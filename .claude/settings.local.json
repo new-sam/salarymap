@@ -1,0 +1,28 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(ls /c/Users/slsvm/Desktop/*.html)",
+      "Bash(npm install:*)",
+      "Bash(curl -s -X POST http://localhost:3000/api/submit -H \"Content-Type: application/json\" -d '{\"\"role\"\":\"\"개발자\"\",\"\"experience\"\":\"\"3년\"\",\"\"salary\"\":5000,\"\"company\"\":\"\"테스트\"\",\"\"source\"\":\"\"직접입력\"\"}')",
+      "Bash(node:*)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:3000/)",
+      "Bash(cmd.exe /c \"taskkill /PID 41472 /F\")",
+      "Bash(npm run:*)",
+      "Bash(curl -s \"http://localhost:3000/api/company?name=Grab+Vietnam\")",
+      "Bash(curl -s \"http://localhost:3000/api/company?name=Accenture+Vietnam\")",
+      "Bash(curl -s http://localhost:3000/)",
+      "Bash(curl -s \"http://localhost:3000/api/companies\")",
+      "Bash(wc -l pages/index.js pages/api/*.js pages/supabase.js)",
+      "Bash(explorer.exe \"C:\\\\Users\\\\slsvm\\\\Desktop\\\\salarymap\")",
+      "Bash(npx kill-port:*)",
+      "Bash(curl -s http://localhost:3000/api/stats)",
+      "WebFetch(domain:itviec.com)",
+      "WebFetch(domain:topdev.vn)",
+      "Bash(git -C . status)",
+      "Bash(ls .env*)",
+      "Bash(git init:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)"
+    ]
+  }
+}
