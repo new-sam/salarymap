@@ -27,13 +27,13 @@ nav { position:fixed; top:0; left:0; right:0; z-index:200; padding:0 52px; heigh
 .slide.active { opacity:1; z-index:1; }
 .slide img { width:100%; height:100%; object-fit:cover; filter:brightness(.42); }
 .slide::after { content:''; position:absolute; inset:0; z-index:1; background:linear-gradient(to right,rgba(12,12,11,.85) 0%,rgba(12,12,11,.35) 55%,transparent 100%); }
-.hero-copy { position:absolute; inset:0; z-index:10; display:flex; flex-direction:column; justify-content:center; padding:0 52px; max-width:660px; }
+.hero-copy { position:absolute; inset:0; z-index:10; display:flex; flex-direction:column; justify-content:center; padding:80px 52px; max-width:660px; }
 .hero-kicker { font-family:'Geist Mono',monospace; font-size:11px; color:var(--orange); letter-spacing:2.5px; text-transform:uppercase; margin-bottom:32px; display:flex; align-items:center; gap:10px; }
 .kdot { width:5px; height:5px; border-radius:50%; background:var(--orange); box-shadow:0 0 8px var(--orange); animation:glow 2s ease-in-out infinite; }
 @keyframes glow { 0%,100%{box-shadow:0 0 6px var(--orange)} 50%{box-shadow:0 0 20px var(--orange)} }
 .hero-h1 { font-size:clamp(40px,5.2vw,72px); font-weight:800; line-height:1.04; letter-spacing:-2.5px; margin-bottom:24px; color:var(--white); }
 .hero-h1 em { font-style:normal; color:var(--orange); }
-.hero-sub { font-size:16px; color:var(--mid); line-height:1.8; font-weight:300; max-width:420px; margin-bottom:24px; }
+.hero-sub { font-size:16px; color:var(--mid); line-height:1.8; font-weight:300; max-width:420px; margin-bottom:44px; }
 .hero-btns { display:flex; gap:12px; }
 .btn-p { font-family:'Geist',sans-serif; font-size:14px; font-weight:700; background:var(--orange); color:#fff; border:none; padding:14px 28px; border-radius:2px; cursor:pointer; }
 .btn-g { font-size:14px; color:var(--mid); background:transparent; border:1px solid var(--line); padding:13px 24px; border-radius:2px; cursor:pointer; font-family:'Geist',sans-serif; transition:all .15s; }
@@ -354,7 +354,7 @@ const bodyHTML = `<nav>
   </div>
   <div class="hero-copy">
     <div class="hero-kicker"><span class="kdot"></span>Vietnam IT Salary Intelligence</div>
-    <h1 class="hero-h1"><span style="font-size:0.6em;font-weight:700;color:var(--white);display:block;margin-bottom:8px;">Grab, Shopee, VNG.</span>Who pays <em>more?</em></h1>
+    <h1 class="hero-h1"><span style="font-size:0.6em;font-weight:700;color:var(--white);display:block;margin-bottom:8px;">Grab, Shopee, VNG.</span><em>Who pays more?</em></h1>
     <p class="hero-sub"><span id="stat-sub-hero">—</span> real salary data submitted anonymously by engineers who work there. Compare companies directly.</p>
     <div class="hero-btns">
       <button class="btn-p" onclick="document.querySelector('.cards-section').scrollIntoView({behavior:'smooth'})">Compare companies →</button>
