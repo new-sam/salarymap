@@ -252,6 +252,87 @@ nav { position:fixed; top:0; left:0; right:0; z-index:200; padding:0 52px; heigh
 .co-similar-grid { display:flex; flex-wrap:wrap; gap:8px; }
 .co-similar-chip { padding:7px 14px; border:1px solid var(--line); border-radius:20px; font-size:12px; font-weight:500; cursor:pointer; transition:all .15s; color:var(--mid); }
 .co-similar-chip:hover { border-color:var(--orange); color:var(--orange); }
+
+/* ── MOBILE RESPONSIVE ── */
+@media (max-width: 768px) {
+  /* NAV */
+  nav { padding:0 16px; height:52px; }
+  .nav-link { display:none; }
+  .nav-btn { font-size:11px; padding:7px 14px; }
+
+  /* HERO */
+  .hero-copy { padding:0 20px; max-width:100%; }
+  .hero-h1 { font-size:clamp(28px,8vw,44px); letter-spacing:-1.5px; }
+  .hero-sub { font-size:13px; margin-bottom:28px; }
+  .hero-btns { flex-direction:column; gap:10px; }
+  .btn-p, .btn-g { width:100%; text-align:center; padding:13px 20px; }
+  .car-dots, .car-arrows { display:none; }
+  .hero-stats { padding:14px 16px; flex-wrap:wrap; gap:0; }
+  .hs { flex:1 1 50%; padding:8px 4px; border-right:none !important; border-bottom:1px solid var(--line); }
+  .hs:nth-child(odd) { border-right:1px solid var(--line) !important; }
+  .hs:nth-last-child(-n+2) { border-bottom:none; }
+  .hs-n { font-size:18px; }
+
+  /* TICKER */
+  .stream-ticker { padding:0 16px; }
+  .st-label { display:none; }
+  .st-item { padding:0 12px; }
+
+  /* CARDS SECTION */
+  .cards-section { padding:40px 16px 0; }
+  .section-head-title { font-size:22px; }
+  .card-grid { grid-template-columns:repeat(2,1fr); gap:12px; }
+  .bcard-banner { height:90px; }
+  .bcard-logo-wrap, .bcard-logo-fb { width:44px; height:44px; bottom:-18px; border-radius:9px; }
+  .bcard-logo-wrap img { width:34px; height:34px; }
+  .bcard-body { padding:26px 12px 14px; }
+  .bcard-co { font-size:12px; }
+  .bcard-type { font-size:10px; margin-bottom:10px; }
+  .bcard-sal { font-size:22px; }
+  .bcard-sal-sub { font-size:10px; margin-bottom:10px; }
+  .bcard-metrics { display:none; }
+  .bcard-quote { display:none; }
+  .bcard-n { font-size:9px; }
+  .cards-gate { height:80px; margin-top:-80px; }
+
+  /* SUBMIT */
+  .submit-outer { margin:40px 16px 0; }
+  .submit-inner { padding:28px 20px 28px; }
+  .form-line { grid-template-columns:1fr 1fr !important; gap:14px 16px !important; }
+  .fg select, .fg input, .ac-input { font-size:16px; } /* prevent iOS zoom */
+  .trust-line { gap:10px; }
+  .tl { font-size:10px; }
+  .btn-sub { width:100%; padding:14px; font-size:14px; }
+
+  /* RESULT BLOCK */
+  .result-block { flex-direction:column; align-items:flex-start; gap:14px; }
+  .rb-sep { display:none; }
+  .rb-bwrap { width:100%; }
+  .rb-pct { font-size:32px; }
+
+  /* FULL FEED */
+  #full-feed { padding:36px 16px 60px; }
+  .ff-head { flex-direction:column; gap:4px; align-items:flex-start; }
+
+  /* COMPANY SEARCH */
+  .co-result-panel { padding:16px; }
+  .co-role-table th:nth-child(3),
+  .co-role-table td:nth-child(3),
+  .co-role-table th:nth-child(4),
+  .co-role-table td:nth-child(4),
+  .co-role-table th:nth-child(5),
+  .co-role-table td:nth-child(5) { display:none; }
+  .co-role-median { font-size:13px; }
+}
+
+@media (max-width: 400px) {
+  .card-grid { grid-template-columns:1fr; gap:12px; }
+  .bcard-banner { height:110px; }
+  .bcard-metrics { display:grid; }
+  .bcard-quote { display:none; }
+  .form-line { grid-template-columns:1fr !important; }
+  .hero-h1 { font-size:clamp(26px,9vw,36px); }
+}
 `;
 
 const bodyHTML = `<nav>
@@ -894,6 +975,7 @@ export default function Home() {
     <>
       <Head>
         <title>SalaryMap.vn</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
         <link
           href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700;800;900&family=Geist+Mono:wght@400;500&display=swap"
           rel="stylesheet"
