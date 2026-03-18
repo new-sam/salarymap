@@ -354,10 +354,10 @@ const bodyHTML = `<nav>
   </div>
   <div class="hero-copy">
     <div class="hero-kicker"><span class="kdot"></span>Vietnam IT Salary Intelligence</div>
-    <h1 class="hero-h1">What does<br><em>Grab Vietnam</em><br>actually pay?</h1>
-    <p class="hero-sub"><span id="stat-sub-hero">4,812</span> anonymous submissions from engineers across Vietnam's top IT companies. Real numbers. No guessing.</p>
+    <h1 class="hero-h1">Grab, Shopee, VNG.<br><em>Who pays more?</em></h1>
+    <p class="hero-sub"><span id="stat-sub-hero">—</span> real salary data submitted anonymously by engineers who work there. Compare companies directly.</p>
     <div class="hero-btns">
-      <button class="btn-p" onclick="document.querySelector('.cards-section').scrollIntoView({behavior:'smooth'})">Browse companies →</button>
+      <button class="btn-p" onclick="document.querySelector('.cards-section').scrollIntoView({behavior:'smooth'})">Compare companies →</button>
       <button class="btn-g" onclick="document.querySelector('.submit-outer').scrollIntoView({behavior:'smooth'})">Submit my salary</button>
     </div>
   </div>
