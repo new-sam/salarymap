@@ -1,4 +1,17 @@
 {
+  "hooks": {
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "cd /c/Users/slsvm/Desktop/salarymap && git add -A && git diff --cached --quiet || (git commit -m \"auto: $(date +'%Y-%m-%d %H:%M')\" && git push) 2>/dev/null || true",
+            "timeout": 30
+          }
+        ]
+      }
+    ]
+  },
   "permissions": {
     "allow": [
       "Bash(ls /c/Users/slsvm/Desktop/*.html)",
@@ -29,7 +42,14 @@
       "Bash(git branch:*)",
       "Bash(git push:*)",
       "Bash(vercel:*)",
-      "Bash(curl -s http://localhost:3000)"
+      "Bash(curl -s http://localhost:3000)",
+      "Bash(taskkill /F /PID 34372)",
+      "Bash(netstat -ano)",
+      "Bash(findstr \":3000\")",
+      "Bash(cmd /c \"taskkill /F /PID 34372\" 2>&1)",
+      "Bash(cmd /c \"taskkill /F /PID 34372 && echo success\" 2>&1)",
+      "Bash(cmd /c \"taskkill /F /PID 34372\")",
+      "Skill(update-config)"
     ]
   }
 }
