@@ -160,6 +160,16 @@ nav { position:fixed; top:0; left:0; right:0; z-index:200; padding:0 52px; heigh
 .fg select:focus, .fg input:focus { border-bottom-color:var(--orange); }
 .fg select option { background:#f2f0eb; }
 .btn-sub { background:var(--orange); color:#fff; border:none; font-family:'Geist',sans-serif; font-size:14px; font-weight:700; padding:14px 32px; border-radius:2px; cursor:pointer; }
+.otw-wrap { margin-bottom:24px; }
+.otw-check { display:flex; align-items:center; gap:10px; cursor:pointer; user-select:none; }
+.otw-check input[type=checkbox] { width:16px; height:16px; accent-color:var(--orange); cursor:pointer; flex-shrink:0; }
+.otw-check-label { font-size:13px; color:rgba(12,12,11,.65); font-weight:500; }
+.otw-email { display:none; margin-top:12px; padding-left:26px; }
+.otw-email.on { display:block; }
+.otw-email input { width:100%; background:transparent; border:none; border-bottom:1.5px solid rgba(12,12,11,.14); color:var(--bg); font-family:'Geist',sans-serif; font-size:14px; padding:10px 0; outline:none; transition:border-color .2s; }
+.otw-email input:focus { border-bottom-color:var(--orange); }
+.otw-email input::placeholder { color:rgba(12,12,11,.3); }
+.otw-trust { margin-top:6px; font-size:10px; color:rgba(12,12,11,.35); font-family:'Geist Mono',monospace; }
 
 /* AUTOCOMPLETE */
 .ac-wrap { position:relative; }
@@ -618,6 +628,16 @@ const bodyHTML = `<nav>
         </div>
       </div>
     </div>
+    <div class="otw-wrap">
+      <label class="otw-check">
+        <input type="checkbox" id="otw-cb" onchange="document.getElementById('otw-email-wrap').classList.toggle('on',this.checked)">
+        <span class="otw-check-label">더 좋은 기회가 생기면 알고 싶어요</span>
+      </label>
+      <div class="otw-email" id="otw-email-wrap">
+        <input type="email" id="f-email" placeholder="이메일 (선택)">
+        <div class="otw-trust">채용 정보 외 다른 용도로 사용하지 않습니다</div>
+      </div>
+    </div>
     <button class="btn-sub" id="unlock-btn" onclick="unlock()">See all salary data →</button>
     <p style="font-size:11px;color:rgba(12,12,11,.38);margin-top:10px;">Your salary is never linked to your name, email, or identity.</p>
     <div class="result-block" id="result-block">
@@ -949,12 +969,12 @@ async function doUnlock(role,exp,sal){
   uline.classList.add('on');
   return true;
 }
-async function submitSalary(role, experience, salary, company, source){
+async function submitSalary(role, experience, salary, company, source, email){
   try {
     await fetch('/api/submit', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ role, experience, salary, company, source })
+      body: JSON.stringify({ role, experience, salary, company, source, email })
     });
   } catch(e) {
     // Continue unlock even if submit fails
@@ -966,7 +986,8 @@ async function unlock(){
   if(!r||!e||!s||!c){ alert('Please fill in all fields including your company name.'); return; }
   const urlParams=new URLSearchParams(window.location.search);
   const source=urlParams.get('source')||'direct';
-  submitSalary(r,e,s,c,source);
+  const email=document.getElementById('f-email')?.value||'';
+  submitSalary(r,e,s,c,source,email);
   if(await doUnlock(r,e,s)) setTimeout(()=>document.getElementById('full-feed').scrollIntoView({behavior:'smooth'}),300);
 }`;
 

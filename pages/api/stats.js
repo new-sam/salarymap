@@ -5,7 +5,7 @@ const VALID_EXP   = ['Under 1 year','1–2 yrs','3–4 yrs','5–7 yrs','8+ yrs'
 const MIN_SAL = 5, MAX_SAL = 300;
 
 export default async function handler(req, res) {
-  const [subResult, coResult, recentResult] = await Promise.all([
+  const [subResult, coResult, recentResult, otwResult] = await Promise.all([
     supabase.from('submissions').select('*', { count: 'exact', head: true })
       .in('role', VALID_ROLES).in('experience', VALID_EXP)
       .gte('salary', MIN_SAL).lte('salary', MAX_SAL),
@@ -14,11 +14,15 @@ export default async function handler(req, res) {
       .in('role', VALID_ROLES).in('experience', VALID_EXP)
       .gte('salary', MIN_SAL).lte('salary', MAX_SAL)
       .limit(30),
+    supabase.from('submissions').select('*', { count: 'exact', head: true })
+      .not('email', 'is', null)
+      .neq('email', ''),
   ]);
 
   res.json({
     submissionCount: subResult.count || 0,
     companyCount: coResult.count || 0,
     recent: recentResult.data || [],
+    otwCount: otwResult.count || 0,
   });
 }
