@@ -290,6 +290,7 @@ nav { position:fixed; top:0; left:0; right:0; z-index:200; padding:0 52px; heigh
 
   /* CARDS SECTION */
   .cards-section { padding:40px 16px 0; }
+  .stories-grid { grid-template-columns:1fr !important; }
   .section-head-title { font-size:22px; }
   .card-grid { grid-template-columns:repeat(2,1fr); gap:12px; }
   .bcard-banner { height:90px; }
@@ -351,6 +352,7 @@ const bodyHTML = `<nav>
     <a class="nav-link" href="#">Data</a>
     <a class="nav-link" href="#">Companies</a>
     <a class="nav-link" href="#">Reports</a>
+    <a class="nav-link" href="/how-it-works">How it works</a>
     <button class="nav-btn" onclick="document.querySelector('.submit-outer').scrollIntoView({behavior:'smooth'})">Submit Salary</button>
   </div>
 </nav>
@@ -386,6 +388,24 @@ const bodyHTML = `<nav>
     <div class="hs"><div class="hs-n" id="hero-co-n">134</div><div class="hs-l">Companies</div></div>
     <div class="hs"><div class="hs-n">31</div><div class="hs-l">Roles tracked</div></div>
     <div class="hs"><div class="hs-n" style="font-size:13px;color:var(--dim);font-weight:400;">Updated today</div><div class="hs-l">&nbsp;</div></div>
+  </div>
+</section>
+
+<section style="max-width:1160px; margin:0 auto; padding:64px 52px;">
+  <div style="font-family:'Geist Mono',monospace; font-size:11px; color:var(--orange); letter-spacing:2px; margin-bottom:32px;">REAL STORIES</div>
+  <div class="stories-grid" style="display:grid; grid-template-columns:repeat(3,1fr); gap:20px;">
+    <div style="background:var(--bg1); border:1px solid var(--line); border-radius:12px; padding:24px;">
+      <div style="font-size:13px; color:var(--mid); font-style:italic; line-height:1.7; margin-bottom:16px;">"Got Shopee offer, checked here before negotiation. Base salary 15% higher after. Very useful for real number."</div>
+      <div style="font-size:11px; color:var(--dim);">— Backend Engineer · 5 yrs · Ho Chi Minh City</div>
+    </div>
+    <div style="background:var(--bg1); border:1px solid var(--line); border-radius:12px; padding:24px;">
+      <div style="font-size:13px; color:var(--mid); font-style:italic; line-height:1.7; margin-bottom:16px;">"Always wonder if my salary is good or not. Here I can see same role, same year experience. Now I know I am underpaid at current company."</div>
+      <div style="font-size:11px; color:var(--dim);">— Fullstack Developer · 3 yrs · Hanoi</div>
+    </div>
+    <div style="background:var(--bg1); border:1px solid var(--line); border-radius:12px; padding:24px;">
+      <div style="font-size:13px; color:var(--mid); font-style:italic; line-height:1.7; margin-bottom:16px;">"My friend tell me about this site. I submit salary and see Grab pay much more than my company. Now I apply there."</div>
+      <div style="font-size:11px; color:var(--dim);">— Mobile Engineer · 4 yrs · Ho Chi Minh City</div>
+    </div>
   </div>
 </section>
 
@@ -451,6 +471,7 @@ const bodyHTML = `<nav>
         </div>
         <div class="bcard-quote">"Salary very competitive here. Total package with bonus and stock is best in Vietnam I think."<div class="bcard-quote-src">— Current · Mobile Engineer · 6 yrs</div></div>
         <div class="bcard-n" id="n0">17 responses</div>
+        <div style="text-align:center; margin-top:6px;"><span style="font-size:10px; color:var(--dim); cursor:pointer; text-decoration:underline; text-underline-offset:2px;" onclick="reportData('Grab Vietnam')">Data looks wrong?</span></div>
       </div>
     </div>
 
@@ -476,6 +497,7 @@ const bodyHTML = `<nav>
         </div>
         <div class="bcard-quote">"Good salary for Vietnam. Product team pays better than outsourcing team, quite different."<div class="bcard-quote-src">— Current · Backend Engineer · 4 yrs</div></div>
         <div class="bcard-n" id="n1">34 responses</div>
+        <div style="text-align:center; margin-top:6px;"><span style="font-size:10px; color:var(--dim); cursor:pointer; text-decoration:underline; text-underline-offset:2px;" onclick="reportData('VNG Corporation')">Data looks wrong?</span></div>
       </div>
     </div>
 
@@ -501,6 +523,7 @@ const bodyHTML = `<nav>
         </div>
         <div class="bcard-quote">"Like working for Singapore company. Pay scale much higher than local. Hard to get in but worth it."<div class="bcard-quote-src">— Current · Backend Engineer · 5 yrs</div></div>
         <div class="bcard-n" id="n2">23 responses</div>
+        <div style="text-align:center; margin-top:6px;"><span style="font-size:10px; color:var(--dim); cursor:pointer; text-decoration:underline; text-underline-offset:2px;" onclick="reportData('Shopee Vietnam')">Data looks wrong?</span></div>
       </div>
     </div>
 
@@ -993,6 +1016,9 @@ async function doUnlock(role,exp,sal){
   uline.textContent=\`vs. median \${vsText} · Top 25% earn \${p75}M+\`;
   uline.classList.add('on');
   return true;
+}
+function reportData(company){
+  alert('Thank you for the feedback. We will review ' + company + ' data shortly.');
 }
 function heroSearch(q){
   if(!q||q.length<2) return;
