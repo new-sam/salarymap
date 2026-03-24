@@ -37,7 +37,8 @@
       "Bash(cmd /c \"taskkill /F /PID 34372 && echo success\" 2>&1)",
       "Bash(cmd /c \"taskkill /F /PID 34372\")",
       "Skill(update-config)",
-      "Bash(curl:*)"
+      "Bash(curl:*)",
+      "Bash(git checkout:*)"
     ]
   },
   "hooks": {
