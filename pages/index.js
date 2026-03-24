@@ -414,30 +414,30 @@ const bodyHTML = `<nav>
   <div class="trust-inner" style="width:100%; padding:0 52px; margin-bottom:2px;">
     <div class="trust-roadmap" style="display:grid; grid-template-columns:repeat(3,1fr); gap:2px;">
       <div style="position:relative; overflow:hidden;">
-        <img src="https://images.unsplash.com/photo-1524178232363-1fb2b075b655?w=600&h=300&fit=crop&q=80" style="width:100%; height:420px; object-fit:cover; filter:brightness(.4); display:block;" alt="">
-        <div style="position:absolute; inset:0; padding:20px; display:flex; flex-direction:column; justify-content:flex-end;">
-          <div style="font-size:10px; color:var(--orange); letter-spacing:1.5px; text-transform:uppercase; margin-bottom:6px;">2020 — Now</div>
-          <div style="font-size:14px; font-weight:700; color:var(--white); margin-bottom:4px;">University programs</div>
-          <div style="font-size:26px; font-weight:800; color:var(--orange); letter-spacing:-1px;">6,000+</div>
-          <div style="font-size:11px; color:rgba(242,240,235,0.4);">developers trained</div>
+        <img src="https://images.unsplash.com/photo-1524178232363-1fb2b075b655?w=600&h=300&fit=crop&q=80" style="width:100%; height:360px; object-fit:cover; filter:brightness(.4); display:block;" alt="">
+        <div style="position:absolute; inset:0; padding:28px; display:flex; flex-direction:column; justify-content:flex-end;">
+          <div style="font-size:11px; color:var(--orange); letter-spacing:1.5px; text-transform:uppercase; margin-bottom:8px;">2020 — Now</div>
+          <div style="font-size:17px; font-weight:700; color:var(--white); margin-bottom:6px;">University programs</div>
+          <div style="font-size:40px; font-weight:800; color:var(--orange); letter-spacing:-1.5px;">6,000+</div>
+          <div style="font-size:13px; color:rgba(242,240,235,0.4);">developers trained</div>
         </div>
       </div>
       <div style="position:relative; overflow:hidden;">
-        <img src="https://images.unsplash.com/photo-1600880292203-757bb62b4baf?w=600&h=300&fit=crop&q=80" style="width:100%; height:420px; object-fit:cover; filter:brightness(.4); display:block;" alt="">
-        <div style="position:absolute; inset:0; padding:20px; display:flex; flex-direction:column; justify-content:flex-end;">
-          <div style="font-size:10px; color:var(--orange); letter-spacing:1.5px; text-transform:uppercase; margin-bottom:6px;">2023 — Now</div>
-          <div style="font-size:14px; font-weight:700; color:var(--white); margin-bottom:4px;">Enterprise partnerships</div>
-          <div style="font-size:26px; font-weight:800; color:var(--orange); letter-spacing:-1px;">80+</div>
-          <div style="font-size:11px; color:rgba(242,240,235,0.4);">companies, real offer data</div>
+        <img src="https://images.unsplash.com/photo-1600880292203-757bb62b4baf?w=600&h=300&fit=crop&q=80" style="width:100%; height:360px; object-fit:cover; filter:brightness(.4); display:block;" alt="">
+        <div style="position:absolute; inset:0; padding:28px; display:flex; flex-direction:column; justify-content:flex-end;">
+          <div style="font-size:11px; color:var(--orange); letter-spacing:1.5px; text-transform:uppercase; margin-bottom:8px;">2023 — Now</div>
+          <div style="font-size:17px; font-weight:700; color:var(--white); margin-bottom:6px;">Enterprise partnerships</div>
+          <div style="font-size:40px; font-weight:800; color:var(--orange); letter-spacing:-1.5px;">80+</div>
+          <div style="font-size:13px; color:rgba(242,240,235,0.4);">companies, real offer data</div>
         </div>
       </div>
       <div style="position:relative; overflow:hidden;">
-        <img src="https://images.unsplash.com/photo-1551434678-e076c223a692?w=600&h=300&fit=crop&q=80" style="width:100%; height:420px; object-fit:cover; filter:brightness(.4); display:block;" alt="">
-        <div style="position:absolute; inset:0; padding:20px; display:flex; flex-direction:column; justify-content:flex-end;">
-          <div style="font-size:10px; color:var(--orange); letter-spacing:1.5px; text-transform:uppercase; margin-bottom:6px;">2025</div>
-          <div style="font-size:14px; font-weight:700; color:var(--white); margin-bottom:4px;">SalaryMap launched</div>
-          <div style="font-size:26px; font-weight:800; color:var(--orange); letter-spacing:-1px;" id="trust-sub-n">—</div>
-          <div style="font-size:11px; color:rgba(242,240,235,0.4);">submissions & counting</div>
+        <img src="https://images.unsplash.com/photo-1551434678-e076c223a692?w=600&h=300&fit=crop&q=80" style="width:100%; height:360px; object-fit:cover; filter:brightness(.4); display:block;" alt="">
+        <div style="position:absolute; inset:0; padding:28px; display:flex; flex-direction:column; justify-content:flex-end;">
+          <div style="font-size:11px; color:var(--orange); letter-spacing:1.5px; text-transform:uppercase; margin-bottom:8px;">2025</div>
+          <div style="font-size:17px; font-weight:700; color:var(--white); margin-bottom:6px;">SalaryMap launched</div>
+          <div style="font-size:40px; font-weight:800; color:var(--orange); letter-spacing:-1.5px;" id="trust-sub-n">—</div>
+          <div style="font-size:13px; color:rgba(242,240,235,0.4);">submissions & counting</div>
         </div>
       </div>
     </div>
@@ -468,7 +468,7 @@ const bodyHTML = `<nav>
     <div style="font-size:11px; color:var(--dim); letter-spacing:1px; text-transform:uppercase; margin-bottom:16px;">From our developer community</div>
     <div class="trust-interviews" style="display:grid; grid-template-columns:repeat(3,1fr); gap:2px;">
       <div style="background:#141413; overflow:hidden;">
-        <img src="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=400&h=200&fit=crop&crop=top&q=80" style="width:100%; height:280px; object-fit:cover; object-position:top; filter:brightness(.6) saturate(.7); display:block;" alt="">
+        <img src="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=400&h=200&fit=crop&crop=top&q=80" style="width:100%; height:240px; object-fit:cover; object-position:top; filter:brightness(.6) saturate(.7); display:block;" alt="">
         <div style="padding:16px;">
           <div style="font-size:10px; color:var(--orange); letter-spacing:1px; text-transform:uppercase; margin-bottom:8px;">Grab Vietnam · Backend</div>
           <div style="font-size:12px; color:var(--mid); line-height:1.6; font-style:italic; margin-bottom:10px;">"Check here before negotiation. Got 12% higher than first offer."</div>
@@ -476,7 +476,7 @@ const bodyHTML = `<nav>
         </div>
       </div>
       <div style="background:#141413; overflow:hidden;">
-        <img src="https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=400&h=200&fit=crop&crop=top&q=80" style="width:100%; height:280px; object-fit:cover; object-position:top; filter:brightness(.6) saturate(.7); display:block;" alt="">
+        <img src="https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=400&h=200&fit=crop&crop=top&q=80" style="width:100%; height:240px; object-fit:cover; object-position:top; filter:brightness(.6) saturate(.7); display:block;" alt="">
         <div style="padding:16px;">
           <div style="font-size:10px; color:var(--orange); letter-spacing:1px; text-transform:uppercase; margin-bottom:8px;">VNG Corporation · Mobile</div>
           <div style="font-size:12px; color:var(--mid); line-height:1.6; font-style:italic; margin-bottom:10px;">"Now I know I am underpaid. Start applying to better companies."</div>
@@ -484,7 +484,7 @@ const bodyHTML = `<nav>
         </div>
       </div>
       <div style="background:#141413; overflow:hidden;">
-        <img src="https://images.unsplash.com/photo-1551836022-deb4988cc6c0?w=400&h=200&fit=crop&crop=top&q=80" style="width:100%; height:280px; object-fit:cover; object-position:top; filter:brightness(.6) saturate(.7); display:block;" alt="">
+        <img src="https://images.unsplash.com/photo-1551836022-deb4988cc6c0?w=400&h=200&fit=crop&crop=top&q=80" style="width:100%; height:240px; object-fit:cover; object-position:top; filter:brightness(.6) saturate(.7); display:block;" alt="">
         <div style="padding:16px;">
           <div style="font-size:10px; color:var(--orange); letter-spacing:1px; text-transform:uppercase; margin-bottom:8px;">FPT Software · Fullstack</div>
           <div style="font-size:12px; color:var(--mid); line-height:1.6; font-style:italic; margin-bottom:10px;">"Foreign companies pay much more. Very eye opening for me."</div>
