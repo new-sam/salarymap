@@ -27,7 +27,7 @@ nav { position:fixed; top:0; left:0; right:0; z-index:200; padding:0 52px; heigh
 .slide.active { opacity:1; z-index:1; }
 .slide img { width:100%; height:100%; object-fit:cover; filter:brightness(.42); }
 .slide::after { content:''; position:absolute; inset:0; z-index:1; background:linear-gradient(to right,rgba(12,12,11,.85) 0%,rgba(12,12,11,.35) 55%,transparent 100%); }
-.hero-copy { position:absolute; inset:0; z-index:10; display:flex; flex-direction:column; justify-content:center; padding:80px 52px; max-width:660px; }
+.hero-copy { position:absolute; inset:0; z-index:10; display:flex; flex-direction:column; justify-content:center; padding:80px 52px 80px 96px; max-width:700px; }
 .hero-kicker { font-family:'Geist Mono',monospace; font-size:11px; color:var(--orange); letter-spacing:2.5px; text-transform:uppercase; margin-bottom:32px; display:flex; align-items:center; gap:10px; }
 .kdot { width:5px; height:5px; border-radius:50%; background:var(--orange); box-shadow:0 0 8px var(--orange); animation:glow 2s ease-in-out infinite; }
 @keyframes glow { 0%,100%{box-shadow:0 0 6px var(--orange)} 50%{box-shadow:0 0 20px var(--orange)} }
@@ -400,7 +400,7 @@ const bodyHTML = `<nav>
 <!-- TRUST BUILDER -->
 <section class="trust-section" style="background:#0c0c0b; padding:80px 0;">
 
-  <div class="trust-inner" style="width:100%; padding:0 52px; margin-bottom:48px;">
+  <div class="trust-inner" style="max-width:1160px; margin:0 auto; padding:0 52px; margin-bottom:48px;">
     <div style="font-family:'Geist Mono',monospace; font-size:11px; color:var(--orange); letter-spacing:2.5px; text-transform:uppercase; margin-bottom:16px; display:flex; align-items:center; gap:8px;">
       <span style="width:5px;height:5px;border-radius:50%;background:var(--orange);box-shadow:0 0 8px var(--orange);"></span>
       Why trust our data
@@ -411,10 +411,10 @@ const bodyHTML = `<nav>
     </h2>
   </div>
 
-  <div class="trust-inner" style="width:100%; padding:0 52px; margin-bottom:2px;">
+  <div class="trust-inner" style="max-width:1160px; margin:0 auto; padding:0 52px; margin-bottom:2px;">
     <div class="trust-roadmap" style="display:grid; grid-template-columns:repeat(3,1fr); gap:2px;">
       <div style="position:relative; overflow:hidden;">
-        <img src="https://images.unsplash.com/photo-1524178232363-1fb2b075b655?w=600&h=300&fit=crop&q=80" style="width:100%; height:360px; object-fit:cover; filter:brightness(.4); display:block;" alt="">
+        <img src="https://images.unsplash.com/photo-1524178232363-1fb2b075b655?w=600&h=300&fit=crop&q=80" style="width:100%; height:306px; object-fit:cover; filter:brightness(.4); display:block;" alt="">
         <div style="position:absolute; inset:0; padding:28px; display:flex; flex-direction:column; justify-content:flex-end;">
           <div style="font-size:11px; color:var(--orange); letter-spacing:1.5px; text-transform:uppercase; margin-bottom:8px;">2020 — Now</div>
           <div style="font-size:17px; font-weight:700; color:var(--white); margin-bottom:6px;">University programs</div>
@@ -423,7 +423,7 @@ const bodyHTML = `<nav>
         </div>
       </div>
       <div style="position:relative; overflow:hidden;">
-        <img src="https://images.unsplash.com/photo-1600880292203-757bb62b4baf?w=600&h=300&fit=crop&q=80" style="width:100%; height:360px; object-fit:cover; filter:brightness(.4); display:block;" alt="">
+        <img src="https://images.unsplash.com/photo-1600880292203-757bb62b4baf?w=600&h=300&fit=crop&q=80" style="width:100%; height:306px; object-fit:cover; filter:brightness(.4); display:block;" alt="">
         <div style="position:absolute; inset:0; padding:28px; display:flex; flex-direction:column; justify-content:flex-end;">
           <div style="font-size:11px; color:var(--orange); letter-spacing:1.5px; text-transform:uppercase; margin-bottom:8px;">2023 — Now</div>
           <div style="font-size:17px; font-weight:700; color:var(--white); margin-bottom:6px;">Enterprise partnerships</div>
@@ -432,7 +432,7 @@ const bodyHTML = `<nav>
         </div>
       </div>
       <div style="position:relative; overflow:hidden;">
-        <img src="https://images.unsplash.com/photo-1551434678-e076c223a692?w=600&h=300&fit=crop&q=80" style="width:100%; height:360px; object-fit:cover; filter:brightness(.4); display:block;" alt="">
+        <img src="https://images.unsplash.com/photo-1551434678-e076c223a692?w=600&h=300&fit=crop&q=80" style="width:100%; height:306px; object-fit:cover; filter:brightness(.4); display:block;" alt="">
         <div style="position:absolute; inset:0; padding:28px; display:flex; flex-direction:column; justify-content:flex-end;">
           <div style="font-size:11px; color:var(--orange); letter-spacing:1.5px; text-transform:uppercase; margin-bottom:8px;">2025</div>
           <div style="font-size:17px; font-weight:700; color:var(--white); margin-bottom:6px;">SalaryMap launched</div>
@@ -443,7 +443,7 @@ const bodyHTML = `<nav>
     </div>
   </div>
 
-  <div class="trust-inner" style="width:100%; padding:0 52px; margin-bottom:56px;">
+  <div class="trust-inner" style="max-width:1160px; margin:0 auto; padding:0 52px; margin-bottom:56px;">
     <div class="trust-stats" style="display:grid; grid-template-columns:repeat(4,1fr); gap:2px;">
       <div style="background:#141413; padding:20px 24px;">
         <div style="font-size:24px; font-weight:800; color:var(--white); letter-spacing:-1px;" id="trust-s1">—</div>
@@ -464,11 +464,11 @@ const bodyHTML = `<nav>
     </div>
   </div>
 
-  <div class="trust-inner" style="width:100%; padding:0 52px; margin-bottom:56px;">
+  <div class="trust-inner" style="max-width:1160px; margin:0 auto; padding:0 52px; margin-bottom:56px;">
     <div style="font-size:11px; color:var(--dim); letter-spacing:1px; text-transform:uppercase; margin-bottom:16px;">From our developer community</div>
     <div class="trust-interviews" style="display:grid; grid-template-columns:repeat(3,1fr); gap:2px;">
       <div style="background:#141413; overflow:hidden;">
-        <img src="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=400&h=200&fit=crop&crop=top&q=80" style="width:100%; height:240px; object-fit:cover; object-position:top; filter:brightness(.6) saturate(.7); display:block;" alt="">
+        <img src="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=400&h=200&fit=crop&crop=top&q=80" style="width:100%; height:204px; object-fit:cover; object-position:top; filter:brightness(.6) saturate(.7); display:block;" alt="">
         <div style="padding:16px;">
           <div style="font-size:10px; color:var(--orange); letter-spacing:1px; text-transform:uppercase; margin-bottom:8px;">Grab Vietnam · Backend</div>
           <div style="font-size:12px; color:var(--mid); line-height:1.6; font-style:italic; margin-bottom:10px;">"Check here before negotiation. Got 12% higher than first offer."</div>
@@ -476,7 +476,7 @@ const bodyHTML = `<nav>
         </div>
       </div>
       <div style="background:#141413; overflow:hidden;">
-        <img src="https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=400&h=200&fit=crop&crop=top&q=80" style="width:100%; height:240px; object-fit:cover; object-position:top; filter:brightness(.6) saturate(.7); display:block;" alt="">
+        <img src="https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=400&h=200&fit=crop&crop=top&q=80" style="width:100%; height:204px; object-fit:cover; object-position:top; filter:brightness(.6) saturate(.7); display:block;" alt="">
         <div style="padding:16px;">
           <div style="font-size:10px; color:var(--orange); letter-spacing:1px; text-transform:uppercase; margin-bottom:8px;">VNG Corporation · Mobile</div>
           <div style="font-size:12px; color:var(--mid); line-height:1.6; font-style:italic; margin-bottom:10px;">"Now I know I am underpaid. Start applying to better companies."</div>
@@ -484,7 +484,7 @@ const bodyHTML = `<nav>
         </div>
       </div>
       <div style="background:#141413; overflow:hidden;">
-        <img src="https://images.unsplash.com/photo-1551836022-deb4988cc6c0?w=400&h=200&fit=crop&crop=top&q=80" style="width:100%; height:240px; object-fit:cover; object-position:top; filter:brightness(.6) saturate(.7); display:block;" alt="">
+        <img src="https://images.unsplash.com/photo-1551836022-deb4988cc6c0?w=400&h=200&fit=crop&crop=top&q=80" style="width:100%; height:204px; object-fit:cover; object-position:top; filter:brightness(.6) saturate(.7); display:block;" alt="">
         <div style="padding:16px;">
           <div style="font-size:10px; color:var(--orange); letter-spacing:1px; text-transform:uppercase; margin-bottom:8px;">FPT Software · Fullstack</div>
           <div style="font-size:12px; color:var(--mid); line-height:1.6; font-style:italic; margin-bottom:10px;">"Foreign companies pay much more. Very eye opening for me."</div>
@@ -494,9 +494,11 @@ const bodyHTML = `<nav>
     </div>
   </div>
 
-  <div style="text-align:center; font-size:11px; color:var(--dim); letter-spacing:1px; text-transform:uppercase; margin-bottom:16px;">Salary data from engineers at</div>
-  <div style="border-top:1px solid var(--line); border-bottom:1px solid var(--line); padding:16px 0; overflow:hidden;">
-    <div id="trust-strip" style="display:flex; align-items:center; animation:scrollX 24s linear infinite; width:max-content;"></div>
+  <div style="max-width:1160px; margin:0 auto; padding:0 52px;">
+    <div style="font-size:11px; color:var(--dim); letter-spacing:1px; text-transform:uppercase; margin-bottom:16px;">Salary data from engineers at</div>
+    <div style="border-top:1px solid var(--line); border-bottom:1px solid var(--line); padding:20px 0; overflow:hidden;">
+      <div id="trust-strip" style="display:flex; align-items:center; animation:scrollX 20s linear infinite; width:max-content;"></div>
+    </div>
   </div>
 
 </section>
@@ -1126,9 +1128,9 @@ const trustLogos=[
 function buildStrip(){
   const strip=document.getElementById('trust-strip'); if(!strip) return;
   strip.innerHTML=[...trustLogos,...trustLogos].map(l=>\`
-    <div style="display:flex;align-items:center;gap:8px;padding:0 28px;border-right:1px solid var(--line);">
-      <img src="https://www.google.com/s2/favicons?domain=\${l.domain}&sz=64" alt="\${l.name[0]}" style="width:20px;height:20px;border-radius:4px;background:#fff;object-fit:contain;" onerror="this.style.display='none';this.parentNode.style.background='rgba(255,96,0,0.15)';this.parentNode.style.justifyContent='center';this.parentNode.innerHTML='<span style=\\'font-size:9px;font-weight:800;color:#ff6000\\'>\${l.name[0]}</span>';">
-      <span style="font-size:11px;color:var(--dim);white-space:nowrap;">\${l.name}</span>
+    <div style="display:flex;align-items:center;gap:12px;padding:0 36px;border-right:1px solid var(--line);">
+      <img src="https://www.google.com/s2/favicons?domain=\${l.domain}&sz=64" alt="\${l.name[0]}" style="width:36px;height:36px;border-radius:8px;background:#fff;object-fit:contain;flex-shrink:0;" onerror="this.style.display='none';this.parentNode.style.background='rgba(255,96,0,0.15)';this.parentNode.style.justifyContent='center';this.parentNode.innerHTML='<span style=\\'font-size:13px;font-weight:800;color:#ff6000\\'>\${l.name[0]}</span>';">
+      <span style="font-size:14px;font-weight:500;color:var(--mid);white-space:nowrap;">\${l.name}</span>
     </div>
   \`).join('');
 }
