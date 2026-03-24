@@ -201,6 +201,7 @@ nav { position:fixed; top:0; left:0; right:0; z-index:200; padding:0 52px; heigh
 .result-block { display:none; margin-top:28px; padding-top:28px; border-top:1px solid rgba(12,12,11,.1); align-items:center; gap:28px; flex-wrap:wrap; }
 .result-block.on { display:flex; animation:fadeUp .35s ease; }
 @keyframes fadeUp { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:translateY(0)} }
+@keyframes scrollX { from{transform:translateX(0)} to{transform:translateX(-50%)} }
 .rb-ctx { font-family:'Geist Mono',monospace; font-size:10px; color:rgba(12,12,11,.38); margin-bottom:6px; letter-spacing:1px; text-transform:uppercase; }
 .rb-pct { font-family:'Geist Mono',monospace; font-size:40px; font-weight:500; color:var(--bg); line-height:1; }
 .rb-sep { width:1px; height:48px; background:rgba(12,12,11,.1); }
@@ -291,6 +292,11 @@ nav { position:fixed; top:0; left:0; right:0; z-index:200; padding:0 52px; heigh
   /* CARDS SECTION */
   .cards-section { padding:40px 16px 0; }
   .stories-grid { grid-template-columns:1fr !important; }
+  .trust-roadmap { grid-template-columns:1fr !important; }
+  .trust-stats { grid-template-columns:repeat(2,1fr) !important; }
+  .trust-interviews { grid-template-columns:1fr !important; }
+  .trust-section { padding:60px 16px !important; }
+  .trust-inner { padding:0 !important; }
   .section-head-title { font-size:22px; }
   .card-grid { grid-template-columns:repeat(2,1fr); gap:12px; }
   .bcard-banner { height:90px; }
@@ -389,6 +395,110 @@ const bodyHTML = `<nav>
     <div class="hs"><div class="hs-n">31</div><div class="hs-l">Roles tracked</div></div>
     <div class="hs"><div class="hs-n" style="font-size:13px;color:var(--dim);font-weight:400;">Updated today</div><div class="hs-l">&nbsp;</div></div>
   </div>
+</section>
+
+<!-- TRUST BUILDER -->
+<section class="trust-section" style="background:#0c0c0b; padding:80px 0;">
+
+  <div class="trust-inner" style="max-width:1060px; margin:0 auto; padding:0 52px; margin-bottom:48px;">
+    <div style="font-family:'Geist Mono',monospace; font-size:11px; color:var(--orange); letter-spacing:2.5px; text-transform:uppercase; margin-bottom:16px; display:flex; align-items:center; gap:8px;">
+      <span style="width:5px;height:5px;border-radius:50%;background:var(--orange);box-shadow:0 0 8px var(--orange);"></span>
+      Why trust our data
+    </div>
+    <h2 style="font-size:clamp(26px,3.2vw,40px); font-weight:800; color:var(--white); letter-spacing:-1.5px; line-height:1.15;">
+      We didn't just build a form.<br>
+      <em style="font-style:normal; color:var(--orange);">We built the network first.</em>
+    </h2>
+  </div>
+
+  <div class="trust-inner" style="max-width:1060px; margin:0 auto; padding:0 52px; margin-bottom:2px;">
+    <div class="trust-roadmap" style="display:grid; grid-template-columns:repeat(3,1fr); gap:2px;">
+      <div style="position:relative; overflow:hidden;">
+        <img src="https://images.unsplash.com/photo-1524178232363-1fb2b075b655?w=600&h=300&fit=crop&q=80" style="width:100%; height:220px; object-fit:cover; filter:brightness(.4); display:block;" alt="">
+        <div style="position:absolute; inset:0; padding:20px; display:flex; flex-direction:column; justify-content:flex-end;">
+          <div style="font-size:10px; color:var(--orange); letter-spacing:1.5px; text-transform:uppercase; margin-bottom:6px;">2020 — Now</div>
+          <div style="font-size:14px; font-weight:700; color:var(--white); margin-bottom:4px;">University programs</div>
+          <div style="font-size:26px; font-weight:800; color:var(--orange); letter-spacing:-1px;">6,000+</div>
+          <div style="font-size:11px; color:rgba(242,240,235,0.4);">developers trained</div>
+        </div>
+      </div>
+      <div style="position:relative; overflow:hidden;">
+        <img src="https://images.unsplash.com/photo-1600880292203-757bb62b4baf?w=600&h=300&fit=crop&q=80" style="width:100%; height:220px; object-fit:cover; filter:brightness(.4); display:block;" alt="">
+        <div style="position:absolute; inset:0; padding:20px; display:flex; flex-direction:column; justify-content:flex-end;">
+          <div style="font-size:10px; color:var(--orange); letter-spacing:1.5px; text-transform:uppercase; margin-bottom:6px;">2023 — Now</div>
+          <div style="font-size:14px; font-weight:700; color:var(--white); margin-bottom:4px;">Enterprise partnerships</div>
+          <div style="font-size:26px; font-weight:800; color:var(--orange); letter-spacing:-1px;">80+</div>
+          <div style="font-size:11px; color:rgba(242,240,235,0.4);">companies, real offer data</div>
+        </div>
+      </div>
+      <div style="position:relative; overflow:hidden;">
+        <img src="https://images.unsplash.com/photo-1551434678-e076c223a692?w=600&h=300&fit=crop&q=80" style="width:100%; height:220px; object-fit:cover; filter:brightness(.4); display:block;" alt="">
+        <div style="position:absolute; inset:0; padding:20px; display:flex; flex-direction:column; justify-content:flex-end;">
+          <div style="font-size:10px; color:var(--orange); letter-spacing:1.5px; text-transform:uppercase; margin-bottom:6px;">2025</div>
+          <div style="font-size:14px; font-weight:700; color:var(--white); margin-bottom:4px;">SalaryMap launched</div>
+          <div style="font-size:26px; font-weight:800; color:var(--orange); letter-spacing:-1px;" id="trust-sub-n">—</div>
+          <div style="font-size:11px; color:rgba(242,240,235,0.4);">submissions & counting</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="trust-inner" style="max-width:1060px; margin:0 auto; padding:0 52px; margin-bottom:56px;">
+    <div class="trust-stats" style="display:grid; grid-template-columns:repeat(4,1fr); gap:2px;">
+      <div style="background:#141413; padding:20px 24px;">
+        <div style="font-size:24px; font-weight:800; color:var(--white); letter-spacing:-1px;" id="trust-s1">—</div>
+        <div style="font-size:11px; color:var(--dim); text-transform:uppercase; letter-spacing:.8px; margin-top:4px;">Submissions</div>
+      </div>
+      <div style="background:#141413; padding:20px 24px;">
+        <div style="font-size:24px; font-weight:800; color:var(--white); letter-spacing:-1px;" id="trust-s2">—</div>
+        <div style="font-size:11px; color:var(--dim); text-transform:uppercase; letter-spacing:.8px; margin-top:4px;">Companies</div>
+      </div>
+      <div style="background:#141413; padding:20px 24px;">
+        <div style="font-size:24px; font-weight:800; color:var(--orange); letter-spacing:-1px;">100%</div>
+        <div style="font-size:11px; color:var(--dim); text-transform:uppercase; letter-spacing:.8px; margin-top:4px;">Anonymous</div>
+      </div>
+      <div style="background:#141413; padding:20px 24px;">
+        <div style="font-size:24px; font-weight:800; color:var(--orange); letter-spacing:-1px;">ITviec</div>
+        <div style="font-size:11px; color:var(--dim); text-transform:uppercase; letter-spacing:.8px; margin-top:4px;">Cross-referenced</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="trust-inner" style="max-width:1060px; margin:0 auto; padding:0 52px; margin-bottom:56px;">
+    <div style="font-size:11px; color:var(--dim); letter-spacing:1px; text-transform:uppercase; margin-bottom:16px;">From our developer community</div>
+    <div class="trust-interviews" style="display:grid; grid-template-columns:repeat(3,1fr); gap:2px;">
+      <div style="background:#141413; overflow:hidden;">
+        <img src="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=400&h=200&fit=crop&crop=top&q=80" style="width:100%; height:160px; object-fit:cover; object-position:top; filter:brightness(.6) saturate(.7); display:block;" alt="">
+        <div style="padding:16px;">
+          <div style="font-size:10px; color:var(--orange); letter-spacing:1px; text-transform:uppercase; margin-bottom:8px;">Grab Vietnam · Backend</div>
+          <div style="font-size:12px; color:var(--mid); line-height:1.6; font-style:italic; margin-bottom:10px;">"Check here before negotiation. Got 12% higher than first offer."</div>
+          <div style="font-size:10px; color:var(--dim);">Likelion alumni · 4 yrs · HCMC</div>
+        </div>
+      </div>
+      <div style="background:#141413; overflow:hidden;">
+        <img src="https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=400&h=200&fit=crop&crop=top&q=80" style="width:100%; height:160px; object-fit:cover; object-position:top; filter:brightness(.6) saturate(.7); display:block;" alt="">
+        <div style="padding:16px;">
+          <div style="font-size:10px; color:var(--orange); letter-spacing:1px; text-transform:uppercase; margin-bottom:8px;">VNG Corporation · Mobile</div>
+          <div style="font-size:12px; color:var(--mid); line-height:1.6; font-style:italic; margin-bottom:10px;">"Now I know I am underpaid. Start applying to better companies."</div>
+          <div style="font-size:10px; color:var(--dim);">Community member · 3 yrs · Hanoi</div>
+        </div>
+      </div>
+      <div style="background:#141413; overflow:hidden;">
+        <img src="https://images.unsplash.com/photo-1551836022-deb4988cc6c0?w=400&h=200&fit=crop&crop=top&q=80" style="width:100%; height:160px; object-fit:cover; object-position:top; filter:brightness(.6) saturate(.7); display:block;" alt="">
+        <div style="padding:16px;">
+          <div style="font-size:10px; color:var(--orange); letter-spacing:1px; text-transform:uppercase; margin-bottom:8px;">FPT Software · Fullstack</div>
+          <div style="font-size:12px; color:var(--mid); line-height:1.6; font-style:italic; margin-bottom:10px;">"Foreign companies pay much more. Very eye opening for me."</div>
+          <div style="font-size:10px; color:var(--dim);">Likelion alumni · 2 yrs · Da Nang</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div style="text-align:center; font-size:11px; color:var(--dim); letter-spacing:1px; text-transform:uppercase; margin-bottom:16px;">Salary data from engineers at</div>
+  <div style="border-top:1px solid var(--line); border-bottom:1px solid var(--line); padding:16px 0; overflow:hidden;">
+    <div id="trust-strip" style="display:flex; align-items:center; animation:scrollX 24s linear infinite; width:max-content;"></div>
+  </div>
+
 </section>
 
 <section style="max-width:1160px; margin:0 auto; padding:64px 52px;">
@@ -783,6 +893,7 @@ async function loadStats(){
     const unlockBtn=document.getElementById('unlock-btn'); if(unlockBtn) unlockBtn.textContent=\`See all salary data →\`;
     const ffMeta=document.getElementById('ff-meta'); if(ffMeta) ffMeta.textContent=\`\${co.toLocaleString()} companies · \${sub.toLocaleString()} responses\`;
     const uline=document.getElementById('uline'); if(uline&&!uline.classList.contains('on')) uline.textContent=\`✓ UNLOCKED — \${co.toLocaleString()} companies now visible below\`;
+    updateTrustStats(sub, co);
     if(d.recent && d.recent.length>=4){
       const list=document.getElementById('st-list'); if(list) list.innerHTML='';
       const realPool=d.recent.map(s=>{
@@ -1017,6 +1128,29 @@ async function doUnlock(role,exp,sal){
   uline.classList.add('on');
   return true;
 }
+function updateTrustStats(sub, co) {
+  const t1=document.getElementById('trust-s1'); if(t1) t1.textContent=sub.toLocaleString();
+  const t2=document.getElementById('trust-s2'); if(t2) t2.textContent=co.toLocaleString();
+  const tn=document.getElementById('trust-sub-n'); if(tn) tn.textContent=sub.toLocaleString();
+}
+const trustLogos=[
+  {name:'Grab',domain:'grab.com'},{name:'VNG',domain:'vng.com.vn'},
+  {name:'Shopee',domain:'shopee.vn'},{name:'Tiki',domain:'tiki.vn'},
+  {name:'Momo',domain:'momo.vn'},{name:'FPT',domain:'fpt.com.vn'},
+  {name:'Zalo',domain:'zalo.me'},{name:'Sky Mavis',domain:'skymavis.com'},
+  {name:'KMS',domain:'kms-technology.com'},{name:'Techcombank',domain:'techcombank.com.vn'},
+  {name:'Axon Active',domain:'axonactive.com'},{name:'VPBank',domain:'vpbank.com.vn'},
+];
+function buildStrip(){
+  const strip=document.getElementById('trust-strip'); if(!strip) return;
+  strip.innerHTML=[...trustLogos,...trustLogos].map(l=>\`
+    <div style="display:flex;align-items:center;gap:8px;padding:0 28px;border-right:1px solid var(--line);">
+      <img src="https://logo.clearbit.com/\${l.domain}" style="width:20px;height:20px;border-radius:4px;background:#fff;object-fit:contain;" onerror="this.style.background='#1c1c1a'">
+      <span style="font-size:11px;color:var(--dim);white-space:nowrap;">\${l.name}</span>
+    </div>
+  \`).join('');
+}
+buildStrip();
 function reportData(company){
   alert('Thank you for the feedback. We will review ' + company + ' data shortly.');
 }
