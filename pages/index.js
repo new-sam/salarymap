@@ -721,15 +721,6 @@ const bodyHTML = `<nav>
   </div>
 </div>
 
-<!-- TICKER -->
-<div class="stream-ticker">
-  <div class="stream-ticker-inner">
-    <div class="st-label"><span class="ldot"></span>Live</div>
-    <div class="st-feed"><div class="st-list" id="st-list"></div></div>
-  </div>
-</div>
-
-
 <!-- SUBMIT -->
 <div class="submit-outer">
   <div class="submit-inner">
