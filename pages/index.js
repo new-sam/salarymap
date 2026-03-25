@@ -414,7 +414,7 @@ const bodyHTML = `<nav>
   <div class="trust-inner" style="max-width:1160px; margin:0 auto; padding:0 52px; margin-bottom:2px;">
     <div class="trust-roadmap" style="display:grid; grid-template-columns:repeat(3,1fr); gap:2px;">
       <div style="position:relative; overflow:hidden;">
-        <img src="https://images.unsplash.com/photo-1524178232363-1fb2b075b655?w=600&h=300&fit=crop&q=80" style="width:100%; height:306px; object-fit:cover; filter:brightness(.4); display:block;" alt="">
+        <img src="/trust-1.png" style="width:100%; height:306px; object-fit:cover; filter:brightness(.4); display:block;" alt="">
         <div style="position:absolute; inset:0; padding:28px; display:flex; flex-direction:column; justify-content:flex-end;">
           <div style="font-size:11px; color:var(--orange); letter-spacing:1.5px; text-transform:uppercase; margin-bottom:8px;">2020 — Now</div>
           <div style="font-size:17px; font-weight:700; color:var(--white); margin-bottom:6px;">University programs</div>
@@ -423,7 +423,7 @@ const bodyHTML = `<nav>
         </div>
       </div>
       <div style="position:relative; overflow:hidden;">
-        <img src="https://images.unsplash.com/photo-1600880292203-757bb62b4baf?w=600&h=300&fit=crop&q=80" style="width:100%; height:306px; object-fit:cover; filter:brightness(.4); display:block;" alt="">
+        <img src="/trust-2.png" style="width:100%; height:306px; object-fit:cover; filter:brightness(.4); display:block;" alt="">
         <div style="position:absolute; inset:0; padding:28px; display:flex; flex-direction:column; justify-content:flex-end;">
           <div style="font-size:11px; color:var(--orange); letter-spacing:1.5px; text-transform:uppercase; margin-bottom:8px;">2023 — Now</div>
           <div style="font-size:17px; font-weight:700; color:var(--white); margin-bottom:6px;">Enterprise partnerships</div>

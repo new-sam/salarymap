@@ -43,7 +43,8 @@
       "Bash(cp /mnt/user-data/uploads/1774315615261_image.png /c/Users/slsvm/Desktop/salarymap/public/trust-2.png)",
       "Bash(cp /mnt/user-data/uploads/1774325379054_image.png /c/Users/slsvm/Desktop/salarymap/public/trust-3.png)",
       "Read(//mnt/user-data/**)",
-      "Read(//c/Users/slsvm/**)"
+      "Read(//c/Users/slsvm/**)",
+      "Bash(ls:*)"
     ]
   },
   "hooks": {
