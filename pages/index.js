@@ -432,12 +432,12 @@ const bodyHTML = `<nav>
         </div>
       </div>
       <div style="position:relative; overflow:hidden;">
-        <img src="https://images.unsplash.com/photo-1551434678-e076c223a692?w=600&h=300&fit=crop&q=80" style="width:100%; height:306px; object-fit:cover; filter:brightness(.4); display:block;" alt="">
+        <img src="/trust-3png.png" style="width:100%; height:306px; object-fit:cover; filter:brightness(.4); display:block;" alt="">
         <div style="position:absolute; inset:0; padding:28px; display:flex; flex-direction:column; justify-content:flex-end;">
-          <div style="font-size:11px; color:var(--orange); letter-spacing:1.5px; text-transform:uppercase; margin-bottom:8px;">2025</div>
-          <div style="font-size:17px; font-weight:700; color:var(--white); margin-bottom:6px;">SalaryMap launched</div>
-          <div style="font-size:40px; font-weight:800; color:var(--orange); letter-spacing:-1.5px;" id="trust-sub-n">—</div>
-          <div style="font-size:13px; color:rgba(242,240,235,0.4);">submissions & counting</div>
+          <div style="font-size:11px; color:var(--orange); letter-spacing:1.5px; text-transform:uppercase; margin-bottom:8px;">2024 — Now</div>
+          <div style="font-size:17px; font-weight:700; color:var(--white); margin-bottom:6px;">Job fairs & talent pool</div>
+          <div style="font-size:40px; font-weight:800; color:var(--orange); letter-spacing:-1.5px;">6,000+</div>
+          <div style="font-size:13px; color:rgba(242,240,235,0.4);">developers, actively managed</div>
         </div>
       </div>
     </div>
