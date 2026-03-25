@@ -701,24 +701,6 @@ const bodyHTML = `<nav>
 
   </div>
   <div class="cards-gate"></div>
-  <div style="text-align:center; padding: 32px 0 16px;">
-    <p style="font-size:13px; color:var(--dim); margin-bottom:16px;">
-      + <span id="remaining-co">494</span> more companies in the database
-    </p>
-    <div style="max-width:480px; margin:0 auto; position:relative;">
-      <input
-        id="hero-search"
-        type="text"
-        placeholder="Search any company — Katalon, KMS, Axon Active…"
-        style="width:100%; background:var(--bg1); border:1px solid rgba(255,96,0,.3); color:var(--white); font-size:14px; padding:14px 20px; border-radius:4px; outline:none; font-family:'Geist',sans-serif;"
-        onclick="if(!window.isUnlocked) document.querySelector('.submit-outer').scrollIntoView({behavior:'smooth'})"
-        oninput="if(window.isUnlocked) heroSearch(this.value)"
-      />
-      <span style="position:absolute; right:14px; top:50%; transform:translateY(-50%); font-size:12px; color:var(--orange);" id="search-lock">
-        🔒 Submit to search
-      </span>
-    </div>
-  </div>
 </div>
 
 <!-- SUBMIT -->
