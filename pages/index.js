@@ -354,6 +354,16 @@ nav { position:fixed; top:0; left:0; right:0; z-index:200; padding:0 52px; heigh
 }
 `;
 
+const _trustLogos = [
+  {name:'Grab',domain:'grab.com'},{name:'VNG',domain:'vng.com.vn'},{name:'Shopee',domain:'shopee.vn'},
+  {name:'Tiki',domain:'tiki.vn'},{name:'MoMo',domain:'momo.vn'},{name:'FPT Software',domain:'fpt-software.com'},
+  {name:'Zalo',domain:'zalo.me'},{name:'Sky Mavis',domain:'skymavis.com'},{name:'KMS',domain:'kms-technology.com'},
+  {name:'Techcombank',domain:'techcombank.com.vn'},{name:'Axon Active',domain:'axonactive.com'},{name:'VPBank',domain:'vpbank.com.vn'},
+];
+const logoStripHTML = [..._trustLogos,..._trustLogos].map(l =>
+  `<div style="display:flex;align-items:center;gap:12px;padding:0 36px;border-right:1px solid rgba(255,255,255,0.07);flex-shrink:0;"><img src="https://www.google.com/s2/favicons?domain=${l.domain}&sz=64" alt="${l.name[0]}" style="width:32px;height:32px;border-radius:6px;background:#fff;object-fit:contain;flex-shrink:0;"><span style="font-size:14px;font-weight:500;color:rgba(242,240,235,0.42);white-space:nowrap;">${l.name}</span></div>`
+).join('');
+
 const bodyHTML = `<nav>
   <div class="logo">Salary<span>Map</span>.vn</div>
   <div class="nav-r">
@@ -503,7 +513,9 @@ const bodyHTML = `<nav>
   <div style="max-width:1160px; margin:0 auto; padding:0 52px;">
     <div style="font-size:11px; color:var(--dim); letter-spacing:1px; text-transform:uppercase; margin-bottom:16px;">Salary data from engineers at</div>
     <div style="border-top:1px solid var(--line); border-bottom:1px solid var(--line); padding:24px 0; overflow:hidden;">
-      <div id="trust-strip" style="display:flex; align-items:center; width:max-content;"></div>
+      <div style="display:flex; align-items:center; width:max-content; animation:scrollX 28s linear infinite;">
+        ${logoStripHTML}
+      </div>
     </div>
   </div>
 
@@ -1066,26 +1078,6 @@ function updateTrustStats(sub, co) {
   const t2=document.getElementById('trust-s2'); if(t2) t2.textContent=co.toLocaleString();
   const tn=document.getElementById('trust-sub-n'); if(tn) tn.textContent=sub.toLocaleString();
 }
-const trustLogos=[
-  {name:'Grab',domain:'grab.com'},{name:'VNG',domain:'vng.com.vn'},
-  {name:'Shopee',domain:'shopee.vn'},{name:'Tiki',domain:'tiki.vn'},
-  {name:'Momo',domain:'momo.vn'},{name:'FPT',domain:'fpt.com.vn'},
-  {name:'Zalo',domain:'zalo.me'},{name:'Sky Mavis',domain:'skymavis.com'},
-  {name:'KMS',domain:'kms-technology.com'},{name:'Techcombank',domain:'techcombank.com.vn'},
-  {name:'Axon Active',domain:'axonactive.com'},{name:'VPBank',domain:'vpbank.com.vn'},
-];
-function buildStrip(){
-  const strip=document.getElementById('trust-strip'); if(!strip) return;
-  strip.innerHTML=[...trustLogos,...trustLogos].map(l=>\`
-    <div style="display:flex;align-items:center;gap:12px;padding:0 36px;border-right:1px solid var(--line);flex-shrink:0;">
-      <img src="https://www.google.com/s2/favicons?domain=\${l.domain}&sz=64" alt="\${l.name[0]}" style="width:32px;height:32px;border-radius:6px;background:#fff;object-fit:contain;flex-shrink:0;">
-      <span style="font-size:14px;font-weight:500;color:var(--mid);white-space:nowrap;">\${l.name}</span>
-    </div>
-  \`).join('');
-  setTimeout(()=>{ strip.style.animation='scrollX 20s linear infinite'; },50);
-}
-if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', buildStrip);
-else setTimeout(buildStrip, 0);
 function reportData(company){
   alert('Thank you for the feedback. We will review ' + company + ' data shortly.');
 }
