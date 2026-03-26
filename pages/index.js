@@ -415,7 +415,7 @@ const bodyHTML = `<nav>
   </div>
 
   <!-- STAFF REVEAL BLOCK -->
-  <div class="trust-inner" style="max-width:1160px; margin:0 auto; padding:0 52px; margin-bottom:2px;">
+  <div class="trust-inner" style="max-width:1160px; margin:0 auto; padding:0 52px; margin-bottom:56px;">
     <div class="trust-roadmap" style="display:grid; grid-template-columns:1fr 1fr; gap:2px;">
 
       <!-- LEFT BIG -->
@@ -452,7 +452,7 @@ const bodyHTML = `<nav>
   </div>
 
   <!-- STREET INTERVIEWS -->
-  <div class="trust-inner" style="max-width:1160px; margin:0 auto; padding:0 52px; margin-bottom:2px;">
+  <div class="trust-inner" style="max-width:1160px; margin:0 auto; padding:0 52px; margin-bottom:56px;">
     <div class="trust-interviews" style="display:grid; grid-template-columns:repeat(3,1fr); gap:2px;">
       <div style="position:relative; overflow:hidden;">
         <img src="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=400&h=200&fit=crop&crop=top&q=80" style="width:100%; height:260px; object-fit:cover; object-position:top; filter:brightness(.5) saturate(.7); display:block;" alt="">
@@ -1077,13 +1077,14 @@ const trustLogos=[
 function buildStrip(){
   const strip=document.getElementById('trust-strip'); if(!strip) return;
   strip.innerHTML=[...trustLogos,...trustLogos].map(l=>\`
-    <div style="display:flex;align-items:center;gap:12px;padding:0 36px;border-right:1px solid var(--line);">
-      <img src="https://www.google.com/s2/favicons?domain=\${l.domain}&sz=64" alt="\${l.name[0]}" style="width:36px;height:36px;border-radius:8px;background:#fff;object-fit:contain;flex-shrink:0;" onerror="this.style.display='none';this.parentNode.style.background='rgba(255,96,0,0.15)';this.parentNode.style.justifyContent='center';this.parentNode.innerHTML='<span style=\\'font-size:13px;font-weight:800;color:#ff6000\\'>\${l.name[0]}</span>';">
+    <div style="display:flex;align-items:center;gap:12px;padding:0 36px;border-right:1px solid var(--line);flex-shrink:0;">
+      <img src="https://www.google.com/s2/favicons?domain=\${l.domain}&sz=64" alt="\${l.name[0]}" style="width:32px;height:32px;border-radius:6px;background:#fff;object-fit:contain;flex-shrink:0;">
       <span style="font-size:14px;font-weight:500;color:var(--mid);white-space:nowrap;">\${l.name}</span>
     </div>
   \`).join('');
 }
-buildStrip();
+if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', buildStrip);
+else buildStrip();
 function reportData(company){
   alert('Thank you for the feedback. We will review ' + company + ' data shortly.');
 }
