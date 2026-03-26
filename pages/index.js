@@ -419,10 +419,9 @@ const bodyHTML = `<nav>
       Real salaries, real people
     </div>
     <h2 style="font-size:clamp(26px,3.2vw,40px); font-weight:800; color:var(--white); letter-spacing:-1.5px; line-height:1.15;">
-      No bullshit.<br>
-      <em style="font-style:normal; color:var(--orange);">We go first.</em>
+      No bullshit. <em style="font-style:normal; color:var(--orange);">We go first.</em>
     </h2>
-    <p style="font-size:14px; color:rgba(242,240,235,.38); line-height:1.7; margin-bottom:40px; margin-top:16px;">If we ask you to share your salary,<br>we share ours first.</p>
+    <p style="font-size:14px; color:rgba(242,240,235,.38); line-height:1.7; margin-bottom:40px; margin-top:16px;">If we ask you to share your salary, we share ours first.</p>
   </div>
 
   <!-- STAFF REVEAL BLOCK -->
