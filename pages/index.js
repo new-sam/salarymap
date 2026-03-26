@@ -503,7 +503,7 @@ const bodyHTML = `<nav>
   <div style="max-width:1160px; margin:0 auto; padding:0 52px;">
     <div style="font-size:11px; color:var(--dim); letter-spacing:1px; text-transform:uppercase; margin-bottom:16px;">Salary data from engineers at</div>
     <div style="border-top:1px solid var(--line); border-bottom:1px solid var(--line); padding:24px 0; overflow:hidden;">
-      <div id="trust-strip" style="display:flex; align-items:center; animation:scrollX 20s linear infinite; width:max-content;"></div>
+      <div id="trust-strip" style="display:flex; align-items:center; width:max-content;"></div>
     </div>
   </div>
 
@@ -1082,9 +1082,10 @@ function buildStrip(){
       <span style="font-size:14px;font-weight:500;color:var(--mid);white-space:nowrap;">\${l.name}</span>
     </div>
   \`).join('');
+  setTimeout(()=>{ strip.style.animation='scrollX 20s linear infinite'; },50);
 }
 if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', buildStrip);
-else buildStrip();
+else setTimeout(buildStrip, 0);
 function reportData(company){
   alert('Thank you for the feedback. We will review ' + company + ' data shortly.');
 }
