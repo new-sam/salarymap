@@ -31,7 +31,7 @@ nav { position:fixed; top:0; left:0; right:0; z-index:200; padding:0 52px; heigh
 .hero-kicker { font-family:'Geist Mono',monospace; font-size:11px; color:var(--orange); letter-spacing:2.5px; text-transform:uppercase; margin-bottom:32px; display:flex; align-items:center; gap:10px; }
 .kdot { width:5px; height:5px; border-radius:50%; background:var(--orange); box-shadow:0 0 8px var(--orange); animation:glow 2s ease-in-out infinite; }
 @keyframes glow { 0%,100%{box-shadow:0 0 6px var(--orange)} 50%{box-shadow:0 0 20px var(--orange)} }
-.hero-h1 { font-size:clamp(40px,5.2vw,72px); font-weight:800; line-height:1.04; letter-spacing:-2.5px; margin-bottom:24px; color:var(--white); }
+.hero-h1 { font-size:clamp(36px,4.8vw,64px); font-weight:800; line-height:1.08; letter-spacing:-2.5px; margin-bottom:24px; color:var(--white); }
 .hero-h1 em { font-style:normal; color:var(--orange); }
 .hero-sub { font-size:16px; color:var(--mid); line-height:1.8; font-weight:300; max-width:420px; margin-bottom:44px; }
 .hero-btns { display:flex; gap:12px; }
@@ -384,7 +384,7 @@ const bodyHTML = `<nav>
   </div>
   <div class="hero-copy">
     <div class="hero-kicker"><span class="kdot"></span>Vietnam IT Salary Intelligence</div>
-    <h1 class="hero-h1"><span style="font-size:0.6em;font-weight:700;color:var(--white);display:block;margin-bottom:8px;">Grab, Shopee, VNG.</span><em>Who pays more?</em></h1>
+    <h1 class="hero-h1">Grab, Shopee, VNG.<br>Do you know what<br><em>they actually pay?</em></h1>
     <p class="hero-sub"><span id="stat-sub-hero">—</span> real salary data submitted anonymously by engineers who work there. Compare companies directly.</p>
     <div class="hero-btns">
       <button class="btn-p" onclick="document.querySelector('.cards-section').scrollIntoView({behavior:'smooth'})">Compare companies →</button>
@@ -419,9 +419,10 @@ const bodyHTML = `<nav>
       Real salaries, real people
     </div>
     <h2 style="font-size:clamp(26px,3.2vw,40px); font-weight:800; color:var(--white); letter-spacing:-1.5px; line-height:1.15;">
-      We asked.<br>
-      <em style="font-style:normal; color:var(--orange);">They answered.</em>
+      No bullshit.<br>
+      <em style="font-style:normal; color:var(--orange);">We go first.</em>
     </h2>
+    <p style="font-size:14px; color:rgba(242,240,235,.38); line-height:1.7; margin-bottom:40px; margin-top:16px;">If we ask you to share your salary,<br>we share ours first.</p>
   </div>
 
   <!-- STAFF REVEAL BLOCK -->
