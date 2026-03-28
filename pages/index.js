@@ -342,81 +342,170 @@ nav { position:fixed; top:0; left:0; right:0; z-index:200; padding:0 52px; heigh
 
 /* ── MOBILE RESPONSIVE ── */
 
-/* SUBMIT SECTION */
-.submit-section { padding:80px 0 0; }
-.section-inner { max-width:1140px; margin:0 auto; padding:0 52px; }
-.submit-grid { display:grid; grid-template-columns:1fr 1fr; gap:72px; align-items:start; }
-.submit-left { padding:52px 0; }
-.submit-left h2 { font-size:clamp(26px,3.2vw,40px); font-weight:800; color:var(--white); letter-spacing:-.5px; line-height:1.15; margin-bottom:14px; }
-.submit-left .hl { color:var(--orange); }
-.submit-left p { font-size:14px; color:var(--mid); line-height:1.7; margin-bottom:28px; }
-.sub-badges { display:flex; flex-direction:column; gap:9px; }
-.sb-badge { font-size:12px; color:var(--dim); display:flex; align-items:center; gap:8px; }
-.sb-badge::before { content:'✓'; color:var(--orange); font-weight:700; flex-shrink:0; }
-.step-form { background:#111110; border-radius:12px; border:1px solid rgba(255,255,255,.07); padding:36px; }
-.step-progress { display:flex; align-items:center; gap:6px; margin-bottom:28px; }
-.sp-dot { width:8px; height:8px; border-radius:50%; background:rgba(255,255,255,.13); transition:all .25s; flex-shrink:0; }
-.sp-dot.active { background:var(--orange); width:24px; border-radius:4px; }
-.sp-dot.done { background:rgba(255,96,0,.35); }
-.step-content { display:none; }
-.step-content.active { display:block; }
-.step-question { font-size:20px; font-weight:800; color:var(--white); letter-spacing:-.3px; margin-bottom:6px; }
-.step-sub { font-size:13px; color:var(--dim); margin-bottom:20px; line-height:1.5; }
-.option-grid { display:grid; gap:8px; }
-.option-grid.cols-3 { grid-template-columns:repeat(3,1fr); }
-.option-grid.cols-2 { grid-template-columns:repeat(2,1fr); }
-.opt-btn { font-family:'Geist',sans-serif; background:#1a1a18; border:1.5px solid rgba(255,255,255,.07); border-radius:10px; padding:14px 10px; cursor:pointer; transition:border-color .15s,background .15s; display:flex; flex-direction:column; align-items:center; gap:5px; color:var(--white); text-align:center; width:100%; }
-.opt-btn:hover { border-color:rgba(255,96,0,.5); background:rgba(255,96,0,.05); }
-.opt-btn.selected { border-color:#ff6000; background:rgba(255,96,0,.09); }
-.ob-icon { font-size:20px; line-height:1; }
-.ob-label { font-size:13px; font-weight:600; color:var(--white); }
-.ob-sub { font-size:11px; color:var(--dim); }
-.opt-btn.selected .ob-label { color:#ff6000; }
-.step-nav { display:flex; align-items:center; gap:12px; margin-top:20px; }
-.btn-primary { font-family:'Geist',sans-serif; font-size:14px; font-weight:700; background:var(--orange); color:#fff; border:none; padding:12px 24px; border-radius:6px; cursor:pointer; transition:opacity .15s; }
-.btn-primary:disabled { opacity:.32; cursor:not-allowed; }
-.btn-primary:not(:disabled):hover { opacity:.87; }
-.btn-back { font-family:'Geist',sans-serif; font-size:13px; font-weight:600; background:transparent; color:var(--dim); border:1px solid rgba(255,255,255,.1); padding:11px 18px; border-radius:6px; cursor:pointer; transition:color .15s,border-color .15s; }
-.btn-back:hover { color:var(--white); border-color:rgba(255,255,255,.25); }
-.green-btn { background:#22c55e !important; }
-.green-btn:not(:disabled):hover { opacity:.87; }
-.salary-slider-wrap { margin-bottom:4px; }
-.ss-display { display:flex; align-items:baseline; gap:10px; margin-bottom:18px; }
-.ss-num { font-family:'Geist Mono',monospace; font-size:52px; font-weight:700; color:var(--orange); letter-spacing:-2px; line-height:1; }
-.ss-unit { font-size:13px; color:var(--dim); }
-.salary-slider { width:100%; -webkit-appearance:none; height:4px; border-radius:2px; background:rgba(255,255,255,.1); outline:none; margin-bottom:10px; cursor:pointer; }
-.salary-slider::-webkit-slider-thumb { -webkit-appearance:none; width:22px; height:22px; border-radius:50%; background:#ff6000; cursor:pointer; box-shadow:0 0 0 4px rgba(255,96,0,.15); }
-.ss-ticks { display:flex; justify-content:space-between; margin-bottom:4px; }
-.ss-tick { font-size:10px; color:var(--dim); font-family:'Geist Mono',monospace; }
-.form-input { width:100%; font-family:'Geist',sans-serif; font-size:15px; background:#1a1a18; border:1.5px solid rgba(255,255,255,.1); border-radius:8px; color:var(--white); padding:14px 16px; outline:none; transition:border-color .15s; box-sizing:border-box; }
-.form-input:focus { border-color:#ff6000; }
-.form-input::placeholder { color:rgba(242,240,235,.28); }
-.voc-options { display:flex; flex-direction:column; gap:7px; margin-bottom:4px; }
-.voc-opt { display:flex; align-items:center; gap:12px; padding:11px 14px; border-radius:8px; border:1.5px solid rgba(255,255,255,.07); background:#1a1a18; cursor:pointer; transition:border-color .15s; }
-.voc-opt:hover { border-color:rgba(255,255,255,.18); }
-.voc-opt.selected { border-color:#ff6000; background:rgba(255,96,0,.07); }
-.voc-checkbox { width:18px; height:18px; border-radius:4px; border:2px solid rgba(255,255,255,.18); flex-shrink:0; display:flex; align-items:center; justify-content:center; transition:all .15s; }
-.voc-opt.selected .voc-checkbox { background:#ff6000; border-color:#ff6000; }
-.voc-opt.selected .voc-checkbox::after { content:'✓'; font-size:11px; color:#fff; font-weight:700; }
-.voc-label { font-size:13px; color:var(--white); line-height:1.4; }
-.submit-success { display:none; text-align:center; padding:24px 0 8px; }
-.submit-success .ss-icon { font-size:42px; margin-bottom:14px; }
-.submit-success .ss-title { font-size:20px; font-weight:800; color:var(--white); margin-bottom:8px; }
-.submit-success .ss-sub { font-size:14px; color:var(--dim); line-height:1.65; }
-.anon-note { font-size:11px; color:rgba(242,240,235,.28); margin-top:12px; text-align:center; }
-footer { margin-top:80px; padding:28px 52px; border-top:1px solid rgba(255,255,255,.06); display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px; }
-.footer-brand { font-size:14px; font-weight:700; color:var(--white); }
-.footer-brand span { color:var(--dim); font-weight:400; }
-.footer-meta { font-size:12px; color:var(--dim); }
+/* FYI SUBMIT SECTION */
+.fyi-submit-section {
+  background: #f0ede8;
+  padding: 80px 60px;
+  font-family: 'Barlow', sans-serif;
+}
+.fyi-submit-inner { max-width: 1100px; margin: 0 auto; }
+.fyi-submit-grid {
+  display: grid;
+  grid-template-columns: 1fr 1.4fr;
+  gap: 80px;
+  align-items: start;
+}
+.fyi-submit-left h2 {
+  font-size: clamp(36px,4.5vw,58px);
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: -1.5px;
+  line-height: 0.95;
+  color: #0c0c0c;
+  margin-bottom: 18px;
+  font-family: 'Barlow', sans-serif;
+}
+.fyi-submit-left h2 .hl { color: #f26522; }
+.fyi-submit-left p { font-size: 15px; color: rgba(0,0,0,.5); line-height: 1.65; margin-bottom: 28px; }
+.fyi-sub-badges { display: flex; flex-direction: column; gap: 10px; }
+.fyi-sb-badge {
+  display: flex; align-items: center; gap: 10px;
+  font-size: 13px; color: rgba(0,0,0,.5); font-weight: 600;
+}
+.fyi-sb-badge::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: #f26522; flex-shrink: 0; }
+.fyi-step-form {
+  background: #0c0c0c;
+  border-radius: 10px;
+  padding: 36px;
+  position: relative;
+  overflow: hidden;
+}
+.fyi-step-form::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+  background: linear-gradient(90deg, #f26522, #f5a03a);
+}
+.fyi-step-progress { display: flex; gap: 4px; margin-bottom: 30px; }
+.fyi-sp-dot {
+  flex: 1; height: 3px; border-radius: 2px;
+  background: rgba(255,255,255,.1); transition: background .25s;
+}
+.fyi-sp-dot.done   { background: #f26522; }
+.fyi-sp-dot.active { background: #ffffff; }
+.fyi-step-content { display: none; }
+.fyi-step-content.active { display: block; }
+.fyi-step-question {
+  font-size: 22px; font-weight: 800; text-transform: uppercase;
+  letter-spacing: -0.5px; margin-bottom: 6px; line-height: 1.1;
+  color: #ffffff; font-family: 'Barlow', sans-serif;
+}
+.fyi-step-sub { font-size: 13px; color: rgba(255,255,255,.45); margin-bottom: 24px; }
+.fyi-option-grid { display: grid; gap: 7px; margin-bottom: 24px; }
+.fyi-option-grid.cols-2 { grid-template-columns: 1fr 1fr; }
+.fyi-option-grid.cols-3 { grid-template-columns: repeat(3, 1fr); }
+.fyi-opt-btn {
+  background: rgba(255,255,255,.04);
+  border: 1.5px solid rgba(255,255,255,.08);
+  border-radius: 7px; padding: 11px 13px;
+  color: #ffffff; font-size: 12px; font-weight: 700;
+  font-family: 'Barlow', sans-serif; cursor: pointer;
+  text-align: left; text-transform: uppercase; letter-spacing: 0.3px;
+  transition: all .12s; line-height: 1.3; width: 100%;
+}
+.fyi-opt-btn:hover { background: rgba(255,255,255,.07); border-color: rgba(255,255,255,.15); }
+.fyi-opt-btn.selected { background: rgba(242,101,34,.12); border-color: #f26522; }
+.fyi-ob-icon  { font-size: 16px; margin-bottom: 4px; display: block; }
+.fyi-ob-label { font-weight: 800; display: block; }
+.fyi-ob-sub   { font-size: 10px; color: rgba(255,255,255,.45); display: block; margin-top: 2px; font-weight: 400; text-transform: none; }
+.fyi-salary-slider-wrap { margin-bottom: 28px; }
+.fyi-ss-display { display: flex; align-items: baseline; gap: 8px; margin-bottom: 18px; }
+.fyi-ss-num { font-family: 'Geist Mono', monospace; font-size: 52px; color: #f26522; font-weight: 500; line-height: 1; }
+.fyi-ss-unit { font-size: 15px; color: rgba(255,255,255,.45); }
+.fyi-salary-slider {
+  width: 100%; -webkit-appearance: none;
+  height: 3px; border-radius: 2px; outline: none;
+  background: linear-gradient(90deg, #f26522 var(--pct,13%), rgba(255,255,255,.1) var(--pct,13%));
+}
+.fyi-salary-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 20px; height: 20px; border-radius: 50%;
+  background: #ffffff; cursor: pointer; box-shadow: 0 2px 8px rgba(0,0,0,.5);
+}
+.fyi-ss-ticks { display: flex; justify-content: space-between; margin-top: 8px; }
+.fyi-ss-tick  { font-size: 10px; color: rgba(255,255,255,.45); font-family: 'Geist Mono', monospace; }
+.fyi-form-input {
+  width: 100%; background: rgba(255,255,255,.05);
+  border: 1.5px solid rgba(255,255,255,.1);
+  border-radius: 7px; padding: 13px 16px;
+  color: #ffffff; font-size: 14px;
+  font-family: 'Barlow', sans-serif; outline: none;
+  transition: border-color .15s; margin-bottom: 10px;
+}
+.fyi-form-input:focus { border-color: #f26522; }
+.fyi-form-input::placeholder { color: rgba(255,255,255,.2); }
+.fyi-voc-options { display: flex; flex-direction: column; gap: 6px; margin-bottom: 24px; }
+.fyi-voc-opt {
+  display: flex; align-items: center; gap: 12px;
+  background: rgba(255,255,255,.04); border: 1.5px solid rgba(255,255,255,.08);
+  border-radius: 7px; padding: 12px 14px; cursor: pointer; transition: all .12s;
+}
+.fyi-voc-opt:hover { background: rgba(255,255,255,.07); }
+.fyi-voc-opt.selected { background: rgba(242,101,34,.12); border-color: #f26522; }
+.fyi-voc-checkbox {
+  width: 18px; height: 18px; border-radius: 50%;
+  border: 2px solid rgba(255,255,255,.2);
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0; transition: all .12s; font-size: 10px; font-weight: 700;
+}
+.fyi-voc-opt.selected .fyi-voc-checkbox { background: #f26522; border-color: #f26522; }
+.fyi-voc-checkbox::after { content: '✓'; color: #ffffff; opacity: 0; }
+.fyi-voc-opt.selected .fyi-voc-checkbox::after { opacity: 1; }
+.fyi-voc-label { font-size: 13px; font-weight: 600; line-height: 1.4; color: #ffffff; }
+.fyi-step-nav { display: flex; gap: 10px; align-items: center; }
+.fyi-btn-primary {
+  flex: 1; background: #f26522; color: #ffffff;
+  border: none; border-radius: 7px; padding: 14px 22px;
+  font-size: 13px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.5px; font-family: 'Barlow', sans-serif;
+  cursor: pointer; transition: opacity .15s;
+}
+.fyi-btn-primary:hover    { opacity: 0.85; }
+.fyi-btn-primary:disabled { opacity: 0.35; cursor: not-allowed; }
+.fyi-btn-back {
+  background: none; border: 1.5px solid rgba(255,255,255,.08);
+  border-radius: 7px; padding: 14px 18px;
+  color: rgba(255,255,255,.45); font-size: 13px;
+  font-family: 'Barlow', sans-serif; font-weight: 700;
+  cursor: pointer; transition: all .15s;
+  text-transform: uppercase; letter-spacing: 0.3px;
+}
+.fyi-btn-back:hover { border-color: rgba(255,255,255,.2); color: #ffffff; }
+.fyi-anon-note {
+  display: flex; align-items: center; gap: 6px;
+  font-size: 11px; color: rgba(255,255,255,.45); margin-top: 12px;
+  justify-content: center; text-transform: uppercase;
+  letter-spacing: 0.5px; font-weight: 600;
+}
+.fyi-anon-note::before { content: '🔒'; font-size: 13px; }
+.fyi-submit-success { text-align: center; padding: 20px 0; display: none; }
+.fyi-ss-icon  { font-size: 52px; margin-bottom: 14px; }
+.fyi-ss-title {
+  font-size: 26px; font-weight: 900; text-transform: uppercase;
+  letter-spacing: -0.5px; margin-bottom: 8px; color: #ffffff;
+  font-family: 'Barlow', sans-serif;
+}
+.fyi-ss-sub { font-size: 14px; color: rgba(255,255,255,.45); line-height: 1.6; }
+.fyi-ss-cta {
+  display: block; margin-top: 22px; text-align: center;
+  text-decoration: none; background: #f26522; color: #ffffff;
+  border: none; border-radius: 7px; padding: 14px 22px;
+  font-size: 13px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.5px; font-family: 'Barlow', sans-serif;
+  cursor: pointer; transition: opacity .15s;
+}
+.fyi-ss-cta:hover { opacity: 0.85; }
 @media (max-width: 768px) {
-  .submit-grid { grid-template-columns:1fr; gap:0; }
-  .submit-left { display:none; }
-  .section-inner { padding:0 16px; }
-  .submit-section { padding:48px 0 0; }
-  .step-form { border-radius:8px; padding:24px 20px; }
-  .option-grid.cols-3 { grid-template-columns:repeat(3,1fr); }
-  .option-grid.cols-2 { grid-template-columns:1fr 1fr; }
-  .ss-num { font-size:40px; }
+  .fyi-submit-section { padding: 60px 24px; }
+  .fyi-submit-grid { grid-template-columns: 1fr; gap: 40px; }
   footer { padding:24px 16px; }
   /* NAV */
   nav { padding:0 16px; height:52px; }
@@ -882,119 +971,166 @@ const bodyHTML = `<nav>
 </div>
 
 <!-- SUBMIT -->
-<section class="submit-section" id="submit">
-  <div class="section-inner">
-    <div class="submit-grid">
-      <div class="submit-left">
+<section class="fyi-submit-section" id="submit">
+  <div class="fyi-submit-inner">
+    <div class="fyi-submit-grid">
+
+      <div class="fyi-submit-left">
         <h2>Submit your salary.<br><span class="hl">Unlock everything.</span></h2>
         <p>30 seconds. No name. No email. 134 companies unlocked the moment you share.</p>
-        <div class="sub-badges">
-          <div class="sb-badge">100% anonymous · no account needed</div>
-          <div class="sb-badge">Never shown individually, only aggregated</div>
-          <div class="sb-badge">Never sold or shared with companies</div>
-          <div class="sb-badge">Instant unlock · 134 companies</div>
+        <div class="fyi-sub-badges">
+          <div class="fyi-sb-badge">100% anonymous · no account needed</div>
+          <div class="fyi-sb-badge">Never shown individually, only aggregated</div>
+          <div class="fyi-sb-badge">Never sold or shared with companies</div>
+          <div class="fyi-sb-badge">Instant unlock · 134 companies</div>
         </div>
       </div>
 
-      <div class="step-form">
-        <div class="step-progress">
-          <div class="sp-dot active" id="prog-0"></div>
-          <div class="sp-dot" id="prog-1"></div>
-          <div class="sp-dot" id="prog-2"></div>
-          <div class="sp-dot" id="prog-3"></div>
-          <div class="sp-dot" id="prog-4"></div>
+      <div class="fyi-step-form">
+        <div class="fyi-step-progress">
+          <div class="fyi-sp-dot active" id="fyi-prog-0"></div>
+          <div class="fyi-sp-dot"        id="fyi-prog-1"></div>
+          <div class="fyi-sp-dot"        id="fyi-prog-2"></div>
+          <div class="fyi-sp-dot"        id="fyi-prog-3"></div>
+          <div class="fyi-sp-dot"        id="fyi-prog-4"></div>
         </div>
 
-        <div class="step-content active" id="step-0">
-          <div class="step-question">What's your role?</div>
-          <div class="step-sub">Pick the one that best describes what you do.</div>
-          <div class="option-grid cols-3">
-            <button class="opt-btn" onclick="selectOpt(this,'role','Backend')"><span class="ob-icon">⚙️</span><span class="ob-label">Backend</span></button>
-            <button class="opt-btn" onclick="selectOpt(this,'role','Frontend')"><span class="ob-icon">🎨</span><span class="ob-label">Frontend</span></button>
-            <button class="opt-btn" onclick="selectOpt(this,'role','Fullstack')"><span class="ob-icon">🔧</span><span class="ob-label">Fullstack</span></button>
-            <button class="opt-btn" onclick="selectOpt(this,'role','Mobile')"><span class="ob-icon">📱</span><span class="ob-label">Mobile</span></button>
-            <button class="opt-btn" onclick="selectOpt(this,'role','Data Engineer')"><span class="ob-icon">📊</span><span class="ob-label">Data Eng</span></button>
-            <button class="opt-btn" onclick="selectOpt(this,'role','DevOps / Cloud')"><span class="ob-icon">☁️</span><span class="ob-label">DevOps</span></button>
-            <button class="opt-btn" onclick="selectOpt(this,'role','UI/UX')"><span class="ob-icon">✏️</span><span class="ob-label">UI/UX</span></button>
-            <button class="opt-btn" onclick="selectOpt(this,'role','PM')"><span class="ob-icon">🗺️</span><span class="ob-label">Product</span></button>
-            <button class="opt-btn" onclick="selectOpt(this,'role','Marketer')"><span class="ob-icon">📣</span><span class="ob-label">Marketing</span></button>
+        <div class="fyi-step-content active" id="fyi-step-0">
+          <div class="fyi-step-question">What's your role?</div>
+          <div class="fyi-step-sub">Pick the one that best describes what you do.</div>
+          <div class="fyi-option-grid cols-3">
+            <button class="fyi-opt-btn" onclick="fyiSelectOpt(this,'role','Backend')">
+              <span class="fyi-ob-icon">⚙️</span><span class="fyi-ob-label">Backend</span>
+            </button>
+            <button class="fyi-opt-btn" onclick="fyiSelectOpt(this,'role','Frontend')">
+              <span class="fyi-ob-icon">🎨</span><span class="fyi-ob-label">Frontend</span>
+            </button>
+            <button class="fyi-opt-btn" onclick="fyiSelectOpt(this,'role','Fullstack')">
+              <span class="fyi-ob-icon">🔧</span><span class="fyi-ob-label">Fullstack</span>
+            </button>
+            <button class="fyi-opt-btn" onclick="fyiSelectOpt(this,'role','Mobile')">
+              <span class="fyi-ob-icon">📱</span><span class="fyi-ob-label">Mobile</span>
+            </button>
+            <button class="fyi-opt-btn" onclick="fyiSelectOpt(this,'role','Data Engineer')">
+              <span class="fyi-ob-icon">📊</span><span class="fyi-ob-label">Data Eng</span>
+            </button>
+            <button class="fyi-opt-btn" onclick="fyiSelectOpt(this,'role','DevOps / Cloud')">
+              <span class="fyi-ob-icon">☁️</span><span class="fyi-ob-label">DevOps</span>
+            </button>
+            <button class="fyi-opt-btn" onclick="fyiSelectOpt(this,'role','UI/UX')">
+              <span class="fyi-ob-icon">✏️</span><span class="fyi-ob-label">UI/UX</span>
+            </button>
+            <button class="fyi-opt-btn" onclick="fyiSelectOpt(this,'role','PM')">
+              <span class="fyi-ob-icon">🗺️</span><span class="fyi-ob-label">Product</span>
+            </button>
+            <button class="fyi-opt-btn" onclick="fyiSelectOpt(this,'role','Marketer')">
+              <span class="fyi-ob-icon">📣</span><span class="fyi-ob-label">Marketing</span>
+            </button>
           </div>
-          <div class="step-nav">
-            <button class="btn-primary" onclick="nextStep(0)" disabled id="btn-step-0">Next →</button>
+          <div class="fyi-step-nav">
+            <button class="fyi-btn-primary" onclick="fyiNextStep(0)" disabled id="fyi-btn-step-0">Next →</button>
           </div>
         </div>
 
-        <div class="step-content" id="step-1">
-          <div class="step-question">Years of experience?</div>
-          <div class="step-sub">Total years in the industry, not just at your current company.</div>
-          <div class="option-grid cols-2">
-            <button class="opt-btn" onclick="selectOpt(this,'exp','Under 1 year')"><span class="ob-label">Under 1 year</span><span class="ob-sub">Just getting started</span></button>
-            <button class="opt-btn" onclick="selectOpt(this,'exp','1–2 yrs')"><span class="ob-label">1 – 2 years</span><span class="ob-sub">Junior level</span></button>
-            <button class="opt-btn" onclick="selectOpt(this,'exp','3–4 yrs')"><span class="ob-label">3 – 4 years</span><span class="ob-sub">Mid level</span></button>
-            <button class="opt-btn" onclick="selectOpt(this,'exp','5–7 yrs')"><span class="ob-label">5 – 7 years</span><span class="ob-sub">Senior level</span></button>
-            <button class="opt-btn" onclick="selectOpt(this,'exp','8+ yrs')" style="grid-column:1/-1"><span class="ob-label">8+ years</span><span class="ob-sub">Lead / Principal</span></button>
+        <div class="fyi-step-content" id="fyi-step-1">
+          <div class="fyi-step-question">Years of experience?</div>
+          <div class="fyi-step-sub">Total years in the industry, not just at your current company.</div>
+          <div class="fyi-option-grid cols-2">
+            <button class="fyi-opt-btn" onclick="fyiSelectOpt(this,'exp','Under 1 year')">
+              <span class="fyi-ob-label">Under 1 year</span><span class="fyi-ob-sub">Just getting started</span>
+            </button>
+            <button class="fyi-opt-btn" onclick="fyiSelectOpt(this,'exp','1–2 yrs')">
+              <span class="fyi-ob-label">1 – 2 years</span><span class="fyi-ob-sub">Junior level</span>
+            </button>
+            <button class="fyi-opt-btn" onclick="fyiSelectOpt(this,'exp','3–4 yrs')">
+              <span class="fyi-ob-label">3 – 4 years</span><span class="fyi-ob-sub">Mid level</span>
+            </button>
+            <button class="fyi-opt-btn" onclick="fyiSelectOpt(this,'exp','5–7 yrs')">
+              <span class="fyi-ob-label">5 – 7 years</span><span class="fyi-ob-sub">Senior level</span>
+            </button>
+            <button class="fyi-opt-btn" onclick="fyiSelectOpt(this,'exp','8+ yrs')" style="grid-column:1/-1">
+              <span class="fyi-ob-label">8+ years</span><span class="fyi-ob-sub">Lead / Principal</span>
+            </button>
           </div>
-          <div class="step-nav">
-            <button class="btn-back" onclick="prevStep(1)">← Back</button>
-            <button class="btn-primary" onclick="nextStep(1)" disabled id="btn-step-1">Next →</button>
+          <div class="fyi-step-nav">
+            <button class="fyi-btn-back" onclick="fyiPrevStep(1)">← Back</button>
+            <button class="fyi-btn-primary" onclick="fyiNextStep(1)" disabled id="fyi-btn-step-1">Next →</button>
           </div>
         </div>
 
-        <div class="step-content" id="step-2">
-          <div class="step-question">Your monthly salary?</div>
-          <div class="step-sub">Gross, before tax. In million VND.</div>
-          <div class="salary-slider-wrap">
-            <div class="ss-display">
-              <div class="ss-num" id="sal-display">20</div>
-              <div class="ss-unit">M VND / month</div>
+        <div class="fyi-step-content" id="fyi-step-2">
+          <div class="fyi-step-question">Your monthly salary?</div>
+          <div class="fyi-step-sub">Gross, before tax. In million VND.</div>
+          <div class="fyi-salary-slider-wrap">
+            <div class="fyi-ss-display">
+              <div class="fyi-ss-num" id="fyi-sal-display">20</div>
+              <div class="fyi-ss-unit">M VND / month</div>
             </div>
-            <input type="range" class="salary-slider" id="sal-slider" min="5" max="150" value="20" step="1" oninput="updateSalary(this)">
-            <div class="ss-ticks">
-              <span class="ss-tick">5M</span>
-              <span class="ss-tick">40M</span>
-              <span class="ss-tick">80M</span>
-              <span class="ss-tick">120M</span>
-              <span class="ss-tick">150M+</span>
+            <input type="range" class="fyi-salary-slider" id="fyi-sal-slider"
+              min="5" max="150" value="20" step="1" oninput="fyiUpdateSalary(this)">
+            <div class="fyi-ss-ticks">
+              <span class="fyi-ss-tick">5M</span>
+              <span class="fyi-ss-tick">40M</span>
+              <span class="fyi-ss-tick">80M</span>
+              <span class="fyi-ss-tick">120M</span>
+              <span class="fyi-ss-tick">150M+</span>
             </div>
           </div>
-          <div class="step-nav">
-            <button class="btn-back" onclick="prevStep(2)">← Back</button>
-            <button class="btn-primary" onclick="nextStep(2)" id="btn-step-2">Next →</button>
+          <div class="fyi-step-nav">
+            <button class="fyi-btn-back" onclick="fyiPrevStep(2)">← Back</button>
+            <button class="fyi-btn-primary" onclick="fyiNextStep(2)" id="fyi-btn-step-2">Next →</button>
           </div>
         </div>
 
-        <div class="step-content" id="step-3">
-          <div class="step-question">Where do you work?</div>
-          <div class="step-sub">Company name is only used to group salary data — never shown individually.</div>
-          <input type="text" class="form-input" id="f-co" placeholder="e.g. VNG, Grab, FPT Software…" oninput="updateCompanyBtn()" autocomplete="off">
-          <div class="step-nav" style="margin-top:16px;">
-            <button class="btn-back" onclick="prevStep(3)">← Back</button>
-            <button class="btn-primary" onclick="nextStep(3)" disabled id="btn-step-3">Next →</button>
+        <div class="fyi-step-content" id="fyi-step-3">
+          <div class="fyi-step-question">Where do you work?</div>
+          <div class="fyi-step-sub">Only used to group salary data — never shown individually.</div>
+          <input type="text" class="fyi-form-input" id="f-co"
+            placeholder="e.g. VNG, Grab, FPT Software…"
+            oninput="fyiUpdateCompanyBtn()" autocomplete="off">
+          <div class="fyi-step-nav">
+            <button class="fyi-btn-back" onclick="fyiPrevStep(3)">← Back</button>
+            <button class="fyi-btn-primary" onclick="fyiNextStep(3)" disabled id="fyi-btn-step-3">Next →</button>
           </div>
         </div>
 
-        <div class="step-content" id="step-4">
-          <div class="step-question">One last thing 👋</div>
-          <div class="step-sub">What would be most useful for you? (Pick all that apply)</div>
-          <div class="voc-options">
-            <div class="voc-opt" onclick="toggleVoc(this)"><div class="voc-checkbox"></div><div class="voc-label">🏢 See salaries at more companies</div></div>
-            <div class="voc-opt" onclick="toggleVoc(this)"><div class="voc-checkbox"></div><div class="voc-label">💼 See more roles and job functions</div></div>
-            <div class="voc-opt" onclick="toggleVoc(this)"><div class="voc-checkbox"></div><div class="voc-label">📅 Compare with people at my experience level</div></div>
-            <div class="voc-opt" onclick="toggleVoc(this)"><div class="voc-checkbox"></div><div class="voc-label">🚀 Find out where I can earn more</div></div>
-            <div class="voc-opt" onclick="toggleVoc(this)"><div class="voc-checkbox"></div><div class="voc-label">🎯 Get matched with recruiters at top-paying companies</div></div>
+        <div class="fyi-step-content" id="fyi-step-4">
+          <div class="fyi-step-question">One last thing</div>
+          <div class="fyi-step-sub">What would be most useful for you? (Pick all that apply)</div>
+          <div class="fyi-voc-options">
+            <div class="fyi-voc-opt" onclick="fyiToggleVoc(this)">
+              <div class="fyi-voc-checkbox"></div>
+              <div class="fyi-voc-label">🏢 See salaries at more companies</div>
+            </div>
+            <div class="fyi-voc-opt" onclick="fyiToggleVoc(this)">
+              <div class="fyi-voc-checkbox"></div>
+              <div class="fyi-voc-label">💼 See more roles and job functions</div>
+            </div>
+            <div class="fyi-voc-opt" onclick="fyiToggleVoc(this)">
+              <div class="fyi-voc-checkbox"></div>
+              <div class="fyi-voc-label">📅 Compare with people at my experience level</div>
+            </div>
+            <div class="fyi-voc-opt" onclick="fyiToggleVoc(this)">
+              <div class="fyi-voc-checkbox"></div>
+              <div class="fyi-voc-label">🚀 Find out where I can earn more</div>
+            </div>
+            <div class="fyi-voc-opt" onclick="fyiToggleVoc(this)">
+              <div class="fyi-voc-checkbox"></div>
+              <div class="fyi-voc-label">🎯 Get matched with recruiters at top-paying companies</div>
+            </div>
           </div>
-          <div class="step-nav" style="margin-top:20px;">
-            <button class="btn-back" onclick="prevStep(4)">← Back</button>
-            <button class="btn-primary green-btn" id="unlock-btn" onclick="doSubmit()">Unlock all 134 companies →</button>
+          <div class="fyi-step-nav">
+            <button class="fyi-btn-back" onclick="fyiPrevStep(4)">← Back</button>
+            <button class="fyi-btn-primary" id="fyi-unlock-btn" onclick="fyiDoSubmit()">Unlock all 134 companies →</button>
           </div>
-          <div class="anon-note">Your salary is never linked to your name or identity.</div>
+          <div class="fyi-anon-note">Your salary is never linked to your name or identity.</div>
         </div>
 
-        <div class="submit-success" id="submit-success">
-          <div class="ss-icon">🎉</div>
-          <div class="ss-title">You're in. Everything's unlocked.</div>
-          <p class="ss-sub">All 134 companies are now visible below. Thanks for making the data better for everyone in Vietnam.</p>
-          <a href="#full-feed" class="btn-primary green-btn" style="display:block;margin-top:22px;text-align:center;text-decoration:none;" onclick="document.getElementById('full-feed').scrollIntoView({behavior:'smooth'});return false;">See all company salaries ↓</a>
+        <div class="fyi-submit-success" id="fyi-submit-success">
+          <div class="fyi-ss-icon">🎉</div>
+          <div class="fyi-ss-title">You're in. Everything's unlocked.</div>
+          <p class="fyi-ss-sub">All 134 companies are now visible below. Thanks for making the data better for everyone in Vietnam.</p>
+          <button class="fyi-ss-cta" onclick="document.getElementById('full-feed').scrollIntoView({behavior:'smooth'})">See all company salaries ↓</button>
         </div>
 
         <input type="hidden" id="f-role">
@@ -1379,66 +1515,62 @@ async function submitSalary(role, experience, salary, company, source, email){
   }
 }
 
-const _wiz={role:'',exp:'',sal:20,co:''};
-let _wizStep=0;
-function selectOpt(el,field,val){
-  _wiz[field]=val;
-  el.closest('.option-grid').querySelectorAll('.opt-btn').forEach(b=>b.classList.remove('selected'));
+const _fyiWiz={role:'',exp:'',sal:20,co:''};
+let _fyiStep=0;
+function fyiSetDots(){
+  for(let i=0;i<5;i++){
+    const dot=document.getElementById('fyi-prog-'+i);
+    if(!dot) continue;
+    dot.className='fyi-sp-dot'+(i<_fyiStep?' done':i===_fyiStep?' active':'');
+  }
+}
+function fyiSelectOpt(el,field,val){
+  _fyiWiz[field]=val;
+  el.closest('.fyi-option-grid').querySelectorAll('.fyi-opt-btn').forEach(b=>b.classList.remove('selected'));
   el.classList.add('selected');
-  const btn=document.getElementById('btn-step-'+_wizStep);
+  const btn=document.getElementById('fyi-btn-step-'+_fyiStep);
   if(btn) btn.disabled=false;
 }
-function nextStep(n){
-  document.getElementById('step-'+n).classList.remove('active');
-  const next=document.getElementById('step-'+(n+1));
-  if(next){ next.classList.add('active'); _wizStep=n+1; }
-  // Update dots
-  for(let i=0;i<5;i++){
-    const dot=document.getElementById('prog-'+i);
-    if(!dot) continue;
-    dot.classList.remove('active','done');
-    if(i<_wizStep) dot.classList.add('done');
-    else if(i===_wizStep) dot.classList.add('active');
-  }
+function fyiNextStep(n){
+  document.getElementById('fyi-step-'+n).classList.remove('active');
+  _fyiStep=n+1;
+  const next=document.getElementById('fyi-step-'+_fyiStep);
+  if(next) next.classList.add('active');
+  fyiSetDots();
 }
-function prevStep(n){
-  document.getElementById('step-'+n).classList.remove('active');
-  const prev=document.getElementById('step-'+(n-1));
-  if(prev){ prev.classList.add('active'); _wizStep=n-1; }
-  for(let i=0;i<5;i++){
-    const dot=document.getElementById('prog-'+i);
-    if(!dot) continue;
-    dot.classList.remove('active','done');
-    if(i<_wizStep) dot.classList.add('done');
-    else if(i===_wizStep) dot.classList.add('active');
-  }
+function fyiPrevStep(n){
+  document.getElementById('fyi-step-'+n).classList.remove('active');
+  _fyiStep=n-1;
+  const prev=document.getElementById('fyi-step-'+_fyiStep);
+  if(prev) prev.classList.add('active');
+  fyiSetDots();
 }
-function updateSalary(input){
-  _wiz.sal=parseInt(input.value);
-  const el=document.getElementById('sal-display');
+function fyiUpdateSalary(input){
+  _fyiWiz.sal=parseInt(input.value);
+  const el=document.getElementById('fyi-sal-display');
   if(el) el.textContent=input.value;
+  const pct=((input.value-5)/(150-5)*100).toFixed(1)+'%';
+  input.style.setProperty('--pct',pct);
 }
-function updateCompanyBtn(){
+function fyiUpdateCompanyBtn(){
   const val=(document.getElementById('f-co')||{}).value||'';
-  const btn=document.getElementById('btn-step-3');
+  const btn=document.getElementById('fyi-btn-step-3');
   if(btn) btn.disabled=!val.trim();
-  _wiz.co=val.trim();
+  _fyiWiz.co=val.trim();
 }
-function toggleVoc(el){
-  el.classList.toggle('selected');
-}
-async function doSubmit(){
-  if(!_wiz.role||!_wiz.exp||!_wiz.sal){alert('Please complete all steps.');return;}
-  _wiz.co=(document.getElementById('f-co')||{}).value||_wiz.co||'';
-  const btn=document.getElementById('unlock-btn');
+function fyiToggleVoc(el){ el.classList.toggle('selected'); }
+async function fyiDoSubmit(){
+  if(!_fyiWiz.role||!_fyiWiz.exp||!_fyiWiz.sal){alert('Please complete all steps.');return;}
+  _fyiWiz.co=(document.getElementById('f-co')||{}).value||_fyiWiz.co||'';
+  const btn=document.getElementById('fyi-unlock-btn');
   if(btn){btn.textContent='Unlocking…';btn.disabled=true;}
   const urlParams=new URLSearchParams(window.location.search);
   const source=urlParams.get('source')||'direct';
-  submitSalary(_wiz.role,_wiz.exp,_wiz.sal,_wiz.co,source,'');
-  if(await doUnlock(_wiz.role,_wiz.exp,_wiz.sal)){
-    const sc=document.getElementById('submit-success');
+  submitSalary(_fyiWiz.role,_fyiWiz.exp,_fyiWiz.sal,_fyiWiz.co,source,'');
+  if(await doUnlock(_fyiWiz.role,_fyiWiz.exp,_fyiWiz.sal)){
+    document.getElementById('fyi-step-4').classList.remove('active');
+    const sc=document.getElementById('fyi-submit-success');
     if(sc) sc.style.display='block';
-    document.getElementById('step-4').classList.remove('active');
     setTimeout(()=>document.getElementById('full-feed').scrollIntoView({behavior:'smooth'}),600);
   }
 }
@@ -1536,7 +1668,7 @@ export default function Home() {
         <title>FYI — Vietnam IT Salaries</title>
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <link
-          href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700;800;900&family=Geist+Mono:wght@400;500&display=swap"
+          href="https://fonts.googleapis.com/css2?family=Barlow:ital,wght@0,400;0,600;0,700;0,800;0,900;1,800;1,900&family=Geist:wght@300;400;500;600;700;800;900&family=Geist+Mono:wght@400;500&display=swap"
           rel="stylesheet"
         />
         <style dangerouslySetInnerHTML={{ __html: css }} />
