@@ -1027,9 +1027,6 @@ const bodyHTML = `<nav>
               <span class="fyi-ob-icon">📣</span><span class="fyi-ob-label">Marketing</span>
             </button>
           </div>
-          <div class="fyi-step-nav">
-            <button class="fyi-btn-primary" onclick="fyiNextStep(0)" disabled id="fyi-btn-step-0">Next →</button>
-          </div>
         </div>
 
         <div class="fyi-step-content" id="fyi-step-1">
@@ -1054,7 +1051,6 @@ const bodyHTML = `<nav>
           </div>
           <div class="fyi-step-nav">
             <button class="fyi-btn-back" onclick="fyiPrevStep(1)">← Back</button>
-            <button class="fyi-btn-primary" onclick="fyiNextStep(1)" disabled id="fyi-btn-step-1">Next →</button>
           </div>
         </div>
 
@@ -1528,8 +1524,7 @@ function fyiSelectOpt(el,field,val){
   _fyiWiz[field]=val;
   el.closest('.fyi-option-grid').querySelectorAll('.fyi-opt-btn').forEach(b=>b.classList.remove('selected'));
   el.classList.add('selected');
-  const btn=document.getElementById('fyi-btn-step-'+_fyiStep);
-  if(btn) btn.disabled=false;
+  setTimeout(()=>fyiNextStep(_fyiStep),180);
 }
 function fyiNextStep(n){
   document.getElementById('fyi-step-'+n).classList.remove('active');
