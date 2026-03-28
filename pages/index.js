@@ -10,7 +10,7 @@ const css = `
   --orange:#ff6000; --green:#4ade80; --red:#f87171;
 }
 html { scroll-behavior:smooth; }
-body { background:var(--bg); color:var(--white); font-family:'Geist',sans-serif; -webkit-font-smoothing:antialiased; overflow-x:hidden; }
+body { background:var(--bg); color:var(--white); font-family:'Barlow',sans-serif; -webkit-font-smoothing:antialiased; overflow-x:hidden; }
 
 /* NAV */
 nav { position:fixed; top:0; left:0; right:0; z-index:200; padding:0 52px; height:56px; display:flex; align-items:center; justify-content:space-between; background:rgba(12,12,11,0.9); backdrop-filter:blur(14px); border-bottom:1px solid var(--line); }
@@ -18,7 +18,7 @@ nav { position:fixed; top:0; left:0; right:0; z-index:200; padding:0 52px; heigh
 .nav-r { display:flex; align-items:center; gap:32px; }
 .nav-link { font-size:13px; color:var(--mid); text-decoration:none; transition:color .15s; }
 .nav-link:hover { color:var(--white); }
-.nav-btn { font-family:'Geist',sans-serif; font-size:12px; font-weight:600; background:var(--orange); color:#fff; border:none; padding:8px 18px; border-radius:2px; cursor:pointer; }
+.nav-btn { font-family:'Barlow',sans-serif; font-size:12px; font-weight:600; background:var(--orange); color:#fff; border:none; padding:8px 18px; border-radius:2px; cursor:pointer; }
 
 /* HERO */
 .hero { position:relative; height:100vh; overflow:hidden; padding-top:56px; background:#0c0c0b; }
@@ -31,8 +31,8 @@ nav { position:fixed; top:0; left:0; right:0; z-index:200; padding:0 52px; heigh
 .hero-h1 em { font-style:normal; color:var(--orange); }
 .hero-sub { font-size:16px; color:var(--mid); line-height:1.8; font-weight:300; max-width:420px; margin-bottom:44px; }
 .hero-btns { display:flex; gap:12px; }
-.btn-p { font-family:'Geist',sans-serif; font-size:14px; font-weight:700; background:var(--orange); color:#fff; border:none; padding:14px 28px; border-radius:2px; cursor:pointer; }
-.btn-g { font-size:14px; color:var(--mid); background:transparent; border:1px solid var(--line); padding:13px 24px; border-radius:2px; cursor:pointer; font-family:'Geist',sans-serif; transition:all .15s; }
+.btn-p { font-family:'Barlow',sans-serif; font-size:14px; font-weight:700; background:var(--orange); color:#fff; border:none; padding:14px 28px; border-radius:2px; cursor:pointer; }
+.btn-g { font-size:14px; color:var(--mid); background:transparent; border:1px solid var(--line); padding:13px 24px; border-radius:2px; cursor:pointer; font-family:'Barlow',sans-serif; transition:all .15s; }
 .btn-g:hover { border-color:rgba(255,255,255,.22); color:var(--white); }
 .hero-stats { position:absolute; bottom:0; left:0; right:0; z-index:10; padding:22px 52px; border-top:1px solid var(--line); display:flex; background:rgba(12,12,11,.55); backdrop-filter:blur(8px); }
 .hs { flex:1; padding:0 32px 0 0; border-right:1px solid var(--line); }
@@ -139,10 +139,10 @@ nav { position:fixed; top:0; left:0; right:0; z-index:200; padding:0 52px; heigh
 .ig-form { display:flex; gap:8px; align-items:flex-end; flex:2; flex-wrap:wrap; }
 .ig-fg { display:flex; flex-direction:column; gap:4px; }
 .ig-fg label { font-size:10px; color:var(--dim); text-transform:uppercase; letter-spacing:1px; }
-.ig-sel, .ig-inp { background:var(--bg2); border:1px solid var(--line); color:var(--white); font-family:'Geist',sans-serif; font-size:13px; padding:9px 12px; border-radius:3px; outline:none; appearance:none; transition:border-color .2s; min-width:110px; }
+.ig-sel, .ig-inp { background:var(--bg2); border:1px solid var(--line); color:var(--white); font-family:'Barlow',sans-serif; font-size:13px; padding:9px 12px; border-radius:3px; outline:none; appearance:none; transition:border-color .2s; min-width:110px; }
 .ig-sel:focus, .ig-inp:focus { border-color:var(--orange); }
 .ig-inp { min-width:90px; }
-.ig-btn { background:var(--orange); color:#fff; border:none; font-family:'Geist',sans-serif; font-size:13px; font-weight:700; padding:10px 20px; border-radius:3px; cursor:pointer; white-space:nowrap; align-self:flex-end; }
+.ig-btn { background:var(--orange); color:#fff; border:none; font-family:'Barlow',sans-serif; font-size:13px; font-weight:700; padding:10px 20px; border-radius:3px; cursor:pointer; white-space:nowrap; align-self:flex-end; }
 
 /* SUBMIT */
 .submit-outer { margin:64px 52px 0; border-radius:10px; overflow:hidden; }
@@ -155,17 +155,17 @@ nav { position:fixed; top:0; left:0; right:0; z-index:200; padding:0 52px; heigh
 .tl::before { content:'✓'; color:var(--orange); font-weight:700; }
 .form-line { display:grid; grid-template-columns:1fr 1fr 1.3fr; gap:20px; margin-bottom:24px; }
 .fg label { display:block; font-size:10px; font-weight:600; color:rgba(12,12,11,.35); margin-bottom:6px; text-transform:uppercase; letter-spacing:1px; }
-.fg select, .fg input { width:100%; background:transparent; border:none; border-bottom:1.5px solid rgba(12,12,11,.14); color:var(--bg); font-family:'Geist',sans-serif; font-size:14px; padding:10px 0; border-radius:0; outline:none; appearance:none; transition:border-color .2s; }
+.fg select, .fg input { width:100%; background:transparent; border:none; border-bottom:1.5px solid rgba(12,12,11,.14); color:var(--bg); font-family:'Barlow',sans-serif; font-size:14px; padding:10px 0; border-radius:0; outline:none; appearance:none; transition:border-color .2s; }
 .fg select:focus, .fg input:focus { border-bottom-color:var(--orange); }
 .fg select option { background:#f2f0eb; }
-.btn-sub { background:var(--orange); color:#fff; border:none; font-family:'Geist',sans-serif; font-size:14px; font-weight:700; padding:14px 32px; border-radius:2px; cursor:pointer; }
+.btn-sub { background:var(--orange); color:#fff; border:none; font-family:'Barlow',sans-serif; font-size:14px; font-weight:700; padding:14px 32px; border-radius:2px; cursor:pointer; }
 .otw-wrap { margin-bottom:24px; }
 .otw-check { display:flex; align-items:center; gap:10px; cursor:pointer; user-select:none; }
 .otw-check input[type=checkbox] { width:16px; height:16px; accent-color:var(--orange); cursor:pointer; flex-shrink:0; }
 .otw-check-label { font-size:13px; color:rgba(12,12,11,.65); font-weight:500; }
 .otw-email { display:none; margin-top:12px; padding-left:26px; }
 .otw-email.on { display:block; }
-.otw-email input { width:100%; background:transparent; border:none; border-bottom:1.5px solid rgba(12,12,11,.14); color:var(--bg); font-family:'Geist',sans-serif; font-size:14px; padding:10px 0; outline:none; transition:border-color .2s; }
+.otw-email input { width:100%; background:transparent; border:none; border-bottom:1.5px solid rgba(12,12,11,.14); color:var(--bg); font-family:'Barlow',sans-serif; font-size:14px; padding:10px 0; outline:none; transition:border-color .2s; }
 .otw-email input:focus { border-bottom-color:var(--orange); }
 .otw-email input::placeholder { color:rgba(12,12,11,.3); }
 .otw-trust { margin-top:6px; font-size:10px; color:rgba(12,12,11,.35); font-family:'Geist Mono',monospace; }
@@ -175,7 +175,7 @@ nav { position:fixed; top:0; left:0; right:0; z-index:200; padding:0 52px; heigh
 .ac-input {
   width:100%; background:transparent; border:none;
   border-bottom:1.5px solid rgba(12,12,11,.14);
-  color:var(--bg); font-family:'Geist',sans-serif; font-size:14px;
+  color:var(--bg); font-family:'Barlow',sans-serif; font-size:14px;
   padding:10px 0; border-radius:0; outline:none; transition:border-color .2s;
 }
 .ac-input:focus { border-bottom-color:var(--orange); }
@@ -225,7 +225,7 @@ nav { position:fixed; top:0; left:0; right:0; z-index:200; padding:0 52px; heigh
 .co-search-bar { display:flex; align-items:center; gap:10px; background:var(--bg1); border:1px solid var(--line); border-radius:8px; padding:12px 18px; transition:border-color .2s; }
 .co-search-bar:focus-within { border-color:rgba(255,96,0,.4); }
 .co-search-icon { color:var(--dim); font-size:15px; flex-shrink:0; }
-.co-search-input { flex:1; background:transparent; border:none; outline:none; color:var(--white); font-family:'Geist',sans-serif; font-size:14px; }
+.co-search-input { flex:1; background:transparent; border:none; outline:none; color:var(--white); font-family:'Barlow',sans-serif; font-size:14px; }
 .co-search-input::placeholder { color:var(--dim); }
 .co-search-drop { display:none; position:absolute; top:calc(100% + 6px); left:0; right:0; z-index:100; background:var(--bg1); border:1px solid var(--line); border-radius:8px; box-shadow:0 12px 32px rgba(0,0,0,.5); max-height:260px; overflow-y:auto; }
 .co-search-drop.open { display:block; }
@@ -241,7 +241,7 @@ nav { position:fixed; top:0; left:0; right:0; z-index:200; padding:0 52px; heigh
 .co-result-header { display:flex; align-items:flex-start; justify-content:space-between; margin-bottom:20px; }
 .co-result-name { font-size:20px; font-weight:800; letter-spacing:-.5px; }
 .co-result-count { font-family:'Geist Mono',monospace; font-size:11px; color:var(--orange); margin-top:4px; }
-.co-result-close { background:transparent; border:1px solid var(--line); color:var(--dim); font-size:12px; padding:5px 12px; border-radius:4px; cursor:pointer; font-family:'Geist',sans-serif; flex-shrink:0; }
+.co-result-close { background:transparent; border:1px solid var(--line); color:var(--dim); font-size:12px; padding:5px 12px; border-radius:4px; cursor:pointer; font-family:'Barlow',sans-serif; flex-shrink:0; }
 .co-result-close:hover { color:var(--white); border-color:rgba(255,255,255,.2); }
 
 /* 역할별 연봉 테이블 */
@@ -883,7 +883,7 @@ const bodyHTML = `<nav>
       <div class="chp-row"><div class="chp-label">Mobile · 5yr</div><div class="chp-bar-wrap"><div class="chp-bar" style="width:100%;"></div></div><div class="chp-val">72M</div></div>
       <div class="chp-row"><div class="chp-label">Backend · 4yr</div><div class="chp-bar-wrap"><div class="chp-bar" style="width:81%;"></div></div><div class="chp-val">58M</div></div>
       <div class="chp-row"><div class="chp-label">DevOps · 3yr</div><div class="chp-bar-wrap"><div class="chp-bar" style="width:64%;"></div></div><div class="chp-val">46M</div></div>
-      <div style="margin-top:auto;padding-top:10px;border-top:1px solid rgba(255,255,255,.1);"><button onclick="event.stopPropagation();openLB('Grab Vietnam')" style="font-size:12px;font-weight:600;color:var(--orange);background:transparent;border:1px solid var(--orange);padding:5px 14px;border-radius:4px;cursor:pointer;font-family:'Geist',sans-serif;">See all →</button></div>
+      <div style="margin-top:auto;padding-top:10px;border-top:1px solid rgba(255,255,255,.1);"><button onclick="event.stopPropagation();openLB('Grab Vietnam')" style="font-size:12px;font-weight:600;color:var(--orange);background:transparent;border:1px solid var(--orange);padding:5px 14px;border-radius:4px;cursor:pointer;font-family:'Barlow',sans-serif;">See all →</button></div>
     </div>
   </div>
 
@@ -908,7 +908,7 @@ const bodyHTML = `<nav>
       <div class="chp-row"><div class="chp-label">Backend · 6yr</div><div class="chp-bar-wrap"><div class="chp-bar" style="width:100%;"></div></div><div class="chp-val">55M</div></div>
       <div class="chp-row"><div class="chp-label">Mobile · 4yr</div><div class="chp-bar-wrap"><div class="chp-bar" style="width:80%;"></div></div><div class="chp-val">44M</div></div>
       <div class="chp-row"><div class="chp-label">Frontend · 2yr</div><div class="chp-bar-wrap"><div class="chp-bar" style="width:51%;"></div></div><div class="chp-val">28M</div></div>
-      <div style="margin-top:auto;padding-top:10px;border-top:1px solid rgba(255,255,255,.1);"><button onclick="event.stopPropagation();openLB('VNG Corporation')" style="font-size:12px;font-weight:600;color:var(--orange);background:transparent;border:1px solid var(--orange);padding:5px 14px;border-radius:4px;cursor:pointer;font-family:'Geist',sans-serif;">See all →</button></div>
+      <div style="margin-top:auto;padding-top:10px;border-top:1px solid rgba(255,255,255,.1);"><button onclick="event.stopPropagation();openLB('VNG Corporation')" style="font-size:12px;font-weight:600;color:var(--orange);background:transparent;border:1px solid var(--orange);padding:5px 14px;border-radius:4px;cursor:pointer;font-family:'Barlow',sans-serif;">See all →</button></div>
     </div>
   </div>
 
@@ -933,7 +933,7 @@ const bodyHTML = `<nav>
       <div class="chp-row"><div class="chp-label">Backend · 5yr</div><div class="chp-bar-wrap"><div class="chp-bar" style="width:100%;"></div></div><div class="chp-val">62M</div></div>
       <div class="chp-row"><div class="chp-label">Data · 4yr</div><div class="chp-bar-wrap"><div class="chp-bar" style="width:89%;"></div></div><div class="chp-val">55M</div></div>
       <div class="chp-row"><div class="chp-label">Mobile · 3yr</div><div class="chp-bar-wrap"><div class="chp-bar" style="width:77%;"></div></div><div class="chp-val">48M</div></div>
-      <div style="margin-top:auto;padding-top:10px;border-top:1px solid rgba(255,255,255,.1);"><button onclick="event.stopPropagation();openLB('Shopee Vietnam')" style="font-size:12px;font-weight:600;color:var(--orange);background:transparent;border:1px solid var(--orange);padding:5px 14px;border-radius:4px;cursor:pointer;font-family:'Geist',sans-serif;">See all →</button></div>
+      <div style="margin-top:auto;padding-top:10px;border-top:1px solid rgba(255,255,255,.1);"><button onclick="event.stopPropagation();openLB('Shopee Vietnam')" style="font-size:12px;font-weight:600;color:var(--orange);background:transparent;border:1px solid var(--orange);padding:5px 14px;border-radius:4px;cursor:pointer;font-family:'Barlow',sans-serif;">See all →</button></div>
     </div>
   </div>
 
@@ -957,7 +957,7 @@ const bodyHTML = `<nav>
       <div class="chp-row"><div class="chp-label">Backend · 5yr</div><div class="chp-bar-wrap"><div class="chp-bar" style="width:100%;"></div></div><div class="chp-val" style="filter:blur(5px);user-select:none;">██M</div></div>
       <div class="chp-row"><div class="chp-label">Mobile · 4yr</div><div class="chp-bar-wrap"><div class="chp-bar" style="width:80%;"></div></div><div class="chp-val" style="filter:blur(5px);user-select:none;">██M</div></div>
       <div class="chp-row"><div class="chp-label">DevOps · 3yr</div><div class="chp-bar-wrap"><div class="chp-bar" style="width:65%;"></div></div><div class="chp-val" style="filter:blur(5px);user-select:none;">██M</div></div>
-      <div style="margin-top:auto;padding-top:10px;border-top:1px solid rgba(255,255,255,.1);"><button onclick="event.stopPropagation();document.querySelector('.submit-outer').scrollIntoView({behavior:'smooth'})" style="font-size:12px;font-weight:600;color:#fff;background:var(--orange);border:none;padding:6px 14px;border-radius:4px;cursor:pointer;font-family:'Geist',sans-serif;">See all →</button></div>
+      <div style="margin-top:auto;padding-top:10px;border-top:1px solid rgba(255,255,255,.1);"><button onclick="event.stopPropagation();document.querySelector('.submit-outer').scrollIntoView({behavior:'smooth'})" style="font-size:12px;font-weight:600;color:#fff;background:var(--orange);border:none;padding:6px 14px;border-radius:4px;cursor:pointer;font-family:'Barlow',sans-serif;">See all →</button></div>
     </div>
   </div>
 
@@ -981,7 +981,7 @@ const bodyHTML = `<nav>
       <div class="chp-row"><div class="chp-label">Mobile · 5yr</div><div class="chp-bar-wrap"><div class="chp-bar" style="width:100%;"></div></div><div class="chp-val" style="filter:blur(5px);user-select:none;">██M</div></div>
       <div class="chp-row"><div class="chp-label">Backend · 4yr</div><div class="chp-bar-wrap"><div class="chp-bar" style="width:78%;"></div></div><div class="chp-val" style="filter:blur(5px);user-select:none;">██M</div></div>
       <div class="chp-row"><div class="chp-label">Frontend · 2yr</div><div class="chp-bar-wrap"><div class="chp-bar" style="width:55%;"></div></div><div class="chp-val" style="filter:blur(5px);user-select:none;">██M</div></div>
-      <div style="margin-top:auto;padding-top:10px;border-top:1px solid rgba(255,255,255,.1);"><button onclick="event.stopPropagation();document.querySelector('.submit-outer').scrollIntoView({behavior:'smooth'})" style="font-size:12px;font-weight:600;color:#fff;background:var(--orange);border:none;padding:6px 14px;border-radius:4px;cursor:pointer;font-family:'Geist',sans-serif;">See all →</button></div>
+      <div style="margin-top:auto;padding-top:10px;border-top:1px solid rgba(255,255,255,.1);"><button onclick="event.stopPropagation();document.querySelector('.submit-outer').scrollIntoView({behavior:'smooth'})" style="font-size:12px;font-weight:600;color:#fff;background:var(--orange);border:none;padding:6px 14px;border-radius:4px;cursor:pointer;font-family:'Barlow',sans-serif;">See all →</button></div>
     </div>
   </div>
 
@@ -1005,7 +1005,7 @@ const bodyHTML = `<nav>
       <div class="chp-row"><div class="chp-label">Backend · 5yr</div><div class="chp-bar-wrap"><div class="chp-bar" style="width:100%;"></div></div><div class="chp-val" style="filter:blur(5px);user-select:none;">██M</div></div>
       <div class="chp-row"><div class="chp-label">DevOps · 4yr</div><div class="chp-bar-wrap"><div class="chp-bar" style="width:75%;"></div></div><div class="chp-val" style="filter:blur(5px);user-select:none;">██M</div></div>
       <div class="chp-row"><div class="chp-label">Frontend · 3yr</div><div class="chp-bar-wrap"><div class="chp-bar" style="width:58%;"></div></div><div class="chp-val" style="filter:blur(5px);user-select:none;">██M</div></div>
-      <div style="margin-top:auto;padding-top:10px;border-top:1px solid rgba(255,255,255,.1);"><button onclick="event.stopPropagation();document.querySelector('.submit-outer').scrollIntoView({behavior:'smooth'})" style="font-size:12px;font-weight:600;color:#fff;background:var(--orange);border:none;padding:6px 14px;border-radius:4px;cursor:pointer;font-family:'Geist',sans-serif;">See all →</button></div>
+      <div style="margin-top:auto;padding-top:10px;border-top:1px solid rgba(255,255,255,.1);"><button onclick="event.stopPropagation();document.querySelector('.submit-outer').scrollIntoView({behavior:'smooth'})" style="font-size:12px;font-weight:600;color:#fff;background:var(--orange);border:none;padding:6px 14px;border-radius:4px;cursor:pointer;font-family:'Barlow',sans-serif;">See all →</button></div>
     </div>
   </div>
 
