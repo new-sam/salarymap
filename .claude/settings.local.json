@@ -50,7 +50,8 @@
       "Bash(sed -n 900,1100p /c/Users/slsvm/Desktop/salarymap/pages/index.js)",
       "Bash(node -e \":*)",
       "Bash(echo \"exit:$?\")",
-      "Bash(python3 -c \"import sys,json; d=json.loads\\(sys.stdin.read\\(\\)\\); print\\(d.get\\(''''err'''',{}\\).get\\(''''message'''',''''''''\\)[:800]\\)\")"
+      "Bash(python3 -c \"import sys,json; d=json.loads\\(sys.stdin.read\\(\\)\\); print\\(d.get\\(''''err'''',{}\\).get\\(''''message'''',''''''''\\)[:800]\\)\")",
+      "Bash(git:*)"
     ]
   },
   "hooks": {
