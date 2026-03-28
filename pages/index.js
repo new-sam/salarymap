@@ -261,6 +261,7 @@ nav { position:fixed; top:0; left:0; right:0; z-index:200; padding:0 52px; heigh
 .co-similar-chip:hover { border-color:var(--orange); color:var(--orange); }
 
 /* Card hover panel */
+#typed-company { color:var(--orange); }
 .typed-cursor {
   display:inline-block;
   width:3px;
@@ -893,7 +894,34 @@ const bodyHTML = `<nav>
 </div>
 `;
 
-const js = `// CAROUSEL }
+const js = `(function(){
+  function initTyping(){
+    var el=document.getElementById('typed-company');
+    if(!el){ setTimeout(initTyping,50); return; }
+    var companies=['Grab Vietnam','VNG Corporation','Shopee Vietnam','Tiki','Momo','FPT Software','Sky Mavis','Zalo','KMS Technology','Axon Active'];
+    var ci=0,ti=0,del=false,wait=false;
+    function tick(){
+      var w=companies[ci];
+      if(wait){wait=false;del=true;setTimeout(tick,80);return;}
+      if(!del){
+        el.textContent=w.slice(0,++ti);
+        if(ti===w.length){wait=true;setTimeout(tick,1800);return;}
+        setTimeout(tick,80);
+      } else {
+        el.textContent=w.slice(0,--ti);
+        if(ti===0){del=false;ci=(ci+1)%companies.length;setTimeout(tick,300);return;}
+        setTimeout(tick,45);
+      }
+    }
+    tick();
+  }
+  if(document.readyState==='loading'){
+    document.addEventListener('DOMContentLoaded',initTyping);
+  } else {
+    setTimeout(initTyping,0);
+  }
+})();
+// CAROUSEL }
 
 // FILTER
 function filterCards(cat,el){
@@ -1291,26 +1319,6 @@ function reportData(company){
   alert('Thank you for the feedback. We will review ' + company + ' data shortly.');
 }
 
-(function initTyping(){
-  var el=document.getElementById('typed-company');
-  if(!el){ setTimeout(initTyping,100); return; }
-  var companies=['Grab Vietnam','VNG Corporation','Shopee Vietnam','Tiki','Momo','FPT Software','Sky Mavis','Zalo','KMS Technology','Axon Active'];
-  var ci=0,ti=0,del=false,wait=false;
-  function tick(){
-    var w=companies[ci];
-    if(wait){wait=false;del=true;setTimeout(tick,80);return;}
-    if(!del){
-      el.textContent=w.slice(0,++ti);
-      if(ti===w.length){wait=true;setTimeout(tick,1800);return;}
-      setTimeout(tick,80);
-    } else {
-      el.textContent=w.slice(0,--ti);
-      if(ti===0){del=false;ci=(ci+1)%companies.length;setTimeout(tick,300);return;}
-      setTimeout(tick,45);
-    }
-  }
-  tick();
-})();
 function heroSearch(q){
   if(!q||q.length<2) return;
   const coInput=document.getElementById('co-search-input');
