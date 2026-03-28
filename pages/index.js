@@ -442,7 +442,7 @@ const logoStripHTML = [..._trustLogos,..._trustLogos].map(l =>
 ).join('');
 
 const bodyHTML = `<nav>
-  <div class="logo">Salary<span>Map</span>.vn</div>
+  <div class="logo" style="display:flex;align-items:center;gap:8px;"><img src="/logo.png" style="width:32px;height:32px;object-fit:contain;" alt="FYI"><span style="font-size:15px;font-weight:800;color:#f2f0eb;letter-spacing:-.3px;font-family:'Geist',sans-serif;">FYI</span></div>
   <div class="nav-r">
     <a class="nav-link" href="#">Data</a>
     <a class="nav-link" href="#">Companies</a>
@@ -1307,7 +1307,7 @@ export default function Home() {
   return (
     <>
       <Head>
-        <title>SalaryMap.vn</title>
+        <title>FYI — Vietnam IT Salaries</title>
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <link
           href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700;800;900&family=Geist+Mono:wght@400;500&display=swap"
