@@ -48,7 +48,8 @@
       "Read(//c/Users/slsvm/Desktop/salarymap/**)",
       "Read(//tmp/**)",
       "Bash(sed -n 900,1100p /c/Users/slsvm/Desktop/salarymap/pages/index.js)",
-      "Bash(node -e \":*)"
+      "Bash(node -e \":*)",
+      "Bash(echo \"exit:$?\")"
     ]
   },
   "hooks": {
