@@ -44,7 +44,10 @@
       "Bash(cp /mnt/user-data/uploads/1774325379054_image.png /c/Users/slsvm/Desktop/salarymap/public/trust-3.png)",
       "Read(//mnt/user-data/**)",
       "Read(//c/Users/slsvm/**)",
-      "Bash(ls:*)"
+      "Bash(ls:*)",
+      "Read(//c/Users/slsvm/Desktop/salarymap/**)",
+      "Read(//tmp/**)",
+      "Bash(sed -n 900,1100p /c/Users/slsvm/Desktop/salarymap/pages/index.js)"
     ]
   },
   "hooks": {
