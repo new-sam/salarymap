@@ -47,7 +47,10 @@ nav { position:fixed; top:0; left:0; right:0; z-index:200; padding:0 52px; heigh
 .carr:hover { background:rgba(255,255,255,.16); }
 
 /* CARDS SECTION */
+.cards-bg { background: #f0ede8; }
 .cards-section { max-width:1160px; margin:0 auto; padding:80px 52px 0; }
+.cards-bg .section-head-title { color: #0c0c0c; }
+.cards-bg .section-head-sub { color: rgba(0,0,0,.5); }
 .section-head { margin-bottom:28px; }
 .section-head-title { font-size:clamp(22px,2.8vw,32px); font-weight:800; letter-spacing:-1px; margin-bottom:6px; }
 .section-head-title em { font-style:normal; color:var(--orange); }
@@ -612,7 +615,7 @@ const bodyHTML = `<nav>
     <a class="nav-link" href="#">Companies</a>
     <a class="nav-link" href="#">Reports</a>
     <a class="nav-link" href="/how-it-works">How it works</a>
-    <button class="nav-btn" onclick="document.querySelector('.submit-outer').scrollIntoView({behavior:'smooth'})">Submit Salary</button>
+    <button class="nav-btn" onclick="document.getElementById('submit').scrollIntoView({behavior:'smooth'})">Submit Salary</button>
   </div>
 </nav>
 
@@ -747,6 +750,7 @@ const bodyHTML = `<nav>
 
 </section>
 
+<div class="cards-bg">
 <div class="cards-section">
   <div class="section-head">
     <h2 class="section-head-title">See what Vietnam's top IT companies <em>actually pay.</em></h2>
@@ -776,7 +780,7 @@ const bodyHTML = `<nav>
     </div>
     <div id="co-result-body"></div>
   </div>
-  <p style="font-size:12px;color:var(--dim);margin-bottom:20px;">All submissions are anonymous. No account, no email, no identity — ever.</p>
+  <p style="font-size:12px;color:rgba(0,0,0,.4);margin-bottom:20px;">All submissions are anonymous. No account, no email, no identity — ever.</p>
   <div class="filter-tabs">
     <div class="ftab active" onclick="filterCards('all',this)"><span class="ftab-icon">🔥</span> Most Searched</div>
     <div class="ftab" onclick="filterCards('top',this)"><span class="ftab-icon">💰</span> Top Paying</div>
@@ -963,12 +967,11 @@ const bodyHTML = `<nav>
   </div>
 
 </div>
-<div style="text-align:center; padding:16px 0 32px; font-size:13px; color:var(--dim);">
-  Showing 8 of <span id="total-co-count">—</span> companies · <span style="color:var(--orange); cursor:pointer;" onclick="document.querySelector('.submit-outer').scrollIntoView({behavior:'smooth'})">Submit your salary to unlock all →</span>
+<div style="text-align:center; padding:16px 0 32px; font-size:13px; color:rgba(0,0,0,.4);">
+  Showing 8 of <span id="total-co-count">—</span> companies · <span style="color:var(--orange); cursor:pointer;" onclick="document.getElementById('submit').scrollIntoView({behavior:'smooth'})">Submit your salary to unlock all →</span>
 </div>
-
-<div class="cards-gate"></div>
-</div>
+</div><!-- /cards-section -->
+</div><!-- /cards-bg -->
 
 <!-- SUBMIT -->
 <section class="fyi-submit-section" id="submit">
@@ -1511,65 +1514,6 @@ async function submitSalary(role, experience, salary, company, source, email){
   }
 }
 
-const _fyiWiz={role:'',exp:'',sal:20,co:''};
-let _fyiStep=0;
-function fyiSetDots(){
-  for(let i=0;i<5;i++){
-    const dot=document.getElementById('fyi-prog-'+i);
-    if(!dot) continue;
-    dot.className='fyi-sp-dot'+(i<_fyiStep?' done':i===_fyiStep?' active':'');
-  }
-}
-function fyiSelectOpt(el,field,val){
-  _fyiWiz[field]=val;
-  el.closest('.fyi-option-grid').querySelectorAll('.fyi-opt-btn').forEach(b=>b.classList.remove('selected'));
-  el.classList.add('selected');
-  setTimeout(()=>fyiNextStep(_fyiStep),180);
-}
-function fyiNextStep(n){
-  document.getElementById('fyi-step-'+n).classList.remove('active');
-  _fyiStep=n+1;
-  const next=document.getElementById('fyi-step-'+_fyiStep);
-  if(next) next.classList.add('active');
-  fyiSetDots();
-}
-function fyiPrevStep(n){
-  document.getElementById('fyi-step-'+n).classList.remove('active');
-  _fyiStep=n-1;
-  const prev=document.getElementById('fyi-step-'+_fyiStep);
-  if(prev) prev.classList.add('active');
-  fyiSetDots();
-}
-function fyiUpdateSalary(input){
-  _fyiWiz.sal=parseInt(input.value);
-  const el=document.getElementById('fyi-sal-display');
-  if(el) el.textContent=input.value;
-  const pct=((input.value-5)/(150-5)*100).toFixed(1)+'%';
-  input.style.setProperty('--pct',pct);
-}
-function fyiUpdateCompanyBtn(){
-  const val=(document.getElementById('f-co')||{}).value||'';
-  const btn=document.getElementById('fyi-btn-step-3');
-  if(btn) btn.disabled=!val.trim();
-  _fyiWiz.co=val.trim();
-}
-function fyiToggleVoc(el){ el.classList.toggle('selected'); }
-async function fyiDoSubmit(){
-  if(!_fyiWiz.role||!_fyiWiz.exp||!_fyiWiz.sal){alert('Please complete all steps.');return;}
-  _fyiWiz.co=(document.getElementById('f-co')||{}).value||_fyiWiz.co||'';
-  const btn=document.getElementById('fyi-unlock-btn');
-  if(btn){btn.textContent='Unlocking…';btn.disabled=true;}
-  const urlParams=new URLSearchParams(window.location.search);
-  const source=urlParams.get('source')||'direct';
-  submitSalary(_fyiWiz.role,_fyiWiz.exp,_fyiWiz.sal,_fyiWiz.co,source,'');
-  if(await doUnlock(_fyiWiz.role,_fyiWiz.exp,_fyiWiz.sal)){
-    document.getElementById('fyi-step-4').classList.remove('active');
-    const sc=document.getElementById('fyi-submit-success');
-    if(sc) sc.style.display='block';
-    setTimeout(()=>document.getElementById('full-feed').scrollIntoView({behavior:'smooth'}),600);
-  }
-}
-
 async function unlock(){
   const r=document.getElementById('f-role').value,e=document.getElementById('f-exp').value,s=parseInt(document.getElementById('f-sal').value);
   const c=document.getElementById('f-co')?document.getElementById('f-co').value:'';
@@ -1579,7 +1523,10 @@ async function unlock(){
   const email=document.getElementById('f-email')?.value||'';
   submitSalary(r,e,s,c,source,email);
   if(await doUnlock(r,e,s)) setTimeout(()=>document.getElementById('full-feed').scrollIntoView({behavior:'smooth'}),300);
-}`;
+}
+window.submitSalary=submitSalary;
+window.doUnlock=doUnlock;
+`;
 
 const lbData = {
   'Grab Vietnam': {
@@ -1625,6 +1572,76 @@ export default function Home() {
     window.openLB = (company) => setLbCompany(company);
     window.closeLB = () => setLbCompany(null);
     return () => { delete window.openLB; delete window.closeLB; };
+  }, []);
+
+  // Wizard state & functions exposed to inline onclick handlers
+  useEffect(() => {
+    const wiz = { role: '', exp: '', sal: 20, co: '' };
+    let step = 0;
+
+    window.fyiSetDots = function() {
+      for (let i = 0; i < 5; i++) {
+        const dot = document.getElementById('fyi-prog-' + i);
+        if (!dot) continue;
+        dot.className = 'fyi-sp-dot' + (i < step ? ' done' : i === step ? ' active' : '');
+      }
+    };
+    window.fyiSelectOpt = function(el, field, val) {
+      wiz[field] = val;
+      el.closest('.fyi-option-grid').querySelectorAll('.fyi-opt-btn').forEach(b => b.classList.remove('selected'));
+      el.classList.add('selected');
+      setTimeout(() => window.fyiNextStep(step), 180);
+    };
+    window.fyiNextStep = function(n) {
+      const cur = document.getElementById('fyi-step-' + n);
+      if (cur) cur.classList.remove('active');
+      step = n + 1;
+      const next = document.getElementById('fyi-step-' + step);
+      if (next) next.classList.add('active');
+      window.fyiSetDots();
+    };
+    window.fyiPrevStep = function(n) {
+      const cur = document.getElementById('fyi-step-' + n);
+      if (cur) cur.classList.remove('active');
+      step = n - 1;
+      const prev = document.getElementById('fyi-step-' + step);
+      if (prev) prev.classList.add('active');
+      window.fyiSetDots();
+    };
+    window.fyiUpdateSalary = function(input) {
+      wiz.sal = parseInt(input.value);
+      const el = document.getElementById('fyi-sal-display');
+      if (el) el.textContent = input.value;
+      const pct = ((input.value - 5) / (150 - 5) * 100).toFixed(1) + '%';
+      input.style.setProperty('--pct', pct);
+    };
+    window.fyiUpdateCompanyBtn = function() {
+      const val = (document.getElementById('f-co') || {}).value || '';
+      const btn = document.getElementById('fyi-btn-step-3');
+      if (btn) btn.disabled = !val.trim();
+      wiz.co = val.trim();
+    };
+    window.fyiToggleVoc = function(el) { el.classList.toggle('selected'); };
+    window.fyiDoSubmit = async function() {
+      if (!wiz.role || !wiz.exp || !wiz.sal) { alert('Please complete all steps.'); return; }
+      wiz.co = (document.getElementById('f-co') || {}).value || wiz.co || '';
+      const btn = document.getElementById('fyi-unlock-btn');
+      if (btn) { btn.textContent = 'Unlocking…'; btn.disabled = true; }
+      const urlParams = new URLSearchParams(window.location.search);
+      const source = urlParams.get('source') || 'direct';
+      if (typeof window.submitSalary === 'function') window.submitSalary(wiz.role, wiz.exp, wiz.sal, wiz.co, source, '');
+      if (typeof window.doUnlock === 'function' && await window.doUnlock(wiz.role, wiz.exp, wiz.sal)) {
+        const s4 = document.getElementById('fyi-step-4');
+        if (s4) s4.classList.remove('active');
+        const sc = document.getElementById('fyi-submit-success');
+        if (sc) sc.style.display = 'block';
+        setTimeout(() => { const ff = document.getElementById('full-feed'); if (ff) ff.scrollIntoView({ behavior: 'smooth' }); }, 600);
+      }
+    };
+
+    return () => {
+      ['fyiSetDots','fyiSelectOpt','fyiNextStep','fyiPrevStep','fyiUpdateSalary','fyiUpdateCompanyBtn','fyiToggleVoc','fyiDoSubmit'].forEach(k => delete window[k]);
+    };
   }, []);
 
   // Typing animation
