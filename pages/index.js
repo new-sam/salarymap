@@ -47,45 +47,6 @@ nav { position:fixed; top:0; left:0; right:0; z-index:200; padding:0 52px; heigh
 .carr:hover { background:rgba(255,255,255,.16); }
 
 /* CARDS SECTION */
-
-.privacy-section { padding: 80px 40px; max-width: 960px; margin: 0 auto; }
-.privacy-headline { font-size: 48px; font-weight: 700; line-height: 1.15; margin-bottom: 12px; }
-.privacy-headline em { color: var(--orange); font-style: normal; }
-.privacy-sub { font-size: 15px; color: var(--dim); margin-bottom: 36px; line-height: 1.7; }
-.lock-diagram { background: #0f0f0f; border: 1px solid #1a1a1a; border-radius: 18px; padding: 36px 32px; margin-bottom: 14px; display: flex; align-items: center; }
-.lock-input-side { display: flex; flex-direction: column; gap: 10px; flex: 1; }
-.lock-input-label { font-size: 10px; letter-spacing: .18em; text-transform: uppercase; color: #555; margin-bottom: 2px; }
-.lock-input-item { background: #161616; border: 1px solid #222; border-radius: 10px; padding: 13px 16px; display: flex; align-items: center; gap: 12px; }
-.lock-i-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--orange); flex-shrink: 0; }
-.lock-i-label { font-size: 13px; color: #bbb; }
-.lock-i-val { font-size: 13px; color: #666; margin-left: auto; font-family: monospace; filter: blur(5px); user-select: none; }
-.lock-arrow { padding: 0 24px; display: flex; flex-direction: column; align-items: center; gap: 6px; flex-shrink: 0; }
-.lock-arrow-line { width: 36px; height: 1px; background: linear-gradient(to right, #2a2a2a, #444); }
-.lock-arrow-head { color: #444; font-size: 14px; margin-top: -6px; }
-.lock-box { width: 88px; height: 88px; flex-shrink: 0; background: #161616; border: 1px solid #2a2a2a; border-radius: 18px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 5px; }
-.lock-box-emoji { font-size: 32px; line-height: 1; }
-.lock-box-label { font-size: 8px; letter-spacing: .16em; text-transform: uppercase; color: #444; }
-.lock-output-side { flex: 1; }
-.lock-output-box { background: #161616; border: 1px solid #222; border-radius: 12px; padding: 18px; }
-.lock-output-tag { font-size: 9px; letter-spacing: .18em; text-transform: uppercase; color: var(--orange); margin-bottom: 10px; }
-.lock-output-bar-label { font-size: 11px; color: #888; margin-bottom: 6px; }
-.lock-output-bar-wrap { height: 7px; background: #222; border-radius: 100px; overflow: hidden; margin-bottom: 8px; }
-.lock-output-bar-fill { height: 100%; border-radius: 100px; background: var(--orange); width: 72%; }
-.lock-output-range { font-size: 13px; color: #ccc; font-weight: 700; }
-.lock-output-sub { font-size: 11px; color: #555; margin-top: 3px; }
-.privacy-final { background: #111; border-radius: 14px; padding: 28px 32px; display: flex; align-items: center; gap: 20px; }
-.privacy-final-icon { font-size: 38px; flex-shrink: 0; }
-.privacy-final-title { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
-.privacy-final-main { font-size: 22px; font-weight: 700; }
-.privacy-final-main em { color: var(--orange); font-style: normal; }
-.privacy-final-side { font-size: 22px; font-weight: 700; color: #444; }
-@media (max-width:768px) {
-  .privacy-section { padding: 60px 20px; }
-  .privacy-headline { font-size: 34px; }
-  .lock-diagram { flex-direction: column; gap: 16px; }
-  .lock-arrow { flex-direction: row; padding: 0; }
-  .lock-box { width: 64px; height: 64px; }
-}
 .cards-bg { background: #f0ede8; }
 .cards-section { max-width:1160px; margin:0 auto; padding:80px 52px 0; }
 .cards-bg .section-head-title { color: #0c0c0c; }
@@ -579,7 +540,13 @@ nav { position:fixed; top:0; left:0; right:0; z-index:200; padding:0 52px; heigh
   /* CARDS SECTION */
   .cards-section { padding:40px 16px 0; }
   .stories-grid { grid-template-columns:1fr !important; }
+  .trust-roadmap { grid-template-columns:1fr !important; }
+  .trust-stats { grid-template-columns:repeat(2,1fr) !important; }
+  .trust-interviews { grid-template-columns:1fr !important; }
   .city-cards-grid { grid-template-columns:1fr !important; }
+  .trust-privacy { grid-template-columns:1fr !important; }
+  .trust-section { padding:60px 0 !important; }
+  .trust-inner { padding:0 16px !important; }
   .section-head-title { font-size:22px; }
   .card-grid { grid-template-columns:repeat(2,1fr); gap:12px; }
   #card-grid { grid-template-columns:repeat(2,1fr) !important; }
@@ -677,41 +644,176 @@ const bodyHTML = `<nav>
 </section>
 
 <!-- TRUST BUILDER -->
-<section id="privacy" style="background:#0c0c0b; padding:0;">
-  <div class="privacy-section">
-    <h2 class="privacy-headline">This is<br><em>completely</em> anonymous.</h2>
-    <p class="privacy-sub">We don't know who you are. We just know what engineers in Vietnam are earning.</p>
+<section class="trust-section" style="background:#0c0c0b; padding:80px 0;">
 
-    <div class="lock-diagram">
-      <div class="lock-input-side">
-        <div class="lock-input-label">What you submit</div>
-        <div class="lock-input-item"><div class="lock-i-dot"></div><span class="lock-i-label">Salary</span><span class="lock-i-val">$2,800</span></div>
-        <div class="lock-input-item"><div class="lock-i-dot"></div><span class="lock-i-label">Role</span><span class="lock-i-val">Backend</span></div>
-        <div class="lock-input-item"><div class="lock-i-dot"></div><span class="lock-i-label">Experience</span><span class="lock-i-val">4 yrs</span></div>
-        <div class="lock-input-item"><div class="lock-i-dot"></div><span class="lock-i-label">Company</span><span class="lock-i-val">Grab</span></div>
-      </div>
-      <div class="lock-arrow"><div class="lock-arrow-line"></div><div class="lock-arrow-head">→</div></div>
-      <div class="lock-box"><div class="lock-box-emoji">🔐</div><div class="lock-box-label">Mixed in</div></div>
-      <div class="lock-arrow"><div class="lock-arrow-line"></div><div class="lock-arrow-head">→</div></div>
-      <div class="lock-output-side">
-        <div class="lock-output-box">
-          <div class="lock-output-tag">What everyone sees</div>
-          <div class="lock-output-bar-label">Backend · 4–6 yrs · Grab</div>
-          <div class="lock-output-bar-wrap"><div class="lock-output-bar-fill"></div></div>
-          <div class="lock-output-range">$2,400 — $3,800</div>
-          <div class="lock-output-sub">Based on 35 salaries</div>
+  <!-- HEAD -->
+  <div class="trust-inner" style="max-width:1160px; margin:0 auto; padding:0 52px; margin-bottom:48px;">
+    <div style="font-family:'Geist Mono',monospace; font-size:11px; color:var(--orange); letter-spacing:2.5px; text-transform:uppercase; margin-bottom:16px; display:flex; align-items:center; gap:8px;">
+      <span style="width:5px;height:5px;border-radius:50%;background:var(--orange);box-shadow:0 0 8px var(--orange);"></span>
+      Real salaries, real people
+    </div>
+    <h2 style="font-size:clamp(26px,3.2vw,40px); font-weight:800; color:var(--white); letter-spacing:-1.5px; line-height:1.15;">
+      No bullshit. <em style="font-style:normal; color:var(--orange);">We go first.</em>
+    </h2>
+    <p style="font-size:14px; color:rgba(242,240,235,.38); line-height:1.7; margin-bottom:40px; margin-top:16px;">If we ask you to share your salary, we share ours first.</p>
+  </div>
+
+  <!-- STAFF REVEAL BLOCK -->
+  <div class="trust-inner" style="max-width:1160px; margin:0 auto; padding:0 52px; margin-bottom:56px;">
+    <div class="trust-roadmap" style="display:grid; grid-template-columns:1fr 1fr; gap:2px;">
+
+      <!-- LEFT BIG -->
+      <div style="position:relative; overflow:hidden;">
+        <img src="/trust-1.png" style="width:100%; height:320px; object-fit:cover; filter:brightness(.4); display:block;" alt="">
+        <div style="position:absolute; inset:0; background:linear-gradient(to top, rgba(12,12,11,.9) 0%, transparent 55%); padding:28px; display:flex; flex-direction:column; justify-content:flex-end;">
+          <div style="font-size:10px; color:var(--orange); letter-spacing:1.5px; text-transform:uppercase; margin-bottom:6px;">Likelion staff · first</div>
+          <div style="font-size:48px; font-weight:800; color:var(--white); letter-spacing:-2px; line-height:1;">34M</div>
+          <div style="font-size:13px; color:rgba(242,240,235,0.5); margin-top:4px;">Product Manager · 3 yrs</div>
         </div>
       </div>
-    </div>
 
-    <div class="privacy-final">
-      <div class="privacy-final-icon">🙈</div>
-      <div class="privacy-final-title">
-        <span class="privacy-final-main">We <em>can't</em> identify you.</span>
-        <span class="privacy-final-side">Even if we tried.</span>
+      <!-- RIGHT SMALL STACK -->
+      <div style="display:flex; flex-direction:column; gap:2px;">
+        <div style="position:relative; overflow:hidden;">
+          <img src="/trust-2.png" style="width:100%; height:158px; object-fit:cover; filter:brightness(.4); display:block;" alt="">
+          <div style="position:absolute; inset:0; background:linear-gradient(to top, rgba(12,12,11,.9) 0%, transparent 55%); padding:20px; display:flex; flex-direction:column; justify-content:flex-end;">
+            <div style="font-size:10px; color:var(--orange); letter-spacing:1.5px; text-transform:uppercase; margin-bottom:4px;">Likelion staff</div>
+            <div style="font-size:36px; font-weight:800; color:var(--white); letter-spacing:-1.5px; line-height:1;">28M</div>
+            <div style="font-size:12px; color:rgba(242,240,235,0.5); margin-top:3px;">Backend Dev · 2 yrs</div>
+          </div>
+        </div>
+        <div style="position:relative; overflow:hidden;">
+          <img src="/trust-3.png" style="width:100%; height:158px; object-fit:cover; filter:brightness(.4); display:block;" alt="">
+          <div style="position:absolute; inset:0; background:linear-gradient(to top, rgba(12,12,11,.9) 0%, transparent 55%); padding:20px; display:flex; flex-direction:column; justify-content:flex-end;">
+            <div style="font-size:10px; color:var(--orange); letter-spacing:1.5px; text-transform:uppercase; margin-bottom:4px;">Likelion staff</div>
+            <div style="font-size:36px; font-weight:800; color:var(--white); letter-spacing:-1.5px; line-height:1;">52M</div>
+            <div style="font-size:12px; color:rgba(242,240,235,0.5); margin-top:3px;">Engineering Lead · 6 yrs</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- STREET INTERVIEWS -->
+  <div style="max-width:1160px; margin:0 auto; padding:0 52px; margin-bottom:56px;">
+    <div class="city-cards-grid" style="display:grid; grid-template-columns:repeat(3,1fr); gap:3px;">
+
+      <!-- Card 1: HCMC District 1 -->
+      <div class="city-card" style="position:relative; height:320px; overflow:hidden; cursor:pointer;"
+           onmouseenter="this.style.transform='scale(1.04)';this.style.outline='2px solid var(--orange)';this.style.zIndex='2'"
+           onmouseleave="this.style.transform='scale(1)';this.style.outline='none';this.style.zIndex='1'">
+        <img src="/city-1.jpg" class="city-card-img" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;filter:brightness(.35);transform-origin:center;animation:kenBurns1 6s ease infinite alternate;" alt="Ho Chi Minh City District 1">
+        <div style="position:absolute;inset:0;background:linear-gradient(to top, rgba(12,12,11,.95) 0%, rgba(12,12,11,.3) 55%, transparent 100%);"></div>
+        <div style="position:absolute;inset:0;padding:24px;display:flex;flex-direction:column;justify-content:flex-end;">
+          <div style="font-size:9px;font-family:'Geist Mono',monospace;color:var(--orange);letter-spacing:2px;text-transform:uppercase;margin-bottom:4px;">Ho Chi Minh City</div>
+          <div style="font-size:22px;font-weight:800;color:var(--white);letter-spacing:-.5px;line-height:1.1;margin-bottom:4px;">District 1</div>
+          <div style="font-size:11px;color:rgba(242,240,235,.45);margin-bottom:16px;">Bitexco · Ben Thanh · Tech hub</div>
+          <div style="border-top:1px solid rgba(255,255,255,.1);padding-top:14px;display:flex;flex-direction:column;gap:7px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;">
+              <span style="font-size:12px;color:var(--white);font-weight:500;">Grab Vietnam</span>
+              <span style="font-size:11px;font-family:'Geist Mono',monospace;color:var(--orange);">35 salaries</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;align-items:center;">
+              <span style="font-size:12px;color:var(--white);font-weight:500;">Shopee Vietnam</span>
+              <span style="font-size:11px;font-family:'Geist Mono',monospace;color:var(--orange);">31 salaries</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;align-items:center;">
+              <span style="font-size:12px;color:var(--white);font-weight:500;">Momo</span>
+              <span style="font-size:11px;font-family:'Geist Mono',monospace;color:var(--orange);">22 salaries</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Card 2: HCMC Thu Duc -->
+      <div class="city-card" style="position:relative; height:320px; overflow:hidden; cursor:pointer;"
+           onmouseenter="this.style.transform='scale(1.04)';this.style.outline='2px solid var(--orange)';this.style.zIndex='2'"
+           onmouseleave="this.style.transform='scale(1)';this.style.outline='none';this.style.zIndex='1'">
+        <img src="/city-2.jpg" class="city-card-img" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;filter:brightness(.35);transform-origin:center;animation:kenBurns2 6s ease infinite alternate;" alt="Thu Duc City">
+        <div style="position:absolute;inset:0;background:linear-gradient(to top, rgba(12,12,11,.95) 0%, rgba(12,12,11,.3) 55%, transparent 100%);"></div>
+        <div style="position:absolute;inset:0;padding:24px;display:flex;flex-direction:column;justify-content:flex-end;">
+          <div style="font-size:9px;font-family:'Geist Mono',monospace;color:var(--orange);letter-spacing:2px;text-transform:uppercase;margin-bottom:4px;">Ho Chi Minh City</div>
+          <div style="font-size:22px;font-weight:800;color:var(--white);letter-spacing:-.5px;line-height:1.1;margin-bottom:4px;">Thu Duc City</div>
+          <div style="font-size:11px;color:rgba(242,240,235,.45);margin-bottom:16px;">SHTP · Tech park · Startups</div>
+          <div style="border-top:1px solid rgba(255,255,255,.1);padding-top:14px;display:flex;flex-direction:column;gap:7px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;">
+              <span style="font-size:12px;color:var(--white);font-weight:500;">VNG Corporation</span>
+              <span style="font-size:11px;font-family:'Geist Mono',monospace;color:var(--orange);">47 salaries</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;align-items:center;">
+              <span style="font-size:12px;color:var(--white);font-weight:500;">Sky Mavis</span>
+              <span style="font-size:11px;font-family:'Geist Mono',monospace;color:var(--orange);">14 salaries</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;align-items:center;">
+              <span style="font-size:12px;color:var(--white);font-weight:500;">KMS Technology</span>
+              <span style="font-size:11px;font-family:'Geist Mono',monospace;color:var(--orange);">18 salaries</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Card 3: Hanoi Cầu Giấy -->
+      <div class="city-card" style="position:relative; height:320px; overflow:hidden; cursor:pointer;"
+           onmouseenter="this.style.transform='scale(1.04)';this.style.outline='2px solid var(--orange)';this.style.zIndex='2'"
+           onmouseleave="this.style.transform='scale(1)';this.style.outline='none';this.style.zIndex='1'">
+        <img src="/city-3.jpg" class="city-card-img" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;filter:brightness(.35);transform-origin:center;animation:kenBurns3 6s ease infinite alternate;" alt="Hanoi Cau Giay">
+        <div style="position:absolute;inset:0;background:linear-gradient(to top, rgba(12,12,11,.95) 0%, rgba(12,12,11,.3) 55%, transparent 100%);"></div>
+        <div style="position:absolute;inset:0;padding:24px;display:flex;flex-direction:column;justify-content:flex-end;">
+          <div style="font-size:9px;font-family:'Geist Mono',monospace;color:var(--orange);letter-spacing:2px;text-transform:uppercase;margin-bottom:4px;">Hanoi</div>
+          <div style="font-size:22px;font-weight:800;color:var(--white);letter-spacing:-.5px;line-height:1.1;margin-bottom:4px;">Cầu Giấy</div>
+          <div style="font-size:11px;color:rgba(242,240,235,.45);margin-bottom:16px;">FPT · Keangnam · IT corridor</div>
+          <div style="border-top:1px solid rgba(255,255,255,.1);padding-top:14px;display:flex;flex-direction:column;gap:7px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;">
+              <span style="font-size:12px;color:var(--white);font-weight:500;">FPT Software</span>
+              <span style="font-size:11px;font-family:'Geist Mono',monospace;color:var(--orange);">58 salaries</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;align-items:center;">
+              <span style="font-size:12px;color:var(--white);font-weight:500;">Tiki</span>
+              <span style="font-size:11px;font-family:'Geist Mono',monospace;color:var(--orange);">28 salaries</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;align-items:center;">
+              <span style="font-size:12px;color:var(--white);font-weight:500;">Axon Active</span>
+              <span style="font-size:11px;font-family:'Geist Mono',monospace;color:var(--orange);">16 salaries</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- PRIVACY TRUST BOX -->
+  <div class="trust-inner" style="max-width:1160px; margin:0 auto; padding:0 52px; margin-bottom:56px;">
+    <div class="trust-privacy" style="display:grid; grid-template-columns:1fr 1fr; gap:0; background:#141413; border:1px dashed rgba(255,96,0,.25);">
+      <div style="padding:32px; border-right:1px dashed rgba(255,96,0,.15);">
+        <div style="font-family:'Geist Mono',monospace; font-size:10px; color:var(--orange); letter-spacing:1.5px; margin-bottom:16px;">★ NEW — Privacy Trust</div>
+        <div style="font-size:18px; font-weight:700; color:var(--white); letter-spacing:-.5px; margin-bottom:20px;">Your data stays private</div>
+        <div style="display:flex; flex-direction:column; gap:10px;">
+          <div style="display:flex; align-items:flex-start; gap:10px; font-size:13px; color:var(--mid); line-height:1.5;"><span style="width:6px;height:6px;border-radius:50%;background:var(--orange);flex-shrink:0;margin-top:5px;"></span>Only in aggregate stats — never shown individually</div>
+          <div style="display:flex; align-items:flex-start; gap:10px; font-size:13px; color:var(--mid); line-height:1.5;"><span style="width:6px;height:6px;border-radius:50%;background:var(--orange);flex-shrink:0;margin-top:5px;"></span>No name, email, or employer ID required</div>
+          <div style="display:flex; align-items:flex-start; gap:10px; font-size:13px; color:var(--mid); line-height:1.5;"><span style="width:6px;height:6px;border-radius:50%;background:var(--orange);flex-shrink:0;margin-top:5px;"></span>Never sold or shared with companies</div>
+          <div style="display:flex; align-items:flex-start; gap:10px; font-size:13px; color:var(--orange); font-weight:600; line-height:1.5;"><span style="width:6px;height:6px;border-radius:50%;background:var(--orange);flex-shrink:0;margin-top:5px;"></span>Will my boss see this? No. Ever.</div>
+        </div>
+      </div>
+      <div style="padding:32px; display:flex; flex-direction:column; justify-content:center;">
+        <div style="font-size:32px; color:rgba(255,96,0,.3); line-height:1; margin-bottom:12px; font-family:Georgia,serif;">"</div>
+        <div style="font-size:14px; color:var(--white); line-height:1.75; font-style:italic; margin-bottom:16px;">I submitted in 2 minutes. Didn't give my name or email. Completely anonymous.</div>
+        <div style="font-size:11px; color:var(--dim); font-family:'Geist Mono',monospace;">Nguyen T.H. · Sr Engineer · FPT · Verified contributor · Mar 2025</div>
       </div>
     </div>
   </div>
+
+  <!-- LOGO STRIP -->
+  <div style="max-width:1160px; margin:0 auto; padding:0 52px;">
+    <div style="font-size:11px; color:var(--dim); letter-spacing:1px; text-transform:uppercase; margin-bottom:16px;">Salary data from engineers at</div>
+    <div style="border-top:1px solid var(--line); border-bottom:1px solid var(--line); padding:24px 0; overflow:hidden;">
+      <div style="display:flex; align-items:center; width:max-content; animation:scrollX 28s linear infinite;">
+        ${logoStripHTML}
+      </div>
+    </div>
+  </div>
+
 </section>
 
 <div class="cards-bg">
