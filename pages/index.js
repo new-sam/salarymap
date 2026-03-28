@@ -399,6 +399,8 @@ const bodyHTML = `<nav>
 </nav>
 
 <section class="hero">
+  <div style="position:absolute;inset:0;background:url('https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=1920&q=60&fit=crop&crop=center') center/cover no-repeat;filter:brightness(.28);z-index:0;"></div>
+  <div style="position:absolute;inset:0;background:linear-gradient(to right,rgba(12,12,11,.88) 0%,rgba(12,12,11,.4) 60%,transparent 100%);z-index:1;"></div>
   
   <div class="hero-copy">
     <div class="hero-kicker"><span class="kdot"></span>Vietnam IT Salary Intelligence</div>
@@ -408,9 +410,6 @@ const bodyHTML = `<nav>
       <button class="btn-p" onclick="document.querySelector('.co-search-wrap').scrollIntoView({behavior:'smooth'})">Search companies →</button>
     </div>
   </div>
-    <div class="cdot" onclick="goSlide(1)"></div>
-    <div class="cdot" onclick="goSlide(2)"></div>
-    <div class="cdot" onclick="goSlide(3)"></div>
   </div>
   <div class="hero-stats">
     <div class="hs"><div class="hs-n" id="hero-n">4,812</div><div class="hs-l">Submissions</div></div>
@@ -863,7 +862,6 @@ const bodyHTML = `<nav>
 </div>`;
 
 const js = `// CAROUSEL }
-let autoT; function resetAuto(){ clearInterval(autoT); autoT=setInterval(()=>goSlide((cur+1)%4),5000); } resetAuto();
 
 // FILTER
 function filterCards(cat,el){
@@ -1215,10 +1213,10 @@ function openLeaderboard(co){
   document.getElementById('lb-badge').textContent=d.badge;
   document.getElementById('lb-logo').src='https://www.google.com/s2/favicons?domain='+d.domain+'&sz=64';
   const tabs=document.getElementById('lb-tabs');
-  tabs.innerHTML=d.tabs.map(function(t,i){return '<div class="lb-tab'+(i===0?' active':'')+'" onclick="lbTab(this,''+t+'',''+co+'')">'+t+'</div>';}).join('');
+  tabs.innerHTML=d.tabs.map(function(t,i){var cls='lb-tab'+(i===0?' active':'');return '<div class="'+cls+'" data-tab="'+t+'" data-co="'+co+'" onclick="lbTab(this,this.dataset.tab,this.dataset.co)">'+t+'</div>';}).join('');
   renderLbRows(d.rows);
   const rel=document.getElementById('lb-related');
-  rel.innerHTML=d.related.map(function(r){return '<div class="lb-related-chip" onclick="coSelect(''+r.replace(/'/g,"\\'")+'')">'+r+'</div>';}).join('');
+  rel.innerHTML=d.related.map(function(r){return '<div class="lb-related-chip" data-co="'+r+'" onclick="coSelect(this.dataset.co)">'+r+'</div>';}).join('');
   const panel=document.getElementById('lboard-panel');
   panel.style.display='block';
   setTimeout(function(){panel.scrollIntoView({behavior:'smooth',block:'nearest'});},50);
