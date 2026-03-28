@@ -783,23 +783,47 @@ const bodyHTML = `<nav>
     </div>
   </div>
 
-  <!-- PRIVACY TRUST BOX -->
-  <div class="trust-inner" style="max-width:1160px; margin:0 auto; padding:0 52px; margin-bottom:56px;">
-    <div class="trust-privacy" style="display:grid; grid-template-columns:1fr 1fr; gap:0; background:#141413; border:1px dashed rgba(255,96,0,.25);">
-      <div style="padding:32px; border-right:1px dashed rgba(255,96,0,.15);">
-        <div style="font-family:'Geist Mono',monospace; font-size:10px; color:var(--orange); letter-spacing:1.5px; margin-bottom:16px;">★ NEW — Privacy Trust</div>
-        <div style="font-size:18px; font-weight:700; color:var(--white); letter-spacing:-.5px; margin-bottom:20px;">Your data stays private</div>
-        <div style="display:flex; flex-direction:column; gap:10px;">
-          <div style="display:flex; align-items:flex-start; gap:10px; font-size:13px; color:var(--mid); line-height:1.5;"><span style="width:6px;height:6px;border-radius:50%;background:var(--orange);flex-shrink:0;margin-top:5px;"></span>Only in aggregate stats — never shown individually</div>
-          <div style="display:flex; align-items:flex-start; gap:10px; font-size:13px; color:var(--mid); line-height:1.5;"><span style="width:6px;height:6px;border-radius:50%;background:var(--orange);flex-shrink:0;margin-top:5px;"></span>No name, email, or employer ID required</div>
-          <div style="display:flex; align-items:flex-start; gap:10px; font-size:13px; color:var(--mid); line-height:1.5;"><span style="width:6px;height:6px;border-radius:50%;background:var(--orange);flex-shrink:0;margin-top:5px;"></span>Never sold or shared with companies</div>
-          <div style="display:flex; align-items:flex-start; gap:10px; font-size:13px; color:var(--orange); font-weight:600; line-height:1.5;"><span style="width:6px;height:6px;border-radius:50%;background:var(--orange);flex-shrink:0;margin-top:5px;"></span>Will my boss see this? No. Ever.</div>
+  <!-- PRIVACY SECTION -->
+  <div style="max-width:960px; margin:0 auto; padding:0 52px 56px;">
+    <h2 style="font-size:clamp(32px,4vw,48px); font-weight:700; line-height:1.15; margin-bottom:12px; color:var(--white);">This is<br><em style="color:var(--orange);font-style:normal;">completely</em> anonymous.</h2>
+    <p style="font-size:15px; color:var(--dim); margin-bottom:36px; line-height:1.7;">We don't know who you are. We just know what engineers in Vietnam are earning.</p>
+
+    <div style="background:#0f0f0f; border:1px solid #1a1a1a; border-radius:18px; padding:36px 32px; margin-bottom:14px; display:flex; align-items:center; gap:0; flex-wrap:wrap;">
+      <div style="display:flex; flex-direction:column; gap:10px; flex:1; min-width:180px;">
+        <div style="font-size:10px; letter-spacing:.18em; text-transform:uppercase; color:#555; margin-bottom:2px;">What you submit</div>
+        <div style="background:#161616; border:1px solid #222; border-radius:10px; padding:13px 16px; display:flex; align-items:center; gap:12px;"><div style="width:7px;height:7px;border-radius:50%;background:var(--orange);flex-shrink:0;"></div><span style="font-size:13px;color:#bbb;">Salary</span><span style="font-size:13px;color:#666;margin-left:auto;font-family:monospace;filter:blur(5px);user-select:none;">$2,800</span></div>
+        <div style="background:#161616; border:1px solid #222; border-radius:10px; padding:13px 16px; display:flex; align-items:center; gap:12px;"><div style="width:7px;height:7px;border-radius:50%;background:var(--orange);flex-shrink:0;"></div><span style="font-size:13px;color:#bbb;">Role</span><span style="font-size:13px;color:#666;margin-left:auto;font-family:monospace;filter:blur(5px);user-select:none;">Backend</span></div>
+        <div style="background:#161616; border:1px solid #222; border-radius:10px; padding:13px 16px; display:flex; align-items:center; gap:12px;"><div style="width:7px;height:7px;border-radius:50%;background:var(--orange);flex-shrink:0;"></div><span style="font-size:13px;color:#bbb;">Experience</span><span style="font-size:13px;color:#666;margin-left:auto;font-family:monospace;filter:blur(5px);user-select:none;">4 yrs</span></div>
+        <div style="background:#161616; border:1px solid #222; border-radius:10px; padding:13px 16px; display:flex; align-items:center; gap:12px;"><div style="width:7px;height:7px;border-radius:50%;background:var(--orange);flex-shrink:0;"></div><span style="font-size:13px;color:#bbb;">Company</span><span style="font-size:13px;color:#666;margin-left:auto;font-family:monospace;filter:blur(5px);user-select:none;">Grab</span></div>
+      </div>
+      <div style="padding:0 20px; display:flex; flex-direction:column; align-items:center; gap:6px; flex-shrink:0;">
+        <div style="width:36px;height:1px;background:linear-gradient(to right,#2a2a2a,#444);"></div>
+        <div style="color:#444;font-size:14px;">→</div>
+      </div>
+      <div style="width:88px;height:88px;flex-shrink:0;background:#161616;border:1px solid #2a2a2a;border-radius:18px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;">
+        <div style="font-size:32px;line-height:1;">🔐</div>
+        <div style="font-size:8px;letter-spacing:.16em;text-transform:uppercase;color:#444;">Mixed in</div>
+      </div>
+      <div style="padding:0 20px; display:flex; flex-direction:column; align-items:center; gap:6px; flex-shrink:0;">
+        <div style="width:36px;height:1px;background:linear-gradient(to right,#2a2a2a,#444);"></div>
+        <div style="color:#444;font-size:14px;">→</div>
+      </div>
+      <div style="flex:1; min-width:180px;">
+        <div style="background:#161616; border:1px solid #222; border-radius:12px; padding:18px;">
+          <div style="font-size:9px;letter-spacing:.18em;text-transform:uppercase;color:var(--orange);margin-bottom:10px;">What everyone sees</div>
+          <div style="font-size:11px;color:#888;margin-bottom:6px;">Backend · 4–6 yrs · Grab</div>
+          <div style="height:7px;background:#222;border-radius:100px;overflow:hidden;margin-bottom:8px;"><div style="height:100%;border-radius:100px;background:var(--orange);width:72%;"></div></div>
+          <div style="font-size:13px;color:#ccc;font-weight:700;">$2,400 — $3,800</div>
+          <div style="font-size:11px;color:#555;margin-top:3px;">Based on 35 salaries</div>
         </div>
       </div>
-      <div style="padding:32px; display:flex; flex-direction:column; justify-content:center;">
-        <div style="font-size:32px; color:rgba(255,96,0,.3); line-height:1; margin-bottom:12px; font-family:Georgia,serif;">"</div>
-        <div style="font-size:14px; color:var(--white); line-height:1.75; font-style:italic; margin-bottom:16px;">I submitted in 2 minutes. Didn't give my name or email. Completely anonymous.</div>
-        <div style="font-size:11px; color:var(--dim); font-family:'Geist Mono',monospace;">Nguyen T.H. · Sr Engineer · FPT · Verified contributor · Mar 2025</div>
+    </div>
+
+    <div style="background:#111; border-radius:14px; padding:28px 32px; display:flex; align-items:center; gap:20px;">
+      <div style="font-size:38px;flex-shrink:0;">🙈</div>
+      <div style="display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;">
+        <span style="font-size:22px;font-weight:700;color:var(--white);">We <em style="color:var(--orange);font-style:normal;">can't</em> identify you.</span>
+        <span style="font-size:22px;font-weight:700;color:#444;">Even if we tried.</span>
       </div>
     </div>
   </div>
