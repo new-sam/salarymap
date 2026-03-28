@@ -342,49 +342,82 @@ nav { position:fixed; top:0; left:0; right:0; z-index:200; padding:0 52px; heigh
 
 /* ── MOBILE RESPONSIVE ── */
 
-/* WIZARD */
-.wiz-wrap { display:grid; grid-template-columns:1fr 1fr; min-height:540px; }
-.wiz-copy { background:#ff6000; padding:52px 44px; display:flex; flex-direction:column; justify-content:space-between; color:#fff; }
-.wiz-copy-badge { font-size:11px; font-weight:700; letter-spacing:2px; opacity:.7; text-transform:uppercase; margin-bottom:0; }
-.wiz-copy-mid { flex:1; display:flex; flex-direction:column; justify-content:center; padding:32px 0; }
-.wiz-copy-h { font-size:clamp(28px,3.5vw,48px); font-weight:800; color:#fff; letter-spacing:-.5px; line-height:1.1; margin-bottom:14px; }
-.wiz-copy-p { font-size:14px; color:rgba(255,255,255,.8); line-height:1.65; }
-.wiz-copy-stats { display:flex; gap:36px; }
-.wiz-copy-stats div { display:flex; flex-direction:column; gap:4px; }
-.wiz-copy-stats div span:first-child { font-family:'Geist Mono',monospace; font-size:26px; font-weight:800; color:#fff; line-height:1; }
-.wiz-copy-stats div span:last-child { font-size:11px; color:rgba(255,255,255,.65); letter-spacing:.5px; }
-.wiz-card { padding:40px 44px; background:#0c0c0b; display:flex; flex-direction:column; justify-content:center; }
-.wiz-prog-wrap { margin-bottom:8px; }
-.wiz-step-label { font-family:'Geist Mono',monospace; font-size:11px; color:rgba(242,240,235,.4); margin-bottom:6px; }
-.wiz-prog { height:2px; background:rgba(255,255,255,.07); border-radius:1px; margin-bottom:28px; }
-.wiz-prog-fill { height:100%; background:#ff6000; border-radius:1px; transition:width .4s cubic-bezier(.4,0,.2,1); }
-.wiz-q { font-size:22px; font-weight:800; color:var(--white); letter-spacing:-.3px; margin-bottom:20px; line-height:1.2; }
-.wiz-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; }
-.wiz-grid button { font-family:'Geist',sans-serif; font-size:14px; font-weight:600; padding:16px 8px; border-radius:8px; border:1px solid rgba(255,255,255,.1); background:#141413; color:var(--white); cursor:pointer; transition:border-color .15s,background .15s; text-align:center; }
-.wiz-grid button:hover { border-color:#ff6000; background:rgba(255,96,0,.08); }
-.wiz-grid button.selected { border-color:#ff6000; background:rgba(255,96,0,.08); color:#ff6000; }
-.wiz-chips { display:flex; flex-wrap:wrap; gap:8px; }
-.wiz-chips button { font-family:'Geist',sans-serif; font-size:14px; font-weight:600; padding:12px 20px; border-radius:8px; border:1px solid rgba(255,255,255,.1); background:#141413; color:var(--white); cursor:pointer; transition:border-color .15s,background .15s; }
-.wiz-chips button:hover { border-color:#ff6000; background:rgba(255,96,0,.08); }
-.wiz-chips button.selected { border-color:#ff6000; background:rgba(255,96,0,.08); color:#ff6000; }
-.wiz-sal-display { font-family:'Geist Mono',monospace; font-size:52px; font-weight:700; color:#ff6000; letter-spacing:-2px; margin-bottom:16px; line-height:1; }
-.wiz-slider { width:100%; -webkit-appearance:none; height:4px; border-radius:2px; background:rgba(255,255,255,.1); outline:none; margin-bottom:8px; }
-.wiz-slider::-webkit-slider-thumb { -webkit-appearance:none; width:22px; height:22px; border-radius:50%; background:#ff6000; cursor:pointer; box-shadow:0 0 0 4px rgba(255,96,0,.15); }
-.wiz-sal-range { display:flex; justify-content:space-between; font-size:11px; color:rgba(242,240,235,.35); margin-bottom:24px; }
-.wiz-next { font-family:'Geist',sans-serif; font-size:14px; font-weight:700; background:#ff6000; color:#fff; border:none; padding:14px 32px; border-radius:4px; cursor:pointer; transition:opacity .15s; margin-top:8px; }
-.wiz-next:hover { opacity:.85; }
-.wiz-next:disabled { opacity:.4; cursor:not-allowed; }
-.wiz-goals { display:flex; flex-direction:column; gap:8px; margin-bottom:4px; }
-.wiz-goal-item { display:flex; align-items:center; gap:12px; cursor:pointer; padding:12px 14px; border-radius:8px; border:1px solid rgba(255,255,255,.08); background:#141413; transition:border-color .15s; }
-.wiz-goal-item:hover { border-color:rgba(255,255,255,.2); }
-.wiz-goal-item input[type=checkbox] { width:16px; height:16px; accent-color:#ff6000; flex-shrink:0; }
-.wiz-goal-item span { font-size:14px; color:var(--white); }
-.wiz-submit { width:100%; text-align:center; margin-top:20px; padding:15px; font-size:15px; }
+/* SUBMIT SECTION */
+.submit-section { padding:80px 0 0; }
+.section-inner { max-width:1140px; margin:0 auto; padding:0 52px; }
+.submit-grid { display:grid; grid-template-columns:1fr 1fr; gap:72px; align-items:start; }
+.submit-left { padding:52px 0; }
+.submit-left h2 { font-size:clamp(26px,3.2vw,40px); font-weight:800; color:var(--white); letter-spacing:-.5px; line-height:1.15; margin-bottom:14px; }
+.submit-left .hl { color:var(--orange); }
+.submit-left p { font-size:14px; color:var(--mid); line-height:1.7; margin-bottom:28px; }
+.sub-badges { display:flex; flex-direction:column; gap:9px; }
+.sb-badge { font-size:12px; color:var(--dim); display:flex; align-items:center; gap:8px; }
+.sb-badge::before { content:'✓'; color:var(--orange); font-weight:700; flex-shrink:0; }
+.step-form { background:#111110; border-radius:12px; border:1px solid rgba(255,255,255,.07); padding:36px; }
+.step-progress { display:flex; align-items:center; gap:6px; margin-bottom:28px; }
+.sp-dot { width:8px; height:8px; border-radius:50%; background:rgba(255,255,255,.13); transition:all .25s; flex-shrink:0; }
+.sp-dot.active { background:var(--orange); width:24px; border-radius:4px; }
+.sp-dot.done { background:rgba(255,96,0,.35); }
+.step-content { display:none; }
+.step-content.active { display:block; }
+.step-question { font-size:20px; font-weight:800; color:var(--white); letter-spacing:-.3px; margin-bottom:6px; }
+.step-sub { font-size:13px; color:var(--dim); margin-bottom:20px; line-height:1.5; }
+.option-grid { display:grid; gap:8px; }
+.option-grid.cols-3 { grid-template-columns:repeat(3,1fr); }
+.option-grid.cols-2 { grid-template-columns:repeat(2,1fr); }
+.opt-btn { font-family:'Geist',sans-serif; background:#1a1a18; border:1.5px solid rgba(255,255,255,.07); border-radius:10px; padding:14px 10px; cursor:pointer; transition:border-color .15s,background .15s; display:flex; flex-direction:column; align-items:center; gap:5px; color:var(--white); text-align:center; width:100%; }
+.opt-btn:hover { border-color:rgba(255,96,0,.5); background:rgba(255,96,0,.05); }
+.opt-btn.selected { border-color:#ff6000; background:rgba(255,96,0,.09); }
+.ob-icon { font-size:20px; line-height:1; }
+.ob-label { font-size:13px; font-weight:600; color:var(--white); }
+.ob-sub { font-size:11px; color:var(--dim); }
+.opt-btn.selected .ob-label { color:#ff6000; }
+.step-nav { display:flex; align-items:center; gap:12px; margin-top:20px; }
+.btn-primary { font-family:'Geist',sans-serif; font-size:14px; font-weight:700; background:var(--orange); color:#fff; border:none; padding:12px 24px; border-radius:6px; cursor:pointer; transition:opacity .15s; }
+.btn-primary:disabled { opacity:.32; cursor:not-allowed; }
+.btn-primary:not(:disabled):hover { opacity:.87; }
+.btn-back { font-family:'Geist',sans-serif; font-size:13px; font-weight:600; background:transparent; color:var(--dim); border:1px solid rgba(255,255,255,.1); padding:11px 18px; border-radius:6px; cursor:pointer; transition:color .15s,border-color .15s; }
+.btn-back:hover { color:var(--white); border-color:rgba(255,255,255,.25); }
+.green-btn { background:#22c55e !important; }
+.green-btn:not(:disabled):hover { opacity:.87; }
+.salary-slider-wrap { margin-bottom:4px; }
+.ss-display { display:flex; align-items:baseline; gap:10px; margin-bottom:18px; }
+.ss-num { font-family:'Geist Mono',monospace; font-size:52px; font-weight:700; color:var(--orange); letter-spacing:-2px; line-height:1; }
+.ss-unit { font-size:13px; color:var(--dim); }
+.salary-slider { width:100%; -webkit-appearance:none; height:4px; border-radius:2px; background:rgba(255,255,255,.1); outline:none; margin-bottom:10px; cursor:pointer; }
+.salary-slider::-webkit-slider-thumb { -webkit-appearance:none; width:22px; height:22px; border-radius:50%; background:#ff6000; cursor:pointer; box-shadow:0 0 0 4px rgba(255,96,0,.15); }
+.ss-ticks { display:flex; justify-content:space-between; margin-bottom:4px; }
+.ss-tick { font-size:10px; color:var(--dim); font-family:'Geist Mono',monospace; }
+.form-input { width:100%; font-family:'Geist',sans-serif; font-size:15px; background:#1a1a18; border:1.5px solid rgba(255,255,255,.1); border-radius:8px; color:var(--white); padding:14px 16px; outline:none; transition:border-color .15s; box-sizing:border-box; }
+.form-input:focus { border-color:#ff6000; }
+.form-input::placeholder { color:rgba(242,240,235,.28); }
+.voc-options { display:flex; flex-direction:column; gap:7px; margin-bottom:4px; }
+.voc-opt { display:flex; align-items:center; gap:12px; padding:11px 14px; border-radius:8px; border:1.5px solid rgba(255,255,255,.07); background:#1a1a18; cursor:pointer; transition:border-color .15s; }
+.voc-opt:hover { border-color:rgba(255,255,255,.18); }
+.voc-opt.selected { border-color:#ff6000; background:rgba(255,96,0,.07); }
+.voc-checkbox { width:18px; height:18px; border-radius:4px; border:2px solid rgba(255,255,255,.18); flex-shrink:0; display:flex; align-items:center; justify-content:center; transition:all .15s; }
+.voc-opt.selected .voc-checkbox { background:#ff6000; border-color:#ff6000; }
+.voc-opt.selected .voc-checkbox::after { content:'✓'; font-size:11px; color:#fff; font-weight:700; }
+.voc-label { font-size:13px; color:var(--white); line-height:1.4; }
+.submit-success { display:none; text-align:center; padding:24px 0 8px; }
+.submit-success .ss-icon { font-size:42px; margin-bottom:14px; }
+.submit-success .ss-title { font-size:20px; font-weight:800; color:var(--white); margin-bottom:8px; }
+.submit-success .ss-sub { font-size:14px; color:var(--dim); line-height:1.65; }
+.anon-note { font-size:11px; color:rgba(242,240,235,.28); margin-top:12px; text-align:center; }
+footer { margin-top:80px; padding:28px 52px; border-top:1px solid rgba(255,255,255,.06); display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px; }
+.footer-brand { font-size:14px; font-weight:700; color:var(--white); }
+.footer-brand span { color:var(--dim); font-weight:400; }
+.footer-meta { font-size:12px; color:var(--dim); }
 @media (max-width: 768px) {
-  .wiz-wrap { grid-template-columns:1fr; }
-  .wiz-copy { display:none; }
-  .wiz-card { padding:28px 20px; }
-  .wiz-sal-display { font-size:38px; }
+  .submit-grid { grid-template-columns:1fr; gap:0; }
+  .submit-left { display:none; }
+  .section-inner { padding:0 16px; }
+  .submit-section { padding:48px 0 0; }
+  .step-form { border-radius:8px; padding:24px 20px; }
+  .option-grid.cols-3 { grid-template-columns:repeat(3,1fr); }
+  .option-grid.cols-2 { grid-template-columns:1fr 1fr; }
+  .ss-num { font-size:40px; }
+  footer { padding:24px 16px; }
   /* NAV */
   nav { padding:0 16px; height:52px; }
   .nav-link { display:none; }
@@ -849,108 +882,143 @@ const bodyHTML = `<nav>
 </div>
 
 <!-- SUBMIT -->
-<div class="submit-outer">
-  <div class="wiz-wrap">
-    <div class="wiz-copy">
-      <div class="wiz-copy-badge">ANONYMOUS · ENCRYPTED</div>
-    <div class="wiz-copy-mid">
-      <h2 class="wiz-copy-h">Find out where<br>you stand.</h2>
-      <p class="wiz-copy-p">Join engineers who shared their salary to unlock the full market picture.</p>
-    </div>
-    <div class="wiz-copy-stats">
-      <div><span id="stat-co-sub">—</span><span>companies</span></div>
-      <div><span id="stat-sub-sub">—</span><span>data points</span></div>
-    </div>
-    </div>
-    <div class="wiz-card">
-      <div class="wiz-prog-wrap">
-        <div class="wiz-step-label" id="wiz-step-label">1 / 5 — Role</div>
-        <div class="wiz-prog"><div class="wiz-prog-fill" id="wiz-fill" style="width:20%"></div></div>
-      </div>
-
-      <div class="wiz-step" id="ws1">
-        <div class="wiz-q">What's your role?</div>
-        <div class="wiz-grid">
-          <button onclick="wizPick('role','Backend',this)">Backend</button>
-          <button onclick="wizPick('role','Frontend',this)">Frontend</button>
-          <button onclick="wizPick('role','Fullstack',this)">Fullstack</button>
-          <button onclick="wizPick('role','Mobile',this)">Mobile</button>
-          <button onclick="wizPick('role','Data Engineer',this)">Data Eng</button>
-          <button onclick="wizPick('role','DevOps / Cloud',this)">DevOps</button>
-          <button onclick="wizPick('role','UI/UX',this)">UI/UX</button>
-          <button onclick="wizPick('role','PM',this)">PM</button>
-          <button onclick="wizPick('role','QA',this)">QA / Test</button>
+<section class="submit-section" id="submit">
+  <div class="section-inner">
+    <div class="submit-grid">
+      <div class="submit-left">
+        <h2>Submit your salary.<br><span class="hl">Unlock everything.</span></h2>
+        <p>30 seconds. No name. No email. 134 companies unlocked the moment you share.</p>
+        <div class="sub-badges">
+          <div class="sb-badge">100% anonymous · no account needed</div>
+          <div class="sb-badge">Never shown individually, only aggregated</div>
+          <div class="sb-badge">Never sold or shared with companies</div>
+          <div class="sb-badge">Instant unlock · 134 companies</div>
         </div>
       </div>
 
-      <div class="wiz-step" id="ws2" style="display:none">
-        <div class="wiz-q">Years of experience?</div>
-        <div class="wiz-chips">
-          <button onclick="wizPick('exp','Under 1 year',this)">&lt; 1 yr</button>
-          <button onclick="wizPick('exp','1–2 yrs',this)">1–2 yrs</button>
-          <button onclick="wizPick('exp','3–4 yrs',this)">3–4 yrs</button>
-          <button onclick="wizPick('exp','5–7 yrs',this)">5–7 yrs</button>
-          <button onclick="wizPick('exp','8–10 yrs',this)">8–10 yrs</button>
-          <button onclick="wizPick('exp','10+ yrs',this)">10+ yrs</button>
+      <div class="step-form">
+        <div class="step-progress">
+          <div class="sp-dot active" id="prog-0"></div>
+          <div class="sp-dot" id="prog-1"></div>
+          <div class="sp-dot" id="prog-2"></div>
+          <div class="sp-dot" id="prog-3"></div>
+          <div class="sp-dot" id="prog-4"></div>
         </div>
-      </div>
 
-      <div class="wiz-step" id="ws3" style="display:none">
-        <div class="wiz-q">Monthly salary?</div>
-        <div class="wiz-sal-display" id="wiz-sal-num">40M</div>
-        <input type="range" id="wiz-slider" class="wiz-slider" min="5" max="150" step="1" value="40" oninput="document.getElementById('wiz-sal-num').textContent=this.value+'M'">
-        <div class="wiz-sal-range"><span>5M VND</span><span>150M+</span></div>
-        <button class="wiz-next" onclick="wizPickSal()">Next →</button>
-      </div>
-
-      <div class="wiz-step" id="ws4" style="display:none">
-        <div class="wiz-q">Which company?</div>
-        <div class="ac-wrap" style="margin-bottom:16px;">
-          <input class="ac-input" id="f-co" placeholder="Type company name…" autocomplete="off"
-            oninput="acFilter(this.value)" onkeydown="acKey(event)" onfocus="acFilter(this.value)" onblur="setTimeout(acHide,180)">
-          <div class="ac-dropdown" id="ac-drop"></div>
-        </div>
-        <button class="wiz-next" onclick="wizPickCo()">Next →</button>
-      </div>
-
-      <div class="wiz-step" id="ws5" style="display:none">
-        <div class="wiz-q">What brings you here?</div>
-        <div class="wiz-goals">
-          <label class="wiz-goal-item"><input type="checkbox" value="benchmark"> <span>Benchmarking my salary</span></label>
-          <label class="wiz-goal-item"><input type="checkbox" value="opportunity"> <span>Exploring new opportunities</span></label>
-          <label class="wiz-goal-item"><input type="checkbox" value="negotiating"> <span>Negotiating a raise</span></label>
-          <label class="wiz-goal-item"><input type="checkbox" value="curious"> <span>Just curious</span></label>
-        </div>
-        <div class="otw-wrap" style="margin-top:16px;">
-          <label class="otw-check">
-            <input type="checkbox" id="otw-cb" onchange="document.getElementById('otw-email-wrap').classList.toggle('on',this.checked)">
-            <span class="otw-check-label">더 좋은 기회가 생기면 알고 싶어요</span>
-          </label>
-          <div class="otw-email" id="otw-email-wrap">
-            <input type="email" id="f-email" placeholder="이메일 (선택)">
-            <div class="otw-trust">채용 정보 외 다른 용도로 사용하지 않습니다</div>
+        <div class="step-content active" id="step-0">
+          <div class="step-question">What's your role?</div>
+          <div class="step-sub">Pick the one that best describes what you do.</div>
+          <div class="option-grid cols-3">
+            <button class="opt-btn" onclick="selectOpt(this,'role','Backend')"><span class="ob-icon">⚙️</span><span class="ob-label">Backend</span></button>
+            <button class="opt-btn" onclick="selectOpt(this,'role','Frontend')"><span class="ob-icon">🎨</span><span class="ob-label">Frontend</span></button>
+            <button class="opt-btn" onclick="selectOpt(this,'role','Fullstack')"><span class="ob-icon">🔧</span><span class="ob-label">Fullstack</span></button>
+            <button class="opt-btn" onclick="selectOpt(this,'role','Mobile')"><span class="ob-icon">📱</span><span class="ob-label">Mobile</span></button>
+            <button class="opt-btn" onclick="selectOpt(this,'role','Data Engineer')"><span class="ob-icon">📊</span><span class="ob-label">Data Eng</span></button>
+            <button class="opt-btn" onclick="selectOpt(this,'role','DevOps / Cloud')"><span class="ob-icon">☁️</span><span class="ob-label">DevOps</span></button>
+            <button class="opt-btn" onclick="selectOpt(this,'role','UI/UX')"><span class="ob-icon">✏️</span><span class="ob-label">UI/UX</span></button>
+            <button class="opt-btn" onclick="selectOpt(this,'role','PM')"><span class="ob-icon">🗺️</span><span class="ob-label">Product</span></button>
+            <button class="opt-btn" onclick="selectOpt(this,'role','Marketer')"><span class="ob-icon">📣</span><span class="ob-label">Marketing</span></button>
+          </div>
+          <div class="step-nav">
+            <button class="btn-primary" onclick="nextStep(0)" disabled id="btn-step-0">Next →</button>
           </div>
         </div>
-        <button class="wiz-next wiz-submit" id="unlock-btn" onclick="wizSubmit()">See my salary ranking →</button>
-        <p style="font-size:11px;color:rgba(12,12,11,.38);margin-top:10px;">Anonymous · never linked to your name or email</p>
-      </div>
 
-      <input type="hidden" id="f-role">
-      <input type="hidden" id="f-exp">
-      <input type="hidden" id="f-sal">
-
-      <div class="result-block" id="result-block">
-        <div><div class="rb-ctx" id="rb-ctx">Backend · 3–4 yrs</div><div class="rb-pct" id="rb-pct">Top 38%</div></div>
-        <div class="rb-sep"></div>
-        <div class="rb-bwrap">
-          <div class="rb-bl"><span id="rl">You</span><span id="rm">Median</span><span id="rr">Top 10%</span></div>
-          <div class="rb-track"><div class="rb-fill" id="rb-fill" style="width:0%"></div></div>
+        <div class="step-content" id="step-1">
+          <div class="step-question">Years of experience?</div>
+          <div class="step-sub">Total years in the industry, not just at your current company.</div>
+          <div class="option-grid cols-2">
+            <button class="opt-btn" onclick="selectOpt(this,'exp','Under 1 year')"><span class="ob-label">Under 1 year</span><span class="ob-sub">Just getting started</span></button>
+            <button class="opt-btn" onclick="selectOpt(this,'exp','1–2 yrs')"><span class="ob-label">1 – 2 years</span><span class="ob-sub">Junior level</span></button>
+            <button class="opt-btn" onclick="selectOpt(this,'exp','3–4 yrs')"><span class="ob-label">3 – 4 years</span><span class="ob-sub">Mid level</span></button>
+            <button class="opt-btn" onclick="selectOpt(this,'exp','5–7 yrs')"><span class="ob-label">5 – 7 years</span><span class="ob-sub">Senior level</span></button>
+            <button class="opt-btn" onclick="selectOpt(this,'exp','8+ yrs')" style="grid-column:1/-1"><span class="ob-label">8+ years</span><span class="ob-sub">Lead / Principal</span></button>
+          </div>
+          <div class="step-nav">
+            <button class="btn-back" onclick="prevStep(1)">← Back</button>
+            <button class="btn-primary" onclick="nextStep(1)" disabled id="btn-step-1">Next →</button>
+          </div>
         </div>
+
+        <div class="step-content" id="step-2">
+          <div class="step-question">Your monthly salary?</div>
+          <div class="step-sub">Gross, before tax. In million VND.</div>
+          <div class="salary-slider-wrap">
+            <div class="ss-display">
+              <div class="ss-num" id="sal-display">20</div>
+              <div class="ss-unit">M VND / month</div>
+            </div>
+            <input type="range" class="salary-slider" id="sal-slider" min="5" max="150" value="20" step="1" oninput="updateSalary(this)">
+            <div class="ss-ticks">
+              <span class="ss-tick">5M</span>
+              <span class="ss-tick">40M</span>
+              <span class="ss-tick">80M</span>
+              <span class="ss-tick">120M</span>
+              <span class="ss-tick">150M+</span>
+            </div>
+          </div>
+          <div class="step-nav">
+            <button class="btn-back" onclick="prevStep(2)">← Back</button>
+            <button class="btn-primary" onclick="nextStep(2)" id="btn-step-2">Next →</button>
+          </div>
+        </div>
+
+        <div class="step-content" id="step-3">
+          <div class="step-question">Where do you work?</div>
+          <div class="step-sub">Company name is only used to group salary data — never shown individually.</div>
+          <input type="text" class="form-input" id="f-co" placeholder="e.g. VNG, Grab, FPT Software…" oninput="updateCompanyBtn()" autocomplete="off">
+          <div class="step-nav" style="margin-top:16px;">
+            <button class="btn-back" onclick="prevStep(3)">← Back</button>
+            <button class="btn-primary" onclick="nextStep(3)" disabled id="btn-step-3">Next →</button>
+          </div>
+        </div>
+
+        <div class="step-content" id="step-4">
+          <div class="step-question">One last thing 👋</div>
+          <div class="step-sub">What would be most useful for you? (Pick all that apply)</div>
+          <div class="voc-options">
+            <div class="voc-opt" onclick="toggleVoc(this)"><div class="voc-checkbox"></div><div class="voc-label">🏢 See salaries at more companies</div></div>
+            <div class="voc-opt" onclick="toggleVoc(this)"><div class="voc-checkbox"></div><div class="voc-label">💼 See more roles and job functions</div></div>
+            <div class="voc-opt" onclick="toggleVoc(this)"><div class="voc-checkbox"></div><div class="voc-label">📅 Compare with people at my experience level</div></div>
+            <div class="voc-opt" onclick="toggleVoc(this)"><div class="voc-checkbox"></div><div class="voc-label">🚀 Find out where I can earn more</div></div>
+            <div class="voc-opt" onclick="toggleVoc(this)"><div class="voc-checkbox"></div><div class="voc-label">🎯 Get matched with recruiters at top-paying companies</div></div>
+          </div>
+          <div class="step-nav" style="margin-top:20px;">
+            <button class="btn-back" onclick="prevStep(4)">← Back</button>
+            <button class="btn-primary green-btn" id="unlock-btn" onclick="doSubmit()">Unlock all 134 companies →</button>
+          </div>
+          <div class="anon-note">Your salary is never linked to your name or identity.</div>
+        </div>
+
+        <div class="submit-success" id="submit-success">
+          <div class="ss-icon">🎉</div>
+          <div class="ss-title">You're in. Everything's unlocked.</div>
+          <p class="ss-sub">All 134 companies are now visible below. Thanks for making the data better for everyone in Vietnam.</p>
+          <a href="#full-feed" class="btn-primary green-btn" style="display:block;margin-top:22px;text-align:center;text-decoration:none;" onclick="document.getElementById('full-feed').scrollIntoView({behavior:'smooth'});return false;">See all company salaries ↓</a>
+        </div>
+
+        <input type="hidden" id="f-role">
+        <input type="hidden" id="f-exp">
+        <input type="hidden" id="f-sal">
+
+        <div class="result-block" id="result-block">
+          <div><div class="rb-ctx" id="rb-ctx">Backend · 3–4 yrs</div><div class="rb-pct" id="rb-pct">Top 38%</div></div>
+          <div class="rb-sep"></div>
+          <div class="rb-bwrap">
+            <div class="rb-bl"><span id="rl">You</span><span id="rm">Median</span><span id="rr">Top 10%</span></div>
+            <div class="rb-track"><div class="rb-fill" id="rb-fill" style="width:0%"></div></div>
+          </div>
+        </div>
+        <div class="uline" id="uline">✓ UNLOCKED — 134 companies now visible below</div>
       </div>
-      <div class="uline" id="uline">✓ UNLOCKED — 134 companies now visible below</div>
     </div>
   </div>
-</div>
+</section>
+
+<footer>
+  <div class="footer-brand">FYI <span>—</span> For Your Information</div>
+  <div class="footer-meta">Vietnam IT Salary Intelligence · 100% Anonymous · Updated daily</div>
+</footer>
 
 <div id="full-feed">
   <div class="ff-head">
@@ -1311,44 +1379,68 @@ async function submitSalary(role, experience, salary, company, source, email){
   }
 }
 
-const _wiz={role:'',exp:'',sal:40,co:''};
-let _wizStep=1;
-function wizGoStep(n){
-  document.getElementById('ws'+_wizStep).style.display='none';
-  _wizStep=n;
-  document.getElementById('ws'+n).style.display='';
-  document.getElementById('wiz-fill').style.width=(n*20)+'%';
-  const labels=['','1/5 — Role','2/5 — Experience','3/5 — Salary','4/5 — Company','5/5 — Goals'];
-  document.getElementById('wiz-step-label').textContent=labels[n];
-}
-function wizPick(field,val,el){
+const _wiz={role:'',exp:'',sal:20,co:''};
+let _wizStep=0;
+function selectOpt(el,field,val){
   _wiz[field]=val;
-  const container=el.closest('.wiz-grid,.wiz-chips');
-  if(container) container.querySelectorAll('button').forEach(b=>b.classList.remove('selected'));
+  el.closest('.option-grid').querySelectorAll('.opt-btn').forEach(b=>b.classList.remove('selected'));
   el.classList.add('selected');
-  setTimeout(()=>wizGoStep(_wizStep+1),260);
+  const btn=document.getElementById('btn-step-'+_wizStep);
+  if(btn) btn.disabled=false;
 }
-function wizPickSal(){
-  _wiz.sal=parseInt(document.getElementById('wiz-slider').value);
-  wizGoStep(4);
+function nextStep(n){
+  document.getElementById('step-'+n).classList.remove('active');
+  const next=document.getElementById('step-'+(n+1));
+  if(next){ next.classList.add('active'); _wizStep=n+1; }
+  // Update dots
+  for(let i=0;i<5;i++){
+    const dot=document.getElementById('prog-'+i);
+    if(!dot) continue;
+    dot.classList.remove('active','done');
+    if(i<_wizStep) dot.classList.add('done');
+    else if(i===_wizStep) dot.classList.add('active');
+  }
 }
-function wizPickCo(){
-  const co=(document.getElementById('f-co')||{}).value||'';
-  if(!co.trim()){if(document.getElementById('f-co'))document.getElementById('f-co').focus();return;}
-  _wiz.co=co.trim();
-  wizGoStep(5);
+function prevStep(n){
+  document.getElementById('step-'+n).classList.remove('active');
+  const prev=document.getElementById('step-'+(n-1));
+  if(prev){ prev.classList.add('active'); _wizStep=n-1; }
+  for(let i=0;i<5;i++){
+    const dot=document.getElementById('prog-'+i);
+    if(!dot) continue;
+    dot.classList.remove('active','done');
+    if(i<_wizStep) dot.classList.add('done');
+    else if(i===_wizStep) dot.classList.add('active');
+  }
 }
-async function wizSubmit(){
-  if(!_wiz.role||!_wiz.exp||!_wiz.sal||!_wiz.co){alert('Please complete all steps.');return;}
-  const fr=document.getElementById('f-role'),fe=document.getElementById('f-exp'),fs=document.getElementById('f-sal');
-  if(fr)fr.value=_wiz.role; if(fe)fe.value=_wiz.exp; if(fs)fs.value=_wiz.sal;
+function updateSalary(input){
+  _wiz.sal=parseInt(input.value);
+  const el=document.getElementById('sal-display');
+  if(el) el.textContent=input.value;
+}
+function updateCompanyBtn(){
+  const val=(document.getElementById('f-co')||{}).value||'';
+  const btn=document.getElementById('btn-step-3');
+  if(btn) btn.disabled=!val.trim();
+  _wiz.co=val.trim();
+}
+function toggleVoc(el){
+  el.classList.toggle('selected');
+}
+async function doSubmit(){
+  if(!_wiz.role||!_wiz.exp||!_wiz.sal){alert('Please complete all steps.');return;}
+  _wiz.co=(document.getElementById('f-co')||{}).value||_wiz.co||'';
   const btn=document.getElementById('unlock-btn');
   if(btn){btn.textContent='Unlocking…';btn.disabled=true;}
   const urlParams=new URLSearchParams(window.location.search);
   const source=urlParams.get('source')||'direct';
-  const email=(document.getElementById('f-email')||{}).value||'';
-  submitSalary(_wiz.role,_wiz.exp,_wiz.sal,_wiz.co,source,email);
-  if(await doUnlock(_wiz.role,_wiz.exp,_wiz.sal))setTimeout(()=>document.getElementById('full-feed').scrollIntoView({behavior:'smooth'}),300);
+  submitSalary(_wiz.role,_wiz.exp,_wiz.sal,_wiz.co,source,'');
+  if(await doUnlock(_wiz.role,_wiz.exp,_wiz.sal)){
+    const sc=document.getElementById('submit-success');
+    if(sc) sc.style.display='block';
+    document.getElementById('step-4').classList.remove('active');
+    setTimeout(()=>document.getElementById('full-feed').scrollIntoView({behavior:'smooth'}),600);
+  }
 }
 
 async function unlock(){
