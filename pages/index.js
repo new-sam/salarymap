@@ -751,6 +751,45 @@ const bodyHTML = `<nav>
 <div style="text-align:center; padding:16px 0 32px; font-size:13px; color:var(--dim);">
   Showing 8 of <span id="total-co-count">—</span> companies · <span style="color:var(--orange); cursor:pointer;" onclick="document.querySelector('.submit-outer').scrollIntoView({behavior:'smooth'})">Submit your salary to unlock all →</span>
 </div>
+
+<div id="lboard-panel" style="display:none;margin:0 0 24px;">
+  <div class="lboard">
+    <div style="padding:20px 24px;border-bottom:1px solid rgba(255,255,255,.06);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
+      <div style="display:flex;align-items:center;gap:14px;">
+        <img id="lb-logo" src="" alt="" style="width:40px;height:40px;border-radius:8px;background:#fff;object-fit:contain;padding:4px;flex-shrink:0;">
+        <div>
+          <div id="lb-name" style="font-size:18px;font-weight:800;letter-spacing:-.5px;color:var(--white);"></div>
+          <div id="lb-type" style="font-size:11px;color:var(--dim);margin-top:2px;font-family:'Geist Mono',monospace;"></div>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:12px;">
+        <div id="lb-badge" style="font-size:11px;font-weight:700;color:#4ade80;background:rgba(74,222,128,.1);padding:4px 12px;border-radius:20px;"></div>
+        <button onclick="closeLeaderboard()" style="background:transparent;border:1px solid rgba(255,255,255,.12);color:var(--dim);font-size:13px;padding:6px 14px;border-radius:4px;cursor:pointer;font-family:'Geist',sans-serif;">Close</button>
+      </div>
+    </div>
+    <div id="lb-tabs" style="display:flex;border-bottom:1px solid rgba(255,255,255,.06);overflow-x:auto;padding:0 24px;"></div>
+    <div style="padding:8px 24px 0;">
+      <table style="width:100%;border-collapse:collapse;">
+        <thead><tr style="border-bottom:1px solid rgba(255,255,255,.08);">
+          <th style="font-family:'Geist Mono',monospace;font-size:10px;color:var(--dim);text-transform:uppercase;letter-spacing:.8px;padding:10px 0;text-align:left;width:24px;">#</th>
+          <th style="font-family:'Geist Mono',monospace;font-size:10px;color:var(--dim);text-transform:uppercase;letter-spacing:.8px;padding:10px 12px;text-align:left;">Role / Experience</th>
+          <th style="font-family:'Geist Mono',monospace;font-size:10px;color:var(--dim);text-transform:uppercase;letter-spacing:.8px;padding:10px 12px;text-align:left;min-width:120px;">Range</th>
+          <th style="font-family:'Geist Mono',monospace;font-size:10px;color:var(--dim);text-transform:uppercase;letter-spacing:.8px;padding:10px 12px;text-align:right;">Salary</th>
+          <th style="font-family:'Geist Mono',monospace;font-size:10px;color:var(--dim);text-transform:uppercase;letter-spacing:.8px;padding:10px 0;text-align:right;">Market</th>
+        </tr></thead>
+        <tbody id="lb-tbody"></tbody>
+      </table>
+    </div>
+    <div style="padding:14px 24px;border-top:1px solid rgba(255,255,255,.06);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
+      <div style="font-size:12px;color:var(--dim);">+13 more entries · <span style="color:var(--mid);">Add your data to see all</span></div>
+      <button onclick="document.querySelector('.submit-outer').scrollIntoView({behavior:'smooth'})" style="font-size:12px;font-weight:600;color:#fff;background:var(--orange);border:none;padding:6px 16px;border-radius:4px;cursor:pointer;font-family:'Geist',sans-serif;">See all →</button>
+    </div>
+    <div style="padding:14px 24px;border-top:1px solid rgba(255,255,255,.06);display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+      <span style="font-size:12px;color:var(--dim);margin-right:4px;">See also:</span>
+      <div id="lb-related" style="display:flex;gap:8px;flex-wrap:wrap;"></div>
+    </div>
+  </div>
+</div>
 <div class="cards-gate"></div>
 </div>
 
@@ -1146,6 +1185,52 @@ function updateTrustStats(sub, co) {
   const t2=document.getElementById('trust-s2'); if(t2) t2.textContent=co.toLocaleString();
   const tn=document.getElementById('trust-sub-n'); if(tn) tn.textContent=sub.toLocaleString();
 }
+const _ldata={
+  grab:{name:'Grab Vietnam',type:'Super App · Foreign',domain:'grab.com',badge:'Top 6% paying',
+    tabs:['All roles','Backend','Mobile','DevOps','Data'],
+    rows:[{role:'Mobile',exp:'5–7 yrs',salary:72,market:'Top 4%'},{role:'Backend',exp:'5–7 yrs',salary:65,market:'Top 6%'},{role:'Data Eng',exp:'3–5 yrs',salary:55,market:'Top 9%'},{role:'Backend',exp:'3–4 yrs',salary:46,market:'Top 14%'}],
+    related:['VNG Corporation','Shopee Vietnam','Tiki','Momo']},
+  vng:{name:'VNG Corporation',type:'Product · Large',domain:'vng.com.vn',badge:'Top 9% paying',
+    tabs:['All roles','Backend','Mobile','Frontend','Data'],
+    rows:[{role:'Backend',exp:'5–7 yrs',salary:55,market:'Top 9%'},{role:'Mobile',exp:'4–5 yrs',salary:48,market:'Top 12%'},{role:'Data Eng',exp:'3–4 yrs',salary:42,market:'Top 16%'},{role:'Frontend',exp:'3–4 yrs',salary:36,market:'Top 22%'}],
+    related:['Grab Vietnam','Zalo','Shopee Vietnam','KMS Technology']},
+  shopee:{name:'Shopee Vietnam',type:'E-commerce · Foreign',domain:'shopee.vn',badge:'Top 6% paying',
+    tabs:['All roles','Backend','Data','Mobile','DevOps'],
+    rows:[{role:'Backend',exp:'5–7 yrs',salary:62,market:'Top 6%'},{role:'Data Eng',exp:'4–5 yrs',salary:55,market:'Top 9%'},{role:'Mobile',exp:'3–4 yrs',salary:48,market:'Top 12%'},{role:'DevOps',exp:'2–3 yrs',salary:38,market:'Top 19%'}],
+    related:['Grab Vietnam','Tiki','Momo','Sea Group']}
+};
+function renderLbRows(rows){
+  const max=Math.max(...rows.map(r=>r.salary));
+  const html=rows.map((r,i)=>{
+    const pct=Math.round(r.salary/max*100);
+    return '<tr class="lb-row"><td style="font-family:\"Geist Mono\",monospace;font-size:10px;color:var(--dim);padding:11px 0;">'+(i+1)+'</td><td style="padding:11px 12px;"><div style="font-size:13px;font-weight:600;color:var(--white);">'+r.role+'</div><div style="font-size:11px;color:var(--dim);margin-top:1px;">'+r.exp+'</div></td><td style="padding:11px 12px;"><div style="height:6px;background:rgba(255,255,255,.07);border-radius:3px;overflow:hidden;width:120px;"><div style="height:100%;background:#ff6000;border-radius:3px;width:'+pct+'%;"></div></div></td><td style="font-family:\"Geist Mono\",monospace;font-size:14px;font-weight:600;color:var(--white);text-align:right;padding:11px 12px;">'+r.salary+'M</td><td style="font-family:\"Geist Mono\",monospace;font-size:11px;color:#4ade80;text-align:right;padding:11px 0;">'+r.market+'</td></tr>';
+  }).join('');
+  const locked='<tr style="opacity:.3;pointer-events:none;"><td style="padding:11px 0;font-size:10px;color:var(--dim);">5</td><td style="padding:11px 12px;font-size:13px;filter:blur(5px);user-select:none;">Backend</td><td style="padding:11px 12px;"><div style="height:6px;background:rgba(255,255,255,.07);border-radius:3px;width:120px;"><div style="height:100%;background:#ff6000;border-radius:3px;width:55%;"></div></div></td><td style="font-family:\"Geist Mono\",monospace;font-size:14px;font-weight:600;text-align:right;padding:11px 12px;filter:blur(5px);">38M</td><td style="font-family:\"Geist Mono\",monospace;font-size:11px;color:#4ade80;text-align:right;padding:11px 0;filter:blur(5px);">Top 20%</td></tr>';
+  document.getElementById('lb-tbody').innerHTML=html+locked;
+}
+function openLeaderboard(co){
+  const d=_ldata[co]; if(!d) return;
+  document.getElementById('lb-name').textContent=d.name;
+  document.getElementById('lb-type').textContent=d.type;
+  document.getElementById('lb-badge').textContent=d.badge;
+  document.getElementById('lb-logo').src='https://www.google.com/s2/favicons?domain='+d.domain+'&sz=64';
+  const tabs=document.getElementById('lb-tabs');
+  tabs.innerHTML=d.tabs.map(function(t,i){return '<div class="lb-tab'+(i===0?' active':'')+'" onclick="lbTab(this,''+t+'',''+co+'')">'+t+'</div>';}).join('');
+  renderLbRows(d.rows);
+  const rel=document.getElementById('lb-related');
+  rel.innerHTML=d.related.map(function(r){return '<div class="lb-related-chip" onclick="coSelect(''+r.replace(/'/g,"\\'")+'')">'+r+'</div>';}).join('');
+  const panel=document.getElementById('lboard-panel');
+  panel.style.display='block';
+  setTimeout(function(){panel.scrollIntoView({behavior:'smooth',block:'nearest'});},50);
+}
+function closeLeaderboard(){ document.getElementById('lboard-panel').style.display='none'; }
+function lbTab(el,tab,co){
+  document.querySelectorAll('.lb-tab').forEach(function(t){t.classList.remove('active');});
+  el.classList.add('active');
+  const d=_ldata[co]; if(!d) return;
+  const filtered=tab==='All roles'?d.rows:d.rows.filter(function(r){return r.role.toLowerCase().includes(tab.toLowerCase());});
+  renderLbRows(filtered.length?filtered:d.rows);
+}
 function reportData(company){
   alert('Thank you for the feedback. We will review ' + company + ' data shortly.');
 }
@@ -1156,8 +1241,8 @@ const _companies = [
   'Zalo','KMS Technology','Axon Active','Techcombank'
 ];
 let _ci=0, _ti=0, _deleting=false, _paused=false;
-const _el=document.getElementById('typed-company');
 function tick(){
+  const _el=document.getElementById('typed-company');
   if(!_el) return;
   const word=_companies[_ci];
   if(_paused){_paused=false;_deleting=true;setTimeout(tick,80);return;}
@@ -1171,7 +1256,7 @@ function tick(){
     setTimeout(tick,45);
   }
 }
-tick();
+setTimeout(tick, 200);
 function heroSearch(q){
   if(!q||q.length<2) return;
   const coInput=document.getElementById('co-search-input');
