@@ -1277,29 +1277,30 @@ export default function Home() {
 
   // Typing animation
   useEffect(() => {
-    const el = document.getElementById('typed-company');
-    if (!el) return;
     const companies = [
       'Grab Vietnam','VNG Corporation','Shopee Vietnam',
       'Tiki','Momo','FPT Software','Sky Mavis',
       'Zalo','KMS Technology','Axon Active',
     ];
-    let ci = 0, ti = 0, del = false, wait = false, timer;
+    let ci = 0, ti = 0, del = false, wait = false, alive = true;
     function tick() {
+      if (!alive) return;
+      const el = document.getElementById('typed-company');
+      if (!el) { setTimeout(tick, 50); return; }
       const w = companies[ci];
-      if (wait)  { wait = false; del = true; timer = setTimeout(tick, 80); return; }
-      if (!del)  {
+      if (wait) { wait = false; del = true; setTimeout(tick, 80); return; }
+      if (!del) {
         el.textContent = w.slice(0, ++ti);
-        if (ti === w.length) { wait = true; timer = setTimeout(tick, 1800); return; }
-        timer = setTimeout(tick, 80);
+        if (ti === w.length) { wait = true; setTimeout(tick, 1800); return; }
+        setTimeout(tick, 80);
       } else {
         el.textContent = w.slice(0, --ti);
-        if (ti === 0) { del = false; ci = (ci + 1) % companies.length; timer = setTimeout(tick, 300); return; }
-        timer = setTimeout(tick, 45);
+        if (ti === 0) { del = false; ci = (ci + 1) % companies.length; setTimeout(tick, 300); return; }
+        setTimeout(tick, 45);
       }
     }
     tick();
-    return () => clearTimeout(timer);
+    return () => { alive = false; };
   }, []);
 
   const d = lbCompany ? lbData[lbCompany] : null;
