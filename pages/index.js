@@ -201,6 +201,10 @@ nav { position:fixed; top:0; left:0; right:0; z-index:200; padding:0 52px; heigh
 .result-block.on { display:flex; animation:fadeUp .35s ease; }
 @keyframes fadeUp { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:translateY(0)} }
 @keyframes scrollX { from{transform:translateX(0)} to{transform:translateX(-50%)} }
+@keyframes kenBurns1 { from{transform:scale(1) translate(0,0)} to{transform:scale(1.08) translate(-1%,-.5%)} }
+@keyframes kenBurns2 { from{transform:scale(1) translate(0,0)} to{transform:scale(1.08) translate(1%,-.5%)} }
+@keyframes kenBurns3 { from{transform:scale(1) translate(0,0)} to{transform:scale(1.08) translate(0,1%)} }
+.city-card { transition: transform .4s ease, outline .2s ease; }
 .rb-ctx { font-family:'Geist Mono',monospace; font-size:10px; color:rgba(12,12,11,.38); margin-bottom:6px; letter-spacing:1px; text-transform:uppercase; }
 .rb-pct { font-family:'Geist Mono',monospace; font-size:40px; font-weight:500; color:var(--bg); line-height:1; }
 .rb-sep { width:1px; height:48px; background:rgba(12,12,11,.1); }
@@ -539,6 +543,7 @@ nav { position:fixed; top:0; left:0; right:0; z-index:200; padding:0 52px; heigh
   .trust-roadmap { grid-template-columns:1fr !important; }
   .trust-stats { grid-template-columns:repeat(2,1fr) !important; }
   .trust-interviews { grid-template-columns:1fr !important; }
+  .city-cards-grid { grid-template-columns:1fr !important; }
   .trust-privacy { grid-template-columns:1fr !important; }
   .trust-section { padding:60px 0 !important; }
   .trust-inner { padding:0 16px !important; }
@@ -691,29 +696,90 @@ const bodyHTML = `<nav>
   </div>
 
   <!-- STREET INTERVIEWS -->
-  <div class="trust-inner" style="max-width:1160px; margin:0 auto; padding:0 52px; margin-bottom:56px;">
-    <div class="trust-interviews" style="display:grid; grid-template-columns:repeat(3,1fr); gap:2px;">
-      <div style="position:relative; overflow:hidden;">
-        <img src="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=400&h=200&fit=crop&crop=top&q=80" style="width:100%; height:260px; object-fit:cover; object-position:top; filter:brightness(.5) saturate(.7); display:block;" alt="">
-        <div style="position:absolute; inset:0; background:linear-gradient(to top, rgba(12,12,11,.92) 0%, transparent 50%); padding:20px; display:flex; flex-direction:column; justify-content:flex-end;">
-          <div style="font-size:10px; color:var(--orange); letter-spacing:1px; text-transform:uppercase; margin-bottom:6px;">Street interview · HCMC</div>
-          <div style="font-size:13px; color:var(--white); line-height:1.55; font-style:italic;">"Shopee offer came. Almost said yes without checking."</div>
+  <div style="max-width:1160px; margin:0 auto; padding:0 52px; margin-bottom:56px;">
+    <div class="city-cards-grid" style="display:grid; grid-template-columns:repeat(3,1fr); gap:3px;">
+
+      <!-- Card 1: HCMC District 1 -->
+      <div class="city-card" style="position:relative; height:320px; overflow:hidden; cursor:pointer;"
+           onmouseenter="this.style.transform='scale(1.04)';this.style.outline='2px solid var(--orange)';this.style.zIndex='2'"
+           onmouseleave="this.style.transform='scale(1)';this.style.outline='none';this.style.zIndex='1'">
+        <img src="/city-1.jpg" class="city-card-img" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;filter:brightness(.35);transform-origin:center;animation:kenBurns1 6s ease infinite alternate;" alt="Ho Chi Minh City District 1">
+        <div style="position:absolute;inset:0;background:linear-gradient(to top, rgba(12,12,11,.95) 0%, rgba(12,12,11,.3) 55%, transparent 100%);"></div>
+        <div style="position:absolute;inset:0;padding:24px;display:flex;flex-direction:column;justify-content:flex-end;">
+          <div style="font-size:9px;font-family:'Geist Mono',monospace;color:var(--orange);letter-spacing:2px;text-transform:uppercase;margin-bottom:4px;">Ho Chi Minh City</div>
+          <div style="font-size:22px;font-weight:800;color:var(--white);letter-spacing:-.5px;line-height:1.1;margin-bottom:4px;">District 1</div>
+          <div style="font-size:11px;color:rgba(242,240,235,.45);margin-bottom:16px;">Bitexco · Ben Thanh · Tech hub</div>
+          <div style="border-top:1px solid rgba(255,255,255,.1);padding-top:14px;display:flex;flex-direction:column;gap:7px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;">
+              <span style="font-size:12px;color:var(--white);font-weight:500;">Grab Vietnam</span>
+              <span style="font-size:11px;font-family:'Geist Mono',monospace;color:var(--orange);">35 responses</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;align-items:center;">
+              <span style="font-size:12px;color:var(--white);font-weight:500;">Shopee Vietnam</span>
+              <span style="font-size:11px;font-family:'Geist Mono',monospace;color:var(--orange);">31 responses</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;align-items:center;">
+              <span style="font-size:12px;color:var(--white);font-weight:500;">Momo</span>
+              <span style="font-size:11px;font-family:'Geist Mono',monospace;color:var(--orange);">22 responses</span>
+            </div>
+          </div>
         </div>
       </div>
-      <div style="position:relative; overflow:hidden;">
-        <img src="https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=400&h=200&fit=crop&crop=top&q=80" style="width:100%; height:260px; object-fit:cover; object-position:top; filter:brightness(.5) saturate(.7); display:block;" alt="">
-        <div style="position:absolute; inset:0; background:linear-gradient(to top, rgba(12,12,11,.92) 0%, transparent 50%); padding:20px; display:flex; flex-direction:column; justify-content:flex-end;">
-          <div style="font-size:10px; color:var(--orange); letter-spacing:1px; text-transform:uppercase; margin-bottom:6px;">Developer interview · Hanoi</div>
-          <div style="font-size:13px; color:var(--white); line-height:1.55; font-style:italic;">"Thought 22M was normal. Market showed 31M."</div>
+
+      <!-- Card 2: HCMC Thu Duc -->
+      <div class="city-card" style="position:relative; height:320px; overflow:hidden; cursor:pointer;"
+           onmouseenter="this.style.transform='scale(1.04)';this.style.outline='2px solid var(--orange)';this.style.zIndex='2'"
+           onmouseleave="this.style.transform='scale(1)';this.style.outline='none';this.style.zIndex='1'">
+        <img src="/city-2.jpg" class="city-card-img" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;filter:brightness(.35);transform-origin:center;animation:kenBurns2 6s ease infinite alternate;" alt="Thu Duc City">
+        <div style="position:absolute;inset:0;background:linear-gradient(to top, rgba(12,12,11,.95) 0%, rgba(12,12,11,.3) 55%, transparent 100%);"></div>
+        <div style="position:absolute;inset:0;padding:24px;display:flex;flex-direction:column;justify-content:flex-end;">
+          <div style="font-size:9px;font-family:'Geist Mono',monospace;color:var(--orange);letter-spacing:2px;text-transform:uppercase;margin-bottom:4px;">Ho Chi Minh City</div>
+          <div style="font-size:22px;font-weight:800;color:var(--white);letter-spacing:-.5px;line-height:1.1;margin-bottom:4px;">Thu Duc City</div>
+          <div style="font-size:11px;color:rgba(242,240,235,.45);margin-bottom:16px;">SHTP · Tech park · Startups</div>
+          <div style="border-top:1px solid rgba(255,255,255,.1);padding-top:14px;display:flex;flex-direction:column;gap:7px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;">
+              <span style="font-size:12px;color:var(--white);font-weight:500;">VNG Corporation</span>
+              <span style="font-size:11px;font-family:'Geist Mono',monospace;color:var(--orange);">47 responses</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;align-items:center;">
+              <span style="font-size:12px;color:var(--white);font-weight:500;">Sky Mavis</span>
+              <span style="font-size:11px;font-family:'Geist Mono',monospace;color:var(--orange);">14 responses</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;align-items:center;">
+              <span style="font-size:12px;color:var(--white);font-weight:500;">KMS Technology</span>
+              <span style="font-size:11px;font-family:'Geist Mono',monospace;color:var(--orange);">18 responses</span>
+            </div>
+          </div>
         </div>
       </div>
-      <div style="position:relative; overflow:hidden;">
-        <img src="https://images.unsplash.com/photo-1551836022-deb4988cc6c0?w=400&h=200&fit=crop&crop=top&q=80" style="width:100%; height:260px; object-fit:cover; object-position:top; filter:brightness(.5) saturate(.7); display:block;" alt="">
-        <div style="position:absolute; inset:0; background:linear-gradient(to top, rgba(12,12,11,.92) 0%, transparent 50%); padding:20px; display:flex; flex-direction:column; justify-content:flex-end;">
-          <div style="font-size:10px; color:var(--orange); letter-spacing:1px; text-transform:uppercase; margin-bottom:6px;">Developer interview · HCMC</div>
-          <div style="font-size:13px; color:var(--white); line-height:1.55; font-style:italic;">"Foreign vs local — nobody talks about the gap."</div>
+
+      <!-- Card 3: Hanoi Cầu Giấy -->
+      <div class="city-card" style="position:relative; height:320px; overflow:hidden; cursor:pointer;"
+           onmouseenter="this.style.transform='scale(1.04)';this.style.outline='2px solid var(--orange)';this.style.zIndex='2'"
+           onmouseleave="this.style.transform='scale(1)';this.style.outline='none';this.style.zIndex='1'">
+        <img src="/city-3.jpg" class="city-card-img" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;filter:brightness(.35);transform-origin:center;animation:kenBurns3 6s ease infinite alternate;" alt="Hanoi Cau Giay">
+        <div style="position:absolute;inset:0;background:linear-gradient(to top, rgba(12,12,11,.95) 0%, rgba(12,12,11,.3) 55%, transparent 100%);"></div>
+        <div style="position:absolute;inset:0;padding:24px;display:flex;flex-direction:column;justify-content:flex-end;">
+          <div style="font-size:9px;font-family:'Geist Mono',monospace;color:var(--orange);letter-spacing:2px;text-transform:uppercase;margin-bottom:4px;">Hanoi</div>
+          <div style="font-size:22px;font-weight:800;color:var(--white);letter-spacing:-.5px;line-height:1.1;margin-bottom:4px;">Cầu Giấy</div>
+          <div style="font-size:11px;color:rgba(242,240,235,.45);margin-bottom:16px;">FPT · Keangnam · IT corridor</div>
+          <div style="border-top:1px solid rgba(255,255,255,.1);padding-top:14px;display:flex;flex-direction:column;gap:7px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;">
+              <span style="font-size:12px;color:var(--white);font-weight:500;">FPT Software</span>
+              <span style="font-size:11px;font-family:'Geist Mono',monospace;color:var(--orange);">58 responses</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;align-items:center;">
+              <span style="font-size:12px;color:var(--white);font-weight:500;">Tiki</span>
+              <span style="font-size:11px;font-family:'Geist Mono',monospace;color:var(--orange);">28 responses</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;align-items:center;">
+              <span style="font-size:12px;color:var(--white);font-weight:500;">Axon Active</span>
+              <span style="font-size:11px;font-family:'Geist Mono',monospace;color:var(--orange);">16 responses</span>
+            </div>
+          </div>
         </div>
       </div>
+
     </div>
   </div>
 
