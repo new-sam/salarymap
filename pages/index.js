@@ -343,44 +343,48 @@ nav { position:fixed; top:0; left:0; right:0; z-index:200; padding:0 52px; heigh
 /* ── MOBILE RESPONSIVE ── */
 
 /* WIZARD */
-.wiz-wrap { display:grid; grid-template-columns:1fr 1fr; min-height:480px; }
-.wiz-copy { background:var(--orange); padding:48px 40px; display:flex; flex-direction:column; justify-content:center; }
-.wiz-copy-badge { font-size:11px; font-weight:700; color:rgba(255,255,255,.7); letter-spacing:1.5px; text-transform:uppercase; margin-bottom:20px; }
-.wiz-copy-h { font-size:28px; font-weight:800; color:#fff; letter-spacing:-.5px; line-height:1.15; margin-bottom:12px; }
-.wiz-copy-p { font-size:14px; color:rgba(255,255,255,.8); line-height:1.6; margin-bottom:24px; }
-.wiz-copy-stats { display:flex; gap:32px; }
-.wiz-copy-stats div { display:flex; flex-direction:column; gap:2px; }
-.wiz-copy-stats div span:first-child { font-family:'Geist Mono',monospace; font-size:24px; font-weight:700; color:#fff; }
-.wiz-copy-stats div span:last-child { font-size:11px; color:rgba(255,255,255,.65); }
-.wiz-card { padding:32px 36px; background:var(--bg1); display:flex; flex-direction:column; }
-.wiz-prog { height:3px; background:rgba(255,255,255,.08); border-radius:2px; margin-bottom:10px; }
-.wiz-prog-fill { height:100%; background:var(--orange); border-radius:2px; transition:width .35s; }
-.wiz-step-label { font-family:'Geist Mono',monospace; font-size:11px; color:var(--dim); margin-bottom:24px; }
-.wiz-q { font-size:20px; font-weight:800; color:var(--white); letter-spacing:-.3px; margin-bottom:20px; }
+.wiz-wrap { display:grid; grid-template-columns:1fr 1fr; min-height:540px; }
+.wiz-copy { background:#ff6000; padding:52px 44px; display:flex; flex-direction:column; justify-content:space-between; color:#fff; }
+.wiz-copy-badge { font-size:11px; font-weight:700; letter-spacing:2px; opacity:.7; text-transform:uppercase; margin-bottom:0; }
+.wiz-copy-mid { flex:1; display:flex; flex-direction:column; justify-content:center; padding:32px 0; }
+.wiz-copy-h { font-size:clamp(28px,3.5vw,48px); font-weight:800; color:#fff; letter-spacing:-.5px; line-height:1.1; margin-bottom:14px; }
+.wiz-copy-p { font-size:14px; color:rgba(255,255,255,.8); line-height:1.65; }
+.wiz-copy-stats { display:flex; gap:36px; }
+.wiz-copy-stats div { display:flex; flex-direction:column; gap:4px; }
+.wiz-copy-stats div span:first-child { font-family:'Geist Mono',monospace; font-size:26px; font-weight:800; color:#fff; line-height:1; }
+.wiz-copy-stats div span:last-child { font-size:11px; color:rgba(255,255,255,.65); letter-spacing:.5px; }
+.wiz-card { padding:40px 44px; background:#0c0c0b; display:flex; flex-direction:column; justify-content:center; }
+.wiz-prog-wrap { margin-bottom:8px; }
+.wiz-step-label { font-family:'Geist Mono',monospace; font-size:11px; color:rgba(242,240,235,.4); margin-bottom:6px; }
+.wiz-prog { height:2px; background:rgba(255,255,255,.07); border-radius:1px; margin-bottom:28px; }
+.wiz-prog-fill { height:100%; background:#ff6000; border-radius:1px; transition:width .4s cubic-bezier(.4,0,.2,1); }
+.wiz-q { font-size:22px; font-weight:800; color:var(--white); letter-spacing:-.3px; margin-bottom:20px; line-height:1.2; }
 .wiz-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; }
-.wiz-grid button, .wiz-chips button { font-family:'Geist',sans-serif; font-size:13px; font-weight:600; padding:12px 8px; border-radius:6px; border:1.5px solid rgba(255,255,255,.1); background:transparent; color:var(--white); cursor:pointer; transition:all .15s; }
-.wiz-grid button:hover, .wiz-chips button:hover { border-color:var(--orange); color:var(--orange); }
-.wiz-grid button.selected, .wiz-chips button.selected { background:var(--orange); border-color:var(--orange); color:#fff; }
+.wiz-grid button { font-family:'Geist',sans-serif; font-size:14px; font-weight:600; padding:16px 8px; border-radius:8px; border:1px solid rgba(255,255,255,.1); background:#141413; color:var(--white); cursor:pointer; transition:border-color .15s,background .15s; text-align:center; }
+.wiz-grid button:hover { border-color:#ff6000; background:rgba(255,96,0,.08); }
+.wiz-grid button.selected { border-color:#ff6000; background:rgba(255,96,0,.08); color:#ff6000; }
 .wiz-chips { display:flex; flex-wrap:wrap; gap:8px; }
-.wiz-chips button { padding:10px 18px; }
-.wiz-sal-display { font-family:'Geist Mono',monospace; font-size:48px; font-weight:700; color:var(--orange); letter-spacing:-2px; margin-bottom:16px; }
+.wiz-chips button { font-family:'Geist',sans-serif; font-size:14px; font-weight:600; padding:12px 20px; border-radius:8px; border:1px solid rgba(255,255,255,.1); background:#141413; color:var(--white); cursor:pointer; transition:border-color .15s,background .15s; }
+.wiz-chips button:hover { border-color:#ff6000; background:rgba(255,96,0,.08); }
+.wiz-chips button.selected { border-color:#ff6000; background:rgba(255,96,0,.08); color:#ff6000; }
+.wiz-sal-display { font-family:'Geist Mono',monospace; font-size:52px; font-weight:700; color:#ff6000; letter-spacing:-2px; margin-bottom:16px; line-height:1; }
 .wiz-slider { width:100%; -webkit-appearance:none; height:4px; border-radius:2px; background:rgba(255,255,255,.1); outline:none; margin-bottom:8px; }
-.wiz-slider::-webkit-slider-thumb { -webkit-appearance:none; width:20px; height:20px; border-radius:50%; background:var(--orange); cursor:pointer; }
-.wiz-sal-range { display:flex; justify-content:space-between; font-size:11px; color:var(--dim); margin-bottom:20px; }
-.wiz-next { font-family:'Geist',sans-serif; font-size:14px; font-weight:700; background:var(--orange); color:#fff; border:none; padding:12px 28px; border-radius:4px; cursor:pointer; transition:opacity .15s; margin-top:8px; }
+.wiz-slider::-webkit-slider-thumb { -webkit-appearance:none; width:22px; height:22px; border-radius:50%; background:#ff6000; cursor:pointer; box-shadow:0 0 0 4px rgba(255,96,0,.15); }
+.wiz-sal-range { display:flex; justify-content:space-between; font-size:11px; color:rgba(242,240,235,.35); margin-bottom:24px; }
+.wiz-next { font-family:'Geist',sans-serif; font-size:14px; font-weight:700; background:#ff6000; color:#fff; border:none; padding:14px 32px; border-radius:4px; cursor:pointer; transition:opacity .15s; margin-top:8px; }
 .wiz-next:hover { opacity:.85; }
 .wiz-next:disabled { opacity:.4; cursor:not-allowed; }
-.wiz-goals { display:flex; flex-direction:column; gap:10px; margin-bottom:4px; }
-.wiz-goal-item { display:flex; align-items:center; gap:10px; cursor:pointer; padding:10px 12px; border-radius:6px; border:1.5px solid rgba(255,255,255,.08); transition:border-color .15s; }
+.wiz-goals { display:flex; flex-direction:column; gap:8px; margin-bottom:4px; }
+.wiz-goal-item { display:flex; align-items:center; gap:12px; cursor:pointer; padding:12px 14px; border-radius:8px; border:1px solid rgba(255,255,255,.08); background:#141413; transition:border-color .15s; }
 .wiz-goal-item:hover { border-color:rgba(255,255,255,.2); }
-.wiz-goal-item input[type=checkbox] { width:16px; height:16px; accent-color:var(--orange); flex-shrink:0; }
+.wiz-goal-item input[type=checkbox] { width:16px; height:16px; accent-color:#ff6000; flex-shrink:0; }
 .wiz-goal-item span { font-size:14px; color:var(--white); }
-.wiz-submit { width:100%; text-align:center; margin-top:16px; padding:14px; font-size:15px; }
+.wiz-submit { width:100%; text-align:center; margin-top:20px; padding:15px; font-size:15px; }
 @media (max-width: 768px) {
   .wiz-wrap { grid-template-columns:1fr; }
   .wiz-copy { display:none; }
-  .wiz-card { padding:24px 20px; }
-  .wiz-sal-display { font-size:36px; }
+  .wiz-card { padding:28px 20px; }
+  .wiz-sal-display { font-size:38px; }
   /* NAV */
   nav { padding:0 16px; height:52px; }
   .nav-link { display:none; }
@@ -848,17 +852,21 @@ const bodyHTML = `<nav>
 <div class="submit-outer">
   <div class="wiz-wrap">
     <div class="wiz-copy">
-      <div class="wiz-copy-badge">Anonymous · Encrypted</div>
+      <div class="wiz-copy-badge">ANONYMOUS · ENCRYPTED</div>
+    <div class="wiz-copy-mid">
       <h2 class="wiz-copy-h">Find out where<br>you stand.</h2>
       <p class="wiz-copy-p">Join engineers who shared their salary to unlock the full market picture.</p>
-      <div class="wiz-copy-stats">
-        <div><span id="stat-co-sub">—</span><span>companies</span></div>
-        <div><span id="stat-sub-sub">—</span><span>data points</span></div>
-      </div>
+    </div>
+    <div class="wiz-copy-stats">
+      <div><span id="stat-co-sub">—</span><span>companies</span></div>
+      <div><span id="stat-sub-sub">—</span><span>data points</span></div>
+    </div>
     </div>
     <div class="wiz-card">
-      <div class="wiz-prog"><div class="wiz-prog-fill" id="wiz-fill" style="width:20%"></div></div>
-      <div class="wiz-step-label" id="wiz-step-label">1 / 5 — Role</div>
+      <div class="wiz-prog-wrap">
+        <div class="wiz-step-label" id="wiz-step-label">1 / 5 — Role</div>
+        <div class="wiz-prog"><div class="wiz-prog-fill" id="wiz-fill" style="width:20%"></div></div>
+      </div>
 
       <div class="wiz-step" id="ws1">
         <div class="wiz-q">What's your role?</div>
