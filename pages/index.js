@@ -650,8 +650,8 @@ const bodyHTML = `<nav>
 </nav>
 
 <section class="hero">
-  <video autoplay muted loop playsinline style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:.35;z-index:0;">
-    <source src="/interview.mp4" type="video/mp4">
+  <video id="hero-vid" autoplay muted playsinline style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:.35;z-index:0;">
+    <source src="/interview1.mp4" type="video/mp4">
   </video>
 
   <div class="hero-copy">
@@ -1827,6 +1827,20 @@ export default function Home() {
     }, 3200);
 
     return () => clearInterval(interval);
+  }, []);
+
+  useEffect(() => {
+    const videos = ['/interview1.mp4', '/interview2.mp4'];
+    let idx = 0;
+    const vid = document.getElementById('hero-vid');
+    if (!vid) return;
+    const onEnded = () => {
+      idx = (idx + 1) % videos.length;
+      vid.src = videos[idx];
+      vid.play();
+    };
+    vid.addEventListener('ended', onEnded);
+    return () => vid.removeEventListener('ended', onEnded);
   }, []);
 
   const d = lbCompany ? lbData[lbCompany] : null;
