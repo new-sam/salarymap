@@ -51,7 +51,8 @@
       "Bash(node -e \":*)",
       "Bash(echo \"exit:$?\")",
       "Bash(python3 -c \"import sys,json; d=json.loads\\(sys.stdin.read\\(\\)\\); print\\(d.get\\(''''err'''',{}\\).get\\(''''message'''',''''''''\\)[:800]\\)\")",
-      "Bash(git:*)"
+      "Bash(git:*)",
+      "Bash(python3:*)"
     ]
   },
   "hooks": {
