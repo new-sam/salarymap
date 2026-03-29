@@ -34,11 +34,50 @@ nav { position:fixed; top:0; left:0; right:0; z-index:200; padding:0 52px; heigh
 .btn-p { font-family:'Barlow',sans-serif; font-size:14px; font-weight:700; background:var(--orange); color:#fff; border:none; padding:14px 28px; border-radius:2px; cursor:pointer; }
 .btn-g { font-size:14px; color:var(--mid); background:transparent; border:1px solid var(--line); padding:13px 24px; border-radius:2px; cursor:pointer; font-family:'Barlow',sans-serif; transition:all .15s; }
 .btn-g:hover { border-color:rgba(255,255,255,.22); color:var(--white); }
-.hero-stats { position:absolute; bottom:0; left:0; right:0; z-index:10; padding:22px 52px; border-top:1px solid var(--line); display:flex; background:rgba(12,12,11,.55); backdrop-filter:blur(8px); }
-.hs { flex:1; padding:0 32px 0 0; border-right:1px solid var(--line); }
-.hs:first-child { padding-left:0; } .hs:last-child { border-right:none; }
-.hs-n { font-family:'Geist Mono',monospace; font-size:24px; font-weight:500; line-height:1; margin-bottom:4px; transition:color .4s; }
-.hs-l { font-size:11px; color:var(--dim); text-transform:uppercase; letter-spacing:.8px; }
+.hero-live-bar {
+  position:absolute; bottom:0; left:0; right:0; z-index:10;
+  background:rgba(12,12,11,.6); backdrop-filter:blur(8px);
+  border-top: 1px solid #1a1a1a;
+  padding: 0 40px;
+  height: 52px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  overflow: hidden;
+}
+.live-badge {
+  display: flex; align-items: center; gap: 7px;
+  flex-shrink: 0;
+  padding-right: 16px;
+  border-right: 1px solid #1e1e1e;
+}
+.live-dot {
+  width: 7px; height: 7px; border-radius: 50%; background: #4ade80;
+  animation: livePulse 2s ease-in-out infinite;
+}
+@keyframes livePulse {
+  0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.25;transform:scale(.65)}
+}
+.live-label {
+  font-size: 10px; font-weight: 600; letter-spacing: .18em;
+  text-transform: uppercase; color: #4ade80;
+}
+.live-msg-wrap {
+  flex: 1; overflow: hidden; position: relative; height: 52px;
+}
+.live-msg {
+  position: absolute; left: 0; right: 0;
+  display: flex; align-items: center; height: 52px;
+  opacity: 0; transform: translateY(12px);
+  transition: opacity .45s ease, transform .45s ease;
+  white-space: nowrap; overflow: hidden;
+  font-size: 13px; color: rgba(255,255,255,.55);
+}
+.live-msg.show { opacity: 1; transform: translateY(0); }
+.live-msg.hide { opacity: 0; transform: translateY(-12px); }
+.live-msg b { color: white; font-weight: 600; }
+.live-msg .co { color: #FF6200; font-weight: 700; }
+.live-msg .dim { color: rgba(255,255,255,.3); font-size: 12px; }
 .car-dots { position:absolute; right:52px; bottom:88px; z-index:10; display:flex; gap:6px; }
 .cdot { width:5px; height:5px; border-radius:50%; background:rgba(255,255,255,.28); cursor:pointer; transition:all .3s; }
 .cdot.on { background:var(--orange); width:16px; border-radius:3px; }
@@ -525,11 +564,7 @@ nav { position:fixed; top:0; left:0; right:0; z-index:200; padding:0 52px; heigh
   .hero-btns { flex-direction:column; gap:10px; }
   .btn-p, .btn-g { width:100%; text-align:center; padding:13px 20px; }
   .car-dots, .car-arrows { display:none; }
-  .hero-stats { padding:14px 16px; flex-wrap:wrap; gap:0; }
-  .hs { flex:1 1 50%; padding:8px 4px; border-right:none !important; border-bottom:1px solid var(--line); }
-  .hs:nth-child(odd) { border-right:1px solid var(--line) !important; }
-  .hs:nth-last-child(-n+2) { border-bottom:none; }
-  .hs-n { font-size:18px; }
+
 
   /* TICKER */
   .stream-ticker { padding:0 16px; }
@@ -628,11 +663,12 @@ const bodyHTML = `<nav>
     </div>
   </div>
   </div>
-  <div class="hero-stats">
-    <div class="hs"><div class="hs-n" id="hero-n">4,812</div><div class="hs-l">Submissions</div></div>
-    <div class="hs"><div class="hs-n" id="hero-co-n">134</div><div class="hs-l">Companies</div></div>
-    <div class="hs"><div class="hs-n">31</div><div class="hs-l">Roles tracked</div></div>
-    <div class="hs"><div class="hs-n" style="font-size:13px;color:var(--dim);font-weight:400;">Updated today</div><div class="hs-l">&nbsp;</div></div>
+  <div class="hero-live-bar">
+    <div class="live-badge">
+      <div class="live-dot"></div>
+      <span class="live-label">Live</span>
+    </div>
+    <div class="live-msg-wrap" id="liveMsgWrap"></div>
   </div>
 </section>
 
@@ -1744,6 +1780,46 @@ export default function Home() {
     }
     tick();
     return () => { alive = false; };
+  }, []);
+
+  useEffect(() => {
+    const messages = [
+      `<b class="co">Grab Vietnam</b> · Backend Engineer 가 방금 연봉을 공유했습니다.`,
+      `지난 <b>1시간</b> 동안 <b class="co">12명</b>이 새로운 연봉 데이터를 입력했습니다.`,
+      `<b class="co">Shopee Vietnam</b> · Mobile Developer 가 방금 연봉을 공유했습니다.`,
+      `<b class="co">FPT · VNG · Tiki</b> 포함 <b>47개 회사</b> 데이터가 지금 업데이트 중입니다.`,
+      `<b class="co">Sky Mavis</b> · Senior Backend Engineer 가 방금 연봉을 공유했습니다.`,
+      `오늘 <b>38명</b>이 연봉을 공유하고 <b>전체 데이터에 접근</b>했습니다.`,
+      `<b class="co">Momo</b> · Data Engineer 가 방금 연봉을 공유했습니다.`,
+      `방금 <b class="co">Techcombank</b> 의 연봉 데이터가 추가되었습니다. <span class="dim">3분 전</span>`,
+      `<b class="co">VNG Corporation</b> · DevOps Engineer 가 방금 연봉을 공유했습니다.`,
+      `지금 <b>누군가</b>가 이 페이지를 보고 있습니다. <b class="co">당신의 연봉은 시장 대비 어디일까요?</b>`,
+    ];
+
+    const wrap = document.getElementById('liveMsgWrap');
+    if (!wrap) return;
+
+    messages.forEach(m => {
+      const div = document.createElement('div');
+      div.className = 'live-msg';
+      div.innerHTML = m;
+      wrap.appendChild(div);
+    });
+
+    const els = wrap.querySelectorAll('.live-msg');
+    let cur = 0;
+    els[0].classList.add('show');
+
+    const interval = setInterval(() => {
+      const prev = cur;
+      cur = (cur + 1) % els.length;
+      els[prev].classList.remove('show');
+      els[prev].classList.add('hide');
+      setTimeout(() => els[prev].classList.remove('hide'), 500);
+      els[cur].classList.add('show');
+    }, 3200);
+
+    return () => clearInterval(interval);
   }, []);
 
   const d = lbCompany ? lbData[lbCompany] : null;
