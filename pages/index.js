@@ -1784,16 +1784,16 @@ export default function Home() {
 
   useEffect(() => {
     const messages = [
-      `<b class="co">Grab Vietnam</b> · Backend Engineer 가 방금 연봉을 공유했습니다.`,
-      `지난 <b>1시간</b> 동안 <b class="co">12명</b>이 새로운 연봉 데이터를 입력했습니다.`,
-      `<b class="co">Shopee Vietnam</b> · Mobile Developer 가 방금 연봉을 공유했습니다.`,
-      `<b class="co">FPT · VNG · Tiki</b> 포함 <b>47개 회사</b> 데이터가 지금 업데이트 중입니다.`,
-      `<b class="co">Sky Mavis</b> · Senior Backend Engineer 가 방금 연봉을 공유했습니다.`,
-      `오늘 <b>38명</b>이 연봉을 공유하고 <b>전체 데이터에 접근</b>했습니다.`,
-      `<b class="co">Momo</b> · Data Engineer 가 방금 연봉을 공유했습니다.`,
-      `방금 <b class="co">Techcombank</b> 의 연봉 데이터가 추가되었습니다. <span class="dim">3분 전</span>`,
-      `<b class="co">VNG Corporation</b> · DevOps Engineer 가 방금 연봉을 공유했습니다.`,
-      `지금 <b>누군가</b>가 이 페이지를 보고 있습니다. <b class="co">당신의 연봉은 시장 대비 어디일까요?</b>`,
+      `<b class="co">Grab Vietnam</b> · Backend Engineer just shared their salary.`,
+      `<b class="co">12 engineers</b> submitted new salary data in the last <b>hour</b>.`,
+      `<b class="co">Shopee Vietnam</b> · Mobile Developer just shared their salary.`,
+      `Data from <b>47 companies</b> including <b class="co">FPT · VNG · Tiki</b> is being updated now.`,
+      `<b class="co">Sky Mavis</b> · Senior Backend Engineer just shared their salary.`,
+      `<b>38 engineers</b> shared their salary and <b>unlocked full data</b> today.`,
+      `<b class="co">Momo</b> · Data Engineer just shared their salary.`,
+      `New salary data from <b class="co">Techcombank</b> was just added. <span class="dim">3 min ago</span>`,
+      `<b class="co">VNG Corporation</b> · DevOps Engineer just shared their salary.`,
+      `Someone is viewing this page right now. <b class="co">Where does your salary stand?</b>`,
     ];
 
     const wrap = document.getElementById('liveMsgWrap');
