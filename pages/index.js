@@ -108,7 +108,7 @@ nav { position:fixed; top:0; left:0; right:0; z-index:200; padding:0 52px; heigh
 .card-top-badge { font-size:10px; font-weight:700; color:#000; background:#FF6200; padding:3px 8px; border-radius:5px; }
 .card-bottom { position:absolute; bottom:0; left:0; right:0; padding:16px; z-index:2; }
 .card-name { font-size:15px; font-weight:700; color:#fff; margin-bottom:2px; letter-spacing:-.02em; }
-.card-type { font-size:10px; color:rgba(255,255,255,.45); margin-bottom:10px; }
+.card-divider { height:1px; background:rgba(255,255,255,.15); margin:10px 0; }
 .card-sal { font-size:13px; font-weight:700; color:#FF6200; margin-bottom:4px; }
 .card-count { font-size:11px; color:rgba(255,255,255,.35); }
 .card-lock-center { position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:6px; z-index:2; }
@@ -620,7 +620,7 @@ const _cardsHTML = _cardCompanies.map((c, i) => {
       </div>
       <div class="card-bottom">
         <div class="card-name">${c.name}</div>
-        <div class="card-type">${c.type} · ${c.tier}</div>
+        <div class="card-divider"></div>
         <div class="card-sal">$${c.salMin.toLocaleString()}–$${c.salMax.toLocaleString()}</div>
         <div class="card-count">${c.submissions} salaries</div>
       </div>
