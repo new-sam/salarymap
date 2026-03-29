@@ -326,64 +326,55 @@ nav { position:fixed; top:0; left:0; right:0; z-index:200; padding:0 52px; heigh
 .chp-val { font-family:'Geist Mono',monospace; font-size:10px; color:var(--white); width:32px; text-align:right; }
 
 /* Leaderboard panel */
-.lb-gate { background:white; border-radius:20px; overflow:hidden; box-shadow:0 2px 32px rgba(0,0,0,.07); }
-.lb-head { background:#111; padding:22px 24px 20px; position:relative; }
-.lb-head-eyebrow { font-size:10px; letter-spacing:.22em; text-transform:uppercase; color:rgba(255,255,255,.28); margin-bottom:10px; }
-.lb-head-main { display:flex; align-items:flex-end; justify-content:space-between; }
-.lb-head-name { font-size:24px; font-weight:900; letter-spacing:-.03em; color:white; }
+.lb-gate { background:white; border-radius:20px; overflow:hidden; box-shadow:0 4px 40px rgba(0,0,0,.1); margin-top:12px; }
+.lb-head-strip { height:4px; background:linear-gradient(to right,#FF6200,#FFB870); }
+.lb-head-body { padding:20px 24px; display:flex; align-items:stretch; border-bottom:1px solid #f5f3ee; }
+.lb-head-left { flex:1; padding-right:20px; border-right:1px solid #f0ede6; }
+.lb-head-eyebrow { font-size:9px; letter-spacing:.2em; text-transform:uppercase; color:#ccc; margin-bottom:7px; }
+.lb-head-name { font-size:21px; font-weight:900; letter-spacing:-.03em; color:#111; margin-bottom:3px; }
 .lb-head-name em { color:#FF6200; font-style:normal; }
-.lb-head-right { text-align:right; }
-.lb-median-lbl { font-size:9px; letter-spacing:.12em; text-transform:uppercase; color:rgba(255,255,255,.25); margin-bottom:4px; }
-.lb-median-num { font-size:32px; font-weight:900; color:#FF6200; letter-spacing:-.03em; line-height:1; }
-.lb-median-sub { font-size:10px; color:rgba(255,255,255,.25); margin-top:3px; }
-.lb-head-chips { display:flex; gap:6px; margin-top:14px; flex-wrap:wrap; }
-.lb-chip { font-size:10px; font-weight:700; padding:5px 11px; border-radius:7px; }
-.lb-chip.orange { background:#FF6200; color:#000; }
-.lb-chip.dim { background:rgba(255,255,255,.07); color:rgba(255,255,255,.4); }
-.lb-tabs { display:flex; gap:0; padding:0 24px; border-bottom:2px solid #f0ede6; overflow-x:auto; scrollbar-width:none; }
+.lb-head-meta { font-size:12px; color:#bbb; }
+.lb-head-badge { display:inline-block; margin-top:10px; font-size:11px; font-weight:700; color:#FF6200; border:1.5px solid rgba(255,98,0,.3); padding:4px 12px; border-radius:7px; background:rgba(255,98,0,.04); }
+.lb-head-right { padding-left:20px; display:flex; flex-direction:column; justify-content:space-around; flex-shrink:0; gap:8px; }
+.lb-stat-b { text-align:right; }
+.lb-stat-n { font-size:20px; font-weight:900; letter-spacing:-.02em; line-height:1; color:#111; }
+.lb-stat-n.o { color:#FF6200; }
+.lb-stat-n.g { color:#16a34a; }
+.lb-stat-l { font-size:9px; letter-spacing:.1em; text-transform:uppercase; color:#ccc; margin-top:2px; }
+.lb-dist { padding:14px 24px 16px; border-bottom:1px solid #f5f3ee; }
+.lb-dist-label { font-size:9px; letter-spacing:.14em; text-transform:uppercase; color:#ccc; margin-bottom:8px; }
+.lb-dist-track { position:relative; height:6px; background:#f5f3ee; border-radius:100px; margin-bottom:7px; }
+.lb-dist-fill { position:absolute; left:8%; width:76%; height:100%; background:linear-gradient(to right,#FFE135,#FF9540,#FF6200); border-radius:100px; }
+.lb-dist-median { position:absolute; left:52%; top:-3px; width:2px; height:12px; background:#111; border-radius:1px; }
+.lb-dist-labels { display:flex; justify-content:space-between; font-size:10px; color:#bbb; }
+.lb-dist-labels .mid { text-align:center; flex:1; color:#111; font-weight:600; }
+.lb-tabs { display:flex; padding:0 24px; border-bottom:1.5px solid #f5f3ee; overflow-x:auto; scrollbar-width:none; }
 .lb-tabs::-webkit-scrollbar { display:none; }
-.lb-tab { font-size:12px; font-weight:700; color:#ccc; padding:13px 13px 11px; cursor:pointer; border-bottom:2px solid transparent; margin-bottom:-2px; white-space:nowrap; transition:all .18s; flex-shrink:0; }
+.lb-tab { font-size:12px; font-weight:600; color:#ccc; padding:11px 13px 9px; cursor:pointer; border-bottom:2px solid transparent; margin-bottom:-1.5px; white-space:nowrap; transition:all .18s; flex-shrink:0; }
 .lb-tab:hover { color:#888; }
-.lb-tab.active { color:#111; border-color:#FF6200; }
-.lb-top-row { display:flex; align-items:center; padding:18px 24px; border-bottom:1px solid #f5f3ee; position:relative; overflow:hidden; transition:background .15s; cursor:default; }
-.lb-top-row:hover { background:#fdf9f4; }
-.lb-top-row::before { content:''; position:absolute; left:0; top:0; bottom:0; width:3px; }
-.lb-top-row.r1::before { background:#FF6200; }
-.lb-top-row.r2::before { background:#FF9540; }
-.lb-top-row.r3::before { background:#FFB870; }
-.lb-rank-circle { width:32px; height:32px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:900; flex-shrink:0; margin-right:14px; }
-.lb-top-row.r1 .lb-rank-circle { background:#FF6200; color:#000; }
-.lb-top-row.r2 .lb-rank-circle { background:#FF9540; color:#000; }
-.lb-top-row.r3 .lb-rank-circle { background:#f5f3ee; color:#aaa; }
-.lb-role-block { flex:1; }
-.lb-role-title { font-size:15px; font-weight:800; color:#111; letter-spacing:-.01em; }
-.lb-role-sub { font-size:11px; color:#bbb; margin-top:2px; }
-.lb-sal-block { text-align:right; flex-shrink:0; }
-.lb-sal-num { font-size:22px; font-weight:900; color:#111; letter-spacing:-.03em; line-height:1; }
-.lb-sal-bar-wrap { height:3px; background:#f0ede6; border-radius:100px; overflow:hidden; margin:5px 0 3px; width:100px; margin-left:auto; }
-.lb-sal-bar { height:100%; border-radius:100px; background:#FF6200; }
-.lb-sal-vs { font-size:11px; font-weight:700; }
-.lb-sal-vs.up { color:#16a34a; }
-.lb-sal-vs.dn { color:#FF6200; }
-.lb-locked-header { display:flex; align-items:center; gap:10px; padding:14px 24px 10px; border-top:1px solid #f0ede6; }
-.lb-locked-line { flex:1; height:1px; background:#f0ede6; }
-.lb-locked-label { font-size:10px; font-weight:700; letter-spacing:.12em; text-transform:uppercase; color:#ccc; flex-shrink:0; }
-.lb-locked-rows { padding:0 24px; }
-.lb-locked-row { display:flex; align-items:center; padding:12px 0; border-bottom:1px solid #f8f6f2; }
-.lb-locked-row:last-child { border-bottom:none; }
-.lb-lock-rank { font-size:12px; font-weight:900; color:#e0ddd5; width:32px; flex-shrink:0; }
-.lb-lock-role { flex:1; }
-.lb-lock-title { font-size:13px; font-weight:700; color:#ddd; filter:blur(5px); user-select:none; }
-.lb-lock-sub { font-size:10px; color:#ddd; margin-top:2px; filter:blur(3px); }
-.lb-lock-sal { text-align:right; flex-shrink:0; }
-.lb-lock-num { font-size:18px; font-weight:900; color:#ddd; filter:blur(7px); user-select:none; }
-.lb-lock-vs { font-size:10px; color:#ddd; filter:blur(4px); user-select:none; margin-top:2px; }
-.lb-cta-area { padding:20px 24px 24px; }
-.lb-cta-btn { width:100%; background:#FF6200; color:#000; font-size:14px; font-weight:900; letter-spacing:-.01em; padding:16px; border-radius:12px; text-align:center; cursor:pointer; border:none; transition:transform .15s, opacity .15s; display:block; }
+.lb-tab.active { color:#FF6200; border-color:#FF6200; }
+.lb-row { display:flex; align-items:center; gap:14px; padding:14px 24px; border-bottom:1px solid #f8f6f2; transition:background .15s; }
+.lb-row:hover { background:#fdfaf7; }
+.lb-av { width:34px; height:34px; border-radius:50%; flex-shrink:0; display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:800; background:#fff3ec; color:#FF6200; border:1.5px solid rgba(255,98,0,.2); }
+.lb-row-info { flex:1; min-width:0; }
+.lb-row-title { font-size:13px; font-weight:700; color:#111; }
+.lb-row-sub { font-size:11px; color:#bbb; margin-top:2px; }
+.lb-row-bar-block { flex-shrink:0; width:156px; }
+.lb-row-track { position:relative; height:3px; background:#f5f3ee; border-radius:100px; margin-bottom:5px; }
+.lb-row-fill { height:100%; border-radius:100px; background:#FF6200; }
+.lb-row-median { position:absolute; left:53%; top:-3px; width:1.5px; height:9px; background:rgba(0,0,0,.1); border-radius:1px; }
+.lb-row-nums { display:flex; justify-content:space-between; align-items:baseline; }
+.lb-row-salary { font-size:14px; font-weight:800; color:#111; letter-spacing:-.02em; }
+.lb-row-vs { font-size:10px; font-weight:700; }
+.lb-row-vs.up { color:#16a34a; }
+.lb-row-vs.dn { color:#FF6200; }
+.lb-cta-fade { height:60px; background:linear-gradient(to bottom,rgba(255,255,255,0),white); margin-bottom:-2px; pointer-events:none; }
+.lb-cta-area { padding:0 24px 24px; }
+.lb-cta-count { text-align:center; font-size:12px; color:#bbb; margin-bottom:14px; }
+.lb-cta-count b { color:#111; }
+.lb-cta-btn { width:100%; background:#FF6200; color:#000; font-size:14px; font-weight:800; padding:15px; border-radius:12px; text-align:center; cursor:pointer; border:none; display:block; transition:transform .15s,opacity .15s; letter-spacing:-.01em; }
 .lb-cta-btn:hover { opacity:.9; transform:translateY(-1px); }
-.lb-cta-row { display:flex; justify-content:center; gap:18px; margin-top:10px; }
-.lb-cta-chip { font-size:10px; color:#bbb; display:flex; align-items:center; gap:4px; }
-.lb-cta-chip::before { content:'✓'; color:#4ade80; font-weight:800; font-size:10px; }
+.lb-cta-sub { text-align:center; font-size:11px; color:#bbb; margin-top:8px; }
 
 /* ── MOBILE RESPONSIVE ── */
 
@@ -1640,42 +1631,48 @@ window.doUnlock=doUnlock;
 
 const lbData = {
   'Grab Vietnam': {
-    type: 'Super App', city: 'Ho Chi Minh City', topPct: 4, submissions: 127, median: 2800, vsMarket: 38,
+    type: 'Super App', tier: 'Foreign · L1', city: 'Ho Chi Minh City',
+    topPct: 4, submissions: 127, median: 2800, vsMarket: 38,
+    salaryMin: 1200, salaryMax: 4200,
     openRows: [
-      { title:'Mobile Engineer',   role:'Mobile',   exp:'5–7', city:'HCMC', salary:3500, barPct:100, vsMarket:52 },
-      { title:'Backend Engineer',  role:'Backend',  exp:'5–7', city:'HCMC', salary:3200, barPct:91,  vsMarket:38 },
-      { title:'Data Engineer',     role:'Data',     exp:'3–5', city:'HCMC', salary:2800, barPct:80,  vsMarket:21 },
+      { title:'Mobile Engineer',   roleAbbr:'Mob', role:'Mobile',   exp:'5–7', salary:3500, barPct:100, vsMarket:52 },
+      { title:'Backend Engineer',  roleAbbr:'BE',  role:'Backend',  exp:'5–7', salary:3200, barPct:91,  vsMarket:38 },
+      { title:'Data Engineer',     roleAbbr:'DE',  role:'Data',     exp:'3–5', salary:2800, barPct:80,  vsMarket:21 },
+      { title:'DevOps / Cloud',    roleAbbr:'DO',  role:'DevOps',   exp:'2–3', salary:2300, barPct:66,  vsMarket:-2 },
     ],
     lockedRows: [
-      { title:'Backend Engineer',  role:'Backend',  exp:'3–4', city:'HCMC', salary:2300, vsMarket:-2  },
-      { title:'DevOps / Cloud',    role:'DevOps',   exp:'2–3', city:'HCMC', salary:1900, vsMarket:-18 },
-      { title:'Frontend Engineer', role:'Frontend', exp:'1–2', city:'HCMC', salary:1400, vsMarket:-31 },
+      { title:'Backend Engineer',  role:'Backend',  exp:'3–4', salary:2000, vsMarket:-13 },
+      { title:'Frontend Engineer', role:'Frontend', exp:'1–2', salary:1400, vsMarket:-31 },
     ],
   },
   'VNG Corporation': {
-    type: 'Product · Large', city: 'Ho Chi Minh City', topPct: 9, submissions: 94, median: 2200, vsMarket: 14,
+    type: 'Product', tier: 'Local · Large', city: 'Ho Chi Minh City',
+    topPct: 9, submissions: 94, median: 2200, vsMarket: 14,
+    salaryMin: 900, salaryMax: 3200,
     openRows: [
-      { title:'Backend Engineer',  role:'Backend', exp:'5–7', city:'HCMC', salary:2700, barPct:100, vsMarket:17 },
-      { title:'Mobile Engineer',   role:'Mobile',  exp:'4–5', city:'HCMC', salary:2400, barPct:89,  vsMarket:4  },
-      { title:'Data Engineer',     role:'Data',    exp:'3–4', city:'HCMC', salary:2100, barPct:78,  vsMarket:-9 },
+      { title:'Backend Engineer',  roleAbbr:'BE',  role:'Backend', exp:'5–7', salary:2700, barPct:100, vsMarket:17 },
+      { title:'Mobile Engineer',   roleAbbr:'Mob', role:'Mobile',  exp:'4–5', salary:2400, barPct:89,  vsMarket:4  },
+      { title:'Data Engineer',     roleAbbr:'DE',  role:'Data',    exp:'3–4', salary:2100, barPct:78,  vsMarket:-9 },
+      { title:'Frontend Engineer', roleAbbr:'FE',  role:'Frontend',exp:'3–4', salary:1800, barPct:67,  vsMarket:-22 },
     ],
     lockedRows: [
-      { title:'Frontend Engineer', role:'Frontend', exp:'3–4', city:'HCMC', salary:1800, vsMarket:-22 },
-      { title:'DevOps / Cloud',    role:'DevOps',   exp:'2–3', city:'HCMC', salary:1500, vsMarket:-35 },
-      { title:'PM',                role:'PM',       exp:'3–4', city:'HCMC', salary:1750, vsMarket:-24 },
+      { title:'DevOps / Cloud',    role:'DevOps', exp:'2–3', salary:1500, vsMarket:-35 },
+      { title:'PM',                role:'PM',     exp:'3–4', salary:1750, vsMarket:-24 },
     ],
   },
   'Shopee Vietnam': {
-    type: 'E-commerce · Foreign', city: 'Ho Chi Minh City', topPct: 6, submissions: 112, median: 2600, vsMarket: 30,
+    type: 'E-commerce', tier: 'Foreign · L1', city: 'Ho Chi Minh City',
+    topPct: 6, submissions: 112, median: 2600, vsMarket: 30,
+    salaryMin: 1100, salaryMax: 3800,
     openRows: [
-      { title:'Backend Engineer',  role:'Backend', exp:'5–7', city:'HCMC', salary:3100, barPct:100, vsMarket:34 },
-      { title:'Data Engineer',     role:'Data',    exp:'4–5', city:'HCMC', salary:2800, barPct:90,  vsMarket:21 },
-      { title:'Mobile Engineer',   role:'Mobile',  exp:'3–4', city:'HCMC', salary:2400, barPct:77,  vsMarket:4  },
+      { title:'Backend Engineer',  roleAbbr:'BE',  role:'Backend', exp:'5–7', salary:3100, barPct:100, vsMarket:34 },
+      { title:'Data Engineer',     roleAbbr:'DE',  role:'Data',    exp:'4–5', salary:2800, barPct:90,  vsMarket:21 },
+      { title:'Mobile Engineer',   roleAbbr:'Mob', role:'Mobile',  exp:'3–4', salary:2400, barPct:77,  vsMarket:4  },
+      { title:'PM',                roleAbbr:'PM',  role:'PM',      exp:'4–5', salary:2500, barPct:81,  vsMarket:8  },
     ],
     lockedRows: [
-      { title:'DevOps / Cloud',    role:'DevOps',   exp:'2–3', city:'HCMC', salary:1900, vsMarket:-18 },
-      { title:'Frontend Engineer', role:'Frontend', exp:'2–3', city:'HCMC', salary:1600, vsMarket:-31 },
-      { title:'PM',                role:'PM',       exp:'4–5', city:'HCMC', salary:2500, vsMarket:8   },
+      { title:'DevOps / Cloud',    role:'DevOps',   exp:'2–3', salary:1900, vsMarket:-18 },
+      { title:'Frontend Engineer', role:'Frontend', exp:'2–3', salary:1600, vsMarket:-31 },
     ],
   },
 };
@@ -1872,26 +1869,46 @@ export default function Home() {
           <div style={{ width:'90%', maxWidth:520, maxHeight:'85vh', overflowY:'auto', fontFamily:"'Barlow',sans-serif" }}>
             <div className="lb-gate">
 
+              {/* Top gradient strip */}
+              <div className="lb-head-strip" />
+
               {/* Head */}
-              <div className="lb-head">
-                <button onClick={() => setLbCompany(null)} style={{ position:'absolute', top:14, right:16, background:'none', border:'none', color:'rgba(255,255,255,.3)', fontSize:22, cursor:'pointer', lineHeight:1 }}>×</button>
-                <div className="lb-head-eyebrow">Salary leaderboard</div>
-                <div className="lb-head-main">
-                  <div>
-                    <div className="lb-head-name">
-                      {company.name.split(' ')[0]} <em>{company.name.split(' ').slice(1).join(' ')}</em>
-                    </div>
-                    <div className="lb-head-chips">
-                      <span className="lb-chip orange">Top {company.topPct}% Vietnam</span>
-                      <span className="lb-chip dim">{company.type} · {company.city}</span>
-                      <span className="lb-chip dim">{company.submissions} salaries</span>
-                    </div>
+              <div className="lb-head-body">
+                <div className="lb-head-left">
+                  <div className="lb-head-eyebrow">Salary leaderboard</div>
+                  <div className="lb-head-name">
+                    {company.name.split(' ')[0]} <em>{company.name.split(' ').slice(1).join(' ')}</em>
                   </div>
-                  <div className="lb-head-right">
-                    <div className="lb-median-lbl">Median</div>
-                    <div className="lb-median-num">${company.median.toLocaleString()}</div>
-                    <div className="lb-median-sub">+{company.vsMarket}% vs VN avg</div>
+                  <div className="lb-head-meta">{company.type} · {company.tier} · {company.city}</div>
+                  <div className="lb-head-badge">Top {company.topPct}% in Vietnam</div>
+                </div>
+                <div className="lb-head-right">
+                  <div className="lb-stat-b">
+                    <div className="lb-stat-n">{company.submissions}</div>
+                    <div className="lb-stat-l">Salaries</div>
                   </div>
+                  <div className="lb-stat-b">
+                    <div className="lb-stat-n o">${(company.median/1000).toFixed(1)}k</div>
+                    <div className="lb-stat-l">Median</div>
+                  </div>
+                  <div className="lb-stat-b">
+                    <div className="lb-stat-n g">+{company.vsMarket}%</div>
+                    <div className="lb-stat-l">vs market</div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Salary distribution bar */}
+              <div className="lb-dist">
+                <div className="lb-dist-label">Salary spread at this company</div>
+                <div className="lb-dist-track">
+                  <div className="lb-dist-fill" />
+                  <div className="lb-dist-median" />
+                </div>
+                <div className="lb-dist-labels">
+                  <span>${company.salaryMin?.toLocaleString()}</span>
+                  <span className="mid">median ${company.median?.toLocaleString()}</span>
+                  <span>${company.salaryMax?.toLocaleString()}</span>
                 </div>
               </div>
 
@@ -1899,70 +1916,49 @@ export default function Home() {
               <div className="lb-tabs">
                 {['All roles','Backend','Mobile','Data','DevOps','PM'].map(tab => (
                   <div key={tab}
-                    className={`lb-tab${activeTab===tab?' active':''}`}
+                    className={`lb-tab ${activeTab===tab?'active':''}`}
                     onClick={() => setActiveTab(tab)}>
                     {tab}
                   </div>
                 ))}
               </div>
 
-              {/* Open rows */}
-              <div className="lb-open-rows">
-                {openRows.filter(r => activeTab==='All roles' || r.role===activeTab).map((row, i) => (
-                  <div key={i} className={`lb-top-row r${i+1}`}>
-                    <div className="lb-rank-circle">0{i+1}</div>
-                    <div className="lb-role-block">
-                      <div className="lb-role-title">{row.title}</div>
-                      <div className="lb-role-sub">{row.exp} yrs · Full-time · {row.city}</div>
+              {/* Rows */}
+              {openRows
+                .filter(r => activeTab==='All roles' || r.role===activeTab)
+                .map((row, i) => (
+                  <div key={i} className="lb-row">
+                    <div className="lb-av">{row.roleAbbr}</div>
+                    <div className="lb-row-info">
+                      <div className="lb-row-title">{row.title}</div>
+                      <div className="lb-row-sub">{row.exp} yrs · Full-time</div>
                     </div>
-                    <div className="lb-sal-block">
-                      <div className="lb-sal-num">${row.salary.toLocaleString()}</div>
-                      <div className="lb-sal-bar-wrap">
-                        <div className="lb-sal-bar" style={{width:`${row.barPct}%`}}></div>
+                    <div className="lb-row-bar-block">
+                      <div className="lb-row-track">
+                        <div className="lb-row-fill" style={{width:`${row.barPct}%`}} />
+                        <div className="lb-row-median" />
                       </div>
-                      <div className={`lb-sal-vs ${row.vsMarket>=0?'up':'dn'}`}>
-                        {row.vsMarket>=0?'+':''}{row.vsMarket}% vs market
+                      <div className="lb-row-nums">
+                        <div className="lb-row-salary">${row.salary.toLocaleString()}</div>
+                        <div className={`lb-row-vs ${row.vsMarket>=0?'up':'dn'}`}>
+                          {row.vsMarket>=0?'+':''}{row.vsMarket}%
+                        </div>
                       </div>
                     </div>
                   </div>
-                ))}
-              </div>
-
-              {/* Locked divider */}
-              <div className="lb-locked-header">
-                <div className="lb-locked-line"></div>
-                <div className="lb-locked-label">🔒 {lockedCount} more roles locked</div>
-                <div className="lb-locked-line"></div>
-              </div>
-
-              {/* Locked rows */}
-              <div className="lb-locked-rows">
-                {lockedRows.map((row, i) => (
-                  <div key={i} className="lb-locked-row">
-                    <div className="lb-lock-rank">0{i+4}</div>
-                    <div className="lb-lock-role">
-                      <div className="lb-lock-title">{row.title}</div>
-                      <div className="lb-lock-sub">{row.exp} yrs · {row.city}</div>
-                    </div>
-                    <div className="lb-lock-sal">
-                      <div className="lb-lock-num">${row.salary.toLocaleString()}</div>
-                      <div className="lb-lock-vs">{row.vsMarket>=0?'+':''}{row.vsMarket}% market</div>
-                    </div>
-                  </div>
-                ))}
-              </div>
+              ))}
 
               {/* CTA */}
+              <div className="lb-cta-fade" />
               <div className="lb-cta-area">
+                <div className="lb-cta-count">
+                  <b>{lockedCount} more roles</b> hidden — add your salary to unlock
+                </div>
                 <button className="lb-cta-btn"
                   onClick={() => { setLbCompany(null); document.getElementById('submit-section')?.scrollIntoView({behavior:'smooth'}); }}>
-                  Share your salary → Unlock all {company.submissions} roles
+                  See where you stand →
                 </button>
-                <div className="lb-cta-row">
-                  <span className="lb-cta-chip">2 minutes</span>
-                  <span className="lb-cta-chip">Anonymous</span>
-                  <span className="lb-cta-chip">No login</span>
-                </div>
+                <div className="lb-cta-sub">2 minutes · anonymous · no login</div>
               </div>
 
             </div>
