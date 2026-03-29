@@ -96,10 +96,10 @@ nav { position:fixed; top:0; left:0; right:0; z-index:200; padding:0 52px; heigh
 .section-head-sub { font-size:13px; color:var(--mid); font-weight:300; }
 
 /* FILTER TABS */
-.filter-tabs { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:36px; }
-.ftab { display:flex; align-items:center; gap:8px; padding:9px 16px; border-radius:24px; border:1px solid var(--line); background:var(--bg1); cursor:pointer; transition:all .2s; font-size:12px; font-weight:500; color:var(--mid); white-space:nowrap; }
-.ftab:hover { border-color:rgba(255,255,255,.18); color:var(--white); }
-.ftab.active { border-color:var(--orange); background:rgba(255,96,0,.08); color:var(--orange); }
+.filter-tabs { display:flex; gap:6px; flex-wrap:wrap; margin-bottom:36px; }
+.ftab { display:flex; align-items:center; gap:5px; border:none; border-bottom:2px solid transparent; padding:6px 4px; background:transparent; font-size:12px; font-weight:500; color:#999; cursor:pointer; transition:all .18s; border-radius:0; white-space:nowrap; }
+.ftab:hover { color:#111; border-color:#ddd; }
+.ftab.active { color:#FF6200; border-color:#FF6200; }
 .ftab-icon { font-size:14px; }
 
 /* CARD GRID */
@@ -261,11 +261,11 @@ nav { position:fixed; top:0; left:0; right:0; z-index:200; padding:0 52px; heigh
 
 /* ── COMPANY SEARCH ── */
 .co-search-wrap { margin-bottom:28px; position:relative; }
-.co-search-bar { display:flex; align-items:center; gap:10px; background:var(--bg1); border:1px solid var(--line); border-radius:8px; padding:12px 18px; transition:border-color .2s; }
-.co-search-bar:focus-within { border-color:rgba(255,96,0,.4); }
-.co-search-icon { color:var(--dim); font-size:15px; flex-shrink:0; }
-.co-search-input { flex:1; background:transparent; border:none; outline:none; color:var(--white); font-family:'Barlow',sans-serif; font-size:14px; }
-.co-search-input::placeholder { color:var(--dim); }
+.co-search-bar { display:flex; align-items:center; gap:10px; border-bottom:1.5px solid #ddd; border-radius:0; padding:12px 4px; background:transparent; margin-bottom:20px; transition:border-color .2s; }
+.co-search-bar:focus-within { border-color:#FF6200; }
+.co-search-icon { font-size:14px; opacity:.3; flex-shrink:0; }
+.co-search-input { flex:1; background:transparent; border:none; outline:none; color:#111; font-family:'Barlow',sans-serif; font-size:15px; }
+.co-search-input::placeholder { color:#bbb; }
 .co-search-drop { display:none; position:absolute; top:calc(100% + 6px); left:0; right:0; z-index:100; background:var(--bg1); border:1px solid var(--line); border-radius:8px; box-shadow:0 12px 32px rgba(0,0,0,.5); max-height:260px; overflow-y:auto; }
 .co-search-drop.open { display:block; }
 .co-drop-item { padding:11px 18px; font-size:13px; cursor:pointer; display:flex; align-items:center; justify-content:space-between; transition:background .1s; }
