@@ -326,64 +326,64 @@ nav { position:fixed; top:0; left:0; right:0; z-index:200; padding:0 52px; heigh
 .chp-val { font-family:'Geist Mono',monospace; font-size:10px; color:var(--white); width:32px; text-align:right; }
 
 /* Leaderboard panel */
-.lb-overlay {
-  display:none;
-  position:fixed;
-  inset:0;
-  background:rgba(0,0,0,.75);
-  z-index:1000;
-  align-items:center;
-  justify-content:center;
-}
-.lb-overlay.open { display:flex; }
-.lb-modal {
-  background:#141413;
-  border:1px solid rgba(255,255,255,.1);
-  border-radius:14px;
-  width:90%;
-  max-width:700px;
-  max-height:80vh;
-  overflow-y:auto;
-}
-.lb-modal-header {
-  padding:24px 28px;
-  border-bottom:1px solid rgba(255,255,255,.07);
-  display:flex;
-  align-items:center;
-  gap:14px;
-  position:sticky;
-  top:0;
-  background:#141413;
-  z-index:2;
-}
-.lb-close {
-  margin-left:auto;
-  background:none;
-  border:none;
-  color:rgba(255,255,255,.5);
-  font-size:20px;
-  cursor:pointer;
-  padding:4px 8px;
-}
-.lb-close:hover { color:#fff; }
-.lb-row-item {
-  display:grid;
-  grid-template-columns:32px 1fr 100px 80px;
-  gap:12px;
-  padding:14px 28px;
-  border-bottom:1px solid rgba(255,255,255,.04);
-  align-items:center;
-}
-.lb-row-item:hover { background:rgba(255,255,255,.03); }
-.lb-locked .lb-salary { filter:blur(6px); }
-.lb-gate {
-  padding:20px 28px;
-  background:rgba(255,96,0,.04);
-  border-top:1px solid rgba(255,96,0,.1);
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-}
+.lb-gate { background:white; border-radius:20px; overflow:hidden; box-shadow:0 2px 32px rgba(0,0,0,.07); }
+.lb-head { background:#111; padding:22px 24px 20px; position:relative; }
+.lb-head-eyebrow { font-size:10px; letter-spacing:.22em; text-transform:uppercase; color:rgba(255,255,255,.28); margin-bottom:10px; }
+.lb-head-main { display:flex; align-items:flex-end; justify-content:space-between; }
+.lb-head-name { font-size:24px; font-weight:900; letter-spacing:-.03em; color:white; }
+.lb-head-name em { color:#FF6200; font-style:normal; }
+.lb-head-right { text-align:right; }
+.lb-median-lbl { font-size:9px; letter-spacing:.12em; text-transform:uppercase; color:rgba(255,255,255,.25); margin-bottom:4px; }
+.lb-median-num { font-size:32px; font-weight:900; color:#FF6200; letter-spacing:-.03em; line-height:1; }
+.lb-median-sub { font-size:10px; color:rgba(255,255,255,.25); margin-top:3px; }
+.lb-head-chips { display:flex; gap:6px; margin-top:14px; flex-wrap:wrap; }
+.lb-chip { font-size:10px; font-weight:700; padding:5px 11px; border-radius:7px; }
+.lb-chip.orange { background:#FF6200; color:#000; }
+.lb-chip.dim { background:rgba(255,255,255,.07); color:rgba(255,255,255,.4); }
+.lb-tabs { display:flex; gap:0; padding:0 24px; border-bottom:2px solid #f0ede6; overflow-x:auto; scrollbar-width:none; }
+.lb-tabs::-webkit-scrollbar { display:none; }
+.lb-tab { font-size:12px; font-weight:700; color:#ccc; padding:13px 13px 11px; cursor:pointer; border-bottom:2px solid transparent; margin-bottom:-2px; white-space:nowrap; transition:all .18s; flex-shrink:0; }
+.lb-tab:hover { color:#888; }
+.lb-tab.active { color:#111; border-color:#FF6200; }
+.lb-top-row { display:flex; align-items:center; padding:18px 24px; border-bottom:1px solid #f5f3ee; position:relative; overflow:hidden; transition:background .15s; cursor:default; }
+.lb-top-row:hover { background:#fdf9f4; }
+.lb-top-row::before { content:''; position:absolute; left:0; top:0; bottom:0; width:3px; }
+.lb-top-row.r1::before { background:#FF6200; }
+.lb-top-row.r2::before { background:#FF9540; }
+.lb-top-row.r3::before { background:#FFB870; }
+.lb-rank-circle { width:32px; height:32px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:900; flex-shrink:0; margin-right:14px; }
+.lb-top-row.r1 .lb-rank-circle { background:#FF6200; color:#000; }
+.lb-top-row.r2 .lb-rank-circle { background:#FF9540; color:#000; }
+.lb-top-row.r3 .lb-rank-circle { background:#f5f3ee; color:#aaa; }
+.lb-role-block { flex:1; }
+.lb-role-title { font-size:15px; font-weight:800; color:#111; letter-spacing:-.01em; }
+.lb-role-sub { font-size:11px; color:#bbb; margin-top:2px; }
+.lb-sal-block { text-align:right; flex-shrink:0; }
+.lb-sal-num { font-size:22px; font-weight:900; color:#111; letter-spacing:-.03em; line-height:1; }
+.lb-sal-bar-wrap { height:3px; background:#f0ede6; border-radius:100px; overflow:hidden; margin:5px 0 3px; width:100px; margin-left:auto; }
+.lb-sal-bar { height:100%; border-radius:100px; background:#FF6200; }
+.lb-sal-vs { font-size:11px; font-weight:700; }
+.lb-sal-vs.up { color:#16a34a; }
+.lb-sal-vs.dn { color:#FF6200; }
+.lb-locked-header { display:flex; align-items:center; gap:10px; padding:14px 24px 10px; border-top:1px solid #f0ede6; }
+.lb-locked-line { flex:1; height:1px; background:#f0ede6; }
+.lb-locked-label { font-size:10px; font-weight:700; letter-spacing:.12em; text-transform:uppercase; color:#ccc; flex-shrink:0; }
+.lb-locked-rows { padding:0 24px; }
+.lb-locked-row { display:flex; align-items:center; padding:12px 0; border-bottom:1px solid #f8f6f2; }
+.lb-locked-row:last-child { border-bottom:none; }
+.lb-lock-rank { font-size:12px; font-weight:900; color:#e0ddd5; width:32px; flex-shrink:0; }
+.lb-lock-role { flex:1; }
+.lb-lock-title { font-size:13px; font-weight:700; color:#ddd; filter:blur(5px); user-select:none; }
+.lb-lock-sub { font-size:10px; color:#ddd; margin-top:2px; filter:blur(3px); }
+.lb-lock-sal { text-align:right; flex-shrink:0; }
+.lb-lock-num { font-size:18px; font-weight:900; color:#ddd; filter:blur(7px); user-select:none; }
+.lb-lock-vs { font-size:10px; color:#ddd; filter:blur(4px); user-select:none; margin-top:2px; }
+.lb-cta-area { padding:20px 24px 24px; }
+.lb-cta-btn { width:100%; background:#FF6200; color:#000; font-size:14px; font-weight:900; letter-spacing:-.01em; padding:16px; border-radius:12px; text-align:center; cursor:pointer; border:none; transition:transform .15s, opacity .15s; display:block; }
+.lb-cta-btn:hover { opacity:.9; transform:translateY(-1px); }
+.lb-cta-row { display:flex; justify-content:center; gap:18px; margin-top:10px; }
+.lb-cta-chip { font-size:10px; color:#bbb; display:flex; align-items:center; gap:4px; }
+.lb-cta-chip::before { content:'✓'; color:#4ade80; font-weight:800; font-size:10px; }
 
 /* ── MOBILE RESPONSIVE ── */
 
@@ -1640,46 +1640,53 @@ window.doUnlock=doUnlock;
 
 const lbData = {
   'Grab Vietnam': {
-    type: 'Super App · Foreign', domain: 'grab.com',
-    rows: [
-      { role: 'Mobile Engineer',   exp: '5–7 yrs', salary: '72M', pct: 'Top 4%',  locked: false },
-      { role: 'Backend Engineer',  exp: '5–7 yrs', salary: '65M', pct: 'Top 6%',  locked: false },
-      { role: 'Data Engineer',     exp: '3–5 yrs', salary: '55M', pct: 'Top 9%',  locked: false },
-      { role: 'Backend Engineer',  exp: '3–4 yrs', salary: '46M', pct: 'Top 14%', locked: false },
-      { role: 'DevOps / Cloud',    exp: '2–3 yrs', salary: '38M', pct: 'Top 19%', locked: true  },
-      { role: 'Frontend Engineer', exp: '1–2 yrs', salary: '28M', pct: 'Top 31%', locked: true  },
+    type: 'Super App', city: 'Ho Chi Minh City', topPct: 4, submissions: 127, median: 2800, vsMarket: 38,
+    openRows: [
+      { title:'Mobile Engineer',   role:'Mobile',   exp:'5–7', city:'HCMC', salary:3500, barPct:100, vsMarket:52 },
+      { title:'Backend Engineer',  role:'Backend',  exp:'5–7', city:'HCMC', salary:3200, barPct:91,  vsMarket:38 },
+      { title:'Data Engineer',     role:'Data',     exp:'3–5', city:'HCMC', salary:2800, barPct:80,  vsMarket:21 },
+    ],
+    lockedRows: [
+      { title:'Backend Engineer',  role:'Backend',  exp:'3–4', city:'HCMC', salary:2300, vsMarket:-2  },
+      { title:'DevOps / Cloud',    role:'DevOps',   exp:'2–3', city:'HCMC', salary:1900, vsMarket:-18 },
+      { title:'Frontend Engineer', role:'Frontend', exp:'1–2', city:'HCMC', salary:1400, vsMarket:-31 },
     ],
   },
   'VNG Corporation': {
-    type: 'Product · Large corp', domain: 'vng.com.vn',
-    rows: [
-      { role: 'Backend Engineer',  exp: '5–7 yrs', salary: '55M', pct: 'Top 9%',  locked: false },
-      { role: 'Mobile Engineer',   exp: '4–5 yrs', salary: '48M', pct: 'Top 12%', locked: false },
-      { role: 'Data Engineer',     exp: '3–4 yrs', salary: '42M', pct: 'Top 16%', locked: false },
-      { role: 'Frontend Engineer', exp: '3–4 yrs', salary: '36M', pct: 'Top 22%', locked: false },
-      { role: 'DevOps / Cloud',    exp: '2–3 yrs', salary: '30M', pct: 'Top 28%', locked: true  },
-      { role: 'PM',                exp: '3–4 yrs', salary: '35M', pct: 'Top 24%', locked: true  },
+    type: 'Product · Large', city: 'Ho Chi Minh City', topPct: 9, submissions: 94, median: 2200, vsMarket: 14,
+    openRows: [
+      { title:'Backend Engineer',  role:'Backend', exp:'5–7', city:'HCMC', salary:2700, barPct:100, vsMarket:17 },
+      { title:'Mobile Engineer',   role:'Mobile',  exp:'4–5', city:'HCMC', salary:2400, barPct:89,  vsMarket:4  },
+      { title:'Data Engineer',     role:'Data',    exp:'3–4', city:'HCMC', salary:2100, barPct:78,  vsMarket:-9 },
+    ],
+    lockedRows: [
+      { title:'Frontend Engineer', role:'Frontend', exp:'3–4', city:'HCMC', salary:1800, vsMarket:-22 },
+      { title:'DevOps / Cloud',    role:'DevOps',   exp:'2–3', city:'HCMC', salary:1500, vsMarket:-35 },
+      { title:'PM',                role:'PM',       exp:'3–4', city:'HCMC', salary:1750, vsMarket:-24 },
     ],
   },
   'Shopee Vietnam': {
-    type: 'E-commerce · Foreign', domain: 'shopee.vn',
-    rows: [
-      { role: 'Backend Engineer',  exp: '5–7 yrs', salary: '62M', pct: 'Top 6%',  locked: false },
-      { role: 'Data Engineer',     exp: '4–5 yrs', salary: '55M', pct: 'Top 9%',  locked: false },
-      { role: 'Mobile Engineer',   exp: '3–4 yrs', salary: '48M', pct: 'Top 12%', locked: false },
-      { role: 'DevOps / Cloud',    exp: '2–3 yrs', salary: '38M', pct: 'Top 19%', locked: false },
-      { role: 'Frontend Engineer', exp: '2–3 yrs', salary: '32M', pct: 'Top 26%', locked: true  },
-      { role: 'PM',                exp: '4–5 yrs', salary: '50M', pct: 'Top 11%', locked: true  },
+    type: 'E-commerce · Foreign', city: 'Ho Chi Minh City', topPct: 6, submissions: 112, median: 2600, vsMarket: 30,
+    openRows: [
+      { title:'Backend Engineer',  role:'Backend', exp:'5–7', city:'HCMC', salary:3100, barPct:100, vsMarket:34 },
+      { title:'Data Engineer',     role:'Data',    exp:'4–5', city:'HCMC', salary:2800, barPct:90,  vsMarket:21 },
+      { title:'Mobile Engineer',   role:'Mobile',  exp:'3–4', city:'HCMC', salary:2400, barPct:77,  vsMarket:4  },
+    ],
+    lockedRows: [
+      { title:'DevOps / Cloud',    role:'DevOps',   exp:'2–3', city:'HCMC', salary:1900, vsMarket:-18 },
+      { title:'Frontend Engineer', role:'Frontend', exp:'2–3', city:'HCMC', salary:1600, vsMarket:-31 },
+      { title:'PM',                role:'PM',       exp:'4–5', city:'HCMC', salary:2500, vsMarket:8   },
     ],
   },
 };
 
 export default function Home() {
   const [lbCompany, setLbCompany] = useState(null);
+  const [activeTab, setActiveTab] = useState('All roles');
 
   // Expose openLB / closeLB to inline onclick handlers inside dangerouslySetInnerHTML
   useEffect(() => {
-    window.openLB = (company) => setLbCompany(company);
+    window.openLB = (company) => { setLbCompany(company); setActiveTab('All roles'); };
     window.closeLB = () => setLbCompany(null);
     return () => { delete window.openLB; delete window.closeLB; };
   }, []);
@@ -1823,6 +1830,10 @@ export default function Home() {
   }, []);
 
   const d = lbCompany ? lbData[lbCompany] : null;
+  const company = d ? { name: lbCompany, ...d } : null;
+  const openRows = d ? d.openRows : [];
+  const lockedRows = d ? d.lockedRows : [];
+  const lockedCount = lockedRows.length;
 
   return (
     <>
@@ -1844,60 +1855,103 @@ export default function Home() {
           style={{ display:'flex', position:'fixed', inset:0, background:'rgba(0,0,0,.75)', zIndex:1000, alignItems:'center', justifyContent:'center' }}
           onClick={(e) => { if (e.target === e.currentTarget) setLbCompany(null); }}
         >
-          <div style={{ background:'#141413', border:'1px solid rgba(255,255,255,.1)', borderRadius:14, width:'90%', maxWidth:700, maxHeight:'80vh', overflowY:'auto', fontFamily:"'Geist',sans-serif" }}>
+          <div style={{ width:'90%', maxWidth:520, maxHeight:'85vh', overflowY:'auto', fontFamily:"'Barlow',sans-serif" }}>
+            <div className="lb-gate">
 
-            {/* Header */}
-            <div style={{ padding:'24px 28px', borderBottom:'1px solid rgba(255,255,255,.07)', display:'flex', alignItems:'center', gap:14, position:'sticky', top:0, background:'#141413', zIndex:2 }}>
-              <div style={{ width:36, height:36, borderRadius:8, background:'#fff', overflow:'hidden', flexShrink:0 }}>
-                <img src={`https://www.google.com/s2/favicons?domain=${d.domain}&sz=64`} alt="" style={{ width:'100%', height:'100%', objectFit:'contain' }} />
-              </div>
-              <div>
-                <div style={{ fontSize:17, fontWeight:800, color:'#f2f0eb' }}>{lbCompany}</div>
-                <div style={{ fontSize:11, color:'rgba(242,240,235,.35)', marginTop:2 }}>{d.type}</div>
-              </div>
-              <button onClick={() => setLbCompany(null)} style={{ marginLeft:'auto', background:'none', border:'none', color:'rgba(255,255,255,.5)', fontSize:22, cursor:'pointer', padding:'4px 8px', lineHeight:1 }}>×</button>
-            </div>
-
-            {/* Table header */}
-            <div style={{ display:'grid', gridTemplateColumns:'32px 1fr 90px 80px', gap:12, padding:'10px 28px', borderBottom:'1px solid rgba(255,255,255,.05)' }}>
-              {['#','Role','Salary','Market'].map((h,i) => (
-                <span key={i} style={{ fontSize:10, color:'rgba(242,240,235,.25)', textTransform:'uppercase', letterSpacing:'.6px', textAlign: i >= 2 ? 'right' : 'left' }}>{h}</span>
-              ))}
-            </div>
-
-            {/* Rows */}
-            {d.rows.map((r, i) => (
-              <div key={i} style={{ display:'grid', gridTemplateColumns:'32px 1fr 90px 80px', gap:12, padding:'14px 28px', borderBottom:'1px solid rgba(255,255,255,.04)', alignItems:'center' }}>
-                <span style={{ fontSize:12, fontWeight:700, color: i < 2 ? '#ff6000' : 'rgba(242,240,235,.3)' }}>{i + 1}</span>
-                <div style={{ filter: r.locked ? 'blur(5px)' : 'none', userSelect: r.locked ? 'none' : 'auto' }}>
-                  <div style={{ fontSize:13, fontWeight:600, color:'#f2f0eb' }}>{r.role}</div>
-                  <div style={{ fontSize:11, color:'rgba(242,240,235,.35)', marginTop:2 }}>{r.exp}</div>
-                </div>
-                <div style={{ fontSize:15, fontWeight:800, color:'#f2f0eb', textAlign:'right', filter: r.locked ? 'blur(5px)' : 'none', userSelect: r.locked ? 'none' : 'auto' }}>{r.salary}</div>
-                <div style={{ textAlign:'right' }}>
-                  <span style={{
-                    fontSize:10, fontWeight:700, padding:'3px 8px', borderRadius:3,
-                    background: r.locked ? 'rgba(255,255,255,.06)' : i < 2 ? 'rgba(74,222,128,.12)' : 'rgba(255,96,0,.1)',
-                    color: r.locked ? 'rgba(242,240,235,.2)' : i < 2 ? '#4ade80' : '#ff6000',
-                    filter: r.locked ? 'blur(5px)' : 'none',
-                  }}>{r.pct}</span>
+              {/* Head */}
+              <div className="lb-head">
+                <button onClick={() => setLbCompany(null)} style={{ position:'absolute', top:14, right:16, background:'none', border:'none', color:'rgba(255,255,255,.3)', fontSize:22, cursor:'pointer', lineHeight:1 }}>×</button>
+                <div className="lb-head-eyebrow">Salary leaderboard</div>
+                <div className="lb-head-main">
+                  <div>
+                    <div className="lb-head-name">
+                      {company.name.split(' ')[0]} <em>{company.name.split(' ').slice(1).join(' ')}</em>
+                    </div>
+                    <div className="lb-head-chips">
+                      <span className="lb-chip orange">Top {company.topPct}% Vietnam</span>
+                      <span className="lb-chip dim">{company.type} · {company.city}</span>
+                      <span className="lb-chip dim">{company.submissions} salaries</span>
+                    </div>
+                  </div>
+                  <div className="lb-head-right">
+                    <div className="lb-median-lbl">Median</div>
+                    <div className="lb-median-num">${company.median.toLocaleString()}</div>
+                    <div className="lb-median-sub">+{company.vsMarket}% vs VN avg</div>
+                  </div>
                 </div>
               </div>
-            ))}
 
-            {/* Gate */}
-            <div style={{ padding:'20px 28px', background:'rgba(255,96,0,.04)', borderTop:'1px solid rgba(255,96,0,.1)', display:'flex', alignItems:'center', justifyContent:'space-between', flexWrap:'wrap', gap:12 }}>
-              <span style={{ fontSize:13, color:'rgba(242,240,235,.45)' }}>
-                Add your data to <strong style={{ color:'#f2f0eb' }}>see all</strong>
-              </span>
-              <button
-                onClick={() => { setLbCompany(null); document.querySelector('.submit-outer')?.scrollIntoView({ behavior:'smooth' }); }}
-                style={{ background:'#ff6000', color:'#fff', border:'none', padding:'10px 22px', borderRadius:4, fontSize:13, fontWeight:700, cursor:'pointer', fontFamily:"inherit" }}
-              >
-                See all →
-              </button>
+              {/* Tabs */}
+              <div className="lb-tabs">
+                {['All roles','Backend','Mobile','Data','DevOps','PM'].map(tab => (
+                  <div key={tab}
+                    className={`lb-tab${activeTab===tab?' active':''}`}
+                    onClick={() => setActiveTab(tab)}>
+                    {tab}
+                  </div>
+                ))}
+              </div>
+
+              {/* Open rows */}
+              <div className="lb-open-rows">
+                {openRows.filter(r => activeTab==='All roles' || r.role===activeTab).map((row, i) => (
+                  <div key={i} className={`lb-top-row r${i+1}`}>
+                    <div className="lb-rank-circle">0{i+1}</div>
+                    <div className="lb-role-block">
+                      <div className="lb-role-title">{row.title}</div>
+                      <div className="lb-role-sub">{row.exp} yrs · Full-time · {row.city}</div>
+                    </div>
+                    <div className="lb-sal-block">
+                      <div className="lb-sal-num">${row.salary.toLocaleString()}</div>
+                      <div className="lb-sal-bar-wrap">
+                        <div className="lb-sal-bar" style={{width:`${row.barPct}%`}}></div>
+                      </div>
+                      <div className={`lb-sal-vs ${row.vsMarket>=0?'up':'dn'}`}>
+                        {row.vsMarket>=0?'+':''}{row.vsMarket}% vs market
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Locked divider */}
+              <div className="lb-locked-header">
+                <div className="lb-locked-line"></div>
+                <div className="lb-locked-label">🔒 {lockedCount} more roles locked</div>
+                <div className="lb-locked-line"></div>
+              </div>
+
+              {/* Locked rows */}
+              <div className="lb-locked-rows">
+                {lockedRows.map((row, i) => (
+                  <div key={i} className="lb-locked-row">
+                    <div className="lb-lock-rank">0{i+4}</div>
+                    <div className="lb-lock-role">
+                      <div className="lb-lock-title">{row.title}</div>
+                      <div className="lb-lock-sub">{row.exp} yrs · {row.city}</div>
+                    </div>
+                    <div className="lb-lock-sal">
+                      <div className="lb-lock-num">${row.salary.toLocaleString()}</div>
+                      <div className="lb-lock-vs">{row.vsMarket>=0?'+':''}{row.vsMarket}% market</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* CTA */}
+              <div className="lb-cta-area">
+                <button className="lb-cta-btn"
+                  onClick={() => { setLbCompany(null); document.getElementById('submit-section')?.scrollIntoView({behavior:'smooth'}); }}>
+                  Share your salary → Unlock all {company.submissions} roles
+                </button>
+                <div className="lb-cta-row">
+                  <span className="lb-cta-chip">2 minutes</span>
+                  <span className="lb-cta-chip">Anonymous</span>
+                  <span className="lb-cta-chip">No login</span>
+                </div>
+              </div>
+
             </div>
-
           </div>
         </div>
       )}
