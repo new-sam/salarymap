@@ -615,7 +615,10 @@ const bodyHTML = `<nav>
 </nav>
 
 <section class="hero">
-  
+  <video autoplay muted loop playsinline style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:.35;z-index:0;">
+    <source src="/interview.mp4" type="video/mp4">
+  </video>
+
   <div class="hero-copy">
     <div class="hero-kicker"><span class="kdot"></span>Vietnam IT Salary Intelligence</div>
     <h1 class="hero-h1">What does<br><span id="typed-company"></span><span class="typed-cursor"></span><br>actually pay?</h1>
