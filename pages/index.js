@@ -124,6 +124,37 @@ nav { position:fixed; top:0; left:0; right:0; z-index:200; padding:0 52px; heigh
 .body-unlocked .company-card.locked .lock-cta { display:none; }
 .body-unlocked .company-card.locked:hover { outline-color:#FF6200; }
 
+/* WGF SECTION */
+.wgf-section { max-width:1100px; margin:0 auto; padding:80px 40px; }
+.wgf-eyebrow { display:flex; align-items:center; gap:8px; font-size:11px; font-weight:800; color:#FF6B00; letter-spacing:2.5px; text-transform:uppercase; margin-bottom:48px; }
+.wgf-eyebrow::before { content:''; width:6px; height:6px; border-radius:50%; background:#FF6B00; }
+.wgf-director-row { display:grid; grid-template-columns:380px 1fr; gap:48px; align-items:stretch; margin-bottom:20px; }
+.wgf-photo-wrap { position:relative; border-radius:20px; overflow:hidden; }
+.wgf-photo-wrap img { width:100%; height:100%; object-fit:cover; object-position:top center; display:block; }
+.wgf-photo-wrap::after { content:''; position:absolute; inset:0; background:linear-gradient(to top,rgba(0,0,0,.35) 0%,transparent 50%); pointer-events:none; }
+.wgf-story { display:flex; flex-direction:column; justify-content:center; gap:28px; }
+.wgf-quote-mark { font-size:72px; font-weight:900; color:#FF6B00; line-height:.7; opacity:.35; margin-bottom:-8px; }
+.wgf-headline { font-size:36px; font-weight:900; color:#fff; letter-spacing:-1.5px; line-height:1.15; }
+.wgf-headline span { color:#FF6B00; }
+.wgf-body { font-size:16px; color:rgba(255,255,255,.55); line-height:1.8; }
+.wgf-body strong { color:rgba(255,255,255,.88); }
+.wgf-sig { padding-top:8px; border-top:1px solid rgba(255,255,255,.08); }
+.wgf-sig-name { font-size:13px; font-weight:800; color:rgba(255,255,255,.85); margin-bottom:2px; }
+.wgf-sig-sub { font-size:12px; color:rgba(255,255,255,.3); }
+.wgf-divider { display:flex; align-items:center; gap:16px; margin:44px 0 32px; }
+.wgf-divider::before, .wgf-divider::after { content:''; flex:1; height:1px; background:rgba(255,255,255,.08); }
+.wgf-divider span { font-size:11px; font-weight:800; color:rgba(255,255,255,.2); letter-spacing:2px; text-transform:uppercase; white-space:nowrap; }
+.wgf-team-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:16px; }
+.wgf-team-card { border-radius:16px; overflow:hidden; position:relative; aspect-ratio:3/4; cursor:pointer; transition:transform .2s ease, box-shadow .2s ease; }
+.wgf-team-card:hover { transform:translateY(-6px); box-shadow:0 20px 40px rgba(0,0,0,.5); }
+.wgf-team-card img { width:100%; height:100%; object-fit:cover; object-position:top center; display:block; }
+.wgf-team-card::after { content:''; position:absolute; inset:0; background:linear-gradient(to top,rgba(0,0,0,.2) 0%,transparent 60%); pointer-events:none; }
+.wgf-bottom-cta { margin-top:52px; text-align:center; display:flex; flex-direction:column; align-items:center; gap:14px; }
+.wgf-bottom-cta p { font-size:14px; color:rgba(255,255,255,.35); }
+.wgf-bottom-cta p strong { color:rgba(255,255,255,.7); }
+.wgf-cta-btn { display:inline-flex; align-items:center; gap:8px; background:#FF6B00; color:#fff; font-size:15px; font-weight:900; padding:14px 32px; border-radius:100px; border:none; cursor:pointer; letter-spacing:-.2px; transition:background .15s; }
+.wgf-cta-btn:hover { background:#e55f00; }
+
 /* TICKER */
 .stream-ticker { max-width:1160px; margin:0 auto; padding:0 52px; border-top:1px solid var(--line); }
 .stream-ticker-inner { display:flex; align-items:stretch; overflow:hidden; height:46px; }
@@ -526,6 +557,10 @@ nav { position:fixed; top:0; left:0; right:0; z-index:200; padding:0 52px; heigh
 .fyi-ss-cta:hover { opacity: 0.85; }
 @media (max-width: 768px) {
   .fyi-submit-section { padding: 60px 24px; }
+  .wgf-director-row { grid-template-columns:1fr; gap:28px; }
+  .wgf-headline { font-size:26px; }
+  .wgf-team-grid { grid-template-columns:repeat(3,1fr); gap:10px; }
+  .wgf-section { padding:60px 20px; }
   .fyi-submit-grid { grid-template-columns: 1fr; gap: 40px; }
   footer { padding:24px 16px; }
   /* NAV */
@@ -721,131 +756,51 @@ const bodyHTML = `<nav>
     <p style="font-size:14px; color:rgba(242,240,235,.38); line-height:1.7; margin-bottom:40px; margin-top:16px;">If we ask you to share your salary, we share ours first.</p>
   </div>
 
-  <!-- STAFF REVEAL BLOCK -->
-  <div class="trust-inner" style="max-width:1160px; margin:0 auto; padding:0 52px; margin-bottom:56px;">
-    <div class="trust-roadmap" style="display:grid; grid-template-columns:1fr 1fr; gap:2px;">
+  <!-- WGF SECTION -->
+  <div class="wgf-section">
+    <div class="wgf-eyebrow">REAL SALARIES · REAL PEOPLE</div>
 
-      <!-- LEFT BIG -->
-      <div style="position:relative; overflow:hidden;">
-        <img src="/trust-1.png" style="width:100%; height:320px; object-fit:cover; filter:brightness(.4); display:block;" alt="">
-        <div style="position:absolute; inset:0; background:linear-gradient(to top, rgba(12,12,11,.9) 0%, transparent 55%); padding:28px; display:flex; flex-direction:column; justify-content:flex-end;">
-          <div style="font-size:10px; color:var(--orange); letter-spacing:1.5px; text-transform:uppercase; margin-bottom:6px;">Likelion staff · first</div>
-          <div style="font-size:48px; font-weight:800; color:var(--white); letter-spacing:-2px; line-height:1;">34M</div>
-          <div style="font-size:13px; color:rgba(242,240,235,0.5); margin-top:4px;">Product Manager · 3 yrs</div>
+    <div class="wgf-director-row">
+      <div class="wgf-photo-wrap">
+        <img src="/LL1.png" alt="Director — 100M/Month">
+      </div>
+      <div class="wgf-story">
+        <div>
+          <div class="wgf-quote-mark">"</div>
+          <h2 class="wgf-headline">
+            If we ask you<br>to share your salary,<br>
+            <span>we share ours first.</span>
+          </h2>
+        </div>
+        <p class="wgf-body">
+          I've spent years watching engineers in Vietnam get lowballed — not because
+          they're not good enough, but because
+          <strong>they had no idea what the market actually pays.</strong>
+          <br><br>
+          FYI was born to fix that information asymmetry.
+        </p>
+        <div class="wgf-sig">
+          <div class="wgf-sig-name">— Director, LikeLion Vietnam</div>
+          <div class="wgf-sig-sub">Founder of FYI Salary · salarymap.vercel.app</div>
         </div>
       </div>
+    </div>
 
-      <!-- RIGHT SMALL STACK -->
-      <div style="display:flex; flex-direction:column; gap:2px;">
-        <div style="position:relative; overflow:hidden;">
-          <img src="/trust-2.png" style="width:100%; height:158px; object-fit:cover; filter:brightness(.4); display:block;" alt="">
-          <div style="position:absolute; inset:0; background:linear-gradient(to top, rgba(12,12,11,.9) 0%, transparent 55%); padding:20px; display:flex; flex-direction:column; justify-content:flex-end;">
-            <div style="font-size:10px; color:var(--orange); letter-spacing:1.5px; text-transform:uppercase; margin-bottom:4px;">Likelion staff</div>
-            <div style="font-size:36px; font-weight:800; color:var(--white); letter-spacing:-1.5px; line-height:1;">28M</div>
-            <div style="font-size:12px; color:rgba(242,240,235,0.5); margin-top:3px;">Backend Dev · 2 yrs</div>
-          </div>
-        </div>
-        <div style="position:relative; overflow:hidden;">
-          <img src="/trust-3.png" style="width:100%; height:158px; object-fit:cover; filter:brightness(.4); display:block;" alt="">
-          <div style="position:absolute; inset:0; background:linear-gradient(to top, rgba(12,12,11,.9) 0%, transparent 55%); padding:20px; display:flex; flex-direction:column; justify-content:flex-end;">
-            <div style="font-size:10px; color:var(--orange); letter-spacing:1.5px; text-transform:uppercase; margin-bottom:4px;">Likelion staff</div>
-            <div style="font-size:36px; font-weight:800; color:var(--white); letter-spacing:-1.5px; line-height:1;">52M</div>
-            <div style="font-size:12px; color:rgba(242,240,235,0.5); margin-top:3px;">Engineering Lead · 6 yrs</div>
-          </div>
-        </div>
-      </div>
+    <div class="wgf-divider"><span>And the whole team did too</span></div>
 
+    <div class="wgf-team-grid">
+      <div class="wgf-team-card"><img src="/LL2.png" alt="Head of Business — 40M/Month"></div>
+      <div class="wgf-team-card"><img src="/LL3.png" alt="Marketing Lead — 30M/Month"></div>
+      <div class="wgf-team-card"><img src="/LL4.png" alt="Content Marketer — 15M/Month"></div>
+    </div>
+
+    <div class="wgf-bottom-cta">
+      <p>We showed ours. <strong>Now find out where you stand.</strong></p>
+      <button class="wgf-cta-btn" onclick="document.getElementById('submit').scrollIntoView({behavior:'smooth'})">
+        Am I Underpaid? →
+      </button>
     </div>
   </div>
-
-  <!-- STREET INTERVIEWS -->
-  <div style="max-width:1160px; margin:0 auto; padding:0 52px; margin-bottom:56px;">
-    <div class="city-cards-grid" style="display:grid; grid-template-columns:repeat(3,1fr); gap:3px;">
-
-      <!-- Card 1: HCMC District 1 -->
-      <div class="city-card" style="position:relative; height:320px; overflow:hidden; cursor:pointer;"
-           onmouseenter="this.style.transform='scale(1.04)';this.style.outline='2px solid var(--orange)';this.style.zIndex='2'"
-           onmouseleave="this.style.transform='scale(1)';this.style.outline='none';this.style.zIndex='1'">
-        <img src="/city-1.jpg" class="city-card-img" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;filter:brightness(.35);transform-origin:center;animation:kenBurns1 6s ease infinite alternate;" alt="Ho Chi Minh City District 1">
-        <div style="position:absolute;inset:0;background:linear-gradient(to top, rgba(12,12,11,.95) 0%, rgba(12,12,11,.3) 55%, transparent 100%);"></div>
-        <div style="position:absolute;inset:0;padding:24px;display:flex;flex-direction:column;justify-content:flex-end;">
-          <div style="font-size:9px;font-family:'Geist Mono',monospace;color:var(--orange);letter-spacing:2px;text-transform:uppercase;margin-bottom:4px;">Ho Chi Minh City</div>
-          <div style="font-size:22px;font-weight:800;color:var(--white);letter-spacing:-.5px;line-height:1.1;margin-bottom:4px;">District 1</div>
-          <div style="font-size:11px;color:rgba(242,240,235,.45);margin-bottom:16px;">Bitexco · Ben Thanh · Tech hub</div>
-          <div style="border-top:1px solid rgba(255,255,255,.1);padding-top:14px;display:flex;flex-direction:column;gap:7px;">
-            <div style="display:flex;justify-content:space-between;align-items:center;">
-              <span style="font-size:12px;color:var(--white);font-weight:500;">Grab Vietnam</span>
-              <span style="font-size:11px;font-family:'Geist Mono',monospace;color:var(--orange);">35 salaries</span>
-            </div>
-            <div style="display:flex;justify-content:space-between;align-items:center;">
-              <span style="font-size:12px;color:var(--white);font-weight:500;">Shopee Vietnam</span>
-              <span style="font-size:11px;font-family:'Geist Mono',monospace;color:var(--orange);">31 salaries</span>
-            </div>
-            <div style="display:flex;justify-content:space-between;align-items:center;">
-              <span style="font-size:12px;color:var(--white);font-weight:500;">Momo</span>
-              <span style="font-size:11px;font-family:'Geist Mono',monospace;color:var(--orange);">22 salaries</span>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Card 2: HCMC Thu Duc -->
-      <div class="city-card" style="position:relative; height:320px; overflow:hidden; cursor:pointer;"
-           onmouseenter="this.style.transform='scale(1.04)';this.style.outline='2px solid var(--orange)';this.style.zIndex='2'"
-           onmouseleave="this.style.transform='scale(1)';this.style.outline='none';this.style.zIndex='1'">
-        <img src="/city-2.jpg" class="city-card-img" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;filter:brightness(.35);transform-origin:center;animation:kenBurns2 6s ease infinite alternate;" alt="Thu Duc City">
-        <div style="position:absolute;inset:0;background:linear-gradient(to top, rgba(12,12,11,.95) 0%, rgba(12,12,11,.3) 55%, transparent 100%);"></div>
-        <div style="position:absolute;inset:0;padding:24px;display:flex;flex-direction:column;justify-content:flex-end;">
-          <div style="font-size:9px;font-family:'Geist Mono',monospace;color:var(--orange);letter-spacing:2px;text-transform:uppercase;margin-bottom:4px;">Ho Chi Minh City</div>
-          <div style="font-size:22px;font-weight:800;color:var(--white);letter-spacing:-.5px;line-height:1.1;margin-bottom:4px;">Thu Duc City</div>
-          <div style="font-size:11px;color:rgba(242,240,235,.45);margin-bottom:16px;">SHTP · Tech park · Startups</div>
-          <div style="border-top:1px solid rgba(255,255,255,.1);padding-top:14px;display:flex;flex-direction:column;gap:7px;">
-            <div style="display:flex;justify-content:space-between;align-items:center;">
-              <span style="font-size:12px;color:var(--white);font-weight:500;">VNG Corporation</span>
-              <span style="font-size:11px;font-family:'Geist Mono',monospace;color:var(--orange);">47 salaries</span>
-            </div>
-            <div style="display:flex;justify-content:space-between;align-items:center;">
-              <span style="font-size:12px;color:var(--white);font-weight:500;">Sky Mavis</span>
-              <span style="font-size:11px;font-family:'Geist Mono',monospace;color:var(--orange);">14 salaries</span>
-            </div>
-            <div style="display:flex;justify-content:space-between;align-items:center;">
-              <span style="font-size:12px;color:var(--white);font-weight:500;">KMS Technology</span>
-              <span style="font-size:11px;font-family:'Geist Mono',monospace;color:var(--orange);">18 salaries</span>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Card 3: Hanoi Cầu Giấy -->
-      <div class="city-card" style="position:relative; height:320px; overflow:hidden; cursor:pointer;"
-           onmouseenter="this.style.transform='scale(1.04)';this.style.outline='2px solid var(--orange)';this.style.zIndex='2'"
-           onmouseleave="this.style.transform='scale(1)';this.style.outline='none';this.style.zIndex='1'">
-        <img src="/city-3.jpg" class="city-card-img" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;filter:brightness(.35);transform-origin:center;animation:kenBurns3 6s ease infinite alternate;" alt="Hanoi Cau Giay">
-        <div style="position:absolute;inset:0;background:linear-gradient(to top, rgba(12,12,11,.95) 0%, rgba(12,12,11,.3) 55%, transparent 100%);"></div>
-        <div style="position:absolute;inset:0;padding:24px;display:flex;flex-direction:column;justify-content:flex-end;">
-          <div style="font-size:9px;font-family:'Geist Mono',monospace;color:var(--orange);letter-spacing:2px;text-transform:uppercase;margin-bottom:4px;">Hanoi</div>
-          <div style="font-size:22px;font-weight:800;color:var(--white);letter-spacing:-.5px;line-height:1.1;margin-bottom:4px;">Cầu Giấy</div>
-          <div style="font-size:11px;color:rgba(242,240,235,.45);margin-bottom:16px;">FPT · Keangnam · IT corridor</div>
-          <div style="border-top:1px solid rgba(255,255,255,.1);padding-top:14px;display:flex;flex-direction:column;gap:7px;">
-            <div style="display:flex;justify-content:space-between;align-items:center;">
-              <span style="font-size:12px;color:var(--white);font-weight:500;">FPT Software</span>
-              <span style="font-size:11px;font-family:'Geist Mono',monospace;color:var(--orange);">58 salaries</span>
-            </div>
-            <div style="display:flex;justify-content:space-between;align-items:center;">
-              <span style="font-size:12px;color:var(--white);font-weight:500;">Tiki</span>
-              <span style="font-size:11px;font-family:'Geist Mono',monospace;color:var(--orange);">28 salaries</span>
-            </div>
-            <div style="display:flex;justify-content:space-between;align-items:center;">
-              <span style="font-size:12px;color:var(--white);font-weight:500;">Axon Active</span>
-              <span style="font-size:11px;font-family:'Geist Mono',monospace;color:var(--orange);">16 salaries</span>
-            </div>
-          </div>
-        </div>
-      </div>
-
-    </div>
-  </div>
-
   <!-- PRIVACY SECTION -->
   <div style="max-width:960px; margin:0 auto; padding:0 52px 56px;">
     <h2 style="font-size:clamp(32px,4vw,48px); font-weight:700; line-height:1.15; margin-bottom:12px; color:var(--white);">This is<br><em style="color:var(--orange);font-style:normal;">completely</em> anonymous.</h2>
