@@ -100,8 +100,10 @@ nav { position:fixed; top:0; left:0; right:0; z-index:200; padding:0 52px; heigh
 .company-card { border-radius:14px; overflow:hidden; position:relative; height:280px; cursor:pointer; outline:2px solid transparent; outline-offset:-2px; transition:transform .2s, outline-color .2s; }
 .company-card:hover { transform:scale(1.02); }
 .company-card.open:hover { outline-color:#FF6200; }
-.card-img { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; filter:brightness(.35); }
-.card-overlay { position:absolute; inset:0; background:linear-gradient(to top,rgba(0,0,0,.92) 0%,transparent 60%); }
+.card-bg { position:absolute; inset:0; }
+.card-logo-wrap { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; z-index:1; }
+.card-logo-img { width:80px; height:80px; object-fit:contain; border-radius:14px; opacity:0.22; filter:brightness(0) invert(1); }
+.card-overlay { position:absolute; inset:0; background:linear-gradient(to top,rgba(0,0,0,.85) 0%,rgba(0,0,0,.2) 60%); }
 .company-card.locked .card-overlay { background:rgba(0,0,0,.72); backdrop-filter:blur(3px); }
 .card-top { position:absolute; top:14px; left:14px; right:14px; display:flex; justify-content:space-between; align-items:center; z-index:2; }
 .card-rank { font-size:10px; font-weight:700; color:rgba(255,255,255,.55); background:rgba(0,0,0,.4); padding:3px 8px; border-radius:5px; }
@@ -597,22 +599,48 @@ nav { position:fixed; top:0; left:0; right:0; z-index:200; padding:0 52px; heigh
 
 
 const _cardCompanies = [
-  { name:'Grab Vietnam',    type:'Super App',   tier:'Foreign',  salMin:1200, salMax:4200, submissions:127, topPct:4,  open:true  },
-  { name:'VNG Corporation', type:'Product',     tier:'Local',    salMin:900,  salMax:3200, submissions:94,  topPct:9,  open:true  },
-  { name:'Shopee Vietnam',  type:'E-commerce',  tier:'Foreign',  salMin:1100, salMax:3800, submissions:112, topPct:6,  open:true  },
-  { name:'FPT Software',    type:'IT Services', tier:'Local',    submissions:88,  open:false },
-  { name:'Momo',            type:'Fintech',     tier:'Local',    submissions:63,  open:false },
-  { name:'Sky Mavis',       type:'Web3 Gaming', tier:'Foreign',  submissions:41,  open:false },
-  { name:'Tiki',            type:'E-commerce',  tier:'Local',    submissions:57,  open:false },
-  { name:'Zalo',            type:'Social Tech', tier:'Local',    submissions:52,  open:false },
+  { name:'Grab Vietnam',    type:'Super App',   tier:'Foreign', city:'Ho Chi Minh City', domain:'grab.com',      color:'#00B14F',
+    salMin:1200, salMax:4200, submissions:127, topPct:4, open:true, category:'Super App', median:2800, top10:4200,
+    salaryByRole:[
+      {role:'Mobile Engineer',   experience:'5–7 yrs', barPercent:100, salaryVND:82},
+      {role:'Backend Engineer',  experience:'3–5 yrs', barPercent:84,  salaryVND:69},
+      {role:'Data Engineer',     experience:'2–4 yrs', barPercent:72,  salaryVND:59},
+      {role:'Frontend Engineer', experience:'3–5 yrs', barPercent:68,  salaryVND:56},
+      {role:'DevOps / Cloud',    experience:'2–4 yrs', barPercent:60,  salaryVND:49},
+    ]},
+  { name:'VNG Corporation', type:'Product',     tier:'Local',   city:'Ho Chi Minh City', domain:'vng.com.vn',    color:'#0066CC',
+    salMin:900, salMax:3200, submissions:94, topPct:9, open:true, category:'Product', median:1900, top10:3200,
+    salaryByRole:[
+      {role:'Backend Engineer',  experience:'3–5 yrs', barPercent:100, salaryVND:60},
+      {role:'Mobile Engineer',   experience:'3–5 yrs', barPercent:88,  salaryVND:53},
+      {role:'Data Engineer',     experience:'2–4 yrs', barPercent:75,  salaryVND:45},
+      {role:'Frontend Engineer', experience:'2–4 yrs', barPercent:70,  salaryVND:42},
+      {role:'DevOps / Cloud',    experience:'2–3 yrs', barPercent:62,  salaryVND:37},
+    ]},
+  { name:'Shopee Vietnam',  type:'E-commerce',  tier:'Foreign', city:'Ho Chi Minh City', domain:'shopee.vn',     color:'#EE4D2D',
+    salMin:1100, salMax:3800, submissions:112, topPct:6, open:true, category:'E-commerce', median:2400, top10:3800,
+    salaryByRole:[
+      {role:'Backend Engineer',  experience:'3–5 yrs', barPercent:100, salaryVND:72},
+      {role:'Data Engineer',     experience:'2–4 yrs', barPercent:85,  salaryVND:61},
+      {role:'Mobile Engineer',   experience:'3–5 yrs', barPercent:80,  salaryVND:58},
+      {role:'Frontend Engineer', experience:'2–4 yrs', barPercent:72,  salaryVND:52},
+      {role:'DevOps / Cloud',    experience:'2–3 yrs', barPercent:65,  salaryVND:47},
+    ]},
+  { name:'FPT Software', type:'IT Services', tier:'Local',   city:'Ha Noi',           domain:'fpt.com',       color:'#F26522', submissions:88,  open:false, category:'IT Services', salaryByRole:[] },
+  { name:'Momo',         type:'Fintech',     tier:'Local',   city:'Ho Chi Minh City', domain:'momo.vn',       color:'#A50064', submissions:63,  open:false, category:'Fintech',     salaryByRole:[] },
+  { name:'Sky Mavis',    type:'Web3 Gaming', tier:'Foreign', city:'Ho Chi Minh City', domain:'skymavis.com',  color:'#4B5CE4', submissions:41,  open:false, category:'Web3 Gaming', salaryByRole:[] },
+  { name:'Tiki',         type:'E-commerce',  tier:'Local',   city:'Ho Chi Minh City', domain:'tiki.vn',       color:'#1A94FF', submissions:57,  open:false, category:'E-commerce',  salaryByRole:[] },
+  { name:'Zalo',         type:'Social Tech', tier:'Local',   city:'Ho Chi Minh City', domain:'zalo.me',       color:'#0068FF', submissions:52,  open:false, category:'Social Tech', salaryByRole:[] },
 ];
 
 const _cardsHTML = _cardCompanies.map((c, i) => {
-  const img = `https://picsum.photos/seed/${encodeURIComponent(c.name)}/400/600`;
+  const bg = `linear-gradient(135deg, ${c.color}bb 0%, ${c.color}33 100%)`;
+  const logo = `https://logo.clearbit.com/${c.domain}`;
   if (c.open) {
     const rank = _cardCompanies.filter(x => x.open).findIndex(x => x.name === c.name) + 1;
-    return `<div class="company-card open" onclick="openLB('${c.name.replace(/'/g,"\\'")}')">
-      <img class="card-img" src="${img}" alt="${c.name}" loading="lazy">
+    return `<div class="company-card open" onclick="openCompanyPanel('${c.name.replace(/'/g,"\\'")}')">
+      <div class="card-bg" style="background:${bg}"></div>
+      <div class="card-logo-wrap"><img class="card-logo-img" src="${logo}" alt="${c.name}" onerror="this.style.display='none'"></div>
       <div class="card-overlay"></div>
       <div class="card-top">
         <span class="card-rank">#${rank}</span>
@@ -626,8 +654,9 @@ const _cardsHTML = _cardCompanies.map((c, i) => {
       </div>
     </div>`;
   } else {
-    return `<div class="company-card locked" onclick="document.getElementById('submit').scrollIntoView({behavior:'smooth'})">
-      <img class="card-img" src="${img}" alt="${c.name}" loading="lazy">
+    return `<div class="company-card locked" onclick="openCompanyPanel('${c.name.replace(/'/g,"\\'")}')">
+      <div class="card-bg" style="background:${bg}"></div>
+      <div class="card-logo-wrap"><img class="card-logo-img" src="${logo}" alt="${c.name}" onerror="this.style.display='none'"></div>
       <div class="card-overlay"></div>
       <div class="card-lock-center">
         <div class="card-lock-icon">🔒</div>
@@ -1506,6 +1535,7 @@ const lbData = {
 export default function Home() {
   const [lbCompany, setLbCompany] = useState(null);
   const [activeTab, setActiveTab] = useState('All roles');
+  const [selectedCompany, setSelectedCompany] = useState(null);
 
   // Expose openLB / closeLB to inline onclick handlers inside dangerouslySetInnerHTML
   useEffect(() => {
@@ -1513,6 +1543,28 @@ export default function Home() {
     window.closeLB = () => setLbCompany(null);
     return () => { delete window.openLB; delete window.closeLB; };
   }, []);
+
+  // Company panel bridge
+  useEffect(() => {
+    window.openCompanyPanel = (name) => {
+      const c = _cardCompanies.find(x => x.name === name);
+      if (c) setSelectedCompany(c);
+    };
+    return () => { delete window.openCompanyPanel; };
+  }, []);
+
+  // ESC to close panel
+  useEffect(() => {
+    const handler = (e) => { if (e.key === 'Escape') setSelectedCompany(null); };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, []);
+
+  // Body scroll lock when panel open
+  useEffect(() => {
+    document.body.style.overflow = selectedCompany ? 'hidden' : '';
+    return () => { document.body.style.overflow = ''; };
+  }, [selectedCompany]);
 
   // Wizard state & functions exposed to inline onclick handlers
   useEffect(() => {
@@ -1811,6 +1863,144 @@ export default function Home() {
           </div>
         </div>
       )}
+
+      {/* Company Panel Overlay */}
+      <div
+        onClick={() => setSelectedCompany(null)}
+        style={{
+          position:'fixed', inset:0, background:'rgba(0,0,0,0.45)',
+          zIndex:200, opacity: selectedCompany ? 1 : 0,
+          pointerEvents: selectedCompany ? 'all' : 'none',
+          transition:'opacity .32s',
+        }}
+      />
+
+      {/* Company Slide Panel */}
+      <div style={{
+        position:'fixed', top:0, right:0, bottom:0, width:'420px', maxWidth:'100vw',
+        background:'white', zIndex:201, overflowY:'auto',
+        transform: selectedCompany ? 'translateX(0)' : 'translateX(100%)',
+        transition:'transform 0.32s cubic-bezier(0.22, 0.9, 0.36, 1)',
+        fontFamily:"'Barlow', sans-serif",
+      }}>
+        {selectedCompany && (() => {
+          const sc = selectedCompany;
+          const rank = sc.open ? _cardCompanies.filter(x=>x.open).findIndex(x=>x.name===sc.name)+1 : null;
+          const heroBg = `linear-gradient(160deg, ${sc.color}dd 0%, ${sc.color}88 100%)`;
+          return (
+            <>
+              {/* Hero */}
+              <div style={{height:'200px', position:'relative', overflow:'hidden', background:heroBg}}>
+                <div style={{position:'absolute',inset:0,background:'linear-gradient(to bottom,rgba(0,0,0,0.35) 0%,transparent 60%)'}}/>
+                {/* Logo watermark */}
+                <div style={{position:'absolute',inset:0,display:'flex',alignItems:'center',justifyContent:'center'}}>
+                  <img src={`https://logo.clearbit.com/${sc.domain}`} alt={sc.name}
+                    style={{width:'88px',height:'88px',objectFit:'contain',borderRadius:'16px',
+                      filter:'brightness(0) invert(1)',opacity:0.18}}
+                    onError={e=>e.target.style.display='none'} />
+                </div>
+                {/* Top bar */}
+                <div style={{position:'absolute',top:0,left:0,right:0,padding:'16px 20px',
+                  display:'flex',alignItems:'center',justifyContent:'space-between',zIndex:2}}>
+                  <img src={`https://logo.clearbit.com/${sc.domain}`} alt={sc.name}
+                    style={{width:'32px',height:'32px',objectFit:'contain',borderRadius:'6px',background:'rgba(255,255,255,0.15)',padding:'4px'}}
+                    onError={e=>e.target.style.display='none'} />
+                  <div onClick={() => setSelectedCompany(null)}
+                    style={{width:'32px',height:'32px',borderRadius:'50%',
+                      background:'rgba(0,0,0,0.35)',border:'1px solid rgba(255,255,255,0.25)',
+                      display:'flex',alignItems:'center',justifyContent:'center',
+                      cursor:'pointer',color:'white',fontSize:'15px',lineHeight:1}}>✕</div>
+                </div>
+              </div>
+
+              {/* Body */}
+              <div style={{padding:'20px 22px'}}>
+                {/* Eyebrow */}
+                <div style={{fontSize:'11px',fontWeight:700,color:'#FF6200',letterSpacing:'.06em',textTransform:'uppercase',marginBottom:'6px'}}>
+                  {rank ? `#${rank} · ` : ''}{sc.city}
+                </div>
+                <div style={{fontSize:'24px',fontWeight:900,color:'#111',letterSpacing:'-.03em',marginBottom:'10px'}}>
+                  {sc.name}
+                </div>
+                {/* Tags */}
+                <div style={{display:'flex',gap:'6px',flexWrap:'wrap',marginBottom:'20px'}}>
+                  {sc.open && <span style={{fontSize:'11px',fontWeight:700,padding:'4px 11px',borderRadius:'100px',background:'rgba(255,98,0,0.12)',color:'#FF6200'}}>Top {sc.topPct}%</span>}
+                  <span style={{fontSize:'11px',fontWeight:600,padding:'4px 11px',borderRadius:'100px',background:'#f2f0ec',color:'#888'}}>{sc.tier}</span>
+                  <span style={{fontSize:'11px',fontWeight:600,padding:'4px 11px',borderRadius:'100px',background:'#f2f0ec',color:'#888'}}>{sc.category}</span>
+                </div>
+
+                {/* Stats row */}
+                <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:'8px',marginBottom:'20px'}}>
+                  {[
+                    {v: sc.open ? `$${(sc.median/1000).toFixed(1)}k` : '???', l:'Median salary'},
+                    {v: sc.submissions, l:'Submissions'},
+                    {v: sc.open ? `$${(sc.top10/1000).toFixed(1)}k` : '???', l:'Top 10%'},
+                  ].map((o,i) => (
+                    <div key={i} style={{background:'#F7F4EF',borderRadius:'12px',padding:'13px 10px',textAlign:'center'}}>
+                      <div style={{fontSize:'15px',fontWeight:800,color:'#FF6200',lineHeight:1,marginBottom:'4px',
+                        filter:sc.open?'none':'blur(6px)',userSelect:sc.open?'auto':'none'}}>
+                        {o.v}
+                      </div>
+                      <div style={{fontSize:'10px',color:'#A09890'}}>{o.l}</div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Salary by role */}
+                {sc.salaryByRole.length > 0 && (
+                  <>
+                    <div style={{fontSize:'9px',letterSpacing:'.16em',textTransform:'uppercase',color:'#A09890',marginBottom:'10px'}}>Salary by role</div>
+                    {sc.salaryByRole.map((row, i) => (
+                      <div key={i} style={{display:'flex',alignItems:'center',gap:'10px',
+                        padding:'10px 0',borderBottom:'1px solid #f5f3ef'}}>
+                        <div style={{fontSize:'15px',width:'22px',textAlign:'center',flexShrink:0,fontFamily:'monospace'}}>
+                          {i===0?'🥇':i===1?'🥈':i===2?'🥉':`${i+1}.`}
+                        </div>
+                        <div style={{flex:1,minWidth:0}}>
+                          <div style={{fontSize:'13px',fontWeight:700,color:'#111'}}>{row.role}</div>
+                          <div style={{fontSize:'11px',color:'#A09890',marginTop:'1px'}}>{row.experience}</div>
+                        </div>
+                        <div style={{textAlign:'right',flexShrink:0,width:'90px'}}>
+                          <div style={{height:'2px',background:'#f0ede6',borderRadius:'100px',overflow:'hidden',marginBottom:'4px'}}>
+                            <div style={{height:'100%',width:`${row.barPercent}%`,background:'#FF6200',borderRadius:'100px'}}/>
+                          </div>
+                          <div style={{fontSize:'13px',fontWeight:800,color:'#FF6200'}}>
+                            {row.salaryVND}M ₫
+                          </div>
+                          <div style={{fontSize:'10px',color:'#A09890'}}>
+                            ≈ ${(row.salaryVND * 43 / 1000).toFixed(1)}k
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </>
+                )}
+
+                {/* CTA */}
+                <div style={{background:'#FFF0E6',borderRadius:'14px',padding:'18px',marginTop:'20px',marginBottom:'8px'}}>
+                  <div style={{fontSize:'13px',fontWeight:600,color:'#111',lineHeight:1.5,marginBottom:'14px'}}>
+                    {sc.open
+                      ? `See where you stand at ${sc.name}`
+                      : 'Submit your salary to unlock full data'}
+                  </div>
+                  <button
+                    onClick={() => {
+                      setSelectedCompany(null);
+                      setTimeout(() => document.getElementById('submit')?.scrollIntoView({behavior:'smooth'}), 350);
+                    }}
+                    style={{width:'100%',background:'#FF6200',color:'black',fontSize:'14px',fontWeight:800,
+                      padding:'14px',borderRadius:'10px',border:'none',cursor:'pointer',textAlign:'center',display:'block'}}>
+                    {sc.open ? 'Am I Underpaid? →' : '🔓 Submit & Unlock →'}
+                  </button>
+                  <div style={{textAlign:'center',fontSize:'11px',color:'#A09890',marginTop:'8px'}}>
+                    2 min · anonymous · no login
+                  </div>
+                </div>
+              </div>
+            </>
+          );
+        })()}
+      </div>
     </>
   );
 }
