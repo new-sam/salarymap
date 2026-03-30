@@ -125,7 +125,7 @@ nav { position:fixed; top:0; left:0; right:0; z-index:200; padding:0 52px; heigh
 .body-unlocked .company-card.locked:hover { outline-color:#FF6200; }
 
 /* WGF SECTION */
-.wgf-section { max-width:1100px; margin:0 auto; padding:80px 40px; }
+.wgf-section { max-width:1100px; margin:0 auto; padding:40px 40px 80px; }
 .wgf-eyebrow { display:flex; align-items:center; gap:8px; font-size:11px; font-weight:800; color:#FF6B00; letter-spacing:2.5px; text-transform:uppercase; margin-bottom:48px; }
 .wgf-eyebrow::before { content:''; width:6px; height:6px; border-radius:50%; background:#FF6B00; }
 .wgf-director-row { display:grid; grid-template-columns:380px 1fr; gap:48px; align-items:stretch; margin-bottom:20px; }
@@ -742,7 +742,7 @@ const bodyHTML = `<nav>
 </section>
 
 <!-- TRUST BUILDER -->
-<section class="trust-section" style="background:#0c0c0b; padding:80px 0;">
+<section class="trust-section" style="background:#0c0c0b; padding:20px 0 60px;">
 
   <!-- WGF SECTION -->
   <div class="wgf-section">
