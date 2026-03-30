@@ -744,18 +744,6 @@ const bodyHTML = `<nav>
 <!-- TRUST BUILDER -->
 <section class="trust-section" style="background:#0c0c0b; padding:80px 0;">
 
-  <!-- HEAD -->
-  <div class="trust-inner" style="max-width:1160px; margin:0 auto; padding:0 52px; margin-bottom:48px;">
-    <div style="font-family:'Geist Mono',monospace; font-size:11px; color:var(--orange); letter-spacing:2.5px; text-transform:uppercase; margin-bottom:16px; display:flex; align-items:center; gap:8px;">
-      <span style="width:5px;height:5px;border-radius:50%;background:var(--orange);box-shadow:0 0 8px var(--orange);"></span>
-      Real salaries, real people
-    </div>
-    <h2 style="font-size:clamp(26px,3.2vw,40px); font-weight:800; color:var(--white); letter-spacing:-1.5px; line-height:1.15;">
-      No bullshit. <em style="font-style:normal; color:var(--orange);">We go first.</em>
-    </h2>
-    <p style="font-size:14px; color:rgba(242,240,235,.38); line-height:1.7; margin-bottom:40px; margin-top:16px;">If we ask you to share your salary, we share ours first.</p>
-  </div>
-
   <!-- WGF SECTION -->
   <div class="wgf-section">
     <div class="wgf-eyebrow">REAL SALARIES · REAL PEOPLE</div>
