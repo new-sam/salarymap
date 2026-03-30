@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Head from 'next/head';
 
 const css = `
@@ -119,6 +119,10 @@ nav { position:fixed; top:0; left:0; right:0; z-index:200; padding:0 52px; heigh
 .card-lock-count { font-size:11px; color:rgba(255,255,255,.3); }
 .lock-cta { position:absolute; bottom:14px; left:14px; right:14px; background:#FF6200; color:black; font-size:11px; font-weight:700; padding:8px; border-radius:8px; text-align:center; opacity:0; transition:opacity .2s; z-index:3; }
 .company-card.locked:hover .lock-cta { opacity:1; }
+.body-unlocked .company-card.locked .card-overlay { background:linear-gradient(to top,rgba(0,0,0,.85) 0%,rgba(0,0,0,.2) 60%) !important; backdrop-filter:none !important; }
+.body-unlocked .company-card.locked .card-lock-center { opacity:0; transform:scale(0.75); transition:opacity .5s ease, transform .5s ease; pointer-events:none; }
+.body-unlocked .company-card.locked .lock-cta { display:none; }
+.body-unlocked .company-card.locked:hover { outline-color:#FF6200; }
 
 /* TICKER */
 .stream-ticker { max-width:1160px; margin:0 auto; padding:0 52px; border-top:1px solid var(--line); }
@@ -1439,6 +1443,7 @@ async function doUnlock(role,exp,sal){
   const uline=document.getElementById('uline');
   uline.textContent=\`vs. median \${vsText} · Top 25% earn \${p75}M+\`;
   uline.classList.add('on');
+  if (typeof window.onUnlockSuccess === 'function') window.onUnlockSuccess();
   return true;
 }
 function updateTrustStats(sub, co) {
@@ -1536,6 +1541,9 @@ export default function Home() {
   const [lbCompany, setLbCompany] = useState(null);
   const [activeTab, setActiveTab] = useState('All roles');
   const [selectedCompany, setSelectedCompany] = useState(null);
+  const [isUnlocked, setIsUnlocked] = useState(false);
+  const isUnlockedRef = useRef(false);
+  const pendingCompanyRef = useRef(null);
 
   // Expose openLB / closeLB to inline onclick handlers inside dangerouslySetInnerHTML
   useEffect(() => {
@@ -1544,13 +1552,47 @@ export default function Home() {
     return () => { delete window.openLB; delete window.closeLB; };
   }, []);
 
-  // Company panel bridge
+  // localStorage unlock check on mount
+  useEffect(() => {
+    if (localStorage.getItem('fyi_submitted') === 'true') {
+      isUnlockedRef.current = true;
+      setIsUnlocked(true);
+      document.body.classList.add('body-unlocked');
+      const gate = document.querySelector('.cards-gate');
+      if (gate) gate.style.display = 'none';
+    }
+  }, []);
+
+  // Company panel bridge + unlock success handler
   useEffect(() => {
     window.openCompanyPanel = (name) => {
       const c = _cardCompanies.find(x => x.name === name);
-      if (c) setSelectedCompany(c);
+      if (!c) return;
+      if (!c.open && !isUnlockedRef.current) pendingCompanyRef.current = name;
+      setSelectedCompany(c);
     };
-    return () => { delete window.openCompanyPanel; };
+    window.onUnlockSuccess = () => {
+      localStorage.setItem('fyi_submitted', 'true');
+      isUnlockedRef.current = true;
+      setIsUnlocked(true);
+      document.body.classList.add('body-unlocked');
+      const gate = document.querySelector('.cards-gate');
+      if (gate) {
+        gate.style.transition = 'opacity .5s ease';
+        gate.style.opacity = '0';
+        setTimeout(() => { gate.style.display = 'none'; }, 500);
+      }
+      const pending = pendingCompanyRef.current;
+      pendingCompanyRef.current = null;
+      setSelectedCompany(null);
+      if (pending) {
+        setTimeout(() => {
+          const c = _cardCompanies.find(x => x.name === pending);
+          if (c) setSelectedCompany(c);
+        }, 500);
+      }
+    };
+    return () => { delete window.openCompanyPanel; delete window.onUnlockSuccess; };
   }, []);
 
   // ESC to close panel
@@ -1924,7 +1966,7 @@ export default function Home() {
                 </div>
                 {/* Tags */}
                 <div style={{display:'flex',gap:'6px',flexWrap:'wrap',marginBottom:'20px'}}>
-                  {sc.open && <span style={{fontSize:'11px',fontWeight:700,padding:'4px 11px',borderRadius:'100px',background:'rgba(255,98,0,0.12)',color:'#FF6200'}}>Top {sc.topPct}%</span>}
+                  {(sc.open||isUnlocked) && <span style={{fontSize:'11px',fontWeight:700,padding:'4px 11px',borderRadius:'100px',background:'rgba(255,98,0,0.12)',color:'#FF6200'}}>Top {sc.topPct}%</span>}
                   <span style={{fontSize:'11px',fontWeight:600,padding:'4px 11px',borderRadius:'100px',background:'#f2f0ec',color:'#888'}}>{sc.tier}</span>
                   <span style={{fontSize:'11px',fontWeight:600,padding:'4px 11px',borderRadius:'100px',background:'#f2f0ec',color:'#888'}}>{sc.category}</span>
                 </div>
@@ -1932,13 +1974,13 @@ export default function Home() {
                 {/* Stats row */}
                 <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:'8px',marginBottom:'20px'}}>
                   {[
-                    {v: sc.open ? `$${(sc.median/1000).toFixed(1)}k` : '???', l:'Median salary'},
+                    {v: (sc.open||isUnlocked) ? `${(sc.median/1000).toFixed(1)}k` : '???', l:'Median salary'},
                     {v: sc.submissions, l:'Submissions'},
-                    {v: sc.open ? `$${(sc.top10/1000).toFixed(1)}k` : '???', l:'Top 10%'},
+                    {v: (sc.open||isUnlocked) ? `${(sc.top10/1000).toFixed(1)}k` : '???', l:'Top 10%'},
                   ].map((o,i) => (
                     <div key={i} style={{background:'#F7F4EF',borderRadius:'12px',padding:'13px 10px',textAlign:'center'}}>
                       <div style={{fontSize:'15px',fontWeight:800,color:'#FF6200',lineHeight:1,marginBottom:'4px',
-                        filter:sc.open?'none':'blur(6px)',userSelect:sc.open?'auto':'none'}}>
+                        filter:(sc.open||isUnlocked)?'none':'blur(6px)',userSelect:(sc.open||isUnlocked)?'auto':'none'}}>
                         {o.v}
                       </div>
                       <div style={{fontSize:'10px',color:'#A09890'}}>{o.l}</div>
@@ -1979,7 +2021,7 @@ export default function Home() {
                 {/* CTA */}
                 <div style={{background:'#FFF0E6',borderRadius:'14px',padding:'18px',marginTop:'20px',marginBottom:'8px'}}>
                   <div style={{fontSize:'13px',fontWeight:600,color:'#111',lineHeight:1.5,marginBottom:'14px'}}>
-                    {sc.open
+                    {(sc.open||isUnlocked)
                       ? `See where you stand at ${sc.name}`
                       : 'Submit your salary to unlock full data'}
                   </div>
@@ -1990,7 +2032,7 @@ export default function Home() {
                     }}
                     style={{width:'100%',background:'#FF6200',color:'black',fontSize:'14px',fontWeight:800,
                       padding:'14px',borderRadius:'10px',border:'none',cursor:'pointer',textAlign:'center',display:'block'}}>
-                    {sc.open ? 'Am I Underpaid? →' : '🔓 Submit & Unlock →'}
+                    {(sc.open||isUnlocked) ? 'Am I Underpaid? →' : '🔓 Submit & Unlock →'}
                   </button>
                   <div style={{textAlign:'center',fontSize:'11px',color:'#A09890',marginTop:'8px'}}>
                     2 min · anonymous · no login
