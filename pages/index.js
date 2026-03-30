@@ -1426,7 +1426,7 @@ async function doUnlock(role,exp,sal){
     const blurred=el.querySelectorAll('[style*="blur"]');
     blurred.forEach(b=>{ b.style.filter='none'; });
   });
-  document.querySelector('.cards-gate').style.display='none';
+  const gate=document.querySelector('.cards-gate'); if(gate) gate.style.display='none';
   window.isUnlocked=true;
   const searchInput=document.getElementById('hero-search');
   const searchLock=document.getElementById('search-lock');
@@ -1664,13 +1664,12 @@ export default function Home() {
       const urlParams = new URLSearchParams(window.location.search);
       const source = urlParams.get('source') || 'direct';
       if (typeof window.submitSalary === 'function') window.submitSalary(wiz.role, wiz.exp, wiz.sal, wiz.co, source, '');
-      if (typeof window.doUnlock === 'function' && await window.doUnlock(wiz.role, wiz.exp, wiz.sal)) {
-        const s4 = document.getElementById('fyi-step-4');
-        if (s4) s4.classList.remove('active');
-        const sc = document.getElementById('fyi-submit-success');
-        if (sc) sc.style.display = 'block';
-        setTimeout(() => { const ff = document.getElementById('full-feed'); if (ff) ff.scrollIntoView({ behavior: 'smooth' }); }, 600);
-      }
+      try { if (typeof window.doUnlock === 'function') await window.doUnlock(wiz.role, wiz.exp, wiz.sal); } catch(e) { console.error('doUnlock error:', e); }
+      const s4 = document.getElementById('fyi-step-4');
+      if (s4) s4.classList.remove('active');
+      const scEl = document.getElementById('fyi-submit-success');
+      if (scEl) scEl.style.display = 'block';
+      setTimeout(() => { const ff = document.getElementById('full-feed'); if (ff) ff.scrollIntoView({ behavior: 'smooth' }); }, 600);
     };
 
     return () => {
