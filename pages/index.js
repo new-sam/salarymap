@@ -102,7 +102,7 @@ nav { position:fixed; top:0; left:0; right:0; z-index:200; padding:0 52px; heigh
 .company-card.open:hover { outline-color:#FF6200; }
 .card-bg { position:absolute; inset:0; }
 .card-logo-wrap { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; z-index:1; }
-.card-logo-img { width:80px; height:80px; object-fit:contain; border-radius:14px; opacity:0.22; filter:brightness(0) invert(1); }
+.card-logo-img { width:72px; height:72px; object-fit:contain; border-radius:14px; opacity:0.95; background:rgba(255,255,255,0.92); padding:10px; box-shadow:0 2px 16px rgba(0,0,0,0.25); }
 .card-overlay { position:absolute; inset:0; background:linear-gradient(to top,rgba(0,0,0,.85) 0%,rgba(0,0,0,.2) 60%); }
 .company-card.locked .card-overlay { background:rgba(0,0,0,.72); backdrop-filter:blur(3px); }
 .card-top { position:absolute; top:14px; left:14px; right:14px; display:flex; justify-content:space-between; align-items:center; z-index:2; }
@@ -635,7 +635,7 @@ const _cardCompanies = [
 
 const _cardsHTML = _cardCompanies.map((c, i) => {
   const bg = `linear-gradient(135deg, ${c.color}bb 0%, ${c.color}33 100%)`;
-  const logo = `https://logo.clearbit.com/${c.domain}`;
+  const logo = `https://www.google.com/s2/favicons?domain=${c.domain}&sz=256`;
   if (c.open) {
     const rank = _cardCompanies.filter(x => x.open).findIndex(x => x.name === c.name) + 1;
     return `<div class="company-card open" onclick="openCompanyPanel('${c.name.replace(/'/g,"\\'")}')">
@@ -1877,7 +1877,7 @@ export default function Home() {
 
       {/* Company Slide Panel */}
       <div style={{
-        position:'fixed', top:0, right:0, bottom:0, width:'420px', maxWidth:'100vw',
+        position:'fixed', top:0, right:0, bottom:0, width:'min(560px, 92vw)',
         background:'white', zIndex:201, overflowY:'auto',
         transform: selectedCompany ? 'translateX(0)' : 'translateX(100%)',
         transition:'transform 0.32s cubic-bezier(0.22, 0.9, 0.36, 1)',
@@ -1894,16 +1894,16 @@ export default function Home() {
                 <div style={{position:'absolute',inset:0,background:'linear-gradient(to bottom,rgba(0,0,0,0.35) 0%,transparent 60%)'}}/>
                 {/* Logo watermark */}
                 <div style={{position:'absolute',inset:0,display:'flex',alignItems:'center',justifyContent:'center'}}>
-                  <img src={`https://logo.clearbit.com/${sc.domain}`} alt={sc.name}
+                  <img src={`https://www.google.com/s2/favicons?domain=${sc.domain}&sz=256`} alt={sc.name}
                     style={{width:'88px',height:'88px',objectFit:'contain',borderRadius:'16px',
-                      filter:'brightness(0) invert(1)',opacity:0.18}}
+                      background:'rgba(255,255,255,0.18)',padding:'16px',opacity:0.5}}
                     onError={e=>e.target.style.display='none'} />
                 </div>
                 {/* Top bar */}
                 <div style={{position:'absolute',top:0,left:0,right:0,padding:'16px 20px',
                   display:'flex',alignItems:'center',justifyContent:'space-between',zIndex:2}}>
-                  <img src={`https://logo.clearbit.com/${sc.domain}`} alt={sc.name}
-                    style={{width:'32px',height:'32px',objectFit:'contain',borderRadius:'6px',background:'rgba(255,255,255,0.15)',padding:'4px'}}
+                  <img src={`https://www.google.com/s2/favicons?domain=${sc.domain}&sz=256`} alt={sc.name}
+                    style={{width:'32px',height:'32px',objectFit:'contain',borderRadius:'6px',background:'rgba(255,255,255,0.9)',padding:'4px'}}
                     onError={e=>e.target.style.display='none'} />
                   <div onClick={() => setSelectedCompany(null)}
                     style={{width:'32px',height:'32px',borderRadius:'50%',
