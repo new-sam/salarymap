@@ -1877,7 +1877,7 @@ export default function Home() {
 
       {/* Company Slide Panel */}
       <div style={{
-        position:'fixed', top:0, right:0, bottom:0, width:'min(560px, 92vw)',
+        position:'fixed', top:0, right:0, bottom:0, width:'clamp(480px, 50vw, 800px)',
         background:'white', zIndex:201, overflowY:'auto',
         transform: selectedCompany ? 'translateX(0)' : 'translateX(100%)',
         transition:'transform 0.32s cubic-bezier(0.22, 0.9, 0.36, 1)',
