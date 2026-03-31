@@ -1485,26 +1485,21 @@ const CARD_BG_POOL = [
   px('1181671'), px('3184360'), px('1036808'), px('3861958'),
 ];
 
-function buildCardCompanies(companyStats) {
-  // Sort open companies by median salary desc; locked companies after
-  const sorted = [...companyStats].sort((a, b) => {
-    const aOpen = a.count >= 10, bOpen = b.count >= 10;
-    if (aOpen !== bOpen) return aOpen ? -1 : 1;
-    return b.median - a.median;
-  });
+const OPEN_THRESHOLD = 15; // submissions needed to show salary data
 
-  // Compute topPct: salary rank among open companies only
-  const openStats = sorted.filter(s => s.count >= 10);
-  const totalOpen = openStats.length;
+function buildCardCompanies(companyStats) {
+  // Sort by submission count desc (popularity) — open first, then locked
+  const sorted = [...companyStats].sort((a, b) => {
+    const aOpen = a.count >= OPEN_THRESHOLD, bOpen = b.count >= OPEN_THRESHOLD;
+    if (aOpen !== bOpen) return aOpen ? -1 : 1;
+    return b.count - a.count;
+  });
 
   return sorted.map((s, i) => {
     const meta = COMPANY_META[s.company] || COMPANY_META_DEFAULT;
-    const open = s.count >= 10;
+    const open = s.count >= OPEN_THRESHOLD;
     const imgUrl = COMPANY_IMAGES[s.company] || CARD_BG_POOL[i % CARD_BG_POOL.length];
-
-    // topPct: position among open companies by median salary (1 = top paying)
-    const salaryRank = open ? openStats.findIndex(x => x.company === s.company) : -1;
-    const topPct = open ? Math.max(5, Math.round(((salaryRank + 1) / totalOpen) * 100)) : null;
+    const topPct = null; // removed
 
     return {
       name: s.company, ...meta,
