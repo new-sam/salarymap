@@ -1460,6 +1460,7 @@ function buildCardCompanies(companyStats) {
       salMin: s.salMin, salMax: s.salMax,
       submissions: s.count, topPct: s.topPct,
       open, median: s.median, top10: s.salMax,
+      unsplashImage: s.unsplashImage || null,
       salaryByRole: s.salaryByRole.map((r, j) => ({
         role: r.role, experience: '',
         barPercent: Math.round((r.median / (s.salaryByRole[0]?.median || 1)) * 100),
@@ -1471,7 +1472,7 @@ function buildCardCompanies(companyStats) {
 
 function buildCardsHTML(companies) {
   const cards = companies.map((c, i) => {
-    const bgImage = c.bgImage || CARD_BG_POOL[i % CARD_BG_POOL.length];
+    const bgImage = c.unsplashImage || c.bgImage || CARD_BG_POOL[i % CARD_BG_POOL.length];
     const bgStyle = `background-image:url('${bgImage}'); background-color:${c.color};`;
     const logo = c.domain ? `https://www.google.com/s2/favicons?domain=${c.domain}&sz=256` : '';
     const logoTag = logo
@@ -1523,10 +1524,20 @@ function buildCardsHTML(companies) {
 export async function getServerSideProps() {
   try {
     const { getCompanyStats } = await import('../lib/getCompanyStats');
+    const { getCompanyImage } = await import('../lib/getCompanyImage');
     const companyStats = await getCompanyStats();
-    return { props: { companyStats } };
+
+    // Fetch Unsplash images in parallel (falls back gracefully if key missing)
+    const withImages = await Promise.all(
+      companyStats.map(async (s) => {
+        const unsplashImage = await getCompanyImage(s.company);
+        return { ...s, unsplashImage };
+      })
+    );
+
+    return { props: { companyStats: withImages } };
   } catch(e) {
-    console.error('getCompanyStats error:', e);
+    console.error('getServerSideProps error:', e);
     return { props: { companyStats: [] } };
   }
 }
