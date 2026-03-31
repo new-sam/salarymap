@@ -1528,8 +1528,7 @@ export async function getServerSideProps() {
     // Fetch Unsplash images in parallel (falls back gracefully if key missing)
     const withImages = await Promise.all(
       companyStats.map(async (s) => {
-        const meta = COMPANY_META[s.company] || COMPANY_META_DEFAULT;
-        const unsplashImage = await getCompanyImage(s.company, meta.category);
+        const unsplashImage = await getCompanyImage(s.company);
         return { ...s, unsplashImage };
       })
     );
