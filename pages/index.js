@@ -1413,22 +1413,39 @@ const lbData = {
   },
 };
 
+const PX = (id) => `https://images.pexels.com/photos/${id}/pexels-photo-${id}.jpeg?auto=compress&cs=tinysrgb&w=800&h=500&fit=crop`;
+
 const COMPANY_META = {
-  'Grab Vietnam':    { domain:'grab.com',           color:'#00B14F', city:'Ho Chi Minh City', category:'Super App'   },
-  'VNG Corporation': { domain:'vng.com.vn',          color:'#0066CC', city:'Ho Chi Minh City', category:'Product'     },
-  'Shopee Vietnam':  { domain:'shopee.vn',           color:'#EE4D2D', city:'Ho Chi Minh City', category:'E-commerce'  },
-  'FPT Software':    { domain:'fpt.com',             color:'#F26522', city:'Ha Noi',           category:'IT Services' },
-  'Momo':            { domain:'momo.vn',             color:'#A50064', city:'Ho Chi Minh City', category:'Fintech'     },
-  'Sky Mavis':       { domain:'skymavis.com',        color:'#4B5CE4', city:'Ho Chi Minh City', category:'Web3 Gaming' },
-  'Tiki':            { domain:'tiki.vn',             color:'#1A94FF', city:'Ho Chi Minh City', category:'E-commerce'  },
-  'Zalo':            { domain:'zalo.me',             color:'#0068FF', city:'Ho Chi Minh City', category:'Social Tech' },
-  'VPBank':          { domain:'vpbank.com.vn',       color:'#00A651', city:'Ha Noi',           category:'Banking'     },
-  'Techcombank':     { domain:'techcombank.com.vn',  color:'#E30613', city:'Ha Noi',           category:'Banking'     },
-  'VNPT Technology': { domain:'vnpt.com.vn',         color:'#003087', city:'Ha Noi',           category:'Telecom'     },
-  'OneMount Group':  { domain:'onemount.com',        color:'#FF6200', city:'Ha Noi',           category:'Tech'        },
-  'GHN':             { domain:'ghn.vn',              color:'#F26522', city:'Ho Chi Minh City', category:'Logistics'   },
-  'NashTech':        { domain:'nashtechglobal.com',  color:'#0033A0', city:'Ho Chi Minh City', category:'IT Services' },
-  'KMS Technology':  { domain:'kms-technology.com',  color:'#0F75BC', city:'Ho Chi Minh City', category:'IT Services' },
+  // Ride-hailing / green city streets at night
+  'Grab Vietnam':    { domain:'grab.com',           color:'#00B14F', city:'Ho Chi Minh City', category:'Super App',   bgImage: PX(3806753)  },
+  // Gaming studio / dark creative screens
+  'VNG Corporation': { domain:'vng.com.vn',          color:'#0066CC', city:'Ho Chi Minh City', category:'Product',     bgImage: PX(7915435)  },
+  // E-commerce / packages & delivery
+  'Shopee Vietnam':  { domain:'shopee.vn',           color:'#EE4D2D', city:'Ho Chi Minh City', category:'E-commerce',  bgImage: PX(5632399)  },
+  // Large IT office / enterprise dev team
+  'FPT Software':    { domain:'fpt.com',             color:'#F26522', city:'Ha Noi',           category:'IT Services', bgImage: PX(3182812)  },
+  // Fintech / mobile wallet close-up
+  'Momo':            { domain:'momo.vn',             color:'#A50064', city:'Ho Chi Minh City', category:'Fintech',     bgImage: PX(6801631)  },
+  // Web3 gaming / neon digital art vibe
+  'Sky Mavis':       { domain:'skymavis.com',        color:'#4B5CE4', city:'Ho Chi Minh City', category:'Web3 Gaming', bgImage: PX(3165335)  },
+  // Blue delivery / fast commerce
+  'Tiki':            { domain:'tiki.vn',             color:'#1A94FF', city:'Ho Chi Minh City', category:'E-commerce',  bgImage: PX(4481326)  },
+  // Social / people on phones in cafe
+  'Zalo':            { domain:'zalo.me',             color:'#0068FF', city:'Ho Chi Minh City', category:'Social Tech', bgImage: PX(607812)   },
+  // Modern bank exterior / green finance
+  'VPBank':          { domain:'vpbank.com.vn',       color:'#00A651', city:'Ha Noi',           category:'Banking',     bgImage: PX(259200)   },
+  // Financial district / red corporate
+  'Techcombank':     { domain:'techcombank.com.vn',  color:'#E30613', city:'Ha Noi',           category:'Banking',     bgImage: PX(534216)   },
+  // Telecom towers / network infrastructure
+  'VNPT Technology': { domain:'vnpt.com.vn',         color:'#003087', city:'Ha Noi',           category:'Telecom',     bgImage: PX(1036808)  },
+  // Retail tech / modern shopping
+  'OneMount Group':  { domain:'onemount.com',        color:'#FF6200', city:'Ha Noi',           category:'Tech',        bgImage: PX(3184418)  },
+  // Logistics / warehouse operations
+  'GHN':             { domain:'ghn.vn',              color:'#F26522', city:'Ho Chi Minh City', category:'Logistics',   bgImage: PX(4481259)  },
+  // Global IT consulting / collab office
+  'NashTech':        { domain:'nashtechglobal.com',  color:'#0033A0', city:'Ho Chi Minh City', category:'IT Services', bgImage: PX(3184292)  },
+  // Software dev / dual monitors coding
+  'KMS Technology':  { domain:'kms-technology.com',  color:'#0F75BC', city:'Ho Chi Minh City', category:'IT Services', bgImage: PX(1181244)  },
 };
 const COMPANY_META_DEFAULT = { domain:'', color:'#4A5568', city:'Vietnam', category:'Tech' };
 
@@ -1468,7 +1485,7 @@ function buildCardCompanies(companyStats) {
 
 function buildCardsHTML(companies) {
   const cards = companies.map((c, i) => {
-    const bgImage = CARD_BG_POOL[i % CARD_BG_POOL.length];
+    const bgImage = c.bgImage || CARD_BG_POOL[i % CARD_BG_POOL.length];
     const bgStyle = `background-image:url('${bgImage}'); background-color:${c.color};`;
     const logo = c.domain ? `https://www.google.com/s2/favicons?domain=${c.domain}&sz=256` : '';
     const logoTag = logo
