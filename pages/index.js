@@ -1488,7 +1488,7 @@ function buildCardsHTML(companies) {
 
 export async function getServerSideProps() {
   try {
-    const { getCompanyStats } = require('../lib/getCompanyStats');
+    const { getCompanyStats } = await import('../lib/getCompanyStats');
     const companyStats = await getCompanyStats();
     return { props: { companyStats } };
   } catch(e) {
