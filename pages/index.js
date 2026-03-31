@@ -1524,17 +1524,6 @@ export default function Home({ companyStats = [] }) {
     }
   }, []);
 
-  // Populate company card grid from server-fetched Supabase data
-  useEffect(() => {
-    const grid = document.getElementById('company-grid-root');
-    if (!grid) return;
-    const companies = buildCardCompanies(companyStats);
-    grid.innerHTML = buildCardsHTML(companies);
-    if (isUnlockedRef.current) {
-      document.body.classList.add('body-unlocked');
-    }
-  }, [companyStats]);
-
   // Company panel bridge + unlock success handler
   useEffect(() => {
     window.openCompanyPanel = (name) => {
@@ -1749,7 +1738,7 @@ export default function Home({ companyStats = [] }) {
         <style dangerouslySetInnerHTML={{ __html: css }} />
       </Head>
 
-      <div dangerouslySetInnerHTML={{ __html: bodyHTML + '<script>' + js + '<\/script>' }} />
+      <div dangerouslySetInnerHTML={{ __html: bodyHTML.replace('<div class="company-grid" id="company-grid-root"></div>', `<div class="company-grid" id="company-grid-root">${buildCardsHTML(buildCardCompanies(companyStats))}</div>`) + '<script>' + js + '<\/script>' }} />
 
       {/* ── Leaderboard overlay — rendered as React JSX ── */}
       {lbCompany && d && (
