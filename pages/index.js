@@ -101,8 +101,8 @@ nav { position:fixed; top:0; left:0; right:0; z-index:200; padding:0 52px; heigh
 .company-card:hover { transform:scale(1.02); }
 .company-card.open:hover { outline-color:#FF6200; }
 .card-bg { position:absolute; inset:0; background-size:cover; background-position:center; }
-.card-logo-wrap { position:absolute; top:14px; right:14px; z-index:3; }
-.card-logo-img { width:36px; height:36px; object-fit:contain; border-radius:8px; opacity:0.95; background:rgba(255,255,255,0.92); padding:5px; box-shadow:0 2px 10px rgba(0,0,0,0.35); }
+.card-logo-wrap { position:absolute; bottom:16px; right:14px; z-index:3; }
+.card-logo-img { width:26px; height:26px; object-fit:contain; border-radius:6px; background:rgba(255,255,255,0.9); padding:4px; box-shadow:0 1px 8px rgba(0,0,0,0.4); }
 .card-overlay { position:absolute; inset:0; background:linear-gradient(to top,rgba(0,0,0,.88) 0%,rgba(0,0,0,.45) 55%,rgba(0,0,0,.15) 100%); }
 .company-card.hidden { display:none; }
 .load-more-wrap { grid-column:1/-1; display:flex; justify-content:center; padding:16px 0 4px; }
@@ -1432,19 +1432,21 @@ const COMPANY_META = {
 };
 const COMPANY_META_DEFAULT = { domain:'', color:'#4A5568', city:'Vietnam', category:'Tech' };
 
-const CATEGORY_BG = {
-  'Super App':   'https://images.pexels.com/photos/4255417/pexels-photo-4255417.jpeg?auto=compress&cs=tinysrgb&w=800&h=500&fit=crop',
-  'E-commerce':  'https://images.pexels.com/photos/5632399/pexels-photo-5632399.jpeg?auto=compress&cs=tinysrgb&w=800&h=500&fit=crop',
-  'Fintech':     'https://images.pexels.com/photos/6801631/pexels-photo-6801631.jpeg?auto=compress&cs=tinysrgb&w=800&h=500&fit=crop',
-  'Banking':     'https://images.pexels.com/photos/259200/pexels-photo-259200.jpeg?auto=compress&cs=tinysrgb&w=800&h=500&fit=crop',
-  'Product':     'https://images.pexels.com/photos/3184292/pexels-photo-3184292.jpeg?auto=compress&cs=tinysrgb&w=800&h=500&fit=crop',
-  'IT Services': 'https://images.pexels.com/photos/1181244/pexels-photo-1181244.jpeg?auto=compress&cs=tinysrgb&w=800&h=500&fit=crop',
-  'Social Tech': 'https://images.pexels.com/photos/607812/pexels-photo-607812.jpeg?auto=compress&cs=tinysrgb&w=800&h=500&fit=crop',
-  'Web3 Gaming': 'https://images.pexels.com/photos/3165335/pexels-photo-3165335.jpeg?auto=compress&cs=tinysrgb&w=800&h=500&fit=crop',
-  'Telecom':     'https://images.pexels.com/photos/1036808/pexels-photo-1036808.jpeg?auto=compress&cs=tinysrgb&w=800&h=500&fit=crop',
-  'Logistics':   'https://images.pexels.com/photos/4481259/pexels-photo-4481259.jpeg?auto=compress&cs=tinysrgb&w=800&h=500&fit=crop',
-  'Tech':        'https://images.pexels.com/photos/3182812/pexels-photo-3182812.jpeg?auto=compress&cs=tinysrgb&w=800&h=500&fit=crop',
-};
+// Curated pool: index-based assignment (company[i] → pool[i % pool.length])
+const CARD_BG_POOL = [
+  'https://images.pexels.com/photos/3182812/pexels-photo-3182812.jpeg?auto=compress&cs=tinysrgb&w=800&h=500&fit=crop',  // 0 modern team office
+  'https://images.pexels.com/photos/1181244/pexels-photo-1181244.jpeg?auto=compress&cs=tinysrgb&w=800&h=500&fit=crop',  // 1 coding desk
+  'https://images.pexels.com/photos/3184418/pexels-photo-3184418.jpeg?auto=compress&cs=tinysrgb&w=800&h=500&fit=crop',  // 2 business meeting
+  'https://images.pexels.com/photos/256559/pexels-photo-256559.jpeg?auto=compress&cs=tinysrgb&w=800&h=500&fit=crop',    // 3 glass office building
+  'https://images.pexels.com/photos/3861969/pexels-photo-3861969.jpeg?auto=compress&cs=tinysrgb&w=800&h=500&fit=crop',  // 4 startup workspace
+  'https://images.pexels.com/photos/1181406/pexels-photo-1181406.jpeg?auto=compress&cs=tinysrgb&w=800&h=500&fit=crop',  // 5 laptop open office
+  'https://images.pexels.com/photos/2182973/pexels-photo-2182973.jpeg?auto=compress&cs=tinysrgb&w=800&h=500&fit=crop',  // 6 modern open plan
+  'https://images.pexels.com/photos/3184292/pexels-photo-3184292.jpeg?auto=compress&cs=tinysrgb&w=800&h=500&fit=crop',  // 7 product team collab
+  'https://images.pexels.com/photos/1181671/pexels-photo-1181671.jpeg?auto=compress&cs=tinysrgb&w=800&h=500&fit=crop',  // 8 developer screens
+  'https://images.pexels.com/photos/3184360/pexels-photo-3184360.jpeg?auto=compress&cs=tinysrgb&w=800&h=500&fit=crop',  // 9 brainstorm whiteboard
+  'https://images.pexels.com/photos/1036808/pexels-photo-1036808.jpeg?auto=compress&cs=tinysrgb&w=800&h=500&fit=crop',  // 10 city skyline night
+  'https://images.pexels.com/photos/4481326/pexels-photo-4481326.jpeg?auto=compress&cs=tinysrgb&w=800&h=500&fit=crop',  // 11 fintech mobile
+];
 
 function buildCardCompanies(companyStats) {
   return companyStats.map((s, i) => {
@@ -1466,7 +1468,7 @@ function buildCardCompanies(companyStats) {
 
 function buildCardsHTML(companies) {
   const cards = companies.map((c, i) => {
-    const bgImage = CATEGORY_BG[c.category] || CATEGORY_BG['Tech'];
+    const bgImage = CARD_BG_POOL[i % CARD_BG_POOL.length];
     const bgStyle = `background-image:url('${bgImage}'); background-color:${c.color};`;
     const logo = c.domain ? `https://www.google.com/s2/favicons?domain=${c.domain}&sz=256` : '';
     const logoTag = logo
