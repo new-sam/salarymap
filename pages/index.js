@@ -1802,7 +1802,7 @@ export default function Home({ companyStats = [] }) {
         <style dangerouslySetInnerHTML={{ __html: css }} />
       </Head>
 
-      <div dangerouslySetInnerHTML={{ __html: bodyHTML.replace('<div class="company-grid" id="company-grid-root"></div>', `<div class="company-grid" id="company-grid-root">${buildCardsHTML(buildCardCompanies(companyStats))}</div>`) + '<script>' + js + '<\/script>' }} />
+      <div dangerouslySetInnerHTML={{ __html: bodyHTML.replace(/[\s]*<div class="company-grid" id="company-grid-root"><\/div>/, `<div class="company-grid" id="company-grid-root">${buildCardsHTML(buildCardCompanies(companyStats))}</div>`) + '<script>' + js + '<\/script>' }} />
 
       {/* ── Leaderboard overlay — rendered as React JSX ── */}
       {lbCompany && d && (
