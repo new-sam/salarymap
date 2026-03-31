@@ -52,7 +52,11 @@
       "Bash(echo \"exit:$?\")",
       "Bash(python3 -c \"import sys,json; d=json.loads\\(sys.stdin.read\\(\\)\\); print\\(d.get\\(''''err'''',{}\\).get\\(''''message'''',''''''''\\)[:800]\\)\")",
       "Bash(git:*)",
-      "Bash(python3:*)"
+      "Bash(python3:*)",
+      "Bash(cmd /c \"taskkill /PID 34372 /F\")",
+      "Bash(cmd /c \"taskkill /PID 48668 /F\")",
+      "Bash(cmd.exe /c \"taskkill /PID 34372 /F 2>&1 && echo ok\")",
+      "Bash(cmd.exe /c \"taskkill /IM node.exe /F 2>&1\")"
     ]
   },
   "hooks": {

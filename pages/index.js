@@ -637,75 +637,6 @@ nav { position:fixed; top:0; left:0; right:0; z-index:200; padding:0 52px; heigh
 `;
 
 
-const _cardCompanies = [
-  { name:'Grab Vietnam',    type:'Super App',   tier:'Foreign', city:'Ho Chi Minh City', domain:'grab.com',      color:'#00B14F',
-    salMin:1200, salMax:4200, submissions:127, topPct:4, open:true, category:'Super App', median:2800, top10:4200,
-    salaryByRole:[
-      {role:'Mobile Engineer',   experience:'5–7 yrs', barPercent:100, salaryVND:82},
-      {role:'Backend Engineer',  experience:'3–5 yrs', barPercent:84,  salaryVND:69},
-      {role:'Data Engineer',     experience:'2–4 yrs', barPercent:72,  salaryVND:59},
-      {role:'Frontend Engineer', experience:'3–5 yrs', barPercent:68,  salaryVND:56},
-      {role:'DevOps / Cloud',    experience:'2–4 yrs', barPercent:60,  salaryVND:49},
-    ]},
-  { name:'VNG Corporation', type:'Product',     tier:'Local',   city:'Ho Chi Minh City', domain:'vng.com.vn',    color:'#0066CC',
-    salMin:900, salMax:3200, submissions:94, topPct:9, open:true, category:'Product', median:1900, top10:3200,
-    salaryByRole:[
-      {role:'Backend Engineer',  experience:'3–5 yrs', barPercent:100, salaryVND:60},
-      {role:'Mobile Engineer',   experience:'3–5 yrs', barPercent:88,  salaryVND:53},
-      {role:'Data Engineer',     experience:'2–4 yrs', barPercent:75,  salaryVND:45},
-      {role:'Frontend Engineer', experience:'2–4 yrs', barPercent:70,  salaryVND:42},
-      {role:'DevOps / Cloud',    experience:'2–3 yrs', barPercent:62,  salaryVND:37},
-    ]},
-  { name:'Shopee Vietnam',  type:'E-commerce',  tier:'Foreign', city:'Ho Chi Minh City', domain:'shopee.vn',     color:'#EE4D2D',
-    salMin:1100, salMax:3800, submissions:112, topPct:6, open:true, category:'E-commerce', median:2400, top10:3800,
-    salaryByRole:[
-      {role:'Backend Engineer',  experience:'3–5 yrs', barPercent:100, salaryVND:72},
-      {role:'Data Engineer',     experience:'2–4 yrs', barPercent:85,  salaryVND:61},
-      {role:'Mobile Engineer',   experience:'3–5 yrs', barPercent:80,  salaryVND:58},
-      {role:'Frontend Engineer', experience:'2–4 yrs', barPercent:72,  salaryVND:52},
-      {role:'DevOps / Cloud',    experience:'2–3 yrs', barPercent:65,  salaryVND:47},
-    ]},
-  { name:'FPT Software', type:'IT Services', tier:'Local',   city:'Ha Noi',           domain:'fpt.com',       color:'#F26522', submissions:88,  open:false, category:'IT Services', salaryByRole:[] },
-  { name:'Momo',         type:'Fintech',     tier:'Local',   city:'Ho Chi Minh City', domain:'momo.vn',       color:'#A50064', submissions:63,  open:false, category:'Fintech',     salaryByRole:[] },
-  { name:'Sky Mavis',    type:'Web3 Gaming', tier:'Foreign', city:'Ho Chi Minh City', domain:'skymavis.com',  color:'#4B5CE4', submissions:41,  open:false, category:'Web3 Gaming', salaryByRole:[] },
-  { name:'Tiki',         type:'E-commerce',  tier:'Local',   city:'Ho Chi Minh City', domain:'tiki.vn',       color:'#1A94FF', submissions:57,  open:false, category:'E-commerce',  salaryByRole:[] },
-  { name:'Zalo',         type:'Social Tech', tier:'Local',   city:'Ho Chi Minh City', domain:'zalo.me',       color:'#0068FF', submissions:52,  open:false, category:'Social Tech', salaryByRole:[] },
-];
-
-const _cardsHTML = _cardCompanies.map((c, i) => {
-  const bg = `linear-gradient(135deg, ${c.color}bb 0%, ${c.color}33 100%)`;
-  const logo = `https://www.google.com/s2/favicons?domain=${c.domain}&sz=256`;
-  if (c.open) {
-    const rank = _cardCompanies.filter(x => x.open).findIndex(x => x.name === c.name) + 1;
-    return `<div class="company-card open" onclick="openCompanyPanel('${c.name.replace(/'/g,"\\'")}')">
-      <div class="card-bg" style="background:${bg}"></div>
-      <div class="card-logo-wrap"><img class="card-logo-img" src="${logo}" alt="${c.name}" onerror="this.style.display='none'"></div>
-      <div class="card-overlay"></div>
-      <div class="card-top">
-        <span class="card-rank">#${rank}</span>
-        <span class="card-top-badge">Top ${c.topPct}%</span>
-      </div>
-      <div class="card-bottom">
-        <div class="card-name">${c.name}</div>
-        <div class="card-divider"></div>
-        <div class="card-sal">$${c.salMin.toLocaleString()}–$${c.salMax.toLocaleString()}</div>
-        <div class="card-count">${c.submissions} salaries</div>
-      </div>
-    </div>`;
-  } else {
-    return `<div class="company-card locked" onclick="openCompanyPanel('${c.name.replace(/'/g,"\\'")}')">
-      <div class="card-bg" style="background:${bg}"></div>
-      <div class="card-logo-wrap"><img class="card-logo-img" src="${logo}" alt="${c.name}" onerror="this.style.display='none'"></div>
-      <div class="card-overlay"></div>
-      <div class="card-lock-center">
-        <div class="card-lock-icon">🔒</div>
-        <div class="card-lock-name">${c.name}</div>
-        <div class="card-lock-count">${c.submissions} salaries</div>
-      </div>
-      <div class="lock-cta">Submit to unlock →</div>
-    </div>`;
-  }
-}).join('');
 
 const bodyHTML = `<nav>
   <div class="logo"><img src="/logo.png" style="width:28px;height:28px;object-fit:contain;"><span>FYI — FOR YOUR <span style="color:var(--orange);">&apos;SALARY&apos;</span> INFORMATION</span></div>
@@ -867,9 +798,7 @@ const bodyHTML = `<nav>
     </div>
     <div id="co-result-body"></div>
   </div>
-  <div class="company-grid">
-    ${_cardsHTML}
-  </div>
+  <div class="company-grid" id="company-grid-root"></div>
 </div><!-- /cards-section -->
 </div><!-- /cards-bg -->
 
@@ -1480,7 +1409,96 @@ const lbData = {
   },
 };
 
-export default function Home() {
+const COMPANY_META = {
+  'Grab Vietnam':    { domain:'grab.com',           color:'#00B14F', city:'Ho Chi Minh City', category:'Super App'   },
+  'VNG Corporation': { domain:'vng.com.vn',          color:'#0066CC', city:'Ho Chi Minh City', category:'Product'     },
+  'Shopee Vietnam':  { domain:'shopee.vn',           color:'#EE4D2D', city:'Ho Chi Minh City', category:'E-commerce'  },
+  'FPT Software':    { domain:'fpt.com',             color:'#F26522', city:'Ha Noi',           category:'IT Services' },
+  'Momo':            { domain:'momo.vn',             color:'#A50064', city:'Ho Chi Minh City', category:'Fintech'     },
+  'Sky Mavis':       { domain:'skymavis.com',        color:'#4B5CE4', city:'Ho Chi Minh City', category:'Web3 Gaming' },
+  'Tiki':            { domain:'tiki.vn',             color:'#1A94FF', city:'Ho Chi Minh City', category:'E-commerce'  },
+  'Zalo':            { domain:'zalo.me',             color:'#0068FF', city:'Ho Chi Minh City', category:'Social Tech' },
+  'VPBank':          { domain:'vpbank.com.vn',       color:'#00A651', city:'Ha Noi',           category:'Banking'     },
+  'Techcombank':     { domain:'techcombank.com.vn',  color:'#E30613', city:'Ha Noi',           category:'Banking'     },
+  'VNPT Technology': { domain:'vnpt.com.vn',         color:'#003087', city:'Ha Noi',           category:'Telecom'     },
+  'OneMount Group':  { domain:'onemount.com',        color:'#FF6200', city:'Ha Noi',           category:'Tech'        },
+  'GHN':             { domain:'ghn.vn',              color:'#F26522', city:'Ho Chi Minh City', category:'Logistics'   },
+  'NashTech':        { domain:'nashtechglobal.com',  color:'#0033A0', city:'Ho Chi Minh City', category:'IT Services' },
+  'KMS Technology':  { domain:'kms-technology.com',  color:'#0F75BC', city:'Ho Chi Minh City', category:'IT Services' },
+};
+const COMPANY_META_DEFAULT = { domain:'', color:'#4A5568', city:'Vietnam', category:'Tech' };
+
+function buildCardCompanies(companyStats) {
+  return companyStats.map((s, i) => {
+    const meta = COMPANY_META[s.company] || COMPANY_META_DEFAULT;
+    const open = s.count >= 10;
+    return {
+      name: s.company, ...meta,
+      salMin: s.salMin, salMax: s.salMax,
+      submissions: s.count, topPct: s.topPct,
+      open, median: s.median, top10: s.salMax,
+      salaryByRole: s.salaryByRole.map((r, j) => ({
+        role: r.role, experience: '',
+        barPercent: Math.round((r.median / (s.salaryByRole[0]?.median || 1)) * 100),
+        salaryVND: r.median,
+      })),
+    };
+  });
+}
+
+function buildCardsHTML(companies) {
+  return companies.map((c, i) => {
+    const bg = `linear-gradient(135deg, ${c.color}bb 0%, ${c.color}33 100%)`;
+    const logo = c.domain ? `https://www.google.com/s2/favicons?domain=${c.domain}&sz=256` : '';
+    const logoTag = logo
+      ? `<div class="card-logo-wrap"><img class="card-logo-img" src="${logo}" alt="${c.name}" onerror="this.style.display='none'"></div>`
+      : '';
+    if (c.open) {
+      const rank = companies.filter(x => x.open).findIndex(x => x.name === c.name) + 1;
+      return `<div class="company-card open" onclick="openCompanyPanel('${c.name.replace(/'/g,"\'")}')">
+        <div class="card-bg" style="background:${bg}"></div>
+        ${logoTag}
+        <div class="card-overlay"></div>
+        <div class="card-top">
+          <span class="card-rank">#${rank}</span>
+          <span class="card-top-badge">Top ${c.topPct}%</span>
+        </div>
+        <div class="card-bottom">
+          <div class="card-name">${c.name}</div>
+          <div class="card-divider"></div>
+          <div class="card-sal">${c.salMin}M–${c.salMax}M ₫</div>
+          <div class="card-count">${c.submissions} salaries</div>
+        </div>
+      </div>`;
+    } else {
+      return `<div class="company-card locked" onclick="openCompanyPanel('${c.name.replace(/'/g,"\'")}')">
+        <div class="card-bg" style="background:${bg}"></div>
+        ${logoTag}
+        <div class="card-overlay"></div>
+        <div class="card-lock-center">
+          <div class="card-lock-icon">🔒</div>
+          <div class="card-lock-name">${c.name}</div>
+          <div class="card-lock-count">${c.submissions} salaries</div>
+        </div>
+        <div class="lock-cta">Submit to unlock →</div>
+      </div>`;
+    }
+  }).join('');
+}
+
+export async function getServerSideProps() {
+  try {
+    const { getCompanyStats } = require('../lib/getCompanyStats');
+    const companyStats = await getCompanyStats();
+    return { props: { companyStats } };
+  } catch(e) {
+    console.error('getCompanyStats error:', e);
+    return { props: { companyStats: [] } };
+  }
+}
+
+
+export default function Home({ companyStats = [] }) {
   const [lbCompany, setLbCompany] = useState(null);
   const [activeTab, setActiveTab] = useState('All roles');
   const [selectedCompany, setSelectedCompany] = useState(null);
@@ -1506,10 +1524,21 @@ export default function Home() {
     }
   }, []);
 
+  // Populate company card grid from server-fetched Supabase data
+  useEffect(() => {
+    const grid = document.getElementById('company-grid-root');
+    if (!grid) return;
+    const companies = buildCardCompanies(companyStats);
+    grid.innerHTML = buildCardsHTML(companies);
+    if (isUnlockedRef.current) {
+      document.body.classList.add('body-unlocked');
+    }
+  }, [companyStats]);
+
   // Company panel bridge + unlock success handler
   useEffect(() => {
     window.openCompanyPanel = (name) => {
-      const c = _cardCompanies.find(x => x.name === name);
+      const c = buildCardCompanies(companyStats).find(x => x.name === name);
       if (!c) return;
       if (!c.open && !isUnlockedRef.current) pendingCompanyRef.current = name;
       setSelectedCompany(c);
@@ -1530,7 +1559,7 @@ export default function Home() {
       setSelectedCompany(null);
       if (pending) {
         setTimeout(() => {
-          const c = _cardCompanies.find(x => x.name === pending);
+          const c = buildCardCompanies(companyStats).find(x => x.name === pending);
           if (c) setSelectedCompany(c);
         }, 500);
       }
@@ -1869,7 +1898,7 @@ export default function Home() {
       }}>
         {selectedCompany && (() => {
           const sc = selectedCompany;
-          const rank = sc.open ? _cardCompanies.filter(x=>x.open).findIndex(x=>x.name===sc.name)+1 : null;
+          const rank = sc.open ? buildCardCompanies(companyStats).filter(x=>x.open).findIndex(x=>x.name===sc.name)+1 : null;
           const heroBg = `linear-gradient(160deg, ${sc.color}dd 0%, ${sc.color}88 100%)`;
           return (
             <>
