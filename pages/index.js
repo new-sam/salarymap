@@ -100,10 +100,14 @@ nav { position:fixed; top:0; left:0; right:0; z-index:200; padding:0 52px; heigh
 .company-card { border-radius:14px; overflow:hidden; position:relative; height:280px; cursor:pointer; outline:2px solid transparent; outline-offset:-2px; transition:transform .2s, outline-color .2s; }
 .company-card:hover { transform:scale(1.02); }
 .company-card.open:hover { outline-color:#FF6200; }
-.card-bg { position:absolute; inset:0; }
-.card-logo-wrap { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; z-index:1; }
-.card-logo-img { width:72px; height:72px; object-fit:contain; border-radius:14px; opacity:0.95; background:rgba(255,255,255,0.92); padding:10px; box-shadow:0 2px 16px rgba(0,0,0,0.25); }
-.card-overlay { position:absolute; inset:0; background:linear-gradient(to top,rgba(0,0,0,.85) 0%,rgba(0,0,0,.2) 60%); }
+.card-bg { position:absolute; inset:0; background-size:cover; background-position:center; }
+.card-logo-wrap { position:absolute; top:14px; right:14px; z-index:3; }
+.card-logo-img { width:36px; height:36px; object-fit:contain; border-radius:8px; opacity:0.95; background:rgba(255,255,255,0.92); padding:5px; box-shadow:0 2px 10px rgba(0,0,0,0.35); }
+.card-overlay { position:absolute; inset:0; background:linear-gradient(to top,rgba(0,0,0,.88) 0%,rgba(0,0,0,.45) 55%,rgba(0,0,0,.15) 100%); }
+.company-card.hidden { display:none; }
+.load-more-wrap { grid-column:1/-1; display:flex; justify-content:center; padding:16px 0 4px; }
+.load-more-btn { background:rgba(255,255,255,.07); border:1px solid rgba(255,255,255,.15); color:rgba(255,255,255,.7); font-size:13px; font-weight:600; padding:12px 32px; border-radius:10px; cursor:pointer; transition:background .2s, color .2s; }
+.load-more-btn:hover { background:rgba(255,102,0,.15); border-color:#FF6200; color:#FF6200; }
 .company-card.locked .card-overlay { background:rgba(0,0,0,.72); backdrop-filter:blur(3px); }
 .card-top { position:absolute; top:14px; left:14px; right:14px; display:flex; justify-content:space-between; align-items:center; z-index:2; }
 .card-rank { font-size:10px; font-weight:700; color:rgba(255,255,255,.55); background:rgba(0,0,0,.4); padding:3px 8px; border-radius:5px; }
@@ -1428,6 +1432,20 @@ const COMPANY_META = {
 };
 const COMPANY_META_DEFAULT = { domain:'', color:'#4A5568', city:'Vietnam', category:'Tech' };
 
+const CATEGORY_BG = {
+  'Super App':   'https://images.pexels.com/photos/4255417/pexels-photo-4255417.jpeg?auto=compress&cs=tinysrgb&w=800&h=500&fit=crop',
+  'E-commerce':  'https://images.pexels.com/photos/5632399/pexels-photo-5632399.jpeg?auto=compress&cs=tinysrgb&w=800&h=500&fit=crop',
+  'Fintech':     'https://images.pexels.com/photos/6801631/pexels-photo-6801631.jpeg?auto=compress&cs=tinysrgb&w=800&h=500&fit=crop',
+  'Banking':     'https://images.pexels.com/photos/259200/pexels-photo-259200.jpeg?auto=compress&cs=tinysrgb&w=800&h=500&fit=crop',
+  'Product':     'https://images.pexels.com/photos/3184292/pexels-photo-3184292.jpeg?auto=compress&cs=tinysrgb&w=800&h=500&fit=crop',
+  'IT Services': 'https://images.pexels.com/photos/1181244/pexels-photo-1181244.jpeg?auto=compress&cs=tinysrgb&w=800&h=500&fit=crop',
+  'Social Tech': 'https://images.pexels.com/photos/607812/pexels-photo-607812.jpeg?auto=compress&cs=tinysrgb&w=800&h=500&fit=crop',
+  'Web3 Gaming': 'https://images.pexels.com/photos/3165335/pexels-photo-3165335.jpeg?auto=compress&cs=tinysrgb&w=800&h=500&fit=crop',
+  'Telecom':     'https://images.pexels.com/photos/1036808/pexels-photo-1036808.jpeg?auto=compress&cs=tinysrgb&w=800&h=500&fit=crop',
+  'Logistics':   'https://images.pexels.com/photos/4481259/pexels-photo-4481259.jpeg?auto=compress&cs=tinysrgb&w=800&h=500&fit=crop',
+  'Tech':        'https://images.pexels.com/photos/3182812/pexels-photo-3182812.jpeg?auto=compress&cs=tinysrgb&w=800&h=500&fit=crop',
+};
+
 function buildCardCompanies(companyStats) {
   return companyStats.map((s, i) => {
     const meta = COMPANY_META[s.company] || COMPANY_META_DEFAULT;
@@ -1447,16 +1465,18 @@ function buildCardCompanies(companyStats) {
 }
 
 function buildCardsHTML(companies) {
-  return companies.map((c, i) => {
-    const bg = `linear-gradient(135deg, ${c.color}bb 0%, ${c.color}33 100%)`;
+  const cards = companies.map((c, i) => {
+    const bgImage = CATEGORY_BG[c.category] || CATEGORY_BG['Tech'];
+    const bgStyle = `background-image:url('${bgImage}'); background-color:${c.color};`;
     const logo = c.domain ? `https://www.google.com/s2/favicons?domain=${c.domain}&sz=256` : '';
     const logoTag = logo
       ? `<div class="card-logo-wrap"><img class="card-logo-img" src="${logo}" alt="${c.name}" onerror="this.style.display='none'"></div>`
       : '';
+    const hiddenClass = i >= 12 ? ' hidden' : '';
     if (c.open) {
       const rank = companies.filter(x => x.open).findIndex(x => x.name === c.name) + 1;
-      return `<div class="company-card open" onclick="openCompanyPanel('${c.name.replace(/'/g,"\'")}')">
-        <div class="card-bg" style="background:${bg}"></div>
+      return `<div class="company-card open${hiddenClass}" onclick="openCompanyPanel('${c.name.replace(/'/g,"\'")}')">
+        <div class="card-bg" style="${bgStyle}"></div>
         ${logoTag}
         <div class="card-overlay"></div>
         <div class="card-top">
@@ -1471,8 +1491,8 @@ function buildCardsHTML(companies) {
         </div>
       </div>`;
     } else {
-      return `<div class="company-card locked" onclick="openCompanyPanel('${c.name.replace(/'/g,"\'")}')">
-        <div class="card-bg" style="background:${bg}"></div>
+      return `<div class="company-card locked${hiddenClass}" onclick="openCompanyPanel('${c.name.replace(/'/g,"\'")}')">
+        <div class="card-bg" style="${bgStyle}"></div>
         ${logoTag}
         <div class="card-overlay"></div>
         <div class="card-lock-center">
@@ -1484,6 +1504,13 @@ function buildCardsHTML(companies) {
       </div>`;
     }
   }).join('');
+
+  const remaining = companies.length - 12;
+  const loadMore = remaining > 0
+    ? `<div class="load-more-wrap"><button class="load-more-btn" onclick="document.querySelectorAll('.company-card.hidden').forEach(el=>el.classList.remove('hidden'));this.parentElement.remove()">Show ${remaining} more companies ↓</button></div>`
+    : '';
+
+  return cards + loadMore;
 }
 
 export async function getServerSideProps() {
