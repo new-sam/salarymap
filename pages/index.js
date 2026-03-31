@@ -1434,32 +1434,61 @@ const COMPANY_META = {
 const COMPANY_META_DEFAULT = { domain:'', color:'#4A5568', city:'Vietnam', category:'Tech' };
 
 // Company og:images (scraped from official websites)
-const OG_IMAGES = {
-  'Grab Vietnam':    'https://www.grab.com/vn/wp-content/uploads/sites/11/2016/08/cropped-car_banner.jpg',
-  'VNG Corporation': 'https://img.zing.vn/products/vng/thumb.jpg',
-  'FPT Software':    'https://fptsoftware.com/-/media/project/fpt-software/global/common/fptsoftware_building_d.png?modified=20230518152255',
-  'Momo':            'https://homepage.momocdn.net/img/momo-amazone-s3-api-241029082636-638657871963540172.jpg',
-  'Sky Mavis':       'https://skymavis.com/thumbnail.png',
-  'Zalo':            'https://h5.zdn.vn/static/zalo-site/thumb.jpg',
-  'Techcombank':     'https://www.techcombank.com.vn/content/dam/techcombank/public-site/seo/techcombank-default-thumbnail.jpg',
-  'OneMount Group':  'https://onemount.com/website-template-OG.webp',
-  'GHN':             'http://cdn.hstatic.net/themes/200000472237/1001423864/14/share_fb_home.png?v=2816',
+// Per-company curated images — verified 200, hotlink-friendly Pexels CDN
+// Chosen by company category (not random pool), all checked working
+const px = id => `https://images.pexels.com/photos/${id}/pexels-photo-${id}.jpeg?auto=compress&cs=tinysrgb&w=800&h=500&fit=crop`;
+const COMPANY_IMAGES = {
+  // Super App / Ride-hailing
+  'Grab Vietnam':    px('7654202'),  // vietnam city traffic
+  // Gaming / Web3
+  'Sky Mavis':       px('2182973'),  // neon night city
+  'VNG Corporation': px('2182973'),  // neon night (gaming vibes)
+  // Fintech / Mobile payment
+  'Momo':            px('3184360'),  // mobile phone / app
+  'VPBank':          px('5473955'),  // financial district
+  'Techcombank':     px('7821734'),  // modern banking
+  'MBBank':          px('256559'),   // city skyline / finance
+  'SHB Finance':     px('5473955'),  // financial district
+  'Sacombank Digital': px('7821734'), // banking
+  // E-commerce
+  'Shopee Vietnam':  px('3861958'),  // startup office / commerce
+  'Tiki':            px('3861969'),  // modern office / tech
+  'Sendo':           px('3184292'),  // team / commerce
+  // IT Services / Consulting
+  'FPT Software':    px('3182812'),  // team collaboration
+  'NashTech':        px('1181244'),  // coding desk
+  'Nashtech Global': px('1181244'),  // coding desk
+  'KMS Technology':  px('1181406'),  // laptop code
+  'Harvey Nash':     px('3184418'),  // office collab
+  'Axon Active':     px('3861958'),  // startup office
+  'Got It':          px('1181671'),  // server / data
+  'Katalon':         px('3182812'),  // team collab
+  // Social / Communication
+  'Zalo':            px('6476254'),  // smartphone social
+  // Telecom / Infrastructure
+  'VNPT Technology': px('1181671'),  // server room / data
+  'Viettel':         px('1181671'),  // infrastructure
+  // Logistics
+  'GHN':             px('1036808'),  // delivery / logistics
+  'Logivan':         px('1036808'),  // logistics
+  // Tech / Product
+  'OneMount Group':  px('3861969'),  // modern office
+  'Teko Vietnam':    px('3184292'),  // product / tech team
+  'Base.vn':         px('3182820'),  // office workspace
+  'KiotViet':        px('3184360'),  // pos / commerce tech
+  'Amanotes':        px('2182973'),  // music / entertainment (neon)
+  'Rever':           px('7654202'),  // real estate / city
+  'Trusting Social': px('6476254'),  // social / mobile
+  'TokyoTech VN':    px('3861958'),  // tech startup
+  'Fossil Group VN': px('3184418'),  // design / product
+  'BHD Star':        px('2182973'),  // entertainment / cinema
 };
 
-// Curated pool — all verified working Pexels IDs
+// Fallback pool for unlisted companies — all verified 200
 const CARD_BG_POOL = [
-  'https://images.pexels.com/photos/3182812/pexels-photo-3182812.jpeg?auto=compress&cs=tinysrgb&w=800&h=500&fit=crop',
-  'https://images.pexels.com/photos/1181244/pexels-photo-1181244.jpeg?auto=compress&cs=tinysrgb&w=800&h=500&fit=crop',
-  'https://images.pexels.com/photos/3184418/pexels-photo-3184418.jpeg?auto=compress&cs=tinysrgb&w=800&h=500&fit=crop',
-  'https://images.pexels.com/photos/256559/pexels-photo-256559.jpeg?auto=compress&cs=tinysrgb&w=800&h=500&fit=crop',
-  'https://images.pexels.com/photos/3861969/pexels-photo-3861969.jpeg?auto=compress&cs=tinysrgb&w=800&h=500&fit=crop',
-  'https://images.pexels.com/photos/1181406/pexels-photo-1181406.jpeg?auto=compress&cs=tinysrgb&w=800&h=500&fit=crop',
-  'https://images.pexels.com/photos/2182973/pexels-photo-2182973.jpeg?auto=compress&cs=tinysrgb&w=800&h=500&fit=crop',
-  'https://images.pexels.com/photos/3184292/pexels-photo-3184292.jpeg?auto=compress&cs=tinysrgb&w=800&h=500&fit=crop',
-  'https://images.pexels.com/photos/1181671/pexels-photo-1181671.jpeg?auto=compress&cs=tinysrgb&w=800&h=500&fit=crop',
-  'https://images.pexels.com/photos/3184360/pexels-photo-3184360.jpeg?auto=compress&cs=tinysrgb&w=800&h=500&fit=crop',
-  'https://images.pexels.com/photos/1036808/pexels-photo-1036808.jpeg?auto=compress&cs=tinysrgb&w=800&h=500&fit=crop',
-  'https://images.pexels.com/photos/3861958/pexels-photo-3861958.jpeg?auto=compress&cs=tinysrgb&w=800&h=500&fit=crop',
+  px('3182812'), px('1181244'), px('3184418'), px('256559'),
+  px('3861969'), px('1181406'), px('2182973'), px('3184292'),
+  px('1181671'), px('3184360'), px('1036808'), px('3861958'),
 ];
 
 function buildCardCompanies(companyStats) {
@@ -1477,7 +1506,7 @@ function buildCardCompanies(companyStats) {
   return sorted.map((s, i) => {
     const meta = COMPANY_META[s.company] || COMPANY_META_DEFAULT;
     const open = s.count >= 10;
-    const imgUrl = OG_IMAGES[s.company] || s.unsplashImage || CARD_BG_POOL[i % CARD_BG_POOL.length];
+    const imgUrl = COMPANY_IMAGES[s.company] || CARD_BG_POOL[i % CARD_BG_POOL.length];
 
     // topPct: position among open companies by median salary (1 = top paying)
     const salaryRank = open ? openStats.findIndex(x => x.company === s.company) : -1;
