@@ -1450,13 +1450,15 @@ const COMPANY_IMAGES = {
   'KMS Technology':  'https://greatplacetowork.com.vn/wp-content/uploads/2025/02/KMS-TECHNOLOGY_1-2-scaled.jpg',
   'NashTech':        'https://www.outsourceaccelerator.com/wp-content/uploads/2023/05/f7e52632d507ce7029cde7932db75a9a_nashtech-top-10-ict-bpo-2048x1367-1.jpg',
   'Nashtech Global': 'https://www.outsourceaccelerator.com/wp-content/uploads/2023/05/f7e52632d507ce7029cde7932db75a9a_nashtech-top-10-ict-bpo-2048x1367-1.jpg',
-  // Pexels fallbacks for companies without verified photos
-  'VNG Corporation': px('2182973'),
-  'VPBank':          px('5473955'),
+  // Real photos for previously missing companies
+  'VNG Corporation': 'https://namthuycorp.com/wp-content/uploads/2020/07/du-an-VNG-1.jpg',
+  'VNPT Technology': 'https://architizer-prod.imgix.net/media/mediadata/uploads/1754883372803112358_VNPT_Landscape_2.jpg?w=1680&q=60&auto=format,compress&cs=strip',
+  'GHN':             'https://vstatic.vietnam.vn/vietnam/resource/IMAGE/2026/01/15/1768469557624_giao-hang-nhanhdocx-1768467798800.jpeg',
+  'VPBank':          'https://niceoffice.com.vn/wp-content/uploads/2023/10/vpbank-saigon-tower-duong-ton-duc-thang-quan-1.jpg',
+  // Pexels fallbacks
   'MBBank':          px('256559'),
   'SHB Finance':     px('5473955'),
   'Sacombank Digital': px('7821734'),
-  'VNPT Technology': px('1181671'),
   'Viettel':         px('1181671'),
   'OneMount Group':  px('3861969'),
   'Logivan':         px('1036808'),
