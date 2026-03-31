@@ -1414,24 +1414,22 @@ const lbData = {
   },
 };
 
-const PX = (id) => `https://images.pexels.com/photos/${id}/pexels-photo-${id}.jpeg?auto=compress&cs=tinysrgb&w=800&h=500&fit=crop`;
-
 const COMPANY_META = {
-  'Grab Vietnam':    { domain:'grab.com',           color:'#00B14F', city:'Ho Chi Minh City', category:'Super App',   bgImage: PX(1036808)  }, // city night
-  'VNG Corporation': { domain:'vng.com.vn',          color:'#0066CC', city:'Ho Chi Minh City', category:'Product',     bgImage: PX(3861969)  }, // startup workspace
-  'Shopee Vietnam':  { domain:'shopee.vn',           color:'#EE4D2D', city:'Ho Chi Minh City', category:'E-commerce',  bgImage: PX(3184360)  }, // team operations
-  'FPT Software':    { domain:'fpt.com',             color:'#F26522', city:'Ha Noi',           category:'IT Services', bgImage: PX(3182812)  }, // large team meeting
-  'Momo':            { domain:'momo.vn',             color:'#A50064', city:'Ho Chi Minh City', category:'Fintech',     bgImage: PX(1181406)  }, // laptop open office
-  'Sky Mavis':       { domain:'skymavis.com',        color:'#4B5CE4', city:'Ho Chi Minh City', category:'Web3 Gaming', bgImage: PX(1181671)  }, // developer screens
-  'Tiki':            { domain:'tiki.vn',             color:'#1A94FF', city:'Ho Chi Minh City', category:'E-commerce',  bgImage: PX(2182973)  }, // modern open plan
-  'Zalo':            { domain:'zalo.me',             color:'#0068FF', city:'Ho Chi Minh City', category:'Social Tech', bgImage: PX(3184418)  }, // people collaborating
-  'VPBank':          { domain:'vpbank.com.vn',       color:'#00A651', city:'Ha Noi',           category:'Banking',     bgImage: PX(256559)   }, // glass office building
-  'Techcombank':     { domain:'techcombank.com.vn',  color:'#E30613', city:'Ha Noi',           category:'Banking',     bgImage: PX(3184292)  }, // team collab
-  'VNPT Technology': { domain:'vnpt.com.vn',         color:'#003087', city:'Ha Noi',           category:'Telecom',     bgImage: PX(1036808)  }, // city/network
-  'OneMount Group':  { domain:'onemount.com',        color:'#FF6200', city:'Ha Noi',           category:'Tech',        bgImage: PX(3184418)  }, // business meeting
-  'GHN':             { domain:'ghn.vn',              color:'#F26522', city:'Ho Chi Minh City', category:'Logistics',   bgImage: PX(3861958)  }, // operations
-  'NashTech':        { domain:'nashtechglobal.com',  color:'#0033A0', city:'Ho Chi Minh City', category:'IT Services', bgImage: PX(3184292)  }, // collab office
-  'KMS Technology':  { domain:'kms-technology.com',  color:'#0F75BC', city:'Ho Chi Minh City', category:'IT Services', bgImage: PX(1181244)  }, // coding desk
+  'Grab Vietnam':    { domain:'grab.com',           color:'#00B14F', city:'Ho Chi Minh City', category:'Super App'   },
+  'VNG Corporation': { domain:'vng.com.vn',          color:'#0066CC', city:'Ho Chi Minh City', category:'Product'     },
+  'Shopee Vietnam':  { domain:'shopee.vn',           color:'#EE4D2D', city:'Ho Chi Minh City', category:'E-commerce'  },
+  'FPT Software':    { domain:'fpt.com',             color:'#F26522', city:'Ha Noi',           category:'IT Services' },
+  'Momo':            { domain:'momo.vn',             color:'#A50064', city:'Ho Chi Minh City', category:'Fintech'     },
+  'Sky Mavis':       { domain:'skymavis.com',        color:'#4B5CE4', city:'Ho Chi Minh City', category:'Web3 Gaming' },
+  'Tiki':            { domain:'tiki.vn',             color:'#1A94FF', city:'Ho Chi Minh City', category:'E-commerce'  },
+  'Zalo':            { domain:'zalo.me',             color:'#0068FF', city:'Ho Chi Minh City', category:'Social Tech' },
+  'VPBank':          { domain:'vpbank.com.vn',       color:'#00A651', city:'Ha Noi',           category:'Banking'     },
+  'Techcombank':     { domain:'techcombank.com.vn',  color:'#E30613', city:'Ha Noi',           category:'Banking'     },
+  'VNPT Technology': { domain:'vnpt.com.vn',         color:'#003087', city:'Ha Noi',           category:'Telecom'     },
+  'OneMount Group':  { domain:'onemount.com',        color:'#FF6200', city:'Ha Noi',           category:'Tech'        },
+  'GHN':             { domain:'ghn.vn',              color:'#F26522', city:'Ho Chi Minh City', category:'Logistics'   },
+  'NashTech':        { domain:'nashtechglobal.com',  color:'#0033A0', city:'Ho Chi Minh City', category:'IT Services' },
+  'KMS Technology':  { domain:'kms-technology.com',  color:'#0F75BC', city:'Ho Chi Minh City', category:'IT Services' },
 };
 const COMPANY_META_DEFAULT = { domain:'', color:'#4A5568', city:'Vietnam', category:'Tech' };
 
@@ -1530,7 +1528,8 @@ export async function getServerSideProps() {
     // Fetch Unsplash images in parallel (falls back gracefully if key missing)
     const withImages = await Promise.all(
       companyStats.map(async (s) => {
-        const unsplashImage = await getCompanyImage(s.company);
+        const meta = COMPANY_META[s.company] || COMPANY_META_DEFAULT;
+        const unsplashImage = await getCompanyImage(s.company, meta.category);
         return { ...s, unsplashImage };
       })
     );
