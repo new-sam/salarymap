@@ -1433,6 +1433,19 @@ const COMPANY_META = {
 };
 const COMPANY_META_DEFAULT = { domain:'', color:'#4A5568', city:'Vietnam', category:'Tech' };
 
+// Company og:images (scraped from official websites)
+const OG_IMAGES = {
+  'Grab Vietnam':    'https://www.grab.com/vn/wp-content/uploads/sites/11/2016/08/cropped-car_banner.jpg',
+  'VNG Corporation': 'https://img.zing.vn/products/vng/thumb.jpg',
+  'FPT Software':    'https://fptsoftware.com/-/media/project/fpt-software/global/common/fptsoftware_building_d.png?modified=20230518152255',
+  'Momo':            'https://homepage.momocdn.net/img/momo-amazone-s3-api-241029082636-638657871963540172.jpg',
+  'Sky Mavis':       'https://skymavis.com/thumbnail.png',
+  'Zalo':            'https://h5.zdn.vn/static/zalo-site/thumb.jpg',
+  'Techcombank':     'https://www.techcombank.com.vn/content/dam/techcombank/public-site/seo/techcombank-default-thumbnail.jpg',
+  'OneMount Group':  'https://onemount.com/website-template-OG.webp',
+  'GHN':             'http://cdn.hstatic.net/themes/200000472237/1001423864/14/share_fb_home.png?v=2816',
+};
+
 // Curated pool — all verified working Pexels IDs
 const CARD_BG_POOL = [
   'https://images.pexels.com/photos/3182812/pexels-photo-3182812.jpeg?auto=compress&cs=tinysrgb&w=800&h=500&fit=crop',
@@ -1450,17 +1463,33 @@ const CARD_BG_POOL = [
 ];
 
 function buildCardCompanies(companyStats) {
-  return companyStats.map((s, i) => {
+  // Sort open companies by median salary desc; locked companies after
+  const sorted = [...companyStats].sort((a, b) => {
+    const aOpen = a.count >= 10, bOpen = b.count >= 10;
+    if (aOpen !== bOpen) return aOpen ? -1 : 1;
+    return b.median - a.median;
+  });
+
+  // Compute topPct: salary rank among open companies only
+  const openStats = sorted.filter(s => s.count >= 10);
+  const totalOpen = openStats.length;
+
+  return sorted.map((s, i) => {
     const meta = COMPANY_META[s.company] || COMPANY_META_DEFAULT;
     const open = s.count >= 10;
-    const imgUrl = s.unsplashImage || CARD_BG_POOL[i % CARD_BG_POOL.length];
+    const imgUrl = OG_IMAGES[s.company] || s.unsplashImage || CARD_BG_POOL[i % CARD_BG_POOL.length];
+
+    // topPct: position among open companies by median salary (1 = top paying)
+    const salaryRank = open ? openStats.findIndex(x => x.company === s.company) : -1;
+    const topPct = open ? Math.max(5, Math.round(((salaryRank + 1) / totalOpen) * 100)) : null;
+
     return {
       name: s.company, ...meta,
       salMin: s.salMin, salMax: s.salMax,
-      submissions: s.count, topPct: s.topPct,
+      submissions: s.count, topPct,
       open, median: s.median, top10: s.salMax,
       imgUrl,
-      salaryByRole: s.salaryByRole.map((r, j) => ({
+      salaryByRole: s.salaryByRole.map((r) => ({
         role: r.role, experience: '',
         barPercent: Math.round((r.median / (s.salaryByRole[0]?.median || 1)) * 100),
         salaryVND: r.median,
@@ -1479,7 +1508,8 @@ function buildCardsHTML(companies) {
       : '';
     const hiddenClass = i >= 12 ? ' hidden' : '';
     if (c.open) {
-      const rank = companies.filter(x => x.open).findIndex(x => x.name === c.name) + 1;
+      const openList = companies.filter(x => x.open);
+      const rank = openList.findIndex(x => x.name === c.name) + 1;
       return `<div class="company-card open${hiddenClass}" onclick="openCompanyPanel('${c.name.replace(/'/g,"\'")}')">
         <div class="card-bg" style="${bgStyle}"></div>
         ${logoTag}
@@ -1523,18 +1553,8 @@ function buildCardsHTML(companies) {
 export async function getServerSideProps() {
   try {
     const { getCompanyStats } = await import('../lib/getCompanyStats');
-    const { getCompanyImage } = await import('../lib/getCompanyImage');
     const companyStats = await getCompanyStats();
-
-    // Fetch Unsplash images in parallel (falls back gracefully if key missing)
-    const withImages = await Promise.all(
-      companyStats.map(async (s) => {
-        const unsplashImage = await getCompanyImage(s.company);
-        return { ...s, unsplashImage };
-      })
-    );
-
-    return { props: { companyStats: withImages } };
+    return { props: { companyStats } };
   } catch(e) {
     console.error('getServerSideProps error:', e);
     return { props: { companyStats: [] } };
