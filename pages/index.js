@@ -1434,54 +1434,46 @@ const COMPANY_META = {
 const COMPANY_META_DEFAULT = { domain:'', color:'#4A5568', city:'Vietnam', category:'Tech' };
 
 // Company og:images (scraped from official websites)
-// Per-company curated images — verified 200, hotlink-friendly Pexels CDN
-// Chosen by company category (not random pool), all checked working
+// Per-company curated images — real company photos, all verified 200
 const px = id => `https://images.pexels.com/photos/${id}/pexels-photo-${id}.jpeg?auto=compress&cs=tinysrgb&w=800&h=500&fit=crop`;
 const COMPANY_IMAGES = {
-  // Super App / Ride-hailing
-  'Grab Vietnam':    px('7654202'),  // vietnam city traffic
-  // Gaming / Web3
-  'Sky Mavis':       px('2182973'),  // neon night city
-  'VNG Corporation': px('2182973'),  // neon night (gaming vibes)
-  // Fintech / Mobile payment
-  'Momo':            px('3184360'),  // mobile phone / app
-  'VPBank':          px('5473955'),  // financial district
-  'Techcombank':     px('7821734'),  // modern banking
-  'MBBank':          px('256559'),   // city skyline / finance
-  'SHB Finance':     px('5473955'),  // financial district
-  'Sacombank Digital': px('7821734'), // banking
-  // E-commerce
-  'Shopee Vietnam':  px('3861958'),  // startup office / commerce
-  'Tiki':            px('3861969'),  // modern office / tech
-  'Sendo':           px('3184292'),  // team / commerce
-  // IT Services / Consulting
-  'FPT Software':    px('3182812'),  // team collaboration
-  'NashTech':        px('1181244'),  // coding desk
-  'Nashtech Global': px('1181244'),  // coding desk
-  'KMS Technology':  px('1181406'),  // laptop code
-  'Harvey Nash':     px('3184418'),  // office collab
-  'Axon Active':     px('3861958'),  // startup office
-  'Got It':          px('1181671'),  // server / data
-  'Katalon':         px('3182812'),  // team collab
-  // Social / Communication
-  'Zalo':            px('6476254'),  // smartphone social
-  // Telecom / Infrastructure
-  'VNPT Technology': px('1181671'),  // server room / data
-  'Viettel':         px('1181671'),  // infrastructure
-  // Logistics
-  'GHN':             px('1036808'),  // delivery / logistics
-  'Logivan':         px('1036808'),  // logistics
-  // Tech / Product
-  'OneMount Group':  px('3861969'),  // modern office
-  'Teko Vietnam':    px('3184292'),  // product / tech team
-  'Base.vn':         px('3182820'),  // office workspace
-  'KiotViet':        px('3184360'),  // pos / commerce tech
-  'Amanotes':        px('2182973'),  // music / entertainment (neon)
-  'Rever':           px('7654202'),  // real estate / city
-  'Trusting Social': px('6476254'),  // social / mobile
-  'TokyoTech VN':    px('3861958'),  // tech startup
-  'Fossil Group VN': px('3184418'),  // design / product
-  'BHD Star':        px('2182973'),  // entertainment / cinema
+  // Real company photos (verified working)
+  'Grab Vietnam':    'https://assets.grab.com/wp-content/uploads/sites/11/2024/10/08174304/RV-2x1-GRAB-10Y-1-scaled.jpg',
+  'Sky Mavis':       'https://cdn.skymavis.com/skymavis-home/public//homepage/about-us-1.jpg',
+  'Momo':            'https://boho.vn/wp-content/uploads/2023/03/L6-Momo-001-1024x576.jpg',
+  'FPT Software':    'https://fptsoftware.com/-/media/project/fpt-software/fso/about-us/global-presence/f-town/f-town-1.jpg',
+  'Shopee Vietnam':  'https://www.sea.com/_next/static/media/bg-shopee.1789debb.jpg',
+  'Tiki':            'https://tuyendung.tiki.vn/images/features/about.jpg',
+  'GHN':             'https://cdn.hstatic.net/files/200000472237/file/aboutus-01.jpg',
+  'Techcombank':     'https://www.metalocus.es/sites/default/files/files/metalocus_fosterpartners_techcombank_01.jpg',
+  'Zalo':            'https://stc-zalo-careers.zdn.vn/v2/assets/images/lifeAtZalo/img1.jpg',
+  'KMS Technology':  'https://greatplacetowork.com.vn/wp-content/uploads/2025/02/KMS-TECHNOLOGY_1-2-scaled.jpg',
+  'NashTech':        'https://www.outsourceaccelerator.com/wp-content/uploads/2023/05/f7e52632d507ce7029cde7932db75a9a_nashtech-top-10-ict-bpo-2048x1367-1.jpg',
+  'Nashtech Global': 'https://www.outsourceaccelerator.com/wp-content/uploads/2023/05/f7e52632d507ce7029cde7932db75a9a_nashtech-top-10-ict-bpo-2048x1367-1.jpg',
+  // Pexels fallbacks for companies without verified photos
+  'VNG Corporation': px('2182973'),
+  'VPBank':          px('5473955'),
+  'MBBank':          px('256559'),
+  'SHB Finance':     px('5473955'),
+  'Sacombank Digital': px('7821734'),
+  'VNPT Technology': px('1181671'),
+  'Viettel':         px('1181671'),
+  'OneMount Group':  px('3861969'),
+  'Logivan':         px('1036808'),
+  'Base.vn':         px('3182820'),
+  'KiotViet':        px('3184360'),
+  'Amanotes':        px('2182973'),
+  'Rever':           px('7654202'),
+  'Trusting Social': px('6476254'),
+  'TokyoTech VN':    px('3861958'),
+  'Fossil Group VN': px('3184418'),
+  'BHD Star':        px('2182973'),
+  'Harvey Nash':     px('3184418'),
+  'Axon Active':     px('3861958'),
+  'Got It':          px('1181671'),
+  'Katalon':         px('3182812'),
+  'Teko Vietnam':    px('3184292'),
+  'Sendo':           px('3184292'),
 };
 
 // Fallback pool for unlisted companies — all verified 200
