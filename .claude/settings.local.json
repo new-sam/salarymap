@@ -56,7 +56,16 @@
       "Bash(cmd /c \"taskkill /PID 34372 /F\")",
       "Bash(cmd /c \"taskkill /PID 48668 /F\")",
       "Bash(cmd.exe /c \"taskkill /PID 34372 /F 2>&1 && echo ok\")",
-      "Bash(cmd.exe /c \"taskkill /IM node.exe /F 2>&1\")"
+      "Bash(cmd.exe /c \"taskkill /IM node.exe /F 2>&1\")",
+      "WebSearch",
+      "WebFetch(domain:moodesigns.net)",
+      "WebFetch(domain:www.grab.careers)",
+      "WebFetch(domain:fptsoftware.com)",
+      "WebFetch(domain:kms-technology.com)",
+      "WebFetch(domain:techcombank.com)",
+      "WebFetch(domain:www.metalocus.es)",
+      "WebFetch(domain:boho.vn)",
+      "WebFetch(domain:www.nashtechglobal.com)"
     ]
   },
   "hooks": {
