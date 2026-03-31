@@ -1,4 +1,5 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
+import ReactDOM from 'react-dom';
 import Head from 'next/head';
 
 const css = `
@@ -97,21 +98,17 @@ nav { position:fixed; top:0; left:0; right:0; z-index:200; padding:0 52px; heigh
 
 /* COMPANY GRID */
 .company-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:8px; }
-.company-card { border-radius:14px; overflow:hidden; position:relative; height:280px; cursor:pointer; outline:2px solid transparent; outline-offset:-2px; transition:transform .2s, outline-color .2s; }
+.company-card { border-radius:14px; overflow:hidden; position:relative; height:260px; cursor:pointer; outline:2px solid transparent; outline-offset:-2px; transition:transform .2s, outline-color .2s; }
 .company-card:hover { transform:scale(1.02); }
 .company-card.open:hover { outline-color:#FF6200; }
 .card-bg { position:absolute; inset:0; background-size:cover; background-position:center; }
 .card-logo-wrap { position:absolute; bottom:16px; right:14px; z-index:3; }
 .card-logo-img { width:26px; height:26px; object-fit:contain; border-radius:6px; background:rgba(255,255,255,0.9); padding:4px; box-shadow:0 1px 8px rgba(0,0,0,0.4); }
 .card-overlay { position:absolute; inset:0; background:linear-gradient(to top,rgba(0,0,0,.88) 0%,rgba(0,0,0,.45) 55%,rgba(0,0,0,.15) 100%); }
-.company-card.hidden { display:none; }
-.load-more-wrap { grid-column:1/-1; display:flex; justify-content:center; padding:16px 0 4px; }
-.load-more-btn { background:rgba(255,255,255,.07); border:1px solid rgba(255,255,255,.15); color:rgba(255,255,255,.7); font-size:13px; font-weight:600; padding:12px 32px; border-radius:10px; cursor:pointer; transition:background .2s, color .2s; }
-.load-more-btn:hover { background:rgba(255,102,0,.15); border-color:#FF6200; color:#FF6200; }
-.company-card.locked .card-overlay { background:rgba(0,0,0,.72); backdrop-filter:blur(3px); }
+.card-locked-overlay { position:absolute; inset:0; background:rgba(0,0,0,0.65); backdrop-filter:blur(4px); z-index:1; }
 .card-top { position:absolute; top:14px; left:14px; right:14px; display:flex; justify-content:space-between; align-items:center; z-index:2; }
 .card-rank { font-size:10px; font-weight:700; color:rgba(255,255,255,.55); background:rgba(0,0,0,.4); padding:3px 8px; border-radius:5px; }
-.card-category { font-size:10px; font-weight:600; color:rgba(255,255,255,0.7); background:rgba(255,255,255,0.12); padding:3px 8px; border-radius:5px; letter-spacing:.03em; }
+.card-top-badge { font-size:10px; font-weight:700; color:#000; background:#FF6200; padding:3px 8px; border-radius:5px; }
 .card-bottom { position:absolute; bottom:0; left:0; right:0; padding:16px; z-index:2; }
 .card-name-row { display:flex; justify-content:space-between; align-items:baseline; gap:6px; }
 .card-name { font-size:14px; font-weight:700; color:#fff; letter-spacing:-.02em; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
@@ -120,14 +117,14 @@ nav { position:fixed; top:0; left:0; right:0; z-index:200; padding:0 52px; heigh
 .card-sal { font-size:20px; font-weight:800; color:#FF6200; letter-spacing:-.03em; line-height:1; }
 .card-lock-center { position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:6px; z-index:2; }
 .card-lock-icon { font-size:22px; }
-.card-lock-name { font-size:13px; font-weight:700; color:rgba(255,255,255,.55); }
-.card-lock-count { font-size:11px; color:rgba(255,255,255,.3); }
-.lock-cta { position:absolute; bottom:14px; left:14px; right:14px; background:#FF6200; color:black; font-size:11px; font-weight:700; padding:8px; border-radius:8px; text-align:center; opacity:0; transition:opacity .2s; z-index:3; }
+.card-lock-name { font-size:13px; font-weight:700; color:#fff; }
+.card-lock-count { font-size:11px; color:rgba(255,255,255,.5); }
+.lock-cta { position:absolute; bottom:14px; left:14px; right:14px; background:#FF6200; color:#000; font-size:11px; font-weight:700; padding:8px; border-radius:8px; text-align:center; opacity:0; transition:opacity .2s; z-index:3; }
 .company-card.locked:hover .lock-cta { opacity:1; }
-.body-unlocked .company-card.locked .card-overlay { background:linear-gradient(to top,rgba(0,0,0,.85) 0%,rgba(0,0,0,.2) 60%) !important; backdrop-filter:none !important; }
-.body-unlocked .company-card.locked .card-lock-center { opacity:0; transform:scale(0.75); transition:opacity .5s ease, transform .5s ease; pointer-events:none; }
-.body-unlocked .company-card.locked .lock-cta { display:none; }
-.body-unlocked .company-card.locked:hover { outline-color:#FF6200; }
+.company-card-cta { border-radius:14px; height:260px; cursor:pointer; background:#111; border:1px dashed rgba(255,98,0,0.4); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:6px; transition:border-color .2s, background .2s; }
+.company-card-cta:hover { border-color:#FF6200; background:rgba(255,98,0,.07); }
+.cta-main { font-size:16px; font-weight:700; color:#fff; }
+.cta-sub { font-size:12px; color:rgba(255,255,255,.45); }
 
 /* WGF SECTION */
 .wgf-section { max-width:1100px; margin:0 auto; padding:40px 40px 80px; }
@@ -1568,6 +1565,67 @@ function buildCardsHTML(companies) {
   return cards + loadMore;
 }
 
+function CompanyCardGrid({ companies, isSubmitted, onOpenPanel, onScrollToSubmit }) {
+  const lockedCount = Math.max(0, companies.length - 3);
+  return (
+    <>
+      {companies.map((c, i) => {
+        const locked = !isSubmitted && i >= 3;
+        const bg = { backgroundImage: `url('${c.imgUrl}')`, backgroundColor: c.color };
+        const logo = c.domain ? `https://www.google.com/s2/favicons?domain=${c.domain}&sz=256` : null;
+
+        if (locked) {
+          return (
+            <div key={c.name} className="company-card locked" onClick={onScrollToSubmit}>
+              <div className="card-bg" style={bg} />
+              <div className="card-locked-overlay" />
+              <div className="card-lock-center">
+                <div className="card-lock-icon">🔒</div>
+                <div className="card-lock-name">{c.name}</div>
+                <div className="card-lock-count">{c.submissions} salaries</div>
+              </div>
+              <div className="lock-cta">Submit to unlock →</div>
+            </div>
+          );
+        }
+
+        return (
+          <div key={c.name} className="company-card open" onClick={() => onOpenPanel(c.name)}>
+            <div className="card-bg" style={bg} />
+            {logo && (
+              <div className="card-logo-wrap">
+                <img className="card-logo-img" src={logo} alt={c.name}
+                  onError={(e) => { e.currentTarget.style.display = 'none'; }} />
+              </div>
+            )}
+            <div className="card-overlay" />
+            <div className="card-top">
+              <span className="card-rank">#{i + 1}</span>
+              <span className="card-top-badge">Top {c.topPct}%</span>
+            </div>
+            <div className="card-bottom">
+              <div className="card-name-row">
+                <div className="card-name">{c.name}</div>
+                <div className="card-count">{c.submissions} salaries</div>
+              </div>
+              <div className="card-divider" />
+              <div className="card-sal">{c.salMin}M – {c.salMax}M ₫</div>
+            </div>
+          </div>
+        );
+      })}
+
+      {!isSubmitted && lockedCount > 0 && (
+        <div className="company-card-cta" onClick={onScrollToSubmit}>
+          <div style={{ fontSize: '24px' }}>🔓</div>
+          <div className="cta-main">{lockedCount}개 더 있어요</div>
+          <div className="cta-sub">연봉 제출하면 전체 공개</div>
+        </div>
+      )}
+    </>
+  );
+}
+
 export async function getServerSideProps() {
   try {
     const { getCompanyStats } = await import('../lib/getCompanyStats');
@@ -1585,8 +1643,11 @@ export default function Home({ companyStats = [] }) {
   const [activeTab, setActiveTab] = useState('All roles');
   const [selectedCompany, setSelectedCompany] = useState(null);
   const [isUnlocked, setIsUnlocked] = useState(false);
+  const [isSubmitted, setIsSubmitted] = useState(false);
+  const [gridMounted, setGridMounted] = useState(false);
   const isUnlockedRef = useRef(false);
   const pendingCompanyRef = useRef(null);
+  const companies = useMemo(() => buildCardCompanies(companyStats), [companyStats]);
 
   // Expose openLB / closeLB to inline onclick handlers inside dangerouslySetInnerHTML
   useEffect(() => {
@@ -1595,14 +1656,14 @@ export default function Home({ companyStats = [] }) {
     return () => { delete window.openLB; delete window.closeLB; };
   }, []);
 
-  // localStorage unlock check on mount
+  // localStorage unlock check on mount + enable card grid portal
   useEffect(() => {
+    setGridMounted(true);
     if (localStorage.getItem('fyi_submitted') === 'true') {
       isUnlockedRef.current = true;
       setIsUnlocked(true);
+      setIsSubmitted(true);
       document.body.classList.add('body-unlocked');
-      const gate = document.querySelector('.cards-gate');
-      if (gate) gate.style.display = 'none';
     }
   }, []);
 
@@ -1618,13 +1679,8 @@ export default function Home({ companyStats = [] }) {
       localStorage.setItem('fyi_submitted', 'true');
       isUnlockedRef.current = true;
       setIsUnlocked(true);
+      setIsSubmitted(true);
       document.body.classList.add('body-unlocked');
-      const gate = document.querySelector('.cards-gate');
-      if (gate) {
-        gate.style.transition = 'opacity .5s ease';
-        gate.style.opacity = '0';
-        setTimeout(() => { gate.style.display = 'none'; }, 500);
-      }
       const pending = pendingCompanyRef.current;
       pendingCompanyRef.current = null;
       setSelectedCompany(null);
@@ -1820,7 +1876,23 @@ export default function Home({ companyStats = [] }) {
         <style dangerouslySetInnerHTML={{ __html: css }} />
       </Head>
 
-      <div dangerouslySetInnerHTML={{ __html: bodyHTML.replace(/[\s]*<div class="company-grid" id="company-grid-root"><\/div>/, `<div class="company-grid" id="company-grid-root">${buildCardsHTML(buildCardCompanies(companyStats))}</div>`) + '<script>' + js + '<\/script>' }} />
+      <div suppressHydrationWarning dangerouslySetInnerHTML={{ __html: bodyHTML + '<script>' + js + '<\/script>' }} />
+
+      {/* Company grid — React portal into #company-grid-root */}
+      {gridMounted && typeof document !== 'undefined' && document.getElementById('company-grid-root') &&
+        ReactDOM.createPortal(
+          <CompanyCardGrid
+            companies={companies}
+            isSubmitted={isSubmitted}
+            onOpenPanel={(name) => {
+              const c = companies.find(x => x.name === name);
+              if (c) setSelectedCompany(c);
+            }}
+            onScrollToSubmit={() => document.getElementById('submit')?.scrollIntoView({ behavior: 'smooth' })}
+          />,
+          document.getElementById('company-grid-root')
+        )
+      }
 
       {/* ── Leaderboard overlay — rendered as React JSX ── */}
       {lbCompany && d && (
