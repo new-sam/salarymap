@@ -1453,12 +1453,13 @@ function buildCardCompanies(companyStats) {
   return companyStats.map((s, i) => {
     const meta = COMPANY_META[s.company] || COMPANY_META_DEFAULT;
     const open = s.count >= 10;
+    const imgUrl = s.unsplashImage || CARD_BG_POOL[i % CARD_BG_POOL.length];
     return {
       name: s.company, ...meta,
       salMin: s.salMin, salMax: s.salMax,
       submissions: s.count, topPct: s.topPct,
       open, median: s.median, top10: s.salMax,
-      unsplashImage: s.unsplashImage || null,
+      imgUrl,
       salaryByRole: s.salaryByRole.map((r, j) => ({
         role: r.role, experience: '',
         barPercent: Math.round((r.median / (s.salaryByRole[0]?.median || 1)) * 100),
@@ -1470,7 +1471,7 @@ function buildCardCompanies(companyStats) {
 
 function buildCardsHTML(companies) {
   const cards = companies.map((c, i) => {
-    const bgImage = c.unsplashImage || c.bgImage || CARD_BG_POOL[i % CARD_BG_POOL.length];
+    const bgImage = c.imgUrl;
     const bgStyle = `background-image:url('${bgImage}'); background-color:${c.color};`;
     const logo = c.domain ? `https://www.google.com/s2/favicons?domain=${c.domain}&sz=256` : '';
     const logoTag = logo
@@ -1931,8 +1932,8 @@ export default function Home({ companyStats = [] }) {
         {selectedCompany && (() => {
           const sc = selectedCompany;
           const rank = sc.open ? buildCardCompanies(companyStats).filter(x=>x.open).findIndex(x=>x.name===sc.name)+1 : null;
-          const heroBg = sc.unsplashImage
-            ? `url('${sc.unsplashImage}')`
+          const heroBg = sc.imgUrl
+            ? `url('${sc.imgUrl}')`
             : `linear-gradient(160deg, ${sc.color}dd 0%, ${sc.color}88 100%)`;
           return (
             <>
