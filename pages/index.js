@@ -1932,19 +1932,15 @@ export default function Home({ companyStats = [] }) {
         {selectedCompany && (() => {
           const sc = selectedCompany;
           const rank = sc.open ? buildCardCompanies(companyStats).filter(x=>x.open).findIndex(x=>x.name===sc.name)+1 : null;
-          const heroBg = `linear-gradient(160deg, ${sc.color}dd 0%, ${sc.color}88 100%)`;
+          const heroBg = sc.unsplashImage
+            ? `url('${sc.unsplashImage}')`
+            : `linear-gradient(160deg, ${sc.color}dd 0%, ${sc.color}88 100%)`;
           return (
             <>
               {/* Hero */}
-              <div style={{height:'200px', position:'relative', overflow:'hidden', background:heroBg}}>
-                <div style={{position:'absolute',inset:0,background:'linear-gradient(to bottom,rgba(0,0,0,0.35) 0%,transparent 60%)'}}/>
-                {/* Logo watermark */}
-                <div style={{position:'absolute',inset:0,display:'flex',alignItems:'center',justifyContent:'center'}}>
-                  <img src={`https://www.google.com/s2/favicons?domain=${sc.domain}&sz=256`} alt={sc.name}
-                    style={{width:'88px',height:'88px',objectFit:'contain',borderRadius:'16px',
-                      background:'rgba(255,255,255,0.18)',padding:'16px',opacity:0.5}}
-                    onError={e=>e.target.style.display='none'} />
-                </div>
+              <div style={{height:'200px', position:'relative', overflow:'hidden',
+                background: heroBg, backgroundSize:'cover', backgroundPosition:'center'}}>
+                <div style={{position:'absolute',inset:0,background:'linear-gradient(to bottom,rgba(0,0,0,0.55) 0%,rgba(0,0,0,0.25) 100%)'}}/>
                 {/* Top bar */}
                 <div style={{position:'absolute',top:0,left:0,right:0,padding:'16px 20px',
                   display:'flex',alignItems:'center',justifyContent:'space-between',zIndex:2}}>
