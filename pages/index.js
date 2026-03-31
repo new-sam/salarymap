@@ -113,10 +113,11 @@ nav { position:fixed; top:0; left:0; right:0; z-index:200; padding:0 52px; heigh
 .card-rank { font-size:10px; font-weight:700; color:rgba(255,255,255,.55); background:rgba(0,0,0,.4); padding:3px 8px; border-radius:5px; }
 .card-top-badge { font-size:10px; font-weight:700; color:#000; background:#FF6200; padding:3px 8px; border-radius:5px; }
 .card-bottom { position:absolute; bottom:0; left:0; right:0; padding:16px; z-index:2; }
-.card-name { font-size:15px; font-weight:700; color:#fff; margin-bottom:2px; letter-spacing:-.02em; }
-.card-divider { height:1px; background:rgba(255,255,255,.15); margin:10px 0; }
-.card-sal { font-size:13px; font-weight:700; color:#FF6200; margin-bottom:4px; }
-.card-count { font-size:11px; color:rgba(255,255,255,.35); }
+.card-name-row { display:flex; justify-content:space-between; align-items:baseline; gap:6px; }
+.card-name { font-size:14px; font-weight:700; color:#fff; letter-spacing:-.02em; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.card-count { font-size:10px; color:rgba(255,255,255,.4); white-space:nowrap; flex-shrink:0; }
+.card-divider { height:1px; background:rgba(255,255,255,.15); margin:8px 0; }
+.card-sal { font-size:20px; font-weight:800; color:#FF6200; letter-spacing:-.03em; line-height:1; }
 .card-lock-center { position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:6px; z-index:2; }
 .card-lock-icon { font-size:22px; }
 .card-lock-name { font-size:13px; font-weight:700; color:rgba(255,255,255,.55); }
@@ -1416,53 +1417,38 @@ const lbData = {
 const PX = (id) => `https://images.pexels.com/photos/${id}/pexels-photo-${id}.jpeg?auto=compress&cs=tinysrgb&w=800&h=500&fit=crop`;
 
 const COMPANY_META = {
-  // Ride-hailing / green city streets at night
-  'Grab Vietnam':    { domain:'grab.com',           color:'#00B14F', city:'Ho Chi Minh City', category:'Super App',   bgImage: PX(3806753)  },
-  // Gaming studio / dark creative screens
-  'VNG Corporation': { domain:'vng.com.vn',          color:'#0066CC', city:'Ho Chi Minh City', category:'Product',     bgImage: PX(7915435)  },
-  // E-commerce / packages & delivery
-  'Shopee Vietnam':  { domain:'shopee.vn',           color:'#EE4D2D', city:'Ho Chi Minh City', category:'E-commerce',  bgImage: PX(5632399)  },
-  // Large IT office / enterprise dev team
-  'FPT Software':    { domain:'fpt.com',             color:'#F26522', city:'Ha Noi',           category:'IT Services', bgImage: PX(3182812)  },
-  // Fintech / mobile wallet close-up
-  'Momo':            { domain:'momo.vn',             color:'#A50064', city:'Ho Chi Minh City', category:'Fintech',     bgImage: PX(6801631)  },
-  // Web3 gaming / neon digital art vibe
-  'Sky Mavis':       { domain:'skymavis.com',        color:'#4B5CE4', city:'Ho Chi Minh City', category:'Web3 Gaming', bgImage: PX(3165335)  },
-  // Blue delivery / fast commerce
-  'Tiki':            { domain:'tiki.vn',             color:'#1A94FF', city:'Ho Chi Minh City', category:'E-commerce',  bgImage: PX(4481326)  },
-  // Social / people on phones in cafe
-  'Zalo':            { domain:'zalo.me',             color:'#0068FF', city:'Ho Chi Minh City', category:'Social Tech', bgImage: PX(607812)   },
-  // Modern bank exterior / green finance
-  'VPBank':          { domain:'vpbank.com.vn',       color:'#00A651', city:'Ha Noi',           category:'Banking',     bgImage: PX(259200)   },
-  // Financial district / red corporate
-  'Techcombank':     { domain:'techcombank.com.vn',  color:'#E30613', city:'Ha Noi',           category:'Banking',     bgImage: PX(534216)   },
-  // Telecom towers / network infrastructure
-  'VNPT Technology': { domain:'vnpt.com.vn',         color:'#003087', city:'Ha Noi',           category:'Telecom',     bgImage: PX(1036808)  },
-  // Retail tech / modern shopping
-  'OneMount Group':  { domain:'onemount.com',        color:'#FF6200', city:'Ha Noi',           category:'Tech',        bgImage: PX(3184418)  },
-  // Logistics / warehouse operations
-  'GHN':             { domain:'ghn.vn',              color:'#F26522', city:'Ho Chi Minh City', category:'Logistics',   bgImage: PX(4481259)  },
-  // Global IT consulting / collab office
-  'NashTech':        { domain:'nashtechglobal.com',  color:'#0033A0', city:'Ho Chi Minh City', category:'IT Services', bgImage: PX(3184292)  },
-  // Software dev / dual monitors coding
-  'KMS Technology':  { domain:'kms-technology.com',  color:'#0F75BC', city:'Ho Chi Minh City', category:'IT Services', bgImage: PX(1181244)  },
+  'Grab Vietnam':    { domain:'grab.com',           color:'#00B14F', city:'Ho Chi Minh City', category:'Super App',   bgImage: PX(1036808)  }, // city night
+  'VNG Corporation': { domain:'vng.com.vn',          color:'#0066CC', city:'Ho Chi Minh City', category:'Product',     bgImage: PX(3861969)  }, // startup workspace
+  'Shopee Vietnam':  { domain:'shopee.vn',           color:'#EE4D2D', city:'Ho Chi Minh City', category:'E-commerce',  bgImage: PX(3184360)  }, // team operations
+  'FPT Software':    { domain:'fpt.com',             color:'#F26522', city:'Ha Noi',           category:'IT Services', bgImage: PX(3182812)  }, // large team meeting
+  'Momo':            { domain:'momo.vn',             color:'#A50064', city:'Ho Chi Minh City', category:'Fintech',     bgImage: PX(1181406)  }, // laptop open office
+  'Sky Mavis':       { domain:'skymavis.com',        color:'#4B5CE4', city:'Ho Chi Minh City', category:'Web3 Gaming', bgImage: PX(1181671)  }, // developer screens
+  'Tiki':            { domain:'tiki.vn',             color:'#1A94FF', city:'Ho Chi Minh City', category:'E-commerce',  bgImage: PX(2182973)  }, // modern open plan
+  'Zalo':            { domain:'zalo.me',             color:'#0068FF', city:'Ho Chi Minh City', category:'Social Tech', bgImage: PX(3184418)  }, // people collaborating
+  'VPBank':          { domain:'vpbank.com.vn',       color:'#00A651', city:'Ha Noi',           category:'Banking',     bgImage: PX(256559)   }, // glass office building
+  'Techcombank':     { domain:'techcombank.com.vn',  color:'#E30613', city:'Ha Noi',           category:'Banking',     bgImage: PX(3184292)  }, // team collab
+  'VNPT Technology': { domain:'vnpt.com.vn',         color:'#003087', city:'Ha Noi',           category:'Telecom',     bgImage: PX(1036808)  }, // city/network
+  'OneMount Group':  { domain:'onemount.com',        color:'#FF6200', city:'Ha Noi',           category:'Tech',        bgImage: PX(3184418)  }, // business meeting
+  'GHN':             { domain:'ghn.vn',              color:'#F26522', city:'Ho Chi Minh City', category:'Logistics',   bgImage: PX(3861958)  }, // operations
+  'NashTech':        { domain:'nashtechglobal.com',  color:'#0033A0', city:'Ho Chi Minh City', category:'IT Services', bgImage: PX(3184292)  }, // collab office
+  'KMS Technology':  { domain:'kms-technology.com',  color:'#0F75BC', city:'Ho Chi Minh City', category:'IT Services', bgImage: PX(1181244)  }, // coding desk
 };
 const COMPANY_META_DEFAULT = { domain:'', color:'#4A5568', city:'Vietnam', category:'Tech' };
 
-// Curated pool: index-based assignment (company[i] → pool[i % pool.length])
+// Curated pool — all verified working Pexels IDs
 const CARD_BG_POOL = [
-  'https://images.pexels.com/photos/3182812/pexels-photo-3182812.jpeg?auto=compress&cs=tinysrgb&w=800&h=500&fit=crop',  // 0 modern team office
-  'https://images.pexels.com/photos/1181244/pexels-photo-1181244.jpeg?auto=compress&cs=tinysrgb&w=800&h=500&fit=crop',  // 1 coding desk
-  'https://images.pexels.com/photos/3184418/pexels-photo-3184418.jpeg?auto=compress&cs=tinysrgb&w=800&h=500&fit=crop',  // 2 business meeting
-  'https://images.pexels.com/photos/256559/pexels-photo-256559.jpeg?auto=compress&cs=tinysrgb&w=800&h=500&fit=crop',    // 3 glass office building
-  'https://images.pexels.com/photos/3861969/pexels-photo-3861969.jpeg?auto=compress&cs=tinysrgb&w=800&h=500&fit=crop',  // 4 startup workspace
-  'https://images.pexels.com/photos/1181406/pexels-photo-1181406.jpeg?auto=compress&cs=tinysrgb&w=800&h=500&fit=crop',  // 5 laptop open office
-  'https://images.pexels.com/photos/2182973/pexels-photo-2182973.jpeg?auto=compress&cs=tinysrgb&w=800&h=500&fit=crop',  // 6 modern open plan
-  'https://images.pexels.com/photos/3184292/pexels-photo-3184292.jpeg?auto=compress&cs=tinysrgb&w=800&h=500&fit=crop',  // 7 product team collab
-  'https://images.pexels.com/photos/1181671/pexels-photo-1181671.jpeg?auto=compress&cs=tinysrgb&w=800&h=500&fit=crop',  // 8 developer screens
-  'https://images.pexels.com/photos/3184360/pexels-photo-3184360.jpeg?auto=compress&cs=tinysrgb&w=800&h=500&fit=crop',  // 9 brainstorm whiteboard
-  'https://images.pexels.com/photos/1036808/pexels-photo-1036808.jpeg?auto=compress&cs=tinysrgb&w=800&h=500&fit=crop',  // 10 city skyline night
-  'https://images.pexels.com/photos/4481326/pexels-photo-4481326.jpeg?auto=compress&cs=tinysrgb&w=800&h=500&fit=crop',  // 11 fintech mobile
+  'https://images.pexels.com/photos/3182812/pexels-photo-3182812.jpeg?auto=compress&cs=tinysrgb&w=800&h=500&fit=crop',
+  'https://images.pexels.com/photos/1181244/pexels-photo-1181244.jpeg?auto=compress&cs=tinysrgb&w=800&h=500&fit=crop',
+  'https://images.pexels.com/photos/3184418/pexels-photo-3184418.jpeg?auto=compress&cs=tinysrgb&w=800&h=500&fit=crop',
+  'https://images.pexels.com/photos/256559/pexels-photo-256559.jpeg?auto=compress&cs=tinysrgb&w=800&h=500&fit=crop',
+  'https://images.pexels.com/photos/3861969/pexels-photo-3861969.jpeg?auto=compress&cs=tinysrgb&w=800&h=500&fit=crop',
+  'https://images.pexels.com/photos/1181406/pexels-photo-1181406.jpeg?auto=compress&cs=tinysrgb&w=800&h=500&fit=crop',
+  'https://images.pexels.com/photos/2182973/pexels-photo-2182973.jpeg?auto=compress&cs=tinysrgb&w=800&h=500&fit=crop',
+  'https://images.pexels.com/photos/3184292/pexels-photo-3184292.jpeg?auto=compress&cs=tinysrgb&w=800&h=500&fit=crop',
+  'https://images.pexels.com/photos/1181671/pexels-photo-1181671.jpeg?auto=compress&cs=tinysrgb&w=800&h=500&fit=crop',
+  'https://images.pexels.com/photos/3184360/pexels-photo-3184360.jpeg?auto=compress&cs=tinysrgb&w=800&h=500&fit=crop',
+  'https://images.pexels.com/photos/1036808/pexels-photo-1036808.jpeg?auto=compress&cs=tinysrgb&w=800&h=500&fit=crop',
+  'https://images.pexels.com/photos/3861958/pexels-photo-3861958.jpeg?auto=compress&cs=tinysrgb&w=800&h=500&fit=crop',
 ];
 
 function buildCardCompanies(companyStats) {
@@ -1503,10 +1489,12 @@ function buildCardsHTML(companies) {
           <span class="card-top-badge">Top ${c.topPct}%</span>
         </div>
         <div class="card-bottom">
-          <div class="card-name">${c.name}</div>
+          <div class="card-name-row">
+            <div class="card-name">${c.name}</div>
+            <div class="card-count">${c.submissions} salaries</div>
+          </div>
           <div class="card-divider"></div>
-          <div class="card-sal">${c.salMin}M–${c.salMax}M ₫</div>
-          <div class="card-count">${c.submissions} salaries</div>
+          <div class="card-sal">${c.salMin}M – ${c.salMax}M ₫</div>
         </div>
       </div>`;
     } else {
