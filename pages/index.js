@@ -108,6 +108,7 @@ nav { position:fixed; top:0; left:0; right:0; z-index:200; padding:0 52px; heigh
 .card-top { position:absolute; top:14px; left:14px; right:14px; display:flex; justify-content:space-between; align-items:center; z-index:2; }
 .card-rank { font-size:10px; font-weight:700; color:rgba(255,255,255,.55); background:rgba(0,0,0,.4); padding:3px 8px; border-radius:5px; }
 .card-top-badge { font-size:10px; font-weight:700; color:#000; background:#FF6200; padding:3px 8px; border-radius:5px; }
+.card-category { font-size:10px; font-weight:600; color:rgba(255,255,255,.7); background:rgba(255,255,255,.12); padding:3px 8px; border-radius:5px; }
 .card-bottom { position:absolute; bottom:0; left:0; right:0; padding:16px; z-index:2; }
 .card-name-row { display:flex; justify-content:space-between; align-items:baseline; gap:6px; }
 .card-name { font-size:14px; font-weight:700; color:#fff; letter-spacing:-.02em; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
@@ -1591,7 +1592,7 @@ function buildCardsHTMLv2(companies, isSubmitted) {
       <div class="card-overlay"></div>
       <div class="card-top">
         <span class="card-rank">#${i + 1}</span>
-        ${c.topPct ? `<span class="card-top-badge">Top ${c.topPct}%</span>` : ''}
+        <span class="card-category">${c.category}</span>
       </div>
       <div class="card-bottom">
         <div class="card-name-row">
