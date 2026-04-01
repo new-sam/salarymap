@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
+import ReactDOM from 'react-dom';
 import Head from 'next/head';
 
 const css = `
@@ -1565,71 +1566,100 @@ function buildCardsHTML(companies) {
   return cards + loadMore;
 }
 
-function buildCardsHTMLv2(companies, isSubmitted) {
-  const lockedCount = Math.max(0, companies.length - 3);
-  const cards = companies.map((c, i) => {
-    const locked = !isSubmitted && i >= 3;
-    const bgStyle = `background-image:url('${c.imgUrl}'); background-color:${c.color};`;
-    const logo = c.domain ? `https://www.google.com/s2/favicons?domain=${c.domain}&sz=256` : '';
-    const logoTag = logo ? `<div class="card-logo-wrap"><img class="card-logo-img" src="${logo}" alt="${c.name}" onerror="this.style.display='none'"></div>` : '';
+// ── React JSX card grid (rendered via portal into #company-grid-root) ─────────
+function CompanyCardGrid({ companies, isSubmitted, setPendingCompanyId, onOpenPanel }) {
+  return (
+    <>
+      {companies.map((company, index) => {
+        const locked = !isSubmitted && index >= 3;
+        const logo = company.domain
+          ? `https://www.google.com/s2/favicons?domain=${company.domain}&sz=256`
+          : null;
 
-    // ── OPEN card (index 0-2, or all if submitted) ──────────────────────────
-    const openCard = `<div class="company-card open" onclick="openCompanyPanel('${c.name.replace(/'/g,"\\'")}')">
-      <div class="card-bg" style="${bgStyle}"></div>
-      ${logoTag}
-      <div class="card-overlay"></div>
-      <div class="card-top">
-        <span class="card-rank">#${i + 1}</span>
-        <span class="card-category">${c.category}</span>
-      </div>
-      <div class="card-bottom">
-        <div class="card-name-row">
-          <div class="card-name">${c.name}</div>
-          <div class="card-count">${c.submissions} salaries</div>
+        return (
+          <div
+            key={company.name}
+            className="company-card open"
+            style={{ position: 'relative' }}
+            onClick={() => { if (!locked) onOpenPanel(company.name); }}
+          >
+            {/* existing card UI — unchanged */}
+            <div className="card-bg" style={{ backgroundImage: `url('${company.imgUrl}')`, backgroundColor: company.color }} />
+            {logo && (
+              <div className="card-logo-wrap">
+                <img className="card-logo-img" src={logo} alt={company.name}
+                  onError={e => { e.target.style.display = 'none'; }} />
+              </div>
+            )}
+            <div className="card-overlay" />
+            <div className="card-top">
+              <span className="card-rank">#{index + 1}</span>
+              <span className="card-category">{company.category}</span>
+            </div>
+            <div className="card-bottom">
+              <div className="card-name-row">
+                <div className="card-name">{company.name}</div>
+                <div className="card-count">{company.submissions} salaries</div>
+              </div>
+              <div className="card-divider" />
+              <div className="card-sal">{company.salMin}M – {company.salMax}M ₫</div>
+            </div>
+
+            {/* lock overlay — absolute on top, only when locked */}
+            {locked && (
+              <div
+                style={{
+                  position:'absolute', inset:0, zIndex:10,
+                  background:'rgba(0,0,0,0.75)',
+                  backdropFilter:'blur(3px)',
+                  display:'flex', flexDirection:'column',
+                  alignItems:'center', justifyContent:'center',
+                  gap:'8px', cursor:'pointer', borderRadius:'inherit',
+                }}
+                onClick={e => {
+                  e.stopPropagation();
+                  setPendingCompanyId(company.name);
+                  document.getElementById('submit')?.scrollIntoView({ behavior: 'smooth' });
+                }}
+              >
+                <span style={{ fontSize:'22px' }}>🔒</span>
+                <span style={{ fontSize:'14px', fontWeight:800, color:'white' }}>{company.name}</span>
+                <span style={{ fontSize:'11px', color:'rgba(255,255,255,0.4)' }}>{company.submissions} salaries</span>
+                <span style={{
+                  marginTop:'8px', background:'#FF6200', color:'black',
+                  fontSize:'12px', fontWeight:800,
+                  padding:'9px 20px', borderRadius:'100px',
+                }}>Submit to unlock →</span>
+              </div>
+            )}
+          </div>
+        );
+      })}
+
+      {/* CTA card */}
+      {!isSubmitted && companies.length > 3 && (
+        <div
+          onClick={() => document.getElementById('submit')?.scrollIntoView({ behavior: 'smooth' })}
+          style={{
+            height:'260px', borderRadius:'14px',
+            background:'#111', border:'1.5px dashed rgba(255,98,0,0.4)',
+            display:'flex', flexDirection:'column',
+            alignItems:'center', justifyContent:'center',
+            gap:'10px', cursor:'pointer',
+          }}
+        >
+          <span style={{ fontSize:'24px' }}>🔓</span>
+          <span style={{ fontSize:'15px', fontWeight:800, color:'white' }}>{companies.length - 3}개 더 있어요</span>
+          <span style={{ fontSize:'12px', color:'rgba(255,255,255,0.35)', textAlign:'center', padding:'0 20px' }}>
+            연봉 제출하면 전체 공개
+          </span>
+          <span style={{ background:'#FF6200', color:'black', fontSize:'12px', fontWeight:800, padding:'9px 20px', borderRadius:'100px' }}>
+            Submit salary →
+          </span>
         </div>
-        <div class="card-divider"></div>
-        <div class="card-sal">${c.salMin}M – ${c.salMax}M ₫</div>
-      </div>
-    </div>`;
-
-    if (!locked) return openCard;
-
-    // ── LOCKED card: same UI underneath + dark overlay on top ────────────
-    return `<div class="company-card locked" onclick="window.scrollToSubmit('${c.name.replace(/'/g,"\\'")}')">
-      <div class="card-bg" style="${bgStyle}"></div>
-      ${logoTag}
-      <div class="card-overlay"></div>
-      <div class="card-top">
-        <span class="card-rank">#${i + 1}</span>
-        <span class="card-category">${c.category}</span>
-      </div>
-      <div class="card-bottom">
-        <div class="card-name-row">
-          <div class="card-name">${c.name}</div>
-          <div class="card-count">${c.submissions} salaries</div>
-        </div>
-        <div class="card-divider"></div>
-        <div class="card-sal">${c.salMin}M – ${c.salMax}M ₫</div>
-      </div>
-      <div style="position:absolute;inset:0;z-index:10;background:rgba(0,0,0,0.72);backdrop-filter:blur(3px);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;border-radius:inherit;">
-        <span style="font-size:22px">🔒</span>
-        <span style="font-size:14px;font-weight:800;color:white">${c.name}</span>
-        <span style="font-size:11px;color:rgba(255,255,255,0.4)">${c.submissions} salaries</span>
-        <div class="lock-cta">Submit to unlock →</div>
-      </div>
-    </div>`;
-  }).join('');
-
-  const cta = !isSubmitted && companies.length > 3
-    ? `<div class="company-card-cta" onclick="window.scrollToSubmit()">
-        <span style="font-size:24px">🔓</span>
-        <span style="font-size:15px;font-weight:800;color:white">${companies.length - 3}개 더 있어요</span>
-        <span style="font-size:12px;color:rgba(255,255,255,0.35);text-align:center;padding:0 20px">연봉 제출하면 전체 공개</span>
-        <span style="margin-top:8px;background:#FF6200;color:black;font-size:12px;font-weight:800;padding:9px 20px;border-radius:100px">Submit salary →</span>
-      </div>`
-    : '';
-
-  return cards + cta;
+      )}
+    </>
+  );
 }
 
 // Stable object reference — prevents React 19 from resetting dangerouslySetInnerHTML on re-render
@@ -1676,6 +1706,9 @@ export default function Home({ companyStats = [] }) {
       document.getElementById('submit')?.scrollIntoView({ behavior: 'smooth' });
     };
     if (localStorage.getItem('fyi_submitted') === 'true') {
+      isUnlockedRef.current = true;
+      setIsUnlocked(true);
+      setIsSubmitted(true);
       document.body.classList.add('body-unlocked');
     }
     return () => { delete window.scrollToSubmit; };
@@ -1708,13 +1741,11 @@ export default function Home({ companyStats = [] }) {
     return () => { delete window.openCompanyPanel; delete window.onUnlockSuccess; };
   }, []);
 
-  // Inject company card grid HTML — runs after every render so grid survives any React reconciliation
+  // Mount the portal container for CompanyCardGrid
+  const [gridContainer, setGridContainer] = useState(null);
   useEffect(() => {
-    const grid = document.getElementById('company-grid-root');
-    if (!grid) return;
-    const next = buildCardsHTMLv2(companies, isSubmitted);
-    if (grid.innerHTML !== next) grid.innerHTML = next;
-  });
+    setGridContainer(document.getElementById('company-grid-root'));
+  }, []);
 
   // ESC to close panel
   useEffect(() => {
@@ -1899,6 +1930,20 @@ export default function Home({ companyStats = [] }) {
       </Head>
 
       <div suppressHydrationWarning dangerouslySetInnerHTML={PAGE_HTML_OBJ} />
+
+      {/* ── Company card grid — rendered via portal into #company-grid-root ── */}
+      {gridContainer && ReactDOM.createPortal(
+        <CompanyCardGrid
+          companies={companies}
+          isSubmitted={isSubmitted}
+          setPendingCompanyId={setPendingCompanyId}
+          onOpenPanel={(name) => {
+            const c = companies.find(x => x.name === name);
+            if (c) setSelectedCompany(c);
+          }}
+        />,
+        gridContainer
+      )}
 
       {/* ── Leaderboard overlay — rendered as React JSX ── */}
       {lbCompany && d && (
