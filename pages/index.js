@@ -1715,14 +1715,10 @@ export default function Home({ companyStats = [] }) {
   const [lbCompany, setLbCompany] = useState(null);
   const [activeTab, setActiveTab] = useState('All roles');
   const [selectedCompany, setSelectedCompany] = useState(null);
-  const [isUnlocked, setIsUnlocked] = useState(
-    () => typeof window !== 'undefined' && localStorage.getItem('fyi_submitted') === 'true'
-  );
-  const [isSubmitted, setIsSubmitted] = useState(
-    () => typeof window !== 'undefined' && localStorage.getItem('fyi_submitted') === 'true'
-  );
+  const [isUnlocked, setIsUnlocked] = useState(false);
+  const [isSubmitted, setIsSubmitted] = useState(false);
   const [pendingCompanyId, setPendingCompanyId] = useState(null);
-  const isUnlockedRef = useRef(typeof window !== 'undefined' && localStorage.getItem('fyi_submitted') === 'true');
+  const isUnlockedRef = useRef(false);
   const pendingCompanyRef = useRef(null);
   const companies = useMemo(() => buildCardCompanies(companyStats), [companyStats]);
 
@@ -1751,12 +1747,6 @@ export default function Home({ companyStats = [] }) {
       if (name) { pendingCompanyRef.current = name; setPendingCompanyId(name); }
       document.getElementById('submit')?.scrollIntoView({ behavior: 'smooth' });
     };
-    if (localStorage.getItem('fyi_submitted') === 'true') {
-      isUnlockedRef.current = true;
-      setIsUnlocked(true);
-      setIsSubmitted(true);
-      document.body.classList.add('body-unlocked');
-    }
     return () => { delete window.scrollToSubmit; };
   }, []);
 
@@ -1769,7 +1759,6 @@ export default function Home({ companyStats = [] }) {
       setSelectedCompany(c);
     };
     window.onUnlockSuccess = () => {
-      localStorage.setItem('fyi_submitted', 'true');
       isUnlockedRef.current = true;
       setIsUnlocked(true);
       setIsSubmitted(true);
