@@ -1573,20 +1573,8 @@ function buildCardsHTMLv2(companies, isSubmitted) {
     const logo = c.domain ? `https://www.google.com/s2/favicons?domain=${c.domain}&sz=256` : '';
     const logoTag = logo ? `<div class="card-logo-wrap"><img class="card-logo-img" src="${logo}" alt="${c.name}" onerror="this.style.display='none'"></div>` : '';
 
-    if (locked) {
-      return `<div class="company-card locked" onclick="window.scrollToSubmit()">
-        <div class="card-bg" style="${bgStyle}"></div>
-        <div class="card-locked-overlay"></div>
-        <div class="card-lock-center">
-          <div class="card-lock-icon">🔒</div>
-          <div class="card-lock-name">${c.name}</div>
-          <div class="card-lock-count">${c.submissions} salaries</div>
-        </div>
-        <div class="lock-cta">Submit to unlock →</div>
-      </div>`;
-    }
-
-    return `<div class="company-card open" onclick="openCompanyPanel('${c.name.replace(/'/g,"\\'")}')">
+    // ── OPEN card (index 0-2, or all if submitted) ──────────────────────────
+    const openCard = `<div class="company-card open" onclick="openCompanyPanel('${c.name.replace(/'/g,"\\'")}')">
       <div class="card-bg" style="${bgStyle}"></div>
       ${logoTag}
       <div class="card-overlay"></div>
@@ -1603,13 +1591,41 @@ function buildCardsHTMLv2(companies, isSubmitted) {
         <div class="card-sal">${c.salMin}M – ${c.salMax}M ₫</div>
       </div>
     </div>`;
+
+    if (!locked) return openCard;
+
+    // ── LOCKED card: same UI underneath + dark overlay on top ────────────
+    return `<div class="company-card locked" onclick="window.scrollToSubmit('${c.name.replace(/'/g,"\\'")}')">
+      <div class="card-bg" style="${bgStyle}"></div>
+      ${logoTag}
+      <div class="card-overlay"></div>
+      <div class="card-top">
+        <span class="card-rank">#${i + 1}</span>
+        <span class="card-category">${c.category}</span>
+      </div>
+      <div class="card-bottom">
+        <div class="card-name-row">
+          <div class="card-name">${c.name}</div>
+          <div class="card-count">${c.submissions} salaries</div>
+        </div>
+        <div class="card-divider"></div>
+        <div class="card-sal">${c.salMin}M – ${c.salMax}M ₫</div>
+      </div>
+      <div style="position:absolute;inset:0;z-index:10;background:rgba(0,0,0,0.72);backdrop-filter:blur(3px);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;border-radius:inherit;">
+        <span style="font-size:22px">🔒</span>
+        <span style="font-size:14px;font-weight:800;color:white">${c.name}</span>
+        <span style="font-size:11px;color:rgba(255,255,255,0.4)">${c.submissions} salaries</span>
+        <div class="lock-cta">Submit to unlock →</div>
+      </div>
+    </div>`;
   }).join('');
 
-  const cta = !isSubmitted && lockedCount > 0
+  const cta = !isSubmitted && companies.length > 3
     ? `<div class="company-card-cta" onclick="window.scrollToSubmit()">
-        <div style="font-size:24px">🔓</div>
-        <div class="cta-main">${lockedCount}개 더 있어요</div>
-        <div class="cta-sub">연봉 제출하면 전체 공개</div>
+        <span style="font-size:24px">🔓</span>
+        <span style="font-size:15px;font-weight:800;color:white">${companies.length - 3}개 더 있어요</span>
+        <span style="font-size:12px;color:rgba(255,255,255,0.35);text-align:center;padding:0 20px">연봉 제출하면 전체 공개</span>
+        <span style="margin-top:8px;background:#FF6200;color:black;font-size:12px;font-weight:800;padding:9px 20px;border-radius:100px">Submit salary →</span>
       </div>`
     : '';
 
@@ -1635,9 +1651,14 @@ export default function Home({ companyStats = [] }) {
   const [lbCompany, setLbCompany] = useState(null);
   const [activeTab, setActiveTab] = useState('All roles');
   const [selectedCompany, setSelectedCompany] = useState(null);
-  const [isUnlocked, setIsUnlocked] = useState(false);
-  const [isSubmitted, setIsSubmitted] = useState(false);
-  const isUnlockedRef = useRef(false);
+  const [isUnlocked, setIsUnlocked] = useState(
+    () => typeof window !== 'undefined' && localStorage.getItem('fyi_submitted') === 'true'
+  );
+  const [isSubmitted, setIsSubmitted] = useState(
+    () => typeof window !== 'undefined' && localStorage.getItem('fyi_submitted') === 'true'
+  );
+  const [pendingCompanyId, setPendingCompanyId] = useState(null);
+  const isUnlockedRef = useRef(typeof window !== 'undefined' && localStorage.getItem('fyi_submitted') === 'true');
   const pendingCompanyRef = useRef(null);
   const companies = useMemo(() => buildCardCompanies(companyStats), [companyStats]);
 
@@ -1648,13 +1669,13 @@ export default function Home({ companyStats = [] }) {
     return () => { delete window.openLB; delete window.closeLB; };
   }, []);
 
-  // localStorage unlock check on mount
+  // Mount: expose scrollToSubmit + sync body class
   useEffect(() => {
-    window.scrollToSubmit = () => document.getElementById('submit')?.scrollIntoView({ behavior: 'smooth' });
+    window.scrollToSubmit = (name) => {
+      if (name) { pendingCompanyRef.current = name; setPendingCompanyId(name); }
+      document.getElementById('submit')?.scrollIntoView({ behavior: 'smooth' });
+    };
     if (localStorage.getItem('fyi_submitted') === 'true') {
-      isUnlockedRef.current = true;
-      setIsUnlocked(true);
-      setIsSubmitted(true);
       document.body.classList.add('body-unlocked');
     }
     return () => { delete window.scrollToSubmit; };
@@ -1673,15 +1694,15 @@ export default function Home({ companyStats = [] }) {
       isUnlockedRef.current = true;
       setIsUnlocked(true);
       setIsSubmitted(true);
+      setPendingCompanyId(null);
       document.body.classList.add('body-unlocked');
       const pending = pendingCompanyRef.current;
       pendingCompanyRef.current = null;
-      setSelectedCompany(null);
       if (pending) {
         setTimeout(() => {
           const c = buildCardCompanies(companyStats).find(x => x.name === pending);
           if (c) setSelectedCompany(c);
-        }, 500);
+        }, 300);
       }
     };
     return () => { delete window.openCompanyPanel; delete window.onUnlockSuccess; };
