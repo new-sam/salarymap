@@ -65,7 +65,8 @@
       "WebFetch(domain:techcombank.com)",
       "WebFetch(domain:www.metalocus.es)",
       "WebFetch(domain:boho.vn)",
-      "WebFetch(domain:www.nashtechglobal.com)"
+      "WebFetch(domain:www.nashtechglobal.com)",
+      "Bash(npx next:*)"
     ]
   },
   "hooks": {
