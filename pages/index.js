@@ -1662,8 +1662,11 @@ function CompanyCardGrid({ companies, isSubmitted, setPendingCompanyId, onOpenPa
   );
 }
 
+const INITIAL_LOAD = 12;
+
 function genCardHTML(companies, unlocked) {
-  const cards = companies.map((company, i) => {
+  const visible = unlocked ? companies : companies.slice(0, INITIAL_LOAD);
+  const cards = visible.map((company, i) => {
     const locked = !unlocked && i >= 3;
     const bg = `background-image:url('${company.imgUrl}');background-color:${company.color};`;
     const logo = company.domain
@@ -1686,10 +1689,11 @@ function genCardHTML(companies, unlocked) {
 <div class="card-bottom"><div class="card-name-row"><div class="card-name">${company.name}</div><div class="card-count">${company.submissions} salaries</div></div>
 <div class="card-divider"></div><div class="card-sal">${company.salMin}M – ${company.salMax}M ₫</div></div></div>`;
   });
-  const cta = !unlocked && companies.length > 3
+  const remaining = companies.length - INITIAL_LOAD;
+  const cta = !unlocked && remaining > 0
     ? `<div class="company-card-cta" onclick="document.getElementById('submit').scrollIntoView({behavior:'smooth'})">
 <span style="font-size:24px">🔓</span>
-<span style="font-size:15px;font-weight:800;color:white">${companies.length - 3}개 더 있어요</span>
+<span style="font-size:15px;font-weight:800;color:white">${remaining}개 더 있어요</span>
 <span style="font-size:12px;color:rgba(255,255,255,0.35);text-align:center;padding:0 20px">연봉 제출하면 전체 공개</span>
 <span style="background:#FF6200;color:black;font-size:12px;font-weight:800;padding:9px 20px;border-radius:100px">Submit salary →</span>
 </div>` : '';
@@ -1776,60 +1780,11 @@ export default function Home({ companyStats = [] }) {
     return () => { delete window.openCompanyPanel; delete window.onUnlockSuccess; };
   }, []);
 
-  // Inject card grid HTML whenever isSubmitted or companies changes
+  // Re-inject card grid when isSubmitted changes (unlock after submit)
   useEffect(() => {
     const grid = document.getElementById('company-grid-root');
     if (!grid) return;
-
-    const cards = companies.map((company, i) => {
-      const locked = !isSubmitted && i >= 3;
-      const bg = `background-image:url('${company.imgUrl}');background-color:${company.color};`;
-      const logo = company.domain
-        ? `<div class="card-logo-wrap"><img class="card-logo-img" src="https://www.google.com/s2/favicons?domain=${company.domain}&sz=256" alt="${company.name}" onerror="this.style.display='none'"></div>`
-        : '';
-
-      if (locked) {
-        return `<div class="company-card locked" onclick="window.scrollToSubmit('${company.name.replace(/'/g,"\\'").replace(/\\/g,"\\\\")}')">
-          <div class="card-bg" style="${bg}"></div>
-          ${logo}
-          <div class="card-overlay"></div>
-          <div style="position:absolute;inset:0;z-index:10;background:rgba(0,0,0,0.75);backdrop-filter:blur(3px);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;cursor:pointer;border-radius:inherit;">
-            <span style="font-size:22px">🔒</span>
-            <span style="font-size:14px;font-weight:800;color:white">${company.name}</span>
-            <span style="font-size:11px;color:rgba(255,255,255,0.4)">${company.submissions} salaries</span>
-            <span style="margin-top:8px;background:#FF6200;color:black;font-size:12px;font-weight:800;padding:9px 20px;border-radius:100px">Submit to unlock →</span>
-          </div>
-        </div>`;
-      } else {
-        return `<div class="company-card open" onclick="window.openCompanyPanel('${company.name.replace(/'/g,"\\'").replace(/\\/g,"\\\\")}')">
-          <div class="card-bg" style="${bg}"></div>
-          ${logo}
-          <div class="card-overlay"></div>
-          <div class="card-top">
-            <span class="card-rank">#${i + 1}</span>
-            <span class="card-category">${company.category}</span>
-          </div>
-          <div class="card-bottom">
-            <div class="card-name-row">
-              <div class="card-name">${company.name}</div>
-              <div class="card-count">${company.submissions} salaries</div>
-            </div>
-            <div class="card-divider"></div>
-            <div class="card-sal">${company.salMin}M – ${company.salMax}M ₫</div>
-          </div>
-        </div>`;
-      }
-    });
-
-    const cta = !isSubmitted && companies.length > 3 ? `
-      <div class="company-card-cta" onclick="document.getElementById('submit').scrollIntoView({behavior:'smooth'})">
-        <span style="font-size:24px">🔓</span>
-        <span style="font-size:15px;font-weight:800;color:white">${companies.length - 3}개 더 있어요</span>
-        <span style="font-size:12px;color:rgba(255,255,255,0.35);text-align:center;padding:0 20px">연봉 제출하면 전체 공개</span>
-        <span style="background:#FF6200;color:black;font-size:12px;font-weight:800;padding:9px 20px;border-radius:100px">Submit salary →</span>
-      </div>` : '';
-
-    grid.innerHTML = cards.join('') + cta;
+    grid.innerHTML = genCardHTML(companies, isSubmitted);
   }, [isSubmitted, companies]);
 
   // ESC to close panel
