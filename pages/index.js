@@ -1662,8 +1662,42 @@ function CompanyCardGrid({ companies, isSubmitted, setPendingCompanyId, onOpenPa
   );
 }
 
-// Stable object reference — prevents React 19 from resetting dangerouslySetInnerHTML on re-render
-const PAGE_HTML_OBJ = { __html: bodyHTML + '<script>' + js + '<\/script>' };
+function genCardHTML(companies, unlocked) {
+  const cards = companies.map((company, i) => {
+    const locked = !unlocked && i >= 3;
+    const bg = `background-image:url('${company.imgUrl}');background-color:${company.color};`;
+    const logo = company.domain
+      ? `<div class="card-logo-wrap"><img class="card-logo-img" src="https://www.google.com/s2/favicons?domain=${company.domain}&sz=256" alt="${company.name}" onerror="this.style.display='none'"></div>`
+      : '';
+    const safeName = company.name.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+    if (locked) {
+      return `<div class="company-card locked" onclick="window.scrollToSubmit('${safeName}')">
+<div class="card-bg" style="${bg}"></div>${logo}<div class="card-overlay"></div>
+<div style="position:absolute;inset:0;z-index:10;background:rgba(0,0,0,0.75);backdrop-filter:blur(3px);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;cursor:pointer;border-radius:14px">
+<span style="font-size:22px">🔒</span>
+<span style="font-size:14px;font-weight:800;color:white">${company.name}</span>
+<span style="font-size:11px;color:rgba(255,255,255,0.4)">${company.submissions} salaries</span>
+<span style="margin-top:8px;background:#FF6200;color:black;font-size:12px;font-weight:800;padding:9px 20px;border-radius:100px">Submit to unlock →</span>
+</div></div>`;
+    }
+    return `<div class="company-card open" onclick="window.openCompanyPanel('${safeName}')">
+<div class="card-bg" style="${bg}"></div>${logo}<div class="card-overlay"></div>
+<div class="card-top"><span class="card-rank">#${i + 1}</span><span class="card-category">${company.category}</span></div>
+<div class="card-bottom"><div class="card-name-row"><div class="card-name">${company.name}</div><div class="card-count">${company.submissions} salaries</div></div>
+<div class="card-divider"></div><div class="card-sal">${company.salMin}M – ${company.salMax}M ₫</div></div></div>`;
+  });
+  const cta = !unlocked && companies.length > 3
+    ? `<div class="company-card-cta" onclick="document.getElementById('submit').scrollIntoView({behavior:'smooth'})">
+<span style="font-size:24px">🔓</span>
+<span style="font-size:15px;font-weight:800;color:white">${companies.length - 3}개 더 있어요</span>
+<span style="font-size:12px;color:rgba(255,255,255,0.35);text-align:center;padding:0 20px">연봉 제출하면 전체 공개</span>
+<span style="background:#FF6200;color:black;font-size:12px;font-weight:800;padding:9px 20px;border-radius:100px">Submit salary →</span>
+</div>` : '';
+  return cards.join('') + cta;
+}
+
+// PAGE_HTML_OBJ is built per-request in the component via useMemo — includes initial card HTML server-side
+const PAGE_HTML_TEMPLATE = bodyHTML + '<script>' + js + '<\/script>';
 
 export async function getServerSideProps() {
   try {
@@ -1691,6 +1725,18 @@ export default function Home({ companyStats = [] }) {
   const isUnlockedRef = useRef(typeof window !== 'undefined' && localStorage.getItem('fyi_submitted') === 'true');
   const pendingCompanyRef = useRef(null);
   const companies = useMemo(() => buildCardCompanies(companyStats), [companyStats]);
+
+  // Build page HTML with initial card state (first 3 open, rest locked).
+  // useMemo with [] = stable reference = React never resets dangerouslySetInnerHTML.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const PAGE_HTML_OBJ = useMemo(() => {
+    const initialCards = genCardHTML(companies, false);
+    const html = PAGE_HTML_TEMPLATE.replace(
+      '  <div class="company-grid" id="company-grid-root"></div>',
+      `  <div class="company-grid" id="company-grid-root">${initialCards}</div>`
+    );
+    return { __html: html };
+  }, []); // empty deps intentional — stable ref, cards updated via useEffect
 
   // Expose openLB / closeLB to inline onclick handlers inside dangerouslySetInnerHTML
   useEffect(() => {
