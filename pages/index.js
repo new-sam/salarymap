@@ -1615,6 +1615,9 @@ function buildCardsHTMLv2(companies, isSubmitted) {
   return cards + cta;
 }
 
+// Stable object reference — prevents React 19 from resetting dangerouslySetInnerHTML on re-render
+const PAGE_HTML_OBJ = { __html: bodyHTML + '<script>' + js + '<\/script>' };
+
 export async function getServerSideProps() {
   try {
     const { getCompanyStats } = await import('../lib/getCompanyStats');
@@ -1683,12 +1686,13 @@ export default function Home({ companyStats = [] }) {
     return () => { delete window.openCompanyPanel; delete window.onUnlockSuccess; };
   }, []);
 
-  // Inject company card grid HTML into #company-grid-root
+  // Inject company card grid HTML — runs after every render so grid survives any React reconciliation
   useEffect(() => {
     const grid = document.getElementById('company-grid-root');
     if (!grid) return;
-    grid.innerHTML = buildCardsHTMLv2(companies, isSubmitted);
-  }, [isSubmitted, companies]);
+    const next = buildCardsHTMLv2(companies, isSubmitted);
+    if (grid.innerHTML !== next) grid.innerHTML = next;
+  });
 
   // ESC to close panel
   useEffect(() => {
@@ -1872,7 +1876,7 @@ export default function Home({ companyStats = [] }) {
         <style dangerouslySetInnerHTML={{ __html: css }} />
       </Head>
 
-      <div suppressHydrationWarning dangerouslySetInnerHTML={{ __html: bodyHTML + '<script>' + js + '<\/script>' }} />
+      <div suppressHydrationWarning dangerouslySetInnerHTML={PAGE_HTML_OBJ} />
 
       {/* ── Leaderboard overlay — rendered as React JSX ── */}
       {lbCompany && d && (
@@ -2064,9 +2068,9 @@ export default function Home({ companyStats = [] }) {
                 {/* Stats row */}
                 <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:'8px',marginBottom:'20px'}}>
                   {[
-                    {v: (sc.open||isUnlocked) ? `${(sc.median/1000).toFixed(1)}k` : '???', l:'Median salary'},
+                    {v: (sc.open||isUnlocked) ? `${sc.median}M ₫` : '???', l:'Median salary'},
                     {v: sc.submissions, l:'Submissions'},
-                    {v: (sc.open||isUnlocked) ? `${(sc.top10/1000).toFixed(1)}k` : '???', l:'Top 10%'},
+                    {v: (sc.open||isUnlocked) ? `${sc.top10}M ₫` : '???', l:'Top 10%'},
                   ].map((o,i) => (
                     <div key={i} style={{background:'#F7F4EF',borderRadius:'12px',padding:'13px 10px',textAlign:'center'}}>
                       <div style={{fontSize:'15px',fontWeight:800,color:'#FF6200',lineHeight:1,marginBottom:'4px',
