@@ -122,8 +122,15 @@ nav { position:fixed; top:0; left:0; right:0; z-index:200; padding:0 52px; heigh
 .card-lock-count { font-size:11px; color:rgba(255,255,255,.5); }
 .lock-cta { position:absolute; bottom:14px; left:14px; right:14px; background:#FF6200; color:#000; font-size:11px; font-weight:700; padding:8px; border-radius:8px; text-align:center; opacity:0; transition:opacity .2s; z-index:3; }
 .company-card.locked:hover .lock-cta { opacity:1; }
-.company-card-cta { border-radius:14px; height:260px; cursor:pointer; background:#111; border:1px dashed rgba(255,98,0,0.4); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:6px; transition:border-color .2s, background .2s; }
-.company-card-cta:hover { border-color:#FF6200; background:rgba(255,98,0,.07); }
+.cards-unlock-cta { grid-column:1/-1; margin-top:4px; padding:28px 36px; background:linear-gradient(100deg,rgba(255,98,0,.07) 0%,rgba(0,0,0,0) 60%); border:1px solid rgba(255,98,0,.22); border-radius:16px; display:flex; align-items:center; justify-content:space-between; gap:24px; cursor:pointer; transition:border-color .2s,background .2s; }
+.cards-unlock-cta:hover { border-color:rgba(255,98,0,.5); background:linear-gradient(100deg,rgba(255,98,0,.12) 0%,rgba(0,0,0,0) 60%); }
+.cards-unlock-cta-left { display:flex; align-items:center; gap:16px; }
+.cards-unlock-cta-icon { font-size:28px; flex-shrink:0; }
+.cards-unlock-cta-title { font-size:17px; font-weight:800; color:#f2f0eb; line-height:1.2; }
+.cards-unlock-cta-sub { font-size:13px; color:rgba(255,255,255,.4); margin-top:3px; }
+.cards-unlock-cta-btn { flex-shrink:0; background:#FF6200; color:#000; font-size:13px; font-weight:800; padding:11px 22px; border-radius:100px; white-space:nowrap; transition:opacity .15s; }
+.cards-unlock-cta:hover .cards-unlock-cta-btn { opacity:.85; }
+@media(max-width:600px){ .cards-unlock-cta { flex-direction:column; align-items:flex-start; padding:20px; } .cards-unlock-cta-btn { align-self:stretch; text-align:center; } }
 .cta-main { font-size:16px; font-weight:700; color:#fff; }
 .cta-sub { font-size:12px; color:rgba(255,255,255,.45); }
 
@@ -1691,11 +1698,15 @@ function genCardHTML(companies, unlocked) {
   });
   const remaining = companies.length - INITIAL_LOAD;
   const cta = !unlocked && remaining > 0
-    ? `<div class="company-card-cta" onclick="document.getElementById('submit').scrollIntoView({behavior:'smooth'})">
-<span style="font-size:24px">🔓</span>
-<span style="font-size:15px;font-weight:800;color:white">${remaining}개 더 있어요</span>
-<span style="font-size:12px;color:rgba(255,255,255,0.35);text-align:center;padding:0 20px">연봉 제출하면 전체 공개</span>
-<span style="background:#FF6200;color:black;font-size:12px;font-weight:800;padding:9px 20px;border-radius:100px">Submit salary →</span>
+    ? `<div class="cards-unlock-cta" onclick="document.getElementById('submit').scrollIntoView({behavior:'smooth'})">
+<div class="cards-unlock-cta-left">
+  <span class="cards-unlock-cta-icon">🔒</span>
+  <div>
+    <div class="cards-unlock-cta-title">${remaining}개 회사 데이터가 더 있어요</div>
+    <div class="cards-unlock-cta-sub">내 연봉을 제출하면 전체 ${companies.length}개 회사 연봉 데이터를 볼 수 있어요</div>
+  </div>
+</div>
+<div class="cards-unlock-cta-btn">연봉 제출하고 전체 보기 →</div>
 </div>` : '';
   return cards.join('') + cta;
 }
