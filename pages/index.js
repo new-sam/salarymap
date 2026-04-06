@@ -19,6 +19,8 @@ nav { position:fixed; top:0; left:0; right:0; z-index:200; padding:0 52px; heigh
 .nav-r { display:flex; align-items:center; gap:32px; }
 .nav-link { font-size:13px; color:var(--mid); text-decoration:none; transition:color .15s; }
 .nav-link:hover { color:var(--white); }
+.nav-login-btn { font-family:'Barlow',sans-serif; font-size:13px; font-weight:600; color:rgba(255,255,255,0.5); background:none; border:1px solid rgba(255,255,255,0.15); padding:7px 16px; border-radius:100px; cursor:pointer; transition:border-color .15s,color .15s; }
+.nav-login-btn:hover { border-color:rgba(255,255,255,0.35); color:rgba(255,255,255,0.8); }
 .nav-btn { font-family:'Barlow',sans-serif; font-size:12px; font-weight:600; background:var(--orange); color:#fff; border:none; padding:8px 18px; border-radius:2px; cursor:pointer; }
 
 /* HERO */
@@ -655,6 +657,7 @@ const bodyHTML = `<nav>
     <a class="nav-link" href="#">Companies</a>
     <a class="nav-link" href="#">Reports</a>
     <a class="nav-link" href="/how-it-works">How it works</a>
+    <button class="nav-login-btn" onclick="window.openAuthModal()">Log in</button>
     <button class="nav-btn" onclick="document.getElementById('submit').scrollIntoView({behavior:'smooth'})">Submit Salary</button>
   </div>
 </nav>
@@ -812,182 +815,7 @@ const bodyHTML = `<nav>
 </div><!-- /cards-section -->
 </div><!-- /cards-bg -->
 
-<!-- SUBMIT -->
-<section class="fyi-submit-section" id="submit">
-  <div class="fyi-submit-inner">
-    <div class="fyi-submit-grid">
-
-      <div class="fyi-submit-left">
-        <h2>Submit your salary.<br><span class="hl">Unlock everything.</span></h2>
-        <p>30 seconds. No name. No email. 134 companies unlocked the moment you share.</p>
-        <div class="fyi-sub-badges">
-          <div class="fyi-sb-badge">100% anonymous · no account needed</div>
-          <div class="fyi-sb-badge">Never shown individually, only aggregated</div>
-          <div class="fyi-sb-badge">Never sold or shared with companies</div>
-          <div class="fyi-sb-badge">Instant unlock · 134 companies</div>
-        </div>
-      </div>
-
-      <div class="fyi-step-form">
-        <div class="fyi-step-progress">
-          <div class="fyi-sp-dot active" id="fyi-prog-0"></div>
-          <div class="fyi-sp-dot"        id="fyi-prog-1"></div>
-          <div class="fyi-sp-dot"        id="fyi-prog-2"></div>
-          <div class="fyi-sp-dot"        id="fyi-prog-3"></div>
-          <div class="fyi-sp-dot"        id="fyi-prog-4"></div>
-        </div>
-
-        <div class="fyi-step-content active" id="fyi-step-0">
-          <div class="fyi-step-question">What's your role?</div>
-          <div class="fyi-step-sub">Pick the one that best describes what you do.</div>
-          <div class="fyi-option-grid cols-3">
-            <button class="fyi-opt-btn" onclick="fyiSelectOpt(this,'role','Backend')">
-              <span class="fyi-ob-icon">⚙️</span><span class="fyi-ob-label">Backend</span>
-            </button>
-            <button class="fyi-opt-btn" onclick="fyiSelectOpt(this,'role','Frontend')">
-              <span class="fyi-ob-icon">🎨</span><span class="fyi-ob-label">Frontend</span>
-            </button>
-            <button class="fyi-opt-btn" onclick="fyiSelectOpt(this,'role','Fullstack')">
-              <span class="fyi-ob-icon">🔧</span><span class="fyi-ob-label">Fullstack</span>
-            </button>
-            <button class="fyi-opt-btn" onclick="fyiSelectOpt(this,'role','Mobile')">
-              <span class="fyi-ob-icon">📱</span><span class="fyi-ob-label">Mobile</span>
-            </button>
-            <button class="fyi-opt-btn" onclick="fyiSelectOpt(this,'role','Data Engineer')">
-              <span class="fyi-ob-icon">📊</span><span class="fyi-ob-label">Data Eng</span>
-            </button>
-            <button class="fyi-opt-btn" onclick="fyiSelectOpt(this,'role','DevOps / Cloud')">
-              <span class="fyi-ob-icon">☁️</span><span class="fyi-ob-label">DevOps</span>
-            </button>
-            <button class="fyi-opt-btn" onclick="fyiSelectOpt(this,'role','UI/UX')">
-              <span class="fyi-ob-icon">✏️</span><span class="fyi-ob-label">UI/UX</span>
-            </button>
-            <button class="fyi-opt-btn" onclick="fyiSelectOpt(this,'role','PM')">
-              <span class="fyi-ob-icon">🗺️</span><span class="fyi-ob-label">Product</span>
-            </button>
-            <button class="fyi-opt-btn" onclick="fyiSelectOpt(this,'role','Marketer')">
-              <span class="fyi-ob-icon">📣</span><span class="fyi-ob-label">Marketing</span>
-            </button>
-          </div>
-        </div>
-
-        <div class="fyi-step-content" id="fyi-step-1">
-          <div class="fyi-step-question">Years of experience?</div>
-          <div class="fyi-step-sub">Total years in the industry, not just at your current company.</div>
-          <div class="fyi-option-grid cols-2">
-            <button class="fyi-opt-btn" onclick="fyiSelectOpt(this,'exp','Under 1 year')">
-              <span class="fyi-ob-label">Under 1 year</span><span class="fyi-ob-sub">Just getting started</span>
-            </button>
-            <button class="fyi-opt-btn" onclick="fyiSelectOpt(this,'exp','1–2 yrs')">
-              <span class="fyi-ob-label">1 – 2 years</span><span class="fyi-ob-sub">Junior level</span>
-            </button>
-            <button class="fyi-opt-btn" onclick="fyiSelectOpt(this,'exp','3–4 yrs')">
-              <span class="fyi-ob-label">3 – 4 years</span><span class="fyi-ob-sub">Mid level</span>
-            </button>
-            <button class="fyi-opt-btn" onclick="fyiSelectOpt(this,'exp','5–7 yrs')">
-              <span class="fyi-ob-label">5 – 7 years</span><span class="fyi-ob-sub">Senior level</span>
-            </button>
-            <button class="fyi-opt-btn" onclick="fyiSelectOpt(this,'exp','8+ yrs')" style="grid-column:1/-1">
-              <span class="fyi-ob-label">8+ years</span><span class="fyi-ob-sub">Lead / Principal</span>
-            </button>
-          </div>
-          <div class="fyi-step-nav">
-            <button class="fyi-btn-back" onclick="fyiPrevStep(1)">← Back</button>
-          </div>
-        </div>
-
-        <div class="fyi-step-content" id="fyi-step-2">
-          <div class="fyi-step-question">Your monthly salary?</div>
-          <div class="fyi-step-sub">Gross, before tax. In million VND.</div>
-          <div class="fyi-salary-slider-wrap">
-            <div class="fyi-ss-display">
-              <div class="fyi-ss-num" id="fyi-sal-display">20</div>
-              <div class="fyi-ss-unit">M VND / month</div>
-            </div>
-            <input type="range" class="fyi-salary-slider" id="fyi-sal-slider"
-              min="5" max="150" value="20" step="1" oninput="fyiUpdateSalary(this)">
-            <div class="fyi-ss-ticks">
-              <span class="fyi-ss-tick">5M</span>
-              <span class="fyi-ss-tick">40M</span>
-              <span class="fyi-ss-tick">80M</span>
-              <span class="fyi-ss-tick">120M</span>
-              <span class="fyi-ss-tick">150M+</span>
-            </div>
-          </div>
-          <div class="fyi-step-nav">
-            <button class="fyi-btn-back" onclick="fyiPrevStep(2)">← Back</button>
-            <button class="fyi-btn-primary" onclick="fyiNextStep(2)" id="fyi-btn-step-2">Next →</button>
-          </div>
-        </div>
-
-        <div class="fyi-step-content" id="fyi-step-3">
-          <div class="fyi-step-question">Where do you work?</div>
-          <div class="fyi-step-sub">Only used to group salary data — never shown individually.</div>
-          <input type="text" class="fyi-form-input" id="f-co"
-            placeholder="e.g. VNG, Grab, FPT Software…"
-            oninput="fyiUpdateCompanyBtn()" autocomplete="off">
-          <div class="fyi-step-nav">
-            <button class="fyi-btn-back" onclick="fyiPrevStep(3)">← Back</button>
-            <button class="fyi-btn-primary" onclick="fyiNextStep(3)" disabled id="fyi-btn-step-3">Next →</button>
-          </div>
-        </div>
-
-        <div class="fyi-step-content" id="fyi-step-4">
-          <div class="fyi-step-question">One last thing</div>
-          <div class="fyi-step-sub">What would be most useful for you? (Pick all that apply)</div>
-          <div class="fyi-voc-options">
-            <div class="fyi-voc-opt" onclick="fyiToggleVoc(this)">
-              <div class="fyi-voc-checkbox"></div>
-              <div class="fyi-voc-label">🏢 See salaries at more companies</div>
-            </div>
-            <div class="fyi-voc-opt" onclick="fyiToggleVoc(this)">
-              <div class="fyi-voc-checkbox"></div>
-              <div class="fyi-voc-label">💼 See more roles and job functions</div>
-            </div>
-            <div class="fyi-voc-opt" onclick="fyiToggleVoc(this)">
-              <div class="fyi-voc-checkbox"></div>
-              <div class="fyi-voc-label">📅 Compare with people at my experience level</div>
-            </div>
-            <div class="fyi-voc-opt" onclick="fyiToggleVoc(this)">
-              <div class="fyi-voc-checkbox"></div>
-              <div class="fyi-voc-label">🚀 Find out where I can earn more</div>
-            </div>
-            <div class="fyi-voc-opt" onclick="fyiToggleVoc(this)">
-              <div class="fyi-voc-checkbox"></div>
-              <div class="fyi-voc-label">🎯 Get matched with recruiters at top-paying companies</div>
-            </div>
-          </div>
-          <div class="fyi-step-nav">
-            <button class="fyi-btn-back" onclick="fyiPrevStep(4)">← Back</button>
-            <button class="fyi-btn-primary" id="fyi-unlock-btn" onclick="fyiDoSubmit()">Unlock all 134 companies →</button>
-          </div>
-          <div class="fyi-anon-note">Your salary is never linked to your name or identity.</div>
-        </div>
-
-        <div class="fyi-submit-success" id="fyi-submit-success">
-          <div class="fyi-ss-icon">🎉</div>
-          <div class="fyi-ss-title">You're in. Everything's unlocked.</div>
-          <p class="fyi-ss-sub">All 134 companies are now visible below. Thanks for making the data better for everyone in Vietnam.</p>
-          <button class="fyi-ss-cta" onclick="document.getElementById('full-feed').scrollIntoView({behavior:'smooth'})">See all company salaries ↓</button>
-        </div>
-
-        <input type="hidden" id="f-role">
-        <input type="hidden" id="f-exp">
-        <input type="hidden" id="f-sal">
-
-        <div class="result-block" id="result-block">
-          <div><div class="rb-ctx" id="rb-ctx">Backend · 3–4 yrs</div><div class="rb-pct" id="rb-pct">Top 38%</div></div>
-          <div class="rb-sep"></div>
-          <div class="rb-bwrap">
-            <div class="rb-bl"><span id="rl">You</span><span id="rm">Median</span><span id="rr">Top 10%</span></div>
-            <div class="rb-track"><div class="rb-fill" id="rb-fill" style="width:0%"></div></div>
-          </div>
-        </div>
-        <div class="uline" id="uline">✓ UNLOCKED — 134 companies now visible below</div>
-      </div>
-    </div>
-  </div>
-</section>
+<!-- SUBMIT_REACT_PLACEHOLDER -->
 
 <footer>
   <div class="footer-brand">FYI <span>—</span> For Your Information</div>
@@ -1669,6 +1497,238 @@ function CompanyCardGrid({ companies, isSubmitted, setPendingCompanyId, onOpenPa
   );
 }
 
+// ── SubmitSection — 4-step wizard ─────────────────────────────────────────────
+function SubmitSection({
+  wizardStep, setWizardStep,
+  wRole, setWRole, wExp, setWExp,
+  wSalary, setWSalary, wCompany, setWCompany,
+  showResult, percentileData,
+  showSocialPrompt, setShowSocialPrompt,
+  setShowOTW, setShowAuthModal,
+  onSubmit,
+}) {
+  const [submitting, setSubmitting] = useState(false);
+  const ROLES = ['Backend','Frontend','Mobile','Data · AI','DevOps','PM · PO','Design','QA'];
+  const EXPS  = ['Under 1yr','1–2 yrs','3–4 yrs','5–7 yrs','8+ yrs'];
+  const sal = Number(wSalary);
+  const salPct = Math.round(((sal - 5) / (200 - 5)) * 100);
+
+  const handleSubmit = async () => {
+    if (!wCompany.trim()) return;
+    setSubmitting(true);
+    await onSubmit();
+    setSubmitting(false);
+  };
+
+  const pct = percentileData?.topPct;
+  const pctColor = pct <= 20 ? '#4ade80' : pct <= 50 ? '#facc15' : '#f87171';
+  const diagnosis = pct == null ? null
+    : pct <= 20 ? '상위 연봉 구간이에요. 시장에서 좋은 위치에 있어요.'
+    : pct <= 50 ? '시장 중간 수준이에요. 협상 여지가 있어요.'
+    : '시장 하위권이에요. 이직을 고려해볼 만해요.';
+
+  const card = { background:'rgba(255,255,255,0.03)', border:'1px solid rgba(255,255,255,0.08)', borderRadius:'20px', padding:'36px 32px' };
+  const btn = { fontFamily:"'Barlow',sans-serif", cursor:'pointer', border:'none' };
+
+  return (
+    <section id="submit" style={{background:'#0c0c0b', padding:'100px 52px 120px', fontFamily:"'Barlow',sans-serif"}}>
+      <div style={{maxWidth:'1060px', margin:'0 auto', display:'grid', gridTemplateColumns:'1fr 1fr', gap:'80px', alignItems:'start'}}>
+
+        {/* Left column */}
+        <div>
+          <div style={{fontSize:'11px', fontWeight:700, color:'#ff6000', letterSpacing:'2.5px', textTransform:'uppercase', marginBottom:'20px', display:'flex', alignItems:'center', gap:'8px'}}>
+            <span style={{width:'5px', height:'5px', borderRadius:'50%', background:'#ff6000', display:'inline-block'}} />
+            Anonymous · Secure
+          </div>
+          <h2 style={{fontSize:'clamp(28px,3.5vw,48px)', fontWeight:900, lineHeight:1.05, letterSpacing:'-2px', color:'#f2f0eb', marginBottom:'20px'}}>
+            내 연봉,<br /><em style={{fontStyle:'normal', color:'#ff6000'}}>어디쯤</em> 있을까?
+          </h2>
+          <p style={{fontSize:'15px', color:'rgba(242,240,235,0.45)', lineHeight:1.8, marginBottom:'32px', maxWidth:'340px'}}>
+            2분이면 충분해요. 역할과 연봉을 입력하면 베트남 IT 시장에서 내 위치를 바로 확인할 수 있어요.
+          </p>
+          <div style={{display:'flex', flexDirection:'column', gap:'10px'}}>
+            {[['🔒','익명 보장','이름·이메일 필요 없어요'],['⚡','즉시 결과','제출하면 바로 비교 결과 공개'],['📊','실제 데이터','34개 이상 기업 실제 제출 기반']].map(([icon, title, sub]) => (
+              <div key={title} style={{display:'flex', alignItems:'center', gap:'12px', padding:'12px 16px', background:'rgba(255,255,255,0.03)', borderRadius:'10px', border:'1px solid rgba(255,255,255,0.06)'}}>
+                <span style={{fontSize:'18px'}}>{icon}</span>
+                <div>
+                  <div style={{fontSize:'13px', fontWeight:700, color:'#f2f0eb'}}>{title}</div>
+                  <div style={{fontSize:'11px', color:'rgba(242,240,235,0.4)', marginTop:'1px'}}>{sub}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Right column — wizard or result */}
+        <div style={card}>
+          {!showResult ? (
+            <>
+              {/* Progress dots */}
+              <div style={{display:'flex', gap:'6px', marginBottom:'28px'}}>
+                {[1,2,3,4].map(s => (
+                  <div key={s} style={{height:'3px', flex:1, borderRadius:'2px', transition:'background .25s',
+                    background: s < wizardStep ? '#ff6000' : s === wizardStep ? '#fff' : 'rgba(255,255,255,0.1)'}} />
+                ))}
+              </div>
+
+              {/* Step 1 — Role */}
+              {wizardStep === 1 && (
+                <div>
+                  <div style={{fontSize:'11px', fontWeight:700, color:'rgba(255,255,255,0.35)', letterSpacing:'2px', textTransform:'uppercase', marginBottom:'8px'}}>STEP 1 / 4</div>
+                  <div style={{fontSize:'22px', fontWeight:900, color:'#fff', letterSpacing:'-0.5px', marginBottom:'6px'}}>직무가 뭐예요?</div>
+                  <div style={{fontSize:'13px', color:'rgba(255,255,255,0.4)', marginBottom:'24px'}}>해당하는 직무를 선택하세요</div>
+                  <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:'8px'}}>
+                    {ROLES.map(r => (
+                      <button key={r} onClick={() => { setWRole(r); setTimeout(() => setWizardStep(2), 180); }}
+                        style={{...btn, padding:'12px 14px', background: wRole===r ? 'rgba(255,96,0,0.15)' : 'rgba(255,255,255,0.04)',
+                          border:`1.5px solid ${wRole===r ? '#ff6000' : 'rgba(255,255,255,0.08)'}`,
+                          borderRadius:'8px', color:'#fff', fontSize:'13px', fontWeight:700, textAlign:'left', transition:'all .12s'}}>
+                        {r}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Step 2 — Experience */}
+              {wizardStep === 2 && (
+                <div>
+                  <div style={{fontSize:'11px', fontWeight:700, color:'rgba(255,255,255,0.35)', letterSpacing:'2px', textTransform:'uppercase', marginBottom:'8px'}}>STEP 2 / 4</div>
+                  <div style={{fontSize:'22px', fontWeight:900, color:'#fff', letterSpacing:'-0.5px', marginBottom:'6px'}}>경력이 얼마나 됐어요?</div>
+                  <div style={{fontSize:'13px', color:'rgba(255,255,255,0.4)', marginBottom:'24px'}}>전체 IT 경력 기준으로 선택하세요</div>
+                  <div style={{display:'flex', flexDirection:'column', gap:'8px'}}>
+                    {EXPS.map(e => (
+                      <button key={e} onClick={() => { setWExp(e); setTimeout(() => setWizardStep(3), 180); }}
+                        style={{...btn, padding:'14px 16px', background: wExp===e ? 'rgba(255,96,0,0.15)' : 'rgba(255,255,255,0.04)',
+                          border:`1.5px solid ${wExp===e ? '#ff6000' : 'rgba(255,255,255,0.08)'}`,
+                          borderRadius:'8px', color:'#fff', fontSize:'14px', fontWeight:700, textAlign:'left', transition:'all .12s'}}>
+                        {e}
+                      </button>
+                    ))}
+                  </div>
+                  <button onClick={() => setWizardStep(1)} style={{...btn, marginTop:'16px', background:'none', color:'rgba(255,255,255,0.35)', fontSize:'12px'}}>← 이전</button>
+                </div>
+              )}
+
+              {/* Step 3 — Salary */}
+              {wizardStep === 3 && (
+                <div>
+                  <div style={{fontSize:'11px', fontWeight:700, color:'rgba(255,255,255,0.35)', letterSpacing:'2px', textTransform:'uppercase', marginBottom:'8px'}}>STEP 3 / 4</div>
+                  <div style={{fontSize:'22px', fontWeight:900, color:'#fff', letterSpacing:'-0.5px', marginBottom:'6px'}}>월 연봉이 어떻게 돼요?</div>
+                  <div style={{fontSize:'13px', color:'rgba(255,255,255,0.4)', marginBottom:'28px'}}>세전 월 기준 (USD)</div>
+                  <div style={{display:'flex', alignItems:'baseline', gap:'8px', marginBottom:'20px'}}>
+                    <span style={{fontFamily:"'Geist Mono',monospace", fontSize:'56px', color:'#ff6000', fontWeight:500, lineHeight:1}}>{sal}</span>
+                    <span style={{fontSize:'16px', color:'rgba(255,255,255,0.4)'}}>USD / mo</span>
+                  </div>
+                  <input type="range" min="5" max="200" value={sal}
+                    onChange={e => setWSalary(Number(e.target.value))}
+                    style={{width:'100%', WebkitAppearance:'none', appearance:'none', height:'3px', borderRadius:'2px', outline:'none', cursor:'pointer',
+                      background:`linear-gradient(90deg, #ff6000 ${salPct}%, rgba(255,255,255,0.1) ${salPct}%)`}}
+                  />
+                  <div style={{display:'flex', justifyContent:'space-between', marginTop:'8px', marginBottom:'28px'}}>
+                    {['$5','$50','$100','$150','$200+'].map(t => (
+                      <span key={t} style={{fontSize:'10px', color:'rgba(255,255,255,0.35)', fontFamily:"'Geist Mono',monospace"}}>{t}</span>
+                    ))}
+                  </div>
+                  <button onClick={() => setWizardStep(4)}
+                    style={{...btn, width:'100%', background:'#ff6000', color:'#fff', fontSize:'14px', fontWeight:800, padding:'15px', borderRadius:'10px'}}>
+                    다음 →
+                  </button>
+                  <button onClick={() => setWizardStep(2)} style={{...btn, marginTop:'12px', background:'none', color:'rgba(255,255,255,0.35)', fontSize:'12px', display:'block', width:'100%', textAlign:'center'}}>← 이전</button>
+                </div>
+              )}
+
+              {/* Step 4 — Company */}
+              {wizardStep === 4 && (
+                <div>
+                  <div style={{fontSize:'11px', fontWeight:700, color:'rgba(255,255,255,0.35)', letterSpacing:'2px', textTransform:'uppercase', marginBottom:'8px'}}>STEP 4 / 4</div>
+                  <div style={{fontSize:'22px', fontWeight:900, color:'#fff', letterSpacing:'-0.5px', marginBottom:'6px'}}>어디서 일해요?</div>
+                  <div style={{fontSize:'13px', color:'rgba(255,255,255,0.4)', marginBottom:'24px'}}>회사 이름 입력 (익명 처리됨)</div>
+                  <input
+                    type="text"
+                    placeholder="예: Grab Vietnam, FPT Software…"
+                    value={wCompany}
+                    onChange={e => setWCompany(e.target.value)}
+                    onKeyDown={e => { if (e.key==='Enter' && wCompany.trim()) handleSubmit(); }}
+                    autoFocus
+                    style={{width:'100%', background:'rgba(255,255,255,0.05)', border:'1.5px solid rgba(255,255,255,0.1)',
+                      borderRadius:'8px', padding:'14px 16px', color:'#fff', fontSize:'14px',
+                      fontFamily:"'Barlow',sans-serif", outline:'none', marginBottom:'16px', boxSizing:'border-box'}}
+                  />
+                  <button onClick={handleSubmit} disabled={!wCompany.trim() || submitting}
+                    style={{...btn, width:'100%', background: wCompany.trim() ? '#ff6000' : 'rgba(255,96,0,0.3)',
+                      color:'#fff', fontSize:'14px', fontWeight:800, padding:'15px', borderRadius:'10px',
+                      cursor: wCompany.trim() ? 'pointer' : 'not-allowed', transition:'background .15s'}}>
+                    {submitting ? '제출 중…' : '내 위치 확인하기 →'}
+                  </button>
+                  <div style={{textAlign:'center', fontSize:'11px', color:'rgba(255,255,255,0.3)', marginTop:'12px'}}>🔒 익명 · 이름 불필요 · 2분</div>
+                  <button onClick={() => setWizardStep(3)} style={{...btn, marginTop:'12px', background:'none', color:'rgba(255,255,255,0.35)', fontSize:'12px', display:'block', width:'100%', textAlign:'center'}}>← 이전</button>
+                </div>
+              )}
+            </>
+          ) : (
+            /* Result card */
+            <div>
+              <div style={{textAlign:'center', marginBottom:'24px'}}>
+                <div style={{fontSize:'11px', fontWeight:700, color:'rgba(255,255,255,0.4)', letterSpacing:'2px', textTransform:'uppercase', marginBottom:'12px'}}>결과</div>
+                {percentileData && !percentileData.usedFallback ? (
+                  <>
+                    <div style={{fontSize:'72px', fontWeight:900, color:pctColor, lineHeight:1, letterSpacing:'-3px', marginBottom:'4px'}}>
+                      Top {pct}%
+                    </div>
+                    <div style={{fontSize:'14px', color:'rgba(255,255,255,0.5)', marginBottom:'20px'}}>
+                      {wRole} · {wExp} 기준 {percentileData.n}명 중
+                    </div>
+                    <div style={{display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:'8px', marginBottom:'20px'}}>
+                      {[{v:`$${percentileData.p25}`,l:'25th %ile'},{v:`$${percentileData.median}`,l:'Median'},{v:`$${percentileData.p75}`,l:'75th %ile'}].map(o => (
+                        <div key={o.l} style={{background:'rgba(255,255,255,0.04)', borderRadius:'10px', padding:'12px 8px', textAlign:'center'}}>
+                          <div style={{fontSize:'15px', fontWeight:800, color:'#ff6000'}}>{o.v}</div>
+                          <div style={{fontSize:'10px', color:'rgba(255,255,255,0.35)', marginTop:'3px'}}>{o.l}</div>
+                        </div>
+                      ))}
+                    </div>
+                    <div style={{background:'rgba(255,255,255,0.04)', borderRadius:'10px', padding:'14px 16px', fontSize:'13px', color:'rgba(255,255,255,0.65)', lineHeight:1.6, textAlign:'left'}}>
+                      {diagnosis}
+                    </div>
+                  </>
+                ) : (
+                  <div style={{padding:'20px 0'}}>
+                    <div style={{fontSize:'42px', marginBottom:'12px'}}>✅</div>
+                    <div style={{fontSize:'18px', fontWeight:800, color:'#fff', marginBottom:'8px'}}>제출 완료!</div>
+                    <div style={{fontSize:'13px', color:'rgba(255,255,255,0.4)', lineHeight:1.6}}>데이터가 추가됐어요. 전체 회사 연봉 데이터가 잠금 해제됐어요.</div>
+                  </div>
+                )}
+              </div>
+
+              {/* Social login prompt */}
+              {showSocialPrompt && (
+                <div style={{borderTop:'1px solid rgba(255,255,255,0.08)', paddingTop:'20px'}}>
+                  <div style={{fontSize:'14px', fontWeight:700, color:'#fff', marginBottom:'6px', textAlign:'center'}}>결과를 저장하고 싶으면?</div>
+                  <div style={{fontSize:'12px', color:'rgba(255,255,255,0.4)', marginBottom:'16px', textAlign:'center'}}>로그인하면 히스토리가 저장되고 업데이트 알림도 받을 수 있어요</div>
+                  <div style={{display:'flex', flexDirection:'column', gap:'8px'}}>
+                    <button onClick={() => { setShowSocialPrompt(false); setShowOTW(true); }}
+                      style={{...btn, width:'100%', background:'#0a66c2', color:'#fff', fontSize:'13px', fontWeight:700, padding:'13px', borderRadius:'8px', display:'flex', alignItems:'center', justifyContent:'center', gap:'8px'}}>
+                      <span style={{fontWeight:900}}>in</span> LinkedIn으로 계속
+                    </button>
+                    <button onClick={() => { setShowSocialPrompt(false); setShowOTW(true); }}
+                      style={{...btn, width:'100%', background:'#fff', color:'#111', fontSize:'13px', fontWeight:700, padding:'13px', borderRadius:'8px', display:'flex', alignItems:'center', justifyContent:'center', gap:'8px'}}>
+                      <span style={{fontWeight:900}}>G</span> Google로 계속
+                    </button>
+                    <button onClick={() => setShowSocialPrompt(false)}
+                      style={{...btn, background:'none', color:'rgba(255,255,255,0.3)', fontSize:'12px', width:'100%', textAlign:'center', marginTop:'4px'}}>
+                      나중에
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+    </section>
+  );
+}
+
 const INITIAL_LOAD = 12;
 
 function genCardHTML(companies, unlocked) {
@@ -1711,8 +1771,10 @@ function genCardHTML(companies, unlocked) {
   return cards.join('') + cta;
 }
 
-// PAGE_HTML_OBJ is built per-request in the component via useMemo — includes initial card HTML server-side
-const PAGE_HTML_TEMPLATE = bodyHTML + '<script>' + js + '<\/script>';
+// Split at the submit placeholder — submit section is rendered as React JSX
+const [BODY_PRE_TMPL, BODY_POST_TMPL] = bodyHTML.split('\n<!-- SUBMIT_REACT_PLACEHOLDER -->\n');
+const PAGE_HTML_PRE_TMPL = BODY_PRE_TMPL;
+const PAGE_HTML_POST_TMPL = BODY_POST_TMPL + '\n<script>' + js + '<\/script>';
 
 export async function getServerSideProps() {
   try {
@@ -1737,17 +1799,30 @@ export default function Home({ companyStats = [] }) {
   const pendingCompanyRef = useRef(null);
   const companies = useMemo(() => buildCardCompanies(companyStats), [companyStats]);
 
-  // Build page HTML with initial card state (first 3 open, rest locked).
-  // useMemo with [] = stable reference = React never resets dangerouslySetInnerHTML.
+  // Wizard state
+  const [wizardStep, setWizardStep] = useState(1);
+  const [wRole, setWRole] = useState('');
+  const [wExp, setWExp] = useState('');
+  const [wSalary, setWSalary] = useState(62);
+  const [wCompany, setWCompany] = useState('');
+  const [showResult, setShowResult] = useState(false);
+  const [percentileData, setPercentileData] = useState(null);
+  const [showSocialPrompt, setShowSocialPrompt] = useState(false);
+  const [showOTW, setShowOTW] = useState(false);
+  const [showAuthModal, setShowAuthModal] = useState(false);
+
+  // Stable refs for PRE/POST dangerouslySetInnerHTML
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  const PAGE_HTML_OBJ = useMemo(() => {
+  const PAGE_HTML_PRE = useMemo(() => {
     const initialCards = genCardHTML(companies, false);
-    const html = PAGE_HTML_TEMPLATE.replace(
+    const html = PAGE_HTML_PRE_TMPL.replace(
       '  <div class="company-grid" id="company-grid-root"></div>',
       `  <div class="company-grid" id="company-grid-root">${initialCards}</div>`
     );
     return { __html: html };
-  }, []); // empty deps intentional — stable ref, cards updated via useEffect
+  }, []);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const PAGE_HTML_POST = useMemo(() => ({ __html: PAGE_HTML_POST_TMPL }), []);
 
   // Expose openLB / closeLB to inline onclick handlers inside dangerouslySetInnerHTML
   useEffect(() => {
@@ -1811,73 +1886,10 @@ export default function Home({ companyStats = [] }) {
     return () => { document.body.style.overflow = ''; };
   }, [selectedCompany]);
 
-  // Wizard state & functions exposed to inline onclick handlers
+  // Expose openAuthModal bridge
   useEffect(() => {
-    const wiz = { role: '', exp: '', sal: 20, co: '' };
-    let step = 0;
-
-    window.fyiSetDots = function() {
-      for (let i = 0; i < 5; i++) {
-        const dot = document.getElementById('fyi-prog-' + i);
-        if (!dot) continue;
-        dot.className = 'fyi-sp-dot' + (i < step ? ' done' : i === step ? ' active' : '');
-      }
-    };
-    window.fyiSelectOpt = function(el, field, val) {
-      wiz[field] = val;
-      el.closest('.fyi-option-grid').querySelectorAll('.fyi-opt-btn').forEach(b => b.classList.remove('selected'));
-      el.classList.add('selected');
-      setTimeout(() => window.fyiNextStep(step), 180);
-    };
-    window.fyiNextStep = function(n) {
-      const cur = document.getElementById('fyi-step-' + n);
-      if (cur) cur.classList.remove('active');
-      step = n + 1;
-      const next = document.getElementById('fyi-step-' + step);
-      if (next) next.classList.add('active');
-      window.fyiSetDots();
-    };
-    window.fyiPrevStep = function(n) {
-      const cur = document.getElementById('fyi-step-' + n);
-      if (cur) cur.classList.remove('active');
-      step = n - 1;
-      const prev = document.getElementById('fyi-step-' + step);
-      if (prev) prev.classList.add('active');
-      window.fyiSetDots();
-    };
-    window.fyiUpdateSalary = function(input) {
-      wiz.sal = parseInt(input.value);
-      const el = document.getElementById('fyi-sal-display');
-      if (el) el.textContent = input.value;
-      const pct = ((input.value - 5) / (150 - 5) * 100).toFixed(1) + '%';
-      input.style.setProperty('--pct', pct);
-    };
-    window.fyiUpdateCompanyBtn = function() {
-      const val = (document.getElementById('f-co') || {}).value || '';
-      const btn = document.getElementById('fyi-btn-step-3');
-      if (btn) btn.disabled = !val.trim();
-      wiz.co = val.trim();
-    };
-    window.fyiToggleVoc = function(el) { el.classList.toggle('selected'); };
-    window.fyiDoSubmit = async function() {
-      if (!wiz.role || !wiz.exp || !wiz.sal) { alert('Please complete all steps.'); return; }
-      wiz.co = (document.getElementById('f-co') || {}).value || wiz.co || '';
-      const btn = document.getElementById('fyi-unlock-btn');
-      if (btn) { btn.textContent = 'Unlocking…'; btn.disabled = true; }
-      const urlParams = new URLSearchParams(window.location.search);
-      const source = urlParams.get('source') || 'direct';
-      if (typeof window.submitSalary === 'function') window.submitSalary(wiz.role, wiz.exp, wiz.sal, wiz.co, source, '');
-      try { if (typeof window.doUnlock === 'function') await window.doUnlock(wiz.role, wiz.exp, wiz.sal); } catch(e) { console.error('doUnlock error:', e); }
-      const s4 = document.getElementById('fyi-step-4');
-      if (s4) s4.classList.remove('active');
-      const scEl = document.getElementById('fyi-submit-success');
-      if (scEl) scEl.style.display = 'block';
-      setTimeout(() => { const ff = document.getElementById('full-feed'); if (ff) ff.scrollIntoView({ behavior: 'smooth' }); }, 600);
-    };
-
-    return () => {
-      ['fyiSetDots','fyiSelectOpt','fyiNextStep','fyiPrevStep','fyiUpdateSalary','fyiUpdateCompanyBtn','fyiToggleVoc','fyiDoSubmit'].forEach(k => delete window[k]);
-    };
+    window.openAuthModal = () => setShowAuthModal(true);
+    return () => { delete window.openAuthModal; };
   }, []);
 
   // Typing animation
@@ -1980,7 +1992,44 @@ export default function Home({ companyStats = [] }) {
         <style dangerouslySetInnerHTML={{ __html: css }} />
       </Head>
 
-      <div suppressHydrationWarning dangerouslySetInnerHTML={PAGE_HTML_OBJ} />
+      <div suppressHydrationWarning dangerouslySetInnerHTML={PAGE_HTML_PRE} />
+
+      {/* ── Submit section — pure React JSX ── */}
+      <SubmitSection
+        wizardStep={wizardStep} setWizardStep={setWizardStep}
+        wRole={wRole} setWRole={setWRole}
+        wExp={wExp} setWExp={setWExp}
+        wSalary={wSalary} setWSalary={setWSalary}
+        wCompany={wCompany} setWCompany={setWCompany}
+        showResult={showResult}
+        percentileData={percentileData}
+        showSocialPrompt={showSocialPrompt}
+        setShowSocialPrompt={setShowSocialPrompt}
+        setShowOTW={setShowOTW}
+        setShowAuthModal={setShowAuthModal}
+        onSubmit={async () => {
+          // POST to /api/submit
+          try {
+            await fetch('/api/submit', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ role: wRole, experience: wExp, salary: wSalary, company: wCompany, source: new URLSearchParams(window.location.search).get('source') || 'direct' }),
+            });
+          } catch(e) {}
+          // Unlock cards
+          window.onUnlockSuccess?.();
+          // Fetch percentile
+          try {
+            const res = await fetch(`/api/percentile?role=${encodeURIComponent(wRole)}&experience=${encodeURIComponent(wExp)}&salary=${wSalary}`);
+            const data = await res.json();
+            setPercentileData(data);
+          } catch(e) { setPercentileData(null); }
+          setShowResult(true);
+          setShowSocialPrompt(true);
+        }}
+      />
+
+      <div suppressHydrationWarning dangerouslySetInnerHTML={PAGE_HTML_POST} />
 
       {/* ── Leaderboard overlay — rendered as React JSX ── */}
       {lbCompany && d && (
@@ -2241,6 +2290,61 @@ export default function Home({ companyStats = [] }) {
           );
         })()}
       </div>
+
+      {/* OTW Modal */}
+      {showOTW && (
+        <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.75)',zIndex:1000,display:'flex',alignItems:'center',justifyContent:'center',padding:'20px'}}
+          onClick={e => { if(e.target===e.currentTarget) setShowOTW(false); }}>
+          <div style={{background:'#1a1a18',border:'1px solid rgba(255,255,255,0.1)',borderRadius:'20px',padding:'40px 36px',maxWidth:'460px',width:'100%',fontFamily:"'Barlow',sans-serif"}}>
+            <div style={{fontSize:'11px',fontWeight:700,color:'#ff6000',letterSpacing:'2px',textTransform:'uppercase',marginBottom:'16px'}}>지금 어떤 상황이에요?</div>
+            <div style={{fontSize:'24px',fontWeight:900,color:'#fff',letterSpacing:'-0.5px',marginBottom:'8px'}}>이직 의향이 있으신가요?</div>
+            <div style={{fontSize:'13px',color:'rgba(255,255,255,0.4)',marginBottom:'28px',lineHeight:1.6}}>적합한 포지션이 생기면 바로 알려드릴게요.</div>
+            {[
+              ['🔥','적극적으로 이직 중','지금 바로 기회를 보고 싶어요'],
+              ['👀','기회가 있으면 봐요','좋은 기회가 있으면 고려해볼게요'],
+              ['😊','지금은 괜찮아요','지금은 이직 생각 없어요'],
+            ].map(([icon, label, sub]) => (
+              <button key={label}
+                onClick={async () => {
+                  try { await fetch('/api/user-intent',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({intent:label})}); } catch(e) {}
+                  setShowOTW(false);
+                }}
+                style={{width:'100%',display:'flex',alignItems:'center',gap:'14px',padding:'16px',background:'rgba(255,255,255,0.04)',border:'1.5px solid rgba(255,255,255,0.08)',borderRadius:'10px',cursor:'pointer',marginBottom:'8px',fontFamily:"'Barlow',sans-serif",textAlign:'left',transition:'border-color .15s'}}>
+                <span style={{fontSize:'22px',flexShrink:0}}>{icon}</span>
+                <div>
+                  <div style={{fontSize:'14px',fontWeight:700,color:'#fff'}}>{label}</div>
+                  <div style={{fontSize:'11px',color:'rgba(255,255,255,0.35)',marginTop:'2px'}}>{sub}</div>
+                </div>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Auth Modal */}
+      {showAuthModal && (
+        <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.75)',zIndex:1000,display:'flex',alignItems:'center',justifyContent:'center',padding:'20px'}}
+          onClick={e => { if(e.target===e.currentTarget) setShowAuthModal(false); }}>
+          <div style={{background:'#1a1a18',border:'1px solid rgba(255,255,255,0.1)',borderRadius:'20px',padding:'40px 36px',maxWidth:'420px',width:'100%',fontFamily:"'Barlow',sans-serif"}}>
+            <div style={{fontSize:'24px',fontWeight:900,color:'#fff',letterSpacing:'-0.5px',marginBottom:'8px'}}>로그인</div>
+            <div style={{fontSize:'13px',color:'rgba(255,255,255,0.4)',marginBottom:'28px',lineHeight:1.6}}>저장된 히스토리 확인 및 알림 설정을 위해 로그인하세요.</div>
+            <div style={{display:'flex',flexDirection:'column',gap:'10px'}}>
+              <button onClick={() => { console.log('LinkedIn auth'); window.location.href='/api/auth/linkedin'; }}
+                style={{width:'100%',background:'#0a66c2',color:'#fff',fontSize:'14px',fontWeight:700,padding:'14px',borderRadius:'10px',border:'none',cursor:'pointer',fontFamily:"'Barlow',sans-serif",display:'flex',alignItems:'center',justifyContent:'center',gap:'10px'}}>
+                <span style={{fontWeight:900,fontSize:'16px'}}>in</span> LinkedIn으로 로그인
+              </button>
+              <button onClick={() => { console.log('Google auth'); window.location.href='/api/auth/google'; }}
+                style={{width:'100%',background:'#fff',color:'#111',fontSize:'14px',fontWeight:700,padding:'14px',borderRadius:'10px',border:'none',cursor:'pointer',fontFamily:"'Barlow',sans-serif",display:'flex',alignItems:'center',justifyContent:'center',gap:'10px'}}>
+                <span style={{fontWeight:900,fontSize:'16px'}}>G</span> Google로 로그인
+              </button>
+              <button onClick={() => setShowAuthModal(false)}
+                style={{background:'none',border:'none',color:'rgba(255,255,255,0.3)',fontSize:'12px',cursor:'pointer',fontFamily:"'Barlow',sans-serif",marginTop:'4px',width:'100%',textAlign:'center'}}>
+                나중에
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }
