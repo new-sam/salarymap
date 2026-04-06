@@ -297,7 +297,7 @@ nav { position:fixed; top:0; left:0; right:0; z-index:200; padding:0 52px; heigh
 .co-result-close { background:transparent; border:1px solid var(--line); color:var(--dim); font-size:12px; padding:5px 12px; border-radius:4px; cursor:pointer; font-family:'Barlow',sans-serif; flex-shrink:0; }
 .co-result-close:hover { color:var(--white); border-color:rgba(255,255,255,.2); }
 
-/* 역할별 연봉 테이블 */
+/* Salary by role table */
 .co-role-table { width:100%; border-collapse:collapse; }
 .co-role-table th { font-family:'Geist Mono',monospace; font-size:10px; color:var(--dim); text-transform:uppercase; letter-spacing:.8px; padding:0 0 10px; text-align:left; border-bottom:1px solid var(--line); }
 .co-role-table th:not(:first-child) { text-align:right; }
@@ -310,7 +310,7 @@ nav { position:fixed; top:0; left:0; right:0; z-index:200; padding:0 52px; heigh
 .co-role-bar-wrap { width:80px; height:4px; background:rgba(255,255,255,.08); border-radius:2px; margin-left:auto; margin-right:0; }
 .co-role-bar { height:100%; background:var(--orange); border-radius:2px; }
 
-/* 데이터 없음 */
+/* No data */
 .co-no-data { text-align:center; padding:20px 0 8px; }
 .co-no-data-title { font-size:15px; font-weight:700; margin-bottom:6px; }
 .co-no-data-sub { font-size:13px; color:var(--mid); margin-bottom:20px; }
@@ -670,7 +670,7 @@ const bodyHTML = `<nav>
   <div class="hero-copy">
     <div class="hero-kicker"><span class="kdot"></span>Vietnam IT Salary Intelligence</div>
     <h1 class="hero-h1">What does<br><span id="typed-company"></span><span class="typed-cursor"></span><br>actually pay?</h1>
-    <p class="hero-sub">Real salary data submitted anonymously by engineers who work there. Find out where you actually stand.</p>
+    <p class="hero-sub">Check if you're being underpaid — based on real salary data from engineers at Vietnam's top IT companies.</p>
     <div class="hero-btns">
       <button class="btn-p" onclick="document.getElementById('submit').scrollIntoView({behavior:'smooth'})">Am I Underpaid? →</button>
     </div>
@@ -807,7 +807,7 @@ const bodyHTML = `<nav>
         <div class="co-result-name" id="co-result-name">—</div>
         <div class="co-result-count" id="co-result-count"></div>
       </div>
-      <button class="co-result-close" onclick="coResultClose()">✕ 닫기</button>
+      <button class="co-result-close" onclick="coResultClose()">✕ Close</button>
     </div>
     <div id="co-result-body"></div>
   </div>
@@ -1484,9 +1484,9 @@ function CompanyCardGrid({ companies, isSubmitted, setPendingCompanyId, onOpenPa
           }}
         >
           <span style={{ fontSize:'24px' }}>🔓</span>
-          <span style={{ fontSize:'15px', fontWeight:800, color:'white' }}>{companies.length - 3}개 더 있어요</span>
+          <span style={{ fontSize:'15px', fontWeight:800, color:'white' }}>{companies.length - 3} more companies</span>
           <span style={{ fontSize:'12px', color:'rgba(255,255,255,0.35)', textAlign:'center', padding:'0 20px' }}>
-            연봉 제출하면 전체 공개
+            Submit your salary to unlock all
           </span>
           <span style={{ background:'#FF6200', color:'black', fontSize:'12px', fontWeight:800, padding:'9px 20px', borderRadius:'100px' }}>
             Submit salary →
@@ -1504,7 +1504,7 @@ function SubmitSection({
   wSalary, setWSalary, wCompany, setWCompany,
   showResult, percentileData,
   showSocialPrompt, setShowSocialPrompt,
-  setShowOTW, setShowAuthModal,
+  setShowOTW,
   onSubmit,
 }) {
   const [submitting, setSubmitting] = useState(false);
@@ -1520,15 +1520,27 @@ function SubmitSection({
     setSubmitting(false);
   };
 
-  const pct = percentileData?.topPct;
-  const pctColor = pct <= 20 ? '#4ade80' : pct <= 50 ? '#facc15' : '#f87171';
-  const diagnosis = pct == null ? null
-    : pct <= 20 ? '상위 연봉 구간이에요. 시장에서 좋은 위치에 있어요.'
-    : pct <= 50 ? '시장 중간 수준이에요. 협상 여지가 있어요.'
-    : '시장 하위권이에요. 이직을 고려해볼 만해요.';
+  // percentile from bottom (e.g. 80 = earns more than 80% of peers)
+  const percentile = percentileData ? 100 - (percentileData.topPct ?? 50) : null;
+  const isTopHalf = percentile != null && percentile >= 50;
+  const pctLabel = percentile == null ? null
+    : percentile >= 70 ? `Top ${100 - percentile}%`
+    : `Bottom ${percentile}%`;
+  const pctColor = percentile == null ? '#fff'
+    : percentile >= 70 ? '#4ade80' : '#FF6200';
+  const diff = percentileData ? sal - (percentileData.median ?? sal) : 0;
+  const diffLabel = diff >= 0 ? `+$${diff}` : `-$${Math.abs(diff)}`;
+  const message = isTopHalf
+    ? "You're above the market median. See what higher-paying roles are available right now."
+    : "You're earning below the market rate. This is a good time to negotiate or explore better-paying roles.";
 
   const card = { background:'rgba(255,255,255,0.03)', border:'1px solid rgba(255,255,255,0.08)', borderRadius:'20px', padding:'36px 32px' };
   const btn = { fontFamily:"'Barlow',sans-serif", cursor:'pointer', border:'none' };
+
+  const mockAuth = () => {
+    setShowSocialPrompt(false);
+    setShowOTW(true);
+  };
 
   return (
     <section id="submit" style={{background:'#0c0c0b', padding:'100px 52px 120px', fontFamily:"'Barlow',sans-serif"}}>
@@ -1541,13 +1553,17 @@ function SubmitSection({
             Anonymous · Secure
           </div>
           <h2 style={{fontSize:'clamp(28px,3.5vw,48px)', fontWeight:900, lineHeight:1.05, letterSpacing:'-2px', color:'#f2f0eb', marginBottom:'20px'}}>
-            내 연봉,<br /><em style={{fontStyle:'normal', color:'#ff6000'}}>어디쯤</em> 있을까?
+            Where does<br />my salary <em style={{fontStyle:'normal', color:'#ff6000'}}>stand?</em>
           </h2>
           <p style={{fontSize:'15px', color:'rgba(242,240,235,0.45)', lineHeight:1.8, marginBottom:'32px', maxWidth:'340px'}}>
-            2분이면 충분해요. 역할과 연봉을 입력하면 베트남 IT 시장에서 내 위치를 바로 확인할 수 있어요.
+            Takes 2 minutes. Enter your role and salary to instantly see where you rank in the Vietnam IT market.
           </p>
           <div style={{display:'flex', flexDirection:'column', gap:'10px'}}>
-            {[['🔒','익명 보장','이름·이메일 필요 없어요'],['⚡','즉시 결과','제출하면 바로 비교 결과 공개'],['📊','실제 데이터','34개 이상 기업 실제 제출 기반']].map(([icon, title, sub]) => (
+            {[
+              ['🔒','Anonymous','No name or email required'],
+              ['⚡','Instant results','See your ranking immediately after submitting'],
+              ['📊','Real data','Based on submissions from 34+ companies'],
+            ].map(([icon, title, sub]) => (
               <div key={title} style={{display:'flex', alignItems:'center', gap:'12px', padding:'12px 16px', background:'rgba(255,255,255,0.03)', borderRadius:'10px', border:'1px solid rgba(255,255,255,0.06)'}}>
                 <span style={{fontSize:'18px'}}>{icon}</span>
                 <div>
@@ -1575,8 +1591,8 @@ function SubmitSection({
               {wizardStep === 1 && (
                 <div>
                   <div style={{fontSize:'11px', fontWeight:700, color:'rgba(255,255,255,0.35)', letterSpacing:'2px', textTransform:'uppercase', marginBottom:'8px'}}>STEP 1 / 4</div>
-                  <div style={{fontSize:'22px', fontWeight:900, color:'#fff', letterSpacing:'-0.5px', marginBottom:'6px'}}>직무가 뭐예요?</div>
-                  <div style={{fontSize:'13px', color:'rgba(255,255,255,0.4)', marginBottom:'24px'}}>해당하는 직무를 선택하세요</div>
+                  <div style={{fontSize:'22px', fontWeight:900, color:'#fff', letterSpacing:'-0.5px', marginBottom:'6px'}}>What's your role?</div>
+                  <div style={{fontSize:'13px', color:'rgba(255,255,255,0.4)', marginBottom:'24px'}}>Select the option that best fits</div>
                   <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:'8px'}}>
                     {ROLES.map(r => (
                       <button key={r} onClick={() => { setWRole(r); setTimeout(() => setWizardStep(2), 180); }}
@@ -1594,8 +1610,8 @@ function SubmitSection({
               {wizardStep === 2 && (
                 <div>
                   <div style={{fontSize:'11px', fontWeight:700, color:'rgba(255,255,255,0.35)', letterSpacing:'2px', textTransform:'uppercase', marginBottom:'8px'}}>STEP 2 / 4</div>
-                  <div style={{fontSize:'22px', fontWeight:900, color:'#fff', letterSpacing:'-0.5px', marginBottom:'6px'}}>경력이 얼마나 됐어요?</div>
-                  <div style={{fontSize:'13px', color:'rgba(255,255,255,0.4)', marginBottom:'24px'}}>전체 IT 경력 기준으로 선택하세요</div>
+                  <div style={{fontSize:'22px', fontWeight:900, color:'#fff', letterSpacing:'-0.5px', marginBottom:'6px'}}>Years of experience?</div>
+                  <div style={{fontSize:'13px', color:'rgba(255,255,255,0.4)', marginBottom:'24px'}}>Total IT experience, including all roles</div>
                   <div style={{display:'flex', flexDirection:'column', gap:'8px'}}>
                     {EXPS.map(e => (
                       <button key={e} onClick={() => { setWExp(e); setTimeout(() => setWizardStep(3), 180); }}
@@ -1606,7 +1622,7 @@ function SubmitSection({
                       </button>
                     ))}
                   </div>
-                  <button onClick={() => setWizardStep(1)} style={{...btn, marginTop:'16px', background:'none', color:'rgba(255,255,255,0.35)', fontSize:'12px'}}>← 이전</button>
+                  <button onClick={() => setWizardStep(1)} style={{...btn, marginTop:'16px', background:'none', color:'rgba(255,255,255,0.35)', fontSize:'12px'}}>← Back</button>
                 </div>
               )}
 
@@ -1614,8 +1630,8 @@ function SubmitSection({
               {wizardStep === 3 && (
                 <div>
                   <div style={{fontSize:'11px', fontWeight:700, color:'rgba(255,255,255,0.35)', letterSpacing:'2px', textTransform:'uppercase', marginBottom:'8px'}}>STEP 3 / 4</div>
-                  <div style={{fontSize:'22px', fontWeight:900, color:'#fff', letterSpacing:'-0.5px', marginBottom:'6px'}}>월 연봉이 어떻게 돼요?</div>
-                  <div style={{fontSize:'13px', color:'rgba(255,255,255,0.4)', marginBottom:'28px'}}>세전 월 기준 (USD)</div>
+                  <div style={{fontSize:'22px', fontWeight:900, color:'#fff', letterSpacing:'-0.5px', marginBottom:'6px'}}>What's your monthly salary?</div>
+                  <div style={{fontSize:'13px', color:'rgba(255,255,255,0.4)', marginBottom:'28px'}}>Pre-tax, per month (USD)</div>
                   <div style={{display:'flex', alignItems:'baseline', gap:'8px', marginBottom:'20px'}}>
                     <span style={{fontFamily:"'Geist Mono',monospace", fontSize:'56px', color:'#ff6000', fontWeight:500, lineHeight:1}}>{sal}</span>
                     <span style={{fontSize:'16px', color:'rgba(255,255,255,0.4)'}}>USD / mo</span>
@@ -1632,9 +1648,9 @@ function SubmitSection({
                   </div>
                   <button onClick={() => setWizardStep(4)}
                     style={{...btn, width:'100%', background:'#ff6000', color:'#fff', fontSize:'14px', fontWeight:800, padding:'15px', borderRadius:'10px'}}>
-                    다음 →
+                    Next →
                   </button>
-                  <button onClick={() => setWizardStep(2)} style={{...btn, marginTop:'12px', background:'none', color:'rgba(255,255,255,0.35)', fontSize:'12px', display:'block', width:'100%', textAlign:'center'}}>← 이전</button>
+                  <button onClick={() => setWizardStep(2)} style={{...btn, marginTop:'12px', background:'none', color:'rgba(255,255,255,0.35)', fontSize:'12px', display:'block', width:'100%', textAlign:'center'}}>← Back</button>
                 </div>
               )}
 
@@ -1642,11 +1658,11 @@ function SubmitSection({
               {wizardStep === 4 && (
                 <div>
                   <div style={{fontSize:'11px', fontWeight:700, color:'rgba(255,255,255,0.35)', letterSpacing:'2px', textTransform:'uppercase', marginBottom:'8px'}}>STEP 4 / 4</div>
-                  <div style={{fontSize:'22px', fontWeight:900, color:'#fff', letterSpacing:'-0.5px', marginBottom:'6px'}}>어디서 일해요?</div>
-                  <div style={{fontSize:'13px', color:'rgba(255,255,255,0.4)', marginBottom:'24px'}}>회사 이름 입력 (익명 처리됨)</div>
+                  <div style={{fontSize:'22px', fontWeight:900, color:'#fff', letterSpacing:'-0.5px', marginBottom:'6px'}}>Where do you work?</div>
+                  <div style={{fontSize:'13px', color:'rgba(255,255,255,0.4)', marginBottom:'24px'}}>Company name (kept anonymous)</div>
                   <input
                     type="text"
-                    placeholder="예: Grab Vietnam, FPT Software…"
+                    placeholder="e.g. Grab Vietnam, FPT Software…"
                     value={wCompany}
                     onChange={e => setWCompany(e.target.value)}
                     onKeyDown={e => { if (e.key==='Enter' && wCompany.trim()) handleSubmit(); }}
@@ -1659,10 +1675,10 @@ function SubmitSection({
                     style={{...btn, width:'100%', background: wCompany.trim() ? '#ff6000' : 'rgba(255,96,0,0.3)',
                       color:'#fff', fontSize:'14px', fontWeight:800, padding:'15px', borderRadius:'10px',
                       cursor: wCompany.trim() ? 'pointer' : 'not-allowed', transition:'background .15s'}}>
-                    {submitting ? '제출 중…' : '내 위치 확인하기 →'}
+                    {submitting ? 'Submitting…' : 'See where I stand →'}
                   </button>
-                  <div style={{textAlign:'center', fontSize:'11px', color:'rgba(255,255,255,0.3)', marginTop:'12px'}}>🔒 익명 · 이름 불필요 · 2분</div>
-                  <button onClick={() => setWizardStep(3)} style={{...btn, marginTop:'12px', background:'none', color:'rgba(255,255,255,0.35)', fontSize:'12px', display:'block', width:'100%', textAlign:'center'}}>← 이전</button>
+                  <div style={{textAlign:'center', fontSize:'11px', color:'rgba(255,255,255,0.3)', marginTop:'12px'}}>🔒 Anonymous · No login required · 2 min</div>
+                  <button onClick={() => setWizardStep(3)} style={{...btn, marginTop:'12px', background:'none', color:'rgba(255,255,255,0.35)', fontSize:'12px', display:'block', width:'100%', textAlign:'center'}}>← Back</button>
                 </div>
               )}
             </>
@@ -1670,32 +1686,35 @@ function SubmitSection({
             /* Result card */
             <div>
               <div style={{textAlign:'center', marginBottom:'24px'}}>
-                <div style={{fontSize:'11px', fontWeight:700, color:'rgba(255,255,255,0.4)', letterSpacing:'2px', textTransform:'uppercase', marginBottom:'12px'}}>결과</div>
+                <div style={{fontSize:'11px', fontWeight:700, color:'rgba(255,255,255,0.4)', letterSpacing:'2px', textTransform:'uppercase', marginBottom:'12px'}}>Your result</div>
                 {percentileData && !percentileData.usedFallback ? (
                   <>
-                    <div style={{fontSize:'72px', fontWeight:900, color:pctColor, lineHeight:1, letterSpacing:'-3px', marginBottom:'4px'}}>
-                      Top {pct}%
+                    <div style={{fontSize:'72px', fontWeight:900, color:pctColor, lineHeight:1, letterSpacing:'-3px', marginBottom:'8px'}}>
+                      {pctLabel}
                     </div>
-                    <div style={{fontSize:'14px', color:'rgba(255,255,255,0.5)', marginBottom:'20px'}}>
-                      {wRole} · {wExp} 기준 {percentileData.n}명 중
+                    <div style={{fontSize:'14px', color:'rgba(255,255,255,0.5)', marginBottom:'24px'}}>
+                      Among {wRole} engineers with {wExp} experience
                     </div>
                     <div style={{display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:'8px', marginBottom:'20px'}}>
-                      {[{v:`$${percentileData.p25}`,l:'25th %ile'},{v:`$${percentileData.median}`,l:'Median'},{v:`$${percentileData.p75}`,l:'75th %ile'}].map(o => (
+                      {[
+                        {v:`$${sal}`, l:'Your salary'},
+                        {v:`$${percentileData.median}`, l:'Market median'},
+                        {v:diffLabel, l:'Difference', c: diff >= 0 ? '#4ade80' : '#f87171'},
+                      ].map(o => (
                         <div key={o.l} style={{background:'rgba(255,255,255,0.04)', borderRadius:'10px', padding:'12px 8px', textAlign:'center'}}>
-                          <div style={{fontSize:'15px', fontWeight:800, color:'#ff6000'}}>{o.v}</div>
+                          <div style={{fontSize:'15px', fontWeight:800, color: o.c || '#ff6000'}}>{o.v}</div>
                           <div style={{fontSize:'10px', color:'rgba(255,255,255,0.35)', marginTop:'3px'}}>{o.l}</div>
                         </div>
                       ))}
                     </div>
                     <div style={{background:'rgba(255,255,255,0.04)', borderRadius:'10px', padding:'14px 16px', fontSize:'13px', color:'rgba(255,255,255,0.65)', lineHeight:1.6, textAlign:'left'}}>
-                      {diagnosis}
+                      {message}
                     </div>
                   </>
                 ) : (
                   <div style={{padding:'20px 0'}}>
                     <div style={{fontSize:'42px', marginBottom:'12px'}}>✅</div>
-                    <div style={{fontSize:'18px', fontWeight:800, color:'#fff', marginBottom:'8px'}}>제출 완료!</div>
-                    <div style={{fontSize:'13px', color:'rgba(255,255,255,0.4)', lineHeight:1.6}}>데이터가 추가됐어요. 전체 회사 연봉 데이터가 잠금 해제됐어요.</div>
+                    <div style={{fontSize:'18px', fontWeight:800, color:'#fff', marginBottom:'8px'}}>Submitted!</div>
                   </div>
                 )}
               </div>
@@ -1703,20 +1722,25 @@ function SubmitSection({
               {/* Social login prompt */}
               {showSocialPrompt && (
                 <div style={{borderTop:'1px solid rgba(255,255,255,0.08)', paddingTop:'20px'}}>
-                  <div style={{fontSize:'14px', fontWeight:700, color:'#fff', marginBottom:'6px', textAlign:'center'}}>결과를 저장하고 싶으면?</div>
-                  <div style={{fontSize:'12px', color:'rgba(255,255,255,0.4)', marginBottom:'16px', textAlign:'center'}}>로그인하면 히스토리가 저장되고 업데이트 알림도 받을 수 있어요</div>
+                  <div style={{fontSize:'16px', fontWeight:800, color:'#fff', marginBottom:'6px'}}>Get notified when a higher-paying role opens up.</div>
+                  <div style={{fontSize:'12px', color:'rgba(255,255,255,0.4)', marginBottom:'12px', lineHeight:1.6}}>
+                    We'll alert you when a position matching your role and experience pays more than what you earn now. No spam.
+                  </div>
+                  <div style={{background:'rgba(255,255,255,0.04)', borderRadius:'8px', padding:'10px 14px', fontSize:'12px', color:'rgba(255,255,255,0.5)', marginBottom:'16px', lineHeight:1.5}}>
+                    🤝 A FYI partner headhunter will reach out directly. Only if you're open to it. One time only.
+                  </div>
                   <div style={{display:'flex', flexDirection:'column', gap:'8px'}}>
-                    <button onClick={() => { setShowSocialPrompt(false); setShowOTW(true); }}
-                      style={{...btn, width:'100%', background:'#0a66c2', color:'#fff', fontSize:'13px', fontWeight:700, padding:'13px', borderRadius:'8px', display:'flex', alignItems:'center', justifyContent:'center', gap:'8px'}}>
-                      <span style={{fontWeight:900}}>in</span> LinkedIn으로 계속
+                    <button onClick={mockAuth}
+                      style={{...btn, width:'100%', background:'#0077B5', color:'#fff', fontSize:'13px', fontWeight:700, padding:'13px', borderRadius:'8px', display:'flex', alignItems:'center', justifyContent:'center', gap:'8px'}}>
+                      <span style={{fontWeight:900, fontSize:'14px'}}>in</span> Continue with LinkedIn
                     </button>
-                    <button onClick={() => { setShowSocialPrompt(false); setShowOTW(true); }}
+                    <button onClick={mockAuth}
                       style={{...btn, width:'100%', background:'#fff', color:'#111', fontSize:'13px', fontWeight:700, padding:'13px', borderRadius:'8px', display:'flex', alignItems:'center', justifyContent:'center', gap:'8px'}}>
-                      <span style={{fontWeight:900}}>G</span> Google로 계속
+                      <span style={{fontWeight:900, fontSize:'14px'}}>G</span> Continue with Google
                     </button>
                     <button onClick={() => setShowSocialPrompt(false)}
                       style={{...btn, background:'none', color:'rgba(255,255,255,0.3)', fontSize:'12px', width:'100%', textAlign:'center', marginTop:'4px'}}>
-                      나중에
+                      Maybe later
                     </button>
                   </div>
                 </div>
@@ -1762,11 +1786,11 @@ function genCardHTML(companies, unlocked) {
 <div class="cards-unlock-cta-left">
   <span class="cards-unlock-cta-icon">🔒</span>
   <div>
-    <div class="cards-unlock-cta-title">${remaining}개 회사 데이터가 더 있어요</div>
-    <div class="cards-unlock-cta-sub">내 연봉을 제출하면 전체 ${companies.length}개 회사 연봉 데이터를 볼 수 있어요</div>
+    <div class="cards-unlock-cta-title">${remaining} more companies available</div>
+    <div class="cards-unlock-cta-sub">Submit your salary to unlock all ${companies.length} companies</div>
   </div>
 </div>
-<div class="cards-unlock-cta-btn">연봉 제출하고 전체 보기 →</div>
+<div class="cards-unlock-cta-btn">Submit & unlock all →</div>
 </div>` : '';
   return cards.join('') + cta;
 }
@@ -2296,18 +2320,17 @@ export default function Home({ companyStats = [] }) {
         <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.75)',zIndex:1000,display:'flex',alignItems:'center',justifyContent:'center',padding:'20px'}}
           onClick={e => { if(e.target===e.currentTarget) setShowOTW(false); }}>
           <div style={{background:'#1a1a18',border:'1px solid rgba(255,255,255,0.1)',borderRadius:'20px',padding:'40px 36px',maxWidth:'460px',width:'100%',fontFamily:"'Barlow',sans-serif"}}>
-            <div style={{fontSize:'11px',fontWeight:700,color:'#ff6000',letterSpacing:'2px',textTransform:'uppercase',marginBottom:'16px'}}>지금 어떤 상황이에요?</div>
-            <div style={{fontSize:'24px',fontWeight:900,color:'#fff',letterSpacing:'-0.5px',marginBottom:'8px'}}>이직 의향이 있으신가요?</div>
-            <div style={{fontSize:'13px',color:'rgba(255,255,255,0.4)',marginBottom:'28px',lineHeight:1.6}}>적합한 포지션이 생기면 바로 알려드릴게요.</div>
+            <div style={{fontSize:'24px',fontWeight:900,color:'#fff',letterSpacing:'-0.5px',marginBottom:'8px'}}>Are you open to better opportunities?</div>
             {[
-              ['🔥','적극적으로 이직 중','지금 바로 기회를 보고 싶어요'],
-              ['👀','기회가 있으면 봐요','좋은 기회가 있으면 고려해볼게요'],
-              ['😊','지금은 괜찮아요','지금은 이직 생각 없어요'],
+              ['🔥','Yes, actively looking','I want to see what\'s out there now'],
+              ['👀','Open if it\'s the right fit','I\'d consider it for the right role'],
+              ['😊','Not right now','I\'m happy where I am'],
             ].map(([icon, label, sub]) => (
               <button key={label}
                 onClick={async () => {
-                  try { await fetch('/api/user-intent',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({intent:label})}); } catch(e) {}
+                  try { await fetch('/api/user-intent',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({otw:label})}); } catch(e) { console.log('OTW intent:', label); }
                   setShowOTW(false);
+                  document.getElementById('company-grid-root')?.scrollIntoView({behavior:'smooth'});
                 }}
                 style={{width:'100%',display:'flex',alignItems:'center',gap:'14px',padding:'16px',background:'rgba(255,255,255,0.04)',border:'1.5px solid rgba(255,255,255,0.08)',borderRadius:'10px',cursor:'pointer',marginBottom:'8px',fontFamily:"'Barlow',sans-serif",textAlign:'left',transition:'border-color .15s'}}>
                 <span style={{fontSize:'22px',flexShrink:0}}>{icon}</span>
@@ -2326,20 +2349,20 @@ export default function Home({ companyStats = [] }) {
         <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.75)',zIndex:1000,display:'flex',alignItems:'center',justifyContent:'center',padding:'20px'}}
           onClick={e => { if(e.target===e.currentTarget) setShowAuthModal(false); }}>
           <div style={{background:'#1a1a18',border:'1px solid rgba(255,255,255,0.1)',borderRadius:'20px',padding:'40px 36px',maxWidth:'420px',width:'100%',fontFamily:"'Barlow',sans-serif"}}>
-            <div style={{fontSize:'24px',fontWeight:900,color:'#fff',letterSpacing:'-0.5px',marginBottom:'8px'}}>로그인</div>
-            <div style={{fontSize:'13px',color:'rgba(255,255,255,0.4)',marginBottom:'28px',lineHeight:1.6}}>저장된 히스토리 확인 및 알림 설정을 위해 로그인하세요.</div>
+            <div style={{fontSize:'24px',fontWeight:900,color:'#fff',letterSpacing:'-0.5px',marginBottom:'8px'}}>Log in</div>
+            <div style={{fontSize:'13px',color:'rgba(255,255,255,0.4)',marginBottom:'28px',lineHeight:1.6}}>Sign in to access your salary history and job alerts.</div>
             <div style={{display:'flex',flexDirection:'column',gap:'10px'}}>
-              <button onClick={() => { console.log('LinkedIn auth'); window.location.href='/api/auth/linkedin'; }}
-                style={{width:'100%',background:'#0a66c2',color:'#fff',fontSize:'14px',fontWeight:700,padding:'14px',borderRadius:'10px',border:'none',cursor:'pointer',fontFamily:"'Barlow',sans-serif",display:'flex',alignItems:'center',justifyContent:'center',gap:'10px'}}>
-                <span style={{fontWeight:900,fontSize:'16px'}}>in</span> LinkedIn으로 로그인
+              <button onClick={() => { setShowAuthModal(false); setShowOTW(true); }}
+                style={{width:'100%',background:'#0077B5',color:'#fff',fontSize:'14px',fontWeight:700,padding:'14px',borderRadius:'10px',border:'none',cursor:'pointer',fontFamily:"'Barlow',sans-serif",display:'flex',alignItems:'center',justifyContent:'center',gap:'10px'}}>
+                <span style={{fontWeight:900,fontSize:'16px'}}>in</span> Continue with LinkedIn
               </button>
-              <button onClick={() => { console.log('Google auth'); window.location.href='/api/auth/google'; }}
+              <button onClick={() => { setShowAuthModal(false); setShowOTW(true); }}
                 style={{width:'100%',background:'#fff',color:'#111',fontSize:'14px',fontWeight:700,padding:'14px',borderRadius:'10px',border:'none',cursor:'pointer',fontFamily:"'Barlow',sans-serif",display:'flex',alignItems:'center',justifyContent:'center',gap:'10px'}}>
-                <span style={{fontWeight:900,fontSize:'16px'}}>G</span> Google로 로그인
+                <span style={{fontWeight:900,fontSize:'16px'}}>G</span> Continue with Google
               </button>
               <button onClick={() => setShowAuthModal(false)}
                 style={{background:'none',border:'none',color:'rgba(255,255,255,0.3)',fontSize:'12px',cursor:'pointer',fontFamily:"'Barlow',sans-serif",marginTop:'4px',width:'100%',textAlign:'center'}}>
-                나중에
+                Maybe later
               </button>
             </div>
           </div>
