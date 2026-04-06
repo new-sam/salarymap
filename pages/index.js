@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
 import ReactDOM from 'react-dom';
 import Head from 'next/head';
+import supabaseClient from '../lib/supabaseClient';
 
 const css = `
 *, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
@@ -1520,34 +1521,41 @@ function SubmitSection({
     setSubmitting(false);
   };
 
-  // percentile from bottom (e.g. 80 = earns more than 80% of peers)
+  // percentile = % of peers earning less (e.g. 80 = earns more than 80%)
   const percentile = percentileData ? 100 - (percentileData.topPct ?? 50) : null;
   const isTopHalf = percentile != null && percentile >= 50;
   const pctLabel = percentile == null ? null
-    : percentile >= 70 ? `Top ${100 - percentile}%`
+    : percentile >= 50 ? `Top ${100 - percentile}%`
     : `Bottom ${percentile}%`;
   const pctColor = percentile == null ? '#fff'
-    : percentile >= 70 ? '#4ade80' : '#FF6200';
+    : percentile >= 50 ? '#4ade80' : '#FF6200';
   const diff = percentileData ? sal - (percentileData.median ?? sal) : 0;
   const diffLabel = diff >= 0 ? `+$${diff}` : `-$${Math.abs(diff)}`;
   const message = isTopHalf
     ? "You're above the market median. See what higher-paying roles are available right now."
-    : "You're earning below the market rate. This is a good time to negotiate or explore better-paying roles.";
+    : "You're earning below the market rate for your role. This is a good time to explore better-paying opportunities.";
 
   const card = { background:'rgba(255,255,255,0.03)', border:'1px solid rgba(255,255,255,0.08)', borderRadius:'20px', padding:'36px 32px' };
   const btn = { fontFamily:"'Barlow',sans-serif", cursor:'pointer', border:'none' };
 
-  const mockAuth = () => {
-    setShowSocialPrompt(false);
-    setShowOTW(true);
+  const handleOAuth = async (provider) => {
+    try {
+      const { error } = await supabaseClient.auth.signInWithOAuth({
+        provider,
+        options: { redirectTo: window.location.origin + '/auth/callback' },
+      });
+      if (error) throw error;
+    } catch (e) {
+      console.error('OAuth error:', e);
+    }
   };
 
   return (
     <section id="submit" style={{background:'#0c0c0b', padding:'100px 52px 120px', fontFamily:"'Barlow',sans-serif"}}>
-      <div style={{maxWidth:'1060px', margin:'0 auto', display:'grid', gridTemplateColumns:'1fr 1fr', gap:'80px', alignItems:'start'}}>
+      <div style={{maxWidth:'1060px', margin:'0 auto', display:'grid', gridTemplateColumns:'1fr 1fr', gap:'80px', alignItems:'stretch'}}>
 
         {/* Left column */}
-        <div>
+        <div style={{display:'flex', flexDirection:'column', justifyContent:'center'}}>
           <div style={{fontSize:'11px', fontWeight:700, color:'#ff6000', letterSpacing:'2.5px', textTransform:'uppercase', marginBottom:'20px', display:'flex', alignItems:'center', gap:'8px'}}>
             <span style={{width:'5px', height:'5px', borderRadius:'50%', background:'#ff6000', display:'inline-block'}} />
             Anonymous · Secure
@@ -1561,8 +1569,8 @@ function SubmitSection({
           <div style={{display:'flex', flexDirection:'column', gap:'10px'}}>
             {[
               ['🔒','Anonymous','No name or email required'],
-              ['⚡','Instant results','See your ranking immediately after submitting'],
-              ['📊','Real data','Based on submissions from 34+ companies'],
+              ['⚡','Instant results','See your market position immediately'],
+              ['📊','Real data','Based on 34+ companies actual submissions'],
             ].map(([icon, title, sub]) => (
               <div key={title} style={{display:'flex', alignItems:'center', gap:'12px', padding:'12px 16px', background:'rgba(255,255,255,0.03)', borderRadius:'10px', border:'1px solid rgba(255,255,255,0.06)'}}>
                 <span style={{fontSize:'18px'}}>{icon}</span>
@@ -1730,11 +1738,11 @@ function SubmitSection({
                     🤝 A FYI partner headhunter will reach out directly. Only if you're open to it. One time only.
                   </div>
                   <div style={{display:'flex', flexDirection:'column', gap:'8px'}}>
-                    <button onClick={mockAuth}
+                    <button onClick={() => handleOAuth('linkedin_oidc')}
                       style={{...btn, width:'100%', background:'#0077B5', color:'#fff', fontSize:'13px', fontWeight:700, padding:'13px', borderRadius:'8px', display:'flex', alignItems:'center', justifyContent:'center', gap:'8px'}}>
                       <span style={{fontWeight:900, fontSize:'14px'}}>in</span> Continue with LinkedIn
                     </button>
-                    <button onClick={mockAuth}
+                    <button onClick={() => handleOAuth('google')}
                       style={{...btn, width:'100%', background:'#fff', color:'#111', fontSize:'13px', fontWeight:700, padding:'13px', borderRadius:'8px', display:'flex', alignItems:'center', justifyContent:'center', gap:'8px'}}>
                       <span style={{fontWeight:900, fontSize:'14px'}}>G</span> Continue with Google
                     </button>
@@ -1834,6 +1842,7 @@ export default function Home({ companyStats = [] }) {
   const [showSocialPrompt, setShowSocialPrompt] = useState(false);
   const [showOTW, setShowOTW] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
 
   // Stable refs for PRE/POST dangerouslySetInnerHTML
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -1914,6 +1923,27 @@ export default function Home({ companyStats = [] }) {
   useEffect(() => {
     window.openAuthModal = () => setShowAuthModal(true);
     return () => { delete window.openAuthModal; };
+  }, []);
+
+  // Check existing session on mount
+  useEffect(() => {
+    supabaseClient.auth.getSession().then(({ data: { session } }) => {
+      if (session) setIsLoggedIn(true);
+    });
+  }, []);
+
+  // Detect ?login=success redirect from OAuth callback
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('login') === 'success') {
+      supabaseClient.auth.getSession().then(({ data: { session } }) => {
+        if (session) {
+          setIsLoggedIn(true);
+          setShowOTW(true);
+          window.history.replaceState({}, '', '/');
+        }
+      });
+    }
   }, []);
 
   // Typing animation
@@ -2040,11 +2070,11 @@ export default function Home({ companyStats = [] }) {
               body: JSON.stringify({ role: wRole, experience: wExp, salary: wSalary, company: wCompany, source: new URLSearchParams(window.location.search).get('source') || 'direct' }),
             });
           } catch(e) {}
-          // Unlock cards
+          // Silently unlock card grid in background
           window.onUnlockSuccess?.();
-          // Fetch percentile
+          // Fetch percentile — show result in place of wizard
           try {
-            const res = await fetch(`/api/percentile?role=${encodeURIComponent(wRole)}&experience=${encodeURIComponent(wExp)}&salary=${wSalary}`);
+            const res = await fetch(`/api/percentile?role=${encodeURIComponent(wRole)}&experience=${encodeURIComponent(wExp)}&salary=${wSalary}&company=${encodeURIComponent(wCompany)}`);
             const data = await res.json();
             setPercentileData(data);
           } catch(e) { setPercentileData(null); }
@@ -2352,11 +2382,11 @@ export default function Home({ companyStats = [] }) {
             <div style={{fontSize:'24px',fontWeight:900,color:'#fff',letterSpacing:'-0.5px',marginBottom:'8px'}}>Log in</div>
             <div style={{fontSize:'13px',color:'rgba(255,255,255,0.4)',marginBottom:'28px',lineHeight:1.6}}>Sign in to access your salary history and job alerts.</div>
             <div style={{display:'flex',flexDirection:'column',gap:'10px'}}>
-              <button onClick={() => { setShowAuthModal(false); setShowOTW(true); }}
+              <button onClick={async () => { setShowAuthModal(false); try { await supabaseClient.auth.signInWithOAuth({ provider:'linkedin_oidc', options:{ redirectTo: window.location.origin+'/auth/callback' } }); } catch(e) { console.error(e); } }}
                 style={{width:'100%',background:'#0077B5',color:'#fff',fontSize:'14px',fontWeight:700,padding:'14px',borderRadius:'10px',border:'none',cursor:'pointer',fontFamily:"'Barlow',sans-serif",display:'flex',alignItems:'center',justifyContent:'center',gap:'10px'}}>
                 <span style={{fontWeight:900,fontSize:'16px'}}>in</span> Continue with LinkedIn
               </button>
-              <button onClick={() => { setShowAuthModal(false); setShowOTW(true); }}
+              <button onClick={async () => { setShowAuthModal(false); try { await supabaseClient.auth.signInWithOAuth({ provider:'google', options:{ redirectTo: window.location.origin+'/auth/callback' } }); } catch(e) { console.error(e); } }}
                 style={{width:'100%',background:'#fff',color:'#111',fontSize:'14px',fontWeight:700,padding:'14px',borderRadius:'10px',border:'none',cursor:'pointer',fontFamily:"'Barlow',sans-serif",display:'flex',alignItems:'center',justifyContent:'center',gap:'10px'}}>
                 <span style={{fontWeight:900,fontSize:'16px'}}>G</span> Continue with Google
               </button>
