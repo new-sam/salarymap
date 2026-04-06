@@ -1738,9 +1738,9 @@ function SubmitSection({
                     🤝 A FYI partner headhunter will reach out directly. Only if you're open to it. One time only.
                   </div>
                   <div style={{display:'flex', flexDirection:'column', gap:'8px'}}>
-                    <button onClick={() => handleOAuth('linkedin_oidc')}
-                      style={{...btn, width:'100%', background:'#0077B5', color:'#fff', fontSize:'13px', fontWeight:700, padding:'13px', borderRadius:'8px', display:'flex', alignItems:'center', justifyContent:'center', gap:'8px'}}>
-                      <span style={{fontWeight:900, fontSize:'14px'}}>in</span> Continue with LinkedIn
+                    <button disabled
+                      style={{...btn, width:'100%', background:'#1a1a1a', color:'rgba(255,255,255,0.2)', fontSize:'13px', fontWeight:700, padding:'13px', borderRadius:'8px', display:'flex', alignItems:'center', justifyContent:'center', gap:'8px', cursor:'not-allowed'}}>
+                      <span style={{fontWeight:900, fontSize:'14px'}}>in</span> LinkedIn — Coming soon
                     </button>
                     <button onClick={() => handleOAuth('google')}
                       style={{...btn, width:'100%', background:'#fff', color:'#111', fontSize:'13px', fontWeight:700, padding:'13px', borderRadius:'8px', display:'flex', alignItems:'center', justifyContent:'center', gap:'8px'}}>
@@ -2382,9 +2382,9 @@ export default function Home({ companyStats = [] }) {
             <div style={{fontSize:'24px',fontWeight:900,color:'#fff',letterSpacing:'-0.5px',marginBottom:'8px'}}>Log in</div>
             <div style={{fontSize:'13px',color:'rgba(255,255,255,0.4)',marginBottom:'28px',lineHeight:1.6}}>Sign in to access your salary history and job alerts.</div>
             <div style={{display:'flex',flexDirection:'column',gap:'10px'}}>
-              <button onClick={async () => { setShowAuthModal(false); try { await supabaseClient.auth.signInWithOAuth({ provider:'linkedin_oidc', options:{ redirectTo: window.location.origin+'/auth/callback' } }); } catch(e) { console.error(e); } }}
-                style={{width:'100%',background:'#0077B5',color:'#fff',fontSize:'14px',fontWeight:700,padding:'14px',borderRadius:'10px',border:'none',cursor:'pointer',fontFamily:"'Barlow',sans-serif",display:'flex',alignItems:'center',justifyContent:'center',gap:'10px'}}>
-                <span style={{fontWeight:900,fontSize:'16px'}}>in</span> Continue with LinkedIn
+              <button disabled
+                style={{width:'100%',background:'#1a1a1a',color:'rgba(255,255,255,0.2)',fontSize:'14px',fontWeight:700,padding:'14px',borderRadius:'10px',border:'none',cursor:'not-allowed',fontFamily:"'Barlow',sans-serif",display:'flex',alignItems:'center',justifyContent:'center',gap:'10px'}}>
+                <span style={{fontWeight:900,fontSize:'16px'}}>in</span> LinkedIn — Coming soon
               </button>
               <button onClick={async () => { setShowAuthModal(false); try { await supabaseClient.auth.signInWithOAuth({ provider:'google', options:{ redirectTo: window.location.origin+'/auth/callback' } }); } catch(e) { console.error(e); } }}
                 style={{width:'100%',background:'#fff',color:'#111',fontSize:'14px',fontWeight:700,padding:'14px',borderRadius:'10px',border:'none',cursor:'pointer',fontFamily:"'Barlow',sans-serif",display:'flex',alignItems:'center',justifyContent:'center',gap:'10px'}}>
