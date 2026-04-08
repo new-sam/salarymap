@@ -1764,20 +1764,19 @@ function SubmitSection({
                           <div style={{width:32, height:32, borderRadius:'50%', background:'rgba(255,98,0,0.2)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'16px', flexShrink:0}}>
                             🤝
                           </div>
-                          <div>
-                            <div style={{fontSize:'13px', fontWeight:800, color:'#fff'}}>FYI has a partner headhunter for this.</div>
-                            <div style={{fontSize:'12px', color:'rgba(255,255,255,0.4)', marginTop:'2px'}}>They place {wRole} engineers at Grab, VNG and Shopee.</div>
+                          <div style={{fontSize:'11px', fontWeight:700, color:'rgba(255,98,0,0.8)', letterSpacing:'1.5px', textTransform:'uppercase'}}>
+                            FYI Headhunter Network
                           </div>
                         </div>
 
-                        {/* Main message */}
+                        {/* Title */}
                         <div style={{marginTop:'16px', fontSize:'18px', fontWeight:900, lineHeight:1.3, color:'#fff'}}>
-                          Want them to reach out<br/>if a better role opens up?
+                          Grab pays +40% more for your role.<br/>Want our headhunter to connect you?
                         </div>
 
-                        {/* Sub */}
-                        <div style={{marginTop:'8px', fontSize:'12px', color:'rgba(255,255,255,0.4)'}}>
-                          One time only. Only if you're open to it. No spam.
+                        {/* Subtitle */}
+                        <div style={{marginTop:'8px', fontSize:'12px', color:'rgba(255,255,255,0.4)', lineHeight:1.6}}>
+                          Our FYI partner headhunter places {wRole} engineers at Grab, VNG, and Shopee. One intro. No spam.
                         </div>
 
                         {/* Buttons */}
@@ -1899,6 +1898,10 @@ export default function Home({ companyStats = [] }) {
   const [percentileData, setPercentileData] = useState(null);
   const [showSocialPrompt, setShowSocialPrompt] = useState(false);
   const [showOTW, setShowOTW] = useState(false);
+  const [otwStep, setOtwStep] = useState('intent'); // 'intent' | 'contact'
+  const [selectedOtw, setSelectedOtw] = useState(null);
+  const [otwContactType, setOtwContactType] = useState('zalo');
+  const [otwContactValue, setOtwContactValue] = useState('');
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [user, setUser] = useState(null);
@@ -1984,6 +1987,16 @@ export default function Home({ companyStats = [] }) {
     window.openAuthModal = () => setShowAuthModal(true);
     return () => { delete window.openAuthModal; };
   }, [setShowAuthModal]);
+
+  // Reset OTW modal state whenever it opens
+  useEffect(() => {
+    if (showOTW) {
+      setOtwStep('intent');
+      setSelectedOtw(null);
+      setOtwContactType('zalo');
+      setOtwContactValue('');
+    }
+  }, [showOTW]);
 
   const saveUserProfile = async (u) => {
     try {
@@ -2543,45 +2556,113 @@ export default function Home({ companyStats = [] }) {
       {showOTW && (
         <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.75)',backdropFilter:'blur(6px)',zIndex:400,display:'flex',alignItems:'center',justifyContent:'center',padding:'20px'}}>
           <div style={{background:'#111',borderRadius:'24px',padding:'32px 28px',maxWidth:'400px',width:'100%',border:'1px solid rgba(255,255,255,0.1)',animation:'slideUp 0.3s ease',fontFamily:"'Barlow',sans-serif"}}>
-            <div style={{width:48,height:48,borderRadius:'50%',background:'rgba(255,98,0,0.15)',border:'1px solid rgba(255,98,0,0.3)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:22,marginBottom:16}}>🤝</div>
-            <div style={{fontSize:20,fontWeight:900,color:'white',letterSpacing:'-.02em',marginBottom:6}}>
-              Should we have our headhunter reach out?
-            </div>
-            <div style={{fontSize:13,color:'rgba(255,255,255,0.4)',lineHeight:1.6,marginBottom:24}}>
-              Our FYI partner headhunter works with Grab, VNG, and Shopee. Tell us your preference — no commitment.
-            </div>
 
-            {[
-              {icon:'🔥', label:'Yes, actively looking', sub:"I want to see what's out there now", value:'active'},
-              {icon:'👀', label:"Open if it's the right fit", sub:"I'd consider it for the right role and salary", value:'open'},
-              {icon:'😊', label:'Not right now', sub:"I'm happy where I am", value:'no'},
-            ].map(opt => (
-              <div
-                key={opt.value}
-                onClick={async () => {
-                  const { data: { session } } = await supabaseClient.auth.getSession();
-                  if (session) {
-                    await supabaseClient
-                      .from('user_profiles')
-                      .upsert({ id: session.user.id, otw: opt.value, updated_at: new Date().toISOString() }, { onConflict: 'id' });
-                    console.log('✅ OTW saved:', opt.value);
-                    try {
-                      await fetch('/api/user-intent', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ otw: opt.value, user_id: session.user.id }) });
-                    } catch(e) {}
-                  }
-                  setShowOTW(false);
-                }}
-                style={{display:'flex',alignItems:'center',gap:12,padding:'14px',borderRadius:12,border:'1.5px solid rgba(255,255,255,0.08)',background:'rgba(255,255,255,0.03)',cursor:'pointer',marginBottom:8,transition:'all 0.15s'}}
-                onMouseEnter={e => { e.currentTarget.style.borderColor='rgba(255,98,0,0.4)'; e.currentTarget.style.background='rgba(255,98,0,0.06)'; }}
-                onMouseLeave={e => { e.currentTarget.style.borderColor='rgba(255,255,255,0.08)'; e.currentTarget.style.background='rgba(255,255,255,0.03)'; }}>
-                <span style={{fontSize:20}}>{opt.icon}</span>
-                <div style={{flex:1}}>
-                  <div style={{fontSize:13,fontWeight:700,color:'white'}}>{opt.label}</div>
-                  <div style={{fontSize:11,color:'rgba(255,255,255,0.35)',marginTop:2}}>{opt.sub}</div>
+            {otwStep === 'intent' ? (
+              <>
+                <div style={{width:48,height:48,borderRadius:'50%',background:'rgba(255,98,0,0.15)',border:'1px solid rgba(255,98,0,0.3)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:22,marginBottom:16}}>🤝</div>
+                <div style={{fontSize:20,fontWeight:900,color:'white',letterSpacing:'-.02em',marginBottom:6}}>
+                  Should we have our headhunter reach out?
                 </div>
-                <span style={{fontSize:16,color:'rgba(255,255,255,0.2)'}}>›</span>
-              </div>
-            ))}
+                <div style={{fontSize:13,color:'rgba(255,255,255,0.4)',lineHeight:1.6,marginBottom:24}}>
+                  Our FYI partner headhunter works with Grab, VNG, and Shopee. Tell us your preference — no commitment.
+                </div>
+
+                {[
+                  {icon:'🔥', label:'Yes, actively looking', sub:"I want to see what's out there now", value:'active'},
+                  {icon:'👀', label:"Open if it's the right fit", sub:"I'd consider it for the right role and salary", value:'open'},
+                  {icon:'😊', label:'Not right now', sub:"I'm happy where I am", value:'no'},
+                ].map(opt => (
+                  <div
+                    key={opt.value}
+                    onClick={async () => {
+                      if (opt.value === 'no') {
+                        const { data: { session } } = await supabaseClient.auth.getSession();
+                        if (session) {
+                          await supabaseClient.from('user_profiles').upsert({ id: session.user.id, otw: 'no', updated_at: new Date().toISOString() }, { onConflict: 'id' });
+                          console.log('✅ OTW saved: no');
+                          try { await fetch('/api/user-intent', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ otw: 'no', user_id: session.user.id }) }); } catch(e) {}
+                        }
+                        setShowOTW(false);
+                      } else {
+                        setSelectedOtw(opt.value);
+                        setOtwStep('contact');
+                      }
+                    }}
+                    style={{display:'flex',alignItems:'center',gap:12,padding:'14px',borderRadius:12,border:'1.5px solid rgba(255,255,255,0.08)',background:'rgba(255,255,255,0.03)',cursor:'pointer',marginBottom:8,transition:'all 0.15s'}}
+                    onMouseEnter={e => { e.currentTarget.style.borderColor='rgba(255,98,0,0.4)'; e.currentTarget.style.background='rgba(255,98,0,0.06)'; }}
+                    onMouseLeave={e => { e.currentTarget.style.borderColor='rgba(255,255,255,0.08)'; e.currentTarget.style.background='rgba(255,255,255,0.03)'; }}>
+                    <span style={{fontSize:20}}>{opt.icon}</span>
+                    <div style={{flex:1}}>
+                      <div style={{fontSize:13,fontWeight:700,color:'white'}}>{opt.label}</div>
+                      <div style={{fontSize:11,color:'rgba(255,255,255,0.35)',marginTop:2}}>{opt.sub}</div>
+                    </div>
+                    <span style={{fontSize:16,color:'rgba(255,255,255,0.2)'}}>›</span>
+                  </div>
+                ))}
+              </>
+            ) : (
+              <>
+                <div style={{fontSize:20,fontWeight:900,color:'white',letterSpacing:'-.02em',marginBottom:6}}>
+                  How should they reach you?
+                </div>
+                <div style={{fontSize:13,color:'rgba(255,255,255,0.4)',lineHeight:1.6,marginBottom:20}}>
+                  Pick one. Headhunter contacts you directly.
+                </div>
+
+                {/* Contact type toggle */}
+                <div style={{display:'flex',gap:8,marginBottom:16}}>
+                  {['Zalo','Email','Phone'].map(type => {
+                    const active = otwContactType === type.toLowerCase();
+                    return (
+                      <button key={type}
+                        onClick={() => { setOtwContactType(type.toLowerCase()); setOtwContactValue(''); }}
+                        style={{flex:1,padding:'10px',borderRadius:10,border:`1.5px solid ${active?'#FF6200':'rgba(255,255,255,0.1)'}`,background:active?'rgba(255,98,0,0.1)':'rgba(255,255,255,0.03)',color:active?'#FF6200':'rgba(255,255,255,0.5)',fontSize:13,fontWeight:700,cursor:'pointer',fontFamily:"'Barlow',sans-serif",transition:'all 0.12s'}}>
+                        {type}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {/* Contact input */}
+                <input
+                  type={otwContactType === 'email' ? 'email' : 'tel'}
+                  value={otwContactValue}
+                  onChange={e => setOtwContactValue(e.target.value)}
+                  placeholder={otwContactType === 'zalo' ? 'Your Zalo number' : otwContactType === 'email' ? 'your@email.com' : 'Your phone number'}
+                  style={{width:'100%',background:'rgba(255,255,255,0.05)',border:'1.5px solid rgba(255,255,255,0.1)',borderRadius:10,padding:'13px 16px',color:'#fff',fontSize:14,fontFamily:"'Barlow',sans-serif",outline:'none',boxSizing:'border-box',marginBottom:12}}
+                />
+
+                {/* Done */}
+                <button
+                  onClick={async () => {
+                    const { data: { session } } = await supabaseClient.auth.getSession();
+                    if (session && otwContactValue.trim()) {
+                      await supabaseClient.from('user_profiles').upsert({
+                        id: session.user.id,
+                        otw: selectedOtw,
+                        contact_type: otwContactType,
+                        contact_value: otwContactValue.trim(),
+                        updated_at: new Date().toISOString(),
+                      }, { onConflict: 'id' });
+                      console.log('✅ OTW saved:', selectedOtw, otwContactType);
+                      try {
+                        await fetch('/api/user-intent', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ otw: selectedOtw, contact_type: otwContactType, contact_value: otwContactValue.trim(), user_id: session.user.id }) });
+                      } catch(e) {}
+                    }
+                    setShowOTW(false);
+                  }}
+                  style={{width:'100%',background:'#FF6200',color:'#fff',fontSize:14,fontWeight:800,padding:'14px',borderRadius:12,border:'none',cursor:'pointer',fontFamily:"'Barlow',sans-serif"}}>
+                  Done →
+                </button>
+
+                {/* Skip */}
+                <div
+                  onClick={() => setShowOTW(false)}
+                  style={{textAlign:'center',marginTop:12,fontSize:12,color:'rgba(255,255,255,0.25)',cursor:'pointer'}}>
+                  Skip for now
+                </div>
+              </>
+            )}
           </div>
           <style>{`@keyframes slideUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}`}</style>
         </div>
