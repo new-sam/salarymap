@@ -1506,6 +1506,7 @@ function SubmitSection({
   showResult, percentileData,
   showSocialPrompt, setShowSocialPrompt,
   setShowOTW,
+  isLoggedIn,
   onSubmit,
 }) {
   const [submitting, setSubmitting] = useState(false);
@@ -1731,37 +1732,95 @@ function SubmitSection({
                 )}
               </div>
 
-              {/* Social login prompt */}
-              {showSocialPrompt && (
-                <div style={{borderTop:'1px solid rgba(255,255,255,0.08)', paddingTop:'20px'}}>
-                  <div style={{fontSize:'16px', fontWeight:800, color:'#fff', marginBottom:'6px'}}>Get notified when a higher-paying role opens up.</div>
-                  <div style={{fontSize:'12px', color:'rgba(255,255,255,0.4)', marginBottom:'12px', lineHeight:1.6}}>
-                    We'll alert you when a position matching your role and experience pays more than what you earn now. No spam.
-                  </div>
-                  <div style={{background:'rgba(255,255,255,0.04)', borderRadius:'8px', padding:'10px 14px', fontSize:'12px', color:'rgba(255,255,255,0.5)', marginBottom:'16px', lineHeight:1.5}}>
-                    🤝 A FYI partner headhunter will reach out directly. Only if you're open to it. One time only.
-                  </div>
-                  <div style={{display:'flex', flexDirection:'column', gap:'8px'}}>
-                    <button disabled
-                      style={{...btn, width:'100%', background:'#1a1a1a', color:'rgba(255,255,255,0.2)', fontSize:'13px', fontWeight:700, padding:'13px', borderRadius:'8px', display:'flex', alignItems:'center', justifyContent:'center', gap:'8px', cursor:'not-allowed'}}>
-                      <span style={{fontWeight:900, fontSize:'14px'}}>in</span> LinkedIn — Coming soon
-                    </button>
-                    <button onClick={() => handleOAuth('google')}
-                      style={{...btn, width:'100%', background:'#fff', color:'#111', fontSize:'13px', fontWeight:700, padding:'13px', borderRadius:'8px', display:'flex', alignItems:'center', justifyContent:'center', gap:'8px'}}>
-                      <span style={{fontWeight:900, fontSize:'14px'}}>G</span> Continue with Google
-                    </button>
-                    {oauthError && (
-                      <div style={{fontSize:'12px', color:'#f87171', textAlign:'center', padding:'6px 0'}}>
-                        ⚠️ {oauthError}
+              {/* Company comparison + headhunter CTA — only when not logged in */}
+              {showResult && !isLoggedIn && (() => {
+                const topCos = percentileData?.topCompanies || [];
+                return (
+                  <>
+                    {/* Top companies block */}
+                    {topCos.length > 0 && (
+                      <div style={{background:'rgba(255,255,255,0.04)', border:'1px solid rgba(255,255,255,0.08)', borderRadius:'14px', padding:'16px', marginTop:'16px'}}>
+                        <div style={{fontSize:'11px', fontWeight:600, color:'rgba(255,255,255,0.35)', marginBottom:'12px', letterSpacing:'0.02em'}}>
+                          Companies paying more for {wRole} · {wExp}
+                        </div>
+                        {topCos.map((co, i) => {
+                          const domainMeta = COMPANY_META[co.name];
+                          const domain = co.domain || (domainMeta ? domainMeta.domain : '');
+                          const isLast = i === topCos.length - 1;
+                          return (
+                            <div key={co.name} style={{display:'flex', alignItems:'center', justifyContent:'space-between', padding:'10px 0', borderBottom: isLast ? 'none' : '1px solid rgba(255,255,255,0.06)'}}>
+                              <div style={{display:'flex', alignItems:'center', gap:'10px'}}>
+                                {domain ? (
+                                  <img src={`https://www.google.com/s2/favicons?domain=${domain}&sz=32`} width={20} height={20} style={{borderRadius:'4px'}} alt="" />
+                                ) : (
+                                  <div style={{width:20, height:20, borderRadius:'4px', background:'rgba(255,255,255,0.1)', flexShrink:0}} />
+                                )}
+                                <span style={{fontSize:'13px', fontWeight:700, color:'#fff'}}>{co.name}</span>
+                              </div>
+                              <span style={{color:'#4ade80', fontSize:'12px', fontWeight:800, background:'rgba(74,222,128,0.1)', border:'1px solid rgba(74,222,128,0.2)', padding:'3px 10px', borderRadius:'100px', whiteSpace:'nowrap'}}>
+                                +{co.premiumPct}% vs yours
+                              </span>
+                            </div>
+                          );
+                        })}
                       </div>
                     )}
-                    <button onClick={() => setShowSocialPrompt(false)}
-                      style={{...btn, background:'none', color:'rgba(255,255,255,0.3)', fontSize:'12px', width:'100%', textAlign:'center', marginTop:'4px'}}>
-                      Maybe later
-                    </button>
-                  </div>
-                </div>
-              )}
+
+                    {/* Headhunter CTA */}
+                    {showSocialPrompt && (
+                      <div style={{background:'linear-gradient(135deg, rgba(255,98,0,0.08), rgba(255,98,0,0.04))', border:'1.5px solid rgba(255,98,0,0.3)', borderRadius:'16px', padding:'22px', marginTop:'12px'}}>
+                        {/* Badge row */}
+                        <div style={{display:'flex', alignItems:'center', gap:'10px'}}>
+                          <div style={{width:32, height:32, borderRadius:'50%', background:'rgba(255,98,0,0.2)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'16px', flexShrink:0}}>
+                            🤝
+                          </div>
+                          <div>
+                            <div style={{fontSize:'13px', fontWeight:800, color:'#fff'}}>FYI has a partner headhunter for this.</div>
+                            <div style={{fontSize:'12px', color:'rgba(255,255,255,0.4)', marginTop:'2px'}}>They place {wRole} engineers at Grab, VNG and Shopee.</div>
+                          </div>
+                        </div>
+
+                        {/* Main message */}
+                        <div style={{marginTop:'16px', fontSize:'18px', fontWeight:900, lineHeight:1.3, color:'#fff'}}>
+                          Want them to reach out<br/>if a better role opens up?
+                        </div>
+
+                        {/* Sub */}
+                        <div style={{marginTop:'8px', fontSize:'12px', color:'rgba(255,255,255,0.4)'}}>
+                          One time only. Only if you're open to it. No spam.
+                        </div>
+
+                        {/* Buttons */}
+                        <div style={{marginTop:'18px'}}>
+                          <button
+                            onClick={() => {
+                              supabaseClient.auth.signInWithOAuth({ provider: 'linkedin_oidc', options: { redirectTo: window.location.origin + '/auth/callback' } });
+                            }}
+                            style={{...btn, width:'100%', background:'#0077B5', color:'#fff', fontSize:'14px', fontWeight:800, padding:'14px', borderRadius:'12px', display:'flex', alignItems:'center', justifyContent:'center', gap:'8px'}}>
+                            <span style={{fontWeight:900, fontSize:'15px'}}>in</span> Yes — connect me with the headhunter
+                          </button>
+                          <button
+                            onClick={() => {
+                              supabaseClient.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: window.location.origin + '/auth/callback' } });
+                            }}
+                            style={{...btn, marginTop:'8px', width:'100%', background:'#fff', color:'#111', fontSize:'14px', fontWeight:800, padding:'14px', borderRadius:'12px', display:'flex', alignItems:'center', justifyContent:'center', gap:'8px'}}>
+                            <span style={{fontWeight:900, fontSize:'15px'}}>G</span> Yes — continue with Google
+                          </button>
+                          {oauthError && (
+                            <div style={{fontSize:'12px', color:'#f87171', textAlign:'center', padding:'6px 0'}}>
+                              ⚠️ {oauthError}
+                            </div>
+                          )}
+                          <div onClick={() => setShowSocialPrompt(false)}
+                            style={{textAlign:'center', marginTop:'12px', fontSize:'12px', color:'rgba(255,255,255,0.25)', cursor:'pointer'}}>
+                            Maybe later
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </>
+                );
+              })()}
             </div>
           )}
         </div>
@@ -2081,6 +2140,7 @@ export default function Home({ companyStats = [] }) {
         setShowSocialPrompt={setShowSocialPrompt}
         setShowOTW={setShowOTW}
         setShowAuthModal={setShowAuthModal}
+        isLoggedIn={isLoggedIn}
         onSubmit={async () => {
           // POST to /api/submit
           try {
@@ -2367,18 +2427,21 @@ export default function Home({ companyStats = [] }) {
 
       {/* OTW Modal */}
       {showOTW && (
-        <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.75)',zIndex:1000,display:'flex',alignItems:'center',justifyContent:'center',padding:'20px'}}
-          onClick={e => { if(e.target===e.currentTarget) setShowOTW(false); }}>
+        <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.75)',zIndex:1000,display:'flex',alignItems:'center',justifyContent:'center',padding:'20px'}}>
           <div style={{background:'#1a1a18',border:'1px solid rgba(255,255,255,0.1)',borderRadius:'20px',padding:'40px 36px',maxWidth:'460px',width:'100%',fontFamily:"'Barlow',sans-serif"}}>
-            <div style={{fontSize:'24px',fontWeight:900,color:'#fff',letterSpacing:'-0.5px',marginBottom:'8px'}}>Are you open to better opportunities?</div>
+            <div style={{fontSize:'24px',fontWeight:900,color:'#fff',letterSpacing:'-0.5px',marginBottom:'8px'}}>How open are you to new opportunities?</div>
+            <div style={{fontSize:'13px',color:'rgba(255,255,255,0.4)',marginBottom:'24px',lineHeight:1.6}}>This helps our headhunter know when to reach out.</div>
             {[
-              ['🔥','Yes, actively looking','I want to see what\'s out there now'],
-              ['👀','Open if it\'s the right fit','I\'d consider it for the right role'],
-              ['😊','Not right now','I\'m happy where I am'],
-            ].map(([icon, label, sub]) => (
-              <button key={label}
+              ['🔥','Yes, actively looking','I want to see what\'s out there now','active'],
+              ['👀','Open if it\'s the right fit','I\'d consider it for the right role and salary','open'],
+              ['😊','Not right now','I\'m happy where I am','no'],
+            ].map(([icon, label, sub, value]) => (
+              <button key={value}
                 onClick={async () => {
-                  try { await fetch('/api/user-intent',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({otw:label})}); } catch(e) { console.log('OTW intent:', label); }
+                  try {
+                    const { data: { session } } = await supabaseClient.auth.getSession();
+                    await fetch('/api/user-intent',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({otw:value,user_id:session?.user?.id})});
+                  } catch(e) { console.log('OTW intent:', value); }
                   setShowOTW(false);
                   document.getElementById('company-grid-root')?.scrollIntoView({behavior:'smooth'});
                 }}
