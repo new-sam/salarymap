@@ -1557,39 +1557,41 @@ function SubmitSection({
 
   return (
     <section id="submit" style={{background:'#0c0c0b', padding:'100px 52px 120px', fontFamily:"'Barlow',sans-serif"}}>
-      <div style={{maxWidth:'1060px', margin:'0 auto', display:'grid', gridTemplateColumns:'1fr 1fr', gap:'80px', alignItems:'stretch'}}>
+      <div style={{maxWidth:'1060px', margin:'0 auto', display:'grid', gridTemplateColumns: showResult ? '1fr' : '1fr 1fr', gap:'80px', alignItems:'stretch'}}>
 
-        {/* Left column */}
-        <div style={{display:'flex', flexDirection:'column', justifyContent:'center'}}>
-          <div style={{fontSize:'11px', fontWeight:700, color:'#ff6000', letterSpacing:'2.5px', textTransform:'uppercase', marginBottom:'20px', display:'flex', alignItems:'center', gap:'8px'}}>
-            <span style={{width:'5px', height:'5px', borderRadius:'50%', background:'#ff6000', display:'inline-block'}} />
-            Anonymous · Secure
-          </div>
-          <h2 style={{fontSize:'clamp(28px,3.5vw,48px)', fontWeight:900, lineHeight:1.05, letterSpacing:'-2px', color:'#f2f0eb', marginBottom:'20px'}}>
-            Where does<br />my salary <em style={{fontStyle:'normal', color:'#ff6000'}}>stand?</em>
-          </h2>
-          <p style={{fontSize:'15px', color:'rgba(242,240,235,0.45)', lineHeight:1.8, marginBottom:'32px', maxWidth:'340px'}}>
-            Takes 2 minutes. Enter your role and salary to instantly see where you rank in the Vietnam IT market.
-          </p>
-          <div style={{display:'flex', flexDirection:'column', gap:'10px'}}>
-            {[
-              ['🔒','Anonymous','No name or email required'],
-              ['⚡','Instant results','See your market position immediately'],
-              ['📊','Real data','Based on 34+ companies actual submissions'],
-            ].map(([icon, title, sub]) => (
-              <div key={title} style={{display:'flex', alignItems:'center', gap:'12px', padding:'12px 16px', background:'rgba(255,255,255,0.03)', borderRadius:'10px', border:'1px solid rgba(255,255,255,0.06)'}}>
-                <span style={{fontSize:'18px'}}>{icon}</span>
-                <div>
-                  <div style={{fontSize:'13px', fontWeight:700, color:'#f2f0eb'}}>{title}</div>
-                  <div style={{fontSize:'11px', color:'rgba(242,240,235,0.4)', marginTop:'1px'}}>{sub}</div>
+        {/* Left column — hidden after submit */}
+        {!showResult && (
+          <div style={{display:'flex', flexDirection:'column', justifyContent:'center'}}>
+            <div style={{fontSize:'11px', fontWeight:700, color:'#ff6000', letterSpacing:'2.5px', textTransform:'uppercase', marginBottom:'20px', display:'flex', alignItems:'center', gap:'8px'}}>
+              <span style={{width:'5px', height:'5px', borderRadius:'50%', background:'#ff6000', display:'inline-block'}} />
+              Anonymous · Secure
+            </div>
+            <h2 style={{fontSize:'clamp(28px,3.5vw,48px)', fontWeight:900, lineHeight:1.05, letterSpacing:'-2px', color:'#f2f0eb', marginBottom:'20px'}}>
+              Where does<br />my salary <em style={{fontStyle:'normal', color:'#ff6000'}}>stand?</em>
+            </h2>
+            <p style={{fontSize:'15px', color:'rgba(242,240,235,0.45)', lineHeight:1.8, marginBottom:'32px', maxWidth:'340px'}}>
+              Takes 2 minutes. Enter your role and salary to instantly see where you rank in the Vietnam IT market.
+            </p>
+            <div style={{display:'flex', flexDirection:'column', gap:'10px'}}>
+              {[
+                ['🔒','Anonymous','No name or email required'],
+                ['⚡','Instant results','See your market position immediately'],
+                ['📊','Real data','Based on 34+ companies actual submissions'],
+              ].map(([icon, title, sub]) => (
+                <div key={title} style={{display:'flex', alignItems:'center', gap:'12px', padding:'12px 16px', background:'rgba(255,255,255,0.03)', borderRadius:'10px', border:'1px solid rgba(255,255,255,0.06)'}}>
+                  <span style={{fontSize:'18px'}}>{icon}</span>
+                  <div>
+                    <div style={{fontSize:'13px', fontWeight:700, color:'#f2f0eb'}}>{title}</div>
+                    <div style={{fontSize:'11px', color:'rgba(242,240,235,0.4)', marginTop:'1px'}}>{sub}</div>
+                  </div>
                 </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
-        </div>
+        )}
 
         {/* Right column — wizard or result */}
-        <div style={card}>
+        <div style={showResult ? {...card, maxWidth:'560px', margin:'0 auto', width:'100%'} : card}>
           {!showResult ? (
             <>
               {/* Progress dots */}
