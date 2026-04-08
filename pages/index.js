@@ -2021,6 +2021,7 @@ export default function Home({ companyStats = [] }) {
   useEffect(() => {
     // STATE B: restore submission state from localStorage
     const submitted = localStorage.getItem('fyi_submitted') === 'true';
+    const isLoginSuccess = new URLSearchParams(window.location.search).get('login') === 'success';
     if (submitted) {
       setIsSubmitted(true);
       const cached = localStorage.getItem('fyi_result');
@@ -2029,45 +2030,33 @@ export default function Home({ companyStats = [] }) {
           const parsed = JSON.parse(cached);
           setPercentileData(parsed);
           setShowResult(true);
+          // If returning from OAuth, scroll back to the result card
+          if (isLoginSuccess) {
+            setTimeout(() => document.getElementById('submit')?.scrollIntoView({ behavior: 'smooth' }), 400);
+          }
         } catch(e) {}
       }
     }
 
-    // STATE C: check existing session
-    supabaseClient.auth.getSession().then(({ data: { session } }) => {
-      if (session) {
-        setIsLoggedIn(true);
-        setUser(session.user);
-        console.log('✅ Session:', session.user.email);
-      }
-    });
-
     // Handle ?login=success redirect from OAuth
-    const params = new URLSearchParams(window.location.search);
-    if (params.get('login') === 'success') {
+    if (isLoginSuccess) {
       supabaseClient.auth.getSession().then(({ data: { session } }) => {
         if (session) {
           setIsLoggedIn(true);
           setUser(session.user);
-
-          // Show OTW modal only first time
-          const hasSeenOTW = localStorage.getItem('fyi_otw_shown');
-          if (!hasSeenOTW) {
-            setTimeout(() => setShowOTW(true), 500);
-            localStorage.setItem('fyi_otw_shown', 'true');
-          }
-
           saveUserProfile(session.user);
+          // Always show OTW on login — user can skip if they want
+          setTimeout(() => setShowOTW(true), 800);
           window.history.replaceState({}, '', '/');
         }
       });
     }
 
-    // Listen for real-time auth changes
+    // Listen for auth state changes — INITIAL_SESSION fires on page load with existing session
     const { data: { subscription } } = supabaseClient.auth.onAuthStateChange(
       async (event, session) => {
         console.log('🔄 Auth:', event, session?.user?.email);
-        if (event === 'SIGNED_IN' && session) {
+        if ((event === 'SIGNED_IN' || event === 'INITIAL_SESSION') && session) {
           setIsLoggedIn(true);
           setUser(session.user);
         }
