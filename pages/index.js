@@ -1925,15 +1925,9 @@ export default function Home({ companyStats = [] }) {
     return () => { delete window.openAuthModal; };
   }, []);
 
-  // Check existing session on mount
+  // Session: check on mount + detect login=success + listen for auth changes
   useEffect(() => {
-    supabaseClient.auth.getSession().then(({ data: { session } }) => {
-      if (session) setIsLoggedIn(true);
-    });
-  }, []);
-
-  // Detect ?login=success redirect from OAuth callback
-  useEffect(() => {
+    // Check for ?login=success redirect from OAuth callback
     const params = new URLSearchParams(window.location.search);
     if (params.get('login') === 'success') {
       supabaseClient.auth.getSession().then(({ data: { session } }) => {
@@ -1944,6 +1938,23 @@ export default function Home({ companyStats = [] }) {
         }
       });
     }
+
+    // Check existing session on load
+    supabaseClient.auth.getSession().then(({ data: { session } }) => {
+      if (session) setIsLoggedIn(true);
+    });
+
+    // Listen for auth state changes (handles redirect back from OAuth)
+    const { data: { subscription } } = supabaseClient.auth.onAuthStateChange(
+      (event, session) => {
+        if (event === 'SIGNED_IN' && session) {
+          setIsLoggedIn(true);
+          setShowOTW(true);
+        }
+      }
+    );
+
+    return () => subscription.unsubscribe();
   }, []);
 
   // Typing animation

@@ -4,22 +4,36 @@ import supabaseClient from '../../lib/supabaseClient';
 
 export default function AuthCallback() {
   const router = useRouter();
+
   useEffect(() => {
-    supabaseClient.auth.getSession().then(({ data: { session } }) => {
+    const handleCallback = async () => {
+      const { data: { session } } = await supabaseClient.auth.getSession();
+
       if (session) {
-        router.push('/?login=success');
+        router.replace('/?login=success');
       } else {
-        router.push('/');
+        // Handle PKCE / hash fragment flow
+        const { data } = await supabaseClient.auth.exchangeCodeForSession(
+          window.location.href
+        );
+        if (data?.session) {
+          router.replace('/?login=success');
+        } else {
+          router.replace('/');
+        }
       }
-    });
+    };
+
+    handleCallback();
   }, []);
+
   return (
     <div style={{
-      background: '#0c0c0b', color: 'white', height: '100vh',
       display: 'flex', alignItems: 'center', justifyContent: 'center',
-      fontFamily: "'Barlow', sans-serif", fontSize: '16px',
+      height: '100vh', background: '#0a0a0a', color: 'white',
+      fontSize: '16px', fontFamily: 'system-ui',
     }}>
-      Signing you in…
+      Signing you in...
     </div>
   );
 }
