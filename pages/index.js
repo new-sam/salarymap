@@ -1538,7 +1538,10 @@ function SubmitSection({
   const card = { background:'rgba(255,255,255,0.03)', border:'1px solid rgba(255,255,255,0.08)', borderRadius:'20px', padding:'36px 32px' };
   const btn = { fontFamily:"'Barlow',sans-serif", cursor:'pointer', border:'none' };
 
+  const [oauthError, setOauthError] = useState(null);
+
   const handleOAuth = async (provider) => {
+    setOauthError(null);
     try {
       const { error } = await supabaseClient.auth.signInWithOAuth({
         provider,
@@ -1547,6 +1550,7 @@ function SubmitSection({
       if (error) throw error;
     } catch (e) {
       console.error('OAuth error:', e);
+      setOauthError('Google sign-in is not configured yet. Try again later.');
     }
   };
 
@@ -1746,6 +1750,11 @@ function SubmitSection({
                       style={{...btn, width:'100%', background:'#fff', color:'#111', fontSize:'13px', fontWeight:700, padding:'13px', borderRadius:'8px', display:'flex', alignItems:'center', justifyContent:'center', gap:'8px'}}>
                       <span style={{fontWeight:900, fontSize:'14px'}}>G</span> Continue with Google
                     </button>
+                    {oauthError && (
+                      <div style={{fontSize:'12px', color:'#f87171', textAlign:'center', padding:'6px 0'}}>
+                        ⚠️ {oauthError}
+                      </div>
+                    )}
                     <button onClick={() => setShowSocialPrompt(false)}
                       style={{...btn, background:'none', color:'rgba(255,255,255,0.3)', fontSize:'12px', width:'100%', textAlign:'center', marginTop:'4px'}}>
                       Maybe later
