@@ -651,19 +651,7 @@ nav { position:fixed; top:0; left:0; right:0; z-index:200; padding:0 52px; heigh
 
 
 
-const bodyHTML = `<nav>
-  <div class="logo"><img src="/logo.png" style="width:28px;height:28px;object-fit:contain;"><span>FYI — FOR YOUR <span style="color:var(--orange);">&apos;SALARY&apos;</span> INFORMATION</span></div>
-  <div class="nav-r">
-    <a class="nav-link" href="#">Data</a>
-    <a class="nav-link" href="#">Companies</a>
-    <a class="nav-link" href="#">Reports</a>
-    <a class="nav-link" href="/how-it-works">How it works</a>
-    <button class="nav-login-btn" onclick="window.openAuthModal()">Log in</button>
-    <button class="nav-btn" onclick="document.getElementById('submit').scrollIntoView({behavior:'smooth'})">Submit Salary</button>
-  </div>
-</nav>
-
-<section class="hero">
+const bodyHTML = `<section class="hero">
   <video id="hero-vid" autoplay muted playsinline style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:.35;z-index:0;">
     <source src="/interview1.mp4" type="video/mp4">
   </video>
@@ -1913,6 +1901,8 @@ export default function Home({ companyStats = [] }) {
   const [showOTW, setShowOTW] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [user, setUser] = useState(null);
+  const [showUserMenu, setShowUserMenu] = useState(false);
 
   // Stable refs for PRE/POST dangerouslySetInnerHTML
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -1989,37 +1979,88 @@ export default function Home({ companyStats = [] }) {
     return () => { document.body.style.overflow = ''; };
   }, [selectedCompany]);
 
-  // Expose openAuthModal bridge
+  // Expose openAuthModal bridge (used by legacy HTML onclick handlers)
   useEffect(() => {
     window.openAuthModal = () => setShowAuthModal(true);
     return () => { delete window.openAuthModal; };
-  }, []);
+  }, [setShowAuthModal]);
+
+  const saveUserProfile = async (u) => {
+    try {
+      const { error } = await supabaseClient
+        .from('user_profiles')
+        .upsert({
+          id: u.id,
+          email: u.email,
+          full_name: u.user_metadata?.full_name || null,
+          avatar_url: u.user_metadata?.avatar_url || null,
+          provider: u.app_metadata?.provider || null,
+          updated_at: new Date().toISOString(),
+        }, { onConflict: 'id' });
+      if (error) console.error('Profile save error:', error);
+      else console.log('✅ Profile saved');
+    } catch(e) {
+      console.error('saveUserProfile error:', e);
+    }
+  };
 
   // Session: check on mount + detect login=success + listen for auth changes
   useEffect(() => {
-    // Check for ?login=success redirect from OAuth callback
+    // STATE B: restore submission state from localStorage
+    const submitted = localStorage.getItem('fyi_submitted') === 'true';
+    if (submitted) {
+      setIsSubmitted(true);
+      const cached = localStorage.getItem('fyi_result');
+      if (cached) {
+        try {
+          const parsed = JSON.parse(cached);
+          setPercentileData(parsed);
+          setShowResult(true);
+        } catch(e) {}
+      }
+    }
+
+    // STATE C: check existing session
+    supabaseClient.auth.getSession().then(({ data: { session } }) => {
+      if (session) {
+        setIsLoggedIn(true);
+        setUser(session.user);
+        console.log('✅ Session:', session.user.email);
+      }
+    });
+
+    // Handle ?login=success redirect from OAuth
     const params = new URLSearchParams(window.location.search);
     if (params.get('login') === 'success') {
       supabaseClient.auth.getSession().then(({ data: { session } }) => {
         if (session) {
           setIsLoggedIn(true);
-          setShowOTW(true);
+          setUser(session.user);
+
+          // Show OTW modal only first time
+          const hasSeenOTW = localStorage.getItem('fyi_otw_shown');
+          if (!hasSeenOTW) {
+            setTimeout(() => setShowOTW(true), 500);
+            localStorage.setItem('fyi_otw_shown', 'true');
+          }
+
+          saveUserProfile(session.user);
           window.history.replaceState({}, '', '/');
         }
       });
     }
 
-    // Check existing session on load
-    supabaseClient.auth.getSession().then(({ data: { session } }) => {
-      if (session) setIsLoggedIn(true);
-    });
-
-    // Listen for auth state changes (handles redirect back from OAuth)
+    // Listen for real-time auth changes
     const { data: { subscription } } = supabaseClient.auth.onAuthStateChange(
-      (event, session) => {
+      async (event, session) => {
+        console.log('🔄 Auth:', event, session?.user?.email);
         if (event === 'SIGNED_IN' && session) {
           setIsLoggedIn(true);
-          setShowOTW(true);
+          setUser(session.user);
+        }
+        if (event === 'SIGNED_OUT') {
+          setIsLoggedIn(false);
+          setUser(null);
         }
       }
     );
@@ -2127,6 +2168,67 @@ export default function Home({ companyStats = [] }) {
         <style dangerouslySetInnerHTML={{ __html: css }} />
       </Head>
 
+      {/* ── Nav — React controlled for auth state ── */}
+      <nav>
+        <div className="logo">
+          <img src="/logo.png" style={{width:28,height:28,objectFit:'contain'}} />
+          <span>FYI — FOR YOUR <span style={{color:'var(--orange)'}}>&#39;SALARY&#39;</span> INFORMATION</span>
+        </div>
+        <div className="nav-r">
+          <a className="nav-link" href="#">Data</a>
+          <a className="nav-link" href="#">Companies</a>
+          <a className="nav-link" href="#">Reports</a>
+          <a className="nav-link" href="/how-it-works">How it works</a>
+
+          {!isLoggedIn ? (
+            <button
+              onClick={() => setShowAuthModal(true)}
+              style={{fontFamily:"'Barlow',sans-serif", fontSize:'13px', fontWeight:600, color:'rgba(255,255,255,0.5)', background:'none', border:'1px solid rgba(255,255,255,0.15)', padding:'7px 16px', borderRadius:'100px', cursor:'pointer'}}>
+              Log in
+            </button>
+          ) : (
+            <div
+              style={{display:'flex', alignItems:'center', gap:'8px', padding:'5px 12px 5px 5px', borderRadius:'100px', border:'1px solid rgba(255,255,255,0.12)', cursor:'pointer', position:'relative'}}
+              onClick={() => setShowUserMenu(prev => !prev)}>
+              {user?.user_metadata?.avatar_url ? (
+                <img src={user.user_metadata.avatar_url} style={{width:26,height:26,borderRadius:'50%',objectFit:'cover'}} />
+              ) : (
+                <div style={{width:26,height:26,borderRadius:'50%',background:'#FF6200',display:'flex',alignItems:'center',justifyContent:'center',fontSize:11,fontWeight:800,color:'black'}}>
+                  {(user?.user_metadata?.full_name || user?.email || 'U')[0].toUpperCase()}
+                </div>
+              )}
+              <span style={{fontSize:13,fontWeight:600,color:'rgba(255,255,255,0.7)'}}>
+                {user?.user_metadata?.full_name?.split(' ')[0] || user?.email?.split('@')[0] || 'Account'}
+              </span>
+              <span style={{fontSize:10,color:'rgba(255,255,255,0.3)'}}>▾</span>
+
+              {showUserMenu && (
+                <div style={{position:'absolute',top:'calc(100% + 8px)',right:0,background:'#1a1a1a',border:'1px solid rgba(255,255,255,0.1)',borderRadius:12,padding:'6px',minWidth:160,zIndex:500,boxShadow:'0 8px 32px rgba(0,0,0,0.4)'}}>
+                  <div style={{padding:'10px 14px',fontSize:12,color:'rgba(255,255,255,0.35)',borderBottom:'1px solid rgba(255,255,255,0.06)',marginBottom:'4px'}}>
+                    {user?.email}
+                  </div>
+                  <button
+                    onClick={async (e) => {
+                      e.stopPropagation();
+                      await supabaseClient.auth.signOut();
+                      setIsLoggedIn(false);
+                      setUser(null);
+                      setShowUserMenu(false);
+                    }}
+                    style={{width:'100%',padding:'10px 14px',borderRadius:8,border:'none',background:'transparent',color:'rgba(255,255,255,0.6)',fontSize:13,cursor:'pointer',textAlign:'left',fontFamily:"'Barlow',sans-serif"}}>
+                    Sign out
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+
+          <button className="nav-btn" onClick={() => document.getElementById('submit')?.scrollIntoView({behavior:'smooth'})}>
+            Submit Salary
+          </button>
+        </div>
+      </nav>
+
       <div suppressHydrationWarning dangerouslySetInnerHTML={PAGE_HTML_PRE} />
 
       {/* ── Submit section — pure React JSX ── */}
@@ -2159,7 +2261,9 @@ export default function Home({ companyStats = [] }) {
             const res = await fetch(`/api/percentile?role=${encodeURIComponent(wRole)}&experience=${encodeURIComponent(wExp)}&salary=${wSalary}&company=${encodeURIComponent(wCompany)}`);
             const data = await res.json();
             setPercentileData(data);
+            localStorage.setItem('fyi_result', JSON.stringify(data));
           } catch(e) { setPercentileData(null); }
+          localStorage.setItem('fyi_submitted', 'true');
           setShowResult(true);
           setShowSocialPrompt(true);
         }}
@@ -2429,33 +2533,49 @@ export default function Home({ companyStats = [] }) {
 
       {/* OTW Modal */}
       {showOTW && (
-        <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.75)',zIndex:1000,display:'flex',alignItems:'center',justifyContent:'center',padding:'20px'}}>
-          <div style={{background:'#1a1a18',border:'1px solid rgba(255,255,255,0.1)',borderRadius:'20px',padding:'40px 36px',maxWidth:'460px',width:'100%',fontFamily:"'Barlow',sans-serif"}}>
-            <div style={{fontSize:'24px',fontWeight:900,color:'#fff',letterSpacing:'-0.5px',marginBottom:'8px'}}>How open are you to new opportunities?</div>
-            <div style={{fontSize:'13px',color:'rgba(255,255,255,0.4)',marginBottom:'24px',lineHeight:1.6}}>This helps our headhunter know when to reach out.</div>
+        <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.75)',backdropFilter:'blur(6px)',zIndex:400,display:'flex',alignItems:'center',justifyContent:'center',padding:'20px'}}>
+          <div style={{background:'#111',borderRadius:'24px',padding:'32px 28px',maxWidth:'400px',width:'100%',border:'1px solid rgba(255,255,255,0.1)',animation:'slideUp 0.3s ease',fontFamily:"'Barlow',sans-serif"}}>
+            <div style={{width:48,height:48,borderRadius:'50%',background:'rgba(255,98,0,0.15)',border:'1px solid rgba(255,98,0,0.3)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:22,marginBottom:16}}>🤝</div>
+            <div style={{fontSize:20,fontWeight:900,color:'white',letterSpacing:'-.02em',marginBottom:6}}>
+              Should we have our headhunter reach out?
+            </div>
+            <div style={{fontSize:13,color:'rgba(255,255,255,0.4)',lineHeight:1.6,marginBottom:24}}>
+              Our FYI partner headhunter works with Grab, VNG, and Shopee. Tell us your preference — no commitment.
+            </div>
+
             {[
-              ['🔥','Yes, actively looking','I want to see what\'s out there now','active'],
-              ['👀','Open if it\'s the right fit','I\'d consider it for the right role and salary','open'],
-              ['😊','Not right now','I\'m happy where I am','no'],
-            ].map(([icon, label, sub, value]) => (
-              <button key={value}
+              {icon:'🔥', label:'Yes, actively looking', sub:"I want to see what's out there now", value:'active'},
+              {icon:'👀', label:"Open if it's the right fit", sub:"I'd consider it for the right role and salary", value:'open'},
+              {icon:'😊', label:'Not right now', sub:"I'm happy where I am", value:'no'},
+            ].map(opt => (
+              <div
+                key={opt.value}
                 onClick={async () => {
-                  try {
-                    const { data: { session } } = await supabaseClient.auth.getSession();
-                    await fetch('/api/user-intent',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({otw:value,user_id:session?.user?.id})});
-                  } catch(e) { console.log('OTW intent:', value); }
+                  const { data: { session } } = await supabaseClient.auth.getSession();
+                  if (session) {
+                    await supabaseClient
+                      .from('user_profiles')
+                      .upsert({ id: session.user.id, otw: opt.value, updated_at: new Date().toISOString() }, { onConflict: 'id' });
+                    console.log('✅ OTW saved:', opt.value);
+                    try {
+                      await fetch('/api/user-intent', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ otw: opt.value, user_id: session.user.id }) });
+                    } catch(e) {}
+                  }
                   setShowOTW(false);
-                  document.getElementById('company-grid-root')?.scrollIntoView({behavior:'smooth'});
                 }}
-                style={{width:'100%',display:'flex',alignItems:'center',gap:'14px',padding:'16px',background:'rgba(255,255,255,0.04)',border:'1.5px solid rgba(255,255,255,0.08)',borderRadius:'10px',cursor:'pointer',marginBottom:'8px',fontFamily:"'Barlow',sans-serif",textAlign:'left',transition:'border-color .15s'}}>
-                <span style={{fontSize:'22px',flexShrink:0}}>{icon}</span>
-                <div>
-                  <div style={{fontSize:'14px',fontWeight:700,color:'#fff'}}>{label}</div>
-                  <div style={{fontSize:'11px',color:'rgba(255,255,255,0.35)',marginTop:'2px'}}>{sub}</div>
+                style={{display:'flex',alignItems:'center',gap:12,padding:'14px',borderRadius:12,border:'1.5px solid rgba(255,255,255,0.08)',background:'rgba(255,255,255,0.03)',cursor:'pointer',marginBottom:8,transition:'all 0.15s'}}
+                onMouseEnter={e => { e.currentTarget.style.borderColor='rgba(255,98,0,0.4)'; e.currentTarget.style.background='rgba(255,98,0,0.06)'; }}
+                onMouseLeave={e => { e.currentTarget.style.borderColor='rgba(255,255,255,0.08)'; e.currentTarget.style.background='rgba(255,255,255,0.03)'; }}>
+                <span style={{fontSize:20}}>{opt.icon}</span>
+                <div style={{flex:1}}>
+                  <div style={{fontSize:13,fontWeight:700,color:'white'}}>{opt.label}</div>
+                  <div style={{fontSize:11,color:'rgba(255,255,255,0.35)',marginTop:2}}>{opt.sub}</div>
                 </div>
-              </button>
+                <span style={{fontSize:16,color:'rgba(255,255,255,0.2)'}}>›</span>
+              </div>
             ))}
           </div>
+          <style>{`@keyframes slideUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}`}</style>
         </div>
       )}
 
