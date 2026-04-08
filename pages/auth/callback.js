@@ -1,22 +1,22 @@
 import { useEffect } from 'react'
 import { useRouter } from 'next/router'
-import { createClient } from '@supabase/supabase-js'
 import { supabase } from '../../lib/supabaseClient'
 
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_ROLE_KEY
-)
-
+// Save profile using the regular client (anon key is fine for own user via RLS)
 async function saveProfile(user) {
-  const { error } = await supabaseAdmin.from('user_profiles').upsert({
-    id: user.id,
-    email: user.email,
-    full_name: user.user_metadata?.full_name || null,
-    provider: user.app_metadata?.provider || null,
-    updated_at: new Date().toISOString(),
-  }, { onConflict: 'id' })
-  if (error) console.error('Profile upsert error:', error)
+  try {
+    const { error } = await supabase.from('user_profiles').upsert({
+      id: user.id,
+      email: user.email,
+      full_name: user.user_metadata?.full_name || null,
+      provider: user.app_metadata?.provider || null,
+      updated_at: new Date().toISOString(),
+    }, { onConflict: 'id' })
+    if (error) console.error('Profile upsert error:', error)
+    else console.log('✅ Profile saved for', user.email)
+  } catch(e) {
+    console.error('saveProfile error:', e)
+  }
 }
 
 export default function AuthCallback() {
