@@ -2248,10 +2248,18 @@ export default function Home({ companyStats = [] }) {
         onSubmit={async () => {
           // POST to /api/submit
           try {
+            const { data: { session } } = await supabaseClient.auth.getSession();
             await fetch('/api/submit', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ role: wRole, experience: wExp, salary: wSalary, company: wCompany, source: new URLSearchParams(window.location.search).get('source') || 'direct' }),
+              body: JSON.stringify({
+                role: wRole,
+                experience: wExp,
+                salary: wSalary * 1000000,
+                company: wCompany,
+                user_id: session?.user?.id || null,
+                source: new URLSearchParams(window.location.search).get('source') || null,
+              }),
             });
           } catch(e) {}
           // Silently unlock card grid in background

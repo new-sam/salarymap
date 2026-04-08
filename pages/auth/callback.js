@@ -1,6 +1,23 @@
 import { useEffect } from 'react'
 import { useRouter } from 'next/router'
+import { createClient } from '@supabase/supabase-js'
 import { supabase } from '../../lib/supabaseClient'
+
+const supabaseAdmin = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL,
+  process.env.SUPABASE_SERVICE_ROLE_KEY
+)
+
+async function saveProfile(user) {
+  const { error } = await supabaseAdmin.from('user_profiles').upsert({
+    id: user.id,
+    email: user.email,
+    full_name: user.user_metadata?.full_name || null,
+    provider: user.app_metadata?.provider || null,
+    updated_at: new Date().toISOString(),
+  }, { onConflict: 'id' })
+  if (error) console.error('Profile upsert error:', error)
+}
 
 export default function AuthCallback() {
   const router = useRouter()
@@ -8,7 +25,7 @@ export default function AuthCallback() {
   useEffect(() => {
     const handleAuth = async () => {
       try {
-        // Handle PKCE code exchange
+        // Check for existing session first
         const { data, error } = await supabase.auth.getSession()
 
         if (error) {
@@ -19,11 +36,12 @@ export default function AuthCallback() {
 
         if (data.session) {
           console.log('Session found:', data.session.user.email)
+          await saveProfile(data.session.user)
           router.replace('/?login=success')
           return
         }
 
-        // Try exchanging code from URL
+        // Try exchanging PKCE code from URL
         const params = new URLSearchParams(window.location.search)
         const code = params.get('code')
 
@@ -32,6 +50,7 @@ export default function AuthCallback() {
             await supabase.auth.exchangeCodeForSession(code)
 
           if (exchangeData?.session) {
+            await saveProfile(exchangeData.session.user)
             router.replace('/?login=success')
           } else {
             console.error('Exchange error:', exchangeError)
