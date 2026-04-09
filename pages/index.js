@@ -2209,20 +2209,28 @@ export default function Home({ companyStats = [] }) {
     const section = document.querySelector('.wgf-section');
     if (!section) return;
     let fired = false;
+    const animate = () => {
+      requestAnimationFrame(() => {
+        section.querySelectorAll('[data-wgf]').forEach((el) => {
+          const key = el.getAttribute('data-wgf');
+          const d = delays[key] || 0;
+          setTimeout(() => el.classList.add('on'), d);
+        });
+      });
+    };
     const obs = new IntersectionObserver((entries) => {
       entries.forEach((entry) => {
         if (entry.isIntersecting && !fired) {
           fired = true;
           obs.unobserve(section);
-          section.querySelectorAll('[data-wgf]').forEach((el) => {
-            const key = el.getAttribute('data-wgf');
-            const d = delays[key] || 0;
-            setTimeout(() => el.classList.add('on'), d);
-          });
+          animate();
         }
       });
     }, { threshold: 0.12 });
-    obs.observe(section);
+    // Ensure initial opacity:0 is painted before observing
+    requestAnimationFrame(() => {
+      obs.observe(section);
+    });
     return () => obs.disconnect();
   }, []);
 
