@@ -2349,10 +2349,11 @@ export default function Home({ companyStats = [] }) {
         </div>
       </nav>
 
-      <div suppressHydrationWarning dangerouslySetInnerHTML={PAGE_HTML_PRE} />
+      <div suppressHydrationWarning>
+        <div dangerouslySetInnerHTML={PAGE_HTML_PRE} />
 
-      {/* ── Submit section — client-only to prevent hydration duplication ── */}
-      {mounted && <SubmitSection
+        {/* ── Submit section — client-only to prevent hydration duplication ── */}
+        {mounted && <SubmitSection
         wizardStep={wizardStep} setWizardStep={setWizardStep}
         wRole={wRole} setWRole={setWRole}
         wExp={wExp} setWExp={setWExp}
@@ -2396,7 +2397,8 @@ export default function Home({ companyStats = [] }) {
         }}
       />}
 
-      <div suppressHydrationWarning dangerouslySetInnerHTML={PAGE_HTML_POST} />
+        <div dangerouslySetInnerHTML={PAGE_HTML_POST} />
+      </div>
 
       {/* ── Leaderboard overlay — rendered as React JSX ── */}
       {lbCompany && d && (
