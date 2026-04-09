@@ -158,8 +158,7 @@ nav { position:fixed; top:0; left:0; right:0; z-index:200; padding:0 52px; heigh
 .wgf-divider::before, .wgf-divider::after { content:''; flex:1; height:1px; background:rgba(255,255,255,.08); }
 .wgf-divider span { font-size:11px; font-weight:800; color:rgba(255,255,255,.2); letter-spacing:2px; text-transform:uppercase; white-space:nowrap; }
 .wgf-team-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:16px; }
-.wgf-team-card { border-radius:16px; overflow:hidden; position:relative; aspect-ratio:3/4; cursor:pointer; transition:transform .2s ease, box-shadow .2s ease; }
-.wgf-team-card:hover { transform:translateY(-6px); box-shadow:0 20px 40px rgba(0,0,0,.5); }
+.wgf-team-card { border-radius:16px; overflow:hidden; position:relative; aspect-ratio:3/4; cursor:pointer; }
 .wgf-team-card img { width:100%; height:100%; object-fit:cover; object-position:top center; display:block; }
 .wgf-team-card::after { content:''; position:absolute; inset:0; background:linear-gradient(to top,rgba(0,0,0,.2) 0%,transparent 60%); pointer-events:none; }
 .wgf-bottom-cta { margin-top:52px; text-align:center; display:flex; flex-direction:column; align-items:center; gap:14px; }
@@ -167,6 +166,28 @@ nav { position:fixed; top:0; left:0; right:0; z-index:200; padding:0 52px; heigh
 .wgf-bottom-cta p strong { color:rgba(255,255,255,.7); }
 .wgf-cta-btn { display:inline-flex; align-items:center; gap:8px; background:#FF6B00; color:#fff; font-size:15px; font-weight:900; padding:14px 32px; border-radius:100px; border:none; cursor:pointer; letter-spacing:-.2px; transition:background .15s; }
 .wgf-cta-btn:hover { background:#e55f00; }
+
+/* WGF scroll animations */
+@keyframes wgfDotPulse { 0%,100%{opacity:1} 50%{opacity:.3} }
+.wgf-eyebrow::before { animation: wgfDotPulse 2s ease-in-out infinite; }
+[data-wgf] { opacity:0; }
+[data-wgf="badge"] { transform:translateY(16px); }
+[data-wgf="director"] { transform:translateX(-44px); }
+[data-wgf="quote"], [data-wgf="headline"], [data-wgf="body1"], [data-wgf="body2"], [data-wgf="sig"] { transform:translateY(20px); }
+[data-wgf="divider"] { /* opacity only */ }
+[data-wgf="team1"], [data-wgf="team2"], [data-wgf="team3"] { transform:translateY(40px); }
+[data-wgf].on { opacity:1; transform:translate(0,0); }
+[data-wgf="badge"].on { transition: opacity .7s cubic-bezier(.22,1,.36,1), transform .7s cubic-bezier(.22,1,.36,1); }
+[data-wgf="director"].on { transition: opacity .85s cubic-bezier(.22,1,.36,1), transform .85s cubic-bezier(.22,1,.36,1); }
+[data-wgf="quote"].on, [data-wgf="headline"].on, [data-wgf="body1"].on, [data-wgf="body2"].on, [data-wgf="sig"].on { transition: opacity .7s cubic-bezier(.22,1,.36,1), transform .7s cubic-bezier(.22,1,.36,1); }
+[data-wgf="divider"].on { transition: opacity .85s cubic-bezier(.22,1,.36,1); }
+[data-wgf="team1"].on, [data-wgf="team2"].on, [data-wgf="team3"].on { transition: opacity .8s cubic-bezier(.22,1,.36,1), transform .8s cubic-bezier(.22,1,.36,1); }
+.wgf-photo-wrap.on .wgf-accent { opacity:1; }
+.wgf-accent { position:absolute; left:0; top:0; bottom:0; width:3px; background:#e8622a; border-radius:2px; opacity:0; transition:opacity .5s ease .5s; z-index:2; }
+.wgf-photo-wrap { transition: transform .3s ease, box-shadow .3s ease; }
+.wgf-photo-wrap:hover { transform:translateY(-5px) scale(1.01); box-shadow:0 24px 48px rgba(0,0,0,.4); }
+.wgf-team-card { transition: transform .28s ease, box-shadow .28s ease; }
+.wgf-team-card:hover { transform:translateY(-4px) scale(1.02); box-shadow:0 20px 40px rgba(0,0,0,.5); }
 
 /* TICKER */
 .stream-ticker { max-width:1160px; margin:0 auto; padding:0 52px; border-top:1px solid var(--line); }
@@ -679,40 +700,42 @@ const bodyHTML = `<section class="hero">
 
   <!-- WGF SECTION -->
   <div class="wgf-section">
-    <div class="wgf-eyebrow">REAL SALARIES · REAL PEOPLE</div>
+    <div class="wgf-eyebrow" data-wgf="badge">REAL SALARIES · REAL PEOPLE</div>
 
     <div class="wgf-director-row">
-      <div class="wgf-photo-wrap">
+      <div class="wgf-photo-wrap" data-wgf="director">
+        <div class="wgf-accent"></div>
         <img src="/LL1.png" alt="Director — 100M/Month">
       </div>
       <div class="wgf-story">
         <div>
-          <div class="wgf-quote-mark">"</div>
-          <h2 class="wgf-headline">
+          <div class="wgf-quote-mark" data-wgf="quote">"</div>
+          <h2 class="wgf-headline" data-wgf="headline">
             If we ask you<br>to share your salary,<br>
             <span>we share ours first.</span>
           </h2>
         </div>
-        <p class="wgf-body">
+        <p class="wgf-body" data-wgf="body1">
           I've spent years watching engineers in Vietnam get lowballed — not because
           they're not good enough, but because
           <strong>they had no idea what the market actually pays.</strong>
-          <br><br>
+        </p>
+        <p class="wgf-body" data-wgf="body2">
           FYI was born to fix that information asymmetry.
         </p>
-        <div class="wgf-sig">
+        <div class="wgf-sig" data-wgf="sig">
           <div class="wgf-sig-name">— Director, LikeLion Vietnam</div>
           <div class="wgf-sig-sub">Founder of FYI Salary · salarymap.vercel.app</div>
         </div>
       </div>
     </div>
 
-    <div class="wgf-divider"><span>And the whole team did too</span></div>
+    <div class="wgf-divider" data-wgf="divider"><span>And the whole team did too</span></div>
 
     <div class="wgf-team-grid">
-      <div class="wgf-team-card"><img src="/LL2.png" alt="Head of Business — 40M/Month"></div>
-      <div class="wgf-team-card"><img src="/LL3.png" alt="Marketing Lead — 30M/Month"></div>
-      <div class="wgf-team-card"><img src="/LL4.png" alt="Content Marketer — 15M/Month"></div>
+      <div class="wgf-team-card" data-wgf="team1"><img src="/LL2.png" alt="Head of Business — 40M/Month"></div>
+      <div class="wgf-team-card" data-wgf="team2"><img src="/LL3.png" alt="Marketing Lead — 30M/Month"></div>
+      <div class="wgf-team-card" data-wgf="team3"><img src="/LL4.png" alt="Content Marketer — 15M/Month"></div>
     </div>
 
     <div class="wgf-bottom-cta">
@@ -1183,6 +1206,29 @@ async function unlock(){
 }
 window.submitSalary=submitSalary;
 window.doUnlock=doUnlock;
+
+// WGF scroll-triggered entrance animations
+(function(){
+  var delays={badge:0,director:120,quote:300,headline:440,body1:580,body2:690,sig:820,divider:980,team1:1100,team2:1210,team3:1320};
+  var fired=false;
+  var section=document.querySelector('.wgf-section');
+  if(!section) return;
+  var obs=new IntersectionObserver(function(entries){
+    entries.forEach(function(entry){
+      if(entry.isIntersecting&&!fired){
+        fired=true;
+        obs.unobserve(section);
+        var els=section.querySelectorAll('[data-wgf]');
+        els.forEach(function(el){
+          var key=el.getAttribute('data-wgf');
+          var d=delays[key]||0;
+          setTimeout(function(){ el.classList.add('on'); },d);
+        });
+      }
+    });
+  },{threshold:0.12});
+  obs.observe(section);
+})();
 `;
 
 const lbData = {
