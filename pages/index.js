@@ -2277,7 +2277,7 @@ export default function Home({ companyStats = [] }) {
   const lockedRows = d ? d.lockedRows : [];
 
   return (
-    <>
+    <div suppressHydrationWarning>
       <Head>
         <title>FYI — Vietnam IT Salaries</title>
         <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -2797,6 +2797,6 @@ export default function Home({ companyStats = [] }) {
           </div>
         </div>
       )}
-    </>
+    </div>
   );
 }
