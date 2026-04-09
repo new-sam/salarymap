@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
 import ReactDOM from 'react-dom';
 import Head from 'next/head';
+import dynamic from 'next/dynamic';
 import supabaseClient from '../lib/supabaseClient';
 
 const css = `
@@ -1904,6 +1905,8 @@ function genCardHTML(companies, unlocked) {
   return cards.join('') + cta;
 }
 
+const DynamicSubmitSection = dynamic(() => Promise.resolve(SubmitSection), { ssr: false });
+
 // Split at the submit placeholder — submit section is rendered as React JSX
 const [BODY_PRE_TMPL, BODY_POST_TMPL] = bodyHTML.split('\n<!-- SUBMIT_REACT_PLACEHOLDER -->\n');
 const PAGE_HTML_PRE_TMPL = BODY_PRE_TMPL;
@@ -1949,9 +1952,6 @@ export default function Home({ companyStats = [] }) {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [user, setUser] = useState(null);
   const [showUserMenu, setShowUserMenu] = useState(false);
-
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => { setMounted(true); }, []);
 
   // Derived: card/panel unlock state — a card is locked only when index >= 3 && !isUnlocked
   const isUnlocked = isSubmitted || isLoggedIn;
@@ -2349,11 +2349,9 @@ export default function Home({ companyStats = [] }) {
         </div>
       </nav>
 
-      <div suppressHydrationWarning>
-        <div dangerouslySetInnerHTML={PAGE_HTML_PRE} />
+      <div suppressHydrationWarning dangerouslySetInnerHTML={PAGE_HTML_PRE} />
 
-        {/* ── Submit section — client-only to prevent hydration duplication ── */}
-        {mounted && <SubmitSection
+      <DynamicSubmitSection
         wizardStep={wizardStep} setWizardStep={setWizardStep}
         wRole={wRole} setWRole={setWRole}
         wExp={wExp} setWExp={setWExp}
@@ -2367,7 +2365,6 @@ export default function Home({ companyStats = [] }) {
         setShowAuthModal={setShowAuthModal}
         isLoggedIn={isLoggedIn}
         onSubmit={async () => {
-          // POST to /api/submit
           try {
             const { data: { session } } = await supabaseClient.auth.getSession();
             await fetch('/api/submit', {
@@ -2383,9 +2380,7 @@ export default function Home({ companyStats = [] }) {
               }),
             });
           } catch(e) {}
-          // Silently unlock card grid in background
           window.onUnlockSuccess?.();
-          // Fetch percentile — show result in place of wizard
           try {
             const res = await fetch(`/api/percentile?role=${encodeURIComponent(wRole)}&experience=${encodeURIComponent(wExp)}&salary=${wSalary}&company=${encodeURIComponent(wCompany)}`);
             const data = await res.json();
@@ -2395,10 +2390,9 @@ export default function Home({ companyStats = [] }) {
           setShowResult(true);
           setShowSocialPrompt(true);
         }}
-      />}
+      />
 
-        <div dangerouslySetInnerHTML={PAGE_HTML_POST} />
-      </div>
+      <div suppressHydrationWarning dangerouslySetInnerHTML={PAGE_HTML_POST} />
 
       {/* ── Leaderboard overlay — rendered as React JSX ── */}
       {lbCompany && d && (
