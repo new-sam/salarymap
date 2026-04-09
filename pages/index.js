@@ -880,6 +880,7 @@ const nids=['n0','n1','n2']; let nv=[17,34,23];
 function logoEl(co){ const d=logoMap[co]; if(d) return \`<img class="st-logo" src="https://logo.clearbit.com/\${d}" onerror="this.outerHTML='<div class=st-logo-fb>\${co[0]}</div>'" alt="">\`; return \`<div class="st-logo-fb">\${co[0]}</div>\`; }
 function addTicker(d){
   const list=document.getElementById('st-list');
+  if(!list) return;
   const pl=d.t==='hi'?\`▲ Top \${d.pct}%\`:\`— Top \${d.pct}%\`;
   const item=document.createElement('div'); item.className='st-item';
   item.innerHTML=\`\${logoEl(d.co)}<span class="st-co">\${d.co}</span><span class="st-role">\${d.role} · \${d.exp}</span><span class="st-sal">\${d.sal}M VND</span><span style="font-family:'Geist Mono',monospace;font-size:10px;color:\${d.t==='hi'?'var(--green)':'var(--orange)'}">\${pl}</span>\`;
