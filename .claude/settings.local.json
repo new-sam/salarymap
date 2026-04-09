@@ -70,7 +70,8 @@
       "Bash(npx vercel:*)",
       "Bash(claude logout:*)",
       "Bash(claude login:*)",
-      "Bash(powershell:*)"
+      "Bash(powershell:*)",
+      "Bash(npx -y playwright@latest install chromium)"
     ]
   },
   "hooks": {

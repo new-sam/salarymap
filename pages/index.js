@@ -2242,6 +2242,14 @@ export default function Home({ companyStats = [] }) {
           rel="stylesheet"
         />
         <style dangerouslySetInnerHTML={{ __html: css }} />
+        <script dangerouslySetInnerHTML={{ __html: `
+          setTimeout(function(){
+            var c = document.querySelectorAll('#submit').length;
+            var a = (document.body.innerHTML.match(/Anonymous · Secure/g)||[]).length;
+            document.title = 'SUBMIT=' + c + ' ANON=' + a;
+            console.log('SUBMIT sections:', c, 'Anonymous Secure:', a);
+          }, 3000);
+        ` }} />
       </Head>
 
       {/* ── Nav — React controlled for auth state ── */}
