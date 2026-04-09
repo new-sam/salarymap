@@ -2197,10 +2197,7 @@ export default function Home({ companyStats = [] }) {
 
   // Run inline scripts after hydration (moved out of dangerouslySetInnerHTML to prevent hydration mismatch)
   useEffect(() => {
-    const script = document.createElement('script');
-    script.textContent = js;
-    document.body.appendChild(script);
-    return () => { try { document.body.removeChild(script); } catch(e) {} };
+    try { new Function(js)(); } catch(e) { console.error('inline script error:', e); }
   }, []);
 
   // WGF continuous scroll-driven animations
