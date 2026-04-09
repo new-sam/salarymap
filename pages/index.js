@@ -170,18 +170,7 @@ nav { position:fixed; top:0; left:0; right:0; z-index:200; padding:0 52px; heigh
 /* WGF scroll animations */
 @keyframes wgfDotPulse { 0%,100%{opacity:1} 50%{opacity:.3} }
 .wgf-eyebrow::before { animation: wgfDotPulse 2s ease-in-out infinite; }
-[data-wgf] { opacity:0; }
-[data-wgf="badge"] { transform:translateY(16px); }
-[data-wgf="director"] { transform:translateX(-44px); }
-[data-wgf="quote"], [data-wgf="headline"], [data-wgf="body1"], [data-wgf="body2"], [data-wgf="sig"] { transform:translateY(20px); }
-[data-wgf="divider"] { /* opacity only */ }
-[data-wgf="team1"], [data-wgf="team2"], [data-wgf="team3"] { transform:translateY(40px); }
-[data-wgf].on { opacity:1; transform:translate(0,0); }
-[data-wgf="badge"].on { transition: opacity .7s cubic-bezier(.22,1,.36,1), transform .7s cubic-bezier(.22,1,.36,1); }
-[data-wgf="director"].on { transition: opacity .85s cubic-bezier(.22,1,.36,1), transform .85s cubic-bezier(.22,1,.36,1); }
-[data-wgf="quote"].on, [data-wgf="headline"].on, [data-wgf="body1"].on, [data-wgf="body2"].on, [data-wgf="sig"].on { transition: opacity .7s cubic-bezier(.22,1,.36,1), transform .7s cubic-bezier(.22,1,.36,1); }
-[data-wgf="divider"].on { transition: opacity .85s cubic-bezier(.22,1,.36,1); }
-[data-wgf="team1"].on, [data-wgf="team2"].on, [data-wgf="team3"].on { transition: opacity .8s cubic-bezier(.22,1,.36,1), transform .8s cubic-bezier(.22,1,.36,1); }
+[data-wgf] { opacity:0; will-change:opacity,transform; }
 .wgf-photo-wrap.on .wgf-accent { opacity:1; }
 .wgf-accent { position:absolute; left:0; top:0; bottom:0; width:3px; background:#e8622a; border-radius:2px; opacity:0; transition:opacity .5s ease .5s; z-index:2; }
 .wgf-photo-wrap { transition: transform .3s ease, box-shadow .3s ease; }
@@ -2203,35 +2192,53 @@ export default function Home({ companyStats = [] }) {
     return () => vid.removeEventListener('ended', onEnded);
   }, []);
 
-  // WGF scroll-triggered entrance animations
+  // WGF continuous scroll-driven animations
   useEffect(() => {
-    const delays = {badge:0,director:120,quote:300,headline:440,body1:580,body2:690,sig:820,divider:980,team1:1100,team2:1210,team3:1320};
     const section = document.querySelector('.wgf-section');
     if (!section) return;
-    let fired = false;
-    const animate = () => {
+    const els = section.querySelectorAll('[data-wgf]');
+    if (!els.length) return;
+
+    const config = {
+      badge:    { y: 16, x: 0,   speed: 0.9 },
+      director: { y: 0,  x: -44, speed: 0.7 },
+      quote:    { y: 20, x: 0,   speed: 0.85 },
+      headline: { y: 20, x: 0,   speed: 0.75 },
+      body1:    { y: 20, x: 0,   speed: 0.8 },
+      body2:    { y: 20, x: 0,   speed: 0.8 },
+      sig:      { y: 20, x: 0,   speed: 0.85 },
+      divider:  { y: 0,  x: 0,   speed: 0.9 },
+      team1:    { y: 40, x: 0,   speed: 0.65 },
+      team2:    { y: 40, x: 0,   speed: 0.6 },
+      team3:    { y: 40, x: 0,   speed: 0.55 },
+    };
+
+    let ticking = false;
+    const onScroll = () => {
+      if (ticking) return;
+      ticking = true;
       requestAnimationFrame(() => {
-        section.querySelectorAll('[data-wgf]').forEach((el) => {
+        const vh = window.innerHeight;
+        els.forEach((el) => {
           const key = el.getAttribute('data-wgf');
-          const d = delays[key] || 0;
-          setTimeout(() => el.classList.add('on'), d);
+          const c = config[key] || { y: 20, x: 0, speed: 0.8 };
+          const rect = el.getBoundingClientRect();
+          // 0 = element just entered bottom, 1 = element at top of viewport
+          const progress = Math.min(Math.max((vh - rect.top) / (vh + rect.height), 0), 1);
+          const eased = 1 - Math.pow(1 - progress, 3); // ease-out cubic
+          const opacity = Math.min(eased / c.speed, 1);
+          const ty = c.y * (1 - eased);
+          const tx = c.x * (1 - eased);
+          el.style.opacity = opacity;
+          el.style.transform = `translate(${tx}px, ${ty}px)`;
         });
+        ticking = false;
       });
     };
-    const obs = new IntersectionObserver((entries) => {
-      entries.forEach((entry) => {
-        if (entry.isIntersecting && !fired) {
-          fired = true;
-          obs.unobserve(section);
-          animate();
-        }
-      });
-    }, { threshold: 0.12 });
-    // Ensure initial opacity:0 is painted before observing
-    requestAnimationFrame(() => {
-      obs.observe(section);
-    });
-    return () => obs.disconnect();
+
+    window.addEventListener('scroll', onScroll, { passive: true });
+    onScroll(); // initial check
+    return () => window.removeEventListener('scroll', onScroll);
   }, []);
 
   const d = lbCompany ? lbData[lbCompany] : null;
