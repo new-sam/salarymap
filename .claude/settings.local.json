@@ -72,7 +72,8 @@
       "Bash(claude login:*)",
       "Bash(powershell:*)",
       "Bash(npx -y playwright@latest install chromium)",
-      "Bash(taskkill //F //IM node.exe)"
+      "Bash(taskkill //F //IM node.exe)",
+      "Bash(dd:*)"
     ]
   },
   "hooks": {
