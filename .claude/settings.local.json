@@ -67,7 +67,8 @@
       "WebFetch(domain:boho.vn)",
       "WebFetch(domain:www.nashtechglobal.com)",
       "Bash(npx next:*)",
-      "Bash(npx vercel:*)"
+      "Bash(npx vercel:*)",
+      "Bash(claude logout:*)"
     ]
   },
   "hooks": {
