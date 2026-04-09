@@ -2289,7 +2289,7 @@ export default function Home({ companyStats = [] }) {
       <nav>
         <div className="logo">
           <img src="/logo.png" style={{width:28,height:28,objectFit:'contain'}} />
-          <span>FYI — FOR YOUR <span style={{color:'var(--orange)'}}>&#39;SALARY&#39;</span> INFORMATION</span>
+          <span>FOR YOUR <span style={{color:'var(--orange)'}}>&#39;SALARY&#39;</span> INFORMATION</span>
         </div>
         <div className="nav-r">
           <a className="nav-link" href="#">Data</a>
