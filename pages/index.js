@@ -1810,6 +1810,39 @@ function SubmitSection({
                   </>
                 );
               })()}
+
+              {/* Zalo Group QR — join for job updates */}
+              {showResult && (
+                <div style={{background:'rgba(255,255,255,0.03)', border:'1px solid rgba(255,255,255,0.08)', borderRadius:'16px', padding:'24px', marginTop:'16px', textAlign:'center'}}>
+                  <div style={{display:'flex', alignItems:'center', justifyContent:'center', gap:'8px', marginBottom:'14px'}}>
+                    <div style={{width:28, height:28, borderRadius:'50%', background:'rgba(0,104,255,0.15)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'14px', flexShrink:0}}>
+                      <svg width="16" height="16" viewBox="0 0 48 48" fill="none"><path d="M24 4C12.95 4 4 12.95 4 24s8.95 20 20 20 20-8.95 20-20S35.05 4 24 4z" fill="#0068FF"/><path d="M33.6 18.4c-.8-3.6-4.8-6.4-9.6-6.4-5.6 0-10 3.6-10 8 0 2.4 1.2 4.4 3.2 6l-.8 2.8 3.2-1.6c1.2.4 2.8.8 4.4.8.4 0 .8 0 1.2-.04-.24-.8-.4-1.6-.4-2.36 0-4 3.6-7.2 8.8-7.2z" fill="#fff"/><path d="M38 25.2c0-3.2-3.2-5.6-7.2-5.6s-7.2 2.4-7.2 5.6 3.2 5.6 7.2 5.6c.8 0 1.6-.16 2.4-.4l2 1.2-.4-2c1.6-1.2 3.2-2.8 3.2-4.4z" fill="#fff"/></svg>
+                    </div>
+                    <span style={{fontSize:'11px', fontWeight:700, color:'#0068FF', letterSpacing:'1.2px', textTransform:'uppercase'}}>
+                      Zalo Community
+                    </span>
+                  </div>
+                  <div style={{fontSize:'15px', fontWeight:800, color:'#fff', marginBottom:'6px'}}>
+                    Join our Zalo group for job updates
+                  </div>
+                  <div style={{fontSize:'12px', color:'rgba(255,255,255,0.4)', lineHeight:1.6, marginBottom:'18px', maxWidth:'280px', margin:'0 auto 18px'}}>
+                    Get real-time salary alerts, new openings from top companies, and connect with the FYI community.
+                  </div>
+                  <div style={{display:'inline-block', background:'#fff', borderRadius:'12px', padding:'12px'}}>
+                    <img
+                      src="/zalo-group-qr.png"
+                      alt="Scan to join Zalo group"
+                      width={140}
+                      height={140}
+                      style={{display:'block', borderRadius:'4px'}}
+                      onError={e => { e.currentTarget.style.display='none'; e.currentTarget.parentElement.innerHTML='<div style="width:140px;height:140px;display:flex;align-items:center;justify-content:center;color:#999;font-size:12px;font-family:monospace">QR coming soon</div>'; }}
+                    />
+                  </div>
+                  <div style={{fontSize:'10px', color:'rgba(255,255,255,0.25)', marginTop:'10px', fontFamily:"'Geist Mono',monospace"}}>
+                    Scan with Zalo to join
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -1899,7 +1932,7 @@ export default function Home({ companyStats = [] }) {
   const [showOTW, setShowOTW] = useState(false);
   const [otwStep, setOtwStep] = useState('intent'); // 'intent' | 'contact'
   const [selectedOtw, setSelectedOtw] = useState(null);
-  const [otwContactType, setOtwContactType] = useState('zalo');
+  const [otwContactType, setOtwContactType] = useState('email');
   const [otwContactValue, setOtwContactValue] = useState('');
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -1997,7 +2030,7 @@ export default function Home({ companyStats = [] }) {
     if (showOTW) {
       setOtwStep('intent');
       setSelectedOtw(null);
-      setOtwContactType('zalo');
+      setOtwContactType('email');
       setOtwContactValue('');
     }
   }, [showOTW]);
@@ -2598,7 +2631,7 @@ export default function Home({ companyStats = [] }) {
 
                 {/* Contact type toggle */}
                 <div style={{display:'flex',gap:8,marginBottom:16}}>
-                  {['Zalo','Email','Phone'].map(type => {
+                  {['Email','LinkedIn'].map(type => {
                     const active = otwContactType === type.toLowerCase();
                     return (
                       <button key={type}
@@ -2612,10 +2645,10 @@ export default function Home({ companyStats = [] }) {
 
                 {/* Contact input */}
                 <input
-                  type={otwContactType === 'email' ? 'email' : 'tel'}
+                  type={otwContactType === 'email' ? 'email' : 'url'}
                   value={otwContactValue}
                   onChange={e => setOtwContactValue(e.target.value)}
-                  placeholder={otwContactType === 'zalo' ? 'Your Zalo number' : otwContactType === 'email' ? 'your@email.com' : 'Your phone number'}
+                  placeholder={otwContactType === 'email' ? 'your@email.com' : 'linkedin.com/in/your-profile'}
                   style={{width:'100%',background:'rgba(255,255,255,0.05)',border:'1.5px solid rgba(255,255,255,0.1)',borderRadius:10,padding:'13px 16px',color:'#fff',fontSize:14,fontFamily:"'Barlow',sans-serif",outline:'none',boxSizing:'border-box',marginBottom:12}}
                 />
 
