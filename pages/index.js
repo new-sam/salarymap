@@ -18,8 +18,11 @@ body { background:var(--bg); color:var(--white); font-family:'Barlow',sans-serif
 nav { position:fixed; top:0; left:0; right:0; z-index:200; padding:0 52px; height:56px; display:flex; align-items:center; justify-content:space-between; background:rgba(12,12,11,0.9); backdrop-filter:blur(14px); border-bottom:1px solid var(--line); }
 .logo { display:flex; align-items:center; gap:10px; font-size:13px; font-weight:600; color:var(--white); }
 .nav-r { display:flex; align-items:center; gap:32px; }
-.nav-link { font-size:13px; color:var(--mid); text-decoration:none; transition:color .15s; }
-.nav-link:hover { color:var(--white); }
+.nav-link { position:relative; font-size:13px; color:#444; text-decoration:none; background:none; border:none; cursor:pointer; font-family:'Barlow',sans-serif; padding:0; transition:color .2s; }
+.nav-link:hover { color:#f0ece4; }
+.nav-link::after { content:''; position:absolute; bottom:0; left:0; right:0; height:2px; background:#e8622a; transform:scaleX(0); transition:transform .2s ease; }
+.nav-link.active { color:#f0ece4; }
+.nav-link.active::after { transform:scaleX(1); }
 .nav-login-btn { font-family:'Barlow',sans-serif; font-size:13px; font-weight:600; color:rgba(255,255,255,0.5); background:none; border:1px solid rgba(255,255,255,0.15); padding:7px 16px; border-radius:100px; cursor:pointer; transition:border-color .15s,color .15s; }
 .nav-login-btn:hover { border-color:rgba(255,255,255,0.35); color:rgba(255,255,255,0.8); }
 .nav-btn { font-family:'Barlow',sans-serif; font-size:12px; font-weight:600; background:var(--orange); color:#fff; border:none; padding:8px 18px; border-radius:2px; cursor:pointer; }
@@ -784,7 +787,7 @@ const bodyHTML = `<section class="hero">
 
 </section>
 
-<div class="cards-bg">
+<div class="cards-bg" id="companies" style="scroll-margin-top:64px">
 <div class="cards-section">
   <div class="section-head">
     <h2 class="section-head-title">See what Vietnam's top IT companies <em>actually pay.</em></h2>
@@ -1556,7 +1559,7 @@ function SubmitSection({
   };
 
   return (
-    <section id="submit" style={{background:'#0c0c0b', padding:'100px 52px 120px', fontFamily:"'Barlow',sans-serif"}}>
+    <section id="submit" style={{background:'#0c0c0b', padding:'100px 52px 120px', fontFamily:"'Barlow',sans-serif", scrollMarginTop:'64px'}}>
       <div style={{maxWidth:'1060px', margin:'0 auto', display:'grid', gridTemplateColumns: showResult ? '1fr' : '1fr 1fr', gap:'80px', alignItems:'stretch'}}>
 
         {/* Left column — hidden after submit */}
@@ -1949,6 +1952,7 @@ export default function Home({ companyStats = [] }) {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [user, setUser] = useState(null);
   const [showUserMenu, setShowUserMenu] = useState(false);
+  const [activeNav, setActiveNav] = useState('');
 
   // Derived: card/panel unlock state — a card is locked only when index >= 3 && !isUnlocked
   const isUnlocked = isSubmitted || isLoggedIn;
@@ -2035,6 +2039,25 @@ export default function Home({ companyStats = [] }) {
     window.openAuthModal = () => setShowAuthModal(true);
     return () => { delete window.openAuthModal; };
   }, [setShowAuthModal]);
+
+  // IntersectionObserver for active nav link
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const sections = ['submit', 'companies'];
+    const obs = new IntersectionObserver(
+      (entries) => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) setActiveNav(entry.target.id);
+        });
+      },
+      { threshold: 0.4 }
+    );
+    sections.forEach(id => {
+      const el = document.getElementById(id);
+      if (el) obs.observe(el);
+    });
+    return () => obs.disconnect();
+  }, []);
 
   // Reset OTW modal state whenever it opens
   useEffect(() => {
@@ -2294,9 +2317,8 @@ export default function Home({ companyStats = [] }) {
           <span>FOR YOUR <span style={{color:'var(--orange)'}}>&#39;SALARY&#39;</span> INFORMATION</span>
         </div>
         <div className="nav-r">
-          <a className="nav-link" href="#">Data</a>
-          <a className="nav-link" href="#">Companies</a>
-          <a className="nav-link" href="#">Reports</a>
+          <button className={`nav-link${activeNav === 'submit' ? ' active' : ''}`} onClick={() => document.getElementById('submit')?.scrollIntoView({behavior:'smooth'})}>Am I underpaid?</button>
+          <button className={`nav-link${activeNav === 'companies' ? ' active' : ''}`} onClick={() => document.getElementById('companies')?.scrollIntoView({behavior:'smooth'})}>Who pays the most?</button>
           <a className="nav-link" href="/how-it-works">How it works</a>
 
           {!isLoggedIn ? (
