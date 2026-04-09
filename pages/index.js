@@ -1881,7 +1881,6 @@ export default function Home({ companyStats = [] }) {
   const [lbCompany, setLbCompany] = useState(null);
   const [activeTab, setActiveTab] = useState('All roles');
   const [selectedCompany, setSelectedCompany] = useState(null);
-  const [isUnlocked, setIsUnlocked] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [pendingCompanyId, setPendingCompanyId] = useState(null);
   const isUnlockedRef = useRef(false);
@@ -1906,6 +1905,9 @@ export default function Home({ companyStats = [] }) {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [user, setUser] = useState(null);
   const [showUserMenu, setShowUserMenu] = useState(false);
+
+  // Derived: card/panel unlock state — a card is locked only when index >= 3 && !isUnlocked
+  const isUnlocked = isSubmitted || isLoggedIn;
 
   // Stable refs for PRE/POST dangerouslySetInnerHTML
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -1946,7 +1948,6 @@ export default function Home({ companyStats = [] }) {
     };
     window.onUnlockSuccess = () => {
       isUnlockedRef.current = true;
-      setIsUnlocked(true);
       setIsSubmitted(true);
       setPendingCompanyId(null);
       document.body.classList.add('body-unlocked');
@@ -1962,12 +1963,15 @@ export default function Home({ companyStats = [] }) {
     return () => { delete window.openCompanyPanel; delete window.onUnlockSuccess; };
   }, []);
 
-  // Re-inject card grid when isSubmitted changes (unlock after submit)
+  // Keep isUnlockedRef in sync for use in window.openCompanyPanel callback
+  useEffect(() => { isUnlockedRef.current = isUnlocked; }, [isUnlocked]);
+
+  // Re-inject card grid when unlock state changes
   useEffect(() => {
     const grid = document.getElementById('company-grid-root');
     if (!grid) return;
-    grid.innerHTML = genCardHTML(companies, isSubmitted);
-  }, [isSubmitted, companies]);
+    grid.innerHTML = genCardHTML(companies, isUnlocked);
+  }, [isUnlocked, companies]);
 
   // ESC to close panel
   useEffect(() => {
@@ -2022,35 +2026,25 @@ export default function Home({ companyStats = [] }) {
     // STATE B: restore submission state from localStorage
     const submitted = localStorage.getItem('fyi_submitted') === 'true';
     const isLoginSuccess = new URLSearchParams(window.location.search).get('login') === 'success';
-    if (submitted) {
-      setIsSubmitted(true);
-      const cached = localStorage.getItem('fyi_result');
-      if (cached) {
-        try {
-          const parsed = JSON.parse(cached);
-          setPercentileData(parsed);
-          setShowResult(true);
-          // If returning from OAuth, scroll back to the result card
-          if (isLoginSuccess) {
-            setTimeout(() => document.getElementById('submit')?.scrollIntoView({ behavior: 'smooth' }), 400);
-          }
-        } catch(e) {}
-      }
-    }
+    setIsSubmitted(submitted);
+    // showResult: always false on page load — never restore from storage
 
-    // Handle ?login=success redirect from OAuth
-    if (isLoginSuccess) {
-      supabaseClient.auth.getSession().then(({ data: { session } }) => {
-        if (session) {
-          setIsLoggedIn(true);
-          setUser(session.user);
+    // isLoggedIn: always read from Supabase session on mount
+    supabaseClient.auth.getSession().then(({ data: { session } }) => {
+      if (session) {
+        setIsLoggedIn(true);
+        setUser(session.user);
+        // Handle ?login=success redirect from OAuth
+        if (isLoginSuccess) {
           saveUserProfile(session.user);
-          // Always show OTW on login — user can skip if they want
           setTimeout(() => setShowOTW(true), 800);
           window.history.replaceState({}, '', '/');
         }
-      });
-    }
+      } else {
+        setIsLoggedIn(false);
+        setUser(null);
+      }
+    });
 
     // Listen for auth state changes — INITIAL_SESSION fires on page load with existing session
     const { data: { subscription } } = supabaseClient.auth.onAuthStateChange(
@@ -2063,6 +2057,8 @@ export default function Home({ companyStats = [] }) {
         if (event === 'SIGNED_OUT') {
           setIsLoggedIn(false);
           setUser(null);
+          setShowResult(false);
+          // isSubmitted stays as is
         }
       }
     );
@@ -2216,6 +2212,9 @@ export default function Home({ companyStats = [] }) {
                       setIsLoggedIn(false);
                       setUser(null);
                       setShowUserMenu(false);
+                      setShowOTW(false);
+                      setShowResult(false);
+                      // DO NOT touch isSubmitted or localStorage 'fyi_submitted'
                     }}
                     style={{width:'100%',padding:'10px 14px',borderRadius:8,border:'none',background:'transparent',color:'rgba(255,255,255,0.6)',fontSize:13,cursor:'pointer',textAlign:'left',fontFamily:"'Barlow',sans-serif"}}>
                     Sign out
@@ -2271,7 +2270,6 @@ export default function Home({ companyStats = [] }) {
             const res = await fetch(`/api/percentile?role=${encodeURIComponent(wRole)}&experience=${encodeURIComponent(wExp)}&salary=${wSalary}&company=${encodeURIComponent(wCompany)}`);
             const data = await res.json();
             setPercentileData(data);
-            localStorage.setItem('fyi_result', JSON.stringify(data));
           } catch(e) { setPercentileData(null); }
           localStorage.setItem('fyi_submitted', 'true');
           setShowResult(true);
