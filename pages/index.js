@@ -1828,15 +1828,14 @@ function SubmitSection({
                   <div style={{fontSize:'12px', color:'rgba(255,255,255,0.4)', lineHeight:1.6, marginBottom:'18px', maxWidth:'280px', margin:'0 auto 18px'}}>
                     Get real-time salary alerts, new openings from top companies, and connect with the FYI community.
                   </div>
-                  <div style={{display:'inline-block', background:'#fff', borderRadius:'12px', padding:'12px'}}>
-                    <img
-                      src="/zalo-group-qr.png"
-                      alt="Scan to join Zalo group"
-                      width={140}
-                      height={140}
-                      style={{display:'block', borderRadius:'4px'}}
-                      onError={e => { e.currentTarget.style.display='none'; e.currentTarget.parentElement.innerHTML='<div style="width:140px;height:140px;display:flex;align-items:center;justify-content:center;color:#999;font-size:12px;font-family:monospace">QR coming soon</div>'; }}
-                    />
+                  <div style={{display:'inline-block', background:'#f5f5f5', borderRadius:'12px', padding:'12px'}}>
+                    <div style={{width:140, height:140, background:'#e0e0e0', borderRadius:'4px', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:'8px'}}>
+                      <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#999" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                        <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/>
+                        <rect x="14" y="14" width="3" height="3"/><rect x="18" y="14" width="3" height="3"/><rect x="14" y="18" width="3" height="3"/><rect x="18" y="18" width="3" height="3"/>
+                      </svg>
+                      <span style={{fontSize:'10px', color:'#999', fontFamily:"'Geist Mono',monospace", fontWeight:600}}>QR coming soon</span>
+                    </div>
                   </div>
                   <div style={{fontSize:'10px', color:'rgba(255,255,255,0.25)', marginTop:'10px', fontFamily:"'Geist Mono',monospace"}}>
                     Scan with Zalo to join
