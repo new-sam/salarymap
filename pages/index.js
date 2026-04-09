@@ -18,7 +18,7 @@ body { background:var(--bg); color:var(--white); font-family:'Barlow',sans-serif
 nav { position:fixed; top:0; left:0; right:0; z-index:200; padding:0 52px; height:56px; display:flex; align-items:center; justify-content:space-between; background:rgba(12,12,11,0.9); backdrop-filter:blur(14px); border-bottom:1px solid var(--line); }
 .logo { display:flex; align-items:center; gap:10px; font-size:13px; font-weight:600; color:var(--white); }
 .nav-r { display:flex; align-items:center; gap:32px; }
-.nav-link { position:relative; font-size:13px; color:#444; text-decoration:none; background:none; border:none; cursor:pointer; font-family:'Barlow',sans-serif; padding:0; transition:color .2s; }
+.nav-link { position:relative; font-size:13px; color:rgba(242,240,235,0.42); text-decoration:none; background:none; border:none; cursor:pointer; font-family:'Barlow',sans-serif; padding:0; transition:color .2s; }
 .nav-link:hover { color:#f0ece4; }
 .nav-link::after { content:''; position:absolute; bottom:0; left:0; right:0; height:2px; background:#e8622a; transform:scaleX(0); transition:transform .2s ease; }
 .nav-link:hover::after { transform:scaleX(1); }
