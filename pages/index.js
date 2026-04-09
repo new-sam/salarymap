@@ -1984,6 +1984,9 @@ export default function Home({ companyStats = [] }) {
   const [user, setUser] = useState(null);
   const [showUserMenu, setShowUserMenu] = useState(false);
 
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => { setMounted(true); }, []);
+
   // Derived: card/panel unlock state — a card is locked only when index >= 3 && !isUnlocked
   const isUnlocked = isSubmitted || isLoggedIn;
 
@@ -2242,14 +2245,6 @@ export default function Home({ companyStats = [] }) {
           rel="stylesheet"
         />
         <style dangerouslySetInnerHTML={{ __html: css }} />
-        <script dangerouslySetInnerHTML={{ __html: `
-          setTimeout(function(){
-            var c = document.querySelectorAll('#submit').length;
-            var a = (document.body.innerHTML.match(/Anonymous · Secure/g)||[]).length;
-            document.title = 'SUBMIT=' + c + ' ANON=' + a;
-            console.log('SUBMIT sections:', c, 'Anonymous Secure:', a);
-          }, 3000);
-        ` }} />
       </Head>
 
       {/* ── Nav — React controlled for auth state ── */}
@@ -2318,8 +2313,8 @@ export default function Home({ companyStats = [] }) {
 
       <div suppressHydrationWarning dangerouslySetInnerHTML={PAGE_HTML_PRE} />
 
-      {/* ── Submit section — pure React JSX ── */}
-      <SubmitSection
+      {/* ── Submit section — client-only to prevent hydration duplication ── */}
+      {mounted && <SubmitSection
         wizardStep={wizardStep} setWizardStep={setWizardStep}
         wRole={wRole} setWRole={setWRole}
         wExp={wExp} setWExp={setWExp}
@@ -2361,7 +2356,7 @@ export default function Home({ companyStats = [] }) {
           setShowResult(true);
           setShowSocialPrompt(true);
         }}
-      />
+      />}
 
       <div suppressHydrationWarning dangerouslySetInnerHTML={PAGE_HTML_POST} />
 
