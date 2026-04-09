@@ -1910,7 +1910,7 @@ const DynamicSubmitSection = dynamic(() => Promise.resolve(SubmitSection), { ssr
 // Split at the submit placeholder — submit section is rendered as React JSX
 const [BODY_PRE_TMPL, BODY_POST_TMPL] = bodyHTML.split('\n<!-- SUBMIT_REACT_PLACEHOLDER -->\n');
 const PAGE_HTML_PRE_TMPL = BODY_PRE_TMPL;
-const PAGE_HTML_POST_TMPL = BODY_POST_TMPL + '\n<script>' + js + '<\/script>';
+const PAGE_HTML_POST_TMPL = BODY_POST_TMPL;
 
 export async function getServerSideProps() {
   try {
@@ -2193,6 +2193,14 @@ export default function Home({ companyStats = [] }) {
     };
     vid.addEventListener('ended', onEnded);
     return () => vid.removeEventListener('ended', onEnded);
+  }, []);
+
+  // Run inline scripts after hydration (moved out of dangerouslySetInnerHTML to prevent hydration mismatch)
+  useEffect(() => {
+    const script = document.createElement('script');
+    script.textContent = js;
+    document.body.appendChild(script);
+    return () => { try { document.body.removeChild(script); } catch(e) {} };
   }, []);
 
   // WGF continuous scroll-driven animations
