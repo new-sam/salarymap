@@ -69,7 +69,8 @@
       "Bash(npx next:*)",
       "Bash(npx vercel:*)",
       "Bash(claude logout:*)",
-      "Bash(claude login:*)"
+      "Bash(claude login:*)",
+      "Bash(powershell:*)"
     ]
   },
   "hooks": {
