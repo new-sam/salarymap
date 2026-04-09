@@ -171,6 +171,9 @@ nav { position:fixed; top:0; left:0; right:0; z-index:200; padding:0 52px; heigh
 @keyframes wgfDotPulse { 0%,100%{opacity:1} 50%{opacity:.3} }
 .wgf-eyebrow::before { animation: wgfDotPulse 2s ease-in-out infinite; }
 [data-wgf] { opacity:0; will-change:opacity,transform; }
+[data-wgf="badge"] { transform:translateY(20px); }
+[data-wgf="quote"], [data-wgf="headline"], [data-wgf="body1"], [data-wgf="body2"], [data-wgf="sig"] { transform:translateY(24px); }
+[data-wgf="divider"] { transform:scaleX(0.3); }
 .wgf-photo-wrap.on .wgf-accent { opacity:1; }
 .wgf-accent { position:absolute; left:0; top:0; bottom:0; width:3px; background:#e8622a; border-radius:2px; opacity:0; transition:opacity .5s ease .5s; z-index:2; }
 .wgf-photo-wrap { transition: transform .3s ease, box-shadow .3s ease; }
@@ -2199,21 +2202,37 @@ export default function Home({ companyStats = [] }) {
     const els = section.querySelectorAll('[data-wgf]');
     if (!els.length) return;
 
-    // Bidirectional: elements are sharpest at viewport center,
-    // fade+transform out toward both edges (like Apple/Linear style)
+    // Photos only — text stays still so it's readable
+    const photoKeys = new Set(['director', 'team1', 'team2', 'team3']);
     const config = {
-      badge:    { y: 50,  x: 0,    rot: 0,   scale: 0.88 },
-      director: { y: 60,  x: -100, rot: -4,  scale: 0.85 },
-      quote:    { y: 70,  x: 0,    rot: 0,   scale: 0.9  },
-      headline: { y: 80,  x: 0,    rot: 0,   scale: 0.9  },
-      body1:    { y: 50,  x: 50,   rot: 0,   scale: 1    },
-      body2:    { y: 50,  x: 50,   rot: 0,   scale: 1    },
-      sig:      { y: 40,  x: 0,    rot: 0,   scale: 0.95 },
-      divider:  { y: 0,   x: 0,    rot: 0,   scale: 0.5  },
-      team1:    { y: 100, x: -40,  rot: -6,  scale: 0.78 },
-      team2:    { y: 120, x: 0,    rot: 0,   scale: 0.75 },
-      team3:    { y: 100, x: 40,   rot: 6,   scale: 0.78 },
+      director: { y: 60,  x: -80, rot: -3,  scale: 0.88 },
+      team1:    { y: 100, x: -30, rot: -5,  scale: 0.8  },
+      team2:    { y: 120, x: 0,   rot: 0,   scale: 0.78 },
+      team3:    { y: 100, x: 30,  rot: 5,   scale: 0.8  },
     };
+    const photoEls = [...els].filter(el => photoKeys.has(el.getAttribute('data-wgf')));
+    // Text elements: just do a one-time fade in
+    const textEls = [...els].filter(el => !photoKeys.has(el.getAttribute('data-wgf')));
+    const textDelays = {badge:0,quote:200,headline:350,body1:500,body2:600,sig:750,divider:900};
+    let textFired = false;
+    const textObs = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting && !textFired) {
+          textFired = true;
+          textObs.disconnect();
+          textEls.forEach((el) => {
+            const key = el.getAttribute('data-wgf');
+            const d = textDelays[key] || 0;
+            setTimeout(() => {
+              el.style.transition = 'opacity .7s cubic-bezier(.22,1,.36,1), transform .7s cubic-bezier(.22,1,.36,1)';
+              el.style.opacity = '1';
+              el.style.transform = 'translate(0,0)';
+            }, d);
+          });
+        }
+      });
+    }, { threshold: 0.1 });
+    requestAnimationFrame(() => textObs.observe(section));
 
     let ticking = false;
     const onScroll = () => {
@@ -2221,19 +2240,17 @@ export default function Home({ companyStats = [] }) {
       ticking = true;
       requestAnimationFrame(() => {
         const vh = window.innerHeight;
-        const center = vh * 0.45; // sweet spot slightly above center
-        els.forEach((el) => {
+        const center = vh * 0.45;
+        photoEls.forEach((el) => {
           const key = el.getAttribute('data-wgf');
-          const c = config[key] || { y: 60, x: 0, rot: 0, scale: 0.9 };
+          const c = config[key];
           const rect = el.getBoundingClientRect();
           const elCenter = rect.top + rect.height / 2;
-          // distance from sweet spot: 0 = perfect center, 1 = edge of viewport
           const dist = Math.abs(elCenter - center) / (vh * 0.6);
-          const away = Math.min(dist, 1); // 0..1 how far from center
-          const eased = Math.pow(away, 2); // quadratic — snappy near center, soft at edges
-          // direction: negative = element is above center (scrolled past), positive = below
+          const away = Math.min(dist, 1);
+          const eased = Math.pow(away, 2);
           const dir = elCenter > center ? 1 : -1;
-          const opacity = 1 - eased * 0.95;
+          const opacity = 1 - eased * 0.85;
           const ty = c.y * eased * dir;
           const tx = c.x * eased * dir;
           const rot = c.rot * eased * dir;
@@ -2247,7 +2264,7 @@ export default function Home({ companyStats = [] }) {
 
     window.addEventListener('scroll', onScroll, { passive: true });
     onScroll(); // initial check
-    return () => window.removeEventListener('scroll', onScroll);
+    return () => { window.removeEventListener('scroll', onScroll); textObs.disconnect(); };
   }, []);
 
   const d = lbCompany ? lbData[lbCompany] : null;
