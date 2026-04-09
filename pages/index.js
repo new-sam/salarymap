@@ -2199,18 +2199,20 @@ export default function Home({ companyStats = [] }) {
     const els = section.querySelectorAll('[data-wgf]');
     if (!els.length) return;
 
+    // Bidirectional: elements are sharpest at viewport center,
+    // fade+transform out toward both edges (like Apple/Linear style)
     const config = {
-      badge:    { y: 60,  x: 0,    rot: 0,   scale: 0.85, speed: 0.9 },
-      director: { y: 80,  x: -120, rot: -3,  scale: 0.88, speed: 0.6 },
-      quote:    { y: 100, x: 0,    rot: 0,   scale: 0.9,  speed: 0.75 },
-      headline: { y: 90,  x: 0,    rot: 0,   scale: 0.92, speed: 0.65 },
-      body1:    { y: 70,  x: 40,   rot: 0,   scale: 1,    speed: 0.7 },
-      body2:    { y: 70,  x: 40,   rot: 0,   scale: 1,    speed: 0.7 },
-      sig:      { y: 60,  x: 0,    rot: 0,   scale: 0.95, speed: 0.8 },
-      divider:  { y: 0,   x: 0,    rot: 0,   scale: 0.6,  speed: 0.85 },
-      team1:    { y: 120, x: -30,  rot: -5,  scale: 0.8,  speed: 0.5 },
-      team2:    { y: 140, x: 0,    rot: 0,   scale: 0.75, speed: 0.45 },
-      team3:    { y: 120, x: 30,   rot: 5,   scale: 0.8,  speed: 0.5 },
+      badge:    { y: 50,  x: 0,    rot: 0,   scale: 0.88 },
+      director: { y: 60,  x: -100, rot: -4,  scale: 0.85 },
+      quote:    { y: 70,  x: 0,    rot: 0,   scale: 0.9  },
+      headline: { y: 80,  x: 0,    rot: 0,   scale: 0.9  },
+      body1:    { y: 50,  x: 50,   rot: 0,   scale: 1    },
+      body2:    { y: 50,  x: 50,   rot: 0,   scale: 1    },
+      sig:      { y: 40,  x: 0,    rot: 0,   scale: 0.95 },
+      divider:  { y: 0,   x: 0,    rot: 0,   scale: 0.5  },
+      team1:    { y: 100, x: -40,  rot: -6,  scale: 0.78 },
+      team2:    { y: 120, x: 0,    rot: 0,   scale: 0.75 },
+      team3:    { y: 100, x: 40,   rot: 6,   scale: 0.78 },
     };
 
     let ticking = false;
@@ -2219,17 +2221,23 @@ export default function Home({ companyStats = [] }) {
       ticking = true;
       requestAnimationFrame(() => {
         const vh = window.innerHeight;
+        const center = vh * 0.45; // sweet spot slightly above center
         els.forEach((el) => {
           const key = el.getAttribute('data-wgf');
-          const c = config[key] || { y: 80, x: 0, rot: 0, scale: 0.9, speed: 0.7 };
+          const c = config[key] || { y: 60, x: 0, rot: 0, scale: 0.9 };
           const rect = el.getBoundingClientRect();
-          const progress = Math.min(Math.max((vh - rect.top) / (vh * 0.75), 0), 1);
-          const eased = 1 - Math.pow(1 - progress, 4); // sharper ease-out
-          const opacity = Math.min(eased / c.speed, 1);
-          const ty = c.y * (1 - eased);
-          const tx = c.x * (1 - eased);
-          const rot = c.rot * (1 - eased);
-          const scale = c.scale + (1 - c.scale) * eased;
+          const elCenter = rect.top + rect.height / 2;
+          // distance from sweet spot: 0 = perfect center, 1 = edge of viewport
+          const dist = Math.abs(elCenter - center) / (vh * 0.6);
+          const away = Math.min(dist, 1); // 0..1 how far from center
+          const eased = Math.pow(away, 2); // quadratic — snappy near center, soft at edges
+          // direction: negative = element is above center (scrolled past), positive = below
+          const dir = elCenter > center ? 1 : -1;
+          const opacity = 1 - eased * 0.95;
+          const ty = c.y * eased * dir;
+          const tx = c.x * eased * dir;
+          const rot = c.rot * eased * dir;
+          const scale = 1 - (1 - c.scale) * eased;
           el.style.opacity = opacity;
           el.style.transform = `translate(${tx}px, ${ty}px) rotate(${rot}deg) scale(${scale})`;
         });
