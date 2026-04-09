@@ -68,7 +68,8 @@
       "WebFetch(domain:www.nashtechglobal.com)",
       "Bash(npx next:*)",
       "Bash(npx vercel:*)",
-      "Bash(claude logout:*)"
+      "Bash(claude logout:*)",
+      "Bash(claude login:*)"
     ]
   },
   "hooks": {
