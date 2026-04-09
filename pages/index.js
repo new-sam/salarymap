@@ -829,10 +829,6 @@ const bodyHTML = `<section class="hero">
 
 <!-- SUBMIT_REACT_PLACEHOLDER -->
 
-<footer>
-  <div class="footer-brand">FYI <span>—</span> For Your Information</div>
-  <div class="footer-meta">Vietnam IT Salary Intelligence · 100% Anonymous · Updated daily</div>
-</footer>
 
 <div id="full-feed">
   <div class="ff-head">
