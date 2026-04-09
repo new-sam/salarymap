@@ -1,7 +1,6 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
 import ReactDOM from 'react-dom';
 import Head from 'next/head';
-import dynamic from 'next/dynamic';
 import supabaseClient from '../lib/supabaseClient';
 
 const css = `
@@ -1906,8 +1905,6 @@ function genCardHTML(companies, unlocked) {
   return cards.join('') + cta;
 }
 
-const DynamicSubmitSection = dynamic(() => Promise.resolve(SubmitSection), { ssr: false });
-
 // Split at the submit placeholder — submit section is rendered as React JSX
 const [BODY_PRE_TMPL, BODY_POST_TMPL] = bodyHTML.split('\n<!-- SUBMIT_REACT_PLACEHOLDER -->\n');
 const PAGE_HTML_PRE_TMPL = BODY_PRE_TMPL;
@@ -2357,7 +2354,7 @@ export default function Home({ companyStats = [] }) {
 
       <div suppressHydrationWarning dangerouslySetInnerHTML={PAGE_HTML_PRE} />
 
-      <DynamicSubmitSection
+      <SubmitSection
         wizardStep={wizardStep} setWizardStep={setWizardStep}
         wRole={wRole} setWRole={setWRole}
         wExp={wExp} setWExp={setWExp}
