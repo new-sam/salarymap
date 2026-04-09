@@ -2200,17 +2200,17 @@ export default function Home({ companyStats = [] }) {
     if (!els.length) return;
 
     const config = {
-      badge:    { y: 16, x: 0,   speed: 0.9 },
-      director: { y: 0,  x: -44, speed: 0.7 },
-      quote:    { y: 20, x: 0,   speed: 0.85 },
-      headline: { y: 20, x: 0,   speed: 0.75 },
-      body1:    { y: 20, x: 0,   speed: 0.8 },
-      body2:    { y: 20, x: 0,   speed: 0.8 },
-      sig:      { y: 20, x: 0,   speed: 0.85 },
-      divider:  { y: 0,  x: 0,   speed: 0.9 },
-      team1:    { y: 40, x: 0,   speed: 0.65 },
-      team2:    { y: 40, x: 0,   speed: 0.6 },
-      team3:    { y: 40, x: 0,   speed: 0.55 },
+      badge:    { y: 60,  x: 0,    rot: 0,   scale: 0.85, speed: 0.9 },
+      director: { y: 80,  x: -120, rot: -3,  scale: 0.88, speed: 0.6 },
+      quote:    { y: 100, x: 0,    rot: 0,   scale: 0.9,  speed: 0.75 },
+      headline: { y: 90,  x: 0,    rot: 0,   scale: 0.92, speed: 0.65 },
+      body1:    { y: 70,  x: 40,   rot: 0,   scale: 1,    speed: 0.7 },
+      body2:    { y: 70,  x: 40,   rot: 0,   scale: 1,    speed: 0.7 },
+      sig:      { y: 60,  x: 0,    rot: 0,   scale: 0.95, speed: 0.8 },
+      divider:  { y: 0,   x: 0,    rot: 0,   scale: 0.6,  speed: 0.85 },
+      team1:    { y: 120, x: -30,  rot: -5,  scale: 0.8,  speed: 0.5 },
+      team2:    { y: 140, x: 0,    rot: 0,   scale: 0.75, speed: 0.45 },
+      team3:    { y: 120, x: 30,   rot: 5,   scale: 0.8,  speed: 0.5 },
     };
 
     let ticking = false;
@@ -2221,16 +2221,17 @@ export default function Home({ companyStats = [] }) {
         const vh = window.innerHeight;
         els.forEach((el) => {
           const key = el.getAttribute('data-wgf');
-          const c = config[key] || { y: 20, x: 0, speed: 0.8 };
+          const c = config[key] || { y: 80, x: 0, rot: 0, scale: 0.9, speed: 0.7 };
           const rect = el.getBoundingClientRect();
-          // 0 = element just entered bottom, 1 = element at top of viewport
-          const progress = Math.min(Math.max((vh - rect.top) / (vh + rect.height), 0), 1);
-          const eased = 1 - Math.pow(1 - progress, 3); // ease-out cubic
+          const progress = Math.min(Math.max((vh - rect.top) / (vh * 0.75), 0), 1);
+          const eased = 1 - Math.pow(1 - progress, 4); // sharper ease-out
           const opacity = Math.min(eased / c.speed, 1);
           const ty = c.y * (1 - eased);
           const tx = c.x * (1 - eased);
+          const rot = c.rot * (1 - eased);
+          const scale = c.scale + (1 - c.scale) * eased;
           el.style.opacity = opacity;
-          el.style.transform = `translate(${tx}px, ${ty}px)`;
+          el.style.transform = `translate(${tx}px, ${ty}px) rotate(${rot}deg) scale(${scale})`;
         });
         ticking = false;
       });
