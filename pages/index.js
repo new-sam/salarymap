@@ -1203,28 +1203,6 @@ async function unlock(){
 window.submitSalary=submitSalary;
 window.doUnlock=doUnlock;
 
-// WGF scroll-triggered entrance animations
-(function(){
-  var delays={badge:0,director:120,quote:300,headline:440,body1:580,body2:690,sig:820,divider:980,team1:1100,team2:1210,team3:1320};
-  var fired=false;
-  var section=document.querySelector('.wgf-section');
-  if(!section) return;
-  var obs=new IntersectionObserver(function(entries){
-    entries.forEach(function(entry){
-      if(entry.isIntersecting&&!fired){
-        fired=true;
-        obs.unobserve(section);
-        var els=section.querySelectorAll('[data-wgf]');
-        els.forEach(function(el){
-          var key=el.getAttribute('data-wgf');
-          var d=delays[key]||0;
-          setTimeout(function(){ el.classList.add('on'); },d);
-        });
-      }
-    });
-  },{threshold:0.12});
-  obs.observe(section);
-})();
 `;
 
 const lbData = {
@@ -2223,6 +2201,29 @@ export default function Home({ companyStats = [] }) {
     };
     vid.addEventListener('ended', onEnded);
     return () => vid.removeEventListener('ended', onEnded);
+  }, []);
+
+  // WGF scroll-triggered entrance animations
+  useEffect(() => {
+    const delays = {badge:0,director:120,quote:300,headline:440,body1:580,body2:690,sig:820,divider:980,team1:1100,team2:1210,team3:1320};
+    const section = document.querySelector('.wgf-section');
+    if (!section) return;
+    let fired = false;
+    const obs = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting && !fired) {
+          fired = true;
+          obs.unobserve(section);
+          section.querySelectorAll('[data-wgf]').forEach((el) => {
+            const key = el.getAttribute('data-wgf');
+            const d = delays[key] || 0;
+            setTimeout(() => el.classList.add('on'), d);
+          });
+        }
+      });
+    }, { threshold: 0.12 });
+    obs.observe(section);
+    return () => obs.disconnect();
   }, []);
 
   const d = lbCompany ? lbData[lbCompany] : null;
