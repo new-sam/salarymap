@@ -1,7 +1,7 @@
 export default function AnonymousSection() {
   return (
     <section style={{
-      background: '#fff',
+      background: '#f0ede8',
       padding: '75px 60px 60px',
       fontFamily: "'Inter', 'Helvetica Neue', Arial, sans-serif",
       WebkitFontSmoothing: 'antialiased',
