@@ -1595,21 +1595,12 @@ function SubmitSection({
           ) : (
             /* Result card */
             <div>
-              {percentileData && !percentileData.usedFallback ? (
-                <ResultSection
-                  percentile={percentileData.topPct || percentileData.percentile || 50}
-                  userSalary={sal}
-                  marketMedian={percentileData.median}
-                  role={wRole}
-                  experience={wExp}
-                  companiesPayingMore={percentileData.companiesPayingMore || []}
-                />
-              ) : (
-                <div style={{textAlign:'center', padding:'40px 0'}}>
-                  <div style={{fontSize:'42px', marginBottom:'12px'}}>✅</div>
-                  <div style={{fontSize:'18px', fontWeight:800, color:'#fff', marginBottom:'8px'}}>Submitted!</div>
-                </div>
-              )}
+              <ResultSection
+                salary={sal}
+                role={wRole}
+                experience={wExp}
+                company={wCompany}
+              />
 
               {/* Company comparison + headhunter CTA — only when not logged in */}
               {showResult && !isLoggedIn && (() => {
