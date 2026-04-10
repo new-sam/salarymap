@@ -6,7 +6,9 @@ export default function CompanyCard({ company, index, isUnlocked, onClick, onLoc
   const initials = company.company.slice(0, 2).toUpperCase();
   const logoUrl = company.logo || null;
   const cardUnlocked = isUnlocked || index < 3;
-  const bgImage = `https://picsum.photos/seed/${encodeURIComponent(company.company)}/400/300`;
+  const bgImage = company.domain
+    ? `https://image.thum.io/get/width/400/https://${company.domain}`
+    : null;
 
   if (!cardUnlocked) {
     return (
@@ -14,7 +16,7 @@ export default function CompanyCard({ company, index, isUnlocked, onClick, onLoc
         className="company-card locked"
         onClick={onLockedClick}
       >
-        <div className="card-bg" style={{ backgroundImage: `url(${bgImage})`, backgroundSize: 'cover', backgroundPosition: 'center' }} />
+        <div className="card-bg" style={bgImage ? { backgroundImage: `url(${bgImage})`, backgroundSize: 'cover', backgroundPosition: 'center' } : { background: 'linear-gradient(135deg, #1a1a18 0%, #2a2a28 100%)' }} />
         {logoUrl && !logoError && (
           <div className="card-logo-wrap">
             <img className="card-logo-img" src={logoUrl} alt={company.company} onError={() => setLogoError(true)} />
@@ -47,7 +49,7 @@ export default function CompanyCard({ company, index, isUnlocked, onClick, onLoc
       className="company-card open"
       onClick={() => onClick(company)}
     >
-      <div className="card-bg" style={{ backgroundImage: `url(${bgImage})`, backgroundSize: 'cover', backgroundPosition: 'center' }} />
+      <div className="card-bg" style={bgImage ? { backgroundImage: `url(${bgImage})`, backgroundSize: 'cover', backgroundPosition: 'center' } : { background: 'linear-gradient(135deg, #1a1a18 0%, #2a2a28 100%)' }} />
       {logoUrl && !logoError && (
         <div className="card-logo-wrap">
           <img className="card-logo-img" src={logoUrl} alt={company.company} onError={() => setLogoError(true)} />
