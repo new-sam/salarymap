@@ -1512,6 +1512,12 @@ function SubmitSection({
   onSubmit,
 }) {
   const [submitting, setSubmitting] = useState(false);
+  const [acResults, setAcResults] = useState([]);
+  const [acLoading, setAcLoading] = useState(false);
+  const [acOpen, setAcOpen] = useState(false);
+  const [acHighlight, setAcHighlight] = useState(-1);
+  const acTimerRef = useRef(null);
+  const acWrapRef = useRef(null);
   const ROLES = ['Backend','Frontend','Mobile','Data · AI','DevOps','PM · PO','Design','QA'];
   const EXPS  = ['Under 1yr','1–2 yrs','3–4 yrs','5–7 yrs','8+ yrs'];
   const sal = Number(wSalary);
@@ -1522,6 +1528,51 @@ function SubmitSection({
     setSubmitting(true);
     await onSubmit();
     setSubmitting(false);
+  };
+
+  const isValidCompanyName = (name) => {
+    if (!name || name.trim().length < 2) return false;
+    const valid = /^[\w\s.,&\-()àáảãạăắặẳẵằâấầẩẫậđèéẻẽẹêếềểễệìíỉĩịòóỏõọôốồổỗộơớờởỡợùúủũụưứừửữựỳýỷỹỵ]+$/i;
+    if (!valid.test(name.trim())) return false;
+    const junk = /^(test|qwer|asdf|abc|xxx|123|qwd|dwd|zzz)/i;
+    if (junk.test(name.trim())) return false;
+    return true;
+  };
+
+  const searchCompanies = (q) => {
+    clearTimeout(acTimerRef.current);
+    if (!q || q.trim().length < 1) { setAcResults([]); setAcOpen(false); return; }
+    setAcLoading(true);
+    acTimerRef.current = setTimeout(async () => {
+      try {
+        const res = await fetch(`/api/companies/search?q=${encodeURIComponent(q.trim())}`);
+        const data = await res.json();
+        setAcResults(data);
+        setAcOpen(true);
+        setAcHighlight(-1);
+      } catch { setAcResults([]); }
+      setAcLoading(false);
+    }, 300);
+  };
+
+  // Close dropdown on click outside
+  useEffect(() => {
+    const handler = (e) => { if (acWrapRef.current && !acWrapRef.current.contains(e.target)) setAcOpen(false); };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
+
+  const selectCompany = (item) => {
+    setWCompany(item.name);
+    setAcOpen(false);
+    setAcResults([]);
+    if (item.source === 'clearbit' && item.name && item.domain) {
+      fetch('/api/companies/save', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: item.name, domain: item.domain }),
+      }).catch(() => {});
+    }
   };
 
   // percentile = % of peers earning less (e.g. 80 = earns more than 80%)
@@ -1671,23 +1722,104 @@ function SubmitSection({
                 </div>
               )}
 
-              {/* Step 4 — Company */}
+              {/* Step 4 — Company (with autocomplete) */}
               {wizardStep === 4 && (
                 <div>
                   <div style={{fontSize:'11px', fontWeight:700, color:'rgba(255,255,255,0.35)', letterSpacing:'2px', textTransform:'uppercase', marginBottom:'8px'}}>STEP 4 / 4</div>
                   <div style={{fontSize:'22px', fontWeight:900, color:'#fff', letterSpacing:'-0.5px', marginBottom:'6px'}}>Where do you work?</div>
                   <div style={{fontSize:'13px', color:'rgba(255,255,255,0.4)', marginBottom:'24px'}}>Company name (kept anonymous)</div>
-                  <input
-                    type="text"
-                    placeholder="e.g. Grab Vietnam, FPT Software…"
-                    value={wCompany}
-                    onChange={e => setWCompany(e.target.value)}
-                    onKeyDown={e => { if (e.key==='Enter' && wCompany.trim()) handleSubmit(); }}
-                    autoFocus
-                    style={{width:'100%', background:'rgba(255,255,255,0.05)', border:'1.5px solid rgba(255,255,255,0.1)',
-                      borderRadius:'8px', padding:'14px 16px', color:'#fff', fontSize:'14px',
-                      fontFamily:"'Barlow',sans-serif", outline:'none', marginBottom:'16px', boxSizing:'border-box'}}
-                  />
+
+                  {/* Autocomplete wrapper */}
+                  <div ref={acWrapRef} style={{position:'relative', marginBottom:'16px'}}>
+                    <input
+                      type="text"
+                      placeholder="e.g. Grab Vietnam, FPT Software…"
+                      value={wCompany}
+                      onChange={e => { setWCompany(e.target.value); searchCompanies(e.target.value); }}
+                      onFocus={() => { if (acResults.length > 0) setAcOpen(true); }}
+                      onKeyDown={e => {
+                        if (e.key === 'ArrowDown') { e.preventDefault(); setAcHighlight(h => Math.min(h + 1, acResults.length - 1)); }
+                        else if (e.key === 'ArrowUp') { e.preventDefault(); setAcHighlight(h => Math.max(h - 1, -1)); }
+                        else if (e.key === 'Enter') {
+                          e.preventDefault();
+                          if (acHighlight >= 0 && acResults[acHighlight]) { selectCompany(acResults[acHighlight]); }
+                          else if (wCompany.trim()) { setAcOpen(false); handleSubmit(); }
+                        }
+                        else if (e.key === 'Escape') { setAcOpen(false); }
+                      }}
+                      autoFocus
+                      autoComplete="off"
+                      style={{width:'100%', background:'rgba(255,255,255,0.05)', border:'1.5px solid rgba(255,255,255,0.1)',
+                        borderRadius:'8px', padding:'14px 16px', color:'#fff', fontSize:'14px',
+                        fontFamily:"'Barlow',sans-serif", outline:'none', boxSizing:'border-box'}}
+                    />
+                    {acLoading && (
+                      <div style={{position:'absolute', right:'14px', top:'50%', transform:'translateY(-50%)', fontSize:'11px', color:'rgba(255,255,255,0.3)'}}>…</div>
+                    )}
+
+                    {/* Dropdown */}
+                    {acOpen && (acResults.length > 0 || (wCompany.trim().length >= 2 && isValidCompanyName(wCompany))) && (
+                      <div style={{position:'absolute', top:'100%', left:0, right:0, zIndex:50, marginTop:'4px',
+                        background:'#1a1a18', border:'1px solid rgba(255,255,255,0.1)', borderRadius:'10px',
+                        overflow:'hidden', boxShadow:'0 8px 32px rgba(0,0,0,0.5)', maxHeight:'280px', overflowY:'auto'}}>
+                        {acResults.map((item, i) => {
+                          const isExact = item.name.toLowerCase() === wCompany.trim().toLowerCase();
+                          return (
+                            <div key={item.name + i}
+                              onMouseDown={e => { e.preventDefault(); selectCompany(item); }}
+                              onMouseEnter={() => setAcHighlight(i)}
+                              style={{display:'flex', alignItems:'center', gap:'10px', padding:'10px 14px',
+                                cursor:'pointer', transition:'background .1s',
+                                background: i === acHighlight ? 'rgba(255,255,255,0.06)' : 'transparent'}}>
+                              {item.logo ? (
+                                <img src={item.logo} alt="" style={{width:22, height:22, borderRadius:'4px', objectFit:'contain', background:'#fff', flexShrink:0}}
+                                  onError={e => { e.target.style.display='none'; e.target.nextSibling.style.display='flex'; }} />
+                              ) : null}
+                              {!item.logo ? (
+                                <div style={{width:22, height:22, borderRadius:'4px', background:'rgba(255,255,255,0.08)',
+                                  display:'flex', alignItems:'center', justifyContent:'center',
+                                  fontSize:'9px', fontWeight:800, color:'rgba(255,255,255,0.4)', flexShrink:0}}>
+                                  {item.name.slice(0, 2).toUpperCase()}
+                                </div>
+                              ) : (
+                                <div style={{width:22, height:22, borderRadius:'4px', background:'rgba(255,255,255,0.08)',
+                                  display:'none', alignItems:'center', justifyContent:'center',
+                                  fontSize:'9px', fontWeight:800, color:'rgba(255,255,255,0.4)', flexShrink:0}}>
+                                  {item.name.slice(0, 2).toUpperCase()}
+                                </div>
+                              )}
+                              <div style={{flex:1, minWidth:0}}>
+                                <div style={{fontSize:'13px', fontWeight:600, color:'#fff', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap'}}>{item.name}</div>
+                                {item.domain && <div style={{fontSize:'10px', color:'rgba(255,255,255,0.3)', marginTop:'1px'}}>{item.domain}</div>}
+                              </div>
+                              {item.source === 'db' && (
+                                <span style={{fontSize:'9px', fontWeight:700, color:'#ff6000', background:'rgba(255,96,0,0.1)',
+                                  padding:'2px 6px', borderRadius:'4px', flexShrink:0}}>FYI</span>
+                              )}
+                            </div>
+                          );
+                        })}
+
+                        {/* "Add new" option if typed name is valid and not an exact match */}
+                        {wCompany.trim().length >= 2 && isValidCompanyName(wCompany) &&
+                         !acResults.some(r => r.name.toLowerCase() === wCompany.trim().toLowerCase()) && (
+                          <div
+                            onMouseDown={e => { e.preventDefault(); setAcOpen(false); }}
+                            style={{display:'flex', alignItems:'center', gap:'10px', padding:'10px 14px',
+                              cursor:'pointer', borderTop:'1px solid rgba(255,255,255,0.06)',
+                              background: acHighlight === acResults.length ? 'rgba(255,255,255,0.06)' : 'transparent'}}>
+                            <div style={{width:22, height:22, borderRadius:'4px', background:'rgba(255,96,0,0.15)',
+                              display:'flex', alignItems:'center', justifyContent:'center',
+                              fontSize:'13px', color:'#ff6000', flexShrink:0}}>+</div>
+                            <span style={{fontSize:'13px', color:'rgba(255,255,255,0.5)'}}>
+                              Add "<span style={{color:'#fff', fontWeight:600}}>{wCompany.trim()}</span>"
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+
                   <button onClick={handleSubmit} disabled={!wCompany.trim() || submitting}
                     style={{...btn, width:'100%', background: wCompany.trim() ? '#ff6000' : 'rgba(255,96,0,0.3)',
                       color:'#fff', fontSize:'14px', fontWeight:800, padding:'15px', borderRadius:'10px',

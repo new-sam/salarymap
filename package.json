@@ -14,6 +14,7 @@
     "react-dom": "19.2.3"
   },
   "devDependencies": {
+    "cheerio": "^1.2.0",
     "dotenv": "^17.4.1"
   }
 }

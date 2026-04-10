@@ -75,7 +75,8 @@
       "Bash(taskkill //F //IM node.exe)",
       "Bash(dd:*)",
       "Bash(gh api:*)",
-      "WebFetch(domain:salarymap-dqbzwxruq-slsvm1013-6708s-projects.vercel.app)"
+      "WebFetch(domain:salarymap-dqbzwxruq-slsvm1013-6708s-projects.vercel.app)",
+      "Bash(npm ls:*)"
     ]
   },
   "hooks": {
