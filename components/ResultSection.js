@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import NextStepSheet from './NextStepSheet'
 
 export default function ResultSection({ salary, role, experience, company }) {
   const [result, setResult] = useState(null)
@@ -194,6 +195,15 @@ export default function ResultSection({ salary, role, experience, company }) {
         </div>
 
       </div>
+
+      {/* Bottom sheet — appears 2s after result loads */}
+      {result && (
+        <NextStepSheet
+          role={role}
+          experience={experience}
+          percentile={result.percentile}
+        />
+      )}
     </section>
   )
 }
