@@ -10,12 +10,8 @@ export default function CompanyCard({ company, rank, isUnlocked, onClick, onScro
     .join('')
     .toUpperCase();
 
-  const domain = company.domain || null;
-  const faviconUrl = domain
-    ? `https://www.google.com/s2/favicons?domain=${domain}&sz=256`
-    : null;
-
-  const locked = !isUnlocked && rank >= 3;
+  const logoUrl = company.logo || null;
+  const locked = !isUnlocked;
 
   return (
     <div
@@ -28,20 +24,29 @@ export default function CompanyCard({ company, rank, isUnlocked, onClick, onScro
         }
       }}
     >
-      {/* Background gradient */}
+      {/* Background */}
       <div className="card-bg" style={{ backgroundColor: '#2a2a28' }} />
 
       {/* Logo */}
-      {faviconUrl && !logoError ? (
-        <div className="card-logo-wrap">
+      <div className="card-logo-wrap">
+        {logoUrl && !logoError ? (
           <img
             className="card-logo-img"
-            src={faviconUrl}
+            src={logoUrl}
             alt={company.company}
             onError={() => setLogoError(true)}
           />
-        </div>
-      ) : null}
+        ) : (
+          <div style={{
+            width: '100%', height: '100%',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            background: '#222', color: 'rgba(255,255,255,0.5)',
+            fontSize: '16px', fontWeight: 800, fontFamily: "'Barlow',sans-serif",
+          }}>
+            {initials}
+          </div>
+        )}
+      </div>
 
       {/* Overlay */}
       <div className="card-overlay" />

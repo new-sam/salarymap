@@ -26,6 +26,53 @@ function isJunk(company) {
   return false;
 }
 
+// Domain lookup — companies table has no domain column yet, so we use a hardcoded map
+const DOMAIN_MAP = {
+  'grab': 'grab.com',
+  'grab vietnam': 'grab.com',
+  'vng corporation': 'vng.com.vn',
+  'shopee vietnam': 'shopee.vn',
+  'fpt software': 'fpt.com.vn',
+  'tiki': 'tiki.vn',
+  'momo': 'momo.vn',
+  'zalo': 'zalo.me',
+  'vpbank': 'vpbank.com.vn',
+  'techcombank': 'techcombank.com.vn',
+  'sky mavis': 'skymavis.com',
+  'vnpt technology': 'vnpt.com.vn',
+  'shb finance': 'shbfinance.com.vn',
+  'onemount group': 'onemount.com',
+  'logivan': 'logivan.com',
+  'base.vn': 'base.vn',
+  'sendo': 'sendo.vn',
+  'ghn': 'ghn.vn',
+  'ghn express': 'ghn.vn',
+  'rever': 'rever.vn',
+  'nashtech': 'nashtechglobal.com',
+  'nashtech global': 'nashtechglobal.com',
+  'kiotviet': 'kiotviet.vn',
+  'tokyotech vn': 'tokyotechlab.com',
+  'got it': 'got-it.ai',
+  'katalon': 'katalon.com',
+  'harvey nash': 'harveynash.vn',
+  'axon active': 'axonactive.com',
+  'teko vietnam': 'teko.vn',
+  'bhd star': 'bhdstar.vn',
+  'viettel': 'viettel.com.vn',
+  'sacombank digital': 'sacombank.com.vn',
+  'kms technology': 'kms-technology.com',
+  'amanotes': 'amanotes.com',
+  'mbbank': 'mbbank.com.vn',
+  'fossil group vn': 'fossil.com',
+  'trusting social': 'trustingsocial.com',
+  'likelion vietnam': 'likelion.net',
+  'toss vietnam': 'toss.im',
+};
+
+function lookupDomain(companyName) {
+  return DOMAIN_MAP[companyName.toLowerCase()] || null;
+}
+
 export default async function handler(req, res) {
   const { data, error } = await supabase
     .from('submissions')
@@ -44,24 +91,20 @@ export default async function handler(req, res) {
     map[key].roles[role] = (map[key].roles[role] || 0) + 1;
   });
 
-  // Cross-reference with companies table to get domain
-  const companyNames = Object.keys(map);
-  const { data: companyData } = await supabase
-    .from('companies')
-    .select('name')
-    .in('name', companyNames);
-
   const result = Object.values(map)
     .filter(c => c.salaries.length >= 3)
     .map(c => {
       const clean = removeOutliers(c.salaries);
       const sorted = [...clean].sort((a, b) => a - b);
+      const domain = lookupDomain(c.company);
       return {
         company: c.company,
         count: clean.length,
         min: sorted[0],
         max: sorted[sorted.length - 1],
         median: median(clean),
+        domain,
+        logo: domain ? `https://www.google.com/s2/favicons?domain=${domain}&sz=128` : null,
         topRole: Object.entries(c.roles).sort((a, b) => b[1] - a[1])[0]?.[0] || null,
       };
     })

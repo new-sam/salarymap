@@ -2398,7 +2398,7 @@ export default function Home() {
                 key={c.company}
                 company={c}
                 rank={i}
-                isUnlocked={isUnlocked}
+                isUnlocked={isUnlocked || i < 3}
                 onClick={(co) => { setSelectedCompany(co); setPanelOpen(true); }}
                 onScrollToSubmit={(name) => {
                   pendingCompanyRef.current = name;
