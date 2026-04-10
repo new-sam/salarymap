@@ -37,13 +37,15 @@ export default function AnonymousSection() {
 
           {/* Arrows wrapping around the lock circle */}
           <svg width="220" height="180" viewBox="0 0 220 180" fill="none" style={{ position: 'absolute', top: 0, left: 0 }}>
-            {/* Left arrow: top-left → sweeps down along left side of circle */}
-            <path d="M40 20 C25 30, 12 60, 18 105" stroke="#ff6000" strokeWidth="2" strokeLinecap="round" fill="none" />
-            <path d="M12 100 L18 112 L24 100" stroke="#ff6000" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+            {/* Left arc: follows circle curvature from top-left down to bottom-left */}
+            <path d="M 62 28 A 85 85 0 0 0 30 120" stroke="#ff6000" strokeWidth="2" strokeLinecap="round" fill="none" />
+            {/* Left arrowhead pointing down */}
+            <polygon points="24,114 30,126 36,114" fill="#ff6000" />
 
-            {/* Right arrow: bottom-right → sweeps up along right side of circle */}
-            <path d="M202 105 C208 60, 195 30, 180 20" stroke="#ff6000" strokeWidth="2" strokeLinecap="round" fill="none" />
-            <path d="M185 14 L178 18 L183 26" stroke="#ff6000" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+            {/* Right arc: follows circle curvature from bottom-right up to top-right */}
+            <path d="M 158 152 A 85 85 0 0 0 190 60" stroke="#ff6000" strokeWidth="2" strokeLinecap="round" fill="none" />
+            {/* Right arrowhead pointing up-right */}
+            <polygon points="184,54 196,54 190,66" fill="#ff6000" transform="rotate(-30, 190, 60)" />
           </svg>
 
           {/* Outer ring */}
