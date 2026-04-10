@@ -22,6 +22,19 @@ nav { position:fixed; top:0; left:0; right:0; z-index:200; padding:0 52px; heigh
 .nav-link:hover { color:#f0ece4; }
 .nav-link::after { content:''; position:absolute; bottom:0; left:0; right:0; height:2px; background:#e8622a; transform:scaleX(0); transition:transform .2s ease; }
 .nav-link:hover::after { transform:scaleX(1); }
+
+/* Company selected state */
+.company-selected { display:flex; align-items:center; gap:14px; background:#1a0d07; border:1px solid #e8622a; border-radius:12px; padding:16px 18px; position:relative; overflow:hidden; }
+.company-selected::before { content:''; position:absolute; right:-20px; top:-20px; width:80px; height:80px; border-radius:50%; background:#e8622a; opacity:0.06; pointer-events:none; }
+.company-selected-logo { width:44px; height:44px; border-radius:10px; background:#fff; display:flex; align-items:center; justify-content:center; flex-shrink:0; overflow:hidden; }
+.company-selected-logo img { width:36px; height:36px; object-fit:contain; }
+.company-selected-initials { width:44px; height:44px; border-radius:10px; background:#1e1e1e; display:flex; align-items:center; justify-content:center; flex-shrink:0; font-size:14px; font-weight:800; color:#555; }
+.company-selected-info { flex:1; }
+.company-selected-name { font-size:16px; font-weight:600; color:#f0ece4; }
+.company-selected-domain { font-size:11px; color:#774433; margin-top:2px; }
+.company-selected-badge { font-size:10px; font-weight:500; color:#e8622a; background:#2a1208; padding:3px 8px; border-radius:10px; border:1px solid #3a1a0a; white-space:nowrap; flex-shrink:0; }
+.company-selected-clear { background:none; border:none; cursor:pointer; color:#333; font-size:18px; padding:2px 4px; line-height:1; transition:color .15s; flex-shrink:0; font-family:'Barlow',sans-serif; }
+.company-selected-clear:hover { color:#888; }
 .nav-login-btn { font-family:'Barlow',sans-serif; font-size:13px; font-weight:600; color:rgba(255,255,255,0.5); background:none; border:1px solid rgba(255,255,255,0.15); padding:7px 16px; border-radius:100px; cursor:pointer; transition:border-color .15s,color .15s; }
 .nav-login-btn:hover { border-color:rgba(255,255,255,0.35); color:rgba(255,255,255,0.8); }
 .nav-btn { font-family:'Barlow',sans-serif; font-size:12px; font-weight:600; background:var(--orange); color:#fff; border:none; padding:8px 18px; border-radius:2px; cursor:pointer; }
@@ -1516,6 +1529,7 @@ function SubmitSection({
   const [acLoading, setAcLoading] = useState(false);
   const [acOpen, setAcOpen] = useState(false);
   const [acHighlight, setAcHighlight] = useState(-1);
+  const [selectedItem, setSelectedItem] = useState(null);
   const acTimerRef = useRef(null);
   const acWrapRef = useRef(null);
   const ROLES = ['Backend','Frontend','Mobile','Data · AI','DevOps','PM · PO','Design','QA'];
@@ -1564,6 +1578,7 @@ function SubmitSection({
 
   const selectCompany = (item) => {
     setWCompany(item.name);
+    setSelectedItem(item);
     setAcOpen(false);
     setAcResults([]);
     if (item.source === 'clearbit' && item.name && item.domain) {
@@ -1573,6 +1588,11 @@ function SubmitSection({
         body: JSON.stringify({ name: item.name, domain: item.domain }),
       }).catch(() => {});
     }
+  };
+
+  const clearSelectedItem = () => {
+    setSelectedItem(null);
+    setWCompany('');
   };
 
   // percentile = % of peers earning less (e.g. 80 = earns more than 80%)
@@ -1731,92 +1751,120 @@ function SubmitSection({
 
                   {/* Autocomplete wrapper */}
                   <div ref={acWrapRef} style={{position:'relative', marginBottom:'16px'}}>
-                    <input
-                      type="text"
-                      placeholder="e.g. Grab Vietnam, FPT Software…"
-                      value={wCompany}
-                      onChange={e => { setWCompany(e.target.value); searchCompanies(e.target.value); }}
-                      onFocus={() => { if (acResults.length > 0) setAcOpen(true); }}
-                      onKeyDown={e => {
-                        if (e.key === 'ArrowDown') { e.preventDefault(); setAcHighlight(h => Math.min(h + 1, acResults.length - 1)); }
-                        else if (e.key === 'ArrowUp') { e.preventDefault(); setAcHighlight(h => Math.max(h - 1, -1)); }
-                        else if (e.key === 'Enter') {
-                          e.preventDefault();
-                          if (acHighlight >= 0 && acResults[acHighlight]) { selectCompany(acResults[acHighlight]); }
-                          else if (wCompany.trim()) { setAcOpen(false); handleSubmit(); }
-                        }
-                        else if (e.key === 'Escape') { setAcOpen(false); }
-                      }}
-                      autoFocus
-                      autoComplete="off"
-                      style={{width:'100%', background:'rgba(255,255,255,0.05)', border:'1.5px solid rgba(255,255,255,0.1)',
-                        borderRadius:'8px', padding:'14px 16px', color:'#fff', fontSize:'14px',
-                        fontFamily:"'Barlow',sans-serif", outline:'none', boxSizing:'border-box'}}
-                    />
-                    {acLoading && (
-                      <div style={{position:'absolute', right:'14px', top:'50%', transform:'translateY(-50%)', fontSize:'11px', color:'rgba(255,255,255,0.3)'}}>…</div>
-                    )}
-
-                    {/* Dropdown */}
-                    {acOpen && (acResults.length > 0 || (wCompany.trim().length >= 2 && isValidCompanyName(wCompany))) && (
-                      <div style={{position:'absolute', top:'100%', left:0, right:0, zIndex:50, marginTop:'4px',
-                        background:'#1a1a18', border:'1px solid rgba(255,255,255,0.1)', borderRadius:'10px',
-                        overflow:'hidden', boxShadow:'0 8px 32px rgba(0,0,0,0.5)', maxHeight:'280px', overflowY:'auto'}}>
-                        {acResults.map((item, i) => {
-                          const isExact = item.name.toLowerCase() === wCompany.trim().toLowerCase();
-                          return (
-                            <div key={item.name + i}
-                              onMouseDown={e => { e.preventDefault(); selectCompany(item); }}
-                              onMouseEnter={() => setAcHighlight(i)}
-                              style={{display:'flex', alignItems:'center', gap:'10px', padding:'10px 14px',
-                                cursor:'pointer', transition:'background .1s',
-                                background: i === acHighlight ? 'rgba(255,255,255,0.06)' : 'transparent'}}>
-                              {item.logo ? (
-                                <img src={item.logo} alt="" style={{width:22, height:22, borderRadius:'4px', objectFit:'contain', background:'#fff', flexShrink:0}}
-                                  onError={e => { e.target.style.display='none'; e.target.nextSibling.style.display='flex'; }} />
-                              ) : null}
-                              {!item.logo ? (
-                                <div style={{width:22, height:22, borderRadius:'4px', background:'rgba(255,255,255,0.08)',
-                                  display:'flex', alignItems:'center', justifyContent:'center',
-                                  fontSize:'9px', fontWeight:800, color:'rgba(255,255,255,0.4)', flexShrink:0}}>
-                                  {item.name.slice(0, 2).toUpperCase()}
-                                </div>
-                              ) : (
-                                <div style={{width:22, height:22, borderRadius:'4px', background:'rgba(255,255,255,0.08)',
-                                  display:'none', alignItems:'center', justifyContent:'center',
-                                  fontSize:'9px', fontWeight:800, color:'rgba(255,255,255,0.4)', flexShrink:0}}>
-                                  {item.name.slice(0, 2).toUpperCase()}
-                                </div>
-                              )}
-                              <div style={{flex:1, minWidth:0}}>
-                                <div style={{fontSize:'13px', fontWeight:600, color:'#fff', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap'}}>{item.name}</div>
-                                {item.domain && <div style={{fontSize:'10px', color:'rgba(255,255,255,0.3)', marginTop:'1px'}}>{item.domain}</div>}
-                              </div>
-                              {item.source === 'db' && (
-                                <span style={{fontSize:'9px', fontWeight:700, color:'#ff6000', background:'rgba(255,96,0,0.1)',
-                                  padding:'2px 6px', borderRadius:'4px', flexShrink:0}}>FYI</span>
-                              )}
-                            </div>
-                          );
-                        })}
-
-                        {/* "Add new" option if typed name is valid and not an exact match */}
-                        {wCompany.trim().length >= 2 && isValidCompanyName(wCompany) &&
-                         !acResults.some(r => r.name.toLowerCase() === wCompany.trim().toLowerCase()) && (
-                          <div
-                            onMouseDown={e => { e.preventDefault(); setAcOpen(false); }}
-                            style={{display:'flex', alignItems:'center', gap:'10px', padding:'10px 14px',
-                              cursor:'pointer', borderTop:'1px solid rgba(255,255,255,0.06)',
-                              background: acHighlight === acResults.length ? 'rgba(255,255,255,0.06)' : 'transparent'}}>
-                            <div style={{width:22, height:22, borderRadius:'4px', background:'rgba(255,96,0,0.15)',
-                              display:'flex', alignItems:'center', justifyContent:'center',
-                              fontSize:'13px', color:'#ff6000', flexShrink:0}}>+</div>
-                            <span style={{fontSize:'13px', color:'rgba(255,255,255,0.5)'}}>
-                              Add "<span style={{color:'#fff', fontWeight:600}}>{wCompany.trim()}</span>"
-                            </span>
+                    {selectedItem ? (
+                      <div className="company-selected">
+                        {selectedItem.domain ? (
+                          <div className="company-selected-logo">
+                            <img
+                              src={`https://www.google.com/s2/favicons?domain=${selectedItem.domain}&sz=128`}
+                              alt={selectedItem.name}
+                              onError={e => { e.target.parentElement.style.display='none'; e.target.parentElement.nextSibling.style.display='flex'; }}
+                            />
+                          </div>
+                        ) : null}
+                        {selectedItem.domain ? (
+                          <div className="company-selected-initials" style={{display:'none'}}>
+                            {selectedItem.name.slice(0, 2).toUpperCase()}
+                          </div>
+                        ) : (
+                          <div className="company-selected-initials">
+                            {selectedItem.name.slice(0, 2).toUpperCase()}
                           </div>
                         )}
+                        <div className="company-selected-info">
+                          <div className="company-selected-name">{selectedItem.name}</div>
+                          {selectedItem.domain && <div className="company-selected-domain">{selectedItem.domain}</div>}
+                        </div>
+                        <div className="company-selected-badge">✓ Verified</div>
+                        <button className="company-selected-clear" onClick={clearSelectedItem}>×</button>
                       </div>
+                    ) : (
+                      <>
+                        <input
+                          type="text"
+                          placeholder="e.g. Grab Vietnam, FPT Software…"
+                          value={wCompany}
+                          onChange={e => { setWCompany(e.target.value); searchCompanies(e.target.value); }}
+                          onFocus={() => { if (acResults.length > 0) setAcOpen(true); }}
+                          onKeyDown={e => {
+                            if (e.key === 'ArrowDown') { e.preventDefault(); setAcHighlight(h => Math.min(h + 1, acResults.length - 1)); }
+                            else if (e.key === 'ArrowUp') { e.preventDefault(); setAcHighlight(h => Math.max(h - 1, -1)); }
+                            else if (e.key === 'Enter') {
+                              e.preventDefault();
+                              if (acHighlight >= 0 && acResults[acHighlight]) { selectCompany(acResults[acHighlight]); }
+                              else if (wCompany.trim()) { setAcOpen(false); handleSubmit(); }
+                            }
+                            else if (e.key === 'Escape') { setAcOpen(false); }
+                          }}
+                          autoFocus
+                          autoComplete="off"
+                          style={{width:'100%', background:'rgba(255,255,255,0.05)', border:'1.5px solid rgba(255,255,255,0.1)',
+                            borderRadius:'8px', padding:'14px 16px', color:'#fff', fontSize:'14px',
+                            fontFamily:"'Barlow',sans-serif", outline:'none', boxSizing:'border-box'}}
+                        />
+                        {acLoading && (
+                          <div style={{position:'absolute', right:'14px', top:'50%', transform:'translateY(-50%)', fontSize:'11px', color:'rgba(255,255,255,0.3)'}}>…</div>
+                        )}
+
+                        {/* Dropdown */}
+                        {acOpen && (acResults.length > 0 || (wCompany.trim().length >= 2 && isValidCompanyName(wCompany))) && (
+                          <div style={{position:'absolute', top:'100%', left:0, right:0, zIndex:50, marginTop:'4px',
+                            background:'#1a1a18', border:'1px solid rgba(255,255,255,0.1)', borderRadius:'10px',
+                            overflow:'hidden', boxShadow:'0 8px 32px rgba(0,0,0,0.5)', maxHeight:'280px', overflowY:'auto'}}>
+                            {acResults.map((item, i) => (
+                              <div key={item.name + i}
+                                onMouseDown={e => { e.preventDefault(); selectCompany(item); }}
+                                onMouseEnter={() => setAcHighlight(i)}
+                                style={{display:'flex', alignItems:'center', gap:'10px', padding:'10px 14px',
+                                  cursor:'pointer', transition:'background .1s',
+                                  background: i === acHighlight ? 'rgba(255,255,255,0.06)' : 'transparent'}}>
+                                {item.logo ? (
+                                  <img src={item.logo} alt="" style={{width:22, height:22, borderRadius:'4px', objectFit:'contain', background:'#fff', flexShrink:0}}
+                                    onError={e => { e.target.style.display='none'; e.target.nextSibling.style.display='flex'; }} />
+                                ) : null}
+                                {!item.logo ? (
+                                  <div style={{width:22, height:22, borderRadius:'4px', background:'rgba(255,255,255,0.08)',
+                                    display:'flex', alignItems:'center', justifyContent:'center',
+                                    fontSize:'9px', fontWeight:800, color:'rgba(255,255,255,0.4)', flexShrink:0}}>
+                                    {item.name.slice(0, 2).toUpperCase()}
+                                  </div>
+                                ) : (
+                                  <div style={{width:22, height:22, borderRadius:'4px', background:'rgba(255,255,255,0.08)',
+                                    display:'none', alignItems:'center', justifyContent:'center',
+                                    fontSize:'9px', fontWeight:800, color:'rgba(255,255,255,0.4)', flexShrink:0}}>
+                                    {item.name.slice(0, 2).toUpperCase()}
+                                  </div>
+                                )}
+                                <div style={{flex:1, minWidth:0}}>
+                                  <div style={{fontSize:'13px', fontWeight:600, color:'#fff', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap'}}>{item.name}</div>
+                                  {item.domain && <div style={{fontSize:'10px', color:'rgba(255,255,255,0.3)', marginTop:'1px'}}>{item.domain}</div>}
+                                </div>
+                                {item.source === 'db' && (
+                                  <span style={{fontSize:'9px', fontWeight:700, color:'#ff6000', background:'rgba(255,96,0,0.1)',
+                                    padding:'2px 6px', borderRadius:'4px', flexShrink:0}}>FYI</span>
+                                )}
+                              </div>
+                            ))}
+
+                            {/* "Add new" option */}
+                            {wCompany.trim().length >= 2 && isValidCompanyName(wCompany) &&
+                             !acResults.some(r => r.name.toLowerCase() === wCompany.trim().toLowerCase()) && (
+                              <div
+                                onMouseDown={e => { e.preventDefault(); setAcOpen(false); }}
+                                style={{display:'flex', alignItems:'center', gap:'10px', padding:'10px 14px',
+                                  cursor:'pointer', borderTop:'1px solid rgba(255,255,255,0.06)',
+                                  background: acHighlight === acResults.length ? 'rgba(255,255,255,0.06)' : 'transparent'}}>
+                                <div style={{width:22, height:22, borderRadius:'4px', background:'rgba(255,96,0,0.15)',
+                                  display:'flex', alignItems:'center', justifyContent:'center',
+                                  fontSize:'13px', color:'#ff6000', flexShrink:0}}>+</div>
+                                <span style={{fontSize:'13px', color:'rgba(255,255,255,0.5)'}}>
+                                  Add "<span style={{color:'#fff', fontWeight:600}}>{wCompany.trim()}</span>"
+                                </span>
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </>
                     )}
                   </div>
 
