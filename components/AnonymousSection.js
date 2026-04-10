@@ -35,17 +35,16 @@ export default function AnonymousSection() {
       <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '-36px', position: 'relative', zIndex: 2 }}>
         <div style={{ position: 'relative', width: '220px', height: '180px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
 
-          {/* Arrows wrapping around the lock circle */}
-          <svg width="220" height="180" viewBox="0 0 220 180" fill="none" style={{ position: 'absolute', top: 0, left: 0 }}>
-            {/* Left arc: follows circle curvature from top-left down to bottom-left */}
-            <path d="M 62 28 A 85 85 0 0 0 30 120" stroke="#ff6000" strokeWidth="2" strokeLinecap="round" fill="none" />
-            {/* Left arrowhead pointing down */}
-            <polygon points="24,114 30,126 36,114" fill="#ff6000" />
+          {/* Left curved arrow */}
+          <svg width="40" height="80" viewBox="0 0 40 80" fill="none" style={{ position: 'absolute', left: '6px', top: '20px' }}>
+            <path d="M30 8 A 50 50 0 0 0 12 68" stroke="#ff6000" strokeWidth="2" strokeLinecap="round" fill="none" />
+            <path d="M6 62 L12 72 L18 63" stroke="#ff6000" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+          </svg>
 
-            {/* Right arc: follows circle curvature from bottom-right up to top-right */}
-            <path d="M 158 152 A 85 85 0 0 0 190 60" stroke="#ff6000" strokeWidth="2" strokeLinecap="round" fill="none" />
-            {/* Right arrowhead pointing up-right */}
-            <polygon points="184,54 196,54 190,66" fill="#ff6000" transform="rotate(-30, 190, 60)" />
+          {/* Right curved arrow */}
+          <svg width="40" height="80" viewBox="0 0 40 80" fill="none" style={{ position: 'absolute', right: '6px', top: '20px' }}>
+            <path d="M10 72 A 50 50 0 0 0 28 12" stroke="#ff6000" strokeWidth="2" strokeLinecap="round" fill="none" />
+            <path d="M22 18 L28 8 L34 17" stroke="#ff6000" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none" />
           </svg>
 
           {/* Outer ring */}
