@@ -1,49 +1,26 @@
 import { useState, useEffect } from 'react'
 
-export default function NextStepSheet({ role, experience, percentile }) {
+export default function NextStepSheet({ role, experience, percentile, topCompanies }) {
   const [visible, setVisible] = useState(false)
-  const [state, setState] = useState('choose')
-  const [intent, setIntent] = useState(null)
+  const [step, setStep] = useState('cta') // 'cta' | 'auth' | 'done'
 
   useEffect(() => {
     const t = setTimeout(() => setVisible(true), 2000)
     return () => clearTimeout(t)
   }, [])
 
-  function handleOption(opt) {
-    if (opt === 'done') {
-      setState('done')
-    } else {
-      if (typeof window !== 'undefined') {
-        localStorage.setItem('fyi_intent', opt)
-      }
-      setIntent(opt)
-      setState('connect')
-    }
-  }
-
-  const copy = {
-    open: {
-      emoji: '🎯',
-      title: 'Our headhunter will reach out to you directly.',
-      sub: "We personally match you with companies paying 20\u201340% more \u2014 no job board, no spam. Just a real person finding your next move.",
-    },
-    selective: {
-      emoji: '🔍',
-      title: 'We only send offers worth your time.',
-      sub: "Our headhunter reviews your profile first, then reaches out only when there's a role that genuinely pays more and fits your stack.",
-    },
-  }
-
-  const c = copy[intent] || copy.open
-
   if (!visible) return null
+
+  const companyNames = (topCompanies || []).slice(0, 3).map(c => c.name)
+  const companyText = companyNames.length > 0
+    ? companyNames.join(', ')
+    : 'top companies in Vietnam'
 
   return (
     <>
-      {/* Backdrop — full screen, blocks interaction */}
+      {/* Backdrop */}
       <div
-        onClick={() => state === 'choose' && setVisible(false)}
+        onClick={() => step === 'done' && setVisible(false)}
         style={{
           position: 'fixed', inset: 0,
           background: 'rgba(0,0,0,0.6)',
@@ -52,7 +29,7 @@ export default function NextStepSheet({ role, experience, percentile }) {
         }}
       />
 
-      {/* Sheet — takes up most of the screen */}
+      {/* Sheet */}
       <div style={{
         position: 'fixed',
         bottom: 0, left: 0, right: 0,
@@ -77,144 +54,113 @@ export default function NextStepSheet({ role, experience, percentile }) {
           }
         `}</style>
 
-        {/* Handle bar */}
+        {/* Handle */}
         <div style={{
           width: 56, height: 5,
           background: '#ddd',
           borderRadius: 3,
-          margin: '0 auto 32px',
+          margin: '0 auto 28px',
         }} />
 
-        {/* Inner content with padding */}
         <div style={{ padding: '0 40px 48px', maxWidth: '600px', margin: '0 auto' }}>
 
-          {/* ═══ STATE: choose ═══ */}
-          {state === 'choose' && (
+          {/* ═══ STEP: CTA ═══ */}
+          {step === 'cta' && (
             <div style={{ animation: 'sheetFadeSlide 0.35s ease' }}>
 
-              {/* Mascot bubble */}
+              {/* Headline */}
+              <div style={{ textAlign: 'center', marginBottom: 32 }}>
+                <div style={{ fontSize: 48, marginBottom: 16 }}>💰</div>
+                <h3 style={{
+                  fontSize: 26, fontWeight: 800, color: '#1a1a1a',
+                  lineHeight: 1.35, margin: '0 0 12px',
+                }}>
+                  These companies pay more<br/>for your exact role.
+                </h3>
+                <p style={{
+                  fontSize: 16, color: '#777', lineHeight: 1.65,
+                  margin: 0, maxWidth: '460px', marginLeft: 'auto', marginRight: 'auto',
+                }}>
+                  You just saw that <strong style={{ color: '#1a1a1a' }}>{companyText}</strong> pay
+                  more for <strong style={{ color: '#1a1a1a' }}>{role}</strong> engineers.
+                  Our headhunter can personally introduce you — no job boards, no spam.
+                </p>
+              </div>
+
+              {/* What happens */}
               <div style={{
-                display: 'flex', alignItems: 'center', gap: 20,
-                background: 'linear-gradient(135deg, #f7f4ff 0%, #ede8ff 100%)',
-                borderRadius: 22,
-                padding: '24px 28px',
-                marginBottom: 36,
+                background: '#f8f8f8', borderRadius: 18, padding: '22px 24px', marginBottom: 28,
               }}>
-                <div style={{
-                  width: 72, height: 72, flexShrink: 0,
-                  background: '#7c6aff',
-                  borderRadius: '50%',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  fontSize: 36,
-                  boxShadow: '0 4px 16px rgba(124,106,255,0.3)',
-                }}>🧑‍💻</div>
-                <div>
-                  <div style={{ fontSize: 22, fontWeight: 800, color: '#1a1a1a', lineHeight: 1.3, marginBottom: 6 }}>
-                    You're earning <span style={{ color: '#7c6aff' }}>way above average.</span>
-                  </div>
-                  <div style={{ fontSize: 16, color: '#777', lineHeight: 1.55 }}>
-                    Companies are actively looking for engineers like you. Want us to connect you?
-                  </div>
+                <div style={{ fontSize: 14, fontWeight: 700, color: '#aaa', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 14 }}>
+                  How it works
                 </div>
+                {[
+                  { icon: '1️⃣', text: 'Sign in so our headhunter can reach you' },
+                  { icon: '2️⃣', text: 'They review your profile & find matching roles' },
+                  { icon: '3️⃣', text: 'You get introduced only to companies paying more' },
+                ].map(({ icon, text }) => (
+                  <div key={text} style={{
+                    display: 'flex', alignItems: 'center', gap: 14,
+                    padding: '8px 0',
+                  }}>
+                    <span style={{ fontSize: 22, flexShrink: 0 }}>{icon}</span>
+                    <span style={{ fontSize: 15, color: '#444', lineHeight: 1.5 }}>{text}</span>
+                  </div>
+                ))}
               </div>
 
-              {/* 3 option cards */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 16 }}>
+              {/* CTA button */}
+              <button
+                onClick={() => {
+                  if (typeof window !== 'undefined') localStorage.setItem('fyi_intent', 'open')
+                  setStep('auth')
+                }}
+                style={{
+                  width: '100%', padding: '20px',
+                  borderRadius: 16, border: 'none',
+                  background: '#ff4400', cursor: 'pointer',
+                  fontSize: 18, fontWeight: 800, color: '#fff',
+                  marginBottom: 12, fontFamily: 'inherit',
+                  boxShadow: '0 6px 24px rgba(255,68,0,0.3)',
+                  transition: 'transform 0.1s',
+                }}
+                onMouseDown={e => e.currentTarget.style.transform = 'scale(0.98)'}
+                onMouseUp={e => e.currentTarget.style.transform = ''}
+              >
+                Yes — connect me with the headhunter
+              </button>
 
-                {/* Open */}
-                <div
-                  onClick={() => handleOption('open')}
-                  style={{
-                    background: '#fff4f0',
-                    border: '2px solid #ff4400',
-                    borderRadius: 22,
-                    padding: '36px 16px 28px',
-                    textAlign: 'center',
-                    cursor: 'pointer',
-                    transition: 'transform 0.15s, box-shadow 0.15s',
-                  }}
-                  onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-4px)'; e.currentTarget.style.boxShadow = '0 12px 32px rgba(255,68,0,0.2)'; }}
-                  onMouseLeave={e => { e.currentTarget.style.transform = ''; e.currentTarget.style.boxShadow = ''; }}
-                >
-                  <div style={{ fontSize: 44, marginBottom: 16 }}>🚀</div>
-                  <div style={{ fontSize: 16, fontWeight: 800, color: '#ff4400', lineHeight: 1.35, marginBottom: 8 }}>
-                    Yes, find me<br/>better offers
-                  </div>
-                  <div style={{ fontSize: 13, color: '#aaa', lineHeight: 1.4 }}>
-                    I'm open now
-                  </div>
-                </div>
-
-                {/* Selective */}
-                <div
-                  onClick={() => handleOption('selective')}
-                  style={{
-                    background: '#fffbf0',
-                    border: '2px solid #ffb300',
-                    borderRadius: 22,
-                    padding: '36px 16px 28px',
-                    textAlign: 'center',
-                    cursor: 'pointer',
-                    transition: 'transform 0.15s, box-shadow 0.15s',
-                  }}
-                  onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-4px)'; e.currentTarget.style.boxShadow = '0 12px 32px rgba(255,179,0,0.2)'; }}
-                  onMouseLeave={e => { e.currentTarget.style.transform = ''; e.currentTarget.style.boxShadow = ''; }}
-                >
-                  <div style={{ fontSize: 44, marginBottom: 16 }}>👀</div>
-                  <div style={{ fontSize: 16, fontWeight: 800, color: '#e09000', lineHeight: 1.35, marginBottom: 8 }}>
-                    Only if it's<br/>the right fit
-                  </div>
-                  <div style={{ fontSize: 13, color: '#aaa', lineHeight: 1.4 }}>
-                    Good match only
-                  </div>
-                </div>
-
-                {/* Done */}
-                <div
-                  onClick={() => handleOption('done')}
-                  style={{
-                    background: '#f7f7f7',
-                    border: '2px solid #e0e0e0',
-                    borderRadius: 22,
-                    padding: '36px 16px 28px',
-                    textAlign: 'center',
-                    cursor: 'pointer',
-                    transition: 'transform 0.15s, box-shadow 0.15s',
-                  }}
-                  onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-4px)'; e.currentTarget.style.boxShadow = '0 12px 32px rgba(0,0,0,0.08)'; }}
-                  onMouseLeave={e => { e.currentTarget.style.transform = ''; e.currentTarget.style.boxShadow = ''; }}
-                >
-                  <div style={{ fontSize: 44, marginBottom: 16 }}>😌</div>
-                  <div style={{ fontSize: 16, fontWeight: 800, color: '#555', lineHeight: 1.35, marginBottom: 8 }}>
-                    All good<br/>here
-                  </div>
-                  <div style={{ fontSize: 13, color: '#aaa', lineHeight: 1.4 }}>
-                    Happy where I am
-                  </div>
-                </div>
-
-              </div>
+              <button
+                onClick={() => setStep('done')}
+                style={{
+                  width: '100%', padding: 14,
+                  background: 'transparent', border: 'none',
+                  fontSize: 14, color: '#bbb', cursor: 'pointer',
+                  fontFamily: 'inherit',
+                }}
+              >
+                No thanks, I'm happy where I am
+              </button>
             </div>
           )}
 
-          {/* ═══ STATE: connect ═══ */}
-          {state === 'connect' && (
+          {/* ═══ STEP: AUTH ═══ */}
+          {step === 'auth' && (
             <div style={{ animation: 'sheetFadeSlide 0.35s ease' }}>
 
-              <div style={{ textAlign: 'center', marginBottom: 36 }}>
-                <div style={{ fontSize: 56, marginBottom: 18 }}>{c.emoji}</div>
-                <div style={{
+              <div style={{ textAlign: 'center', marginBottom: 32 }}>
+                <div style={{ fontSize: 48, marginBottom: 16 }}>🤝</div>
+                <h3 style={{
                   fontSize: 24, fontWeight: 800, color: '#1a1a1a',
-                  lineHeight: 1.4, marginBottom: 14,
+                  lineHeight: 1.35, margin: '0 0 10px',
                 }}>
-                  {c.title}
-                </div>
-                <div style={{
-                  fontSize: 16, color: '#888', lineHeight: 1.7,
-                  padding: '0 16px', maxWidth: '440px', margin: '0 auto',
+                  Sign in so we can reach you
+                </h3>
+                <p style={{
+                  fontSize: 15, color: '#888', lineHeight: 1.6, margin: 0,
                 }}>
-                  {c.sub}
-                </div>
+                  We only use this to contact you about matching roles. Nothing else.
+                </p>
               </div>
 
               <button
@@ -245,7 +191,7 @@ export default function NextStepSheet({ role, experience, percentile }) {
                   borderRadius: 16, border: '2px solid #0077b5',
                   background: '#0077b5', cursor: 'pointer',
                   fontSize: 18, fontWeight: 700, color: '#fff',
-                  marginBottom: 20, fontFamily: 'inherit',
+                  marginBottom: 18, fontFamily: 'inherit',
                 }}
               >
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="white">
@@ -255,11 +201,11 @@ export default function NextStepSheet({ role, experience, percentile }) {
               </button>
 
               <button
-                onClick={() => setState('choose')}
+                onClick={() => setStep('cta')}
                 style={{
                   width: '100%', padding: 12,
                   background: 'transparent', border: 'none',
-                  fontSize: 15, color: '#bbb', cursor: 'pointer',
+                  fontSize: 14, color: '#bbb', cursor: 'pointer',
                   fontFamily: 'inherit',
                 }}
               >
@@ -268,15 +214,15 @@ export default function NextStepSheet({ role, experience, percentile }) {
             </div>
           )}
 
-          {/* ═══ STATE: done ═══ */}
-          {state === 'done' && (
+          {/* ═══ STEP: DONE ═══ */}
+          {step === 'done' && (
             <div style={{ animation: 'sheetFadeSlide 0.35s ease', textAlign: 'center', padding: '20px 0 12px' }}>
-              <div style={{ fontSize: 64, marginBottom: 18 }}>😌</div>
+              <div style={{ fontSize: 64, marginBottom: 18 }}>👋</div>
               <div style={{ fontSize: 24, fontWeight: 800, color: '#1a1a1a', marginBottom: 10 }}>
-                Glad you're happy there!
+                No worries!
               </div>
               <div style={{ fontSize: 16, color: '#999', lineHeight: 1.65, marginBottom: 32 }}>
-                If things change, FYI will always be here.
+                Your salary data is saved. If you ever want to explore,<br/>FYI will always be here.
               </div>
               <button
                 onClick={() => setVisible(false)}

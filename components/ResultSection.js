@@ -202,6 +202,7 @@ export default function ResultSection({ salary, role, experience, company }) {
           role={role}
           experience={experience}
           percentile={result.percentile}
+          topCompanies={result.topCompanies}
         />
       )}
     </section>
