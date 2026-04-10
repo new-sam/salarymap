@@ -5,6 +5,7 @@ import supabaseClient from '../lib/supabaseClient';
 import CompanyCard from '../components/CompanyCard';
 import SlidePanel from '../components/SlidePanel';
 import AnonymousSection from '../components/AnonymousSection';
+import ResultSection from '../components/ResultSection';
 
 const css = `
 *, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
@@ -1594,39 +1595,21 @@ function SubmitSection({
           ) : (
             /* Result card */
             <div>
-              <div style={{textAlign:'center', marginBottom:'24px'}}>
-                <div style={{fontSize:'11px', fontWeight:700, color:'rgba(255,255,255,0.4)', letterSpacing:'2px', textTransform:'uppercase', marginBottom:'12px'}}>Your result</div>
-                {percentileData && !percentileData.usedFallback ? (
-                  <>
-                    <div style={{fontSize:'72px', fontWeight:900, color:pctColor, lineHeight:1, letterSpacing:'-3px', marginBottom:'8px'}}>
-                      {pctLabel}
-                    </div>
-                    <div style={{fontSize:'14px', color:'rgba(255,255,255,0.5)', marginBottom:'24px'}}>
-                      Among {wRole} engineers with {wExp} experience
-                    </div>
-                    <div style={{display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:'8px', marginBottom:'20px'}}>
-                      {[
-                        {v:`$${sal}`, l:'Your salary'},
-                        {v:`$${percentileData.median}`, l:'Market median'},
-                        {v:diffLabel, l:'Difference', c: diff >= 0 ? '#4ade80' : '#f87171'},
-                      ].map(o => (
-                        <div key={o.l} style={{background:'rgba(255,255,255,0.04)', borderRadius:'10px', padding:'12px 8px', textAlign:'center'}}>
-                          <div style={{fontSize:'15px', fontWeight:800, color: o.c || '#ff6000'}}>{o.v}</div>
-                          <div style={{fontSize:'10px', color:'rgba(255,255,255,0.35)', marginTop:'3px'}}>{o.l}</div>
-                        </div>
-                      ))}
-                    </div>
-                    <div style={{background:'rgba(255,255,255,0.04)', borderRadius:'10px', padding:'14px 16px', fontSize:'13px', color:'rgba(255,255,255,0.65)', lineHeight:1.6, textAlign:'left'}}>
-                      {message}
-                    </div>
-                  </>
-                ) : (
-                  <div style={{padding:'20px 0'}}>
-                    <div style={{fontSize:'42px', marginBottom:'12px'}}>✅</div>
-                    <div style={{fontSize:'18px', fontWeight:800, color:'#fff', marginBottom:'8px'}}>Submitted!</div>
-                  </div>
-                )}
-              </div>
+              {percentileData && !percentileData.usedFallback ? (
+                <ResultSection
+                  percentile={percentileData.topPct || percentileData.percentile || 50}
+                  userSalary={sal}
+                  marketMedian={percentileData.median}
+                  role={wRole}
+                  experience={wExp}
+                  companiesPayingMore={percentileData.companiesPayingMore || []}
+                />
+              ) : (
+                <div style={{textAlign:'center', padding:'40px 0'}}>
+                  <div style={{fontSize:'42px', marginBottom:'12px'}}>✅</div>
+                  <div style={{fontSize:'18px', fontWeight:800, color:'#fff', marginBottom:'8px'}}>Submitted!</div>
+                </div>
+              )}
 
               {/* Company comparison + headhunter CTA — only when not logged in */}
               {showResult && !isLoggedIn && (() => {

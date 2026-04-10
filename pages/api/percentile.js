@@ -38,6 +38,27 @@ const SEED_COMPANIES = [
   { name: 'KMS Technology',  domain: 'kms-technology.com',  mult: 1.06 },
 ];
 
+const DOMAIN_MAP = {
+  'grab vietnam': 'grab.com',
+  'vng corporation': 'vng.com.vn',
+  'shopee vietnam': 'shopee.vn',
+  'fpt software': 'fpt.com.vn',
+  'tiki': 'tiki.vn',
+  'momo': 'momo.vn',
+  'zalo': 'zalo.me',
+  'vpbank': 'vpbank.com.vn',
+  'techcombank': 'techcombank.com.vn',
+  'sky mavis': 'skymavis.com',
+  'vnpt technology': 'vnpt.com.vn',
+  'kms technology': 'kms-technology.com',
+  'nashtech': 'nashtechglobal.com',
+  'axon active': 'axonactive.com',
+  'harvey nash': 'harveynash.vn',
+  'katalon': 'katalon.com',
+  'got it': 'got-it.ai',
+  'teko vietnam': 'teko.vn',
+};
+
 function buildTopCompanies(realCompanies, userSalary, userCompany) {
   // Filter out user's company, require premiumPct > 0, sort desc, take top 3
   const candidates = realCompanies
@@ -96,7 +117,7 @@ export default async function handler(req, res) {
 
   if (!data || data.length < 5) {
     const topCompanies = seedTopCompanies(role, experience, sal, company || '');
-    return res.json({ usedFallback: true, topCompanies });
+    return res.json({ usedFallback: true, topCompanies, companiesPayingMore: [] });
   }
 
   // Percentile calc (with outlier removal)
@@ -128,8 +149,35 @@ export default async function handler(req, res) {
     topCompanies = seedTopCompanies(role, experience, sal, company || '');
   }
 
+  // Build companiesPayingMore: all companies for this role with median > user salary
+  const { data: allRoleSubs } = await supabase
+    .from('submissions')
+    .select('company, salary')
+    .eq('role', role);
+
+  const byCoAll = {};
+  (allRoleSubs || []).forEach(row => {
+    const co = (row.company || '').trim();
+    if (!co || row.salary < 5 || row.salary > 200) return;
+    if (!byCoAll[co]) byCoAll[co] = [];
+    byCoAll[co].push(row.salary);
+  });
+
+  const companiesPayingMore = Object.entries(byCoAll)
+    .filter(([name, sals]) => sals.length >= 2 && name.toLowerCase() !== (company || '').toLowerCase())
+    .map(([name, sals]) => {
+      const clean = removeOutliers(sals);
+      const med = median(clean);
+      const domain = DOMAIN_MAP[name.toLowerCase()] || '';
+      return { company: name, domain, medianSalary: med };
+    })
+    .filter(c => c.medianSalary > sal)
+    .sort((a, b) => b.medianSalary - a.medianSalary)
+    .slice(0, 4);
+
   return res.json({
     topPct,
+    percentile: topPct,
     median: med,
     p25,
     p75,
@@ -141,5 +189,6 @@ export default async function handler(req, res) {
     difference: sal - med,
     role,
     experience,
+    companiesPayingMore,
   });
 }
