@@ -1343,7 +1343,7 @@ function SubmitSection({
 
   return (
     <section id="submit" style={{background:'#0c0c0b', padding:'100px 52px 120px', fontFamily:"'Barlow',sans-serif", scrollMarginTop:'64px'}}>
-      <div style={{maxWidth:'1060px', margin:'0 auto', display:'grid', gridTemplateColumns: showResult ? '1fr' : '1fr 1fr', gap:'80px', alignItems:'stretch'}}>
+      <div style={{maxWidth: showResult ? '1200px' : '1060px', margin:'0 auto', display:'grid', gridTemplateColumns: showResult ? '1fr' : '1fr 1fr', gap: showResult ? '0px' : '80px', alignItems:'stretch'}}>
 
         {/* Left column — hidden after submit */}
         {!showResult && (
@@ -1377,7 +1377,7 @@ function SubmitSection({
         )}
 
         {/* Right column — wizard or result */}
-        <div style={showResult ? {...card, maxWidth:'560px', margin:'0 auto', width:'100%'} : card}>
+        <div style={showResult ? {} : card}>
           {!showResult ? (
             <>
               {/* Progress dots */}
