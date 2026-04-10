@@ -1808,6 +1808,7 @@ export default function Home() {
   const [selectedCompany, setSelectedCompany] = useState(null);
   const [panelOpen, setPanelOpen] = useState(false);
   const [apiCompanies, setApiCompanies] = useState([]);
+  const [visibleCount, setVisibleCount] = useState(8);
   const [gridReady, setGridReady] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [pendingCompanyId, setPendingCompanyId] = useState(null);
@@ -2393,20 +2394,33 @@ export default function Home() {
       {gridReady && typeof document !== 'undefined' && document.getElementById('company-grid-root') &&
         createPortal(
           <>
-            {apiCompanies.map((c, i) => (
+            {apiCompanies.slice(0, visibleCount).map((c, i) => (
               <CompanyCard
                 key={c.company}
                 company={c}
-                rank={i}
-                isUnlocked={isUnlocked || i < 3}
+                index={i}
+                isUnlocked={isUnlocked}
                 onClick={(co) => { setSelectedCompany(co); setPanelOpen(true); }}
-                onScrollToSubmit={(name) => {
-                  pendingCompanyRef.current = name;
-                  setPendingCompanyId(name);
-                  document.getElementById('submit')?.scrollIntoView({ behavior: 'smooth' });
-                }}
+                onLockedClick={() => document.getElementById('submit')?.scrollIntoView({ behavior: 'smooth' })}
               />
             ))}
+            {visibleCount < apiCompanies.length && (
+              <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '16px 0' }}>
+                <button
+                  onClick={() => setVisibleCount(v => v + 8)}
+                  style={{
+                    fontFamily: "'Barlow',sans-serif", fontSize: '14px', fontWeight: 700,
+                    color: '#f0ece4', background: 'rgba(255,255,255,0.06)',
+                    border: '1px solid rgba(255,255,255,0.12)', borderRadius: '100px',
+                    padding: '12px 28px', cursor: 'pointer', transition: 'all .15s',
+                  }}
+                  onMouseEnter={e => { e.target.style.borderColor = 'rgba(255,255,255,0.3)'; e.target.style.background = 'rgba(255,255,255,0.1)'; }}
+                  onMouseLeave={e => { e.target.style.borderColor = 'rgba(255,255,255,0.12)'; e.target.style.background = 'rgba(255,255,255,0.06)'; }}
+                >
+                  Load more ({apiCompanies.length - visibleCount} more companies)
+                </button>
+              </div>
+            )}
           </>,
           document.getElementById('company-grid-root')
         )
