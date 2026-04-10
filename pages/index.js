@@ -1,7 +1,9 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
-import ReactDOM from 'react-dom';
+import { createPortal } from 'react-dom';
 import Head from 'next/head';
 import supabaseClient from '../lib/supabaseClient';
+import CompanyCard from '../components/CompanyCard';
+import SlidePanel from '../components/SlidePanel';
 
 const css = `
 *, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
@@ -1263,255 +1265,6 @@ const lbData = {
   },
 };
 
-const COMPANY_META = {
-  'Grab Vietnam':    { domain:'grab.com',           color:'#00B14F', city:'Ho Chi Minh City', category:'Super App'   },
-  'VNG Corporation': { domain:'vng.com.vn',          color:'#0066CC', city:'Ho Chi Minh City', category:'Product'     },
-  'Shopee Vietnam':  { domain:'shopee.vn',           color:'#EE4D2D', city:'Ho Chi Minh City', category:'E-commerce'  },
-  'FPT Software':    { domain:'fpt.com',             color:'#F26522', city:'Ha Noi',           category:'IT Services' },
-  'Momo':            { domain:'momo.vn',             color:'#A50064', city:'Ho Chi Minh City', category:'Fintech'     },
-  'Sky Mavis':       { domain:'skymavis.com',        color:'#4B5CE4', city:'Ho Chi Minh City', category:'Web3 Gaming' },
-  'Tiki':            { domain:'tiki.vn',             color:'#1A94FF', city:'Ho Chi Minh City', category:'E-commerce'  },
-  'Zalo':            { domain:'zalo.me',             color:'#0068FF', city:'Ho Chi Minh City', category:'Social Tech' },
-  'VPBank':          { domain:'vpbank.com.vn',       color:'#00A651', city:'Ha Noi',           category:'Banking'     },
-  'Techcombank':     { domain:'techcombank.com.vn',  color:'#E30613', city:'Ha Noi',           category:'Banking'     },
-  'VNPT Technology': { domain:'vnpt.com.vn',         color:'#003087', city:'Ha Noi',           category:'Telecom'     },
-  'OneMount Group':  { domain:'onemount.com',        color:'#FF6200', city:'Ha Noi',           category:'Tech'        },
-  'GHN':             { domain:'ghn.vn',              color:'#F26522', city:'Ho Chi Minh City', category:'Logistics'   },
-  'NashTech':        { domain:'nashtechglobal.com',  color:'#0033A0', city:'Ho Chi Minh City', category:'IT Services' },
-  'KMS Technology':  { domain:'kms-technology.com',  color:'#0F75BC', city:'Ho Chi Minh City', category:'IT Services' },
-};
-const COMPANY_META_DEFAULT = { domain:'', color:'#4A5568', city:'Vietnam', category:'Tech' };
-
-// Company og:images (scraped from official websites)
-// Per-company curated images — real company photos, all verified 200
-const px = id => `https://images.pexels.com/photos/${id}/pexels-photo-${id}.jpeg?auto=compress&cs=tinysrgb&w=800&h=500&fit=crop`;
-const COMPANY_IMAGES = {
-  // Real company photos (verified working)
-  'Grab Vietnam':    'https://assets.grab.com/wp-content/uploads/sites/11/2024/10/08174304/RV-2x1-GRAB-10Y-1-scaled.jpg',
-  'Sky Mavis':       'https://cdn.skymavis.com/skymavis-home/public//homepage/about-us-1.jpg',
-  'Momo':            'https://boho.vn/wp-content/uploads/2023/03/L6-Momo-001-1024x576.jpg',
-  'FPT Software':    'https://fptsoftware.com/-/media/project/fpt-software/fso/about-us/global-presence/f-town/f-town-1.jpg',
-  'Shopee Vietnam':  'https://www.sea.com/_next/static/media/bg-shopee.1789debb.jpg',
-  'Tiki':            'https://tuyendung.tiki.vn/images/features/about.jpg',
-  'GHN':             'https://cdn.hstatic.net/files/200000472237/file/aboutus-01.jpg',
-  'Techcombank':     'https://www.metalocus.es/sites/default/files/files/metalocus_fosterpartners_techcombank_01.jpg',
-  'Zalo':            'https://stc-zalo-careers.zdn.vn/v2/assets/images/lifeAtZalo/img1.jpg',
-  'KMS Technology':  'https://greatplacetowork.com.vn/wp-content/uploads/2025/02/KMS-TECHNOLOGY_1-2-scaled.jpg',
-  'NashTech':        'https://www.outsourceaccelerator.com/wp-content/uploads/2023/05/f7e52632d507ce7029cde7932db75a9a_nashtech-top-10-ict-bpo-2048x1367-1.jpg',
-  'Nashtech Global': 'https://www.outsourceaccelerator.com/wp-content/uploads/2023/05/f7e52632d507ce7029cde7932db75a9a_nashtech-top-10-ict-bpo-2048x1367-1.jpg',
-  // Real photos for previously missing companies
-  'VNG Corporation': 'https://namthuycorp.com/wp-content/uploads/2020/07/du-an-VNG-1.jpg',
-  'VNPT Technology': 'https://architizer-prod.imgix.net/media/mediadata/uploads/1754883372803112358_VNPT_Landscape_2.jpg?w=1680&q=60&auto=format,compress&cs=strip',
-  'GHN':             'https://vstatic.vietnam.vn/vietnam/resource/IMAGE/2026/01/15/1768469557624_giao-hang-nhanhdocx-1768467798800.jpeg',
-  'VPBank':          'https://niceoffice.com.vn/wp-content/uploads/2023/10/vpbank-saigon-tower-duong-ton-duc-thang-quan-1.jpg',
-  // Pexels fallbacks
-  'MBBank':          px('256559'),
-  'SHB Finance':     px('5473955'),
-  'Sacombank Digital': px('7821734'),
-  'Viettel':         px('1181671'),
-  'OneMount Group':  px('3861969'),
-  'Logivan':         px('1036808'),
-  'Base.vn':         px('3182820'),
-  'KiotViet':        px('3184360'),
-  'Amanotes':        px('2182973'),
-  'Rever':           px('7654202'),
-  'Trusting Social': px('6476254'),
-  'TokyoTech VN':    px('3861958'),
-  'Fossil Group VN': px('3184418'),
-  'BHD Star':        px('2182973'),
-  'Harvey Nash':     px('3184418'),
-  'Axon Active':     px('3861958'),
-  'Got It':          px('1181671'),
-  'Katalon':         px('3182812'),
-  'Teko Vietnam':    px('3184292'),
-  'Sendo':           px('3184292'),
-};
-
-// Fallback pool for unlisted companies — all verified 200
-const CARD_BG_POOL = [
-  px('3182812'), px('1181244'), px('3184418'), px('256559'),
-  px('3861969'), px('1181406'), px('2182973'), px('3184292'),
-  px('1181671'), px('3184360'), px('1036808'), px('3861958'),
-];
-
-const OPEN_THRESHOLD = 15; // submissions needed to show salary data
-
-function buildCardCompanies(companyStats) {
-  // Sort by submission count desc (popularity) — open first, then locked
-  const sorted = [...companyStats].sort((a, b) => {
-    const aOpen = a.count >= OPEN_THRESHOLD, bOpen = b.count >= OPEN_THRESHOLD;
-    if (aOpen !== bOpen) return aOpen ? -1 : 1;
-    return b.count - a.count;
-  });
-
-  return sorted.map((s, i) => {
-    const meta = COMPANY_META[s.company] || COMPANY_META_DEFAULT;
-    const open = s.count >= OPEN_THRESHOLD;
-    const imgUrl = COMPANY_IMAGES[s.company] || CARD_BG_POOL[i % CARD_BG_POOL.length];
-    const topPct = s.topPct || null;
-
-    return {
-      name: s.company, ...meta,
-      salMin: s.salMin, salMax: s.salMax,
-      submissions: s.count, topPct,
-      open, median: s.median, top10: s.salMax,
-      imgUrl,
-      salaryByRole: s.salaryByRole.map((r) => ({
-        role: r.role, experience: '',
-        barPercent: Math.round((r.median / (s.salaryByRole[0]?.median || 1)) * 100),
-        salaryVND: r.median,
-      })),
-    };
-  });
-}
-
-function buildCardsHTML(companies) {
-  const cards = companies.map((c, i) => {
-    const bgImage = c.imgUrl;
-    const bgStyle = `background-image:url('${bgImage}'); background-color:${c.color};`;
-    const logo = c.domain ? `https://www.google.com/s2/favicons?domain=${c.domain}&sz=256` : '';
-    const logoTag = logo
-      ? `<div class="card-logo-wrap"><img class="card-logo-img" src="${logo}" alt="${c.name}" onerror="this.style.display='none'"></div>`
-      : '';
-    const hiddenClass = i >= 12 ? ' hidden' : '';
-    if (c.open) {
-      const openList = companies.filter(x => x.open);
-      const rank = openList.findIndex(x => x.name === c.name) + 1;
-      return `<div class="company-card open${hiddenClass}" onclick="openCompanyPanel('${c.name.replace(/'/g,"\'")}')">
-        <div class="card-bg" style="${bgStyle}"></div>
-        ${logoTag}
-        <div class="card-overlay"></div>
-        <div class="card-top">
-          <span class="card-rank">#${rank}</span>
-          <span class="card-category">${c.category}</span>
-        </div>
-        <div class="card-bottom">
-          <div class="card-name-row">
-            <div class="card-name">${c.name}</div>
-            <div class="card-count">${c.submissions} salaries</div>
-          </div>
-          <div class="card-divider"></div>
-          <div class="card-sal">${c.salMin}M – ${c.salMax}M ₫</div>
-        </div>
-      </div>`;
-    } else {
-      return `<div class="company-card locked${hiddenClass}" onclick="openCompanyPanel('${c.name.replace(/'/g,"\'")}')">
-        <div class="card-bg" style="${bgStyle}"></div>
-        ${logoTag}
-        <div class="card-overlay"></div>
-        <div class="card-lock-center">
-          <div class="card-lock-icon">🔒</div>
-          <div class="card-lock-name">${c.name}</div>
-          <div class="card-lock-count">${c.submissions} salaries</div>
-        </div>
-        <div class="lock-cta">Submit to unlock →</div>
-      </div>`;
-    }
-  }).join('');
-
-  const remaining = companies.length - 12;
-  const loadMore = remaining > 0
-    ? `<div class="load-more-wrap"><button class="load-more-btn" onclick="document.querySelectorAll('.company-card.hidden').forEach(el=>el.classList.remove('hidden'));this.parentElement.remove()">Show ${remaining} more companies ↓</button></div>`
-    : '';
-
-  return cards + loadMore;
-}
-
-// ── React JSX card grid (rendered via portal into #company-grid-root) ─────────
-function CompanyCardGrid({ companies, isSubmitted, setPendingCompanyId, onOpenPanel }) {
-  return (
-    <>
-      {companies.map((company, index) => {
-        const locked = !isSubmitted && index >= 3;
-        const logo = company.domain
-          ? `https://www.google.com/s2/favicons?domain=${company.domain}&sz=256`
-          : null;
-
-        return (
-          <div
-            key={company.name}
-            className="company-card open"
-            style={{ position: 'relative' }}
-            onClick={() => { if (!locked) onOpenPanel(company.name); }}
-          >
-            {/* existing card UI — unchanged */}
-            <div className="card-bg" style={{ backgroundImage: `url('${company.imgUrl}')`, backgroundColor: company.color }} />
-            {logo && (
-              <div className="card-logo-wrap">
-                <img className="card-logo-img" src={logo} alt={company.name}
-                  onError={e => { e.target.style.display = 'none'; }} />
-              </div>
-            )}
-            <div className="card-overlay" />
-            <div className="card-top">
-              <span className="card-rank">#{index + 1}</span>
-              <span className="card-category">{company.category}</span>
-            </div>
-            <div className="card-bottom">
-              <div className="card-name-row">
-                <div className="card-name">{company.name}</div>
-                <div className="card-count">{company.submissions} salaries</div>
-              </div>
-              <div className="card-divider" />
-              <div className="card-sal">{company.salMin}M – {company.salMax}M ₫</div>
-            </div>
-
-            {/* lock overlay — absolute on top, only when locked */}
-            {locked && (
-              <div
-                style={{
-                  position:'absolute', inset:0, zIndex:10,
-                  background:'rgba(0,0,0,0.75)',
-                  backdropFilter:'blur(3px)',
-                  display:'flex', flexDirection:'column',
-                  alignItems:'center', justifyContent:'center',
-                  gap:'8px', cursor:'pointer', borderRadius:'inherit',
-                }}
-                onClick={e => {
-                  e.stopPropagation();
-                  setPendingCompanyId(company.name);
-                  document.getElementById('submit')?.scrollIntoView({ behavior: 'smooth' });
-                }}
-              >
-                <span style={{ fontSize:'22px' }}>🔒</span>
-                <span style={{ fontSize:'14px', fontWeight:800, color:'white' }}>{company.name}</span>
-                <span style={{ fontSize:'11px', color:'rgba(255,255,255,0.4)' }}>{company.submissions} salaries</span>
-                <span style={{
-                  marginTop:'8px', background:'#FF6200', color:'black',
-                  fontSize:'12px', fontWeight:800,
-                  padding:'9px 20px', borderRadius:'100px',
-                }}>Submit to unlock →</span>
-              </div>
-            )}
-          </div>
-        );
-      })}
-
-      {/* CTA card */}
-      {!isSubmitted && companies.length > 3 && (
-        <div
-          onClick={() => document.getElementById('submit')?.scrollIntoView({ behavior: 'smooth' })}
-          style={{
-            height:'260px', borderRadius:'14px',
-            background:'#111', border:'1.5px dashed rgba(255,98,0,0.4)',
-            display:'flex', flexDirection:'column',
-            alignItems:'center', justifyContent:'center',
-            gap:'10px', cursor:'pointer',
-          }}
-        >
-          <span style={{ fontSize:'24px' }}>🔓</span>
-          <span style={{ fontSize:'15px', fontWeight:800, color:'white' }}>{companies.length - 3} more companies</span>
-          <span style={{ fontSize:'12px', color:'rgba(255,255,255,0.35)', textAlign:'center', padding:'0 20px' }}>
-            Submit your salary to unlock all
-          </span>
-          <span style={{ background:'#FF6200', color:'black', fontSize:'12px', fontWeight:800, padding:'9px 20px', borderRadius:'100px' }}>
-            Submit salary →
-          </span>
-        </div>
-      )}
-    </>
-  );
-}
 
 // ── SubmitSection — 4-step wizard ─────────────────────────────────────────────
 function SubmitSection({
@@ -1928,8 +1681,7 @@ function SubmitSection({
                           Companies paying more for {wRole} · {wExp}
                         </div>
                         {topCos.map((co, i) => {
-                          const domainMeta = COMPANY_META[co.name];
-                          const domain = co.domain || (domainMeta ? domainMeta.domain : '');
+                          const domain = co.domain || '';
                           const isLast = i === topCos.length - 1;
                           return (
                             <div key={co.name} style={{display:'flex', alignItems:'center', justifyContent:'space-between', padding:'10px 0', borderBottom: isLast ? 'none' : '1px solid rgba(255,255,255,0.06)'}}>
@@ -2044,74 +1796,23 @@ function SubmitSection({
   );
 }
 
-const INITIAL_LOAD = 12;
-
-function genCardHTML(companies, unlocked) {
-  const visible = unlocked ? companies : companies.slice(0, INITIAL_LOAD);
-  const cards = visible.map((company, i) => {
-    const locked = !unlocked && i >= 3;
-    const bg = `background-image:url('${company.imgUrl}');background-color:${company.color};`;
-    const logo = company.domain
-      ? `<div class="card-logo-wrap"><img class="card-logo-img" src="https://www.google.com/s2/favicons?domain=${company.domain}&sz=256" alt="${company.name}" onerror="this.style.display='none'"></div>`
-      : '';
-    const safeName = company.name.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
-    if (locked) {
-      return `<div class="company-card locked" onclick="window.scrollToSubmit('${safeName}')">
-<div class="card-bg" style="${bg}"></div>${logo}<div class="card-overlay"></div>
-<div style="position:absolute;inset:0;z-index:10;background:rgba(0,0,0,0.75);backdrop-filter:blur(3px);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;cursor:pointer;border-radius:14px">
-<span style="font-size:22px">🔒</span>
-<span style="font-size:14px;font-weight:800;color:white">${company.name}</span>
-<span style="font-size:11px;color:rgba(255,255,255,0.4)">${company.submissions} salaries</span>
-<span style="margin-top:8px;background:#FF6200;color:black;font-size:12px;font-weight:800;padding:9px 20px;border-radius:100px">Submit to unlock →</span>
-</div></div>`;
-    }
-    return `<div class="company-card open" onclick="window.openCompanyPanel('${safeName}')">
-<div class="card-bg" style="${bg}"></div>${logo}<div class="card-overlay"></div>
-<div class="card-top"><span class="card-rank">#${i + 1}</span><span class="card-category">${company.category}</span></div>
-<div class="card-bottom"><div class="card-name-row"><div class="card-name">${company.name}</div><div class="card-count">${company.submissions} salaries</div></div>
-<div class="card-divider"></div><div class="card-sal">${company.salMin}M – ${company.salMax}M ₫</div></div></div>`;
-  });
-  const remaining = companies.length - INITIAL_LOAD;
-  const cta = !unlocked && remaining > 0
-    ? `<div class="cards-unlock-cta" onclick="document.getElementById('submit').scrollIntoView({behavior:'smooth'})">
-<div class="cards-unlock-cta-left">
-  <span class="cards-unlock-cta-icon">🔒</span>
-  <div>
-    <div class="cards-unlock-cta-title">${remaining} more companies available</div>
-    <div class="cards-unlock-cta-sub">Submit your salary to unlock all ${companies.length} companies</div>
-  </div>
-</div>
-<div class="cards-unlock-cta-btn">Submit & unlock all →</div>
-</div>` : '';
-  return cards.join('') + cta;
-}
 
 // Split at the submit placeholder — submit section is rendered as React JSX
 const [BODY_PRE_TMPL, BODY_POST_TMPL] = bodyHTML.split('\n<!-- SUBMIT_REACT_PLACEHOLDER -->\n');
 const PAGE_HTML_PRE_TMPL = BODY_PRE_TMPL;
 const PAGE_HTML_POST_TMPL = BODY_POST_TMPL;
 
-export async function getServerSideProps() {
-  try {
-    const { getCompanyStats } = await import('../lib/getCompanyStats');
-    const companyStats = await getCompanyStats();
-    return { props: { companyStats } };
-  } catch(e) {
-    console.error('getServerSideProps error:', e);
-    return { props: { companyStats: [] } };
-  }
-}
-
-
-export default function Home({ companyStats = [] }) {
+export default function Home() {
   const [lbCompany, setLbCompany] = useState(null);
   const [activeTab, setActiveTab] = useState('All roles');
   const [selectedCompany, setSelectedCompany] = useState(null);
+  const [panelOpen, setPanelOpen] = useState(false);
+  const [apiCompanies, setApiCompanies] = useState([]);
+  const [gridReady, setGridReady] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [pendingCompanyId, setPendingCompanyId] = useState(null);
   const isUnlockedRef = useRef(false);
   const pendingCompanyRef = useRef(null);
-  const companies = useMemo(() => buildCardCompanies(companyStats), [companyStats]);
 
   // Wizard state
   const [wizardStep, setWizardStep] = useState(1);
@@ -2137,14 +1838,7 @@ export default function Home({ companyStats = [] }) {
 
   // Stable refs for PRE/POST dangerouslySetInnerHTML
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  const PAGE_HTML_PRE = useMemo(() => {
-    const initialCards = genCardHTML(companies, false);
-    const html = PAGE_HTML_PRE_TMPL.replace(
-      '  <div class="company-grid" id="company-grid-root"></div>',
-      `  <div class="company-grid" id="company-grid-root">${initialCards}</div>`
-    );
-    return { __html: html };
-  }, []);
+  const PAGE_HTML_PRE = useMemo(() => ({ __html: PAGE_HTML_PRE_TMPL }), []);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const PAGE_HTML_POST = useMemo(() => ({ __html: PAGE_HTML_POST_TMPL }), []);
 
@@ -2164,13 +1858,25 @@ export default function Home({ companyStats = [] }) {
     return () => { delete window.scrollToSubmit; };
   }, []);
 
+  // Fetch companies from API
+  useEffect(() => {
+    fetch('/api/companies')
+      .then(r => r.json())
+      .then(data => { if (Array.isArray(data)) setApiCompanies(data); })
+      .catch(() => {});
+  }, []);
+
+  // Mark grid root as ready for portal rendering
+  useEffect(() => {
+    const grid = document.getElementById('company-grid-root');
+    if (grid) { grid.innerHTML = ''; setGridReady(true); }
+  }, []);
+
   // Company panel bridge + unlock success handler
   useEffect(() => {
     window.openCompanyPanel = (name) => {
-      const c = buildCardCompanies(companyStats).find(x => x.name === name);
-      if (!c) return;
-      if (!c.open && !isUnlockedRef.current) pendingCompanyRef.current = name;
-      setSelectedCompany(c);
+      const c = apiCompanies.find(x => x.company === name);
+      if (c) { setSelectedCompany(c); setPanelOpen(true); }
     };
     window.onUnlockSuccess = () => {
       isUnlockedRef.current = true;
@@ -2181,36 +1887,16 @@ export default function Home({ companyStats = [] }) {
       pendingCompanyRef.current = null;
       if (pending) {
         setTimeout(() => {
-          const c = buildCardCompanies(companyStats).find(x => x.name === pending);
-          if (c) setSelectedCompany(c);
+          const c = apiCompanies.find(x => x.company === pending);
+          if (c) { setSelectedCompany(c); setPanelOpen(true); }
         }, 300);
       }
     };
     return () => { delete window.openCompanyPanel; delete window.onUnlockSuccess; };
-  }, []);
+  }, [apiCompanies]);
 
-  // Keep isUnlockedRef in sync for use in window.openCompanyPanel callback
+  // Keep isUnlockedRef in sync
   useEffect(() => { isUnlockedRef.current = isUnlocked; }, [isUnlocked]);
-
-  // Re-inject card grid when unlock state changes
-  useEffect(() => {
-    const grid = document.getElementById('company-grid-root');
-    if (!grid) return;
-    grid.innerHTML = genCardHTML(companies, isUnlocked);
-  }, [isUnlocked, companies]);
-
-  // ESC to close panel
-  useEffect(() => {
-    const handler = (e) => { if (e.key === 'Escape') setSelectedCompany(null); };
-    window.addEventListener('keydown', handler);
-    return () => window.removeEventListener('keydown', handler);
-  }, []);
-
-  // Body scroll lock when panel open
-  useEffect(() => {
-    document.body.style.overflow = selectedCompany ? 'hidden' : '';
-    return () => { document.body.style.overflow = ''; };
-  }, [selectedCompany]);
 
   // Expose openAuthModal bridge (used by legacy HTML onclick handlers)
   useEffect(() => {
@@ -2703,141 +2389,38 @@ export default function Home({ companyStats = [] }) {
         </div>
       )}
 
-      {/* Company Panel Overlay */}
-      <div
-        onClick={() => setSelectedCompany(null)}
-        style={{
-          position:'fixed', inset:0, background:'rgba(0,0,0,0.45)',
-          zIndex:200, opacity: selectedCompany ? 1 : 0,
-          pointerEvents: selectedCompany ? 'all' : 'none',
-          transition:'opacity .32s',
-        }}
-      />
+      {/* Portal: render CompanyCards into #company-grid-root */}
+      {gridReady && typeof document !== 'undefined' && document.getElementById('company-grid-root') &&
+        createPortal(
+          <>
+            {apiCompanies.map((c, i) => (
+              <CompanyCard
+                key={c.company}
+                company={c}
+                rank={i}
+                isUnlocked={isUnlocked}
+                onClick={(co) => { setSelectedCompany(co); setPanelOpen(true); }}
+                onScrollToSubmit={(name) => {
+                  pendingCompanyRef.current = name;
+                  setPendingCompanyId(name);
+                  document.getElementById('submit')?.scrollIntoView({ behavior: 'smooth' });
+                }}
+              />
+            ))}
+          </>,
+          document.getElementById('company-grid-root')
+        )
+      }
 
       {/* Company Slide Panel */}
-      <div style={{
-        position:'fixed', top:0, right:0, bottom:0, width:'clamp(480px, 50vw, 800px)',
-        background:'white', zIndex:201, overflowY:'auto',
-        transform: selectedCompany ? 'translateX(0)' : 'translateX(100%)',
-        transition:'transform 0.32s cubic-bezier(0.22, 0.9, 0.36, 1)',
-        fontFamily:"'Barlow', sans-serif",
-      }}>
-        {selectedCompany && (() => {
-          const sc = selectedCompany;
-          const rank = sc.open ? buildCardCompanies(companyStats).filter(x=>x.open).findIndex(x=>x.name===sc.name)+1 : null;
-          const heroBg = sc.imgUrl
-            ? `url('${sc.imgUrl}')`
-            : `linear-gradient(160deg, ${sc.color}dd 0%, ${sc.color}88 100%)`;
-          return (
-            <>
-              {/* Hero */}
-              <div style={{height:'200px', position:'relative', overflow:'hidden',
-                background: heroBg, backgroundSize:'cover', backgroundPosition:'center'}}>
-                <div style={{position:'absolute',inset:0,background:'linear-gradient(to bottom,rgba(0,0,0,0.55) 0%,rgba(0,0,0,0.25) 100%)'}}/>
-                {/* Top bar */}
-                <div style={{position:'absolute',top:0,left:0,right:0,padding:'16px 20px',
-                  display:'flex',alignItems:'center',justifyContent:'space-between',zIndex:2}}>
-                  <img src={`https://www.google.com/s2/favicons?domain=${sc.domain}&sz=256`} alt={sc.name}
-                    style={{width:'32px',height:'32px',objectFit:'contain',borderRadius:'6px',background:'rgba(255,255,255,0.9)',padding:'4px'}}
-                    onError={e=>e.target.style.display='none'} />
-                  <div onClick={() => setSelectedCompany(null)}
-                    style={{width:'32px',height:'32px',borderRadius:'50%',
-                      background:'rgba(0,0,0,0.35)',border:'1px solid rgba(255,255,255,0.25)',
-                      display:'flex',alignItems:'center',justifyContent:'center',
-                      cursor:'pointer',color:'white',fontSize:'15px',lineHeight:1}}>✕</div>
-                </div>
-              </div>
+      <SlidePanel
+        company={selectedCompany}
+        isOpen={panelOpen}
+        onClose={() => setPanelOpen(false)}
+      />
 
-              {/* Body */}
-              <div style={{padding:'20px 22px'}}>
-                {/* Eyebrow */}
-                <div style={{fontSize:'11px',fontWeight:700,color:'#FF6200',letterSpacing:'.06em',textTransform:'uppercase',marginBottom:'6px'}}>
-                  {rank ? `#${rank} · ` : ''}{sc.city}
-                </div>
-                <div style={{fontSize:'24px',fontWeight:900,color:'#111',letterSpacing:'-.03em',marginBottom:'10px'}}>
-                  {sc.name}
-                </div>
-                {/* Tags */}
-                <div style={{display:'flex',gap:'6px',flexWrap:'wrap',marginBottom:'20px'}}>
-                  {(sc.open||isUnlocked) && <span style={{fontSize:'11px',fontWeight:700,padding:'4px 11px',borderRadius:'100px',background:'rgba(255,98,0,0.12)',color:'#FF6200'}}>Top {sc.topPct}%</span>}
-                  <span style={{fontSize:'11px',fontWeight:600,padding:'4px 11px',borderRadius:'100px',background:'#f2f0ec',color:'#888'}}>{sc.tier}</span>
-                  <span style={{fontSize:'11px',fontWeight:600,padding:'4px 11px',borderRadius:'100px',background:'#f2f0ec',color:'#888'}}>{sc.category}</span>
-                </div>
 
-                {/* Stats row */}
-                <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:'8px',marginBottom:'20px'}}>
-                  {[
-                    {v: (sc.open||isUnlocked) ? `${sc.median}M ₫` : '???', l:'Median salary'},
-                    {v: sc.submissions, l:'Submissions'},
-                    {v: (sc.open||isUnlocked) ? `${sc.top10}M ₫` : '???', l:'Top 10%'},
-                  ].map((o,i) => (
-                    <div key={i} style={{background:'#F7F4EF',borderRadius:'12px',padding:'13px 10px',textAlign:'center'}}>
-                      <div style={{fontSize:'15px',fontWeight:800,color:'#FF6200',lineHeight:1,marginBottom:'4px',
-                        filter:(sc.open||isUnlocked)?'none':'blur(6px)',userSelect:(sc.open||isUnlocked)?'auto':'none'}}>
-                        {o.v}
-                      </div>
-                      <div style={{fontSize:'10px',color:'#A09890'}}>{o.l}</div>
-                    </div>
-                  ))}
-                </div>
-
-                {/* Salary by role */}
-                {sc.salaryByRole.length > 0 && (
-                  <>
-                    <div style={{fontSize:'9px',letterSpacing:'.16em',textTransform:'uppercase',color:'#A09890',marginBottom:'10px'}}>Salary by role</div>
-                    {sc.salaryByRole.map((row, i) => (
-                      <div key={i} style={{display:'flex',alignItems:'center',gap:'10px',
-                        padding:'10px 0',borderBottom:'1px solid #f5f3ef'}}>
-                        <div style={{fontSize:'15px',width:'22px',textAlign:'center',flexShrink:0,fontFamily:'monospace'}}>
-                          {i===0?'🥇':i===1?'🥈':i===2?'🥉':`${i+1}.`}
-                        </div>
-                        <div style={{flex:1,minWidth:0}}>
-                          <div style={{fontSize:'13px',fontWeight:700,color:'#111'}}>{row.role}</div>
-                          <div style={{fontSize:'11px',color:'#A09890',marginTop:'1px'}}>{row.experience}</div>
-                        </div>
-                        <div style={{textAlign:'right',flexShrink:0,width:'90px'}}>
-                          <div style={{height:'2px',background:'#f0ede6',borderRadius:'100px',overflow:'hidden',marginBottom:'4px'}}>
-                            <div style={{height:'100%',width:`${row.barPercent}%`,background:'#FF6200',borderRadius:'100px'}}/>
-                          </div>
-                          <div style={{fontSize:'13px',fontWeight:800,color:'#FF6200'}}>
-                            {row.salaryVND}M ₫
-                          </div>
-                          <div style={{fontSize:'10px',color:'#A09890'}}>
-                            ≈ ${(row.salaryVND * 43 / 1000).toFixed(1)}k
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </>
-                )}
-
-                {/* CTA */}
-                <div style={{background:'#FFF0E6',borderRadius:'14px',padding:'18px',marginTop:'20px',marginBottom:'8px'}}>
-                  <div style={{fontSize:'13px',fontWeight:600,color:'#111',lineHeight:1.5,marginBottom:'14px'}}>
-                    {(sc.open||isUnlocked)
-                      ? `See where you stand at ${sc.name}`
-                      : 'Submit your salary to unlock full data'}
-                  </div>
-                  <button
-                    onClick={() => {
-                      setSelectedCompany(null);
-                      setTimeout(() => document.getElementById('submit')?.scrollIntoView({behavior:'smooth'}), 350);
-                    }}
-                    style={{width:'100%',background:'#FF6200',color:'black',fontSize:'14px',fontWeight:800,
-                      padding:'14px',borderRadius:'10px',border:'none',cursor:'pointer',textAlign:'center',display:'block'}}>
-                    {(sc.open||isUnlocked) ? 'Am I Underpaid? →' : '🔓 Submit & Unlock →'}
-                  </button>
-                  <div style={{textAlign:'center',fontSize:'11px',color:'#A09890',marginTop:'8px'}}>
-                    2 min · anonymous · no login
-                  </div>
-                </div>
-              </div>
-            </>
-          );
-        })()}
-      </div>
-
-      {/* OTW Modal */}
+            {/* OTW Modal */}
       {showOTW && (
         <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.75)',backdropFilter:'blur(6px)',zIndex:400,display:'flex',alignItems:'center',justifyContent:'center',padding:'20px'}}>
           <div style={{background:'#111',borderRadius:'24px',padding:'32px 28px',maxWidth:'400px',width:'100%',border:'1px solid rgba(255,255,255,0.1)',animation:'slideUp 0.3s ease',fontFamily:"'Barlow',sans-serif"}}>
