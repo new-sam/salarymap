@@ -35,9 +35,11 @@ export default function AnonymousSection() {
       {/* Main body */}
       <div style={{
         display: 'grid',
-        gridTemplateColumns: '1fr 220px',
+        gridTemplateColumns: '1fr 240px',
         gap: '40px',
         alignItems: 'center',
+        maxWidth: '900px',
+        margin: '0 auto',
         background: 'linear-gradient(180deg, rgba(217,217,217,0.02) 0%, rgba(255,255,255,0.06) 100%)',
         borderRadius: '24px',
         padding: '28px',
