@@ -4,6 +4,7 @@ import Head from 'next/head';
 import supabaseClient from '../lib/supabaseClient';
 import CompanyCard from '../components/CompanyCard';
 import SlidePanel from '../components/SlidePanel';
+import AnonymousSection from '../components/AnonymousSection';
 
 const css = `
 *, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
@@ -753,50 +754,8 @@ const bodyHTML = `<section class="hero">
       </button>
     </div>
   </div>
-  <!-- PRIVACY SECTION -->
-  <div style="max-width:960px; margin:0 auto; padding:0 52px 56px;">
-    <h2 style="font-size:clamp(32px,4vw,48px); font-weight:700; line-height:1.15; margin-bottom:12px; color:var(--white);">This is<br><em style="color:var(--orange);font-style:normal;">completely</em> anonymous.</h2>
-    <p style="font-size:15px; color:var(--dim); margin-bottom:36px; line-height:1.7;">We don't know who you are. We just know what engineers in Vietnam are earning.</p>
-
-    <div style="background:#0f0f0f; border:1px solid #1a1a1a; border-radius:18px; padding:36px 32px; margin-bottom:14px; display:flex; align-items:center; gap:0; flex-wrap:wrap;">
-      <div style="display:flex; flex-direction:column; gap:10px; flex:1; min-width:180px;">
-        <div style="font-size:10px; letter-spacing:.18em; text-transform:uppercase; color:#555; margin-bottom:2px;">What you submit</div>
-        <div style="background:#161616; border:1px solid #222; border-radius:10px; padding:13px 16px; display:flex; align-items:center; gap:12px;"><div style="width:7px;height:7px;border-radius:50%;background:var(--orange);flex-shrink:0;"></div><span style="font-size:13px;color:#bbb;">Salary</span><span style="font-size:13px;color:#666;margin-left:auto;font-family:monospace;filter:blur(5px);user-select:none;">$2,800</span></div>
-        <div style="background:#161616; border:1px solid #222; border-radius:10px; padding:13px 16px; display:flex; align-items:center; gap:12px;"><div style="width:7px;height:7px;border-radius:50%;background:var(--orange);flex-shrink:0;"></div><span style="font-size:13px;color:#bbb;">Role</span><span style="font-size:13px;color:#666;margin-left:auto;font-family:monospace;filter:blur(5px);user-select:none;">Backend</span></div>
-        <div style="background:#161616; border:1px solid #222; border-radius:10px; padding:13px 16px; display:flex; align-items:center; gap:12px;"><div style="width:7px;height:7px;border-radius:50%;background:var(--orange);flex-shrink:0;"></div><span style="font-size:13px;color:#bbb;">Experience</span><span style="font-size:13px;color:#666;margin-left:auto;font-family:monospace;filter:blur(5px);user-select:none;">4 yrs</span></div>
-        <div style="background:#161616; border:1px solid #222; border-radius:10px; padding:13px 16px; display:flex; align-items:center; gap:12px;"><div style="width:7px;height:7px;border-radius:50%;background:var(--orange);flex-shrink:0;"></div><span style="font-size:13px;color:#bbb;">Company</span><span style="font-size:13px;color:#666;margin-left:auto;font-family:monospace;filter:blur(5px);user-select:none;">Grab</span></div>
-      </div>
-      <div style="padding:0 20px; display:flex; flex-direction:column; align-items:center; gap:6px; flex-shrink:0;">
-        <div style="width:36px;height:1px;background:linear-gradient(to right,#2a2a2a,#444);"></div>
-        <div style="color:#444;font-size:14px;">→</div>
-      </div>
-      <div style="width:88px;height:88px;flex-shrink:0;background:#161616;border:1px solid #2a2a2a;border-radius:18px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;">
-        <div style="font-size:32px;line-height:1;">🔐</div>
-        <div style="font-size:8px;letter-spacing:.16em;text-transform:uppercase;color:#444;">Mixed in</div>
-      </div>
-      <div style="padding:0 20px; display:flex; flex-direction:column; align-items:center; gap:6px; flex-shrink:0;">
-        <div style="width:36px;height:1px;background:linear-gradient(to right,#2a2a2a,#444);"></div>
-        <div style="color:#444;font-size:14px;">→</div>
-      </div>
-      <div style="flex:1; min-width:180px;">
-        <div style="background:#161616; border:1px solid #222; border-radius:12px; padding:18px;">
-          <div style="font-size:9px;letter-spacing:.18em;text-transform:uppercase;color:var(--orange);margin-bottom:10px;">What everyone sees</div>
-          <div style="font-size:11px;color:#888;margin-bottom:6px;">Backend · 4–6 yrs · Grab</div>
-          <div style="height:7px;background:#222;border-radius:100px;overflow:hidden;margin-bottom:8px;"><div style="height:100%;border-radius:100px;background:var(--orange);width:72%;"></div></div>
-          <div style="font-size:13px;color:#ccc;font-weight:700;">$2,400 — $3,800</div>
-          <div style="font-size:11px;color:#555;margin-top:3px;">Based on 35 salaries</div>
-        </div>
-      </div>
-    </div>
-
-    <div style="background:#111; border-radius:14px; padding:28px 32px; display:flex; align-items:center; gap:20px;">
-      <div style="font-size:38px;flex-shrink:0;">🙈</div>
-      <div style="display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;">
-        <span style="font-size:22px;font-weight:700;color:var(--white);">We <em style="color:var(--orange);font-style:normal;">can't</em> identify you.</span>
-        <span style="font-size:22px;font-weight:700;color:#444;">Even if we tried.</span>
-      </div>
-    </div>
-  </div>
+  <!-- PRIVACY SECTION (rendered as React component) -->
+  <div id="anonymous-section-root"></div>
 
 
 </section>
@@ -2389,6 +2348,11 @@ export default function Home() {
           </div>
         </div>
       )}
+
+      {/* Portal: render AnonymousSection */}
+      {gridReady && typeof document !== 'undefined' && document.getElementById('anonymous-section-root') &&
+        createPortal(<AnonymousSection />, document.getElementById('anonymous-section-root'))
+      }
 
       {/* Portal: render CompanyCards into #company-grid-root */}
       {gridReady && typeof document !== 'undefined' && document.getElementById('company-grid-root') &&
