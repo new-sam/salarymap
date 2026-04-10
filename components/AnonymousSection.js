@@ -31,27 +31,46 @@ export default function AnonymousSection() {
         </p>
       </div>
 
-      {/* Lock icon */}
+      {/* Lock icon with arrows */}
       <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '-36px', position: 'relative', zIndex: 2 }}>
-        <div style={{
-          width: '160px', height: '160px', borderRadius: '50%',
-          background: 'linear-gradient(180deg, rgba(255,96,0,0.12) 0%, rgba(255,96,0,0) 100%)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-        }}>
+        <div style={{ position: 'relative', width: '220px', height: '180px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+
+          {/* Left arrow — curving into the lock */}
+          <svg width="80" height="100" viewBox="0 0 80 100" fill="none" style={{ position: 'absolute', left: '-24px', top: '10px' }}>
+            <path d="M75 5 C50 5, 15 20, 15 55" stroke="#ff6000" strokeWidth="2" strokeLinecap="round" fill="none" strokeDasharray="4 4" />
+            <path d="M10 48 L15 58 L20 48" stroke="#ff6000" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+          </svg>
+
+          {/* Right arrow — curving out of the lock */}
+          <svg width="80" height="100" viewBox="0 0 80 100" fill="none" style={{ position: 'absolute', right: '-24px', top: '10px' }}>
+            <path d="M5 55 C5 20, 40 5, 65 5" stroke="#ff6000" strokeWidth="2" strokeLinecap="round" fill="none" strokeDasharray="4 4" />
+            <path d="M60 0 L68 5 L60 10" stroke="#ff6000" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+          </svg>
+
+          {/* Outer ring */}
           <div style={{
-            width: '120px', height: '120px', borderRadius: '50%',
-            background: 'linear-gradient(180deg, rgba(255,96,0,0.15) 0%, rgba(255,96,0,0.05) 100%)',
+            width: '160px', height: '160px', borderRadius: '50%',
+            background: 'linear-gradient(180deg, rgba(255,96,0,0.12) 0%, rgba(255,96,0,0) 100%)',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
           }}>
+            {/* Middle ring */}
             <div style={{
-              width: '84px', height: '84px', borderRadius: '50%',
-              background: '#ff6000',
-              boxShadow: '0px 8px 24px rgba(255,96,0,0.4)',
+              width: '120px', height: '120px', borderRadius: '50%',
+              background: 'linear-gradient(180deg, rgba(255,96,0,0.15) 0%, rgba(255,96,0,0.05) 100%)',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
             }}>
-              <span style={{ fontSize: '36px' }}>🔐</span>
+              {/* Inner circle */}
+              <div style={{
+                width: '84px', height: '84px', borderRadius: '50%',
+                background: '#ff6000',
+                boxShadow: '0px 8px 24px rgba(255,96,0,0.4)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+              }}>
+                <span style={{ fontSize: '36px' }}>🔐</span>
+              </div>
             </div>
           </div>
+
         </div>
       </div>
 
