@@ -35,16 +35,16 @@ export default function AnonymousSection() {
       <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '-36px', position: 'relative', zIndex: 2 }}>
         <div style={{ position: 'relative', width: '220px', height: '180px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
 
-          {/* Left arrow — curving into the lock */}
-          <svg width="80" height="100" viewBox="0 0 80 100" fill="none" style={{ position: 'absolute', left: '-24px', top: '10px' }}>
-            <path d="M75 5 C50 5, 15 20, 15 55" stroke="#ff6000" strokeWidth="2" strokeLinecap="round" fill="none" strokeDasharray="4 4" />
-            <path d="M10 48 L15 58 L20 48" stroke="#ff6000" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+          {/* Left arc arrow — sweeping down along left side */}
+          <svg width="110" height="140" viewBox="0 0 110 140" fill="none" style={{ position: 'absolute', left: '-30px', top: '-5px' }}>
+            <path d="M95 10 C60 2, 20 25, 15 75" stroke="#ff6000" strokeWidth="2" strokeLinecap="round" fill="none" />
+            <path d="M9 70 L15 80 L21 70" stroke="#ff6000" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none" />
           </svg>
 
-          {/* Right arrow — curving out of the lock */}
-          <svg width="80" height="100" viewBox="0 0 80 100" fill="none" style={{ position: 'absolute', right: '-24px', top: '10px' }}>
-            <path d="M5 55 C5 20, 40 5, 65 5" stroke="#ff6000" strokeWidth="2" strokeLinecap="round" fill="none" strokeDasharray="4 4" />
-            <path d="M60 0 L68 5 L60 10" stroke="#ff6000" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+          {/* Right arc arrow — sweeping up along right side */}
+          <svg width="110" height="140" viewBox="0 0 110 140" fill="none" style={{ position: 'absolute', right: '-30px', top: '45px' }}>
+            <path d="M15 65 C20 15, 60 -2, 95 10" stroke="#ff6000" strokeWidth="2" strokeLinecap="round" fill="none" />
+            <path d="M90 4 L98 10 L90 16" stroke="#ff6000" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none" />
           </svg>
 
           {/* Outer ring */}
