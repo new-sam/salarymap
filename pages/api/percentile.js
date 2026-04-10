@@ -6,6 +6,17 @@ function median(arr) {
   return s.length % 2 === 0 ? Math.round((s[m - 1] + s[m]) / 2) : s[m];
 }
 
+function removeOutliers(salaries) {
+  if (salaries.length < 4) return salaries;
+  const sorted = [...salaries].sort((a, b) => a - b);
+  const q1 = sorted[Math.floor(sorted.length * 0.25)];
+  const q3 = sorted[Math.floor(sorted.length * 0.75)];
+  const iqr = q3 - q1;
+  const lower = q1 - 1.5 * iqr;
+  const upper = q3 + 1.5 * iqr;
+  return sorted.filter(s => s >= lower && s <= upper);
+}
+
 // Base medians (USD/mo) per role × experience index [<1yr, 1-2, 3-4, 5-7, 8+]
 const BASE_MEDIANS = {
   'Backend':   [25, 40, 75, 110, 140],
@@ -88,8 +99,8 @@ export default async function handler(req, res) {
     return res.json({ usedFallback: true, topCompanies });
   }
 
-  // Percentile calc
-  const salaries = data.map(s => s.salary).sort((a, b) => a - b);
+  // Percentile calc (with outlier removal)
+  const salaries = removeOutliers(data.map(s => s.salary));
   const n = salaries.length;
   const below = salaries.filter(s => s < sal).length;
   const percentile = Math.round((below / n) * 100);
@@ -108,7 +119,7 @@ export default async function handler(req, res) {
   }
   const companyMedians = Object.entries(byCompany)
     .filter(([, sals]) => sals.length >= 1)
-    .map(([name, sals]) => ({ name, median: median(sals) }));
+    .map(([name, sals]) => ({ name, median: median(removeOutliers(sals)) }));
 
   let topCompanies = buildTopCompanies(companyMedians, sal, company || '');
 

@@ -1,0 +1,3008 @@
+[
+  {
+    "name": "Grab Vietnam",
+    "currentDomain": null,
+    "newDomain": "grab.com",
+    "logoOk": false
+  },
+  {
+    "name": "VNG Corporation",
+    "currentDomain": null,
+    "newDomain": "vng.com.vn",
+    "logoOk": false
+  },
+  {
+    "name": "Shopee Vietnam",
+    "currentDomain": null,
+    "newDomain": "shopee.vn",
+    "logoOk": false
+  },
+  {
+    "name": "Tiki",
+    "currentDomain": null,
+    "newDomain": "tiki.vn",
+    "logoOk": false
+  },
+  {
+    "name": "Momo",
+    "currentDomain": null,
+    "newDomain": "momo.vn",
+    "logoOk": false
+  },
+  {
+    "name": "FPT Software",
+    "currentDomain": null,
+    "newDomain": "fpt.com",
+    "logoOk": false
+  },
+  {
+    "name": "Zalo",
+    "currentDomain": null,
+    "newDomain": "zalo.me",
+    "logoOk": false
+  },
+  {
+    "name": "Sky Mavis",
+    "currentDomain": null,
+    "newDomain": "skymavis.com",
+    "logoOk": false
+  },
+  {
+    "name": "Techcombank",
+    "currentDomain": null,
+    "newDomain": "techcombank.com.vn",
+    "logoOk": false
+  },
+  {
+    "name": "VPBank",
+    "currentDomain": null,
+    "newDomain": "vpbank.com.vn",
+    "logoOk": false
+  },
+  {
+    "name": "KMS Technology",
+    "currentDomain": null,
+    "newDomain": "kms-technology.com",
+    "logoOk": false
+  },
+  {
+    "name": "NashTech",
+    "currentDomain": null,
+    "newDomain": "nashtechglobal.com",
+    "logoOk": false
+  },
+  {
+    "name": "Axon Active",
+    "currentDomain": null,
+    "newDomain": "axonactive.com",
+    "logoOk": false
+  },
+  {
+    "name": "Harvey Nash",
+    "currentDomain": null,
+    "newDomain": "harveynash.vn",
+    "logoOk": false
+  },
+  {
+    "name": "Fossil Group VN",
+    "currentDomain": null,
+    "newDomain": "fossil.com",
+    "logoOk": false
+  },
+  {
+    "name": "GHN",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Base.vn",
+    "currentDomain": null,
+    "newDomain": "base.vn",
+    "logoOk": false
+  },
+  {
+    "name": "Rever",
+    "currentDomain": null,
+    "newDomain": "rfrever.vn",
+    "logoOk": false
+  },
+  {
+    "name": "Got It",
+    "currentDomain": null,
+    "newDomain": "got-it.ai",
+    "logoOk": false
+  },
+  {
+    "name": "Amanotes",
+    "currentDomain": null,
+    "newDomain": "amanotes.com",
+    "logoOk": false
+  },
+  {
+    "name": "VNPT Technology",
+    "currentDomain": null,
+    "newDomain": "vnpt-technology.vn",
+    "logoOk": false
+  },
+  {
+    "name": "Viettel",
+    "currentDomain": null,
+    "newDomain": "viettel.com.vn",
+    "logoOk": false
+  },
+  {
+    "name": "MBBank",
+    "currentDomain": null,
+    "newDomain": "mbbank.com.vn",
+    "logoOk": false
+  },
+  {
+    "name": "Sacombank Digital",
+    "currentDomain": null,
+    "newDomain": "sacombank.com.vn",
+    "logoOk": false
+  },
+  {
+    "name": "Teko Vietnam",
+    "currentDomain": null,
+    "newDomain": "teko.vn",
+    "logoOk": false
+  },
+  {
+    "name": "Logivan",
+    "currentDomain": null,
+    "newDomain": "logivan.com",
+    "logoOk": false
+  },
+  {
+    "name": "OneMount Group",
+    "currentDomain": null,
+    "newDomain": "onemount.com",
+    "logoOk": false
+  },
+  {
+    "name": "Sendo",
+    "currentDomain": null,
+    "newDomain": "sendo.vn",
+    "logoOk": false
+  },
+  {
+    "name": "Katalon",
+    "currentDomain": null,
+    "newDomain": "katalon.com",
+    "logoOk": false
+  },
+  {
+    "name": "KiotViet",
+    "currentDomain": null,
+    "newDomain": "kiotviet.vn",
+    "logoOk": false
+  },
+  {
+    "name": "TokyoTech VN",
+    "currentDomain": null,
+    "newDomain": "tokyotechlab.com",
+    "logoOk": false
+  },
+  {
+    "name": "BHD Star",
+    "currentDomain": null,
+    "newDomain": "bhdstar.vn",
+    "logoOk": false
+  },
+  {
+    "name": "Vietcombank Digital",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "ACB Digital",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "HDBank IT",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "TPBank",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "MSB Bank",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "VIB Digital",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "BIDV Technology",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Agribank IT",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "LienVietPostBank",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "NCB Digital",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "VinAI Research",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "VinBigData",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "VinSmart",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Thegioididong Tech",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "VNPAY",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "ZaloPay",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Payoo",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "OnePay",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "SenPay",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "iPrice Vietnam",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Cho Tot",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Muaban.net",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Ahamove",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Lalamove Vietnam",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Giaohangtietkiem",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "VietnamWorks",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "TopCV",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "CareerBuilder VN",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "JobStreet Vietnam",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "ELSA Speak",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "KidsOnline",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "DataStory VN",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Cimigo",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Nielsen Vietnam",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "GE Digital Vietnam",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Standard Chartered VN",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "HSBC Vietnam",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Citibank Vietnam",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Shinhan Bank VN",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Woori Bank VN",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "KB Kookmin Bank VN",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "KEB Hana Bank VN",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "UOB Vietnam",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "DBS Vietnam",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Maybank Vietnam",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "CIMB Vietnam",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Public Bank VN",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "OCB Bank",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "FPT Telecom",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Topica",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Edupia",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "CoderSchool",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Deloitte Vietnam",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "PwC Vietnam",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "KPMG Vietnam",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "EY Vietnam",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Accenture Vietnam",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "TCS Vietnam",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "SHB Finance",
+    "currentDomain": null,
+    "newDomain": "shbfinance.com.vn",
+    "logoOk": false
+  },
+  {
+    "name": "Fujitsu Vietnam",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "NEC Vietnam",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Hitachi Vantara VN",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "DXC Technology VN",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "IBM Vietnam",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "SeABank",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "VietinBank Digital",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Eximbank Digital",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "PVcomBank",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Nam A Bank",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Bac A Bank",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Kienlongbank",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "ABBank Digital",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "BaoViet Bank",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "VietABank",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "BVBank",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Cake by VPBank",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "TNEX Digital",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Timo",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Finhay",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Infina",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "GIMO",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Moneylover",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Kredivo Vietnam",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Home Credit Vietnam",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Vay Muon",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "WisePass",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "OnCredit",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Prudential Vietnam IT",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Manulife Vietnam",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "AIA Vietnam",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Sun Life Vietnam",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Generali Vietnam",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "AXA Vietnam",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Bảo Việt IT",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "PVI Insurance IT",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Google Vietnam",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Meta Vietnam",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Microsoft Vietnam",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Amazon AWS VN",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Oracle Vietnam",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "SAP Vietnam",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Salesforce Vietnam",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Adobe Vietnam",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "ServiceNow Vietnam",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Atlassian Vietnam",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Autodesk Vietnam",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "TikTok Vietnam",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "ByteDance Vietnam",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Garena Vietnam",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "SEA Group VN",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Grab (Regional)",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Rakuten Vietnam",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "LINE Vietnam",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Mercari Vietnam",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Cybozu Vietnam",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "SoftBank Vietnam",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "KDDI Vietnam",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Yahoo Japan VN",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "CyberAgent Vietnam",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "DeNA Vietnam",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Appier Vietnam",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Recruit VN",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Transcosmos Vietnam",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "NTT Data Vietnam",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Hitachi Solutions VN",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Cisco Vietnam",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Juniper Networks VN",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "F5 Networks VN",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Palo Alto Networks VN",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Fortinet Vietnam",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Trend Micro VN",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "CrowdStrike VN",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Zscaler Vietnam",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Global CyberSoft",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Orient Software",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Rikkeisoft",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "TMA Solutions",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Savvycom",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Hachinet Software",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Seta International",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "BrSE Vietnam",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Kyanon Digital",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Arche Consulting",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Nodeshift",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "TechElite Vietnam",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Nashtech Global",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Mobidev Vietnam",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Novus Soft VN",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "SotaERP",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "BPO Infosoft",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "BPO NextG",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "SkyHub VN",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Solazu",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Groove Technology",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Techvify",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "CodeBase VN",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "DevPro Vietnam",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Innotech Vietnam",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Axons VN",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Hyperlogy",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Smartosc",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Goldsun Digital",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "GEEK Up",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Paradox Vietnam",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "DTS Vietnam",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "AgileTech VN",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Brocoders VN",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Amaris Consulting VN",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Codelink",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Fulcrum VN",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "CoderDojo VN",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "CodFishAI",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Softgent",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "VCCorp",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Unica.vn",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Nexttech Group",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "CMC Technology",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "CMC Telecom",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Misa Software",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Fast Software",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "BravoSoft",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "CloudGO",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Getfly CRM",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "KiotViet (Parent)",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Haravan",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Sapo",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Nhanh.vn",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Bán Hàng Pro",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Pancake",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Novaon Digital",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "YouNet Group",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Vinalink",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "MXH Hahalolo",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "VTV Digital",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "HTV Digital",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "VnExpress Tech",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Vietnamnet Digital",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Dantri.com",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Kenh14 Tech",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Cafef.vn",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "CafeF Tech",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Zing MP3",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "ZingTV",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Zing News",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "VNPT-IT",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "VNPT VinaPhone",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Viettel Digital",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Viettel IDC",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Viettel Cyberspace",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Mobifone IT",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Vietnamobile",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Gmobile",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "MyTV (VNPT)",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "VTVcab Digital",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "FPT IS",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "FPT Play",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "FPT AI",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "FPT Retail",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "FPT Automotive",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Lazada Vietnam",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Shopback Vietnam",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Lotte Vietnam",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "AEON Vietnam IT",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Central Retail VN",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "WinCommerce",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Masan Digital",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "VinID",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Guardian Vietnam",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Pharmacity",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Long Chau Digital",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "An Khang Digital",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "HAPO Commerce",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Vatgia.com",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Websosanh",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Hotdeal VN",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Dealtoday",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Cungmua",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Nhommua",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Adayroi (legacy)",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Traveloka Vietnam",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Agoda Vietnam",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Booking.com VN",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Klook Vietnam",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Mytour.vn",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Vntrip",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "iVIVU",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Gotadi",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "PropertyGuru VN",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Batdongsan.com.vn",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Homedy",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Novaland IT",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Dat Xanh Digital",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Sunshine Digital",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Nam Long IT",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Phu My Hung IT",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "CBRE Vietnam Tech",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "JLL Vietnam Tech",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Savills Vietnam IT",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Vinhomes IT",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "DHL Vietnam IT",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "FedEx Vietnam IT",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Maersk Vietnam IT",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Gemadept Digital",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Sotrans Digital",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "EcoTruck VN",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Vietnam Airlines IT",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Vietjet IT",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Bamboo Airways IT",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Be Group",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "FastGo",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "GoCar Vietnam",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Xanh SM",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Công Nghệ Emddi",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Vinmec IT",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Medlatec Digital",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "FV Hospital IT",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "CarePlus Digital",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "eDoctor",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "DrAid Vietnam",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Medpro Vietnam",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "emed Vietnam",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "DOL English App",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Prep.vn",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Reboost Education",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Everest Education Tech",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "IIG Vietnam",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Kyna.vn",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Edumall",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "MindX",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "CodeLearn",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "SteamHouse",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Clevai",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "VNG Games",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Funtap",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Hiker Games",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "VTC Game",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "VTC Mobile",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Appota",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Sohagame",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Topgame Vietnam",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "eStar Vietnam",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Gosu Vietnam",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Mwork VN",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Gamota",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "NEXON Vietnam",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Pearl Abyss VN",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Garenanow VN",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "McKinsey Vietnam",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "BCG Vietnam",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Bain Vietnam",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Capgemini Vietnam",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Cognizant Vietnam",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Wipro Vietnam",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Infosys Vietnam",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "HCL Vietnam",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Tech Mahindra VN",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Mphasis Vietnam",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Hexaware VN",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Zensar VN",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Bosch Vietnam",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Siemens Vietnam",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Schneider Electric VN",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "ABB Vietnam",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Honeywell Vietnam",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "GE Digital VN",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Panasonic R&D VN",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Samsung R&D VN",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "LG Vietnam IT",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Intel Vietnam",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Qualcomm Vietnam",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Renesas VN",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Renesas Design VN",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Robert Bosch Engineering VN",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Fukoku Vietnam IT",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Trusting Social",
+    "currentDomain": null,
+    "newDomain": "trustingsocial.com",
+    "logoOk": false
+  },
+  {
+    "name": "Tyme Vietnam",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Viet Credit",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "iPay",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "FastMobile",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Toong",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Paperless",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Lark Vietnam",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Coda Vietnam",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Notion VN (local team)",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Figma VN (local team)",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Miro VN (local team)",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Jira VN (local team)",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Slack VN (local team)",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Zoom VN",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Skim.AI",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Trusting AI VN",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "VinCSS",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "CyRadar",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Viettel Cyber Security",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "VSEC",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "SCS Vietnam",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "AnNinh Mang",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "WhiteHat.vn",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "VietCredit",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Mirae Asset VN",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Shinhan Finance VN",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Lotte Finance VN",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "HD Saison",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "FE Credit",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Mcredit",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Viet Capital Securities",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "SSI Securities IT",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "VPS Securities",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "VNDIRECT IT",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "HSC Securities",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "MBS Securities",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Dragon Capital VN",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "VinaCapital IT",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Manulife Invest VN",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Unisys Vietnam",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Ericsson Vietnam",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Nokia Vietnam",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Huawei Vietnam",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "ZTE Vietnam",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Vivo Vietnam IT",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "OPPO Vietnam IT",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Xiaomi Vietnam IT",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "TCL Vietnam IT",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Nano Technologies VN",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Ant Group VN",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "PayME",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Vietmoney",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Lendio VN",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Fundiin",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Moca (Grab Pay)",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "VinaPay",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Napas Digital",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Paylink VN",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "ZPay",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Ví FPT",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "BuyMed",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Medigo",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Jio Health",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "BookingCare",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Amslink",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Hocmai.vn",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Moon.vn",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Thinkzone VN",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "GeniusEdu",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "BrainBox VN",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "SkillHub VN",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "FUNiX",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Vtalk",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "TalkFirst",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Speaknow",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Ninja Van Vietnam",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "J&T Express VN",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Kerry Express VN",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Best Express VN",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Viettel Post IT",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Vietnam Post IT",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Shipchung.vn",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Boxme Global",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "eShip",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Giao Hang Nhanh (GHN2)",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Admicro (VCCorp)",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Adtima (Zalo)",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "iClick Vietnam",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Eclick",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Digital Plus VN",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Metta Digital",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Ureka Media",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Brands Vietnam",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Anymind Vietnam",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Dentsu Vietnam IT",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Publicis Vietnam IT",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Ogilvy Vietnam IT",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "WPP Vietnam IT",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Samsung Electronics VN IT",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "LG Electronics VN IT",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Intel Products VN",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Jabil Circuit VN IT",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Foxconn VN IT",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Pegatron VN IT",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Canon Vietnam IT",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Nidec Vietnam IT",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Datalogic VN",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Cognex Vietnam",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Keyence VN",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "VNG Cloud",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Viettel Cloud",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "VNPT Cloud",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "CMC Cloud",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "FPT Cloud",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Bizfly Cloud",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "UpBase",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Stringee",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Abit",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Haraworks",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Nhanh CRM",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Callio",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Hana CRM",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Chatbot.edu.vn",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "BotBanHang",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Trusting AI",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "VinAI (Extended)",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "AIV Group",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Phenikaa-X",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "FutureLab VN",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "AI Academy VN",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "SmartDev",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "KobiGo",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "Zien.vn",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  },
+  {
+    "name": "VR Plus VN",
+    "currentDomain": null,
+    "newDomain": null,
+    "logoOk": false
+  }
+]
