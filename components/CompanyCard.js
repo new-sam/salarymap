@@ -61,10 +61,14 @@ export default function CompanyCard({ company, index, isUnlocked, onClick, onLoc
       <div className="card-bottom">
         <div className="card-name-row">
           <div className="card-name">{company.company}</div>
-          <div className="card-count">{company.count} salaries</div>
+          <div className="card-count">{company.count > 0 ? `${company.count} salaries` : 'New'}</div>
         </div>
         <div className="card-divider" />
-        <div className="card-sal">${company.min} – ${company.max} /mo</div>
+        {company.hasData ? (
+          <div className="card-sal">${company.min} – ${company.max} /mo</div>
+        ) : (
+          <div className="card-sal" style={{ color: 'rgba(255,255,255,0.3)', fontStyle: 'italic', fontSize: '12px' }}>Collecting data...</div>
+        )}
       </div>
     </div>
   );

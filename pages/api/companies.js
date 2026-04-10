@@ -9,26 +9,14 @@ function removeOutliers(arr) {
   return sorted.filter(s => s >= q1 - 1.5 * iqr && s <= q3 + 1.5 * iqr);
 }
 
-function median(arr) {
+function calcMedian(arr) {
   const s = [...arr].sort((a, b) => a - b);
   const m = Math.floor(s.length / 2);
   return s.length % 2 === 0 ? Math.round((s[m - 1] + s[m]) / 2) : s[m];
 }
 
-const JUNK_RE = /[\uAC00-\uD7A3\u1100-\u11FF\u3130-\u318F\u4E00-\u9FFF\u3040-\u30FF]/;
-const TEST_RE = /^(test|qwer|asdf|abc|xxx|123|qwd|dwd|fgf|zzz)/i;
-
-function isJunk(company) {
-  if (!company || company.trim().length < 2) return true;
-  if (JUNK_RE.test(company)) return true;
-  if (TEST_RE.test(company.trim())) return true;
-  if (company.replace(/[a-zA-ZÀ-ỹ0-9\s.\-&,'()\/]/g, '').length > company.length * 0.4) return true;
-  return false;
-}
-
-// Domain lookup — companies table has no domain column yet, so we use a hardcoded map
+// Domain lookup (companies table has no domain column yet)
 const DOMAIN_MAP = {
-  'grab': 'grab.com',
   'grab vietnam': 'grab.com',
   'vng corporation': 'vng.com.vn',
   'shopee vietnam': 'shopee.vn',
@@ -69,15 +57,10 @@ const DOMAIN_MAP = {
   'toss vietnam': 'toss.im',
 };
 
-function lookupDomain(companyName) {
-  return DOMAIN_MAP[companyName.toLowerCase()] || null;
-}
-
 // Curated background images per company
 const px = id => `https://images.pexels.com/photos/${id}/pexels-photo-${id}.jpeg?auto=compress&cs=tinysrgb&w=800&h=500&fit=crop`;
 const IMAGE_MAP = {
   'Grab Vietnam':    'https://assets.grab.com/wp-content/uploads/sites/11/2024/10/08174304/RV-2x1-GRAB-10Y-1-scaled.jpg',
-  'Grab':            'https://assets.grab.com/wp-content/uploads/sites/11/2024/10/08174304/RV-2x1-GRAB-10Y-1-scaled.jpg',
   'Sky Mavis':       'https://cdn.skymavis.com/skymavis-home/public//homepage/about-us-1.jpg',
   'Momo':            'https://boho.vn/wp-content/uploads/2023/03/L6-Momo-001-1024x576.jpg',
   'FPT Software':    'https://fptsoftware.com/-/media/project/fpt-software/fso/about-us/global-presence/f-town/f-town-1.jpg',
@@ -120,57 +103,93 @@ const BG_POOL = [
   px('1181671'), px('3184360'), px('1036808'), px('3861958'),
 ];
 
-function lookupImage(companyName, index) {
-  return IMAGE_MAP[companyName] || BG_POOL[index % BG_POOL.length];
-}
-
 export default async function handler(req, res) {
-  const { data, error } = await supabase
+  // Source of truth: companies table
+  const { data: allCompanies, error: compErr } = await supabase
+    .from('companies')
+    .select('id, name, tier');
+
+  if (compErr) return res.status(500).json({ error: compErr.message });
+
+  // Enrichment: submissions table
+  const { data: subs, error: subErr } = await supabase
     .from('submissions')
-    .select('company, salary, role');
+    .select('company, salary, role')
+    .not('company', 'is', null);
 
-  if (error) return res.status(500).json({ error: error.message });
+  if (subErr) return res.status(500).json({ error: subErr.message });
 
-  // Aggregate by company
-  const map = {};
-  data.forEach(({ company, salary, role }) => {
-    if (isJunk(company)) return;
-    if (salary < 5 || salary > 200) return;
-    const key = company.trim();
-    if (!map[key]) map[key] = { company: key, salaries: [], roles: {} };
-    map[key].salaries.push(salary);
-    map[key].roles[role] = (map[key].roles[role] || 0) + 1;
+  // Build submission map keyed by lowercase company name
+  const subMap = {};
+  subs.forEach(({ company, salary, role }) => {
+    if (!company || company.trim().length < 2) return;
+    const key = company.trim().toLowerCase();
+    if (!subMap[key]) subMap[key] = { salaries: [], roles: {} };
+    if (salary >= 5 && salary <= 200) subMap[key].salaries.push(salary);
+    if (role) subMap[key].roles[role] = (subMap[key].roles[role] || 0) + 1;
   });
 
-  const result = Object.values(map)
-    .filter(c => c.salaries.length >= 3)
-    .map((c, i) => {
-      const clean = removeOutliers(c.salaries);
-      const sorted = [...clean].sort((a, b) => a - b);
-      const domain = lookupDomain(c.company);
-      return {
-        company: c.company,
-        count: clean.length,
-        min: sorted[0],
-        max: sorted[sorted.length - 1],
-        median: median(clean),
-        domain,
-        logo: domain ? `https://www.google.com/s2/favicons?domain=${domain}&sz=128` : null,
-        image: lookupImage(c.company, i),
-        topRole: Object.entries(c.roles).sort((a, b) => b[1] - a[1])[0]?.[0] || null,
-      };
-    })
-    .sort((a, b) => b.count - a.count);
+  // Merge companies + submissions
+  const result = allCompanies.map((c, i) => {
+    const key = c.name.trim().toLowerCase();
+    const sub = subMap[key] || null;
+    const domain = DOMAIN_MAP[key] || null;
+    const logo = domain ? `https://www.google.com/s2/favicons?domain=${domain}&sz=128` : null;
+    const image = IMAGE_MAP[c.name] || BG_POOL[i % BG_POOL.length];
+    const hasSubs = sub && sub.salaries.length >= 3;
 
-  // Compute topPct
-  const sortedByMedian = [...result].sort((a, b) => b.median - a.median);
-  const enriched = result.map(c => {
+    if (!hasSubs) {
+      return {
+        company: c.name,
+        domain,
+        logo,
+        image,
+        tier: c.tier || 3,
+        count: sub?.salaries.length || 0,
+        hasData: false,
+        min: null,
+        max: null,
+        median: null,
+        topRole: null,
+        topPct: null,
+      };
+    }
+
+    const clean = removeOutliers(sub.salaries);
+    const sorted = [...clean].sort((a, b) => a - b);
+
+    return {
+      company: c.name,
+      domain,
+      logo,
+      image,
+      tier: c.tier || 3,
+      count: clean.length,
+      hasData: true,
+      min: sorted[0],
+      max: sorted[sorted.length - 1],
+      median: calcMedian(clean),
+      topRole: Object.entries(sub.roles).sort((a, b) => b[1] - a[1])[0]?.[0] || null,
+      topPct: null,
+    };
+  });
+
+  // Compute topPct for companies with data
+  const withData = result.filter(c => c.hasData);
+  const sortedByMedian = [...withData].sort((a, b) => b.median - a.median);
+  withData.forEach(c => {
     const rank = sortedByMedian.findIndex(x => x.company === c.company);
-    const raw = Math.round(((rank + 1) / result.length) * 100);
-    const topPct = Math.max(5, Math.round(raw / 5) * 5);
-    return { ...c, topPct };
+    const raw = Math.round(((rank + 1) / withData.length) * 100);
+    c.topPct = Math.max(5, Math.round(raw / 5) * 5);
+  });
+
+  // Sort: tier asc → hasData desc → count desc
+  result.sort((a, b) => {
+    if (a.tier !== b.tier) return a.tier - b.tier;
+    if (a.hasData !== b.hasData) return (b.hasData ? 1 : 0) - (a.hasData ? 1 : 0);
+    return b.count - a.count;
   });
 
   res.setHeader('Cache-Control', 's-maxage=600');
-  res.status(200).json(enriched);
+  res.status(200).json(result);
 }
