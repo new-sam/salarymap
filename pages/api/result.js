@@ -59,12 +59,21 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: 'salary, role, experience required' });
   }
 
-  // Get peers: same role + same experience
-  const { data: peers } = await supabase
+  // Get peers: same role + same experience, fallback to role only
+  let { data: peers } = await supabase
     .from('submissions')
     .select('salary')
     .eq('role', role)
     .eq('experience', experience);
+
+  // If not enough peers for exact match, broaden to all experience levels for this role
+  if (!peers || peers.length < 3) {
+    const { data: broadPeers } = await supabase
+      .from('submissions')
+      .select('salary')
+      .eq('role', role);
+    peers = broadPeers;
+  }
 
   if (!peers || peers.length < 3) {
     return res.status(200).json({
@@ -77,7 +86,7 @@ export default async function handler(req, res) {
     });
   }
 
-  const clean = removeOutliers(peers.map(p => p.salary));
+  const clean = removeOutliers(peers.map(p => p.salary).filter(s => s >= 5 && s <= 200));
   const sorted = [...clean].sort((a, b) => a - b);
   const below = sorted.filter(s => s < userSalary).length;
   const rawPct = Math.round((below / sorted.length) * 100);

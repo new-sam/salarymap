@@ -20,7 +20,6 @@ export default function ResultSection({ salary, role, experience, company }) {
   return (
     <section style={{
       background: '#000',
-      minHeight: '100vh',
       padding: '48px 24px',
       fontFamily: "'Inter', sans-serif",
       WebkitFontSmoothing: 'antialiased',
