@@ -706,7 +706,7 @@ const bodyHTML = `<section class="hero">
 </section>
 
 <!-- TRUST BUILDER -->
-<section class="trust-section" style="background:#f0ede8; padding:20px 0 60px;">
+<section class="trust-section" style="background:#0c0c0b; padding:20px 0 60px;">
 
   <!-- WGF SECTION -->
   <div class="wgf-section">
@@ -755,11 +755,10 @@ const bodyHTML = `<section class="hero">
       </button>
     </div>
   </div>
-  <!-- PRIVACY SECTION (rendered as React component) -->
-  <div id="anonymous-section-root"></div>
-
-
 </section>
+
+<!-- PRIVACY SECTION (rendered as React component) -->
+<div id="anonymous-section-root"></div>
 
 <div class="cards-bg" id="companies" style="scroll-margin-top:64px">
 <div class="cards-section">
