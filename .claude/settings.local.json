@@ -76,7 +76,8 @@
       "Bash(dd:*)",
       "Bash(gh api:*)",
       "WebFetch(domain:salarymap-dqbzwxruq-slsvm1013-6708s-projects.vercel.app)",
-      "Bash(npm ls:*)"
+      "Bash(npm ls:*)",
+      "Bash(npx playwright:*)"
     ]
   },
   "hooks": {
