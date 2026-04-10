@@ -41,10 +41,10 @@ export default function AnonymousSection() {
             <path d="M6 62 L12 72 L18 63" stroke="#ff6000" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none" />
           </svg>
 
-          {/* Right curved arrow */}
-          <svg width="40" height="80" viewBox="0 0 40 80" fill="none" style={{ position: 'absolute', right: '6px', top: '20px' }}>
-            <path d="M10 72 A 50 50 0 0 0 28 12" stroke="#ff6000" strokeWidth="2" strokeLinecap="round" fill="none" />
-            <path d="M22 18 L28 8 L34 17" stroke="#ff6000" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+          {/* Right curved arrow — mirrored from left */}
+          <svg width="40" height="80" viewBox="0 0 40 80" fill="none" style={{ position: 'absolute', right: '6px', top: '20px', transform: 'scaleX(-1)' }}>
+            <path d="M30 72 A 50 50 0 0 1 12 12" stroke="#ff6000" strokeWidth="2" strokeLinecap="round" fill="none" />
+            <path d="M6 18 L12 8 L18 17" stroke="#ff6000" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none" />
           </svg>
 
           {/* Outer ring */}
