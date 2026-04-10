@@ -56,11 +56,12 @@ export default function NextStepSheet({ role, experience, percentile }) {
         bottom: 0, left: 0, right: 0,
         background: '#fff',
         borderRadius: '32px 32px 0 0',
-        padding: '24px 40px 52px',
+        padding: '28px 48px 60px',
         zIndex: 50,
         boxShadow: '0 -20px 60px rgba(0,0,0,0.35)',
         animation: 'sheetSlideUp 0.45s cubic-bezier(0.34,1.56,0.64,1)',
-        maxWidth: '560px',
+        maxWidth: '720px',
+        minHeight: '55vh',
         margin: '0 auto',
         fontFamily: "'Barlow', 'Inter', sans-serif",
       }}>
@@ -113,7 +114,7 @@ export default function NextStepSheet({ role, experience, percentile }) {
             </div>
 
             {/* 3 option cards */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 16 }}>
 
               {/* Open */}
               <div
@@ -121,8 +122,8 @@ export default function NextStepSheet({ role, experience, percentile }) {
                 style={{
                   background: '#fff4f0',
                   border: '2px solid #ff4400',
-                  borderRadius: 20,
-                  padding: '22px 12px 18px',
+                  borderRadius: 22,
+                  padding: '32px 16px 28px',
                   textAlign: 'center',
                   cursor: 'pointer',
                   transition: 'transform 0.15s, box-shadow 0.15s',
