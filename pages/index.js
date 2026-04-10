@@ -2399,7 +2399,7 @@ export default function Home() {
                 key={c.company}
                 company={c}
                 index={i}
-                isUnlocked={isUnlocked}
+                isUnlocked={isSubmitted}
                 onClick={(co) => { setSelectedCompany(co); setPanelOpen(true); }}
                 onLockedClick={() => document.getElementById('submit')?.scrollIntoView({ behavior: 'smooth' })}
               />
@@ -2410,12 +2410,12 @@ export default function Home() {
                   onClick={() => setVisibleCount(v => v + 8)}
                   style={{
                     fontFamily: "'Barlow',sans-serif", fontSize: '14px', fontWeight: 700,
-                    color: '#f0ece4', background: 'rgba(255,255,255,0.06)',
-                    border: '1px solid rgba(255,255,255,0.12)', borderRadius: '100px',
+                    color: '#333', background: 'rgba(0,0,0,0.05)',
+                    border: '1px solid rgba(0,0,0,0.12)', borderRadius: '100px',
                     padding: '12px 28px', cursor: 'pointer', transition: 'all .15s',
                   }}
-                  onMouseEnter={e => { e.target.style.borderColor = 'rgba(255,255,255,0.3)'; e.target.style.background = 'rgba(255,255,255,0.1)'; }}
-                  onMouseLeave={e => { e.target.style.borderColor = 'rgba(255,255,255,0.12)'; e.target.style.background = 'rgba(255,255,255,0.06)'; }}
+                  onMouseEnter={e => { e.target.style.borderColor = 'rgba(0,0,0,0.3)'; e.target.style.background = 'rgba(0,0,0,0.08)'; }}
+                  onMouseLeave={e => { e.target.style.borderColor = 'rgba(0,0,0,0.12)'; e.target.style.background = 'rgba(0,0,0,0.05)'; }}
                 >
                   Load more ({apiCompanies.length - visibleCount} more companies)
                 </button>
