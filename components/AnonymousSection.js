@@ -1,7 +1,7 @@
 export default function AnonymousSection() {
   return (
     <section style={{
-      background: '#f0ede8',
+      background: '#0c0c0b',
       padding: '75px 60px 60px',
       fontFamily: "'Inter', 'Helvetica Neue', Arial, sans-serif",
       WebkitFontSmoothing: 'antialiased',
@@ -13,7 +13,7 @@ export default function AnonymousSection() {
         <h2 style={{
           fontSize: 'clamp(32px, 4vw, 51px)',
           fontWeight: 700,
-          color: '#4a4a4a',
+          color: '#fff',
           lineHeight: 1.3,
           marginBottom: '14px',
         }}>
@@ -24,7 +24,7 @@ export default function AnonymousSection() {
         <p style={{
           fontSize: '20px',
           fontWeight: 400,
-          color: '#4a4a4a',
+          color: '#fff',
           maxWidth: '797px',
           margin: '0 auto',
         }}>
@@ -77,13 +77,14 @@ export default function AnonymousSection() {
 
         {/* Left card — What you submit */}
         <div style={{
-          background: 'linear-gradient(180deg, rgba(216,234,255,0) 0%, rgba(55,148,254,0.56) 100%)',
-          boxShadow: '0px 17px 20px -9px rgba(0,0,0,0.25)',
+          background: 'linear-gradient(180deg, rgba(55,148,254,0.05) 0%, rgba(55,148,254,0.25) 100%)',
+          boxShadow: '0px 17px 20px -9px rgba(0,0,0,0.4)',
+          border: '1px solid rgba(55,148,254,0.15)',
           borderRadius: '17px',
           padding: '28px 28px 32px',
           paddingTop: '52px',
         }}>
-          <div style={{ fontSize: '22px', fontWeight: 300, color: '#303030', marginBottom: '20px' }}>
+          <div style={{ fontSize: '22px', fontWeight: 300, color: 'rgba(255,255,255,0.6)', marginBottom: '20px' }}>
             What you submit
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
@@ -123,8 +124,9 @@ export default function AnonymousSection() {
 
         {/* Right card — What everyone sees */}
         <div style={{
-          background: 'linear-gradient(180deg, rgba(216,234,255,0) 0%, rgba(55,148,254,0.56) 100%)',
-          boxShadow: '0px 17px 20px -9px rgba(0,0,0,0.25)',
+          background: 'linear-gradient(180deg, rgba(55,148,254,0.05) 0%, rgba(55,148,254,0.25) 100%)',
+          boxShadow: '0px 17px 20px -9px rgba(0,0,0,0.4)',
+          border: '1px solid rgba(55,148,254,0.15)',
           borderRadius: '17px',
           padding: '28px 28px 32px',
           paddingTop: '52px',
@@ -132,10 +134,10 @@ export default function AnonymousSection() {
           <div style={{ fontSize: '22px', fontWeight: 700, color: '#3794FE', marginBottom: '10px' }}>
             What everyone sees
           </div>
-          <div style={{ fontSize: '17px', fontWeight: 300, color: '#2b2b2b', marginBottom: '14px' }}>
+          <div style={{ fontSize: '17px', fontWeight: 300, color: 'rgba(255,255,255,0.5)', marginBottom: '14px' }}>
             Backend · 4–6 yrs · Grab
           </div>
-          <div style={{ height: '9px', background: '#fff', borderRadius: '28px', overflow: 'hidden', marginBottom: '12px' }}>
+          <div style={{ height: '9px', background: 'rgba(255,255,255,0.15)', borderRadius: '28px', overflow: 'hidden', marginBottom: '12px' }}>
             <div style={{ height: '100%', width: '72%', background: '#3794FE', borderRadius: '28px' }} />
           </div>
           <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between' }}>
