@@ -73,6 +73,57 @@ function lookupDomain(companyName) {
   return DOMAIN_MAP[companyName.toLowerCase()] || null;
 }
 
+// Curated background images per company
+const px = id => `https://images.pexels.com/photos/${id}/pexels-photo-${id}.jpeg?auto=compress&cs=tinysrgb&w=800&h=500&fit=crop`;
+const IMAGE_MAP = {
+  'Grab Vietnam':    'https://assets.grab.com/wp-content/uploads/sites/11/2024/10/08174304/RV-2x1-GRAB-10Y-1-scaled.jpg',
+  'Grab':            'https://assets.grab.com/wp-content/uploads/sites/11/2024/10/08174304/RV-2x1-GRAB-10Y-1-scaled.jpg',
+  'Sky Mavis':       'https://cdn.skymavis.com/skymavis-home/public//homepage/about-us-1.jpg',
+  'Momo':            'https://boho.vn/wp-content/uploads/2023/03/L6-Momo-001-1024x576.jpg',
+  'FPT Software':    'https://fptsoftware.com/-/media/project/fpt-software/fso/about-us/global-presence/f-town/f-town-1.jpg',
+  'Shopee Vietnam':  'https://www.sea.com/_next/static/media/bg-shopee.1789debb.jpg',
+  'Tiki':            'https://tuyendung.tiki.vn/images/features/about.jpg',
+  'GHN':             'https://vstatic.vietnam.vn/vietnam/resource/IMAGE/2026/01/15/1768469557624_giao-hang-nhanhdocx-1768467798800.jpeg',
+  'GHN Express':     'https://vstatic.vietnam.vn/vietnam/resource/IMAGE/2026/01/15/1768469557624_giao-hang-nhanhdocx-1768467798800.jpeg',
+  'Techcombank':     'https://www.metalocus.es/sites/default/files/files/metalocus_fosterpartners_techcombank_01.jpg',
+  'Zalo':            'https://stc-zalo-careers.zdn.vn/v2/assets/images/lifeAtZalo/img1.jpg',
+  'KMS Technology':  'https://greatplacetowork.com.vn/wp-content/uploads/2025/02/KMS-TECHNOLOGY_1-2-scaled.jpg',
+  'NashTech':        'https://www.outsourceaccelerator.com/wp-content/uploads/2023/05/f7e52632d507ce7029cde7932db75a9a_nashtech-top-10-ict-bpo-2048x1367-1.jpg',
+  'Nashtech Global': 'https://www.outsourceaccelerator.com/wp-content/uploads/2023/05/f7e52632d507ce7029cde7932db75a9a_nashtech-top-10-ict-bpo-2048x1367-1.jpg',
+  'VNG Corporation': 'https://namthuycorp.com/wp-content/uploads/2020/07/du-an-VNG-1.jpg',
+  'VNPT Technology': 'https://architizer-prod.imgix.net/media/mediadata/uploads/1754883372803112358_VNPT_Landscape_2.jpg?w=1680&q=60&auto=format,compress&cs=strip',
+  'VPBank':          'https://niceoffice.com.vn/wp-content/uploads/2023/10/vpbank-saigon-tower-duong-ton-duc-thang-quan-1.jpg',
+  'MBBank':          px('256559'),
+  'SHB Finance':     px('5473955'),
+  'Sacombank Digital': px('7821734'),
+  'Viettel':         px('1181671'),
+  'OneMount Group':  px('3861969'),
+  'Logivan':         px('1036808'),
+  'Base.vn':         px('3182820'),
+  'KiotViet':        px('3184360'),
+  'Amanotes':        px('2182973'),
+  'Rever':           px('7654202'),
+  'Trusting Social': px('6476254'),
+  'TokyoTech VN':    px('3861958'),
+  'Fossil Group VN': px('3184418'),
+  'BHD Star':        px('2182973'),
+  'Harvey Nash':     px('3184418'),
+  'Axon Active':     px('3861958'),
+  'Got It':          px('1181671'),
+  'Katalon':         px('3182812'),
+  'Teko Vietnam':    px('3184292'),
+  'Sendo':           px('3184292'),
+};
+const BG_POOL = [
+  px('3182812'), px('1181244'), px('3184418'), px('256559'),
+  px('3861969'), px('1181406'), px('2182973'), px('3184292'),
+  px('1181671'), px('3184360'), px('1036808'), px('3861958'),
+];
+
+function lookupImage(companyName, index) {
+  return IMAGE_MAP[companyName] || BG_POOL[index % BG_POOL.length];
+}
+
 export default async function handler(req, res) {
   const { data, error } = await supabase
     .from('submissions')
@@ -93,7 +144,7 @@ export default async function handler(req, res) {
 
   const result = Object.values(map)
     .filter(c => c.salaries.length >= 3)
-    .map(c => {
+    .map((c, i) => {
       const clean = removeOutliers(c.salaries);
       const sorted = [...clean].sort((a, b) => a - b);
       const domain = lookupDomain(c.company);
@@ -105,6 +156,7 @@ export default async function handler(req, res) {
         median: median(clean),
         domain,
         logo: domain ? `https://www.google.com/s2/favicons?domain=${domain}&sz=128` : null,
+        image: lookupImage(c.company, i),
         topRole: Object.entries(c.roles).sort((a, b) => b[1] - a[1])[0]?.[0] || null,
       };
     })

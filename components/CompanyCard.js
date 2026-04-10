@@ -6,9 +6,7 @@ export default function CompanyCard({ company, index, isUnlocked, onClick, onLoc
   const initials = company.company.slice(0, 2).toUpperCase();
   const logoUrl = company.logo || null;
   const cardUnlocked = isUnlocked || index < 3;
-  const bgImage = company.domain
-    ? `https://image.thum.io/get/width/400/https://${company.domain}`
-    : null;
+  const bgImage = company.image || null;
 
   if (!cardUnlocked) {
     return (
