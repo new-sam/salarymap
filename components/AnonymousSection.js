@@ -35,16 +35,15 @@ export default function AnonymousSection() {
       <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '-36px', position: 'relative', zIndex: 2 }}>
         <div style={{ position: 'relative', width: '220px', height: '180px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
 
-          {/* Left arc arrow — sweeping down along left side */}
-          <svg width="110" height="140" viewBox="0 0 110 140" fill="none" style={{ position: 'absolute', left: '-30px', top: '-5px' }}>
-            <path d="M95 10 C60 2, 20 25, 15 75" stroke="#ff6000" strokeWidth="2" strokeLinecap="round" fill="none" />
-            <path d="M9 70 L15 80 L21 70" stroke="#ff6000" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none" />
-          </svg>
+          {/* Arrows wrapping around the lock circle */}
+          <svg width="220" height="180" viewBox="0 0 220 180" fill="none" style={{ position: 'absolute', top: 0, left: 0 }}>
+            {/* Left arrow: top-left → sweeps down along left side of circle */}
+            <path d="M40 20 C25 30, 12 60, 18 105" stroke="#ff6000" strokeWidth="2" strokeLinecap="round" fill="none" />
+            <path d="M12 100 L18 112 L24 100" stroke="#ff6000" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" fill="none" />
 
-          {/* Right arc arrow — sweeping up along right side */}
-          <svg width="110" height="140" viewBox="0 0 110 140" fill="none" style={{ position: 'absolute', right: '-30px', top: '45px' }}>
-            <path d="M15 65 C20 15, 60 -2, 95 10" stroke="#ff6000" strokeWidth="2" strokeLinecap="round" fill="none" />
-            <path d="M90 4 L98 10 L90 16" stroke="#ff6000" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+            {/* Right arrow: bottom-right → sweeps up along right side of circle */}
+            <path d="M202 105 C208 60, 195 30, 180 20" stroke="#ff6000" strokeWidth="2" strokeLinecap="round" fill="none" />
+            <path d="M185 14 L178 18 L183 26" stroke="#ff6000" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" fill="none" />
           </svg>
 
           {/* Outer ring */}
