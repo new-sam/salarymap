@@ -1,62 +1,5 @@
 import supabase from '../../lib/supabase';
 
-function removeOutliers(arr) {
-  if (arr.length < 4) return arr;
-  const sorted = [...arr].sort((a, b) => a - b);
-  const q1 = sorted[Math.floor(sorted.length * 0.25)];
-  const q3 = sorted[Math.floor(sorted.length * 0.75)];
-  const iqr = q3 - q1;
-  return sorted.filter(s => s >= q1 - 1.5 * iqr && s <= q3 + 1.5 * iqr);
-}
-
-function calcMedian(arr) {
-  const s = [...arr].sort((a, b) => a - b);
-  const m = Math.floor(s.length / 2);
-  return s.length % 2 === 0 ? Math.round((s[m - 1] + s[m]) / 2) : s[m];
-}
-
-// Domain lookup (companies table has no domain column yet)
-const DOMAIN_MAP = {
-  'grab vietnam': 'grab.com',
-  'vng corporation': 'vng.com.vn',
-  'shopee vietnam': 'shopee.vn',
-  'fpt software': 'fpt.com.vn',
-  'tiki': 'tiki.vn',
-  'momo': 'momo.vn',
-  'zalo': 'zalo.me',
-  'vpbank': 'vpbank.com.vn',
-  'techcombank': 'techcombank.com.vn',
-  'sky mavis': 'skymavis.com',
-  'vnpt technology': 'vnpt.com.vn',
-  'shb finance': 'shbfinance.com.vn',
-  'onemount group': 'onemount.com',
-  'logivan': 'logivan.com',
-  'base.vn': 'base.vn',
-  'sendo': 'sendo.vn',
-  'ghn': 'ghn.vn',
-  'ghn express': 'ghn.vn',
-  'rever': 'rever.vn',
-  'nashtech': 'nashtechglobal.com',
-  'nashtech global': 'nashtechglobal.com',
-  'kiotviet': 'kiotviet.vn',
-  'tokyotech vn': 'tokyotechlab.com',
-  'got it': 'got-it.ai',
-  'katalon': 'katalon.com',
-  'harvey nash': 'harveynash.vn',
-  'axon active': 'axonactive.com',
-  'teko vietnam': 'teko.vn',
-  'bhd star': 'bhdstar.vn',
-  'viettel': 'viettel.com.vn',
-  'sacombank digital': 'sacombank.com.vn',
-  'kms technology': 'kms-technology.com',
-  'amanotes': 'amanotes.com',
-  'mbbank': 'mbbank.com.vn',
-  'fossil group vn': 'fossil.com',
-  'trusting social': 'trustingsocial.com',
-  'likelion vietnam': 'likelion.net',
-  'toss vietnam': 'toss.im',
-};
-
 // Curated background images per company
 const px = id => `https://images.pexels.com/photos/${id}/pexels-photo-${id}.jpeg?auto=compress&cs=tinysrgb&w=800&h=500&fit=crop`;
 const IMAGE_MAP = {
@@ -103,93 +46,139 @@ const BG_POOL = [
   px('1181671'), px('3184360'), px('1036808'), px('3861958'),
 ];
 
+// Domain lookup
+const DOMAIN_MAP = {
+  'grab vietnam': 'grab.com',
+  'vng corporation': 'vng.com.vn',
+  'shopee vietnam': 'shopee.vn',
+  'fpt software': 'fpt.com.vn',
+  'tiki': 'tiki.vn',
+  'momo': 'momo.vn',
+  'zalo': 'zalo.me',
+  'vpbank': 'vpbank.com.vn',
+  'techcombank': 'techcombank.com.vn',
+  'sky mavis': 'skymavis.com',
+  'vnpt technology': 'vnpt.com.vn',
+  'shb finance': 'shbfinance.com.vn',
+  'onemount group': 'onemount.com',
+  'logivan': 'logivan.com',
+  'base.vn': 'base.vn',
+  'sendo': 'sendo.vn',
+  'ghn': 'ghn.vn',
+  'ghn express': 'ghn.vn',
+  'rever': 'rever.vn',
+  'nashtech': 'nashtechglobal.com',
+  'nashtech global': 'nashtechglobal.com',
+  'kiotviet': 'kiotviet.vn',
+  'tokyotech vn': 'tokyotechlab.com',
+  'got it': 'got-it.ai',
+  'katalon': 'katalon.com',
+  'harvey nash': 'harveynash.vn',
+  'axon active': 'axonactive.com',
+  'teko vietnam': 'teko.vn',
+  'bhd star': 'bhdstar.vn',
+  'viettel': 'viettel.com.vn',
+  'sacombank digital': 'sacombank.com.vn',
+  'kms technology': 'kms-technology.com',
+  'amanotes': 'amanotes.com',
+  'mbbank': 'mbbank.com.vn',
+  'fossil group vn': 'fossil.com',
+  'trusting social': 'trustingsocial.com',
+  'likelion vietnam': 'likelion.net',
+  'toss vietnam': 'toss.im',
+};
+
 export default async function handler(req, res) {
-  // Source of truth: companies table
-  const { data: allCompanies, error: compErr } = await supabase
-    .from('companies')
-    .select('id, name, tier');
+  try {
+    // 1. All companies (source of truth)
+    const { data: companies, error: cErr } = await supabase
+      .from('companies')
+      .select('id, name, tier');
 
-  if (compErr) return res.status(500).json({ error: compErr.message });
+    if (cErr) throw cErr;
 
-  // Enrichment: submissions table
-  const { data: subs, error: subErr } = await supabase
-    .from('submissions')
-    .select('company, salary, role')
-    .not('company', 'is', null);
+    // 2. All salary submissions
+    const { data: submissions, error: sErr } = await supabase
+      .from('submissions')
+      .select('company, salary, role');
 
-  if (subErr) return res.status(500).json({ error: subErr.message });
+    if (sErr) throw sErr;
 
-  // Build submission map keyed by lowercase company name
-  const subMap = {};
-  subs.forEach(({ company, salary, role }) => {
-    if (!company || company.trim().length < 2) return;
-    const key = company.trim().toLowerCase();
-    if (!subMap[key]) subMap[key] = { salaries: [], roles: {} };
-    if (salary >= 5 && salary <= 200) subMap[key].salaries.push(salary);
-    if (role) subMap[key].roles[role] = (subMap[key].roles[role] || 0) + 1;
-  });
+    // 3. Group submissions by company name
+    const salaryMap = {};
+    submissions.forEach(s => {
+      if (!s.company || !s.salary) return;
+      if (s.salary < 5 || s.salary > 200) return;
+      const key = s.company.trim().toLowerCase();
+      if (!salaryMap[key]) salaryMap[key] = { salaries: [], roles: {} };
+      salaryMap[key].salaries.push(s.salary);
+      if (s.role) salaryMap[key].roles[s.role] = (salaryMap[key].roles[s.role] || 0) + 1;
+    });
 
-  // Merge companies + submissions
-  const result = allCompanies.map((c, i) => {
-    const key = c.name.trim().toLowerCase();
-    const sub = subMap[key] || null;
-    const domain = DOMAIN_MAP[key] || null;
-    const logo = domain ? `https://www.google.com/s2/favicons?domain=${domain}&sz=128` : null;
-    const image = IMAGE_MAP[c.name] || BG_POOL[i % BG_POOL.length];
-    const hasSubs = sub && sub.salaries.length >= 3;
-
-    if (!hasSubs) {
+    const getSummary = (arr) => {
+      const sorted = [...arr].sort((a, b) => a - b);
+      const mid = Math.floor(sorted.length / 2);
+      const median = sorted.length % 2 === 0
+        ? Math.round((sorted[mid - 1] + sorted[mid]) / 2)
+        : sorted[mid];
       return {
-        company: c.name,
+        count: sorted.length,
+        median,
+        min: sorted[0],
+        max: sorted[sorted.length - 1],
+      };
+    };
+
+    // 4. Join companies + salary data
+    const cards = companies.map((co, i) => {
+      const key = co.name.trim().toLowerCase();
+      const sub = salaryMap[key];
+      const hasData = !!(sub && sub.salaries.length >= 3);
+      const summary = hasData
+        ? getSummary(sub.salaries)
+        : { count: sub?.salaries.length || 0, median: 0, min: 0, max: 0 };
+
+      const domain = DOMAIN_MAP[key] || null;
+      const logo = domain ? `https://www.google.com/s2/favicons?domain=${domain}&sz=128` : null;
+      const image = IMAGE_MAP[co.name] || BG_POOL[i % BG_POOL.length];
+      const topRole = sub ? Object.entries(sub.roles).sort((a, b) => b[1] - a[1])[0]?.[0] || null : null;
+
+      return {
+        id: co.id,
+        company: co.name,
         domain,
         logo,
         image,
-        tier: c.tier || 3,
-        count: sub?.salaries.length || 0,
-        hasData: false,
-        min: null,
-        max: null,
-        median: null,
-        topRole: null,
-        topPct: null,
+        tier: co.tier || 3,
+        hasData,
+        topRole,
+        ...summary,
       };
-    }
+    });
 
-    const clean = removeOutliers(sub.salaries);
-    const sorted = [...clean].sort((a, b) => a - b);
+    // 5. Compute topPct for companies with data
+    const withData = cards.filter(c => c.hasData);
+    const sortedByMedian = [...withData].sort((a, b) => b.median - a.median);
+    withData.forEach(c => {
+      const rank = sortedByMedian.findIndex(x => x.company === c.company);
+      const raw = Math.round(((rank + 1) / withData.length) * 100);
+      c.topPct = Math.max(5, Math.round(raw / 5) * 5);
+    });
 
-    return {
-      company: c.name,
-      domain,
-      logo,
-      image,
-      tier: c.tier || 3,
-      count: clean.length,
-      hasData: true,
-      min: sorted[0],
-      max: sorted[sorted.length - 1],
-      median: calcMedian(clean),
-      topRole: Object.entries(sub.roles).sort((a, b) => b[1] - a[1])[0]?.[0] || null,
-      topPct: null,
-    };
-  });
+    // 6. Sort: hasData first (by count desc), then no data (by tier asc, name asc)
+    cards.sort((a, b) => {
+      if (a.hasData && !b.hasData) return -1;
+      if (!a.hasData && b.hasData) return 1;
+      if (a.hasData && b.hasData) return b.count - a.count;
+      if (a.tier !== b.tier) return a.tier - b.tier;
+      return a.company.localeCompare(b.company);
+    });
 
-  // Compute topPct for companies with data
-  const withData = result.filter(c => c.hasData);
-  const sortedByMedian = [...withData].sort((a, b) => b.median - a.median);
-  withData.forEach(c => {
-    const rank = sortedByMedian.findIndex(x => x.company === c.company);
-    const raw = Math.round(((rank + 1) / withData.length) * 100);
-    c.topPct = Math.max(5, Math.round(raw / 5) * 5);
-  });
+    res.setHeader('Cache-Control', 's-maxage=300, stale-while-revalidate');
+    return res.status(200).json(cards);
 
-  // Sort: tier asc → hasData desc → count desc
-  result.sort((a, b) => {
-    if (a.tier !== b.tier) return a.tier - b.tier;
-    if (a.hasData !== b.hasData) return (b.hasData ? 1 : 0) - (a.hasData ? 1 : 0);
-    return b.count - a.count;
-  });
-
-  res.setHeader('Cache-Control', 's-maxage=600');
-  res.status(200).json(result);
+  } catch (err) {
+    console.error('companies API error:', err);
+    return res.status(500).json({ error: err.message });
+  }
 }
