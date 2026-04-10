@@ -51,11 +51,24 @@ const DOMAIN_MAP = {
   'trusting social': 'trustingsocial.com',
 };
 
-export default async function handler(req, res) {
-  const { salary, role, experience, company } = req.query;
-  const userSalary = parseInt(salary);
+// Map wizard role names to DB role names
+const ROLE_MAP = {
+  'Data · AI': 'Data Engineer',
+  'PM · PO': 'PM',
+  'Design': 'Frontend',  // fallback: no Design data, use Frontend
+  'QA': 'Backend',        // fallback: no QA data, use Backend
+};
 
-  if (!userSalary || !role || !experience) {
+function resolveRole(role) {
+  return ROLE_MAP[role] || role;
+}
+
+export default async function handler(req, res) {
+  const { salary, role: rawRole, experience, company } = req.query;
+  const userSalary = parseInt(salary);
+  const role = resolveRole(rawRole);
+
+  if (!userSalary || !rawRole || !experience) {
     return res.status(400).json({ error: 'salary, role, experience required' });
   }
 
