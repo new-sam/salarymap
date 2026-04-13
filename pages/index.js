@@ -1220,9 +1220,8 @@ function SubmitSection({
   wizardStep, setWizardStep,
   wRole, setWRole, wExp, setWExp,
   wSalary, setWSalary, wCompany, setWCompany,
-  showResult, percentileData,
+  percentileData,
   showSocialPrompt, setShowSocialPrompt,
-  setShowOTW,
   isLoggedIn,
   onSubmit,
   submissionId,
@@ -1692,18 +1691,12 @@ export default function Home() {
   const [wExp, setWExp] = useState('');
   const [wSalary, setWSalary] = useState(62);
   const [wCompany, setWCompany] = useState('');
-  const [showResult, setShowResult] = useState(false);
   const [percentileData, setPercentileData] = useState(null);
   const [showSocialPrompt, setShowSocialPrompt] = useState(false);
   const [submissionId, setSubmissionId] = useState(null);
   const [detailCompany, setDetailCompany] = useState(null);
   const [detailOpen, setDetailOpen] = useState(false);
   const [detailCardIndex, setDetailCardIndex] = useState(0);
-  const [showOTW, setShowOTW] = useState(false);
-  const [otwStep, setOtwStep] = useState('intent'); // 'intent' | 'contact'
-  const [selectedOtw, setSelectedOtw] = useState(null);
-  const [otwContactType, setOtwContactType] = useState('email');
-  const [otwContactValue, setOtwContactValue] = useState('');
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [user, setUser] = useState(null);
@@ -1791,16 +1784,6 @@ export default function Home() {
     return () => { delete window.openAuthModal; };
   }, [setShowAuthModal]);
 
-  // Reset OTW modal state whenever it opens
-  useEffect(() => {
-    if (showOTW) {
-      setOtwStep('intent');
-      setSelectedOtw(null);
-      setOtwContactType('email');
-      setOtwContactValue('');
-    }
-  }, [showOTW]);
-
   const saveUserProfile = async (u) => {
     try {
       const { error } = await supabaseClient
@@ -1846,7 +1829,6 @@ export default function Home() {
         // Handle ?login=success redirect from OAuth
         if (isLoginSuccess) {
           saveUserProfile(session.user);
-          setTimeout(() => setShowOTW(true), 800);
           window.history.replaceState({}, '', '/');
         }
       } else {
@@ -2097,8 +2079,6 @@ export default function Home() {
                       setIsLoggedIn(false);
                       setUser(null);
                       setShowUserMenu(false);
-                      setShowOTW(false);
-                      setShowResult(false);
                       // DO NOT touch isSubmitted or localStorage 'fyi_submitted'
                     }}
                     style={{width:'100%',padding:'10px 14px',borderRadius:8,border:'none',background:'transparent',color:'rgba(255,255,255,0.6)',fontSize:13,cursor:'pointer',textAlign:'left',fontFamily:"'Barlow',sans-serif"}}>
@@ -2123,12 +2103,9 @@ export default function Home() {
         wExp={wExp} setWExp={setWExp}
         wSalary={wSalary} setWSalary={setWSalary}
         wCompany={wCompany} setWCompany={setWCompany}
-        showResult={showResult}
         percentileData={percentileData}
         showSocialPrompt={showSocialPrompt}
         setShowSocialPrompt={setShowSocialPrompt}
-        setShowOTW={setShowOTW}
-        setShowAuthModal={setShowAuthModal}
         isLoggedIn={isLoggedIn}
         submissionId={submissionId}
         onSubmit={async () => {
@@ -2225,7 +2202,7 @@ export default function Home() {
                       </div>
                       <div className="lb-tc-title">{row.title}</div>
                       <div className="lb-tc-sub">{row.exp} yrs · {row.city}</div>
-                      <div className="lb-tc-salary">${row.salary.toLocaleString()}</div>
+                      <div className="lb-tc-salary">{row.salary.toLocaleString()}M</div>
                       <div className="lb-tc-bar-wrap">
                         <div className="lb-tc-bar" style={{width:`${row.barPct}%`}} />
                       </div>
@@ -2248,7 +2225,7 @@ export default function Home() {
                       <div className="lb-row-sub">{row.exp} yrs · Full-time · {row.city}</div>
                     </div>
                     <div className="lb-row-right">
-                      <div className="lb-row-sal">${row.salary.toLocaleString()}</div>
+                      <div className="lb-row-sal">{row.salary.toLocaleString()}M</div>
                       <div className={`lb-row-vs ${row.vsMarket>=0?'up':'dn'}`}>
                         {row.vsMarket>=0?'+':''}{row.vsMarket}% vs market
                       </div>
@@ -2263,7 +2240,7 @@ export default function Home() {
                       <div className="lb-row-sub blurred">{row.exp} yrs · {row.city}</div>
                     </div>
                     <div className="lb-row-right">
-                      <div className="lb-row-sal blurred">${row.salary.toLocaleString()}</div>
+                      <div className="lb-row-sal blurred">{row.salary.toLocaleString()}M</div>
                       <div className={`lb-row-vs blurred ${row.vsMarket>=0?'up':'dn'}`}>
                         {row.vsMarket>=0?'+':''}{row.vsMarket}%
                       </div>

@@ -108,9 +108,9 @@ export default function SlidePanel({ company, isOpen, onClose }) {
               {/* Stats row */}
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '8px', marginBottom: '28px' }}>
                 {[
-                  { label: 'Min', value: `$${company.min}` },
-                  { label: 'Median', value: `$${company.median}`, highlight: true },
-                  { label: 'Max', value: `$${company.max}` },
+                  { label: 'Min', value: `${company.min}M` },
+                  { label: 'Median', value: `${company.median}M`, highlight: true },
+                  { label: 'Max', value: `${company.max}M` },
                 ].map(s => (
                   <div key={s.label} style={{
                     background: '#f8f6f3', borderRadius: '10px', padding: '14px 12px', textAlign: 'center',
@@ -145,7 +145,7 @@ export default function SlidePanel({ company, isOpen, onClose }) {
                         <div style={{ flex: 1, minWidth: 0 }}>
                           <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
                             <span style={{ fontSize: '13px', fontWeight: 700, color: '#111' }}>{role.role}</span>
-                            <span style={{ fontSize: '12px', fontWeight: 800, color: '#FF6200' }}>${role.median}/mo</span>
+                            <span style={{ fontSize: '12px', fontWeight: 800, color: '#FF6200' }}>{role.median}M/mo</span>
                           </div>
                           <div style={{ height: '4px', borderRadius: '2px', background: '#f0ede8', overflow: 'hidden' }}>
                             <div style={{
@@ -155,7 +155,7 @@ export default function SlidePanel({ company, isOpen, onClose }) {
                             }} />
                           </div>
                           <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '3px' }}>
-                            <span style={{ fontSize: '10px', color: '#aaa' }}>${role.min} – ${role.max}</span>
+                            <span style={{ fontSize: '10px', color: '#aaa' }}>{role.min}M – {role.max}M</span>
                             <span style={{ fontSize: '10px', color: '#aaa' }}>{role.count} people</span>
                           </div>
                         </div>
