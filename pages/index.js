@@ -965,27 +965,29 @@ function acKey(e) {
 let coAllCompanies = [];
 let coSearchIdx = -1;
 
+let coLoadPromise = null;
 async function coLoadCompanies() {
   if (coAllCompanies.length) return;
-  try {
-    const res = await fetch('/api/companies');
-    coAllCompanies = await res.json();
-  } catch(e) {}
+  if (!coLoadPromise) {
+    coLoadPromise = fetch('/api/companies').then(r => r.json()).then(data => { coAllCompanies = data; }).catch(() => {});
+  }
+  await coLoadPromise;
 }
 
-function coSearchFilter(val) {
-  coLoadCompanies();
+async function coSearchFilter(val) {
+  await coLoadCompanies();
   const drop = document.getElementById('co-search-drop');
   const q = val.trim().toLowerCase();
   if (!q) { drop.classList.remove('open'); return; }
-  const matches = coAllCompanies.filter(c => c.name.toLowerCase().includes(q)).slice(0, 8);
+  const matches = coAllCompanies.filter(c => (c.name || c.company || '').toLowerCase().includes(q)).slice(0, 8);
   if (!matches.length) { drop.classList.remove('open'); return; }
-  drop.innerHTML = matches.map((c, i) =>
-    \`<div class="co-drop-item" data-name="\${c.name}" data-tier="\${c.tier}" onclick="coSelect('\${c.name.replace(/'/g,"\\\\'")}')">
-      <span class="co-drop-item-name">\${c.name}</span>
+  drop.innerHTML = matches.map((c, i) => {
+    const n = c.name || c.company || '';
+    return \`<div class="co-drop-item" data-name="\${n}" data-tier="\${c.tier}" onclick="coSelect('\${n.replace(/'/g,"\\\\'")}')">
+      <span class="co-drop-item-name">\${n}</span>
       <span class="co-drop-item-badge \${c.tier===3?'no-data':''}">\${c.tier===1?'Rich data':c.tier===2?'Has data':'No data yet'}</span>
-    </div>\`
-  ).join('');
+    </div>\`;
+  }).join('');
   coSearchIdx = -1;
   drop.classList.add('open');
 }
