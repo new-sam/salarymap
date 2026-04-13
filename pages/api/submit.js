@@ -51,5 +51,15 @@ export default async function handler(req, res) {
     // Non-fatal — don't fail the request
   }
 
+  // Auto-add company to companies table if not exists
+  if (company && company.trim()) {
+    await supabase
+      .from('companies')
+      .upsert(
+        { name: company.trim(), tier: 4 },
+        { onConflict: 'name', ignoreDuplicates: true }
+      );
+  }
+
   return res.status(201).json({ success: true, data });
 }
