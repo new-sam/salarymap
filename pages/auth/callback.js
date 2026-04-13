@@ -8,7 +8,7 @@ async function saveProfile(user) {
     const { error } = await supabase.from('user_profiles').upsert({
       id: user.id,
       email: user.email,
-      full_name: user.user_metadata?.full_name || null,
+      full_name: user.user_metadata?.full_name || user.user_metadata?.name || null,
       provider: user.app_metadata?.provider || null,
       updated_at: new Date().toISOString(),
     }, { onConflict: 'id' })

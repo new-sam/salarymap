@@ -1808,7 +1808,7 @@ export default function Home() {
         .upsert({
           id: u.id,
           email: u.email,
-          full_name: u.user_metadata?.full_name || null,
+          full_name: u.user_metadata?.full_name || u.user_metadata?.name || null,
           avatar_url: u.user_metadata?.avatar_url || null,
           provider: u.app_metadata?.provider || null,
           updated_at: new Date().toISOString(),
@@ -2077,11 +2077,11 @@ export default function Home() {
                 <img src={user.user_metadata.avatar_url} style={{width:26,height:26,borderRadius:'50%',objectFit:'cover'}} />
               ) : (
                 <div style={{width:26,height:26,borderRadius:'50%',background:'#FF6200',display:'flex',alignItems:'center',justifyContent:'center',fontSize:11,fontWeight:800,color:'black'}}>
-                  {(user?.user_metadata?.full_name || user?.email || 'U')[0].toUpperCase()}
+                  {(user?.user_metadata?.full_name || user?.user_metadata?.name || user?.email || 'U')[0].toUpperCase()}
                 </div>
               )}
               <span style={{fontSize:13,fontWeight:600,color:'rgba(255,255,255,0.7)'}}>
-                {user?.user_metadata?.full_name?.split(' ')[0] || user?.email?.split('@')[0] || 'Account'}
+                {(user?.user_metadata?.full_name || user?.user_metadata?.name)?.split(' ')[0] || user?.email?.split('@')[0] || 'Account'}
               </span>
               <span style={{fontSize:10,color:'rgba(255,255,255,0.3)'}}>▾</span>
 
