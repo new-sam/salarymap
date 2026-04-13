@@ -1698,6 +1698,7 @@ export default function Home() {
   const [submissionId, setSubmissionId] = useState(null);
   const [detailCompany, setDetailCompany] = useState(null);
   const [detailOpen, setDetailOpen] = useState(false);
+  const [detailCardIndex, setDetailCardIndex] = useState(0);
   const [showOTW, setShowOTW] = useState(false);
   const [otwStep, setOtwStep] = useState('intent'); // 'intent' | 'contact'
   const [selectedOtw, setSelectedOtw] = useState(null);
@@ -2313,7 +2314,7 @@ export default function Home() {
                       company={c}
                       index={i}
                       isUnlocked={isSubmitted}
-                      onClick={(co) => { setDetailCompany(co.name || co.company); setDetailOpen(true); }}
+                      onClick={(co) => { setDetailCompany(co.name || co.company); setDetailCardIndex(i); setDetailOpen(true); }}
                       onLockedClick={() => document.getElementById('submit')?.scrollIntoView({ behavior: 'smooth' })}
                     />
                   ))}
@@ -2359,6 +2360,7 @@ export default function Home() {
         userSalary={wSalary || null}
         userCompany={wCompany || null}
         isSubmitted={isSubmitted}
+        cardIndex={detailCardIndex}
       />
 
 
