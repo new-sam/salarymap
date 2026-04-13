@@ -111,7 +111,7 @@ export default function CompanyDetailPanel({
   // ── Panel style ──
   const panelStyle = isMobile ? {
     position: 'fixed', bottom: 0, left: 0, right: 0,
-    maxHeight: '90vh', background: '#fff', zIndex: 50,
+    maxHeight: '90vh', background: '#fff', zIndex: 300,
     borderRadius: '20px 20px 0 0', overflowY: 'auto',
     transform: isOpen ? 'translateY(0)' : 'translateY(100%)',
     transition: 'transform 0.3s ease',
@@ -119,7 +119,7 @@ export default function CompanyDetailPanel({
     fontFamily: "'Inter', sans-serif",
   } : {
     position: 'fixed', top: 0, right: 0,
-    width: 480, height: '100vh', background: '#fff', zIndex: 50,
+    width: 'clamp(520px, 55vw, 720px)', height: '100vh', background: '#fff', zIndex: 300,
     overflowY: 'auto',
     transform: isOpen ? 'translateX(0)' : 'translateX(100%)',
     transition: 'transform 0.3s ease',
@@ -206,32 +206,41 @@ export default function CompanyDetailPanel({
   const renderSummaryBoxes = (blurred = false) => {
     const boxes = summaryData
       ? [
-          { label: '25th %ile', value: fmtShort(summaryData.p25) },
-          { label: 'Median', value: fmtShort(summaryData.median), hl: true },
-          { label: '75th %ile', value: fmtShort(summaryData.p75) },
+          { label: 'Lower range', sub: 'Bottom 25% earn under', value: fmtShort(summaryData.p25) },
+          { label: 'Median salary', sub: 'Typical salary here', value: fmtShort(summaryData.median), hl: true },
+          { label: 'Upper range', sub: 'Top 25% earn above', value: fmtShort(summaryData.p75) },
         ]
       : [
-          { label: '25th %ile', value: '??' },
-          { label: 'Median', value: '??', hl: true },
-          { label: '75th %ile', value: '??' },
+          { label: 'Lower range', value: '??', sub: '' },
+          { label: 'Median salary', value: '??', hl: true, sub: '' },
+          { label: 'Upper range', value: '??', sub: '' },
         ]
     return (
       <div style={blurred ? { filter: 'blur(6px)', pointerEvents: 'none', userSelect: 'none' } : {}}>
+        {/* Section title */}
+        <div style={{ fontSize: 11, fontWeight: 700, color: '#333', marginBottom: 4 }}>
+          Salary breakdown
+        </div>
+        <div style={{ fontSize: 11, color: '#999', lineHeight: 1.5, marginBottom: 12 }}>
+          {isSubmitted && userRole
+            ? `How ${activeRole === 'All' ? 'all roles' : activeRole + ' engineers'} at ${company} are paid, filtered to your experience level (±1 year).`
+            : `Salary range for ${activeRole === 'All' ? 'all roles' : activeRole + ' engineers'} at ${company}, based on anonymous submissions.`}
+        </div>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8, marginBottom: 6 }}>
           {boxes.map(s => (
             <div key={s.label} style={{
               background: s.hl ? '#fff4f0' : '#f5f5f5',
               border: s.hl ? '1.5px solid #ffcab3' : '1.5px solid transparent',
-              borderRadius: 10, padding: '13px 8px', textAlign: 'center',
+              borderRadius: 12, padding: '16px 10px', textAlign: 'center',
             }}>
-              <div style={{ fontSize: 18, fontWeight: 700, color: s.hl ? '#ff4400' : '#1a1a1a' }}>{s.value}</div>
-              <div style={{ fontSize: 9, color: '#aaa', marginTop: 3 }}>{s.label}</div>
+              <div style={{ fontSize: 22, fontWeight: 800, color: s.hl ? '#ff4400' : '#1a1a1a', letterSpacing: '-0.02em' }}>{s.value}</div>
+              <div style={{ fontSize: 10, fontWeight: 600, color: s.hl ? '#ff4400' : '#888', marginTop: 4 }}>{s.label}</div>
             </div>
           ))}
         </div>
         {summaryData && (
-          <div style={{ fontSize: 9, color: '#ccc', textAlign: 'center', marginBottom: 4 }}>
-            Based on {summaryData.count} submissions · VND /month
+          <div style={{ fontSize: 10, color: '#bbb', textAlign: 'center', marginBottom: 4 }}>
+            Based on {summaryData.count} submissions · VND per month
           </div>
         )}
       </div>
@@ -244,6 +253,12 @@ export default function CompanyDetailPanel({
     const youPos = userSalary ? distPct(userSalary) : null
     return (
       <div style={{ margin: '14px 0 18px' }}>
+        <div style={{ fontSize: 11, fontWeight: 700, color: '#333', marginBottom: 4 }}>
+          Where you stand
+        </div>
+        <div style={{ fontSize: 11, color: '#999', lineHeight: 1.5, marginBottom: 10 }}>
+          The bar below shows the full salary range at this company. The orange dot is the median, and the dark dot is your salary.
+        </div>
         {/* Track */}
         <div style={{ position: 'relative', height: 6, background: '#eee', borderRadius: 3 }}>
           <div style={{
@@ -283,25 +298,34 @@ export default function CompanyDetailPanel({
       return (
         <div style={{
           background: '#f5f5f5', border: '1px solid #e0e0e0',
-          borderRadius: 10, padding: '10px 14px', marginBottom: 14,
-          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          borderRadius: 12, padding: '14px 16px', marginBottom: 16,
         }}>
-          <span style={{ fontSize: 12, color: '#555' }}>vs market median</span>
-          <span style={{ fontSize: 12, fontWeight: 600, color: '#888' }}>your company</span>
+          <div style={{ fontSize: 12, fontWeight: 600, color: '#555', marginBottom: 4 }}>
+            You work here — this is your current company's pay range.
+          </div>
+          <div style={{ fontSize: 11, color: '#999' }}>
+            Your salary: {fmtShort(userSalary)} · Company median: {fmtShort(summaryData.median)}
+          </div>
         </div>
       )
     }
+    const more = comparePct >= 0
     return (
       <div style={{
-        background: comparePct >= 0 ? '#f0fff4' : '#fff5f5',
-        border: `1.5px solid ${comparePct >= 0 ? '#86efac' : '#fca5a5'}`,
-        borderRadius: 10, padding: '10px 14px', marginBottom: 14,
-        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        background: more ? '#f0fff4' : '#fff5f5',
+        border: `1.5px solid ${more ? '#86efac' : '#fca5a5'}`,
+        borderRadius: 12, padding: '14px 16px', marginBottom: 16,
       }}>
-        <span style={{ fontSize: 12, color: '#555' }}>vs your salary ({fmtShort(userSalary)})</span>
-        <span style={{ fontSize: 13, fontWeight: 700, color: comparePct >= 0 ? '#16a34a' : '#dc2626' }}>
-          {comparePct >= 0 ? '+' : ''}{comparePct}% {comparePct >= 0 ? 'more here' : 'less here'}
-        </span>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
+          <span style={{ fontSize: 13, fontWeight: 700, color: more ? '#16a34a' : '#dc2626' }}>
+            {more ? '+' : ''}{comparePct}% {more ? 'more here' : 'less here'}
+          </span>
+        </div>
+        <div style={{ fontSize: 11, color: '#888', lineHeight: 1.5 }}>
+          {more
+            ? `Engineers here earn about ${Math.abs(comparePct)}% more than your current salary (${fmtShort(userSalary)}). Consider this company if you're looking to grow.`
+            : `Engineers here earn about ${Math.abs(comparePct)}% less than your current salary (${fmtShort(userSalary)}). You're ahead of this company's pay range.`}
+        </div>
       </div>
     )
   }
@@ -339,8 +363,13 @@ export default function CompanyDetailPanel({
       : visibleFeed
     return (
       <div style={blurred ? { filter: 'blur(6px)', pointerEvents: 'none', userSelect: 'none' } : {}}>
-        <div style={{ fontSize: 10, fontWeight: 600, color: '#bbb', letterSpacing: '0.06em', marginBottom: 8 }}>
-          {isSubmitted ? 'INDIVIDUAL SALARIES · similar to you first' : 'INDIVIDUAL SALARIES'}
+        <div style={{ fontSize: 11, fontWeight: 700, color: '#333', marginBottom: 4 }}>
+          Individual salary entries
+        </div>
+        <div style={{ fontSize: 11, color: '#999', lineHeight: 1.5, marginBottom: 10 }}>
+          {isSubmitted
+            ? 'Real salary entries from engineers at this company. Green rows are from people with a similar role and experience to yours.'
+            : 'Real salary entries submitted anonymously by engineers at this company.'}
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
           {rows.map((row, i) => renderFeedRow(row, i))}
@@ -386,22 +415,25 @@ export default function CompanyDetailPanel({
 
   const renderGate = () => (
     <div style={{
-      background: '#f5f5f5', borderRadius: 14,
-      padding: '22px 18px', textAlign: 'center', marginBottom: 18,
+      background: '#f5f5f5', borderRadius: 16,
+      padding: '28px 22px', textAlign: 'center', marginBottom: 20,
     }}>
-      <div style={{ fontSize: 20, marginBottom: 8 }}>🔒</div>
-      <div style={{ fontSize: 14, fontWeight: 700, color: '#1a1a1a', marginBottom: 6 }}>
-        Share yours to see all salaries
+      <div style={{ fontSize: 28, marginBottom: 10 }}>🔒</div>
+      <div style={{ fontSize: 17, fontWeight: 800, color: '#1a1a1a', marginBottom: 8 }}>
+        Want to see what {company} pays?
       </div>
-      <div style={{ fontSize: 12, color: '#999', lineHeight: 1.6, marginBottom: 16 }}>
-        Submit your salary anonymously.<br />
-        Unlock real salary data from engineers here.
+      <div style={{ fontSize: 13, color: '#888', lineHeight: 1.7, marginBottom: 20 }}>
+        We keep salary data fair — share yours to unlock everyone else's.<br />
+        It takes 2 minutes and your identity is never shared.
       </div>
       <button onClick={() => { onClose(); document.getElementById('submit')?.scrollIntoView({ behavior: 'smooth' }) }} style={{
-        width: '100%', padding: 12,
-        background: '#ff4400', border: 'none', borderRadius: 11,
-        fontSize: 13, fontWeight: 700, color: '#fff', cursor: 'pointer', fontFamily: 'inherit',
+        width: '100%', padding: '14px 0',
+        background: '#ff4400', border: 'none', borderRadius: 12,
+        fontSize: 14, fontWeight: 700, color: '#fff', cursor: 'pointer', fontFamily: 'inherit',
       }}>Submit my salary → unlock</button>
+      <div style={{ fontSize: 10, color: '#bbb', marginTop: 10 }}>
+        100% anonymous · No login required
+      </div>
     </div>
   )
 
@@ -426,7 +458,7 @@ export default function CompanyDetailPanel({
     <>
       {/* Backdrop */}
       {isOpen && <div onClick={onClose} style={{
-        position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 49,
+        position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 299,
       }} />}
 
       {/* Panel */}
