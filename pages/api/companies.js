@@ -166,16 +166,6 @@ export default async function handler(req, res) {
     };
 
     // 4. Join companies + salary data
-    // Use a seeded random so counts are stable per company name (not changing on every request)
-    function seededRandom(str) {
-      let hash = 0;
-      for (let i = 0; i < str.length; i++) {
-        hash = ((hash << 5) - hash) + str.charCodeAt(i);
-        hash |= 0;
-      }
-      return ((hash & 0x7fffffff) % 40) - 10; // range: -10 to +29
-    }
-
     const cards = companies.map((co, i) => {
       const key = co.name.trim().toLowerCase();
       const sub = salaryMap[key];
@@ -184,13 +174,8 @@ export default async function handler(req, res) {
         ? getSummary(sub.salaries)
         : { count: 0, median: 0, min: 0, max: 0 };
 
-      // Total count from unfiltered submissions
-      const rawCount = totalCountMap[key] || 0;
-      // Add stable variation so counts look natural
-      const variation = seededRandom(co.name);
-      const displayCount = rawCount > 0
-        ? Math.max(Math.floor(rawCount / 2), rawCount + variation)
-        : 0;
+      // Total count from unfiltered submissions — exact DB value
+      const displayCount = totalCountMap[key] || 0;
 
       const domain = DOMAIN_MAP[key] || null;
       const logo = domain ? `https://www.google.com/s2/favicons?domain=${domain}&sz=128` : null;
