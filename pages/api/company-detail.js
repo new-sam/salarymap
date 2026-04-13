@@ -32,7 +32,7 @@ export default async function handler(req, res) {
   const rawRows = await fetchAll(
     supabase
       .from('submissions')
-      .select('role, experience, salary, created_at')
+      .select('role, experience, salary, created_at, rating_worklife, rating_salary, rating_growth')
       .eq('company', company)
       .order('created_at', { ascending: false })
   )
@@ -76,8 +76,22 @@ export default async function handler(req, res) {
       createdAt: r.created_at
     }))
 
-  // 4. Rating — columns not yet in submissions table, return null for now
-  const rating = null
+  // 4. Rating — compute from rows that have all 3 rating fields
+  const ratingRows = rows.filter(r =>
+    r.rating_worklife != null &&
+    r.rating_salary != null &&
+    r.rating_growth != null
+  )
+  const avg = arr => {
+    if (!arr.length) return 0
+    return Math.round((arr.reduce((a, b) => a + b, 0) / arr.length) * 10) / 10
+  }
+  const rating = ratingRows.length > 0 ? {
+    worklife: avg(ratingRows.map(r => r.rating_worklife)),
+    salary: avg(ratingRows.map(r => r.rating_salary)),
+    growth: avg(ratingRows.map(r => r.rating_growth)),
+    count: ratingRows.length,
+  } : null
 
   // 5. Return
   res.setHeader('Cache-Control', 's-maxage=60, stale-while-revalidate')

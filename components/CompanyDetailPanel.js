@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 
-const ITEMS_PER_PAGE = 20
+const DEFAULT_VISIBLE = 5
+const LOAD_MORE_COUNT = 20
 
 export default function CompanyDetailPanel({
   company, isOpen, onClose,
@@ -10,7 +11,7 @@ export default function CompanyDetailPanel({
   const [detail, setDetail] = useState(null)
   const [loading, setLoading] = useState(false)
   const [activeRole, setActiveRole] = useState('All')
-  const [page, setPage] = useState(1)
+  const [visibleCount, setVisibleCount] = useState(DEFAULT_VISIBLE)
   const [isMobile, setIsMobile] = useState(false)
 
   // Mobile detection
@@ -25,7 +26,7 @@ export default function CompanyDetailPanel({
   useEffect(() => {
     if (!isOpen || !company) return
     setDetail(null)
-    setPage(1)
+    setVisibleCount(DEFAULT_VISIBLE)
     setActiveRole(isSubmitted && userRole ? userRole : 'All')
     setLoading(true)
     fetch(`/api/company-detail?company=${encodeURIComponent(company)}`)
@@ -64,8 +65,8 @@ export default function CompanyDetailPanel({
     : []
 
   // Paginated
-  const visibleFeed = filteredFeed.slice(0, page * ITEMS_PER_PAGE)
-  const hasMore = visibleFeed.length < filteredFeed.length
+  const visibleFeed = filteredFeed.slice(0, visibleCount)
+  const remaining = filteredFeed.length - visibleCount
 
   // Summary from filtered feed — use all entries for this role (no experience filter)
   // so min/max/median reflect the full visible range
@@ -188,7 +189,7 @@ export default function CompanyDetailPanel({
       {allRoles.map(role => {
         const active = role === activeRole
         return (
-          <button key={role} onClick={() => { setActiveRole(role); setPage(1) }} style={{
+          <button key={role} onClick={() => { setActiveRole(role); setVisibleCount(DEFAULT_VISIBLE) }} style={{
             padding: '6px 14px', borderRadius: 20, border: 'none', flexShrink: 0,
             fontSize: 11, fontWeight: 600, cursor: 'pointer',
             background: active ? '#111' : '#f0f0f0',
@@ -372,19 +373,29 @@ export default function CompanyDetailPanel({
         <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
           {rows.map((row, i) => renderFeedRow(row, i))}
         </div>
-        {!blurred && hasMore && (
-          <button onClick={() => setPage(p => p + 1)} style={{
+        {!blurred && remaining > 0 && (
+          <button onClick={() => setVisibleCount(v => v + LOAD_MORE_COUNT)} style={{
             width: '100%', padding: 10, marginTop: 8,
             background: '#f7f7f7', border: 'none', borderRadius: 10,
             fontSize: 12, color: '#888', cursor: 'pointer', fontFamily: 'inherit',
-          }}>Load more ({filteredFeed.length - visibleFeed.length} remaining)</button>
+          }}>Load {Math.min(remaining, LOAD_MORE_COUNT)} more ({remaining} remaining)</button>
         )}
       </div>
     )
   }
 
   const renderRating = (blurred = false) => {
-    if (!detail?.rating) return null
+    // No rating data — show placeholder
+    if (!detail?.rating) {
+      return (
+        <div style={{ marginTop: 18 }}>
+          <div style={{ fontSize: 12, color: '#aaa', textAlign: 'center', padding: '12px 0' }}>
+            No ratings yet. Be the first to rate after submitting.
+          </div>
+        </div>
+      )
+    }
+
     const items = [
       { label: 'Work-life', value: detail.rating.worklife },
       { label: 'Salary fair', value: detail.rating.salary },
@@ -392,21 +403,25 @@ export default function CompanyDetailPanel({
     ]
     return (
       <div style={{
-        marginTop: 18, borderTop: '1px solid #f0f0f0', paddingTop: 14,
+        marginTop: 18,
         ...(blurred ? { filter: 'blur(6px)', pointerEvents: 'none', userSelect: 'none' } : {}),
       }}>
-        <div style={{ fontSize: 10, fontWeight: 600, color: '#bbb', letterSpacing: '0.06em', marginBottom: 12 }}>
-          COMPANY RATING · {detail.rating.count} reviews
-        </div>
-        {items.map(({ label, value }) => (
-          <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
-            <div style={{ fontSize: 11, color: '#666', width: 80, flexShrink: 0 }}>{label}</div>
-            <div style={{ flex: 1, height: 6, background: '#eee', borderRadius: 3, overflow: 'hidden' }}>
-              <div style={{ height: '100%', width: `${(value / 5) * 100}%`, background: '#ff4400', borderRadius: 3 }} />
-            </div>
-            <div style={{ fontSize: 11, fontWeight: 600, color: '#999', width: 24, textAlign: 'right' }}>{value}</div>
+        <div style={{
+          background: '#f7f7f7', borderRadius: 12, padding: '14px 16px',
+        }}>
+          <div style={{ fontSize: 10, fontWeight: 600, color: '#aaa', letterSpacing: '0.06em', marginBottom: 12 }}>
+            COMPANY RATING · {detail.rating.count} reviews
           </div>
-        ))}
+          {items.map(({ label, value }) => (
+            <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
+              <div style={{ fontSize: 12, color: '#555', width: 80, flexShrink: 0 }}>{label}</div>
+              <div style={{ flex: 1, height: 6, background: '#e8e8e8', borderRadius: 20 }}>
+                <div style={{ height: '100%', width: `${(value / 5) * 100}%`, background: '#ff4400', borderRadius: 20 }} />
+              </div>
+              <div style={{ fontSize: 12, fontWeight: 600, color: '#1a1a1a', width: 24, textAlign: 'right' }}>{value.toFixed(1)}</div>
+            </div>
+          ))}
+        </div>
       </div>
     )
   }
