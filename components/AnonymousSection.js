@@ -103,7 +103,7 @@ export default function AnonymousSection() {
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
             {[
-              { label: 'Salary', val: '$4,200' },
+              { label: 'Salary', val: '42M' },
               { label: 'Role', val: 'Backend' },
               { label: 'Experience', val: '4 yrs' },
               { label: 'Company', val: 'Grab' },
@@ -155,7 +155,7 @@ export default function AnonymousSection() {
           </div>
           <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between' }}>
             <span style={{ fontSize: '22px', fontWeight: 700, color: '#fff' }}>
-              $2,400 — $3,800
+              24M — 38M VND
             </span>
             <span style={{ fontSize: '12px', fontWeight: 300, color: 'rgba(255,255,255,0.35)' }}>
               Based on 35 salaries

@@ -3,7 +3,6 @@ import { createPortal } from 'react-dom';
 import Head from 'next/head';
 import supabaseClient from '../lib/supabaseClient';
 import CompanyCard from '../components/CompanyCard';
-import SlidePanel from '../components/SlidePanel';
 import CompanyDetailPanel from '../components/CompanyDetailPanel';
 import AnonymousSection from '../components/AnonymousSection';
 import ResultSection from '../components/ResultSection';
@@ -1674,8 +1673,6 @@ const PAGE_HTML_POST_TMPL = BODY_POST_TMPL;
 export default function Home() {
   const [lbCompany, setLbCompany] = useState(null);
   const [activeTab, setActiveTab] = useState('All roles');
-  const [selectedCompany, setSelectedCompany] = useState(null);
-  const [panelOpen, setPanelOpen] = useState(false);
   const [apiCompanies, setApiCompanies] = useState([]);
   const [visibleCount, setVisibleCount] = useState(8);
   const [cardSearchQuery, setCardSearchQuery] = useState('');
@@ -1767,8 +1764,8 @@ export default function Home() {
       pendingCompanyRef.current = null;
       if (pending) {
         setTimeout(() => {
-          const c = apiCompanies.find(x => x.company === pending);
-          if (c) { setSelectedCompany(c); setPanelOpen(true); }
+          setDetailCompany(pending);
+          setDetailOpen(true);
         }, 300);
       }
     };
@@ -2320,13 +2317,6 @@ export default function Home() {
         )
       }
 
-      {/* Company Slide Panel (legacy) */}
-      <SlidePanel
-        company={selectedCompany}
-        isOpen={panelOpen}
-        onClose={() => setPanelOpen(false)}
-      />
-
       {/* Company Detail Panel */}
       <CompanyDetailPanel
         company={detailCompany}
@@ -2348,11 +2338,11 @@ export default function Home() {
             <div style={{fontSize:'24px',fontWeight:900,color:'#fff',letterSpacing:'-0.5px',marginBottom:'8px'}}>Log in</div>
             <div style={{fontSize:'13px',color:'rgba(255,255,255,0.4)',marginBottom:'28px',lineHeight:1.6}}>Sign in to access your salary history and job alerts.</div>
             <div style={{display:'flex',flexDirection:'column',gap:'10px'}}>
-              <button disabled
-                style={{width:'100%',background:'#1a1a1a',color:'rgba(255,255,255,0.2)',fontSize:'14px',fontWeight:700,padding:'14px',borderRadius:'10px',border:'none',cursor:'not-allowed',fontFamily:"'Barlow',sans-serif",display:'flex',alignItems:'center',justifyContent:'center',gap:'10px'}}>
-                <span style={{fontWeight:900,fontSize:'16px'}}>in</span> LinkedIn — Coming soon
+              <button onClick={async () => { setShowAuthModal(false); try { await supabaseClient.auth.signInWithOAuth({ provider:'linkedin_oidc', options:{ redirectTo: window.location.origin+'/auth/callback', scopes:'openid profile email' } }); } catch(e) { console.error(e); } }}
+                style={{width:'100%',background:'#0A66C2',color:'#fff',fontSize:'14px',fontWeight:700,padding:'14px',borderRadius:'10px',border:'none',cursor:'pointer',fontFamily:"'Barlow',sans-serif",display:'flex',alignItems:'center',justifyContent:'center',gap:'10px'}}>
+                <span style={{fontWeight:900,fontSize:'16px'}}>in</span> Continue with LinkedIn
               </button>
-              <button onClick={async () => { setShowAuthModal(false); try { await supabaseClient.auth.signInWithOAuth({ provider:'google', options:{ redirectTo: window.location.origin+'/auth/callback' } }); } catch(e) { console.error(e); } }}
+              <button onClick={async () => { setShowAuthModal(false); try { const { error } = await supabaseClient.auth.signInWithOAuth({ provider:'google', options:{ redirectTo: window.location.origin+'/auth/callback' } }); if (error) throw error; } catch(e) { console.error('Google OAuth error:', e); } }}
                 style={{width:'100%',background:'#fff',color:'#111',fontSize:'14px',fontWeight:700,padding:'14px',borderRadius:'10px',border:'none',cursor:'pointer',fontFamily:"'Barlow',sans-serif",display:'flex',alignItems:'center',justifyContent:'center',gap:'10px'}}>
                 <span style={{fontWeight:900,fontSize:'16px'}}>G</span> Continue with Google
               </button>
