@@ -88,8 +88,23 @@ const DOMAIN_MAP = {
   'toss vietnam': 'toss.im',
 };
 
+// Map wizard role names to DB role names
+const ROLE_MAP = {
+  'Data · AI': 'Data Engineer',
+  'PM · PO': 'PM',
+  'Design': 'Frontend',
+  'QA': 'Backend',
+};
+
+function resolveRole(role) {
+  return ROLE_MAP[role] || role;
+}
+
 export default async function handler(req, res) {
   try {
+    const { role: rawRole, experience } = req.query;
+    const role = rawRole ? resolveRole(rawRole) : null;
+
     // 1. All companies (source of truth)
     const { data: companies, error: cErr } = await supabase
       .from('companies')
@@ -97,10 +112,15 @@ export default async function handler(req, res) {
 
     if (cErr) throw cErr;
 
-    // 2. All salary submissions
-    const { data: submissions, error: sErr } = await supabase
+    // 2. Fetch submissions — filtered by role+experience if provided
+    let query = supabase
       .from('submissions')
-      .select('company, salary, role');
+      .select('company, salary, role, experience');
+
+    if (role) query = query.eq('role', role);
+    if (experience) query = query.eq('experience', experience);
+
+    const { data: submissions, error: sErr } = await query;
 
     if (sErr) throw sErr;
 

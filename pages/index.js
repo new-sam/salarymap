@@ -1671,13 +1671,17 @@ export default function Home() {
     return () => { delete window.scrollToSubmit; };
   }, []);
 
-  // Fetch companies from API
+  // Fetch companies from API — re-fetch with role/experience after submission
   useEffect(() => {
-    fetch('/api/companies')
+    let url = '/api/companies';
+    if (showResult && wRole && wExp) {
+      url = `/api/companies?role=${encodeURIComponent(wRole)}&experience=${encodeURIComponent(wExp)}`;
+    }
+    fetch(url)
       .then(r => r.json())
       .then(data => { if (Array.isArray(data)) setApiCompanies(data); })
       .catch(() => {});
-  }, []);
+  }, [showResult]);
 
   // Mark grid root as ready for portal rendering
   useEffect(() => {
