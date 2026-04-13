@@ -67,14 +67,12 @@ export default function CompanyDetailPanel({
   const visibleFeed = filteredFeed.slice(0, page * ITEMS_PER_PAGE)
   const hasMore = visibleFeed.length < filteredFeed.length
 
-  // Summary from filtered feed
+  // Summary from filtered feed — use all entries for this role (no experience filter)
+  // so min/max/median reflect the full visible range
   const summaryData = (() => {
     if (!detail?.feed) return null
     const base = activeRole === 'All' ? detail.feed : detail.feed.filter(r => r.role === activeRole)
-    const scoped = isSubmitted && userExperience
-      ? base.filter(r => Math.abs(Number(r.experience) - Number(userExperience)) <= 1)
-      : base
-    const salaries = scoped.map(r => r.salary).sort((a, b) => a - b)
+    const salaries = base.map(r => r.salary).sort((a, b) => a - b)
     if (!salaries.length) return null
     return {
       p25: salaries[Math.floor(salaries.length * 0.25)],
@@ -206,14 +204,14 @@ export default function CompanyDetailPanel({
   const renderSummaryBoxes = (blurred = false) => {
     const boxes = summaryData
       ? [
-          { label: 'Lower range', sub: 'Bottom 25% earn under', value: fmtShort(summaryData.p25) },
-          { label: 'Median salary', sub: 'Typical salary here', value: fmtShort(summaryData.median), hl: true },
-          { label: 'Upper range', sub: 'Top 25% earn above', value: fmtShort(summaryData.p75) },
+          { label: 'Lowest', value: fmtShort(summaryData.min) },
+          { label: 'Median', value: fmtShort(summaryData.median), hl: true },
+          { label: 'Highest', value: fmtShort(summaryData.max) },
         ]
       : [
-          { label: 'Lower range', value: '??', sub: '' },
-          { label: 'Median salary', value: '??', hl: true, sub: '' },
-          { label: 'Upper range', value: '??', sub: '' },
+          { label: 'Lowest', value: '??' },
+          { label: 'Median', value: '??', hl: true },
+          { label: 'Highest', value: '??' },
         ]
     return (
       <div style={blurred ? { filter: 'blur(6px)', pointerEvents: 'none', userSelect: 'none' } : {}}>
@@ -344,7 +342,7 @@ export default function CompanyDetailPanel({
             {row.role}
             {isYou && <span style={{ color: '#ff4400', fontSize: 10, fontWeight: 700, marginLeft: 6 }}>← YOU</span>}
           </div>
-          <div style={{ fontSize: 10, color: '#aaa', marginTop: 2 }}>{row.experience} yrs</div>
+          <div style={{ fontSize: 10, color: '#aaa', marginTop: 2 }}>{row.experience}</div>
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 3 }}>
           <div style={{ fontSize: 14, fontWeight: 700, color: isYou ? '#ff4400' : '#1a1a1a' }}>{fmt(row.salary)}</div>
