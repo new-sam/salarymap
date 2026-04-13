@@ -179,7 +179,7 @@ export default async function handler(req, res) {
     const cards = companies.map((co, i) => {
       const key = co.name.trim().toLowerCase();
       const sub = salaryMap[key];
-      const hasData = !!(sub && sub.salaries.length >= 3);
+      const hasData = !!(sub && sub.salaries.length >= 1);
       const salaryStats = hasData
         ? getSummary(sub.salaries)
         : { count: 0, median: 0, min: 0, max: 0 };
