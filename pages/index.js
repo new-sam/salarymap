@@ -1172,6 +1172,14 @@ async function unlock(){
 }
 window.submitSalary=submitSalary;
 window.doUnlock=doUnlock;
+window.coSearchFilter=coSearchFilter;
+window.coSearchKey=coSearchKey;
+window.coSearchClose=coSearchClose;
+window.coSelect=coSelect;
+window.acFilter=acFilter;
+window.acPick=acPick;
+window.acClose=acClose;
+window.acKey=acKey;
 
 `;
 
