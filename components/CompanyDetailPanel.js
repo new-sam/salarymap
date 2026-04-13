@@ -127,7 +127,7 @@ export default function CompanyDetailPanel({
     fontFamily: "'Inter', sans-serif",
   } : {
     position: 'fixed', top: 0, right: 0,
-    width: 'clamp(520px, 55vw, 720px)', height: '100vh', background: '#fff', zIndex: 300,
+    width: 'clamp(580px, 65vw, 860px)', height: '100vh', background: '#fff', zIndex: 300,
     overflowY: 'auto',
     transform: isOpen ? 'translateX(0)' : 'translateX(100%)',
     transition: 'transform 0.3s ease',
@@ -472,7 +472,7 @@ export default function CompanyDetailPanel({
               </div>
               {/* Bar + scale */}
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <div style={{ fontSize: 9, color: '#ccc', flexShrink: 0, width: 8, textAlign: 'center' }}>1</div>
+                <div style={{ fontSize: 9, color: '#ccc', flexShrink: 0, width: 8, textAlign: 'center' }}>0</div>
                 <div style={{
                   flex: 1, height: 8, background: '#e4e4e4', borderRadius: 20, overflow: 'hidden',
                 }}>
