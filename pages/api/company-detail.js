@@ -14,12 +14,22 @@ async function fetchAll(query) {
   return all;
 }
 
+// IQR-based outlier bounds
+function getCleanBounds(salaries) {
+  if (salaries.length < 4) return { lower: -Infinity, upper: Infinity }
+  const sorted = [...salaries].sort((a, b) => a - b)
+  const q1 = sorted[Math.floor(sorted.length * 0.25)]
+  const q3 = sorted[Math.floor(sorted.length * 0.75)]
+  const iqr = q3 - q1
+  return { lower: q1 - 1.5 * iqr, upper: q3 + 1.5 * iqr }
+}
+
 export default async function handler(req, res) {
   const { company, role, experience } = req.query
   if (!company) return res.status(400).json({ error: 'company required' })
 
   // 1. Fetch all submissions for this company
-  const rows = await fetchAll(
+  const rawRows = await fetchAll(
     supabase
       .from('submissions')
       .select('role, experience, salary, created_at')
@@ -27,7 +37,12 @@ export default async function handler(req, res) {
       .order('created_at', { ascending: false })
   )
 
-  if (!rows || rows.length === 0) return res.status(404).json({ error: 'No data' })
+  if (!rawRows || rawRows.length === 0) return res.status(404).json({ error: 'No data' })
+
+  // 1b. Filter: hard range + IQR outlier removal
+  const hardFiltered = rawRows.filter(r => r.salary >= 3 && r.salary <= 300)
+  const { lower, upper } = getCleanBounds(hardFiltered.map(r => r.salary))
+  const rows = hardFiltered.filter(r => r.salary >= lower && r.salary <= upper)
 
   // 2. Compute summary (only if role + experience provided)
   let summary = null
