@@ -56,7 +56,6 @@ export default function CompanyCard({ company, index, isUnlocked, onClick, onLoc
       <div className="card-overlay" />
       <div className="card-top">
         <span className="card-rank">#{index + 1}</span>
-        <span className="card-category">{company.topRole || 'Tech'}</span>
       </div>
       <div className="card-bottom">
         <div className="card-name-row">
