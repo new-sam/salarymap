@@ -385,42 +385,108 @@ export default function CompanyDetailPanel({
   }
 
   const renderRating = (blurred = false) => {
-    // No rating data — show placeholder
-    if (!detail?.rating) {
-      return (
-        <div style={{ marginTop: 18 }}>
-          <div style={{ fontSize: 12, color: '#aaa', textAlign: 'center', padding: '12px 0' }}>
-            No ratings yet. Be the first to rate after submitting.
-          </div>
-        </div>
-      )
+    const hasData = !!detail?.rating
+    const items = [
+      { key: 'worklife', label: 'Work-life balance', desc: 'Flexibility, hours, remote options', icon: '⚖️', value: hasData ? detail.rating.worklife : 0 },
+      { key: 'salary',   label: 'Salary satisfaction', desc: 'Pay fairness vs market & workload', icon: '💰', value: hasData ? detail.rating.salary : 0 },
+      { key: 'growth',   label: 'Growth opportunity', desc: 'Promotion path, learning, mentorship', icon: '📈', value: hasData ? detail.rating.growth : 0 },
+    ]
+    const overallAvg = hasData
+      ? Math.round(((detail.rating.worklife + detail.rating.salary + detail.rating.growth) / 3) * 10) / 10
+      : null
+
+    const ratingLabel = (v) => {
+      if (v >= 4.5) return 'Excellent'
+      if (v >= 3.5) return 'Good'
+      if (v >= 2.5) return 'Average'
+      if (v >= 1.5) return 'Below avg'
+      return 'Poor'
     }
 
-    const items = [
-      { label: 'Work-life', value: detail.rating.worklife },
-      { label: 'Salary fair', value: detail.rating.salary },
-      { label: 'Growth', value: detail.rating.growth },
-    ]
     return (
       <div style={{
-        marginTop: 18,
+        marginTop: 18, marginBottom: 18,
         ...(blurred ? { filter: 'blur(6px)', pointerEvents: 'none', userSelect: 'none' } : {}),
       }}>
-        <div style={{
-          background: '#f7f7f7', borderRadius: 12, padding: '14px 16px',
-        }}>
-          <div style={{ fontSize: 10, fontWeight: 600, color: '#aaa', letterSpacing: '0.06em', marginBottom: 12 }}>
-            COMPANY RATING · {detail.rating.count} reviews
-          </div>
-          {items.map(({ label, value }) => (
-            <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
-              <div style={{ fontSize: 12, color: '#555', width: 80, flexShrink: 0 }}>{label}</div>
-              <div style={{ flex: 1, height: 6, background: '#e8e8e8', borderRadius: 20 }}>
-                <div style={{ height: '100%', width: `${(value / 5) * 100}%`, background: '#ff4400', borderRadius: 20 }} />
+        {/* Section header */}
+        <div style={{ fontSize: 11, fontWeight: 700, color: '#333', marginBottom: 4 }}>
+          Employee satisfaction
+        </div>
+        <div style={{ fontSize: 11, color: '#999', lineHeight: 1.5, marginBottom: 14 }}>
+          {hasData
+            ? `Rated by ${detail.rating.count} engineer${detail.rating.count > 1 ? 's' : ''} who submitted their salary. Each category is scored 1–5.`
+            : `No one has rated this company yet. After submitting your salary, you can be the first to leave a rating.`}
+        </div>
+
+        <div style={{ background: '#f7f7f7', borderRadius: 14, padding: '16px 18px' }}>
+
+          {/* Overall score — only when data exists */}
+          {hasData && (
+            <div style={{
+              display: 'flex', alignItems: 'center', gap: 14, marginBottom: 16,
+              paddingBottom: 14, borderBottom: '1px solid #ebebeb',
+            }}>
+              <div style={{
+                width: 48, height: 48, borderRadius: 12,
+                background: overallAvg >= 3.5 ? '#f0fff4' : overallAvg >= 2.5 ? '#fffbeb' : '#fff5f5',
+                border: `1.5px solid ${overallAvg >= 3.5 ? '#86efac' : overallAvg >= 2.5 ? '#fcd34d' : '#fca5a5'}`,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontSize: 18, fontWeight: 800,
+                color: overallAvg >= 3.5 ? '#16a34a' : overallAvg >= 2.5 ? '#b45309' : '#dc2626',
+              }}>{overallAvg}</div>
+              <div>
+                <div style={{ fontSize: 14, fontWeight: 700, color: '#1a1a1a' }}>
+                  {ratingLabel(overallAvg)}
+                </div>
+                <div style={{ fontSize: 11, color: '#999', marginTop: 1 }}>
+                  Overall score from {detail.rating.count} review{detail.rating.count > 1 ? 's' : ''}
+                </div>
               </div>
-              <div style={{ fontSize: 12, fontWeight: 600, color: '#1a1a1a', width: 24, textAlign: 'right' }}>{value.toFixed(1)}</div>
+            </div>
+          )}
+
+          {/* Individual rows */}
+          {items.map(({ key, label, desc, icon, value }) => (
+            <div key={key} style={{ marginBottom: 14 }}>
+              {/* Label row */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+                <span style={{ fontSize: 14 }}>{icon}</span>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: 12, fontWeight: 600, color: '#333' }}>{label}</div>
+                  <div style={{ fontSize: 10, color: '#aaa', marginTop: 1 }}>{desc}</div>
+                </div>
+                {hasData && (
+                  <div style={{ fontSize: 13, fontWeight: 700, color: '#1a1a1a', flexShrink: 0 }}>
+                    {value.toFixed(1)}<span style={{ fontSize: 10, fontWeight: 400, color: '#aaa' }}>/5</span>
+                  </div>
+                )}
+              </div>
+              {/* Bar */}
+              <div style={{
+                height: 8, background: '#e4e4e4', borderRadius: 20, overflow: 'hidden',
+              }}>
+                <div style={{
+                  height: '100%',
+                  width: hasData ? `${(value / 5) * 100}%` : '0%',
+                  background: hasData
+                    ? (value >= 3.5 ? '#22c55e' : value >= 2.5 ? '#f59e0b' : '#ef4444')
+                    : '#e4e4e4',
+                  borderRadius: 20,
+                  transition: 'width 0.5s ease',
+                }} />
+              </div>
             </div>
           ))}
+
+          {/* No data state — overlay text */}
+          {!hasData && (
+            <div style={{
+              textAlign: 'center', padding: '4px 0 2px',
+              fontSize: 11, fontWeight: 600, color: '#bbb',
+            }}>
+              NO RATINGS YET
+            </div>
+          )}
         </div>
       </div>
     )
@@ -498,8 +564,8 @@ export default function CompanyDetailPanel({
                 <>
                   {renderSummaryBoxes(true)}
                   {renderGate()}
-                  {renderFeed(true)}
                   {renderRating(true)}
+                  {renderFeed(true)}
                 </>
               )}
 
@@ -508,8 +574,8 @@ export default function CompanyDetailPanel({
                 <>
                   {renderRoleTabs()}
                   {renderSummaryBoxes(false)}
-                  {renderFeed(false)}
                   {renderRating(false)}
+                  {renderFeed(false)}
                   {renderBottomCTA()}
                 </>
               )}
@@ -521,8 +587,8 @@ export default function CompanyDetailPanel({
                   {renderSummaryBoxes(false)}
                   {renderCompareBadge()}
                   {renderDistribution()}
-                  {renderFeed(false)}
                   {renderRating(false)}
+                  {renderFeed(false)}
                 </>
               )}
 
@@ -538,8 +604,8 @@ export default function CompanyDetailPanel({
                   {renderSummaryBoxes(false)}
                   {renderCompareBadge()}
                   {renderDistribution()}
-                  {renderFeed(false)}
                   {renderRating(false)}
+                  {renderFeed(false)}
                 </>
               )}
             </div>
