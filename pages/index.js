@@ -133,9 +133,9 @@ nav { position:fixed; top:0; left:0; right:0; z-index:200; padding:0 52px; heigh
 .card-top-badge { font-size:10px; font-weight:700; color:#000; background:#FF6200; padding:3px 8px; border-radius:5px; }
 .card-category { font-size:11px; font-weight:600; color:rgba(255,255,255,.75); background:rgba(255,255,255,.12); padding:4px 10px; border-radius:6px; }
 .card-bottom { position:absolute; bottom:0; left:0; right:0; padding:20px; z-index:2; }
-.card-name-row { display:flex; justify-content:space-between; align-items:baseline; gap:6px; }
-.card-name { font-size:14px; font-weight:700; color:#fff; letter-spacing:-.02em; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-.card-count { font-size:10px; color:rgba(255,255,255,.4); white-space:nowrap; flex-shrink:0; }
+.card-name-row { display:flex; flex-direction:column; gap:3px; margin-bottom:2px; }
+.card-name { font-size:17px; font-weight:800; color:#fff; letter-spacing:-.02em; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; line-height:1.2; }
+.card-count { font-size:12px; font-weight:600; color:rgba(255,255,255,.55); white-space:nowrap; flex-shrink:0; }
 .card-divider { height:1px; background:rgba(255,255,255,.15); margin:8px 0; }
 .card-sal { font-size:20px; font-weight:800; color:#FF6200; letter-spacing:-.03em; line-height:1; }
 .card-lock-center { position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:6px; z-index:2; }
