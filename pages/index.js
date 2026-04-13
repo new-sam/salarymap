@@ -2054,7 +2054,7 @@ export default function Home() {
 
       {/* ── Nav — React controlled for auth state ── */}
       <nav>
-        <div className="logo">
+        <div className="logo" onClick={() => window.location.reload()} style={{cursor:'pointer'}}>
           <img src="/logo.png" style={{width:28,height:28,objectFit:'contain'}} />
           <span>FOR YOUR <span style={{color:'var(--orange)'}}>&#39;SALARY&#39;</span> INFORMATION</span>
         </div>
