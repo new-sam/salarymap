@@ -965,31 +965,10 @@ function acKey(e) {
 let coAllCompanies = [];
 let coSearchIdx = -1;
 
-let coLoadPromise = null;
-async function coLoadCompanies() {
-  if (coAllCompanies.length) return;
-  if (!coLoadPromise) {
-    coLoadPromise = fetch('/api/companies').then(r => r.json()).then(data => { coAllCompanies = data; }).catch(() => {});
-  }
-  await coLoadPromise;
-}
-
-async function coSearchFilter(val) {
-  await coLoadCompanies();
-  const drop = document.getElementById('co-search-drop');
-  const q = val.trim().toLowerCase();
-  if (!q) { drop.classList.remove('open'); return; }
-  const matches = coAllCompanies.filter(c => (c.name || c.company || '').toLowerCase().includes(q)).slice(0, 8);
-  if (!matches.length) { drop.classList.remove('open'); return; }
-  drop.innerHTML = matches.map((c, i) => {
-    const n = c.name || c.company || '';
-    return \`<div class="co-drop-item" data-name="\${n}" data-tier="\${c.tier}" onclick="coSelect('\${n.replace(/'/g,"\\\\'")}')">
-      <span class="co-drop-item-name">\${n}</span>
-      <span class="co-drop-item-badge \${c.tier===3?'no-data':''}">\${c.tier===1?'Rich data':c.tier===2?'Has data':'No data yet'}</span>
-    </div>\`;
-  }).join('');
-  coSearchIdx = -1;
-  drop.classList.add('open');
+// coSearchFilter — card filtering is handled by React state (cardSearchQuery)
+// This stub keeps the global reference alive for the HTML oninput handler.
+function coSearchFilter(val) {
+  // filtering now handled by React via the 'input' event listener
 }
 
 function coSearchKey(e) {
@@ -1631,6 +1610,7 @@ export default function Home() {
   const [panelOpen, setPanelOpen] = useState(false);
   const [apiCompanies, setApiCompanies] = useState([]);
   const [visibleCount, setVisibleCount] = useState(8);
+  const [cardSearchQuery, setCardSearchQuery] = useState('');
   const [gridReady, setGridReady] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [pendingCompanyId, setPendingCompanyId] = useState(null);
@@ -1697,6 +1677,13 @@ export default function Home() {
   useEffect(() => {
     const grid = document.getElementById('company-grid-root');
     if (grid) { grid.innerHTML = ''; setGridReady(true); }
+    // Bridge search input to React state for card filtering
+    const searchInput = document.getElementById('co-search-input');
+    if (searchInput) {
+      const handler = (e) => { setCardSearchQuery(e.target.value.trim().toLowerCase()); setVisibleCount(8); };
+      searchInput.addEventListener('input', handler);
+      return () => searchInput.removeEventListener('input', handler);
+    }
   }, []);
 
   // Company panel bridge + unlock success handler
@@ -2225,33 +2212,43 @@ export default function Home() {
       {gridReady && typeof document !== 'undefined' && document.getElementById('company-grid-root') &&
         createPortal(
           <>
-            {apiCompanies.slice(0, visibleCount).map((c, i) => (
-              <CompanyCard
-                key={c.company}
-                company={c}
-                index={i}
-                isUnlocked={isSubmitted}
-                onClick={(co) => { setSelectedCompany(co); setPanelOpen(true); }}
-                onLockedClick={() => document.getElementById('submit')?.scrollIntoView({ behavior: 'smooth' })}
-              />
-            ))}
-            {visibleCount < apiCompanies.length && (
-              <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '16px 0' }}>
-                <button
-                  onClick={() => setVisibleCount(v => v + 8)}
-                  style={{
-                    fontFamily: "'Barlow',sans-serif", fontSize: '14px', fontWeight: 700,
-                    color: '#333', background: 'rgba(0,0,0,0.05)',
-                    border: '1px solid rgba(0,0,0,0.12)', borderRadius: '100px',
-                    padding: '12px 28px', cursor: 'pointer', transition: 'all .15s',
-                  }}
-                  onMouseEnter={e => { e.target.style.borderColor = 'rgba(0,0,0,0.3)'; e.target.style.background = 'rgba(0,0,0,0.08)'; }}
-                  onMouseLeave={e => { e.target.style.borderColor = 'rgba(0,0,0,0.12)'; e.target.style.background = 'rgba(0,0,0,0.05)'; }}
-                >
-                  Load more ({apiCompanies.length - visibleCount} more companies)
-                </button>
-              </div>
-            )}
+            {(() => {
+              const filtered = cardSearchQuery
+                ? apiCompanies.filter(c => (c.name || c.company || '').toLowerCase().includes(cardSearchQuery))
+                : apiCompanies;
+              const visible = filtered.slice(0, visibleCount);
+              return (
+                <>
+                  {visible.map((c, i) => (
+                    <CompanyCard
+                      key={c.company}
+                      company={c}
+                      index={i}
+                      isUnlocked={isSubmitted}
+                      onClick={(co) => { setSelectedCompany(co); setPanelOpen(true); }}
+                      onLockedClick={() => document.getElementById('submit')?.scrollIntoView({ behavior: 'smooth' })}
+                    />
+                  ))}
+                  {visibleCount < filtered.length && (
+                    <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '16px 0' }}>
+                      <button
+                        onClick={() => setVisibleCount(v => v + 8)}
+                        style={{
+                          fontFamily: "'Barlow',sans-serif", fontSize: '14px', fontWeight: 700,
+                          color: '#333', background: 'rgba(0,0,0,0.05)',
+                          border: '1px solid rgba(0,0,0,0.12)', borderRadius: '100px',
+                          padding: '12px 28px', cursor: 'pointer', transition: 'all .15s',
+                        }}
+                        onMouseEnter={e => { e.target.style.borderColor = 'rgba(0,0,0,0.3)'; e.target.style.background = 'rgba(0,0,0,0.08)'; }}
+                        onMouseLeave={e => { e.target.style.borderColor = 'rgba(0,0,0,0.12)'; e.target.style.background = 'rgba(0,0,0,0.05)'; }}
+                      >
+                        Load more ({filtered.length - visibleCount} more companies)
+                      </button>
+                    </div>
+                  )}
+                </>
+              );
+            })()}
           </>,
           document.getElementById('company-grid-root')
         )
