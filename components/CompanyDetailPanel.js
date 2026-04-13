@@ -31,7 +31,15 @@ export default function CompanyDetailPanel({
     setLoading(true)
     fetch(`/api/company-detail?company=${encodeURIComponent(company)}`)
       .then(r => r.json())
-      .then(d => { setDetail(d); setLoading(false) })
+      .then(d => {
+        setDetail(d)
+        // If default role has no data, fallback to 'All'
+        if (isSubmitted && userRole && d?.feed) {
+          const hasRoleData = d.feed.some(r => r.role === userRole)
+          if (!hasRoleData) setActiveRole('All')
+        }
+        setLoading(false)
+      })
       .catch(() => setLoading(false))
   }, [isOpen, company])
 
@@ -212,6 +220,25 @@ export default function CompanyDetailPanel({
   )
 
   const renderSummaryBoxes = (blurred = false) => {
+    // No data for selected role — show message instead of ??
+    if (!summaryData && !blurred) {
+      return (
+        <div style={{ marginBottom: 16 }}>
+          <div style={{ fontSize: 11, fontWeight: 700, color: '#333', marginBottom: 4 }}>Salary breakdown</div>
+          <div style={{
+            background: '#f5f5f5', borderRadius: 12, padding: '20px 16px', textAlign: 'center',
+          }}>
+            <div style={{ fontSize: 13, color: '#999', marginBottom: 4 }}>
+              No salary data for <strong style={{ color: '#555' }}>{activeRole}</strong> at this company yet.
+            </div>
+            <div style={{ fontSize: 11, color: '#bbb' }}>
+              Try selecting "All" or a different role above.
+            </div>
+          </div>
+        </div>
+      )
+    }
+
     const boxes = summaryData
       ? [
           { label: 'Lowest', value: fmtShort(summaryData.min) },
@@ -219,9 +246,9 @@ export default function CompanyDetailPanel({
           { label: 'Highest', value: fmtShort(summaryData.max) },
         ]
       : [
-          { label: 'Lowest', value: '??' },
-          { label: 'Median', value: '??', hl: true },
-          { label: 'Highest', value: '??' },
+          { label: 'Lowest', value: '–' },
+          { label: 'Median', value: '–', hl: true },
+          { label: 'Highest', value: '–' },
         ]
     return (
       <div style={blurred ? { filter: 'blur(6px)', pointerEvents: 'none', userSelect: 'none' } : {}}>
