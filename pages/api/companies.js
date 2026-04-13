@@ -193,6 +193,7 @@ export default async function handler(req, res) {
 
       return {
         id: co.id,
+        name: co.name,
         company: co.name,
         domain,
         logo,
