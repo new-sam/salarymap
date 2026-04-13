@@ -1,10 +1,9 @@
 import supabase from '../../lib/supabase';
 import { createClient } from '@supabase/supabase-js';
 
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_ROLE_KEY
-);
+const supabaseAdmin = process.env.SUPABASE_SERVICE_ROLE_KEY
+  ? createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY)
+  : null;
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -60,6 +59,9 @@ export default async function handler(req, res) {
   }
 
   // Also insert into salary_submissions to link to user (if logged in)
+  if (!supabaseAdmin) {
+    console.log('[submit] skipping salary_submissions — no service role key');
+  } else {
   const { error: ssError } = await supabaseAdmin
     .from('salary_submissions')
     .insert({
@@ -76,6 +78,7 @@ export default async function handler(req, res) {
     console.error('[submit] salary_submissions error:', ssError.message);
     // Non-fatal — don't fail the request
   }
+  } // end supabaseAdmin block
 
   // Auto-add company to companies table if not exists
   if (company && company.trim()) {
