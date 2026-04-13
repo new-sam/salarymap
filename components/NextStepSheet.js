@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { supabase } from '../lib/supabaseClient'
 
 export default function NextStepSheet({ role, experience, percentile, topCompanies }) {
   const [visible, setVisible] = useState(false)
@@ -164,7 +165,7 @@ export default function NextStepSheet({ role, experience, percentile, topCompani
               </div>
 
               <button
-                onClick={() => window.location.href = '/api/auth/google'}
+                onClick={async () => { await supabase.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: window.location.origin + '/auth/callback' } }); }}
                 style={{
                   display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 14,
                   width: '100%', padding: '18px',
