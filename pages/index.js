@@ -1344,7 +1344,7 @@ function SubmitSection({
   const pctColor = percentile == null ? '#fff'
     : percentile >= 50 ? '#4ade80' : '#FF6200';
   const diff = percentileData ? sal - (percentileData.median ?? sal) : 0;
-  const diffLabel = diff >= 0 ? `+$${diff}` : `-$${Math.abs(diff)}`;
+  const diffLabel = diff >= 0 ? `+${diff}M` : `-${Math.abs(diff)}M`;
   const message = isTopHalf
     ? "You're above the market median. See what higher-paying roles are available right now."
     : "You're earning below the market rate for your role. This is a good time to explore better-paying opportunities.";
@@ -1461,10 +1461,10 @@ function SubmitSection({
                 <div>
                   <div style={{fontSize:'11px', fontWeight:700, color:'rgba(255,255,255,0.35)', letterSpacing:'2px', textTransform:'uppercase', marginBottom:'8px'}}>STEP 3 / 4</div>
                   <div style={{fontSize:'22px', fontWeight:900, color:'#fff', letterSpacing:'-0.5px', marginBottom:'6px'}}>What's your monthly salary?</div>
-                  <div style={{fontSize:'13px', color:'rgba(255,255,255,0.4)', marginBottom:'28px'}}>Pre-tax, per month (USD)</div>
+                  <div style={{fontSize:'13px', color:'rgba(255,255,255,0.4)', marginBottom:'28px'}}>Pre-tax, per month (triệu VND)</div>
                   <div style={{display:'flex', alignItems:'baseline', gap:'8px', marginBottom:'20px'}}>
                     <span style={{fontFamily:"'Geist Mono',monospace", fontSize:'56px', color:'#ff6000', fontWeight:500, lineHeight:1}}>{sal}</span>
-                    <span style={{fontSize:'16px', color:'rgba(255,255,255,0.4)'}}>USD / mo</span>
+                    <span style={{fontSize:'16px', color:'rgba(255,255,255,0.4)'}}>triệu / tháng</span>
                   </div>
                   <input type="range" min="5" max="200" value={sal}
                     onChange={e => setWSalary(Number(e.target.value))}
@@ -1472,7 +1472,7 @@ function SubmitSection({
                       background:`linear-gradient(90deg, #ff6000 ${salPct}%, rgba(255,255,255,0.1) ${salPct}%)`}}
                   />
                   <div style={{display:'flex', justifyContent:'space-between', marginTop:'8px', marginBottom:'28px'}}>
-                    {['$5','$50','$100','$150','$200+'].map(t => (
+                    {['5M','50M','100M','150M','200M+'].map(t => (
                       <span key={t} style={{fontSize:'10px', color:'rgba(255,255,255,0.35)', fontFamily:"'Geist Mono',monospace"}}>{t}</span>
                     ))}
                   </div>
@@ -2193,7 +2193,7 @@ export default function Home() {
                     <div className="lb-stat-l">Salaries</div>
                   </div>
                   <div className="lb-stat-b">
-                    <div className="lb-stat-n o">${(company.median/1000).toFixed(1)}k</div>
+                    <div className="lb-stat-n o">{company.median}M</div>
                     <div className="lb-stat-l">Median</div>
                   </div>
                   <div className="lb-stat-b">

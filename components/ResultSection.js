@@ -110,7 +110,7 @@ export default function ResultSection({ salary, role, experience, company }) {
                       color: accent ? '#ff4400' : '#fff',
                       lineHeight: 1,
                       marginTop: '-4px',
-                    }}>$</span>
+                    }}>₫</span>
                   </div>
                 </div>
 

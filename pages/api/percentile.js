@@ -17,7 +17,7 @@ function removeOutliers(salaries) {
   return sorted.filter(s => s >= lower && s <= upper);
 }
 
-// Base medians (USD/mo) per role × experience index [<1yr, 1-2, 3-4, 5-7, 8+]
+// Base medians (triệu VND/mo) per role × experience index [<1yr, 1-2, 3-4, 5-7, 8+]
 const BASE_MEDIANS = {
   'Backend':   [25, 40, 75, 110, 140],
   'Frontend':  [22, 36, 68, 100, 130],
