@@ -81,7 +81,12 @@
       "Bash(taskkill //F //PID 26268)",
       "Bash(rm -f /c/Users/slsvm/Desktop/salarymap/.next/dev/lock)",
       "WebFetch(domain:twpxsbnkypocjfnerfmd.supabase.co)",
-      "Bash(powershell.exe:*)"
+      "Bash(powershell.exe:*)",
+      "Bash(grep -rn \"\\\\$[0-9]\\\\|\\\\${\\\\|label: '\\\\$\" /c/Users/slsvm/Desktop/salarymap/components/ /c/Users/slsvm/Desktop/salarymap/lib/ --include=\"*.js\")",
+      "Bash(grep:*)",
+      "Bash(xargs basename:*)",
+      "Bash(sed -n '870,890p' /c/Users/slsvm/Desktop/salarymap/pages/index.js)",
+      "Bash(sed -n '1000,1020p' /c/Users/slsvm/Desktop/salarymap/pages/index.js)"
     ]
   },
   "hooks": {
