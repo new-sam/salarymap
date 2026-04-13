@@ -107,11 +107,13 @@ export default async function handler(req, res) {
     // 3. Group submissions by company name
     const salaryMap = {};
     submissions.forEach(s => {
-      if (!s.company || !s.salary) return;
-      if (s.salary < 5 || s.salary > 200) return;
+      if (!s.company) return;
       const key = s.company.trim().toLowerCase();
-      if (!salaryMap[key]) salaryMap[key] = { salaries: [], roles: {} };
-      salaryMap[key].salaries.push(s.salary);
+      if (!salaryMap[key]) salaryMap[key] = { salaries: [], totalCount: 0, roles: {} };
+      salaryMap[key].totalCount++;
+      if (s.salary && s.salary >= 5 && s.salary <= 200) {
+        salaryMap[key].salaries.push(s.salary);
+      }
       if (s.role) salaryMap[key].roles[s.role] = (salaryMap[key].roles[s.role] || 0) + 1;
     });
 

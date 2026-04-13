@@ -110,7 +110,7 @@ nav { position:fixed; top:0; left:0; right:0; z-index:200; padding:0 52px; heigh
 
 /* CARDS SECTION */
 .cards-bg { background: #f0ede8; }
-.cards-section { max-width:1160px; margin:0 auto; padding:80px 52px 0; }
+.cards-section { max-width:1360px; margin:0 auto; padding:80px 40px 0; }
 .cards-bg .section-head-title { color: #0c0c0c; }
 .cards-bg .section-head-sub { color: rgba(0,0,0,.5); }
 .section-head { margin-bottom:28px; }
@@ -119,20 +119,20 @@ nav { position:fixed; top:0; left:0; right:0; z-index:200; padding:0 52px; heigh
 .section-head-sub { font-size:13px; color:var(--mid); font-weight:300; }
 
 /* COMPANY GRID */
-.company-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:8px; }
-.company-card { border-radius:14px; overflow:hidden; position:relative; height:260px; cursor:pointer; outline:2px solid transparent; outline-offset:-2px; transition:transform .2s, outline-color .2s; }
-.company-card:hover { transform:scale(1.02); }
+.company-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:14px; }
+.company-card { border-radius:16px; overflow:hidden; position:relative; height:280px; cursor:pointer; outline:2px solid transparent; outline-offset:-2px; transition:transform .22s, outline-color .22s, box-shadow .22s; }
+.company-card:hover { transform:scale(1.03); box-shadow:0 12px 32px rgba(0,0,0,0.35); }
 .company-card.open:hover { outline-color:#FF6200; }
 .card-bg { position:absolute; inset:0; background-size:cover; background-position:center; }
-.card-logo-wrap { position:absolute; bottom:16px; right:14px; z-index:3; }
-.card-logo-img { width:26px; height:26px; object-fit:contain; border-radius:6px; background:rgba(255,255,255,0.9); padding:4px; box-shadow:0 1px 8px rgba(0,0,0,0.4); }
-.card-overlay { position:absolute; inset:0; background:linear-gradient(to top,rgba(0,0,0,.88) 0%,rgba(0,0,0,.45) 55%,rgba(0,0,0,.15) 100%); }
+.card-logo-wrap { position:absolute; bottom:18px; right:16px; z-index:3; }
+.card-logo-img { width:32px; height:32px; object-fit:contain; border-radius:8px; background:rgba(255,255,255,0.9); padding:5px; box-shadow:0 2px 10px rgba(0,0,0,0.4); }
+.card-overlay { position:absolute; inset:0; background:linear-gradient(to top,rgba(0,0,0,.85) 0%,rgba(0,0,0,.4) 50%,rgba(0,0,0,.1) 100%); }
 .card-locked-overlay { position:absolute; inset:0; background:rgba(0,0,0,0.65); backdrop-filter:blur(4px); z-index:1; }
-.card-top { position:absolute; top:14px; left:14px; right:14px; display:flex; justify-content:space-between; align-items:center; z-index:2; }
-.card-rank { font-size:10px; font-weight:700; color:rgba(255,255,255,.55); background:rgba(0,0,0,.4); padding:3px 8px; border-radius:5px; }
+.card-top { position:absolute; top:16px; left:16px; right:16px; display:flex; justify-content:space-between; align-items:center; z-index:2; }
+.card-rank { font-size:11px; font-weight:700; color:rgba(255,255,255,.6); background:rgba(0,0,0,.45); padding:4px 10px; border-radius:6px; }
 .card-top-badge { font-size:10px; font-weight:700; color:#000; background:#FF6200; padding:3px 8px; border-radius:5px; }
-.card-category { font-size:10px; font-weight:600; color:rgba(255,255,255,.7); background:rgba(255,255,255,.12); padding:3px 8px; border-radius:5px; }
-.card-bottom { position:absolute; bottom:0; left:0; right:0; padding:16px; z-index:2; }
+.card-category { font-size:11px; font-weight:600; color:rgba(255,255,255,.75); background:rgba(255,255,255,.12); padding:4px 10px; border-radius:6px; }
+.card-bottom { position:absolute; bottom:0; left:0; right:0; padding:20px; z-index:2; }
 .card-name-row { display:flex; justify-content:space-between; align-items:baseline; gap:6px; }
 .card-name { font-size:14px; font-weight:700; color:#fff; letter-spacing:-.02em; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 .card-count { font-size:10px; color:rgba(255,255,255,.4); white-space:nowrap; flex-shrink:0; }
@@ -638,8 +638,8 @@ nav { position:fixed; top:0; left:0; right:0; z-index:200; padding:0 52px; heigh
   .trust-section { padding:60px 0 !important; }
   .trust-inner { padding:0 16px !important; }
   .section-head-title { font-size:22px; }
-  .company-grid { grid-template-columns:repeat(2,1fr); }
-  .company-card { height:200px; }
+  .company-grid { grid-template-columns:repeat(2,1fr); gap:10px; }
+  .company-card { height:220px; }
 
   /* SUBMIT */
   .submit-outer { margin:40px 16px 0; }

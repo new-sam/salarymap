@@ -65,7 +65,7 @@ export default function CompanyCard({ company, index, isUnlocked, onClick, onLoc
         </div>
         <div className="card-divider" />
         {company.hasData ? (
-          <div className="card-sal">${company.min} – ${company.max} /mo</div>
+          <div className="card-sal">{company.min}M – {company.max}M VND /mo</div>
         ) : (
           <div className="card-sal" style={{ color: 'rgba(255,255,255,0.3)', fontStyle: 'italic', fontSize: '12px' }}>Collecting data...</div>
         )}
