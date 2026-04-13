@@ -2059,7 +2059,7 @@ export default function Home() {
               body: JSON.stringify({
                 role: wRole,
                 experience: wExp,
-                salary: wSalary * 1000000,
+                salary: wSalary,
                 company: wCompany,
                 user_id: session?.user?.id || null,
                 source: new URLSearchParams(window.location.search).get('source') || null,
