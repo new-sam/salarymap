@@ -100,6 +100,21 @@ function resolveRole(role) {
   return ROLE_MAP[role] || role;
 }
 
+// Paginate through all rows (Supabase caps at 1000 per request)
+async function fetchAll(query) {
+  const PAGE = 1000;
+  let all = [], from = 0;
+  while (true) {
+    const { data, error } = await query.range(from, from + PAGE - 1);
+    if (error) throw error;
+    if (!data || data.length === 0) break;
+    all = all.concat(data);
+    if (data.length < PAGE) break;
+    from += PAGE;
+  }
+  return all;
+}
+
 export default async function handler(req, res) {
   try {
     const { role: rawRole, experience } = req.query;
@@ -113,11 +128,9 @@ export default async function handler(req, res) {
     if (cErr) throw cErr;
 
     // 2a. Fetch ALL submissions (unfiltered) for total count per company
-    const { data: allSubmissions, error: allErr } = await supabase
-      .from('submissions')
-      .select('company');
-
-    if (allErr) throw allErr;
+    const allSubmissions = await fetchAll(
+      supabase.from('submissions').select('company')
+    );
 
     // Total count per company (no filters)
     const totalCountMap = {};
@@ -128,16 +141,12 @@ export default async function handler(req, res) {
     });
 
     // 2b. Fetch submissions filtered by role+experience for salary stats
-    let query = supabase
-      .from('submissions')
-      .select('company, salary, role, experience');
+    let q = supabase.from('submissions').select('company, salary, role, experience');
+    if (role) q = q.eq('role', role);
+    if (experience) q = q.eq('experience', experience);
 
-    if (role) query = query.eq('role', role);
-    if (experience) query = query.eq('experience', experience);
+    const submissions = await fetchAll(q);
 
-    const { data: submissions, error: sErr } = await query;
-
-    if (sErr) throw sErr;
 
     // 3. Group filtered submissions by company name (for salary stats only)
     const salaryMap = {};

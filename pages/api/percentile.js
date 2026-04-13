@@ -100,6 +100,21 @@ function seedTopCompanies(role, experience, userSalary, userCompany) {
   return top.slice(0, 3);
 }
 
+// Paginate through all rows (Supabase caps at 1000 per request)
+async function fetchAll(query) {
+  const PAGE = 1000;
+  let all = [], from = 0;
+  while (true) {
+    const { data, error } = await query.range(from, from + PAGE - 1);
+    if (error) throw error;
+    if (!data || data.length === 0) break;
+    all = all.concat(data);
+    if (data.length < PAGE) break;
+    from += PAGE;
+  }
+  return all;
+}
+
 export default async function handler(req, res) {
   const { role, experience, salary, company } = req.query;
   if (!role || !experience || !salary) {
@@ -109,11 +124,9 @@ export default async function handler(req, res) {
   const sal = parseInt(salary);
 
   // Fetch all submissions for this role + experience (including company)
-  const { data } = await supabase
-    .from('submissions')
-    .select('salary, company')
-    .eq('role', role)
-    .eq('experience', experience);
+  const data = await fetchAll(
+    supabase.from('submissions').select('salary, company').eq('role', role).eq('experience', experience)
+  );
 
   if (!data || data.length < 5) {
     const topCompanies = seedTopCompanies(role, experience, sal, company || '');
@@ -150,10 +163,9 @@ export default async function handler(req, res) {
   }
 
   // Build companiesPayingMore: all companies for this role with median > user salary
-  const { data: allRoleSubs } = await supabase
-    .from('submissions')
-    .select('company, salary')
-    .eq('role', role);
+  const allRoleSubs = await fetchAll(
+    supabase.from('submissions').select('company, salary').eq('role', role)
+  );
 
   const byCoAll = {};
   (allRoleSubs || []).forEach(row => {

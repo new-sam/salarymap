@@ -63,6 +63,21 @@ function resolveRole(role) {
   return ROLE_MAP[role] || role;
 }
 
+// Paginate through all rows (Supabase caps at 1000 per request)
+async function fetchAll(query) {
+  const PAGE = 1000;
+  let all = [], from = 0;
+  while (true) {
+    const { data, error } = await query.range(from, from + PAGE - 1);
+    if (error) throw error;
+    if (!data || data.length === 0) break;
+    all = all.concat(data);
+    if (data.length < PAGE) break;
+    from += PAGE;
+  }
+  return all;
+}
+
 export default async function handler(req, res) {
   const { salary, role: rawRole, experience, company } = req.query;
   const userSalary = parseInt(salary);
@@ -73,19 +88,15 @@ export default async function handler(req, res) {
   }
 
   // Get peers: same role + same experience, fallback to role only
-  let { data: peers } = await supabase
-    .from('submissions')
-    .select('salary')
-    .eq('role', role)
-    .eq('experience', experience);
+  let peers = await fetchAll(
+    supabase.from('submissions').select('salary').eq('role', role).eq('experience', experience)
+  );
 
   // If not enough peers for exact match, broaden to all experience levels for this role
   if (!peers || peers.length < 3) {
-    const { data: broadPeers } = await supabase
-      .from('submissions')
-      .select('salary')
-      .eq('role', role);
-    peers = broadPeers;
+    peers = await fetchAll(
+      supabase.from('submissions').select('salary').eq('role', role)
+    );
   }
 
   if (!peers || peers.length < 3) {
@@ -109,10 +120,9 @@ export default async function handler(req, res) {
   const diffPct = marketMedian > 0 ? Math.round((diff / marketMedian) * 100) : 0;
 
   // Get companies paying more for this role
-  const { data: companyData } = await supabase
-    .from('submissions')
-    .select('company, salary')
-    .eq('role', role);
+  const companyData = await fetchAll(
+    supabase.from('submissions').select('company, salary').eq('role', role)
+  );
 
   const companyMap = {};
   (companyData || []).forEach(row => {
