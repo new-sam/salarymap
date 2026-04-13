@@ -274,7 +274,7 @@ export default function CompanyDetailPanel({
                               return (
                                 <div key={i} style={{
                                   background: isYou ? '#fff4f0' : row.mostSimilar ? '#f0fff4' : '#f7f7f7',
-                                  border: isYou ? '1.5px solid #ff4400' : row.mostSimilar ? '1px solid #86efac' : 'none',
+                                  border: isYou ? '1.5px solid #ff4400' : row.mostSimilar ? '1.5px solid #86efac' : '1px solid #efefef',
                                   borderRadius: 10, padding: '10px 12px',
                                   display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                                 }}>

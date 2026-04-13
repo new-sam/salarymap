@@ -1825,6 +1825,16 @@ export default function Home() {
     const submitted = localStorage.getItem('fyi_submitted') === 'true';
     const isLoginSuccess = new URLSearchParams(window.location.search).get('login') === 'success';
     setIsSubmitted(submitted);
+    if (submitted) {
+      const sr = localStorage.getItem('fyi_role');
+      const se = localStorage.getItem('fyi_exp');
+      const ss = localStorage.getItem('fyi_salary');
+      const sc = localStorage.getItem('fyi_company');
+      if (sr) setWRole(sr);
+      if (se) setWExp(se);
+      if (ss) setWSalary(Number(ss));
+      if (sc) setWCompany(sc);
+    }
     // showResult: always false on page load — never restore from storage
 
     // isLoggedIn: always read from Supabase session on mount
@@ -2145,6 +2155,10 @@ export default function Home() {
             setPercentileData(data);
           } catch(e) { setPercentileData(null); }
           localStorage.setItem('fyi_submitted', 'true');
+          localStorage.setItem('fyi_role', wRole);
+          localStorage.setItem('fyi_exp', wExp);
+          localStorage.setItem('fyi_salary', String(wSalary));
+          localStorage.setItem('fyi_company', wCompany);
           setShowSocialPrompt(true);
         }}
       />
