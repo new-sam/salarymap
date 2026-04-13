@@ -1350,10 +1350,7 @@ function SubmitSection({
   const card = { background:'rgba(255,255,255,0.03)', border:'1px solid rgba(255,255,255,0.08)', borderRadius:'20px', padding:'36px 32px' };
   const btn = { fontFamily:"'Barlow',sans-serif", cursor:'pointer', border:'none' };
 
-  const [oauthError, setOauthError] = useState(null);
-
   const handleOAuth = async (provider) => {
-    setOauthError(null);
     try {
       const { error } = await supabaseClient.auth.signInWithOAuth({
         provider,
@@ -1362,7 +1359,6 @@ function SubmitSection({
       if (error) throw error;
     } catch (e) {
       console.error('OAuth error:', e);
-      setOauthError('Google sign-in is not configured yet. Try again later.');
     }
   };
 
