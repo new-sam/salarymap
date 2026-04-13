@@ -77,7 +77,9 @@
       "Bash(gh api:*)",
       "WebFetch(domain:salarymap-dqbzwxruq-slsvm1013-6708s-projects.vercel.app)",
       "Bash(npm ls:*)",
-      "Bash(npx playwright:*)"
+      "Bash(npx playwright:*)",
+      "Bash(taskkill //F //PID 26268)",
+      "Bash(rm -f /c/Users/slsvm/Desktop/salarymap/.next/dev/lock)"
     ]
   },
   "hooks": {
