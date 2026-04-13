@@ -80,7 +80,8 @@
       "Bash(npx playwright:*)",
       "Bash(taskkill //F //PID 26268)",
       "Bash(rm -f /c/Users/slsvm/Desktop/salarymap/.next/dev/lock)",
-      "WebFetch(domain:twpxsbnkypocjfnerfmd.supabase.co)"
+      "WebFetch(domain:twpxsbnkypocjfnerfmd.supabase.co)",
+      "Bash(powershell.exe:*)"
     ]
   },
   "hooks": {
