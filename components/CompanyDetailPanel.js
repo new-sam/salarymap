@@ -102,6 +102,15 @@ export default function CompanyDetailPanel({
   const fmt = (v) => Math.round(v) + 'M VND'
   const fmtShort = (v) => Math.round(v) + 'M'
 
+  // Experience display — "5" → "5 yrs experience", "5–7 yrs" → as-is
+  const fmtExp = (exp) => {
+    if (!exp) return ''
+    const s = String(exp).trim()
+    if (/^\d+$/.test(s)) return `${s} yrs experience`
+    if (s.toLowerCase().includes('yr') || s.toLowerCase().includes('under')) return s
+    return `${s} yrs experience`
+  }
+
   // Average rating
   const avgRating = detail?.rating
     ? Math.round(((detail.rating.worklife + detail.rating.salary + detail.rating.growth) / 3) * 10) / 10
@@ -338,17 +347,17 @@ export default function CompanyDetailPanel({
         background: bg, border: bd, borderRadius: 10, padding: '10px 13px',
         display: 'flex', justifyContent: 'space-between', alignItems: 'center',
       }}>
-        <div>
-          <div style={{ fontSize: 12, fontWeight: 600, color: '#1a1a1a' }}>
-            {row.role}
-            {isYou && <span style={{ color: '#ff4400', fontSize: 10, fontWeight: 700, marginLeft: 6 }}>← YOU</span>}
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <span style={{ fontSize: 13, fontWeight: 600, color: '#1a1a1a' }}>{row.role}</span>
+            {isYou && <span style={{ fontSize: 9, fontWeight: 700, color: '#ff4400', background: 'rgba(255,68,0,0.08)', padding: '1px 6px', borderRadius: 3 }}>YOU</span>}
+            {!isYou && row.mostSimilar && isSubmitted && <span style={{ fontSize: 9, fontWeight: 700, color: '#22c55e', background: 'rgba(34,197,94,0.08)', padding: '1px 6px', borderRadius: 3 }}>similar</span>}
           </div>
-          <div style={{ fontSize: 10, color: '#aaa', marginTop: 2 }}>{row.experience}</div>
+          <div style={{ fontSize: 10, color: '#999', marginTop: 2 }}>{fmtExp(row.experience)}</div>
         </div>
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 3 }}>
-          <div style={{ fontSize: 14, fontWeight: 700, color: isYou ? '#ff4400' : '#1a1a1a' }}>{fmt(row.salary)}</div>
-          {isYou && <div style={{ fontSize: 8, fontWeight: 700, background: '#ff4400', color: '#fff', padding: '1px 6px', borderRadius: 3 }}>your entry</div>}
-          {!isYou && row.mostSimilar && isSubmitted && <div style={{ fontSize: 8, fontWeight: 700, background: '#22c55e', color: '#fff', padding: '1px 6px', borderRadius: 3 }}>similar</div>}
+        <div style={{ textAlign: 'right', flexShrink: 0 }}>
+          <div style={{ fontSize: 15, fontWeight: 700, color: isYou ? '#ff4400' : '#1a1a1a' }}>{fmt(row.salary)}</div>
+          <div style={{ fontSize: 9, color: '#bbb', marginTop: 1 }}>per month</div>
         </div>
       </div>
     )
@@ -356,9 +365,9 @@ export default function CompanyDetailPanel({
 
   const renderFeed = (blurred = false) => {
     const rows = blurred
-      ? [{ role: 'Backend', experience: '3', salary: 38, mostSimilar: false },
-         { role: 'Frontend', experience: '2', salary: 32, mostSimilar: false },
-         { role: 'Mobile', experience: '5', salary: 55, mostSimilar: false }]
+      ? [{ role: 'Backend', experience: '3–4 yrs', salary: 38, mostSimilar: false },
+         { role: 'Frontend', experience: '1–2 yrs', salary: 32, mostSimilar: false },
+         { role: 'Mobile', experience: '5–7 yrs', salary: 55, mostSimilar: false }]
       : visibleFeed
     return (
       <div style={blurred ? { filter: 'blur(6px)', pointerEvents: 'none', userSelect: 'none' } : {}}>
@@ -461,19 +470,23 @@ export default function CompanyDetailPanel({
                   </div>
                 )}
               </div>
-              {/* Bar */}
-              <div style={{
-                height: 8, background: '#e4e4e4', borderRadius: 20, overflow: 'hidden',
-              }}>
+              {/* Bar + scale */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <div style={{ fontSize: 9, color: '#ccc', flexShrink: 0, width: 8, textAlign: 'center' }}>1</div>
                 <div style={{
-                  height: '100%',
-                  width: hasData ? `${(value / 5) * 100}%` : '0%',
-                  background: hasData
-                    ? (value >= 3.5 ? '#22c55e' : value >= 2.5 ? '#f59e0b' : '#ef4444')
-                    : '#e4e4e4',
-                  borderRadius: 20,
-                  transition: 'width 0.5s ease',
-                }} />
+                  flex: 1, height: 8, background: '#e4e4e4', borderRadius: 20, overflow: 'hidden',
+                }}>
+                  <div style={{
+                    height: '100%',
+                    width: hasData ? `${(value / 5) * 100}%` : '0%',
+                    background: hasData
+                      ? (value >= 3.5 ? '#22c55e' : value >= 2.5 ? '#f59e0b' : '#ef4444')
+                      : '#e4e4e4',
+                    borderRadius: 20,
+                    transition: 'width 0.5s ease',
+                  }} />
+                </div>
+                <div style={{ fontSize: 9, color: '#ccc', flexShrink: 0, width: 8, textAlign: 'center' }}>5</div>
               </div>
             </div>
           ))}
