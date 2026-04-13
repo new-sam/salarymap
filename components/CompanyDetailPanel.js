@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
 
 export default function CompanyDetailPanel({
   company, isOpen, onClose,
@@ -7,7 +7,6 @@ export default function CompanyDetailPanel({
   const [detail, setDetail] = useState(null)
   const [loading, setLoading] = useState(false)
   const [isMobile, setIsMobile] = useState(false)
-  const panelRef = useRef(null)
 
   useEffect(() => {
     const check = () => setIsMobile(window.innerWidth <= 768)
@@ -40,285 +39,302 @@ export default function CompanyDetailPanel({
     return () => { document.body.style.overflow = '' }
   }, [isOpen])
 
-  const isOwnCompany = isSubmitted && userCompany && company &&
+  const isMyCompany = isSubmitted && userCompany && company &&
     company.trim().toLowerCase() === userCompany.trim().toLowerCase()
 
-  const F = { fontFamily: "'Barlow', 'Inter', sans-serif" }
-  const blur = { filter: 'blur(6px)', userSelect: 'none', pointerEvents: 'none' }
-
-  const sal = (v) => `${v}M VND`
-
   const comparePct = (isSubmitted && userSalary && detail?.summary?.median)
-    ? Math.round(((userSalary - detail.summary.median) / detail.summary.median) * 100)
+    ? (isMyCompany
+        ? Math.round(((detail.summary.median - userSalary) / userSalary) * 100)
+        : Math.round(((detail.summary.median - userSalary) / userSalary) * 100))
     : null
 
-  // --- panel positioning ---
+  const fmtSal = (v) => Math.round(v) + 'M'
+
+  // --- panel style ---
   const panelStyle = isMobile ? {
     position: 'fixed', bottom: 0, left: 0, right: 0,
-    maxHeight: '90vh', background: '#fff', zIndex: 50,
-    borderRadius: '20px 20px 0 0', overflowY: 'auto', ...F,
+    maxHeight: '90vh', height: 'auto',
+    background: '#fff', zIndex: 50,
+    borderRadius: '20px 20px 0 0',
+    overflowY: 'auto',
+    fontFamily: "'Inter', sans-serif",
     transform: isOpen ? 'translateY(0)' : 'translateY(100%)',
     transition: 'transform 0.3s ease',
-    boxShadow: '0 -4px 40px rgba(0,0,0,0.25)',
+    boxShadow: '0 -4px 24px rgba(0,0,0,0.2)',
   } : {
-    position: 'fixed', top: 0, right: 0, height: '100vh',
-    width: 420, background: '#fff', zIndex: 50,
-    overflowY: 'auto', ...F,
+    position: 'fixed', top: 0, right: 0,
+    width: 420, height: '100vh',
+    background: '#fff', zIndex: 50,
+    overflowY: 'auto',
+    fontFamily: "'Inter', sans-serif",
     transform: isOpen ? 'translateX(0)' : 'translateX(100%)',
     transition: 'transform 0.3s ease',
-    boxShadow: '-4px 0 40px rgba(0,0,0,0.15)',
+    boxShadow: '-4px 0 24px rgba(0,0,0,0.15)',
   }
 
   return (
     <>
       {/* Backdrop */}
-      <div
-        onClick={onClose}
-        style={{
-          position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)',
-          zIndex: 49, opacity: isOpen ? 1 : 0,
-          pointerEvents: isOpen ? 'all' : 'none',
-          transition: 'opacity .3s',
-        }}
-      />
+      <div onClick={onClose} style={{
+        position: 'fixed', inset: 0,
+        background: 'rgba(0,0,0,0.5)',
+        zIndex: 49,
+        display: isOpen ? 'block' : 'none',
+      }} />
 
       {/* Panel */}
-      <div ref={panelRef} style={panelStyle}>
+      <div style={panelStyle}>
         {company && (
           <>
-            {/* Header — sticky */}
+            {/* ── Header ── */}
             <div style={{
-              background: '#1a1a18', padding: '24px 20px 20px',
-              position: 'sticky', top: 0, zIndex: 2,
+              background: '#111', padding: '20px',
+              display: 'flex', alignItems: 'center', gap: 12,
+              position: 'sticky', top: 0, zIndex: 10,
             }}>
+              {/* Logo circle */}
+              <div style={{
+                width: 44, height: 44, borderRadius: 11,
+                background: '#ff4400',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontSize: 13, fontWeight: 800, color: '#fff', flexShrink: 0,
+              }}>
+                {company.slice(0, 3).toUpperCase()}
+              </div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: 17, fontWeight: 700, color: '#fff', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {company}
+                </div>
+                <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)' }}>
+                  {loading ? 'Loading...' : `${detail?.totalCount || 0} salaries shared`}
+                </div>
+              </div>
               {/* Close */}
               <div onClick={onClose} style={{
-                position: 'absolute', top: 12, right: 12, width: 28, height: 28, borderRadius: '50%',
-                background: 'rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center',
-                justifyContent: 'center', cursor: 'pointer', color: '#fff', fontSize: 13, lineHeight: 1,
+                width: 28, height: 28, borderRadius: '50%',
+                background: 'rgba(255,255,255,0.1)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                cursor: 'pointer', fontSize: 14, color: 'rgba(255,255,255,0.6)',
+                flexShrink: 0,
               }}>✕</div>
-
-              {/* Mobile drag indicator */}
-              {isMobile && (
-                <div style={{ width: 36, height: 4, borderRadius: 2, background: 'rgba(255,255,255,0.2)', margin: '0 auto 16px' }} />
-              )}
-
-              {/* Own company banner */}
-              {isOwnCompany && (
-                <div style={{
-                  background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)',
-                  borderRadius: 6, padding: '7px 12px', marginBottom: 14,
-                  fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,0.5)', letterSpacing: '.02em',
-                }}>This is your current company</div>
-              )}
-
-              {/* Company name */}
-              <div style={{ fontSize: 20, fontWeight: 900, color: '#fff', letterSpacing: '-0.02em', paddingRight: 36 }}>
-                {company}
-              </div>
-              <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', marginTop: 3 }}>
-                {loading ? 'Loading...' : detail ? `${detail.totalCount} salaries` : ''}
-              </div>
-
-              {/* Context bar */}
-              {isSubmitted && userRole && (
-                <div style={{
-                  marginTop: 10, display: 'inline-flex', alignItems: 'center', gap: 5,
-                  background: 'rgba(255,96,0,0.1)', border: '1px solid rgba(255,96,0,0.18)',
-                  borderRadius: 5, padding: '4px 10px', fontSize: 10, fontWeight: 700, color: '#ff6000',
-                }}>
-                  {userRole} · {userExperience}
-                </div>
-              )}
             </div>
 
-            {/* Body */}
-            <div style={{ padding: '20px' }}>
+            {/* ── Body ── */}
+            <div style={{ padding: 16 }}>
 
               {/* Loading */}
               {loading && (
-                <div style={{ textAlign: 'center', padding: '48px 0', color: '#bbb', fontSize: 13 }}>
-                  Loading...
-                </div>
+                <div style={{ textAlign: 'center', padding: '48px 0', color: '#bbb', fontSize: 13 }}>Loading...</div>
               )}
 
-              {/* Summary boxes */}
-              {!loading && detail?.summary && (
-                <div style={isSubmitted ? {} : blur}>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8, marginBottom: 6 }}>
-                    {[
-                      { label: 'P25', value: detail.summary.p25 },
-                      { label: 'Median', value: detail.summary.median, hl: true },
-                      { label: 'P75', value: detail.summary.p75 },
-                    ].map(s => (
-                      <div key={s.label} style={{
-                        background: s.hl ? '#fff6f0' : '#f8f6f3', borderRadius: 10,
-                        padding: '14px 10px', textAlign: 'center',
-                        border: s.hl ? '1.5px solid #ffe0cc' : '1.5px solid transparent',
-                      }}>
-                        <div style={{ fontSize: 18, fontWeight: 800, color: s.hl ? '#ff4400' : '#111', letterSpacing: '-0.02em' }}>
-                          {isSubmitted ? sal(s.value) : '??M'}
-                        </div>
-                        <div style={{ fontSize: 9, fontWeight: 600, color: '#aaa', marginTop: 4, textTransform: 'uppercase', letterSpacing: '.04em' }}>
-                          {s.label} /mo
+              {!loading && detail && (
+                <>
+                  {/* ── STATE 1: not submitted ── */}
+                  {!isSubmitted && (
+                    <>
+                      {/* Blurred summary */}
+                      <div style={{ filter: 'blur(6px)', pointerEvents: 'none', marginBottom: 14 }}>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8 }}>
+                          {['25th %ile', 'Median', '75th %ile'].map((label, i) => (
+                            <div key={label} style={{ background: '#f7f7f7', borderRadius: 10, padding: '12px 8px', textAlign: 'center' }}>
+                              <div style={{ fontSize: 18, fontWeight: 700, color: i === 1 ? '#ff4400' : '#1a1a1a', marginBottom: 2 }}>42M</div>
+                              <div style={{ fontSize: 10, color: '#aaa' }}>{label}</div>
+                            </div>
+                          ))}
                         </div>
                       </div>
-                    ))}
-                  </div>
-                  <div style={{ fontSize: 9, color: '#ccc', textAlign: 'center', marginBottom: 16 }}>
-                    Based on {detail.summary.count} similar submissions
-                  </div>
-                </div>
-              )}
 
-              {!loading && !detail?.summary && detail && (
-                <div style={{ textAlign: 'center', padding: '16px 0 20px', color: '#bbb', fontSize: 12 }}>
-                  Not enough data for this role yet.
-                </div>
-              )}
-
-              {/* Compare badge */}
-              {isSubmitted && comparePct !== null && detail?.summary?.median > 0 && (
-                <div style={{
-                  background: comparePct >= 0 ? '#f0fdf4' : '#fef2f2',
-                  border: `1px solid ${comparePct >= 0 ? '#bbf7d0' : '#fecaca'}`,
-                  borderRadius: 8, padding: '10px 14px', marginBottom: 16,
-                  display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                }}>
-                  <span style={{ fontSize: 12, color: '#666' }}>
-                    {isOwnCompany ? 'vs market median' : 'vs your salary'}
-                  </span>
-                  <span style={{
-                    fontSize: 14, fontWeight: 800,
-                    color: comparePct >= 0 ? '#16a34a' : '#dc2626',
-                  }}>
-                    {comparePct >= 0 ? '+' : ''}{comparePct}%{comparePct >= 0 ? ' more' : ' less'}
-                  </span>
-                </div>
-              )}
-
-              {/* Gate — not submitted */}
-              {!isSubmitted && !loading && (
-                <div style={{
-                  background: '#f8f6f3', borderRadius: 12, padding: '24px 16px',
-                  textAlign: 'center', marginBottom: 20, border: '1px solid #efe9e0',
-                }}>
-                  <div style={{ fontSize: 15, fontWeight: 800, color: '#111', marginBottom: 4 }}>
-                    Submit your salary to unlock
-                  </div>
-                  <div style={{ fontSize: 11, color: '#999', marginBottom: 14 }}>
-                    Anonymous · 2 minutes · see how you compare
-                  </div>
-                  <button
-                    onClick={() => { onClose(); document.getElementById('submit')?.scrollIntoView({ behavior: 'smooth' }) }}
-                    style={{
-                      ...F, fontSize: 13, fontWeight: 800, background: '#ff6000', color: '#fff',
-                      border: 'none', padding: '11px 24px', borderRadius: 8, cursor: 'pointer',
-                    }}
-                  >Submit my salary →</button>
-                </div>
-              )}
-
-              {/* Feed */}
-              {!loading && detail?.feed && detail.feed.length > 0 && (
-                <>
-                  <div style={{
-                    fontSize: 10, fontWeight: 700, color: '#aaa', letterSpacing: '.06em',
-                    textTransform: 'uppercase', marginBottom: 10, marginTop: 4,
-                  }}>
-                    Individual salaries
-                  </div>
-                  <div style={isSubmitted ? {} : blur}>
-                    {(isSubmitted ? detail.feed : detail.feed.slice(0, 3)).map((item, i) => {
-                      const isYou = isSubmitted && isOwnCompany &&
-                        item.role === userRole &&
-                        item.experience === userExperience &&
-                        item.salary === userSalary
-
-                      const rowBg = isYou
-                        ? '#fff4f0'
-                        : item.mostSimilar ? '#f0fff4' : '#fff'
-                      const rowBorder = isYou
-                        ? '#ff4400'
-                        : item.mostSimilar ? '#86efac' : '#f0ede8'
-
-                      return (
-                        <div key={i} style={{
-                          display: 'flex', alignItems: 'center', gap: 10,
-                          padding: '10px 12px', borderRadius: 8, marginBottom: 4,
-                          background: rowBg, border: `1px solid ${rowBorder}`,
-                        }}>
-                          {/* Role + exp */}
-                          <div style={{ flex: 1, minWidth: 0 }}>
-                            <div style={{ fontSize: 13, fontWeight: 600, color: '#111' }}>
-                              {item.role}
-                            </div>
-                            <div style={{ fontSize: 10, color: '#999', marginTop: 1 }}>
-                              {item.experience} yrs
-                            </div>
-                          </div>
-
-                          {/* Salary */}
-                          <div style={{ fontSize: 14, fontWeight: 800, color: '#111', flexShrink: 0 }}>
-                            {isSubmitted ? sal(item.salary) : '??M'}
-                          </div>
-
-                          {/* Badge */}
-                          {isYou && (
-                            <span style={{
-                              fontSize: 9, fontWeight: 800, color: '#ff4400',
-                              background: 'rgba(255,68,0,0.08)', padding: '2px 7px', borderRadius: 4, flexShrink: 0,
-                            }}>← YOU</span>
-                          )}
-                          {!isYou && item.mostSimilar && (
-                            <span style={{
-                              fontSize: 9, fontWeight: 700, color: '#16a34a',
-                              background: 'rgba(34,197,94,0.08)', padding: '2px 7px', borderRadius: 4, flexShrink: 0,
-                            }}>similar</span>
-                          )}
+                      {/* Gate box */}
+                      <div style={{
+                        background: '#f7f7f7', borderRadius: 14,
+                        padding: '18px 16px', textAlign: 'center', marginBottom: 14,
+                      }}>
+                        <div style={{ fontSize: 14, fontWeight: 700, color: '#1a1a1a', marginBottom: 6 }}>
+                          Share yours to see all salaries
                         </div>
-                      )
-                    })}
-                  </div>
+                        <div style={{ fontSize: 12, color: '#999', lineHeight: 1.6, marginBottom: 14 }}>
+                          Submit your salary anonymously.<br />
+                          Unlock individual salary entries from real engineers.
+                        </div>
+                        <button onClick={() => { onClose(); document.getElementById('submit')?.scrollIntoView({ behavior: 'smooth' }) }} style={{
+                          width: '100%', padding: 12,
+                          background: '#ff4400', border: 'none', borderRadius: 11,
+                          fontSize: 13, fontWeight: 700, color: '#fff', cursor: 'pointer',
+                          fontFamily: "'Inter', sans-serif",
+                        }}>
+                          Submit my salary → unlock
+                        </button>
+                      </div>
+
+                      {/* Blurred feed */}
+                      <div style={{ filter: 'blur(6px)', pointerEvents: 'none' }}>
+                        <div style={{ fontSize: 10, color: '#aaa', letterSpacing: '.06em', marginBottom: 8 }}>INDIVIDUAL SALARIES</div>
+                        {[1, 2, 3].map(i => (
+                          <div key={i} style={{ background: '#f7f7f7', borderRadius: 10, padding: '10px 12px', marginBottom: 6, display: 'flex', justifyContent: 'space-between' }}>
+                            <div><div style={{ fontSize: 12, fontWeight: 600, color: '#1a1a1a' }}>Backend</div><div style={{ fontSize: 10, color: '#aaa' }}>3 yrs</div></div>
+                            <div style={{ fontSize: 14, fontWeight: 700, color: '#1a1a1a' }}>38M VND</div>
+                          </div>
+                        ))}
+                      </div>
+                    </>
+                  )}
+
+                  {/* ── STATE 2 & 3: submitted ── */}
+                  {isSubmitted && (
+                    <>
+                      {/* Own company banner */}
+                      {isMyCompany && (
+                        <div style={{
+                          background: '#111', color: '#fff', borderRadius: 10,
+                          padding: '9px 13px', marginBottom: 14,
+                          fontSize: 11, fontWeight: 700, textAlign: 'center', letterSpacing: '.02em',
+                        }}>This is your current company</div>
+                      )}
+
+                      {/* Context bar */}
+                      {userRole && (
+                        <div style={{
+                          background: '#fff4f0', border: '1.5px solid #ff4400',
+                          borderRadius: 10, padding: '9px 13px',
+                          display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14,
+                        }}>
+                          <div style={{
+                            background: '#ff4400', color: '#fff',
+                            fontSize: 10, fontWeight: 700,
+                            padding: '2px 8px', borderRadius: 5,
+                          }}>
+                            {userRole} · {userExperience}
+                          </div>
+                          <div style={{ fontSize: 11, color: '#666' }}>Filtered to your role & experience</div>
+                        </div>
+                      )}
+
+                      {/* Summary boxes */}
+                      {detail.summary ? (
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8, marginBottom: 14 }}>
+                          {[
+                            { label: '25th %ile', value: detail.summary.p25 },
+                            { label: 'Median', value: detail.summary.median, highlight: true },
+                            { label: '75th %ile', value: detail.summary.p75 },
+                          ].map(({ label, value, highlight }) => (
+                            <div key={label} style={{
+                              background: '#f7f7f7', borderRadius: 10,
+                              padding: '12px 8px', textAlign: 'center',
+                            }}>
+                              <div style={{
+                                fontSize: 18, fontWeight: 700, marginBottom: 2,
+                                color: highlight ? '#ff4400' : '#1a1a1a',
+                              }}>
+                                {value ? fmtSal(value) : '–'}
+                              </div>
+                              <div style={{ fontSize: 10, color: '#aaa' }}>{label}</div>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div style={{ textAlign: 'center', padding: '12px 0 16px', color: '#bbb', fontSize: 12 }}>
+                          Not enough data for this role yet.
+                        </div>
+                      )}
+
+                      {/* Compare badge */}
+                      {comparePct !== null && detail.summary?.median > 0 && (
+                        <div style={{
+                          borderRadius: 10, padding: '10px 13px',
+                          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                          marginBottom: 14,
+                          background: comparePct >= 0 ? '#f0fff4' : '#fff5f5',
+                          border: `1px solid ${comparePct >= 0 ? '#86efac' : '#fca5a5'}`,
+                        }}>
+                          <div style={{ fontSize: 12, color: '#555' }}>
+                            {isMyCompany ? 'vs market median' : `vs your salary (${fmtSal(userSalary)})`}
+                          </div>
+                          <div style={{
+                            fontSize: 13, fontWeight: 700,
+                            color: comparePct >= 0 ? '#16a34a' : '#dc2626',
+                          }}>
+                            {comparePct >= 0 ? '+' : ''}{comparePct}%
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Individual feed */}
+                      {detail.feed && detail.feed.length > 0 && (
+                        <>
+                          <div style={{ fontSize: 10, color: '#aaa', letterSpacing: '.06em', marginBottom: 8 }}>
+                            INDIVIDUAL SALARIES · similar to you first
+                          </div>
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 14 }}>
+                            {detail.feed.map((row, i) => {
+                              const isYou = isMyCompany &&
+                                row.role === userRole &&
+                                String(row.experience) === String(userExperience) &&
+                                row.salary === userSalary
+
+                              return (
+                                <div key={i} style={{
+                                  background: isYou ? '#fff4f0' : row.mostSimilar ? '#f0fff4' : '#f7f7f7',
+                                  border: isYou ? '1.5px solid #ff4400' : row.mostSimilar ? '1px solid #86efac' : 'none',
+                                  borderRadius: 10, padding: '10px 12px',
+                                  display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                                }}>
+                                  <div>
+                                    <div style={{ fontSize: 12, fontWeight: 600, color: '#1a1a1a' }}>
+                                      {row.role}
+                                      {isYou && <span style={{ color: '#ff4400', fontSize: 10, marginLeft: 6 }}>← YOU</span>}
+                                    </div>
+                                    <div style={{ fontSize: 10, color: '#aaa' }}>{row.experience} yrs</div>
+                                  </div>
+                                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 3 }}>
+                                    <div style={{ fontSize: 14, fontWeight: 700, color: isYou ? '#ff4400' : '#1a1a1a' }}>
+                                      {fmtSal(row.salary)} VND
+                                    </div>
+                                    {isYou && (
+                                      <div style={{ fontSize: 9, background: '#ff4400', color: '#fff', padding: '1px 5px', borderRadius: 4 }}>your entry</div>
+                                    )}
+                                    {!isYou && row.mostSimilar && (
+                                      <div style={{ fontSize: 9, background: '#22c55e', color: '#fff', padding: '1px 5px', borderRadius: 4 }}>similar</div>
+                                    )}
+                                  </div>
+                                </div>
+                              )
+                            })}
+                          </div>
+                        </>
+                      )}
+
+                      {/* Rating */}
+                      {detail.rating && (
+                        <div style={{ borderTop: '0.5px solid #f0f0f0', paddingTop: 12 }}>
+                          <div style={{ fontSize: 10, color: '#aaa', letterSpacing: '.06em', marginBottom: 10 }}>
+                            COMPANY RATING · {detail.rating.count} reviews
+                          </div>
+                          {[
+                            { label: 'Work-life', value: detail.rating.worklife },
+                            { label: 'Salary fair', value: detail.rating.salary },
+                            { label: 'Growth', value: detail.rating.growth },
+                          ].map(({ label, value }) => (
+                            <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+                              <div style={{ fontSize: 11, color: '#555', width: 70, flexShrink: 0 }}>{label}</div>
+                              <div style={{ display: 'flex', gap: 2 }}>
+                                {[1, 2, 3, 4, 5].map(s => (
+                                  <div key={s} style={{
+                                    width: 11, height: 11, borderRadius: 2,
+                                    background: s <= Math.round(value) ? '#ff4400' : '#ebebeb',
+                                  }} />
+                                ))}
+                              </div>
+                              <div style={{ fontSize: 11, color: '#aaa' }}>{value}</div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </>
+                  )}
                 </>
               )}
 
-              {/* Rating */}
-              {detail?.rating && (
-                <div style={isSubmitted ? { marginTop: 24 } : { ...blur, marginTop: 24 }}>
-                  <div style={{
-                    fontSize: 10, fontWeight: 700, color: '#aaa', letterSpacing: '.06em',
-                    textTransform: 'uppercase', marginBottom: 10,
-                  }}>
-                    Employee ratings
-                  </div>
-                  {[
-                    { label: 'Work-life balance', value: detail.rating.worklife },
-                    { label: 'Salary fairness', value: detail.rating.salary },
-                    { label: 'Growth opportunity', value: detail.rating.growth },
-                  ].map(r => (
-                    <div key={r.label} style={{
-                      display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                      padding: '9px 0', borderBottom: '1px solid #f0ede8',
-                    }}>
-                      <span style={{ fontSize: 12, color: '#555' }}>{r.label}</span>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-                        <span style={{ fontSize: 11, color: '#f59e0b' }}>
-                          {'★'.repeat(Math.round(r.value))}{'☆'.repeat(5 - Math.round(r.value))}
-                        </span>
-                        <span style={{ fontSize: 13, fontWeight: 800, color: '#111', minWidth: 22, textAlign: 'right' }}>
-                          {r.value}
-                        </span>
-                      </div>
-                    </div>
-                  ))}
-                  <div style={{ fontSize: 9, color: '#ccc', marginTop: 5 }}>
-                    Based on {detail.rating.count} reviews
-                  </div>
-                </div>
-              )}
-
-              {/* Bottom spacer for mobile */}
+              {/* Bottom spacer */}
               <div style={{ height: 40 }} />
             </div>
           </>
