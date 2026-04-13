@@ -185,7 +185,7 @@ export default function NextStepSheet({ role, experience, percentile, topCompani
               </button>
 
               <button
-                onClick={() => window.location.href = '/api/auth/linkedin'}
+                onClick={async () => { await supabase.auth.signInWithOAuth({ provider: 'linkedin_oidc', options: { redirectTo: window.location.origin + '/auth/callback', scopes: 'openid profile email' } }); }}
                 style={{
                   display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 14,
                   width: '100%', padding: '18px',
