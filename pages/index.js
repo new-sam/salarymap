@@ -4,6 +4,7 @@ import Head from 'next/head';
 import supabaseClient from '../lib/supabaseClient';
 import CompanyCard from '../components/CompanyCard';
 import SlidePanel from '../components/SlidePanel';
+import CompanyDetailPanel from '../components/CompanyDetailPanel';
 import AnonymousSection from '../components/AnonymousSection';
 import ResultSection from '../components/ResultSection';
 
@@ -1224,8 +1225,13 @@ function SubmitSection({
   setShowOTW,
   isLoggedIn,
   onSubmit,
+  submissionId,
 }) {
   const [submitting, setSubmitting] = useState(false);
+  const [ratingWorklife, setRatingWorklife] = useState(0);
+  const [ratingSalary, setRatingSalary] = useState(0);
+  const [ratingGrowth, setRatingGrowth] = useState(0);
+  const [ratingSubmitting, setRatingSubmitting] = useState(false);
   const [acResults, setAcResults] = useState([]);
   const [acLoading, setAcLoading] = useState(false);
   const [acOpen, setAcOpen] = useState(false);
@@ -1243,7 +1249,40 @@ function SubmitSection({
     setSubmitting(true);
     await onSubmit();
     setSubmitting(false);
+    setWizardStep(5);
   };
+
+  const handleRatingSubmit = async () => {
+    if (!submissionId || (!ratingWorklife && !ratingSalary && !ratingGrowth)) return;
+    setRatingSubmitting(true);
+    try {
+      await fetch('/api/submit-rating', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          submissionId,
+          rating_worklife: ratingWorklife || null,
+          rating_salary: ratingSalary || null,
+          rating_growth: ratingGrowth || null,
+        }),
+      });
+    } catch (e) {}
+    setRatingSubmitting(false);
+  };
+
+  const StarRow = ({ label, value, onChange }) => (
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 0', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+      <span style={{ fontSize: 14, color: 'rgba(255,255,255,0.7)' }}>{label}</span>
+      <div style={{ display: 'flex', gap: 4 }}>
+        {[1, 2, 3, 4, 5].map(n => (
+          <span key={n} onClick={() => onChange(n)}
+            style={{ fontSize: 22, cursor: 'pointer', color: n <= value ? '#f59e0b' : 'rgba(255,255,255,0.15)', transition: 'color .12s' }}>
+            ★
+          </span>
+        ))}
+      </div>
+    </div>
+  );
 
   const isValidCompanyName = (name) => {
     if (!name || name.trim().length < 2) return false;
@@ -1331,10 +1370,10 @@ function SubmitSection({
 
   return (
     <section id="submit" style={{background:'#0c0c0b', padding:'100px 52px 120px', fontFamily:"'Barlow',sans-serif", scrollMarginTop:'64px'}}>
-      <div style={{maxWidth: showResult ? '1200px' : '1060px', margin:'0 auto', display:'grid', gridTemplateColumns: showResult ? '1fr' : '1fr 1fr', gap: showResult ? '0px' : '80px', alignItems:'stretch'}}>
+      <div style={{maxWidth: wizardStep > 5 ? '1200px' : '1060px', margin:'0 auto', display:'grid', gridTemplateColumns: wizardStep > 5 ? '1fr' : '1fr 1fr', gap: wizardStep > 5 ? '0px' : '80px', alignItems:'stretch'}}>
 
         {/* Left column — hidden after submit */}
-        {!showResult && (
+        {wizardStep <= 5 && (
           <div style={{display:'flex', flexDirection:'column', justifyContent:'center'}}>
             <div style={{fontSize:'11px', fontWeight:700, color:'#ff6000', letterSpacing:'2.5px', textTransform:'uppercase', marginBottom:'20px', display:'flex', alignItems:'center', gap:'8px'}}>
               <span style={{width:'5px', height:'5px', borderRadius:'50%', background:'#ff6000', display:'inline-block'}} />
@@ -1365,16 +1404,18 @@ function SubmitSection({
         )}
 
         {/* Right column — wizard or result */}
-        <div style={showResult ? {} : card}>
-          {!showResult ? (
+        <div style={wizardStep > 5 ? {} : card}>
+          {wizardStep <= 5 ? (
             <>
               {/* Progress dots */}
+              {wizardStep <= 4 && (
               <div style={{display:'flex', gap:'6px', marginBottom:'28px'}}>
                 {[1,2,3,4].map(s => (
                   <div key={s} style={{height:'3px', flex:1, borderRadius:'2px', transition:'background .25s',
                     background: s < wizardStep ? '#ff6000' : s === wizardStep ? '#fff' : 'rgba(255,255,255,0.1)'}} />
                 ))}
               </div>
+              )}
 
               {/* Step 1 — Role */}
               {wizardStep === 1 && (
@@ -1579,6 +1620,34 @@ function SubmitSection({
                   <button onClick={() => setWizardStep(3)} style={{...btn, marginTop:'12px', background:'none', color:'rgba(255,255,255,0.35)', fontSize:'12px', display:'block', width:'100%', textAlign:'center'}}>← Back</button>
                 </div>
               )}
+
+              {/* Step 5 — optional rating */}
+              {wizardStep === 5 && (
+                <div>
+                  <div style={{fontSize:'22px', fontWeight:900, color:'#fff', letterSpacing:'-0.5px', marginBottom:'6px'}}>One more thing (optional)</div>
+                  <div style={{fontSize:'13px', color:'rgba(255,255,255,0.4)', marginBottom:'28px'}}>Rate your experience at {wCompany}</div>
+
+                  <StarRow label="Work-life balance" value={ratingWorklife} onChange={setRatingWorklife} />
+                  <StarRow label="Salary fairness" value={ratingSalary} onChange={setRatingSalary} />
+                  <StarRow label="Growth opportunity" value={ratingGrowth} onChange={setRatingGrowth} />
+
+                  <div style={{display:'flex', gap:'10px', marginTop:'28px'}}>
+                    <button
+                      onClick={async () => { await handleRatingSubmit(); setWizardStep(6); }}
+                      disabled={(!ratingWorklife && !ratingSalary && !ratingGrowth) || ratingSubmitting}
+                      style={{...btn, flex:1, background: (ratingWorklife || ratingSalary || ratingGrowth) ? '#ff6000' : 'rgba(255,96,0,0.3)',
+                        color:'#fff', fontSize:'14px', fontWeight:800, padding:'15px', borderRadius:'10px',
+                        cursor: (ratingWorklife || ratingSalary || ratingGrowth) ? 'pointer' : 'not-allowed', transition:'background .15s'}}>
+                      {ratingSubmitting ? 'Saving…' : 'Submit rating'}
+                    </button>
+                    <button
+                      onClick={() => setWizardStep(6)}
+                      style={{...btn, padding:'15px 20px', background:'none', color:'rgba(255,255,255,0.4)', fontSize:'14px', fontWeight:700, borderRadius:'10px'}}>
+                      Skip
+                    </button>
+                  </div>
+                </div>
+              )}
             </>
           ) : (
             /* Result card */
@@ -1626,6 +1695,9 @@ export default function Home() {
   const [showResult, setShowResult] = useState(false);
   const [percentileData, setPercentileData] = useState(null);
   const [showSocialPrompt, setShowSocialPrompt] = useState(false);
+  const [submissionId, setSubmissionId] = useState(null);
+  const [detailCompany, setDetailCompany] = useState(null);
+  const [detailOpen, setDetailOpen] = useState(false);
   const [showOTW, setShowOTW] = useState(false);
   const [otwStep, setOtwStep] = useState('intent'); // 'intent' | 'contact'
   const [selectedOtw, setSelectedOtw] = useState(null);
@@ -1664,14 +1736,14 @@ export default function Home() {
   // Fetch companies from API — re-fetch with role/experience after submission
   useEffect(() => {
     let url = '/api/companies';
-    if (showResult && wRole && wExp) {
+    if (wizardStep > 5 && wRole && wExp) {
       url = `/api/companies?role=${encodeURIComponent(wRole)}&experience=${encodeURIComponent(wExp)}`;
     }
     fetch(url)
       .then(r => r.json())
       .then(data => { if (Array.isArray(data)) setApiCompanies(data); })
       .catch(() => {});
-  }, [showResult]);
+  }, [wizardStep > 5]);
 
   // Mark grid root as ready for portal rendering
   useEffect(() => {
@@ -1689,8 +1761,8 @@ export default function Home() {
   // Company panel bridge + unlock success handler
   useEffect(() => {
     window.openCompanyPanel = (name) => {
-      const c = apiCompanies.find(x => x.company === name);
-      if (c) { setSelectedCompany(c); setPanelOpen(true); }
+      setDetailCompany(name);
+      setDetailOpen(true);
     };
     window.onUnlockSuccess = () => {
       isUnlockedRef.current = true;
@@ -2047,10 +2119,11 @@ export default function Home() {
         setShowOTW={setShowOTW}
         setShowAuthModal={setShowAuthModal}
         isLoggedIn={isLoggedIn}
+        submissionId={submissionId}
         onSubmit={async () => {
           try {
             const { data: { session } } = await supabaseClient.auth.getSession();
-            await fetch('/api/submit', {
+            const submitRes = await fetch('/api/submit', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
@@ -2062,6 +2135,8 @@ export default function Home() {
                 source: new URLSearchParams(window.location.search).get('source') || null,
               }),
             });
+            const submitData = await submitRes.json();
+            if (submitData?.data?.id) setSubmissionId(submitData.data.id);
           } catch(e) {}
           window.onUnlockSuccess?.();
           try {
@@ -2070,7 +2145,6 @@ export default function Home() {
             setPercentileData(data);
           } catch(e) { setPercentileData(null); }
           localStorage.setItem('fyi_submitted', 'true');
-          setShowResult(true);
           setShowSocialPrompt(true);
         }}
       />
@@ -2225,7 +2299,7 @@ export default function Home() {
                       company={c}
                       index={i}
                       isUnlocked={isSubmitted}
-                      onClick={(co) => { setSelectedCompany(co); setPanelOpen(true); }}
+                      onClick={(co) => { setDetailCompany(co.name || co.company); setDetailOpen(true); }}
                       onLockedClick={() => document.getElementById('submit')?.scrollIntoView({ behavior: 'smooth' })}
                     />
                   ))}
@@ -2254,11 +2328,23 @@ export default function Home() {
         )
       }
 
-      {/* Company Slide Panel */}
+      {/* Company Slide Panel (legacy) */}
       <SlidePanel
         company={selectedCompany}
         isOpen={panelOpen}
         onClose={() => setPanelOpen(false)}
+      />
+
+      {/* Company Detail Panel */}
+      <CompanyDetailPanel
+        company={detailCompany}
+        isOpen={detailOpen}
+        onClose={() => setDetailOpen(false)}
+        userRole={wRole || null}
+        userExperience={wExp || null}
+        userSalary={wSalary || null}
+        userCompany={wCompany || null}
+        isSubmitted={isSubmitted}
       />
 
 

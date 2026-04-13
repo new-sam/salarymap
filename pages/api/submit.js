@@ -23,7 +23,9 @@ export default async function handler(req, res) {
 
   const { data, error } = await supabase
     .from('submissions')
-    .insert([record]);
+    .insert([record])
+    .select('id')
+    .single();
 
   console.log('[submit] record:', record);
   console.log('[submit] error:', error);
