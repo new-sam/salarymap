@@ -127,15 +127,16 @@ export default async function handler(req, res) {
 
     if (cErr) throw cErr;
 
-    // 2a. Fetch ALL submissions (unfiltered) for total count per company
+    // 2a. Fetch ALL submissions for total count per company (with salary range filter)
     const allSubmissions = await fetchAll(
-      supabase.from('submissions').select('company')
+      supabase.from('submissions').select('company, salary')
     );
 
-    // Total count per company (no filters)
+    // Total count per company (filtered to valid salary range)
     const totalCountMap = {};
     allSubmissions.forEach(s => {
       if (!s.company) return;
+      if (s.salary < 3 || s.salary > 300) return;
       const key = s.company.trim().toLowerCase();
       totalCountMap[key] = (totalCountMap[key] || 0) + 1;
     });
