@@ -1650,6 +1650,7 @@ function SubmitSection({
                 role={wRole}
                 experience={wExp}
                 company={wCompany}
+                isLoggedIn={isLoggedIn}
               />
             </div>
           )}

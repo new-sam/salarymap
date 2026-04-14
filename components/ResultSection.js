@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import NextStepSheet from './NextStepSheet'
 
-export default function ResultSection({ salary, role, experience, company }) {
+export default function ResultSection({ salary, role, experience, company, isLoggedIn }) {
   const [result, setResult] = useState(null)
 
   useEffect(() => {
@@ -201,8 +201,8 @@ export default function ResultSection({ salary, role, experience, company }) {
 
       </div>
 
-      {/* Bottom sheet — appears 2s after result loads */}
-      {result && (
+      {/* Bottom sheet — appears 2s after result loads, only for non-logged-in users */}
+      {result && !isLoggedIn && (
         <NextStepSheet
           role={role}
           experience={experience}
