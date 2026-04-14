@@ -1303,7 +1303,7 @@ function SubmitSection({
         setAcHighlight(-1);
       } catch { setAcResults([]); }
       setAcLoading(false);
-    }, 300);
+    }, 150);
   };
 
   // Close dropdown on click outside
