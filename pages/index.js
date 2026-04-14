@@ -1835,7 +1835,7 @@ export default function Home() {
             fetch('/api/link-submission', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ submission_id: pendingSid, user_id: session.user.id }),
+              body: JSON.stringify({ submission_id: pendingSid, user_id: session.user.id, email: session.user.email }),
             }).catch(() => {});
             localStorage.removeItem('fyi_submission_id');
           }
