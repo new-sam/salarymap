@@ -735,7 +735,6 @@ const bodyHTML = `<section class="hero">
         </p>
         <div class="wgf-sig" data-wgf="sig">
           <div class="wgf-sig-name">— Director, LikeLion Vietnam</div>
-          <div class="wgf-sig-sub">Founder of FYI Salary · salarymap.vercel.app</div>
         </div>
       </div>
     </div>
