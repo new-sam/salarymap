@@ -1081,7 +1081,7 @@ async function doUnlock(role,exp,sal){
   }catch(e){}
   if(!pctData) pctData=calcPercentile(role,exp,sal);
   const {topPct,median,p25,p75}=pctData;
-  const bar=topPct;
+  const bar=Math.max(2, Math.min(98, Math.round(((sal - p25) / (p75 - p25)) * 100)));
   const vsMedian=Math.round(((sal-median)/median)*100);
   const vsText=vsMedian>=0?\`+\${vsMedian}%\`:\`\${vsMedian}%\`;
   ['bl0','bl1','bl2'].forEach(id=>{
