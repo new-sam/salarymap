@@ -30,104 +30,115 @@ export default function ResultSection({ salary, role, experience, company, isLog
   ]
 
   return (
-    <section style={{
-      background: '#000',
-      padding: '64px 40px 80px',
-      fontFamily: "'Barlow', 'Inter', sans-serif",
-      WebkitFontSmoothing: 'antialiased',
-    }}>
-      {/* Outer gradient container */}
-      <div style={{
-        maxWidth: '1178px',
-        margin: '0 auto',
-        background: 'linear-gradient(180deg, rgba(217,217,217,0) 0%, rgba(255,255,255,0.21) 100%)',
-        borderRadius: '25px',
-        padding: '56px 48px 64px',
-        display: 'grid',
-        gridTemplateColumns: '1fr 1fr',
-        gap: '48px',
-        alignItems: 'start',
-      }}>
+    <section className="result-section">
+      <style>{`
+        .result-section {
+          background: #000;
+          padding: 64px 40px 80px;
+          font-family: 'Barlow', 'Inter', sans-serif;
+          -webkit-font-smoothing: antialiased;
+        }
+        .result-grid {
+          max-width: 1178px;
+          margin: 0 auto;
+          background: linear-gradient(180deg, rgba(217,217,217,0) 0%, rgba(255,255,255,0.21) 100%);
+          border-radius: 25px;
+          padding: 56px 48px 64px;
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 48px;
+          align-items: start;
+        }
+        .result-top-pct { font-size: 82px; font-weight: 700; line-height: 1; letter-spacing: -0.02em; }
+        .result-subtitle { font-size: 20px; }
+        .pill-row { display: flex; gap: 20px; justify-content: center; margin-bottom: 16px; }
+        .pill-body { width: 126px; height: 206px; border-radius: 15px 15px 71px 71px; }
+        .pill-val { font-size: 38px; }
+        .pill-coin { width: 71px; height: 71px; }
+        .pill-coin-symbol { font-size: 42px; }
+        .pill-label { font-size: 24px; }
+        .result-right { padding: 28px 32px; min-height: 460px; }
+        .result-right-title { font-size: 25px; }
+        .result-co-name { font-size: 21px; }
+        .result-co-badge { font-size: 22px; }
+        .result-co-logo { width: 54px; height: 54px; }
 
-        {/* ─── LEFT COLUMN ─── */}
+        @media (max-width: 768px) {
+          .result-section { padding: 40px 16px 60px; }
+          .result-grid {
+            grid-template-columns: 1fr;
+            padding: 32px 20px 40px;
+            gap: 32px;
+          }
+          .result-top-pct { font-size: 52px; }
+          .result-subtitle { font-size: 15px; }
+          .pill-row { gap: 12px; }
+          .pill-body { width: 90px; height: 150px; }
+          .pill-val { font-size: 26px; }
+          .pill-coin { width: 50px; height: 50px; }
+          .pill-coin-symbol { font-size: 30px; }
+          .pill-label { font-size: 16px; }
+          .result-right { padding: 20px 16px; min-height: auto; }
+          .result-right-title { font-size: 18px; }
+          .result-co-name { font-size: 15px; }
+          .result-co-badge { font-size: 14px; }
+          .result-co-logo { width: 40px; height: 40px; }
+        }
+
+        @media (max-width: 400px) {
+          .pill-body { width: 80px; height: 130px; }
+          .pill-val { font-size: 22px; }
+          .pill-coin { width: 42px; height: 42px; }
+          .pill-coin-symbol { font-size: 26px; }
+          .pill-label { font-size: 14px; }
+          .result-top-pct { font-size: 42px; }
+        }
+      `}</style>
+
+      <div className="result-grid">
+
+        {/* LEFT COLUMN */}
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-
-          {/* Your Result */}
           <div style={{ fontSize: '27px', fontWeight: 400, color: '#8f8f8f', marginBottom: '12px' }}>
             Your Result
           </div>
-
-          {/* Top N% */}
           <div style={{ marginBottom: '8px' }}>
-            <span style={{ fontSize: '82px', fontWeight: 700, color: '#fff', lineHeight: 1, letterSpacing: '-0.02em' }}>Top </span>
-            <span style={{ fontSize: '82px', fontWeight: 700, color: '#ff6000', lineHeight: 1, letterSpacing: '-0.02em' }}>{percentile}%</span>
+            <span className="result-top-pct" style={{ color: '#fff' }}>Top </span>
+            <span className="result-top-pct" style={{ color: '#ff6000' }}>{percentile}%</span>
           </div>
-
-          {/* Subtitle */}
-          <div style={{ fontSize: '20px', fontWeight: 400, color: '#fff', marginBottom: '48px', textAlign: 'center' }}>
+          <div className="result-subtitle" style={{ fontWeight: 400, color: '#fff', marginBottom: '48px', textAlign: 'center' }}>
             Among {role} engineers with {experience} experience
           </div>
 
           {/* 3 Pill Cards */}
-          <div style={{ display: 'flex', gap: '20px', justifyContent: 'center', marginBottom: '16px' }}>
+          <div className="pill-row">
             {pillCards.map(({ val, label, accent }) => (
               <div key={label} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                {/* Pill body */}
-                <div style={{
-                  width: '126px',
-                  height: '206px',
+                <div className="pill-body" style={{
                   background: accent ? '#ff6000' : '#fff',
-                  borderRadius: '15px 15px 71px 71px',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'center',
-                  justifyContent: 'flex-start',
-                  paddingTop: '28px',
-                  position: 'relative',
+                  display: 'flex', flexDirection: 'column', alignItems: 'center',
+                  justifyContent: 'flex-start', paddingTop: '28px', position: 'relative',
                 }}>
-                  {/* Value */}
-                  <div style={{
-                    fontSize: '38px',
-                    fontWeight: 800,
-                    color: accent ? '#fff' : '#8f8f8f',
-                    lineHeight: 1.2,
-                    textAlign: 'center',
-                    marginBottom: '12px',
+                  <div className="pill-val" style={{
+                    fontWeight: 800, color: accent ? '#fff' : '#8f8f8f',
+                    lineHeight: 1.2, textAlign: 'center', marginBottom: '12px',
                   }}>
                     {val}
                   </div>
-
-                  {/* $ Coin */}
-                  <div style={{
-                    width: '71px',
-                    height: '71px',
-                    borderRadius: '50%',
-                    background: accent ? '#fff' : '#ff6000',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    position: 'absolute',
-                    bottom: '16px',
+                  <div className="pill-coin" style={{
+                    borderRadius: '50%', background: accent ? '#fff' : '#ff6000',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    position: 'absolute', bottom: '16px',
                   }}>
-                    <span style={{
-                      fontSize: '42px',
-                      fontWeight: 700,
-                      color: accent ? '#ff6000' : '#fff',
-                      lineHeight: 1,
-                      marginTop: '-4px',
+                    <span className="pill-coin-symbol" style={{
+                      fontWeight: 700, color: accent ? '#ff6000' : '#fff',
+                      lineHeight: 1, marginTop: '-4px',
                     }}>₫</span>
                   </div>
                 </div>
-
-                {/* Label below pill */}
-                <div style={{
-                  fontSize: '24px',
-                  fontWeight: 700,
-                  color: accent ? '#ff6000' : '#fff',
-                  textAlign: 'center',
-                  marginTop: '16px',
-                  whiteSpace: 'pre-line',
-                  lineHeight: 1.3,
+                <div className="pill-label" style={{
+                  fontWeight: 700, color: accent ? '#ff6000' : '#fff',
+                  textAlign: 'center', marginTop: '16px', whiteSpace: 'pre-line', lineHeight: 1.3,
                 }}>
                   {label}
                 </div>
@@ -136,22 +147,16 @@ export default function ResultSection({ salary, role, experience, company, isLog
           </div>
         </div>
 
-        {/* ─── RIGHT COLUMN ─── */}
-        <div style={{
+        {/* RIGHT COLUMN */}
+        <div className="result-right" style={{
           background: 'linear-gradient(180deg, rgba(42,42,42,0.08) 0%, rgba(144,144,144,0.27) 100%)',
           borderRadius: '19px',
-          padding: '28px 32px',
-          minHeight: '460px',
         }}>
-          {/* Orange accent bar */}
           <div style={{ width: '126px', height: '8px', background: '#ff6000', borderRadius: '28px', margin: '0 auto 28px' }} />
-
-          {/* Title */}
-          <div style={{ fontSize: '25px', fontWeight: 400, color: '#fff', textAlign: 'center', lineHeight: 1.35, marginBottom: '32px' }}>
+          <div className="result-right-title" style={{ fontWeight: 400, color: '#fff', textAlign: 'center', lineHeight: 1.35, marginBottom: '32px' }}>
             Companies paying more<br />for {role} · {experience}
           </div>
 
-          {/* Company rows */}
           {(!topCompanies || topCompanies.length === 0) && (
             <div style={{ fontSize: '16px', color: 'rgba(255,255,255,0.3)', textAlign: 'center', padding: '40px 0' }}>
               You're already at the top for this role.
@@ -163,19 +168,12 @@ export default function ResultSection({ salary, role, experience, company, isLog
               const initials = co.name.slice(0, 2).toUpperCase()
               return (
                 <div key={i} style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '14px',
-                  padding: '10px 16px',
-                  border: '1px solid #585858',
-                  borderRadius: '9px',
+                  display: 'flex', alignItems: 'center', gap: '12px',
+                  padding: '10px 14px', border: '1px solid #585858', borderRadius: '9px',
                 }}>
-                  {/* Logo */}
-                  <div style={{
-                    width: '54px', height: '54px', borderRadius: '50%',
-                    background: '#222', overflow: 'hidden', flexShrink: 0,
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    position: 'relative',
+                  <div className="result-co-logo" style={{
+                    borderRadius: '50%', background: '#222', overflow: 'hidden', flexShrink: 0,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative',
                   }}>
                     <img
                       src={`https://www.google.com/s2/favicons?domain=${co.domain}&sz=128`}
@@ -185,12 +183,8 @@ export default function ResultSection({ salary, role, experience, company, isLog
                     />
                     <span style={{ fontSize: '14px', fontWeight: 700, color: '#666' }}>{initials}</span>
                   </div>
-
-                  {/* Name */}
-                  <span style={{ fontSize: '21px', fontWeight: 400, color: '#fff', flex: 1 }}>{co.name}</span>
-
-                  {/* Premium badge */}
-                  <span style={{ fontSize: '22px', fontWeight: 700, color: '#b3ff00', whiteSpace: 'nowrap' }}>
+                  <span className="result-co-name" style={{ fontWeight: 400, color: '#fff', flex: 1 }}>{co.name}</span>
+                  <span className="result-co-badge" style={{ fontWeight: 700, color: '#b3ff00', whiteSpace: 'nowrap' }}>
                     +{co.premiumPct}% vs yours
                   </span>
                 </div>

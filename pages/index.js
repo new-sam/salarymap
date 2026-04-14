@@ -610,18 +610,22 @@ nav { position:fixed; top:0; left:0; right:0; z-index:200; padding:0 52px; heigh
   .fyi-submit-grid { grid-template-columns: 1fr; gap: 40px; }
   footer { padding:24px 16px; }
   /* NAV */
-  nav { padding:0 16px; height:52px; }
+  nav { padding:0 12px; height:48px; }
+  .logo { font-size:11px; gap:6px; }
+  .logo img { width:22px !important; height:22px !important; }
   .nav-link { display:none; }
-  .nav-btn { font-size:11px; padding:7px 14px; }
+  .nav-r { gap:8px; }
+  .nav-btn { font-size:10px; padding:6px 10px; white-space:nowrap; }
+  .nav-login-btn { font-size:11px; padding:5px 12px; }
 
   /* HERO */
+  .hero { padding-top:48px; }
   .hero-copy { padding:0 20px; max-width:100%; }
   .hero-h1 { font-size:clamp(28px,8vw,44px); letter-spacing:-1.5px; }
   .hero-sub { font-size:13px; margin-bottom:28px; }
   .hero-btns { flex-direction:column; gap:10px; }
   .btn-p, .btn-g { width:100%; text-align:center; padding:13px 20px; }
   .car-dots, .car-arrows { display:none; }
-
 
   /* TICKER */
   .stream-ticker { padding:0 16px; }
@@ -679,6 +683,11 @@ nav { position:fixed; top:0; left:0; right:0; z-index:200; padding:0 52px; heigh
   .bcard-quote { display:none; }
   .form-line { grid-template-columns:1fr !important; }
   .hero-h1 { font-size:clamp(26px,9vw,36px); }
+  .nav-r { gap:6px; }
+  .nav-btn { font-size:9px; padding:5px 8px; }
+  .nav-user-name { display:none; }
+  .logo span { font-size:0; }
+  .logo span span { font-size:10px; }
 }
 `;
 
@@ -2068,21 +2077,21 @@ export default function Home() {
           {!isLoggedIn ? (
             <button
               onClick={() => setShowAuthModal(true)}
-              style={{fontFamily:"'Barlow',sans-serif", fontSize:'13px', fontWeight:600, color:'rgba(255,255,255,0.5)', background:'none', border:'1px solid rgba(255,255,255,0.15)', padding:'7px 16px', borderRadius:'100px', cursor:'pointer'}}>
+              className="nav-login-btn">
               Log in
             </button>
           ) : (
             <div
-              style={{display:'flex', alignItems:'center', gap:'8px', padding:'5px 12px 5px 5px', borderRadius:'100px', border:'1px solid rgba(255,255,255,0.12)', cursor:'pointer', position:'relative'}}
+              style={{display:'flex', alignItems:'center', gap:'6px', padding:'4px 10px 4px 4px', borderRadius:'100px', border:'1px solid rgba(255,255,255,0.12)', cursor:'pointer', position:'relative', flexShrink:0}}
               onClick={() => setShowUserMenu(prev => !prev)}>
               {user?.user_metadata?.avatar_url ? (
-                <img src={user.user_metadata.avatar_url} style={{width:26,height:26,borderRadius:'50%',objectFit:'cover'}} />
+                <img src={user.user_metadata.avatar_url} style={{width:24,height:24,borderRadius:'50%',objectFit:'cover'}} />
               ) : (
-                <div style={{width:26,height:26,borderRadius:'50%',background:'#ff6000',display:'flex',alignItems:'center',justifyContent:'center',fontSize:11,fontWeight:800,color:'black'}}>
+                <div style={{width:24,height:24,borderRadius:'50%',background:'#ff6000',display:'flex',alignItems:'center',justifyContent:'center',fontSize:10,fontWeight:800,color:'black'}}>
                   {(user?.user_metadata?.full_name || user?.user_metadata?.name || user?.email || 'U')[0].toUpperCase()}
                 </div>
               )}
-              <span style={{fontSize:13,fontWeight:600,color:'rgba(255,255,255,0.7)'}}>
+              <span className="nav-user-name" style={{fontSize:12,fontWeight:600,color:'rgba(255,255,255,0.7)',whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis',maxWidth:'80px'}}>
                 {(user?.user_metadata?.full_name || user?.user_metadata?.name)?.split(' ')[0] || user?.email?.split('@')[0] || 'Account'}
               </span>
               <span style={{fontSize:10,color:'rgba(255,255,255,0.3)'}}>▾</span>

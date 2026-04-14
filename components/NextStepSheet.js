@@ -63,7 +63,7 @@ export default function NextStepSheet({ role, experience, percentile, topCompani
           margin: '0 auto 28px',
         }} />
 
-        <div style={{ padding: '0 40px 48px', maxWidth: '600px', margin: '0 auto' }}>
+        <div style={{ padding: '0 24px 40px', maxWidth: '600px', margin: '0 auto' }}>
 
           {/* ═══ STEP: CTA ═══ */}
           {step === 'cta' && (
