@@ -10,7 +10,7 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const { role, experience, salary, company, source, email, user_id } = req.body;
+  const { role, experience, salary, company, source, email, user_id, utm_source, utm_medium, utm_campaign } = req.body;
 
   if (!role || !experience || !salary) {
     return res.status(400).json({ error: 'role, experience, salary are required.' });
@@ -43,6 +43,9 @@ export default async function handler(req, res) {
   // Insert into existing submissions table (anonymous, no user link)
   const record = { role, experience, salary: salNum, company: company?.trim() || null, source };
   if (email && email.trim()) record.email = email.trim();
+  if (utm_source) record.utm_source = utm_source;
+  if (utm_medium) record.utm_medium = utm_medium;
+  if (utm_campaign) record.utm_campaign = utm_campaign;
 
   const { data, error } = await supabase
     .from('submissions')

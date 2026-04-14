@@ -1143,7 +1143,7 @@ async function unlock(){
   const c=document.getElementById('f-co')?document.getElementById('f-co').value:'';
   if(!r||!e||!s||!c){ alert('Please fill in all fields including your company name.'); return; }
   const urlParams=new URLSearchParams(window.location.search);
-  const source=urlParams.get('source')||(window.location.hostname==='localhost'?'qa-local':'direct');
+  const source=sessionStorage.getItem('utm_source')||urlParams.get('source')||(window.location.hostname==='localhost'?'qa-local':'direct');
   const email=document.getElementById('f-email')?.value||'';
   submitSalary(r,e,s,c,source,email);
   if(await doUnlock(r,e,s)) setTimeout(()=>document.getElementById('full-feed').scrollIntoView({behavior:'smooth'}),300);
@@ -1797,7 +1797,14 @@ export default function Home() {
 
   // Session: check on mount + detect login=success + listen for auth changes
   useEffect(() => {
-    const isLoginSuccess = new URLSearchParams(window.location.search).get('login') === 'success';
+    // Capture UTM params on landing — persist in sessionStorage so they survive page navigation
+    const params = new URLSearchParams(window.location.search);
+    ['utm_source','utm_medium','utm_campaign'].forEach(k => {
+      const v = params.get(k);
+      if (v) sessionStorage.setItem(k, v);
+    });
+
+    const isLoginSuccess = params.get('login') === 'success';
 
     // isLoggedIn: always read from Supabase session on mount
     supabaseClient.auth.getSession().then(({ data: { session } }) => {
@@ -2111,7 +2118,10 @@ export default function Home() {
                 salary: wSalary,
                 company: wCompany,
                 user_id: session?.user?.id || null,
-                source: new URLSearchParams(window.location.search).get('source') || (window.location.hostname === 'localhost' ? 'qa-local' : 'direct'),
+                source: sessionStorage.getItem('utm_source') || (window.location.hostname === 'localhost' ? 'qa-local' : 'direct'),
+                utm_source: sessionStorage.getItem('utm_source') || null,
+                utm_medium: sessionStorage.getItem('utm_medium') || null,
+                utm_campaign: sessionStorage.getItem('utm_campaign') || null,
               }),
             });
             const submitData = await submitRes.json();
