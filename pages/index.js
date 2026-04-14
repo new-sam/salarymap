@@ -1879,15 +1879,15 @@ export default function Home() {
   useEffect(() => {
     const messages = [
       `<b class="co">Grab Vietnam</b> · Backend Engineer just shared their salary.`,
-      `<b class="co">12 engineers</b> submitted new salary data in the last <b>hour</b>.`,
+      `<b class="co">12 engineers</b>&nbsp;submitted new salary data in the last&nbsp;<b>hour</b>.`,
       `<b class="co">Shopee Vietnam</b> · Mobile Developer just shared their salary.`,
-      `Data from <b>47 companies</b> including <b class="co">FPT · VNG · Tiki</b> is being updated now.`,
+      `Data from&nbsp;<b>47 companies</b>&nbsp;including&nbsp;<b class="co">FPT · VNG · Tiki</b>&nbsp;is being updated now.`,
       `<b class="co">Sky Mavis</b> · Senior Backend Engineer just shared their salary.`,
-      `<b>38 engineers</b> shared their salary and <b>unlocked full data</b> today.`,
+      `<b>38 engineers</b>&nbsp;shared their salary and&nbsp;<b>unlocked full data</b>&nbsp;today.`,
       `<b class="co">Momo</b> · Data Engineer just shared their salary.`,
-      `New salary data from <b class="co">Techcombank</b> was just added. <span class="dim">3 min ago</span>`,
+      `New salary data from&nbsp;<b class="co">Techcombank</b>&nbsp;was just added.&nbsp;<span class="dim">3 min ago</span>`,
       `<b class="co">VNG Corporation</b> · DevOps Engineer just shared their salary.`,
-      `Someone is viewing this page right now. <b class="co">Where does your salary stand?</b>`,
+      `Someone is viewing this page right now.&nbsp;<b class="co">Where does your salary stand?</b>`,
     ];
 
     const wrap = document.getElementById('liveMsgWrap');
