@@ -2031,7 +2031,7 @@ export default function Home() {
           <span>FOR YOUR <span style={{color:'var(--orange)'}}>&#39;SALARY&#39;</span> INFORMATION</span>
         </div>
         <div className="nav-r">
-          <button className="nav-link" onClick={() => document.getElementById('submit')?.scrollIntoView({behavior:'smooth'})}>Tôi có bị trả thấp?</button>
+          <button className="nav-link" onClick={() => document.getElementById('submit')?.scrollIntoView({behavior:'smooth'})}>Am I underpaid?</button>
           <button className="nav-link" onClick={() => document.getElementById('companies')?.scrollIntoView({behavior:'smooth'})}>Who pays the most?</button>
           <a className="nav-link" href="/how-it-works">How it works</a>
 
