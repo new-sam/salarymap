@@ -1694,8 +1694,8 @@ export default function Home() {
   const [user, setUser] = useState(null);
   const [showUserMenu, setShowUserMenu] = useState(false);
 
-  // Derived: card/panel unlock state — a card is locked only when index >= 3 && !isUnlocked
-  const isUnlocked = isSubmitted || isLoggedIn;
+  // Derived: card/panel unlock state — only unlocked after submitting salary info
+  const isUnlocked = isSubmitted;
 
   // Stable refs for PRE/POST dangerouslySetInnerHTML
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -1797,27 +1797,28 @@ export default function Home() {
 
   // Session: check on mount + detect login=success + listen for auth changes
   useEffect(() => {
-    // STATE B: restore submission state from localStorage
-    const submitted = localStorage.getItem('fyi_submitted') === 'true';
     const isLoginSuccess = new URLSearchParams(window.location.search).get('login') === 'success';
-    setIsSubmitted(submitted);
-    if (submitted) {
-      const sr = localStorage.getItem('fyi_role');
-      const se = localStorage.getItem('fyi_exp');
-      const ss = localStorage.getItem('fyi_salary');
-      const sc = localStorage.getItem('fyi_company');
-      if (sr) setWRole(sr);
-      if (se) setWExp(se);
-      if (ss) setWSalary(Number(ss));
-      if (sc) setWCompany(sc);
-    }
-    // showResult: always false on page load — never restore from storage
 
     // isLoggedIn: always read from Supabase session on mount
     supabaseClient.auth.getSession().then(({ data: { session } }) => {
       if (session) {
         setIsLoggedIn(true);
         setUser(session.user);
+
+        // Only restore submission state for logged-in users
+        const submitted = localStorage.getItem('fyi_submitted') === 'true';
+        if (submitted) {
+          setIsSubmitted(true);
+          const sr = localStorage.getItem('fyi_role');
+          const se = localStorage.getItem('fyi_exp');
+          const ss = localStorage.getItem('fyi_salary');
+          const sc = localStorage.getItem('fyi_company');
+          if (sr) setWRole(sr);
+          if (se) setWExp(se);
+          if (ss) setWSalary(Number(ss));
+          if (sc) setWCompany(sc);
+        }
+
         // Handle ?login=success redirect from OAuth
         if (isLoginSuccess) {
           saveUserProfile(session.user);
