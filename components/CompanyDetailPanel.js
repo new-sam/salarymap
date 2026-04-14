@@ -160,7 +160,7 @@ export default function CompanyDetailPanel({
       <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
         <div style={{
           width: 42, height: 42, borderRadius: 10, flexShrink: 0,
-          background: '#ff4400',
+          background: '#ff6000',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           fontSize: 12, fontWeight: 800, color: '#fff',
         }}>{company.slice(0, 3).toUpperCase()}</div>
@@ -189,7 +189,7 @@ export default function CompanyDetailPanel({
             <div key={s.label} style={{
               background: 'rgba(255,255,255,0.06)', borderRadius: 8, padding: '10px 10px', textAlign: 'center',
             }}>
-              <div style={{ fontSize: 16, fontWeight: 700, color: s.accent ? '#ff4400' : '#fff' }}>{s.value}</div>
+              <div style={{ fontSize: 16, fontWeight: 700, color: s.accent ? '#ff6000' : '#fff' }}>{s.value}</div>
               <div style={{ fontSize: 9, color: 'rgba(255,255,255,0.3)', marginTop: 2, letterSpacing: '0.04em' }}>{s.label}</div>
             </div>
           ))}
@@ -268,8 +268,8 @@ export default function CompanyDetailPanel({
               border: s.hl ? '1.5px solid #ffcab3' : '1.5px solid transparent',
               borderRadius: 12, padding: '16px 10px', textAlign: 'center',
             }}>
-              <div style={{ fontSize: 22, fontWeight: 800, color: s.hl ? '#ff4400' : '#1a1a1a', letterSpacing: '-0.02em' }}>{s.value}</div>
-              <div style={{ fontSize: 10, fontWeight: 600, color: s.hl ? '#ff4400' : '#888', marginTop: 4 }}>{s.label}</div>
+              <div style={{ fontSize: 22, fontWeight: 800, color: s.hl ? '#ff6000' : '#1a1a1a', letterSpacing: '-0.02em' }}>{s.value}</div>
+              <div style={{ fontSize: 10, fontWeight: 600, color: s.hl ? '#ff6000' : '#888', marginTop: 4 }}>{s.label}</div>
             </div>
           ))}
         </div>
@@ -298,13 +298,13 @@ export default function CompanyDetailPanel({
         <div style={{ position: 'relative', height: 6, background: '#eee', borderRadius: 3 }}>
           <div style={{
             position: 'absolute', top: 0, left: 0, height: 6, borderRadius: 3,
-            background: 'linear-gradient(90deg, #ffcab3, #ff4400)',
+            background: 'linear-gradient(90deg, #ffcab3, #ff6000)',
             width: '100%',
           }} />
           {/* Median marker */}
           <div style={{
             position: 'absolute', top: -4, width: 14, height: 14, borderRadius: '50%',
-            background: '#ff4400', border: '2px solid #fff',
+            background: '#ff6000', border: '2px solid #fff',
             left: `${medPos}%`, transform: 'translateX(-50%)',
           }} />
           {/* You marker */}
@@ -319,7 +319,7 @@ export default function CompanyDetailPanel({
         {/* Labels */}
         <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 8, fontSize: 9, color: '#aaa' }}>
           <span>{fmtShort(summaryData.min)}</span>
-          <span style={{ color: '#ff4400', fontWeight: 600 }}>● median {fmtShort(summaryData.median)}</span>
+          <span style={{ color: '#ff6000', fontWeight: 600 }}>● median {fmtShort(summaryData.median)}</span>
           {youPos !== null && <span style={{ color: '#111', fontWeight: 600 }}>● you {fmtShort(userSalary)}</span>}
           <span>{fmtShort(summaryData.max)}</span>
         </div>
@@ -368,7 +368,7 @@ export default function CompanyDetailPanel({
   const renderFeedRow = (row, i) => {
     const isYou = checkIsYou(row)
     const bg = isYou ? '#fff4f0' : row.mostSimilar ? '#f0fff4' : '#f7f7f7'
-    const bd = isYou ? '1.5px solid #ff4400' : row.mostSimilar ? '1px solid #86efac' : 'none'
+    const bd = isYou ? '1.5px solid #ff6000' : row.mostSimilar ? '1px solid #86efac' : 'none'
     return (
       <div key={i} style={{
         background: bg, border: bd, borderRadius: 10, padding: '10px 13px',
@@ -377,13 +377,13 @@ export default function CompanyDetailPanel({
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
             <span style={{ fontSize: 13, fontWeight: 600, color: '#1a1a1a' }}>{row.role}</span>
-            {isYou && <span style={{ fontSize: 9, fontWeight: 700, color: '#ff4400', background: 'rgba(255,68,0,0.08)', padding: '1px 6px', borderRadius: 3 }}>YOU</span>}
+            {isYou && <span style={{ fontSize: 9, fontWeight: 700, color: '#ff6000', background: 'rgba(255,68,0,0.08)', padding: '1px 6px', borderRadius: 3 }}>YOU</span>}
             {!isYou && row.mostSimilar && isSubmitted && <span style={{ fontSize: 9, fontWeight: 700, color: '#22c55e', background: 'rgba(34,197,94,0.08)', padding: '1px 6px', borderRadius: 3 }}>similar</span>}
           </div>
           <div style={{ fontSize: 10, color: '#999', marginTop: 2 }}>{fmtExp(row.experience)}</div>
         </div>
         <div style={{ textAlign: 'right', flexShrink: 0 }}>
-          <div style={{ fontSize: 15, fontWeight: 700, color: isYou ? '#ff4400' : '#1a1a1a' }}>{fmt(row.salary)}</div>
+          <div style={{ fontSize: 15, fontWeight: 700, color: isYou ? '#ff6000' : '#1a1a1a' }}>{fmt(row.salary)}</div>
           <div style={{ fontSize: 9, color: '#bbb', marginTop: 1 }}>per month</div>
         </div>
       </div>
@@ -547,7 +547,7 @@ export default function CompanyDetailPanel({
       </div>
       <button onClick={() => { onClose(); document.getElementById('submit')?.scrollIntoView({ behavior: 'smooth' }) }} style={{
         width: '100%', padding: '14px 0',
-        background: '#ff4400', border: 'none', borderRadius: 12,
+        background: '#ff6000', border: 'none', borderRadius: 12,
         fontSize: 14, fontWeight: 700, color: '#fff', cursor: 'pointer', fontFamily: 'inherit',
       }}>Submit my salary → unlock</button>
       <div style={{ fontSize: 10, color: '#bbb', marginTop: 10 }}>

@@ -6,9 +6,14 @@ export default function ResultSection({ salary, role, experience, company }) {
 
   useEffect(() => {
     async function fetchResult() {
-      const res = await fetch(`/api/result?salary=${salary}&role=${encodeURIComponent(role)}&experience=${encodeURIComponent(experience)}&company=${encodeURIComponent(company)}`)
-      const data = await res.json()
-      setResult(data)
+      try {
+        const res = await fetch(`/api/result?salary=${salary}&role=${encodeURIComponent(role)}&experience=${encodeURIComponent(experience)}&company=${encodeURIComponent(company)}`)
+        if (!res.ok) return
+        const data = await res.json()
+        setResult(data)
+      } catch(e) {
+        // network error — silent fail, component stays hidden
+      }
     }
     if (salary) fetchResult()
   }, [salary, role, experience, company])
@@ -55,7 +60,7 @@ export default function ResultSection({ salary, role, experience, company }) {
           {/* Top N% */}
           <div style={{ marginBottom: '8px' }}>
             <span style={{ fontSize: '82px', fontWeight: 700, color: '#fff', lineHeight: 1, letterSpacing: '-0.02em' }}>Top </span>
-            <span style={{ fontSize: '82px', fontWeight: 700, color: '#ff4400', lineHeight: 1, letterSpacing: '-0.02em' }}>{percentile}%</span>
+            <span style={{ fontSize: '82px', fontWeight: 700, color: '#ff6000', lineHeight: 1, letterSpacing: '-0.02em' }}>{percentile}%</span>
           </div>
 
           {/* Subtitle */}
@@ -71,7 +76,7 @@ export default function ResultSection({ salary, role, experience, company }) {
                 <div style={{
                   width: '126px',
                   height: '206px',
-                  background: accent ? '#ff4400' : '#fff',
+                  background: accent ? '#ff6000' : '#fff',
                   borderRadius: '15px 15px 71px 71px',
                   display: 'flex',
                   flexDirection: 'column',
@@ -97,7 +102,7 @@ export default function ResultSection({ salary, role, experience, company }) {
                     width: '71px',
                     height: '71px',
                     borderRadius: '50%',
-                    background: accent ? '#fff' : '#ff4400',
+                    background: accent ? '#fff' : '#ff6000',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
@@ -107,7 +112,7 @@ export default function ResultSection({ salary, role, experience, company }) {
                     <span style={{
                       fontSize: '42px',
                       fontWeight: 700,
-                      color: accent ? '#ff4400' : '#fff',
+                      color: accent ? '#ff6000' : '#fff',
                       lineHeight: 1,
                       marginTop: '-4px',
                     }}>₫</span>
@@ -118,7 +123,7 @@ export default function ResultSection({ salary, role, experience, company }) {
                 <div style={{
                   fontSize: '24px',
                   fontWeight: 700,
-                  color: accent ? '#ff4400' : '#fff',
+                  color: accent ? '#ff6000' : '#fff',
                   textAlign: 'center',
                   marginTop: '16px',
                   whiteSpace: 'pre-line',
@@ -139,7 +144,7 @@ export default function ResultSection({ salary, role, experience, company }) {
           minHeight: '460px',
         }}>
           {/* Orange accent bar */}
-          <div style={{ width: '126px', height: '8px', background: '#ff4400', borderRadius: '28px', margin: '0 auto 28px' }} />
+          <div style={{ width: '126px', height: '8px', background: '#ff6000', borderRadius: '28px', margin: '0 auto 28px' }} />
 
           {/* Title */}
           <div style={{ fontSize: '25px', fontWeight: 400, color: '#fff', textAlign: 'center', lineHeight: 1.35, marginBottom: '32px' }}>

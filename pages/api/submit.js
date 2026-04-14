@@ -53,17 +53,13 @@ export default async function handler(req, res) {
     .select('id')
     .single();
 
-  console.log('[submit] record:', record);
-  console.log('[submit] error:', error);
-  console.log('[submit] data:', data);
-
   if (error) {
     return res.status(500).json({ error: error.message });
   }
 
   // Also insert into salary_submissions to link to user (if logged in)
   if (!supabaseAdmin) {
-    console.log('[submit] skipping salary_submissions — no service role key');
+    // no service role key — skip salary_submissions
   } else {
   const { error: ssError } = await supabaseAdmin
     .from('salary_submissions')

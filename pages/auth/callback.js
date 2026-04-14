@@ -12,10 +12,9 @@ async function saveProfile(user) {
       provider: user.app_metadata?.provider || null,
       updated_at: new Date().toISOString(),
     }, { onConflict: 'id' })
-    if (error) console.error('Profile upsert error:', error)
-    else console.log('✅ Profile saved for', user.email)
+    // silent on success/error
   } catch(e) {
-    console.error('saveProfile error:', e)
+    // silent fail
   }
 }
 
@@ -29,13 +28,11 @@ export default function AuthCallback() {
         const { data, error } = await supabase.auth.getSession()
 
         if (error) {
-          console.error('Auth callback error:', error)
           router.replace('/')
           return
         }
 
         if (data.session) {
-          console.log('Session found:', data.session.user.email)
           await saveProfile(data.session.user)
           router.replace('/?login=success')
           return
@@ -53,14 +50,14 @@ export default function AuthCallback() {
             await saveProfile(exchangeData.session.user)
             router.replace('/?login=success')
           } else {
-            console.error('Exchange error:', exchangeError)
+            // exchange failed
             router.replace('/')
           }
         } else {
           router.replace('/')
         }
       } catch (err) {
-        console.error('Callback error:', err)
+        // callback failed
         router.replace('/')
       }
     }
@@ -77,7 +74,7 @@ export default function AuthCallback() {
     }}>
       <div style={{
         width:'40px', height:'40px', borderRadius:'50%',
-        border:'3px solid #FF6200', borderTopColor:'transparent',
+        border:'3px solid #ff6000', borderTopColor:'transparent',
         animation:'spin 0.8s linear infinite'
       }}/>
       <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>

@@ -119,7 +119,7 @@ export default function NextStepSheet({ role, experience, percentile, topCompani
                 style={{
                   width: '100%', padding: '20px',
                   borderRadius: 16, border: 'none',
-                  background: '#ff4400', cursor: 'pointer',
+                  background: '#ff6000', cursor: 'pointer',
                   fontSize: 18, fontWeight: 800, color: '#fff',
                   marginBottom: 12, fontFamily: 'inherit',
                   boxShadow: '0 6px 24px rgba(255,68,0,0.3)',
