@@ -1839,6 +1839,16 @@ export default function Home() {
             }).catch(() => {});
             localStorage.removeItem('fyi_submission_id');
           }
+          // Set otw if user clicked "Yes — connect me with headhunter"
+          const intent = localStorage.getItem('fyi_intent');
+          if (intent === 'open') {
+            supabaseClient
+              .from('user_profiles')
+              .update({ otw: 'yes' })
+              .eq('id', session.user.id)
+              .then(() => {});
+            localStorage.removeItem('fyi_intent');
+          }
           window.history.replaceState({}, '', '/');
         }
       } else {
