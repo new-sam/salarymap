@@ -1143,7 +1143,7 @@ async function unlock(){
   const c=document.getElementById('f-co')?document.getElementById('f-co').value:'';
   if(!r||!e||!s||!c){ alert('Please fill in all fields including your company name.'); return; }
   const urlParams=new URLSearchParams(window.location.search);
-  const source=urlParams.get('source')||'direct';
+  const source=urlParams.get('source')||(window.location.hostname==='localhost'?'qa-local':'direct');
   const email=document.getElementById('f-email')?.value||'';
   submitSalary(r,e,s,c,source,email);
   if(await doUnlock(r,e,s)) setTimeout(()=>document.getElementById('full-feed').scrollIntoView({behavior:'smooth'}),300);
@@ -2111,7 +2111,7 @@ export default function Home() {
                 salary: wSalary,
                 company: wCompany,
                 user_id: session?.user?.id || null,
-                source: new URLSearchParams(window.location.search).get('source') || null,
+                source: new URLSearchParams(window.location.search).get('source') || (window.location.hostname === 'localhost' ? 'qa-local' : 'direct'),
               }),
             });
             const submitData = await submitRes.json();
