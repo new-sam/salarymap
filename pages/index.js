@@ -6,6 +6,7 @@ import CompanyCard from '../components/CompanyCard';
 import CompanyDetailPanel from '../components/CompanyDetailPanel';
 import AnonymousSection from '../components/AnonymousSection';
 import ResultSection from '../components/ResultSection';
+import ContactSheet from '../components/ContactSheet';
 
 const css = `
 *, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
@@ -1691,6 +1692,7 @@ export default function Home() {
   const [detailOpen, setDetailOpen] = useState(false);
   const [detailCardIndex, setDetailCardIndex] = useState(0);
   const [showAuthModal, setShowAuthModal] = useState(false);
+  const [showContactSheet, setShowContactSheet] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [user, setUser] = useState(null);
   const [showUserMenu, setShowUserMenu] = useState(false);
@@ -1839,7 +1841,7 @@ export default function Home() {
             }).catch(() => {});
             localStorage.removeItem('fyi_submission_id');
           }
-          // Set otw if user clicked "Yes — connect me with headhunter"
+          // Show contact sheet if user clicked "Yes — connect me with headhunter"
           const intent = localStorage.getItem('fyi_intent');
           if (intent === 'open') {
             supabaseClient
@@ -1848,6 +1850,7 @@ export default function Home() {
               .eq('id', session.user.id)
               .then(() => {});
             localStorage.removeItem('fyi_intent');
+            setShowContactSheet(true);
           }
           window.history.replaceState({}, '', '/');
         }
@@ -2380,6 +2383,14 @@ export default function Home() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Contact collection sheet — after headhunter opt-in + login */}
+      {showContactSheet && user && (
+        <ContactSheet
+          user={user}
+          onClose={() => setShowContactSheet(false)}
+        />
       )}
     </div>
   );
