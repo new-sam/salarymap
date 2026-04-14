@@ -40,8 +40,9 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: 'Please enter a real company name.' });
   }
 
-  // Insert into existing submissions table (anonymous, no user link)
+  // Insert into submissions table — link to user if logged in
   const record = { role, experience, salary: salNum, company: company?.trim() || null, source };
+  if (user_id) record.user_id = user_id;
   if (email && email.trim()) record.email = email.trim();
   if (utm_source) record.utm_source = utm_source;
   if (utm_medium) record.utm_medium = utm_medium;
@@ -73,10 +74,7 @@ export default async function handler(req, res) {
       created_at: new Date().toISOString(),
     });
 
-  if (ssError) {
-    console.error('[submit] salary_submissions error:', ssError.message);
-    // Non-fatal — don't fail the request
-  }
+  // ssError is non-fatal — don't fail the request
   } // end supabaseAdmin block
 
   // Auto-add company to companies table if not exists

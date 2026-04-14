@@ -1828,6 +1828,16 @@ export default function Home() {
         // Handle ?login=success redirect from OAuth
         if (isLoginSuccess) {
           saveUserProfile(session.user);
+          // Link prior anonymous submission to this user
+          const pendingSid = localStorage.getItem('fyi_submission_id');
+          if (pendingSid) {
+            fetch('/api/link-submission', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ submission_id: pendingSid, user_id: session.user.id }),
+            }).catch(() => {});
+            localStorage.removeItem('fyi_submission_id');
+          }
           window.history.replaceState({}, '', '/');
         }
       } else {
@@ -2123,7 +2133,10 @@ export default function Home() {
               }),
             });
             const submitData = await submitRes.json();
-            if (submitData?.data?.id) setSubmissionId(submitData.data.id);
+            if (submitData?.data?.id) {
+              setSubmissionId(submitData.data.id);
+              localStorage.setItem('fyi_submission_id', submitData.data.id);
+            }
           } catch(e) {}
           window.onUnlockSuccess?.();
           try {
