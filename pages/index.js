@@ -693,7 +693,7 @@ const bodyHTML = `<section class="hero">
     <h1 class="hero-h1">What does<br><span id="typed-company"></span><span class="typed-cursor"></span><br>actually pay?</h1>
     <p class="hero-sub">Check if you're being underpaid — based on real salary data from engineers at Vietnam's top IT companies.</p>
     <div class="hero-btns">
-      <button class="btn-p" onclick="document.getElementById('submit').scrollIntoView({behavior:'smooth'})">Am I Underpaid? →</button>
+      <button class="btn-p" onclick="document.getElementById('submit').scrollIntoView({behavior:'smooth'})">Tôi có bị trả thấp? →</button>
     </div>
   </div>
   <div class="hero-live-bar">
@@ -751,7 +751,7 @@ const bodyHTML = `<section class="hero">
     <div class="wgf-bottom-cta">
       <p>We showed ours. <strong>Now find out where you stand.</strong></p>
       <button class="wgf-cta-btn" onclick="document.getElementById('submit').scrollIntoView({behavior:'smooth'})">
-        Am I Underpaid? →
+        Tôi có bị trả thấp? →
       </button>
     </div>
   </div>
@@ -1841,8 +1841,6 @@ export default function Home() {
         if (event === 'SIGNED_OUT') {
           setIsLoggedIn(false);
           setUser(null);
-          setShowResult(false);
-          // isSubmitted stays as is
         }
       }
     );
@@ -2034,7 +2032,7 @@ export default function Home() {
           <span>FOR YOUR <span style={{color:'var(--orange)'}}>&#39;SALARY&#39;</span> INFORMATION</span>
         </div>
         <div className="nav-r">
-          <button className="nav-link" onClick={() => document.getElementById('submit')?.scrollIntoView({behavior:'smooth'})}>Am I underpaid?</button>
+          <button className="nav-link" onClick={() => document.getElementById('submit')?.scrollIntoView({behavior:'smooth'})}>Tôi có bị trả thấp?</button>
           <button className="nav-link" onClick={() => document.getElementById('companies')?.scrollIntoView({behavior:'smooth'})}>Who pays the most?</button>
           <a className="nav-link" href="/how-it-works">How it works</a>
 
