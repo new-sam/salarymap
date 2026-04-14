@@ -2126,6 +2126,7 @@ export default function Home() {
                 salary: wSalary,
                 company: wCompany,
                 user_id: session?.user?.id || null,
+                email: session?.user?.email || null,
                 source: sessionStorage.getItem('utm_source') || (window.location.hostname === 'localhost' ? 'qa-local' : 'direct'),
                 utm_source: sessionStorage.getItem('utm_source') || null,
                 utm_medium: sessionStorage.getItem('utm_medium') || null,
