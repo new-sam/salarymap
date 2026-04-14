@@ -101,6 +101,18 @@
           }
         ]
       }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "powershell.exe -ExecutionPolicy Bypass -File \"C:\\Users\\slsvm\\.claude\\scripts\\save-clipboard-image.ps1\" 2>/dev/null || true",
+            "timeout": 10,
+            "statusMessage": "Checking clipboard for screenshot..."
+          }
+        ]
+      }
     ]
   }
 }
