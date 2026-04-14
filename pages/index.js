@@ -2280,7 +2280,7 @@ export default function Home() {
                       key={c.company}
                       company={c}
                       index={i}
-                      isUnlocked={isSubmitted}
+                      isUnlocked={isUnlocked}
                       onClick={(co) => { setDetailCompany(co.name || co.company); setDetailCardIndex(i); setDetailOpen(true); }}
                       onLockedClick={() => document.getElementById('submit')?.scrollIntoView({ behavior: 'smooth' })}
                     />
@@ -2319,7 +2319,7 @@ export default function Home() {
         userExperience={wExp || null}
         userSalary={wSalary || null}
         userCompany={wCompany || null}
-        isSubmitted={isSubmitted}
+        isSubmitted={isUnlocked}
         cardIndex={detailCardIndex}
       />
 
