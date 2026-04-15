@@ -285,43 +285,59 @@ export default function CompanyDetailPanel({
   const renderDistribution = () => {
     if (!isSubmitted || !summaryData || summaryData.max === summaryData.min) return null
     const medPos = distPct(summaryData.median)
+    const youExceedsMax = userSalary && userSalary > summaryData.max
+    const youBelowMin = userSalary && userSalary < summaryData.min
+    const youInRange = userSalary && !youExceedsMax && !youBelowMin
     const youPos = userSalary ? distPct(userSalary) : null
+    // For display: extend the visual range if user exceeds
+    const displayMax = youExceedsMax ? userSalary : summaryData.max
+    const displayMin = youBelowMin ? userSalary : summaryData.min
+    const displayRange = displayMax - displayMin
+    const extMedPos = displayRange > 0 ? Math.round(((summaryData.median - displayMin) / displayRange) * 100) : 50
+    const extYouPos = userSalary && displayRange > 0 ? Math.round(((userSalary - displayMin) / displayRange) * 100) : null
+    const barWidth = displayRange > 0 ? Math.round(((summaryData.max - summaryData.min) / displayRange) * 100) : 100
+    const barLeft = displayRange > 0 ? Math.round(((summaryData.min - displayMin) / displayRange) * 100) : 0
     return (
       <div style={{ margin: '14px 0 18px' }}>
         <div style={{ fontSize: 11, fontWeight: 700, color: '#333', marginBottom: 4 }}>
           Where you stand
         </div>
         <div style={{ fontSize: 11, color: '#999', lineHeight: 1.5, marginBottom: 10 }}>
-          The bar below shows the full salary range at this company. The orange dot is the median, and the dark dot is your salary.
+          {youExceedsMax
+            ? `Your salary (${fmtShort(userSalary)}) exceeds this company's range (${fmtShort(summaryData.min)}–${fmtShort(summaryData.max)}).`
+            : youBelowMin
+            ? `Your salary (${fmtShort(userSalary)}) is below this company's range (${fmtShort(summaryData.min)}–${fmtShort(summaryData.max)}).`
+            : 'The bar shows the salary range. Orange dot = median, dark dot = your salary.'}
         </div>
         {/* Track */}
-        <div style={{ position: 'relative', height: 6, background: '#eee', borderRadius: 3 }}>
+        <div style={{ position: 'relative', height: 6, background: '#f0f0f0', borderRadius: 3 }}>
+          {/* Company range bar */}
           <div style={{
-            position: 'absolute', top: 0, left: 0, height: 6, borderRadius: 3,
+            position: 'absolute', top: 0, left: `${barLeft}%`, height: 6, borderRadius: 3,
             background: 'linear-gradient(90deg, #ffcab3, #ff6000)',
-            width: '100%',
+            width: `${barWidth}%`,
           }} />
           {/* Median marker */}
           <div style={{
             position: 'absolute', top: -4, width: 14, height: 14, borderRadius: '50%',
             background: '#ff6000', border: '2px solid #fff',
-            left: `${medPos}%`, transform: 'translateX(-50%)',
+            left: `${extMedPos}%`, transform: 'translateX(-50%)',
           }} />
           {/* You marker */}
-          {youPos !== null && (
+          {extYouPos !== null && (
             <div style={{
               position: 'absolute', top: -4, width: 14, height: 14, borderRadius: '50%',
               background: '#111', border: '2px solid #fff',
-              left: `${youPos}%`, transform: 'translateX(-50%)',
+              left: `${extYouPos}%`, transform: 'translateX(-50%)',
             }} />
           )}
         </div>
         {/* Labels */}
         <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 8, fontSize: 9, color: '#aaa' }}>
-          <span>{fmtShort(summaryData.min)}</span>
+          <span>{fmtShort(youBelowMin ? userSalary : summaryData.min)}</span>
           <span style={{ color: '#ff6000', fontWeight: 600 }}>● median {fmtShort(summaryData.median)}</span>
-          {youPos !== null && <span style={{ color: '#111', fontWeight: 600 }}>● you {fmtShort(userSalary)}</span>}
-          <span>{fmtShort(summaryData.max)}</span>
+          {extYouPos !== null && <span style={{ color: '#111', fontWeight: 600 }}>● you {fmtShort(userSalary)}</span>}
+          <span>{fmtShort(youExceedsMax ? userSalary : summaryData.max)}</span>
         </div>
       </div>
     )
@@ -358,8 +374,8 @@ export default function CompanyDetailPanel({
         </div>
         <div style={{ fontSize: 11, color: '#888', lineHeight: 1.5 }}>
           {more
-            ? `Engineers here earn about ${Math.abs(comparePct)}% more than your current salary (${fmtShort(userSalary)}). Consider this company if you're looking to grow.`
-            : `Engineers here earn about ${Math.abs(comparePct)}% less than your current salary (${fmtShort(userSalary)}). You're ahead of this company's pay range.`}
+            ? `Professionals here earn about ${Math.abs(comparePct)}% more than your current salary (${fmtShort(userSalary)}). Consider this company if you're looking to grow.`
+            : `Professionals here earn about ${Math.abs(comparePct)}% less than your current salary (${fmtShort(userSalary)}). You're ahead of this company's pay range.`}
         </div>
       </div>
     )
