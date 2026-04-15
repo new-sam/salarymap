@@ -431,8 +431,9 @@ export default function JobsPage() {
 
             {/* Hero image / Carousel */}
             {(() => {
-              const allImgs = [...(detailJob.images?.length ? detailJob.images : []), detailJob.image_url, detailJob._imgFallback, DEFAULT_IMAGES[0]].filter(Boolean)
-              const uniqueImgs = [...new Set(allImgs)]
+              const uploaded = detailJob.images?.length ? detailJob.images : []
+              const fallback = detailJob.image_url || detailJob._imgFallback || DEFAULT_IMAGES[0]
+              const uniqueImgs = uploaded.length ? uploaded : [fallback]
               return (
                 <div style={{ position: 'relative' }}>
                   <div className="jd-img" style={{
