@@ -6,7 +6,6 @@ import CompanyCard from '../components/CompanyCard';
 import CompanyDetailPanel from '../components/CompanyDetailPanel';
 import AnonymousSection from '../components/AnonymousSection';
 import ResultSection from '../components/ResultSection';
-import ContactSheet from '../components/ContactSheet';
 
 const css = `
 *, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
@@ -1701,7 +1700,6 @@ export default function Home() {
   const [detailOpen, setDetailOpen] = useState(false);
   const [detailCardIndex, setDetailCardIndex] = useState(0);
   const [showAuthModal, setShowAuthModal] = useState(false);
-  const [showContactSheet, setShowContactSheet] = useState(false);
   const [isAdminUser, setIsAdminUser] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [user, setUser] = useState(null);
@@ -1862,7 +1860,6 @@ export default function Home() {
               .eq('id', session.user.id)
               .then(() => {});
             localStorage.removeItem('fyi_intent');
-            setShowContactSheet(true);
           }
           window.history.replaceState({}, '', '/');
         }
@@ -2408,12 +2405,6 @@ export default function Home() {
       )}
 
       {/* Contact collection sheet — after headhunter opt-in + login */}
-      {showContactSheet && user && (
-        <ContactSheet
-          user={user}
-          onClose={() => setShowContactSheet(false)}
-        />
-      )}
     </div>
   );
 }
