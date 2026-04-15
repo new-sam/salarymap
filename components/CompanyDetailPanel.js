@@ -629,6 +629,14 @@ export default function CompanyDetailPanel({
                   {renderDistribution()}
                   {renderRating(false)}
                   {renderFeed(false)}
+                  <a href={`/jobs?company=${encodeURIComponent(company)}`} style={{
+                    display: 'block', marginTop: 20, padding: '14px 20px',
+                    background: '#1a0d07', border: '1px solid rgba(255,96,0,0.25)',
+                    borderRadius: 10, textAlign: 'center', textDecoration: 'none',
+                    fontSize: 13, fontWeight: 700, color: '#ff6000',
+                  }}>
+                    See open roles at {company} →
+                  </a>
                 </>
               )}
 

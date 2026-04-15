@@ -42,6 +42,7 @@ export default function JobsPage() {
   const [applied, setApplied] = useState(false)
   const [showUserMenu, setShowUserMenu] = useState(false)
   const [isAdminUser, setIsAdminUser] = useState(false)
+  const [bookmarks, setBookmarks] = useState([])
 
   // Load state
   useEffect(() => {
@@ -52,6 +53,7 @@ export default function JobsPage() {
       setUserRole(localStorage.getItem('fyi_role'))
       setUserExperience(localStorage.getItem('fyi_exp'))
       setUserCompany(localStorage.getItem('fyi_company'))
+      try { setBookmarks(JSON.parse(localStorage.getItem('fyi_bookmarks') || '[]')) } catch {}
     }
     supabase.auth.getSession().then(async ({ data: { session: s } }) => {
       if (s) {
@@ -113,6 +115,14 @@ export default function JobsPage() {
     })
     setApplying(false)
     setApplied(true)
+  }
+
+  const toggleBookmark = (jobId) => {
+    setBookmarks(prev => {
+      const next = prev.includes(jobId) ? prev.filter(id => id !== jobId) : [...prev, jobId]
+      localStorage.setItem('fyi_bookmarks', JSON.stringify(next))
+      return next
+    })
   }
 
   const openApply = (job) => {
@@ -311,6 +321,7 @@ export default function JobsPage() {
               {showUserMenu && (
                 <div className="jn-menu">
                   <div className="jn-menu-email">{user?.email}</div>
+                  <a href="/profile" className="jn-menu-item">My Profile</a>
                   {isAdminUser && (
                     <a href="/admin/jobs" className="jn-menu-item">Admin Dashboard</a>
                   )}
@@ -385,8 +396,8 @@ export default function JobsPage() {
                         {bump !== null && bump > 0 && (
                           <div className="jc-bump">↑ <b>+{bump}%</b> vs your salary</div>
                         )}
-                        <button className="jc-bm" aria-label="Bookmark">
-                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#999" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <button className="jc-bm" aria-label="Bookmark" onClick={e => { e.stopPropagation(); toggleBookmark(job.id) }}>
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill={bookmarks.includes(job.id) ? '#ff4400' : 'none'} stroke={bookmarks.includes(job.id) ? '#ff4400' : '#999'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                             <path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z"/>
                           </svg>
                         </button>

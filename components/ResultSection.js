@@ -195,7 +195,7 @@ export default function ResultSection({ salary, role, experience, company, isLog
 
       </div>
 
-      {/* Bottom sheet — appears 2s after result loads, only for non-logged-in users */}
+      {/* Bottom sheet — appears 2s after result loads */}
       {result && !isLoggedIn && (
         <NextStepSheet
           role={role}
@@ -203,6 +203,35 @@ export default function ResultSection({ salary, role, experience, company, isLog
           percentile={result.percentile}
           topCompanies={result.topCompanies}
         />
+      )}
+      {/* Logged-in users: inline CTA instead of sheet */}
+      {result && isLoggedIn && result.topCompanies?.length > 0 && (
+        <div style={{
+          maxWidth: 1178, margin: '32px auto 0', padding: '0 48px',
+        }}>
+          <div style={{
+            background: 'linear-gradient(135deg, #1a0d07 0%, #111 100%)',
+            border: '1px solid rgba(255,96,0,0.2)', borderRadius: 16,
+            padding: '28px 32px', display: 'flex', alignItems: 'center',
+            justifyContent: 'space-between', gap: 20, flexWrap: 'wrap',
+          }}>
+            <div>
+              <div style={{ fontSize: 16, fontWeight: 700, color: '#fff', marginBottom: 4 }}>
+                {result.topCompanies.length} companies pay more for your role
+              </div>
+              <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.5)' }}>
+                Our headhunter can personally introduce you — no job boards, no spam.
+              </div>
+            </div>
+            <a href="/jobs" style={{
+              background: '#ff6000', color: '#fff', border: 'none', padding: '12px 24px',
+              borderRadius: 8, fontSize: 14, fontWeight: 700, cursor: 'pointer',
+              textDecoration: 'none', whiteSpace: 'nowrap', flexShrink: 0,
+            }}>
+              See matching jobs →
+            </a>
+          </div>
+        </div>
       )}
     </section>
   )
