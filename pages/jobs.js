@@ -336,7 +336,9 @@ export default function JobsPage() {
                 return (
                   <div key={job.id} className="jc">
                     <div className="jc-img">
-                      <div className="jc-img-in" style={{ background: IMAGE_COLORS[idx % 3] }}>
+                      <div className="jc-img-in" style={{
+                        background: job.image_url ? `url(${job.image_url}) center/cover no-repeat` : IMAGE_COLORS[idx % 3],
+                      }}>
                         {bump !== null && bump > 0 && (
                           <div className="jc-bump">↑ <b>+{bump}%</b> vs your salary</div>
                         )}
