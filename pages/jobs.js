@@ -363,30 +363,8 @@ export default function JobsPage() {
                     Sign in to view details and get introduced
                   </div>
                 </div>
-                {/* Preview chips */}
-                <div style={{ padding: '20px 36px 0', display: 'flex', flexDirection: 'column', gap: 8 }}>
-                  {jobs.slice(0, 3).map((job, i) => (
-                    <div key={job?.id || i} style={{
-                      display: 'flex', alignItems: 'center', gap: 10,
-                      padding: '10px 12px', background: '#f9f9f8', borderRadius: 8,
-                    }}>
-                      <div style={{
-                        width: 32, height: 32, borderRadius: 6, background: '#eee',
-                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        fontSize: 9, fontWeight: 800, color: '#888', flexShrink: 0,
-                      }}>{job?.company_initials || '??'}</div>
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ fontSize: 13, fontWeight: 600, color: '#111', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{job?.title || 'Engineer'}</div>
-                        <div style={{ fontSize: 11, color: '#aaa' }}>{job?.company || 'Company'}</div>
-                      </div>
-                      <div style={{ fontSize: 12, fontWeight: 700, color: '#ff4400', whiteSpace: 'nowrap' }}>
-                        {job ? `${Math.round(job.salary_min/1e6)}M+` : '??M'}
-                      </div>
-                    </div>
-                  ))}
-                </div>
                 {/* Login buttons */}
-                <div style={{ padding: '20px 36px 28px', display: 'flex', flexDirection: 'column', gap: 10 }}>
+                <div style={{ padding: '24px 36px 32px', display: 'flex', flexDirection: 'column', gap: 10 }}>
                   <button style={{
                     display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
                     width: '100%', padding: '13px 20px', borderRadius: 10, fontSize: 14, fontWeight: 600,
