@@ -3,337 +3,338 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>UX Mockup — Unified Flow</title>
+<title>UX Mockup v2 — Simplified Flow</title>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: -apple-system, 'Helvetica Neue', Arial, sans-serif; background: #f5f5f3; color: #111; }
-  .mockup-nav { display: flex; gap: 16px; padding: 16px 32px; background: #fff; border-bottom: 1px solid #eee; position: sticky; top: 0; z-index: 10; }
-  .mockup-nav button { padding: 8px 20px; border-radius: 8px; border: 1px solid #ddd; background: #fff; cursor: pointer; font-size: 13px; font-weight: 600; }
-  .mockup-nav button.active { background: #111; color: #fff; border-color: #111; }
-  .screen { display: none; max-width: 900px; margin: 0 auto; padding: 40px 20px 80px; }
-  .screen.active { display: block; }
-  .screen-label { font-size: 10px; font-weight: 700; color: #ff4400; letter-spacing: .1em; text-transform: uppercase; margin-bottom: 8px; }
-  .screen-title { font-size: 22px; font-weight: 800; margin-bottom: 6px; }
-  .screen-desc { font-size: 13px; color: #888; margin-bottom: 32px; line-height: 1.6; }
-  .flow-arrow { text-align: center; padding: 20px 0; font-size: 24px; color: #ccc; }
-  .card { background: #fff; border: 1px solid #eee; border-radius: 16px; padding: 28px; margin-bottom: 16px; }
-  .card-dark { background: #111; border: none; color: #fff; border-radius: 16px; padding: 28px; margin-bottom: 16px; }
-  .card-label { font-size: 10px; font-weight: 700; color: #aaa; letter-spacing: .06em; text-transform: uppercase; margin-bottom: 12px; }
-  .card-dark .card-label { color: #666; }
-  .btn-orange { display: inline-block; background: #ff4400; color: #fff; border: none; padding: 13px 28px; border-radius: 10px; font-size: 14px; font-weight: 700; cursor: pointer; text-decoration: none; }
-  .btn-outline { display: inline-block; background: #fff; color: #333; border: 1px solid #ddd; padding: 12px 24px; border-radius: 10px; font-size: 14px; font-weight: 600; cursor: pointer; }
-  .btn-dark { display: inline-block; background: #111; color: #fff; border: none; padding: 12px 24px; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; }
-  .tag { display: inline-block; background: #f0f0f0; border-radius: 6px; padding: 6px 12px; font-size: 12px; font-weight: 600; color: #555; margin-right: 6px; }
-  .tag-orange { background: #fff3ed; color: #ff4400; border: 1px solid #ffd6c8; }
-  .divider { height: 1px; background: #f0f0f0; margin: 24px 0; }
-  .pill-row { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
-  .pill { padding: 8px 18px; border-radius: 20px; border: 1px solid #e0e0e0; font-size: 13px; font-weight: 600; color: #888; background: #fff; }
-  .pill.on { background: #111; color: #fff; border-color: #111; }
-  .job-row { display: flex; align-items: center; gap: 14px; padding: 14px 0; border-bottom: 1px solid #f5f5f5; }
-  .job-ini { width: 40px; height: 40px; border-radius: 8px; background: #f0f0f0; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 800; color: #888; flex-shrink: 0; }
-  .job-info { flex: 1; }
-  .job-title { font-size: 14px; font-weight: 600; }
-  .job-co { font-size: 12px; color: #888; }
-  .job-salary { font-size: 14px; font-weight: 700; color: #ff4400; white-space: nowrap; }
-  .bump-tag { font-size: 11px; background: rgba(0,0,0,0.06); padding: 3px 8px; border-radius: 4px; color: #555; }
-  .bump-tag b { color: #ff4400; }
-  .empty-state { text-align: center; padding: 48px 20px; }
-  .empty-state-icon { font-size: 40px; margin-bottom: 12px; }
-  .empty-state-h { font-size: 18px; font-weight: 700; margin-bottom: 6px; }
-  .empty-state-p { font-size: 14px; color: #888; line-height: 1.6; margin-bottom: 20px; }
-  .compare { display: flex; gap: 12px; margin: 20px 0; }
-  .compare-box { flex: 1; background: #1a1a1a; border-radius: 10px; padding: 14px; text-align: center; }
-  .compare-label { font-size: 10px; color: #666; text-transform: uppercase; margin-bottom: 4px; }
-  .compare-val { font-size: 22px; font-weight: 800; }
-  .note { background: #fffbeb; border: 1px solid #fde68a; border-radius: 10px; padding: 14px 18px; font-size: 13px; color: #92400e; line-height: 1.5; margin-top: 16px; }
-  h3 { font-size: 16px; font-weight: 700; margin-bottom: 12px; }
-  .wireframe { border: 2px dashed #ddd; border-radius: 12px; padding: 20px; text-align: center; color: #bbb; font-size: 13px; margin-bottom: 16px; }
-  .step-indicator { display: flex; gap: 8px; margin-bottom: 24px; }
-  .step-dot { width: 8px; height: 8px; border-radius: 50%; background: #ddd; }
-  .step-dot.on { background: #ff4400; }
-  .annotation { background: #fff3ed; border-left: 3px solid #ff4400; padding: 12px 16px; margin: 16px 0; font-size: 12px; color: #333; line-height: 1.5; }
-  .annotation b { color: #ff4400; }
+  body { font-family: -apple-system, 'Helvetica Neue', Arial, sans-serif; background: #0a0a0a; color: #fff; }
+
+  .nav { display: flex; gap: 12px; padding: 12px 24px; background: #111; border-bottom: 1px solid #222; position: sticky; top: 0; z-index: 10; }
+  .nav button { padding: 8px 18px; border-radius: 8px; border: 1px solid #333; background: #111; color: #888; cursor: pointer; font-size: 12px; font-weight: 600; transition: all .15s; }
+  .nav button.on { background: #ff4400; color: #fff; border-color: #ff4400; }
+
+  .screen { display: none; max-width: 820px; margin: 0 auto; padding: 40px 20px 100px; }
+  .screen.on { display: block; }
+
+  .label { font-size: 10px; font-weight: 700; color: #ff4400; letter-spacing: .1em; text-transform: uppercase; margin-bottom: 8px; }
+  .title { font-size: 24px; font-weight: 800; margin-bottom: 6px; letter-spacing: -0.3px; }
+  .desc { font-size: 13px; color: #666; margin-bottom: 32px; line-height: 1.6; }
+
+  .card { background: #161616; border: 1px solid #222; border-radius: 14px; padding: 24px; margin-bottom: 14px; }
+  .card-accent { border-color: #ff4400; background: linear-gradient(135deg, #1a0d07, #161616); }
+  .divider { height: 1px; background: #222; margin: 32px 0; }
+
+  .anno { background: #1a1400; border-left: 3px solid #ff4400; padding: 12px 16px; margin: 16px 0; font-size: 12px; color: #ccc; line-height: 1.6; border-radius: 0 8px 8px 0; }
+  .anno b { color: #ff4400; }
+
+  .arrow { text-align: center; padding: 16px 0; font-size: 20px; color: #333; }
+
+  /* Result mockup */
+  .result-pct { text-align: center; padding: 32px 0; }
+  .result-pct .big { font-size: 56px; font-weight: 800; }
+  .result-pct .orange { color: #ff4400; }
+  .result-pct .sub { font-size: 14px; color: #666; margin-top: 8px; }
+
+  .pills { display: flex; gap: 12px; justify-content: center; margin: 24px 0; }
+  .pill-card { background: #1a1a1a; border-radius: 12px; padding: 16px 24px; text-align: center; flex: 1; }
+  .pill-val { font-size: 24px; font-weight: 800; }
+  .pill-label { font-size: 11px; color: #666; margin-top: 4px; }
+
+  /* Job cards */
+  .jobs-section { margin-top: 40px; }
+  .jobs-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 16px; position: relative; }
+  .job-card { background: #161616; border: 1px solid #222; border-radius: 12px; overflow: hidden; cursor: pointer; transition: border-color .15s; }
+  .job-card:hover { border-color: #444; }
+  .job-img { height: 120px; background: #222; position: relative; }
+  .job-img-color1 { background: linear-gradient(135deg, #1a2332, #2a1a1a); }
+  .job-img-color2 { background: linear-gradient(135deg, #2a2a1a, #1a2a1a); }
+  .job-img-color3 { background: linear-gradient(135deg, #1a1a2a, #2a1a2a); }
+  .job-bump { position: absolute; top: 8px; left: 8px; background: rgba(0,0,0,0.7); padding: 4px 8px; border-radius: 4px; font-size: 10px; }
+  .job-bump b { color: #ff4400; }
+  .job-ini { position: absolute; bottom: 8px; left: 8px; width: 28px; height: 28px; border-radius: 6px; background: #fff; display: flex; align-items: center; justify-content: center; font-size: 9px; font-weight: 800; color: #333; }
+  .job-body { padding: 12px 14px; }
+  .job-title { font-size: 14px; font-weight: 600; margin-bottom: 2px; }
+  .job-co { font-size: 12px; color: #666; margin-bottom: 4px; }
+  .job-salary { font-size: 12px; color: #ff4400; font-weight: 700; }
+
+  /* Blur overlay */
+  .blur-wrap { position: relative; }
+  .blur-cards { filter: blur(6px); pointer-events: none; user-select: none; }
+  .blur-gate { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 2; width: 90%; max-width: 380px; }
+  .gate-box { background: #fff; border-radius: 16px; padding: 32px; text-align: center; box-shadow: 0 16px 48px rgba(0,0,0,0.5); }
+  .gate-box h3 { font-size: 18px; font-weight: 800; color: #111; margin-bottom: 6px; }
+  .gate-box p { font-size: 13px; color: #888; margin-bottom: 20px; line-height: 1.5; }
+  .btn-g { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; padding: 12px; border-radius: 10px; font-size: 14px; font-weight: 600; cursor: pointer; margin-bottom: 8px; border: 1px solid #ddd; background: #fff; color: #333; }
+  .btn-li { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; padding: 12px; border-radius: 10px; font-size: 14px; font-weight: 600; cursor: pointer; background: #0A66C2; color: #fff; border: none; }
+
+  /* After login */
+  .job-apply { width: 100%; padding: 8px; background: #ff4400; color: #fff; border: none; border-radius: 6px; font-size: 12px; font-weight: 600; cursor: pointer; margin-top: 8px; }
+
+  /* Headhunter card */
+  .hh-card { background: linear-gradient(135deg, #1a0d07, #111); border: 1px solid rgba(255,68,0,0.2); border-radius: 14px; padding: 28px; text-align: center; margin-top: 14px; }
+  .hh-card h3 { font-size: 16px; font-weight: 700; margin-bottom: 6px; }
+  .hh-card p { font-size: 13px; color: #666; margin-bottom: 16px; line-height: 1.5; }
+  .btn-outline { padding: 10px 24px; border-radius: 8px; border: 1px solid #ff4400; background: transparent; color: #ff4400; font-size: 13px; font-weight: 600; cursor: pointer; }
+
+  @media (max-width: 600px) {
+    .jobs-grid { grid-template-columns: 1fr; }
+    .pills { flex-direction: row; }
+    .pill-card { padding: 12px 16px; }
+    .pill-val { font-size: 20px; }
+  }
 </style>
 </head>
 <body>
 
-<div class="mockup-nav">
-  <button class="active" onclick="show('flow')">Full Flow</button>
-  <button onclick="show('result')">After Result</button>
-  <button onclick="show('jobs-match')">Jobs - Matched</button>
-  <button onclick="show('jobs-empty')">Jobs - No Match</button>
-  <button onclick="show('jobs-gate')">Jobs - Not Logged In</button>
+<div class="nav">
+  <button class="on" onclick="show('before')">Before Login</button>
+  <button onclick="show('after')">After Login</button>
+  <button onclick="show('flow')">Flow Summary</button>
 </div>
 
-<!-- SCREEN: Full Flow Overview -->
-<div id="flow" class="screen active">
-  <div class="screen-label">Unified Flow Overview</div>
-  <div class="screen-title">Submit → Result → Jobs → Apply/Headhunter</div>
-  <div class="screen-desc">하나의 퍼널로 통합. 헤드헌터 CTA와 Jobs를 합침.</div>
+<!-- BEFORE LOGIN: Result + Blurred Jobs -->
+<div id="before" class="screen on">
+  <div class="label">Step 1 — Result (변경 없음)</div>
 
-  <div class="card">
-    <div class="card-label">Step 1 — Submit Salary</div>
-    <p style="font-size:14px;color:#444">Role → Experience → Salary → Company</p>
-    <p style="font-size:12px;color:#aaa;margin-top:8px">변경 없음. 현재 위자드 유지.</p>
+  <div class="result-pct">
+    <div class="big">Top <span class="orange">3%</span></div>
+    <div class="sub">Among Backend engineers with 3-4 yrs experience</div>
   </div>
 
-  <div class="flow-arrow">↓</div>
-
-  <div class="card">
-    <div class="card-label">Step 2 — Result (Top N%)</div>
-    <p style="font-size:14px;color:#444">Top 3% · Your salary vs Market median · Pill cards</p>
-    <p style="font-size:12px;color:#aaa;margin-top:8px">변경 없음. 현재 ResultSection 유지.</p>
-  </div>
-
-  <div class="flow-arrow">↓</div>
-
-  <div class="card" style="border-color:#ff4400;border-width:2px">
-    <div class="card-label" style="color:#ff4400">Step 3 — CTA (변경됨)</div>
-    <p style="font-size:16px;font-weight:700;margin-bottom:8px">기존: "Yes — connect me with headhunter" → 소셜 로그인</p>
-    <p style="font-size:16px;font-weight:700;color:#ff4400;margin-bottom:12px">변경: "See roles that pay more →" → /jobs 이동</p>
-    <div class="annotation">
-      <b>핵심 변경:</b> NextStepSheet의 CTA가 소셜 로그인 대신 /jobs로 연결됨.
-      소셜 로그인은 /jobs에서 한 번만 요구. 퍼널이 하나로 통합.
+  <div class="pills">
+    <div class="pill-card">
+      <div class="pill-val" style="color:#fff">72M</div>
+      <div class="pill-label">Your salary</div>
     </div>
-  </div>
-
-  <div class="flow-arrow">↓</div>
-
-  <div class="card">
-    <div class="card-label">Step 4 — Jobs Page</div>
-    <p style="font-size:14px;color:#444">3가지 상태에 따라 다른 화면</p>
-    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-top:16px">
-      <div style="background:#f9f9f8;border-radius:10px;padding:14px;font-size:12px">
-        <div style="font-weight:700;margin-bottom:4px">비로그인</div>
-        블러 + 로그인 게이트
-      </div>
-      <div style="background:#f9f9f8;border-radius:10px;padding:14px;font-size:12px">
-        <div style="font-weight:700;margin-bottom:4px">매칭 공고 있음</div>
-        카드 목록 + Apply
-      </div>
-      <div style="background:#f9f9f8;border-radius:10px;padding:14px;font-size:12px">
-        <div style="font-weight:700;margin-bottom:4px;color:#ff4400">매칭 없음 (NEW)</div>
-        헤드헌터 CTA 카드
-      </div>
+    <div class="pill-card">
+      <div class="pill-val" style="color:#666">45M</div>
+      <div class="pill-label">Market median</div>
     </div>
-  </div>
-</div>
-
-<!-- SCREEN: After Result -->
-<div id="result" class="screen">
-  <div class="screen-label">Result Screen — CTA 변경</div>
-  <div class="screen-title">결과 화면 아래 CTA</div>
-  <div class="screen-desc">NextStepSheet 대신 인라인 배너. 5초 후 바텀시트 대신 항상 보이는 배너.</div>
-
-  <div class="card-dark">
-    <div style="text-align:center;margin-bottom:20px">
-      <div style="font-size:14px;color:#888">Your Result</div>
-      <div style="font-size:48px;font-weight:800;margin:8px 0">
-        Top <span style="color:#ff4400">3%</span>
-      </div>
-      <div style="font-size:14px;color:#888">Among Backend engineers with 3-4 yrs experience</div>
+    <div class="pill-card">
+      <div class="pill-val" style="color:#4ade80">+27M</div>
+      <div class="pill-label">Difference</div>
     </div>
-    <div class="compare">
-      <div class="compare-box">
-        <div class="compare-label">You</div>
-        <div class="compare-val" style="color:#fff">72M</div>
-      </div>
-      <div class="compare-box">
-        <div class="compare-label">Median</div>
-        <div class="compare-val" style="color:#888">45M</div>
-      </div>
-      <div class="compare-box">
-        <div class="compare-label">Diff</div>
-        <div class="compare-val" style="color:#4ade80">+27M</div>
-      </div>
-    </div>
-  </div>
-
-  <div class="annotation">
-    <b>아래는 NEW — 기존 NextStepSheet 바텀시트 대체</b>
-  </div>
-
-  <div class="card" style="border:2px solid #ff4400;background:linear-gradient(135deg,#fff9f5,#fff)">
-    <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap">
-      <div style="flex:1;min-width:200px">
-        <div style="font-size:18px;font-weight:800;color:#111;margin-bottom:4px">
-          We found roles that pay even more
-        </div>
-        <div style="font-size:13px;color:#888">
-          3 companies are hiring for your exact profile right now.
-        </div>
-      </div>
-      <a class="btn-orange" href="#" onclick="show('jobs-match');return false">
-        See matched jobs →
-      </a>
-    </div>
-  </div>
-
-  <div class="note">
-    기존 NextStepSheet 바텀시트는 제거. 이 배너가 결과 바로 아래에 항상 보임.
-    로그인 유저/비로그인 유저 모두에게 표시. 클릭하면 /jobs로 이동.
-  </div>
-</div>
-
-<!-- SCREEN: Jobs - Matched -->
-<div id="jobs-match" class="screen">
-  <div class="screen-label">Jobs Page — 매칭 공고 있음</div>
-  <div class="screen-title">로그인 + 매칭되는 공고가 있는 경우</div>
-  <div class="screen-desc">현재와 동일하지만 하단에 헤드헌터 섹션 추가</div>
-
-  <div style="background:#fff7f5;border:1px solid #ffd6c8;border-radius:20px;padding:8px 16px;display:inline-flex;align-items:center;gap:8px;font-size:13px;color:#555;margin-bottom:20px">
-    <span style="width:7px;height:7px;border-radius:50%;background:#ff4400"></span>
-    Your benchmark: 72M VND · Backend · 3-4 yrs · LIKELION VN
-  </div>
-
-  <div class="pill-row">
-    <div class="pill on">All</div>
-    <div class="pill">Remote</div>
-    <div class="pill">Korean company</div>
-    <div class="pill">Vietnam local</div>
-  </div>
-
-  <h3>2 jobs matched for you</h3>
-
-  <div class="job-row">
-    <div class="job-ini">JN</div>
-    <div class="job-info">
-      <div class="job-title">Backend Engineer</div>
-      <div class="job-co">지노시스 · Seoul · onsite</div>
-    </div>
-    <div>
-      <div class="job-salary">55M–80M VND</div>
-      <div class="bump-tag">↑ <b>+11%</b></div>
-    </div>
-    <button class="btn-dark">Apply →</button>
-  </div>
-
-  <div class="job-row">
-    <div class="job-ini">DF</div>
-    <div class="job-info">
-      <div class="job-title">Frontend Developer</div>
-      <div class="job-co">디에프코퍼레이션 · Seoul · onsite</div>
-    </div>
-    <div>
-      <div class="job-salary">60M–90M VND</div>
-      <div class="bump-tag">↑ <b>+25%</b></div>
-    </div>
-    <button class="btn-dark">Apply →</button>
   </div>
 
   <div class="divider"></div>
 
-  <div class="annotation">
-    <b>NEW — 공고 목록 아래 헤드헌터 섹션</b>
+  <div class="anno">
+    <b>NEW — 결과 바로 아래에 공고 카드 노출 (블러)</b><br>
+    별도 /jobs 페이지 이동 없이 결과 스크롤만 하면 보임. 기대감 극대화.
   </div>
 
-  <div class="card" style="background:#fafafa;border:1px dashed #ddd;text-align:center">
-    <div style="font-size:28px;margin-bottom:12px">🤝</div>
-    <div style="font-size:16px;font-weight:700;margin-bottom:6px">Want more options?</div>
-    <div style="font-size:13px;color:#888;margin-bottom:16px;line-height:1.6">
-      Our headhunter can find roles not listed here —<br>
-      matched specifically to your profile and salary range.
+  <!-- Jobs section with blur -->
+  <div class="jobs-section">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+      <div>
+        <div style="font-size:16px;font-weight:700">These companies want someone like you</div>
+        <div style="font-size:12px;color:#666;margin-top:2px">Based on your role, experience, and salary range</div>
+      </div>
     </div>
-    <button class="btn-outline">Talk to our headhunter →</button>
-    <div style="font-size:11px;color:#bbb;margin-top:10px">We'll reach out via your registered email</div>
+
+    <div class="blur-wrap">
+      <div class="blur-cards">
+        <div class="jobs-grid">
+          <div class="job-card">
+            <div class="job-img job-img-color1">
+              <div class="job-bump">↑ <b>+11%</b> vs yours</div>
+              <div class="job-ini">JN</div>
+            </div>
+            <div class="job-body">
+              <div class="job-title">Backend Engineer</div>
+              <div class="job-co">지노시스</div>
+              <div class="job-salary">55M–80M VND</div>
+            </div>
+          </div>
+          <div class="job-card">
+            <div class="job-img job-img-color2">
+              <div class="job-bump">↑ <b>+25%</b> vs yours</div>
+              <div class="job-ini">DF</div>
+            </div>
+            <div class="job-body">
+              <div class="job-title">Frontend Developer</div>
+              <div class="job-co">디에프코퍼레이션</div>
+              <div class="job-salary">60M–90M VND</div>
+            </div>
+          </div>
+          <div class="job-card">
+            <div class="job-img job-img-color3">
+              <div class="job-ini">RM</div>
+            </div>
+            <div class="job-body">
+              <div class="job-title">UI/UX Designer</div>
+              <div class="job-co">로맨</div>
+              <div class="job-salary">45M–65M VND</div>
+            </div>
+          </div>
+          <div class="job-card">
+            <div class="job-img" style="background:#1a1a1a">
+              <div class="job-ini" style="background:#333;color:#666">+2</div>
+            </div>
+            <div class="job-body">
+              <div class="job-title" style="color:#444">More roles available</div>
+              <div class="job-co" style="color:#333">Sign in to see all</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Login Gate overlay -->
+      <div class="blur-gate">
+        <div class="gate-box">
+          <h3>Sign in to see matched roles</h3>
+          <p>These companies are hiring for your profile.<br>Sign in to view details and apply.</p>
+          <button class="btn-g" onclick="show('after')">
+            <svg width="16" height="16" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+            Continue with Google
+          </button>
+          <button class="btn-li" onclick="show('after')">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="white"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 01-2.063-2.065 2.064 2.064 0 112.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>
+            Continue with LinkedIn
+          </button>
+        </div>
+      </div>
+    </div>
   </div>
 </div>
 
-<!-- SCREEN: Jobs - No Match -->
-<div id="jobs-empty" class="screen">
-  <div class="screen-label">Jobs Page — 매칭 공고 없음 (NEW)</div>
-  <div class="screen-title">로그인했지만 매칭되는 공고가 없는 경우</div>
-  <div class="screen-desc">빈 화면 대신 헤드헌터가 메인 CTA로 올라옴</div>
+<!-- AFTER LOGIN: Result + Unlocked Jobs -->
+<div id="after" class="screen">
+  <div class="label">After Login — 공고 언락</div>
 
-  <div style="background:#fff7f5;border:1px solid #ffd6c8;border-radius:20px;padding:8px 16px;display:inline-flex;align-items:center;gap:8px;font-size:13px;color:#555;margin-bottom:20px">
-    <span style="width:7px;height:7px;border-radius:50%;background:#ff4400"></span>
-    Your benchmark: 72M VND · Backend · 3-4 yrs · LIKELION VN
+  <div class="result-pct">
+    <div class="big">Top <span class="orange">3%</span></div>
+    <div class="sub">Among Backend engineers with 3-4 yrs experience</div>
   </div>
 
-  <div class="pill-row">
-    <div class="pill on">All</div>
-    <div class="pill">Remote</div>
-    <div class="pill">Korean company</div>
-    <div class="pill">Vietnam local</div>
+  <div class="pills">
+    <div class="pill-card">
+      <div class="pill-val" style="color:#fff">72M</div>
+      <div class="pill-label">Your salary</div>
+    </div>
+    <div class="pill-card">
+      <div class="pill-val" style="color:#666">45M</div>
+      <div class="pill-label">Market median</div>
+    </div>
+    <div class="pill-card">
+      <div class="pill-val" style="color:#4ade80">+27M</div>
+      <div class="pill-label">Difference</div>
+    </div>
   </div>
 
-  <div class="annotation">
-    <b>핵심:</b> "0 jobs matched" 대신 아래 카드가 전체 영역을 차지.
-    기존 빈 화면의 실망감을 헤드헌터 전환으로 바꿈.
-  </div>
+  <div class="divider"></div>
 
-  <div class="card-dark" style="text-align:center;padding:48px 36px">
-    <div style="font-size:48px;margin-bottom:16px">🎯</div>
-    <div style="font-size:22px;font-weight:800;margin-bottom:8px">
-      We're finding the right role for you
-    </div>
-    <div style="font-size:14px;color:rgba(255,255,255,0.5);margin-bottom:8px;line-height:1.6">
-      No exact matches yet — but our headhunter is reviewing<br>
-      companies hiring for <span style="color:#ff4400">Backend · 3-4 yrs · 72M+ VND</span>
-    </div>
-    <div style="font-size:13px;color:rgba(255,255,255,0.3);margin-bottom:28px">
-      We'll personally reach out when we find a fit.
-    </div>
-    <div style="display:flex;flex-direction:column;gap:10px;max-width:320px;margin:0 auto">
-      <button class="btn-orange" style="width:100%">Get notified when matched →</button>
-      <div style="font-size:11px;color:rgba(255,255,255,0.3)">
-        We'll email you at kee@likelion.net
+  <div class="jobs-section">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+      <div>
+        <div style="font-size:16px;font-weight:700">These companies want someone like you</div>
+        <div style="font-size:12px;color:#666;margin-top:2px">Based on your role, experience, and salary range</div>
       </div>
     </div>
-  </div>
 
-  <div style="margin-top:24px">
-    <h3 style="color:#bbb">Other roles you might explore</h3>
-    <div class="job-row" style="opacity:0.6">
-      <div class="job-ini">RM</div>
-      <div class="job-info">
-        <div class="job-title">UI/UX Designer</div>
-        <div class="job-co">로맨 · Daegu · hybrid</div>
+    <div class="jobs-grid">
+      <div class="job-card">
+        <div class="job-img job-img-color1">
+          <div class="job-bump">↑ <b>+11%</b> vs yours</div>
+          <div class="job-ini">JN</div>
+        </div>
+        <div class="job-body">
+          <div class="job-title">Backend Engineer</div>
+          <div class="job-co">지노시스 · Seoul</div>
+          <div class="job-salary">55M–80M VND</div>
+          <button class="job-apply">Apply now →</button>
+        </div>
       </div>
-      <div class="job-salary">45M–65M VND</div>
+      <div class="job-card">
+        <div class="job-img job-img-color2">
+          <div class="job-bump">↑ <b>+25%</b> vs yours</div>
+          <div class="job-ini">DF</div>
+        </div>
+        <div class="job-body">
+          <div class="job-title">Frontend Developer</div>
+          <div class="job-co">디에프코퍼레이션 · Seoul</div>
+          <div class="job-salary">60M–90M VND</div>
+          <button class="job-apply">Apply now →</button>
+        </div>
+      </div>
+      <div class="job-card">
+        <div class="job-img job-img-color3">
+          <div class="job-ini">RM</div>
+        </div>
+        <div class="job-body">
+          <div class="job-title">UI/UX Designer</div>
+          <div class="job-co">로맨 · Daegu</div>
+          <div class="job-salary">45M–65M VND</div>
+          <button class="job-apply">Apply now →</button>
+        </div>
+      </div>
     </div>
-  </div>
 
-  <div class="note">
-    매칭 안 되는 공고도 "Other roles" 섹션에서 볼 수 있음.
-    연봉 필터를 hard filter → soft sort로 변경 제안.
+    <!-- Headhunter fallback -->
+    <div class="hh-card">
+      <div style="font-size:24px;margin-bottom:10px">🤝</div>
+      <h3>Want more options?</h3>
+      <p>Our headhunter can find roles not listed here —<br>matched to your profile and salary.</p>
+      <button class="btn-outline">Talk to our headhunter →</button>
+    </div>
   </div>
 </div>
 
-<!-- SCREEN: Jobs - Not Logged In -->
-<div id="jobs-gate" class="screen">
-  <div class="screen-label">Jobs Page — 비로그인 게이트</div>
-  <div class="screen-title">연봉 기입 완료, 비로그인 상태</div>
-  <div class="screen-desc">현재와 동일. 변경 없음.</div>
+<!-- FLOW SUMMARY -->
+<div id="flow" class="screen">
+  <div class="label">Flow Summary</div>
+  <div class="title">통합된 퍼널</div>
+  <div class="desc">3단계로 단순화. 별도 /jobs 페이지 이동 없음.</div>
 
-  <div style="position:relative;min-height:400px">
-    <div style="filter:blur(7px);pointer-events:none">
-      <div class="job-row">
-        <div class="job-ini">JN</div>
-        <div class="job-info"><div class="job-title">Backend Engineer</div><div class="job-co">지노시스</div></div>
-        <div class="job-salary">55M–80M VND</div>
-      </div>
-      <div class="job-row">
-        <div class="job-ini">DF</div>
-        <div class="job-info"><div class="job-title">Frontend Developer</div><div class="job-co">디에프코퍼레이션</div></div>
-        <div class="job-salary">60M–90M VND</div>
-      </div>
+  <div class="card">
+    <div style="font-size:12px;font-weight:700;color:#ff4400;margin-bottom:8px">STEP 1</div>
+    <div style="font-size:16px;font-weight:700;margin-bottom:4px">연봉 제출 → 결과</div>
+    <div style="font-size:13px;color:#666">현재와 동일. Top N% + 비교 카드.</div>
+  </div>
+
+  <div class="arrow">↓ 스크롤</div>
+
+  <div class="card card-accent">
+    <div style="font-size:12px;font-weight:700;color:#ff4400;margin-bottom:8px">STEP 2 — 핵심 변경</div>
+    <div style="font-size:16px;font-weight:700;margin-bottom:4px">공고 카드 블러로 노출 + 로그인 유도</div>
+    <div style="font-size:13px;color:#666;line-height:1.6">
+      결과 바로 아래에 공고 카드가 블러로 보임.<br>
+      "These companies want someone like you"<br>
+      클릭하면 로그인 게이트. Google / LinkedIn.<br><br>
+      <span style="color:#ff4400">NextStepSheet 바텀시트 제거. /jobs 별도 페이지 불필요.</span>
     </div>
-    <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);background:#111;border-radius:16px;padding:36px;text-align:center;color:#fff;width:90%;max-width:400px">
-      <div style="font-size:20px;font-weight:800;margin-bottom:8px">Sign in to see your matched jobs</div>
-      <div style="font-size:13px;color:rgba(255,255,255,0.5);margin-bottom:20px">Sign in to view details and get introduced</div>
-      <button class="btn-outline" style="width:100%;margin-bottom:8px">Google</button>
-      <button style="width:100%;padding:12px;border-radius:10px;background:#0A66C2;color:#fff;border:none;font-size:14px;font-weight:600">LinkedIn</button>
+  </div>
+
+  <div class="arrow">↓ 로그인</div>
+
+  <div class="card">
+    <div style="font-size:12px;font-weight:700;color:#ff4400;margin-bottom:8px">STEP 3</div>
+    <div style="font-size:16px;font-weight:700;margin-bottom:4px">공고 언락 + Apply / 헤드헌터</div>
+    <div style="font-size:13px;color:#666;line-height:1.6">
+      블러 해제. Apply 버튼 활성화.<br>
+      공고가 적으면 하단에 "헤드헌터가 직접 찾아드립니다" 카드.<br>
+      /jobs 페이지는 nav에서 접근 가능하되, 메인 전환은 여기서 완료.
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <div style="font-size:14px;font-weight:700;margin-bottom:12px">제거 대상</div>
+  <div class="card" style="border-color:#ff4400;border-style:dashed">
+    <div style="font-size:13px;color:#888;line-height:1.8">
+      <s>NextStepSheet</s> — 바텀시트 제거. 결과 아래 인라인으로 대체.<br>
+      <s>ContactSheet</s> — 이미 제거됨.<br>
+      <s>/jobs 게이트 로직</s> — 메인에서 처리. /jobs는 단순 목록 페이지로 축소.<br>
+      <s>"Yes — connect me with headhunter"</s> — 별도 CTA 불필요. Apply가 전환점.
     </div>
   </div>
 </div>
 
 <script>
 function show(id) {
-  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-  document.querySelectorAll('.mockup-nav button').forEach(b => b.classList.remove('active'));
-  document.getElementById(id).classList.add('active');
-  event.target.classList.add('active');
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('on'));
+  document.querySelectorAll('.nav button').forEach(b => b.classList.remove('on'));
+  document.getElementById(id).classList.add('on');
+  event.target.classList.add('on');
 }
 </script>
 </body>
