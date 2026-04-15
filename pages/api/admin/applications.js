@@ -1,20 +1,10 @@
 import { createClient } from '@supabase/supabase-js'
+import { verifyAdmin } from './check'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_ROLE_KEY
+  process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 )
-
-const ADMIN_EMAILS = ['slsvm@hotmail.com', 'kee@likelion.net']
-
-async function verifyAdmin(req) {
-  const token = req.headers.authorization?.replace('Bearer ', '')
-  if (!token) return null
-  const { data: { user }, error } = await supabase.auth.getUser(token)
-  if (error || !user) return null
-  if (!ADMIN_EMAILS.includes(user.email)) return null
-  return user
-}
 
 export default async function handler(req, res) {
   const admin = await verifyAdmin(req)
@@ -26,15 +16,15 @@ export default async function handler(req, res) {
       .select('*, jobs(title, company)')
       .order('created_at', { ascending: false })
 
-    // Get user emails
     const userIds = [...new Set((data || []).map(a => a.user_id).filter(Boolean))]
-    const { data: profiles } = await supabase
-      .from('user_profiles')
-      .select('id, email, full_name')
-      .in('id', userIds)
-
-    const profileMap = {}
-    ;(profiles || []).forEach(p => { profileMap[p.id] = p })
+    let profileMap = {}
+    if (userIds.length) {
+      const { data: profiles } = await supabase
+        .from('user_profiles')
+        .select('id, email, full_name')
+        .in('id', userIds)
+      ;(profiles || []).forEach(p => { profileMap[p.id] = p })
+    }
 
     const enriched = (data || []).map(a => ({
       ...a,
@@ -45,12 +35,13 @@ export default async function handler(req, res) {
     return res.status(200).json(enriched)
   }
 
-  // PUT — update status
   if (req.method === 'PUT') {
-    const { id, status } = req.body
+    const { id, status, admin_note } = req.body
+    const updates = { status, updated_at: new Date().toISOString() }
+    if (admin_note !== undefined) updates.admin_note = admin_note
     const { error } = await supabase
       .from('job_applications')
-      .update({ status })
+      .update(updates)
       .eq('id', id)
     if (error) return res.status(500).json({ error: error.message })
     return res.status(200).json({ success: true })

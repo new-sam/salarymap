@@ -4,7 +4,6 @@ import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { supabase } from '../lib/supabaseClient'
 
-const ADMIN_EMAILS = ['slsvm@hotmail.com', 'kee@likelion.net']
 const IMAGE_COLORS = ['#e8ecf5', '#f0ece8', '#e8f0ec']
 const FILTER_MAP = {
   all: { label: 'All' },
@@ -36,6 +35,7 @@ export default function JobsPage() {
   const [applying, setApplying] = useState(false)
   const [applied, setApplied] = useState(false)
   const [showUserMenu, setShowUserMenu] = useState(false)
+  const [isAdminUser, setIsAdminUser] = useState(false)
 
   // Load state
   useEffect(() => {
@@ -47,8 +47,15 @@ export default function JobsPage() {
       setUserExperience(localStorage.getItem('fyi_exp'))
       setUserCompany(localStorage.getItem('fyi_company'))
     }
-    supabase.auth.getSession().then(({ data: { session: s } }) => {
-      if (s) { setIsLoggedIn(true); setSession(s); setUser(s.user) }
+    supabase.auth.getSession().then(async ({ data: { session: s } }) => {
+      if (s) {
+        setIsLoggedIn(true); setSession(s); setUser(s.user)
+        try {
+          const res = await fetch(`/api/admin/check?email=${encodeURIComponent(s.user.email)}`)
+          const { isAdmin } = await res.json()
+          setIsAdminUser(isAdmin)
+        } catch {}
+      }
     })
   }, [])
 
@@ -261,7 +268,7 @@ export default function JobsPage() {
               {showUserMenu && (
                 <div className="jn-menu">
                   <div className="jn-menu-email">{user?.email}</div>
-                  {ADMIN_EMAILS.includes(user?.email) && (
+                  {isAdminUser && (
                     <a href="/admin/jobs" className="jn-menu-item">Admin Dashboard</a>
                   )}
                   <button className="jn-menu-item" onClick={async () => {

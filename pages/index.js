@@ -1702,6 +1702,7 @@ export default function Home() {
   const [detailCardIndex, setDetailCardIndex] = useState(0);
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [showContactSheet, setShowContactSheet] = useState(false);
+  const [isAdminUser, setIsAdminUser] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [user, setUser] = useState(null);
   const [showUserMenu, setShowUserMenu] = useState(false);
@@ -1822,6 +1823,8 @@ export default function Home() {
       if (session) {
         setIsLoggedIn(true);
         setUser(session.user);
+        fetch(`/api/admin/check?email=${encodeURIComponent(session.user.email)}`)
+          .then(r => r.json()).then(d => setIsAdminUser(d.isAdmin)).catch(() => {});
 
         // Only restore submission state for logged-in users
         const submitted = localStorage.getItem('fyi_submitted') === 'true';
@@ -2101,7 +2104,7 @@ export default function Home() {
                   <div style={{padding:'10px 14px',fontSize:12,color:'rgba(255,255,255,0.35)',borderBottom:'1px solid rgba(255,255,255,0.06)',marginBottom:'4px'}}>
                     {user?.email}
                   </div>
-                  {['slsvm@hotmail.com','kee@likelion.net'].includes(user?.email) && (
+                  {isAdminUser && (
                     <a href="/admin/jobs" onClick={e => e.stopPropagation()}
                       style={{display:'block',padding:'10px 14px',borderRadius:8,color:'#ff6000',fontSize:13,textDecoration:'none',fontFamily:"'Barlow',sans-serif"}}>
                       Admin Dashboard
