@@ -93,7 +93,8 @@
       "WebFetch(domain:www.jinosys.net)",
       "WebFetch(domain:salarymap.vercel.app)",
       "WebFetch(domain:lomen.co.kr)",
-      "WebFetch(domain:hdex.co.kr)"
+      "WebFetch(domain:hdex.co.kr)",
+      "WebFetch(domain:unsplash.com)"
     ]
   },
   "hooks": {
