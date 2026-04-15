@@ -326,9 +326,42 @@ export default function JobsPage() {
               <button className="jgate-btn" onClick={() => router.push('/#submit')}>Submit my salary → unlock jobs</button>
             </div>
           </div>
+        ) : isSubmitted && !isLoggedIn ? (
+          /* STATE B: submitted but not logged in — blur + login gate */
+          <>
+            {/* Filters (visible but non-functional) */}
+            <div className="jf">
+              {Object.entries(FILTER_MAP).map(([key, { label }]) => (
+                <button key={key} className={`jf-pill${filter === key ? ' on' : ''}`} onClick={() => setFilter(key)}>{label}</button>
+              ))}
+            </div>
+
+            <div className="jgate" style={{ minHeight: 500 }}>
+              <div className="jgate-blur">
+                <div className="jg">
+                  {jobs.slice(0, 4).map((job, i) => (
+                    <div key={job.id} className="jc">
+                      <div className="jc-img"><div className="jc-img-in" style={{ background: `url(${job.image_url || DEFAULT_IMAGES[i % 3]}) center/cover no-repeat` }} /></div>
+                      <div className="jc-t">{job.title}</div>
+                      <div className="jc-co">{job.company}</div>
+                      <div className="jc-m">{job.location} · {job.type} · <b>{Math.round(job.salary_min/1e6)}M–{Math.round(job.salary_max/1e6)}M VND</b></div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <div className="jgate-box">
+                <div className="jgate-icon">🔓</div>
+                <div className="jgate-h">Log in to see your matched jobs</div>
+                <div className="jgate-p">{"You've already submitted your salary.\nSign in to see jobs that pay more and apply directly."}</div>
+                <button className="jgate-btn" onClick={() => supabase.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: window.location.origin + '/auth/callback' } })}>
+                  Continue with Google →
+                </button>
+              </div>
+            </div>
+          </>
         ) : (
           <>
-            {/* STATE B & C — submitted */}
+            {/* STATE C — submitted + logged in */}
             {userSalary && (
               <div className="jbm">
                 <span className="jbm-dot" />
@@ -371,19 +404,7 @@ export default function JobsPage() {
                     <div className="jc-m">
                       {job.location} · {job.type} · <b>{Math.round(job.salary_min/1e6)}M–{Math.round(job.salary_max/1e6)}M VND</b>
                     </div>
-
-                    {/* STATE B: login nudge */}
-                    {!isLoggedIn ? (
-                      <div className="jc-nudge">
-                        <span className="jc-nudge-t">Log in to apply</span>
-                        <button className="jc-nudge-b" onClick={() => supabase.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: window.location.origin + '/auth/callback' } })}>
-                          Continue with Google →
-                        </button>
-                      </div>
-                    ) : (
-                      /* STATE C: apply button */
-                      <button className="jc-apply" onClick={() => openApply(job)}>Apply now →</button>
-                    )}
+                    <button className="jc-apply" onClick={() => openApply(job)}>Apply now →</button>
                   </div>
                 )
               })}
