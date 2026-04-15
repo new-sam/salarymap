@@ -37,6 +37,7 @@ export default function JobsPage() {
 
   // Detail & Apply panel
   const [detailJob, setDetailJob] = useState(null)
+  const [carouselIdx, setCarouselIdx] = useState(0)
   const [showPanel, setShowPanel] = useState(false)
   const [selectedJob, setSelectedJob] = useState(null)
   const [resumeFile, setResumeFile] = useState(null)
@@ -391,7 +392,7 @@ export default function JobsPage() {
                 const bump = getBump(job)
                 return (
                   <div key={job.id} className="jc">
-                    <div className="jc-img" onClick={() => setDetailJob({ ...job, _imgFallback: DEFAULT_IMAGES[idx % 3] })}>
+                    <div className="jc-img" onClick={() => { setCarouselIdx(0); setDetailJob({ ...job, _imgFallback: DEFAULT_IMAGES[idx % 3] }) }}>
                       <div className="jc-img-in" style={{
                         background: `url(${job.image_url || job.images?.[0] || DEFAULT_IMAGES[idx % 3]}) center/cover no-repeat`,
                       }}>
@@ -428,10 +429,45 @@ export default function JobsPage() {
           <div className="jd">
             <button className="jd-x" onClick={() => setDetailJob(null)}>×</button>
 
-            {/* Hero image */}
-            <div className="jd-img" style={{
-              background: `url(${detailJob.image_url || detailJob.images?.[0] || detailJob._imgFallback || DEFAULT_IMAGES[0]}) center/cover no-repeat`,
-            }} />
+            {/* Hero image / Carousel */}
+            {(() => {
+              const allImgs = [...(detailJob.images?.length ? detailJob.images : []), detailJob.image_url, detailJob._imgFallback, DEFAULT_IMAGES[0]].filter(Boolean)
+              const uniqueImgs = [...new Set(allImgs)]
+              return (
+                <div style={{ position: 'relative' }}>
+                  <div className="jd-img" style={{
+                    background: `url(${uniqueImgs[carouselIdx % uniqueImgs.length]}) center/cover no-repeat`,
+                  }} />
+                  {uniqueImgs.length > 1 && (
+                    <>
+                      <button onClick={() => setCarouselIdx(i => (i - 1 + uniqueImgs.length) % uniqueImgs.length)} style={{
+                        position: 'absolute', top: '50%', left: 10, transform: 'translateY(-50%)',
+                        width: 32, height: 32, borderRadius: '50%', background: 'rgba(0,0,0,0.5)',
+                        color: '#fff', border: 'none', fontSize: 16, cursor: 'pointer', display: 'flex',
+                        alignItems: 'center', justifyContent: 'center',
+                      }}>‹</button>
+                      <button onClick={() => setCarouselIdx(i => (i + 1) % uniqueImgs.length)} style={{
+                        position: 'absolute', top: '50%', right: 10, transform: 'translateY(-50%)',
+                        width: 32, height: 32, borderRadius: '50%', background: 'rgba(0,0,0,0.5)',
+                        color: '#fff', border: 'none', fontSize: 16, cursor: 'pointer', display: 'flex',
+                        alignItems: 'center', justifyContent: 'center',
+                      }}>›</button>
+                      <div style={{
+                        position: 'absolute', bottom: 10, left: '50%', transform: 'translateX(-50%)',
+                        display: 'flex', gap: 6,
+                      }}>
+                        {uniqueImgs.map((_, i) => (
+                          <div key={i} onClick={() => setCarouselIdx(i)} style={{
+                            width: 7, height: 7, borderRadius: '50%', cursor: 'pointer',
+                            background: i === carouselIdx % uniqueImgs.length ? '#fff' : 'rgba(255,255,255,0.4)',
+                          }} />
+                        ))}
+                      </div>
+                    </>
+                  )}
+                </div>
+              )
+            })()}
 
             <div className="jd-body">
               {/* Company */}
