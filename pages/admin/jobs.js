@@ -224,6 +224,9 @@ export default function AdminJobs() {
                   </div>
                   <div style={{ fontSize: 12, color: '#888' }}>
                     Applied for: {app.jobs?.title || '—'} at {app.jobs?.company || '—'}
+                    {app.applicant_role && <> · {app.applicant_role}</>}
+                    {app.applicant_salary && <> · {Math.round(app.applicant_salary/1e6)}M VND</>}
+                    {app.applicant_company && <> · {app.applicant_company}</>}
                     {app.resume_url && <> · <a href={app.resume_url} target="_blank" rel="noopener" style={{ color: '#ff4400' }}>Resume</a></>}
                   </div>
                   <div style={{ fontSize: 11, color: '#bbb' }}>{new Date(app.created_at).toLocaleString()}</div>
@@ -234,8 +237,9 @@ export default function AdminJobs() {
                   style={styles.statusSelect}
                 >
                   <option value="pending">Pending</option>
-                  <option value="reviewing">Reviewing</option>
+                  <option value="reviewed">Reviewed</option>
                   <option value="contacted">Contacted</option>
+                  <option value="hired">Hired</option>
                   <option value="rejected">Rejected</option>
                 </select>
               </div>

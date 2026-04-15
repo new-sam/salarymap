@@ -87,6 +87,12 @@ export default function JobsPage() {
         jobId: selectedJob.id,
         userId: session.user.id,
         resumeUrl,
+        applicantRole: userRole,
+        applicantExperience: userExperience,
+        applicantSalary: userSalary,
+        applicantCompany: userCompany,
+        applicantEmail: session.user.email,
+        applicantName: session.user.user_metadata?.full_name || '',
       }),
     })
     setApplying(false)

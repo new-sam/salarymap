@@ -38,8 +38,8 @@ export default async function handler(req, res) {
 
     const enriched = (data || []).map(a => ({
       ...a,
-      user_email: profileMap[a.user_id]?.email || '—',
-      user_name: profileMap[a.user_id]?.full_name || '—',
+      user_email: a.applicant_email || profileMap[a.user_id]?.email || '—',
+      user_name: a.applicant_name || profileMap[a.user_id]?.full_name || '—',
     }))
 
     return res.status(200).json(enriched)
