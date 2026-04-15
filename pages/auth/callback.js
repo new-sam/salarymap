@@ -34,7 +34,9 @@ export default function AuthCallback() {
 
         if (data.session) {
           await saveProfile(data.session.user)
-          router.replace('/?login=success')
+          const returnTo = typeof window !== 'undefined' && localStorage.getItem('fyi_login_return')
+          localStorage.removeItem('fyi_login_return')
+          router.replace(returnTo || '/?login=success')
           return
         }
 
@@ -48,7 +50,9 @@ export default function AuthCallback() {
 
           if (exchangeData?.session) {
             await saveProfile(exchangeData.session.user)
-            router.replace('/?login=success')
+            const returnTo = typeof window !== 'undefined' && localStorage.getItem('fyi_login_return')
+            localStorage.removeItem('fyi_login_return')
+            router.replace(returnTo || '/?login=success')
           } else {
             // exchange failed
             router.replace('/')

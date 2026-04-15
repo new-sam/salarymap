@@ -74,7 +74,10 @@ export default function GlobalNav({ activePage }) {
 
           {!ready ? null : !isLoggedIn ? (
             <>
-              <button className="gnav-login" onClick={() => supabase.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: window.location.origin + '/auth/callback' } })}>
+              <button className="gnav-login" onClick={() => {
+                if (typeof window !== 'undefined') localStorage.setItem('fyi_login_return', window.location.pathname)
+                supabase.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: window.location.origin + '/auth/callback' } })
+              }}>
                 Log in
               </button>
               <Link href="/#submit" className="gnav-submit">Submit Salary</Link>
