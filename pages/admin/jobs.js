@@ -76,6 +76,9 @@ export default function AdminJobs() {
       salary_max: Number(form.salary_max),
       experience_min: Number(form.experience_min),
       experience_max: Number(form.experience_max),
+      image_url: form.image_url || null,
+      logo_url: form.logo_url || null,
+      images: (form.images && form.images.length > 0) ? form.images : null,
     }
     if (editing) {
       await fetch('/api/admin/jobs', { method: 'PUT', headers: headers(), body: JSON.stringify({ id: editing.id, ...payload }) })
