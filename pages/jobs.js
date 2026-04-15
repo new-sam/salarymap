@@ -3,6 +3,7 @@ import Head from 'next/head'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { supabase } from '../lib/supabaseClient'
+import GlobalNav from '../components/GlobalNav'
 
 const DEFAULT_IMAGES = [
   'https://images.unsplash.com/photo-1497366216548-37526070297c?w=600&h=400&fit=crop',
@@ -295,46 +296,7 @@ export default function JobsPage() {
         }
       `}</style>
 
-      {/* NAV */}
-      <nav className="jn">
-        <div className="jn-l">
-          <Link href="/" className="jn-logo">FYI</Link>
-          <div className="jn-tabs">
-            <Link href="/" className="jn-tab">Salaries</Link>
-            <Link href="/jobs" className="jn-tab on">Jobs</Link>
-          </div>
-        </div>
-        <div className="jn-r">
-          {!isLoggedIn ? (
-            <>
-              <button className="jn-login" onClick={() => supabase.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: window.location.origin + '/auth/callback' } })}>Log in</button>
-              <button className="jn-submit" onClick={() => router.push('/#submit')}>Submit Salary</button>
-            </>
-          ) : (
-            <div style={{ position: 'relative' }}>
-              <div className="jn-avatar" onClick={() => setShowUserMenu(v => !v)}>
-                {user?.user_metadata?.avatar_url
-                  ? <img src={user.user_metadata.avatar_url} alt="" />
-                  : (user?.email || 'U')[0].toUpperCase()
-                }
-              </div>
-              {showUserMenu && (
-                <div className="jn-menu">
-                  <div className="jn-menu-email">{user?.email}</div>
-                  <a href="/profile" className="jn-menu-item">My Profile</a>
-                  {isAdminUser && (
-                    <a href="/admin/jobs" className="jn-menu-item">Admin Dashboard</a>
-                  )}
-                  <button className="jn-menu-item" onClick={async () => {
-                    await supabase.auth.signOut()
-                    setIsLoggedIn(false); setUser(null); setShowUserMenu(false)
-                  }}>Sign out</button>
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-      </nav>
+      <GlobalNav activePage="jobs" />
 
       <div className="jw">
         {/* HEADER */}

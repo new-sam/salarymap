@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react'
 import Head from 'next/head'
-import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { supabase } from '../lib/supabaseClient'
+import GlobalNav from '../components/GlobalNav'
 
 export default function ProfilePage() {
   const router = useRouter()
@@ -105,10 +105,7 @@ export default function ProfilePage() {
         }
       `}</style>
 
-      <nav className="pn">
-        <Link href="/" className="pn-logo">FYI</Link>
-        <Link href="/" className="pn-back">← Back to home</Link>
-      </nav>
+      <GlobalNav activePage="profile" />
 
       <div className="pw">
         <div className="pw-h">My Profile</div>
