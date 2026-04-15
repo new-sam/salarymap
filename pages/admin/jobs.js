@@ -6,6 +6,7 @@ const EMPTY_JOB = {
   title: '', company: '', company_initials: '', location: '', type: 'remote',
   country: 'korea', role: 'Backend', experience_min: 1, experience_max: 5,
   salary_min: 50000000, salary_max: 80000000, description: '', is_active: true,
+  image_url: '', logo_url: '',
 }
 
 const ROLES = ['Backend','Frontend','Fullstack','Mobile','Data','DevOps','PM','Design','QA']
@@ -174,6 +175,15 @@ export default function AdminJobs() {
                 <F label="Salary Min (VND)" value={form.salary_min} type="number" set={v => setForm({ ...form, salary_min: v })} />
                 <F label="Salary Max (VND)" value={form.salary_max} type="number" set={v => setForm({ ...form, salary_max: v })} />
               </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px 16px', marginTop: 10 }}>
+                <F label="Image URL (card thumbnail)" value={form.image_url} set={v => setForm({ ...form, image_url: v })} />
+                <F label="Logo URL (small icon)" value={form.logo_url} set={v => setForm({ ...form, logo_url: v })} />
+              </div>
+              {form.image_url && (
+                <div style={{ marginTop: 8 }}>
+                  <img src={form.image_url} alt="preview" style={{ height: 80, borderRadius: 6, objectFit: 'cover' }} />
+                </div>
+              )}
               <div style={{ marginTop: 8 }}>
                 <label style={S.lbl}>Description</label>
                 <textarea value={form.description || ''} onChange={e => setForm({ ...form, description: e.target.value })}
