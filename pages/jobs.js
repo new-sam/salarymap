@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { supabase } from '../lib/supabaseClient'
 
+const ADMIN_EMAILS = ['slsvm@hotmail.com', 'kee@likelion.net']
 const IMAGE_COLORS = ['#e8ecf5', '#f0ece8', '#e8f0ec']
 const FILTER_MAP = {
   all: { label: 'All' },
@@ -34,6 +35,7 @@ export default function JobsPage() {
   const [resumeFile, setResumeFile] = useState(null)
   const [applying, setApplying] = useState(false)
   const [applied, setApplied] = useState(false)
+  const [showUserMenu, setShowUserMenu] = useState(false)
 
   // Load state
   useEffect(() => {
@@ -129,6 +131,10 @@ export default function JobsPage() {
         .jn-submit { font-size: 13px; font-weight: 700; color: #fff; background: #ff4400; border: none; padding: 7px 16px; border-radius: 6px; cursor: pointer; }
         .jn-avatar { width: 32px; height: 32px; border-radius: 50%; background: #ff4400; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 800; color: #fff; overflow: hidden; }
         .jn-avatar img { width: 100%; height: 100%; object-fit: cover; }
+        .jn-menu { position: absolute; top: calc(100% + 8px); right: 0; background: #fff; border: 1px solid #eee; border-radius: 12px; padding: 6px; min-width: 180px; z-index: 500; box-shadow: 0 8px 24px rgba(0,0,0,0.1); }
+        .jn-menu-email { padding: 10px 14px; font-size: 12px; color: #aaa; border-bottom: 1px solid #f0f0f0; margin-bottom: 4px; }
+        .jn-menu-item { display: block; width: 100%; padding: 10px 14px; border-radius: 8px; border: none; background: none; color: #333; font-size: 13px; cursor: pointer; text-align: left; text-decoration: none; transition: background .1s; font-family: inherit; }
+        .jn-menu-item:hover { background: #f5f5f5; }
 
         .jw { max-width: 1080px; margin: 0 auto; padding: 36px 40px 80px; }
         .jw-eye { font-size: 11px; font-weight: 700; color: #ff4400; letter-spacing: .08em; margin-bottom: 8px; }
@@ -245,11 +251,25 @@ export default function JobsPage() {
               <button className="jn-submit" onClick={() => router.push('/#submit')}>Submit Salary</button>
             </>
           ) : (
-            <div className="jn-avatar">
-              {user?.user_metadata?.avatar_url
-                ? <img src={user.user_metadata.avatar_url} alt="" />
-                : (user?.email || 'U')[0].toUpperCase()
-              }
+            <div style={{ position: 'relative' }}>
+              <div className="jn-avatar" onClick={() => setShowUserMenu(v => !v)}>
+                {user?.user_metadata?.avatar_url
+                  ? <img src={user.user_metadata.avatar_url} alt="" />
+                  : (user?.email || 'U')[0].toUpperCase()
+                }
+              </div>
+              {showUserMenu && (
+                <div className="jn-menu">
+                  <div className="jn-menu-email">{user?.email}</div>
+                  {ADMIN_EMAILS.includes(user?.email) && (
+                    <a href="/admin/jobs" className="jn-menu-item">Admin Dashboard</a>
+                  )}
+                  <button className="jn-menu-item" onClick={async () => {
+                    await supabase.auth.signOut()
+                    setIsLoggedIn(false); setUser(null); setShowUserMenu(false)
+                  }}>Sign out</button>
+                </div>
+              )}
             </div>
           )}
         </div>

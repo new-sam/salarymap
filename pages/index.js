@@ -2101,6 +2101,12 @@ export default function Home() {
                   <div style={{padding:'10px 14px',fontSize:12,color:'rgba(255,255,255,0.35)',borderBottom:'1px solid rgba(255,255,255,0.06)',marginBottom:'4px'}}>
                     {user?.email}
                   </div>
+                  {['slsvm@hotmail.com','kee@likelion.net'].includes(user?.email) && (
+                    <a href="/admin/jobs" onClick={e => e.stopPropagation()}
+                      style={{display:'block',padding:'10px 14px',borderRadius:8,color:'#ff6000',fontSize:13,textDecoration:'none',fontFamily:"'Barlow',sans-serif"}}>
+                      Admin Dashboard
+                    </a>
+                  )}
                   <button
                     onClick={async (e) => {
                       e.stopPropagation();
