@@ -27,7 +27,7 @@ export default function AnonymousSection() {
           maxWidth: '700px',
           margin: '0 auto',
         }}>
-          We don't know who you are. We just know what engineers in Vietnam are earning.
+          We don't know who you are. We just know what professionals in Vietnam are earning.
         </p>
       </div>
 

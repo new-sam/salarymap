@@ -83,7 +83,7 @@ export default function NextStepSheet({ role, experience, percentile, topCompani
                   margin: 0, maxWidth: '460px', marginLeft: 'auto', marginRight: 'auto',
                 }}>
                   You just saw that <strong style={{ color: '#1a1a1a' }}>{companyText}</strong> pay
-                  more for <strong style={{ color: '#1a1a1a' }}>{role}</strong> engineers.
+                  more for <strong style={{ color: '#1a1a1a' }}>{role}</strong> professionals.
                   Our headhunter can personally introduce you — no job boards, no spam.
                 </p>
               </div>

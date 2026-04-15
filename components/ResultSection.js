@@ -107,7 +107,7 @@ export default function ResultSection({ salary, role, experience, company, isLog
             <span className="result-top-pct" style={{ color: '#ff6000' }}>{percentile}%</span>
           </div>
           <div className="result-subtitle" style={{ fontWeight: 400, color: '#fff', marginBottom: '48px', textAlign: 'center' }}>
-            Among {role} engineers with {experience} experience
+            Among {role} professionals with {experience} experience
           </div>
 
           {/* 3 Pill Cards */}

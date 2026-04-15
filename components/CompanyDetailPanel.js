@@ -258,8 +258,8 @@ export default function CompanyDetailPanel({
         </div>
         <div style={{ fontSize: 11, color: '#999', lineHeight: 1.5, marginBottom: 12 }}>
           {isSubmitted && userRole
-            ? `How ${activeRole === 'All' ? 'all roles' : activeRole + ' engineers'} at ${company} are paid, filtered to your experience level (±1 year).`
-            : `Salary range for ${activeRole === 'All' ? 'all roles' : activeRole + ' engineers'} at ${company}, based on anonymous submissions.`}
+            ? `How ${activeRole === 'All' ? 'all roles' : activeRole + ' professionals'} at ${company} are paid, filtered to your experience level (±1 year).`
+            : `Salary range for ${activeRole === 'All' ? 'all roles' : activeRole + ' professionals'} at ${company}, based on anonymous submissions.`}
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8, marginBottom: 6 }}>
           {boxes.map(s => (
@@ -403,8 +403,8 @@ export default function CompanyDetailPanel({
         </div>
         <div style={{ fontSize: 11, color: '#999', lineHeight: 1.5, marginBottom: 10 }}>
           {isSubmitted
-            ? 'Real salary entries from engineers at this company. Green rows are from people with a similar role and experience to yours.'
-            : 'Real salary entries submitted anonymously by engineers at this company.'}
+            ? 'Real salary entries from professionals at this company. Green rows are from people with a similar role and experience to yours.'
+            : 'Real salary entries submitted anonymously by professionals at this company.'}
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
           {rows.map((row, i) => renderFeedRow(row, i))}

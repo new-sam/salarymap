@@ -700,7 +700,7 @@ const bodyHTML = `<section class="hero">
   <div class="hero-copy">
     <div class="hero-kicker"><span class="kdot"></span>Vietnam IT Salary Intelligence</div>
     <h1 class="hero-h1">What does<br><span id="typed-company"></span><span class="typed-cursor"></span><br>actually pay?</h1>
-    <p class="hero-sub">Check if you're being underpaid — based on real salary data from engineers at Vietnam's top IT companies.</p>
+    <p class="hero-sub">Check if you're being underpaid — based on real salary data from professionals at Vietnam's top IT companies.</p>
     <div class="hero-btns">
       <button class="btn-p" onclick="document.getElementById('submit').scrollIntoView({behavior:'smooth'})">Tôi có bị trả thấp? →</button>
     </div>
