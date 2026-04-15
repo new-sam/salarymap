@@ -238,7 +238,7 @@ export default function JobsPage() {
 
         /* Job Detail Panel */
         .jd-bg { position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 60; }
-        .jd { position: fixed; top: 0; right: 0; width: 100%; max-width: 560px; height: 100vh; background: #fff; z-index: 61; overflow-y: auto; animation: jdSlide .3s ease; box-shadow: -8px 0 40px rgba(0,0,0,0.1); }
+        .jd { position: fixed; top: 0; right: 0; width: 50%; height: 100vh; background: #fff; z-index: 61; overflow-y: auto; animation: jdSlide .3s ease; box-shadow: -8px 0 40px rgba(0,0,0,0.1); }
         @keyframes jdSlide { from { transform: translateX(100%); } to { transform: translateX(0); } }
         .jd-x { position: absolute; top: 16px; right: 20px; font-size: 24px; color: #aaa; cursor: pointer; background: none; border: none; z-index: 2; line-height: 1; }
         .jd-img { width: 100%; height: 280px; object-fit: cover; background: #f0f0f0; }
@@ -273,7 +273,7 @@ export default function JobsPage() {
           .jbm { font-size: 12px; padding: 5px 12px; }
           .jgate-box { padding: 36px 24px; }
           .ap { padding: 20px 20px 32px; }
-          .jd { max-width: 100%; }
+          .jd { width: 100%; }
           .jd-body { padding: 20px 16px 32px; }
           .jd-img { height: 200px; }
           .jd-title { font-size: 18px; }
