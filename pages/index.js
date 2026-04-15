@@ -2073,6 +2073,7 @@ export default function Home() {
           <button className="nav-link" onClick={() => document.getElementById('submit')?.scrollIntoView({behavior:'smooth'})}>Am I underpaid?</button>
           <button className="nav-link" onClick={() => document.getElementById('companies')?.scrollIntoView({behavior:'smooth'})}>Who pays the most?</button>
           <a className="nav-link" href="/how-it-works">How it works</a>
+          <a className="nav-link" href="/jobs">Jobs</a>
 
           {!isLoggedIn ? (
             <button
