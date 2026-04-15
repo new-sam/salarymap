@@ -30,12 +30,20 @@ export default function ProfilePage() {
         setLinkedinUrl(data.linkedin_url || '')
         setOtw(data.otw || null)
       }
-      // Fetch user's submissions
-      const { data: subs } = await supabase
+      // Fetch user's submissions — by user_id or email
+      let { data: subs } = await supabase
         .from('submissions')
         .select('*')
         .eq('user_id', session.user.id)
         .order('created_at', { ascending: false })
+      if (!subs?.length && session.user.email) {
+        const { data: emailSubs } = await supabase
+          .from('submissions')
+          .select('*')
+          .eq('email', session.user.email)
+          .order('created_at', { ascending: false })
+        if (emailSubs?.length) subs = emailSubs
+      }
       if (subs?.length) {
         setSubmissions(subs)
         // Fetch percentile for latest submission
