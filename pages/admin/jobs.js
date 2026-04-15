@@ -205,8 +205,23 @@ export default function AdminJobs() {
                 <F label="Logo URL (small icon)" value={form.logo_url} set={v => setForm({ ...form, logo_url: v })} />
               </div>
               {form.image_url && (
-                <div style={{ marginTop: 8 }}>
+                <div style={{ marginTop: 8, position: 'relative', display: 'inline-block' }}>
                   <img src={form.image_url} alt="preview" style={{ height: 80, borderRadius: 6, objectFit: 'cover' }} />
+                  <button onClick={() => setForm({ ...form, image_url: '' })} style={{
+                    position: 'absolute', top: -6, right: -6, width: 20, height: 20,
+                    borderRadius: '50%', background: '#dc2626', color: '#fff', border: 'none',
+                    fontSize: 11, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  }}>×</button>
+                </div>
+              )}
+              {form.logo_url && (
+                <div style={{ marginTop: 8, position: 'relative', display: 'inline-block', marginLeft: 8 }}>
+                  <img src={form.logo_url} alt="logo" style={{ height: 40, borderRadius: 4, objectFit: 'contain' }} />
+                  <button onClick={() => setForm({ ...form, logo_url: '' })} style={{
+                    position: 'absolute', top: -6, right: -6, width: 20, height: 20,
+                    borderRadius: '50%', background: '#dc2626', color: '#fff', border: 'none',
+                    fontSize: 11, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  }}>×</button>
                 </div>
               )}
 
