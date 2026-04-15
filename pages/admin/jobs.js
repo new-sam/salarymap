@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import Head from 'next/head'
 import { supabase } from '../../lib/supabaseClient'
 
@@ -6,7 +6,7 @@ const EMPTY_JOB = {
   title: '', company: '', company_initials: '', location: '', type: 'remote',
   country: 'korea', role: 'Backend', experience_min: 1, experience_max: 5,
   salary_min: 50000000, salary_max: 80000000, description: '', is_active: true,
-  image_url: '', logo_url: '',
+  image_url: '', logo_url: '', images: [],
 }
 
 const ROLES = ['Backend','Frontend','Fullstack','Mobile','Data','DevOps','PM','Design','QA']
@@ -26,6 +26,8 @@ export default function AdminJobs() {
   const [saving, setSaving] = useState(false)
   const [msg, setMsg] = useState(null)
   const [newAdminEmail, setNewAdminEmail] = useState('')
+  const [imageUploading, setImageUploading] = useState(false)
+  const imgInputRef = useRef(null)
 
   // Auth check — DB based
   useEffect(() => {
@@ -115,7 +117,30 @@ export default function AdminJobs() {
     else { const d = await res.json(); flash(d.error || 'Failed') }
   }
 
-  const startEdit = (job) => { setEditing(job); setForm({ ...job }) }
+  const handleImageUpload = async (e) => {
+    const files = Array.from(e.target.files || [])
+    if (!files.length) return
+    setImageUploading(true)
+    const newUrls = []
+    for (const file of files) {
+      if (file.size > 5 * 1024 * 1024) { flash('Max 5MB per image'); continue }
+      const path = `jobs/${Date.now()}_${file.name}`
+      const { error } = await supabase.storage.from('job-images').upload(path, file)
+      if (!error) {
+        const { data } = supabase.storage.from('job-images').getPublicUrl(path)
+        newUrls.push(data.publicUrl)
+      }
+    }
+    setForm(prev => ({ ...prev, images: [...(prev.images || []), ...newUrls] }))
+    setImageUploading(false)
+    if (imgInputRef.current) imgInputRef.current.value = ''
+  }
+
+  const removeImage = (idx) => {
+    setForm(prev => ({ ...prev, images: (prev.images || []).filter((_, i) => i !== idx) }))
+  }
+
+  const startEdit = (job) => { setEditing(job); setForm({ ...job, images: job.images || [] }) }
   const startNew = () => { setEditing(null); setForm(EMPTY_JOB) }
 
   if (auth === 'loading') return <div style={S.center}>Loading...</div>
@@ -184,6 +209,34 @@ export default function AdminJobs() {
                   <img src={form.image_url} alt="preview" style={{ height: 80, borderRadius: 6, objectFit: 'cover' }} />
                 </div>
               )}
+
+              {/* Company photos */}
+              <div style={{ marginTop: 14 }}>
+                <label style={S.lbl}>Company Photos (carousel)</label>
+                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 10 }}>
+                  {(form.images || []).map((url, i) => (
+                    <div key={i} style={{ position: 'relative' }}>
+                      <img src={url} alt="" style={{ width: 100, height: 70, objectFit: 'cover', borderRadius: 6, border: '1px solid #eee' }} />
+                      <button onClick={() => removeImage(i)} style={{
+                        position: 'absolute', top: -6, right: -6, width: 18, height: 18,
+                        borderRadius: '50%', background: '#dc2626', color: '#fff', border: 'none',
+                        fontSize: 10, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      }}>×</button>
+                    </div>
+                  ))}
+                </div>
+                <div
+                  onClick={() => imgInputRef.current?.click()}
+                  style={{
+                    border: '1.5px dashed #ddd', borderRadius: 8, padding: '14px 20px',
+                    textAlign: 'center', cursor: 'pointer', fontSize: 12, color: '#aaa',
+                  }}
+                >
+                  {imageUploading ? 'Uploading...' : 'Click to add photos · JPG/PNG · max 5MB each'}
+                </div>
+                <input ref={imgInputRef} type="file" accept="image/*" multiple style={{ display: 'none' }} onChange={handleImageUpload} />
+              </div>
+
               <div style={{ marginTop: 8 }}>
                 <label style={S.lbl}>Description</label>
                 <textarea value={form.description || ''} onChange={e => setForm({ ...form, description: e.target.value })}
