@@ -339,12 +339,12 @@ export default function JobsPage() {
             <div className="jgate" style={{ minHeight: 500 }}>
               <div className="jgate-blur">
                 <div className="jg">
-                  {(jobs.length ? jobs.slice(0, 4) : [0,1,2,3]).map((job, i) => (
+                  {(jobs.length >= 4 ? jobs.slice(0, 4) : jobs.length ? [...jobs, ...Array(4 - jobs.length).fill(null)].slice(0, 4) : [null,null,null,null]).map((job, i) => (
                     <div key={job?.id || i} className="jc">
-                      <div className="jc-img"><div className="jc-img-in" style={{ background: `url(${job?.image_url || DEFAULT_IMAGES[i % 3]}) center/cover no-repeat` }} /></div>
+                      <div className="jc-img"><div className="jc-img-in" style={{ background: `url(${DEFAULT_IMAGES[i % 3]}) center/cover no-repeat` }} /></div>
                       <div className="jc-t">{job?.title || 'Senior Engineer'}</div>
-                      <div className="jc-co">{job?.company || 'Company'}</div>
-                      <div className="jc-m">{job?.location || 'Seoul'} · {job?.type || 'remote'} · <b>{job ? `${Math.round(job.salary_min/1e6)}M–${Math.round(job.salary_max/1e6)}M VND` : '60M–90M VND'}</b></div>
+                      <div className="jc-co">{job?.company || 'Tech Company'}</div>
+                      <div className="jc-m">{job?.location || 'Seoul'} · {job?.type || 'onsite'} · <b>{job ? `${Math.round(job.salary_min/1e6)}M–${Math.round(job.salary_max/1e6)}M VND` : '60M–90M VND'}</b></div>
                     </div>
                   ))}
                 </div>
