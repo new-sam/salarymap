@@ -12,6 +12,7 @@ const DEFAULT_IMAGES = [
 ]
 const FILTER_MAP = {
   all: { label: 'All' },
+  pays_more: { label: 'Pays more' },
   remote: { label: 'Remote' },
   korea: { label: 'Korean company' },
   vietnam: { label: 'Vietnam local' },
@@ -81,12 +82,9 @@ export default function JobsPage() {
   const filteredJobs = jobs
     .filter(job => {
       if (filter === 'all') return true
+      if (filter === 'pays_more') return userSalary ? job.salary_min > userSalary : true
       if (filter === 'remote') return job.type === 'remote'
       return job.country === filter
-    })
-    .filter(job => {
-      if (!isSubmitted || !userSalary) return true
-      return job.salary_min > userSalary
     })
 
   const handleApply = async () => {
