@@ -353,9 +353,14 @@ export default function JobsPage() {
                 <div className="jgate-icon">🔓</div>
                 <div className="jgate-h">Sign in to unlock your matched jobs</div>
                 <div className="jgate-p">{"Log in to see roles that match your profile\nand get personally introduced by our headhunter."}</div>
-                <button className="jgate-btn" onClick={() => supabase.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: window.location.origin + '/auth/callback' } })}>
-                  Continue with Google →
-                </button>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                  <button className="jgate-btn" onClick={() => supabase.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: window.location.origin + '/auth/callback' } })}>
+                    Continue with Google →
+                  </button>
+                  <button className="jgate-btn" style={{ background: '#0A66C2' }} onClick={() => supabase.auth.signInWithOAuth({ provider: 'linkedin_oidc', options: { redirectTo: window.location.origin + '/auth/callback', scopes: 'openid profile email' } })}>
+                    Continue with LinkedIn →
+                  </button>
+                </div>
               </div>
             </div>
           </>
