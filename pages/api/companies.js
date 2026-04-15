@@ -227,7 +227,7 @@ export default async function handler(req, res) {
       return a.company.localeCompare(b.company);
     });
 
-    res.setHeader('Cache-Control', 's-maxage=300, stale-while-revalidate');
+    res.setHeader('Cache-Control', 's-maxage=600, stale-while-revalidate=3600');
     return res.status(200).json(cards);
 
   } catch (err) {
