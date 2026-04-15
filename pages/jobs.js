@@ -370,17 +370,6 @@ export default function JobsPage() {
                 )
               })}
 
-              {/* Empty slot */}
-              <div>
-                <div className="jc-empty">
-                  <div className="jc-empty-in">
-                    <div className="jc-empty-t">More roles being curated</div>
-                    <button className="jc-empty-b">Notify me →</button>
-                  </div>
-                </div>
-                <div className="jc-t" style={{ color: '#ccc' }}>Coming soon</div>
-                <div className="jc-co" style={{ color: '#ddd' }}>We're reviewing new companies</div>
-              </div>
             </div>
           </>
         )}
