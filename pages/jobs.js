@@ -393,7 +393,7 @@ export default function JobsPage() {
                   <div key={job.id} className="jc">
                     <div className="jc-img" onClick={() => setDetailJob({ ...job, _imgFallback: DEFAULT_IMAGES[idx % 3] })}>
                       <div className="jc-img-in" style={{
-                        background: `url(${job.image_url || DEFAULT_IMAGES[idx % 3]}) center/cover no-repeat`,
+                        background: `url(${job.image_url || job.images?.[0] || DEFAULT_IMAGES[idx % 3]}) center/cover no-repeat`,
                       }}>
                         {bump !== null && bump > 0 && (
                           <div className="jc-bump">↑ <b>+{bump}%</b> vs your salary</div>
@@ -430,7 +430,7 @@ export default function JobsPage() {
 
             {/* Hero image */}
             <div className="jd-img" style={{
-              background: `url(${detailJob.image_url || detailJob._imgFallback || DEFAULT_IMAGES[0]}) center/cover no-repeat`,
+              background: `url(${detailJob.image_url || detailJob.images?.[0] || detailJob._imgFallback || DEFAULT_IMAGES[0]}) center/cover no-repeat`,
             }} />
 
             <div className="jd-body">
