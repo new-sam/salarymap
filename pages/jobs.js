@@ -181,7 +181,7 @@ export default function JobsPage() {
 
         .jf-count { font-size: 15px; font-weight: 700; color: #111; margin-bottom: 16px; }
 
-        .jg { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+        .jg { display: grid; grid-template-columns: repeat(4, 1fr); gap: 24px; }
 
         /* Card */
         .jc { cursor: pointer; }
@@ -279,7 +279,7 @@ export default function JobsPage() {
           .jn-tab { font-size: 13px; height: 48px; padding: 0 12px; }
           .jw { padding: 28px 16px 60px; }
           .jw-h1 { font-size: 20px; }
-          .jg { grid-template-columns: repeat(2, 1fr); gap: 12px; }
+          .jg { grid-template-columns: repeat(2, 1fr); gap: 20px; }
           .jbm { font-size: 12px; padding: 5px 12px; }
           .jgate-box { padding: 36px 24px; }
           .ap { padding: 20px 20px 32px; }
