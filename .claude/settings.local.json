@@ -87,7 +87,10 @@
       "Bash(xargs basename:*)",
       "Bash(sed -n '870,890p' /c/Users/slsvm/Desktop/salarymap/pages/index.js)",
       "Bash(sed -n '1000,1020p' /c/Users/slsvm/Desktop/salarymap/pages/index.js)",
-      "Bash(find /c/Users/slsvm/Desktop/salarymap/pages/api -name \"*.js\" -exec wc -l {} \\\\;)"
+      "Bash(find /c/Users/slsvm/Desktop/salarymap/pages/api -name \"*.js\" -exec wc -l {} \\\\;)",
+      "WebFetch(domain:www.jinosys.com)",
+      "WebFetch(domain:thevc.kr)",
+      "WebFetch(domain:www.jinosys.net)"
     ]
   },
   "hooks": {

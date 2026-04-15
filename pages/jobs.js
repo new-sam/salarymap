@@ -345,7 +345,12 @@ export default function JobsPage() {
                             <path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z"/>
                           </svg>
                         </button>
-                        <div className="jc-ini">{job.company_initials || job.company.slice(0,2).toUpperCase()}</div>
+                        <div className="jc-ini" style={job.logo_url ? { overflow: 'hidden', padding: 0 } : {}}>
+                          {job.logo_url
+                            ? <img src={job.logo_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                            : (job.company_initials || job.company.slice(0,2).toUpperCase())
+                          }
+                        </div>
                       </div>
                     </div>
                     <div className="jc-t">{job.title}</div>
