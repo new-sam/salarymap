@@ -4,7 +4,11 @@ import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { supabase } from '../lib/supabaseClient'
 
-const IMAGE_COLORS = ['#e8ecf5', '#f0ece8', '#e8f0ec']
+const DEFAULT_IMAGES = [
+  'https://images.unsplash.com/photo-1497366216548-37526070297c?w=600&h=400&fit=crop',
+  'https://images.unsplash.com/photo-1524758631624-e2822e304c36?w=600&h=400&fit=crop',
+  'https://images.unsplash.com/photo-1497215842964-222b430dc094?w=600&h=400&fit=crop',
+]
 const FILTER_MAP = {
   all: { label: 'All' },
   remote: { label: 'Remote' },
@@ -295,7 +299,7 @@ export default function JobsPage() {
               <div className="jg">
                 {[0,1,2,3].map(i => (
                   <div key={i} className="jc">
-                    <div className="jc-img"><div className="jc-img-in" style={{ background: IMAGE_COLORS[i % 3] }} /></div>
+                    <div className="jc-img"><div className="jc-img-in" style={{ background: `url(${DEFAULT_IMAGES[i % 3]}) center/cover no-repeat` }} /></div>
                     <div style={{ background: '#eee', height: 14, borderRadius: 4, width: '75%', marginBottom: 6 }} />
                     <div style={{ background: '#f0f0f0', height: 11, borderRadius: 4, width: '50%', marginBottom: 5 }} />
                     <div style={{ background: '#f5f5f5', height: 10, borderRadius: 4, width: '65%' }} />
@@ -337,7 +341,7 @@ export default function JobsPage() {
                   <div key={job.id} className="jc">
                     <div className="jc-img">
                       <div className="jc-img-in" style={{
-                        background: job.image_url ? `url(${job.image_url}) center/cover no-repeat` : IMAGE_COLORS[idx % 3],
+                        background: `url(${job.image_url || DEFAULT_IMAGES[idx % 3]}) center/cover no-repeat`,
                       }}>
                         {bump !== null && bump > 0 && (
                           <div className="jc-bump">↑ <b>+{bump}%</b> vs your salary</div>
