@@ -25,6 +25,7 @@ export default function JobsPage() {
   const [filter, setFilter] = useState('all')
   const [isSubmitted, setIsSubmitted] = useState(false)
   const [isLoggedIn, setIsLoggedIn] = useState(false)
+  const [authLoading, setAuthLoading] = useState(true)
   const [session, setSession] = useState(null)
   const [user, setUser] = useState(null)
   const [userSalary, setUserSalary] = useState(null)
@@ -60,6 +61,7 @@ export default function JobsPage() {
           setIsAdminUser(isAdmin)
         } catch {}
       }
+      setAuthLoading(false)
     })
   }, [])
 
@@ -118,6 +120,12 @@ export default function JobsPage() {
     setApplied(false)
     setResumeFile(null)
   }
+
+  if (authLoading) return (
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', background: '#f7f7f5', fontFamily: "-apple-system, 'Helvetica Neue', Arial, sans-serif" }}>
+      <div style={{ fontSize: 14, color: '#aaa' }}>Loading...</div>
+    </div>
+  )
 
   return (
     <>
@@ -351,12 +359,7 @@ export default function JobsPage() {
                             <path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z"/>
                           </svg>
                         </button>
-                        <div className="jc-ini" style={job.logo_url ? { overflow: 'hidden', padding: 0 } : {}}>
-                          {job.logo_url
-                            ? <img src={job.logo_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                            : (job.company_initials || job.company.slice(0,2).toUpperCase())
-                          }
-                        </div>
+                        <div className="jc-ini">{job.company_initials || job.company.slice(0,2).toUpperCase()}</div>
                       </div>
                     </div>
                     <div className="jc-t">{job.title}</div>
