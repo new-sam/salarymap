@@ -322,7 +322,7 @@ nav { position:fixed; top:0; left:0; right:0; z-index:200; padding:0 52px; heigh
 .co-drop-item-badge.no-data { color:var(--dim); background:transparent; }
 
 /* Search result panel */
-.co-result-panel { display:none; background:var(--bg1); border:1px solid var(--line); border-radius:10px; padding:28px; margin-bottom:32px; animation:fadeUp .25s ease; }
+.co-result-panel { display:none; background:var(--bg1); border:1px solid var(--line); border-radius:10px; padding:28px; margin-bottom:48px; animation:fadeUp .25s ease; }
 .co-result-panel.on { display:block; }
 .co-result-header { display:flex; align-items:flex-start; justify-content:space-between; margin-bottom:20px; }
 .co-result-name { font-size:20px; font-weight:800; letter-spacing:-.5px; }
