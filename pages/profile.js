@@ -13,6 +13,8 @@ export default function ProfilePage() {
   const [otw, setOtw] = useState(null)
   const [saving, setSaving] = useState(false)
   const [msg, setMsg] = useState(null)
+  const [submissions, setSubmissions] = useState([])
+  const [percentile, setPercentile] = useState(null)
 
   useEffect(() => {
     supabase.auth.getSession().then(async ({ data: { session } }) => {
@@ -27,6 +29,22 @@ export default function ProfilePage() {
         setProfile(data)
         setLinkedinUrl(data.linkedin_url || '')
         setOtw(data.otw || null)
+      }
+      // Fetch user's submissions
+      const { data: subs } = await supabase
+        .from('submissions')
+        .select('*')
+        .eq('user_id', session.user.id)
+        .order('created_at', { ascending: false })
+      if (subs?.length) {
+        setSubmissions(subs)
+        // Fetch percentile for latest submission
+        const latest = subs[0]
+        try {
+          const pRes = await fetch(`/api/percentile?role=${encodeURIComponent(latest.role)}&experience=${encodeURIComponent(latest.experience)}&salary=${latest.salary}&company=${encodeURIComponent(latest.company || '')}`)
+          const pData = await pRes.json()
+          setPercentile(pData)
+        } catch {}
       }
       setLoading(false)
     })
@@ -147,6 +165,76 @@ export default function ProfilePage() {
         <button className="psave" onClick={handleSave} disabled={saving}>
           {saving ? 'Saving...' : 'Save changes'}
         </button>
+
+        {/* My Salary & Result */}
+        {submissions.length > 0 && (
+          <>
+            {/* Where I Stand */}
+            {percentile && (
+              <div style={{
+                background: '#111', borderRadius: 12, padding: '28px 24px',
+                marginTop: 24, textAlign: 'center', color: '#fff',
+              }}>
+                <div style={{ fontSize: 11, fontWeight: 700, color: '#888', textTransform: 'uppercase', letterSpacing: '.06em', marginBottom: 8 }}>
+                  Where you stand
+                </div>
+                <div style={{ marginBottom: 4 }}>
+                  <span style={{ fontSize: 42, fontWeight: 800, color: '#fff' }}>Top </span>
+                  <span style={{ fontSize: 42, fontWeight: 800, color: '#ff4400' }}>{percentile.percentile}%</span>
+                </div>
+                <div style={{ fontSize: 13, color: '#888', marginBottom: 20 }}>
+                  Among {submissions[0].role} with {submissions[0].experience} experience
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'center', gap: 16 }}>
+                  <div style={{ background: '#1a1a1a', borderRadius: 8, padding: '10px 18px' }}>
+                    <div style={{ fontSize: 10, color: '#666', textTransform: 'uppercase', marginBottom: 2 }}>You</div>
+                    <div style={{ fontSize: 18, fontWeight: 800, color: '#fff' }}>{percentile.userSalary}M</div>
+                  </div>
+                  <div style={{ background: '#1a1a1a', borderRadius: 8, padding: '10px 18px' }}>
+                    <div style={{ fontSize: 10, color: '#666', textTransform: 'uppercase', marginBottom: 2 }}>Median</div>
+                    <div style={{ fontSize: 18, fontWeight: 800, color: '#888' }}>{percentile.marketMedian}M</div>
+                  </div>
+                  <div style={{ background: '#1a1a1a', borderRadius: 8, padding: '10px 18px' }}>
+                    <div style={{ fontSize: 10, color: '#666', textTransform: 'uppercase', marginBottom: 2 }}>Diff</div>
+                    <div style={{ fontSize: 18, fontWeight: 800, color: percentile.diff >= 0 ? '#4ade80' : '#f87171' }}>
+                      {percentile.diff >= 0 ? '+' : ''}{percentile.diff}M
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Submission History */}
+            <div className="pcard" style={{ marginTop: 16 }}>
+              <div className="pcard-h">My Submissions ({submissions.length})</div>
+              {submissions.map((sub, i) => (
+                <div key={sub.id} style={{
+                  padding: '14px 0',
+                  borderBottom: i < submissions.length - 1 ? '1px solid #f0f0f0' : 'none',
+                  display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                  flexWrap: 'wrap', gap: 8,
+                }}>
+                  <div>
+                    <div style={{ fontSize: 14, fontWeight: 600, color: '#111' }}>
+                      {sub.role} · {sub.experience}
+                    </div>
+                    <div style={{ fontSize: 13, color: '#888' }}>
+                      {sub.company || '—'}
+                    </div>
+                  </div>
+                  <div style={{ textAlign: 'right' }}>
+                    <div style={{ fontSize: 16, fontWeight: 800, color: '#ff4400' }}>
+                      {sub.salary}M VND
+                    </div>
+                    <div style={{ fontSize: 11, color: '#bbb' }}>
+                      {new Date(sub.created_at).toLocaleDateString()}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </>
+        )}
       </div>
     </>
   )
