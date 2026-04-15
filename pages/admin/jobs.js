@@ -117,23 +117,41 @@ export default function AdminJobs() {
     else { const d = await res.json(); flash(d.error || 'Failed') }
   }
 
-  const handleImageUpload = async (e) => {
-    const files = Array.from(e.target.files || [])
+  const uploadFiles = async (files) => {
     if (!files.length) return
     setImageUploading(true)
     const newUrls = []
     for (const file of files) {
       if (file.size > 5 * 1024 * 1024) { flash('Max 5MB per image'); continue }
-      const path = `jobs/${Date.now()}_${file.name}`
+      const ext = file.name?.split('.').pop() || 'png'
+      const path = `jobs/${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`
       const { error } = await supabase.storage.from('job-images').upload(path, file)
       if (!error) {
         const { data } = supabase.storage.from('job-images').getPublicUrl(path)
         newUrls.push(data.publicUrl)
+      } else {
+        flash(error.message)
       }
     }
-    setForm(prev => ({ ...prev, images: [...(prev.images || []), ...newUrls] }))
+    if (newUrls.length) setForm(prev => ({ ...prev, images: [...(prev.images || []), ...newUrls] }))
     setImageUploading(false)
     if (imgInputRef.current) imgInputRef.current.value = ''
+  }
+
+  const handleImageUpload = async (e) => {
+    await uploadFiles(Array.from(e.target.files || []))
+  }
+
+  const handlePaste = async (e) => {
+    const items = Array.from(e.clipboardData?.items || [])
+    const imageFiles = items
+      .filter(item => item.type.startsWith('image/'))
+      .map(item => item.getAsFile())
+      .filter(Boolean)
+    if (imageFiles.length) {
+      e.preventDefault()
+      await uploadFiles(imageFiles)
+    }
   }
 
   const removeImage = (idx) => {
@@ -242,12 +260,17 @@ export default function AdminJobs() {
                 </div>
                 <div
                   onClick={() => imgInputRef.current?.click()}
+                  onPaste={handlePaste}
+                  tabIndex={0}
                   style={{
                     border: '1.5px dashed #ddd', borderRadius: 8, padding: '14px 20px',
                     textAlign: 'center', cursor: 'pointer', fontSize: 12, color: '#aaa',
+                    outline: 'none',
                   }}
+                  onFocus={e => e.target.style.borderColor = '#ff4400'}
+                  onBlur={e => e.target.style.borderColor = '#ddd'}
                 >
-                  {imageUploading ? 'Uploading...' : 'Click to add photos · JPG/PNG · max 5MB each'}
+                  {imageUploading ? 'Uploading...' : 'Click to browse · or Ctrl+V to paste from clipboard'}
                 </div>
                 <input ref={imgInputRef} type="file" accept="image/*" multiple style={{ display: 'none' }} onChange={handleImageUpload} />
               </div>
