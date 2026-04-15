@@ -301,8 +301,8 @@ export default function JobsPage() {
       <div className="jw">
         {/* HEADER */}
         <div className="jw-eye">JOBS CURATED FOR YOU</div>
-        <div className="jw-h1">Only jobs that pay more than you make now.</div>
-        <div className="jw-sub">No job boards. No spam. Real offers, real numbers.</div>
+        <div className="jw-h1">Better roles, higher pay — picked for you.</div>
+        <div className="jw-sub">Opportunities matched to your profile. Our headhunter personally introduces you.</div>
 
         {/* STATE A — not submitted */}
         {!isSubmitted ? (
@@ -322,7 +322,7 @@ export default function JobsPage() {
             <div className="jgate-box">
               <div className="jgate-icon">🔒</div>
               <div className="jgate-h">Unlock jobs matched for you</div>
-              <div className="jgate-p">{"Submit your salary — takes 2 minutes.\nWe'll show every job that pays more than what you make right now."}</div>
+              <div className="jgate-p">{"Submit your salary to get matched with better opportunities.\nTakes 2 minutes — your identity stays anonymous."}</div>
               <button className="jgate-btn" onClick={() => router.push('/#submit')}>Submit my salary → unlock jobs</button>
             </div>
           </div>
@@ -351,8 +351,8 @@ export default function JobsPage() {
               </div>
               <div className="jgate-box">
                 <div className="jgate-icon">🔓</div>
-                <div className="jgate-h">Log in to see your matched jobs</div>
-                <div className="jgate-p">{"You've already submitted your salary.\nSign in to see jobs that pay more and apply directly."}</div>
+                <div className="jgate-h">Sign in to unlock your matched jobs</div>
+                <div className="jgate-p">{"Log in to see roles that match your profile\nand get personally introduced by our headhunter."}</div>
                 <button className="jgate-btn" onClick={() => supabase.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: window.location.origin + '/auth/callback' } })}>
                   Continue with Google →
                 </button>
