@@ -6,7 +6,7 @@ export default function NextStepSheet({ role, experience, percentile, topCompani
   const [step, setStep] = useState('cta') // 'cta' | 'auth' | 'done'
 
   useEffect(() => {
-    const t = setTimeout(() => setVisible(true), 2000)
+    const t = setTimeout(() => setVisible(true), 5000)
     return () => clearTimeout(t)
   }, [])
 
