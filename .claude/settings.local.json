@@ -94,7 +94,8 @@
       "WebFetch(domain:salarymap.vercel.app)",
       "WebFetch(domain:lomen.co.kr)",
       "WebFetch(domain:hdex.co.kr)",
-      "WebFetch(domain:unsplash.com)"
+      "WebFetch(domain:unsplash.com)",
+      "WebFetch(domain:www.wanted.co.kr)"
     ]
   },
   "hooks": {

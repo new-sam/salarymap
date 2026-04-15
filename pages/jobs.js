@@ -33,7 +33,8 @@ export default function JobsPage() {
   const [userExperience, setUserExperience] = useState(null)
   const [userCompany, setUserCompany] = useState(null)
 
-  // Apply panel
+  // Detail & Apply panel
+  const [detailJob, setDetailJob] = useState(null)
   const [showPanel, setShowPanel] = useState(false)
   const [selectedJob, setSelectedJob] = useState(null)
   const [resumeFile, setResumeFile] = useState(null)
@@ -235,6 +236,32 @@ export default function JobsPage() {
         .ap-ok-h { font-size: 18px; font-weight: 700; color: #111; margin-bottom: 6px; }
         .ap-ok-p { font-size: 14px; color: #888; line-height: 1.5; }
 
+        /* Job Detail Panel */
+        .jd-bg { position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 60; }
+        .jd { position: fixed; top: 0; right: 0; width: 100%; max-width: 560px; height: 100vh; background: #fff; z-index: 61; overflow-y: auto; animation: jdSlide .3s ease; box-shadow: -8px 0 40px rgba(0,0,0,0.1); }
+        @keyframes jdSlide { from { transform: translateX(100%); } to { transform: translateX(0); } }
+        .jd-x { position: absolute; top: 16px; right: 20px; font-size: 24px; color: #aaa; cursor: pointer; background: none; border: none; z-index: 2; line-height: 1; }
+        .jd-img { width: 100%; height: 280px; object-fit: cover; background: #f0f0f0; }
+        .jd-body { padding: 28px 32px 40px; }
+        .jd-company { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; }
+        .jd-co-ini { width: 44px; height: 44px; border-radius: 10px; background: #f0f0f0; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 800; color: #555; flex-shrink: 0; }
+        .jd-co-name { font-size: 15px; font-weight: 600; color: #111; }
+        .jd-co-loc { font-size: 13px; color: #888; }
+        .jd-title { font-size: 22px; font-weight: 800; color: #111; margin-bottom: 8px; letter-spacing: -0.3px; }
+        .jd-salary { font-size: 16px; font-weight: 700; color: #ff4400; margin-bottom: 24px; }
+        .jd-divider { height: 1px; background: #f0f0f0; margin: 24px 0; }
+        .jd-section-title { font-size: 11px; font-weight: 700; color: #aaa; text-transform: uppercase; letter-spacing: .06em; margin-bottom: 12px; }
+        .jd-desc { font-size: 14px; color: #444; line-height: 1.8; margin-bottom: 24px; white-space: pre-line; }
+        .jd-meta-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 24px; }
+        .jd-meta-item { background: #f9f9f8; border-radius: 8px; padding: 12px 14px; }
+        .jd-meta-label { font-size: 10px; font-weight: 700; color: #aaa; text-transform: uppercase; letter-spacing: .04em; margin-bottom: 4px; }
+        .jd-meta-value { font-size: 14px; font-weight: 600; color: #111; }
+        .jd-apply-btn { width: 100%; padding: 14px; background: #ff4400; color: #fff; border: none; border-radius: 8px; font-size: 15px; font-weight: 700; cursor: pointer; margin-top: 8px; transition: background .15s; }
+        .jd-apply-btn:hover { background: #e63d00; }
+        .jd-login-box { background: #fff7f5; border: 1px solid #ffd6c8; border-radius: 10px; padding: 16px 20px; text-align: center; margin-top: 8px; }
+        .jd-login-text { font-size: 13px; color: #888; margin-bottom: 10px; }
+        .jd-login-btn { background: #ff4400; color: #fff; border: none; padding: 10px 24px; border-radius: 6px; font-size: 13px; font-weight: 700; cursor: pointer; }
+
         @media (max-width: 900px) { .jg { grid-template-columns: repeat(3, 1fr); } }
         @media (max-width: 768px) {
           .jn { padding: 0 16px; height: 48px; }
@@ -246,6 +273,10 @@ export default function JobsPage() {
           .jbm { font-size: 12px; padding: 5px 12px; }
           .jgate-box { padding: 36px 24px; }
           .ap { padding: 20px 20px 32px; }
+          .jd { max-width: 100%; }
+          .jd-body { padding: 20px 16px 32px; }
+          .jd-img { height: 200px; }
+          .jd-title { font-size: 18px; }
         }
         @media (max-width: 480px) {
           .jg { grid-template-columns: 1fr; max-width: 400px; }
@@ -347,7 +378,7 @@ export default function JobsPage() {
                 const bump = getBump(job)
                 return (
                   <div key={job.id} className="jc">
-                    <div className="jc-img">
+                    <div className="jc-img" onClick={() => setDetailJob({ ...job, _imgFallback: DEFAULT_IMAGES[idx % 3] })}>
                       <div className="jc-img-in" style={{
                         background: `url(${job.image_url || DEFAULT_IMAGES[idx % 3]}) center/cover no-repeat`,
                       }}>
@@ -388,6 +419,98 @@ export default function JobsPage() {
           </>
         )}
       </div>
+
+      {/* JOB DETAIL PANEL */}
+      {detailJob && (
+        <>
+          <div className="jd-bg" onClick={() => setDetailJob(null)} />
+          <div className="jd">
+            <button className="jd-x" onClick={() => setDetailJob(null)}>×</button>
+
+            {/* Hero image */}
+            <div className="jd-img" style={{
+              background: `url(${detailJob.image_url || detailJob._imgFallback || DEFAULT_IMAGES[0]}) center/cover no-repeat`,
+            }} />
+
+            <div className="jd-body">
+              {/* Company */}
+              <div className="jd-company">
+                <div className="jd-co-ini">{detailJob.company_initials || detailJob.company.slice(0,2).toUpperCase()}</div>
+                <div>
+                  <div className="jd-co-name">{detailJob.company}</div>
+                  <div className="jd-co-loc">{detailJob.location} · {detailJob.type}</div>
+                </div>
+              </div>
+
+              {/* Title & Salary */}
+              <div className="jd-title">{detailJob.title}</div>
+              <div className="jd-salary">{Math.round(detailJob.salary_min/1e6)}M – {Math.round(detailJob.salary_max/1e6)}M VND</div>
+
+              {/* Meta grid */}
+              <div className="jd-meta-grid">
+                <div className="jd-meta-item">
+                  <div className="jd-meta-label">Experience</div>
+                  <div className="jd-meta-value">{detailJob.experience_min}–{detailJob.experience_max} years</div>
+                </div>
+                <div className="jd-meta-item">
+                  <div className="jd-meta-label">Role</div>
+                  <div className="jd-meta-value">{detailJob.role}</div>
+                </div>
+                <div className="jd-meta-item">
+                  <div className="jd-meta-label">Work type</div>
+                  <div className="jd-meta-value" style={{ textTransform: 'capitalize' }}>{detailJob.type}</div>
+                </div>
+                <div className="jd-meta-item">
+                  <div className="jd-meta-label">Region</div>
+                  <div className="jd-meta-value" style={{ textTransform: 'capitalize' }}>{detailJob.country}</div>
+                </div>
+              </div>
+
+              <div className="jd-divider" />
+
+              {/* Description */}
+              <div className="jd-section-title">About this role</div>
+              <div className="jd-desc">
+                {detailJob.description || `${detailJob.company} is looking for a ${detailJob.title} to join their team in ${detailJob.location}.\n\nThis is a ${detailJob.type} position offering ${Math.round(detailJob.salary_min/1e6)}M–${Math.round(detailJob.salary_max/1e6)}M VND, ideal for candidates with ${detailJob.experience_min}–${detailJob.experience_max} years of experience in ${detailJob.role}.\n\nOur headhunter team will personally introduce you and support you throughout the process.`}
+              </div>
+
+              <div className="jd-divider" />
+
+              {/* Bump comparison */}
+              {isSubmitted && userSalary && detailJob.salary_min > userSalary && (
+                <div style={{
+                  background: '#fff7f5', border: '1px solid #ffd6c8', borderRadius: 10,
+                  padding: '14px 18px', marginBottom: 20, display: 'flex', alignItems: 'center', gap: 10,
+                }}>
+                  <span style={{ fontSize: 20 }}>📈</span>
+                  <div>
+                    <div style={{ fontSize: 14, fontWeight: 700, color: '#111' }}>
+                      +{Math.round(((detailJob.salary_min - userSalary) / userSalary) * 100)}% higher than your current salary
+                    </div>
+                    <div style={{ fontSize: 12, color: '#888' }}>
+                      Your benchmark: {Math.round(userSalary/1e6)}M VND → This role: {Math.round(detailJob.salary_min/1e6)}M–{Math.round(detailJob.salary_max/1e6)}M VND
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Apply CTA */}
+              {isLoggedIn ? (
+                <button className="jd-apply-btn" onClick={() => { setDetailJob(null); openApply(detailJob) }}>
+                  Apply now →
+                </button>
+              ) : (
+                <div className="jd-login-box">
+                  <div className="jd-login-text">Log in to apply for this position</div>
+                  <button className="jd-login-btn" onClick={() => supabase.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: window.location.origin + '/auth/callback' } })}>
+                    Continue with Google →
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        </>
+      )}
 
       {/* APPLY PANEL — STATE C */}
       {showPanel && selectedJob && isLoggedIn && (
