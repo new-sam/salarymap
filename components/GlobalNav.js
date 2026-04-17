@@ -40,7 +40,8 @@ export default function GlobalNav({ activePage }) {
         .gnav-jobs-cta:hover { background: linear-gradient(135deg, rgba(255,170,40,0.25), rgba(255,96,0,0.25)); color: #ffc56e !important; border-color: rgba(255,150,30,0.5); }
         .gnav-jobs-cta.on { color: #ffb347 !important; }
         .gnav-jobs-cta.on::after { display: none; }
-        .gnav-jobs-badge { font-size: 11px; font-weight: 800; color: #111; background: linear-gradient(135deg, #ffb347, #ff6000); width: 18px; height: 18px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; line-height: 1; }
+        @keyframes jobsBounce { 0%,100% { transform:translateY(0); } 50% { transform:translateY(-3px); } }
+        .gnav-jobs-badge { font-size: 11px; font-weight: 800; color: #111; background: linear-gradient(135deg, #ffb347, #ff6000); width: 18px; height: 18px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; line-height: 1; animation: jobsBounce 1.5s ease-in-out infinite; }
         .gnav-jobs-sub { font-size: 9px; color: rgba(255,179,71,0.6); position: absolute; bottom: -14px; left: 50%; transform: translateX(-50%); white-space: nowrap; letter-spacing: 0.03em; }
         .gnav-login { font-size: 13px; font-weight: 600; color: rgba(255,255,255,0.5); background: none; border: 1px solid rgba(255,255,255,0.15); padding: 7px 16px; border-radius: 100px; cursor: pointer; font-family: 'Barlow', sans-serif; }
         .gnav-submit { font-size: 12px; font-weight: 600; background: #ff6000; color: #fff; border: none; padding: 8px 18px; border-radius: 2px; cursor: pointer; font-family: 'Barlow', sans-serif; }
