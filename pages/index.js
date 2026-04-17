@@ -24,7 +24,7 @@ nav { position:fixed; top:0; left:0; right:0; z-index:200; padding:0 52px; heigh
 .nav-r { display:flex; align-items:center; gap:32px; }
 .nav-link { position:relative; font-size:13px; color:rgba(242,240,235,0.42); text-decoration:none; background:none; border:none; cursor:pointer; font-family:'Barlow',sans-serif; padding:0; transition:color .2s; }
 .nav-link:hover { color:#f0ece4; }
-.nav-link::after { content:''; position:absolute; bottom:0; left:0; right:0; height:2px; background:#ff6000; transform:scaleX(0); transition:transform .2s ease; }
+.nav-link::after { content:''; position:absolute; bottom:-2px; left:0; right:0; height:2px; background:#ff6000; transform:scaleX(0); transition:transform .2s ease; }
 .nav-link:hover::after { transform:scaleX(1); }
 .nav-jobs-cta { display:inline-flex; align-items:center; gap:5px; background:linear-gradient(135deg, rgba(255,170,40,0.15), rgba(255,96,0,0.15)); border:1px solid rgba(255,150,30,0.3); padding:6px 14px; border-radius:100px; color:#ffb347; font-weight:600; text-decoration:none; font-size:13px; font-family:'Barlow',sans-serif; position:relative; transition:all .25s; animation:jobsBounce 1.5s ease-in-out infinite; }
 .nav-jobs-cta:hover { background:linear-gradient(135deg, rgba(255,170,40,0.25), rgba(255,96,0,0.25)); color:#ffc56e; border-color:rgba(255,150,30,0.5); }
@@ -447,20 +447,24 @@ nav { position:fixed; top:0; left:0; right:0; z-index:200; padding:0 52px; heigh
 
 /* FYI SUBMIT SECTION */
 .fyi-submit-section {
-  background: #f0ede8;
-  padding: 80px 60px;
+  background: #0c0c0b;
+  padding: 100px 52px 120px;
   font-family: 'Barlow', sans-serif;
+  scroll-margin-top: 64px;
 }
 .fyi-submit-inner { max-width: 1100px; margin: 0 auto; }
 .fyi-submit-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 80px;
-  align-items: start;
+  align-items: stretch;
+  max-width: 1060px;
+  margin: 0 auto;
 }
 .fyi-submit-grid.fyi-submit-done {
   grid-template-columns: 1fr;
   gap: 0;
+  max-width: 1200px;
 }
 .fyi-submit-left h2 {
   font-size: clamp(36px,4.5vw,58px);
@@ -594,6 +598,9 @@ nav { position:fixed; top:0; left:0; right:0; z-index:200; padding:0 52px; heigh
 }
 .fyi-anon-note::before { content: '🔒'; font-size: 13px; }
 .fyi-submit-success { text-align: center; padding: 20px 0; display: none; }
+.fyi-step-label { font-size:11px; font-weight:700; color:rgba(255,255,255,0.35); letter-spacing:2px; text-transform:uppercase; margin-bottom:8px; }
+.fyi-step-title { font-size:22px; font-weight:900; color:#fff; letter-spacing:-0.5px; margin-bottom:6px; }
+.fyi-step-sub { font-size:13px; color:rgba(255,255,255,0.4); margin-bottom:24px; }
 .fyi-ss-icon  { font-size: 52px; margin-bottom: 14px; }
 .fyi-ss-title {
   font-size: 26px; font-weight: 900; text-transform: uppercase;
@@ -611,13 +618,12 @@ nav { position:fixed; top:0; left:0; right:0; z-index:200; padding:0 52px; heigh
 }
 .fyi-ss-cta:hover { opacity: 0.85; }
 @media (max-width: 768px) {
-  .fyi-submit-section { padding: 60px 24px; overflow:hidden; }
+  .fyi-submit-section { padding: 60px 20px 80px; overflow:hidden; }
   .wgf-director-row { grid-template-columns:1fr; gap:28px; }
   .wgf-headline { font-size:26px; }
   .wgf-team-grid { grid-template-columns:repeat(3,1fr); gap:10px; }
   .wgf-section { padding:60px 20px; }
-  .fyi-submit-grid { grid-template-columns: 1fr !important; gap: 40px !important; }
-  #submit { padding: 60px 20px 80px !important; }
+  .fyi-submit-grid { grid-template-columns: 1fr; gap: 40px; }
   footer { padding:24px 16px; }
   /* NAV */
   nav { padding:0 12px; height:48px; }
@@ -689,12 +695,16 @@ nav { position:fixed; top:0; left:0; right:0; z-index:200; padding:0 52px; heigh
   .co-role-median { font-size:13px; }
 }
 
-@media (max-width: 400px) {
+@media (max-width: 480px) {
+  .form-line { grid-template-columns:1fr !important; }
+  .fyi-step-roles { grid-template-columns:1fr !important; }
   .card-grid { grid-template-columns:1fr; gap:12px; }
   .bcard-banner { height:110px; }
   .bcard-metrics { display:grid; }
   .bcard-quote { display:none; }
-  .form-line { grid-template-columns:1fr !important; }
+}
+
+@media (max-width: 400px) {
   .hero-h1 { font-size:clamp(26px,9vw,36px); }
   .nav-r { gap:4px; }
   .nav-btn { font-size:8px; padding:4px 6px; }
@@ -1387,8 +1397,8 @@ function SubmitSection({
   };
 
   return (
-    <section id="submit" style={{background:'#0c0c0b', padding:'100px 52px 120px', fontFamily:"'Barlow',sans-serif", scrollMarginTop:'64px'}}>
-      <div className={`fyi-submit-grid${wizardStep > 5 ? ' fyi-submit-done' : ''}`} style={{maxWidth: wizardStep > 5 ? '1200px' : '1060px', margin:'0 auto', alignItems:'stretch'}}>
+    <section id="submit" className="fyi-submit-section">
+      <div className={`fyi-submit-grid${wizardStep > 5 ? ' fyi-submit-done' : ''}`}>
 
         {/* Left column — hidden after submit */}
         {wizardStep <= 5 && (
@@ -1438,10 +1448,10 @@ function SubmitSection({
               {/* Step 1 — Role */}
               {wizardStep === 1 && (
                 <div>
-                  <div style={{fontSize:'11px', fontWeight:700, color:'rgba(255,255,255,0.35)', letterSpacing:'2px', textTransform:'uppercase', marginBottom:'8px'}}>STEP 1 / 4</div>
-                  <div style={{fontSize:'22px', fontWeight:900, color:'#fff', letterSpacing:'-0.5px', marginBottom:'6px'}}>What's your role?</div>
-                  <div style={{fontSize:'13px', color:'rgba(255,255,255,0.4)', marginBottom:'24px'}}>Select the option that best fits</div>
-                  <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:'8px'}}>
+                  <div className="fyi-step-label">STEP 1 / 4</div>
+                  <div className="fyi-step-title">What's your role?</div>
+                  <div className="fyi-step-sub">Select the option that best fits</div>
+                  <div className="fyi-step-roles" style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:'8px'}}>
                     {ROLES.map(r => (
                       <button key={r} onClick={() => { setWRole(r); setTimeout(() => setWizardStep(2), 180); }}
                         style={{...btn, padding:'12px 14px', background: wRole===r ? 'rgba(255,96,0,0.15)' : 'rgba(255,255,255,0.04)',
@@ -1457,9 +1467,9 @@ function SubmitSection({
               {/* Step 2 — Experience */}
               {wizardStep === 2 && (
                 <div>
-                  <div style={{fontSize:'11px', fontWeight:700, color:'rgba(255,255,255,0.35)', letterSpacing:'2px', textTransform:'uppercase', marginBottom:'8px'}}>STEP 2 / 4</div>
-                  <div style={{fontSize:'22px', fontWeight:900, color:'#fff', letterSpacing:'-0.5px', marginBottom:'6px'}}>Years of experience?</div>
-                  <div style={{fontSize:'13px', color:'rgba(255,255,255,0.4)', marginBottom:'24px'}}>Total IT experience, including all roles</div>
+                  <div className="fyi-step-label">STEP 2 / 4</div>
+                  <div className="fyi-step-title">Years of experience?</div>
+                  <div className="fyi-step-sub">Total IT experience, including all roles</div>
                   <div style={{display:'flex', flexDirection:'column', gap:'8px'}}>
                     {EXPS.map(e => (
                       <button key={e} onClick={() => { setWExp(e); setTimeout(() => setWizardStep(3), 180); }}
@@ -1477,8 +1487,8 @@ function SubmitSection({
               {/* Step 3 — Salary */}
               {wizardStep === 3 && (
                 <div>
-                  <div style={{fontSize:'11px', fontWeight:700, color:'rgba(255,255,255,0.35)', letterSpacing:'2px', textTransform:'uppercase', marginBottom:'8px'}}>STEP 3 / 4</div>
-                  <div style={{fontSize:'22px', fontWeight:900, color:'#fff', letterSpacing:'-0.5px', marginBottom:'6px'}}>What's your monthly salary?</div>
+                  <div className="fyi-step-label">STEP 3 / 4</div>
+                  <div className="fyi-step-title">What's your monthly salary?</div>
                   <div style={{fontSize:'13px', color:'rgba(255,255,255,0.4)', marginBottom:'28px'}}>Pre-tax, per month (triệu VND)</div>
                   <div style={{display:'flex', alignItems:'baseline', gap:'8px', marginBottom:'20px'}}>
                     <span style={{fontFamily:"'Geist Mono',monospace", fontSize:'56px', color:'#ff6000', fontWeight:500, lineHeight:1}}>{sal}</span>
@@ -1505,9 +1515,9 @@ function SubmitSection({
               {/* Step 4 — Company (with autocomplete) */}
               {wizardStep === 4 && (
                 <div>
-                  <div style={{fontSize:'11px', fontWeight:700, color:'rgba(255,255,255,0.35)', letterSpacing:'2px', textTransform:'uppercase', marginBottom:'8px'}}>STEP 4 / 4</div>
-                  <div style={{fontSize:'22px', fontWeight:900, color:'#fff', letterSpacing:'-0.5px', marginBottom:'6px'}}>Where do you work?</div>
-                  <div style={{fontSize:'13px', color:'rgba(255,255,255,0.4)', marginBottom:'24px'}}>Company name (kept anonymous)</div>
+                  <div className="fyi-step-label">STEP 4 / 4</div>
+                  <div className="fyi-step-title">Where do you work?</div>
+                  <div className="fyi-step-sub">Company name (kept anonymous)</div>
 
                   {/* Autocomplete wrapper */}
                   <div ref={acWrapRef} style={{position:'relative', marginBottom:'16px'}}>
@@ -1642,7 +1652,7 @@ function SubmitSection({
               {/* Step 5 — optional rating */}
               {wizardStep === 5 && (
                 <div>
-                  <div style={{fontSize:'22px', fontWeight:900, color:'#fff', letterSpacing:'-0.5px', marginBottom:'6px'}}>One more thing (optional)</div>
+                  <div className="fyi-step-title">One more thing (optional)</div>
                   <div style={{fontSize:'13px', color:'rgba(255,255,255,0.4)', marginBottom:'28px'}}>Rate your experience at {wCompany}</div>
 
                   <StarRow label="Work-life balance" value={ratingWorklife} onChange={setRatingWorklife} />

@@ -32,6 +32,7 @@ export default function JobsPage() {
   const fileRef = useRef(null)
 
   const [jobs, setJobs] = useState([])
+  const [jobsLoaded, setJobsLoaded] = useState(false)
   const [roleFilter, setRoleFilter] = useState('all')
   const [perkFilter, setPerkFilter] = useState(null)
   const [isSubmitted, setIsSubmitted] = useState(false)
@@ -81,7 +82,7 @@ export default function JobsPage() {
   }, [])
 
   useEffect(() => {
-    fetch('/api/jobs').then(r => r.json()).then(setJobs).catch(() => {})
+    fetch('/api/jobs').then(r => r.json()).then(d => { setJobs(d); setJobsLoaded(true) }).catch(() => setJobsLoaded(true))
   }, [])
 
   const getBump = (job) => {
@@ -301,7 +302,7 @@ export default function JobsPage() {
           .jd-title { font-size: 18px; }
         }
         @media (max-width: 480px) {
-          .jg { grid-template-columns: 1fr; max-width: 400px; }
+          .jg { grid-template-columns: 1fr; }
           .jn-r .jn-submit { display: none; }
           .jn-tab { font-size: 12px; padding: 0 8px; }
         }
@@ -320,7 +321,7 @@ export default function JobsPage() {
           /* GATE: not submitted OR not logged in — unified blur + gate */
           <div className="jgate" style={{ minHeight: 500 }}>
             <div className="jgate-blur">
-              <div className="jg">
+              <div className="jg" style={{ opacity: jobsLoaded ? 1 : 0, transition: 'opacity .3s' }}>
                 {jobs.map((job, i) => (
                   <div key={job.id} className="jc">
                     <div className="jc-img"><div className="jc-img-in" style={{ background: `url(${job.images?.[0] || job.image_url || DEFAULT_IMAGES[i % 3]}) center/cover no-repeat` }} /></div>
@@ -402,7 +403,7 @@ export default function JobsPage() {
             <div className="jf-count">{filteredJobs.length} job{filteredJobs.length !== 1 ? 's' : ''} matched for you</div>
 
             {/* Grid */}
-            <div className="jg">
+            <div className="jg" style={{ opacity: jobsLoaded ? 1 : 0, transition: 'opacity .3s' }}>
               {filteredJobs.map((job, idx) => {
                 const bump = getBump(job)
                 return (
