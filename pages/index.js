@@ -607,7 +607,7 @@ nav { position:fixed; top:0; left:0; right:0; z-index:200; padding:0 52px; heigh
 }
 .fyi-ss-cta:hover { opacity: 0.85; }
 @media (max-width: 768px) {
-  .fyi-submit-section { padding: 60px 24px; }
+  .fyi-submit-section { padding: 60px 24px; overflow:hidden; }
   .wgf-director-row { grid-template-columns:1fr; gap:28px; }
   .wgf-headline { font-size:26px; }
   .wgf-team-grid { grid-template-columns:repeat(3,1fr); gap:10px; }
@@ -619,12 +619,12 @@ nav { position:fixed; top:0; left:0; right:0; z-index:200; padding:0 52px; heigh
   .logo { font-size:11px; gap:6px; }
   .logo img { width:22px !important; height:22px !important; }
   .nav-link { display:none; }
-  .nav-jobs-cta { display:inline-flex !important; font-size:11px; padding:5px 10px; gap:4px; }
-  .nav-jobs-badge { width:15px; height:15px; font-size:9px; }
+  .nav-jobs-cta { display:inline-flex !important; font-size:10px; padding:4px 8px; gap:3px; white-space:nowrap; }
+  .nav-jobs-badge { width:14px; height:14px; font-size:8px; }
   .nav-jobs-sub { display:none; }
-  .nav-r { gap:8px; }
-  .nav-btn { font-size:10px; padding:6px 10px; white-space:nowrap; }
-  .nav-login-btn { font-size:11px; padding:5px 12px; }
+  .nav-r { gap:6px; flex-shrink:0; }
+  .nav-btn { font-size:9px; padding:5px 8px; white-space:nowrap; }
+  .nav-login-btn { font-size:10px; padding:4px 10px; white-space:nowrap; }
 
   /* HERO */
   .hero { padding-top:48px; }
@@ -691,8 +691,10 @@ nav { position:fixed; top:0; left:0; right:0; z-index:200; padding:0 52px; heigh
   .bcard-quote { display:none; }
   .form-line { grid-template-columns:1fr !important; }
   .hero-h1 { font-size:clamp(26px,9vw,36px); }
-  .nav-r { gap:6px; }
-  .nav-btn { font-size:9px; padding:5px 8px; }
+  .nav-r { gap:4px; }
+  .nav-btn { font-size:8px; padding:4px 6px; }
+  .nav-login-btn { font-size:9px; padding:3px 8px; }
+  .nav-jobs-cta { font-size:9px; padding:3px 6px; }
   .nav-user-name { display:none; }
   .logo span { font-size:0; }
   .logo span span { font-size:10px; }

@@ -61,10 +61,11 @@ export default function GlobalNav({ activePage }) {
           .gnav-logo img { width: 22px; height: 22px; }
           .gnav-r { gap: 8px; }
           .gnav-link { display: none; }
-          .gnav-jobs-cta { display: inline-flex !important; font-size: 11px; padding: 5px 10px !important; gap: 4px; }
-          .gnav-jobs-badge { width: 15px; height: 15px; font-size: 9px; }
+          .gnav-jobs-cta { display: inline-flex !important; font-size: 10px; padding: 4px 8px !important; gap: 3px; white-space: nowrap; }
+          .gnav-jobs-badge { width: 14px; height: 14px; font-size: 8px; }
           .gnav-jobs-sub { display: none; }
-          .gnav-submit { font-size: 10px; padding: 6px 10px; }
+          .gnav-login { font-size: 10px; padding: 4px 10px; white-space: nowrap; }
+          .gnav-submit { font-size: 9px; padding: 5px 8px; white-space: nowrap; }
         }
         @media (max-width: 400px) {
           .gnav-name { display: none; }
