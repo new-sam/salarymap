@@ -26,6 +26,11 @@ nav { position:fixed; top:0; left:0; right:0; z-index:200; padding:0 52px; heigh
 .nav-link:hover { color:#f0ece4; }
 .nav-link::after { content:''; position:absolute; bottom:0; left:0; right:0; height:2px; background:#ff6000; transform:scaleX(0); transition:transform .2s ease; }
 .nav-link:hover::after { transform:scaleX(1); }
+.nav-jobs-cta { display:inline-flex; align-items:center; gap:5px; background:linear-gradient(135deg, rgba(255,170,40,0.15), rgba(255,96,0,0.15)); border:1px solid rgba(255,150,30,0.3); padding:6px 14px; border-radius:100px; color:#ffb347; font-weight:600; text-decoration:none; font-size:13px; font-family:'Barlow',sans-serif; position:relative; transition:all .25s; }
+.nav-jobs-cta:hover { background:linear-gradient(135deg, rgba(255,170,40,0.25), rgba(255,96,0,0.25)); color:#ffc56e; border-color:rgba(255,150,30,0.5); }
+.nav-jobs-cta::after { display:none !important; }
+.nav-jobs-badge { font-size:11px; font-weight:800; color:#111; background:linear-gradient(135deg, #ffb347, #ff6000); width:18px; height:18px; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; line-height:1; }
+.nav-jobs-sub { font-size:9px; color:rgba(255,179,71,0.6); position:absolute; bottom:-14px; left:50%; transform:translateX(-50%); white-space:nowrap; letter-spacing:0.03em; }
 
 /* Company selected state */
 .company-selected { display:flex; align-items:center; gap:14px; background:#1a0d07; border:1px solid #ff6000; border-radius:12px; padding:16px 18px; position:relative; overflow:hidden; }
@@ -2072,7 +2077,10 @@ export default function Home() {
         <div className="nav-r">
           <button className="nav-link" onClick={() => document.getElementById('submit')?.scrollIntoView({behavior:'smooth'})}>Am I underpaid?</button>
           <button className="nav-link" onClick={() => document.getElementById('companies')?.scrollIntoView({behavior:'smooth'})}>Who pays the most?</button>
-          <a className="nav-link" href="/jobs">Jobs</a>
+          <a className="nav-jobs-cta" href="/jobs">
+            Jobs <span className="nav-jobs-badge">↑</span>
+            <span className="nav-jobs-sub">Earn more</span>
+          </a>
 
           {!isLoggedIn ? (
             <button
