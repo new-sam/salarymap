@@ -101,7 +101,8 @@
       "Read(//c/Program Files/**)",
       "Read(//c/Program Files \\(x86\\)/**)",
       "Bash(sc query *)",
-      "Bash(reg query *)"
+      "Bash(reg query *)",
+      "Bash(taskkill //F //IM chrome.exe)"
     ]
   },
   "hooks": {
