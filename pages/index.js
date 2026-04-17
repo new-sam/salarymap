@@ -454,9 +454,13 @@ nav { position:fixed; top:0; left:0; right:0; z-index:200; padding:0 52px; heigh
 .fyi-submit-inner { max-width: 1100px; margin: 0 auto; }
 .fyi-submit-grid {
   display: grid;
-  grid-template-columns: 1fr 1.4fr;
+  grid-template-columns: 1fr 1fr;
   gap: 80px;
   align-items: start;
+}
+.fyi-submit-grid.fyi-submit-done {
+  grid-template-columns: 1fr;
+  gap: 0;
 }
 .fyi-submit-left h2 {
   font-size: clamp(36px,4.5vw,58px);
@@ -612,7 +616,8 @@ nav { position:fixed; top:0; left:0; right:0; z-index:200; padding:0 52px; heigh
   .wgf-headline { font-size:26px; }
   .wgf-team-grid { grid-template-columns:repeat(3,1fr); gap:10px; }
   .wgf-section { padding:60px 20px; }
-  .fyi-submit-grid { grid-template-columns: 1fr; gap: 40px; }
+  .fyi-submit-grid { grid-template-columns: 1fr !important; gap: 40px !important; }
+  #submit { padding: 60px 20px 80px !important; }
   footer { padding:24px 16px; }
   /* NAV */
   nav { padding:0 12px; height:48px; }
@@ -1383,7 +1388,7 @@ function SubmitSection({
 
   return (
     <section id="submit" style={{background:'#0c0c0b', padding:'100px 52px 120px', fontFamily:"'Barlow',sans-serif", scrollMarginTop:'64px'}}>
-      <div style={{maxWidth: wizardStep > 5 ? '1200px' : '1060px', margin:'0 auto', display:'grid', gridTemplateColumns: wizardStep > 5 ? '1fr' : '1fr 1fr', gap: wizardStep > 5 ? '0px' : '80px', alignItems:'stretch'}}>
+      <div className={`fyi-submit-grid${wizardStep > 5 ? ' fyi-submit-done' : ''}`} style={{maxWidth: wizardStep > 5 ? '1200px' : '1060px', margin:'0 auto', alignItems:'stretch'}}>
 
         {/* Left column — hidden after submit */}
         {wizardStep <= 5 && (
