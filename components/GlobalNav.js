@@ -36,6 +36,12 @@ export default function GlobalNav({ activePage }) {
         .gnav-link:hover { color: #f0ece4; }
         .gnav-link.on { color: #f0ece4; }
         .gnav-link.on::after { content: ''; position: absolute; bottom: -2px; left: 0; right: 0; height: 2px; background: #ff6000; }
+        .gnav-jobs-cta { display: inline-flex; align-items: center; gap: 5px; background: linear-gradient(135deg, rgba(255,170,40,0.15), rgba(255,96,0,0.15)); border: 1px solid rgba(255,150,30,0.3); padding: 6px 14px !important; border-radius: 100px; color: #ffb347 !important; font-weight: 600; transition: all .25s; }
+        .gnav-jobs-cta:hover { background: linear-gradient(135deg, rgba(255,170,40,0.25), rgba(255,96,0,0.25)); color: #ffc56e !important; border-color: rgba(255,150,30,0.5); }
+        .gnav-jobs-cta.on { color: #ffb347 !important; }
+        .gnav-jobs-cta.on::after { display: none; }
+        .gnav-jobs-badge { font-size: 11px; font-weight: 800; color: #111; background: linear-gradient(135deg, #ffb347, #ff6000); width: 18px; height: 18px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; line-height: 1; }
+        .gnav-jobs-sub { font-size: 9px; color: rgba(255,179,71,0.6); position: absolute; bottom: -14px; left: 50%; transform: translateX(-50%); white-space: nowrap; letter-spacing: 0.03em; }
         .gnav-login { font-size: 13px; font-weight: 600; color: rgba(255,255,255,0.5); background: none; border: 1px solid rgba(255,255,255,0.15); padding: 7px 16px; border-radius: 100px; cursor: pointer; font-family: 'Barlow', sans-serif; }
         .gnav-submit { font-size: 12px; font-weight: 600; background: #ff6000; color: #fff; border: none; padding: 8px 18px; border-radius: 2px; cursor: pointer; font-family: 'Barlow', sans-serif; }
         .gnav-user { display: flex; align-items: center; gap: 6px; padding: 4px 10px 4px 4px; border-radius: 100px; border: 1px solid rgba(255,255,255,0.12); cursor: pointer; position: relative; flex-shrink: 0; }
@@ -70,7 +76,10 @@ export default function GlobalNav({ activePage }) {
         </div>
         <div className="gnav-r">
           <Link href="/" className={`gnav-link${activePage === 'home' ? ' on' : ''}`}>Am I underpaid?</Link>
-          <Link href="/jobs" className={`gnav-link${activePage === 'jobs' ? ' on' : ''}`}>Jobs</Link>
+          <Link href="/jobs" className={`gnav-link gnav-jobs-cta${activePage === 'jobs' ? ' on' : ''}`}>
+            Jobs <span className="gnav-jobs-badge">↑</span>
+            <span className="gnav-jobs-sub">Earn more</span>
+          </Link>
 
           {!ready ? null : !isLoggedIn ? (
             <>
