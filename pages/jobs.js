@@ -198,7 +198,7 @@ export default function JobsPage() {
         /* Card */
         .jc { cursor: pointer; }
         .jc-img { border-radius: 8px; overflow: hidden; position: relative; padding-top: 62%; margin-bottom: 11px; background: #f0f0f0; }
-        .jc-img-in { position: absolute; inset: 0; transition: transform .25s ease; background-color: #f5f5f3; }
+        .jc-img-in { position: absolute; inset: 0; transition: transform .25s ease; background-color: #f5f5f3; background-origin: content-box; padding: 16%; }
         .jc:hover .jc-img-in { transform: scale(1.04); }
         .jc-bump { position: absolute; top: 10px; left: 10px; background: rgba(0,0,0,0.62); color: #fff; font-size: 11px; font-weight: 600; padding: 4px 9px; border-radius: 4px; z-index: 2; }
         .jc-bump b { color: #ff4400; font-weight: 700; }
