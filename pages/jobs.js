@@ -10,21 +10,30 @@ const DEFAULT_IMAGES = [
   'https://images.unsplash.com/photo-1524758631624-e2822e304c36?w=600&h=400&fit=crop',
   'https://images.unsplash.com/photo-1497215842964-222b430dc094?w=600&h=400&fit=crop',
 ]
-const FILTER_MAP = {
-  all: { label: 'All' },
-  pays_more: { label: 'Pays more' },
-  remote: { label: 'Remote' },
-  korea: { label: 'Korean company' },
-  vietnam: { label: 'Vietnam local' },
-  global: { label: 'Global' },
-}
+const ROLE_FILTERS = [
+  { key: 'all', label: 'All' },
+  { key: 'Frontend', label: 'Frontend' },
+  { key: 'Backend', label: 'Backend' },
+  { key: 'Fullstack', label: 'Full-Stack' },
+  { key: 'Mobile', label: 'Mobile' },
+  { key: 'Design', label: 'Design' },
+  { key: 'PM', label: 'PM' },
+]
+const PERK_FILTERS = [
+  { key: 'pays_more', label: 'Pays more' },
+  { key: 'remote', label: 'Remote' },
+  { key: 'korea', label: 'Korean company' },
+  { key: 'vietnam', label: 'Vietnam local' },
+  { key: 'global', label: 'Global' },
+]
 
 export default function JobsPage() {
   const router = useRouter()
   const fileRef = useRef(null)
 
   const [jobs, setJobs] = useState([])
-  const [filter, setFilter] = useState('all')
+  const [roleFilter, setRoleFilter] = useState('all')
+  const [perkFilter, setPerkFilter] = useState(null)
   const [isSubmitted, setIsSubmitted] = useState(false)
   const [isLoggedIn, setIsLoggedIn] = useState(false)
   const [authLoading, setAuthLoading] = useState(true)
@@ -82,10 +91,11 @@ export default function JobsPage() {
 
   const filteredJobs = jobs
     .filter(job => {
-      if (filter === 'all') return true
-      if (filter === 'pays_more') return userSalary ? job.salary_min > userSalary : true
-      if (filter === 'remote') return job.type === 'remote'
-      return job.country === filter
+      if (roleFilter !== 'all' && job.role !== roleFilter) return false
+      if (perkFilter === 'pays_more') return userSalary ? job.salary_min > userSalary : true
+      if (perkFilter === 'remote') return job.type === 'remote'
+      if (perkFilter === 'korea' || perkFilter === 'vietnam' || perkFilter === 'global') return job.country === perkFilter
+      return true
     })
 
   const handleApply = async () => {
@@ -178,6 +188,8 @@ export default function JobsPage() {
         .jf-pill { font-size: 13px; font-weight: 600; color: #666; background: #fff; border: 1px solid #e0e0e0; padding: 7px 16px; border-radius: 20px; cursor: pointer; transition: all .15s; }
         .jf-pill:hover { border-color: #bbb; color: #333; }
         .jf-pill.on { background: #111; color: #fff; border-color: #111; }
+        .jf-pill.outline { background: transparent; border: 1px solid #e0e0e0; font-weight: 500; }
+        .jf-pill.outline.on { background: #fff7f5; color: #ff4400; border-color: #ff4400; font-weight: 600; }
 
         .jf-count { font-size: 15px; font-weight: 700; color: #111; margin-bottom: 16px; }
 
@@ -378,10 +390,16 @@ export default function JobsPage() {
               </div>
             )}
 
-            {/* Filters */}
+            {/* Role filters */}
             <div className="jf">
-              {Object.entries(FILTER_MAP).map(([key, { label }]) => (
-                <button key={key} className={`jf-pill${filter === key ? ' on' : ''}`} onClick={() => setFilter(key)}>{label}</button>
+              {ROLE_FILTERS.map(({ key, label }) => (
+                <button key={key} className={`jf-pill${roleFilter === key ? ' on' : ''}`} onClick={() => setRoleFilter(key)}>{label}</button>
+              ))}
+            </div>
+            {/* Perk filters */}
+            <div className="jf">
+              {PERK_FILTERS.map(({ key, label }) => (
+                <button key={key} className={`jf-pill outline${perkFilter === key ? ' on' : ''}`} onClick={() => setPerkFilter(perkFilter === key ? null : key)}>{label}</button>
               ))}
             </div>
 
