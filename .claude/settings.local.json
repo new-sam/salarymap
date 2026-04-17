@@ -95,7 +95,13 @@
       "WebFetch(domain:lomen.co.kr)",
       "WebFetch(domain:hdex.co.kr)",
       "WebFetch(domain:unsplash.com)",
-      "WebFetch(domain:www.wanted.co.kr)"
+      "WebFetch(domain:www.wanted.co.kr)",
+      "Bash(tasklist)",
+      "Bash(wmic product *)",
+      "Read(//c/Program Files/**)",
+      "Read(//c/Program Files \\(x86\\)/**)",
+      "Bash(sc query *)",
+      "Bash(reg query *)"
     ]
   },
   "hooks": {
