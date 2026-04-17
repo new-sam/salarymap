@@ -198,7 +198,7 @@ export default function JobsPage() {
         /* Card */
         .jc { cursor: pointer; }
         .jc-img { border-radius: 8px; overflow: hidden; position: relative; padding-top: 62%; margin-bottom: 11px; background: #f0f0f0; }
-        .jc-img-in { position: absolute; inset: 0; transition: transform .25s ease; background-color: #f5f5f3; }
+        .jc-img-in { position: absolute; inset: 0; transition: transform .25s ease; background-color: #f0f0f0; background-size: cover; background-position: center; background-repeat: no-repeat; }
         .jc:hover .jc-img-in { transform: scale(1.04); }
         .jc-bump { position: absolute; top: 10px; left: 10px; background: rgba(0,0,0,0.62); color: #fff; font-size: 11px; font-weight: 600; padding: 4px 9px; border-radius: 4px; z-index: 2; }
         .jc-bump b { color: #ff4400; font-weight: 700; }
@@ -321,7 +321,7 @@ export default function JobsPage() {
           <div className="jgate" style={{ minHeight: 500 }}>
             <div className="jgate-blur">
               <div className="jg">
-                {(jobs.length ? jobs : [null,null,null]).slice(0, 4).map((job, i) => (
+                {(jobs.length ? jobs : [null,null,null,null]).slice(0, 4).map((job, i) => (
                   <div key={job?.id || i} className="jc">
                     <div className="jc-img"><div className="jc-img-in" style={{ background: `url(${job?.images?.[0] || job?.image_url || DEFAULT_IMAGES[i % 3]}) center/cover no-repeat` }} /></div>
                     <div className="jc-t" style={!job ? { background: '#e0e0e0', height: 14, borderRadius: 4, width: '70%' } : {}}>{job?.title || ''}</div>
