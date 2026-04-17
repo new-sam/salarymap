@@ -103,7 +103,9 @@
       "Bash(sc query *)",
       "Bash(reg query *)",
       "Bash(taskkill //F //IM chrome.exe)",
-      "Bash(certutil *)"
+      "Bash(certutil *)",
+      "Bash(nslookup salary-fyi.com)",
+      "Bash(whois salary-fyi.com)"
     ]
   },
   "hooks": {
