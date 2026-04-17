@@ -619,6 +619,9 @@ nav { position:fixed; top:0; left:0; right:0; z-index:200; padding:0 52px; heigh
   .logo { font-size:11px; gap:6px; }
   .logo img { width:22px !important; height:22px !important; }
   .nav-link { display:none; }
+  .nav-jobs-cta { display:inline-flex !important; font-size:11px; padding:5px 10px; gap:4px; }
+  .nav-jobs-badge { width:15px; height:15px; font-size:9px; }
+  .nav-jobs-sub { display:none; }
   .nav-r { gap:8px; }
   .nav-btn { font-size:10px; padding:6px 10px; white-space:nowrap; }
   .nav-login-btn { font-size:11px; padding:5px 12px; }

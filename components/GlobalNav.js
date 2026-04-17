@@ -61,6 +61,9 @@ export default function GlobalNav({ activePage }) {
           .gnav-logo img { width: 22px; height: 22px; }
           .gnav-r { gap: 8px; }
           .gnav-link { display: none; }
+          .gnav-jobs-cta { display: inline-flex !important; font-size: 11px; padding: 5px 10px !important; gap: 4px; }
+          .gnav-jobs-badge { width: 15px; height: 15px; font-size: 9px; }
+          .gnav-jobs-sub { display: none; }
           .gnav-submit { font-size: 10px; padding: 6px 10px; }
         }
         @media (max-width: 400px) {
