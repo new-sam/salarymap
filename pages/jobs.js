@@ -321,8 +321,8 @@ export default function JobsPage() {
           <div className="jgate" style={{ minHeight: 500 }}>
             <div className="jgate-blur">
               <div className="jg">
-                {(jobs.length ? jobs : [null,null,null,null]).slice(0, 4).map((job, i) => (
-                  <div key={job?.id || i} className="jc">
+                {(jobs.length ? jobs : Array.from({ length: 8 }, () => null)).map((job, i) => (
+                  <div key={job?.id || `sk-${i}`} className="jc">
                     <div className="jc-img"><div className="jc-img-in" style={{ background: `url(${job?.images?.[0] || job?.image_url || DEFAULT_IMAGES[i % 3]}) center/cover no-repeat` }} /></div>
                     <div className="jc-t" style={!job ? { background: '#e0e0e0', height: 14, borderRadius: 4, width: '70%' } : {}}>{job?.title || ''}</div>
                     <div className="jc-co" style={!job ? { background: '#eee', height: 11, borderRadius: 4, width: '45%', marginTop: 4 } : {}}>{job?.company || ''}</div>
