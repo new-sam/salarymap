@@ -321,16 +321,12 @@ export default function JobsPage() {
           <div className="jgate" style={{ minHeight: 500 }}>
             <div className="jgate-blur">
               <div className="jg">
-                {(jobs.length ? jobs : Array.from({ length: 8 }, () => null)).map((job, i) => (
-                  <div key={job?.id || `sk-${i}`} className="jc">
-                    <div className="jc-img"><div className="jc-img-in" style={{ background: `url(${job?.images?.[0] || job?.image_url || DEFAULT_IMAGES[i % 3]}) center/cover no-repeat` }} /></div>
-                    <div className="jc-t" style={!job ? { background: '#e0e0e0', height: 14, borderRadius: 4, width: '70%' } : {}}>{job?.title || ''}</div>
-                    <div className="jc-co" style={!job ? { background: '#eee', height: 11, borderRadius: 4, width: '45%', marginTop: 4 } : {}}>{job?.company || ''}</div>
-                    {job ? (
-                      <div className="jc-m">{job.location} · {job.type} · <b>{Math.round(job.salary_min/1e6)}M–{Math.round(job.salary_max/1e6)}M VND</b></div>
-                    ) : (
-                      <div style={{ background: '#f0f0f0', height: 10, borderRadius: 4, width: '60%', marginTop: 4 }} />
-                    )}
+                {jobs.map((job, i) => (
+                  <div key={job.id} className="jc">
+                    <div className="jc-img"><div className="jc-img-in" style={{ background: `url(${job.images?.[0] || job.image_url || DEFAULT_IMAGES[i % 3]}) center/cover no-repeat` }} /></div>
+                    <div className="jc-t">{job.title}</div>
+                    <div className="jc-co">{job.company}</div>
+                    <div className="jc-m">{job.location} · {job.type} · <b>{Math.round(job.salary_min/1e6)}M–{Math.round(job.salary_max/1e6)}M VND</b></div>
                   </div>
                 ))}
               </div>
