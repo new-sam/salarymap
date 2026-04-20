@@ -1853,8 +1853,13 @@ export default function Home() {
       if (session) {
         setIsLoggedIn(true);
         setUser(session.user);
-        fetch(`/api/admin/check?email=${encodeURIComponent(session.user.email)}`)
-          .then(r => r.json()).then(d => setIsAdminUser(d.isAdmin)).catch(() => {});
+        const cached = sessionStorage.getItem('fyi_is_admin');
+        if (cached !== null) {
+          setIsAdminUser(cached === 'true');
+        } else {
+          fetch(`/api/admin/check?email=${encodeURIComponent(session.user.email)}`)
+            .then(r => r.json()).then(d => { setIsAdminUser(d.isAdmin); sessionStorage.setItem('fyi_is_admin', String(d.isAdmin)); }).catch(() => {});
+        }
 
         // Only restore submission state for logged-in users
         const submitted = localStorage.getItem('fyi_submitted') === 'true';

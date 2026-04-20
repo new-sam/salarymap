@@ -16,6 +16,7 @@ export default async function handler(req, res) {
       .limit(30),
   ]);
 
+  res.setHeader('Cache-Control', 's-maxage=300, stale-while-revalidate=600');
   res.json({
     submissionCount: subResult.count || 0,
     companyCount: coResult.count || 0,

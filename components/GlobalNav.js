@@ -14,11 +14,17 @@ export default function GlobalNav({ activePage }) {
       if (session) {
         setIsLoggedIn(true)
         setUser(session.user)
-        try {
-          const r = await fetch(`/api/admin/check?email=${encodeURIComponent(session.user.email)}`)
-          const d = await r.json()
-          setIsAdmin(d.isAdmin)
-        } catch {}
+        const cached = sessionStorage.getItem('fyi_is_admin')
+        if (cached !== null) {
+          setIsAdmin(cached === 'true')
+        } else {
+          try {
+            const r = await fetch(`/api/admin/check?email=${encodeURIComponent(session.user.email)}`)
+            const d = await r.json()
+            setIsAdmin(d.isAdmin)
+            sessionStorage.setItem('fyi_is_admin', String(d.isAdmin))
+          } catch {}
+        }
       }
       setReady(true)
     })

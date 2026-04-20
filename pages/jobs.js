@@ -71,11 +71,17 @@ export default function JobsPage() {
     supabase.auth.getSession().then(async ({ data: { session: s } }) => {
       if (s) {
         setIsLoggedIn(true); setSession(s); setUser(s.user)
-        try {
-          const res = await fetch(`/api/admin/check?email=${encodeURIComponent(s.user.email)}`)
-          const { isAdmin } = await res.json()
-          setIsAdminUser(isAdmin)
-        } catch {}
+        const cached = sessionStorage.getItem('fyi_is_admin')
+        if (cached !== null) {
+          setIsAdminUser(cached === 'true')
+        } else {
+          try {
+            const res = await fetch(`/api/admin/check?email=${encodeURIComponent(s.user.email)}`)
+            const { isAdmin } = await res.json()
+            setIsAdminUser(isAdmin)
+            sessionStorage.setItem('fyi_is_admin', String(isAdmin))
+          } catch {}
+        }
       }
       setAuthLoading(false)
     })

@@ -87,19 +87,16 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: 'salary, role, experience required' });
   }
 
-  // Get peers: same role + same experience, fallback to role only
-  let peers = await fetchAll(
-    supabase.from('submissions').select('salary').eq('role', role).eq('experience', experience)
+  // Single query: get all submissions for this role (salary + company)
+  const allRoleData = await fetchAll(
+    supabase.from('submissions').select('salary, company, experience').eq('role', role)
   );
 
-  // If not enough peers for exact match, broaden to all experience levels for this role
-  if (!peers || peers.length < 3) {
-    peers = await fetchAll(
-      supabase.from('submissions').select('salary').eq('role', role)
-    );
-  }
+  // Filter peers: try exact experience match first, fallback to all
+  let peers = (allRoleData || []).filter(p => p.experience === experience);
+  if (peers.length < 3) peers = allRoleData || [];
 
-  if (!peers || peers.length < 3) {
+  if (peers.length < 3) {
     return res.status(200).json({
       percentile: 50,
       userSalary,
@@ -119,10 +116,8 @@ export default async function handler(req, res) {
   const diff = userSalary - marketMedian;
   const diffPct = marketMedian > 0 ? Math.round((diff / marketMedian) * 100) : 0;
 
-  // Get companies paying more for this role
-  const companyData = await fetchAll(
-    supabase.from('submissions').select('company, salary').eq('role', role)
-  );
+  // Reuse allRoleData for company analysis (no extra query)
+  const companyData = allRoleData;
 
   const companyMap = {};
   (companyData || []).forEach(row => {
@@ -145,6 +140,7 @@ export default async function handler(req, res) {
     .sort((a, b) => b.premiumPct - a.premiumPct)
     .slice(0, 4);
 
+  res.setHeader('Cache-Control', 's-maxage=60, stale-while-revalidate=300');
   res.status(200).json({
     percentile,
     userSalary,
