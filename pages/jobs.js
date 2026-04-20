@@ -126,6 +126,10 @@ export default function JobsPage() {
     })
     setApplying(false)
     setApplied(true)
+    // GA4 event
+    if (typeof gtag === 'function') gtag('event', 'job_apply', { event_category: 'engagement', event_label: selectedJob.title, company: selectedJob.company })
+    // Meta Pixel event
+    if (typeof fbq === 'function') fbq('track', 'Lead', { content_name: 'job_apply', content_category: selectedJob.title })
   }
 
   const toggleBookmark = (jobId) => {

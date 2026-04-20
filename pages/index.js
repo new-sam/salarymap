@@ -1284,6 +1284,10 @@ function SubmitSection({
     await onSubmit();
     setSubmitting(false);
     setWizardStep(5);
+    // GA4 event
+    if (typeof gtag === 'function') gtag('event', 'submit_salary', { event_category: 'engagement', event_label: wRole });
+    // Meta Pixel event
+    if (typeof fbq === 'function') fbq('track', 'Lead', { content_name: 'salary_submit', content_category: wRole });
   };
 
   const handleRatingSubmit = async () => {
