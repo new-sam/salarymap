@@ -624,6 +624,8 @@ nav { position:fixed; top:0; left:0; right:0; z-index:200; padding:0 52px; heigh
   .wgf-team-grid { grid-template-columns:repeat(3,1fr); gap:10px; }
   .wgf-section { padding:60px 20px; }
   .fyi-submit-grid { grid-template-columns: 1fr; gap: 40px; }
+  .lb-top3 { grid-template-columns: 1fr; }
+  .wgf-team-grid { grid-template-columns: repeat(2, 1fr); }
   footer { padding:24px 16px; }
   /* NAV */
   nav { padding:0 12px; height:48px; }
