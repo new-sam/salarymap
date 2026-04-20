@@ -156,8 +156,15 @@ export default function JobsPage() {
   return (
     <>
       <Head>
-        <title>Jobs — FYI Salary</title>
+        <title>Jobs — Higher Pay, Better Roles | FYI Salary</title>
+        <meta name="description" content="Curated IT jobs in Vietnam with higher pay. Our headhunter personally introduces you to top companies. Remote, Korean, and global opportunities." />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <meta property="og:type" content="website" />
+        <meta property="og:url" content="https://salary-fyi.com/jobs" />
+        <meta property="og:title" content="Jobs — Higher Pay, Better Roles | FYI Salary" />
+        <meta property="og:description" content="Curated IT jobs in Vietnam with higher pay. Our headhunter personally introduces you." />
+        <meta property="og:image" content="https://salary-fyi.com/og-image.png" />
+        <link rel="canonical" href="https://salary-fyi.com/jobs" />
       </Head>
 
       <style>{`

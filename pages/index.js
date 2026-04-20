@@ -2086,8 +2086,24 @@ export default function Home() {
   return (
     <div suppressHydrationWarning>
       <Head>
-        <title>FYI — Vietnam IT Salaries</title>
+        <title>FYI — Vietnam IT Salary Intelligence | Check If You're Underpaid</title>
+        <meta name="description" content="Compare your salary with real data from 34+ top IT companies in Vietnam. Anonymous, instant results. Find out if you're underpaid and discover higher-paying roles." />
+        <meta name="keywords" content="Vietnam IT salary, salary comparison, tech salary Vietnam, developer salary, software engineer salary, IT jobs Vietnam" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
+        {/* Open Graph */}
+        <meta property="og:type" content="website" />
+        <meta property="og:url" content="https://salary-fyi.com" />
+        <meta property="og:title" content="FYI — Vietnam IT Salary Intelligence" />
+        <meta property="og:description" content="Compare your salary with real data from 34+ top IT companies in Vietnam. Anonymous, instant results." />
+        <meta property="og:image" content="https://salary-fyi.com/og-image.png" />
+        <meta property="og:site_name" content="FYI Salary" />
+        {/* Twitter Card */}
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content="FYI — Vietnam IT Salary Intelligence" />
+        <meta name="twitter:description" content="Compare your salary with real data from 34+ top IT companies in Vietnam." />
+        <meta name="twitter:image" content="https://salary-fyi.com/og-image.png" />
+        {/* Canonical */}
+        <link rel="canonical" href="https://salary-fyi.com" />
         <link
           href="https://fonts.googleapis.com/css2?family=Barlow:ital,wght@0,400;0,600;0,700;0,800;0,900;1,800;1,900&family=Geist:wght@300;400;500;600;700;800;900&family=Geist+Mono:wght@400;500&display=swap"
           rel="stylesheet"

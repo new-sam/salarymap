@@ -83,9 +83,13 @@ export default function HowItWorks() {
   return (
     <>
       <Head>
-        <title>How it works — SalaryMap.vn</title>
+        <title>How It Works — FYI Salary</title>
         <meta name="viewport" content="width=device-width, initial-scale=1" />
-        <meta name="description" content="How SalaryMap collects, verifies, and displays Vietnam IT salary data." />
+        <meta name="description" content="How FYI Salary collects, verifies, and displays Vietnam IT salary data. Anonymous submissions, real-time results." />
+        <meta property="og:title" content="How It Works — FYI Salary" />
+        <meta property="og:description" content="How FYI Salary collects, verifies, and displays Vietnam IT salary data." />
+        <meta property="og:image" content="https://salary-fyi.com/og-image.png" />
+        <link rel="canonical" href="https://salary-fyi.com/how-it-works" />
       </Head>
       <div dangerouslySetInnerHTML={{ __html: html }} />
     </>

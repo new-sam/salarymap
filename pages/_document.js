@@ -4,6 +4,12 @@ export default function Document() {
   return (
     <Html lang="en">
       <Head>
+        {/* Favicon */}
+        <link rel="icon" href="/logo.png" />
+        <link rel="apple-touch-icon" href="/logo.png" />
+        {/* SEO defaults */}
+        <meta name="theme-color" content="#0c0c0b" />
+        <meta property="og:locale" content="en_US" />
         {/* Google Analytics 4 */}
         <script async src="https://www.googletagmanager.com/gtag/js?id=G-XK0DH7FKDX" />
         <script dangerouslySetInnerHTML={{ __html: `
