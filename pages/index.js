@@ -1460,7 +1460,7 @@ function SubmitSection({
                   <div className="fyi-step-sub">Select the option that best fits</div>
                   <div className="fyi-step-roles" style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:'8px'}}>
                     {ROLES.map(r => (
-                      <button key={r} onClick={() => { setWRole(r); setTimeout(() => setWizardStep(2), 180); }}
+                      <button key={r} onClick={() => { setWRole(r); if(typeof gtag==='function') gtag('event','wizard_step_1',{role:r}); setTimeout(() => setWizardStep(2), 180); }}
                         style={{...btn, padding:'12px 14px', background: wRole===r ? 'rgba(255,96,0,0.15)' : 'rgba(255,255,255,0.04)',
                           border:`1.5px solid ${wRole===r ? '#ff6000' : 'rgba(255,255,255,0.08)'}`,
                           borderRadius:'8px', color:'#fff', fontSize:'13px', fontWeight:700, textAlign:'left', transition:'all .12s'}}>
@@ -1479,7 +1479,7 @@ function SubmitSection({
                   <div className="fyi-step-sub">Total IT experience, including all roles</div>
                   <div style={{display:'flex', flexDirection:'column', gap:'8px'}}>
                     {EXPS.map(e => (
-                      <button key={e} onClick={() => { setWExp(e); setTimeout(() => setWizardStep(3), 180); }}
+                      <button key={e} onClick={() => { setWExp(e); if(typeof gtag==='function') gtag('event','wizard_step_2',{experience:e}); setTimeout(() => setWizardStep(3), 180); }}
                         style={{...btn, padding:'14px 16px', background: wExp===e ? 'rgba(255,96,0,0.15)' : 'rgba(255,255,255,0.04)',
                           border:`1.5px solid ${wExp===e ? '#ff6000' : 'rgba(255,255,255,0.08)'}`,
                           borderRadius:'8px', color:'#fff', fontSize:'14px', fontWeight:700, textAlign:'left', transition:'all .12s'}}>
@@ -1511,7 +1511,7 @@ function SubmitSection({
                       <span key={t} style={{fontSize:'10px', color:'rgba(255,255,255,0.35)', fontFamily:"'Geist Mono',monospace"}}>{t}</span>
                     ))}
                   </div>
-                  <button onClick={() => setWizardStep(4)}
+                  <button onClick={() => { if(typeof gtag==='function') gtag('event','wizard_step_3',{salary:wSalary}); setWizardStep(4); }}
                     style={{...btn, width:'100%', background:'#ff6000', color:'#fff', fontSize:'14px', fontWeight:800, padding:'15px', borderRadius:'10px'}}>
                     Next →
                   </button>
@@ -2405,7 +2405,7 @@ export default function Home() {
                       index={i}
                       isUnlocked={isUnlocked}
                       onClick={(co) => { setDetailCompany(co.name || co.company); setDetailCardIndex(i); setDetailOpen(true); }}
-                      onLockedClick={() => document.getElementById('submit')?.scrollIntoView({ behavior: 'smooth' })}
+                      onLockedClick={() => { if(typeof gtag==='function') gtag('event','locked_card_click'); document.getElementById('submit')?.scrollIntoView({ behavior: 'smooth' }); }}
                     />
                   ))}
                   {visibleCount < filtered.length && (
