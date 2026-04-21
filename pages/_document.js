@@ -7,11 +7,16 @@ export default function Document() {
         {/* Favicon */}
         <link rel="icon" href="/logo.png" />
         <link rel="apple-touch-icon" href="/logo.png" />
+        {/* Font preconnect */}
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link rel="preconnect" href="https://images.unsplash.com" />
+        <link rel="preconnect" href="https://www.google.com" />
         {/* SEO defaults */}
         <meta name="theme-color" content="#0c0c0b" />
         <meta property="og:locale" content="en_US" />
-        {/* Google Analytics 4 */}
-        <script async src="https://www.googletagmanager.com/gtag/js?id=G-XK0DH7FKDX" />
+        {/* Google Analytics 4 — defer to not block render */}
+        <script defer src="https://www.googletagmanager.com/gtag/js?id=G-XK0DH7FKDX" />
         <script dangerouslySetInnerHTML={{ __html: `
           window.dataLayer = window.dataLayer || [];
           function gtag(){dataLayer.push(arguments);}

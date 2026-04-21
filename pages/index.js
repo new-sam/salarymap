@@ -722,7 +722,7 @@ nav { position:fixed; top:0; left:0; right:0; z-index:200; padding:0 52px; heigh
 
 
 const bodyHTML = `<section class="hero">
-  <video id="hero-vid" autoplay muted playsinline style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:.35;z-index:0;">
+  <video id="hero-vid" autoplay muted playsinline preload="none" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:.35;z-index:0;">
     <source src="/interview1.mp4" type="video/mp4">
   </video>
 
