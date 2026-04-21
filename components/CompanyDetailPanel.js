@@ -573,7 +573,7 @@ export default function CompanyDetailPanel({
       </div>
       <div style={{ fontSize: 13, color: '#888', lineHeight: 1.7, marginBottom: 20 }}>
         We keep salary data fair — share yours to unlock everyone else's.<br />
-        It takes 2 minutes and your identity is never shared.
+        It takes 30 seconds and your identity is never shared.
       </div>
       <button onClick={() => { onClose(); document.getElementById('submit')?.scrollIntoView({ behavior: 'smooth' }) }} style={{
         width: '100%', padding: '14px 0',

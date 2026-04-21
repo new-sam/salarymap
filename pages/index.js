@@ -1418,13 +1418,13 @@ function SubmitSection({
               Where does<br />my salary <em style={{fontStyle:'normal', color:'#ff6000'}}>stand?</em>
             </h2>
             <p style={{fontSize:'15px', color:'rgba(242,240,235,0.45)', lineHeight:1.8, marginBottom:'32px', maxWidth:'340px'}}>
-              Takes 2 minutes. Enter your role and salary to instantly see where you rank in the Vietnam IT market.
+              Takes 30 seconds. Enter your role and salary to instantly see where you rank in the Vietnam IT market.
             </p>
             <div style={{display:'flex', flexDirection:'column', gap:'10px'}}>
               {[
                 ['🔒','Anonymous','No name or email required'],
                 ['⚡','Instant results','See your market position immediately'],
-                ['📊','Real data','Based on 34+ companies actual submissions'],
+                ['📊','Real data','Based on 70+ companies actual submissions'],
               ].map(([icon, title, sub]) => (
                 <div key={title} style={{display:'flex', alignItems:'center', gap:'12px', padding:'12px 16px', background:'rgba(255,255,255,0.03)', borderRadius:'10px', border:'1px solid rgba(255,255,255,0.06)'}}>
                   <span style={{fontSize:'18px'}}>{icon}</span>
@@ -1651,7 +1651,7 @@ function SubmitSection({
                       cursor: wCompany.trim() ? 'pointer' : 'not-allowed', transition:'background .15s'}}>
                     {submitting ? 'Submitting…' : 'See where I stand →'}
                   </button>
-                  <div style={{textAlign:'center', fontSize:'11px', color:'rgba(255,255,255,0.3)', marginTop:'12px'}}>🔒 Anonymous · No login required · 2 min</div>
+                  <div style={{textAlign:'center', fontSize:'11px', color:'rgba(255,255,255,0.3)', marginTop:'12px'}}>🔒 Anonymous · No login required · 30 sec</div>
                   <button onClick={() => setWizardStep(3)} style={{...btn, marginTop:'12px', background:'none', color:'rgba(255,255,255,0.35)', fontSize:'12px', display:'block', width:'100%', textAlign:'center'}}>← Back</button>
                 </div>
               )}
@@ -2093,20 +2093,20 @@ export default function Home() {
     <div suppressHydrationWarning>
       <Head>
         <title>FYI — Vietnam IT Salary Intelligence | Check If You're Underpaid</title>
-        <meta name="description" content="Compare your salary with real data from 34+ top IT companies in Vietnam. Anonymous, instant results. Find out if you're underpaid and discover higher-paying roles." />
+        <meta name="description" content="Compare your salary with real data from 70+ top IT companies in Vietnam. Anonymous, instant results. Find out if you're underpaid and discover higher-paying roles." />
         <meta name="keywords" content="Vietnam IT salary, salary comparison, tech salary Vietnam, developer salary, software engineer salary, IT jobs Vietnam" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         {/* Open Graph */}
         <meta property="og:type" content="website" />
         <meta property="og:url" content="https://salary-fyi.com" />
         <meta property="og:title" content="FYI — Vietnam IT Salary Intelligence" />
-        <meta property="og:description" content="Compare your salary with real data from 34+ top IT companies in Vietnam. Anonymous, instant results." />
+        <meta property="og:description" content="Compare your salary with real data from 70+ top IT companies in Vietnam. Anonymous, instant results." />
         <meta property="og:image" content="https://salary-fyi.com/og-image.png" />
         <meta property="og:site_name" content="FYI Salary" />
         {/* Twitter Card */}
         <meta name="twitter:card" content="summary_large_image" />
         <meta name="twitter:title" content="FYI — Vietnam IT Salary Intelligence" />
-        <meta name="twitter:description" content="Compare your salary with real data from 34+ top IT companies in Vietnam." />
+        <meta name="twitter:description" content="Compare your salary with real data from 70+ top IT companies in Vietnam." />
         <meta name="twitter:image" content="https://salary-fyi.com/og-image.png" />
         {/* Canonical */}
         <link rel="canonical" href="https://salary-fyi.com" />
@@ -2364,7 +2364,7 @@ export default function Home() {
                   onClick={() => { setLbCompany(null); document.getElementById('submit')?.scrollIntoView({behavior:'smooth'}); }}>
                   See where you stand →
                 </button>
-                <div className="lb-cta-sub">2 minutes · anonymous · no login</div>
+                <div className="lb-cta-sub">30 seconds · anonymous · no login</div>
               </div>
 
             </div>
