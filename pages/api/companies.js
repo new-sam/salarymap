@@ -127,9 +127,9 @@ export default async function handler(req, res) {
 
     if (cErr) throw cErr;
 
-    // 2a. Fetch ALL submissions for total count per company (with salary range filter)
+    // 2. Single fetch: get ALL submissions once, filter in memory
     const allSubmissions = await fetchAll(
-      supabase.from('submissions').select('company, salary')
+      supabase.from('submissions').select('company, salary, role, experience')
     );
 
     // Total count per company (filtered to valid salary range)
@@ -141,12 +141,12 @@ export default async function handler(req, res) {
       totalCountMap[key] = (totalCountMap[key] || 0) + 1;
     });
 
-    // 2b. Fetch submissions filtered by role+experience for salary stats
-    let q = supabase.from('submissions').select('company, salary, role, experience');
-    if (role) q = q.eq('role', role);
-    if (experience) q = q.eq('experience', experience);
-
-    const submissions = await fetchAll(q);
+    // Filter by role+experience in memory
+    const submissions = allSubmissions.filter(s => {
+      if (role && s.role !== role) return false;
+      if (experience && s.experience !== experience) return false;
+      return true;
+    });
 
 
     // 3. Group filtered submissions by company name (for salary stats only)
@@ -227,7 +227,7 @@ export default async function handler(req, res) {
       return a.company.localeCompare(b.company);
     });
 
-    res.setHeader('Cache-Control', 's-maxage=600, stale-while-revalidate=3600');
+    res.setHeader('Cache-Control', 's-maxage=1800, stale-while-revalidate=3600');
     return res.status(200).json(cards);
 
   } catch (err) {
