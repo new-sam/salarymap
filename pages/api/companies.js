@@ -127,34 +127,31 @@ export default async function handler(req, res) {
 
     if (cErr) throw cErr;
 
-    // 2. Fast RPC for total counts + filtered submissions in parallel
-    let filteredQuery = supabase.from('submissions').select('company, salary, role, experience');
-    if (role) filteredQuery = filteredQuery.eq('role', role);
-    if (experience) filteredQuery = filteredQuery.eq('experience', experience);
-
-    const [rpcResult, filteredResult] = await Promise.all([
-      supabase.rpc('get_company_stats'),
-      fetchAll(filteredQuery),
-    ]);
-
-    // Total count from RPC
+    // 2. Fast RPC for total counts
+    const { data: rpcData } = await supabase.rpc('get_company_stats');
     const totalCountMap = {};
-    (rpcResult.data || []).forEach(r => {
+    (rpcData || []).forEach(r => {
       const key = r.company.trim().toLowerCase();
       totalCountMap[key] = Number(r.cnt);
     });
 
-    // 3. Group filtered submissions by company name (for salary stats only)
+    // 3. Only fetch filtered submissions if role/experience filter is applied
     const salaryMap = {};
-    (filteredResult || []).forEach(s => {
-      if (!s.company) return;
-      const key = s.company.trim().toLowerCase();
-      if (!salaryMap[key]) salaryMap[key] = { salaries: [], roles: {} };
-      if (s.salary && s.salary >= 5 && s.salary <= 200) {
-        salaryMap[key].salaries.push(s.salary);
-      }
-      if (s.role) salaryMap[key].roles[s.role] = (salaryMap[key].roles[s.role] || 0) + 1;
-    });
+    if (role || experience) {
+      let filteredQuery = supabase.from('submissions').select('company, salary, role, experience');
+      if (role) filteredQuery = filteredQuery.eq('role', role);
+      if (experience) filteredQuery = filteredQuery.eq('experience', experience);
+      const filteredResult = await fetchAll(filteredQuery);
+      (filteredResult || []).forEach(s => {
+        if (!s.company) return;
+        const key = s.company.trim().toLowerCase();
+        if (!salaryMap[key]) salaryMap[key] = { salaries: [], roles: {} };
+        if (s.salary && s.salary >= 5 && s.salary <= 200) {
+          salaryMap[key].salaries.push(s.salary);
+        }
+        if (s.role) salaryMap[key].roles[s.role] = (salaryMap[key].roles[s.role] || 0) + 1;
+      });
+    }
 
     const getSummary = (arr) => {
       const sorted = [...arr].sort((a, b) => a - b);
