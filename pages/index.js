@@ -56,6 +56,7 @@ nav { position:fixed; top:0; left:0; right:0; z-index:200; padding:0 52px; heigh
 .kdot { width:5px; height:5px; border-radius:50%; background:var(--orange); box-shadow:0 0 8px var(--orange); animation:glow 2s ease-in-out infinite; }
 @keyframes glow { 0%,100%{box-shadow:0 0 6px var(--orange)} 50%{box-shadow:0 0 20px var(--orange)} }
 @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
+@keyframes pulse { 0%,100%{opacity:0.6} 50%{opacity:0.3} }
 .hero-h1 { font-size:clamp(36px,4.5vw,64px); font-weight:800; line-height:1.1; letter-spacing:-2px; margin-bottom:24px; color:var(--white); }
 .hero-h1 em { font-style:normal; color:var(--orange); }
 .hero-sub { font-size:16px; color:var(--mid); line-height:1.8; font-weight:300; max-width:420px; margin-bottom:44px; }
@@ -2381,6 +2382,16 @@ export default function Home() {
         createPortal(
           <>
             {(() => {
+              if (!apiCompanies.length) {
+                return Array.from({ length: 8 }).map((_, i) => (
+                  <div key={`sk-${i}`} className="company-card" style={{ background: '#1a1a1a', animation: 'pulse 1.5s ease-in-out infinite' }}>
+                    <div style={{ padding: 20 }}>
+                      <div style={{ width: '60%', height: 16, background: 'rgba(255,255,255,0.08)', borderRadius: 4, marginBottom: 10 }} />
+                      <div style={{ width: '40%', height: 12, background: 'rgba(255,255,255,0.05)', borderRadius: 4 }} />
+                    </div>
+                  </div>
+                ));
+              }
               const filtered = cardSearchQuery
                 ? apiCompanies.filter(c => (c.name || c.company || '').toLowerCase().includes(cardSearchQuery))
                 : apiCompanies;

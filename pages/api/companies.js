@@ -227,8 +227,17 @@ export default async function handler(req, res) {
       return a.company.localeCompare(b.company);
     });
 
+    // Strip heavy fields from cards without data to reduce payload
+    const lightCards = cards.map(c => {
+      if (!c.hasData) {
+        const { image, topRole, topPct, ...rest } = c;
+        return rest;
+      }
+      return c;
+    });
+
     res.setHeader('Cache-Control', 's-maxage=1800, stale-while-revalidate=3600');
-    return res.status(200).json(cards);
+    return res.status(200).json(lightCards);
 
   } catch (err) {
     console.error('companies API error:', err);
