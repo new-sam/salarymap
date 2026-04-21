@@ -127,31 +127,26 @@ export default async function handler(req, res) {
 
     if (cErr) throw cErr;
 
-    // 2. Single fetch: get ALL submissions once, filter in memory
-    const allSubmissions = await fetchAll(
-      supabase.from('submissions').select('company, salary, role, experience')
-    );
+    // 2. Fast RPC for total counts + filtered submissions in parallel
+    let filteredQuery = supabase.from('submissions').select('company, salary, role, experience');
+    if (role) filteredQuery = filteredQuery.eq('role', role);
+    if (experience) filteredQuery = filteredQuery.eq('experience', experience);
 
-    // Total count per company (filtered to valid salary range)
+    const [rpcResult, filteredResult] = await Promise.all([
+      supabase.rpc('get_company_stats'),
+      fetchAll(filteredQuery),
+    ]);
+
+    // Total count from RPC
     const totalCountMap = {};
-    allSubmissions.forEach(s => {
-      if (!s.company) return;
-      if (s.salary < 3 || s.salary > 300) return;
-      const key = s.company.trim().toLowerCase();
-      totalCountMap[key] = (totalCountMap[key] || 0) + 1;
+    (rpcResult.data || []).forEach(r => {
+      const key = r.company.trim().toLowerCase();
+      totalCountMap[key] = Number(r.cnt);
     });
-
-    // Filter by role+experience in memory
-    const submissions = allSubmissions.filter(s => {
-      if (role && s.role !== role) return false;
-      if (experience && s.experience !== experience) return false;
-      return true;
-    });
-
 
     // 3. Group filtered submissions by company name (for salary stats only)
     const salaryMap = {};
-    submissions.forEach(s => {
+    (filteredResult || []).forEach(s => {
       if (!s.company) return;
       const key = s.company.trim().toLowerCase();
       if (!salaryMap[key]) salaryMap[key] = { salaries: [], roles: {} };
