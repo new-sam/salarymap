@@ -742,10 +742,46 @@ const bodyHTML = `<section class="hero">
   </div>
 </section>
 
-<!-- TRUST BUILDER -->
-<section class="trust-section" style="background:#0c0c0b; padding:20px 0 60px;">
+<!-- COMPANY SEARCH (2nd section) -->
+<div class="cards-bg" id="companies" style="scroll-margin-top:64px">
+<div class="cards-section">
+  <div class="section-head">
+    <h2 class="section-head-title">See what Vietnam's top IT companies <em>actually pay.</em></h2>
+    <p class="section-head-sub">Search your company or browse by category.</p>
+  </div>
 
-  <!-- WGF SECTION -->
+  <!-- Company search bar -->
+  <div class="co-search-wrap">
+    <div class="co-search-bar">
+      <span class="co-search-icon">🔍</span>
+      <input class="co-search-input" id="co-search-input" type="text" placeholder="Search company (e.g. Grab, VNG, Shopee…)"
+        oninput="coSearchFilter(this.value)"
+        onkeydown="coSearchKey(event)"
+        onblur="setTimeout(coSearchClose, 180)" />
+    </div>
+    <div class="co-search-drop" id="co-search-drop"></div>
+  </div>
+
+  <!-- Search result panel -->
+  <div class="co-result-panel" id="co-result-panel">
+    <div class="co-result-header">
+      <div>
+        <div class="co-result-name" id="co-result-name">—</div>
+        <div class="co-result-count" id="co-result-count"></div>
+      </div>
+      <button class="co-result-close" onclick="coResultClose()">✕ Close</button>
+    </div>
+    <div id="co-result-body"></div>
+  </div>
+  <div class="company-grid" id="company-grid-root"></div>
+</div><!-- /cards-section -->
+</div><!-- /cards-bg -->
+
+<!-- SUBMIT WIZARD (3rd section) -->
+<!-- SUBMIT_REACT_PLACEHOLDER -->
+
+<!-- WE GO FIRST (4th section) -->
+<section class="trust-section" style="background:#0c0c0b; padding:20px 0 60px;">
   <div class="wgf-section">
     <div class="wgf-eyebrow" data-wgf="badge">REAL SALARIES · REAL PEOPLE</div>
 
@@ -793,44 +829,8 @@ const bodyHTML = `<section class="hero">
   </div>
 </section>
 
-<!-- PRIVACY SECTION (rendered as React component) -->
+<!-- ANONYMOUS (5th section) -->
 <div id="anonymous-section-root"></div>
-
-<div class="cards-bg" id="companies" style="scroll-margin-top:64px">
-<div class="cards-section">
-  <div class="section-head">
-    <h2 class="section-head-title">See what Vietnam's top IT companies <em>actually pay.</em></h2>
-    <p class="section-head-sub">Search your company or browse by category.</p>
-  </div>
-
-  <!-- Company search bar -->
-  <div class="co-search-wrap">
-    <div class="co-search-bar">
-      <span class="co-search-icon">🔍</span>
-      <input class="co-search-input" id="co-search-input" type="text" placeholder="Search company (e.g. Grab, VNG, Shopee…)"
-        oninput="coSearchFilter(this.value)"
-        onkeydown="coSearchKey(event)"
-        onblur="setTimeout(coSearchClose, 180)" />
-    </div>
-    <div class="co-search-drop" id="co-search-drop"></div>
-  </div>
-
-  <!-- Search result panel -->
-  <div class="co-result-panel" id="co-result-panel">
-    <div class="co-result-header">
-      <div>
-        <div class="co-result-name" id="co-result-name">—</div>
-        <div class="co-result-count" id="co-result-count"></div>
-      </div>
-      <button class="co-result-close" onclick="coResultClose()">✕ Close</button>
-    </div>
-    <div id="co-result-body"></div>
-  </div>
-  <div class="company-grid" id="company-grid-root"></div>
-</div><!-- /cards-section -->
-</div><!-- /cards-bg -->
-
-<!-- SUBMIT_REACT_PLACEHOLDER -->
 
 
 <div id="full-feed">

@@ -1,16 +1,19 @@
 export default function AnonymousSection() {
   return (
-    <section style={{
-      background: '#0c0c0b',
-      padding: '80px 60px 60px',
-      fontFamily: "'Barlow', 'Inter', sans-serif",
-      WebkitFontSmoothing: 'antialiased',
-    }}>
+    <section className="anon-section">
+      <style>{`
+        .anon-section { background:#0c0c0b; padding:80px 60px 60px; font-family:'Barlow','Inter',sans-serif; -webkit-font-smoothing:antialiased; }
+        .anon-cards { display:grid; grid-template-columns:1fr 1fr; gap:20px; max-width:960px; margin:0 auto; }
+        @media (max-width: 768px) {
+          .anon-section { padding:60px 20px 40px; }
+          .anon-cards { grid-template-columns:1fr; gap:16px; }
+        }
+      `}</style>
 
       {/* Header */}
       <div style={{ textAlign: 'center', marginBottom: '24px' }}>
         <h2 style={{
-          fontSize: 'clamp(32px, 4vw, 51px)',
+          fontSize: 'clamp(28px, 4vw, 51px)',
           fontWeight: 700,
           color: '#fff',
           lineHeight: 1.3,
@@ -21,7 +24,7 @@ export default function AnonymousSection() {
           {' '}anonymous.
         </h2>
         <p style={{
-          fontSize: '18px',
+          fontSize: 'clamp(14px, 2.5vw, 18px)',
           fontWeight: 300,
           color: 'rgba(255,255,255,0.5)',
           maxWidth: '700px',
@@ -33,7 +36,7 @@ export default function AnonymousSection() {
 
       {/* Illustration */}
       <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '-24px', position: 'relative', zIndex: 2 }}>
-        <svg width="256" height="221" viewBox="0 0 256 221" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <svg width="256" height="221" viewBox="0 0 256 221" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ maxWidth: '200px', height: 'auto' }}>
           <circle cx="126.086" cy="114.687" r="106" fill="url(#paint0_anon)" fillOpacity="0.34"/>
           <circle cx="126.086" cy="114.687" r="80.854" fill="url(#paint1_anon)" fillOpacity="0.34"/>
           <path d="M78.0864 1.68748L66.6634 0L70.9135 10.7364L78.0864 1.68748ZM1.0864 110.687L2.08516 110.638C0.824408 85.4226 13.0134 30.7922 70.1218 5.91523L69.7225 4.99844L69.3231 4.08165C11.2053 29.3984-1.19939 84.9967 0.0876513 110.737L1.0864 110.687Z" fill="#C8F133"/>
@@ -83,20 +86,14 @@ export default function AnonymousSection() {
       </div>
 
       {/* Two cards */}
-      <div style={{
-        display: 'grid',
-        gridTemplateColumns: '1fr 1fr',
-        gap: '20px',
-        maxWidth: '960px',
-        margin: '0 auto',
-      }}>
+      <div className="anon-cards">
 
         {/* Left — What you submit */}
         <div style={{
           background: 'rgba(255,255,255,0.04)',
           border: '1px solid rgba(255,255,255,0.08)',
           borderRadius: '18px',
-          padding: '52px 24px 28px',
+          padding: '32px 24px 28px',
         }}>
           <div style={{ fontSize: '14px', fontWeight: 300, color: 'rgba(255,255,255,0.4)', marginBottom: '18px', letterSpacing: '0.02em' }}>
             What you submit
@@ -123,10 +120,10 @@ export default function AnonymousSection() {
                   background: '#ff6000',
                   flexShrink: 0,
                 }} />
-                <span style={{ fontSize: '14px', color: '#fff' }}>{label}</span>
+                <span style={{ fontSize: '13px', color: '#fff' }}>{label}</span>
                 <span style={{
                   marginLeft: 'auto',
-                  fontSize: '14px',
+                  fontSize: '13px',
                   fontWeight: 600,
                   color: 'rgba(255,255,255,0.3)',
                   filter: 'blur(5px)',
@@ -142,7 +139,7 @@ export default function AnonymousSection() {
           background: 'rgba(255,255,255,0.04)',
           border: '1px solid rgba(255,255,255,0.08)',
           borderRadius: '18px',
-          padding: '52px 24px 28px',
+          padding: '32px 24px 28px',
         }}>
           <div style={{ fontSize: '18px', fontWeight: 700, color: '#ff6000', marginBottom: '8px' }}>
             What everyone sees
@@ -153,7 +150,7 @@ export default function AnonymousSection() {
           <div style={{ height: '8px', background: 'rgba(255,255,255,0.1)', borderRadius: '20px', overflow: 'hidden', marginBottom: '12px' }}>
             <div style={{ height: '100%', width: '72%', background: '#ff6000', borderRadius: '20px' }} />
           </div>
-          <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between' }}>
+          <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', flexWrap: 'wrap', gap: '4px' }}>
             <span style={{ fontSize: '22px', fontWeight: 700, color: '#fff' }}>
               24M — 38M VND
             </span>
@@ -172,9 +169,10 @@ export default function AnonymousSection() {
         alignItems: 'center',
         justifyContent: 'center',
         gap: '12px',
+        flexWrap: 'wrap',
       }}>
         <span style={{ fontSize: '28px' }}>🙈</span>
-        <span style={{ fontSize: '18px', fontWeight: 300, color: 'rgba(255,255,255,0.5)' }}>
+        <span style={{ fontSize: 'clamp(14px, 2.5vw, 18px)', fontWeight: 300, color: 'rgba(255,255,255,0.5)' }}>
           We <em style={{ color: '#ff6000', fontStyle: 'normal', fontWeight: 700 }}>can't</em> identify you. Even if we tried.
         </span>
       </div>
