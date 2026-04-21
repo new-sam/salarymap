@@ -1424,7 +1424,7 @@ function SubmitSection({
               {[
                 ['🔒','Anonymous','No name or email required'],
                 ['⚡','Instant results','See your market position immediately'],
-                ['📊','Real data','Based on 70+ companies actual submissions'],
+                ['📊','Real data','Based on 4,600+ real salary entries'],
               ].map(([icon, title, sub]) => (
                 <div key={title} style={{display:'flex', alignItems:'center', gap:'12px', padding:'12px 16px', background:'rgba(255,255,255,0.03)', borderRadius:'10px', border:'1px solid rgba(255,255,255,0.06)'}}>
                   <span style={{fontSize:'18px'}}>{icon}</span>
@@ -2093,20 +2093,20 @@ export default function Home() {
     <div suppressHydrationWarning>
       <Head>
         <title>FYI — Vietnam IT Salary Intelligence | Check If You're Underpaid</title>
-        <meta name="description" content="Compare your salary with real data from 70+ top IT companies in Vietnam. Anonymous, instant results. Find out if you're underpaid and discover higher-paying roles." />
+        <meta name="description" content="Compare your salary with real data from 4,600+ real salary entries across Vietnam. Anonymous, instant results. Find out if you're underpaid and discover higher-paying roles." />
         <meta name="keywords" content="Vietnam IT salary, salary comparison, tech salary Vietnam, developer salary, software engineer salary, IT jobs Vietnam" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         {/* Open Graph */}
         <meta property="og:type" content="website" />
         <meta property="og:url" content="https://salary-fyi.com" />
         <meta property="og:title" content="FYI — Vietnam IT Salary Intelligence" />
-        <meta property="og:description" content="Compare your salary with real data from 70+ top IT companies in Vietnam. Anonymous, instant results." />
+        <meta property="og:description" content="Compare your salary with real data from 4,600+ real salary entries across Vietnam. Anonymous, instant results." />
         <meta property="og:image" content="https://salary-fyi.com/og-image.png" />
         <meta property="og:site_name" content="FYI Salary" />
         {/* Twitter Card */}
         <meta name="twitter:card" content="summary_large_image" />
         <meta name="twitter:title" content="FYI — Vietnam IT Salary Intelligence" />
-        <meta name="twitter:description" content="Compare your salary with real data from 70+ top IT companies in Vietnam." />
+        <meta name="twitter:description" content="Compare your salary with real data from 4,600+ real salary entries across Vietnam." />
         <meta name="twitter:image" content="https://salary-fyi.com/og-image.png" />
         {/* Canonical */}
         <link rel="canonical" href="https://salary-fyi.com" />

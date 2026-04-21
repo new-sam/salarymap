@@ -155,7 +155,7 @@ export default function AnonymousSection() {
               24M — 38M VND
             </span>
             <span style={{ fontSize: '12px', fontWeight: 300, color: 'rgba(255,255,255,0.35)' }}>
-              Based on 35 salaries
+              Based on 261 salaries
             </span>
           </div>
         </div>
