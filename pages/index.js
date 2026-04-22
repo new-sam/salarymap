@@ -1403,301 +1403,228 @@ function SubmitSection({
     }
   };
 
+  const POPULAR_COMPANIES = ['Grab','FPT Software','MoMo','VNG','Sky Mavis','Shopee'];
+  const stepHeadings = [
+    null,
+    { pre: 'Lương tôi có ', em: 'thấp không?', sub: 'Chọn vị trí hiện tại của bạn' },
+    { pre: 'Số năm ', em: 'kinh nghiệm?', sub: 'Tổng kinh nghiệm IT, bao gồm tất cả vị trí' },
+    { pre: 'Lương hàng tháng ', em: 'của bạn?', sub: 'Trước thuế, mỗi tháng (triệu VNĐ)' },
+    { pre: 'Bạn đang ', em: 'làm ở đâu?', sub: 'Tên công ty (được giữ ẩn danh)' },
+    { pre: 'Đánh giá ', em: 'công ty?', sub: `Đánh giá trải nghiệm tại ${wCompany}` },
+  ];
+  const EXP_LABELS = {
+    'Under 1yr': 'Dưới 1 năm', '1–2 yrs': '1–2 năm', '3–4 yrs': '3–5 năm',
+    '5–7 yrs': '5–8 năm', '8+ yrs': '8+ năm',
+  };
+
+  const quizCard = {
+    background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)',
+    borderRadius: '20px', padding: 'clamp(24px, 5vw, 40px)',
+    maxWidth: '520px', margin: '0 auto', position: 'relative',
+  };
+  const quizBtn = { fontFamily: "'Be Vietnam Pro', sans-serif", cursor: 'pointer', border: 'none' };
+  const ctaStyle = {
+    ...quizBtn, width: '100%', background: '#ff4400', color: '#fff', fontSize: '16px',
+    fontWeight: 700, padding: '16px', borderRadius: '14px',
+    boxShadow: '0 8px 32px rgba(255,68,0,0.3)', transition: 'all .15s',
+  };
+  const optBase = {
+    ...quizBtn, padding: '15px 12px', borderRadius: '14px', color: 'rgba(255,255,255,0.55)',
+    background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)',
+    fontSize: '14px', fontWeight: 700, textAlign: 'left', transition: 'all .15s',
+    width: '100%',
+  };
+  const optSelected = {
+    border: '1px solid #ff4400', background: 'rgba(255,68,0,0.12)', color: '#fff',
+    boxShadow: '0 0 20px rgba(255,68,0,0.2)',
+  };
+
+  const BlurredTeaser = () => (
+    <div style={{ border: '1px solid rgba(255,68,0,0.2)', background: 'rgba(255,68,0,0.05)',
+      borderRadius: '18px', padding: '20px', marginBottom: '24px', position: 'relative', overflow: 'hidden' }}>
+      <div style={{ filter: 'blur(10px)', pointerEvents: 'none', userSelect: 'none' }}>
+        <div style={{ fontSize: '28px', fontWeight: 900, color: '#4ade80' }}>Top 18%</div>
+        <div style={{ fontSize: '13px', color: 'rgba(255,255,255,0.5)', marginTop: '4px' }}>Bạn đang kiếm nhiều hơn 82% người cùng vị trí</div>
+        <div style={{ height: '6px', background: 'rgba(255,255,255,0.1)', borderRadius: '20px', marginTop: '12px' }}>
+          <div style={{ height: '100%', width: '82%', background: '#4ade80', borderRadius: '20px' }} />
+        </div>
+      </div>
+      <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column',
+        alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+        <span style={{ fontSize: '20px' }}>🔒</span>
+        <span style={{ fontSize: '12px', fontWeight: 700, color: 'rgba(255,255,255,0.5)' }}>
+          Chọn vị trí để xem kết quả
+        </span>
+      </div>
+    </div>
+  );
+
+  const heading = stepHeadings[Math.min(wizardStep, 5)];
+
   return (
-    <section id="submit" className="fyi-submit-section">
-      <div className={`fyi-submit-grid${wizardStep > 5 ? ' fyi-submit-done' : ''}`}>
+    <section id="submit" style={{
+      background: '#080808', padding: 'clamp(60px, 8vw, 100px) clamp(16px, 4vw, 52px)',
+      fontFamily: "'Be Vietnam Pro', sans-serif", scrollMarginTop: '64px', position: 'relative', overflow: 'hidden',
+    }}>
+      {/* Ambient glow */}
+      <div style={{ position: 'absolute', top: '-200px', left: '-200px', width: '600px', height: '600px',
+        background: 'radial-gradient(circle, rgba(255,68,0,0.08) 0%, transparent 70%)', pointerEvents: 'none' }} />
+      <div style={{ position: 'absolute', bottom: '-200px', right: '-200px', width: '600px', height: '600px',
+        background: 'radial-gradient(circle, rgba(255,68,0,0.06) 0%, transparent 70%)', pointerEvents: 'none' }} />
 
-        {/* Left column — hidden after submit */}
-        {wizardStep <= 5 && (
-          <div style={{display:'flex', flexDirection:'column', justifyContent:'center'}}>
-            <div style={{fontSize:'11px', fontWeight:700, color:'#ff6000', letterSpacing:'2.5px', textTransform:'uppercase', marginBottom:'20px', display:'flex', alignItems:'center', gap:'8px'}}>
-              <span style={{width:'5px', height:'5px', borderRadius:'50%', background:'#ff6000', display:'inline-block'}} />
-              Anonymous · Secure
-            </div>
-            <h2 style={{fontSize:'clamp(28px,3.5vw,48px)', fontWeight:900, lineHeight:1.05, letterSpacing:'-2px', color:'#f2f0eb', marginBottom:'20px'}}>
-              Where does<br />my salary <em style={{fontStyle:'normal', color:'#ff6000'}}>stand?</em>
-            </h2>
-            <p style={{fontSize:'15px', color:'rgba(242,240,235,0.45)', lineHeight:1.8, marginBottom:'32px', maxWidth:'340px'}}>
-              Takes 30 seconds. Enter your role and salary to instantly see where you rank in the Vietnam IT market.
-            </p>
-            <div style={{display:'flex', flexDirection:'column', gap:'10px'}}>
-              {[
-                ['🔒','Anonymous','No name or email required'],
-                ['⚡','Instant results','See your market position immediately'],
-                ['📊','Real data','Based on 4,600+ real salary entries'],
-              ].map(([icon, title, sub]) => (
-                <div key={title} style={{display:'flex', alignItems:'center', gap:'12px', padding:'12px 16px', background:'rgba(255,255,255,0.03)', borderRadius:'10px', border:'1px solid rgba(255,255,255,0.06)'}}>
-                  <span style={{fontSize:'18px'}}>{icon}</span>
-                  <div>
-                    <div style={{fontSize:'13px', fontWeight:700, color:'#f2f0eb'}}>{title}</div>
-                    <div style={{fontSize:'11px', color:'rgba(242,240,235,0.4)', marginTop:'1px'}}>{sub}</div>
-                  </div>
-                </div>
-              ))}
-            </div>
+      {wizardStep <= 5 ? (
+        <div style={quizCard}>
+          {/* Progress bar */}
+          <div style={{ display: 'flex', gap: '6px', marginBottom: '28px' }}>
+            {[1,2,3,4].map(s => (
+              <div key={s} style={{ height: '2px', flex: 1, borderRadius: '2px', transition: 'background .3s',
+                background: s < wizardStep ? '#ff4400' : s === wizardStep ? 'rgba(255,68,0,0.4)' : 'rgba(255,255,255,0.08)' }} />
+            ))}
           </div>
-        )}
 
-        {/* Right column — wizard or result */}
-        <div style={wizardStep > 5 ? {} : card}>
-          {wizardStep <= 5 ? (
-            <>
-              {/* Progress dots */}
-              {wizardStep <= 4 && (
-              <div style={{display:'flex', gap:'6px', marginBottom:'28px'}}>
-                {[1,2,3,4].map(s => (
-                  <div key={s} style={{height:'3px', flex:1, borderRadius:'2px', transition:'background .25s',
-                    background: s < wizardStep ? '#ff6000' : s === wizardStep ? '#fff' : 'rgba(255,255,255,0.1)'}} />
+          {/* Step label */}
+          {heading && (
+            <div style={{ marginBottom: '24px' }}>
+              <div style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '.14em', color: 'rgba(255,255,255,0.25)',
+                textTransform: 'uppercase', marginBottom: '12px' }}>
+                BƯỚC {Math.min(wizardStep, 4)} / 4
+              </div>
+              <h2 style={{ fontSize: 'clamp(28px, 5vw, 36px)', fontWeight: 900, color: '#fff', lineHeight: 1.15, marginBottom: '8px' }}>
+                {heading.pre}<em style={{ fontStyle: 'italic', color: '#ff4400' }}>{heading.em}</em>
+              </h2>
+              <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.3)' }}>{heading.sub}</p>
+            </div>
+          )}
+
+          {/* Step 1 — Role */}
+          {wizardStep === 1 && (
+            <div>
+              <BlurredTeaser />
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                {ROLES.map(r => (
+                  <button key={r} onClick={() => { setWRole(r); if(typeof gtag==='function') gtag('event','wizard_step_1',{role:r}); setTimeout(() => setWizardStep(2), 300); }}
+                    style={{ ...optBase, ...(wRole === r ? optSelected : {}) }}>
+                    {r}
+                  </button>
                 ))}
               </div>
-              )}
+            </div>
+          )}
 
-              {/* Step 1 — Role */}
-              {wizardStep === 1 && (
-                <div>
-                  <div className="fyi-step-label">STEP 1 / 4</div>
-                  <div className="fyi-step-title">What's your role?</div>
-                  <div className="fyi-step-sub">Select the option that best fits</div>
-                  <div className="fyi-step-roles" style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:'8px'}}>
-                    {ROLES.map(r => (
-                      <button key={r} onClick={() => { setWRole(r); if(typeof gtag==='function') gtag('event','wizard_step_1',{role:r}); setTimeout(() => setWizardStep(2), 180); }}
-                        style={{...btn, padding:'12px 14px', background: wRole===r ? 'rgba(255,96,0,0.15)' : 'rgba(255,255,255,0.04)',
-                          border:`1.5px solid ${wRole===r ? '#ff6000' : 'rgba(255,255,255,0.08)'}`,
-                          borderRadius:'8px', color:'#fff', fontSize:'13px', fontWeight:700, textAlign:'left', transition:'all .12s'}}>
-                        {r}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Step 2 — Experience */}
-              {wizardStep === 2 && (
-                <div>
-                  <div className="fyi-step-label">STEP 2 / 4</div>
-                  <div className="fyi-step-title">Years of experience?</div>
-                  <div className="fyi-step-sub">Total IT experience, including all roles</div>
-                  <div style={{display:'flex', flexDirection:'column', gap:'8px'}}>
-                    {EXPS.map(e => (
-                      <button key={e} onClick={() => { setWExp(e); if(typeof gtag==='function') gtag('event','wizard_step_2',{experience:e}); setTimeout(() => setWizardStep(3), 180); }}
-                        style={{...btn, padding:'14px 16px', background: wExp===e ? 'rgba(255,96,0,0.15)' : 'rgba(255,255,255,0.04)',
-                          border:`1.5px solid ${wExp===e ? '#ff6000' : 'rgba(255,255,255,0.08)'}`,
-                          borderRadius:'8px', color:'#fff', fontSize:'14px', fontWeight:700, textAlign:'left', transition:'all .12s'}}>
-                        {e}
-                      </button>
-                    ))}
-                  </div>
-                  <button onClick={() => setWizardStep(1)} style={{...btn, marginTop:'16px', background:'none', color:'rgba(255,255,255,0.35)', fontSize:'12px'}}>← Back</button>
-                </div>
-              )}
-
-              {/* Step 3 — Salary */}
-              {wizardStep === 3 && (
-                <div>
-                  <div className="fyi-step-label">STEP 3 / 4</div>
-                  <div className="fyi-step-title">What's your monthly salary?</div>
-                  <div style={{fontSize:'13px', color:'rgba(255,255,255,0.4)', marginBottom:'28px'}}>Pre-tax, per month (triệu VND)</div>
-                  <div style={{display:'flex', alignItems:'baseline', gap:'8px', marginBottom:'20px'}}>
-                    <span style={{fontFamily:"'Geist Mono',monospace", fontSize:'56px', color:'#ff6000', fontWeight:500, lineHeight:1}}>{sal}</span>
-                    <span style={{fontSize:'16px', color:'rgba(255,255,255,0.4)'}}>triệu / tháng</span>
-                  </div>
-                  <input type="range" min="5" max="200" value={sal}
-                    onChange={e => setWSalary(Number(e.target.value))}
-                    style={{width:'100%', WebkitAppearance:'none', appearance:'none', height:'3px', borderRadius:'2px', outline:'none', cursor:'pointer',
-                      background:`linear-gradient(90deg, #ff6000 ${salPct}%, rgba(255,255,255,0.1) ${salPct}%)`}}
-                  />
-                  <div style={{display:'flex', justifyContent:'space-between', marginTop:'8px', marginBottom:'28px'}}>
-                    {['5M','50M','100M','150M','200M+'].map(t => (
-                      <span key={t} style={{fontSize:'10px', color:'rgba(255,255,255,0.35)', fontFamily:"'Geist Mono',monospace"}}>{t}</span>
-                    ))}
-                  </div>
-                  <button onClick={() => { if(typeof gtag==='function') gtag('event','wizard_step_3',{salary:wSalary}); setWizardStep(4); }}
-                    style={{...btn, width:'100%', background:'#ff6000', color:'#fff', fontSize:'14px', fontWeight:800, padding:'15px', borderRadius:'10px'}}>
-                    Next →
-                  </button>
-                  <button onClick={() => setWizardStep(2)} style={{...btn, marginTop:'12px', background:'none', color:'rgba(255,255,255,0.35)', fontSize:'12px', display:'block', width:'100%', textAlign:'center'}}>← Back</button>
-                </div>
-              )}
-
-              {/* Step 4 — Company (with autocomplete) */}
-              {wizardStep === 4 && (
-                <div>
-                  <div className="fyi-step-label">STEP 4 / 4</div>
-                  <div className="fyi-step-title">Where do you work?</div>
-                  <div className="fyi-step-sub">Company name (kept anonymous)</div>
-
-                  {/* Autocomplete wrapper */}
-                  <div ref={acWrapRef} style={{position:'relative', marginBottom:'16px'}}>
-                    {selectedItem ? (
-                      <div className="company-selected">
-                        {selectedItem.domain ? (
-                          <div className="company-selected-logo">
-                            <img
-                              src={`https://www.google.com/s2/favicons?domain=${selectedItem.domain}&sz=128`}
-                              alt={selectedItem.name}
-                              onError={e => { e.target.parentElement.style.display='none'; e.target.parentElement.nextSibling.style.display='flex'; }}
-                            />
-                          </div>
-                        ) : null}
-                        {selectedItem.domain ? (
-                          <div className="company-selected-initials" style={{display:'none'}}>
-                            {selectedItem.name.slice(0, 2).toUpperCase()}
-                          </div>
-                        ) : (
-                          <div className="company-selected-initials">
-                            {selectedItem.name.slice(0, 2).toUpperCase()}
-                          </div>
-                        )}
-                        <div className="company-selected-info">
-                          <div className="company-selected-name">{selectedItem.name}</div>
-                          {selectedItem.domain && <div className="company-selected-domain">{selectedItem.domain}</div>}
-                        </div>
-                        <div className="company-selected-badge">✓ Verified</div>
-                        <button className="company-selected-clear" onClick={clearSelectedItem}>×</button>
-                      </div>
-                    ) : (
-                      <>
-                        <input
-                          type="text"
-                          placeholder="e.g. Grab Vietnam, FPT Software…"
-                          value={wCompany}
-                          onChange={e => { setWCompany(e.target.value); searchCompanies(e.target.value); }}
-                          onFocus={() => { if (acResults.length > 0) setAcOpen(true); }}
-                          onKeyDown={e => {
-                            if (e.key === 'ArrowDown') { e.preventDefault(); setAcHighlight(h => Math.min(h + 1, acResults.length - 1)); }
-                            else if (e.key === 'ArrowUp') { e.preventDefault(); setAcHighlight(h => Math.max(h - 1, -1)); }
-                            else if (e.key === 'Enter') {
-                              e.preventDefault();
-                              if (acHighlight >= 0 && acResults[acHighlight]) { selectCompany(acResults[acHighlight]); }
-                              else if (wCompany.trim()) { setAcOpen(false); handleSubmit(); }
-                            }
-                            else if (e.key === 'Escape') { setAcOpen(false); }
-                          }}
-                          autoFocus
-                          autoComplete="off"
-                          style={{width:'100%', background:'rgba(255,255,255,0.05)', border:'1.5px solid rgba(255,255,255,0.1)',
-                            borderRadius:'8px', padding:'14px 16px', color:'#fff', fontSize:'14px',
-                            fontFamily:"'Barlow',sans-serif", outline:'none', boxSizing:'border-box'}}
-                        />
-                        {acLoading && (
-                          <div style={{position:'absolute', right:'14px', top:'50%', transform:'translateY(-50%)', fontSize:'11px', color:'rgba(255,255,255,0.3)'}}>…</div>
-                        )}
-
-                        {/* Dropdown */}
-                        {acOpen && (acResults.length > 0 || (wCompany.trim().length >= 2 && isValidCompanyName(wCompany))) && (
-                          <div style={{position:'absolute', top:'100%', left:0, right:0, zIndex:50, marginTop:'4px',
-                            background:'#1a1a18', border:'1px solid rgba(255,255,255,0.1)', borderRadius:'10px',
-                            overflow:'hidden', boxShadow:'0 8px 32px rgba(0,0,0,0.5)', maxHeight:'280px', overflowY:'auto'}}>
-                            {acResults.map((item, i) => (
-                              <div key={item.name + i}
-                                onMouseDown={e => { e.preventDefault(); selectCompany(item); }}
-                                onMouseEnter={() => setAcHighlight(i)}
-                                style={{display:'flex', alignItems:'center', gap:'10px', padding:'10px 14px',
-                                  cursor:'pointer', transition:'background .1s',
-                                  background: i === acHighlight ? 'rgba(255,255,255,0.06)' : 'transparent'}}>
-                                {item.logo ? (
-                                  <img src={item.logo} alt="" style={{width:22, height:22, borderRadius:'4px', objectFit:'contain', background:'#fff', flexShrink:0}}
-                                    onError={e => { e.target.style.display='none'; e.target.nextSibling.style.display='flex'; }} />
-                                ) : null}
-                                {!item.logo ? (
-                                  <div style={{width:22, height:22, borderRadius:'4px', background:'rgba(255,255,255,0.08)',
-                                    display:'flex', alignItems:'center', justifyContent:'center',
-                                    fontSize:'9px', fontWeight:800, color:'rgba(255,255,255,0.4)', flexShrink:0}}>
-                                    {item.name.slice(0, 2).toUpperCase()}
-                                  </div>
-                                ) : (
-                                  <div style={{width:22, height:22, borderRadius:'4px', background:'rgba(255,255,255,0.08)',
-                                    display:'none', alignItems:'center', justifyContent:'center',
-                                    fontSize:'9px', fontWeight:800, color:'rgba(255,255,255,0.4)', flexShrink:0}}>
-                                    {item.name.slice(0, 2).toUpperCase()}
-                                  </div>
-                                )}
-                                <div style={{flex:1, minWidth:0}}>
-                                  <div style={{fontSize:'13px', fontWeight:600, color:'#fff', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap'}}>{item.name}</div>
-                                  {item.domain && <div style={{fontSize:'10px', color:'rgba(255,255,255,0.3)', marginTop:'1px'}}>{item.domain}</div>}
-                                </div>
-                                {item.source === 'db' && (
-                                  <span style={{fontSize:'9px', fontWeight:700, color:'#ff6000', background:'rgba(255,96,0,0.1)',
-                                    padding:'2px 6px', borderRadius:'4px', flexShrink:0}}>FYI</span>
-                                )}
-                              </div>
-                            ))}
-
-                            {/* "Add new" option */}
-                            {wCompany.trim().length >= 2 && isValidCompanyName(wCompany) &&
-                             !acResults.some(r => r.name.toLowerCase() === wCompany.trim().toLowerCase()) && (
-                              <div
-                                onMouseDown={e => { e.preventDefault(); setAcOpen(false); }}
-                                style={{display:'flex', alignItems:'center', gap:'10px', padding:'10px 14px',
-                                  cursor:'pointer', borderTop:'1px solid rgba(255,255,255,0.06)',
-                                  background: acHighlight === acResults.length ? 'rgba(255,255,255,0.06)' : 'transparent'}}>
-                                <div style={{width:22, height:22, borderRadius:'4px', background:'rgba(255,96,0,0.15)',
-                                  display:'flex', alignItems:'center', justifyContent:'center',
-                                  fontSize:'13px', color:'#ff6000', flexShrink:0}}>+</div>
-                                <span style={{fontSize:'13px', color:'rgba(255,255,255,0.5)'}}>
-                                  Add "<span style={{color:'#fff', fontWeight:600}}>{wCompany.trim()}</span>"
-                                </span>
-                              </div>
-                            )}
-                          </div>
-                        )}
-                      </>
-                    )}
-                  </div>
-
-                  <button onClick={handleSubmit} disabled={!wCompany.trim() || submitting}
-                    style={{...btn, width:'100%', background: wCompany.trim() ? '#ff6000' : 'rgba(255,96,0,0.3)',
-                      color:'#fff', fontSize:'14px', fontWeight:800, padding:'15px', borderRadius:'10px',
-                      cursor: wCompany.trim() ? 'pointer' : 'not-allowed', transition:'background .15s'}}>
-                    {submitting ? 'Submitting…' : 'See where I stand →'}
-                  </button>
-                  <div style={{textAlign:'center', fontSize:'11px', color:'rgba(255,255,255,0.3)', marginTop:'12px'}}>🔒 Anonymous · No login required · 30 sec</div>
-                  <button onClick={() => setWizardStep(3)} style={{...btn, marginTop:'12px', background:'none', color:'rgba(255,255,255,0.35)', fontSize:'12px', display:'block', width:'100%', textAlign:'center'}}>← Back</button>
-                </div>
-              )}
-
-              {/* Step 5 — optional rating */}
-              {wizardStep === 5 && (
-                <div>
-                  <div className="fyi-step-title">One more thing (optional)</div>
-                  <div style={{fontSize:'13px', color:'rgba(255,255,255,0.4)', marginBottom:'28px'}}>Rate your experience at {wCompany}</div>
-
-                  <StarRow label="Work-life balance" value={ratingWorklife} onChange={setRatingWorklife} />
-                  <StarRow label="Salary fairness" value={ratingSalary} onChange={setRatingSalary} />
-                  <StarRow label="Growth opportunity" value={ratingGrowth} onChange={setRatingGrowth} />
-
-                  <div style={{display:'flex', gap:'10px', marginTop:'28px'}}>
-                    <button
-                      onClick={async () => { await handleRatingSubmit(); setWizardStep(6); }}
-                      disabled={(!ratingWorklife && !ratingSalary && !ratingGrowth) || ratingSubmitting}
-                      style={{...btn, flex:1, background: (ratingWorklife || ratingSalary || ratingGrowth) ? '#ff6000' : 'rgba(255,96,0,0.3)',
-                        color:'#fff', fontSize:'14px', fontWeight:800, padding:'15px', borderRadius:'10px',
-                        cursor: (ratingWorklife || ratingSalary || ratingGrowth) ? 'pointer' : 'not-allowed', transition:'background .15s'}}>
-                      {ratingSubmitting ? 'Saving…' : 'Submit rating'}
-                    </button>
-                    <button
-                      onClick={() => setWizardStep(6)}
-                      style={{...btn, padding:'15px 20px', background:'none', color:'rgba(255,255,255,0.4)', fontSize:'14px', fontWeight:700, borderRadius:'10px'}}>
-                      Skip
-                    </button>
-                  </div>
-                </div>
-              )}
-            </>
-          ) : (
-            /* Result card */
+          {/* Step 2 — Experience */}
+          {wizardStep === 2 && (
             <div>
-              <ResultSection
-                salary={sal}
-                role={wRole}
-                experience={wExp}
-                company={wCompany}
-                isLoggedIn={isLoggedIn}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '8px' }}>
+                {EXPS.map(e => (
+                  <button key={e} onClick={() => { setWExp(e); if(typeof gtag==='function') gtag('event','wizard_step_2',{experience:e}); setTimeout(() => setWizardStep(3), 300); }}
+                    style={{ ...optBase, textAlign: 'center', ...(wExp === e ? optSelected : {}) }}>
+                    {EXP_LABELS[e] || e}
+                  </button>
+                ))}
+              </div>
+              <button onClick={() => setWizardStep(1)} style={{ ...quizBtn, marginTop: '16px', background: 'none', color: 'rgba(255,255,255,0.25)', fontSize: '12px' }}>← Quay lại</button>
+            </div>
+          )}
+
+          {/* Step 3 — Salary */}
+          {wizardStep === 3 && (
+            <div>
+              <BlurredTeaser />
+              <div style={{ textAlign: 'center', marginBottom: '24px' }}>
+                <span style={{ fontSize: '56px', fontWeight: 900, fontStyle: 'italic', color: '#fff', lineHeight: 1 }}>{sal}</span>
+                <span style={{ fontSize: '16px', color: 'rgba(255,255,255,0.25)', marginLeft: '8px' }}>triệu VNĐ / tháng</span>
+              </div>
+              <input type="range" min="5" max="200" value={sal}
+                onChange={e => setWSalary(Number(e.target.value))}
+                style={{ width: '100%', accentColor: '#ff4400', height: '4px', marginBottom: '24px' }}
               />
+              <div style={{ textAlign: 'center', fontSize: '11px', color: 'rgba(255,255,255,0.18)', marginBottom: '20px' }}>
+                🔒 Thông tin lương của bạn hoàn toàn riêng tư
+              </div>
+              <button onClick={() => { if(typeof gtag==='function') gtag('event','wizard_step_3',{salary:wSalary}); setWizardStep(4); }}
+                style={ctaStyle}>
+                Sắp xong rồi →
+              </button>
+              <button onClick={() => setWizardStep(2)} style={{ ...quizBtn, marginTop: '12px', background: 'none', color: 'rgba(255,255,255,0.25)', fontSize: '12px', display: 'block', width: '100%', textAlign: 'center' }}>← Quay lại</button>
+            </div>
+          )}
+
+          {/* Step 4 — Company */}
+          {wizardStep === 4 && (
+            <div>
+              <input
+                type="text"
+                placeholder="VD: FPT Software, Grab, MoMo..."
+                value={wCompany}
+                onChange={e => setWCompany(e.target.value)}
+                autoFocus
+                autoComplete="off"
+                style={{ width: '100%', background: 'rgba(255,255,255,0.05)', border: '1.5px solid rgba(255,255,255,0.1)',
+                  borderRadius: '14px', padding: '16px 18px', color: '#fff', fontSize: '15px',
+                  fontFamily: "'Be Vietnam Pro', sans-serif", outline: 'none', boxSizing: 'border-box', marginBottom: '12px' }}
+              />
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '24px' }}>
+                {POPULAR_COMPANIES.map(c => (
+                  <button key={c} onClick={() => setWCompany(c)}
+                    style={{ ...quizBtn, padding: '6px 12px', borderRadius: '100px', fontSize: '12px', fontWeight: 600,
+                      background: wCompany === c ? 'rgba(255,68,0,0.15)' : 'rgba(255,255,255,0.05)',
+                      border: `1px solid ${wCompany === c ? 'rgba(255,68,0,0.4)' : 'rgba(255,255,255,0.1)'}`,
+                      color: wCompany === c ? '#ff4400' : 'rgba(255,255,255,0.4)', transition: 'all .12s' }}>
+                    {c}
+                  </button>
+                ))}
+              </div>
+              <button onClick={handleSubmit} disabled={!wCompany.trim() || submitting}
+                style={{ ...ctaStyle, opacity: wCompany.trim() ? 1 : 0.4, cursor: wCompany.trim() ? 'pointer' : 'not-allowed' }}>
+                {submitting ? 'Đang gửi…' : 'Xem thứ hạng của tôi →'}
+              </button>
+              <div style={{ textAlign: 'center', fontSize: '11px', color: 'rgba(255,255,255,0.18)', marginTop: '12px' }}>
+                🔒 Ẩn danh — không cần tên hay email
+              </div>
+              <button onClick={() => setWizardStep(3)} style={{ ...quizBtn, marginTop: '12px', background: 'none', color: 'rgba(255,255,255,0.25)', fontSize: '12px', display: 'block', width: '100%', textAlign: 'center' }}>← Quay lại</button>
+            </div>
+          )}
+
+          {/* Step 5 — Rating */}
+          {wizardStep === 5 && (
+            <div>
+              <StarRow label="Work-life balance" value={ratingWorklife} onChange={setRatingWorklife} />
+              <StarRow label="Salary fairness" value={ratingSalary} onChange={setRatingSalary} />
+              <StarRow label="Growth opportunity" value={ratingGrowth} onChange={setRatingGrowth} />
+              <div style={{ display: 'flex', gap: '10px', marginTop: '28px' }}>
+                <button onClick={async () => { await handleRatingSubmit(); setWizardStep(6); }}
+                  disabled={(!ratingWorklife && !ratingSalary && !ratingGrowth) || ratingSubmitting}
+                  style={{ ...ctaStyle, flex: 1, opacity: (ratingWorklife || ratingSalary || ratingGrowth) ? 1 : 0.4 }}>
+                  {ratingSubmitting ? 'Đang lưu…' : 'Gửi đánh giá'}
+                </button>
+                <button onClick={() => setWizardStep(6)}
+                  style={{ ...quizBtn, padding: '16px 20px', background: 'none', color: 'rgba(255,255,255,0.4)', fontSize: '14px', fontWeight: 700, borderRadius: '14px' }}>
+                  Bỏ qua
+                </button>
+              </div>
             </div>
           )}
         </div>
-      </div>
+      ) : (
+        /* Result + rate nudge */
+        <div style={{ maxWidth: '520px', margin: '0 auto' }}>
+          <ResultSection salary={sal} role={wRole} experience={wExp} company={wCompany} isLoggedIn={isLoggedIn} />
+
+          {/* Rate your company nudge */}
+          <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)',
+            borderRadius: '16px', padding: '16px', marginTop: '20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px' }}>
+            <div>
+              <div style={{ fontSize: '13px', fontWeight: 700, color: '#fff' }}>Làm việc ở {wCompany} như thế nào?</div>
+              <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.3)', marginTop: '2px' }}>Đánh giá work-life, lương & cơ hội — ẩn danh.</div>
+            </div>
+            <button onClick={() => setWizardStep(5)}
+              style={{ ...quizBtn, padding: '8px 16px', background: 'rgba(255,68,0,0.15)', border: '1px solid rgba(255,68,0,0.3)',
+                color: '#ff4400', fontSize: '12px', fontWeight: 700, borderRadius: '10px', whiteSpace: 'nowrap' }}>
+              Đánh giá →
+            </button>
+          </div>
+        </div>
+      )}
     </section>
   );
 }
