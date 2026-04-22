@@ -1,217 +1,195 @@
 import { useState, useEffect } from 'react'
-import { supabase } from '../lib/supabaseClient'
+import { useRouter } from 'next/router'
 
 export default function NextStepSheet({ role, experience, percentile, topCompanies }) {
   const [visible, setVisible] = useState(false)
-  const [step, setStep] = useState('cta') // 'cta' | 'auth' | 'done'
+  const [step, setStep] = useState('cta') // 'cta' | 'jobs' | 'done'
+  const [jobs, setJobs] = useState([])
+  const router = useRouter()
+
+  const userSalary = typeof window !== 'undefined' ? parseInt(localStorage.getItem('fyi_salary')) || 0 : 0
 
   useEffect(() => {
     const t = setTimeout(() => setVisible(true), 2000)
     return () => clearTimeout(t)
   }, [])
 
+  useEffect(() => {
+    async function fetchJobs() {
+      try {
+        const res = await fetch('/api/jobs')
+        if (!res.ok) return
+        const data = await res.json()
+        setJobs(data.filter(j => j.salary_min > userSalary).slice(0, 3))
+      } catch {}
+    }
+    fetchJobs()
+  }, [userSalary])
+
   if (!visible) return null
 
-  const companyNames = (topCompanies || []).slice(0, 3).map(c => c.name)
-  const companyText = companyNames.length > 0
-    ? companyNames.join(', ')
-    : 'top companies in Vietnam'
+  const jobCount = jobs.length
+  const bgColors = ['#e8ecf5', '#f0ece8', '#e8f0ec']
 
   return (
     <>
       {/* Backdrop */}
-      <div
-        onClick={() => step === 'done' && setVisible(false)}
-        style={{
-          position: 'fixed', inset: 0,
-          background: 'rgba(0,0,0,0.6)',
-          zIndex: 400,
-          backdropFilter: 'blur(6px)',
-        }}
-      />
+      <div onClick={() => { if (step === 'done') setVisible(false) }}
+        style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', zIndex: 400,
+          backdropFilter: 'blur(4px)', transition: 'opacity .3s' }} />
 
       {/* Sheet */}
       <div style={{
-        position: 'fixed',
-        bottom: 0, left: 0, right: 0,
-        background: '#fff',
-        borderRadius: '28px 28px 0 0',
-        padding: '28px 0 0',
-        zIndex: 500,
+        position: 'fixed', bottom: 0, left: 0, right: 0,
+        background: '#fff', borderRadius: '28px 28px 0 0',
+        padding: '28px 0 0', zIndex: 500,
         boxShadow: '0 -20px 80px rgba(0,0,0,0.4)',
-        animation: 'sheetSlideUp 0.5s cubic-bezier(0.22,0.9,0.36,1)',
-        maxHeight: '85vh',
-        overflowY: 'auto',
+        animation: 'sheetSlideUp 0.4s cubic-bezier(.16,1,.3,1)',
+        maxHeight: '85vh', overflowY: 'auto',
         fontFamily: "'Barlow', 'Inter', sans-serif",
       }}>
         <style>{`
-          @keyframes sheetSlideUp {
-            from { transform: translateY(100%); }
-            to { transform: translateY(0); }
-          }
-          @keyframes sheetFadeSlide {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
-          }
+          @keyframes sheetSlideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+          @keyframes sheetFadeSlide { from { opacity:0; transform:translateY(20px); } to { opacity:1; transform:translateY(0); } }
         `}</style>
 
         {/* Handle */}
-        <div style={{
-          width: 56, height: 5,
-          background: '#ddd',
-          borderRadius: 3,
-          margin: '0 auto 28px',
-        }} />
+        <div style={{ width: 56, height: 5, background: '#ddd', borderRadius: 3, margin: '0 auto 28px' }} />
 
         <div style={{ padding: '0 24px 40px', maxWidth: '600px', margin: '0 auto' }}>
 
-          {/* ═══ STEP: CTA ═══ */}
+          {/* ═══ STEP: CTA — Intent selection ═══ */}
           {step === 'cta' && (
             <div style={{ animation: 'sheetFadeSlide 0.35s ease' }}>
-
-              {/* Headline */}
-              <div style={{ textAlign: 'center', marginBottom: 32 }}>
-                <div style={{ fontSize: 48, marginBottom: 16 }}>💰</div>
-                <h3 style={{
-                  fontSize: 26, fontWeight: 800, color: '#1a1a1a',
-                  lineHeight: 1.35, margin: '0 0 12px',
-                }}>
-                  These companies pay more<br/>for your exact role.
+              <div style={{ textAlign: 'center', marginBottom: 24 }}>
+                <h3 style={{ fontSize: 22, fontWeight: 800, color: '#1a1a1a', lineHeight: 1.35, margin: '0 0 8px' }}>
+                  Do you want us to connect you with a <span style={{ color: '#ff4400' }}>better-paying</span> company?
                 </h3>
-                <p style={{
-                  fontSize: 16, color: '#777', lineHeight: 1.65,
-                  margin: 0, maxWidth: '460px', marginLeft: 'auto', marginRight: 'auto',
-                }}>
-                  You just saw that <strong style={{ color: '#1a1a1a' }}>{companyText}</strong> pay
-                  more for <strong style={{ color: '#1a1a1a' }}>{role}</strong> professionals.
-                  Our headhunter can personally introduce you — no job boards, no spam.
+                <p style={{ fontSize: 14, color: '#888', margin: 0 }}>
+                  We helped <strong style={{ color: '#1a1a1a' }}>3,000+</strong> engineers earn more than <strong style={{ color: '#1a1a1a' }}>10%</strong> of their current salary.
                 </p>
               </div>
 
-              {/* What happens */}
-              <div style={{
-                background: '#f8f8f8', borderRadius: 18, padding: '22px 24px', marginBottom: 28,
-              }}>
-                <div style={{ fontSize: 14, fontWeight: 700, color: '#aaa', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 14 }}>
-                  How it works
-                </div>
+              {/* 3 intent cards */}
+              <div style={{ display: 'flex', gap: 10, marginBottom: 20 }}>
                 {[
-                  { icon: '1️⃣', text: 'Sign in so our headhunter can reach you' },
-                  { icon: '2️⃣', text: 'They review your profile & find matching roles' },
-                  { icon: '3️⃣', text: 'You get introduced only to companies paying more' },
-                ].map(({ icon, text }) => (
-                  <div key={text} style={{
-                    display: 'flex', alignItems: 'center', gap: 14,
-                    padding: '8px 0',
-                  }}>
-                    <span style={{ fontSize: 22, flexShrink: 0 }}>{icon}</span>
-                    <span style={{ fontSize: 15, color: '#444', lineHeight: 1.5 }}>{text}</span>
-                  </div>
+                  { emoji: '🚀', label: 'Yes, available for better job offers', sub: 'I want to find a fit job now', intent: 'open' },
+                  { emoji: '👀', label: 'Open if it\'s the right fit', sub: "I'd consider it for the right role and salary", intent: 'selective' },
+                  { emoji: '😌', label: 'Not right now', sub: "I'm happy where I am", intent: 'none' },
+                ].map(({ emoji, label, sub, intent }) => (
+                  <button key={intent} onClick={() => {
+                    if (intent === 'none') { setStep('done'); return; }
+                    if (typeof window !== 'undefined') localStorage.setItem('fyi_intent', intent)
+                    setStep('jobs')
+                  }}
+                    style={{
+                      flex: 1, padding: '16px 10px', borderRadius: 16,
+                      border: '2px solid #eee', background: '#fff', cursor: 'pointer',
+                      display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8,
+                      fontFamily: 'inherit', transition: 'all .15s',
+                    }}
+                    onMouseEnter={e => { e.currentTarget.style.borderColor = '#ff4400'; e.currentTarget.style.background = '#fff8f5'; }}
+                    onMouseLeave={e => { e.currentTarget.style.borderColor = '#eee'; e.currentTarget.style.background = '#fff'; }}
+                  >
+                    <span style={{ fontSize: 28 }}>{emoji}</span>
+                    <span style={{ fontSize: 13, fontWeight: 700, color: '#1a1a1a', lineHeight: 1.3, textAlign: 'center' }}>{label}</span>
+                    <span style={{ fontSize: 10, color: '#aaa', lineHeight: 1.4, textAlign: 'center' }}>{sub}</span>
+                  </button>
                 ))}
               </div>
 
-              {/* CTA button */}
-              <button
-                onClick={() => {
-                  if (typeof window !== 'undefined') localStorage.setItem('fyi_intent', 'open')
-                  setStep('auth')
-                }}
-                style={{
-                  width: '100%', padding: '20px',
-                  borderRadius: 16, border: 'none',
-                  background: '#ff6000', cursor: 'pointer',
-                  fontSize: 18, fontWeight: 800, color: '#fff',
-                  marginBottom: 12, fontFamily: 'inherit',
-                  boxShadow: '0 6px 24px rgba(255,68,0,0.3)',
-                  transition: 'transform 0.1s',
-                }}
-                onMouseDown={e => e.currentTarget.style.transform = 'scale(0.98)'}
-                onMouseUp={e => e.currentTarget.style.transform = ''}
-              >
-                Yes — connect me with the headhunter
-              </button>
-
-              <button
-                onClick={() => setStep('done')}
-                style={{
-                  width: '100%', padding: 14,
-                  background: 'transparent', border: 'none',
-                  fontSize: 14, color: '#bbb', cursor: 'pointer',
-                  fontFamily: 'inherit',
-                }}
-              >
-                No thanks, I'm happy where I am
+              <button onClick={() => setVisible(false)}
+                style={{ width: '100%', padding: 12, background: 'transparent', border: 'none',
+                  fontSize: 13, color: '#ccc', cursor: 'pointer', fontFamily: 'inherit' }}>
+                Maybe later
               </button>
             </div>
           )}
 
-          {/* ═══ STEP: AUTH ═══ */}
-          {step === 'auth' && (
+          {/* ═══ STEP: JOBS — Preview after intent ═══ */}
+          {step === 'jobs' && (
             <div style={{ animation: 'sheetFadeSlide 0.35s ease' }}>
 
-              <div style={{ textAlign: 'center', marginBottom: 32 }}>
-                <div style={{ fontSize: 48, marginBottom: 16 }}>🤝</div>
-                <h3 style={{
-                  fontSize: 24, fontWeight: 800, color: '#1a1a1a',
-                  lineHeight: 1.35, margin: '0 0 10px',
+              {/* Match message bar */}
+              {jobCount > 0 && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: 7,
+                  background: '#f0fff4', border: '1px solid #86efac', borderRadius: 10,
+                  padding: '9px 12px', marginBottom: 12 }}>
+                  <div style={{ width: 7, height: 7, borderRadius: '50%', background: '#22c55e', flexShrink: 0 }} />
+                  <span style={{ fontSize: 12, color: '#444' }}>
+                    We found <strong style={{ color: '#111' }}>{jobCount} jobs</strong> that pay more than you right now
+                  </span>
+                </div>
+              )}
+
+              {/* Blurred jobs preview */}
+              {jobCount > 0 && (
+                <div style={{ position: 'relative', borderRadius: 12, overflow: 'hidden',
+                  border: '1px solid #eee', marginBottom: 14 }}>
+                  {/* Inner blurred */}
+                  <div style={{ display: 'flex', filter: 'blur(3px)', pointerEvents: 'none', userSelect: 'none' }}>
+                    {jobs.map((job, i) => {
+                      const initials = job.company_initials || (job.company || '').slice(0, 2).toUpperCase()
+                      const bump = Math.round(((job.salary_min - userSalary) / userSalary) * 100)
+                      return (
+                        <div key={i} style={{ flex: i === 2 ? '0 0 30%' : '0 0 52%', borderRight: '1px solid #f0f0f0',
+                          opacity: i === 2 ? 0.6 : 1 }}>
+                          {/* Image area */}
+                          <div style={{ height: 72, background: bgColors[i % 3], position: 'relative' }}>
+                            <div style={{ position: 'absolute', bottom: 6, left: 6, width: 26, height: 26, borderRadius: 5,
+                              background: '#fff', border: '1px solid rgba(0,0,0,0.08)',
+                              display: 'flex', alignItems: 'center', justifyContent: 'center',
+                              fontSize: 8, fontWeight: 800, color: '#333' }}>
+                              {initials}
+                            </div>
+                          </div>
+                          {/* Body */}
+                          <div style={{ padding: '8px 10px 10px' }}>
+                            <div style={{ fontSize: 11, fontWeight: 700, color: '#111', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                              {job.title}
+                            </div>
+                            <div style={{ fontSize: 10, color: '#aaa', marginBottom: 5 }}>{job.company}</div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                              <span style={{ fontSize: 10, color: '#bbb', textDecoration: 'line-through' }}>{userSalary}M</span>
+                              <span style={{ fontSize: 10, color: '#bbb' }}>→</span>
+                              <span style={{ fontSize: 10, fontWeight: 700, color: '#111' }}>{Math.round(job.salary_min / 1e6)}–{Math.round(job.salary_max / 1e6)}M</span>
+                              {bump > 0 && (
+                                <span style={{ background: '#fff4f0', color: '#ff4400', fontWeight: 700, padding: '1px 5px', borderRadius: 4, fontSize: 9 }}>
+                                  +{bump}%
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                  {/* Overlay */}
+                  <div style={{ position: 'absolute', inset: 0, background: 'rgba(255,255,255,0.55)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: 4 }}>
+                    <span style={{ fontSize: 20 }}>🔒</span>
+                    <span style={{ fontSize: 12, fontWeight: 600, color: '#555' }}>Sign in to see & apply</span>
+                  </div>
+                  {/* Right fade */}
+                  <div style={{ position: 'absolute', right: 0, top: 0, bottom: 0, width: 60,
+                    background: 'linear-gradient(to right, transparent, #fff)', pointerEvents: 'none' }} />
+                </div>
+              )}
+
+              {/* CTA */}
+              <button onClick={() => router.push('/jobs')}
+                style={{
+                  width: '100%', padding: 13, background: '#0080FF', border: 'none', borderRadius: 12,
+                  fontSize: 14, fontWeight: 700, color: '#fff', cursor: 'pointer', fontFamily: 'inherit',
+                  boxShadow: '0 4px 16px rgba(0,128,255,0.25)', marginBottom: 8,
                 }}>
-                  Sign in so we can reach you
-                </h3>
-                <p style={{
-                  fontSize: 15, color: '#888', lineHeight: 1.6, margin: 0,
-                }}>
-                  We only use this to contact you about matching roles. Nothing else.
-                </p>
+                See all jobs →
+              </button>
+
+              {/* Privacy note */}
+              <div style={{ fontSize: 10, color: '#ccc', textAlign: 'center' }}>
+                🔒 No spam. We only reach out when it's worth your time.
               </div>
-
-              <button
-                onClick={async () => { await supabase.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: window.location.origin + '/auth/callback' } }); }}
-                style={{
-                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 14,
-                  width: '100%', padding: '18px',
-                  borderRadius: 16, border: '2px solid #e8e8e8',
-                  background: '#fff', cursor: 'pointer',
-                  fontSize: 18, fontWeight: 700, color: '#1a1a1a',
-                  marginBottom: 14, fontFamily: 'inherit',
-                }}
-              >
-                <svg width="22" height="22" viewBox="0 0 24 24">
-                  <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
-                  <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
-                  <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"/>
-                  <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
-                </svg>
-                Continue with Google
-              </button>
-
-              <button
-                onClick={async () => { await supabase.auth.signInWithOAuth({ provider: 'linkedin_oidc', options: { redirectTo: window.location.origin + '/auth/callback', scopes: 'openid profile email' } }); }}
-                style={{
-                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 14,
-                  width: '100%', padding: '18px',
-                  borderRadius: 16, border: '2px solid #0077b5',
-                  background: '#0077b5', cursor: 'pointer',
-                  fontSize: 18, fontWeight: 700, color: '#fff',
-                  marginBottom: 18, fontFamily: 'inherit',
-                }}
-              >
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="white">
-                  <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 01-2.063-2.065 2.064 2.064 0 112.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/>
-                </svg>
-                Continue with LinkedIn
-              </button>
-
-              <button
-                onClick={() => setStep('cta')}
-                style={{
-                  width: '100%', padding: 12,
-                  background: 'transparent', border: 'none',
-                  fontSize: 14, color: '#bbb', cursor: 'pointer',
-                  fontFamily: 'inherit',
-                }}
-              >
-                ← Back
-              </button>
             </div>
           )}
 
@@ -219,22 +197,13 @@ export default function NextStepSheet({ role, experience, percentile, topCompani
           {step === 'done' && (
             <div style={{ animation: 'sheetFadeSlide 0.35s ease', textAlign: 'center', padding: '20px 0 12px' }}>
               <div style={{ fontSize: 64, marginBottom: 18 }}>👋</div>
-              <div style={{ fontSize: 24, fontWeight: 800, color: '#1a1a1a', marginBottom: 10 }}>
-                No worries!
-              </div>
+              <div style={{ fontSize: 24, fontWeight: 800, color: '#1a1a1a', marginBottom: 10 }}>No worries!</div>
               <div style={{ fontSize: 16, color: '#999', lineHeight: 1.65, marginBottom: 32 }}>
-                Your salary data is saved. If you ever want to explore,<br/>FYI will always be here.
+                Your salary data is saved. If you ever want to explore,<br />FYI will always be here.
               </div>
-              <button
-                onClick={() => setVisible(false)}
-                style={{
-                  width: '100%', padding: 18,
-                  borderRadius: 16, border: '2px solid #e8e8e8',
-                  background: '#f7f7f7', fontSize: 17,
-                  fontWeight: 700, color: '#555', cursor: 'pointer',
-                  fontFamily: 'inherit',
-                }}
-              >
+              <button onClick={() => setVisible(false)}
+                style={{ width: '100%', padding: 18, borderRadius: 16, border: '2px solid #e8e8e8',
+                  background: '#f7f7f7', fontSize: 17, fontWeight: 700, color: '#555', cursor: 'pointer', fontFamily: 'inherit' }}>
                 Close
               </button>
             </div>
