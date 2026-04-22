@@ -2234,7 +2234,7 @@ export default function Home({ initialCompanies = [] }) {
           localStorage.setItem('fyi_exp', wExp);
           localStorage.setItem('fyi_salary', String(wSalary));
           localStorage.setItem('fyi_company', wCompany);
-          setShowSocialPrompt(true);
+          setTimeout(() => setShowSocialPrompt(true), 3000);
         }}
       />
 
