@@ -89,9 +89,9 @@ export default function NextStepSheet({ role, experience, percentile, topCompani
           {/* 3 Intent cards */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10, marginBottom: 16 }}>
             {[
-              { intent: 'open', img: '/char1.png', label: 'Yes, available\nfor better job\noffers', desc: 'I want to find a fit job now', blue: true },
+              { intent: 'open', img: '/char1.svg', label: 'Yes, available for\nbetter job offers', desc: 'I want to find a fit job now', blue: true },
               { intent: 'selective', img: '/char2.svg', label: "Open if it's\nthe right fit", desc: "I'd consider it for the right role and salary", blue: true },
-              { intent: 'none', img: '/char3.png', label: 'Not right now', desc: "I'm happy where I am", blue: false },
+              { intent: 'none', img: '/char3.svg', label: 'Not right now', desc: "I'm happy where I am", blue: false },
             ].map(({ intent, img, label, desc, blue }) => (
               <div key={intent} style={cardStyle(intent)} onClick={() => handleSelect(intent)}>
                 <CharImg src={img} />
