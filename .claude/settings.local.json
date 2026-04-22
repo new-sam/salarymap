@@ -109,7 +109,8 @@
       "Bash(awk '/\\\\.lb-top3/,/@media/' \"C:/Users/slsvm/Desktop/salarymap/pages/index.js\")",
       "Bash(nslookup *)",
       "Skill(schedule)",
-      "WebFetch(domain:claude.ai)"
+      "WebFetch(domain:claude.ai)",
+      "Bash(sort -t: -k2 -u)"
     ]
   },
   "hooks": {
