@@ -26,7 +26,14 @@ export default function ResultSection({ salary, role, experience, company, isLog
     if (salary) { fetchResult(); fetchJobs(); }
   }, [salary, role, experience, company])
 
-  if (!result) return null
+  if (!result) return (
+    <div style={{ padding:'clamp(20px,4vw,32px)', textAlign:'center' }}>
+      <div style={{ width:60, height:60, borderRadius:'50%', border:'3px solid #ff4400', borderTopColor:'transparent',
+        animation:'spin .8s linear infinite', margin:'40px auto 16px' }} />
+      <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
+      <div style={{ fontSize:14, color:'rgba(255,255,255,0.4)' }}>Calculating your rank...</div>
+    </div>
+  )
 
   const { percentile, userSalary, marketMedian, diff, topCompanies } = result
   const isPositive = diff >= 0

@@ -12,6 +12,6 @@ export default async function handler(req, res) {
     .eq('is_active', true)
     .order('created_at', { ascending: false })
 
-  res.setHeader('Cache-Control', 's-maxage=300')
+  res.setHeader('Cache-Control', 'public, max-age=120, s-maxage=300, stale-while-revalidate=600')
   res.status(200).json(data || [])
 }

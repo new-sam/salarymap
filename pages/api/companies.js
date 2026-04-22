@@ -227,7 +227,7 @@ export default async function handler(req, res) {
       return c;
     });
 
-    res.setHeader('Cache-Control', 's-maxage=1800, stale-while-revalidate=3600');
+    res.setHeader('Cache-Control', 'public, max-age=300, s-maxage=1800, stale-while-revalidate=3600');
     return res.status(200).json(lightCards);
 
   } catch (err) {

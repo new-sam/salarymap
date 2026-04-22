@@ -140,7 +140,7 @@ export default async function handler(req, res) {
     .sort((a, b) => b.premiumPct - a.premiumPct)
     .slice(0, 4);
 
-  res.setHeader('Cache-Control', 's-maxage=60, stale-while-revalidate=300');
+  res.setHeader('Cache-Control', 'public, max-age=30, s-maxage=60, stale-while-revalidate=300');
   res.status(200).json({
     percentile,
     userSalary,
