@@ -33,8 +33,8 @@ export default function ResultSection({ salary, role, experience, company, isLog
     <section className="result-section">
       <style>{`
         .result-section {
-          background: #000;
-          padding: 64px 40px 80px;
+          background: transparent;
+          padding: 0;
           font-family: 'Barlow', 'Inter', sans-serif;
           -webkit-font-smoothing: antialiased;
         }

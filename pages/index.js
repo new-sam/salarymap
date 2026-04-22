@@ -1658,7 +1658,7 @@ function SubmitSection({
         </div>
       ) : (
         /* Result + rate nudge */
-        <div style={{ maxWidth: '520px', margin: '0 auto' }}>
+        <div style={{ maxWidth: '900px', margin: '0 auto' }}>
           <ResultSection salary={sal} role={wRole} experience={wExp} company={wCompany} isLoggedIn={isLoggedIn} />
 
           {/* Rate your company nudge */}
