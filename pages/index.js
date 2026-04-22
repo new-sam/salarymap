@@ -1549,30 +1549,81 @@ function SubmitSection({
             </div>
           )}
 
-          {/* Step 4 — Company */}
+          {/* Step 4 — Company (with autocomplete) */}
           {wizardStep === 4 && (
             <div>
-              <input
-                type="text"
-                placeholder="VD: FPT Software, Grab, MoMo..."
-                value={wCompany}
-                onChange={e => setWCompany(e.target.value)}
-                autoFocus
-                autoComplete="off"
-                style={{ width: '100%', background: 'rgba(255,255,255,0.05)', border: '1.5px solid rgba(255,255,255,0.1)',
-                  borderRadius: '14px', padding: '16px 18px', color: '#fff', fontSize: '15px',
-                  fontFamily: "'Be Vietnam Pro', sans-serif", outline: 'none', boxSizing: 'border-box', marginBottom: '12px' }}
-              />
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '24px' }}>
-                {POPULAR_COMPANIES.map(c => (
-                  <button key={c} onClick={() => setWCompany(c)}
-                    style={{ ...quizBtn, padding: '6px 12px', borderRadius: '100px', fontSize: '12px', fontWeight: 600,
-                      background: wCompany === c ? 'rgba(255,68,0,0.15)' : 'rgba(255,255,255,0.05)',
-                      border: `1px solid ${wCompany === c ? 'rgba(255,68,0,0.4)' : 'rgba(255,255,255,0.1)'}`,
-                      color: wCompany === c ? '#ff4400' : 'rgba(255,255,255,0.4)', transition: 'all .12s' }}>
-                    {c}
-                  </button>
-                ))}
+              <div ref={acWrapRef} style={{ position: 'relative', marginBottom: '16px' }}>
+                {selectedItem ? (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px', background: 'rgba(255,68,0,0.08)',
+                    border: '1px solid rgba(255,68,0,0.3)', borderRadius: '14px', padding: '14px 16px' }}>
+                    {selectedItem.domain ? (
+                      <img src={`https://www.google.com/s2/favicons?domain=${selectedItem.domain}&sz=128`} alt=""
+                        style={{ width: 28, height: 28, borderRadius: '6px', objectFit: 'contain', background: '#fff' }}
+                        onError={e => { e.target.style.display = 'none'; }} />
+                    ) : (
+                      <div style={{ width: 28, height: 28, borderRadius: '6px', background: 'rgba(255,255,255,0.1)',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '10px', fontWeight: 800, color: 'rgba(255,255,255,0.4)' }}>
+                        {selectedItem.name.slice(0, 2).toUpperCase()}
+                      </div>
+                    )}
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontSize: '14px', fontWeight: 700, color: '#fff' }}>{selectedItem.name}</div>
+                      {selectedItem.domain && <div style={{ fontSize: '10px', color: 'rgba(255,255,255,0.3)' }}>{selectedItem.domain}</div>}
+                    </div>
+                    <button onClick={clearSelectedItem} style={{ ...quizBtn, background: 'none', color: 'rgba(255,255,255,0.3)', fontSize: '18px', padding: '4px' }}>×</button>
+                  </div>
+                ) : (
+                  <>
+                    <input type="text" placeholder="VD: Grab Vietnam, FPT Software…" value={wCompany}
+                      onChange={e => { setWCompany(e.target.value); searchCompanies(e.target.value); }}
+                      onFocus={() => { if (acResults.length > 0) setAcOpen(true); }}
+                      onKeyDown={e => {
+                        if (e.key === 'ArrowDown') { e.preventDefault(); setAcHighlight(h => Math.min(h + 1, acResults.length - 1)); }
+                        else if (e.key === 'ArrowUp') { e.preventDefault(); setAcHighlight(h => Math.max(h - 1, -1)); }
+                        else if (e.key === 'Enter') { e.preventDefault(); if (acHighlight >= 0 && acResults[acHighlight]) selectCompany(acResults[acHighlight]); else if (wCompany.trim()) { setAcOpen(false); handleSubmit(); } }
+                        else if (e.key === 'Escape') setAcOpen(false);
+                      }}
+                      autoFocus autoComplete="off"
+                      style={{ width: '100%', background: 'rgba(255,255,255,0.05)', border: '1.5px solid rgba(255,255,255,0.1)',
+                        borderRadius: '14px', padding: '16px 18px', color: '#fff', fontSize: '15px',
+                        fontFamily: "'Be Vietnam Pro', sans-serif", outline: 'none', boxSizing: 'border-box' }}
+                    />
+                    {acLoading && <div style={{ position: 'absolute', right: '16px', top: '50%', transform: 'translateY(-50%)', fontSize: '11px', color: 'rgba(255,255,255,0.3)' }}>…</div>}
+                    {acOpen && (acResults.length > 0 || (wCompany.trim().length >= 2 && isValidCompanyName(wCompany))) && (
+                      <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 50, marginTop: '4px',
+                        background: '#1a1a18', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '14px',
+                        overflow: 'hidden', boxShadow: '0 8px 32px rgba(0,0,0,0.5)', maxHeight: '280px', overflowY: 'auto' }}>
+                        {acResults.map((item, i) => (
+                          <div key={item.name + i} onMouseDown={e => { e.preventDefault(); selectCompany(item); }} onMouseEnter={() => setAcHighlight(i)}
+                            style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 14px', cursor: 'pointer', transition: 'background .1s',
+                              background: i === acHighlight ? 'rgba(255,255,255,0.06)' : 'transparent' }}>
+                            {item.logo ? (
+                              <img src={item.logo} alt="" style={{ width: 22, height: 22, borderRadius: '4px', objectFit: 'contain', background: '#fff', flexShrink: 0 }}
+                                onError={e => { e.target.style.display = 'none'; }} />
+                            ) : (
+                              <div style={{ width: 22, height: 22, borderRadius: '4px', background: 'rgba(255,255,255,0.08)',
+                                display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '9px', fontWeight: 800, color: 'rgba(255,255,255,0.4)', flexShrink: 0 }}>
+                                {item.name.slice(0, 2).toUpperCase()}
+                              </div>
+                            )}
+                            <div style={{ flex: 1, minWidth: 0 }}>
+                              <div style={{ fontSize: '13px', fontWeight: 600, color: '#fff', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.name}</div>
+                              {item.domain && <div style={{ fontSize: '10px', color: 'rgba(255,255,255,0.3)', marginTop: '1px' }}>{item.domain}</div>}
+                            </div>
+                            {item.source === 'db' && <span style={{ fontSize: '9px', fontWeight: 700, color: '#ff4400', background: 'rgba(255,68,0,0.1)', padding: '2px 6px', borderRadius: '4px', flexShrink: 0 }}>FYI</span>}
+                          </div>
+                        ))}
+                        {wCompany.trim().length >= 2 && isValidCompanyName(wCompany) && !acResults.some(r => r.name.toLowerCase() === wCompany.trim().toLowerCase()) && (
+                          <div onMouseDown={e => { e.preventDefault(); setAcOpen(false); }}
+                            style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 14px', cursor: 'pointer', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+                            <div style={{ width: 22, height: 22, borderRadius: '4px', background: 'rgba(255,68,0,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '13px', color: '#ff4400', flexShrink: 0 }}>+</div>
+                            <span style={{ fontSize: '13px', color: 'rgba(255,255,255,0.5)' }}>Thêm "<span style={{ color: '#fff', fontWeight: 600 }}>{wCompany.trim()}</span>"</span>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </>
+                )}
               </div>
               <button onClick={handleSubmit} disabled={!wCompany.trim() || submitting}
                 style={{ ...ctaStyle, opacity: wCompany.trim() ? 1 : 0.4, cursor: wCompany.trim() ? 'pointer' : 'not-allowed' }}>
