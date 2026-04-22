@@ -5,14 +5,19 @@ import { supabase } from '../../lib/supabaseClient'
 // Save profile using the regular client (anon key is fine for own user via RLS)
 async function saveProfile(user) {
   try {
+    const utm_source = typeof sessionStorage !== 'undefined' ? sessionStorage.getItem('utm_source') : null;
+    const utm_medium = typeof sessionStorage !== 'undefined' ? sessionStorage.getItem('utm_medium') : null;
+    const utm_campaign = typeof sessionStorage !== 'undefined' ? sessionStorage.getItem('utm_campaign') : null;
     const { error } = await supabase.from('user_profiles').upsert({
       id: user.id,
       email: user.email,
       full_name: user.user_metadata?.full_name || user.user_metadata?.name || null,
       provider: user.app_metadata?.provider || null,
+      utm_source: utm_source || null,
+      utm_medium: utm_medium || null,
+      utm_campaign: utm_campaign || null,
       updated_at: new Date().toISOString(),
     }, { onConflict: 'id' })
-    // silent on success/error
   } catch(e) {
     // silent fail
   }
