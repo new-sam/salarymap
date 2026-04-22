@@ -36,7 +36,7 @@ export default function NextStepSheet({ role, experience, percentile, topCompani
     <>
       <style>{`
         @keyframes nsSlideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
-        .ns-sheet { position:fixed; bottom:0; left:0; right:0; background:#fff; border-radius:28px 28px 0 0; z-index:500; box-shadow:0 -20px 80px rgba(0,0,0,0.4); animation:nsSlideUp .4s cubic-bezier(.16,1,.3,1); max-height:85vh; overflow-y:auto; font-family:'Be Vietnam Pro',sans-serif; }
+        .ns-sheet { position:fixed; bottom:0; left:50%; transform:translateX(-50%); width:100%; max-width:420px; background:#fff; border-radius:28px 28px 0 0; z-index:500; box-shadow:0 -20px 80px rgba(0,0,0,0.4); animation:nsSlideUp .4s cubic-bezier(.16,1,.3,1); max-height:85vh; overflow-y:auto; font-family:'Be Vietnam Pro',sans-serif; }
         .ns-handle { width:40px; height:4px; background:#e0e0e0; border-radius:2px; margin:14px auto 0; }
         .ns-body { padding:14px 18px 28px; }
         .ns-title { font-size:19px; font-weight:800; color:#111; line-height:1.35; text-align:center; margin-bottom:8px; }
@@ -48,8 +48,8 @@ export default function NextStepSheet({ role, experience, percentile, topCompani
         .ns-card:hover { transform:translateY(-3px); box-shadow:0 6px 20px rgba(0,0,0,0.1); }
         .ns-card.sel-blue { border-color:#0080FF; box-shadow:0 0 0 3px rgba(0,128,255,0.15), 0 6px 20px rgba(0,128,255,0.15); }
         .ns-card.sel-gray { border-color:#aaa; box-shadow:0 0 0 3px rgba(0,0,0,0.06); }
-        .ns-card-img { width:100%; display:block; }
-        .ns-card-img img { width:100%; height:auto; display:block; border-radius:0; }
+        .ns-card-img { width:100%; display:block; overflow:hidden; border-radius:14px 14px 0 0; background:#F1FFD2; }
+        .ns-card-img img { width:100%; height:auto; display:block; aspect-ratio:268/233; object-fit:cover; }
         .ns-card-body { padding:10px 8px 12px; display:flex; flex-direction:column; align-items:center; gap:4px; flex:1; }
         .ns-btn { font-family:'Be Vietnam Pro',sans-serif; font-size:11px; font-weight:800; color:#0080FF; background:transparent; border:none; text-align:center; line-height:1.3; cursor:pointer; padding:0; }
         .ns-btn.gray { color:#888; }
@@ -100,9 +100,9 @@ export default function NextStepSheet({ role, experience, percentile, topCompani
           {/* 3 cards */}
           <div className="ns-intents">
             {[
-              { id: 'open', img: '/char1.svg', label: 'Yes, available for\nbetter job offers', desc: 'I want to find a fit job now', blue: true },
+              { id: 'open', img: '/char1.png', label: 'Yes, available for\nbetter job offers', desc: 'I want to find a fit job now', blue: true },
               { id: 'selective', img: '/char2.svg', label: "Open if it's\nthe right fit", desc: "I'd consider it for the right role and salary", blue: true },
-              { id: 'none', img: '/char3.svg', label: 'Not right now', desc: "I'm happy where I am", blue: false },
+              { id: 'none', img: '/char3.png', label: 'Not right now', desc: "I'm happy where I am", blue: false },
             ].map(c => (
               <div key={c.id}
                 className={`ns-card${selected === c.id ? (c.blue ? ' sel-blue' : ' sel-gray') : ''}`}
