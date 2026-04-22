@@ -1708,10 +1708,22 @@ const [BODY_PRE_TMPL, BODY_POST_TMPL] = bodyHTML.split('\n<!-- SUBMIT_REACT_PLAC
 const PAGE_HTML_PRE_TMPL = BODY_PRE_TMPL;
 const PAGE_HTML_POST_TMPL = BODY_POST_TMPL;
 
-export default function Home() {
+export async function getStaticProps() {
+  try {
+    const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://salary-fyi.com';
+    const res = await fetch(`${baseUrl}/api/companies`);
+    if (res.ok) {
+      const data = await res.json();
+      return { props: { initialCompanies: data }, revalidate: 1800 };
+    }
+  } catch {}
+  return { props: { initialCompanies: [] }, revalidate: 300 };
+}
+
+export default function Home({ initialCompanies = [] }) {
   const [lbCompany, setLbCompany] = useState(null);
   const [activeTab, setActiveTab] = useState('All roles');
-  const [apiCompanies, setApiCompanies] = useState([]);
+  const [apiCompanies, setApiCompanies] = useState(initialCompanies);
   const [visibleCount, setVisibleCount] = useState(8);
   const [cardSearchQuery, setCardSearchQuery] = useState('');
   const [gridReady, setGridReady] = useState(false);
@@ -1763,16 +1775,20 @@ export default function Home() {
     return () => { delete window.scrollToSubmit; };
   }, []);
 
-  // Fetch companies from API — re-fetch with role/experience after submission
+  // Fetch companies — only re-fetch after submission with role/experience filter
   useEffect(() => {
-    let url = '/api/companies';
     if (wizardStep > 5 && wRole && wExp) {
-      url = `/api/companies?role=${encodeURIComponent(wRole)}&experience=${encodeURIComponent(wExp)}`;
+      const url = `/api/companies?role=${encodeURIComponent(wRole)}&experience=${encodeURIComponent(wExp)}`;
+      fetch(url)
+        .then(r => { if (!r.ok) throw new Error(); return r.json(); })
+        .then(data => { if (Array.isArray(data)) setApiCompanies(data); })
+        .catch(() => {});
+    } else if (!apiCompanies.length) {
+      fetch('/api/companies')
+        .then(r => { if (!r.ok) throw new Error(); return r.json(); })
+        .then(data => { if (Array.isArray(data)) setApiCompanies(data); })
+        .catch(() => {});
     }
-    fetch(url)
-      .then(r => { if (!r.ok) throw new Error(); return r.json(); })
-      .then(data => { if (Array.isArray(data)) setApiCompanies(data); })
-      .catch(() => { /* API unavailable — grid stays empty */ });
   }, [wizardStep > 5]);
 
   // Mark grid root as ready for portal rendering
