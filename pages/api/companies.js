@@ -135,23 +135,21 @@ export default async function handler(req, res) {
       totalCountMap[key] = Number(r.cnt);
     });
 
-    // 3. Only fetch filtered submissions if role/experience filter is applied
+    // 3. Fetch submissions for salary stats (always needed)
     const salaryMap = {};
-    if (role || experience) {
-      let filteredQuery = supabase.from('submissions').select('company, salary, role, experience');
-      if (role) filteredQuery = filteredQuery.eq('role', role);
-      if (experience) filteredQuery = filteredQuery.eq('experience', experience);
-      const filteredResult = await fetchAll(filteredQuery);
-      (filteredResult || []).forEach(s => {
-        if (!s.company) return;
-        const key = s.company.trim().toLowerCase();
-        if (!salaryMap[key]) salaryMap[key] = { salaries: [], roles: {} };
-        if (s.salary && s.salary >= 5 && s.salary <= 200) {
-          salaryMap[key].salaries.push(s.salary);
-        }
-        if (s.role) salaryMap[key].roles[s.role] = (salaryMap[key].roles[s.role] || 0) + 1;
-      });
-    }
+    let filteredQuery = supabase.from('submissions').select('company, salary, role, experience');
+    if (role) filteredQuery = filteredQuery.eq('role', role);
+    if (experience) filteredQuery = filteredQuery.eq('experience', experience);
+    const filteredResult = await fetchAll(filteredQuery);
+    (filteredResult || []).forEach(s => {
+      if (!s.company) return;
+      const key = s.company.trim().toLowerCase();
+      if (!salaryMap[key]) salaryMap[key] = { salaries: [], roles: {} };
+      if (s.salary && s.salary >= 5 && s.salary <= 200) {
+        salaryMap[key].salaries.push(s.salary);
+      }
+      if (s.role) salaryMap[key].roles[s.role] = (salaryMap[key].roles[s.role] || 0) + 1;
+    });
 
     const getSummary = (arr) => {
       const sorted = [...arr].sort((a, b) => a - b);
