@@ -63,10 +63,10 @@ export default function NextStepSheet({ role, experience, percentile, topCompani
             <div style={{ animation: 'sheetFadeSlide 0.35s ease' }}>
               <div style={{ textAlign: 'center', marginBottom: 24 }}>
                 <h3 style={{ fontSize: 22, fontWeight: 800, color: '#1a1a1a', lineHeight: 1.35, margin: '0 0 8px' }}>
-                  Do you want us to connect you with a <span style={{ color: '#ff4400' }}>better-paying</span> company?
+                  Do you want us to connect you with a <span style={{ color: '#0080FF' }}>better-paying</span> company?
                 </h3>
                 <p style={{ fontSize: 14, color: '#888', margin: 0 }}>
-                  We helped <strong style={{ color: '#1a1a1a' }}>3,000+</strong> engineers earn more than <strong style={{ color: '#1a1a1a' }}>10%</strong> of their current salary.
+                  We helped <strong style={{ color: '#0080FF' }}>3,000+</strong> engineers earn more than <strong style={{ color: '#0080FF' }}>10%</strong> of their current salary.
                 </p>
               </div>
 
@@ -84,23 +84,24 @@ export default function NextStepSheet({ role, experience, percentile, topCompani
                   }}
                     style={{
                       flex: 1, padding: '16px 10px', borderRadius: 16,
-                      border: '2px solid #eee', background: '#fff', cursor: 'pointer',
+                      border: '1.5px solid #ebebeb', background: '#fff', cursor: 'pointer',
+                      boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
                       display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8,
                       fontFamily: 'inherit', transition: 'all .15s',
                     }}
-                    onMouseEnter={e => { e.currentTarget.style.borderColor = '#ff4400'; e.currentTarget.style.background = '#fff8f5'; }}
-                    onMouseLeave={e => { e.currentTarget.style.borderColor = '#eee'; e.currentTarget.style.background = '#fff'; }}
+                    onMouseEnter={e => { e.currentTarget.style.borderColor = intent === 'none' ? '#aaa' : '#0080FF'; e.currentTarget.style.boxShadow = intent === 'none' ? 'none' : '0 0 0 3px rgba(0,128,255,0.15)'; }}
+                    onMouseLeave={e => { e.currentTarget.style.borderColor = '#eee'; e.currentTarget.style.boxShadow = 'none'; }}
                   >
                     <span style={{ fontSize: 28 }}>{emoji}</span>
-                    <span style={{ fontSize: 13, fontWeight: 700, color: '#1a1a1a', lineHeight: 1.3, textAlign: 'center' }}>{label}</span>
-                    <span style={{ fontSize: 10, color: '#aaa', lineHeight: 1.4, textAlign: 'center' }}>{sub}</span>
+                    <span style={{ fontSize: 13, fontWeight: 700, color: intent === 'none' ? '#888' : '#0080FF', lineHeight: 1.3, textAlign: 'center' }}>{label}</span>
+                    <span style={{ fontSize: 10, color: '#bbb', lineHeight: 1.4, textAlign: 'center' }}>{sub}</span>
                   </button>
                 ))}
               </div>
 
               <button onClick={() => setVisible(false)}
-                style={{ width: '100%', padding: 12, background: 'transparent', border: 'none',
-                  fontSize: 13, color: '#ccc', cursor: 'pointer', fontFamily: 'inherit' }}>
+                style={{ width: '100%', padding: 8, background: 'transparent', border: 'none',
+                  fontSize: 11, color: '#ccc', cursor: 'pointer', fontFamily: 'inherit' }}>
                 Maybe later
               </button>
             </div>
@@ -135,7 +136,7 @@ export default function NextStepSheet({ role, experience, percentile, topCompani
                         <div key={i} style={{ flex: i === 2 ? '0 0 30%' : '0 0 52%', borderRight: '1px solid #f0f0f0',
                           opacity: i === 2 ? 0.6 : 1 }}>
                           {/* Image area */}
-                          <div style={{ height: 72, background: bgColors[i % 3], position: 'relative' }}>
+                          <div style={{ height: 72, background: `url(${job.images?.[0] || job.image_url || ''}) center/cover no-repeat, ${bgColors[i % 3]}`, position: 'relative' }}>
                             <div style={{ position: 'absolute', bottom: 6, left: 6, width: 26, height: 26, borderRadius: 5,
                               background: '#fff', border: '1px solid rgba(0,0,0,0.08)',
                               display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -196,16 +197,12 @@ export default function NextStepSheet({ role, experience, percentile, topCompani
           {/* ═══ STEP: DONE ═══ */}
           {step === 'done' && (
             <div style={{ animation: 'sheetFadeSlide 0.35s ease', textAlign: 'center', padding: '20px 0 12px' }}>
-              <div style={{ fontSize: 64, marginBottom: 18 }}>👋</div>
-              <div style={{ fontSize: 24, fontWeight: 800, color: '#1a1a1a', marginBottom: 10 }}>No worries!</div>
-              <div style={{ fontSize: 16, color: '#999', lineHeight: 1.65, marginBottom: 32 }}>
-                Your salary data is saved. If you ever want to explore,<br />FYI will always be here.
-              </div>
               <button onClick={() => setVisible(false)}
-                style={{ width: '100%', padding: 18, borderRadius: 16, border: '2px solid #e8e8e8',
-                  background: '#f7f7f7', fontSize: 17, fontWeight: 700, color: '#555', cursor: 'pointer', fontFamily: 'inherit' }}>
-                Close
+                style={{ width: '100%', padding: 13, background: '#111', border: 'none', borderRadius: 12,
+                  fontSize: 14, fontWeight: 700, color: '#fff', cursor: 'pointer', fontFamily: 'inherit', marginBottom: 8 }}>
+                Browse salary data →
               </button>
+              <div style={{ fontSize: 11, color: '#bbb' }}>No sign-up needed. Explore all company salaries freely.</div>
             </div>
           )}
 
