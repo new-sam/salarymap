@@ -1,16 +1,10 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/router'
 
-// Character images — simple emoji fallback (SVG too complex for inline JSX)
-const CharImg = ({ emoji, bg }) => (
-  <div style={{ width: '100%', aspectRatio: '268/233', borderRadius: '23px 23px 0 0', background: bg,
-    display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 64 }}>
-    {emoji}
-  </div>
+// Character images from public folder
+const CharImg = ({ src }) => (
+  <img src={src} alt="" style={{ width: '100%', display: 'block', borderRadius: '14px 14px 0 0' }} />
 )
-const Char1 = () => <CharImg emoji="😎" bg="linear-gradient(135deg, #e8f5e9, #c8e6c9)" />
-const Char2 = () => <CharImg emoji="🤔" bg="linear-gradient(135deg, #e3f2fd, #bbdefb)" />
-const Char3 = () => <CharImg emoji="😌" bg="linear-gradient(135deg, #fce4ec, #f8bbd0)" />
 
 export default function NextStepSheet({ role, experience, percentile, topCompanies }) {
   const [visible, setVisible] = useState(false)
@@ -85,45 +79,35 @@ export default function NextStepSheet({ role, experience, percentile, topCompani
         <div style={{ padding: '14px 18px 28px' }}>
 
           {/* Title */}
-          <div style={{ fontSize: 19, fontWeight: 800, color: '#111', lineHeight: 1.35, textAlign: 'center', marginBottom: 8 }}>
-            Do you want us to connect<br/>you with a <span style={{ color: '#0080FF' }}>better-paying</span> company?
+          <div style={{ fontSize: 'clamp(22px, 5vw, 28px)', fontWeight: 800, fontStyle: 'italic', color: '#111', lineHeight: 1.3, textAlign: 'center', marginBottom: 10 }}>
+            Do you want us to connect you with a <span style={{ color: '#0080FF' }}>better-paying</span> company?
           </div>
-          <div style={{ fontSize: 13, color: '#888', textAlign: 'center', lineHeight: 1.6, marginBottom: 20 }}>
+          <div style={{ fontSize: 14, color: '#888', textAlign: 'center', lineHeight: 1.6, marginBottom: 20 }}>
             We helped <b style={{ color: '#0080FF' }}>3,000+</b> engineers earn more than <b style={{ color: '#0080FF' }}>10%</b> of their current salary.
           </div>
 
           {/* 3 Intent cards */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10, marginBottom: 16 }}>
-            {/* Card 1 */}
-            <div style={cardStyle('open')} onClick={() => handleSelect('open')}>
-              <div><Char1 /></div>
-              <div style={{ padding: '10px 8px 12px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, flex: 1 }}>
-                <div style={{ fontSize: 11, fontWeight: 800, color: selected === 'open' ? '#005ecc' : '#0080FF', textAlign: 'center', lineHeight: 1.3, border: 'none', background: 'none', cursor: 'pointer' }}>
-                  Yes, available for<br/>better job offers
+            {[
+              { intent: 'open', img: '/char1.png', label: 'Yes, available\nfor better job\noffers', desc: 'I want to find a fit job now', blue: true },
+              { intent: 'selective', img: '/char2.svg', label: "Open if it's\nthe right fit", desc: "I'd consider it for the right role and salary", blue: true },
+              { intent: 'none', img: '/char3.png', label: 'Not right now', desc: "I'm happy where I am", blue: false },
+            ].map(({ intent, img, label, desc, blue }) => (
+              <div key={intent} style={cardStyle(intent)} onClick={() => handleSelect(intent)}>
+                <CharImg src={img} />
+                <div style={{ padding: '10px 8px 12px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, flex: 1 }}>
+                  <div style={{
+                    fontSize: 11, fontWeight: 800, textAlign: 'center', lineHeight: 1.3,
+                    whiteSpace: 'pre-line', cursor: 'pointer',
+                    color: blue ? '#0080FF' : '#888',
+                    ...(selected === intent && blue ? { color: '#005ecc' } : {}),
+                  }}>
+                    {label}
+                  </div>
+                  <div style={{ fontSize: 10, color: '#bbb', textAlign: 'center', lineHeight: 1.4 }}>{desc}</div>
                 </div>
-                <div style={{ fontSize: 10, color: '#bbb', textAlign: 'center', lineHeight: 1.4 }}>I want to find a fit job now</div>
               </div>
-            </div>
-
-            {/* Card 2 */}
-            <div style={cardStyle('selective')} onClick={() => handleSelect('selective')}>
-              <div><Char2 /></div>
-              <div style={{ padding: '10px 8px 12px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, flex: 1 }}>
-                <div style={{ fontSize: 11, fontWeight: 800, color: selected === 'selective' ? '#005ecc' : '#0080FF', textAlign: 'center', lineHeight: 1.3 }}>
-                  Open if it's<br/>the right fit
-                </div>
-                <div style={{ fontSize: 10, color: '#bbb', textAlign: 'center', lineHeight: 1.4 }}>I'd consider it for the right role and salary</div>
-              </div>
-            </div>
-
-            {/* Card 3 */}
-            <div style={cardStyle('none')} onClick={() => handleSelect('none')}>
-              <div><Char3 /></div>
-              <div style={{ padding: '10px 8px 12px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, flex: 1 }}>
-                <div style={{ fontSize: 11, fontWeight: 800, color: '#888', textAlign: 'center', lineHeight: 1.3 }}>Not right now</div>
-                <div style={{ fontSize: 10, color: '#bbb', textAlign: 'center', lineHeight: 1.4 }}>I'm happy where I am</div>
-              </div>
-            </div>
+            ))}
           </div>
 
           {/* Maybe later */}
