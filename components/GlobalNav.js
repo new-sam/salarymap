@@ -86,10 +86,10 @@ export default function GlobalNav({ activePage }) {
           </Link>
         </div>
         <div className="gnav-r">
-          <Link href="/" className={`gnav-link${activePage === 'home' ? ' on' : ''}`}>Am I underpaid?</Link>
+          <Link href="/" className={`gnav-link${activePage === 'home' ? ' on' : ''}`}>Tôi có bị trả thấp?</Link>
           <Link href="/jobs" className={`gnav-link gnav-jobs-cta${activePage === 'jobs' ? ' on' : ''}`}>
-            💰 Jobs <span className="gnav-jobs-badge">↑</span>
-            <span className="gnav-jobs-sub">Earn more</span>
+            💰 Việc làm <span className="gnav-jobs-badge">↑</span>
+            <span className="gnav-jobs-sub">Kiếm thêm</span>
           </Link>
 
           {!ready ? null : !isLoggedIn ? (
@@ -98,9 +98,9 @@ export default function GlobalNav({ activePage }) {
                 if (typeof window !== 'undefined') localStorage.setItem('fyi_login_return', window.location.pathname)
                 supabase.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: window.location.origin + '/auth/callback' } })
               }}>
-                Log in
+                Đăng nhập
               </button>
-              <Link href="/#submit" className="gnav-submit">Submit Salary</Link>
+              <Link href="/#submit" className="gnav-submit">Gửi lương</Link>
             </>
           ) : (
             <div className="gnav-user" onClick={() => setShowMenu(v => !v)}>
@@ -119,7 +119,7 @@ export default function GlobalNav({ activePage }) {
               {showMenu && (
                 <div className="gnav-menu" onClick={e => e.stopPropagation()}>
                   <div className="gnav-menu-email">{user?.email}</div>
-                  <a href="/profile" className="gnav-menu-item">My Profile</a>
+                  <a href="/profile" className="gnav-menu-item">Hồ sơ của tôi</a>
                   {isAdmin && (
                     <a href="/admin/jobs" className="gnav-menu-item gnav-menu-admin">Admin Dashboard</a>
                   )}
@@ -127,7 +127,7 @@ export default function GlobalNav({ activePage }) {
                     await supabase.auth.signOut()
                     setIsLoggedIn(false); setUser(null); setShowMenu(false)
                     window.location.reload()
-                  }}>Sign out</button>
+                  }}>Đăng xuất</button>
                 </div>
               )}
             </div>

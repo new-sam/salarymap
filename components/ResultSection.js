@@ -31,7 +31,7 @@ export default function ResultSection({ salary, role, experience, company, isLog
       <div style={{ width:60, height:60, borderRadius:'50%', border:'3px solid #ff4400', borderTopColor:'transparent',
         animation:'spin .8s linear infinite', margin:'40px auto 16px' }} />
       <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
-      <div style={{ fontSize:14, color:'rgba(255,255,255,0.4)' }}>Calculating your rank...</div>
+      <div style={{ fontSize:14, color:'rgba(255,255,255,0.4)' }}>Đang tính thứ hạng...</div>
     </div>
   )
 
@@ -40,9 +40,9 @@ export default function ResultSection({ salary, role, experience, company, isLog
   const state = percentile <= 33 ? 'high' : percentile <= 66 ? 'mid' : 'low'
 
   const verdictMap = {
-    high: { bg: 'rgba(34,197,94,0.1)', border: 'rgba(34,197,94,0.25)', color: '#4ade80', icon: '✦', text: "You're earning well above market" },
-    mid: { bg: 'rgba(250,204,21,0.1)', border: 'rgba(250,204,21,0.25)', color: '#facc15', icon: '◎', text: "You're close to market rate" },
-    low: { bg: 'rgba(255,68,0,0.1)', border: 'rgba(255,68,0,0.25)', color: '#ff6b35', icon: '↓', text: 'You may be underpaid' },
+    high: { bg: 'rgba(34,197,94,0.1)', border: 'rgba(34,197,94,0.25)', color: '#4ade80', icon: '✦', text: "Bạn đang kiếm được cao hơn thị trường" },
+    mid: { bg: 'rgba(250,204,21,0.1)', border: 'rgba(250,204,21,0.25)', color: '#facc15', icon: '◎', text: "Bạn gần với mức thị trường" },
+    low: { bg: 'rgba(255,68,0,0.1)', border: 'rgba(255,68,0,0.25)', color: '#ff6b35', icon: '↓', text: 'Bạn có thể đang bị trả thấp' },
   }
   const verdict = verdictMap[state]
   const pctPosition = Math.max(5, Math.min(95, 100 - percentile))
@@ -75,7 +75,7 @@ export default function ResultSection({ salary, role, experience, company, isLog
 
         {/* Eyebrow */}
         <div style={{ fontSize:'10px', fontWeight:700, letterSpacing:'.1em', color:'rgba(255,255,255,0.25)', textTransform:'uppercase', textAlign:'center', marginBottom:'16px' }}>
-          YOUR RESULT · {role} · {experience}
+          KẾT QUẢ CỦA BẠN · {role} · {experience}
         </div>
 
         {/* Big percentile */}
@@ -85,24 +85,24 @@ export default function ResultSection({ salary, role, experience, company, isLog
           </span>
         </div>
         <div style={{ textAlign:'center', fontSize:'13px', color:'rgba(255,255,255,0.4)', marginBottom:'24px' }}>
-          Among {role} engineers with {experience} in Vietnam
+          Trong số các kỹ sư {role} với {experience} tại Việt Nam
         </div>
 
         {/* 3 stat boxes */}
         <div className="rs-stat-grid" style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:'8px', marginBottom:'20px' }}>
           <div className="rs-stat-box">
             <div style={{ fontSize:'24px', fontWeight:900, color:'#fff' }}>{userSalary}M</div>
-            <div style={{ fontSize:'11px', color:'rgba(255,255,255,0.35)', marginTop:'4px' }}>Your salary</div>
+            <div style={{ fontSize:'11px', color:'rgba(255,255,255,0.35)', marginTop:'4px' }}>Lương của bạn</div>
           </div>
           <div className="rs-stat-box">
             <div style={{ fontSize:'24px', fontWeight:900, color:'#fff' }}>{marketMedian}M</div>
-            <div style={{ fontSize:'11px', color:'rgba(255,255,255,0.35)', marginTop:'4px' }}>Market median</div>
+            <div style={{ fontSize:'11px', color:'rgba(255,255,255,0.35)', marginTop:'4px' }}>Trung vị thị trường</div>
           </div>
           <div className="rs-stat-box" style={{ background:'rgba(255,68,0,0.08)', border:'1px solid rgba(255,68,0,0.25)' }}>
             <div style={{ fontSize:'24px', fontWeight:900, color: isPositive ? '#4ade80' : '#ff4400' }}>
               {isPositive ? '+' : ''}{diff}M
             </div>
-            <div style={{ fontSize:'11px', color:'rgba(255,255,255,0.35)', marginTop:'4px' }}>{isPositive ? 'Above' : 'Below'} median</div>
+            <div style={{ fontSize:'11px', color:'rgba(255,255,255,0.35)', marginTop:'4px' }}>{isPositive ? 'Trên' : 'Dưới'} trung vị</div>
           </div>
         </div>
 
@@ -124,9 +124,9 @@ export default function ResultSection({ salary, role, experience, company, isLog
               animation:'glowPulse 2s ease-in-out infinite' }} />
           </div>
           <div style={{ display:'flex', justifyContent:'space-between', marginTop:'6px' }}>
-            <span style={{ fontSize:'9px', color:'rgba(255,255,255,0.2)' }}>Lowest</span>
-            <span style={{ fontSize:'9px', color:'rgba(255,255,255,0.2)' }}>Median</span>
-            <span style={{ fontSize:'9px', color:'rgba(255,255,255,0.2)' }}>Highest</span>
+            <span style={{ fontSize:'9px', color:'rgba(255,255,255,0.2)' }}>Thấp nhất</span>
+            <span style={{ fontSize:'9px', color:'rgba(255,255,255,0.2)' }}>Trung vị</span>
+            <span style={{ fontSize:'9px', color:'rgba(255,255,255,0.2)' }}>Cao nhất</span>
           </div>
         </div>
 
@@ -145,7 +145,7 @@ export default function ResultSection({ salary, role, experience, company, isLog
         <div style={{ marginTop:'20px' }}>
           <div style={{ fontSize:'10px', fontWeight:700, letterSpacing:'.1em', color:'rgba(255,255,255,0.25)',
             textTransform:'uppercase', marginBottom:'12px' }}>
-            COMPANIES PAYING MORE FOR YOUR ROLE
+            CÔNG TY TRẢ CAO HƠN CHO VỊ TRÍ CỦA BẠN
           </div>
           <div style={{ display:'flex', flexDirection:'column', gap:'8px' }}>
             {topCompanies.slice(0, 5).map((co, i) => {
@@ -178,13 +178,13 @@ export default function ResultSection({ salary, role, experience, company, isLog
           display:'flex', alignItems:'center', justifyContent:'space-between', gap:'12px' }}>
           <div>
             <div style={{ fontSize:'14px', fontWeight:700, color:'#fff' }}>
-              {jobCount} jobs paying +{avgBump}% more
+              {jobCount} việc làm trả cao hơn +{avgBump}%
             </div>
             <div style={{ fontSize:'11px', color:'rgba(255,255,255,0.35)', marginTop:'2px' }}>
               For {role} with {experience}
             </div>
           </div>
-          <span style={{ fontSize:'13px', fontWeight:700, color:'#ff4400', whiteSpace:'nowrap' }}>See jobs →</span>
+          <span style={{ fontSize:'13px', fontWeight:700, color:'#ff4400', whiteSpace:'nowrap' }}>Xem việc làm →</span>
         </div>
       )}
 
@@ -197,12 +197,12 @@ export default function ResultSection({ salary, role, experience, company, isLog
         <div style={{ marginTop:'16px', background:'linear-gradient(135deg,#1a0d07,#111)', border:'1px solid rgba(255,96,0,0.2)',
           borderRadius:'14px', padding:'16px 20px', display:'flex', alignItems:'center', justifyContent:'space-between', gap:'12px', flexWrap:'wrap' }}>
           <div>
-            <div style={{ fontSize:'14px', fontWeight:700, color:'#fff' }}>{topCompanies.length} companies pay more for your role</div>
-            <div style={{ fontSize:'11px', color:'rgba(255,255,255,0.4)' }}>Our headhunter can personally introduce you.</div>
+            <div style={{ fontSize:'14px', fontWeight:700, color:'#fff' }}>{topCompanies.length} công ty trả cao hơn cho vị trí của bạn</div>
+            <div style={{ fontSize:'11px', color:'rgba(255,255,255,0.4)' }}>Headhunter của chúng tôi có thể giới thiệu bạn.</div>
           </div>
           <a href="/jobs" style={{ background:'#ff4400', color:'#fff', border:'none', padding:'10px 20px',
             borderRadius:'10px', fontSize:'13px', fontWeight:700, textDecoration:'none', whiteSpace:'nowrap' }}>
-            See jobs →
+            Xem việc làm →
           </a>
         </div>
       )}

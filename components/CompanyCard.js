@@ -29,14 +29,14 @@ export default function CompanyCard({ company, index, isUnlocked, onClick, onLoc
         }}>
           <span style={{ fontSize: '22px' }}>🔒</span>
           <span style={{ fontSize: '14px', fontWeight: 800, color: 'white' }}>{company.company}</span>
-          <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)' }}>{company.count} salaries</span>
+          <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)' }}>{company.count} dữ liệu lương</span>
           <span
             onClick={(e) => { e.stopPropagation(); onLockedClick(); }}
             style={{
               marginTop: '8px', background: '#ff6000', color: 'black',
               fontSize: '12px', fontWeight: 800, padding: '9px 20px', borderRadius: '100px',
             }}
-          >Submit to unlock →</span>
+          >Gửi lương để mở khóa →</span>
         </div>
       </div>
     );
@@ -60,13 +60,13 @@ export default function CompanyCard({ company, index, isUnlocked, onClick, onLoc
       <div className="card-bottom">
         <div className="card-name-row">
           <div className="card-name">{company.company}</div>
-          <div className="card-count">{company.count > 0 ? `${company.count} salaries` : 'New'}</div>
+          <div className="card-count">{company.count > 0 ? `${company.count} dữ liệu lương` : 'New'}</div>
         </div>
         <div className="card-divider" />
         {company.hasData ? (
           <div className="card-sal">{company.min}M – {company.max}M VND /mo</div>
         ) : (
-          <div className="card-sal" style={{ color: 'rgba(255,255,255,0.3)', fontStyle: 'italic', fontSize: '12px' }}>Collecting data...</div>
+          <div className="card-sal" style={{ color: 'rgba(255,255,255,0.3)', fontStyle: 'italic', fontSize: '12px' }}>Đang thu thập...</div>
         )}
       </div>
     </div>

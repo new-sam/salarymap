@@ -19,9 +19,8 @@ export default function AnonymousSection() {
           lineHeight: 1.3,
           marginBottom: '14px',
         }}>
-          This is{' '}
-          <em style={{ color: '#ff6000', fontStyle: 'normal' }}>completely</em>
-          {' '}anonymous.
+          Hoàn toàn{' '}
+          <em style={{ color: '#ff6000', fontStyle: 'normal' }}>ẩn danh.</em>
         </h2>
         <p style={{
           fontSize: 'clamp(14px, 2.5vw, 18px)',
@@ -30,7 +29,7 @@ export default function AnonymousSection() {
           maxWidth: '700px',
           margin: '0 auto',
         }}>
-          We don't know who you are. We just know what professionals in Vietnam are earning.
+          Chúng tôi không biết bạn là ai. Chúng tôi chỉ biết các chuyên gia tại Việt Nam đang kiếm được bao nhiêu.
         </p>
       </div>
 
@@ -96,7 +95,7 @@ export default function AnonymousSection() {
           padding: '32px 24px 28px',
         }}>
           <div style={{ fontSize: '14px', fontWeight: 300, color: 'rgba(255,255,255,0.4)', marginBottom: '18px', letterSpacing: '0.02em' }}>
-            What you submit
+            Bạn gửi
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
             {[
@@ -142,7 +141,7 @@ export default function AnonymousSection() {
           padding: '32px 24px 28px',
         }}>
           <div style={{ fontSize: '18px', fontWeight: 700, color: '#ff6000', marginBottom: '8px' }}>
-            What everyone sees
+            Mọi người thấy
           </div>
           <div style={{ fontSize: '14px', fontWeight: 300, color: 'rgba(255,255,255,0.5)', marginBottom: '14px' }}>
             Backend · 4–6 yrs · Grab
@@ -155,7 +154,7 @@ export default function AnonymousSection() {
               24M — 38M VND
             </span>
             <span style={{ fontSize: '12px', fontWeight: 300, color: 'rgba(255,255,255,0.35)' }}>
-              Based on 261 salaries
+              Dựa trên 261 dữ liệu lương
             </span>
           </div>
         </div>
@@ -173,7 +172,7 @@ export default function AnonymousSection() {
       }}>
         <span style={{ fontSize: '28px' }}>🙈</span>
         <span style={{ fontSize: 'clamp(14px, 2.5vw, 18px)', fontWeight: 300, color: 'rgba(255,255,255,0.5)' }}>
-          We <em style={{ color: '#ff6000', fontStyle: 'normal', fontWeight: 700 }}>can't</em> identify you. Even if we tried.
+          Chúng tôi <em style={{ color: '#ff6000', fontStyle: 'normal', fontWeight: 700 }}>không thể</em> xác định bạn. Ngay cả khi muốn.
         </span>
       </div>
 

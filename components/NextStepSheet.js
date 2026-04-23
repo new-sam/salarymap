@@ -105,14 +105,14 @@ export default function NextStepSheet({ role, experience, percentile, topCompani
         <div className="ns-handle" />
         <div className="ns-body">
 
-          <div className="ns-title">Do you want us to connect<br/>you with a <span className="blue">better-paying</span> company?</div>
-          <div className="ns-sub">We helped <b>3,000+</b> engineers earn more than <b>10%</b> of their current salary.</div>
+          <div className="ns-title">Bạn có muốn chúng tôi kết nối<br/>bạn với công ty <span className="blue">trả lương cao hơn</span>?</div>
+          <div className="ns-sub">Chúng tôi đã giúp <b>3.000+</b> kỹ sư kiếm được hơn <b>10%</b> lương hiện tại.</div>
 
           <div className="ns-intents">
             {[
-              { id:'open', img:'/char1.png', label:<>Yes, available for<br/>better job offers</>, desc:'I want to find a fit job now', blue:true },
-              { id:'selective', img:'/char2.png', label:<>Open if it&apos;s<br/>the right fit</>, desc:"I'd consider it for the right role and salary", blue:true },
-              { id:'none', img:'/char3.png', label:'Not right now', desc:"I'm happy where I am", blue:false },
+              { id:'open', img:'/char1.png', label:<>Có, sẵn sàng nhận<br/>cơ hội tốt hơn</>, desc:'Tôi muốn tìm việc phù hợp ngay', blue:true },
+              { id:'selective', img:'/char2.png', label:<>Cân nhắc nếu<br/>phù hợp</>, desc:'Tôi sẽ xem xét nếu đúng vị trí và mức lương', blue:true },
+              { id:'none', img:'/char3.png', label:'Chưa cần ngay', desc:'Tôi hài lòng với công việc hiện tại', blue:false },
             ].map(c => (
               <div key={c.id} className={`ns-card${selected===c.id?(c.blue?' sel-blue':' sel-gray'):''}`} onClick={() => handleSelect(c.id)}>
                 <div className="ns-card-img"><img src={c.img} alt="" /></div>
@@ -125,7 +125,7 @@ export default function NextStepSheet({ role, experience, percentile, topCompani
           </div>
 
           <div style={{textAlign:'center',marginBottom:4}}>
-            <button className="ns-exit" onClick={() => { handleSelect('maybe_later'); setVisible(false); }}>Maybe later</button>
+            <button className="ns-exit" onClick={() => { handleSelect('maybe_later'); setVisible(false); }}>Để sau</button>
           </div>
 
           <div id="ns-post">
@@ -134,7 +134,7 @@ export default function NextStepSheet({ role, experience, percentile, topCompani
                 {jobCount>0 && (
                   <div className="ns-match">
                     <div className="ns-match-dot" />
-                    <div className="ns-match-text">We found <b>{jobCount} jobs</b> that pay more than you right now</div>
+                    <div className="ns-match-text">Chúng tôi tìm thấy <b>{jobCount} việc làm</b> trả lương cao hơn bạn hiện tại</div>
                   </div>
                 )}
                 {jobCount>0 && (
@@ -158,18 +158,18 @@ export default function NextStepSheet({ role, experience, percentile, topCompani
                         )
                       })}
                     </div>
-                    <div className="ns-overlay"><div className="ns-overlay-icon">🔒</div><div className="ns-overlay-text">Sign in to see & apply</div></div>
+                    <div className="ns-overlay"><div className="ns-overlay-icon">🔒</div><div className="ns-overlay-text">Đăng nhập để xem & ứng tuyển</div></div>
                     <div className="ns-right-fade" />
                   </div>
                 )}
-                <button className="ns-unlock" onClick={() => router.push('/jobs')}>See all jobs →</button>
-                <div className="ns-privacy">🔒 No spam. We only reach out when it&apos;s worth your time.</div>
+                <button className="ns-unlock" onClick={() => router.push('/jobs')}>Xem tất cả việc làm →</button>
+                <div className="ns-privacy">🔒 Không spam. Chúng tôi chỉ liên hệ khi thực sự đáng giá.</div>
               </div>
             )}
             {selected==='none' && (
               <div>
-                <button className="ns-browse" onClick={() => setVisible(false)}>Browse salary data →</button>
-                <div className="ns-browse-sub">No sign-up needed. Explore all company salaries freely.</div>
+                <button className="ns-browse" onClick={() => setVisible(false)}>Xem dữ liệu lương →</button>
+                <div className="ns-browse-sub">Không cần đăng ký. Khám phá dữ liệu lương tất cả công ty.</div>
               </div>
             )}
           </div>
