@@ -110,7 +110,8 @@
       "Bash(nslookup *)",
       "Skill(schedule)",
       "WebFetch(domain:claude.ai)",
-      "Bash(sort -t: -k2 -u)"
+      "Bash(sort -t: -k2 -u)",
+      "WebFetch(domain:www.notion.so)"
     ]
   },
   "hooks": {
