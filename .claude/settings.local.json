@@ -117,7 +117,8 @@
       "Bash(clip)",
       "Bash(sed -i 's|Lương ở<br>|What does<br>|' pages/index.js)",
       "Bash(sed -i 's|thực sự là bao nhiêu?|actually pay?|' pages/index.js)",
-      "Bash(gh repo *)"
+      "Bash(gh repo *)",
+      "Bash(npm list *)"
     ]
   },
   "hooks": {
