@@ -26,7 +26,19 @@ export default function NextStepSheet({ role, experience, percentile, topCompani
 
   const handleSelect = (intent) => {
     setSelected(intent)
-    if (typeof window !== 'undefined') localStorage.setItem('fyi_intent', intent)
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('fyi_intent', intent)
+      // Save intent to DB
+      const sid = localStorage.getItem('fyi_submission_id')
+      if (sid) {
+        fetch('/api/intent', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ submissionId: sid, intent }),
+        }).catch(() => {})
+      }
+    }
+    if (typeof gtag === 'function') gtag('event', 'nextstep_intent', { intent })
     setTimeout(() => {
       document.getElementById('ns-post')?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
     }, 100)
@@ -113,7 +125,7 @@ export default function NextStepSheet({ role, experience, percentile, topCompani
           </div>
 
           <div style={{textAlign:'center',marginBottom:4}}>
-            <button className="ns-exit" onClick={() => setVisible(false)}>Maybe later</button>
+            <button className="ns-exit" onClick={() => { handleSelect('maybe_later'); setVisible(false); }}>Maybe later</button>
           </div>
 
           <div id="ns-post">
