@@ -113,7 +113,8 @@
       "Bash(sort -t: -k2 -u)",
       "WebFetch(domain:www.notion.so)",
       "WebFetch(domain:docs.google.com)",
-      "WebFetch(domain:doc-00-54-sheets.googleusercontent.com)"
+      "WebFetch(domain:doc-00-54-sheets.googleusercontent.com)",
+      "Bash(clip)"
     ]
   },
   "hooks": {
