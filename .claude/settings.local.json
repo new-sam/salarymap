@@ -118,7 +118,11 @@
       "Bash(sed -i 's|Lương ở<br>|What does<br>|' pages/index.js)",
       "Bash(sed -i 's|thực sự là bao nhiêu?|actually pay?|' pages/index.js)",
       "Bash(gh repo *)",
-      "Bash(npm list *)"
+      "Bash(npm list *)",
+      "Bash(npx ngrok *)",
+      "Bash(ngrok http *)",
+      "Bash(where ngrok *)",
+      "Bash(ngrok version *)"
     ]
   },
   "hooks": {
