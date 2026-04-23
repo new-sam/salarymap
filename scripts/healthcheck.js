@@ -1,4 +1,4 @@
-// Site health check — run with: node scripts/healthcheck.js
+// Site health check — run with: node scripts/healthcheck.js — run with: node scripts/healthcheck.js
 const checks = [
   {
     name: 'Homepage loads',
