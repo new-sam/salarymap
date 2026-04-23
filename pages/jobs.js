@@ -508,18 +508,9 @@ export default function JobsPage() {
               )}
 
               {/* Apply CTA */}
-              {isLoggedIn ? (
-                <button className="jd-apply-btn" onClick={() => { setDetailJob(null); openApply(detailJob) }}>
-                  Ứng tuyển →
-                </button>
-              ) : (
-                <div className="jd-login-box">
-                  <div className="jd-login-text">Đăng nhập để ứng tuyển vị trí này</div>
-                  <button className="jd-login-btn" onClick={() => { localStorage.setItem('fyi_login_return','/jobs'); supabase.auth.signInWithOAuth({ provider:'google', options:{ redirectTo: window.location.origin+'/auth/callback' }}) }}>
-                    Tiếp tục với Google →
-                  </button>
-                </div>
-              )}
+              <button className="jd-apply-btn" onClick={() => { setDetailJob(null); openApply(detailJob) }}>
+                Ứng tuyển →
+              </button>
             </div>
           </div>
         </>
@@ -571,7 +562,10 @@ export default function JobsPage() {
                 }} disabled={applying}>
                   {!isLoggedIn ? 'Đăng nhập để ứng tuyển →' : applying ? 'Đang gửi...' : 'Gửi đơn ứng tuyển →'}
                 </button>
-                <button className="ap-skip" onClick={() => { setResumeFile(null); handleApply() }}>Ứng tuyển không cần CV</button>
+                <button className="ap-skip" onClick={() => {
+                  if (!isLoggedIn) { localStorage.setItem('fyi_login_return','/jobs'); supabase.auth.signInWithOAuth({ provider:'google', options:{ redirectTo: window.location.origin+'/auth/callback' }}); return; }
+                  setResumeFile(null); handleApply();
+                }}>Ứng tuyển không cần CV</button>
               </>
             ) : (
               <div className="ap-ok">
