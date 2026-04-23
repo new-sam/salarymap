@@ -89,7 +89,7 @@ export default function GlobalNav({ activePage }) {
           <Link href="/" className={`gnav-link${activePage === 'home' ? ' on' : ''}`}>Tôi có bị trả thấp?</Link>
           <Link href="/jobs" className={`gnav-link gnav-jobs-cta${activePage === 'jobs' ? ' on' : ''}`}>
             💰 Việc làm <span className="gnav-jobs-badge">↑</span>
-            <span className="gnav-jobs-sub">Kiếm thêm</span>
+            <span className="gnav-jobs-sub">Thu nhập cao hơn</span>
           </Link>
 
           {!ready ? null : !isLoggedIn ? (

@@ -579,7 +579,7 @@ export default function CompanyDetailPanel({
         width: '100%', padding: '14px 0',
         background: '#ff6000', border: 'none', borderRadius: 12,
         fontSize: 14, fontWeight: 700, color: '#fff', cursor: 'pointer', fontFamily: 'inherit',
-      }}>Gửi lương để mở khóa</button>
+      }}>Chia sẻ lương để xem</button>
       <div style={{ fontSize: 10, color: '#bbb', marginTop: 10 }}>
         100% ẩn danh · Không cần đăng nhập
       </div>

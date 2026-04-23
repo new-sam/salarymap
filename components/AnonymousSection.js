@@ -29,7 +29,7 @@ export default function AnonymousSection() {
           maxWidth: '700px',
           margin: '0 auto',
         }}>
-          Chúng tôi không biết bạn là ai. Chúng tôi chỉ biết các chuyên gia tại Việt Nam đang kiếm được bao nhiêu.
+          Chúng tôi không biết bạn là ai — chỉ biết các chuyên gia tại Việt Nam đang kiếm được bao nhiêu.
         </p>
       </div>
 

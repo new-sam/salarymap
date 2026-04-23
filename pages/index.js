@@ -2119,10 +2119,10 @@ export default function Home({ initialCompanies = [] }) {
         </div>
         <div className="nav-r">
           <button className="nav-link" onClick={() => document.getElementById('submit')?.scrollIntoView({behavior:'smooth'})}>Tôi có bị trả thấp?</button>
-          <button className="nav-link" onClick={() => document.getElementById('companies')?.scrollIntoView({behavior:'smooth'})}>Công ty nào trả cao nhất?</button>
+          <button className="nav-link" onClick={() => document.getElementById('companies')?.scrollIntoView({behavior:'smooth'})}>Ai trả lương cao nhất?</button>
           <a className="nav-jobs-cta" href="/jobs">
             💰 Việc làm <span className="nav-jobs-badge">↑</span>
-            <span className="nav-jobs-sub">Kiếm thêm</span>
+            <span className="nav-jobs-sub">Thu nhập cao hơn</span>
           </a>
 
           {!isLoggedIn ? (

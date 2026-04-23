@@ -105,7 +105,7 @@ export default function NextStepSheet({ role, experience, percentile, topCompani
         <div className="ns-handle" />
         <div className="ns-body">
 
-          <div className="ns-title">Bạn có muốn chúng tôi kết nối<br/>bạn với công ty <span className="blue">trả lương cao hơn</span>?</div>
+          <div className="ns-title">Muốn được kết nối với công ty <span className="blue">trả lương cao hơn</span>?</div>
           <div className="ns-sub">Chúng tôi đã giúp <b>3.000+</b> kỹ sư kiếm được hơn <b>10%</b> lương hiện tại.</div>
 
           <div className="ns-intents">

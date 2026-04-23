@@ -36,7 +36,7 @@ export default function CompanyCard({ company, index, isUnlocked, onClick, onLoc
               marginTop: '8px', background: '#ff6000', color: 'black',
               fontSize: '12px', fontWeight: 800, padding: '9px 20px', borderRadius: '100px',
             }}
-          >Gửi lương để mở khóa →</span>
+          >Chia sẻ lương để xem →</span>
         </div>
       </div>
     );

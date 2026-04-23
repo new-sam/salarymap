@@ -85,7 +85,7 @@ export default function ResultSection({ salary, role, experience, company, isLog
           </span>
         </div>
         <div style={{ textAlign:'center', fontSize:'13px', color:'rgba(255,255,255,0.4)', marginBottom:'24px' }}>
-          Trong số các kỹ sư {role} với {experience} tại Việt Nam
+          Trong số kỹ sư {role}, {experience} kinh nghiệm tại Việt Nam
         </div>
 
         {/* 3 stat boxes */}
