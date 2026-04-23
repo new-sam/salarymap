@@ -99,7 +99,7 @@ export default function NextStepSheet({ role, experience, percentile, topCompani
 .ns-browse-sub{font-size:11px;color:#bbb;text-align:center}
       `}</style>
 
-      <div className="ns-backdrop" onClick={() => setVisible(false)} />
+      <div className="ns-backdrop" onClick={() => { handleSelect('dismissed'); setVisible(false); }} />
 
       <div className="ns-sheet">
         <div className="ns-handle" />

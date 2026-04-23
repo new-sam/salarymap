@@ -6,7 +6,7 @@ export default async function handler(req, res) {
   const { submissionId, intent } = req.body;
   if (!submissionId || !intent) return res.status(400).json({ error: 'submissionId and intent required' });
 
-  const validIntents = ['open', 'selective', 'none', 'maybe_later'];
+  const validIntents = ['open', 'selective', 'none', 'maybe_later', 'dismissed'];
   if (!validIntents.includes(intent)) return res.status(400).json({ error: 'Invalid intent' });
 
   const { error } = await supabase
