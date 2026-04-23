@@ -20,7 +20,7 @@ export default function ResultSection({ salary, role, experience, company, isLog
         const res = await fetch('/api/jobs')
         if (!res.ok) return
         const data = await res.json()
-        setJobs(data.filter(j => j.salary_min > salary && j.role?.toLowerCase().includes(role?.toLowerCase()?.split(' ')[0])))
+        setJobs(data.filter(j => j.salary_min > (salary * 1000000) && j.role?.toLowerCase().includes(role?.toLowerCase()?.split(' ')[0])))
       } catch {}
     }
     if (salary) { fetchResult(); fetchJobs(); }
@@ -58,7 +58,8 @@ export default function ResultSection({ salary, role, experience, company, isLog
   })
 
   const jobCount = jobs.length
-  const avgBump = jobCount > 0 ? Math.round(jobs.reduce((a, j) => a + ((j.salary_min - salary) / salary * 100), 0) / jobCount) : 0
+  const salaryVnd = salary * 1000000
+  const avgBump = jobCount > 0 ? Math.round(jobs.reduce((a, j) => a + ((j.salary_min - salaryVnd) / salaryVnd * 100), 0) / jobCount) : 0
 
   return (
     <div style={{ fontFamily: "'Be Vietnam Pro','Barlow',sans-serif", WebkitFontSmoothing: 'antialiased' }}>
