@@ -1005,7 +1005,25 @@ let coSearchIdx = -1;
 // coSearchFilter — card filtering is handled by React state (cardSearchQuery)
 // This stub keeps the global reference alive for the HTML oninput handler.
 function coSearchFilter(val) {
-  // filtering now handled by React via the 'input' event listener
+  var drop = document.getElementById('co-search-drop');
+  if (!val || val.trim().length < 1) { drop.classList.remove('open'); drop.innerHTML = ''; return; }
+  var q = val.trim().toLowerCase();
+  var grid = document.getElementById('company-grid-root');
+  if (!grid) return;
+  var cards = grid.querySelectorAll('.company-card');
+  var matches = [];
+  cards.forEach(function(card) {
+    var name = card.querySelector('.card-name');
+    if (name && name.textContent.toLowerCase().indexOf(q) >= 0) {
+      matches.push(name.textContent);
+    }
+  });
+  if (matches.length === 0) { drop.classList.remove('open'); drop.innerHTML = ''; return; }
+  drop.innerHTML = matches.slice(0, 8).map(function(m) {
+    return '<div class="co-drop-item" data-name="' + m.replace(/"/g,'&quot;') + '" onmousedown="coSelect(\'' + m.replace(/'/g,"\\'") + '\')" style="padding:10px 14px;cursor:pointer;font-size:13px;color:#fff;transition:background .1s;">' + m + '</div>';
+  }).join('');
+  drop.classList.add('open');
+  coSearchIdx = -1;
 }
 
 function coSearchKey(e) {

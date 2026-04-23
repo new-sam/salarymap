@@ -96,8 +96,11 @@ export default function JobsPage() {
     return Math.round(((job.salary_min - userSalary) / userSalary) * 100)
   }
 
+  const companyQuery = router.query.company ? String(router.query.company).toLowerCase() : null
+
   const filteredJobs = jobs
     .filter(job => {
+      if (companyQuery && job.company?.toLowerCase() !== companyQuery) return false
       if (roleFilter !== 'all' && job.role !== roleFilter) return false
       if (perkFilter === 'pays_more') return userSalary ? job.salary_min > userSalary : true
       if (perkFilter === 'remote') return job.type === 'remote'
