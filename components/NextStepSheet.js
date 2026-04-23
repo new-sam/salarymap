@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/router'
 
-export default function NextStepSheet({ role, experience, percentile, topCompanies }) {
+export default function NextStepSheet({ role, experience, percentile, topCompanies, onDismiss }) {
   const [visible, setVisible] = useState(false)
   const [selected, setSelected] = useState(null)
   const [jobs, setJobs] = useState([])
@@ -9,7 +9,7 @@ export default function NextStepSheet({ role, experience, percentile, topCompani
   const userSalary = typeof window !== 'undefined' ? parseInt(localStorage.getItem('fyi_salary')) || 0 : 0
 
   useEffect(() => {
-    const t = setTimeout(() => setVisible(true), 3000)
+    const t = setTimeout(() => setVisible(true), 5000)
     return () => clearTimeout(t)
   }, [])
 
@@ -99,7 +99,7 @@ export default function NextStepSheet({ role, experience, percentile, topCompani
 .ns-browse-sub{font-size:11px;color:#bbb;text-align:center}
       `}</style>
 
-      <div className="ns-backdrop" onClick={() => { handleSelect('dismissed'); setVisible(false); }} />
+      <div className="ns-backdrop" onClick={() => { handleSelect('dismissed'); setVisible(false); if(onDismiss) onDismiss(); }} />
 
       <div className="ns-sheet">
         <div className="ns-handle" />

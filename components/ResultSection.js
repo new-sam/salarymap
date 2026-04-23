@@ -5,6 +5,8 @@ import NextStepSheet from './NextStepSheet'
 export default function ResultSection({ salary, role, experience, company, isLoggedIn }) {
   const [result, setResult] = useState(null)
   const [jobs, setJobs] = useState([])
+  const [sheetDismissed, setSheetDismissed] = useState(false)
+  const [showSheet, setShowSheet] = useState(true)
   const router = useRouter()
 
   useEffect(() => {
@@ -190,8 +192,20 @@ export default function ResultSection({ salary, role, experience, company, isLog
       )}
 
       {/* NextStep sheet */}
-      {result && !isLoggedIn && (
-        <NextStepSheet role={role} experience={experience} percentile={percentile} topCompanies={topCompanies} />
+      {result && !isLoggedIn && showSheet && (
+        <NextStepSheet role={role} experience={experience} percentile={percentile} topCompanies={topCompanies}
+          onDismiss={() => { setShowSheet(false); setSheetDismissed(true); }} />
+      )}
+      {/* Reopen button after dismiss */}
+      {result && !isLoggedIn && sheetDismissed && !showSheet && (
+        <div style={{ marginTop:'16px', textAlign:'center' }}>
+          <button onClick={() => { setShowSheet(true); setSheetDismissed(false); }}
+            style={{ background:'rgba(0,128,255,0.1)', border:'1px solid rgba(0,128,255,0.3)', borderRadius:'12px',
+              padding:'12px 24px', fontSize:'13px', fontWeight:700, color:'#0080FF', cursor:'pointer',
+              fontFamily:"'Be Vietnam Pro',sans-serif" }}>
+            Bạn muốn được kết nối với công ty trả cao hơn? →
+          </button>
+        </div>
       )}
       {/* Logged-in CTA */}
       {result && isLoggedIn && topCompanies?.length > 0 && (
