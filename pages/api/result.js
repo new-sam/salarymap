@@ -6,9 +6,23 @@ function median(arr) {
   return s.length % 2 === 0 ? Math.round((s[m - 1] + s[m]) / 2) : s[m];
 }
 
-function removeOutliers(arr) {
-  if (arr.length < 4) return arr;
-  const sorted = [...arr].sort((a, b) => a - b);
+// Experience-based salary caps (triệu VND/month)
+const SALARY_CAP = {
+  'Under 1yr': 40,
+  '1–2 yrs': 60,
+  '3–4 yrs': 80,
+  '5–7 yrs': 120,
+  '8+ yrs': 200,
+};
+
+function removeOutliers(arr, experience) {
+  // Hard cap by experience level
+  const cap = SALARY_CAP[experience] || 200;
+  let filtered = arr.filter(s => s >= 5 && s <= cap);
+  if (filtered.length < 3) filtered = arr.filter(s => s >= 5 && s <= 200);
+  // IQR filter
+  if (filtered.length < 4) return filtered;
+  const sorted = [...filtered].sort((a, b) => a - b);
   const q1 = sorted[Math.floor(sorted.length * 0.25)];
   const q3 = sorted[Math.floor(sorted.length * 0.75)];
   const iqr = q3 - q1;
@@ -107,7 +121,7 @@ export default async function handler(req, res) {
     });
   }
 
-  const clean = removeOutliers(peers.map(p => p.salary).filter(s => s >= 5 && s <= 200));
+  const clean = removeOutliers(peers.map(p => p.salary), experience);
   const sorted = [...clean].sort((a, b) => a - b);
   const below = sorted.filter(s => s < userSalary).length;
   const rawPct = Math.round((below / sorted.length) * 100);
