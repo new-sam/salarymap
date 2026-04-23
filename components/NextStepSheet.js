@@ -37,7 +37,8 @@ export default function NextStepSheet({ role, experience, percentile, topCompani
       <style>{`
 .ns-backdrop{position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:400;backdrop-filter:blur(4px)}
 @keyframes nsUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
-.ns-sheet{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:375px;background:#fff;border-radius:28px 28px 0 0;z-index:500;box-shadow:0 -20px 80px rgba(0,0,0,0.4);animation:nsUp .4s cubic-bezier(.16,1,.3,1);max-height:85vh;overflow-y:auto;font-family:'Be Vietnam Pro',sans-serif}
+.ns-sheet{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:680px;background:#fff;border-radius:28px 28px 0 0;z-index:500;box-shadow:0 -20px 80px rgba(0,0,0,0.4);animation:nsUp .4s cubic-bezier(.16,1,.3,1);max-height:85vh;overflow-y:auto;font-family:'Be Vietnam Pro',sans-serif}
+@media(max-width:768px){.ns-sheet{max-width:100%}}
 .ns-handle{width:40px;height:4px;background:#e0e0e0;border-radius:2px;margin:14px auto 0}
 .ns-body{padding:14px 18px 28px}
 .ns-title{font-size:19px;font-weight:800;color:#111;line-height:1.35;text-align:center;margin-bottom:8px}
