@@ -40,8 +40,12 @@ export default function AuthCallback() {
         if (data.session) {
           await saveProfile(data.session.user)
           const returnTo = typeof window !== 'undefined' && localStorage.getItem('fyi_login_return')
+          const intent = typeof window !== 'undefined' && localStorage.getItem('fyi_intent')
           localStorage.removeItem('fyi_login_return')
-          router.replace(returnTo || '/?login=success')
+          // If user expressed job interest, go to jobs page
+          const jobIntents = ['open', 'selective']
+          const destination = returnTo || (intent && jobIntents.includes(intent) ? '/jobs' : '/?login=success')
+          router.replace(destination)
           return
         }
 
@@ -56,8 +60,11 @@ export default function AuthCallback() {
           if (exchangeData?.session) {
             await saveProfile(exchangeData.session.user)
             const returnTo = typeof window !== 'undefined' && localStorage.getItem('fyi_login_return')
+            const intent2 = typeof window !== 'undefined' && localStorage.getItem('fyi_intent')
             localStorage.removeItem('fyi_login_return')
-            router.replace(returnTo || '/?login=success')
+            const jobIntents2 = ['open', 'selective']
+            const dest2 = returnTo || (intent2 && jobIntents2.includes(intent2) ? '/jobs' : '/?login=success')
+            router.replace(dest2)
           } else {
             // exchange failed
             router.replace('/')
