@@ -1,321 +1,178 @@
 <!DOCTYPE html>
-<html lang="vi">
+<html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>FYI — Result Page Mockup</title>
+<title>FYI — Result Mockup</title>
 <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:ital,wght@0,400;0,600;0,700;0,800;0,900;1,700;1,800;1,900&display=swap" rel="stylesheet">
 <style>
 * { margin:0; padding:0; box-sizing:border-box; }
-body { font-family:'Be Vietnam Pro',sans-serif; background:#000; color:#fff; -webkit-font-smoothing:antialiased; overflow-x:hidden; }
+body { font-family:'Be Vietnam Pro',sans-serif; background:#111; min-height:100vh; display:flex; align-items:center; justify-content:center; padding:60px 20px; -webkit-font-smoothing:antialiased; }
 
-/* State switcher */
-.switcher { position:fixed; top:12px; left:50%; transform:translateX(-50%); background:#111; border:1px solid #2a2a2a; border-radius:20px; padding:3px; display:flex; gap:2px; z-index:100; }
-.sw { padding:5px 12px; border-radius:16px; font-size:10px; font-weight:700; cursor:pointer; color:rgba(255,255,255,0.3); border:none; background:transparent; font-family:'Be Vietnam Pro',sans-serif; }
+.switcher { position:fixed; top:12px; left:50%; transform:translateX(-50%); background:#000; border:1px solid #2a2a2a; border-radius:20px; padding:3px; display:flex; gap:2px; z-index:100; }
+.sw { padding:5px 12px; border-radius:16px; font-size:10px; font-weight:700; cursor:pointer; color:rgba(255,255,255,0.3); border:none; background:transparent; font-family:inherit; }
 .sw.on { background:#fff; color:#111; }
 
-/* Phone frame */
-.phone { width:375px; margin:60px auto 40px; background:#000; border-radius:44px; border:10px solid #1a1a1a; overflow:hidden; box-shadow:0 32px 80px rgba(0,0,0,0.8); }
-.phone-inner { overflow-y:auto; max-height:812px; scroll-behavior:smooth; }
+.phone { width:375px; background:#000; border-radius:44px; border:10px solid #1a1a1a; overflow:hidden; box-shadow:0 32px 80px rgba(0,0,0,0.8); }
+.inner { max-height:812px; overflow-y:auto; scroll-behavior:smooth; }
 
-/* ═══ SCREEN 1: THE PUNCH ═══ */
-.s1 {
-  min-height:100vh; display:flex; flex-direction:column;
-  align-items:center; justify-content:center;
-  padding:60px 24px 40px; position:relative;
+/* Screen 1 — The Punch */
+.punch {
+  min-height:520px; display:flex; flex-direction:column;
+  align-items:center; justify-content:center; padding:60px 24px 40px;
+  position:relative;
 }
-.s1-eyebrow { font-size:9px; font-weight:700; letter-spacing:.14em; color:rgba(255,255,255,0.2); text-transform:uppercase; margin-bottom:40px; }
-.s1-number { font-size:96px; font-weight:900; font-style:italic; line-height:1; margin-bottom:8px; }
-.s1-number.loss { color:#ff4400; text-shadow:0 0 80px rgba(255,68,0,0.4); }
-.s1-number.gain { color:#4ade80; text-shadow:0 0 80px rgba(74,222,128,0.3); }
-.s1-label { font-size:15px; color:rgba(255,255,255,0.4); font-weight:400; margin-bottom:48px; }
-.s1-annual { font-size:13px; color:rgba(255,255,255,0.25); }
-.s1-annual b { color:rgba(255,255,255,0.5); font-weight:700; }
-.s1-scroll { position:absolute; bottom:24px; font-size:10px; color:rgba(255,255,255,0.15); animation:pulse 2s ease infinite; }
-@keyframes pulse { 0%,100%{opacity:0.15}50%{opacity:0.4} }
+.punch-eye { font-size:9px; font-weight:700; letter-spacing:.14em; color:rgba(255,255,255,0.15); text-transform:uppercase; margin-bottom:48px; }
+.punch-n { font-size:104px; font-weight:900; font-style:italic; line-height:0.9; margin-bottom:10px; }
+.punch-n.bad { color:#ff4400; text-shadow:0 0 100px rgba(255,68,0,0.5); }
+.punch-n.ok { color:#facc15; text-shadow:0 0 80px rgba(250,204,21,0.3); }
+.punch-n.good { color:#4ade80; text-shadow:0 0 80px rgba(74,222,128,0.3); }
+.punch-sub { font-size:14px; color:rgba(255,255,255,0.35); margin-bottom:56px; }
+.punch-year { font-size:12px; color:rgba(255,255,255,0.2); }
+.punch-year b { color:rgba(255,255,255,0.4); }
+.punch-hint { position:absolute; bottom:20px; font-size:9px; color:rgba(255,255,255,0.1); animation:fade 2s ease infinite; }
+@keyframes fade { 0%,100%{opacity:.1}50%{opacity:.3} }
 
-/* ═══ SCREEN 2: THE CONTEXT ═══ */
-.s2 { padding:40px 24px; }
-.s2-pct-wrap { margin-bottom:32px; }
-.s2-pct-track { height:6px; background:rgba(255,255,255,0.06); border-radius:3px; position:relative; }
-.s2-pct-fill { height:100%; border-radius:3px; background:linear-gradient(90deg, rgba(255,68,0,0.2), #ff4400); }
-.s2-pct-dot { position:absolute; top:50%; transform:translate(-50%,-50%); width:14px; height:14px; border-radius:50%; background:#ff4400; box-shadow:0 0 16px rgba(255,68,0,0.5); }
-.s2-pct-label { display:flex; justify-content:space-between; margin-top:8px; font-size:9px; color:rgba(255,255,255,0.15); }
-.s2-pct-badge { text-align:center; margin-top:12px; font-size:32px; font-weight:900; font-style:italic; color:#ff4400; }
+/* Screen 2 — You vs Market */
+.vs { padding:36px 24px; }
+.vs-row { display:flex; align-items:flex-end; justify-content:center; gap:32px; margin-bottom:24px; }
+.vs-col { text-align:center; }
+.vs-n { font-size:36px; font-weight:900; line-height:1; }
+.vs-l { font-size:10px; color:rgba(255,255,255,0.25); margin-top:4px; }
+.vs-divider { font-size:20px; color:rgba(255,255,255,0.1); padding-bottom:10px; }
+.vs-badge { text-align:center; }
+.vs-badge span { display:inline-block; padding:8px 20px; border-radius:100px; font-size:12px; font-weight:700; }
 
-.s2-stats { display:flex; justify-content:space-between; margin:32px 0; padding:0 8px; }
-.s2-stat { text-align:center; }
-.s2-stat-n { font-size:28px; font-weight:900; line-height:1; margin-bottom:4px; }
-.s2-stat-n.neg { color:#ff4400; }
-.s2-stat-l { font-size:10px; color:rgba(255,255,255,0.3); }
+/* Screen 3 — Who pays more */
+.who { padding:28px 24px; }
+.who-title { font-size:9px; font-weight:700; letter-spacing:.12em; color:rgba(255,255,255,0.15); text-transform:uppercase; margin-bottom:14px; }
+.who-row { display:flex; align-items:center; justify-content:space-between; padding:14px 0; border-bottom:1px solid rgba(255,255,255,0.04); }
+.who-row:last-child { border:none; }
+.who-name { font-size:14px; font-weight:700; }
+.who-sal { font-size:14px; font-weight:800; text-align:right; }
+.who-pct { font-size:11px; font-weight:700; color:#ff4400; }
+.who-you { opacity:0.4; }
+.who-you .who-name { color:#ff4400; }
 
-.s2-verdict { text-align:center; padding:10px 20px; border-radius:100px; font-size:12px; font-weight:700; display:inline-block; margin:0 auto; }
-.s2-verdict.low { background:rgba(255,68,0,0.08); border:1px solid rgba(255,68,0,0.2); color:#ff6b35; }
-.s2-verdict.mid { background:rgba(250,204,21,0.08); border:1px solid rgba(250,204,21,0.2); color:#facc15; }
-.s2-verdict.high { background:rgba(34,197,94,0.08); border:1px solid rgba(34,197,94,0.2); color:#4ade80; }
+/* Screen 4 — Share */
+.share { padding:28px 24px 40px; text-align:center; }
+.share-card { background:linear-gradient(135deg, #1a0d00, #0a0a0a); border:1px solid rgba(255,68,0,0.12); border-radius:20px; padding:32px 24px; margin-bottom:14px; }
+.share-tag { font-size:9px; color:rgba(255,255,255,0.15); letter-spacing:.1em; margin-bottom:14px; }
+.share-pct { font-size:48px; font-weight:900; font-style:italic; color:#ff4400; }
+.share-role { font-size:11px; color:rgba(255,255,255,0.25); margin-top:4px; }
+.share-btn { width:100%; padding:14px; background:#ff4400; border:none; border-radius:12px; font-size:13px; font-weight:700; color:#fff; cursor:pointer; font-family:inherit; }
 
-/* ═══ SCREEN 3: THE PROOF ═══ */
-.s3 { padding:32px 24px; }
-.s3-title { font-size:9px; font-weight:700; letter-spacing:.12em; color:rgba(255,255,255,0.2); text-transform:uppercase; margin-bottom:14px; }
-.s3-card { padding:14px 16px; border:1px solid rgba(255,255,255,0.08); border-radius:14px; margin-bottom:8px; display:flex; align-items:center; justify-content:space-between; background:rgba(255,255,255,0.02); }
-.s3-card-left { display:flex; align-items:center; gap:12px; }
-.s3-dot { width:8px; height:8px; border-radius:50%; flex-shrink:0; }
-.s3-name { font-size:14px; font-weight:700; }
-.s3-sub { font-size:10px; color:rgba(255,255,255,0.3); margin-top:1px; }
-.s3-right { text-align:right; }
-.s3-sal { font-size:15px; font-weight:800; }
-.s3-bump { font-size:11px; font-weight:700; color:#ff4400; margin-top:2px; }
-
-.s3-you { border:1px solid rgba(255,68,0,0.3); background:rgba(255,68,0,0.05); }
-.s3-you .s3-sal { color:#ff4400; }
-
-/* ═══ SCREEN 4: THE LOSS ═══ */
-.s4 { padding:48px 24px; text-align:center; border-top:1px solid rgba(255,255,255,0.04); }
-.s4-pre { font-size:13px; color:rgba(255,255,255,0.3); margin-bottom:16px; }
-.s4-big { font-size:48px; font-weight:900; font-style:italic; color:#ff4400; margin-bottom:24px; line-height:1; }
-.s4-items { display:flex; flex-direction:column; gap:8px; max-width:260px; margin:0 auto 24px; }
-.s4-item { display:flex; align-items:center; gap:10px; font-size:13px; color:rgba(255,255,255,0.5); }
-.s4-eq { font-size:11px; color:rgba(255,255,255,0.2); width:16px; text-align:center; flex-shrink:0; }
-.s4-note { font-size:10px; color:rgba(255,255,255,0.15); max-width:240px; margin:0 auto; line-height:1.6; }
-
-/* ═══ SCREEN 5: THE SHARE ═══ */
-.s5 { padding:32px 24px; }
-.s5-card { background:linear-gradient(135deg, #1a1108 0%, #111 100%); border:1px solid rgba(255,68,0,0.15); border-radius:18px; padding:28px 24px; text-align:center; margin-bottom:16px; }
-.s5-logo { font-size:11px; font-weight:700; color:rgba(255,255,255,0.2); letter-spacing:.1em; margin-bottom:16px; }
-.s5-pct { font-size:44px; font-weight:900; font-style:italic; color:#ff4400; margin-bottom:4px; }
-.s5-role { font-size:12px; color:rgba(255,255,255,0.3); margin-bottom:4px; }
-.s5-url { font-size:10px; color:rgba(255,255,255,0.15); }
-.s5-btn { width:100%; padding:14px; background:#ff4400; border:none; border-radius:12px; font-size:14px; font-weight:700; color:#fff; cursor:pointer; font-family:'Be Vietnam Pro',sans-serif; display:flex; align-items:center; justify-content:center; gap:8px; box-shadow:0 4px 20px rgba(255,68,0,0.3); }
-
-/* ═══ SCREEN 6: THE HOOK ═══ */
-.s6 { padding:32px 24px 48px; text-align:center; border-top:1px solid rgba(255,255,255,0.04); }
-.s6-icon { font-size:24px; margin-bottom:12px; }
-.s6-title { font-size:15px; font-weight:700; color:#fff; margin-bottom:4px; }
-.s6-sub { font-size:12px; color:rgba(255,255,255,0.3); margin-bottom:20px; }
-.s6-form { display:flex; gap:8px; margin-bottom:12px; }
-.s6-input { flex:1; padding:12px 14px; background:rgba(255,255,255,0.05); border:1.5px solid rgba(255,255,255,0.1); border-radius:10px; color:#fff; font-size:13px; font-family:'Be Vietnam Pro',sans-serif; outline:none; }
-.s6-input:focus { border-color:#ff4400; }
-.s6-submit { padding:12px 18px; background:#ff4400; border:none; border-radius:10px; font-size:12px; font-weight:700; color:#fff; cursor:pointer; font-family:'Be Vietnam Pro',sans-serif; white-space:nowrap; }
-.s6-privacy { font-size:10px; color:rgba(255,255,255,0.15); }
+/* Hidden sections */
+.hidden { display:none; }
 </style>
 </head>
 <body>
 
-<!-- State switcher -->
 <div class="switcher">
-  <button class="sw on" onclick="showState('loss',this)">📉 Underpaid</button>
-  <button class="sw" onclick="showState('even',this)">📊 Market rate</button>
-  <button class="sw" onclick="showState('gain',this)">📈 Overpaid</button>
+  <button class="sw on" onclick="show('bad',this)">Underpaid</button>
+  <button class="sw" onclick="show('ok',this)">Market rate</button>
+  <button class="sw" onclick="show('good',this)">Overpaid</button>
 </div>
 
-<div class="phone">
-<div class="phone-inner" id="scroll">
+<div class="phone"><div class="inner" id="scroll">
 
-<!-- SCREEN 1: THE PUNCH -->
-<div class="s1" id="s1">
-  <div class="s1-eyebrow">KẾT QUẢ · Backend · 3–4 năm</div>
-  <div class="s1-number loss" id="punch-number">-12M</div>
-  <div class="s1-label" id="punch-label">bạn đang mất mỗi tháng</div>
-  <div class="s1-annual">Mỗi năm: <b id="punch-annual">-144M VND</b></div>
-  <div class="s1-scroll">↓ Vuốt để xem chi tiết</div>
+<!-- 1. THE PUNCH — one number, nothing else -->
+<div class="punch">
+  <div class="punch-eye">Backend · 3–4 yrs · Vietnam</div>
+  <div class="punch-n bad" id="pn">-12M</div>
+  <div class="punch-sub" id="ps">you're losing every month</div>
+  <div class="punch-year">That's <b id="py">-144M</b> per year</div>
+  <div class="punch-hint">↓ scroll</div>
 </div>
 
-<!-- SCREEN 2: THE CONTEXT -->
-<div class="s2">
-  <div class="s2-pct-wrap">
-    <div class="s2-pct-track">
-      <div class="s2-pct-fill" id="pct-fill" style="width:38%"></div>
-      <div class="s2-pct-dot" id="pct-dot" style="left:38%"></div>
+<!-- 2. YOU vs MARKET — just two numbers -->
+<div class="vs">
+  <div class="vs-row">
+    <div class="vs-col">
+      <div class="vs-n" id="v-you">30M</div>
+      <div class="vs-l">You</div>
     </div>
-    <div class="s2-pct-label"><span>Thấp nhất</span><span>Trung vị</span><span>Cao nhất</span></div>
-    <div class="s2-pct-badge" id="pct-badge">Top 38%</div>
-  </div>
-
-  <div class="s2-stats">
-    <div class="s2-stat">
-      <div class="s2-stat-n" id="stat-yours">30M</div>
-      <div class="s2-stat-l">Bạn</div>
-    </div>
-    <div class="s2-stat">
-      <div class="s2-stat-n" id="stat-market">42M</div>
-      <div class="s2-stat-l">Thị trường</div>
-    </div>
-    <div class="s2-stat">
-      <div class="s2-stat-n neg" id="stat-diff">-12M</div>
-      <div class="s2-stat-l">Chênh lệch</div>
+    <div class="vs-divider">vs</div>
+    <div class="vs-col">
+      <div class="vs-n" id="v-mkt">42M</div>
+      <div class="vs-l">Market</div>
     </div>
   </div>
-
-  <div style="text-align:center">
-    <div class="s2-verdict low" id="verdict">↓ Bạn có thể đang bị trả thấp</div>
+  <div class="vs-badge">
+    <span id="v-badge" style="background:rgba(255,68,0,0.08);border:1px solid rgba(255,68,0,0.2);color:#ff6b35;">
+      Top 38% — you could earn more
+    </span>
   </div>
 </div>
 
-<!-- SCREEN 3: THE PROOF -->
-<div class="s3">
-  <div class="s3-title">Công ty trả cao hơn cho vị trí của bạn</div>
-
-  <div class="s3-card">
-    <div class="s3-card-left">
-      <div class="s3-dot" style="background:#4ade80"></div>
-      <div>
-        <div class="s3-name">Grab Vietnam</div>
-        <div class="s3-sub">Backend · 3–4 năm</div>
-      </div>
-    </div>
-    <div class="s3-right">
-      <div class="s3-sal">52M</div>
-      <div class="s3-bump">+73% so với bạn</div>
-    </div>
+<!-- 3. WHO PAYS MORE — simple list -->
+<div class="who">
+  <div class="who-title">Companies paying more for your role</div>
+  <div class="who-row">
+    <div class="who-name">Grab Vietnam</div>
+    <div><div class="who-sal">52M</div><div class="who-pct">+73%</div></div>
   </div>
-
-  <div class="s3-card">
-    <div class="s3-card-left">
-      <div class="s3-dot" style="background:#60a5fa"></div>
-      <div>
-        <div class="s3-name">VNG Corporation</div>
-        <div class="s3-sub">Backend · 3–4 năm</div>
-      </div>
-    </div>
-    <div class="s3-right">
-      <div class="s3-sal">45M</div>
-      <div class="s3-bump">+50% so với bạn</div>
-    </div>
+  <div class="who-row">
+    <div class="who-name">VNG</div>
+    <div><div class="who-sal">45M</div><div class="who-pct">+50%</div></div>
   </div>
-
-  <div class="s3-card">
-    <div class="s3-card-left">
-      <div class="s3-dot" style="background:#a78bfa"></div>
-      <div>
-        <div class="s3-name">FPT Software</div>
-        <div class="s3-sub">Backend · 3–4 năm</div>
-      </div>
-    </div>
-    <div class="s3-right">
-      <div class="s3-sal">38M</div>
-      <div class="s3-bump">+27% so với bạn</div>
-    </div>
+  <div class="who-row">
+    <div class="who-name">FPT Software</div>
+    <div><div class="who-sal">38M</div><div class="who-pct">+27%</div></div>
   </div>
-
-  <div class="s3-card s3-you">
-    <div class="s3-card-left">
-      <div class="s3-dot" style="background:#ff4400"></div>
-      <div>
-        <div class="s3-name" style="color:#ff4400">Bạn</div>
-        <div class="s3-sub">Backend · 3–4 năm</div>
-      </div>
-    </div>
-    <div class="s3-right">
-      <div class="s3-sal">30M</div>
-    </div>
+  <div class="who-row who-you">
+    <div class="who-name">You</div>
+    <div><div class="who-sal" style="color:#ff4400">30M</div></div>
   </div>
 </div>
 
-<!-- SCREEN 4: THE LOSS -->
-<div class="s4" id="s4">
-  <div class="s4-pre" id="loss-pre">Năm 2026, bạn sẽ mất:</div>
-  <div class="s4-big" id="loss-big">144M VND</div>
-  <div class="s4-items" id="loss-items">
-    <div class="s4-item"><span class="s4-eq">≈</span> iPhone 16 Pro × 3</div>
-    <div class="s4-item"><span class="s4-eq">≈</span> 12 tháng tiền thuê nhà HCM</div>
-    <div class="s4-item"><span class="s4-eq">≈</span> 2 chuyến du lịch Nhật Bản</div>
+<!-- 4. SHARE — viral card -->
+<div class="share">
+  <div class="share-card">
+    <div class="share-tag">FYI SALARY · 2026</div>
+    <div class="share-pct" id="sh-pct">Top 38%</div>
+    <div class="share-role">Backend · 3–4 yrs · Vietnam</div>
   </div>
-  <div class="s4-note">So với mức thị trường cho Backend · 3–4 năm tại Việt Nam</div>
+  <button class="share-btn">📤 Share my result</button>
 </div>
 
-<!-- SCREEN 5: THE SHARE -->
-<div class="s5">
-  <div class="s5-card">
-    <div class="s5-logo">FYI SALARY · 2026</div>
-    <div class="s5-pct" id="share-pct">Top 38%</div>
-    <div class="s5-role">Backend · 3–4 năm</div>
-    <div class="s5-role">Vietnam IT Market</div>
-    <div class="s5-url" style="margin-top:12px">salary-fyi.com</div>
-  </div>
-  <button class="s5-btn">📤 Chia sẻ kết quả</button>
-</div>
-
-<!-- SCREEN 6: THE HOOK -->
-<div class="s6">
-  <div class="s6-icon">📊</div>
-  <div class="s6-title">Thị trường thay đổi mỗi tháng.</div>
-  <div class="s6-sub">Nhận báo cáo lương hàng tháng?</div>
-  <div class="s6-form">
-    <input class="s6-input" type="email" placeholder="your@email.com" />
-    <button class="s6-submit">Nhận →</button>
-  </div>
-  <div class="s6-privacy">🔒 Chỉ báo cáo lương. Không spam.</div>
-</div>
-
-</div>
-</div>
+</div></div>
 
 <script>
-function showState(state, el) {
-  document.querySelectorAll('.sw').forEach(b => b.classList.remove('on'));
+function show(s, el) {
+  document.querySelectorAll('.sw').forEach(b=>b.classList.remove('on'));
   el.classList.add('on');
 
-  const punch = document.getElementById('punch-number');
-  const label = document.getElementById('punch-label');
-  const annual = document.getElementById('punch-annual');
-  const yours = document.getElementById('stat-yours');
-  const market = document.getElementById('stat-market');
-  const diff = document.getElementById('stat-diff');
-  const verdict = document.getElementById('verdict');
-  const fill = document.getElementById('pct-fill');
-  const dot = document.getElementById('pct-dot');
-  const badge = document.getElementById('pct-badge');
-  const share = document.getElementById('share-pct');
-  const lossPre = document.getElementById('loss-pre');
-  const lossBig = document.getElementById('loss-big');
-  const lossItems = document.getElementById('loss-items');
-  const s4 = document.getElementById('s4');
+  var pn=document.getElementById('pn'), ps=document.getElementById('ps'), py=document.getElementById('py');
+  var vy=document.getElementById('v-you'), vm=document.getElementById('v-mkt'), vb=document.getElementById('v-badge');
+  var sp=document.getElementById('sh-pct');
 
-  if (state === 'loss') {
-    punch.className = 's1-number loss';
-    punch.textContent = '-12M';
-    label.textContent = 'bạn đang mất mỗi tháng';
-    annual.textContent = '-144M VND';
-    yours.textContent = '30M'; market.textContent = '42M';
-    diff.textContent = '-12M'; diff.className = 's2-stat-n neg';
-    verdict.className = 's2-verdict low';
-    verdict.textContent = '↓ Bạn có thể đang bị trả thấp';
-    fill.style.width = '38%'; dot.style.left = '38%';
-    badge.textContent = 'Top 38%'; share.textContent = 'Top 38%';
-    lossPre.textContent = 'Năm 2026, bạn sẽ mất:';
-    lossBig.textContent = '144M VND'; lossBig.style.color = '#ff4400';
-    lossItems.innerHTML = '<div class="s4-item"><span class="s4-eq">≈</span> iPhone 16 Pro × 3</div><div class="s4-item"><span class="s4-eq">≈</span> 12 tháng tiền thuê nhà HCM</div><div class="s4-item"><span class="s4-eq">≈</span> 2 chuyến du lịch Nhật Bản</div>';
-    s4.style.display = '';
-  } else if (state === 'even') {
-    punch.className = 's1-number'; punch.style.color = '#facc15'; punch.style.textShadow = '0 0 80px rgba(250,204,21,0.3)';
-    punch.textContent = '~0M';
-    label.textContent = 'bạn đang ở mức thị trường';
-    annual.textContent = 'Gần đúng mức trung vị';
-    yours.textContent = '40M'; market.textContent = '42M';
-    diff.textContent = '-2M'; diff.className = 's2-stat-n';
-    verdict.className = 's2-verdict mid';
-    verdict.textContent = '◎ Gần mức thị trường';
-    fill.style.width = '48%'; dot.style.left = '48%';
-    badge.textContent = 'Top 48%'; share.textContent = 'Top 48%';
-    s4.style.display = 'none';
+  if (s==='bad') {
+    pn.className='punch-n bad'; pn.textContent='-12M';
+    ps.textContent="you're losing every month";
+    py.textContent='-144M';
+    vy.textContent='30M'; vm.textContent='42M';
+    vb.textContent='Top 38% — you could earn more';
+    vb.style.cssText='background:rgba(255,68,0,0.08);border:1px solid rgba(255,68,0,0.2);color:#ff6b35;';
+    sp.textContent='Top 38%'; sp.style.color='#ff4400';
+  } else if (s==='ok') {
+    pn.className='punch-n ok'; pn.textContent='~0';
+    ps.textContent="you're at market rate";
+    py.textContent='on par';
+    vy.textContent='41M'; vm.textContent='42M';
+    vb.textContent='Top 47% — right at market';
+    vb.style.cssText='background:rgba(250,204,21,0.08);border:1px solid rgba(250,204,21,0.2);color:#facc15;';
+    sp.textContent='Top 47%'; sp.style.color='#facc15';
   } else {
-    punch.className = 's1-number gain';
-    punch.textContent = '+15M';
-    label.textContent = 'bạn đang kiếm thêm mỗi tháng';
-    annual.textContent = '+180M VND/năm';
-    yours.textContent = '57M'; market.textContent = '42M';
-    diff.textContent = '+15M'; diff.className = 's2-stat-n'; diff.style.color = '#4ade80';
-    verdict.className = 's2-verdict high';
-    verdict.textContent = '✦ Bạn đang kiếm được cao hơn thị trường';
-    fill.style.width = '82%'; dot.style.left = '82%';
-    badge.textContent = 'Top 8%'; share.textContent = 'Top 8%';
-    lossPre.textContent = 'Năm 2026, bạn kiếm thêm:';
-    lossBig.textContent = '180M VND'; lossBig.style.color = '#4ade80';
-    lossItems.innerHTML = '<div class="s4-item"><span class="s4-eq">≈</span> iPhone 16 Pro × 4</div><div class="s4-item"><span class="s4-eq">≈</span> 15 tháng tiền thuê nhà</div>';
-    s4.style.display = '';
+    pn.className='punch-n good'; pn.textContent='+15M';
+    ps.textContent="you're earning above market";
+    py.textContent='+180M';
+    vy.textContent='57M'; vm.textContent='42M';
+    vb.textContent='Top 8% — well above market';
+    vb.style.cssText='background:rgba(34,197,94,0.08);border:1px solid rgba(34,197,94,0.2);color:#4ade80;';
+    sp.textContent='Top 8%'; sp.style.color='#4ade80';
   }
-
-  document.getElementById('scroll').scrollTo({ top: 0, behavior: 'smooth' });
+  document.getElementById('scroll').scrollTo({top:0,behavior:'smooth'});
 }
 </script>
 </body>
