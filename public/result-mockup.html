@@ -3,176 +3,118 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>FYI — Result Mockup</title>
+<title>FYI — Result v3</title>
 <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:ital,wght@0,400;0,600;0,700;0,800;0,900;1,700;1,800;1,900&display=swap" rel="stylesheet">
 <style>
-* { margin:0; padding:0; box-sizing:border-box; }
-body { font-family:'Be Vietnam Pro',sans-serif; background:#111; min-height:100vh; display:flex; align-items:center; justify-content:center; padding:60px 20px; -webkit-font-smoothing:antialiased; }
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Be Vietnam Pro',sans-serif;background:#111;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:60px 20px;-webkit-font-smoothing:antialiased}
 
-.switcher { position:fixed; top:12px; left:50%; transform:translateX(-50%); background:#000; border:1px solid #2a2a2a; border-radius:20px; padding:3px; display:flex; gap:2px; z-index:100; }
-.sw { padding:5px 12px; border-radius:16px; font-size:10px; font-weight:700; cursor:pointer; color:rgba(255,255,255,0.3); border:none; background:transparent; font-family:inherit; }
-.sw.on { background:#fff; color:#111; }
+.sw-wrap{position:fixed;top:12px;left:50%;transform:translateX(-50%);background:#000;border:1px solid #222;border-radius:20px;padding:3px;display:flex;gap:2px;z-index:100}
+.sw{padding:5px 12px;border-radius:16px;font-size:10px;font-weight:700;cursor:pointer;color:rgba(255,255,255,.3);border:none;background:0;font-family:inherit}
+.sw.on{background:#fff;color:#111}
 
-.phone { width:375px; background:#000; border-radius:44px; border:10px solid #1a1a1a; overflow:hidden; box-shadow:0 32px 80px rgba(0,0,0,0.8); }
-.inner { max-height:812px; overflow-y:auto; scroll-behavior:smooth; }
+.phone{width:375px;background:#000;border-radius:44px;border:10px solid #1a1a1a;overflow:hidden;box-shadow:0 32px 80px rgba(0,0,0,.8)}
+.inner{max-height:812px;overflow-y:auto;scroll-behavior:smooth}
 
-/* Screen 1 — The Punch */
-.punch {
-  min-height:520px; display:flex; flex-direction:column;
-  align-items:center; justify-content:center; padding:60px 24px 40px;
-  position:relative;
-}
-.punch-eye { font-size:9px; font-weight:700; letter-spacing:.14em; color:rgba(255,255,255,0.15); text-transform:uppercase; margin-bottom:48px; }
-.punch-n { font-size:104px; font-weight:900; font-style:italic; line-height:0.9; margin-bottom:10px; }
-.punch-n.bad { color:#ff4400; text-shadow:0 0 100px rgba(255,68,0,0.5); }
-.punch-n.ok { color:#facc15; text-shadow:0 0 80px rgba(250,204,21,0.3); }
-.punch-n.good { color:#4ade80; text-shadow:0 0 80px rgba(74,222,128,0.3); }
-.punch-sub { font-size:14px; color:rgba(255,255,255,0.35); margin-bottom:56px; }
-.punch-year { font-size:12px; color:rgba(255,255,255,0.2); }
-.punch-year b { color:rgba(255,255,255,0.4); }
-.punch-hint { position:absolute; bottom:20px; font-size:9px; color:rgba(255,255,255,0.1); animation:fade 2s ease infinite; }
-@keyframes fade { 0%,100%{opacity:.1}50%{opacity:.3} }
+/* ══ SCREEN 1: THE PUNCH ══ */
+.s1{min-height:480px;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:60px 28px 32px;position:relative}
+.s1-eye{font-size:9px;font-weight:700;letter-spacing:.14em;color:rgba(255,255,255,.12);text-transform:uppercase;margin-bottom:52px}
 
-/* Screen 2 — You vs Market */
-.vs { padding:36px 24px; }
-.vs-row { display:flex; align-items:flex-end; justify-content:center; gap:32px; margin-bottom:24px; }
-.vs-col { text-align:center; }
-.vs-n { font-size:36px; font-weight:900; line-height:1; }
-.vs-l { font-size:10px; color:rgba(255,255,255,0.25); margin-top:4px; }
-.vs-divider { font-size:20px; color:rgba(255,255,255,0.1); padding-bottom:10px; }
-.vs-badge { text-align:center; }
-.vs-badge span { display:inline-block; padding:8px 20px; border-radius:100px; font-size:12px; font-weight:700; }
+.s1-vs{display:flex;align-items:flex-end;gap:28px;margin-bottom:20px}
+.s1-col{text-align:center}
+.s1-n{font-size:40px;font-weight:900;color:#fff;line-height:1}
+.s1-l{font-size:10px;color:rgba(255,255,255,.2);margin-top:4px}
+.s1-mid{font-size:18px;color:rgba(255,255,255,.08);padding-bottom:12px}
 
-/* Screen 3 — Who pays more */
-.who { padding:28px 24px; }
-.who-title { font-size:9px; font-weight:700; letter-spacing:.12em; color:rgba(255,255,255,0.15); text-transform:uppercase; margin-bottom:14px; }
-.who-row { display:flex; align-items:center; justify-content:space-between; padding:14px 0; border-bottom:1px solid rgba(255,255,255,0.04); }
-.who-row:last-child { border:none; }
-.who-name { font-size:14px; font-weight:700; }
-.who-sal { font-size:14px; font-weight:800; text-align:right; }
-.who-pct { font-size:11px; font-weight:700; color:#ff4400; }
-.who-you { opacity:0.4; }
-.who-you .who-name { color:#ff4400; }
+.s1-diff{font-size:88px;font-weight:900;font-style:italic;line-height:.9;margin-bottom:8px}
+.s1-diff.bad{color:#ff4400;text-shadow:0 0 80px rgba(255,68,0,.4)}
+.s1-diff.ok{color:#facc15;text-shadow:0 0 60px rgba(250,204,21,.25)}
+.s1-diff.good{color:#4ade80;text-shadow:0 0 60px rgba(74,222,128,.25)}
+.s1-sub{font-size:13px;color:rgba(255,255,255,.3)}
+.s1-hint{position:absolute;bottom:16px;font-size:9px;color:rgba(255,255,255,.08);animation:p 2s ease infinite}
+@keyframes p{0%,100%{opacity:.08}50%{opacity:.2}}
 
-/* Screen 4 — Share */
-.share { padding:28px 24px 40px; text-align:center; }
-.share-card { background:linear-gradient(135deg, #1a0d00, #0a0a0a); border:1px solid rgba(255,68,0,0.12); border-radius:20px; padding:32px 24px; margin-bottom:14px; }
-.share-tag { font-size:9px; color:rgba(255,255,255,0.15); letter-spacing:.1em; margin-bottom:14px; }
-.share-pct { font-size:48px; font-weight:900; font-style:italic; color:#ff4400; }
-.share-role { font-size:11px; color:rgba(255,255,255,0.25); margin-top:4px; }
-.share-btn { width:100%; padding:14px; background:#ff4400; border:none; border-radius:12px; font-size:13px; font-weight:700; color:#fff; cursor:pointer; font-family:inherit; }
+/* ══ SCREEN 2: THE PROOF ══ */
+.s2{padding:28px 24px 40px}
+.s2-title{font-size:9px;font-weight:700;letter-spacing:.12em;color:rgba(255,255,255,.12);text-transform:uppercase;margin-bottom:16px}
+.s2-row{display:flex;align-items:center;justify-content:space-between;padding:13px 0;border-bottom:1px solid rgba(255,255,255,.03)}
+.s2-row:last-child{border:none}
+.s2-name{font-size:14px;font-weight:600;color:rgba(255,255,255,.7)}
+.s2-right{text-align:right}
+.s2-sal{font-size:15px;font-weight:800;color:#fff}
+.s2-pct{font-size:11px;font-weight:700;color:#ff4400;margin-top:1px}
+.s2-you{opacity:.35}
+.s2-you .s2-name{color:#ff4400;font-weight:800}
+.s2-you .s2-sal{color:#ff4400}
 
-/* Hidden sections */
-.hidden { display:none; }
+.s2-cta{display:block;width:100%;margin-top:20px;padding:14px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:12px;text-align:center;text-decoration:none;font-size:13px;font-weight:600;color:rgba(255,255,255,.4);transition:all .15s}
+.s2-cta:hover{background:rgba(255,255,255,.08);color:rgba(255,255,255,.7);border-color:rgba(255,255,255,.15)}
 </style>
 </head>
 <body>
 
-<div class="switcher">
-  <button class="sw on" onclick="show('bad',this)">Underpaid</button>
-  <button class="sw" onclick="show('ok',this)">Market rate</button>
-  <button class="sw" onclick="show('good',this)">Overpaid</button>
+<div class="sw-wrap">
+  <button class="sw on" onclick="s('bad',this)">Underpaid</button>
+  <button class="sw" onclick="s('ok',this)">Market rate</button>
+  <button class="sw" onclick="s('good',this)">Overpaid</button>
 </div>
 
-<div class="phone"><div class="inner" id="scroll">
+<div class="phone"><div class="inner" id="sc">
 
-<!-- 1. THE PUNCH — one number, nothing else -->
-<div class="punch">
-  <div class="punch-eye">Backend · 3–4 yrs · Vietnam</div>
-  <div class="punch-n bad" id="pn">-12M</div>
-  <div class="punch-sub" id="ps">you're losing every month</div>
-  <div class="punch-year">That's <b id="py">-144M</b> per year</div>
-  <div class="punch-hint">↓ scroll</div>
+<!-- SCREEN 1 -->
+<div class="s1">
+  <div class="s1-eye">Backend · 3–4 yrs · Vietnam</div>
+
+  <div class="s1-vs">
+    <div class="s1-col"><div class="s1-n" id="yn">30M</div><div class="s1-l">You</div></div>
+    <div class="s1-mid">vs</div>
+    <div class="s1-col"><div class="s1-n" id="mn">42M</div><div class="s1-l">Market</div></div>
+  </div>
+
+  <div class="s1-diff bad" id="dn">-12M</div>
+  <div class="s1-sub" id="ds">you're losing every month</div>
+
+  <div class="s1-hint">↓ scroll</div>
 </div>
 
-<!-- 2. YOU vs MARKET — just two numbers -->
-<div class="vs">
-  <div class="vs-row">
-    <div class="vs-col">
-      <div class="vs-n" id="v-you">30M</div>
-      <div class="vs-l">You</div>
-    </div>
-    <div class="vs-divider">vs</div>
-    <div class="vs-col">
-      <div class="vs-n" id="v-mkt">42M</div>
-      <div class="vs-l">Market</div>
-    </div>
-  </div>
-  <div class="vs-badge">
-    <span id="v-badge" style="background:rgba(255,68,0,0.08);border:1px solid rgba(255,68,0,0.2);color:#ff6b35;">
-      Top 38% — you could earn more
-    </span>
-  </div>
-</div>
+<!-- SCREEN 2 -->
+<div class="s2">
+  <div class="s2-title">Companies paying more for your role</div>
 
-<!-- 3. WHO PAYS MORE — simple list -->
-<div class="who">
-  <div class="who-title">Companies paying more for your role</div>
-  <div class="who-row">
-    <div class="who-name">Grab Vietnam</div>
-    <div><div class="who-sal">52M</div><div class="who-pct">+73%</div></div>
-  </div>
-  <div class="who-row">
-    <div class="who-name">VNG</div>
-    <div><div class="who-sal">45M</div><div class="who-pct">+50%</div></div>
-  </div>
-  <div class="who-row">
-    <div class="who-name">FPT Software</div>
-    <div><div class="who-sal">38M</div><div class="who-pct">+27%</div></div>
-  </div>
-  <div class="who-row who-you">
-    <div class="who-name">You</div>
-    <div><div class="who-sal" style="color:#ff4400">30M</div></div>
-  </div>
-</div>
+  <div class="s2-row"><div class="s2-name">Grab Vietnam</div><div class="s2-right"><div class="s2-sal">52M</div><div class="s2-pct">+73%</div></div></div>
+  <div class="s2-row"><div class="s2-name">VNG</div><div class="s2-right"><div class="s2-sal">45M</div><div class="s2-pct">+50%</div></div></div>
+  <div class="s2-row"><div class="s2-name">FPT Software</div><div class="s2-right"><div class="s2-sal">38M</div><div class="s2-pct">+27%</div></div></div>
+  <div class="s2-row s2-you"><div class="s2-name">You</div><div class="s2-right"><div class="s2-sal">30M</div></div></div>
 
-<!-- 4. SHARE — viral card -->
-<div class="share">
-  <div class="share-card">
-    <div class="share-tag">FYI SALARY · 2026</div>
-    <div class="share-pct" id="sh-pct">Top 38%</div>
-    <div class="share-role">Backend · 3–4 yrs · Vietnam</div>
-  </div>
-  <button class="share-btn">📤 Share my result</button>
+  <a href="/jobs" class="s2-cta" id="cta">See open positions at these companies →</a>
 </div>
 
 </div></div>
 
 <script>
-function show(s, el) {
-  document.querySelectorAll('.sw').forEach(b=>b.classList.remove('on'));
+function s(t,el){
+  document.querySelectorAll('.sw').forEach(function(b){b.classList.remove('on')});
   el.classList.add('on');
-
-  var pn=document.getElementById('pn'), ps=document.getElementById('ps'), py=document.getElementById('py');
-  var vy=document.getElementById('v-you'), vm=document.getElementById('v-mkt'), vb=document.getElementById('v-badge');
-  var sp=document.getElementById('sh-pct');
-
-  if (s==='bad') {
-    pn.className='punch-n bad'; pn.textContent='-12M';
-    ps.textContent="you're losing every month";
-    py.textContent='-144M';
-    vy.textContent='30M'; vm.textContent='42M';
-    vb.textContent='Top 38% — you could earn more';
-    vb.style.cssText='background:rgba(255,68,0,0.08);border:1px solid rgba(255,68,0,0.2);color:#ff6b35;';
-    sp.textContent='Top 38%'; sp.style.color='#ff4400';
-  } else if (s==='ok') {
-    pn.className='punch-n ok'; pn.textContent='~0';
-    ps.textContent="you're at market rate";
-    py.textContent='on par';
-    vy.textContent='41M'; vm.textContent='42M';
-    vb.textContent='Top 47% — right at market';
-    vb.style.cssText='background:rgba(250,204,21,0.08);border:1px solid rgba(250,204,21,0.2);color:#facc15;';
-    sp.textContent='Top 47%'; sp.style.color='#facc15';
-  } else {
-    pn.className='punch-n good'; pn.textContent='+15M';
-    ps.textContent="you're earning above market";
-    py.textContent='+180M';
-    vy.textContent='57M'; vm.textContent='42M';
-    vb.textContent='Top 8% — well above market';
-    vb.style.cssText='background:rgba(34,197,94,0.08);border:1px solid rgba(34,197,94,0.2);color:#4ade80;';
-    sp.textContent='Top 8%'; sp.style.color='#4ade80';
+  var yn=document.getElementById('yn'),mn=document.getElementById('mn'),dn=document.getElementById('dn'),ds=document.getElementById('ds'),cta=document.getElementById('cta');
+  if(t==='bad'){
+    yn.textContent='30M';mn.textContent='42M';
+    dn.className='s1-diff bad';dn.textContent='-12M';
+    ds.textContent="you're losing every month";
+    cta.textContent='See open positions at these companies →';
+    cta.style.display='';
+  }else if(t==='ok'){
+    yn.textContent='41M';mn.textContent='42M';
+    dn.className='s1-diff ok';dn.textContent='~0';
+    ds.textContent="you're at market rate";
+    cta.textContent='See how top earners got there →';
+    cta.style.display='';
+  }else{
+    yn.textContent='57M';mn.textContent='42M';
+    dn.className='s1-diff good';dn.textContent='+15M';
+    ds.textContent="you're earning above market";
+    cta.style.display='none';
   }
-  document.getElementById('scroll').scrollTo({top:0,behavior:'smooth'});
+  document.getElementById('sc').scrollTo({top:0,behavior:'smooth'});
 }
 </script>
 </body>
