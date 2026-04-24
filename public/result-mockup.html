@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>FYI — Result v3</title>
+<title>FYI — Result v4 (reorder only)</title>
 <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:ital,wght@0,400;0,600;0,700;0,800;0,900;1,700;1,800;1,900&display=swap" rel="stylesheet">
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
@@ -16,103 +16,131 @@ body{font-family:'Be Vietnam Pro',sans-serif;background:#111;min-height:100vh;di
 .phone{width:375px;background:#000;border-radius:44px;border:10px solid #1a1a1a;overflow:hidden;box-shadow:0 32px 80px rgba(0,0,0,.8)}
 .inner{max-height:812px;overflow-y:auto;scroll-behavior:smooth}
 
-/* ══ SCREEN 1: THE PUNCH ══ */
-.s1{min-height:480px;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:60px 28px 32px;position:relative}
-.s1-eye{font-size:9px;font-weight:700;letter-spacing:.14em;color:rgba(255,255,255,.12);text-transform:uppercase;margin-bottom:52px}
+/* ══ HERO — diff is king ══ */
+.hero{padding:48px 24px 32px;text-align:center;background:linear-gradient(180deg,#0d0d0d,#000)}
+.hero-eye{font-size:9px;font-weight:700;letter-spacing:.14em;color:rgba(255,255,255,.12);text-transform:uppercase;margin-bottom:32px}
+.hero-diff{font-size:80px;font-weight:900;font-style:italic;line-height:.9;margin-bottom:6px}
+.hero-diff.bad{color:#ff4400;text-shadow:0 0 80px rgba(255,68,0,.35)}
+.hero-diff.ok{color:#facc15;text-shadow:0 0 60px rgba(250,204,21,.2)}
+.hero-diff.good{color:#4ade80;text-shadow:0 0 60px rgba(74,222,128,.2)}
+.hero-sub{font-size:13px;color:rgba(255,255,255,.3);margin-bottom:28px}
 
-.s1-vs{display:flex;align-items:flex-end;gap:28px;margin-bottom:20px}
-.s1-col{text-align:center}
-.s1-n{font-size:40px;font-weight:900;color:#fff;line-height:1}
-.s1-l{font-size:10px;color:rgba(255,255,255,.2);margin-top:4px}
-.s1-mid{font-size:18px;color:rgba(255,255,255,.08);padding-bottom:12px}
+/* You vs Market — smaller, supporting */
+.hero-vs{display:flex;justify-content:center;gap:24px;margin-bottom:20px}
+.hero-stat{text-align:center}
+.hero-stat-n{font-size:22px;font-weight:800;color:#fff}
+.hero-stat-l{font-size:9px;color:rgba(255,255,255,.2);margin-top:2px}
 
-.s1-diff{font-size:88px;font-weight:900;font-style:italic;line-height:.9;margin-bottom:8px}
-.s1-diff.bad{color:#ff4400;text-shadow:0 0 80px rgba(255,68,0,.4)}
-.s1-diff.ok{color:#facc15;text-shadow:0 0 60px rgba(250,204,21,.25)}
-.s1-diff.good{color:#4ade80;text-shadow:0 0 60px rgba(74,222,128,.25)}
-.s1-sub{font-size:13px;color:rgba(255,255,255,.3)}
-.s1-hint{position:absolute;bottom:16px;font-size:9px;color:rgba(255,255,255,.08);animation:p 2s ease infinite}
-@keyframes p{0%,100%{opacity:.08}50%{opacity:.2}}
+/* Verdict — one line */
+.hero-verdict{display:inline-block;padding:7px 18px;border-radius:100px;font-size:11px;font-weight:700}
+.hero-verdict.bad{background:rgba(255,68,0,.08);border:1px solid rgba(255,68,0,.18);color:#ff6b35}
+.hero-verdict.ok{background:rgba(250,204,21,.08);border:1px solid rgba(250,204,21,.18);color:#facc15}
+.hero-verdict.good{background:rgba(34,197,94,.08);border:1px solid rgba(34,197,94,.18);color:#4ade80}
 
-/* ══ SCREEN 2: THE PROOF ══ */
-.s2{padding:28px 24px 40px}
-.s2-title{font-size:9px;font-weight:700;letter-spacing:.12em;color:rgba(255,255,255,.12);text-transform:uppercase;margin-bottom:16px}
-.s2-row{display:flex;align-items:center;justify-content:space-between;padding:13px 0;border-bottom:1px solid rgba(255,255,255,.03)}
-.s2-row:last-child{border:none}
-.s2-name{font-size:14px;font-weight:600;color:rgba(255,255,255,.7)}
-.s2-right{text-align:right}
-.s2-sal{font-size:15px;font-weight:800;color:#fff}
-.s2-pct{font-size:11px;font-weight:700;color:#ff4400;margin-top:1px}
-.s2-you{opacity:.35}
-.s2-you .s2-name{color:#ff4400;font-weight:800}
-.s2-you .s2-sal{color:#ff4400}
+/* ══ COMPANIES — existing style, kept ══ */
+.cos{padding:24px 24px 8px}
+.cos-title{font-size:9px;font-weight:700;letter-spacing:.12em;color:rgba(255,255,255,.12);text-transform:uppercase;margin-bottom:14px}
+.cos-row{display:flex;align-items:center;gap:12px;padding:12px 14px;border:1px solid rgba(255,255,255,.06);border-radius:12px;margin-bottom:6px;background:rgba(255,255,255,.02)}
+.cos-ini{width:34px;height:34px;border-radius:8px;background:rgba(255,255,255,.06);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;color:rgba(255,255,255,.3);flex-shrink:0}
+.cos-name{font-size:13px;font-weight:700;color:#fff;flex:1}
+.cos-badge{font-size:12px;font-weight:700;color:#ff4400;background:rgba(255,68,0,.08);padding:4px 10px;border-radius:8px;white-space:nowrap}
+.cos-row.locked{filter:blur(4px);pointer-events:none}
 
-.s2-cta{display:block;width:100%;margin-top:20px;padding:14px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:12px;text-align:center;text-decoration:none;font-size:13px;font-weight:600;color:rgba(255,255,255,.4);transition:all .15s}
-.s2-cta:hover{background:rgba(255,255,255,.08);color:rgba(255,255,255,.7);border-color:rgba(255,255,255,.15)}
+/* ══ JOBS NUDGE — existing, kept ══ */
+.nudge{margin:8px 24px 0;padding:14px 16px;background:rgba(255,68,0,.05);border:1px solid rgba(255,68,0,.15);border-radius:12px;display:flex;align-items:center;justify-content:space-between;gap:10px;cursor:pointer}
+.nudge-text{font-size:13px;font-weight:700;color:#fff}
+.nudge-sub{font-size:10px;color:rgba(255,255,255,.3);margin-top:2px}
+.nudge-cta{font-size:12px;font-weight:700;color:#ff4400;white-space:nowrap}
+
+/* ══ RATE NUDGE — existing, kept ══ */
+.rate{margin:8px 24px 0;padding:14px 16px;background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.06);border-radius:12px;display:flex;align-items:center;justify-content:space-between;gap:10px}
+.rate-text{font-size:12px;font-weight:700;color:#fff}
+.rate-sub{font-size:10px;color:rgba(255,255,255,.25);margin-top:2px}
+.rate-btn{font-size:11px;font-weight:700;color:#ff4400;background:rgba(255,68,0,.1);border:1px solid rgba(255,68,0,.2);border-radius:8px;padding:6px 14px;cursor:pointer;white-space:nowrap;font-family:inherit}
+
+/* Bottom padding */
+.bottom{height:32px}
 </style>
 </head>
 <body>
 
 <div class="sw-wrap">
-  <button class="sw on" onclick="s('bad',this)">Underpaid</button>
-  <button class="sw" onclick="s('ok',this)">Market rate</button>
-  <button class="sw" onclick="s('good',this)">Overpaid</button>
+  <button class="sw on" onclick="go('bad',this)">Underpaid</button>
+  <button class="sw" onclick="go('ok',this)">Market rate</button>
+  <button class="sw" onclick="go('good',this)">Overpaid</button>
 </div>
 
 <div class="phone"><div class="inner" id="sc">
 
-<!-- SCREEN 1 -->
-<div class="s1">
-  <div class="s1-eye">Backend · 3–4 yrs · Vietnam</div>
+<!-- HERO — diff first, then context -->
+<div class="hero">
+  <div class="hero-eye">Backend · 3–4 yrs · Vietnam</div>
 
-  <div class="s1-vs">
-    <div class="s1-col"><div class="s1-n" id="yn">30M</div><div class="s1-l">You</div></div>
-    <div class="s1-mid">vs</div>
-    <div class="s1-col"><div class="s1-n" id="mn">42M</div><div class="s1-l">Market</div></div>
+  <!-- THE NUMBER -->
+  <div class="hero-diff bad" id="hd">-12M</div>
+  <div class="hero-sub" id="hs">you're losing every month</div>
+
+  <!-- You vs Market (supporting) -->
+  <div class="hero-vs">
+    <div class="hero-stat"><div class="hero-stat-n" id="hy">30M</div><div class="hero-stat-l">Your salary</div></div>
+    <div class="hero-stat"><div class="hero-stat-n" id="hm">42M</div><div class="hero-stat-l">Market median</div></div>
   </div>
 
-  <div class="s1-diff bad" id="dn">-12M</div>
-  <div class="s1-sub" id="ds">you're losing every month</div>
-
-  <div class="s1-hint">↓ scroll</div>
+  <!-- Verdict -->
+  <span class="hero-verdict bad" id="hv">↓ You may be underpaid</span>
 </div>
 
-<!-- SCREEN 2 -->
-<div class="s2">
-  <div class="s2-title">Companies paying more for your role</div>
-
-  <div class="s2-row"><div class="s2-name">Grab Vietnam</div><div class="s2-right"><div class="s2-sal">52M</div><div class="s2-pct">+73%</div></div></div>
-  <div class="s2-row"><div class="s2-name">VNG</div><div class="s2-right"><div class="s2-sal">45M</div><div class="s2-pct">+50%</div></div></div>
-  <div class="s2-row"><div class="s2-name">FPT Software</div><div class="s2-right"><div class="s2-sal">38M</div><div class="s2-pct">+27%</div></div></div>
-  <div class="s2-row s2-you"><div class="s2-name">You</div><div class="s2-right"><div class="s2-sal">30M</div></div></div>
-
-  <a href="/jobs" class="s2-cta" id="cta">See open positions at these companies →</a>
+<!-- COMPANIES — same as current -->
+<div class="cos">
+  <div class="cos-title">Companies paying more for your role</div>
+  <div class="cos-row"><div class="cos-ini">GR</div><div class="cos-name">Grab Vietnam</div><div class="cos-badge">+73%</div></div>
+  <div class="cos-row"><div class="cos-ini">VN</div><div class="cos-name">VNG Corporation</div><div class="cos-badge">+50%</div></div>
+  <div class="cos-row locked"><div class="cos-ini">FP</div><div class="cos-name">FPT Software</div><div class="cos-badge">+27%</div></div>
+  <div class="cos-row locked"><div class="cos-ini">MO</div><div class="cos-name">MoMo</div><div class="cos-badge">+22%</div></div>
 </div>
+
+<!-- JOBS NUDGE — same as current -->
+<div class="nudge" id="nudge">
+  <div><div class="nudge-text" id="nt">3 jobs paying +45% more</div><div class="nudge-sub">For Backend with 3–4 yrs</div></div>
+  <div class="nudge-cta">See jobs →</div>
+</div>
+
+<!-- RATE NUDGE — same as current -->
+<div class="rate">
+  <div><div class="rate-text">How's it working at Grab?</div><div class="rate-sub">Rate work-life, salary & growth — anonymous.</div></div>
+  <button class="rate-btn">Rate →</button>
+</div>
+
+<div class="bottom"></div>
 
 </div></div>
 
 <script>
-function s(t,el){
+function go(t,el){
   document.querySelectorAll('.sw').forEach(function(b){b.classList.remove('on')});
   el.classList.add('on');
-  var yn=document.getElementById('yn'),mn=document.getElementById('mn'),dn=document.getElementById('dn'),ds=document.getElementById('ds'),cta=document.getElementById('cta');
+  var hd=document.getElementById('hd'),hs=document.getElementById('hs');
+  var hy=document.getElementById('hy'),hm=document.getElementById('hm');
+  var hv=document.getElementById('hv'),nudge=document.getElementById('nudge');
   if(t==='bad'){
-    yn.textContent='30M';mn.textContent='42M';
-    dn.className='s1-diff bad';dn.textContent='-12M';
-    ds.textContent="you're losing every month";
-    cta.textContent='See open positions at these companies →';
-    cta.style.display='';
+    hd.className='hero-diff bad';hd.textContent='-12M';
+    hs.textContent="you're losing every month";
+    hy.textContent='30M';hm.textContent='42M';
+    hv.className='hero-verdict bad';hv.textContent='↓ You may be underpaid';
+    nudge.style.display='';
   }else if(t==='ok'){
-    yn.textContent='41M';mn.textContent='42M';
-    dn.className='s1-diff ok';dn.textContent='~0';
-    ds.textContent="you're at market rate";
-    cta.textContent='See how top earners got there →';
-    cta.style.display='';
+    hd.className='hero-diff ok';hd.textContent='~0';
+    hs.textContent="you're right at market rate";
+    hy.textContent='41M';hm.textContent='42M';
+    hv.className='hero-verdict ok';hv.textContent='◎ Close to market rate';
+    nudge.style.display='';
+    document.getElementById('nt').textContent='See how top earners got there';
   }else{
-    yn.textContent='57M';mn.textContent='42M';
-    dn.className='s1-diff good';dn.textContent='+15M';
-    ds.textContent="you're earning above market";
-    cta.style.display='none';
+    hd.className='hero-diff good';hd.textContent='+15M';
+    hs.textContent="you're earning above market";
+    hy.textContent='57M';hm.textContent='42M';
+    hv.className='hero-verdict good';hv.textContent='✦ Well above market';
+    nudge.style.display='none';
   }
   document.getElementById('sc').scrollTo({top:0,behavior:'smooth'});
 }
