@@ -129,7 +129,8 @@
       "Bash(sed -i \"s|Kiếm thêm|Thu nhập cao hơn|g\" pages/index.js components/GlobalNav.js)",
       "Bash(sed -i \"s|Bạn có muốn chúng tôi kết nối<br/>bạn với công ty|Muốn được kết nối với công ty|g\" components/NextStepSheet.js)",
       "WebFetch(domain:www.life-spoiler.com)",
-      "Bash(start *)"
+      "Bash(start *)",
+      "Bash(gh auth *)"
     ]
   },
   "hooks": {
