@@ -127,7 +127,8 @@
       "Bash(sed -i \"s|Gửi lương để mở khóa|Chia sẻ lương để xem|g\" components/CompanyCard.js pages/index.js components/CompanyDetailPanel.js)",
       "Bash(sed -i \"s|Công ty nào trả cao nhất?|Ai trả lương cao nhất?|g\" pages/index.js)",
       "Bash(sed -i \"s|Kiếm thêm|Thu nhập cao hơn|g\" pages/index.js components/GlobalNav.js)",
-      "Bash(sed -i \"s|Bạn có muốn chúng tôi kết nối<br/>bạn với công ty|Muốn được kết nối với công ty|g\" components/NextStepSheet.js)"
+      "Bash(sed -i \"s|Bạn có muốn chúng tôi kết nối<br/>bạn với công ty|Muốn được kết nối với công ty|g\" components/NextStepSheet.js)",
+      "WebFetch(domain:www.life-spoiler.com)"
     ]
   },
   "hooks": {
