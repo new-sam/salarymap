@@ -1,14 +1,20 @@
 import supabase from '../../lib/supabase'
+import { verifyClaim } from '../../lib/verifyClaim'
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' })
   }
 
-  const { submissionId, rating_worklife, rating_salary, rating_growth } = req.body
+  const { submissionId, claimToken, rating_worklife, rating_salary, rating_growth } = req.body
 
   if (!submissionId) {
     return res.status(400).json({ error: 'submissionId required' })
+  }
+
+  const claim = await verifyClaim(submissionId, claimToken)
+  if (!claim.ok) {
+    return res.status(403).json({ error: 'Invalid claim token' })
   }
 
   const { error } = await supabase

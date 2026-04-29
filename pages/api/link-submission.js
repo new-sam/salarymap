@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
+import { verifyClaim } from '../../lib/verifyClaim';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
@@ -10,9 +11,14 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const { submission_id, user_id, email } = req.body;
+  const { submission_id, claim_token, user_id, email } = req.body;
   if (!submission_id || !user_id) {
     return res.status(400).json({ error: 'submission_id and user_id required' });
+  }
+
+  const claim = await verifyClaim(submission_id, claim_token);
+  if (!claim.ok) {
+    return res.status(403).json({ error: 'Invalid claim token' });
   }
 
   const updateData = { user_id };
