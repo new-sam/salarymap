@@ -115,16 +115,28 @@ export default function JobsPage() {
     setApplying(true)
     let resumeUrl = null
     if (resumeFile) {
-      const path = `${session.user.id}/${Date.now()}_${resumeFile.name}`
-      await supabase.storage.from('resumes').upload(path, resumeFile)
+      const safeName = resumeFile.name.replace(/[^a-zA-Z0-9._-]/g, '_')
+      const path = `${session.user.id}/${Date.now()}_${safeName}`
+      const { error: upErr } = await supabase.storage.from('resumes').upload(path, resumeFile, {
+        cacheControl: '3600',
+        upsert: false,
+        contentType: resumeFile.type || 'application/octet-stream',
+      })
+      if (upErr) {
+        setApplying(false)
+        alert('CV 업로드에 실패했습니다: ' + upErr.message + '\n\n관리자에게 문의하거나 CV 없이 다시 시도해주세요.')
+        return
+      }
       const { data } = supabase.storage.from('resumes').getPublicUrl(path)
       resumeUrl = data.publicUrl
     }
-    await fetch('/api/job-applications', {
+    const applyRes = await fetch('/api/job-applications', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         jobId: selectedJob.id,
+        jobTitle: selectedJob.title,
+        jobCompany: selectedJob.company,
         userId: session.user.id,
         resumeUrl,
         applicantRole: userRole,
@@ -135,6 +147,12 @@ export default function JobsPage() {
         applicantName: session.user.user_metadata?.full_name || '',
       }),
     })
+    if (!applyRes.ok) {
+      setApplying(false)
+      const err = await applyRes.json().catch(() => ({}))
+      alert('지원 처리에 실패했습니다: ' + (err.error || 'unknown error'))
+      return
+    }
     setApplying(false)
     setApplied(true)
     // GA4 event

@@ -11,7 +11,7 @@ export default async function handler(req, res) {
   }
 
   const {
-    jobId, userId, resumeUrl,
+    jobId, jobTitle, jobCompany, userId, resumeUrl,
     applicantRole, applicantExperience, applicantSalary,
     applicantCompany, applicantEmail, applicantName,
   } = req.body
@@ -20,10 +20,27 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: 'jobId required' })
   }
 
+  // Look up job title/company server-side as a fallback (in case client didn't pass them)
+  let resolvedTitle = jobTitle || null
+  let resolvedCompany = jobCompany || null
+  if (!resolvedTitle || !resolvedCompany) {
+    const { data: job } = await supabase
+      .from('jobs')
+      .select('title, company')
+      .eq('id', jobId)
+      .single()
+    if (job) {
+      resolvedTitle = resolvedTitle || job.title
+      resolvedCompany = resolvedCompany || job.company
+    }
+  }
+
   const { data, error } = await supabase
     .from('job_applications')
     .insert({
       job_id: jobId,
+      job_title: resolvedTitle,
+      job_company: resolvedCompany,
       user_id: userId || null,
       resume_url: resumeUrl || null,
       applicant_role: applicantRole || null,

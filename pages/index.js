@@ -1021,7 +1021,7 @@ function coSearchFilter(val) {
   });
   if (matches.length === 0) { drop.classList.remove('open'); drop.innerHTML = ''; return; }
   drop.innerHTML = matches.slice(0, 8).map(function(m) {
-    return '<div class="co-drop-item" data-name="' + m.replace(/"/g,'&quot;') + '" onmousedown="coSelect(\'' + m.replace(/'/g,"\\'") + '\')" style="padding:10px 14px;cursor:pointer;font-size:13px;color:#fff;transition:background .1s;">' + m + '</div>';
+    return '<div class="co-drop-item" data-name="' + m.replace(/"/g,'&quot;') + '" onmousedown="coSelect(\\\'' + m.replace(/'/g,"\\\\\'") + '\\')" style="padding:10px 14px;cursor:pointer;font-size:13px;color:#fff;transition:background .1s;">' + m + '</div>';
   }).join('');
   drop.classList.add('open');
   coSearchIdx = -1;
