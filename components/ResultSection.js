@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/router'
 import NextStepSheet from './NextStepSheet'
+import { useT } from '../lib/i18n'
 
 export default function ResultSection({ salary, role, experience, company, isLoggedIn }) {
+  const { t } = useT()
   const [result, setResult] = useState(null)
   const [jobs, setJobs] = useState([])
   const [sheetDismissed, setSheetDismissed] = useState(false)
@@ -33,7 +35,7 @@ export default function ResultSection({ salary, role, experience, company, isLog
       <div style={{ width:60, height:60, borderRadius:'50%', border:'3px solid #ff4400', borderTopColor:'transparent',
         animation:'spin .8s linear infinite', margin:'40px auto 16px' }} />
       <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
-      <div style={{ fontSize:14, color:'rgba(255,255,255,0.4)' }}>Đang tính thứ hạng...</div>
+      <div style={{ fontSize:14, color:'rgba(255,255,255,0.4)' }}>{t('result.loading')}</div>
     </div>
   )
 
@@ -42,9 +44,9 @@ export default function ResultSection({ salary, role, experience, company, isLog
   const state = percentile <= 33 ? 'high' : percentile <= 66 ? 'mid' : 'low'
 
   const verdictMap = {
-    high: { bg: 'rgba(34,197,94,0.1)', border: 'rgba(34,197,94,0.25)', color: '#4ade80', icon: '✦', text: "Bạn đang kiếm được cao hơn thị trường" },
-    mid: { bg: 'rgba(250,204,21,0.1)', border: 'rgba(250,204,21,0.25)', color: '#facc15', icon: '◎', text: "Bạn gần với mức thị trường" },
-    low: { bg: 'rgba(255,68,0,0.1)', border: 'rgba(255,68,0,0.25)', color: '#ff6b35', icon: '↓', text: 'Bạn có thể đang bị trả thấp' },
+    high: { bg: 'rgba(34,197,94,0.1)', border: 'rgba(34,197,94,0.25)', color: '#4ade80', icon: '✦', text: t('result.high') },
+    mid: { bg: 'rgba(250,204,21,0.1)', border: 'rgba(250,204,21,0.25)', color: '#facc15', icon: '◎', text: t('result.mid') },
+    low: { bg: 'rgba(255,68,0,0.1)', border: 'rgba(255,68,0,0.25)', color: '#ff6b35', icon: '↓', text: t('result.low') },
   }
   const verdict = verdictMap[state]
   const pctPosition = Math.max(5, Math.min(95, 100 - percentile))
@@ -78,7 +80,7 @@ export default function ResultSection({ salary, role, experience, company, isLog
 
         {/* Eyebrow */}
         <div style={{ fontSize:'10px', fontWeight:700, letterSpacing:'.1em', color:'rgba(255,255,255,0.25)', textTransform:'uppercase', textAlign:'center', marginBottom:'16px' }}>
-          KẾT QUẢ CỦA BẠN · {role} · {experience}
+          {t('result.eyebrow', { role, experience })}
         </div>
 
         {/* Big percentile */}
@@ -88,24 +90,24 @@ export default function ResultSection({ salary, role, experience, company, isLog
           </span>
         </div>
         <div style={{ textAlign:'center', fontSize:'13px', color:'rgba(255,255,255,0.4)', marginBottom:'24px' }}>
-          Trong số kỹ sư {role}, {experience} kinh nghiệm tại Việt Nam
+          {t('result.among', { role, experience })}
         </div>
 
         {/* 3 stat boxes */}
         <div className="rs-stat-grid" style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:'8px', marginBottom:'20px' }}>
           <div className="rs-stat-box">
             <div style={{ fontSize:'24px', fontWeight:900, color:'#fff' }}>{userSalary}M</div>
-            <div style={{ fontSize:'11px', color:'rgba(255,255,255,0.35)', marginTop:'4px' }}>Lương của bạn</div>
+            <div style={{ fontSize:'11px', color:'rgba(255,255,255,0.35)', marginTop:'4px' }}>{t('result.yourSalary')}</div>
           </div>
           <div className="rs-stat-box">
             <div style={{ fontSize:'24px', fontWeight:900, color:'#fff' }}>{marketMedian}M</div>
-            <div style={{ fontSize:'11px', color:'rgba(255,255,255,0.35)', marginTop:'4px' }}>Trung vị thị trường</div>
+            <div style={{ fontSize:'11px', color:'rgba(255,255,255,0.35)', marginTop:'4px' }}>{t('result.marketMedian')}</div>
           </div>
           <div className="rs-stat-box" style={{ background:'rgba(255,68,0,0.08)', border:'1px solid rgba(255,68,0,0.25)' }}>
             <div style={{ fontSize:'24px', fontWeight:900, color: isPositive ? '#4ade80' : '#ff4400' }}>
               {isPositive ? '+' : ''}{diff}M
             </div>
-            <div style={{ fontSize:'11px', color:'rgba(255,255,255,0.35)', marginTop:'4px' }}>{isPositive ? 'Trên' : 'Dưới'} trung vị</div>
+            <div style={{ fontSize:'11px', color:'rgba(255,255,255,0.35)', marginTop:'4px' }}>{isPositive ? t('result.aboveMedian') : t('result.belowMedian')}</div>
           </div>
         </div>
 
@@ -127,9 +129,9 @@ export default function ResultSection({ salary, role, experience, company, isLog
               animation:'glowPulse 2s ease-in-out infinite' }} />
           </div>
           <div style={{ display:'flex', justifyContent:'space-between', marginTop:'6px' }}>
-            <span style={{ fontSize:'9px', color:'rgba(255,255,255,0.2)' }}>Thấp nhất</span>
-            <span style={{ fontSize:'9px', color:'rgba(255,255,255,0.2)' }}>Trung vị</span>
-            <span style={{ fontSize:'9px', color:'rgba(255,255,255,0.2)' }}>Cao nhất</span>
+            <span style={{ fontSize:'9px', color:'rgba(255,255,255,0.2)' }}>{t('result.lowest')}</span>
+            <span style={{ fontSize:'9px', color:'rgba(255,255,255,0.2)' }}>{t('result.median')}</span>
+            <span style={{ fontSize:'9px', color:'rgba(255,255,255,0.2)' }}>{t('result.highest')}</span>
           </div>
         </div>
 
@@ -148,7 +150,7 @@ export default function ResultSection({ salary, role, experience, company, isLog
         <div style={{ marginTop:'20px' }}>
           <div style={{ fontSize:'10px', fontWeight:700, letterSpacing:'.1em', color:'rgba(255,255,255,0.25)',
             textTransform:'uppercase', marginBottom:'12px' }}>
-            CÔNG TY TRẢ CAO HƠN CHO VỊ TRÍ CỦA BẠN
+            {t('result.companiesPayMore')}
           </div>
           <div style={{ display:'flex', flexDirection:'column', gap:'8px' }}>
             {topCompanies.slice(0, 5).map((co, i) => {
@@ -181,13 +183,13 @@ export default function ResultSection({ salary, role, experience, company, isLog
           display:'flex', alignItems:'center', justifyContent:'space-between', gap:'12px' }}>
           <div>
             <div style={{ fontSize:'14px', fontWeight:700, color:'#fff' }}>
-              {jobCount} việc làm trả cao hơn +{avgBump}%
+              {t('result.jobsPayMore', { count: jobCount, bump: avgBump })}
             </div>
             <div style={{ fontSize:'11px', color:'rgba(255,255,255,0.35)', marginTop:'2px' }}>
               For {role} with {experience}
             </div>
           </div>
-          <span style={{ fontSize:'13px', fontWeight:700, color:'#ff4400', whiteSpace:'nowrap' }}>Xem việc làm →</span>
+          <span style={{ fontSize:'13px', fontWeight:700, color:'#ff4400', whiteSpace:'nowrap' }}>{t('result.viewJobs')}</span>
         </div>
       )}
 
@@ -203,7 +205,7 @@ export default function ResultSection({ salary, role, experience, company, isLog
             style={{ background:'rgba(0,128,255,0.1)', border:'1px solid rgba(0,128,255,0.3)', borderRadius:'12px',
               padding:'12px 24px', fontSize:'13px', fontWeight:700, color:'#0080FF', cursor:'pointer',
               fontFamily:"'Be Vietnam Pro',sans-serif" }}>
-            Bạn muốn được kết nối với công ty trả cao hơn? →
+            {t('result.connectHigher')}
           </button>
         </div>
       )}
@@ -212,12 +214,12 @@ export default function ResultSection({ salary, role, experience, company, isLog
         <div style={{ marginTop:'16px', background:'linear-gradient(135deg,#1a0d07,#111)', border:'1px solid rgba(255,96,0,0.2)',
           borderRadius:'14px', padding:'16px 20px', display:'flex', alignItems:'center', justifyContent:'space-between', gap:'12px', flexWrap:'wrap' }}>
           <div>
-            <div style={{ fontSize:'14px', fontWeight:700, color:'#fff' }}>{topCompanies.length} công ty trả cao hơn cho vị trí của bạn</div>
-            <div style={{ fontSize:'11px', color:'rgba(255,255,255,0.4)' }}>Headhunter của chúng tôi có thể giới thiệu bạn.</div>
+            <div style={{ fontSize:'14px', fontWeight:700, color:'#fff' }}>{t('result.companiesHigher', { count: topCompanies.length })}</div>
+            <div style={{ fontSize:'11px', color:'rgba(255,255,255,0.4)' }}>{t('result.headhunterIntro')}</div>
           </div>
           <a href="/jobs" style={{ background:'#ff4400', color:'#fff', border:'none', padding:'10px 20px',
             borderRadius:'10px', fontSize:'13px', fontWeight:700, textDecoration:'none', whiteSpace:'nowrap' }}>
-            Xem việc làm →
+            {t('result.viewJobs')}
           </a>
         </div>
       )}

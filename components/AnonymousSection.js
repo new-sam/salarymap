@@ -1,4 +1,7 @@
+import { useT } from '../lib/i18n'
+
 export default function AnonymousSection() {
+  const { t } = useT()
   return (
     <section className="anon-section">
       <style>{`
@@ -18,10 +21,7 @@ export default function AnonymousSection() {
           color: '#fff',
           lineHeight: 1.3,
           marginBottom: '14px',
-        }}>
-          Hoàn toàn{' '}
-          <em style={{ color: '#ff6000', fontStyle: 'normal' }}>ẩn danh.</em>
-        </h2>
+        }} dangerouslySetInnerHTML={{ __html: t('anon.title') }} />
         <p style={{
           fontSize: 'clamp(14px, 2.5vw, 18px)',
           fontWeight: 300,
@@ -29,7 +29,7 @@ export default function AnonymousSection() {
           maxWidth: '700px',
           margin: '0 auto',
         }}>
-          Chúng tôi không biết bạn là ai — chỉ biết các chuyên gia tại Việt Nam đang kiếm được bao nhiêu.
+          {t('anon.sub')}
         </p>
       </div>
 
@@ -95,7 +95,7 @@ export default function AnonymousSection() {
           padding: '32px 24px 28px',
         }}>
           <div style={{ fontSize: '14px', fontWeight: 300, color: 'rgba(255,255,255,0.4)', marginBottom: '18px', letterSpacing: '0.02em' }}>
-            Bạn gửi
+            {t('anon.youSubmit')}
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
             {[
@@ -141,7 +141,7 @@ export default function AnonymousSection() {
           padding: '32px 24px 28px',
         }}>
           <div style={{ fontSize: '18px', fontWeight: 700, color: '#ff6000', marginBottom: '8px' }}>
-            Mọi người thấy
+            {t('anon.everyoneSees')}
           </div>
           <div style={{ fontSize: '14px', fontWeight: 300, color: 'rgba(255,255,255,0.5)', marginBottom: '14px' }}>
             Backend · 4–6 yrs · Grab
@@ -154,7 +154,7 @@ export default function AnonymousSection() {
               24M — 38M VND
             </span>
             <span style={{ fontSize: '12px', fontWeight: 300, color: 'rgba(255,255,255,0.35)' }}>
-              Dựa trên 261 dữ liệu lương
+              {t('anon.basedOn')}
             </span>
           </div>
         </div>
@@ -171,9 +171,7 @@ export default function AnonymousSection() {
         flexWrap: 'wrap',
       }}>
         <span style={{ fontSize: '28px' }}>🙈</span>
-        <span style={{ fontSize: 'clamp(14px, 2.5vw, 18px)', fontWeight: 300, color: 'rgba(255,255,255,0.5)' }}>
-          Chúng tôi <em style={{ color: '#ff6000', fontStyle: 'normal', fontWeight: 700 }}>không thể</em> xác định bạn. Ngay cả khi muốn.
-        </span>
+        <span style={{ fontSize: 'clamp(14px, 2.5vw, 18px)', fontWeight: 300, color: 'rgba(255,255,255,0.5)' }} dangerouslySetInnerHTML={{ __html: t('anon.cantIdentify') }} />
       </div>
 
     </section>

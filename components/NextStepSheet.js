@@ -1,11 +1,13 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/router'
+import { useT } from '../lib/i18n'
 
 export default function NextStepSheet({ role, experience, percentile, topCompanies, onDismiss }) {
   const [visible, setVisible] = useState(false)
   const [selected, setSelected] = useState(null)
   const [jobs, setJobs] = useState([])
   const router = useRouter()
+  const { t } = useT()
   const userSalary = typeof window !== 'undefined' ? parseInt(localStorage.getItem('fyi_salary')) || 0 : 0
 
   useEffect(() => {
@@ -105,19 +107,19 @@ export default function NextStepSheet({ role, experience, percentile, topCompani
         <div className="ns-handle" />
         <div className="ns-body">
 
-          <div className="ns-title">Muốn được kết nối với công ty <span className="blue">trả lương cao hơn</span>?</div>
-          <div className="ns-sub">Chúng tôi đã giúp <b>3.000+</b> kỹ sư kiếm được hơn <b>10%</b> lương hiện tại.</div>
+          <div className="ns-title" dangerouslySetInnerHTML={{ __html: t('nextstep.title') }} />
+          <div className="ns-sub" dangerouslySetInnerHTML={{ __html: t('nextstep.sub') }} />
 
           <div className="ns-intents">
             {[
-              { id:'open', img:'/char1.png', label:<>Có, sẵn sàng nhận<br/>cơ hội tốt hơn</>, desc:'Tôi muốn tìm việc phù hợp ngay', blue:true },
-              { id:'selective', img:'/char2.png', label:<>Cân nhắc nếu<br/>phù hợp</>, desc:'Tôi sẽ xem xét nếu đúng vị trí và mức lương', blue:true },
-              { id:'none', img:'/char3.png', label:'Chưa cần ngay', desc:'Tôi hài lòng với công việc hiện tại', blue:false },
+              { id:'open', img:'/char1.png', labelHtml:t('nextstep.open'), desc:t('nextstep.openDesc'), blue:true },
+              { id:'selective', img:'/char2.png', labelHtml:t('nextstep.selective'), desc:t('nextstep.selectiveDesc'), blue:true },
+              { id:'none', img:'/char3.png', labelHtml:t('nextstep.notNow'), desc:t('nextstep.notNowDesc'), blue:false },
             ].map(c => (
               <div key={c.id} className={`ns-card${selected===c.id?(c.blue?' sel-blue':' sel-gray'):''}`} onClick={() => handleSelect(c.id)}>
                 <div className="ns-card-img"><img src={c.img} alt="" /></div>
                 <div className="ns-card-body">
-                  <button className={`ns-btn${!c.blue?' gray':''}${selected===c.id?' active':''}`}>{c.label}</button>
+                  <button className={`ns-btn${!c.blue?' gray':''}${selected===c.id?' active':''}`} dangerouslySetInnerHTML={{ __html: c.labelHtml }} />
                   <div className="ns-desc">{c.desc}</div>
                 </div>
               </div>
@@ -125,7 +127,7 @@ export default function NextStepSheet({ role, experience, percentile, topCompani
           </div>
 
           <div style={{textAlign:'center',marginBottom:4}}>
-            <button className="ns-exit" onClick={() => { handleSelect('maybe_later'); setVisible(false); }}>Để sau</button>
+            <button className="ns-exit" onClick={() => { handleSelect('maybe_later'); setVisible(false); }}>{t('nextstep.later')}</button>
           </div>
 
           <div id="ns-post">
@@ -134,7 +136,7 @@ export default function NextStepSheet({ role, experience, percentile, topCompani
                 {jobCount>0 && (
                   <div className="ns-match">
                     <div className="ns-match-dot" />
-                    <div className="ns-match-text">Chúng tôi tìm thấy <b>{jobCount} việc làm</b> trả lương cao hơn bạn hiện tại</div>
+                    <div className="ns-match-text" dangerouslySetInnerHTML={{ __html: t('nextstep.matchFound', { count: jobCount }) }} />
                   </div>
                 )}
                 {jobCount>0 && (
@@ -158,18 +160,18 @@ export default function NextStepSheet({ role, experience, percentile, topCompani
                         )
                       })}
                     </div>
-                    <div className="ns-overlay"><div className="ns-overlay-icon">🔒</div><div className="ns-overlay-text">Đăng nhập để xem & ứng tuyển</div></div>
+                    <div className="ns-overlay"><div className="ns-overlay-icon">🔒</div><div className="ns-overlay-text">{t('nextstep.loginToSee')}</div></div>
                     <div className="ns-right-fade" />
                   </div>
                 )}
-                <button className="ns-unlock" onClick={() => router.push('/jobs')}>Xem tất cả việc làm →</button>
-                <div className="ns-privacy">🔒 Không spam. Chúng tôi chỉ liên hệ khi thực sự đáng giá.</div>
+                <button className="ns-unlock" onClick={() => router.push('/jobs')}>{t('nextstep.viewAllJobs')}</button>
+                <div className="ns-privacy">{t('nextstep.noSpam')}</div>
               </div>
             )}
             {selected==='none' && (
               <div>
-                <button className="ns-browse" onClick={() => setVisible(false)}>Xem dữ liệu lương →</button>
-                <div className="ns-browse-sub">Không cần đăng ký. Khám phá dữ liệu lương tất cả công ty.</div>
+                <button className="ns-browse" onClick={() => setVisible(false)}>{t('nextstep.viewSalaryData')}</button>
+                <div className="ns-browse-sub">{t('nextstep.noSignup')}</div>
               </div>
             )}
           </div>

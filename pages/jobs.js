@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { supabase } from '../lib/supabaseClient'
 import GlobalNav from '../components/GlobalNav'
+import { useT } from '../lib/i18n'
 
 const DEFAULT_IMAGES = [
   'https://images.unsplash.com/photo-1497366216548-37526070297c?w=600&h=400&fit=crop',
@@ -19,17 +20,18 @@ const ROLE_FILTERS = [
   { key: 'Design', label: 'Design' },
   { key: 'PM', label: 'PM' },
 ]
-const PERK_FILTERS = [
-  { key: 'pays_more', label: 'Trả cao hơn' },
+const PERK_FILTER_KEYS = [
+  { key: 'pays_more', tKey: 'jobs.paysMore' },
   { key: 'remote', label: 'Remote' },
-  { key: 'korea', label: 'Công ty Hàn Quốc' },
-  { key: 'vietnam', label: 'Công ty Việt Nam' },
-  { key: 'global', label: 'Quốc tế' },
+  { key: 'korea', tKey: 'jobs.koreanCompany' },
+  { key: 'vietnam', tKey: 'jobs.vnCompany' },
+  { key: 'global', tKey: 'jobs.global' },
 ]
 
 export default function JobsPage() {
   const router = useRouter()
   const fileRef = useRef(null)
+  const { t } = useT()
 
   const [jobs, setJobs] = useState([])
   const [jobsLoaded, setJobsLoaded] = useState(false)
@@ -158,14 +160,14 @@ export default function JobsPage() {
 
   if (authLoading) return (
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', background: '#f7f7f5', fontFamily: "-apple-system, 'Helvetica Neue', Arial, sans-serif" }}>
-      <div style={{ fontSize: 14, color: '#aaa' }}>Đang tải...</div>
+      <div style={{ fontSize: 14, color: '#aaa' }}>{t('jobs.loading')}</div>
     </div>
   )
 
   return (
     <>
       <Head>
-        <title>Việc làm — Lương Cao Hơn, Vị Trí Tốt Hơn | FYI Salary</title>
+        <title>{t('jobs.title')}</title>
         <meta name="description" content="Curated IT jobs in Vietnam with higher pay. Our headhunter personally introduces you to top companies. Remote, Korean, and global opportunities." />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <meta property="og:type" content="website" />
@@ -332,9 +334,9 @@ export default function JobsPage() {
 
       <div className="jw">
         {/* HEADER */}
-        <div className="jw-eye">VIỆC LÀM ĐƯỢC CHỌN CHO BẠN</div>
-        <div className="jw-h1">Vị trí tốt hơn, lương cao hơn — dành cho bạn.</div>
-        <div className="jw-sub">Cơ hội phù hợp với hồ sơ của bạn. Headhunter sẽ giới thiệu bạn trực tiếp.</div>
+        <div className="jw-eye">{t('jobs.eyebrow')}</div>
+        <div className="jw-h1">{t('jobs.h1')}</div>
+        <div className="jw-sub">{t('jobs.sub')}</div>
 
         {(
           <>
@@ -342,7 +344,7 @@ export default function JobsPage() {
             {userSalary && (
               <div className="jbm">
                 <span className="jbm-dot" />
-                Mức lương của bạn: {Math.round(userSalary / 1000000)}M VND · {userRole || '—'} · {userExperience || '—'} · {userCompany || '—'} · Tất cả việc làm dưới đây trả cao hơn
+                {t('jobs.yourSalary', { salary: Math.round(userSalary / 1000000), role: userRole || '—', exp: userExperience || '—', company: userCompany || '—' })}
               </div>
             )}
 
@@ -354,12 +356,12 @@ export default function JobsPage() {
             </div>
             {/* Perk filters */}
             <div className="jf">
-              {PERK_FILTERS.map(({ key, label }) => (
-                <button key={key} className={`jf-pill outline${perkFilter === key ? ' on' : ''}`} onClick={() => setPerkFilter(perkFilter === key ? null : key)}>{label}</button>
+              {PERK_FILTER_KEYS.map(({ key, tKey, label }) => (
+                <button key={key} className={`jf-pill outline${perkFilter === key ? ' on' : ''}`} onClick={() => setPerkFilter(perkFilter === key ? null : key)}>{tKey ? t(tKey) : label}</button>
               ))}
             </div>
 
-            <div className="jf-count">{filteredJobs.length} việc làm phù hợp với bạn</div>
+            <div className="jf-count">{t('jobs.matchCount', { count: filteredJobs.length })}</div>
 
             {/* Grid */}
             <div className="jg" style={{ opacity: jobsLoaded ? 1 : 0, transition: 'opacity .3s' }}>
@@ -372,7 +374,7 @@ export default function JobsPage() {
                         background: `url(${job.image_url || job.images?.[0] || DEFAULT_IMAGES[idx % 3]}) center/cover no-repeat`,
                       }}>
                         {bump !== null && bump > 0 && (
-                          <div className="jc-bump">↑ <b>+{bump}%</b> so với lương bạn</div>
+                          <div className="jc-bump" dangerouslySetInnerHTML={{ __html: t('jobs.bumpVs', { bump }) }} />
                         )}
                         <button className="jc-bm" aria-label="Bookmark" onClick={e => { e.stopPropagation(); toggleBookmark(job.id) }}>
                           <svg width="14" height="14" viewBox="0 0 24 24" fill={bookmarks.includes(job.id) ? '#ff4400' : 'none'} stroke={bookmarks.includes(job.id) ? '#ff4400' : '#999'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -387,7 +389,7 @@ export default function JobsPage() {
                     <div className="jc-m">
                       {job.location} · {job.type} · <b>{Math.round(job.salary_min/1e6)}M–{Math.round(job.salary_max/1e6)}M VND</b>
                     </div>
-                    <button className="jc-apply" onClick={() => openApply(job)}>Ứng tuyển →</button>
+                    <button className="jc-apply" onClick={() => openApply(job)}>{t('jobs.apply')}</button>
                   </div>
                 )
               })}
@@ -462,19 +464,19 @@ export default function JobsPage() {
               {/* Meta grid */}
               <div className="jd-meta-grid">
                 <div className="jd-meta-item">
-                  <div className="jd-meta-label">Kinh nghiệm</div>
-                  <div className="jd-meta-value">{detailJob.experience_min}–{detailJob.experience_max} năm</div>
+                  <div className="jd-meta-label">{t('jobs.experience')}</div>
+                  <div className="jd-meta-value">{t('jobs.years', { min: detailJob.experience_min, max: detailJob.experience_max })}</div>
                 </div>
                 <div className="jd-meta-item">
-                  <div className="jd-meta-label">Vị trí</div>
+                  <div className="jd-meta-label">{t('jobs.position')}</div>
                   <div className="jd-meta-value">{detailJob.role}</div>
                 </div>
                 <div className="jd-meta-item">
-                  <div className="jd-meta-label">Hình thức</div>
+                  <div className="jd-meta-label">{t('jobs.type')}</div>
                   <div className="jd-meta-value" style={{ textTransform: 'capitalize' }}>{detailJob.type}</div>
                 </div>
                 <div className="jd-meta-item">
-                  <div className="jd-meta-label">Khu vực</div>
+                  <div className="jd-meta-label">{t('jobs.region')}</div>
                   <div className="jd-meta-value" style={{ textTransform: 'capitalize' }}>{detailJob.country}</div>
                 </div>
               </div>
@@ -482,7 +484,7 @@ export default function JobsPage() {
               <div className="jd-divider" />
 
               {/* Description */}
-              <div className="jd-section-title">Về vị trí này</div>
+              <div className="jd-section-title">{t('jobs.about')}</div>
               <div className="jd-desc">
                 {detailJob.description || `${detailJob.company} is looking for a ${detailJob.title} to join their team in ${detailJob.location}.\n\nThis is a ${detailJob.type} position offering ${Math.round(detailJob.salary_min/1e6)}M–${Math.round(detailJob.salary_max/1e6)}M VND, ideal for candidates with ${detailJob.experience_min}–${detailJob.experience_max} years of experience in ${detailJob.role}.\n\nOur headhunter team will personally introduce you and support you throughout the process.`}
               </div>
@@ -498,7 +500,7 @@ export default function JobsPage() {
                   <span style={{ fontSize: 20 }}>📈</span>
                   <div>
                     <div style={{ fontSize: 14, fontWeight: 700, color: '#111' }}>
-                      +{Math.round(((detailJob.salary_min - userSalary) / userSalary) * 100)}% cao hơn lương hiện tại của bạn
+                      {t('jobs.higherThanCurrent', { pct: Math.round(((detailJob.salary_min - userSalary) / userSalary) * 100) })}
                     </div>
                     <div style={{ fontSize: 12, color: '#888' }}>
                       Your benchmark: {Math.round(userSalary/1e6)}M VND → This role: {Math.round(detailJob.salary_min/1e6)}M–{Math.round(detailJob.salary_max/1e6)}M VND
@@ -509,7 +511,7 @@ export default function JobsPage() {
 
               {/* Apply CTA */}
               <button className="jd-apply-btn" onClick={() => { setDetailJob(null); openApply(detailJob) }}>
-                Ứng tuyển →
+                {t('jobs.apply')}
               </button>
             </div>
           </div>
@@ -526,8 +528,8 @@ export default function JobsPage() {
 
             {!applied ? (
               <>
-                <div className="ap-h">Ứng tuyển vị trí này</div>
-                <div className="ap-sub">Đội ngũ của chúng tôi xem xét mọi đơn ứng tuyển và liên hệ trong 2 ngày làm việc.</div>
+                <div className="ap-h">{t('jobs.applyThis')}</div>
+                <div className="ap-sub">{t('jobs.applySub')}</div>
 
                 <div className="ap-job">
                   <div className="ap-job-ini">{selectedJob.company_initials || selectedJob.company.slice(0,2).toUpperCase()}</div>
@@ -537,13 +539,13 @@ export default function JobsPage() {
                   </div>
                 </div>
 
-                <div className="ap-lbl">HỒ SƠ CỦA BẠN · tự động điền</div>
+                <div className="ap-lbl">{t('jobs.yourProfile')}</div>
                 <div className="ap-tags">
                   {userRole && <div className="ap-tag">{userRole} · {userExperience || '—'} yrs</div>}
-                  {userCompany && <div className="ap-tag">Hiện tại: {userCompany} · {userSalary ? Math.round(userSalary/1e6) : '—'}M VND</div>}
+                  {userCompany && <div className="ap-tag">{t('jobs.currentAt', { company: userCompany, salary: userSalary ? Math.round(userSalary/1e6) : '—' })}</div>}
                 </div>
 
-                <div className="ap-lbl">CV (không bắt buộc)</div>
+                <div className="ap-lbl">{t('jobs.cvOptional')}</div>
                 <div className="ap-up" onClick={() => fileRef.current?.click()}>
                   <input ref={fileRef} type="file" accept=".pdf,.docx,.doc" style={{ display: 'none' }} onChange={e => {
                     const f = e.target.files?.[0]
@@ -552,7 +554,7 @@ export default function JobsPage() {
                   }} />
                   {resumeFile
                     ? <div className="ap-up-f">{resumeFile.name}</div>
-                    : <><div className="ap-up-t">Kéo thả CV hoặc chọn file</div><div className="ap-up-h">PDF / DOCX · tối đa 5MB</div></>
+                    : <><div className="ap-up-t" style={{ whiteSpace: 'pre-line' }}>{t('jobs.dragCV')}</div></>
                   }
                 </div>
 
@@ -560,19 +562,19 @@ export default function JobsPage() {
                   if (!isLoggedIn) { localStorage.setItem('fyi_login_return','/jobs'); supabase.auth.signInWithOAuth({ provider:'google', options:{ redirectTo: window.location.origin+'/auth/callback' }}); return; }
                   handleApply();
                 }} disabled={applying}>
-                  {!isLoggedIn ? 'Đăng nhập để ứng tuyển →' : applying ? 'Đang gửi...' : 'Gửi đơn ứng tuyển →'}
+                  {!isLoggedIn ? t('jobs.loginToApply') : applying ? t('jobs.sending') : t('jobs.submitApplication')}
                 </button>
                 <button className="ap-skip" onClick={() => {
                   if (!isLoggedIn) { localStorage.setItem('fyi_login_return','/jobs'); supabase.auth.signInWithOAuth({ provider:'google', options:{ redirectTo: window.location.origin+'/auth/callback' }}); return; }
                   setResumeFile(null); handleApply();
-                }}>Ứng tuyển không cần CV</button>
+                }}>{t('jobs.applyNoCV')}</button>
               </>
             ) : (
               <div className="ap-ok">
                 <div className="ap-ok-i">✓</div>
-                <div className="ap-ok-h">Đã gửi đơn ứng tuyển!</div>
-                <div className="ap-ok-p">Đội ngũ của chúng tôi sẽ liên hệ trong 2 ngày làm việc.</div>
-                <button className="ap-skip" style={{ marginTop: 20 }} onClick={() => setShowPanel(false)}>Đóng</button>
+                <div className="ap-ok-h">{t('jobs.applied')}</div>
+                <div className="ap-ok-p">{t('jobs.appliedSub')}</div>
+                <button className="ap-skip" style={{ marginTop: 20 }} onClick={() => setShowPanel(false)}>{t('jobs.close')}</button>
               </div>
             )}
           </div>
