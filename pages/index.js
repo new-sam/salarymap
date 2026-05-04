@@ -6,6 +6,7 @@ import CompanyCard from '../components/CompanyCard';
 import CompanyDetailPanel from '../components/CompanyDetailPanel';
 import AnonymousSection from '../components/AnonymousSection';
 import ResultSection from '../components/ResultSection';
+import { useT } from '../lib/i18n';
 
 const css = `
 *, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
@@ -1280,6 +1281,7 @@ function SubmitSection({
   onSubmit,
   submissionId,
 }) {
+  const { t } = useT();
   const [submitting, setSubmitting] = useState(false);
   const [ratingWorklife, setRatingWorklife] = useState(0);
   const [ratingSalary, setRatingSalary] = useState(0);
@@ -1403,8 +1405,8 @@ function SubmitSection({
   const diff = percentileData ? sal - (percentileData.median ?? sal) : 0;
   const diffLabel = diff >= 0 ? `+${diff}M` : `-${Math.abs(diff)}M`;
   const message = isTopHalf
-    ? "Bạn đang trên trung vị thị trường. Xem các vị trí trả lương cao hơn ngay."
-    : "Bạn đang kiếm dưới mức thị trường cho vị trí của bạn. Đây là thời điểm tốt để khám phá cơ hội tốt hơn.";
+    ? t('wizard.aboveMedian')
+    : t('wizard.belowMedian');
 
   const card = { background:'rgba(255,255,255,0.03)', border:'1px solid rgba(255,255,255,0.08)', borderRadius:'20px', padding:'36px 32px' };
   const btn = { fontFamily:"'Barlow',sans-serif", cursor:'pointer', border:'none' };
@@ -1424,15 +1426,15 @@ function SubmitSection({
   const POPULAR_COMPANIES = ['Grab','FPT Software','MoMo','VNG','Sky Mavis','Shopee'];
   const stepHeadings = [
     null,
-    { pre: 'Lương tôi có ', em: 'thấp không?', sub: 'Chọn vị trí hiện tại của bạn' },
-    { pre: 'Số năm ', em: 'kinh nghiệm?', sub: 'Tổng kinh nghiệm IT, bao gồm tất cả vị trí' },
-    { pre: 'Lương hàng tháng ', em: 'của bạn?', sub: 'Trước thuế, mỗi tháng (triệu VNĐ)' },
-    { pre: 'Bạn đang ', em: 'làm ở đâu?', sub: 'Tên công ty (được giữ ẩn danh)' },
-    { pre: 'Đánh giá ', em: 'công ty?', sub: `Đánh giá trải nghiệm tại ${wCompany}` },
+    { pre: t('wizard.step1.pre'), em: t('wizard.step1.em'), sub: t('wizard.step1.sub') },
+    { pre: t('wizard.step2.pre'), em: t('wizard.step2.em'), sub: t('wizard.step2.sub') },
+    { pre: t('wizard.step3.pre'), em: t('wizard.step3.em'), sub: t('wizard.step3.sub') },
+    { pre: t('wizard.step4.pre'), em: t('wizard.step4.em'), sub: t('wizard.step4.sub') },
+    { pre: t('wizard.step5.pre'), em: t('wizard.step5.em'), sub: t('wizard.step5.sub', { company: wCompany }) },
   ];
   const EXP_LABELS = {
-    'Under 1yr': 'Dưới 1 năm', '1–2 yrs': '1–2 năm', '3–4 yrs': '3–5 năm',
-    '5–7 yrs': '5–8 năm', '8+ yrs': '8+ năm',
+    'Under 1yr': t('exp.under1'), '1–2 yrs': t('exp.1_2'), '3–4 yrs': t('exp.3_4'),
+    '5–7 yrs': t('exp.5_7'), '8+ yrs': t('exp.8plus'),
   };
 
   const quizCard = {
@@ -1462,7 +1464,7 @@ function SubmitSection({
       borderRadius: '18px', padding: '20px', marginBottom: '24px', position: 'relative', overflow: 'hidden' }}>
       <div style={{ filter: 'blur(10px)', pointerEvents: 'none', userSelect: 'none' }}>
         <div style={{ fontSize: '28px', fontWeight: 900, color: '#4ade80' }}>Top 18%</div>
-        <div style={{ fontSize: '13px', color: 'rgba(255,255,255,0.5)', marginTop: '4px' }}>Bạn đang kiếm nhiều hơn 82% người cùng vị trí</div>
+        <div style={{ fontSize: '13px', color: 'rgba(255,255,255,0.5)', marginTop: '4px' }}>{t('wizard.earningMore')}</div>
         <div style={{ height: '6px', background: 'rgba(255,255,255,0.1)', borderRadius: '20px', marginTop: '12px' }}>
           <div style={{ height: '100%', width: '82%', background: '#4ade80', borderRadius: '20px' }} />
         </div>
@@ -1471,7 +1473,7 @@ function SubmitSection({
         alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
         <span style={{ fontSize: '20px' }}>🔒</span>
         <span style={{ fontSize: '12px', fontWeight: 700, color: 'rgba(255,255,255,0.5)' }}>
-          Chọn vị trí để xem kết quả
+          {t('wizard.selectRoleToSee')}
         </span>
       </div>
     </div>
@@ -1505,7 +1507,7 @@ function SubmitSection({
             <div style={{ marginBottom: '24px' }}>
               <div style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '.14em', color: 'rgba(255,255,255,0.25)',
                 textTransform: 'uppercase', marginBottom: '12px' }}>
-                BƯỚC {Math.min(wizardStep, 4)} / 4
+                {t('wizard.step', { step: Math.min(wizardStep, 4) })}
               </div>
               <h2 style={{ fontSize: 'clamp(28px, 5vw, 36px)', fontWeight: 900, color: '#fff', lineHeight: 1.15, marginBottom: '8px' }}>
                 {heading.pre}<em style={{ fontStyle: 'italic', color: '#ff4400' }}>{heading.em}</em>
@@ -1540,7 +1542,7 @@ function SubmitSection({
                   </button>
                 ))}
               </div>
-              <button onClick={() => setWizardStep(1)} style={{ ...quizBtn, marginTop: '16px', background: 'none', color: 'rgba(255,255,255,0.25)', fontSize: '12px' }}>← Quay lại</button>
+              <button onClick={() => setWizardStep(1)} style={{ ...quizBtn, marginTop: '16px', background: 'none', color: 'rgba(255,255,255,0.25)', fontSize: '12px' }}>{t('wizard.back')}</button>
             </div>
           )}
 
@@ -1550,20 +1552,20 @@ function SubmitSection({
               <BlurredTeaser />
               <div style={{ textAlign: 'center', marginBottom: '24px' }}>
                 <span style={{ fontSize: '56px', fontWeight: 900, fontStyle: 'italic', color: '#fff', lineHeight: 1 }}>{sal}</span>
-                <span style={{ fontSize: '16px', color: 'rgba(255,255,255,0.25)', marginLeft: '8px' }}>triệu VNĐ / tháng</span>
+                <span style={{ fontSize: '16px', color: 'rgba(255,255,255,0.25)', marginLeft: '8px' }}>{t('wizard.salaryUnit')}</span>
               </div>
               <input type="range" min="5" max="200" value={sal}
                 onChange={e => setWSalary(Number(e.target.value))}
                 style={{ width: '100%', accentColor: '#ff4400', height: '4px', marginBottom: '24px' }}
               />
               <div style={{ textAlign: 'center', fontSize: '11px', color: 'rgba(255,255,255,0.18)', marginBottom: '20px' }}>
-                🔒 Thông tin lương của bạn hoàn toàn riêng tư
+                {t('wizard.salaryPrivacy')}
               </div>
               <button onClick={() => { if(typeof gtag==='function') gtag('event','wizard_step_3',{salary:wSalary}); setWizardStep(4); }}
                 style={ctaStyle}>
-                Sắp xong rồi →
+                {t('wizard.almostDone')}
               </button>
-              <button onClick={() => setWizardStep(2)} style={{ ...quizBtn, marginTop: '12px', background: 'none', color: 'rgba(255,255,255,0.25)', fontSize: '12px', display: 'block', width: '100%', textAlign: 'center' }}>← Quay lại</button>
+              <button onClick={() => setWizardStep(2)} style={{ ...quizBtn, marginTop: '12px', background: 'none', color: 'rgba(255,255,255,0.25)', fontSize: '12px', display: 'block', width: '100%', textAlign: 'center' }}>{t('wizard.back')}</button>
             </div>
           )}
 
@@ -1635,7 +1637,7 @@ function SubmitSection({
                           <div onMouseDown={e => { e.preventDefault(); setAcOpen(false); }}
                             style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 14px', cursor: 'pointer', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
                             <div style={{ width: 22, height: 22, borderRadius: '4px', background: 'rgba(255,68,0,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '13px', color: '#ff4400', flexShrink: 0 }}>+</div>
-                            <span style={{ fontSize: '13px', color: 'rgba(255,255,255,0.5)' }}>Thêm "<span style={{ color: '#fff', fontWeight: 600 }}>{wCompany.trim()}</span>"</span>
+                            <span style={{ fontSize: '13px', color: 'rgba(255,255,255,0.5)' }}>{t('wizard.addCompany', { company: '' })}<span style={{ color: '#fff', fontWeight: 600 }}>{wCompany.trim()}</span>"</span>
                           </div>
                         )}
                       </div>
@@ -1645,12 +1647,12 @@ function SubmitSection({
               </div>
               <button onClick={handleSubmit} disabled={!wCompany.trim() || submitting}
                 style={{ ...ctaStyle, opacity: wCompany.trim() ? 1 : 0.4, cursor: wCompany.trim() ? 'pointer' : 'not-allowed' }}>
-                {submitting ? 'Đang gửi…' : 'Xem thứ hạng của tôi →'}
+                {submitting ? t('wizard.submitting') : t('wizard.viewRank')}
               </button>
               <div style={{ textAlign: 'center', fontSize: '11px', color: 'rgba(255,255,255,0.18)', marginTop: '12px' }}>
-                🔒 Ẩn danh — không cần tên hay email
+                {t('wizard.anonymous')}
               </div>
-              <button onClick={() => setWizardStep(3)} style={{ ...quizBtn, marginTop: '12px', background: 'none', color: 'rgba(255,255,255,0.25)', fontSize: '12px', display: 'block', width: '100%', textAlign: 'center' }}>← Quay lại</button>
+              <button onClick={() => setWizardStep(3)} style={{ ...quizBtn, marginTop: '12px', background: 'none', color: 'rgba(255,255,255,0.25)', fontSize: '12px', display: 'block', width: '100%', textAlign: 'center' }}>{t('wizard.back')}</button>
             </div>
           )}
 
@@ -1664,11 +1666,11 @@ function SubmitSection({
                 <button onClick={async () => { await handleRatingSubmit(); setWizardStep(6); }}
                   disabled={(!ratingWorklife && !ratingSalary && !ratingGrowth) || ratingSubmitting}
                   style={{ ...ctaStyle, flex: 1, opacity: (ratingWorklife || ratingSalary || ratingGrowth) ? 1 : 0.4 }}>
-                  {ratingSubmitting ? 'Đang lưu…' : 'Gửi đánh giá'}
+                  {ratingSubmitting ? t('wizard.savingRating') : t('wizard.submitRating')}
                 </button>
                 <button onClick={() => setWizardStep(6)}
                   style={{ ...quizBtn, padding: '16px 20px', background: 'none', color: 'rgba(255,255,255,0.4)', fontSize: '14px', fontWeight: 700, borderRadius: '14px' }}>
-                  Bỏ qua
+                  {t('wizard.skip')}
                 </button>
               </div>
             </div>
@@ -1683,13 +1685,13 @@ function SubmitSection({
           <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)',
             borderRadius: '16px', padding: '16px', marginTop: '20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px' }}>
             <div>
-              <div style={{ fontSize: '13px', fontWeight: 700, color: '#fff' }}>Làm việc ở {wCompany} như thế nào?</div>
-              <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.3)', marginTop: '2px' }}>Đánh giá work-life, lương & cơ hội — ẩn danh.</div>
+              <div style={{ fontSize: '13px', fontWeight: 700, color: '#fff' }}>{t('wizard.rateCompany', { company: wCompany })}</div>
+              <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.3)', marginTop: '2px' }}>{t('wizard.rateCompanySub')}</div>
             </div>
             <button onClick={() => setWizardStep(5)}
               style={{ ...quizBtn, padding: '8px 16px', background: 'rgba(255,68,0,0.15)', border: '1px solid rgba(255,68,0,0.3)',
                 color: '#ff4400', fontSize: '12px', fontWeight: 700, borderRadius: '10px', whiteSpace: 'nowrap' }}>
-              Đánh giá →
+              {t('wizard.rateCta')}
             </button>
           </div>
         </div>
@@ -1717,6 +1719,7 @@ export async function getStaticProps() {
 }
 
 export default function Home({ initialCompanies = [] }) {
+  const { t, lang } = useT();
   const [lbCompany, setLbCompany] = useState(null);
   const [activeTab, setActiveTab] = useState('All roles');
   const [apiCompanies, setApiCompanies] = useState(initialCompanies);
@@ -1964,18 +1967,51 @@ export default function Home({ initialCompanies = [] }) {
     return () => { alive = false; };
   }, []);
 
+  // DOM-based i18n for bodyHTML template sections
+  useEffect(() => {
+    // Hero section
+    const kicker = document.querySelector('.hero-kicker');
+    if (kicker) { const kdot = kicker.querySelector('.kdot'); kicker.textContent = ''; if (kdot) kicker.appendChild(kdot); kicker.appendChild(document.createTextNode(t('hero.kicker'))); }
+    const heroSub = document.querySelector('.hero-sub');
+    if (heroSub) heroSub.textContent = t('hero.sub');
+    const heroBtn = document.querySelector('.btn-p');
+    if (heroBtn) heroBtn.textContent = t('hero.cta');
+    // Company section
+    const sectionTitle = document.querySelector('.section-head-title');
+    if (sectionTitle) sectionTitle.innerHTML = t('companies.title');
+    const sectionSub = document.querySelector('.section-head-sub');
+    if (sectionSub) sectionSub.textContent = t('companies.sub');
+    const searchInput = document.getElementById('co-search-input');
+    if (searchInput) searchInput.placeholder = t('companies.searchPlaceholder');
+    // WGF section
+    const wgfEye = document.querySelector('.wgf-eyebrow');
+    if (wgfEye) wgfEye.innerHTML = t('wgf.eyebrow');
+    const wgfHeadline = document.querySelector('.wgf-headline');
+    if (wgfHeadline) wgfHeadline.innerHTML = t('wgf.headline');
+    const wgfBody1 = document.querySelector('[data-wgf="body1"]');
+    if (wgfBody1) wgfBody1.innerHTML = t('wgf.body1');
+    const wgfBody2 = document.querySelector('[data-wgf="body2"]');
+    if (wgfBody2) wgfBody2.textContent = t('wgf.body2');
+    const wgfDivider = document.querySelector('.wgf-divider span');
+    if (wgfDivider) wgfDivider.textContent = t('wgf.divider');
+    const wgfBottom = document.querySelector('.wgf-bottom-cta p');
+    if (wgfBottom) wgfBottom.innerHTML = t('wgf.bottomText');
+    const wgfCtaBtn = document.querySelector('.wgf-cta-btn');
+    if (wgfCtaBtn) wgfCtaBtn.textContent = t('wgf.bottomCta');
+  }, [lang, t]);
+
   useEffect(() => {
     const messages = [
-      `<b class="co">Grab Vietnam</b> · Backend Engineer vừa chia sẻ lương.`,
-      `<b class="co">12 kỹ sư</b>&nbsp;đã gửi dữ liệu lương mới trong&nbsp;<b>1 giờ</b>&nbsp;qua.`,
-      `<b class="co">Shopee Vietnam</b> · Mobile Developer vừa chia sẻ lương.`,
-      `Dữ liệu từ&nbsp;<b>47 công ty</b>&nbsp;bao gồm&nbsp;<b class="co">FPT · VNG · Tiki</b>&nbsp;đang được cập nhật.`,
-      `<b class="co">Sky Mavis</b> · Senior Backend Engineer vừa chia sẻ lương.`,
-      `<b>38 kỹ sư</b>&nbsp;đã chia sẻ lương và&nbsp;<b>mở khóa toàn bộ dữ liệu</b>&nbsp;hôm nay.`,
-      `<b class="co">Momo</b> · Data Engineer vừa chia sẻ lương.`,
-      `Dữ liệu lương mới từ&nbsp;<b class="co">Techcombank</b>&nbsp;vừa được thêm.&nbsp;<span class="dim">3 phút trước</span>`,
-      `<b class="co">VNG Corporation</b> · DevOps Engineer vừa chia sẻ lương.`,
-      `Có người đang xem trang này.&nbsp;<b class="co">Lương bạn đứng ở đâu?</b>`,
+      t('live.grabShared'),
+      t('live.engineersShared'),
+      t('live.shopeeShared'),
+      t('live.companiesUpdating'),
+      t('live.skymavisShared'),
+      t('live.engineersUnlocked'),
+      t('live.momoShared'),
+      t('live.techcombankNew'),
+      t('live.vngShared'),
+      t('live.someoneViewing'),
     ];
 
     const wrap = document.getElementById('liveMsgWrap');
@@ -2020,7 +2056,7 @@ export default function Home({ initialCompanies = [] }) {
 
   // Run inline scripts after hydration (moved out of dangerouslySetInnerHTML to prevent hydration mismatch)
   useEffect(() => {
-    try { new Function(js)(); } catch(e) { console.error('inline script error:', e); }
+    try { new Function(js)(); } catch(e) { /* inline script init — safe to ignore in dev */ }
   }, []);
 
   // WGF continuous scroll-driven animations
@@ -2136,18 +2172,18 @@ export default function Home({ initialCompanies = [] }) {
           <span>FOR YOUR <span style={{color:'var(--orange)'}}>&#39;SALARY&#39;</span> INFORMATION</span>
         </div>
         <div className="nav-r">
-          <button className="nav-link" onClick={() => document.getElementById('submit')?.scrollIntoView({behavior:'smooth'})}>Tôi có bị trả thấp?</button>
-          <button className="nav-link" onClick={() => document.getElementById('companies')?.scrollIntoView({behavior:'smooth'})}>Ai trả lương cao nhất?</button>
+          <button className="nav-link" onClick={() => document.getElementById('submit')?.scrollIntoView({behavior:'smooth'})}>{t('nav.amIUnderpaid')}</button>
+          <button className="nav-link" onClick={() => document.getElementById('companies')?.scrollIntoView({behavior:'smooth'})}>{t('nav.whoPaysMost')}</button>
           <a className="nav-jobs-cta" href="/jobs">
-            💰 Việc làm <span className="nav-jobs-badge">↑</span>
-            <span className="nav-jobs-sub">Thu nhập cao hơn</span>
+            {t('nav.jobs')} <span className="nav-jobs-badge">↑</span>
+            <span className="nav-jobs-sub">{t('nav.jobsSub')}</span>
           </a>
 
           {!isLoggedIn ? (
             <button
               onClick={() => setShowAuthModal(true)}
               className="nav-login-btn">
-              Đăng nhập
+              {t('nav.login')}
             </button>
           ) : (
             <div
@@ -2172,7 +2208,7 @@ export default function Home({ initialCompanies = [] }) {
                   </div>
                   <a href="/profile" onClick={e => e.stopPropagation()}
                     style={{display:'block',padding:'10px 14px',borderRadius:8,color:'rgba(255,255,255,0.6)',fontSize:13,textDecoration:'none',fontFamily:"'Barlow',sans-serif"}}>
-                    Hồ sơ của tôi
+                    {t('nav.myProfile')}
                   </a>
                   {isAdminUser && (
                     <a href="/admin/jobs" onClick={e => e.stopPropagation()}
@@ -2190,7 +2226,7 @@ export default function Home({ initialCompanies = [] }) {
                       // DO NOT touch isSubmitted or localStorage 'fyi_submitted'
                     }}
                     style={{width:'100%',padding:'10px 14px',borderRadius:8,border:'none',background:'transparent',color:'rgba(255,255,255,0.6)',fontSize:13,cursor:'pointer',textAlign:'left',fontFamily:"'Barlow',sans-serif"}}>
-                    Đăng xuất
+                    {t('nav.logout')}
                   </button>
                 </div>
               )}
@@ -2198,7 +2234,7 @@ export default function Home({ initialCompanies = [] }) {
           )}
 
           <button className="nav-btn" onClick={() => document.getElementById('submit')?.scrollIntoView({behavior:'smooth'})}>
-            Gửi lương
+            {t('nav.submitSalary')}
           </button>
         </div>
       </nav>
@@ -2272,7 +2308,7 @@ export default function Home({ initialCompanies = [] }) {
               {/* Head */}
               <div className="lb-head-body">
                 <div className="lb-head-left">
-                  <div className="lb-head-eyebrow">Bảng xếp hạng lương</div>
+                  <div className="lb-head-eyebrow">{t('lb.title')}</div>
                   <div className="lb-head-name">
                     {company.name.split(' ')[0]} <em>{company.name.split(' ').slice(1).join(' ')}</em>
                   </div>
@@ -2282,11 +2318,11 @@ export default function Home({ initialCompanies = [] }) {
                 <div className="lb-head-right">
                   <div className="lb-stat-b">
                     <div className="lb-stat-n">{company.submissions}</div>
-                    <div className="lb-stat-l">Dữ liệu lương</div>
+                    <div className="lb-stat-l">{t('lb.salaryData')}</div>
                   </div>
                   <div className="lb-stat-b">
                     <div className="lb-stat-n o">{company.median}M</div>
-                    <div className="lb-stat-l">Trung vị</div>
+                    <div className="lb-stat-l">{t('lb.median')}</div>
                   </div>
                   <div className="lb-stat-b">
                     <div className="lb-stat-n g">+{company.vsMarket}%</div>
@@ -2331,7 +2367,7 @@ export default function Home({ initialCompanies = [] }) {
 
               {/* List rows (open) + locked */}
               <div className="lb-list-section">
-                <div className="lb-list-header">Các vị trí khác</div>
+                <div className="lb-list-header">{t('lb.otherRoles')}</div>
                 {listRows.filter(r => activeTab==='All roles' || r.role===activeTab).map((row,i) => (
                   <div key={i} className="lb-list-row">
                     <div className="lb-av">{row.abbr}</div>
@@ -2369,14 +2405,14 @@ export default function Home({ initialCompanies = [] }) {
               <div className="lb-cta-area">
                 <div className="lb-cta-sep">
                   <div className="lb-cta-line" />
-                  <div className="lb-cta-sep-text"><b>{lockedRows.length} vị trí khác</b> đang khóa</div>
+                  <div className="lb-cta-sep-text">{t('lb.lockedRoles', { count: lockedRows.length })}</div>
                   <div className="lb-cta-line" />
                 </div>
                 <button className="lb-cta-btn"
                   onClick={() => { setLbCompany(null); document.getElementById('submit')?.scrollIntoView({behavior:'smooth'}); }}>
-                  Xem thứ hạng của tôi →
+                  {t('lb.viewRank')}
                 </button>
-                <div className="lb-cta-sub">30 giây · ẩn danh · không cần đăng nhập</div>
+                <div className="lb-cta-sub">{t('lb.quickNote')}</div>
               </div>
 
             </div>
@@ -2433,7 +2469,7 @@ export default function Home({ initialCompanies = [] }) {
                         onMouseEnter={e => { e.target.style.borderColor = 'rgba(0,0,0,0.3)'; e.target.style.background = 'rgba(0,0,0,0.08)'; }}
                         onMouseLeave={e => { e.target.style.borderColor = 'rgba(0,0,0,0.12)'; e.target.style.background = 'rgba(0,0,0,0.05)'; }}
                       >
-                        Xem thêm (còn {filtered.length - visibleCount} công ty)
+                        {t('companies.showMore', { count: filtered.length - visibleCount })}
                       </button>
                     </div>
                   )}
@@ -2463,20 +2499,20 @@ export default function Home({ initialCompanies = [] }) {
         <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.75)',zIndex:1000,display:'flex',alignItems:'center',justifyContent:'center',padding:'20px'}}
           onClick={e => { if(e.target===e.currentTarget) setShowAuthModal(false); }}>
           <div style={{background:'#1a1a18',border:'1px solid rgba(255,255,255,0.1)',borderRadius:'20px',padding:'40px 36px',maxWidth:'420px',width:'100%',fontFamily:"'Barlow',sans-serif"}}>
-            <div style={{fontSize:'24px',fontWeight:900,color:'#fff',letterSpacing:'-0.5px',marginBottom:'8px'}}>Đăng nhập</div>
-            <div style={{fontSize:'13px',color:'rgba(255,255,255,0.4)',marginBottom:'28px',lineHeight:1.6}}>Đăng nhập để xem lịch sử lương và thông báo việc làm.</div>
+            <div style={{fontSize:'24px',fontWeight:900,color:'#fff',letterSpacing:'-0.5px',marginBottom:'8px'}}>{t('auth.title')}</div>
+            <div style={{fontSize:'13px',color:'rgba(255,255,255,0.4)',marginBottom:'28px',lineHeight:1.6}}>{t('auth.sub')}</div>
             <div style={{display:'flex',flexDirection:'column',gap:'10px'}}>
               <button onClick={async () => { setShowAuthModal(false); try { await supabaseClient.auth.signInWithOAuth({ provider:'linkedin_oidc', options:{ redirectTo: window.location.origin+'/auth/callback', scopes:'openid profile email' } }); } catch(e) { console.error(e); } }}
                 style={{width:'100%',background:'#0A66C2',color:'#fff',fontSize:'14px',fontWeight:700,padding:'14px',borderRadius:'10px',border:'none',cursor:'pointer',fontFamily:"'Barlow',sans-serif",display:'flex',alignItems:'center',justifyContent:'center',gap:'10px'}}>
-                <span style={{fontWeight:900,fontSize:'16px'}}>in</span> Tiếp tục với LinkedIn
+                <span style={{fontWeight:900,fontSize:'16px'}}>in</span> {t('auth.linkedin')}
               </button>
               <button onClick={async () => { setShowAuthModal(false); try { const { error } = await supabaseClient.auth.signInWithOAuth({ provider:'google', options:{ redirectTo: window.location.origin+'/auth/callback' } }); if (error) throw error; } catch(e) { console.error('Google OAuth error:', e); } }}
                 style={{width:'100%',background:'#fff',color:'#111',fontSize:'14px',fontWeight:700,padding:'14px',borderRadius:'10px',border:'none',cursor:'pointer',fontFamily:"'Barlow',sans-serif",display:'flex',alignItems:'center',justifyContent:'center',gap:'10px'}}>
-                <span style={{fontWeight:900,fontSize:'16px'}}>G</span> Tiếp tục với Google
+                <span style={{fontWeight:900,fontSize:'16px'}}>G</span> {t('auth.google')}
               </button>
               <button onClick={() => setShowAuthModal(false)}
                 style={{background:'none',border:'none',color:'rgba(255,255,255,0.3)',fontSize:'12px',cursor:'pointer',fontFamily:"'Barlow',sans-serif",marginTop:'4px',width:'100%',textAlign:'center'}}>
-                Để sau
+                {t('auth.later')}
               </button>
             </div>
           </div>

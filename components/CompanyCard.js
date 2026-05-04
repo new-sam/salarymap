@@ -1,6 +1,8 @@
 import { useState } from 'react';
+import { useT } from '../lib/i18n';
 
 export default function CompanyCard({ company, index, isUnlocked, onClick, onLockedClick }) {
+  const { t } = useT();
   const [logoError, setLogoError] = useState(false);
 
   const initials = company.company.slice(0, 2).toUpperCase();
@@ -29,14 +31,14 @@ export default function CompanyCard({ company, index, isUnlocked, onClick, onLoc
         }}>
           <span style={{ fontSize: '22px' }}>🔒</span>
           <span style={{ fontSize: '14px', fontWeight: 800, color: 'white' }}>{company.company}</span>
-          <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)' }}>{company.count} dữ liệu lương</span>
+          <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)' }}>{t('companies.salaryData', { count: company.count })}</span>
           <span
             onClick={(e) => { e.stopPropagation(); onLockedClick(); }}
             style={{
               marginTop: '8px', background: '#ff6000', color: 'black',
               fontSize: '12px', fontWeight: 800, padding: '9px 20px', borderRadius: '100px',
             }}
-          >Chia sẻ lương để xem →</span>
+          >{t('companies.shareSalary')}</span>
         </div>
       </div>
     );
@@ -60,13 +62,13 @@ export default function CompanyCard({ company, index, isUnlocked, onClick, onLoc
       <div className="card-bottom">
         <div className="card-name-row">
           <div className="card-name">{company.company}</div>
-          <div className="card-count">{company.count > 0 ? `${company.count} dữ liệu lương` : 'New'}</div>
+          <div className="card-count">{company.count > 0 ? t('companies.salaryData', { count: company.count }) : 'New'}</div>
         </div>
         <div className="card-divider" />
         {company.hasData ? (
           <div className="card-sal">{company.min}M – {company.max}M VND /mo</div>
         ) : (
-          <div className="card-sal" style={{ color: 'rgba(255,255,255,0.3)', fontStyle: 'italic', fontSize: '12px' }}>Đang thu thập...</div>
+          <div className="card-sal" style={{ color: 'rgba(255,255,255,0.3)', fontStyle: 'italic', fontSize: '12px' }}>{t('companies.collecting')}</div>
         )}
       </div>
     </div>

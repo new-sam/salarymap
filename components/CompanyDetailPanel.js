@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { useT } from '../lib/i18n'
 
 const DEFAULT_VISIBLE = 5
 const LOAD_MORE_COUNT = 20
@@ -8,6 +9,7 @@ export default function CompanyDetailPanel({
   userRole, userExperience, userSalary, userCompany, isSubmitted,
   cardIndex = 0,
 }) {
+  const { t } = useT()
   const [detail, setDetail] = useState(null)
   const [loading, setLoading] = useState(false)
   const [activeRole, setActiveRole] = useState('All')
@@ -181,7 +183,7 @@ export default function CompanyDetailPanel({
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ fontSize: 16, fontWeight: 700, color: '#fff', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{company}</div>
           <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.35)', marginTop: 1 }}>
-            {loading ? 'Đang tải...' : `${detail?.totalCount || 0} dữ liệu lương`}
+            {loading ? t('detail.loading') : t('companies.salaryData', { count: detail?.totalCount || 0 })}
           </div>
         </div>
         <div onClick={onClose} style={{
@@ -196,9 +198,9 @@ export default function CompanyDetailPanel({
       {detail && !isLocked && (
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8, marginTop: 14 }}>
           {[
-            { label: 'Dữ liệu lương', value: detail.totalCount },
-            { label: 'Trung vị', value: summaryData ? fmtShort(summaryData.median) : '–', accent: true },
-            { label: 'Đánh giá', value: avgRating ? `${avgRating}/5` : '–' },
+            { label: t('detail.salaryData'), value: detail.totalCount },
+            { label: t('detail.median'), value: summaryData ? fmtShort(summaryData.median) : '–', accent: true },
+            { label: t('detail.rating'), value: avgRating ? `${avgRating}/5` : '–' },
           ].map(s => (
             <div key={s.label} style={{
               background: 'rgba(255,255,255,0.06)', borderRadius: 8, padding: '10px 10px', textAlign: 'center',
@@ -238,15 +240,13 @@ export default function CompanyDetailPanel({
     if (!summaryData && !blurred) {
       return (
         <div style={{ marginBottom: 16 }}>
-          <div style={{ fontSize: 11, fontWeight: 700, color: '#333', marginBottom: 4 }}>Phân tích lương</div>
+          <div style={{ fontSize: 11, fontWeight: 700, color: '#333', marginBottom: 4 }}>{t('detail.salaryAnalysis')}</div>
           <div style={{
             background: '#f5f5f5', borderRadius: 12, padding: '20px 16px', textAlign: 'center',
           }}>
-            <div style={{ fontSize: 13, color: '#999', marginBottom: 4 }}>
-              Chưa có dữ liệu lương cho <strong style={{ color: '#555' }}>{activeRole}</strong> tại công ty này.
-            </div>
+            <div style={{ fontSize: 13, color: '#999', marginBottom: 4 }} dangerouslySetInnerHTML={{ __html: t('detail.noData', { role: activeRole }) }} />
             <div style={{ fontSize: 11, color: '#bbb' }}>
-              Thử chọn "All" hoặc vị trí khác ở trên.
+              {t('detail.tryAll')}
             </div>
           </div>
         </div>
@@ -255,25 +255,25 @@ export default function CompanyDetailPanel({
 
     const boxes = summaryData
       ? [
-          { label: 'Thấp nhất', value: fmtShort(summaryData.min) },
-          { label: 'Trung vị', value: fmtShort(summaryData.median), hl: true },
-          { label: 'Cao nhất', value: fmtShort(summaryData.max) },
+          { label: t('detail.lowest'), value: fmtShort(summaryData.min) },
+          { label: t('detail.median2'), value: fmtShort(summaryData.median), hl: true },
+          { label: t('detail.highest'), value: fmtShort(summaryData.max) },
         ]
       : [
-          { label: 'Thấp nhất', value: '–' },
-          { label: 'Trung vị', value: '–', hl: true },
-          { label: 'Cao nhất', value: '–' },
+          { label: t('detail.lowest'), value: '–' },
+          { label: t('detail.median2'), value: '–', hl: true },
+          { label: t('detail.highest'), value: '–' },
         ]
     return (
       <div style={blurred ? { filter: 'blur(6px)', pointerEvents: 'none', userSelect: 'none' } : {}}>
         {/* Section title */}
         <div style={{ fontSize: 11, fontWeight: 700, color: '#333', marginBottom: 4 }}>
-          Phân tích lương
+          {t('detail.salaryAnalysis')}
         </div>
         <div style={{ fontSize: 11, color: '#999', lineHeight: 1.5, marginBottom: 12 }}>
           {isSubmitted && userRole
-            ? `Mức lương ${activeRole === 'All' ? 'tất cả vị trí' : activeRole} tại ${company}, lọc theo kinh nghiệm của bạn (±1 năm).`
-            : `Khoảng lương cho ${activeRole === 'All' ? 'tất cả vị trí' : activeRole} tại ${company}, dựa trên dữ liệu ẩn danh.`}
+            ? t('detail.salaryRange', { role: activeRole === 'All' ? 'All' : activeRole, company })
+            : t('detail.salaryRangeAnon', { role: activeRole === 'All' ? 'All' : activeRole, company })}
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8, marginBottom: 6 }}>
           {boxes.map(s => (
@@ -289,7 +289,7 @@ export default function CompanyDetailPanel({
         </div>
         {summaryData && (
           <div style={{ fontSize: 10, color: '#bbb', textAlign: 'center', marginBottom: 4 }}>
-            Dựa trên {summaryData.count} dữ liệu lương · VND/tháng
+            {t('detail.basedOn', { count: summaryData.count })}
           </div>
         )}
       </div>
@@ -314,14 +314,14 @@ export default function CompanyDetailPanel({
     return (
       <div style={{ margin: '14px 0 18px' }}>
         <div style={{ fontSize: 11, fontWeight: 700, color: '#333', marginBottom: 4 }}>
-          Vị trí của bạn
+          {t('detail.yourPosition')}
         </div>
         <div style={{ fontSize: 11, color: '#999', lineHeight: 1.5, marginBottom: 10 }}>
           {youExceedsMax
-            ? `Lương của bạn (${fmtShort(userSalary)}) vượt khoảng lương công ty này (${fmtShort(summaryData.min)}–${fmtShort(summaryData.max)}).`
+            ? t('detail.exceedsRange', { salary: fmtShort(userSalary), min: fmtShort(summaryData.min), max: fmtShort(summaryData.max) })
             : youBelowMin
-            ? `Lương của bạn (${fmtShort(userSalary)}) thấp hơn khoảng lương công ty này (${fmtShort(summaryData.min)}–${fmtShort(summaryData.max)}).`
-            : 'Thanh hiển thị khoảng lương. Chấm cam = trung vị, chấm đen = lương của bạn.'}
+            ? t('detail.belowRange', { salary: fmtShort(userSalary), min: fmtShort(summaryData.min), max: fmtShort(summaryData.max) })
+            : t('detail.barExplain')}
         </div>
         {/* Track */}
         <div style={{ position: 'relative', height: 6, background: '#f0f0f0', borderRadius: 3 }}>
@@ -349,8 +349,8 @@ export default function CompanyDetailPanel({
         {/* Labels */}
         <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 8, fontSize: 9, color: '#aaa' }}>
           <span>{fmtShort(youBelowMin ? userSalary : summaryData.min)}</span>
-          <span style={{ color: '#ff6000', fontWeight: 600 }}>● trung vị {fmtShort(summaryData.median)}</span>
-          {extYouPos !== null && <span style={{ color: '#111', fontWeight: 600 }}>● bạn {fmtShort(userSalary)}</span>}
+          <span style={{ color: '#ff6000', fontWeight: 600 }}>{t('detail.medianLabel', { value: fmtShort(summaryData.median) })}</span>
+          {extYouPos !== null && <span style={{ color: '#111', fontWeight: 600 }}>{t('detail.youLabel', { value: fmtShort(userSalary) })}</span>}
           <span>{fmtShort(youExceedsMax ? userSalary : summaryData.max)}</span>
         </div>
       </div>
@@ -366,10 +366,10 @@ export default function CompanyDetailPanel({
           borderRadius: 12, padding: '14px 16px', marginBottom: 16,
         }}>
           <div style={{ fontSize: 12, fontWeight: 600, color: '#555', marginBottom: 4 }}>
-            Bạn đang làm việc ở đây — đây là khoảng lương của công ty bạn.
+            {t('detail.yourCompany')}
           </div>
           <div style={{ fontSize: 11, color: '#999' }}>
-            Lương của bạn: {fmtShort(userSalary)} · Trung vị công ty: {fmtShort(summaryData.median)}
+            {t('detail.yourSalaryVsMedian', { salary: fmtShort(userSalary), median: fmtShort(summaryData.median) })}
           </div>
         </div>
       )
@@ -383,13 +383,13 @@ export default function CompanyDetailPanel({
       }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
           <span style={{ fontSize: 13, fontWeight: 700, color: more ? '#16a34a' : '#dc2626' }}>
-            {more ? '+' : ''}{comparePct}% {more ? 'cao hơn ở đây' : 'thấp hơn ở đây'}
+            {more ? '+' : ''}{comparePct}% {more ? t('detail.higherHere') : t('detail.lowerHere')}
           </span>
         </div>
         <div style={{ fontSize: 11, color: '#888', lineHeight: 1.5 }}>
           {more
-            ? `Chuyên gia ở đây kiếm khoảng ${Math.abs(comparePct)}% hơn lương hiện tại của bạn (${fmtShort(userSalary)}). Cân nhắc công ty này nếu bạn muốn phát triển.`
-            : `Chuyên gia ở đây kiếm khoảng ${Math.abs(comparePct)}% ít hơn lương hiện tại của bạn (${fmtShort(userSalary)}). Bạn đang vượt khoảng lương của công ty này.`}
+            ? t('detail.higherDetail', { pct: Math.abs(comparePct), salary: fmtShort(userSalary) })
+            : t('detail.lowerDetail', { pct: Math.abs(comparePct), salary: fmtShort(userSalary) })}
         </div>
       </div>
     )
@@ -408,13 +408,13 @@ export default function CompanyDetailPanel({
           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
             <span style={{ fontSize: 13, fontWeight: 600, color: '#1a1a1a' }}>{row.role}</span>
             {isYou && <span style={{ fontSize: 9, fontWeight: 700, color: '#ff6000', background: 'rgba(255,68,0,0.08)', padding: '1px 6px', borderRadius: 3 }}>YOU</span>}
-            {!isYou && row.mostSimilar && isSubmitted && <span style={{ fontSize: 9, fontWeight: 700, color: '#22c55e', background: 'rgba(34,197,94,0.08)', padding: '1px 6px', borderRadius: 3 }}>tương tự</span>}
+            {!isYou && row.mostSimilar && isSubmitted && <span style={{ fontSize: 9, fontWeight: 700, color: '#22c55e', background: 'rgba(34,197,94,0.08)', padding: '1px 6px', borderRadius: 3 }}>{t('detail.similar')}</span>}
           </div>
           <div style={{ fontSize: 10, color: '#999', marginTop: 2 }}>{fmtExp(row.experience)}</div>
         </div>
         <div style={{ textAlign: 'right', flexShrink: 0 }}>
           <div style={{ fontSize: 15, fontWeight: 700, color: isYou ? '#ff6000' : '#1a1a1a' }}>{fmt(row.salary)}</div>
-          <div style={{ fontSize: 9, color: '#bbb', marginTop: 1 }}>mỗi tháng</div>
+          <div style={{ fontSize: 9, color: '#bbb', marginTop: 1 }}>{t('detail.perMonth')}</div>
         </div>
       </div>
     )
@@ -429,12 +429,12 @@ export default function CompanyDetailPanel({
     return (
       <div style={blurred ? { filter: 'blur(6px)', pointerEvents: 'none', userSelect: 'none' } : {}}>
         <div style={{ fontSize: 11, fontWeight: 700, color: '#333', marginBottom: 4 }}>
-          Dữ liệu lương cá nhân
+          {t('detail.individualSalary')}
         </div>
         <div style={{ fontSize: 11, color: '#999', lineHeight: 1.5, marginBottom: 10 }}>
           {isSubmitted
-            ? 'Dữ liệu lương thực từ các chuyên gia tại công ty này. Hàng xanh là những người có vị trí và kinh nghiệm tương tự bạn.'
-            : 'Dữ liệu lương thực được gửi ẩn danh bởi các chuyên gia tại công ty này.'}
+            ? t('detail.individualDesc')
+            : t('detail.individualDescAnon')}
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
           {rows.map((row, i) => renderFeedRow(row, i))}
@@ -444,7 +444,7 @@ export default function CompanyDetailPanel({
             width: '100%', padding: 10, marginTop: 8,
             background: '#f7f7f7', border: 'none', borderRadius: 10,
             fontSize: 12, color: '#888', cursor: 'pointer', fontFamily: 'inherit',
-          }}>Xem thêm {Math.min(remaining, LOAD_MORE_COUNT)} (còn {remaining})</button>
+          }}>{t('detail.showMore', { count: Math.min(remaining, LOAD_MORE_COUNT), remaining })}</button>
         )}
       </div>
     )
@@ -453,20 +453,20 @@ export default function CompanyDetailPanel({
   const renderRating = (blurred = false) => {
     const hasData = !!detail?.rating
     const items = [
-      { key: 'worklife', label: 'Cân bằng công việc-cuộc sống', desc: 'Linh hoạt, giờ làm, làm từ xa', icon: '⚖️', value: hasData ? detail.rating.worklife : 0 },
-      { key: 'salary',   label: 'Hài lòng về lương', desc: 'Công bằng lương so với thị trường', icon: '💰', value: hasData ? detail.rating.salary : 0 },
-      { key: 'growth',   label: 'Cơ hội phát triển', desc: 'Thăng tiến, học hỏi, mentorship', icon: '📈', value: hasData ? detail.rating.growth : 0 },
+      { key: 'worklife', label: t('detail.worklife'), desc: t('detail.worklifeDesc'), icon: '⚖️', value: hasData ? detail.rating.worklife : 0 },
+      { key: 'salary',   label: t('detail.salaryHappiness'), desc: t('detail.salaryHappinessDesc'), icon: '💰', value: hasData ? detail.rating.salary : 0 },
+      { key: 'growth',   label: t('detail.growth'), desc: t('detail.growthDesc'), icon: '📈', value: hasData ? detail.rating.growth : 0 },
     ]
     const overallAvg = hasData
       ? Math.round(((detail.rating.worklife + detail.rating.salary + detail.rating.growth) / 3) * 10) / 10
       : null
 
     const ratingLabel = (v) => {
-      if (v >= 4.5) return 'Xuất sắc'
-      if (v >= 3.5) return 'Tốt'
-      if (v >= 2.5) return 'Trung bình'
-      if (v >= 1.5) return 'Dưới trung bình'
-      return 'Kém'
+      if (v >= 4.5) return t('detail.ratingExcellent')
+      if (v >= 3.5) return t('detail.ratingGood')
+      if (v >= 2.5) return t('detail.ratingAverage')
+      if (v >= 1.5) return t('detail.ratingBelowAverage')
+      return t('detail.ratingPoor')
     }
 
     return (
@@ -476,12 +476,12 @@ export default function CompanyDetailPanel({
       }}>
         {/* Section header */}
         <div style={{ fontSize: 11, fontWeight: 700, color: '#333', marginBottom: 4 }}>
-          Mức hài lòng nhân viên
+          {t('detail.satisfaction')}
         </div>
         <div style={{ fontSize: 11, color: '#999', lineHeight: 1.5, marginBottom: 14 }}>
           {hasData
-            ? `Được đánh giá bởi ${detail.rating.count} kỹ sư đã gửi lương. Mỗi hạng mục được chấm điểm 1–5.`
-            : `Chưa có ai đánh giá công ty này. Sau khi gửi lương, bạn có thể là người đầu tiên đánh giá.`}
+            ? t('detail.ratedBy', { count: detail.rating.count })
+            : t('detail.noRatingYet')}
         </div>
 
         <div style={{ background: '#f7f7f7', borderRadius: 14, padding: '16px 18px' }}>
@@ -505,7 +505,7 @@ export default function CompanyDetailPanel({
                   {ratingLabel(overallAvg)}
                 </div>
                 <div style={{ fontSize: 11, color: '#999', marginTop: 1 }}>
-                  Điểm tổng hợp từ {detail.rating.count} đánh giá
+                  {t('detail.overallScore', { count: detail.rating.count })}
                 </div>
               </div>
             </div>
@@ -554,7 +554,7 @@ export default function CompanyDetailPanel({
               textAlign: 'center', padding: '4px 0 2px',
               fontSize: 11, fontWeight: 600, color: '#bbb',
             }}>
-              CHƯA CÓ ĐÁNH GIÁ
+              {t('detail.noRating')}
             </div>
           )}
         </div>
@@ -569,19 +569,18 @@ export default function CompanyDetailPanel({
     }}>
       <div style={{ fontSize: 28, marginBottom: 10 }}>🔒</div>
       <div style={{ fontSize: 17, fontWeight: 800, color: '#1a1a1a', marginBottom: 8 }}>
-        Lương ở {company} thực sự là bao nhiêu?
+        {t('detail.gateLock', { company })}
       </div>
       <div style={{ fontSize: 13, color: '#888', lineHeight: 1.7, marginBottom: 20 }}>
-        Chúng tôi giữ dữ liệu lương công bằng — chia sẻ lương để mở khóa dữ liệu của mọi người.<br />
-        Chỉ mất 30 giây và danh tính của bạn không bao giờ bị tiết lộ.
+        {t('detail.gateDesc')}
       </div>
       <button onClick={() => { onClose(); document.getElementById('submit')?.scrollIntoView({ behavior: 'smooth' }) }} style={{
         width: '100%', padding: '14px 0',
         background: '#ff6000', border: 'none', borderRadius: 12,
         fontSize: 14, fontWeight: 700, color: '#fff', cursor: 'pointer', fontFamily: 'inherit',
-      }}>Chia sẻ lương để xem</button>
+      }}>{t('detail.gateBtn')}</button>
       <div style={{ fontSize: 10, color: '#bbb', marginTop: 10 }}>
-        100% ẩn danh · Không cần đăng nhập
+        {t('detail.gateAnon')}
       </div>
     </div>
   )
@@ -596,7 +595,7 @@ export default function CompanyDetailPanel({
         padding: '10px 24px',
         background: '#111', border: 'none', borderRadius: 10,
         fontSize: 12, fontWeight: 600, color: '#fff', cursor: 'pointer', fontFamily: 'inherit',
-      }}>Gửi lương để xem thứ hạng của bạn →</button>
+      }}>{t('detail.submitToSee')}</button>
     </div>
   )
 
@@ -626,7 +625,7 @@ export default function CompanyDetailPanel({
             <div style={{ padding: '0 20px 40px' }}>
 
               {loading && (
-                <div style={{ textAlign: 'center', padding: '60px 0', fontSize: 13, color: '#ccc' }}>Đang tải...</div>
+                <div style={{ textAlign: 'center', padding: '60px 0', fontSize: 13, color: '#ccc' }}>{t('detail.loading')}</div>
               )}
 
               {/* ── STATE A: Locked ── */}
@@ -665,7 +664,7 @@ export default function CompanyDetailPanel({
                     borderRadius: 10, textAlign: 'center', textDecoration: 'none',
                     fontSize: 13, fontWeight: 700, color: '#ff6000',
                   }}>
-                    Xem vị trí đang tuyển tại {company} →
+                    {t('detail.viewJobs', { company })}
                   </a>
                 </>
               )}
@@ -677,7 +676,7 @@ export default function CompanyDetailPanel({
                     background: '#111', borderRadius: 10, padding: '10px 14px',
                     textAlign: 'center', marginTop: 14, marginBottom: 14,
                     fontSize: 11, fontWeight: 700, color: '#fff',
-                  }}>Đây là công ty hiện tại của bạn</div>
+                  }}>{t('detail.isYourCompany')}</div>
                   {renderRoleTabs()}
                   {renderSummaryBoxes(false)}
                   {renderCompareBadge()}

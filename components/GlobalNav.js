@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { supabase } from '../lib/supabaseClient'
+import { useT } from '../lib/i18n'
 
 export default function GlobalNav({ activePage }) {
+  const { t } = useT()
   const [isLoggedIn, setIsLoggedIn] = useState(false)
   const [user, setUser] = useState(null)
   const [showMenu, setShowMenu] = useState(false)
@@ -86,10 +88,10 @@ export default function GlobalNav({ activePage }) {
           </Link>
         </div>
         <div className="gnav-r">
-          <Link href="/" className={`gnav-link${activePage === 'home' ? ' on' : ''}`}>Tôi có bị trả thấp?</Link>
+          <Link href="/" className={`gnav-link${activePage === 'home' ? ' on' : ''}`}>{t('nav.amIUnderpaid')}</Link>
           <Link href="/jobs" className={`gnav-link gnav-jobs-cta${activePage === 'jobs' ? ' on' : ''}`}>
-            💰 Việc làm <span className="gnav-jobs-badge">↑</span>
-            <span className="gnav-jobs-sub">Thu nhập cao hơn</span>
+            💰 {t('nav.jobs')} <span className="gnav-jobs-badge">↑</span>
+            <span className="gnav-jobs-sub">{t('nav.jobsSub')}</span>
           </Link>
 
           {!ready ? null : !isLoggedIn ? (
@@ -98,9 +100,9 @@ export default function GlobalNav({ activePage }) {
                 if (typeof window !== 'undefined') localStorage.setItem('fyi_login_return', window.location.pathname)
                 supabase.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: window.location.origin + '/auth/callback' } })
               }}>
-                Đăng nhập
+                {t('nav.login')}
               </button>
-              <Link href="/#submit" className="gnav-submit">Gửi lương</Link>
+              <Link href="/#submit" className="gnav-submit">{t('nav.submitSalary')}</Link>
             </>
           ) : (
             <div className="gnav-user" onClick={() => setShowMenu(v => !v)}>
@@ -119,7 +121,7 @@ export default function GlobalNav({ activePage }) {
               {showMenu && (
                 <div className="gnav-menu" onClick={e => e.stopPropagation()}>
                   <div className="gnav-menu-email">{user?.email}</div>
-                  <a href="/profile" className="gnav-menu-item">Hồ sơ của tôi</a>
+                  <a href="/profile" className="gnav-menu-item">{t('nav.myProfile')}</a>
                   {isAdmin && (
                     <a href="/admin/jobs" className="gnav-menu-item gnav-menu-admin">Admin Dashboard</a>
                   )}
@@ -127,7 +129,7 @@ export default function GlobalNav({ activePage }) {
                     await supabase.auth.signOut()
                     setIsLoggedIn(false); setUser(null); setShowMenu(false)
                     window.location.reload()
-                  }}>Đăng xuất</button>
+                  }}>{t('nav.logout')}</button>
                 </div>
               )}
             </div>
