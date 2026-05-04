@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/router'
 import NextStepSheet from './NextStepSheet'
 import { useT } from '../lib/i18n'
+import { supabase } from '../lib/supabaseClient'
 
 export default function ResultSection({ salary, role, experience, company, isLoggedIn }) {
   const { t } = useT()
@@ -178,7 +179,16 @@ export default function ResultSection({ salary, role, experience, company, isLog
 
       {/* Jobs nudge */}
       {state !== 'high' && jobCount > 0 && (
-        <div onClick={() => router.push('/jobs')} style={{ marginTop:'16px', background:'rgba(255,68,0,0.06)',
+        <div onClick={async () => {
+          if (typeof gtag === 'function') gtag('event', 'cta_click_view_jobs', { source: 'result_nudge' })
+          if (typeof fbq === 'function') fbq('trackCustom', 'CTAClickViewJobs', { source: 'result_nudge' })
+          if (isLoggedIn) {
+            router.push('/jobs')
+          } else {
+            localStorage.setItem('fyi_login_return', '/jobs')
+            supabase.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: window.location.origin + '/auth/callback' } })
+          }
+        }} style={{ marginTop:'16px', background:'rgba(255,68,0,0.06)',
           border:'1px solid rgba(255,68,0,0.2)', borderRadius:'14px', padding:'16px', cursor:'pointer',
           display:'flex', alignItems:'center', justifyContent:'space-between', gap:'12px' }}>
           <div>

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/router'
 import { useT } from '../lib/i18n'
+import { supabase } from '../lib/supabaseClient'
 
 export default function NextStepSheet({ role, experience, percentile, topCompanies, onDismiss }) {
   const [visible, setVisible] = useState(false)
@@ -164,7 +165,17 @@ export default function NextStepSheet({ role, experience, percentile, topCompani
                     <div className="ns-right-fade" />
                   </div>
                 )}
-                <button className="ns-unlock" onClick={() => router.push('/jobs')}>{t('nextstep.viewAllJobs')}</button>
+                <button className="ns-unlock" onClick={async () => {
+                  if (typeof gtag === 'function') gtag('event', 'cta_click_view_jobs', { intent: selected, source: 'nextstep_sheet' })
+                  if (typeof fbq === 'function') fbq('trackCustom', 'CTAClickViewJobs', { intent: selected, source: 'nextstep_sheet' })
+                  const { data: { session } } = await supabase.auth.getSession()
+                  if (session) {
+                    router.push('/jobs')
+                  } else {
+                    localStorage.setItem('fyi_login_return', '/jobs')
+                    supabase.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: window.location.origin + '/auth/callback' } })
+                  }
+                }}>{t('nextstep.viewAllJobs')}</button>
                 <div className="ns-privacy">{t('nextstep.noSpam')}</div>
               </div>
             )}
