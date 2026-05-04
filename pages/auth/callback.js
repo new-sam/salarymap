@@ -4,6 +4,7 @@ import { supabase } from '../../lib/supabaseClient'
 
 // Save profile using the regular client (anon key is fine for own user via RLS)
 async function saveProfile(user) {
+  if (process.env.NODE_ENV === 'development') return;
   try {
     const utm_source = typeof sessionStorage !== 'undefined' ? sessionStorage.getItem('utm_source') : null;
     const utm_medium = typeof sessionStorage !== 'undefined' ? sessionStorage.getItem('utm_medium') : null;

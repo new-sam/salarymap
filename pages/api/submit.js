@@ -35,6 +35,11 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: 'Please enter a real company name.' });
   }
 
+  // Skip DB writes in development (localhost) to keep production data clean
+  if (process.env.NODE_ENV === 'development') {
+    return res.status(201).json({ success: true, data: { id: 'dev-mock' } });
+  }
+
   // Insert into submissions table — link to user if logged in
   const record = { role, experience, salary: salNum, company: company?.trim() || null, source };
   if (user_id) record.user_id = user_id;
