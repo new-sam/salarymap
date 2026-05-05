@@ -33,11 +33,12 @@ export default function NextStepSheet({ role, experience, percentile, topCompani
       localStorage.setItem('fyi_intent', intent)
       // Save intent to DB
       const sid = localStorage.getItem('fyi_submission_id')
+      const tok = localStorage.getItem('fyi_claim_token')
       if (sid) {
         fetch('/api/intent', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ submissionId: sid, intent }),
+          body: JSON.stringify({ submissionId: sid, claimToken: tok, intent }),
         }).catch(() => {})
       }
     }

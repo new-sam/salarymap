@@ -1315,11 +1315,13 @@ function SubmitSection({
     if (!submissionId || (!ratingWorklife && !ratingSalary && !ratingGrowth)) return;
     setRatingSubmitting(true);
     try {
+      const claimToken = typeof window !== 'undefined' ? localStorage.getItem('fyi_claim_token') : null;
       await fetch('/api/submit-rating', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           submissionId,
+          claimToken,
           rating_worklife: ratingWorklife || null,
           rating_salary: ratingSalary || null,
           rating_growth: ratingGrowth || null,
@@ -1896,13 +1898,15 @@ export default function Home({ initialCompanies = [] }) {
           saveUserProfile(session.user);
           // Link prior anonymous submission to this user
           const pendingSid = localStorage.getItem('fyi_submission_id');
+          const pendingToken = localStorage.getItem('fyi_claim_token');
           if (pendingSid) {
             fetch('/api/link-submission', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ submission_id: pendingSid, user_id: session.user.id, email: session.user.email }),
+              body: JSON.stringify({ submission_id: pendingSid, claim_token: pendingToken, user_id: session.user.id, email: session.user.email }),
             }).catch(() => {});
             localStorage.removeItem('fyi_submission_id');
+            localStorage.removeItem('fyi_claim_token');
           }
           // Show contact sheet if user clicked "Yes — connect me with headhunter"
           const intent = localStorage.getItem('fyi_intent');
@@ -2275,6 +2279,9 @@ export default function Home({ initialCompanies = [] }) {
             if (submitData?.data?.id) {
               setSubmissionId(submitData.data.id);
               localStorage.setItem('fyi_submission_id', submitData.data.id);
+              if (submitData.data.claim_token) {
+                localStorage.setItem('fyi_claim_token', submitData.data.claim_token);
+              }
             }
           } catch(e) {}
           window.onUnlockSuccess?.();

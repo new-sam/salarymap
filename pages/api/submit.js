@@ -1,4 +1,5 @@
 import supabase from '../../lib/supabase';
+import { generateClaimToken, hashClaimToken } from '../../lib/verifyClaim';
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -41,7 +42,15 @@ export default async function handler(req, res) {
   }
 
   // Insert into submissions table — link to user if logged in
-  const record = { role, experience, salary: salNum, company: company?.trim() || null, source };
+  const claimToken = generateClaimToken();
+  const record = {
+    role,
+    experience,
+    salary: salNum,
+    company: company?.trim() || null,
+    source,
+    claim_token_hash: hashClaimToken(claimToken),
+  };
   if (user_id) record.user_id = user_id;
   if (email && email.trim()) record.email = email.trim();
   if (utm_source) record.utm_source = utm_source;
@@ -68,5 +77,8 @@ export default async function handler(req, res) {
       );
   }
 
-  return res.status(201).json({ success: true, data });
+  return res.status(201).json({
+    success: true,
+    data: { ...data, claim_token: claimToken },
+  });
 }
