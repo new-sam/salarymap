@@ -11,26 +11,9 @@ const DEFAULT_IMAGES = [
   'https://images.unsplash.com/photo-1524758631624-e2822e304c36?w=600&h=400&fit=crop',
   'https://images.unsplash.com/photo-1497215842964-222b430dc094?w=600&h=400&fit=crop',
 ]
-const ROLE_FILTERS = [
-  { key: 'all', label: 'All' },
-  { key: 'Frontend', label: 'Frontend' },
-  { key: 'Backend', label: 'Backend' },
-  { key: 'Fullstack', label: 'Full-Stack' },
-  { key: 'Mobile', label: 'Mobile' },
-  { key: 'Design', label: 'Design' },
-  { key: 'PM', label: 'PM' },
-]
-const PERK_FILTER_KEYS = [
-  { key: 'pays_more', tKey: 'jobs.paysMore' },
-  { key: 'remote', label: 'Remote' },
-  { key: 'korea', tKey: 'jobs.koreanCompany' },
-  { key: 'vietnam', tKey: 'jobs.vnCompany' },
-  { key: 'global', tKey: 'jobs.global' },
-]
-
-const TECH_FILTERS = [
-  'React', 'Node.js', 'Python', 'Java', 'TypeScript', 'Go', 'PostgreSQL', 'AWS',
-]
+const ROLE_OPTIONS = ['Backend','Frontend','Fullstack','Data','DevOps','Mobile','PM','Design','QA']
+const TYPE_OPTIONS = ['remote','onsite','hybrid']
+const TECH_OPTIONS = ['Java','Python','AWS','React','Go','TypeScript','JavaScript','Node.js','Kotlin','Docker','Spring Framework','Rust','Swift','Flutter','Kubernetes']
 
 export default function JobsPage() {
   const router = useRouter()
@@ -39,9 +22,13 @@ export default function JobsPage() {
 
   const [jobs, setJobs] = useState([])
   const [jobsLoaded, setJobsLoaded] = useState(false)
-  const [roleFilter, setRoleFilter] = useState('all')
-  const [perkFilter, setPerkFilter] = useState(null)
-  const [techFilter, setTechFilter] = useState(null)
+  const [searchQuery, setSearchQuery] = useState('')
+  const [roleFilter, setRoleFilter] = useState('')
+  const [typeFilter, setTypeFilter] = useState('')
+  const [expMin, setExpMin] = useState('')
+  const [expMax, setExpMax] = useState('')
+  const [techFilter, setTechFilter] = useState('')
+  const [openDropdown, setOpenDropdown] = useState(null)
   const [isSubmitted, setIsSubmitted] = useState(false)
   const [isLoggedIn, setIsLoggedIn] = useState(false)
   const [authLoading, setAuthLoading] = useState(true)
@@ -52,6 +39,9 @@ export default function JobsPage() {
   const [userExperience, setUserExperience] = useState(null)
   const [userCompany, setUserCompany] = useState(null)
 
+  const [sortBy, setSortBy] = useState('spread')
+  const [hideExpired, setHideExpired] = useState(true)
+
   // Detail & Apply panel
   const [detailJob, setDetailJob] = useState(null)
   const [carouselIdx, setCarouselIdx] = useState(0)
@@ -60,6 +50,7 @@ export default function JobsPage() {
   const [resumeFile, setResumeFile] = useState(null)
   const [applying, setApplying] = useState(false)
   const [applied, setApplied] = useState(false)
+  const [detailApplyMode, setDetailApplyMode] = useState(false)
   const [showUserMenu, setShowUserMenu] = useState(false)
   const [isAdminUser, setIsAdminUser] = useState(false)
   const [bookmarks, setBookmarks] = useState([])
@@ -117,6 +108,14 @@ export default function JobsPage() {
     load()
   }, [])
 
+  // 드롭다운 바깥 클릭 시 닫기
+  useEffect(() => {
+    if (!openDropdown) return
+    const handle = () => setOpenDropdown(null)
+    document.addEventListener('click', handle)
+    return () => document.removeEventListener('click', handle)
+  }, [openDropdown])
+
   const typeLabel = (type) => {
     const normalized = {
       remote: 'jobs.typeRemote', onsite: 'jobs.typeOnsite', hybrid: 'jobs.typeHybrid',
@@ -132,37 +131,71 @@ export default function JobsPage() {
     return Math.round(((job.salary_min - userSalary) / userSalary) * 100)
   }
 
+  const isProfileMatch = (job) => {
+    if (!userSalary) return false
+    const roleMatch = userRole && job.role === userRole
+    const salaryMatch = job.salary_min && job.salary_min > userSalary
+    const expMatch = userExperience && job.experience_min != null && job.experience_max != null &&
+      Number(String(userExperience).replace(/[^0-9]/g, '') || 0) >= job.experience_min &&
+      Number(String(userExperience).replace(/[^0-9]/g, '') || 0) <= job.experience_max
+    return roleMatch || salaryMatch || expMatch
+  }
+
   const companyQuery = router.query.company ? String(router.query.company).toLowerCase() : null
 
   const filteredJobs = (() => {
+    const q = searchQuery.toLowerCase().trim()
     const filtered = jobs.filter(job => {
       if (companyQuery && job.company?.toLowerCase() !== companyQuery) return false
-      if (roleFilter !== 'all' && job.role !== roleFilter) return false
+      if (q && !job.title?.toLowerCase().includes(q) && !job.company?.toLowerCase().includes(q)) return false
+      if (hideExpired && job.deadline && new Date(job.deadline) < new Date()) return false
+      if (roleFilter && job.role !== roleFilter) return false
+      if (typeFilter && job.type !== typeFilter) return false
       if (techFilter && !(job.tech_stack || []).some(t => t.toLowerCase().includes(techFilter.toLowerCase()))) return false
-      if (perkFilter === 'pays_more') return userSalary ? job.salary_min > userSalary : true
-      if (perkFilter === 'remote') return job.type === 'remote' || job.type === '원격 근무' || job.type === '원격근무' || job.type === '재택'
-      if (perkFilter === 'korea' || perkFilter === 'vietnam' || perkFilter === 'global') return job.country === perkFilter
+      if (expMin !== '' || expMax !== '') {
+        const jobMin = job.experience_min || 0
+        const jobMax = job.experience_max || 0
+        if (!jobMin && !jobMax) return true // 경력 무관은 항상 포함
+        const eMin = expMin !== '' ? Number(expMin) : 0
+        const eMax = expMax !== '' ? Number(expMax) : 99
+        if (jobMax < eMin || jobMin > eMax) return false
+      }
       return true
     })
-    // 같은 회사가 연속으로 몰리지 않게 분산 배치
-    const byCompany = {}
-    filtered.forEach(job => {
-      const key = job.company || ''
-      if (!byCompany[key]) byCompany[key] = []
-      byCompany[key].push(job)
-    })
-    const queues = Object.values(byCompany).sort((a, b) => b.length - a.length)
-    const result = []
-    while (queues.some(q => q.length > 0)) {
-      for (const q of queues) {
-        if (q.length > 0) result.push(q.shift())
-      }
+    // 정렬
+    if (sortBy === 'deadline') {
+      filtered.sort((a, b) => {
+        if (!a.deadline && !b.deadline) return 0
+        if (!a.deadline) return 1
+        if (!b.deadline) return -1
+        return new Date(a.deadline) - new Date(b.deadline)
+      })
+    } else if (sortBy === 'latest') {
+      filtered.sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0))
     }
-    return result
+    // sortBy === 'spread' → 같은 회사 분산 배치
+    if (sortBy === 'spread') {
+      const byCompany = {}
+      filtered.forEach(job => {
+        const key = job.company || ''
+        if (!byCompany[key]) byCompany[key] = []
+        byCompany[key].push(job)
+      })
+      const queues = Object.values(byCompany).sort((a, b) => b.length - a.length)
+      const result = []
+      while (queues.some(q => q.length > 0)) {
+        for (const q of queues) {
+          if (q.length > 0) result.push(q.shift())
+        }
+      }
+      return result
+    }
+    return filtered
   })()
 
-  const handleApply = async () => {
-    if (!selectedJob || !session) return
+  const handleApply = async (job) => {
+    const target = job || selectedJob
+    if (!target || !session) return
     setApplying(true)
     let resumeUrl = null
     if (resumeFile) {
@@ -185,9 +218,9 @@ export default function JobsPage() {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        jobId: selectedJob.id,
-        jobTitle: selectedJob.title,
-        jobCompany: selectedJob.company,
+        jobId: target.id,
+        jobTitle: target.title,
+        jobCompany: target.company,
         userId: session.user.id,
         resumeUrl,
         applicantRole: userRole,
@@ -207,9 +240,9 @@ export default function JobsPage() {
     setApplying(false)
     setApplied(true)
     // GA4 event
-    if (typeof gtag === 'function') gtag('event', 'job_apply', { event_category: 'engagement', event_label: selectedJob.title, company: selectedJob.company })
+    if (typeof gtag === 'function') gtag('event', 'job_apply', { event_category: 'engagement', event_label: target.title, company: target.company })
     // Meta Pixel event
-    if (typeof fbq === 'function') fbq('track', 'Lead', { content_name: 'job_apply', content_category: selectedJob.title })
+    if (typeof fbq === 'function') fbq('track', 'Lead', { content_name: 'job_apply', content_category: target.title })
   }
 
   const toggleBookmark = (jobId) => {
@@ -273,22 +306,73 @@ export default function JobsPage() {
         .jw-h1 { font-size: 24px; font-weight: 800; color: #111; margin-bottom: 6px; letter-spacing: -0.3px; }
         .jw-sub { font-size: 14px; color: #aaa; margin-bottom: 20px; }
 
-        .jbm { display: inline-flex; align-items: center; gap: 7px; background: #fff7f5; border: 1px solid #ffd6c8; border-radius: 20px; padding: 6px 14px; font-size: 13px; color: #555; margin-bottom: 20px; flex-wrap: wrap; }
-        .jbm-dot { width: 7px; height: 7px; border-radius: 50%; background: #ff4400; flex-shrink: 0; }
+        .jbm { display: flex; align-items: center; gap: 12px; background: linear-gradient(135deg, #fff9f7 0%, #fff 100%); border: 1px solid #ffe8e0; border-radius: 12px; padding: 12px 16px; margin-bottom: 24px; }
+        .jbm-icon { width: 32px; height: 32px; border-radius: 8px; background: #ff4400; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+        .jbm-icon svg { width: 16px; height: 16px; }
+        .jbm-body { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+        .jbm-label { font-size: 11px; font-weight: 600; color: #ff4400; letter-spacing: 0.02em; }
+        .jbm-tags { display: flex; flex-wrap: wrap; gap: 6px; }
+        .jbm-tag { font-size: 12px; color: #444; background: #fff; border: 1px solid #eee; border-radius: 4px; padding: 2px 8px; font-weight: 500; white-space: nowrap; }
 
-        .jf { display: flex; gap: 8px; margin-bottom: 24px; flex-wrap: wrap; }
-        .jf-pill { font-size: 13px; font-weight: 600; color: #666; background: #fff; border: 1px solid #e0e0e0; padding: 7px 16px; border-radius: 20px; cursor: pointer; transition: all .15s; }
-        .jf-pill:hover { border-color: #bbb; color: #333; }
-        .jf-pill.on { background: #111; color: #fff; border-color: #111; }
-        .jf-pill.outline { background: transparent; border: 1px solid #e0e0e0; font-weight: 500; }
-        .jf-pill.outline.on { background: #fff7f5; color: #ff4400; border-color: #ff4400; font-weight: 600; }
+        .jf-search { position: relative; margin-bottom: 16px; }
+        .jf-search-icon { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); pointer-events: none; }
+        .jf-search-input { width: 100%; padding: 11px 36px 11px 40px; font-size: 14px; border: 1px solid #e0e0e0; border-radius: 10px; background: #fff; outline: none; transition: border-color .15s; font-family: inherit; }
+        .jf-search-input:focus { border-color: #ff4400; }
+        .jf-search-input::placeholder { color: #bbb; }
+        .jf-search-clear { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); background: none; border: none; font-size: 18px; color: #aaa; cursor: pointer; line-height: 1; }
 
-        .jf-count { font-size: 15px; font-weight: 700; color: #111; margin-bottom: 16px; }
+        .jf { display: flex; gap: 8px; margin-bottom: 20px; flex-wrap: wrap; align-items: center; }
+        .jf-dd { position: relative; }
+        .jf-dd-btn { font-size: 13px; font-weight: 500; color: #555; background: #fff; border: 1px solid #e0e0e0; padding: 8px 14px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; gap: 6px; transition: all .15s; white-space: nowrap; font-family: inherit; }
+        .jf-dd-btn:hover { border-color: #bbb; }
+        .jf-dd-btn.on { background: #111; color: #fff; border-color: #111; font-weight: 600; }
+        .jf-dd-arrow { font-size: 10px; opacity: 0.5; }
+        .jf-dd-menu { position: absolute; top: calc(100% + 4px); left: 0; background: #fff; border: 1px solid #eee; border-radius: 10px; padding: 4px; min-width: 160px; z-index: 20; box-shadow: 0 8px 24px rgba(0,0,0,0.1); }
+        .jf-dd-menu-scroll { max-height: 240px; overflow-y: auto; }
+        .jf-dd-item { display: block; width: 100%; padding: 9px 12px; border: none; background: none; font-size: 13px; color: #333; cursor: pointer; text-align: left; border-radius: 6px; transition: background .1s; font-family: inherit; white-space: nowrap; }
+        .jf-dd-item:hover { background: #f5f5f5; }
+        .jf-dd-item.on { color: #ff4400; font-weight: 600; }
+        .jf-reset { font-size: 13px; color: #aaa; background: none; border: none; cursor: pointer; padding: 8px 4px; font-family: inherit; text-decoration: underline; white-space: nowrap; }
+        .jf-reset:hover { color: #666; }
+        .jf-exp-panel { position: absolute; top: calc(100% + 4px); left: 0; background: #fff; border: 1px solid #eee; border-radius: 12px; padding: 20px; min-width: 280px; z-index: 20; box-shadow: 0 8px 24px rgba(0,0,0,0.1); }
+        .jf-exp-title { font-size: 14px; font-weight: 700; color: #111; margin-bottom: 16px; }
+        .jf-exp-display { font-size: 18px; font-weight: 700; color: #111; text-align: center; margin-bottom: 20px; }
+        .jf-exp-slider { position: relative; height: 32px; margin-bottom: 20px; }
+        .jf-exp-track { position: absolute; top: 50%; left: 0; right: 0; height: 4px; background: #e8e8e8; border-radius: 2px; transform: translateY(-50%); }
+        .jf-exp-fill { position: absolute; top: 0; bottom: 0; background: #ff4400; border-radius: 2px; }
+        .jf-exp-range { position: absolute; top: 0; left: 0; width: 100%; height: 100%; -webkit-appearance: none; appearance: none; background: transparent; pointer-events: none; margin: 0; }
+        .jf-exp-range::-webkit-slider-thumb { -webkit-appearance: none; width: 20px; height: 20px; border-radius: 50%; background: #ff4400; border: 3px solid #fff; box-shadow: 0 1px 4px rgba(0,0,0,0.2); cursor: pointer; pointer-events: auto; }
+        .jf-exp-range::-moz-range-thumb { width: 20px; height: 20px; border-radius: 50%; background: #ff4400; border: 3px solid #fff; box-shadow: 0 1px 4px rgba(0,0,0,0.2); cursor: pointer; pointer-events: auto; }
+        .jf-exp-footer { display: flex; justify-content: space-between; align-items: center; }
+        .jf-exp-reset { font-size: 13px; color: #aaa; background: none; border: none; cursor: pointer; font-family: inherit; }
+        .jf-exp-reset:hover { color: #666; }
+        .jf-exp-apply { font-size: 13px; font-weight: 700; color: #fff; background: #ff4400; border: none; padding: 8px 20px; border-radius: 6px; cursor: pointer; font-family: inherit; }
+        .jf-exp-apply:hover { background: #e63d00; }
+
+        .jf-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 8px; }
+        .jf-bar-l { display: flex; align-items: center; gap: 16px; }
+        .jf-check { display: flex; align-items: center; gap: 5px; font-size: 13px; color: #888; cursor: pointer; user-select: none; }
+        .jf-check input { accent-color: #ff4400; cursor: pointer; margin: 0; }
+        .jf-count { font-size: 16px; font-weight: 800; color: #111; }
+        .jf-sort { display: flex; background: #f5f5f5; border-radius: 8px; overflow: hidden; }
+        .jf-sort-btn { font-size: 13px; font-weight: 500; color: #888; background: none; border: none; padding: 7px 14px; cursor: pointer; font-family: inherit; transition: all .15s; }
+        .jf-sort-btn.on { background: #fff; color: #111; font-weight: 700; box-shadow: 0 1px 3px rgba(0,0,0,0.08); border-radius: 6px; }
+
+        /* Hot jobs */
+        .jh { margin-bottom: 32px; }
+        .jh-title { font-size: 16px; font-weight: 800; color: #111; margin-bottom: 14px; }
+        .jh-app { display: inline-flex; align-items: center; gap: 5px; font-size: 11px; color: #ff4400; font-weight: 700; margin-right: 6px; overflow: visible; }
+        .jh-pulse { width: 6px; height: 6px; border-radius: 50%; background: #ff4400; position: relative; flex-shrink: 0; margin: 4px; }
+        .jh-pulse::after { content: ''; position: absolute; inset: -3px; border-radius: 50%; background: rgba(255,68,0,0.35); animation: jh-ping 1.5s cubic-bezier(0,0,0.2,1) infinite; }
+        @keyframes jh-ping { 0% { transform: scale(1); opacity: 1; } 75%,100% { transform: scale(2.2); opacity: 0; } }
+        .jh-open { font-size: 11px; color: #38a169; font-weight: 600; }
+        .jh-divider { height: 1px; background: #eee; margin-top: 32px; }
 
         .jg { display: grid; grid-template-columns: repeat(4, 1fr); gap: 24px; align-items: stretch; }
 
         /* Card */
         .jc { cursor: pointer; display: flex; flex-direction: column; }
+        .jc-match { position: absolute; top: 10px; left: 10px; background: #ff4400; color: #fff; font-size: 11px; font-weight: 700; padding: 4px 10px; border-radius: 4px; z-index: 2; }
         .jc-img { border-radius: 8px; overflow: hidden; position: relative; padding-top: 62%; margin-bottom: 11px; background: #f0f0f0; flex-shrink: 0; }
         .jc-img-in { position: absolute; inset: 0; transition: transform .25s ease; background-color: #f0f0f0; background-size: cover; background-position: center; background-repeat: no-repeat; }
         .jc:hover .jc-img-in { transform: scale(1.04); }
@@ -301,7 +385,7 @@ export default function JobsPage() {
         .jc-co { font-size: 13px; color: #888; margin-bottom: 4px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         .jc-tags { display: flex; gap: 4px; flex-wrap: nowrap; overflow: hidden; margin-bottom: 4px; height: 22px; }
         .jc-bottom { margin-top: auto; }
-        .jc-m { font-size: 12px; color: #bbb; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .jc-m { font-size: 12px; color: #bbb; white-space: nowrap; overflow: visible; text-overflow: ellipsis; }
         .jc-m b { color: #ff4400; font-weight: 700; }
         .jc-tag { font-size: 11px; font-weight: 500; color: #555; background: #f0f0f0; padding: 2px 7px; border-radius: 4px; }
         .jc-tag-more { color: #aaa; }
@@ -378,6 +462,9 @@ export default function JobsPage() {
         .jd-apply-float { position: sticky; bottom: 0; background: #fff; padding: 16px 32px; border-top: 1px solid #f0f0f0; z-index: 2; }
         .jd-apply-btn { width: 100%; padding: 14px; background: #ff4400; color: #fff; border: none; border-radius: 8px; font-size: 15px; font-weight: 700; cursor: pointer; transition: background .15s; }
         .jd-apply-btn:hover { background: #e63d00; }
+        .jd-apply-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        .jd-apply-inline { padding: 20px 32px 24px; border-top: 1px solid #f0f0f0; }
+        .jd-apply-inline-h { font-size: 16px; font-weight: 800; color: #111; margin-bottom: 14px; }
         .jd-login-box { background: #fff7f5; border: 1px solid #ffd6c8; border-radius: 10px; padding: 16px 20px; text-align: center; margin-top: 8px; }
         .jd-login-text { font-size: 13px; color: #888; margin-bottom: 10px; }
         .jd-login-btn { background: #ff4400; color: #fff; border: none; padding: 10px 24px; border-radius: 6px; font-size: 13px; font-weight: 700; cursor: pointer; }
@@ -398,7 +485,12 @@ export default function JobsPage() {
           .jw { padding: 28px 16px 60px; }
           .jw-h1 { font-size: 20px; }
           .jg { grid-template-columns: repeat(2, 1fr); gap: 20px; }
-          .jbm { font-size: 12px; padding: 5px 12px; }
+          .jbm { padding: 10px 12px; gap: 10px; }
+          .jbm-icon { width: 28px; height: 28px; border-radius: 6px; }
+          .jbm-icon svg { width: 14px; height: 14px; }
+          .jbm-tag { font-size: 11px; }
+          .jf { gap: 6px; }
+          .jf-dd-btn { font-size: 12px; padding: 7px 10px; }
           .jgate-box { padding: 36px 24px; }
           .ap { padding: 20px 20px 32px; }
           .jd { width: 100%; }
@@ -426,31 +518,184 @@ export default function JobsPage() {
             {/* STATE C — submitted + logged in */}
             {userSalary && (
               <div className="jbm">
-                <span className="jbm-dot" />
-                {t('jobs.yourSalary', { salary: Math.round(userSalary / 1000000), role: userRole || '—', exp: userExperience || '—', company: userCompany || '—' })}
+                <div className="jbm-icon"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div>
+                <div className="jbm-body">
+                  <span className="jbm-label">{t('jobs.profileMatch')}</span>
+                  <div className="jbm-tags">
+                    <span className="jbm-tag">{Math.round(userSalary / 1000000)}M VND</span>
+                    {userRole && <span className="jbm-tag">{userRole}</span>}
+                    {userExperience && <span className="jbm-tag">{userExperience}</span>}
+                    {userCompany && <span className="jbm-tag">{userCompany}</span>}
+                  </div>
+                </div>
               </div>
             )}
 
-            {/* Role filters */}
-            <div className="jf">
-              {ROLE_FILTERS.map(({ key, label }) => (
-                <button key={key} className={`jf-pill${roleFilter === key ? ' on' : ''}`} onClick={() => { setRoleFilter(key); setCurrentPage(1) }}>{label}</button>
-              ))}
-            </div>
-            {/* Perk filters */}
-            <div className="jf">
-              {PERK_FILTER_KEYS.map(({ key, tKey, label }) => (
-                <button key={key} className={`jf-pill outline${perkFilter === key ? ' on' : ''}`} onClick={() => { setPerkFilter(perkFilter === key ? null : key); setCurrentPage(1) }}>{tKey ? t(tKey) : label}</button>
-              ))}
-            </div>
-            {/* Tech stack filters */}
-            <div className="jf">
-              {TECH_FILTERS.map(tech => (
-                <button key={tech} className={`jf-pill outline${techFilter === tech ? ' on' : ''}`} onClick={() => { setTechFilter(techFilter === tech ? null : tech); setCurrentPage(1) }}>{tech}</button>
-              ))}
+            {/* Search */}
+            <div className="jf-search">
+              <svg className="jf-search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#aaa" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+              <input className="jf-search-input" placeholder={t('jobs.searchPlaceholder')} value={searchQuery} onChange={e => { setSearchQuery(e.target.value); setCurrentPage(1) }} />
+              {searchQuery && <button className="jf-search-clear" onClick={() => setSearchQuery('')}>×</button>}
             </div>
 
-            <div className="jf-count">{t('jobs.matchCount', { count: filteredJobs.length })}</div>
+            {/* Filter dropdowns */}
+            <div className="jf">
+              {/* Role */}
+              <div className="jf-dd">
+                <button className={`jf-dd-btn${roleFilter ? ' on' : ''}`} onClick={e => { e.stopPropagation(); setOpenDropdown(openDropdown === 'role' ? null : 'role') }}>
+                  {roleFilter || t('jobs.filterRole')} <span className="jf-dd-arrow">▾</span>
+                </button>
+                {openDropdown === 'role' && (
+                  <div className="jf-dd-menu">
+                    <button className={`jf-dd-item${!roleFilter ? ' on' : ''}`} onClick={() => { setRoleFilter(''); setOpenDropdown(null); setCurrentPage(1) }}>{t('jobs.filterAll')}</button>
+                    {ROLE_OPTIONS.map(r => (
+                      <button key={r} className={`jf-dd-item${roleFilter === r ? ' on' : ''}`} onClick={() => { setRoleFilter(r); setOpenDropdown(null); setCurrentPage(1) }}>{r}</button>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Experience */}
+              <div className="jf-dd">
+                <button className={`jf-dd-btn${expMin !== '' || expMax !== '' ? ' on' : ''}`} onClick={e => { e.stopPropagation(); setOpenDropdown(openDropdown === 'exp' ? null : 'exp') }}>
+                  {expMin !== '' || expMax !== '' ? `${expMin || 0} ~ ${expMax || 15}${t('jobs.expYears')}` : t('jobs.yearsAny')} <span className="jf-dd-arrow">▾</span>
+                </button>
+                {openDropdown === 'exp' && (
+                  <div className="jf-exp-panel" onClick={e => e.stopPropagation()}>
+                    <div className="jf-exp-title">{t('jobs.expSelect')}</div>
+                    <div className="jf-exp-display">{expMin === '' && expMax === '' ? t('jobs.yearsAny') : `${expMin || 0}${t('jobs.expYears')} ~ ${expMax || 15}${t('jobs.expYears')}`}</div>
+                    <div className="jf-exp-slider">
+                      <div className="jf-exp-track">
+                        <div className="jf-exp-fill" style={{ left: `${(Number(expMin || 0) / 15) * 100}%`, right: `${100 - (Number(expMax || 15) / 15) * 100}%` }} />
+                      </div>
+                      <input type="range" className="jf-exp-range" min="0" max="15" value={expMin || 0} onChange={e => { const v = e.target.value; if (Number(v) <= Number(expMax || 15)) { setExpMin(v === '0' ? '' : v); setCurrentPage(1) } }} />
+                      <input type="range" className="jf-exp-range" min="0" max="15" value={expMax || 15} onChange={e => { const v = e.target.value; if (Number(v) >= Number(expMin || 0)) { setExpMax(v === '15' ? '' : v); setCurrentPage(1) } }} />
+                    </div>
+                    <div className="jf-exp-footer">
+                      <button className="jf-exp-reset" onClick={() => { setExpMin(''); setExpMax(''); setCurrentPage(1) }}>{t('jobs.filterReset')}</button>
+                      <button className="jf-exp-apply" onClick={() => setOpenDropdown(null)}>{t('jobs.expApply')}</button>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Type */}
+              <div className="jf-dd">
+                <button className={`jf-dd-btn${typeFilter ? ' on' : ''}`} onClick={e => { e.stopPropagation(); setOpenDropdown(openDropdown === 'type' ? null : 'type') }}>
+                  {typeFilter ? typeLabel(typeFilter) : t('jobs.filterType')} <span className="jf-dd-arrow">▾</span>
+                </button>
+                {openDropdown === 'type' && (
+                  <div className="jf-dd-menu">
+                    <button className={`jf-dd-item${!typeFilter ? ' on' : ''}`} onClick={() => { setTypeFilter(''); setOpenDropdown(null); setCurrentPage(1) }}>{t('jobs.filterAll')}</button>
+                    {TYPE_OPTIONS.map(tp => (
+                      <button key={tp} className={`jf-dd-item${typeFilter === tp ? ' on' : ''}`} onClick={() => { setTypeFilter(tp); setOpenDropdown(null); setCurrentPage(1) }}>{typeLabel(tp)}</button>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Tech */}
+              <div className="jf-dd">
+                <button className={`jf-dd-btn${techFilter ? ' on' : ''}`} onClick={e => { e.stopPropagation(); setOpenDropdown(openDropdown === 'tech' ? null : 'tech') }}>
+                  {techFilter || t('jobs.filterTech')} <span className="jf-dd-arrow">▾</span>
+                </button>
+                {openDropdown === 'tech' && (
+                  <div className="jf-dd-menu jf-dd-menu-scroll">
+                    <button className={`jf-dd-item${!techFilter ? ' on' : ''}`} onClick={() => { setTechFilter(''); setOpenDropdown(null); setCurrentPage(1) }}>{t('jobs.filterAll')}</button>
+                    {TECH_OPTIONS.map(tc => (
+                      <button key={tc} className={`jf-dd-item${techFilter === tc ? ' on' : ''}`} onClick={() => { setTechFilter(tc); setOpenDropdown(null); setCurrentPage(1) }}>{tc}</button>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Reset */}
+              {(roleFilter || typeFilter || expMin !== '' || expMax !== '' || techFilter || searchQuery) && (
+                <button className="jf-reset" onClick={() => { setRoleFilter(''); setTypeFilter(''); setExpMin(''); setExpMax(''); setTechFilter(''); setSearchQuery(''); setCurrentPage(1) }}>{t('jobs.filterReset')}</button>
+              )}
+            </div>
+
+            {/* Hot jobs section */}
+            {jobs.length > 0 && currentPage === 1 && !searchQuery && !roleFilter && !typeFilter && !techFilter && expMin === '' && expMax === '' && (() => {
+              const now = new Date()
+              const closing = jobs
+                .filter(j => j.deadline && new Date(j.deadline) > now && Math.ceil((new Date(j.deadline) - now) / 86400000) <= 14)
+                .sort((a, b) => new Date(a.deadline) - new Date(b.deadline))
+                .slice(0, 2)
+              const noDeadline = jobs
+                .filter(j => !j.deadline && !closing.find(c => c.id === j.id))
+                .slice(0, 2)
+              const hotJobs = [...closing, ...noDeadline].slice(0, 4)
+              if (hotJobs.length === 0) return null
+              const fakeCount = (id) => 20 + (id.charCodeAt(0) + id.charCodeAt(id.length - 1)) % 21
+              return (
+                <div className="jh">
+                  <div className="jh-title">🔥 {t('jobs.hotTitle')}</div>
+                  <div className="jg">
+                    {hotJobs.map((job, idx) => {
+                      const bump = getBump(job)
+                      const matched = isProfileMatch(job)
+                      const days = job.deadline ? Math.ceil((new Date(job.deadline) - now) / 86400000) : null
+                      return (
+                        <div key={job.id} className="jc" onClick={() => { setCarouselIdx(0); setDetailApplyMode(false); setApplied(false); setResumeFile(null); setDetailJob({ ...job, _imgFallback: DEFAULT_IMAGES[idx % 3] }) }}>
+                          <div className="jc-img">
+                            <div className="jc-img-in" style={{ background: `url(${job.image_url || job.images?.[0] || DEFAULT_IMAGES[idx % 3]}) center/cover no-repeat` }}>
+                              {bump !== null && bump > 0 && (
+                                <div className="jc-bump" dangerouslySetInnerHTML={{ __html: t('jobs.bumpVs', { bump }) }} />
+                              )}
+                              {matched && <div className="jc-match" style={bump > 0 ? { top: 38 } : undefined}>{t('jobs.profileBadge')}</div>}
+                              <button className="jc-bm" aria-label="Bookmark" onClick={e => { e.stopPropagation(); toggleBookmark(job.id) }}>
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill={bookmarks.includes(job.id) ? '#ff4400' : 'none'} stroke={bookmarks.includes(job.id) ? '#ff4400' : '#999'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                  <path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z" />
+                                </svg>
+                              </button>
+                            </div>
+                          </div>
+                          <div className="jc-body">
+                            <div className="jc-t">{job.title}</div>
+                            <div className="jc-co">{job.company}</div>
+                            <div className="jc-tags">
+                              {job.tech_stack?.length > 0 && (
+                                <>
+                                  {job.tech_stack.slice(0, 3).map(t => <span key={t} className="jc-tag">{t}</span>)}
+                                  {job.tech_stack.length > 3 && <span className="jc-tag jc-tag-more">+{job.tech_stack.length - 3}</span>}
+                                </>
+                              )}
+                            </div>
+                            <div className="jc-bottom">
+                              <div className="jc-m">
+                                <span className="jh-app"><span className="jh-pulse" />{t('jobs.hotApplicants', { count: fakeCount(job.id) })}</span>
+                                {days !== null ? (
+                                  <span className={`jc-dday${days <= 7 ? ' urgent' : ''}`}>D-{days}</span>
+                                ) : (
+                                  <span className="jh-open">{t('jobs.hotUntilFilled')}</span>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                  <div className="jh-divider" />
+                </div>
+              )
+            })()}
+
+            <div className="jf-bar">
+              <div className="jf-bar-l">
+                <div className="jf-count">{t('jobs.matchCount', { count: filteredJobs.length })}</div>
+                <label className="jf-check">
+                  <input type="checkbox" checked={hideExpired} onChange={e => { setHideExpired(e.target.checked); setCurrentPage(1) }} />
+                  <span>{t('jobs.hideExpired')}</span>
+                </label>
+              </div>
+              <div className="jf-sort">
+                {['spread','latest','deadline'].map(key => (
+                  <button key={key} className={`jf-sort-btn${sortBy === key ? ' on' : ''}`} onClick={() => { setSortBy(key); setCurrentPage(1) }}>{t(`jobs.sort.${key}`)}</button>
+                ))}
+              </div>
+            </div>
 
             {/* Grid */}
             {(() => {
@@ -461,9 +706,10 @@ export default function JobsPage() {
                   <div className="jg" style={{ opacity: jobsLoaded ? 1 : 0, transition: 'opacity .3s' }}>
                     {pagedJobs.map((job, idx) => {
                       const bump = getBump(job)
+                      const matched = isProfileMatch(job)
                       const globalIdx = (currentPage - 1) * JOBS_PER_PAGE + idx
                       return (
-                        <div key={job.id} className="jc" onClick={() => { setCarouselIdx(0); setDetailJob({ ...job, _imgFallback: DEFAULT_IMAGES[globalIdx % 3] }) }}>
+                        <div key={job.id} className="jc" onClick={() => { setCarouselIdx(0); setDetailApplyMode(false); setApplied(false); setResumeFile(null); setDetailJob({ ...job, _imgFallback: DEFAULT_IMAGES[globalIdx % 3] }) }}>
                           <div className="jc-img">
                             <div className="jc-img-in" style={{
                               background: `url(${job.image_url || job.images?.[0] || DEFAULT_IMAGES[globalIdx % 3]}) center/cover no-repeat`,
@@ -471,6 +717,7 @@ export default function JobsPage() {
                               {bump !== null && bump > 0 && (
                                 <div className="jc-bump" dangerouslySetInnerHTML={{ __html: t('jobs.bumpVs', { bump }) }} />
                               )}
+                              {matched && <div className="jc-match" style={bump > 0 ? { top: 38 } : undefined}>{t('jobs.profileBadge')}</div>}
                               <button className="jc-bm" aria-label="Bookmark" onClick={e => { e.stopPropagation(); toggleBookmark(job.id) }}>
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill={bookmarks.includes(job.id) ? '#ff4400' : 'none'} stroke={bookmarks.includes(job.id) ? '#ff4400' : '#999'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                                   <path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z" />
@@ -700,12 +947,53 @@ export default function JobsPage() {
               )}
 
             </div>
+            {/* Inline Apply Form */}
+            {detailApplyMode && !applied && (
+              <div className="jd-apply-inline" ref={el => { if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }) }}>
+                <div className="jd-apply-inline-h">{t('jobs.applyThis')}</div>
+
+                <div style={{ fontSize: 13, fontWeight: 600, color: '#555', marginBottom: 6 }}>{t('jobs.cvOptional')}</div>
+                <div className="ap-up" onClick={() => fileRef.current?.click()}>
+                  <input ref={fileRef} type="file" accept=".pdf,.docx,.doc" style={{ display: 'none' }} onChange={e => {
+                    const f = e.target.files?.[0]
+                    if (f && f.size <= 5 * 1024 * 1024) setResumeFile(f)
+                    else if (f) alert('Max 5MB')
+                  }} />
+                  {resumeFile
+                    ? <div className="ap-up-f">{resumeFile.name}</div>
+                    : <div className="ap-up-t" style={{ whiteSpace: 'pre-line' }}>{t('jobs.dragCV')}</div>
+                  }
+                </div>
+
+                <button className="jd-apply-btn" style={{ width: '100%', marginTop: 12 }} onClick={() => {
+                  if (!isLoggedIn) { localStorage.setItem('fyi_login_return', '/jobs'); supabase.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: window.location.origin + '/auth/callback' } }); return; }
+                  handleApply(detailJob);
+                }} disabled={applying}>
+                  {!isLoggedIn ? t('jobs.loginToApply') : applying ? t('jobs.sending') : t('jobs.submitApplication')}
+                </button>
+                <button className="ap-skip" style={{ width: '100%', textAlign: 'center' }} onClick={() => {
+                  if (!isLoggedIn) { localStorage.setItem('fyi_login_return', '/jobs'); supabase.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: window.location.origin + '/auth/callback' } }); return; }
+                  setResumeFile(null); handleApply(detailJob);
+                }}>{t('jobs.applyNoCV')}</button>
+              </div>
+            )}
+
+            {applied && (
+              <div className="jd-apply-inline" style={{ textAlign: 'center' }}>
+                <div className="ap-ok-i">✓</div>
+                <div className="ap-ok-h">{t('jobs.applied')}</div>
+                <div className="ap-ok-p">{t('jobs.appliedSub')}</div>
+              </div>
+            )}
+
             {/* Floating Apply CTA */}
-            <div className="jd-apply-float">
-              <button className="jd-apply-btn" onClick={() => { setDetailJob(null); openApply(detailJob) }}>
-                {t('jobs.apply')}
-              </button>
-            </div>
+            {!detailApplyMode && !applied && (
+              <div className="jd-apply-float">
+                <button className="jd-apply-btn" onClick={() => setDetailApplyMode(true)}>
+                  {t('jobs.apply')}
+                </button>
+              </div>
+            )}
           </div>
         </>
       )}
