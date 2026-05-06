@@ -63,6 +63,8 @@ export default function JobsPage() {
   const [showUserMenu, setShowUserMenu] = useState(false)
   const [isAdminUser, setIsAdminUser] = useState(false)
   const [bookmarks, setBookmarks] = useState([])
+  const [currentPage, setCurrentPage] = useState(1)
+  const JOBS_PER_PAGE = 20
 
   // Load state
   useEffect(() => {
@@ -115,6 +117,16 @@ export default function JobsPage() {
     load()
   }, [])
 
+  const typeLabel = (type) => {
+    const normalized = {
+      remote: 'jobs.typeRemote', onsite: 'jobs.typeOnsite', hybrid: 'jobs.typeHybrid',
+      '원격 근무': 'jobs.typeRemote', '원격근무': 'jobs.typeRemote', '재택': 'jobs.typeRemote',
+      '오프라인 근무': 'jobs.typeOnsite', '오프라인근무': 'jobs.typeOnsite',
+      '하이브리드': 'jobs.typeHybrid',
+    }[type]
+    return normalized ? t(normalized) : type
+  }
+
   const getBump = (job) => {
     if (!userSalary || !job.salary_min) return null
     return Math.round(((job.salary_min - userSalary) / userSalary) * 100)
@@ -122,16 +134,32 @@ export default function JobsPage() {
 
   const companyQuery = router.query.company ? String(router.query.company).toLowerCase() : null
 
-  const filteredJobs = jobs
-    .filter(job => {
+  const filteredJobs = (() => {
+    const filtered = jobs.filter(job => {
       if (companyQuery && job.company?.toLowerCase() !== companyQuery) return false
       if (roleFilter !== 'all' && job.role !== roleFilter) return false
       if (techFilter && !(job.tech_stack || []).some(t => t.toLowerCase().includes(techFilter.toLowerCase()))) return false
       if (perkFilter === 'pays_more') return userSalary ? job.salary_min > userSalary : true
-      if (perkFilter === 'remote') return job.type === 'remote'
+      if (perkFilter === 'remote') return job.type === 'remote' || job.type === '원격 근무' || job.type === '원격근무' || job.type === '재택'
       if (perkFilter === 'korea' || perkFilter === 'vietnam' || perkFilter === 'global') return job.country === perkFilter
       return true
     })
+    // 같은 회사가 연속으로 몰리지 않게 분산 배치
+    const byCompany = {}
+    filtered.forEach(job => {
+      const key = job.company || ''
+      if (!byCompany[key]) byCompany[key] = []
+      byCompany[key].push(job)
+    })
+    const queues = Object.values(byCompany).sort((a, b) => b.length - a.length)
+    const result = []
+    while (queues.some(q => q.length > 0)) {
+      for (const q of queues) {
+        if (q.length > 0) result.push(q.shift())
+      }
+    }
+    return result
+  })()
 
   const handleApply = async () => {
     if (!selectedJob || !session) return
@@ -282,8 +310,6 @@ export default function JobsPage() {
         .jc-nudge { background: #fff7f5; border: 1px solid #ffd6c8; border-radius: 8px; padding: 8px 12px; display: flex; justify-content: space-between; align-items: center; margin-top: 8px; }
         .jc-nudge-t { font-size: 12px; color: #888; }
         .jc-nudge-b { font-size: 12px; color: #ff4400; font-weight: 700; background: none; border: none; cursor: pointer; white-space: nowrap; }
-        .jc-apply { width: 100%; padding: 9px; background: #111; color: #fff; border: none; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer; margin-top: 8px; transition: background .15s; }
-        .jc-apply:hover { background: #333; }
 
         /* Empty slot */
         .jc-empty { border-radius: 8px; padding-top: 62%; position: relative; background: #fafafa; border: 1.5px dashed #e5e5e5; margin-bottom: 11px; }
@@ -356,6 +382,14 @@ export default function JobsPage() {
         .jd-login-text { font-size: 13px; color: #888; margin-bottom: 10px; }
         .jd-login-btn { background: #ff4400; color: #fff; border: none; padding: 10px 24px; border-radius: 6px; font-size: 13px; font-weight: 700; cursor: pointer; }
 
+        /* Pagination */
+        .jp { display: flex; align-items: center; justify-content: center; gap: 4px; margin-top: 40px; }
+        .jp-btn { width: 36px; height: 36px; border-radius: 8px; border: 1px solid #e0e0e0; background: #fff; color: #555; font-size: 14px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all .15s; }
+        .jp-btn:hover:not(:disabled) { border-color: #bbb; color: #111; }
+        .jp-btn.on { background: #111; color: #fff; border-color: #111; }
+        .jp-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+        .jp-dots { font-size: 14px; color: #aaa; padding: 0 4px; }
+
         @media (max-width: 900px) { .jg { grid-template-columns: repeat(3, 1fr); } }
         @media (max-width: 768px) {
           .jn { padding: 0 16px; height: 48px; }
@@ -400,74 +434,102 @@ export default function JobsPage() {
             {/* Role filters */}
             <div className="jf">
               {ROLE_FILTERS.map(({ key, label }) => (
-                <button key={key} className={`jf-pill${roleFilter === key ? ' on' : ''}`} onClick={() => setRoleFilter(key)}>{label}</button>
+                <button key={key} className={`jf-pill${roleFilter === key ? ' on' : ''}`} onClick={() => { setRoleFilter(key); setCurrentPage(1) }}>{label}</button>
               ))}
             </div>
             {/* Perk filters */}
             <div className="jf">
               {PERK_FILTER_KEYS.map(({ key, tKey, label }) => (
-                <button key={key} className={`jf-pill outline${perkFilter === key ? ' on' : ''}`} onClick={() => setPerkFilter(perkFilter === key ? null : key)}>{tKey ? t(tKey) : label}</button>
+                <button key={key} className={`jf-pill outline${perkFilter === key ? ' on' : ''}`} onClick={() => { setPerkFilter(perkFilter === key ? null : key); setCurrentPage(1) }}>{tKey ? t(tKey) : label}</button>
               ))}
             </div>
             {/* Tech stack filters */}
             <div className="jf">
               {TECH_FILTERS.map(tech => (
-                <button key={tech} className={`jf-pill outline${techFilter === tech ? ' on' : ''}`} onClick={() => setTechFilter(techFilter === tech ? null : tech)}>{tech}</button>
+                <button key={tech} className={`jf-pill outline${techFilter === tech ? ' on' : ''}`} onClick={() => { setTechFilter(techFilter === tech ? null : tech); setCurrentPage(1) }}>{tech}</button>
               ))}
             </div>
 
             <div className="jf-count">{t('jobs.matchCount', { count: filteredJobs.length })}</div>
 
             {/* Grid */}
-            <div className="jg" style={{ opacity: jobsLoaded ? 1 : 0, transition: 'opacity .3s' }}>
-              {filteredJobs.map((job, idx) => {
-                const bump = getBump(job)
-                return (
-                  <div key={job.id} className="jc">
-                    <div className="jc-img" onClick={() => { setCarouselIdx(0); setDetailJob({ ...job, _imgFallback: DEFAULT_IMAGES[idx % 3] }) }}>
-                      <div className="jc-img-in" style={{
-                        background: `url(${job.image_url || job.images?.[0] || DEFAULT_IMAGES[idx % 3]}) center/cover no-repeat`,
-                      }}>
-                        {bump !== null && bump > 0 && (
-                          <div className="jc-bump" dangerouslySetInnerHTML={{ __html: t('jobs.bumpVs', { bump }) }} />
-                        )}
-                        <button className="jc-bm" aria-label="Bookmark" onClick={e => { e.stopPropagation(); toggleBookmark(job.id) }}>
-                          <svg width="14" height="14" viewBox="0 0 24 24" fill={bookmarks.includes(job.id) ? '#ff4400' : 'none'} stroke={bookmarks.includes(job.id) ? '#ff4400' : '#999'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                            <path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z" />
-                          </svg>
-                        </button>
-                        <div className="jc-ini">{job.company_initials || job.company.slice(0, 2).toUpperCase()}</div>
-                      </div>
-                    </div>
-                    <div className="jc-body">
-                      <div className="jc-t">{job.title}</div>
-                      <div className="jc-co">{job.company}</div>
-                      <div className="jc-tags">
-                        {job.tech_stack?.length > 0 && (
-                          <>
-                            {job.tech_stack.slice(0, 3).map(t => <span key={t} className="jc-tag">{t}</span>)}
-                            {job.tech_stack.length > 3 && <span className="jc-tag jc-tag-more">+{job.tech_stack.length - 3}</span>}
-                          </>
-                        )}
-                      </div>
-                      <div className="jc-bottom">
-                        <div className="jc-m">
-                          {job.location} · {job.type}
-                          {job.salary_min > 0 && <> · <b>{Math.round(job.salary_min / 1e6)}M–{Math.round(job.salary_max / 1e6)}M VND</b></>}
-                          {job.deadline && (() => {
-                            const days = Math.ceil((new Date(job.deadline) - new Date()) / 86400000)
-                            if (days < 0) return null
-                            return <span className={`jc-dday${days <= 7 ? ' urgent' : ''}`}>{days === 0 ? 'D-Day' : `D-${days}`}</span>
-                          })()}
+            {(() => {
+              const totalPages = Math.ceil(filteredJobs.length / JOBS_PER_PAGE)
+              const pagedJobs = filteredJobs.slice((currentPage - 1) * JOBS_PER_PAGE, currentPage * JOBS_PER_PAGE)
+              return (
+                <>
+                  <div className="jg" style={{ opacity: jobsLoaded ? 1 : 0, transition: 'opacity .3s' }}>
+                    {pagedJobs.map((job, idx) => {
+                      const bump = getBump(job)
+                      const globalIdx = (currentPage - 1) * JOBS_PER_PAGE + idx
+                      return (
+                        <div key={job.id} className="jc" onClick={() => { setCarouselIdx(0); setDetailJob({ ...job, _imgFallback: DEFAULT_IMAGES[globalIdx % 3] }) }}>
+                          <div className="jc-img">
+                            <div className="jc-img-in" style={{
+                              background: `url(${job.image_url || job.images?.[0] || DEFAULT_IMAGES[globalIdx % 3]}) center/cover no-repeat`,
+                            }}>
+                              {bump !== null && bump > 0 && (
+                                <div className="jc-bump" dangerouslySetInnerHTML={{ __html: t('jobs.bumpVs', { bump }) }} />
+                              )}
+                              <button className="jc-bm" aria-label="Bookmark" onClick={e => { e.stopPropagation(); toggleBookmark(job.id) }}>
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill={bookmarks.includes(job.id) ? '#ff4400' : 'none'} stroke={bookmarks.includes(job.id) ? '#ff4400' : '#999'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                  <path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z" />
+                                </svg>
+                              </button>
+                            </div>
+                          </div>
+                          <div className="jc-body">
+                            <div className="jc-t">{job.title}</div>
+                            <div className="jc-co">{job.company}</div>
+                            <div className="jc-tags">
+                              {job.tech_stack?.length > 0 && (
+                                <>
+                                  {job.tech_stack.slice(0, 3).map(t => <span key={t} className="jc-tag">{t}</span>)}
+                                  {job.tech_stack.length > 3 && <span className="jc-tag jc-tag-more">+{job.tech_stack.length - 3}</span>}
+                                </>
+                              )}
+                            </div>
+                            <div className="jc-bottom">
+                              <div className="jc-m">
+                                {[
+                                  !job.experience_min && !job.experience_max ? t('jobs.yearsAny') : t('jobs.years', { min: job.experience_min, max: job.experience_max }),
+                                  job.type !== 'remote' && job.location,
+                                  typeLabel(job.type),
+                                ].filter(Boolean).join(' · ')}
+                                {job.deadline && (() => {
+                                  const days = Math.ceil((new Date(job.deadline) - new Date()) / 86400000)
+                                  if (days < 0) return null
+                                  return <span className={`jc-dday${days <= 7 ? ' urgent' : ''}`}>{days === 0 ? 'D-Day' : `D-${days}`}</span>
+                                })()}
+                              </div>
+                            </div>
+                          </div>
                         </div>
-                        <button className="jc-apply" onClick={() => openApply(job)}>{t('jobs.apply')}</button>
-                      </div>
-                    </div>
+                      )
+                    })}
                   </div>
-                )
-              })}
 
-            </div>
+                  {/* Pagination */}
+                  {totalPages > 1 && (
+                    <div className="jp">
+                      <button className="jp-btn" disabled={currentPage === 1} onClick={() => { setCurrentPage(p => p - 1); window.scrollTo({ top: 0, behavior: 'smooth' }) }}>&lsaquo;</button>
+                      {Array.from({ length: totalPages }, (_, i) => i + 1)
+                        .filter(p => p === 1 || p === totalPages || Math.abs(p - currentPage) <= 2)
+                        .reduce((acc, p, i, arr) => {
+                          if (i > 0 && p - arr[i - 1] > 1) acc.push('...')
+                          acc.push(p)
+                          return acc
+                        }, [])
+                        .map((p, i) => p === '...'
+                          ? <span key={`dots-${i}`} className="jp-dots">...</span>
+                          : <button key={p} className={`jp-btn${p === currentPage ? ' on' : ''}`} onClick={() => { setCurrentPage(p); window.scrollTo({ top: 0, behavior: 'smooth' }) }}>{p}</button>
+                        )}
+                      <button className="jp-btn" disabled={currentPage === totalPages} onClick={() => { setCurrentPage(p => p + 1); window.scrollTo({ top: 0, behavior: 'smooth' }) }}>&rsaquo;</button>
+                    </div>
+                  )}
+                </>
+              )
+            })()}
           </>
         )}
       </div>
@@ -527,7 +589,7 @@ export default function JobsPage() {
                 <div>
                   <div className="jd-co-name">{detailJob.company}</div>
                   <div className="jd-co-loc">
-                    {detailJob.location} · {detailJob.type}
+                    {detailJob.location} · {typeLabel(detailJob.type)}
                     {detailJob.company_url && <> · <a href={detailJob.company_url} target="_blank" rel="noopener noreferrer" style={{ color: '#ff4400', textDecoration: 'none' }}>Website</a></>}
                   </div>
                 </div>
@@ -552,7 +614,7 @@ export default function JobsPage() {
               <div className="jd-meta-grid">
                 <div className="jd-meta-item">
                   <div className="jd-meta-label">{t('jobs.experience')}</div>
-                  <div className="jd-meta-value">{t('jobs.years', { min: detailJob.experience_min, max: detailJob.experience_max })}</div>
+                  <div className="jd-meta-value">{!detailJob.experience_min && !detailJob.experience_max ? t('jobs.yearsAny') : t('jobs.years', { min: detailJob.experience_min, max: detailJob.experience_max })}</div>
                 </div>
                 <div className="jd-meta-item">
                   <div className="jd-meta-label">{t('jobs.position')}</div>
@@ -560,7 +622,7 @@ export default function JobsPage() {
                 </div>
                 <div className="jd-meta-item">
                   <div className="jd-meta-label">{t('jobs.type')}</div>
-                  <div className="jd-meta-value" style={{ textTransform: 'capitalize' }}>{detailJob.type}</div>
+                  <div className="jd-meta-value">{typeLabel(detailJob.type)}</div>
                 </div>
                 <div className="jd-meta-item">
                   <div className="jd-meta-label">{t('jobs.region')}</div>
@@ -578,15 +640,13 @@ export default function JobsPage() {
                     <div className="jd-meta-value">{detailJob.headcount}</div>
                   </div>
                 )}
-                {detailJob.deadline && (
-                  <div className="jd-meta-item">
-                    <div className="jd-meta-label">Deadline</div>
-                    <div className="jd-meta-value">{(() => {
-                      const days = Math.ceil((new Date(detailJob.deadline) - new Date()) / 86400000)
-                      return `${detailJob.deadline} ${days >= 0 ? `(D-${days})` : '(Closed)'}`
-                    })()}</div>
-                  </div>
-                )}
+                <div className="jd-meta-item">
+                  <div className="jd-meta-label">Deadline</div>
+                  <div className="jd-meta-value">{detailJob.deadline ? (() => {
+                    const days = Math.ceil((new Date(detailJob.deadline) - new Date()) / 86400000)
+                    return `${detailJob.deadline} ${days >= 0 ? `(D-${days})` : '(Closed)'}`
+                  })() : t('jobs.ongoing')}</div>
+                </div>
               </div>
 
               <div className="jd-divider" />

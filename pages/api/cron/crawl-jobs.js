@@ -145,14 +145,16 @@ const TITLE_MAP = [
 ]
 
 function simplifyLocation(address) {
-  const full = address?.full_location || address?.location || ''
-  for (const [kr, en] of Object.entries(CITY_MAP)) {
-    if (full.includes(kr)) return en
-  }
-  // fallback: use location field
-  const loc = address?.location || ''
-  for (const [kr, en] of Object.entries(CITY_MAP)) {
-    if (loc.includes(kr)) return en
+  const candidates = [
+    address?.full_location,
+    address?.location,
+  ].filter(Boolean)
+  for (const text of candidates) {
+    // 근무형태 텍스트는 무시
+    if (/오프라인|원격|재택|하이브리드/.test(text) && !/시|구|동|도/.test(text)) continue
+    for (const [kr, en] of Object.entries(CITY_MAP)) {
+      if (text.includes(kr)) return en
+    }
   }
   return 'Seoul'
 }
