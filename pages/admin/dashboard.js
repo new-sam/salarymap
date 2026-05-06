@@ -100,10 +100,9 @@ export default function AdminDashboard() {
   const [expForm, setExpForm] = useState({ title: '', date: '', color: EXP_COLORS[0] })
   const [showExpForm, setShowExpForm] = useState(false)
   const [lang, setLang] = useState('ko')
-  const [dateRange, setDateRange] = useState(() => {
-    const yesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10)
-    return { from: '2026-04-20', to: yesterday }
-  })
+  const yesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10)
+  const [dateInput, setDateInput] = useState({ from: '2026-04-20', to: yesterday })
+  const [dateRange, setDateRange] = useState({ from: '2026-04-20', to: yesterday })
 
   const t = T[lang]
   const METRICS = METRICS_BASE.map(m => ({ ...m, label: t.metrics[m.key] }))
@@ -131,6 +130,21 @@ export default function AdminDashboard() {
     fetchExperiments()
   }, [auth, token, dateRange, lang])
 
+  function applyRange(from, to) {
+    setDateInput({ from, to })
+    setDateRange({ from, to })
+  }
+
+  function applyPreset(days) {
+    const to = new Date(Date.now() - 86400000).toISOString().slice(0, 10)
+    const from = new Date(Date.now() - days * 86400000).toISOString().slice(0, 10)
+    applyRange(from, to)
+  }
+
+  function handleSearch() {
+    setDateRange({ ...dateInput })
+  }
+
   async function fetchData() {
     setLoading(true)
     try {
@@ -139,6 +153,7 @@ export default function AdminDashboard() {
         { headers: { Authorization: `Bearer ${token}` } }
       )
       const json = await res.json()
+      if (json.error) { console.error('Dashboard API error:', json.error); setLoading(false); return }
       setData(json)
       setLastUpdated(new Date())
     } catch (e) {
@@ -191,17 +206,24 @@ export default function AdminDashboard() {
             <a href="/admin/jobs" style={{ color: '#888', textDecoration: 'none', fontSize: 20 }} title={t.backTitle}>&larr;</a>
             <h1 style={{ fontSize: 24, fontWeight: 700, margin: 0 }}>{t.title}</h1>
           </div>
-          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-            <input type="date" value={dateRange.from}
-              onChange={e => setDateRange(r => ({ ...r, from: e.target.value }))}
+          <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
+            {[{ label: '7D', days: 7 }, { label: '14D', days: 14 }, { label: '30D', days: 30 }, { label: 'All', days: 0 }].map(p => (
+              <button key={p.label} onClick={() => p.days ? applyPreset(p.days) : applyRange('2026-04-20', yesterday)}
+                style={{ padding: '5px 10px', border: '1px solid #d1d5db', borderRadius: 6, fontSize: 12, background: '#fff', cursor: 'pointer', fontWeight: 600 }}>
+                {p.label}
+              </button>
+            ))}
+            <span style={{ color: '#ddd', margin: '0 2px' }}>|</span>
+            <input type="date" value={dateInput.from}
+              onChange={e => setDateInput(r => ({ ...r, from: e.target.value }))}
               style={inputStyle} />
             <span style={{ color: '#666' }}>~</span>
-            <input type="date" value={dateRange.to}
-              onChange={e => setDateRange(r => ({ ...r, to: e.target.value }))}
+            <input type="date" value={dateInput.to}
+              onChange={e => setDateInput(r => ({ ...r, to: e.target.value }))}
               style={inputStyle} />
-            <button onClick={fetchData} disabled={loading}
-              style={{ padding: '6px 14px', border: '1px solid #d1d5db', borderRadius: 6, fontSize: 13, background: '#fff', cursor: 'pointer', fontWeight: 600 }}>
-              {loading ? '...' : t.refresh}
+            <button onClick={handleSearch} disabled={loading}
+              style={{ padding: '6px 14px', border: 'none', borderRadius: 6, fontSize: 13, background: '#111', color: '#fff', cursor: 'pointer', fontWeight: 600 }}>
+              {loading ? '...' : lang === 'ko' ? '조회' : 'Search'}
             </button>
           </div>
           {lastUpdated && (
@@ -213,7 +235,7 @@ export default function AdminDashboard() {
 
         {loading && <div style={{ textAlign: 'center', padding: 40, color: '#666' }}>{t.loadingData}</div>}
 
-        {data && !loading && (
+        {data?.summary && !loading && (
           <>
             {/* Clickable Metric Cards */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))', gap: 12, marginBottom: 24 }}>
@@ -370,7 +392,7 @@ export default function AdminDashboard() {
                         {c.name}
                       </span>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                        <div style={{ width: Math.max(4, (c.count / data.topCompanies[0].count) * 100), height: 16, background: '#4F46E5', borderRadius: 3, opacity: 0.7 }} />
+                        <div style={{ width: Math.max(4, (c.count / (data.topCompanies[0]?.count || 1)) * 100), height: 16, background: '#4F46E5', borderRadius: 3, opacity: 0.7 }} />
                         <span style={{ fontWeight: 600, minWidth: 24, textAlign: 'right' }}>{c.count}</span>
                       </div>
                     </div>

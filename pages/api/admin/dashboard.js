@@ -52,19 +52,31 @@ export default async function handler(req, res) {
   }
 
   // Fetch job applications in date range
-  const { data: jobApps } = await supabase
-    .from('job_applications')
-    .select('id, created_at')
-    .gte('created_at', startISO)
-    .lte('created_at', endISO)
+  let jobApps = []
+  try {
+    const { data: jaData } = await supabase
+      .from('job_applications')
+      .select('id, created_at')
+      .gte('created_at', startISO)
+      .lte('created_at', endISO)
+    jobApps = jaData || []
+  } catch (e) {
+    // table may not exist
+  }
 
   // Fetch click events in date range
-  const { data: events } = await supabase
-    .from('events')
-    .select('id, event, meta, created_at')
-    .in('event', ['click_jobs_cta', 'click_job_card'])
-    .gte('created_at', startISO)
-    .lte('created_at', endISO)
+  let events = []
+  try {
+    const { data: evData } = await supabase
+      .from('events')
+      .select('id, event, meta, created_at')
+      .in('event', ['click_jobs_cta', 'click_job_card'])
+      .gte('created_at', startISO)
+      .lte('created_at', endISO)
+    events = evData || []
+  } catch (e) {
+    // events table may not exist yet
+  }
 
   // --- Aggregate daily trend ---
   const dailyMap = {}
@@ -86,13 +98,13 @@ export default async function handler(req, res) {
     dailyMap[date].signups++
   }
 
-  for (const ja of (jobApps || [])) {
+  for (const ja of jobApps) {
     const date = ja.created_at.slice(0, 10)
     if (!dailyMap[date]) dailyMap[date] = { date, submissions: 0, ad: 0, organic: 0, signups: 0, companies: new Set(), jobApps: 0, jobClicks: 0, cardClicks: 0 }
     dailyMap[date].jobApps++
   }
 
-  for (const ev of (events || [])) {
+  for (const ev of events) {
     const date = ev.created_at.slice(0, 10)
     if (!dailyMap[date]) dailyMap[date] = { date, submissions: 0, ad: 0, organic: 0, signups: 0, companies: new Set(), jobApps: 0, jobClicks: 0, cardClicks: 0 }
     if (ev.event === 'click_jobs_cta') dailyMap[date].jobClicks++
@@ -152,9 +164,9 @@ export default async function handler(req, res) {
     adSubmissions: submissions.filter(s => s.utm_source || s.utm_medium || s.utm_campaign).length,
     organicSubmissions: submissions.filter(s => !s.utm_source && !s.utm_medium && !s.utm_campaign).length,
     totalSignups: signups.length,
-    totalJobApps: (jobApps || []).length,
-    totalJobClicks: (events || []).filter(e => e.event === 'click_jobs_cta').length,
-    totalCardClicks: (events || []).filter(e => e.event === 'click_job_card').length,
+    totalJobApps: jobApps.length,
+    totalJobClicks: events.filter(e => e.event === 'click_jobs_cta').length,
+    totalCardClicks: events.filter(e => e.event === 'click_job_card').length,
     uniqueCompanies: uniqueCompanies.size,
     interested,
     signupRate: submissions.length > 0 ? ((signups.length / submissions.length) * 100).toFixed(1) : '0',

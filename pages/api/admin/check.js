@@ -29,6 +29,6 @@ export default async function handler(req, res) {
   const { email } = req.query
   if (!email) return res.status(400).json({ isAdmin: false })
   const result = await isAdmin(email)
-  res.setHeader('Cache-Control', 's-maxage=600, stale-while-revalidate=1800')
+  res.setHeader('Cache-Control', 'no-store')
   res.status(200).json({ isAdmin: result })
 }
