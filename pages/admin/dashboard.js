@@ -5,13 +5,76 @@ import { supabase } from '../../lib/supabaseClient'
 
 const MetricChart = dynamic(() => import('../../components/DashboardCharts'), { ssr: false })
 
-const METRICS = [
-  { key: 'submissions', label: '제출', dataKey: 'submissions', color: '#111', summaryKey: 'totalSubmissions' },
-  { key: 'ad', label: '광고 (UTM)', dataKey: 'ad', color: '#4F46E5', summaryKey: 'adSubmissions' },
-  { key: 'organic', label: '자연유입', dataKey: 'organic', color: '#10B981', summaryKey: 'organicSubmissions' },
-  { key: 'signups', label: '가입', dataKey: 'signups', color: '#F59E0B', summaryKey: 'totalSignups' },
-  { key: 'jobApps', label: '채용지원', dataKey: 'jobApps', color: '#EF4444', summaryKey: 'totalJobApps' },
-  { key: 'companies', label: '회사', dataKey: 'companies', color: '#8B5CF6', summaryKey: 'uniqueCompanies' },
+const T = {
+  ko: {
+    title: '성과 대시보드',
+    loading: '로딩 중...',
+    denied: '접근 권한이 없습니다',
+    loadingData: '데이터 불러오는 중...',
+    refresh: '새로고침',
+    lastUpdate: '마지막 업데이트',
+    backTitle: '관리자로 돌아가기',
+    trend: '추이',
+    intentTitle: '관심도 분포',
+    topCompanies: '상위 회사',
+    countUnit: '개',
+    dailyDetail: '일별 상세',
+    total: '합계',
+    expTitle: '실험 / 개선 기록',
+    expAdd: '+ 추가',
+    expCancel: '취소',
+    expStartDate: '실험 시작일',
+    expPlaceholder: '예: CTA 문구 변경, 랜딩 리디자인...',
+    expSave: '저장',
+    expDelete: '삭제',
+    expDeleteConfirm: '이 실험 기록을 삭제하시겠습니까?',
+    expEmpty: '아직 기록이 없습니다. 실험이나 개선 사항을 추가해보세요.',
+    avg: '평균',
+    tableHeaders: ['날짜', '전체', '광고', '자연유입', '가입', '회사', '채용지원'],
+    metrics: {
+      submissions: '제출', ad: '광고 (UTM)', organic: '자연유입',
+      signups: '가입', jobApps: '채용지원', companies: '회사',
+    },
+  },
+  en: {
+    title: 'Performance Dashboard',
+    loading: 'Loading...',
+    denied: 'Access denied',
+    loadingData: 'Loading data...',
+    refresh: 'Refresh',
+    lastUpdate: 'Last updated',
+    backTitle: 'Back to Admin',
+    trend: 'Trend',
+    intentTitle: 'Intent Breakdown',
+    topCompanies: 'Top Companies',
+    countUnit: '',
+    dailyDetail: 'Daily Detail',
+    total: 'Total',
+    expTitle: 'Experiments / Improvements',
+    expAdd: '+ Add',
+    expCancel: 'Cancel',
+    expStartDate: 'Start date',
+    expPlaceholder: 'e.g. CTA copy change, landing redesign...',
+    expSave: 'Save',
+    expDelete: 'Delete',
+    expDeleteConfirm: 'Delete this experiment?',
+    expEmpty: 'No records yet. Add an experiment or improvement.',
+    avg: 'avg',
+    tableHeaders: ['Date', 'Total', 'Ad', 'Organic', 'Sign-ups', 'Companies', 'Job Apps'],
+    metrics: {
+      submissions: 'Submissions', ad: 'Ad (UTM)', organic: 'Organic',
+      signups: 'Sign-ups', jobApps: 'Job Apps', companies: 'Companies',
+    },
+  },
+}
+
+const METRICS_BASE = [
+  { key: 'submissions', dataKey: 'submissions', color: '#111', summaryKey: 'totalSubmissions' },
+  { key: 'ad', dataKey: 'ad', color: '#4F46E5', summaryKey: 'adSubmissions' },
+  { key: 'organic', dataKey: 'organic', color: '#10B981', summaryKey: 'organicSubmissions' },
+  { key: 'signups', dataKey: 'signups', color: '#F59E0B', summaryKey: 'totalSignups' },
+  { key: 'jobApps', dataKey: 'jobApps', color: '#EF4444', summaryKey: 'totalJobApps' },
+  { key: 'companies', dataKey: 'companies', color: '#8B5CF6', summaryKey: 'uniqueCompanies' },
 ]
 
 const EXP_COLORS = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7', '#DDA0DD', '#98D8C8', '#F7DC6F']
@@ -24,7 +87,6 @@ function getDoD(daily, dataKey) {
   return Math.round(((last - prev) / prev) * 100)
 }
 
-
 export default function AdminDashboard() {
   const [auth, setAuth] = useState('loading')
   const [token, setToken] = useState(null)
@@ -35,10 +97,14 @@ export default function AdminDashboard() {
   const [experiments, setExperiments] = useState([])
   const [expForm, setExpForm] = useState({ title: '', date: '', color: EXP_COLORS[0] })
   const [showExpForm, setShowExpForm] = useState(false)
+  const [lang, setLang] = useState('ko')
   const [dateRange, setDateRange] = useState(() => {
     const yesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10)
     return { from: '2026-04-20', to: yesterday }
   })
+
+  const t = T[lang]
+  const METRICS = METRICS_BASE.map(m => ({ ...m, label: t.metrics[m.key] }))
 
   const headers = () => ({ 'Content-Type': 'application/json', Authorization: `Bearer ${token}` })
 
@@ -61,13 +127,13 @@ export default function AdminDashboard() {
     if (auth !== 'ok' || !token) return
     fetchData()
     fetchExperiments()
-  }, [auth, token, dateRange])
+  }, [auth, token, dateRange, lang])
 
   async function fetchData() {
     setLoading(true)
     try {
       const res = await fetch(
-        `/api/admin/dashboard?from=${dateRange.from}&to=${dateRange.to}`,
+        `/api/admin/dashboard?from=${dateRange.from}&to=${dateRange.to}&lang=${lang}`,
         { headers: { Authorization: `Bearer ${token}` } }
       )
       const json = await res.json()
@@ -101,27 +167,27 @@ export default function AdminDashboard() {
   }
 
   async function deleteExperiment(id) {
-    if (!confirm('이 실험 기록을 삭제하시겠습니까?')) return
+    if (!confirm(t.expDeleteConfirm)) return
     await fetch('/api/admin/experiments', {
       method: 'DELETE', headers: headers(), body: JSON.stringify({ id })
     })
     fetchExperiments()
   }
 
-  if (auth === 'loading') return <div style={{ padding: 40, textAlign: 'center' }}>로딩 중...</div>
-  if (auth === 'denied') return <div style={{ padding: 40, textAlign: 'center' }}>접근 권한이 없습니다</div>
+  if (auth === 'loading') return <div style={{ padding: 40, textAlign: 'center' }}>{t.loading}</div>
+  if (auth === 'denied') return <div style={{ padding: 40, textAlign: 'center' }}>{t.denied}</div>
 
   const selectedMetric = METRICS.find(m => m.key === selected)
   const visibleExperiments = experiments.filter(e => e.date >= dateRange.from && e.date <= dateRange.to)
 
   return (
     <>
-      <Head><title>FYI 성과 대시보드</title></Head>
+      <Head><title>FYI {t.title}</title></Head>
       <div style={{ maxWidth: 1200, margin: '0 auto', padding: '24px 16px', fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            <a href="/admin/jobs" style={{ color: '#888', textDecoration: 'none', fontSize: 20 }} title="관리자로 돌아가기">&larr;</a>
-            <h1 style={{ fontSize: 24, fontWeight: 700, margin: 0 }}>성과 대시보드</h1>
+            <a href="/admin/jobs" style={{ color: '#888', textDecoration: 'none', fontSize: 20 }} title={t.backTitle}>&larr;</a>
+            <h1 style={{ fontSize: 24, fontWeight: 700, margin: 0 }}>{t.title}</h1>
           </div>
           <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
             <input type="date" value={dateRange.from}
@@ -133,17 +199,17 @@ export default function AdminDashboard() {
               style={inputStyle} />
             <button onClick={fetchData} disabled={loading}
               style={{ padding: '6px 14px', border: '1px solid #d1d5db', borderRadius: 6, fontSize: 13, background: '#fff', cursor: 'pointer', fontWeight: 600 }}>
-              {loading ? '...' : '새로고침'}
+              {loading ? '...' : t.refresh}
             </button>
           </div>
           {lastUpdated && (
             <div style={{ fontSize: 11, color: '#aaa', textAlign: 'right', marginTop: 4 }}>
-              마지막 업데이트: {lastUpdated.toLocaleTimeString('ko-KR')}
+              {t.lastUpdate}: {lastUpdated.toLocaleTimeString(lang === 'ko' ? 'ko-KR' : 'en-US')}
             </div>
           )}
         </div>
 
-        {loading && <div style={{ textAlign: 'center', padding: 40, color: '#666' }}>데이터 불러오는 중...</div>}
+        {loading && <div style={{ textAlign: 'center', padding: 40, color: '#666' }}>{t.loadingData}</div>}
 
         {data && !loading && (
           <>
@@ -184,10 +250,9 @@ export default function AdminDashboard() {
             {/* Selected Metric Chart + Experiment Chips */}
             {selectedMetric && (
               <div style={sectionStyle}>
-                <h3 style={{ ...sectionTitle, marginBottom: 16 }}>{selectedMetric.label} 추이</h3>
-                <MetricChart daily={data.daily} metric={selectedMetric} experiments={visibleExperiments} />
+                <h3 style={{ ...sectionTitle, marginBottom: 16 }}>{selectedMetric.label} {t.trend}</h3>
+                <MetricChart daily={data.daily} metric={selectedMetric} experiments={visibleExperiments} avgLabel={t.avg} />
 
-                {/* Experiment chips below chart */}
                 {visibleExperiments.length > 0 && (
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 12, paddingTop: 12, borderTop: '1px solid #f3f4f6' }}>
                     {visibleExperiments.map(exp => (
@@ -209,22 +274,22 @@ export default function AdminDashboard() {
             {/* Experiment Management */}
             <div style={sectionStyle}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: showExpForm || experiments.length > 0 ? 16 : 0 }}>
-                <h3 style={{ ...sectionTitle, margin: 0 }}>실험 / 개선 기록</h3>
+                <h3 style={{ ...sectionTitle, margin: 0 }}>{t.expTitle}</h3>
                 <button onClick={() => setShowExpForm(!showExpForm)}
                   style={{ padding: '5px 12px', border: '1px solid #d1d5db', borderRadius: 6, fontSize: 12, background: showExpForm ? '#f3f4f6' : '#fff', cursor: 'pointer', fontWeight: 600 }}>
-                  {showExpForm ? '취소' : '+ 추가'}
+                  {showExpForm ? t.expCancel : t.expAdd}
                 </button>
               </div>
 
               {showExpForm && (
                 <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 16, padding: 12, background: '#fafafa', borderRadius: 8 }}>
                   <label style={{ display: 'flex', flexDirection: 'column', gap: 2, fontSize: 11, color: '#888' }}>
-                    실험 시작일
+                    {t.expStartDate}
                     <input type="date" value={expForm.date}
                       onChange={e => setExpForm(f => ({ ...f, date: e.target.value }))}
                       style={{ ...inputStyle, width: 140 }} />
                   </label>
-                  <input type="text" value={expForm.title} placeholder="예: CTA 문구 변경, 랜딩 리디자인..."
+                  <input type="text" value={expForm.title} placeholder={t.expPlaceholder}
                     onChange={e => setExpForm(f => ({ ...f, title: e.target.value }))}
                     onKeyDown={e => e.key === 'Enter' && addExperiment()}
                     style={{ ...inputStyle, flex: 1 }} />
@@ -239,7 +304,7 @@ export default function AdminDashboard() {
                   </div>
                   <button onClick={addExperiment}
                     style={{ padding: '6px 16px', border: 'none', borderRadius: 6, fontSize: 13, background: '#111', color: '#fff', cursor: 'pointer', fontWeight: 600, whiteSpace: 'nowrap' }}>
-                    저장
+                    {t.expSave}
                   </button>
                 </div>
               )}
@@ -258,7 +323,7 @@ export default function AdminDashboard() {
                       </div>
                       <button onClick={() => deleteExperiment(exp.id)}
                         style={{ border: 'none', background: 'none', color: '#ccc', cursor: 'pointer', fontSize: 16, padding: '0 4px' }}
-                        title="삭제">
+                        title={t.expDelete}>
                         &times;
                       </button>
                     </div>
@@ -268,7 +333,7 @@ export default function AdminDashboard() {
 
               {experiments.length === 0 && !showExpForm && (
                 <div style={{ color: '#aaa', fontSize: 13, marginTop: 8 }}>
-                  아직 기록이 없습니다. 실험이나 개선 사항을 추가해보세요.
+                  {t.expEmpty}
                 </div>
               )}
             </div>
@@ -276,7 +341,7 @@ export default function AdminDashboard() {
             {/* Intent & Top Companies */}
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24, marginBottom: 24 }}>
               <div style={sectionStyle}>
-                <h3 style={sectionTitle}>관심도 분포</h3>
+                <h3 style={sectionTitle}>{t.intentTitle}</h3>
                 {data.intent.filter(i => i.value > 0).map((item, i) => {
                   const maxVal = Math.max(...data.intent.filter(x => x.value > 0).map(x => x.value))
                   return (
@@ -294,7 +359,7 @@ export default function AdminDashboard() {
               </div>
 
               <div style={sectionStyle}>
-                <h3 style={sectionTitle}>상위 회사 ({data.summary.uniqueCompanies}개)</h3>
+                <h3 style={sectionTitle}>{t.topCompanies} ({data.summary.uniqueCompanies}{t.countUnit})</h3>
                 <div style={{ maxHeight: 400, overflowY: 'auto' }}>
                   {data.topCompanies.map((c, i) => (
                     <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '6px 0', borderBottom: '1px solid #f3f3f3', fontSize: 13 }}>
@@ -314,13 +379,13 @@ export default function AdminDashboard() {
 
             {/* Daily Detail Table */}
             <div style={sectionStyle}>
-              <h3 style={sectionTitle}>일별 상세</h3>
+              <h3 style={sectionTitle}>{t.dailyDetail}</h3>
               <div style={{ overflowX: 'auto' }}>
                 <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
                   <thead>
                     <tr style={{ borderBottom: '2px solid #e5e7eb' }}>
-                      {['날짜', '전체', '광고', '자연유입', '가입', '회사', '채용지원'].map(h => (
-                        <th key={h} style={{ padding: '8px 12px', textAlign: h === '날짜' ? 'left' : 'right', fontWeight: 600, color: '#374151' }}>{h}</th>
+                      {t.tableHeaders.map((h, i) => (
+                        <th key={h} style={{ padding: '8px 12px', textAlign: i === 0 ? 'left' : 'right', fontWeight: 600, color: '#374151' }}>{h}</th>
                       ))}
                     </tr>
                   </thead>
@@ -337,7 +402,7 @@ export default function AdminDashboard() {
                       </tr>
                     ))}
                     <tr style={{ borderTop: '2px solid #e5e7eb', fontWeight: 700 }}>
-                      <td style={{ padding: '8px 12px' }}>합계</td>
+                      <td style={{ padding: '8px 12px' }}>{t.total}</td>
                       <td style={{ padding: '8px 12px', textAlign: 'right' }}>{data.summary.totalSubmissions}</td>
                       <td style={{ padding: '8px 12px', textAlign: 'right', color: '#4F46E5' }}>{data.summary.adSubmissions}</td>
                       <td style={{ padding: '8px 12px', textAlign: 'right', color: '#10B981' }}>{data.summary.organicSubmissions}</td>
@@ -351,6 +416,21 @@ export default function AdminDashboard() {
             </div>
           </>
         )}
+
+        {/* Language Switcher */}
+        <div style={{ display: 'flex', justifyContent: 'center', gap: 8, padding: '16px 0', borderTop: '1px solid #f3f4f6' }}>
+          {['ko', 'en'].map(l => (
+            <button key={l} onClick={() => setLang(l)}
+              style={{
+                padding: '4px 14px', borderRadius: 6, fontSize: 13, fontWeight: 600, cursor: 'pointer',
+                border: lang === l ? '1px solid #111' : '1px solid #d1d5db',
+                background: lang === l ? '#111' : '#fff',
+                color: lang === l ? '#fff' : '#666',
+              }}>
+              {l === 'ko' ? '한국어' : 'English'}
+            </button>
+          ))}
+        </div>
       </div>
     </>
   )

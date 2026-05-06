@@ -10,7 +10,7 @@ export default async function handler(req, res) {
   const user = await verifyAdmin(req)
   if (!user) return res.status(401).json({ error: 'Unauthorized' })
 
-  const { from, to } = req.query
+  const { from, to, lang } = req.query
   const startDate = from || new Date(Date.now() - 30 * 86400000).toISOString().slice(0, 10)
   const endDate = to || new Date().toISOString().slice(0, 10)
 
@@ -95,19 +95,26 @@ export default async function handler(req, res) {
     if (!sub.intent) { preTracking++; continue }
     intentCounts[sub.intent] = (intentCounts[sub.intent] || 0) + 1
   }
-  const intentLabels = {
+  const intentLabels = lang === 'en' ? {
+    open: 'Yes, available',
+    selective: 'Open if right fit',
+    none: 'Not right now',
+    maybe_later: 'Maybe later',
+    dismissed: 'Dismissed',
+  } : {
     open: '적극 구직 중',
     selective: '맞는 곳이면 고려',
     none: '현재는 아님',
     maybe_later: '나중에 고려',
     dismissed: '관심 없음',
   }
+  const preTrackingLabel = lang === 'en' ? 'Pre-tracking' : '추적 이전'
   const intent = Object.entries(intentCounts).map(([key, count]) => ({
     name: intentLabels[key] || key,
     value: count,
     pct: ((count / submissions.length) * 100).toFixed(1),
   }))
-  intent.push({ name: '추적 이전', value: preTracking, pct: ((preTracking / submissions.length) * 100).toFixed(1) })
+  intent.push({ name: preTrackingLabel, value: preTracking, pct: ((preTracking / submissions.length) * 100).toFixed(1) })
 
   // --- Top companies ---
   const companyMap = {}

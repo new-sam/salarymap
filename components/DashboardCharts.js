@@ -40,7 +40,7 @@ function CustomTooltip({ active, payload, label, daily, metric, experiments }) {
   )
 }
 
-export default function MetricChart({ daily, metric, experiments = [] }) {
+export default function MetricChart({ daily, metric, experiments = [], avgLabel = '평균' }) {
   const avg = daily.length > 0
     ? Math.round(daily.reduce((s, d) => s + (d[metric.dataKey] || 0), 0) / daily.length)
     : 0
@@ -61,7 +61,7 @@ export default function MetricChart({ daily, metric, experiments = [] }) {
         <YAxis fontSize={12} />
         <Tooltip content={<CustomTooltip daily={daily} metric={metric} experiments={experiments} />} />
         <ReferenceLine y={avg} stroke={metric.color} strokeDasharray="4 4" strokeOpacity={0.5}
-          label={{ value: `평균: ${avg}`, position: 'right', fontSize: 11, fill: '#999' }} />
+          label={{ value: `${avgLabel}: ${avg}`, position: 'right', fontSize: 11, fill: '#999' }} />
 
         {experiments.filter(e => dateSet.has(e.date)).map(exp => (
           <ReferenceLine key={exp.id} x={exp.date} stroke={exp.color} strokeDasharray="4 4" strokeWidth={2}
