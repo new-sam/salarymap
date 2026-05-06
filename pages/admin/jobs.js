@@ -7,6 +7,8 @@ const EMPTY_JOB = {
   country: 'korea', role: 'Backend', experience_min: 1, experience_max: 5,
   salary_min: 50000000, salary_max: 80000000, description: '', is_active: true,
   image_url: '', logo_url: '', images: [],
+  tech_stack: [], benefits: [], company_size: '', hiring_process: '',
+  deadline: '', headcount: '', apply_url: '',
 }
 
 const ROLES = ['Backend','Frontend','Fullstack','Mobile','Data','DevOps','PM','Design','QA']
@@ -79,6 +81,13 @@ export default function AdminJobs() {
       image_url: form.image_url || null,
       logo_url: form.logo_url || null,
       images: (form.images && form.images.length > 0) ? form.images : null,
+      tech_stack: (form.tech_stack && form.tech_stack.length > 0) ? form.tech_stack : [],
+      benefits: (form.benefits && form.benefits.length > 0) ? form.benefits : [],
+      company_size: form.company_size || null,
+      hiring_process: form.hiring_process || null,
+      deadline: form.deadline || null,
+      headcount: form.headcount ? Number(form.headcount) : null,
+      apply_url: form.apply_url || null,
     }
     if (editing) {
       await fetch('/api/admin/jobs', { method: 'PUT', headers: headers(), body: JSON.stringify({ id: editing.id, ...payload }) })
@@ -221,6 +230,26 @@ export default function AdminJobs() {
                 <F label="Salary Min (VND)" value={form.salary_min} type="number" set={v => setForm({ ...form, salary_min: v })} />
                 <F label="Salary Max (VND)" value={form.salary_max} type="number" set={v => setForm({ ...form, salary_max: v })} />
               </div>
+              {/* New fields */}
+              <div style={{ marginTop: 14, borderTop: '1px solid #f0f0f0', paddingTop: 14 }}>
+                <div style={{ fontSize: 11, fontWeight: 700, color: '#ff4400', marginBottom: 10 }}>EXTENDED INFO</div>
+                <div style={S.grid}>
+                  <div>
+                    <label style={S.lbl}>Tech Stack (comma separated)</label>
+                    <input value={(form.tech_stack || []).join(', ')} onChange={e => setForm({ ...form, tech_stack: e.target.value.split(',').map(s => s.trim()).filter(Boolean) })} style={S.inp} placeholder="React, Node.js, PostgreSQL" />
+                  </div>
+                  <div>
+                    <label style={S.lbl}>Benefits (comma separated)</label>
+                    <input value={(form.benefits || []).join(', ')} onChange={e => setForm({ ...form, benefits: e.target.value.split(',').map(s => s.trim()).filter(Boolean) })} style={S.inp} placeholder="Flexible hours, Health insurance" />
+                  </div>
+                  <F label="Company Size" value={form.company_size} set={v => setForm({ ...form, company_size: v })} />
+                  <F label="Hiring Process" value={form.hiring_process} set={v => setForm({ ...form, hiring_process: v })} />
+                  <F label="Deadline" value={form.deadline} type="date" set={v => setForm({ ...form, deadline: v })} />
+                  <F label="Headcount" value={form.headcount} type="number" set={v => setForm({ ...form, headcount: v })} />
+                  <F label="Apply URL" value={form.apply_url} set={v => setForm({ ...form, apply_url: v })} />
+                </div>
+              </div>
+
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px 16px', marginTop: 10 }}>
                 <F label="Image URL (card thumbnail)" value={form.image_url} set={v => setForm({ ...form, image_url: v })} />
                 <F label="Logo URL (small icon)" value={form.logo_url} set={v => setForm({ ...form, logo_url: v })} />
