@@ -641,7 +641,7 @@ export default function JobsPage() {
                       const matched = isProfileMatch(job)
                       const days = job.deadline ? Math.ceil((new Date(job.deadline) - now) / 86400000) : null
                       return (
-                        <div key={job.id} className="jc" onClick={() => { setCarouselIdx(0); setDetailApplyMode(false); setApplied(false); setResumeFile(null); setDetailJob({ ...job, _imgFallback: DEFAULT_IMAGES[idx % 3] }) }}>
+                        <div key={job.id} className="jc" onClick={() => { setCarouselIdx(0); setDetailApplyMode(false); setApplied(false); setResumeFile(null); setDetailJob({ ...job, _imgFallback: DEFAULT_IMAGES[idx % 3] }); fetch('/api/track',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({event:'click_job_card',page:'jobs',meta:{jobId:job.id,title:job.title,company:job.company}})}).catch(()=>{}) }}>
                           <div className="jc-img">
                             <div className="jc-img-in" style={{ background: `url(${job.image_url || job.images?.[0] || DEFAULT_IMAGES[idx % 3]}) center/cover no-repeat` }}>
                               {bump !== null && bump > 0 && (
@@ -728,7 +728,7 @@ export default function JobsPage() {
                       const matched = isProfileMatch(job)
                       const globalIdx = (currentPage - 1) * JOBS_PER_PAGE + idx
                       return (
-                        <div key={job.id} className="jc" onClick={() => { setCarouselIdx(0); setDetailApplyMode(false); setApplied(false); setResumeFile(null); setDetailJob({ ...job, _imgFallback: DEFAULT_IMAGES[globalIdx % 3] }) }}>
+                        <div key={job.id} className="jc" onClick={() => { setCarouselIdx(0); setDetailApplyMode(false); setApplied(false); setResumeFile(null); setDetailJob({ ...job, _imgFallback: DEFAULT_IMAGES[globalIdx % 3] }); fetch('/api/track',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({event:'click_job_card',page:'jobs',meta:{jobId:job.id,title:job.title,company:job.company}})}).catch(()=>{}) }}>
                           <div className="jc-img">
                             <div className="jc-img-in" style={{
                               background: `url(${job.image_url || job.images?.[0] || DEFAULT_IMAGES[globalIdx % 3]}) center/cover no-repeat`,

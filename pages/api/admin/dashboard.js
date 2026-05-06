@@ -58,11 +58,19 @@ export default async function handler(req, res) {
     .gte('created_at', startISO)
     .lte('created_at', endISO)
 
+  // Fetch click events in date range
+  const { data: events } = await supabase
+    .from('events')
+    .select('id, event, meta, created_at')
+    .in('event', ['click_jobs_cta', 'click_job_card'])
+    .gte('created_at', startISO)
+    .lte('created_at', endISO)
+
   // --- Aggregate daily trend ---
   const dailyMap = {}
   for (const sub of submissions) {
     const date = sub.created_at.slice(0, 10)
-    if (!dailyMap[date]) dailyMap[date] = { date, submissions: 0, ad: 0, organic: 0, signups: 0, companies: new Set(), jobApps: 0 }
+    if (!dailyMap[date]) dailyMap[date] = { date, submissions: 0, ad: 0, organic: 0, signups: 0, companies: new Set(), jobApps: 0, jobClicks: 0, cardClicks: 0 }
     dailyMap[date].submissions++
     if (sub.utm_source || sub.utm_medium || sub.utm_campaign) {
       dailyMap[date].ad++
@@ -74,14 +82,21 @@ export default async function handler(req, res) {
 
   for (const s of signups) {
     const date = s.created_at.slice(0, 10)
-    if (!dailyMap[date]) dailyMap[date] = { date, submissions: 0, ad: 0, organic: 0, signups: 0, companies: new Set(), jobApps: 0 }
+    if (!dailyMap[date]) dailyMap[date] = { date, submissions: 0, ad: 0, organic: 0, signups: 0, companies: new Set(), jobApps: 0, jobClicks: 0, cardClicks: 0 }
     dailyMap[date].signups++
   }
 
   for (const ja of (jobApps || [])) {
     const date = ja.created_at.slice(0, 10)
-    if (!dailyMap[date]) dailyMap[date] = { date, submissions: 0, ad: 0, organic: 0, signups: 0, companies: new Set(), jobApps: 0 }
+    if (!dailyMap[date]) dailyMap[date] = { date, submissions: 0, ad: 0, organic: 0, signups: 0, companies: new Set(), jobApps: 0, jobClicks: 0, cardClicks: 0 }
     dailyMap[date].jobApps++
+  }
+
+  for (const ev of (events || [])) {
+    const date = ev.created_at.slice(0, 10)
+    if (!dailyMap[date]) dailyMap[date] = { date, submissions: 0, ad: 0, organic: 0, signups: 0, companies: new Set(), jobApps: 0, jobClicks: 0, cardClicks: 0 }
+    if (ev.event === 'click_jobs_cta') dailyMap[date].jobClicks++
+    if (ev.event === 'click_job_card') dailyMap[date].cardClicks++
   }
 
   const daily = Object.values(dailyMap)
@@ -138,6 +153,8 @@ export default async function handler(req, res) {
     organicSubmissions: submissions.filter(s => !s.utm_source && !s.utm_medium && !s.utm_campaign).length,
     totalSignups: signups.length,
     totalJobApps: (jobApps || []).length,
+    totalJobClicks: (events || []).filter(e => e.event === 'click_jobs_cta').length,
+    totalCardClicks: (events || []).filter(e => e.event === 'click_job_card').length,
     uniqueCompanies: uniqueCompanies.size,
     interested,
     signupRate: submissions.length > 0 ? ((signups.length / submissions.length) * 100).toFixed(1) : '0',
