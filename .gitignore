@@ -46,3 +46,4 @@ captures/
 
 # claude code
 .claude/
+.mcp.json
