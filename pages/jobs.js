@@ -95,7 +95,24 @@ export default function JobsPage() {
   }, [])
 
   useEffect(() => {
-    fetch('/api/jobs').then(r => r.json()).then(d => { setJobs(d); setJobsLoaded(true) }).catch(() => setJobsLoaded(true))
+    let retries = 0
+    const load = () => {
+      fetch('/api/jobs').then(r => {
+        if (!r.ok) throw new Error(r.status)
+        return r.json()
+      }).then(d => {
+        if (d.length === 0 && retries < 2) {
+          retries++
+          setTimeout(load, 1000)
+        } else {
+          setJobs(d); setJobsLoaded(true)
+        }
+      }).catch(() => {
+        if (retries < 2) { retries++; setTimeout(load, 1000) }
+        else setJobsLoaded(true)
+      })
+    }
+    load()
   }, [])
 
   const getBump = (job) => {

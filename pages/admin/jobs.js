@@ -22,12 +22,15 @@ export default function AdminJobs() {
   const [jobs, setJobs] = useState([])
   const [apps, setApps] = useState([])
   const [admins, setAdmins] = useState([])
+  const [targets, setTargets] = useState([])
   const [tab, setTab] = useState('jobs')
   const [editing, setEditing] = useState(null)
   const [form, setForm] = useState(EMPTY_JOB)
   const [saving, setSaving] = useState(false)
   const [msg, setMsg] = useState(null)
   const [newAdminEmail, setNewAdminEmail] = useState('')
+  const [targetForm, setTargetForm] = useState({ company_name: '', slug: '', source_type: 'greenhouse', career_url: '' })
+  const [targetSaving, setTargetSaving] = useState(false)
   const [imageUploading, setImageUploading] = useState(false)
   const imgInputRef = useRef(null)
 
@@ -52,7 +55,7 @@ export default function AdminJobs() {
 
   useEffect(() => {
     if (auth !== 'ok') return
-    fetchJobs(); fetchApps(); fetchAdmins()
+    fetchJobs(); fetchApps(); fetchAdmins(); fetchTargets()
   }, [auth])
 
   const fetchJobs = async () => {
@@ -66,6 +69,30 @@ export default function AdminJobs() {
   const fetchAdmins = async () => {
     const res = await fetch('/api/admin/users', { headers: headers() })
     if (res.ok) setAdmins(await res.json())
+  }
+  const fetchTargets = async () => {
+    const res = await fetch('/api/admin/crawl-targets', { headers: headers() })
+    if (res.ok) setTargets(await res.json())
+  }
+
+  const handleAddTarget = async () => {
+    if (!targetForm.company_name || !targetForm.slug) return
+    setTargetSaving(true)
+    const res = await fetch('/api/admin/crawl-targets', { method: 'POST', headers: headers(), body: JSON.stringify(targetForm) })
+    if (res.ok) { flash('Target added'); setTargetForm({ company_name: '', slug: '', source_type: 'greenhouse', career_url: '' }); fetchTargets() }
+    else { const d = await res.json(); flash(d.error || 'Failed') }
+    setTargetSaving(false)
+  }
+
+  const handleToggleTarget = async (target) => {
+    await fetch('/api/admin/crawl-targets', { method: 'PUT', headers: headers(), body: JSON.stringify({ id: target.id, is_active: !target.is_active }) })
+    fetchTargets()
+  }
+
+  const handleDeleteTarget = async (id) => {
+    if (!confirm('Delete this target?')) return
+    await fetch('/api/admin/crawl-targets', { method: 'DELETE', headers: headers(), body: JSON.stringify({ id }) })
+    flash('Deleted'); fetchTargets()
   }
 
   const flash = (text) => { setMsg(text); setTimeout(() => setMsg(null), 3000) }
@@ -200,9 +227,9 @@ export default function AdminJobs() {
             <div style={{ fontSize: 12, color: '#aaa' }}>{currentEmail}</div>
           </div>
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-            {['jobs','applications','admins'].map(t => (
+            {['jobs','applications','crawl','admins'].map(t => (
               <button key={t} style={{ ...S.tab, ...(tab === t ? S.tabOn : {}) }} onClick={() => setTab(t)}>
-                {t === 'jobs' ? `Jobs (${jobs.length})` : t === 'applications' ? `Applications (${apps.length})` : `Admins (${admins.length})`}
+                {t === 'jobs' ? `Jobs (${jobs.length})` : t === 'applications' ? `Applications (${apps.length})` : t === 'crawl' ? `Crawl Targets (${targets.length})` : `Admins (${admins.length})`}
               </button>
             ))}
           </div>
@@ -376,6 +403,49 @@ export default function AdminJobs() {
                 </select>
               </div>
             ))}
+          </div>
+        )}
+
+        {/* CRAWL TARGETS TAB */}
+        {tab === 'crawl' && (
+          <div style={S.card}>
+            <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 16 }}>Crawl Targets</div>
+
+            <div style={{ ...S.grid, marginBottom: 16 }}>
+              <F label="Company Name" value={targetForm.company_name} set={v => setTargetForm({ ...targetForm, company_name: v })} />
+              <F label="Slug" value={targetForm.slug} set={v => setTargetForm({ ...targetForm, slug: v })} />
+              <Sel label="Source Type" value={targetForm.source_type} opts={['greenhouse', 'lever', 'workable', 'greetinghr']} set={v => setTargetForm({ ...targetForm, source_type: v })} />
+              <F label="Career URL (optional)" value={targetForm.career_url} set={v => setTargetForm({ ...targetForm, career_url: v })} />
+            </div>
+            <button style={S.btnP} onClick={handleAddTarget} disabled={targetSaving || !targetForm.company_name || !targetForm.slug}>
+              {targetSaving ? 'Adding...' : 'Add Target'}
+            </button>
+
+            <div style={{ marginTop: 20 }}>
+              {targets.length === 0 && <div style={{ color: '#aaa', fontSize: 13 }}>No targets yet</div>}
+              {targets.map(t => (
+                <div key={t.id} style={S.row}>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontSize: 14, fontWeight: 600 }}>
+                      {t.company_name}
+                      <span style={{ ...S.badge, background: '#eef2ff', color: '#4338ca', marginLeft: 8 }}>{t.source_type}</span>
+                      <span style={{ ...S.badge, background: t.is_active ? '#dcfce7' : '#fee2e2', color: t.is_active ? '#166534' : '#991b1b' }}>
+                        {t.is_active ? 'Active' : 'Inactive'}
+                      </span>
+                    </div>
+                    <div style={{ fontSize: 12, color: '#888' }}>
+                      slug: {t.slug}
+                      {t.career_url && <> · <a href={t.career_url} target="_blank" rel="noopener" style={{ color: '#ff4400' }}>{t.career_url}</a></>}
+                      {t.last_crawled_at && <> · Last crawled: {new Date(t.last_crawled_at).toLocaleString()}</>}
+                    </div>
+                  </div>
+                  <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
+                    <button style={S.btnS} onClick={() => handleToggleTarget(t)}>{t.is_active ? 'Deactivate' : 'Activate'}</button>
+                    <button style={{ ...S.btnS, color: '#dc2626' }} onClick={() => handleDeleteTarget(t.id)}>Delete</button>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         )}
 

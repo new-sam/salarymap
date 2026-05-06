@@ -6,12 +6,21 @@ const supabase = createClient(
 )
 
 export default async function handler(req, res) {
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from('jobs')
     .select('*')
     .eq('is_active', true)
     .order('created_at', { ascending: false })
 
-  res.setHeader('Cache-Control', 'public, max-age=120, s-maxage=300, stale-while-revalidate=600')
-  res.status(200).json(data || [])
+  if (error || !data) {
+    res.setHeader('Cache-Control', 'no-store')
+    return res.status(500).json([])
+  }
+
+  if (data.length === 0) {
+    res.setHeader('Cache-Control', 'no-store')
+  } else {
+    res.setHeader('Cache-Control', 'public, max-age=60, s-maxage=120, stale-while-revalidate=300')
+  }
+  res.status(200).json(data)
 }
