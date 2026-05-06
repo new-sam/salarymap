@@ -3,5 +3,11 @@
     "deploymentEnabled": {
       "main": true
     }
-  }
+  },
+  "crons": [
+    {
+      "path": "/api/cron/crawl-jobs",
+      "schedule": "0 3 * * *"
+    }
+  ]
 }

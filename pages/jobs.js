@@ -73,7 +73,7 @@ export default function JobsPage() {
       setUserRole(localStorage.getItem('fyi_role'))
       setUserExperience(localStorage.getItem('fyi_exp'))
       setUserCompany(localStorage.getItem('fyi_company'))
-      try { setBookmarks(JSON.parse(localStorage.getItem('fyi_bookmarks') || '[]')) } catch {}
+      try { setBookmarks(JSON.parse(localStorage.getItem('fyi_bookmarks') || '[]')) } catch { }
     }
     supabase.auth.getSession().then(async ({ data: { session: s } }) => {
       if (s) {
@@ -87,7 +87,7 @@ export default function JobsPage() {
             const { isAdmin } = await res.json()
             setIsAdminUser(isAdmin)
             sessionStorage.setItem('fyi_is_admin', String(isAdmin))
-          } catch {}
+          } catch { }
         }
       }
       setAuthLoading(false)
@@ -240,22 +240,24 @@ export default function JobsPage() {
 
         .jf-count { font-size: 15px; font-weight: 700; color: #111; margin-bottom: 16px; }
 
-        .jg { display: grid; grid-template-columns: repeat(4, 1fr); gap: 24px; }
+        .jg { display: grid; grid-template-columns: repeat(4, 1fr); gap: 24px; align-items: stretch; }
 
         /* Card */
-        .jc { cursor: pointer; }
-        .jc-img { border-radius: 8px; overflow: hidden; position: relative; padding-top: 62%; margin-bottom: 11px; background: #f0f0f0; }
+        .jc { cursor: pointer; display: flex; flex-direction: column; }
+        .jc-img { border-radius: 8px; overflow: hidden; position: relative; padding-top: 62%; margin-bottom: 11px; background: #f0f0f0; flex-shrink: 0; }
         .jc-img-in { position: absolute; inset: 0; transition: transform .25s ease; background-color: #f0f0f0; background-size: cover; background-position: center; background-repeat: no-repeat; }
         .jc:hover .jc-img-in { transform: scale(1.04); }
         .jc-bump { position: absolute; top: 10px; left: 10px; background: rgba(0,0,0,0.62); color: #fff; font-size: 11px; font-weight: 600; padding: 4px 9px; border-radius: 4px; z-index: 2; }
         .jc-bump b { color: #ff4400; font-weight: 700; }
         .jc-bm { position: absolute; top: 10px; right: 10px; width: 28px; height: 28px; border-radius: 50%; background: rgba(255,255,255,0.92); display: flex; align-items: center; justify-content: center; z-index: 2; border: none; cursor: pointer; }
         .jc-ini { position: absolute; bottom: 10px; left: 10px; width: 34px; height: 34px; border-radius: 6px; background: #fff; border: 1px solid rgba(0,0,0,0.08); display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 800; color: #333; z-index: 2; }
-        .jc-t { font-size: 15px; font-weight: 600; color: #111; margin-bottom: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .jc-co { font-size: 13px; color: #888; margin-bottom: 4px; }
-        .jc-m { font-size: 12px; color: #bbb; }
+        .jc-body { flex: 1; display: flex; flex-direction: column; }
+        .jc-t { font-size: 15px; font-weight: 600; color: #111; margin-bottom: 3px; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; }
+        .jc-co { font-size: 13px; color: #888; margin-bottom: 4px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .jc-tags { display: flex; gap: 4px; flex-wrap: nowrap; overflow: hidden; margin-bottom: 4px; height: 22px; }
+        .jc-bottom { margin-top: auto; }
+        .jc-m { font-size: 12px; color: #bbb; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .jc-m b { color: #ff4400; font-weight: 700; }
-        .jc-tags { display: flex; gap: 4px; flex-wrap: wrap; margin-bottom: 4px; }
         .jc-tag { font-size: 11px; font-weight: 500; color: #555; background: #f0f0f0; padding: 2px 7px; border-radius: 4px; }
         .jc-tag-more { color: #aaa; }
         .jc-dday { display: inline-block; margin-left: 6px; font-size: 11px; font-weight: 700; color: #ff4400; background: #fff7f5; border: 1px solid #ffd6c8; padding: 1px 6px; border-radius: 4px; }
@@ -330,7 +332,8 @@ export default function JobsPage() {
         .jd-meta-item { background: #f9f9f8; border-radius: 8px; padding: 12px 14px; }
         .jd-meta-label { font-size: 10px; font-weight: 700; color: #aaa; text-transform: uppercase; letter-spacing: .04em; margin-bottom: 4px; }
         .jd-meta-value { font-size: 14px; font-weight: 600; color: #111; }
-        .jd-apply-btn { width: 100%; padding: 14px; background: #ff4400; color: #fff; border: none; border-radius: 8px; font-size: 15px; font-weight: 700; cursor: pointer; margin-top: 8px; transition: background .15s; }
+        .jd-apply-float { position: sticky; bottom: 0; background: #fff; padding: 16px 32px; border-top: 1px solid #f0f0f0; z-index: 2; }
+        .jd-apply-btn { width: 100%; padding: 14px; background: #ff4400; color: #fff; border: none; border-radius: 8px; font-size: 15px; font-weight: 700; cursor: pointer; transition: background .15s; }
         .jd-apply-btn:hover { background: #e63d00; }
         .jd-login-box { background: #fff7f5; border: 1px solid #ffd6c8; border-radius: 10px; padding: 16px 20px; text-align: center; margin-top: 8px; }
         .jd-login-text { font-size: 13px; color: #888; margin-bottom: 10px; }
@@ -413,29 +416,36 @@ export default function JobsPage() {
                         )}
                         <button className="jc-bm" aria-label="Bookmark" onClick={e => { e.stopPropagation(); toggleBookmark(job.id) }}>
                           <svg width="14" height="14" viewBox="0 0 24 24" fill={bookmarks.includes(job.id) ? '#ff4400' : 'none'} stroke={bookmarks.includes(job.id) ? '#ff4400' : '#999'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                            <path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z"/>
+                            <path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z" />
                           </svg>
                         </button>
-                        <div className="jc-ini">{job.company_initials || job.company.slice(0,2).toUpperCase()}</div>
+                        <div className="jc-ini">{job.company_initials || job.company.slice(0, 2).toUpperCase()}</div>
                       </div>
                     </div>
-                    <div className="jc-t">{job.title}</div>
-                    <div className="jc-co">{job.company}</div>
-                    {job.tech_stack?.length > 0 && (
+                    <div className="jc-body">
+                      <div className="jc-t">{job.title}</div>
+                      <div className="jc-co">{job.company}</div>
                       <div className="jc-tags">
-                        {job.tech_stack.slice(0, 3).map(t => <span key={t} className="jc-tag">{t}</span>)}
-                        {job.tech_stack.length > 3 && <span className="jc-tag jc-tag-more">+{job.tech_stack.length - 3}</span>}
+                        {job.tech_stack?.length > 0 && (
+                          <>
+                            {job.tech_stack.slice(0, 3).map(t => <span key={t} className="jc-tag">{t}</span>)}
+                            {job.tech_stack.length > 3 && <span className="jc-tag jc-tag-more">+{job.tech_stack.length - 3}</span>}
+                          </>
+                        )}
                       </div>
-                    )}
-                    <div className="jc-m">
-                      {job.location} · {job.type} · <b>{Math.round(job.salary_min/1e6)}M–{Math.round(job.salary_max/1e6)}M VND</b>
-                      {job.deadline && (() => {
-                        const days = Math.ceil((new Date(job.deadline) - new Date()) / 86400000)
-                        if (days < 0) return null
-                        return <span className={`jc-dday${days <= 7 ? ' urgent' : ''}`}>{days === 0 ? 'D-Day' : `D-${days}`}</span>
-                      })()}
+                      <div className="jc-bottom">
+                        <div className="jc-m">
+                          {job.location} · {job.type}
+                          {job.salary_min > 0 && <> · <b>{Math.round(job.salary_min / 1e6)}M–{Math.round(job.salary_max / 1e6)}M VND</b></>}
+                          {job.deadline && (() => {
+                            const days = Math.ceil((new Date(job.deadline) - new Date()) / 86400000)
+                            if (days < 0) return null
+                            return <span className={`jc-dday${days <= 7 ? ' urgent' : ''}`}>{days === 0 ? 'D-Day' : `D-${days}`}</span>
+                          })()}
+                        </div>
+                        <button className="jc-apply" onClick={() => openApply(job)}>{t('jobs.apply')}</button>
+                      </div>
                     </div>
-                    <button className="jc-apply" onClick={() => openApply(job)}>{t('jobs.apply')}</button>
                   </div>
                 )
               })}
@@ -496,16 +506,21 @@ export default function JobsPage() {
             <div className="jd-body">
               {/* Company */}
               <div className="jd-company">
-                <div className="jd-co-ini">{detailJob.company_initials || detailJob.company.slice(0,2).toUpperCase()}</div>
+                <div className="jd-co-ini">{detailJob.company_initials || detailJob.company.slice(0, 2).toUpperCase()}</div>
                 <div>
                   <div className="jd-co-name">{detailJob.company}</div>
-                  <div className="jd-co-loc">{detailJob.location} · {detailJob.type}</div>
+                  <div className="jd-co-loc">
+                    {detailJob.location} · {detailJob.type}
+                    {detailJob.company_url && <> · <a href={detailJob.company_url} target="_blank" rel="noopener noreferrer" style={{ color: '#ff4400', textDecoration: 'none' }}>Website</a></>}
+                  </div>
                 </div>
               </div>
 
               {/* Title & Salary */}
               <div className="jd-title">{detailJob.title}</div>
-              <div className="jd-salary">{Math.round(detailJob.salary_min/1e6)}M – {Math.round(detailJob.salary_max/1e6)}M VND</div>
+              {detailJob.salary_min > 0 && (
+                <div className="jd-salary">{Math.round(detailJob.salary_min / 1e6)}M – {Math.round(detailJob.salary_max / 1e6)}M VND</div>
+              )}
 
               {/* Tech Stack */}
               {detailJob.tech_stack?.length > 0 && (
@@ -562,7 +577,7 @@ export default function JobsPage() {
               {/* Description */}
               <div className="jd-section-title">{t('jobs.about')}</div>
               <div className="jd-desc">
-                {detailJob.description || `${detailJob.company} is looking for a ${detailJob.title} to join their team in ${detailJob.location}.\n\nThis is a ${detailJob.type} position offering ${Math.round(detailJob.salary_min/1e6)}M–${Math.round(detailJob.salary_max/1e6)}M VND, ideal for candidates with ${detailJob.experience_min}–${detailJob.experience_max} years of experience in ${detailJob.role}.\n\nOur headhunter team will personally introduce you and support you throughout the process.`}
+                {detailJob.description || `${detailJob.company} is looking for a ${detailJob.title} to join their team in ${detailJob.location}.\n\nThis is a ${detailJob.type} position offering ${Math.round(detailJob.salary_min / 1e6)}M–${Math.round(detailJob.salary_max / 1e6)}M VND, ideal for candidates with ${detailJob.experience_min}–${detailJob.experience_max} years of experience in ${detailJob.role}.\n\nOur headhunter team will personally introduce you and support you throughout the process.`}
               </div>
 
               {/* Benefits */}
@@ -601,22 +616,18 @@ export default function JobsPage() {
                       {t('jobs.higherThanCurrent', { pct: Math.round(((detailJob.salary_min - userSalary) / userSalary) * 100) })}
                     </div>
                     <div style={{ fontSize: 12, color: '#888' }}>
-                      Your benchmark: {Math.round(userSalary/1e6)}M VND → This role: {Math.round(detailJob.salary_min/1e6)}M–{Math.round(detailJob.salary_max/1e6)}M VND
+                      Your benchmark: {Math.round(userSalary / 1e6)}M VND → This role: {Math.round(detailJob.salary_min / 1e6)}M–{Math.round(detailJob.salary_max / 1e6)}M VND
                     </div>
                   </div>
                 </div>
               )}
 
-              {/* Apply CTA */}
-              {detailJob.apply_url ? (
-                <a href={detailJob.apply_url} target="_blank" rel="noopener noreferrer" className="jd-apply-btn" style={{ display: 'block', textAlign: 'center', textDecoration: 'none' }}>
-                  Apply on Company Site
-                </a>
-              ) : (
-                <button className="jd-apply-btn" onClick={() => { setDetailJob(null); openApply(detailJob) }}>
-                  {t('jobs.apply')}
-                </button>
-              )}
+            </div>
+            {/* Floating Apply CTA */}
+            <div className="jd-apply-float">
+              <button className="jd-apply-btn" onClick={() => { setDetailJob(null); openApply(detailJob) }}>
+                {t('jobs.apply')}
+              </button>
             </div>
           </div>
         </>
@@ -636,17 +647,17 @@ export default function JobsPage() {
                 <div className="ap-sub">{t('jobs.applySub')}</div>
 
                 <div className="ap-job">
-                  <div className="ap-job-ini">{selectedJob.company_initials || selectedJob.company.slice(0,2).toUpperCase()}</div>
+                  <div className="ap-job-ini">{selectedJob.company_initials || selectedJob.company.slice(0, 2).toUpperCase()}</div>
                   <div>
                     <div className="ap-job-t">{selectedJob.title} — {selectedJob.company}</div>
-                    <div className="ap-job-s">{Math.round(selectedJob.salary_min/1e6)}M–{Math.round(selectedJob.salary_max/1e6)}M VND</div>
+                    {selectedJob.salary_min > 0 && <div className="ap-job-s">{Math.round(selectedJob.salary_min / 1e6)}M–{Math.round(selectedJob.salary_max / 1e6)}M VND</div>}
                   </div>
                 </div>
 
                 <div className="ap-lbl">{t('jobs.yourProfile')}</div>
                 <div className="ap-tags">
                   {userRole && <div className="ap-tag">{userRole} · {userExperience || '—'} yrs</div>}
-                  {userCompany && <div className="ap-tag">{t('jobs.currentAt', { company: userCompany, salary: userSalary ? Math.round(userSalary/1e6) : '—' })}</div>}
+                  {userCompany && <div className="ap-tag">{t('jobs.currentAt', { company: userCompany, salary: userSalary ? Math.round(userSalary / 1e6) : '—' })}</div>}
                 </div>
 
                 <div className="ap-lbl">{t('jobs.cvOptional')}</div>
@@ -663,13 +674,13 @@ export default function JobsPage() {
                 </div>
 
                 <button className="ap-btn" onClick={() => {
-                  if (!isLoggedIn) { localStorage.setItem('fyi_login_return','/jobs'); supabase.auth.signInWithOAuth({ provider:'google', options:{ redirectTo: window.location.origin+'/auth/callback' }}); return; }
+                  if (!isLoggedIn) { localStorage.setItem('fyi_login_return', '/jobs'); supabase.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: window.location.origin + '/auth/callback' } }); return; }
                   handleApply();
                 }} disabled={applying}>
                   {!isLoggedIn ? t('jobs.loginToApply') : applying ? t('jobs.sending') : t('jobs.submitApplication')}
                 </button>
                 <button className="ap-skip" onClick={() => {
-                  if (!isLoggedIn) { localStorage.setItem('fyi_login_return','/jobs'); supabase.auth.signInWithOAuth({ provider:'google', options:{ redirectTo: window.location.origin+'/auth/callback' }}); return; }
+                  if (!isLoggedIn) { localStorage.setItem('fyi_login_return', '/jobs'); supabase.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: window.location.origin + '/auth/callback' } }); return; }
                   setResumeFile(null); handleApply();
                 }}>{t('jobs.applyNoCV')}</button>
               </>
