@@ -222,16 +222,22 @@ export default function AdminJobs() {
 
       <div style={S.shell}>
         <div style={S.header}>
-          <div>
-            <div style={{ fontSize: 20, fontWeight: 800 }}>Admin Dashboard</div>
-            <div style={{ fontSize: 12, color: '#aaa' }}>{currentEmail}</div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <a href="/" style={{ color: '#888', textDecoration: 'none', fontSize: 20 }} title="Back to Home">&larr;</a>
+            <div>
+              <div style={{ fontSize: 20, fontWeight: 800 }}>Admin Dashboard</div>
+              <div style={{ fontSize: 12, color: '#aaa' }}>{currentEmail}</div>
+            </div>
           </div>
-          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
             {['jobs','applications','crawl','admins'].map(t => (
               <button key={t} style={{ ...S.tab, ...(tab === t ? S.tabOn : {}) }} onClick={() => setTab(t)}>
                 {t === 'jobs' ? `Jobs (${jobs.length})` : t === 'applications' ? `Applications (${apps.length})` : t === 'crawl' ? `Crawl Targets (${targets.length})` : `Admins (${admins.length})`}
               </button>
             ))}
+            <a href="/admin/dashboard" style={{ fontSize: 13, fontWeight: 600, color: '#4F46E5', textDecoration: 'none', padding: '7px 16px', border: '1px solid #4F46E5', borderRadius: 8 }}>
+              Performance
+            </a>
           </div>
         </div>
 
