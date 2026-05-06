@@ -503,6 +503,10 @@ export default function JobsPage() {
           .jn-r .jn-submit { display: none; }
           .jn-tab { font-size: 12px; padding: 0 8px; }
         }
+        .jc-skel .jc-skel-img { position: absolute; inset: 0; border-radius: 8px; background: #e9e9e9; }
+        .jc-skel-line { border-radius: 4px; background: #e9e9e9; }
+        .shimmer { background: linear-gradient(90deg, #e9e9e9 25%, #f5f5f5 50%, #e9e9e9 75%); background-size: 200% 100%; animation: shimmer 1.5s infinite; }
+        @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
       `}</style>
 
       <GlobalNav activePage="jobs" />
@@ -682,7 +686,22 @@ export default function JobsPage() {
               )
             })()}
 
-            <div className="jf-bar">
+            {!jobsLoaded && (
+              <div className="jg jg-skeleton">
+                {[...Array(6)].map((_, i) => (
+                  <div key={i} className="jc jc-skel">
+                    <div className="jc-img"><div className="jc-skel-img shimmer" /></div>
+                    <div className="jc-body">
+                      <div className="jc-skel-line shimmer" style={{ width: '70%', height: 14, marginBottom: 8 }} />
+                      <div className="jc-skel-line shimmer" style={{ width: '50%', height: 12, marginBottom: 6 }} />
+                      <div className="jc-skel-line shimmer" style={{ width: '40%', height: 12 }} />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <div className="jf-bar" style={{ visibility: jobsLoaded ? 'visible' : 'hidden' }}>
               <div className="jf-bar-l">
                 <div className="jf-count">{t('jobs.matchCount', { count: filteredJobs.length })}</div>
                 <label className="jf-check">
