@@ -28,6 +28,10 @@ const PERK_FILTER_KEYS = [
   { key: 'global', tKey: 'jobs.global' },
 ]
 
+const TECH_FILTERS = [
+  'React', 'Node.js', 'Python', 'Java', 'TypeScript', 'Go', 'PostgreSQL', 'AWS',
+]
+
 export default function JobsPage() {
   const router = useRouter()
   const fileRef = useRef(null)
@@ -37,6 +41,7 @@ export default function JobsPage() {
   const [jobsLoaded, setJobsLoaded] = useState(false)
   const [roleFilter, setRoleFilter] = useState('all')
   const [perkFilter, setPerkFilter] = useState(null)
+  const [techFilter, setTechFilter] = useState(null)
   const [isSubmitted, setIsSubmitted] = useState(false)
   const [isLoggedIn, setIsLoggedIn] = useState(false)
   const [authLoading, setAuthLoading] = useState(true)
@@ -104,6 +109,7 @@ export default function JobsPage() {
     .filter(job => {
       if (companyQuery && job.company?.toLowerCase() !== companyQuery) return false
       if (roleFilter !== 'all' && job.role !== roleFilter) return false
+      if (techFilter && !(job.tech_stack || []).some(t => t.toLowerCase().includes(techFilter.toLowerCase()))) return false
       if (perkFilter === 'pays_more') return userSalary ? job.salary_min > userSalary : true
       if (perkFilter === 'remote') return job.type === 'remote'
       if (perkFilter === 'korea' || perkFilter === 'vietnam' || perkFilter === 'global') return job.country === perkFilter
@@ -249,6 +255,11 @@ export default function JobsPage() {
         .jc-co { font-size: 13px; color: #888; margin-bottom: 4px; }
         .jc-m { font-size: 12px; color: #bbb; }
         .jc-m b { color: #ff4400; font-weight: 700; }
+        .jc-tags { display: flex; gap: 4px; flex-wrap: wrap; margin-bottom: 4px; }
+        .jc-tag { font-size: 11px; font-weight: 500; color: #555; background: #f0f0f0; padding: 2px 7px; border-radius: 4px; }
+        .jc-tag-more { color: #aaa; }
+        .jc-dday { display: inline-block; margin-left: 6px; font-size: 11px; font-weight: 700; color: #ff4400; background: #fff7f5; border: 1px solid #ffd6c8; padding: 1px 6px; border-radius: 4px; }
+        .jc-dday.urgent { color: #dc2626; background: #fef2f2; border-color: #fecaca; }
         .jc-nudge { background: #fff7f5; border: 1px solid #ffd6c8; border-radius: 8px; padding: 8px 12px; display: flex; justify-content: space-between; align-items: center; margin-top: 8px; }
         .jc-nudge-t { font-size: 12px; color: #888; }
         .jc-nudge-b { font-size: 12px; color: #ff4400; font-weight: 700; background: none; border: none; cursor: pointer; white-space: nowrap; }
@@ -378,6 +389,12 @@ export default function JobsPage() {
                 <button key={key} className={`jf-pill outline${perkFilter === key ? ' on' : ''}`} onClick={() => setPerkFilter(perkFilter === key ? null : key)}>{tKey ? t(tKey) : label}</button>
               ))}
             </div>
+            {/* Tech stack filters */}
+            <div className="jf">
+              {TECH_FILTERS.map(tech => (
+                <button key={tech} className={`jf-pill outline${techFilter === tech ? ' on' : ''}`} onClick={() => setTechFilter(techFilter === tech ? null : tech)}>{tech}</button>
+              ))}
+            </div>
 
             <div className="jf-count">{t('jobs.matchCount', { count: filteredJobs.length })}</div>
 
@@ -404,8 +421,19 @@ export default function JobsPage() {
                     </div>
                     <div className="jc-t">{job.title}</div>
                     <div className="jc-co">{job.company}</div>
+                    {job.tech_stack?.length > 0 && (
+                      <div className="jc-tags">
+                        {job.tech_stack.slice(0, 3).map(t => <span key={t} className="jc-tag">{t}</span>)}
+                        {job.tech_stack.length > 3 && <span className="jc-tag jc-tag-more">+{job.tech_stack.length - 3}</span>}
+                      </div>
+                    )}
                     <div className="jc-m">
                       {job.location} · {job.type} · <b>{Math.round(job.salary_min/1e6)}M–{Math.round(job.salary_max/1e6)}M VND</b>
+                      {job.deadline && (() => {
+                        const days = Math.ceil((new Date(job.deadline) - new Date()) / 86400000)
+                        if (days < 0) return null
+                        return <span className={`jc-dday${days <= 7 ? ' urgent' : ''}`}>{days === 0 ? 'D-Day' : `D-${days}`}</span>
+                      })()}
                     </div>
                     <button className="jc-apply" onClick={() => openApply(job)}>{t('jobs.apply')}</button>
                   </div>
@@ -479,6 +507,15 @@ export default function JobsPage() {
               <div className="jd-title">{detailJob.title}</div>
               <div className="jd-salary">{Math.round(detailJob.salary_min/1e6)}M – {Math.round(detailJob.salary_max/1e6)}M VND</div>
 
+              {/* Tech Stack */}
+              {detailJob.tech_stack?.length > 0 && (
+                <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 16 }}>
+                  {detailJob.tech_stack.map(t => (
+                    <span key={t} style={{ fontSize: 12, fontWeight: 600, color: '#333', background: '#f0f0f0', padding: '4px 10px', borderRadius: 5 }}>{t}</span>
+                  ))}
+                </div>
+              )}
+
               {/* Meta grid */}
               <div className="jd-meta-grid">
                 <div className="jd-meta-item">
@@ -497,6 +534,27 @@ export default function JobsPage() {
                   <div className="jd-meta-label">{t('jobs.region')}</div>
                   <div className="jd-meta-value" style={{ textTransform: 'capitalize' }}>{detailJob.country}</div>
                 </div>
+                {detailJob.company_size && (
+                  <div className="jd-meta-item">
+                    <div className="jd-meta-label">Company Size</div>
+                    <div className="jd-meta-value">{detailJob.company_size}</div>
+                  </div>
+                )}
+                {detailJob.headcount && (
+                  <div className="jd-meta-item">
+                    <div className="jd-meta-label">Headcount</div>
+                    <div className="jd-meta-value">{detailJob.headcount}</div>
+                  </div>
+                )}
+                {detailJob.deadline && (
+                  <div className="jd-meta-item">
+                    <div className="jd-meta-label">Deadline</div>
+                    <div className="jd-meta-value">{(() => {
+                      const days = Math.ceil((new Date(detailJob.deadline) - new Date()) / 86400000)
+                      return `${detailJob.deadline} ${days >= 0 ? `(D-${days})` : '(Closed)'}`
+                    })()}</div>
+                  </div>
+                )}
               </div>
 
               <div className="jd-divider" />
@@ -506,6 +564,28 @@ export default function JobsPage() {
               <div className="jd-desc">
                 {detailJob.description || `${detailJob.company} is looking for a ${detailJob.title} to join their team in ${detailJob.location}.\n\nThis is a ${detailJob.type} position offering ${Math.round(detailJob.salary_min/1e6)}M–${Math.round(detailJob.salary_max/1e6)}M VND, ideal for candidates with ${detailJob.experience_min}–${detailJob.experience_max} years of experience in ${detailJob.role}.\n\nOur headhunter team will personally introduce you and support you throughout the process.`}
               </div>
+
+              {/* Benefits */}
+              {detailJob.benefits?.length > 0 && (
+                <>
+                  <div className="jd-divider" />
+                  <div className="jd-section-title">Benefits</div>
+                  <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 24 }}>
+                    {detailJob.benefits.map(b => (
+                      <span key={b} style={{ fontSize: 13, color: '#166534', background: '#f0fff4', border: '1px solid #86efac', padding: '5px 12px', borderRadius: 6 }}>{b}</span>
+                    ))}
+                  </div>
+                </>
+              )}
+
+              {/* Hiring Process */}
+              {detailJob.hiring_process && (
+                <>
+                  <div className="jd-divider" />
+                  <div className="jd-section-title">Hiring Process</div>
+                  <div style={{ fontSize: 14, color: '#444', marginBottom: 24 }}>{detailJob.hiring_process}</div>
+                </>
+              )}
 
               <div className="jd-divider" />
 
@@ -528,9 +608,15 @@ export default function JobsPage() {
               )}
 
               {/* Apply CTA */}
-              <button className="jd-apply-btn" onClick={() => { setDetailJob(null); openApply(detailJob) }}>
-                {t('jobs.apply')}
-              </button>
+              {detailJob.apply_url ? (
+                <a href={detailJob.apply_url} target="_blank" rel="noopener noreferrer" className="jd-apply-btn" style={{ display: 'block', textAlign: 'center', textDecoration: 'none' }}>
+                  Apply on Company Site
+                </a>
+              ) : (
+                <button className="jd-apply-btn" onClick={() => { setDetailJob(null); openApply(detailJob) }}>
+                  {t('jobs.apply')}
+                </button>
+              )}
             </div>
           </div>
         </>
