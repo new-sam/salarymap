@@ -971,7 +971,7 @@ export default function JobsPage() {
               <div className="jd-apply-inline" ref={el => { if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }) }}>
                 <div className="jd-apply-inline-h">{t('jobs.applyThis')}</div>
 
-                <div style={{ fontSize: 13, fontWeight: 600, color: '#555', marginBottom: 6 }}>{t('jobs.cvOptional')}</div>
+                <div style={{ fontSize: 13, fontWeight: 600, color: '#555', marginBottom: 6 }}>{t('jobs.cvRequired') || 'Resume (required)'}</div>
                 <div className="ap-up" onClick={() => fileRef.current?.click()}>
                   <input ref={fileRef} type="file" accept=".pdf,.docx,.doc" style={{ display: 'none' }} onChange={e => {
                     const f = e.target.files?.[0]
@@ -987,13 +987,9 @@ export default function JobsPage() {
                 <button className="jd-apply-btn" style={{ width: '100%', marginTop: 12 }} onClick={() => {
                   if (!isLoggedIn) { localStorage.setItem('fyi_login_return', '/jobs'); supabase.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: window.location.origin + '/auth/callback' } }); return; }
                   handleApply(detailJob);
-                }} disabled={applying}>
+                }} disabled={applying || !resumeFile}>
                   {!isLoggedIn ? t('jobs.loginToApply') : applying ? t('jobs.sending') : t('jobs.submitApplication')}
                 </button>
-                <button className="ap-skip" style={{ width: '100%', textAlign: 'center' }} onClick={() => {
-                  if (!isLoggedIn) { localStorage.setItem('fyi_login_return', '/jobs'); supabase.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: window.location.origin + '/auth/callback' } }); return; }
-                  setResumeFile(null); handleApply(detailJob);
-                }}>{t('jobs.applyNoCV')}</button>
               </div>
             )}
 
@@ -1044,7 +1040,7 @@ export default function JobsPage() {
                   {userCompany && <div className="ap-tag">{t('jobs.currentAt', { company: userCompany, salary: userSalary ? Math.round(userSalary / 1e6) : '—' })}</div>}
                 </div>
 
-                <div className="ap-lbl">{t('jobs.cvOptional')}</div>
+                <div className="ap-lbl">{t('jobs.cvRequired') || 'Resume (required)'}</div>
                 <div className="ap-up" onClick={() => fileRef.current?.click()}>
                   <input ref={fileRef} type="file" accept=".pdf,.docx,.doc" style={{ display: 'none' }} onChange={e => {
                     const f = e.target.files?.[0]
@@ -1060,13 +1056,9 @@ export default function JobsPage() {
                 <button className="ap-btn" onClick={() => {
                   if (!isLoggedIn) { localStorage.setItem('fyi_login_return', '/jobs'); supabase.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: window.location.origin + '/auth/callback' } }); return; }
                   handleApply();
-                }} disabled={applying}>
+                }} disabled={applying || !resumeFile}>
                   {!isLoggedIn ? t('jobs.loginToApply') : applying ? t('jobs.sending') : t('jobs.submitApplication')}
                 </button>
-                <button className="ap-skip" onClick={() => {
-                  if (!isLoggedIn) { localStorage.setItem('fyi_login_return', '/jobs'); supabase.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: window.location.origin + '/auth/callback' } }); return; }
-                  setResumeFile(null); handleApply();
-                }}>{t('jobs.applyNoCV')}</button>
               </>
             ) : (
               <div className="ap-ok">
