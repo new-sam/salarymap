@@ -42,6 +42,16 @@ const T = {
     funnelDropped: '이탈',
     funnelOf: '전체 대비',
     funnelConv: '전환율',
+    utm: 'UTM',
+    utmTitle: 'UTM 캠페인 분석',
+    utmSource: '소스 (utm_source)',
+    utmCampaign: '캠페인 (utm_campaign)',
+    utmContent: '콘텐츠 (utm_content)',
+    utmViews: '방문',
+    utmSubmissions: '제출',
+    utmConvRate: '전환율',
+    utmTotalViews: '총 UTM 방문',
+    utmNoData: 'UTM 데이터가 아직 없습니다. 캠페인 링크로 방문이 들어오면 여기에 표시됩니다.',
   },
   en: {
     title: 'Performance Dashboard',
@@ -79,6 +89,16 @@ const T = {
     funnelDropped: 'Dropped',
     funnelOf: 'of total',
     funnelConv: 'Conversion',
+    utm: 'UTM',
+    utmTitle: 'UTM Campaign Analysis',
+    utmSource: 'Source (utm_source)',
+    utmCampaign: 'Campaign (utm_campaign)',
+    utmContent: 'Content (utm_content)',
+    utmViews: 'Views',
+    utmSubmissions: 'Submissions',
+    utmConvRate: 'Conv. Rate',
+    utmTotalViews: 'Total UTM Views',
+    utmNoData: 'No UTM data yet. Campaign visits will appear here.',
   },
 }
 
@@ -253,7 +273,7 @@ export default function AdminDashboard() {
 
         {/* Tab switcher */}
         <div style={{ display: 'flex', gap: 0, marginBottom: 24, borderBottom: '2px solid #e5e7eb' }}>
-          {['trend', 'funnel'].map(k => (
+          {['trend', 'funnel', 'utm'].map(k => (
             <button key={k} onClick={() => setTab(k)}
               style={{
                 padding: '10px 24px', fontSize: 14, fontWeight: 600, cursor: 'pointer',
@@ -490,6 +510,11 @@ export default function AdminDashboard() {
           <FunnelView data={data} metrics={METRICS} funnelKeys={funnelKeys} setFunnelKeys={setFunnelKeys} t={t} />
         )}
 
+        {/* ===== UTM TAB ===== */}
+        {data && !loading && tab === 'utm' && (
+          <UtmView utm={data.utm} t={t} />
+        )}
+
         {/* Language Switcher */}
         <div style={{ display: 'flex', justifyContent: 'center', gap: 8, padding: '16px 0', borderTop: '1px solid #f3f4f6' }}>
           {['ko', 'en'].map(l => (
@@ -704,6 +729,72 @@ function FunnelView({ data, metrics, funnelKeys, setFunnelKeys, t }) {
           </div>
         </div>
       )}
+    </>
+  )
+}
+
+/* ──────────────── UTM Campaign View ──────────────── */
+
+function UtmView({ utm, t }) {
+  if (!utm || (utm.bySource.length === 0 && utm.byCampaign.length === 0 && utm.byContent.length === 0)) {
+    return (
+      <div style={{ background: '#fff', border: '1px solid #e5e7eb', borderRadius: 12, padding: 40, textAlign: 'center', color: '#999' }}>
+        {t.utmNoData}
+      </div>
+    )
+  }
+
+  function UtmTable({ title, data }) {
+    if (!data || data.length === 0) return null
+    const maxViews = Math.max(...data.map(d => d.views))
+    return (
+      <div style={{ background: '#fff', border: '1px solid #e5e7eb', borderRadius: 12, padding: 20, marginBottom: 24 }}>
+        <h3 style={{ fontSize: 16, fontWeight: 600, margin: '0 0 16px 0' }}>{title}</h3>
+        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+          <thead>
+            <tr style={{ borderBottom: '2px solid #e5e7eb' }}>
+              <th style={{ padding: '8px 12px', textAlign: 'left', fontWeight: 600, color: '#374151' }}>Name</th>
+              <th style={{ padding: '8px 12px', textAlign: 'right', fontWeight: 600, color: '#374151' }}>{t.utmViews}</th>
+              <th style={{ padding: '8px 12px', textAlign: 'right', fontWeight: 600, color: '#374151' }}>{t.utmSubmissions}</th>
+              <th style={{ padding: '8px 12px', textAlign: 'right', fontWeight: 600, color: '#374151' }}>{t.utmConvRate}</th>
+              <th style={{ padding: '8px 12px', textAlign: 'left', fontWeight: 600, color: '#374151', width: '30%' }}></th>
+            </tr>
+          </thead>
+          <tbody>
+            {data.map((row, i) => (
+              <tr key={row.name} style={{ borderBottom: '1px solid #f3f4f6', background: i % 2 === 0 ? '#fff' : '#fafafa' }}>
+                <td style={{ padding: '8px 12px', fontWeight: 500 }}>{row.name}</td>
+                <td style={{ padding: '8px 12px', textAlign: 'right', fontWeight: 600, color: '#4F46E5' }}>{row.views}</td>
+                <td style={{ padding: '8px 12px', textAlign: 'right', fontWeight: 600, color: '#10B981' }}>{row.submissions}</td>
+                <td style={{ padding: '8px 12px', textAlign: 'right', fontWeight: 600, color: row.convRate === '-' ? '#999' : parseFloat(row.convRate) >= 20 ? '#10B981' : '#F59E0B' }}>
+                  {row.convRate === '-' ? '-' : `${row.convRate}%`}
+                </td>
+                <td style={{ padding: '8px 12px' }}>
+                  <div style={{ height: 8, background: '#f3f4f6', borderRadius: 4, overflow: 'hidden' }}>
+                    <div style={{ height: '100%', width: `${(row.views / maxViews) * 100}%`, background: '#4F46E5', borderRadius: 4, opacity: 0.7 }} />
+                  </div>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    )
+  }
+
+  return (
+    <>
+      {/* Summary card */}
+      <div style={{ background: '#fff', border: '1px solid #e5e7eb', borderRadius: 12, padding: 20, marginBottom: 24, display: 'flex', gap: 24 }}>
+        <div>
+          <div style={{ fontSize: 12, color: '#6B7280', marginBottom: 4 }}>{t.utmTotalViews}</div>
+          <div style={{ fontSize: 28, fontWeight: 700, color: '#4F46E5' }}>{utm.totalPageViews}</div>
+        </div>
+      </div>
+
+      <UtmTable title={t.utmSource} data={utm.bySource} />
+      <UtmTable title={t.utmCampaign} data={utm.byCampaign} />
+      <UtmTable title={t.utmContent} data={utm.byContent} />
     </>
   )
 }

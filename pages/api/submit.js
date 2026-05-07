@@ -5,7 +5,7 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const { role, experience, salary, company, source, email, user_id, utm_source, utm_medium, utm_campaign } = req.body;
+  const { role, experience, salary, company, source, email, user_id, utm_source, utm_medium, utm_campaign, utm_content } = req.body;
 
   if (!role || !experience || !salary) {
     return res.status(400).json({ error: 'role, experience, salary are required.' });
@@ -47,6 +47,7 @@ export default async function handler(req, res) {
   if (utm_source) record.utm_source = utm_source;
   if (utm_medium) record.utm_medium = utm_medium;
   if (utm_campaign) record.utm_campaign = utm_campaign;
+  if (utm_content) record.utm_content = utm_content;
 
   const { data, error } = await supabase
     .from('submissions')

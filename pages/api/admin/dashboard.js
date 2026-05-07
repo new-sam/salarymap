@@ -20,7 +20,7 @@ export default async function handler(req, res) {
   // Fetch all submissions in date range
   const { data: submissions, error } = await supabase
     .from('submissions')
-    .select('id, created_at, company, intent, utm_source, utm_medium, utm_campaign, user_id, email')
+    .select('id, created_at, company, intent, utm_source, utm_medium, utm_campaign, utm_content, user_id, email')
     .gte('created_at', startISO)
     .lte('created_at', endISO)
     .order('created_at', { ascending: true })
@@ -74,6 +74,20 @@ export default async function handler(req, res) {
       .gte('created_at', startISO)
       .lte('created_at', endISO)
     events = evData || []
+  } catch (e) {
+    // events table may not exist yet
+  }
+
+  // Fetch page_view events with UTM for campaign attribution
+  let pageViews = []
+  try {
+    const { data: pvData } = await supabase
+      .from('events')
+      .select('id, meta, created_at')
+      .eq('event', 'page_view')
+      .gte('created_at', startISO)
+      .lte('created_at', endISO)
+    pageViews = pvData || []
   } catch (e) {
     // events table may not exist yet
   }
@@ -180,5 +194,53 @@ export default async function handler(req, res) {
     signupRate: submissions.length > 0 ? ((signups.length / submissions.length) * 100).toFixed(1) : '0',
   }
 
-  res.json({ summary, daily, intent, topCompanies })
+  // --- UTM breakdown (from page_view events + submissions) ---
+  const utmBreakdown = { bySource: {}, byCampaign: {}, byContent: {} }
+
+  // Count page views by UTM dimensions
+  for (const pv of pageViews) {
+    const m = pv.meta || {}
+    if (m.utm_source) {
+      utmBreakdown.bySource[m.utm_source] = utmBreakdown.bySource[m.utm_source] || { views: 0, submissions: 0 }
+      utmBreakdown.bySource[m.utm_source].views++
+    }
+    if (m.utm_campaign) {
+      utmBreakdown.byCampaign[m.utm_campaign] = utmBreakdown.byCampaign[m.utm_campaign] || { views: 0, submissions: 0 }
+      utmBreakdown.byCampaign[m.utm_campaign].views++
+    }
+    if (m.utm_content) {
+      utmBreakdown.byContent[m.utm_content] = utmBreakdown.byContent[m.utm_content] || { views: 0, submissions: 0 }
+      utmBreakdown.byContent[m.utm_content].views++
+    }
+  }
+
+  // Count submissions by UTM dimensions
+  for (const sub of submissions) {
+    if (sub.utm_source) {
+      utmBreakdown.bySource[sub.utm_source] = utmBreakdown.bySource[sub.utm_source] || { views: 0, submissions: 0 }
+      utmBreakdown.bySource[sub.utm_source].submissions++
+    }
+    if (sub.utm_campaign) {
+      utmBreakdown.byCampaign[sub.utm_campaign] = utmBreakdown.byCampaign[sub.utm_campaign] || { views: 0, submissions: 0 }
+      utmBreakdown.byCampaign[sub.utm_campaign].submissions++
+    }
+    if (sub.utm_content) {
+      utmBreakdown.byContent[sub.utm_content] = utmBreakdown.byContent[sub.utm_content] || { views: 0, submissions: 0 }
+      utmBreakdown.byContent[sub.utm_content].submissions++
+    }
+  }
+
+  // Convert to sorted arrays
+  const toSorted = (obj) => Object.entries(obj)
+    .map(([name, d]) => ({ name, views: d.views, submissions: d.submissions, convRate: d.views > 0 ? ((d.submissions / d.views) * 100).toFixed(1) : '-' }))
+    .sort((a, b) => b.views - a.views)
+
+  const utm = {
+    bySource: toSorted(utmBreakdown.bySource),
+    byCampaign: toSorted(utmBreakdown.byCampaign),
+    byContent: toSorted(utmBreakdown.byContent),
+    totalPageViews: pageViews.length,
+  }
+
+  res.json({ summary, daily, intent, topCompanies, utm })
 }

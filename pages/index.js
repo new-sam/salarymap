@@ -1857,10 +1857,30 @@ export default function Home({ initialCompanies = [] }) {
   useEffect(() => {
     // Capture UTM params on landing — persist in sessionStorage so they survive page navigation
     const params = new URLSearchParams(window.location.search);
-    ['utm_source','utm_medium','utm_campaign'].forEach(k => {
+    ['utm_source','utm_medium','utm_campaign','utm_content'].forEach(k => {
       const v = params.get(k);
       if (v) sessionStorage.setItem(k, v);
     });
+
+    // Track page_view with UTM params for campaign attribution
+    const utmSource = params.get('utm_source') || sessionStorage.getItem('utm_source');
+    if (utmSource) {
+      fetch('/api/track', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          event: 'page_view',
+          page: window.location.pathname,
+          meta: {
+            utm_source: utmSource,
+            utm_medium: params.get('utm_medium') || sessionStorage.getItem('utm_medium') || null,
+            utm_campaign: params.get('utm_campaign') || sessionStorage.getItem('utm_campaign') || null,
+            utm_content: params.get('utm_content') || sessionStorage.getItem('utm_content') || null,
+            referrer: document.referrer || null,
+          },
+        }),
+      }).catch(() => {});
+    }
 
     const isLoginSuccess = params.get('login') === 'success';
 
@@ -2272,6 +2292,7 @@ export default function Home({ initialCompanies = [] }) {
                 utm_source: sessionStorage.getItem('utm_source') || null,
                 utm_medium: sessionStorage.getItem('utm_medium') || null,
                 utm_campaign: sessionStorage.getItem('utm_campaign') || null,
+                utm_content: sessionStorage.getItem('utm_content') || null,
               }),
             });
             const submitData = await submitRes.json();
