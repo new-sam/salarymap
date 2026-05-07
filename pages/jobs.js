@@ -18,7 +18,7 @@ const TECH_OPTIONS = ['Java','Python','AWS','React','Go','TypeScript','JavaScrip
 export default function JobsPage() {
   const router = useRouter()
   const fileRef = useRef(null)
-  const { t } = useT()
+  const { t, lang } = useT()
 
   const [jobs, setJobs] = useState([])
   const [jobsLoaded, setJobsLoaded] = useState(false)
@@ -389,6 +389,9 @@ export default function JobsPage() {
         .jc-m b { color: #ff4400; font-weight: 700; }
         .jc-tag { font-size: 11px; font-weight: 500; color: #555; background: #f0f0f0; padding: 2px 7px; border-radius: 4px; }
         .jc-tag-more { color: #aaa; }
+        .jc-type-badge { position: absolute; bottom: 10px; right: 10px; font-size: 11px; font-weight: 800; padding: 4px 9px; border-radius: 4px; z-index: 2; letter-spacing: 0.3px; }
+        .jc-type-badge.remote { color: #fff; background: #16a34a; }
+        .jc-type-badge.hybrid { color: #fff; background: #2563eb; }
         .jc-dday { display: inline-flex; align-items: center; margin-left: 6px; font-size: 11px; font-weight: 700; color: #ff4400; background: #fff7f5; border: 1px solid #ffd6c8; padding: 1px 6px; border-radius: 4px; line-height: 1; }
         .jc-dday.urgent { color: #dc2626; background: #fef2f2; border-color: #fecaca; }
         .jc-nudge { background: #fff7f5; border: 1px solid #ffd6c8; border-radius: 8px; padding: 8px 12px; display: flex; justify-content: space-between; align-items: center; margin-top: 8px; }
@@ -653,6 +656,7 @@ export default function JobsPage() {
                                   <path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z" />
                                 </svg>
                               </button>
+                              {(job.type === 'remote' || job.type === 'hybrid') && <span className={`jc-type-badge ${job.type}`}>{typeLabel(job.type)}</span>}
                             </div>
                           </div>
                           <div className="jc-body">
@@ -670,7 +674,7 @@ export default function JobsPage() {
                               <div className="jc-m">
                                 <span className="jh-app"><span className="jh-pulse" />{t('jobs.hotApplicants', { count: fakeCount(job.id) })}</span>
                                 {days !== null ? (
-                                  <span className={`jc-dday${days <= 7 ? ' urgent' : ''}`}>D-{days}</span>
+                                  <span className={`jc-dday${days <= 7 ? ' urgent' : ''}`}>{lang === 'vi' ? (days === 0 ? t('jobs.ddayToday') : t('jobs.dday', { days })) : `D-${days}`}</span>
                                 ) : (
                                   <span className="jh-open">{t('jobs.hotUntilFilled')}</span>
                                 )}
@@ -742,6 +746,7 @@ export default function JobsPage() {
                                   <path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z" />
                                 </svg>
                               </button>
+                              {(job.type === 'remote' || job.type === 'hybrid') && <span className={`jc-type-badge ${job.type}`}>{typeLabel(job.type)}</span>}
                             </div>
                           </div>
                           <div className="jc-body">
@@ -758,14 +763,14 @@ export default function JobsPage() {
                             <div className="jc-bottom">
                               <div className="jc-m">
                                 {[
-                                  !job.experience_min && !job.experience_max ? t('jobs.yearsAny') : t('jobs.years', { min: job.experience_min, max: job.experience_max }),
+                                  !job.experience_min && !job.experience_max ? t('jobs.yearsAny') : job.experience_max >= 30 ? t('jobs.yearsMin', { min: job.experience_min || 0 }) : t('jobs.years', { min: job.experience_min, max: job.experience_max }),
                                   job.type !== 'remote' && job.location,
                                   typeLabel(job.type),
                                 ].filter(Boolean).join(' · ')}
                                 {job.deadline && (() => {
                                   const days = Math.ceil((new Date(job.deadline) - new Date()) / 86400000)
                                   if (days < 0) return null
-                                  return <span className={`jc-dday${days <= 7 ? ' urgent' : ''}`}>{days === 0 ? 'D-Day' : `D-${days}`}</span>
+                                  return <span className={`jc-dday${days <= 7 ? ' urgent' : ''}`}>{lang === 'vi' ? (days === 0 ? t('jobs.ddayToday') : t('jobs.dday', { days })) : days === 0 ? 'D-Day' : `D-${days}`}</span>
                                 })()}
                               </div>
                             </div>
@@ -880,7 +885,7 @@ export default function JobsPage() {
               <div className="jd-meta-grid">
                 <div className="jd-meta-item">
                   <div className="jd-meta-label">{t('jobs.experience')}</div>
-                  <div className="jd-meta-value">{!detailJob.experience_min && !detailJob.experience_max ? t('jobs.yearsAny') : t('jobs.years', { min: detailJob.experience_min, max: detailJob.experience_max })}</div>
+                  <div className="jd-meta-value">{!detailJob.experience_min && !detailJob.experience_max ? t('jobs.yearsAny') : detailJob.experience_max >= 30 ? t('jobs.yearsMin', { min: detailJob.experience_min || 0 }) : t('jobs.years', { min: detailJob.experience_min, max: detailJob.experience_max })}</div>
                 </div>
                 <div className="jd-meta-item">
                   <div className="jd-meta-label">{t('jobs.position')}</div>
@@ -910,7 +915,8 @@ export default function JobsPage() {
                   <div className="jd-meta-label">Deadline</div>
                   <div className="jd-meta-value">{detailJob.deadline ? (() => {
                     const days = Math.ceil((new Date(detailJob.deadline) - new Date()) / 86400000)
-                    return `${detailJob.deadline} ${days >= 0 ? `(D-${days})` : '(Closed)'}`
+                    const ddayText = lang === 'vi' ? (days === 0 ? t('jobs.ddayToday') : days > 0 ? t('jobs.dday', { days }) : 'Đã đóng') : days >= 0 ? `D-${days}` : 'Closed'
+                    return `${detailJob.deadline} (${ddayText})`
                   })() : t('jobs.ongoing')}</div>
                 </div>
               </div>
