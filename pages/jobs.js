@@ -15,6 +15,9 @@ const ROLE_OPTIONS = ['Backend','Frontend','Fullstack','Data','DevOps','Mobile',
 const TYPE_OPTIONS = ['remote','onsite','hybrid']
 const TECH_OPTIONS = ['Java','Python','AWS','React','Go','TypeScript','JavaScript','Node.js','Kotlin','Docker','Spring Framework','Rust','Swift','Flutter','Kubernetes']
 
+// Module-level: survives client-side navigation, resets on full page reload
+let _cachedProfile = null
+
 export default function JobsPage() {
   const router = useRouter()
   const fileRef = useRef(null)
@@ -61,11 +64,25 @@ export default function JobsPage() {
   useEffect(() => {
     if (typeof window !== 'undefined') {
       setIsSubmitted(localStorage.getItem('fyi_submitted') === 'true')
-      const sal = parseInt(localStorage.getItem('fyi_salary'))
-      if (sal) setUserSalary(sal * 1000000)
-      setUserRole(localStorage.getItem('fyi_role'))
-      setUserExperience(localStorage.getItem('fyi_exp'))
-      setUserCompany(localStorage.getItem('fyi_company'))
+      if (!_cachedProfile) {
+        const freshSubmit = sessionStorage.getItem('fyi_fresh_submit') === 'true'
+        if (freshSubmit) {
+          sessionStorage.removeItem('fyi_fresh_submit')
+          const sal = parseInt(localStorage.getItem('fyi_salary'))
+          _cachedProfile = {
+            salary: sal ? sal * 1000000 : null,
+            role: localStorage.getItem('fyi_role'),
+            exp: localStorage.getItem('fyi_exp'),
+            company: localStorage.getItem('fyi_company'),
+          }
+        }
+      }
+      if (_cachedProfile) {
+        if (_cachedProfile.salary) setUserSalary(_cachedProfile.salary)
+        setUserRole(_cachedProfile.role)
+        setUserExperience(_cachedProfile.exp)
+        setUserCompany(_cachedProfile.company)
+      }
       try { setBookmarks(JSON.parse(localStorage.getItem('fyi_bookmarks') || '[]')) } catch { }
     }
     supabase.auth.getSession().then(async ({ data: { session: s } }) => {
@@ -306,13 +323,13 @@ export default function JobsPage() {
         .jw-h1 { font-size: 24px; font-weight: 800; color: #111; margin-bottom: 6px; letter-spacing: -0.3px; }
         .jw-sub { font-size: 14px; color: #aaa; margin-bottom: 20px; }
 
-        .jbm { display: flex; align-items: center; gap: 12px; background: linear-gradient(135deg, #fff9f7 0%, #fff 100%); border: 1px solid #ffe8e0; border-radius: 12px; padding: 12px 16px; margin-bottom: 24px; }
-        .jbm-icon { width: 32px; height: 32px; border-radius: 8px; background: #ff4400; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
-        .jbm-icon svg { width: 16px; height: 16px; }
-        .jbm-body { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
-        .jbm-label { font-size: 11px; font-weight: 600; color: #ff4400; letter-spacing: 0.02em; }
+        .jbm { display: flex; align-items: center; gap: 14px; background: linear-gradient(135deg, #ff4400 0%, #ff6b35 100%); border-radius: 14px; padding: 16px 20px; margin-bottom: 24px; box-shadow: 0 4px 16px rgba(255,68,0,0.18); }
+        .jbm-icon { width: 36px; height: 36px; border-radius: 10px; background: rgba(255,255,255,0.22); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+        .jbm-icon svg { width: 18px; height: 18px; }
+        .jbm-body { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+        .jbm-label { font-size: 12px; font-weight: 700; color: rgba(255,255,255,0.85); letter-spacing: 0.03em; }
         .jbm-tags { display: flex; flex-wrap: wrap; gap: 6px; }
-        .jbm-tag { font-size: 12px; color: #444; background: #fff; border: 1px solid #eee; border-radius: 4px; padding: 2px 8px; font-weight: 500; white-space: nowrap; }
+        .jbm-tag { font-size: 13px; color: #fff; background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.3); border-radius: 6px; padding: 4px 10px; font-weight: 600; white-space: nowrap; backdrop-filter: blur(4px); }
 
         .jf-search { position: relative; margin-bottom: 16px; }
         .jf-search-icon { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); pointer-events: none; }
@@ -488,10 +505,10 @@ export default function JobsPage() {
           .jw { padding: 28px 16px 60px; }
           .jw-h1 { font-size: 20px; }
           .jg { grid-template-columns: repeat(2, 1fr); gap: 20px; }
-          .jbm { padding: 10px 12px; gap: 10px; }
-          .jbm-icon { width: 28px; height: 28px; border-radius: 6px; }
-          .jbm-icon svg { width: 14px; height: 14px; }
-          .jbm-tag { font-size: 11px; }
+          .jbm { padding: 12px 14px; gap: 10px; }
+          .jbm-icon { width: 30px; height: 30px; border-radius: 8px; }
+          .jbm-icon svg { width: 15px; height: 15px; }
+          .jbm-tag { font-size: 12px; padding: 3px 8px; }
           .jf { gap: 6px; }
           .jf-dd-btn { font-size: 12px; padding: 7px 10px; }
           .jgate-box { padding: 36px 24px; }
