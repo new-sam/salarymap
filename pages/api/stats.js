@@ -1,4 +1,4 @@
-import supabase from '../../lib/supabase';
+import supabase from '../../lib/supabaseAdmin';
 
 const VALID_ROLES = ['Backend','Frontend','Fullstack','Mobile','Data Engineer','DevOps / Cloud','UI/UX','PM'];
 const VALID_EXP   = ['Under 1 year','1–2 yrs','3–4 yrs','5–7 yrs','8+ yrs'];

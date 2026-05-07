@@ -1,4 +1,4 @@
-import supabase from '../../lib/supabase';
+import supabase from '../../lib/supabaseAdmin';
 
 // Curated background images per company
 const px = id => `https://images.pexels.com/photos/${id}/pexels-photo-${id}.jpeg?auto=compress&cs=tinysrgb&w=800&h=500&fit=crop`;

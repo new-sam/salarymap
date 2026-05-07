@@ -1,4 +1,4 @@
-import supabase from '../../lib/supabase';
+import supabase from '../../lib/supabaseAdmin';
 
 function median(arr) {
   const s = [...arr].sort((a, b) => a - b);

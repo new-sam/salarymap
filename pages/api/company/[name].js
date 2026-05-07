@@ -1,4 +1,4 @@
-import supabase from '../../../lib/supabase';
+import supabase from '../../../lib/supabaseAdmin';
 
 function removeOutliers(arr) {
   if (arr.length < 4) return arr;

@@ -1,4 +1,4 @@
-import supabase from '../../lib/supabase'
+import supabase from '../../lib/supabaseAdmin'
 
 async function fetchAll(query) {
   const PAGE = 1000;
