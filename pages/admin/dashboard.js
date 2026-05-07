@@ -16,6 +16,10 @@ const T = {
     autoRefresh: '자동',
     today: '오늘 실시간',
     pageViews: '페이지뷰',
+    chart1d: '1일',
+    chart3d: '3일',
+    chartWeekly: '주간',
+    chartMonthly: '월간',
     backTitle: '관리자로 돌아가기',
     trend: '추이',
     funnel: '퍼널',
@@ -67,6 +71,10 @@ const T = {
     autoRefresh: 'Auto',
     today: 'Today Live',
     pageViews: 'Page Views',
+    chart1d: '1D',
+    chart3d: '3D',
+    chartWeekly: 'W',
+    chartMonthly: 'M',
     backTitle: 'Back to Admin',
     trend: 'Trend',
     funnel: 'Funnel',
@@ -132,6 +140,38 @@ function getDoD(daily, dataKey) {
   return Math.round(((last - prev) / prev) * 100)
 }
 
+const DATA_KEYS = ['submissions', 'ad', 'organic', 'signups', 'companies', 'jobApps', 'jobClicks', 'cardClicks']
+
+function aggregateDaily(daily, mode) {
+  if (!daily || mode === '1d') return daily
+  const buckets = {}
+  const firstDate = daily.length > 0 ? new Date(daily[0].date) : new Date()
+  for (const d of daily) {
+    let key
+    if (mode === '3d') {
+      const dt = new Date(d.date)
+      const diff = Math.floor((dt - firstDate) / (3 * 86400000))
+      const bucket = new Date(firstDate.getTime() + diff * 3 * 86400000)
+      key = bucket.toISOString().slice(0, 10)
+    } else if (mode === 'weekly') {
+      const dt = new Date(d.date)
+      const day = dt.getDay()
+      const mon = new Date(dt)
+      mon.setDate(dt.getDate() - ((day + 6) % 7))
+      key = mon.toISOString().slice(0, 10)
+    } else {
+      key = d.date.slice(0, 7)
+    }
+    if (!buckets[key]) buckets[key] = { date: key }
+    for (const k of DATA_KEYS) {
+      const val = d[k]
+      if (val === null || val === undefined) continue
+      buckets[key][k] = (buckets[key][k] || 0) + val
+    }
+  }
+  return Object.values(buckets).sort((a, b) => a.date.localeCompare(b.date))
+}
+
 export default function AdminDashboard() {
   const [auth, setAuth] = useState('loading')
   const [token, setToken] = useState(null)
@@ -145,6 +185,7 @@ export default function AdminDashboard() {
   const [lang, setLang] = useState('ko')
   const [tab, setTab] = useState('trend')
   const [funnelKeys, setFunnelKeys] = useState([])
+  const [chartMode, setChartMode] = useState('1d')
   const [realtime, setRealtime] = useState(null)
   const [realtimeLoading, setRealtimeLoading] = useState(false)
   const [autoRefresh, setAutoRefresh] = useState(false)
@@ -284,6 +325,7 @@ export default function AdminDashboard() {
     }]
   })()
 
+  const chartData = aggregateDaily(dailyWithToday, chartMode)
   const visibleExperiments = experiments.filter(e => e.date >= dateRange.from && e.date <= (realtime?.date || dateRange.to))
 
   return (
@@ -412,7 +454,7 @@ export default function AdminDashboard() {
                 const isEventMetric = m.key === 'jobClicks' || m.key === 'cardClicks'
                 const noTracking = isEventMetric && !data.summary.hasEventTracking
                 const value = noTracking ? '-' : data.summary[m.summaryKey]
-                const dod = noTracking ? null : getDoD(dailyWithToday, m.dataKey)
+                const dod = noTracking ? null : getDoD(chartData, m.dataKey)
                 const isActive = selected === m.key
                 return (
                   <div key={m.key}
@@ -445,8 +487,29 @@ export default function AdminDashboard() {
             {/* Selected Metric Chart + Experiment Chips */}
             {selectedMetric && (
               <div style={sectionStyle}>
-                <h3 style={{ ...sectionTitle, marginBottom: 16 }}>{selectedMetric.label} {t.trend}</h3>
-                <MetricChart daily={dailyWithToday} metric={selectedMetric} experiments={visibleExperiments} avgLabel={t.avg} />
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+                  <h3 style={{ ...sectionTitle, margin: 0 }}>{selectedMetric.label} {t.trend}</h3>
+                  <div style={{ display: 'flex', gap: 0, background: '#f3f4f6', borderRadius: 8, padding: 2 }}>
+                    {[
+                      { key: '1d', label: t.chart1d },
+                      { key: '3d', label: t.chart3d },
+                      { key: 'weekly', label: t.chartWeekly },
+                      { key: 'monthly', label: t.chartMonthly },
+                    ].map(m => (
+                      <button key={m.key} onClick={() => setChartMode(m.key)}
+                        style={{
+                          padding: '5px 12px', borderRadius: 6, fontSize: 12, fontWeight: 600,
+                          border: 'none', cursor: 'pointer', transition: 'all 0.15s',
+                          background: chartMode === m.key ? '#fff' : 'transparent',
+                          color: chartMode === m.key ? '#111' : '#999',
+                          boxShadow: chartMode === m.key ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
+                        }}>
+                        {m.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <MetricChart daily={chartData} metric={selectedMetric} experiments={chartMode === '1d' ? visibleExperiments : []} avgLabel={t.avg} />
 
                 {visibleExperiments.length > 0 && (
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 12, paddingTop: 12, borderTop: '1px solid #f3f4f6' }}>
