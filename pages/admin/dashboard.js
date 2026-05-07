@@ -11,10 +11,10 @@ const T = {
     loading: '로딩 중...',
     denied: '접근 권한이 없습니다',
     loadingData: '데이터 불러오는 중...',
-    refresh: '새로고침',
     lastUpdate: '마지막 업데이트',
     backTitle: '관리자로 돌아가기',
     trend: '추이',
+    funnel: '퍼널',
     intentTitle: '관심도 분포',
     topCompanies: '상위 회사',
     countUnit: '개',
@@ -35,16 +35,23 @@ const T = {
       submissions: '제출', ad: '광고 (UTM)', organic: '자연유입',
       signups: '가입', jobClicks: '공고클릭', cardClicks: '카드클릭', jobApps: '채용지원', companies: '회사',
     },
+    funnelEmpty: '스테이지를 클릭하여 퍼널을 구성하세요',
+    funnelClear: '초기화',
+    funnelOverall: '전체 전환율',
+    funnelStep: 'Step',
+    funnelDropped: '이탈',
+    funnelOf: '전체 대비',
+    funnelConv: '전환율',
   },
   en: {
     title: 'Performance Dashboard',
     loading: 'Loading...',
     denied: 'Access denied',
     loadingData: 'Loading data...',
-    refresh: 'Refresh',
     lastUpdate: 'Last updated',
     backTitle: 'Back to Admin',
     trend: 'Trend',
+    funnel: 'Funnel',
     intentTitle: 'Intent Breakdown',
     topCompanies: 'Top Companies',
     countUnit: '',
@@ -65,11 +72,18 @@ const T = {
       submissions: 'Submissions', ad: 'Ad (UTM)', organic: 'Organic',
       signups: 'Sign-ups', jobClicks: 'Job Clicks', cardClicks: 'Card Clicks', jobApps: 'Job Apps', companies: 'Companies',
     },
+    funnelEmpty: 'Click stages below to build your funnel',
+    funnelClear: 'Clear',
+    funnelOverall: 'Overall conversion',
+    funnelStep: 'Step',
+    funnelDropped: 'Dropped',
+    funnelOf: 'of total',
+    funnelConv: 'Conversion',
   },
 }
 
 const METRICS_BASE = [
-  { key: 'submissions', dataKey: 'submissions', color: '#111', summaryKey: 'totalSubmissions' },
+  { key: 'submissions', dataKey: 'submissions', color: '#374151', summaryKey: 'totalSubmissions' },
   { key: 'ad', dataKey: 'ad', color: '#4F46E5', summaryKey: 'adSubmissions' },
   { key: 'organic', dataKey: 'organic', color: '#10B981', summaryKey: 'organicSubmissions' },
   { key: 'signups', dataKey: 'signups', color: '#F59E0B', summaryKey: 'totalSignups' },
@@ -101,6 +115,8 @@ export default function AdminDashboard() {
   const [expForm, setExpForm] = useState({ title: '', date: '', color: EXP_COLORS[0] })
   const [showExpForm, setShowExpForm] = useState(false)
   const [lang, setLang] = useState('ko')
+  const [tab, setTab] = useState('trend')
+  const [funnelKeys, setFunnelKeys] = useState([])
   const yesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10)
   const [dateInput, setDateInput] = useState({ from: '2026-04-20', to: yesterday })
   const [dateRange, setDateRange] = useState({ from: '2026-04-20', to: yesterday })
@@ -202,6 +218,7 @@ export default function AdminDashboard() {
     <>
       <Head><title>FYI {t.title}</title></Head>
       <div style={{ maxWidth: 1200, margin: '0 auto', padding: '24px 16px', fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif' }}>
+        {/* Header */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
             <a href="/admin/jobs" style={{ color: '#888', textDecoration: 'none', fontSize: 20 }} title={t.backTitle}>&larr;</a>
@@ -234,9 +251,25 @@ export default function AdminDashboard() {
           )}
         </div>
 
+        {/* Tab switcher */}
+        <div style={{ display: 'flex', gap: 0, marginBottom: 24, borderBottom: '2px solid #e5e7eb' }}>
+          {['trend', 'funnel'].map(k => (
+            <button key={k} onClick={() => setTab(k)}
+              style={{
+                padding: '10px 24px', fontSize: 14, fontWeight: 600, cursor: 'pointer',
+                border: 'none', borderBottom: tab === k ? '2px solid #111' : '2px solid transparent',
+                background: 'none', color: tab === k ? '#111' : '#999',
+                marginBottom: -2, transition: 'all 0.15s',
+              }}>
+              {t[k]}
+            </button>
+          ))}
+        </div>
+
         {loading && <div style={{ textAlign: 'center', padding: 40, color: '#666' }}>{t.loadingData}</div>}
 
-        {data?.summary && !loading && (
+        {/* ===== TREND TAB ===== */}
+        {data?.summary && !loading && tab === 'trend' && (
           <>
             {/* Clickable Metric Cards */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))', gap: 12, marginBottom: 24 }}>
@@ -452,6 +485,11 @@ export default function AdminDashboard() {
           </>
         )}
 
+        {/* ===== FUNNEL TAB ===== */}
+        {data?.summary && !loading && tab === 'funnel' && (
+          <FunnelView data={data} metrics={METRICS} funnelKeys={funnelKeys} setFunnelKeys={setFunnelKeys} t={t} />
+        )}
+
         {/* Language Switcher */}
         <div style={{ display: 'flex', justifyContent: 'center', gap: 8, padding: '16px 0', borderTop: '1px solid #f3f4f6' }}>
           {['ko', 'en'].map(l => (
@@ -467,6 +505,205 @@ export default function AdminDashboard() {
           ))}
         </div>
       </div>
+    </>
+  )
+}
+
+/* ──────────────── Amplitude-style Funnel ──────────────── */
+
+function FunnelView({ data, metrics, funnelKeys, setFunnelKeys, t }) {
+  const C = '#4F46E5'
+  const stages = funnelKeys.map(k => {
+    const m = metrics.find(x => x.key === k)
+    return { ...m, value: data.summary[m.summaryKey] ?? 0 }
+  })
+  const firstVal = stages[0]?.value || 1
+
+  function opacity(i) {
+    return stages.length <= 1 ? 1 : 1 - (i / stages.length) * 0.55
+  }
+
+  return (
+    <>
+      {/* Metric selector chips */}
+      <div style={{ ...sectionStyle, paddingBottom: 16 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+          <span style={{ fontSize: 13, color: '#666' }}>
+            {funnelKeys.length === 0 ? t.funnelEmpty : `${funnelKeys.length} steps`}
+          </span>
+          {funnelKeys.length > 0 && (
+            <button onClick={() => setFunnelKeys([])}
+              style={{ padding: '4px 12px', border: '1px solid #d1d5db', borderRadius: 6, fontSize: 12, background: '#fff', cursor: 'pointer', fontWeight: 600 }}>
+              {t.funnelClear}
+            </button>
+          )}
+        </div>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+          {metrics.map(m => {
+            const inFunnel = funnelKeys.includes(m.key)
+            return (
+              <button key={m.key}
+                onClick={() => {
+                  if (inFunnel) {
+                    setFunnelKeys(funnelKeys.filter(k => k !== m.key))
+                  } else {
+                    setFunnelKeys([...funnelKeys, m.key])
+                  }
+                }}
+                style={{
+                  padding: '6px 14px', borderRadius: 20, fontSize: 12, fontWeight: 600,
+                  border: inFunnel ? `2px solid ${C}` : '1px solid #d1d5db',
+                  background: inFunnel ? C + '12' : '#fff',
+                  color: inFunnel ? C : '#666',
+                  cursor: 'pointer', transition: 'all 0.15s',
+                }}>
+                {inFunnel && <span style={{ marginRight: 4 }}>{funnelKeys.indexOf(m.key) + 1}.</span>}
+                {m.label}
+              </button>
+            )
+          })}
+        </div>
+      </div>
+
+      {/* Funnel chart */}
+      {stages.length >= 2 && (
+        <div style={sectionStyle}>
+          {/* Funnel bars */}
+          <div style={{ display: 'flex', gap: 0, alignItems: 'flex-end', minHeight: 340, padding: '60px 20px 0' }}>
+            {stages.map((stage, i) => {
+              const pctOfFirst = firstVal > 0 ? (stage.value / firstVal) * 100 : 0
+              const prevVal = i > 0 ? stages[i - 1].value : null
+              const stepConv = prevVal && prevVal > 0 ? (stage.value / prevVal) * 100 : null
+              const barHeight = firstVal > 0 ? Math.max(8, (stage.value / firstVal) * 280) : 40
+
+              return (
+                <div key={stage.key} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', position: 'relative' }}>
+                  {/* Conversion badge */}
+                  {i > 0 && (
+                    <div style={{
+                      position: 'absolute', left: -20, top: 0, bottom: 80,
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      width: 40, zIndex: 1,
+                    }}>
+                      <div style={{
+                        background: '#fff', border: '1px solid #e5e7eb', borderRadius: 8,
+                        padding: '3px 5px', fontSize: 10, fontWeight: 700, textAlign: 'center',
+                        color: stepConv >= 50 ? '#10B981' : stepConv >= 20 ? '#F59E0B' : '#EF4444',
+                      }}>
+                        {stepConv?.toFixed(1)}%
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Value + percentage */}
+                  <div style={{ marginBottom: 8, textAlign: 'center', minHeight: 48, display: 'flex', flexDirection: 'column', justifyContent: 'flex-end' }}>
+                    <div style={{ fontSize: 22, fontWeight: 700, color: C, lineHeight: 1.2 }}>
+                      {stage.value.toLocaleString()}
+                    </div>
+                    <div style={{ fontSize: 11, color: '#999', marginTop: 2 }}>
+                      {i === 0 ? '100%' : `${pctOfFirst.toFixed(1)}%`} {t.funnelOf}
+                    </div>
+                  </div>
+
+                  {/* Bar */}
+                  <div style={{
+                    width: '65%', height: barHeight,
+                    background: C, opacity: opacity(i),
+                    borderRadius: '4px 4px 0 0',
+                    transition: 'height 0.4s ease',
+                    position: 'relative',
+                  }}>
+                    {i > 0 && prevVal > stage.value && (
+                      <div style={{
+                        position: 'absolute', top: -18, right: -6,
+                        fontSize: 10, color: '#EF4444', fontWeight: 600, whiteSpace: 'nowrap',
+                      }}>
+                        -{(prevVal - stage.value).toLocaleString()}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Step label */}
+                  <div style={{
+                    marginTop: 10, textAlign: 'center', padding: '6px 4px', borderRadius: 6,
+                    background: '#fafafa', width: '95%',
+                  }}>
+                    <div style={{ fontSize: 10, color: '#999', marginBottom: 2 }}>{t.funnelStep} {i + 1}</div>
+                    <div style={{ fontSize: 13, fontWeight: 600, color: '#333' }}>{stage.label}</div>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+
+          {/* Overall conversion */}
+          <div style={{
+            marginTop: 24, padding: '16px 20px',
+            background: '#f9fafb', borderRadius: 10,
+            display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+              <span style={{ fontSize: 13, color: '#666' }}>{t.funnelOverall}</span>
+              <span style={{ fontSize: 13, color: '#999' }}>
+                {stages[0].label} &rarr; {stages[stages.length - 1].label}
+              </span>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
+              <span style={{ fontSize: 28, fontWeight: 700, color: C }}>
+                {firstVal > 0 ? ((stages[stages.length - 1].value / firstVal) * 100).toFixed(2) : 0}%
+              </span>
+              <span style={{ fontSize: 13, color: '#999' }}>
+                ({stages[0].value.toLocaleString()} &rarr; {stages[stages.length - 1].value.toLocaleString()})
+              </span>
+            </div>
+          </div>
+
+          {/* Step table */}
+          <div style={{ marginTop: 20, overflowX: 'auto' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+              <thead>
+                <tr style={{ borderBottom: '2px solid #e5e7eb' }}>
+                  <th style={{ padding: '8px 12px', textAlign: 'left', fontWeight: 600, color: '#374151' }}>{t.funnelStep}</th>
+                  <th style={{ padding: '8px 12px', textAlign: 'left', fontWeight: 600, color: '#374151' }}>Stage</th>
+                  <th style={{ padding: '8px 12px', textAlign: 'right', fontWeight: 600, color: '#374151' }}>Count</th>
+                  <th style={{ padding: '8px 12px', textAlign: 'right', fontWeight: 600, color: '#374151' }}>{t.funnelConv}</th>
+                  <th style={{ padding: '8px 12px', textAlign: 'right', fontWeight: 600, color: '#374151' }}>{t.funnelDropped}</th>
+                  <th style={{ padding: '8px 12px', textAlign: 'right', fontWeight: 600, color: '#374151' }}>{t.funnelOf}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {stages.map((stage, i) => {
+                  const prevVal = i > 0 ? stages[i - 1].value : null
+                  const conv = prevVal && prevVal > 0 ? ((stage.value / prevVal) * 100).toFixed(1) : null
+                  const dropped = prevVal ? prevVal - stage.value : 0
+                  const ofTotal = firstVal > 0 ? ((stage.value / firstVal) * 100).toFixed(1) : '0'
+
+                  return (
+                    <tr key={stage.key} style={{ borderBottom: '1px solid #f3f4f6', background: i % 2 === 0 ? '#fff' : '#fafafa' }}>
+                      <td style={{ padding: '8px 12px' }}>
+                        <span style={{
+                          display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                          width: 22, height: 22, borderRadius: 6,
+                          background: C, opacity: opacity(i), color: '#fff', fontSize: 12, fontWeight: 700,
+                        }}>{i + 1}</span>
+                      </td>
+                      <td style={{ padding: '8px 12px', fontWeight: 500 }}>{stage.label}</td>
+                      <td style={{ padding: '8px 12px', textAlign: 'right', fontWeight: 600 }}>{stage.value.toLocaleString()}</td>
+                      <td style={{ padding: '8px 12px', textAlign: 'right', fontWeight: 600, color: i === 0 ? '#999' : conv >= 50 ? '#10B981' : conv >= 20 ? '#F59E0B' : '#EF4444' }}>
+                        {i === 0 ? '-' : `${conv}%`}
+                      </td>
+                      <td style={{ padding: '8px 12px', textAlign: 'right', color: dropped > 0 ? '#EF4444' : '#999' }}>
+                        {i === 0 ? '-' : dropped > 0 ? `-${dropped.toLocaleString()}` : '0'}
+                      </td>
+                      <td style={{ padding: '8px 12px', textAlign: 'right', color: '#666' }}>{ofTotal}%</td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
     </>
   )
 }
