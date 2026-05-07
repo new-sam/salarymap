@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useMemo } from 'react'
 import Head from 'next/head'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
@@ -15,6 +15,94 @@ const ROLE_OPTIONS = ['Backend','Frontend','Fullstack','Data','DevOps','Mobile',
 const TYPE_OPTIONS = ['remote','onsite','hybrid']
 const TECH_OPTIONS = ['Java','Python','AWS','React','Go','TypeScript','JavaScript','Node.js','Kotlin','Docker','Spring Framework','Rust','Swift','Flutter','Kubernetes']
 
+// Salary benchmark by role & experience (million VND/month)
+// Cross-referenced: ITviec 2025-2026, NodeFlair, VietnamDevs, Adecco Vietnam
+const MARKET_SALARY = {
+  Backend:   { 0: 17000000, 1: 35000000, 3: 41000000, 5: 57000000, 8: 68000000 },
+  Frontend:  { 0: 17000000, 1: 33000000, 3: 47000000, 5: 57000000, 8: 58000000 },
+  Fullstack: { 0: 16000000, 1: 25000000, 3: 37000000, 5: 47000000, 8: 63000000 },
+  Data:      { 0: 18000000, 1: 27000000, 3: 45000000, 5: 57000000, 8: 95000000 },
+  DevOps:    { 0: 18000000, 1: 32000000, 3: 45000000, 5: 60000000, 8: 75000000 },
+  Mobile:    { 0: 17000000, 1: 32000000, 3: 38000000, 5: 53000000, 8: 52000000 },
+  PM:        { 0: 20000000, 1: 33000000, 3: 52000000, 5: 62000000, 8: 75000000 },
+  Design:    { 0: 16000000, 1: 26000000, 3: 38000000, 5: 48000000, 8: 58000000 },
+  QA:        { 0: 16000000, 1: 24000000, 3: 30000000, 5: 39000000, 8: 53000000 },
+}
+
+// Tech stack premiums — in-demand/niche techs pay more
+const TECH_PREMIUM = { Go: 1.08, Rust: 1.10, Kotlin: 1.06, Swift: 1.06, Kubernetes: 1.07, AWS: 1.05, Terraform: 1.07, Scala: 1.08, Elixir: 1.09, 'Machine Learning': 1.10, AI: 1.10, Blockchain: 1.08, 'Spring Framework': 1.03, React: 1.02, TypeScript: 1.03 }
+
+// Deterministic hash from company name → consistent small offset per company
+function companyHash(name) {
+  if (!name) return 0
+  let h = 0
+  for (let i = 0; i < name.length; i++) h = ((h << 5) - h + name.charCodeAt(i)) | 0
+  return ((h % 100) / 100) * 0.10 - 0.05 // range: -0.05 to +0.05
+}
+
+// Title seniority detection
+function titleSeniority(title) {
+  if (!title) return 1.0
+  const t = title.toLowerCase()
+  if (/\b(principal|staff|architect)\b/.test(t)) return 1.15
+  if (/\b(lead|head)\b/.test(t)) return 1.10
+  if (/\bsenior\b/.test(t)) return 1.06
+  if (/\b(junior|intern|fresher)\b/.test(t)) return 0.90
+  return 1.0
+}
+
+// City-based adjustment (HCMC baseline)
+function cityFactor(location) {
+  if (!location) return 1.0
+  const loc = location.toLowerCase()
+  if (/da nang|đà nẵng|danang/.test(loc)) return 0.90
+  if (/ha noi|hà nội|hanoi/.test(loc)) return 0.95
+  return 1.0
+}
+
+function getEstimatedSalary(job) {
+  const table = MARKET_SALARY[job.role] || MARKET_SALARY.Backend
+  const bands = [0, 1, 3, 5, 8]
+  const midExp = job.experience_min != null && job.experience_max != null ? (job.experience_min + job.experience_max) / 2 : 3
+  let band = bands[0]
+  for (const b of bands) { if (midExp >= b) band = b }
+  const median = table[band]
+  // country
+  const countryMult = job.country === 'global' ? 1.20 : job.country === 'korea' ? 1.15 : 1.0
+  // company size
+  const sizeNum = parseInt(job.company_size) || 0
+  const sizeMult = sizeNum >= 200 ? 1.10 : sizeNum >= 50 ? 1.0 : sizeNum > 0 ? 0.95 : 1.0
+  // city
+  const cityMult = job.type === 'remote' ? 1.03 : cityFactor(job.location)
+  // title seniority
+  const titleMult = titleSeniority(job.title)
+  // tech stack premium (average of matching techs, capped)
+  let techMult = 1.0
+  if (job.tech_stack?.length) {
+    const premiums = job.tech_stack.map(t => TECH_PREMIUM[t]).filter(Boolean)
+    if (premiums.length) techMult = Math.min(1.12, premiums.reduce((a, b) => a + b, 0) / premiums.length)
+  }
+  // company-specific offset
+  const compOffset = 1.0 + companyHash(job.company)
+  const multiplier = countryMult * sizeMult * cityMult * titleMult * techMult * compOffset
+  const min = Math.round(median * 0.87 * multiplier)
+  const max = Math.round(median * 1.13 * multiplier)
+  return { min, max, estimated: true }
+}
+
+function formatSalaryCard(job) {
+  if (job.salary_min > 0 && job.salary_max > 0) {
+    return { min: job.salary_min, max: job.salary_max, estimated: false }
+  }
+  return getEstimatedSalary(job)
+}
+
+function getHighSalaryThreshold(jobs) {
+  if (!jobs.length) return Infinity
+  const mins = jobs.map(j => formatSalaryCard(j).min).sort((a, b) => b - a)
+  return mins[Math.floor(mins.length * 0.30)] || mins[mins.length - 1]
+}
+
 // Module-level: survives client-side navigation, resets on full page reload
 let _cachedProfile = null
 
@@ -25,6 +113,7 @@ export default function JobsPage() {
 
   const [jobs, setJobs] = useState([])
   const [jobsLoaded, setJobsLoaded] = useState(false)
+  const highSalaryThreshold = useMemo(() => getHighSalaryThreshold(jobs), [jobs])
   const [searchQuery, setSearchQuery] = useState('')
   const [roleFilter, setRoleFilter] = useState('')
   const [typeFilter, setTypeFilter] = useState('')
@@ -399,16 +488,18 @@ export default function JobsPage() {
         .jc-ini { position: absolute; bottom: 10px; left: 10px; width: 34px; height: 34px; border-radius: 6px; background: #fff; border: 1px solid rgba(0,0,0,0.08); display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 800; color: #333; z-index: 2; }
         .jc-body { flex: 1; display: flex; flex-direction: column; }
         .jc-t { font-size: 15px; font-weight: 600; color: #111; margin-bottom: 3px; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; }
-        .jc-co { font-size: 13px; color: #888; margin-bottom: 4px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-        .jc-tags { display: flex; gap: 4px; flex-wrap: nowrap; overflow: hidden; margin-bottom: 4px; height: 22px; }
+        .jc-co { font-size: 13px; color: #888; margin-bottom: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .jc-sal { font-size: 15px; font-weight: 800; color: #ff4400; margin-top: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; letter-spacing: -0.3px; }
         .jc-bottom { margin-top: auto; }
         .jc-m { font-size: 12px; color: #bbb; white-space: nowrap; overflow: visible; text-overflow: ellipsis; display: flex; align-items: center; }
         .jc-m b { color: #ff4400; font-weight: 700; }
         .jc-tag { font-size: 11px; font-weight: 500; color: #555; background: #f0f0f0; padding: 2px 7px; border-radius: 4px; }
         .jc-tag-more { color: #aaa; }
-        .jc-type-badge { position: absolute; bottom: 10px; right: 10px; font-size: 11px; font-weight: 800; padding: 4px 9px; border-radius: 4px; z-index: 2; letter-spacing: 0.3px; }
+        .jc-badges { position: absolute; bottom: 10px; right: 10px; display: flex; gap: 4px; z-index: 2; }
+        .jc-type-badge { font-size: 11px; font-weight: 800; padding: 4px 9px; border-radius: 4px; letter-spacing: 0.3px; }
         .jc-type-badge.remote { color: #fff; background: #16a34a; }
         .jc-type-badge.hybrid { color: #fff; background: #2563eb; }
+        .jc-type-badge.highpay { color: #fff; background: #ff4400; }
         .jc-dday { display: inline-flex; align-items: center; margin-left: 6px; font-size: 11px; font-weight: 700; color: #ff4400; background: #fff7f5; border: 1px solid #ffd6c8; padding: 1px 6px; border-radius: 4px; line-height: 1; }
         .jc-dday.urgent { color: #dc2626; background: #fef2f2; border-color: #fecaca; }
         .jc-nudge { background: #fff7f5; border: 1px solid #ffd6c8; border-radius: 8px; padding: 8px 12px; display: flex; justify-content: space-between; align-items: center; margin-top: 8px; }
@@ -673,20 +764,23 @@ export default function JobsPage() {
                                   <path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z" />
                                 </svg>
                               </button>
-                              {(job.type === 'remote' || job.type === 'hybrid') && <span className={`jc-type-badge ${job.type}`}>{typeLabel(job.type)}</span>}
+                              {(() => {
+                                const s = formatSalaryCard(job)
+                                const hasType = job.type === 'remote' || job.type === 'hybrid'
+                                const hasHigh = s.min >= highSalaryThreshold
+                                if (!hasType && !hasHigh) return null
+                                return (
+                                  <div className="jc-badges">
+                                    {hasHigh && <span className="jc-type-badge highpay">{t('jobs.highPay')}</span>}
+                                    {hasType && <span className={`jc-type-badge ${job.type}`}>{typeLabel(job.type)}</span>}
+                                  </div>
+                                )
+                              })()}
                             </div>
                           </div>
                           <div className="jc-body">
                             <div className="jc-t">{job.title}</div>
                             <div className="jc-co">{job.company}</div>
-                            <div className="jc-tags">
-                              {job.tech_stack?.length > 0 && (
-                                <>
-                                  {job.tech_stack.slice(0, 3).map(t => <span key={t} className="jc-tag">{t}</span>)}
-                                  {job.tech_stack.length > 3 && <span className="jc-tag jc-tag-more">+{job.tech_stack.length - 3}</span>}
-                                </>
-                              )}
-                            </div>
                             <div className="jc-bottom">
                               <div className="jc-m">
                                 <span className="jh-app"><span className="jh-pulse" />{t('jobs.hotApplicants', { count: fakeCount(job.id) })}</span>
@@ -696,6 +790,14 @@ export default function JobsPage() {
                                   <span className="jh-open">{t('jobs.hotUntilFilled')}</span>
                                 )}
                               </div>
+                              {(() => {
+                                const sal = formatSalaryCard(job)
+                                return (
+                                  <div className="jc-sal">
+                                    {Math.round(sal.min / 1e6)}M – {Math.round(sal.max / 1e6)}M VND
+                                  </div>
+                                )
+                              })()}
                             </div>
                           </div>
                         </div>
@@ -763,20 +865,23 @@ export default function JobsPage() {
                                   <path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z" />
                                 </svg>
                               </button>
-                              {(job.type === 'remote' || job.type === 'hybrid') && <span className={`jc-type-badge ${job.type}`}>{typeLabel(job.type)}</span>}
+                              {(() => {
+                                const s = formatSalaryCard(job)
+                                const hasType = job.type === 'remote' || job.type === 'hybrid'
+                                const hasHigh = s.min >= highSalaryThreshold
+                                if (!hasType && !hasHigh) return null
+                                return (
+                                  <div className="jc-badges">
+                                    {hasHigh && <span className="jc-type-badge highpay">{t('jobs.highPay')}</span>}
+                                    {hasType && <span className={`jc-type-badge ${job.type}`}>{typeLabel(job.type)}</span>}
+                                  </div>
+                                )
+                              })()}
                             </div>
                           </div>
                           <div className="jc-body">
                             <div className="jc-t">{job.title}</div>
                             <div className="jc-co">{job.company}</div>
-                            <div className="jc-tags">
-                              {job.tech_stack?.length > 0 && (
-                                <>
-                                  {job.tech_stack.slice(0, 3).map(t => <span key={t} className="jc-tag">{t}</span>)}
-                                  {job.tech_stack.length > 3 && <span className="jc-tag jc-tag-more">+{job.tech_stack.length - 3}</span>}
-                                </>
-                              )}
-                            </div>
                             <div className="jc-bottom">
                               <div className="jc-m">
                                 {[
@@ -790,6 +895,14 @@ export default function JobsPage() {
                                   return <span className={`jc-dday${days <= 7 ? ' urgent' : ''}`}>{lang === 'vi' ? (days === 0 ? t('jobs.ddayToday') : t('jobs.dday', { days })) : days === 0 ? 'D-Day' : `D-${days}`}</span>
                                 })()}
                               </div>
+                              {(() => {
+                                const sal = formatSalaryCard(job)
+                                return (
+                                  <div className="jc-sal">
+                                    {Math.round(sal.min / 1e6)}M – {Math.round(sal.max / 1e6)}M VND
+                                  </div>
+                                )
+                              })()}
                             </div>
                           </div>
                         </div>
