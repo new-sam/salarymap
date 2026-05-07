@@ -16,17 +16,19 @@ export default async function handler(req, res) {
 
   const [subsRes, jaRes, evRes, pvRes] = await Promise.all([
     supabase.from('submissions')
-      .select('id, utm_source, utm_medium, utm_campaign', { count: 'exact' })
-      .gte('created_at', startISO).lte('created_at', endISO),
+      .select('id, utm_source, utm_medium, utm_campaign', { count: 'exact', head: false })
+      .gte('created_at', startISO).lte('created_at', endISO)
+      .limit(10000),
     supabase.from('job_applications')
-      .select('id', { count: 'exact' })
+      .select('id', { count: 'exact', head: true })
       .gte('created_at', startISO).lte('created_at', endISO),
     supabase.from('events')
       .select('id, event')
       .in('event', ['click_jobs_cta', 'click_job_card'])
-      .gte('created_at', startISO).lte('created_at', endISO),
+      .gte('created_at', startISO).lte('created_at', endISO)
+      .limit(10000),
     supabase.from('events')
-      .select('id', { count: 'exact' })
+      .select('id', { count: 'exact', head: true })
       .eq('event', 'page_view')
       .gte('created_at', startISO).lte('created_at', endISO),
   ])
@@ -54,9 +56,9 @@ export default async function handler(req, res) {
     ad,
     organic: subs.length - ad,
     signups: todaySignups,
-    jobApps: jaRes.data?.length || 0,
+    jobApps: jaRes.count || 0,
     jobClicks: events.filter(e => e.event === 'click_jobs_cta').length,
     cardClicks: events.filter(e => e.event === 'click_job_card').length,
-    pageViews: pvRes.data?.length || 0,
+    pageViews: pvRes.count || 0,
   })
 }

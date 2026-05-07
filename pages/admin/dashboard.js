@@ -211,7 +211,10 @@ export default function AdminDashboard() {
   const [realtime, setRealtime] = useState(null)
   const [realtimeLoading, setRealtimeLoading] = useState(false)
   const [autoRefresh, setAutoRefresh] = useState(false)
-  const yesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10)
+  const yesterday = (() => {
+    const d = new Date(Date.now() - 86400000)
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+  })()
   const [dateInput, setDateInput] = useState({ from: '2026-04-20', to: yesterday })
   const [dateRange, setDateRange] = useState({ from: '2026-04-20', to: yesterday })
 
@@ -253,9 +256,14 @@ export default function AdminDashboard() {
     setDateRange({ from, to })
   }
 
+  function localDate(ms) {
+    const d = new Date(ms)
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+  }
+
   function applyPreset(days) {
-    const to = new Date(Date.now() - 86400000).toISOString().slice(0, 10)
-    const from = new Date(Date.now() - days * 86400000).toISOString().slice(0, 10)
+    const to = localDate(Date.now() - 86400000)
+    const from = localDate(Date.now() - days * 86400000)
     applyRange(from, to)
   }
 

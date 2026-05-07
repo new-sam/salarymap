@@ -17,13 +17,26 @@ export default async function handler(req, res) {
   const startISO = `${startDate}T00:00:00`
   const endISO = `${endDate}T23:59:59`
 
-  // Fetch all submissions in date range
-  const { data: submissions, error } = await supabase
-    .from('submissions')
-    .select('id, created_at, company, intent, utm_source, utm_medium, utm_campaign, utm_content, user_id, email')
-    .gte('created_at', startISO)
-    .lte('created_at', endISO)
-    .order('created_at', { ascending: true })
+  // Fetch all submissions in date range (paginate to avoid 1000-row default limit)
+  let submissions = []
+  {
+    let from = 0
+    const PAGE = 1000
+    while (true) {
+      const { data, error: fetchErr } = await supabase
+        .from('submissions')
+        .select('id, created_at, company, intent, utm_source, utm_medium, utm_campaign, utm_content, user_id, email')
+        .gte('created_at', startISO)
+        .lte('created_at', endISO)
+        .order('created_at', { ascending: true })
+        .range(from, from + PAGE - 1)
+      if (fetchErr) return res.status(500).json({ error: fetchErr.message })
+      submissions = submissions.concat(data || [])
+      if (!data || data.length < PAGE) break
+      from += PAGE
+    }
+  }
+  const error = null
 
   if (error) return res.status(500).json({ error: error.message })
 
@@ -51,15 +64,27 @@ export default async function handler(req, res) {
     // If admin API not available, skip signups
   }
 
+  // Helper to fetch all rows with pagination
+  async function fetchAll(query) {
+    let all = []
+    let from = 0
+    const PAGE = 1000
+    while (true) {
+      const { data } = await query.range(from, from + PAGE - 1)
+      all = all.concat(data || [])
+      if (!data || data.length < PAGE) break
+      from += PAGE
+    }
+    return all
+  }
+
   // Fetch job applications in date range
   let jobApps = []
   try {
-    const { data: jaData } = await supabase
-      .from('job_applications')
-      .select('id, created_at')
-      .gte('created_at', startISO)
-      .lte('created_at', endISO)
-    jobApps = jaData || []
+    jobApps = await fetchAll(
+      supabase.from('job_applications').select('id, created_at')
+        .gte('created_at', startISO).lte('created_at', endISO)
+    )
   } catch (e) {
     // table may not exist
   }
@@ -67,13 +92,11 @@ export default async function handler(req, res) {
   // Fetch click events in date range
   let events = []
   try {
-    const { data: evData } = await supabase
-      .from('events')
-      .select('id, event, meta, created_at')
-      .in('event', ['click_jobs_cta', 'click_job_card'])
-      .gte('created_at', startISO)
-      .lte('created_at', endISO)
-    events = evData || []
+    events = await fetchAll(
+      supabase.from('events').select('id, event, meta, created_at')
+        .in('event', ['click_jobs_cta', 'click_job_card'])
+        .gte('created_at', startISO).lte('created_at', endISO)
+    )
   } catch (e) {
     // events table may not exist yet
   }
@@ -81,13 +104,11 @@ export default async function handler(req, res) {
   // Fetch page_view events with UTM for campaign attribution
   let pageViews = []
   try {
-    const { data: pvData } = await supabase
-      .from('events')
-      .select('id, meta, created_at')
-      .eq('event', 'page_view')
-      .gte('created_at', startISO)
-      .lte('created_at', endISO)
-    pageViews = pvData || []
+    pageViews = await fetchAll(
+      supabase.from('events').select('id, meta, created_at')
+        .eq('event', 'page_view')
+        .gte('created_at', startISO).lte('created_at', endISO)
+    )
   } catch (e) {
     // events table may not exist yet
   }
