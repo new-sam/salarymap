@@ -235,10 +235,25 @@ export default async function handler(req, res) {
     .map(([name, d]) => ({ name, views: d.views, submissions: d.submissions, convRate: d.views > 0 ? ((d.submissions / d.views) * 100).toFixed(1) : '-' }))
     .sort((a, b) => b.views - a.views)
 
+  // Daily views per campaign (for trend chart in UTM tab)
+  const dailyCampaignMap = {}
+  for (const pv of pageViews) {
+    const campaign = pv.meta?.utm_campaign
+    if (!campaign) continue
+    const date = pv.created_at.slice(0, 10)
+    if (!dailyCampaignMap[campaign]) dailyCampaignMap[campaign] = {}
+    dailyCampaignMap[campaign][date] = (dailyCampaignMap[campaign][date] || 0) + 1
+  }
+  const dailyByCampaign = Object.entries(dailyCampaignMap).map(([name, dates]) => ({
+    name,
+    daily: Object.entries(dates).sort((a, b) => a[0].localeCompare(b[0])).map(([date, views]) => ({ date, views })),
+  }))
+
   const utm = {
     bySource: toSorted(utmBreakdown.bySource),
     byCampaign: toSorted(utmBreakdown.byCampaign),
     byContent: toSorted(utmBreakdown.byContent),
+    dailyByCampaign,
     totalPageViews: pageViews.length,
   }
 

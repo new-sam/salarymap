@@ -1200,7 +1200,7 @@ async function unlock(){
   const c=document.getElementById('f-co')?document.getElementById('f-co').value:'';
   if(!r||!e||!s||!c){ alert('Please fill in all fields including your company name.'); return; }
   const urlParams=new URLSearchParams(window.location.search);
-  const source=sessionStorage.getItem('utm_source')||urlParams.get('source')||(window.location.hostname==='localhost'?'qa-local':'direct');
+  const source=readUtm('utm_source')||urlParams.get('source')||(window.location.hostname==='localhost'?'qa-local':'direct');
   const email=document.getElementById('f-email')?.value||'';
   submitSalary(r,e,s,c,source,email);
   if(await doUnlock(r,e,s)) setTimeout(()=>document.getElementById('full-feed').scrollIntoView({behavior:'smooth'}),300);
@@ -1718,6 +1718,15 @@ export async function getStaticProps() {
   return { props: { initialCompanies: [] }, revalidate: 300 };
 }
 
+// Read UTM value from sessionStorage or cookie (30-day persistence)
+function readUtm(k) {
+  if (typeof window === 'undefined') return null;
+  const s = sessionStorage.getItem(k);
+  if (s) return s;
+  const match = document.cookie.match(new RegExp('(?:^|; )' + k + '=([^;]*)'));
+  return match ? decodeURIComponent(match[1]) : null;
+}
+
 export default function Home({ initialCompanies = [] }) {
   const { t, lang } = useT();
   const [lbCompany, setLbCompany] = useState(null);
@@ -1855,15 +1864,33 @@ export default function Home({ initialCompanies = [] }) {
 
   // Session: check on mount + detect login=success + listen for auth changes
   useEffect(() => {
-    // Capture UTM params on landing — persist in sessionStorage so they survive page navigation
+    // Capture UTM params on landing — persist in cookie (30 days) + sessionStorage
     const params = new URLSearchParams(window.location.search);
-    ['utm_source','utm_medium','utm_campaign','utm_content'].forEach(k => {
-      const v = params.get(k);
-      if (v) sessionStorage.setItem(k, v);
-    });
+    const utmKeys = ['utm_source','utm_medium','utm_campaign','utm_content'];
+    const hasNewUtm = utmKeys.some(k => params.get(k));
+    if (hasNewUtm) {
+      const expires = new Date(Date.now() + 30 * 86400000).toUTCString();
+      utmKeys.forEach(k => {
+        const v = params.get(k);
+        if (v) {
+          document.cookie = `${k}=${encodeURIComponent(v)};path=/;expires=${expires};SameSite=Lax`;
+          sessionStorage.setItem(k, v);
+        }
+      });
+    }
+
+    // Helper to read UTM: URL param > sessionStorage > cookie
+    const getUtm = (k) => {
+      const p = params.get(k);
+      if (p) return p;
+      const s = sessionStorage.getItem(k);
+      if (s) return s;
+      const match = document.cookie.match(new RegExp('(?:^|; )' + k + '=([^;]*)'));
+      return match ? decodeURIComponent(match[1]) : null;
+    };
 
     // Track page_view with UTM params for campaign attribution
-    const utmSource = params.get('utm_source') || sessionStorage.getItem('utm_source');
+    const utmSource = getUtm('utm_source');
     if (utmSource) {
       fetch('/api/track', {
         method: 'POST',
@@ -1873,9 +1900,9 @@ export default function Home({ initialCompanies = [] }) {
           page: window.location.pathname,
           meta: {
             utm_source: utmSource,
-            utm_medium: params.get('utm_medium') || sessionStorage.getItem('utm_medium') || null,
-            utm_campaign: params.get('utm_campaign') || sessionStorage.getItem('utm_campaign') || null,
-            utm_content: params.get('utm_content') || sessionStorage.getItem('utm_content') || null,
+            utm_medium: getUtm('utm_medium'),
+            utm_campaign: getUtm('utm_campaign'),
+            utm_content: getUtm('utm_content'),
             referrer: document.referrer || null,
           },
         }),
@@ -2288,11 +2315,11 @@ export default function Home({ initialCompanies = [] }) {
                 company: wCompany,
                 user_id: session?.user?.id || null,
                 email: session?.user?.email || null,
-                source: sessionStorage.getItem('utm_source') || (window.location.hostname === 'localhost' ? 'qa-local' : 'direct'),
-                utm_source: sessionStorage.getItem('utm_source') || null,
-                utm_medium: sessionStorage.getItem('utm_medium') || null,
-                utm_campaign: sessionStorage.getItem('utm_campaign') || null,
-                utm_content: sessionStorage.getItem('utm_content') || null,
+                source: readUtm('utm_source') || (window.location.hostname === 'localhost' ? 'qa-local' : 'direct'),
+                utm_source: readUtm('utm_source'),
+                utm_medium: readUtm('utm_medium'),
+                utm_campaign: readUtm('utm_campaign'),
+                utm_content: readUtm('utm_content'),
               }),
             });
             const submitData = await submitRes.json();
