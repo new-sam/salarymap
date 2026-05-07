@@ -365,7 +365,7 @@ export default function JobsPage() {
         .jh-pulse { width: 6px; height: 6px; border-radius: 50%; background: #ff4400; position: relative; flex-shrink: 0; margin: 4px; }
         .jh-pulse::after { content: ''; position: absolute; inset: -3px; border-radius: 50%; background: rgba(255,68,0,0.35); animation: jh-ping 1.5s cubic-bezier(0,0,0.2,1) infinite; }
         @keyframes jh-ping { 0% { transform: scale(1); opacity: 1; } 75%,100% { transform: scale(2.2); opacity: 0; } }
-        .jh-open { font-size: 11px; color: #38a169; font-weight: 600; }
+        .jh-open { font-size: 11px; color: #38a169; font-weight: 600; display: inline-flex; align-items: center; line-height: 1; }
         .jh-divider { height: 1px; background: #eee; margin-top: 32px; }
 
         .jg { display: grid; grid-template-columns: repeat(4, 1fr); gap: 24px; align-items: stretch; }
@@ -385,11 +385,11 @@ export default function JobsPage() {
         .jc-co { font-size: 13px; color: #888; margin-bottom: 4px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         .jc-tags { display: flex; gap: 4px; flex-wrap: nowrap; overflow: hidden; margin-bottom: 4px; height: 22px; }
         .jc-bottom { margin-top: auto; }
-        .jc-m { font-size: 12px; color: #bbb; white-space: nowrap; overflow: visible; text-overflow: ellipsis; }
+        .jc-m { font-size: 12px; color: #bbb; white-space: nowrap; overflow: visible; text-overflow: ellipsis; display: flex; align-items: center; }
         .jc-m b { color: #ff4400; font-weight: 700; }
         .jc-tag { font-size: 11px; font-weight: 500; color: #555; background: #f0f0f0; padding: 2px 7px; border-radius: 4px; }
         .jc-tag-more { color: #aaa; }
-        .jc-dday { display: inline-block; margin-left: 6px; font-size: 11px; font-weight: 700; color: #ff4400; background: #fff7f5; border: 1px solid #ffd6c8; padding: 1px 6px; border-radius: 4px; }
+        .jc-dday { display: inline-flex; align-items: center; margin-left: 6px; font-size: 11px; font-weight: 700; color: #ff4400; background: #fff7f5; border: 1px solid #ffd6c8; padding: 1px 6px; border-radius: 4px; line-height: 1; }
         .jc-dday.urgent { color: #dc2626; background: #fef2f2; border-color: #fecaca; }
         .jc-nudge { background: #fff7f5; border: 1px solid #ffd6c8; border-radius: 8px; padding: 8px 12px; display: flex; justify-content: space-between; align-items: center; margin-top: 8px; }
         .jc-nudge-t { font-size: 12px; color: #888; }
