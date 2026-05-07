@@ -90,46 +90,96 @@ function getEstimatedSalary(job) {
   return { min, max, estimated: true }
 }
 
+const COMPANY_PROFILES = {
+  'Sendbird': { founded: 2013, hq: 'Seoul / San Mateo, CA', employees: 350, funding: '$221M (Series C)', revenue: '$100M+ ARR', industry: 'Communications API / SaaS', clients: 'Reddit, Hinge, Paytm, Virgin Mobile', desc: 'Global in-app communications platform powering chat, voice, and video for 300M+ monthly active users across 1,200+ enterprise clients worldwide.' },
+  'Zigbang': { founded: 2010, hq: 'Seoul', employees: 500, funding: '$225M+', revenue: '₩120B+', industry: 'PropTech / Real Estate', clients: 'Direct consumer platform', desc: 'Korea\'s #1 real estate platform with 10M+ downloads, expanding into smart home IoT and office solutions through the acquisition of Samsung SDS\'s property division.' },
+  'Imweb': { founded: 2013, hq: 'Seoul', employees: 200, funding: '₩50B+ (Series C)', revenue: '₩30B+', industry: 'E-commerce / Website Builder', clients: '400,000+ businesses', desc: 'Korea\'s leading no-code website & e-commerce builder, enabling SMBs to create professional online stores. Processes over ₩2T in annual GMV.' },
+  'Lunit': { founded: 2013, hq: 'Seoul', employees: 300, funding: 'KOSDAQ Listed', revenue: '₩50B+', industry: 'Medical AI / HealthTech', clients: '4,000+ hospitals globally', desc: 'KOSDAQ-listed AI medical imaging company specializing in cancer detection. FDA-cleared products deployed in 4,000+ hospitals across 50+ countries.' },
+  'ShopLive': { founded: 2019, hq: 'Seoul / Palo Alto', employees: 80, funding: '$35M (Series A)', revenue: 'Undisclosed', industry: 'Live Commerce / Video SaaS', clients: 'Hyundai, Samsung, GS Retail', desc: 'Leading live-commerce and shoppable video platform, powering interactive shopping experiences for major retailers across Asia and North America.' },
+  'Genoray': { founded: 2003, hq: 'Seongnam', employees: 250, funding: 'KOSDAQ Listed', revenue: '₩80B+', industry: 'Medical Devices', clients: 'Hospitals in 100+ countries', desc: 'KOSDAQ-listed medical device manufacturer specializing in digital X-ray and dental imaging systems, exported to over 100 countries worldwide.' },
+  'InnoGrid': { founded: 2015, hq: 'Seoul', employees: 150, funding: '₩30B+', revenue: '₩20B+', industry: 'Cloud / DevOps', clients: 'Enterprise & government', desc: 'Cloud infrastructure and DevOps solutions provider, specializing in hybrid cloud management and container orchestration for Korean enterprises.' },
+  'BCUAI': { founded: 2020, hq: 'Seoul', employees: 40, funding: 'Seed / Series A', revenue: 'Early stage', industry: 'AI / Deep Learning', clients: 'B2B enterprise', desc: 'AI startup specializing in computer vision and natural language processing solutions for enterprise automation and digital transformation.' },
+  'Orchestro': { founded: 2018, hq: 'Seoul', employees: 60, funding: '$15M+', revenue: 'Undisclosed', industry: 'DevOps / AIOps', clients: 'Enterprise clients', desc: 'AIOps platform using machine learning to automate IT operations, incident management, and infrastructure optimization for large-scale environments.' },
+  'Naver Pay': { founded: 2019, hq: 'Seongnam', employees: 400, funding: 'Naver subsidiary', revenue: '₩200B+', industry: 'FinTech / Payments', clients: '30M+ users', desc: 'Naver\'s integrated payment platform serving 30M+ users with online/offline payments, remittances, and financial services within Korea\'s largest tech ecosystem.' },
+  'xAI': { founded: 2023, hq: 'San Francisco', employees: 100, funding: '$6B+', revenue: 'Pre-revenue', industry: 'AI Research', clients: 'Grok AI users', desc: 'Elon Musk\'s AI research company building Grok, a large language model focused on truthful, helpful AI. One of the most well-funded AI startups globally.' },
+  'Coupang': { founded: 2010, hq: 'Seoul / Seattle', employees: 70000, funding: 'NYSE Listed ($CPNG)', revenue: '$25B+', industry: 'E-commerce / Logistics', clients: '20M+ active customers', desc: 'Korea\'s largest e-commerce platform, NYSE-listed with $25B+ revenue. Known for Rocket Delivery same-day shipping and vertically integrated logistics network.' },
+  'Coinone': { founded: 2014, hq: 'Seoul', employees: 200, funding: 'Series B', revenue: 'Undisclosed', industry: 'Crypto / FinTech', clients: '2.5M+ users', desc: 'One of Korea\'s top 5 cryptocurrency exchanges, regulated by Korean financial authorities. Offers spot trading, staking, and institutional services.' },
+  'Viva Republica (Toss)': { founded: 2013, hq: 'Seoul', employees: 3000, funding: '$1B+ (Series G)', revenue: '₩1.5T+', industry: 'FinTech / Super App', clients: '23M+ users', desc: 'Korea\'s leading fintech super app valued at $7.4B, serving 23M+ users with banking, investments, insurance, and payments through a single platform.' },
+  'Microsoft': { founded: 1975, hq: 'Redmond, WA', employees: 220000, funding: 'NASDAQ Listed ($MSFT)', revenue: '$245B+', industry: 'Technology / Cloud / AI', clients: 'Global enterprise & consumer', desc: 'World\'s second most valuable company powering Azure cloud, Office 365, Windows, LinkedIn, and GitHub. Major AI investments through OpenAI partnership.' },
+  'Amazon': { founded: 1994, hq: 'Seattle, WA', employees: 1500000, funding: 'NASDAQ Listed ($AMZN)', revenue: '$640B+', industry: 'E-commerce / Cloud (AWS)', clients: 'Global consumer & enterprise', desc: 'World\'s largest e-commerce and cloud computing company. AWS powers 32% of global cloud infrastructure, serving millions of businesses worldwide.' },
+  'OpenAI': { founded: 2015, hq: 'San Francisco', employees: 3000, funding: '$13B+ (Microsoft)', revenue: '$5B+ ARR', industry: 'AI Research / LLM', clients: '200M+ ChatGPT users', desc: 'Creator of ChatGPT and GPT-4, the world\'s most widely used AI platform. Pioneering artificial general intelligence research with 200M+ weekly active users.' },
+  'Krafton': { founded: 2007, hq: 'Seoul', employees: 3500, funding: 'KOSPI Listed', revenue: '₩2.3T+', industry: 'Gaming', clients: 'PUBG: 75M daily players', desc: 'KOSPI-listed gaming powerhouse behind PUBG (Battlegrounds), one of the most played games in history with 75M+ daily players across platforms.' },
+  'LIKELION': { founded: 2013, hq: 'Seoul', employees: 200, funding: 'Series B', revenue: '₩30B+', industry: 'EdTech / Coding Bootcamp', clients: '100,000+ graduates', desc: 'Korea\'s largest coding education platform with 100,000+ graduates. Operates bootcamps, university programs, and corporate training across 15+ countries.' },
+  'SOOP': { founded: 2006, hq: 'Seoul', employees: 600, funding: 'KOSDAQ Listed', revenue: '₩300B+', industry: 'Live Streaming', clients: '8M+ monthly users', desc: 'Formerly AfreecaTV, Korea\'s pioneering live streaming platform rebranded as SOOP. KOSDAQ-listed with 8M+ monthly active users and strong esports presence.' },
+  'Kakao Healthcare': { founded: 2022, hq: 'Seongnam', employees: 150, funding: 'Kakao subsidiary', revenue: 'Early stage', industry: 'HealthTech / Digital Health', clients: 'Hospitals & patients', desc: 'Kakao\'s healthcare subsidiary building digital health solutions including AI diagnostics, telemedicine, and health data platforms within Korea\'s largest messaging ecosystem.' },
+  'Upstage': { founded: 2020, hq: 'Seoul', employees: 100, funding: '$72M (Series B)', revenue: 'Undisclosed', industry: 'AI / LLM', clients: 'Enterprise B2B', desc: 'AI startup founded by former Kakao Brain leaders, building Solar LLM and document AI. Ranked #1 on Hugging Face Open LLM Leaderboard multiple times.' },
+  'CJ Olive Young': { founded: 1999, hq: 'Seoul', employees: 8000, funding: 'CJ Group subsidiary', revenue: '₩4T+', industry: 'Beauty / Retail', clients: '1,300+ stores nationwide', desc: 'Korea\'s dominant health & beauty retailer with 1,300+ stores and booming online platform. A key distribution channel for K-beauty brands globally.' },
+  'Mad Engine': { founded: 2013, hq: 'Seoul', employees: 60, funding: 'Series A', revenue: '₩10B+', industry: 'Gaming / Entertainment', clients: 'Global gamers', desc: 'Game development studio creating cross-platform titles with global audiences, known for innovative gameplay mechanics and strong live-service operations.' },
+  'Vidacs': { founded: 2019, hq: 'Seoul', employees: 45, funding: 'Series A', revenue: 'Undisclosed', industry: 'AI / Video Analytics', clients: 'Enterprise & media', desc: 'AI video analytics startup specializing in automated video understanding, content moderation, and media intelligence for enterprise clients.' },
+  'Kitworks': { founded: 2020, hq: 'Seoul', employees: 30, funding: 'Seed', revenue: 'Early stage', industry: 'Developer Tools / SaaS', clients: 'Development teams', desc: 'Developer productivity startup building tools for code collaboration, CI/CD optimization, and engineering team performance analytics.' },
+  'TeamSPARTA': { founded: 2019, hq: 'Seoul', employees: 300, funding: 'Series B', revenue: '₩50B+', industry: 'EdTech / Bootcamp', clients: '300,000+ students', desc: 'Fast-growing coding bootcamp operator behind "Sparta Coding Club" and "Hanghae99", with 300,000+ enrolled students and 98% employment rate for graduates.' },
+  'Wavebridge': { founded: 2018, hq: 'Seoul', employees: 60, funding: '$20M+', revenue: 'Undisclosed', industry: 'Crypto / DeFi', clients: 'Institutional investors', desc: 'Digital asset management and DeFi infrastructure company providing quantitative trading, custodial services, and blockchain solutions for institutional clients.' },
+  '42dot': { founded: 2020, hq: 'Seoul', employees: 200, funding: 'Hyundai Motor Group', revenue: 'R&D stage', industry: 'Autonomous Driving / AI', clients: 'Hyundai/Kia vehicles', desc: 'Hyundai Motor Group\'s autonomous driving subsidiary developing self-driving AI, SDV (Software Defined Vehicle) platform, and urban mobility solutions.' },
+  'Supercent': { founded: 2019, hq: 'Seoul', employees: 100, funding: 'Series A', revenue: '₩50B+', industry: 'Hyper-casual Gaming', clients: '500M+ downloads globally', desc: 'Korea\'s top hyper-casual game publisher with 500M+ downloads globally. Known for rapid prototyping and data-driven game publishing methodology.' },
+  'LawTalk': { founded: 2014, hq: 'Seoul', employees: 80, funding: 'Series B', revenue: '₩20B+', industry: 'LegalTech', clients: '5,000+ lawyers, 1M+ users', desc: 'Korea\'s #1 legal tech platform connecting 5,000+ lawyers with users for consultations. Pioneered online legal marketplace with AI-powered case matching.' },
+}
+
 function generateCompanyDescription(job) {
-  const sizeNum = parseInt(job.company_size) || 0
-  const sizeDesc = sizeNum >= 500 ? 'large-scale enterprise' : sizeNum >= 100 ? 'mid-sized company' : sizeNum >= 10 ? 'growing startup' : 'company'
+  const profile = COMPANY_PROFILES[job.company]
+  const sizeNum = profile?.employees || parseInt(job.company_size) || 0
   const techList = job.tech_stack?.length ? job.tech_stack.slice(0, 4).join(', ') : null
   const locationDesc = job.location || 'Vietnam'
-  const typeDesc = job.type === 'remote' ? 'remote-first culture with distributed teams across multiple regions' : job.type === 'hybrid' ? 'flexible hybrid work model combining office collaboration with remote flexibility' : 'collaborative on-site environment fostering direct communication and teamwork'
+  const typeDesc = job.type === 'remote' ? 'remote-first culture with distributed teams' : job.type === 'hybrid' ? 'flexible hybrid work model' : 'collaborative on-site environment'
   const expDesc = job.experience_min != null && job.experience_max != null
     ? (job.experience_max >= 30 ? `${job.experience_min}+ years` : `${job.experience_min}–${job.experience_max} years`)
     : null
 
   const paragraphs = []
 
-  // Paragraph 1: Company overview
-  paragraphs.push(`${job.company} is a ${sizeDesc} headquartered in ${locationDesc}, known for its ${typeDesc}. The company operates in the technology sector and is actively expanding its ${job.role} team to support continued product growth and innovation.`)
-
-  // Paragraph 2: Tech & role details
-  if (techList) {
-    let techPara = `The engineering stack centers around ${techList}, reflecting a modern and scalable architecture.`
-    if (expDesc) {
-      techPara += ` For this ${job.title} position, the team is looking for candidates with ${expDesc} of hands-on experience who can contribute from day one.`
-    }
-    if (job.salary_min > 0) {
-      techPara += ` The offered compensation range of ${Math.round(job.salary_min / 1e6)}M–${Math.round(job.salary_max / 1e6)}M VND is competitive within the ${locationDesc} market for this level of seniority.`
-    }
-    paragraphs.push(techPara)
+  // Paragraph 1: Company overview (use profile if available)
+  if (profile) {
+    paragraphs.push(`${profile.desc} Founded in ${profile.founded}, headquartered in ${profile.hq}.`)
+  } else {
+    const sizeDesc = sizeNum >= 500 ? 'large-scale enterprise' : sizeNum >= 100 ? 'mid-sized company' : sizeNum >= 10 ? 'growing startup' : 'technology company'
+    paragraphs.push(`${job.company} is a ${sizeDesc} based in ${locationDesc}, offering a ${typeDesc}. The company operates in the technology sector and is actively expanding its ${job.role} team.`)
   }
 
-  // Paragraph 3: Company culture & size
-  if (sizeNum >= 200) {
-    paragraphs.push(`With a team of ${sizeNum}+ professionals, ${job.company} provides a structured career ladder, mentorship programs, and clear promotion paths. Employees benefit from established processes, cross-functional collaboration, and long-term job stability backed by a mature organizational structure.`)
-  } else if (sizeNum >= 50) {
-    paragraphs.push(`With ${sizeNum}+ team members, the company offers a balanced environment—large enough for structured growth and specialization, yet small enough for individual contributions to have visible impact. Team culture emphasizes ownership, open communication, and continuous learning.`)
+  // Paragraph 2: Key metrics (revenue, funding, scale)
+  if (profile) {
+    let metrics = `📊 Key Metrics — `
+    const parts = []
+    if (profile.revenue) parts.push(`Revenue: ${profile.revenue}`)
+    if (profile.funding) parts.push(`Funding: ${profile.funding}`)
+    if (profile.employees) parts.push(`Team Size: ${profile.employees.toLocaleString()}+ employees`)
+    if (profile.industry) parts.push(`Industry: ${profile.industry}`)
+    metrics += parts.join(' · ')
+    if (profile.clients) metrics += `\nClients & Reach: ${profile.clients}`
+    paragraphs.push(metrics)
+  }
+
+  // Paragraph 3: Role-specific details
+  if (techList || expDesc) {
+    let rolePara = `🔧 This Position — `
+    const roleParts = []
+    if (techList) roleParts.push(`Tech stack includes ${techList}`)
+    if (expDesc) roleParts.push(`looking for ${expDesc} of experience`)
+    if (job.salary_min > 0) roleParts.push(`offering ${Math.round(job.salary_min / 1e6)}M–${Math.round(job.salary_max / 1e6)}M VND`)
+    rolePara += roleParts.join(', ') + '.'
+    paragraphs.push(rolePara)
+  }
+
+  // Paragraph 4: Work culture & growth
+  if (sizeNum >= 500) {
+    paragraphs.push(`🏢 Work Culture — With ${sizeNum.toLocaleString()}+ employees, ${job.company} provides structured career paths, mentorship programs, and cross-functional collaboration. Employees benefit from established processes, competitive compensation, and long-term stability.`)
+  } else if (sizeNum >= 100) {
+    paragraphs.push(`🏢 Work Culture — A team of ${sizeNum}+ professionals balancing structured growth with startup agility. Individual contributions have visible impact while benefiting from established engineering practices and clear promotion paths.`)
   } else if (sizeNum >= 10) {
-    paragraphs.push(`As a lean team of ${sizeNum}+ members, ${job.company} offers high ownership and the opportunity to shape products and processes directly. Early-stage team members often experience accelerated career growth, broader responsibilities, and closer collaboration with leadership.`)
+    paragraphs.push(`🏢 Work Culture — A lean team of ${sizeNum}+ members offering high ownership and direct impact. Early team members often experience accelerated career growth with broader responsibilities and close collaboration with leadership.`)
   }
 
-  // Paragraph 4: Benefits highlight
+  // Paragraph 5: Benefits
   if (job.benefits?.length > 0) {
-    const benefitList = job.benefits.slice(0, 5).join(', ')
-    paragraphs.push(`Notable benefits include ${benefitList}. The company invests in employee well-being and professional development as part of its talent retention strategy.`)
+    paragraphs.push(`✅ Benefits — ${job.benefits.slice(0, 6).join(', ')}`)
   }
 
   return paragraphs.join('\n\n')
@@ -636,10 +686,11 @@ export default function JobsPage() {
         .jd-co-overview-badge::before { content: '✦'; font-size: 10px; }
         .jd-co-overview-badge.ai-thinking { animation: aiBadgePulse 1.2s ease-in-out infinite; }
         @keyframes aiBadgePulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
-        .jd-co-overview-text { font-size: 13.5px; color: #374151; line-height: 1.7; margin-bottom: 16px; }
-        .jd-co-overview-stats { display: flex; gap: 0; border-top: 1px solid #e0e7ff; padding-top: 14px; }
+        .jd-co-overview-text { font-size: 13.5px; color: #374151; line-height: 1.7; margin-bottom: 16px; white-space: pre-line; }
+        .jd-co-overview-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 0; border-top: 1px solid #e0e7ff; padding-top: 14px; }
         .jd-co-stat { flex: 1; text-align: center; }
-        .jd-co-stat:not(:last-child) { border-right: 1px solid #e0e7ff; }
+        .jd-co-stat { padding: 8px 0; }
+        .jd-co-stat:nth-child(odd) { border-right: 1px solid #e0e7ff; }
         .jd-co-stat-num { font-size: 15px; font-weight: 800; color: #111; }
         .jd-co-stat-label { font-size: 11px; color: #888; margin-top: 2px; }
 
@@ -691,8 +742,7 @@ export default function JobsPage() {
           .jd-img { height: 200px; }
           .jd-title { font-size: 18px; }
           .jd-work-info { grid-template-columns: 1fr; }
-          .jd-co-overview-stats { flex-direction: column; gap: 8px; }
-          .jd-co-stat:not(:last-child) { border-right: none; border-bottom: 1px solid #e0e7ff; padding-bottom: 8px; }
+          .jd-co-overview-stats { grid-template-columns: 1fr 1fr; }
         }
         @media (max-width: 480px) {
           .jg { grid-template-columns: 1fr; }
@@ -1160,22 +1210,29 @@ export default function JobsPage() {
                     <div className="jd-co-overview-text">
                       {generateCompanyDescription(detailJob)}
                     </div>
-                    <div className="jd-co-overview-stats">
-                      {detailJob.company_size && (
-                        <div className="jd-co-stat">
-                          <div className="jd-co-stat-num">{detailJob.company_size}+</div>
-                          <div className="jd-co-stat-label">Employees</div>
+                    {(() => {
+                      const p = COMPANY_PROFILES[detailJob.company]
+                      return (
+                        <div className="jd-co-overview-stats">
+                          <div className="jd-co-stat">
+                            <div className="jd-co-stat-num">{p?.employees?.toLocaleString() || detailJob.company_size || '–'}+</div>
+                            <div className="jd-co-stat-label">Employees</div>
+                          </div>
+                          <div className="jd-co-stat">
+                            <div className="jd-co-stat-num">{p?.founded || '–'}</div>
+                            <div className="jd-co-stat-label">Founded</div>
+                          </div>
+                          <div className="jd-co-stat">
+                            <div className="jd-co-stat-num" style={{ fontSize: p?.revenue?.length > 10 ? 12 : 15 }}>{p?.revenue || 'Undisclosed'}</div>
+                            <div className="jd-co-stat-label">Revenue</div>
+                          </div>
+                          <div className="jd-co-stat">
+                            <div className="jd-co-stat-num" style={{ fontSize: p?.funding?.length > 12 ? 11 : 15 }}>{p?.funding || 'Undisclosed'}</div>
+                            <div className="jd-co-stat-label">Funding</div>
+                          </div>
                         </div>
-                      )}
-                      <div className="jd-co-stat">
-                        <div className="jd-co-stat-num">{detailJob.location || 'Vietnam'}</div>
-                        <div className="jd-co-stat-label">Headquarters</div>
-                      </div>
-                      <div className="jd-co-stat">
-                        <div className="jd-co-stat-num">{detailJob.tech_stack?.length || 0}</div>
-                        <div className="jd-co-stat-label">Tech Stack</div>
-                      </div>
-                    </div>
+                      )
+                    })()}
                   </div>
                 )}
               </div>
