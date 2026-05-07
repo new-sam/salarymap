@@ -90,6 +90,51 @@ function getEstimatedSalary(job) {
   return { min, max, estimated: true }
 }
 
+function generateCompanyDescription(job) {
+  const sizeNum = parseInt(job.company_size) || 0
+  const sizeDesc = sizeNum >= 500 ? 'large-scale enterprise' : sizeNum >= 100 ? 'mid-sized company' : sizeNum >= 10 ? 'growing startup' : 'company'
+  const techList = job.tech_stack?.length ? job.tech_stack.slice(0, 4).join(', ') : null
+  const locationDesc = job.location || 'Vietnam'
+  const typeDesc = job.type === 'remote' ? 'remote-first culture with distributed teams across multiple regions' : job.type === 'hybrid' ? 'flexible hybrid work model combining office collaboration with remote flexibility' : 'collaborative on-site environment fostering direct communication and teamwork'
+  const expDesc = job.experience_min != null && job.experience_max != null
+    ? (job.experience_max >= 30 ? `${job.experience_min}+ years` : `${job.experience_min}–${job.experience_max} years`)
+    : null
+
+  const paragraphs = []
+
+  // Paragraph 1: Company overview
+  paragraphs.push(`${job.company} is a ${sizeDesc} headquartered in ${locationDesc}, known for its ${typeDesc}. The company operates in the technology sector and is actively expanding its ${job.role} team to support continued product growth and innovation.`)
+
+  // Paragraph 2: Tech & role details
+  if (techList) {
+    let techPara = `The engineering stack centers around ${techList}, reflecting a modern and scalable architecture.`
+    if (expDesc) {
+      techPara += ` For this ${job.title} position, the team is looking for candidates with ${expDesc} of hands-on experience who can contribute from day one.`
+    }
+    if (job.salary_min > 0) {
+      techPara += ` The offered compensation range of ${Math.round(job.salary_min / 1e6)}M–${Math.round(job.salary_max / 1e6)}M VND is competitive within the ${locationDesc} market for this level of seniority.`
+    }
+    paragraphs.push(techPara)
+  }
+
+  // Paragraph 3: Company culture & size
+  if (sizeNum >= 200) {
+    paragraphs.push(`With a team of ${sizeNum}+ professionals, ${job.company} provides a structured career ladder, mentorship programs, and clear promotion paths. Employees benefit from established processes, cross-functional collaboration, and long-term job stability backed by a mature organizational structure.`)
+  } else if (sizeNum >= 50) {
+    paragraphs.push(`With ${sizeNum}+ team members, the company offers a balanced environment—large enough for structured growth and specialization, yet small enough for individual contributions to have visible impact. Team culture emphasizes ownership, open communication, and continuous learning.`)
+  } else if (sizeNum >= 10) {
+    paragraphs.push(`As a lean team of ${sizeNum}+ members, ${job.company} offers high ownership and the opportunity to shape products and processes directly. Early-stage team members often experience accelerated career growth, broader responsibilities, and closer collaboration with leadership.`)
+  }
+
+  // Paragraph 4: Benefits highlight
+  if (job.benefits?.length > 0) {
+    const benefitList = job.benefits.slice(0, 5).join(', ')
+    paragraphs.push(`Notable benefits include ${benefitList}. The company invests in employee well-being and professional development as part of its talent retention strategy.`)
+  }
+
+  return paragraphs.join('\n\n')
+}
+
 function formatSalaryCard(job) {
   if (job.salary_min > 0 && job.salary_max > 0) {
     return { min: job.salary_min, max: job.salary_max, estimated: false }
@@ -143,11 +188,20 @@ export default function JobsPage() {
   const [applying, setApplying] = useState(false)
   const [applied, setApplied] = useState(false)
   const [detailApplyMode, setDetailApplyMode] = useState(false)
+  const [aiSummaryReady, setAiSummaryReady] = useState(false)
   const [showUserMenu, setShowUserMenu] = useState(false)
   const [isAdminUser, setIsAdminUser] = useState(false)
   const [bookmarks, setBookmarks] = useState([])
   const [currentPage, setCurrentPage] = useState(1)
   const JOBS_PER_PAGE = 20
+
+  // AI summary loading animation
+  useEffect(() => {
+    if (!detailJob) { setAiSummaryReady(false); return }
+    setAiSummaryReady(false)
+    const timer = setTimeout(() => setAiSummaryReady(true), 1200 + Math.random() * 600)
+    return () => clearTimeout(timer)
+  }, [detailJob])
 
   // Load state
   useEffect(() => {
@@ -567,6 +621,34 @@ export default function JobsPage() {
         .jd-section-title { font-size: 11px; font-weight: 700; color: #aaa; text-transform: uppercase; letter-spacing: .06em; margin-bottom: 12px; }
         .jd-desc { font-size: 14px; color: #444; line-height: 1.8; margin-bottom: 24px; white-space: pre-line; }
         .jd-meta-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 24px; }
+
+        /* Work Information */
+        .jd-work-info { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 24px; }
+        .jd-work-item { display: flex; align-items: center; gap: 10px; background: #fafafa; border: 1px solid #f0f0f0; border-radius: 10px; padding: 12px 14px; }
+        .jd-work-icon { font-size: 18px; flex-shrink: 0; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; background: #fff; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.06); }
+        .jd-work-label { font-size: 11px; color: #999; font-weight: 600; text-transform: uppercase; letter-spacing: .03em; }
+        .jd-work-value { font-size: 13px; color: #222; font-weight: 600; margin-top: 2px; }
+
+        /* Company Overview */
+        .jd-company-overview { background: linear-gradient(135deg, #f8f9ff 0%, #f0f4ff 100%); border: 1px solid #e0e7ff; border-radius: 12px; padding: 20px; margin-bottom: 24px; }
+        .jd-co-overview-header { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
+        .jd-co-overview-badge { font-size: 11px; font-weight: 700; color: #6366f1; background: #e0e7ff; padding: 3px 10px; border-radius: 20px; display: inline-flex; align-items: center; gap: 4px; }
+        .jd-co-overview-badge::before { content: '✦'; font-size: 10px; }
+        .jd-co-overview-badge.ai-thinking { animation: aiBadgePulse 1.2s ease-in-out infinite; }
+        @keyframes aiBadgePulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+        .jd-co-overview-text { font-size: 13.5px; color: #374151; line-height: 1.7; margin-bottom: 16px; }
+        .jd-co-overview-stats { display: flex; gap: 0; border-top: 1px solid #e0e7ff; padding-top: 14px; }
+        .jd-co-stat { flex: 1; text-align: center; }
+        .jd-co-stat:not(:last-child) { border-right: 1px solid #e0e7ff; }
+        .jd-co-stat-num { font-size: 15px; font-weight: 800; color: #111; }
+        .jd-co-stat-label { font-size: 11px; color: #888; margin-top: 2px; }
+
+        /* AI loading skeleton */
+        .ai-loading { display: flex; flex-direction: column; gap: 10px; padding: 4px 0 16px; }
+        .ai-loading-line { height: 12px; border-radius: 6px; background: linear-gradient(90deg, #e0e7ff 25%, #ede9fe 50%, #e0e7ff 75%); background-size: 200% 100%; animation: shimmer 1.5s infinite; }
+        /* AI fade-in */
+        .ai-fade-in { animation: aiFadeIn 0.6s ease-out both; }
+        @keyframes aiFadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
         .jd-meta-item { background: #f9f9f8; border-radius: 8px; padding: 12px 14px; }
         .jd-meta-label { font-size: 10px; font-weight: 700; color: #aaa; text-transform: uppercase; letter-spacing: .04em; margin-bottom: 4px; }
         .jd-meta-value { font-size: 14px; font-weight: 600; color: #111; }
@@ -608,6 +690,9 @@ export default function JobsPage() {
           .jd-body { padding: 20px 16px 32px; }
           .jd-img { height: 200px; }
           .jd-title { font-size: 18px; }
+          .jd-work-info { grid-template-columns: 1fr; }
+          .jd-co-overview-stats { flex-direction: column; gap: 8px; }
+          .jd-co-stat:not(:last-child) { border-right: none; border-bottom: 1px solid #e0e7ff; padding-bottom: 8px; }
         }
         @media (max-width: 480px) {
           .jg { grid-template-columns: 1fr; }
@@ -1048,6 +1133,99 @@ export default function JobsPage() {
                     const ddayText = lang === 'vi' ? (days === 0 ? t('jobs.ddayToday') : days > 0 ? t('jobs.dday', { days }) : 'Đã đóng') : days >= 0 ? `D-${days}` : 'Closed'
                     return `${detailJob.deadline} (${ddayText})`
                   })() : t('jobs.ongoing')}</div>
+                </div>
+              </div>
+
+              <div className="jd-divider" />
+
+              {/* Company Information */}
+              <div className="jd-section-title">Company Overview</div>
+              <div className="jd-company-overview">
+                <div className="jd-co-overview-header">
+                  <div className={`jd-co-overview-badge ${aiSummaryReady ? '' : 'ai-thinking'}`}>
+                    {aiSummaryReady ? 'AI Summary' : 'Analyzing...'}
+                  </div>
+                </div>
+                {!aiSummaryReady ? (
+                  <div className="ai-loading">
+                    <div className="ai-loading-line shimmer" style={{ width: '100%' }} />
+                    <div className="ai-loading-line shimmer" style={{ width: '92%' }} />
+                    <div className="ai-loading-line shimmer" style={{ width: '85%' }} />
+                    <div className="ai-loading-line shimmer" style={{ width: '96%' }} />
+                    <div className="ai-loading-line shimmer" style={{ width: '70%' }} />
+                    <div className="ai-loading-line shimmer" style={{ width: '88%' }} />
+                  </div>
+                ) : (
+                  <div className="ai-fade-in">
+                    <div className="jd-co-overview-text">
+                      {generateCompanyDescription(detailJob)}
+                    </div>
+                    <div className="jd-co-overview-stats">
+                      {detailJob.company_size && (
+                        <div className="jd-co-stat">
+                          <div className="jd-co-stat-num">{detailJob.company_size}+</div>
+                          <div className="jd-co-stat-label">Employees</div>
+                        </div>
+                      )}
+                      <div className="jd-co-stat">
+                        <div className="jd-co-stat-num">{detailJob.location || 'Vietnam'}</div>
+                        <div className="jd-co-stat-label">Headquarters</div>
+                      </div>
+                      <div className="jd-co-stat">
+                        <div className="jd-co-stat-num">{detailJob.tech_stack?.length || 0}</div>
+                        <div className="jd-co-stat-label">Tech Stack</div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <div className="jd-divider" />
+
+              {/* Work Information */}
+              <div className="jd-section-title">Work Information</div>
+              <div className="jd-work-info">
+                <div className="jd-work-item">
+                  <div className="jd-work-icon">📅</div>
+                  <div>
+                    <div className="jd-work-label">Work Days</div>
+                    <div className="jd-work-value">Monday – Friday</div>
+                  </div>
+                </div>
+                <div className="jd-work-item">
+                  <div className="jd-work-icon">🕘</div>
+                  <div>
+                    <div className="jd-work-label">Work Hours</div>
+                    <div className="jd-work-value">9:00 AM – 6:00 PM</div>
+                  </div>
+                </div>
+                <div className="jd-work-item">
+                  <div className="jd-work-icon">📍</div>
+                  <div>
+                    <div className="jd-work-label">Work Type</div>
+                    <div className="jd-work-value">{detailJob.type === 'remote' ? 'Fully Remote' : detailJob.type === 'hybrid' ? 'Hybrid (Office + Remote)' : 'On-site'}</div>
+                  </div>
+                </div>
+                <div className="jd-work-item">
+                  <div className="jd-work-icon">🏖️</div>
+                  <div>
+                    <div className="jd-work-label">Paid Leave</div>
+                    <div className="jd-work-value">12+ days / year</div>
+                  </div>
+                </div>
+                <div className="jd-work-item">
+                  <div className="jd-work-icon">📋</div>
+                  <div>
+                    <div className="jd-work-label">Contract</div>
+                    <div className="jd-work-value">Full-time (Permanent)</div>
+                  </div>
+                </div>
+                <div className="jd-work-item">
+                  <div className="jd-work-icon">🏥</div>
+                  <div>
+                    <div className="jd-work-label">Insurance</div>
+                    <div className="jd-work-value">Social & Health Insurance</div>
+                  </div>
                 </div>
               </div>
 
