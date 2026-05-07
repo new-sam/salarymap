@@ -1,0 +1,62 @@
+import { createClient } from '@supabase/supabase-js'
+import { verifyAdmin } from './check'
+
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL,
+  process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+)
+
+export default async function handler(req, res) {
+  const user = await verifyAdmin(req)
+  if (!user) return res.status(401).json({ error: 'Unauthorized' })
+
+  const today = new Date().toISOString().slice(0, 10)
+  const startISO = `${today}T00:00:00`
+  const endISO = `${today}T23:59:59`
+
+  const [subsRes, jaRes, evRes, pvRes] = await Promise.all([
+    supabase.from('submissions')
+      .select('id, utm_source, utm_medium, utm_campaign', { count: 'exact' })
+      .gte('created_at', startISO).lte('created_at', endISO),
+    supabase.from('job_applications')
+      .select('id', { count: 'exact' })
+      .gte('created_at', startISO).lte('created_at', endISO),
+    supabase.from('events')
+      .select('id, event')
+      .in('event', ['click_jobs_cta', 'click_job_card'])
+      .gte('created_at', startISO).lte('created_at', endISO),
+    supabase.from('events')
+      .select('id', { count: 'exact' })
+      .eq('event', 'page_view')
+      .gte('created_at', startISO).lte('created_at', endISO),
+  ])
+
+  const subs = subsRes.data || []
+  const events = evRes.data || []
+
+  let todaySignups = 0
+  try {
+    let page = 1
+    while (true) {
+      const { data: { users }, error } = await supabase.auth.admin.listUsers({ page, perPage: 1000 })
+      if (error || !users || users.length === 0) break
+      todaySignups += users.filter(u => u.created_at >= startISO && u.created_at <= endISO).length
+      if (users.length < 1000) break
+      page++
+    }
+  } catch (e) {}
+
+  const ad = subs.filter(s => s.utm_source || s.utm_medium || s.utm_campaign).length
+
+  res.json({
+    date: today,
+    submissions: subs.length,
+    ad,
+    organic: subs.length - ad,
+    signups: todaySignups,
+    jobApps: jaRes.data?.length || 0,
+    jobClicks: events.filter(e => e.event === 'click_jobs_cta').length,
+    cardClicks: events.filter(e => e.event === 'click_job_card').length,
+    pageViews: pvRes.data?.length || 0,
+  })
+}

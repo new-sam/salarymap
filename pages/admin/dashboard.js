@@ -12,6 +12,10 @@ const T = {
     denied: '접근 권한이 없습니다',
     loadingData: '데이터 불러오는 중...',
     lastUpdate: '마지막 업데이트',
+    refresh: '새로고침',
+    autoRefresh: '자동',
+    today: '오늘 실시간',
+    pageViews: '페이지뷰',
     backTitle: '관리자로 돌아가기',
     trend: '추이',
     funnel: '퍼널',
@@ -59,6 +63,10 @@ const T = {
     denied: 'Access denied',
     loadingData: 'Loading data...',
     lastUpdate: 'Last updated',
+    refresh: 'Refresh',
+    autoRefresh: 'Auto',
+    today: 'Today Live',
+    pageViews: 'Page Views',
     backTitle: 'Back to Admin',
     trend: 'Trend',
     funnel: 'Funnel',
@@ -137,6 +145,9 @@ export default function AdminDashboard() {
   const [lang, setLang] = useState('ko')
   const [tab, setTab] = useState('trend')
   const [funnelKeys, setFunnelKeys] = useState([])
+  const [realtime, setRealtime] = useState(null)
+  const [realtimeLoading, setRealtimeLoading] = useState(false)
+  const [autoRefresh, setAutoRefresh] = useState(false)
   const yesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10)
   const [dateInput, setDateInput] = useState({ from: '2026-04-20', to: yesterday })
   const [dateRange, setDateRange] = useState({ from: '2026-04-20', to: yesterday })
@@ -165,7 +176,14 @@ export default function AdminDashboard() {
     if (auth !== 'ok' || !token) return
     fetchData()
     fetchExperiments()
+    fetchRealtime()
   }, [auth, token, dateRange, lang])
+
+  useEffect(() => {
+    if (!autoRefresh || auth !== 'ok' || !token) return
+    const id = setInterval(fetchRealtime, 30000)
+    return () => clearInterval(id)
+  }, [autoRefresh, auth, token])
 
   function applyRange(from, to) {
     setDateInput({ from, to })
@@ -197,6 +215,20 @@ export default function AdminDashboard() {
       console.error(e)
     }
     setLoading(false)
+  }
+
+  async function fetchRealtime() {
+    setRealtimeLoading(true)
+    try {
+      const res = await fetch('/api/admin/realtime', { headers: { Authorization: `Bearer ${token}` } })
+      if (res.ok) {
+        setRealtime(await res.json())
+        setLastUpdated(new Date())
+      }
+    } catch (e) {
+      console.error(e)
+    }
+    setRealtimeLoading(false)
   }
 
   async function fetchExperiments() {
@@ -232,7 +264,27 @@ export default function AdminDashboard() {
   if (auth === 'denied') return <div style={{ padding: 40, textAlign: 'center' }}>{t.denied}</div>
 
   const selectedMetric = METRICS.find(m => m.key === selected)
-  const visibleExperiments = experiments.filter(e => e.date >= dateRange.from && e.date <= dateRange.to)
+
+  // Merge realtime (today) into daily for chart display
+  const dailyWithToday = (() => {
+    if (!data?.daily || !realtime) return data?.daily
+    const today = realtime.date
+    const exists = data.daily.some(d => d.date === today)
+    if (exists) return data.daily
+    return [...data.daily, {
+      date: today,
+      submissions: realtime.submissions,
+      ad: realtime.ad,
+      organic: realtime.organic,
+      signups: realtime.signups,
+      companies: 0,
+      jobClicks: realtime.jobClicks,
+      cardClicks: realtime.cardClicks,
+      jobApps: realtime.jobApps,
+    }]
+  })()
+
+  const visibleExperiments = experiments.filter(e => e.date >= dateRange.from && e.date <= (realtime?.date || dateRange.to))
 
   return (
     <>
@@ -264,11 +316,6 @@ export default function AdminDashboard() {
               {loading ? '...' : lang === 'ko' ? '조회' : 'Search'}
             </button>
           </div>
-          {lastUpdated && (
-            <div style={{ fontSize: 11, color: '#aaa', textAlign: 'right', marginTop: 4 }}>
-              {t.lastUpdate}: {lastUpdated.toLocaleTimeString(lang === 'ko' ? 'ko-KR' : 'en-US')}
-            </div>
-          )}
         </div>
 
         {/* Tab switcher */}
@@ -286,6 +333,74 @@ export default function AdminDashboard() {
           ))}
         </div>
 
+        {/* ===== TODAY REALTIME ===== */}
+        {realtime && (
+          <div style={{
+            background: 'linear-gradient(135deg, #1e1b4b 0%, #312e81 100%)',
+            borderRadius: 12, padding: '16px 20px', marginBottom: 24, color: '#fff',
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <span style={{
+                  width: 8, height: 8, borderRadius: '50%', background: '#34d399',
+                  display: 'inline-block', animation: autoRefresh ? 'pulse 2s infinite' : 'none',
+                }} />
+                <span style={{ fontSize: 14, fontWeight: 700 }}>{t.today}</span>
+                <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.5)' }}>{realtime.date}</span>
+              </div>
+              <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                <button onClick={() => setAutoRefresh(!autoRefresh)}
+                  style={{
+                    padding: '4px 10px', borderRadius: 6, fontSize: 11, fontWeight: 600, cursor: 'pointer',
+                    border: autoRefresh ? '1px solid #34d399' : '1px solid rgba(255,255,255,0.3)',
+                    background: autoRefresh ? 'rgba(52,211,153,0.2)' : 'transparent',
+                    color: autoRefresh ? '#34d399' : 'rgba(255,255,255,0.6)',
+                  }}>
+                  {t.autoRefresh} {autoRefresh ? 'ON' : 'OFF'}
+                </button>
+                <button onClick={fetchRealtime} disabled={realtimeLoading}
+                  style={{
+                    padding: '4px 10px', borderRadius: 6, fontSize: 11, fontWeight: 600, cursor: 'pointer',
+                    border: '1px solid rgba(255,255,255,0.3)', background: 'rgba(255,255,255,0.1)', color: '#fff',
+                  }}>
+                  {realtimeLoading ? '...' : t.refresh}
+                </button>
+                {lastUpdated && (
+                  <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.4)' }}>
+                    {lastUpdated.toLocaleTimeString(lang === 'ko' ? 'ko-KR' : 'en-US')}
+                  </span>
+                )}
+              </div>
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(100px, 1fr))', gap: 8 }}>
+              {[
+                { label: t.metrics.submissions, value: realtime.submissions, color: '#e2e8f0' },
+                { label: t.metrics.ad, value: realtime.ad, color: '#818cf8' },
+                { label: t.metrics.organic, value: realtime.organic, color: '#34d399' },
+                { label: t.metrics.signups, value: realtime.signups, color: '#fbbf24' },
+                { label: t.pageViews, value: realtime.pageViews, color: '#a78bfa' },
+                { label: t.metrics.jobClicks, value: realtime.jobClicks, color: '#fb923c' },
+                { label: t.metrics.cardClicks, value: realtime.cardClicks, color: '#f472b6' },
+                { label: t.metrics.jobApps, value: realtime.jobApps, color: '#f87171' },
+              ].map(item => (
+                <div key={item.label} style={{
+                  background: 'rgba(255,255,255,0.08)', borderRadius: 8, padding: '10px 12px', textAlign: 'center',
+                }}>
+                  <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.5)', marginBottom: 4 }}>{item.label}</div>
+                  <div style={{ fontSize: 22, fontWeight: 700, color: item.color }}>{item.value}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        <style jsx global>{`
+          @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+          }
+        `}</style>
+
         {loading && <div style={{ textAlign: 'center', padding: 40, color: '#666' }}>{t.loadingData}</div>}
 
         {/* ===== TREND TAB ===== */}
@@ -297,7 +412,7 @@ export default function AdminDashboard() {
                 const isEventMetric = m.key === 'jobClicks' || m.key === 'cardClicks'
                 const noTracking = isEventMetric && !data.summary.hasEventTracking
                 const value = noTracking ? '-' : data.summary[m.summaryKey]
-                const dod = noTracking ? null : getDoD(data.daily, m.dataKey)
+                const dod = noTracking ? null : getDoD(dailyWithToday, m.dataKey)
                 const isActive = selected === m.key
                 return (
                   <div key={m.key}
@@ -331,7 +446,7 @@ export default function AdminDashboard() {
             {selectedMetric && (
               <div style={sectionStyle}>
                 <h3 style={{ ...sectionTitle, marginBottom: 16 }}>{selectedMetric.label} {t.trend}</h3>
-                <MetricChart daily={data.daily} metric={selectedMetric} experiments={visibleExperiments} avgLabel={t.avg} />
+                <MetricChart daily={dailyWithToday} metric={selectedMetric} experiments={visibleExperiments} avgLabel={t.avg} />
 
                 {visibleExperiments.length > 0 && (
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 12, paddingTop: 12, borderTop: '1px solid #f3f4f6' }}>
@@ -474,7 +589,7 @@ export default function AdminDashboard() {
                     </tr>
                   </thead>
                   <tbody>
-                    {data.daily.map((d, i) => (
+                    {dailyWithToday.map((d, i) => (
                       <tr key={i} style={{ borderBottom: '1px solid #f3f4f6', background: i % 2 === 0 ? '#fff' : '#fafafa' }}>
                         <td style={{ padding: '6px 12px' }}>{d.date}</td>
                         <td style={{ padding: '6px 12px', textAlign: 'right', fontWeight: 600 }}>{d.submissions}</td>
