@@ -111,9 +111,15 @@ export default async function handler(req, res) {
     if (ev.event === 'click_job_card') dailyMap[date].cardClicks++
   }
 
+  const EVENT_TRACKING_START = '2026-05-06'
   const daily = Object.values(dailyMap)
     .sort((a, b) => a.date.localeCompare(b.date))
-    .map(d => ({ ...d, companies: d.companies.size }))
+    .map(d => ({
+      ...d,
+      companies: d.companies.size,
+      jobClicks: d.date < EVENT_TRACKING_START ? null : d.jobClicks,
+      cardClicks: d.date < EVENT_TRACKING_START ? null : d.cardClicks,
+    }))
 
   // --- Intent breakdown ---
   const intentCounts = {}
@@ -165,8 +171,10 @@ export default async function handler(req, res) {
     organicSubmissions: submissions.filter(s => !s.utm_source && !s.utm_medium && !s.utm_campaign).length,
     totalSignups: signups.length,
     totalJobApps: jobApps.length,
-    totalJobClicks: events.filter(e => e.event === 'click_jobs_cta').length,
-    totalCardClicks: events.filter(e => e.event === 'click_job_card').length,
+    totalJobClicks: events.filter(e => e.event === 'click_jobs_cta' && e.created_at.slice(0, 10) >= EVENT_TRACKING_START).length,
+    totalCardClicks: events.filter(e => e.event === 'click_job_card' && e.created_at.slice(0, 10) >= EVENT_TRACKING_START).length,
+    hasEventTracking: endDate >= EVENT_TRACKING_START,
+    eventTrackingStart: EVENT_TRACKING_START,
     uniqueCompanies: uniqueCompanies.size,
     interested,
     signupRate: submissions.length > 0 ? ((signups.length / submissions.length) * 100).toFixed(1) : '0',

@@ -85,6 +85,7 @@ function getDoD(daily, dataKey) {
   if (!daily || daily.length < 2) return null
   const last = daily[daily.length - 1][dataKey]
   const prev = daily[daily.length - 2][dataKey]
+  if (last === null || last === undefined || prev === null || prev === undefined) return null
   if (prev === 0) return last > 0 ? 100 : 0
   return Math.round(((last - prev) / prev) * 100)
 }
@@ -240,8 +241,10 @@ export default function AdminDashboard() {
             {/* Clickable Metric Cards */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))', gap: 12, marginBottom: 24 }}>
               {METRICS.map(m => {
-                const value = data.summary[m.summaryKey]
-                const dod = getDoD(data.daily, m.dataKey)
+                const isEventMetric = m.key === 'jobClicks' || m.key === 'cardClicks'
+                const noTracking = isEventMetric && !data.summary.hasEventTracking
+                const value = noTracking ? '-' : data.summary[m.summaryKey]
+                const dod = noTracking ? null : getDoD(data.daily, m.dataKey)
                 const isActive = selected === m.key
                 return (
                   <div key={m.key}
@@ -279,13 +282,17 @@ export default function AdminDashboard() {
 
                 {visibleExperiments.length > 0 && (
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 12, paddingTop: 12, borderTop: '1px solid #f3f4f6' }}>
-                    {visibleExperiments.map(exp => (
+                    {visibleExperiments.map((exp, i) => (
                       <div key={exp.id} style={{
                         display: 'inline-flex', alignItems: 'center', gap: 6,
                         padding: '4px 10px', borderRadius: 20, fontSize: 12, fontWeight: 500,
                         background: exp.color + '18', border: `1px solid ${exp.color}40`, color: '#333',
                       }}>
-                        <span style={{ width: 8, height: 8, borderRadius: '50%', background: exp.color, flexShrink: 0 }} />
+                        <span style={{
+                          width: 16, height: 16, borderRadius: '50%', background: exp.color, flexShrink: 0,
+                          display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          color: '#fff', fontSize: 10, fontWeight: 700, lineHeight: 1,
+                        }}>{i + 1}</span>
                         <span style={{ color: '#888', fontSize: 11 }}>{exp.date.slice(5)}</span>
                         {exp.title}
                       </div>
@@ -422,8 +429,8 @@ export default function AdminDashboard() {
                         <td style={{ padding: '6px 12px', textAlign: 'right', color: '#10B981' }}>{d.organic}</td>
                         <td style={{ padding: '6px 12px', textAlign: 'right', color: '#F59E0B' }}>{d.signups}</td>
                         <td style={{ padding: '6px 12px', textAlign: 'right', color: '#8B5CF6' }}>{d.companies}</td>
-                        <td style={{ padding: '6px 12px', textAlign: 'right', color: '#F97316' }}>{d.jobClicks}</td>
-                        <td style={{ padding: '6px 12px', textAlign: 'right', color: '#EC4899' }}>{d.cardClicks}</td>
+                        <td style={{ padding: '6px 12px', textAlign: 'right', color: d.jobClicks === null ? '#ccc' : '#F97316' }}>{d.jobClicks === null ? '-' : d.jobClicks}</td>
+                        <td style={{ padding: '6px 12px', textAlign: 'right', color: d.cardClicks === null ? '#ccc' : '#EC4899' }}>{d.cardClicks === null ? '-' : d.cardClicks}</td>
                         <td style={{ padding: '6px 12px', textAlign: 'right', color: '#EF4444' }}>{d.jobApps}</td>
                       </tr>
                     ))}
@@ -434,8 +441,8 @@ export default function AdminDashboard() {
                       <td style={{ padding: '8px 12px', textAlign: 'right', color: '#10B981' }}>{data.summary.organicSubmissions}</td>
                       <td style={{ padding: '8px 12px', textAlign: 'right', color: '#F59E0B' }}>{data.summary.totalSignups}</td>
                       <td style={{ padding: '8px 12px', textAlign: 'right', color: '#8B5CF6' }}>{data.summary.uniqueCompanies}</td>
-                      <td style={{ padding: '8px 12px', textAlign: 'right', color: '#F97316' }}>{data.summary.totalJobClicks}</td>
-                      <td style={{ padding: '8px 12px', textAlign: 'right', color: '#EC4899' }}>{data.summary.totalCardClicks}</td>
+                      <td style={{ padding: '8px 12px', textAlign: 'right', color: data.summary.hasEventTracking ? '#F97316' : '#ccc' }}>{data.summary.hasEventTracking ? data.summary.totalJobClicks : '-'}</td>
+                      <td style={{ padding: '8px 12px', textAlign: 'right', color: data.summary.hasEventTracking ? '#EC4899' : '#ccc' }}>{data.summary.hasEventTracking ? data.summary.totalCardClicks : '-'}</td>
                       <td style={{ padding: '8px 12px', textAlign: 'right', color: '#EF4444' }}>{data.summary.totalJobApps}</td>
                     </tr>
                   </tbody>

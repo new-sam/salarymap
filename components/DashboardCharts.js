@@ -4,14 +4,40 @@ import {
   ReferenceLine
 } from 'recharts'
 
+function ExpLabel({ viewBox, index, color, title }) {
+  const x = viewBox?.x ?? 0
+  return (
+    <foreignObject x={x - 12} y={0} width={24} height={24} style={{ overflow: 'visible' }}>
+      <div style={{ position: 'relative', width: 24, height: 24 }} className="exp-label-wrap">
+        <div style={{
+          width: 20, height: 20, borderRadius: '50%', background: color,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          color: '#fff', fontSize: 10, fontWeight: 700, cursor: 'pointer',
+          margin: '2px auto',
+        }}>{index}</div>
+        <div className="exp-label-tooltip" style={{
+          position: 'absolute', bottom: 28, left: '50%', transform: 'translateX(-50%)',
+          background: '#333', color: '#fff', fontSize: 11, fontWeight: 500,
+          padding: '4px 8px', borderRadius: 6, whiteSpace: 'nowrap',
+          pointerEvents: 'none', opacity: 0, transition: 'opacity 0.15s',
+        }}>{title}</div>
+        <style>{`
+          .exp-label-wrap:hover .exp-label-tooltip { opacity: 1 !important; }
+        `}</style>
+      </div>
+    </foreignObject>
+  )
+}
+
 function CustomTooltip({ active, payload, label, daily, metric, experiments }) {
   if (!active || !payload || !payload.length) return null
   const val = payload[0].value
+  if (val === null || val === undefined) return null
   const idx = daily.findIndex(d => d.date === label)
   let change = null
   if (idx > 0) {
     const prev = daily[idx - 1][metric.dataKey]
-    if (prev > 0) change = Math.round(((val - prev) / prev) * 100)
+    if (prev !== null && prev > 0) change = Math.round(((val - prev) / prev) * 100)
   }
   const exps = experiments.filter(e => e.date === label)
 
@@ -41,8 +67,9 @@ function CustomTooltip({ active, payload, label, daily, metric, experiments }) {
 }
 
 export default function MetricChart({ daily, metric, experiments = [], avgLabel = '평균' }) {
-  const avg = daily.length > 0
-    ? Math.round(daily.reduce((s, d) => s + (d[metric.dataKey] || 0), 0) / daily.length)
+  const validDays = daily.filter(d => d[metric.dataKey] !== null && d[metric.dataKey] !== undefined)
+  const avg = validDays.length > 0
+    ? Math.round(validDays.reduce((s, d) => s + d[metric.dataKey], 0) / validDays.length)
     : 0
 
   const dateSet = new Set(daily.map(d => d.date))
@@ -63,9 +90,9 @@ export default function MetricChart({ daily, metric, experiments = [], avgLabel 
         <ReferenceLine y={avg} stroke={metric.color} strokeDasharray="4 4" strokeOpacity={0.5}
           label={{ value: `${avgLabel}: ${avg}`, position: 'right', fontSize: 11, fill: '#999' }} />
 
-        {experiments.filter(e => dateSet.has(e.date)).map(exp => (
+        {experiments.filter(e => dateSet.has(e.date)).map((exp, i) => (
           <ReferenceLine key={exp.id} x={exp.date} stroke={exp.color} strokeDasharray="4 4" strokeWidth={2}
-            label={{ value: exp.title, position: 'top', fontSize: 10, fill: exp.color, fontWeight: 600 }} />
+            label={<ExpLabel index={i + 1} color={exp.color} title={exp.title} />} />
         ))}
 
         <Area
@@ -74,6 +101,7 @@ export default function MetricChart({ daily, metric, experiments = [], avgLabel 
           fill={`url(#grad-${metric.key})`}
           dot={{ r: 3, fill: metric.color, strokeWidth: 0 }}
           activeDot={{ r: 5, fill: metric.color, strokeWidth: 2, stroke: '#fff' }}
+          connectNulls={false}
         />
       </AreaChart>
     </ResponsiveContainer>
