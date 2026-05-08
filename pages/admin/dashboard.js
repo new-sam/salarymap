@@ -207,7 +207,7 @@ export default function AdminDashboard() {
   const [selected, setSelected] = useState(null)
   const [lastUpdated, setLastUpdated] = useState(null)
   const [experiments, setExperiments] = useState([])
-  const [expForm, setExpForm] = useState({ title: '', date: '', color: EXP_COLORS[0] })
+  const [expForm, setExpForm] = useState({ title: '', date: '', color: EXP_COLORS[0], metrics: [] })
   const [showExpForm, setShowExpForm] = useState(false)
   const [lang, setLang] = useState('ko')
   const [tab, setTab] = useState('trend')
@@ -316,14 +316,27 @@ export default function AdminDashboard() {
     }
   }
 
+  const [editingExp, setEditingExp] = useState(null)
+
   async function addExperiment() {
     if (!expForm.title || !expForm.date) return
     const res = await fetch('/api/admin/experiments', {
       method: 'POST', headers: headers(), body: JSON.stringify(expForm)
     })
     if (res.ok) {
-      setExpForm({ title: '', date: '', color: EXP_COLORS[experiments.length % EXP_COLORS.length] })
+      setExpForm({ title: '', date: '', color: EXP_COLORS[experiments.length % EXP_COLORS.length], metrics: [] })
       setShowExpForm(false)
+      fetchExperiments()
+    }
+  }
+
+  async function updateExperiment() {
+    if (!editingExp || !editingExp.title || !editingExp.date) return
+    const res = await fetch('/api/admin/experiments', {
+      method: 'PUT', headers: headers(), body: JSON.stringify(editingExp)
+    })
+    if (res.ok) {
+      setEditingExp(null)
       fetchExperiments()
     }
   }
@@ -333,6 +346,7 @@ export default function AdminDashboard() {
     await fetch('/api/admin/experiments', {
       method: 'DELETE', headers: headers(), body: JSON.stringify({ id })
     })
+    setEditingExp(null)
     fetchExperiments()
   }
 
@@ -362,7 +376,7 @@ export default function AdminDashboard() {
   })()
 
   const chartData = aggregateDaily(dailyWithToday, chartMode)
-  const visibleExperiments = experiments.filter(e => e.date >= dateRange.from && e.date <= (realtime?.date || dateRange.to))
+  const visibleExperiments = experiments.filter(e => e.date >= dateRange.from && e.date <= (realtime?.date || dateRange.to) && (!e.metrics?.length || !selected || e.metrics.includes(selected)))
 
   return (
     <>
@@ -456,7 +470,7 @@ export default function AdminDashboard() {
                 { label: t.metrics.ad, value: realtime.ad, color: '#818cf8' },
                 { label: t.metrics.organic, value: realtime.organic, color: '#34d399' },
                 { label: t.metrics.signups, value: realtime.signups, color: '#fbbf24' },
-                { label: t.pageViews, value: realtime.pageViews, color: '#a78bfa' },
+                { label: t.pageViews, value: realtime.landings, color: '#a78bfa' },
                 { label: t.metrics.jobClicks, value: realtime.jobClicks, color: '#fb923c' },
                 { label: t.metrics.cardClicks, value: realtime.cardClicks, color: '#f472b6' },
                 { label: t.metrics.jobApps, value: realtime.jobApps, color: '#f87171' },
@@ -604,28 +618,87 @@ export default function AdminDashboard() {
                     style={{ padding: '6px 16px', border: 'none', borderRadius: 6, fontSize: 13, background: '#111', color: '#fff', cursor: 'pointer', fontWeight: 600, whiteSpace: 'nowrap' }}>
                     {t.expSave}
                   </button>
+                  <div style={{ width: '100%', marginTop: 8 }}>
+                    <div style={{ fontSize: 11, color: '#888', marginBottom: 4 }}>{lang === 'ko' ? '영향 지표' : 'Affected Metrics'}</div>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+                      {METRICS_BASE.map(m => {
+                        const on = expForm.metrics.includes(m.key)
+                        return (
+                          <button key={m.key} onClick={() => setExpForm(f => ({ ...f, metrics: on ? f.metrics.filter(k => k !== m.key) : [...f.metrics, m.key] }))}
+                            style={{ padding: '3px 8px', borderRadius: 12, fontSize: 10, fontWeight: 600, border: on ? `1.5px solid ${m.color}` : '1px solid #ddd', background: on ? m.color + '18' : '#fff', color: on ? m.color : '#999', cursor: 'pointer' }}>
+                            {t.metrics[m.key] || m.key}
+                          </button>
+                        )
+                      })}
+                    </div>
+                  </div>
                 </div>
               )}
 
               {experiments.length > 0 && (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                  {experiments.map(exp => (
-                    <div key={exp.id} style={{
+                  {experiments.map(exp => {
+                    const isEditing = editingExp?.id === exp.id
+                    if (isEditing) return (
+                      <div key={exp.id} style={{ padding: 12, borderRadius: 8, background: '#f0f0ff', border: `1.5px solid #4F46E5`, fontSize: 13 }}>
+                        <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 8 }}>
+                          <input type="date" value={editingExp.date} onChange={e => setEditingExp(f => ({ ...f, date: e.target.value }))}
+                            style={{ ...inputStyle, width: 140 }} />
+                          <input type="text" value={editingExp.title} onChange={e => setEditingExp(f => ({ ...f, title: e.target.value }))}
+                            onKeyDown={e => e.key === 'Enter' && updateExperiment()}
+                            style={{ ...inputStyle, flex: 1 }} />
+                          <div style={{ display: 'flex', gap: 3 }}>
+                            {EXP_COLORS.map(c => (
+                              <div key={c} onClick={() => setEditingExp(f => ({ ...f, color: c }))}
+                                style={{ width: 18, height: 18, borderRadius: '50%', background: c, cursor: 'pointer', border: editingExp.color === c ? '2px solid #333' : '2px solid transparent' }} />
+                            ))}
+                          </div>
+                        </div>
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginBottom: 8 }}>
+                          {METRICS_BASE.map(m => {
+                            const on = (editingExp.metrics || []).includes(m.key)
+                            return (
+                              <button key={m.key} onClick={() => setEditingExp(f => ({ ...f, metrics: on ? (f.metrics || []).filter(k => k !== m.key) : [...(f.metrics || []), m.key] }))}
+                                style={{ padding: '3px 8px', borderRadius: 12, fontSize: 10, fontWeight: 600, border: on ? `1.5px solid ${m.color}` : '1px solid #ddd', background: on ? m.color + '18' : '#fff', color: on ? m.color : '#999', cursor: 'pointer' }}>
+                                {t.metrics[m.key] || m.key}
+                              </button>
+                            )
+                          })}
+                        </div>
+                        <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end' }}>
+                          <button onClick={() => setEditingExp(null)}
+                            style={{ padding: '4px 12px', border: '1px solid #d1d5db', borderRadius: 6, fontSize: 12, background: '#fff', cursor: 'pointer' }}>
+                            {t.expCancel}
+                          </button>
+                          <button onClick={() => deleteExperiment(exp.id)}
+                            style={{ padding: '4px 12px', border: '1px solid #fca5a5', borderRadius: 6, fontSize: 12, background: '#fff', color: '#EF4444', cursor: 'pointer', fontWeight: 600 }}>
+                            {t.expDelete}
+                          </button>
+                          <button onClick={updateExperiment}
+                            style={{ padding: '4px 12px', border: 'none', borderRadius: 6, fontSize: 12, background: '#111', color: '#fff', cursor: 'pointer', fontWeight: 600 }}>
+                            {t.expSave}
+                          </button>
+                        </div>
+                      </div>
+                    )
+                    return (
+                    <div key={exp.id} onClick={() => setEditingExp({ ...exp, metrics: exp.metrics || [] })} style={{
                       display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                      padding: '8px 12px', borderRadius: 8, background: '#fafafa', fontSize: 13,
+                      padding: '8px 12px', borderRadius: 8, background: '#fafafa', fontSize: 13, cursor: 'pointer',
                     }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
                         <span style={{ width: 10, height: 10, borderRadius: '50%', background: exp.color, flexShrink: 0 }} />
                         <span style={{ color: '#888', fontSize: 12, minWidth: 80 }}>{exp.date}</span>
                         <span style={{ fontWeight: 500 }}>{exp.title}</span>
+                        {exp.metrics?.map(mk => {
+                          const mb = METRICS_BASE.find(x => x.key === mk)
+                          return mb ? <span key={mk} style={{ fontSize: 9, padding: '1px 6px', borderRadius: 8, background: mb.color + '18', color: mb.color, fontWeight: 600 }}>{t.metrics[mk] || mk}</span> : null
+                        })}
                       </div>
-                      <button onClick={() => deleteExperiment(exp.id)}
-                        style={{ border: 'none', background: 'none', color: '#ccc', cursor: 'pointer', fontSize: 16, padding: '0 4px' }}
-                        title={t.expDelete}>
-                        &times;
-                      </button>
+                      <span style={{ color: '#ccc', fontSize: 11 }}>✎</span>
                     </div>
-                  ))}
+                    )
+                  })}
                 </div>
               )}
 

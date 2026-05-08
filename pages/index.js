@@ -1895,23 +1895,29 @@ export default function Home({ initialCompanies = [] }) {
       return match ? decodeURIComponent(match[1]) : null;
     };
 
-    // Track page_view for all landings (with UTM params if available)
+    // Track landing for all visitors
     const utmSource = getUtm('utm_source');
+    const utmMeta = {
+      utm_source: utmSource || null,
+      utm_medium: getUtm('utm_medium'),
+      utm_campaign: getUtm('utm_campaign'),
+      utm_content: getUtm('utm_content'),
+      referrer: document.referrer || null,
+    };
     fetch('/api/track', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        event: 'page_view',
-        page: window.location.pathname,
-        meta: {
-          utm_source: utmSource || null,
-          utm_medium: getUtm('utm_medium'),
-          utm_campaign: getUtm('utm_campaign'),
-          utm_content: getUtm('utm_content'),
-          referrer: document.referrer || null,
-        },
-      }),
+      body: JSON.stringify({ event: 'landing', page: window.location.pathname, meta: utmMeta }),
     }).catch(() => {});
+
+    // Track page_view with UTM params for campaign attribution (ad traffic only)
+    if (utmSource) {
+      fetch('/api/track', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ event: 'page_view', page: window.location.pathname, meta: utmMeta }),
+      }).catch(() => {});
+    }
 
     const isLoginSuccess = params.get('login') === 'success';
 

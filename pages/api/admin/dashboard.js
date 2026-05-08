@@ -113,11 +113,24 @@ export default async function handler(req, res) {
     // events table may not exist yet
   }
 
+  // Fetch landing events (all visitors)
+  let landings = []
+  try {
+    landings = await fetchAll(
+      supabase.from('events').select('id, created_at')
+        .eq('event', 'landing')
+        .gte('created_at', startISO).lte('created_at', endISO)
+    )
+  } catch (e) {
+    // events table may not exist yet
+  }
+
   // --- Aggregate daily trend ---
   const dailyMap = {}
+  const newDay = () => ({ date: '', submissions: 0, ad: 0, organic: 0, signups: 0, companies: new Set(), jobApps: 0, jobClicks: 0, cardClicks: 0, jobsPageViews: 0, jobDetailViews: 0, applyClicks: 0, landings: 0 })
   for (const sub of submissions) {
     const date = sub.created_at.slice(0, 10)
-    if (!dailyMap[date]) dailyMap[date] = { date, submissions: 0, ad: 0, organic: 0, signups: 0, companies: new Set(), jobApps: 0, jobClicks: 0, cardClicks: 0, jobsPageViews: 0, jobDetailViews: 0, applyClicks: 0 }
+    if (!dailyMap[date]) dailyMap[date] = { ...newDay(), date }
     dailyMap[date].submissions++
     if (sub.utm_source || sub.utm_medium || sub.utm_campaign) {
       dailyMap[date].ad++
@@ -129,24 +142,30 @@ export default async function handler(req, res) {
 
   for (const s of signups) {
     const date = s.created_at.slice(0, 10)
-    if (!dailyMap[date]) dailyMap[date] = { date, submissions: 0, ad: 0, organic: 0, signups: 0, companies: new Set(), jobApps: 0, jobClicks: 0, cardClicks: 0, jobsPageViews: 0, jobDetailViews: 0, applyClicks: 0 }
+    if (!dailyMap[date]) dailyMap[date] = { ...newDay(), date }
     dailyMap[date].signups++
   }
 
   for (const ja of jobApps) {
     const date = ja.created_at.slice(0, 10)
-    if (!dailyMap[date]) dailyMap[date] = { date, submissions: 0, ad: 0, organic: 0, signups: 0, companies: new Set(), jobApps: 0, jobClicks: 0, cardClicks: 0, jobsPageViews: 0, jobDetailViews: 0, applyClicks: 0 }
+    if (!dailyMap[date]) dailyMap[date] = { ...newDay(), date }
     dailyMap[date].jobApps++
   }
 
   for (const ev of events) {
     const date = ev.created_at.slice(0, 10)
-    if (!dailyMap[date]) dailyMap[date] = { date, submissions: 0, ad: 0, organic: 0, signups: 0, companies: new Set(), jobApps: 0, jobClicks: 0, cardClicks: 0, jobsPageViews: 0, jobDetailViews: 0, applyClicks: 0 }
+    if (!dailyMap[date]) dailyMap[date] = { ...newDay(), date }
     if (ev.event === 'click_jobs_cta') dailyMap[date].jobClicks++
     if (ev.event === 'click_job_card') dailyMap[date].cardClicks++
     if (ev.event === 'view_jobs_page') dailyMap[date].jobsPageViews++
     if (ev.event === 'view_job_detail') dailyMap[date].jobDetailViews++
     if (ev.event === 'click_apply_button') dailyMap[date].applyClicks++
+  }
+
+  for (const l of landings) {
+    const date = l.created_at.slice(0, 10)
+    if (!dailyMap[date]) dailyMap[date] = { ...newDay(), date }
+    dailyMap[date].landings++
   }
 
   const EVENT_TRACKING_START = '2026-05-06'
@@ -164,7 +183,7 @@ export default async function handler(req, res) {
   }
   for (const date of allDates) {
     if (!dailyMap[date]) {
-      dailyMap[date] = { date, submissions: 0, ad: 0, organic: 0, signups: 0, companies: new Set(), jobApps: 0, jobClicks: 0, cardClicks: 0, jobsPageViews: 0, jobDetailViews: 0, applyClicks: 0 }
+      dailyMap[date] = { ...newDay(), date }
     }
   }
 
@@ -173,6 +192,7 @@ export default async function handler(req, res) {
     .map(d => ({
       ...d,
       companies: d.companies instanceof Set ? d.companies.size : d.companies,
+      landings: d.date < EVENT_TRACKING_START ? null : d.landings,
       jobClicks: d.date < EVENT_TRACKING_START ? null : d.jobClicks,
       cardClicks: d.date < EVENT_TRACKING_START ? null : d.cardClicks,
       jobsPageViews: d.date < EVENT_TRACKING_START ? null : d.jobsPageViews,
@@ -230,6 +250,7 @@ export default async function handler(req, res) {
     organicSubmissions: submissions.filter(s => !s.utm_source && !s.utm_medium && !s.utm_campaign).length,
     totalSignups: signups.length,
     totalJobApps: jobApps.length,
+    totalLandings: landings.filter(l => l.created_at.slice(0, 10) >= EVENT_TRACKING_START).length,
     totalJobClicks: events.filter(e => e.event === 'click_jobs_cta' && e.created_at.slice(0, 10) >= EVENT_TRACKING_START).length,
     totalCardClicks: events.filter(e => e.event === 'click_job_card' && e.created_at.slice(0, 10) >= EVENT_TRACKING_START).length,
     totalJobsPageViews: events.filter(e => e.event === 'view_jobs_page' && e.created_at.slice(0, 10) >= EVENT_TRACKING_START).length,

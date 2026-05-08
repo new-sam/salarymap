@@ -14,7 +14,7 @@ export default async function handler(req, res) {
   const startISO = `${today}T00:00:00`
   const endISO = `${today}T23:59:59`
 
-  const [subsRes, jaRes, evRes, pvRes] = await Promise.all([
+  const [subsRes, jaRes, evRes, pvRes, landingRes] = await Promise.all([
     supabase.from('submissions')
       .select('id, utm_source, utm_medium, utm_campaign', { count: 'exact', head: false })
       .gte('created_at', startISO).lte('created_at', endISO)
@@ -30,6 +30,10 @@ export default async function handler(req, res) {
     supabase.from('events')
       .select('id', { count: 'exact', head: true })
       .eq('event', 'page_view')
+      .gte('created_at', startISO).lte('created_at', endISO),
+    supabase.from('events')
+      .select('id', { count: 'exact', head: true })
+      .eq('event', 'landing')
       .gte('created_at', startISO).lte('created_at', endISO),
   ])
 
@@ -60,5 +64,6 @@ export default async function handler(req, res) {
     jobClicks: events.filter(e => e.event === 'click_jobs_cta').length,
     cardClicks: events.filter(e => e.event === 'click_job_card').length,
     pageViews: pvRes.count || 0,
+    landings: landingRes.count || 0,
   })
 }
