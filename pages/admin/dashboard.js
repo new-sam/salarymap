@@ -340,6 +340,7 @@ export default function AdminDashboard() {
   const dailyWithToday = (() => {
     if (!data?.daily || !realtime) return data?.daily
     const today = realtime.date
+    if (today > dateRange.to) return data.daily
     const exists = data.daily.some(d => d.date === today)
     if (exists) return data.daily
     return [...data.daily, {
