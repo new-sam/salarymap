@@ -29,7 +29,7 @@ function ExpLabel({ viewBox, index, color, title }) {
   )
 }
 
-function CustomTooltip({ active, payload, label, daily, metric, experiments }) {
+function CustomTooltip({ active, payload, label, daily, metric, experiments, lang }) {
   if (!active || !payload || !payload.length) return null
   const val = payload[0].value
   if (val === null || val === undefined) return null
@@ -43,7 +43,7 @@ function CustomTooltip({ active, payload, label, daily, metric, experiments }) {
 
   return (
     <div style={{ background: '#fff', border: '1px solid #e5e7eb', borderRadius: 8, padding: '8px 12px', fontSize: 13 }}>
-      <div style={{ fontWeight: 600, marginBottom: 4 }}>{label}</div>
+      <div style={{ fontWeight: 600, marginBottom: 4 }}>{label} ({(lang === 'en' ? ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'] : ['일','월','화','수','목','금','토'])[new Date(label + 'T00:00:00').getDay()]})</div>
       <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
         <span>{metric.label}: {val}</span>
         {change !== null && (
@@ -66,7 +66,7 @@ function CustomTooltip({ active, payload, label, daily, metric, experiments }) {
   )
 }
 
-export default function MetricChart({ daily, metric, experiments = [], avgLabel = '평균' }) {
+export default function MetricChart({ daily, metric, experiments = [], avgLabel = '평균', lang = 'ko' }) {
   const validDays = daily.filter(d => d[metric.dataKey] !== null && d[metric.dataKey] !== undefined)
   const avg = validDays.length > 0
     ? Math.round(validDays.reduce((s, d) => s + d[metric.dataKey], 0) / validDays.length)
@@ -86,7 +86,7 @@ export default function MetricChart({ daily, metric, experiments = [], avgLabel 
         <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
         <XAxis dataKey="date" tickFormatter={d => d.slice(5)} fontSize={12} />
         <YAxis fontSize={12} />
-        <Tooltip content={<CustomTooltip daily={daily} metric={metric} experiments={experiments} />} />
+        <Tooltip content={<CustomTooltip daily={daily} metric={metric} experiments={experiments} lang={lang} />} />
         <ReferenceLine y={avg} stroke={metric.color} strokeDasharray="4 4" strokeOpacity={0.5}
           label={{ value: `${avgLabel}: ${avg}`, position: 'right', fontSize: 11, fill: '#999' }} />
 

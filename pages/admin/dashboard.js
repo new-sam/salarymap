@@ -540,7 +540,7 @@ export default function AdminDashboard() {
                     ))}
                   </div>
                 </div>
-                <MetricChart daily={chartData} metric={selectedMetric} experiments={chartMode === '1d' ? visibleExperiments : []} avgLabel={t.avg} />
+                <MetricChart daily={chartData} metric={selectedMetric} experiments={chartMode === '1d' ? visibleExperiments : []} avgLabel={t.avg} lang={lang} />
 
                 {visibleExperiments.length > 0 && (
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 12, paddingTop: 12, borderTop: '1px solid #f3f4f6' }}>

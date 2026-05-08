@@ -147,11 +147,29 @@ export default async function handler(req, res) {
   }
 
   const EVENT_TRACKING_START = '2026-05-06'
+
+  // Fill in all dates in range (including dates with no data)
+  const allDates = []
+  {
+    const cur = new Date(startDate + 'T00:00:00')
+    const end = new Date(endDate + 'T00:00:00')
+    while (cur <= end) {
+      const key = cur.toISOString().slice(0, 10)
+      allDates.push(key)
+      cur.setDate(cur.getDate() + 1)
+    }
+  }
+  for (const date of allDates) {
+    if (!dailyMap[date]) {
+      dailyMap[date] = { date, submissions: 0, ad: 0, organic: 0, signups: 0, companies: new Set(), jobApps: 0, jobClicks: 0, cardClicks: 0 }
+    }
+  }
+
   const daily = Object.values(dailyMap)
     .sort((a, b) => a.date.localeCompare(b.date))
     .map(d => ({
       ...d,
-      companies: d.companies.size,
+      companies: d.companies instanceof Set ? d.companies.size : d.companies,
       jobClicks: d.date < EVENT_TRACKING_START ? null : d.jobClicks,
       cardClicks: d.date < EVENT_TRACKING_START ? null : d.cardClicks,
     }))
