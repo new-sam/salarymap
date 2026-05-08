@@ -400,12 +400,11 @@ export default function AdminJobs() {
                   </div>
                   <div style={{ fontSize: 11, color: '#bbb' }}>{new Date(app.created_at).toLocaleString()}</div>
                 </div>
-                <select value={app.status} onChange={e => handleStatusChange(app.id, e.target.value)} style={S.sel}>
-                  <option value="pending">Pending</option>
-                  <option value="reviewed">Reviewed</option>
-                  <option value="contacted">Contacted</option>
-                  <option value="hired">Hired</option>
-                  <option value="rejected">Rejected</option>
+                <select value={app.status || 'applied'} onChange={e => handleStatusChange(app.id, e.target.value)} style={S.sel}>
+                  <option value="applied">지원 완료</option>
+                  <option value="viewed">담당자 열람</option>
+                  <option value="reviewing">검토중</option>
+                  <option value="decided">결과 확인</option>
                 </select>
               </div>
             ))}

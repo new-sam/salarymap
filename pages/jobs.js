@@ -242,6 +242,7 @@ export default function JobsPage() {
   const [showUserMenu, setShowUserMenu] = useState(false)
   const [isAdminUser, setIsAdminUser] = useState(false)
   const [bookmarks, setBookmarks] = useState([])
+  const [appliedJobs, setAppliedJobs] = useState([])
   const [currentPage, setCurrentPage] = useState(1)
   const JOBS_PER_PAGE = 20
 
@@ -320,6 +321,7 @@ export default function JobsPage() {
         setUserCompany(_cachedProfile.company)
       }
       try { setBookmarks(JSON.parse(localStorage.getItem('fyi_bookmarks') || '[]')) } catch { }
+      try { setAppliedJobs(JSON.parse(localStorage.getItem('fyi_applied_jobs') || '[]')) } catch { }
     }
     supabase.auth.getSession().then(async ({ data: { session: s } }) => {
       if (s) {
@@ -352,6 +354,12 @@ export default function JobsPage() {
           setTimeout(load, 1000)
         } else {
           setJobs(d); setJobsLoaded(true)
+          // Open job detail if jobId query param exists
+          const qJobId = new URLSearchParams(window.location.search).get('jobId')
+          if (qJobId) {
+            const found = d.find(j => String(j.id) === qJobId)
+            if (found) { setCarouselIdx(0); setDetailApplyMode(false); setApplied(false); setResumeFile(null); setDetailJob(found) }
+          }
         }
       }).catch(() => {
         if (retries < 2) { retries++; setTimeout(load, 1000) }
@@ -491,11 +499,30 @@ export default function JobsPage() {
       return
     }
     setApplying(false)
-    setApplied(true)
-    // GA4 event
-    if (typeof gtag === 'function') gtag('event', 'job_apply', { event_category: 'engagement', event_label: target.title, company: target.company })
-    // Meta Pixel event
-    if (typeof fbq === 'function') fbq('track', 'Lead', { content_name: 'job_apply', content_category: target.title })
+    // Save applied job to prevent re-applying
+    setAppliedJobs(prev => {
+      const next = [...prev, target.id]
+      localStorage.setItem('fyi_applied_jobs', JSON.stringify(next))
+      return next
+    })
+    // Save to my-applications cache so it shows instantly
+    try {
+      const cached = JSON.parse(localStorage.getItem('fyi_my_applications') || '[]')
+      cached.unshift({
+        id: Date.now(),
+        job_id: target.id,
+        job_title: target.title,
+        job_company: target.company,
+        status: 'applied',
+        created_at: new Date().toISOString(),
+      })
+      localStorage.setItem('fyi_my_applications', JSON.stringify(cached))
+    } catch {}
+    // Redirect to confirmation page
+    router.push({
+      pathname: '/jobs/applied',
+      query: { title: target.title, company: target.company },
+    })
   }
 
   const toggleBookmark = (jobId) => {
@@ -507,6 +534,7 @@ export default function JobsPage() {
   }
 
   const openApply = (job) => {
+    if (appliedJobs.includes(job.id)) return
     setSelectedJob(job)
     setShowPanel(true)
     setApplied(false)
@@ -1381,7 +1409,7 @@ export default function JobsPage() {
 
             </div>
             {/* Inline Apply Form */}
-            {detailApplyMode && !applied && (
+            {detailApplyMode && !applied && !appliedJobs.includes(detailJob.id) && (
               <div className="jd-apply-inline" ref={el => { if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }) }}>
                 <div className="jd-apply-inline-h">{t('jobs.applyThis')}</div>
 
@@ -1407,20 +1435,18 @@ export default function JobsPage() {
               </div>
             )}
 
-            {applied && (
-              <div className="jd-apply-inline" style={{ textAlign: 'center' }}>
-                <div className="ap-ok-i">✓</div>
-                <div className="ap-ok-h">{t('jobs.applied')}</div>
-                <div className="ap-ok-p">{t('jobs.appliedSub')}</div>
-              </div>
-            )}
-
             {/* Floating Apply CTA */}
-            {!detailApplyMode && !applied && (
+            {!detailApplyMode && (
               <div className="jd-apply-float">
-                <button className="jd-apply-btn" onClick={() => { setDetailApplyMode(true); fetch('/api/track',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({event:'click_apply_button',page:'/jobs',meta:{jobId:detailJob.id,title:detailJob.title,company:detailJob.company}})}).catch(()=>{}) }}>
-                  {t('jobs.apply')}
-                </button>
+                {appliedJobs.includes(detailJob.id) ? (
+                  <button className="jd-apply-btn" disabled style={{ background: '#ccc' }}>
+                    {t('jobs.applied')}
+                  </button>
+                ) : (
+                  <button className="jd-apply-btn" onClick={() => { setDetailApplyMode(true); fetch('/api/track',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({event:'click_apply_button',page:'/jobs',meta:{jobId:detailJob.id,title:detailJob.title,company:detailJob.company}})}).catch(()=>{}) }}>
+                    {t('jobs.apply')}
+                  </button>
+                )}
               </div>
             )}
           </div>

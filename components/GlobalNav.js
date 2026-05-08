@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
 import { supabase } from '../lib/supabaseClient'
 import { useT } from '../lib/i18n'
@@ -10,6 +10,13 @@ export default function GlobalNav({ activePage }) {
   const [showMenu, setShowMenu] = useState(false)
   const [isAdmin, setIsAdmin] = useState(false)
   const [ready, setReady] = useState(false)
+  const menuRef = useRef(null)
+
+  useEffect(() => {
+    const handleClick = (e) => { if (menuRef.current && !menuRef.current.contains(e.target)) setShowMenu(false) }
+    document.addEventListener('mousedown', handleClick)
+    return () => document.removeEventListener('mousedown', handleClick)
+  }, [])
 
   useEffect(() => {
     supabase.auth.getSession().then(async ({ data: { session } }) => {
@@ -96,17 +103,21 @@ export default function GlobalNav({ activePage }) {
 
           {!ready ? null : !isLoggedIn ? (
             <>
-              <button className="gnav-login" onClick={() => {
+              <button className="gnav-login" onClick={async () => {
                 if (typeof window === 'undefined') return;
                 localStorage.setItem('fyi_login_return', window.location.pathname);
-                window.location.href = '/api/auth/google?return=' + encodeURIComponent(window.location.pathname);
+                if (window.location.hostname === 'localhost') {
+                  await supabase.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: window.location.origin + '/auth/callback' } });
+                } else {
+                  window.location.href = '/api/auth/google?return=' + encodeURIComponent(window.location.pathname);
+                }
               }}>
                 {t('nav.login')}
               </button>
               <Link href="/#submit" className="gnav-submit">{t('nav.submitSalary')}</Link>
             </>
           ) : (
-            <div className="gnav-user" onClick={() => setShowMenu(v => !v)}>
+            <div className="gnav-user" ref={menuRef} onClick={() => setShowMenu(v => !v)}>
               {user?.user_metadata?.avatar_url ? (
                 <img src={user.user_metadata.avatar_url} className="gnav-avatar" alt="" />
               ) : (
@@ -123,6 +134,7 @@ export default function GlobalNav({ activePage }) {
                 <div className="gnav-menu" onClick={e => e.stopPropagation()}>
                   <div className="gnav-menu-email">{user?.email}</div>
                   <a href="/profile" className="gnav-menu-item">{t('nav.myProfile')}</a>
+                  <a href="/my-applications" className="gnav-menu-item">{t('nav.myApplications')}</a>
                   {isAdmin && (
                     <a href="/admin/jobs" className="gnav-menu-item gnav-menu-admin">Admin Dashboard</a>
                   )}

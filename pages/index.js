@@ -1763,6 +1763,13 @@ export default function Home({ initialCompanies = [] }) {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [user, setUser] = useState(null);
   const [showUserMenu, setShowUserMenu] = useState(false);
+  const userMenuRef = useRef(null);
+
+  useEffect(() => {
+    const handleClick = (e) => { if (userMenuRef.current && !userMenuRef.current.contains(e.target)) setShowUserMenu(false) }
+    document.addEventListener('mousedown', handleClick)
+    return () => document.removeEventListener('mousedown', handleClick)
+  }, [])
 
   // Derived: card/panel unlock state — only unlocked after submitting salary info
   const isUnlocked = isSubmitted;
@@ -2247,6 +2254,7 @@ export default function Home({ initialCompanies = [] }) {
             </button>
           ) : (
             <div
+              ref={userMenuRef}
               style={{display:'flex', alignItems:'center', gap:'6px', padding:'4px 10px 4px 4px', borderRadius:'100px', border:'1px solid rgba(255,255,255,0.12)', cursor:'pointer', position:'relative', flexShrink:0}}
               onClick={() => setShowUserMenu(prev => !prev)}>
               {user?.user_metadata?.avatar_url ? (
@@ -2269,6 +2277,10 @@ export default function Home({ initialCompanies = [] }) {
                   <a href="/profile" onClick={e => e.stopPropagation()}
                     style={{display:'block',padding:'10px 14px',borderRadius:8,color:'rgba(255,255,255,0.6)',fontSize:13,textDecoration:'none',fontFamily:"'Barlow',sans-serif"}}>
                     {t('nav.myProfile')}
+                  </a>
+                  <a href="/my-applications" onClick={e => e.stopPropagation()}
+                    style={{display:'block',padding:'10px 14px',borderRadius:8,color:'rgba(255,255,255,0.6)',fontSize:13,textDecoration:'none',fontFamily:"'Barlow',sans-serif"}}>
+                    {t('nav.myApplications')}
                   </a>
                   {isAdminUser && (
                     <a href="/admin/jobs" onClick={e => e.stopPropagation()}
