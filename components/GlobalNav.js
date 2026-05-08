@@ -97,8 +97,9 @@ export default function GlobalNav({ activePage }) {
           {!ready ? null : !isLoggedIn ? (
             <>
               <button className="gnav-login" onClick={() => {
-                if (typeof window !== 'undefined') localStorage.setItem('fyi_login_return', window.location.pathname)
-                supabase.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: window.location.origin + '/auth/callback' } })
+                if (typeof window === 'undefined') return;
+                localStorage.setItem('fyi_login_return', window.location.pathname);
+                window.location.href = '/api/auth/google?return=' + encodeURIComponent(window.location.pathname);
               }}>
                 {t('nav.login')}
               </button>

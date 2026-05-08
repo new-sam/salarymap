@@ -206,7 +206,7 @@ export default function AdminJobs() {
       <div style={{ fontSize: 48, marginBottom: 16 }}>🔒</div>
       <div style={{ fontSize: 18, fontWeight: 700, marginBottom: 8 }}>Admin access required</div>
       <div style={{ color: '#888', marginBottom: 24 }}>Sign in with an admin account.</div>
-      <button style={S.btnP} onClick={() => supabase.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: window.location.origin + '/auth/callback' } })}>
+      <button style={S.btnP} onClick={() => { window.location.href = '/api/auth/google?return=' + encodeURIComponent('/admin/jobs'); }}>
         Sign in with Google
       </button>
     </div>

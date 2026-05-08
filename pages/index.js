@@ -1413,6 +1413,12 @@ function SubmitSection({
 
   const handleOAuth = async (provider) => {
     try {
+      // Google goes through our own /api/auth/google to keep the OAuth screen
+      // showing salary-fyi.com instead of the Supabase URL.
+      if (provider === 'google') {
+        window.location.href = '/api/auth/google?return=' + encodeURIComponent('/');
+        return;
+      }
       const { error } = await supabaseClient.auth.signInWithOAuth({
         provider,
         options: { redirectTo: window.location.origin + '/auth/callback' },
@@ -2558,7 +2564,7 @@ export default function Home({ initialCompanies = [] }) {
                 style={{width:'100%',background:'#0A66C2',color:'#fff',fontSize:'14px',fontWeight:700,padding:'14px',borderRadius:'10px',border:'none',cursor:'pointer',fontFamily:"'Barlow',sans-serif",display:'flex',alignItems:'center',justifyContent:'center',gap:'10px'}}>
                 <span style={{fontWeight:900,fontSize:'16px'}}>in</span> {t('auth.linkedin')}
               </button>
-              <button onClick={async () => { setShowAuthModal(false); try { const { error } = await supabaseClient.auth.signInWithOAuth({ provider:'google', options:{ redirectTo: window.location.origin+'/auth/callback' } }); if (error) throw error; } catch(e) { console.error('Google OAuth error:', e); } }}
+              <button onClick={() => { setShowAuthModal(false); window.location.href = '/api/auth/google?return=' + encodeURIComponent(window.location.pathname); }}
                 style={{width:'100%',background:'#fff',color:'#111',fontSize:'14px',fontWeight:700,padding:'14px',borderRadius:'10px',border:'none',cursor:'pointer',fontFamily:"'Barlow',sans-serif",display:'flex',alignItems:'center',justifyContent:'center',gap:'10px'}}>
                 <span style={{fontWeight:900,fontSize:'16px'}}>G</span> {t('auth.google')}
               </button>

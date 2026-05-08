@@ -1425,7 +1425,7 @@ export default function JobsPage() {
                 </div>
 
                 <button className="ap-btn" onClick={() => {
-                  if (!isLoggedIn) { localStorage.setItem('fyi_login_return', '/jobs'); supabase.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: window.location.origin + '/auth/callback' } }); return; }
+                  if (!isLoggedIn) { localStorage.setItem('fyi_login_return', '/jobs'); window.location.href = '/api/auth/google?return=' + encodeURIComponent('/jobs'); return; }
                   handleApply();
                 }} disabled={applying || !resumeFile}>
                   {!isLoggedIn ? t('jobs.loginToApply') : applying ? t('jobs.sending') : t('jobs.submitApplication')}
