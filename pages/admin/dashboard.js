@@ -727,7 +727,7 @@ export default function AdminDashboard() {
 
         {/* ===== FUNNEL TAB ===== */}
         {data?.summary && !loading && tab === 'funnel' && (
-          <FunnelView data={data} metrics={METRICS} funnelKeys={funnelKeys} setFunnelKeys={setFunnelKeys} t={t} />
+          <FunnelView data={data} metrics={METRICS} funnelKeys={funnelKeys} setFunnelKeys={setFunnelKeys} t={t} lang={lang} />
         )}
 
         {/* ===== UTM TAB ===== */}
@@ -761,25 +761,168 @@ export default function AdminDashboard() {
 
 /* ──────────────── Amplitude-style Funnel ──────────────── */
 
-function FunnelView({ data, metrics, funnelKeys, setFunnelKeys, t }) {
+const FUNNEL_TRACKING_START = '2026-05-09'
+
+const PRESET_FUNNELS = {
+  ko: [
+    { name: 'Jobs 채용 퍼널', desc: 'Jobs 페이지 방문부터 지원 완료까지', keys: ['jobsPageViews', 'cardClicks', 'jobDetailViews', 'applyClicks', 'jobApps'], since: FUNNEL_TRACKING_START },
+    { name: '홈 → Jobs 전환', desc: '홈페이지 유입부터 Jobs 관심까지', keys: ['submissions', 'jobClicks', 'jobsPageViews', 'cardClicks'], since: FUNNEL_TRACKING_START },
+    { name: '가입 & 지원', desc: '제출 → 가입 → 지원 전환', keys: ['submissions', 'signups', 'applyClicks', 'jobApps'], since: FUNNEL_TRACKING_START },
+  ],
+  en: [
+    { name: 'Jobs Hiring Funnel', desc: 'From page visit to application', keys: ['jobsPageViews', 'cardClicks', 'jobDetailViews', 'applyClicks', 'jobApps'], since: FUNNEL_TRACKING_START },
+    { name: 'Home → Jobs Conversion', desc: 'Home traffic to Jobs interest', keys: ['submissions', 'jobClicks', 'jobsPageViews', 'cardClicks'], since: FUNNEL_TRACKING_START },
+    { name: 'Signup & Apply', desc: 'Submit → Signup → Apply flow', keys: ['submissions', 'signups', 'applyClicks', 'jobApps'], since: FUNNEL_TRACKING_START },
+  ],
+}
+
+function sumDailyFrom(daily, keys, since) {
+  const filtered = daily.filter(d => d.date >= since)
+  const sums = {}
+  for (const k of keys) {
+    sums[k] = filtered.reduce((acc, d) => acc + (d[k] || 0), 0)
+  }
+  return sums
+}
+
+const MAX_BAR_HEIGHT = 160
+
+function FunnelView({ data, metrics, funnelKeys, setFunnelKeys, t, lang }) {
   const C = '#4F46E5'
+  const presets = PRESET_FUNNELS[lang] || PRESET_FUNNELS.en
+  const [expandedPreset, setExpandedPreset] = useState(null)
+
   const stages = funnelKeys.map(k => {
     const m = metrics.find(x => x.key === k)
     return { ...m, value: data.summary[m.summaryKey] ?? 0 }
   })
   const firstVal = stages[0]?.value || 1
 
-  function opacity(i) {
-    return stages.length <= 1 ? 1 : 1 - (i / stages.length) * 0.55
+  function renderDetailChart(stageList) {
+    const maxVal = Math.max(...stageList.map(s => s.value), 1)
+    const fv = stageList[0]?.value || 0
+    return (
+      <div style={{ marginTop: 16 }}>
+        {/* Bars */}
+        <div style={{ display: 'flex', gap: 4, alignItems: 'flex-end', height: MAX_BAR_HEIGHT }}>
+          {stageList.map((stage, i) => {
+            const barHeight = Math.max(4, (stage.value / maxVal) * MAX_BAR_HEIGHT)
+            return (
+              <div key={stage.key} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                <div style={{ fontSize: 13, fontWeight: 700, color: C, marginBottom: 4 }}>{stage.value.toLocaleString()}</div>
+                <div style={{ width: '70%', height: barHeight, background: C, opacity: 1 - (i / stageList.length) * 0.5, borderRadius: '4px 4px 0 0' }} />
+              </div>
+            )
+          })}
+        </div>
+        <div style={{ display: 'flex', gap: 4, marginTop: 6 }}>
+          {stageList.map((stage, i) => (
+            <div key={stage.key} style={{ flex: 1, textAlign: 'center', fontSize: 11, fontWeight: 600, color: '#555' }}>{stage.label}</div>
+          ))}
+        </div>
+        {/* Step table */}
+        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12, marginTop: 16 }}>
+          <thead>
+            <tr style={{ borderBottom: '2px solid #e5e7eb' }}>
+              <th style={{ padding: '6px 8px', textAlign: 'left', color: '#666' }}>{t.funnelStep}</th>
+              <th style={{ padding: '6px 8px', textAlign: 'right', color: '#666' }}>Count</th>
+              <th style={{ padding: '6px 8px', textAlign: 'right', color: '#666' }}>{t.funnelConv}</th>
+              <th style={{ padding: '6px 8px', textAlign: 'right', color: '#666' }}>{t.funnelOf}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {stageList.map((stage, i) => {
+              const prev = i > 0 ? stageList[i - 1].value : null
+              const conv = prev && prev > 0 ? ((stage.value / prev) * 100).toFixed(1) : null
+              const ofTotal = fv > 0 ? ((stage.value / fv) * 100).toFixed(1) : '0'
+              return (
+                <tr key={stage.key} style={{ borderBottom: '1px solid #f3f4f6' }}>
+                  <td style={{ padding: '6px 8px', fontWeight: 500 }}>{i + 1}. {stage.label}</td>
+                  <td style={{ padding: '6px 8px', textAlign: 'right', fontWeight: 600 }}>{stage.value.toLocaleString()}</td>
+                  <td style={{ padding: '6px 8px', textAlign: 'right', fontWeight: 600, color: i === 0 ? '#999' : conv >= 50 ? '#10B981' : conv >= 20 ? '#F59E0B' : '#EF4444' }}>{i === 0 ? '-' : `${conv}%`}</td>
+                  <td style={{ padding: '6px 8px', textAlign: 'right', color: '#666' }}>{i === 0 ? '100%' : `${ofTotal}%`}</td>
+                </tr>
+              )
+            })}
+          </tbody>
+        </table>
+      </div>
+    )
   }
 
   return (
     <>
-      {/* Metric selector chips */}
+      {/* Preset funnels - 3 column summary cards */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12, marginBottom: 20 }}>
+        {presets.map((p, pi) => {
+          const sums = sumDailyFrom(data.daily, p.keys.map(k => metrics.find(x => x.key === k)?.dataKey).filter(Boolean), p.since)
+          const pStages = p.keys.map(k => {
+            const m = metrics.find(x => x.key === k)
+            return { ...m, value: sums[m.dataKey] ?? 0 }
+          })
+          const pFirst = pStages[0]?.value || 0
+          const pLast = pStages[pStages.length - 1]?.value || 0
+          const overallConv = pFirst > 0 ? ((pLast / pFirst) * 100).toFixed(1) : '0'
+          const isOpen = expandedPreset === pi
+          return (
+            <div key={pi}
+              onClick={() => setExpandedPreset(isOpen ? null : pi)}
+              style={{
+                background: '#fff', border: isOpen ? `2px solid ${C}` : '1px solid #e5e7eb', borderRadius: 12,
+                padding: 16, cursor: 'pointer', transition: 'all 0.15s',
+              }}>
+              <div style={{ fontSize: 13, fontWeight: 700, color: '#333' }}>{p.name}</div>
+              <div style={{ fontSize: 11, color: '#999', marginTop: 2 }}>{p.desc} · {p.since}~</div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginTop: 10 }}>
+                <span style={{ fontSize: 11, color: '#999' }}>{pStages[0]?.label} → {pStages[pStages.length - 1]?.label}</span>
+                <span style={{ fontSize: 24, fontWeight: 700, color: C }}>{overallConv}%</span>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', marginTop: 8, gap: 4 }}>
+                {pStages.map((s, i) => (
+                  <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                    <span style={{ fontSize: 11, color: '#555', fontWeight: 600 }}>{s.value.toLocaleString()}</span>
+                    {i < pStages.length - 1 && <span style={{ fontSize: 10, color: '#ccc' }}>→</span>}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )
+        })}
+      </div>
+
+      {/* Expanded preset detail */}
+      {expandedPreset !== null && (() => {
+        const p = presets[expandedPreset]
+        const sums = sumDailyFrom(data.daily, p.keys.map(k => metrics.find(x => x.key === k)?.dataKey).filter(Boolean), p.since)
+        const pStages = p.keys.map(k => {
+          const m = metrics.find(x => x.key === k)
+          return { ...m, value: sums[m.dataKey] ?? 0 }
+        })
+        const pFirst = pStages[0]?.value || 0
+        const pLast = pStages[pStages.length - 1]?.value || 0
+        const overallConv = pFirst > 0 ? ((pLast / pFirst) * 100).toFixed(1) : '0'
+        return (
+          <div style={{ ...sectionStyle, marginBottom: 20 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+              <span style={{ fontSize: 15, fontWeight: 700, color: '#333' }}>{p.name}</span>
+              <div>
+                <span style={{ fontSize: 12, color: '#999', marginRight: 8 }}>{p.since}~ · {t.funnelOverall}</span>
+                <span style={{ fontSize: 22, fontWeight: 700, color: C }}>{overallConv}%</span>
+              </div>
+            </div>
+            {renderDetailChart(pStages)}
+          </div>
+        )
+      })()}
+
+      {/* Custom funnel builder */}
       <div style={{ ...sectionStyle, paddingBottom: 16 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-          <span style={{ fontSize: 13, color: '#666' }}>
-            {funnelKeys.length === 0 ? t.funnelEmpty : `${funnelKeys.length} steps`}
+          <span style={{ fontSize: 14, fontWeight: 700, color: '#333' }}>
+            {lang === 'ko' ? '커스텀 퍼널' : 'Custom Funnel'}
+            <span style={{ fontWeight: 400, color: '#999', fontSize: 12, marginLeft: 8 }}>
+              {funnelKeys.length === 0 ? t.funnelEmpty : `${funnelKeys.length} steps`}
+            </span>
           </span>
           {funnelKeys.length > 0 && (
             <button onClick={() => setFunnelKeys([])}
@@ -815,142 +958,19 @@ function FunnelView({ data, metrics, funnelKeys, setFunnelKeys, t }) {
         </div>
       </div>
 
-      {/* Funnel chart */}
+      {/* Custom funnel chart */}
       {stages.length >= 2 && (
         <div style={sectionStyle}>
-          {/* Funnel bars */}
-          <div style={{ display: 'flex', gap: 0, alignItems: 'flex-end', minHeight: 340, padding: '60px 20px 0' }}>
-            {stages.map((stage, i) => {
-              const pctOfFirst = firstVal > 0 ? (stage.value / firstVal) * 100 : 0
-              const prevVal = i > 0 ? stages[i - 1].value : null
-              const stepConv = prevVal && prevVal > 0 ? (stage.value / prevVal) * 100 : null
-              const barHeight = firstVal > 0 ? Math.max(8, (stage.value / firstVal) * 280) : 40
-
-              return (
-                <div key={stage.key} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', position: 'relative' }}>
-                  {/* Conversion badge */}
-                  {i > 0 && (
-                    <div style={{
-                      position: 'absolute', left: -20, top: 0, bottom: 80,
-                      display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      width: 40, zIndex: 1,
-                    }}>
-                      <div style={{
-                        background: '#fff', border: '1px solid #e5e7eb', borderRadius: 8,
-                        padding: '3px 5px', fontSize: 10, fontWeight: 700, textAlign: 'center',
-                        color: stepConv >= 50 ? '#10B981' : stepConv >= 20 ? '#F59E0B' : '#EF4444',
-                      }}>
-                        {stepConv?.toFixed(1)}%
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Value + percentage */}
-                  <div style={{ marginBottom: 8, textAlign: 'center', minHeight: 48, display: 'flex', flexDirection: 'column', justifyContent: 'flex-end' }}>
-                    <div style={{ fontSize: 22, fontWeight: 700, color: C, lineHeight: 1.2 }}>
-                      {stage.value.toLocaleString()}
-                    </div>
-                    <div style={{ fontSize: 11, color: '#999', marginTop: 2 }}>
-                      {i === 0 ? '100%' : `${pctOfFirst.toFixed(1)}%`} {t.funnelOf}
-                    </div>
-                  </div>
-
-                  {/* Bar */}
-                  <div style={{
-                    width: '65%', height: barHeight,
-                    background: C, opacity: opacity(i),
-                    borderRadius: '4px 4px 0 0',
-                    transition: 'height 0.4s ease',
-                    position: 'relative',
-                  }}>
-                    {i > 0 && prevVal > stage.value && (
-                      <div style={{
-                        position: 'absolute', top: -18, right: -6,
-                        fontSize: 10, color: '#EF4444', fontWeight: 600, whiteSpace: 'nowrap',
-                      }}>
-                        -{(prevVal - stage.value).toLocaleString()}
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Step label */}
-                  <div style={{
-                    marginTop: 10, textAlign: 'center', padding: '6px 4px', borderRadius: 6,
-                    background: '#fafafa', width: '95%',
-                  }}>
-                    <div style={{ fontSize: 10, color: '#999', marginBottom: 2 }}>{t.funnelStep} {i + 1}</div>
-                    <div style={{ fontSize: 13, fontWeight: 600, color: '#333' }}>{stage.label}</div>
-                  </div>
-                </div>
-              )
-            })}
-          </div>
-
-          {/* Overall conversion */}
+          {renderDetailChart(stages)}
           <div style={{
-            marginTop: 24, padding: '16px 20px',
-            background: '#f9fafb', borderRadius: 10,
+            marginTop: 16, padding: '10px 16px',
+            background: '#f9fafb', borderRadius: 8,
             display: 'flex', justifyContent: 'space-between', alignItems: 'center',
           }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-              <span style={{ fontSize: 13, color: '#666' }}>{t.funnelOverall}</span>
-              <span style={{ fontSize: 13, color: '#999' }}>
-                {stages[0].label} &rarr; {stages[stages.length - 1].label}
-              </span>
-            </div>
-            <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
-              <span style={{ fontSize: 28, fontWeight: 700, color: C }}>
-                {firstVal > 0 ? ((stages[stages.length - 1].value / firstVal) * 100).toFixed(2) : 0}%
-              </span>
-              <span style={{ fontSize: 13, color: '#999' }}>
-                ({stages[0].value.toLocaleString()} &rarr; {stages[stages.length - 1].value.toLocaleString()})
-              </span>
-            </div>
-          </div>
-
-          {/* Step table */}
-          <div style={{ marginTop: 20, overflowX: 'auto' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
-              <thead>
-                <tr style={{ borderBottom: '2px solid #e5e7eb' }}>
-                  <th style={{ padding: '8px 12px', textAlign: 'left', fontWeight: 600, color: '#374151' }}>{t.funnelStep}</th>
-                  <th style={{ padding: '8px 12px', textAlign: 'left', fontWeight: 600, color: '#374151' }}>Stage</th>
-                  <th style={{ padding: '8px 12px', textAlign: 'right', fontWeight: 600, color: '#374151' }}>Count</th>
-                  <th style={{ padding: '8px 12px', textAlign: 'right', fontWeight: 600, color: '#374151' }}>{t.funnelConv}</th>
-                  <th style={{ padding: '8px 12px', textAlign: 'right', fontWeight: 600, color: '#374151' }}>{t.funnelDropped}</th>
-                  <th style={{ padding: '8px 12px', textAlign: 'right', fontWeight: 600, color: '#374151' }}>{t.funnelOf}</th>
-                </tr>
-              </thead>
-              <tbody>
-                {stages.map((stage, i) => {
-                  const prevVal = i > 0 ? stages[i - 1].value : null
-                  const conv = prevVal && prevVal > 0 ? ((stage.value / prevVal) * 100).toFixed(1) : null
-                  const dropped = prevVal ? prevVal - stage.value : 0
-                  const ofTotal = firstVal > 0 ? ((stage.value / firstVal) * 100).toFixed(1) : '0'
-
-                  return (
-                    <tr key={stage.key} style={{ borderBottom: '1px solid #f3f4f6', background: i % 2 === 0 ? '#fff' : '#fafafa' }}>
-                      <td style={{ padding: '8px 12px' }}>
-                        <span style={{
-                          display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-                          width: 22, height: 22, borderRadius: 6,
-                          background: C, opacity: opacity(i), color: '#fff', fontSize: 12, fontWeight: 700,
-                        }}>{i + 1}</span>
-                      </td>
-                      <td style={{ padding: '8px 12px', fontWeight: 500 }}>{stage.label}</td>
-                      <td style={{ padding: '8px 12px', textAlign: 'right', fontWeight: 600 }}>{stage.value.toLocaleString()}</td>
-                      <td style={{ padding: '8px 12px', textAlign: 'right', fontWeight: 600, color: i === 0 ? '#999' : conv >= 50 ? '#10B981' : conv >= 20 ? '#F59E0B' : '#EF4444' }}>
-                        {i === 0 ? '-' : `${conv}%`}
-                      </td>
-                      <td style={{ padding: '8px 12px', textAlign: 'right', color: dropped > 0 ? '#EF4444' : '#999' }}>
-                        {i === 0 ? '-' : dropped > 0 ? `-${dropped.toLocaleString()}` : '0'}
-                      </td>
-                      <td style={{ padding: '8px 12px', textAlign: 'right', color: '#666' }}>{ofTotal}%</td>
-                    </tr>
-                  )
-                })}
-              </tbody>
-            </table>
+            <span style={{ fontSize: 13, color: '#666' }}>{t.funnelOverall}: {stages[0].label} → {stages[stages.length - 1].label}</span>
+            <span style={{ fontSize: 22, fontWeight: 700, color: C }}>
+              {firstVal > 0 ? ((stages[stages.length - 1].value / firstVal) * 100).toFixed(2) : 0}%
+            </span>
           </div>
         </div>
       )}
