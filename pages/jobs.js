@@ -245,13 +245,56 @@ export default function JobsPage() {
   const [currentPage, setCurrentPage] = useState(1)
   const JOBS_PER_PAGE = 20
 
-  // AI summary loading animation
+  // AI summary loading animation + view_job_detail tracking
   useEffect(() => {
     if (!detailJob) { setAiSummaryReady(false); return }
     setAiSummaryReady(false)
     const timer = setTimeout(() => setAiSummaryReady(true), 1200 + Math.random() * 600)
+    // Track detail view
+    fetch('/api/track', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ event: 'view_job_detail', page: '/jobs', meta: { jobId: detailJob.id, title: detailJob.title, company: detailJob.company } }) }).catch(() => {})
+    if (typeof fbq === 'function') fbq('track', 'ViewContent', { content_name: detailJob.title, content_category: detailJob.company, content_type: 'job' })
     return () => clearTimeout(timer)
   }, [detailJob])
+
+  // UTM capture + page view tracking on jobs page
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    const utmKeys = ['utm_source','utm_medium','utm_campaign','utm_content']
+    const hasNewUtm = utmKeys.some(k => params.get(k))
+    if (hasNewUtm) {
+      const expires = new Date(Date.now() + 30 * 86400000).toUTCString()
+      utmKeys.forEach(k => {
+        const v = params.get(k)
+        if (v) {
+          document.cookie = `${k}=${encodeURIComponent(v)};path=/;expires=${expires};SameSite=Lax`
+          sessionStorage.setItem(k, v)
+        }
+      })
+    }
+    const getUtm = (k) => {
+      const p = params.get(k)
+      if (p) return p
+      const s = sessionStorage.getItem(k)
+      if (s) return s
+      const match = document.cookie.match(new RegExp('(?:^|; )' + k + '=([^;]*)'))
+      return match ? decodeURIComponent(match[1]) : null
+    }
+    fetch('/api/track', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        event: 'view_jobs_page',
+        page: '/jobs',
+        meta: {
+          utm_source: getUtm('utm_source'),
+          utm_medium: getUtm('utm_medium'),
+          utm_campaign: getUtm('utm_campaign'),
+          utm_content: getUtm('utm_content'),
+          referrer: document.referrer || null,
+        },
+      }),
+    }).catch(() => {})
+  }, [])
 
   // Load state
   useEffect(() => {
@@ -1375,7 +1418,7 @@ export default function JobsPage() {
             {/* Floating Apply CTA */}
             {!detailApplyMode && !applied && (
               <div className="jd-apply-float">
-                <button className="jd-apply-btn" onClick={() => setDetailApplyMode(true)}>
+                <button className="jd-apply-btn" onClick={() => { setDetailApplyMode(true); fetch('/api/track',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({event:'click_apply_button',page:'/jobs',meta:{jobId:detailJob.id,title:detailJob.title,company:detailJob.company}})}).catch(()=>{}) }}>
                   {t('jobs.apply')}
                 </button>
               </div>

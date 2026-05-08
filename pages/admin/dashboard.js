@@ -38,10 +38,11 @@ const T = {
     expDeleteConfirm: '이 실험 기록을 삭제하시겠습니까?',
     expEmpty: '아직 기록이 없습니다. 실험이나 개선 사항을 추가해보세요.',
     avg: '평균',
-    tableHeaders: ['날짜', '전체', '광고', '자연유입', '가입', '회사', '공고클릭', '카드클릭', '채용지원'],
+    tableHeaders: ['날짜', '전체', '광고', '자연유입', '가입', '회사', '공고클릭', '카드클릭', 'Jobs뷰', '상세뷰', 'Apply클릭', '채용지원'],
     metrics: {
       submissions: '제출', ad: '광고 (UTM)', organic: '자연유입',
       signups: '가입', jobClicks: '공고클릭', cardClicks: '카드클릭', jobApps: '채용지원', companies: '회사',
+      jobsPageViews: 'Jobs뷰', jobDetailViews: '상세뷰', applyClicks: 'Apply클릭',
     },
     funnelEmpty: '스테이지를 클릭하여 퍼널을 구성하세요',
     funnelClear: '초기화',
@@ -104,10 +105,11 @@ const T = {
     expDeleteConfirm: 'Delete this experiment?',
     expEmpty: 'No records yet. Add an experiment or improvement.',
     avg: 'avg',
-    tableHeaders: ['Date', 'Total', 'Ad', 'Organic', 'Sign-ups', 'Companies', 'Job Clicks', 'Card Clicks', 'Job Apps'],
+    tableHeaders: ['Date', 'Total', 'Ad', 'Organic', 'Sign-ups', 'Companies', 'Job Clicks', 'Card Clicks', 'Jobs Views', 'Detail Views', 'Apply Clicks', 'Job Apps'],
     metrics: {
       submissions: 'Submissions', ad: 'Ad (UTM)', organic: 'Organic',
       signups: 'Sign-ups', jobClicks: 'Job Clicks', cardClicks: 'Card Clicks', jobApps: 'Job Apps', companies: 'Companies',
+      jobsPageViews: 'Jobs Views', jobDetailViews: 'Detail Views', applyClicks: 'Apply Clicks',
     },
     funnelEmpty: 'Click stages below to build your funnel',
     funnelClear: 'Clear',
@@ -147,8 +149,11 @@ const METRICS_BASE = [
   { key: 'signups', dataKey: 'signups', color: '#F59E0B', summaryKey: 'totalSignups' },
   { key: 'jobClicks', dataKey: 'jobClicks', color: '#F97316', summaryKey: 'totalJobClicks' },
   { key: 'cardClicks', dataKey: 'cardClicks', color: '#EC4899', summaryKey: 'totalCardClicks' },
+  { key: 'jobsPageViews', dataKey: 'jobsPageViews', color: '#06B6D4', summaryKey: 'totalJobsPageViews' },
+  { key: 'jobDetailViews', dataKey: 'jobDetailViews', color: '#8B5CF6', summaryKey: 'totalJobDetailViews' },
+  { key: 'applyClicks', dataKey: 'applyClicks', color: '#D946EF', summaryKey: 'totalApplyClicks' },
   { key: 'jobApps', dataKey: 'jobApps', color: '#EF4444', summaryKey: 'totalJobApps' },
-  { key: 'companies', dataKey: 'companies', color: '#8B5CF6', summaryKey: 'uniqueCompanies' },
+  { key: 'companies', dataKey: 'companies', color: '#6B7280', summaryKey: 'uniqueCompanies' },
 ]
 
 const EXP_COLORS = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7', '#DDA0DD', '#98D8C8', '#F7DC6F']
@@ -162,7 +167,7 @@ function getDoD(daily, dataKey) {
   return Math.round(((last - prev) / prev) * 100)
 }
 
-const DATA_KEYS = ['submissions', 'ad', 'organic', 'signups', 'companies', 'jobApps', 'jobClicks', 'cardClicks']
+const DATA_KEYS = ['submissions', 'ad', 'organic', 'signups', 'companies', 'jobApps', 'jobClicks', 'cardClicks', 'jobsPageViews', 'jobDetailViews', 'applyClicks']
 
 function aggregateDaily(daily, mode) {
   if (!daily || mode === '1d') return daily
@@ -693,6 +698,9 @@ export default function AdminDashboard() {
                         <td style={{ padding: '6px 12px', textAlign: 'right', color: '#8B5CF6' }}>{d.companies}</td>
                         <td style={{ padding: '6px 12px', textAlign: 'right', color: d.jobClicks === null ? '#ccc' : '#F97316' }}>{d.jobClicks === null ? '-' : d.jobClicks}</td>
                         <td style={{ padding: '6px 12px', textAlign: 'right', color: d.cardClicks === null ? '#ccc' : '#EC4899' }}>{d.cardClicks === null ? '-' : d.cardClicks}</td>
+                        <td style={{ padding: '6px 12px', textAlign: 'right', color: d.jobsPageViews === null ? '#ccc' : '#06B6D4' }}>{d.jobsPageViews === null ? '-' : d.jobsPageViews}</td>
+                        <td style={{ padding: '6px 12px', textAlign: 'right', color: d.jobDetailViews === null ? '#ccc' : '#8B5CF6' }}>{d.jobDetailViews === null ? '-' : d.jobDetailViews}</td>
+                        <td style={{ padding: '6px 12px', textAlign: 'right', color: d.applyClicks === null ? '#ccc' : '#D946EF' }}>{d.applyClicks === null ? '-' : d.applyClicks}</td>
                         <td style={{ padding: '6px 12px', textAlign: 'right', color: '#EF4444' }}>{d.jobApps}</td>
                       </tr>
                     ))}
@@ -705,6 +713,9 @@ export default function AdminDashboard() {
                       <td style={{ padding: '8px 12px', textAlign: 'right', color: '#8B5CF6' }}>{data.summary.uniqueCompanies}</td>
                       <td style={{ padding: '8px 12px', textAlign: 'right', color: data.summary.hasEventTracking ? '#F97316' : '#ccc' }}>{data.summary.hasEventTracking ? data.summary.totalJobClicks : '-'}</td>
                       <td style={{ padding: '8px 12px', textAlign: 'right', color: data.summary.hasEventTracking ? '#EC4899' : '#ccc' }}>{data.summary.hasEventTracking ? data.summary.totalCardClicks : '-'}</td>
+                      <td style={{ padding: '8px 12px', textAlign: 'right', color: data.summary.hasEventTracking ? '#06B6D4' : '#ccc' }}>{data.summary.hasEventTracking ? data.summary.totalJobsPageViews : '-'}</td>
+                      <td style={{ padding: '8px 12px', textAlign: 'right', color: data.summary.hasEventTracking ? '#8B5CF6' : '#ccc' }}>{data.summary.hasEventTracking ? data.summary.totalJobDetailViews : '-'}</td>
+                      <td style={{ padding: '8px 12px', textAlign: 'right', color: data.summary.hasEventTracking ? '#D946EF' : '#ccc' }}>{data.summary.hasEventTracking ? data.summary.totalApplyClicks : '-'}</td>
                       <td style={{ padding: '8px 12px', textAlign: 'right', color: '#EF4444' }}>{data.summary.totalJobApps}</td>
                     </tr>
                   </tbody>
