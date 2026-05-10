@@ -439,6 +439,7 @@ export default function AdminDashboard() {
                 }} />
                 <span style={{ fontSize: 14, fontWeight: 700 }}>{t.today}</span>
                 <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.5)' }}>{realtime.date}</span>
+                <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.35)', marginLeft: 4 }}>UTC+7</span>
               </div>
               <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
                 <button onClick={() => setAutoRefresh(!autoRefresh)}
@@ -459,7 +460,7 @@ export default function AdminDashboard() {
                 </button>
                 {lastUpdated && (
                   <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.4)' }}>
-                    {lastUpdated.toLocaleTimeString(lang === 'ko' ? 'ko-KR' : 'en-US')}
+                    {new Date(lastUpdated.getTime() + 7 * 60 * 60 * 1000).toISOString().slice(11, 16)} (VN)
                   </span>
                 )}
               </div>

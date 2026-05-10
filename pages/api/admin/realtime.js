@@ -10,9 +10,11 @@ export default async function handler(req, res) {
   const user = await verifyAdmin(req)
   if (!user) return res.status(401).json({ error: 'Unauthorized' })
 
-  const today = new Date().toISOString().slice(0, 10)
-  const startISO = `${today}T00:00:00`
-  const endISO = `${today}T23:59:59`
+  const now = new Date()
+  const vn = new Date(now.getTime() + 7 * 60 * 60 * 1000)
+  const today = vn.toISOString().slice(0, 10)
+  const startISO = new Date(`${today}T00:00:00+07:00`).toISOString()
+  const endISO = new Date(`${today}T23:59:59+07:00`).toISOString()
 
   const [subsRes, jaRes, evRes, pvRes, landingRes] = await Promise.all([
     supabase.from('submissions')
