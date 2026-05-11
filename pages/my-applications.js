@@ -6,6 +6,7 @@ import GlobalNav from '../components/GlobalNav'
 import { useT } from '../lib/i18n'
 
 const STEPS = ['applied', 'viewed', 'reviewing', 'decided']
+const STATUS_TO_STEP = { applied: 'applied', viewed: 'viewed', reviewing: 'reviewing', accepted: 'decided', rejected: 'decided' }
 
 export default function MyApplications() {
   const router = useRouter()
@@ -41,12 +42,13 @@ export default function MyApplications() {
     decided: t('apps.decided'),
   }[step] || step)
 
-  const stepMessage = (step) => ({
+  const stepMessage = (status) => ({
     applied: t('apps.msgApplied'),
     viewed: t('apps.msgViewed'),
     reviewing: t('apps.msgReviewing'),
-    decided: t('apps.msgDecided'),
-  }[step] || '')
+    accepted: t('apps.msgAccepted'),
+    rejected: t('apps.msgRejected'),
+  }[status] || '')
 
   if (loading) return (
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', background: '#f7f7f5', fontFamily: "-apple-system, 'Helvetica Neue', Arial, sans-serif" }}>
@@ -112,7 +114,8 @@ export default function MyApplications() {
         ) : (
           applications.map(app => {
             const st = app.status || 'applied'
-            const currentStep = Math.max(0, STEPS.indexOf(st))
+            const mappedStep = STATUS_TO_STEP[st] || 'applied'
+            const currentStep = Math.max(0, STEPS.indexOf(mappedStep))
             return (
               <div key={app.id} className="ma-card" onClick={() => router.push(`/jobs?jobId=${app.job_id}`)}>
                 <div className="ma-top">
@@ -143,7 +146,9 @@ export default function MyApplications() {
                     </div>
                   ))}
                 </div>
-                <div className="ma-msg">{stepMessage(st)}</div>
+                <div className="ma-msg">{stepMessage(st)}
+                  {st === 'accepted' && <span style={{ display: 'inline-block', marginLeft: 6, color: '#065F46', fontWeight: 700 }}>🎉</span>}
+                </div>
               </div>
             )
           })

@@ -1324,10 +1324,11 @@ function UsersView({ token, t }) {
 
 /* ──────────────── Applications View ──────────────── */
 
-const STATUS_OPTIONS = ['pending', 'reviewed', 'accepted', 'rejected']
+const STATUS_OPTIONS = ['applied', 'viewed', 'reviewing', 'accepted', 'rejected']
 const STATUS_COLORS = {
-  pending: { bg: '#FEF3C7', color: '#92400E' },
-  reviewed: { bg: '#DBEAFE', color: '#1E40AF' },
+  applied: { bg: '#E0E7FF', color: '#3730A3' },
+  viewed: { bg: '#FEF3C7', color: '#92400E' },
+  reviewing: { bg: '#DBEAFE', color: '#1E40AF' },
   accepted: { bg: '#D1FAE5', color: '#065F46' },
   rejected: { bg: '#FEE2E2', color: '#991B1B' },
 }
