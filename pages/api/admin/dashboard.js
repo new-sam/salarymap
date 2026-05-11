@@ -6,6 +6,39 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 )
 
+// --- Data quality filters ---
+const EXCLUDED_COMPANIES = new Set([
+  'likelion', 'likelion vn', 'likelion vietnam',
+  '{company}', 'dwqdqwd', 'gggg', 'kkk', 'xx', 'yy', 'tt', 'xd', 'blah', 'idk',
+  'úud', 'ừv', 'khôbg', 'bcagnecu', 'hi', 'boo', 'cac', 'say gex', '12',
+  'alice testing', 'alice testing 2', 'jobtest', '...', 'bimat', 'bí mật',
+  'secret', 'cant say', 'ẩn danh', 'tên công ty được giữ ẩn danh',
+  'anonymous', 'hide', 'm*',
+])
+const EXCLUDED_EMAIL_DOMAINS = ['likelion.net']
+
+function isExcludedSubmission(sub) {
+  if (sub.company && EXCLUDED_COMPANIES.has(sub.company.trim().toLowerCase())) return true
+  if (sub.email && EXCLUDED_EMAIL_DOMAINS.some(d => sub.email.endsWith('@' + d))) return true
+  return false
+}
+
+function dedupeSubmissions(subs) {
+  const seen = new Set()
+  return subs.filter(s => {
+    if (!s.user_id || !s.company) return true
+    const key = s.user_id + '::' + s.company.trim().toLowerCase()
+    if (seen.has(key)) return false
+    seen.add(key)
+    return true
+  })
+}
+
+function isExcludedSignup(user) {
+  if (user.email && EXCLUDED_EMAIL_DOMAINS.some(d => user.email.endsWith('@' + d))) return true
+  return false
+}
+
 export default async function handler(req, res) {
   const user = await verifyAdmin(req)
   if (!user) return res.status(401).json({ error: 'Unauthorized' })
@@ -36,9 +69,8 @@ export default async function handler(req, res) {
       from += PAGE
     }
   }
-  const error = null
-
-  if (error) return res.status(500).json({ error: error.message })
+  // Apply data quality filters: exclude internal/garbage entries and dedupe
+  submissions = dedupeSubmissions(submissions.filter(s => !isExcludedSubmission(s)))
 
   // Fetch sign-ups (auth.users) in date range using admin API
   let signups = []
@@ -58,7 +90,7 @@ export default async function handler(req, res) {
     }
     signups = allUsers.filter(u => {
       const d = u.created_at
-      return d >= startISO && d <= endISO
+      return d >= startISO && d <= endISO && !isExcludedSignup(u)
     })
   } catch (e) {
     // If admin API not available, skip signups
