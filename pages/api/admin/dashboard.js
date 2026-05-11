@@ -126,10 +126,11 @@ export default async function handler(req, res) {
   }
 
   // --- Aggregate daily trend ---
+  const toVN = (iso) => new Date(new Date(iso).getTime() + 7 * 3600000).toISOString().slice(0, 10)
   const dailyMap = {}
   const newDay = () => ({ date: '', submissions: 0, ad: 0, organic: 0, signups: 0, companies: new Set(), jobApps: 0, jobClicks: 0, cardClicks: 0, jobsPageViews: 0, jobDetailViews: 0, applyClicks: 0, landings: 0 })
   for (const sub of submissions) {
-    const date = sub.created_at.slice(0, 10)
+    const date = toVN(sub.created_at)
     if (!dailyMap[date]) dailyMap[date] = { ...newDay(), date }
     dailyMap[date].submissions++
     if (sub.utm_source || sub.utm_medium || sub.utm_campaign) {
@@ -141,19 +142,19 @@ export default async function handler(req, res) {
   }
 
   for (const s of signups) {
-    const date = s.created_at.slice(0, 10)
+    const date = toVN(s.created_at)
     if (!dailyMap[date]) dailyMap[date] = { ...newDay(), date }
     dailyMap[date].signups++
   }
 
   for (const ja of jobApps) {
-    const date = ja.created_at.slice(0, 10)
+    const date = toVN(ja.created_at)
     if (!dailyMap[date]) dailyMap[date] = { ...newDay(), date }
     dailyMap[date].jobApps++
   }
 
   for (const ev of events) {
-    const date = ev.created_at.slice(0, 10)
+    const date = toVN(ev.created_at)
     if (!dailyMap[date]) dailyMap[date] = { ...newDay(), date }
     if (ev.event === 'click_jobs_cta') dailyMap[date].jobClicks++
     if (ev.event === 'click_job_card') dailyMap[date].cardClicks++
@@ -163,7 +164,7 @@ export default async function handler(req, res) {
   }
 
   for (const l of landings) {
-    const date = l.created_at.slice(0, 10)
+    const date = toVN(l.created_at)
     if (!dailyMap[date]) dailyMap[date] = { ...newDay(), date }
     dailyMap[date].landings++
   }
