@@ -243,7 +243,7 @@ export default function AdminDashboard() {
   const [chartMode, setChartMode] = useState('1d')
   const [realtime, setRealtime] = useState(null)
   const [realtimeLoading, setRealtimeLoading] = useState(false)
-  const [autoRefresh, setAutoRefresh] = useState(false)
+  const [autoRefresh, setAutoRefresh] = useState(true)
   const yesterday = (() => {
     const d = new Date(Date.now() - 86400000)
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
@@ -387,10 +387,8 @@ export default function AdminDashboard() {
   const dailyWithToday = (() => {
     if (!data?.daily || !realtime) return data?.daily
     const today = realtime.date
-    if (today > dateRange.to) return data.daily
-    const exists = data.daily.some(d => d.date === today)
-    if (exists) return data.daily
-    return [...data.daily, {
+    if (today > dateRange.to && today !== localDate(Date.now())) return data.daily
+    const todayData = {
       date: today,
       submissions: realtime.submissions,
       ad: realtime.ad,
@@ -400,7 +398,10 @@ export default function AdminDashboard() {
       jobClicks: realtime.jobClicks,
       cardClicks: realtime.cardClicks,
       jobApps: realtime.jobApps,
-    }]
+    }
+    const exists = data.daily.some(d => d.date === today)
+    if (exists) return data.daily.map(d => d.date === today ? todayData : d)
+    return [...data.daily, todayData]
   })()
 
   const chartData = aggregateDaily(dailyWithToday, chartMode)
@@ -470,22 +471,6 @@ export default function AdminDashboard() {
                 <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.35)', marginLeft: 4 }}>UTC+7</span>
               </div>
               <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-                <button onClick={() => setAutoRefresh(!autoRefresh)}
-                  style={{
-                    padding: '4px 10px', borderRadius: 6, fontSize: 11, fontWeight: 600, cursor: 'pointer',
-                    border: autoRefresh ? '1px solid #34d399' : '1px solid rgba(255,255,255,0.3)',
-                    background: autoRefresh ? 'rgba(52,211,153,0.2)' : 'transparent',
-                    color: autoRefresh ? '#34d399' : 'rgba(255,255,255,0.6)',
-                  }}>
-                  {t.autoRefresh} {autoRefresh ? 'ON' : 'OFF'}
-                </button>
-                <button onClick={fetchRealtime} disabled={realtimeLoading}
-                  style={{
-                    padding: '4px 10px', borderRadius: 6, fontSize: 11, fontWeight: 600, cursor: 'pointer',
-                    border: '1px solid rgba(255,255,255,0.3)', background: 'rgba(255,255,255,0.1)', color: '#fff',
-                  }}>
-                  {realtimeLoading ? '...' : t.refresh}
-                </button>
                 {lastUpdated && (
                   <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.4)' }}>
                     {new Date(lastUpdated.getTime() + 7 * 60 * 60 * 1000).toISOString().slice(11, 16)} (VN)

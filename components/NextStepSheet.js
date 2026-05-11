@@ -79,7 +79,7 @@ export default function NextStepSheet({ role, experience, percentile, topCompani
 .ns-match-text{font-size:12px;color:#444;line-height:1.4}
 .ns-match-text b{color:#111}
 .ns-jobs-preview{position:relative;margin-bottom:14px;border-radius:12px;overflow:hidden;border:1px solid #eee}
-.ns-jobs-blur{display:flex;gap:0;filter:blur(3px);pointer-events:none;user-select:none}
+.ns-jobs-blur{display:flex;gap:0;filter:blur(1.5px);pointer-events:none;user-select:none}
 .ns-jp{flex:0 0 52%;background:#fff;border-right:1px solid #f0f0f0}
 .ns-jp-half{flex:0 0 30%;opacity:.6}
 .ns-jp-img{height:72px;position:relative;display:flex;align-items:flex-end;padding:8px}
@@ -91,8 +91,7 @@ export default function NextStepSheet({ role, experience, percentile, topCompani
 .ns-jp-old{text-decoration:line-through}
 .ns-jp-new{color:#111;font-weight:700}
 .ns-jp-pct{background:#fff4f0;color:#ff4400;font-weight:700;padding:1px 5px;border-radius:4px;font-size:9px}
-.ns-overlay{position:absolute;inset:0;background:rgba(255,255,255,0.55);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px}
-.ns-overlay-icon{font-size:20px}
+.ns-overlay{position:absolute;inset:0;background:rgba(255,255,255,0.35);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px}
 .ns-overlay-text{font-size:12px;font-weight:600;color:#555}
 .ns-right-fade{position:absolute;top:0;right:0;bottom:0;width:60px;background:linear-gradient(to right,transparent,#fff);pointer-events:none}
 .ns-unlock{width:100%;padding:13px;background:#0080FF;border:none;border-radius:12px;font-size:14px;font-weight:700;color:#fff;cursor:pointer;margin-bottom:8px;font-family:'Be Vietnam Pro',sans-serif;box-shadow:0 4px 16px rgba(0,128,255,0.25)}
@@ -161,7 +160,7 @@ export default function NextStepSheet({ role, experience, percentile, topCompani
                         )
                       })}
                     </div>
-                    <div className="ns-overlay"><div className="ns-overlay-icon">🔒</div><div className="ns-overlay-text">{t('nextstep.loginToSee')}</div></div>
+                    <div className="ns-overlay"><div className="ns-overlay-text">{t('nextstep.loginToSee')}</div></div>
                     <div className="ns-right-fade" />
                   </div>
                 )}
