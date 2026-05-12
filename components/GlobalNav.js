@@ -12,7 +12,8 @@ export default function GlobalNav({ activePage }) {
   const [ready, setReady] = useState(false)
   const [savedCount, setSavedCount] = useState(0)
   const [isHR, setIsHR] = useState(false)
-  const [viewMode, setViewMode] = useState('seeker') // 'seeker' | 'hr'
+  const [viewMode, setViewMode] = useState('seeker')
+  const [profileScore, setProfileScore] = useState(null) // 'seeker' | 'hr'
   const menuRef = useRef(null)
 
   useEffect(() => {
@@ -54,6 +55,16 @@ export default function GlobalNav({ activePage }) {
           const hrRes = await fetch(`/api/hr/status?userId=${session.user.id}`)
           const hrData = await hrRes.json()
           if (hrData.isHR && hrData.status === 'approved') setIsHR(true)
+        } catch {}
+        try {
+          const pRes = await fetch('/api/profile/talent', { headers: { Authorization: `Bearer ${session.access_token}` } })
+          if (pRes.ok) {
+            const { profile: p } = await pRes.json()
+            if (p) {
+              const checks = [p.photo_url, p.full_name, p.headline, p.position, p.yoe_months != null, p.intro, p.skills?.length > 0, p.english_cert, p.location, p.university, p.resume_url, p.job_signal && p.job_signal !== 'passive', p.experiences?.length > 0, p.salary_min]
+              setProfileScore(Math.round(checks.filter(Boolean).length / checks.length * 100))
+            }
+          }
         } catch {}
       }
       setReady(true)
@@ -179,7 +190,12 @@ export default function GlobalNav({ activePage }) {
                 <div className="gnav-menu" onClick={e => e.stopPropagation()}>
                   <div className="gnav-menu-email">{user?.email}</div>
                   {viewMode === 'seeker' ? (<>
-                    <a href="/profile" className="gnav-menu-item">{t('nav.myProfile')}</a>
+                    <a href="/profile" className="gnav-menu-item" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                      <span>{t('nav.myProfile')}</span>
+                      {profileScore != null && profileScore < 100 && (
+                        <span style={{ fontSize: 10, fontWeight: 700, color: profileScore >= 80 ? '#4ade80' : '#fbbf24', background: profileScore >= 80 ? 'rgba(74,222,128,0.1)' : 'rgba(251,191,36,0.1)', padding: '2px 8px', borderRadius: 100 }}>{profileScore}%</span>
+                      )}
+                    </a>
                     <a href="/my-applications" className="gnav-menu-item">{t('nav.myApplications')}</a>
                     <a href="/saved-jobs" className="gnav-menu-item gnav-saved-link">
                       <span>{t('nav.savedJobs')}</span>

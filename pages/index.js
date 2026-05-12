@@ -1764,6 +1764,7 @@ export default function Home({ initialCompanies = [] }) {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [user, setUser] = useState(null);
   const [showUserMenu, setShowUserMenu] = useState(false);
+  const [profileScore, setProfileScore] = useState(null);
   const userMenuRef = useRef(null);
 
   useEffect(() => {
@@ -1942,6 +1943,15 @@ export default function Home({ initialCompanies = [] }) {
           fetch(`/api/admin/check?email=${encodeURIComponent(session.user.email)}`)
             .then(r => r.json()).then(d => { setIsAdminUser(d.isAdmin); sessionStorage.setItem('fyi_is_admin', String(d.isAdmin)); if (d.isAdmin) { const sm = sessionStorage.getItem('fyi_view_mode'); if (sm === 'hr') setViewMode('hr'); } }).catch(() => {});
         }
+
+        // Fetch profile score
+        fetch('/api/profile/talent', { headers: { Authorization: `Bearer ${session.access_token}` } })
+          .then(r => r.json()).then(({ profile: p }) => {
+            if (p) {
+              const checks = [p.photo_url, p.full_name, p.headline, p.position, p.yoe_months != null, p.intro, p.skills?.length > 0, p.english_cert, p.location, p.university, p.resume_url, p.job_signal && p.job_signal !== 'passive', p.experiences?.length > 0, p.salary_min];
+              setProfileScore(Math.round(checks.filter(Boolean).length / checks.length * 100));
+            }
+          }).catch(() => {});
 
         // Only restore submission state for logged-in users
         const submitted = localStorage.getItem('fyi_submitted') === 'true';
@@ -2288,8 +2298,11 @@ export default function Home({ initialCompanies = [] }) {
                     {user?.email}
                   </div>
                   <a href="/profile" onClick={e => e.stopPropagation()}
-                    style={{display:'block',padding:'10px 14px',borderRadius:8,color:'rgba(255,255,255,0.6)',fontSize:13,textDecoration:'none',fontFamily:"'Barlow',sans-serif"}}>
-                    {t('nav.myProfile')}
+                    style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'10px 14px',borderRadius:8,color:'rgba(255,255,255,0.6)',fontSize:13,textDecoration:'none',fontFamily:"'Barlow',sans-serif"}}>
+                    <span>{t('nav.myProfile')}</span>
+                    {profileScore != null && profileScore < 100 && (
+                      <span style={{fontSize:10,fontWeight:700,color:profileScore >= 80 ? '#4ade80' : '#fbbf24',background:profileScore >= 80 ? 'rgba(74,222,128,0.1)' : 'rgba(251,191,36,0.1)',padding:'2px 8px',borderRadius:100}}>{profileScore}%</span>
+                    )}
                   </a>
                   <a href="/my-applications" onClick={e => e.stopPropagation()}
                     style={{display:'block',padding:'10px 14px',borderRadius:8,color:'rgba(255,255,255,0.6)',fontSize:13,textDecoration:'none',fontFamily:"'Barlow',sans-serif"}}>
