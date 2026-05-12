@@ -31,7 +31,14 @@ export default async function handler(req, res) {
     if (hr?.status !== 'approved') return res.status(403).json({ error: 'not approved' })
   }
 
-  const { position, sort, order, page, limit: lim, search } = req.query
+  const { position, sort, order, page, limit: lim, search, id: candidateId } = req.query
+
+  // Single candidate by ID
+  if (candidateId) {
+    const { data } = await supabase.from('candidates').select('*').eq('id', candidateId).single()
+    if (!data) return res.status(404).json({ error: 'not found' })
+    return res.json({ candidates: [data], total: 1, page: 1, pageSize: 1, totalPages: 1 })
+  }
   const pageNum = Math.max(1, parseInt(page) || 1)
   const pageSize = Math.min(50, parseInt(lim) || 20)
   const offset = (pageNum - 1) * pageSize
