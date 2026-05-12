@@ -1760,6 +1760,7 @@ export default function Home({ initialCompanies = [] }) {
   const [detailCardIndex, setDetailCardIndex] = useState(0);
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [isAdminUser, setIsAdminUser] = useState(false);
+  const [viewMode, setViewMode] = useState('seeker');
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [user, setUser] = useState(null);
   const [showUserMenu, setShowUserMenu] = useState(false);
@@ -1936,9 +1937,10 @@ export default function Home({ initialCompanies = [] }) {
         const cached = sessionStorage.getItem('fyi_is_admin');
         if (cached !== null) {
           setIsAdminUser(cached === 'true');
+          if (cached === 'true') { const sm = sessionStorage.getItem('fyi_view_mode'); if (sm === 'hr') setViewMode('hr'); }
         } else {
           fetch(`/api/admin/check?email=${encodeURIComponent(session.user.email)}`)
-            .then(r => r.json()).then(d => { setIsAdminUser(d.isAdmin); sessionStorage.setItem('fyi_is_admin', String(d.isAdmin)); }).catch(() => {});
+            .then(r => r.json()).then(d => { setIsAdminUser(d.isAdmin); sessionStorage.setItem('fyi_is_admin', String(d.isAdmin)); if (d.isAdmin) { const sm = sessionStorage.getItem('fyi_view_mode'); if (sm === 'hr') setViewMode('hr'); } }).catch(() => {});
         }
 
         // Only restore submission state for logged-in users
@@ -2245,6 +2247,19 @@ export default function Home({ initialCompanies = [] }) {
             {t('nav.jobs')} <span className="nav-jobs-badge">↑</span>
             <span className="nav-jobs-sub">{t('nav.jobsSub')}</span>
           </a>
+
+          {isAdminUser && isLoggedIn && (
+            <div style={{display:'flex',alignItems:'center',gap:0,background:'rgba(255,255,255,0.06)',borderRadius:100,padding:2,border:'1px solid rgba(255,255,255,0.08)'}}>
+              <button onClick={() => { setViewMode('seeker'); sessionStorage.setItem('fyi_view_mode','seeker'); }}
+                style={{fontSize:11,fontWeight:600,padding:'4px 12px',borderRadius:100,cursor:'pointer',border:'none',background:viewMode==='seeker'?'rgba(255,96,0,0.2)':'none',color:viewMode==='seeker'?'#ff6000':'rgba(255,255,255,0.3)',fontFamily:"'Barlow',sans-serif",transition:'all .2s',whiteSpace:'nowrap'}}>
+                Seeker
+              </button>
+              <button onClick={() => { setViewMode('hr'); sessionStorage.setItem('fyi_view_mode','hr'); window.location.href='/hr'; }}
+                style={{fontSize:11,fontWeight:600,padding:'4px 12px',borderRadius:100,cursor:'pointer',border:'none',background:viewMode==='hr'?'rgba(255,96,0,0.2)':'none',color:viewMode==='hr'?'#ff6000':'rgba(255,255,255,0.3)',fontFamily:"'Barlow',sans-serif",transition:'all .2s',whiteSpace:'nowrap'}}>
+                HR
+              </button>
+            </div>
+          )}
 
           {!isLoggedIn ? (
             <button

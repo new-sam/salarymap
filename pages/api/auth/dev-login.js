@@ -15,29 +15,47 @@ export default async function handler(req, res) {
     return res.status(400).send('Usage: /api/auth/dev-login?email=you@example.com')
   }
 
+  const host = req.headers.host || 'localhost:3000'
+  const baseUrl = `http://${host}`
+
+  // Generate magic link and extract the token
   const { data, error } = await supabase.auth.admin.generateLink({
     type: 'magiclink',
     email,
-    options: { redirectTo: 'http://localhost:3000/auth/callback' },
   })
 
   if (error) {
     return res.status(500).json({ error: error.message })
   }
 
-  const url = data?.properties?.action_link
-  if (url) {
-    const fixed = url.replace(/redirect_to=[^&]*/, 'redirect_to=' + encodeURIComponent('http://localhost:3000/auth/callback'))
-    return res.send(`
-      <html><body style="font-family:system-ui;padding:40px;background:#111;color:#fff">
-        <h2>Dev Login</h2>
-        <p>Click to login as <b>${email}</b>:</p>
-        <a href="${fixed}" style="color:#ff6000;font-size:18px">Login →</a>
-        <br/><br/>
-        <code style="font-size:11px;color:#666;word-break:break-all">${fixed}</code>
-      </body></html>
-    `)
+  // Extract token hash from the action link
+  const actionLink = data?.properties?.action_link
+  if (!actionLink) {
+    return res.status(500).json({ error: 'Could not generate link', data })
   }
 
-  return res.status(500).json({ error: 'Could not generate link', data })
+  // The action link goes to Supabase which then redirects to production.
+  // Instead, call Supabase's verify endpoint directly to get a session.
+  const tokenHash = data?.properties?.hashed_token
+  const { data: verifyData, error: verifyError } = await supabase.auth.verifyOtp({
+    token_hash: tokenHash,
+    type: 'magiclink',
+  })
+
+  if (verifyError || !verifyData?.session) {
+    return res.status(500).json({ error: verifyError?.message || 'verify failed', verifyData })
+  }
+
+  // Redirect to local /auth/callback with session in hash
+  const sess = verifyData.session
+  const hash = new URLSearchParams({
+    access_token: sess.access_token,
+    refresh_token: sess.refresh_token,
+    expires_in: String(sess.expires_in ?? 3600),
+    expires_at: String(sess.expires_at ?? ''),
+    token_type: 'bearer',
+    type: 'magiclink',
+  }).toString()
+
+  res.redirect(`${baseUrl}/auth/callback#${hash}`)
 }

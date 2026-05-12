@@ -7,7 +7,10 @@ export default function handler(req, res) {
   const host = req.headers.host;
   const redirectUri = `${proto}://${host}/api/auth/google/callback`;
 
-  const state = typeof req.query.return === 'string' ? req.query.return : '/';
+  // Encode return path and optional role into state
+  const returnTo = typeof req.query.return === 'string' ? req.query.return : '/';
+  const role = req.query.role === 'hr' ? 'hr' : '';
+  const state = role ? JSON.stringify({ return: returnTo, role }) : returnTo;
 
   const params = new URLSearchParams({
     client_id: process.env.GOOGLE_CLIENT_ID,

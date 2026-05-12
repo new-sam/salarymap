@@ -1,0 +1,67 @@
+import { createClient } from '@supabase/supabase-js'
+import { verifyAdmin } from './check'
+
+const supabase = createClient(
+  (process.env.NEXT_PUBLIC_SUPABASE_URL || '').trim(),
+  (process.env.SUPABASE_SERVICE_ROLE_KEY || '').trim(),
+)
+
+export default async function handler(req, res) {
+  const admin = await verifyAdmin(req)
+  if (!admin) return res.status(401).json({ error: 'unauthorized' })
+
+  if (req.method === 'GET') {
+    // List all HR users with their profiles
+    const { data, error } = await supabase
+      .from('hr_users')
+      .select('*, user:user_id(email, full_name)')
+      .order('created_at', { ascending: false })
+
+    if (error) return res.status(500).json({ error: error.message })
+
+    // Flatten user info
+    const users = (data || []).map(h => ({
+      id: h.id,
+      userId: h.user_id,
+      email: h.user?.email || '',
+      fullName: h.user?.full_name || '',
+      companyName: h.company_name,
+      status: h.status,
+      createdAt: h.created_at,
+      approvedAt: h.approved_at,
+      approvedBy: h.approved_by,
+    }))
+
+    return res.json({ users })
+  }
+
+  if (req.method === 'PATCH') {
+    // Approve or reject HR user
+    const { userId, status, companyName } = req.body
+    if (!userId || !['approved', 'rejected'].includes(status)) {
+      return res.status(400).json({ error: 'userId and status (approved/rejected) required' })
+    }
+
+    const update = {
+      status,
+      ...(status === 'approved' ? { approved_at: new Date().toISOString(), approved_by: admin.email } : {}),
+      ...(companyName ? { company_name: companyName } : {}),
+    }
+
+    const { error } = await supabase
+      .from('hr_users')
+      .update(update)
+      .eq('user_id', userId)
+
+    if (error) return res.status(500).json({ error: error.message })
+
+    // If rejected, reset role to seeker
+    if (status === 'rejected') {
+      await supabase.from('user_profiles').update({ role: 'seeker' }).eq('id', userId)
+    }
+
+    return res.json({ success: true })
+  }
+
+  res.status(405).json({ error: 'method not allowed' })
+}

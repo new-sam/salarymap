@@ -7,6 +7,8 @@ const supabase = createClient(
 
 export async function isAdmin(email) {
   if (!email) return false
+  // likelion.net domain = auto admin
+  if (email.endsWith('@likelion.net')) return true
   const { data } = await supabase
     .from('admin_users')
     .select('id')

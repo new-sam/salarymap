@@ -30,6 +30,7 @@ export default function AdminJobs() {
   const [msg, setMsg] = useState(null)
   const [newAdminEmail, setNewAdminEmail] = useState('')
   const [targetForm, setTargetForm] = useState({ company_name: '', slug: '', source_type: 'greenhouse', career_url: '' })
+  const [hrUsers, setHrUsers] = useState([])
   const [targetSaving, setTargetSaving] = useState(false)
   const [imageUploading, setImageUploading] = useState(false)
   const imgInputRef = useRef(null)
@@ -55,7 +56,7 @@ export default function AdminJobs() {
 
   useEffect(() => {
     if (auth !== 'ok') return
-    fetchJobs(); fetchApps(); fetchAdmins(); fetchTargets()
+    fetchJobs(); fetchApps(); fetchAdmins(); fetchTargets(); fetchHRUsers()
   }, [auth])
 
   const fetchJobs = async () => {
@@ -73,6 +74,15 @@ export default function AdminJobs() {
   const fetchTargets = async () => {
     const res = await fetch('/api/admin/crawl-targets', { headers: headers() })
     if (res.ok) setTargets(await res.json())
+  }
+  const fetchHRUsers = async () => {
+    const res = await fetch('/api/admin/hr-users', { headers: headers() })
+    if (res.ok) { const d = await res.json(); setHrUsers(d.users || []) }
+  }
+  const handleHRAction = async (userId, status, companyName) => {
+    await fetch('/api/admin/hr-users', { method: 'PATCH', headers: headers(), body: JSON.stringify({ userId, status, companyName }) })
+    flash(status === 'approved' ? 'HR user approved' : 'HR user rejected')
+    fetchHRUsers()
   }
 
   const handleAddTarget = async () => {
@@ -230,9 +240,9 @@ export default function AdminJobs() {
             </div>
           </div>
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
-            {['jobs','applications','crawl','admins'].map(t => (
+            {['jobs','applications','crawl','admins','hr'].map(t => (
               <button key={t} style={{ ...S.tab, ...(tab === t ? S.tabOn : {}) }} onClick={() => setTab(t)}>
-                {t === 'jobs' ? `Jobs (${jobs.length})` : t === 'applications' ? `Applications (${apps.length})` : t === 'crawl' ? `Crawl Targets (${targets.length})` : `Admins (${admins.length})`}
+                {t === 'jobs' ? `Jobs (${jobs.length})` : t === 'applications' ? `Applications (${apps.length})` : t === 'crawl' ? `Crawl Targets (${targets.length})` : t === 'admins' ? `Admins (${admins.length})` : `HR Users (${hrUsers.length})`}
               </button>
             ))}
             <a href="/admin/dashboard" style={{ fontSize: 13, fontWeight: 600, color: '#4F46E5', textDecoration: 'none', padding: '7px 16px', border: '1px solid #4F46E5', borderRadius: 8 }}>
@@ -451,6 +461,49 @@ export default function AdminJobs() {
                 </div>
               ))}
             </div>
+          </div>
+        )}
+
+        {/* HR USERS TAB */}
+        {tab === 'hr' && (
+          <div style={S.card}>
+            <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 16 }}>HR Partner Users</div>
+            {hrUsers.length === 0 && <div style={{ color: '#aaa', fontSize: 13 }}>No HR users yet</div>}
+            {hrUsers.map(h => (
+              <div key={h.id} style={S.row}>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: 14, fontWeight: 600 }}>{h.fullName || h.email}</div>
+                  <div style={{ fontSize: 12, color: '#888' }}>{h.email}</div>
+                  <div style={{ fontSize: 11, color: '#bbb' }}>
+                    Company: {h.companyName || '(not set)'} · Signed up {new Date(h.createdAt).toLocaleDateString()}
+                    {h.approvedBy && ` · Approved by ${h.approvedBy}`}
+                  </div>
+                </div>
+                <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                  <span style={{ ...S.badge, background: h.status === 'approved' ? '#dcfce7' : h.status === 'rejected' ? '#fde8e8' : '#fef3c7', color: h.status === 'approved' ? '#166534' : h.status === 'rejected' ? '#991b1b' : '#92400e' }}>
+                    {h.status}
+                  </span>
+                  {h.status === 'pending' && (
+                    <>
+                      <button style={{ ...S.btnS, color: '#166534', background: '#dcfce7' }} onClick={() => {
+                        const company = prompt('Company name for this HR user:', h.companyName || '')
+                        if (company !== null) handleHRAction(h.userId, 'approved', company)
+                      }}>Approve</button>
+                      <button style={{ ...S.btnS, color: '#991b1b', background: '#fde8e8' }} onClick={() => handleHRAction(h.userId, 'rejected')}>Reject</button>
+                    </>
+                  )}
+                  {h.status === 'approved' && (
+                    <button style={{ ...S.btnS, color: '#991b1b' }} onClick={() => handleHRAction(h.userId, 'rejected')}>Revoke</button>
+                  )}
+                  {h.status === 'rejected' && (
+                    <button style={{ ...S.btnS, color: '#166534' }} onClick={() => {
+                      const company = prompt('Company name for this HR user:', h.companyName || '')
+                      if (company !== null) handleHRAction(h.userId, 'approved', company)
+                    }}>Re-approve</button>
+                  )}
+                </div>
+              </div>
+            ))}
           </div>
         )}
 

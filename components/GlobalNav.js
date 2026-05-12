@@ -11,6 +11,8 @@ export default function GlobalNav({ activePage }) {
   const [isAdmin, setIsAdmin] = useState(false)
   const [ready, setReady] = useState(false)
   const [savedCount, setSavedCount] = useState(0)
+  const [isHR, setIsHR] = useState(false)
+  const [viewMode, setViewMode] = useState('seeker') // 'seeker' | 'hr'
   const menuRef = useRef(null)
 
   useEffect(() => {
@@ -27,18 +29,31 @@ export default function GlobalNav({ activePage }) {
         const cached = sessionStorage.getItem('fyi_is_admin')
         if (cached !== null) {
           setIsAdmin(cached === 'true')
+          if (cached === 'true') {
+            const savedMode = sessionStorage.getItem('fyi_view_mode')
+            if (savedMode === 'hr') setViewMode('hr')
+          }
         } else {
           try {
             const r = await fetch(`/api/admin/check?email=${encodeURIComponent(session.user.email)}`)
             const d = await r.json()
             setIsAdmin(d.isAdmin)
             sessionStorage.setItem('fyi_is_admin', String(d.isAdmin))
+            if (d.isAdmin) {
+              const savedMode = sessionStorage.getItem('fyi_view_mode')
+              if (savedMode === 'hr') setViewMode('hr')
+            }
           } catch {}
         }
         try {
           const bRes = await fetch(`/api/job-bookmarks?userId=${session.user.id}`)
           const bData = await bRes.json()
           if (bData.bookmarks) setSavedCount(bData.bookmarks.length)
+        } catch {}
+        try {
+          const hrRes = await fetch(`/api/hr/status?userId=${session.user.id}`)
+          const hrData = await hrRes.json()
+          if (hrData.isHR && hrData.status === 'approved') setIsHR(true)
         } catch {}
       }
       setReady(true)
@@ -78,12 +93,17 @@ export default function GlobalNav({ activePage }) {
         .gnav-menu-admin { color: #ff6000; }
         .gnav-saved-link { display: flex; align-items: center; justify-content: space-between; }
         .gnav-saved-badge { font-size: 10px; font-weight: 700; color: #fff; background: #ff4400; min-width: 18px; height: 18px; border-radius: 9px; display: inline-flex; align-items: center; justify-content: center; padding: 0 5px; }
+        .gnav-toggle { display: flex; align-items: center; gap: 0; background: rgba(255,255,255,0.06); border-radius: 100px; padding: 2px; border: 1px solid rgba(255,255,255,0.08); }
+        .gnav-toggle-opt { font-size: 11px; font-weight: 600; padding: 4px 12px; border-radius: 100px; cursor: pointer; border: none; background: none; color: rgba(255,255,255,0.3); font-family: 'Barlow', sans-serif; transition: all .2s; white-space: nowrap; }
+        .gnav-toggle-opt.active { background: rgba(255,96,0,0.2); color: #ff6000; }
+        .gnav-toggle-opt:hover:not(.active) { color: rgba(255,255,255,0.5); }
         @media (max-width: 768px) {
           .gnav { padding: 0 12px; height: 48px; }
           .gnav-logo { font-size: 11px; gap: 6px; }
           .gnav-logo img { width: 22px; height: 22px; }
           .gnav-r { gap: 8px; }
           .gnav-link { display: none; }
+          .gnav-toggle-opt { font-size: 9px; padding: 3px 8px; }
           .gnav-jobs-cta { display: inline-flex !important; font-size: 10px; padding: 4px 8px !important; gap: 3px; white-space: nowrap; }
           .gnav-jobs-badge { width: 14px; height: 14px; font-size: 8px; }
           .gnav-jobs-sub { display: none; }
@@ -103,11 +123,30 @@ export default function GlobalNav({ activePage }) {
           </Link>
         </div>
         <div className="gnav-r">
-          <Link href="/" className={`gnav-link${activePage === 'home' ? ' on' : ''}`}>{t('nav.amIUnderpaid')}</Link>
-          <Link href="/jobs" className={`gnav-link gnav-jobs-cta${activePage === 'jobs' ? ' on' : ''}`}>
-            💰 {t('nav.jobs')} <span className="gnav-jobs-badge">↑</span>
-            <span className="gnav-jobs-sub">{t('nav.jobsSub')}</span>
-          </Link>
+          {isAdmin && ready && isLoggedIn && (
+            <div className="gnav-toggle">
+              <button className={`gnav-toggle-opt${viewMode === 'seeker' ? ' active' : ''}`} onClick={() => {
+                setViewMode('seeker')
+                sessionStorage.setItem('fyi_view_mode', 'seeker')
+                if (window.location.pathname.startsWith('/hr')) window.location.href = '/'
+              }}>Seeker</button>
+              <button className={`gnav-toggle-opt${viewMode === 'hr' ? ' active' : ''}`} onClick={() => {
+                setViewMode('hr')
+                sessionStorage.setItem('fyi_view_mode', 'hr')
+                if (!window.location.pathname.startsWith('/hr')) window.location.href = '/hr'
+              }}>HR</button>
+            </div>
+          )}
+
+          {viewMode === 'seeker' ? (<>
+            <Link href="/" className={`gnav-link${activePage === 'home' ? ' on' : ''}`}>{t('nav.amIUnderpaid')}</Link>
+            <Link href="/jobs" className={`gnav-link gnav-jobs-cta${activePage === 'jobs' ? ' on' : ''}`}>
+              💰 {t('nav.jobs')} <span className="gnav-jobs-badge">↑</span>
+              <span className="gnav-jobs-sub">{t('nav.jobsSub')}</span>
+            </Link>
+          </>) : (<>
+            <Link href="/hr" className={`gnav-link${activePage === 'hr' ? ' on' : ''}`}>Candidates</Link>
+          </>)}
 
           {!ready ? null : !isLoggedIn ? (
             <>
@@ -141,12 +180,19 @@ export default function GlobalNav({ activePage }) {
               {showMenu && (
                 <div className="gnav-menu" onClick={e => e.stopPropagation()}>
                   <div className="gnav-menu-email">{user?.email}</div>
-                  <a href="/profile" className="gnav-menu-item">{t('nav.myProfile')}</a>
-                  <a href="/my-applications" className="gnav-menu-item">{t('nav.myApplications')}</a>
-                  <a href="/saved-jobs" className="gnav-menu-item gnav-saved-link">
-                    <span>{t('nav.savedJobs')}</span>
-                    {savedCount > 0 && <span className="gnav-saved-badge">{savedCount}</span>}
-                  </a>
+                  {viewMode === 'seeker' ? (<>
+                    <a href="/profile" className="gnav-menu-item">{t('nav.myProfile')}</a>
+                    <a href="/my-applications" className="gnav-menu-item">{t('nav.myApplications')}</a>
+                    <a href="/saved-jobs" className="gnav-menu-item gnav-saved-link">
+                      <span>{t('nav.savedJobs')}</span>
+                      {savedCount > 0 && <span className="gnav-saved-badge">{savedCount}</span>}
+                    </a>
+                  </>) : (<>
+                    <a href="/hr" className="gnav-menu-item">Candidates</a>
+                  </>)}
+                  {(isHR && !isAdmin) && (
+                    <a href="/hr" className="gnav-menu-item" style={{ color: '#ffb347' }}>HR Dashboard</a>
+                  )}
                   {isAdmin && (
                     <a href="/admin/jobs" className="gnav-menu-item gnav-menu-admin">Admin Dashboard</a>
                   )}
