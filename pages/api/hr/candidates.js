@@ -13,23 +13,19 @@ export default async function handler(req, res) {
   const { data: { user }, error: authErr } = await supabase.auth.getUser(token)
   if (authErr || !user) return res.status(401).json({ error: 'unauthorized' })
 
-  // Check HR or admin access
+  // Check HR role + approved
   const { data: profile } = await supabase
     .from('user_profiles')
-    .select('role, email')
+    .select('role')
     .eq('id', user.id)
     .single()
 
-  const isAdmin = profile?.email?.endsWith('@likelion.net')
-  if (!isAdmin && profile?.role !== 'hr') {
+  if (profile?.role !== 'hr') {
     return res.status(403).json({ error: 'forbidden' })
   }
 
-  // If HR, verify approved
-  if (!isAdmin && profile?.role === 'hr') {
-    const { data: hr } = await supabase.from('hr_users').select('status').eq('user_id', user.id).single()
-    if (hr?.status !== 'approved') return res.status(403).json({ error: 'not approved' })
-  }
+  const { data: hr } = await supabase.from('hr_users').select('status').eq('user_id', user.id).single()
+  if (hr?.status !== 'approved') return res.status(403).json({ error: 'not approved' })
 
   const { position, sort, order, page, limit: lim, search, id: candidateId } = req.query
 

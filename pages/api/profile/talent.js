@@ -23,7 +23,7 @@ export default async function handler(req, res) {
     const allowed = [
       'full_name', 'headline', 'position', 'yoe_months', 'intro', 'skills',
       'english_cert', 'korean_cert', 'location', 'birthdate', 'university',
-      'major', 'graduation_year', 'salary_min', 'salary_max', 'work_type',
+      'major', 'graduation_year', 'salary_min', 'salary_max', 'salary_currency', 'work_type',
       'job_signal', 'hr_visible', 'photo_url', 'resume_url',
       'experiences', 'projects', 'certs', 'portfolio_url',
     ]

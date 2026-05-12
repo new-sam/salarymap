@@ -1,66 +1,111 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { useRouter } from 'next/router'
 import Head from 'next/head'
 import Link from 'next/link'
+import { supabase } from '../../../lib/supabaseClient'
 
-const DUMMY_MAP = {
-  'demo-001': {
-    name: '위승주', nameEn: 'Seungju Wi', photo: 'https://twpxsbnkypocjfnerfmd.supabase.co/storage/v1/object/public/profiles/demo-001.jpg',
-    position: 'Product Owner · Service Planner',
-    headline: 'AI 솔루션 도입으로 결제 전환율 +75% 달성, 플랜핏 PO 인턴',
-    signal: 'active', lastActive: '오늘',
-    location: '서울', age: 24,
-    university: '홍익대학교', major: '컴퓨터공학', graduation: '2026년 졸업',
-    english: 'OPIc IH (Intermediate High)',
-    korean: 'TOPIK 4급',
-    salaryMin: 25000000, salaryMax: 35000000, salaryCurrency: 'VND',
-    workType: '정규직 / 인턴',
-    skills: ['서비스기획', '프로덕트관리', '데이터분석', 'UX기획', 'UI/UX', '앱기획', '웹기획', 'IT기획', '기능기획', '서비스운영', 'Agile', '브랜딩', 'SNS마케팅'],
-    toolsProduct: 'A/B Testing · 가설 검증 · 퍼널 분석 · PRD 작성',
-    toolsAnalytics: 'Amplitude · MySQL',
-    toolsDesign: 'Figma · Figma Make · Photoshop',
-    toolsDev: 'React Native · Next.js · TypeScript',
-    toolsAI: 'Cursor · Claude · Antigravity · Veo · Midjourney · Nano Banana',
-    toolsCollab: 'Notion · Slack · Linear',
-    intro: '기술적 이해도와 데이터 분석 역량을 바탕으로 비즈니스 목표를 안정적으로 달성하는 서비스 기획자 위승주입니다.\n\n직관보다는 철저한 데이터 분석을 통해 유저의 문제를 정의하고 실질적인 지표 개선으로 연결합니다. 실무에서 외부 솔루션 제휴를 직접 주도하여 주간 결제 전환율(CVR)을 75% 상승시키는 등 명확한 비즈니스 임팩트를 창출한 경험이 있습니다.\n\n컴퓨터공학 전공 지식을 살려 기획·디자인·개발 전 과정을 단독으로 소화하는 1인 메이커 역량을 갖추고 있습니다.',
-    experiences: [
-      {
-        company: '(주)플랜핏 Planfit', role: 'Product Owner Intern / 기획 (Solver)',
-        period: '2025.06 - 2025.12', duration: '7개월',
-        details: [
-          '외부 AI 솔루션(Monetai) 발굴·도입 주도: 유저 구매 확률 예측 솔루션을 직접 리서치·발굴하고 제휴사와 1:3 기술 미팅을 단독으로 리드, 맞춤형 다겟팅 프로모션 런칭으로 주간 결제 전환율(CVR) +75% 상승 달성 후 프로덕션 정착',
-          '비디오 생성 AI 활용 결제창 영상 배포: 다 부서 의존 없이 단독으로 시즌 페이월 영상을 제작·배포, 신규 유저 전환율 목표 2배 초과(+20%) 달성',
-          'Amplitude 데이터 분석 기반으로 4개월간 30건 이상의 가설 검증실험 주도 및 실험 리드타임 획기적 단축',
-          'Stack: Amplitude · Figma · Cursor · Claude · Veo — 데이터 드리븐 의사결정과 AI 풀사이클 실행',
-        ],
-      },
-    ],
-    projects: [
-      {
-        name: 'Drinkig 드링키지', desc: '2030 취향 기반 와인 큐레이션 앱 (1인 풀사이클)',
-        period: '2025.12 - 현재',
-        details: [
-          '기획/디자인/개발/운영 1인 · App Store 운영 중',
-          'v1: 10인 팀(개발 6·디자인 3·PM 1) Swift/UIKit 프로젝트에서 PM 리드 / 아이디어 오너로 참여, 2025 홍익대학교 창업 페스티벌 2등 수상',
-          'Swift 전량 폐기 후 React Native로 전면 리라이트, 약 2개월 만에 1인 풀사이클로 App Store 재출시 후 직접 운영',
-        ],
-      },
-      {
-        name: 'Gourmevel 고메블', desc: 'F&B 미식 숏폼 매거진 (1인 총괄 운영)',
-        period: '2022.05 - 현재',
-        details: [
-          '유료 광고 0원, 오가닉 도달만으로 팔로워 1만+, 숏폼 최고 124만 뷰, 릴스 평균 30만 뷰 달성',
-          '초기 팔로워 200명 정체 구간에서 "감성향" 콘텐츠를 "셰프 취재 기반 매거진"으로 리포지셔닝, 2주 만에 +1,000 팔로워 회복',
-          '3개월 만에 팔로워 4,000 → 8,000 (2배 성장)',
-          '캐치테이블 등 브랜드와 50+ 건 협업 · 제휴',
-        ],
-      },
-    ],
-    awards: '2025 홍익대학교 창업 페스티벌 2등 · Drinkig 프로젝트 (시장성·기획력 부문)',
-    certs: ['ADsP — Advanced Data Analytics Semi-Professional', 'OPIc — IH (Intermediate High)', '제2종 보통 운전면허'],
-    cvUrl: 'https://twpxsbnkypocjfnerfmd.supabase.co/storage/v1/object/public/resumes/demo-001.pdf',
-    contactCount: 5,
-    isNew: true,
-  },
+const DEMO_001 = {
+  name: '위승주', nameEn: 'Seungju Wi', photo: 'https://twpxsbnkypocjfnerfmd.supabase.co/storage/v1/object/public/profiles/demo-001.jpg',
+  position: 'Product Owner · Service Planner',
+  headline: 'AI 솔루션 도입으로 결제 전환율 +75% 달성, 플랜핏 PO 인턴',
+  signal: 'active', lastActive: '오늘',
+  location: '서울', age: 24,
+  university: '홍익대학교', major: '컴퓨터공학', graduation: '2026년 졸업',
+  english: 'OPIc IH (Intermediate High)',
+  korean: 'TOPIK 4급',
+  salaryMin: 3000000, salaryMax: 3500000, salaryCurrency: 'KRW',
+  workType: '정규직',
+  skills: ['서비스기획', '프로덕트관리', '데이터분석', 'UX기획', 'UI/UX', '앱기획', '웹기획', 'IT기획', '기능기획', '서비스운영', 'Agile', '브랜딩', 'SNS마케팅'],
+  intro: '기술적 이해도와 데이터 분석 역량을 바탕으로 비즈니스 목표를 안정적으로 달성하는 서비스 기획자 위승주입니다.\n\n직관보다는 철저한 데이터 분석을 통해 유저의 문제를 정의하고 실질적인 지표 개선으로 연결합니다. 실무에서 외부 솔루션 제휴를 직접 주도하여 주간 결제 전환율(CVR)을 75% 상승시키는 등 명확한 비즈니스 임팩트를 창출한 경험이 있습니다.\n\n컴퓨터공학 전공 지식을 살려 기획·디자인·개발 전 과정을 단독으로 소화하는 1인 메이커 역량을 갖추고 있습니다.',
+  experiences: [
+    {
+      company: '(주)플랜핏 Planfit', role: 'Product Owner Intern / 기획 (Solver)',
+      period: '2025.06 - 2025.12', duration: '7개월',
+      details: [
+        '외부 AI 솔루션(Monetai) 발굴·도입 주도: 유저 구매 확률 예측 솔루션을 직접 리서치·발굴하고 제휴사와 1:3 기술 미팅을 단독으로 리드, 맞춤형 다겟팅 프로모션 런칭으로 주간 결제 전환율(CVR) +75% 상승 달성 후 프로덕션 정착',
+        '비디오 생성 AI 활용 결제창 영상 배포: 다 부서 의존 없이 단독으로 시즌 페이월 영상을 제작·배포, 신규 유저 전환율 목표 2배 초과(+20%) 달성',
+        'Amplitude 데이터 분석 기반으로 4개월간 30건 이상의 가설 검증실험 주도 및 실험 리드타임 획기적 단축',
+        'Stack: Amplitude · Figma · Cursor · Claude · Veo — 데이터 드리븐 의사결정과 AI 풀사이클 실행',
+      ],
+    },
+  ],
+  projects: [
+    {
+      name: 'Drinkig 드링키지', desc: '2030 취향 기반 와인 큐레이션 앱 (1인 풀사이클)',
+      period: '2025.12 - 현재',
+      details: [
+        '기획/디자인/개발/운영 1인 · App Store 운영 중',
+        'v1: 10인 팀(개발 6·디자인 3·PM 1) Swift/UIKit 프로젝트에서 PM 리드 / 아이디어 오너로 참여, 2025 홍익대학교 창업 페스티벌 2등 수상',
+        'Swift 전량 폐기 후 React Native로 전면 리라이트, 약 2개월 만에 1인 풀사이클로 App Store 재출시 후 직접 운영',
+      ],
+    },
+    {
+      name: 'Gourmevel 고메블', desc: 'F&B 미식 숏폼 매거진 (1인 총괄 운영)',
+      period: '2022.05 - 현재',
+      details: [
+        '유료 광고 0원, 오가닉 도달만으로 팔로워 1만+, 숏폼 최고 124만 뷰, 릴스 평균 30만 뷰 달성',
+        '초기 팔로워 200명 정체 구간에서 "감성향" 콘텐츠를 "셰프 취재 기반 매거진"으로 리포지셔닝, 2주 만에 +1,000 팔로워 회복',
+        '3개월 만에 팔로워 4,000 → 8,000 (2배 성장)',
+        '캐치테이블 등 브랜드와 50+ 건 협업 · 제휴',
+      ],
+    },
+  ],
+  awards: '2025 홍익대학교 창업 페스티벌 2등 · Drinkig 프로젝트 (시장성·기획력 부문)',
+  certs: ['ADsP — Advanced Data Analytics Semi-Professional', 'OPIc — IH (Intermediate High)', '제2종 보통 운전면허'],
+  cvUrl: 'https://twpxsbnkypocjfnerfmd.supabase.co/storage/v1/object/public/resumes/demo-001.pdf',
+  contactCount: 5,
+  isNew: true,
+}
+
+function fromApi(p) {
+  return {
+    name: p.name,
+    nameEn: '',
+    photo: p.photo,
+    position: p.position || '',
+    headline: p.headline || '',
+    signal: p.signal || 'passive',
+    lastActive: p.updated_at ? timeAgo(p.updated_at) : '',
+    location: p.location || '',
+    age: p.birthdate ? calcAge(p.birthdate) : null,
+    university: p.university || '',
+    major: p.major || '',
+    graduation: p.graduation || '',
+    english: p.english_cert || '',
+    korean: p.korean_cert || '',
+    salaryMin: p.salary_min,
+    salaryMax: p.salary_max,
+    salaryCurrency: p.salary_currency || 'VND',
+    workType: p.work_type || '',
+    skills: p.skills || [],
+    intro: p.intro || '',
+    experiences: p.experiences || [],
+    projects: p.projects || [],
+    awards: '',
+    certs: p.certs || [],
+    cvUrl: p.resume_url || '',
+    contactCount: 0,
+    isNew: false,
+  }
+}
+
+function timeAgo(dateStr) {
+  const diff = Date.now() - new Date(dateStr).getTime()
+  const mins = Math.floor(diff / 60000)
+  if (mins < 60) return '방금 전'
+  const hours = Math.floor(mins / 60)
+  if (hours < 24) return `${hours}시간 전`
+  const days = Math.floor(hours / 24)
+  if (days < 7) return `${days}일 전`
+  return `${Math.floor(days / 7)}주 전`
+}
+
+function calcAge(birthdate) {
+  const birth = new Date(birthdate)
+  const now = new Date()
+  let age = now.getFullYear() - birth.getFullYear()
+  if (now.getMonth() < birth.getMonth() || (now.getMonth() === birth.getMonth() && now.getDate() < birth.getDate())) age--
+  return age
 }
 
 const SIGNAL_MAP = {
@@ -70,12 +115,44 @@ const SIGNAL_MAP = {
 }
 
 export default function TalentDetail() {
+  const router = useRouter()
+  const { id } = router.query
   const [saved, setSaved] = useState(false)
   const [showCV, setShowCV] = useState(false)
   const [showKRW, setShowKRW] = useState(false)
-  const c = DUMMY_MAP['demo-001']
-  if (!c) return null
-  const sig = SIGNAL_MAP[c.signal]
+  const [c, setC] = useState(null)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    if (!id) return
+    if (id === 'demo-001') {
+      setC(DEMO_001)
+      setLoading(false)
+      return
+    }
+    async function load() {
+      try {
+        const { data: { session } } = await supabase.auth.getSession()
+        if (!session) { setLoading(false); return }
+        const resp = await fetch(`/api/hr/talent-search?id=${id}`, {
+          headers: { Authorization: `Bearer ${session.access_token}` },
+        })
+        if (resp.ok) {
+          const { profile } = await resp.json()
+          setC(fromApi(profile))
+        }
+      } catch (e) {
+        console.error(e)
+      }
+      setLoading(false)
+    }
+    load()
+  }, [id])
+
+  if (loading) return <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'system-ui', color: '#ccc' }}>로딩 중...</div>
+  if (!c) return <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'system-ui', color: '#ccc' }}>프로필을 찾을 수 없습니다</div>
+
+  const sig = SIGNAL_MAP[c.signal] || SIGNAL_MAP.passive
 
   return (
     <>
@@ -93,7 +170,6 @@ export default function TalentDetail() {
 
         .td-grid { display: grid; grid-template-columns: 300px 1fr; gap: 20px; align-items: start; }
 
-        /* Left — follows scroll */
         .td-left { background: #fff; border: 1px solid #eee; border-radius: 16px; position: sticky; top: 72px; align-self: start; }
         .td-photo-wrap { display: flex; justify-content: center; padding: 32px 0 0; }
         .td-photo { width: 140px; height: 140px; border-radius: 50%; object-fit: cover; }
@@ -117,18 +193,12 @@ export default function TalentDetail() {
         .td-btn3:hover { border-color: #ddd; }
         .td-demand { font-size: 11px; color: #bbb; text-align: center; margin-top: 4px; }
 
-        /* Right */
         .td-right { display: flex; flex-direction: column; gap: 16px; }
         .td-section { background: #fff; border: 1px solid #eee; border-radius: 16px; padding: 28px; }
         .td-stitle { font-size: 13px; font-weight: 700; color: #bbb; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 14px; }
         .td-intro { font-size: 14px; color: #555; line-height: 1.8; white-space: pre-line; }
         .td-tags { display: flex; flex-wrap: wrap; gap: 6px; }
         .td-tag { font-size: 11px; font-weight: 600; color: #555; background: #f5f5f5; padding: 4px 12px; border-radius: 6px; }
-
-        .td-tools { margin-top: 16px; }
-        .td-tool-row { display: flex; padding: 5px 0; font-size: 12px; }
-        .td-tool-l { color: #bbb; width: 80px; flex-shrink: 0; font-weight: 600; text-transform: uppercase; font-size: 10px; padding-top: 2px; }
-        .td-tool-r { color: #555; line-height: 1.6; }
 
         .td-exp { margin-bottom: 24px; padding-bottom: 24px; border-bottom: 1px solid #f5f5f5; }
         .td-exp:last-child { margin-bottom: 0; padding-bottom: 0; border-bottom: none; }
@@ -144,6 +214,8 @@ export default function TalentDetail() {
 
         .td-cert { font-size: 13px; color: #555; line-height: 1.8; }
 
+        .td-no-photo { width: 140px; height: 140px; border-radius: 50%; background: #f0f0f0; display: flex; align-items: center; justify-content: center; font-size: 40px; font-weight: 800; color: #ccc; }
+
         @media (max-width: 768px) {
           .td-grid { grid-template-columns: 1fr; }
           .td-left { position: static !important; }
@@ -157,7 +229,7 @@ export default function TalentDetail() {
         </nav>
 
         <div className="td-body">
-          <Link href="/hr" className="td-back">
+          <Link href="/hr/search" className="td-back">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M15 18l-6-6 6-6"/></svg>
             목록으로
           </Link>
@@ -165,11 +237,15 @@ export default function TalentDetail() {
             {/* Left */}
             <div className="td-left">
               <div className="td-photo-wrap">
-                <img src={c.photo} className="td-photo" />
+                {c.photo ? (
+                  <img src={c.photo} className="td-photo" />
+                ) : (
+                  <div className="td-no-photo">{(c.name || 'U')[0]}</div>
+                )}
               </div>
               <div className="td-lbody">
                 <div className="td-lname">{c.name}</div>
-                <div className="td-lsub">{c.nameEn}</div>
+                {c.nameEn && <div className="td-lsub">{c.nameEn}</div>}
                 <div className="td-lrole">{c.position}</div>
                 <div className="td-badges">
                   <span className="td-signal" style={{ background: sig.bg, color: sig.color }}>
@@ -181,29 +257,29 @@ export default function TalentDetail() {
 
               <div className="td-lmeta">
                 {[
-                  { l: '지역', r: c.location },
-                  { l: '나이', r: `만 ${c.age}세` },
-                  { l: '학력', r: `${c.university} · ${c.major}` },
-                  { l: '졸업', r: c.graduation },
-                  { l: '영어', r: c.english },
-                  { l: '한국어', r: c.korean },
-                  { l: '희망 보수', r: '__salary__' },
-                  { l: '근무 형태', r: c.workType },
-                  { l: '최근 활동', r: c.lastActive },
-                ].map((row, i) => (
+                  c.location && { l: '지역', r: c.location },
+                  c.age && { l: '나이', r: `만 ${c.age}세` },
+                  c.university && { l: '학력', r: `${c.university}${c.major ? ' · ' + c.major : ''}` },
+                  c.graduation && { l: '졸업', r: c.graduation },
+                  c.english && { l: '영어', r: c.english },
+                  c.korean && { l: '한국어', r: c.korean },
+                  (c.salaryMin || c.salaryMax) && { l: '희망 보수', r: '__salary__' },
+                  c.workType && { l: '근무 형태', r: c.workType },
+                  c.lastActive && { l: '최근 활동', r: c.lastActive },
+                ].filter(Boolean).map((row, i) => (
                   <div key={i} className="td-lrow">
                     <span className="td-lrow-l">{row.l}</span>
                     {row.r === '__salary__' ? (
                       <span className="td-lrow-r" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                        <span>{showKRW
-                          ? `${Math.round(c.salaryMin * 0.058 / 10000)}~${Math.round(c.salaryMax * 0.058 / 10000)}만원`
-                          : `${(c.salaryMin / 1000000).toFixed(0)}~${(c.salaryMax / 1000000).toFixed(0)}M VND`
+                        <span>{c.salaryCurrency === 'KRW'
+                          ? (showKRW ? `${Math.round(c.salaryMin / 0.058 / 1000000)}~${Math.round(c.salaryMax / 0.058 / 1000000)}M VND` : `${Math.round(c.salaryMin / 10000)}~${Math.round(c.salaryMax / 10000)}만원`)
+                          : (showKRW ? `${Math.round(c.salaryMin * 0.058 / 10000)}~${Math.round(c.salaryMax * 0.058 / 10000)}만원` : `${(c.salaryMin / 1000000).toFixed(0)}~${(c.salaryMax / 1000000).toFixed(0)}M VND`)
                         }/월</span>
                         <button onClick={() => setShowKRW(v => !v)} style={{
                           fontSize: 10, fontWeight: 600, color: '#ff6000', background: 'none',
                           border: '1px solid #fed7aa', borderRadius: 4, padding: '1px 6px',
                           cursor: 'pointer', fontFamily: 'inherit', whiteSpace: 'nowrap',
-                        }}>{showKRW ? 'VND' : '₩'}</button>
+                        }}>{c.salaryCurrency === 'KRW' ? (showKRW ? '₩' : 'VND') : (showKRW ? 'VND' : '₩')}</button>
                       </span>
                     ) : (
                       <span className="td-lrow-r">{row.r}</span>
@@ -214,10 +290,12 @@ export default function TalentDetail() {
 
               <div className="td-lactions">
                 <button className="td-btn1">채용 문의</button>
-                <button className="td-btn2" onClick={() => setShowCV(true)}>
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-                  이력서 보기
-                </button>
+                {c.cvUrl && (
+                  <button className="td-btn2" onClick={() => setShowCV(true)}>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                    이력서 보기
+                  </button>
+                )}
                 <button className="td-btn3" onClick={() => setSaved(v => !v)}>
                   <svg width="14" height="14" viewBox="0 0 24 24" fill={saved ? '#f59e0b' : 'none'} stroke={saved ? '#f59e0b' : 'currentColor'} strokeWidth="2"><path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z"/></svg>
                   {saved ? '저장됨' : '저장하기'}
@@ -231,98 +309,103 @@ export default function TalentDetail() {
             {/* Right */}
             <div className="td-right">
               {/* Intro */}
-              <div className="td-section">
-                <div className="td-stitle">소개</div>
-                <div className="td-intro">{c.intro}</div>
-              </div>
-
-              {/* Skills + Tools */}
-              <div className="td-section">
-                <div className="td-stitle">전문 분야 & 스킬</div>
-                <div className="td-tags">
-                  {c.skills.map((s, i) => <span key={i} className="td-tag">{s}</span>)}
+              {c.intro && (
+                <div className="td-section">
+                  <div className="td-stitle">소개</div>
+                  <div className="td-intro">{c.intro}</div>
                 </div>
-                <div className="td-tools">
-                  {[
-                    { l: 'Product', r: c.toolsProduct },
-                    { l: 'Analytics', r: c.toolsAnalytics },
-                    { l: 'Design', r: c.toolsDesign },
-                    { l: 'Dev', r: c.toolsDev },
-                    { l: 'AI Tools', r: c.toolsAI },
-                    { l: 'Collab', r: c.toolsCollab },
-                  ].map((row, i) => (
-                    <div key={i} className="td-tool-row">
-                      <span className="td-tool-l">{row.l}</span>
-                      <span className="td-tool-r">{row.r}</span>
+              )}
+
+              {/* Experience */}
+              {c.experiences.length > 0 && (
+                <div className="td-section">
+                  <div className="td-stitle">경력</div>
+                  {c.experiences.map((exp, i) => (
+                    <div key={i} className="td-exp">
+                      <div className="td-exp-top">
+                        <div>
+                          <div className="td-exp-company">{exp.company}</div>
+                          <div className="td-exp-role">{exp.role}</div>
+                        </div>
+                        <div className="td-exp-right">
+                          <div className="td-exp-period">{exp.period}</div>
+                          {exp.duration && <div className="td-exp-dur">{exp.duration}</div>}
+                        </div>
+                      </div>
+                      {exp.details && (
+                        <ul className="td-exp-list">
+                          {exp.details.map((d, j) => <li key={j}>{d}</li>)}
+                        </ul>
+                      )}
                     </div>
                   ))}
                 </div>
-              </div>
-
-              {/* Experience */}
-              <div className="td-section">
-                <div className="td-stitle">경력</div>
-                {c.experiences.map((exp, i) => (
-                  <div key={i} className="td-exp">
-                    <div className="td-exp-top">
-                      <div>
-                        <div className="td-exp-company">{exp.company}</div>
-                        <div className="td-exp-role">{exp.role}</div>
-                      </div>
-                      <div className="td-exp-right">
-                        <div className="td-exp-period">{exp.period}</div>
-                        <div className="td-exp-dur">{exp.duration}</div>
-                      </div>
-                    </div>
-                    <ul className="td-exp-list">
-                      {exp.details.map((d, j) => <li key={j}>{d}</li>)}
-                    </ul>
-                  </div>
-                ))}
-              </div>
+              )}
 
               {/* Projects */}
-              <div className="td-section">
-                <div className="td-stitle">프로젝트</div>
-                {c.projects.map((pj, i) => (
-                  <div key={i} className="td-exp">
-                    <div className="td-exp-top">
-                      <div>
-                        <div className="td-exp-company">{pj.name}</div>
-                        <div className="td-exp-role">{pj.desc}</div>
+              {c.projects.length > 0 && (
+                <div className="td-section">
+                  <div className="td-stitle">프로젝트</div>
+                  {c.projects.map((pj, i) => (
+                    <div key={i} className="td-exp">
+                      <div className="td-exp-top">
+                        <div>
+                          <div className="td-exp-company">{pj.name}</div>
+                          <div className="td-exp-role">{pj.desc}</div>
+                        </div>
+                        <div className="td-exp-right">
+                          <div className="td-exp-period">{pj.period}</div>
+                        </div>
                       </div>
-                      <div className="td-exp-right">
-                        <div className="td-exp-period">{pj.period}</div>
-                      </div>
+                      {pj.details && (
+                        <ul className="td-exp-list">
+                          {pj.details.map((d, j) => <li key={j}>{d}</li>)}
+                        </ul>
+                      )}
                     </div>
-                    <ul className="td-exp-list">
-                      {pj.details.map((d, j) => <li key={j}>{d}</li>)}
-                    </ul>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              )}
 
               {/* Awards + Certs */}
-              <div className="td-section">
-                <div className="td-stitle">수상 & 자격증</div>
-                <div className="td-cert" style={{ marginBottom: 12 }}>{c.awards}</div>
-                {c.certs.map((cert, i) => (
-                  <div key={i} className="td-cert">{cert}</div>
-                ))}
-              </div>
+              {(c.awards || (c.certs && c.certs.length > 0)) && (
+                <div className="td-section">
+                  <div className="td-stitle">수상 & 자격증</div>
+                  {c.awards && <div className="td-cert" style={{ marginBottom: 12 }}>{c.awards}</div>}
+                  {(c.certs || []).map((cert, i) => (
+                    <div key={i} className="td-cert">{cert}</div>
+                  ))}
+                </div>
+              )}
 
               {/* Education */}
-              <div className="td-section">
-                <div className="td-stitle">학력</div>
-                <div style={{ fontSize: 14, fontWeight: 600, color: '#333' }}>{c.university}</div>
-                <div style={{ fontSize: 13, color: '#999', marginTop: 4 }}>{c.major} · {c.graduation}</div>
-              </div>
+              {c.university && (
+                <div className="td-section">
+                  <div className="td-stitle">학력</div>
+                  <div style={{ fontSize: 14, fontWeight: 600, color: '#333' }}>{c.university}</div>
+                  {(c.major || c.graduation) && (
+                    <div style={{ fontSize: 13, color: '#999', marginTop: 4 }}>
+                      {[c.major, c.graduation].filter(Boolean).join(' · ')}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Skills */}
+              {c.skills.length > 0 && (
+                <div className="td-section">
+                  <div className="td-stitle">전문 분야 & 스킬</div>
+                  <div className="td-tags">
+                    {c.skills.map((s, i) => <span key={i} className="td-tag">{s}</span>)}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>
       </div>
       {/* PDF Viewer */}
-      {showCV && (
+      {showCV && c.cvUrl && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}
           onClick={() => setShowCV(false)}>
           <div onClick={e => e.stopPropagation()} style={{ background: '#fff', borderRadius: 12, width: '100%', maxWidth: 900, height: '90vh', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
