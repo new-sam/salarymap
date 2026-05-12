@@ -1,8 +1,27 @@
+import { useState, useEffect } from 'react'
 import Head from 'next/head'
 import { useKo } from '../../lib/i18n'
 
 export default function HRLoginPage() {
   const { t } = useKo()
+  const [activeStep, setActiveStep] = useState(-1)
+
+  useEffect(() => {
+    let step = -1
+    const advance = () => {
+      step++
+      if (step > 4) {
+        step = -1
+        setActiveStep(-1)
+        timeout = setTimeout(advance, 800)
+      } else {
+        setActiveStep(step)
+        timeout = setTimeout(advance, step === 3 ? 2400 : 1200)
+      }
+    }
+    let timeout = setTimeout(advance, 600)
+    return () => clearTimeout(timeout)
+  }, [])
 
   const handleLogin = () => {
     if (typeof window === 'undefined') return
@@ -11,10 +30,10 @@ export default function HRLoginPage() {
   }
 
   const steps = [
-    { num: '1', key: 'step1', icon: '&#128272;', active: true },
-    { num: '2', key: 'step2', icon: '&#128270;', active: false },
-    { num: '3', key: 'step3', icon: '&#9989;', active: false },
-    { num: '4', key: 'step4', icon: '&#129309;', active: false },
+    { num: '1', key: 'step1' },
+    { num: '2', key: 'step2' },
+    { num: '3', key: 'step3' },
+    { num: '4', key: 'step4' },
   ]
 
   return (
@@ -48,18 +67,20 @@ export default function HRLoginPage() {
         .hrl-steps { display: flex; flex-direction: column; gap: 0; }
         .hrl-step { display: flex; gap: 16px; position: relative; }
         .hrl-step-line { display: flex; flex-direction: column; align-items: center; width: 32px; flex-shrink: 0; }
-        .hrl-step-dot { width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 800; flex-shrink: 0; z-index: 1; }
-        .hrl-step-dot.active { background: #ff6000; color: #fff; }
-        .hrl-step-dot.inactive { background: #f3f3f3; color: #ccc; border: 2px solid #e5e5e5; }
-        .hrl-step-connector { width: 2px; flex: 1; min-height: 20px; }
+        .hrl-step-dot { width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 800; flex-shrink: 0; z-index: 1; transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1); }
+        .hrl-step-dot.active { background: #ff6000; color: #fff; border: 2px solid #ff6000; }
+        .hrl-step-dot.current { background: #ff6000; color: #fff; border: 2px solid #ff6000; transform: scale(1.15); box-shadow: 0 0 0 6px rgba(255, 96, 0, 0.15); }
+        .hrl-step-dot.inactive { background: #f3f3f3; color: #ccc; border: 2px solid #e5e5e5; transform: scale(1); box-shadow: none; }
+        .hrl-step-connector { width: 2px; flex: 1; min-height: 20px; transition: background 0.5s cubic-bezier(0.4, 0, 0.2, 1); }
         .hrl-step-connector.active { background: #ff6000; }
         .hrl-step-connector.inactive { background: #e5e5e5; }
-        .hrl-step-content { padding: 4px 0 28px; }
-        .hrl-step-label { font-size: 11px; font-weight: 700; color: #ff6000; margin-bottom: 2px; }
+        .hrl-step-content { padding: 4px 0 28px; transition: opacity 0.5s ease; }
+        .hrl-step-content.dimmed { opacity: 0.4; }
+        .hrl-step-label { font-size: 11px; font-weight: 700; color: #ff6000; margin-bottom: 2px; transition: color 0.5s ease; }
         .hrl-step-label.inactive { color: #ccc; }
-        .hrl-step-name { font-size: 15px; font-weight: 700; color: #111; margin-bottom: 4px; }
+        .hrl-step-name { font-size: 15px; font-weight: 700; color: #111; margin-bottom: 4px; transition: color 0.5s ease; }
         .hrl-step-name.inactive { color: #bbb; }
-        .hrl-step-desc { font-size: 12px; color: #999; line-height: 1.5; }
+        .hrl-step-desc { font-size: 12px; color: #999; line-height: 1.5; transition: color 0.5s ease; }
         .hrl-step-desc.inactive { color: #ccc; }
         .hrl-step:last-child .hrl-step-content { padding-bottom: 0; }
 
@@ -100,17 +121,19 @@ export default function HRLoginPage() {
             <div className="hrl-roadmap-title">{t('hr.login.roadmapTitle')}</div>
             <div className="hrl-steps">
               {steps.map((s, i) => {
-                const isActive = s.active
+                const isActive = i <= activeStep
+                const isCurrent = i === activeStep
                 const isLast = i === steps.length - 1
+                const dotClass = isCurrent ? 'current' : isActive ? 'active' : 'inactive'
                 return (
                   <div className="hrl-step" key={i}>
                     <div className="hrl-step-line">
-                      <div className={`hrl-step-dot ${isActive ? 'active' : 'inactive'}`}>{s.num}</div>
-                      {!isLast && <div className={`hrl-step-connector ${isActive ? 'active' : 'inactive'}`} />}
+                      <div className={`hrl-step-dot ${dotClass}`}>{s.num}</div>
+                      {!isLast && <div className={`hrl-step-connector ${i < activeStep ? 'active' : 'inactive'}`} />}
                     </div>
-                    <div className="hrl-step-content">
+                    <div className={`hrl-step-content${isActive ? '' : ' dimmed'}`}>
                       <div className={`hrl-step-label ${isActive ? '' : 'inactive'}`}>
-                        {isActive ? t('hr.login.current') : t('hr.login.upcoming')}
+                        {isCurrent ? t('hr.login.current') : isActive ? t('hr.login.current') : t('hr.login.upcoming')}
                       </div>
                       <div className={`hrl-step-name ${isActive ? '' : 'inactive'}`}>{t(`hr.login.road${s.key}`)}</div>
                       <div className={`hrl-step-desc ${isActive ? '' : 'inactive'}`}>{t(`hr.login.road${s.key}Desc`)}</div>
