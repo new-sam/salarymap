@@ -35,7 +35,7 @@ function CustomSelect({ value, options, placeholder, onChange }) {
         borderRadius: 8, background: 'rgba(255,255,255,0.04)', color: value ? '#fff' : 'rgba(255,255,255,0.2)',
         fontFamily: 'inherit', cursor: 'pointer', textAlign: 'left', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         transition: 'border-color .15s', outline: 'none',
-        ...(open ? { borderColor: '#ff6000' } : {}),
+        ...(open ? { borderColor: '#ff6000' } : value ? { borderColor: 'rgba(74,222,128,0.3)', background: 'rgba(74,222,128,0.03)' } : {}),
       }}>
         <span>{value || placeholder}</span>
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.3)" strokeWidth="2" style={{ transform: open ? 'rotate(180deg)' : 'none', transition: 'transform .2s' }}><path d="M6 9l6 6 6-6"/></svg>
@@ -392,6 +392,7 @@ export default function ProfilePage() {
         .pfield-label { font-size: 12px; font-weight: 700; color: rgba(255,255,255,0.6); letter-spacing: .02em; margin-bottom: 6px; }
         .pfield-value { font-size: 14px; color: #fff; }
         .pinput { width: 100%; font-size: 14px; padding: 10px 12px; border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; outline: none; font-family: inherit; background: rgba(255,255,255,0.04); color: #fff; transition: border-color .15s; }
+        .pinput.filled { border-color: rgba(74,222,128,0.3); background: rgba(74,222,128,0.03); }
         .pinput:focus { border-color: #ff6000; }
         .pinput::placeholder { color: rgba(255,255,255,0.2); }
         .ptextarea { min-height: 100px; resize: vertical; }
@@ -403,7 +404,7 @@ export default function ProfilePage() {
         .psave:disabled { opacity: 0.5; }
         .pmsg { background: rgba(34,197,94,0.12); color: #4ade80; font-size: 13px; font-weight: 600; padding: 10px 16px; border-radius: 8px; margin-bottom: 16px; text-align: center; }
         .pprogress { height: 6px; background: rgba(255,255,255,0.06); border-radius: 3px; margin-bottom: 8px; overflow: hidden; }
-        .pprogress-fill { height: 100%; border-radius: 3px; background: #ff6000; transition: width .5s; }
+        .pprogress-fill { height: 100%; border-radius: 3px; transition: width .5s; }
         .pphoto-wrap { display: flex; align-items: center; gap: 16px; }
         .pphoto { width: 72px; height: 72px; border-radius: 50%; object-fit: cover; border: 2px solid rgba(255,255,255,0.1); }
         .pphoto-placeholder { width: 72px; height: 72px; border-radius: 50%; background: rgba(255,255,255,0.06); display: flex; align-items: center; justify-content: center; border: 2px dashed rgba(255,255,255,0.1); }
@@ -451,9 +452,9 @@ export default function ProfilePage() {
           <div className="pcard">
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
               <span style={{ fontSize: 12, fontWeight: 700, color: 'rgba(255,255,255,0.4)' }}>{t('profile.completion')}</span>
-              <span style={{ fontSize: 13, fontWeight: 800, color: score >= 80 ? '#4ade80' : score >= 50 ? '#fbbf24' : '#ff6000' }}>{score}%</span>
+              <span style={{ fontSize: 13, fontWeight: 800, color: score >= 80 ? '#4ade80' : '#fbbf24' }}>{score}%</span>
             </div>
-            <div className="pprogress"><div className="pprogress-fill" style={{ width: `${score}%` }} /></div>
+            <div className="pprogress"><div className="pprogress-fill" style={{ width: `${score}%`, background: score >= 80 ? '#4ade80' : '#fbbf24' }} /></div>
             <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.25)' }}>
               {score < 80 ? t('profile.completion.incomplete') : t('profile.completion.done')}
               {score < 80 && <span style={{ color: '#ff6000', marginLeft: 4 }}>({t('profile.completion.min80')})</span>}
@@ -480,16 +481,16 @@ export default function ProfilePage() {
             <div className="pinline">
               <div className="pfield">
                 <div className="pfield-label">{t('profile.name')}</div>
-                <input className="pinput" value={form.full_name || ''} onChange={e => set('full_name', e.target.value)} placeholder="" />
+                <input className={`pinput${form.full_name ? ' filled' : ''}`} value={form.full_name || ''} onChange={e => set('full_name', e.target.value)} placeholder="" />
               </div>
               <div className="pfield">
                 <div className="pfield-label">{t('profile.location')}</div>
-                <input className="pinput" value={form.location || ''} onChange={e => set('location', e.target.value)} placeholder="" />
+                <input className={`pinput${form.location ? ' filled' : ''}`} value={form.location || ''} onChange={e => set('location', e.target.value)} placeholder="" />
               </div>
             </div>
             <div className="pfield">
               <div className="pfield-label">{t('profile.headline')}</div>
-              <input className="pinput" value={form.headline || ''} onChange={e => set('headline', e.target.value)} placeholder="" />
+              <input className={`pinput${form.headline ? ' filled' : ''}`} value={form.headline || ''} onChange={e => set('headline', e.target.value)} placeholder="" />
             </div>
           </div>
 
@@ -498,11 +499,31 @@ export default function ProfilePage() {
             <div className="pfield">
               <div className="pfield-label">{t('profile.signal')}</div>
               <div className="psignal">
-                {['active','open','passive'].map(v => (
-                  <button key={v} className={`psignal-btn${form.job_signal === v ? ' on' : ''}`} onClick={() => set('job_signal', v)}>
-                    {v === 'active' ? '🟢' : v === 'open' ? '🟡' : '⚪'} {t(`profile.signal.${v}`)}
-                  </button>
-                ))}
+                {['active','open','passive'].map(v => {
+                  const isOn = form.job_signal === v
+                  const icon = v === 'active' ? (
+                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                      <circle cx="7" cy="7" r="5.5" stroke={isOn ? '#4ade80' : 'rgba(255,255,255,0.25)'} strokeWidth="1.5"/>
+                      <circle cx="7" cy="7" r="3" fill={isOn ? '#4ade80' : 'rgba(255,255,255,0.15)'}/>
+                    </svg>
+                  ) : v === 'open' ? (
+                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                      <circle cx="7" cy="7" r="5.5" stroke={isOn ? '#fbbf24' : 'rgba(255,255,255,0.25)'} strokeWidth="1.5"/>
+                      <path d="M7 4v3.5" stroke={isOn ? '#fbbf24' : 'rgba(255,255,255,0.2)'} strokeWidth="1.5" strokeLinecap="round"/>
+                      <circle cx="7" cy="10" r="0.75" fill={isOn ? '#fbbf24' : 'rgba(255,255,255,0.2)'}/>
+                    </svg>
+                  ) : (
+                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                      <circle cx="7" cy="7" r="5.5" stroke={isOn ? '#ff6000' : 'rgba(255,255,255,0.25)'} strokeWidth="1.5"/>
+                      <path d="M5 5l4 4M9 5l-4 4" stroke={isOn ? '#ff6000' : 'rgba(255,255,255,0.2)'} strokeWidth="1.3" strokeLinecap="round"/>
+                    </svg>
+                  )
+                  return (
+                    <button key={v} className={`psignal-btn${isOn ? ' on' : ''}`} onClick={() => set('job_signal', v)}>
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>{icon} {t(`profile.signal.${v}`)}</span>
+                    </button>
+                  )
+                })}
               </div>
             </div>
             <div className="pinline">
@@ -519,9 +540,9 @@ export default function ProfilePage() {
               <div className="pfield">
                 <div className="pfield-label">{t('profile.salary')}</div>
                 <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                  <input className="pinput" inputMode="numeric" value={form.salary_min || ''} onChange={e => set('salary_min', e.target.value.replace(/[^0-9]/g, ''))} placeholder="" style={{ flex: 1 }} />
+                  <input className={`pinput${form.salary_min ? ' filled' : ''}`} inputMode="numeric" value={form.salary_min || ''} onChange={e => set('salary_min', e.target.value.replace(/[^0-9]/g, ''))} placeholder="" style={{ flex: 1 }} />
                   <span style={{ color: 'rgba(255,255,255,0.2)' }}>~</span>
-                  <input className="pinput" inputMode="numeric" value={form.salary_max || ''} onChange={e => set('salary_max', e.target.value.replace(/[^0-9]/g, ''))} placeholder="" style={{ flex: 1 }} />
+                  <input className={`pinput${form.salary_max ? ' filled' : ''}`} inputMode="numeric" value={form.salary_max || ''} onChange={e => set('salary_max', e.target.value.replace(/[^0-9]/g, ''))} placeholder="" style={{ flex: 1 }} />
                 </div>
               </div>
               <div className="pfield">
@@ -535,11 +556,11 @@ export default function ProfilePage() {
             <div className="pcard-h">{t('profile.about')}</div>
             <div className="pfield">
               <div className="pfield-label">{t('profile.intro')}</div>
-              <textarea className="pinput ptextarea" value={form.intro || ''} onChange={e => set('intro', e.target.value)} placeholder="" />
+              <textarea className={`pinput ptextarea${form.intro ? ' filled' : ''}`} value={form.intro || ''} onChange={e => set('intro', e.target.value)} placeholder="" />
             </div>
             <div className="pfield">
               <div className="pfield-label">{t('profile.skills')}</div>
-              <input className="pinput" value={form.skills || ''} onChange={e => set('skills', e.target.value)} placeholder="" />
+              <input className={`pinput${form.skills ? ' filled' : ''}`} value={form.skills || ''} onChange={e => set('skills', e.target.value)} placeholder="" />
             </div>
           </div>
 
@@ -548,25 +569,25 @@ export default function ProfilePage() {
             <div className="pinline">
               <div className="pfield">
                 <div className="pfield-label">{t('profile.university')}</div>
-                <input className="pinput" value={form.university || ''} onChange={e => set('university', e.target.value)} placeholder="" />
+                <input className={`pinput${form.university ? ' filled' : ''}`} value={form.university || ''} onChange={e => set('university', e.target.value)} placeholder="" />
               </div>
               <div className="pfield">
                 <div className="pfield-label">{t('profile.major')}</div>
-                <input className="pinput" value={form.major || ''} onChange={e => set('major', e.target.value)} placeholder="" />
+                <input className={`pinput${form.major ? ' filled' : ''}`} value={form.major || ''} onChange={e => set('major', e.target.value)} placeholder="" />
               </div>
             </div>
             <div className="pfield">
               <div className="pfield-label">{t('profile.gradyear')}</div>
-              <input className="pinput" value={form.graduation_year || ''} onChange={e => set('graduation_year', e.target.value)} placeholder="" />
+              <input className={`pinput${form.graduation_year ? ' filled' : ''}`} value={form.graduation_year || ''} onChange={e => set('graduation_year', e.target.value)} placeholder="" />
             </div>
             <div className="pinline">
               <div className="pfield">
                 <div className="pfield-label">{t('profile.english')}</div>
-                <input className="pinput" value={form.english_cert || ''} onChange={e => set('english_cert', e.target.value)} placeholder="" />
+                <input className={`pinput${form.english_cert ? ' filled' : ''}`} value={form.english_cert || ''} onChange={e => set('english_cert', e.target.value)} placeholder="" />
               </div>
               <div className="pfield">
                 <div className="pfield-label">{t('profile.korean')}</div>
-                <input className="pinput" value={form.korean_cert || ''} onChange={e => set('korean_cert', e.target.value)} placeholder="" />
+                <input className={`pinput${form.korean_cert ? ' filled' : ''}`} value={form.korean_cert || ''} onChange={e => set('korean_cert', e.target.value)} placeholder="" />
               </div>
             </div>
           </div>
@@ -587,7 +608,7 @@ export default function ProfilePage() {
             </div>
             <div className="pfield">
               <div className="pfield-label">{t('profile.portfolio')}</div>
-              <input className="pinput" value={form.portfolio_url || ''} onChange={e => set('portfolio_url', e.target.value)} placeholder="" />
+              <input className={`pinput${form.portfolio_url ? ' filled' : ''}`} value={form.portfolio_url || ''} onChange={e => set('portfolio_url', e.target.value)} placeholder="" />
             </div>
           </div>
 
