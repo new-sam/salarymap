@@ -2240,7 +2240,7 @@ export default function Home({ initialCompanies = [] }) {
           <button className="nav-link" onClick={() => document.getElementById('companies')?.scrollIntoView({behavior:'smooth'})}>{t('nav.whoPaysMost')}</button>
           <a className="nav-jobs-cta" href="/jobs" onClick={() => {
             fetch('/api/track', { method: 'POST', headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ event: 'click_jobs_cta', page: 'home' }) }).catch(() => {})
+              body: JSON.stringify({ event: 'click_jobs_cta', page: 'home', email: user?.email }) }).catch(() => {})
           }}>
             {t('nav.jobs')} <span className="nav-jobs-badge">↑</span>
             <span className="nav-jobs-sub">{t('nav.jobsSub')}</span>

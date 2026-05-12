@@ -243,16 +243,19 @@ export default function JobsPage() {
   const [isAdminUser, setIsAdminUser] = useState(false)
   const [bookmarks, setBookmarks] = useState([])
   const [appliedJobs, setAppliedJobs] = useState([])
+  const [toast, setToast] = useState(null)
   const [currentPage, setCurrentPage] = useState(1)
   const JOBS_PER_PAGE = 20
 
-  // AI summary loading animation + view_job_detail tracking
+  const track = (event, page, meta) => {
+    fetch('/api/track', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ event, page, meta, email: user?.email }) }).catch(() => {})
+  }
+
+  // AI summary loading animation
   useEffect(() => {
     if (!detailJob) { setAiSummaryReady(false); return }
     setAiSummaryReady(false)
     const timer = setTimeout(() => setAiSummaryReady(true), 1200 + Math.random() * 600)
-    // Track detail view
-    fetch('/api/track', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ event: 'view_job_detail', page: '/jobs', meta: { jobId: detailJob.id, title: detailJob.title, company: detailJob.company } }) }).catch(() => {})
     if (typeof fbq === 'function') fbq('track', 'ViewContent', { content_name: detailJob.title, content_category: detailJob.company, content_type: 'job' })
     return () => clearTimeout(timer)
   }, [detailJob])
@@ -280,21 +283,13 @@ export default function JobsPage() {
       const match = document.cookie.match(new RegExp('(?:^|; )' + k + '=([^;]*)'))
       return match ? decodeURIComponent(match[1]) : null
     }
-    fetch('/api/track', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        event: 'view_jobs_page',
-        page: '/jobs',
-        meta: {
-          utm_source: getUtm('utm_source'),
-          utm_medium: getUtm('utm_medium'),
-          utm_campaign: getUtm('utm_campaign'),
-          utm_content: getUtm('utm_content'),
-          referrer: document.referrer || null,
-        },
-      }),
-    }).catch(() => {})
+    track('view_jobs_page', '/jobs', {
+      utm_source: getUtm('utm_source'),
+      utm_medium: getUtm('utm_medium'),
+      utm_campaign: getUtm('utm_campaign'),
+      utm_content: getUtm('utm_content'),
+      referrer: document.referrer || null,
+    })
   }, [])
 
   // Load state
@@ -337,6 +332,16 @@ export default function JobsPage() {
             sessionStorage.setItem('fyi_is_admin', String(isAdmin))
           } catch { }
         }
+        // Load bookmarks from DB
+        try {
+          const bRes = await fetch(`/api/job-bookmarks?userId=${s.user.id}`)
+          const bData = await bRes.json()
+          if (bData.bookmarks) {
+            const ids = bData.bookmarks.map(b => b.job_id)
+            setBookmarks(ids)
+            localStorage.setItem('fyi_bookmarks', JSON.stringify(ids))
+          }
+        } catch { }
       }
       setAuthLoading(false)
     })
@@ -423,6 +428,10 @@ export default function JobsPage() {
       }
       return true
     })
+    // 스크랩 필터
+    if (sortBy === 'saved') {
+      return filtered.filter(job => bookmarks.includes(job.id))
+    }
     // 정렬
     if (sortBy === 'deadline') {
       filtered.sort((a, b) => {
@@ -525,12 +534,28 @@ export default function JobsPage() {
     })
   }
 
+  const showToast = (msg) => {
+    setToast(msg)
+    setTimeout(() => setToast(null), 2000)
+  }
+
   const toggleBookmark = (jobId) => {
+    const isRemoving = bookmarks.includes(jobId)
     setBookmarks(prev => {
-      const next = prev.includes(jobId) ? prev.filter(id => id !== jobId) : [...prev, jobId]
+      const next = isRemoving ? prev.filter(id => id !== jobId) : [...prev, jobId]
       localStorage.setItem('fyi_bookmarks', JSON.stringify(next))
       return next
     })
+    showToast(isRemoving ? t('jobs.unsaved') : t('jobs.savedToast'))
+    const job = jobs.find(j => j.id === jobId)
+    track(isRemoving ? 'unsave_job' : 'save_job', '/jobs', { jobId, title: job?.title, company: job?.company })
+    if (user) {
+      fetch('/api/job-bookmarks', {
+        method: isRemoving ? 'DELETE' : 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: user.id, jobId }),
+      }).catch(() => {})
+    }
   }
 
   const openApply = (job) => {
@@ -638,6 +663,8 @@ export default function JobsPage() {
         .jf-sort { display: flex; background: #f5f5f5; border-radius: 8px; overflow: hidden; }
         .jf-sort-btn { font-size: 13px; font-weight: 500; color: #888; background: none; border: none; padding: 7px 14px; cursor: pointer; font-family: inherit; transition: all .15s; }
         .jf-sort-btn.on { background: #fff; color: #111; font-weight: 700; box-shadow: 0 1px 3px rgba(0,0,0,0.08); border-radius: 6px; }
+        .jf-sort-saved { display: inline-flex; align-items: center; border-left: 1px solid #e0e0e0; margin-left: 2px; }
+        .jf-sort-saved.on { color: #ff4400; }
 
         /* Hot jobs */
         .jh { margin-bottom: 32px; }
@@ -778,6 +805,10 @@ export default function JobsPage() {
         .jd-apply-btn { width: 100%; padding: 14px; background: #ff4400; color: #fff; border: none; border-radius: 8px; font-size: 15px; font-weight: 700; cursor: pointer; transition: background .15s; }
         .jd-apply-btn:hover { background: #e63d00; }
         .jd-apply-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        .jd-save-btn { width: 48px; height: 48px; border-radius: 8px; border: 1px solid #e0e0e0; background: #fff; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all .15s; flex-shrink: 0; }
+        .jd-save-btn:hover { border-color: #ff4400; background: #fff5f0; }
+        .toast { position: fixed; bottom: 32px; left: 50%; transform: translateX(-50%) translateY(20px); background: #222; color: #fff; font-size: 14px; font-weight: 600; padding: 12px 24px; border-radius: 10px; z-index: 9999; opacity: 0; animation: toastIn .25s ease forwards; box-shadow: 0 6px 24px rgba(0,0,0,0.25); pointer-events: none; display: flex; align-items: center; gap: 8px; }
+        @keyframes toastIn { to { opacity: 1; transform: translateX(-50%) translateY(0); } }
         .jd-apply-inline { padding: 20px 32px 24px; border-top: 1px solid #f0f0f0; }
         .jd-apply-inline-h { font-size: 16px; font-weight: 800; color: #111; margin-bottom: 14px; }
         .jd-login-box { background: #fff7f5; border: 1px solid #ffd6c8; border-radius: 10px; padding: 16px 20px; text-align: center; margin-top: 8px; }
@@ -806,6 +837,8 @@ export default function JobsPage() {
           .jbm-tag { font-size: 12px; padding: 3px 8px; }
           .jf { gap: 6px; }
           .jf-dd-btn { font-size: 12px; padding: 7px 10px; }
+          .jf-sort { flex-wrap: wrap; }
+          .jf-sort-btn { font-size: 12px; padding: 6px 10px; }
           .jgate-box { padding: 36px 24px; }
           .ap { padding: 20px 20px 32px; }
           .jd { width: 100%; }
@@ -814,6 +847,10 @@ export default function JobsPage() {
           .jd-title { font-size: 18px; }
           .jd-work-info { grid-template-columns: 1fr; }
           .jd-co-overview-stats { grid-template-columns: 1fr 1fr; }
+          .jd-apply-float { padding: 12px 16px; }
+          .jd-save-btn { width: 44px; height: 44px; }
+          .jd-apply-btn { padding: 12px; font-size: 14px; }
+          .toast { font-size: 13px; padding: 10px 20px; bottom: 24px; }
         }
         @media (max-width: 480px) {
           .jg { grid-template-columns: 1fr; }
@@ -958,7 +995,7 @@ export default function JobsPage() {
                       const matched = isProfileMatch(job)
                       const days = job.deadline ? Math.ceil((new Date(job.deadline) - now) / 86400000) : null
                       return (
-                        <div key={job.id} className="jc" onClick={() => { setCarouselIdx(0); setDetailApplyMode(false); setApplied(false); setResumeFile(null); setDetailJob({ ...job, _imgFallback: DEFAULT_IMAGES[idx % 3] }); fetch('/api/track',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({event:'click_job_card',page:'jobs',meta:{jobId:job.id,title:job.title,company:job.company}})}).catch(()=>{}) }}>
+                        <div key={job.id} className="jc" onClick={() => { setCarouselIdx(0); setDetailApplyMode(false); setApplied(false); setResumeFile(null); setDetailJob({ ...job, _imgFallback: DEFAULT_IMAGES[idx % 3] }); track('click_job_card','jobs',{jobId:job.id,title:job.title,company:job.company}) }}>
                           <div className="jc-img">
                             <div className="jc-img-in" style={{ background: `url(${job.image_url || job.images?.[0] || DEFAULT_IMAGES[idx % 3]}) center/cover no-repeat` }}>
                               {bump !== null && bump > 0 && (
@@ -1042,6 +1079,12 @@ export default function JobsPage() {
                 {['spread','latest','deadline'].map(key => (
                   <button key={key} className={`jf-sort-btn${sortBy === key ? ' on' : ''}`} onClick={() => { setSortBy(key); setCurrentPage(1) }}>{t(`jobs.sort.${key}`)}</button>
                 ))}
+                {bookmarks.length > 0 && (
+                  <button className={`jf-sort-btn jf-sort-saved${sortBy === 'saved' ? ' on' : ''}`} onClick={() => { setSortBy(sortBy === 'saved' ? 'spread' : 'saved'); setCurrentPage(1) }}>
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill={sortBy === 'saved' ? '#ff4400' : 'none'} stroke={sortBy === 'saved' ? '#ff4400' : 'currentColor'} strokeWidth="2.5" style={{ marginRight: 4 }}><path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z"/></svg>
+                    {t('jobs.saved')} ({bookmarks.length})
+                  </button>
+                )}
               </div>
             </div>
 
@@ -1057,7 +1100,7 @@ export default function JobsPage() {
                       const matched = isProfileMatch(job)
                       const globalIdx = (currentPage - 1) * JOBS_PER_PAGE + idx
                       return (
-                        <div key={job.id} className="jc" onClick={() => { setCarouselIdx(0); setDetailApplyMode(false); setApplied(false); setResumeFile(null); setDetailJob({ ...job, _imgFallback: DEFAULT_IMAGES[globalIdx % 3] }); fetch('/api/track',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({event:'click_job_card',page:'jobs',meta:{jobId:job.id,title:job.title,company:job.company}})}).catch(()=>{}) }}>
+                        <div key={job.id} className="jc" onClick={() => { setCarouselIdx(0); setDetailApplyMode(false); setApplied(false); setResumeFile(null); setDetailJob({ ...job, _imgFallback: DEFAULT_IMAGES[globalIdx % 3] }); track('click_job_card','jobs',{jobId:job.id,title:job.title,company:job.company}) }}>
                           <div className="jc-img">
                             <div className="jc-img-in" style={{
                               background: `url(${job.image_url || job.images?.[0] || DEFAULT_IMAGES[globalIdx % 3]}) center/cover no-repeat`,
@@ -1438,15 +1481,20 @@ export default function JobsPage() {
             {/* Floating Apply CTA */}
             {!detailApplyMode && (
               <div className="jd-apply-float">
-                {appliedJobs.includes(detailJob.id) ? (
-                  <button className="jd-apply-btn" disabled style={{ background: '#ccc' }}>
-                    {t('jobs.applied')}
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <button className="jd-save-btn" onClick={() => toggleBookmark(detailJob.id)} title={bookmarks.includes(detailJob.id) ? t('jobs.saved') : t('jobs.save')}>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill={bookmarks.includes(detailJob.id) ? '#ff4400' : 'none'} stroke={bookmarks.includes(detailJob.id) ? '#ff4400' : '#666'} strokeWidth="2"><path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z"/></svg>
                   </button>
-                ) : (
-                  <button className="jd-apply-btn" onClick={() => { setDetailApplyMode(true); fetch('/api/track',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({event:'click_apply_button',page:'/jobs',meta:{jobId:detailJob.id,title:detailJob.title,company:detailJob.company}})}).catch(()=>{}) }}>
-                    {t('jobs.apply')}
-                  </button>
-                )}
+                  {appliedJobs.includes(detailJob.id) ? (
+                    <button className="jd-apply-btn" disabled style={{ background: '#ccc', flex: 1 }}>
+                      {t('jobs.applied')}
+                    </button>
+                  ) : (
+                    <button className="jd-apply-btn" style={{ flex: 1 }} onClick={() => { setDetailApplyMode(true); track('click_apply_button','/jobs',{jobId:detailJob.id,title:detailJob.title,company:detailJob.company}) }}>
+                      {t('jobs.apply')}
+                    </button>
+                  )}
+                </div>
               </div>
             )}
           </div>
@@ -1510,6 +1558,13 @@ export default function JobsPage() {
             )}
           </div>
         </>
+      )}
+
+      {toast && (
+        <div className="toast">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="#ff4400" stroke="none"><path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z"/></svg>
+          {toast}
+        </div>
       )}
     </>
   )

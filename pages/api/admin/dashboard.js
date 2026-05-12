@@ -126,7 +126,7 @@ export default async function handler(req, res) {
   try {
     events = await fetchAll(
       supabase.from('events').select('id, event, meta, created_at')
-        .in('event', ['click_jobs_cta', 'click_job_card', 'view_jobs_page', 'view_job_detail', 'click_apply_button'])
+        .in('event', ['click_jobs_cta', 'click_job_card', 'view_jobs_page', 'click_apply_button', 'save_job'])
         .gte('created_at', startISO).lte('created_at', endISO)
     )
   } catch (e) {
@@ -160,7 +160,7 @@ export default async function handler(req, res) {
   // --- Aggregate daily trend ---
   const toVN = (iso) => new Date(new Date(iso).getTime() + 7 * 3600000).toISOString().slice(0, 10)
   const dailyMap = {}
-  const newDay = () => ({ date: '', submissions: 0, ad: 0, organic: 0, signups: 0, companies: new Set(), jobApps: 0, jobClicks: 0, cardClicks: 0, jobsPageViews: 0, jobDetailViews: 0, applyClicks: 0, landings: 0 })
+  const newDay = () => ({ date: '', submissions: 0, ad: 0, organic: 0, signups: 0, companies: new Set(), jobApps: 0, jobClicks: 0, cardClicks: 0, jobsPageViews: 0, applyClicks: 0, saveClicks: 0, landings: 0 })
   for (const sub of submissions) {
     const date = toVN(sub.created_at)
     if (!dailyMap[date]) dailyMap[date] = { ...newDay(), date }
@@ -191,8 +191,8 @@ export default async function handler(req, res) {
     if (ev.event === 'click_jobs_cta') dailyMap[date].jobClicks++
     if (ev.event === 'click_job_card') dailyMap[date].cardClicks++
     if (ev.event === 'view_jobs_page') dailyMap[date].jobsPageViews++
-    if (ev.event === 'view_job_detail') dailyMap[date].jobDetailViews++
     if (ev.event === 'click_apply_button') dailyMap[date].applyClicks++
+    if (ev.event === 'save_job') dailyMap[date].saveClicks++
   }
 
   for (const l of landings) {
@@ -229,8 +229,8 @@ export default async function handler(req, res) {
       jobClicks: d.date < EVENT_TRACKING_START ? null : d.jobClicks,
       cardClicks: d.date < EVENT_TRACKING_START ? null : d.cardClicks,
       jobsPageViews: d.date < EVENT_TRACKING_START ? null : d.jobsPageViews,
-      jobDetailViews: d.date < EVENT_TRACKING_START ? null : d.jobDetailViews,
       applyClicks: d.date < EVENT_TRACKING_START ? null : d.applyClicks,
+      saveClicks: d.date < '2026-05-11' ? null : d.saveClicks,
     }))
 
   // --- Intent breakdown ---
@@ -287,8 +287,8 @@ export default async function handler(req, res) {
     totalJobClicks: events.filter(e => e.event === 'click_jobs_cta' && e.created_at.slice(0, 10) >= EVENT_TRACKING_START).length,
     totalCardClicks: events.filter(e => e.event === 'click_job_card' && e.created_at.slice(0, 10) >= EVENT_TRACKING_START).length,
     totalJobsPageViews: events.filter(e => e.event === 'view_jobs_page' && e.created_at.slice(0, 10) >= EVENT_TRACKING_START).length,
-    totalJobDetailViews: events.filter(e => e.event === 'view_job_detail' && e.created_at.slice(0, 10) >= EVENT_TRACKING_START).length,
     totalApplyClicks: events.filter(e => e.event === 'click_apply_button' && e.created_at.slice(0, 10) >= EVENT_TRACKING_START).length,
+    totalSaveClicks: events.filter(e => e.event === 'save_job' && e.created_at.slice(0, 10) >= '2026-05-11').length,
     hasEventTracking: endDate >= EVENT_TRACKING_START,
     eventTrackingStart: EVENT_TRACKING_START,
     uniqueCompanies: uniqueCompanies.size,

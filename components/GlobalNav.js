@@ -10,6 +10,7 @@ export default function GlobalNav({ activePage }) {
   const [showMenu, setShowMenu] = useState(false)
   const [isAdmin, setIsAdmin] = useState(false)
   const [ready, setReady] = useState(false)
+  const [savedCount, setSavedCount] = useState(0)
   const menuRef = useRef(null)
 
   useEffect(() => {
@@ -34,6 +35,11 @@ export default function GlobalNav({ activePage }) {
             sessionStorage.setItem('fyi_is_admin', String(d.isAdmin))
           } catch {}
         }
+        try {
+          const bRes = await fetch(`/api/job-bookmarks?userId=${session.user.id}`)
+          const bData = await bRes.json()
+          if (bData.bookmarks) setSavedCount(bData.bookmarks.length)
+        } catch {}
       }
       setReady(true)
     })
@@ -70,6 +76,8 @@ export default function GlobalNav({ activePage }) {
         .gnav-menu-item { display: block; width: 100%; padding: 10px 14px; border-radius: 8px; border: none; background: none; color: rgba(255,255,255,0.6); font-size: 13px; cursor: pointer; text-align: left; text-decoration: none; font-family: 'Barlow', sans-serif; transition: background .1s; }
         .gnav-menu-item:hover { background: rgba(255,255,255,0.06); }
         .gnav-menu-admin { color: #ff6000; }
+        .gnav-saved-link { display: flex; align-items: center; justify-content: space-between; }
+        .gnav-saved-badge { font-size: 10px; font-weight: 700; color: #fff; background: #ff4400; min-width: 18px; height: 18px; border-radius: 9px; display: inline-flex; align-items: center; justify-content: center; padding: 0 5px; }
         @media (max-width: 768px) {
           .gnav { padding: 0 12px; height: 48px; }
           .gnav-logo { font-size: 11px; gap: 6px; }
@@ -135,6 +143,10 @@ export default function GlobalNav({ activePage }) {
                   <div className="gnav-menu-email">{user?.email}</div>
                   <a href="/profile" className="gnav-menu-item">{t('nav.myProfile')}</a>
                   <a href="/my-applications" className="gnav-menu-item">{t('nav.myApplications')}</a>
+                  <a href="/saved-jobs" className="gnav-menu-item gnav-saved-link">
+                    <span>{t('nav.savedJobs')}</span>
+                    {savedCount > 0 && <span className="gnav-saved-badge">{savedCount}</span>}
+                  </a>
                   {isAdmin && (
                     <a href="/admin/jobs" className="gnav-menu-item gnav-menu-admin">Admin Dashboard</a>
                   )}

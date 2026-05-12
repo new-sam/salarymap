@@ -38,11 +38,11 @@ const T = {
     expDeleteConfirm: '이 실험 기록을 삭제하시겠습니까?',
     expEmpty: '아직 기록이 없습니다. 실험이나 개선 사항을 추가해보세요.',
     avg: '평균',
-    tableHeaders: ['날짜', '전체', '광고', '자연유입', '가입', '회사', '공고클릭', '카드클릭', 'Jobs뷰', '상세뷰', 'Apply클릭', '채용지원'],
+    tableHeaders: ['날짜', '전체', '광고', '자연유입', '가입', '회사', '홈→Jobs', '공고클릭', 'Jobs페이지뷰', '지원클릭', '스크랩', '채용지원'],
     metrics: {
       submissions: '제출', ad: '광고 (UTM)', organic: '자연유입',
-      signups: '가입', jobClicks: '공고클릭', cardClicks: '카드클릭', jobApps: '채용지원', companies: '회사',
-      jobsPageViews: 'Jobs뷰', jobDetailViews: '상세뷰', applyClicks: 'Apply클릭',
+      signups: '가입', jobClicks: '홈→Jobs', cardClicks: '공고클릭', jobApps: '채용지원', companies: '회사',
+      jobsPageViews: 'Jobs페이지뷰', applyClicks: '지원클릭', saveClicks: '스크랩',
     },
     funnelEmpty: '스테이지를 클릭하여 퍼널을 구성하세요',
     funnelClear: '초기화',
@@ -119,11 +119,11 @@ const T = {
     expDeleteConfirm: 'Delete this experiment?',
     expEmpty: 'No records yet. Add an experiment or improvement.',
     avg: 'avg',
-    tableHeaders: ['Date', 'Total', 'Ad', 'Organic', 'Sign-ups', 'Companies', 'Job Clicks', 'Card Clicks', 'Jobs Views', 'Detail Views', 'Apply Clicks', 'Job Apps'],
+    tableHeaders: ['Date', 'Total', 'Ad', 'Organic', 'Sign-ups', 'Companies', 'Home→Jobs', 'Job Clicks', 'Jobs Page Views', 'Apply Clicks', 'Saves', 'Job Apps'],
     metrics: {
       submissions: 'Submissions', ad: 'Ad (UTM)', organic: 'Organic',
-      signups: 'Sign-ups', jobClicks: 'Job Clicks', cardClicks: 'Card Clicks', jobApps: 'Job Apps', companies: 'Companies',
-      jobsPageViews: 'Jobs Views', jobDetailViews: 'Detail Views', applyClicks: 'Apply Clicks',
+      signups: 'Sign-ups', jobClicks: 'Home→Jobs', cardClicks: 'Job Clicks', jobApps: 'Job Apps', companies: 'Companies',
+      jobsPageViews: 'Jobs Page Views', applyClicks: 'Apply Clicks', saveClicks: 'Saves',
     },
     funnelEmpty: 'Click stages below to build your funnel',
     funnelClear: 'Clear',
@@ -178,8 +178,8 @@ const METRICS_BASE = [
   { key: 'jobClicks', dataKey: 'jobClicks', color: '#F97316', summaryKey: 'totalJobClicks' },
   { key: 'cardClicks', dataKey: 'cardClicks', color: '#EC4899', summaryKey: 'totalCardClicks' },
   { key: 'jobsPageViews', dataKey: 'jobsPageViews', color: '#06B6D4', summaryKey: 'totalJobsPageViews' },
-  { key: 'jobDetailViews', dataKey: 'jobDetailViews', color: '#8B5CF6', summaryKey: 'totalJobDetailViews' },
   { key: 'applyClicks', dataKey: 'applyClicks', color: '#D946EF', summaryKey: 'totalApplyClicks' },
+  { key: 'saveClicks', dataKey: 'saveClicks', color: '#F472B6', summaryKey: 'totalSaveClicks' },
   { key: 'jobApps', dataKey: 'jobApps', color: '#EF4444', summaryKey: 'totalJobApps' },
   { key: 'companies', dataKey: 'companies', color: '#6B7280', summaryKey: 'uniqueCompanies' },
 ]
@@ -195,7 +195,7 @@ function getDoD(daily, dataKey) {
   return Math.round(((last - prev) / prev) * 100)
 }
 
-const DATA_KEYS = ['submissions', 'ad', 'organic', 'signups', 'companies', 'jobApps', 'jobClicks', 'cardClicks', 'jobsPageViews', 'jobDetailViews', 'applyClicks']
+const DATA_KEYS = ['submissions', 'ad', 'organic', 'signups', 'companies', 'jobApps', 'jobClicks', 'cardClicks', 'jobsPageViews', 'applyClicks', 'saveClicks']
 
 function aggregateDaily(daily, mode) {
   if (!daily || mode === '1d') return daily
@@ -404,6 +404,25 @@ export default function AdminDashboard() {
     return [...data.daily, todayData]
   })()
 
+  // Merge realtime into summary totals so metric cards & table footer stay in sync
+  const summary = (() => {
+    if (!data?.summary || !realtime) return data?.summary
+    const today = realtime.date
+    const todayInRange = data.daily?.find(d => d.date === today)
+    if (!todayInRange && today > dateRange.to) return data.summary
+    const diff = (rtKey, dayKey) => (realtime[rtKey] ?? 0) - (todayInRange?.[dayKey ?? rtKey] ?? 0)
+    return {
+      ...data.summary,
+      totalSubmissions: data.summary.totalSubmissions + diff('submissions'),
+      adSubmissions: data.summary.adSubmissions + diff('ad'),
+      organicSubmissions: data.summary.organicSubmissions + diff('organic'),
+      totalSignups: data.summary.totalSignups + diff('signups'),
+      totalJobApps: data.summary.totalJobApps + diff('jobApps'),
+      totalJobClicks: data.summary.totalJobClicks + diff('jobClicks'),
+      totalCardClicks: data.summary.totalCardClicks + diff('cardClicks'),
+    }
+  })()
+
   const chartData = aggregateDaily(dailyWithToday, chartMode)
   const visibleExperiments = experiments.filter(e => e.date >= dateRange.from && e.date <= (realtime?.date || dateRange.to) && (!e.metrics?.length || !selected || e.metrics.includes(selected)))
 
@@ -510,14 +529,14 @@ export default function AdminDashboard() {
         {loading && <div style={{ textAlign: 'center', padding: 40, color: '#666' }}>{t.loadingData}</div>}
 
         {/* ===== TREND TAB ===== */}
-        {data?.summary && !loading && tab === 'trend' && (
+        {summary && !loading && tab === 'trend' && (
           <>
             {/* Clickable Metric Cards */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))', gap: 12, marginBottom: 24 }}>
               {METRICS.map(m => {
                 const isEventMetric = m.key === 'jobClicks' || m.key === 'cardClicks'
-                const noTracking = isEventMetric && !data.summary.hasEventTracking
-                const value = noTracking ? '-' : data.summary[m.summaryKey]
+                const noTracking = isEventMetric && !summary.hasEventTracking
+                const value = noTracking ? '-' : summary[m.summaryKey]
                 const dod = noTracking ? null : getDoD(chartData, m.dataKey)
                 const isActive = selected === m.key
                 return (
@@ -744,7 +763,7 @@ export default function AdminDashboard() {
               </div>
 
               <div style={sectionStyle}>
-                <h3 style={sectionTitle}>{t.topCompanies} ({data.summary.uniqueCompanies}{t.countUnit})</h3>
+                <h3 style={sectionTitle}>{t.topCompanies} ({summary.uniqueCompanies}{t.countUnit})</h3>
                 <div style={{ maxHeight: 400, overflowY: 'auto' }}>
                   {data.topCompanies.map((c, i) => (
                     <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '6px 0', borderBottom: '1px solid #f3f3f3', fontSize: 13 }}>
@@ -786,24 +805,24 @@ export default function AdminDashboard() {
                         <td style={{ padding: '6px 12px', textAlign: 'right', color: d.jobClicks === null ? '#ccc' : '#F97316' }}>{d.jobClicks === null ? '-' : d.jobClicks}</td>
                         <td style={{ padding: '6px 12px', textAlign: 'right', color: d.cardClicks === null ? '#ccc' : '#EC4899' }}>{d.cardClicks === null ? '-' : d.cardClicks}</td>
                         <td style={{ padding: '6px 12px', textAlign: 'right', color: d.jobsPageViews === null ? '#ccc' : '#06B6D4' }}>{d.jobsPageViews === null ? '-' : d.jobsPageViews}</td>
-                        <td style={{ padding: '6px 12px', textAlign: 'right', color: d.jobDetailViews === null ? '#ccc' : '#8B5CF6' }}>{d.jobDetailViews === null ? '-' : d.jobDetailViews}</td>
                         <td style={{ padding: '6px 12px', textAlign: 'right', color: d.applyClicks === null ? '#ccc' : '#D946EF' }}>{d.applyClicks === null ? '-' : d.applyClicks}</td>
+                        <td style={{ padding: '6px 12px', textAlign: 'right', color: d.saveClicks === null ? '#ccc' : '#F472B6' }}>{d.saveClicks === null ? '-' : d.saveClicks}</td>
                         <td style={{ padding: '6px 12px', textAlign: 'right', color: '#EF4444' }}>{d.jobApps}</td>
                       </tr>
                     ))}
                     <tr style={{ borderTop: '2px solid #e5e7eb', fontWeight: 700 }}>
                       <td style={{ padding: '8px 12px' }}>{t.total}</td>
-                      <td style={{ padding: '8px 12px', textAlign: 'right' }}>{data.summary.totalSubmissions}</td>
-                      <td style={{ padding: '8px 12px', textAlign: 'right', color: '#4F46E5' }}>{data.summary.adSubmissions}</td>
-                      <td style={{ padding: '8px 12px', textAlign: 'right', color: '#10B981' }}>{data.summary.organicSubmissions}</td>
-                      <td style={{ padding: '8px 12px', textAlign: 'right', color: '#F59E0B' }}>{data.summary.totalSignups}</td>
-                      <td style={{ padding: '8px 12px', textAlign: 'right', color: '#8B5CF6' }}>{data.summary.uniqueCompanies}</td>
-                      <td style={{ padding: '8px 12px', textAlign: 'right', color: data.summary.hasEventTracking ? '#F97316' : '#ccc' }}>{data.summary.hasEventTracking ? data.summary.totalJobClicks : '-'}</td>
-                      <td style={{ padding: '8px 12px', textAlign: 'right', color: data.summary.hasEventTracking ? '#EC4899' : '#ccc' }}>{data.summary.hasEventTracking ? data.summary.totalCardClicks : '-'}</td>
-                      <td style={{ padding: '8px 12px', textAlign: 'right', color: data.summary.hasEventTracking ? '#06B6D4' : '#ccc' }}>{data.summary.hasEventTracking ? data.summary.totalJobsPageViews : '-'}</td>
-                      <td style={{ padding: '8px 12px', textAlign: 'right', color: data.summary.hasEventTracking ? '#8B5CF6' : '#ccc' }}>{data.summary.hasEventTracking ? data.summary.totalJobDetailViews : '-'}</td>
-                      <td style={{ padding: '8px 12px', textAlign: 'right', color: data.summary.hasEventTracking ? '#D946EF' : '#ccc' }}>{data.summary.hasEventTracking ? data.summary.totalApplyClicks : '-'}</td>
-                      <td style={{ padding: '8px 12px', textAlign: 'right', color: '#EF4444' }}>{data.summary.totalJobApps}</td>
+                      <td style={{ padding: '8px 12px', textAlign: 'right' }}>{summary.totalSubmissions}</td>
+                      <td style={{ padding: '8px 12px', textAlign: 'right', color: '#4F46E5' }}>{summary.adSubmissions}</td>
+                      <td style={{ padding: '8px 12px', textAlign: 'right', color: '#10B981' }}>{summary.organicSubmissions}</td>
+                      <td style={{ padding: '8px 12px', textAlign: 'right', color: '#F59E0B' }}>{summary.totalSignups}</td>
+                      <td style={{ padding: '8px 12px', textAlign: 'right', color: '#8B5CF6' }}>{summary.uniqueCompanies}</td>
+                      <td style={{ padding: '8px 12px', textAlign: 'right', color: summary.hasEventTracking ? '#F97316' : '#ccc' }}>{summary.hasEventTracking ? summary.totalJobClicks : '-'}</td>
+                      <td style={{ padding: '8px 12px', textAlign: 'right', color: summary.hasEventTracking ? '#EC4899' : '#ccc' }}>{summary.hasEventTracking ? summary.totalCardClicks : '-'}</td>
+                      <td style={{ padding: '8px 12px', textAlign: 'right', color: summary.hasEventTracking ? '#06B6D4' : '#ccc' }}>{summary.hasEventTracking ? summary.totalJobsPageViews : '-'}</td>
+                      <td style={{ padding: '8px 12px', textAlign: 'right', color: summary.hasEventTracking ? '#D946EF' : '#ccc' }}>{summary.hasEventTracking ? summary.totalApplyClicks : '-'}</td>
+                      <td style={{ padding: '8px 12px', textAlign: 'right', color: summary.hasEventTracking ? '#F472B6' : '#ccc' }}>{summary.hasEventTracking ? summary.totalSaveClicks : '-'}</td>
+                      <td style={{ padding: '8px 12px', textAlign: 'right', color: '#EF4444' }}>{summary.totalJobApps}</td>
                     </tr>
                   </tbody>
                 </table>
@@ -857,12 +876,12 @@ const FUNNEL_TRACKING_START = '2026-05-09'
 
 const PRESET_FUNNELS = {
   ko: [
-    { name: 'Jobs 채용 퍼널', desc: 'Jobs 페이지 방문부터 지원 완료까지', keys: ['jobsPageViews', 'cardClicks', 'jobDetailViews', 'applyClicks', 'jobApps'], since: FUNNEL_TRACKING_START },
+    { name: 'Jobs 채용 퍼널', desc: 'Jobs 페이지 방문부터 지원 완료까지', keys: ['jobsPageViews', 'cardClicks', 'applyClicks', 'jobApps'], since: FUNNEL_TRACKING_START },
     { name: '홈 → Jobs 전환', desc: '홈페이지 유입부터 Jobs 관심까지', keys: ['submissions', 'jobClicks', 'jobsPageViews', 'cardClicks'], since: FUNNEL_TRACKING_START },
     { name: '가입 & 지원', desc: '제출 → 가입 → 지원 전환', keys: ['submissions', 'signups', 'applyClicks', 'jobApps'], since: FUNNEL_TRACKING_START },
   ],
   en: [
-    { name: 'Jobs Hiring Funnel', desc: 'From page visit to application', keys: ['jobsPageViews', 'cardClicks', 'jobDetailViews', 'applyClicks', 'jobApps'], since: FUNNEL_TRACKING_START },
+    { name: 'Jobs Hiring Funnel', desc: 'From page visit to application', keys: ['jobsPageViews', 'cardClicks', 'applyClicks', 'jobApps'], since: FUNNEL_TRACKING_START },
     { name: 'Home → Jobs Conversion', desc: 'Home traffic to Jobs interest', keys: ['submissions', 'jobClicks', 'jobsPageViews', 'cardClicks'], since: FUNNEL_TRACKING_START },
     { name: 'Signup & Apply', desc: 'Submit → Signup → Apply flow', keys: ['submissions', 'signups', 'applyClicks', 'jobApps'], since: FUNNEL_TRACKING_START },
   ],
@@ -886,7 +905,7 @@ function FunnelView({ data, metrics, funnelKeys, setFunnelKeys, t, lang }) {
 
   const stages = funnelKeys.map(k => {
     const m = metrics.find(x => x.key === k)
-    return { ...m, value: data.summary[m.summaryKey] ?? 0 }
+    return { ...m, value: summary[m.summaryKey] ?? 0 }
   })
   const firstVal = stages[0]?.value || 1
 
