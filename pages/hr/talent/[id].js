@@ -10,9 +10,10 @@ const DUMMY_MAP = {
     signal: 'active', lastActive: '오늘',
     location: '서울', age: 24,
     university: '홍익대학교', major: '컴퓨터공학', graduation: '2026년 졸업',
-    english: '원어민 수준 (싱가포르 5년 거주)', korean: '원어민',
-    chinese: '업무상 소통 가능',
-    salaryExpect: '협의', workType: '정규직 / 인턴',
+    english: 'OPIc IH (Intermediate High)',
+    korean: 'TOPIK 4급',
+    salaryMin: 25000000, salaryMax: 35000000, salaryCurrency: 'VND',
+    workType: '정규직 / 인턴',
     skills: ['서비스기획', '프로덕트관리', '데이터분석', 'UX기획', 'UI/UX', '앱기획', '웹기획', 'IT기획', '기능기획', '서비스운영', 'Agile', '브랜딩', 'SNS마케팅'],
     toolsProduct: 'A/B Testing · 가설 검증 · 퍼널 분석 · PRD 작성',
     toolsAnalytics: 'Amplitude · MySQL',
@@ -71,6 +72,7 @@ const SIGNAL_MAP = {
 export default function TalentDetail() {
   const [saved, setSaved] = useState(false)
   const [showCV, setShowCV] = useState(false)
+  const [showKRW, setShowKRW] = useState(false)
   const c = DUMMY_MAP['demo-001']
   if (!c) return null
   const sig = SIGNAL_MAP[c.signal]
@@ -185,14 +187,27 @@ export default function TalentDetail() {
                   { l: '졸업', r: c.graduation },
                   { l: '영어', r: c.english },
                   { l: '한국어', r: c.korean },
-                  { l: '중국어', r: c.chinese },
-                  { l: '희망 보수', r: c.salaryExpect },
+                  { l: '희망 보수', r: '__salary__' },
                   { l: '근무 형태', r: c.workType },
                   { l: '최근 활동', r: c.lastActive },
                 ].map((row, i) => (
                   <div key={i} className="td-lrow">
                     <span className="td-lrow-l">{row.l}</span>
-                    <span className="td-lrow-r">{row.r}</span>
+                    {row.r === '__salary__' ? (
+                      <span className="td-lrow-r" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                        <span>{showKRW
+                          ? `${Math.round(c.salaryMin * 0.058 / 10000)}~${Math.round(c.salaryMax * 0.058 / 10000)}만원`
+                          : `${(c.salaryMin / 1000000).toFixed(0)}~${(c.salaryMax / 1000000).toFixed(0)}M VND`
+                        }/월</span>
+                        <button onClick={() => setShowKRW(v => !v)} style={{
+                          fontSize: 10, fontWeight: 600, color: '#ff6000', background: 'none',
+                          border: '1px solid #fed7aa', borderRadius: 4, padding: '1px 6px',
+                          cursor: 'pointer', fontFamily: 'inherit', whiteSpace: 'nowrap',
+                        }}>{showKRW ? 'VND' : '₩'}</button>
+                      </span>
+                    ) : (
+                      <span className="td-lrow-r">{row.r}</span>
+                    )}
                   </div>
                 ))}
               </div>
