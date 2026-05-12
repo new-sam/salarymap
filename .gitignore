@@ -44,6 +44,9 @@ next-env.d.ts
 .env*.local
 captures/
 
+# candidate data (PII)
+data/
+
 # claude code
 .claude/
 .mcp.json
