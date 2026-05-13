@@ -59,7 +59,6 @@ export default function JobsPage() {
   const [appliedJobs, setAppliedJobs] = useState([])
   const [toast, setToast] = useState(null)
   const [visibleCount, setVisibleCount] = useState(JOBS_PER_PAGE)
-  const loadMoreRef = useRef(null)
   const barPlaceholderRef = useRef(null)
   const stickyRef = useRef(null)
   const [barFixed, setBarFixed] = useState(false)
@@ -97,15 +96,17 @@ export default function JobsPage() {
   useEffect(() => { setVisibleCount(JOBS_PER_PAGE) }, [searchQuery, roleFilter, typeFilter, techFilter, expMin, expMax])
 
   // Infinite scroll
+  const loadMoreObserver = useRef(null)
   useEffect(() => {
-    const el = loadMoreRef.current
-    if (!el) return
-    const observer = new IntersectionObserver(([entry]) => {
+    loadMoreObserver.current = new IntersectionObserver(([entry]) => {
       if (entry.isIntersecting) setVisibleCount(v => v + JOBS_PER_PAGE)
     }, { rootMargin: '200px' })
-    observer.observe(el)
-    return () => observer.disconnect()
-  })
+    return () => loadMoreObserver.current?.disconnect()
+  }, [])
+  const loadMoreCallback = useCallback(node => {
+    loadMoreObserver.current?.disconnect()
+    if (node) loadMoreObserver.current?.observe(node)
+  }, [])
 
   // UTM capture + page view tracking on jobs page
   useEffect(() => {
@@ -553,10 +554,10 @@ export default function JobsPage() {
         .jh-open { font-size: 11px; color: #38a169; font-weight: 600; display: inline-flex; align-items: center; line-height: 1; }
         .jh-divider { height: 1px; background: #eee; margin-top: 32px; }
 
-        .jg { display: grid; grid-template-columns: repeat(4, 1fr); gap: 24px; align-items: stretch; }
+        .jg { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 24px; align-items: stretch; }
 
         /* Card */
-        .jc { cursor: pointer; display: flex; flex-direction: column; }
+        .jc { cursor: pointer; display: flex; flex-direction: column; min-width: 0; }
         .jc-match { position: absolute; top: 10px; left: 10px; background: #ff4400; color: #fff; font-size: 11px; font-weight: 700; padding: 4px 10px; border-radius: 4px; z-index: 2; }
         .jc-img { border-radius: 8px; overflow: hidden; position: relative; padding-top: 62%; margin-bottom: 11px; background: #f0f0f0; flex-shrink: 0; border: 1px solid rgba(0,0,0,0.06); }
         .jc-img-in { position: absolute; inset: 0; transition: transform .25s ease; background-color: #f0f0f0; background-size: cover; background-position: center; background-repeat: no-repeat; }
@@ -694,14 +695,14 @@ export default function JobsPage() {
 
         /* Pagination */
 
-        @media (max-width: 900px) { .jg { grid-template-columns: repeat(3, 1fr); } }
+        @media (max-width: 900px) { .jg { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
         @media (max-width: 768px) {
           .jn { padding: 0 16px; height: 48px; }
           .jn-l { gap: 16px; }
           .jn-tab { font-size: 13px; height: 48px; padding: 0 12px; }
           .jw { padding: 28px 16px 60px; }
           .jw-h1 { font-size: 20px; }
-          .jg { grid-template-columns: repeat(2, 1fr); gap: 20px; }
+          .jg { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; }
           .jbm { padding: 12px 14px; gap: 10px; }
           .jbm-icon { width: 30px; height: 30px; border-radius: 8px; }
           .jbm-icon svg { width: 15px; height: 15px; }
@@ -725,7 +726,7 @@ export default function JobsPage() {
           .toast { font-size: 13px; padding: 10px 20px; bottom: 24px; }
         }
         @media (max-width: 480px) {
-          .jg { grid-template-columns: repeat(2, 1fr); gap: 12px; }
+          .jg { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
           .jh .jg { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; -webkit-overflow-scrolling: touch; gap: 14px; padding-bottom: 8px; grid-template-columns: none; }
           .jh .jg::-webkit-scrollbar { display: none; }
           .jh .jg > .jc { min-width: 60%; flex-shrink: 0; scroll-snap-align: start; }
@@ -880,7 +881,7 @@ export default function JobsPage() {
                       return (
                         <div key={job.id} className="jc" onClick={() => { setCarouselIdx(0); setDetailApplyMode(false); setApplied(false); setResumeFile(null); setDetailJob({ ...job, _imgFallback: DEFAULT_IMAGES[idx % 3] }); track('click_job_card','jobs',{jobId:job.id,title:job.title,company:job.company}) }}>
                           <div className="jc-img">
-                            <div className="jc-img-in" style={{ background: `url(${job.image_url || job.images?.[0] || DEFAULT_IMAGES[idx % 3]}) center/cover no-repeat` }}>
+                            <div className="jc-img-in" style={(() => { const hasImg = job.image_url || job.images?.[0]; const src = hasImg || job.logo_url || DEFAULT_IMAGES[idx % 3]; const mode = !hasImg && job.logo_url ? '60%' : 'cover'; return { background: `#fff url(${src}) center/${mode} no-repeat` } })()}>
                               {!job.is_featured && bump !== null && bump > 0 && (
                                 <div className="jc-bump" dangerouslySetInnerHTML={{ __html: t('jobs.bumpVs', { bump }) }} />
                               )}
@@ -983,9 +984,7 @@ export default function JobsPage() {
                       return (
                         <div key={job.id} className="jc" onClick={() => { setCarouselIdx(0); setDetailApplyMode(false); setApplied(false); setResumeFile(null); setDetailJob({ ...job, _imgFallback: DEFAULT_IMAGES[idx % 3] }); track('click_job_card','jobs',{jobId:job.id,title:job.title,company:job.company}) }}>
                           <div className="jc-img">
-                            <div className="jc-img-in" style={{
-                              background: `url(${job.image_url || job.images?.[0] || DEFAULT_IMAGES[idx % 3]}) center/cover no-repeat`,
-                            }}>
+                            <div className="jc-img-in" style={(() => { const hasImg = job.image_url || job.images?.[0]; const src = hasImg || job.logo_url || DEFAULT_IMAGES[idx % 3]; const mode = !hasImg && job.logo_url ? '60%' : 'cover'; return { background: `#fff url(${src}) center/${mode} no-repeat` } })()}>
                               {!job.is_featured && bump !== null && bump > 0 && (
                                 <div className="jc-bump" dangerouslySetInnerHTML={{ __html: t('jobs.bumpVs', { bump }) }} />
                               )}
@@ -1039,7 +1038,7 @@ export default function JobsPage() {
                       )
                     })}
                   </div>
-                  {visibleCount < filteredJobs.length && <div ref={loadMoreRef} style={{ height: 1 }} />}
+                  {visibleCount < filteredJobs.length && <div ref={loadMoreCallback} style={{ height: 1 }} />}
                 </>
               )
             })()}
