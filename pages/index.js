@@ -2265,16 +2265,18 @@ export default function Home({ initialCompanies = [] }) {
             <span className="nav-jobs-bubble">{t('nav.jobsSub')}</span>
           </a>
 
-          <div style={{display:'flex',alignItems:'center',gap:0,background:'rgba(255,255,255,0.06)',borderRadius:100,padding:2,border:'1px solid rgba(255,255,255,0.08)'}}>
-            <button onClick={() => { setViewMode('seeker'); sessionStorage.setItem('fyi_view_mode','seeker'); }}
-              style={{fontSize:11,fontWeight:600,padding:'4px 12px',borderRadius:100,cursor:'pointer',border:'none',background:viewMode==='seeker'?'rgba(255,96,0,0.2)':'none',color:viewMode==='seeker'?'#ff6000':'rgba(255,255,255,0.3)',fontFamily:"'Barlow',sans-serif",transition:'all .2s',whiteSpace:'nowrap'}}>
-              Seeker
-            </button>
-            <button onClick={() => { setViewMode('hr'); sessionStorage.setItem('fyi_view_mode','hr'); window.location.href='/hr/home'; }}
-              style={{fontSize:11,fontWeight:600,padding:'4px 12px',borderRadius:100,cursor:'pointer',border:'none',background:viewMode==='hr'?'rgba(255,96,0,0.2)':'none',color:viewMode==='hr'?'#ff6000':'rgba(255,255,255,0.3)',fontFamily:"'Barlow',sans-serif",transition:'all .2s',whiteSpace:'nowrap'}}>
-              HR
-            </button>
-          </div>
+          {isAdminUser && (
+            <div style={{display:'flex',alignItems:'center',gap:0,background:'rgba(255,255,255,0.06)',borderRadius:100,padding:2,border:'1px solid rgba(255,255,255,0.08)'}}>
+              <button onClick={() => {}}
+                style={{fontSize:11,fontWeight:600,padding:'4px 12px',borderRadius:100,cursor:'pointer',border:'none',background:'rgba(255,96,0,0.2)',color:'#ff6000',fontFamily:"'Barlow',sans-serif",transition:'all .2s',whiteSpace:'nowrap'}}>
+                Seeker
+              </button>
+              <button onClick={() => { window.location.href='/hr/home'; }}
+                style={{fontSize:11,fontWeight:600,padding:'4px 12px',borderRadius:100,cursor:'pointer',border:'none',background:'none',color:'rgba(255,255,255,0.3)',fontFamily:"'Barlow',sans-serif",transition:'all .2s',whiteSpace:'nowrap'}}>
+                HR
+              </button>
+            </div>
+          )}
 
           {!isLoggedIn ? (
             <button
