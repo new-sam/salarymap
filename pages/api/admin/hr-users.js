@@ -14,17 +14,28 @@ export default async function handler(req, res) {
     // List all HR users with their profiles
     const { data, error } = await supabase
       .from('hr_users')
-      .select('*, user:user_id(email, full_name)')
+      .select('*')
       .order('created_at', { ascending: false })
 
     if (error) return res.status(500).json({ error: error.message })
 
-    // Flatten user info
+    // Fetch user emails from auth.users
+    const userIds = (data || []).map(h => h.user_id)
+    const userMap = {}
+    if (userIds.length > 0) {
+      for (const uid of userIds) {
+        const { data: { user } } = await supabase.auth.admin.getUserById(uid)
+        if (user) {
+          userMap[uid] = { email: user.email, fullName: user.user_metadata?.full_name || '' }
+        }
+      }
+    }
+
     const users = (data || []).map(h => ({
       id: h.id,
       userId: h.user_id,
-      email: h.user?.email || '',
-      fullName: h.user?.full_name || '',
+      email: userMap[h.user_id]?.email || '',
+      fullName: userMap[h.user_id]?.fullName || '',
       companyName: h.company_name,
       contactName: h.contact_name || '',
       phone: h.phone || '',
