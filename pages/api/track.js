@@ -12,6 +12,16 @@ export default async function handler(req, res) {
     return res.json({ ok: true, skipped: true })
   }
 
+  // Skip events from HR users to avoid data contamination
+  if (email) {
+    const { data: profile } = await supabase
+      .from('user_profiles')
+      .select('role')
+      .eq('email', email)
+      .single()
+    if (profile?.role === 'hr') return res.json({ ok: true, skipped: true })
+  }
+
   const { error } = await supabase
     .from('events')
     .insert([{ event, page: page || null, meta: meta || null }])
