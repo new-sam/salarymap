@@ -290,17 +290,35 @@ export default function JobsPage() {
     } else if (sortBy === 'latest') {
       filtered.sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0))
     }
-    // sortBy === 'spread' → 같은 회사 분산 배치
+    // sortBy === 'spread' → 베트남 인지도순 (유명 기업 우선 + 같은 회사 분산)
     if (sortBy === 'spread') {
+      const BRAND_RANK = {
+        'VNG Corporation': 1, 'MoMo': 2, 'FPT Software': 3, 'FPT IS': 4,
+        'Vietinbank': 5, 'MobiFone': 6, 'HEINEKEN Vietnam': 7, 'Viva Republica (Toss)': 8,
+        'Samsung SDS': 9, 'NEC Vietnam': 10, 'Sendbird': 11, 'Lunit': 12,
+        'Microsoft': 13, 'Amazon': 14, 'OpenAI': 15, 'xAI': 16,
+        'Coupang': 17, 'Krafton': 18, 'Naver Pay': 19, 'Kakao Healthcare': 20,
+        'CJ Olive Young': 21, 'Descente Korea': 22, 'Coinone': 23, 'SOOP': 24,
+      }
+      const getBrand = (company) => {
+        for (const [name, rank] of Object.entries(BRAND_RANK)) {
+          if (company?.includes(name)) return rank
+        }
+        return 999
+      }
       const featured = filtered.filter(j => j.is_featured)
       const rest = filtered.filter(j => !j.is_featured)
+      rest.sort((a, b) => getBrand(a.company) - getBrand(b.company))
+      // 같은 회사 분산
       const byCompany = {}
       rest.forEach(job => {
         const key = job.company || ''
         if (!byCompany[key]) byCompany[key] = []
         byCompany[key].push(job)
       })
-      const queues = Object.values(byCompany).sort((a, b) => b.length - a.length)
+      const queues = Object.entries(byCompany)
+        .sort((a, b) => getBrand(a[0]) - getBrand(b[0]))
+        .map(([, jobs]) => jobs)
       const result = []
       while (queues.some(q => q.length > 0)) {
         for (const q of queues) {

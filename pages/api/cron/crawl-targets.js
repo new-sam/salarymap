@@ -148,7 +148,7 @@ async function fetchWorkable(slug) {
 
 async function fetchGreetingHR(careerUrl) {
   if (!careerUrl) return []
-  const resp = await fetch(careerUrl, { headers: { 'User-Agent': 'Mozilla/5.0' } })
+  const resp = await fetch(careerUrl, { headers: { 'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36', 'Accept': 'text/html,application/xhtml+xml', 'Accept-Language': 'en-US,en;q=0.9' } })
   if (!resp.ok) return []
   const html = await resp.text()
 
@@ -158,6 +158,42 @@ async function fetchGreetingHR(careerUrl) {
 
   const data = JSON.parse(match[1])
   const pageProps = data.props?.pageProps || {}
+
+  // Pattern: VNG
+  if (Array.isArray(pageProps.jobs) && pageProps.jobs[0]?.job_id) {
+    return pageProps.jobs.map(j => ({
+      title: j.title,
+      location: j.location || '',
+      content: j.description || j.summary || '',
+      url: `https://career.vng.com.vn/co-hoi-nghe-nghiep/${j.slug}`,
+      source_id: String(j.job_id || j.code),
+      source_type: 'greetinghr',
+      departments: j.job_family || '',
+    }))
+  }
+
+  // Pattern: MoMo (find array with jobId)
+  const findMomoJobs = (obj) => {
+    if (!obj || typeof obj !== 'object') return null
+    if (Array.isArray(obj) && obj.length > 0 && obj[0].jobId) return obj
+    for (const val of Object.values(obj)) {
+      const found = findMomoJobs(val)
+      if (found) return found
+    }
+    return null
+  }
+  const momoJobs = findMomoJobs(pageProps)
+  if (momoJobs) {
+    return momoJobs.map(j => ({
+      title: j.jobTitle || j.title || '',
+      location: j.location || '',
+      content: '',
+      url: j.subdirectory ? `https://momo.careers/${j.subdirectory}` : '',
+      source_id: String(j.jobId || j.jobCode),
+      source_type: 'greetinghr',
+      departments: '',
+    }))
+  }
 
   // Pattern 1: openData (직방 style)
   const openData = pageProps.openData
