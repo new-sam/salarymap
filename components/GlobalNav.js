@@ -139,18 +139,20 @@ export default function GlobalNav({ activePage }) {
           </Link>
         </div>
         <div className="gnav-r">
-          <div className="gnav-toggle">
-            <button className={`gnav-toggle-opt${viewMode === 'seeker' ? ' active' : ''}`} onClick={() => {
-              setViewMode('seeker')
-              sessionStorage.setItem('fyi_view_mode', 'seeker')
-              if (window.location.pathname.startsWith('/hr')) window.location.href = '/'
-            }}>Seeker</button>
-            <button className={`gnav-toggle-opt${viewMode === 'hr' ? ' active' : ''}`} onClick={() => {
-              setViewMode('hr')
-              sessionStorage.setItem('fyi_view_mode', 'hr')
-              if (!window.location.pathname.startsWith('/hr')) window.location.href = '/hr/home'
-            }}>HR</button>
-          </div>
+          {(isHR || isAdmin) && (
+            <div className="gnav-toggle">
+              <button className={`gnav-toggle-opt${viewMode === 'seeker' ? ' active' : ''}`} onClick={() => {
+                setViewMode('seeker')
+                sessionStorage.setItem('fyi_view_mode', 'seeker')
+                if (window.location.pathname.startsWith('/hr')) window.location.href = '/'
+              }}>Seeker</button>
+              <button className={`gnav-toggle-opt${viewMode === 'hr' ? ' active' : ''}`} onClick={() => {
+                setViewMode('hr')
+                sessionStorage.setItem('fyi_view_mode', 'hr')
+                if (!window.location.pathname.startsWith('/hr')) window.location.href = '/hr/home'
+              }}>HR</button>
+            </div>
+          )}
 
           {viewMode === 'seeker' ? (<>
             <Link href="/" className={`gnav-link${activePage === 'home' ? ' on' : ''}`}>{t('nav.amIUnderpaid')}</Link>
