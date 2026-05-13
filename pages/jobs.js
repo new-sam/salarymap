@@ -31,6 +31,7 @@ export default function JobsPage() {
   const [openDropdown, setOpenDropdown] = useState(null)
   const [isSubmitted, setIsSubmitted] = useState(false)
   const [isLoggedIn, setIsLoggedIn] = useState(false)
+  const [showAuthModal, setShowAuthModal] = useState(false)
   const [authLoading, setAuthLoading] = useState(true)
   const [session, setSession] = useState(null)
   const [user, setUser] = useState(null)
@@ -356,6 +357,10 @@ export default function JobsPage() {
   }
 
   const toggleBookmark = (jobId) => {
+    if (!isLoggedIn) {
+      setShowAuthModal(true)
+      return
+    }
     const isRemoving = bookmarks.includes(jobId)
     setBookmarks(prev => {
       const next = isRemoving ? prev.filter(id => id !== jobId) : [...prev, jobId]
@@ -365,13 +370,11 @@ export default function JobsPage() {
     showToast(isRemoving ? t('jobs.unsaved') : t('jobs.savedToast'))
     const job = jobs.find(j => j.id === jobId)
     track(isRemoving ? 'unsave_job' : 'save_job', '/jobs', { jobId, title: job?.title, company: job?.company })
-    if (user) {
-      fetch('/api/job-bookmarks', {
-        method: isRemoving ? 'DELETE' : 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId: user.id, jobId }),
-      }).catch(() => {})
-    }
+    fetch('/api/job-bookmarks', {
+      method: isRemoving ? 'DELETE' : 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId: user.id, jobId }),
+    }).catch(() => {})
   }
 
   const openApply = (job) => {
@@ -596,7 +599,7 @@ export default function JobsPage() {
         .jd { position: fixed; top: 0; right: 0; width: 50%; height: 100vh; background: #fafaf8; z-index: 61; overflow-y: auto; animation: jdSlide .3s ease; box-shadow: -8px 0 40px rgba(0,0,0,0.1); }
         @keyframes jdSlide { from { transform: translateX(100%); } to { transform: translateX(0); } }
         .jd-x { position: absolute; top: 16px; right: 20px; font-size: 24px; color: #999; cursor: pointer; background: none; border: none; z-index: 2; line-height: 1; }
-        .jd-img { width: 100%; height: 280px; object-fit: cover; background: #f0f0f0; }
+        .jd-img { width: 100%; max-height: 400px; background: #f0f0f0; background-size: contain; background-position: center; background-repeat: no-repeat; aspect-ratio: 16/9; }
         .jd-body { padding: 28px 32px 40px; }
         .jd-company { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; }
         .jd-co-ini { width: 44px; height: 44px; border-radius: 10px; background: #f0f0f0; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 800; color: #555; flex-shrink: 0; }
@@ -682,7 +685,7 @@ export default function JobsPage() {
           .ap { padding: 20px 20px 32px; }
           .jd { width: 100%; }
           .jd-body { padding: 20px 16px 32px; }
-          .jd-img { height: 200px; }
+          .jd-img { max-height: 280px; }
           .jd-title { font-size: 18px; }
           .jd-work-info { grid-template-columns: 1fr; }
           .jd-co-overview-stats { grid-template-columns: 1fr 1fr; }
@@ -1046,7 +1049,7 @@ export default function JobsPage() {
               return (
                 <div style={{ position: 'relative' }}>
                   <div className="jd-img" style={{
-                    background: `url(${uniqueImgs[carouselIdx % uniqueImgs.length]}) center/cover no-repeat`,
+                    backgroundImage: `url(${uniqueImgs[carouselIdx % uniqueImgs.length]})`,
                   }} />
                   {uniqueImgs.length > 1 && (
                     <>
@@ -1411,6 +1414,30 @@ export default function JobsPage() {
         <div className="toast">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="#ff4400" stroke="none"><path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z"/></svg>
           {toast}
+        </div>
+      )}
+
+      {showAuthModal && (
+        <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.6)',zIndex:1100,display:'flex',alignItems:'center',justifyContent:'center',padding:'20px'}}
+          onClick={e => { if(e.target===e.currentTarget) setShowAuthModal(false); }}>
+          <div style={{background:'#fff',borderRadius:'20px',padding:'40px 36px',maxWidth:'420px',width:'100%',fontFamily:"'Barlow',sans-serif"}}>
+            <div style={{fontSize:'24px',fontWeight:900,color:'#111',letterSpacing:'-0.5px',marginBottom:'8px'}}>{t('auth.title')}</div>
+            <div style={{fontSize:'13px',color:'#888',marginBottom:'28px',lineHeight:1.6}}>{t('auth.sub')}</div>
+            <div style={{display:'flex',flexDirection:'column',gap:'10px'}}>
+              <button onClick={async () => { setShowAuthModal(false); localStorage.setItem('fyi_login_return', '/jobs'); try { await supabase.auth.signInWithOAuth({ provider:'linkedin_oidc', options:{ redirectTo: window.location.origin+'/auth/callback', scopes:'openid profile email' } }); } catch(e) { console.error(e); } }}
+                style={{width:'100%',background:'#0A66C2',color:'#fff',fontSize:'14px',fontWeight:700,padding:'14px',borderRadius:'10px',border:'none',cursor:'pointer',fontFamily:"'Barlow',sans-serif",display:'flex',alignItems:'center',justifyContent:'center',gap:'10px'}}>
+                <span style={{fontWeight:900,fontSize:'16px'}}>in</span> {t('auth.linkedin')}
+              </button>
+              <button onClick={() => { setShowAuthModal(false); localStorage.setItem('fyi_login_return', '/jobs'); window.location.href = '/api/auth/google?return=' + encodeURIComponent('/jobs'); }}
+                style={{width:'100%',background:'#f5f5f3',color:'#111',fontSize:'14px',fontWeight:700,padding:'14px',borderRadius:'10px',border:'none',cursor:'pointer',fontFamily:"'Barlow',sans-serif",display:'flex',alignItems:'center',justifyContent:'center',gap:'10px'}}>
+                <span style={{fontWeight:900,fontSize:'16px'}}>G</span> {t('auth.google')}
+              </button>
+              <button onClick={() => setShowAuthModal(false)}
+                style={{background:'none',border:'none',color:'#bbb',fontSize:'12px',cursor:'pointer',fontFamily:"'Barlow',sans-serif",marginTop:'4px',width:'100%',textAlign:'center'}}>
+                {t('auth.later')}
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </>
