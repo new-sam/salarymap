@@ -685,7 +685,31 @@ export default function JobsPage() {
 
         /* Hot jobs */
         .jh { margin-bottom: 32px; }
-        .jh-title { font-size: 16px; font-weight: 800; color: #111; margin-bottom: 14px; }
+        .jh-title {
+          font-size: 16px; font-weight: 800; color: #111; margin-bottom: 14px;
+          display: flex; align-items: center; gap: 7px;
+        }
+        .jh-trend {
+          display: inline-flex; align-items: center; gap: 4px;
+          background: #fff0eb; color: #ff4400;
+          font-size: 11px; font-weight: 800;
+          padding: 4px 10px 4px 8px; border-radius: 100px;
+          border: 1px solid rgba(255,68,0,0.15);
+        }
+        .jh-trend-arrows {
+          display: flex; flex-direction: column; gap: 0;
+          line-height: 0;
+        }
+        .jh-trend-arrow {
+          display: block; animation: arrowUp 1.4s ease-in-out infinite;
+        }
+        .jh-trend-arrow:nth-child(1) { animation-delay: 0s; }
+        .jh-trend-arrow:nth-child(2) { animation-delay: 0.15s; }
+        .jh-trend-arrow:nth-child(3) { animation-delay: 0.3s; }
+        @keyframes arrowUp {
+          0%, 100% { opacity: 0.2; transform: translateY(1px); }
+          40%, 60% { opacity: 1; transform: translateY(-1px); }
+        }
         .jh-app { display: inline-flex; align-items: center; gap: 5px; font-size: 11px; color: #ff4400; font-weight: 700; margin-right: 6px; overflow: visible; }
         .jh-pulse { width: 6px; height: 6px; border-radius: 50%; background: #ff4400; position: relative; flex-shrink: 0; margin: 4px; }
         .jh-pulse::after { content: ''; position: absolute; inset: -3px; border-radius: 50%; background: rgba(255,68,0,0.35); animation: jh-ping 1.5s cubic-bezier(0,0,0.2,1) infinite; }
@@ -1013,7 +1037,7 @@ export default function JobsPage() {
               const fakeCount = (id) => 20 + (id.charCodeAt(0) + id.charCodeAt(id.length - 1)) % 21
               return (
                 <div className="jh">
-                  <div className="jh-title"><Icon name="fire" size={18} color="#ff4400" style={{ marginRight: 6 }} />{t('jobs.hotTitle')}</div>
+                  <div className="jh-title"><span className="jh-trend"><span className="jh-trend-arrows"><svg className="jh-trend-arrow" width="10" height="5" viewBox="0 0 10 5"><polyline points="1,4 5,1 9,4" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg><svg className="jh-trend-arrow" width="10" height="5" viewBox="0 0 10 5"><polyline points="1,4 5,1 9,4" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg><svg className="jh-trend-arrow" width="10" height="5" viewBox="0 0 10 5"><polyline points="1,4 5,1 9,4" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg></span>Trending</span>{t('jobs.hotTitle')}</div>
                   <div className="jg">
                     {hotJobs.map((job, idx) => {
                       const bump = getBump(job)
