@@ -58,6 +58,18 @@
   .side .block ul li { margin-bottom: 3px; }
   .side .block ul li b { color: #fde047; }
 
+  .hooks { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 14px; }
+  .hook { background: rgba(253, 224, 71, 0.08); border: 1px solid rgba(253, 224, 71, 0.3); border-radius: 12px; padding: 14px 10px; text-align: center; }
+  .hook .ico { font-size: 24px; margin-bottom: 6px; }
+  .hook .name { font-size: 13px; font-weight: 800; margin-bottom: 4px; line-height: 1.3; color: #fde047; }
+  .hook .desc { font-size: 10.5px; opacity: 0.7; line-height: 1.45; }
+
+  .sup-title { font-size: 10px; text-transform: uppercase; letter-spacing: 1.5px; opacity: 0.5; margin-bottom: 8px; font-weight: 700; }
+  .sup-list { display: flex; flex-direction: column; gap: 6px; font-size: 12px; line-height: 1.5; opacity: 0.85; }
+  .sup-list span { display: inline-flex; gap: 6px; align-items: flex-start; }
+  .sup-list span::before { content: "✓"; color: #4ade80; font-weight: 800; flex-shrink: 0; }
+  .sup-list span b { color: #fff; }
+
   .trigger {
     background: linear-gradient(135deg, #fde047, #facc15);
     color: #111;
@@ -221,42 +233,61 @@
     <div class="two-sides">
       <div class="side">
         <div class="h"><span class="ico">🏢</span>Company Side</div>
-        <div class="block">
-          <div class="l">Edge (our advantage)</div>
-          <ul>
-            <li><b>Intent-verified candidate pool</b> — salary + job-seeking data</li>
-            <li>Reach candidates <b>instantly via Zalo</b> — nobody else does</li>
-            <li>Job posting <b>free</b> — zero entry friction</li>
-            <li><b>Curated Top-5 shortlist</b> — we filter, you only see qualified</li>
-          </ul>
+
+        <div class="sup-title">🪝 HOOK · 3 reasons they listen in 10 seconds</div>
+        <div class="hooks">
+          <div class="hook">
+            <div class="ico">📊</div>
+            <div class="name">10K+ salary data</div>
+            <div class="desc">Vietnam's only<br>verified IT pool</div>
+          </div>
+          <div class="hook">
+            <div class="ico">🎯</div>
+            <div class="name">Top-5 curated</div>
+            <div class="desc">Pre-filtered cards<br>1-click to interview</div>
+          </div>
+          <div class="hook">
+            <div class="ico">🆓</div>
+            <div class="name">Posting $0</div>
+            <div class="desc">May promo<br>zero friction</div>
+          </div>
         </div>
-        <div class="block">
-          <div class="l">Value (what the company gets)</div>
-          <ul>
-            <li>Hire cycle <b>4–8 weeks → 7 days</b></li>
-            <li>🔥 <b>$0 owed until your hire works day 30</b> — we absorb cashflow risk</li>
-            <li>🔥 <b>3 match cards within 48 hours</b> — SLA guarantee</li>
-            <li>🔥 <b>End-to-end Zalo handling</b> — messages, scheduling, even rejections</li>
-          </ul>
+
+        <div class="sup-title" style="margin-top:18px;">Supporting value (post-signup)</div>
+        <div class="sup-list">
+          <span>Hire cycle <b>4–8 wks → 7 days</b></span>
+          <span><b>$0 owed until day 30</b> of hire — we absorb cashflow</span>
+          <span><b>3 match cards within 48 hours</b> — SLA</span>
         </div>
       </div>
+
       <div class="side">
         <div class="h"><span class="ico">👤</span>Candidate Side</div>
-        <div class="block">
-          <div class="l">Edge</div>
-          <ul>
-            <li>Only <b>intent-flagged</b> people get matched (no spam)</li>
-            <li>See your <b>salary percentile</b> in the market</li>
-            <li>Auto-matched with companies paying <b>higher salaries</b></li>
-          </ul>
+
+        <div class="sup-title">🪝 HOOK · 3 reasons to sign up</div>
+        <div class="hooks">
+          <div class="hook">
+            <div class="ico">🎁</div>
+            <div class="name">₫500K bonus</div>
+            <div class="desc">Hired + 3-month stay<br>(Wanted model)</div>
+          </div>
+          <div class="hook">
+            <div class="ico">📈</div>
+            <div class="name">Salary percentile</div>
+            <div class="desc">Know where you<br>stand instantly</div>
+          </div>
+          <div class="hook">
+            <div class="ico">🎯</div>
+            <div class="name">Auto match</div>
+            <div class="desc">Higher-paying<br>companies only</div>
+          </div>
         </div>
-        <div class="block">
-          <div class="l">Value</div>
-          <ul>
-            <li>🎁 <b>₫500K bonus when hired via FYI + stay 3 months</b> (Wanted-style)</li>
-            <li>Auto-scheduled interviews — no time/place negotiation</li>
-            <li>Entire hiring process completes <b>in 7 days</b></li>
-          </ul>
+
+        <div class="sup-title" style="margin-top:18px;">Supporting value</div>
+        <div class="sup-list">
+          <span><b>No spam</b> — only intent-flagged users matched</span>
+          <span>Interviews <b>auto-scheduled</b> — no calendar pinging</span>
+          <span>Entire process <b>completes in 7 days</b></span>
         </div>
       </div>
     </div>
@@ -320,7 +351,7 @@
         <tr><td class="feature">CV database search</td><td class="yes">✓</td><td class="yes">✓</td><td class="us">✓ <small style="color:#6b7280">+ intent-verified</small></td></tr>
         <tr><td class="feature">Match automation</td><td class="no">✗</td><td class="partial">△ AI recommend</td><td class="us">✓ <small style="color:#6b7280">skill+salary+intent</small></td></tr>
         <tr><td class="feature">Interview scheduling</td><td class="no">✗</td><td class="no">✗</td><td class="us">✓ <small style="color:#6b7280">automated</small></td></tr>
-        <tr><td class="feature">Zalo-native messaging</td><td class="no">✗</td><td class="no">✗</td><td class="us">✓ <small style="color:#6b7280">OA integration</small></td></tr>
+        <tr><td class="feature">Candidate comms automation</td><td class="no">✗</td><td class="no">✗</td><td class="us">✓ <small style="color:#6b7280">messages·scheduling·rejections<sup style="color:#fde047">★</sup></small></td></tr>
         <tr><td class="feature">Pipeline tracking</td><td class="partial">△ basic</td><td class="partial">△ basic</td><td class="us">✓ <small style="color:#6b7280">speed-focused</small></td></tr>
         <tr><td class="feature">Employer branding</td><td class="yes">✓ heavy</td><td class="partial">△</td><td class="us"><span class="no">✗</span> <small style="color:#6b7280">not built</small></td></tr>
         <tr><td class="feature">Pricing model</td><td>~$80/post · ~$160/mo DB</td><td>Not public</td><td class="us"><b>Success-based (7%)</b></td></tr>
@@ -332,10 +363,10 @@
     <div class="box make">
       <div class="h">✅ Build</div>
       <ul>
-        <li>Native Zalo OA integration (market gap)</li>
         <li>Match engine on intent-verified data</li>
         <li>Auto interview scheduling</li>
         <li>Lightweight pipeline tracking (basis for success-fee billing)</li>
+        <li>Candidate communication automation — channel TBD<sup style="color:#fde047">★</sup></li>
       </ul>
     </div>
     <div class="box skip">
@@ -375,7 +406,7 @@
     <div class="day s2">
       <div class="dn">D2</div>
       <div class="t">Cold send</div>
-      <div class="k">Send cards + Zalo CTA to 100 companies. One-click "Interview Request" (email + Zalo). Highlight <b>May-only free posting</b></div>
+      <div class="k">Send anonymized cards + 1-click "Interview Request" CTA to 100 companies. Highlight <b>May-only free posting</b></div>
     </div>
     <div class="day s2">
       <div class="dn">D3</div>
@@ -385,7 +416,7 @@
     <div class="day s3">
       <div class="dn">D4</div>
       <div class="t">Service delivery</div>
-      <div class="k">Run paid ads + matching on their postings. Push more candidates via Zalo</div>
+      <div class="k">Run paid ads + matching on their postings. Push more candidates directly (channel TBD<sup style="color:#dc2626">★</sup>)</div>
     </div>
     <div class="day s3">
       <div class="dn">D5</div>
@@ -418,7 +449,7 @@
 
       <div style="padding:14px 18px; font-size:13.5px; font-weight:700; border-top:1px solid #f3f4f6;">Disintermediation</div>
       <div style="padding:14px 18px; font-size:13px; border-top:1px solid #f3f4f6;">Companies see candidates and bypass us via LinkedIn/Facebook → no success fee</div>
-      <div style="padding:14px 18px; font-size:13px; border-top:1px solid #f3f4f6;">Contact info <b>visible only inside platform</b>. All Zalo messages routed through our OA. Direct-contact clause in T&C</div>
+      <div style="padding:14px 18px; font-size:13px; border-top:1px solid #f3f4f6;">Contact info <b>visible only inside platform</b>. All messages routed through our system. Direct-contact clause in T&C</div>
 
       <div style="padding:14px 18px; font-size:13.5px; font-weight:700; border-top:1px solid #f3f4f6;">First-match quality</div>
       <div style="padding:14px 18px; font-size:13px; border-top:1px solid #f3f4f6;">One bad match in the first 3 cards = "AI doesn't work" brand stain, hard to recover</div>
@@ -430,11 +461,18 @@
   <div class="final">
     <div class="l">Big picture in one line</div>
     <div class="v">
-      <b>Anonymized cards + 1-click Zalo CTA</b> to 100 active-hiring companies →
+      <b>Anonymized cards + 1-click CTA</b> to 100 active-hiring companies →
       <b>30 onboard for free</b> → service delivery → <b>7% success fee from first hire</b>.<br>
-      Build only what supports the BM: <b>Zalo integration · match engine · auto-scheduling · status tracking</b>.
+      Build only what supports the BM: <b>match engine · auto-scheduling · status tracking · candidate comms</b>.
       Block <b>PDPL · disintermediation · match quality</b> in week 1.
     </div>
+  </div>
+
+  <!-- Footnote -->
+  <div style="margin-top:18px; padding:14px 18px; background:#fef3c7; border-left:3px solid #fde047; border-radius:8px; font-size:12px; line-height:1.7; color:#78350f;">
+    <b><sup>★</sup> Candidate comms channel TBD</b> — Zalo OA integration would be a market-gap differentiator, but implementation difficulty and OA approval still under review.
+    Week-1 operates via email/SMS/in-platform messaging; Zalo addition decided after ATS stabilizes.
+    Strategy & BM hold regardless of channel choice.
   </div>
 
 </div>
