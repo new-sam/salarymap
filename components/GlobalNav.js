@@ -83,13 +83,18 @@ export default function GlobalNav({ activePage }) {
         .gnav-link:hover { color: #f0ece4; }
         .gnav-link.on { color: #f0ece4; }
         .gnav-link.on::after { content: ''; position: absolute; bottom: -2px; left: 0; right: 0; height: 2px; background: #ff6000; }
-        .gnav-jobs-cta { display: inline-flex; align-items: center; gap: 5px; background: linear-gradient(135deg, rgba(255,170,40,0.15), rgba(255,96,0,0.15)); border: 1px solid rgba(255,150,30,0.3); padding: 6px 14px !important; border-radius: 100px; color: #ffb347 !important; font-weight: 600; transition: all .25s; animation: jobsBounce 1.5s ease-in-out infinite; }
-        .gnav-jobs-cta:hover { background: linear-gradient(135deg, rgba(255,170,40,0.25), rgba(255,96,0,0.25)); color: #ffc56e !important; border-color: rgba(255,150,30,0.5); }
-        .gnav-jobs-cta.on { color: #ffb347 !important; }
+        .gnav-jobs-cta { display: inline-flex; align-items: center; gap: 6px; background: #ff6000; border: none; padding: 7px 16px !important; border-radius: 100px; color: #fff !important; font-weight: 700; transition: all .25s; position: relative; }
+        .gnav-jobs-shimmer { position: absolute; inset: 0; border-radius: 100px; overflow: hidden; pointer-events: none; }
+        .gnav-jobs-shimmer::before { content: ''; position: absolute; top: 0; left: -100%; width: 60%; height: 100%; background: linear-gradient(90deg, transparent, rgba(255,255,255,0.25), transparent); animation: jobsShimmer 2.5s ease-in-out infinite; }
+        .gnav-jobs-cta:hover { background: #ff7a1a; box-shadow: 0 0 20px rgba(255,96,0,0.4); transform: translateY(-1px); }
+        .gnav-jobs-cta.on { color: #fff !important; }
         .gnav-jobs-cta.on::after { display: none; }
-        @keyframes jobsBounce { 0%,100% { transform:translateY(0); } 50% { transform:translateY(-3px); } }
-        .gnav-jobs-badge { font-size: 11px; font-weight: 800; color: #111; background: linear-gradient(135deg, #ffb347, #ff6000); width: 18px; height: 18px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; line-height: 1; }
-        .gnav-jobs-sub { font-size: 8px; color: rgba(255,179,71,0.5); position: absolute; bottom: -10px; left: 50%; transform: translateX(-50%); white-space: nowrap; letter-spacing: 0.05em; font-weight: 500; }
+        @keyframes jobsShimmer { 0% { left: -100%; } 50% { left: 120%; } 100% { left: 120%; } }
+        .gnav-jobs-icon { display: inline-flex; align-items: center; flex-shrink: 0; }
+        .gnav-jobs-icon svg { width: 14px; height: 14px; }
+        .gnav-jobs-bubble { position: absolute; top: calc(100% + 14px); left: 50%; transform: translateX(-50%); background: #fff; padding: 5px 12px; border-radius: 8px; white-space: nowrap; font-size: 11px; font-weight: 700; color: #ff6000; pointer-events: none; animation: bubbleFloat 3s ease-in-out infinite; box-shadow: 0 2px 12px rgba(0,0,0,0.25); }
+        .gnav-jobs-bubble::before { content: ''; position: absolute; top: -4px; left: 50%; transform: translateX(-50%) rotate(45deg); width: 8px; height: 8px; background: #fff; }
+        @keyframes bubbleFloat { 0%,100% { transform: translateX(-50%) translateY(0); } 50% { transform: translateX(-50%) translateY(-3px); } }
         .gnav-login { font-size: 13px; font-weight: 600; color: rgba(255,255,255,0.5); background: none; border: 1px solid rgba(255,255,255,0.15); padding: 7px 16px; border-radius: 100px; cursor: pointer; font-family: 'Barlow', sans-serif; }
         .gnav-submit { font-size: 12px; font-weight: 600; background: #ff6000; color: #fff; border: none; padding: 8px 18px; border-radius: 2px; cursor: pointer; font-family: 'Barlow', sans-serif; }
         .gnav-user { display: flex; align-items: center; gap: 6px; padding: 4px 10px 4px 4px; border-radius: 100px; border: 1px solid rgba(255,255,255,0.12); cursor: pointer; position: relative; flex-shrink: 0; }
@@ -115,9 +120,9 @@ export default function GlobalNav({ activePage }) {
           .gnav-r { gap: 8px; }
           .gnav-link { display: none; }
           .gnav-toggle-opt { font-size: 9px; padding: 3px 8px; }
-          .gnav-jobs-cta { display: inline-flex !important; font-size: 10px; padding: 4px 8px !important; gap: 3px; white-space: nowrap; }
-          .gnav-jobs-badge { width: 14px; height: 14px; font-size: 8px; }
-          .gnav-jobs-sub { display: none; }
+          .gnav-jobs-cta { display: inline-flex !important; font-size: 10px; padding: 4px 10px !important; gap: 4px; white-space: nowrap; }
+          .gnav-jobs-icon svg { width: 12px; height: 12px; }
+          .gnav-jobs-bubble { display: none; }
           .gnav-login { font-size: 10px; padding: 4px 10px; white-space: nowrap; }
           .gnav-submit { font-size: 9px; padding: 5px 8px; white-space: nowrap; }
         }
@@ -150,8 +155,10 @@ export default function GlobalNav({ activePage }) {
           {viewMode === 'seeker' ? (<>
             <Link href="/" className={`gnav-link${activePage === 'home' ? ' on' : ''}`}>{t('nav.amIUnderpaid')}</Link>
             <Link href="/jobs" className={`gnav-link gnav-jobs-cta${activePage === 'jobs' ? ' on' : ''}`}>
-              💰 {t('nav.jobs')} <span className="gnav-jobs-badge">↑</span>
-              <span className="gnav-jobs-sub">{t('nav.jobsSub')}</span>
+              <span className="gnav-jobs-shimmer"></span>
+              <span className="gnav-jobs-icon"><svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="3" y="7" width="18" height="13" rx="2" stroke="currentColor" strokeWidth="2"/><path d="M8 7V5a2 2 0 012-2h4a2 2 0 012 2v2" stroke="currentColor" strokeWidth="2"/><path d="M12 11v4M10 13h4" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg></span>
+              {t('nav.jobs')}
+              <span className="gnav-jobs-bubble">{t('nav.jobsSub')}</span>
             </Link>
           </>) : (<>
             <Link href="/hr" className={`gnav-link${activePage === 'hr' ? ' on' : ''}`}>Candidates</Link>

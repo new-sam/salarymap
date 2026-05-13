@@ -27,12 +27,17 @@ nav { position:fixed; top:0; left:0; right:0; z-index:200; padding:0 52px; heigh
 .nav-link:hover { color:#f0ece4; }
 .nav-link::after { content:''; position:absolute; bottom:-2px; left:0; right:0; height:2px; background:#ff6000; transform:scaleX(0); transition:transform .2s ease; }
 .nav-link:hover::after { transform:scaleX(1); }
-.nav-jobs-cta { display:inline-flex; align-items:center; gap:5px; background:linear-gradient(135deg, rgba(255,170,40,0.15), rgba(255,96,0,0.15)); border:1px solid rgba(255,150,30,0.3); padding:6px 14px; border-radius:100px; color:#ffb347; font-weight:600; text-decoration:none; font-size:13px; font-family:'Barlow',sans-serif; position:relative; transition:all .25s; animation:jobsBounce 1.5s ease-in-out infinite; }
-.nav-jobs-cta:hover { background:linear-gradient(135deg, rgba(255,170,40,0.25), rgba(255,96,0,0.25)); color:#ffc56e; border-color:rgba(255,150,30,0.5); }
+.nav-jobs-cta { display:inline-flex; align-items:center; gap:6px; background:#ff6000; border:none; padding:7px 16px; border-radius:100px; color:#fff; font-weight:700; text-decoration:none; font-size:13px; font-family:'Barlow',sans-serif; position:relative; transition:all .25s; }
+.nav-jobs-shimmer { position:absolute; inset:0; border-radius:100px; overflow:hidden; pointer-events:none; }
+.nav-jobs-shimmer::before { content:''; position:absolute; top:0; left:-100%; width:60%; height:100%; background:linear-gradient(90deg, transparent, rgba(255,255,255,0.25), transparent); animation:jobsShimmer 2.5s ease-in-out infinite; }
+.nav-jobs-cta:hover { background:#ff7a1a; box-shadow:0 0 20px rgba(255,96,0,0.4); transform:translateY(-1px); }
 .nav-jobs-cta::after { display:none !important; }
-@keyframes jobsBounce { 0%,100% { transform:translateY(0); } 50% { transform:translateY(-3px); } }
-.nav-jobs-badge { font-size:11px; font-weight:800; color:#111; background:linear-gradient(135deg, #ffb347, #ff6000); width:18px; height:18px; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; line-height:1; }
-.nav-jobs-sub { font-size:8px; color:rgba(255,179,71,0.5); position:absolute; bottom:-10px; left:50%; transform:translateX(-50%); white-space:nowrap; letter-spacing:0.05em; font-weight:500; }
+@keyframes jobsShimmer { 0% { left:-100%; } 50% { left:120%; } 100% { left:120%; } }
+.nav-jobs-icon { display:inline-flex; align-items:center; flex-shrink:0; }
+.nav-jobs-icon svg { width:14px; height:14px; }
+.nav-jobs-bubble { position:absolute; top:calc(100% + 14px); left:50%; transform:translateX(-50%); background:#fff; padding:5px 12px; border-radius:8px; white-space:nowrap; font-size:11px; font-weight:700; color:#ff6000; pointer-events:none; animation:bubbleFloat 3s ease-in-out infinite; box-shadow:0 2px 12px rgba(0,0,0,0.25); }
+.nav-jobs-bubble::before { content:''; position:absolute; top:-4px; left:50%; transform:translateX(-50%) rotate(45deg); width:8px; height:8px; background:#fff; }
+@keyframes bubbleFloat { 0%,100% { transform:translateX(-50%) translateY(0); } 50% { transform:translateX(-50%) translateY(-3px); } }
 
 /* Company selected state */
 .company-selected { display:flex; align-items:center; gap:14px; background:#1a0d07; border:1px solid #ff6000; border-radius:12px; padding:16px 18px; position:relative; overflow:hidden; }
@@ -634,9 +639,9 @@ nav { position:fixed; top:0; left:0; right:0; z-index:200; padding:0 52px; heigh
   .logo { font-size:11px; gap:6px; }
   .logo img { width:22px !important; height:22px !important; }
   .nav-link { display:none; }
-  .nav-jobs-cta { display:inline-flex !important; font-size:10px; padding:4px 8px; gap:3px; white-space:nowrap; }
-  .nav-jobs-badge { width:14px; height:14px; font-size:8px; }
-  .nav-jobs-sub { display:none; }
+  .nav-jobs-cta { display:inline-flex !important; font-size:10px; padding:4px 10px; gap:4px; white-space:nowrap; }
+  .nav-jobs-icon svg { width:12px; height:12px; }
+  .nav-jobs-bubble { display:none; }
   .nav-r { gap:6px; flex-shrink:0; }
   .nav-btn { font-size:9px; padding:5px 8px; white-space:nowrap; }
   .nav-login-btn { font-size:10px; padding:4px 10px; white-space:nowrap; }
@@ -2254,8 +2259,10 @@ export default function Home({ initialCompanies = [] }) {
             fetch('/api/track', { method: 'POST', headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({ event: 'click_jobs_cta', page: 'home', email: user?.email }) }).catch(() => {})
           }}>
-            {t('nav.jobs')} <span className="nav-jobs-badge">↑</span>
-            <span className="nav-jobs-sub">{t('nav.jobsSub')}</span>
+            <span className="nav-jobs-shimmer"></span>
+            <span className="nav-jobs-icon"><svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="3" y="7" width="18" height="13" rx="2" stroke="currentColor" strokeWidth="2"/><path d="M8 7V5a2 2 0 012-2h4a2 2 0 012 2v2" stroke="currentColor" strokeWidth="2"/><path d="M12 11v4M10 13h4" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg></span>
+            {t('nav.jobs')}
+            <span className="nav-jobs-bubble">{t('nav.jobsSub')}</span>
           </a>
 
           <div style={{display:'flex',alignItems:'center',gap:0,background:'rgba(255,255,255,0.06)',borderRadius:100,padding:2,border:'1px solid rgba(255,255,255,0.08)'}}>
