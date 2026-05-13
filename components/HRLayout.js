@@ -36,9 +36,18 @@ export default function HRLayout({ children, title = '대시보드', meta }) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session) setUser(session.user)
-      else router.replace('/hr/login')
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
+      if (!session) { router.replace('/hr/login'); return }
+      // Check HR approval status
+      try {
+        const res = await fetch(`/api/hr/status?userId=${session.user.id}`)
+        const data = await res.json()
+        if (!data.isHR || data.status !== 'approved') {
+          router.replace('/hr/onboarding')
+          return
+        }
+      } catch {}
+      setUser(session.user)
     })
   }, [])
 
