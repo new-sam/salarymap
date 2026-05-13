@@ -46,6 +46,7 @@ captures/
 
 # candidate data (PII)
 data/
+!data/companyProfiles.js
 
 # claude code
 .claude/
