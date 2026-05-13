@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { supabase } from '../lib/supabaseClient'
+import Icon from './Icon'
 
 export default function ContactSheet({ user, onClose }) {
   const [step, setStep] = useState('form') // 'form' | 'saving' | 'confirmed'
@@ -86,7 +87,7 @@ export default function ContactSheet({ user, onClose }) {
             <div style={{ animation: 'sheetFadeSlide 0.35s ease' }}>
 
               <div style={{ textAlign: 'center', marginBottom: 32 }}>
-                <div style={{ fontSize: 48, marginBottom: 16 }}>💼</div>
+                <div style={{ marginBottom: 16 }}><Icon name="briefcase" size={48} color="#1a1a1a" /></div>
                 <h3 style={{
                   fontSize: 24, fontWeight: 800, color: '#1a1a1a',
                   lineHeight: 1.35, margin: '0 0 10px',

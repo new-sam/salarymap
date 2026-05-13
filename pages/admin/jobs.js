@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import Head from 'next/head'
 import { supabase } from '../../lib/supabaseClient'
+import Icon from '../../components/Icon'
 
 const EMPTY_JOB = {
   title: '', company: '', company_initials: '', location: '', type: 'remote',
@@ -213,7 +214,7 @@ export default function AdminJobs() {
   if (auth === 'loading') return <div style={S.center}>Loading...</div>
   if (auth === 'denied') return (
     <div style={S.center}>
-      <div style={{ fontSize: 48, marginBottom: 16 }}>🔒</div>
+      <div style={{ marginBottom: 16 }}><Icon name="lock" size={48} color="#1a1a1a" /></div>
       <div style={{ fontSize: 18, fontWeight: 700, marginBottom: 8 }}>Admin access required</div>
       <div style={{ color: '#888', marginBottom: 24 }}>Sign in with an admin account.</div>
       <button style={S.btnP} onClick={() => { window.location.href = '/api/auth/google?return=' + encodeURIComponent('/admin/jobs'); }}>

@@ -3,6 +3,7 @@ import { useRouter } from 'next/router'
 import Link from 'next/link'
 import HRLayout from '../../components/HRLayout'
 import { supabase } from '../../lib/supabaseClient'
+import Icon from '../../components/Icon'
 
 const STATUS_MAP = {
   applied: { label: '신규 지원', color: '#2563eb', bg: '#eff6ff' },
@@ -116,7 +117,7 @@ export default function HRApplicants() {
       {app.resume_url && !compact && (
         <a href={app.resume_url} target="_blank" rel="noopener noreferrer"
           style={{ fontSize: 11, color: '#2563eb', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 4, marginBottom: 10 }}>
-          📎 이력서 보기
+          <Icon name="paperclip" size={11} color="#2563eb" /> 이력서 보기
         </a>
       )}
 

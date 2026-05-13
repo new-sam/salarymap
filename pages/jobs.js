@@ -5,6 +5,7 @@ import { useRouter } from 'next/router'
 import { supabase } from '../lib/supabaseClient'
 import GlobalNav from '../components/GlobalNav'
 import { useT } from '../lib/i18n'
+import Icon from '../components/Icon'
 
 const DEFAULT_IMAGES = [
   'https://images.unsplash.com/photo-1497366216548-37526070297c?w=600&h=400&fit=crop',
@@ -157,7 +158,7 @@ function generateCompanyDescription(job) {
 
   // Paragraph 2: Key metrics (revenue, funding, scale)
   if (profile) {
-    let metrics = `📊 Key Metrics — `
+    let metrics = `\ud83d\udcca Key Metrics \u2014 `
     const parts = []
     if (profile.revenue) parts.push(`Revenue: ${profile.revenue}`)
     if (profile.funding) parts.push(`Funding: ${profile.funding}`)
@@ -170,7 +171,7 @@ function generateCompanyDescription(job) {
 
   // Paragraph 3: Role-specific details
   if (techList || expDesc) {
-    let rolePara = `🔧 This Position — `
+    let rolePara = `\ud83d\udd27 This Position \u2014 `
     const roleParts = []
     if (techList) roleParts.push(`Tech stack includes ${techList}`)
     if (expDesc) roleParts.push(`looking for ${expDesc} of experience`)
@@ -181,16 +182,16 @@ function generateCompanyDescription(job) {
 
   // Paragraph 4: Work culture & growth
   if (sizeNum >= 500) {
-    paragraphs.push(`🏢 Work Culture — With ${sizeNum.toLocaleString()}+ employees, ${job.company} provides structured career paths, mentorship programs, and cross-functional collaboration. Employees benefit from established processes, competitive compensation, and long-term stability.`)
+    paragraphs.push(`\ud83c\udfe2 Work Culture \u2014 With ${sizeNum.toLocaleString()}+ employees, ${job.company} provides structured career paths, mentorship programs, and cross-functional collaboration. Employees benefit from established processes, competitive compensation, and long-term stability.`)
   } else if (sizeNum >= 100) {
-    paragraphs.push(`🏢 Work Culture — A team of ${sizeNum}+ professionals balancing structured growth with startup agility. Individual contributions have visible impact while benefiting from established engineering practices and clear promotion paths.`)
+    paragraphs.push(`\ud83c\udfe2 Work Culture \u2014 A team of ${sizeNum}+ professionals balancing structured growth with startup agility. Individual contributions have visible impact while benefiting from established engineering practices and clear promotion paths.`)
   } else if (sizeNum >= 10) {
-    paragraphs.push(`🏢 Work Culture — A lean team of ${sizeNum}+ members offering high ownership and direct impact. Early team members often experience accelerated career growth with broader responsibilities and close collaboration with leadership.`)
+    paragraphs.push(`\ud83c\udfe2 Work Culture \u2014 A lean team of ${sizeNum}+ members offering high ownership and direct impact. Early team members often experience accelerated career growth with broader responsibilities and close collaboration with leadership.`)
   }
 
   // Paragraph 5: Benefits
   if (job.benefits?.length > 0) {
-    paragraphs.push(`✅ Benefits — ${job.benefits.slice(0, 6).join(', ')}`)
+    paragraphs.push(`\u2705 Benefits \u2014 ${job.benefits.slice(0, 6).join(', ')}`)
   }
 
   return paragraphs.join('\n\n')
@@ -799,7 +800,7 @@ export default function JobsPage() {
         .jd-company-overview { background: linear-gradient(135deg, #f8f9ff 0%, #f0f4ff 100%); border: 1px solid #e0e7ff; border-radius: 12px; padding: 20px; margin-bottom: 24px; }
         .jd-co-overview-header { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
         .jd-co-overview-badge { font-size: 11px; font-weight: 700; color: #6366f1; background: #e0e7ff; padding: 3px 10px; border-radius: 20px; display: inline-flex; align-items: center; gap: 4px; }
-        .jd-co-overview-badge::before { content: '✦'; font-size: 10px; }
+        .jd-co-overview-badge::before { content: '\\2726'; font-size: 10px; }
         .jd-co-overview-badge.ai-thinking { animation: aiBadgePulse 1.2s ease-in-out infinite; }
         @keyframes aiBadgePulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
         .jd-co-overview-text { font-size: 13.5px; color: #374151; line-height: 1.7; margin-bottom: 16px; white-space: pre-line; }
@@ -1012,7 +1013,7 @@ export default function JobsPage() {
               const fakeCount = (id) => 20 + (id.charCodeAt(0) + id.charCodeAt(id.length - 1)) % 21
               return (
                 <div className="jh">
-                  <div className="jh-title">🔥 {t('jobs.hotTitle')}</div>
+                  <div className="jh-title"><Icon name="fire" size={18} color="#ff4400" style={{ marginRight: 6 }} />{t('jobs.hotTitle')}</div>
                   <div className="jg">
                     {hotJobs.map((job, idx) => {
                       const bump = getBump(job)
@@ -1383,42 +1384,42 @@ export default function JobsPage() {
               <div className="jd-section-title">Work Information</div>
               <div className="jd-work-info">
                 <div className="jd-work-item">
-                  <div className="jd-work-icon">📅</div>
+                  <div className="jd-work-icon"><Icon name="calendar" size={18} color="#555" /></div>
                   <div>
                     <div className="jd-work-label">Work Days</div>
                     <div className="jd-work-value">Monday – Friday</div>
                   </div>
                 </div>
                 <div className="jd-work-item">
-                  <div className="jd-work-icon">🕘</div>
+                  <div className="jd-work-icon"><Icon name="clock" size={18} color="#555" /></div>
                   <div>
                     <div className="jd-work-label">Work Hours</div>
                     <div className="jd-work-value">9:00 AM – 6:00 PM</div>
                   </div>
                 </div>
                 <div className="jd-work-item">
-                  <div className="jd-work-icon">📍</div>
+                  <div className="jd-work-icon"><Icon name="mapPin" size={18} color="#555" /></div>
                   <div>
                     <div className="jd-work-label">Work Type</div>
                     <div className="jd-work-value">{detailJob.type === 'remote' ? 'Fully Remote' : detailJob.type === 'hybrid' ? 'Hybrid (Office + Remote)' : 'On-site'}</div>
                   </div>
                 </div>
                 <div className="jd-work-item">
-                  <div className="jd-work-icon">🏖️</div>
+                  <div className="jd-work-icon"><Icon name="palmTree" size={18} color="#555" /></div>
                   <div>
                     <div className="jd-work-label">Paid Leave</div>
                     <div className="jd-work-value">12+ days / year</div>
                   </div>
                 </div>
                 <div className="jd-work-item">
-                  <div className="jd-work-icon">📋</div>
+                  <div className="jd-work-icon"><Icon name="clipboard" size={18} color="#555" /></div>
                   <div>
                     <div className="jd-work-label">Contract</div>
                     <div className="jd-work-value">Full-time (Permanent)</div>
                   </div>
                 </div>
                 <div className="jd-work-item">
-                  <div className="jd-work-icon">🏥</div>
+                  <div className="jd-work-icon"><Icon name="hospital" size={18} color="#555" /></div>
                   <div>
                     <div className="jd-work-label">Insurance</div>
                     <div className="jd-work-value">Social & Health Insurance</div>
@@ -1464,7 +1465,7 @@ export default function JobsPage() {
                   background: '#fff7f5', border: '1px solid #ffd6c8', borderRadius: 10,
                   padding: '14px 18px', marginBottom: 20, display: 'flex', alignItems: 'center', gap: 10,
                 }}>
-                  <span style={{ fontSize: 20 }}>📈</span>
+                  <Icon name="trendUp" size={20} color="#ff4400" />
                   <div>
                     <div style={{ fontSize: 14, fontWeight: 700, color: '#111' }}>
                       {t('jobs.higherThanCurrent', { pct: Math.round(((detailJob.salary_min - userSalary) / userSalary) * 100) })}
@@ -1576,7 +1577,7 @@ export default function JobsPage() {
               </>
             ) : (
               <div className="ap-ok">
-                <div className="ap-ok-i">✓</div>
+                <div className="ap-ok-i"><Icon name="check" size={24} color="#fff" /></div>
                 <div className="ap-ok-h">{t('jobs.applied')}</div>
                 <div className="ap-ok-p">{t('jobs.appliedSub')}</div>
                 <button className="ap-skip" style={{ marginTop: 20 }} onClick={() => setShowPanel(false)}>{t('jobs.close')}</button>

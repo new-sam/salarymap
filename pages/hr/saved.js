@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import HRLayout from '../../components/HRLayout'
 import { supabase } from '../../lib/supabaseClient'
+import Icon from '../../components/Icon'
 
 const STATUS_MAP = {
   all: { label: '전체', color: '#555' },
@@ -180,7 +181,7 @@ export default function HRSaved() {
                       </button>
                     )
                   })}
-                  <button className="hrsv-remove" onClick={() => removeSaved(item.interestId)} title="삭제">✕</button>
+                  <button className="hrsv-remove" onClick={() => removeSaved(item.interestId)} title="삭제"><Icon name="close" size={14} color="currentColor" /></button>
                 </div>
               </div>
             )

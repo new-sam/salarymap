@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import Head from 'next/head'
 import { useRouter } from 'next/router'
 import { supabase } from '../../lib/supabaseClient'
+import Icon from '../../components/Icon'
 
 const COMPANY_SIZES = ['1-10', '11-50', '51-200', '201-500', '500+']
 
@@ -251,7 +252,7 @@ export default function HROnboarding() {
                         color: bizVerify.valid ? '#166534' : '#991b1b',
                         border: `1px solid ${bizVerify.valid ? '#bbf7d0' : '#fecaca'}`,
                       }}>
-                        {bizVerify.valid ? '✓' : '✕'} {bizVerify.message}
+                        <Icon name={bizVerify.valid ? 'check' : 'close'} size={12} color="currentColor" style={{ marginRight: 4 }} />{bizVerify.message}
                       </div>
                     )}
                     {!bizVerify && <div className="onb-biz-hint">개인 이메일 사용 시 국세청 인증이 필요합니다</div>}

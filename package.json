@@ -8,6 +8,7 @@
     "start": "next start"
   },
   "dependencies": {
+    "@phosphor-icons/react": "^2.1.10",
     "@supabase/supabase-js": "^2.99.2",
     "formidable": "^3.5.4",
     "next": "16.1.7",

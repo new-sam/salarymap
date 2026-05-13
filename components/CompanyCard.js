@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useT } from '../lib/i18n';
+import Icon from './Icon';
 
 export default function CompanyCard({ company, index, isUnlocked, onClick, onLockedClick }) {
   const { t } = useT();
@@ -29,7 +30,7 @@ export default function CompanyCard({ company, index, isUnlocked, onClick, onLoc
           display: 'flex', flexDirection: 'column', alignItems: 'center',
           justifyContent: 'center', gap: '8px', cursor: 'pointer', borderRadius: '14px',
         }}>
-          <span style={{ fontSize: '22px' }}>🔒</span>
+          <Icon name="lock" size={22} color="white" />
           <span style={{ fontSize: '14px', fontWeight: 800, color: 'white' }}>{company.company}</span>
           <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)' }}>{t('companies.salaryData', { count: company.count })}</span>
           <span

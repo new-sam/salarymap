@@ -1,4 +1,5 @@
 import { useT } from '../lib/i18n'
+import Icon from './Icon'
 
 export default function AnonymousSection() {
   const { t } = useT()
@@ -170,7 +171,7 @@ export default function AnonymousSection() {
         gap: '12px',
         flexWrap: 'wrap',
       }}>
-        <span style={{ fontSize: '28px' }}>🙈</span>
+        <Icon name="seeNoEvil" size={28} color="rgba(255,255,255,0.5)" />
         <span style={{ fontSize: 'clamp(14px, 2.5vw, 18px)', fontWeight: 300, color: 'rgba(255,255,255,0.5)' }} dangerouslySetInnerHTML={{ __html: t('anon.cantIdentify') }} />
       </div>
 

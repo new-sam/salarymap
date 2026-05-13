@@ -4,6 +4,7 @@ import { useRouter } from 'next/router'
 import { supabase } from '../lib/supabaseClient'
 import GlobalNav from '../components/GlobalNav'
 import { useT } from '../lib/i18n'
+import Icon from '../components/Icon'
 
 const STEPS = ['applied', 'viewed', 'reviewing', 'decided']
 const STATUS_TO_STEP = { applied: 'applied', viewed: 'viewed', reviewing: 'reviewing', accepted: 'decided', rejected: 'decided' }
@@ -104,7 +105,7 @@ export default function MyApplications() {
 
         {applications.length === 0 ? (
           <div className="ma-empty">
-            <div className="ma-empty-icon">📋</div>
+            <div className="ma-empty-icon"><Icon name="clipboard" size={40} color="#ccc" /></div>
             <div className="ma-empty-h">{t('apps.emptyTitle')}</div>
             <div className="ma-empty-p">{t('apps.emptyDesc')}</div>
             <button className="ma-empty-btn" onClick={() => router.push('/jobs')}>
@@ -138,7 +139,7 @@ export default function MyApplications() {
                         <div className={`ma-step-line${si === currentStep + 1 ? ' next' : ''}`} style={{ background: si <= currentStep ? '#ff4400' : '#e0e0e0' }} />
                       )}
                       <div className={`ma-step-dot${si === currentStep + 1 ? ' next' : ''}`} style={{ background: si <= currentStep ? '#ff4400' : si === currentStep + 1 ? undefined : '#e0e0e0' }}>
-                        {si <= currentStep ? '✓' : ''}
+                        {si <= currentStep ? <Icon name="check" size={12} color="#fff" /> : ''}
                       </div>
                       <div className="ma-step-label" style={{ color: si <= currentStep ? '#ff4400' : '#bbb' }}>
                         {stepLabel(step)}
@@ -147,7 +148,7 @@ export default function MyApplications() {
                   ))}
                 </div>
                 <div className="ma-msg">{stepMessage(st)}
-                  {st === 'accepted' && <span style={{ display: 'inline-block', marginLeft: 6, color: '#065F46', fontWeight: 700 }}>🎉</span>}
+                  {st === 'accepted' && <span style={{ display: 'inline-block', marginLeft: 6 }}><Icon name="party" size={16} color="#065F46" /></span>}
                 </div>
               </div>
             )

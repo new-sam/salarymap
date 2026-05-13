@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import Head from 'next/head'
 import dynamic from 'next/dynamic'
 import { supabase } from '../../lib/supabaseClient'
+import Icon from '../../components/Icon'
 
 const MetricChart = dynamic(() => import('../../components/DashboardCharts'), { ssr: false })
 
@@ -730,7 +731,7 @@ export default function AdminDashboard() {
                           return mb ? <span key={mk} style={{ fontSize: 9, padding: '1px 6px', borderRadius: 8, background: mb.color + '18', color: mb.color, fontWeight: 600 }}>{t.metrics[mk] || mk}</span> : null
                         })}
                       </div>
-                      <span style={{ color: '#ccc', fontSize: 11 }}>✎</span>
+                      <Icon name="edit" size={11} color="#ccc" />
                     </div>
                     )
                   })}
@@ -1537,10 +1538,10 @@ function HRApprovalView({ token, lang }) {
       {/* Summary cards */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12, marginBottom: 24 }}>
         {[
-          { key: 'submitted', label: lang === 'ko' ? '승인 대기' : 'Pending Review', color: '#1E40AF', bg: '#EFF6FF', icon: '⏳' },
-          { key: 'approved', label: lang === 'ko' ? '승인됨' : 'Approved', color: '#065F46', bg: '#F0FDF4', icon: '✓' },
-          { key: 'rejected', label: lang === 'ko' ? '반려' : 'Rejected', color: '#991B1B', bg: '#FEF2F2', icon: '✕' },
-          { key: 'all', label: lang === 'ko' ? '전체' : 'Total', color: '#374151', bg: '#F9FAFB', icon: '#' },
+          { key: 'submitted', label: lang === 'ko' ? '승인 대기' : 'Pending Review', color: '#1E40AF', bg: '#EFF6FF', iconName: 'hourglass' },
+          { key: 'approved', label: lang === 'ko' ? '승인됨' : 'Approved', color: '#065F46', bg: '#F0FDF4', iconName: 'check' },
+          { key: 'rejected', label: lang === 'ko' ? '반려' : 'Rejected', color: '#991B1B', bg: '#FEF2F2', iconName: 'close' },
+          { key: 'all', label: lang === 'ko' ? '전체' : 'Total', color: '#374151', bg: '#F9FAFB', iconName: null },
         ].map(c => (
           <div key={c.key} onClick={() => setFilter(c.key)}
             style={{

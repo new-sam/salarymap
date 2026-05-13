@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useT } from '../lib/i18n'
+import Icon from './Icon'
 
 const DEFAULT_VISIBLE = 5
 const LOAD_MORE_COUNT = 20
@@ -191,7 +192,7 @@ export default function CompanyDetailPanel({
           background: 'rgba(255,255,255,0.08)', cursor: 'pointer',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           fontSize: 14, color: 'rgba(255,255,255,0.5)',
-        }}>✕</div>
+        }}><Icon name="close" size={14} color="rgba(255,255,255,0.5)" /></div>
       </div>
 
       {/* Stats bar — only when data loaded and not locked */}
@@ -453,9 +454,9 @@ export default function CompanyDetailPanel({
   const renderRating = (blurred = false) => {
     const hasData = !!detail?.rating
     const items = [
-      { key: 'worklife', label: t('detail.worklife'), desc: t('detail.worklifeDesc'), icon: '⚖️', value: hasData ? detail.rating.worklife : 0 },
-      { key: 'salary',   label: t('detail.salaryHappiness'), desc: t('detail.salaryHappinessDesc'), icon: '💰', value: hasData ? detail.rating.salary : 0 },
-      { key: 'growth',   label: t('detail.growth'), desc: t('detail.growthDesc'), icon: '📈', value: hasData ? detail.rating.growth : 0 },
+      { key: 'worklife', label: t('detail.worklife'), desc: t('detail.worklifeDesc'), iconName: 'scale', value: hasData ? detail.rating.worklife : 0 },
+      { key: 'salary',   label: t('detail.salaryHappiness'), desc: t('detail.salaryHappinessDesc'), iconName: 'coins', value: hasData ? detail.rating.salary : 0 },
+      { key: 'growth',   label: t('detail.growth'), desc: t('detail.growthDesc'), iconName: 'trendUp', value: hasData ? detail.rating.growth : 0 },
     ]
     const overallAvg = hasData
       ? Math.round(((detail.rating.worklife + detail.rating.salary + detail.rating.growth) / 3) * 10) / 10
@@ -512,11 +513,11 @@ export default function CompanyDetailPanel({
           )}
 
           {/* Individual rows */}
-          {items.map(({ key, label, desc, icon, value }) => (
+          {items.map(({ key, label, desc, iconName, value }) => (
             <div key={key} style={{ marginBottom: 14 }}>
               {/* Label row */}
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
-                <span style={{ fontSize: 14 }}>{icon}</span>
+                <Icon name={iconName} size={14} color="#555" />
                 <div style={{ flex: 1 }}>
                   <div style={{ fontSize: 12, fontWeight: 600, color: '#333' }}>{label}</div>
                   <div style={{ fontSize: 10, color: '#aaa', marginTop: 1 }}>{desc}</div>
@@ -567,7 +568,7 @@ export default function CompanyDetailPanel({
       background: '#f5f5f5', borderRadius: 16,
       padding: '28px 22px', textAlign: 'center', marginBottom: 20,
     }}>
-      <div style={{ fontSize: 28, marginBottom: 10 }}>🔒</div>
+      <div style={{ marginBottom: 10 }}><Icon name="lock" size={28} color="#1a1a1a" /></div>
       <div style={{ fontSize: 17, fontWeight: 800, color: '#1a1a1a', marginBottom: 8 }}>
         {t('detail.gateLock', { company })}
       </div>

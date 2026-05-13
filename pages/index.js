@@ -7,6 +7,7 @@ import CompanyDetailPanel from '../components/CompanyDetailPanel';
 import AnonymousSection from '../components/AnonymousSection';
 import ResultSection from '../components/ResultSection';
 import { useT } from '../lib/i18n';
+import Icon from '../components/Icon';
 
 const css = `
 *, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
@@ -251,7 +252,7 @@ nav { position:fixed; top:0; left:0; right:0; z-index:200; padding:0 52px; heigh
 .submit-sub { font-size:14px; color:rgba(12,12,11,.55); font-weight:300; margin-bottom:36px; line-height:1.7; max-width:480px; }
 .trust-line { display:flex; gap:24px; margin-bottom:32px; flex-wrap:wrap; }
 .tl { font-family:'Geist Mono',monospace; font-size:11px; color:rgba(12,12,11,.5); display:flex; align-items:center; gap:5px; }
-.tl::before { content:'✓'; color:var(--orange); font-weight:700; }
+.tl::before { content:'\\2713'; color:var(--orange); font-weight:700; }
 .form-line { display:grid; grid-template-columns:1fr 1fr 1.3fr; gap:20px; margin-bottom:24px; }
 .fg label { display:block; font-size:10px; font-weight:600; color:rgba(12,12,11,.5); margin-bottom:6px; text-transform:uppercase; letter-spacing:1px; }
 .fg select, .fg input { width:100%; background:transparent; border:none; border-bottom:1.5px solid rgba(12,12,11,.14); color:var(--bg); font-family:'Barlow',sans-serif; font-size:14px; padding:10px 0; border-radius:0; outline:none; appearance:none; transition:border-color .2s; }
@@ -575,7 +576,7 @@ nav { position:fixed; top:0; left:0; right:0; z-index:200; padding:0 52px; heigh
   flex-shrink: 0; transition: all .12s; font-size: 10px; font-weight: 700;
 }
 .fyi-voc-opt.selected .fyi-voc-checkbox { background: #f26522; border-color: #f26522; }
-.fyi-voc-checkbox::after { content: '✓'; color: #ffffff; opacity: 0; }
+.fyi-voc-checkbox::after { content: '\\2713'; color: #ffffff; opacity: 0; }
 .fyi-voc-opt.selected .fyi-voc-checkbox::after { opacity: 1; }
 .fyi-voc-label { font-size: 13px; font-weight: 600; line-height: 1.4; color: #ffffff; }
 .fyi-step-nav { display: flex; gap: 10px; align-items: center; }
@@ -603,7 +604,7 @@ nav { position:fixed; top:0; left:0; right:0; z-index:200; padding:0 52px; heigh
   justify-content: center; text-transform: uppercase;
   letter-spacing: 0.5px; font-weight: 600;
 }
-.fyi-anon-note::before { content: '🔒'; font-size: 13px; }
+.fyi-anon-note::before { content: ''; display: inline-block; width: 13px; height: 13px; background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23999' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M17 11V7a5 5 0 0 0-10 0v4'/%3E%3Crect x='5' y='11' width='14' height='11' rx='2'/%3E%3C/svg%3E") no-repeat center/contain; }
 .fyi-submit-success { text-align: center; padding: 20px 0; display: none; }
 .fyi-step-label { font-size:11px; font-weight:700; color:rgba(255,255,255,0.35); letter-spacing:2px; text-transform:uppercase; margin-bottom:8px; }
 .fyi-step-title { font-size:22px; font-weight:900; color:#fff; letter-spacing:-0.5px; margin-bottom:6px; }
@@ -760,7 +761,7 @@ const bodyHTML = `<section class="hero">
   <!-- Company search bar -->
   <div class="co-search-wrap">
     <div class="co-search-bar">
-      <span class="co-search-icon">🔍</span>
+      <span class="co-search-icon"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></span>
       <input class="co-search-input" id="co-search-input" type="text" placeholder="Tìm công ty (VD: Grab, VNG, Shopee…)"
         oninput="coSearchFilter(this.value)"
         onkeydown="coSearchKey(event)"
@@ -776,7 +777,7 @@ const bodyHTML = `<section class="hero">
         <div class="co-result-name" id="co-result-name">—</div>
         <div class="co-result-count" id="co-result-count"></div>
       </div>
-      <button class="co-result-close" onclick="coResultClose()">✕ Close</button>
+      <button class="co-result-close" onclick="coResultClose()"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:4px"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>Close</button>
     </div>
     <div id="co-result-body"></div>
   </div>
@@ -930,7 +931,7 @@ async function loadStats(){
     const statSubSub=document.getElementById('stat-sub-sub'); if(statSubSub) statSubSub.textContent=sub.toLocaleString();
     const unlockBtn=document.getElementById('unlock-btn'); if(unlockBtn) unlockBtn.textContent=\`Xem tất cả dữ liệu lương →\`;
     const ffMeta=document.getElementById('ff-meta'); if(ffMeta) ffMeta.textContent=\`\${co.toLocaleString()} công ty · \${sub.toLocaleString()} dữ liệu lương\`;
-    const uline=document.getElementById('uline'); if(uline&&!uline.classList.contains('on')) uline.textContent=\`✓ UNLOCKED — \${co.toLocaleString()} companies now visible below\`;
+    const uline=document.getElementById('uline'); if(uline&&!uline.classList.contains('on')) uline.textContent=\`UNLOCKED — \${co.toLocaleString()} companies now visible below\`;
     updateTrustStats(sub, co);
     const totalCo=document.getElementById('total-co-count'); if(totalCo) totalCo.textContent=co.toLocaleString();
     if(d.recent && d.recent.length>=4){
@@ -1159,7 +1160,7 @@ async function doUnlock(role,exp,sal){
   const searchInput=document.getElementById('hero-search');
   const searchLock=document.getElementById('search-lock');
   if(searchInput){ searchInput.placeholder='Search any of the '+(window.totalCo||'500')+' companies…'; searchInput.style.borderColor='rgba(255,255,255,0.15)'; searchInput.onclick=null; }
-  if(searchLock) searchLock.textContent='🔓 Đã mở khóa tìm kiếm';
+  if(searchLock) searchLock.textContent='Đã mở khóa tìm kiếm';
   document.getElementById('full-feed').classList.add('on');
   document.getElementById('rb-ctx').textContent=\`\${role} · \${exp}\`;
   document.getElementById('rb-pct').textContent=\`Top \${topPct}%\`;
@@ -1340,8 +1341,8 @@ function SubmitSection({
       <div style={{ display: 'flex', gap: 4 }}>
         {[1, 2, 3, 4, 5].map(n => (
           <span key={n} onClick={() => onChange(n)}
-            style={{ fontSize: 22, cursor: 'pointer', color: n <= value ? '#f59e0b' : 'rgba(255,255,255,0.15)', transition: 'color .12s' }}>
-            ★
+            style={{ cursor: 'pointer', transition: 'color .12s' }}>
+            <Icon name="star" size={22} color={n <= value ? '#f59e0b' : 'rgba(255,255,255,0.15)'} style={{ fill: n <= value ? '#f59e0b' : 'none' }} />
           </span>
         ))}
       </div>
@@ -1482,7 +1483,7 @@ function SubmitSection({
       </div>
       <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column',
         alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
-        <span style={{ fontSize: '20px' }}>🔒</span>
+        <Icon name="lock" size={20} color="rgba(255,255,255,0.5)" />
         <span style={{ fontSize: '12px', fontWeight: 700, color: 'rgba(255,255,255,0.5)' }}>
           {t('wizard.selectRoleToSee')}
         </span>
