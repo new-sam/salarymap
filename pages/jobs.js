@@ -122,6 +122,17 @@ const COMPANY_PROFILES = {
   '42dot': { founded: 2020, hq: 'Seoul', employees: 200, funding: 'Hyundai Motor Group', revenue: 'R&D stage', industry: 'Autonomous Driving / AI', clients: 'Hyundai/Kia vehicles', desc: 'Hyundai Motor Group\'s autonomous driving subsidiary developing self-driving AI, SDV (Software Defined Vehicle) platform, and urban mobility solutions.' },
   'Supercent': { founded: 2019, hq: 'Seoul', employees: 100, funding: 'Series A', revenue: '₩50B+', industry: 'Hyper-casual Gaming', clients: '500M+ downloads globally', desc: 'Korea\'s top hyper-casual game publisher with 500M+ downloads globally. Known for rapid prototyping and data-driven game publishing methodology.' },
   'LawTalk': { founded: 2014, hq: 'Seoul', employees: 80, funding: 'Series B', revenue: '₩20B+', industry: 'LegalTech', clients: '5,000+ lawyers, 1M+ users', desc: 'Korea\'s #1 legal tech platform connecting 5,000+ lawyers with users for consultations. Pioneered online legal marketplace with AI-powered case matching.' },
+  'SeedLab': { founded: 2020, hq: 'Seoul / HCMC', employees: 30, funding: 'Seed', revenue: 'Early stage', industry: 'Growth Marketing / E-commerce', clients: 'U.S. brands & startups', desc: 'Execution-driven operating partner specializing in global expansion — not a traditional consulting firm. Experienced in building and operating companies in the U.S. across market entry, commerce infrastructure, growth marketing, and local operations.' },
+  'Jinosys': { founded: 2015, hq: 'Seoul / HCMC', employees: 50, funding: 'Series A', revenue: 'Undisclosed', industry: 'AI / IoT / Robotics', clients: 'Samsung Electronics & enterprises', desc: 'Safety-specialized innovation company with 18 patents, developing proprietary AI-based safety IoT platforms and smart management systems. A decade of experience partnering with Samsung Electronics, digitalizing industrial safety through advanced IoT sensors and big data analytics.' },
+  'FPT Software': { founded: 1999, hq: 'Hanoi / Seoul / HCMC', employees: 30000, funding: 'FPT Group subsidiary (HOSE Listed)', revenue: '$2B+', industry: 'IT Services / Automotive Software', clients: '1,000+ global enterprises', desc: 'Subsidiary of FPT Group, Vietnam\'s largest ICT company. Global top 50 IT outsourcing provider serving 1,000+ clients across 30+ countries. This role focuses on Automotive domain software (Infotainment) with Agile, ASPICE, and ISO 26262 standards.' },
+  'Nexacode': { founded: 2021, hq: 'Seoul / HCMC', employees: 20, funding: 'Seed', revenue: 'Early stage', industry: 'ERP / B2B SaaS', clients: 'B2B clients', desc: 'Software development company specializing in in-house services such as ERP and B2B SaaS with customized system development capabilities.' },
+  'Wellpod': { founded: 2022, hq: 'Seoul / HCMC', employees: 15, funding: 'Seed', revenue: 'Early stage', industry: 'K-pop Distribution / Social Commerce', clients: 'K-pop fans & merchants', desc: 'Specializes in global sales and distribution of K-pop albums, developing short-form video content for YouTube and TikTok platforms, and operating as a marketing agency.' },
+  'Mutistation': { founded: 2018, hq: 'Seoul / Silicon Valley / HCMC', employees: 40, funding: 'Series A', revenue: 'Undisclosed', industry: 'AR / VPS Technology', clients: 'Enterprise & global markets', desc: 'Develops Augmented Reality (AR) applications and Visual Positioning System (VPS) technology for precise indoor location recognition. Expanding globally into Silicon Valley since 2025, building next-generation AR device applications.' },
+  'Andwise': { founded: 2008, hq: 'Seoul / HCMC', employees: 50, funding: 'Established', revenue: 'Undisclosed', industry: 'Digital Platform / CMS', clients: 'Public institutions & universities', desc: 'IT company specializing in digital platform development and operation for public institutions, universities, and various industries. Provides integrated services including website creation, proprietary GINIWORKS CMS, cloud transformation, and AI-driven solutions.' },
+  'ONSQUARE': { founded: 2016, hq: 'Seoul / Canada / HCMC', employees: 80, funding: 'Series A', revenue: 'Undisclosed', industry: 'Fintech / AI SaaS', clients: 'Global B2B clients', desc: 'Korea-based Fintech and AI-based SaaS startup creating payment systems and AI Agent tools for global markets, with distributed teams across Korea, Canada, and Vietnam.' },
+  'Lumicraft': { founded: 2022, hq: 'Seoul / HCMC', employees: 10, funding: 'Pre-seed', revenue: 'Early stage', industry: 'Software Development', clients: 'B2B clients', desc: 'Early-stage software studio building innovative web applications and digital products with a focus on clean design and modern development practices.' },
+  'Shupia': { founded: 2021, hq: 'Seoul / HCMC', employees: 20, funding: 'Seed', revenue: 'Early stage', industry: 'E-commerce / Fashion Tech', clients: 'Fashion brands & consumers', desc: 'Fashion tech startup connecting brands with consumers through curated shopping experiences and innovative e-commerce solutions.' },
+  'MNF Solution': { founded: 2019, hq: 'Seoul / HCMC', employees: 35, funding: 'Seed', revenue: 'Undisclosed', industry: 'Enterprise Software / SaaS', clients: 'B2B enterprise', desc: 'Enterprise software company building back-office and front-office solutions to streamline business operations and improve workflow efficiency.' },
 }
 
 function generateCompanyDescription(job) {
@@ -445,8 +456,10 @@ export default function JobsPage() {
     }
     // sortBy === 'spread' → 같은 회사 분산 배치
     if (sortBy === 'spread') {
+      const featured = filtered.filter(j => j.is_featured)
+      const rest = filtered.filter(j => !j.is_featured)
       const byCompany = {}
-      filtered.forEach(job => {
+      rest.forEach(job => {
         const key = job.company || ''
         if (!byCompany[key]) byCompany[key] = []
         byCompany[key].push(job)
@@ -458,9 +471,12 @@ export default function JobsPage() {
           if (q.length > 0) result.push(q.shift())
         }
       }
-      return result
+      return [...featured, ...result]
     }
-    return filtered
+    // featured 공고 상단 고정 (다른 정렬에서도)
+    const featured = filtered.filter(j => j.is_featured)
+    const rest = filtered.filter(j => !j.is_featured)
+    return [...featured, ...rest]
   })()
 
   const handleApply = async (job) => {
@@ -590,11 +606,11 @@ export default function JobsPage() {
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
         body { background: #f7f7f5; font-family: -apple-system, 'Helvetica Neue', Arial, sans-serif; -webkit-font-smoothing: antialiased; }
 
-        .jn { position: sticky; top: 0; z-index: 100; height: 56px; background: #fff; border-bottom: 1px solid #f0f0f0; display: flex; align-items: center; justify-content: space-between; padding: 0 40px; }
+        .jn { position: sticky; top: 0; z-index: 100; height: 56px; background: #fafaf8; border-bottom: 1px solid #f0f0f0; display: flex; align-items: center; justify-content: space-between; padding: 0 40px; }
         .jn-l { display: flex; align-items: center; gap: 28px; }
         .jn-logo { font-size: 18px; font-weight: 800; color: #ff4400; text-decoration: none; }
         .jn-tabs { display: flex; }
-        .jn-tab { font-size: 14px; color: #aaa; padding: 0 16px; height: 56px; display: flex; align-items: center; border: none; background: none; cursor: pointer; border-bottom: 2px solid transparent; text-decoration: none; transition: color .15s; }
+        .jn-tab { font-size: 14px; color: #999; padding: 0 16px; height: 56px; display: flex; align-items: center; border: none; background: none; cursor: pointer; border-bottom: 2px solid transparent; text-decoration: none; transition: color .15s; }
         .jn-tab:hover { color: #555; }
         .jn-tab.on { color: #111; font-weight: 600; border-bottom-color: #ff4400; }
         .jn-r { display: flex; align-items: center; gap: 10px; }
@@ -602,15 +618,15 @@ export default function JobsPage() {
         .jn-submit { font-size: 13px; font-weight: 700; color: #fff; background: #ff4400; border: none; padding: 7px 16px; border-radius: 6px; cursor: pointer; }
         .jn-avatar { width: 32px; height: 32px; border-radius: 50%; background: #ff4400; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 800; color: #fff; overflow: hidden; }
         .jn-avatar img { width: 100%; height: 100%; object-fit: cover; }
-        .jn-menu { position: absolute; top: calc(100% + 8px); right: 0; background: #fff; border: 1px solid #eee; border-radius: 12px; padding: 6px; min-width: 180px; z-index: 500; box-shadow: 0 8px 24px rgba(0,0,0,0.1); }
-        .jn-menu-email { padding: 10px 14px; font-size: 12px; color: #aaa; border-bottom: 1px solid #f0f0f0; margin-bottom: 4px; }
+        .jn-menu { position: absolute; top: calc(100% + 8px); right: 0; background: #fafaf8; border: 1px solid #eee; border-radius: 12px; padding: 6px; min-width: 180px; z-index: 500; box-shadow: 0 8px 24px rgba(0,0,0,0.1); }
+        .jn-menu-email { padding: 10px 14px; font-size: 12px; color: #999; border-bottom: 1px solid #f0f0f0; margin-bottom: 4px; }
         .jn-menu-item { display: block; width: 100%; padding: 10px 14px; border-radius: 8px; border: none; background: none; color: #333; font-size: 13px; cursor: pointer; text-align: left; text-decoration: none; transition: background .1s; font-family: inherit; }
         .jn-menu-item:hover { background: #f5f5f5; }
 
         .jw { max-width: 1080px; margin: 0 auto; padding: 36px 40px 80px; }
         .jw-eye { font-size: 11px; font-weight: 700; color: #ff4400; letter-spacing: .08em; margin-bottom: 8px; }
         .jw-h1 { font-size: 24px; font-weight: 800; color: #111; margin-bottom: 6px; letter-spacing: -0.3px; }
-        .jw-sub { font-size: 14px; color: #aaa; margin-bottom: 20px; }
+        .jw-sub { font-size: 14px; color: #999; margin-bottom: 20px; }
 
         .jbm { display: flex; align-items: center; gap: 14px; background: linear-gradient(135deg, #ff4400 0%, #ff6b35 100%); border-radius: 14px; padding: 16px 20px; margin-bottom: 24px; box-shadow: 0 4px 16px rgba(255,68,0,0.18); }
         .jbm-icon { width: 36px; height: 36px; border-radius: 10px; background: rgba(255,255,255,0.22); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
@@ -622,25 +638,25 @@ export default function JobsPage() {
 
         .jf-search { position: relative; margin-bottom: 16px; }
         .jf-search-icon { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); pointer-events: none; }
-        .jf-search-input { width: 100%; padding: 11px 36px 11px 40px; font-size: 14px; border: 1px solid #e0e0e0; border-radius: 10px; background: #fff; outline: none; transition: border-color .15s; font-family: inherit; }
+        .jf-search-input { width: 100%; padding: 11px 36px 11px 40px; font-size: 14px; border: 1px solid #e0e0e0; border-radius: 10px; background: #fafaf8; outline: none; transition: border-color .15s; font-family: inherit; }
         .jf-search-input:focus { border-color: #ff4400; }
-        .jf-search-input::placeholder { color: #bbb; }
-        .jf-search-clear { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); background: none; border: none; font-size: 18px; color: #aaa; cursor: pointer; line-height: 1; }
+        .jf-search-input::placeholder { color: #999; }
+        .jf-search-clear { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); background: none; border: none; font-size: 18px; color: #999; cursor: pointer; line-height: 1; }
 
         .jf { display: flex; gap: 8px; margin-bottom: 20px; flex-wrap: wrap; align-items: center; }
         .jf-dd { position: relative; }
-        .jf-dd-btn { font-size: 13px; font-weight: 500; color: #555; background: #fff; border: 1px solid #e0e0e0; padding: 8px 14px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; gap: 6px; transition: all .15s; white-space: nowrap; font-family: inherit; }
-        .jf-dd-btn:hover { border-color: #bbb; }
+        .jf-dd-btn { font-size: 13px; font-weight: 500; color: #555; background: #fafaf8; border: 1px solid #e0e0e0; padding: 8px 14px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; gap: 6px; transition: all .15s; white-space: nowrap; font-family: inherit; }
+        .jf-dd-btn:hover { border-color: #999; }
         .jf-dd-btn.on { background: #111; color: #fff; border-color: #111; font-weight: 600; }
         .jf-dd-arrow { font-size: 10px; opacity: 0.5; }
-        .jf-dd-menu { position: absolute; top: calc(100% + 4px); left: 0; background: #fff; border: 1px solid #eee; border-radius: 10px; padding: 4px; min-width: 160px; z-index: 20; box-shadow: 0 8px 24px rgba(0,0,0,0.1); }
+        .jf-dd-menu { position: absolute; top: calc(100% + 4px); left: 0; background: #fafaf8; border: 1px solid #eee; border-radius: 10px; padding: 4px; min-width: 160px; z-index: 20; box-shadow: 0 8px 24px rgba(0,0,0,0.1); }
         .jf-dd-menu-scroll { max-height: 240px; overflow-y: auto; }
         .jf-dd-item { display: block; width: 100%; padding: 9px 12px; border: none; background: none; font-size: 13px; color: #333; cursor: pointer; text-align: left; border-radius: 6px; transition: background .1s; font-family: inherit; white-space: nowrap; }
         .jf-dd-item:hover { background: #f5f5f5; }
         .jf-dd-item.on { color: #ff4400; font-weight: 600; }
-        .jf-reset { font-size: 13px; color: #aaa; background: none; border: none; cursor: pointer; padding: 8px 4px; font-family: inherit; text-decoration: underline; white-space: nowrap; }
+        .jf-reset { font-size: 13px; color: #999; background: none; border: none; cursor: pointer; padding: 8px 4px; font-family: inherit; text-decoration: underline; white-space: nowrap; }
         .jf-reset:hover { color: #666; }
-        .jf-exp-panel { position: absolute; top: calc(100% + 4px); left: 0; background: #fff; border: 1px solid #eee; border-radius: 12px; padding: 20px; min-width: 280px; z-index: 20; box-shadow: 0 8px 24px rgba(0,0,0,0.1); }
+        .jf-exp-panel { position: absolute; top: calc(100% + 4px); left: 0; background: #fafaf8; border: 1px solid #eee; border-radius: 12px; padding: 20px; min-width: 280px; z-index: 20; box-shadow: 0 8px 24px rgba(0,0,0,0.1); }
         .jf-exp-title { font-size: 14px; font-weight: 700; color: #111; margin-bottom: 16px; }
         .jf-exp-display { font-size: 18px; font-weight: 700; color: #111; text-align: center; margin-bottom: 20px; }
         .jf-exp-slider { position: relative; height: 32px; margin-bottom: 20px; }
@@ -650,19 +666,19 @@ export default function JobsPage() {
         .jf-exp-range::-webkit-slider-thumb { -webkit-appearance: none; width: 20px; height: 20px; border-radius: 50%; background: #ff4400; border: 3px solid #fff; box-shadow: 0 1px 4px rgba(0,0,0,0.2); cursor: pointer; pointer-events: auto; }
         .jf-exp-range::-moz-range-thumb { width: 20px; height: 20px; border-radius: 50%; background: #ff4400; border: 3px solid #fff; box-shadow: 0 1px 4px rgba(0,0,0,0.2); cursor: pointer; pointer-events: auto; }
         .jf-exp-footer { display: flex; justify-content: space-between; align-items: center; }
-        .jf-exp-reset { font-size: 13px; color: #aaa; background: none; border: none; cursor: pointer; font-family: inherit; }
+        .jf-exp-reset { font-size: 13px; color: #999; background: none; border: none; cursor: pointer; font-family: inherit; }
         .jf-exp-reset:hover { color: #666; }
         .jf-exp-apply { font-size: 13px; font-weight: 700; color: #fff; background: #ff4400; border: none; padding: 8px 20px; border-radius: 6px; cursor: pointer; font-family: inherit; }
         .jf-exp-apply:hover { background: #e63d00; }
 
         .jf-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 8px; }
         .jf-bar-l { display: flex; align-items: center; gap: 16px; }
-        .jf-check { display: flex; align-items: center; gap: 5px; font-size: 13px; color: #888; cursor: pointer; user-select: none; }
+        .jf-check { display: flex; align-items: center; gap: 5px; font-size: 13px; color: #777; cursor: pointer; user-select: none; }
         .jf-check input { accent-color: #ff4400; cursor: pointer; margin: 0; }
         .jf-count { font-size: 16px; font-weight: 800; color: #111; }
         .jf-sort { display: flex; background: #f5f5f5; border-radius: 8px; overflow: hidden; }
-        .jf-sort-btn { font-size: 13px; font-weight: 500; color: #888; background: none; border: none; padding: 7px 14px; cursor: pointer; font-family: inherit; transition: all .15s; }
-        .jf-sort-btn.on { background: #fff; color: #111; font-weight: 700; box-shadow: 0 1px 3px rgba(0,0,0,0.08); border-radius: 6px; }
+        .jf-sort-btn { font-size: 13px; font-weight: 500; color: #777; background: none; border: none; padding: 7px 14px; cursor: pointer; font-family: inherit; transition: all .15s; }
+        .jf-sort-btn.on { background: #fafaf8; color: #111; font-weight: 700; box-shadow: 0 1px 3px rgba(0,0,0,0.08); border-radius: 6px; }
         .jf-sort-saved { display: inline-flex; align-items: center; border-left: 1px solid #e0e0e0; margin-left: 2px; }
         .jf-sort-saved.on { color: #ff4400; }
 
@@ -681,99 +697,101 @@ export default function JobsPage() {
         /* Card */
         .jc { cursor: pointer; display: flex; flex-direction: column; }
         .jc-match { position: absolute; top: 10px; left: 10px; background: #ff4400; color: #fff; font-size: 11px; font-weight: 700; padding: 4px 10px; border-radius: 4px; z-index: 2; }
-        .jc-img { border-radius: 8px; overflow: hidden; position: relative; padding-top: 62%; margin-bottom: 11px; background: #f0f0f0; flex-shrink: 0; }
+        .jc-img { border-radius: 8px; overflow: hidden; position: relative; padding-top: 62%; margin-bottom: 11px; background: #f0f0f0; flex-shrink: 0; border: 1px solid rgba(0,0,0,0.06); }
         .jc-img-in { position: absolute; inset: 0; transition: transform .25s ease; background-color: #f0f0f0; background-size: cover; background-position: center; background-repeat: no-repeat; }
         .jc:hover .jc-img-in { transform: scale(1.04); }
         .jc-bump { position: absolute; top: 10px; left: 10px; background: rgba(0,0,0,0.62); color: #fff; font-size: 11px; font-weight: 600; padding: 4px 9px; border-radius: 4px; z-index: 2; }
         .jc-bump b { color: #ff4400; font-weight: 700; }
-        .jc-bm { position: absolute; top: 10px; right: 10px; width: 28px; height: 28px; border-radius: 50%; background: rgba(255,255,255,0.92); display: flex; align-items: center; justify-content: center; z-index: 2; border: none; cursor: pointer; }
-        .jc-ini { position: absolute; bottom: 10px; left: 10px; width: 34px; height: 34px; border-radius: 6px; background: #fff; border: 1px solid rgba(0,0,0,0.08); display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 800; color: #333; z-index: 2; }
+        .jc-bm { position: absolute; top: 10px; right: 10px; width: 28px; height: 28px; border-radius: 50%; background: rgba(250,250,248,0.92); display: flex; align-items: center; justify-content: center; z-index: 2; border: none; cursor: pointer; }
+        .jc-ini { position: absolute; bottom: 10px; left: 10px; width: 34px; height: 34px; border-radius: 6px; background: #fafaf8; border: 1px solid rgba(0,0,0,0.08); display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 800; color: #333; z-index: 2; }
         .jc-body { flex: 1; display: flex; flex-direction: column; }
         .jc-t { font-size: 15px; font-weight: 600; color: #111; margin-bottom: 3px; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; }
-        .jc-co { font-size: 13px; color: #888; margin-bottom: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .jc-co { font-size: 13px; color: #777; margin-bottom: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         .jc-sal { font-size: 15px; font-weight: 800; color: #ff4400; margin-top: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; letter-spacing: -0.3px; }
         .jc-bottom { margin-top: auto; }
-        .jc-m { font-size: 12px; color: #bbb; white-space: nowrap; overflow: visible; text-overflow: ellipsis; display: flex; align-items: center; }
+        .jc-m { font-size: 12px; color: #999; white-space: nowrap; overflow: visible; text-overflow: ellipsis; display: flex; align-items: center; }
         .jc-m b { color: #ff4400; font-weight: 700; }
         .jc-tag { font-size: 11px; font-weight: 500; color: #555; background: #f0f0f0; padding: 2px 7px; border-radius: 4px; }
-        .jc-tag-more { color: #aaa; }
+        .jc-tag-more { color: #999; }
         .jc-badges { position: absolute; bottom: 10px; right: 10px; display: flex; gap: 4px; z-index: 2; }
         .jc-type-badge { font-size: 11px; font-weight: 800; padding: 4px 9px; border-radius: 4px; letter-spacing: 0.3px; }
         .jc-type-badge.remote { color: #fff; background: #16a34a; }
         .jc-type-badge.hybrid { color: #fff; background: #2563eb; }
         .jc-type-badge.highpay { color: #fff; background: #ff4400; }
+        .jc-featured { position: absolute; top: 10px; left: 10px; background: linear-gradient(135deg, #ff6b00, #ff4400); color: #fff; font-size: 11px; font-weight: 800; padding: 4px 10px; border-radius: 4px; z-index: 3; letter-spacing: 0.3px; box-shadow: 0 2px 6px rgba(255,68,0,0.3); animation: featuredPulse 2s ease-in-out infinite; }
+        @keyframes featuredPulse { 0%, 100% { box-shadow: 0 2px 6px rgba(255,68,0,0.3); } 50% { box-shadow: 0 2px 12px rgba(255,68,0,0.5); } }
         .jc-dday { display: inline-flex; align-items: center; margin-left: 6px; font-size: 11px; font-weight: 700; color: #ff4400; background: #fff7f5; border: 1px solid #ffd6c8; padding: 1px 6px; border-radius: 4px; line-height: 1; }
         .jc-dday.urgent { color: #dc2626; background: #fef2f2; border-color: #fecaca; }
         .jc-nudge { background: #fff7f5; border: 1px solid #ffd6c8; border-radius: 8px; padding: 8px 12px; display: flex; justify-content: space-between; align-items: center; margin-top: 8px; }
-        .jc-nudge-t { font-size: 12px; color: #888; }
+        .jc-nudge-t { font-size: 12px; color: #777; }
         .jc-nudge-b { font-size: 12px; color: #ff4400; font-weight: 700; background: none; border: none; cursor: pointer; white-space: nowrap; }
 
         /* Empty slot */
         .jc-empty { border-radius: 8px; padding-top: 62%; position: relative; background: #fafafa; border: 1.5px dashed #e5e5e5; margin-bottom: 11px; }
         .jc-empty-in { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; }
-        .jc-empty-t { font-size: 12px; color: #bbb; }
+        .jc-empty-t { font-size: 12px; color: #999; }
         .jc-empty-b { padding: 6px 14px; background: #ff4400; border: none; border-radius: 5px; font-size: 12px; font-weight: 700; color: #fff; cursor: pointer; }
 
         /* Gate */
         .jgate { position: relative; min-height: 420px; }
         .jgate-blur { filter: blur(7px); pointer-events: none; user-select: none; }
-        .jgate-box { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: #fff; border: 1px solid #eee; border-radius: 16px; padding: 56px 40px; text-align: center; z-index: 2; max-width: 440px; width: 90%; box-shadow: 0 8px 40px rgba(0,0,0,0.06); }
+        .jgate-box { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: #fafaf8; border: 1px solid #eee; border-radius: 16px; padding: 56px 40px; text-align: center; z-index: 2; max-width: 440px; width: 90%; box-shadow: 0 8px 40px rgba(0,0,0,0.06); }
         .jgate-icon { font-size: 32px; margin-bottom: 16px; }
         .jgate-h { font-size: 20px; font-weight: 800; color: #111; margin-bottom: 8px; }
-        .jgate-p { font-size: 14px; color: #888; line-height: 1.7; margin-bottom: 24px; white-space: pre-line; }
+        .jgate-p { font-size: 14px; color: #777; line-height: 1.7; margin-bottom: 24px; white-space: pre-line; }
         .jgate-btn { font-size: 14px; font-weight: 700; color: #fff; background: #ff4400; border: none; padding: 13px 28px; border-radius: 8px; cursor: pointer; transition: background .15s; }
         .jgate-btn:hover { background: #e63d00; }
 
         /* Apply panel */
         .ap-bg { position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 50; }
-        .ap { position: fixed; bottom: 0; left: 50%; transform: translateX(-50%); width: 100%; max-width: 560px; background: #fff; border-radius: 20px 20px 0 0; z-index: 51; padding: 24px 28px 40px; max-height: 85vh; overflow-y: auto; animation: apUp .3s ease; }
+        .ap { position: fixed; bottom: 0; left: 50%; transform: translateX(-50%); width: 100%; max-width: 560px; background: #fafaf8; border-radius: 20px 20px 0 0; z-index: 51; padding: 24px 28px 40px; max-height: 85vh; overflow-y: auto; animation: apUp .3s ease; }
         @keyframes apUp { from { transform: translate(-50%,100%); } to { transform: translate(-50%,0); } }
         .ap-bar { width: 36px; height: 4px; background: #e0e0e0; border-radius: 2px; margin: 0 auto 20px; }
-        .ap-x { position: absolute; top: 16px; right: 20px; font-size: 20px; color: #aaa; cursor: pointer; background: none; border: none; line-height: 1; }
+        .ap-x { position: absolute; top: 16px; right: 20px; font-size: 20px; color: #999; cursor: pointer; background: none; border: none; line-height: 1; }
         .ap-h { font-size: 17px; font-weight: 700; color: #111; margin-bottom: 4px; }
-        .ap-sub { font-size: 13px; color: #aaa; margin-bottom: 20px; line-height: 1.5; }
+        .ap-sub { font-size: 13px; color: #999; margin-bottom: 20px; line-height: 1.5; }
         .ap-job { background: #f7f7f7; border-radius: 10px; padding: 12px 14px; display: flex; align-items: center; gap: 12px; margin-bottom: 20px; }
         .ap-job-ini { width: 36px; height: 36px; border-radius: 6px; background: #eee; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 800; color: #555; flex-shrink: 0; }
         .ap-job-t { font-size: 14px; font-weight: 600; color: #111; }
         .ap-job-s { font-size: 12px; color: #ff4400; font-weight: 600; }
-        .ap-lbl { font-size: 10px; font-weight: 700; color: #aaa; letter-spacing: .06em; text-transform: uppercase; margin-bottom: 8px; }
+        .ap-lbl { font-size: 10px; font-weight: 700; color: #999; letter-spacing: .06em; text-transform: uppercase; margin-bottom: 8px; }
         .ap-tags { display: flex; gap: 8px; margin-bottom: 20px; flex-wrap: wrap; }
         .ap-tag { background: #f0fff4; border: 1px solid #86efac; border-radius: 6px; padding: 8px 12px; font-size: 13px; color: #166534; }
         .ap-up { border: 1.5px dashed #ddd; border-radius: 8px; padding: 20px; text-align: center; cursor: pointer; margin-bottom: 20px; transition: border-color .15s; }
-        .ap-up:hover { border-color: #bbb; }
-        .ap-up-t { font-size: 13px; color: #aaa; }
-        .ap-up-h { font-size: 11px; color: #ccc; margin-top: 4px; }
+        .ap-up:hover { border-color: #999; }
+        .ap-up-t { font-size: 13px; color: #999; }
+        .ap-up-h { font-size: 11px; color: #aaa; margin-top: 4px; }
         .ap-up-f { font-size: 13px; color: #111; font-weight: 600; }
         .ap-btn { width: 100%; padding: 12px; font-size: 14px; font-weight: 700; color: #fff; background: #ff4400; border: none; border-radius: 8px; cursor: pointer; margin-bottom: 8px; transition: opacity .15s; }
         .ap-btn:disabled { opacity: 0.6; cursor: not-allowed; }
-        .ap-skip { width: 100%; padding: 8px; font-size: 13px; color: #aaa; background: none; border: none; cursor: pointer; }
+        .ap-skip { width: 100%; padding: 8px; font-size: 13px; color: #999; background: none; border: none; cursor: pointer; }
         .ap-ok { text-align: center; padding: 40px 0; }
         .ap-ok-i { font-size: 40px; color: #22c55e; margin-bottom: 12px; }
         .ap-ok-h { font-size: 18px; font-weight: 700; color: #111; margin-bottom: 6px; }
-        .ap-ok-p { font-size: 14px; color: #888; line-height: 1.5; }
+        .ap-ok-p { font-size: 14px; color: #777; line-height: 1.5; }
 
         /* Job Detail Panel */
         .jd-bg { position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 60; }
-        .jd { position: fixed; top: 0; right: 0; width: 50%; height: 100vh; background: #fff; z-index: 61; overflow-y: auto; animation: jdSlide .3s ease; box-shadow: -8px 0 40px rgba(0,0,0,0.1); }
+        .jd { position: fixed; top: 0; right: 0; width: 50%; height: 100vh; background: #fafaf8; z-index: 61; overflow-y: auto; animation: jdSlide .3s ease; box-shadow: -8px 0 40px rgba(0,0,0,0.1); }
         @keyframes jdSlide { from { transform: translateX(100%); } to { transform: translateX(0); } }
-        .jd-x { position: absolute; top: 16px; right: 20px; font-size: 24px; color: #aaa; cursor: pointer; background: none; border: none; z-index: 2; line-height: 1; }
+        .jd-x { position: absolute; top: 16px; right: 20px; font-size: 24px; color: #999; cursor: pointer; background: none; border: none; z-index: 2; line-height: 1; }
         .jd-img { width: 100%; height: 280px; object-fit: cover; background: #f0f0f0; }
         .jd-body { padding: 28px 32px 40px; }
         .jd-company { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; }
         .jd-co-ini { width: 44px; height: 44px; border-radius: 10px; background: #f0f0f0; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 800; color: #555; flex-shrink: 0; }
         .jd-co-name { font-size: 15px; font-weight: 600; color: #111; }
-        .jd-co-loc { font-size: 13px; color: #888; }
+        .jd-co-loc { font-size: 13px; color: #777; }
         .jd-title { font-size: 22px; font-weight: 800; color: #111; margin-bottom: 8px; letter-spacing: -0.3px; }
         .jd-salary { font-size: 16px; font-weight: 700; color: #ff4400; margin-bottom: 24px; }
         .jd-divider { height: 1px; background: #f0f0f0; margin: 24px 0; }
-        .jd-section-title { font-size: 11px; font-weight: 700; color: #aaa; text-transform: uppercase; letter-spacing: .06em; margin-bottom: 12px; }
+        .jd-section-title { font-size: 11px; font-weight: 700; color: #999; text-transform: uppercase; letter-spacing: .06em; margin-bottom: 12px; }
         .jd-desc { font-size: 14px; color: #444; line-height: 1.8; margin-bottom: 24px; white-space: pre-line; }
         .jd-meta-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 24px; }
 
         /* Work Information */
         .jd-work-info { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 24px; }
         .jd-work-item { display: flex; align-items: center; gap: 10px; background: #fafafa; border: 1px solid #f0f0f0; border-radius: 10px; padding: 12px 14px; }
-        .jd-work-icon { font-size: 18px; flex-shrink: 0; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; background: #fff; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.06); }
+        .jd-work-icon { font-size: 18px; flex-shrink: 0; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; background: #fafaf8; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.06); }
         .jd-work-label { font-size: 11px; color: #999; font-weight: 600; text-transform: uppercase; letter-spacing: .03em; }
         .jd-work-value { font-size: 13px; color: #222; font-weight: 600; margin-top: 2px; }
 
@@ -790,7 +808,7 @@ export default function JobsPage() {
         .jd-co-stat { padding: 8px 0; }
         .jd-co-stat:nth-child(odd) { border-right: 1px solid #e0e7ff; }
         .jd-co-stat-num { font-size: 15px; font-weight: 800; color: #111; }
-        .jd-co-stat-label { font-size: 11px; color: #888; margin-top: 2px; }
+        .jd-co-stat-label { font-size: 11px; color: #777; margin-top: 2px; }
 
         /* AI loading skeleton */
         .ai-loading { display: flex; flex-direction: column; gap: 10px; padding: 4px 0 16px; }
@@ -799,29 +817,29 @@ export default function JobsPage() {
         .ai-fade-in { animation: aiFadeIn 0.6s ease-out both; }
         @keyframes aiFadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
         .jd-meta-item { background: #f9f9f8; border-radius: 8px; padding: 12px 14px; }
-        .jd-meta-label { font-size: 10px; font-weight: 700; color: #aaa; text-transform: uppercase; letter-spacing: .04em; margin-bottom: 4px; }
+        .jd-meta-label { font-size: 10px; font-weight: 700; color: #999; text-transform: uppercase; letter-spacing: .04em; margin-bottom: 4px; }
         .jd-meta-value { font-size: 14px; font-weight: 600; color: #111; }
-        .jd-apply-float { position: sticky; bottom: 0; background: #fff; padding: 16px 32px; border-top: 1px solid #f0f0f0; z-index: 2; }
+        .jd-apply-float { position: sticky; bottom: 0; background: #fafaf8; padding: 16px 32px; border-top: 1px solid #f0f0f0; z-index: 2; }
         .jd-apply-btn { width: 100%; padding: 14px; background: #ff4400; color: #fff; border: none; border-radius: 8px; font-size: 15px; font-weight: 700; cursor: pointer; transition: background .15s; }
         .jd-apply-btn:hover { background: #e63d00; }
         .jd-apply-btn:disabled { opacity: 0.5; cursor: not-allowed; }
-        .jd-save-btn { width: 48px; height: 48px; border-radius: 8px; border: 1px solid #e0e0e0; background: #fff; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all .15s; flex-shrink: 0; }
+        .jd-save-btn { width: 48px; height: 48px; border-radius: 8px; border: 1px solid #e0e0e0; background: #fafaf8; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all .15s; flex-shrink: 0; }
         .jd-save-btn:hover { border-color: #ff4400; background: #fff5f0; }
         .toast { position: fixed; bottom: 32px; left: 50%; transform: translateX(-50%) translateY(20px); background: #222; color: #fff; font-size: 14px; font-weight: 600; padding: 12px 24px; border-radius: 10px; z-index: 9999; opacity: 0; animation: toastIn .25s ease forwards; box-shadow: 0 6px 24px rgba(0,0,0,0.25); pointer-events: none; display: flex; align-items: center; gap: 8px; }
         @keyframes toastIn { to { opacity: 1; transform: translateX(-50%) translateY(0); } }
         .jd-apply-inline { padding: 20px 32px 24px; border-top: 1px solid #f0f0f0; }
         .jd-apply-inline-h { font-size: 16px; font-weight: 800; color: #111; margin-bottom: 14px; }
         .jd-login-box { background: #fff7f5; border: 1px solid #ffd6c8; border-radius: 10px; padding: 16px 20px; text-align: center; margin-top: 8px; }
-        .jd-login-text { font-size: 13px; color: #888; margin-bottom: 10px; }
+        .jd-login-text { font-size: 13px; color: #777; margin-bottom: 10px; }
         .jd-login-btn { background: #ff4400; color: #fff; border: none; padding: 10px 24px; border-radius: 6px; font-size: 13px; font-weight: 700; cursor: pointer; }
 
         /* Pagination */
         .jp { display: flex; align-items: center; justify-content: center; gap: 4px; margin-top: 40px; }
-        .jp-btn { width: 36px; height: 36px; border-radius: 8px; border: 1px solid #e0e0e0; background: #fff; color: #555; font-size: 14px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all .15s; }
-        .jp-btn:hover:not(:disabled) { border-color: #bbb; color: #111; }
+        .jp-btn { width: 36px; height: 36px; border-radius: 8px; border: 1px solid #e0e0e0; background: #fafaf8; color: #555; font-size: 14px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all .15s; }
+        .jp-btn:hover:not(:disabled) { border-color: #999; color: #111; }
         .jp-btn.on { background: #111; color: #fff; border-color: #111; }
         .jp-btn:disabled { opacity: 0.3; cursor: not-allowed; }
-        .jp-dots { font-size: 14px; color: #aaa; padding: 0 4px; }
+        .jp-dots { font-size: 14px; color: #999; padding: 0 4px; }
 
         @media (max-width: 900px) { .jg { grid-template-columns: repeat(3, 1fr); } }
         @media (max-width: 768px) {
@@ -976,14 +994,20 @@ export default function JobsPage() {
             {/* Hot jobs section */}
             {jobs.length > 0 && currentPage === 1 && !searchQuery && !roleFilter && !typeFilter && !techFilter && expMin === '' && expMax === '' && (() => {
               const now = new Date()
-              const closing = jobs
-                .filter(j => j.deadline && new Date(j.deadline) > now && Math.ceil((new Date(j.deadline) - now) / 86400000) <= 14)
-                .sort((a, b) => new Date(a.deadline) - new Date(b.deadline))
-                .slice(0, 2)
-              const noDeadline = jobs
-                .filter(j => !j.deadline && !closing.find(c => c.id === j.id))
-                .slice(0, 2)
-              const hotJobs = [...closing, ...noDeadline].slice(0, 4)
+              const featuredJobs = jobs.filter(j => j.is_featured).sort((a, b) => (b.salary_max || 0) - (a.salary_max || 0)).slice(0, 4)
+              let hotJobs
+              if (featuredJobs.length >= 4) {
+                hotJobs = featuredJobs
+              } else {
+                const closing = jobs
+                  .filter(j => !j.is_featured && j.deadline && new Date(j.deadline) > now && Math.ceil((new Date(j.deadline) - now) / 86400000) <= 14)
+                  .sort((a, b) => new Date(a.deadline) - new Date(b.deadline))
+                  .slice(0, 2)
+                const noDeadline = jobs
+                  .filter(j => !j.is_featured && !j.deadline && !closing.find(c => c.id === j.id))
+                  .slice(0, 2)
+                hotJobs = [...featuredJobs, ...closing, ...noDeadline].slice(0, 4)
+              }
               if (hotJobs.length === 0) return null
               const fakeCount = (id) => 20 + (id.charCodeAt(0) + id.charCodeAt(id.length - 1)) % 21
               return (
@@ -998,10 +1022,11 @@ export default function JobsPage() {
                         <div key={job.id} className="jc" onClick={() => { setCarouselIdx(0); setDetailApplyMode(false); setApplied(false); setResumeFile(null); setDetailJob({ ...job, _imgFallback: DEFAULT_IMAGES[idx % 3] }); track('click_job_card','jobs',{jobId:job.id,title:job.title,company:job.company}) }}>
                           <div className="jc-img">
                             <div className="jc-img-in" style={{ background: `url(${job.image_url || job.images?.[0] || DEFAULT_IMAGES[idx % 3]}) center/cover no-repeat` }}>
-                              {bump !== null && bump > 0 && (
+                              {job.is_featured && <div className="jc-featured">{t('jobs.featuredBadge')}</div>}
+                              {!job.is_featured && bump !== null && bump > 0 && (
                                 <div className="jc-bump" dangerouslySetInnerHTML={{ __html: t('jobs.bumpVs', { bump }) }} />
                               )}
-                              {matched && <div className="jc-match" style={bump > 0 ? { top: 38 } : undefined}>{t('jobs.profileBadge')}</div>}
+                              {!job.is_featured && matched && <div className="jc-match" style={bump > 0 ? { top: 38 } : undefined}>{t('jobs.profileBadge')}</div>}
                               <button className="jc-bm" aria-label="Bookmark" onClick={e => { e.stopPropagation(); toggleBookmark(job.id) }}>
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill={bookmarks.includes(job.id) ? '#ff4400' : 'none'} stroke={bookmarks.includes(job.id) ? '#ff4400' : '#999'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                                   <path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z" />
@@ -1105,10 +1130,11 @@ export default function JobsPage() {
                             <div className="jc-img-in" style={{
                               background: `url(${job.image_url || job.images?.[0] || DEFAULT_IMAGES[globalIdx % 3]}) center/cover no-repeat`,
                             }}>
-                              {bump !== null && bump > 0 && (
+                              {job.is_featured && <div className="jc-featured">{t('jobs.featuredBadge')}</div>}
+                              {!job.is_featured && bump !== null && bump > 0 && (
                                 <div className="jc-bump" dangerouslySetInnerHTML={{ __html: t('jobs.bumpVs', { bump }) }} />
                               )}
-                              {matched && <div className="jc-match" style={bump > 0 ? { top: 38 } : undefined}>{t('jobs.profileBadge')}</div>}
+                              {!job.is_featured && matched && <div className="jc-match" style={bump > 0 ? { top: 38 } : undefined}>{t('jobs.profileBadge')}</div>}
                               <button className="jc-bm" aria-label="Bookmark" onClick={e => { e.stopPropagation(); toggleBookmark(job.id) }}>
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill={bookmarks.includes(job.id) ? '#ff4400' : 'none'} stroke={bookmarks.includes(job.id) ? '#ff4400' : '#999'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                                   <path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z" />

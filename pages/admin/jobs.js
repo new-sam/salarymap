@@ -8,7 +8,7 @@ const EMPTY_JOB = {
   salary_min: 50000000, salary_max: 80000000, description: '', is_active: true,
   image_url: '', logo_url: '', images: [],
   tech_stack: [], benefits: [], company_size: '', hiring_process: '',
-  deadline: '', headcount: '', apply_url: '',
+  deadline: '', headcount: '', apply_url: '', is_featured: false,
 }
 
 const ROLES = ['Backend','Frontend','Fullstack','Mobile','Data','DevOps','PM','Design','QA']
@@ -290,6 +290,10 @@ export default function AdminJobs() {
                   <F label="Deadline" value={form.deadline} type="date" set={v => setForm({ ...form, deadline: v })} />
                   <F label="Headcount" value={form.headcount} type="number" set={v => setForm({ ...form, headcount: v })} />
                   <F label="Apply URL" value={form.apply_url} set={v => setForm({ ...form, apply_url: v })} />
+                  <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, cursor: 'pointer' }}>
+                    <input type="checkbox" checked={form.is_featured || false} onChange={e => setForm({ ...form, is_featured: e.target.checked })} />
+                    Featured (추천 상단 고정)
+                  </label>
                 </div>
               </div>
 
@@ -374,6 +378,7 @@ export default function AdminJobs() {
                       <span style={{ ...S.badge, background: job.is_active ? '#dcfce7' : '#fee2e2', color: job.is_active ? '#166534' : '#991b1b' }}>
                         {job.is_active ? 'Active' : 'Inactive'}
                       </span>
+                      {job.is_featured && <span style={{ ...S.badge, background: '#fef3c7', color: '#92400e' }}>Featured</span>}
                     </div>
                     <div style={{ fontSize: 12, color: '#888' }}>
                       {job.company} · {job.location} · {job.type} · {Math.round(job.salary_min/1e6)}M–{Math.round(job.salary_max/1e6)}M VND

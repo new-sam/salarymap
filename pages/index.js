@@ -35,14 +35,14 @@ nav { position:fixed; top:0; left:0; right:0; z-index:200; padding:0 52px; heigh
 @keyframes jobsShimmer { 0% { left:-100%; } 50% { left:120%; } 100% { left:120%; } }
 .nav-jobs-icon { display:inline-flex; align-items:center; flex-shrink:0; }
 .nav-jobs-icon svg { width:14px; height:14px; }
-.nav-jobs-bubble { position:absolute; top:calc(100% + 14px); left:50%; transform:translateX(-50%); background:#fff; padding:5px 12px; border-radius:8px; white-space:nowrap; font-size:11px; font-weight:700; color:#ff6000; pointer-events:none; animation:bubbleFloat 3s ease-in-out infinite; box-shadow:0 2px 12px rgba(0,0,0,0.25); }
-.nav-jobs-bubble::before { content:''; position:absolute; top:-4px; left:50%; transform:translateX(-50%) rotate(45deg); width:8px; height:8px; background:#fff; }
+.nav-jobs-bubble { position:absolute; top:calc(100% + 14px); left:50%; transform:translateX(-50%); background:#fafaf8; padding:5px 12px; border-radius:8px; white-space:nowrap; font-size:11px; font-weight:700; color:#ff6000; pointer-events:none; animation:bubbleFloat 3s ease-in-out infinite; box-shadow:0 2px 12px rgba(0,0,0,0.25); }
+.nav-jobs-bubble::before { content:''; position:absolute; top:-4px; left:50%; transform:translateX(-50%) rotate(45deg); width:8px; height:8px; background:#fafaf8; }
 @keyframes bubbleFloat { 0%,100% { transform:translateX(-50%) translateY(0); } 50% { transform:translateX(-50%) translateY(-3px); } }
 
 /* Company selected state */
 .company-selected { display:flex; align-items:center; gap:14px; background:#1a0d07; border:1px solid #ff6000; border-radius:12px; padding:16px 18px; position:relative; overflow:hidden; }
 .company-selected::before { content:''; position:absolute; right:-20px; top:-20px; width:80px; height:80px; border-radius:50%; background:#ff6000; opacity:0.06; pointer-events:none; }
-.company-selected-logo { width:44px; height:44px; border-radius:10px; background:#fff; display:flex; align-items:center; justify-content:center; flex-shrink:0; overflow:hidden; }
+.company-selected-logo { width:44px; height:44px; border-radius:10px; background:#fafaf8; display:flex; align-items:center; justify-content:center; flex-shrink:0; overflow:hidden; }
 .company-selected-logo img { width:36px; height:36px; object-fit:contain; }
 .company-selected-initials { width:44px; height:44px; border-radius:10px; background:#1e1e1e; display:flex; align-items:center; justify-content:center; flex-shrink:0; font-size:14px; font-weight:800; color:#555; }
 .company-selected-info { flex:1; }
@@ -221,7 +221,7 @@ nav { position:fixed; top:0; left:0; right:0; z-index:200; padding:0 52px; heigh
 .st-list { display:flex; align-items:center; }
 .st-item { display:flex; align-items:center; gap:10px; padding:0 24px; border-right:1px solid var(--line); white-space:nowrap; flex-shrink:0; animation:slideL .4s ease forwards; opacity:0; }
 @keyframes slideL { from{opacity:0;transform:translateX(16px)} to{opacity:1;transform:translateX(0)} }
-.st-logo { width:16px; height:16px; border-radius:3px; object-fit:contain; background:#fff; padding:1px; }
+.st-logo { width:16px; height:16px; border-radius:3px; object-fit:contain; background:#fafaf8; padding:1px; }
 .st-logo-fb { width:16px; height:16px; border-radius:3px; background:var(--bg2); display:flex; align-items:center; justify-content:center; font-size:7px; font-weight:800; color:var(--orange); }
 .st-co { font-size:12px; font-weight:600; }
 .st-role { font-family:'Geist Mono',monospace; font-size:10px; color:var(--dim); }
@@ -248,12 +248,12 @@ nav { position:fixed; top:0; left:0; right:0; z-index:200; padding:0 52px; heigh
 .submit-inner { padding:64px 64px 56px; color:var(--bg); }
 .submit-h { font-size:clamp(28px,3.5vw,48px); font-weight:800; letter-spacing:-1.5px; line-height:1.1; margin-bottom:12px; }
 .submit-h em { font-style:normal; color:var(--orange); }
-.submit-sub { font-size:14px; color:rgba(12,12,11,.45); font-weight:300; margin-bottom:36px; line-height:1.7; max-width:480px; }
+.submit-sub { font-size:14px; color:rgba(12,12,11,.55); font-weight:300; margin-bottom:36px; line-height:1.7; max-width:480px; }
 .trust-line { display:flex; gap:24px; margin-bottom:32px; flex-wrap:wrap; }
-.tl { font-family:'Geist Mono',monospace; font-size:11px; color:rgba(12,12,11,.38); display:flex; align-items:center; gap:5px; }
+.tl { font-family:'Geist Mono',monospace; font-size:11px; color:rgba(12,12,11,.5); display:flex; align-items:center; gap:5px; }
 .tl::before { content:'✓'; color:var(--orange); font-weight:700; }
 .form-line { display:grid; grid-template-columns:1fr 1fr 1.3fr; gap:20px; margin-bottom:24px; }
-.fg label { display:block; font-size:10px; font-weight:600; color:rgba(12,12,11,.35); margin-bottom:6px; text-transform:uppercase; letter-spacing:1px; }
+.fg label { display:block; font-size:10px; font-weight:600; color:rgba(12,12,11,.5); margin-bottom:6px; text-transform:uppercase; letter-spacing:1px; }
 .fg select, .fg input { width:100%; background:transparent; border:none; border-bottom:1.5px solid rgba(12,12,11,.14); color:var(--bg); font-family:'Barlow',sans-serif; font-size:14px; padding:10px 0; border-radius:0; outline:none; appearance:none; transition:border-color .2s; }
 .fg select:focus, .fg input:focus { border-bottom-color:var(--orange); }
 .fg select option { background:#f2f0eb; }
@@ -266,8 +266,8 @@ nav { position:fixed; top:0; left:0; right:0; z-index:200; padding:0 52px; heigh
 .otw-email.on { display:block; }
 .otw-email input { width:100%; background:transparent; border:none; border-bottom:1.5px solid rgba(12,12,11,.14); color:var(--bg); font-family:'Barlow',sans-serif; font-size:14px; padding:10px 0; outline:none; transition:border-color .2s; }
 .otw-email input:focus { border-bottom-color:var(--orange); }
-.otw-email input::placeholder { color:rgba(12,12,11,.3); }
-.otw-trust { margin-top:6px; font-size:10px; color:rgba(12,12,11,.35); font-family:'Geist Mono',monospace; }
+.otw-email input::placeholder { color:rgba(12,12,11,.55); }
+.otw-trust { margin-top:6px; font-size:10px; color:rgba(12,12,11,.5); font-family:'Geist Mono',monospace; }
 
 /* AUTOCOMPLETE */
 .ac-wrap { position:relative; }
@@ -278,10 +278,10 @@ nav { position:fixed; top:0; left:0; right:0; z-index:200; padding:0 52px; heigh
   padding:10px 0; border-radius:0; outline:none; transition:border-color .2s;
 }
 .ac-input:focus { border-bottom-color:var(--orange); }
-.ac-input::placeholder { color:rgba(12,12,11,.3); }
+.ac-input::placeholder { color:rgba(12,12,11,.55); }
 .ac-dropdown {
   display:none; position:absolute; top:calc(100% + 4px); left:0; right:0; z-index:50;
-  background:#fff; border:1px solid rgba(12,12,11,.1);
+  background:#fafaf8; border:1px solid rgba(12,12,11,.1);
   border-radius:6px; box-shadow:0 8px 24px rgba(0,0,0,.12);
   max-height:200px; overflow-y:auto;
 }
@@ -303,11 +303,11 @@ nav { position:fixed; top:0; left:0; right:0; z-index:200; padding:0 52px; heigh
 @keyframes kenBurns2 { from{transform:scale(1) translate(0,0)} to{transform:scale(1.08) translate(1%,-.5%)} }
 @keyframes kenBurns3 { from{transform:scale(1) translate(0,0)} to{transform:scale(1.08) translate(0,1%)} }
 .city-card { transition: transform .4s ease, outline .2s ease; }
-.rb-ctx { font-family:'Geist Mono',monospace; font-size:10px; color:rgba(12,12,11,.38); margin-bottom:6px; letter-spacing:1px; text-transform:uppercase; }
+.rb-ctx { font-family:'Geist Mono',monospace; font-size:10px; color:rgba(12,12,11,.5); margin-bottom:6px; letter-spacing:1px; text-transform:uppercase; }
 .rb-pct { font-family:'Geist Mono',monospace; font-size:40px; font-weight:500; color:var(--bg); line-height:1; }
 .rb-sep { width:1px; height:48px; background:rgba(12,12,11,.1); }
 .rb-bwrap { flex:1; min-width:200px; }
-.rb-bl { display:flex; justify-content:space-between; font-size:10px; color:rgba(12,12,11,.38); margin-bottom:8px; font-family:'Geist Mono',monospace; }
+.rb-bl { display:flex; justify-content:space-between; font-size:10px; color:rgba(12,12,11,.5); margin-bottom:8px; font-family:'Geist Mono',monospace; }
 .rb-track { height:2px; background:rgba(12,12,11,.08); border-radius:1px; }
 .rb-fill { height:100%; background:var(--orange); border-radius:1px; transition:width .9s ease; }
 .uline { display:none; margin-top:18px; font-family:'Geist Mono',monospace; font-size:11px; color:var(--orange); }
@@ -1589,7 +1589,7 @@ function SubmitSection({
                     border: '1px solid rgba(255,68,0,0.3)', borderRadius: '14px', padding: '14px 16px' }}>
                     {selectedItem.domain ? (
                       <img src={`https://www.google.com/s2/favicons?domain=${selectedItem.domain}&sz=128`} alt=""
-                        style={{ width: 28, height: 28, borderRadius: '6px', objectFit: 'contain', background: '#fff' }}
+                        style={{ width: 28, height: 28, borderRadius: '6px', objectFit: 'contain', background: '#fafaf8' }}
                         onError={e => { e.target.style.display = 'none'; }} />
                     ) : (
                       <div style={{ width: 28, height: 28, borderRadius: '6px', background: 'rgba(255,255,255,0.1)',
@@ -1629,7 +1629,7 @@ function SubmitSection({
                             style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 14px', cursor: 'pointer', transition: 'background .1s',
                               background: i === acHighlight ? 'rgba(255,255,255,0.06)' : 'transparent' }}>
                             {item.logo ? (
-                              <img src={item.logo} alt="" style={{ width: 22, height: 22, borderRadius: '4px', objectFit: 'contain', background: '#fff', flexShrink: 0 }}
+                              <img src={item.logo} alt="" style={{ width: 22, height: 22, borderRadius: '4px', objectFit: 'contain', background: '#fafaf8', flexShrink: 0 }}
                                 onError={e => { e.target.style.display = 'none'; }} />
                             ) : (
                               <div style={{ width: 22, height: 22, borderRadius: '4px', background: 'rgba(255,255,255,0.08)',
@@ -2614,7 +2614,7 @@ export default function Home({ initialCompanies = [] }) {
                 <span style={{fontWeight:900,fontSize:'16px'}}>in</span> {t('auth.linkedin')}
               </button>
               <button onClick={() => { setShowAuthModal(false); window.location.href = '/api/auth/google?return=' + encodeURIComponent(window.location.pathname); }}
-                style={{width:'100%',background:'#fff',color:'#111',fontSize:'14px',fontWeight:700,padding:'14px',borderRadius:'10px',border:'none',cursor:'pointer',fontFamily:"'Barlow',sans-serif",display:'flex',alignItems:'center',justifyContent:'center',gap:'10px'}}>
+                style={{width:'100%',background:'#fafaf8',color:'#111',fontSize:'14px',fontWeight:700,padding:'14px',borderRadius:'10px',border:'none',cursor:'pointer',fontFamily:"'Barlow',sans-serif",display:'flex',alignItems:'center',justifyContent:'center',gap:'10px'}}>
                 <span style={{fontWeight:900,fontSize:'16px'}}>G</span> {t('auth.google')}
               </button>
               <button onClick={() => setShowAuthModal(false)}
