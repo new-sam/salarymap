@@ -12,7 +12,7 @@ export default function GlobalNav({ activePage }) {
   const [ready, setReady] = useState(false)
   const [savedCount, setSavedCount] = useState(0)
   const [isHR, setIsHR] = useState(false)
-  const [viewMode, setViewMode] = useState('seeker')
+  const [viewMode, setViewMode] = useState(() => typeof window !== 'undefined' && window.location.pathname.startsWith('/hr') ? 'hr' : 'seeker')
   const [profileScore, setProfileScore] = useState(null) // 'seeker' | 'hr'
   const menuRef = useRef(null)
 
@@ -30,20 +30,12 @@ export default function GlobalNav({ activePage }) {
         const cached = sessionStorage.getItem('fyi_is_admin')
         if (cached !== null) {
           setIsAdmin(cached === 'true')
-          if (cached === 'true') {
-            const savedMode = sessionStorage.getItem('fyi_view_mode')
-            if (savedMode === 'hr') setViewMode('hr')
-          }
         } else {
           try {
             const r = await fetch(`/api/admin/check?email=${encodeURIComponent(session.user.email)}`)
             const d = await r.json()
             setIsAdmin(d.isAdmin)
             sessionStorage.setItem('fyi_is_admin', String(d.isAdmin))
-            if (d.isAdmin) {
-              const savedMode = sessionStorage.getItem('fyi_view_mode')
-              if (savedMode === 'hr') setViewMode('hr')
-            }
           } catch {}
         }
         try {
@@ -142,13 +134,9 @@ export default function GlobalNav({ activePage }) {
           {(isHR || isAdmin) && (
             <div className="gnav-toggle">
               <button className={`gnav-toggle-opt${viewMode === 'seeker' ? ' active' : ''}`} onClick={() => {
-                setViewMode('seeker')
-                sessionStorage.setItem('fyi_view_mode', 'seeker')
                 if (window.location.pathname.startsWith('/hr')) window.location.href = '/'
               }}>Seeker</button>
               <button className={`gnav-toggle-opt${viewMode === 'hr' ? ' active' : ''}`} onClick={() => {
-                setViewMode('hr')
-                sessionStorage.setItem('fyi_view_mode', 'hr')
                 if (!window.location.pathname.startsWith('/hr')) window.location.href = '/hr/home'
               }}>HR</button>
             </div>
