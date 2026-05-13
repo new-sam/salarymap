@@ -1,4 +1,4 @@
-import { COMPANY_PROFILES } from '../data/companyProfiles'
+import { COMPANY_PROFILES } from '../data/companyProfiles.js'
 
 export function generateCompanyDescription(job) {
   const profile = COMPANY_PROFILES[job.company]

@@ -7,7 +7,7 @@ import GlobalNav from '../components/GlobalNav'
 import { useT } from '../lib/i18n'
 import Icon from '../components/Icon'
 import { DEFAULT_IMAGES, ROLE_OPTIONS, TYPE_OPTIONS, TECH_OPTIONS, JOBS_PER_PAGE } from '../constants/jobs'
-import { COMPANY_PROFILES } from '../data/companyProfiles'
+import { COMPANY_PROFILES } from '../data/companyProfiles.js'
 import { formatSalaryCard, getHighSalaryThreshold } from '../utils/salary'
 import { generateCompanyDescription } from '../utils/companyDescription'
 
