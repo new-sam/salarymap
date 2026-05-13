@@ -327,7 +327,6 @@ export default function JobsPage() {
         setUserExperience(_cachedProfile.exp)
         setUserCompany(_cachedProfile.company)
       }
-      try { setBookmarks(JSON.parse(localStorage.getItem('fyi_bookmarks') || '[]')) } catch { }
       try { setAppliedJobs(JSON.parse(localStorage.getItem('fyi_applied_jobs') || '[]')) } catch { }
     }
     supabase.auth.getSession().then(async ({ data: { session: s } }) => {
