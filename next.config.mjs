@@ -9,6 +9,12 @@ const nextConfig = {
       { source: '/fb', destination: '/?utm_source=facebook&utm_medium=social', permanent: false },
     ];
   },
+  async rewrites() {
+    return [
+      { source: '/strategy', destination: '/strategy.html' },
+      { source: '/strategy-en', destination: '/strategy-en.html' },
+    ];
+  },
 };
 
 export default nextConfig;
