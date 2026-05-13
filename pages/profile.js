@@ -270,9 +270,14 @@ export default function ProfilePage() {
       setUser(session.user)
       setToken(session.access_token)
 
-      const res = await fetch('/api/profile/talent', { headers: { Authorization: `Bearer ${session.access_token}` } })
-      if (res.ok) {
-        const { profile: p } = await res.json()
+      // Fetch profile and submissions in parallel
+      const [profileRes, subsResult] = await Promise.all([
+        fetch('/api/profile/talent', { headers: { Authorization: `Bearer ${session.access_token}` } }),
+        supabase.from('submissions').select('*').eq('user_id', session.user.id).order('created_at', { ascending: false }),
+      ])
+
+      if (profileRes.ok) {
+        const { profile: p } = await profileRes.json()
         if (p) {
           setProfile(p)
           const formData = {
@@ -300,15 +305,13 @@ export default function ProfilePage() {
           }
           setForm(formData)
           setInitialForm(formData)
-          // Show onboarding if profile not started
           if (!p.headline && !p.position) {
             setShowOnboard(true)
           }
         }
       }
 
-      // Fetch submissions for salary tab
-      let { data: subs } = await supabase.from('submissions').select('*').eq('user_id', session.user.id).order('created_at', { ascending: false })
+      let subs = subsResult.data
       if (!subs?.length && session.user.email) {
         const { data: es } = await supabase.from('submissions').select('*').eq('email', session.user.email).order('created_at', { ascending: false })
         if (es?.length) subs = es

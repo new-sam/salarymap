@@ -154,12 +154,14 @@ export default function GlobalNav({ activePage }) {
 
           {viewMode === 'seeker' ? (<>
             <Link href="/" className={`gnav-link${activePage === 'home' ? ' on' : ''}`}>{t('nav.amIUnderpaid')}</Link>
-            <Link href="/jobs" className={`gnav-link gnav-jobs-cta${activePage === 'jobs' ? ' on' : ''}`}>
-              <span className="gnav-jobs-shimmer"></span>
-              <span className="gnav-jobs-icon"><svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="3" y="7" width="18" height="13" rx="2" stroke="currentColor" strokeWidth="2"/><path d="M8 7V5a2 2 0 012-2h4a2 2 0 012 2v2" stroke="currentColor" strokeWidth="2"/><path d="M12 11v4M10 13h4" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg></span>
-              {t('nav.jobs')}
-              {activePage !== 'jobs' && <span className="gnav-jobs-bubble">{t('nav.jobsSub')}</span>}
-            </Link>
+            {activePage !== 'jobs' && (
+              <Link href="/jobs" className="gnav-link gnav-jobs-cta">
+                <span className="gnav-jobs-shimmer"></span>
+                <span className="gnav-jobs-icon"><svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="3" y="7" width="18" height="13" rx="2" stroke="currentColor" strokeWidth="2"/><path d="M8 7V5a2 2 0 012-2h4a2 2 0 012 2v2" stroke="currentColor" strokeWidth="2"/><path d="M12 11v4M10 13h4" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg></span>
+                {t('nav.jobs')}
+                <span className="gnav-jobs-bubble">{t('nav.jobsSub')}</span>
+              </Link>
+            )}
           </>) : (<>
             <Link href="/hr" className={`gnav-link${activePage === 'hr' ? ' on' : ''}`}>Candidates</Link>
           </>)}
