@@ -23,6 +23,7 @@ export default function HROnboarding() {
   const [user, setUser] = useState(null)
   const [status, setStatus] = useState(null)
   const [submitting, setSubmitting] = useState(false)
+  const [bizVerify, setBizVerify] = useState(null) // null | 'loading' | { valid, message }
   const [form, setForm] = useState({
     companyName: '',
     contactName: '',
@@ -60,8 +61,28 @@ export default function HROnboarding() {
   const personal = user ? isPersonalEmail(user.email) : false
   const emailDomain = user?.email?.split('@')[1] || ''
 
+  const bizRaw = form.businessNumber.replace(/[^0-9]/g, '')
+  const bizComplete = bizRaw.length === 10
+  const bizVerified = bizVerify && bizVerify !== 'loading' && bizVerify.valid
+
   const canSubmit = form.companyName && form.contactName && form.phone
-    && (!personal || form.businessNumber.replace(/[^0-9]/g, '').length === 10)
+    && (!personal || bizVerified)
+
+  const handleVerifyBiz = async () => {
+    if (!bizComplete) return
+    setBizVerify('loading')
+    try {
+      const res = await fetch('/api/hr/verify-business', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ businessNumber: form.businessNumber }),
+      })
+      const data = await res.json()
+      setBizVerify(data)
+    } catch {
+      setBizVerify({ valid: false, message: '조회 중 오류가 발생했습니다.' })
+    }
+  }
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -196,19 +217,44 @@ export default function HROnboarding() {
                 {personal && (
                   <div className="onb-field">
                     <label className="onb-label">사업자등록번호 <span className="req">*</span></label>
-                    <input className={`onb-input${form.businessNumber ? ' filled' : ''}`}
-                      placeholder="000-00-00000"
-                      value={form.businessNumber}
-                      onChange={e => {
-                        const raw = e.target.value.replace(/[^0-9]/g, '').slice(0, 10)
-                        const formatted = raw.length > 5
-                          ? `${raw.slice(0,3)}-${raw.slice(3,5)}-${raw.slice(5)}`
-                          : raw.length > 3
-                            ? `${raw.slice(0,3)}-${raw.slice(3)}`
-                            : raw
-                        setForm(f => ({ ...f, businessNumber: formatted }))
-                      }} />
-                    <div className="onb-biz-hint">개인 이메일 사용 시 기업 인증을 위해 필요합니다 (10자리)</div>
+                    <div style={{ display: 'flex', gap: 8 }}>
+                      <input className={`onb-input${form.businessNumber ? ' filled' : ''}`}
+                        placeholder="000-00-00000"
+                        style={{ flex: 1 }}
+                        value={form.businessNumber}
+                        onChange={e => {
+                          const raw = e.target.value.replace(/[^0-9]/g, '').slice(0, 10)
+                          const formatted = raw.length > 5
+                            ? `${raw.slice(0,3)}-${raw.slice(3,5)}-${raw.slice(5)}`
+                            : raw.length > 3
+                              ? `${raw.slice(0,3)}-${raw.slice(3)}`
+                              : raw
+                          setForm(f => ({ ...f, businessNumber: formatted }))
+                          setBizVerify(null)
+                        }} />
+                      <button type="button" onClick={handleVerifyBiz}
+                        disabled={!bizComplete || bizVerify === 'loading'}
+                        style={{
+                          padding: '0 20px', borderRadius: 10, border: 'none',
+                          background: bizComplete ? '#111' : '#e5e5e5',
+                          color: bizComplete ? '#fff' : '#bbb',
+                          fontSize: 13, fontWeight: 700, cursor: bizComplete ? 'pointer' : 'not-allowed',
+                          fontFamily: 'inherit', whiteSpace: 'nowrap', transition: 'all .2s',
+                        }}>
+                        {bizVerify === 'loading' ? '조회중...' : '인증'}
+                      </button>
+                    </div>
+                    {bizVerify && bizVerify !== 'loading' && (
+                      <div style={{
+                        marginTop: 8, padding: '8px 12px', borderRadius: 8, fontSize: 12, fontWeight: 600,
+                        background: bizVerify.valid ? '#f0fdf4' : '#fef2f2',
+                        color: bizVerify.valid ? '#166534' : '#991b1b',
+                        border: `1px solid ${bizVerify.valid ? '#bbf7d0' : '#fecaca'}`,
+                      }}>
+                        {bizVerify.valid ? '✓' : '✕'} {bizVerify.message}
+                      </div>
+                    )}
+                    {!bizVerify && <div className="onb-biz-hint">개인 이메일 사용 시 국세청 인증이 필요합니다</div>}
                   </div>
                 )}
 

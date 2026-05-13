@@ -26,6 +26,7 @@ export default function HRLoginPage() {
   const handleLogin = () => {
     if (typeof window === 'undefined') return
     localStorage.setItem('fyi_login_return', '/hr')
+    localStorage.setItem('fyi_intent', 'hr')
     window.location.href = '/api/auth/google?role=hr&return=/hr'
   }
 
