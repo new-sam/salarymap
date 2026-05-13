@@ -690,11 +690,8 @@ export default function JobsPage() {
           display: flex; align-items: center; gap: 7px;
         }
         .jh-trend {
-          display: inline-flex; align-items: center; gap: 4px;
-          background: #fff0eb; color: #ff4400;
-          font-size: 11px; font-weight: 800;
-          padding: 4px 10px 4px 8px; border-radius: 100px;
-          border: 1px solid rgba(255,68,0,0.15);
+          display: inline-flex; align-items: center;
+          color: #ff4400;
         }
         .jh-trend-arrows {
           display: flex; flex-direction: column; gap: 0;
@@ -1037,7 +1034,7 @@ export default function JobsPage() {
               const fakeCount = (id) => 20 + (id.charCodeAt(0) + id.charCodeAt(id.length - 1)) % 21
               return (
                 <div className="jh">
-                  <div className="jh-title"><span className="jh-trend"><span className="jh-trend-arrows"><svg className="jh-trend-arrow" width="10" height="5" viewBox="0 0 10 5"><polyline points="1,4 5,1 9,4" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg><svg className="jh-trend-arrow" width="10" height="5" viewBox="0 0 10 5"><polyline points="1,4 5,1 9,4" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg><svg className="jh-trend-arrow" width="10" height="5" viewBox="0 0 10 5"><polyline points="1,4 5,1 9,4" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg></span>Trending</span>{t('jobs.hotTitle')}</div>
+                  <div className="jh-title"><span className="jh-trend"><span className="jh-trend-arrows"><svg className="jh-trend-arrow" width="12" height="6" viewBox="0 0 12 6"><polyline points="1,5 6,1 11,5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg><svg className="jh-trend-arrow" width="12" height="6" viewBox="0 0 12 6"><polyline points="1,5 6,1 11,5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg><svg className="jh-trend-arrow" width="12" height="6" viewBox="0 0 12 6"><polyline points="1,5 6,1 11,5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg></span></span>{t('jobs.hotTitle')}</div>
                   <div className="jg">
                     {hotJobs.map((job, idx) => {
                       const bump = getBump(job)
