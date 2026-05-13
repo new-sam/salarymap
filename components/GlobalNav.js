@@ -142,7 +142,9 @@ export default function GlobalNav({ activePage }) {
             </div>
           )}
 
-          {viewMode === 'seeker' ? (<>
+          {viewMode === 'hr' && (isHR || isAdmin) ? (<>
+            <Link href="/hr" className={`gnav-link${activePage === 'hr' ? ' on' : ''}`}>Candidates</Link>
+          </>) : (<>
             <Link href="/" className={`gnav-link${activePage === 'home' ? ' on' : ''}`}>{t('nav.amIUnderpaid')}</Link>
             {activePage !== 'jobs' && (
               <Link href="/jobs" className="gnav-link gnav-jobs-cta">
@@ -152,8 +154,6 @@ export default function GlobalNav({ activePage }) {
                 <span className="gnav-jobs-bubble">{t('nav.jobsSub')}</span>
               </Link>
             )}
-          </>) : (<>
-            <Link href="/hr" className={`gnav-link${activePage === 'hr' ? ' on' : ''}`}>Candidates</Link>
           </>)}
 
           {!ready ? null : !isLoggedIn ? (
