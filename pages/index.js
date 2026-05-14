@@ -1110,6 +1110,26 @@ export default function Home({ initialCompanies = [] }) {
         <div className="nav-r">
           <button className="nav-link" onClick={() => document.getElementById('submit')?.scrollIntoView({behavior:'smooth'})}>{t('nav.amIUnderpaid')}</button>
           <button className="nav-link" onClick={() => document.getElementById('companies')?.scrollIntoView({behavior:'smooth'})}>{t('nav.whoPaysMost')}</button>
+          <a
+            href="/for-companies"
+            onClick={() => {
+              fetch('/api/track', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ event: 'click_for_companies', page: 'home', email: user?.email }) }).catch(() => {})
+            }}
+            style={{
+              display:'inline-flex', alignItems:'center', gap:4,
+              padding:'6px 10px', borderRadius:6,
+              border:'1px solid rgba(255,255,255,0.12)', background:'transparent',
+              color:'rgba(255,255,255,0.7)', fontSize:12, fontWeight:600,
+              textDecoration:'none', whiteSpace:'nowrap', cursor:'pointer',
+              transition:'all .15s',
+            }}
+            onMouseEnter={(e) => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.25)'; e.currentTarget.style.color = '#fff'; }}
+            onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.12)'; e.currentTarget.style.color = 'rgba(255,255,255,0.7)'; }}
+          >
+            기업 채용
+            <span style={{fontSize:10, opacity:0.7}}>↗</span>
+          </a>
           <a className="nav-jobs-cta" href="/jobs" onClick={() => {
             fetch('/api/track', { method: 'POST', headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({ event: 'click_jobs_cta', page: 'home', email: user?.email }) }).catch(() => {})
@@ -1195,9 +1215,6 @@ export default function Home({ initialCompanies = [] }) {
             </div>
           )}
 
-          <button className="nav-btn" onClick={() => document.getElementById('submit')?.scrollIntoView({behavior:'smooth'})}>
-            {t('nav.submitSalary')}
-          </button>
         </div>
       </nav>
 

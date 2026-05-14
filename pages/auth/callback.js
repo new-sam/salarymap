@@ -24,6 +24,59 @@ async function saveProfile(user) {
   }
 }
 
+// Company signup: find-or-create recruiter_companies + insert recruiter_users
+async function saveCompanyRecruiter(user) {
+  try {
+    const companyName = typeof sessionStorage !== 'undefined' ? sessionStorage.getItem('fyi_company_name') : null;
+    const fullName = typeof sessionStorage !== 'undefined' ? sessionStorage.getItem('fyi_company_full_name') : null;
+    const email = user.email || '';
+    const emailDomain = email.includes('@') ? email.split('@')[1].toLowerCase() : null;
+    if (!emailDomain) return;
+
+    // 1) Find existing recruiter_company by domain
+    let companyId = null;
+    const { data: existing } = await supabase
+      .from('recruiter_companies')
+      .select('id')
+      .eq('email_domain', emailDomain)
+      .limit(1)
+      .maybeSingle();
+
+    if (existing?.id) {
+      companyId = existing.id;
+    } else if (companyName) {
+      // 2) Create new recruiter_company
+      const { data: created } = await supabase
+        .from('recruiter_companies')
+        .insert({
+          name: companyName,
+          email_domain: emailDomain,
+          created_by: user.id,
+        })
+        .select('id')
+        .single();
+      if (created?.id) companyId = created.id;
+    }
+
+    // 3) Upsert recruiter_users row (one per user)
+    await supabase.from('recruiter_users').upsert({
+      user_id: user.id,
+      company_id: companyId,
+      email: user.email,
+      full_name: fullName,
+      role: 'admin',
+    }, { onConflict: 'user_id' });
+
+    // Cleanup sessionStorage keys
+    if (typeof sessionStorage !== 'undefined') {
+      sessionStorage.removeItem('fyi_company_name');
+      sessionStorage.removeItem('fyi_company_full_name');
+    }
+  } catch (e) {
+    // silent fail
+  }
+}
+
 export default function AuthCallback() {
   const router = useRouter()
 
@@ -39,21 +92,38 @@ export default function AuthCallback() {
         }
 
         if (data.session) {
-          await saveProfile(data.session.user)
+          const intentEarly = typeof window !== 'undefined' && localStorage.getItem('fyi_intent')
+          if (intentEarly === 'company') {
+            await saveCompanyRecruiter(data.session.user)
+          } else {
+            await saveProfile(data.session.user)
+          }
           const returnTo = typeof window !== 'undefined' && localStorage.getItem('fyi_login_return')
-          const intent = typeof window !== 'undefined' && localStorage.getItem('fyi_intent')
+          const intent = intentEarly
           localStorage.removeItem('fyi_login_return')
-          // Track signup — skip for HR logins
+          // Track signup — skip for HR/company logins
           if (intent === 'hr') {
             if (typeof gtag === 'function') gtag('event', 'hr_signup', {})
             if (typeof fbq === 'function') fbq('trackCustom', 'HRSignup', {})
+          } else if (intent === 'company') {
+            if (typeof gtag === 'function') gtag('event', 'company_signup', {})
+            if (typeof fbq === 'function') fbq('trackCustom', 'CompanySignup', {})
           } else {
             if (typeof gtag === 'function') gtag('event', 'signup_complete', { intent: intent || 'none', return_to: returnTo || 'default' })
             if (typeof fbq === 'function') fbq('trackCustom', 'SignupComplete', { intent: intent || 'none', return_to: returnTo || 'default' })
           }
           // If user expressed job interest, go to jobs page
           const jobIntents = ['open', 'selective']
-          const destination = returnTo || (intent && jobIntents.includes(intent) ? '/jobs' : '/?login=success')
+          let destination;
+          if (returnTo) {
+            destination = returnTo;
+          } else if (intent === 'company') {
+            destination = '/company';
+          } else if (intent && jobIntents.includes(intent)) {
+            destination = '/jobs';
+          } else {
+            destination = '/?login=success';
+          }
           router.replace(destination)
           return
         }
@@ -67,20 +137,36 @@ export default function AuthCallback() {
             await supabase.auth.exchangeCodeForSession(code)
 
           if (exchangeData?.session) {
-            await saveProfile(exchangeData.session.user)
+            const intent2Early = typeof window !== 'undefined' && localStorage.getItem('fyi_intent')
+            if (intent2Early === 'company') {
+              await saveCompanyRecruiter(exchangeData.session.user)
+            } else {
+              await saveProfile(exchangeData.session.user)
+            }
             const returnTo = typeof window !== 'undefined' && localStorage.getItem('fyi_login_return')
-            const intent2 = typeof window !== 'undefined' && localStorage.getItem('fyi_intent')
+            const intent2 = intent2Early
             localStorage.removeItem('fyi_login_return')
-            // Track signup — skip for HR logins
             if (intent2 === 'hr') {
               if (typeof gtag === 'function') gtag('event', 'hr_signup', {})
               if (typeof fbq === 'function') fbq('trackCustom', 'HRSignup', {})
+            } else if (intent2 === 'company') {
+              if (typeof gtag === 'function') gtag('event', 'company_signup', {})
+              if (typeof fbq === 'function') fbq('trackCustom', 'CompanySignup', {})
             } else {
               if (typeof gtag === 'function') gtag('event', 'signup_complete', { intent: intent2 || 'none', return_to: returnTo || 'default' })
               if (typeof fbq === 'function') fbq('trackCustom', 'SignupComplete', { intent: intent2 || 'none', return_to: returnTo || 'default' })
             }
             const jobIntents2 = ['open', 'selective']
-            const dest2 = returnTo || (intent2 && jobIntents2.includes(intent2) ? '/jobs' : '/?login=success')
+            let dest2;
+            if (returnTo) {
+              dest2 = returnTo;
+            } else if (intent2 === 'company') {
+              dest2 = '/company';
+            } else if (intent2 && jobIntents2.includes(intent2)) {
+              dest2 = '/jobs';
+            } else {
+              dest2 = '/?login=success';
+            }
             router.replace(dest2)
           } else {
             // exchange failed
