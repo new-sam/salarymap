@@ -43,14 +43,8 @@ export default function AuthCallback() {
           const returnTo = typeof window !== 'undefined' && localStorage.getItem('fyi_login_return')
           const intent = typeof window !== 'undefined' && localStorage.getItem('fyi_intent')
           localStorage.removeItem('fyi_login_return')
-          // Track signup — skip for HR logins
-          if (intent === 'hr') {
-            if (typeof gtag === 'function') gtag('event', 'hr_signup', {})
-            if (typeof fbq === 'function') fbq('trackCustom', 'HRSignup', {})
-          } else {
-            if (typeof gtag === 'function') gtag('event', 'signup_complete', { intent: intent || 'none', return_to: returnTo || 'default' })
-            if (typeof fbq === 'function') fbq('trackCustom', 'SignupComplete', { intent: intent || 'none', return_to: returnTo || 'default' })
-          }
+          if (typeof gtag === 'function') gtag('event', 'signup_complete', { intent: intent || 'none', return_to: returnTo || 'default' })
+          if (typeof fbq === 'function') fbq('trackCustom', 'SignupComplete', { intent: intent || 'none', return_to: returnTo || 'default' })
           // If user expressed job interest, go to jobs page
           const jobIntents = ['open', 'selective']
           const destination = returnTo || (intent && jobIntents.includes(intent) ? '/jobs' : '/?login=success')
@@ -71,14 +65,8 @@ export default function AuthCallback() {
             const returnTo = typeof window !== 'undefined' && localStorage.getItem('fyi_login_return')
             const intent2 = typeof window !== 'undefined' && localStorage.getItem('fyi_intent')
             localStorage.removeItem('fyi_login_return')
-            // Track signup — skip for HR logins
-            if (intent2 === 'hr') {
-              if (typeof gtag === 'function') gtag('event', 'hr_signup', {})
-              if (typeof fbq === 'function') fbq('trackCustom', 'HRSignup', {})
-            } else {
-              if (typeof gtag === 'function') gtag('event', 'signup_complete', { intent: intent2 || 'none', return_to: returnTo || 'default' })
-              if (typeof fbq === 'function') fbq('trackCustom', 'SignupComplete', { intent: intent2 || 'none', return_to: returnTo || 'default' })
-            }
+            if (typeof gtag === 'function') gtag('event', 'signup_complete', { intent: intent2 || 'none', return_to: returnTo || 'default' })
+            if (typeof fbq === 'function') fbq('trackCustom', 'SignupComplete', { intent: intent2 || 'none', return_to: returnTo || 'default' })
             const jobIntents2 = ['open', 'selective']
             const dest2 = returnTo || (intent2 && jobIntents2.includes(intent2) ? '/jobs' : '/?login=success')
             router.replace(dest2)

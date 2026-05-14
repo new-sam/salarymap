@@ -620,7 +620,6 @@ export default function Home({ initialCompanies = [] }) {
   const [detailCardIndex, setDetailCardIndex] = useState(0);
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [isAdminUser, setIsAdminUser] = useState(false);
-  const [viewMode, setViewMode] = useState('seeker');
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [user, setUser] = useState(null);
   const [showUserMenu, setShowUserMenu] = useState(false);
@@ -798,10 +797,10 @@ export default function Home({ initialCompanies = [] }) {
         const cached = sessionStorage.getItem('fyi_is_admin');
         if (cached !== null) {
           setIsAdminUser(cached === 'true');
-          if (cached === 'true') { const sm = sessionStorage.getItem('fyi_view_mode'); if (sm === 'hr') setViewMode('hr'); }
+          if (cached === 'true') {}
         } else {
           fetch(`/api/admin/check?email=${encodeURIComponent(session.user.email)}`)
-            .then(r => r.json()).then(d => { setIsAdminUser(d.isAdmin); sessionStorage.setItem('fyi_is_admin', String(d.isAdmin)); if (d.isAdmin) { const sm = sessionStorage.getItem('fyi_view_mode'); if (sm === 'hr') setViewMode('hr'); } }).catch(() => {});
+            .then(r => r.json()).then(d => { setIsAdminUser(d.isAdmin); sessionStorage.setItem('fyi_is_admin', String(d.isAdmin)); }).catch(() => {});
         }
 
         // Fetch profile score
@@ -1120,18 +1119,6 @@ export default function Home({ initialCompanies = [] }) {
             <span className="nav-jobs-bubble">{t('nav.jobsSub')}</span>
           </a>
 
-          {isAdminUser && (
-            <div style={{display:'flex',alignItems:'center',gap:0,background:'rgba(255,255,255,0.06)',borderRadius:100,padding:2,border:'1px solid rgba(255,255,255,0.08)'}}>
-              <button onClick={() => {}}
-                style={{fontSize:11,fontWeight:600,padding:'4px 12px',borderRadius:100,cursor:'pointer',border:'none',background:'rgba(255,96,0,0.2)',color:'#ff6000',fontFamily:"'Barlow',sans-serif",transition:'all .2s',whiteSpace:'nowrap'}}>
-                Seeker
-              </button>
-              <button onClick={() => { window.location.href='/hr/home'; }}
-                style={{fontSize:11,fontWeight:600,padding:'4px 12px',borderRadius:100,cursor:'pointer',border:'none',background:'none',color:'rgba(255,255,255,0.3)',fontFamily:"'Barlow',sans-serif",transition:'all .2s',whiteSpace:'nowrap'}}>
-                HR
-              </button>
-            </div>
-          )}
 
           {!isLoggedIn ? (
             <button

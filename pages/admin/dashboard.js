@@ -7,7 +7,6 @@ import FunnelView from '../../components/admin/FunnelView'
 import UtmView from '../../components/admin/UtmView'
 import UsersView from '../../components/admin/UsersView'
 import ApplicationsView from '../../components/admin/ApplicationsView'
-import HRApprovalView from '../../components/admin/HRApprovalView'
 import {
   T, METRICS_BASE, EXP_COLORS, COLORS,
   inputStyle, sectionStyle, sectionTitle,
@@ -242,7 +241,7 @@ export default function AdminDashboard() {
 
         {/* Tab switcher */}
         <div style={{ display: 'flex', gap: 0, marginBottom: 24, borderBottom: '2px solid #e5e7eb' }}>
-          {['trend', 'funnel', 'utm', 'users', 'applications', 'hrApproval'].map(k => (
+          {['trend', 'funnel', 'utm', 'users', 'applications'].map(k => (
             <button key={k} onClick={() => setTab(k)}
               style={{
                 padding: '10px 24px', fontSize: 14, fontWeight: 600, cursor: 'pointer',
@@ -631,11 +630,6 @@ export default function AdminDashboard() {
         {/* Applications Tab */}
         {tab === 'applications' && (
           <ApplicationsView token={token} t={t} />
-        )}
-
-        {/* HR Approval Tab */}
-        {tab === 'hrApproval' && (
-          <HRApprovalView token={token} lang={lang} />
         )}
 
         {/* Language Switcher */}
