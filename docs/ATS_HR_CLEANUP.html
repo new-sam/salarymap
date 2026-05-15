@@ -47,8 +47,9 @@
     font-size: 10.5px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase;
   }
   .alive { background: #ecfdf5; color: #059669; }
-  .delete { background: #fef2f2; color: #b91c1c; }
+  .done { background: #f0f9ff; color: #0369a1; }
   .check { background: #fffbeb; color: #d97706; }
+  .delete { background: #fef2f2; color: #b91c1c; }
 
   .note {
     margin-top: 24px; padding: 14px 18px;
@@ -57,9 +58,12 @@
   }
   .note b { color: #422006; }
 
-  .pill { display: inline-block; padding: 2px 7px; border-radius: 999px; font-size: 10.5px; font-weight: 700; letter-spacing: 0.04em; }
-  .pill.new { background: #ffedd5; color: #c2410c; }
-  .pill.old { background: #fee2e2; color: #991b1b; }
+  .merge-box {
+    background: #ecfdf5; border: 1px solid #a7f3d0; border-left: 4px solid #059669;
+    padding: 14px 18px; border-radius: 6px; font-size: 12.5px; color: #064e3b; line-height: 1.7;
+    margin-top: 8px;
+  }
+  .merge-box code { background: rgba(6,78,59,0.08); color: #064e3b; }
 
   footer { margin-top: 40px; font-size: 11px; color: #94a3b8; text-align: center; padding-top: 16px; border-top: 1px solid #e5e7eb; }
 </style>
@@ -68,7 +72,7 @@
 <div class="wrap">
 
 <h1>ATS Flow + HR 잔재 정리</h1>
-<div class="meta">2026-05-15 · feat/company-flow 브랜치 기준</div>
+<div class="meta">2026-05-15 · feat/company-flow @ 46ef526 (origin/main 머지 후)</div>
 
 <!-- ============================================== -->
 <h2><span class="num">01</span>새 ATS 작동 흐름</h2>
@@ -76,12 +80,12 @@
 <div class="flow">
   <div class="flow-step">
     <span class="num">[1]</span>
-    <span class="what">회사 사람이 메인 사이트 우측 상단 <b>"기업 채용 ↗"</b> 작은 링크 클릭 → <span class="route">/for-companies</span> 별도 랜딩</span>
+    <span class="what">메인 사이트 우측 상단 <b>"기업 채용 ↗"</b> 작은 링크 → <span class="route">/for-companies</span> 별도 랜딩</span>
   </div>
   <div class="flow-arrow">↓</div>
   <div class="flow-step">
     <span class="num">[2]</span>
-    <span class="what">랜딩에서 <b>"공고 올리기"</b> CTA → <span class="route">/company/signup</span> 회사 이메일 입력 → Supabase 매직링크 발송</span>
+    <span class="what">랜딩 <b>"공고 올리기"</b> CTA → <span class="route">/company/signup</span> 회사 이메일 입력 → Supabase 매직링크 발송</span>
   </div>
   <div class="flow-arrow">↓</div>
   <div class="flow-step">
@@ -91,7 +95,7 @@
   <div class="flow-arrow">↓</div>
   <div class="flow-step">
     <span class="num">[4]</span>
-    <span class="what"><b>"+ 새 공고"</b> → <span class="route">/company/jobs/new</span> 폼 작성 (이미지 업로드 포함) → <code>jobs</code> 테이블에 <code>status='live', company_id=X</code>로 insert</span>
+    <span class="what"><b>"+ 새 공고"</b> → <span class="route">/company/jobs/new</span> 폼 (이미지 업로드 포함) → <code>jobs</code> insert (<code>status='live', company_id=X</code>)</span>
   </div>
   <div class="flow-arrow">↓</div>
   <div class="flow-step">
@@ -101,101 +105,80 @@
   <div class="flow-arrow">↓</div>
   <div class="flow-step">
     <span class="num">[6]</span>
-    <span class="what"><span class="route">/company/ats?job=X</span> 칸반 4컬럼 (신규/열람/검토/결정) — 좌측 사이드바엔 본인 회사 LIVE 공고 🟢 dot</span>
+    <span class="what"><span class="route">/company/ats?job=X</span> 칸반 4컬럼 (신규/열람/검토/결정) — 좌측 사이드바에 본인 회사 LIVE 공고 🟢 dot</span>
   </div>
   <div class="flow-arrow">↓</div>
   <div class="flow-step">
     <span class="num">[7]</span>
-    <span class="what">카드 클릭 → <b>전체화면 모달</b>: 중앙에 이력서 iframe + 우측 280px 패널 (정보 / 평가 메모 / 단계 이동 / 면접 일정)</span>
+    <span class="what">카드 클릭 → 전체화면 모달: 중앙 이력서 iframe + 우측 280px 패널 (정보 / 평가 메모 / 단계 이동 / 면접 일정)</span>
   </div>
 </div>
 
 <!-- ============================================== -->
-<h2><span class="num">02</span>코드 — 살아있는 것 <span style="color:#fbbf24">(NEW ATS, 유지)</span></h2>
+<h2><span class="num">02</span>HR 코드 정리 상태</h2>
+
+<div class="merge-box">
+  <b>완료 (merge commit <code>46ef526</code>):</b><br>
+  · <code>ac18505</code> "remove entire HR module" 커밋이 <code>feat/company-flow</code>에 머지됨<br>
+  · <code>pages/hr/*</code> (9파일), <code>pages/api/hr/*</code> (11파일), <code>components/HRLayout.js</code>, <code>components/admin/HRApprovalView.js</code>, <code>scripts/import-candidates.js</code> 모두 삭제<br>
+  · <code>pages/_app.js</code>·<code>auth/callback.js</code>·<code>index.js</code>·<code>GlobalNav.js</code> HR 분기 제거 (충돌은 company 분기 유지하며 해결)
+</div>
+
+<!-- ============================================== -->
+<h2><span class="num">03</span>코드 — 현재 살아있는 것</h2>
 
 <table>
   <thead>
     <tr><th>경로</th><th>역할</th><th>상태</th></tr>
   </thead>
   <tbody>
-    <tr><td><code>pages/for-companies.js</code></td><td>기업용 별도 랜딩 페이지 (사자 hero + KPI 카운트업 + 5단계 HOW IT WORKS + 비교 테이블)</td><td><span class="tag alive">유지</span></td></tr>
+    <tr><td><code>pages/for-companies.js</code></td><td>기업용 별도 랜딩 (사자 hero + KPI 카운트업 + 5단계 HOW IT WORKS + 비교 테이블)</td><td><span class="tag alive">유지</span></td></tr>
     <tr><td><code>pages/company/signup.js</code></td><td>회사 이메일 매직링크 가입 폼</td><td><span class="tag alive">유지</span></td></tr>
-    <tr><td><code>pages/company/index.js</code></td><td>기업 대시보드 (공고 리스트 + KPI)</td><td><span class="tag alive">유지</span></td></tr>
+    <tr><td><code>pages/company/index.js</code></td><td>기업 대시보드 (공고 리스트 + 인라인 KPI)</td><td><span class="tag alive">유지</span></td></tr>
     <tr><td><code>pages/company/jobs/new.js</code></td><td>새 공고 작성 폼 + 이미지 업로드 (Supabase Storage)</td><td><span class="tag alive">유지</span></td></tr>
     <tr><td><code>pages/company/jobs/[id]/edit.js</code></td><td>공고 수정·일시중지·삭제</td><td><span class="tag alive">유지</span></td></tr>
-    <tr><td><code>pages/company/jobs/index.js</code></td><td><span class="route">/company/jobs</span> → <span class="route">/company</span> redirect (예전 url 호환용)</td><td><span class="tag alive">유지</span></td></tr>
+    <tr><td><code>pages/company/jobs/index.js</code></td><td><span class="route">/company/jobs</span> → <span class="route">/company</span> redirect</td><td><span class="tag alive">유지</span></td></tr>
     <tr><td><code>pages/company/ats.js</code></td><td>칸반 4컬럼 + 후보자 모달</td><td><span class="tag alive">유지</span></td></tr>
-    <tr><td><code>pages/company/candidates/[id].js</code></td><td>후보자 상세 standalone 페이지 (URL 공유 가능)</td><td><span class="tag alive">유지</span></td></tr>
-    <tr><td><code>components/company/CandidateDetail.js</code></td><td>이력서 + 정보 + 메모 + 단계 이동 공통 컴포넌트 (page + overlay 둘 다 사용)</td><td><span class="tag alive">유지</span></td></tr>
-    <tr><td><code>pages/index.js</code> 상단 nav</td><td>우측 nav에 작은 <b>"기업 채용 ↗"</b> 링크 (메인 페이지 entry point)</td><td><span class="tag alive">유지</span></td></tr>
-    <tr><td><code>pages/_app.js</code></td><td><code>/company</code> 와 <code>/for-companies</code> 경로에서 footer 숨김</td><td><span class="tag alive">유지</span></td></tr>
+    <tr><td><code>pages/company/candidates/[id].js</code></td><td>후보자 상세 standalone 페이지</td><td><span class="tag alive">유지</span></td></tr>
+    <tr><td><code>components/company/CandidateDetail.js</code></td><td>이력서 + 정보 + 메모 + 단계 이동 공통 컴포넌트 (page + overlay)</td><td><span class="tag alive">유지</span></td></tr>
+    <tr><td><code>pages/index.js</code> 상단 nav</td><td>우측 nav <b>"기업 채용 ↗"</b> 진입 링크</td><td><span class="tag alive">유지</span></td></tr>
+    <tr><td><code>pages/_app.js</code></td><td><code>/company</code> 와 <code>/for-companies</code> 경로 footer 숨김</td><td><span class="tag alive">유지</span></td></tr>
     <tr><td><code>pages/auth/callback.js</code></td><td><code>intent === 'company'</code> 분기 → recruiter_* row 자동 생성</td><td><span class="tag alive">유지</span></td></tr>
   </tbody>
 </table>
 
 <!-- ============================================== -->
-<h2><span class="num">03</span>DB — 살아있는 것 <span style="color:#fbbf24">(NEW ATS, 유지)</span></h2>
+<h2><span class="num">04</span>DB — 살아있는 것</h2>
 
 <table>
   <thead><tr><th>객체</th><th>역할</th><th>상태</th></tr></thead>
   <tbody>
-    <tr><td><code>recruiter_companies</code> (table)</td><td>회사 명부 — id, name, email_domain, tax_id, verified_at, created_by</td><td><span class="tag alive">유지</span></td></tr>
-    <tr><td><code>recruiter_users</code> (table)</td><td>회사 담당자 — user_id ↔ company_id ↔ role</td><td><span class="tag alive">유지</span></td></tr>
-    <tr><td><code>jobs.company_id</code> (column)</td><td>jobs 와 recruiter_companies 연결</td><td><span class="tag alive">유지</span></td></tr>
+    <tr><td><code>recruiter_companies</code> (table)</td><td>회사 명부 (id, name, email_domain, tax_id, verified_at, created_by)</td><td><span class="tag alive">유지</span></td></tr>
+    <tr><td><code>recruiter_users</code> (table)</td><td>회사 담당자 (user_id ↔ company_id ↔ role)</td><td><span class="tag alive">유지</span></td></tr>
+    <tr><td><code>jobs.company_id</code> (column)</td><td>jobs ↔ recruiter_companies 연결</td><td><span class="tag alive">유지</span></td></tr>
     <tr><td><code>jobs.status</code> (column)</td><td>draft / pending_review / live / paused / closed</td><td><span class="tag alive">유지</span></td></tr>
-    <tr><td><code>recruiter_jobs</code> (VIEW)</td><td>jobs + recruiter_companies 조인 view (관리 편의)</td><td><span class="tag alive">유지</span></td></tr>
-    <tr><td><code>job_applications</code> (table) + 관련 RLS</td><td>지원자 + 4단계 status (기존 활용, 신규 RLS 추가)</td><td><span class="tag alive">유지</span></td></tr>
+    <tr><td><code>recruiter_jobs</code> (VIEW)</td><td>jobs + recruiter_companies 조인 view</td><td><span class="tag alive">유지</span></td></tr>
+    <tr><td><code>job_applications</code> (table) + RLS</td><td>지원자 + 4단계 status (기존 활용, RLS 신규 추가)</td><td><span class="tag alive">유지</span></td></tr>
   </tbody>
 </table>
 
 <!-- ============================================== -->
-<h2><span class="num">04</span>지워야 할 것 <span style="color:#f87171">(HR 잔재)</span></h2>
+<h2><span class="num">05</span>DB — 운영에 잔재할 수 있는 것</h2>
+
+<p style="font-size:12.5px; color:#525252; margin-bottom: 12px; line-height: 1.65;">
+코드는 머지로 정리됐지만 운영 Supabase의 테이블·컬럼·row 는 별도. 아래는 운영 DB 상태에 따라 처리 필요.
+</p>
 
 <table>
-  <thead><tr><th>경로</th><th>역할 (옛 HR 시스템)</th><th>상태</th></tr></thead>
+  <thead><tr><th>객체</th><th>역할</th><th>처리</th></tr></thead>
   <tbody>
-    <tr><td colspan="3" style="background:#fafbfc; font-weight:700; color:#0f172a; font-size:11.5px">— Frontend 페이지 —</td></tr>
-    <tr><td><code>pages/hr/index.js</code></td><td>HR 홈</td><td><span class="tag delete">삭제</span></td></tr>
-    <tr><td><code>pages/hr/home.js</code></td><td>HR 대시보드 홈</td><td><span class="tag delete">삭제</span></td></tr>
-    <tr><td><code>pages/hr/login.js</code></td><td>HR 별도 로그인</td><td><span class="tag delete">삭제</span></td></tr>
-    <tr><td><code>pages/hr/onboarding.js</code></td><td>HR 가입/회사 등록</td><td><span class="tag delete">삭제</span></td></tr>
-    <tr><td><code>pages/hr/applicants.js</code></td><td>HR 지원자 리스트</td><td><span class="tag delete">삭제</span></td></tr>
-    <tr><td><code>pages/hr/hiring.js</code></td><td>HR 채용 현황</td><td><span class="tag delete">삭제</span></td></tr>
-    <tr><td><code>pages/hr/saved.js</code></td><td>HR 즐겨찾기</td><td><span class="tag delete">삭제</span></td></tr>
-    <tr><td><code>pages/hr/search.js</code></td><td>HR 인재 검색</td><td><span class="tag delete">삭제</span></td></tr>
-    <tr><td><code>pages/hr/talent/*</code></td><td>인재 프로필 페이지</td><td><span class="tag delete">삭제</span></td></tr>
-
-    <tr><td colspan="3" style="background:#fafbfc; font-weight:700; color:#0f172a; font-size:11.5px">— API —</td></tr>
-    <tr><td><code>pages/api/hr/*</code> (11개)</td><td>onboarding, verify-business, dashboard-stats, my-applicants, my-jobs, saved-candidates, talent-search, candidate-count, candidates, interest, status</td><td><span class="tag delete">삭제</span></td></tr>
-
-    <tr><td colspan="3" style="background:#fafbfc; font-weight:700; color:#0f172a; font-size:11.5px">— 메인 페이지에 남은 토글/조건 —</td></tr>
-    <tr><td><code>pages/index.js</code> ~1143-1155행</td><td><code>isAdminUser</code> 일 때 보이는 <b>Seeker / HR 토글</b> (HR 클릭 시 <code>/hr/home</code> 이동) — 캡쳐의 그것</td><td><span class="tag delete">삭제</span></td></tr>
-    <tr><td><code>pages/index.js</code> 1195행 부근</td><td><code>isAdminUser</code> 분기 (HR 관련 admin link 가능성)</td><td><span class="tag check">검토 후 정리</span></td></tr>
-
-    <tr><td colspan="3" style="background:#fafbfc; font-weight:700; color:#0f172a; font-size:11.5px">— _app.js / callback.js HR 분기 —</td></tr>
-    <tr><td><code>pages/_app.js</code></td><td><code>const isHR = router.pathname.startsWith('/hr')</code> 및 <code>!isHR</code> 조건</td><td><span class="tag delete">삭제</span></td></tr>
-    <tr><td><code>pages/auth/callback.js</code></td><td><code>intent === 'hr'</code> 분기 (gtag/fbq 이벤트 + 라우팅)</td><td><span class="tag delete">삭제</span></td></tr>
-    <tr><td><code>pages/auth/callback.js</code> 안의 <code>saveProfile</code></td><td>HR 가입 시 <code>fyi_intent='hr'</code> 처리</td><td><span class="tag delete">삭제</span></td></tr>
-  </tbody>
-</table>
-
-<!-- ============================================== -->
-<h2><span class="num">05</span>DB — 지울 것 <span style="color:#f87171">(HR 잔재)</span></h2>
-
-<table>
-  <thead><tr><th>객체</th><th>역할</th><th>상태</th></tr></thead>
-  <tbody>
-    <tr><td><code>hr_users</code> (table)</td><td>HR 사용자 명부 (recruiter_users로 대체)</td><td><span class="tag delete">DROP</span></td></tr>
-    <tr><td><code>candidates</code> (table)</td><td>HR 인재 풀 (talent search용)</td><td><span class="tag check">검토 후 정리 — user_profiles 와 중복 여부 확인</span></td></tr>
-    <tr><td><code>talent_profile</code> (관련)</td><td>HR 인재 프로필</td><td><span class="tag delete">DROP</span></td></tr>
-    <tr><td><code>user_profiles.role</code> column</td><td><code>'hr'</code> 값 자체 (role 컬럼은 다른 용도로 유지하되 hr 값만 사용 안 함)</td><td><span class="tag check">검토</span></td></tr>
-
-    <tr><td colspan="3" style="background:#fafbfc; font-weight:700; color:#0f172a; font-size:11.5px">— 마이그레이션 파일 (참고용, 운영 DB는 별도 DROP 필요) —</td></tr>
-    <tr><td><code>supabase/migrations/20260512_hr_onboarding.sql</code></td><td>hr_users 테이블 생성</td><td><span class="tag delete">파일 삭제 + 운영 DB DROP TABLE</span></td></tr>
-    <tr><td><code>supabase/migrations/20260512_candidates.sql</code></td><td>candidates 테이블</td><td><span class="tag check">검토</span></td></tr>
-    <tr><td><code>supabase/migrations/20260512_talent_profile.sql</code></td><td>talent_profile 관련</td><td><span class="tag delete">삭제</span></td></tr>
-    <tr><td><code>supabase/migrations/20260512_talent_salary_currency.sql</code></td><td>talent 연봉 통화</td><td><span class="tag delete">삭제</span></td></tr>
-    <tr><td><code>supabase/migrations/20260512_user_roles.sql</code></td><td>user_profiles.role 추가 + hr_users 생성</td><td><span class="tag check">role 컬럼 유지 / hr_users 부분만 DROP</span></td></tr>
+    <tr><td><code>hr_users</code> (table)</td><td>옛 HR 사용자 명부</td><td><span class="tag delete">DROP</span></td></tr>
+    <tr><td><code>candidates</code> (table)</td><td>HR 인재 풀 — user_profiles와 중복 가능</td><td><span class="tag check">데이터 확인 후 DROP</span></td></tr>
+    <tr><td><code>talent_profile</code> 관련 테이블</td><td>HR 인재 프로필</td><td><span class="tag delete">DROP</span></td></tr>
+    <tr><td><code>user_profiles.role</code> 값이 'hr' 인 row</td><td>HR로 가입했던 사용자</td><td><span class="tag check">개수 확인 → 'seeker'로 reset or 그대로 두기</span></td></tr>
+    <tr><td><code>supabase/migrations/20260512_hr_onboarding.sql</code></td><td>hr_users 생성 마이그레이션 파일</td><td><span class="tag check">머지 시 함께 삭제됐는지 확인</span></td></tr>
+    <tr><td><code>supabase/migrations/20260512_candidates.sql</code></td><td>candidates 테이블 생성</td><td><span class="tag check">동일</span></td></tr>
+    <tr><td><code>supabase/migrations/20260512_talent_*</code></td><td>talent 관련</td><td><span class="tag check">동일</span></td></tr>
   </tbody>
 </table>
 
@@ -203,15 +186,15 @@
 <h2><span class="num">06</span>결정 포인트</h2>
 
 <div class="note">
-  ① <code>candidates</code> 테이블에 데이터가 있는지 — 있으면 마이그레이션 후 DROP, 없으면 바로 DROP<br>
-  ② <code>user_profiles.role</code> 컬럼 — 'hr' 값을 가진 row 처리 방법 (그냥 둘지, 'seeker'로 reset)<br>
-  ③ <code>isAdminUser</code> 로직 (메인 페이지 1195행 부근) — HR 외에 admin 용도 다른 게 있는지<br>
-  ④ HR 도메인에서 production에 실제 가입한 사용자가 있는지 (있으면 안내 후 정리)<br>
-  ⑤ 삭제 순서 — 코드 먼저 빼고 1주 후 DB DROP (롤백 여유) vs 한 번에 정리
+  ① <code>candidates</code> 운영 DB 에 데이터가 있는지 (있으면 마이그레이션 절차 필요)<br>
+  ② <code>user_profiles.role</code>이 'hr'인 row 처리 방법 — 그냥 둘지, 'seeker'로 reset<br>
+  ③ HR 도메인에서 production에 실제 가입한 사용자가 있는지<br>
+  ④ DB DROP 시점 — 코드 머지 후 1주 안전 기간 후 DROP vs 즉시 DROP<br>
+  ⑤ recruiter_* 테이블에 production 시드 데이터 필요 여부 (테스트용 회사 row)
 </div>
 
 <footer>
-  feat/company-flow @ HEAD
+  feat/company-flow @ 46ef526
 </footer>
 
 </div>
