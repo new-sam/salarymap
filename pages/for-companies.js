@@ -125,7 +125,7 @@ export default function ForCompanies() {
           </div>
           <div style={css.navRight}>
             <Link href="/company" style={css.btnGhost}>기업 로그인</Link>
-            <Link href="/company/signup" style={css.btnPrimary}>기업 계정 만들기</Link>
+            <Link href="/company/signup" style={css.btnPrimary}>공고 올리기 →</Link>
           </div>
         </nav>
 
@@ -147,7 +147,7 @@ export default function ForCompanies() {
               </p>
               <div style={css.heroCtas}>
                 <button onClick={() => router.push('/company/signup')} style={css.btnAccentLg}>
-                  기업 계정 만들기
+                  무료로 공고 올리기
                 </button>
                 <button style={css.btnGhostLg}>상담하기</button>
               </div>
@@ -360,7 +360,7 @@ export default function ForCompanies() {
           <h2 style={css.h2}>지금 회사 계정을 만드세요.</h2>
           <p style={css.ctaSub}>1분이면 입장. 첫 공고 발행까지 무료.</p>
           <button onClick={() => router.push('/company/signup')} style={css.btnAccentLg}>
-            기업 계정 만들기 →
+            지금 공고 올리기 →
           </button>
         </section>
 

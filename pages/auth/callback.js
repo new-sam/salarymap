@@ -27,8 +27,8 @@ async function saveProfile(user) {
 // Company signup: find-or-create recruiter_companies + insert recruiter_users
 async function saveCompanyRecruiter(user) {
   try {
-    const companyName = typeof sessionStorage !== 'undefined' ? sessionStorage.getItem('fyi_company_name') : null;
-    const fullName = typeof sessionStorage !== 'undefined' ? sessionStorage.getItem('fyi_company_full_name') : null;
+    const companyName = typeof localStorage !== 'undefined' ? localStorage.getItem('fyi_company_name') : null;
+    const fullName = typeof localStorage !== 'undefined' ? localStorage.getItem('fyi_company_full_name') : null;
     const email = user.email || '';
     const emailDomain = email.includes('@') ? email.split('@')[1].toLowerCase() : null;
     if (!emailDomain) return;
@@ -67,10 +67,10 @@ async function saveCompanyRecruiter(user) {
       role: 'admin',
     }, { onConflict: 'user_id' });
 
-    // Cleanup sessionStorage keys
-    if (typeof sessionStorage !== 'undefined') {
-      sessionStorage.removeItem('fyi_company_name');
-      sessionStorage.removeItem('fyi_company_full_name');
+    // Cleanup localStorage keys
+    if (typeof localStorage !== 'undefined') {
+      localStorage.removeItem('fyi_company_name');
+      localStorage.removeItem('fyi_company_full_name');
     }
   } catch (e) {
     // silent fail

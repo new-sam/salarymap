@@ -3,203 +3,211 @@ import Head from 'next/head';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { supabase } from '../../lib/supabaseClient';
+import { Sidebar, css } from './jobs/new';
+
+const STATUS_LABEL = { draft: '초안', pending_review: '검수 중', live: '활성', paused: '일시중지', closed: '종료' };
+const STATUS_STYLE = {
+  draft: { bg: '#F1F5F9', color: '#64748B' },
+  pending_review: { bg: '#FFF7ED', color: '#EA580C' },
+  live: { bg: '#ECFDF5', color: '#059669' },
+  paused: { bg: '#FFFBEB', color: '#D97706' },
+  closed: { bg: '#F1F5F9', color: '#94A3B8' },
+};
 
 export default function CompanyDashboard() {
   const router = useRouter();
-  const [status, setStatus] = useState('loading'); // loading | unauthed | ready
+  const [status, setStatus] = useState('loading');
   const [user, setUser] = useState(null);
   const [companyName, setCompanyName] = useState('');
   const [fullName, setFullName] = useState('');
+  const [jobs, setJobs] = useState([]);
+  const [appsCount, setAppsCount] = useState(0);
+  const [appsByJob, setAppsByJob] = useState({});
 
   useEffect(() => {
     let mounted = true;
     (async () => {
       const { data } = await supabase.auth.getSession();
       if (!mounted) return;
-      if (!data.session) {
-        setStatus('unauthed');
-        return;
-      }
+      if (!data.session) { setStatus('unauthed'); return; }
       setUser(data.session.user);
-      const sn = typeof window !== 'undefined' ? sessionStorage.getItem('fyi_company_name') : null;
-      const fn = typeof window !== 'undefined' ? sessionStorage.getItem('fyi_company_full_name') : null;
-      if (sn) setCompanyName(sn);
-      if (fn) setFullName(fn);
+
+      const { data: rec } = await supabase
+        .from('recruiter_users')
+        .select('company_id, full_name, recruiter_companies(name)')
+        .eq('user_id', data.session.user.id)
+        .maybeSingle();
+      if (rec?.recruiter_companies?.name) setCompanyName(rec.recruiter_companies.name);
+      if (rec?.full_name) setFullName(rec.full_name);
+
+      if (rec?.company_id) {
+        const { data: jobsData } = await supabase
+          .from('jobs')
+          .select('id, title, location, type, status, salary_min, salary_max, experience_min, experience_max, created_at, is_active')
+          .eq('company_id', rec.company_id)
+          .order('created_at', { ascending: false });
+        const jobList = jobsData || [];
+        setJobs(jobList);
+
+        if (jobList.length > 0) {
+          const ids = jobList.map(j => j.id);
+          const { data: appsData } = await supabase
+            .from('job_applications')
+            .select('id, job_id, status')
+            .in('job_id', ids);
+
+          const apps = appsData || [];
+          setAppsCount(apps.length);
+          const grouped = {};
+          apps.forEach(a => {
+            if (!grouped[a.job_id]) grouped[a.job_id] = { total: 0, new: 0 };
+            grouped[a.job_id].total += 1;
+            if (a.status === 'pending') grouped[a.job_id].new += 1;
+          });
+          setAppsByJob(grouped);
+        }
+      }
       setStatus('ready');
     })();
     return () => { mounted = false; };
   }, []);
 
-  const signOut = async () => {
-    await supabase.auth.signOut();
-    router.replace('/for-companies');
-  };
-
-  if (status === 'loading') {
+  if (status === 'loading') return <div style={css.loading}>Loading…</div>;
+  if (status === 'unauthed') {
     return (
-      <div style={css.loading}>
-        <div style={css.spinner} />
-        <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
+      <div style={css.fullCenter}>
+        <div style={css.lightCard}>
+          <h1 style={css.cardH}>기업 로그인</h1>
+          <p style={css.cardP}>회사 계정으로 로그인해 주세요.</p>
+          <Link href="/company/signup" style={css.btnPrimary}>로그인 / 가입</Link>
+        </div>
       </div>
     );
   }
 
-  if (status === 'unauthed') {
-    return (
-      <>
-        <Head><title>기업 로그인 · FYI</title></Head>
-        <div style={css.unauthedShell}>
-          <div style={css.unauthedCard}>
-            <h1 style={css.h1}>기업 로그인</h1>
-            <p style={css.lead}>회사 계정으로 로그인해 주세요.</p>
-            <Link href="/company/signup" style={css.btnPrimary}>회사 이메일로 로그인 / 가입</Link>
-            <div style={css.legalLine}>
-              아직 계정 없으세요? <Link href="/for-companies" style={css.linkAccent}>FYI for Companies 소개 →</Link>
-            </div>
-          </div>
-        </div>
-      </>
-    );
-  }
+  const activeCount = jobs.filter(j => j.status === 'live').length;
+  const goKanban = (jobId) => router.push(`/company/ats?job=${jobId}`);
 
   return (
     <>
       <Head><title>대시보드 · FYI for Companies</title></Head>
       <div style={css.app}>
-        <aside style={css.sidebar}>
-          <div style={css.sideHead}>
-            <div style={css.sideCompany}>{companyName || '내 회사'}</div>
-            <div style={css.sideUser}>{fullName || user?.email} · admin</div>
-          </div>
-          <nav style={css.sideNav}>
-            <a style={{...css.navItem, ...css.navItemActive}}><span style={css.navIco}>🏠</span>대시보드</a>
-            <a style={css.navItem}><span style={css.navIco}>📋</span>공고 (0)</a>
-            <a style={css.navItem}><span style={css.navIco}>👥</span>팀</a>
-            <a style={css.navItem}><span style={css.navIco}>💸</span>빌링</a>
-          </nav>
-          <button style={css.atsCta} disabled>
-            <span style={css.atsIco}>⚡</span>ATS 열기
-            <span style={css.atsArr}>잠금</span>
-          </button>
-          <div style={css.sideBottom}>
-            <a onClick={signOut} style={css.signoutLink}>로그아웃</a>
-          </div>
-        </aside>
+        <Sidebar companyName={companyName} userEmail={user?.email} activePage="home" />
 
         <main style={css.main}>
           <header style={css.mainHead}>
             <div>
               <h1 style={css.mainH}>환영합니다{fullName ? `, ${fullName}님` : ''}</h1>
               <p style={css.mainP}>
-                {companyName ? `${companyName} ` : ''}계정이 생성되었습니다. 첫 공고를 등록해 보세요.
+                {companyName ? `${companyName} ` : ''}— 공고를 누르면 지원자 칸반으로 이동합니다.
               </p>
             </div>
+            <Link href="/company/jobs/new" style={css.btnPrimary}>+ 새 공고</Link>
           </header>
 
-          <div style={css.empty}>
-            <div style={css.emptyIco}>📋</div>
-            <h2 style={css.emptyH}>아직 공고가 없네요</h2>
-            <p style={css.emptyP}>
-              첫 공고는 운영 검수(24시간) 후 활성됩니다. 이후 공고는 자동 통과.
-            </p>
-            <button style={css.btnAccent} disabled title="Phase 2에서 구현됩니다">
-              + 첫 공고 작성하기 (준비 중)
-            </button>
-            <div style={css.emptyHint}>Phase 1은 진입·인증 플로우까지. 공고 작성 폼은 다음 단계.</div>
-          </div>
+          {jobs.length === 0 ? (
+            <div style={localCss.empty}>
+              <div style={localCss.emptyIco}>📋</div>
+              <h2 style={localCss.emptyH}>첫 공고를 등록해 보세요</h2>
+              <p style={localCss.emptyP}>발행하면 즉시 후보자에게 공개됩니다.</p>
+              <Link href="/company/jobs/new" style={css.btnPrimary}>+ 새 공고 작성하기</Link>
+            </div>
+          ) : (
+            <>
+              {/* 인라인 KPI */}
+              <div style={localCss.kpiInline}>
+                <span><b style={localCss.kpiStrong}>{jobs.length}</b>개 공고</span>
+                <span style={localCss.kpiSep}>·</span>
+                <span><b style={localCss.kpiStrong}>{activeCount}</b>개 활성</span>
+                <span style={localCss.kpiSep}>·</span>
+                <span><b style={localCss.kpiStrong}>{appsCount}</b>명 누적 지원</span>
+              </div>
+
+              <div style={localCss.list}>
+                {jobs.map(job => {
+                  const s = STATUS_STYLE[job.status] || STATUS_STYLE.draft;
+                  const stats = appsByJob[job.id] || { total: 0, new: 0 };
+                  return (
+                    <div
+                      key={job.id}
+                      onClick={() => goKanban(job.id)}
+                      style={localCss.card}
+                      onMouseEnter={(e) => { e.currentTarget.style.borderColor = '#FCA5A5'; e.currentTarget.style.boxShadow = '0 4px 12px rgba(234,88,12,0.08)'; }}
+                      onMouseLeave={(e) => { e.currentTarget.style.borderColor = '#E5E7EB'; e.currentTarget.style.boxShadow = 'none'; }}
+                    >
+                      <div style={localCss.cardLeft}>
+                        <div style={localCss.cardTitleRow}>
+                          <span style={localCss.cardTitle}>{job.title}</span>
+                          <span style={{...localCss.badge, background: s.bg, color: s.color}}>
+                            {STATUS_LABEL[job.status] || job.status}
+                          </span>
+                        </div>
+                        <div style={localCss.cardMeta}>
+                          {job.location} · {job.type} · ₫{Math.round(job.salary_min/1e6)}M–{Math.round(job.salary_max/1e6)}M/월
+                        </div>
+                      </div>
+                      <div style={localCss.cardRight}>
+                        <div style={localCss.stats}>
+                          <div style={localCss.statBox}>
+                            <div style={localCss.statVal}>{stats.total}</div>
+                            <div style={localCss.statLab}>지원</div>
+                          </div>
+                          {stats.new > 0 && (
+                            <div style={{...localCss.statBox, ...localCss.statBoxNew}}>
+                              <div style={localCss.statVal}>{stats.new}</div>
+                              <div style={localCss.statLab}>신규</div>
+                            </div>
+                          )}
+                        </div>
+                        <button
+                          onClick={(e) => { e.stopPropagation(); router.push(`/company/jobs/${job.id}/edit`); }}
+                          style={localCss.editBtn}
+                        >
+                          수정
+                        </button>
+                        <span style={localCss.arrow}>→</span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </>
+          )}
         </main>
       </div>
     </>
   );
 }
 
-const css = {
-  loading: {
-    display: 'flex', alignItems: 'center', justifyContent: 'center',
-    height: '100vh', background: '#0a0a0a',
-  },
-  spinner: {
-    width: 32, height: 32, borderRadius: '50%',
-    border: '3px solid #f97316', borderTopColor: 'transparent',
-    animation: 'spin 0.8s linear infinite',
-  },
+const localCss = {
+  empty: { border: '2px dashed #E5E7EB', borderRadius: 12, padding: '48px 24px', textAlign: 'center', background: '#fff' },
+  emptyIco: { fontSize: 36, marginBottom: 12, opacity: 0.5 },
+  emptyH: { fontSize: 18, fontWeight: 800, color: '#1A1A1A', marginBottom: 8 },
+  emptyP: { fontSize: 13.5, color: '#525252', maxWidth: 380, margin: '0 auto 22px', lineHeight: 1.65 },
 
-  // Unauthed
-  unauthedShell: {
-    minHeight: '100vh', background: '#0a0a0a',
-    display: 'flex', alignItems: 'center', justifyContent: 'center',
-    fontFamily: "'Pretendard', -apple-system, BlinkMacSystemFont, sans-serif",
-    color: '#e5e5e5', padding: 20,
-  },
-  unauthedCard: {
-    maxWidth: 400, width: '100%', padding: '40px 32px', textAlign: 'center',
-    background: '#13131a', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 12,
-  },
-  h1: { fontSize: 22, fontWeight: 800, color: '#fff', marginBottom: 6, letterSpacing: '-0.01em' },
-  lead: { fontSize: 13.5, color: 'rgba(255,255,255,0.6)', marginBottom: 24, lineHeight: 1.65 },
-  btnPrimary: {
-    display: 'inline-block', width: '100%',
-    padding: '12px 16px', borderRadius: 8, border: 'none',
-    background: 'linear-gradient(135deg,#ef4444,#f97316)', color: '#fff',
-    fontSize: 14, fontWeight: 700, cursor: 'pointer', textAlign: 'center',
-    textDecoration: 'none', fontFamily: 'inherit',
-  },
-  legalLine: { fontSize: 12, color: 'rgba(255,255,255,0.4)', marginTop: 16, lineHeight: 1.6 },
-  linkAccent: { color: '#f97316', fontWeight: 700, textDecoration: 'underline' },
+  kpiInline: { display: 'flex', alignItems: 'center', gap: 12, fontSize: 13.5, color: '#525252', fontWeight: 600 },
+  kpiStrong: { color: '#1A1A1A', fontWeight: 900, fontSize: 16, fontVariantNumeric: 'tabular-nums' },
+  kpiSep: { color: '#CBD5E1' },
 
-  // App shell
-  app: {
-    display: 'grid', gridTemplateColumns: '220px 1fr', minHeight: '100vh',
-    background: '#0a0a0a',
-    fontFamily: "'Pretendard', -apple-system, BlinkMacSystemFont, sans-serif",
-    color: '#e5e5e5',
+  list: { display: 'flex', flexDirection: 'column', gap: 10 },
+  card: {
+    display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+    padding: '18px 22px', background: '#fff', border: '1px solid #E5E7EB',
+    borderRadius: 10, cursor: 'pointer', transition: 'all 0.15s',
   },
-  sidebar: {
-    background: '#0f0f15', borderRight: '1px solid rgba(255,255,255,0.06)',
-    padding: '14px 10px', display: 'flex', flexDirection: 'column', gap: 4,
-  },
-  sideHead: {
-    padding: '10px 10px 14px', borderBottom: '1px solid rgba(255,255,255,0.06)', marginBottom: 8,
-  },
-  sideCompany: { fontSize: 13.5, fontWeight: 700, color: '#fff' },
-  sideUser: { fontSize: 11, color: 'rgba(255,255,255,0.45)', marginTop: 3 },
-  sideNav: { display: 'flex', flexDirection: 'column', gap: 2 },
-  navItem: {
-    display: 'flex', alignItems: 'center', gap: 9,
-    padding: '8px 10px', borderRadius: 6,
-    fontSize: 12.5, color: 'rgba(255,255,255,0.55)', fontWeight: 500, cursor: 'pointer',
-  },
-  navItemActive: { background: 'rgba(255,255,255,0.06)', color: '#fff', fontWeight: 700 },
-  navIco: { width: 14, textAlign: 'center', fontSize: 13 },
-  atsCta: {
-    marginTop: 12, padding: '10px 12px', borderRadius: 7,
-    background: 'rgba(255,255,255,0.04)', color: 'rgba(255,255,255,0.4)',
-    border: '1px dashed rgba(255,255,255,0.12)',
-    fontSize: 12, fontWeight: 700, cursor: 'not-allowed',
-    display: 'flex', alignItems: 'center', gap: 8, fontFamily: 'inherit',
-  },
-  atsIco: { fontSize: 14 },
-  atsArr: { marginLeft: 'auto', fontSize: 10.5, color: 'rgba(255,255,255,0.4)' },
-  sideBottom: { marginTop: 'auto', padding: '10px' },
-  signoutLink: { fontSize: 11.5, color: 'rgba(255,255,255,0.4)', cursor: 'pointer', textDecoration: 'underline' },
+  cardLeft: { flex: 1, minWidth: 0 },
+  cardTitleRow: { display: 'flex', alignItems: 'center', gap: 10, marginBottom: 5 },
+  cardTitle: { fontSize: 15, fontWeight: 800, color: '#1A1A1A' },
+  cardMeta: { fontSize: 12.5, color: '#525252' },
+  cardRight: { display: 'flex', alignItems: 'center', gap: 16 },
+  badge: { padding: '3px 9px', borderRadius: 999, fontSize: 10.5, fontWeight: 800, letterSpacing: '0.04em', textTransform: 'uppercase' },
 
-  // Main
-  main: { padding: '28px 32px', display: 'flex', flexDirection: 'column', gap: 22 },
-  mainHead: { display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' },
-  mainH: { fontSize: 22, fontWeight: 800, color: '#fff', letterSpacing: '-0.01em' },
-  mainP: { fontSize: 13, color: 'rgba(255,255,255,0.55)', marginTop: 4 },
-  empty: {
-    border: '2px dashed rgba(255,255,255,0.12)', borderRadius: 12,
-    padding: '48px 24px', textAlign: 'center',
-  },
-  emptyIco: { fontSize: 36, marginBottom: 12, opacity: 0.4 },
-  emptyH: { fontSize: 17, fontWeight: 700, color: '#fff', marginBottom: 8 },
-  emptyP: { fontSize: 13, color: 'rgba(255,255,255,0.5)', maxWidth: 360, margin: '0 auto 22px', lineHeight: 1.65 },
-  btnAccent: {
-    padding: '12px 22px', borderRadius: 8, border: 'none',
-    background: 'rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.5)',
-    fontSize: 14, fontWeight: 700, cursor: 'not-allowed',
-    fontFamily: 'inherit',
-  },
-  emptyHint: { fontSize: 11, color: 'rgba(255,255,255,0.35)', marginTop: 14, fontStyle: 'italic' },
+  stats: { display: 'flex', gap: 10 },
+  statBox: { textAlign: 'center', minWidth: 40 },
+  statBoxNew: { color: '#EA580C' },
+  statVal: { fontSize: 18, fontWeight: 900, color: '#1A1A1A', letterSpacing: '-0.01em', fontVariantNumeric: 'tabular-nums' },
+  statLab: { fontSize: 10.5, color: '#737373', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em' },
+
+  editBtn: { padding: '6px 12px', borderRadius: 6, border: '1px solid #D1D5DB', background: '#fff', color: '#525252', fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' },
+  arrow: { fontSize: 16, color: '#94A3B8', fontWeight: 800 },
 };

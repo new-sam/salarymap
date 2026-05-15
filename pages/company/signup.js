@@ -36,8 +36,8 @@ export default function CompanySignup() {
       if (typeof window !== 'undefined') {
         localStorage.setItem('fyi_intent', 'company');
         localStorage.setItem('fyi_login_return', '/company');
-        sessionStorage.setItem('fyi_company_full_name', fullName.trim());
-        sessionStorage.setItem('fyi_company_name', companyName.trim());
+        localStorage.setItem('fyi_company_full_name', fullName.trim());
+        localStorage.setItem('fyi_company_name', companyName.trim());
       }
       const redirectTo = typeof window !== 'undefined'
         ? `${window.location.origin}/auth/callback`
