@@ -101,11 +101,7 @@ export default function AuthCallback() {
           const returnTo = typeof window !== 'undefined' && localStorage.getItem('fyi_login_return')
           const intent = intentEarly
           localStorage.removeItem('fyi_login_return')
-          // Track signup — skip for HR/company logins
-          if (intent === 'hr') {
-            if (typeof gtag === 'function') gtag('event', 'hr_signup', {})
-            if (typeof fbq === 'function') fbq('trackCustom', 'HRSignup', {})
-          } else if (intent === 'company') {
+          if (intent === 'company') {
             if (typeof gtag === 'function') gtag('event', 'company_signup', {})
             if (typeof fbq === 'function') fbq('trackCustom', 'CompanySignup', {})
           } else {
@@ -146,10 +142,7 @@ export default function AuthCallback() {
             const returnTo = typeof window !== 'undefined' && localStorage.getItem('fyi_login_return')
             const intent2 = intent2Early
             localStorage.removeItem('fyi_login_return')
-            if (intent2 === 'hr') {
-              if (typeof gtag === 'function') gtag('event', 'hr_signup', {})
-              if (typeof fbq === 'function') fbq('trackCustom', 'HRSignup', {})
-            } else if (intent2 === 'company') {
+            if (intent2 === 'company') {
               if (typeof gtag === 'function') gtag('event', 'company_signup', {})
               if (typeof fbq === 'function') fbq('trackCustom', 'CompanySignup', {})
             } else {

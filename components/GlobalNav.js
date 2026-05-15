@@ -11,9 +11,7 @@ export default function GlobalNav({ activePage }) {
   const [isAdmin, setIsAdmin] = useState(false)
   const [ready, setReady] = useState(false)
   const [savedCount, setSavedCount] = useState(0)
-  const [isHR, setIsHR] = useState(false)
-  const [viewMode, setViewMode] = useState(() => typeof window !== 'undefined' && window.location.pathname.startsWith('/hr') ? 'hr' : 'seeker')
-  const [profileScore, setProfileScore] = useState(null) // 'seeker' | 'hr'
+  const [profileScore, setProfileScore] = useState(null)
   const menuRef = useRef(null)
 
   useEffect(() => {
@@ -42,21 +40,6 @@ export default function GlobalNav({ activePage }) {
           const bRes = await fetch(`/api/job-bookmarks?userId=${session.user.id}`)
           const bData = await bRes.json()
           if (bData.bookmarks) setSavedCount(bData.bookmarks.length)
-        } catch {}
-        try {
-          const hrRes = await fetch(`/api/hr/status?userId=${session.user.id}`)
-          const hrData = await hrRes.json()
-          if (hrData.isHR && hrData.status === 'approved') setIsHR(true)
-        } catch {}
-        try {
-          const pRes = await fetch('/api/profile/talent', { headers: { Authorization: `Bearer ${session.access_token}` } })
-          if (pRes.ok) {
-            const { profile: p } = await pRes.json()
-            if (p) {
-              const checks = [p.photo_url, p.full_name, p.headline, p.position, p.yoe_months != null, p.intro, p.skills?.length > 0, p.english_cert, p.location, p.university, p.resume_url, p.job_signal && p.job_signal !== 'passive', p.experiences?.length > 0, p.salary_min]
-              setProfileScore(Math.round(checks.filter(Boolean).length / checks.length * 100))
-            }
-          }
         } catch {}
       }
       setReady(true)
@@ -131,30 +114,15 @@ export default function GlobalNav({ activePage }) {
           </Link>
         </div>
         <div className="gnav-r">
-          {(isHR || isAdmin) && (
-            <div className="gnav-toggle">
-              <button className={`gnav-toggle-opt${viewMode === 'seeker' ? ' active' : ''}`} onClick={() => {
-                if (window.location.pathname.startsWith('/hr')) window.location.href = '/'
-              }}>Seeker</button>
-              <button className={`gnav-toggle-opt${viewMode === 'hr' ? ' active' : ''}`} onClick={() => {
-                if (!window.location.pathname.startsWith('/hr')) window.location.href = '/hr/home'
-              }}>HR</button>
-            </div>
+          <Link href="/" className={`gnav-link${activePage === 'home' ? ' on' : ''}`}>{t('nav.amIUnderpaid')}</Link>
+          {activePage !== 'jobs' && (
+            <Link href="/jobs" className="gnav-link gnav-jobs-cta">
+              <span className="gnav-jobs-shimmer"></span>
+              <span className="gnav-jobs-icon"><svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="3" y="7" width="18" height="13" rx="2" stroke="currentColor" strokeWidth="2"/><path d="M8 7V5a2 2 0 012-2h4a2 2 0 012 2v2" stroke="currentColor" strokeWidth="2"/><path d="M12 11v4M10 13h4" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg></span>
+              {t('nav.jobs')}
+              <span className="gnav-jobs-bubble">{t('nav.jobsSub')}</span>
+            </Link>
           )}
-
-          {viewMode === 'hr' && (isHR || isAdmin) ? (<>
-            <Link href="/hr" className={`gnav-link${activePage === 'hr' ? ' on' : ''}`}>Candidates</Link>
-          </>) : (<>
-            <Link href="/" className={`gnav-link${activePage === 'home' ? ' on' : ''}`}>{t('nav.amIUnderpaid')}</Link>
-            {activePage !== 'jobs' && (
-              <Link href="/jobs" className="gnav-link gnav-jobs-cta">
-                <span className="gnav-jobs-shimmer"></span>
-                <span className="gnav-jobs-icon"><svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="3" y="7" width="18" height="13" rx="2" stroke="currentColor" strokeWidth="2"/><path d="M8 7V5a2 2 0 012-2h4a2 2 0 012 2v2" stroke="currentColor" strokeWidth="2"/><path d="M12 11v4M10 13h4" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg></span>
-                {t('nav.jobs')}
-                <span className="gnav-jobs-bubble">{t('nav.jobsSub')}</span>
-              </Link>
-            )}
-          </>)}
 
           {!ready ? null : !isLoggedIn ? (
             <>
@@ -188,8 +156,7 @@ export default function GlobalNav({ activePage }) {
               {showMenu && (
                 <div className="gnav-menu" onClick={e => e.stopPropagation()}>
                   <div className="gnav-menu-email">{user?.email}</div>
-                  {viewMode === 'seeker' ? (<>
-                    <a href="/profile" className="gnav-menu-item" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <a href="/profile" className="gnav-menu-item" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                       <span>{t('nav.myProfile')}</span>
                       {profileScore != null && profileScore < 100 && (
                         <span style={{ fontSize: 10, fontWeight: 700, color: profileScore >= 80 ? '#4ade80' : '#fbbf24', background: profileScore >= 80 ? 'rgba(74,222,128,0.1)' : 'rgba(251,191,36,0.1)', padding: '2px 8px', borderRadius: 100 }}>{profileScore}%</span>
@@ -200,12 +167,6 @@ export default function GlobalNav({ activePage }) {
                       <span>{t('nav.savedJobs')}</span>
                       {savedCount > 0 && <span className="gnav-saved-badge">{savedCount}</span>}
                     </a>
-                  </>) : (<>
-                    <a href="/hr" className="gnav-menu-item">Candidates</a>
-                  </>)}
-                  {(isHR && !isAdmin) && (
-                    <a href="/hr" className="gnav-menu-item" style={{ color: '#ffb347' }}>HR Dashboard</a>
-                  )}
                   {isAdmin && (
                     <a href="/admin/jobs" className="gnav-menu-item gnav-menu-admin">Admin Dashboard</a>
                   )}

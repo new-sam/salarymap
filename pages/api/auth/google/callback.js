@@ -77,28 +77,5 @@ export default async function handler(req, res) {
     }
   }
 
-  // If HR login, set role in user_profiles and create hr_users record
-  if (role === 'hr') {
-    const serviceSupabase = createClient(
-      (process.env.NEXT_PUBLIC_SUPABASE_URL || '').trim(),
-      (process.env.SUPABASE_SERVICE_ROLE_KEY || '').trim(),
-    );
-    await serviceSupabase.from('user_profiles').upsert({
-      id: sess.user.id,
-      email: sess.user.email,
-      full_name: sess.user.user_metadata?.full_name || sess.user.user_metadata?.name || null,
-      provider: sess.user.app_metadata?.provider || null,
-      role: 'hr',
-      updated_at: new Date().toISOString(),
-    }, { onConflict: 'id' });
-    // Create pending hr_users record if not exists
-    await serviceSupabase.from('hr_users').upsert({
-      user_id: sess.user.id,
-      company_name: '',
-      status: 'pending',
-    }, { onConflict: 'user_id', ignoreDuplicates: true });
-    returnTo = '/hr';
-  }
-
   res.redirect(`/auth/callback?return=${encodeURIComponent(returnTo)}#${hash}`);
 }
