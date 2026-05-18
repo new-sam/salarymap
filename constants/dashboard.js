@@ -31,9 +31,9 @@ export const T = {
     expDeleteConfirm: '이 실험 기록을 삭제하시겠습니까?',
     expEmpty: '아직 기록이 없습니다. 실험이나 개선 사항을 추가해보세요.',
     avg: '평균',
-    tableHeaders: ['날짜', '전체', '광고', '자연유입', '가입', '회사', '홈→Jobs', '공고클릭', 'Jobs페이지뷰', '지원클릭', '스크랩', '채용지원'],
+    tableHeaders: ['날짜', '세션', '전환(GA4)', '전체', '광고', '자연유입', '가입', '회사', '홈→Jobs', '공고클릭', 'Jobs페이지뷰', '지원클릭', '스크랩', '채용지원'],
     metrics: {
-      submissions: '제출', ad: '광고 (UTM)', organic: '자연유입',
+      sessions: '세션 (GA4)', conversions: '전환 (GA4)', submissions: '제출', ad: '광고 (UTM)', organic: '자연유입',
       signups: '가입', jobClicks: '홈→Jobs', cardClicks: '공고클릭', jobApps: '채용지원', companies: '회사',
       jobsPageViews: 'Jobs페이지뷰', applyClicks: '지원클릭', saveClicks: '스크랩',
     },
@@ -70,6 +70,19 @@ export const T = {
     appsResume: '이력서',
     appsSave: '저장',
     hrApproval: 'HR 승인',
+    ga4: 'GA4',
+    ga4Sessions: '세션',
+    ga4TotalUsers: '전체 사용자',
+    ga4NewUsers: '신규 사용자',
+    ga4EngagedSessions: '참여 세션',
+    ga4BounceRate: '이탈률',
+    ga4AvgDuration: '평균 체류시간',
+    ga4Conversions: '전환',
+    ga4ByChannel: '채널별',
+    ga4ByDevice: '디바이스별',
+    ga4LandingPages: '랜딩 페이지별',
+    ga4Channel: '채널',
+    ga4Page: '페이지',
     utm: 'UTM',
     utmTitle: 'UTM 캠페인 분석',
     utmSource: '소스 (utm_source)',
@@ -113,9 +126,9 @@ export const T = {
     expDeleteConfirm: 'Delete this experiment?',
     expEmpty: 'No records yet. Add an experiment or improvement.',
     avg: 'avg',
-    tableHeaders: ['Date', 'Total', 'Ad', 'Organic', 'Sign-ups', 'Companies', 'Home→Jobs', 'Job Clicks', 'Jobs Page Views', 'Apply Clicks', 'Saves', 'Job Apps'],
+    tableHeaders: ['Date', 'Sessions', 'Conv(GA4)', 'Total', 'Ad', 'Organic', 'Sign-ups', 'Companies', 'Home→Jobs', 'Job Clicks', 'Jobs Page Views', 'Apply Clicks', 'Saves', 'Job Apps'],
     metrics: {
-      submissions: 'Submissions', ad: 'Ad (UTM)', organic: 'Organic',
+      sessions: 'Sessions (GA4)', conversions: 'Conversions (GA4)', submissions: 'Submissions', ad: 'Ad (UTM)', organic: 'Organic',
       signups: 'Sign-ups', jobClicks: 'Home→Jobs', cardClicks: 'Job Clicks', jobApps: 'Job Apps', companies: 'Companies',
       jobsPageViews: 'Jobs Page Views', applyClicks: 'Apply Clicks', saveClicks: 'Saves',
     },
@@ -152,6 +165,19 @@ export const T = {
     appsResume: 'Resume',
     appsSave: 'Save',
     hrApproval: 'HR Approval',
+    ga4: 'GA4',
+    ga4Sessions: 'Sessions',
+    ga4TotalUsers: 'Total Users',
+    ga4NewUsers: 'New Users',
+    ga4EngagedSessions: 'Engaged Sessions',
+    ga4BounceRate: 'Bounce Rate',
+    ga4AvgDuration: 'Avg Duration',
+    ga4Conversions: 'Conversions',
+    ga4ByChannel: 'By Channel',
+    ga4ByDevice: 'By Device',
+    ga4LandingPages: 'Landing Pages',
+    ga4Channel: 'Channel',
+    ga4Page: 'Page',
     utm: 'UTM',
     utmTitle: 'UTM Campaign Analysis',
     utmSource: 'Source (utm_source)',
@@ -166,6 +192,8 @@ export const T = {
 }
 
 export const METRICS_BASE = [
+  { key: 'sessions', dataKey: 'sessions', color: '#2563EB', summaryKey: 'totalSessions' },
+  { key: 'conversions', dataKey: 'conversions', color: '#059669', summaryKey: 'totalConversions' },
   { key: 'submissions', dataKey: 'submissions', color: '#374151', summaryKey: 'totalSubmissions' },
   { key: 'ad', dataKey: 'ad', color: '#4F46E5', summaryKey: 'adSubmissions' },
   { key: 'organic', dataKey: 'organic', color: '#10B981', summaryKey: 'organicSubmissions' },
@@ -181,20 +209,16 @@ export const METRICS_BASE = [
 
 export const EXP_COLORS = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7', '#DDA0DD', '#98D8C8', '#F7DC6F']
 
-export const DATA_KEYS = ['submissions', 'ad', 'organic', 'signups', 'companies', 'jobApps', 'jobClicks', 'cardClicks', 'jobsPageViews', 'applyClicks', 'saveClicks']
+export const DATA_KEYS = ['sessions', 'conversions', 'submissions', 'ad', 'organic', 'signups', 'companies', 'jobApps', 'jobClicks', 'cardClicks', 'jobsPageViews', 'applyClicks', 'saveClicks']
 
 export const FUNNEL_TRACKING_START = '2026-05-09'
 
 export const PRESET_FUNNELS = {
   ko: [
-    { name: 'Jobs 채용 퍼널', desc: 'Jobs 페이지 방문부터 지원 완료까지', keys: ['jobsPageViews', 'cardClicks', 'applyClicks', 'jobApps'], since: FUNNEL_TRACKING_START },
-    { name: '홈 → Jobs 전환', desc: '홈페이지 유입부터 Jobs 관심까지', keys: ['submissions', 'jobClicks', 'jobsPageViews', 'cardClicks'], since: FUNNEL_TRACKING_START },
-    { name: '가입 & 지원', desc: '제출 → 가입 → 지원 전환', keys: ['submissions', 'signups', 'applyClicks', 'jobApps'], since: FUNNEL_TRACKING_START },
+    { name: '대표 퍼널', desc: '세션 → 제출 → 가입 → 지원', keys: ['sessions', 'submissions', 'signups', 'jobApps'], since: FUNNEL_TRACKING_START },
   ],
   en: [
-    { name: 'Jobs Hiring Funnel', desc: 'From page visit to application', keys: ['jobsPageViews', 'cardClicks', 'applyClicks', 'jobApps'], since: FUNNEL_TRACKING_START },
-    { name: 'Home → Jobs Conversion', desc: 'Home traffic to Jobs interest', keys: ['submissions', 'jobClicks', 'jobsPageViews', 'cardClicks'], since: FUNNEL_TRACKING_START },
-    { name: 'Signup & Apply', desc: 'Submit → Signup → Apply flow', keys: ['submissions', 'signups', 'applyClicks', 'jobApps'], since: FUNNEL_TRACKING_START },
+    { name: 'Main Funnel', desc: 'Session → Subs → Signin → Apply', keys: ['sessions', 'submissions', 'signups', 'jobApps'], since: FUNNEL_TRACKING_START },
   ],
 }
 

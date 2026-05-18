@@ -7,6 +7,7 @@ import FunnelView from '../../components/admin/FunnelView'
 import UtmView from '../../components/admin/UtmView'
 import UsersView from '../../components/admin/UsersView'
 import ApplicationsView from '../../components/admin/ApplicationsView'
+import GA4View from '../../components/admin/GA4View'
 import {
   T, METRICS_BASE, EXP_COLORS, COLORS,
   inputStyle, sectionStyle, sectionTitle,
@@ -31,6 +32,7 @@ export default function AdminDashboard() {
   const [chartMode, setChartMode] = useState('1d')
   const [realtime, setRealtime] = useState(null)
   const [realtimeLoading, setRealtimeLoading] = useState(false)
+  const [ga4, setGa4] = useState(null)
   const [autoRefresh, setAutoRefresh] = useState(true)
   const yesterday = (() => {
     const d = new Date(Date.now() - 86400000)
@@ -64,6 +66,7 @@ export default function AdminDashboard() {
     fetchData()
     fetchExperiments()
     fetchRealtime()
+    fetchGA4()
   }, [auth, token, dateRange, lang])
 
   useEffect(() => {
@@ -118,6 +121,18 @@ export default function AdminDashboard() {
     setRealtimeLoading(false)
   }
 
+  async function fetchGA4() {
+    try {
+      const res = await fetch(
+        `/api/admin/ga4?from=${dateRange.from}&to=${dateRange.to}`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      )
+      if (res.ok) setGa4(await res.json())
+    } catch (e) {
+      console.error('GA4 fetch error:', e)
+    }
+  }
+
   async function fetchExperiments() {
     try {
       const res = await fetch('/api/admin/experiments', { headers: headers() })
@@ -167,11 +182,27 @@ export default function AdminDashboard() {
   const selectedMetric = METRICS.find(m => m.key === selected)
 
   const dailyWithToday = (() => {
-    if (!data?.daily || !realtime) return data?.daily
+    if (!data?.daily) return data?.daily
+    // Merge GA4 sessions + conversions into daily data
+    const ga4Map = {}
+    if (ga4?.daily) {
+      for (const d of ga4.daily) ga4Map[d.date] = { sessions: d.sessions, conversions: d.conversions, totalUsers: d.totalUsers, newUsers: d.newUsers, engagedSessions: d.engagedSessions }
+    }
+    let merged = data.daily.map(d => ({
+      ...d,
+      sessions: ga4Map[d.date]?.sessions ?? 0,
+      conversions: ga4Map[d.date]?.conversions ?? 0,
+      ga4Users: ga4Map[d.date]?.totalUsers ?? 0,
+      ga4NewUsers: ga4Map[d.date]?.newUsers ?? 0,
+      ga4Engaged: ga4Map[d.date]?.engagedSessions ?? 0,
+    }))
+
+    if (!realtime) return merged
     const today = realtime.date
-    if (today > dateRange.to && today !== localDate(Date.now())) return data.daily
+    if (today > dateRange.to && today !== localDate(Date.now())) return merged
     const todayData = {
       date: today,
+      sessions: ga4?.today?.sessions ?? 0,
       submissions: realtime.submissions,
       ad: realtime.ad,
       organic: realtime.organic,
@@ -181,19 +212,28 @@ export default function AdminDashboard() {
       cardClicks: realtime.cardClicks,
       jobApps: realtime.jobApps,
     }
-    const exists = data.daily.some(d => d.date === today)
-    if (exists) return data.daily.map(d => d.date === today ? todayData : d)
-    return [...data.daily, todayData]
+    const exists = merged.some(d => d.date === today)
+    if (exists) return merged.map(d => d.date === today ? todayData : d)
+    return [...merged, todayData]
   })()
 
   const summary = (() => {
-    if (!data?.summary || !realtime) return data?.summary
+    if (!data?.summary) return data?.summary
+    const base = {
+      ...data.summary,
+      totalSessions: ga4?.totals?.sessions ?? 0,
+      totalConversions: ga4?.totals?.conversions ?? 0,
+      ga4TotalUsers: ga4?.totals?.totalUsers ?? 0,
+      ga4NewUsers: ga4?.totals?.newUsers ?? 0,
+      ga4EngagedSessions: ga4?.totals?.engagedSessions ?? 0,
+    }
+    if (!realtime) return base
     const today = realtime.date
     const todayInRange = data.daily?.find(d => d.date === today)
-    if (!todayInRange && today > dateRange.to) return data.summary
+    if (!todayInRange && today > dateRange.to) return base
     const diff = (rtKey, dayKey) => (realtime[rtKey] ?? 0) - (todayInRange?.[dayKey ?? rtKey] ?? 0)
     return {
-      ...data.summary,
+      ...base,
       totalSubmissions: data.summary.totalSubmissions + diff('submissions'),
       adSubmissions: data.summary.adSubmissions + diff('ad'),
       organicSubmissions: data.summary.organicSubmissions + diff('organic'),
@@ -241,7 +281,7 @@ export default function AdminDashboard() {
 
         {/* Tab switcher */}
         <div style={{ display: 'flex', gap: 0, marginBottom: 24, borderBottom: '2px solid #e5e7eb' }}>
-          {['trend', 'funnel', 'utm', 'users', 'applications'].map(k => (
+          {['trend', 'funnel', 'ga4', 'utm', 'users', 'applications'].map(k => (
             <button key={k} onClick={() => setTab(k)}
               style={{
                 padding: '10px 24px', fontSize: 14, fontWeight: 600, cursor: 'pointer',
@@ -280,6 +320,7 @@ export default function AdminDashboard() {
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(100px, 1fr))', gap: 8 }}>
               {[
+                { label: t.metrics.sessions, value: ga4?.today?.sessions ?? '-', color: '#2563EB' },
                 { label: t.metrics.submissions, value: realtime.submissions, color: '#e2e8f0' },
                 { label: t.metrics.ad, value: realtime.ad, color: '#818cf8' },
                 { label: t.metrics.organic, value: realtime.organic, color: '#34d399' },
@@ -578,6 +619,8 @@ export default function AdminDashboard() {
                     {dailyWithToday.map((d, i) => (
                       <tr key={i} style={{ borderBottom: '1px solid #f3f4f6', background: i % 2 === 0 ? '#fff' : '#fafafa' }}>
                         <td style={{ padding: '6px 12px' }}>{d.date}</td>
+                        <td style={{ padding: '6px 12px', textAlign: 'right', color: '#2563EB', fontWeight: 600 }}>{d.sessions ?? '-'}</td>
+                        <td style={{ padding: '6px 12px', textAlign: 'right', color: '#059669' }}>{d.conversions ?? '-'}</td>
                         <td style={{ padding: '6px 12px', textAlign: 'right', fontWeight: 600 }}>{d.submissions}</td>
                         <td style={{ padding: '6px 12px', textAlign: 'right', color: '#4F46E5' }}>{d.ad}</td>
                         <td style={{ padding: '6px 12px', textAlign: 'right', color: '#10B981' }}>{d.organic}</td>
@@ -593,6 +636,8 @@ export default function AdminDashboard() {
                     ))}
                     <tr style={{ borderTop: '2px solid #e5e7eb', fontWeight: 700 }}>
                       <td style={{ padding: '8px 12px' }}>{t.total}</td>
+                      <td style={{ padding: '8px 12px', textAlign: 'right', color: '#2563EB' }}>{summary.totalSessions ?? '-'}</td>
+                      <td style={{ padding: '8px 12px', textAlign: 'right', color: '#059669' }}>{summary.totalConversions ?? '-'}</td>
                       <td style={{ padding: '8px 12px', textAlign: 'right' }}>{summary.totalSubmissions}</td>
                       <td style={{ padding: '8px 12px', textAlign: 'right', color: '#4F46E5' }}>{summary.adSubmissions}</td>
                       <td style={{ padding: '8px 12px', textAlign: 'right', color: '#10B981' }}>{summary.organicSubmissions}</td>
@@ -614,7 +659,12 @@ export default function AdminDashboard() {
 
         {/* Funnel Tab */}
         {data?.summary && !loading && tab === 'funnel' && (
-          <FunnelView data={data} metrics={METRICS} summary={summary} funnelKeys={funnelKeys} setFunnelKeys={setFunnelKeys} t={t} lang={lang} />
+          <FunnelView data={{ ...data, daily: dailyWithToday }} metrics={METRICS} summary={summary} funnelKeys={funnelKeys} setFunnelKeys={setFunnelKeys} t={t} lang={lang} />
+        )}
+
+        {/* GA4 Tab */}
+        {!loading && tab === 'ga4' && (
+          <GA4View ga4={ga4} t={t} />
         )}
 
         {/* UTM Tab */}
