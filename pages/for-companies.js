@@ -121,7 +121,8 @@ export default function ForCompanies() {
             <span>salary-fyi <span style={css.logoSub}>· for companies</span></span>
           </Link>
           <div style={css.navLinks}>
-            <a href="#how" style={css.navLink}>소개</a>
+            <a href="#how" style={css.navLink}>작동 방식</a>
+            <a href="#compare" style={css.navLink}>요금</a>
           </div>
           <div style={css.navRight}>
             <Link href="/company" style={css.btnGhost}>기업 로그인</Link>
@@ -136,11 +137,9 @@ export default function ForCompanies() {
           {/* 위: 반반 split */}
           <div style={css.heroSplit}>
             <div style={css.heroCopyLeft}>
-              <div style={css.heroTag}>FYI · FOR COMPANIES</div>
               <h1 style={css.h1}>
                 베트남 IT 채용,<br />
-                <span style={css.h1Highlight}>7.3일</span>로<br />
-                압축합니다.
+                <span style={css.h1Highlight}>7일</span> 안에 끝납니다.
               </h1>
               <p style={css.lead}>
                 돈 많이 들고 오래 걸리던 채용, FYI가 가장 쉽게 만듭니다.
@@ -149,7 +148,7 @@ export default function ForCompanies() {
                 <button onClick={() => router.push('/company/signup')} style={css.btnAccentLg}>
                   무료로 공고 올리기
                 </button>
-                <button style={css.btnGhostLg}>상담하기</button>
+                <a style={css.consultLink}>상담하기 →</a>
               </div>
             </div>
 
@@ -160,109 +159,81 @@ export default function ForCompanies() {
             </div>
           </div>
 
-          {/* 아래: 거대 KPI 카운트업 */}
+          {/* 아래: 거대 KPI — 0원 강조 */}
           <div style={css.megaKpi}>
             <div style={css.kpiCol}>
-              <div style={css.kpiBigNum}>
-                <CountUp end={7.3} decimals={1} suffix="일" duration={1800} />
+              <div style={css.kpiSubNum}>
+                <CountUp end={7} suffix="일" duration={1800} />
               </div>
-              <div style={css.kpiBigLab}>매칭 → 인터뷰까지 평균</div>
+              <div style={css.kpiBigLab}>면접까지 평균</div>
               <div style={css.kpiBigNote}>시장 평균 4~8주</div>
             </div>
             <div style={css.kpiSepBig} />
             <div style={css.kpiCol}>
-              <div style={css.kpiBigNum}>
+              <div style={css.kpiHeroNum}>
                 <CountUp end={0} suffix="원" duration={1200} />
               </div>
-              <div style={css.kpiBigLab}>게재비 · 사전 비용</div>
+              <div style={css.kpiBigLab}>공고 등록비</div>
               <div style={css.kpiBigNote}>채용 실패 시 비용 0</div>
             </div>
             <div style={css.kpiSepBig} />
             <div style={css.kpiCol}>
-              <div style={css.kpiBigNum}>
+              <div style={css.kpiSubNum}>
                 <CountUp end={14252} duration={2200} />
               </div>
-              <div style={css.kpiBigLab}>베트남 IT 개발자 풀</div>
+              <div style={css.kpiBigLab}>베트남 IT 개발자</div>
               <div style={css.kpiBigNote}>134개사 실연봉 누적</div>
             </div>
           </div>
         </section>
 
-        {/* ────────── HOW IT WORKS (3 steps with screenshots) ────────── */}
+        {/* ────────── HOW IT WORKS (3 steps with real product captures) ────────── */}
         <section id="how" style={css.journey}>
           <div style={css.journeyHead}>
             <div style={css.sectionEyebrow}>HOW IT WORKS</div>
-            <h2 style={css.h2}>채용의 모든 단계가<br />하나의 화면에서 흐릅니다.</h2>
+            <h2 style={css.h2}>공고만 올리세요.<br />면접까지 FYI가 진행합니다.</h2>
           </div>
 
           <div style={css.journeySteps}>
-            {/* Step 01 — 기업 계정 만들기 */}
+            {/* Step 01 — 공고 올리기 (구직자 피드에 노출되는 결과) */}
             <div style={css.step}>
               <div style={css.stepText}>
                 <div style={css.stepNum}>01</div>
-                <h3 style={css.stepTitle}>회사 이메일 한 번이면 입장.</h3>
+                <h3 style={css.stepTitle}>공고를 올립니다.</h3>
                 <p style={css.stepDesc}>
-                  회사 이메일로 인증 링크를 받고 1분 내 입장. 사업자번호는 첫 공고 발행 시점에 한 번만 입력하면 끝.
+                  베트남 IT 개발자들이 보는 채용 페이지에 바로 올라갑니다. 등록비는 0원입니다.
                 </p>
               </div>
               <div style={css.stepShot}>
-                <img src="/ats-preview/step-signup.png" alt="기업 계정 만들기" style={css.stepImg} />
+                <img src="/ats-preview/jobs-public.png" alt="베트남 IT 인재 잡 피드" style={css.stepImg} />
               </div>
             </div>
 
-            {/* Step 02 — 공고 등록 (reversed) */}
+            {/* Step 02 — 칸반 도착 (메인) (reversed) */}
             <div style={{...css.step, ...css.stepReverse}}>
               <div style={css.stepText}>
                 <div style={css.stepNum}>02</div>
-                <h3 style={css.stepTitle}>공고 작성하면 미리보기까지.</h3>
+                <h3 style={css.stepTitle}>조건에 맞는 후보가 자동으로 들어옵니다.</h3>
                 <p style={css.stepDesc}>
-                  포지션·연봉·스킬을 입력하면 후보자가 볼 카드 모양을 즉시 미리보기. 첫 공고는 운영 검수 후 자동 활성.
+                  FYI가 베트남 IT 개발자 중 조건에 맞는 사람을 추천합니다. 면접 요청과 일정 조율도 메일 주고받을 필요 없이 끝납니다.
                 </p>
               </div>
               <div style={css.stepShot}>
-                <img src="/ats-preview/step-post.png" alt="공고 작성 화면" style={css.stepImg} />
+                <img src="/ats-preview/ats-kanban-masked.png" alt="후보 진행 현황 화면" style={css.stepImg} />
               </div>
             </div>
 
-            {/* Step 03 — 모든 공고 한 화면 */}
+            {/* Step 03 — 후보 상세 (이력서 + 결정 한 화면) */}
             <div style={css.step}>
               <div style={css.stepText}>
                 <div style={css.stepNum}>03</div>
-                <h3 style={css.stepTitle}>모든 공고를 한 눈에.</h3>
+                <h3 style={css.stepTitle}>이력서를 보면서 바로 결정합니다.</h3>
                 <p style={css.stepDesc}>
-                  활성 공고가 카드 그리드로. 매칭 / 인터뷰 요청 / 일정 조율 / 인터뷰 완료 / 채용 확정 인원이 카드에 그대로.
+                  이력서를 보면서 평가를 메모하고, 합격·불합격을 바로 정합니다.
                 </p>
               </div>
               <div style={css.stepShot}>
-                <img src="/ats-preview/ats-jobs.png" alt="공고 그리드 화면" style={css.stepImg} />
-              </div>
-            </div>
-
-            {/* Step 04 — 매칭 칸반 (reversed) */}
-            <div style={{...css.step, ...css.stepReverse}}>
-              <div style={css.stepText}>
-                <div style={css.stepNum}>04</div>
-                <h3 style={css.stepTitle}>매칭이 칸반에 도착합니다.</h3>
-                <p style={css.stepDesc}>
-                  검증된 후보 카드가 ① 매칭 컬럼에 자동 등장. 1클릭으로 인터뷰 요청 → 일정 조율까지 자동.
-                </p>
-              </div>
-              <div style={css.stepShot}>
-                <img src="/ats-preview/ats-kanban.png" alt="칸반 파이프라인" style={css.stepImg} />
-              </div>
-            </div>
-
-            {/* Step 05 — 분석 */}
-            <div style={css.step}>
-              <div style={css.stepText}>
-                <div style={css.stepNum}>05</div>
-                <h3 style={css.stepTitle}>채용 결과를 한 화면에.</h3>
-                <p style={css.stepDesc}>
-                  전체 채용 퍼널과 KPI를 한 번에 확인. 입사 확정 30일 후 자동 검증 → 정산까지 한 흐름.
-                </p>
-              </div>
-              <div style={css.stepShot}>
-                <img src="/ats-preview/ats-analytics.png" alt="채용 분석 화면" style={css.stepImg} />
+                <img src="/ats-preview/ats-candidate-detail-masked.png" alt="후보 상세 화면 — 이력서와 평가" style={css.stepImg} />
               </div>
             </div>
           </div>
@@ -273,7 +244,7 @@ export default function ForCompanies() {
           <div style={css.compareHead}>
             <div style={css.sectionEyebrow}>VS COMPETITORS</div>
             <h2 style={css.h2}>왜 다른가</h2>
-            <p style={css.compareSub}>동일한 채용 1건을 처리하는 데 드는 비용·시간·작업 비교</p>
+            <p style={css.compareSub}>베트남 IT 개발자 1명 채용에 드는 비용·시간 비교</p>
           </div>
 
           <div style={css.tableWrap}>
@@ -281,76 +252,51 @@ export default function ForCompanies() {
               <thead>
                 <tr>
                   <th style={{...css.th, ...css.thFeature}}>기능</th>
-                  <th style={css.th}>VietnamWorks</th>
-                  <th style={css.th}>ITviec</th>
-                  <th style={css.th}>TopDev</th>
-                  <th style={css.th}>LinkedIn</th>
+                  <th style={css.th}>A 채용 플랫폼</th>
+                  <th style={css.th}>B 헤드헌팅 에이전시</th>
                   <th style={{...css.th, ...css.thFyi}}>FYI</th>
                 </tr>
               </thead>
               <tbody>
                 <tr style={css.tr}>
-                  <td style={css.tdFeature}>공고 게재비 무료</td>
-                  <td style={css.td}><Mark v="x" /></td>
-                  <td style={css.td}><Mark v="x" /></td>
-                  <td style={css.td}><Mark v="x" /></td>
-                  <td style={css.td}><Mark v="x" /></td>
-                  <td style={{...css.td, ...css.tdFyi}}><Mark v="o" /></td>
+                  <td style={css.tdFeature}>공고 등록비</td>
+                  <td style={{...css.td, ...css.tdMetric}}>유료</td>
+                  <td style={{...css.td, ...css.tdMetric}}>—</td>
+                  <td style={{...css.td, ...css.tdFyi, ...css.tdMetricFyi}}>무료</td>
                 </tr>
                 <tr style={css.tr}>
                   <td style={css.tdFeature}>사전 결제 없음</td>
                   <td style={css.td}><Mark v="x" /></td>
-                  <td style={css.td}><Mark v="x" /></td>
-                  <td style={css.td}><Mark v="x" /></td>
-                  <td style={css.td}><Mark v="x" /></td>
+                  <td style={css.td}><Mark v="o" /></td>
                   <td style={{...css.td, ...css.tdFyi}}><Mark v="o" /></td>
                 </tr>
                 <tr style={css.tr}>
-                  <td style={css.tdFeature}>입사 30일 검증 후 7% 후불</td>
-                  <td style={css.td}><Mark v="x" /></td>
-                  <td style={css.td}><Mark v="x" /></td>
-                  <td style={css.td}><Mark v="x" /></td>
-                  <td style={css.td}><Mark v="x" /></td>
-                  <td style={{...css.td, ...css.tdFyi}}><Mark v="o" /></td>
+                  <td style={css.tdFeature}>수수료 (성공 채용 시)</td>
+                  <td style={{...css.td, ...css.tdMetric}}>—</td>
+                  <td style={{...css.td, ...css.tdMetric}}>연봉 15–25%</td>
+                  <td style={{...css.td, ...css.tdFyi, ...css.tdMetricFyi}}>연봉 7%</td>
                 </tr>
                 <tr style={css.tr}>
-                  <td style={css.tdFeature}>실연봉 데이터 기반 매칭</td>
+                  <td style={css.tdFeature}>실제 연봉 데이터로 후보 추천</td>
                   <td style={css.td}><Mark v="x" /></td>
                   <td style={css.td}><Mark v="x" /></td>
-                  <td style={css.td}><Mark v="x" /></td>
-                  <td style={css.td}><Mark v="p" label="부분" /></td>
-                  <td style={{...css.td, ...css.tdFyi}}><Mark v="o" /></td>
-                </tr>
-                <tr style={css.tr}>
-                  <td style={css.tdFeature}>익명 카드 + PDPL 자동 처리</td>
-                  <td style={css.td}><Mark v="x" /></td>
-                  <td style={css.td}><Mark v="x" /></td>
-                  <td style={css.td}><Mark v="x" /></td>
-                  <td style={css.td}><Mark v="x" /></td>
-                  <td style={{...css.td, ...css.tdFyi}}><Mark v="o" /></td>
-                </tr>
-                <tr style={css.tr}>
-                  <td style={css.tdFeature}>1클릭 면접 요청 · 슬롯 자동 조율</td>
-                  <td style={css.td}><Mark v="x" /></td>
-                  <td style={css.td}><Mark v="p" label="부분" /></td>
-                  <td style={css.td}><Mark v="x" /></td>
-                  <td style={css.td}><Mark v="p" label="부분" /></td>
                   <td style={{...css.td, ...css.tdFyi}}><Mark v="o" /></td>
                 </tr>
                 <tr style={{...css.tr, ...css.trFinal}}>
                   <td style={{...css.tdFeature, ...css.tdFinalLabel}}>평균 채용 사이클</td>
-                  <td style={{...css.td, ...css.tdMetric}}>4~8주</td>
-                  <td style={{...css.td, ...css.tdMetric}}>4~8주</td>
-                  <td style={{...css.td, ...css.tdMetric}}>3~6주</td>
-                  <td style={{...css.td, ...css.tdMetric}}>4~12주</td>
+                  <td style={{...css.td, ...css.tdMetric}}>4–8주</td>
+                  <td style={{...css.td, ...css.tdMetric}}>4–12주</td>
                   <td style={{...css.td, ...css.tdFyi, ...css.tdMetricFyi}}>7.3일</td>
                 </tr>
               </tbody>
             </table>
             <div style={css.tableLegend}>
               <span><Mark v="o" /> 지원</span>
-              <span><Mark v="p" label="부분" /> 부분 지원</span>
+              <span><Mark v="p" label="수동" /> 수동 / 부분</span>
               <span><Mark v="x" /> 미지원</span>
+              <span style={{marginLeft: 'auto', color: 'rgba(255,255,255,0.35)', fontSize: 11.5}}>
+                · A: 유료 채용공고 게시 서비스 · B: 성공보수 헤드헌팅 (2026.5 기준)
+              </span>
             </div>
           </div>
         </section>
@@ -504,6 +450,25 @@ const css = {
     fontVariantNumeric: 'tabular-nums',
     marginBottom: 12,
   },
+  kpiHeroNum: {
+    fontSize: 156,
+    fontWeight: 900,
+    lineHeight: 0.92,
+    letterSpacing: '-0.06em',
+    color: '#EA580C',
+    fontVariantNumeric: 'tabular-nums',
+    marginBottom: 14,
+  },
+  kpiSubNum: {
+    fontSize: 72,
+    fontWeight: 900,
+    lineHeight: 0.95,
+    letterSpacing: '-0.04em',
+    color: '#1A1A1A',
+    fontVariantNumeric: 'tabular-nums',
+    marginBottom: 12,
+    opacity: 0.72,
+  },
   kpiBigLab: {
     fontSize: 15, fontWeight: 800, color: '#1A1A1A',
     letterSpacing: '-0.005em', marginBottom: 3,
@@ -532,6 +497,11 @@ const css = {
     padding: '18px 36px', borderRadius: 999, border: '1.5px solid rgba(26,26,26,0.15)',
     background: '#fff', color: '#1A1A1A', fontSize: 16, fontWeight: 700, cursor: 'pointer',
     fontFamily: 'inherit',
+  },
+  consultLink: {
+    alignSelf: 'center', padding: '10px 0 10px 18px',
+    fontSize: 14, fontWeight: 700, color: '#525252',
+    cursor: 'pointer', textDecoration: 'none',
   },
 
   // Hero visual — character dominates, clean rounded card
