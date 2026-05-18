@@ -3,320 +3,364 @@ import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { useEffect, useRef, useState } from 'react';
 
-function CountUp({ end, decimals = 0, duration = 1800, suffix = '', delay = 0 }) {
+function CountUp({ end, decimals = 0, duration = 1200, suffix = '' }) {
   const [val, setVal] = useState(0);
   const ref = useRef(null);
   const animRef = useRef(null);
-  const lastWheelRef = useRef(0);
-
-  const animate = () => {
-    if (animRef.current) cancelAnimationFrame(animRef.current);
-    let startTs = null;
-    setVal(0);
-    const run = (ts) => {
-      if (!startTs) startTs = ts + delay;
-      const t = Math.max(0, ts - startTs);
-      const progress = Math.min(t / duration, 1);
-      const eased = 1 - Math.pow(1 - progress, 3);
-      setVal(end * eased);
-      if (progress < 1) animRef.current = requestAnimationFrame(run);
-    };
-    animRef.current = requestAnimationFrame(run);
-  };
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
-    const io = new IntersectionObserver((entries) => {
-      entries.forEach((e) => {
-        if (e.isIntersecting) animate();
-      });
-    }, { threshold: 0.3 });
-    if (ref.current) io.observe(ref.current);
-
-    const onWheel = () => {
-      const now = Date.now();
-      if (now - lastWheelRef.current > 600) {
-        lastWheelRef.current = now;
-        animate();
-      }
+    const run = () => {
+      if (animRef.current) cancelAnimationFrame(animRef.current);
+      let start = null;
+      const tick = (ts) => {
+        if (!start) start = ts;
+        const progress = Math.min((ts - start) / duration, 1);
+        const eased = 1 - Math.pow(1 - progress, 3);
+        setVal(end * eased);
+        if (progress < 1) animRef.current = requestAnimationFrame(tick);
+      };
+      animRef.current = requestAnimationFrame(tick);
     };
-    window.addEventListener('wheel', onWheel, { passive: true });
-
+    const io = new IntersectionObserver((entries) => {
+      if (entries.some((entry) => entry.isIntersecting)) run();
+    }, { threshold: 0.25 });
+    if (ref.current) io.observe(ref.current);
     return () => {
       io.disconnect();
-      window.removeEventListener('wheel', onWheel);
       if (animRef.current) cancelAnimationFrame(animRef.current);
     };
-  }, [end, duration, delay]);
+  }, [end, duration]);
 
-  const formatted = decimals > 0
-    ? val.toFixed(decimals)
-    : Math.floor(val).toLocaleString();
-
-  return (
-    <span ref={ref}>
-      {formatted}
-      {suffix && <span style={{ fontSize: '0.45em', fontWeight: 800, opacity: 0.5, marginLeft: 6 }}>{suffix}</span>}
-    </span>
-  );
+  const formatted = decimals ? val.toFixed(decimals) : Math.floor(val).toLocaleString();
+  return <span ref={ref}>{formatted}{suffix && <span style={css.unit}>{suffix}</span>}</span>;
 }
 
-function Mark({ v, label }) {
-  if (v === 'o') return <span style={markStyles.o} title="지원">✓</span>;
-  if (v === 'x') return <span style={markStyles.x} title="미지원">×</span>;
-  if (v === 'p') return <span style={markStyles.p} title="부분 지원">{label || '△'}</span>;
+function Mark({ v }) {
+  if (v === 'o') return <span style={css.markYes} title="지원">✓</span>;
+  if (v === 'x') return <span style={css.markNo} title="미지원">×</span>;
   return null;
 }
 
-const markStyles = {
-  o: {
-    display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-    width: 30, height: 30, borderRadius: '50%',
-    background: '#0EBA9A', color: '#fff',
-    fontSize: 16, fontWeight: 900,
-    boxShadow: '0 2px 6px rgba(14,186,154,0.3)',
+function Lines({ lines }) {
+  return (
+    <>
+      {lines.map((line) => (
+        <span key={line}>{line}</span>
+      ))}
+    </>
+  );
+}
+
+const offers = [
+  ['01', '공고 노출', ['게재비 0원', '채용 페이지 게시']],
+  ['02', '후보 추천', ['조건 맞는', '후보 선별']],
+  ['03', '면접 관리', ['상태·요청', '평가 관리']],
+  ['04', '유지 보증', ['3개월 미유지', '수수료 0원']],
+];
+
+const steps = [
+  {
+    no: '01',
+    title: '공고를 올립니다',
+    desc: ['직무와 조건만 입력하면', '채용 페이지에 바로 노출됩니다.'],
+    img: '/ats-preview/jobs-public.png',
   },
-  x: {
-    display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-    width: 30, height: 30, borderRadius: '50%',
-    background: 'rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.35)',
-    fontSize: 18, fontWeight: 700,
-    border: '1px solid rgba(255,255,255,0.08)',
+  {
+    no: '02',
+    title: '조건에 맞는 후보를 확인합니다',
+    desc: ['FYI가 후보를 모으고', '진행 상태를 정리합니다.'],
+    img: '/ats-preview/ats-kanban-masked.png',
+    reverse: true,
   },
-  p: {
-    display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-    minWidth: 30, height: 24, padding: '0 9px', borderRadius: 999,
-    background: 'rgba(245,158,11,0.18)', color: '#F59E0B',
-    fontSize: 10.5, fontWeight: 800, letterSpacing: '0.02em',
-    border: '1px solid rgba(245,158,11,0.3)',
+  {
+    no: '03',
+    title: '이력서를 보고 결정합니다',
+    desc: ['이력서와 평가 메모를 보고', '합격 여부를 결정합니다.'],
+    img: '/ats-preview/ats-candidate-detail-masked.png',
   },
-};
+];
 
 export default function ForCompanies() {
   const router = useRouter();
+
   return (
     <>
       <Head>
-        <title>FYI for Companies · 베트남 IT 채용, 7.3일로 압축합니다</title>
-        <meta name="description" content="돈 많이 들고 오래 걸리던 채용, FYI가 가장 쉽게 만듭니다. 사전 비용 0원, 입사 30일 검증 후 7% 후불." />
+        <title>FYI for Companies · 베트남 IT 채용을 7일 안에</title>
+        <meta
+          name="description"
+          content="공고 등록비 없이 베트남 IT 후보를 만나보세요. FYI가 후보 추천, 면접 진행, ATS 관리를 돕고 채용 성공 시에만 7%를 청구합니다."
+        />
       </Head>
       <style>{`
-        html { scroll-behavior: smooth; }
-        section { scroll-margin-top: 80px; }
-        @keyframes fyiHeroFloat {
-          0%, 100% { transform: translateY(0px); }
-          50% { transform: translateY(-12px); }
+        section {
+          scroll-margin-top: 96px;
         }
-        @keyframes fyiHeroPulse {
-          0%, 100% { opacity: 1; transform: scale(1); }
-          50% { opacity: 0.75; transform: scale(1.05); }
+        .fc-kpi strong {
+          color: #ea580c;
+          font-size: clamp(46px, 7vw, 82px);
+          line-height: 0.95;
+          letter-spacing: -0.05em;
+        }
+        @media (max-width: 900px) {
+          .fc-hero {
+            grid-template-columns: 1fr !important;
+            gap: 36px !important;
+            padding: 56px 20px 42px !important;
+            text-align: center !important;
+          }
+          .fc-hero-copy {
+            justify-self: center !important;
+          }
+          .fc-hero-ctas,
+          .fc-trust {
+            justify-content: center !important;
+          }
+          .fc-float-card {
+            left: 12px !important;
+            bottom: 16px !important;
+          }
+          .fc-kpis {
+            grid-template-columns: 1fr !important;
+            gap: 28px !important;
+            padding: 28px 20px 44px !important;
+          }
+          .fc-offer-grid {
+            grid-template-columns: 1fr 1fr !important;
+          }
+          .fc-step,
+          .fc-step-reverse {
+            grid-template-columns: 1fr !important;
+            direction: ltr !important;
+            gap: 22px !important;
+          }
+          .fc-offer-flow {
+            flex-wrap: wrap !important;
+          }
+        }
+        @media (max-width: 560px) {
+          .fc-company-nav {
+            padding: 12px 16px !important;
+            gap: 10px !important;
+          }
+          .fc-company-nav-links {
+            order: 3 !important;
+            width: 100% !important;
+            justify-content: center !important;
+            gap: 16px !important;
+          }
+          .fc-hero h1 {
+            font-size: 42px !important;
+          }
+          .fc-hero-ctas {
+            flex-direction: column !important;
+            align-items: stretch !important;
+          }
+          .fc-hero-ctas button {
+            width: 100% !important;
+          }
+          .fc-offer-grid {
+            grid-template-columns: 1fr !important;
+          }
+          .fc-offer-grid article {
+            min-height: 188px !important;
+            transform: none !important;
+          }
+          .fc-float-card {
+            position: static !important;
+            width: 100% !important;
+            margin-top: 12px !important;
+          }
+        }
+        .fc-offer-flow b {
+          display: block;
+          width: 46px;
+          height: 1px;
+          background: linear-gradient(90deg, rgba(234,88,12,0.18), rgba(234,88,12,0.8));
         }
       `}</style>
-
       <div style={css.page}>
-        {/* ────────── NAV ────────── */}
-        <nav style={css.nav}>
+        <nav className="fc-company-nav" style={css.nav}>
           <Link href="/" style={css.logo}>
             <span style={css.logoMark}>F</span>
-            <span>salary-fyi <span style={css.logoSub}>· for companies</span></span>
+            <span>salary-fyi <span style={css.logoSub}>for companies</span></span>
           </Link>
-          <div style={css.navLinks}>
-            <a href="#how" style={css.navLink}>작동 방식</a>
-            <a href="#compare" style={css.navLink}>요금</a>
+          <div className="fc-company-nav-links" style={css.navLinks}>
+            <a href="#offer" style={css.navLink}>제공 내용</a>
+            <a href="#how" style={css.navLink}>진행 방식</a>
+            <a href="#pricing" style={css.navLink}>요금</a>
           </div>
           <div style={css.navRight}>
             <Link href="/company" style={css.btnGhost}>기업 로그인</Link>
-            <Link href="/company/signup" style={css.btnPrimary}>공고 올리기 →</Link>
+            <Link href="/company" style={css.btnPrimary}>무료로 공고 올리기</Link>
           </div>
         </nav>
 
-        {/* ────────── HERO (반반 split + 아래 거대 KPI 카운트업) ────────── */}
-        <section style={css.hero}>
-          <div style={css.heroBlob1} />
-
-          {/* 위: 반반 split */}
-          <div style={css.heroSplit}>
-            <div style={css.heroCopyLeft}>
+        <main>
+          <section className="fc-hero" style={css.hero}>
+            <div className="fc-hero-copy" style={css.heroCopy}>
+              <div style={css.eyebrow}>FOR COMPANIES</div>
               <h1 style={css.h1}>
                 베트남 IT 채용,<br />
-                <span style={css.h1Highlight}>7일</span> 안에 끝납니다.
+                <span style={css.highlight}>7일이면</span> 됩니다.
               </h1>
               <p style={css.lead}>
-                돈 많이 들고 오래 걸리던 채용, FYI가 가장 쉽게 만듭니다.
+                공고만 올리면 후보 추천부터 면접 관리까지 FYI가 정리합니다.
               </p>
-              <div style={css.heroCtas}>
-                <button onClick={() => router.push('/company/signup')} style={css.btnAccentLg}>
+              <div className="fc-hero-ctas" style={css.heroCtas}>
+                <button type="button" onClick={() => router.push('/company')} style={css.btnAccent}>
                   무료로 공고 올리기
                 </button>
-                <a style={css.consultLink}>상담하기 →</a>
+                <a href="#offer" style={css.textLink}>제공 내용 보기 →</a>
+              </div>
+              <div className="fc-trust" style={css.trustLine}>
+                <span>등록비 0원</span>
+                <span>성공 시 7%</span>
               </div>
             </div>
 
-            <div style={css.heroLionWrap}>
-              <div style={css.heroLionCard}>
-                <img src="/LION.png" alt="FYI 후보자 인터뷰" style={css.heroLionImg} />
+            <div style={css.heroVisual}>
+              <img src="/LION.png" alt="FYI 후보 인터뷰" style={css.heroImg} />
+              <div className="fc-float-card" style={css.floatCard}>
+                <span style={css.floatLabel}>FYI DATA</span>
+                <strong>15,723명 연봉 정보</strong>
+                <small>베트남 IT 인재 매칭에 활용</small>
               </div>
             </div>
-          </div>
+          </section>
 
-          {/* 아래: 거대 KPI — 0원 강조 */}
-          <div style={css.megaKpi}>
-            <div style={css.kpiCol}>
-              <div style={css.kpiSubNum}>
-                <CountUp end={7} suffix="일" duration={1800} />
-              </div>
-              <div style={css.kpiBigLab}>면접까지 평균</div>
-              <div style={css.kpiBigNote}>시장 평균 4~8주</div>
+          <section className="fc-kpis" style={css.kpiStrip}>
+            <div className="fc-kpi" style={css.kpi}>
+              <strong><CountUp end={7.3} decimals={1} suffix="일" /></strong>
+              <span>첫 면접까지 평균</span>
             </div>
-            <div style={css.kpiSepBig} />
-            <div style={css.kpiCol}>
-              <div style={css.kpiHeroNum}>
-                <CountUp end={0} suffix="원" duration={1200} />
-              </div>
-              <div style={css.kpiBigLab}>공고 등록비</div>
-              <div style={css.kpiBigNote}>채용 실패 시 비용 0</div>
+            <div className="fc-kpi" style={css.kpi}>
+              <strong><CountUp end={0} suffix="원" /></strong>
+              <span>공고 등록비</span>
             </div>
-            <div style={css.kpiSepBig} />
-            <div style={css.kpiCol}>
-              <div style={css.kpiSubNum}>
-                <CountUp end={14252} duration={2200} />
-              </div>
-              <div style={css.kpiBigLab}>베트남 IT 개발자</div>
-              <div style={css.kpiBigNote}>134개사 실연봉 누적</div>
+            <div className="fc-kpi" style={css.kpi}>
+              <strong><CountUp end={15723} suffix="명" /></strong>
+              <span>연봉 정보 확보</span>
             </div>
-          </div>
-        </section>
+          </section>
 
-        {/* ────────── HOW IT WORKS (3 steps with real product captures) ────────── */}
-        <section id="how" style={css.journey}>
-          <div style={css.journeyHead}>
-            <div style={css.sectionEyebrow}>HOW IT WORKS</div>
-            <h2 style={css.h2}>공고만 올리세요.<br />면접까지 FYI가 진행합니다.</h2>
-          </div>
-
-          <div style={css.journeySteps}>
-            {/* Step 01 — 공고 올리기 (구직자 피드에 노출되는 결과) */}
-            <div style={css.step}>
-              <div style={css.stepText}>
-                <div style={css.stepNum}>01</div>
-                <h3 style={css.stepTitle}>공고를 올립니다.</h3>
-                <p style={css.stepDesc}>
-                  베트남 IT 개발자들이 보는 채용 페이지에 바로 올라갑니다. 등록비는 0원입니다.
-                </p>
-              </div>
-              <div style={css.stepShot}>
-                <img src="/ats-preview/jobs-public.png" alt="베트남 IT 인재 잡 피드" style={css.stepImg} />
-              </div>
+          <section id="offer" style={css.offer}>
+            <div style={css.sectionHead}>
+              <div style={css.eyebrowDark}>WHAT YOU GET</div>
+              <h2 style={css.h2Dark}>
+                공고 하나로<br />
+                여기까지 받습니다.
+              </h2>
             </div>
-
-            {/* Step 02 — 칸반 도착 (메인) (reversed) */}
-            <div style={{...css.step, ...css.stepReverse}}>
-              <div style={css.stepText}>
-                <div style={css.stepNum}>02</div>
-                <h3 style={css.stepTitle}>조건에 맞는 후보가 자동으로 들어옵니다.</h3>
-                <p style={css.stepDesc}>
-                  FYI가 베트남 IT 개발자 중 조건에 맞는 사람을 추천합니다. 면접 요청과 일정 조율도 메일 주고받을 필요 없이 끝납니다.
-                </p>
-              </div>
-              <div style={css.stepShot}>
-                <img src="/ats-preview/ats-kanban-masked.png" alt="후보 진행 현황 화면" style={css.stepImg} />
-              </div>
+            <div className="fc-offer-grid" style={css.offerGrid}>
+              {offers.map(([no, title, desc], idx) => (
+                <article key={title} style={{ ...css.offerCard, ...([0, 1, 3].includes(idx) ? css.offerCardKey : null) }}>
+                  <div style={css.offerTop}>
+                    <span style={css.offerNo}>{no}</span>
+                    {idx === 0 && <span style={css.offerBadge}>게재비 0원</span>}
+                    {idx === 1 && <span style={css.offerBadge}>핵심</span>}
+                    {idx === 3 && <span style={css.offerBadge}>보증</span>}
+                  </div>
+                  <h3 style={css.offerTitle}>{title}</h3>
+                  <p style={css.offerDesc}><Lines lines={desc} /></p>
+                </article>
+              ))}
             </div>
-
-            {/* Step 03 — 후보 상세 (이력서 + 결정 한 화면) */}
-            <div style={css.step}>
-              <div style={css.stepText}>
-                <div style={css.stepNum}>03</div>
-                <h3 style={css.stepTitle}>이력서를 보면서 바로 결정합니다.</h3>
-                <p style={css.stepDesc}>
-                  이력서를 보면서 평가를 메모하고, 합격·불합격을 바로 정합니다.
-                </p>
-              </div>
-              <div style={css.stepShot}>
-                <img src="/ats-preview/ats-candidate-detail-masked.png" alt="후보 상세 화면 — 이력서와 평가" style={css.stepImg} />
-              </div>
+            <div className="fc-offer-flow" style={css.offerFlow}>
+              <span>공고</span>
+              <b />
+              <span>후보</span>
+              <b />
+              <span>면접</span>
+              <b />
+              <span>채용</span>
             </div>
-          </div>
-        </section>
+          </section>
 
-        {/* ────────── COMPARE TABLE ────────── */}
-        <section id="compare" style={css.compare}>
-          <div style={css.compareHead}>
-            <div style={css.sectionEyebrow}>VS COMPETITORS</div>
-            <h2 style={css.h2}>왜 다른가</h2>
-            <p style={css.compareSub}>베트남 IT 개발자 1명 채용에 드는 비용·시간 비교</p>
-          </div>
-
-          <div style={css.tableWrap}>
-            <table style={css.table}>
-              <thead>
-                <tr>
-                  <th style={{...css.th, ...css.thFeature}}>기능</th>
-                  <th style={css.th}>A 채용 플랫폼</th>
-                  <th style={css.th}>B 헤드헌팅 에이전시</th>
-                  <th style={{...css.th, ...css.thFyi}}>FYI</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr style={css.tr}>
-                  <td style={css.tdFeature}>공고 등록비</td>
-                  <td style={{...css.td, ...css.tdMetric}}>유료</td>
-                  <td style={{...css.td, ...css.tdMetric}}>—</td>
-                  <td style={{...css.td, ...css.tdFyi, ...css.tdMetricFyi}}>무료</td>
-                </tr>
-                <tr style={css.tr}>
-                  <td style={css.tdFeature}>사전 결제 없음</td>
-                  <td style={css.td}><Mark v="x" /></td>
-                  <td style={css.td}><Mark v="o" /></td>
-                  <td style={{...css.td, ...css.tdFyi}}><Mark v="o" /></td>
-                </tr>
-                <tr style={css.tr}>
-                  <td style={css.tdFeature}>수수료 (성공 채용 시)</td>
-                  <td style={{...css.td, ...css.tdMetric}}>—</td>
-                  <td style={{...css.td, ...css.tdMetric}}>연봉 15–25%</td>
-                  <td style={{...css.td, ...css.tdFyi, ...css.tdMetricFyi}}>연봉 7%</td>
-                </tr>
-                <tr style={css.tr}>
-                  <td style={css.tdFeature}>실제 연봉 데이터로 후보 추천</td>
-                  <td style={css.td}><Mark v="x" /></td>
-                  <td style={css.td}><Mark v="x" /></td>
-                  <td style={{...css.td, ...css.tdFyi}}><Mark v="o" /></td>
-                </tr>
-                <tr style={{...css.tr, ...css.trFinal}}>
-                  <td style={{...css.tdFeature, ...css.tdFinalLabel}}>평균 채용 사이클</td>
-                  <td style={{...css.td, ...css.tdMetric}}>4–8주</td>
-                  <td style={{...css.td, ...css.tdMetric}}>4–12주</td>
-                  <td style={{...css.td, ...css.tdFyi, ...css.tdMetricFyi}}>7.3일</td>
-                </tr>
-              </tbody>
-            </table>
-            <div style={css.tableLegend}>
-              <span><Mark v="o" /> 지원</span>
-              <span><Mark v="p" label="수동" /> 수동 / 부분</span>
-              <span><Mark v="x" /> 미지원</span>
-              <span style={{marginLeft: 'auto', color: 'rgba(255,255,255,0.35)', fontSize: 11.5}}>
-                · A: 유료 채용공고 게시 서비스 · B: 성공보수 헤드헌팅 (2026.5 기준)
-              </span>
+          <section id="how" style={css.darkSection}>
+            <div style={css.sectionHead}>
+              <div style={css.eyebrow}>HOW IT WORKS</div>
+              <h2 style={css.h2}>
+                공고 등록부터<br />
+                후보 결정까지
+              </h2>
             </div>
-          </div>
-        </section>
+            <div style={css.steps}>
+              {steps.map((step) => (
+                <article key={step.no} className={step.reverse ? 'fc-step-reverse' : 'fc-step'} style={{ ...css.step, ...(step.reverse ? css.stepReverse : null) }}>
+                  <div style={css.stepText}>
+                    <span style={css.stepNo}>{step.no}</span>
+                    <h3 style={css.stepTitle}>{step.title}</h3>
+                    <p style={css.stepDesc}><Lines lines={step.desc} /></p>
+                  </div>
+                  <div style={css.shotWrap}>
+                    <img src={step.img} alt={step.title} style={css.shot} />
+                  </div>
+                </article>
+              ))}
+            </div>
+          </section>
 
-        {/* ────────── BOTTOM CTA ────────── */}
-        <section style={css.ctaBottom}>
-          <h2 style={css.h2}>지금 회사 계정을 만드세요.</h2>
-          <p style={css.ctaSub}>1분이면 입장. 첫 공고 발행까지 무료.</p>
-          <button onClick={() => router.push('/company/signup')} style={css.btnAccentLg}>
-            지금 공고 올리기 →
-          </button>
-        </section>
+          <section id="pricing" style={css.compare}>
+            <div style={css.sectionHead}>
+              <div style={css.eyebrow}>PRICING</div>
+              <h2 style={css.h2}>
+                선결제 부담 없이<br />
+                성공 기준으로
+              </h2>
+            </div>
+            <div style={css.tableWrap}>
+              <table style={css.table}>
+                <thead>
+                  <tr>
+                    <th style={css.thFeature}>항목</th>
+                    <th style={css.th}>채용 플랫폼</th>
+                    <th style={css.th}>헤드헌팅</th>
+                    <th style={{ ...css.th, ...css.thFyi }}>FYI</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td style={css.tdFeature}>공고 등록비</td>
+                    <td style={css.td}>유료</td>
+                    <td style={css.td}>없음</td>
+                    <td style={css.tdFyi}>무료</td>
+                  </tr>
+                  <tr>
+                    <td style={css.tdFeature}>성공 수수료</td>
+                    <td style={css.td}>-</td>
+                    <td style={css.td}>연봉 15~25%</td>
+                    <td style={css.tdFyi}>연봉 7%</td>
+                  </tr>
+                  <tr>
+                    <td style={css.tdFeature}>연봉 데이터 기반 추천</td>
+                    <td style={css.td}><Mark v="x" /></td>
+                    <td style={css.td}><Mark v="x" /></td>
+                    <td style={css.tdFyi}><Mark v="o" /></td>
+                  </tr>
+                  <tr>
+                    <td style={css.tdFeature}>첫 면접까지</td>
+                    <td style={css.td}>2~4주</td>
+                    <td style={css.td}>1~3주</td>
+                    <td style={css.tdFyi}>평균 7.3일</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </section>
 
-        {/* ────────── FOOTER ────────── */}
-        <footer style={css.footer}>
-          <div>FYI · for companies · 2026</div>
-          <div style={css.footerLinks}>
-            <Link href="/" style={css.footerLink}>개인 사이트로 →</Link>
-          </div>
-        </footer>
+          <section style={css.bottomCta}>
+            <h2 style={css.h2}>
+              첫 공고를<br />
+              무료로 올려보세요.
+            </h2>
+            <p style={css.ctaSub}>회사 이메일 인증 후 바로 시작할 수 있습니다.</p>
+            <button type="button" onClick={() => router.push('/company')} style={css.btnAccent}>
+              기업 계정 만들기
+            </button>
+          </section>
+        </main>
       </div>
     </>
   );
@@ -325,394 +369,389 @@ export default function ForCompanies() {
 const css = {
   page: {
     minHeight: '100vh',
-    background: '#0a0a0a',
-    color: '#e5e5e5',
+    background: '#090909',
+    color: '#fff',
     fontFamily: "'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
     WebkitFontSmoothing: 'antialiased',
   },
-
-  // NAV
   nav: {
-    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-    padding: '16px 32px', borderBottom: '1px solid rgba(255,255,255,0.06)',
-    position: 'sticky', top: 0, background: 'rgba(10,10,10,0.92)', backdropFilter: 'blur(10px)', zIndex: 10,
+    position: 'sticky',
+    top: 0,
+    zIndex: 20,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 18,
+    padding: '14px clamp(18px, 4vw, 40px)',
+    background: 'rgba(9,9,9,0.92)',
+    backdropFilter: 'blur(12px)',
+    borderBottom: '1px solid rgba(255,255,255,0.08)',
+    flexWrap: 'wrap',
   },
   logo: {
-    display: 'flex', alignItems: 'center', gap: 8,
-    fontSize: 15, fontWeight: 800, color: '#fff', textDecoration: 'none', letterSpacing: '-0.02em',
+    display: 'flex',
+    alignItems: 'center',
+    gap: 8,
+    fontSize: 15,
+    fontWeight: 850,
+    color: '#fff',
+    textDecoration: 'none',
   },
   logoMark: {
-    width: 24, height: 24, borderRadius: 6,
-    background: 'linear-gradient(135deg,#ef4444,#f97316)', color: '#fff',
-    display: 'grid', placeItems: 'center', fontSize: 12, fontWeight: 800,
+    width: 26,
+    height: 26,
+    borderRadius: 7,
+    background: 'linear-gradient(135deg,#ef4444,#f97316)',
+    display: 'grid',
+    placeItems: 'center',
+    fontSize: 13,
+    fontWeight: 900,
   },
-  logoSub: { fontSize: 11.5, color: 'rgba(255,255,255,0.5)', fontWeight: 500, marginLeft: 2 },
-  navLinks: { display: 'flex', gap: 24, fontSize: 13 },
-  navLink: { color: 'rgba(255,255,255,0.6)', cursor: 'pointer', fontWeight: 500, textDecoration: 'none' },
-  navRight: { display: 'flex', alignItems: 'center', gap: 8 },
+  logoSub: { color: 'rgba(255,255,255,0.48)', fontSize: 12, fontWeight: 600, marginLeft: 4 },
+  navLinks: { display: 'flex', gap: 22, fontSize: 13, color: 'rgba(255,255,255,0.64)' },
+  navLink: { textDecoration: 'none', fontWeight: 700 },
+  navRight: { display: 'flex', gap: 8, marginLeft: 'auto' },
   btnGhost: {
-    padding: '8px 14px', borderRadius: 6, border: '1px solid rgba(255,255,255,0.15)',
-    background: 'transparent', color: '#fff', fontSize: 12.5, fontWeight: 600,
-    textDecoration: 'none', cursor: 'pointer',
+    padding: '9px 13px',
+    borderRadius: 7,
+    border: '1px solid rgba(255,255,255,0.18)',
+    color: '#fff',
+    fontSize: 12.5,
+    fontWeight: 750,
+    textDecoration: 'none',
+    whiteSpace: 'nowrap',
   },
   btnPrimary: {
-    padding: '8px 14px', borderRadius: 6, border: 'none',
-    background: '#fff', color: '#0a0a0a', fontSize: 12.5, fontWeight: 700,
-    textDecoration: 'none', cursor: 'pointer',
-  },
-
-  // HERO (반반 split + 하단 거대 KPI · 자연 흐름)
-  hero: {
-    position: 'relative',
-    padding: '80px 32px 56px',
-    overflow: 'hidden',
-    isolation: 'isolate',
-    display: 'flex', flexDirection: 'column', alignItems: 'center',
-    background: '#FAFAFA',
-  },
-  heroBlob1: {
-    position: 'absolute', top: '15%', right: '-15%',
-    width: 700, height: 700, borderRadius: '50%',
-    background: 'radial-gradient(circle, rgba(249,115,22,0.10), transparent 65%)',
-    filter: 'blur(30px)', zIndex: 0, pointerEvents: 'none',
-  },
-
-  // Top: copy left + lion right — flexbox로 자연 너비, 적당한 gap
-  heroSplit: {
-    position: 'relative', zIndex: 1,
-    width: '100%', maxWidth: 1200,
-    display: 'flex',
-    alignItems: 'center', justifyContent: 'center',
-    gap: 64,
-    marginBottom: 56,
-  },
-  heroCopyLeft: {
-    display: 'flex', flexDirection: 'column', alignItems: 'flex-start',
-    flex: '0 1 600px',
-    minWidth: 0,
-  },
-  heroLionWrap: {
-    position: 'relative',
-    aspectRatio: '1/1',
-    width: 440,
-    flex: '0 0 440px',
-    display: 'flex', alignItems: 'center', justifyContent: 'center',
-  },
-  heroLionCard: {
-    width: '100%',
-    aspectRatio: '1/1',
-    borderRadius: 28,
-    overflow: 'hidden',
+    padding: '9px 14px',
+    borderRadius: 7,
     background: '#fff',
-    boxShadow:
-      '0 30px 60px -10px rgba(234,88,12,0.16),' +
-      '0 12px 24px rgba(26,26,26,0.06),' +
-      '0 0 0 1px rgba(26,26,26,0.04)',
-    animation: 'fyiHeroFloat 6s ease-in-out infinite',
+    color: '#111',
+    fontSize: 12.5,
+    fontWeight: 850,
+    textDecoration: 'none',
+    whiteSpace: 'nowrap',
   },
-  heroLionImg: {
-    width: '100%', height: '100%', objectFit: 'cover', display: 'block',
+  hero: {
+    display: 'grid',
+    gridTemplateColumns: 'minmax(0, 1.18fr) minmax(300px, 0.82fr)',
+    gap: 56,
+    alignItems: 'center',
+    maxWidth: 'none',
+    margin: '0 auto',
+    padding: '86px max(32px, calc((100vw - 1240px) / 2 + 32px)) 54px',
+    background: '#f7f7f5',
+    color: '#151515',
   },
-  heroTag: {
-    fontFamily: "'JetBrains Mono', monospace",
-    fontSize: 12.5, color: '#EA580C', fontWeight: 700,
-    letterSpacing: '0.18em', marginBottom: 18, textTransform: 'uppercase',
+  heroCopy: { minWidth: 0 },
+  eyebrow: {
+    color: '#fb923c',
+    fontSize: 11,
+    fontWeight: 900,
+    letterSpacing: '0.16em',
+    textTransform: 'uppercase',
+    marginBottom: 16,
+  },
+  eyebrowDark: {
+    color: '#ea580c',
+    fontSize: 11,
+    fontWeight: 900,
+    letterSpacing: '0.16em',
+    textTransform: 'uppercase',
+    marginBottom: 12,
   },
   h1: {
-    fontSize: 76, fontWeight: 900, lineHeight: 1.04, letterSpacing: '-0.04em', marginBottom: 24, color: '#1A1A1A',
+    margin: 0,
+    maxWidth: 680,
+    fontSize: 'clamp(48px, 6.1vw, 80px)',
+    lineHeight: 1.03,
+    fontWeight: 950,
+    letterSpacing: '-0.035em',
   },
-  h1Highlight: {
-    display: 'inline-block',
-    background: 'linear-gradient(180deg, transparent 58%, rgba(249,115,22,0.32) 58%)',
-    padding: '0 10px', borderRadius: 4,
-    color: '#EA580C',
+  highlight: {
+    color: '#ea580c',
+    background: 'linear-gradient(180deg, transparent 58%, rgba(249,115,22,0.22) 58%)',
+    borderRadius: 6,
+    padding: '0 8px',
   },
-  lead: { fontSize: 17, color: '#525252', maxWidth: 540, lineHeight: 1.65, marginBottom: 28 },
-  leadBold: { color: '#1A1A1A', fontWeight: 800 },
-  heroCtas: { display: 'flex', gap: 12 },
-
-  // MEGA KPI — 하단 카운트업
-  megaKpi: {
-    position: 'relative', zIndex: 1,
-    width: '100%', maxWidth: 1240,
-    display: 'grid', gridTemplateColumns: '1fr auto 1fr auto 1fr',
-    alignItems: 'flex-end', gap: 0,
-    paddingTop: 36,
-    borderTop: '1px solid rgba(0,0,0,0.06)',
+  lead: {
+    maxWidth: 560,
+    margin: '22px 0 0',
+    color: '#4b5563',
+    fontSize: 18,
+    lineHeight: 1.55,
+    fontWeight: 650,
   },
-  kpiCol: { textAlign: 'center', padding: '0 16px' },
-  kpiBigNum: {
-    fontSize: 96,
+  heroCtas: { display: 'flex', alignItems: 'center', gap: 18, marginTop: 28, flexWrap: 'wrap' },
+  btnAccent: {
+    border: 0,
+    borderRadius: 999,
+    padding: '17px 30px',
+    background: 'linear-gradient(135deg,#ef4444,#f97316)',
+    color: '#fff',
+    fontSize: 15.5,
     fontWeight: 900,
-    lineHeight: 0.95,
-    letterSpacing: '-0.05em',
-    color: '#EA580C',
-    fontVariantNumeric: 'tabular-nums',
-    marginBottom: 12,
-  },
-  kpiHeroNum: {
-    fontSize: 156,
-    fontWeight: 900,
-    lineHeight: 0.92,
-    letterSpacing: '-0.06em',
-    color: '#EA580C',
-    fontVariantNumeric: 'tabular-nums',
-    marginBottom: 14,
-  },
-  kpiSubNum: {
-    fontSize: 72,
-    fontWeight: 900,
-    lineHeight: 0.95,
-    letterSpacing: '-0.04em',
-    color: '#1A1A1A',
-    fontVariantNumeric: 'tabular-nums',
-    marginBottom: 12,
-    opacity: 0.72,
-  },
-  kpiBigLab: {
-    fontSize: 15, fontWeight: 800, color: '#1A1A1A',
-    letterSpacing: '-0.005em', marginBottom: 3,
-  },
-  kpiBigNote: {
-    fontSize: 12.5, fontWeight: 600, color: '#9CA3AF',
-  },
-  kpiSepBig: {
-    width: 1, alignSelf: 'stretch',
-    background: 'linear-gradient(180deg, transparent, rgba(0,0,0,0.08) 40%, rgba(0,0,0,0.08) 60%, transparent)',
-    margin: '20px 0',
-  },
-
-  heroBottom: {
-    position: 'relative', zIndex: 1, width: '100%', maxWidth: 1100,
-    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 24,
-  },
-  btnAccentLg: {
-    padding: '18px 36px', borderRadius: 999, border: 'none',
-    background: 'linear-gradient(135deg, #EF4444 0%, #F97316 100%)', color: '#fff',
-    fontSize: 16, fontWeight: 800, cursor: 'pointer',
     fontFamily: 'inherit',
-    boxShadow: '0 10px 28px rgba(234,88,12,0.32)',
+    cursor: 'pointer',
+    boxShadow: '0 14px 34px rgba(249,115,22,0.32)',
   },
-  btnGhostLg: {
-    padding: '18px 36px', borderRadius: 999, border: '1.5px solid rgba(26,26,26,0.15)',
-    background: '#fff', color: '#1A1A1A', fontSize: 16, fontWeight: 700, cursor: 'pointer',
-    fontFamily: 'inherit',
+  textLink: { color: '#222', textDecoration: 'none', fontSize: 14, fontWeight: 850 },
+  trustLine: {
+    display: 'flex',
+    gap: 10,
+    flexWrap: 'wrap',
+    marginTop: 22,
+    color: '#555',
+    fontSize: 12.5,
+    fontWeight: 750,
   },
-  consultLink: {
-    alignSelf: 'center', padding: '10px 0 10px 18px',
-    fontSize: 14, fontWeight: 700, color: '#525252',
-    cursor: 'pointer', textDecoration: 'none',
-  },
-
-  // Hero visual — character dominates, clean rounded card
   heroVisual: {
     position: 'relative',
-    aspectRatio: '1/1',
-    display: 'flex', alignItems: 'center', justifyContent: 'center',
+    justifySelf: 'center',
+    width: 'min(100%, 430px)',
   },
-  heroLionCard: {
-    position: 'relative',
-    width: '90%',
-    aspectRatio: '1/1',
+  heroImg: {
+    width: '100%',
+    aspectRatio: '1 / 1',
+    objectFit: 'cover',
+    display: 'block',
     borderRadius: 32,
+    boxShadow: '0 30px 70px rgba(17,17,17,0.13), 0 0 0 1px rgba(0,0,0,0.04)',
+  },
+  floatCard: {
+    position: 'absolute',
+    left: -18,
+    bottom: 28,
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 3,
+    width: 220,
+    padding: '14px 16px',
+    borderRadius: 14,
+    background: 'rgba(255,255,255,0.94)',
+    color: '#111',
+    boxShadow: '0 16px 40px rgba(0,0,0,0.14)',
+  },
+  floatLabel: { color: '#ea580c', fontSize: 11, fontWeight: 900 },
+  kpiStrip: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(3, 1fr)',
+    maxWidth: 'none',
+    margin: '0 auto',
+    padding: '30px max(32px, calc((100vw - 1240px) / 2 + 32px)) 46px',
+    background: '#f7f7f5',
+    color: '#151515',
+    borderTop: '1px solid rgba(0,0,0,0.07)',
+  },
+  kpi: {
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    gap: 8,
+    textAlign: 'center',
+  },
+  unit: { fontSize: '0.46em', marginLeft: 5, opacity: 0.56 },
+  offer: {
+    position: 'relative',
     overflow: 'hidden',
-    background: '#fff',
-    boxShadow:
-      '0 30px 60px -10px rgba(234,88,12,0.18),' +
-      '0 12px 24px rgba(26,26,26,0.08),' +
-      '0 0 0 1px rgba(26,26,26,0.04)',
-    animation: 'fyiHeroFloat 6s ease-in-out infinite',
+    background:
+      'radial-gradient(circle at 18% 18%, rgba(249,115,22,0.14), transparent 26%),' +
+      'linear-gradient(180deg, #fff 0%, #f6f4ef 100%)',
+    color: '#111',
+    padding: '78px 32px 84px',
   },
-  heroLionImg: {
-    width: '100%', height: '100%', objectFit: 'cover', display: 'block',
-  },
-
-  // Bento KPI — 단일 스킴 (white card + 주황 number)
-  bento: {
-    position: 'relative', zIndex: 1,
-    maxWidth: 1100, margin: '40px auto 0', width: '100%',
-    display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 14,
-  },
-  bentoCard: {
-    padding: '24px 26px', borderRadius: 18,
-    display: 'flex', flexDirection: 'column', gap: 4,
-    background: '#fff',
-    border: '1px solid rgba(26,26,26,0.06)',
-    boxShadow: '0 6px 16px rgba(26,26,26,0.04)',
-  },
-  bentoNum: {
-    fontSize: 48, fontWeight: 900, letterSpacing: '-0.035em', lineHeight: 1,
-    fontVariantNumeric: 'tabular-nums',
-    color: '#EA580C',
-  },
-  bentoUnit: { fontSize: 22, fontWeight: 800, color: 'rgba(234,88,12,0.55)', marginLeft: 3 },
-  bentoLab: { fontSize: 14, fontWeight: 800, marginTop: 10, color: '#1A1A1A', letterSpacing: '-0.005em' },
-  bentoNote: { fontSize: 12, fontWeight: 600, color: '#737373', marginTop: 2 },
-
-  // BIG KPI
-  bigKpi: {
-    borderTop: '1px solid rgba(255,255,255,0.06)',
-    borderBottom: '1px solid rgba(255,255,255,0.06)',
-    padding: '60px 32px',
-    background: 'linear-gradient(180deg, rgba(255,255,255,0.01), rgba(0,0,0,0))',
-  },
-  bigKpiGrid: {
-    maxWidth: 1100, margin: '0 auto',
-    display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 24,
-  },
-  bigKpiBox: { textAlign: 'center' },
-  bigKpiVal: {
-    fontSize: 88, fontWeight: 800, color: '#fff', letterSpacing: '-0.04em',
-    fontVariantNumeric: 'tabular-nums', lineHeight: 1,
-    background: 'linear-gradient(180deg,#fff,rgba(255,255,255,0.55))',
-    WebkitBackgroundClip: 'text', backgroundClip: 'text', WebkitTextFillColor: 'transparent',
-  },
-  bigKpiUnit: {
-    fontSize: 32, fontWeight: 700, color: 'rgba(255,255,255,0.5)', marginLeft: 6, WebkitTextFillColor: 'rgba(255,255,255,0.5)',
-  },
-  bigKpiLab: {
-    fontSize: 14, color: '#fff', fontWeight: 700, marginTop: 12, letterSpacing: '-0.005em',
-  },
-  bigKpiNote: {
-    fontSize: 11.5, color: 'rgba(255,255,255,0.45)', marginTop: 5, fontWeight: 500,
-  },
-
-  // JOURNEY
-  journey: {
-    maxWidth: 1240, margin: '0 auto', padding: '96px 32px 60px',
-  },
-  journeyHead: { textAlign: 'center', marginBottom: 64, maxWidth: 760, marginLeft: 'auto', marginRight: 'auto' },
-  sectionEyebrow: {
-    fontFamily: "'JetBrains Mono', monospace",
-    fontSize: 11, color: '#f97316', fontWeight: 700,
-    letterSpacing: '0.15em', marginBottom: 14, textTransform: 'uppercase',
-  },
-  journeySub: { fontSize: 15.5, color: 'rgba(255,255,255,0.6)', marginTop: 14, lineHeight: 1.65 },
-  journeySteps: { display: 'flex', flexDirection: 'column', gap: 80 },
-  step: {
-    display: 'grid', gridTemplateColumns: '1fr 1.3fr', gap: 48, alignItems: 'center',
-  },
-  stepReverse: { gridTemplateColumns: '1.3fr 1fr', direction: 'rtl' },
-  stepText: { direction: 'ltr', display: 'flex', flexDirection: 'column' },
-  stepNum: {
-    fontFamily: "'JetBrains Mono', monospace",
-    fontSize: 13, color: '#f97316', fontWeight: 800, letterSpacing: '0.04em', marginBottom: 14,
-  },
-  stepTitle: {
-    fontSize: 30, fontWeight: 800, color: '#fff', letterSpacing: '-0.02em', marginBottom: 14, lineHeight: 1.2,
-  },
-  stepDesc: { fontSize: 14.5, color: 'rgba(255,255,255,0.65)', lineHeight: 1.7, marginBottom: 16 },
-  stepBullets: {
-    listStyle: 'none', padding: 0, margin: 0,
-    display: 'flex', flexDirection: 'column', gap: 8,
-    fontSize: 13, color: 'rgba(255,255,255,0.6)',
-  },
-  stepShot: {
-    direction: 'ltr',
-    borderRadius: 14, overflow: 'hidden',
-    border: '1px solid rgba(255,255,255,0.08)',
-    boxShadow: '0 24px 80px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.04) inset',
-    background: '#fff',
-  },
-  stepImg: { width: '100%', display: 'block', height: 'auto' },
-
-  // TRUST
-  trust: {
-    maxWidth: 1140, margin: '0 auto', padding: '80px 32px 40px',
-  },
-  trustHead: { textAlign: 'center', marginBottom: 40 },
-  trustGrid: { display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 18 },
-  trustCard: {
-    padding: 28, borderRadius: 12,
-    background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)',
-  },
-  trustIcon: { fontSize: 28, marginBottom: 14 },
-  trustTitle: { fontSize: 15.5, fontWeight: 800, color: '#fff', marginBottom: 10, letterSpacing: '-0.005em' },
-  trustDesc: { fontSize: 13, color: 'rgba(255,255,255,0.6)', lineHeight: 1.65 },
-
-  // H2 (shared)
+  sectionHead: { maxWidth: 760, margin: '0 auto 38px', textAlign: 'center' },
   h2: {
-    fontSize: 36, fontWeight: 800, letterSpacing: '-0.02em', textAlign: 'center', color: '#fff', marginBottom: 6, lineHeight: 1.18,
+    margin: 0,
+    color: '#fff',
+    fontSize: 'clamp(28px, 4vw, 42px)',
+    lineHeight: 1.2,
+    fontWeight: 900,
+    letterSpacing: '-0.025em',
   },
-
-  // COMPARE TABLE
-  compare: {
-    maxWidth: 1240, margin: '0 auto', padding: '80px 32px 60px',
+  h2Dark: {
+    margin: 0,
+    color: '#111',
+    fontSize: 'clamp(28px, 4vw, 42px)',
+    lineHeight: 1.2,
+    fontWeight: 900,
+    letterSpacing: '-0.025em',
   },
-  compareHead: { textAlign: 'center', marginBottom: 40 },
-  compareSub: { fontSize: 14.5, color: 'rgba(255,255,255,0.6)', marginTop: 12, lineHeight: 1.65 },
+  offerGrid: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(4, 1fr)',
+    gap: 16,
+    maxWidth: 1120,
+    margin: '0 auto',
+  },
+  offerCard: {
+    position: 'relative',
+    minHeight: 188,
+    padding: '22px 22px 24px',
+    borderRadius: 20,
+    background: 'rgba(255,255,255,0.78)',
+    border: '1px solid rgba(0,0,0,0.06)',
+    boxShadow: '0 18px 44px rgba(17,17,17,0.08)',
+    overflow: 'hidden',
+  },
+  offerCardKey: {
+    background:
+      'linear-gradient(180deg, rgba(255,255,255,0.94), rgba(255,247,237,0.94))',
+    border: '1px solid rgba(249,115,22,0.34)',
+    boxShadow: '0 24px 54px rgba(249,115,22,0.16)',
+  },
+  offerTop: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 42,
+  },
+  offerNo: {
+    display: 'grid',
+    placeItems: 'center',
+    width: 38,
+    height: 38,
+    borderRadius: '50%',
+    background: 'linear-gradient(135deg,#ef4444,#f97316)',
+    color: '#fff',
+    fontSize: 12,
+    fontWeight: 950,
+    boxShadow: '0 12px 28px rgba(249,115,22,0.28)',
+  },
+  offerBadge: {
+    padding: '6px 9px',
+    borderRadius: 999,
+    background: '#fff7ed',
+    color: '#ea580c',
+    fontSize: 11,
+    fontWeight: 900,
+    border: '1px solid rgba(249,115,22,0.22)',
+  },
+  offerTitle: { margin: '0 0 12px', fontSize: 24, lineHeight: 1.1, fontWeight: 950, letterSpacing: '-0.025em' },
+  offerDesc: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 3,
+    margin: 0,
+    color: 'inherit',
+    opacity: 0.68,
+    fontSize: 14,
+    lineHeight: 1.45,
+    fontWeight: 700,
+    wordBreak: 'keep-all',
+    overflowWrap: 'normal',
+  },
+  offerFlow: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 12,
+    maxWidth: 640,
+    margin: '34px auto 0',
+    color: '#525252',
+    fontSize: 13,
+    fontWeight: 900,
+  },
+  darkSection: { padding: '84px 32px 60px', maxWidth: 1240, margin: '0 auto' },
+  steps: { display: 'flex', flexDirection: 'column', gap: 62 },
+  step: {
+    display: 'grid',
+    gridTemplateColumns: '0.72fr 1.28fr',
+    alignItems: 'center',
+    gap: 44,
+  },
+  stepReverse: { gridTemplateColumns: '1.28fr 0.72fr', direction: 'rtl' },
+  stepText: { direction: 'ltr' },
+  stepNo: { color: '#fb923c', fontSize: 13, fontWeight: 900 },
+  stepTitle: { margin: '14px 0 12px', fontSize: 30, lineHeight: 1.22, fontWeight: 900 },
+  stepDesc: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 3,
+    margin: 0,
+    color: 'rgba(255,255,255,0.64)',
+    fontSize: 15,
+    lineHeight: 1.62,
+    wordBreak: 'keep-all',
+  },
+  shotWrap: {
+    direction: 'ltr',
+    overflow: 'hidden',
+    borderRadius: 14,
+    background: '#fff',
+    border: '1px solid rgba(255,255,255,0.1)',
+    boxShadow: '0 24px 70px rgba(0,0,0,0.42)',
+  },
+  shot: { display: 'block', width: '100%', height: 'auto' },
+  compare: { padding: '70px 32px 80px', maxWidth: 1160, margin: '0 auto' },
   tableWrap: {
-    background: '#13131a', border: '1px solid rgba(255,255,255,0.08)',
-    borderRadius: 20, padding: '8px 8px 18px',
-    boxShadow: '0 24px 60px rgba(0,0,0,0.4)',
+    overflowX: 'auto',
+    borderRadius: 16,
+    background: '#141416',
+    border: '1px solid rgba(255,255,255,0.09)',
   },
-  table: {
-    width: '100%', borderCollapse: 'separate', borderSpacing: 0,
-  },
+  table: { width: '100%', minWidth: 680, borderCollapse: 'collapse' },
   th: {
-    padding: '20px 16px 18px', textAlign: 'center',
-    fontSize: 12.5, fontWeight: 700, color: 'rgba(255,255,255,0.55)',
-    letterSpacing: '0.02em', borderBottom: '1px solid rgba(255,255,255,0.08)',
+    padding: '18px 16px',
+    textAlign: 'center',
+    color: 'rgba(255,255,255,0.54)',
+    fontSize: 12.5,
+    borderBottom: '1px solid rgba(255,255,255,0.08)',
   },
   thFeature: {
-    textAlign: 'left', paddingLeft: 24,
-    color: 'rgba(255,255,255,0.4)',
-    textTransform: 'uppercase', letterSpacing: '0.06em', fontSize: 11.5,
+    padding: '18px 22px',
+    textAlign: 'left',
+    color: 'rgba(255,255,255,0.45)',
+    fontSize: 12.5,
+    borderBottom: '1px solid rgba(255,255,255,0.08)',
   },
-  thFyi: {
-    color: '#FFD43B', fontSize: 14, fontWeight: 900,
-    letterSpacing: '0.04em', textTransform: 'uppercase',
-  },
-  tr: { transition: 'background 0.15s' },
-  trFinal: { borderTop: '2px solid rgba(255,255,255,0.1)' },
+  thFyi: { color: '#fb923c', fontWeight: 900 },
   td: {
-    padding: '16px 16px', textAlign: 'center',
-    borderBottom: '1px solid rgba(255,255,255,0.05)',
-    fontSize: 14, color: 'rgba(255,255,255,0.7)',
-    verticalAlign: 'middle',
+    padding: '18px 16px',
+    textAlign: 'center',
+    color: 'rgba(255,255,255,0.7)',
+    borderBottom: '1px solid rgba(255,255,255,0.06)',
+    fontWeight: 700,
   },
   tdFeature: {
-    padding: '16px 24px', textAlign: 'left',
-    fontSize: 14, fontWeight: 700, color: '#fff',
-    borderBottom: '1px solid rgba(255,255,255,0.05)',
-    verticalAlign: 'middle',
+    padding: '18px 22px',
+    color: '#fff',
+    borderBottom: '1px solid rgba(255,255,255,0.06)',
+    fontWeight: 850,
   },
   tdFyi: {
-    background: 'linear-gradient(180deg, rgba(255,212,59,0.06), rgba(255,123,71,0.04))',
-    borderLeft: '1px solid rgba(255,212,59,0.15)',
-    borderRight: '1px solid rgba(255,212,59,0.15)',
+    padding: '18px 16px',
+    textAlign: 'center',
+    color: '#fb923c',
+    borderBottom: '1px solid rgba(255,255,255,0.06)',
+    background: 'rgba(249,115,22,0.08)',
+    fontWeight: 950,
   },
-  tdMetric: {
-    fontSize: 15, fontWeight: 700, color: 'rgba(255,255,255,0.55)',
-    fontVariantNumeric: 'tabular-nums',
+  markYes: {
+    display: 'inline-grid',
+    placeItems: 'center',
+    width: 28,
+    height: 28,
+    borderRadius: '50%',
+    background: '#0eba9a',
+    color: '#fff',
+    fontWeight: 900,
   },
-  tdMetricFyi: {
-    fontSize: 22, fontWeight: 900, color: '#FFD43B',
-    letterSpacing: '-0.02em',
+  markNo: {
+    display: 'inline-grid',
+    placeItems: 'center',
+    width: 28,
+    height: 28,
+    borderRadius: '50%',
+    background: 'rgba(255,255,255,0.08)',
+    color: 'rgba(255,255,255,0.36)',
+    fontWeight: 900,
   },
-  tdFinalLabel: {
-    fontSize: 13, color: 'rgba(255,255,255,0.6)', fontWeight: 800,
-    textTransform: 'uppercase', letterSpacing: '0.04em',
+  bottomCta: {
+    maxWidth: 760,
+    margin: '0 auto',
+    padding: '58px 32px 82px',
+    textAlign: 'center',
+    borderTop: '1px solid rgba(255,255,255,0.08)',
   },
-  tableLegend: {
-    display: 'flex', justifyContent: 'center', gap: 24,
-    padding: '20px 16px 8px', marginTop: 4,
-    fontSize: 12, color: 'rgba(255,255,255,0.5)',
-  },
-
-  // BOTTOM CTA
-  ctaBottom: {
-    maxWidth: 700, margin: '0 auto', padding: '60px 32px 80px', textAlign: 'center',
-    borderTop: '1px solid rgba(255,255,255,0.06)',
-  },
-  ctaSub: { fontSize: 14, color: 'rgba(255,255,255,0.6)', marginBottom: 28, marginTop: 10 },
-
-  // FOOTER
-  footer: {
-    borderTop: '1px solid rgba(255,255,255,0.06)', padding: '24px 32px',
-    display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-    fontSize: 12, color: 'rgba(255,255,255,0.4)',
-  },
-  footerLinks: { display: 'flex', gap: 16 },
-  footerLink: { color: 'rgba(255,255,255,0.5)', textDecoration: 'none', fontWeight: 600 },
+  ctaSub: { color: 'rgba(255,255,255,0.62)', margin: '14px 0 26px', fontSize: 15 },
 };

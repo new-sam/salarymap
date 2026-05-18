@@ -7,7 +7,7 @@ import { Sidebar, css } from './jobs/new';
 import CandidateDetail from '../../components/company/CandidateDetail';
 
 const STAGES = [
-  { key: 'pending', label: '신규 지원', emoji: '📥' },
+  { key: 'applied', label: '신규 지원', emoji: '📥' },
   { key: 'viewed', label: '열람', emoji: '👀' },
   { key: 'reviewing', label: '검토 / 인터뷰', emoji: '🗣️' },
   { key: 'decided', label: '결정', emoji: '✅' },
@@ -199,6 +199,7 @@ export default function CompanyATSPage() {
                 mode="overlay"
                 companyId={job.company_id}
                 onClose={() => setSelectedAppId(null)}
+                onStageChange={(id, st) => setApps(prev => prev.map(a => a.id === id ? { ...a, status: st } : a))}
               />
             </div>
           </div>

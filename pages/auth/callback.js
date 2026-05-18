@@ -58,6 +58,13 @@ async function saveCompanyRecruiter(user) {
       if (created?.id) companyId = created.id;
     }
 
+    if (!companyId) {
+      if (typeof localStorage !== 'undefined') {
+        localStorage.setItem('fyi_company_needs_setup', '1');
+      }
+      return;
+    }
+
     // 3) Upsert recruiter_users row (one per user)
     await supabase.from('recruiter_users').upsert({
       user_id: user.id,
@@ -71,6 +78,7 @@ async function saveCompanyRecruiter(user) {
     if (typeof localStorage !== 'undefined') {
       localStorage.removeItem('fyi_company_name');
       localStorage.removeItem('fyi_company_full_name');
+      localStorage.removeItem('fyi_company_needs_setup');
     }
   } catch (e) {
     // silent fail
@@ -101,6 +109,7 @@ export default function AuthCallback() {
           const returnTo = typeof window !== 'undefined' && localStorage.getItem('fyi_login_return')
           const intent = intentEarly
           localStorage.removeItem('fyi_login_return')
+          localStorage.removeItem('fyi_intent')
           if (intent === 'company') {
             if (typeof gtag === 'function') gtag('event', 'company_signup', {})
             if (typeof fbq === 'function') fbq('trackCustom', 'CompanySignup', {})
@@ -142,6 +151,7 @@ export default function AuthCallback() {
             const returnTo = typeof window !== 'undefined' && localStorage.getItem('fyi_login_return')
             const intent2 = intent2Early
             localStorage.removeItem('fyi_login_return')
+            localStorage.removeItem('fyi_intent')
             if (intent2 === 'company') {
               if (typeof gtag === 'function') gtag('event', 'company_signup', {})
               if (typeof fbq === 'function') fbq('trackCustom', 'CompanySignup', {})

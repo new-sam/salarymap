@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { supabase } from '../../lib/supabaseClient';
 
 const STAGES = [
-  { key: 'pending', label: '신규 지원', emoji: '📥' },
+  { key: 'applied', label: '신규 지원', emoji: '📥' },
   { key: 'viewed', label: '열람', emoji: '👀' },
   { key: 'reviewing', label: '검토 / 인터뷰', emoji: '🗣️' },
   { key: 'decided', label: '결정', emoji: '✅' },
@@ -15,7 +15,7 @@ const STAGE_ORDER = STAGES.map(s => s.key);
  *   page: 풀 페이지 (대시보드 sidebar 포함된 페이지에서 사용)
  *   overlay: 모달 오버레이 — 우상단 ✕ 닫기
  */
-export default function CandidateDetail({ appId, mode = 'page', onClose, companyId }) {
+export default function CandidateDetail({ appId, mode = 'page', onClose, companyId, onStageChange }) {
   const [status, setStatus] = useState('loading');
   const [app, setApp] = useState(null);
   const [job, setJob] = useState(null);
@@ -26,6 +26,7 @@ export default function CandidateDetail({ appId, mode = 'page', onClose, company
   const [savingNote, setSavingNote] = useState(false);
   const [noteSavedAt, setNoteSavedAt] = useState(null);
   const [showInterviewModal, setShowInterviewModal] = useState(false);
+  const [showMailModal, setShowMailModal] = useState(false);
 
   useEffect(() => {
     if (!appId) return;
@@ -44,7 +45,7 @@ export default function CandidateDetail({ appId, mode = 'page', onClose, company
 
       const { data: appData, error: appErr } = await supabase
         .from('job_applications')
-        .select('*, jobs(id, title, company_id, location, type)')
+        .select('*, jobs(id, title, company_id, location, type, recruiter_companies(name))')
         .eq('id', appId)
         .maybeSingle();
       if (appErr || !appData || appData.jobs?.company_id !== cid) {
@@ -76,6 +77,7 @@ export default function CandidateDetail({ appId, mode = 'page', onClose, company
       setErr('상태 변경 실패: ' + error.message);
       return;
     }
+    onStageChange?.(app.id, newStatus);
     if (newStatus === 'reviewing') setShowInterviewModal(true);
   };
 
@@ -105,6 +107,8 @@ export default function CandidateDetail({ appId, mode = 'page', onClose, company
   const idx = STAGE_ORDER.indexOf(app.status);
   const nextStage = idx < STAGES.length - 1 ? STAGES[idx + 1] : null;
   const hasResume = !!app.resume_url;
+  const companyName = job?.recruiter_companies?.name || '';
+  const canEmail = /@/.test(email);
 
   return (
     <div style={mode === 'overlay' ? local.overlayBody : local.pageBody}>
@@ -168,6 +172,18 @@ export default function CandidateDetail({ appId, mode = 'page', onClose, company
           </section>
 
           <section style={local.section}>
+            <h3 style={local.sectionH}>후보 연락</h3>
+            <button
+              onClick={() => setShowMailModal(true)}
+              disabled={!canEmail}
+              style={canEmail ? local.btnMail : local.btnMailDisabled}
+            >
+              ✉ 메일 보내기
+            </button>
+            {!canEmail && <div style={local.mailHint}>후보 이메일이 없어 메일을 보낼 수 없습니다.</div>}
+          </section>
+
+          <section style={local.section}>
             <h3 style={local.sectionH}>평가 메모</h3>
             <textarea
               value={note}
@@ -222,6 +238,16 @@ export default function CandidateDetail({ appId, mode = 'page', onClose, company
             setNote(updated);
             setShowInterviewModal(false);
           }}
+        />
+      )}
+
+      {showMailModal && (
+        <MailComposer
+          candidateName={name}
+          candidateEmail={email}
+          jobTitle={job.title}
+          companyName={companyName}
+          onClose={() => setShowMailModal(false)}
         />
       )}
     </div>
@@ -281,6 +307,137 @@ function InterviewModal({ app, onClose, onSaved }) {
   );
 }
 
+const MAIL_TEMPLATES = [
+  {
+    key: 'received', label: '지원 접수',
+    subject: '[{회사명}] {공고명} 지원 접수 안내',
+    body: `{후보이름}님, 안녕하세요.
+{회사명} 채용 담당자입니다.
+
+{공고명} 포지션에 지원해 주셔서 감사합니다.
+제출해 주신 지원서를 잘 받았으며, 현재 검토하고 있습니다.
+결과는 확인되는 대로 다시 안내드리겠습니다.
+
+감사합니다.`,
+  },
+  {
+    key: 'interview', label: '면접 제안',
+    subject: '[{회사명}] {공고명} 면접 제안',
+    body: `{후보이름}님, 안녕하세요.
+{회사명} 채용 담당자입니다.
+
+{공고명} 포지션 검토 결과, {후보이름}님과 면접을 진행하고 싶습니다.
+아래 시간 중 가능한 일정을 회신해 주시면 확정하겠습니다.
+
+1)
+2)
+3)
+
+면접 방식과 장소는 일정 확정 후 안내드리겠습니다.
+감사합니다.`,
+  },
+  {
+    key: 'offer', label: '합격',
+    subject: '[{회사명}] {공고명} 합격 안내',
+    body: `{후보이름}님, 안녕하세요.
+{회사명} 채용 담당자입니다.
+
+{공고명} 포지션에 {후보이름}님을 모시기로 결정했습니다. 축하드립니다.
+입사 절차와 처우 조건은 별도로 안내드리겠습니다.
+
+함께하게 되어 기쁩니다.
+감사합니다.`,
+  },
+  {
+    key: 'reject', label: '불합격',
+    subject: '[{회사명}] {공고명} 전형 결과 안내',
+    body: `{후보이름}님, 안녕하세요.
+{회사명} 채용 담당자입니다.
+
+{공고명} 포지션에 관심을 갖고 지원해 주셔서 감사합니다.
+아쉽게도 이번 전형에서는 함께하지 못하게 되었습니다.
+
+지원에 들인 시간과 노력에 깊이 감사드리며, 좋은 기회로 다시 뵙기를 바랍니다.
+
+감사합니다.`,
+  },
+];
+
+function fillVars(text, vars) {
+  return text
+    .split('{후보이름}').join(vars.name)
+    .split('{공고명}').join(vars.jobTitle)
+    .split('{회사명}').join(vars.companyName || '저희 회사');
+}
+
+export function MailComposer({ candidateName, candidateEmail, jobTitle, companyName, onClose }) {
+  const vars = { name: candidateName, jobTitle, companyName };
+  const [tplKey, setTplKey] = useState(MAIL_TEMPLATES[0].key);
+  const [subject, setSubject] = useState(fillVars(MAIL_TEMPLATES[0].subject, vars));
+  const [body, setBody] = useState(fillVars(MAIL_TEMPLATES[0].body, vars));
+
+  const pickTemplate = (key) => {
+    const tpl = MAIL_TEMPLATES.find(t => t.key === key);
+    if (!tpl) return;
+    setTplKey(key);
+    setSubject(fillVars(tpl.subject, vars));
+    setBody(fillVars(tpl.body, vars));
+  };
+
+  const send = () => {
+    const url = `mailto:${encodeURIComponent(candidateEmail)}`
+      + `?subject=${encodeURIComponent(subject)}`
+      + `&body=${encodeURIComponent(body)}`;
+    window.location.href = url;
+    onClose();
+  };
+
+  return (
+    <div style={modal.overlay} onClick={onClose}>
+      <div style={{ ...modal.box, maxWidth: 560 }} onClick={(e) => e.stopPropagation()}>
+        <header style={modal.head}>
+          <h2 style={modal.h}>후보에게 메일</h2>
+          <button onClick={onClose} style={modal.closeBtn}>✕</button>
+        </header>
+        <div style={modal.body}>
+          <div style={mc.tplRow}>
+            {MAIL_TEMPLATES.map(t => (
+              <button key={t.key} onClick={() => pickTemplate(t.key)}
+                style={t.key === tplKey ? mc.tplActive : mc.tpl}>
+                {t.label}
+              </button>
+            ))}
+          </div>
+          <div style={modal.field}>
+            <label style={modal.label}>받는 사람</label>
+            <input value={candidateEmail} readOnly style={{ ...modal.inp, background: '#F1F5F9', color: '#737373' }} />
+          </div>
+          <div style={modal.field}>
+            <label style={modal.label}>제목</label>
+            <input value={subject} onChange={(e) => setSubject(e.target.value)} style={modal.inp} />
+          </div>
+          <div style={modal.field}>
+            <label style={modal.label}>본문</label>
+            <textarea value={body} onChange={(e) => setBody(e.target.value)} rows={12}
+              style={{ ...modal.inp, resize: 'vertical', fontFamily: 'inherit', lineHeight: 1.6 }} />
+          </div>
+          <p style={modal.hint}>'메일 보내기'를 누르면 사용 중인 메일 프로그램이 열립니다. 최종 검토 후 발송하세요.</p>
+        </div>
+        <footer style={modal.foot}>
+          <button onClick={onClose} style={modal.btnGhost}>취소</button>
+          <button onClick={send} style={modal.btnPrimary}>메일 보내기</button>
+        </footer>
+      </div>
+    </div>
+  );
+}
+
+const mc = {
+  tplRow: { display: 'flex', gap: 6, flexWrap: 'wrap' },
+  tpl: { padding: '7px 12px', borderRadius: 999, border: '1px solid #E5E7EB', background: '#fff', color: '#525252', fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' },
+  tplActive: { padding: '7px 12px', borderRadius: 999, border: '1.5px solid #EA580C', background: '#FFF7ED', color: '#EA580C', fontSize: 12, fontWeight: 800, cursor: 'pointer', fontFamily: 'inherit' },
+};
+
 const local = {
   loading: { display: 'grid', placeItems: 'center', height: '60vh', color: '#525252', fontSize: 14 },
   errBox: { background: '#FEF2F2', border: '1px solid #FECACA', color: '#B91C1C', padding: '12px 16px', borderRadius: 8, fontSize: 13 },
@@ -330,6 +487,9 @@ const local = {
   stageBtnActive: { padding: '7px 10px', borderRadius: 6, border: '1.5px solid #EA580C', background: '#FFF7ED', color: '#EA580C', fontSize: 11.5, fontWeight: 800, cursor: 'pointer', fontFamily: 'inherit', textAlign: 'left' },
   btnNext: { width: '100%', padding: '11px 14px', borderRadius: 8, border: 'none', background: 'linear-gradient(135deg,#EF4444,#F97316)', color: '#fff', fontSize: 13, fontWeight: 800, cursor: 'pointer', fontFamily: 'inherit', boxShadow: '0 4px 12px rgba(234,88,12,0.22)' },
   btnAction: { width: '100%', padding: '11px 14px', borderRadius: 8, border: '1px solid #D1D5DB', background: '#fff', color: '#1A1A1A', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' },
+  btnMail: { width: '100%', padding: '11px 14px', borderRadius: 8, border: 'none', background: 'linear-gradient(135deg,#EF4444,#F97316)', color: '#fff', fontSize: 13, fontWeight: 800, cursor: 'pointer', fontFamily: 'inherit', boxShadow: '0 4px 12px rgba(234,88,12,0.22)' },
+  btnMailDisabled: { width: '100%', padding: '11px 14px', borderRadius: 8, border: '1px solid #E5E7EB', background: '#F1F5F9', color: '#94A3B8', fontSize: 13, fontWeight: 800, cursor: 'not-allowed', fontFamily: 'inherit' },
+  mailHint: { fontSize: 11, color: '#94A3B8', marginTop: 6 },
 };
 
 const modal = {

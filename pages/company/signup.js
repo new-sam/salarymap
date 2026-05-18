@@ -9,6 +9,15 @@ const FREE_MAIL_DOMAINS = new Set([
   'icloud.com', 'daum.net', 'kakao.com', 'protonmail.com',
 ]);
 
+function Brand() {
+  return (
+    <Link href="/for-companies" style={css.brand}>
+      <span style={css.brandMark}>F</span>
+      <span style={css.brandWord}>FYI <span style={css.brandSub}>for companies</span></span>
+    </Link>
+  );
+}
+
 export default function CompanySignup() {
   const router = useRouter();
   const sent = router.query.sent === '1';
@@ -61,6 +70,7 @@ export default function CompanySignup() {
       <>
         <Head><title>인증 메일 발송됨 · FYI for Companies</title></Head>
         <div style={css.shell}>
+          <Brand />
           <div style={css.sentCard}>
             <div style={css.sentIcon}>✉</div>
             <h1 style={css.sentH}>인증 메일을 보냈어요</h1>
@@ -82,12 +92,13 @@ export default function CompanySignup() {
     <>
       <Head><title>기업 계정 만들기 · FYI for Companies</title></Head>
       <div style={css.shell}>
+        <Brand />
         <div style={css.card}>
           <h1 style={css.h}>기업 계정 만들기</h1>
           <p style={css.lead}>회사 이메일로 인증 링크를 보냅니다. 1분 내 도착.</p>
 
           <div style={css.note}>
-            <b style={css.noteB}>📌 개인 계정과 별개입니다</b>
+            <b style={css.noteB}>개인 계정과 별개입니다</b>
             <span style={css.noteText}>
               기존 salary-fyi.com 후보자 계정을 갖고 있어도, 회사 계정은 새로 만들어야 합니다. (역할 충돌 방지)
             </span>
@@ -155,66 +166,85 @@ export default function CompanySignup() {
 const css = {
   shell: {
     minHeight: '100vh',
-    background: '#0a0a0a',
-    color: '#e5e5e5',
+    background: '#F7F7F8',
+    color: '#1a1a1a',
     fontFamily: "'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+    WebkitFontSmoothing: 'antialiased',
     display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-start',
-    padding: '48px 20px 40px',
+    padding: '44px 20px 48px',
   },
+  brand: {
+    display: 'flex', alignItems: 'center', gap: 9, marginBottom: 26,
+    textDecoration: 'none',
+  },
+  brandMark: {
+    width: 30, height: 30, borderRadius: 8,
+    background: 'linear-gradient(135deg,#ef4444,#f97316)', color: '#fff',
+    display: 'grid', placeItems: 'center', fontSize: 15, fontWeight: 800,
+  },
+  brandWord: { fontSize: 16, fontWeight: 800, color: '#111', letterSpacing: '-0.02em' },
+  brandSub: { fontSize: 12.5, color: '#9ca3af', fontWeight: 500, letterSpacing: 0 },
+
   card: {
-    maxWidth: 440, width: '100%', padding: '36px 32px',
-    background: '#13131a', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 12,
+    maxWidth: 460, width: '100%', padding: '40px 36px',
+    background: '#fff', borderRadius: 16,
+    border: '1px solid rgba(0,0,0,0.05)',
+    boxShadow: '0 1px 2px rgba(0,0,0,0.04), 0 14px 36px rgba(0,0,0,0.07)',
   },
-  h: { fontSize: 22, fontWeight: 800, color: '#fff', marginBottom: 6, letterSpacing: '-0.01em' },
-  lead: { fontSize: 13, color: 'rgba(255,255,255,0.55)', marginBottom: 22, lineHeight: 1.6 },
+  h: { fontSize: 24, fontWeight: 800, color: '#111', marginBottom: 8, letterSpacing: '-0.02em' },
+  lead: { fontSize: 13.5, color: '#6b7280', marginBottom: 24, lineHeight: 1.6 },
   note: {
-    background: 'rgba(37,99,235,0.1)', border: '1px solid rgba(37,99,235,0.3)', borderRadius: 7,
-    padding: '12px 14px', marginBottom: 22, fontSize: 12.5, lineHeight: 1.55,
+    background: '#F0F6FF', border: '1px solid #DBE8FF', borderRadius: 10,
+    padding: '13px 15px', marginBottom: 24, fontSize: 12.5, lineHeight: 1.55,
   },
-  noteB: { display: 'block', color: '#60a5fa', marginBottom: 4, fontSize: 12 },
-  noteText: { color: 'rgba(255,255,255,0.7)' },
-  field: { display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 16 },
-  label: { fontSize: 12, color: 'rgba(255,255,255,0.55)', fontWeight: 600 },
+  noteB: { display: 'block', color: '#2563eb', marginBottom: 4, fontSize: 12, fontWeight: 700 },
+  noteText: { color: '#4b5563' },
+  field: { display: 'flex', flexDirection: 'column', gap: 7, marginBottom: 18 },
+  label: { fontSize: 12.5, color: '#374151', fontWeight: 600 },
   input: {
-    background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 7,
-    padding: '11px 14px', fontSize: 14, color: '#fff',
-    fontFamily: 'inherit',
+    background: '#fff', border: '1px solid #D4D7DD', borderRadius: 9,
+    padding: '12px 14px', fontSize: 14, color: '#111',
+    fontFamily: 'inherit', outline: 'none',
   },
-  hint: { fontSize: 11.5, color: 'rgba(255,255,255,0.4)' },
+  hint: { fontSize: 11.5, color: '#9ca3af' },
   err: {
-    background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: 6,
-    padding: '10px 12px', fontSize: 12.5, color: '#f87171', marginBottom: 14, lineHeight: 1.5,
+    background: '#FEF2F2', border: '1px solid #FECACA', borderRadius: 8,
+    padding: '10px 13px', fontSize: 12.5, color: '#dc2626', marginBottom: 14, lineHeight: 1.5,
   },
   btnPrimary: {
-    width: '100%', padding: '12px 16px', borderRadius: 8, border: 'none',
+    width: '100%', padding: '13px 16px', borderRadius: 10, border: 'none',
     background: 'linear-gradient(135deg,#ef4444,#f97316)', color: '#fff',
-    fontSize: 14, fontWeight: 700, cursor: 'pointer',
+    fontSize: 14.5, fontWeight: 700, cursor: 'pointer',
     fontFamily: 'inherit',
+    boxShadow: '0 4px 14px rgba(249,115,22,0.28)',
   },
   btnDisabled: {
-    width: '100%', padding: '12px 16px', borderRadius: 8, border: 'none',
-    background: 'rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.4)',
-    fontSize: 14, fontWeight: 700, cursor: 'not-allowed',
+    width: '100%', padding: '13px 16px', borderRadius: 10, border: 'none',
+    background: '#E5E7EB', color: '#9CA3AF',
+    fontSize: 14.5, fontWeight: 700, cursor: 'not-allowed',
     fontFamily: 'inherit',
   },
-  legal: { fontSize: 11.5, color: 'rgba(255,255,255,0.4)', textAlign: 'center', marginTop: 18, lineHeight: 1.6 },
-  linkDim: { color: 'rgba(255,255,255,0.55)', textDecoration: 'underline', fontWeight: 600, cursor: 'pointer' },
+  legal: { fontSize: 11.5, color: '#9ca3af', textAlign: 'center', marginTop: 20, lineHeight: 1.7 },
+  linkDim: { color: '#6b7280', textDecoration: 'underline', fontWeight: 600, cursor: 'pointer' },
   linkAccent: { color: '#f97316', fontWeight: 700, cursor: 'pointer', textDecoration: 'underline' },
   bottomNav: {
-    maxWidth: 440, width: '100%', marginTop: 24,
+    maxWidth: 460, width: '100%', marginTop: 20,
     display: 'flex', justifyContent: 'space-between', fontSize: 12,
   },
   // sent state
   sentCard: {
-    maxWidth: 440, width: '100%', padding: '48px 32px', textAlign: 'center',
+    maxWidth: 460, width: '100%', padding: '48px 36px', textAlign: 'center',
+    background: '#fff', borderRadius: 16,
+    border: '1px solid rgba(0,0,0,0.05)',
+    boxShadow: '0 1px 2px rgba(0,0,0,0.04), 0 14px 36px rgba(0,0,0,0.07)',
   },
   sentIcon: {
     width: 64, height: 64, borderRadius: '50%',
-    background: 'rgba(16,185,129,0.12)', color: '#10b981',
+    background: '#ECFDF5', color: '#10b981',
     fontSize: 28, display: 'grid', placeItems: 'center', margin: '0 auto 20px',
   },
-  sentH: { fontSize: 20, fontWeight: 700, color: '#fff', marginBottom: 8 },
-  sentP: { fontSize: 13.5, color: 'rgba(255,255,255,0.6)', marginBottom: 24, lineHeight: 1.7 },
-  sentResend: { fontSize: 12.5, color: 'rgba(255,255,255,0.5)' },
-  code: { background: 'rgba(255,255,255,0.06)', padding: '2px 6px', borderRadius: 4, fontFamily: "'JetBrains Mono', monospace", fontSize: 11.5, color: '#fbbf24' },
+  sentH: { fontSize: 21, fontWeight: 800, color: '#111', marginBottom: 10 },
+  sentP: { fontSize: 13.5, color: '#6b7280', marginBottom: 24, lineHeight: 1.7 },
+  sentResend: { fontSize: 12.5, color: '#9ca3af' },
+  code: { background: '#F3F4F6', padding: '2px 6px', borderRadius: 4, fontFamily: "'JetBrains Mono', monospace", fontSize: 11.5, color: '#d97706' },
 };

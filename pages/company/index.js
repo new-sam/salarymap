@@ -5,6 +5,11 @@ import { useRouter } from 'next/router';
 import { supabase } from '../../lib/supabaseClient';
 import { Sidebar, css } from './jobs/new';
 
+const FREE_MAIL_DOMAINS = new Set([
+  'gmail.com', 'naver.com', 'yahoo.com', 'hotmail.com', 'outlook.com',
+  'icloud.com', 'daum.net', 'kakao.com', 'protonmail.com',
+]);
+
 const STATUS_LABEL = { draft: '초안', pending_review: '검수 중', live: '활성', paused: '일시중지', closed: '종료' };
 const STATUS_STYLE = {
   draft: { bg: '#F1F5F9', color: '#64748B' },
@@ -13,6 +18,29 @@ const STATUS_STYLE = {
   paused: { bg: '#FFFBEB', color: '#D97706' },
   closed: { bg: '#F1F5F9', color: '#94A3B8' },
 };
+
+const authResponsiveCss = `
+  @media (max-width: 760px) {
+    .company-auth-shell {
+      padding: 24px 18px 44px !important;
+    }
+    .company-auth-grid {
+      grid-template-columns: 1fr !important;
+      gap: 28px !important;
+    }
+    .company-auth-hero {
+      padding-top: 8px !important;
+    }
+    .company-auth-panel {
+      padding: 24px 20px !important;
+      width: 100% !important;
+      min-width: 0 !important;
+    }
+    .company-auth-two-cols {
+      grid-template-columns: 1fr !important;
+    }
+  }
+`;
 
 export default function CompanyDashboard() {
   const router = useRouter();
@@ -23,6 +51,130 @@ export default function CompanyDashboard() {
   const [jobs, setJobs] = useState([]);
   const [appsCount, setAppsCount] = useState(0);
   const [appsByJob, setAppsByJob] = useState({});
+  const [loginEmail, setLoginEmail] = useState('');
+  const [signupEmail, setSignupEmail] = useState('');
+  const [signupName, setSignupName] = useState('');
+  const [signupCompany, setSignupCompany] = useState('');
+  const [authBusy, setAuthBusy] = useState(false);
+  const [authErr, setAuthErr] = useState('');
+  const [sentEmail, setSentEmail] = useState('');
+  const [setupName, setSetupName] = useState('');
+  const [setupCompany, setSetupCompany] = useState('');
+  const [setupBusy, setSetupBusy] = useState(false);
+
+  const sendCompanyOtp = async ({ email, fullName = '', companyName = '' }) => {
+    setAuthErr('');
+    const trimmed = email.trim().toLowerCase();
+    const domain = trimmed.split('@')[1];
+    if (!domain || FREE_MAIL_DOMAINS.has(domain)) {
+      setAuthErr('회사 이메일을 입력해 주세요. gmail/naver 같은 개인 메일은 사용할 수 없습니다.');
+      return;
+    }
+
+    setAuthBusy(true);
+    try {
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('fyi_intent', 'company');
+        localStorage.setItem('fyi_login_return', '/company');
+        if (fullName.trim()) localStorage.setItem('fyi_company_full_name', fullName.trim());
+        if (companyName.trim()) localStorage.setItem('fyi_company_name', companyName.trim());
+      }
+      const redirectTo = typeof window !== 'undefined'
+        ? `${window.location.origin}/auth/callback`
+        : undefined;
+      const { error } = await supabase.auth.signInWithOtp({
+        email: trimmed,
+        options: { emailRedirectTo: redirectTo },
+      });
+      if (error) throw error;
+      setSentEmail(trimmed);
+    } catch (e) {
+      setAuthErr(e?.message || '인증 메일을 보내지 못했습니다.');
+    } finally {
+      setAuthBusy(false);
+    }
+  };
+
+  const onLogin = (e) => {
+    e.preventDefault();
+    sendCompanyOtp({ email: loginEmail });
+  };
+
+  const onSignup = (e) => {
+    e.preventDefault();
+    if (!signupName.trim()) { setAuthErr('담당자 이름을 입력해 주세요.'); return; }
+    if (!signupCompany.trim()) { setAuthErr('회사명을 입력해 주세요.'); return; }
+    sendCompanyOtp({ email: signupEmail, fullName: signupName, companyName: signupCompany });
+  };
+
+  const completeCompanySetup = async (e) => {
+    e.preventDefault();
+    setAuthErr('');
+    const email = user?.email || '';
+    const domain = email.includes('@') ? email.split('@')[1].toLowerCase() : '';
+    if (!domain || FREE_MAIL_DOMAINS.has(domain)) {
+      setAuthErr('회사 이메일로 인증된 계정만 기업 계정을 만들 수 있습니다.');
+      return;
+    }
+    if (!setupName.trim()) { setAuthErr('담당자 이름을 입력해 주세요.'); return; }
+    if (!setupCompany.trim()) { setAuthErr('회사명을 입력해 주세요.'); return; }
+
+    setSetupBusy(true);
+    try {
+      const { data: existing } = await supabase
+        .from('recruiter_companies')
+        .select('id, name')
+        .eq('email_domain', domain)
+        .limit(1)
+        .maybeSingle();
+
+      let companyId = existing?.id || null;
+      let resolvedCompanyName = existing?.name || setupCompany.trim();
+
+      if (!companyId) {
+        const { data: created, error: companyError } = await supabase
+          .from('recruiter_companies')
+          .insert({
+            name: setupCompany.trim(),
+            email_domain: domain,
+            created_by: user.id,
+          })
+          .select('id, name')
+          .single();
+        if (companyError) throw companyError;
+        companyId = created?.id;
+        resolvedCompanyName = created?.name || resolvedCompanyName;
+      }
+
+      if (!companyId) throw new Error('회사 계정을 만들지 못했습니다.');
+
+      const { error: userError } = await supabase.from('recruiter_users').upsert({
+        user_id: user.id,
+        company_id: companyId,
+        email,
+        full_name: setupName.trim(),
+        role: 'admin',
+      }, { onConflict: 'user_id' });
+      if (userError) throw userError;
+
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('fyi_company_name');
+        localStorage.removeItem('fyi_company_full_name');
+        localStorage.removeItem('fyi_company_needs_setup');
+      }
+
+      setCompanyName(resolvedCompanyName);
+      setFullName(setupName.trim());
+      setJobs([]);
+      setAppsCount(0);
+      setAppsByJob({});
+      setStatus('ready');
+    } catch (err) {
+      setAuthErr(err?.message || '회사 계정을 연결하지 못했습니다.');
+    } finally {
+      setSetupBusy(false);
+    }
+  };
 
   useEffect(() => {
     let mounted = true;
@@ -62,10 +214,25 @@ export default function CompanyDashboard() {
           apps.forEach(a => {
             if (!grouped[a.job_id]) grouped[a.job_id] = { total: 0, new: 0 };
             grouped[a.job_id].total += 1;
-            if (a.status === 'pending') grouped[a.job_id].new += 1;
+            if (a.status === 'applied') grouped[a.job_id].new += 1;
           });
           setAppsByJob(grouped);
         }
+      } else {
+        if (typeof window !== 'undefined') {
+          const cachedCompany = localStorage.getItem('fyi_company_name') || '';
+          const needsSetup = localStorage.getItem('fyi_company_needs_setup') === '1';
+          if (!needsSetup && !cachedCompany) {
+            setStatus('unauthed');
+            return;
+          }
+          setSetupCompany(cachedCompany);
+          setSetupName(localStorage.getItem('fyi_company_full_name') || rec?.full_name || '');
+        } else {
+          setSetupName(rec?.full_name || '');
+        }
+        setStatus('needs_company');
+        return;
       }
       setStatus('ready');
     })();
@@ -75,13 +242,196 @@ export default function CompanyDashboard() {
   if (status === 'loading') return <div style={css.loading}>Loading…</div>;
   if (status === 'unauthed') {
     return (
-      <div style={css.fullCenter}>
-        <div style={css.lightCard}>
-          <h1 style={css.cardH}>기업 로그인</h1>
-          <p style={css.cardP}>회사 계정으로 로그인해 주세요.</p>
-          <Link href="/company/signup" style={css.btnPrimary}>로그인 / 가입</Link>
+      <>
+        <Head><title>기업 로그인 · FYI for Companies</title></Head>
+        <style>{`
+          @media (max-width: 760px) {
+            .company-auth-shell {
+              padding: 24px 18px 44px !important;
+            }
+            .company-auth-grid {
+              grid-template-columns: 1fr !important;
+              gap: 28px !important;
+            }
+            .company-auth-hero {
+              padding-top: 8px !important;
+            }
+            .company-auth-panel {
+              padding: 24px 20px !important;
+              width: 100% !important;
+              min-width: 0 !important;
+            }
+            .company-auth-two-cols {
+              grid-template-columns: 1fr !important;
+            }
+          }
+        `}</style>
+        <div className="company-auth-shell" style={localCss.authShell}>
+          <Link href="/for-companies" style={localCss.authBrand}>
+            <span style={localCss.authLogo}>F</span>
+            <span>salary-fyi <em style={localCss.authBrandSub}>for companies</em></span>
+          </Link>
+
+          <div className="company-auth-grid" style={localCss.authGrid}>
+            <section className="company-auth-hero" style={localCss.authHero}>
+              <div style={localCss.authKicker}>COMPANY ACCESS</div>
+              <h1 style={localCss.authTitle}>
+                회사 이메일로<br />
+                계속하세요.
+              </h1>
+              <p style={localCss.authCopy}>
+                개인 FYI 계정과 분리된<br />
+                기업 전용 계정으로 접속합니다.
+              </p>
+              <div style={localCss.authPoints}>
+                <span>게재비 0원</span>
+                <span>공고 등록 1분</span>
+                <span>성공 시에만 수수료</span>
+              </div>
+            </section>
+
+            <section className="company-auth-panel" style={localCss.authPanel}>
+              {sentEmail ? (
+                <div style={localCss.sentBox}>
+                  <div style={localCss.sentIcon}>↗</div>
+                  <h2 style={localCss.panelTitle}>메일을 확인해 주세요.</h2>
+                  <p style={localCss.panelCopy}>
+                    <b>{sentEmail}</b><br />
+                    인증 링크를 누르면 기업 대시보드로 이동합니다.
+                  </p>
+                  <button type="button" onClick={() => setSentEmail('')} style={localCss.secondaryBtn}>
+                    다른 이메일 입력
+                  </button>
+                </div>
+              ) : (
+                <>
+                  <form onSubmit={onLogin} style={localCss.form}>
+                    <h2 style={localCss.panelTitle}>기업 로그인</h2>
+                    <p style={localCss.panelCopy}>이미 기업 계정이 있는 회사 이메일만 사용하세요.</p>
+                    <label style={localCss.label}>회사 이메일</label>
+                    <input
+                      type="email"
+                      value={loginEmail}
+                      onChange={(e) => setLoginEmail(e.target.value)}
+                      placeholder="you@company.com"
+                      style={localCss.input}
+                      required
+                    />
+                    <button type="submit" disabled={authBusy} style={localCss.primaryBtn}>
+                      {authBusy ? '메일 발송 중...' : '이메일로 로그인'}
+                    </button>
+                  </form>
+
+                  <div style={localCss.divider}><span>처음이신가요?</span></div>
+
+                  <form onSubmit={onSignup} style={localCss.form}>
+                    <p style={localCss.panelCopy}>처음이라면 회사 정보를 입력해 별도 기업 계정을 만듭니다.</p>
+                    <label style={localCss.label}>회사 이메일</label>
+                    <input
+                      type="email"
+                      value={signupEmail}
+                      onChange={(e) => setSignupEmail(e.target.value)}
+                      placeholder="you@company.com"
+                      style={localCss.input}
+                      required
+                    />
+                    <div className="company-auth-two-cols" style={localCss.twoCols}>
+                      <div>
+                        <label style={localCss.label}>담당자 이름</label>
+                        <input
+                          value={signupName}
+                          onChange={(e) => setSignupName(e.target.value)}
+                          placeholder="홍길동"
+                          style={localCss.input}
+                          required
+                        />
+                      </div>
+                      <div>
+                        <label style={localCss.label}>회사명</label>
+                        <input
+                          value={signupCompany}
+                          onChange={(e) => setSignupCompany(e.target.value)}
+                          placeholder="ACME Vietnam"
+                          style={localCss.input}
+                          required
+                        />
+                      </div>
+                    </div>
+                    {authErr && <div style={localCss.authErr}>{authErr}</div>}
+                    <button type="submit" disabled={authBusy} style={localCss.secondaryBtn}>
+                      {authBusy ? '메일 발송 중...' : '회사 계정 만들기'}
+                    </button>
+                  </form>
+                </>
+              )}
+            </section>
+          </div>
         </div>
-      </div>
+      </>
+    );
+  }
+
+  if (status === 'needs_company') {
+    return (
+      <>
+        <Head><title>기업 계정 설정 · FYI for Companies</title></Head>
+        <style>{authResponsiveCss}</style>
+        <div className="company-auth-shell" style={localCss.authShell}>
+          <Link href="/for-companies" style={localCss.authBrand}>
+            <span style={localCss.authLogo}>F</span>
+            <span>salary-fyi <em style={localCss.authBrandSub}>for companies</em></span>
+          </Link>
+
+          <div className="company-auth-grid" style={localCss.authGrid}>
+            <section className="company-auth-hero" style={localCss.authHero}>
+              <div style={localCss.authKicker}>COMPANY SETUP</div>
+              <h1 style={localCss.authTitle}>
+                기업 계정을<br />
+                완료하세요.
+              </h1>
+              <p style={localCss.authCopy}>
+                {user?.email}<br />
+                인증된 회사 이메일로만 연결됩니다.
+              </p>
+            </section>
+
+            <section className="company-auth-panel" style={localCss.authPanel}>
+              <form onSubmit={completeCompanySetup} style={localCss.form}>
+                <h2 style={localCss.panelTitle}>회사 정보 확인</h2>
+                <p style={localCss.panelCopy}>
+                  이 단계가 끝나야 기업 대시보드와 공고 관리가 열립니다.
+                </p>
+                <div className="company-auth-two-cols" style={localCss.twoCols}>
+                  <div>
+                    <label style={localCss.label}>담당자 이름</label>
+                    <input
+                      value={setupName}
+                      onChange={(e) => setSetupName(e.target.value)}
+                      placeholder="홍길동"
+                      style={localCss.input}
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label style={localCss.label}>회사명</label>
+                    <input
+                      value={setupCompany}
+                      onChange={(e) => setSetupCompany(e.target.value)}
+                      placeholder="ACME Vietnam"
+                      style={localCss.input}
+                      required
+                    />
+                  </div>
+                </div>
+                {authErr && <div style={localCss.authErr}>{authErr}</div>}
+                <button type="submit" disabled={setupBusy} style={localCss.primaryBtn}>
+                  {setupBusy ? '연결 중...' : '기업 계정 연결하기'}
+                </button>
+              </form>
+            </section>
+          </div>
+        </div>
+      </>
     );
   }
 
@@ -180,6 +530,153 @@ export default function CompanyDashboard() {
 }
 
 const localCss = {
+  authShell: {
+    minHeight: '100vh',
+    background: '#F7F7F5',
+    color: '#111',
+    fontFamily: "'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+    padding: '34px clamp(18px, 5vw, 64px) 56px',
+  },
+  authBrand: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: 9,
+    color: '#111',
+    textDecoration: 'none',
+    fontSize: 15,
+    fontWeight: 900,
+    marginBottom: 58,
+  },
+  authLogo: {
+    display: 'grid',
+    placeItems: 'center',
+    width: 30,
+    height: 30,
+    borderRadius: 8,
+    color: '#fff',
+    background: 'linear-gradient(135deg,#ef4444,#f97316)',
+    fontSize: 14,
+  },
+  authBrandSub: { color: '#9CA3AF', fontStyle: 'normal', fontSize: 12, marginLeft: 4 },
+  authGrid: {
+    display: 'grid',
+    gridTemplateColumns: 'minmax(0, 0.95fr) minmax(380px, 0.72fr)',
+    gap: 56,
+    alignItems: 'start',
+    maxWidth: 1120,
+    margin: '0 auto',
+  },
+  authHero: { paddingTop: 36 },
+  authKicker: {
+    color: '#EA580C',
+    fontSize: 11,
+    fontWeight: 900,
+    letterSpacing: '0.16em',
+    marginBottom: 18,
+  },
+  authTitle: {
+    margin: 0,
+    fontSize: 'clamp(44px, 6vw, 72px)',
+    lineHeight: 1.04,
+    letterSpacing: '-0.04em',
+    fontWeight: 950,
+  },
+  authCopy: {
+    margin: '24px 0 0',
+    color: '#525252',
+    fontSize: 17,
+    lineHeight: 1.7,
+    fontWeight: 650,
+  },
+  authPoints: {
+    display: 'flex',
+    flexWrap: 'wrap',
+    gap: 10,
+    marginTop: 28,
+    color: '#525252',
+    fontSize: 12.5,
+    fontWeight: 850,
+  },
+  authPanel: {
+    background: '#fff',
+    border: '1px solid rgba(0,0,0,0.06)',
+    borderRadius: 18,
+    padding: 30,
+    boxShadow: '0 18px 46px rgba(17,17,17,0.08)',
+  },
+  panelTitle: { margin: 0, fontSize: 23, lineHeight: 1.2, fontWeight: 900, letterSpacing: '-0.02em' },
+  panelCopy: { margin: '9px 0 20px', color: '#6B7280', fontSize: 13.5, lineHeight: 1.55, fontWeight: 600 },
+  form: { display: 'flex', flexDirection: 'column', gap: 9 },
+  label: { display: 'block', marginBottom: 6, color: '#374151', fontSize: 12, fontWeight: 800 },
+  input: {
+    width: '100%',
+    border: '1px solid #D1D5DB',
+    borderRadius: 10,
+    padding: '13px 14px',
+    color: '#111',
+    background: '#fff',
+    fontSize: 14,
+    fontFamily: 'inherit',
+    outline: 'none',
+  },
+  primaryBtn: {
+    marginTop: 5,
+    width: '100%',
+    border: 'none',
+    borderRadius: 999,
+    padding: '14px 18px',
+    color: '#fff',
+    background: 'linear-gradient(135deg,#ef4444,#f97316)',
+    fontSize: 14.5,
+    fontWeight: 900,
+    fontFamily: 'inherit',
+    cursor: 'pointer',
+  },
+  secondaryBtn: {
+    marginTop: 5,
+    width: '100%',
+    border: '1px solid rgba(249,115,22,0.24)',
+    borderRadius: 999,
+    padding: '14px 18px',
+    color: '#EA580C',
+    background: '#FFF7ED',
+    fontSize: 14.5,
+    fontWeight: 900,
+    fontFamily: 'inherit',
+    cursor: 'pointer',
+  },
+  divider: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    margin: '26px 0 22px',
+    color: '#9CA3AF',
+    fontSize: 12,
+    fontWeight: 800,
+  },
+  twoCols: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 },
+  authErr: {
+    padding: '10px 12px',
+    borderRadius: 9,
+    background: '#FEF2F2',
+    color: '#DC2626',
+    fontSize: 12.5,
+    fontWeight: 650,
+    lineHeight: 1.45,
+  },
+  sentBox: { textAlign: 'center' },
+  sentIcon: {
+    display: 'grid',
+    placeItems: 'center',
+    width: 54,
+    height: 54,
+    margin: '0 auto 18px',
+    borderRadius: '50%',
+    color: '#fff',
+    background: 'linear-gradient(135deg,#ef4444,#f97316)',
+    fontSize: 24,
+    fontWeight: 900,
+  },
   empty: { border: '2px dashed #E5E7EB', borderRadius: 12, padding: '48px 24px', textAlign: 'center', background: '#fff' },
   emptyIco: { fontSize: 36, marginBottom: 12, opacity: 0.5 },
   emptyH: { fontSize: 18, fontWeight: 800, color: '#1A1A1A', marginBottom: 8 },
