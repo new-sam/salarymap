@@ -247,6 +247,7 @@ export default function CandidateDetail({ appId, mode = 'page', onClose, company
           candidateEmail={email}
           jobTitle={job.title}
           companyName={companyName}
+          applicationId={app.id}
           onClose={() => setShowMailModal(false)}
         />
       )}
@@ -275,7 +276,12 @@ function InterviewModal({ app, onClose, onSaved }) {
     if (!date) { setErr('날짜를 선택해 주세요'); return; }
     setSaving(true);
     const summary = `[면접 일정]\n📅 ${date} ${time}\n📍 ${location || '미정'}\n👤 면접관: ${interviewer || '미정'}\n\n${app.admin_note ? '── 기존 메모 ──\n' + app.admin_note : ''}`;
-    const { error } = await supabase.from('job_applications').update({ admin_note: summary }).eq('id', app.id);
+    const { error } = await supabase.from('job_applications').update({
+      admin_note: summary,
+      interview_at: new Date(`${date}T${time || '00:00'}`).toISOString(),
+      interview_location: location || null,
+      interview_interviewer: interviewer || null,
+    }).eq('id', app.id);
     setSaving(false);
     if (error) { setErr('저장 실패: ' + error.message); return; }
     onSaved(summary);
@@ -370,11 +376,17 @@ function fillVars(text, vars) {
     .split('{회사명}').join(vars.companyName || '저희 회사');
 }
 
-export function MailComposer({ candidateName, candidateEmail, jobTitle, companyName, onClose }) {
+export function MailComposer({
+  candidateName, candidateEmail, jobTitle, companyName,
+  applicationId, initialTemplateKey, stageNote, onClose, onSent,
+}) {
   const vars = { name: candidateName, jobTitle, companyName };
-  const [tplKey, setTplKey] = useState(MAIL_TEMPLATES[0].key);
-  const [subject, setSubject] = useState(fillVars(MAIL_TEMPLATES[0].subject, vars));
-  const [body, setBody] = useState(fillVars(MAIL_TEMPLATES[0].body, vars));
+  const startTpl = MAIL_TEMPLATES.find(t => t.key === initialTemplateKey) || MAIL_TEMPLATES[0];
+  const [tplKey, setTplKey] = useState(startTpl.key);
+  const [subject, setSubject] = useState(fillVars(startTpl.subject, vars));
+  const [body, setBody] = useState(fillVars(startTpl.body, vars));
+  const [sending, setSending] = useState(false);
+  const [err, setErr] = useState('');
 
   const pickTemplate = (key) => {
     const tpl = MAIL_TEMPLATES.find(t => t.key === key);
@@ -384,22 +396,44 @@ export function MailComposer({ candidateName, candidateEmail, jobTitle, companyN
     setBody(fillVars(tpl.body, vars));
   };
 
-  const send = () => {
-    const url = `mailto:${encodeURIComponent(candidateEmail)}`
-      + `?subject=${encodeURIComponent(subject)}`
-      + `&body=${encodeURIComponent(body)}`;
-    window.location.href = url;
-    onClose();
+  const send = async () => {
+    setErr('');
+    if (!applicationId) { setErr('지원자 정보가 없어 발송할 수 없습니다.'); return; }
+    setSending(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const res = await fetch('/api/company/send-mail', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${session?.access_token || ''}`,
+        },
+        body: JSON.stringify({ appId: applicationId, subject, body, templateKey: tplKey }),
+      });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) { setErr(json.error || '발송에 실패했습니다.'); setSending(false); return; }
+      onSent?.(tplKey);
+      onClose();
+    } catch (e) {
+      setErr('발송 중 오류: ' + (e?.message || ''));
+      setSending(false);
+    }
+  };
+
+  const openMailApp = () => {
+    window.location.href = `mailto:${encodeURIComponent(candidateEmail)}`
+      + `?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
   };
 
   return (
-    <div style={modal.overlay} onClick={onClose}>
+    <div style={modal.overlay} onClick={sending ? undefined : onClose}>
       <div style={{ ...modal.box, maxWidth: 560 }} onClick={(e) => e.stopPropagation()}>
         <header style={modal.head}>
           <h2 style={modal.h}>후보에게 메일</h2>
           <button onClick={onClose} style={modal.closeBtn}>✕</button>
         </header>
         <div style={modal.body}>
+          {stageNote && <div style={mc.stageNote}>{stageNote}</div>}
           <div style={mc.tplRow}>
             {MAIL_TEMPLATES.map(t => (
               <button key={t.key} onClick={() => pickTemplate(t.key)}
@@ -421,11 +455,15 @@ export function MailComposer({ candidateName, candidateEmail, jobTitle, companyN
             <textarea value={body} onChange={(e) => setBody(e.target.value)} rows={12}
               style={{ ...modal.inp, resize: 'vertical', fontFamily: 'inherit', lineHeight: 1.6 }} />
           </div>
-          <p style={modal.hint}>'메일 보내기'를 누르면 사용 중인 메일 프로그램이 열립니다. 최종 검토 후 발송하세요.</p>
+          {err && <div style={local.errBox}>{err}</div>}
+          <p style={modal.hint}>'보내기'를 누르면 FYI가 후보 이메일로 바로 발송합니다. 발송 이력이 기록됩니다.</p>
         </div>
         <footer style={modal.foot}>
-          <button onClick={onClose} style={modal.btnGhost}>취소</button>
-          <button onClick={send} style={modal.btnPrimary}>메일 보내기</button>
+          <button onClick={onClose} style={modal.btnGhost}>{stageNote ? '건너뛰기' : '취소'}</button>
+          <button onClick={openMailApp} style={modal.btnGhost}>메일 앱으로 열기</button>
+          <button onClick={send} disabled={sending} style={sending ? modal.btnDisabled : modal.btnPrimary}>
+            {sending ? '발송 중…' : '보내기'}
+          </button>
         </footer>
       </div>
     </div>
@@ -436,6 +474,7 @@ const mc = {
   tplRow: { display: 'flex', gap: 6, flexWrap: 'wrap' },
   tpl: { padding: '7px 12px', borderRadius: 999, border: '1px solid #E5E7EB', background: '#fff', color: '#525252', fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' },
   tplActive: { padding: '7px 12px', borderRadius: 999, border: '1.5px solid #EA580C', background: '#FFF7ED', color: '#EA580C', fontSize: 12, fontWeight: 800, cursor: 'pointer', fontFamily: 'inherit' },
+  stageNote: { background: '#FFF7ED', border: '1px solid #FED7AA', color: '#9A3412', padding: '9px 12px', borderRadius: 8, fontSize: 12.5, fontWeight: 600, lineHeight: 1.5 },
 };
 
 const local = {

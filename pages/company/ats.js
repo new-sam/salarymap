@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { supabase } from '../../lib/supabaseClient';
 import { Sidebar, css } from './jobs/new';
-import CandidateDetail from '../../components/company/CandidateDetail';
+import CandidateDetail, { MailComposer } from '../../components/company/CandidateDetail';
 
 const STAGES = [
   { key: 'applied', label: '신규 지원', emoji: '📥' },
@@ -14,6 +14,8 @@ const STAGES = [
 ];
 
 const STAGE_ORDER = STAGES.map(s => s.key);
+// 단계 전진 시 자동으로 띄울 메일 템플릿
+const STAGE_MAIL = { viewed: 'received', reviewing: 'interview', decided: 'offer' };
 
 export default function CompanyATSPage() {
   const router = useRouter();
@@ -28,6 +30,10 @@ export default function CompanyATSPage() {
   const [selectedAppId, setSelectedAppId] = useState(null);
   const [profileMap, setProfileMap] = useState({});
   const [savingNote, setSavingNote] = useState(false);
+  const [query, setQuery] = useState('');
+  const [draggingId, setDraggingId] = useState(null);
+  const [dragOverCol, setDragOverCol] = useState(null);
+  const [mailFor, setMailFor] = useState(null);
 
   useEffect(() => {
     if (!jobId) return;
@@ -105,6 +111,24 @@ export default function CompanyATSPage() {
     }
   };
 
+  // 카드를 다른 단계 컬럼에 드롭 — 단계 변경 후, 전진 이동이면 메일 작성창을 띄움
+  const handleDrop = (newStatus) => {
+    const appId = draggingId;
+    setDraggingId(null);
+    setDragOverCol(null);
+    if (!appId) return;
+    const app = apps.find(a => a.id === appId);
+    if (!app || app.status === newStatus) return;
+    const forward = STAGE_ORDER.indexOf(newStatus) > STAGE_ORDER.indexOf(app.status);
+    setStage(appId, newStatus);
+    const profile = app.user_id ? profileMap[app.user_id] : null;
+    const email = app.applicant_email || profile?.email || '';
+    if (forward && STAGE_MAIL[newStatus] && email) {
+      const stage = STAGES.find(s => s.key === newStatus);
+      setMailFor({ app, profile, email, templateKey: STAGE_MAIL[newStatus], stageLabel: stage.label });
+    }
+  };
+
   const saveNote = async (appId, note) => {
     setSavingNote(true);
     setApps(prev => prev.map(a => a.id === appId ? { ...a, admin_note: note } : a));
@@ -113,7 +137,14 @@ export default function CompanyATSPage() {
     if (error) setErr('메모 저장 실패: ' + error.message);
   };
 
-  const grouped = STAGES.map(s => ({ ...s, apps: apps.filter(a => a.status === s.key) }));
+  const matchesQuery = (a) => {
+    const q = query.trim().toLowerCase();
+    if (!q) return true;
+    const profile = a.user_id ? profileMap[a.user_id] : null;
+    return [a.applicant_name, a.applicant_email, a.applicant_role, a.applicant_company, profile?.full_name, profile?.email]
+      .filter(Boolean).join(' ').toLowerCase().includes(q);
+  };
+  const grouped = STAGES.map(s => ({ ...s, apps: apps.filter(a => a.status === s.key && matchesQuery(a)) }));
   const selectedApp = apps.find(a => a.id === selectedAppId);
 
   if (status === 'loading') return <div style={css.loading}>Loading…</div>;
@@ -159,24 +190,43 @@ export default function CompanyATSPage() {
 
           {err && <div style={css.err}>{err}</div>}
 
+          <div style={localCss.toolbar}>
+            <input
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="이름 · 이메일 · 역할로 검색"
+              style={localCss.search}
+            />
+            {query && <button onClick={() => setQuery('')} style={localCss.searchClear}>지우기</button>}
+            <span style={localCss.dragHint}>카드를 끌어 단계를 옮기세요</span>
+          </div>
+
           <div style={localCss.kanban}>
             {grouped.map((col) => (
-              <div key={col.key} style={localCss.col}>
+              <div
+                key={col.key}
+                style={{...localCss.col, ...(dragOverCol === col.key ? localCss.colOver : {})}}
+                onDragOver={(e) => { e.preventDefault(); if (dragOverCol !== col.key) setDragOverCol(col.key); }}
+                onDrop={() => handleDrop(col.key)}
+              >
                 <div style={localCss.colHead}>
                   <span style={localCss.colEmoji}>{col.emoji}</span>
                   <span style={localCss.colLabel}>{col.label}</span>
                   <span style={localCss.colCount}>{col.apps.length}</span>
                 </div>
                 <div style={localCss.colBody}>
-                  {col.apps.length === 0 && <div style={localCss.colEmpty}>—</div>}
+                  {col.apps.length === 0 && <div style={localCss.colEmpty}>{dragOverCol === col.key ? '여기에 놓기' : '—'}</div>}
                   {col.apps.map(app => {
                     const profile = app.user_id ? profileMap[app.user_id] : null;
                     const name = app.applicant_name || profile?.full_name || `후보 #${app.id.slice(-6).toUpperCase()}`;
                     return (
                       <div
                         key={app.id}
+                        draggable
+                        onDragStart={() => setDraggingId(app.id)}
+                        onDragEnd={() => { setDraggingId(null); setDragOverCol(null); }}
                         onClick={() => setSelectedAppId(app.id)}
-                        style={{...localCss.card, ...(selectedAppId === app.id ? localCss.cardActive : {})}}
+                        style={{...localCss.card, ...(selectedAppId === app.id ? localCss.cardActive : {}), ...(draggingId === app.id ? localCss.cardDragging : {})}}
                       >
                         <div style={localCss.cardName}>{name}</div>
                         {app.applicant_role && <div style={localCss.cardMeta}>{app.applicant_role} · {app.applicant_experience || 0}년</div>}
@@ -203,6 +253,20 @@ export default function CompanyATSPage() {
               />
             </div>
           </div>
+        )}
+
+        {mailFor && (
+          <MailComposer
+            candidateName={mailFor.app.applicant_name || mailFor.profile?.full_name || `후보 #${mailFor.app.id.slice(-6).toUpperCase()}`}
+            candidateEmail={mailFor.email}
+            jobTitle={job.title}
+            companyName={companyName}
+            applicationId={mailFor.app.id}
+            initialTemplateKey={mailFor.templateKey}
+            stageNote={`후보를 '${mailFor.stageLabel}' 단계로 옮겼습니다. 후보에게 알림 메일을 보낼까요?`}
+            onClose={() => setMailFor(null)}
+            onSent={() => setMailFor(null)}
+          />
         )}
       </div>
     </>
@@ -316,8 +380,15 @@ const localCss = {
   colBody: { display: 'flex', flexDirection: 'column', gap: 8 },
   colEmpty: { fontSize: 12, color: '#94A3B8', textAlign: 'center', padding: '24px 0' },
 
-  card: { background: '#FAFAFA', border: '1px solid #E5E7EB', borderRadius: 8, padding: '12px 14px', display: 'flex', flexDirection: 'column', gap: 4, cursor: 'pointer', transition: 'all 0.15s', textDecoration: 'none' },
+  card: { background: '#FAFAFA', border: '1px solid #E5E7EB', borderRadius: 8, padding: '12px 14px', display: 'flex', flexDirection: 'column', gap: 4, cursor: 'grab', transition: 'all 0.15s', textDecoration: 'none' },
   cardActive: { background: '#FFF7ED', border: '1.5px solid #FCA5A5', boxShadow: '0 4px 12px rgba(234,88,12,0.12)' },
+  cardDragging: { opacity: 0.4 },
+
+  toolbar: { display: 'flex', alignItems: 'center', gap: 8 },
+  search: { flex: '0 1 320px', padding: '9px 12px', border: '1px solid #D1D5DB', borderRadius: 8, fontSize: 13, color: '#1A1A1A', fontFamily: 'inherit', outline: 'none' },
+  searchClear: { padding: '8px 12px', border: '1px solid #D1D5DB', borderRadius: 8, background: '#fff', color: '#525252', fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' },
+  dragHint: { marginLeft: 'auto', fontSize: 11.5, color: '#94A3B8', fontWeight: 600 },
+  colOver: { background: '#FFF7ED', borderColor: '#FCA5A5' },
   overlay: { position: 'fixed', inset: 0, background: 'rgba(15,23,42,0.55)', zIndex: 50 },
   panel: { position: 'absolute', top: 16, left: 16, right: 16, bottom: 16, background: '#FAFAFA', borderRadius: 14, overflow: 'hidden', boxShadow: '0 20px 60px rgba(0,0,0,0.35)', display: 'flex', flexDirection: 'column' },
   cardName: { fontSize: 13.5, fontWeight: 800, color: '#1A1A1A' },

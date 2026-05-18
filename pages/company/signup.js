@@ -3,20 +3,12 @@ import Head from 'next/head';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { supabase } from '../../lib/supabaseClient';
+import Brand from '../../components/company/Brand';
 
 const FREE_MAIL_DOMAINS = new Set([
   'gmail.com', 'naver.com', 'yahoo.com', 'hotmail.com', 'outlook.com',
   'icloud.com', 'daum.net', 'kakao.com', 'protonmail.com',
 ]);
-
-function Brand() {
-  return (
-    <Link href="/for-companies" style={css.brand}>
-      <span style={css.brandMark}>F</span>
-      <span style={css.brandWord}>FYI <span style={css.brandSub}>for companies</span></span>
-    </Link>
-  );
-}
 
 export default function CompanySignup() {
   const router = useRouter();
@@ -70,7 +62,7 @@ export default function CompanySignup() {
       <>
         <Head><title>인증 메일 발송됨 · FYI for Companies</title></Head>
         <div style={css.shell}>
-          <Brand />
+          <Brand style={{ marginBottom: 26 }} />
           <div style={css.sentCard}>
             <div style={css.sentIcon}>✉</div>
             <h1 style={css.sentH}>인증 메일을 보냈어요</h1>
@@ -92,7 +84,7 @@ export default function CompanySignup() {
     <>
       <Head><title>기업 계정 만들기 · FYI for Companies</title></Head>
       <div style={css.shell}>
-        <Brand />
+        <Brand style={{ marginBottom: 26 }} />
         <div style={css.card}>
           <h1 style={css.h}>기업 계정 만들기</h1>
           <p style={css.lead}>회사 이메일로 인증 링크를 보냅니다. 1분 내 도착.</p>
@@ -173,17 +165,6 @@ const css = {
     display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-start',
     padding: '44px 20px 48px',
   },
-  brand: {
-    display: 'flex', alignItems: 'center', gap: 9, marginBottom: 26,
-    textDecoration: 'none',
-  },
-  brandMark: {
-    width: 30, height: 30, borderRadius: 8,
-    background: 'linear-gradient(135deg,#ef4444,#f97316)', color: '#fff',
-    display: 'grid', placeItems: 'center', fontSize: 15, fontWeight: 800,
-  },
-  brandWord: { fontSize: 16, fontWeight: 800, color: '#111', letterSpacing: '-0.02em' },
-  brandSub: { fontSize: 12.5, color: '#9ca3af', fontWeight: 500, letterSpacing: 0 },
 
   card: {
     maxWidth: 460, width: '100%', padding: '40px 36px',

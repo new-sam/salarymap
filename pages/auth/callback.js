@@ -2,6 +2,11 @@ import { useEffect } from 'react'
 import { useRouter } from 'next/router'
 import { supabase } from '../../lib/supabaseClient'
 
+const FREE_MAIL_DOMAINS = new Set([
+  'gmail.com', 'naver.com', 'yahoo.com', 'hotmail.com', 'outlook.com',
+  'icloud.com', 'daum.net', 'kakao.com', 'protonmail.com',
+])
+
 // Save profile using the regular client (anon key is fine for own user via RLS)
 async function saveProfile(user) {
   if (process.env.NODE_ENV === 'development') return;
@@ -28,10 +33,15 @@ async function saveProfile(user) {
 async function saveCompanyRecruiter(user) {
   try {
     const companyName = typeof localStorage !== 'undefined' ? localStorage.getItem('fyi_company_name') : null;
-    const fullName = typeof localStorage !== 'undefined' ? localStorage.getItem('fyi_company_full_name') : null;
     const email = user.email || '';
     const emailDomain = email.includes('@') ? email.split('@')[1].toLowerCase() : null;
     if (!emailDomain) return;
+    if (FREE_MAIL_DOMAINS.has(emailDomain)) {
+      if (typeof localStorage !== 'undefined') {
+        localStorage.setItem('fyi_company_needs_setup', '1');
+      }
+      return;
+    }
 
     // 1) Find existing recruiter_company by domain
     let companyId = null;
@@ -66,11 +76,11 @@ async function saveCompanyRecruiter(user) {
     }
 
     // 3) Upsert recruiter_users row (one per user)
+    // full_name은 회사 설정 단계(completeCompanySetup)가 소유 — 여기서 덮어쓰지 않음
     await supabase.from('recruiter_users').upsert({
       user_id: user.id,
       company_id: companyId,
       email: user.email,
-      full_name: fullName,
       role: 'admin',
     }, { onConflict: 'user_id' });
 

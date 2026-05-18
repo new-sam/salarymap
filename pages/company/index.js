@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { supabase } from '../../lib/supabaseClient';
 import { Sidebar, css } from './jobs/new';
+import Brand from '../../components/company/Brand';
 
 const FREE_MAIL_DOMAINS = new Set([
   'gmail.com', 'naver.com', 'yahoo.com', 'hotmail.com', 'outlook.com',
@@ -51,10 +52,7 @@ export default function CompanyDashboard() {
   const [jobs, setJobs] = useState([]);
   const [appsCount, setAppsCount] = useState(0);
   const [appsByJob, setAppsByJob] = useState({});
-  const [loginEmail, setLoginEmail] = useState('');
-  const [signupEmail, setSignupEmail] = useState('');
-  const [signupName, setSignupName] = useState('');
-  const [signupCompany, setSignupCompany] = useState('');
+  const [email, setEmail] = useState('');
   const [authBusy, setAuthBusy] = useState(false);
   const [authErr, setAuthErr] = useState('');
   const [sentEmail, setSentEmail] = useState('');
@@ -62,7 +60,9 @@ export default function CompanyDashboard() {
   const [setupCompany, setSetupCompany] = useState('');
   const [setupBusy, setSetupBusy] = useState(false);
 
-  const sendCompanyOtp = async ({ email, fullName = '', companyName = '' }) => {
+  // 단일 입구: 회사 이메일로 매직링크 발송 (로그인/가입 공통)
+  const sendLink = async (e) => {
+    e.preventDefault();
     setAuthErr('');
     const trimmed = email.trim().toLowerCase();
     const domain = trimmed.split('@')[1];
@@ -70,43 +70,29 @@ export default function CompanyDashboard() {
       setAuthErr('회사 이메일을 입력해 주세요. gmail/naver 같은 개인 메일은 사용할 수 없습니다.');
       return;
     }
-
     setAuthBusy(true);
     try {
       if (typeof window !== 'undefined') {
         localStorage.setItem('fyi_intent', 'company');
         localStorage.setItem('fyi_login_return', '/company');
-        if (fullName.trim()) localStorage.setItem('fyi_company_full_name', fullName.trim());
-        if (companyName.trim()) localStorage.setItem('fyi_company_name', companyName.trim());
       }
       const redirectTo = typeof window !== 'undefined'
         ? `${window.location.origin}/auth/callback`
         : undefined;
       const { error } = await supabase.auth.signInWithOtp({
         email: trimmed,
-        options: { emailRedirectTo: redirectTo },
+        options: { emailRedirectTo: redirectTo, shouldCreateUser: true },
       });
       if (error) throw error;
       setSentEmail(trimmed);
-    } catch (e) {
-      setAuthErr(e?.message || '인증 메일을 보내지 못했습니다.');
+    } catch (err) {
+      setAuthErr(err?.message || '인증 링크를 보내지 못했습니다.');
     } finally {
       setAuthBusy(false);
     }
   };
 
-  const onLogin = (e) => {
-    e.preventDefault();
-    sendCompanyOtp({ email: loginEmail });
-  };
-
-  const onSignup = (e) => {
-    e.preventDefault();
-    if (!signupName.trim()) { setAuthErr('담당자 이름을 입력해 주세요.'); return; }
-    if (!signupCompany.trim()) { setAuthErr('회사명을 입력해 주세요.'); return; }
-    sendCompanyOtp({ email: signupEmail, fullName: signupName, companyName: signupCompany });
-  };
-
+  // 인증 후 회사 연결이 없는 사용자가 회사 정보를 입력하는 단계
   const completeCompanySetup = async (e) => {
     e.preventDefault();
     setAuthErr('');
@@ -157,12 +143,6 @@ export default function CompanyDashboard() {
       }, { onConflict: 'user_id' });
       if (userError) throw userError;
 
-      if (typeof window !== 'undefined') {
-        localStorage.removeItem('fyi_company_name');
-        localStorage.removeItem('fyi_company_full_name');
-        localStorage.removeItem('fyi_company_needs_setup');
-      }
-
       setCompanyName(resolvedCompanyName);
       setFullName(setupName.trim());
       setJobs([]);
@@ -179,6 +159,8 @@ export default function CompanyDashboard() {
   useEffect(() => {
     let mounted = true;
     (async () => {
+      if (!router.isReady) return;
+
       const { data } = await supabase.auth.getSession();
       if (!mounted) return;
       if (!data.session) { setStatus('unauthed'); return; }
@@ -192,85 +174,53 @@ export default function CompanyDashboard() {
       if (rec?.recruiter_companies?.name) setCompanyName(rec.recruiter_companies.name);
       if (rec?.full_name) setFullName(rec.full_name);
 
-      if (rec?.company_id) {
-        const { data: jobsData } = await supabase
-          .from('jobs')
-          .select('id, title, location, type, status, salary_min, salary_max, experience_min, experience_max, created_at, is_active')
-          .eq('company_id', rec.company_id)
-          .order('created_at', { ascending: false });
-        const jobList = jobsData || [];
-        setJobs(jobList);
-
-        if (jobList.length > 0) {
-          const ids = jobList.map(j => j.id);
-          const { data: appsData } = await supabase
-            .from('job_applications')
-            .select('id, job_id, status')
-            .in('job_id', ids);
-
-          const apps = appsData || [];
-          setAppsCount(apps.length);
-          const grouped = {};
-          apps.forEach(a => {
-            if (!grouped[a.job_id]) grouped[a.job_id] = { total: 0, new: 0 };
-            grouped[a.job_id].total += 1;
-            if (a.status === 'applied') grouped[a.job_id].new += 1;
-          });
-          setAppsByJob(grouped);
-        }
-      } else {
-        if (typeof window !== 'undefined') {
-          const cachedCompany = localStorage.getItem('fyi_company_name') || '';
-          const needsSetup = localStorage.getItem('fyi_company_needs_setup') === '1';
-          if (!needsSetup && !cachedCompany) {
-            setStatus('unauthed');
-            return;
-          }
-          setSetupCompany(cachedCompany);
-          setSetupName(localStorage.getItem('fyi_company_full_name') || rec?.full_name || '');
-        } else {
-          setSetupName(rec?.full_name || '');
-        }
+      // 세션은 있지만 회사 연결이 없으면 → 회사 정보 설정 단계
+      if (!rec?.company_id) {
+        setSetupName(rec?.full_name || '');
         setStatus('needs_company');
         return;
+      }
+
+      const { data: jobsData } = await supabase
+        .from('jobs')
+        .select('id, title, location, type, status, salary_min, salary_max, experience_min, experience_max, created_at, is_active')
+        .eq('company_id', rec.company_id)
+        .order('created_at', { ascending: false });
+      const jobList = jobsData || [];
+      setJobs(jobList);
+
+      if (jobList.length > 0) {
+        const ids = jobList.map(j => j.id);
+        const { data: appsData } = await supabase
+          .from('job_applications')
+          .select('id, job_id, status')
+          .in('job_id', ids);
+
+        const apps = appsData || [];
+        setAppsCount(apps.length);
+        const grouped = {};
+        apps.forEach(a => {
+          if (!grouped[a.job_id]) grouped[a.job_id] = { total: 0, new: 0 };
+          grouped[a.job_id].total += 1;
+          if (a.status === 'applied') grouped[a.job_id].new += 1;
+        });
+        setAppsByJob(grouped);
       }
       setStatus('ready');
     })();
     return () => { mounted = false; };
-  }, []);
+  }, [router.isReady]);
 
   if (status === 'loading') return <div style={css.loading}>Loading…</div>;
+
   if (status === 'unauthed') {
+    const signupFrame = router.query.mode === 'signup';
     return (
       <>
-        <Head><title>기업 로그인 · FYI for Companies</title></Head>
-        <style>{`
-          @media (max-width: 760px) {
-            .company-auth-shell {
-              padding: 24px 18px 44px !important;
-            }
-            .company-auth-grid {
-              grid-template-columns: 1fr !important;
-              gap: 28px !important;
-            }
-            .company-auth-hero {
-              padding-top: 8px !important;
-            }
-            .company-auth-panel {
-              padding: 24px 20px !important;
-              width: 100% !important;
-              min-width: 0 !important;
-            }
-            .company-auth-two-cols {
-              grid-template-columns: 1fr !important;
-            }
-          }
-        `}</style>
+        <Head><title>{signupFrame ? '회사 계정 만들기' : '기업 로그인'} · FYI for Companies</title></Head>
+        <style>{authResponsiveCss}</style>
         <div className="company-auth-shell" style={localCss.authShell}>
-          <Link href="/for-companies" style={localCss.authBrand}>
-            <span style={localCss.authLogo}>F</span>
-            <span>salary-fyi <em style={localCss.authBrandSub}>for companies</em></span>
-          </Link>
+          <Brand href="/for-companies" style={{ marginBottom: 58 }} />
 
           <div className="company-auth-grid" style={localCss.authGrid}>
             <section className="company-auth-hero" style={localCss.authHero}>
@@ -297,72 +247,38 @@ export default function CompanyDashboard() {
                   <h2 style={localCss.panelTitle}>메일을 확인해 주세요.</h2>
                   <p style={localCss.panelCopy}>
                     <b>{sentEmail}</b><br />
-                    인증 링크를 누르면 기업 대시보드로 이동합니다.
+                    인증 링크를 보냈습니다. 링크를 열면 자동으로 로그인되고,
+                    신규 회사면 다음 단계에서 회사 정보를 입력합니다.
                   </p>
-                  <button type="button" onClick={() => setSentEmail('')} style={localCss.secondaryBtn}>
-                    다른 이메일 입력
+                  <button type="button" onClick={() => setSentEmail('')} style={localCss.resendLink}>
+                    메일이 안 왔나요? 다른 이메일로 다시 시도
                   </button>
                 </div>
               ) : (
-                <>
-                  <form onSubmit={onLogin} style={localCss.form}>
-                    <h2 style={localCss.panelTitle}>기업 로그인</h2>
-                    <p style={localCss.panelCopy}>이미 기업 계정이 있는 회사 이메일만 사용하세요.</p>
-                    <label style={localCss.label}>회사 이메일</label>
-                    <input
-                      type="email"
-                      value={loginEmail}
-                      onChange={(e) => setLoginEmail(e.target.value)}
-                      placeholder="you@company.com"
-                      style={localCss.input}
-                      required
-                    />
-                    <button type="submit" disabled={authBusy} style={localCss.primaryBtn}>
-                      {authBusy ? '메일 발송 중...' : '이메일로 로그인'}
-                    </button>
-                  </form>
-
-                  <div style={localCss.divider}><span>처음이신가요?</span></div>
-
-                  <form onSubmit={onSignup} style={localCss.form}>
-                    <p style={localCss.panelCopy}>처음이라면 회사 정보를 입력해 별도 기업 계정을 만듭니다.</p>
-                    <label style={localCss.label}>회사 이메일</label>
-                    <input
-                      type="email"
-                      value={signupEmail}
-                      onChange={(e) => setSignupEmail(e.target.value)}
-                      placeholder="you@company.com"
-                      style={localCss.input}
-                      required
-                    />
-                    <div className="company-auth-two-cols" style={localCss.twoCols}>
-                      <div>
-                        <label style={localCss.label}>담당자 이름</label>
-                        <input
-                          value={signupName}
-                          onChange={(e) => setSignupName(e.target.value)}
-                          placeholder="홍길동"
-                          style={localCss.input}
-                          required
-                        />
-                      </div>
-                      <div>
-                        <label style={localCss.label}>회사명</label>
-                        <input
-                          value={signupCompany}
-                          onChange={(e) => setSignupCompany(e.target.value)}
-                          placeholder="ACME Vietnam"
-                          style={localCss.input}
-                          required
-                        />
-                      </div>
-                    </div>
-                    {authErr && <div style={localCss.authErr}>{authErr}</div>}
-                    <button type="submit" disabled={authBusy} style={localCss.secondaryBtn}>
-                      {authBusy ? '메일 발송 중...' : '회사 계정 만들기'}
-                    </button>
-                  </form>
-                </>
+                <form onSubmit={sendLink} style={localCss.form}>
+                  <h2 style={localCss.panelTitle}>{signupFrame ? '회사 계정 만들기' : '기업 로그인'}</h2>
+                  <p style={localCss.panelCopy}>
+                    회사 이메일을 입력하면 로그인 또는 가입이 한 번에 진행됩니다.<br />
+                    인증 후에는 이 브라우저에서 로그인 상태가 유지됩니다.
+                  </p>
+                  <label style={localCss.label}>회사 이메일</label>
+                  <input
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="you@company.com"
+                    style={localCss.input}
+                    required
+                  />
+                  <div style={localCss.note}>gmail·naver 등 개인 메일은 사용할 수 없습니다.</div>
+                  {authErr && <div style={localCss.authErr}>{authErr}</div>}
+                  <button type="submit" disabled={authBusy} style={localCss.primaryBtn}>
+                    {authBusy ? '인증 링크 발송 중…' : '계속하기'}
+                  </button>
+                  <div style={localCss.legalNote}>
+                    계속하기를 누르면 이용약관과 개인정보처리방침에 동의하는 것으로 간주됩니다.
+                  </div>
+                </form>
               )}
             </section>
           </div>
@@ -377,17 +293,14 @@ export default function CompanyDashboard() {
         <Head><title>기업 계정 설정 · FYI for Companies</title></Head>
         <style>{authResponsiveCss}</style>
         <div className="company-auth-shell" style={localCss.authShell}>
-          <Link href="/for-companies" style={localCss.authBrand}>
-            <span style={localCss.authLogo}>F</span>
-            <span>salary-fyi <em style={localCss.authBrandSub}>for companies</em></span>
-          </Link>
+          <Brand href="/for-companies" style={{ marginBottom: 58 }} />
 
           <div className="company-auth-grid" style={localCss.authGrid}>
             <section className="company-auth-hero" style={localCss.authHero}>
               <div style={localCss.authKicker}>COMPANY SETUP</div>
               <h1 style={localCss.authTitle}>
-                기업 계정을<br />
-                완료하세요.
+                거의 다<br />
+                됐어요.
               </h1>
               <p style={localCss.authCopy}>
                 {user?.email}<br />
@@ -397,9 +310,9 @@ export default function CompanyDashboard() {
 
             <section className="company-auth-panel" style={localCss.authPanel}>
               <form onSubmit={completeCompanySetup} style={localCss.form}>
-                <h2 style={localCss.panelTitle}>회사 정보 확인</h2>
+                <h2 style={localCss.panelTitle}>회사 정보 입력</h2>
                 <p style={localCss.panelCopy}>
-                  이 단계가 끝나야 기업 대시보드와 공고 관리가 열립니다.
+                  이 단계가 끝나면 기업 대시보드와 공고 관리가 열립니다.
                 </p>
                 <div className="company-auth-two-cols" style={localCss.twoCols}>
                   <div>
@@ -537,27 +450,6 @@ const localCss = {
     fontFamily: "'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
     padding: '34px clamp(18px, 5vw, 64px) 56px',
   },
-  authBrand: {
-    display: 'inline-flex',
-    alignItems: 'center',
-    gap: 9,
-    color: '#111',
-    textDecoration: 'none',
-    fontSize: 15,
-    fontWeight: 900,
-    marginBottom: 58,
-  },
-  authLogo: {
-    display: 'grid',
-    placeItems: 'center',
-    width: 30,
-    height: 30,
-    borderRadius: 8,
-    color: '#fff',
-    background: 'linear-gradient(135deg,#ef4444,#f97316)',
-    fontSize: 14,
-  },
-  authBrandSub: { color: '#9CA3AF', fontStyle: 'normal', fontSize: 12, marginLeft: 4 },
   authGrid: {
     display: 'grid',
     gridTemplateColumns: 'minmax(0, 0.95fr) minmax(380px, 0.72fr)',
@@ -608,6 +500,21 @@ const localCss = {
   panelCopy: { margin: '9px 0 20px', color: '#6B7280', fontSize: 13.5, lineHeight: 1.55, fontWeight: 600 },
   form: { display: 'flex', flexDirection: 'column', gap: 9 },
   label: { display: 'block', marginBottom: 6, color: '#374151', fontSize: 12, fontWeight: 800 },
+  note: {
+    margin: '4px 0 2px',
+    color: '#9CA3AF',
+    fontSize: 12,
+    lineHeight: 1.5,
+    fontWeight: 650,
+  },
+  legalNote: {
+    marginTop: 12,
+    color: '#9CA3AF',
+    fontSize: 11.5,
+    lineHeight: 1.5,
+    textAlign: 'center',
+    fontWeight: 600,
+  },
   input: {
     width: '100%',
     border: '1px solid #D1D5DB',
@@ -631,28 +538,21 @@ const localCss = {
     fontWeight: 900,
     fontFamily: 'inherit',
     cursor: 'pointer',
-  },
-  secondaryBtn: {
-    marginTop: 5,
-    width: '100%',
-    border: '1px solid rgba(249,115,22,0.24)',
-    borderRadius: 999,
-    padding: '14px 18px',
-    color: '#EA580C',
-    background: '#FFF7ED',
-    fontSize: 14.5,
-    fontWeight: 900,
-    fontFamily: 'inherit',
-    cursor: 'pointer',
-  },
-  divider: {
-    display: 'flex',
+    display: 'inline-flex',
     alignItems: 'center',
     justifyContent: 'center',
-    margin: '26px 0 22px',
+    gap: 8,
+  },
+  resendLink: {
+    marginTop: 20,
+    background: 'none',
+    border: 'none',
     color: '#9CA3AF',
     fontSize: 12,
-    fontWeight: 800,
+    fontWeight: 600,
+    fontFamily: 'inherit',
+    cursor: 'pointer',
+    textDecoration: 'underline',
   },
   twoCols: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 },
   authErr: {

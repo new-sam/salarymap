@@ -2,6 +2,7 @@ import Head from 'next/head';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { useEffect, useRef, useState } from 'react';
+import Brand from '../components/company/Brand';
 
 function CountUp({ end, decimals = 0, duration = 1200, suffix = '' }) {
   const [val, setVal] = useState(0);
@@ -182,10 +183,7 @@ export default function ForCompanies() {
       `}</style>
       <div style={css.page}>
         <nav className="fc-company-nav" style={css.nav}>
-          <Link href="/" style={css.logo}>
-            <span style={css.logoMark}>F</span>
-            <span>salary-fyi <span style={css.logoSub}>for companies</span></span>
-          </Link>
+          <Brand href="/" />
           <div className="fc-company-nav-links" style={css.navLinks}>
             <a href="#offer" style={css.navLink}>제공 내용</a>
             <a href="#how" style={css.navLink}>진행 방식</a>
@@ -193,7 +191,7 @@ export default function ForCompanies() {
           </div>
           <div style={css.navRight}>
             <Link href="/company" style={css.btnGhost}>기업 로그인</Link>
-            <Link href="/company" style={css.btnPrimary}>무료로 공고 올리기</Link>
+            <Link href="/company?mode=signup" style={css.btnPrimary}>무료로 공고 올리기</Link>
           </div>
         </nav>
 
@@ -209,7 +207,7 @@ export default function ForCompanies() {
                 공고만 올리면 후보 추천부터 면접 관리까지 FYI가 정리합니다.
               </p>
               <div className="fc-hero-ctas" style={css.heroCtas}>
-                <button type="button" onClick={() => router.push('/company')} style={css.btnAccent}>
+                <button type="button" onClick={() => router.push('/company?mode=signup')} style={css.btnAccent}>
                   무료로 공고 올리기
                 </button>
                 <a href="#offer" style={css.textLink}>제공 내용 보기 →</a>
@@ -356,7 +354,7 @@ export default function ForCompanies() {
               무료로 올려보세요.
             </h2>
             <p style={css.ctaSub}>회사 이메일 인증 후 바로 시작할 수 있습니다.</p>
-            <button type="button" onClick={() => router.push('/company')} style={css.btnAccent}>
+            <button type="button" onClick={() => router.push('/company?mode=signup')} style={css.btnAccent}>
               기업 계정 만들기
             </button>
           </section>
@@ -388,26 +386,6 @@ const css = {
     borderBottom: '1px solid rgba(255,255,255,0.08)',
     flexWrap: 'wrap',
   },
-  logo: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: 8,
-    fontSize: 15,
-    fontWeight: 850,
-    color: '#fff',
-    textDecoration: 'none',
-  },
-  logoMark: {
-    width: 26,
-    height: 26,
-    borderRadius: 7,
-    background: 'linear-gradient(135deg,#ef4444,#f97316)',
-    display: 'grid',
-    placeItems: 'center',
-    fontSize: 13,
-    fontWeight: 900,
-  },
-  logoSub: { color: 'rgba(255,255,255,0.48)', fontSize: 12, fontWeight: 600, marginLeft: 4 },
   navLinks: { display: 'flex', gap: 22, fontSize: 13, color: 'rgba(255,255,255,0.64)' },
   navLink: { textDecoration: 'none', fontWeight: 700 },
   navRight: { display: 'flex', gap: 8, marginLeft: 'auto' },

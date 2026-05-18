@@ -3,6 +3,7 @@ import Head from 'next/head';
 import { useRouter } from 'next/router';
 import Link from 'next/link';
 import { supabase } from '../../../lib/supabaseClient';
+import Brand from '../../../components/company/Brand';
 
 const ROLES = ['Backend', 'Frontend', 'Fullstack', 'Mobile', 'Data', 'DevOps', 'PM', 'Design', 'QA'];
 const TYPES = ['remote', 'onsite', 'hybrid'];
@@ -188,7 +189,39 @@ export default function NewJobPage() {
 
           <form onSubmit={onSubmit} style={css.formShell}>
             <div style={css.formCol}>
-              <h2 style={css.sectionTitle}>기본 정보</h2>
+              <h2 style={css.sectionTitle}>공고 대표 사진</h2>
+
+              <div style={css.row2}>
+                <Field label="대표 이미지 (카드 썸네일)">
+                  {form.image_url ? (
+                    <div style={localCss.imgRow}>
+                      <img src={form.image_url} alt="thumbnail" style={localCss.imgPreview} />
+                      <button type="button" onClick={() => setF('image_url', '')} style={localCss.imgRemove}>제거</button>
+                    </div>
+                  ) : (
+                    <input type="file" accept="image/*" disabled={uploading}
+                      onChange={(e) => e.target.files?.[0] && uploadImage(e.target.files[0], 'image_url')}
+                      style={localCss.fileInp} />
+                  )}
+                </Field>
+                <Field label="회사 로고 (작은 아이콘)">
+                  {form.logo_url ? (
+                    <div style={localCss.imgRow}>
+                      <img src={form.logo_url} alt="logo" style={localCss.logoPreview} />
+                      <button type="button" onClick={() => setF('logo_url', '')} style={localCss.imgRemove}>제거</button>
+                    </div>
+                  ) : (
+                    <input type="file" accept="image/*" disabled={uploading}
+                      onChange={(e) => e.target.files?.[0] && uploadImage(e.target.files[0], 'logo_url')}
+                      style={localCss.fileInp} />
+                  )}
+                </Field>
+              </div>
+              {uploading
+                ? <div style={localCss.uploadHint}>업로드 중...</div>
+                : <div style={localCss.photoHint}>사진을 올리면 오른쪽 미리보기 카드에 바로 반영됩니다.</div>}
+
+              <h2 style={{...css.sectionTitle, marginTop: 28}}>기본 정보</h2>
 
               <Field label="포지션명">
                 <input value={form.title} onChange={e => setF('title', e.target.value)} placeholder="Senior Backend Engineer" style={css.inp} />
@@ -240,36 +273,6 @@ export default function NewJobPage() {
                 </Field>
               </div>
 
-              <h2 style={{...css.sectionTitle, marginTop: 28}}>이미지</h2>
-
-              <div style={css.row2}>
-                <Field label="회사 로고 (작은 아이콘)">
-                  {form.logo_url ? (
-                    <div style={localCss.imgRow}>
-                      <img src={form.logo_url} alt="logo" style={localCss.logoPreview} />
-                      <button type="button" onClick={() => setF('logo_url', '')} style={localCss.imgRemove}>제거</button>
-                    </div>
-                  ) : (
-                    <input type="file" accept="image/*" disabled={uploading}
-                      onChange={(e) => e.target.files?.[0] && uploadImage(e.target.files[0], 'logo_url')}
-                      style={localCss.fileInp} />
-                  )}
-                </Field>
-                <Field label="공고 대표 이미지 (카드 썸네일)">
-                  {form.image_url ? (
-                    <div style={localCss.imgRow}>
-                      <img src={form.image_url} alt="thumbnail" style={localCss.imgPreview} />
-                      <button type="button" onClick={() => setF('image_url', '')} style={localCss.imgRemove}>제거</button>
-                    </div>
-                  ) : (
-                    <input type="file" accept="image/*" disabled={uploading}
-                      onChange={(e) => e.target.files?.[0] && uploadImage(e.target.files[0], 'image_url')}
-                      style={localCss.fileInp} />
-                  )}
-                </Field>
-              </div>
-              {uploading && <div style={localCss.uploadHint}>업로드 중...</div>}
-
               <h2 style={{...css.sectionTitle, marginTop: 28}}>스킬·복지·기타</h2>
 
               <Field label="기술 스택 (콤마 구분)">
@@ -294,11 +297,30 @@ export default function NewJobPage() {
 
             <aside style={css.previewCol}>
               <div style={css.previewLabel}>미리보기 · /jobs 피드</div>
-              <div style={css.previewCard}>
-                <div style={css.pTitle}>{form.title || '포지션명'}</div>
-                <div style={css.pMeta}>{companyName} · ₫{Math.round(form.salary_min/1e6)}M–{Math.round(form.salary_max/1e6)}M/월 · {form.experience_min}–{form.experience_max}y</div>
-                <div style={css.pMeta}>{(form.tech_stack || '').split(',').filter(s => s.trim()).slice(0, 3).join(' · ')}</div>
-                <div style={css.pLoc}>📍 {form.location} · {form.type}</div>
+              <div style={localCss.pvCard}>
+                {form.image_url
+                  ? <img src={form.image_url} alt="" style={localCss.pvImg} />
+                  : <div style={localCss.pvImgEmpty}>📷 대표 사진을 올려보세요</div>}
+                <div style={localCss.pvBody}>
+                  <div style={localCss.pvCompanyRow}>
+                    {form.logo_url
+                      ? <img src={form.logo_url} alt="" style={localCss.pvLogo} />
+                      : <div style={localCss.pvLogoEmpty} />}
+                    <span style={localCss.pvCompany}>{companyName || '회사명'}</span>
+                  </div>
+                  <div style={localCss.pvTitle}>{form.title || '포지션명'}</div>
+                  <div style={localCss.pvSalary}>
+                    ₫{Math.round(form.salary_min/1e6)}M–{Math.round(form.salary_max/1e6)}M/월
+                  </div>
+                  {(form.tech_stack || '').trim() && (
+                    <div style={localCss.pvTags}>
+                      {form.tech_stack.split(',').map(s => s.trim()).filter(Boolean).slice(0, 4).map(t => (
+                        <span key={t} style={localCss.pvTag}>{t}</span>
+                      ))}
+                    </div>
+                  )}
+                  <div style={localCss.pvLoc}>📍 {form.location} · {form.type} · {form.experience_min}–{form.experience_max}y</div>
+                </div>
               </div>
             </aside>
 
@@ -357,12 +379,14 @@ export function Sidebar({ companyName, userEmail, activePage = 'home', activeJob
   return (
     <aside style={css.sidebar}>
       <div style={css.sideHead}>
+        <Brand href="/company" size="sm" style={{ marginBottom: 12 }} />
         <div style={css.sideCompany}>{companyName || '내 회사'}</div>
         <div style={css.sideUser}>{userEmail}</div>
       </div>
       <nav style={css.sideNav}>
         <Link href="/company" style={{...css.navItem, ...(isActive('home') ? css.navItemActive : {})}}><span style={css.navIco}>🏠</span>대시보드</Link>
         <Link href="/company/jobs/new" style={css.navItem}><span style={css.navIco}>➕</span>새 공고</Link>
+        <Link href="/company/calendar" style={{...css.navItem, ...(isActive('calendar') ? css.navItemActive : {})}}><span style={css.navIco}>📅</span>면접 일정</Link>
       </nav>
 
       {jobs.length > 0 && (
@@ -466,4 +490,20 @@ const localCss = {
   imgPreview: { height: 60, width: 100, borderRadius: 6, objectFit: 'cover' },
   imgRemove: { marginLeft: 'auto', padding: '5px 10px', fontSize: 11, color: '#B91C1C', background: '#FEF2F2', border: '1px solid #FECACA', borderRadius: 5, cursor: 'pointer', fontFamily: 'inherit', fontWeight: 700 },
   uploadHint: { fontSize: 12, color: '#EA580C', fontWeight: 600, marginTop: -8, marginBottom: 14 },
+  photoHint: { fontSize: 11.5, color: '#94A3B8', marginTop: -8, marginBottom: 14, fontWeight: 600 },
+
+  // 미리보기 — 실제 /jobs 피드 카드 형태
+  pvCard: { background: '#fff', border: '1px solid #E5E7EB', borderRadius: 10, overflow: 'hidden' },
+  pvImg: { width: '100%', height: 140, objectFit: 'cover', display: 'block' },
+  pvImgEmpty: { width: '100%', height: 140, background: '#F1F5F9', display: 'grid', placeItems: 'center', color: '#94A3B8', fontSize: 12.5, fontWeight: 700 },
+  pvBody: { padding: 14 },
+  pvCompanyRow: { display: 'flex', alignItems: 'center', gap: 6, marginBottom: 7 },
+  pvLogo: { width: 20, height: 20, borderRadius: 5, objectFit: 'contain', background: '#F4F4F5' },
+  pvLogoEmpty: { width: 20, height: 20, borderRadius: 5, background: '#E5E7EB' },
+  pvCompany: { fontSize: 11.5, color: '#737373', fontWeight: 700 },
+  pvTitle: { fontSize: 15, fontWeight: 800, color: '#1A1A1A', marginBottom: 6, lineHeight: 1.3 },
+  pvSalary: { fontSize: 13, color: '#059669', fontWeight: 800, marginBottom: 7 },
+  pvTags: { display: 'flex', flexWrap: 'wrap', gap: 5, marginBottom: 8 },
+  pvTag: { fontSize: 10.5, fontWeight: 700, color: '#525252', background: '#F1F5F9', padding: '3px 8px', borderRadius: 999 },
+  pvLoc: { fontSize: 11.5, color: '#737373' },
 };
