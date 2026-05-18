@@ -183,15 +183,14 @@ export default function AdminDashboard() {
 
   const dailyWithToday = (() => {
     if (!data?.daily) return data?.daily
-    // Merge GA4 sessions + conversions into daily data
+    // Merge GA4 sessions into daily data
     const ga4Map = {}
     if (ga4?.daily) {
-      for (const d of ga4.daily) ga4Map[d.date] = { sessions: d.sessions, conversions: d.conversions, totalUsers: d.totalUsers, newUsers: d.newUsers, engagedSessions: d.engagedSessions }
+      for (const d of ga4.daily) ga4Map[d.date] = { sessions: d.sessions, totalUsers: d.totalUsers, newUsers: d.newUsers, engagedSessions: d.engagedSessions }
     }
     let merged = data.daily.map(d => ({
       ...d,
       sessions: ga4Map[d.date]?.sessions ?? 0,
-      conversions: ga4Map[d.date]?.conversions ?? 0,
       ga4Users: ga4Map[d.date]?.totalUsers ?? 0,
       ga4NewUsers: ga4Map[d.date]?.newUsers ?? 0,
       ga4Engaged: ga4Map[d.date]?.engagedSessions ?? 0,
@@ -222,7 +221,6 @@ export default function AdminDashboard() {
     const base = {
       ...data.summary,
       totalSessions: ga4?.totals?.sessions ?? 0,
-      totalConversions: ga4?.totals?.conversions ?? 0,
       ga4TotalUsers: ga4?.totals?.totalUsers ?? 0,
       ga4NewUsers: ga4?.totals?.newUsers ?? 0,
       ga4EngagedSessions: ga4?.totals?.engagedSessions ?? 0,
@@ -620,7 +618,6 @@ export default function AdminDashboard() {
                       <tr key={i} style={{ borderBottom: '1px solid #f3f4f6', background: i % 2 === 0 ? '#fff' : '#fafafa' }}>
                         <td style={{ padding: '6px 12px' }}>{d.date}</td>
                         <td style={{ padding: '6px 12px', textAlign: 'right', color: '#2563EB', fontWeight: 600 }}>{d.sessions ?? '-'}</td>
-                        <td style={{ padding: '6px 12px', textAlign: 'right', color: '#059669' }}>{d.conversions ?? '-'}</td>
                         <td style={{ padding: '6px 12px', textAlign: 'right', fontWeight: 600 }}>{d.submissions}</td>
                         <td style={{ padding: '6px 12px', textAlign: 'right', color: '#4F46E5' }}>{d.ad}</td>
                         <td style={{ padding: '6px 12px', textAlign: 'right', color: '#10B981' }}>{d.organic}</td>
@@ -637,7 +634,6 @@ export default function AdminDashboard() {
                     <tr style={{ borderTop: '2px solid #e5e7eb', fontWeight: 700 }}>
                       <td style={{ padding: '8px 12px' }}>{t.total}</td>
                       <td style={{ padding: '8px 12px', textAlign: 'right', color: '#2563EB' }}>{summary.totalSessions ?? '-'}</td>
-                      <td style={{ padding: '8px 12px', textAlign: 'right', color: '#059669' }}>{summary.totalConversions ?? '-'}</td>
                       <td style={{ padding: '8px 12px', textAlign: 'right' }}>{summary.totalSubmissions}</td>
                       <td style={{ padding: '8px 12px', textAlign: 'right', color: '#4F46E5' }}>{summary.adSubmissions}</td>
                       <td style={{ padding: '8px 12px', textAlign: 'right', color: '#10B981' }}>{summary.organicSubmissions}</td>

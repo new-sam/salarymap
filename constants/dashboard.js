@@ -31,9 +31,9 @@ export const T = {
     expDeleteConfirm: '이 실험 기록을 삭제하시겠습니까?',
     expEmpty: '아직 기록이 없습니다. 실험이나 개선 사항을 추가해보세요.',
     avg: '평균',
-    tableHeaders: ['날짜', '세션', '전환(GA4)', '전체', '광고', '자연유입', '가입', '회사', '홈→Jobs', '공고클릭', 'Jobs페이지뷰', '지원클릭', '스크랩', '채용지원'],
+    tableHeaders: ['날짜', '세션', '전체', '광고', '자연유입', '가입', '회사', '홈→Jobs', '공고클릭', 'Jobs페이지뷰', '지원클릭', '스크랩', '채용지원'],
     metrics: {
-      sessions: '세션 (GA4)', conversions: '전환 (GA4)', submissions: '제출', ad: '광고 (UTM)', organic: '자연유입',
+      sessions: '세션 (GA4)', submissions: '제출', ad: '광고 (UTM)', organic: '자연유입',
       signups: '가입', jobClicks: '홈→Jobs', cardClicks: '공고클릭', jobApps: '채용지원', companies: '회사',
       jobsPageViews: 'Jobs페이지뷰', applyClicks: '지원클릭', saveClicks: '스크랩',
     },
@@ -77,7 +77,6 @@ export const T = {
     ga4EngagedSessions: '참여 세션',
     ga4BounceRate: '이탈률',
     ga4AvgDuration: '평균 체류시간',
-    ga4Conversions: '전환',
     ga4ByChannel: '채널별',
     ga4ByDevice: '디바이스별',
     ga4LandingPages: '랜딩 페이지별',
@@ -126,9 +125,9 @@ export const T = {
     expDeleteConfirm: 'Delete this experiment?',
     expEmpty: 'No records yet. Add an experiment or improvement.',
     avg: 'avg',
-    tableHeaders: ['Date', 'Sessions', 'Conv(GA4)', 'Total', 'Ad', 'Organic', 'Sign-ups', 'Companies', 'Home→Jobs', 'Job Clicks', 'Jobs Page Views', 'Apply Clicks', 'Saves', 'Job Apps'],
+    tableHeaders: ['Date', 'Sessions', 'Total', 'Ad', 'Organic', 'Sign-ups', 'Companies', 'Home→Jobs', 'Job Clicks', 'Jobs Page Views', 'Apply Clicks', 'Saves', 'Job Apps'],
     metrics: {
-      sessions: 'Sessions (GA4)', conversions: 'Conversions (GA4)', submissions: 'Submissions', ad: 'Ad (UTM)', organic: 'Organic',
+      sessions: 'Sessions (GA4)', submissions: 'Submissions', ad: 'Ad (UTM)', organic: 'Organic',
       signups: 'Sign-ups', jobClicks: 'Home→Jobs', cardClicks: 'Job Clicks', jobApps: 'Job Apps', companies: 'Companies',
       jobsPageViews: 'Jobs Page Views', applyClicks: 'Apply Clicks', saveClicks: 'Saves',
     },
@@ -172,7 +171,6 @@ export const T = {
     ga4EngagedSessions: 'Engaged Sessions',
     ga4BounceRate: 'Bounce Rate',
     ga4AvgDuration: 'Avg Duration',
-    ga4Conversions: 'Conversions',
     ga4ByChannel: 'By Channel',
     ga4ByDevice: 'By Device',
     ga4LandingPages: 'Landing Pages',
@@ -193,7 +191,6 @@ export const T = {
 
 export const METRICS_BASE = [
   { key: 'sessions', dataKey: 'sessions', color: '#2563EB', summaryKey: 'totalSessions' },
-  { key: 'conversions', dataKey: 'conversions', color: '#059669', summaryKey: 'totalConversions' },
   { key: 'submissions', dataKey: 'submissions', color: '#374151', summaryKey: 'totalSubmissions' },
   { key: 'ad', dataKey: 'ad', color: '#4F46E5', summaryKey: 'adSubmissions' },
   { key: 'organic', dataKey: 'organic', color: '#10B981', summaryKey: 'organicSubmissions' },
@@ -209,7 +206,7 @@ export const METRICS_BASE = [
 
 export const EXP_COLORS = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7', '#DDA0DD', '#98D8C8', '#F7DC6F']
 
-export const DATA_KEYS = ['sessions', 'conversions', 'submissions', 'ad', 'organic', 'signups', 'companies', 'jobApps', 'jobClicks', 'cardClicks', 'jobsPageViews', 'applyClicks', 'saveClicks']
+export const DATA_KEYS = ['sessions', 'submissions', 'ad', 'organic', 'signups', 'companies', 'jobApps', 'jobClicks', 'cardClicks', 'jobsPageViews', 'applyClicks', 'saveClicks']
 
 export const FUNNEL_TRACKING_START = '2026-05-09'
 

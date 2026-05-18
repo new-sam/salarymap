@@ -117,7 +117,6 @@ export default function GA4View({ ga4, t }) {
               { label: t.ga4EngagedSessions, render: r => r.engagedSessions.toLocaleString() },
               { label: t.ga4BounceRate, render: r => <Pct value={r.bounceRate} />, style: { color: '#EF4444' } },
               { label: t.ga4AvgDuration, render: r => <Duration seconds={r.avgDuration} /> },
-              { label: t.ga4Conversions, render: r => r.conversions.toLocaleString(), style: { fontWeight: 600, color: '#10B981' } },
             ]}
             rows={channels}
           />
@@ -192,7 +191,6 @@ export default function GA4View({ ga4, t }) {
               { label: t.ga4TotalUsers, render: r => r.totalUsers.toLocaleString() },
               { label: t.ga4EngagedSessions, render: r => r.engagedSessions.toLocaleString() },
               { label: t.ga4BounceRate, render: r => <Pct value={r.bounceRate} />, style: { color: '#EF4444' } },
-              { label: t.ga4Conversions, render: r => r.conversions.toLocaleString(), style: { fontWeight: 600, color: '#10B981' } },
             ]}
             rows={landingPages}
           />

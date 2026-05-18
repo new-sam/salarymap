@@ -96,7 +96,7 @@ export default async function handler(req, res) {
       runReport({
         startDate: from, endDate: to,
         dimensions: ['date'],
-        metrics: ['sessions', 'totalUsers', 'newUsers', 'engagedSessions', 'conversions'],
+        metrics: ['sessions', 'totalUsers', 'newUsers', 'engagedSessions'],
         orderBys: [{ dimension: { dimensionName: 'date' } }],
       }).then(data => (data.rows || []).map(r => ({
         date: r.dimensionValues[0].value.replace(/(\d{4})(\d{2})(\d{2})/, '$1-$2-$3'),
@@ -104,13 +104,12 @@ export default async function handler(req, res) {
         totalUsers: parseInt(r.metricValues[1].value),
         newUsers: parseInt(r.metricValues[2].value),
         engagedSessions: parseInt(r.metricValues[3].value),
-        conversions: parseInt(r.metricValues[4].value),
       }))),
       // By channel
       runReport({
         startDate: from, endDate: to,
         dimensions: ['sessionDefaultChannelGroup'],
-        metrics: ['sessions', 'totalUsers', 'newUsers', 'engagedSessions', 'bounceRate', 'averageSessionDuration', 'conversions'],
+        metrics: ['sessions', 'totalUsers', 'newUsers', 'engagedSessions', 'bounceRate', 'averageSessionDuration'],
         orderBys: [{ metric: { metricName: 'sessions' }, desc: true }],
       }).then(data => (data.rows || []).map(r => ({
         channel: r.dimensionValues[0].value,
@@ -120,7 +119,6 @@ export default async function handler(req, res) {
         engagedSessions: parseInt(r.metricValues[3].value),
         bounceRate: parseFloat(r.metricValues[4].value),
         avgDuration: parseFloat(r.metricValues[5].value),
-        conversions: parseInt(r.metricValues[6].value),
       }))),
       // By device
       runReport({
@@ -140,7 +138,7 @@ export default async function handler(req, res) {
       runReport({
         startDate: from, endDate: to,
         dimensions: ['landingPage'],
-        metrics: ['sessions', 'totalUsers', 'engagedSessions', 'bounceRate', 'conversions'],
+        metrics: ['sessions', 'totalUsers', 'engagedSessions', 'bounceRate'],
         orderBys: [{ metric: { metricName: 'sessions' }, desc: true }],
         limit: 20,
       }).then(data => (data.rows || []).map(r => ({
@@ -149,14 +147,13 @@ export default async function handler(req, res) {
         totalUsers: parseInt(r.metricValues[1].value),
         engagedSessions: parseInt(r.metricValues[2].value),
         bounceRate: parseFloat(r.metricValues[3].value),
-        conversions: parseInt(r.metricValues[4].value),
       }))),
       // Totals
       runReport({
         startDate: from, endDate: to,
-        metrics: ['sessions', 'totalUsers', 'newUsers', 'engagedSessions', 'bounceRate', 'averageSessionDuration', 'conversions'],
+        metrics: ['sessions', 'totalUsers', 'newUsers', 'engagedSessions', 'bounceRate', 'averageSessionDuration'],
       }).then(data => {
-        if (!data.rows?.length) return { sessions: 0, totalUsers: 0, newUsers: 0, engagedSessions: 0, bounceRate: 0, avgDuration: 0, conversions: 0 }
+        if (!data.rows?.length) return { sessions: 0, totalUsers: 0, newUsers: 0, engagedSessions: 0, bounceRate: 0, avgDuration: 0 }
         const r = data.rows[0]
         return {
           sessions: parseInt(r.metricValues[0].value),
@@ -165,7 +162,6 @@ export default async function handler(req, res) {
           engagedSessions: parseInt(r.metricValues[3].value),
           bounceRate: parseFloat(r.metricValues[4].value),
           avgDuration: parseFloat(r.metricValues[5].value),
-          conversions: parseInt(r.metricValues[6].value),
         }
       }),
       // Today
