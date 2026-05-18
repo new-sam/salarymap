@@ -7,6 +7,8 @@ from PIL import Image, ImageDraw, ImageFilter
 import os
 
 BASE = os.path.join(os.path.dirname(__file__), '..', 'public', 'ats-preview')
+# Raw capture holds PII — kept in scripts/ (outside the web-served public/ dir)
+RAW = os.path.join(os.path.dirname(__file__), 'candidate-detail-raw.png')
 WHITE = (255, 255, 255)
 
 # Very light blur — content remains mostly recognizable, the landing's scaling does the rest
@@ -25,7 +27,7 @@ WHITEOUT_RECTS = [
 ]
 
 def apply():
-    src = os.path.join(BASE, 'candidate-detail-raw.png')
+    src = RAW
     img = Image.open(src).convert('RGB')
 
     # Heavy blur over PDF area
@@ -43,7 +45,7 @@ def apply():
     print('wrote ats-candidate-detail-masked.png')
 
 def debug():
-    src = os.path.join(BASE, 'candidate-detail-raw.png')
+    src = RAW
     img = Image.open(src).convert('RGBA')
     overlay = Image.new('RGBA', img.size, (0, 0, 0, 0))
     draw = ImageDraw.Draw(overlay)
