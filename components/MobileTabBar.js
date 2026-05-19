@@ -83,7 +83,18 @@ export default function MobileTabBar() {
       `}</style>
 
       {showBubble && (
-        <div className="mtab-bubble" onClick={() => router.push('/profile')}>
+        <div className="mtab-bubble" onClick={async () => {
+          if (!isLoggedIn) {
+            localStorage.setItem('fyi_login_return', '/profile')
+            if (window.location.hostname === 'localhost') {
+              await supabase.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: window.location.origin + '/auth/callback' } })
+            } else {
+              window.location.href = '/api/auth/google?return=' + encodeURIComponent('/profile')
+            }
+          } else {
+            router.push('/profile')
+          }
+        }}>
           {t('mtab.resumeCta')}
         </div>
       )}
