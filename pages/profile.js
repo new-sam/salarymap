@@ -220,7 +220,7 @@ function completionScore(p) {
   if (!p) return 0
   const checks = [
     p.photo_url, p.full_name, p.headline, p.location,
-    p.resume_url, p.skills,
+    p.resume_url, Array.isArray(p.skills) ? p.skills.length > 0 : !!p.skills,
     p.university, p.experiences?.length > 0,
   ]
   return Math.round(checks.filter(Boolean).length / checks.length * 100)
@@ -324,6 +324,14 @@ export default function ProfilePage() {
           }
           setForm(formData)
           setInitialForm(formData)
+          // Auto-save Google name if DB is empty
+          if (!p.full_name && formData.full_name) {
+            fetch('/api/profile/talent', {
+              method: 'PUT',
+              headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
+              body: JSON.stringify({ full_name: formData.full_name }),
+            })
+          }
           if (!p.headline && !p.position) {
             setShowOnboard(true)
           }
@@ -365,7 +373,11 @@ export default function ProfilePage() {
     })
     // Refresh profile for completion score
     const res = await fetch('/api/profile/talent', { headers: { Authorization: `Bearer ${token}` } })
-    if (res.ok) { const { profile: p } = await res.json(); setProfile(p) }
+    if (res.ok) {
+      const { profile: p } = await res.json()
+      setProfile(p)
+      window.dispatchEvent(new CustomEvent('profile-updated', { detail: p }))
+    }
     setInitialForm({ ...form })
     setSaving(false)
     setMsg('Saved!')

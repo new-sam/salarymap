@@ -21,6 +21,16 @@ export default function GlobalNav({ activePage }) {
   }, [])
 
   useEffect(() => {
+    const onProfileUpdate = (e) => {
+      const p = e.detail
+      const checks = [p.photo_url, p.full_name, p.headline, p.location, p.resume_url, p.skills?.length > 0, p.university, p.experiences?.length > 0]
+      setProfileScore(Math.round(checks.filter(Boolean).length / checks.length * 100))
+    }
+    window.addEventListener('profile-updated', onProfileUpdate)
+    return () => window.removeEventListener('profile-updated', onProfileUpdate)
+  }, [])
+
+  useEffect(() => {
     supabase.auth.getSession().then(async ({ data: { session } }) => {
       if (session) {
         setIsLoggedIn(true)
@@ -40,6 +50,16 @@ export default function GlobalNav({ activePage }) {
           const bRes = await fetch(`/api/job-bookmarks?userId=${session.user.id}`)
           const bData = await bRes.json()
           if (bData.bookmarks) setSavedCount(bData.bookmarks.length)
+        } catch {}
+        try {
+          const pRes = await fetch('/api/profile/talent', { headers: { Authorization: `Bearer ${session.access_token}` } })
+          if (pRes.ok) {
+            const { profile: p } = await pRes.json()
+            if (p) {
+              const checks = [p.photo_url, p.full_name, p.headline, p.location, p.resume_url, p.skills?.length > 0, p.university, p.experiences?.length > 0]
+              setProfileScore(Math.round(checks.filter(Boolean).length / checks.length * 100))
+            }
+          }
         } catch {}
       }
       setReady(true)
@@ -159,7 +179,7 @@ export default function GlobalNav({ activePage }) {
                   <a href="/profile" className="gnav-menu-item" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                       <span>{t('nav.myProfile')}</span>
                       {profileScore != null && profileScore < 100 && (
-                        <span style={{ fontSize: 10, fontWeight: 700, color: profileScore >= 80 ? '#4ade80' : '#fbbf24', background: profileScore >= 80 ? 'rgba(74,222,128,0.1)' : 'rgba(251,191,36,0.1)', padding: '2px 8px', borderRadius: 100 }}>{profileScore}%</span>
+                        <span style={{ fontSize: 10, fontWeight: 700, color: profileScore >= 60 ? '#4ade80' : '#fbbf24', background: profileScore >= 60 ? 'rgba(74,222,128,0.1)' : 'rgba(251,191,36,0.1)', padding: '2px 8px', borderRadius: 100 }}>{profileScore}%</span>
                       )}
                     </a>
                     <a href="/my-applications" className="gnav-menu-item">{t('nav.myApplications')}</a>
