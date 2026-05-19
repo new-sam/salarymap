@@ -244,6 +244,7 @@ export default function ProfilePage() {
   const [aiProgress, setAiProgress] = useState({ percent: 0, message: '' })
   const [showLeaveConfirm, setShowLeaveConfirm] = useState(false)
   const [sharingResume, setSharingResume] = useState(false)
+  const [showPublishPrompt, setShowPublishPrompt] = useState(false)
   const pendingRoute = useRef(null)
   const photoRef = useRef(null)
   const resumeRef = useRef(null)
@@ -336,6 +337,10 @@ export default function ProfilePage() {
           }
           if (!p.headline && !p.position) {
             setShowOnboard(true)
+          }
+          if (router.query.from === 'ai-resume' && !p.hr_visible && completionScore(formData) >= 60) {
+            setShowPublishPrompt(true)
+            router.replace('/profile', undefined, { shallow: true })
           }
         }
       }
@@ -978,6 +983,38 @@ export default function ProfilePage() {
               style={{ width: '100%', padding: 12, borderRadius: 10, border: 'none', background: '#ff6000', color: '#fff', fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>
               OK
             </button>
+          </div>
+        </div>
+      )}
+
+      {showPublishPrompt && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.3)', zIndex: 1100, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}
+          onClick={() => setShowPublishPrompt(false)}>
+          <div onClick={e => e.stopPropagation()} style={{ background: '#fff', borderRadius: 16, maxWidth: 380, width: '100%', padding: '32px 28px', textAlign: 'center', fontFamily: "'Barlow', system-ui", boxShadow: '0 20px 60px rgba(0,0,0,0.15)' }}>
+            <div style={{ width: 48, height: 48, borderRadius: '50%', background: 'rgba(255,68,0,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
+              <span style={{ fontSize: 24 }}>&#128640;</span>
+            </div>
+            <div style={{ fontSize: 17, fontWeight: 800, color: '#111', marginBottom: 6 }}>{t('profile.publishPrompt.title')}</div>
+            <div style={{ fontSize: 13, color: 'rgba(0,0,0,0.5)', marginBottom: 24, lineHeight: 1.6 }}>{t('profile.publishPrompt.desc')}</div>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button onClick={() => setShowPublishPrompt(false)}
+                style={{ flex: 1, padding: 12, borderRadius: 10, border: '1px solid rgba(0,0,0,0.1)', background: '#fff', color: '#555', fontSize: 14, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>
+                {t('profile.publishPrompt.skip')}
+              </button>
+              <button onClick={async () => {
+                set('hr_visible', true)
+                setShowPublishPrompt(false)
+                const payload = { ...form, hr_visible: true, skills: form.skills ? form.skills.split(',').map(s => s.trim()).filter(Boolean) : [], yoe_months: form.yoe_months ? parseInt(form.yoe_months) : null, salary_min: form.salary_min ? parseInt(form.salary_min) * 1000000 : null, salary_max: form.salary_max ? parseInt(form.salary_max) * 1000000 : null }
+                delete payload.photo_url; delete payload.resume_url
+                await fetch('/api/profile/talent', { method: 'PUT', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify(payload) })
+                setInitialForm(prev => ({ ...prev, hr_visible: true }))
+                setMsg('Saved!')
+                setTimeout(() => setMsg(null), 2000)
+              }}
+                style={{ flex: 1, padding: 12, borderRadius: 10, border: 'none', background: '#ff4400', color: '#fff', fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>
+                {t('profile.publishPrompt.confirm')}
+              </button>
+            </div>
           </div>
         </div>
       )}

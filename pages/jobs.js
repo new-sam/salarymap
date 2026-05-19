@@ -1548,7 +1548,7 @@ export default function JobsPage() {
                       if (!parseRes.ok) throw new Error('parse failed')
                       setAiParsing(100)
                       await new Promise(r => setTimeout(r, 400))
-                      router.push('/profile')
+                      router.push('/profile?from=ai-resume')
                     } catch (err) {
                       console.error('AI profile parse error:', err)
                       alert(t('jobs.aiProfileError'))
