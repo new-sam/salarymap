@@ -35,7 +35,7 @@ function CustomSelect({ value, options, placeholder, onChange }) {
         borderRadius: 8, background: '#fff', color: value ? '#111' : 'rgba(0,0,0,0.3)',
         fontFamily: 'inherit', cursor: 'pointer', textAlign: 'left', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         transition: 'border-color .15s', outline: 'none',
-        ...(open ? { borderColor: '#ff6000' } : value ? { borderColor: 'rgba(34,197,94,0.4)', background: 'rgba(34,197,94,0.03)' } : {}),
+        ...(open ? { borderColor: '#ff6000' } : {}),
       }}>
         <span>{value || placeholder}</span>
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="rgba(0,0,0,0.3)" strokeWidth="2" style={{ transform: open ? 'rotate(180deg)' : 'none', transition: 'transform .2s' }}><path d="M6 9l6 6 6-6"/></svg>
@@ -219,9 +219,9 @@ const WORK_TYPES = ['Remote', 'Hybrid', 'On-site']
 function completionScore(p) {
   if (!p) return 0
   const checks = [
-    p.photo_url, p.full_name, p.headline, p.position, p.yoe_months != null,
-    p.location, p.resume_url, p.job_signal && p.job_signal !== 'passive',
-    p.salary_min,
+    p.photo_url, p.full_name, p.headline, p.location,
+    p.resume_url, p.skills,
+    p.university, p.experiences?.length > 0,
   ]
   return Math.round(checks.filter(Boolean).length / checks.length * 100)
 }
@@ -252,6 +252,7 @@ export default function ProfilePage() {
   const [initialForm, setInitialForm] = useState({})
   const set = (k, v) => setForm(prev => ({ ...prev, [k]: v }))
   const isDirty = JSON.stringify(form) !== JSON.stringify(initialForm)
+  const df = (k) => { const a = form[k], b = initialForm[k]; const changed = typeof a === 'object' ? JSON.stringify(a) !== JSON.stringify(b) : a !== b; return changed && a ? ' dirty' : '' }
   const isDirtyRef = useRef(false)
   isDirtyRef.current = isDirty
 
@@ -464,7 +465,7 @@ export default function ProfilePage() {
     </div>
   )
 
-  const score = completionScore(profile)
+  const score = completionScore(form)
 
   return (
     <>
@@ -482,7 +483,7 @@ export default function ProfilePage() {
         .pfield-label { font-size: 12px; font-weight: 700; color: rgba(0,0,0,0.5); letter-spacing: .02em; margin-bottom: 6px; }
         .pfield-value { font-size: 14px; color: #111; }
         .pinput { width: 100%; font-size: 14px; padding: 10px 12px; border: 1px solid rgba(0,0,0,0.12); border-radius: 8px; outline: none; font-family: inherit; background: #fff; color: #111; transition: border-color .15s; }
-        .pinput.filled { border-color: rgba(34,197,94,0.4); background: rgba(34,197,94,0.03); }
+        .pinput.dirty { border-color: rgba(34,197,94,0.4); background: rgba(34,197,94,0.03); }
         .pinput:focus { border-color: #ff6000; }
         .pinput::placeholder { color: rgba(0,0,0,0.25); }
         .ptextarea { min-height: 100px; resize: vertical; }
@@ -495,7 +496,7 @@ export default function ProfilePage() {
         .psave-inner { max-width: 580px; margin: 0 auto; }
         .psave { width: 100%; padding: 14px; background: #ff6000; color: #fff; border: none; border-radius: 10px; font-size: 14px; font-weight: 700; cursor: pointer; font-family: inherit; box-shadow: 0 4px 12px rgba(255,96,0,0.3); }
         .psave:disabled { opacity: 0.5; box-shadow: none; }
-        .pmsg { background: rgba(34,197,94,0.1); color: #16a34a; font-size: 13px; font-weight: 600; padding: 10px 16px; border-radius: 8px; margin-bottom: 16px; text-align: center; }
+        .pmsg { background: #fff; color: #111; font-size: 13px; font-weight: 600; padding: 10px 16px; border-radius: 8px; margin-bottom: 16px; text-align: center; border: 1px solid rgba(0,0,0,0.06); box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
         .pprogress { height: 6px; background: rgba(0,0,0,0.06); border-radius: 3px; margin-bottom: 8px; overflow: hidden; }
         .pprogress-fill { height: 100%; border-radius: 3px; transition: width .5s; }
         .pphoto-wrap { display: flex; align-items: center; gap: 16px; }
@@ -598,9 +599,9 @@ export default function ProfilePage() {
                   <div className="pfield">
                     <div className="pfield-label">{t('profile.salary')}</div>
                     <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                      <input className={`pinput${form.salary_min ? ' filled' : ''}`} inputMode="numeric" value={form.salary_min || ''} onChange={e => set('salary_min', e.target.value.replace(/[^0-9]/g, ''))} placeholder="" style={{ flex: 1 }} />
+                      <input className={`pinput${df('salary_min')}`} inputMode="numeric" value={form.salary_min || ''} onChange={e => set('salary_min', e.target.value.replace(/[^0-9]/g, ''))} placeholder="" style={{ flex: 1 }} />
                       <span style={{ color: 'rgba(0,0,0,0.25)' }}>~</span>
-                      <input className={`pinput${form.salary_max ? ' filled' : ''}`} inputMode="numeric" value={form.salary_max || ''} onChange={e => set('salary_max', e.target.value.replace(/[^0-9]/g, ''))} placeholder="" style={{ flex: 1 }} />
+                      <input className={`pinput${df('salary_max')}`} inputMode="numeric" value={form.salary_max || ''} onChange={e => set('salary_max', e.target.value.replace(/[^0-9]/g, ''))} placeholder="" style={{ flex: 1 }} />
                     </div>
                   </div>
                   <div className="pfield">
@@ -676,7 +677,7 @@ export default function ProfilePage() {
             </div>
             <div className="pfield">
               <div className="pfield-label">{t('profile.portfolio')}</div>
-              <input className={`pinput${form.portfolio_url ? ' filled' : ''}`} value={form.portfolio_url || ''} onChange={e => set('portfolio_url', e.target.value)} placeholder="" />
+              <input className={`pinput${df('portfolio_url')}`} value={form.portfolio_url || ''} onChange={e => set('portfolio_url', e.target.value)} placeholder="" />
             </div>
           </div>
 
@@ -685,7 +686,15 @@ export default function ProfilePage() {
             <div className="pfield">
               <div className="pfield-label">{t('profile.photo')}</div>
               <div className="pphoto-wrap">
-                {form.photo_url ? <img src={form.photo_url} className="pphoto" /> : (
+                {form.photo_url ? (
+                  <div style={{ position: 'relative' }}>
+                    <img src={form.photo_url} className="pphoto" />
+                    <button onClick={() => { set('photo_url', ''); setProfile(prev => ({ ...prev, photo_url: '' })); fetch('/api/profile/talent', { method: 'PUT', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify({ photo_url: '' }) }) }}
+                      style={{ position: 'absolute', top: -4, right: -4, width: 20, height: 20, borderRadius: '50%', border: 'none', background: 'rgba(0,0,0,0.5)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0 }}>
+                      <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="#fff" strokeWidth="1.5" strokeLinecap="round"><path d="M2 2l6 6M8 2l-6 6"/></svg>
+                    </button>
+                  </div>
+                ) : (
                   <div className="pphoto-placeholder"><span style={{ fontSize: 24, color: 'rgba(0,0,0,0.2)' }}>+</span></div>
                 )}
                 <div>
@@ -698,16 +707,16 @@ export default function ProfilePage() {
             <div className="pinline">
               <div className="pfield">
                 <div className="pfield-label">{t('profile.name')}</div>
-                <input className={`pinput${form.full_name ? ' filled' : ''}`} value={form.full_name || ''} onChange={e => set('full_name', e.target.value)} placeholder="" />
+                <input className={`pinput${df('full_name')}`} value={form.full_name || ''} onChange={e => set('full_name', e.target.value)} placeholder="" />
               </div>
               <div className="pfield">
                 <div className="pfield-label">{t('profile.location')}</div>
-                <input className={`pinput${form.location ? ' filled' : ''}`} value={form.location || ''} onChange={e => set('location', e.target.value)} placeholder="" />
+                <input className={`pinput${df('location')}`} value={form.location || ''} onChange={e => set('location', e.target.value)} placeholder="" />
               </div>
             </div>
             <div className="pfield">
               <div className="pfield-label">{t('profile.headline')}</div>
-              <input className={`pinput${form.headline ? ' filled' : ''}`} value={form.headline || ''} onChange={e => set('headline', e.target.value)} placeholder="" />
+              <input className={`pinput${df('headline')}`} value={form.headline || ''} onChange={e => set('headline', e.target.value)} placeholder="" />
             </div>
           </div>
 
@@ -716,7 +725,7 @@ export default function ProfilePage() {
           <div className="pcard">
             <div className="pcard-h">{t('profile.skills')}</div>
             <div className="pfield">
-              <input className={`pinput${form.skills ? ' filled' : ''}`} value={form.skills || ''} onChange={e => set('skills', e.target.value)} placeholder={t('profile.skills.ph')} />
+              <input className={`pinput${df('skills')}`} value={form.skills || ''} onChange={e => set('skills', e.target.value)} placeholder={t('profile.skills.ph')} />
               <div style={{ fontSize: 10, color: 'rgba(0,0,0,0.3)', marginTop: 4 }}>{t('profile.skills.hint')}</div>
             </div>
           </div>
@@ -727,21 +736,21 @@ export default function ProfilePage() {
             <div className="pinline">
               <div className="pfield">
                 <div className="pfield-label">{t('profile.university')}</div>
-                <input className={`pinput${form.university ? ' filled' : ''}`} value={form.university || ''} onChange={e => set('university', e.target.value)} placeholder="" />
+                <input className={`pinput${df('university')}`} value={form.university || ''} onChange={e => set('university', e.target.value)} placeholder="" />
               </div>
               <div className="pfield">
                 <div className="pfield-label">{t('profile.major')}</div>
-                <input className={`pinput${form.major ? ' filled' : ''}`} value={form.major || ''} onChange={e => set('major', e.target.value)} placeholder="" />
+                <input className={`pinput${df('major')}`} value={form.major || ''} onChange={e => set('major', e.target.value)} placeholder="" />
               </div>
             </div>
             <div className="pinline">
               <div className="pfield">
                 <div className="pfield-label">{t('profile.gradyear')}</div>
-                <input className={`pinput${form.graduation_year ? ' filled' : ''}`} value={form.graduation_year || ''} onChange={e => set('graduation_year', e.target.value)} placeholder="" />
+                <input className={`pinput${df('graduation_year')}`} value={form.graduation_year || ''} onChange={e => set('graduation_year', e.target.value)} placeholder="" />
               </div>
               <div className="pfield">
                 <div className="pfield-label">{t('profile.gpa')}</div>
-                <input className={`pinput${form.gpa ? ' filled' : ''}`} value={form.gpa || ''} onChange={e => set('gpa', e.target.value)} placeholder="e.g. 3.8 / 4.0" />
+                <input className={`pinput${df('gpa')}`} value={form.gpa || ''} onChange={e => set('gpa', e.target.value)} placeholder="e.g. 3.8 / 4.0" />
               </div>
             </div>
           </div>
@@ -761,20 +770,20 @@ export default function ProfilePage() {
                 <div className="pinline">
                   <div className="pfield">
                     <div className="pfield-label">{t('profile.exp.company')}</div>
-                    <input className={`pinput${exp.company ? ' filled' : ''}`} value={exp.company} onChange={e => { const arr = [...form.experiences]; arr[i] = { ...arr[i], company: e.target.value }; set('experiences', arr) }} placeholder="" />
+                    <input className={`pinput${df('experiences')}`} value={exp.company} onChange={e => { const arr = [...form.experiences]; arr[i] = { ...arr[i], company: e.target.value }; set('experiences', arr) }} placeholder="" />
                   </div>
                   <div className="pfield">
                     <div className="pfield-label">{t('profile.exp.role')}</div>
-                    <input className={`pinput${exp.role ? ' filled' : ''}`} value={exp.role} onChange={e => { const arr = [...form.experiences]; arr[i] = { ...arr[i], role: e.target.value }; set('experiences', arr) }} placeholder="" />
+                    <input className={`pinput${df('experiences')}`} value={exp.role} onChange={e => { const arr = [...form.experiences]; arr[i] = { ...arr[i], role: e.target.value }; set('experiences', arr) }} placeholder="" />
                   </div>
                 </div>
                 <div className="pfield">
                   <div className="pfield-label">{t('profile.exp.period')}</div>
-                  <input className={`pinput${exp.period ? ' filled' : ''}`} value={exp.period} onChange={e => { const arr = [...form.experiences]; arr[i] = { ...arr[i], period: e.target.value }; set('experiences', arr) }} placeholder="e.g. 2022.03 - 2024.01" />
+                  <input className={`pinput${df('experiences')}`} value={exp.period} onChange={e => { const arr = [...form.experiences]; arr[i] = { ...arr[i], period: e.target.value }; set('experiences', arr) }} placeholder="e.g. 2022.03 - 2024.01" />
                 </div>
                 <div className="pfield">
                   <div className="pfield-label">{t('profile.exp.desc')}</div>
-                  <textarea className={`pinput ptextarea${exp.desc ? ' filled' : ''}`} value={exp.desc} onChange={e => { const arr = [...form.experiences]; arr[i] = { ...arr[i], desc: e.target.value }; set('experiences', arr) }} placeholder="" style={{ minHeight: 60 }} />
+                  <textarea className={`pinput ptextarea${df('experiences')}`} value={exp.desc} onChange={e => { const arr = [...form.experiences]; arr[i] = { ...arr[i], desc: e.target.value }; set('experiences', arr) }} placeholder="" style={{ minHeight: 60 }} />
                 </div>
               </div>
             ))}
@@ -797,15 +806,15 @@ export default function ProfilePage() {
                 </div>
                 <div className="pfield">
                   <div className="pfield-label">{t('profile.projects.name')}</div>
-                  <input className={`pinput${proj.name ? ' filled' : ''}`} value={proj.name} onChange={e => { const arr = [...form.projects]; arr[i] = { ...arr[i], name: e.target.value }; set('projects', arr) }} placeholder="" />
+                  <input className={`pinput${df('projects')}`} value={proj.name} onChange={e => { const arr = [...form.projects]; arr[i] = { ...arr[i], name: e.target.value }; set('projects', arr) }} placeholder="" />
                 </div>
                 <div className="pfield">
                   <div className="pfield-label">{t('profile.projects.desc')}</div>
-                  <textarea className={`pinput ptextarea${proj.desc ? ' filled' : ''}`} value={proj.desc} onChange={e => { const arr = [...form.projects]; arr[i] = { ...arr[i], desc: e.target.value }; set('projects', arr) }} placeholder="" style={{ minHeight: 60 }} />
+                  <textarea className={`pinput ptextarea${df('projects')}`} value={proj.desc} onChange={e => { const arr = [...form.projects]; arr[i] = { ...arr[i], desc: e.target.value }; set('projects', arr) }} placeholder="" style={{ minHeight: 60 }} />
                 </div>
                 <div className="pfield">
                   <div className="pfield-label">{t('profile.projects.url')}</div>
-                  <input className={`pinput${proj.url ? ' filled' : ''}`} value={proj.url} onChange={e => { const arr = [...form.projects]; arr[i] = { ...arr[i], url: e.target.value }; set('projects', arr) }} placeholder="https://" />
+                  <input className={`pinput${df('projects')}`} value={proj.url} onChange={e => { const arr = [...form.projects]; arr[i] = { ...arr[i], url: e.target.value }; set('projects', arr) }} placeholder="https://" />
                 </div>
               </div>
             ))}
@@ -896,7 +905,7 @@ export default function ProfilePage() {
             <div style={{ fontSize: 15, fontWeight: 700, color: '#111', marginBottom: 6 }}>{t('profile.leave.title')}</div>
             <div style={{ fontSize: 13, color: 'rgba(0,0,0,0.45)', marginBottom: 20, lineHeight: 1.5 }}>{t('profile.leave.desc')}</div>
             <div style={{ display: 'flex', gap: 8 }}>
-              <button onClick={() => { setShowLeaveConfirm(false); setInitialForm({ ...form }); router.push(pendingRoute.current) }}
+              <button onClick={() => { setShowLeaveConfirm(false); setForm({ ...initialForm }); router.push(pendingRoute.current) }}
                 style={{ flex: 1, padding: 11, borderRadius: 8, border: '1px solid rgba(0,0,0,0.1)', background: '#fff', color: '#111', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>
                 {t('profile.leave.no')}
               </button>
