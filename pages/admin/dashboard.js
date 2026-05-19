@@ -30,6 +30,7 @@ export default function AdminDashboard() {
   const [tab, setTab] = useState('trend')
   const [funnelKeys, setFunnelKeys] = useState([])
   const [chartMode, setChartMode] = useState('1d')
+  const [dualAxis, setDualAxis] = useState(true)
   const [realtime, setRealtime] = useState(null)
   const [realtimeLoading, setRealtimeLoading] = useState(false)
   const [ga4, setGa4] = useState(null)
@@ -400,27 +401,40 @@ export default function AdminDashboard() {
               <div style={sectionStyle}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
                   <h3 style={{ ...sectionTitle, margin: 0 }}>{selectedMetrics.map(m => m.label).join(' + ')} {t.trend}</h3>
-                  <div style={{ display: 'flex', gap: 0, background: '#f3f4f6', borderRadius: 8, padding: 2 }}>
-                    {[
-                      { key: '1d', label: t.chart1d },
-                      { key: '3d', label: t.chart3d },
-                      { key: 'weekly', label: t.chartWeekly },
-                      { key: 'monthly', label: t.chartMonthly },
-                    ].map(m => (
-                      <button key={m.key} onClick={() => setChartMode(m.key)}
+                  <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                    {selectedMetrics.length === 2 && (
+                      <button onClick={() => setDualAxis(v => !v)}
                         style={{
-                          padding: '5px 12px', borderRadius: 6, fontSize: 12, fontWeight: 600,
-                          border: 'none', cursor: 'pointer', transition: 'all 0.15s',
-                          background: chartMode === m.key ? '#fff' : 'transparent',
-                          color: chartMode === m.key ? '#111' : '#999',
-                          boxShadow: chartMode === m.key ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
+                          padding: '5px 10px', borderRadius: 6, fontSize: 11, fontWeight: 600,
+                          border: '1px solid #d1d5db', cursor: 'pointer', transition: 'all 0.15s',
+                          background: dualAxis ? '#EEF2FF' : '#fff',
+                          color: dualAxis ? '#4F46E5' : '#999',
                         }}>
-                        {m.label}
+                        {lang === 'ko' ? (dualAxis ? 'Y축 분리' : 'Y축 공유') : (dualAxis ? 'Dual Y' : 'Shared Y')}
                       </button>
-                    ))}
+                    )}
+                    <div style={{ display: 'flex', gap: 0, background: '#f3f4f6', borderRadius: 8, padding: 2 }}>
+                      {[
+                        { key: '1d', label: t.chart1d },
+                        { key: '3d', label: t.chart3d },
+                        { key: 'weekly', label: t.chartWeekly },
+                        { key: 'monthly', label: t.chartMonthly },
+                      ].map(m => (
+                        <button key={m.key} onClick={() => setChartMode(m.key)}
+                          style={{
+                            padding: '5px 12px', borderRadius: 6, fontSize: 12, fontWeight: 600,
+                            border: 'none', cursor: 'pointer', transition: 'all 0.15s',
+                            background: chartMode === m.key ? '#fff' : 'transparent',
+                            color: chartMode === m.key ? '#111' : '#999',
+                            boxShadow: chartMode === m.key ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
+                          }}>
+                          {m.label}
+                        </button>
+                      ))}
+                    </div>
                   </div>
                 </div>
-                <MetricChart daily={chartData} metrics={selectedMetrics} experiments={chartMode === '1d' ? visibleExperiments : []} avgLabel={t.avg} lang={lang} />
+                <MetricChart daily={chartData} metrics={selectedMetrics} experiments={chartMode === '1d' ? visibleExperiments : []} avgLabel={t.avg} lang={lang} dualAxis={dualAxis} />
 
                 {visibleExperiments.length > 0 && (
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 12, paddingTop: 12, borderTop: '1px solid #f3f4f6' }}>

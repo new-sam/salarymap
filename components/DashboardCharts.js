@@ -76,11 +76,10 @@ function MultiTooltip({ active, payload, label, daily, metrics, experiments, lan
   )
 }
 
-export default function MetricChart({ daily, metrics, experiments = [], avgLabel = '평균', lang = 'ko' }) {
-  // Support both single metric (legacy) and multiple metrics
+export default function MetricChart({ daily, metrics, experiments = [], avgLabel = '평균', lang = 'ko', dualAxis = true }) {
   const metricList = Array.isArray(metrics) ? metrics : [metrics]
-  // Also accept legacy `metric` prop
   const isMulti = metricList.length > 1
+  const useDualAxis = isMulti && metricList.length === 2 && dualAxis
 
   const dateSet = new Set(daily.map(d => d.date))
 
@@ -97,9 +96,9 @@ export default function MetricChart({ daily, metrics, experiments = [], avgLabel
         </defs>
         <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
         <XAxis dataKey="date" tickFormatter={d => d.slice(5)} fontSize={12} />
-        <YAxis yAxisId="left" fontSize={12} />
-        {isMulti && (
-          <YAxis yAxisId="right" orientation="right" fontSize={12} />
+        <YAxis yAxisId="left" fontSize={12} stroke={useDualAxis ? metricList[0].color : undefined} />
+        {useDualAxis && (
+          <YAxis yAxisId="right" orientation="right" fontSize={12} stroke={metricList[1].color} />
         )}
         <Tooltip content={<MultiTooltip daily={daily} metrics={metricList} experiments={experiments} lang={lang} />} />
 
@@ -123,7 +122,7 @@ export default function MetricChart({ daily, metrics, experiments = [], avgLabel
         {metricList.map((m, i) => (
           <Area
             key={m.key}
-            yAxisId={isMulti && i === metricList.length - 1 && metricList.length === 2 ? 'right' : 'left'}
+            yAxisId={useDualAxis && i === 1 ? 'right' : 'left'}
             type="monotone" dataKey={m.dataKey} name={m.label}
             stroke={m.color} strokeWidth={2.5}
             fill={`url(#grad-${m.key})`}
