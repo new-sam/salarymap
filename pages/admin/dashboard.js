@@ -244,7 +244,7 @@ export default function AdminDashboard() {
   })()
 
   const chartData = aggregateDaily(dailyWithToday, chartMode)
-  const visibleExperiments = experiments.filter(e => e.date >= dateRange.from && e.date <= (realtime?.date || dateRange.to) && (!e.metrics?.length || selected.length === 0 || selected.some(k => e.metrics.includes(k))))
+  const visibleExperiments = experiments.filter(e => (!e.status || e.status === 'running') && e.date >= dateRange.from && e.date <= (realtime?.date || dateRange.to) && (!e.metrics?.length || selected.length === 0 || selected.some(k => e.metrics.includes(k))))
 
   return (
     <>
@@ -540,6 +540,35 @@ export default function AdminDashboard() {
                             )
                           })}
                         </div>
+                        {/* Status & Result */}
+                        <div style={{ padding: '10px 0', borderTop: '1px solid #e5e7eb', marginTop: 4 }}>
+                          <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 8 }}>
+                            <span style={{ fontSize: 11, color: '#888', minWidth: 32 }}>{t.expStatus}</span>
+                            {['running', 'success', 'failure'].map(s => {
+                              const on = (editingExp.status || 'running') === s
+                              const colors = { running: '#2563EB', success: '#10B981', failure: '#EF4444' }
+                              const labels = { running: t.expRunning, success: t.expSuccess, failure: t.expFailure }
+                              return (
+                                <button key={s} onClick={() => setEditingExp(f => ({ ...f, status: s, ...(s !== 'running' && !f.end_date ? { end_date: new Date().toISOString().slice(0, 10) } : {}) }))}
+                                  style={{ padding: '3px 10px', borderRadius: 12, fontSize: 11, fontWeight: 600, border: on ? `1.5px solid ${colors[s]}` : '1px solid #ddd', background: on ? colors[s] + '18' : '#fff', color: on ? colors[s] : '#999', cursor: 'pointer' }}>
+                                  {labels[s]}
+                                </button>
+                              )
+                            })}
+                            {(editingExp.status === 'success' || editingExp.status === 'failure') && (
+                              <label style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, color: '#888', marginLeft: 8 }}>
+                                {t.expEndDate}
+                                <input type="date" value={editingExp.end_date || ''} onChange={e => setEditingExp(f => ({ ...f, end_date: e.target.value }))}
+                                  style={{ ...inputStyle, width: 130, fontSize: 12 }} />
+                              </label>
+                            )}
+                          </div>
+                          {(editingExp.status === 'success' || editingExp.status === 'failure') && (
+                            <textarea value={editingExp.result_note || ''} onChange={e => setEditingExp(f => ({ ...f, result_note: e.target.value }))}
+                              placeholder={t.expResultPlaceholder}
+                              style={{ ...inputStyle, width: '100%', minHeight: 60, resize: 'vertical', fontFamily: 'inherit', boxSizing: 'border-box' }} />
+                          )}
+                        </div>
                         <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end' }}>
                           <button onClick={() => setEditingExp(null)}
                             style={{ padding: '4px 12px', border: '1px solid #d1d5db', borderRadius: 6, fontSize: 12, background: '#fff', cursor: 'pointer' }}>
@@ -558,19 +587,50 @@ export default function AdminDashboard() {
                     )
                     return (
                     <div key={exp.id} onClick={() => setEditingExp({ ...exp, metrics: exp.metrics || [] })} style={{
-                      display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                      display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between',
                       padding: '8px 12px', borderRadius: 8, background: '#fafafa', fontSize: 13, cursor: 'pointer',
                     }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-                        <span style={{ width: 10, height: 10, borderRadius: '50%', background: exp.color, flexShrink: 0 }} />
-                        <span style={{ color: '#888', fontSize: 12, minWidth: 80 }}>{exp.date}</span>
-                        <span style={{ fontWeight: 500 }}>{exp.title}</span>
-                        {exp.metrics?.map(mk => {
-                          const mb = METRICS_BASE.find(x => x.key === mk)
-                          return mb ? <span key={mk} style={{ fontSize: 9, padding: '1px 6px', borderRadius: 8, background: mb.color + '18', color: mb.color, fontWeight: 600 }}>{t.metrics[mk] || mk}</span> : null
-                        })}
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 3, flex: 1, minWidth: 0 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                          <span style={{ width: 10, height: 10, borderRadius: '50%', background: exp.color, flexShrink: 0 }} />
+                          <span style={{ fontWeight: 500 }}>{exp.title}</span>
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginLeft: 18, flexWrap: 'wrap' }}>
+                          <span style={{ color: '#999', fontSize: 11 }}>{exp.date}{exp.end_date ? ` → ${exp.end_date}` : ''}</span>
+                          {exp.metrics?.length > 0 && (
+                            <>
+                              <span style={{ color: '#ddd', fontSize: 11 }}>·</span>
+                              {exp.metrics.map(mk => {
+                                const mb = METRICS_BASE.find(x => x.key === mk)
+                                return mb ? <span key={mk} style={{ fontSize: 9, padding: '1px 6px', borderRadius: 8, background: mb.color + '18', color: mb.color, fontWeight: 600 }}>{t.metrics[mk] || mk}</span> : null
+                              })}
+                            </>
+                          )}
+                        </div>
                       </div>
-                      <Icon name="edit" size={11} color="#ccc" />
+                      <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8, flexShrink: 0 }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 4 }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                            {(() => {
+                              const s = exp.status || 'running'
+                              const cfg = { running: { bg: '#DBEAFE', color: '#1E40AF', icon: '●' }, success: { bg: '#D1FAE5', color: '#065F46', icon: '✓' }, failure: { bg: '#FEE2E2', color: '#991B1B', icon: '✗' } }
+                              const c = cfg[s]
+                              const labels = { running: t.expRunning, success: t.expSuccess, failure: t.expFailure }
+                              return <span style={{ fontSize: 11, padding: '2px 10px', borderRadius: 4, background: c.bg, color: c.color, fontWeight: 700, whiteSpace: 'nowrap' }}>{c.icon} {labels[s]}</span>
+                            })()}
+                            {(!exp.status || exp.status === 'running') && (
+                              <button onClick={e => { e.stopPropagation(); setEditingExp({ ...exp, metrics: exp.metrics || [], status: 'success', end_date: new Date().toISOString().slice(0, 10) }) }}
+                                style={{ padding: '3px 10px', border: '1px solid #d1d5db', borderRadius: 6, fontSize: 11, background: '#fff', cursor: 'pointer', fontWeight: 600, color: '#374151', whiteSpace: 'nowrap' }}>
+                                {t.expEnd}
+                              </button>
+                            )}
+                          </div>
+                          {exp.result_note && (
+                            <div style={{ fontSize: 11, color: '#888', lineHeight: 1.4, maxWidth: 200, textAlign: 'right' }}>{exp.result_note}</div>
+                          )}
+                        </div>
+                        <Icon name="edit" size={11} color="#ccc" style={{ marginTop: 4 }} />
+                      </div>
                     </div>
                     )
                   })}
