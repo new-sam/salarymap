@@ -52,6 +52,15 @@ export default function JobsPage() {
   const [applying, setApplying] = useState(false)
   const [applied, setApplied] = useState(false)
   const [detailApplyMode, setDetailApplyMode] = useState(false)
+
+  useEffect(() => {
+    if (detailJob) {
+      document.body.style.overflow = 'hidden'
+    } else {
+      document.body.style.overflow = ''
+    }
+    return () => { document.body.style.overflow = '' }
+  }, [detailJob])
   const [aiSummaryReady, setAiSummaryReady] = useState(false)
   const [showUserMenu, setShowUserMenu] = useState(false)
   const [isAdminUser, setIsAdminUser] = useState(false)
@@ -589,7 +598,7 @@ export default function JobsPage() {
         .jc-co { font-size: 13px; color: #777; margin-bottom: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         .jc-sal { font-size: 15px; font-weight: 800; color: #ff4400; margin-top: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; letter-spacing: -0.3px; }
         .jc-bottom { margin-top: auto; }
-        .jc-m { font-size: 12px; color: #999; white-space: nowrap; overflow: visible; text-overflow: ellipsis; display: flex; align-items: center; }
+        .jc-m { font-size: 12px; color: #999; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: flex; align-items: center; }
         .jc-m b { color: #ff4400; font-weight: 700; }
         .jc-tag { font-size: 11px; font-weight: 500; color: #555; background: #f0f0f0; padding: 2px 7px; border-radius: 4px; }
         .jc-tag-more { color: #999; }
@@ -650,9 +659,11 @@ export default function JobsPage() {
 
         /* Job Detail Panel */
         .jd-bg { position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 60; }
-        .jd { position: fixed; top: 0; right: 0; width: 50%; height: 100vh; background: #fafaf8; z-index: 61; overflow-y: auto; animation: jdSlide .3s ease; box-shadow: -8px 0 40px rgba(0,0,0,0.1); }
+        .jd { position: fixed; top: 0; right: 0; width: 50%; height: 100vh; background: #fafaf8; z-index: 61; overflow-y: auto; overscroll-behavior: contain; animation: jdSlide .3s ease; box-shadow: -8px 0 40px rgba(0,0,0,0.1); }
         @keyframes jdSlide { from { transform: translateX(100%); } to { transform: translateX(0); } }
         .jd-x { position: absolute; top: 16px; right: 20px; font-size: 24px; color: #999; cursor: pointer; background: none; border: none; z-index: 2; line-height: 1; }
+        .jd-back { display: none; align-items: center; gap: 8px; padding: 12px 16px; border-bottom: 1px solid #f0f0f0; background: #fafaf8; font-size: 14px; font-weight: 600; color: #333; cursor: pointer; border: none; width: 100%; flex-shrink: 0; }
+        .jd-scroll { display: contents; }
         .jd-img { width: 100%; max-height: 400px; background: #f0f0f0; background-size: contain; background-position: center; background-repeat: no-repeat; aspect-ratio: 16/9; }
         .jd-body { padding: 28px 32px 40px; }
         .jd-company { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; }
@@ -715,7 +726,7 @@ export default function JobsPage() {
 
         @media (max-width: 900px) { .jg { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
         @media (max-width: 768px) {
-          .jn { padding: 0 16px; height: 48px; }
+          .jn { display: none; }
           .jn-l { gap: 16px; }
           .jn-tab { font-size: 13px; height: 48px; padding: 0 12px; }
           .jw { padding: 28px 16px 60px; }
@@ -725,20 +736,23 @@ export default function JobsPage() {
           .jbm-icon { width: 30px; height: 30px; border-radius: 8px; }
           .jbm-icon svg { width: 15px; height: 15px; }
           .jbm-tag { font-size: 12px; padding: 3px 8px; }
-          .jf-sticky { top: 48px; }
+          .jf-sticky { top: 52px; }
           .jf { gap: 6px; }
           .jf-dd-btn { font-size: 12px; padding: 7px 10px; }
           .jf-sort { flex-wrap: wrap; }
           .jf-sort-btn { font-size: 12px; padding: 6px 10px; }
           .jgate-box { padding: 36px 24px; }
           .ap { padding: 20px 20px 32px; }
-          .jd { width: 100%; }
+          .jd { width: 100%; top: 52px; height: calc(100vh - 52px); z-index: 100000; padding-bottom: 68px; }
+          .jd-x { display: none; }
+          .jd-back { display: flex !important; position: sticky; top: 0; z-index: 3; }
+          .jd-scroll { display: contents; }
           .jd-body { padding: 20px 16px 32px; }
           .jd-img { max-height: 280px; }
           .jd-title { font-size: 18px; }
           .jd-work-info { grid-template-columns: 1fr; }
           .jd-co-overview-stats { grid-template-columns: 1fr 1fr; }
-          .jd-apply-float { padding: 12px 16px; }
+          .jd-apply-float { position: fixed; bottom: 0; left: 0; right: 0; padding: 12px 16px; background: #fafaf8; border-top: 1px solid #f0f0f0; z-index: 100001; }
           .jd-save-btn { width: 44px; height: 44px; }
           .jd-apply-btn { padding: 12px; font-size: 14px; }
           .toast { font-size: 13px; padding: 10px 20px; bottom: 24px; }
@@ -1070,7 +1084,12 @@ export default function JobsPage() {
           <div className="jd-bg" onClick={() => setDetailJob(null)} />
           <div className="jd">
             <button className="jd-x" onClick={() => setDetailJob(null)}>×</button>
+            <button className="jd-back" onClick={() => setDetailJob(null)}>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+              {t('jobs.back') || 'Back'}
+            </button>
 
+            <div className="jd-scroll">
             {/* Hero image / Carousel */}
             {(() => {
               const uploaded = detailJob.images?.length ? detailJob.images : []
@@ -1357,6 +1376,8 @@ export default function JobsPage() {
                 </button>
               </div>
             )}
+
+            </div>{/* /jd-scroll */}
 
             {/* Floating Apply CTA */}
             {!detailApplyMode && (

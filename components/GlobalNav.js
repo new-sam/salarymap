@@ -115,21 +115,10 @@ export default function GlobalNav({ activePage, onLogin, onJobsClick }) {
         .gnav-toggle-opt.active { background: rgba(255,96,0,0.2); color: #ff6000; }
         .gnav-toggle-opt:hover:not(.active) { color: rgba(255,255,255,0.5); }
         @media (max-width: 768px) {
-          .gnav { padding: 0 12px; height: 48px; }
-          .gnav-logo { font-size: 11px; gap: 6px; }
-          .gnav-logo img { width: 22px; height: 22px; }
-          .gnav-r { gap: 8px; }
-          .gnav-link { display: none; }
-          .gnav-toggle-opt { font-size: 9px; padding: 3px 8px; }
-          .gnav-jobs-cta { display: inline-flex !important; font-size: 10px; padding: 4px 10px !important; gap: 4px; white-space: nowrap; }
-          .gnav-jobs-icon svg { width: 12px; height: 12px; }
-
-          .gnav-login { font-size: 10px; padding: 4px 10px; white-space: nowrap; }
-          .gnav-submit { font-size: 9px; padding: 5px 8px; white-space: nowrap; }
-          .gnav-ai-bubble { font-size: 9px; padding: 4px 8px; }
-        }
-        @media (max-width: 400px) {
-          .gnav-name { display: none; }
+          .gnav { position: fixed; top: 0; left: 0; right: 0; padding: 0 16px; height: 52px; }
+          .gnav-logo span { display: none; }
+          .gnav-logo img { width: 32px; height: 32px; }
+          .gnav-r { display: none; }
         }
       `}</style>
 

@@ -1,5 +1,6 @@
 import "@/styles/globals.css";
 import { I18nProvider, LanguageSwitcher } from '../lib/i18n';
+import MobileTabBar from '../components/MobileTabBar';
 
 export default function App({ Component, pageProps }) {
   return (
@@ -11,6 +12,7 @@ export default function App({ Component, pageProps }) {
       }}>
         <LanguageSwitcher />
       </footer>
+      <MobileTabBar />
     </I18nProvider>
   );
 }
