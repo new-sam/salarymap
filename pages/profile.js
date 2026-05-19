@@ -604,13 +604,28 @@ export default function ProfilePage() {
                       <input className={`pinput${df('salary_max')}`} inputMode="numeric" value={form.salary_max || ''} onChange={e => set('salary_max', e.target.value.replace(/[^0-9]/g, ''))} placeholder="" style={{ flex: 1 }} />
                     </div>
                   </div>
-                  <div className="pfield">
-                    <div className="pfield-label">{t('profile.worktype')}</div>
-                    <CustomSelect value={form.work_type} options={WORK_TYPES} placeholder={t('profile.worktype.ph')} onChange={v => set('work_type', v)} />
-                  </div>
                 </div>
               </div>
             )}
+          </div>
+
+          {/* Work Type Preference */}
+          <div className="pcard">
+            <div className="pcard-h">{t('profile.worktype.title')}</div>
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+              {['All', 'Remote', 'On-site'].map(v => {
+                const isOn = form.work_type === v
+                return (
+                  <button key={v} onClick={() => set('work_type', isOn ? '' : v)} style={{
+                    padding: '8px 16px', borderRadius: 20, border: isOn ? '1.5px solid #ff6000' : '1.5px solid rgba(0,0,0,0.1)',
+                    background: isOn ? 'rgba(255,96,0,0.06)' : '#fff', color: isOn ? '#ff6000' : 'rgba(0,0,0,0.5)',
+                    fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', transition: 'all .15s',
+                  }}>
+                    {t(`profile.worktype.${v.toLowerCase()}`)}
+                  </button>
+                )
+              })}
+            </div>
           </div>
 
           {/* Completion */}
