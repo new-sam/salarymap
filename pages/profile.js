@@ -220,9 +220,8 @@ function completionScore(p) {
   if (!p) return 0
   const checks = [
     p.photo_url, p.full_name, p.headline, p.position, p.yoe_months != null,
-    p.intro, p.skills?.length > 0, p.english_cert, p.location,
-    p.university, p.resume_url, p.job_signal && p.job_signal !== 'passive',
-    p.experiences?.length > 0, p.salary_min,
+    p.location, p.resume_url, p.job_signal && p.job_signal !== 'passive',
+    p.salary_min,
   ]
   return Math.round(checks.filter(Boolean).length / checks.length * 100)
 }
@@ -241,6 +240,10 @@ export default function ProfilePage() {
   const [showAlert, setShowAlert] = useState(null)
   const [submissions, setSubmissions] = useState([])
   const [percentile, setPercentile] = useState(null)
+  const [aiParsing, setAiParsing] = useState(false)
+  const [aiProgress, setAiProgress] = useState({ percent: 0, message: '' })
+  const [showLeaveConfirm, setShowLeaveConfirm] = useState(false)
+  const pendingRoute = useRef(null)
   const photoRef = useRef(null)
   const resumeRef = useRef(null)
 
@@ -249,6 +252,28 @@ export default function ProfilePage() {
   const [initialForm, setInitialForm] = useState({})
   const set = (k, v) => setForm(prev => ({ ...prev, [k]: v }))
   const isDirty = JSON.stringify(form) !== JSON.stringify(initialForm)
+  const isDirtyRef = useRef(false)
+  isDirtyRef.current = isDirty
+
+  // Browser tab close / refresh guard
+  useEffect(() => {
+    const handler = (e) => { if (isDirtyRef.current) { e.preventDefault(); e.returnValue = '' } }
+    window.addEventListener('beforeunload', handler)
+    return () => window.removeEventListener('beforeunload', handler)
+  }, [])
+
+  // Next.js route change guard
+  useEffect(() => {
+    const handler = (url) => {
+      if (!isDirtyRef.current) return
+      pendingRoute.current = url
+      setShowLeaveConfirm(true)
+      router.events.emit('routeChangeError')
+      throw 'Route change blocked'
+    }
+    router.events.on('routeChangeStart', handler)
+    return () => router.events.off('routeChangeStart', handler)
+  }, [router])
 
   useEffect(() => {
     supabase.auth.getSession().then(async ({ data: { session } }) => {
@@ -288,6 +313,13 @@ export default function ProfilePage() {
             portfolio_url: p.portfolio_url || '',
             photo_url: p.photo_url || '',
             resume_url: p.resume_url || '',
+            university: p.university || '',
+            major: p.major || '',
+            graduation_year: p.graduation_year || '',
+            gpa: p.gpa || '',
+            skills: p.skills?.join(', ') || '',
+            experiences: p.experiences || [],
+            projects: p.projects || [],
           }
           setForm(formData)
           setInitialForm(formData)
@@ -353,7 +385,76 @@ export default function ProfilePage() {
       const { url } = await res.json()
       set(type === 'photo' ? 'photo_url' : 'resume_url', url)
       setProfile(prev => ({ ...prev, [type === 'photo' ? 'photo_url' : 'resume_url']: url }))
+      if (type === 'resume') {
+        runAiParse()
+      }
     }
+  }
+
+  const runAiParse = async () => {
+    setAiParsing(true)
+    const steps = [
+      { percent: 15, message: t('profile.ai.download') },
+      { percent: 35, message: t('profile.ai.extract') },
+      { percent: 55, message: t('profile.ai.analyze') },
+      { percent: 75, message: t('profile.ai.parse') },
+    ]
+    let stepIdx = 0
+    const timer = setInterval(() => {
+      if (stepIdx < steps.length) {
+        setAiProgress(steps[stepIdx])
+        stepIdx++
+      }
+    }, 1500)
+
+    try {
+      const response = await fetch('/api/profile/parse-resume', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      clearInterval(timer)
+
+      if (!response.ok) {
+        const err = await response.json()
+        setShowAlert(err.error || 'AI parsing failed')
+        setAiParsing(false)
+        setAiProgress({ percent: 0, message: '' })
+        return
+      }
+
+      setAiProgress({ percent: 90, message: t('profile.ai.fill') })
+      const { fields: f } = await response.json()
+
+      setForm(prev => ({
+        ...prev,
+        ...(f.full_name && { full_name: f.full_name }),
+        ...(f.headline && { headline: f.headline }),
+        ...(f.location && { location: f.location }),
+        ...(f.position && { position: f.position }),
+        ...(f.yoe_months && { yoe_months: f.yoe_months }),
+        ...(f.skills && { skills: f.skills }),
+        ...(f.university && { university: f.university }),
+        ...(f.major && { major: f.major }),
+        ...(f.graduation_year && { graduation_year: f.graduation_year }),
+        ...(f.gpa && { gpa: f.gpa }),
+        ...(f.experiences?.length && { experiences: f.experiences }),
+        ...(f.projects?.length && { projects: f.projects }),
+        ...(f.photo_url && { photo_url: f.photo_url }),
+      }))
+
+      setAiProgress({ percent: 100, message: t('profile.ai.done') })
+      setMsg(t('profile.ai.verify'))
+      // Refresh profile for completion score
+      const profileRes = await fetch('/api/profile/talent', { headers: { Authorization: `Bearer ${token}` } })
+      if (profileRes.ok) { const { profile: p } = await profileRes.json(); setProfile(p) }
+    } catch (err) {
+      clearInterval(timer)
+      setShowAlert('AI parsing failed: ' + err.message)
+    }
+    setTimeout(() => {
+      setAiParsing(false)
+      setAiProgress({ percent: 0, message: '' })
+    }, 1500)
   }
 
   if (loading) return (
@@ -389,8 +490,11 @@ export default function ProfilePage() {
         .psignal-btn { flex: 1; min-width: 120px; padding: 10px; border-radius: 8px; border: 1px solid rgba(0,0,0,0.08); background: rgba(0,0,0,0.02); font-size: 12px; font-weight: 600; color: rgba(0,0,0,0.4); cursor: pointer; text-align: center; font-family: inherit; transition: all .15s; }
         .psignal-btn.on { border-color: #ff6000; color: #ff6000; background: rgba(255,96,0,0.06); }
         .pselect-dropdown::-webkit-scrollbar { display: none; }
-        .psave { width: 100%; padding: 14px; background: #ff6000; color: #fff; border: none; border-radius: 10px; font-size: 14px; font-weight: 700; cursor: pointer; font-family: inherit; }
-        .psave:disabled { opacity: 0.5; }
+        .psave-wrap { position: fixed; bottom: 0; left: 0; right: 0; z-index: 100; padding: 12px 20px calc(12px + env(safe-area-inset-bottom)); background: rgba(250,250,250,0.95); backdrop-filter: blur(10px); transform: translateY(100%); transition: transform .25s ease; pointer-events: none; }
+        .psave-wrap.show { transform: translateY(0); pointer-events: auto; }
+        .psave-inner { max-width: 580px; margin: 0 auto; }
+        .psave { width: 100%; padding: 14px; background: #ff6000; color: #fff; border: none; border-radius: 10px; font-size: 14px; font-weight: 700; cursor: pointer; font-family: inherit; box-shadow: 0 4px 12px rgba(255,96,0,0.3); }
+        .psave:disabled { opacity: 0.5; box-shadow: none; }
         .pmsg { background: rgba(34,197,94,0.1); color: #16a34a; font-size: 13px; font-weight: 600; padding: 10px 16px; border-radius: 8px; margin-bottom: 16px; text-align: center; }
         .pprogress { height: 6px; background: rgba(0,0,0,0.06); border-radius: 3px; margin-bottom: 8px; overflow: hidden; }
         .pprogress-fill { height: 100%; border-radius: 3px; transition: width .5s; }
@@ -406,6 +510,17 @@ export default function ProfilePage() {
         .ptoggle-switch.on::after { transform: translateX(20px); }
         .pinline { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
         @media (max-width: 500px) { .pinline { grid-template-columns: 1fr; } }
+        .plist-item { background: rgba(0,0,0,0.02); border: 1px solid rgba(0,0,0,0.05); border-radius: 10px; padding: 16px; margin-bottom: 12px; }
+        .plist-item:last-of-type { margin-bottom: 0; }
+        .presume-upload-btn { width: 100%; padding: 16px; border-radius: 10px; border: 2px dashed rgba(255,96,0,0.3); background: rgba(255,96,0,0.04); display: flex; align-items: center; justify-content: center; gap: 10px; cursor: pointer; font-family: inherit; font-size: 14px; font-weight: 700; color: #ff6000; transition: all .15s; }
+        .presume-upload-btn:hover { border-color: #ff6000; background: rgba(255,96,0,0.08); }
+        .ai-bubble { background: #ff6000; border-radius: 12px; padding: 14px 16px; margin-bottom: 20px; position: relative; animation: aiBounce 2s ease-in-out infinite; }
+        .ai-bubble-inner { display: flex; align-items: center; gap: 10px; font-size: 13px; font-weight: 600; color: #fff; line-height: 1.4; }
+        .ai-bubble-icon { display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 8px; background: rgba(255,255,255,0.2); font-size: 11px; font-weight: 800; flex-shrink: 0; }
+        .ai-bubble-arrow { position: absolute; bottom: -6px; left: 24px; width: 12px; height: 12px; background: #ff6000; transform: rotate(45deg); border-radius: 0 0 3px 0; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        @keyframes aiBounce { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-3px); } }
+        .ai-bubble:hover { filter: brightness(1.08); }
       `}</style>
 
       <GlobalNav activePage="profile" />
@@ -428,7 +543,7 @@ export default function ProfilePage() {
                 </div>
               </div>
               <button className={`ptoggle-switch${form.hr_visible ? ' on' : ''}`} onClick={() => {
-                if (score < 80 && !form.hr_visible) {
+                if (score < 60 && !form.hr_visible) {
                   setShowAlert(t('profile.hr.need80'))
                   return
                 }
@@ -437,20 +552,133 @@ export default function ProfilePage() {
             </div>
           </div>
 
+          {/* Job Signal */}
+          <div className="pcard">
+            <div className="pcard-h">{t('profile.signal')}</div>
+            <div className="psignal">
+              {['active','open','passive'].map(v => {
+                const isOn = form.job_signal === v
+                const icon = v === 'active' ? (
+                  <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                    <circle cx="7" cy="7" r="5.5" stroke={isOn ? '#16a34a' : 'rgba(0,0,0,0.2)'} strokeWidth="1.5"/>
+                    <circle cx="7" cy="7" r="3" fill={isOn ? '#16a34a' : 'rgba(0,0,0,0.1)'}/>
+                  </svg>
+                ) : v === 'open' ? (
+                  <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                    <circle cx="7" cy="7" r="5.5" stroke={isOn ? '#f59e0b' : 'rgba(0,0,0,0.2)'} strokeWidth="1.5"/>
+                    <path d="M7 4v3.5" stroke={isOn ? '#f59e0b' : 'rgba(0,0,0,0.15)'} strokeWidth="1.5" strokeLinecap="round"/>
+                    <circle cx="7" cy="10" r="0.75" fill={isOn ? '#f59e0b' : 'rgba(0,0,0,0.15)'}/>
+                  </svg>
+                ) : (
+                  <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                    <circle cx="7" cy="7" r="5.5" stroke={isOn ? '#ff6000' : 'rgba(0,0,0,0.2)'} strokeWidth="1.5"/>
+                    <path d="M5 5l4 4M9 5l-4 4" stroke={isOn ? '#ff6000' : 'rgba(0,0,0,0.15)'} strokeWidth="1.3" strokeLinecap="round"/>
+                  </svg>
+                )
+                return (
+                  <button key={v} className={`psignal-btn${isOn ? ' on' : ''}`} onClick={() => set('job_signal', v)}>
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>{icon} {t(`profile.signal.${v}`)}</span>
+                  </button>
+                )
+              })}
+            </div>
+            {form.job_signal && form.job_signal !== 'passive' && (
+              <div style={{ marginTop: 16, paddingTop: 16, borderTop: '1px solid rgba(0,0,0,0.06)' }}>
+                <div className="pinline">
+                  <div className="pfield">
+                    <div className="pfield-label">{t('profile.position')}</div>
+                    <CustomSelect value={form.position} options={POSITIONS} placeholder={t('profile.position.ph')} onChange={v => set('position', v)} />
+                  </div>
+                  <div className="pfield">
+                    <div className="pfield-label">{t('profile.yoe')}</div>
+                    <CustomSelect value={form.yoe_months ? YOE_OPTIONS.find(o => o.value === String(form.yoe_months))?.label : ''} options={YOE_OPTIONS.map(o => o.label)} placeholder={t('profile.position.ph')} onChange={v => { const found = YOE_OPTIONS.find(o => o.label === v); if (found) set('yoe_months', found.value) }} />
+                  </div>
+                </div>
+                <div className="pinline">
+                  <div className="pfield">
+                    <div className="pfield-label">{t('profile.salary')}</div>
+                    <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                      <input className={`pinput${form.salary_min ? ' filled' : ''}`} inputMode="numeric" value={form.salary_min || ''} onChange={e => set('salary_min', e.target.value.replace(/[^0-9]/g, ''))} placeholder="" style={{ flex: 1 }} />
+                      <span style={{ color: 'rgba(0,0,0,0.25)' }}>~</span>
+                      <input className={`pinput${form.salary_max ? ' filled' : ''}`} inputMode="numeric" value={form.salary_max || ''} onChange={e => set('salary_max', e.target.value.replace(/[^0-9]/g, ''))} placeholder="" style={{ flex: 1 }} />
+                    </div>
+                  </div>
+                  <div className="pfield">
+                    <div className="pfield-label">{t('profile.worktype')}</div>
+                    <CustomSelect value={form.work_type} options={WORK_TYPES} placeholder={t('profile.worktype.ph')} onChange={v => set('work_type', v)} />
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+
           {/* Completion */}
           <div className="pcard">
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
               <span style={{ fontSize: 12, fontWeight: 700, color: 'rgba(0,0,0,0.4)' }}>{t('profile.completion')}</span>
-              <span style={{ fontSize: 13, fontWeight: 800, color: score >= 80 ? '#16a34a' : '#f59e0b' }}>{score}%</span>
+              <span style={{ fontSize: 13, fontWeight: 800, color: score >= 60 ? '#16a34a' : '#f59e0b' }}>{score}%</span>
             </div>
-            <div className="pprogress"><div className="pprogress-fill" style={{ width: `${score}%`, background: score >= 80 ? '#16a34a' : '#f59e0b' }} /></div>
+            <div className="pprogress"><div className="pprogress-fill" style={{ width: `${score}%`, background: score >= 60 ? '#16a34a' : '#f59e0b' }} /></div>
             <div style={{ fontSize: 11, color: 'rgba(0,0,0,0.3)' }}>
-              {score < 80 ? t('profile.completion.incomplete') : t('profile.completion.done')}
-              {score < 80 && <span style={{ color: '#ff6000', marginLeft: 4 }}>({t('profile.completion.min80')})</span>}
+              {score < 60 ? t('profile.completion.incomplete') : t('profile.completion.done')}
+              {score < 60 && <span style={{ color: '#ff6000', marginLeft: 4 }}>({t('profile.completion.min80')})</span>}
             </div>
           </div>
 
           {msg && <div className="pmsg">{msg}</div>}
+
+          <div className="pcard" style={{ position: 'relative', overflow: 'visible' }}>
+            <div className="pcard-h">{t('profile.resume')}</div>
+            {!form.resume_url && !aiParsing && (
+              <div className="ai-bubble" onClick={() => resumeRef.current?.click()} style={{ cursor: 'pointer' }}>
+                <div className="ai-bubble-inner">
+                  <span className="ai-bubble-icon">AI</span>
+                  <span>{t('profile.resume.ai_hint')}</span>
+                </div>
+                <div className="ai-bubble-arrow" />
+              </div>
+            )}
+            {aiParsing && (
+              <div style={{ background: 'rgba(255,96,0,0.04)', border: '1px solid rgba(255,96,0,0.12)', borderRadius: 10, padding: '16px 18px', marginBottom: 16 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
+                  <div style={{ width: 20, height: 20, borderRadius: '50%', border: '2.5px solid #ff6000', borderTopColor: 'transparent', animation: 'spin 0.8s linear infinite', flexShrink: 0 }} />
+                  <span style={{ fontSize: 13, fontWeight: 600, color: '#111' }}>{aiProgress.message}</span>
+                </div>
+                <div style={{ height: 6, background: 'rgba(0,0,0,0.06)', borderRadius: 3, overflow: 'hidden' }}>
+                  <div style={{ height: '100%', width: `${aiProgress.percent}%`, background: '#ff6000', borderRadius: 3, transition: 'width 0.5s ease' }} />
+                </div>
+                <div style={{ fontSize: 11, color: 'rgba(0,0,0,0.35)', marginTop: 6, textAlign: 'right' }}>{aiProgress.percent}%</div>
+              </div>
+            )}
+            <div className="pfield">
+              <input ref={resumeRef} type="file" accept=".pdf" hidden onChange={e => handleUpload('resume', e.target.files[0])} />
+              {form.resume_url ? (
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'rgba(34,197,94,0.06)', border: '1px solid rgba(34,197,94,0.2)', borderRadius: 10, padding: '12px 16px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#16a34a" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                    <a href={form.resume_url} target="_blank" rel="noopener noreferrer" style={{ fontSize: 13, fontWeight: 600, color: '#111', textDecoration: 'none', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {decodeURIComponent(form.resume_url.split('/').pop().split('?')[0])}
+                    </a>
+                  </div>
+                  <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexShrink: 0 }}>
+                    <button className="pupload-btn" onClick={() => resumeRef.current?.click()} disabled={aiParsing}>{t('profile.resume.change')}</button>
+                    <button onClick={() => { set('resume_url', ''); setProfile(prev => ({ ...prev, resume_url: '' })); fetch('/api/profile/talent', { method: 'PUT', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify({ resume_url: '' }) }) }} style={{ width: 28, height: 28, borderRadius: 6, border: '1px solid rgba(0,0,0,0.08)', background: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                      <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="rgba(0,0,0,0.3)" strokeWidth="1.5" strokeLinecap="round"><path d="M2 2l8 8M10 2l-8 8"/></svg>
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <button onClick={() => resumeRef.current?.click()} className="presume-upload-btn" disabled={aiParsing}>
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#ff6000" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                  <span>{t('profile.resume.register')}</span>
+                </button>
+              )}
+            </div>
+            <div className="pfield">
+              <div className="pfield-label">{t('profile.portfolio')}</div>
+              <input className={`pinput${form.portfolio_url ? ' filled' : ''}`} value={form.portfolio_url || ''} onChange={e => set('portfolio_url', e.target.value)} placeholder="" />
+            </div>
+          </div>
 
           <div className="pcard">
             <div className="pcard-h">{t('profile.basic')}</div>
@@ -483,76 +711,17 @@ export default function ProfilePage() {
             </div>
           </div>
 
+
+          {/* Skills */}
           <div className="pcard">
-            <div className="pcard-h">{t('profile.job')}</div>
+            <div className="pcard-h">{t('profile.skills')}</div>
             <div className="pfield">
-              <div className="pfield-label">{t('profile.signal')}</div>
-              <div className="psignal">
-                {['active','open','passive'].map(v => {
-                  const isOn = form.job_signal === v
-                  const icon = v === 'active' ? (
-                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-                      <circle cx="7" cy="7" r="5.5" stroke={isOn ? '#16a34a' : 'rgba(0,0,0,0.2)'} strokeWidth="1.5"/>
-                      <circle cx="7" cy="7" r="3" fill={isOn ? '#16a34a' : 'rgba(0,0,0,0.1)'}/>
-                    </svg>
-                  ) : v === 'open' ? (
-                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-                      <circle cx="7" cy="7" r="5.5" stroke={isOn ? '#f59e0b' : 'rgba(0,0,0,0.2)'} strokeWidth="1.5"/>
-                      <path d="M7 4v3.5" stroke={isOn ? '#f59e0b' : 'rgba(0,0,0,0.15)'} strokeWidth="1.5" strokeLinecap="round"/>
-                      <circle cx="7" cy="10" r="0.75" fill={isOn ? '#f59e0b' : 'rgba(0,0,0,0.15)'}/>
-                    </svg>
-                  ) : (
-                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-                      <circle cx="7" cy="7" r="5.5" stroke={isOn ? '#ff6000' : 'rgba(0,0,0,0.2)'} strokeWidth="1.5"/>
-                      <path d="M5 5l4 4M9 5l-4 4" stroke={isOn ? '#ff6000' : 'rgba(0,0,0,0.15)'} strokeWidth="1.3" strokeLinecap="round"/>
-                    </svg>
-                  )
-                  return (
-                    <button key={v} className={`psignal-btn${isOn ? ' on' : ''}`} onClick={() => set('job_signal', v)}>
-                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>{icon} {t(`profile.signal.${v}`)}</span>
-                    </button>
-                  )
-                })}
-              </div>
-            </div>
-            <div className="pinline">
-              <div className="pfield">
-                <div className="pfield-label">{t('profile.position')}</div>
-                <CustomSelect value={form.position} options={POSITIONS} placeholder={t('profile.position.ph')} onChange={v => set('position', v)} />
-              </div>
-              <div className="pfield">
-                <div className="pfield-label">{t('profile.yoe')}</div>
-                <CustomSelect value={form.yoe_months ? YOE_OPTIONS.find(o => o.value === String(form.yoe_months))?.label : ''} options={YOE_OPTIONS.map(o => o.label)} placeholder={t('profile.position.ph')} onChange={v => { const found = YOE_OPTIONS.find(o => o.label === v); if (found) set('yoe_months', found.value) }} />
-              </div>
-            </div>
-            <div className="pinline">
-              <div className="pfield">
-                <div className="pfield-label">{t('profile.salary')}</div>
-                <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                  <input className={`pinput${form.salary_min ? ' filled' : ''}`} inputMode="numeric" value={form.salary_min || ''} onChange={e => set('salary_min', e.target.value.replace(/[^0-9]/g, ''))} placeholder="" style={{ flex: 1 }} />
-                  <span style={{ color: 'rgba(0,0,0,0.25)' }}>~</span>
-                  <input className={`pinput${form.salary_max ? ' filled' : ''}`} inputMode="numeric" value={form.salary_max || ''} onChange={e => set('salary_max', e.target.value.replace(/[^0-9]/g, ''))} placeholder="" style={{ flex: 1 }} />
-                </div>
-              </div>
-              <div className="pfield">
-                <div className="pfield-label">{t('profile.worktype')}</div>
-                <CustomSelect value={form.work_type} options={WORK_TYPES} placeholder={t('profile.worktype.ph')} onChange={v => set('work_type', v)} />
-              </div>
+              <input className={`pinput${form.skills ? ' filled' : ''}`} value={form.skills || ''} onChange={e => set('skills', e.target.value)} placeholder={t('profile.skills.ph')} />
+              <div style={{ fontSize: 10, color: 'rgba(0,0,0,0.3)', marginTop: 4 }}>{t('profile.skills.hint')}</div>
             </div>
           </div>
 
-          <div className="pcard">
-            <div className="pcard-h">{t('profile.about')}</div>
-            <div className="pfield">
-              <div className="pfield-label">{t('profile.intro')}</div>
-              <textarea className={`pinput ptextarea${form.intro ? ' filled' : ''}`} value={form.intro || ''} onChange={e => set('intro', e.target.value)} placeholder="" />
-            </div>
-            <div className="pfield">
-              <div className="pfield-label">{t('profile.skills')}</div>
-              <input className={`pinput${form.skills ? ' filled' : ''}`} value={form.skills || ''} onChange={e => set('skills', e.target.value)} placeholder="" />
-            </div>
-          </div>
-
+          {/* Education */}
           <div className="pcard">
             <div className="pcard-h">{t('profile.edu')}</div>
             <div className="pinline">
@@ -565,45 +734,86 @@ export default function ProfilePage() {
                 <input className={`pinput${form.major ? ' filled' : ''}`} value={form.major || ''} onChange={e => set('major', e.target.value)} placeholder="" />
               </div>
             </div>
-            <div className="pfield">
-              <div className="pfield-label">{t('profile.gradyear')}</div>
-              <input className={`pinput${form.graduation_year ? ' filled' : ''}`} value={form.graduation_year || ''} onChange={e => set('graduation_year', e.target.value)} placeholder="" />
-            </div>
             <div className="pinline">
               <div className="pfield">
-                <div className="pfield-label">{t('profile.english')}</div>
-                <input className={`pinput${form.english_cert ? ' filled' : ''}`} value={form.english_cert || ''} onChange={e => set('english_cert', e.target.value)} placeholder="" />
+                <div className="pfield-label">{t('profile.gradyear')}</div>
+                <input className={`pinput${form.graduation_year ? ' filled' : ''}`} value={form.graduation_year || ''} onChange={e => set('graduation_year', e.target.value)} placeholder="" />
               </div>
               <div className="pfield">
-                <div className="pfield-label">{t('profile.korean')}</div>
-                <input className={`pinput${form.korean_cert ? ' filled' : ''}`} value={form.korean_cert || ''} onChange={e => set('korean_cert', e.target.value)} placeholder="" />
+                <div className="pfield-label">{t('profile.gpa')}</div>
+                <input className={`pinput${form.gpa ? ' filled' : ''}`} value={form.gpa || ''} onChange={e => set('gpa', e.target.value)} placeholder="e.g. 3.8 / 4.0" />
               </div>
             </div>
           </div>
 
+          {/* Experience */}
           <div className="pcard">
-            <div className="pcard-h">{t('profile.resume')}</div>
-            <div className="pfield">
-              <div className="pfield-label">Resume (PDF)</div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                {form.resume_url ? (
-                  <a href={form.resume_url} target="_blank" rel="noopener noreferrer" style={{ fontSize: 13, color: '#ff6000' }}>{t('profile.resume.view')}</a>
-                ) : (
-                  <span style={{ fontSize: 12, color: 'rgba(0,0,0,0.3)' }}>{t('profile.resume.none')}</span>
-                )}
-                <button className="pupload-btn" onClick={() => resumeRef.current?.click()}>{t('profile.resume.upload')}</button>
-                <input ref={resumeRef} type="file" accept=".pdf" hidden onChange={e => handleUpload('resume', e.target.files[0])} />
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+              <div className="pcard-h" style={{ marginBottom: 0 }}>{t('profile.exp')}</div>
+              <button type="button" className="pupload-btn" onClick={() => set('experiences', [...(form.experiences || []), { company: '', role: '', period: '', desc: '' }])}>+ {t('profile.add')}</button>
+            </div>
+            {(form.experiences || []).map((exp, i) => (
+              <div key={i} className="plist-item">
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                  <span style={{ fontSize: 11, fontWeight: 700, color: 'rgba(0,0,0,0.3)' }}>#{i + 1}</span>
+                  <button type="button" onClick={() => set('experiences', form.experiences.filter((_, j) => j !== i))} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 12, color: 'rgba(0,0,0,0.25)', fontFamily: 'inherit' }}>{t('profile.remove')}</button>
+                </div>
+                <div className="pinline">
+                  <div className="pfield">
+                    <div className="pfield-label">{t('profile.exp.company')}</div>
+                    <input className={`pinput${exp.company ? ' filled' : ''}`} value={exp.company} onChange={e => { const arr = [...form.experiences]; arr[i] = { ...arr[i], company: e.target.value }; set('experiences', arr) }} placeholder="" />
+                  </div>
+                  <div className="pfield">
+                    <div className="pfield-label">{t('profile.exp.role')}</div>
+                    <input className={`pinput${exp.role ? ' filled' : ''}`} value={exp.role} onChange={e => { const arr = [...form.experiences]; arr[i] = { ...arr[i], role: e.target.value }; set('experiences', arr) }} placeholder="" />
+                  </div>
+                </div>
+                <div className="pfield">
+                  <div className="pfield-label">{t('profile.exp.period')}</div>
+                  <input className={`pinput${exp.period ? ' filled' : ''}`} value={exp.period} onChange={e => { const arr = [...form.experiences]; arr[i] = { ...arr[i], period: e.target.value }; set('experiences', arr) }} placeholder="e.g. 2022.03 - 2024.01" />
+                </div>
+                <div className="pfield">
+                  <div className="pfield-label">{t('profile.exp.desc')}</div>
+                  <textarea className={`pinput ptextarea${exp.desc ? ' filled' : ''}`} value={exp.desc} onChange={e => { const arr = [...form.experiences]; arr[i] = { ...arr[i], desc: e.target.value }; set('experiences', arr) }} placeholder="" style={{ minHeight: 60 }} />
+                </div>
               </div>
-            </div>
-            <div className="pfield">
-              <div className="pfield-label">{t('profile.portfolio')}</div>
-              <input className={`pinput${form.portfolio_url ? ' filled' : ''}`} value={form.portfolio_url || ''} onChange={e => set('portfolio_url', e.target.value)} placeholder="" />
-            </div>
+            ))}
+            {(!form.experiences || form.experiences.length === 0) && (
+              <div style={{ textAlign: 'center', padding: '16px 0', color: 'rgba(0,0,0,0.25)', fontSize: 13 }}>{t('profile.exp.empty')}</div>
+            )}
           </div>
 
-          <button className="psave" onClick={handleSave} disabled={saving || !isDirty}>
-            {saving ? t('profile.saving') : t('profile.save')}
-          </button>
+          {/* Projects */}
+          <div className="pcard">
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+              <div className="pcard-h" style={{ marginBottom: 0 }}>{t('profile.projects')}</div>
+              <button type="button" className="pupload-btn" onClick={() => set('projects', [...(form.projects || []), { name: '', desc: '', url: '' }])}>+ {t('profile.add')}</button>
+            </div>
+            {(form.projects || []).map((proj, i) => (
+              <div key={i} className="plist-item">
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                  <span style={{ fontSize: 11, fontWeight: 700, color: 'rgba(0,0,0,0.3)' }}>#{i + 1}</span>
+                  <button type="button" onClick={() => set('projects', form.projects.filter((_, j) => j !== i))} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 12, color: 'rgba(0,0,0,0.25)', fontFamily: 'inherit' }}>{t('profile.remove')}</button>
+                </div>
+                <div className="pfield">
+                  <div className="pfield-label">{t('profile.projects.name')}</div>
+                  <input className={`pinput${proj.name ? ' filled' : ''}`} value={proj.name} onChange={e => { const arr = [...form.projects]; arr[i] = { ...arr[i], name: e.target.value }; set('projects', arr) }} placeholder="" />
+                </div>
+                <div className="pfield">
+                  <div className="pfield-label">{t('profile.projects.desc')}</div>
+                  <textarea className={`pinput ptextarea${proj.desc ? ' filled' : ''}`} value={proj.desc} onChange={e => { const arr = [...form.projects]; arr[i] = { ...arr[i], desc: e.target.value }; set('projects', arr) }} placeholder="" style={{ minHeight: 60 }} />
+                </div>
+                <div className="pfield">
+                  <div className="pfield-label">{t('profile.projects.url')}</div>
+                  <input className={`pinput${proj.url ? ' filled' : ''}`} value={proj.url} onChange={e => { const arr = [...form.projects]; arr[i] = { ...arr[i], url: e.target.value }; set('projects', arr) }} placeholder="https://" />
+                </div>
+              </div>
+            ))}
+            {(!form.projects || form.projects.length === 0) && (
+              <div style={{ textAlign: 'center', padding: '16px 0', color: 'rgba(0,0,0,0.25)', fontSize: 13 }}>{t('profile.projects.empty')}</div>
+            )}
+          </div>
+
         </>)}
 
         {tab === 'salary' && (<>
@@ -651,6 +861,15 @@ export default function ProfilePage() {
         </>)}
       </div>
 
+      {/* Floating Save Button */}
+      <div className={`psave-wrap${isDirty ? ' show' : ''}`}>
+        <div className="psave-inner">
+          <button className="psave" onClick={handleSave} disabled={saving || !isDirty}>
+            {saving ? t('profile.saving') : t('profile.save')}
+          </button>
+        </div>
+      </div>
+
       {/* Onboarding Modal — Step-by-step */}
       {showOnboard && <OnboardModal t={t} onClose={() => setShowOnboard(false)} />}
 
@@ -667,6 +886,25 @@ export default function ProfilePage() {
               style={{ width: '100%', padding: 12, borderRadius: 10, border: 'none', background: '#ff6000', color: '#fff', fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>
               OK
             </button>
+          </div>
+        </div>
+      )}
+
+      {showLeaveConfirm && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.3)', zIndex: 1100, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
+          <div style={{ background: '#fff', borderRadius: 16, maxWidth: 340, width: '100%', padding: '28px 24px', textAlign: 'center', fontFamily: "'Barlow', system-ui", boxShadow: '0 20px 60px rgba(0,0,0,0.15)' }}>
+            <div style={{ fontSize: 15, fontWeight: 700, color: '#111', marginBottom: 6 }}>{t('profile.leave.title')}</div>
+            <div style={{ fontSize: 13, color: 'rgba(0,0,0,0.45)', marginBottom: 20, lineHeight: 1.5 }}>{t('profile.leave.desc')}</div>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button onClick={() => { setShowLeaveConfirm(false); setInitialForm({ ...form }); router.push(pendingRoute.current) }}
+                style={{ flex: 1, padding: 11, borderRadius: 8, border: '1px solid rgba(0,0,0,0.1)', background: '#fff', color: '#111', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>
+                {t('profile.leave.no')}
+              </button>
+              <button onClick={async () => { setShowLeaveConfirm(false); await handleSave(); router.push(pendingRoute.current) }}
+                style={{ flex: 1, padding: 11, borderRadius: 8, border: 'none', background: '#ff6000', color: '#fff', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>
+                {t('profile.leave.yes')}
+              </button>
+            </div>
           </div>
         </div>
       )}
