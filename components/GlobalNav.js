@@ -3,13 +3,14 @@ import Link from 'next/link'
 import { supabase } from '../lib/supabaseClient'
 import { useT } from '../lib/i18n'
 
-export default function GlobalNav({ activePage }) {
+export default function GlobalNav({ activePage, onLogin, onJobsClick }) {
   const { t } = useT()
   const [isLoggedIn, setIsLoggedIn] = useState(false)
   const [user, setUser] = useState(null)
   const [showMenu, setShowMenu] = useState(false)
   const [isAdmin, setIsAdmin] = useState(false)
   const [ready, setReady] = useState(false)
+  const [isSubmitted, setIsSubmitted] = useState(true)
   const [savedCount, setSavedCount] = useState(0)
   const [profileScore, setProfileScore] = useState(null)
   const menuRef = useRef(null)
@@ -62,6 +63,7 @@ export default function GlobalNav({ activePage }) {
           }
         } catch {}
       }
+      setIsSubmitted(localStorage.getItem('fyi_submitted') === 'true')
       setReady(true)
     })
   }, [])
@@ -87,9 +89,7 @@ export default function GlobalNav({ activePage }) {
         @keyframes jobsShimmer { 0% { left: -100%; } 50% { left: 120%; } 100% { left: 120%; } }
         .gnav-jobs-icon { display: inline-flex; align-items: center; flex-shrink: 0; }
         .gnav-jobs-icon svg { width: 14px; height: 14px; }
-        .gnav-jobs-bubble { position: absolute; top: calc(100% + 14px); left: 50%; transform: translateX(-50%); background: #fff; padding: 5px 12px; border-radius: 8px; white-space: nowrap; font-size: 11px; font-weight: 700; color: #ff6000; pointer-events: none; animation: bubbleFloat 3s ease-in-out infinite; box-shadow: 0 2px 12px rgba(0,0,0,0.25); }
-        .gnav-jobs-bubble::before { content: ''; position: absolute; top: -4px; left: 50%; transform: translateX(-50%) rotate(45deg); width: 8px; height: 8px; background: #fff; }
-        @keyframes bubbleFloat { 0%,100% { transform: translateX(-50%) translateY(0); } 50% { transform: translateX(-50%) translateY(-3px); } }
+
         .gnav-login { font-size: 13px; font-weight: 600; color: rgba(255,255,255,0.5); background: none; border: 1px solid rgba(255,255,255,0.15); padding: 7px 16px; border-radius: 100px; cursor: pointer; font-family: 'Barlow', sans-serif; }
         .gnav-submit { font-size: 12px; font-weight: 600; background: #ff6000; color: #fff; border: none; padding: 8px 18px; border-radius: 2px; cursor: pointer; font-family: 'Barlow', sans-serif; }
         .gnav-user { display: flex; align-items: center; gap: 6px; padding: 4px 10px 4px 4px; border-radius: 100px; border: 1px solid rgba(255,255,255,0.12); cursor: pointer; position: relative; flex-shrink: 0; }
@@ -117,7 +117,7 @@ export default function GlobalNav({ activePage }) {
           .gnav-toggle-opt { font-size: 9px; padding: 3px 8px; }
           .gnav-jobs-cta { display: inline-flex !important; font-size: 10px; padding: 4px 10px !important; gap: 4px; white-space: nowrap; }
           .gnav-jobs-icon svg { width: 12px; height: 12px; }
-          .gnav-jobs-bubble { display: none; }
+
           .gnav-login { font-size: 10px; padding: 4px 10px; white-space: nowrap; }
           .gnav-submit { font-size: 9px; padding: 5px 8px; white-space: nowrap; }
         }
@@ -134,31 +134,35 @@ export default function GlobalNav({ activePage }) {
           </Link>
         </div>
         <div className="gnav-r">
-          <Link href="/" className={`gnav-link${activePage === 'home' ? ' on' : ''}`}>{t('nav.amIUnderpaid')}</Link>
+          {activePage === 'home' ? (
+            <button className="gnav-link on" onClick={() => document.getElementById('submit')?.scrollIntoView({behavior:'smooth'})}>{t('nav.amIUnderpaid')}</button>
+          ) : (
+            <Link href="/" className="gnav-link">{t('nav.amIUnderpaid')}</Link>
+          )}
+          {activePage === 'home' && (
+            <button className="gnav-link" onClick={() => document.getElementById('companies')?.scrollIntoView({behavior:'smooth'})}>{t('nav.whoPaysMost')}</button>
+          )}
           {activePage !== 'jobs' && (
-            <Link href="/jobs" className="gnav-link gnav-jobs-cta">
+            <Link href="/jobs" className="gnav-link gnav-jobs-cta" onClick={() => onJobsClick?.()}>
               <span className="gnav-jobs-shimmer"></span>
               <span className="gnav-jobs-icon"><svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="3" y="7" width="18" height="13" rx="2" stroke="currentColor" strokeWidth="2"/><path d="M8 7V5a2 2 0 012-2h4a2 2 0 012 2v2" stroke="currentColor" strokeWidth="2"/><path d="M12 11v4M10 13h4" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg></span>
               {t('nav.jobs')}
-              <span className="gnav-jobs-bubble">{t('nav.jobsSub')}</span>
             </Link>
           )}
 
           {!ready ? null : !isLoggedIn ? (
-            <>
-              <button className="gnav-login" onClick={async () => {
-                if (typeof window === 'undefined') return;
-                localStorage.setItem('fyi_login_return', window.location.pathname);
-                if (window.location.hostname === 'localhost') {
-                  await supabase.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: window.location.origin + '/auth/callback' } });
-                } else {
-                  window.location.href = '/api/auth/google?return=' + encodeURIComponent(window.location.pathname);
-                }
-              }}>
-                {t('nav.login')}
-              </button>
-              <Link href="/#submit" className="gnav-submit">{t('nav.submitSalary')}</Link>
-            </>
+            <button className="gnav-login" onClick={async () => {
+              if (onLogin) return onLogin();
+              if (typeof window === 'undefined') return;
+              localStorage.setItem('fyi_login_return', window.location.pathname);
+              if (window.location.hostname === 'localhost') {
+                await supabase.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: window.location.origin + '/auth/callback' } });
+              } else {
+                window.location.href = '/api/auth/google?return=' + encodeURIComponent(window.location.pathname);
+              }
+            }}>
+              {t('nav.login')}
+            </button>
           ) : (
             <div className="gnav-user" ref={menuRef} onClick={() => setShowMenu(v => !v)}>
               {user?.user_metadata?.avatar_url ? (
@@ -198,6 +202,14 @@ export default function GlobalNav({ activePage }) {
                 </div>
               )}
             </div>
+          )}
+
+          {ready && !isSubmitted && (
+            activePage === 'home' ? (
+              <button className="gnav-submit" onClick={() => document.getElementById('submit')?.scrollIntoView({behavior:'smooth'})}>{t('nav.submitSalary')}</button>
+            ) : (
+              <Link href="/#submit" className="gnav-submit">{t('nav.submitSalary')}</Link>
+            )
           )}
         </div>
       </nav>

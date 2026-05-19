@@ -9,25 +9,6 @@ export const homeCss = `
 html { scroll-behavior:smooth; }
 body { background:var(--bg); color:var(--white); font-family:'Barlow',sans-serif; -webkit-font-smoothing:antialiased; overflow-x:hidden; }
 
-/* NAV */
-nav { position:fixed; top:0; left:0; right:0; z-index:200; padding:0 52px; height:56px; display:flex; align-items:center; justify-content:space-between; background:rgba(12,12,11,0.9); backdrop-filter:blur(14px); border-bottom:1px solid var(--line); }
-.logo { display:flex; align-items:center; gap:10px; font-size:13px; font-weight:600; color:var(--white); }
-.nav-r { display:flex; align-items:center; gap:32px; }
-.nav-link { position:relative; font-size:13px; color:rgba(242,240,235,0.42); text-decoration:none; background:none; border:none; cursor:pointer; font-family:'Barlow',sans-serif; padding:0; transition:color .2s; }
-.nav-link:hover { color:#f0ece4; }
-.nav-link::after { content:''; position:absolute; bottom:-2px; left:0; right:0; height:2px; background:#ff6000; transform:scaleX(0); transition:transform .2s ease; }
-.nav-link:hover::after { transform:scaleX(1); }
-.nav-jobs-cta { display:inline-flex; align-items:center; gap:6px; background:#ff6000; border:none; padding:7px 16px; border-radius:100px; color:#fff; font-weight:700; text-decoration:none; font-size:13px; font-family:'Barlow',sans-serif; position:relative; transition:all .25s; }
-.nav-jobs-shimmer { position:absolute; inset:0; border-radius:100px; overflow:hidden; pointer-events:none; }
-.nav-jobs-shimmer::before { content:''; position:absolute; top:0; left:-100%; width:60%; height:100%; background:linear-gradient(90deg, transparent, rgba(255,255,255,0.25), transparent); animation:jobsShimmer 2.5s ease-in-out infinite; }
-.nav-jobs-cta:hover { background:#ff7a1a; box-shadow:0 0 20px rgba(255,96,0,0.4); transform:translateY(-1px); }
-.nav-jobs-cta::after { display:none !important; }
-@keyframes jobsShimmer { 0% { left:-100%; } 50% { left:120%; } 100% { left:120%; } }
-.nav-jobs-icon { display:inline-flex; align-items:center; flex-shrink:0; }
-.nav-jobs-icon svg { width:14px; height:14px; }
-.nav-jobs-bubble { position:absolute; top:calc(100% + 14px); left:50%; transform:translateX(-50%); background:#fafaf8; padding:5px 12px; border-radius:8px; white-space:nowrap; font-size:11px; font-weight:700; color:#ff6000; pointer-events:none; animation:bubbleFloat 3s ease-in-out infinite; box-shadow:0 2px 12px rgba(0,0,0,0.25); }
-.nav-jobs-bubble::before { content:''; position:absolute; top:-4px; left:50%; transform:translateX(-50%) rotate(45deg); width:8px; height:8px; background:#fafaf8; }
-@keyframes bubbleFloat { 0%,100% { transform:translateX(-50%) translateY(0); } 50% { transform:translateX(-50%) translateY(-3px); } }
 
 /* Company selected state */
 .company-selected { display:flex; align-items:center; gap:14px; background:#1a0d07; border:1px solid #ff6000; border-radius:12px; padding:16px 18px; position:relative; overflow:hidden; }
@@ -41,12 +22,9 @@ nav { position:fixed; top:0; left:0; right:0; z-index:200; padding:0 52px; heigh
 .company-selected-badge { font-size:10px; font-weight:500; color:#ff6000; background:#2a1208; padding:3px 8px; border-radius:10px; border:1px solid #3a1a0a; white-space:nowrap; flex-shrink:0; }
 .company-selected-clear { background:none; border:none; cursor:pointer; color:#333; font-size:18px; padding:2px 4px; line-height:1; transition:color .15s; flex-shrink:0; font-family:'Barlow',sans-serif; }
 .company-selected-clear:hover { color:#888; }
-.nav-login-btn { font-family:'Barlow',sans-serif; font-size:13px; font-weight:600; color:rgba(255,255,255,0.5); background:none; border:1px solid rgba(255,255,255,0.15); padding:7px 16px; border-radius:100px; cursor:pointer; transition:border-color .15s,color .15s; }
-.nav-login-btn:hover { border-color:rgba(255,255,255,0.35); color:rgba(255,255,255,0.8); }
-.nav-btn { font-family:'Barlow',sans-serif; font-size:12px; font-weight:600; background:var(--orange); color:#fff; border:none; padding:8px 18px; border-radius:2px; cursor:pointer; }
 
 /* HERO */
-.hero { position:relative; height:100vh; overflow:hidden; padding-top:56px; background:#0c0c0b; }
+.hero { position:relative; height:100vh; overflow:hidden; background:#0c0c0b; }
 .hero-copy { position:absolute; inset:0; z-index:10; display:flex; flex-direction:column; justify-content:center; padding:80px 52px 80px 96px; max-width:700px; }
 .hero-kicker { font-family:'Geist Mono',monospace; font-size:11px; color:var(--orange); letter-spacing:2.5px; text-transform:uppercase; margin-bottom:32px; display:flex; align-items:center; gap:10px; }
 .kdot { width:5px; height:5px; border-radius:50%; background:var(--orange); box-shadow:0 0 8px var(--orange); animation:glow 2s ease-in-out infinite; }
@@ -624,20 +602,9 @@ nav { position:fixed; top:0; left:0; right:0; z-index:200; padding:0 52px; heigh
   .lb-top3 { grid-template-columns: 1fr; }
   .wgf-team-grid { grid-template-columns: repeat(2, 1fr); }
   footer { padding:24px 16px; }
-  /* NAV */
-  nav { padding:0 12px; height:48px; }
-  .logo { font-size:11px; gap:6px; }
-  .logo img { width:22px !important; height:22px !important; }
-  .nav-link { display:none; }
-  .nav-jobs-cta { display:inline-flex !important; font-size:10px; padding:4px 10px; gap:4px; white-space:nowrap; }
-  .nav-jobs-icon svg { width:12px; height:12px; }
-  .nav-jobs-bubble { display:none; }
-  .nav-r { gap:6px; flex-shrink:0; }
-  .nav-btn { font-size:9px; padding:5px 8px; white-space:nowrap; }
-  .nav-login-btn { font-size:10px; padding:4px 10px; white-space:nowrap; }
+
 
   /* HERO */
-  .hero { padding-top:48px; }
   .hero-copy { padding:0 20px; max-width:100%; }
   .hero-h1 { font-size:clamp(28px,8vw,44px); letter-spacing:-1.5px; }
   .hero-sub { font-size:13px; margin-bottom:28px; }
@@ -705,11 +672,6 @@ nav { position:fixed; top:0; left:0; right:0; z-index:200; padding:0 52px; heigh
 
 @media (max-width: 400px) {
   .hero-h1 { font-size:clamp(26px,9vw,36px); }
-  .nav-r { gap:4px; }
-  .nav-btn { font-size:8px; padding:4px 6px; }
-  .nav-login-btn { font-size:9px; padding:3px 8px; }
-  .nav-jobs-cta { font-size:9px; padding:3px 6px; }
-  .nav-user-name { display:none; }
   .logo span { font-size:0; }
   .logo span span { font-size:10px; }
 }

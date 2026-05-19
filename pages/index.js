@@ -9,6 +9,7 @@ import SubmitSection from '../components/home/SubmitSection';
 import { useT } from '../lib/i18n';
 import Icon from '../components/Icon';
 import { homeCss } from '../constants/homeStyles';
+import GlobalNav from '../components/GlobalNav';
 
 const css = homeCss;
 
@@ -619,18 +620,8 @@ export default function Home({ initialCompanies = [] }) {
   const [detailOpen, setDetailOpen] = useState(false);
   const [detailCardIndex, setDetailCardIndex] = useState(0);
   const [showAuthModal, setShowAuthModal] = useState(false);
-  const [isAdminUser, setIsAdminUser] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [user, setUser] = useState(null);
-  const [showUserMenu, setShowUserMenu] = useState(false);
-  const [profileScore, setProfileScore] = useState(null);
-  const userMenuRef = useRef(null);
-
-  useEffect(() => {
-    const handleClick = (e) => { if (userMenuRef.current && !userMenuRef.current.contains(e.target)) setShowUserMenu(false) }
-    document.addEventListener('mousedown', handleClick)
-    return () => document.removeEventListener('mousedown', handleClick)
-  }, [])
 
   // Derived: card/panel unlock state — only unlocked after submitting salary info
   const isUnlocked = isSubmitted;
@@ -794,24 +785,6 @@ export default function Home({ initialCompanies = [] }) {
       if (session) {
         setIsLoggedIn(true);
         setUser(session.user);
-        const cached = sessionStorage.getItem('fyi_is_admin');
-        if (cached !== null) {
-          setIsAdminUser(cached === 'true');
-          if (cached === 'true') {}
-        } else {
-          fetch(`/api/admin/check?email=${encodeURIComponent(session.user.email)}`)
-            .then(r => r.json()).then(d => { setIsAdminUser(d.isAdmin); sessionStorage.setItem('fyi_is_admin', String(d.isAdmin)); }).catch(() => {});
-        }
-
-        // Fetch profile score
-        fetch('/api/profile/talent', { headers: { Authorization: `Bearer ${session.access_token}` } })
-          .then(r => r.json()).then(({ profile: p }) => {
-            if (p) {
-              const checks = [p.photo_url, p.full_name, p.headline, p.location, p.resume_url, p.skills?.length > 0, p.university, p.experiences?.length > 0];
-              setProfileScore(Math.round(checks.filter(Boolean).length / checks.length * 100));
-            }
-          }).catch(() => {});
-
         // Only restore submission state for logged-in users
         const submitted = localStorage.getItem('fyi_submitted') === 'true';
         if (submitted) {
@@ -1100,93 +1073,14 @@ export default function Home({ initialCompanies = [] }) {
         <style dangerouslySetInnerHTML={{ __html: css }} />
       </Head>
 
-      {/* ── Nav — React controlled for auth state ── */}
-      <nav>
-        <div className="logo" onClick={() => window.location.reload()} style={{cursor:'pointer'}}>
-          <img src="/logo.png" style={{width:28,height:28,objectFit:'contain'}} />
-          <span>FOR YOUR <span style={{color:'var(--orange)'}}>&#39;SALARY&#39;</span> INFORMATION</span>
-        </div>
-        <div className="nav-r">
-          <button className="nav-link" onClick={() => document.getElementById('submit')?.scrollIntoView({behavior:'smooth'})}>{t('nav.amIUnderpaid')}</button>
-          <button className="nav-link" onClick={() => document.getElementById('companies')?.scrollIntoView({behavior:'smooth'})}>{t('nav.whoPaysMost')}</button>
-          <a className="nav-jobs-cta" href="/jobs" onClick={() => {
-            fetch('/api/track', { method: 'POST', headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ event: 'click_jobs_cta', page: 'home', email: user?.email }) }).catch(() => {})
-          }}>
-            <span className="nav-jobs-shimmer"></span>
-            <span className="nav-jobs-icon"><svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="3" y="7" width="18" height="13" rx="2" stroke="currentColor" strokeWidth="2"/><path d="M8 7V5a2 2 0 012-2h4a2 2 0 012 2v2" stroke="currentColor" strokeWidth="2"/><path d="M12 11v4M10 13h4" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg></span>
-            {t('nav.jobs')}
-            <span className="nav-jobs-bubble">{t('nav.jobsSub')}</span>
-          </a>
-
-
-          {!isLoggedIn ? (
-            <button
-              onClick={() => setShowAuthModal(true)}
-              className="nav-login-btn">
-              {t('nav.login')}
-            </button>
-          ) : (
-            <div
-              ref={userMenuRef}
-              style={{display:'flex', alignItems:'center', gap:'6px', padding:'4px 10px 4px 4px', borderRadius:'100px', border:'1px solid rgba(255,255,255,0.12)', cursor:'pointer', position:'relative', flexShrink:0}}
-              onClick={() => setShowUserMenu(prev => !prev)}>
-              {user?.user_metadata?.avatar_url ? (
-                <img src={user.user_metadata.avatar_url} style={{width:24,height:24,borderRadius:'50%',objectFit:'cover'}} />
-              ) : (
-                <div style={{width:24,height:24,borderRadius:'50%',background:'#ff6000',display:'flex',alignItems:'center',justifyContent:'center',fontSize:10,fontWeight:800,color:'black'}}>
-                  {(user?.user_metadata?.full_name || user?.user_metadata?.name || user?.email || 'U')[0].toUpperCase()}
-                </div>
-              )}
-              <span className="nav-user-name" style={{fontSize:12,fontWeight:600,color:'rgba(255,255,255,0.7)',whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis',maxWidth:'80px'}}>
-                {(user?.user_metadata?.full_name || user?.user_metadata?.name)?.split(' ')[0] || user?.email?.split('@')[0] || 'Account'}
-              </span>
-              <span style={{fontSize:10,color:'rgba(255,255,255,0.3)'}}>▾</span>
-
-              {showUserMenu && (
-                <div style={{position:'absolute',top:'calc(100% + 8px)',right:0,background:'#1a1a1a',border:'1px solid rgba(255,255,255,0.1)',borderRadius:12,padding:'6px',minWidth:160,zIndex:500,boxShadow:'0 8px 32px rgba(0,0,0,0.4)'}}>
-                  <div style={{padding:'10px 14px',fontSize:12,color:'rgba(255,255,255,0.35)',borderBottom:'1px solid rgba(255,255,255,0.06)',marginBottom:'4px'}}>
-                    {user?.email}
-                  </div>
-                  <a href="/profile" onClick={e => e.stopPropagation()}
-                    style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'10px 14px',borderRadius:8,color:'rgba(255,255,255,0.6)',fontSize:13,textDecoration:'none',fontFamily:"'Barlow',sans-serif"}}>
-                    <span>{t('nav.myProfile')}</span>
-                    {profileScore != null && profileScore < 100 && (
-                      <span style={{fontSize:10,fontWeight:700,color:profileScore >= 60 ? '#4ade80' : '#fbbf24',background:profileScore >= 60 ? 'rgba(74,222,128,0.1)' : 'rgba(251,191,36,0.1)',padding:'2px 8px',borderRadius:100}}>{profileScore}%</span>
-                    )}
-                  </a>
-                  <a href="/my-applications" onClick={e => e.stopPropagation()}
-                    style={{display:'block',padding:'10px 14px',borderRadius:8,color:'rgba(255,255,255,0.6)',fontSize:13,textDecoration:'none',fontFamily:"'Barlow',sans-serif"}}>
-                    {t('nav.myApplications')}
-                  </a>
-                  {isAdminUser && (
-                    <a href="/admin/jobs" onClick={e => e.stopPropagation()}
-                      style={{display:'block',padding:'10px 14px',borderRadius:8,color:'#ff6000',fontSize:13,textDecoration:'none',fontFamily:"'Barlow',sans-serif"}}>
-                      Admin Dashboard
-                    </a>
-                  )}
-                  <button
-                    onClick={async (e) => {
-                      e.stopPropagation();
-                      await supabaseClient.auth.signOut();
-                      setIsLoggedIn(false);
-                      setUser(null);
-                      setShowUserMenu(false);
-                      // DO NOT touch isSubmitted or localStorage 'fyi_submitted'
-                    }}
-                    style={{width:'100%',padding:'10px 14px',borderRadius:8,border:'none',background:'transparent',color:'rgba(255,255,255,0.6)',fontSize:13,cursor:'pointer',textAlign:'left',fontFamily:"'Barlow',sans-serif"}}>
-                    {t('nav.logout')}
-                  </button>
-                </div>
-              )}
-            </div>
-          )}
-
-          <button className="nav-btn" onClick={() => document.getElementById('submit')?.scrollIntoView({behavior:'smooth'})}>
-            {t('nav.submitSalary')}
-          </button>
-        </div>
-      </nav>
+      <GlobalNav
+        activePage="home"
+        onLogin={() => setShowAuthModal(true)}
+        onJobsClick={() => {
+          fetch('/api/track', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ event: 'click_jobs_cta', page: 'home', email: user?.email }) }).catch(() => {})
+        }}
+      />
 
       <div suppressHydrationWarning dangerouslySetInnerHTML={PAGE_HTML_PRE} />
 
