@@ -11,6 +11,14 @@ import { COMPANY_PROFILES } from '../data/companyProfiles.js'
 import { formatSalaryCard, getHighSalaryThreshold } from '../utils/salary'
 import { generateCompanyDescription } from '../utils/companyDescription'
 
+function decodeHTML(str) {
+  if (!str || typeof str !== 'string') return str
+  const el = typeof document !== 'undefined' && document.createElement('textarea')
+  if (!el) return str
+  el.innerHTML = str
+  return el.value
+}
+
 // Module-level: survives client-side navigation, resets on full page reload
 let _cachedProfile = null
 
@@ -1304,7 +1312,7 @@ export default function JobsPage() {
               {/* Description */}
               <div className="jd-section-title">{t('jobs.about')}</div>
               <div className="jd-desc">
-                {detailJob.description || `${detailJob.company} is looking for a ${detailJob.title} to join their team in ${detailJob.location}.\n\nThis is a ${detailJob.type} position offering ${Math.round(detailJob.salary_min / 1e6)}M–${Math.round(detailJob.salary_max / 1e6)}M VND, ideal for candidates with ${detailJob.experience_min}–${detailJob.experience_max} years of experience in ${detailJob.role}.\n\nOur headhunter team will personally introduce you and support you throughout the process.`}
+                {decodeHTML(detailJob.description) || `${detailJob.company} is looking for a ${detailJob.title} to join their team in ${detailJob.location}.\n\nThis is a ${detailJob.type} position offering ${Math.round(detailJob.salary_min / 1e6)}M–${Math.round(detailJob.salary_max / 1e6)}M VND, ideal for candidates with ${detailJob.experience_min}–${detailJob.experience_max} years of experience in ${detailJob.role}.\n\nOur headhunter team will personally introduce you and support you throughout the process.`}
               </div>
 
               {/* Benefits */}
@@ -1314,7 +1322,7 @@ export default function JobsPage() {
                   <div className="jd-section-title">Benefits</div>
                   <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 24 }}>
                     {detailJob.benefits.map(b => (
-                      <span key={b} style={{ fontSize: 13, color: '#166534', background: '#f0fff4', border: '1px solid #86efac', padding: '5px 12px', borderRadius: 6 }}>{b}</span>
+                      <span key={b} style={{ fontSize: 13, color: '#166534', background: '#f0fff4', border: '1px solid #86efac', padding: '5px 12px', borderRadius: 6 }}>{decodeHTML(b)}</span>
                     ))}
                   </div>
                 </>
@@ -1325,7 +1333,7 @@ export default function JobsPage() {
                 <>
                   <div className="jd-divider" />
                   <div className="jd-section-title">Hiring Process</div>
-                  <div style={{ fontSize: 14, color: '#444', marginBottom: 24 }}>{detailJob.hiring_process}</div>
+                  <div style={{ fontSize: 14, color: '#444', marginBottom: 24 }}>{decodeHTML(detailJob.hiring_process)}</div>
                 </>
               )}
 
