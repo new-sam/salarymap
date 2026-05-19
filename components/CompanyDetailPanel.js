@@ -54,23 +54,11 @@ export default function CompanyDetailPanel({
     return () => window.removeEventListener('keydown', h)
   }, [isOpen, onClose])
 
-  // Scroll lock (including iOS Safari)
+  // Scroll lock
   useEffect(() => {
     if (isOpen) {
-      const scrollY = window.scrollY
-      document.body.style.position = 'fixed'
-      document.body.style.top = `-${scrollY}px`
-      document.body.style.left = '0'
-      document.body.style.right = '0'
       document.body.style.overflow = 'hidden'
-      return () => {
-        document.body.style.position = ''
-        document.body.style.top = ''
-        document.body.style.left = ''
-        document.body.style.right = ''
-        document.body.style.overflow = ''
-        window.scrollTo(0, scrollY)
-      }
+      return () => { document.body.style.overflow = '' }
     }
   }, [isOpen])
 
@@ -144,8 +132,9 @@ export default function CompanyDetailPanel({
   // ── Panel style ──
   const panelStyle = isMobile ? {
     position: 'fixed', bottom: 0, left: 0, right: 0,
-    maxHeight: '90vh', background: '#fff', zIndex: 300,
-    borderRadius: '20px 20px 0 0', overflowY: 'auto',
+    maxHeight: '85vh', background: '#fff', zIndex: 100000,
+    borderRadius: '16px 16px 0 0', overflowY: 'auto',
+    overscrollBehavior: 'contain',
     transform: isOpen ? 'translateY(0)' : 'translateY(100%)',
     transition: 'transform 0.3s ease',
     boxShadow: '0 -4px 30px rgba(0,0,0,0.2)',
@@ -607,7 +596,7 @@ export default function CompanyDetailPanel({
     <>
       {/* Backdrop */}
       {isOpen && <div onClick={onClose} style={{
-        position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 299,
+        position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: isMobile ? 99999 : 299,
       }} />}
 
       {/* Panel */}
@@ -616,8 +605,8 @@ export default function CompanyDetailPanel({
           <>
             {/* Mobile handle */}
             {isMobile && (
-              <div style={{ display: 'flex', justifyContent: 'center', padding: '10px 0 0' }}>
-                <div style={{ width: 36, height: 4, borderRadius: 2, background: '#ddd' }} />
+              <div style={{ display: 'flex', justifyContent: 'center', padding: '8px 0 0', background: '#111', borderRadius: '16px 16px 0 0' }}>
+                <div style={{ width: 36, height: 4, borderRadius: 2, background: 'rgba(255,255,255,0.3)' }} />
               </div>
             )}
 
@@ -659,7 +648,7 @@ export default function CompanyDetailPanel({
                   {renderDistribution()}
                   {renderRating(false)}
                   {renderFeed(false)}
-                  <a href={`/jobs?company=${encodeURIComponent(company)}`} style={{
+                  <a href="/jobs" style={{
                     display: 'block', marginTop: 20, padding: '14px 20px',
                     background: '#1a0d07', border: '1px solid rgba(255,96,0,0.25)',
                     borderRadius: 10, textAlign: 'center', textDecoration: 'none',

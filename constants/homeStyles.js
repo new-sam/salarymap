@@ -133,6 +133,7 @@ body { background:var(--bg); color:var(--white); font-family:'Barlow',sans-serif
 .cards-unlock-cta-sub { font-size:13px; color:rgba(255,255,255,.4); margin-top:3px; }
 .cards-unlock-cta-btn { flex-shrink:0; background:#ff6000; color:#000; font-size:13px; font-weight:800; padding:11px 22px; border-radius:100px; white-space:nowrap; transition:opacity .15s; }
 .cards-unlock-cta:hover .cards-unlock-cta-btn { opacity:.85; }
+@media(max-width:768px){ .card-sal { font-size:14px; } .card-name { font-size:13px; } }
 @media(max-width:600px){ .cards-unlock-cta { flex-direction:column; align-items:flex-start; padding:20px; } .cards-unlock-cta-btn { align-self:stretch; text-align:center; } }
 .cta-main { font-size:16px; font-weight:700; color:#fff; }
 .cta-sub { font-size:12px; color:rgba(255,255,255,.45); }
