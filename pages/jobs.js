@@ -75,6 +75,10 @@ export default function JobsPage() {
   const [bookmarks, setBookmarks] = useState([])
   const [appliedJobs, setAppliedJobs] = useState([])
   const [toast, setToast] = useState(null)
+  const [appliedInfo, setAppliedInfo] = useState(null)
+  const [showAiProfilePrompt, setShowAiProfilePrompt] = useState(null)
+  const [aiParsing, setAiParsing] = useState(0)
+  const [hasProfileResume, setHasProfileResume] = useState(false)
   const [visibleCount, setVisibleCount] = useState(JOBS_PER_PAGE)
   const barPlaceholderRef = useRef(null)
   const stickyRef = useRef(null)
@@ -196,15 +200,20 @@ export default function JobsPage() {
             sessionStorage.setItem('fyi_is_admin', String(isAdmin))
           } catch { }
         }
-        // Load bookmarks from DB
+        // Load bookmarks from DB + check profile resume
         try {
-          const bRes = await fetch(`/api/job-bookmarks?userId=${s.user.id}`)
+          const [bRes, pRes] = await Promise.all([
+            fetch(`/api/job-bookmarks?userId=${s.user.id}`),
+            fetch('/api/profile/talent', { headers: { Authorization: `Bearer ${s.access_token}` } }),
+          ])
           const bData = await bRes.json()
           if (bData.bookmarks) {
             const ids = bData.bookmarks.map(b => b.job_id)
             setBookmarks(ids)
             localStorage.setItem('fyi_bookmarks', JSON.stringify(ids))
           }
+          const pData = await pRes.json()
+          if (pData.resume_url) setHasProfileResume(true)
         } catch { }
       }
       setAuthLoading(false)
@@ -391,7 +400,7 @@ export default function JobsPage() {
     if (!applyRes.ok) {
       setApplying(false)
       const err = await applyRes.json().catch(() => ({}))
-      alert('지원 처리에 실패했습니다: ' + (err.error || 'unknown error'))
+      alert(t('jobs.applyError', { error: err.error || 'unknown error' }))
       return
     }
     setApplying(false)
@@ -414,11 +423,9 @@ export default function JobsPage() {
       })
       localStorage.setItem('fyi_my_applications', JSON.stringify(cached))
     } catch {}
-    // Redirect to confirmation page
-    router.push({
-      pathname: '/jobs/applied',
-      query: { title: target.title, company: target.company },
-    })
+    // Show success modal
+    setAppliedInfo({ title: target.title, company: target.company, resumeUrl })
+    setDetailJob(null)
   }
 
   const showToast = (msg) => {
@@ -777,6 +784,7 @@ export default function JobsPage() {
         .jc-skel-line { border-radius: 4px; background: #e9e9e9; }
         .shimmer { background: linear-gradient(90deg, #e9e9e9 25%, #f5f5f5 50%, #e9e9e9 75%); background-size: 200% 100%; animation: shimmer 1.5s infinite; }
         @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
       `}</style>
 
       <GlobalNav activePage="jobs" />
@@ -1473,6 +1481,89 @@ export default function JobsPage() {
         <div className="toast">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="#ff4400" stroke="none"><path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z"/></svg>
           {toast}
+        </div>
+      )}
+
+      {appliedInfo && (
+        <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.6)',zIndex:1100,display:'flex',alignItems:'center',justifyContent:'center',padding:'20px'}}
+          onClick={e => { if(e.target===e.currentTarget) { if(appliedInfo.resumeUrl && !hasProfileResume){setShowAiProfilePrompt({resumeUrl:appliedInfo.resumeUrl})} setAppliedInfo(null); } }}>
+          <div style={{background:'#fff',borderRadius:'20px',padding:'40px 36px',maxWidth:'420px',width:'100%',fontFamily:"'Barlow',sans-serif",textAlign:'center'}}>
+            <div style={{width:'56px',height:'56px',borderRadius:'50%',background:'#ff4400',display:'flex',alignItems:'center',justifyContent:'center',margin:'0 auto 16px'}}>
+              <span style={{color:'#fff',fontSize:'28px',lineHeight:1}}>&#10003;</span>
+            </div>
+            <div style={{fontSize:'22px',fontWeight:900,color:'#111',letterSpacing:'-0.5px',marginBottom:'8px'}}>{t('jobs.appliedModalTitle')}</div>
+            <div style={{fontSize:'14px',color:'#666',lineHeight:1.6,marginBottom:'24px'}}>
+              {t('jobs.appliedModalDesc', { company: appliedInfo.company, title: appliedInfo.title })}
+            </div>
+            <button onClick={() => { if(appliedInfo.resumeUrl && !hasProfileResume){setShowAiProfilePrompt({resumeUrl:appliedInfo.resumeUrl})} setAppliedInfo(null); }}
+              style={{background:'#ff4400',color:'#fff',fontSize:'14px',fontWeight:700,padding:'14px 32px',borderRadius:'10px',border:'none',cursor:'pointer',fontFamily:"'Barlow',sans-serif"}}>
+              {t('jobs.confirm')}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {showAiProfilePrompt && (
+        <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.6)',zIndex:1100,display:'flex',alignItems:'center',justifyContent:'center',padding:'20px'}}
+          onClick={e => { if(e.target===e.currentTarget && !aiParsing) setShowAiProfilePrompt(null); }}>
+          <div style={{background:'#fff',borderRadius:'20px',padding:'40px 36px',maxWidth:'420px',width:'100%',fontFamily:"'Barlow',sans-serif",textAlign:'center'}}>
+            {aiParsing ? (
+              <>
+                <div style={{fontSize:'40px',marginBottom:'16px'}}>&#10024;</div>
+                <div style={{fontSize:'18px',fontWeight:800,color:'#111',marginBottom:'8px'}}>{t('jobs.aiParsingTitle')}</div>
+                <div style={{fontSize:'13px',color:'#888',lineHeight:1.6,marginBottom:'20px'}}>{t('jobs.aiParsingSub')}</div>
+                <div style={{background:'#f0f0f0',borderRadius:'8px',height:'8px',overflow:'hidden',marginBottom:'10px'}}>
+                  <div style={{background:'#ff4400',height:'100%',borderRadius:'8px',width:`${aiParsing}%`,transition:'width 0.4s ease'}} />
+                </div>
+                <div style={{fontSize:'13px',fontWeight:700,color:'#ff4400'}}>{aiParsing}%</div>
+              </>
+            ) : (
+              <>
+                <div style={{fontSize:'40px',marginBottom:'16px'}}>&#10024;</div>
+                <div style={{fontSize:'20px',fontWeight:900,color:'#111',letterSpacing:'-0.5px',marginBottom:'8px'}}>{t('jobs.aiProfileTitle')}</div>
+                <div style={{fontSize:'14px',color:'#666',lineHeight:1.6,marginBottom:'24px'}}>{t('jobs.aiProfileDesc')}</div>
+                <div style={{display:'flex',gap:'10px'}}>
+                  <button onClick={() => setShowAiProfilePrompt(null)}
+                    style={{flex:1,background:'#f0f0f0',color:'#555',fontSize:'14px',fontWeight:700,padding:'14px',borderRadius:'10px',border:'none',cursor:'pointer',fontFamily:"'Barlow',sans-serif"}}>
+                    {t('jobs.aiProfileSkip')}
+                  </button>
+                  <button onClick={async () => {
+                    setAiParsing(5)
+                    try {
+                      const token = (await supabase.auth.getSession()).data.session?.access_token
+                      setAiParsing(15)
+                      await fetch('/api/profile/talent', {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+                        body: JSON.stringify({ resume_url: showAiProfilePrompt.resumeUrl }),
+                      })
+                      setAiParsing(30)
+                      const tick = setInterval(() => { setAiParsing(p => p < 85 ? p + Math.random() * 8 >> 0 : p) }, 800)
+                      const parseRes = await fetch('/api/profile/parse-resume', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+                      })
+                      clearInterval(tick)
+                      setAiParsing(95)
+                      if (!parseRes.ok) throw new Error('parse failed')
+                      setAiParsing(100)
+                      await new Promise(r => setTimeout(r, 400))
+                      router.push('/profile')
+                    } catch (err) {
+                      console.error('AI profile parse error:', err)
+                      alert(t('jobs.aiProfileError'))
+                    } finally {
+                      setAiParsing(0)
+                      setShowAiProfilePrompt(null)
+                    }
+                  }}
+                    style={{flex:1,background:'#ff4400',color:'#fff',fontSize:'14px',fontWeight:700,padding:'14px',borderRadius:'10px',border:'none',cursor:'pointer',fontFamily:"'Barlow',sans-serif"}}>
+                    {t('jobs.aiProfileConfirm')}
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
         </div>
       )}
 
