@@ -24,6 +24,7 @@ export default function MobileTabBar() {
   const { t } = useT()
   const [isLoggedIn, setIsLoggedIn] = useState(false)
   const [hasResume, setHasResume] = useState(true)
+  const [dismissed, setDismissed] = useState(false)
 
   useEffect(() => {
     supabase.auth.getSession().then(async ({ data: { session } }) => {
@@ -50,7 +51,7 @@ export default function MobileTabBar() {
   }
 
   const active = getActiveKey()
-  const showBubble = (!isLoggedIn || !hasResume) && active !== 'profile'
+  const showBubble = (!isLoggedIn || !hasResume) && !dismissed && active !== 'profile'
 
   const handleTabClick = async (e, tab) => {
     if ((tab.key === 'profile' || tab.key === 'applications') && !isLoggedIn) {
@@ -78,6 +79,7 @@ export default function MobileTabBar() {
           .mtab-item.on .mtab-label { color: #ff6000; }
           .mtab-bubble { display: block; position: fixed; bottom: calc(68px + env(safe-area-inset-bottom)); right: 8px; z-index: 399; background: #ff6000; color: #fff; font-size: 11px; font-weight: 700; padding: 8px 14px; border-radius: 10px; box-shadow: 0 2px 12px rgba(255,96,0,0.4); animation: mtabBounce 3s ease-in-out infinite; line-height: 1.4; max-width: 180px; text-align: center; }
           .mtab-bubble::after { content: ''; position: absolute; bottom: -5px; right: 24px; width: 10px; height: 10px; background: #ff6000; transform: rotate(45deg); border-radius: 1px; }
+          .mtab-bubble-x { position: absolute; top: -8px; right: -8px; width: 20px; height: 20px; border-radius: 50%; background: rgba(0,0,0,0.6); color: #fff; font-size: 11px; display: flex; align-items: center; justify-content: center; cursor: pointer; border: none; line-height: 1; }
           @keyframes mtabBounce { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-4px); } }
         }
       `}</style>
@@ -95,6 +97,7 @@ export default function MobileTabBar() {
             router.push('/profile')
           }
         }}>
+          <button className="mtab-bubble-x" onClick={(e) => { e.stopPropagation(); setDismissed(true) }}>×</button>
           {t('mtab.resumeCta')}
         </div>
       )}
