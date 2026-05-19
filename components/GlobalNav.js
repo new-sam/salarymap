@@ -94,13 +94,13 @@ export default function GlobalNav({ activePage, onLogin, onJobsClick }) {
 
         .gnav-login { font-size: 13px; font-weight: 600; color: rgba(255,255,255,0.5); background: none; border: 1px solid rgba(255,255,255,0.15); padding: 7px 16px; border-radius: 100px; cursor: pointer; font-family: 'Barlow', sans-serif; }
         .gnav-submit { font-size: 12px; font-weight: 600; background: #ff6000; color: #fff; border: none; padding: 8px 18px; border-radius: 2px; cursor: pointer; font-family: 'Barlow', sans-serif; }
-        .gnav-user { display: flex; align-items: center; gap: 6px; padding: 4px 10px 4px 4px; border-radius: 100px; border: 1px solid rgba(255,255,255,0.12); cursor: pointer; position: relative; flex-shrink: 0; }
+        .gnav-user { display: flex; align-items: center; gap: 6px; padding: 4px 10px 4px 4px; border-radius: 100px; border: 1px solid rgba(255,255,255,0.12); cursor: pointer; flex-shrink: 0; }
         .gnav-avatar { width: 24px; height: 24px; border-radius: 50%; object-fit: cover; }
         .gnav-avatar-ini { width: 24px; height: 24px; border-radius: 50%; background: #ff6000; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 800; color: black; }
         .gnav-name { font-size: 12px; font-weight: 600; color: rgba(255,255,255,0.7); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 80px; }
         .gnav-score { font-size: 10px; font-weight: 700; padding: 2px 6px; border-radius: 100px; line-height: 1; }
         .gnav-caret { font-size: 10px; color: rgba(255,255,255,0.3); }
-        .gnav-ai-bubble { position: absolute; top: calc(100% + 10px); right: 0; background: #ff6000; padding: 6px 12px; border-radius: 8px; white-space: nowrap; font-size: 11px; font-weight: 700; color: #fff; pointer-events: none; animation: gnav-aiBounce 3s ease-in-out infinite; box-shadow: 0 2px 12px rgba(255,96,0,0.4); z-index: 201; }
+        .gnav-ai-bubble { position: absolute; top: calc(100% + 10px); right: 0; background: #ff6000; padding: 6px 12px; border-radius: 8px; white-space: nowrap; font-size: 11px; font-weight: 700; color: #fff; cursor: pointer; animation: gnav-aiBounce 3s ease-in-out infinite; box-shadow: 0 2px 12px rgba(255,96,0,0.4); z-index: 201; }
         .gnav-ai-bubble::before { content: ''; position: absolute; top: -4px; right: 16px; width: 8px; height: 8px; background: #ff6000; transform: rotate(45deg); border-radius: 1px; }
         @keyframes gnav-aiBounce { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-3px); } }
         .gnav-menu { position: absolute; top: calc(100% + 8px); right: 0; background: #1a1a1a; border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 6px; min-width: 160px; z-index: 500; box-shadow: 0 8px 32px rgba(0,0,0,0.4); }
@@ -171,6 +171,7 @@ export default function GlobalNav({ activePage, onLogin, onJobsClick }) {
               {t('nav.login')}
             </button>
           ) : (
+            <div style={{ position: 'relative' }}>
             <div className="gnav-user" ref={menuRef} onClick={() => setShowMenu(v => !v)}>
               {user?.user_metadata?.avatar_url ? (
                 <img src={user.user_metadata.avatar_url} className="gnav-avatar" alt="" />
@@ -186,10 +187,6 @@ export default function GlobalNav({ activePage, onLogin, onJobsClick }) {
                 <span className="gnav-score" style={{ color: profileScore >= 60 ? '#4ade80' : '#fbbf24', background: profileScore >= 60 ? 'rgba(74,222,128,0.1)' : 'rgba(251,191,36,0.1)' }}>{profileScore}%</span>
               )}
               <span className="gnav-caret">▾</span>
-
-              {!hasResume && !showMenu && (
-                <a href="/profile" className="gnav-ai-bubble" style={{ pointerEvents: 'auto', textDecoration: 'none', color: '#fff' }}>✨ {t('nav.aiResume')}</a>
-              )}
 
               {showMenu && (
                 <div className="gnav-menu" onClick={e => e.stopPropagation()}>
@@ -216,6 +213,11 @@ export default function GlobalNav({ activePage, onLogin, onJobsClick }) {
                 </div>
               )}
             </div>
+
+            {!hasResume && !showMenu && (
+              <a href="/profile" className="gnav-ai-bubble" onClick={e => e.stopPropagation()} style={{ pointerEvents: 'auto', textDecoration: 'none', color: '#fff' }}>✨ {t('nav.aiResume')}</a>
+            )}
+          </div>
           )}
 
           {ready && !isSubmitted && (
