@@ -62,6 +62,17 @@ function SubmitSection({
     setRatingSubmitting(false);
   };
 
+  // Auto-advance when all 3 ratings are filled
+  useEffect(() => {
+    if (wizardStep === 5 && ratingWorklife && ratingSalary && ratingGrowth) {
+      const timer = setTimeout(async () => {
+        await handleRatingSubmit();
+        setWizardStep(6);
+      }, 500);
+      return () => clearTimeout(timer);
+    }
+  }, [ratingWorklife, ratingSalary, ratingGrowth, wizardStep]);
+
   const StarRow = ({ label, value, onChange }) => (
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 0', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
       <span style={{ fontSize: 14, color: 'rgba(255,255,255,0.7)' }}>{label}</span>
@@ -120,6 +131,8 @@ function SubmitSection({
         body: JSON.stringify({ name: item.name, domain: item.domain }),
       }).catch(() => {});
     }
+    // Auto-submit after company selection
+    setTimeout(() => handleSubmit(), 400);
   };
 
   const clearSelectedItem = () => {
@@ -384,10 +397,7 @@ function SubmitSection({
                   </>
                 )}
               </div>
-              <button onClick={handleSubmit} disabled={!wCompany.trim() || submitting}
-                style={{ ...ctaStyle, opacity: wCompany.trim() ? 1 : 0.4, cursor: wCompany.trim() ? 'pointer' : 'not-allowed' }}>
-                {submitting ? t('wizard.submitting') : t('wizard.viewRank')}
-              </button>
+              {submitting && <div style={{ textAlign: 'center', fontSize: '13px', color: 'rgba(255,255,255,0.5)', marginTop: '16px' }}>{t('wizard.submitting')}</div>}
               <div style={{ textAlign: 'center', fontSize: '11px', color: 'rgba(255,255,255,0.18)', marginTop: '12px' }}>
                 {t('wizard.anonymous')}
               </div>
@@ -401,17 +411,10 @@ function SubmitSection({
               <StarRow label="Work-life balance" value={ratingWorklife} onChange={setRatingWorklife} />
               <StarRow label="Salary fairness" value={ratingSalary} onChange={setRatingSalary} />
               <StarRow label="Growth opportunity" value={ratingGrowth} onChange={setRatingGrowth} />
-              <div style={{ display: 'flex', gap: '10px', marginTop: '28px' }}>
-                <button onClick={async () => { await handleRatingSubmit(); setWizardStep(6); }}
-                  disabled={(!ratingWorklife && !ratingSalary && !ratingGrowth) || ratingSubmitting}
-                  style={{ ...ctaStyle, flex: 1, opacity: (ratingWorklife || ratingSalary || ratingGrowth) ? 1 : 0.4 }}>
-                  {ratingSubmitting ? t('wizard.savingRating') : t('wizard.submitRating')}
-                </button>
-                <button onClick={() => setWizardStep(6)}
-                  style={{ ...quizBtn, padding: '16px 20px', background: 'none', color: 'rgba(255,255,255,0.4)', fontSize: '14px', fontWeight: 700, borderRadius: '14px' }}>
-                  {t('wizard.skip')}
-                </button>
-              </div>
+              <button onClick={() => setWizardStep(6)}
+                style={{ ...quizBtn, marginTop: '28px', background: 'none', color: 'rgba(255,255,255,0.25)', fontSize: '12px', display: 'block', width: '100%', textAlign: 'center' }}>
+                {t('wizard.skip')}
+              </button>
             </div>
           )}
         </div>
