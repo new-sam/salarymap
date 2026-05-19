@@ -108,7 +108,7 @@ export default function NextStepSheet({ role, experience, percentile, topCompani
 .ns-browse-sub{font-size:11px;color:#bbb;text-align:center}
       `}</style>
 
-      <div className="ns-backdrop" onClick={() => { if (typeof gtag === 'function') gtag('event', 'nextstep_backdrop_tap'); }} />
+      <div className="ns-backdrop" onClick={() => { if (typeof gtag === 'function') gtag('event', 'nextstep_backdrop_tap'); setVisible(false); }} />
 
       <div className="ns-sheet">
         <div className="ns-handle" />
