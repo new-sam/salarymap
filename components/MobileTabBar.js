@@ -76,7 +76,7 @@ export default function MobileTabBar() {
           .mtab-label { font-size: 10px; font-weight: 600; color: rgba(255,255,255,0.35); }
           .mtab-item.on svg { color: #ff6000; }
           .mtab-item.on .mtab-label { color: #ff6000; }
-          .mtab-bubble { display: block; position: fixed; bottom: 68px; right: 8px; z-index: 99998; background: #ff6000; color: #fff; font-size: 11px; font-weight: 700; padding: 8px 14px; border-radius: 10px; box-shadow: 0 2px 12px rgba(255,96,0,0.4); animation: mtabBounce 3s ease-in-out infinite; line-height: 1.4; max-width: 180px; text-align: center; }
+          .mtab-bubble { display: block; position: fixed; bottom: 68px; right: 8px; z-index: 399; background: #ff6000; color: #fff; font-size: 11px; font-weight: 700; padding: 8px 14px; border-radius: 10px; box-shadow: 0 2px 12px rgba(255,96,0,0.4); animation: mtabBounce 3s ease-in-out infinite; line-height: 1.4; max-width: 180px; text-align: center; }
           .mtab-bubble::after { content: ''; position: absolute; bottom: -5px; right: 24px; width: 10px; height: 10px; background: #ff6000; transform: rotate(45deg); border-radius: 1px; }
           @keyframes mtabBounce { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-4px); } }
         }
