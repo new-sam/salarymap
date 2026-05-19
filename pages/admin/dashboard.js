@@ -327,6 +327,7 @@ export default function AdminDashboard() {
                 { label: t.pageViews, value: realtime.landings, color: '#a78bfa' },
                 { label: t.metrics.jobClicks, value: realtime.jobClicks, color: '#fb923c' },
                 { label: t.metrics.cardClicks, value: realtime.cardClicks, color: '#f472b6' },
+                { label: t.metrics.resumeUploads, value: realtime.resumeUploads, color: '#14B8A6' },
                 { label: t.metrics.jobApps, value: realtime.jobApps, color: '#f87171' },
               ].map(item => (
                 <div key={item.label} style={{
@@ -710,6 +711,7 @@ export default function AdminDashboard() {
                         <td style={{ padding: '6px 12px', textAlign: 'right', color: d.jobsPageViews === null ? '#ccc' : '#06B6D4' }}>{d.jobsPageViews === null ? '-' : d.jobsPageViews}</td>
                         <td style={{ padding: '6px 12px', textAlign: 'right', color: d.applyClicks === null ? '#ccc' : '#D946EF' }}>{d.applyClicks === null ? '-' : d.applyClicks}</td>
                         <td style={{ padding: '6px 12px', textAlign: 'right', color: d.saveClicks === null ? '#ccc' : '#F472B6' }}>{d.saveClicks === null ? '-' : d.saveClicks}</td>
+                        <td style={{ padding: '6px 12px', textAlign: 'right', color: d.resumeUploads === null ? '#ccc' : '#14B8A6' }}>{d.resumeUploads === null ? '-' : d.resumeUploads}</td>
                         <td style={{ padding: '6px 12px', textAlign: 'right', color: '#EF4444' }}>{d.jobApps}</td>
                       </tr>
                     ))}
@@ -726,6 +728,7 @@ export default function AdminDashboard() {
                       <td style={{ padding: '8px 12px', textAlign: 'right', color: summary.hasEventTracking ? '#06B6D4' : '#ccc' }}>{summary.hasEventTracking ? summary.totalJobsPageViews : '-'}</td>
                       <td style={{ padding: '8px 12px', textAlign: 'right', color: summary.hasEventTracking ? '#D946EF' : '#ccc' }}>{summary.hasEventTracking ? summary.totalApplyClicks : '-'}</td>
                       <td style={{ padding: '8px 12px', textAlign: 'right', color: summary.hasEventTracking ? '#F472B6' : '#ccc' }}>{summary.hasEventTracking ? summary.totalSaveClicks : '-'}</td>
+                      <td style={{ padding: '8px 12px', textAlign: 'right', color: '#14B8A6' }}>{summary.totalResumeUploads ?? '-'}</td>
                       <td style={{ padding: '8px 12px', textAlign: 'right', color: '#EF4444' }}>{summary.totalJobApps}</td>
                     </tr>
                   </tbody>

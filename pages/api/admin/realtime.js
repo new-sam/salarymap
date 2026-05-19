@@ -16,7 +16,7 @@ export default async function handler(req, res) {
   const startISO = new Date(`${today}T00:00:00+07:00`).toISOString()
   const endISO = new Date(`${today}T23:59:59+07:00`).toISOString()
 
-  const [subsRes, jaRes, evRes, pvRes, landingRes] = await Promise.all([
+  const [subsRes, jaRes, evRes, pvRes, landingRes, resumeRes] = await Promise.all([
     supabase.from('submissions')
       .select('id, utm_source, utm_medium, utm_campaign', { count: 'exact', head: false })
       .gte('created_at', startISO).lte('created_at', endISO)
@@ -36,6 +36,10 @@ export default async function handler(req, res) {
     supabase.from('events')
       .select('id', { count: 'exact', head: true })
       .eq('event', 'landing')
+      .gte('created_at', startISO).lte('created_at', endISO),
+    supabase.from('events')
+      .select('id', { count: 'exact', head: true })
+      .eq('event', 'resume_upload')
       .gte('created_at', startISO).lte('created_at', endISO),
   ])
 
@@ -67,5 +71,6 @@ export default async function handler(req, res) {
     cardClicks: events.filter(e => e.event === 'click_job_card').length,
     pageViews: pvRes.count || 0,
     landings: landingRes.count || 0,
+    resumeUploads: resumeRes.count || 0,
   })
 }

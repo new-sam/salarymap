@@ -399,6 +399,7 @@ export default function ProfilePage() {
       set(type === 'photo' ? 'photo_url' : 'resume_url', url)
       setProfile(prev => ({ ...prev, [type === 'photo' ? 'photo_url' : 'resume_url']: url }))
       if (type === 'resume') {
+        fetch('/api/track', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ event: 'resume_upload', page: '/profile' }) }).catch(() => {})
         runAiParse()
       }
     }

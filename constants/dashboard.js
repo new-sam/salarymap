@@ -39,11 +39,12 @@ export const T = {
     expResultPlaceholder: '실험 결과나 성공/실패 사유를 기록하세요...',
     expEnd: '실험 종료',
     avg: '평균',
-    tableHeaders: ['날짜', '세션', '전체', '광고', '자연유입', '가입', '회사', '홈→Jobs', '공고클릭', 'Jobs페이지뷰', '지원클릭', '스크랩', '채용지원'],
+    tableHeaders: ['날짜', '세션', '전체', '광고', '자연유입', '가입', '회사', '홈→Jobs', '공고클릭', 'Jobs페이지뷰', '지원클릭', '스크랩', '이력서', '채용지원'],
     metrics: {
       sessions: '세션 (GA4)', submissions: '제출', ad: '광고 (UTM)', organic: '자연유입',
       signups: '가입', jobClicks: '홈→Jobs', cardClicks: '공고클릭', jobApps: '채용지원', companies: '회사',
       jobsPageViews: 'Jobs페이지뷰', applyClicks: '지원클릭', saveClicks: '스크랩',
+      resumeUploads: '이력서 등록',
     },
     funnelEmpty: '스테이지를 클릭하여 퍼널을 구성하세요',
     funnelClear: '초기화',
@@ -141,11 +142,12 @@ export const T = {
     expResultPlaceholder: 'Record the result or reason for success/failure...',
     expEnd: 'End Experiment',
     avg: 'avg',
-    tableHeaders: ['Date', 'Sessions', 'Total', 'Ad', 'Organic', 'Sign-ups', 'Companies', 'Home→Jobs', 'Job Clicks', 'Jobs Page Views', 'Apply Clicks', 'Saves', 'Job Apps'],
+    tableHeaders: ['Date', 'Sessions', 'Total', 'Ad', 'Organic', 'Sign-ups', 'Companies', 'Home→Jobs', 'Job Clicks', 'Jobs Page Views', 'Apply Clicks', 'Saves', 'Resumes', 'Job Apps'],
     metrics: {
       sessions: 'Sessions (GA4)', submissions: 'Submissions', ad: 'Ad (UTM)', organic: 'Organic',
       signups: 'Sign-ups', jobClicks: 'Home→Jobs', cardClicks: 'Job Clicks', jobApps: 'Job Apps', companies: 'Companies',
       jobsPageViews: 'Jobs Page Views', applyClicks: 'Apply Clicks', saveClicks: 'Saves',
+      resumeUploads: 'Resume Uploads',
     },
     funnelEmpty: 'Click stages below to build your funnel',
     funnelClear: 'Clear',
@@ -217,12 +219,13 @@ export const METRICS_BASE = [
   { key: 'applyClicks', dataKey: 'applyClicks', color: '#D946EF', summaryKey: 'totalApplyClicks' },
   { key: 'saveClicks', dataKey: 'saveClicks', color: '#F472B6', summaryKey: 'totalSaveClicks' },
   { key: 'jobApps', dataKey: 'jobApps', color: '#EF4444', summaryKey: 'totalJobApps' },
+  { key: 'resumeUploads', dataKey: 'resumeUploads', color: '#14B8A6', summaryKey: 'totalResumeUploads' },
   { key: 'companies', dataKey: 'companies', color: '#6B7280', summaryKey: 'uniqueCompanies' },
 ]
 
 export const EXP_COLORS = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7', '#DDA0DD', '#98D8C8', '#F7DC6F']
 
-export const DATA_KEYS = ['sessions', 'submissions', 'ad', 'organic', 'signups', 'companies', 'jobApps', 'jobClicks', 'cardClicks', 'jobsPageViews', 'applyClicks', 'saveClicks']
+export const DATA_KEYS = ['sessions', 'submissions', 'ad', 'organic', 'signups', 'companies', 'jobApps', 'jobClicks', 'cardClicks', 'jobsPageViews', 'applyClicks', 'saveClicks', 'resumeUploads']
 
 export const FUNNEL_TRACKING_START = '2026-05-09'
 
