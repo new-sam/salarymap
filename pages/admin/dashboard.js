@@ -21,7 +21,7 @@ export default function AdminDashboard() {
   const [token, setToken] = useState(null)
   const [data, setData] = useState(null)
   const [loading, setLoading] = useState(true)
-  const [selected, setSelected] = useState(null)
+  const [selected, setSelected] = useState([])
   const [lastUpdated, setLastUpdated] = useState(null)
   const [experiments, setExperiments] = useState([])
   const [expForm, setExpForm] = useState({ title: '', date: '', color: EXP_COLORS[0], metrics: [] })
@@ -179,7 +179,7 @@ export default function AdminDashboard() {
   if (auth === 'loading') return <div style={{ padding: 40, textAlign: 'center' }}>{t.loading}</div>
   if (auth === 'denied') return <div style={{ padding: 40, textAlign: 'center' }}>{t.denied}</div>
 
-  const selectedMetric = METRICS.find(m => m.key === selected)
+  const selectedMetrics = METRICS.filter(m => selected.includes(m.key))
 
   const dailyWithToday = (() => {
     if (!data?.daily) return data?.daily
@@ -243,7 +243,7 @@ export default function AdminDashboard() {
   })()
 
   const chartData = aggregateDaily(dailyWithToday, chartMode)
-  const visibleExperiments = experiments.filter(e => e.date >= dateRange.from && e.date <= (realtime?.date || dateRange.to) && (!e.metrics?.length || !selected || e.metrics.includes(selected)))
+  const visibleExperiments = experiments.filter(e => e.date >= dateRange.from && e.date <= (realtime?.date || dateRange.to) && (!e.metrics?.length || selected.length === 0 || selected.some(k => e.metrics.includes(k))))
 
   return (
     <>
@@ -352,16 +352,24 @@ export default function AdminDashboard() {
         {summary && !loading && tab === 'trend' && (
           <>
             {/* Metric Cards */}
+            {selected.length > 1 && (
+              <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 8 }}>
+                <button onClick={() => setSelected([])}
+                  style={{ padding: '3px 10px', border: '1px solid #d1d5db', borderRadius: 6, fontSize: 11, background: '#fff', cursor: 'pointer', color: '#888' }}>
+                  {lang === 'ko' ? '선택 초기화' : 'Clear selection'} ({selected.length})
+                </button>
+              </div>
+            )}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))', gap: 12, marginBottom: 24 }}>
               {METRICS.map(m => {
                 const isEventMetric = m.key === 'jobClicks' || m.key === 'cardClicks'
                 const noTracking = isEventMetric && !summary.hasEventTracking
                 const value = noTracking ? '-' : summary[m.summaryKey]
                 const dod = noTracking ? null : getDoD(chartData, m.dataKey)
-                const isActive = selected === m.key
+                const isActive = selected.includes(m.key)
                 return (
                   <div key={m.key}
-                    onClick={() => setSelected(isActive ? null : m.key)}
+                    onClick={() => setSelected(prev => isActive ? prev.filter(k => k !== m.key) : [...prev, m.key])}
                     style={{
                       background: isActive ? m.color : '#fff',
                       border: `2px solid ${isActive ? m.color : '#e5e7eb'}`,
@@ -388,10 +396,10 @@ export default function AdminDashboard() {
             </div>
 
             {/* Chart */}
-            {selectedMetric && (
+            {selectedMetrics.length > 0 && (
               <div style={sectionStyle}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-                  <h3 style={{ ...sectionTitle, margin: 0 }}>{selectedMetric.label} {t.trend}</h3>
+                  <h3 style={{ ...sectionTitle, margin: 0 }}>{selectedMetrics.map(m => m.label).join(' + ')} {t.trend}</h3>
                   <div style={{ display: 'flex', gap: 0, background: '#f3f4f6', borderRadius: 8, padding: 2 }}>
                     {[
                       { key: '1d', label: t.chart1d },
@@ -412,7 +420,7 @@ export default function AdminDashboard() {
                     ))}
                   </div>
                 </div>
-                <MetricChart daily={chartData} metric={selectedMetric} experiments={chartMode === '1d' ? visibleExperiments : []} avgLabel={t.avg} lang={lang} />
+                <MetricChart daily={chartData} metrics={selectedMetrics} experiments={chartMode === '1d' ? visibleExperiments : []} avgLabel={t.avg} lang={lang} />
 
                 {visibleExperiments.length > 0 && (
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 12, paddingTop: 12, borderTop: '1px solid #f3f4f6' }}>
