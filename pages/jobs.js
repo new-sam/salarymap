@@ -332,12 +332,10 @@ export default function JobsPage() {
         }
         return 999
       }
-      const featured = filtered.filter(j => j.is_featured)
-      const rest = filtered.filter(j => !j.is_featured)
-      rest.sort((a, b) => getBrand(a.company) - getBrand(b.company))
+      filtered.sort((a, b) => getBrand(a.company) - getBrand(b.company))
       // 같은 회사 분산
       const byCompany = {}
-      rest.forEach(job => {
+      filtered.forEach(job => {
         const key = job.company || ''
         if (!byCompany[key]) byCompany[key] = []
         byCompany[key].push(job)
@@ -345,18 +343,36 @@ export default function JobsPage() {
       const queues = Object.entries(byCompany)
         .sort((a, b) => getBrand(a[0]) - getBrand(b[0]))
         .map(([, jobs]) => jobs)
-      const result = []
+      const spread = []
       while (queues.some(q => q.length > 0)) {
         for (const q of queues) {
-          if (q.length > 0) result.push(q.shift())
+          if (q.length > 0) spread.push(q.shift())
         }
       }
-      return [...featured, ...result]
+      // wanted/non-wanted 1:1 인터리빙
+      const wanted = spread.filter(j => j.source === 'wanted')
+      const other = spread.filter(j => j.source !== 'wanted')
+      const result = []
+      let wi = 0, oi = 0
+      while (wi < wanted.length || oi < other.length) {
+        if (oi < other.length) result.push(other[oi++])
+        if (wi < wanted.length) result.push(wanted[wi++])
+      }
+      return result
     }
-    // featured 공고 상단 고정 (다른 정렬에서도)
-    const featured = filtered.filter(j => j.is_featured)
-    const rest = filtered.filter(j => !j.is_featured)
-    return [...featured, ...rest]
+    // wanted/non-wanted 1:1 인터리빙
+    const interleave = (list) => {
+      const wanted = list.filter(j => j.source === 'wanted')
+      const other = list.filter(j => j.source !== 'wanted')
+      const result = []
+      let wi = 0, oi = 0
+      while (wi < wanted.length || oi < other.length) {
+        if (oi < other.length) result.push(other[oi++])
+        if (wi < wanted.length) result.push(wanted[wi++])
+      }
+      return result
+    }
+    return interleave(filtered)
   })()
 
   const handleApply = async (job) => {
@@ -902,20 +918,17 @@ export default function JobsPage() {
             {/* Hot jobs section */}
             {jobs.length > 0 && !searchQuery && !roleFilter && !typeFilter && !techFilter && expMin === '' && expMax === '' && (() => {
               const now = new Date()
-              const featuredJobs = jobs.filter(j => j.is_featured).sort((a, b) => (b.salary_max || 0) - (a.salary_max || 0)).slice(0, 4)
-              let hotJobs
-              if (featuredJobs.length >= 4) {
-                hotJobs = featuredJobs
-              } else {
-                const closing = jobs
-                  .filter(j => !j.is_featured && j.deadline && new Date(j.deadline) > now && Math.ceil((new Date(j.deadline) - now) / 86400000) <= 14)
-                  .sort((a, b) => new Date(a.deadline) - new Date(b.deadline))
-                  .slice(0, 2)
-                const noDeadline = jobs
-                  .filter(j => !j.is_featured && !j.deadline && !closing.find(c => c.id === j.id))
-                  .slice(0, 2)
-                hotJobs = [...featuredJobs, ...closing, ...noDeadline].slice(0, 4)
-              }
+              // remote 2개 + onsite 2개 자동 선택
+              const scored = jobs.map(j => {
+                let score = 0
+                if (j.is_featured) score += 100
+                if (j.deadline && new Date(j.deadline) > now && Math.ceil((new Date(j.deadline) - now) / 86400000) <= 14) score += 50
+                score += (j.salary_max || 0) / 1000
+                return { ...j, _score: score }
+              }).sort((a, b) => b._score - a._score)
+              const remoteJobs = scored.filter(j => j.type === 'remote').slice(0, 2)
+              const onsiteJobs = scored.filter(j => j.type !== 'remote').slice(0, 2)
+              const hotJobs = [...remoteJobs, ...onsiteJobs].slice(0, 4)
               if (hotJobs.length === 0) return null
               const fakeCount = (id) => 20 + (id.charCodeAt(0) + id.charCodeAt(id.length - 1)) % 21
               return (
@@ -930,10 +943,10 @@ export default function JobsPage() {
                         <div key={job.id} className="jc" onClick={() => { setCarouselIdx(0); setDetailApplyMode(false); setApplied(false); setResumeFile(null); setDetailJob({ ...job, _imgFallback: DEFAULT_IMAGES[idx % 3] }); track('click_job_card','jobs',{jobId:job.id,title:job.title,company:job.company}) }}>
                           <div className="jc-img">
                             <div className="jc-img-in" style={(() => { const hasImg = job.image_url || job.images?.[0]; const src = hasImg || job.logo_url || DEFAULT_IMAGES[idx % 3]; const mode = !hasImg && job.logo_url ? '60%' : 'cover'; return { background: `#fff url(${src}) center/${mode} no-repeat` } })()}>
-                              {!job.is_featured && bump !== null && bump > 0 && (
+                              {bump !== null && bump > 0 && (
                                 <div className="jc-bump" dangerouslySetInnerHTML={{ __html: t('jobs.bumpVs', { bump }) }} />
                               )}
-                              {!job.is_featured && matched && <div className="jc-match" style={bump > 0 ? { top: 38 } : undefined}>{t('jobs.profileBadge')}</div>}
+                              {matched && <div className="jc-match" style={bump > 0 ? { top: 38 } : undefined}>{t('jobs.profileBadge')}</div>}
                               <button className="jc-bm" aria-label="Bookmark" onClick={e => { e.stopPropagation(); toggleBookmark(job.id) }}>
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill={bookmarks.includes(job.id) ? '#ff4400' : 'none'} stroke={bookmarks.includes(job.id) ? '#ff4400' : '#999'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                                   <path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z" />
@@ -1033,10 +1046,10 @@ export default function JobsPage() {
                         <div key={job.id} className="jc" onClick={() => { setCarouselIdx(0); setDetailApplyMode(false); setApplied(false); setResumeFile(null); setDetailJob({ ...job, _imgFallback: DEFAULT_IMAGES[idx % 3] }); track('click_job_card','jobs',{jobId:job.id,title:job.title,company:job.company}) }}>
                           <div className="jc-img">
                             <div className="jc-img-in" style={(() => { const hasImg = job.image_url || job.images?.[0]; const src = hasImg || job.logo_url || DEFAULT_IMAGES[idx % 3]; const mode = !hasImg && job.logo_url ? '60%' : 'cover'; return { background: `#fff url(${src}) center/${mode} no-repeat` } })()}>
-                              {!job.is_featured && bump !== null && bump > 0 && (
+                              {bump !== null && bump > 0 && (
                                 <div className="jc-bump" dangerouslySetInnerHTML={{ __html: t('jobs.bumpVs', { bump }) }} />
                               )}
-                              {!job.is_featured && matched && <div className="jc-match" style={bump > 0 ? { top: 38 } : undefined}>{t('jobs.profileBadge')}</div>}
+                              {matched && <div className="jc-match" style={bump > 0 ? { top: 38 } : undefined}>{t('jobs.profileBadge')}</div>}
                               <button className="jc-bm" aria-label="Bookmark" onClick={e => { e.stopPropagation(); toggleBookmark(job.id) }}>
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill={bookmarks.includes(job.id) ? '#ff4400' : 'none'} stroke={bookmarks.includes(job.id) ? '#ff4400' : '#999'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                                   <path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z" />
