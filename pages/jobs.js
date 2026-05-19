@@ -466,7 +466,7 @@ export default function JobsPage() {
       <Head>
         <title>{t('jobs.title')}</title>
         <meta name="description" content="Curated IT jobs in Vietnam with higher pay. Our headhunter personally introduces you to top companies. Remote, Korean, and global opportunities." />
-        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
         <meta property="og:type" content="website" />
         <meta property="og:url" content="https://salary-fyi.com/jobs" />
         <meta property="og:title" content="Jobs — Higher Pay, Better Roles | FYI Salary" />

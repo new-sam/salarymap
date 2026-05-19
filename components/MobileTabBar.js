@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabaseClient'
+import { useT } from '../lib/i18n'
 
 const tabs = [
   { key: 'home', href: '/', label: 'Home', icon: (
@@ -20,11 +21,22 @@ const tabs = [
 
 export default function MobileTabBar() {
   const router = useRouter()
+  const { t } = useT()
   const [isLoggedIn, setIsLoggedIn] = useState(false)
+  const [hasResume, setHasResume] = useState(true)
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
       setIsLoggedIn(!!session)
+      if (session) {
+        try {
+          const res = await fetch('/api/profile/talent', { headers: { Authorization: `Bearer ${session.access_token}` } })
+          if (res.ok) {
+            const { profile } = await res.json()
+            if (profile) setHasResume(!!profile.resume_url)
+          }
+        } catch {}
+      }
     })
   }, [])
 
@@ -38,6 +50,7 @@ export default function MobileTabBar() {
   }
 
   const active = getActiveKey()
+  const showBubble = (!isLoggedIn || !hasResume) && active !== 'profile'
 
   const handleTabClick = async (e, tab) => {
     if ((tab.key === 'profile' || tab.key === 'applications') && !isLoggedIn) {
@@ -55,15 +68,26 @@ export default function MobileTabBar() {
     <>
       <style>{`
         .mtab { display: none; }
+        .mtab-bubble { display: none; }
         @media (max-width: 768px) {
           .mtab { display: flex !important; position: fixed !important; bottom: 0 !important; left: 0 !important; right: 0 !important; z-index: 99999; height: 60px; background: rgba(12,12,11,0.97); backdrop-filter: blur(14px); border-top: 1px solid rgba(255,255,255,0.08); align-items: center; justify-content: space-around; padding: 0; margin: 0; padding-bottom: env(safe-area-inset-bottom); font-family: 'Barlow', sans-serif; }
-          .mtab-item { display: flex; flex-direction: column; align-items: center; gap: 2px; text-decoration: none; padding: 6px 0; flex: 1; }
+          .mtab-item { display: flex; flex-direction: column; align-items: center; gap: 2px; text-decoration: none; padding: 6px 0; flex: 1; position: relative; }
           .mtab-item svg { color: rgba(255,255,255,0.35); }
           .mtab-label { font-size: 10px; font-weight: 600; color: rgba(255,255,255,0.35); }
           .mtab-item.on svg { color: #ff6000; }
           .mtab-item.on .mtab-label { color: #ff6000; }
+          .mtab-bubble { display: block; position: fixed; bottom: 68px; right: 8px; z-index: 100000; background: #ff6000; color: #fff; font-size: 11px; font-weight: 700; padding: 8px 14px; border-radius: 10px; box-shadow: 0 2px 12px rgba(255,96,0,0.4); animation: mtabBounce 3s ease-in-out infinite; line-height: 1.4; max-width: 180px; text-align: center; }
+          .mtab-bubble::after { content: ''; position: absolute; bottom: -5px; right: 24px; width: 10px; height: 10px; background: #ff6000; transform: rotate(45deg); border-radius: 1px; }
+          @keyframes mtabBounce { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-4px); } }
         }
       `}</style>
+
+      {showBubble && (
+        <div className="mtab-bubble" onClick={() => router.push('/profile')}>
+          {t('mtab.resumeCta')}
+        </div>
+      )}
+
       <nav className="mtab">
         {tabs.map(tab => (
           <Link

@@ -1051,7 +1051,7 @@ export default function Home({ initialCompanies = [] }) {
         <title>FYI — Vietnam IT Salary Intelligence | Check If You're Underpaid</title>
         <meta name="description" content="Compare your salary with real data from 4,600+ real salary entries across Vietnam. Anonymous, instant results. Find out if you're underpaid and discover higher-paying roles." />
         <meta name="keywords" content="Vietnam IT salary, salary comparison, tech salary Vietnam, developer salary, software engineer salary, IT jobs Vietnam" />
-        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
         {/* Open Graph */}
         <meta property="og:type" content="website" />
         <meta property="og:url" content="https://salary-fyi.com" />

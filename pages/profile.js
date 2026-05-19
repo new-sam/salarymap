@@ -504,6 +504,7 @@ export default function ProfilePage() {
         .psignal-btn.on { border-color: #ff6000; color: #ff6000; background: rgba(255,96,0,0.06); }
         .pselect-dropdown::-webkit-scrollbar { display: none; }
         .psave-wrap { position: fixed; bottom: 0; left: 0; right: 0; z-index: 100; padding: 12px 20px calc(12px + env(safe-area-inset-bottom)); background: rgba(250,250,250,0.95); backdrop-filter: blur(10px); transform: translateY(100%); transition: transform .25s ease; pointer-events: none; }
+        @media (max-width: 768px) { .psave-wrap { bottom: calc(60px + env(safe-area-inset-bottom)); padding: 10px 16px; } }
         .psave-wrap.show { transform: translateY(0); pointer-events: auto; }
         .psave-inner { max-width: 580px; margin: 0 auto; }
         .psave { width: 100%; padding: 14px; background: #ff6000; color: #fff; border: none; border-radius: 10px; font-size: 14px; font-weight: 700; cursor: pointer; font-family: inherit; box-shadow: 0 4px 12px rgba(255,96,0,0.3); }
@@ -534,6 +535,12 @@ export default function ProfilePage() {
         @keyframes spin { to { transform: rotate(360deg); } }
         @keyframes aiBounce { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-3px); } }
         .ai-bubble:hover { filter: brightness(1.08); }
+        .pw-resume-cta { display: none; }
+        .pw-logout { display: none; }
+        @media (max-width: 768px) {
+          .pw-resume-cta { display: flex; align-items: center; gap: 10px; padding: 14px 16px; margin-bottom: 16px; background: linear-gradient(135deg, #ff6000, #ff7a1a); border-radius: 12px; color: #fff; font-size: 13px; cursor: pointer; box-shadow: 0 2px 12px rgba(255,96,0,0.3); }
+          .pw-logout { display: block; width: 100%; padding: 14px; margin-top: 32px; margin-bottom: 20px; background: none; border: 1px solid rgba(0,0,0,0.12); border-radius: 10px; font-size: 14px; font-weight: 600; color: #999; cursor: pointer; font-family: 'Barlow', sans-serif; }
+        }
       `}</style>
 
       <GlobalNav activePage="profile" />
@@ -895,6 +902,14 @@ export default function ProfilePage() {
             </div>
           )}
         </>)}
+
+        {/* Logout — mobile only */}
+        <button className="pw-logout" onClick={async () => {
+          await supabase.auth.signOut()
+          window.location.href = '/'
+        }}>
+          {t('nav.logout')}
+        </button>
       </div>
 
       {/* Floating Save Button */}

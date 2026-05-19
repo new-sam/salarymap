@@ -24,7 +24,7 @@ a {
 @media (max-width: 768px) {
   body {
     padding-top: 52px !important;
-    padding-bottom: 60px !important;
+    padding-bottom: calc(60px + env(safe-area-inset-bottom)) !important;
   }
   .mtab {
     display: flex !important;
@@ -33,15 +33,14 @@ a {
     left: 0 !important;
     right: 0 !important;
     z-index: 99999 !important;
-    height: 60px;
+    height: calc(60px + env(safe-area-inset-bottom)) !important;
     background: rgba(12,12,11,0.97);
     backdrop-filter: blur(14px);
     border-top: 1px solid rgba(255,255,255,0.08);
-    align-items: center;
+    align-items: flex-start;
     justify-content: space-around;
-    padding: 0 !important;
+    padding: 8px 0 0 0 !important;
     margin: 0 !important;
-    padding-bottom: env(safe-area-inset-bottom) !important;
     font-family: 'Barlow', sans-serif;
   }
 }
