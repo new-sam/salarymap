@@ -243,6 +243,7 @@ export default function ProfilePage() {
   const [aiParsing, setAiParsing] = useState(false)
   const [aiProgress, setAiProgress] = useState({ percent: 0, message: '' })
   const [showLeaveConfirm, setShowLeaveConfirm] = useState(false)
+  const [sharingResume, setSharingResume] = useState(false)
   const pendingRoute = useRef(null)
   const photoRef = useRef(null)
   const resumeRef = useRef(null)
@@ -321,6 +322,7 @@ export default function ProfilePage() {
             skills: p.skills?.join(', ') || '',
             experiences: p.experiences || [],
             projects: p.projects || [],
+            is_resume_public: p.is_resume_public || false,
           }
           setForm(formData)
           setInitialForm(formData)
@@ -714,6 +716,44 @@ export default function ProfilePage() {
               <div className="pfield-label">{t('profile.portfolio')}</div>
               <input className={`pinput${df('portfolio_url')}`} value={form.portfolio_url || ''} onChange={e => set('portfolio_url', e.target.value)} placeholder="" />
             </div>
+            {form.resume_url && (
+              <div className="pfield" style={{ marginTop: 16, paddingTop: 16, borderTop: '1px solid rgba(0,0,0,0.06)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <div>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: '#111', marginBottom: 2 }}>{t('profile.resume.share.title')}</div>
+                    <div style={{ fontSize: 11, color: 'rgba(0,0,0,0.4)', lineHeight: 1.4 }}>{t('profile.resume.share.desc')}</div>
+                  </div>
+                  <button
+                    className={`ptoggle-switch${form.is_resume_public ? ' on' : ''}`}
+                    disabled={sharingResume}
+                    onClick={async () => {
+                      setSharingResume(true)
+                      try {
+                        const res = await fetch('/api/profile/share-resume', {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+                          body: JSON.stringify({ action: 'toggle' }),
+                        })
+                        if (res.ok) {
+                          const { is_resume_public } = await res.json()
+                          set('is_resume_public', is_resume_public)
+                          setInitialForm(prev => ({ ...prev, is_resume_public }))
+                          setProfile(prev => ({ ...prev, is_resume_public }))
+                          setMsg(is_resume_public ? t('profile.resume.share.on') : t('profile.resume.share.off'))
+                          setTimeout(() => setMsg(null), 2000)
+                        } else {
+                          const err = await res.json()
+                          setShowAlert(err.error || 'Failed to share resume')
+                        }
+                      } catch (err) {
+                        setShowAlert('Failed to share resume')
+                      }
+                      setSharingResume(false)
+                    }}
+                  />
+                </div>
+              </div>
+            )}
           </div>
 
           <div className="pcard">

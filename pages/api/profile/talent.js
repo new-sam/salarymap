@@ -25,7 +25,7 @@ export default async function handler(req, res) {
       'english_cert', 'korean_cert', 'location', 'birthdate', 'university',
       'major', 'graduation_year', 'gpa', 'salary_min', 'salary_max', 'salary_currency', 'work_type',
       'job_signal', 'hr_visible', 'photo_url', 'resume_url',
-      'experiences', 'projects', 'certs', 'portfolio_url',
+      'experiences', 'projects', 'certs', 'portfolio_url', 'is_resume_public',
     ]
     const update = { updated_at: new Date().toISOString() }
     for (const key of allowed) {
