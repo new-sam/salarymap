@@ -439,9 +439,11 @@ export default function JobsPage() {
       })
       localStorage.setItem('fyi_my_applications', JSON.stringify(cached))
     } catch {}
-    // Show success modal
+    // Show success modal + push URL for Meta Pixel conversion tracking
     setAppliedInfo({ title: target.title, company: target.company, resumeUrl })
     setDetailJob(null)
+    window.history.pushState(null, '', `/jobs/applied?title=${encodeURIComponent(target.title)}&company=${encodeURIComponent(target.company)}`)
+    if (typeof fbq === 'function') fbq('track', 'Lead', { content_name: 'job_apply_confirmed', content_category: target.title })
   }
 
   const showToast = (msg) => {
@@ -1499,7 +1501,7 @@ export default function JobsPage() {
 
       {appliedInfo && (
         <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.6)',zIndex:1100,display:'flex',alignItems:'center',justifyContent:'center',padding:'20px'}}
-          onClick={e => { if(e.target===e.currentTarget) { if(appliedInfo.resumeUrl && !hasProfileResume){setShowAiProfilePrompt({resumeUrl:appliedInfo.resumeUrl})} setAppliedInfo(null); } }}>
+          onClick={e => { if(e.target===e.currentTarget) { if(appliedInfo.resumeUrl && !hasProfileResume){setShowAiProfilePrompt({resumeUrl:appliedInfo.resumeUrl})} setAppliedInfo(null); window.history.replaceState(null, '', '/jobs'); } }}>
           <div style={{background:'#fff',borderRadius:'20px',padding:'40px 36px',maxWidth:'420px',width:'100%',fontFamily:"'Barlow',sans-serif",textAlign:'center'}}>
             <div style={{width:'56px',height:'56px',borderRadius:'50%',background:'#ff4400',display:'flex',alignItems:'center',justifyContent:'center',margin:'0 auto 16px'}}>
               <span style={{color:'#fff',fontSize:'28px',lineHeight:1}}>&#10003;</span>
@@ -1508,7 +1510,7 @@ export default function JobsPage() {
             <div style={{fontSize:'14px',color:'#666',lineHeight:1.6,marginBottom:'24px'}}>
               {t('jobs.appliedModalDesc', { company: appliedInfo.company, title: appliedInfo.title })}
             </div>
-            <button onClick={() => { if(appliedInfo.resumeUrl && !hasProfileResume){setShowAiProfilePrompt({resumeUrl:appliedInfo.resumeUrl})} setAppliedInfo(null); }}
+            <button onClick={() => { if(appliedInfo.resumeUrl && !hasProfileResume){setShowAiProfilePrompt({resumeUrl:appliedInfo.resumeUrl})} setAppliedInfo(null); window.history.replaceState(null, '', '/jobs'); }}
               style={{background:'#ff4400',color:'#fff',fontSize:'14px',fontWeight:700,padding:'14px 32px',borderRadius:'10px',border:'none',cursor:'pointer',fontFamily:"'Barlow',sans-serif"}}>
               {t('jobs.confirm')}
             </button>
