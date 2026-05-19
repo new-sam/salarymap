@@ -441,9 +441,9 @@ export default function ProfilePage() {
           <div className="pcard">
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
               <span style={{ fontSize: 12, fontWeight: 700, color: 'rgba(0,0,0,0.4)' }}>{t('profile.completion')}</span>
-              <span style={{ fontSize: 13, fontWeight: 800, color: score >= 80 ? '#16a34a' : '#ca8a04' }}>{score}%</span>
+              <span style={{ fontSize: 13, fontWeight: 800, color: score >= 80 ? '#16a34a' : '#f59e0b' }}>{score}%</span>
             </div>
-            <div className="pprogress"><div className="pprogress-fill" style={{ width: `${score}%`, background: score >= 80 ? '#16a34a' : '#ca8a04' }} /></div>
+            <div className="pprogress"><div className="pprogress-fill" style={{ width: `${score}%`, background: score >= 80 ? '#16a34a' : '#f59e0b' }} /></div>
             <div style={{ fontSize: 11, color: 'rgba(0,0,0,0.3)' }}>
               {score < 80 ? t('profile.completion.incomplete') : t('profile.completion.done')}
               {score < 80 && <span style={{ color: '#ff6000', marginLeft: 4 }}>({t('profile.completion.min80')})</span>}
@@ -497,9 +497,9 @@ export default function ProfilePage() {
                     </svg>
                   ) : v === 'open' ? (
                     <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-                      <circle cx="7" cy="7" r="5.5" stroke={isOn ? '#ca8a04' : 'rgba(0,0,0,0.2)'} strokeWidth="1.5"/>
-                      <path d="M7 4v3.5" stroke={isOn ? '#ca8a04' : 'rgba(0,0,0,0.15)'} strokeWidth="1.5" strokeLinecap="round"/>
-                      <circle cx="7" cy="10" r="0.75" fill={isOn ? '#ca8a04' : 'rgba(0,0,0,0.15)'}/>
+                      <circle cx="7" cy="7" r="5.5" stroke={isOn ? '#f59e0b' : 'rgba(0,0,0,0.2)'} strokeWidth="1.5"/>
+                      <path d="M7 4v3.5" stroke={isOn ? '#f59e0b' : 'rgba(0,0,0,0.15)'} strokeWidth="1.5" strokeLinecap="round"/>
+                      <circle cx="7" cy="10" r="0.75" fill={isOn ? '#f59e0b' : 'rgba(0,0,0,0.15)'}/>
                     </svg>
                   ) : (
                     <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
