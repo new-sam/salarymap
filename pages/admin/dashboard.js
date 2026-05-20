@@ -30,6 +30,7 @@ export default function AdminDashboard() {
   const [tab, setTab] = useState('trend')
   const [funnelKeys, setFunnelKeys] = useState([])
   const [chartMode, setChartMode] = useState('1d')
+  const [tableView, setTableView] = useState('daily')
   const [dualAxis, setDualAxis] = useState(true)
   const [realtime, setRealtime] = useState(null)
   const [realtimeLoading, setRealtimeLoading] = useState(false)
@@ -241,6 +242,43 @@ export default function AdminDashboard() {
       totalJobClicks: data.summary.totalJobClicks + diff('jobClicks'),
       totalCardClicks: data.summary.totalCardClicks + diff('cardClicks'),
     }
+  })()
+
+  const weeklyTableData = (() => {
+    if (!dailyWithToday || tableView !== 'weekly') return null
+    const weeks = {}
+    for (const d of dailyWithToday) {
+      const dt = new Date(d.date + 'T00:00:00')
+      const day = dt.getDay()
+      const mon = new Date(dt)
+      mon.setDate(dt.getDate() - ((day + 6) % 7))
+      const key = mon.toISOString().slice(0, 10)
+      if (!weeks[key]) weeks[key] = { start: key, end: d.date, days: [] }
+      weeks[key].end = d.date
+      weeks[key].days.push(d)
+    }
+    return Object.values(weeks).map(w => {
+      const sum = (k) => {
+        const vals = w.days.map(d => d[k]).filter(v => v !== null && v !== undefined)
+        return vals.length ? vals.reduce((a, b) => a + b, 0) : null
+      }
+      return {
+        label: `${w.start.slice(5)} ~ ${w.end.slice(5)}`,
+        sessions: sum('sessions'),
+        submissions: sum('submissions') ?? 0,
+        ad: sum('ad') ?? 0,
+        organic: sum('organic') ?? 0,
+        signups: sum('signups') ?? 0,
+        companies: sum('companies') ?? 0,
+        jobClicks: sum('jobClicks'),
+        cardClicks: sum('cardClicks'),
+        jobsPageViews: sum('jobsPageViews'),
+        applyClicks: sum('applyClicks'),
+        saveClicks: sum('saveClicks'),
+        resumeUploads: sum('resumeUploads'),
+        jobApps: sum('jobApps') ?? 0,
+      }
+    })
   })()
 
   const chartData = aggregateDaily(dailyWithToday, chartMode)
@@ -686,7 +724,26 @@ export default function AdminDashboard() {
 
             {/* Daily Detail Table */}
             <div style={sectionStyle}>
-              <h3 style={sectionTitle}>{t.dailyDetail}</h3>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 0 }}>
+                <h3 style={sectionTitle}>{tableView === 'weekly' ? t.weeklyDetail : t.dailyDetail}</h3>
+                <div style={{ display: 'flex', gap: 0, background: '#f3f4f6', borderRadius: 8, padding: 2 }}>
+                  {[
+                    { key: 'daily', label: lang === 'ko' ? '일별' : 'Daily' },
+                    { key: 'weekly', label: lang === 'ko' ? '주별' : 'Weekly' },
+                  ].map(m => (
+                    <button key={m.key} onClick={() => setTableView(m.key)}
+                      style={{
+                        padding: '5px 12px', borderRadius: 6, fontSize: 12, fontWeight: 600,
+                        border: 'none', cursor: 'pointer', transition: 'all 0.15s',
+                        background: tableView === m.key ? '#fff' : 'transparent',
+                        color: tableView === m.key ? '#111' : '#999',
+                        boxShadow: tableView === m.key ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
+                      }}>
+                      {m.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
               <div style={{ overflowX: 'auto' }}>
                 <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
                   <thead>
@@ -697,9 +754,9 @@ export default function AdminDashboard() {
                     </tr>
                   </thead>
                   <tbody>
-                    {dailyWithToday.map((d, i) => (
+                    {(tableView === 'weekly' ? weeklyTableData : dailyWithToday).map((d, i) => (
                       <tr key={i} style={{ borderBottom: '1px solid #f3f4f6', background: i % 2 === 0 ? '#fff' : '#fafafa' }}>
-                        <td style={{ padding: '6px 12px' }}>{d.date}</td>
+                        <td style={{ padding: '6px 12px' }}>{tableView === 'weekly' ? d.label : d.date}</td>
                         <td style={{ padding: '6px 12px', textAlign: 'right', color: '#2563EB', fontWeight: 600 }}>{d.sessions ?? '-'}</td>
                         <td style={{ padding: '6px 12px', textAlign: 'right', fontWeight: 600 }}>{d.submissions}</td>
                         <td style={{ padding: '6px 12px', textAlign: 'right', color: '#4F46E5' }}>{d.ad}</td>
