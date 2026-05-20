@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { useEffect, useRef, useState } from 'react';
 import Brand from '../components/company/Brand';
+import { useT, LanguageSwitcher } from '../lib/i18n';
 
 function CountUp({ end, decimals = 0, duration = 1200, suffix = '' }) {
   const [val, setVal] = useState(0);
@@ -37,67 +38,37 @@ function CountUp({ end, decimals = 0, duration = 1200, suffix = '' }) {
   return <span ref={ref}>{formatted}{suffix && <span style={css.unit}>{suffix}</span>}</span>;
 }
 
-function Mark({ v }) {
-  if (v === 'o') return <span style={css.markYes} title="지원">✓</span>;
-  if (v === 'x') return <span style={css.markNo} title="미지원">×</span>;
+function Mark({ v, t }) {
+  if (v === 'o') return <span style={css.markYes} title={t('company.stat.apps')}>✓</span>;
+  if (v === 'x') return <span style={css.markNo} title="">×</span>;
   return null;
 }
 
-function Lines({ lines }) {
-  return (
-    <>
-      {lines.map((line) => (
-        <span key={line}>{line}</span>
-      ))}
-    </>
-  );
-}
-
-const offers = [
-  ['01', '공고 노출', ['게재비 0원', '채용 페이지 게시']],
-  ['02', '후보 추천', ['조건 맞는', '후보 선별']],
-  ['03', '면접 관리', ['상태·요청', '평가 관리']],
-  ['04', '유지 보증', ['3개월 미유지', '수수료 0원']],
+const OFFERS = [
+  { no: '01', tk: 'company.landing.offer1.title', d1: 'company.landing.offer1.desc1', d2: 'company.landing.offer1.desc2', badge: 'company.landing.badge.free' },
+  { no: '02', tk: 'company.landing.offer2.title', d1: 'company.landing.offer2.desc1', d2: 'company.landing.offer2.desc2', badge: 'company.landing.badge.key' },
+  { no: '03', tk: 'company.landing.offer3.title', d1: 'company.landing.offer3.desc1', d2: 'company.landing.offer3.desc2', badge: null },
+  { no: '04', tk: 'company.landing.offer4.title', d1: 'company.landing.offer4.desc1', d2: 'company.landing.offer4.desc2', badge: 'company.landing.badge.guarantee' },
 ];
 
-const steps = [
-  {
-    no: '01',
-    title: '공고를 올립니다',
-    desc: ['직무와 조건만 입력하면', '채용 페이지에 바로 노출됩니다.'],
-    img: '/ats-preview/jobs-public.png',
-  },
-  {
-    no: '02',
-    title: '조건에 맞는 후보를 확인합니다',
-    desc: ['FYI가 후보를 모으고', '진행 상태를 정리합니다.'],
-    img: '/ats-preview/ats-kanban-masked.png',
-    reverse: true,
-  },
-  {
-    no: '03',
-    title: '이력서를 보고 결정합니다',
-    desc: ['이력서와 평가 메모를 보고', '합격 여부를 결정합니다.'],
-    img: '/ats-preview/ats-candidate-detail-masked.png',
-  },
+const STEPS = [
+  { no: '01', tk: 'company.landing.step1.title', d1: 'company.landing.step1.desc1', d2: 'company.landing.step1.desc2', img: '/ats-preview/jobs-public.png' },
+  { no: '02', tk: 'company.landing.step2.title', d1: 'company.landing.step2.desc1', d2: 'company.landing.step2.desc2', img: '/ats-preview/ats-kanban-masked.png', reverse: true },
+  { no: '03', tk: 'company.landing.step3.title', d1: 'company.landing.step3.desc1', d2: 'company.landing.step3.desc2', img: '/ats-preview/ats-candidate-detail-masked.png' },
 ];
 
 export default function ForCompanies() {
   const router = useRouter();
+  const { t } = useT();
 
   return (
     <>
       <Head>
-        <title>FYI for Companies · 베트남 IT 채용을 7일 안에</title>
-        <meta
-          name="description"
-          content="공고 등록비 없이 베트남 IT 후보를 만나보세요. FYI가 후보 추천, 면접 진행, ATS 관리를 돕고 채용 성공 시에만 7%를 청구합니다."
-        />
+        <title>{t('company.landing.head.title')}</title>
+        <meta name="description" content={t('company.landing.head.desc')} />
       </Head>
       <style>{`
-        section {
-          scroll-margin-top: 96px;
-        }
+        section { scroll-margin-top: 96px; }
         .fc-kpi strong {
           color: #ea580c;
           font-size: clamp(46px, 7vw, 82px);
@@ -105,79 +76,27 @@ export default function ForCompanies() {
           letter-spacing: -0.05em;
         }
         @media (max-width: 900px) {
-          .fc-hero {
-            grid-template-columns: 1fr !important;
-            gap: 36px !important;
-            padding: 56px 20px 42px !important;
-            text-align: center !important;
-          }
-          .fc-hero-copy {
-            justify-self: center !important;
-          }
-          .fc-hero-ctas,
-          .fc-trust {
-            justify-content: center !important;
-          }
-          .fc-float-card {
-            left: 12px !important;
-            bottom: 16px !important;
-          }
-          .fc-kpis {
-            grid-template-columns: 1fr !important;
-            gap: 28px !important;
-            padding: 28px 20px 44px !important;
-          }
-          .fc-offer-grid {
-            grid-template-columns: 1fr 1fr !important;
-          }
-          .fc-step,
-          .fc-step-reverse {
-            grid-template-columns: 1fr !important;
-            direction: ltr !important;
-            gap: 22px !important;
-          }
-          .fc-offer-flow {
-            flex-wrap: wrap !important;
-          }
+          .fc-hero { grid-template-columns: 1fr !important; gap: 36px !important; padding: 56px 20px 42px !important; text-align: center !important; }
+          .fc-hero-copy { justify-self: center !important; }
+          .fc-hero-ctas, .fc-trust { justify-content: center !important; }
+          .fc-float-card { left: 12px !important; bottom: 16px !important; }
+          .fc-kpis { grid-template-columns: 1fr !important; gap: 28px !important; padding: 28px 20px 44px !important; }
+          .fc-offer-grid { grid-template-columns: 1fr 1fr !important; }
+          .fc-step, .fc-step-reverse { grid-template-columns: 1fr !important; direction: ltr !important; gap: 22px !important; }
+          .fc-offer-flow { flex-wrap: wrap !important; }
         }
         @media (max-width: 560px) {
-          .fc-company-nav {
-            padding: 12px 16px !important;
-            gap: 10px !important;
-          }
-          .fc-company-nav-links {
-            order: 3 !important;
-            width: 100% !important;
-            justify-content: center !important;
-            gap: 16px !important;
-          }
-          .fc-hero h1 {
-            font-size: 42px !important;
-          }
-          .fc-hero-ctas {
-            flex-direction: column !important;
-            align-items: stretch !important;
-          }
-          .fc-hero-ctas button {
-            width: 100% !important;
-          }
-          .fc-offer-grid {
-            grid-template-columns: 1fr !important;
-          }
-          .fc-offer-grid article {
-            min-height: 188px !important;
-            transform: none !important;
-          }
-          .fc-float-card {
-            position: static !important;
-            width: 100% !important;
-            margin-top: 12px !important;
-          }
+          .fc-company-nav { padding: 12px 16px !important; gap: 10px !important; }
+          .fc-company-nav-links { order: 3 !important; width: 100% !important; justify-content: center !important; gap: 16px !important; }
+          .fc-hero h1 { font-size: 42px !important; }
+          .fc-hero-ctas { flex-direction: column !important; align-items: stretch !important; }
+          .fc-hero-ctas button { width: 100% !important; }
+          .fc-offer-grid { grid-template-columns: 1fr !important; }
+          .fc-offer-grid article { min-height: 188px !important; transform: none !important; }
+          .fc-float-card { position: static !important; width: 100% !important; margin-top: 12px !important; }
         }
         .fc-offer-flow b {
-          display: block;
-          width: 46px;
-          height: 1px;
+          display: block; width: 46px; height: 1px;
           background: linear-gradient(90deg, rgba(234,88,12,0.18), rgba(234,88,12,0.8));
         }
       `}</style>
@@ -185,13 +104,14 @@ export default function ForCompanies() {
         <nav className="fc-company-nav" style={css.nav}>
           <Brand href="/" />
           <div className="fc-company-nav-links" style={css.navLinks}>
-            <a href="#offer" style={css.navLink}>제공 내용</a>
-            <a href="#how" style={css.navLink}>진행 방식</a>
-            <a href="#pricing" style={css.navLink}>요금</a>
+            <a href="#offer" style={css.navLink}>{t('company.landing.nav.offer')}</a>
+            <a href="#how" style={css.navLink}>{t('company.landing.nav.how')}</a>
+            <a href="#pricing" style={css.navLink}>{t('company.landing.nav.pricing')}</a>
           </div>
           <div style={css.navRight}>
-            <Link href="/company" style={css.btnGhost}>기업 로그인</Link>
-            <Link href="/company?mode=signup" style={css.btnPrimary}>무료로 공고 올리기</Link>
+            <LanguageSwitcher />
+            <Link href="/company" style={css.btnGhost}>{t('company.landing.nav.login')}</Link>
+            <Link href="/company?mode=signup" style={css.btnPrimary}>{t('company.landing.nav.cta')}</Link>
           </div>
         </nav>
 
@@ -200,46 +120,44 @@ export default function ForCompanies() {
             <div className="fc-hero-copy" style={css.heroCopy}>
               <div style={css.eyebrow}>FOR COMPANIES</div>
               <h1 style={css.h1}>
-                베트남 IT 채용,<br />
-                <span style={css.highlight}>7일이면</span> 됩니다.
+                {t('company.landing.h1.line1')}<br />
+                <span style={css.highlight}>{t('company.landing.h1.highlight')}</span> {t('company.landing.h1.line2')}
               </h1>
-              <p style={css.lead}>
-                공고만 올리면 후보 추천부터 면접 관리까지 FYI가 정리합니다.
-              </p>
+              <p style={css.lead}>{t('company.landing.lead')}</p>
               <div className="fc-hero-ctas" style={css.heroCtas}>
                 <button type="button" onClick={() => router.push('/company?mode=signup')} style={css.btnAccent}>
-                  무료로 공고 올리기
+                  {t('company.landing.heroCtaPost')}
                 </button>
-                <a href="#offer" style={css.textLink}>제공 내용 보기 →</a>
+                <a href="#offer" style={css.textLink}>{t('company.landing.heroCtaOffer')}</a>
               </div>
               <div className="fc-trust" style={css.trustLine}>
-                <span>등록비 0원</span>
-                <span>성공 시 7%</span>
+                <span>{t('company.landing.trust.free')}</span>
+                <span>{t('company.landing.trust.success')}</span>
               </div>
             </div>
 
             <div style={css.heroVisual}>
-              <img src="/LION.png" alt="FYI 후보 인터뷰" style={css.heroImg} />
+              <img src="/LION.png" alt={t('company.landing.heroAlt')} style={css.heroImg} />
               <div className="fc-float-card" style={css.floatCard}>
                 <span style={css.floatLabel}>FYI DATA</span>
-                <strong>15,723명 연봉 정보</strong>
-                <small>베트남 IT 인재 매칭에 활용</small>
+                <strong>{t('company.landing.floatStrong')}</strong>
+                <small>{t('company.landing.floatSmall')}</small>
               </div>
             </div>
           </section>
 
           <section className="fc-kpis" style={css.kpiStrip}>
             <div className="fc-kpi" style={css.kpi}>
-              <strong><CountUp end={7.3} decimals={1} suffix="일" /></strong>
-              <span>첫 면접까지 평균</span>
+              <strong><CountUp end={7.3} decimals={1} suffix={t('company.landing.kpi1Suffix')} /></strong>
+              <span>{t('company.landing.kpi1Label')}</span>
             </div>
             <div className="fc-kpi" style={css.kpi}>
-              <strong><CountUp end={0} suffix="원" /></strong>
-              <span>공고 등록비</span>
+              <strong><CountUp end={0} suffix={t('company.landing.kpi2Suffix')} /></strong>
+              <span>{t('company.landing.kpi2Label')}</span>
             </div>
             <div className="fc-kpi" style={css.kpi}>
-              <strong><CountUp end={15723} suffix="명" /></strong>
-              <span>연봉 정보 확보</span>
+              <strong><CountUp end={15723} suffix={t('company.landing.kpi3Suffix')} /></strong>
+              <span>{t('company.landing.kpi3Label')}</span>
             </div>
           </section>
 
@@ -247,32 +165,33 @@ export default function ForCompanies() {
             <div style={css.sectionHead}>
               <div style={css.eyebrowDark}>WHAT YOU GET</div>
               <h2 style={css.h2Dark}>
-                공고 하나로<br />
-                여기까지 받습니다.
+                {t('company.landing.offerH1')}<br />
+                {t('company.landing.offerH2')}
               </h2>
             </div>
             <div className="fc-offer-grid" style={css.offerGrid}>
-              {offers.map(([no, title, desc], idx) => (
-                <article key={title} style={{ ...css.offerCard, ...([0, 1, 3].includes(idx) ? css.offerCardKey : null) }}>
+              {OFFERS.map((o, idx) => (
+                <article key={o.no} style={{ ...css.offerCard, ...([0, 1, 3].includes(idx) ? css.offerCardKey : null) }}>
                   <div style={css.offerTop}>
-                    <span style={css.offerNo}>{no}</span>
-                    {idx === 0 && <span style={css.offerBadge}>게재비 0원</span>}
-                    {idx === 1 && <span style={css.offerBadge}>핵심</span>}
-                    {idx === 3 && <span style={css.offerBadge}>보증</span>}
+                    <span style={css.offerNo}>{o.no}</span>
+                    {o.badge && <span style={css.offerBadge}>{t(o.badge)}</span>}
                   </div>
-                  <h3 style={css.offerTitle}>{title}</h3>
-                  <p style={css.offerDesc}><Lines lines={desc} /></p>
+                  <h3 style={css.offerTitle}>{t(o.tk)}</h3>
+                  <p style={css.offerDesc}>
+                    <span>{t(o.d1)}</span>
+                    <span>{t(o.d2)}</span>
+                  </p>
                 </article>
               ))}
             </div>
             <div className="fc-offer-flow" style={css.offerFlow}>
-              <span>공고</span>
+              <span>{t('company.landing.flow.posting')}</span>
               <b />
-              <span>후보</span>
+              <span>{t('company.landing.flow.candidate')}</span>
               <b />
-              <span>면접</span>
+              <span>{t('company.landing.flow.interview')}</span>
               <b />
-              <span>채용</span>
+              <span>{t('company.landing.flow.hire')}</span>
             </div>
           </section>
 
@@ -280,20 +199,23 @@ export default function ForCompanies() {
             <div style={css.sectionHead}>
               <div style={css.eyebrow}>HOW IT WORKS</div>
               <h2 style={css.h2}>
-                공고 등록부터<br />
-                후보 결정까지
+                {t('company.landing.how.h1')}<br />
+                {t('company.landing.how.h2')}
               </h2>
             </div>
             <div style={css.steps}>
-              {steps.map((step) => (
-                <article key={step.no} className={step.reverse ? 'fc-step-reverse' : 'fc-step'} style={{ ...css.step, ...(step.reverse ? css.stepReverse : null) }}>
+              {STEPS.map((s) => (
+                <article key={s.no} className={s.reverse ? 'fc-step-reverse' : 'fc-step'} style={{ ...css.step, ...(s.reverse ? css.stepReverse : null) }}>
                   <div style={css.stepText}>
-                    <span style={css.stepNo}>{step.no}</span>
-                    <h3 style={css.stepTitle}>{step.title}</h3>
-                    <p style={css.stepDesc}><Lines lines={step.desc} /></p>
+                    <span style={css.stepNo}>{s.no}</span>
+                    <h3 style={css.stepTitle}>{t(s.tk)}</h3>
+                    <p style={css.stepDesc}>
+                      <span>{t(s.d1)}</span>
+                      <span>{t(s.d2)}</span>
+                    </p>
                   </div>
                   <div style={css.shotWrap}>
-                    <img src={step.img} alt={step.title} style={css.shot} />
+                    <img src={s.img} alt={t(s.tk)} style={css.shot} />
                   </div>
                 </article>
               ))}
@@ -304,44 +226,44 @@ export default function ForCompanies() {
             <div style={css.sectionHead}>
               <div style={css.eyebrow}>PRICING</div>
               <h2 style={css.h2}>
-                선결제 부담 없이<br />
-                성공 기준으로
+                {t('company.landing.pricing.h1')}<br />
+                {t('company.landing.pricing.h2')}
               </h2>
             </div>
             <div style={css.tableWrap}>
               <table style={css.table}>
                 <thead>
                   <tr>
-                    <th style={css.thFeature}>항목</th>
-                    <th style={css.th}>채용 플랫폼</th>
-                    <th style={css.th}>헤드헌팅</th>
+                    <th style={css.thFeature}>{t('company.landing.pricing.colFeature')}</th>
+                    <th style={css.th}>{t('company.landing.pricing.colPlatform')}</th>
+                    <th style={css.th}>{t('company.landing.pricing.colHeadhunt')}</th>
                     <th style={{ ...css.th, ...css.thFyi }}>FYI</th>
                   </tr>
                 </thead>
                 <tbody>
                   <tr>
-                    <td style={css.tdFeature}>공고 등록비</td>
-                    <td style={css.td}>유료</td>
-                    <td style={css.td}>없음</td>
-                    <td style={css.tdFyi}>무료</td>
+                    <td style={css.tdFeature}>{t('company.landing.pricing.row1.label')}</td>
+                    <td style={css.td}>{t('company.landing.pricing.row1.platform')}</td>
+                    <td style={css.td}>{t('company.landing.pricing.row1.headhunt')}</td>
+                    <td style={css.tdFyi}>{t('company.landing.pricing.row1.fyi')}</td>
                   </tr>
                   <tr>
-                    <td style={css.tdFeature}>성공 수수료</td>
+                    <td style={css.tdFeature}>{t('company.landing.pricing.row2.label')}</td>
                     <td style={css.td}>-</td>
-                    <td style={css.td}>연봉 15~25%</td>
-                    <td style={css.tdFyi}>연봉 7%</td>
+                    <td style={css.td}>{t('company.landing.pricing.row2.headhunt')}</td>
+                    <td style={css.tdFyi}>{t('company.landing.pricing.row2.fyi')}</td>
                   </tr>
                   <tr>
-                    <td style={css.tdFeature}>연봉 데이터 기반 추천</td>
-                    <td style={css.td}><Mark v="x" /></td>
-                    <td style={css.td}><Mark v="x" /></td>
-                    <td style={css.tdFyi}><Mark v="o" /></td>
+                    <td style={css.tdFeature}>{t('company.landing.pricing.row3.label')}</td>
+                    <td style={css.td}><Mark v="x" t={t} /></td>
+                    <td style={css.td}><Mark v="x" t={t} /></td>
+                    <td style={css.tdFyi}><Mark v="o" t={t} /></td>
                   </tr>
                   <tr>
-                    <td style={css.tdFeature}>첫 면접까지</td>
-                    <td style={css.td}>2~4주</td>
-                    <td style={css.td}>1~3주</td>
-                    <td style={css.tdFyi}>평균 7.3일</td>
+                    <td style={css.tdFeature}>{t('company.landing.pricing.row4.label')}</td>
+                    <td style={css.td}>{t('company.landing.pricing.row4.platform')}</td>
+                    <td style={css.td}>{t('company.landing.pricing.row4.headhunt')}</td>
+                    <td style={css.tdFyi}>{t('company.landing.pricing.row4.fyi')}</td>
                   </tr>
                 </tbody>
               </table>
@@ -350,12 +272,12 @@ export default function ForCompanies() {
 
           <section style={css.bottomCta}>
             <h2 style={css.h2}>
-              첫 공고를<br />
-              무료로 올려보세요.
+              {t('company.landing.bottomCtaH1')}<br />
+              {t('company.landing.bottomCtaH2')}
             </h2>
-            <p style={css.ctaSub}>회사 이메일 인증 후 바로 시작할 수 있습니다.</p>
+            <p style={css.ctaSub}>{t('company.landing.bottomSub')}</p>
             <button type="button" onClick={() => router.push('/company?mode=signup')} style={css.btnAccent}>
-              기업 계정 만들기
+              {t('company.landing.bottomBtn')}
             </button>
           </section>
         </main>
@@ -388,7 +310,7 @@ const css = {
   },
   navLinks: { display: 'flex', gap: 22, fontSize: 13, color: 'rgba(255,255,255,0.64)' },
   navLink: { textDecoration: 'none', fontWeight: 700 },
-  navRight: { display: 'flex', gap: 8, marginLeft: 'auto' },
+  navRight: { display: 'flex', gap: 8, marginLeft: 'auto', alignItems: 'center' },
   btnGhost: {
     padding: '9px 13px',
     borderRadius: 7,
@@ -572,8 +494,7 @@ const css = {
     overflow: 'hidden',
   },
   offerCardKey: {
-    background:
-      'linear-gradient(180deg, rgba(255,255,255,0.94), rgba(255,247,237,0.94))',
+    background: 'linear-gradient(180deg, rgba(255,255,255,0.94), rgba(255,247,237,0.94))',
     border: '1px solid rgba(249,115,22,0.34)',
     boxShadow: '0 24px 54px rgba(249,115,22,0.16)',
   },
