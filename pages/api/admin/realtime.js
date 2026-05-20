@@ -37,10 +37,9 @@ export default async function handler(req, res) {
       .select('id', { count: 'exact', head: true })
       .eq('event', 'landing')
       .gte('created_at', startISO).lte('created_at', endISO),
-    supabase.from('events')
+    supabase.from('user_profiles')
       .select('id', { count: 'exact', head: true })
-      .eq('event', 'resume_upload')
-      .gte('created_at', startISO).lte('created_at', endISO),
+      .not('resume_url', 'is', null),
   ])
 
   const subs = subsRes.data || []

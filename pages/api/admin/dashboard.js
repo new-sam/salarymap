@@ -126,7 +126,7 @@ export default async function handler(req, res) {
   try {
     events = await fetchAll(
       supabase.from('events').select('id, event, meta, created_at')
-        .in('event', ['click_jobs_cta', 'click_job_card', 'view_jobs_page', 'click_apply_button', 'save_job', 'resume_upload'])
+        .in('event', ['click_jobs_cta', 'click_job_card', 'view_jobs_page', 'click_apply_button', 'save_job'])
         .gte('created_at', startISO).lte('created_at', endISO)
     )
   } catch (e) {
@@ -156,6 +156,16 @@ export default async function handler(req, res) {
   } catch (e) {
     // events table may not exist yet
   }
+
+  // Fetch resume users (unique users with resume_url)
+  let resumeUsers = []
+  try {
+    const { data } = await supabase
+      .from('user_profiles')
+      .select('id, updated_at')
+      .not('resume_url', 'is', null)
+    resumeUsers = (data || []).filter(r => r.updated_at)
+  } catch (e) {}
 
   // --- Aggregate daily trend ---
   const toVN = (iso) => new Date(new Date(iso).getTime() + 7 * 3600000).toISOString().slice(0, 10)
@@ -193,7 +203,12 @@ export default async function handler(req, res) {
     if (ev.event === 'view_jobs_page') dailyMap[date].jobsPageViews++
     if (ev.event === 'click_apply_button') dailyMap[date].applyClicks++
     if (ev.event === 'save_job') dailyMap[date].saveClicks++
-    if (ev.event === 'resume_upload') dailyMap[date].resumeUploads++
+  }
+
+  for (const ru of resumeUsers) {
+    const date = toVN(ru.updated_at)
+    if (!dailyMap[date]) dailyMap[date] = { ...newDay(), date }
+    dailyMap[date].resumeUploads++
   }
 
   for (const l of landings) {
@@ -291,7 +306,7 @@ export default async function handler(req, res) {
     totalJobsPageViews: events.filter(e => e.event === 'view_jobs_page' && e.created_at.slice(0, 10) >= EVENT_TRACKING_START).length,
     totalApplyClicks: events.filter(e => e.event === 'click_apply_button' && e.created_at.slice(0, 10) >= EVENT_TRACKING_START).length,
     totalSaveClicks: events.filter(e => e.event === 'save_job' && e.created_at.slice(0, 10) >= '2026-05-11').length,
-    totalResumeUploads: events.filter(e => e.event === 'resume_upload' && e.created_at.slice(0, 10) >= '2026-05-19').length,
+    totalResumeUploads: resumeUsers.length,
     hasEventTracking: endDate >= EVENT_TRACKING_START,
     eventTrackingStart: EVENT_TRACKING_START,
     uniqueCompanies: uniqueCompanies.size,
