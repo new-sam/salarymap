@@ -1417,6 +1417,9 @@ export default function JobsPage() {
                   <button className="jd-save-btn" onClick={() => toggleBookmark(detailJob.id)} title={bookmarks.includes(detailJob.id) ? t('jobs.saved') : t('jobs.save')}>
                     <svg width="18" height="18" viewBox="0 0 24 24" fill={bookmarks.includes(detailJob.id) ? '#ff4400' : 'none'} stroke={bookmarks.includes(detailJob.id) ? '#ff4400' : '#666'} strokeWidth="2"><path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z"/></svg>
                   </button>
+                  <button className="jd-save-btn" onClick={() => { navigator.clipboard.writeText(`${window.location.origin}/jobs/${detailJob.id}`); setToast('Link copied!'); setTimeout(() => setToast(null), 2000) }} title="Share">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#666" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+                  </button>
                   {appliedJobs.includes(detailJob.id) ? (
                     <button className="jd-apply-btn" disabled style={{ background: '#ccc', flex: 1 }}>
                       {t('jobs.applied')}
