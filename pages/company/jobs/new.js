@@ -4,6 +4,8 @@ import { useRouter } from 'next/router';
 import Link from 'next/link';
 import { supabase } from '../../../lib/supabaseClient';
 import Brand from '../../../components/company/Brand';
+import LangToggle from '../../../components/company/LangToggle';
+import { useT } from '../../../lib/i18n';
 
 const ROLES = ['Backend', 'Frontend', 'Fullstack', 'Mobile', 'Data', 'DevOps', 'PM', 'Design', 'QA'];
 const TYPES = ['remote', 'onsite', 'hybrid'];
@@ -19,6 +21,7 @@ const EMPTY = {
 
 export default function NewJobPage() {
   const router = useRouter();
+  const { t } = useT();
   const [status, setStatus] = useState('loading');
   const [user, setUser] = useState(null);
   const [companyId, setCompanyId] = useState(null);
@@ -61,7 +64,7 @@ export default function NewJobPage() {
       const ext = file.name.split('.').pop();
       const path = `company/${user.id}/${Date.now()}.${ext}`;
       const { error } = await supabase.storage.from('job-images').upload(path, file);
-      if (error) { setErr('이미지 업로드 실패: ' + error.message); return; }
+      if (error) { setErr(t('company.err.imgUpload') + error.message); return; }
       const { data } = supabase.storage.from('job-images').getPublicUrl(path);
       setForm(prev => ({ ...prev, [field]: data.publicUrl }));
     } finally {
@@ -72,10 +75,10 @@ export default function NewJobPage() {
   const completeOnboarding = async (e) => {
     e.preventDefault();
     setErr('');
-    if (!tmpCompanyName.trim()) { setErr('회사명을 입력해 주세요'); return; }
-    if (!tmpFullName.trim()) { setErr('본인 이름을 입력해 주세요'); return; }
+    if (!tmpCompanyName.trim()) { setErr(t('company.err.companyRequired')); return; }
+    if (!tmpFullName.trim()) { setErr(t('company.err.contactRequired')); return; }
     const emailDomain = (user.email || '').split('@')[1]?.toLowerCase();
-    if (!emailDomain) { setErr('이메일 정보가 없습니다'); return; }
+    if (!emailDomain) { setErr(t('company.err.notVerified')); return; }
     setStatus('saving');
 
     let cid = null;
@@ -88,14 +91,14 @@ export default function NewJobPage() {
         .from('recruiter_companies')
         .insert({ name: tmpCompanyName.trim(), email_domain: emailDomain, created_by: user.id })
         .select('id').single();
-      if (createErr) { setErr('회사 등록 실패: ' + createErr.message); setStatus('needs_onboarding'); return; }
+      if (createErr) { setErr(t('company.err.createFailed') + ': ' + createErr.message); setStatus('needs_onboarding'); return; }
       cid = created.id;
     }
 
     const { error: updErr } = await supabase
       .from('recruiter_users')
       .upsert({ user_id: user.id, company_id: cid, email: user.email, full_name: tmpFullName.trim(), role: 'admin' }, { onConflict: 'user_id' });
-    if (updErr) { setErr('사용자 연결 실패: ' + updErr.message); setStatus('needs_onboarding'); return; }
+    if (updErr) { setErr(t('company.err.linkFailed') + ': ' + updErr.message); setStatus('needs_onboarding'); return; }
 
     setCompanyId(cid);
     setCompanyName(tmpCompanyName.trim());
@@ -105,9 +108,9 @@ export default function NewJobPage() {
   const onSubmit = async (e) => {
     e.preventDefault();
     setErr('');
-    if (!form.title.trim()) { setErr('포지션명을 입력해 주세요'); return; }
-    if (!form.description.trim()) { setErr('업무 설명을 입력해 주세요'); return; }
-    if (Number(form.salary_min) >= Number(form.salary_max)) { setErr('연봉 최소가 최대보다 작아야 합니다'); return; }
+    if (!form.title.trim()) { setErr(t('company.err.titleRequired')); return; }
+    if (!form.description.trim()) { setErr(t('company.err.descRequired')); return; }
+    if (Number(form.salary_min) >= Number(form.salary_max)) { setErr(t('company.err.salaryRange')); return; }
     setStatus('saving');
 
     const techArr = form.tech_stack.split(',').map(s => s.trim()).filter(Boolean);
@@ -136,15 +139,15 @@ export default function NewJobPage() {
     router.replace('/company/jobs');
   };
 
-  if (status === 'loading') return <div style={css.loading}>Loading…</div>;
+  if (status === 'loading') return <div style={css.loading}>{t('company.loading')}</div>;
 
   if (status === 'unauthed') {
     return (
       <div style={css.fullCenter}>
         <div style={css.lightCard}>
-          <h1 style={css.cardH}>로그인 필요</h1>
-          <p style={css.cardP}>{err || '기업 계정으로 로그인해야 공고를 등록할 수 있습니다.'}</p>
-          <Link href="/company/signup" style={css.btnPrimary}>로그인 / 가입</Link>
+          <h1 style={css.cardH}>{t('company.loginRequired')}</h1>
+          <p style={css.cardP}>{err || t('company.err.loginRequired')}</p>
+          <Link href="/company" style={css.btnPrimary}>{t('company.loginOrSignup')}</Link>
         </div>
       </div>
     );
@@ -154,18 +157,18 @@ export default function NewJobPage() {
     return (
       <div style={css.fullCenter}>
         <div style={{...css.lightCard, maxWidth: 460}}>
-          <h1 style={css.cardH}>회사 정보 보완</h1>
-          <p style={css.cardP}>공고 등록 전에 회사 정보가 한 번 필요해요. 1번만 입력하면 됩니다.</p>
+          <h1 style={css.cardH}>{t('company.jobsnew.onboardH')}</h1>
+          <p style={css.cardP}>{t('company.jobsnew.onboardCopy')}</p>
           <form onSubmit={completeOnboarding} style={{ textAlign: 'left' }}>
-            <Field label="회사명">
-              <input value={tmpCompanyName} onChange={e => setTmpCompanyName(e.target.value)} placeholder="ACME Vietnam Co., Ltd" style={css.inp} />
+            <Field label={t('company.companyLabel')}>
+              <input value={tmpCompanyName} onChange={e => setTmpCompanyName(e.target.value)} placeholder={t('company.companyPh')} style={css.inp} />
             </Field>
-            <Field label="본인 이름">
-              <input value={tmpFullName} onChange={e => setTmpFullName(e.target.value)} placeholder="홍길동" style={css.inp} />
+            <Field label={t('company.contactLabel')}>
+              <input value={tmpFullName} onChange={e => setTmpFullName(e.target.value)} placeholder={t('company.contactPh')} style={css.inp} />
             </Field>
             {err && <div style={css.err}>{err}</div>}
             <button type="submit" disabled={status === 'saving'} style={status === 'saving' ? css.btnDisabled : css.btnPrimary}>
-              {status === 'saving' ? '저장 중…' : '저장하고 공고 작성하기 →'}
+              {status === 'saving' ? t('company.saving') : t('company.jobsnew.onboardSave')}
             </button>
           </form>
         </div>
@@ -175,28 +178,28 @@ export default function NewJobPage() {
 
   return (
     <>
-      <Head><title>새 공고 작성 · FYI</title></Head>
+      <Head><title>{t('company.head.newJob')}</title></Head>
       <div style={css.app}>
         <Sidebar companyName={companyName} userEmail={user?.email} activePage="jobs" />
 
         <main style={css.main}>
           <header style={css.mainHead}>
             <div>
-              <h1 style={css.mainH}>새 공고 작성</h1>
-              <p style={css.mainP}>발행하면 즉시 후보자에게 공개됩니다.</p>
+              <h1 style={css.mainH}>{t('company.jobsnew.h')}</h1>
+              <p style={css.mainP}>{t('company.jobsnew.sub')}</p>
             </div>
           </header>
 
           <form onSubmit={onSubmit} style={css.formShell}>
             <div style={css.formCol}>
-              <h2 style={css.sectionTitle}>공고 대표 사진</h2>
+              <h2 style={css.sectionTitle}>{t('company.jobsnew.photoH')}</h2>
 
               <div style={css.row2}>
-                <Field label="대표 이미지 (카드 썸네일)">
+                <Field label={t('company.jobsnew.imageLabel')}>
                   {form.image_url ? (
                     <div style={localCss.imgRow}>
                       <img src={form.image_url} alt="thumbnail" style={localCss.imgPreview} />
-                      <button type="button" onClick={() => setF('image_url', '')} style={localCss.imgRemove}>제거</button>
+                      <button type="button" onClick={() => setF('image_url', '')} style={localCss.imgRemove}>{t('company.remove')}</button>
                     </div>
                   ) : (
                     <input type="file" accept="image/*" disabled={uploading}
@@ -204,11 +207,11 @@ export default function NewJobPage() {
                       style={localCss.fileInp} />
                   )}
                 </Field>
-                <Field label="회사 로고 (작은 아이콘)">
+                <Field label={t('company.jobsnew.logoLabel')}>
                   {form.logo_url ? (
                     <div style={localCss.imgRow}>
                       <img src={form.logo_url} alt="logo" style={localCss.logoPreview} />
-                      <button type="button" onClick={() => setF('logo_url', '')} style={localCss.imgRemove}>제거</button>
+                      <button type="button" onClick={() => setF('logo_url', '')} style={localCss.imgRemove}>{t('company.remove')}</button>
                     </div>
                   ) : (
                     <input type="file" accept="image/*" disabled={uploading}
@@ -218,104 +221,104 @@ export default function NewJobPage() {
                 </Field>
               </div>
               {uploading
-                ? <div style={localCss.uploadHint}>업로드 중...</div>
-                : <div style={localCss.photoHint}>사진을 올리면 오른쪽 미리보기 카드에 바로 반영됩니다.</div>}
+                ? <div style={localCss.uploadHint}>{t('company.uploading')}</div>
+                : <div style={localCss.photoHint}>{t('company.jobsnew.photoHint')}</div>}
 
-              <h2 style={{...css.sectionTitle, marginTop: 28}}>기본 정보</h2>
+              <h2 style={{...css.sectionTitle, marginTop: 28}}>{t('company.jobsnew.basicH')}</h2>
 
-              <Field label="포지션명">
+              <Field label={t('company.jobsnew.title')}>
                 <input value={form.title} onChange={e => setF('title', e.target.value)} placeholder="Senior Backend Engineer" style={css.inp} />
               </Field>
 
-              <Field label="업무 설명">
+              <Field label={t('company.jobsnew.descLabel')}>
                 <textarea value={form.description} onChange={e => setF('description', e.target.value)} rows={4}
-                  placeholder="역할/책임/팀 구성 등" style={{...css.inp, resize: 'vertical', minHeight: 110}} />
+                  placeholder={t('company.jobsnew.descPh')} style={{...css.inp, resize: 'vertical', minHeight: 110}} />
               </Field>
 
               <div style={css.row2}>
-                <Field label="역할 카테고리">
+                <Field label={t('company.jobsnew.role')}>
                   <select value={form.role} onChange={e => setF('role', e.target.value)} style={css.inp}>
                     {ROLES.map(r => <option key={r} value={r}>{r}</option>)}
                   </select>
                 </Field>
-                <Field label="근무 형태">
+                <Field label={t('company.jobsnew.type')}>
                   <select value={form.type} onChange={e => setF('type', e.target.value)} style={css.inp}>
-                    {TYPES.map(t => <option key={t} value={t}>{t}</option>)}
+                    {TYPES.map(tp => <option key={tp} value={tp}>{tp}</option>)}
                   </select>
                 </Field>
               </div>
 
-              <Field label="근무지">
+              <Field label={t('company.jobsnew.location')}>
                 <select value={form.location} onChange={e => setF('location', e.target.value)} style={css.inp}>
                   {LOCATIONS.map(l => <option key={l} value={l}>{l}</option>)}
                 </select>
               </Field>
 
-              <h2 style={{...css.sectionTitle, marginTop: 28}}>경력 · 연봉</h2>
+              <h2 style={{...css.sectionTitle, marginTop: 28}}>{t('company.jobsnew.expSalH')}</h2>
 
               <div style={css.row2}>
-                <Field label="경력 최소 (년)">
+                <Field label={t('company.jobsnew.expMin')}>
                   <input type="number" value={form.experience_min} onChange={e => setF('experience_min', e.target.value)} style={css.inp} />
                 </Field>
-                <Field label="경력 최대 (년)">
+                <Field label={t('company.jobsnew.expMax')}>
                   <input type="number" value={form.experience_max} onChange={e => setF('experience_max', e.target.value)} style={css.inp} />
                 </Field>
               </div>
 
               <div style={css.row2}>
-                <Field label="연봉 최소 (VND, 월)">
+                <Field label={t('company.jobsnew.salaryMin')}>
                   <input type="number" value={form.salary_min} onChange={e => setF('salary_min', e.target.value)} style={css.inp} />
-                  <div style={css.hint}>{Math.round(form.salary_min / 1e6)}M VND/월</div>
+                  <div style={css.hint}>{t('company.jobsnew.vndHint', { n: Math.round(form.salary_min / 1e6) })}</div>
                 </Field>
-                <Field label="연봉 최대 (VND, 월)">
+                <Field label={t('company.jobsnew.salaryMax')}>
                   <input type="number" value={form.salary_max} onChange={e => setF('salary_max', e.target.value)} style={css.inp} />
-                  <div style={css.hint}>{Math.round(form.salary_max / 1e6)}M VND/월</div>
+                  <div style={css.hint}>{t('company.jobsnew.vndHint', { n: Math.round(form.salary_max / 1e6) })}</div>
                 </Field>
               </div>
 
-              <h2 style={{...css.sectionTitle, marginTop: 28}}>스킬·복지·기타</h2>
+              <h2 style={{...css.sectionTitle, marginTop: 28}}>{t('company.jobsnew.skillH')}</h2>
 
-              <Field label="기술 스택 (콤마 구분)">
+              <Field label={t('company.jobsnew.tech')}>
                 <input value={form.tech_stack} onChange={e => setF('tech_stack', e.target.value)}
                   placeholder="Node.js, PostgreSQL, AWS" style={css.inp} />
               </Field>
 
-              <Field label="복지 (콤마 구분, 선택)">
+              <Field label={t('company.jobsnew.benefits')}>
                 <input value={form.benefits} onChange={e => setF('benefits', e.target.value)}
                   placeholder="13th-month, Health insurance" style={css.inp} />
               </Field>
 
               <div style={css.row2}>
-                <Field label="채용 인원 (선택)">
+                <Field label={t('company.jobsnew.headcount')}>
                   <input type="number" value={form.headcount} onChange={e => setF('headcount', e.target.value)} placeholder="1" style={css.inp} />
                 </Field>
-                <Field label="마감일 (선택)">
+                <Field label={t('company.jobsnew.deadline')}>
                   <input type="date" value={form.deadline} onChange={e => setF('deadline', e.target.value)} style={css.inp} />
                 </Field>
               </div>
             </div>
 
             <aside style={css.previewCol}>
-              <div style={css.previewLabel}>미리보기 · /jobs 피드</div>
+              <div style={css.previewLabel}>{t('company.jobsnew.previewLabel')}</div>
               <div style={localCss.pvCard}>
                 {form.image_url
                   ? <img src={form.image_url} alt="" style={localCss.pvImg} />
-                  : <div style={localCss.pvImgEmpty}>📷 대표 사진을 올려보세요</div>}
+                  : <div style={localCss.pvImgEmpty}>{t('company.jobsnew.previewEmpty')}</div>}
                 <div style={localCss.pvBody}>
                   <div style={localCss.pvCompanyRow}>
                     {form.logo_url
                       ? <img src={form.logo_url} alt="" style={localCss.pvLogo} />
                       : <div style={localCss.pvLogoEmpty} />}
-                    <span style={localCss.pvCompany}>{companyName || '회사명'}</span>
+                    <span style={localCss.pvCompany}>{companyName || t('company.previewCompanyDef')}</span>
                   </div>
-                  <div style={localCss.pvTitle}>{form.title || '포지션명'}</div>
+                  <div style={localCss.pvTitle}>{form.title || t('company.previewTitleDef')}</div>
                   <div style={localCss.pvSalary}>
                     ₫{Math.round(form.salary_min/1e6)}M–{Math.round(form.salary_max/1e6)}M/월
                   </div>
                   {(form.tech_stack || '').trim() && (
                     <div style={localCss.pvTags}>
-                      {form.tech_stack.split(',').map(s => s.trim()).filter(Boolean).slice(0, 4).map(t => (
-                        <span key={t} style={localCss.pvTag}>{t}</span>
+                      {form.tech_stack.split(',').map(s => s.trim()).filter(Boolean).slice(0, 4).map(tg => (
+                        <span key={tg} style={localCss.pvTag}>{tg}</span>
                       ))}
                     </div>
                   )}
@@ -327,9 +330,9 @@ export default function NewJobPage() {
             {err && <div style={css.err}>{err}</div>}
 
             <div style={css.formFoot}>
-              <Link href="/company/jobs" style={css.btnGhost}>취소</Link>
+              <Link href="/company/jobs" style={css.btnGhost}>{t('company.cancel')}</Link>
               <button type="submit" disabled={status === 'saving'} style={status === 'saving' ? css.btnDisabled : css.btnPrimary}>
-                {status === 'saving' ? '저장 중…' : '공고 게재하기 →'}
+                {status === 'saving' ? t('company.saving') : t('company.jobsnew.publish')}
               </button>
             </div>
           </form>
@@ -352,6 +355,7 @@ const DOT_COLOR = { live: '#10b981', paused: '#f59e0b', closed: '#94a3b8', draft
 
 export function Sidebar({ companyName, userEmail, activePage = 'home', activeJobId = null }) {
   const router = useRouter();
+  const { t } = useT();
   const [jobs, setJobs] = useState([]);
 
   useEffect(() => {
@@ -379,20 +383,23 @@ export function Sidebar({ companyName, userEmail, activePage = 'home', activeJob
   return (
     <aside style={css.sidebar}>
       <div style={css.sideHead}>
-        <Brand href="/company" size="sm" style={{ marginBottom: 12 }} />
-        <div style={css.sideCompany}>{companyName || '내 회사'}</div>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 6, marginBottom: 12 }}>
+          <Brand href="/company" size="sm" />
+          <LangToggle align="right" />
+        </div>
+        <div style={css.sideCompany}>{companyName || t('company.sidebar.myCompany')}</div>
         <div style={css.sideUser}>{userEmail}</div>
       </div>
       <nav style={css.sideNav}>
-        <Link href="/company" style={{...css.navItem, ...(isActive('home') ? css.navItemActive : {})}}><span style={css.navIco}>🏠</span>대시보드</Link>
-        <Link href="/company/jobs/new" style={css.navItem}><span style={css.navIco}>➕</span>새 공고</Link>
-        <Link href="/company/calendar" style={{...css.navItem, ...(isActive('calendar') ? css.navItemActive : {})}}><span style={css.navIco}>📅</span>면접 일정</Link>
+        <Link href="/company" style={{...css.navItem, ...(isActive('home') ? css.navItemActive : {})}}><span style={css.navIco}>🏠</span>{t('company.sidebar.dashboard')}</Link>
+        <Link href="/company/jobs/new" style={css.navItem}><span style={css.navIco}>➕</span>{t('company.sidebar.newJob')}</Link>
+        <Link href="/company/calendar" style={{...css.navItem, ...(isActive('calendar') ? css.navItemActive : {})}}><span style={css.navIco}>📅</span>{t('company.sidebar.calendar')}</Link>
       </nav>
 
       {jobs.length > 0 && (
         <>
           <div style={css.sideDivider} />
-          <div style={css.sideSectionTitle}>내 공고 ({jobs.length})</div>
+          <div style={css.sideSectionTitle}>{t('company.sidebar.myJobs', { n: jobs.length })}</div>
           <div style={css.sideJobList}>
             {jobs.map(j => {
               const dotColor = DOT_COLOR[j.status] || DOT_COLOR.draft;
@@ -414,7 +421,7 @@ export function Sidebar({ companyName, userEmail, activePage = 'home', activeJob
       )}
 
       <div style={css.sideBottom}>
-        <a onClick={signOut} style={css.signoutLink}>로그아웃</a>
+        <a onClick={signOut} style={css.signoutLink}>{t('company.sidebar.signOut')}</a>
       </div>
     </aside>
   );

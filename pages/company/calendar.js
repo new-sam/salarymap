@@ -3,19 +3,21 @@ import Head from 'next/head';
 import Link from 'next/link';
 import { supabase } from '../../lib/supabaseClient';
 import { Sidebar, css } from './jobs/new';
+import { useT } from '../../lib/i18n';
 
-const STAGE_LABEL = { applied: '신규 지원', viewed: '열람', reviewing: '검토/인터뷰', decided: '결정' };
-const WEEKDAYS = ['일', '월', '화', '수', '목', '금', '토'];
-
+const LOCALES = { vi: 'vi-VN', en: 'en-US', ko: 'ko-KR' };
 const dateKey = (d) => `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
-const fmtDateLabel = (d) => `${d.getMonth() + 1}월 ${d.getDate()}일 (${WEEKDAYS[d.getDay()]})`;
-const fmtTime = (d) => d.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', hour12: false });
 
 export default function CompanyCalendarPage() {
+  const { t, lang } = useT();
   const [status, setStatus] = useState('loading');
   const [user, setUser] = useState(null);
   const [companyName, setCompanyName] = useState('');
   const [items, setItems] = useState([]);
+
+  const locale = LOCALES[lang] || LOCALES.vi;
+  const fmtDateLabel = (d) => d.toLocaleDateString(locale, { month: 'long', day: 'numeric', weekday: 'short' });
+  const fmtTime = (d) => d.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit', hour12: false });
 
   useEffect(() => {
     (async () => {
@@ -48,13 +50,13 @@ export default function CompanyCalendarPage() {
     })();
   }, []);
 
-  if (status === 'loading') return <div style={css.loading}>Loading…</div>;
+  if (status === 'loading') return <div style={css.loading}>{t('company.loading')}</div>;
   if (status === 'unauthed') {
     return (
       <div style={css.fullCenter}>
         <div style={css.lightCard}>
-          <h1 style={css.cardH}>로그인 필요</h1>
-          <Link href="/company/signup" style={css.btnPrimary}>로그인 / 가입</Link>
+          <h1 style={css.cardH}>{t('company.loginRequired')}</h1>
+          <Link href="/company" style={css.btnPrimary}>{t('company.loginOrSignup')}</Link>
         </div>
       </div>
     );
@@ -78,19 +80,19 @@ export default function CompanyCalendarPage() {
       return (
         <div key={g.k} style={localCss.group}>
           <div style={{ ...localCss.dateHead, ...(isToday ? localCss.dateHeadToday : {}), ...(dim ? localCss.dim : {}) }}>
-            {fmtDateLabel(g.d)}{isToday && <span style={localCss.todayTag}>오늘</span>}
+            {fmtDateLabel(g.d)}{isToday && <span style={localCss.todayTag}>{t('company.calendar.today')}</span>}
           </div>
           {g.rows.map(it => (
             <div key={it.id} style={{ ...localCss.row, ...(dim ? localCss.dim : {}) }}>
               <div style={localCss.time}>{fmtTime(new Date(it.interview_at))}</div>
               <div style={localCss.rowMain}>
                 <div style={localCss.cand}>
-                  {it.applicant_name || '후보'}
-                  <span style={localCss.stage}>{STAGE_LABEL[it.status] || it.status}</span>
+                  {it.applicant_name || t('company.candidatePrefix').replace('#', '').trim()}
+                  <span style={localCss.stage}>{t(`company.stage.${it.status}`) || it.status}</span>
                 </div>
                 <div style={localCss.sub}>{it.jobTitle}</div>
                 <div style={localCss.meta}>
-                  📍 {it.interview_location || '장소 미정'}
+                  📍 {it.interview_location || t('company.calendar.locTbd')}
                   {it.interview_interviewer && <> · 👤 {it.interview_interviewer}</>}
                 </div>
               </div>
@@ -103,35 +105,35 @@ export default function CompanyCalendarPage() {
 
   return (
     <>
-      <Head><title>면접 일정 · FYI for Companies</title></Head>
+      <Head><title>{t('company.head.calendar')}</title></Head>
       <div style={css.app}>
         <Sidebar companyName={companyName} userEmail={user?.email} activePage="calendar" />
 
         <main style={css.main}>
           <header style={css.mainHead}>
             <div>
-              <h1 style={css.mainH}>면접 일정</h1>
-              <p style={css.mainP}>후보 상세의 '면접 일정 잡기'로 등록한 일정이 모입니다.</p>
+              <h1 style={css.mainH}>{t('company.calendar.h')}</h1>
+              <p style={css.mainP}>{t('company.calendar.sub')}</p>
             </div>
           </header>
 
           {items.length === 0 ? (
             <div style={localCss.empty}>
               <div style={localCss.emptyIco}>📅</div>
-              <h2 style={localCss.emptyH}>등록된 면접 일정이 없습니다</h2>
-              <p style={localCss.emptyP}>칸반에서 후보를 열고 '면접 일정 잡기'를 눌러 등록하세요.</p>
+              <h2 style={localCss.emptyH}>{t('company.calendar.emptyH')}</h2>
+              <p style={localCss.emptyP}>{t('company.calendar.emptyDesc')}</p>
             </div>
           ) : (
             <>
               <section>
-                <h2 style={localCss.sectionH}>다가오는 면접 ({upcoming.length})</h2>
+                <h2 style={localCss.sectionH}>{t('company.calendar.upcoming', { n: upcoming.length })}</h2>
                 {upcoming.length === 0
-                  ? <div style={localCss.noneHint}>예정된 면접이 없습니다.</div>
+                  ? <div style={localCss.noneHint}>{t('company.calendar.noUpcoming')}</div>
                   : renderGroups(upcoming, false)}
               </section>
               {past.length > 0 && (
                 <section style={{ marginTop: 28 }}>
-                  <h2 style={localCss.sectionH}>지난 면접 ({past.length})</h2>
+                  <h2 style={localCss.sectionH}>{t('company.calendar.past', { n: past.length })}</h2>
                   {renderGroups(past, true)}
                 </section>
               )}

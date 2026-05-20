@@ -1,21 +1,23 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { supabase } from '../../lib/supabaseClient';
+import { useT } from '../../lib/i18n';
 
 const STAGES = [
-  { key: 'applied', label: '신규 지원', emoji: '📥' },
-  { key: 'viewed', label: '열람', emoji: '👀' },
-  { key: 'reviewing', label: '검토 / 인터뷰', emoji: '🗣️' },
-  { key: 'decided', label: '결정', emoji: '✅' },
+  { key: 'applied', emoji: '📥' },
+  { key: 'viewed', emoji: '👀' },
+  { key: 'reviewing', emoji: '🗣️' },
+  { key: 'decided', emoji: '✅' },
 ];
 const STAGE_ORDER = STAGES.map(s => s.key);
 
+const TPL_KEYS = ['received', 'interview', 'offer', 'reject'];
+
 /**
  * mode: 'page' | 'overlay'
- *   page: 풀 페이지 (대시보드 sidebar 포함된 페이지에서 사용)
- *   overlay: 모달 오버레이 — 우상단 ✕ 닫기
  */
 export default function CandidateDetail({ appId, mode = 'page', onClose, companyId, onStageChange }) {
+  const { t } = useT();
   const [status, setStatus] = useState('loading');
   const [app, setApp] = useState(null);
   const [job, setJob] = useState(null);
@@ -32,7 +34,6 @@ export default function CandidateDetail({ appId, mode = 'page', onClose, company
     if (!appId) return;
     (async () => {
       setStatus('loading');
-      // 권한 체크: companyId가 props로 안 오면 자체적으로 조회
       let cid = companyId;
       if (!cid) {
         const { data: { session } } = await supabase.auth.getSession();
@@ -49,7 +50,7 @@ export default function CandidateDetail({ appId, mode = 'page', onClose, company
         .eq('id', appId)
         .maybeSingle();
       if (appErr || !appData || appData.jobs?.company_id !== cid) {
-        setErr('접근 권한이 없거나 지원자를 찾을 수 없습니다.');
+        setErr(t('company.candidate.notFound'));
         setStatus('error');
         return;
       }
@@ -64,7 +65,7 @@ export default function CandidateDetail({ appId, mode = 'page', onClose, company
       }
       setStatus('ready');
     })();
-  }, [appId, companyId]);
+  }, [appId, companyId, t]);
 
   const setStage = async (newStatus) => {
     if (!app || app.status === newStatus) return;
@@ -74,7 +75,7 @@ export default function CandidateDetail({ appId, mode = 'page', onClose, company
       .update({ status: newStatus, updated_at: new Date().toISOString() }).eq('id', app.id);
     if (error) {
       setApp({ ...app, status: prev });
-      setErr('상태 변경 실패: ' + error.message);
+      setErr(t('company.err.stageChange') + error.message);
       return;
     }
     onStageChange?.(app.id, newStatus);
@@ -82,26 +83,26 @@ export default function CandidateDetail({ appId, mode = 'page', onClose, company
   };
 
   const moveNext = async () => {
-    const idx = STAGE_ORDER.indexOf(app.status);
-    if (idx >= STAGE_ORDER.length - 1) return;
-    await setStage(STAGE_ORDER[idx + 1]);
+    const i = STAGE_ORDER.indexOf(app.status);
+    if (i >= STAGE_ORDER.length - 1) return;
+    await setStage(STAGE_ORDER[i + 1]);
   };
 
   const saveNote = async () => {
     setSavingNote(true);
     const { error } = await supabase.from('job_applications').update({ admin_note: note }).eq('id', app.id);
     setSavingNote(false);
-    if (error) { setErr('메모 저장 실패: ' + error.message); return; }
+    if (error) { setErr(t('company.err.noteSave') + error.message); return; }
     setApp({ ...app, admin_note: note });
     setNoteSavedAt(new Date());
     setTimeout(() => setNoteSavedAt(null), 3000);
   };
 
-  if (status === 'loading') return <div style={local.loading}>Loading…</div>;
-  if (status === 'unauthed') return <div style={local.errBox}>로그인이 필요합니다.</div>;
+  if (status === 'loading') return <div style={local.loading}>{t('company.loading')}</div>;
+  if (status === 'unauthed') return <div style={local.errBox}>{t('company.err.loginRequired')}</div>;
   if (status === 'error') return <div style={local.errBox}>{err}</div>;
 
-  const name = app.applicant_name || profile?.full_name || `후보 #${app.id.slice(-6).toUpperCase()}`;
+  const name = app.applicant_name || profile?.full_name || `${t('company.candidatePrefix')}${app.id.slice(-6).toUpperCase()}`;
   const email = app.applicant_email || profile?.email || '—';
   const currentStage = STAGES.find(s => s.key === app.status);
   const idx = STAGE_ORDER.indexOf(app.status);
@@ -115,7 +116,7 @@ export default function CandidateDetail({ appId, mode = 'page', onClose, company
       <header style={local.head}>
         {mode === 'page' && (
           <div style={local.crumb}>
-            <Link href={`/company/ats?job=${job.id}`} style={local.crumbLink}>← {job.title} 칸반</Link>
+            <Link href={`/company/ats?job=${job.id}`} style={local.crumbLink}>{t('company.candidate.backToKanban', { job: job.title })}</Link>
           </div>
         )}
         <div style={local.headRow}>
@@ -124,16 +125,16 @@ export default function CandidateDetail({ appId, mode = 'page', onClose, company
             <div style={local.subline}>
               {email}
               {app.applicant_role && <> · {app.applicant_role}</>}
-              {(app.applicant_experience !== null && app.applicant_experience !== undefined) && <> · {app.applicant_experience}년</>}
+              {(app.applicant_experience !== null && app.applicant_experience !== undefined) && <> · {app.applicant_experience}{t('company.years')}</>}
               {mode === 'overlay' && <> · {job.title}</>}
             </div>
           </div>
           <div style={local.headRight}>
             <div style={local.stageChip}>
-              현재 단계 <strong style={local.stageStrong}>{currentStage?.emoji} {currentStage?.label}</strong>
+              {t('company.candidate.currentStage')} <strong style={local.stageStrong}>{currentStage?.emoji} {t(`company.stage.${app.status}`)}</strong>
             </div>
             {mode === 'overlay' && (
-              <button onClick={onClose} style={local.closeBtn} title="닫기">✕</button>
+              <button onClick={onClose} style={local.closeBtn} title="✕">✕</button>
             )}
           </div>
         </div>
@@ -142,87 +143,85 @@ export default function CandidateDetail({ appId, mode = 'page', onClose, company
       {err && <div style={local.errBox}>{err}</div>}
 
       <div style={local.bodyGrid}>
-        {/* Center: 이력서 */}
         <section style={local.resumeCol}>
           <div style={local.colHead}>
-            <span>📄 이력서</span>
-            {hasResume && <a href={app.resume_url} target="_blank" rel="noopener noreferrer" style={local.openInNew}>새 탭으로 ↗</a>}
+            <span>{t('company.candidate.resume')}</span>
+            {hasResume && <a href={app.resume_url} target="_blank" rel="noopener noreferrer" style={local.openInNew}>{t('company.candidate.openNewTab')}</a>}
           </div>
           {hasResume ? (
             <iframe src={app.resume_url} style={local.iframe} title="resume" />
           ) : (
             <div style={local.resumeEmpty}>
               <div style={{fontSize:40, opacity:0.4, marginBottom:12}}>📄</div>
-              <p>제출된 이력서 파일이 없습니다.</p>
-              <p style={local.resumeEmptySub}>오른쪽 지원 정보를 참고하세요.</p>
+              <p>{t('company.candidate.noResume')}</p>
+              <p style={local.resumeEmptySub}>{t('company.candidate.noResumeSub')}</p>
             </div>
           )}
         </section>
 
-        {/* Right: 정보 + 메모 + 단계 */}
         <aside style={local.sideCol}>
           <section style={local.section}>
-            <h3 style={local.sectionH}>지원 정보</h3>
-            <Info label="이메일">{email}</Info>
-            {app.applicant_role && <Info label="역할">{app.applicant_role}</Info>}
-            {(app.applicant_experience !== null && app.applicant_experience !== undefined) && <Info label="경력">{app.applicant_experience}년</Info>}
-            {app.applicant_salary && <Info label="희망 연봉">₫{Math.round(app.applicant_salary/1e6)}M/월</Info>}
-            {app.applicant_company && <Info label="현재 회사">{app.applicant_company}</Info>}
-            <Info label="지원일">{new Date(app.created_at).toLocaleString('ko-KR')}</Info>
+            <h3 style={local.sectionH}>{t('company.candidate.applyInfo')}</h3>
+            <Info label={t('company.candidate.email')}>{email}</Info>
+            {app.applicant_role && <Info label={t('company.candidate.role')}>{app.applicant_role}</Info>}
+            {(app.applicant_experience !== null && app.applicant_experience !== undefined) && <Info label={t('company.candidate.exp')}>{app.applicant_experience}{t('company.years')}</Info>}
+            {app.applicant_salary && <Info label={t('company.candidate.wishSalary')}>₫{Math.round(app.applicant_salary/1e6)}M/월</Info>}
+            {app.applicant_company && <Info label={t('company.candidate.currentCompany')}>{app.applicant_company}</Info>}
+            <Info label={t('company.candidate.appliedAt')}>{new Date(app.created_at).toLocaleString()}</Info>
           </section>
 
           <section style={local.section}>
-            <h3 style={local.sectionH}>후보 연락</h3>
+            <h3 style={local.sectionH}>{t('company.candidate.contactH')}</h3>
             <button
               onClick={() => setShowMailModal(true)}
               disabled={!canEmail}
               style={canEmail ? local.btnMail : local.btnMailDisabled}
             >
-              ✉ 메일 보내기
+              {t('company.candidate.mailBtn')}
             </button>
-            {!canEmail && <div style={local.mailHint}>후보 이메일이 없어 메일을 보낼 수 없습니다.</div>}
+            {!canEmail && <div style={local.mailHint}>{t('company.candidate.noEmail')}</div>}
           </section>
 
           <section style={local.section}>
-            <h3 style={local.sectionH}>평가 메모</h3>
+            <h3 style={local.sectionH}>{t('company.candidate.note')}</h3>
             <textarea
               value={note}
               onChange={(e) => setNote(e.target.value)}
-              placeholder="이 후보자에 대한 평가, 인터뷰 의견, 다음 액션 등을 자유롭게"
+              placeholder={t('company.candidate.notePh')}
               rows={6}
               style={local.textarea}
             />
             <div style={local.noteFoot}>
               <button onClick={saveNote} disabled={savingNote || note === (app.admin_note || '')}
                 style={(savingNote || note === (app.admin_note || '')) ? local.btnSaveDisabled : local.btnSave}>
-                {savingNote ? '저장 중…' : '메모 저장'}
+                {savingNote ? t('company.savingShort') : t('company.candidate.saveNote')}
               </button>
-              {noteSavedAt && <span style={local.savedTag}>✓ 저장됨</span>}
+              {noteSavedAt && <span style={local.savedTag}>{t('company.saved')}</span>}
             </div>
           </section>
 
           <section style={local.section}>
-            <h3 style={local.sectionH}>단계 이동</h3>
+            <h3 style={local.sectionH}>{t('company.candidate.stageH')}</h3>
             <div style={local.stageBtns}>
               {STAGES.map(s => (
                 <button key={s.key} onClick={() => setStage(s.key)}
                   style={s.key === app.status ? local.stageBtnActive : local.stageBtn}>
-                  {s.emoji} {s.label}
+                  {s.emoji} {t(`company.stage.${s.key}`)}
                 </button>
               ))}
             </div>
             {nextStage && (
               <button onClick={moveNext} style={local.btnNext}>
-                다음 단계로 → {nextStage.emoji} {nextStage.label}
+                {t('company.candidate.nextStage')} {nextStage.emoji} {t(`company.stage.${nextStage.key}`)}
               </button>
             )}
           </section>
 
           {(app.status === 'reviewing' || app.status === 'decided') && (
             <section style={local.section}>
-              <h3 style={local.sectionH}>액션</h3>
+              <h3 style={local.sectionH}>{t('company.candidate.actionH')}</h3>
               <button onClick={() => setShowInterviewModal(true)} style={local.btnAction}>
-                📅 면접 일정 잡기
+                {t('company.candidate.scheduleInterview')}
               </button>
             </section>
           )}
@@ -265,6 +264,7 @@ function Info({ label, children }) {
 }
 
 function InterviewModal({ app, onClose, onSaved }) {
+  const { t } = useT();
   const [date, setDate] = useState('');
   const [time, setTime] = useState('14:00');
   const [location, setLocation] = useState('');
@@ -273,9 +273,9 @@ function InterviewModal({ app, onClose, onSaved }) {
   const [err, setErr] = useState('');
 
   const save = async () => {
-    if (!date) { setErr('날짜를 선택해 주세요'); return; }
+    if (!date) { setErr(t('company.err.dateRequired')); return; }
     setSaving(true);
-    const summary = `[면접 일정]\n📅 ${date} ${time}\n📍 ${location || '미정'}\n👤 면접관: ${interviewer || '미정'}\n\n${app.admin_note ? '── 기존 메모 ──\n' + app.admin_note : ''}`;
+    const summary = `[Interview]\n📅 ${date} ${time}\n📍 ${location || '—'}\n👤 ${interviewer || '—'}\n\n${app.admin_note || ''}`;
     const { error } = await supabase.from('job_applications').update({
       admin_note: summary,
       interview_at: new Date(`${date}T${time || '00:00'}`).toISOString(),
@@ -283,7 +283,7 @@ function InterviewModal({ app, onClose, onSaved }) {
       interview_interviewer: interviewer || null,
     }).eq('id', app.id);
     setSaving(false);
-    if (error) { setErr('저장 실패: ' + error.message); return; }
+    if (error) { setErr(t('company.err.saveFailed') + error.message); return; }
     onSaved(summary);
   };
 
@@ -291,21 +291,21 @@ function InterviewModal({ app, onClose, onSaved }) {
     <div style={modal.overlay} onClick={onClose}>
       <div style={modal.box} onClick={(e) => e.stopPropagation()}>
         <header style={modal.head}>
-          <h2 style={modal.h}>면접 일정 잡기</h2>
+          <h2 style={modal.h}>{t('company.interview.h')}</h2>
           <button onClick={onClose} style={modal.closeBtn}>✕</button>
         </header>
         <div style={modal.body}>
-          <div style={modal.field}><label style={modal.label}>면접 날짜 *</label><input type="date" value={date} onChange={(e) => setDate(e.target.value)} style={modal.inp} /></div>
-          <div style={modal.field}><label style={modal.label}>시간</label><input type="time" value={time} onChange={(e) => setTime(e.target.value)} style={modal.inp} /></div>
-          <div style={modal.field}><label style={modal.label}>장소</label><input value={location} onChange={(e) => setLocation(e.target.value)} placeholder="회사 본사 회의실 / Zoom 링크" style={modal.inp} /></div>
-          <div style={modal.field}><label style={modal.label}>면접관</label><input value={interviewer} onChange={(e) => setInterviewer(e.target.value)} placeholder="이름 / 직책" style={modal.inp} /></div>
+          <div style={modal.field}><label style={modal.label}>{t('company.interview.dateLabel')}</label><input type="date" value={date} onChange={(e) => setDate(e.target.value)} style={modal.inp} /></div>
+          <div style={modal.field}><label style={modal.label}>{t('company.interview.timeLabel')}</label><input type="time" value={time} onChange={(e) => setTime(e.target.value)} style={modal.inp} /></div>
+          <div style={modal.field}><label style={modal.label}>{t('company.interview.locLabel')}</label><input value={location} onChange={(e) => setLocation(e.target.value)} placeholder={t('company.interview.locPh')} style={modal.inp} /></div>
+          <div style={modal.field}><label style={modal.label}>{t('company.interview.interviewerLabel')}</label><input value={interviewer} onChange={(e) => setInterviewer(e.target.value)} placeholder={t('company.interview.interviewerPh')} style={modal.inp} /></div>
           {err && <div style={local.errBox}>{err}</div>}
-          <p style={modal.hint}>저장 시 후보자 메모 영역에 일정이 자동 기록됩니다.</p>
+          <p style={modal.hint}>{t('company.interview.hint')}</p>
         </div>
         <footer style={modal.foot}>
-          <button onClick={onClose} style={modal.btnGhost}>취소</button>
+          <button onClick={onClose} style={modal.btnGhost}>{t('company.cancel')}</button>
           <button onClick={save} disabled={saving} style={saving ? modal.btnDisabled : modal.btnPrimary}>
-            {saving ? '저장 중…' : '일정 저장'}
+            {saving ? t('company.savingShort') : t('company.interview.saveBtn')}
           </button>
         </footer>
       </div>
@@ -313,75 +313,26 @@ function InterviewModal({ app, onClose, onSaved }) {
   );
 }
 
-const MAIL_TEMPLATES = [
-  {
-    key: 'received', label: '지원 접수',
-    subject: '[{회사명}] {공고명} 지원 접수 안내',
-    body: `{후보이름}님, 안녕하세요.
-{회사명} 채용 담당자입니다.
-
-{공고명} 포지션에 지원해 주셔서 감사합니다.
-제출해 주신 지원서를 잘 받았으며, 현재 검토하고 있습니다.
-결과는 확인되는 대로 다시 안내드리겠습니다.
-
-감사합니다.`,
-  },
-  {
-    key: 'interview', label: '면접 제안',
-    subject: '[{회사명}] {공고명} 면접 제안',
-    body: `{후보이름}님, 안녕하세요.
-{회사명} 채용 담당자입니다.
-
-{공고명} 포지션 검토 결과, {후보이름}님과 면접을 진행하고 싶습니다.
-아래 시간 중 가능한 일정을 회신해 주시면 확정하겠습니다.
-
-1)
-2)
-3)
-
-면접 방식과 장소는 일정 확정 후 안내드리겠습니다.
-감사합니다.`,
-  },
-  {
-    key: 'offer', label: '합격',
-    subject: '[{회사명}] {공고명} 합격 안내',
-    body: `{후보이름}님, 안녕하세요.
-{회사명} 채용 담당자입니다.
-
-{공고명} 포지션에 {후보이름}님을 모시기로 결정했습니다. 축하드립니다.
-입사 절차와 처우 조건은 별도로 안내드리겠습니다.
-
-함께하게 되어 기쁩니다.
-감사합니다.`,
-  },
-  {
-    key: 'reject', label: '불합격',
-    subject: '[{회사명}] {공고명} 전형 결과 안내',
-    body: `{후보이름}님, 안녕하세요.
-{회사명} 채용 담당자입니다.
-
-{공고명} 포지션에 관심을 갖고 지원해 주셔서 감사합니다.
-아쉽게도 이번 전형에서는 함께하지 못하게 되었습니다.
-
-지원에 들인 시간과 노력에 깊이 감사드리며, 좋은 기회로 다시 뵙기를 바랍니다.
-
-감사합니다.`,
-  },
-];
-
 function fillVars(text, vars) {
-  return text
+  return (text || '')
     .split('{후보이름}').join(vars.name)
     .split('{공고명}').join(vars.jobTitle)
-    .split('{회사명}').join(vars.companyName || '저희 회사');
+    .split('{회사명}').join(vars.companyName || '—');
 }
 
 export function MailComposer({
   candidateName, candidateEmail, jobTitle, companyName,
   applicationId, initialTemplateKey, stageNote, onClose, onSent,
 }) {
+  const { t } = useT();
+  const templates = TPL_KEYS.map(key => ({
+    key,
+    label: t(`company.tpl.${key}.label`),
+    subject: t(`company.tpl.${key}.subject`),
+    body: t(`company.tpl.${key}.body`),
+  }));
   const vars = { name: candidateName, jobTitle, companyName };
-  const startTpl = MAIL_TEMPLATES.find(t => t.key === initialTemplateKey) || MAIL_TEMPLATES[0];
+  const startTpl = templates.find(x => x.key === initialTemplateKey) || templates[0];
   const [tplKey, setTplKey] = useState(startTpl.key);
   const [subject, setSubject] = useState(fillVars(startTpl.subject, vars));
   const [body, setBody] = useState(fillVars(startTpl.body, vars));
@@ -389,7 +340,7 @@ export function MailComposer({
   const [err, setErr] = useState('');
 
   const pickTemplate = (key) => {
-    const tpl = MAIL_TEMPLATES.find(t => t.key === key);
+    const tpl = templates.find(x => x.key === key);
     if (!tpl) return;
     setTplKey(key);
     setSubject(fillVars(tpl.subject, vars));
@@ -398,7 +349,7 @@ export function MailComposer({
 
   const send = async () => {
     setErr('');
-    if (!applicationId) { setErr('지원자 정보가 없어 발송할 수 없습니다.'); return; }
+    if (!applicationId) { setErr(t('company.err.noAppId')); return; }
     setSending(true);
     try {
       const { data: { session } } = await supabase.auth.getSession();
@@ -411,11 +362,11 @@ export function MailComposer({
         body: JSON.stringify({ appId: applicationId, subject, body, templateKey: tplKey }),
       });
       const json = await res.json().catch(() => ({}));
-      if (!res.ok) { setErr(json.error || '발송에 실패했습니다.'); setSending(false); return; }
+      if (!res.ok) { setErr(json.error || t('company.err.mailFail')); setSending(false); return; }
       onSent?.(tplKey);
       onClose();
     } catch (e) {
-      setErr('발송 중 오류: ' + (e?.message || ''));
+      setErr(t('company.err.mailErr') + (e?.message || ''));
       setSending(false);
     }
   };
@@ -429,40 +380,40 @@ export function MailComposer({
     <div style={modal.overlay} onClick={sending ? undefined : onClose}>
       <div style={{ ...modal.box, maxWidth: 560 }} onClick={(e) => e.stopPropagation()}>
         <header style={modal.head}>
-          <h2 style={modal.h}>후보에게 메일</h2>
+          <h2 style={modal.h}>{t('company.mail.h')}</h2>
           <button onClick={onClose} style={modal.closeBtn}>✕</button>
         </header>
         <div style={modal.body}>
           {stageNote && <div style={mc.stageNote}>{stageNote}</div>}
           <div style={mc.tplRow}>
-            {MAIL_TEMPLATES.map(t => (
-              <button key={t.key} onClick={() => pickTemplate(t.key)}
-                style={t.key === tplKey ? mc.tplActive : mc.tpl}>
-                {t.label}
+            {templates.map(x => (
+              <button key={x.key} onClick={() => pickTemplate(x.key)}
+                style={x.key === tplKey ? mc.tplActive : mc.tpl}>
+                {x.label}
               </button>
             ))}
           </div>
           <div style={modal.field}>
-            <label style={modal.label}>받는 사람</label>
+            <label style={modal.label}>{t('company.mail.to')}</label>
             <input value={candidateEmail} readOnly style={{ ...modal.inp, background: '#F1F5F9', color: '#737373' }} />
           </div>
           <div style={modal.field}>
-            <label style={modal.label}>제목</label>
+            <label style={modal.label}>{t('company.mail.subject')}</label>
             <input value={subject} onChange={(e) => setSubject(e.target.value)} style={modal.inp} />
           </div>
           <div style={modal.field}>
-            <label style={modal.label}>본문</label>
+            <label style={modal.label}>{t('company.mail.body')}</label>
             <textarea value={body} onChange={(e) => setBody(e.target.value)} rows={12}
               style={{ ...modal.inp, resize: 'vertical', fontFamily: 'inherit', lineHeight: 1.6 }} />
           </div>
           {err && <div style={local.errBox}>{err}</div>}
-          <p style={modal.hint}>'보내기'를 누르면 FYI가 후보 이메일로 바로 발송합니다. 발송 이력이 기록됩니다.</p>
+          <p style={modal.hint}>{t('company.mail.hint')}</p>
         </div>
         <footer style={modal.foot}>
-          <button onClick={onClose} style={modal.btnGhost}>{stageNote ? '건너뛰기' : '취소'}</button>
-          <button onClick={openMailApp} style={modal.btnGhost}>메일 앱으로 열기</button>
+          <button onClick={onClose} style={modal.btnGhost}>{stageNote ? t('company.skip') : t('company.cancel')}</button>
+          <button onClick={openMailApp} style={modal.btnGhost}>{t('company.mail.openApp')}</button>
           <button onClick={send} disabled={sending} style={sending ? modal.btnDisabled : modal.btnPrimary}>
-            {sending ? '발송 중…' : '보내기'}
+            {sending ? t('company.mail.sending') : t('company.mail.send')}
           </button>
         </footer>
       </div>
@@ -501,9 +452,6 @@ const local = {
   colHead: { padding: '13px 18px', fontSize: 12.5, fontWeight: 800, color: '#1A1A1A', borderBottom: '1px solid #E5E7EB', background: '#FAFAFA', display: 'flex', justifyContent: 'space-between', alignItems: 'center' },
   openInNew: { fontSize: 11.5, color: '#EA580C', fontWeight: 700, textDecoration: 'none' },
   iframe: { flex: 1, width: '100%', height: '100%', border: 'none', minHeight: 0 },
-  resumeFallback: { padding: '60px 32px', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 14 },
-  resumeFallbackP: { fontSize: 13, color: '#525252' },
-  openLink: { padding: '10px 18px', background: '#1A1A1A', color: '#fff', borderRadius: 8, textDecoration: 'none', fontSize: 13, fontWeight: 700 },
   resumeEmpty: { padding: '80px 32px', textAlign: 'center', color: '#737373', fontSize: 13 },
   resumeEmptySub: { fontSize: 12, color: '#94A3B8', marginTop: 6 },
 

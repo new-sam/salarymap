@@ -5,13 +5,14 @@ import { useRouter } from 'next/router';
 import { supabase } from '../../lib/supabaseClient';
 import { Sidebar, css } from './jobs/new';
 import Brand from '../../components/company/Brand';
+import LangToggle from '../../components/company/LangToggle';
+import { useT } from '../../lib/i18n';
 
 const FREE_MAIL_DOMAINS = new Set([
   'gmail.com', 'naver.com', 'yahoo.com', 'hotmail.com', 'outlook.com',
   'icloud.com', 'daum.net', 'kakao.com', 'protonmail.com',
 ]);
 
-const STATUS_LABEL = { draft: '초안', pending_review: '검수 중', live: '활성', paused: '일시중지', closed: '종료' };
 const STATUS_STYLE = {
   draft: { bg: '#F1F5F9', color: '#64748B' },
   pending_review: { bg: '#FFF7ED', color: '#EA580C' },
@@ -45,6 +46,7 @@ const authResponsiveCss = `
 
 export default function CompanyDashboard() {
   const router = useRouter();
+  const { t } = useT();
   const [status, setStatus] = useState('loading');
   const [user, setUser] = useState(null);
   const [companyName, setCompanyName] = useState('');
@@ -60,14 +62,13 @@ export default function CompanyDashboard() {
   const [setupCompany, setSetupCompany] = useState('');
   const [setupBusy, setSetupBusy] = useState(false);
 
-  // 단일 입구: 회사 이메일로 매직링크 발송 (로그인/가입 공통)
   const sendLink = async (e) => {
     e.preventDefault();
     setAuthErr('');
     const trimmed = email.trim().toLowerCase();
     const domain = trimmed.split('@')[1];
     if (!domain || FREE_MAIL_DOMAINS.has(domain)) {
-      setAuthErr('회사 이메일을 입력해 주세요. gmail/naver 같은 개인 메일은 사용할 수 없습니다.');
+      setAuthErr(t('company.err.freemail'));
       return;
     }
     setAuthBusy(true);
@@ -86,24 +87,23 @@ export default function CompanyDashboard() {
       if (error) throw error;
       setSentEmail(trimmed);
     } catch (err) {
-      setAuthErr(err?.message || '인증 링크를 보내지 못했습니다.');
+      setAuthErr(err?.message || t('company.err.sendFailed'));
     } finally {
       setAuthBusy(false);
     }
   };
 
-  // 인증 후 회사 연결이 없는 사용자가 회사 정보를 입력하는 단계
   const completeCompanySetup = async (e) => {
     e.preventDefault();
     setAuthErr('');
-    const email = user?.email || '';
-    const domain = email.includes('@') ? email.split('@')[1].toLowerCase() : '';
+    const userEmail = user?.email || '';
+    const domain = userEmail.includes('@') ? userEmail.split('@')[1].toLowerCase() : '';
     if (!domain || FREE_MAIL_DOMAINS.has(domain)) {
-      setAuthErr('회사 이메일로 인증된 계정만 기업 계정을 만들 수 있습니다.');
+      setAuthErr(t('company.err.notVerified'));
       return;
     }
-    if (!setupName.trim()) { setAuthErr('담당자 이름을 입력해 주세요.'); return; }
-    if (!setupCompany.trim()) { setAuthErr('회사명을 입력해 주세요.'); return; }
+    if (!setupName.trim()) { setAuthErr(t('company.err.contactRequired')); return; }
+    if (!setupCompany.trim()) { setAuthErr(t('company.err.companyRequired')); return; }
 
     setSetupBusy(true);
     try {
@@ -132,12 +132,12 @@ export default function CompanyDashboard() {
         resolvedCompanyName = created?.name || resolvedCompanyName;
       }
 
-      if (!companyId) throw new Error('회사 계정을 만들지 못했습니다.');
+      if (!companyId) throw new Error(t('company.err.createFailed'));
 
       const { error: userError } = await supabase.from('recruiter_users').upsert({
         user_id: user.id,
         company_id: companyId,
-        email,
+        email: userEmail,
         full_name: setupName.trim(),
         role: 'admin',
       }, { onConflict: 'user_id' });
@@ -150,7 +150,7 @@ export default function CompanyDashboard() {
       setAppsByJob({});
       setStatus('ready');
     } catch (err) {
-      setAuthErr(err?.message || '회사 계정을 연결하지 못했습니다.');
+      setAuthErr(err?.message || t('company.err.linkFailed'));
     } finally {
       setSetupBusy(false);
     }
@@ -174,7 +174,6 @@ export default function CompanyDashboard() {
       if (rec?.recruiter_companies?.name) setCompanyName(rec.recruiter_companies.name);
       if (rec?.full_name) setFullName(rec.full_name);
 
-      // 세션은 있지만 회사 연결이 없으면 → 회사 정보 설정 단계
       if (!rec?.company_id) {
         setSetupName(rec?.full_name || '');
         setStatus('needs_company');
@@ -211,32 +210,35 @@ export default function CompanyDashboard() {
     return () => { mounted = false; };
   }, [router.isReady]);
 
-  if (status === 'loading') return <div style={css.loading}>Loading…</div>;
+  if (status === 'loading') return <div style={css.loading}>{t('company.loading')}</div>;
 
   if (status === 'unauthed') {
     const signupFrame = router.query.mode === 'signup';
     return (
       <>
-        <Head><title>{signupFrame ? '회사 계정 만들기' : '기업 로그인'} · FYI for Companies</title></Head>
+        <Head><title>{signupFrame ? t('company.head.signup') : t('company.head.login')}</title></Head>
         <style>{authResponsiveCss}</style>
         <div className="company-auth-shell" style={localCss.authShell}>
-          <Brand href="/for-companies" style={{ marginBottom: 58 }} />
+          <div style={localCss.topRow}>
+            <Brand href="/for-companies" />
+            <LangToggle />
+          </div>
 
           <div className="company-auth-grid" style={localCss.authGrid}>
             <section className="company-auth-hero" style={localCss.authHero}>
               <div style={localCss.authKicker}>COMPANY ACCESS</div>
               <h1 style={localCss.authTitle}>
-                회사 이메일로<br />
-                계속하세요.
+                {t('company.heroTitle1')}<br />
+                {t('company.heroTitle2')}
               </h1>
               <p style={localCss.authCopy}>
-                개인 FYI 계정과 분리된<br />
-                기업 전용 계정으로 접속합니다.
+                {t('company.heroDesc1')}<br />
+                {t('company.heroDesc2')}
               </p>
               <div style={localCss.authPoints}>
-                <span>게재비 0원</span>
-                <span>공고 등록 1분</span>
-                <span>성공 시에만 수수료</span>
+                <span>{t('company.point.free')}</span>
+                <span>{t('company.point.fast')}</span>
+                <span>{t('company.point.commission')}</span>
               </div>
             </section>
 
@@ -244,24 +246,23 @@ export default function CompanyDashboard() {
               {sentEmail ? (
                 <div style={localCss.sentBox}>
                   <div style={localCss.sentIcon}>↗</div>
-                  <h2 style={localCss.panelTitle}>메일을 확인해 주세요.</h2>
+                  <h2 style={localCss.panelTitle}>{t('company.sentTitle')}</h2>
                   <p style={localCss.panelCopy}>
                     <b>{sentEmail}</b><br />
-                    인증 링크를 보냈습니다. 링크를 열면 자동으로 로그인되고,
-                    신규 회사면 다음 단계에서 회사 정보를 입력합니다.
+                    {t('company.sentBody')}
                   </p>
                   <button type="button" onClick={() => setSentEmail('')} style={localCss.resendLink}>
-                    메일이 안 왔나요? 다른 이메일로 다시 시도
+                    {t('company.resend')}
                   </button>
                 </div>
               ) : (
                 <form onSubmit={sendLink} style={localCss.form}>
-                  <h2 style={localCss.panelTitle}>{signupFrame ? '회사 계정 만들기' : '기업 로그인'}</h2>
+                  <h2 style={localCss.panelTitle}>{signupFrame ? t('company.signup') : t('company.login')}</h2>
                   <p style={localCss.panelCopy}>
-                    회사 이메일을 입력하면 로그인 또는 가입이 한 번에 진행됩니다.<br />
-                    인증 후에는 이 브라우저에서 로그인 상태가 유지됩니다.
+                    {t('company.loginCopy1')}<br />
+                    {t('company.loginCopy2')}
                   </p>
-                  <label style={localCss.label}>회사 이메일</label>
+                  <label style={localCss.label}>{t('company.emailLabel')}</label>
                   <input
                     type="email"
                     value={email}
@@ -270,14 +271,12 @@ export default function CompanyDashboard() {
                     style={localCss.input}
                     required
                   />
-                  <div style={localCss.note}>gmail·naver 등 개인 메일은 사용할 수 없습니다.</div>
+                  <div style={localCss.note}>{t('company.emailNote')}</div>
                   {authErr && <div style={localCss.authErr}>{authErr}</div>}
                   <button type="submit" disabled={authBusy} style={localCss.primaryBtn}>
-                    {authBusy ? '인증 링크 발송 중…' : '계속하기'}
+                    {authBusy ? t('company.sending') : t('company.continue')}
                   </button>
-                  <div style={localCss.legalNote}>
-                    계속하기를 누르면 이용약관과 개인정보처리방침에 동의하는 것으로 간주됩니다.
-                  </div>
+                  <div style={localCss.legalNote}>{t('company.legalNote')}</div>
                 </form>
               )}
             </section>
@@ -290,47 +289,48 @@ export default function CompanyDashboard() {
   if (status === 'needs_company') {
     return (
       <>
-        <Head><title>기업 계정 설정 · FYI for Companies</title></Head>
+        <Head><title>{t('company.head.setup')}</title></Head>
         <style>{authResponsiveCss}</style>
         <div className="company-auth-shell" style={localCss.authShell}>
-          <Brand href="/for-companies" style={{ marginBottom: 58 }} />
+          <div style={localCss.topRow}>
+            <Brand href="/for-companies" />
+            <LangToggle />
+          </div>
 
           <div className="company-auth-grid" style={localCss.authGrid}>
             <section className="company-auth-hero" style={localCss.authHero}>
               <div style={localCss.authKicker}>COMPANY SETUP</div>
               <h1 style={localCss.authTitle}>
-                거의 다<br />
-                됐어요.
+                {t('company.setupTitle1')}<br />
+                {t('company.setupTitle2')}
               </h1>
               <p style={localCss.authCopy}>
                 {user?.email}<br />
-                인증된 회사 이메일로만 연결됩니다.
+                {t('company.setupSub')}
               </p>
             </section>
 
             <section className="company-auth-panel" style={localCss.authPanel}>
               <form onSubmit={completeCompanySetup} style={localCss.form}>
-                <h2 style={localCss.panelTitle}>회사 정보 입력</h2>
-                <p style={localCss.panelCopy}>
-                  이 단계가 끝나면 기업 대시보드와 공고 관리가 열립니다.
-                </p>
+                <h2 style={localCss.panelTitle}>{t('company.setupH')}</h2>
+                <p style={localCss.panelCopy}>{t('company.setupCopy')}</p>
                 <div className="company-auth-two-cols" style={localCss.twoCols}>
                   <div>
-                    <label style={localCss.label}>담당자 이름</label>
+                    <label style={localCss.label}>{t('company.contactLabel')}</label>
                     <input
                       value={setupName}
                       onChange={(e) => setSetupName(e.target.value)}
-                      placeholder="홍길동"
+                      placeholder={t('company.contactPh')}
                       style={localCss.input}
                       required
                     />
                   </div>
                   <div>
-                    <label style={localCss.label}>회사명</label>
+                    <label style={localCss.label}>{t('company.companyLabel')}</label>
                     <input
                       value={setupCompany}
                       onChange={(e) => setSetupCompany(e.target.value)}
-                      placeholder="ACME Vietnam"
+                      placeholder={t('company.companyPh')}
                       style={localCss.input}
                       required
                     />
@@ -338,7 +338,7 @@ export default function CompanyDashboard() {
                 </div>
                 {authErr && <div style={localCss.authErr}>{authErr}</div>}
                 <button type="submit" disabled={setupBusy} style={localCss.primaryBtn}>
-                  {setupBusy ? '연결 중...' : '기업 계정 연결하기'}
+                  {setupBusy ? t('company.connecting') : t('company.connectBtn')}
                 </button>
               </form>
             </section>
@@ -353,37 +353,36 @@ export default function CompanyDashboard() {
 
   return (
     <>
-      <Head><title>대시보드 · FYI for Companies</title></Head>
+      <Head><title>{t('company.head.dashboard')}</title></Head>
       <div style={css.app}>
         <Sidebar companyName={companyName} userEmail={user?.email} activePage="home" />
 
         <main style={css.main}>
           <header style={css.mainHead}>
             <div>
-              <h1 style={css.mainH}>환영합니다{fullName ? `, ${fullName}님` : ''}</h1>
+              <h1 style={css.mainH}>{fullName ? t('company.welcomeName', { name: fullName }) : t('company.welcome')}</h1>
               <p style={css.mainP}>
-                {companyName ? `${companyName} ` : ''}— 공고를 누르면 지원자 칸반으로 이동합니다.
+                {companyName ? `${companyName} ` : ''}— {t('company.dashSub')}
               </p>
             </div>
-            <Link href="/company/jobs/new" style={css.btnPrimary}>+ 새 공고</Link>
+            <Link href="/company/jobs/new" style={css.btnPrimary}>{t('company.newJobBtn')}</Link>
           </header>
 
           {jobs.length === 0 ? (
             <div style={localCss.empty}>
               <div style={localCss.emptyIco}>📋</div>
-              <h2 style={localCss.emptyH}>첫 공고를 등록해 보세요</h2>
-              <p style={localCss.emptyP}>발행하면 즉시 후보자에게 공개됩니다.</p>
-              <Link href="/company/jobs/new" style={css.btnPrimary}>+ 새 공고 작성하기</Link>
+              <h2 style={localCss.emptyH}>{t('company.emptyTitle')}</h2>
+              <p style={localCss.emptyP}>{t('company.emptyDesc')}</p>
+              <Link href="/company/jobs/new" style={css.btnPrimary}>{t('company.emptyCta')}</Link>
             </div>
           ) : (
             <>
-              {/* 인라인 KPI */}
               <div style={localCss.kpiInline}>
-                <span><b style={localCss.kpiStrong}>{jobs.length}</b>개 공고</span>
+                <span><b style={localCss.kpiStrong}>{jobs.length}</b>{t('company.kpiJobs', { n: '' })}</span>
                 <span style={localCss.kpiSep}>·</span>
-                <span><b style={localCss.kpiStrong}>{activeCount}</b>개 활성</span>
+                <span><b style={localCss.kpiStrong}>{activeCount}</b>{t('company.kpiActive', { n: '' })}</span>
                 <span style={localCss.kpiSep}>·</span>
-                <span><b style={localCss.kpiStrong}>{appsCount}</b>명 누적 지원</span>
+                <span><b style={localCss.kpiStrong}>{appsCount}</b>{t('company.kpiApps', { n: '' })}</span>
               </div>
 
               <div style={localCss.list}>
@@ -402,7 +401,7 @@ export default function CompanyDashboard() {
                         <div style={localCss.cardTitleRow}>
                           <span style={localCss.cardTitle}>{job.title}</span>
                           <span style={{...localCss.badge, background: s.bg, color: s.color}}>
-                            {STATUS_LABEL[job.status] || job.status}
+                            {t(`company.status.${job.status}`)}
                           </span>
                         </div>
                         <div style={localCss.cardMeta}>
@@ -413,12 +412,12 @@ export default function CompanyDashboard() {
                         <div style={localCss.stats}>
                           <div style={localCss.statBox}>
                             <div style={localCss.statVal}>{stats.total}</div>
-                            <div style={localCss.statLab}>지원</div>
+                            <div style={localCss.statLab}>{t('company.stat.apps')}</div>
                           </div>
                           {stats.new > 0 && (
                             <div style={{...localCss.statBox, ...localCss.statBoxNew}}>
                               <div style={localCss.statVal}>{stats.new}</div>
-                              <div style={localCss.statLab}>신규</div>
+                              <div style={localCss.statLab}>{t('company.stat.new')}</div>
                             </div>
                           )}
                         </div>
@@ -426,7 +425,7 @@ export default function CompanyDashboard() {
                           onClick={(e) => { e.stopPropagation(); router.push(`/company/jobs/${job.id}/edit`); }}
                           style={localCss.editBtn}
                         >
-                          수정
+                          {t('company.editBtn')}
                         </button>
                         <span style={localCss.arrow}>→</span>
                       </div>
@@ -449,6 +448,10 @@ const localCss = {
     color: '#111',
     fontFamily: "'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
     padding: '34px clamp(18px, 5vw, 64px) 56px',
+  },
+  topRow: {
+    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+    marginBottom: 58, gap: 12, flexWrap: 'wrap',
   },
   authGrid: {
     display: 'grid',
