@@ -319,6 +319,19 @@ export default function AdminDashboard() {
           <div className="adm-header-title">
             <a href="/admin/jobs" style={{ color: '#888', textDecoration: 'none', fontSize: 20 }} title={t.backTitle}>&larr;</a>
             <h1 style={{ fontSize: 24, fontWeight: 700, margin: 0 }}>{t.title}</h1>
+            <div style={{ display: 'flex', gap: 2, background: '#f3f4f6', borderRadius: 6, padding: 2 }}>
+              {['ko', 'en'].map(l => (
+                <button key={l} onClick={() => setLang(l)}
+                  style={{
+                    padding: '3px 10px', borderRadius: 4, fontSize: 11, fontWeight: 600, cursor: 'pointer',
+                    border: 'none',
+                    background: lang === l ? '#111' : 'transparent',
+                    color: lang === l ? '#fff' : '#999',
+                  }}>
+                  {l === 'ko' ? 'KO' : 'EN'}
+                </button>
+              ))}
+            </div>
           </div>
           <div className="adm-header-controls">
             {[{ label: '7D', days: 7 }, { label: '14D', days: 14 }, { label: '30D', days: 30 }, { label: 'All', days: 0 }].map(p => (
@@ -855,20 +868,6 @@ export default function AdminDashboard() {
           <ResumesView token={token} t={t} />
         )}
 
-        {/* Language Switcher */}
-        <div style={{ display: 'flex', justifyContent: 'center', gap: 8, padding: '16px 0', borderTop: '1px solid #f3f4f6' }}>
-          {['ko', 'en'].map(l => (
-            <button key={l} onClick={() => setLang(l)}
-              style={{
-                padding: '4px 14px', borderRadius: 6, fontSize: 13, fontWeight: 600, cursor: 'pointer',
-                border: lang === l ? '1px solid #111' : '1px solid #d1d5db',
-                background: lang === l ? '#111' : '#fff',
-                color: lang === l ? '#fff' : '#666',
-              }}>
-              {l === 'ko' ? '한국어' : 'English'}
-            </button>
-          ))}
-        </div>
       </div>
     </>
   )

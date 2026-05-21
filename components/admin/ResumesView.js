@@ -5,6 +5,9 @@ export default function ResumesView({ token, t }) {
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [filter, setFilter] = useState('all') // all, public, private
+  const [parsing, setParsing] = useState(false)
+  const [parseProgress, setParseProgress] = useState({ current: 0, total: 0, name: '' })
+  const [parseResults, setParseResults] = useState(null)
 
   useEffect(() => {
     async function fetchResumes() {
@@ -24,14 +27,16 @@ export default function ResumesView({ token, t }) {
 
   function downloadCsv() {
     if (!resumes || resumes.length === 0) return
-    const headers = ['Name', 'Email', 'Position', 'YoE (months)', 'Location', 'University', 'Work Type', 'Public', 'Resume URL', 'Updated']
+    const headers = ['Name', 'Email', 'Position', 'YoE (months)', 'Skills', 'Location', 'University', 'Major', 'Work Type', 'Public', 'Resume URL', 'Updated']
     const rows = resumes.map(r => [
       r.full_name,
       r.email,
       r.position || '',
       r.yoe_months ?? '',
+      Array.isArray(r.skills) ? r.skills.join(', ') : (r.skills || ''),
       r.location || '',
       r.university || '',
+      r.major || '',
       r.work_type || '',
       r.is_resume_public ? 'Yes' : 'No',
       r.resume_url,
@@ -46,6 +51,43 @@ export default function ResumesView({ token, t }) {
     a.download = `resume-users-${new Date().toISOString().slice(0, 10)}.csv`
     a.click()
     URL.revokeObjectURL(url)
+  }
+
+  const unfilled = resumes ? resumes.filter(r => !r.position && (!r.skills || (Array.isArray(r.skills) && r.skills.length === 0))) : []
+
+  async function runAiParse() {
+    if (parsing || unfilled.length === 0) return
+    setParsing(true)
+    setParseResults(null)
+    const results = { success: 0, fail: 0, errors: [] }
+
+    for (let i = 0; i < unfilled.length; i++) {
+      const user = unfilled[i]
+      setParseProgress({ current: i + 1, total: unfilled.length, name: user.full_name || user.email || 'Unknown' })
+      try {
+        const res = await fetch('/api/admin/parse-resumes', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+          body: JSON.stringify({ userId: user.id }),
+        })
+        if (res.ok) {
+          const parsed = await res.json()
+          // Update local state
+          setResumes(prev => prev.map(r => r.id === user.id ? { ...r, ...parsed, skills: parsed.skills } : r))
+          results.success++
+        } else {
+          const err = await res.json()
+          results.fail++
+          results.errors.push(`${user.full_name || user.email}: ${err.error}`)
+        }
+      } catch (e) {
+        results.fail++
+        results.errors.push(`${user.full_name || user.email}: ${e.message}`)
+      }
+    }
+
+    setParseResults(results)
+    setParsing(false)
   }
 
   if (loading) return <div style={{ textAlign: 'center', padding: 40, color: '#666' }}>{t.resumesLoading}</div>
@@ -114,6 +156,13 @@ export default function ResumesView({ token, t }) {
               </button>
             ))}
           </div>
+          <button onClick={runAiParse} disabled={parsing || unfilled.length === 0}
+            style={{
+              padding: '8px 16px', border: 'none', borderRadius: 8, fontSize: 13,
+              background: parsing ? '#9CA3AF' : '#4F46E5', color: '#fff', cursor: parsing ? 'not-allowed' : 'pointer', fontWeight: 600,
+            }}>
+            {parsing ? `AI 분석 중... (${parseProgress.current}/${parseProgress.total})` : `AI 분석 돌리기 (${unfilled.length}명)`}
+          </button>
           <button onClick={downloadCsv}
             style={{
               padding: '8px 16px', border: 'none', borderRadius: 8, fontSize: 13,
@@ -123,6 +172,44 @@ export default function ResumesView({ token, t }) {
           </button>
         </div>
       </div>
+
+      {/* AI Parse Progress */}
+      {parsing && (
+        <div style={{ marginBottom: 16, padding: 16, background: '#EEF2FF', borderRadius: 12, border: '1px solid #C7D2FE' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+            <span style={{ fontSize: 13, fontWeight: 600, color: '#4F46E5' }}>
+              {parseProgress.name} 분석 중...
+            </span>
+            <span style={{ fontSize: 12, color: '#6B7280' }}>
+              {parseProgress.current} / {parseProgress.total}
+            </span>
+          </div>
+          <div style={{ height: 6, background: '#C7D2FE', borderRadius: 3, overflow: 'hidden' }}>
+            <div style={{
+              height: '100%', background: '#4F46E5', borderRadius: 3, transition: 'width 0.3s',
+              width: `${(parseProgress.current / parseProgress.total) * 100}%`,
+            }} />
+          </div>
+        </div>
+      )}
+
+      {/* AI Parse Results */}
+      {parseResults && (
+        <div style={{
+          marginBottom: 16, padding: 16, borderRadius: 12,
+          background: parseResults.fail > 0 ? '#FEF3C7' : '#D1FAE5',
+          border: `1px solid ${parseResults.fail > 0 ? '#FDE68A' : '#A7F3D0'}`,
+        }}>
+          <div style={{ fontSize: 13, fontWeight: 600, marginBottom: parseResults.errors.length > 0 ? 8 : 0 }}>
+            AI 분석 완료: {parseResults.success}명 성공{parseResults.fail > 0 ? `, ${parseResults.fail}명 실패` : ''}
+          </div>
+          {parseResults.errors.length > 0 && (
+            <div style={{ fontSize: 12, color: '#92400E' }}>
+              {parseResults.errors.map((e, i) => <div key={i}>{e}</div>)}
+            </div>
+          )}
+        </div>
+      )}
 
       <div style={{ background: '#fff', border: '1px solid #e5e7eb', borderRadius: 12, overflow: 'hidden' }}>
         <div style={{ overflowX: 'auto' }}>
@@ -134,6 +221,7 @@ export default function ResumesView({ token, t }) {
                 <th style={{ padding: '10px 12px', textAlign: 'left', fontWeight: 600, color: '#374151' }}>{t.resumesEmail}</th>
                 <th style={{ padding: '10px 12px', textAlign: 'left', fontWeight: 600, color: '#374151' }}>{t.resumesPosition}</th>
                 <th style={{ padding: '10px 12px', textAlign: 'left', fontWeight: 600, color: '#374151' }}>{t.resumesYoe}</th>
+                <th style={{ padding: '10px 12px', textAlign: 'left', fontWeight: 600, color: '#374151' }}>Skills</th>
                 <th style={{ padding: '10px 12px', textAlign: 'left', fontWeight: 600, color: '#374151' }}>{t.resumesLocation}</th>
                 <th style={{ padding: '10px 12px', textAlign: 'left', fontWeight: 600, color: '#374151' }}>{t.resumesUniversity}</th>
                 <th style={{ padding: '10px 12px', textAlign: 'center', fontWeight: 600, color: '#374151' }}>{t.resumesPublicLabel}</th>
@@ -169,6 +257,18 @@ export default function ResumesView({ token, t }) {
                     ) : '-'}
                   </td>
                   <td style={{ padding: '8px 12px', color: '#666' }}>{formatYoe(r.yoe_months)}</td>
+                  <td style={{ padding: '8px 12px', maxWidth: 200 }}>
+                    {r.skills && (Array.isArray(r.skills) ? r.skills : r.skills.split(', ')).filter(Boolean).length > 0 ? (
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 3 }}>
+                        {(Array.isArray(r.skills) ? r.skills : r.skills.split(', ')).filter(Boolean).slice(0, 5).map((s, i) => (
+                          <span key={i} style={{ padding: '1px 6px', borderRadius: 8, fontSize: 10, background: '#F3F4F6', color: '#374151' }}>{s}</span>
+                        ))}
+                        {(Array.isArray(r.skills) ? r.skills : r.skills.split(', ')).filter(Boolean).length > 5 && (
+                          <span style={{ fontSize: 10, color: '#999' }}>+{(Array.isArray(r.skills) ? r.skills : r.skills.split(', ')).filter(Boolean).length - 5}</span>
+                        )}
+                      </div>
+                    ) : '-'}
+                  </td>
                   <td style={{ padding: '8px 12px', color: '#666' }}>{r.location || '-'}</td>
                   <td style={{ padding: '8px 12px', color: '#666', fontSize: 12 }}>
                     {r.university || '-'}
