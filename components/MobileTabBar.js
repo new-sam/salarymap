@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabaseClient'
 import { useT } from '../lib/i18n'
 
-const tabs = [
+const baseTabs = [
   { key: 'home', href: '/', label: 'Home', icon: (
     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
   )},
@@ -19,10 +19,15 @@ const tabs = [
   )},
 ]
 
+const adminTab = { key: 'admin', href: '/admin/jobs', label: 'Admin', icon: (
+  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+)}
+
 export default function MobileTabBar() {
   const router = useRouter()
   const { t } = useT()
   const [isLoggedIn, setIsLoggedIn] = useState(false)
+  const [isAdmin, setIsAdmin] = useState(false)
   const [hasResume, setHasResume] = useState(true)
   const [dismissed, setDismissed] = useState(false)
 
@@ -30,6 +35,17 @@ export default function MobileTabBar() {
     supabase.auth.getSession().then(async ({ data: { session } }) => {
       setIsLoggedIn(!!session)
       if (session) {
+        const cached = sessionStorage.getItem('fyi_is_admin')
+        if (cached !== null) {
+          setIsAdmin(cached === 'true')
+        } else {
+          try {
+            const r = await fetch(`/api/admin/check?email=${encodeURIComponent(session.user.email)}`)
+            const d = await r.json()
+            setIsAdmin(d.isAdmin)
+            sessionStorage.setItem('fyi_is_admin', String(d.isAdmin))
+          } catch {}
+        }
         try {
           const res = await fetch('/api/profile/talent', { headers: { Authorization: `Bearer ${session.access_token}` } })
           if (res.ok) {
@@ -47,10 +63,12 @@ export default function MobileTabBar() {
     if (path === '/jobs') return 'jobs'
     if (path === '/my-applications' || path === '/saved-jobs') return 'applications'
     if (path === '/profile') return 'profile'
+    if (path.startsWith('/admin')) return 'admin'
     return ''
   }
 
   const active = getActiveKey()
+  const tabs = isAdmin ? [...baseTabs, adminTab] : baseTabs
   const showBubble = (!isLoggedIn || !hasResume) && !dismissed && active !== 'profile'
 
   const handleTabClick = async (e, tab) => {
@@ -77,6 +95,10 @@ export default function MobileTabBar() {
           .mtab-label { font-size: 10px; font-weight: 600; color: rgba(255,255,255,0.35); }
           .mtab-item.on svg { color: #ff6000; }
           .mtab-item.on .mtab-label { color: #ff6000; }
+          .mtab-item.admin-tab svg { color: rgba(255,96,0,0.5); }
+          .mtab-item.admin-tab .mtab-label { color: rgba(255,96,0,0.5); font-size: 9px; }
+          .mtab-item.admin-tab.on svg { color: #ff6000; }
+          .mtab-item.admin-tab.on .mtab-label { color: #ff6000; }
           .mtab-bubble { display: block; position: fixed; bottom: calc(68px + env(safe-area-inset-bottom)); right: 8px; z-index: 399; background: #ff6000; color: #fff; font-size: 11px; font-weight: 700; padding: 8px 14px; border-radius: 10px; box-shadow: 0 2px 12px rgba(255,96,0,0.4); animation: mtabBounce 3s ease-in-out infinite; line-height: 1.4; max-width: 180px; text-align: center; }
           .mtab-bubble::after { content: ''; position: absolute; bottom: -5px; right: 24px; width: 10px; height: 10px; background: #ff6000; transform: rotate(45deg); border-radius: 1px; }
           .mtab-bubble-x { position: absolute; top: -8px; right: -8px; width: 20px; height: 20px; border-radius: 50%; background: rgba(0,0,0,0.6); color: #fff; font-size: 11px; display: flex; align-items: center; justify-content: center; cursor: pointer; border: none; line-height: 1; }
@@ -107,7 +129,7 @@ export default function MobileTabBar() {
           <Link
             key={tab.key}
             href={tab.href}
-            className={`mtab-item${active === tab.key ? ' on' : ''}`}
+            className={`mtab-item${active === tab.key ? ' on' : ''}${tab.key === 'admin' ? ' admin-tab' : ''}`}
             onClick={(e) => handleTabClick(e, tab)}
           >
             {tab.icon}

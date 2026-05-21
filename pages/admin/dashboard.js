@@ -288,14 +288,38 @@ export default function AdminDashboard() {
   return (
     <>
       <Head><title>FYI {t.title}</title></Head>
-      <div style={{ maxWidth: 1200, margin: '0 auto', padding: '24px 16px', fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif' }}>
+      <style>{`
+        .adm-dash { max-width: 1200px; margin: 0 auto; padding: 24px 16px; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+        .adm-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
+        .adm-header-title { display: flex; align-items: center; gap: 12px; }
+        .adm-header-controls { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+        .adm-tabs { display: flex; gap: 0; margin-bottom: 24px; border-bottom: 2px solid #e5e7eb; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+        .adm-tabs::-webkit-scrollbar { display: none; }
+        .adm-tab-btn { padding: 10px 24px; font-size: 14px; font-weight: 600; cursor: pointer; border: none; background: none; margin-bottom: -2px; transition: all 0.15s; white-space: nowrap; flex-shrink: 0; }
+        .adm-grid-2col { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 24px; }
+        @media (max-width: 768px) {
+          .adm-dash { padding: 16px 12px 80px 12px; }
+          .adm-header { flex-direction: column; align-items: flex-start; gap: 12px; }
+          .adm-header-controls { width: 100%; flex-wrap: wrap; }
+          .adm-header-controls input[type="date"] { width: 110px; font-size: 12px; }
+          .adm-tab-btn { padding: 8px 14px; font-size: 12px; }
+          .adm-grid-2col { grid-template-columns: 1fr; }
+          .adm-metric-cards { grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)) !important; gap: 8px !important; }
+          .adm-metric-cards > div { padding: 12px 14px !important; }
+          .adm-metric-cards .adm-metric-value { font-size: 22px !important; }
+          .adm-realtime-grid { grid-template-columns: repeat(auto-fit, minmax(80px, 1fr)) !important; gap: 6px !important; }
+          .adm-realtime-grid > div { padding: 8px 6px !important; }
+          .adm-realtime-grid .adm-rt-value { font-size: 18px !important; }
+        }
+      `}</style>
+      <div className="adm-dash">
         {/* Header */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+        <div className="adm-header">
+          <div className="adm-header-title">
             <a href="/admin/jobs" style={{ color: '#888', textDecoration: 'none', fontSize: 20 }} title={t.backTitle}>&larr;</a>
             <h1 style={{ fontSize: 24, fontWeight: 700, margin: 0 }}>{t.title}</h1>
           </div>
-          <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
+          <div className="adm-header-controls">
             {[{ label: '7D', days: 7 }, { label: '14D', days: 14 }, { label: '30D', days: 30 }, { label: 'All', days: 0 }].map(p => (
               <button key={p.label} onClick={() => p.days ? applyPreset(p.days) : applyRange('2026-04-20', yesterday)}
                 style={{ padding: '5px 10px', border: '1px solid #d1d5db', borderRadius: 6, fontSize: 12, background: '#fff', cursor: 'pointer', fontWeight: 600 }}>
@@ -318,14 +342,13 @@ export default function AdminDashboard() {
         </div>
 
         {/* Tab switcher */}
-        <div style={{ display: 'flex', gap: 0, marginBottom: 24, borderBottom: '2px solid #e5e7eb' }}>
+        <div className="adm-tabs">
           {['trend', 'funnel', 'ga4', 'utm', 'users', 'applications', 'resumes'].map(k => (
             <button key={k} onClick={() => setTab(k)}
+              className="adm-tab-btn"
               style={{
-                padding: '10px 24px', fontSize: 14, fontWeight: 600, cursor: 'pointer',
-                border: 'none', borderBottom: tab === k ? '2px solid #111' : '2px solid transparent',
-                background: 'none', color: tab === k ? '#111' : '#999',
-                marginBottom: -2, transition: 'all 0.15s',
+                borderBottom: tab === k ? '2px solid #111' : '2px solid transparent',
+                color: tab === k ? '#111' : '#999',
               }}>
               {t[k]}
             </button>
@@ -356,7 +379,7 @@ export default function AdminDashboard() {
                 )}
               </div>
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(100px, 1fr))', gap: 8 }}>
+            <div className="adm-realtime-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(100px, 1fr))', gap: 8 }}>
               {[
                 { label: t.metrics.sessions, value: ga4?.today?.sessions ?? '-', color: '#2563EB' },
                 { label: t.metrics.submissions, value: realtime.submissions, color: '#e2e8f0' },
@@ -401,7 +424,7 @@ export default function AdminDashboard() {
                 </button>
               </div>
             )}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))', gap: 12, marginBottom: 24 }}>
+            <div className="adm-metric-cards" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))', gap: 12, marginBottom: 24 }}>
               {METRICS.map(m => {
                 const isEventMetric = m.key === 'jobClicks' || m.key === 'cardClicks'
                 const noTracking = isEventMetric && !summary.hasEventTracking
@@ -439,7 +462,7 @@ export default function AdminDashboard() {
             {/* Chart */}
             {selectedMetrics.length > 0 && (
               <div style={sectionStyle}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+                <div className="adm-chart-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, flexWrap: 'wrap', gap: 8 }}>
                   <h3 style={{ ...sectionTitle, margin: 0 }}>{selectedMetrics.map(m => m.label).join(' + ')} {t.trend}</h3>
                   <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
                     {selectedMetrics.length === 2 && (
@@ -685,7 +708,7 @@ export default function AdminDashboard() {
             </div>
 
             {/* Intent & Top Companies */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24, marginBottom: 24 }}>
+            <div className="adm-grid-2col">
               <div style={sectionStyle}>
                 <h3 style={sectionTitle}>{t.intentTitle}</h3>
                 {data.intent.filter(i => i.value > 0).map((item, i) => {
