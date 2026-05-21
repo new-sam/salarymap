@@ -8,6 +8,7 @@ import UtmView from '../../components/admin/UtmView'
 import UsersView from '../../components/admin/UsersView'
 import ApplicationsView from '../../components/admin/ApplicationsView'
 import ResumesView from '../../components/admin/ResumesView'
+import RetentionView from '../../components/admin/RetentionView'
 import GA4View from '../../components/admin/GA4View'
 import {
   T, METRICS_BASE, EXP_COLORS, COLORS,
@@ -343,7 +344,7 @@ export default function AdminDashboard() {
 
         {/* Tab switcher */}
         <div className="adm-tabs">
-          {['trend', 'funnel', 'ga4', 'utm', 'users', 'applications', 'resumes'].map(k => (
+          {['trend', 'funnel', 'ga4', 'utm', 'retention', 'users', 'applications', 'resumes'].map(k => (
             <button key={k} onClick={() => setTab(k)}
               className="adm-tab-btn"
               style={{
@@ -832,6 +833,11 @@ export default function AdminDashboard() {
         {/* UTM Tab */}
         {data && !loading && tab === 'utm' && (
           <UtmView utm={data.utm} t={t} />
+        )}
+
+        {/* Retention Tab */}
+        {tab === 'retention' && (
+          <RetentionView token={token} t={t} />
         )}
 
         {/* Users Tab */}
