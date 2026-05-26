@@ -290,6 +290,11 @@ function coSearchClose() { document.getElementById('co-search-drop').classList.r
 async function coSelect(name) {
   document.getElementById('co-search-input').value = name;
   coSearchClose();
+  if (!window.isUnlocked) {
+    const submitEl = document.querySelector('.submit-outer');
+    if (submitEl) submitEl.scrollIntoView({ behavior: 'smooth' });
+    return;
+  }
   const panel = document.getElementById('co-result-panel');
   const body = document.getElementById('co-result-body');
   document.getElementById('co-result-name').textContent = name;
@@ -1144,18 +1149,18 @@ export default function Home({ initialCompanies = [] }) {
                 ));
               }
               const filtered = cardSearchQuery
-                ? apiCompanies.filter(c => (c.name || c.company || '').toLowerCase().includes(cardSearchQuery))
-                : apiCompanies;
+                ? apiCompanies.map((c, origIdx) => ({ ...c, _origIndex: origIdx })).filter(c => (c.name || c.company || '').toLowerCase().includes(cardSearchQuery))
+                : apiCompanies.map((c, origIdx) => ({ ...c, _origIndex: origIdx }));
               const visible = filtered.slice(0, visibleCount);
               return (
                 <>
-                  {visible.map((c, i) => (
+                  {visible.map((c) => (
                     <CompanyCard
                       key={c.company}
                       company={c}
-                      index={i}
+                      index={c._origIndex}
                       isUnlocked={isUnlocked}
-                      onClick={(co) => { setDetailCompany(co.name || co.company); setDetailCardIndex(i); setDetailOpen(true); }}
+                      onClick={(co) => { setDetailCompany(co.name || co.company); setDetailCardIndex(c._origIndex); setDetailOpen(true); }}
                       onLockedClick={() => { if(typeof gtag==='function') gtag('event','locked_card_click'); document.getElementById('submit')?.scrollIntoView({ behavior: 'smooth' }); }}
                     />
                   ))}
