@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { STATUS_OPTIONS, STATUS_COLORS } from '../../constants/dashboard'
 
-export default function ApplicationsView({ token, t }) {
+export default function ApplicationsView({ token, t, dateRange }) {
   const [apps, setApps] = useState(null)
   const [loading, setLoading] = useState(true)
   const [editingNote, setEditingNote] = useState({})
@@ -12,12 +12,15 @@ export default function ApplicationsView({ token, t }) {
 
   useEffect(() => {
     fetchApps()
-  }, [token])
+  }, [token, dateRange])
 
   async function fetchApps() {
     setLoading(true)
     try {
-      const res = await fetch('/api/admin/applications', {
+      const params = new URLSearchParams()
+      if (dateRange?.from) params.set('from', dateRange.from)
+      if (dateRange?.to) params.set('to', dateRange.to)
+      const res = await fetch(`/api/admin/applications?${params}`, {
         headers: { Authorization: `Bearer ${token}` },
       })
       if (res.ok) setApps(await res.json())

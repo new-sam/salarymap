@@ -11,10 +11,13 @@ export default async function handler(req, res) {
   if (!admin) return res.status(401).json({ error: 'Unauthorized' })
 
   if (req.method === 'GET') {
-    const { data } = await supabase
+    const { from, to } = req.query
+    let query = supabase
       .from('job_applications')
       .select('*, jobs(title, company)')
-      .order('created_at', { ascending: false })
+    if (from) query = query.gte('created_at', `${from}T00:00:00`)
+    if (to) query = query.lte('created_at', `${to}T23:59:59`)
+    const { data } = await query.order('created_at', { ascending: false })
 
     const userIds = [...new Set((data || []).map(a => a.user_id).filter(Boolean))]
     let profileMap = {}

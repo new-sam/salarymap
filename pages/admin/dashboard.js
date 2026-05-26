@@ -860,7 +860,7 @@ export default function AdminDashboard() {
 
         {/* Applications Tab */}
         {tab === 'applications' && (
-          <ApplicationsView token={token} t={t} />
+          <ApplicationsView token={token} t={t} dateRange={dateRange} />
         )}
 
         {/* Resumes Tab */}

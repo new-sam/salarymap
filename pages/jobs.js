@@ -22,6 +22,18 @@ function decodeHTML(str) {
 // Module-level: survives client-side navigation, resets on full page reload
 let _cachedProfile = null
 
+// 같은 회사·제목 공고 중복 제거 — 크롤러 중복 삽입 + 대소문자/공백 변형 방어.
+// /api/jobs가 created_at desc 정렬이라 첫 항목(최신)이 유지된다.
+function dedupeJobs(list) {
+  const seen = new Set()
+  return (list || []).filter(j => {
+    const key = `${(j.company || '').trim().toLowerCase().replace(/\s+/g, ' ')}::${(j.title || '').trim().toLowerCase().replace(/\s+/g, ' ')}`
+    if (seen.has(key)) return false
+    seen.add(key)
+    return true
+  })
+}
+
 export default function JobsPage() {
   const router = useRouter()
   const fileRef = useRef(null)
@@ -231,7 +243,7 @@ export default function JobsPage() {
           retries++
           setTimeout(load, 1000)
         } else {
-          setJobs(d); setJobsLoaded(true)
+          setJobs(dedupeJobs(d)); setJobsLoaded(true)
           // Open job detail if jobId query param exists
           const qJobId = new URLSearchParams(window.location.search).get('jobId')
           if (qJobId) {
