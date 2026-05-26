@@ -3,7 +3,7 @@ import Link from 'next/link'
 import { supabase } from '../lib/supabaseClient'
 import { useT } from '../lib/i18n'
 
-export default function GlobalNav({ activePage, onLogin, onJobsClick }) {
+export default function GlobalNav({ activePage, onLogin, onJobsClick, mobileSearch }) {
   const { t } = useT()
   const [isLoggedIn, setIsLoggedIn] = useState(false)
   const [user, setUser] = useState(null)
@@ -124,6 +124,8 @@ export default function GlobalNav({ activePage, onLogin, onJobsClick }) {
         }
         .gnav-mobile-profile { display: flex; align-items: center; gap: 6px; padding: 4px 10px 4px 4px; border-radius: 100px; border: 1px solid rgba(255,255,255,0.12); cursor: pointer; text-decoration: none; background: none; }
         .gnav-mobile-login { font-size: 12px; font-weight: 600; color: rgba(255,255,255,0.5); background: none; border: 1px solid rgba(255,255,255,0.15); padding: 6px 14px; border-radius: 100px; cursor: pointer; font-family: 'Barlow', sans-serif; }
+        .gnav-mobile-search-btn { display: flex; align-items: center; justify-content: center; width: 32px; height: 32px; border: none; background: none; cursor: pointer; padding: 0; }
+        .gnav-mobile-search-btn svg { width: 16px; height: 16px; color: rgba(255,255,255,0.5); }
       `}</style>
 
       <nav className="gnav">
@@ -134,6 +136,11 @@ export default function GlobalNav({ activePage, onLogin, onJobsClick }) {
           </Link>
         </div>
         <div className="gnav-r-mobile">
+          {mobileSearch && (
+            <button className="gnav-mobile-search-btn" onClick={() => mobileSearch.onToggle()}>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+            </button>
+          )}
           {!ready ? null : !isLoggedIn ? (
             <button className="gnav-mobile-login" onClick={async () => {
               if (onLogin) return onLogin();
@@ -242,13 +249,6 @@ export default function GlobalNav({ activePage, onLogin, onJobsClick }) {
           </div>
           )}
 
-          {ready && !isSubmitted && (
-            activePage === 'home' ? (
-              <button className="gnav-submit" onClick={() => document.getElementById('submit')?.scrollIntoView({behavior:'smooth'})}>{t('nav.submitSalary')}</button>
-            ) : (
-              <Link href="/#submit" className="gnav-submit">{t('nav.submitSalary')}</Link>
-            )
-          )}
         </div>
       </nav>
     </>

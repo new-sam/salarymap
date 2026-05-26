@@ -4,7 +4,6 @@ import Head from 'next/head';
 import supabaseClient from '../lib/supabaseClient';
 import CompanyCard from '../components/CompanyCard';
 import CompanyDetailPanel from '../components/CompanyDetailPanel';
-import AnonymousSection from '../components/AnonymousSection';
 import SubmitSection from '../components/home/SubmitSection';
 import { useT } from '../lib/i18n';
 import Icon from '../components/Icon';
@@ -76,57 +75,6 @@ const bodyHTML = `<section class="hero">
 <!-- SUBMIT WIZARD (3rd section) -->
 <!-- SUBMIT_REACT_PLACEHOLDER -->
 
-<!-- WE GO FIRST (4th section) -->
-<section class="trust-section" style="background:#0c0c0b; padding:20px 0 60px;">
-  <div class="wgf-section">
-    <div class="wgf-eyebrow" data-wgf="badge">LƯƠNG THẬT · NGƯỜI THẬT</div>
-
-    <div class="wgf-director-row">
-      <div class="wgf-photo-wrap" data-wgf="director">
-        <div class="wgf-accent"></div>
-        <img src="/LL1.png" alt="Director — 100M/Month">
-      </div>
-      <div class="wgf-story">
-        <div>
-          <div class="wgf-quote-mark" data-wgf="quote">"</div>
-          <h2 class="wgf-headline" data-wgf="headline">
-            Nếu chúng tôi yêu cầu bạn<br>chia sẻ lương,<br>
-            <span>chúng tôi chia sẻ trước.</span>
-          </h2>
-        </div>
-        <p class="wgf-body" data-wgf="body1">
-          Tôi đã chứng kiến nhiều năm các kỹ sư ở Việt Nam bị trả thấp — không phải vì
-          họ không đủ giỏi, mà vì
-          <strong>họ không biết thị trường thực sự trả bao nhiêu.</strong>
-        </p>
-        <p class="wgf-body" data-wgf="body2">
-          FYI ra đời để giải quyết sự bất đối xứng thông tin đó.
-        </p>
-        <div class="wgf-sig" data-wgf="sig">
-          <div class="wgf-sig-name">— Director, LikeLion Vietnam</div>
-        </div>
-      </div>
-    </div>
-
-    <div class="wgf-divider" data-wgf="divider"><span>Và cả đội ngũ cũng vậy</span></div>
-
-    <div class="wgf-team-grid">
-      <div class="wgf-team-card" data-wgf="team1"><img src="/LL2.png" alt="Head of Business — 40M/Month"></div>
-      <div class="wgf-team-card" data-wgf="team2"><img src="/LL3.png" alt="Marketing Lead — 30M/Month"></div>
-      <div class="wgf-team-card" data-wgf="team3"><img src="/LL4.png" alt="Content Marketer — 15M/Month"></div>
-    </div>
-
-    <div class="wgf-bottom-cta">
-      <p>Chúng tôi đã chia sẻ. <strong>Giờ hãy xem bạn đứng đâu.</strong></p>
-      <button class="wgf-cta-btn" onclick="document.getElementById('submit').scrollIntoView({behavior:'smooth'})">
-        Tôi có bị trả thấp? →
-      </button>
-    </div>
-  </div>
-</section>
-
-<!-- ANONYMOUS (5th section) -->
-<div id="anonymous-section-root"></div>
 
 
 <div id="full-feed">
@@ -891,21 +839,6 @@ export default function Home({ initialCompanies = [] }) {
     if (sectionSub) sectionSub.textContent = t('companies.sub');
     const searchInput = document.getElementById('co-search-input');
     if (searchInput) searchInput.placeholder = t('companies.searchPlaceholder');
-    // WGF section
-    const wgfEye = document.querySelector('.wgf-eyebrow');
-    if (wgfEye) wgfEye.innerHTML = t('wgf.eyebrow');
-    const wgfHeadline = document.querySelector('.wgf-headline');
-    if (wgfHeadline) wgfHeadline.innerHTML = t('wgf.headline');
-    const wgfBody1 = document.querySelector('[data-wgf="body1"]');
-    if (wgfBody1) wgfBody1.innerHTML = t('wgf.body1');
-    const wgfBody2 = document.querySelector('[data-wgf="body2"]');
-    if (wgfBody2) wgfBody2.textContent = t('wgf.body2');
-    const wgfDivider = document.querySelector('.wgf-divider span');
-    if (wgfDivider) wgfDivider.textContent = t('wgf.divider');
-    const wgfBottom = document.querySelector('.wgf-bottom-cta p');
-    if (wgfBottom) wgfBottom.innerHTML = t('wgf.bottomText');
-    const wgfCtaBtn = document.querySelector('.wgf-cta-btn');
-    if (wgfCtaBtn) wgfCtaBtn.textContent = t('wgf.bottomCta');
   }, [lang, t]);
 
   useEffect(() => {
@@ -967,77 +900,6 @@ export default function Home({ initialCompanies = [] }) {
     try { new Function(js)(); } catch(e) { /* inline script init — safe to ignore in dev */ }
   }, []);
 
-  // WGF continuous scroll-driven animations
-  useEffect(() => {
-    const section = document.querySelector('.wgf-section');
-    if (!section) return;
-    const els = section.querySelectorAll('[data-wgf]');
-    if (!els.length) return;
-
-    // Photos only — text stays still so it's readable
-    const photoKeys = new Set(['director', 'team1', 'team2', 'team3']);
-    const config = {
-      director: { y: 60,  x: -80, rot: -3,  scale: 0.88 },
-      team1:    { y: 100, x: -30, rot: -5,  scale: 0.8  },
-      team2:    { y: 120, x: 0,   rot: 0,   scale: 0.78 },
-      team3:    { y: 100, x: 30,  rot: 5,   scale: 0.8  },
-    };
-    const photoEls = [...els].filter(el => photoKeys.has(el.getAttribute('data-wgf')));
-    // Text elements: just do a one-time fade in
-    const textEls = [...els].filter(el => !photoKeys.has(el.getAttribute('data-wgf')));
-    const textDelays = {badge:0,quote:200,headline:350,body1:500,body2:600,sig:750,divider:900};
-    let textFired = false;
-    const textObs = new IntersectionObserver((entries) => {
-      entries.forEach((entry) => {
-        if (entry.isIntersecting && !textFired) {
-          textFired = true;
-          textObs.disconnect();
-          textEls.forEach((el) => {
-            const key = el.getAttribute('data-wgf');
-            const d = textDelays[key] || 0;
-            setTimeout(() => {
-              el.style.transition = 'opacity .7s cubic-bezier(.22,1,.36,1), transform .7s cubic-bezier(.22,1,.36,1)';
-              el.style.opacity = '1';
-              el.style.transform = 'translate(0,0)';
-            }, d);
-          });
-        }
-      });
-    }, { threshold: 0.1 });
-    requestAnimationFrame(() => textObs.observe(section));
-
-    let ticking = false;
-    const onScroll = () => {
-      if (ticking) return;
-      ticking = true;
-      requestAnimationFrame(() => {
-        const vh = window.innerHeight;
-        const center = vh * 0.45;
-        photoEls.forEach((el) => {
-          const key = el.getAttribute('data-wgf');
-          const c = config[key];
-          const rect = el.getBoundingClientRect();
-          const elCenter = rect.top + rect.height / 2;
-          const dist = Math.abs(elCenter - center) / (vh * 0.6);
-          const away = Math.min(dist, 1);
-          const eased = Math.pow(away, 2);
-          const dir = elCenter > center ? 1 : -1;
-          const opacity = 1 - eased * 0.85;
-          const ty = c.y * eased * dir;
-          const tx = c.x * eased * dir;
-          const rot = c.rot * eased * dir;
-          const scale = 1 - (1 - c.scale) * eased;
-          el.style.opacity = opacity;
-          el.style.transform = `translate(${tx}px, ${ty}px) rotate(${rot}deg) scale(${scale})`;
-        });
-        ticking = false;
-      });
-    };
-
-    window.addEventListener('scroll', onScroll, { passive: true });
-    onScroll(); // initial check
-    return () => { window.removeEventListener('scroll', onScroll); textObs.disconnect(); };
-  }, []);
 
   const d = lbCompany ? lbData[lbCompany] : null;
   const company = d ? { name: lbCompany, ...d } : null;
@@ -1265,10 +1127,6 @@ export default function Home({ initialCompanies = [] }) {
         </div>
       )}
 
-      {/* Portal: render AnonymousSection */}
-      {gridReady && typeof document !== 'undefined' && document.getElementById('anonymous-section-root') &&
-        createPortal(<AnonymousSection />, document.getElementById('anonymous-section-root'))
-      }
 
       {/* Portal: render CompanyCards into #company-grid-root */}
       {gridReady && typeof document !== 'undefined' && document.getElementById('company-grid-root') &&

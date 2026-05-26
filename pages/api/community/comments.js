@@ -87,24 +87,17 @@ export default async function handler(req, res) {
     if (error) return res.status(500).json({ error: error.message })
 
     // Increment comment count on the post
-    await supabase.rpc('increment_field', { table_name: 'community_posts', row_id: post_id, field_name: 'comment_count' })
-      .catch(() => {
-        // Fallback: manual increment
-        supabase
-          .from('community_posts')
-          .select('comment_count')
-          .eq('id', post_id)
-          .single()
-          .then(({ data: post }) => {
-            if (post) {
-              supabase
-                .from('community_posts')
-                .update({ comment_count: (post.comment_count || 0) + 1 })
-                .eq('id', post_id)
-                .then(() => {})
-            }
-          })
-      })
+    const { data: postData } = await supabase
+      .from('community_posts')
+      .select('comment_count')
+      .eq('id', post_id)
+      .single()
+    if (postData) {
+      await supabase
+        .from('community_posts')
+        .update({ comment_count: (postData.comment_count || 0) + 1 })
+        .eq('id', post_id)
+    }
 
     return res.status(201).json(data)
   }

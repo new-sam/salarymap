@@ -41,9 +41,19 @@ export default function CommunityPostPage() {
   const [loadingComments, setLoadingComments] = useState(true)
   const [commentText, setCommentText] = useState('')
   const [commentAnonymous, setCommentAnonymous] = useState(true)
+  const [showPostMenu, setShowPostMenu] = useState(false)
+  const postMenuRef = React.useRef(null)
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => setSession(session))
+    supabase.auth.getSession().then(({ data: { session: s } }) => {
+      setSession(s)
+    })
+  }, [])
+
+  useEffect(() => {
+    const handle = (e) => { if (postMenuRef.current && !postMenuRef.current.contains(e.target)) setShowPostMenu(false) }
+    document.addEventListener('mousedown', handle)
+    return () => document.removeEventListener('mousedown', handle)
   }, [])
 
   const viewCounted = React.useRef(false)
@@ -148,7 +158,7 @@ export default function CommunityPostPage() {
 
       <style>{`
         .cp-page { background: #fff; min-height: 100vh; }
-        .cp-outer { max-width: 1080px; margin: 0 auto; padding: 80px 40px 60px; display: grid; grid-template-columns: 1fr 300px; gap: 32px; font-family: 'Barlow', sans-serif; }
+        .cp-outer { max-width: 1080px; margin: 0 auto; padding: 64px 40px 60px; display: grid; grid-template-columns: 1fr 300px; gap: 32px; font-family: 'Barlow', sans-serif; }
         .cp-container { min-width: 0; }
         .cp-loading { text-align: center; padding: 80px 0; color: #999; font-size: 14px; }
 
@@ -170,8 +180,15 @@ export default function CommunityPostPage() {
         .cp-action:hover { background: #f5f5f5; color: #111; }
         .cp-action.liked { color: #ff6000; }
         .cp-action svg { width: 18px; height: 18px; }
-        .cp-delete { margin-left: auto; font-size: 12px; color: #bbb; background: none; border: none; cursor: pointer; font-family: 'Barlow', sans-serif; }
-        .cp-delete:hover { color: #ef4444; }
+        .cp-title-row { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+        .cp-more-wrap { position: relative; flex-shrink: 0; }
+        .cp-more-btn { background: none; border: none; cursor: pointer; padding: 4px; color: #999; display: flex; align-items: center; }
+        .cp-more-btn:hover { color: #555; }
+        .cp-more-menu { position: absolute; top: 100%; right: 0; background: #fff; border: 1px solid #eee; border-radius: 10px; padding: 4px; min-width: 120px; box-shadow: 0 4px 16px rgba(0,0,0,0.1); z-index: 10; }
+        .cp-more-item { display: block; width: 100%; padding: 10px 14px; border: none; background: none; color: #333; font-size: 13px; font-weight: 500; text-align: left; cursor: pointer; border-radius: 6px; font-family: 'Barlow', sans-serif; }
+        .cp-more-item:hover { background: #f5f5f5; }
+        .cp-more-item.danger { color: #ef4444; }
+        .cp-more-item.danger:hover { background: #fef2f2; }
 
         .cp-comments-title { font-size: 15px; font-weight: 700; color: #555; margin-bottom: 16px; }
         .cp-comment { padding: 14px 0; border-bottom: 1px solid #f0f0f0; }
@@ -182,7 +199,7 @@ export default function CommunityPostPage() {
         .cp-comment-body { font-size: 14px; color: #444; line-height: 1.6; white-space: pre-wrap; word-break: break-word; }
         .cp-comment-delete { margin-left: auto; font-size: 11px; color: #bbb; background: none; border: none; cursor: pointer; font-family: 'Barlow', sans-serif; }
         .cp-comment-delete:hover { color: #ef4444; }
-        .cp-no-comments { color: #bbb; font-size: 13px; padding: 24px 0; }
+        .cp-no-comments { color: #bbb; font-size: 13px; padding: 24px 0; text-align: center; }
 
         .cp-input-box { background: #fafafa; border: 1px solid #eee; border-radius: 10px; padding: 14px; margin-bottom: 20px; display: flex; flex-direction: column; gap: 10px; }
         .cp-input-row { display: flex; gap: 10px; align-items: center; }
@@ -201,7 +218,7 @@ export default function CommunityPostPage() {
         .cp-sb-guide-item { font-size: 12px; color: #666; display: flex; align-items: flex-start; gap: 6px; line-height: 1.4; }
         .cp-sb-guide-dot { width: 4px; height: 4px; border-radius: 50%; background: #ff6000; margin-top: 5px; flex-shrink: 0; }
         @media (max-width: 768px) {
-          .cp-outer { grid-template-columns: 1fr; padding: 68px 14px 100px; gap: 20px; }
+          .cp-outer { grid-template-columns: 1fr; padding: 56px 14px 90px; gap: 16px; }
           .cp-sidebar { position: static; }
           .cp-title { font-size: 22px; }
         }
@@ -222,7 +239,22 @@ export default function CommunityPostPage() {
                   <span style={{ color: catColor }}>{catLabel}</span>
                 </div>
 
-                <h1 className="cp-title">{post.title}</h1>
+                <div className="cp-title-row">
+                  <h1 className="cp-title" style={{ margin: 0 }}>{post.title}</h1>
+                  {session?.user?.id === post.user_id && (
+                    <div className="cp-more-wrap" ref={postMenuRef}>
+                      <button className="cp-more-btn" onClick={() => setShowPostMenu(v => !v)}>
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg>
+                      </button>
+                      {showPostMenu && (
+                        <div className="cp-more-menu">
+                          <button className="cp-more-item" onClick={() => { setShowPostMenu(false); router.push(`/community/edit?id=${post.id}`) }}>{t('comm.edit')}</button>
+                          <button className="cp-more-item danger" onClick={() => { setShowPostMenu(false); deletePost() }}>{t('comm.deletePost')}</button>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
                 <div className="cp-author-row">
                   <span className="cp-company">{post.is_salary_verified ? (post.author_company || t('comm.unemployed')) : t('comm.unemployed')}</span>
                   <span className="cp-dot">·</span>
@@ -246,9 +278,6 @@ export default function CommunityPostPage() {
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
                     {post.comment_count || 0} {t('comm.comments')}
                   </span>
-                  {session?.user?.id === post.user_id && (
-                    <button className="cp-delete" onClick={deletePost}>{t('comm.deletePost')}</button>
-                  )}
                 </div>
 
                 <div className="cp-comments-title">{t('comm.comments')} ({post.comment_count || 0})</div>
@@ -300,17 +329,6 @@ export default function CommunityPostPage() {
             )}
           </div>
 
-          <div className="cp-sidebar">
-            <div className="cp-sb-card">
-              <h3 className="cp-sb-title">{t('comm.aboutTitle')}</h3>
-              <p className="cp-sb-about">{t('comm.aboutDesc')}</p>
-              <div className="cp-sb-guide">
-                <div className="cp-sb-guide-item"><span className="cp-sb-guide-dot" />{t('comm.guideAnon')}</div>
-                <div className="cp-sb-guide-item"><span className="cp-sb-guide-dot" />{t('comm.guideVerify')}</div>
-                <div className="cp-sb-guide-item"><span className="cp-sb-guide-dot" />{t('comm.guideRespect')}</div>
-              </div>
-            </div>
-          </div>
         </div>
       </div>
     </>

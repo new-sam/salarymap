@@ -91,7 +91,7 @@ body { background:var(--bg); color:var(--white); font-family:'Barlow',sans-serif
 
 /* CARDS SECTION */
 .cards-bg { background: #f0ede8; }
-.cards-section { max-width:1360px; margin:0 auto; padding:80px 40px 0; }
+.cards-section { max-width:1360px; margin:0 auto; padding:80px 40px 60px; }
 .cards-bg .section-head-title { color: #0c0c0c; }
 .cards-bg .section-head-sub { color: rgba(0,0,0,.5); }
 .section-head { margin-bottom:28px; }
@@ -619,7 +619,7 @@ body { background:var(--bg); color:var(--white); font-family:'Barlow',sans-serif
   .st-item { padding:0 12px; }
 
   /* CARDS SECTION */
-  .cards-section { padding:40px 16px 0; }
+  .cards-section { padding:40px 16px 48px; }
   .stories-grid { grid-template-columns:1fr !important; }
   .trust-roadmap { grid-template-columns:1fr !important; }
   .trust-stats { grid-template-columns:repeat(2,1fr) !important; }

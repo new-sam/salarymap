@@ -152,6 +152,31 @@ export default async function handler(req, res) {
     return res.status(201).json(data)
   }
 
+  if (req.method === 'PUT') {
+    const token = req.headers.authorization?.replace('Bearer ', '')
+    if (!token) return res.status(401).json({ error: 'Unauthorized' })
+
+    const { data: { user } } = await supabase.auth.getUser(token)
+    if (!user) return res.status(401).json({ error: 'Unauthorized' })
+
+    const { id } = req.query
+    const { category, title, content } = req.body
+    if (!category || !title || !content) {
+      return res.status(400).json({ error: 'Missing required fields' })
+    }
+
+    const { data, error } = await supabase
+      .from('community_posts')
+      .update({ category, title, content })
+      .eq('id', id)
+      .eq('user_id', user.id)
+      .select()
+      .single()
+
+    if (error) return res.status(500).json({ error: error.message })
+    return res.status(200).json(data)
+  }
+
   if (req.method === 'DELETE') {
     const token = req.headers.authorization?.replace('Bearer ', '')
     if (!token) return res.status(401).json({ error: 'Unauthorized' })

@@ -68,15 +68,10 @@ export default function MobileTabBar() {
 
   const active = getActiveKey()
   const tabs = isAdmin ? [...baseTabs, adminTab] : baseTabs
-  const handleTabClick = async (e, tab) => {
+  const handleTabClick = (e, tab) => {
     if (tab.key === 'applications' && !isLoggedIn) {
       e.preventDefault()
-      localStorage.setItem('fyi_login_return', tab.href)
-      if (window.location.hostname === 'localhost') {
-        await supabase.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: window.location.origin + '/auth/callback' } })
-      } else {
-        window.location.href = '/api/auth/google?return=' + encodeURIComponent(tab.href)
-      }
+      window.dispatchEvent(new CustomEvent('fyi-show-login'))
     }
   }
 
