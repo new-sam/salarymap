@@ -259,6 +259,18 @@ export default function ProfilePage() {
   const df = (k) => { const a = form[k], b = initialForm[k]; const changed = typeof a === 'object' ? JSON.stringify(a) !== JSON.stringify(b) : a !== b; return changed && a ? ' dirty' : '' }
   const isDirtyRef = useRef(false)
   isDirtyRef.current = isDirty
+  const [showTabConfirm, setShowTabConfirm] = useState(false)
+  const pendingTab = useRef(null)
+
+  const handleTabChange = (newTab) => {
+    if (newTab === tab) return
+    if (isDirty && tab === 'profile') {
+      pendingTab.current = newTab
+      setShowTabConfirm(true)
+    } else {
+      setTab(newTab)
+    }
+  }
 
   // Browser tab close / refresh guard
   useEffect(() => {
@@ -605,19 +617,17 @@ export default function ProfilePage() {
 
         {/* Tabs */}
         <div className="pw-tabs">
-          <button className={`pw-tab${tab === 'profile' ? ' on' : ''}`} onClick={() => setTab('profile')}>{t('profile.tab.talent')}</button>
-          <button className={`pw-tab${tab === 'posts' ? ' on' : ''}`} onClick={() => setTab('posts')}>{t('profile.tab.posts') || '내 게시물'}</button>
+          <button className={`pw-tab${tab === 'profile' ? ' on' : ''}`} onClick={() => handleTabChange('profile')}>{t('profile.tab.talent')}</button>
+          <button className={`pw-tab${tab === 'posts' ? ' on' : ''}`} onClick={() => handleTabChange('posts')}>{t('profile.tab.posts') || '내 게시물'}</button>
         </div>
 
         {tab === 'profile' && (<>
-          {/* HR Visibility Banner */}
-          <div className="phr-banner">
-            <div style={{ display: 'flex', alignItems: 'start', justifyContent: 'space-between', gap: 16 }}>
+          {/* HR + Job Signal + Work Type — single card */}
+          <div className="pcard">
+            <div style={{ display: 'flex', alignItems: 'start', justifyContent: 'space-between', gap: 12, marginBottom: 16 }}>
               <div>
-                <div style={{ fontSize: 14, fontWeight: 700, color: '#111', marginBottom: 4 }}>{t('profile.hr.title')}</div>
-                <div style={{ fontSize: 12, color: 'rgba(0,0,0,0.45)', lineHeight: 1.5 }}>
-                  {t('profile.hr.desc')}
-                </div>
+                <div style={{ fontSize: 14, fontWeight: 700, color: '#111', marginBottom: 2 }}>{t('profile.hr.title')}</div>
+                <div style={{ fontSize: 11, color: 'rgba(0,0,0,0.4)', lineHeight: 1.4 }}>{t('profile.hr.desc')}</div>
               </div>
               <button className={`ptoggle-switch${form.hr_visible ? ' on' : ''}`} onClick={() => {
                 if (score < 60 && !form.hr_visible) {
@@ -627,40 +637,38 @@ export default function ProfilePage() {
                 set('hr_visible', !form.hr_visible)
               }} />
             </div>
-          </div>
-
-          {/* Job Signal */}
-          <div className="pcard">
-            <div className="pcard-h">{t('profile.signal')}</div>
-            <div className="psignal">
-              {['active','open','passive'].map(v => {
-                const isOn = form.job_signal === v
-                const icon = v === 'active' ? (
-                  <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-                    <circle cx="7" cy="7" r="5.5" stroke={isOn ? '#16a34a' : 'rgba(0,0,0,0.2)'} strokeWidth="1.5"/>
-                    <circle cx="7" cy="7" r="3" fill={isOn ? '#16a34a' : 'rgba(0,0,0,0.1)'}/>
-                  </svg>
-                ) : v === 'open' ? (
-                  <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-                    <circle cx="7" cy="7" r="5.5" stroke={isOn ? '#f59e0b' : 'rgba(0,0,0,0.2)'} strokeWidth="1.5"/>
-                    <path d="M7 4v3.5" stroke={isOn ? '#f59e0b' : 'rgba(0,0,0,0.15)'} strokeWidth="1.5" strokeLinecap="round"/>
-                    <circle cx="7" cy="10" r="0.75" fill={isOn ? '#f59e0b' : 'rgba(0,0,0,0.15)'}/>
-                  </svg>
-                ) : (
-                  <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-                    <circle cx="7" cy="7" r="5.5" stroke={isOn ? '#ff6000' : 'rgba(0,0,0,0.2)'} strokeWidth="1.5"/>
-                    <path d="M5 5l4 4M9 5l-4 4" stroke={isOn ? '#ff6000' : 'rgba(0,0,0,0.15)'} strokeWidth="1.3" strokeLinecap="round"/>
-                  </svg>
-                )
-                return (
-                  <button key={v} className={`psignal-btn${isOn ? ' on' : ''}`} onClick={() => set('job_signal', v)}>
-                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>{icon} {t(`profile.signal.${v}`)}</span>
-                  </button>
-                )
-              })}
+            <div style={{ borderTop: '1px solid rgba(0,0,0,0.06)', paddingTop: 14 }}>
+              <div style={{ fontSize: 12, fontWeight: 700, color: 'rgba(0,0,0,0.4)', marginBottom: 8 }}>{t('profile.signal')}</div>
+              <div className="psignal">
+                {['active','open','passive'].map(v => {
+                  const isOn = form.job_signal === v
+                  const icon = v === 'active' ? (
+                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                      <circle cx="7" cy="7" r="5.5" stroke={isOn ? '#16a34a' : 'rgba(0,0,0,0.2)'} strokeWidth="1.5"/>
+                      <circle cx="7" cy="7" r="3" fill={isOn ? '#16a34a' : 'rgba(0,0,0,0.1)'}/>
+                    </svg>
+                  ) : v === 'open' ? (
+                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                      <circle cx="7" cy="7" r="5.5" stroke={isOn ? '#f59e0b' : 'rgba(0,0,0,0.2)'} strokeWidth="1.5"/>
+                      <path d="M7 4v3.5" stroke={isOn ? '#f59e0b' : 'rgba(0,0,0,0.15)'} strokeWidth="1.5" strokeLinecap="round"/>
+                      <circle cx="7" cy="10" r="0.75" fill={isOn ? '#f59e0b' : 'rgba(0,0,0,0.15)'}/>
+                    </svg>
+                  ) : (
+                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                      <circle cx="7" cy="7" r="5.5" stroke={isOn ? '#ff6000' : 'rgba(0,0,0,0.2)'} strokeWidth="1.5"/>
+                      <path d="M5 5l4 4M9 5l-4 4" stroke={isOn ? '#ff6000' : 'rgba(0,0,0,0.15)'} strokeWidth="1.3" strokeLinecap="round"/>
+                    </svg>
+                  )
+                  return (
+                    <button key={v} className={`psignal-btn${isOn ? ' on' : ''}`} onClick={() => set('job_signal', v)}>
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>{icon} {t(`profile.signal.${v}`)}</span>
+                    </button>
+                  )
+                })}
+              </div>
             </div>
             {form.job_signal && form.job_signal !== 'passive' && (
-              <div style={{ marginTop: 16, paddingTop: 16, borderTop: '1px solid rgba(0,0,0,0.06)' }}>
+              <div style={{ marginTop: 14, paddingTop: 14, borderTop: '1px solid rgba(0,0,0,0.06)' }}>
                 <div className="pinline">
                   <div className="pfield">
                     <div className="pfield-label">{t('profile.position')}</div>
@@ -683,24 +691,22 @@ export default function ProfilePage() {
                 </div>
               </div>
             )}
-          </div>
-
-          {/* Work Type Preference */}
-          <div className="pcard">
-            <div className="pcard-h">{t('profile.worktype.title')}</div>
-            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-              {['All', 'Remote', 'On-site'].map(v => {
-                const isOn = form.work_type === v
-                return (
-                  <button key={v} onClick={() => set('work_type', isOn ? '' : v)} style={{
-                    padding: '8px 16px', borderRadius: 20, border: isOn ? '1.5px solid #ff6000' : '1.5px solid rgba(0,0,0,0.1)',
-                    background: isOn ? 'rgba(255,96,0,0.06)' : '#fff', color: isOn ? '#ff6000' : 'rgba(0,0,0,0.5)',
-                    fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', transition: 'all .15s',
-                  }}>
-                    {t(`profile.worktype.${v.toLowerCase()}`)}
-                  </button>
-                )
-              })}
+            <div style={{ borderTop: '1px solid rgba(0,0,0,0.06)', paddingTop: 14, marginTop: 14 }}>
+              <div style={{ fontSize: 12, fontWeight: 700, color: 'rgba(0,0,0,0.4)', marginBottom: 8 }}>{t('profile.worktype.title')}</div>
+              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                {['All', 'Remote', 'On-site'].map(v => {
+                  const isOn = form.work_type === v
+                  return (
+                    <button key={v} onClick={() => set('work_type', isOn ? '' : v)} style={{
+                      padding: '8px 16px', borderRadius: 20, border: isOn ? '1.5px solid #ff6000' : '1.5px solid rgba(0,0,0,0.1)',
+                      background: isOn ? 'rgba(255,96,0,0.06)' : '#fff', color: isOn ? '#ff6000' : 'rgba(0,0,0,0.5)',
+                      fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', transition: 'all .15s',
+                    }}>
+                      {t(`profile.worktype.${v.toLowerCase()}`)}
+                    </button>
+                  )
+                })}
+              </div>
             </div>
           </div>
 
@@ -1059,6 +1065,25 @@ export default function ProfilePage() {
                 {t('profile.leave.no')}
               </button>
               <button onClick={async () => { setShowLeaveConfirm(false); await handleSave(); router.push(pendingRoute.current) }}
+                style={{ flex: 1, padding: 11, borderRadius: 8, border: 'none', background: '#ff6000', color: '#fff', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>
+                {t('profile.leave.yes')}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showTabConfirm && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.3)', zIndex: 1100, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
+          <div style={{ background: '#fff', borderRadius: 16, maxWidth: 340, width: '100%', padding: '28px 24px', textAlign: 'center', fontFamily: "'Barlow', system-ui", boxShadow: '0 20px 60px rgba(0,0,0,0.15)' }}>
+            <div style={{ fontSize: 15, fontWeight: 700, color: '#111', marginBottom: 6 }}>{t('profile.leave.title')}</div>
+            <div style={{ fontSize: 13, color: 'rgba(0,0,0,0.45)', marginBottom: 20, lineHeight: 1.5 }}>{t('profile.leave.desc')}</div>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button onClick={() => { setShowTabConfirm(false); setForm({ ...initialForm }); setTab(pendingTab.current) }}
+                style={{ flex: 1, padding: 11, borderRadius: 8, border: '1px solid rgba(0,0,0,0.1)', background: '#fff', color: '#111', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>
+                {t('profile.leave.no')}
+              </button>
+              <button onClick={async () => { setShowTabConfirm(false); await handleSave(); setTab(pendingTab.current) }}
                 style={{ flex: 1, padding: 11, borderRadius: 8, border: 'none', background: '#ff6000', color: '#fff', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>
                 {t('profile.leave.yes')}
               </button>
