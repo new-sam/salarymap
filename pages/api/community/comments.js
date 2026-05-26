@@ -58,16 +58,14 @@ export default async function handler(req, res) {
 
     let isSalaryVerified = false
     let authorCompany = null
-    const { data: submission } = await supabase
-      .from('submissions')
-      .select('id, company')
-      .eq('user_id', user.id)
-      .order('created_at', { ascending: false })
-      .limit(1)
+    const { data: userProfile } = await supabase
+      .from('user_profiles')
+      .select('current_company')
+      .eq('id', user.id)
       .maybeSingle()
-    if (submission) {
+    if (userProfile?.current_company) {
       isSalaryVerified = true
-      authorCompany = submission.company || null
+      authorCompany = userProfile.current_company
     }
 
     const { data, error } = await supabase

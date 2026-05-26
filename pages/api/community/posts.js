@@ -7,7 +7,7 @@ const supabase = createClient(
 
 export default async function handler(req, res) {
   if (req.method === 'GET') {
-    const { category, page = 1, limit = 20, sort = 'recent', search, id: postId } = req.query
+    const { category, page = 1, limit = 20, sort = 'recent', search, id: postId, mine } = req.query
 
     // Single post fetch
     if (postId) {
@@ -48,6 +48,14 @@ export default async function handler(req, res) {
     let query = supabase
       .from('community_posts')
       .select('*', { count: 'exact' })
+
+    if (mine) {
+      const token = req.headers.authorization?.replace('Bearer ', '')
+      if (token) {
+        const { data: { user } } = await supabase.auth.getUser(token)
+        if (user) query = query.eq('user_id', user.id)
+      }
+    }
 
     if (category && category !== 'all') {
       query = query.eq('category', category)
@@ -117,19 +125,17 @@ export default async function handler(req, res) {
       ? (realName.charAt(0) + '**')
       : realName
 
-    // Check if user has submitted salary data → salary verified badge + company
+    // Get company from user profile
     let isSalaryVerified = false
     let authorCompany = null
-    const { data: submission } = await supabase
-      .from('submissions')
-      .select('id, company')
-      .eq('user_id', user.id)
-      .order('created_at', { ascending: false })
-      .limit(1)
+    const { data: userProfile } = await supabase
+      .from('user_profiles')
+      .select('current_company')
+      .eq('id', user.id)
       .maybeSingle()
-    if (submission) {
+    if (userProfile?.current_company) {
       isSalaryVerified = true
-      authorCompany = submission.company || null
+      authorCompany = userProfile.current_company
     }
 
     const { data, error } = await supabase

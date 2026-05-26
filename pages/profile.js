@@ -235,7 +235,7 @@ export default function ProfilePage() {
   const [profile, setProfile] = useState(null)
   const [saving, setSaving] = useState(false)
   const [msg, setMsg] = useState(null)
-  const [tab, setTab] = useState('profile') // profile | salary
+  const [tab, setTab] = useState('profile') // profile | posts
   const [showOnboard, setShowOnboard] = useState(false)
   const [showAlert, setShowAlert] = useState(null)
   const [submissions, setSubmissions] = useState([])
@@ -245,6 +245,8 @@ export default function ProfilePage() {
   const [showLeaveConfirm, setShowLeaveConfirm] = useState(false)
   const [sharingResume, setSharingResume] = useState(false)
   const [showPublishPrompt, setShowPublishPrompt] = useState(false)
+  const [myPosts, setMyPosts] = useState([])
+  const [myPostsLoading, setMyPostsLoading] = useState(false)
   const pendingRoute = useRef(null)
   const photoRef = useRef(null)
   const resumeRef = useRef(null)
@@ -296,6 +298,7 @@ export default function ProfilePage() {
           setProfile(p)
           const formData = {
             full_name: p.full_name || session.user.user_metadata?.full_name || '',
+            current_company: p.current_company || '',
             headline: p.headline || '',
             position: p.position || '',
             yoe_months: p.yoe_months ?? '',
@@ -361,6 +364,16 @@ export default function ProfilePage() {
       setLoading(false)
     })
   }, [])
+
+  useEffect(() => {
+    if (tab !== 'posts' || !token || myPosts.length > 0) return
+    setMyPostsLoading(true)
+    fetch('/api/community/posts?mine=1', { headers: { Authorization: `Bearer ${token}` } })
+      .then(r => r.json())
+      .then(d => setMyPosts(d.posts || []))
+      .catch(() => {})
+      .finally(() => setMyPostsLoading(false))
+  }, [tab, token])
 
   const handleSave = async () => {
     setSaving(true)
@@ -493,9 +506,23 @@ export default function ProfilePage() {
       <style>{`
         body { background: #fafafa; }
         .pw { max-width: 580px; margin: 0 auto; padding: 32px 20px 80px; font-family: 'Barlow', system-ui, sans-serif; }
-        .pw-tabs { display: flex; gap: 4px; margin-bottom: 24px; }
-        .pw-tab { font-size: 13px; font-weight: 600; color: rgba(0,0,0,0.35); background: none; border: none; padding: 8px 16px; border-radius: 8px; cursor: pointer; font-family: inherit; }
-        .pw-tab.on { color: #111; background: rgba(0,0,0,0.06); }
+        .pw-header { margin-bottom: 20px; display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+        .pw-header-left { flex: 1; min-width: 0; }
+        .pw-header-name { font-size: 22px; font-weight: 800; color: #111; margin: 0 0 4px; }
+        .pw-header-photo { width: 56px; height: 56px; border-radius: 50%; object-fit: cover; border: 2px solid rgba(0,0,0,0.08); flex-shrink: 0; }
+        .pw-header-photo-placeholder { width: 56px; height: 56px; border-radius: 50%; background: rgba(0,0,0,0.04); border: 2px solid rgba(0,0,0,0.08); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+        .pw-header-company { display: flex; align-items: center; gap: 6px; font-size: 14px; color: #888; }
+        .pw-header-company input { border: none; outline: none; font-size: 14px; color: #888; font-family: inherit; background: none; padding: 0; width: 200px; }
+        .pw-header-company input::placeholder { color: #ccc; }
+        .pw-header-company input:focus { color: #111; }
+        .pw-tabs { display: flex; gap: 0; margin-bottom: 24px; border-bottom: 1px solid rgba(0,0,0,0.08); }
+        .pw-tab { font-size: 13px; font-weight: 600; color: rgba(0,0,0,0.35); background: none; border: none; padding: 12px 16px; cursor: pointer; font-family: inherit; position: relative; }
+        .pw-tab.on { color: #111; }
+        .pw-tab.on::after { content: ''; position: absolute; bottom: -1px; left: 0; right: 0; height: 2px; background: #ff6000; }
+        .pw-post-item { display: block; padding: 14px 0; border-bottom: 1px solid rgba(0,0,0,0.06); text-decoration: none; }
+        .pw-post-item:last-child { border-bottom: none; }
+        .pw-post-title { font-size: 14px; font-weight: 600; color: #111; margin-bottom: 4px; }
+        .pw-post-meta { font-size: 12px; color: #aaa; display: flex; gap: 10px; }
         .pcard { background: #fff; border: 1px solid rgba(0,0,0,0.06); border-radius: 12px; padding: 24px; margin-bottom: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
         .pcard-h { font-size: 13px; font-weight: 700; color: rgba(0,0,0,0.6); letter-spacing: .02em; margin-bottom: 16px; }
         .pfield { margin-bottom: 16px; }
@@ -530,7 +557,7 @@ export default function ProfilePage() {
         .ptoggle-switch.on { background: #ff6000; }
         .ptoggle-switch::after { content: ''; width: 18px; height: 18px; border-radius: 50%; background: #fff; position: absolute; top: 3px; left: 3px; transition: transform .2s; box-shadow: 0 1px 3px rgba(0,0,0,0.15); }
         .ptoggle-switch.on::after { transform: translateX(20px); }
-        .pinline { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        .pinline { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px; }
         @media (max-width: 500px) { .pinline { grid-template-columns: 1fr; } }
         .plist-item { background: rgba(0,0,0,0.02); border: 1px solid rgba(0,0,0,0.05); border-radius: 10px; padding: 16px; margin-bottom: 12px; }
         .plist-item:last-of-type { margin-bottom: 0; }
@@ -554,10 +581,32 @@ export default function ProfilePage() {
       <GlobalNav activePage="profile" />
 
       <div className="pw">
+        {/* Header */}
+        <div className="pw-header">
+          <div className="pw-header-left">
+            <h1 className="pw-header-name">{form.full_name || user?.user_metadata?.full_name || ''}</h1>
+            <div className="pw-header-company">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>
+              <input
+                value={form.current_company || ''}
+                onChange={e => set('current_company', e.target.value)}
+                placeholder={t('profile.companyPlaceholder') || '재직 회사를 입력하세요'}
+              />
+            </div>
+          </div>
+          {form.photo_url ? (
+            <img src={form.photo_url} className="pw-header-photo" alt="" />
+          ) : (
+            <div className="pw-header-photo-placeholder">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="rgba(0,0,0,0.2)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+            </div>
+          )}
+        </div>
+
         {/* Tabs */}
         <div className="pw-tabs">
           <button className={`pw-tab${tab === 'profile' ? ' on' : ''}`} onClick={() => setTab('profile')}>{t('profile.tab.talent')}</button>
-          <button className={`pw-tab${tab === 'salary' ? ' on' : ''}`} onClick={() => setTab('salary')}>{t('profile.tab.salary')}</button>
+          <button className={`pw-tab${tab === 'posts' ? ' on' : ''}`} onClick={() => setTab('posts')}>{t('profile.tab.posts') || '내 게시물'}</button>
         </div>
 
         {tab === 'profile' && (<>
@@ -669,7 +718,6 @@ export default function ProfilePage() {
           </div>
 
           {msg && <div className="pmsg">{msg}</div>}
-
           <div className="pcard" style={{ position: 'relative', overflow: 'visible' }}>
             <div className="pcard-h">{t('profile.resume')}</div>
             {!form.resume_url && !aiParsing && (
@@ -903,48 +951,29 @@ export default function ProfilePage() {
             )}
           </div>
 
+          {msg && <div className="pmsg">{msg}</div>}
         </>)}
 
-        {tab === 'salary' && (<>
-          {/* Salary tab — existing content */}
-          {percentile && (
-            <div style={{ background: '#fff', borderRadius: 12, padding: '28px 24px', marginBottom: 16, textAlign: 'center', border: '1px solid rgba(0,0,0,0.06)', boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
-              <div style={{ fontSize: 11, fontWeight: 700, color: 'rgba(0,0,0,0.35)', textTransform: 'uppercase', letterSpacing: '.06em', marginBottom: 8 }}>{t('profile.salary.where')}</div>
-              <div><span style={{ fontSize: 42, fontWeight: 800, color: '#111' }}>Top </span><span style={{ fontSize: 42, fontWeight: 800, color: '#ff6000' }}>{percentile.percentile}%</span></div>
-              <div style={{ fontSize: 13, color: 'rgba(0,0,0,0.45)', marginBottom: 20 }}>Among {submissions[0]?.role} with {submissions[0]?.experience} experience</div>
-              <div style={{ display: 'flex', justifyContent: 'center', gap: 16 }}>
-                {[{ l: 'You', v: `${percentile.userSalary}M`, c: '#111' }, { l: 'Median', v: `${percentile.marketMedian}M`, c: 'rgba(0,0,0,0.45)' }, { l: 'Diff', v: `${percentile.diff >= 0 ? '+' : ''}${percentile.diff}M`, c: percentile.diff >= 0 ? '#16a34a' : '#dc2626' }].map((d, i) => (
-                  <div key={i} style={{ background: 'rgba(0,0,0,0.03)', borderRadius: 8, padding: '10px 18px' }}>
-                    <div style={{ fontSize: 10, color: 'rgba(0,0,0,0.35)', textTransform: 'uppercase', marginBottom: 2 }}>{d.l}</div>
-                    <div style={{ fontSize: 18, fontWeight: 800, color: d.c }}>{d.v}</div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {submissions.length > 0 && (
-            <div className="pcard">
-              <div className="pcard-h">My Submissions ({submissions.length})</div>
-              {submissions.map((sub, i) => (
-                <div key={sub.id} style={{ padding: '14px 0', borderBottom: i < submissions.length - 1 ? '1px solid rgba(0,0,0,0.05)' : 'none', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
-                  <div>
-                    <div style={{ fontSize: 14, fontWeight: 600, color: '#111' }}>{sub.role} · {sub.experience}</div>
-                    <div style={{ fontSize: 13, color: 'rgba(0,0,0,0.4)' }}>{sub.company || '—'}</div>
-                  </div>
-                  <div style={{ textAlign: 'right' }}>
-                    <div style={{ fontSize: 16, fontWeight: 800, color: '#ff6000' }}>{sub.salary}M VND</div>
-                    <div style={{ fontSize: 11, color: 'rgba(0,0,0,0.3)' }}>{new Date(sub.created_at).toLocaleDateString()}</div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-
-          {submissions.length === 0 && (
+        {tab === 'posts' && (<>
+          {myPostsLoading ? (
+            <div style={{ textAlign: 'center', padding: '40px 20px', color: '#bbb', fontSize: 14 }}>Loading...</div>
+          ) : myPosts.length === 0 ? (
             <div className="pcard" style={{ textAlign: 'center', padding: '40px 24px' }}>
-              <div style={{ fontSize: 14, color: 'rgba(0,0,0,0.35)' }}>{t('profile.salary.none')}</div>
-              <a href="/#submit" style={{ fontSize: 13, color: '#ff6000', marginTop: 8, display: 'inline-block' }}>{t('profile.salary.submit')}</a>
+              <div style={{ fontSize: 14, color: 'rgba(0,0,0,0.35)' }}>{t('comm.empty') || '게시물이 없습니다'}</div>
+              <a href="/community" style={{ fontSize: 13, color: '#ff6000', marginTop: 8, display: 'inline-block' }}>{t('comm.write') || '글쓰기'}</a>
+            </div>
+          ) : (
+            <div className="pcard">
+              {myPosts.map(post => (
+                <a key={post.id} href={`/community/${post.id}`} className="pw-post-item">
+                  <div className="pw-post-title">{post.title}</div>
+                  <div className="pw-post-meta">
+                    <span>{new Date(post.created_at).toLocaleDateString()}</span>
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3 }}><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg> {post.like_count || 0}</span>
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3 }}><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg> {post.comment_count || 0}</span>
+                  </div>
+                </a>
+              ))}
             </div>
           )}
         </>)}
