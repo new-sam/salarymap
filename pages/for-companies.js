@@ -579,8 +579,10 @@ const css = {
     background: '#fff',
     border: '1px solid rgba(255,255,255,0.1)',
     boxShadow: '0 24px 70px rgba(0,0,0,0.42)',
+    aspectRatio: '16 / 10',
+    width: '100%',
   },
-  shot: { display: 'block', width: '100%', height: 'auto' },
+  shot: { display: 'block', width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'top' },
   compare: { padding: '70px 32px 80px', maxWidth: 1160, margin: '0 auto' },
   tableWrap: {
     overflowX: 'auto',
