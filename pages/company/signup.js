@@ -1,8 +1,6 @@
-import { useState } from 'react';
 import Head from 'next/head';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
-import { supabase } from '../../lib/supabaseClient';
 import Brand from '../../components/company/Brand';
 
 const FREE_MAIL_DOMAINS = new Set([
@@ -12,73 +10,14 @@ const FREE_MAIL_DOMAINS = new Set([
 
 export default function CompanySignup() {
   const router = useRouter();
-  const sent = router.query.sent === '1';
 
-  const [email, setEmail] = useState('');
-  const [fullName, setFullName] = useState('');
-  const [companyName, setCompanyName] = useState('');
-  const [busy, setBusy] = useState(false);
-  const [err, setErr] = useState('');
-
-  const onSubmit = async (e) => {
-    e.preventDefault();
-    setErr('');
-    const trimmed = email.trim().toLowerCase();
-    const domain = trimmed.split('@')[1];
-    if (!domain || FREE_MAIL_DOMAINS.has(domain)) {
-      setErr('회사 이메일 도메인을 사용해 주세요 (gmail/naver 등 프리메일은 사용 불가)');
-      return;
+  const loginWithGoogle = () => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('fyi_intent', 'company');
+      localStorage.setItem('fyi_login_return', '/company');
     }
-    if (!fullName.trim()) { setErr('본인 이름을 입력해 주세요'); return; }
-    if (!companyName.trim()) { setErr('회사명을 입력해 주세요'); return; }
-
-    setBusy(true);
-    try {
-      if (typeof window !== 'undefined') {
-        localStorage.setItem('fyi_intent', 'company');
-        localStorage.setItem('fyi_login_return', '/company');
-        localStorage.setItem('fyi_company_full_name', fullName.trim());
-        localStorage.setItem('fyi_company_name', companyName.trim());
-      }
-      const redirectTo = typeof window !== 'undefined'
-        ? `${window.location.origin}/auth/callback`
-        : undefined;
-      const { error } = await supabase.auth.signInWithOtp({
-        email: trimmed,
-        options: { emailRedirectTo: redirectTo },
-      });
-      if (error) throw error;
-      router.replace({ pathname: '/company/signup', query: { sent: '1', email: trimmed } });
-    } catch (e) {
-      setErr(e?.message || '인증 메일 발송 실패');
-    } finally {
-      setBusy(false);
-    }
+    window.location.href = '/api/auth/google?return=' + encodeURIComponent('/company');
   };
-
-  if (sent) {
-    const shown = router.query.email || '';
-    return (
-      <>
-        <Head><title>인증 메일 발송됨 · FYI for Companies</title></Head>
-        <div style={css.shell}>
-          <Brand style={{ marginBottom: 26 }} />
-          <div style={css.sentCard}>
-            <div style={css.sentIcon}>✉</div>
-            <h1 style={css.sentH}>인증 메일을 보냈어요</h1>
-            <p style={css.sentP}>
-              <b>{shown}</b> 으로 인증 링크를 보냈습니다.<br />
-              메일이 안 보이면 스팸함을 확인해 주세요.<br /><br />
-              링크를 클릭하면 자동으로 로그인되어 <code style={css.code}>/company</code> 대시보드로 이동합니다.
-            </p>
-            <div style={css.sentResend}>
-              메일이 안 와요. <a onClick={() => router.replace('/company/signup')} style={css.linkAccent}>다시 입력하기</a>
-            </div>
-          </div>
-        </div>
-      </>
-    );
-  }
 
   return (
     <>
@@ -87,7 +26,7 @@ export default function CompanySignup() {
         <Brand style={{ marginBottom: 26 }} />
         <div style={css.card}>
           <h1 style={css.h}>기업 계정 만들기</h1>
-          <p style={css.lead}>회사 이메일로 인증 링크를 보냅니다. 1분 내 도착.</p>
+          <p style={css.lead}>회사 Google 계정으로 바로 시작하세요.</p>
 
           <div style={css.note}>
             <b style={css.noteB}>개인 계정과 별개입니다</b>
@@ -96,54 +35,17 @@ export default function CompanySignup() {
             </span>
           </div>
 
-          <form onSubmit={onSubmit}>
-            <div style={css.field}>
-              <label style={css.label}>회사 이메일</label>
-              <input
-                type="email"
-                placeholder="you@yourcompany.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                style={css.input}
-                required
-              />
-              <div style={css.hint}>gmail/naver/yahoo 등 프리메일은 사용 불가</div>
-            </div>
-            <div style={css.field}>
-              <label style={css.label}>본인 이름</label>
-              <input
-                type="text"
-                placeholder="홍길동"
-                value={fullName}
-                onChange={(e) => setFullName(e.target.value)}
-                style={css.input}
-                required
-              />
-            </div>
-            <div style={css.field}>
-              <label style={css.label}>회사명</label>
-              <input
-                type="text"
-                placeholder="ACME Vietnam Co., Ltd"
-                value={companyName}
-                onChange={(e) => setCompanyName(e.target.value)}
-                style={css.input}
-                required
-              />
-              <div style={css.hint}>동일 도메인 회사가 이미 가입돼 있으면 안내됩니다</div>
-            </div>
+          <button type="button" onClick={loginWithGoogle} style={css.googleBtn}>
+            <svg width="18" height="18" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59a14.5 14.5 0 0 1 0-9.18l-7.98-6.19a24.0 24.0 0 0 0 0 21.56l7.98-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
+            Google로 계속하기
+          </button>
 
-            {err && <div style={css.err}>{err}</div>}
+          <div style={css.hint}>gmail·naver 등 개인 메일로는 사용할 수 없습니다. 회사 Google 계정을 사용해 주세요.</div>
 
-            <button type="submit" disabled={busy} style={busy ? css.btnDisabled : css.btnPrimary}>
-              {busy ? '메일 발송 중…' : '이메일로 인증 링크 받기'}
-            </button>
-
-            <div style={css.legal}>
-              버튼 클릭 시 <a style={css.linkDim}>이용약관</a> · <a style={css.linkDim}>개인정보처리방침</a> 동의<br />
-              이미 회사 계정 있으세요? <Link href="/company" style={css.linkAccent}>로그인</Link>
-            </div>
-          </form>
+          <div style={css.legal}>
+            버튼 클릭 시 <a style={css.linkDim}>이용약관</a> · <a style={css.linkDim}>개인정보처리방침</a> 동의<br />
+            이미 회사 계정 있으세요? <Link href="/company" style={css.linkAccent}>로그인</Link>
+          </div>
         </div>
 
         <div style={css.bottomNav}>
@@ -192,18 +94,13 @@ const css = {
     background: '#FEF2F2', border: '1px solid #FECACA', borderRadius: 8,
     padding: '10px 13px', fontSize: 12.5, color: '#dc2626', marginBottom: 14, lineHeight: 1.5,
   },
-  btnPrimary: {
-    width: '100%', padding: '13px 16px', borderRadius: 10, border: 'none',
-    background: 'linear-gradient(135deg,#ef4444,#f97316)', color: '#fff',
+  googleBtn: {
+    width: '100%', padding: '13px 16px', borderRadius: 10, border: '1px solid #D1D5DB',
+    background: '#fff', color: '#111',
     fontSize: 14.5, fontWeight: 700, cursor: 'pointer',
     fontFamily: 'inherit',
-    boxShadow: '0 4px 14px rgba(249,115,22,0.28)',
-  },
-  btnDisabled: {
-    width: '100%', padding: '13px 16px', borderRadius: 10, border: 'none',
-    background: '#E5E7EB', color: '#9CA3AF',
-    fontSize: 14.5, fontWeight: 700, cursor: 'not-allowed',
-    fontFamily: 'inherit',
+    display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 10,
+    marginBottom: 12,
   },
   legal: { fontSize: 11.5, color: '#9ca3af', textAlign: 'center', marginTop: 20, lineHeight: 1.7 },
   linkDim: { color: '#6b7280', textDecoration: 'underline', fontWeight: 600, cursor: 'pointer' },
@@ -212,20 +109,4 @@ const css = {
     maxWidth: 460, width: '100%', marginTop: 20,
     display: 'flex', justifyContent: 'space-between', fontSize: 12,
   },
-  // sent state
-  sentCard: {
-    maxWidth: 460, width: '100%', padding: '48px 36px', textAlign: 'center',
-    background: '#fff', borderRadius: 16,
-    border: '1px solid rgba(0,0,0,0.05)',
-    boxShadow: '0 1px 2px rgba(0,0,0,0.04), 0 14px 36px rgba(0,0,0,0.07)',
-  },
-  sentIcon: {
-    width: 64, height: 64, borderRadius: '50%',
-    background: '#ECFDF5', color: '#10b981',
-    fontSize: 28, display: 'grid', placeItems: 'center', margin: '0 auto 20px',
-  },
-  sentH: { fontSize: 21, fontWeight: 800, color: '#111', marginBottom: 10 },
-  sentP: { fontSize: 13.5, color: '#6b7280', marginBottom: 24, lineHeight: 1.7 },
-  sentResend: { fontSize: 12.5, color: '#9ca3af' },
-  code: { background: '#F3F4F6', padding: '2px 6px', borderRadius: 4, fontFamily: "'JetBrains Mono', monospace", fontSize: 11.5, color: '#d97706' },
 };
