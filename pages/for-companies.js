@@ -39,7 +39,7 @@ function CountUp({ end, decimals = 0, duration = 1200, suffix = '' }) {
 }
 
 function Mark({ v, t }) {
-  if (v === 'o') return <span style={css.markYes} title={t('company.stat.apps')}>✓</span>;
+  if (v === 'o') return <span style={css.markYes} title={t('company.stat.apps')}>{'\u2713'}</span>;
   if (v === 'x') return <span style={css.markNo} title="">×</span>;
   return null;
 }
@@ -58,10 +58,10 @@ const STEPS = [
 ];
 
 const SERVICE_FLOW = [
-  { no: '01', title: 'company.landing.process1.title', desc: 'company.landing.process1.desc', tag: 'company.landing.process1.tag', img: '/ats-preview/jobs-public.png' },
-  { no: '02', title: 'company.landing.process2.title', desc: 'company.landing.process2.desc', tag: 'company.landing.process2.tag', img: '/ats-preview/ats-applicants-masked.png' },
-  { no: '03', title: 'company.landing.process3.title', desc: 'company.landing.process3.desc', tag: 'company.landing.process3.tag', img: '/ats-preview/ats-kanban-masked.png' },
-  { no: '04', title: 'company.landing.process4.title', desc: 'company.landing.process4.desc', tag: 'company.landing.process4.tag', img: '/ats-preview/ats-candidate-detail-masked.png' },
+  { no: '01', title: 'company.landing.process1.title', desc: 'company.landing.process1.desc', tag: 'company.landing.process1.tag', img: '/company-process/post-free.png' },
+  { no: '02', title: 'company.landing.process2.title', desc: 'company.landing.process2.desc', tag: 'company.landing.process2.tag', img: '/company-process/resume-pool.png' },
+  { no: '03', title: 'company.landing.process3.title', desc: 'company.landing.process3.desc', tag: 'company.landing.process3.tag', img: '/company-process/ats-manage.png' },
+  { no: '04', title: 'company.landing.process4.title', desc: 'company.landing.process4.desc', tag: 'company.landing.process4.tag', img: '/company-process/hire-guarantee.png' },
 ];
 
 export default function ForCompanies() {
@@ -136,7 +136,7 @@ export default function ForCompanies() {
             <div className="fc-hero-ctas" style={css.heroCtas}>
               <a href="mailto:ceo_office@likelion.net?subject=FYI%20for%20Companies%20%EB%AC%B8%EC%9D%98" style={css.btnOutline}>{t('company.landing.heroCtaContact')}</a>
               <button type="button" onClick={() => router.push('/company?mode=signup')} style={css.btnDark}>
-                {t('company.landing.heroCtaPost')} →
+                {t('company.landing.heroCtaPost')} -&gt;
               </button>
             </div>
 
@@ -174,15 +174,16 @@ export default function ForCompanies() {
               <div className="fc-flow-grid" style={css.flowGrid}>
                 {SERVICE_FLOW.map((item, idx) => (
                   <article key={item.no} style={css.flowItem}>
+                    <div style={css.flowNumber}>{item.no}</div>
+                    <div style={css.flowVisual}>
+                      <img src={item.img} alt={t(item.title)} style={css.flowVisualImg} />
+                    </div>
                     <div style={css.flowCopy}>
                       <span style={css.flowTag}>{t(item.tag)}</span>
                       <h3 style={css.flowTitle}>{t(item.title)}</h3>
                       <p style={css.flowDesc}>{t(item.desc)}</p>
                     </div>
-                    {idx < SERVICE_FLOW.length - 1 && <div className="fc-flow-dots" style={css.flowDots}>▶ ▶ ▶</div>}
-                    <div style={css.flowShot}>
-                      <img src={item.img} alt={t(item.title)} style={css.flowImg} />
-                    </div>
+                    {idx < SERVICE_FLOW.length - 1 && <div className="fc-flow-dots" style={css.flowDots}>-&gt;</div>}
                   </article>
                 ))}
               </div>
@@ -547,27 +548,53 @@ const css = {
     position: 'relative',
     maxWidth: 1180,
     margin: '0 auto',
-    padding: '34px 36px 0',
+    padding: '30px 32px',
     borderRadius: 28,
-    background: 'linear-gradient(180deg, #eef7ff 0%, #f6fbff 100%)',
-    border: '1px solid rgba(59,130,246,0.08)',
+    background: 'linear-gradient(180deg, #f0f8ff 0%, #f7fbff 100%)',
+    border: '1px solid rgba(37,99,235,0.08)',
     boxShadow: '0 24px 70px rgba(15,23,42,0.08)',
     overflow: 'hidden',
   },
   flowGrid: {
     display: 'grid',
     gridTemplateColumns: 'repeat(4, minmax(0, 1fr))',
-    gap: 24,
-    alignItems: 'end',
+    gap: 18,
+    alignItems: 'stretch',
   },
   flowItem: {
     position: 'relative',
     minWidth: 0,
+    minHeight: 350,
+    padding: '24px 20px 22px',
+    borderRadius: 22,
+    background: 'rgba(255,255,255,0.82)',
+    border: '1px solid rgba(15,23,42,0.1)',
+    boxShadow: '0 18px 42px rgba(15,23,42,0.08)',
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
   },
+  flowNumber: {
+    alignSelf: 'flex-start',
+    color: '#ff4b16',
+    fontSize: 13,
+    fontWeight: 950,
+  },
+  flowVisual: {
+    width: 148,
+    height: 132,
+    margin: '8px auto 22px',
+    borderRadius: 20,
+    background: '#f5f7fb',
+    border: '1px solid rgba(15,23,42,0.06)',
+    boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.82)',
+    position: 'relative',
+    overflow: 'hidden',
+  },
+  flowVisualImg: { display: 'block', width: '100%', height: '100%', objectFit: 'cover' },
   flowCopy: {
-    minHeight: 126,
     textAlign: 'center',
-    padding: '0 6px 20px',
+    padding: 0,
   },
   flowTag: {
     display: 'inline-flex',
@@ -603,29 +630,19 @@ const css = {
   },
   flowDots: {
     position: 'absolute',
-    top: 48,
-    right: -33,
-    color: 'rgba(37,99,235,0.24)',
-    fontSize: 12,
-    letterSpacing: 5,
-    zIndex: 1,
-  },
-  flowShot: {
-    position: 'relative',
-    height: 360,
-    overflow: 'hidden',
-    borderRadius: '18px 18px 0 0',
+    top: 142,
+    right: -18,
+    width: 36,
+    height: 36,
+    borderRadius: '50%',
+    display: 'grid',
+    placeItems: 'center',
     background: '#fff',
-    border: '1px solid rgba(15,23,42,0.08)',
-    borderBottom: 0,
-    boxShadow: '0 18px 46px rgba(15,23,42,0.12)',
-  },
-  flowImg: {
-    display: 'block',
-    width: '100%',
-    height: '100%',
-    objectFit: 'cover',
-    objectPosition: 'top left',
+    color: '#ff4b16',
+    fontSize: 17,
+    fontWeight: 950,
+    boxShadow: '0 8px 20px rgba(15,23,42,0.08)',
+    zIndex: 1,
   },
   offerGrid: {
     display: 'grid',
