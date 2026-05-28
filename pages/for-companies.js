@@ -57,6 +57,12 @@ const STEPS = [
   { no: '03', tk: 'company.landing.step3.title', d1: 'company.landing.step3.desc1', d2: 'company.landing.step3.desc2', img: '/ats-preview/ats-candidate-detail-masked.png' },
 ];
 
+const HERO_TAGS = [
+  { label: 'company.landing.proof1.label', value: 'company.landing.proof1.value' },
+  { label: 'company.landing.proof2.label', value: 'company.landing.proof2.value' },
+  { label: 'company.landing.proof3.label', value: 'company.landing.proof3.value' },
+];
+
 export default function ForCompanies() {
   const router = useRouter();
   const { t } = useT();
@@ -79,6 +85,7 @@ export default function ForCompanies() {
           .fc-hero { grid-template-columns: 1fr !important; gap: 36px !important; padding: 56px 20px 42px !important; text-align: center !important; }
           .fc-hero-copy { justify-self: center !important; }
           .fc-hero-ctas, .fc-trust { justify-content: center !important; }
+          .fc-proof-tags { grid-template-columns: 1fr !important; max-width: 520px !important; }
           .fc-float-card { left: 12px !important; bottom: 16px !important; }
           .fc-kpis { grid-template-columns: 1fr !important; gap: 28px !important; padding: 28px 20px 44px !important; }
           .fc-offer-grid { grid-template-columns: 1fr 1fr !important; }
@@ -91,6 +98,8 @@ export default function ForCompanies() {
           .fc-hero h1 { font-size: 42px !important; }
           .fc-hero-ctas { flex-direction: column !important; align-items: stretch !important; }
           .fc-hero-ctas button { width: 100% !important; }
+          .fc-proof-tags { margin-top: 22px !important; }
+          .fc-stat { display: none !important; }
           .fc-offer-grid { grid-template-columns: 1fr !important; }
           .fc-offer-grid article { min-height: 188px !important; transform: none !important; }
           .fc-float-card { position: static !important; width: 100% !important; margin-top: 12px !important; }
@@ -130,6 +139,15 @@ export default function ForCompanies() {
               </button>
             </div>
 
+            <div className="fc-proof-tags" style={css.proofTags}>
+              {HERO_TAGS.map((tag) => (
+                <div key={tag.label} style={css.proofTag}>
+                  <span style={css.proofLabel}>{t(tag.label)}</span>
+                  <strong style={css.proofValue}>{t(tag.value)}</strong>
+                </div>
+              ))}
+            </div>
+
             <div className="fc-hero-visual" style={css.heroVisual}>
               <div className="fc-stat fc-stat-l" style={css.statCardL}>
                 <div style={css.statLabel}>{t('company.landing.stat1Label')}</div>
@@ -156,7 +174,7 @@ export default function ForCompanies() {
               <span>{t('company.landing.kpi2Label')}</span>
             </div>
             <div className="fc-kpi" style={css.kpi}>
-              <strong><CountUp end={15723} suffix={t('company.landing.kpi3Suffix')} /></strong>
+              <strong><CountUp end={23624} suffix={t('company.landing.kpi3Suffix')} /></strong>
               <span>{t('company.landing.kpi3Label')}</span>
             </div>
           </section>
@@ -338,8 +356,8 @@ const css = {
     textAlign: 'center',
     maxWidth: 'none',
     margin: '0 auto',
-    padding: '74px max(32px, calc((100vw - 1240px) / 2 + 32px)) 96px',
-    background: '#f7f7f5',
+    padding: '64px max(32px, calc((100vw - 1240px) / 2 + 32px)) 84px',
+    background: 'linear-gradient(180deg, #f8faf8 0%, #f3f7f8 52%, #f7f7f5 100%)',
     color: '#151515',
   },
   heroBadge: {
@@ -353,7 +371,7 @@ const css = {
     fontWeight: 800,
     letterSpacing: '0.02em',
     boxShadow: '0 1px 2px rgba(0,0,0,0.04)',
-    marginBottom: 24,
+    marginBottom: 22,
   },
   eyebrow: {
     color: '#fb923c',
@@ -394,6 +412,41 @@ const css = {
     fontWeight: 650,
   },
   heroCtas: { display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 10, marginTop: 26, flexWrap: 'wrap' },
+  proofTags: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
+    gap: 12,
+    width: 'min(100%, 900px)',
+    marginTop: 30,
+  },
+  proofTag: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 14,
+    padding: '15px 18px',
+    borderRadius: 18,
+    background: 'rgba(255,255,255,0.78)',
+    border: '1px solid rgba(17,24,39,0.08)',
+    boxShadow: '0 18px 44px rgba(15,23,42,0.08)',
+    backdropFilter: 'blur(10px)',
+    textAlign: 'left',
+  },
+  proofLabel: {
+    color: '#64748b',
+    fontSize: 13,
+    lineHeight: 1.25,
+    fontWeight: 850,
+    wordBreak: 'keep-all',
+  },
+  proofValue: {
+    color: '#ea580c',
+    fontSize: 19,
+    lineHeight: 1.05,
+    fontWeight: 950,
+    letterSpacing: '-0.02em',
+    whiteSpace: 'nowrap',
+  },
   btnOutline: {
     padding: '13px 24px',
     borderRadius: 999,
@@ -436,17 +489,17 @@ const css = {
   },
   heroVisual: {
     position: 'relative',
-    marginTop: 48,
-    width: 'min(100%, 760px)',
+    marginTop: 42,
+    width: 'min(100%, 940px)',
     display: 'flex',
     justifyContent: 'center',
   },
   heroImgWrap: {
     position: 'relative',
     width: '100%',
-    borderRadius: 24,
+    borderRadius: 26,
     overflow: 'hidden',
-    boxShadow: '0 30px 70px rgba(17,17,17,0.14)',
+    boxShadow: '0 30px 72px rgba(15,23,42,0.16)',
     background: '#e5e7eb',
   },
   heroImg: {
@@ -469,26 +522,26 @@ const css = {
   },
   statCardL: {
     position: 'absolute',
-    left: -24, bottom: 30,
-    padding: '14px 18px',
-    borderRadius: 14,
+    left: -32, top: 72,
+    padding: '15px 20px',
+    borderRadius: 16,
     background: '#fff',
     border: '1px solid rgba(0,0,0,0.06)',
     color: '#111',
-    boxShadow: '0 14px 34px rgba(0,0,0,0.10)',
-    minWidth: 130,
+    boxShadow: '0 18px 42px rgba(15,23,42,0.12)',
+    minWidth: 142,
     textAlign: 'left',
     zIndex: 2,
   },
   statCardR: {
     position: 'absolute',
-    right: -24, top: 36,
-    padding: '14px 18px',
-    borderRadius: 14,
+    right: -32, top: 42,
+    padding: '16px 20px',
+    borderRadius: 18,
     background: 'linear-gradient(135deg, #ef4444, #f97316)',
     color: '#fff',
-    boxShadow: '0 16px 36px rgba(249,115,22,0.34)',
-    minWidth: 140,
+    boxShadow: '0 18px 42px rgba(249,115,22,0.34)',
+    minWidth: 152,
     textAlign: 'left',
     zIndex: 2,
   },
