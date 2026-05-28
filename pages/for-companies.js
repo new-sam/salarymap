@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { useEffect, useRef, useState } from 'react';
 import Brand from '../components/company/Brand';
+import ContactModal from '../components/company/ContactModal';
 import { useT, LanguageSwitcher } from '../lib/i18n';
 
 function CountUp({ end, decimals = 0, duration = 1200, suffix = '' }) {
@@ -51,12 +52,6 @@ const OFFERS = [
   { no: '04', tk: 'company.landing.offer4.title', d1: 'company.landing.offer4.desc1', d2: 'company.landing.offer4.desc2', badge: 'company.landing.badge.guarantee' },
 ];
 
-const STEPS = [
-  { no: '01', tk: 'company.landing.step1.title', d1: 'company.landing.step1.desc1', d2: 'company.landing.step1.desc2', img: '/ats-preview/jobs-public.png' },
-  { no: '02', tk: 'company.landing.step2.title', d1: 'company.landing.step2.desc1', d2: 'company.landing.step2.desc2', img: '/ats-preview/ats-kanban-masked.png', reverse: true },
-  { no: '03', tk: 'company.landing.step3.title', d1: 'company.landing.step3.desc1', d2: 'company.landing.step3.desc2', img: '/ats-preview/ats-candidate-detail-masked.png' },
-];
-
 const SERVICE_FLOW = [
   { no: '01', title: 'company.landing.process1.title', desc: 'company.landing.process1.desc', tag: 'company.landing.process1.tag', img: '/company-process/post-free.png' },
   { no: '02', title: 'company.landing.process2.title', desc: 'company.landing.process2.desc', tag: 'company.landing.process2.tag', img: '/company-process/resume-pool.png' },
@@ -67,6 +62,7 @@ const SERVICE_FLOW = [
 export default function ForCompanies() {
   const router = useRouter();
   const { t } = useT();
+  const [contactOpen, setContactOpen] = useState(false);
 
   return (
     <>
@@ -91,7 +87,7 @@ export default function ForCompanies() {
           .fc-offer-grid { grid-template-columns: 1fr 1fr !important; }
           .fc-flow-grid { grid-template-columns: 1fr 1fr !important; }
           .fc-flow-dots { display: none !important; }
-          .fc-step, .fc-step-reverse { grid-template-columns: 1fr !important; direction: ltr !important; gap: 22px !important; }
+          .fc-verify-grid { grid-template-columns: 1fr !important; gap: 30px !important; }
           .fc-offer-flow { flex-wrap: wrap !important; }
         }
         @media (max-width: 560px) {
@@ -115,7 +111,6 @@ export default function ForCompanies() {
           <Brand href="/" />
           <div className="fc-company-nav-links" style={css.navLinks}>
             <a href="#offer" style={css.navLink}>{t('company.landing.nav.offer')}</a>
-            <a href="#how" style={css.navLink}>{t('company.landing.nav.how')}</a>
             <a href="#pricing" style={css.navLink}>{t('company.landing.nav.pricing')}</a>
           </div>
           <div style={css.navRight}>
@@ -134,7 +129,7 @@ export default function ForCompanies() {
             </h1>
             <p style={css.lead}>{t('company.landing.lead')}</p>
             <div className="fc-hero-ctas" style={css.heroCtas}>
-              <a href="mailto:ceo_office@likelion.net?subject=FYI%20for%20Companies%20%EB%AC%B8%EC%9D%98" style={css.btnOutline}>{t('company.landing.heroCtaContact')}</a>
+              <button type="button" onClick={() => setContactOpen(true)} style={css.btnOutline}>{t('company.landing.heroCtaContact')}</button>
               <button type="button" onClick={() => router.push('/company?mode=signup')} style={css.btnDark}>
                 {t('company.landing.heroCtaPost')} -&gt;
               </button>
@@ -190,30 +185,30 @@ export default function ForCompanies() {
             </div>
           </section>
 
-          <section id="how" style={css.darkSection}>
-            <div style={css.sectionHead}>
-              <div style={css.eyebrow}>HOW IT WORKS</div>
-              <h2 style={css.h2}>
-                {t('company.landing.how.h1')}<br />
-                {t('company.landing.how.h2')}
-              </h2>
-            </div>
-            <div style={css.steps}>
-              {STEPS.map((s) => (
-                <article key={s.no} className={s.reverse ? 'fc-step-reverse' : 'fc-step'} style={{ ...css.step, ...(s.reverse ? css.stepReverse : null) }}>
-                  <div style={css.stepText}>
-                    <span style={css.stepNo}>{s.no}</span>
-                    <h3 style={css.stepTitle}>{t(s.tk)}</h3>
-                    <p style={css.stepDesc}>
-                      <span>{t(s.d1)}</span>
-                      <span>{t(s.d2)}</span>
-                    </p>
-                  </div>
-                  <div style={css.shotWrap}>
-                    <img src={s.img} alt={t(s.tk)} style={css.shot} />
-                  </div>
-                </article>
-              ))}
+          <section id="verify" style={css.verify}>
+            <div className="fc-verify-grid" style={css.verifyGrid}>
+              <div style={css.verifyCopy}>
+                <div style={css.eyebrowDark}>{t('company.landing.verify.eyebrow')}</div>
+                <h2 style={css.h2Dark}>
+                  {t('company.landing.verify.h1')}<br />
+                  <span style={css.highlight}>{t('company.landing.verify.h2')}</span>
+                </h2>
+                <p style={css.verifyLead}>{t('company.landing.verify.lead')}</p>
+                <ul style={css.verifyPoints}>
+                  {[1, 2, 3].map((n) => (
+                    <li key={n} style={css.verifyPoint}>
+                      <span style={css.verifyCheck}>{'✓'}</span>
+                      <div>
+                        <strong style={css.verifyPtTitle}>{t(`company.landing.verify.p${n}.title`)}</strong>
+                        <span style={css.verifyPtDesc}>{t(`company.landing.verify.p${n}.desc`)}</span>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+              <div style={css.verifyVisual}>
+                <img src="/company-trust/salary-data.png" alt={t('company.landing.verify.imgAlt')} style={css.verifyImg} />
+              </div>
             </div>
           </section>
 
@@ -277,6 +272,7 @@ export default function ForCompanies() {
           </section>
         </main>
       </div>
+      <ContactModal open={contactOpen} onClose={() => setContactOpen(false)} />
     </>
   );
 }
@@ -672,39 +668,75 @@ const css = {
     fontSize: 13,
     fontWeight: 900,
   },
-  darkSection: { padding: '84px 32px 60px', maxWidth: 1240, margin: '0 auto' },
-  steps: { display: 'flex', flexDirection: 'column', gap: 62 },
-  step: {
-    display: 'grid',
-    gridTemplateColumns: '0.72fr 1.28fr',
-    alignItems: 'center',
-    gap: 44,
+  verify: {
+    background: '#f7f7f5',
+    color: '#151515',
+    padding: '84px 32px',
+    borderTop: '1px solid rgba(0,0,0,0.06)',
   },
-  stepReverse: { direction: 'rtl' },
-  stepText: { direction: 'ltr' },
-  stepNo: { color: '#fb923c', fontSize: 13, fontWeight: 900 },
-  stepTitle: { margin: '14px 0 12px', fontSize: 30, lineHeight: 1.22, fontWeight: 900 },
-  stepDesc: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: 3,
-    margin: 0,
-    color: 'rgba(255,255,255,0.64)',
-    fontSize: 15,
+  verifyGrid: {
+    display: 'grid',
+    gridTemplateColumns: '0.92fr 1.08fr',
+    alignItems: 'center',
+    gap: 56,
+    maxWidth: 1180,
+    margin: '0 auto',
+  },
+  verifyCopy: { maxWidth: 520 },
+  verifyLead: {
+    margin: '18px 0 28px',
+    color: '#4b5563',
+    fontSize: 16,
     lineHeight: 1.62,
+    fontWeight: 650,
     wordBreak: 'keep-all',
   },
-  shotWrap: {
-    direction: 'ltr',
-    overflow: 'hidden',
-    borderRadius: 14,
-    background: '#fff',
-    border: '1px solid rgba(255,255,255,0.1)',
-    boxShadow: '0 24px 70px rgba(0,0,0,0.42)',
-    aspectRatio: '16 / 10',
-    width: '100%',
+  verifyPoints: {
+    listStyle: 'none',
+    margin: 0,
+    padding: 0,
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 18,
   },
-  shot: { display: 'block', width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'top' },
+  verifyPoint: { display: 'flex', alignItems: 'flex-start', gap: 13 },
+  verifyCheck: {
+    flexShrink: 0,
+    display: 'inline-grid',
+    placeItems: 'center',
+    width: 24,
+    height: 24,
+    borderRadius: '50%',
+    background: '#ea580c',
+    color: '#fff',
+    fontSize: 13,
+    fontWeight: 900,
+    marginTop: 1,
+  },
+  verifyPtTitle: {
+    display: 'block',
+    color: '#111',
+    fontSize: 16,
+    fontWeight: 850,
+    letterSpacing: '-0.01em',
+    marginBottom: 3,
+  },
+  verifyPtDesc: {
+    display: 'block',
+    color: '#4b5563',
+    fontSize: 13.5,
+    lineHeight: 1.5,
+    fontWeight: 650,
+    wordBreak: 'keep-all',
+  },
+  verifyVisual: {
+    borderRadius: 20,
+    overflow: 'hidden',
+    background: '#fff',
+    border: '1px solid rgba(0,0,0,0.06)',
+    boxShadow: '0 26px 64px rgba(17,17,17,0.13)',
+  },
+  verifyImg: { display: 'block', width: '100%', height: 'auto' },
   compare: { padding: '70px 32px 80px', maxWidth: 1160, margin: '0 auto' },
   tableWrap: {
     overflowX: 'auto',
