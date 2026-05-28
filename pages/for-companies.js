@@ -131,17 +131,8 @@ export default function ForCompanies() {
             </div>
 
             <div className="fc-hero-visual" style={css.heroVisual}>
-              <div className="fc-stat fc-stat-l" style={css.statCardL}>
-                <div style={css.statLabel}>{t('company.landing.stat1Label')}</div>
-                <div style={css.statValue}>{t('company.landing.stat1Value')}</div>
-              </div>
               <div style={css.heroImgWrap}>
-                <img src="/LION.png" alt={t('company.landing.heroAlt')} style={css.heroImg} />
-                <div style={css.mockTag}>MOCKUP</div>
-              </div>
-              <div className="fc-stat fc-stat-r" style={css.statCardR}>
-                <div style={{...css.statLabel, opacity:.85}}>{t('company.landing.stat2Label')}</div>
-                <div style={css.statValue}>{t('company.landing.stat2Value')}</div>
+                <img src="/company-hero-fyi-vn.png" alt={t('company.landing.heroAlt')} style={css.heroImg} />
               </div>
             </div>
           </section>
@@ -436,8 +427,8 @@ const css = {
   },
   heroVisual: {
     position: 'relative',
-    marginTop: 48,
-    width: 'min(100%, 760px)',
+    marginTop: 46,
+    width: 'min(100%, 1040px)',
     display: 'flex',
     justifyContent: 'center',
   },
