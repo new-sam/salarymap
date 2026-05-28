@@ -235,7 +235,7 @@ export default function ProfilePage() {
   const [profile, setProfile] = useState(null)
   const [saving, setSaving] = useState(false)
   const [msg, setMsg] = useState(null)
-  const [tab, setTab] = useState('profile') // profile | posts
+  const [tab, setTab] = useState('profile') // profile | posts | employment | badges
   const [showOnboard, setShowOnboard] = useState(false)
   const [showAlert, setShowAlert] = useState(null)
   const [submissions, setSubmissions] = useState([])
@@ -247,9 +247,17 @@ export default function ProfilePage() {
   const [showPublishPrompt, setShowPublishPrompt] = useState(false)
   const [myPosts, setMyPosts] = useState([])
   const [myPostsLoading, setMyPostsLoading] = useState(false)
+  const [verifications, setVerifications] = useState([])
+  const [verificationsLoading, setVerificationsLoading] = useState(false)
+  const [verifyForm, setVerifyForm] = useState({ document_type: 'payslip', salary_amount: '' })
+  const [verifyUploading, setVerifyUploading] = useState(false)
+  const [verifyMsg, setVerifyMsg] = useState(null)
+  const [badges, setBadges] = useState([])
+  const [badgesLoading, setBadgesLoading] = useState(false)
   const pendingRoute = useRef(null)
   const photoRef = useRef(null)
   const resumeRef = useRef(null)
+  const salaryDocRef = useRef(null)
 
   // Form state
   const [form, setForm] = useState({})
@@ -386,6 +394,64 @@ export default function ProfilePage() {
       .catch(() => {})
       .finally(() => setMyPostsLoading(false))
   }, [tab, token])
+
+  useEffect(() => {
+    if (tab !== 'employment' || !token) return
+    setVerificationsLoading(true)
+    fetch('/api/salary-verification', { headers: { Authorization: `Bearer ${token}` } })
+      .then(r => r.json())
+      .then(d => setVerifications(d.verifications || []))
+      .catch(() => {})
+      .finally(() => setVerificationsLoading(false))
+  }, [tab, token])
+
+  useEffect(() => {
+    if (tab !== 'badges' || !token) return
+    setBadgesLoading(true)
+    fetch('/api/badges', { headers: { Authorization: `Bearer ${token}` } })
+      .then(r => r.json())
+      .then(d => setBadges(d.badges || []))
+      .catch(() => {})
+      .finally(() => setBadgesLoading(false))
+  }, [tab, token])
+
+  const handleVerifyUpload = async () => {
+    const file = salaryDocRef.current?.files?.[0]
+    if (!file) return
+    setVerifyUploading(true)
+    setVerifyMsg(null)
+    const fd = new FormData()
+    fd.append('file', file)
+    fd.append('document_type', verifyForm.document_type)
+    if (verifyForm.salary_amount) fd.append('salary_amount', String(parseInt(verifyForm.salary_amount) * 10000))
+    try {
+      const res = await fetch('/api/salary-verification/upload', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+        body: fd,
+      })
+      if (res.ok) {
+        const { verification } = await res.json()
+        setVerifications(prev => [verification, ...prev])
+        setVerifyMsg(t('profile.employment.success'))
+        salaryDocRef.current.value = ''
+        setVerifyForm({ document_type: 'payslip', salary_amount: '' })
+        setTimeout(() => setVerifyMsg(null), 3000)
+      }
+    } catch (e) {}
+    setVerifyUploading(false)
+  }
+
+  const handleToggleBadge = async (badgeType, currentActive) => {
+    const res = await fetch('/api/badges', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ badge_type: badgeType, is_active: !currentActive }),
+    })
+    if (res.ok) {
+      setBadges(prev => prev.map(b => b.badge_type === badgeType ? { ...b, is_active: !currentActive } : b))
+    }
+  }
 
   const handleSave = async () => {
     setSaving(true)
@@ -528,7 +594,7 @@ export default function ProfilePage() {
         .pw-header-company input::placeholder { color: #ccc; }
         .pw-header-company input:focus { color: #111; }
         .pw-tabs { display: flex; gap: 0; margin-bottom: 24px; border-bottom: 1px solid rgba(0,0,0,0.08); }
-        .pw-tab { font-size: 13px; font-weight: 600; color: rgba(0,0,0,0.35); background: none; border: none; padding: 12px 16px; cursor: pointer; font-family: inherit; position: relative; }
+        .pw-tab { font-size: 13px; font-weight: 600; color: rgba(0,0,0,0.35); background: none; border: none; padding: 12px 12px; cursor: pointer; font-family: inherit; position: relative; white-space: nowrap; }
         .pw-tab.on { color: #111; }
         .pw-tab.on::after { content: ''; position: absolute; bottom: -1px; left: 0; right: 0; height: 2px; background: #ff6000; }
         .pw-post-item { display: block; padding: 14px 0; border-bottom: 1px solid rgba(0,0,0,0.06); text-decoration: none; }
@@ -619,6 +685,8 @@ export default function ProfilePage() {
         <div className="pw-tabs">
           <button className={`pw-tab${tab === 'profile' ? ' on' : ''}`} onClick={() => handleTabChange('profile')}>{t('profile.tab.talent')}</button>
           <button className={`pw-tab${tab === 'posts' ? ' on' : ''}`} onClick={() => handleTabChange('posts')}>{t('profile.tab.posts') || '내 게시물'}</button>
+          <button className={`pw-tab${tab === 'employment' ? ' on' : ''}`} onClick={() => handleTabChange('employment')}>{t('profile.tab.employment') || '재직정보'}</button>
+          <button className={`pw-tab${tab === 'badges' ? ' on' : ''}`} onClick={() => handleTabChange('badges')}>{t('profile.tab.badges') || '뱃지'}</button>
         </div>
 
         {tab === 'profile' && (<>
@@ -982,6 +1050,162 @@ export default function ProfilePage() {
               ))}
             </div>
           )}
+        </>)}
+
+        {tab === 'employment' && (<>
+          <div className="pcard">
+            <div className="pcard-h">{t('profile.employment.title')}</div>
+            <div style={{ fontSize: 13, color: 'rgba(0,0,0,0.5)', lineHeight: 1.6, marginBottom: 20 }}>
+              {t('profile.employment.desc')}
+            </div>
+
+            {/* Document Type */}
+            <div className="pfield">
+              <div className="pfield-label">{t('profile.employment.docType')}</div>
+              <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                {['payslip', 'contract', 'tax_return', 'other'].map(dt => (
+                  <button key={dt} type="button"
+                    className={`psignal-btn${verifyForm.document_type === dt ? ' on' : ''}`}
+                    style={{ minWidth: 'auto', flex: 'none', padding: '8px 14px' }}
+                    onClick={() => setVerifyForm(prev => ({ ...prev, document_type: dt }))}>
+                    {t(`profile.employment.docType.${dt}`)}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Salary Amount */}
+            <div className="pfield">
+              <div className="pfield-label">{t('profile.employment.salary')}</div>
+              <input className="pinput" type="number" value={verifyForm.salary_amount}
+                onChange={e => setVerifyForm(prev => ({ ...prev, salary_amount: e.target.value }))}
+                placeholder={t('profile.employment.salaryPh')} />
+            </div>
+
+            {/* File Upload */}
+            <div className="pfield">
+              <div className="pfield-label">{t('profile.employment.upload')}</div>
+              <input ref={salaryDocRef} type="file" accept=".pdf,.jpg,.jpeg,.png"
+                style={{ display: 'none' }} />
+              <button type="button" className="presume-upload-btn" onClick={() => salaryDocRef.current?.click()}>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#ff6000" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
+                </svg>
+                {t('profile.employment.upload')}
+              </button>
+              <div style={{ fontSize: 11, color: 'rgba(0,0,0,0.35)', marginTop: 6 }}>{t('profile.employment.uploadHint')}</div>
+            </div>
+
+            {verifyMsg && <div className="pmsg" style={{ background: 'rgba(34,197,94,0.08)', color: '#16a34a', border: '1px solid rgba(34,197,94,0.2)' }}>{verifyMsg}</div>}
+
+            <button type="button" onClick={handleVerifyUpload} disabled={verifyUploading}
+              style={{ width: '100%', padding: 14, borderRadius: 10, border: 'none', background: '#ff6000', color: '#fff', fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', opacity: verifyUploading ? 0.5 : 1 }}>
+              {verifyUploading ? t('profile.employment.submitting') : t('profile.employment.submit')}
+            </button>
+          </div>
+
+          {/* Verification History */}
+          <div className="pcard">
+            <div className="pcard-h">{t('profile.employment.history')}</div>
+            {verificationsLoading ? (
+              <div style={{ textAlign: 'center', padding: '20px 0', color: '#bbb', fontSize: 13 }}>Loading...</div>
+            ) : verifications.length === 0 ? (
+              <div style={{ textAlign: 'center', padding: '20px 0', color: 'rgba(0,0,0,0.3)', fontSize: 13 }}>{t('profile.employment.noHistory')}</div>
+            ) : (
+              <div>
+                {verifications.map(v => (
+                  <div key={v.id} style={{ padding: '14px 0', borderBottom: '1px solid rgba(0,0,0,0.06)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div>
+                      <div style={{ fontSize: 13, fontWeight: 600, color: '#111' }}>
+                        {t(`profile.employment.docType.${v.document_type}`)}
+                        {v.salary_amount ? ` — ${(v.salary_amount / 10000).toLocaleString()}만원` : ''}
+                      </div>
+                      <div style={{ fontSize: 11, color: 'rgba(0,0,0,0.35)', marginTop: 2 }}>
+                        {new Date(v.created_at).toLocaleDateString()}
+                      </div>
+                      {v.admin_note && (
+                        <div style={{ fontSize: 11, color: 'rgba(0,0,0,0.4)', marginTop: 4, fontStyle: 'italic' }}>{v.admin_note}</div>
+                      )}
+                    </div>
+                    <span style={{
+                      fontSize: 11, fontWeight: 700, padding: '4px 10px', borderRadius: 20,
+                      ...(v.status === 'pending' ? { background: 'rgba(245,158,11,0.1)', color: '#d97706' }
+                        : v.status === 'approved' ? { background: 'rgba(34,197,94,0.1)', color: '#16a34a' }
+                        : { background: 'rgba(239,68,68,0.1)', color: '#dc2626' })
+                    }}>
+                      {t(`profile.employment.status.${v.status}`)}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </>)}
+
+        {tab === 'badges' && (<>
+          <div className="pcard">
+            <div className="pcard-h">{t('profile.badges.title')}</div>
+            <div style={{ fontSize: 13, color: 'rgba(0,0,0,0.5)', lineHeight: 1.6, marginBottom: 20 }}>
+              {t('profile.badges.desc')}
+            </div>
+
+            {badgesLoading ? (
+              <div style={{ textAlign: 'center', padding: '20px 0', color: '#bbb', fontSize: 13 }}>Loading...</div>
+            ) : badges.length === 0 ? (
+              <div style={{ textAlign: 'center', padding: '40px 20px' }}>
+                <div style={{ width: 56, height: 56, borderRadius: '50%', background: 'rgba(0,0,0,0.04)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="rgba(0,0,0,0.2)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <circle cx="12" cy="8" r="6"/><path d="M15.477 12.89L17 22l-5-3-5 3 1.523-9.11"/>
+                  </svg>
+                </div>
+                <div style={{ fontSize: 14, color: 'rgba(0,0,0,0.35)', marginBottom: 4 }}>{t('profile.badges.noBadges')}</div>
+                <div style={{ fontSize: 12, color: 'rgba(0,0,0,0.25)', lineHeight: 1.5 }}>{t('profile.badges.noBadgesHint')}</div>
+                <button type="button" onClick={() => setTab('employment')}
+                  style={{ marginTop: 16, padding: '10px 20px', borderRadius: 8, border: '1px solid rgba(255,96,0,0.3)', background: 'rgba(255,96,0,0.04)', color: '#ff6000', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>
+                  {t('profile.tab.employment')}
+                </button>
+              </div>
+            ) : (
+              <div>
+                {badges.map(badge => (
+                  <div key={badge.id} style={{
+                    padding: 16, borderRadius: 12, border: '1px solid rgba(0,0,0,0.06)', background: badge.is_active ? 'rgba(255,96,0,0.04)' : '#fff',
+                    display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, marginBottom: 12,
+                  }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                      <div style={{
+                        width: 44, height: 44, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        background: badge.badge_type === 'high_salary' ? 'linear-gradient(135deg, #ff6000, #ff8c00)' : 'rgba(0,0,0,0.06)',
+                      }}>
+                        {badge.badge_type === 'high_salary' && (
+                          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <circle cx="12" cy="8" r="6"/><path d="M15.477 12.89L17 22l-5-3-5 3 1.523-9.11"/>
+                          </svg>
+                        )}
+                      </div>
+                      <div>
+                        <div style={{ fontSize: 14, fontWeight: 700, color: '#111' }}>
+                          {badge.badge_type === 'high_salary' ? t('profile.badges.highSalary') : badge.badge_type}
+                        </div>
+                        <div style={{ fontSize: 11, color: 'rgba(0,0,0,0.4)', marginTop: 2 }}>
+                          {badge.badge_type === 'high_salary' ? t('profile.badges.highSalaryDesc') : ''}
+                        </div>
+                      </div>
+                    </div>
+                    <button type="button" onClick={() => handleToggleBadge(badge.badge_type, badge.is_active)}
+                      style={{
+                        padding: '8px 16px', borderRadius: 8, border: 'none', cursor: 'pointer', fontFamily: 'inherit', fontSize: 12, fontWeight: 700,
+                        ...(badge.is_active
+                          ? { background: '#ff6000', color: '#fff' }
+                          : { background: 'rgba(0,0,0,0.06)', color: 'rgba(0,0,0,0.5)' }),
+                      }}>
+                      {badge.is_active ? t('profile.badges.active') : t('profile.badges.activate')}
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         </>)}
 
         {/* Logout — mobile only */}
