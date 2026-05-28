@@ -558,7 +558,7 @@ const css = {
     alignItems: 'center',
     gap: 44,
   },
-  stepReverse: { gridTemplateColumns: '1.28fr 0.72fr', direction: 'rtl' },
+  stepReverse: { direction: 'rtl' },
   stepText: { direction: 'ltr' },
   stepNo: { color: '#fb923c', fontSize: 13, fontWeight: 900 },
   stepTitle: { margin: '14px 0 12px', fontSize: 30, lineHeight: 1.22, fontWeight: 900 },
