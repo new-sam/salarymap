@@ -2,6 +2,7 @@ import Head from 'next/head';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { useEffect, useRef, useState } from 'react';
+import { ArrowRight, Briefcase, CalendarCheck, SealCheck, UsersThree } from '@phosphor-icons/react';
 import Brand from '../components/company/Brand';
 import { useT, LanguageSwitcher } from '../lib/i18n';
 
@@ -57,6 +58,13 @@ const STEPS = [
   { no: '03', tk: 'company.landing.step3.title', d1: 'company.landing.step3.desc1', d2: 'company.landing.step3.desc2', img: '/ats-preview/ats-candidate-detail-masked.png' },
 ];
 
+const PROCESS = [
+  { no: '01', icon: Briefcase, title: 'company.landing.process1.title', desc: 'company.landing.process1.desc', tag: 'company.landing.process1.tag' },
+  { no: '02', icon: UsersThree, title: 'company.landing.process2.title', desc: 'company.landing.process2.desc', tag: 'company.landing.process2.tag' },
+  { no: '03', icon: CalendarCheck, title: 'company.landing.process3.title', desc: 'company.landing.process3.desc', tag: 'company.landing.process3.tag' },
+  { no: '04', icon: SealCheck, title: 'company.landing.process4.title', desc: 'company.landing.process4.desc', tag: 'company.landing.process4.tag' },
+];
+
 export default function ForCompanies() {
   const router = useRouter();
   const { t } = useT();
@@ -82,6 +90,8 @@ export default function ForCompanies() {
           .fc-float-card { left: 12px !important; bottom: 16px !important; }
           .fc-kpis { grid-template-columns: 1fr !important; gap: 28px !important; padding: 28px 20px 44px !important; }
           .fc-offer-grid { grid-template-columns: 1fr 1fr !important; }
+          .fc-process-grid { grid-template-columns: 1fr 1fr !important; }
+          .fc-process-arrow { display: none !important; }
           .fc-step, .fc-step-reverse { grid-template-columns: 1fr !important; direction: ltr !important; gap: 22px !important; }
           .fc-offer-flow { flex-wrap: wrap !important; }
         }
@@ -92,6 +102,7 @@ export default function ForCompanies() {
           .fc-hero-ctas { flex-direction: column !important; align-items: stretch !important; }
           .fc-hero-ctas button { width: 100% !important; }
           .fc-offer-grid { grid-template-columns: 1fr !important; }
+          .fc-process-grid { grid-template-columns: 1fr !important; }
           .fc-offer-grid article { min-height: 188px !important; transform: none !important; }
           .fc-float-card { position: static !important; width: 100% !important; margin-top: 12px !important; }
         }
@@ -160,29 +171,28 @@ export default function ForCompanies() {
                 {t('company.landing.offerH2')}
               </h2>
             </div>
-            <div className="fc-offer-grid" style={css.offerGrid}>
-              {OFFERS.map((o, idx) => (
-                <article key={o.no} style={{ ...css.offerCard, ...([0, 1, 3].includes(idx) ? css.offerCardKey : null) }}>
-                  <div style={css.offerTop}>
-                    <span style={css.offerNo}>{o.no}</span>
-                    {o.badge && <span style={css.offerBadge}>{t(o.badge)}</span>}
-                  </div>
-                  <h3 style={css.offerTitle}>{t(o.tk)}</h3>
-                  <p style={css.offerDesc}>
-                    <span>{t(o.d1)}</span>
-                    <span>{t(o.d2)}</span>
-                  </p>
-                </article>
-              ))}
-            </div>
-            <div className="fc-offer-flow" style={css.offerFlow}>
-              <span>{t('company.landing.flow.posting')}</span>
-              <b />
-              <span>{t('company.landing.flow.candidate')}</span>
-              <b />
-              <span>{t('company.landing.flow.interview')}</span>
-              <b />
-              <span>{t('company.landing.flow.hire')}</span>
+            <div className="fc-process-grid" style={css.processGrid}>
+              {PROCESS.map((item, idx) => {
+                const StepIcon = item.icon;
+                return (
+                  <article key={item.no} style={css.processCard}>
+                    <div style={css.processMeta}>
+                      <span style={css.processNo}>{item.no}</span>
+                      <span style={css.processTag}>{t(item.tag)}</span>
+                    </div>
+                    <div style={css.processIcon}>
+                      <StepIcon size={34} weight="duotone" />
+                    </div>
+                    <h3 style={css.processTitle}>{t(item.title)}</h3>
+                    <p style={css.processDesc}>{t(item.desc)}</p>
+                    {idx < PROCESS.length - 1 && (
+                      <div className="fc-process-arrow" style={css.processArrow}>
+                        <ArrowRight size={18} weight="bold" />
+                      </div>
+                    )}
+                  </article>
+                );
+              })}
             </div>
           </section>
 
@@ -540,6 +550,91 @@ const css = {
     fontWeight: 900,
     letterSpacing: '-0.025em',
   },
+  processGrid: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(4, 1fr)',
+    gap: 18,
+    maxWidth: 1140,
+    margin: '0 auto',
+  },
+  processCard: {
+    position: 'relative',
+    minHeight: 258,
+    padding: '22px 22px 24px',
+    borderRadius: 24,
+    background: 'rgba(255,255,255,0.86)',
+    border: '1px solid rgba(15,23,42,0.08)',
+    boxShadow: '0 24px 58px rgba(15,23,42,0.08)',
+    overflow: 'visible',
+  },
+  processMeta: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 12,
+    marginBottom: 22,
+  },
+  processNo: {
+    color: '#94a3b8',
+    fontSize: 12,
+    fontWeight: 950,
+    letterSpacing: '0.08em',
+  },
+  processTag: {
+    padding: '7px 10px',
+    borderRadius: 999,
+    background: '#fff7ed',
+    color: '#ea580c',
+    fontSize: 11,
+    lineHeight: 1,
+    fontWeight: 950,
+    border: '1px solid rgba(249,115,22,0.18)',
+    whiteSpace: 'nowrap',
+  },
+  processIcon: {
+    display: 'grid',
+    placeItems: 'center',
+    width: 70,
+    height: 70,
+    borderRadius: 22,
+    background: 'linear-gradient(145deg, #fff 0%, #fff7ed 100%)',
+    color: '#ea580c',
+    boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.9), 0 18px 38px rgba(249,115,22,0.18)',
+    border: '1px solid rgba(249,115,22,0.16)',
+  },
+  processTitle: {
+    margin: '24px 0 10px',
+    color: '#111827',
+    fontSize: 23,
+    lineHeight: 1.15,
+    fontWeight: 950,
+    letterSpacing: '-0.02em',
+    wordBreak: 'keep-all',
+  },
+  processDesc: {
+    margin: 0,
+    color: '#64748b',
+    fontSize: 14,
+    lineHeight: 1.58,
+    fontWeight: 750,
+    wordBreak: 'keep-all',
+  },
+  processArrow: {
+    position: 'absolute',
+    top: '50%',
+    right: -21,
+    transform: 'translateY(-50%)',
+    display: 'grid',
+    placeItems: 'center',
+    width: 42,
+    height: 42,
+    borderRadius: '50%',
+    background: '#111827',
+    color: '#fff',
+    border: '5px solid #f6f4ef',
+    zIndex: 2,
+    boxShadow: '0 14px 28px rgba(15,23,42,0.16)',
+  },
   offerGrid: {
     display: 'grid',
     gridTemplateColumns: 'repeat(4, 1fr)',
@@ -556,52 +651,6 @@ const css = {
     border: '1px solid rgba(0,0,0,0.06)',
     boxShadow: '0 18px 44px rgba(17,17,17,0.08)',
     overflow: 'hidden',
-  },
-  offerCardKey: {
-    background: 'linear-gradient(180deg, rgba(255,255,255,0.94), rgba(255,247,237,0.94))',
-    border: '1px solid rgba(249,115,22,0.34)',
-    boxShadow: '0 24px 54px rgba(249,115,22,0.16)',
-  },
-  offerTop: {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 42,
-  },
-  offerNo: {
-    display: 'grid',
-    placeItems: 'center',
-    width: 38,
-    height: 38,
-    borderRadius: '50%',
-    background: 'linear-gradient(135deg,#ef4444,#f97316)',
-    color: '#fff',
-    fontSize: 12,
-    fontWeight: 950,
-    boxShadow: '0 12px 28px rgba(249,115,22,0.28)',
-  },
-  offerBadge: {
-    padding: '6px 9px',
-    borderRadius: 999,
-    background: '#fff7ed',
-    color: '#ea580c',
-    fontSize: 11,
-    fontWeight: 900,
-    border: '1px solid rgba(249,115,22,0.22)',
-  },
-  offerTitle: { margin: '0 0 12px', fontSize: 24, lineHeight: 1.1, fontWeight: 950, letterSpacing: '-0.025em' },
-  offerDesc: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: 3,
-    margin: 0,
-    color: 'inherit',
-    opacity: 0.68,
-    fontSize: 14,
-    lineHeight: 1.45,
-    fontWeight: 700,
-    wordBreak: 'keep-all',
-    overflowWrap: 'normal',
   },
   offerFlow: {
     display: 'flex',
