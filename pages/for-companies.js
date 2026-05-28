@@ -117,31 +117,31 @@ export default function ForCompanies() {
 
         <main>
           <section className="fc-hero" style={css.hero}>
-            <div className="fc-hero-copy" style={css.heroCopy}>
-              <div style={css.eyebrow}>FOR COMPANIES</div>
-              <h1 style={css.h1}>
-                {t('company.landing.h1.line1')}<br />
-                <span style={css.highlight}>{t('company.landing.h1.highlight')}</span> {t('company.landing.h1.line2')}
-              </h1>
-              <p style={css.lead}>{t('company.landing.lead')}</p>
-              <div className="fc-hero-ctas" style={css.heroCtas}>
-                <button type="button" onClick={() => router.push('/company?mode=signup')} style={css.btnAccent}>
-                  {t('company.landing.heroCtaPost')}
-                </button>
-                <a href="#offer" style={css.textLink}>{t('company.landing.heroCtaOffer')}</a>
-              </div>
-              <div className="fc-trust" style={css.trustLine}>
-                <span>{t('company.landing.trust.free')}</span>
-                <span>{t('company.landing.trust.success')}</span>
-              </div>
+            <div style={css.heroBadge}>{t('company.landing.heroBadge')}</div>
+            <h1 style={css.h1}>
+              {t('company.landing.h1.line1')}<br />
+              <span style={css.highlight}>{t('company.landing.h1.highlight')}</span> {t('company.landing.h1.line2')}
+            </h1>
+            <p style={css.lead}>{t('company.landing.lead')}</p>
+            <div className="fc-hero-ctas" style={css.heroCtas}>
+              <a href="#offer" style={css.btnOutline}>{t('company.landing.heroCtaOffer')}</a>
+              <button type="button" onClick={() => router.push('/company?mode=signup')} style={css.btnDark}>
+                {t('company.landing.heroCtaPost')} →
+              </button>
             </div>
 
-            <div style={css.heroVisual}>
-              <img src="/LION.png" alt={t('company.landing.heroAlt')} style={css.heroImg} />
-              <div className="fc-float-card" style={css.floatCard}>
-                <span style={css.floatLabel}>FYI DATA</span>
-                <strong>{t('company.landing.floatStrong')}</strong>
-                <small>{t('company.landing.floatSmall')}</small>
+            <div className="fc-hero-visual" style={css.heroVisual}>
+              <div className="fc-stat fc-stat-l" style={css.statCardL}>
+                <div style={css.statLabel}>{t('company.landing.stat1Label')}</div>
+                <div style={css.statValue}>{t('company.landing.stat1Value')}</div>
+              </div>
+              <div style={css.heroImgWrap}>
+                <img src="/LION.png" alt={t('company.landing.heroAlt')} style={css.heroImg} />
+                <div style={css.mockTag}>MOCKUP</div>
+              </div>
+              <div className="fc-stat fc-stat-r" style={css.statCardR}>
+                <div style={{...css.statLabel, opacity:.85}}>{t('company.landing.stat2Label')}</div>
+                <div style={css.statValue}>{t('company.landing.stat2Value')}</div>
               </div>
             </div>
           </section>
@@ -332,17 +332,29 @@ const css = {
     whiteSpace: 'nowrap',
   },
   hero: {
-    display: 'grid',
-    gridTemplateColumns: 'minmax(0, 1.18fr) minmax(300px, 0.82fr)',
-    gap: 56,
+    display: 'flex',
+    flexDirection: 'column',
     alignItems: 'center',
+    textAlign: 'center',
     maxWidth: 'none',
     margin: '0 auto',
-    padding: '86px max(32px, calc((100vw - 1240px) / 2 + 32px)) 54px',
+    padding: '74px max(32px, calc((100vw - 1240px) / 2 + 32px)) 96px',
     background: '#f7f7f5',
     color: '#151515',
   },
-  heroCopy: { minWidth: 0 },
+  heroBadge: {
+    display: 'inline-block',
+    padding: '7px 16px',
+    borderRadius: 999,
+    background: '#fff',
+    border: '1px solid rgba(0,0,0,0.08)',
+    color: '#525252',
+    fontSize: 12,
+    fontWeight: 800,
+    letterSpacing: '0.02em',
+    boxShadow: '0 1px 2px rgba(0,0,0,0.04)',
+    marginBottom: 24,
+  },
   eyebrow: {
     color: '#fb923c',
     fontSize: 11,
@@ -361,9 +373,9 @@ const css = {
   },
   h1: {
     margin: 0,
-    maxWidth: 680,
-    fontSize: 'clamp(48px, 6.1vw, 80px)',
-    lineHeight: 1.03,
+    maxWidth: 880,
+    fontSize: 'clamp(40px, 5.8vw, 64px)',
+    lineHeight: 1.08,
     fontWeight: 950,
     letterSpacing: '-0.035em',
   },
@@ -374,14 +386,42 @@ const css = {
     padding: '0 8px',
   },
   lead: {
-    maxWidth: 560,
-    margin: '22px 0 0',
+    maxWidth: 620,
+    margin: '20px auto 0',
     color: '#4b5563',
-    fontSize: 18,
-    lineHeight: 1.55,
+    fontSize: 17,
+    lineHeight: 1.6,
     fontWeight: 650,
   },
-  heroCtas: { display: 'flex', alignItems: 'center', gap: 18, marginTop: 28, flexWrap: 'wrap' },
+  heroCtas: { display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 10, marginTop: 26, flexWrap: 'wrap' },
+  btnOutline: {
+    padding: '13px 24px',
+    borderRadius: 999,
+    background: '#fff',
+    border: '1px solid rgba(0,0,0,0.14)',
+    color: '#111',
+    fontSize: 14,
+    fontWeight: 850,
+    fontFamily: 'inherit',
+    cursor: 'pointer',
+    textDecoration: 'none',
+    display: 'inline-flex',
+    alignItems: 'center',
+  },
+  btnDark: {
+    border: 0,
+    borderRadius: 999,
+    padding: '14px 26px',
+    background: '#111',
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: 850,
+    fontFamily: 'inherit',
+    cursor: 'pointer',
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: 6,
+  },
   btnAccent: {
     border: 0,
     borderRadius: 999,
@@ -394,44 +434,77 @@ const css = {
     cursor: 'pointer',
     boxShadow: '0 14px 34px rgba(249,115,22,0.32)',
   },
-  textLink: { color: '#222', textDecoration: 'none', fontSize: 14, fontWeight: 850 },
-  trustLine: {
-    display: 'flex',
-    gap: 10,
-    flexWrap: 'wrap',
-    marginTop: 22,
-    color: '#555',
-    fontSize: 12.5,
-    fontWeight: 750,
-  },
   heroVisual: {
     position: 'relative',
-    justifySelf: 'center',
-    width: 'min(100%, 430px)',
+    marginTop: 48,
+    width: 'min(100%, 760px)',
+    display: 'flex',
+    justifyContent: 'center',
+  },
+  heroImgWrap: {
+    position: 'relative',
+    width: '100%',
+    borderRadius: 24,
+    overflow: 'hidden',
+    boxShadow: '0 30px 70px rgba(17,17,17,0.14)',
+    background: '#e5e7eb',
   },
   heroImg: {
     width: '100%',
-    aspectRatio: '1 / 1',
+    aspectRatio: '16 / 9',
     objectFit: 'cover',
     display: 'block',
-    borderRadius: 32,
-    boxShadow: '0 30px 70px rgba(17,17,17,0.13), 0 0 0 1px rgba(0,0,0,0.04)',
   },
-  floatCard: {
+  mockTag: {
     position: 'absolute',
-    left: -18,
-    bottom: 28,
-    display: 'flex',
-    flexDirection: 'column',
-    gap: 3,
-    width: 220,
-    padding: '14px 16px',
-    borderRadius: 14,
-    background: 'rgba(255,255,255,0.94)',
-    color: '#111',
-    boxShadow: '0 16px 40px rgba(0,0,0,0.14)',
+    top: 12, right: 12,
+    padding: '3px 8px',
+    borderRadius: 6,
+    background: 'rgba(0,0,0,0.55)',
+    color: '#fff',
+    fontSize: 10,
+    fontWeight: 900,
+    letterSpacing: '0.1em',
+    pointerEvents: 'none',
   },
-  floatLabel: { color: '#ea580c', fontSize: 11, fontWeight: 900 },
+  statCardL: {
+    position: 'absolute',
+    left: -24, bottom: 30,
+    padding: '14px 18px',
+    borderRadius: 14,
+    background: '#fff',
+    border: '1px solid rgba(0,0,0,0.06)',
+    color: '#111',
+    boxShadow: '0 14px 34px rgba(0,0,0,0.10)',
+    minWidth: 130,
+    textAlign: 'left',
+    zIndex: 2,
+  },
+  statCardR: {
+    position: 'absolute',
+    right: -24, top: 36,
+    padding: '14px 18px',
+    borderRadius: 14,
+    background: 'linear-gradient(135deg, #ef4444, #f97316)',
+    color: '#fff',
+    boxShadow: '0 16px 36px rgba(249,115,22,0.34)',
+    minWidth: 140,
+    textAlign: 'left',
+    zIndex: 2,
+  },
+  statLabel: {
+    fontSize: 11.5,
+    fontWeight: 800,
+    opacity: 0.65,
+    letterSpacing: '0.02em',
+    marginBottom: 4,
+  },
+  statValue: {
+    fontSize: 28,
+    fontWeight: 950,
+    letterSpacing: '-0.02em',
+    lineHeight: 1,
+  },
   kpiStrip: {
     display: 'grid',
     gridTemplateColumns: 'repeat(3, 1fr)',
