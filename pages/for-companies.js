@@ -142,6 +142,24 @@ export default function ForCompanies() {
             </div>
           </section>
 
+          <section style={css.talentProof}>
+            <div style={css.talentProofHead}>
+              <div style={css.eyebrowDark}>{t('company.landing.talentProof.eyebrow')}</div>
+              <h2 style={css.talentProofTitle}>
+                {t('company.landing.talentProof.h1')}<br />
+                {t('company.landing.talentProof.h2')}
+              </h2>
+              <p style={css.talentProofLead}>{t('company.landing.talentProof.lead')}</p>
+            </div>
+            <div style={css.talentVisualWrap}>
+              <img
+                src="/company-talent-pool-proof.png"
+                alt={t('company.landing.talentProof.alt')}
+                style={css.talentVisual}
+              />
+            </div>
+          </section>
+
           <section className="fc-kpis" style={css.kpiStrip}>
             <div className="fc-kpi" style={css.kpi}>
               <strong><CountUp end={7.3} decimals={1} suffix={t('company.landing.kpi1Suffix')} /></strong>
@@ -445,6 +463,48 @@ const css = {
     aspectRatio: '16 / 9',
     objectFit: 'cover',
     display: 'block',
+  },
+  talentProof: {
+    padding: '78px max(32px, calc((100vw - 1240px) / 2 + 32px)) 86px',
+    background:
+      'radial-gradient(circle at 20% 8%, rgba(249,115,22,0.10), transparent 26%),' +
+      'linear-gradient(180deg, #f7f7f5 0%, #fff 58%, #f7f7f5 100%)',
+    color: '#151515',
+  },
+  talentProofHead: {
+    maxWidth: 820,
+    marginBottom: 30,
+  },
+  talentProofTitle: {
+    margin: 0,
+    color: '#151515',
+    fontSize: 'clamp(34px, 4.6vw, 56px)',
+    lineHeight: 1.08,
+    fontWeight: 950,
+    letterSpacing: '-0.04em',
+  },
+  talentProofLead: {
+    maxWidth: 650,
+    margin: '18px 0 0',
+    color: '#4b5563',
+    fontSize: 17,
+    lineHeight: 1.62,
+    fontWeight: 650,
+    wordBreak: 'keep-all',
+  },
+  talentVisualWrap: {
+    overflow: 'hidden',
+    borderRadius: 30,
+    border: '1px solid rgba(17,17,17,0.08)',
+    background: '#fff',
+    boxShadow: '0 40px 96px rgba(17,17,17,0.13)',
+  },
+  talentVisual: {
+    display: 'block',
+    width: '100%',
+    aspectRatio: '16 / 9',
+    objectFit: 'cover',
+    objectPosition: 'center',
   },
   mockTag: {
     position: 'absolute',
