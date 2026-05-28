@@ -2,7 +2,6 @@ import Head from 'next/head';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { useEffect, useRef, useState } from 'react';
-import { ArrowRight, Briefcase, CalendarCheck, SealCheck, UsersThree } from '@phosphor-icons/react';
 import Brand from '../components/company/Brand';
 import { useT, LanguageSwitcher } from '../lib/i18n';
 
@@ -58,11 +57,11 @@ const STEPS = [
   { no: '03', tk: 'company.landing.step3.title', d1: 'company.landing.step3.desc1', d2: 'company.landing.step3.desc2', img: '/ats-preview/ats-candidate-detail-masked.png' },
 ];
 
-const PROCESS = [
-  { no: '01', icon: Briefcase, title: 'company.landing.process1.title', desc: 'company.landing.process1.desc', tag: 'company.landing.process1.tag' },
-  { no: '02', icon: UsersThree, title: 'company.landing.process2.title', desc: 'company.landing.process2.desc', tag: 'company.landing.process2.tag' },
-  { no: '03', icon: CalendarCheck, title: 'company.landing.process3.title', desc: 'company.landing.process3.desc', tag: 'company.landing.process3.tag' },
-  { no: '04', icon: SealCheck, title: 'company.landing.process4.title', desc: 'company.landing.process4.desc', tag: 'company.landing.process4.tag' },
+const SERVICE_FLOW = [
+  { no: '01', title: 'company.landing.process1.title', desc: 'company.landing.process1.desc', tag: 'company.landing.process1.tag', img: '/ats-preview/jobs-public.png' },
+  { no: '02', title: 'company.landing.process2.title', desc: 'company.landing.process2.desc', tag: 'company.landing.process2.tag', img: '/ats-preview/ats-applicants-masked.png' },
+  { no: '03', title: 'company.landing.process3.title', desc: 'company.landing.process3.desc', tag: 'company.landing.process3.tag', img: '/ats-preview/ats-kanban-masked.png' },
+  { no: '04', title: 'company.landing.process4.title', desc: 'company.landing.process4.desc', tag: 'company.landing.process4.tag', img: '/ats-preview/ats-candidate-detail-masked.png' },
 ];
 
 export default function ForCompanies() {
@@ -90,8 +89,8 @@ export default function ForCompanies() {
           .fc-float-card { left: 12px !important; bottom: 16px !important; }
           .fc-kpis { grid-template-columns: 1fr !important; gap: 28px !important; padding: 28px 20px 44px !important; }
           .fc-offer-grid { grid-template-columns: 1fr 1fr !important; }
-          .fc-process-grid { grid-template-columns: 1fr 1fr !important; }
-          .fc-process-arrow { display: none !important; }
+          .fc-flow-grid { grid-template-columns: 1fr 1fr !important; }
+          .fc-flow-dots { display: none !important; }
           .fc-step, .fc-step-reverse { grid-template-columns: 1fr !important; direction: ltr !important; gap: 22px !important; }
           .fc-offer-flow { flex-wrap: wrap !important; }
         }
@@ -102,7 +101,7 @@ export default function ForCompanies() {
           .fc-hero-ctas { flex-direction: column !important; align-items: stretch !important; }
           .fc-hero-ctas button { width: 100% !important; }
           .fc-offer-grid { grid-template-columns: 1fr !important; }
-          .fc-process-grid { grid-template-columns: 1fr !important; }
+          .fc-flow-grid { grid-template-columns: 1fr !important; }
           .fc-offer-grid article { min-height: 188px !important; transform: none !important; }
           .fc-float-card { position: static !important; width: 100% !important; margin-top: 12px !important; }
         }
@@ -135,7 +134,7 @@ export default function ForCompanies() {
             </h1>
             <p style={css.lead}>{t('company.landing.lead')}</p>
             <div className="fc-hero-ctas" style={css.heroCtas}>
-              <a href="#offer" style={css.btnOutline}>{t('company.landing.heroCtaOffer')}</a>
+              <a href="mailto:ceo_office@likelion.net?subject=FYI%20for%20Companies%20%EB%AC%B8%EC%9D%98" style={css.btnOutline}>{t('company.landing.heroCtaContact')}</a>
               <button type="button" onClick={() => router.push('/company?mode=signup')} style={css.btnDark}>
                 {t('company.landing.heroCtaPost')} →
               </button>
@@ -171,28 +170,22 @@ export default function ForCompanies() {
                 {t('company.landing.offerH2')}
               </h2>
             </div>
-            <div className="fc-process-grid" style={css.processGrid}>
-              {PROCESS.map((item, idx) => {
-                const StepIcon = item.icon;
-                return (
-                  <article key={item.no} style={css.processCard}>
-                    <div style={css.processMeta}>
-                      <span style={css.processNo}>{item.no}</span>
-                      <span style={css.processTag}>{t(item.tag)}</span>
+            <div className="fc-flow-stage" style={css.flowStage}>
+              <div className="fc-flow-grid" style={css.flowGrid}>
+                {SERVICE_FLOW.map((item, idx) => (
+                  <article key={item.no} style={css.flowItem}>
+                    <div style={css.flowCopy}>
+                      <span style={css.flowTag}>{t(item.tag)}</span>
+                      <h3 style={css.flowTitle}>{t(item.title)}</h3>
+                      <p style={css.flowDesc}>{t(item.desc)}</p>
                     </div>
-                    <div style={css.processIcon}>
-                      <StepIcon size={34} weight="duotone" />
+                    {idx < SERVICE_FLOW.length - 1 && <div className="fc-flow-dots" style={css.flowDots}>▶ ▶ ▶</div>}
+                    <div style={css.flowShot}>
+                      <img src={item.img} alt={t(item.title)} style={css.flowImg} />
                     </div>
-                    <h3 style={css.processTitle}>{t(item.title)}</h3>
-                    <p style={css.processDesc}>{t(item.desc)}</p>
-                    {idx < PROCESS.length - 1 && (
-                      <div className="fc-process-arrow" style={css.processArrow}>
-                        <ArrowRight size={18} weight="bold" />
-                      </div>
-                    )}
                   </article>
-                );
-              })}
+                ))}
+              </div>
             </div>
           </section>
 
@@ -550,90 +543,89 @@ const css = {
     fontWeight: 900,
     letterSpacing: '-0.025em',
   },
-  processGrid: {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(4, 1fr)',
-    gap: 18,
-    maxWidth: 1140,
-    margin: '0 auto',
-  },
-  processCard: {
+  flowStage: {
     position: 'relative',
-    minHeight: 258,
-    padding: '22px 22px 24px',
-    borderRadius: 24,
-    background: 'rgba(255,255,255,0.86)',
-    border: '1px solid rgba(15,23,42,0.08)',
-    boxShadow: '0 24px 58px rgba(15,23,42,0.08)',
-    overflow: 'visible',
+    maxWidth: 1180,
+    margin: '0 auto',
+    padding: '34px 36px 0',
+    borderRadius: 28,
+    background: 'linear-gradient(180deg, #eef7ff 0%, #f6fbff 100%)',
+    border: '1px solid rgba(59,130,246,0.08)',
+    boxShadow: '0 24px 70px rgba(15,23,42,0.08)',
+    overflow: 'hidden',
   },
-  processMeta: {
-    display: 'flex',
+  flowGrid: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(4, minmax(0, 1fr))',
+    gap: 24,
+    alignItems: 'end',
+  },
+  flowItem: {
+    position: 'relative',
+    minWidth: 0,
+  },
+  flowCopy: {
+    minHeight: 126,
+    textAlign: 'center',
+    padding: '0 6px 20px',
+  },
+  flowTag: {
+    display: 'inline-flex',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: 12,
-    marginBottom: 22,
-  },
-  processNo: {
-    color: '#94a3b8',
-    fontSize: 12,
-    fontWeight: 950,
-    letterSpacing: '0.08em',
-  },
-  processTag: {
-    padding: '7px 10px',
+    justifyContent: 'center',
+    minHeight: 28,
+    padding: '7px 12px',
     borderRadius: 999,
-    background: '#fff7ed',
+    background: '#fff',
     color: '#ea580c',
-    fontSize: 11,
+    fontSize: 11.5,
     lineHeight: 1,
     fontWeight: 950,
-    border: '1px solid rgba(249,115,22,0.18)',
-    whiteSpace: 'nowrap',
-  },
-  processIcon: {
-    display: 'grid',
-    placeItems: 'center',
-    width: 70,
-    height: 70,
-    borderRadius: 22,
-    background: 'linear-gradient(145deg, #fff 0%, #fff7ed 100%)',
-    color: '#ea580c',
-    boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.9), 0 18px 38px rgba(249,115,22,0.18)',
     border: '1px solid rgba(249,115,22,0.16)',
+    boxShadow: '0 8px 20px rgba(15,23,42,0.05)',
   },
-  processTitle: {
-    margin: '24px 0 10px',
+  flowTitle: {
+    margin: '14px 0 8px',
     color: '#111827',
-    fontSize: 23,
-    lineHeight: 1.15,
+    fontSize: 17,
+    lineHeight: 1.25,
     fontWeight: 950,
-    letterSpacing: '-0.02em',
+    letterSpacing: '-0.01em',
     wordBreak: 'keep-all',
   },
-  processDesc: {
+  flowDesc: {
     margin: 0,
-    color: '#64748b',
-    fontSize: 14,
-    lineHeight: 1.58,
+    color: '#475569',
+    fontSize: 13,
+    lineHeight: 1.52,
     fontWeight: 750,
     wordBreak: 'keep-all',
   },
-  processArrow: {
+  flowDots: {
     position: 'absolute',
-    top: '50%',
-    right: -21,
-    transform: 'translateY(-50%)',
-    display: 'grid',
-    placeItems: 'center',
-    width: 42,
-    height: 42,
-    borderRadius: '50%',
-    background: '#111827',
-    color: '#fff',
-    border: '5px solid #f6f4ef',
-    zIndex: 2,
-    boxShadow: '0 14px 28px rgba(15,23,42,0.16)',
+    top: 48,
+    right: -33,
+    color: 'rgba(37,99,235,0.24)',
+    fontSize: 12,
+    letterSpacing: 5,
+    zIndex: 1,
+  },
+  flowShot: {
+    position: 'relative',
+    height: 360,
+    overflow: 'hidden',
+    borderRadius: '18px 18px 0 0',
+    background: '#fff',
+    border: '1px solid rgba(15,23,42,0.08)',
+    borderBottom: 0,
+    boxShadow: '0 18px 46px rgba(15,23,42,0.12)',
+  },
+  flowImg: {
+    display: 'block',
+    width: '100%',
+    height: '100%',
+    objectFit: 'cover',
+    objectPosition: 'top left',
   },
   offerGrid: {
     display: 'grid',
