@@ -151,6 +151,21 @@ export default function ForCompanies() {
             </div>
           </section>
 
+          <section className="fc-kpis" style={css.kpiStrip}>
+            <div className="fc-kpi" style={css.kpi}>
+              <strong><CountUp end={7.3} decimals={1} suffix={t('company.landing.kpi1Suffix')} /></strong>
+              <span>{t('company.landing.kpi1Label')}</span>
+            </div>
+            <div className="fc-kpi" style={css.kpi}>
+              <strong><CountUp end={0} suffix={t('company.landing.kpi2Suffix')} /></strong>
+              <span>{t('company.landing.kpi2Label')}</span>
+            </div>
+            <div className="fc-kpi" style={css.kpi}>
+              <strong><CountUp end={15723} suffix={t('company.landing.kpi3Suffix')} /></strong>
+              <span>{t('company.landing.kpi3Label')}</span>
+            </div>
+          </section>
+
           <section style={css.talentProof}>
             <div style={css.talentProofHead}>
               <div style={css.eyebrowDark}>{t('company.landing.talentProof.eyebrow')}</div>
@@ -166,21 +181,6 @@ export default function ForCompanies() {
                 alt={t('company.landing.talentProof.alt')}
                 style={css.talentVisual}
               />
-            </div>
-          </section>
-
-          <section className="fc-kpis" style={css.kpiStrip}>
-            <div className="fc-kpi" style={css.kpi}>
-              <strong><CountUp end={7.3} decimals={1} suffix={t('company.landing.kpi1Suffix')} /></strong>
-              <span>{t('company.landing.kpi1Label')}</span>
-            </div>
-            <div className="fc-kpi" style={css.kpi}>
-              <strong><CountUp end={0} suffix={t('company.landing.kpi2Suffix')} /></strong>
-              <span>{t('company.landing.kpi2Label')}</span>
-            </div>
-            <div className="fc-kpi" style={css.kpi}>
-              <strong><CountUp end={15723} suffix={t('company.landing.kpi3Suffix')} /></strong>
-              <span>{t('company.landing.kpi3Label')}</span>
             </div>
           </section>
 
@@ -534,10 +534,9 @@ const css = {
     gridTemplateColumns: 'repeat(3, 1fr)',
     maxWidth: 'none',
     margin: '0 auto',
-    padding: '30px max(32px, calc((100vw - 1240px) / 2 + 32px)) 46px',
+    padding: '0 max(32px, calc((100vw - 1240px) / 2 + 32px)) 46px',
     background: '#f7f7f5',
     color: '#151515',
-    borderTop: '1px solid rgba(0,0,0,0.07)',
   },
   kpi: {
     display: 'flex',
