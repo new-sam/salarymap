@@ -39,24 +39,20 @@ function CountUp({ end, decimals = 0, duration = 1200, suffix = '' }) {
   return <span ref={ref}>{formatted}{suffix && <span style={css.unit}>{suffix}</span>}</span>;
 }
 
-function Mark({ v, t }) {
-  if (v === 'o') return <span style={css.markYes} title={t('company.stat.apps')}>{'\u2713'}</span>;
-  if (v === 'x') return <span style={css.markNo} title="">×</span>;
-  return null;
-}
-
-const OFFERS = [
-  { no: '01', tk: 'company.landing.offer1.title', d1: 'company.landing.offer1.desc1', d2: 'company.landing.offer1.desc2', badge: 'company.landing.badge.free' },
-  { no: '02', tk: 'company.landing.offer2.title', d1: 'company.landing.offer2.desc1', d2: 'company.landing.offer2.desc2', badge: 'company.landing.badge.key' },
-  { no: '03', tk: 'company.landing.offer3.title', d1: 'company.landing.offer3.desc1', d2: 'company.landing.offer3.desc2', badge: null },
-  { no: '04', tk: 'company.landing.offer4.title', d1: 'company.landing.offer4.desc1', d2: 'company.landing.offer4.desc2', badge: 'company.landing.badge.guarantee' },
-];
-
 const SERVICE_FLOW = [
   { no: '01', title: 'company.landing.process1.title', desc: 'company.landing.process1.desc', tag: 'company.landing.process1.tag', img: '/company-process/post-free.png' },
   { no: '02', title: 'company.landing.process2.title', desc: 'company.landing.process2.desc', tag: 'company.landing.process2.tag', img: '/company-process/resume-pool.png' },
   { no: '03', title: 'company.landing.process3.title', desc: 'company.landing.process3.desc', tag: 'company.landing.process3.tag', img: '/company-process/ats-manage.png' },
   { no: '04', title: 'company.landing.process4.title', desc: 'company.landing.process4.desc', tag: 'company.landing.process4.tag', img: '/company-process/hire-guarantee.png' },
+];
+
+const CLOSING_QUOTES = [
+  // Replace these synthetic avatars/quotes with real customer interview material later.
+  { quote: 'company.landing.close.quote1', role: 'company.landing.close.role1', avatarPos: '0% 0%' },
+  { quote: 'company.landing.close.quote2', role: 'company.landing.close.role2', avatarPos: '33.333% 0%' },
+  { quote: 'company.landing.close.quote3', role: 'company.landing.close.role3', avatarPos: '66.666% 33.333%' },
+  { quote: 'company.landing.close.quote4', role: 'company.landing.close.role4', avatarPos: '0% 66.666%' },
+  { quote: 'company.landing.close.quote5', role: 'company.landing.close.role5', avatarPos: '100% 0%' },
 ];
 
 export default function ForCompanies() {
@@ -99,10 +95,24 @@ export default function ForCompanies() {
           .fc-flow-grid { grid-template-columns: 1fr !important; }
           .fc-offer-grid article { min-height: 188px !important; transform: none !important; }
           .fc-float-card { position: static !important; width: 100% !important; margin-top: 12px !important; }
+          .fc-close-wrap { grid-template-columns: 1fr !important; gap: 54px !important; }
+          .fc-close-right { min-height: 430px !important; }
         }
         .fc-offer-flow b {
           display: block; width: 46px; height: 1px;
           background: linear-gradient(90deg, rgba(234,88,12,0.18), rgba(234,88,12,0.8));
+        }
+        .fc-close-quote {
+          position: absolute;
+          inset: 0;
+          opacity: 0;
+          transform: translateY(12px);
+          animation: fcQuoteRoll 20s infinite both;
+        }
+        @keyframes fcQuoteRoll {
+          0%, 3% { opacity: 0; transform: translateY(12px); }
+          8%, 22% { opacity: 1; transform: translateY(0); }
+          27%, 100% { opacity: 0; transform: translateY(-12px); }
         }
       `}</style>
       <div style={css.page}>
@@ -202,63 +212,54 @@ export default function ForCompanies() {
             </div>
           </section>
 
-          <section id="pricing" style={css.compare}>
-            <div style={css.sectionHead}>
-              <div style={css.eyebrow}>PRICING</div>
-              <h2 style={css.h2}>
-                {t('company.landing.pricing.h1')}<br />
-                {t('company.landing.pricing.h2')}
-              </h2>
-            </div>
-            <div style={css.tableWrap}>
-              <table style={css.table}>
-                <thead>
-                  <tr>
-                    <th style={css.thFeature}>{t('company.landing.pricing.colFeature')}</th>
-                    <th style={css.th}>{t('company.landing.pricing.colPlatform')}</th>
-                    <th style={css.th}>{t('company.landing.pricing.colHeadhunt')}</th>
-                    <th style={{ ...css.th, ...css.thFyi }}>FYI</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr>
-                    <td style={css.tdFeature}>{t('company.landing.pricing.row1.label')}</td>
-                    <td style={css.td}>{t('company.landing.pricing.row1.platform')}</td>
-                    <td style={css.td}>{t('company.landing.pricing.row1.headhunt')}</td>
-                    <td style={css.tdFyi}>{t('company.landing.pricing.row1.fyi')}</td>
-                  </tr>
-                  <tr>
-                    <td style={css.tdFeature}>{t('company.landing.pricing.row2.label')}</td>
-                    <td style={css.td}>-</td>
-                    <td style={css.td}>{t('company.landing.pricing.row2.headhunt')}</td>
-                    <td style={css.tdFyi}>{t('company.landing.pricing.row2.fyi')}</td>
-                  </tr>
-                  <tr>
-                    <td style={css.tdFeature}>{t('company.landing.pricing.row3.label')}</td>
-                    <td style={css.td}><Mark v="x" t={t} /></td>
-                    <td style={css.td}><Mark v="x" t={t} /></td>
-                    <td style={css.tdFyi}><Mark v="o" t={t} /></td>
-                  </tr>
-                  <tr>
-                    <td style={css.tdFeature}>{t('company.landing.pricing.row4.label')}</td>
-                    <td style={css.td}>{t('company.landing.pricing.row4.platform')}</td>
-                    <td style={css.td}>{t('company.landing.pricing.row4.headhunt')}</td>
-                    <td style={css.tdFyi}>{t('company.landing.pricing.row4.fyi')}</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </section>
+          <section id="pricing" style={css.closeSection}>
+            <div className="fc-close-wrap" style={css.closeWrap}>
+              <div style={css.closeLeft}>
+                <div style={css.closeNumber}>
+                  0<span style={css.closeCurrency}>{t('company.landing.close.currency')}</span>
+                </div>
+                <p style={css.closeCaption}>
+                  <strong style={css.closeCaptionStrong}>{t('company.landing.close.captionStrong')}</strong><br />
+                  {t('company.landing.close.caption')}
+                </p>
+                <div style={css.closePills}>
+                  <span style={css.closePill}>{t('company.landing.close.pill1')}</span>
+                  <span style={css.closePill}>{t('company.landing.close.pill2')}</span>
+                </div>
+              </div>
 
-          <section style={css.bottomCta}>
-            <h2 style={css.h2}>
-              {t('company.landing.bottomCtaH1')}<br />
-              {t('company.landing.bottomCtaH2')}
-            </h2>
-            <p style={css.ctaSub}>{t('company.landing.bottomSub')}</p>
-            <button type="button" onClick={() => router.push('/company?mode=signup')} style={css.btnAccent}>
-              {t('company.landing.bottomBtn')}
-            </button>
+              <div className="fc-close-right" style={css.closeRight}>
+                <div style={css.quoteStage}>
+                  {CLOSING_QUOTES.slice(0, 3).map((item, idx) => (
+                    <div
+                      key={item.quote}
+                      className="fc-close-quote"
+                      style={{ animationDelay: `${idx * 5}s` }}
+                    >
+                      <p style={css.quoteText}>{t(item.quote)}</p>
+                      <div style={css.quoteRole}>{t(item.role)}</div>
+                    </div>
+                  ))}
+                </div>
+                <div style={css.quoteAvatars}>
+                  {CLOSING_QUOTES.map((item, idx) => (
+                    <span
+                      key={item.role}
+                      style={{
+                        ...css.quoteAvatar,
+                        marginLeft: idx === 0 ? 0 : -9,
+                        opacity: 0.38 + idx * 0.13,
+                        backgroundPosition: item.avatarPos,
+                      }}
+                    />
+                  ))}
+                </div>
+                <p style={css.closeFoot}>{t('company.landing.close.foot')}</p>
+                <button type="button" onClick={() => router.push('/company?mode=signup')} style={css.closeCta}>
+                  {t('company.landing.close.cta')} <span style={css.closeCtaIcon}>→</span>
+                </button>
+              </div>
+            </div>
           </section>
         </main>
       </div>
@@ -700,76 +701,136 @@ const css = {
     fontSize: 13,
     fontWeight: 900,
   },
-  compare: { padding: '70px 32px 80px', maxWidth: 1160, margin: '0 auto' },
-  tableWrap: {
-    overflowX: 'auto',
-    borderRadius: 16,
-    background: '#141416',
-    border: '1px solid rgba(255,255,255,0.09)',
-  },
-  table: { width: '100%', minWidth: 680, borderCollapse: 'collapse' },
-  th: {
-    padding: '18px 16px',
-    textAlign: 'center',
-    color: 'rgba(255,255,255,0.54)',
-    fontSize: 12.5,
-    borderBottom: '1px solid rgba(255,255,255,0.08)',
-  },
-  thFeature: {
-    padding: '18px 22px',
-    textAlign: 'left',
-    color: 'rgba(255,255,255,0.45)',
-    fontSize: 12.5,
-    borderBottom: '1px solid rgba(255,255,255,0.08)',
-  },
-  thFyi: { color: '#fb923c', fontWeight: 900 },
-  td: {
-    padding: '18px 16px',
-    textAlign: 'center',
-    color: 'rgba(255,255,255,0.7)',
-    borderBottom: '1px solid rgba(255,255,255,0.06)',
-    fontWeight: 700,
-  },
-  tdFeature: {
-    padding: '18px 22px',
-    color: '#fff',
-    borderBottom: '1px solid rgba(255,255,255,0.06)',
-    fontWeight: 850,
-  },
-  tdFyi: {
-    padding: '18px 16px',
-    textAlign: 'center',
-    color: '#fb923c',
-    borderBottom: '1px solid rgba(255,255,255,0.06)',
-    background: 'rgba(249,115,22,0.08)',
-    fontWeight: 950,
-  },
-  markYes: {
-    display: 'inline-grid',
+  closeSection: {
+    minHeight: '86vh',
+    display: 'grid',
     placeItems: 'center',
-    width: 28,
-    height: 28,
+    padding: '86px max(32px, calc((100vw - 1240px) / 2 + 32px)) 96px',
+    background:
+      'radial-gradient(circle at 18% 18%, rgba(47,128,237,0.10), transparent 28%),' +
+      'radial-gradient(circle at 82% 80%, rgba(249,115,22,0.08), transparent 26%),' +
+      'linear-gradient(180deg, #f7fbff 0%, #eef5fb 100%)',
+    color: '#111',
+  },
+  closeWrap: {
+    width: '100%',
+    display: 'grid',
+    gridTemplateColumns: '1.04fr 0.96fr',
+    gap: 86,
+    alignItems: 'center',
+  },
+  closeLeft: { minWidth: 0 },
+  closeNumber: {
+    color: '#08090b',
+    fontSize: 'clamp(104px, 14vw, 230px)',
+    lineHeight: 0.86,
+    fontWeight: 650,
+    letterSpacing: '-0.08em',
+  },
+  closeCurrency: {
+    color: '#ea580c',
+    letterSpacing: '-0.08em',
+  },
+  closeCaption: {
+    margin: '42px 0 0',
+    color: '#98a2b3',
+    fontSize: 24,
+    lineHeight: 1.35,
+    fontWeight: 650,
+    letterSpacing: '-0.015em',
+  },
+  closeCaptionStrong: { color: '#111827', fontWeight: 850 },
+  closePills: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 12,
+    marginTop: 28,
+    flexWrap: 'wrap',
+  },
+  closePill: {
+    padding: '9px 13px',
+    borderRadius: 999,
+    background: 'rgba(255,255,255,0.78)',
+    border: '1px solid rgba(17,24,39,0.06)',
+    color: '#667085',
+    fontSize: 15,
+    fontWeight: 760,
+  },
+  closeRight: {
+    minHeight: 500,
+    display: 'flex',
+    flexDirection: 'column',
+    justifyContent: 'center',
+    minWidth: 0,
+  },
+  quoteStage: {
+    position: 'relative',
+    minHeight: 230,
+  },
+  quoteText: {
+    margin: 0,
+    color: '#3f4652',
+    fontSize: 'clamp(28px, 2.35vw, 42px)',
+    lineHeight: 1.44,
+    fontWeight: 780,
+    letterSpacing: '-0.035em',
+    wordBreak: 'keep-all',
+  },
+  quoteRole: {
+    marginTop: 28,
+    color: '#4b5563',
+    fontSize: 18,
+    fontWeight: 800,
+  },
+  quoteAvatars: {
+    display: 'flex',
+    alignItems: 'center',
+    marginTop: 46,
+    paddingLeft: 4,
+  },
+  quoteAvatar: {
+    display: 'block',
+    width: 46,
+    height: 46,
     borderRadius: '50%',
-    background: '#0eba9a',
+    border: '3px solid #eef5fb',
+    backgroundImage: 'url(/company-quote-avatars.png)',
+    backgroundSize: '400% 400%',
+    boxShadow: '0 8px 22px rgba(17,24,39,0.12)',
+    overflow: 'hidden',
+  },
+  closeFoot: {
+    margin: '74px 0 0',
+    color: '#98a2b3',
+    fontSize: 17,
+    lineHeight: 1.7,
+    fontWeight: 680,
+  },
+  closeCta: {
+    marginTop: 28,
+    alignSelf: 'flex-start',
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: 14,
+    height: 56,
+    padding: '0 16px 0 26px',
+    border: 0,
+    borderRadius: 999,
+    background: '#111827',
     color: '#fff',
+    fontFamily: 'inherit',
+    fontSize: 15,
     fontWeight: 900,
+    cursor: 'pointer',
+    boxShadow: '0 18px 44px rgba(17,24,39,0.18)',
   },
-  markNo: {
-    display: 'inline-grid',
+  closeCtaIcon: {
+    display: 'grid',
     placeItems: 'center',
-    width: 28,
-    height: 28,
+    width: 32,
+    height: 32,
     borderRadius: '50%',
-    background: 'rgba(255,255,255,0.08)',
-    color: 'rgba(255,255,255,0.36)',
-    fontWeight: 900,
+    background: '#fff',
+    color: '#111827',
   },
-  bottomCta: {
-    maxWidth: 760,
-    margin: '0 auto',
-    padding: '58px 32px 82px',
-    textAlign: 'center',
-    borderTop: '1px solid rgba(255,255,255,0.08)',
-  },
-  ctaSub: { color: 'rgba(255,255,255,0.62)', margin: '14px 0 26px', fontSize: 15 },
 };
