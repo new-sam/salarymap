@@ -87,7 +87,6 @@ export default function ForCompanies() {
           .fc-offer-grid { grid-template-columns: 1fr 1fr !important; }
           .fc-flow-grid { grid-template-columns: 1fr 1fr !important; }
           .fc-flow-dots { display: none !important; }
-          .fc-verify-grid { grid-template-columns: 1fr !important; gap: 30px !important; }
           .fc-offer-flow { flex-wrap: wrap !important; }
         }
         @media (max-width: 560px) {
@@ -199,33 +198,6 @@ export default function ForCompanies() {
                     {idx < SERVICE_FLOW.length - 1 && <div className="fc-flow-dots" style={css.flowDots}>-&gt;</div>}
                   </article>
                 ))}
-              </div>
-            </div>
-          </section>
-
-          <section id="verify" style={css.verify}>
-            <div className="fc-verify-grid" style={css.verifyGrid}>
-              <div style={css.verifyCopy}>
-                <div style={css.eyebrowDark}>{t('company.landing.verify.eyebrow')}</div>
-                <h2 style={css.h2Dark}>
-                  {t('company.landing.verify.h1')}<br />
-                  <span style={css.highlight}>{t('company.landing.verify.h2')}</span>
-                </h2>
-                <p style={css.verifyLead}>{t('company.landing.verify.lead')}</p>
-                <ul style={css.verifyPoints}>
-                  {[1, 2, 3].map((n) => (
-                    <li key={n} style={css.verifyPoint}>
-                      <span style={css.verifyCheck}>{'✓'}</span>
-                      <div>
-                        <strong style={css.verifyPtTitle}>{t(`company.landing.verify.p${n}.title`)}</strong>
-                        <span style={css.verifyPtDesc}>{t(`company.landing.verify.p${n}.desc`)}</span>
-                      </div>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-              <div style={css.verifyVisual}>
-                <img src="/company-trust/salary-data.png" alt={t('company.landing.verify.imgAlt')} style={css.verifyImg} />
               </div>
             </div>
           </section>
@@ -728,75 +700,6 @@ const css = {
     fontSize: 13,
     fontWeight: 900,
   },
-  verify: {
-    background: '#f7f7f5',
-    color: '#151515',
-    padding: '84px 32px',
-    borderTop: '1px solid rgba(0,0,0,0.06)',
-  },
-  verifyGrid: {
-    display: 'grid',
-    gridTemplateColumns: '0.92fr 1.08fr',
-    alignItems: 'center',
-    gap: 56,
-    maxWidth: 1180,
-    margin: '0 auto',
-  },
-  verifyCopy: { maxWidth: 520 },
-  verifyLead: {
-    margin: '18px 0 28px',
-    color: '#4b5563',
-    fontSize: 16,
-    lineHeight: 1.62,
-    fontWeight: 650,
-    wordBreak: 'keep-all',
-  },
-  verifyPoints: {
-    listStyle: 'none',
-    margin: 0,
-    padding: 0,
-    display: 'flex',
-    flexDirection: 'column',
-    gap: 18,
-  },
-  verifyPoint: { display: 'flex', alignItems: 'flex-start', gap: 13 },
-  verifyCheck: {
-    flexShrink: 0,
-    display: 'inline-grid',
-    placeItems: 'center',
-    width: 24,
-    height: 24,
-    borderRadius: '50%',
-    background: '#ea580c',
-    color: '#fff',
-    fontSize: 13,
-    fontWeight: 900,
-    marginTop: 1,
-  },
-  verifyPtTitle: {
-    display: 'block',
-    color: '#111',
-    fontSize: 16,
-    fontWeight: 850,
-    letterSpacing: '-0.01em',
-    marginBottom: 3,
-  },
-  verifyPtDesc: {
-    display: 'block',
-    color: '#4b5563',
-    fontSize: 13.5,
-    lineHeight: 1.5,
-    fontWeight: 650,
-    wordBreak: 'keep-all',
-  },
-  verifyVisual: {
-    borderRadius: 20,
-    overflow: 'hidden',
-    background: '#fff',
-    border: '1px solid rgba(0,0,0,0.06)',
-    boxShadow: '0 26px 64px rgba(17,17,17,0.13)',
-  },
-  verifyImg: { display: 'block', width: '100%', height: 'auto' },
   compare: { padding: '70px 32px 80px', maxWidth: 1160, margin: '0 auto' },
   tableWrap: {
     overflowX: 'auto',
