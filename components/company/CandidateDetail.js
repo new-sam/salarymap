@@ -27,7 +27,6 @@ export default function CandidateDetail({ appId, mode = 'page', onClose, company
   const [userId, setUserId] = useState(null);
   const [reviewerName, setReviewerName] = useState('');
   const [showInterviewModal, setShowInterviewModal] = useState(false);
-  const [showMailModal, setShowMailModal] = useState(false);
   const [evals, setEvals] = useState([]);
   const [expandedStages, setExpandedStages] = useState(new Set());
   const [evalComment, setEvalComment] = useState('');
@@ -157,8 +156,6 @@ export default function CandidateDetail({ appId, mode = 'page', onClose, company
   const idx = STAGE_ORDER.indexOf(app.status);
   const nextStage = idx < STAGES.length - 1 ? STAGES[idx + 1] : null;
   const hasResume = !!app.resume_url;
-  const companyName = job?.recruiter_companies?.name || '';
-  const canEmail = /@/.test(email);
   const appliedAtLabel = new Date(app.created_at).toLocaleDateString();
   const isOwner = !job?.created_by || job?.created_by === userId;
 
@@ -234,38 +231,16 @@ export default function CandidateDetail({ appId, mode = 'page', onClose, company
 
           {isOwner ? (
             <>
-              <section style={local.section}>
-                <h3 style={local.sectionH}>{t('company.candidate.contactH')}</h3>
-                <button
-                  onClick={() => setShowMailModal(true)}
-                  disabled={!canEmail}
-                  style={canEmail ? local.btnMail : local.btnMailDisabled}
-                >
-                  {t('company.candidate.mailBtn')}
-                </button>
-                {!canEmail && <div style={local.mailHint}>{t('company.candidate.noEmail')}</div>}
-              </section>
-
-              <section style={local.section}>
-                <h3 style={local.sectionH}>{t('company.candidate.stageH')}</h3>
-                <div style={local.stageBtns}>
-                  {STAGES.map(s => (
-                    <button key={s.key} onClick={() => setStage(s.key)}
-                      style={s.key === app.status ? local.stageBtnActive : local.stageBtn}>
-                      {s.emoji} {t(`company.stage.${s.key}`)}
-                    </button>
-                  ))}
-                </div>
-                {nextStage && (
+              {nextStage && (
+                <section style={local.section}>
                   <button onClick={moveNext} style={local.btnNext}>
                     {t('company.candidate.nextStage')} {nextStage.emoji} {t(`company.stage.${nextStage.key}`)}
                   </button>
-                )}
-              </section>
+                </section>
+              )}
 
-              {(app.status === 'reviewing' || app.status === 'decided') && (
+              {app.status !== 'decided' && (
                 <section style={local.section}>
-                  <h3 style={local.sectionH}>{t('company.candidate.actionH')}</h3>
                   <button onClick={() => setShowInterviewModal(true)} style={local.btnAction}>
                     {t('company.candidate.scheduleInterview')}
                   </button>
@@ -273,14 +248,11 @@ export default function CandidateDetail({ appId, mode = 'page', onClose, company
               )}
             </>
           ) : (
-            <section style={local.section}>
-              <button disabled style={local.btnLocked}>{t('company.candidate.mailLocked')}</button>
-              {nextStage && (
-                <button disabled style={{ ...local.btnLocked, marginTop: 8 }}>
-                  {t('company.candidate.nextLocked')}
-                </button>
-              )}
-            </section>
+            nextStage && (
+              <section style={local.section}>
+                <button disabled style={local.btnLocked}>{t('company.candidate.nextLocked')}</button>
+              </section>
+            )
           )}
         </aside>
       </div>
@@ -296,16 +268,6 @@ export default function CandidateDetail({ appId, mode = 'page', onClose, company
         />
       )}
 
-      {showMailModal && (
-        <MailComposer
-          candidateName={name}
-          candidateEmail={email}
-          jobTitle={job.title}
-          companyName={companyName}
-          applicationId={app.id}
-          onClose={() => setShowMailModal(false)}
-        />
-      )}
     </div>
   );
 }
@@ -368,66 +330,66 @@ function EvaluationSection({
               </button>
               {expanded && (
                 <div style={ev.stageBody}>
-                  {stageEvals.length === 0 ? (
-                    <div style={ev.empty}>{t('company.eval.empty')}</div>
-                  ) : (
-                    stageEvals.map(e => {
-                      const isMe = e.reviewer_user_id === currentUserId;
-                      const isOwnerRole = e.reviewer_role === 'owner';
-                      return (
-                        <div key={e.id} style={ev.reviewer}>
-                          <div style={ev.reviewerHead}>
-                            <span style={ev.reviewerName}>
-                              {isMe ? `${t('company.eval.me')} (${e.reviewer_name || ''})` : (e.reviewer_name || '—')}
-                            </span>
-                            <span style={isOwnerRole ? ev.roleTagOwner : ev.roleTagInterviewer}>
-                              {t(`company.eval.role.${isOwnerRole ? 'owner' : 'interviewer'}`)}
-                            </span>
-                            <span style={ev.reviewerTime}>{formatEvalTime(e.created_at)}</span>
-                          </div>
-                          <div style={ev.reviewerBody}>
-                            <span style={ev.comment}>{e.comment}</span>
-                            {typeof e.score === 'number' && (
-                              <span style={ev.scoreBadge}>{e.score}{t('company.eval.scoreUnit')}</span>
-                            )}
-                          </div>
+                  {stageEvals.map(e => {
+                    const isMe = e.reviewer_user_id === currentUserId;
+                    const isOwnerRole = e.reviewer_role === 'owner';
+                    return (
+                      <div key={e.id} style={ev.reviewer}>
+                        <div style={ev.reviewerHead}>
+                          <span style={ev.reviewerName}>
+                            {isMe ? `${t('company.eval.me')} (${e.reviewer_name || ''})` : (e.reviewer_name || '—')}
+                          </span>
+                          <span style={isOwnerRole ? ev.roleTagOwner : ev.roleTagInterviewer}>
+                            {t(`company.eval.role.${isOwnerRole ? 'owner' : 'interviewer'}`)}
+                          </span>
+                          <span style={ev.reviewerTime}>{formatEvalTime(e.created_at)}</span>
                         </div>
-                      );
-                    })
+                        <div style={ev.reviewerBody}>
+                          <span style={ev.comment}>{e.comment}</span>
+                          {typeof e.score === 'number' && (
+                            <span style={ev.scoreBadge}>{e.score}{t('company.eval.scoreUnit')}</span>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                  {stageEvals.length === 0 && s.key !== currentStage && (
+                    <div style={ev.empty}>{t('company.eval.empty')}</div>
+                  )}
+                  {s.key === currentStage && (
+                    <div style={ev.form}>
+                      <textarea
+                        value={evalComment}
+                        onChange={(e) => setEvalComment(e.target.value)}
+                        placeholder={t('company.eval.placeholder', { stage: currentStageLabel })}
+                        rows={3}
+                        style={ev.formText}
+                      />
+                      <div style={ev.formRow}>
+                        <input
+                          type="number"
+                          min={0}
+                          max={100}
+                          value={evalScore}
+                          onChange={(e) => setEvalScore(e.target.value)}
+                          placeholder={t('company.eval.scorePh')}
+                          style={ev.formScore}
+                        />
+                        <button
+                          onClick={onSubmit}
+                          disabled={saving || !evalComment.trim()}
+                          style={(saving || !evalComment.trim()) ? ev.submitDisabled : ev.submit}
+                        >
+                          {saving ? '...' : (myCurrentEval ? t('company.eval.update') : t('company.eval.submit'))}
+                        </button>
+                      </div>
+                    </div>
                   )}
                 </div>
               )}
             </div>
           );
         })}
-      </div>
-
-      <div style={ev.form}>
-        <textarea
-          value={evalComment}
-          onChange={(e) => setEvalComment(e.target.value)}
-          placeholder={t('company.eval.placeholder', { stage: currentStageLabel })}
-          rows={3}
-          style={ev.formText}
-        />
-        <div style={ev.formRow}>
-          <input
-            type="number"
-            min={0}
-            max={100}
-            value={evalScore}
-            onChange={(e) => setEvalScore(e.target.value)}
-            placeholder={t('company.eval.scorePh')}
-            style={ev.formScore}
-          />
-          <button
-            onClick={onSubmit}
-            disabled={saving || !evalComment.trim()}
-            style={(saving || !evalComment.trim()) ? ev.submitDisabled : ev.submit}
-          >
-            {saving ? '...' : (myCurrentEval ? t('company.eval.update') : t('company.eval.submit'))}
-          </button>
-        </div>
       </div>
     </section>
   );
