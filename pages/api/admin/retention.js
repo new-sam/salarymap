@@ -6,10 +6,13 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 )
 
-const EXCLUDED_EMAIL_DOMAINS = ['likelion.net']
+const EXCLUDED_EMAIL_DOMAINS = ['likelion.net', 'dummy.local', 'system.local']
 
 function isExcluded(user) {
-  return user.email && EXCLUDED_EMAIL_DOMAINS.some(d => user.email.endsWith('@' + d))
+  if (user.email && EXCLUDED_EMAIL_DOMAINS.some(d => user.email.endsWith('@' + d))) return true
+  // Banned/deactivated auth users (e.g. seed system account)
+  if (user.banned_until && new Date(user.banned_until) > new Date()) return true
+  return false
 }
 
 export default async function handler(req, res) {

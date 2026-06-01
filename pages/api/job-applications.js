@@ -14,6 +14,7 @@ export default async function handler(req, res) {
     jobId, jobTitle, jobCompany, userId, resumeUrl,
     applicantRole, applicantExperience, applicantSalary,
     applicantCompany, applicantEmail, applicantName,
+    utmSource, utmMedium, utmCampaign,
   } = req.body
 
   if (!jobId) {
@@ -49,6 +50,9 @@ export default async function handler(req, res) {
       applicant_company: applicantCompany || null,
       applicant_email: applicantEmail || null,
       applicant_name: applicantName || null,
+      utm_source: utmSource || null,
+      utm_medium: utmMedium || null,
+      utm_campaign: utmCampaign || null,
     })
     .select('id')
     .single()

@@ -6,6 +6,14 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 )
 
+// Exclude internal/seed/system accounts and banned users from signup counts
+const EXCLUDED_EMAIL_DOMAINS = ['likelion.net', 'dummy.local', 'system.local']
+function isExcludedSignup(user) {
+  if (user.email && EXCLUDED_EMAIL_DOMAINS.some(d => user.email.endsWith('@' + d))) return true
+  if (user.banned_until && new Date(user.banned_until) > new Date()) return true
+  return false
+}
+
 export default async function handler(req, res) {
   const user = await verifyAdmin(req)
   if (!user) return res.status(401).json({ error: 'Unauthorized' })
@@ -52,7 +60,7 @@ export default async function handler(req, res) {
     while (true) {
       const { data: { users }, error } = await supabase.auth.admin.listUsers({ page, perPage: 1000 })
       if (error || !users || users.length === 0) break
-      todaySignups += users.filter(u => u.created_at >= startISO && u.created_at <= endISO).length
+      todaySignups += users.filter(u => u.created_at >= startISO && u.created_at <= endISO && !isExcludedSignup(u)).length
       if (users.length < 1000) break
       page++
     }

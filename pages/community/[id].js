@@ -63,6 +63,14 @@ export default function CommunityPostPage() {
     fetchPost(!viewCounted.current)
     viewCounted.current = true
     fetchComments()
+    // Mark this post as read so the list dims it
+    try {
+      const read = new Set(JSON.parse(localStorage.getItem('comm_read_posts') || '[]'))
+      if (!read.has(id)) {
+        read.add(id)
+        localStorage.setItem('comm_read_posts', JSON.stringify([...read]))
+      }
+    } catch {}
   }, [id, session])
 
   const fetchPost = async (countView = false) => {
@@ -195,6 +203,7 @@ export default function CommunityPostPage() {
         .cp-comment-top { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
         .cp-comment-author { font-size: 13px; font-weight: 400; color: #888; display: flex; align-items: center; gap: 5px; }
         .cp-comment-author .cp-company { font-size: 13px; color: #ff6000; font-weight: 700; }
+        .cp-op-badge { font-size: 10px; font-weight: 700; color: #ff6000; background: #fff1e8; border: 1px solid #ffd4b8; border-radius: 4px; padding: 1px 5px; margin-left: 2px; line-height: 1.4; }
         .cp-comment-time { font-size: 11px; color: #bbb; }
         .cp-comment-body { font-size: 14px; color: #444; line-height: 1.6; white-space: pre-wrap; word-break: break-word; }
         .cp-comment-delete { margin-left: auto; font-size: 11px; color: #bbb; background: none; border: none; cursor: pointer; font-family: 'Barlow', sans-serif; }
@@ -315,6 +324,7 @@ export default function CommunityPostPage() {
                           <span className="cp-company">{comment.is_salary_verified ? (comment.author_company || t('comm.unemployed')) : t('comm.unemployed')}</span>
                           <span className="cp-dot">·</span>
                           {comment.author_name}
+                          {comment.is_op && <span className="cp-op-badge">{t('comm.opBadge')}</span>}
                         </span>
                         <span className="cp-comment-time">{timeAgo(comment.created_at)}</span>
                         {session?.user?.id === comment.user_id && (

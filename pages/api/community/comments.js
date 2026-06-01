@@ -68,6 +68,14 @@ export default async function handler(req, res) {
       authorCompany = userProfile.current_company
     }
 
+    // Fetch the post to flag original-poster (OP) comments and to bump the count
+    const { data: postData } = await supabase
+      .from('community_posts')
+      .select('user_id, comment_count')
+      .eq('id', post_id)
+      .single()
+    const isOp = !!(postData && postData.user_id === user.id)
+
     const { data, error } = await supabase
       .from('community_comments')
       .insert({
@@ -77,7 +85,8 @@ export default async function handler(req, res) {
         content,
         is_anonymous: is_anonymous !== false,
         is_salary_verified: isSalaryVerified,
-        author_company: authorCompany
+        author_company: authorCompany,
+        is_op: isOp
       })
       .select()
       .single()
@@ -85,11 +94,6 @@ export default async function handler(req, res) {
     if (error) return res.status(500).json({ error: error.message })
 
     // Increment comment count on the post
-    const { data: postData } = await supabase
-      .from('community_posts')
-      .select('comment_count')
-      .eq('id', post_id)
-      .single()
     if (postData) {
       await supabase
         .from('community_posts')

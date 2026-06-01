@@ -65,9 +65,25 @@ export default function CommunityPage() {
   // Trending (sidebar)
   const [trending, setTrending] = useState([])
 
+  // Read posts (dim already-viewed posts)
+  const [readPosts, setReadPosts] = useState(() => new Set())
+
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => setSession(session))
+    try {
+      setReadPosts(new Set(JSON.parse(localStorage.getItem('comm_read_posts') || '[]')))
+    } catch {}
   }, [])
+
+  const markRead = (postId) => {
+    setReadPosts(prev => {
+      if (prev.has(postId)) return prev
+      const next = new Set(prev)
+      next.add(postId)
+      try { localStorage.setItem('comm_read_posts', JSON.stringify([...next])) } catch {}
+      return next
+    })
+  }
 
 
   useEffect(() => { fetchPosts() }, [category, sort, page, session, search])
@@ -199,6 +215,7 @@ export default function CommunityPage() {
       window.dispatchEvent(new CustomEvent('fyi-show-login'))
       return
     }
+    markRead(postId)
   }
 
   const handleWrite = () => {
@@ -279,6 +296,10 @@ export default function CommunityPage() {
         .comm-row-stat { display: flex; align-items: center; gap: 3px; font-size: 13px; color: #bbb; white-space: nowrap; }
         .comm-row-stat svg { width: 14px; height: 14px; }
         .comm-row-stat.liked { color: #ff6000; }
+        /* Read (already-viewed) posts: dim & desaturate */
+        .comm-row.is-read, .comm-card-item.is-read, .comm-ms-item.is-read { opacity: 0.5; filter: saturate(0.7); }
+        .comm-row.is-read:hover, .comm-card-item.is-read:hover, .comm-ms-item.is-read:hover { opacity: 0.72; }
+        .comm-row.is-read .comm-row-title, .comm-card-item.is-read .comm-card-title, .comm-ms-item.is-read .comm-ms-item-title { color: #999; font-weight: 500; }
         .comm-empty { text-align: center; padding: 80px 20px; color: #bbb; font-size: 14px; }
         .comm-pager { display: flex; justify-content: center; gap: 8px; }
         .comm-pager-btn { padding: 8px 18px; border-radius: 8px; border: 1px solid #ddd; background: transparent; color: #666; font-size: 13px; cursor: pointer; font-family: 'Barlow', sans-serif; }
@@ -414,7 +435,7 @@ export default function CommunityPage() {
             ) : (<>
               <div className="comm-list">
                 {posts.map(post => (
-                    <Link key={post.id} href={`/community/${post.id}`} className="comm-row" onClick={e => handlePostClick(e, post.id)}>
+                    <Link key={post.id} href={`/community/${post.id}`} className={`comm-row${readPosts.has(post.id) ? ' is-read' : ''}`} onClick={e => handlePostClick(e, post.id)}>
                       <span className="comm-row-cat">{getCatLabel(post.category)}</span>
                       <span className="comm-row-title">{post.title}</span>
                       <div className="comm-row-stats">
@@ -435,7 +456,7 @@ export default function CommunityPage() {
               </div>
               <div className="comm-card-list">
                 {posts.map(post => (
-                  <Link key={post.id} href={`/community/${post.id}`} className="comm-card-item" onClick={e => handlePostClick(e, post.id)}>
+                  <Link key={post.id} href={`/community/${post.id}`} className={`comm-card-item${readPosts.has(post.id) ? ' is-read' : ''}`} onClick={e => handlePostClick(e, post.id)}>
                     <div className="comm-card-meta">
                       <span className="comm-card-cat">{getCatLabel(post.category)}</span>
                       <span className="comm-card-time">{timeAgo(post.created_at)}</span>
@@ -533,7 +554,7 @@ export default function CommunityPage() {
             <div className="comm-ms-empty">{t('comm.empty')}</div>
           ) : (
             mobileSearchResults.map(post => (
-              <Link key={post.id} href={`/community/${post.id}`} className="comm-ms-item" onClick={e => handlePostClick(e, post.id)}>
+              <Link key={post.id} href={`/community/${post.id}`} className={`comm-ms-item${readPosts.has(post.id) ? ' is-read' : ''}`} onClick={e => handlePostClick(e, post.id)}>
                 <div className="comm-ms-item-meta">
                   <span className="comm-ms-item-cat">{getCatLabel(post.category)}</span>
                   <span className="comm-ms-item-time">{timeAgo(post.created_at)}</span>
