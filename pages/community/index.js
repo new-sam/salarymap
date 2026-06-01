@@ -301,7 +301,7 @@ export default function CommunityPage() {
         .comm-row.is-read:hover, .comm-card-item.is-read:hover, .comm-ms-item.is-read:hover { opacity: 0.72; }
         .comm-row.is-read .comm-row-title, .comm-card-item.is-read .comm-card-title, .comm-ms-item.is-read .comm-ms-item-title { color: #999; font-weight: 500; }
         .comm-empty { text-align: center; padding: 80px 20px; color: #bbb; font-size: 14px; }
-        .comm-pager { display: flex; justify-content: center; gap: 8px; }
+        .comm-pager { display: flex; justify-content: center; gap: 8px; margin-top: 28px; padding-top: 4px; }
         .comm-pager-btn { padding: 8px 18px; border-radius: 8px; border: 1px solid #ddd; background: transparent; color: #666; font-size: 13px; cursor: pointer; font-family: 'Barlow', sans-serif; }
         .comm-pager-btn:disabled { opacity: 0.25; cursor: default; }
         .comm-sidebar { display: flex; flex-direction: column; gap: 20px; position: sticky; top: 80px; align-self: start; }
