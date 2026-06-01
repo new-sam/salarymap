@@ -51,6 +51,26 @@ export default function TeamPopover({ jobId, canInvite = true }) {
   }, [open]);
 
   const count = team.members.length + team.invites.length;
+  const isOwner = team.ownerUserId && team.ownerUserId === team.currentUserId;
+
+  const remove = async ({ userId, inviteId, displayName }) => {
+    const msg = userId
+      ? t('company.team.confirmRemove', { name: displayName })
+      : t('company.team.confirmCancelInvite', { email: displayName });
+    if (!confirm(msg)) return;
+    try {
+      const { data } = await supabase.auth.getSession();
+      const token = data?.session?.access_token;
+      const res = await fetch('/api/company/remove-member', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ jobId, userId, inviteId }),
+      });
+      const j = await res.json();
+      if (!res.ok) { alert(j.error || 'error'); return; }
+      load();
+    } catch (e) { alert(e.message || 'error'); }
+  };
 
   return (
     <div ref={ref} style={s.wrap}>
@@ -77,7 +97,8 @@ export default function TeamPopover({ jobId, canInvite = true }) {
             {team.members.map(m => {
               const name = m.full_name || m.email?.split('@')[0] || '?';
               const isMe = m.user_id === team.currentUserId;
-              const isOwner = m.role === 'owner';
+              const isRowOwner = m.role === 'owner';
+              const canRemove = isOwner && !isRowOwner && !isMe;
               return (
                 <div key={m.user_id} style={s.row}>
                   <div style={{ ...s.av, background: colorFor(m.email || name) }}>{initialOf(name)}</div>
@@ -85,9 +106,17 @@ export default function TeamPopover({ jobId, canInvite = true }) {
                     <div style={s.rowName}>{name}{isMe && <span style={s.meTag}> ({t('company.team.you')})</span>}</div>
                     <div style={s.rowEmail}>{m.email}</div>
                   </div>
-                  <div style={isOwner ? s.ownerTag : s.roleTag}>
-                    {t(`company.team.role.${isOwner ? 'owner' : 'interviewer'}`)}
+                  <div style={isRowOwner ? s.ownerTag : s.roleTag}>
+                    {t(`company.team.role.${isRowOwner ? 'owner' : 'interviewer'}`)}
                   </div>
+                  {canRemove && (
+                    <button
+                      type="button"
+                      onClick={() => remove({ userId: m.user_id, displayName: name })}
+                      title={t('company.team.remove')}
+                      style={s.removeBtn}
+                    >×</button>
+                  )}
                 </div>
               );
             })}
@@ -101,6 +130,14 @@ export default function TeamPopover({ jobId, canInvite = true }) {
                   <div style={s.rowSub}>{t('company.team.invitedAt', { when: relTime(iv.created_at) })}</div>
                 </div>
                 <div style={s.pendTag}>{t('company.team.pending')}</div>
+                {isOwner && (
+                  <button
+                    type="button"
+                    onClick={() => remove({ inviteId: iv.id, displayName: iv.email })}
+                    title={t('company.team.cancelInvite')}
+                    style={s.removeBtn}
+                  >×</button>
+                )}
               </div>
             ))}
           </div>
@@ -243,6 +280,12 @@ const s = {
   roleTag: { flexShrink: 0, fontSize: 11, fontWeight: 800, color: '#6b7280' },
   ownerTag: { flexShrink: 0, fontSize: 10.5, fontWeight: 900, color: '#ea580c', background: '#fff7ed', padding: '4px 8px', borderRadius: 6, border: '1px solid rgba(249,115,22,0.3)' },
   pendTag: { flexShrink: 0, fontSize: 11, fontWeight: 800, color: '#f97316' },
+  removeBtn: {
+    flexShrink: 0, marginLeft: 4, width: 22, height: 22, borderRadius: '50%',
+    border: '1px solid #e5e7eb', background: '#fff', color: '#9ca3af',
+    fontSize: 14, lineHeight: 1, cursor: 'pointer', display: 'grid', placeItems: 'center',
+    fontFamily: 'inherit',
+  },
   inviteBtn: {
     marginTop: 10, width: '100%', border: 0, borderRadius: 9, padding: '10px 12px',
     background: '#fff7ed', color: '#ea580c', fontSize: 13, fontWeight: 850, cursor: 'pointer',
