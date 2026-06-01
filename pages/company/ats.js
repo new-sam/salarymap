@@ -10,14 +10,14 @@ import { useT } from '../../lib/i18n';
 
 const STAGES = [
   { key: 'pending', emoji: '📥' },
-  { key: 'viewed', emoji: '👀' },
-  { key: 'reviewing', emoji: '🗣️' },
-  { key: 'decided', emoji: '✅' },
+  { key: 'viewed', emoji: '💬' },
+  { key: 'reviewing', emoji: '🤝' },
+  { key: 'decided', emoji: '🎉' },
 ];
 
 const STAGE_ORDER = STAGES.map(s => s.key);
 // 단계 전진 시 자동으로 띄울 메일 템플릿
-const STAGE_MAIL = { viewed: 'received', reviewing: 'interview', decided: 'offer' };
+const STAGE_MAIL = { viewed: 'interview', reviewing: 'interview', decided: 'offer' };
 
 export default function CompanyATSPage() {
   const router = useRouter();
