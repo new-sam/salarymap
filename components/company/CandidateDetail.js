@@ -25,11 +25,14 @@ export default function CandidateDetail({ appId, mode = 'page', onClose, company
   const [err, setErr] = useState('');
 
   const [userId, setUserId] = useState(null);
-  const [note, setNote] = useState('');
-  const [savingNote, setSavingNote] = useState(false);
-  const [noteSavedAt, setNoteSavedAt] = useState(null);
+  const [reviewerName, setReviewerName] = useState('');
   const [showInterviewModal, setShowInterviewModal] = useState(false);
   const [showMailModal, setShowMailModal] = useState(false);
+  const [evals, setEvals] = useState([]);
+  const [expandedStages, setExpandedStages] = useState(new Set());
+  const [evalComment, setEvalComment] = useState('');
+  const [evalScore, setEvalScore] = useState('');
+  const [savingEval, setSavingEval] = useState(false);
 
   useEffect(() => {
     if (!appId) return;
@@ -39,12 +42,13 @@ export default function CandidateDetail({ appId, mode = 'page', onClose, company
       if (!session) { setStatus('unauthed'); return; }
       setUserId(session.user.id);
       let cid = companyId;
+      const { data: rec } = await supabase
+        .from('recruiter_users').select('company_id, full_name').eq('user_id', session.user.id).maybeSingle();
       if (!cid) {
-        const { data: rec } = await supabase
-          .from('recruiter_users').select('company_id').eq('user_id', session.user.id).maybeSingle();
         cid = rec?.company_id;
         if (!cid) { setStatus('unauthed'); return; }
       }
+      setReviewerName(rec?.full_name || (session.user.email || '').split('@')[0] || t('company.eval.me'));
 
       const { data: appData, error: appErr } = await supabase
         .from('job_applications')
@@ -58,13 +62,21 @@ export default function CandidateDetail({ appId, mode = 'page', onClose, company
       }
       setApp(appData);
       setJob(appData.jobs);
-      setNote(appData.admin_note || '');
+      setExpandedStages(new Set([appData.status]));
 
       if (appData.user_id) {
         const { data: prof } = await supabase
           .from('user_profiles').select('id, email, full_name').eq('id', appData.user_id).maybeSingle();
         if (prof) setProfile(prof);
       }
+
+      const { data: evalData } = await supabase
+        .from('application_evaluations')
+        .select('*')
+        .eq('application_id', appId)
+        .order('created_at', { ascending: true });
+      setEvals(evalData || []);
+
       setStatus('ready');
     })();
   }, [appId, companyId, t]);
@@ -90,14 +102,49 @@ export default function CandidateDetail({ appId, mode = 'page', onClose, company
     await setStage(STAGE_ORDER[i + 1]);
   };
 
-  const saveNote = async () => {
-    setSavingNote(true);
-    const { error } = await supabase.from('job_applications').update({ admin_note: note }).eq('id', app.id);
-    setSavingNote(false);
-    if (error) { setErr(t('company.err.noteSave') + error.message); return; }
-    setApp({ ...app, admin_note: note });
-    setNoteSavedAt(new Date());
-    setTimeout(() => setNoteSavedAt(null), 3000);
+  const toggleStage = (key) => {
+    setExpandedStages(prev => {
+      const next = new Set(prev);
+      next.has(key) ? next.delete(key) : next.add(key);
+      return next;
+    });
+  };
+
+  const submitEvaluation = async () => {
+    setErr('');
+    const comment = evalComment.trim();
+    if (!comment) { setErr(t('company.eval.errEmpty')); return; }
+    let score = null;
+    if (evalScore !== '') {
+      const n = parseInt(evalScore, 10);
+      if (Number.isNaN(n) || n < 0 || n > 100) { setErr(t('company.eval.errScore')); return; }
+      score = n;
+    }
+    setSavingEval(true);
+    const isOwnerNow = !job?.created_by || job?.created_by === userId;
+    const payload = {
+      application_id: app.id,
+      job_id: app.job_id,
+      stage: app.status,
+      reviewer_user_id: userId,
+      reviewer_name: reviewerName,
+      reviewer_role: isOwnerNow ? 'owner' : 'interviewer',
+      comment,
+      score,
+    };
+    const { data, error } = await supabase
+      .from('application_evaluations')
+      .upsert(payload, { onConflict: 'application_id,stage,reviewer_user_id' })
+      .select()
+      .single();
+    setSavingEval(false);
+    if (error) { setErr('평가 저장 실패: ' + error.message); return; }
+    setEvals(prev => {
+      const exists = prev.some(e => e.id === data.id);
+      return exists ? prev.map(e => e.id === data.id ? data : e) : [...prev, data];
+    });
+    setEvalComment('');
+    setEvalScore('');
   };
 
   if (status === 'loading') return <div style={local.loading}>{t('company.loading')}</div>;
@@ -169,23 +216,21 @@ export default function CandidateDetail({ appId, mode = 'page', onClose, company
             <div style={local.interviewerHint}>🔒 {t('company.candidate.interviewerHint')}</div>
           )}
 
-          <section style={local.section}>
-            <h3 style={local.sectionH}>{t('company.candidate.note')}</h3>
-            <textarea
-              value={note}
-              onChange={(e) => setNote(e.target.value)}
-              placeholder={t('company.candidate.notePh')}
-              rows={6}
-              style={local.textarea}
-            />
-            <div style={local.noteFoot}>
-              <button onClick={saveNote} disabled={savingNote || note === (app.admin_note || '')}
-                style={(savingNote || note === (app.admin_note || '')) ? local.btnSaveDisabled : local.btnSave}>
-                {savingNote ? t('company.savingShort') : t('company.candidate.saveNote')}
-              </button>
-              {noteSavedAt && <span style={local.savedTag}>{t('company.saved')}</span>}
-            </div>
-          </section>
+          <EvaluationSection
+            t={t}
+            stages={STAGES}
+            currentStage={app.status}
+            evals={evals}
+            expandedStages={expandedStages}
+            onToggle={toggleStage}
+            currentUserId={userId}
+            evalComment={evalComment}
+            setEvalComment={setEvalComment}
+            evalScore={evalScore}
+            setEvalScore={setEvalScore}
+            onSubmit={submitEvaluation}
+            saving={savingEval}
+          />
 
           {isOwner ? (
             <>
@@ -246,7 +291,6 @@ export default function CandidateDetail({ appId, mode = 'page', onClose, company
           onClose={() => setShowInterviewModal(false)}
           onSaved={(updated) => {
             setApp({ ...app, admin_note: updated });
-            setNote(updated);
             setShowInterviewModal(false);
           }}
         />
@@ -274,6 +318,151 @@ function Info({ label, children }) {
     </div>
   );
 }
+
+function avgScore(list) {
+  const scored = list.filter(e => typeof e.score === 'number');
+  if (scored.length === 0) return null;
+  return Math.round(scored.reduce((s, e) => s + e.score, 0) / scored.length);
+}
+
+function formatEvalTime(ts) {
+  const d = new Date(ts);
+  const m = d.getMonth() + 1;
+  const day = d.getDate();
+  const hh = String(d.getHours()).padStart(2, '0');
+  const mm = String(d.getMinutes()).padStart(2, '0');
+  return `${m}/${day} ${hh}:${mm}`;
+}
+
+function EvaluationSection({
+  t, stages, currentStage, evals, expandedStages, onToggle, currentUserId,
+  evalComment, setEvalComment, evalScore, setEvalScore, onSubmit, saving,
+}) {
+  const currentStageLabel = t(`company.stage.${currentStage}`);
+  const myCurrentEval = evals.find(e => e.stage === currentStage && e.reviewer_user_id === currentUserId);
+
+  return (
+    <section style={local.section}>
+      <div style={ev.head}>
+        <h3 style={local.sectionH}>{t('company.eval.h')}</h3>
+        <span style={ev.sub}>{t('company.eval.sub')}</span>
+      </div>
+
+      <div style={ev.cards}>
+        {stages.map(s => {
+          const stageEvals = evals.filter(e => e.stage === s.key);
+          const avg = avgScore(stageEvals);
+          const expanded = expandedStages.has(s.key);
+          return (
+            <div key={s.key} style={ev.stageCard}>
+              <button
+                onClick={() => onToggle(s.key)}
+                style={{ ...ev.stageHead, ...(s.key === currentStage ? ev.stageHeadCurrent : {}) }}
+              >
+                <span style={ev.stageEmoji}>{s.emoji}</span>
+                <span style={ev.stageLabel}>{t(`company.stage.${s.key}`)}</span>
+                <span style={avg != null ? ev.avgBadge : ev.notRatedBadge}>
+                  {avg != null ? t('company.eval.avgScore', { n: avg }) : t('company.eval.notRated')}
+                </span>
+                <span style={ev.toggleIcon}>{expanded ? '▾' : '▸'}</span>
+              </button>
+              {expanded && (
+                <div style={ev.stageBody}>
+                  {stageEvals.length === 0 ? (
+                    <div style={ev.empty}>{t('company.eval.empty')}</div>
+                  ) : (
+                    stageEvals.map(e => {
+                      const isMe = e.reviewer_user_id === currentUserId;
+                      const isOwnerRole = e.reviewer_role === 'owner';
+                      return (
+                        <div key={e.id} style={ev.reviewer}>
+                          <div style={ev.reviewerHead}>
+                            <span style={ev.reviewerName}>
+                              {isMe ? `${t('company.eval.me')} (${e.reviewer_name || ''})` : (e.reviewer_name || '—')}
+                            </span>
+                            <span style={isOwnerRole ? ev.roleTagOwner : ev.roleTagInterviewer}>
+                              {t(`company.eval.role.${isOwnerRole ? 'owner' : 'interviewer'}`)}
+                            </span>
+                            <span style={ev.reviewerTime}>{formatEvalTime(e.created_at)}</span>
+                          </div>
+                          <div style={ev.reviewerBody}>
+                            <span style={ev.comment}>{e.comment}</span>
+                            {typeof e.score === 'number' && (
+                              <span style={ev.scoreBadge}>{e.score}{t('company.eval.scoreUnit')}</span>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+
+      <div style={ev.form}>
+        <textarea
+          value={evalComment}
+          onChange={(e) => setEvalComment(e.target.value)}
+          placeholder={t('company.eval.placeholder', { stage: currentStageLabel })}
+          rows={3}
+          style={ev.formText}
+        />
+        <div style={ev.formRow}>
+          <input
+            type="number"
+            min={0}
+            max={100}
+            value={evalScore}
+            onChange={(e) => setEvalScore(e.target.value)}
+            placeholder={t('company.eval.scorePh')}
+            style={ev.formScore}
+          />
+          <button
+            onClick={onSubmit}
+            disabled={saving || !evalComment.trim()}
+            style={(saving || !evalComment.trim()) ? ev.submitDisabled : ev.submit}
+          >
+            {saving ? '...' : (myCurrentEval ? t('company.eval.update') : t('company.eval.submit'))}
+          </button>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+const ev = {
+  head: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 },
+  sub: { fontSize: 11, color: '#94A3B8', fontWeight: 600 },
+  cards: { display: 'flex', flexDirection: 'column', gap: 6 },
+  stageCard: { background: '#FAFAFA', border: '1px solid #E5E7EB', borderRadius: 8, overflow: 'hidden' },
+  stageHead: { width: '100%', display: 'flex', alignItems: 'center', gap: 8, padding: '8px 10px', background: '#FAFAFA', border: 'none', cursor: 'pointer', fontFamily: 'inherit', textAlign: 'left' },
+  stageHeadCurrent: { background: '#FFF7ED' },
+  stageEmoji: { fontSize: 14 },
+  stageLabel: { fontSize: 12, fontWeight: 800, color: '#1A1A1A', flex: 1 },
+  toggleIcon: { fontSize: 10, color: '#94A3B8' },
+  avgBadge: { fontSize: 10.5, fontWeight: 800, color: '#059669', background: '#ECFDF5', padding: '3px 7px', borderRadius: 999 },
+  notRatedBadge: { fontSize: 10.5, fontWeight: 700, color: '#94A3B8', background: '#fff', border: '1px dashed #D1D5DB', padding: '2px 7px', borderRadius: 999 },
+  stageBody: { padding: '8px 10px 10px', borderTop: '1px solid #E5E7EB', background: '#fff', display: 'flex', flexDirection: 'column', gap: 6 },
+  empty: { fontSize: 11, color: '#94A3B8', fontStyle: 'italic', padding: '6px 0' },
+  reviewer: { background: '#F8FAFC', border: '1px solid #E5E7EB', borderRadius: 6, padding: '7px 9px' },
+  reviewerHead: { display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 },
+  reviewerName: { fontSize: 11.5, fontWeight: 700, color: '#1A1A1A' },
+  reviewerTime: { marginLeft: 'auto', fontSize: 10.5, color: '#94A3B8' },
+  roleTagOwner: { fontSize: 9.5, fontWeight: 800, color: '#EA580C', background: '#FFF7ED', padding: '2px 6px', borderRadius: 4, border: '1px solid rgba(249,115,22,0.3)' },
+  roleTagInterviewer: { fontSize: 9.5, fontWeight: 800, color: '#0369A1', background: '#F0F9FF', padding: '2px 6px', borderRadius: 4, border: '1px solid rgba(14,165,233,0.3)' },
+  reviewerBody: { display: 'flex', justifyContent: 'space-between', gap: 8, alignItems: 'flex-start' },
+  comment: { fontSize: 12, color: '#374151', lineHeight: 1.5, whiteSpace: 'pre-wrap', flex: 1 },
+  scoreBadge: { fontSize: 10.5, fontWeight: 800, color: '#059669', background: '#ECFDF5', padding: '3px 7px', borderRadius: 4, flexShrink: 0 },
+  form: { marginTop: 10, padding: 10, background: '#FAFAFA', border: '1px dashed #D1D5DB', borderRadius: 8, display: 'flex', flexDirection: 'column', gap: 8 },
+  formText: { width: '100%', padding: '8px 10px', border: '1px solid #E5E7EB', borderRadius: 6, fontSize: 12, color: '#1A1A1A', fontFamily: 'inherit', resize: 'vertical', boxSizing: 'border-box', background: '#fff' },
+  formRow: { display: 'flex', gap: 8, alignItems: 'center' },
+  formScore: { width: 80, padding: '8px 10px', border: '1px solid #E5E7EB', borderRadius: 6, fontSize: 12, color: '#1A1A1A', fontFamily: 'inherit', boxSizing: 'border-box' },
+  submit: { marginLeft: 'auto', padding: '8px 16px', borderRadius: 6, border: 'none', background: '#2563EB', color: '#fff', fontSize: 12, fontWeight: 800, cursor: 'pointer', fontFamily: 'inherit' },
+  submitDisabled: { marginLeft: 'auto', padding: '8px 16px', borderRadius: 6, border: '1px solid #E5E7EB', background: '#F1F5F9', color: '#94A3B8', fontSize: 12, fontWeight: 800, cursor: 'not-allowed', fontFamily: 'inherit' },
+};
 
 function InterviewModal({ app, onClose, onSaved }) {
   const { t } = useT();
