@@ -5,9 +5,9 @@ import { useT } from '../../lib/i18n';
 
 const STAGES = [
   { key: 'pending', emoji: '📥' },
-  { key: 'viewed', emoji: '👀' },
-  { key: 'reviewing', emoji: '🗣️' },
-  { key: 'decided', emoji: '✅' },
+  { key: 'viewed', emoji: '💬' },
+  { key: 'reviewing', emoji: '🤝' },
+  { key: 'decided', emoji: '🎉' },
 ];
 const STAGE_ORDER = STAGES.map(s => s.key);
 
@@ -24,6 +24,7 @@ export default function CandidateDetail({ appId, mode = 'page', onClose, company
   const [profile, setProfile] = useState(null);
   const [err, setErr] = useState('');
 
+  const [userId, setUserId] = useState(null);
   const [note, setNote] = useState('');
   const [savingNote, setSavingNote] = useState(false);
   const [noteSavedAt, setNoteSavedAt] = useState(null);
@@ -34,10 +35,11 @@ export default function CandidateDetail({ appId, mode = 'page', onClose, company
     if (!appId) return;
     (async () => {
       setStatus('loading');
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) { setStatus('unauthed'); return; }
+      setUserId(session.user.id);
       let cid = companyId;
       if (!cid) {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (!session) { setStatus('unauthed'); return; }
         const { data: rec } = await supabase
           .from('recruiter_users').select('company_id').eq('user_id', session.user.id).maybeSingle();
         cid = rec?.company_id;
@@ -46,7 +48,7 @@ export default function CandidateDetail({ appId, mode = 'page', onClose, company
 
       const { data: appData, error: appErr } = await supabase
         .from('job_applications')
-        .select('*, jobs(id, title, company_id, location, type, recruiter_companies(name))')
+        .select('*, jobs(id, title, company_id, location, type, created_by, recruiter_companies(name))')
         .eq('id', appId)
         .maybeSingle();
       if (appErr || !appData || appData.jobs?.company_id !== cid) {
@@ -110,6 +112,8 @@ export default function CandidateDetail({ appId, mode = 'page', onClose, company
   const hasResume = !!app.resume_url;
   const companyName = job?.recruiter_companies?.name || '';
   const canEmail = /@/.test(email);
+  const appliedAtLabel = new Date(app.created_at).toLocaleDateString();
+  const isOwner = !job?.created_by || job?.created_by === userId;
 
   return (
     <div style={mode === 'overlay' ? local.overlayBody : local.pageBody}>
@@ -127,6 +131,7 @@ export default function CandidateDetail({ appId, mode = 'page', onClose, company
               {app.applicant_role && <> · {app.applicant_role}</>}
               {(app.applicant_experience !== null && app.applicant_experience !== undefined) && <> · {app.applicant_experience}{t('company.years')}</>}
               {mode === 'overlay' && <> · {job.title}</>}
+              <> · {t('company.candidate.appliedShort')} {appliedAtLabel}</>
             </div>
           </div>
           <div style={local.headRight}>
@@ -160,27 +165,9 @@ export default function CandidateDetail({ appId, mode = 'page', onClose, company
         </section>
 
         <aside style={local.sideCol}>
-          <section style={local.section}>
-            <h3 style={local.sectionH}>{t('company.candidate.applyInfo')}</h3>
-            <Info label={t('company.candidate.email')}>{email}</Info>
-            {app.applicant_role && <Info label={t('company.candidate.role')}>{app.applicant_role}</Info>}
-            {(app.applicant_experience !== null && app.applicant_experience !== undefined) && <Info label={t('company.candidate.exp')}>{app.applicant_experience}{t('company.years')}</Info>}
-            {app.applicant_salary && <Info label={t('company.candidate.wishSalary')}>₫{Math.round(app.applicant_salary/1e6)}M/월</Info>}
-            {app.applicant_company && <Info label={t('company.candidate.currentCompany')}>{app.applicant_company}</Info>}
-            <Info label={t('company.candidate.appliedAt')}>{new Date(app.created_at).toLocaleString()}</Info>
-          </section>
-
-          <section style={local.section}>
-            <h3 style={local.sectionH}>{t('company.candidate.contactH')}</h3>
-            <button
-              onClick={() => setShowMailModal(true)}
-              disabled={!canEmail}
-              style={canEmail ? local.btnMail : local.btnMailDisabled}
-            >
-              {t('company.candidate.mailBtn')}
-            </button>
-            {!canEmail && <div style={local.mailHint}>{t('company.candidate.noEmail')}</div>}
-          </section>
+          {!isOwner && (
+            <div style={local.interviewerHint}>🔒 {t('company.candidate.interviewerHint')}</div>
+          )}
 
           <section style={local.section}>
             <h3 style={local.sectionH}>{t('company.candidate.note')}</h3>
@@ -200,29 +187,54 @@ export default function CandidateDetail({ appId, mode = 'page', onClose, company
             </div>
           </section>
 
-          <section style={local.section}>
-            <h3 style={local.sectionH}>{t('company.candidate.stageH')}</h3>
-            <div style={local.stageBtns}>
-              {STAGES.map(s => (
-                <button key={s.key} onClick={() => setStage(s.key)}
-                  style={s.key === app.status ? local.stageBtnActive : local.stageBtn}>
-                  {s.emoji} {t(`company.stage.${s.key}`)}
+          {isOwner ? (
+            <>
+              <section style={local.section}>
+                <h3 style={local.sectionH}>{t('company.candidate.contactH')}</h3>
+                <button
+                  onClick={() => setShowMailModal(true)}
+                  disabled={!canEmail}
+                  style={canEmail ? local.btnMail : local.btnMailDisabled}
+                >
+                  {t('company.candidate.mailBtn')}
                 </button>
-              ))}
-            </div>
-            {nextStage && (
-              <button onClick={moveNext} style={local.btnNext}>
-                {t('company.candidate.nextStage')} {nextStage.emoji} {t(`company.stage.${nextStage.key}`)}
-              </button>
-            )}
-          </section>
+                {!canEmail && <div style={local.mailHint}>{t('company.candidate.noEmail')}</div>}
+              </section>
 
-          {(app.status === 'reviewing' || app.status === 'decided') && (
+              <section style={local.section}>
+                <h3 style={local.sectionH}>{t('company.candidate.stageH')}</h3>
+                <div style={local.stageBtns}>
+                  {STAGES.map(s => (
+                    <button key={s.key} onClick={() => setStage(s.key)}
+                      style={s.key === app.status ? local.stageBtnActive : local.stageBtn}>
+                      {s.emoji} {t(`company.stage.${s.key}`)}
+                    </button>
+                  ))}
+                </div>
+                {nextStage && (
+                  <button onClick={moveNext} style={local.btnNext}>
+                    {t('company.candidate.nextStage')} {nextStage.emoji} {t(`company.stage.${nextStage.key}`)}
+                  </button>
+                )}
+              </section>
+
+              {(app.status === 'reviewing' || app.status === 'decided') && (
+                <section style={local.section}>
+                  <h3 style={local.sectionH}>{t('company.candidate.actionH')}</h3>
+                  <button onClick={() => setShowInterviewModal(true)} style={local.btnAction}>
+                    {t('company.candidate.scheduleInterview')}
+                  </button>
+                </section>
+              )}
+            </>
+          ) : (
             <section style={local.section}>
-              <h3 style={local.sectionH}>{t('company.candidate.actionH')}</h3>
-              <button onClick={() => setShowInterviewModal(true)} style={local.btnAction}>
-                {t('company.candidate.scheduleInterview')}
-              </button>
+              <button disabled style={local.btnLocked}>{t('company.candidate.mailLocked')}</button>
+              {nextStage && (
+                <button disabled style={{ ...local.btnLocked, marginTop: 8 }}>
+                  {t('company.candidate.nextLocked')}
+                </button>
+              )}
             </section>
           )}
         </aside>
@@ -477,6 +489,9 @@ const local = {
   btnMail: { width: '100%', padding: '11px 14px', borderRadius: 8, border: 'none', background: 'linear-gradient(135deg,#EF4444,#F97316)', color: '#fff', fontSize: 13, fontWeight: 800, cursor: 'pointer', fontFamily: 'inherit', boxShadow: '0 4px 12px rgba(234,88,12,0.22)' },
   btnMailDisabled: { width: '100%', padding: '11px 14px', borderRadius: 8, border: '1px solid #E5E7EB', background: '#F1F5F9', color: '#94A3B8', fontSize: 13, fontWeight: 800, cursor: 'not-allowed', fontFamily: 'inherit' },
   mailHint: { fontSize: 11, color: '#94A3B8', marginTop: 6 },
+
+  interviewerHint: { padding: '10px 12px', borderRadius: 8, background: '#F0F9FF', border: '1px solid #BAE6FD', color: '#0369A1', fontSize: 12, fontWeight: 600, lineHeight: 1.5 },
+  btnLocked: { width: '100%', padding: '11px 14px', borderRadius: 8, border: '1px dashed #D1D5DB', background: '#F8FAFC', color: '#94A3B8', fontSize: 13, fontWeight: 700, cursor: 'not-allowed', fontFamily: 'inherit' },
 };
 
 const modal = {

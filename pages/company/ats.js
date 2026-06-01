@@ -98,12 +98,15 @@ export default function CompanyATSPage() {
     }
   };
 
+  const isOwner = !job?.created_by || job?.created_by === user?.id;
+
   // 카드를 다른 단계 컬럼에 드롭 — 단계 변경 후, 전진 이동이면 메일 작성창을 띄움
   const handleDrop = (newStatus) => {
     const appId = draggingId;
     setDraggingId(null);
     setDragOverCol(null);
     if (!appId) return;
+    if (!isOwner) { setErr(t('company.ats.lockedDrag')); return; }
     const app = apps.find(a => a.id === appId);
     if (!app || app.status === newStatus) return;
     const forward = STAGE_ORDER.indexOf(newStatus) > STAGE_ORDER.indexOf(app.status);
@@ -182,7 +185,7 @@ export default function CompanyATSPage() {
               style={localCss.search}
             />
             {query && <button onClick={() => setQuery('')} style={localCss.searchClear}>{t('company.clear')}</button>}
-            <span style={localCss.dragHint}>{t('company.ats.dragHint')}</span>
+            <span style={localCss.dragHint}>{isOwner ? t('company.ats.dragHint') : t('company.ats.dragHintLocked')}</span>
           </div>
 
           <div style={localCss.kanban}>
@@ -206,8 +209,8 @@ export default function CompanyATSPage() {
                     return (
                       <div
                         key={app.id}
-                        draggable
-                        onDragStart={() => setDraggingId(app.id)}
+                        draggable={isOwner}
+                        onDragStart={() => isOwner && setDraggingId(app.id)}
                         onDragEnd={() => { setDraggingId(null); setDragOverCol(null); }}
                         onClick={() => setSelectedAppId(app.id)}
                         style={{...localCss.card, ...(selectedAppId === app.id ? localCss.cardActive : {}), ...(draggingId === app.id ? localCss.cardDragging : {})}}
