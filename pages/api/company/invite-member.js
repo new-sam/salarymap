@@ -29,7 +29,7 @@ ${link}
 — FYI for Companies
 salary-fyi.com`;
     const html = `<!doctype html>
-<html><body style="margin:0;padding:0;background:#f4f4f5">
+<html lang="ko"><head><meta charset="utf-8" /><title>FYI 채용팀 초대</title></head><body style="margin:0;padding:0;background:#f4f4f5">
   <div style="max-width:560px;margin:0 auto;padding:32px 20px;font-family:'Pretendard',-apple-system,'Apple SD Gothic Neo','Segoe UI',Arial,sans-serif;color:#111">
 
     <!-- Brand -->
