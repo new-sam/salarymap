@@ -32,10 +32,16 @@ export default async function handler(req, res) {
 
   const { data: app } = await asUser
     .from('job_applications')
-    .select('id, applicant_email, user_id')
+    .select('id, applicant_email, user_id, job_id, jobs(created_by)')
     .eq('id', appId)
     .maybeSingle();
   if (!app) return res.status(403).json({ error: '해당 지원자에 대한 권한이 없습니다.' });
+
+  // 메일 발송은 공고 오너만 가능 (면접관 차단)
+  const jobOwnerId = app.jobs?.created_by;
+  if (jobOwnerId && jobOwnerId !== user.id) {
+    return res.status(403).json({ error: '메일 발송은 공고 오너만 가능합니다.' });
+  }
 
   // 수신자는 서버에서 결정 (클라이언트가 임의 주소로 못 보내게)
   let toEmail = app.applicant_email;
