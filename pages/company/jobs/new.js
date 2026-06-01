@@ -141,7 +141,18 @@ export default function NewJobPage() {
     if (data?.id && user?.id) {
       await supabase.from('job_team').insert({ job_id: data.id, user_id: user.id, role: 'owner' });
     }
-    router.replace('/company/jobs');
+    // 어드민 알림 (베스트에포트 — 실패해도 진행)
+    if (data?.id) {
+      try {
+        const { data: sess } = await supabase.auth.getSession();
+        await fetch('/api/admin/notify-pending-job', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${sess?.session?.access_token}` },
+          body: JSON.stringify({ jobId: data.id }),
+        });
+      } catch (_) {}
+    }
+    setStatus('submitted');
   };
 
   if (status === 'loading') return <div style={css.loading}>{t('company.loading')}</div>;
@@ -153,6 +164,37 @@ export default function NewJobPage() {
           <h1 style={css.cardH}>{t('company.loginRequired')}</h1>
           <p style={css.cardP}>{err || t('company.err.loginRequired')}</p>
           <Link href="/company" style={css.btnPrimary}>{t('company.loginOrSignup')}</Link>
+        </div>
+      </div>
+    );
+  }
+
+  if (status === 'submitted') {
+    return (
+      <div style={css.fullCenter}>
+        <div style={{...css.lightCard, maxWidth: 480, textAlign: 'center'}}>
+          <div style={{
+            width: 60, height: 60, borderRadius: '50%', margin: '0 auto 18px',
+            display: 'grid', placeItems: 'center', background: '#10b981',
+            color: '#fff', fontSize: 30, fontWeight: 900,
+          }}>✓</div>
+          <h1 style={css.cardH}>{t('company.jobsnew.submitted.title')}</h1>
+          <p style={css.cardP}>{t('company.jobsnew.submitted.lead')}</p>
+          <div style={{
+            background: '#FFF7ED', border: '1px solid #FED7AA', borderRadius: 10,
+            padding: '12px 14px', margin: '16px 0 22px',
+            fontSize: 13, color: '#9A3412', fontWeight: 700, lineHeight: 1.55, textAlign: 'left',
+          }}>
+            📩 {t('company.jobsnew.submitted.mailNote')}
+          </div>
+          <div style={{ display: 'flex', gap: 8, justifyContent: 'center', flexWrap: 'wrap' }}>
+            <Link href="/company" style={css.btnPrimary}>{t('company.jobsnew.submitted.toDashboard')}</Link>
+            <button
+              type="button"
+              onClick={() => { setForm(EMPTY); setStatus('ready'); setErr(''); }}
+              style={{...css.btnGhost, cursor: 'pointer'}}
+            >{t('company.jobsnew.submitted.another')}</button>
+          </div>
         </div>
       </div>
     );
