@@ -9,6 +9,14 @@ function colorFor(seed = '') {
   return AVATAR_COLORS[h % AVATAR_COLORS.length];
 }
 const initialOf = (s = '') => (s.trim()[0] || '?').toUpperCase();
+function relTime(iso) {
+  if (!iso) return '';
+  const diff = Math.floor((Date.now() - new Date(iso).getTime()) / 1000);
+  if (diff < 60) return '방금';
+  if (diff < 3600) return `${Math.floor(diff/60)}분 전`;
+  if (diff < 86400) return `${Math.floor(diff/3600)}시간 전`;
+  return `${Math.floor(diff/86400)}일 전`;
+}
 
 export default function TeamPopover({ jobId, canInvite = true }) {
   const { t } = useT();
@@ -90,6 +98,7 @@ export default function TeamPopover({ jobId, canInvite = true }) {
                 <div style={s.rowBody}>
                   <div style={s.rowName}>{iv.email.split('@')[0]}</div>
                   <div style={s.rowEmail}>{iv.email}</div>
+                  <div style={s.rowSub}>{t('company.team.invitedAt', { when: relTime(iv.created_at) })}</div>
                 </div>
                 <div style={s.pendTag}>{t('company.team.pending')}</div>
               </div>
@@ -120,6 +129,8 @@ function InviteModal({ jobId, onClose, onDone }) {
   const [email, setEmail] = useState('');
   const [sending, setSending] = useState(false);
   const [err, setErr] = useState('');
+  const [result, setResult] = useState(null); // { addedDirectly, mailSent, inviteLink, memberName }
+  const [copied, setCopied] = useState(false);
 
   const submit = async () => {
     setErr('');
@@ -134,7 +145,7 @@ function InviteModal({ jobId, onClose, onDone }) {
       });
       const j = await res.json();
       if (!res.ok) throw new Error(j.error || 'error');
-      onDone();
+      setResult(j);
     } catch (e) {
       setErr(e.message || t('company.invite.errGeneric'));
     } finally {
@@ -142,20 +153,64 @@ function InviteModal({ jobId, onClose, onDone }) {
     }
   };
 
+  const copyLink = async () => {
+    try { await navigator.clipboard.writeText(result.inviteLink); setCopied(true); setTimeout(() => setCopied(false), 1500); } catch {}
+  };
+
+  const finish = () => { onDone(); };
+
   return (
-    <div style={s.overlay} onClick={onClose}>
+    <div style={s.overlay} onClick={result ? finish : onClose}>
       <div style={s.modal} onClick={(e) => e.stopPropagation()}>
-        <button type="button" onClick={onClose} style={s.modalClose} aria-label="close">×</button>
-        <h3 style={s.modalTitle}>{t('company.invite.title')}</h3>
-        <p style={s.modalLead}>{t('company.invite.lead')}</p>
+        <button type="button" onClick={result ? finish : onClose} style={s.modalClose} aria-label="close">×</button>
 
-        <label style={s.label}>{t('company.invite.email')}</label>
-        <input style={s.input} type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="name@company.com" autoFocus />
+        {!result && (
+          <>
+            <h3 style={s.modalTitle}>{t('company.invite.title')}</h3>
+            <p style={s.modalLead}>{t('company.invite.lead')}</p>
+            <label style={s.label}>{t('company.invite.email')}</label>
+            <input
+              style={s.input} type="email" value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="name@company.com" autoFocus
+              onKeyDown={(e) => { if (e.key === 'Enter' && !sending) submit(); }}
+            />
+            {err && <div style={s.err}>{err}</div>}
+            <button type="button" disabled={sending} onClick={submit} style={{ ...s.submit, opacity: sending ? 0.6 : 1 }}>
+              {sending ? t('company.invite.sending') : t('company.invite.submit')}
+            </button>
+          </>
+        )}
 
-        {err && <div style={s.err}>{err}</div>}
-        <button type="button" disabled={sending} onClick={submit} style={{ ...s.submit, opacity: sending ? 0.6 : 1 }}>
-          {sending ? t('company.invite.sending') : t('company.invite.submit')}
-        </button>
+        {result && result.addedDirectly && (
+          <div style={{ textAlign: 'center' }}>
+            <div style={s.doneIcon}>✓</div>
+            <h3 style={s.modalTitle}>{t('company.invite.done.added.title')}</h3>
+            <p style={s.modalLead}>{t('company.invite.done.added.lead', { name: result.memberName || email })}</p>
+            <button type="button" style={s.submit} onClick={finish}>{t('company.invite.close')}</button>
+          </div>
+        )}
+
+        {result && !result.addedDirectly && result.mailSent && (
+          <div style={{ textAlign: 'center' }}>
+            <div style={s.doneIcon}>✉</div>
+            <h3 style={s.modalTitle}>{t('company.invite.done.mailed.title')}</h3>
+            <p style={s.modalLead}>{t('company.invite.done.mailed.lead', { email })}</p>
+            <button type="button" style={s.submit} onClick={finish}>{t('company.invite.close')}</button>
+          </div>
+        )}
+
+        {result && !result.addedDirectly && !result.mailSent && (
+          <div>
+            <h3 style={s.modalTitle}>{t('company.invite.done.linkOnly.title')}</h3>
+            <p style={s.modalLead}>{t('company.invite.done.linkOnly.lead')}</p>
+            <div style={s.linkBox}>
+              <span style={s.linkText}>{result.inviteLink}</span>
+              <button type="button" onClick={copyLink} style={s.copyBtn}>{copied ? t('company.invite.copied') : t('company.invite.copy')}</button>
+            </div>
+            <button type="button" style={{ ...s.submit, marginTop: 12 }} onClick={finish}>{t('company.invite.close')}</button>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -184,6 +239,7 @@ const s = {
   rowName: { fontSize: 13.5, fontWeight: 800, color: '#111', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' },
   meTag: { fontWeight: 700, color: '#9ca3af', fontSize: 11.5 },
   rowEmail: { fontSize: 11.5, color: '#6b7280', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' },
+  rowSub: { fontSize: 10.5, color: '#9ca3af', marginTop: 2 },
   roleTag: { flexShrink: 0, fontSize: 11, fontWeight: 800, color: '#6b7280' },
   ownerTag: { flexShrink: 0, fontSize: 10.5, fontWeight: 900, color: '#ea580c', background: '#fff7ed', padding: '4px 8px', borderRadius: 6, border: '1px solid rgba(249,115,22,0.3)' },
   pendTag: { flexShrink: 0, fontSize: 11, fontWeight: 800, color: '#f97316' },
@@ -212,4 +268,15 @@ const s = {
   roleBtnActive: { background: '#fff7ed', borderColor: '#fb923c', color: '#ea580c' },
   err: { marginTop: 12, background: '#FEF2F2', border: '1px solid #FECACA', borderRadius: 8, padding: '9px 12px', fontSize: 12.5, color: '#dc2626', fontWeight: 600 },
   submit: { width: '100%', marginTop: 16, border: 0, borderRadius: 10, padding: '13px 18px', background: 'linear-gradient(135deg,#ef4444,#f97316)', color: '#fff', fontSize: 14, fontWeight: 850, fontFamily: 'inherit', cursor: 'pointer' },
+  doneIcon: {
+    width: 52, height: 52, borderRadius: '50%', margin: '4px auto 14px',
+    display: 'grid', placeItems: 'center', background: '#10b981', color: '#fff',
+    fontSize: 26, fontWeight: 900,
+  },
+  linkBox: {
+    marginTop: 12, display: 'flex', alignItems: 'center', gap: 8,
+    border: '1px solid #e5e7eb', borderRadius: 9, padding: '8px 10px', background: '#f9fafb',
+  },
+  linkText: { flex: 1, minWidth: 0, fontSize: 12, color: '#374151', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontFamily: 'monospace' },
+  copyBtn: { flexShrink: 0, border: '1px solid #d1d5db', background: '#fff', borderRadius: 7, padding: '6px 11px', fontSize: 12, fontWeight: 800, color: '#374151', cursor: 'pointer', fontFamily: 'inherit' },
 };
