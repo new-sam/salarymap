@@ -68,7 +68,7 @@ export default function CompanyATSPage() {
 
       const { data: appsData } = await supabase
         .from('job_applications')
-        .select('id, status, applicant_name, applicant_email, applicant_salary, applicant_role, applicant_experience, applicant_company, resume_url, user_id, created_at, admin_note')
+        .select('id, status, applicant_name, applicant_email, applicant_salary, applicant_role, applicant_experience, applicant_company, resume_url, user_id, created_at, admin_note, interview_at')
         .eq('job_id', jobId)
         .order('created_at', { ascending: false });
       setApps(appsData || []);
@@ -206,6 +206,10 @@ export default function CompanyATSPage() {
                   {col.apps.map(app => {
                     const profile = app.user_id ? profileMap[app.user_id] : null;
                     const name = app.applicant_name || profile?.full_name || `${t('company.candidatePrefix')}${app.id.slice(-6).toUpperCase()}`;
+                    const showInterviewBadge = app.status === 'viewed' || app.status === 'reviewing';
+                    const interviewWhen = app.interview_at
+                      ? new Date(app.interview_at).toLocaleString(undefined, { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' })
+                      : null;
                     return (
                       <div
                         key={app.id}
@@ -218,6 +222,11 @@ export default function CompanyATSPage() {
                         <div style={localCss.cardName}>{name}</div>
                         {app.applicant_role && <div style={localCss.cardMeta}>{app.applicant_role} · {app.applicant_experience || 0}{t('company.years')}</div>}
                         {app.applicant_salary && <div style={localCss.cardSalary}>{t('company.ats.wishSalary', { n: Math.round(app.applicant_salary/1e6) })}</div>}
+                        {showInterviewBadge && (
+                          <div style={interviewWhen ? localCss.interviewSet : localCss.interviewPending}>
+                            {interviewWhen ? t('company.ats.interviewSet', { when: interviewWhen }) : t('company.ats.interviewPending')}
+                          </div>
+                        )}
                         <div style={localCss.cardDate}>{new Date(app.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}</div>
                       </div>
                     );
@@ -250,6 +259,7 @@ export default function CompanyATSPage() {
             companyName={companyName}
             applicationId={mailFor.app.id}
             initialTemplateKey={mailFor.templateKey}
+            withSlots={mailFor.templateKey === 'interview'}
             stageNote={t('company.ats.stageNote', { stage: mailFor.stageLabel })}
             onClose={() => setMailFor(null)}
             onSent={() => setMailFor(null)}
@@ -288,4 +298,6 @@ const localCss = {
   cardMeta: { fontSize: 11.5, color: '#525252' },
   cardSalary: { fontSize: 11.5, color: '#059669', fontWeight: 600 },
   cardDate: { fontSize: 10.5, color: '#94A3B8', marginTop: 2 },
+  interviewSet: { marginTop: 4, padding: '6px 10px', background: '#ECFDF5', border: '1px solid #A7F3D0', borderRadius: 6, fontSize: 11, fontWeight: 700, color: '#047857' },
+  interviewPending: { marginTop: 4, padding: '6px 10px', background: '#FFFBEB', border: '1px solid #FDE68A', borderRadius: 6, fontSize: 11, fontWeight: 700, color: '#B45309' },
 };

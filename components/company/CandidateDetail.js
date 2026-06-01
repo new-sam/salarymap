@@ -10,6 +10,7 @@ const STAGES = [
   { key: 'decided', emoji: '🎉' },
 ];
 const STAGE_ORDER = STAGES.map(s => s.key);
+const STAGE_MAIL_TPL = { viewed: 'interview', reviewing: 'interview', decided: 'offer' };
 
 const TPL_KEYS = ['received', 'interview', 'offer', 'reject'];
 
@@ -26,12 +27,16 @@ export default function CandidateDetail({ appId, mode = 'page', onClose, company
 
   const [userId, setUserId] = useState(null);
   const [reviewerName, setReviewerName] = useState('');
-  const [showInterviewModal, setShowInterviewModal] = useState(false);
+  const [mailModal, setMailModal] = useState(null); // { templateKey, withSlots }
   const [evals, setEvals] = useState([]);
   const [expandedStages, setExpandedStages] = useState(new Set());
   const [evalComment, setEvalComment] = useState('');
   const [evalScore, setEvalScore] = useState('');
   const [savingEval, setSavingEval] = useState(false);
+  const [editingEval, setEditingEval] = useState(null);
+  const [editComment, setEditComment] = useState('');
+  const [editScore, setEditScore] = useState('');
+  const [savingEdit, setSavingEdit] = useState(false);
 
   useEffect(() => {
     if (!appId) return;
@@ -92,7 +97,9 @@ export default function CandidateDetail({ appId, mode = 'page', onClose, company
       return;
     }
     onStageChange?.(app.id, newStatus);
-    if (newStatus === 'reviewing') setShowInterviewModal(true);
+    // 단계 전진 시 메일 + 면접 일정 통합 모달 자동 띄움
+    const tpl = STAGE_MAIL_TPL[newStatus];
+    if (tpl) setMailModal({ templateKey: tpl, withSlots: tpl === 'interview' });
   };
 
   const moveNext = async () => {
@@ -107,6 +114,43 @@ export default function CandidateDetail({ appId, mode = 'page', onClose, company
       next.has(key) ? next.delete(key) : next.add(key);
       return next;
     });
+  };
+
+  const startEditEval = (row) => {
+    setEditingEval(row);
+    setEditComment(row.comment);
+    setEditScore(row.score != null ? String(row.score) : '');
+    setErr('');
+  };
+
+  const saveEditEval = async () => {
+    setErr('');
+    const comment = editComment.trim();
+    if (!comment) { setErr(t('company.eval.errEmpty')); return; }
+    let score = null;
+    if (editScore !== '') {
+      const n = parseInt(editScore, 10);
+      if (Number.isNaN(n) || n < 0 || n > 100) { setErr(t('company.eval.errScore')); return; }
+      score = n;
+    }
+    setSavingEdit(true);
+    const { data, error } = await supabase
+      .from('application_evaluations')
+      .update({ comment, score })
+      .eq('id', editingEval.id)
+      .select()
+      .single();
+    setSavingEdit(false);
+    if (error) { setErr('수정 실패: ' + error.message); return; }
+    setEvals(prev => prev.map(e => e.id === data.id ? data : e));
+    setEditingEval(null);
+  };
+
+  const deleteEvaluation = async (row) => {
+    if (!window.confirm(t('company.eval.confirmDelete'))) return;
+    const { error } = await supabase.from('application_evaluations').delete().eq('id', row.id);
+    if (error) { setErr('삭제 실패: ' + error.message); return; }
+    setEvals(prev => prev.filter(e => e.id !== row.id));
   };
 
   const submitEvaluation = async () => {
@@ -158,6 +202,7 @@ export default function CandidateDetail({ appId, mode = 'page', onClose, company
   const hasResume = !!app.resume_url;
   const appliedAtLabel = new Date(app.created_at).toLocaleDateString();
   const isOwner = !job?.created_by || job?.created_by === userId;
+  const companyName = job?.recruiter_companies?.name || '';
 
   return (
     <div style={mode === 'overlay' ? local.overlayBody : local.pageBody}>
@@ -227,6 +272,8 @@ export default function CandidateDetail({ appId, mode = 'page', onClose, company
             setEvalScore={setEvalScore}
             onSubmit={submitEvaluation}
             saving={savingEval}
+            onEdit={startEditEval}
+            onDelete={deleteEvaluation}
           />
 
           {isOwner ? (
@@ -235,14 +282,6 @@ export default function CandidateDetail({ appId, mode = 'page', onClose, company
                 <section style={local.section}>
                   <button onClick={moveNext} style={local.btnNext}>
                     {t('company.candidate.nextStage')} {nextStage.emoji} {t(`company.stage.${nextStage.key}`)}
-                  </button>
-                </section>
-              )}
-
-              {app.status !== 'decided' && (
-                <section style={local.section}>
-                  <button onClick={() => setShowInterviewModal(true)} style={local.btnAction}>
-                    {t('company.candidate.scheduleInterview')}
                   </button>
                 </section>
               )}
@@ -257,15 +296,46 @@ export default function CandidateDetail({ appId, mode = 'page', onClose, company
         </aside>
       </div>
 
-      {showInterviewModal && (
-        <InterviewModal
-          app={app}
-          onClose={() => setShowInterviewModal(false)}
-          onSaved={(updated) => {
-            setApp({ ...app, admin_note: updated });
-            setShowInterviewModal(false);
-          }}
+      {mailModal && (
+        <MailComposer
+          candidateName={name}
+          candidateEmail={email}
+          jobTitle={job.title}
+          companyName={companyName}
+          applicationId={app.id}
+          initialTemplateKey={mailModal.templateKey}
+          withSlots={mailModal.withSlots}
+          stageNote={t('company.ats.stageNote', { stage: t(`company.stage.${app.status}`) })}
+          onClose={() => setMailModal(null)}
+          onSent={() => setMailModal(null)}
         />
+      )}
+
+      {editingEval && (
+        <div style={modal.overlay} onClick={() => setEditingEval(null)}>
+          <div style={modal.box} onClick={(e) => e.stopPropagation()}>
+            <header style={modal.head}>
+              <h2 style={modal.h}>{t('company.eval.editH')}</h2>
+              <button onClick={() => setEditingEval(null)} style={modal.closeBtn}>✕</button>
+            </header>
+            <div style={modal.body}>
+              <div style={modal.field}>
+                <label style={modal.label}>{t('company.candidate.note')}</label>
+                <textarea value={editComment} onChange={(e) => setEditComment(e.target.value)} rows={4} style={{ ...modal.inp, resize: 'vertical', fontFamily: 'inherit' }} />
+              </div>
+              <div style={modal.field}>
+                <label style={modal.label}>{t('company.eval.scorePh')}</label>
+                <input type="number" min={0} max={100} value={editScore} onChange={(e) => setEditScore(e.target.value)} style={{ ...modal.inp, width: 120 }} />
+              </div>
+            </div>
+            <footer style={modal.foot}>
+              <button onClick={() => setEditingEval(null)} style={modal.btnGhost}>{t('company.cancel')}</button>
+              <button onClick={saveEditEval} disabled={savingEdit} style={savingEdit ? modal.btnDisabled : modal.btnPrimary}>
+                {savingEdit ? t('company.savingShort') : t('company.eval.editBtn')}
+              </button>
+            </footer>
+          </div>
+        </div>
       )}
 
     </div>
@@ -299,6 +369,7 @@ function formatEvalTime(ts) {
 function EvaluationSection({
   t, stages, currentStage, evals, expandedStages, onToggle, currentUserId,
   evalComment, setEvalComment, evalScore, setEvalScore, onSubmit, saving,
+  onEdit, onDelete,
 }) {
   const currentStageLabel = t(`company.stage.${currentStage}`);
   const myCurrentEval = evals.find(e => e.stage === currentStage && e.reviewer_user_id === currentUserId);
@@ -343,6 +414,12 @@ function EvaluationSection({
                             {t(`company.eval.role.${isOwnerRole ? 'owner' : 'interviewer'}`)}
                           </span>
                           <span style={ev.reviewerTime}>{formatEvalTime(e.created_at)}</span>
+                          {isMe && (
+                            <span style={ev.evalActions}>
+                              <button onClick={() => onEdit(e)} style={ev.evalActionBtn}>{t('company.eval.editBtn')}</button>
+                              <button onClick={() => onDelete(e)} style={ev.evalActionBtn}>{t('company.eval.deleteBtn')}</button>
+                            </span>
+                          )}
                         </div>
                         <div style={ev.reviewerBody}>
                           <span style={ev.comment}>{e.comment}</span>
@@ -424,24 +501,38 @@ const ev = {
   formScore: { width: 80, padding: '8px 10px', border: '1px solid #E5E7EB', borderRadius: 6, fontSize: 12, color: '#1A1A1A', fontFamily: 'inherit', boxSizing: 'border-box' },
   submit: { marginLeft: 'auto', padding: '8px 16px', borderRadius: 6, border: 'none', background: '#2563EB', color: '#fff', fontSize: 12, fontWeight: 800, cursor: 'pointer', fontFamily: 'inherit' },
   submitDisabled: { marginLeft: 'auto', padding: '8px 16px', borderRadius: 6, border: '1px solid #E5E7EB', background: '#F1F5F9', color: '#94A3B8', fontSize: 12, fontWeight: 800, cursor: 'not-allowed', fontFamily: 'inherit' },
+  evalActions: { display: 'flex', gap: 4 },
+  evalActionBtn: { padding: '2px 7px', fontSize: 10, fontWeight: 700, color: '#525252', background: '#fff', border: '1px solid #E5E7EB', borderRadius: 4, cursor: 'pointer', fontFamily: 'inherit' },
 };
 
 function InterviewModal({ app, onClose, onSaved }) {
   const { t } = useT();
-  const [date, setDate] = useState('');
-  const [time, setTime] = useState('14:00');
+  const [slots, setSlots] = useState([{ date: '', time: '14:00' }]);
   const [location, setLocation] = useState('');
   const [interviewer, setInterviewer] = useState('');
   const [saving, setSaving] = useState(false);
   const [err, setErr] = useState('');
 
+  const updateSlot = (i, field, value) => {
+    setSlots(prev => prev.map((s, idx) => idx === i ? { ...s, [field]: value } : s));
+  };
+  const addSlot = () => {
+    setSlots(prev => prev.length >= 3 ? prev : [...prev, { date: '', time: '14:00' }]);
+  };
+  const removeSlot = (i) => {
+    setSlots(prev => prev.length <= 1 ? prev : prev.filter((_, idx) => idx !== i));
+  };
+
   const save = async () => {
-    if (!date) { setErr(t('company.err.dateRequired')); return; }
+    const validSlots = slots.filter(s => s.date);
+    if (validSlots.length === 0) { setErr(t('company.err.dateRequired')); return; }
     setSaving(true);
-    const summary = `[Interview]\n📅 ${date} ${time}\n📍 ${location || '—'}\n👤 ${interviewer || '—'}\n\n${app.admin_note || ''}`;
+    const slotLines = validSlots.map((s, i) => `${i + 1}) ${s.date} ${s.time || '00:00'}`).join('\n');
+    const summary = `[Interview]\n📅 ${t('company.interview.slotsTitle')}:\n${slotLines}\n📍 ${location || '—'}\n👤 ${interviewer || '—'}\n\n${app.admin_note || ''}`;
+    const first = validSlots[0];
     const { error } = await supabase.from('job_applications').update({
       admin_note: summary,
-      interview_at: new Date(`${date}T${time || '00:00'}`).toISOString(),
+      interview_at: new Date(`${first.date}T${first.time || '00:00'}`).toISOString(),
       interview_location: location || null,
       interview_interviewer: interviewer || null,
     }).eq('id', app.id);
@@ -458,10 +549,30 @@ function InterviewModal({ app, onClose, onSaved }) {
           <button onClick={onClose} style={modal.closeBtn}>✕</button>
         </header>
         <div style={modal.body}>
-          <div style={modal.field}><label style={modal.label}>{t('company.interview.dateLabel')}</label><input type="date" value={date} onChange={(e) => setDate(e.target.value)} style={modal.inp} /></div>
-          <div style={modal.field}><label style={modal.label}>{t('company.interview.timeLabel')}</label><input type="time" value={time} onChange={(e) => setTime(e.target.value)} style={modal.inp} /></div>
-          <div style={modal.field}><label style={modal.label}>{t('company.interview.locLabel')}</label><input value={location} onChange={(e) => setLocation(e.target.value)} placeholder={t('company.interview.locPh')} style={modal.inp} /></div>
-          <div style={modal.field}><label style={modal.label}>{t('company.interview.interviewerLabel')}</label><input value={interviewer} onChange={(e) => setInterviewer(e.target.value)} placeholder={t('company.interview.interviewerPh')} style={modal.inp} /></div>
+          <div style={modal.field}>
+            <label style={modal.label}>{t('company.interview.locLabel')}</label>
+            <input value={location} onChange={(e) => setLocation(e.target.value)} placeholder={t('company.interview.locPh')} style={modal.inp} />
+          </div>
+          <div style={modal.field}>
+            <label style={modal.label}>{t('company.interview.interviewerLabel')}</label>
+            <input value={interviewer} onChange={(e) => setInterviewer(e.target.value)} placeholder={t('company.interview.interviewerPh')} style={modal.inp} />
+          </div>
+          <div style={modal.field}>
+            <label style={modal.label}>{t('company.interview.slotsLabel')}</label>
+            {slots.map((s, i) => (
+              <div key={i} style={slot.row}>
+                <span style={slot.num}>{i + 1}</span>
+                <input type="date" value={s.date} onChange={(e) => updateSlot(i, 'date', e.target.value)} style={{ ...modal.inp, flex: 1 }} />
+                <input type="time" value={s.time} onChange={(e) => updateSlot(i, 'time', e.target.value)} style={{ ...modal.inp, width: 110 }} />
+                {slots.length > 1 && (
+                  <button type="button" onClick={() => removeSlot(i)} style={slot.removeBtn} title={t('company.interview.removeSlot')}>✕</button>
+                )}
+              </div>
+            ))}
+            {slots.length < 3 && (
+              <button type="button" onClick={addSlot} style={slot.addBtn}>{t('company.interview.addSlot')}</button>
+            )}
+          </div>
           {err && <div style={local.errBox}>{err}</div>}
           <p style={modal.hint}>{t('company.interview.hint')}</p>
         </div>
@@ -476,16 +587,30 @@ function InterviewModal({ app, onClose, onSaved }) {
   );
 }
 
+const slot = {
+  row: { display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 },
+  num: { width: 16, fontSize: 12, fontWeight: 800, color: '#525252' },
+  removeBtn: { padding: '6px 10px', background: 'transparent', border: '1px solid #E5E7EB', borderRadius: 6, fontSize: 12, color: '#94A3B8', cursor: 'pointer', fontFamily: 'inherit' },
+  addBtn: { marginTop: 4, padding: '8px 12px', background: '#F8FAFC', border: '1px dashed #D1D5DB', borderRadius: 6, fontSize: 12, fontWeight: 700, color: '#525252', cursor: 'pointer', fontFamily: 'inherit' },
+};
+
+function formatSlots(slots) {
+  const valid = slots.filter(s => s?.date);
+  if (valid.length === 0) return '';
+  return valid.map((s, i) => `${i + 1}) ${s.date} ${s.time || '00:00'}`).join('\n');
+}
+
 function fillVars(text, vars) {
   return (text || '')
     .split('{후보이름}').join(vars.name)
     .split('{공고명}').join(vars.jobTitle)
-    .split('{회사명}').join(vars.companyName || '—');
+    .split('{회사명}').join(vars.companyName || '—')
+    .split('{면접일정}').join(vars.slotsText || '');
 }
 
 export function MailComposer({
   candidateName, candidateEmail, jobTitle, companyName,
-  applicationId, initialTemplateKey, stageNote, onClose, onSent,
+  applicationId, initialTemplateKey, stageNote, withSlots = false, onClose, onSent,
 }) {
   const { t } = useT();
   const templates = TPL_KEYS.map(key => ({
@@ -494,21 +619,39 @@ export function MailComposer({
     subject: t(`company.tpl.${key}.subject`),
     body: t(`company.tpl.${key}.body`),
   }));
-  const vars = { name: candidateName, jobTitle, companyName };
   const startTpl = templates.find(x => x.key === initialTemplateKey) || templates[0];
   const [tplKey, setTplKey] = useState(startTpl.key);
+  const [slots, setSlots] = useState([{ date: '', time: '14:00' }]);
+  const slotsText = formatSlots(slots);
+  const vars = { name: candidateName, jobTitle, companyName, slotsText };
   const [subject, setSubject] = useState(fillVars(startTpl.subject, vars));
   const [body, setBody] = useState(fillVars(startTpl.body, vars));
   const [sending, setSending] = useState(false);
   const [err, setErr] = useState('');
 
+  // 슬롯/템플릿 변경 시 본문 자동 갱신 (사용자가 본문을 직접 편집한 경우는 덮어쓰지 않도록 마지막 자동값과 비교)
+  const [lastAutoBody, setLastAutoBody] = useState(fillVars(startTpl.body, vars));
+  useEffect(() => {
+    const newAuto = fillVars(templates.find(x => x.key === tplKey)?.body, { ...vars, slotsText });
+    if (body === lastAutoBody) {
+      setBody(newAuto);
+    }
+    setLastAutoBody(newAuto);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tplKey, slots]);
+
   const pickTemplate = (key) => {
     const tpl = templates.find(x => x.key === key);
     if (!tpl) return;
     setTplKey(key);
-    setSubject(fillVars(tpl.subject, vars));
-    setBody(fillVars(tpl.body, vars));
+    setSubject(fillVars(tpl.subject, { ...vars, slotsText }));
   };
+
+  const updateSlot = (i, field, value) => setSlots(prev => prev.map((s, idx) => idx === i ? { ...s, [field]: value } : s));
+  const addSlot = () => setSlots(prev => prev.length >= 3 ? prev : [...prev, { date: '', time: '14:00' }]);
+  const removeSlot = (i) => setSlots(prev => prev.length <= 1 ? prev : prev.filter((_, idx) => idx !== i));
+
+  const showSlots = withSlots && tplKey === 'interview';
 
   const send = async () => {
     setErr('');
@@ -526,6 +669,21 @@ export function MailComposer({
       });
       const json = await res.json().catch(() => ({}));
       if (!res.ok) { setErr(json.error || t('company.err.mailFail')); setSending(false); return; }
+
+      // 면접 슬롯 입력이 있으면 DB에도 첫 슬롯 + admin_note 저장
+      if (showSlots) {
+        const valid = slots.filter(s => s?.date);
+        if (valid.length > 0) {
+          const first = valid[0];
+          const slotLines = valid.map((s, i) => `${i + 1}) ${s.date} ${s.time || '00:00'}`).join('\n');
+          const noteSummary = `[Interview]\n📅 ${t('company.interview.slotsTitle')}:\n${slotLines}`;
+          await supabase.from('job_applications').update({
+            interview_at: new Date(`${first.date}T${first.time || '00:00'}`).toISOString(),
+            admin_note: noteSummary,
+          }).eq('id', applicationId);
+        }
+      }
+
       onSent?.(tplKey);
       onClose();
     } catch (e) {
@@ -564,6 +722,25 @@ export function MailComposer({
             <label style={modal.label}>{t('company.mail.subject')}</label>
             <input value={subject} onChange={(e) => setSubject(e.target.value)} style={modal.inp} />
           </div>
+          {showSlots && (
+            <div style={modal.field}>
+              <label style={modal.label}>{t('company.interview.slotsLabel')}</label>
+              {slots.map((s, i) => (
+                <div key={i} style={slot.row}>
+                  <span style={slot.num}>{i + 1}</span>
+                  <input type="date" value={s.date} onChange={(e) => updateSlot(i, 'date', e.target.value)} style={{ ...modal.inp, flex: 1 }} />
+                  <input type="time" value={s.time} onChange={(e) => updateSlot(i, 'time', e.target.value)} style={{ ...modal.inp, width: 110 }} />
+                  {slots.length > 1 && (
+                    <button type="button" onClick={() => removeSlot(i)} style={slot.removeBtn} title={t('company.interview.removeSlot')}>✕</button>
+                  )}
+                </div>
+              ))}
+              {slots.length < 3 && (
+                <button type="button" onClick={addSlot} style={slot.addBtn}>{t('company.interview.addSlot')}</button>
+              )}
+              <p style={modal.hint}>{t('company.interview.slotsAutoHint')}</p>
+            </div>
+          )}
           <div style={modal.field}>
             <label style={modal.label}>{t('company.mail.body')}</label>
             <textarea value={body} onChange={(e) => setBody(e.target.value)} rows={12}
@@ -647,16 +824,16 @@ const local = {
 
 const modal = {
   overlay: { position: 'fixed', inset: 0, background: 'rgba(15,23,42,0.4)', zIndex: 200, display: 'grid', placeItems: 'center', padding: 20 },
-  box: { background: '#fff', borderRadius: 14, maxWidth: 480, width: '100%', boxShadow: '0 20px 50px rgba(0,0,0,0.25)' },
-  head: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '20px 24px', borderBottom: '1px solid #E5E7EB' },
+  box: { background: '#fff', borderRadius: 14, maxWidth: 480, width: '100%', maxHeight: '90vh', display: 'flex', flexDirection: 'column', boxShadow: '0 20px 50px rgba(0,0,0,0.25)' },
+  head: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '20px 24px', borderBottom: '1px solid #E5E7EB', flexShrink: 0 },
   h: { fontSize: 17, fontWeight: 800, color: '#1A1A1A' },
   closeBtn: { padding: 4, background: 'transparent', border: 'none', fontSize: 18, color: '#94A3B8', cursor: 'pointer' },
-  body: { padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: 14 },
+  body: { padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: 14, overflowY: 'auto', flex: 1, minHeight: 0 },
   field: { display: 'flex', flexDirection: 'column', gap: 6 },
   label: { fontSize: 12, color: '#525252', fontWeight: 700 },
   inp: { padding: '10px 12px', border: '1px solid #D1D5DB', borderRadius: 8, fontSize: 13, color: '#1A1A1A', fontFamily: 'inherit', boxSizing: 'border-box' },
   hint: { fontSize: 11.5, color: '#737373', marginTop: 4, lineHeight: 1.55 },
-  foot: { display: 'flex', justifyContent: 'flex-end', gap: 8, padding: '14px 24px', borderTop: '1px solid #E5E7EB' },
+  foot: { display: 'flex', justifyContent: 'flex-end', gap: 8, padding: '14px 24px', borderTop: '1px solid #E5E7EB', flexShrink: 0 },
   btnPrimary: { padding: '10px 20px', borderRadius: 8, border: 'none', background: 'linear-gradient(135deg,#EF4444,#F97316)', color: '#fff', fontSize: 13, fontWeight: 800, cursor: 'pointer', fontFamily: 'inherit' },
   btnGhost: { padding: '10px 20px', borderRadius: 8, border: '1px solid #D1D5DB', background: '#fff', color: '#1A1A1A', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' },
   btnDisabled: { padding: '10px 20px', borderRadius: 8, border: 'none', background: '#E5E7EB', color: '#94A3B8', fontSize: 13, fontWeight: 800, cursor: 'not-allowed', fontFamily: 'inherit' },
