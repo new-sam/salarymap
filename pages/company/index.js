@@ -367,6 +367,11 @@ export default function CompanyDashboard() {
                         <div style={localCss.cardMeta}>
                           {job.location} · {job.type} · ₫{Math.round(job.salary_min/1e6)}M–{Math.round(job.salary_max/1e6)}M/월
                         </div>
+                        {job.status === 'pending_review' && (
+                          <div style={{ marginTop: 6, fontSize: 12, color: '#EA580C', fontWeight: 700 }}>
+                            ⏳ {t('company.job.approval.pendingDesc')}
+                          </div>
+                        )}
                       </div>
                       <div style={localCss.cardRight}>
                         <div style={localCss.stats}>

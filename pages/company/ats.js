@@ -5,6 +5,7 @@ import { useRouter } from 'next/router';
 import { supabase } from '../../lib/supabaseClient';
 import { Sidebar, css } from './jobs/new';
 import CandidateDetail, { MailComposer } from '../../components/company/CandidateDetail';
+import TeamPopover from '../../components/company/TeamPopover';
 import { useT } from '../../lib/i18n';
 
 const STAGES = [
@@ -54,7 +55,7 @@ export default function CompanyATSPage() {
 
       const { data: jobData, error: jobErr } = await supabase
         .from('jobs')
-        .select('id, title, status, location, type, salary_min, salary_max, company_id, created_at')
+        .select('id, title, status, location, type, salary_min, salary_max, company_id, created_at, created_by')
         .eq('id', jobId)
         .eq('company_id', rec.company_id)
         .maybeSingle();
@@ -165,7 +166,10 @@ export default function CompanyATSPage() {
                 {job.location} · {job.type} · ₫{Math.round(job.salary_min/1e6)}M–{Math.round(job.salary_max/1e6)}M · {t('company.ats.totalApps', { n: apps.length })}
               </p>
             </div>
-            <Link href={`/company/jobs/${job.id}/edit`} style={css.btnGhost}>{t('company.ats.editJob')}</Link>
+            <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+              <TeamPopover jobId={job.id} canInvite={!job.created_by || job.created_by === user?.id} />
+              <Link href={`/company/jobs/${job.id}/edit`} style={css.btnGhost}>{t('company.ats.editJob')}</Link>
+            </div>
           </header>
 
           {err && <div style={css.err}>{err}</div>}
