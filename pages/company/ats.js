@@ -8,7 +8,7 @@ import CandidateDetail, { MailComposer } from '../../components/company/Candidat
 import { useT } from '../../lib/i18n';
 
 const STAGES = [
-  { key: 'applied', emoji: '📥' },
+  { key: 'pending', emoji: '📥' },
   { key: 'viewed', emoji: '👀' },
   { key: 'reviewing', emoji: '🗣️' },
   { key: 'decided', emoji: '✅' },

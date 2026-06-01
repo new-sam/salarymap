@@ -7,7 +7,7 @@ import { useT } from '../lib/i18n'
 import Icon from '../components/Icon'
 
 const STEPS = ['applied', 'viewed', 'reviewing', 'decided']
-const STATUS_TO_STEP = { applied: 'applied', viewed: 'viewed', reviewing: 'reviewing', accepted: 'decided', rejected: 'decided' }
+const STATUS_TO_STEP = { pending: 'applied', applied: 'applied', viewed: 'viewed', reviewing: 'reviewing', decided: 'decided', accepted: 'decided', rejected: 'decided' }
 
 export default function MyApplications() {
   const router = useRouter()

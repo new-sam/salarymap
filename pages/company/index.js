@@ -183,7 +183,7 @@ export default function CompanyDashboard() {
         apps.forEach(a => {
           if (!grouped[a.job_id]) grouped[a.job_id] = { total: 0, new: 0 };
           grouped[a.job_id].total += 1;
-          if (a.status === 'applied') grouped[a.job_id].new += 1;
+          if (a.status === 'pending') grouped[a.job_id].new += 1;
         });
         setAppsByJob(grouped);
       }
