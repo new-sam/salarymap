@@ -137,6 +137,10 @@ export default function NewJobPage() {
 
     const { data, error } = await supabase.from('jobs').insert(payload).select('id').single();
     if (error) { setErr(error.message); setStatus('ready'); return; }
+    // 작성자를 채용팀 오너로 등록 (실패해도 공고 생성 자체는 성공으로 처리)
+    if (data?.id && user?.id) {
+      await supabase.from('job_team').insert({ job_id: data.id, user_id: user.id, role: 'owner' });
+    }
     router.replace('/company/jobs');
   };
 

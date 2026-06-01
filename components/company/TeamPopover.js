@@ -13,25 +13,26 @@ const initialOf = (s = '') => (s.trim()[0] || '?').toUpperCase();
 export default function TeamPopover({ jobId, canInvite = true }) {
   const { t } = useT();
   const [open, setOpen] = useState(false);
-  const [team, setTeam] = useState({ members: [], invites: [], currentUserId: null });
+  const [team, setTeam] = useState({ members: [], invites: [], currentUserId: null, ownerUserId: null });
   const [loading, setLoading] = useState(false);
   const [inviteOpen, setInviteOpen] = useState(false);
   const ref = useRef(null);
 
   const load = async () => {
+    if (!jobId) return;
     setLoading(true);
     try {
       const { data } = await supabase.auth.getSession();
       const token = data?.session?.access_token;
-      const res = await fetch('/api/company/team', { headers: { Authorization: `Bearer ${token}` } });
+      const res = await fetch(`/api/company/team?jobId=${jobId}`, { headers: { Authorization: `Bearer ${token}` } });
       const j = await res.json();
-      if (res.ok) setTeam({ members: j.members || [], invites: j.invites || [], currentUserId: j.currentUserId });
+      if (res.ok) setTeam({ members: j.members || [], invites: j.invites || [], currentUserId: j.currentUserId, ownerUserId: j.ownerUserId });
     } finally {
       setLoading(false);
     }
   };
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => { load(); }, [jobId]);
 
   // Close on outside click
   useEffect(() => {
@@ -68,6 +69,7 @@ export default function TeamPopover({ jobId, canInvite = true }) {
             {team.members.map(m => {
               const name = m.full_name || m.email?.split('@')[0] || '?';
               const isMe = m.user_id === team.currentUserId;
+              const isOwner = m.role === 'owner';
               return (
                 <div key={m.user_id} style={s.row}>
                   <div style={{ ...s.av, background: colorFor(m.email || name) }}>{initialOf(name)}</div>
@@ -75,7 +77,9 @@ export default function TeamPopover({ jobId, canInvite = true }) {
                     <div style={s.rowName}>{name}{isMe && <span style={s.meTag}> ({t('company.team.you')})</span>}</div>
                     <div style={s.rowEmail}>{m.email}</div>
                   </div>
-                  <div style={s.roleTag}>{t(`company.team.role.${m.role === 'admin' ? 'admin' : 'member'}`)}</div>
+                  <div style={isOwner ? s.ownerTag : s.roleTag}>
+                    {t(`company.team.role.${isOwner ? 'owner' : 'interviewer'}`)}
+                  </div>
                 </div>
               );
             })}
@@ -114,7 +118,6 @@ export default function TeamPopover({ jobId, canInvite = true }) {
 function InviteModal({ jobId, onClose, onDone }) {
   const { t } = useT();
   const [email, setEmail] = useState('');
-  const [role, setRole] = useState('member');
   const [sending, setSending] = useState(false);
   const [err, setErr] = useState('');
 
@@ -127,7 +130,7 @@ function InviteModal({ jobId, onClose, onDone }) {
       const res = await fetch('/api/company/invite-member', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ email, role, jobId }),
+        body: JSON.stringify({ email, role: 'interviewer', jobId }),
       });
       const j = await res.json();
       if (!res.ok) throw new Error(j.error || 'error');
@@ -147,16 +150,7 @@ function InviteModal({ jobId, onClose, onDone }) {
         <p style={s.modalLead}>{t('company.invite.lead')}</p>
 
         <label style={s.label}>{t('company.invite.email')}</label>
-        <input style={s.input} type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="name@company.com" />
-
-        <label style={s.label}>{t('company.invite.role')}</label>
-        <div style={s.roleRow}>
-          {['admin', 'member'].map(r => (
-            <button key={r} type="button" onClick={() => setRole(r)} style={{ ...s.roleBtn, ...(role === r ? s.roleBtnActive : {}) }}>
-              {t(`company.team.role.${r}`)}
-            </button>
-          ))}
-        </div>
+        <input style={s.input} type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="name@company.com" autoFocus />
 
         {err && <div style={s.err}>{err}</div>}
         <button type="button" disabled={sending} onClick={submit} style={{ ...s.submit, opacity: sending ? 0.6 : 1 }}>
@@ -191,6 +185,7 @@ const s = {
   meTag: { fontWeight: 700, color: '#9ca3af', fontSize: 11.5 },
   rowEmail: { fontSize: 11.5, color: '#6b7280', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' },
   roleTag: { flexShrink: 0, fontSize: 11, fontWeight: 800, color: '#6b7280' },
+  ownerTag: { flexShrink: 0, fontSize: 10.5, fontWeight: 900, color: '#ea580c', background: '#fff7ed', padding: '4px 8px', borderRadius: 6, border: '1px solid rgba(249,115,22,0.3)' },
   pendTag: { flexShrink: 0, fontSize: 11, fontWeight: 800, color: '#f97316' },
   inviteBtn: {
     marginTop: 10, width: '100%', border: 0, borderRadius: 9, padding: '10px 12px',
