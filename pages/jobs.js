@@ -468,11 +468,11 @@ export default function JobsPage() {
   const loginForJob = (jobId) => {
     const dest = jobId ? `/jobs?jobId=${jobId}` : '/jobs'
     localStorage.setItem('fyi_login_return', dest)
-    try {
-      supabase.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: window.location.origin + '/auth/callback' } })
-    } catch {
-      window.location.href = '/api/auth/google?return=' + encodeURIComponent(dest)
-    }
+    // Use our own server-side Google flow, which fully controls the return path.
+    // (Supabase's hosted signInWithOAuth falls back to the project Site URL — the
+    //  salary homepage — whenever redirectTo isn't in the allow-list, which dropped
+    //  users on the salary page instead of bringing them back to the job.)
+    window.location.href = '/api/auth/google?return=' + encodeURIComponent(dest)
   }
 
   const showToast = (msg) => {
