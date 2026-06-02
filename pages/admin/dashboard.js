@@ -19,6 +19,28 @@ import { getDoD, aggregateDaily, localDate } from '../../utils/dashboard'
 
 const MetricChart = dynamic(() => import('../../components/DashboardCharts'), { ssr: false })
 
+// Detail-table metric columns, in the same order as T.tableHeaders (after the date col)
+const TABLE_COLS = [
+  { key: 'sessions', color: '#2563EB', bold: true, dash: true },
+  { key: 'submissions', color: null, bold: true },
+  { key: 'ad', color: '#4F46E5' },
+  { key: 'organic', color: '#10B981' },
+  { key: 'signups', color: '#F59E0B' },
+  { key: 'companies', color: '#8B5CF6' },
+  { key: 'jobClicks', color: '#F97316' },
+  { key: 'cardClicks', color: '#EC4899' },
+  { key: 'jobsPageViews', color: '#06B6D4' },
+  { key: 'applyClicks', color: '#D946EF' },
+  { key: 'saveClicks', color: '#F472B6' },
+  { key: 'resumeUploads', color: '#14B8A6' },
+  { key: 'jobApps', color: '#EF4444' },
+]
+function cellPct(cur, prev) {
+  if (cur === null || cur === undefined || prev === null || prev === undefined) return null
+  if (prev === 0) return cur > 0 ? 100 : 0
+  return Math.round(((cur - prev) / prev) * 100)
+}
+
 export default function AdminDashboard() {
   const [auth, setAuth] = useState('loading')
   const [token, setToken] = useState(null)
@@ -267,6 +289,38 @@ export default function AdminDashboard() {
       }
       return {
         label: `${w.start.slice(5)} ~ ${w.end.slice(5)}`,
+        sessions: sum('sessions'),
+        submissions: sum('submissions') ?? 0,
+        ad: sum('ad') ?? 0,
+        organic: sum('organic') ?? 0,
+        signups: sum('signups') ?? 0,
+        companies: sum('companies') ?? 0,
+        jobClicks: sum('jobClicks'),
+        cardClicks: sum('cardClicks'),
+        jobsPageViews: sum('jobsPageViews'),
+        applyClicks: sum('applyClicks'),
+        saveClicks: sum('saveClicks'),
+        resumeUploads: sum('resumeUploads'),
+        jobApps: sum('jobApps') ?? 0,
+      }
+    })
+  })()
+
+  const monthlyTableData = (() => {
+    if (!dailyWithToday || tableView !== 'monthly') return null
+    const months = {}
+    for (const d of dailyWithToday) {
+      const key = d.date.slice(0, 7)
+      if (!months[key]) months[key] = { label: key, days: [] }
+      months[key].days.push(d)
+    }
+    return Object.values(months).map(w => {
+      const sum = (k) => {
+        const vals = w.days.map(d => d[k]).filter(v => v !== null && v !== undefined)
+        return vals.length ? vals.reduce((a, b) => a + b, 0) : null
+      }
+      return {
+        label: w.label,
         sessions: sum('sessions'),
         submissions: sum('submissions') ?? 0,
         ad: sum('ad') ?? 0,
@@ -764,11 +818,19 @@ export default function AdminDashboard() {
             {/* Daily Detail Table */}
             <div style={sectionStyle}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 0 }}>
-                <h3 style={sectionTitle}>{tableView === 'weekly' ? t.weeklyDetail : t.dailyDetail}</h3>
+                <h3 style={sectionTitle}>
+                  {tableView === 'weekly' ? t.weeklyDetail : tableView === 'monthly' ? t.monthlyDetail : t.dailyDetail}
+                  {tableView !== 'daily' && (
+                    <span style={{ fontSize: 11, fontWeight: 500, color: '#9CA3AF', marginLeft: 8 }}>
+                      {lang === 'ko' ? '변화율' : 'Change'}: {tableView === 'weekly' ? 'WoW' : 'MoM'}
+                    </span>
+                  )}
+                </h3>
                 <div style={{ display: 'flex', gap: 0, background: '#f3f4f6', borderRadius: 8, padding: 2 }}>
                   {[
                     { key: 'daily', label: lang === 'ko' ? '일별' : 'Daily' },
                     { key: 'weekly', label: lang === 'ko' ? '주별' : 'Weekly' },
+                    { key: 'monthly', label: lang === 'ko' ? '월별' : 'Monthly' },
                   ].map(m => (
                     <button key={m.key} onClick={() => setTableView(m.key)}
                       style={{
@@ -793,22 +855,25 @@ export default function AdminDashboard() {
                     </tr>
                   </thead>
                   <tbody>
-                    {(tableView === 'weekly' ? weeklyTableData : dailyWithToday).map((d, i) => (
+                    {(tableView === 'weekly' ? weeklyTableData : tableView === 'monthly' ? monthlyTableData : dailyWithToday).map((d, i, arr) => (
                       <tr key={i} style={{ borderBottom: '1px solid #f3f4f6', background: i % 2 === 0 ? '#fff' : '#fafafa' }}>
-                        <td style={{ padding: '6px 12px' }}>{tableView === 'weekly' ? d.label : d.date}</td>
-                        <td style={{ padding: '6px 12px', textAlign: 'right', color: '#2563EB', fontWeight: 600 }}>{d.sessions ?? '-'}</td>
-                        <td style={{ padding: '6px 12px', textAlign: 'right', fontWeight: 600 }}>{d.submissions}</td>
-                        <td style={{ padding: '6px 12px', textAlign: 'right', color: '#4F46E5' }}>{d.ad}</td>
-                        <td style={{ padding: '6px 12px', textAlign: 'right', color: '#10B981' }}>{d.organic}</td>
-                        <td style={{ padding: '6px 12px', textAlign: 'right', color: '#F59E0B' }}>{d.signups}</td>
-                        <td style={{ padding: '6px 12px', textAlign: 'right', color: '#8B5CF6' }}>{d.companies}</td>
-                        <td style={{ padding: '6px 12px', textAlign: 'right', color: d.jobClicks === null ? '#ccc' : '#F97316' }}>{d.jobClicks === null ? '-' : d.jobClicks}</td>
-                        <td style={{ padding: '6px 12px', textAlign: 'right', color: d.cardClicks === null ? '#ccc' : '#EC4899' }}>{d.cardClicks === null ? '-' : d.cardClicks}</td>
-                        <td style={{ padding: '6px 12px', textAlign: 'right', color: d.jobsPageViews === null ? '#ccc' : '#06B6D4' }}>{d.jobsPageViews === null ? '-' : d.jobsPageViews}</td>
-                        <td style={{ padding: '6px 12px', textAlign: 'right', color: d.applyClicks === null ? '#ccc' : '#D946EF' }}>{d.applyClicks === null ? '-' : d.applyClicks}</td>
-                        <td style={{ padding: '6px 12px', textAlign: 'right', color: d.saveClicks === null ? '#ccc' : '#F472B6' }}>{d.saveClicks === null ? '-' : d.saveClicks}</td>
-                        <td style={{ padding: '6px 12px', textAlign: 'right', color: d.resumeUploads === null ? '#ccc' : '#14B8A6' }}>{d.resumeUploads === null ? '-' : d.resumeUploads}</td>
-                        <td style={{ padding: '6px 12px', textAlign: 'right', color: '#EF4444' }}>{d.jobApps}</td>
+                        <td style={{ padding: '6px 12px' }}>{tableView === 'daily' ? d.date : d.label}</td>
+                        {TABLE_COLS.map(col => {
+                          const val = d[col.key]
+                          const isNull = val === null || val === undefined
+                          const prev = (tableView !== 'daily' && i > 0) ? arr[i - 1][col.key] : null
+                          const pct = tableView !== 'daily' ? cellPct(val, prev) : null
+                          return (
+                            <td key={col.key} style={{ padding: '6px 12px', textAlign: 'right', color: isNull ? '#ccc' : (col.color || undefined), fontWeight: col.bold ? 600 : undefined }}>
+                              <div>{isNull ? '-' : val}</div>
+                              {pct !== null && (
+                                <div style={{ fontSize: 10, fontWeight: 600, color: pct > 0 ? '#EF4444' : pct < 0 ? '#3B82F6' : '#9CA3AF' }}>
+                                  {pct > 0 ? '+' : ''}{pct}%
+                                </div>
+                              )}
+                            </td>
+                          )
+                        })}
                       </tr>
                     ))}
                     <tr style={{ borderTop: '2px solid #e5e7eb', fontWeight: 700 }}>
