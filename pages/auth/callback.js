@@ -113,6 +113,17 @@ export default function AuthCallback() {
   useEffect(() => {
     const handleAuth = async () => {
       try {
+        // dev-login (and implicit flow) returns tokens in the URL hash — consume them
+        if (typeof window !== 'undefined' && window.location.hash.includes('access_token')) {
+          const hp = new URLSearchParams(window.location.hash.slice(1))
+          const access_token = hp.get('access_token')
+          const refresh_token = hp.get('refresh_token')
+          if (access_token && refresh_token) {
+            await supabase.auth.setSession({ access_token, refresh_token })
+            history.replaceState(null, '', window.location.pathname)
+          }
+        }
+
         // Check for existing session first
         const { data, error } = await supabase.auth.getSession()
 
