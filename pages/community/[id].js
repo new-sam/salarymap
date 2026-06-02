@@ -5,6 +5,7 @@ import { useRouter } from 'next/router'
 import { supabase } from '../../lib/supabaseClient'
 import { useAdminGuard } from '../../lib/useAdminGuard'
 import GlobalNav from '../../components/GlobalNav'
+import SalaryBadge from '../../components/SalaryBadge'
 import { useT } from '../../lib/i18n'
 
 function timeAgo(dateStr) {
@@ -282,6 +283,7 @@ export default function CommunityPostPage() {
                   <span className="cp-company">{post.is_salary_verified ? (post.author_company || t('comm.unemployed')) : t('comm.unemployed')}</span>
                   <span className="cp-dot">·</span>
                   <span className="cp-nickname">{post.author_name}</span>
+                  {post.author_salary_tier && <SalaryBadge tierKey={post.author_salary_tier} t={t} />}
                 </div>
                 <div className="cp-info-row">
                   <span>{timeAgo(post.created_at)}</span>
@@ -338,6 +340,7 @@ export default function CommunityPostPage() {
                           <span className="cp-company">{comment.is_salary_verified ? (comment.author_company || t('comm.unemployed')) : t('comm.unemployed')}</span>
                           <span className="cp-dot">·</span>
                           {comment.author_name}
+                          {comment.author_salary_tier && <SalaryBadge tierKey={comment.author_salary_tier} t={t} />}
                           {comment.is_op && <span className="cp-op-badge">{t('comm.opBadge')}</span>}
                         </span>
                         <span className="cp-comment-time">{timeAgo(comment.created_at)}</span>

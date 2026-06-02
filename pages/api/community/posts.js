@@ -1,9 +1,29 @@
 import { createClient } from '@supabase/supabase-js'
+import { getSalaryTier } from '../../../lib/salaryTiers'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
   process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 )
+
+// Map of user_id -> salary tier key for users with an active salary-range badge.
+// Shown next to authors (incl. anonymous) as a trust signal.
+async function salaryTierMap(userIds) {
+  const ids = [...new Set(userIds)].filter(Boolean)
+  if (!ids.length) return {}
+  const { data } = await supabase
+    .from('user_badges')
+    .select('user_id, salary_amount')
+    .in('user_id', ids)
+    .eq('badge_type', 'salary_range')
+    .eq('is_active', true)
+  const map = {}
+  ;(data || []).forEach(b => {
+    const tier = getSalaryTier(b.salary_amount)
+    if (tier) map[b.user_id] = tier.key
+  })
+  return map
+}
 
 export default async function handler(req, res) {
   if (req.method === 'GET') {
@@ -40,6 +60,8 @@ export default async function handler(req, res) {
           post.is_liked = !!like
         }
       }
+      const tierMap = await salaryTierMap([post.user_id])
+      post.author_salary_tier = tierMap[post.user_id] || null
       return res.status(200).json({ post })
     }
 
@@ -95,8 +117,10 @@ export default async function handler(req, res) {
       }
     }
 
+    const tierMap = await salaryTierMap(data.map(p => p.user_id))
+
     return res.status(200).json({
-      posts: data.map(p => ({ ...p, is_liked: likedPostIds.includes(p.id) })),
+      posts: data.map(p => ({ ...p, is_liked: likedPostIds.includes(p.id), author_salary_tier: tierMap[p.user_id] || null })),
       total: count,
       page: parseInt(page),
       totalPages: Math.ceil(count / parseInt(limit))

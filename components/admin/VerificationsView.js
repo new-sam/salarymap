@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { getSalaryTier } from '../../lib/salaryTiers'
 
 const STATUS_COLORS = {
   pending: { bg: 'rgba(245,158,11,0.1)', color: '#d97706' },
@@ -19,6 +20,7 @@ export default function VerificationsView({ token }) {
   const [filter, setFilter] = useState('pending')
   const [actionLoading, setActionLoading] = useState(null)
   const [noteInput, setNoteInput] = useState({})
+  const [salaryInput, setSalaryInput] = useState({}) // per-id, in 만원
 
   const fetchData = async () => {
     setLoading(true)
@@ -29,6 +31,14 @@ export default function VerificationsView({ token }) {
       if (res.ok) {
         const { verifications: data } = await res.json()
         setVerifications(data)
+        // Prefill the salary input with the user-submitted amount (converted to 만원).
+        setSalaryInput(prev => {
+          const next = { ...prev }
+          data.forEach(v => {
+            if (next[v.id] === undefined && v.salary_amount) next[v.id] = String(Math.round(v.salary_amount / 10000))
+          })
+          return next
+        })
       }
     } catch (e) {
       console.error(e)
@@ -39,12 +49,22 @@ export default function VerificationsView({ token }) {
   useEffect(() => { fetchData() }, [token, filter])
 
   const handleAction = async (id, status) => {
+    // Approval requires an admin-entered salary amount (만원) → stored as won.
+    let salaryWon = null
+    if (status === 'approved') {
+      const man = parseInt(salaryInput[id], 10)
+      if (!man || man <= 0) {
+        alert('연봉 금액(만원)을 입력해야 승인할 수 있습니다.')
+        return
+      }
+      salaryWon = man * 10000
+    }
     setActionLoading(id)
     try {
       const res = await fetch('/api/salary-verification/admin', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ id, status, admin_note: noteInput[id] || '' }),
+        body: JSON.stringify({ id, status, admin_note: noteInput[id] || '', salary_amount: salaryWon }),
       })
       if (res.ok) {
         setVerifications(prev => prev.filter(v => v.id !== id))
@@ -141,8 +161,29 @@ export default function VerificationsView({ token }) {
               </a>
 
               {/* Admin Actions */}
-              {v.status === 'pending' && (
+              {v.status === 'pending' && (() => {
+                const man = parseInt(salaryInput[v.id], 10)
+                const tier = man > 0 ? getSalaryTier(man * 10000) : null
+                return (
                 <div style={{ borderTop: '1px solid rgba(0,0,0,0.06)', paddingTop: 12, marginTop: 4 }}>
+                  {/* Verified salary amount → determines the badge tier */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+                    <div style={{ position: 'relative', flex: 1 }}>
+                      <input
+                        type="number"
+                        value={salaryInput[v.id] || ''}
+                        onChange={e => setSalaryInput(prev => ({ ...prev, [v.id]: e.target.value }))}
+                        placeholder="인증 연봉 (만원)"
+                        style={{ width: '100%', padding: '8px 44px 8px 12px', border: '1px solid rgba(255,96,0,0.3)', borderRadius: 8, fontSize: 13, fontWeight: 600, fontFamily: 'inherit', outline: 'none' }}
+                      />
+                      <span style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', fontSize: 12, color: 'rgba(0,0,0,0.4)' }}>만원</span>
+                    </div>
+                    {tier && (
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, padding: '6px 12px', borderRadius: 8, background: tier.grad, color: '#fff', fontSize: 12, fontWeight: 800, whiteSpace: 'nowrap' }}>
+                        → {tier.defaultLabel}
+                      </span>
+                    )}
+                  </div>
                   <input
                     value={noteInput[v.id] || ''}
                     onChange={e => setNoteInput(prev => ({ ...prev, [v.id]: e.target.value }))}
@@ -160,7 +201,8 @@ export default function VerificationsView({ token }) {
                     </button>
                   </div>
                 </div>
-              )}
+                )
+              })()}
 
               {/* Show reviewer info for non-pending */}
               {v.status !== 'pending' && v.reviewed_by && (

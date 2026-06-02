@@ -3,6 +3,8 @@ import Head from 'next/head'
 import { useRouter } from 'next/router'
 import { supabase } from '../lib/supabaseClient'
 import GlobalNav from '../components/GlobalNav'
+import SalaryBadge from '../components/SalaryBadge'
+import { SALARY_TIERS, getSalaryTier } from '../lib/salaryTiers'
 import { useT } from '../lib/i18n'
 
 const POSITIONS = ['Backend','Frontend','Fullstack','Mobile','AI/Data','DevOps','QA','Design','PM','Other']
@@ -1167,60 +1169,69 @@ export default function ProfilePage() {
 
             {badgesLoading ? (
               <div style={{ textAlign: 'center', padding: '20px 0', color: '#bbb', fontSize: 13 }}>Loading...</div>
-            ) : badges.length === 0 ? (
-              <div style={{ textAlign: 'center', padding: '40px 20px' }}>
-                <div style={{ width: 56, height: 56, borderRadius: '50%', background: 'rgba(0,0,0,0.04)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
-                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="rgba(0,0,0,0.2)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <circle cx="12" cy="8" r="6"/><path d="M15.477 12.89L17 22l-5-3-5 3 1.523-9.11"/>
-                  </svg>
-                </div>
-                <div style={{ fontSize: 14, color: 'rgba(0,0,0,0.35)', marginBottom: 4 }}>{t('profile.badges.noBadges')}</div>
-                <div style={{ fontSize: 12, color: 'rgba(0,0,0,0.25)', lineHeight: 1.5 }}>{t('profile.badges.noBadgesHint')}</div>
-                <button type="button" onClick={() => setTab('employment')}
-                  style={{ marginTop: 16, padding: '10px 20px', borderRadius: 8, border: '1px solid rgba(255,96,0,0.3)', background: 'rgba(255,96,0,0.04)', color: '#ff6000', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>
-                  {t('profile.tab.employment')}
-                </button>
-              </div>
-            ) : (
-              <div>
-                {badges.map(badge => (
-                  <div key={badge.id} style={{
-                    padding: 16, borderRadius: 12, border: '1px solid rgba(0,0,0,0.06)', background: badge.is_active ? 'rgba(255,96,0,0.04)' : '#fff',
-                    display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, marginBottom: 12,
-                  }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                      <div style={{
-                        width: 44, height: 44, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        background: badge.badge_type === 'high_salary' ? 'linear-gradient(135deg, #ff6000, #ff8c00)' : 'rgba(0,0,0,0.06)',
+            ) : (() => {
+              const salaryBadge = badges.find(b => b.badge_type === 'salary_range')
+              const userTier = salaryBadge ? getSalaryTier(salaryBadge.salary_amount) : null
+              return (<>
+                {!salaryBadge && (
+                  <div style={{ display: 'flex', gap: 10, alignItems: 'center', padding: '12px 14px', borderRadius: 10, background: 'rgba(255,96,0,0.05)', border: '1px solid rgba(255,96,0,0.15)', marginBottom: 16 }}>
+                    <div style={{ fontSize: 12, color: 'rgba(0,0,0,0.55)', lineHeight: 1.5, flex: 1 }}>{t('profile.badges.noBadgesHint')}</div>
+                    <button type="button" onClick={() => setTab('employment')}
+                      style={{ flexShrink: 0, padding: '8px 14px', borderRadius: 8, border: '1px solid rgba(255,96,0,0.3)', background: '#fff', color: '#ff6000', fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', whiteSpace: 'nowrap' }}>
+                      {t('profile.tab.employment')}
+                    </button>
+                  </div>
+                )}
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                  {[...SALARY_TIERS].reverse().map(tier => {
+                    const unlocked = !!userTier && tier.key === userTier.key
+                    return (
+                      <div key={tier.key} style={{
+                        padding: 14, borderRadius: 12,
+                        border: unlocked ? '1px solid rgba(255,96,0,0.3)' : '1px solid rgba(0,0,0,0.06)',
+                        background: unlocked ? 'rgba(255,96,0,0.04)' : '#fff',
+                        display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12,
+                        opacity: unlocked ? 1 : 0.7,
                       }}>
-                        {badge.badge_type === 'high_salary' && (
-                          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                            <circle cx="12" cy="8" r="6"/><path d="M15.477 12.89L17 22l-5-3-5 3 1.523-9.11"/>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                          <SalaryBadge tierKey={tier.key} t={t} variant="lg" locked={!unlocked} />
+                          <div>
+                            <div style={{ fontSize: 14, fontWeight: 700, color: unlocked ? '#111' : 'rgba(0,0,0,0.4)' }}>
+                              {t(`salary.tier.${tier.key}`)}
+                            </div>
+                            <div style={{ fontSize: 11, color: unlocked ? '#ff6000' : 'rgba(0,0,0,0.3)', marginTop: 2, fontWeight: unlocked ? 700 : 400 }}>
+                              {unlocked ? t('profile.badges.unlocked') : t('profile.badges.locked')}
+                            </div>
+                          </div>
+                        </div>
+                        {unlocked ? (
+                          <button type="button" onClick={() => handleToggleBadge('salary_range', salaryBadge.is_active)}
+                            style={{
+                              padding: '8px 16px', borderRadius: 8, border: 'none', cursor: 'pointer', fontFamily: 'inherit', fontSize: 12, fontWeight: 700, flexShrink: 0,
+                              ...(salaryBadge.is_active
+                                ? { background: '#ff6000', color: '#fff' }
+                                : { background: 'rgba(0,0,0,0.06)', color: 'rgba(0,0,0,0.5)' }),
+                            }}>
+                            {salaryBadge.is_active ? t('profile.badges.active') : t('profile.badges.activate')}
+                          </button>
+                        ) : (
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(0,0,0,0.2)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0, marginRight: 4 }}>
+                            <rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/>
                           </svg>
                         )}
                       </div>
-                      <div>
-                        <div style={{ fontSize: 14, fontWeight: 700, color: '#111' }}>
-                          {badge.badge_type === 'high_salary' ? t('profile.badges.highSalary') : badge.badge_type}
-                        </div>
-                        <div style={{ fontSize: 11, color: 'rgba(0,0,0,0.4)', marginTop: 2 }}>
-                          {badge.badge_type === 'high_salary' ? t('profile.badges.highSalaryDesc') : ''}
-                        </div>
-                      </div>
-                    </div>
-                    <button type="button" onClick={() => handleToggleBadge(badge.badge_type, badge.is_active)}
-                      style={{
-                        padding: '8px 16px', borderRadius: 8, border: 'none', cursor: 'pointer', fontFamily: 'inherit', fontSize: 12, fontWeight: 700,
-                        ...(badge.is_active
-                          ? { background: '#ff6000', color: '#fff' }
-                          : { background: 'rgba(0,0,0,0.06)', color: 'rgba(0,0,0,0.5)' }),
-                      }}>
-                      {badge.is_active ? t('profile.badges.active') : t('profile.badges.activate')}
-                    </button>
+                    )
+                  })}
+                </div>
+
+                {salaryBadge && (
+                  <div style={{ fontSize: 11, color: 'rgba(0,0,0,0.4)', lineHeight: 1.6, marginTop: 14 }}>
+                    {t('profile.badges.communityNote')}
                   </div>
-                ))}
-              </div>
-            )}
+                )}
+              </>)
+            })()}
           </div>
         </>)}
 

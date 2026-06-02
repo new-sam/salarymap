@@ -5,6 +5,7 @@ import { useRouter } from 'next/router'
 import { supabase } from '../../lib/supabaseClient'
 import { useAdminGuard } from '../../lib/useAdminGuard'
 import GlobalNav from '../../components/GlobalNav'
+import SalaryBadge from '../../components/SalaryBadge'
 import { useT } from '../../lib/i18n'
 
 const CATEGORIES = [
@@ -476,6 +477,7 @@ export default function CommunityPage() {
                       <span>{post.is_salary_verified ? (post.author_company || t('comm.unemployed')) : t('comm.unemployed')}</span>
                       <span className="comm-card-dot">·</span>
                       <span>{post.author_name}</span>
+                      {post.author_salary_tier && <SalaryBadge tierKey={post.author_salary_tier} t={t} />}
                     </div>
                     <div className="comm-card-title">{post.title}</div>
                     {post.content && <div className="comm-card-preview">{post.content}</div>}

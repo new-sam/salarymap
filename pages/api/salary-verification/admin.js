@@ -54,34 +54,56 @@ export default async function handler(req, res) {
 
   // PUT: approve or reject
   if (req.method === 'PUT') {
-    const { id, status, admin_note } = req.body
+    const { id, status, admin_note, salary_amount } = req.body
     if (!id || !['approved', 'rejected'].includes(status)) {
       return res.status(400).json({ error: 'id and valid status required' })
     }
 
+    // Approval requires the admin-verified salary amount (won) — it determines the badge tier.
+    let verifiedAmount = null
+    if (status === 'approved') {
+      verifiedAmount = parseInt(salary_amount, 10)
+      if (!verifiedAmount || verifiedAmount <= 0) {
+        return res.status(400).json({ error: 'salary_amount required to approve' })
+      }
+    }
+
+    const updateFields = {
+      status,
+      admin_note: admin_note || null,
+      reviewed_by: user.email,
+      reviewed_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    }
+    if (verifiedAmount != null) updateFields.salary_amount = verifiedAmount
+
     const { data: verification, error: updateErr } = await supabase
       .from('salary_verifications')
-      .update({
-        status,
-        admin_note: admin_note || null,
-        reviewed_by: user.email,
-        reviewed_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      })
+      .update(updateFields)
       .eq('id', id)
       .select()
       .single()
 
     if (updateErr) return res.status(500).json({ error: updateErr.message })
 
-    // If approved, grant high_salary badge
+    // If approved, grant/refresh the salary-range badge. The tier is derived from
+    // salary_amount in app code (lib/salaryTiers). Keep existing is_active so a
+    // re-approval doesn't silently hide a badge the user already chose to show.
     if (status === 'approved') {
+      const { data: existing } = await supabase
+        .from('user_badges')
+        .select('is_active')
+        .eq('user_id', verification.user_id)
+        .eq('badge_type', 'salary_range')
+        .maybeSingle()
+
       await supabase
         .from('user_badges')
         .upsert({
           user_id: verification.user_id,
-          badge_type: 'high_salary',
-          is_active: false,
+          badge_type: 'salary_range',
+          salary_amount: verifiedAmount,
+          is_active: existing?.is_active ?? false,
           granted_at: new Date().toISOString(),
         }, { onConflict: 'user_id,badge_type' })
     }

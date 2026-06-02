@@ -1,9 +1,28 @@
 import { createClient } from '@supabase/supabase-js'
+import { getSalaryTier } from '../../../lib/salaryTiers'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
   process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 )
+
+// Map of user_id -> salary tier key for users with an active salary-range badge.
+async function salaryTierMap(userIds) {
+  const ids = [...new Set(userIds)].filter(Boolean)
+  if (!ids.length) return {}
+  const { data } = await supabase
+    .from('user_badges')
+    .select('user_id, salary_amount')
+    .in('user_id', ids)
+    .eq('badge_type', 'salary_range')
+    .eq('is_active', true)
+  const map = {}
+  ;(data || []).forEach(b => {
+    const tier = getSalaryTier(b.salary_amount)
+    if (tier) map[b.user_id] = tier.key
+  })
+  return map
+}
 
 export default async function handler(req, res) {
   if (req.method === 'GET') {
@@ -34,8 +53,10 @@ export default async function handler(req, res) {
       }
     }
 
+    const tierMap = await salaryTierMap(data.map(c => c.user_id))
+
     return res.status(200).json({
-      comments: data.map(c => ({ ...c, is_liked: likedCommentIds.includes(c.id) }))
+      comments: data.map(c => ({ ...c, is_liked: likedCommentIds.includes(c.id), author_salary_tier: tierMap[c.user_id] || null }))
     })
   }
 
