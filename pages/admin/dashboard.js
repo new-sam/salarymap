@@ -11,9 +11,30 @@ import {
   T, METRICS_BASE, EXP_COLORS, COLORS,
   inputStyle, sectionStyle, sectionTitle,
 } from '../../constants/dashboard'
-import { getDoD, aggregateDaily, localDate } from '../../utils/dashboard'
+import { aggregateDaily, localDate } from '../../utils/dashboard'
 
 const MetricChart = dynamic(() => import('../../components/DashboardCharts'), { ssr: false })
+
+// Columns for the Daily Detail table (order matches T.tableHeaders after the date col)
+const DETAIL_COLS = [
+  { key: 'submissions', color: null, bold: true },
+  { key: 'ad', color: '#4F46E5' },
+  { key: 'organic', color: '#10B981' },
+  { key: 'signups', color: '#F59E0B' },
+  { key: 'companies', color: '#8B5CF6' },
+  { key: 'jobClicks', color: '#F97316' },
+  { key: 'cardClicks', color: '#EC4899' },
+  { key: 'jobsPageViews', color: '#06B6D4' },
+  { key: 'applyClicks', color: '#D946EF' },
+  { key: 'saveClicks', color: '#F472B6' },
+  { key: 'jobApps', color: '#EF4444' },
+]
+const DETAIL_DELTA_LABEL = { '1d': 'DoD', weekly: 'WoW', monthly: 'MoM' }
+function cellPct(cur, prev) {
+  if (cur === null || cur === undefined || prev === null || prev === undefined) return null
+  if (prev === 0) return cur > 0 ? 100 : 0
+  return Math.round(((cur - prev) / prev) * 100)
+}
 
 export default function AdminDashboard() {
   const [auth, setAuth] = useState('loading')
@@ -29,6 +50,7 @@ export default function AdminDashboard() {
   const [tab, setTab] = useState('trend')
   const [funnelKeys, setFunnelKeys] = useState([])
   const [chartMode, setChartMode] = useState('1d')
+  const [detailMode, setDetailMode] = useState('1d')
   const [realtime, setRealtime] = useState(null)
   const [realtimeLoading, setRealtimeLoading] = useState(false)
   const [autoRefresh, setAutoRefresh] = useState(true)
@@ -205,6 +227,7 @@ export default function AdminDashboard() {
   })()
 
   const chartData = aggregateDaily(dailyWithToday, chartMode)
+  const detailRows = dailyWithToday ? aggregateDaily(dailyWithToday, detailMode) : []
   const visibleExperiments = experiments.filter(e => e.date >= dateRange.from && e.date <= (realtime?.date || dateRange.to) && (!e.metrics?.length || !selected || e.metrics.includes(selected)))
 
   return (
@@ -312,13 +335,16 @@ export default function AdminDashboard() {
         {/* Trend Tab */}
         {summary && !loading && tab === 'trend' && (
           <>
-            {/* Metric Cards */}
+            {/* Metric Cards (cumulative totals over the selected range) */}
+            <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginBottom: 10 }}>
+              <span style={{ fontSize: 13, fontWeight: 700, color: '#374151' }}>{lang === 'ko' ? '누적' : 'Cumulative'}</span>
+              <span style={{ fontSize: 11, color: '#9CA3AF' }}>{dateRange.from} ~ {dateRange.to}</span>
+            </div>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))', gap: 12, marginBottom: 24 }}>
               {METRICS.map(m => {
                 const isEventMetric = m.key === 'jobClicks' || m.key === 'cardClicks'
                 const noTracking = isEventMetric && !summary.hasEventTracking
                 const value = noTracking ? '-' : summary[m.summaryKey]
-                const dod = noTracking ? null : getDoD(chartData, m.dataKey)
                 const isActive = selected === m.key
                 return (
                   <div key={m.key}
@@ -332,16 +358,6 @@ export default function AdminDashboard() {
                     <div style={{ fontSize: 12, color: isActive ? 'rgba(255,255,255,0.7)' : '#6B7280', marginBottom: 4 }}>{m.label}</div>
                     <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
                       <div style={{ fontSize: 28, fontWeight: 700, color: isActive ? '#fff' : m.color }}>{value}</div>
-                      {dod !== null && (
-                        <span style={{
-                          fontSize: 13, fontWeight: 600,
-                          color: isActive
-                            ? 'rgba(255,255,255,0.8)'
-                            : dod > 0 ? '#EF4444' : dod < 0 ? '#3B82F6' : '#9CA3AF'
-                        }}>
-                          {dod > 0 ? '+' : ''}{dod}%
-                        </span>
-                      )}
                     </div>
                   </div>
                 )
@@ -564,7 +580,34 @@ export default function AdminDashboard() {
 
             {/* Daily Detail Table */}
             <div style={sectionStyle}>
-              <h3 style={sectionTitle}>{t.dailyDetail}</h3>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+                <h3 style={{ ...sectionTitle, margin: 0 }}>
+                  {t.dailyDetail}
+                  {detailMode !== '1d' && (
+                    <span style={{ fontSize: 11, fontWeight: 500, color: '#9CA3AF', marginLeft: 8 }}>
+                      {lang === 'ko' ? '변화율' : 'Change'}: {DETAIL_DELTA_LABEL[detailMode]}
+                    </span>
+                  )}
+                </h3>
+                <div style={{ display: 'flex', gap: 0, background: '#f3f4f6', borderRadius: 8, padding: 2 }}>
+                  {[
+                    { key: '1d', label: t.chart1d },
+                    { key: 'weekly', label: t.chartWeekly },
+                    { key: 'monthly', label: t.chartMonthly },
+                  ].map(m => (
+                    <button key={m.key} onClick={() => setDetailMode(m.key)}
+                      style={{
+                        padding: '5px 12px', borderRadius: 6, fontSize: 12, fontWeight: 600,
+                        border: 'none', cursor: 'pointer', transition: 'all 0.15s',
+                        background: detailMode === m.key ? '#fff' : 'transparent',
+                        color: detailMode === m.key ? '#111' : '#999',
+                        boxShadow: detailMode === m.key ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
+                      }}>
+                      {m.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
               <div style={{ overflowX: 'auto' }}>
                 <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
                   <thead>
@@ -575,20 +618,26 @@ export default function AdminDashboard() {
                     </tr>
                   </thead>
                   <tbody>
-                    {dailyWithToday.map((d, i) => (
+                    {detailRows.map((d, i) => (
                       <tr key={i} style={{ borderBottom: '1px solid #f3f4f6', background: i % 2 === 0 ? '#fff' : '#fafafa' }}>
                         <td style={{ padding: '6px 12px' }}>{d.date}</td>
-                        <td style={{ padding: '6px 12px', textAlign: 'right', fontWeight: 600 }}>{d.submissions}</td>
-                        <td style={{ padding: '6px 12px', textAlign: 'right', color: '#4F46E5' }}>{d.ad}</td>
-                        <td style={{ padding: '6px 12px', textAlign: 'right', color: '#10B981' }}>{d.organic}</td>
-                        <td style={{ padding: '6px 12px', textAlign: 'right', color: '#F59E0B' }}>{d.signups}</td>
-                        <td style={{ padding: '6px 12px', textAlign: 'right', color: '#8B5CF6' }}>{d.companies}</td>
-                        <td style={{ padding: '6px 12px', textAlign: 'right', color: d.jobClicks === null ? '#ccc' : '#F97316' }}>{d.jobClicks === null ? '-' : d.jobClicks}</td>
-                        <td style={{ padding: '6px 12px', textAlign: 'right', color: d.cardClicks === null ? '#ccc' : '#EC4899' }}>{d.cardClicks === null ? '-' : d.cardClicks}</td>
-                        <td style={{ padding: '6px 12px', textAlign: 'right', color: d.jobsPageViews === null ? '#ccc' : '#06B6D4' }}>{d.jobsPageViews === null ? '-' : d.jobsPageViews}</td>
-                        <td style={{ padding: '6px 12px', textAlign: 'right', color: d.applyClicks === null ? '#ccc' : '#D946EF' }}>{d.applyClicks === null ? '-' : d.applyClicks}</td>
-                        <td style={{ padding: '6px 12px', textAlign: 'right', color: d.saveClicks === null ? '#ccc' : '#F472B6' }}>{d.saveClicks === null ? '-' : d.saveClicks}</td>
-                        <td style={{ padding: '6px 12px', textAlign: 'right', color: '#EF4444' }}>{d.jobApps}</td>
+                        {DETAIL_COLS.map(col => {
+                          const hideCompanies = col.key === 'companies' && detailMode !== '1d'
+                          const val = hideCompanies ? null : d[col.key]
+                          const prev = (i > 0 && !hideCompanies) ? detailRows[i - 1][col.key] : null
+                          const pct = detailMode === '1d' ? null : cellPct(val, prev)
+                          const isNull = val === null || val === undefined
+                          return (
+                            <td key={col.key} style={{ padding: '6px 12px', textAlign: 'right', color: isNull ? '#ccc' : (col.color || undefined), fontWeight: col.bold ? 600 : undefined }}>
+                              <div>{isNull ? '-' : val}</div>
+                              {pct !== null && (
+                                <div style={{ fontSize: 10, fontWeight: 600, color: pct > 0 ? '#EF4444' : pct < 0 ? '#3B82F6' : '#9CA3AF' }}>
+                                  {pct > 0 ? '+' : ''}{pct}%
+                                </div>
+                              )}
+                            </td>
+                          )
+                        })}
                       </tr>
                     ))}
                     <tr style={{ borderTop: '2px solid #e5e7eb', fontWeight: 700 }}>
