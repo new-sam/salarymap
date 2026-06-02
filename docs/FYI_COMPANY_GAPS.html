@@ -1,0 +1,174 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>FYI for Companies — 짝꿍 기능 누락 점검</title>
+<style>
+  :root { --orange:#ea580c; --ink:#111827; --sub:#6b7280; --line:#e5e7eb; --bg:#f7f7f5; }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--ink); line-height:1.5;
+    font-family:'Pretendard',-apple-system,BlinkMacSystemFont,'Segoe UI','Apple SD Gothic Neo',sans-serif; -webkit-font-smoothing:antialiased; }
+  .wrap { max-width:1120px; margin:0 auto; padding:40px 24px 72px; }
+  header.top { display:flex; align-items:baseline; gap:12px; }
+  .brand { font-weight:950; letter-spacing:-.04em; font-size:26px; color:var(--orange); }
+  .brand-sub { font-size:13px; color:var(--sub); font-weight:700; }
+  h1 { font-size:28px; letter-spacing:-.02em; margin:18px 0 6px; }
+  .lead { color:var(--sub); font-size:14px; margin:0 0 4px; }
+  .note { color:#9ca3af; font-size:12.5px; margin:0 0 22px; }
+  .legend { display:flex; gap:8px; flex-wrap:wrap; margin:0 0 26px; }
+  .sev { font-weight:900; font-size:11.5px; padding:3px 9px; border-radius:6px; white-space:nowrap; display:inline-block; }
+  th:last-child, td:last-child { white-space:nowrap; width:1%; }
+  .s-high { background:#fef2f2; color:#dc2626; border:1px solid #fecaca; }
+  .s-mid { background:#fff7ed; color:#ea580c; border:1px solid #fed7aa; }
+  .s-low { background:#f1f5f9; color:#64748b; border:1px solid #e2e8f0; }
+  .s-chk { background:#eff6ff; color:#2563eb; border:1px solid #bfdbfe; }
+  .s-ok { background:#ecfdf5; color:#059669; border:1px solid #a7f3d0; }
+
+  h2 { font-size:18px; margin:34px 0 12px; letter-spacing:-.01em; display:flex; align-items:center; gap:9px; }
+  h2 .n { background:#111827; color:#fff; font-size:12px; font-weight:900; width:22px; height:22px; border-radius:6px; display:grid; place-items:center; }
+  table { width:100%; border-collapse:collapse; background:#fff; border:1px solid var(--line); border-radius:12px; overflow:hidden; font-size:13.5px; }
+  th,td { text-align:left; padding:11px 13px; border-bottom:1px solid var(--line); vertical-align:top; }
+  th { background:#fafafa; font-size:11px; font-weight:800; color:var(--sub); letter-spacing:.04em; text-transform:uppercase; }
+  tr:last-child td { border-bottom:none; }
+  td.id { font-weight:900; color:#9ca3af; white-space:nowrap; font-size:12px; }
+  td.feat { font-weight:800; }
+  td.why { color:#374151; }
+  code { background:#f1f5f9; padding:1px 5px; border-radius:4px; font-size:12px; }
+  .quoted { background:#fffbeb; border:1px solid #fde68a; border-radius:10px; padding:12px 16px; margin:0 0 26px; font-size:13px; color:#92400e; }
+  .quoted b { color:#78350f; }
+  footer { margin-top:34px; color:#9ca3af; font-size:11.5px; border-top:1px solid var(--line); padding-top:16px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="top"><span class="brand">FYI</span><span class="brand-sub">for Companies · 짝꿍 기능 누락 점검</span></header>
+  <h1>딸려 있어야 할 기능 전수 점검</h1>
+  <p class="lead">"기능 A가 있으면 당연히 B도 있어야 한다"는 관점의 완결성 점검. 칸반 단계 구현·내용은 별도 검토 중이라 제외.</p>
+  <p class="note">대부분 코드(grep/파일)로 부재 확인. <span class="sev s-chk">검증필요</span>는 베이스 스키마/런타임 동작이라 코드 한 곳으로 단정 못 한 항목.</p>
+
+  <div class="legend">
+    <span class="sev s-high">높음</span> 운영 막힘·데이터 유실·보안 위험 &nbsp;
+    <span class="sev s-mid">중간</span> 실사용 불편·동선 단절 &nbsp;
+    <span class="sev s-low">낮음</span> 있으면 좋음 &nbsp;
+    <span class="sev s-chk">검증필요</span>
+  </div>
+
+  <div class="quoted">
+    의뢰하신 예시 4가지 위치 → <b>로그인 뒤로가기</b>: A-1 · <b>공고 승인</b>: 이미 있음(✅ 하단) · <b>회원탈퇴</b>: A-3 · <b>채용팀 권한 배제</b>: 부분 있음(제외만) → 역할/오너 G-1·G-2
+  </div>
+
+  <!-- A -->
+  <h2><span class="n">A</span>인증 · 계정</h2>
+  <table>
+    <thead><tr><th>#</th><th>누락 기능</th><th>왜 필요한가 (짝꿍 관계)</th><th>심각도</th></tr></thead>
+    <tbody>
+      <tr><td class="id">A-1</td><td class="feat">로그인/셋업 화면 뒤로가기·취소 동선</td><td class="why">unauthed·needs_company 화면에 로고 클릭(→/for-companies)만 있고 명시적 '뒤로/취소'가 없음. 들어왔다가 빠지는 길이 없음.</td><td><span class="sev s-mid">중간</span></td></tr>
+      <tr><td class="id">A-2</td><td class="feat">회사 설정 단계에서 로그아웃·계정 전환</td><td class="why">잘못된 구글 계정(또는 개인메일)으로 들어오면 다른 계정으로 못 바꿈. <code>signOut</code>은 대시보드 진입 후 사이드바에만 존재.</td><td><span class="sev s-high">높음</span></td></tr>
+      <tr><td class="id">A-3</td><td class="feat">회원탈퇴 / 계정 삭제</td><td class="why">가입은 되는데 탈퇴 경로가 전무. recruiter_users·회사 연결 해제, 데이터 삭제 요청 처리 불가 (개인정보 관점에서도 필요).</td><td><span class="sev s-high">높음</span></td></tr>
+      <tr><td class="id">A-4</td><td class="feat">내 프로필 수정 (담당자명 등)</td><td class="why">가입 시 입력한 <code>full_name</code>을 이후 변경 불가.</td><td><span class="sev s-low">낮음</span></td></tr>
+      <tr><td class="id">A-5</td><td class="feat">OAuth 실패/취소 시 피드백</td><td class="why">구글 로그인 취소·콜백 에러 시 사용자 안내 동선 확인 필요.</td><td><span class="sev s-chk">검증필요</span></td></tr>
+    </tbody>
+  </table>
+
+  <!-- B -->
+  <h2><span class="n">B</span>회사 · 멤버 관리</h2>
+  <table>
+    <thead><tr><th>#</th><th>누락 기능</th><th>왜 필요한가</th><th>심각도</th></tr></thead>
+    <tbody>
+      <tr><td class="id">B-1</td><td class="feat">회사 설정 페이지 (회사명·로고·도메인)</td><td class="why">가입 시 1회 입력 후 고정. 회사 정보를 바꿀 화면 자체가 없음.</td><td><span class="sev s-mid">중간</span></td></tr>
+      <tr><td class="id">B-2</td><td class="feat">회사 단위 멤버 목록·관리</td><td class="why">멤버 제외는 '공고별 면접관'만 가능. 회사에 합류한 동료 전체를 보고 내보내는 기능이 없음.</td><td><span class="sev s-mid">중간</span></td></tr>
+      <tr><td class="id">B-3</td><td class="feat">도메인 자동합류 승인 게이트</td><td class="why">같은 회사 도메인이면 누구나 <code>admin</code>으로 자동 합류. 첫 가입자 외 합류를 승인/차단할 방법이 없음 — 권한·보안 리스크.</td><td><span class="sev s-high">높음</span></td></tr>
+    </tbody>
+  </table>
+
+  <!-- C -->
+  <h2><span class="n">C</span>공고 작성 · 관리</h2>
+  <table>
+    <thead><tr><th>#</th><th>누락 기능</th><th>왜 필요한가</th><th>심각도</th></tr></thead>
+    <tbody>
+      <tr><td class="id">C-1</td><td class="feat">임시저장 (draft)</td><td class="why">'공고 게재하기' 한 번에 바로 <code>pending_review</code>. 작성 중 저장이 안 됨 (draft 상태는 DB엔 있으나 UI 경로 없음).</td><td><span class="sev s-mid">중간</span></td></tr>
+      <tr><td class="id">C-2</td><td class="feat">공고 마감(closed) 버튼</td><td class="why"><code>closed</code> 상태는 정의돼 있는데 기업이 공고를 '마감'할 UI가 없음 (일시중지/삭제만). 채용 종료 표현 불가.</td><td><span class="sev s-mid">중간</span></td></tr>
+      <tr><td class="id">C-3</td><td class="feat">삭제 = 하드 삭제 / 지원자 연쇄</td><td class="why">마감 대신 삭제로 유도되면 지원 이력이 사라질 위험. <code>job_applications</code> FK의 ON DELETE 동작 확인 필요(연쇄삭제 시 후보 데이터 유실).</td><td><span class="sev s-chk">검증필요</span></td></tr>
+      <tr><td class="id">C-4</td><td class="feat">마감일 자동 마감</td><td class="why"><code>deadline</code> 입력은 받지만 지나도 자동으로 닫히지 않음.</td><td><span class="sev s-low">낮음</span></td></tr>
+      <tr><td class="id">C-5</td><td class="feat">채용 인원 충원 추적</td><td class="why"><code>headcount</code> 입력받지만 합격 인원과 연동·마감 처리 없음.</td><td><span class="sev s-low">낮음</span></td></tr>
+      <tr><td class="id">C-6</td><td class="feat">후보가 보는 전체 공고 미리보기</td><td class="why">작성 화면 미리보기는 미니 카드뿐. 실제 상세 페이지 형태로 못 봄.</td><td><span class="sev s-low">낮음</span></td></tr>
+    </tbody>
+  </table>
+
+  <!-- D -->
+  <h2><span class="n">D</span>후보 처리 (칸반 단계 외)</h2>
+  <table>
+    <thead><tr><th>#</th><th>누락 기능</th><th>왜 필요한가</th><th>심각도</th></tr></thead>
+    <tbody>
+      <tr><td class="id">D-1</td><td class="feat">합격/불합격 결과 구분</td><td class="why">단계가 …→<code>decided</code>로 끝남. '결정'이 합격인지 불합격인지 불명확. <code>reject</code> 메일 템플릿은 있는데 불합격 상태/액션이 없음. <em>(칸반 단계 재설계와 겹침 — 그쪽 검토에 합류)</em></td><td><span class="sev s-mid">중간</span></td></tr>
+      <tr><td class="id">D-2</td><td class="feat">불합격/종료 후보 보관(archive)</td><td class="why">탈락 후보를 정리·숨길 방법이 없음.</td><td><span class="sev s-low">낮음</span></td></tr>
+    </tbody>
+  </table>
+
+  <!-- E -->
+  <h2><span class="n">E</span>메일</h2>
+  <table>
+    <thead><tr><th>#</th><th>누락 기능</th><th>왜 필요한가</th><th>심각도</th></tr></thead>
+    <tbody>
+      <tr><td class="id">E-1</td><td class="feat">발송 메일 이력 화면</td><td class="why"><code>recruiter_mail_log</code>에 서버가 기록하고 조회 RLS 정책까지 있는데, "누구에게 뭘 보냈는지" 볼 UI가 없음. 보내고 나면 확인 불가.</td><td><span class="sev s-mid">중간</span></td></tr>
+      <tr><td class="id">E-2</td><td class="feat">면접 일정 → 후보 자동 안내</td><td class="why">InterviewModal은 일정만 저장하고 메일과 분리. 후보는 면접이 잡힌 걸 모름. 일정 잡기와 안내 메일이 짝이어야 함.</td><td><span class="sev s-high">높음</span></td></tr>
+      <tr><td class="id">E-3</td><td class="feat">발송 실패/반송 상태 노출</td><td class="why">로그엔 status(sent/failed) 저장되나 기업 화면에 표시 안 됨.</td><td><span class="sev s-low">낮음</span></td></tr>
+    </tbody>
+  </table>
+
+  <!-- F -->
+  <h2><span class="n">F</span>면접 · 캘린더</h2>
+  <table>
+    <thead><tr><th>#</th><th>누락 기능</th><th>왜 필요한가</th><th>심각도</th></tr></thead>
+    <tbody>
+      <tr><td class="id">F-1</td><td class="feat">면접 취소/삭제</td><td class="why">잡은 일정을 비우는(<code>interview_at</code> 해제) 경로가 없음. 수정만 되고 취소가 안 됨.</td><td><span class="sev s-mid">중간</span></td></tr>
+      <tr><td class="id">F-2</td><td class="feat">캘린더에서 후보로 이동 / 일정 조작</td><td class="why">캘린더가 읽기 전용. 일정 클릭해도 후보 상세로 못 가고, 수정·취소 불가.</td><td><span class="sev s-mid">중간</span></td></tr>
+      <tr><td class="id">F-3</td><td class="feat">면접 리마인더</td><td class="why">면접 전 후보/면접관 알림 없음.</td><td><span class="sev s-low">낮음</span></td></tr>
+    </tbody>
+  </table>
+
+  <!-- G -->
+  <h2><span class="n">G</span>채용팀 권한</h2>
+  <table>
+    <thead><tr><th>#</th><th>누락 기능</th><th>왜 필요한가</th><th>심각도</th></tr></thead>
+    <tbody>
+      <tr><td class="id">G-1</td><td class="feat">역할 변경 (권한 부여/회수)</td><td class="why">초대된 팀원은 전원 <code>interviewer</code> 고정. 관리자 권한을 주거나 빼는 기능이 없음.</td><td><span class="sev s-mid">중간</span></td></tr>
+      <tr><td class="id">G-2</td><td class="feat">오너 이전(transfer)</td><td class="why">공고 오너(작성자)가 퇴사·제외되면 오너 재지정이 안 됨 → 그 공고 팀 관리 불능. 오너만 팀 관리 가능하므로 치명적.</td><td><span class="sev s-high">높음</span></td></tr>
+      <tr><td class="id">G-3</td><td class="feat">본인이 팀 나가기</td><td class="why">면접관이 스스로 빠지는 경로 없음 (오너만 제외 가능).</td><td><span class="sev s-low">낮음</span></td></tr>
+      <tr><td class="id">G-4</td><td class="feat">초대 재발송</td><td class="why">메일 못 받은 경우 다시 보내기가 없음. 취소 후 재초대만 가능.</td><td><span class="sev s-low">낮음</span></td></tr>
+      <tr><td class="id">G-5</td><td class="feat">제외된 면접관 잔존 접근 차단</td><td class="why">job_team에서 빠진 사람이 직접 URL로 그 공고 칸반에 접근 못 하는지(RLS) 확인 필요.</td><td><span class="sev s-chk">검증필요</span></td></tr>
+    </tbody>
+  </table>
+
+  <!-- H -->
+  <h2><span class="n">H</span>네비게이션 · 공통 UX</h2>
+  <table>
+    <thead><tr><th>#</th><th>누락 기능</th><th>왜 필요한가</th><th>심각도</th></tr></thead>
+    <tbody>
+      <tr><td class="id">H-1</td><td class="feat">사이드바 설정/계정 메뉴</td><td class="why">대시보드·새공고·면접일정만. 설정·계정 진입점이 없음 (B-1·A-3·A-4의 집입구).</td><td><span class="sev s-mid">중간</span></td></tr>
+      <tr><td class="id">H-2</td><td class="feat">에러 화면 복구 동선</td><td class="why">'접근 불가' 등에서 재시도 없이 이동 링크만.</td><td><span class="sev s-low">낮음</span></td></tr>
+    </tbody>
+  </table>
+
+  <!-- 이미 있음 -->
+  <h2><span class="n" style="background:#059669">✓</span>이미 잘 되어 있는 것 (오해 방지)</h2>
+  <table>
+    <thead><tr><th>기능</th><th>상태</th></tr></thead>
+    <tbody>
+      <tr><td class="feat">공고 승인/반려 + 기업 통보 메일</td><td><span class="sev s-ok">있음</span> 어드민 Approve→live+승인메일 / 반려→rejected+반려메일</td></tr>
+      <tr><td class="feat">반려 후 재제출 (재검토 큐 복귀)</td><td><span class="sev s-ok">있음</span> P0에서 추가</td></tr>
+      <tr><td class="feat">팀 초대 ↔ 멤버 제외 / 초대 취소</td><td><span class="sev s-ok">있음</span> 오너 한정</td></tr>
+      <tr><td class="feat">초대 → 가입 시 채용팀 자동 합류</td><td><span class="sev s-ok">있음</span> auth/callback → accept-invites</td></tr>
+      <tr><td class="feat">로그아웃 (대시보드 진입 후)</td><td><span class="sev s-ok">있음</span> 사이드바</td></tr>
+    </tbody>
+  </table>
+
+  <footer>
+    점검 범위: /company 전 화면 + pages/api/company + 관련 컴포넌트. 칸반 단계 메커니즘·내용은 별도 검토로 제외. · FYI for Companies
+  </footer>
+
+</div>
+</body>
+</html>
