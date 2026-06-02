@@ -3,7 +3,6 @@ import Head from 'next/head'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { supabase } from '../../lib/supabaseClient'
-import { useAdminGuard } from '../../lib/useAdminGuard'
 import GlobalNav from '../../components/GlobalNav'
 import SalaryBadge from '../../components/SalaryBadge'
 import { useT } from '../../lib/i18n'
@@ -36,7 +35,6 @@ function timeAgo(dateStr) {
 export default function CommunityPage() {
   const router = useRouter()
   const { t } = useT()
-  const { checking } = useAdminGuard()
   const [session, setSession] = useState(null)
   const [posts, setPosts] = useState([])
   const [loading, setLoading] = useState(true)
@@ -256,15 +254,6 @@ export default function CommunityPage() {
   const getCatLabel = (catKey) => {
     const found = CATEGORIES.find(c => c.key === catKey)
     return found ? t(found.tKey) : catKey
-  }
-
-  if (checking) {
-    return (
-      <>
-        <GlobalNav activePage="community" />
-        <div style={{ minHeight: '60vh', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#bbb', fontSize: 14 }}>Loading...</div>
-      </>
-    )
   }
 
   return (

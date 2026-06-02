@@ -3,7 +3,6 @@ import Head from 'next/head'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { supabase } from '../../lib/supabaseClient'
-import { useAdminGuard } from '../../lib/useAdminGuard'
 import GlobalNav from '../../components/GlobalNav'
 import SalaryBadge from '../../components/SalaryBadge'
 import { useT } from '../../lib/i18n'
@@ -36,7 +35,6 @@ export default function CommunityPostPage() {
   const router = useRouter()
   const { id } = router.query
   const { t } = useT()
-  const { checking } = useAdminGuard()
   const [session, setSession] = useState(null)
   const [post, setPost] = useState(null)
   const [loading, setLoading] = useState(true)
@@ -164,15 +162,6 @@ export default function CommunityPostPage() {
 
   const catColor = post ? CATEGORY_COLORS[post.category] : null
   const catLabel = post && CATEGORY_LABELS[post.category] ? t(CATEGORY_LABELS[post.category]) : ''
-
-  if (checking) {
-    return (
-      <>
-        <GlobalNav activePage="community" />
-        <div style={{ minHeight: '60vh', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#bbb', fontSize: 14 }}>Loading...</div>
-      </>
-    )
-  }
 
   return (
     <>

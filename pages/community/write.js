@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import Head from 'next/head'
 import { useRouter } from 'next/router'
 import { supabase } from '../../lib/supabaseClient'
-import { useAdminGuard } from '../../lib/useAdminGuard'
+import { useLoginGuard } from '../../lib/useLoginGuard'
 import GlobalNav from '../../components/GlobalNav'
 import { useT } from '../../lib/i18n'
 
@@ -15,7 +15,7 @@ const CATEGORIES = [
 export default function CommunityWritePage() {
   const router = useRouter()
   const { t } = useT()
-  const { checking } = useAdminGuard()
+  const { checking } = useLoginGuard()
   const [session, setSession] = useState(null)
   const [category, setCategory] = useState('ask_company')
   const [title, setTitle] = useState('')
@@ -25,7 +25,7 @@ export default function CommunityWritePage() {
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session: s } }) => {
-      // Logged-out / non-admin redirect is handled by useAdminGuard.
+      // Logged-out redirect is handled by useLoginGuard.
       if (s) setSession(s)
     })
   }, [])

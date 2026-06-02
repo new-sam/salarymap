@@ -68,7 +68,7 @@ export default function MobileTabBar() {
   }
 
   const active = getActiveKey()
-  const tabs = isAdmin ? [...baseTabs, communityTab, adminTab] : baseTabs
+  const tabs = isAdmin ? [...baseTabs, communityTab, adminTab] : [...baseTabs, communityTab]
   const handleTabClick = (e, tab) => {
     if (tab.key === 'applications' && !isLoggedIn) {
       e.preventDefault()

@@ -177,9 +177,7 @@ export default function GlobalNav({ activePage, onLogin, onJobsClick, mobileSear
           {activePage === 'home' && (
             <button className="gnav-link" onClick={() => document.getElementById('companies')?.scrollIntoView({behavior:'smooth'})}>{t('nav.whoPaysMost')}</button>
           )}
-          {isAdmin && (
-            <Link href="/community" className={`gnav-link${activePage === 'community' ? ' on' : ''}`}>Community</Link>
-          )}
+          <Link href="/community" className={`gnav-link${activePage === 'community' ? ' on' : ''}`}>Community</Link>
           {activePage !== 'jobs' && (
             <Link href="/jobs" className="gnav-link gnav-jobs-cta" onClick={() => onJobsClick?.()}>
               <span className="gnav-jobs-shimmer"></span>
