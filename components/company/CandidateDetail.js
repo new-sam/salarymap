@@ -142,7 +142,7 @@ export default function CandidateDetail({ appId, mode = 'page', onClose, company
 
       {err && <div style={local.errBox}>{err}</div>}
 
-      <div style={local.bodyGrid}>
+      <div className="company-candidate-grid" style={local.bodyGrid}>
         <section style={local.resumeCol}>
           <div style={local.colHead}>
             <span>{t('company.candidate.resume')}</span>

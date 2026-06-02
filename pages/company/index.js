@@ -7,6 +7,7 @@ import { Sidebar, css } from './jobs/new';
 import Brand from '../../components/company/Brand';
 import LangToggle from '../../components/company/LangToggle';
 import { useT } from '../../lib/i18n';
+import { TERMS_VERSION } from '../../lib/companyTerms';
 
 const FREE_MAIL_DOMAINS = new Set([
   'gmail.com', 'naver.com', 'yahoo.com', 'hotmail.com', 'outlook.com',
@@ -19,6 +20,7 @@ const STATUS_STYLE = {
   live: { bg: '#ECFDF5', color: '#059669' },
   paused: { bg: '#FFFBEB', color: '#D97706' },
   closed: { bg: '#F1F5F9', color: '#94A3B8' },
+  rejected: { bg: '#FEF2F2', color: '#DC2626' },
 };
 
 const authResponsiveCss = `
@@ -58,6 +60,9 @@ export default function CompanyDashboard() {
   const [setupName, setSetupName] = useState('');
   const [setupCompany, setSetupCompany] = useState('');
   const [setupBusy, setSetupBusy] = useState(false);
+  const [agreeTerms, setAgreeTerms] = useState(false);
+  const [agreePrivacy, setAgreePrivacy] = useState(false);
+  const [agreeMarketing, setAgreeMarketing] = useState(false);
 
   const loginWithGoogle = async () => {
     if (typeof window !== 'undefined') {
@@ -78,7 +83,9 @@ export default function CompanyDashboard() {
     }
     if (!setupName.trim()) { setAuthErr(t('company.err.contactRequired')); return; }
     if (!setupCompany.trim()) { setAuthErr(t('company.err.companyRequired')); return; }
+    if (!agreeTerms || !agreePrivacy) { setAuthErr(t('company.err.agreeRequired')); return; }
 
+    const agreedAt = new Date().toISOString();
     setSetupBusy(true);
     try {
       const { data: existing } = await supabase
@@ -114,6 +121,10 @@ export default function CompanyDashboard() {
         email: userEmail,
         full_name: setupName.trim(),
         role: 'admin',
+        terms_agreed_at: agreedAt,
+        terms_version: TERMS_VERSION,
+        privacy_agreed_at: agreedAt,
+        marketing_opt_in: agreeMarketing,
       }, { onConflict: 'user_id' });
       if (userError) throw userError;
 
@@ -296,8 +307,49 @@ export default function CompanyDashboard() {
                     />
                   </div>
                 </div>
+
+                <div style={localCss.consent}>
+                  <label style={localCss.consentAll}>
+                    <input
+                      type="checkbox"
+                      checked={agreeTerms && agreePrivacy && agreeMarketing}
+                      onChange={(e) => {
+                        const v = e.target.checked;
+                        setAgreeTerms(v); setAgreePrivacy(v); setAgreeMarketing(v);
+                      }}
+                      style={localCss.checkbox}
+                    />
+                    <span>{t('company.consent.all')}</span>
+                  </label>
+                  <div style={localCss.consentDivider} />
+                  <label style={localCss.consentRow}>
+                    <input type="checkbox" checked={agreeTerms} onChange={(e) => setAgreeTerms(e.target.checked)} style={localCss.checkbox} />
+                    <span style={localCss.consentText}>
+                      <b style={localCss.consentReq}>{t('company.consent.required')}</b> {t('company.consent.terms')}
+                    </span>
+                    <a href="/company/terms" target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} style={localCss.consentView}>{t('company.consent.view')}</a>
+                  </label>
+                  <label style={localCss.consentRow}>
+                    <input type="checkbox" checked={agreePrivacy} onChange={(e) => setAgreePrivacy(e.target.checked)} style={localCss.checkbox} />
+                    <span style={localCss.consentText}>
+                      <b style={localCss.consentReq}>{t('company.consent.required')}</b> {t('company.consent.privacy')}
+                    </span>
+                    <a href="/company/terms" target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} style={localCss.consentView}>{t('company.consent.view')}</a>
+                  </label>
+                  <label style={localCss.consentRow}>
+                    <input type="checkbox" checked={agreeMarketing} onChange={(e) => setAgreeMarketing(e.target.checked)} style={localCss.checkbox} />
+                    <span style={localCss.consentText}>
+                      <b style={localCss.consentOpt}>{t('company.consent.optional')}</b> {t('company.consent.marketing')}
+                    </span>
+                  </label>
+                </div>
+
                 {authErr && <div style={localCss.authErr}>{authErr}</div>}
-                <button type="submit" disabled={setupBusy} style={localCss.primaryBtn}>
+                <button
+                  type="submit"
+                  disabled={setupBusy || !agreeTerms || !agreePrivacy}
+                  style={{ ...localCss.primaryBtn, ...((setupBusy || !agreeTerms || !agreePrivacy) ? localCss.primaryBtnDisabled : {}) }}
+                >
                   {setupBusy ? t('company.connecting') : t('company.connectBtn')}
                 </button>
               </form>
@@ -314,10 +366,10 @@ export default function CompanyDashboard() {
   return (
     <>
       <Head><title>{t('company.head.dashboard')}</title></Head>
-      <div style={css.app}>
+      <div className="company-app" style={css.app}>
         <Sidebar companyName={companyName} userEmail={user?.email} activePage="home" />
 
-        <main style={css.main}>
+        <main className="company-main" style={css.main}>
           <header style={css.mainHead}>
             <div>
               <h1 style={css.mainH}>{fullName ? t('company.welcomeName', { name: fullName }) : t('company.welcome')}</h1>
@@ -370,6 +422,11 @@ export default function CompanyDashboard() {
                         {job.status === 'pending_review' && (
                           <div style={{ marginTop: 6, fontSize: 12, color: '#EA580C', fontWeight: 700 }}>
                             ⏳ {t('company.job.approval.pendingDesc')}
+                          </div>
+                        )}
+                        {job.status === 'rejected' && (
+                          <div style={{ marginTop: 6, fontSize: 12, color: '#DC2626', fontWeight: 700 }}>
+                            ⚠ {t('company.job.approval.rejectedDesc')}
                           </div>
                         )}
                       </div>
@@ -511,6 +568,32 @@ const localCss = {
     justifyContent: 'center',
     gap: 8,
   },
+  primaryBtnDisabled: {
+    background: '#E5E7EB',
+    color: '#9CA3AF',
+    cursor: 'not-allowed',
+  },
+  consent: {
+    marginTop: 4,
+    border: '1px solid #E5E7EB',
+    borderRadius: 12,
+    padding: '14px 16px',
+    background: '#FAFAFA',
+  },
+  consentAll: {
+    display: 'flex', alignItems: 'center', gap: 9,
+    fontSize: 13.5, fontWeight: 800, color: '#111', cursor: 'pointer',
+  },
+  consentDivider: { height: 1, background: '#E5E7EB', margin: '11px 0' },
+  consentRow: {
+    display: 'flex', alignItems: 'center', gap: 9,
+    fontSize: 12.5, color: '#374151', cursor: 'pointer', padding: '4px 0',
+  },
+  consentText: { flex: 1, lineHeight: 1.4 },
+  consentReq: { color: '#EA580C', fontWeight: 800 },
+  consentOpt: { color: '#9CA3AF', fontWeight: 800 },
+  consentView: { color: '#6B7280', fontSize: 11.5, fontWeight: 700, textDecoration: 'underline', flexShrink: 0 },
+  checkbox: { width: 16, height: 16, accentColor: '#EA580C', cursor: 'pointer', flexShrink: 0 },
   googleBtn: {
     marginTop: 5,
     width: '100%',

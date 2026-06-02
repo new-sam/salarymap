@@ -154,10 +154,10 @@ export default function CompanyATSPage() {
   return (
     <>
       <Head><title>{job.title} · FYI</title></Head>
-      <div style={css.app}>
+      <div className="company-app" style={css.app}>
         <Sidebar companyName={companyName} userEmail={user?.email} activePage="jobs" activeJobId={job.id} />
 
-        <main style={css.main}>
+        <main className="company-main" style={css.main}>
           <header style={css.mainHead}>
             <div>
               <div style={localCss.crumb}><Link href="/company" style={localCss.crumbLink}>{t('company.backDashboard')}</Link></div>
@@ -185,7 +185,7 @@ export default function CompanyATSPage() {
             <span style={localCss.dragHint}>{t('company.ats.dragHint')}</span>
           </div>
 
-          <div style={localCss.kanban}>
+          <div className="company-kanban" style={localCss.kanban}>
             {grouped.map((col) => (
               <div
                 key={col.key}
