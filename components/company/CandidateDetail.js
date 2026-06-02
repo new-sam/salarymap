@@ -220,8 +220,16 @@ export default function CandidateDetail({ appId, mode = 'page', onClose, company
           {(app.status === 'reviewing' || app.status === 'decided') && (
             <section style={local.section}>
               <h3 style={local.sectionH}>{t('company.candidate.actionH')}</h3>
+              {app.interview_at && (
+                <div style={local.interviewBox}>
+                  <div style={local.interviewBoxLabel}>{t('company.interview.scheduledLabel')}</div>
+                  <div style={local.interviewLine}>📅 {new Date(app.interview_at).toLocaleString()}</div>
+                  {app.interview_location && <div style={local.interviewLine}>📍 {app.interview_location}</div>}
+                  {app.interview_interviewer && <div style={local.interviewLine}>👤 {app.interview_interviewer}</div>}
+                </div>
+              )}
               <button onClick={() => setShowInterviewModal(true)} style={local.btnAction}>
-                {t('company.candidate.scheduleInterview')}
+                {app.interview_at ? t('company.interview.editBtn') : t('company.candidate.scheduleInterview')}
               </button>
             </section>
           )}
@@ -232,9 +240,8 @@ export default function CandidateDetail({ appId, mode = 'page', onClose, company
         <InterviewModal
           app={app}
           onClose={() => setShowInterviewModal(false)}
-          onSaved={(updated) => {
-            setApp({ ...app, admin_note: updated });
-            setNote(updated);
+          onSaved={(fields) => {
+            setApp({ ...app, ...fields });
             setShowInterviewModal(false);
           }}
         />
@@ -265,26 +272,28 @@ function Info({ label, children }) {
 
 function InterviewModal({ app, onClose, onSaved }) {
   const { t } = useT();
-  const [date, setDate] = useState('');
-  const [time, setTime] = useState('14:00');
-  const [location, setLocation] = useState('');
-  const [interviewer, setInterviewer] = useState('');
+  const pad = (n) => String(n).padStart(2, '0');
+  const existing = app.interview_at ? new Date(app.interview_at) : null;
+  const [date, setDate] = useState(existing ? `${existing.getFullYear()}-${pad(existing.getMonth() + 1)}-${pad(existing.getDate())}` : '');
+  const [time, setTime] = useState(existing ? `${pad(existing.getHours())}:${pad(existing.getMinutes())}` : '14:00');
+  const [location, setLocation] = useState(app.interview_location || '');
+  const [interviewer, setInterviewer] = useState(app.interview_interviewer || '');
   const [saving, setSaving] = useState(false);
   const [err, setErr] = useState('');
 
   const save = async () => {
     if (!date) { setErr(t('company.err.dateRequired')); return; }
     setSaving(true);
-    const summary = `[Interview]\n📅 ${date} ${time}\n📍 ${location || '—'}\n👤 ${interviewer || '—'}\n\n${app.admin_note || ''}`;
-    const { error } = await supabase.from('job_applications').update({
-      admin_note: summary,
+    // 면접 일정은 전용 컬럼에만 저장 — 평가 메모(admin_note)는 건드리지 않는다.
+    const fields = {
       interview_at: new Date(`${date}T${time || '00:00'}`).toISOString(),
       interview_location: location || null,
       interview_interviewer: interviewer || null,
-    }).eq('id', app.id);
+    };
+    const { error } = await supabase.from('job_applications').update(fields).eq('id', app.id);
     setSaving(false);
     if (error) { setErr(t('company.err.saveFailed') + error.message); return; }
-    onSaved(summary);
+    onSaved(fields);
   };
 
   return (
@@ -474,6 +483,9 @@ const local = {
   stageBtnActive: { padding: '7px 10px', borderRadius: 6, border: '1.5px solid #EA580C', background: '#FFF7ED', color: '#EA580C', fontSize: 11.5, fontWeight: 800, cursor: 'pointer', fontFamily: 'inherit', textAlign: 'left' },
   btnNext: { width: '100%', padding: '11px 14px', borderRadius: 8, border: 'none', background: 'linear-gradient(135deg,#EF4444,#F97316)', color: '#fff', fontSize: 13, fontWeight: 800, cursor: 'pointer', fontFamily: 'inherit', boxShadow: '0 4px 12px rgba(234,88,12,0.22)' },
   btnAction: { width: '100%', padding: '11px 14px', borderRadius: 8, border: '1px solid #D1D5DB', background: '#fff', color: '#1A1A1A', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' },
+  interviewBox: { background: '#FFF7ED', border: '1px solid #FED7AA', borderRadius: 8, padding: '10px 12px', marginBottom: 10, display: 'flex', flexDirection: 'column', gap: 3 },
+  interviewBoxLabel: { fontSize: 10.5, fontWeight: 800, color: '#9A3412', letterSpacing: '0.04em', textTransform: 'uppercase', marginBottom: 2 },
+  interviewLine: { fontSize: 12.5, color: '#7C2D12', fontWeight: 600 },
   btnMail: { width: '100%', padding: '11px 14px', borderRadius: 8, border: 'none', background: 'linear-gradient(135deg,#EF4444,#F97316)', color: '#fff', fontSize: 13, fontWeight: 800, cursor: 'pointer', fontFamily: 'inherit', boxShadow: '0 4px 12px rgba(234,88,12,0.22)' },
   btnMailDisabled: { width: '100%', padding: '11px 14px', borderRadius: 8, border: '1px solid #E5E7EB', background: '#F1F5F9', color: '#94A3B8', fontSize: 13, fontWeight: 800, cursor: 'not-allowed', fontFamily: 'inherit' },
   mailHint: { fontSize: 11, color: '#94A3B8', marginTop: 6 },

@@ -96,7 +96,8 @@ export default async function handler(req, res) {
   const cleanEmail = (email || '').trim().toLowerCase();
   if (!EMAIL_RE.test(cleanEmail)) return res.status(400).json({ error: '올바른 이메일을 입력해 주세요.' });
   if (!jobId) return res.status(400).json({ error: 'jobId 필요' });
-  const cleanRole = role === 'admin' ? 'admin' : 'member';
+  // 초대는 공고 면접관 합류용 — 실제 job_team 합류 role(interviewer)과 저장값을 일치시킨다.
+  const cleanRole = role === 'admin' ? 'admin' : 'interviewer';
 
   const admin = createClient(SUPABASE_URL, SERVICE_KEY);
 

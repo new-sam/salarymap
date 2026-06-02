@@ -79,7 +79,7 @@
   <p class="meta-line">branch <code>codex/company-landing-qa</code> · 보안 점검: 기업/ATS 코드 내 console.log·PII 노출 없음, 메일 수신자 서버 결정으로 임의 발송 차단</p>
 
   <div style="background:#ecfdf5;border:1px solid #a7f3d0;border-radius:12px;padding:14px 18px;margin:0 0 4px;color:#065f46;font-size:14px;font-weight:800">
-    ✓ P0~P2 전부 수정 완료 (2026-06-02) · 프로덕션 빌드 통과. P3는 미착수.
+    ✓ P0~P3 전부 수정 완료 (2026-06-02) · 프로덕션 빌드 통과.
   </div>
 
   <!-- P0 -->
@@ -149,7 +149,7 @@
   </table>
 
   <!-- P3 -->
-  <h2 class="sec-p3"><span class="dot"></span>P3 — 경미 (동작엔 지장 없음)</h2>
+  <h2 class="sec-p3"><span class="dot"></span>P3 — 경미 (동작엔 지장 없음)<span class="badge-pass" style="margin-left:8px">✓ 해결</span></h2>
   <table>
     <thead><tr><th>우선</th><th>영역</th><th>증상</th><th>위치</th><th>고칠 방향</th></tr></thead>
     <tbody>
@@ -158,14 +158,14 @@
         <td class="area">메모·면접 공유</td>
         <td>평가 메모와 면접 일정이 <code>admin_note</code> 한 컬럼을 공유 → 면접 저장 시 메모 본문이 요약 텍스트로 덮어써짐(유실은 아니나 혼란 여지).</td>
         <td class="where">components/company/CandidateDetail.js</td>
-        <td class="fix">장기적으로 면접 메모용 별도 컬럼 분리 검토.</td>
+        <td class="fix">✓ 면접은 전용 <code>interview_*</code> 컬럼에만 저장하도록 변경, <code>admin_note</code>는 평가 메모 전용. 상세에 '예정된 면접' 표시 추가.</td>
       </tr>
       <tr>
         <td><span class="pri p3">P3</span></td>
         <td class="area">초대 role 고정</td>
         <td>초대 시 클라는 <code>interviewer</code>를 보내지만 서버가 admin이 아니면 <code>member</code>로 굳혀 저장. 기능 영향 없음.</td>
         <td class="where">pages/api/company/invite-member.js</td>
-        <td class="fix">role 매핑 정리(또는 의도된 동작이면 주석).</td>
+        <td class="fix">✓ 초대 저장 role을 실제 합류 role(<code>interviewer</code>)과 일치시킴.</td>
       </tr>
     </tbody>
   </table>
