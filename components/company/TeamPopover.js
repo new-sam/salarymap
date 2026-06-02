@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { supabase } from '../../lib/supabaseClient';
 import { useT } from '../../lib/i18n';
+import { ConfirmModal } from './CandidateDetail';
 
 const AVATAR_COLORS = ['#fb923c', '#60a5fa', '#34d399', '#f472b6', '#a78bfa', '#fbbf24', '#22d3ee', '#f87171'];
 function colorFor(seed = '') {
@@ -24,7 +25,24 @@ export default function TeamPopover({ jobId, canInvite = true }) {
   const [team, setTeam] = useState({ members: [], invites: [], currentUserId: null, ownerUserId: null });
   const [loading, setLoading] = useState(false);
   const [inviteOpen, setInviteOpen] = useState(false);
+  const [confirmCfg, setConfirmCfg] = useState(null);
   const ref = useRef(null);
+
+  const askConfirm = (config) => new Promise(resolve => {
+    setConfirmCfg({
+      ...config,
+      onConfirm: () => { setConfirmCfg(null); resolve(true); },
+      onCancel: () => { setConfirmCfg(null); resolve(false); },
+    });
+  });
+  const showAlert = (config) => new Promise(resolve => {
+    setConfirmCfg({
+      variant: 'alert',
+      ...config,
+      onConfirm: () => { setConfirmCfg(null); resolve(true); },
+      onCancel: () => { setConfirmCfg(null); resolve(true); },
+    });
+  });
 
   const load = async () => {
     if (!jobId) return;
@@ -42,13 +60,58 @@ export default function TeamPopover({ jobId, canInvite = true }) {
 
   useEffect(() => { load(); }, [jobId]);
 
-  // Close on outside click
+  const remove = async (payload) => {
+    const { data } = await supabase.auth.getSession();
+    const token = data?.session?.access_token;
+    const res = await fetch('/api/company/remove-member', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ jobId, ...payload }),
+    });
+    const j = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      await showAlert({
+        title: t('company.team.removeBtn'),
+        message: t('company.team.removeErr') + (j.error || ''),
+        tone: 'danger',
+      });
+      return;
+    }
+    await load();
+  };
+
+  const removeMember = async (m) => {
+    const name = m.full_name || m.email?.split('@')[0] || '?';
+    const ok = await askConfirm({
+      title: t('company.team.removeBtn'),
+      message: t('company.team.removeConfirm', { name }),
+      confirmLabel: t('company.team.removeBtn'),
+      tone: 'danger',
+    });
+    if (!ok) return;
+    remove({ userId: m.user_id });
+  };
+  const cancelInvite = async (iv) => {
+    const ok = await askConfirm({
+      title: t('company.team.removeBtn'),
+      message: t('company.team.cancelInviteConfirm', { email: iv.email }),
+      confirmLabel: t('company.team.removeBtn'),
+      tone: 'danger',
+    });
+    if (!ok) return;
+    remove({ inviteId: iv.id });
+  };
+
+  // Close on outside click — confirm 모달이 열려있으면 무시
   useEffect(() => {
     if (!open) return;
-    const onDoc = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
+    const onDoc = (e) => {
+      if (confirmCfg) return;
+      if (ref.current && !ref.current.contains(e.target)) setOpen(false);
+    };
     document.addEventListener('mousedown', onDoc);
     return () => document.removeEventListener('mousedown', onDoc);
-  }, [open]);
+  }, [open, confirmCfg]);
 
   const count = team.members.length + team.invites.length;
 
@@ -74,10 +137,17 @@ export default function TeamPopover({ jobId, canInvite = true }) {
               <div style={s.empty}>{t('company.team.empty')}</div>
             )}
 
-            {team.members.map(m => {
+            {[...team.members].sort((a, b) => {
+              // owner 먼저, 그 다음 면접관
+              if (a.role === 'owner' && b.role !== 'owner') return -1;
+              if (a.role !== 'owner' && b.role === 'owner') return 1;
+              return 0;
+            }).map(m => {
               const name = m.full_name || m.email?.split('@')[0] || '?';
               const isMe = m.user_id === team.currentUserId;
               const isOwner = m.role === 'owner';
+              const iAmOwner = team.ownerUserId === team.currentUserId;
+              const canRemove = iAmOwner && !isOwner && !isMe;
               return (
                 <div key={m.user_id} style={s.row}>
                   <div style={{ ...s.av, background: colorFor(m.email || name) }}>{initialOf(name)}</div>
@@ -88,21 +158,30 @@ export default function TeamPopover({ jobId, canInvite = true }) {
                   <div style={isOwner ? s.ownerTag : s.roleTag}>
                     {t(`company.team.role.${isOwner ? 'owner' : 'interviewer'}`)}
                   </div>
+                  {canRemove && (
+                    <button onClick={() => removeMember(m)} style={s.removeBtn} title={t('company.team.removeBtn')}>✕</button>
+                  )}
                 </div>
               );
             })}
 
-            {team.invites.map(iv => (
-              <div key={iv.id} style={s.row}>
-                <div style={{ ...s.av, background: '#9ca3af' }}>{initialOf(iv.email)}</div>
-                <div style={s.rowBody}>
-                  <div style={s.rowName}>{iv.email.split('@')[0]}</div>
-                  <div style={s.rowEmail}>{iv.email}</div>
-                  <div style={s.rowSub}>{t('company.team.invitedAt', { when: relTime(iv.created_at) })}</div>
+            {team.invites.map(iv => {
+              const iAmOwner = team.ownerUserId === team.currentUserId;
+              return (
+                <div key={iv.id} style={s.row}>
+                  <div style={{ ...s.av, background: '#9ca3af' }}>{initialOf(iv.email)}</div>
+                  <div style={s.rowBody}>
+                    <div style={s.rowName}>{iv.email.split('@')[0]}</div>
+                    <div style={s.rowEmail}>{iv.email}</div>
+                    <div style={s.rowSub}>{t('company.team.invitedAt', { when: relTime(iv.created_at) })}</div>
+                  </div>
+                  <div style={s.pendTag}>{t('company.team.pending')}</div>
+                  {iAmOwner && (
+                    <button onClick={() => cancelInvite(iv)} style={s.removeBtn} title={t('company.team.removeBtn')}>✕</button>
+                  )}
                 </div>
-                <div style={s.pendTag}>{t('company.team.pending')}</div>
-              </div>
-            ))}
+              );
+            })}
           </div>
 
           {canInvite && (
@@ -120,6 +199,8 @@ export default function TeamPopover({ jobId, canInvite = true }) {
           onDone={() => { setInviteOpen(false); load(); }}
         />
       )}
+
+      {confirmCfg && <ConfirmModal {...confirmCfg} />}
     </div>
   );
 }
@@ -243,6 +324,7 @@ const s = {
   roleTag: { flexShrink: 0, fontSize: 11, fontWeight: 800, color: '#6b7280' },
   ownerTag: { flexShrink: 0, fontSize: 10.5, fontWeight: 900, color: '#ea580c', background: '#fff7ed', padding: '4px 8px', borderRadius: 6, border: '1px solid rgba(249,115,22,0.3)' },
   pendTag: { flexShrink: 0, fontSize: 11, fontWeight: 800, color: '#f97316' },
+  removeBtn: { flexShrink: 0, width: 24, height: 24, marginLeft: 6, border: '1px solid #FECACA', background: '#fff', color: '#B91C1C', borderRadius: 6, fontSize: 12, fontWeight: 800, cursor: 'pointer', fontFamily: 'inherit', display: 'grid', placeItems: 'center', lineHeight: 1 },
   inviteBtn: {
     marginTop: 10, width: '100%', border: 0, borderRadius: 9, padding: '10px 12px',
     background: '#fff7ed', color: '#ea580c', fontSize: 13, fontWeight: 850, cursor: 'pointer',

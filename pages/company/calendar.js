@@ -103,7 +103,7 @@ export default function CompanyCalendarPage() {
   const nextMonth = () => setView(v => v.month === 11 ? { year: v.year + 1, month: 0 } : { ...v, month: v.month + 1 });
   const goToday = () => { const d = new Date(); setView({ year: d.getFullYear(), month: d.getMonth() }); };
 
-  const goCandidate = (jobId) => router.push(`/company/ats?job=${jobId}`);
+  const goCandidate = (appId) => router.push(`/company/candidates/${appId}`);
 
   return (
     <>
@@ -158,15 +158,16 @@ export default function CompanyCalendarPage() {
                     {dayItems.map(it => {
                       const time = fmtTime(new Date(it.interview_at));
                       const name = it.applicant_name || t('company.candidatePrefix').replace('#', '').trim();
+                      const stageLabel = t(`company.stage.${it.status}`);
                       return (
                         <div
                           key={it.id}
                           style={cal.itemRow}
-                          onClick={() => goCandidate(it.job_id)}
-                          title={`${time} ${name} · ${it.jobTitle}${it.interview_location ? ' · ' + it.interview_location : ''}`}
+                          onClick={() => goCandidate(it.id)}
+                          title={`${time} ${stageLabel} · ${name} · ${it.jobTitle}${it.interview_location ? ' · ' + it.interview_location : ''}`}
                         >
                           <span style={cal.itemTime}>{time}</span>
-                          <span style={cal.itemName}>[{name}] {it.jobTitle}</span>
+                          <span style={cal.itemName}>[{name}] {stageLabel} · {it.jobTitle}</span>
                         </div>
                       );
                     })}

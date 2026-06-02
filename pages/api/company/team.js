@@ -57,7 +57,56 @@ export default async function handler(req, res) {
     email: profilesByUid[r.user_id]?.email || null,
     full_name: profilesByUid[r.user_id]?.full_name || null,
     created_at: r.created_at,
-  })).sort((a, b) => (a.role === 'owner' ? -1 : b.role === 'owner' ? 1 : 0));
+  }));
+
+  // 공고 owner가 job_team에 없으면 합성해서 추가
+  if (job.created_by) {
+    const existing = members.find(m => m.user_id === job.created_by);
+    if (existing) {
+      existing.role = 'owner';
+    } else {
+      const { data: ownerProf } = await admin
+        .from('recruiter_users')
+        .select('user_id, email, full_name')
+        .eq('user_id', job.created_by)
+        .maybeSingle();
+      members.push({
+        user_id: job.created_by,
+        role: 'owner',
+        email: ownerProf?.email || null,
+        full_name: ownerProf?.full_name || null,
+        created_at: null,
+      });
+    }
+  }
+
+  // 본인이 채용팀에 안 들어있으면 면접관으로 자동 합성 (회사 멤버이므로 자동 권한)
+  const meInMembers = members.some(m => m.user_id === user.id);
+  if (!meInMembers) {
+    const { data: meProf } = await admin
+      .from('recruiter_users')
+      .select('user_id, email, full_name')
+      .eq('user_id', user.id)
+      .maybeSingle();
+    if (meProf) {
+      members.push({
+        user_id: user.id,
+        role: 'interviewer',
+        email: meProf.email,
+        full_name: meProf.full_name,
+        created_at: null,
+      });
+    }
+  }
+
+  // 정렬: owner 먼저, 그 다음 본인(나), 그 다음 나머지 면접관
+  members.sort((a, b) => {
+    if (a.role === 'owner' && b.role !== 'owner') return -1;
+    if (a.role !== 'owner' && b.role === 'owner') return 1;
+    if (a.user_id === user.id && b.user_id !== user.id) return -1;
+    if (a.user_id !== user.id && b.user_id === user.id) return 1;
+    return 0;
+  });
 
   // 보류 초대 (이 공고 한정)
   const { data: invites } = await admin

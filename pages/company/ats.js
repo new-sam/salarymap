@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { supabase } from '../../lib/supabaseClient';
 import { Sidebar, css } from './jobs/new';
-import CandidateDetail, { MailComposer, RejectionModal, InterviewConfirmModal } from '../../components/company/CandidateDetail';
+import CandidateDetail, { MailComposer, RejectionModal, InterviewConfirmModal, ConfirmModal } from '../../components/company/CandidateDetail';
 import TeamPopover from '../../components/company/TeamPopover';
 import { useT } from '../../lib/i18n';
 
@@ -17,7 +17,6 @@ const STAGES = [
 
 const STAGE_ORDER = STAGES.map(s => s.key);
 // 단계 전진 시 자동으로 띄울 메일 템플릿
-const STAGE_MAIL = { viewed: 'interview', reviewing: 'interview', decided: 'offer' };
 
 export default function CompanyATSPage() {
   const router = useRouter();
@@ -40,6 +39,23 @@ export default function CompanyATSPage() {
   const [menuOpenId, setMenuOpenId] = useState(null);
   const [rejectingApp, setRejectingApp] = useState(null);
   const [interviewApp, setInterviewApp] = useState(null);
+  const [confirmCfg, setConfirmCfg] = useState(null);
+
+  const askConfirm = (config) => new Promise(resolve => {
+    setConfirmCfg({
+      ...config,
+      onConfirm: () => { setConfirmCfg(null); resolve(true); },
+      onCancel: () => { setConfirmCfg(null); resolve(false); },
+    });
+  });
+  const showAlert = (config) => new Promise(resolve => {
+    setConfirmCfg({
+      variant: 'alert',
+      ...config,
+      onConfirm: () => { setConfirmCfg(null); resolve(true); },
+      onCancel: () => { setConfirmCfg(null); resolve(true); },
+    });
+  });
 
   useEffect(() => {
     if (!menuOpenId) return;
@@ -118,34 +134,55 @@ export default function CompanyATSPage() {
 
   const isOwner = !job?.created_by || job?.created_by === user?.id;
 
-  // 카드를 다른 단계 컬럼에 드롭 — 단계 변경 후, 전진 이동이면 메일 작성창을 띄움
-  const handleDrop = (newStatus) => {
+  // 카드를 다른 단계 컬럼에 드롭 — 정책:
+  // (1) 같은 단계: 무시 (2) +2 이상 / -2 이상: 차단
+  // (3) 정방향 +1: 합격 확인 → 인터뷰 일정 초기화 → 메일 모달
+  // (4) 역방향 -1: 되돌리기 확인 → 인터뷰 일정 초기화 (메일 없음)
+  const handleDrop = async (newStatus) => {
     const appId = draggingId;
     setDraggingId(null);
     setDragOverCol(null);
     if (!appId) return;
-    if (!isOwner) { setErr(t('company.ats.lockedDrag')); return; }
     const app = apps.find(a => a.id === appId);
     if (!app || app.status === newStatus) return;
-    const forward = STAGE_ORDER.indexOf(newStatus) > STAGE_ORDER.indexOf(app.status);
-    // 인터뷰 일정 확정된 상태에서 전진 이동 시 합격 확인
-    const hasInterview = !!app.interview_at && (app.status === 'viewed' || app.status === 'reviewing');
-    if (forward && hasInterview) {
-      const ok = window.confirm(t('company.ats.advanceConfirm', {
-        from: t(`company.stage.${app.status}`),
-        to: t(`company.stage.${newStatus}`),
-      }));
-      if (!ok) return;
-    }
-    setStage(appId, newStatus, forward && hasInterview);
-    const profile = app.user_id ? profileMap[app.user_id] : null;
-    const email = app.applicant_email || profile?.email || '';
-    if (forward && STAGE_MAIL[newStatus] && email) {
-      setMailFor({
-        app, profile, email,
-        templateKey: STAGE_MAIL[newStatus],
-        stageLabel: t(`company.stage.${newStatus}`),
+
+    if (!isOwner) {
+      await showAlert({
+        title: t('company.ats.lockedDragTitle'),
+        message: t('company.ats.lockedDrag'),
+        tone: 'danger',
       });
+      return;
+    }
+
+    const fromIdx = STAGE_ORDER.indexOf(app.status);
+    const toIdx = STAGE_ORDER.indexOf(newStatus);
+    const diff = toIdx - fromIdx;
+    const fromLabel = t(`company.stage.${app.status}`);
+    const toLabel = t(`company.stage.${newStatus}`);
+    const hasInterview = !!app.interview_at && (app.status === 'viewed' || app.status === 'reviewing');
+
+    if (diff > 0) {
+      const ok = await askConfirm({
+        title: t('company.ats.advanceTitle'),
+        message: t('company.ats.advanceConfirmBasic', { from: fromLabel, to: toLabel }),
+        confirmLabel: t('company.ats.advanceTitle'),
+      });
+      if (!ok) return;
+      setStage(appId, newStatus, hasInterview);
+      return;
+    }
+
+    if (diff < 0) {
+      const msgKey = hasInterview ? 'company.ats.backConfirmWithInterview' : 'company.ats.backConfirmBasic';
+      const ok = await askConfirm({
+        title: t('company.ats.backTitle'),
+        message: t(msgKey, { from: fromLabel, to: toLabel }),
+        confirmLabel: t('company.ats.backTitle'),
+      });
+      if (!ok) return;
+      setStage(appId, newStatus, hasInterview);
+      return;
     }
   };
 
@@ -291,16 +328,44 @@ export default function CompanyATSPage() {
                                   <button
                                     onClick={(e) => { e.stopPropagation(); setInterviewApp(app); setMenuOpenId(null); }}
                                     style={localCss.kebabItemNeutral}
-                                  >{interviewWhen ? t('company.interview.confirmEditBtn') : t('company.interview.confirmBtn')}</button>
+                                  >
+                                    <span style={localCss.kebabIcon}>📅</span>
+                                    <span style={localCss.kebabText}>{interviewWhen ? t('company.kebab.interviewEdit') : t('company.kebab.interviewSet')}</span>
+                                  </button>
                                 )}
+                                {isOwner && (() => {
+                                  const profile = app.user_id ? profileMap[app.user_id] : null;
+                                  const email = app.applicant_email || profile?.email || '';
+                                  if (!email) return null;
+                                  const defaultTpl = app.status === 'pending' ? 'received'
+                                    : (app.status === 'viewed' || app.status === 'reviewing') ? 'interview'
+                                    : 'offer';
+                                  return (
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setMailFor({ app, profile, email, templateKey: defaultTpl, stageLabel: t(`company.stage.${app.status}`) });
+                                        setMenuOpenId(null);
+                                      }}
+                                      style={localCss.kebabItemNeutral}
+                                    >
+                                      <span style={localCss.kebabIcon}>✉</span>
+                                      <span style={localCss.kebabText}>{t('company.kebab.composeMail')}</span>
+                                    </button>
+                                  );
+                                })()}
                                 {isOwner ? (
                                   <button
                                     onClick={(e) => { e.stopPropagation(); setRejectingApp(app); setMenuOpenId(null); }}
                                     style={localCss.kebabItem}
-                                  >{t('company.reject.btn')}</button>
+                                  >
+                                    <span style={localCss.kebabIcon}>🚫</span>
+                                    <span style={localCss.kebabText}>{t('company.kebab.reject')}</span>
+                                  </button>
                                 ) : (
                                   <button disabled style={localCss.kebabItemLocked}>
-                                    {t('company.reject.btnLocked')}
+                                    <span style={localCss.kebabIcon}>🔒</span>
+                                    <span style={localCss.kebabText}>{t('company.kebab.rejectLocked')}</span>
                                   </button>
                                 )}
                               </div>
@@ -364,20 +429,11 @@ export default function CompanyATSPage() {
                 setApps(prev => prev.map(a => a.id === rejectingApp.id ? { ...a, ...payload } : a));
                 setRejectingApp(null);
               }}
-              onSavedAndMail={(payload) => {
-                setApps(prev => prev.map(a => a.id === rejectingApp.id ? { ...a, ...payload } : a));
-                setRejectingApp(null);
-                if (email) {
-                  setMailFor({
-                    app: { ...rejectingApp, ...payload }, profile, email,
-                    templateKey: 'reject',
-                    stageLabel: t(`company.stage.${rejectingApp.status}`),
-                  });
-                }
-              }}
             />
           );
         })()}
+
+        {confirmCfg && <ConfirmModal {...confirmCfg} />}
 
         {interviewApp && (
           <InterviewConfirmModal
@@ -396,9 +452,9 @@ export default function CompanyATSPage() {
             candidateEmail={mailFor.email}
             jobTitle={job.title}
             companyName={companyName}
+            companyId={job?.company_id}
             applicationId={mailFor.app.id}
-            initialTemplateKey={mailFor.templateKey}
-            withSlots={mailFor.templateKey === 'interview'}
+            stage={mailFor.stage || mailFor.app.status}
             stageNote={t('company.ats.stageNote', { stage: mailFor.stageLabel })}
             onClose={() => setMailFor(null)}
             onSent={() => setMailFor(null)}
@@ -450,9 +506,11 @@ const localCss = {
   btnNewJob: { padding: '12px 24px', borderRadius: 8, background: 'linear-gradient(135deg,#F97316,#EA580C)', color: '#fff', fontSize: 14, fontWeight: 800, textDecoration: 'none', boxShadow: '0 4px 12px rgba(234,88,12,0.25)', display: 'inline-flex', alignItems: 'center' },
 
   kebabWrap: { position: 'absolute', top: 6, right: 6 },
-  kebabBtn: { width: 24, height: 24, borderRadius: 6, border: 'none', background: 'transparent', color: '#94A3B8', fontSize: 18, fontWeight: 800, cursor: 'pointer', lineHeight: 1, display: 'grid', placeItems: 'center', fontFamily: 'inherit' },
-  kebabMenu: { position: 'absolute', top: 28, right: 0, minWidth: 160, background: '#fff', border: '1px solid #E5E7EB', borderRadius: 8, boxShadow: '0 10px 24px rgba(0,0,0,0.12)', padding: 4, zIndex: 30, display: 'flex', flexDirection: 'column' },
-  kebabItem: { padding: '9px 12px', border: 'none', background: 'transparent', color: '#B91C1C', fontSize: 12.5, fontWeight: 700, cursor: 'pointer', textAlign: 'left', borderRadius: 6, fontFamily: 'inherit' },
-  kebabItemNeutral: { padding: '9px 12px', border: 'none', background: 'transparent', color: '#1A1A1A', fontSize: 12.5, fontWeight: 700, cursor: 'pointer', textAlign: 'left', borderRadius: 6, fontFamily: 'inherit' },
-  kebabItemLocked: { padding: '9px 12px', border: 'none', background: 'transparent', color: '#94A3B8', fontSize: 12.5, fontWeight: 700, cursor: 'not-allowed', textAlign: 'left', borderRadius: 6, fontFamily: 'inherit' },
+  kebabBtn: { width: 26, height: 26, borderRadius: 6, border: 'none', background: 'transparent', color: '#94A3B8', fontSize: 18, fontWeight: 800, cursor: 'pointer', lineHeight: 1, display: 'grid', placeItems: 'center', fontFamily: 'inherit' },
+  kebabMenu: { position: 'absolute', top: 30, right: 0, minWidth: 200, background: '#fff', border: '1px solid #E5E7EB', borderRadius: 10, boxShadow: '0 12px 28px rgba(0,0,0,0.14)', padding: 6, zIndex: 30, display: 'flex', flexDirection: 'column', gap: 2 },
+  kebabItem: { display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', width: '100%', border: 'none', background: 'transparent', color: '#B91C1C', cursor: 'pointer', textAlign: 'left', borderRadius: 6, fontFamily: 'inherit' },
+  kebabItemNeutral: { display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', width: '100%', border: 'none', background: 'transparent', color: '#1A1A1A', cursor: 'pointer', textAlign: 'left', borderRadius: 6, fontFamily: 'inherit' },
+  kebabItemLocked: { display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', width: '100%', border: 'none', background: '#F8FAFC', color: '#94A3B8', cursor: 'not-allowed', textAlign: 'left', borderRadius: 6, fontFamily: 'inherit' },
+  kebabIcon: { width: 18, fontSize: 14, lineHeight: 1, display: 'inline-flex', justifyContent: 'center', alignItems: 'center', flexShrink: 0, fontFamily: 'inherit' },
+  kebabText: { fontSize: 13, fontWeight: 700, lineHeight: 1.4, flex: 1, fontFamily: 'inherit' },
 };

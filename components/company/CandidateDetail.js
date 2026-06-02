@@ -10,9 +10,7 @@ const STAGES = [
   { key: 'decided', emoji: '🎉' },
 ];
 const STAGE_ORDER = STAGES.map(s => s.key);
-const STAGE_MAIL_TPL = { viewed: 'interview', reviewing: 'interview', decided: 'offer' };
 
-const TPL_KEYS = ['received', 'interview', 'offer', 'reject'];
 
 /**
  * mode: 'page' | 'overlay'
@@ -30,6 +28,21 @@ export default function CandidateDetail({ appId, mode = 'page', onClose, company
   const [mailModal, setMailModal] = useState(null); // { templateKey, withSlots }
   const [rejectModal, setRejectModal] = useState(null); // null | 'new' | 'edit' | 'unreject'
   const [interviewModal, setInterviewModal] = useState(false);
+  const [mailLog, setMailLog] = useState([]);
+
+  const reloadMailLog = async (appId) => {
+    if (!appId) return;
+    const { data } = await supabase
+      .from('recruiter_mail_log')
+      .select('id, template_key, subject, created_at')
+      .eq('application_id', appId)
+      .order('created_at', { ascending: false });
+    setMailLog(data || []);
+  };
+
+  useEffect(() => {
+    if (app?.id) reloadMailLog(app.id);
+  }, [app?.id]);
   const [evals, setEvals] = useState([]);
   const [expandedStages, setExpandedStages] = useState(new Set());
   const [evalComment, setEvalComment] = useState('');
@@ -90,18 +103,28 @@ export default function CandidateDetail({ appId, mode = 'page', onClose, company
   const setStage = async (newStatus) => {
     if (!app || app.status === newStatus) return;
     const prev = app.status;
-    setApp({ ...app, status: newStatus });
+    const fromIdx = STAGE_ORDER.indexOf(prev);
+    const toIdx = STAGE_ORDER.indexOf(newStatus);
+    const forward = toIdx > fromIdx;
+    const hasInterview = !!app.interview_at && (prev === 'viewed' || prev === 'reviewing');
+    const resetInterview = forward && hasInterview;
+
+    const patch = { status: newStatus };
+    if (resetInterview) {
+      patch.interview_at = null;
+      patch.interview_location = null;
+      patch.interview_interviewer = null;
+    }
+
+    setApp({ ...app, ...patch });
     const { error } = await supabase.from('job_applications')
-      .update({ status: newStatus, updated_at: new Date().toISOString() }).eq('id', app.id);
+      .update({ ...patch, updated_at: new Date().toISOString() }).eq('id', app.id);
     if (error) {
       setApp({ ...app, status: prev });
       setErr(t('company.err.stageChange') + error.message);
       return;
     }
-    onStageChange?.(app.id, { status: newStatus });
-    // 단계 전진 시 메일 + 면접 일정 통합 모달 자동 띄움
-    const tpl = STAGE_MAIL_TPL[newStatus];
-    if (tpl) setMailModal({ templateKey: tpl, withSlots: tpl === 'interview' });
+    onStageChange?.(app.id, patch);
   };
 
   const moveNext = async () => {
@@ -336,31 +359,38 @@ export default function CandidateDetail({ appId, mode = 'page', onClose, company
                   );
                 })}
               </div>
-              <div style={local.decisionRow}>
-                {isOwner ? (
-                  <>
-                    {nextStage && (
-                      <button onClick={moveNext} style={local.btnAdvance}>
-                        {t('company.candidate.nextShort', { emoji: nextStage.emoji, label: t(`company.stage.${nextStage.key}`) })}
+              {app.status === 'decided' ? (
+                <div style={local.finalPassCard}>
+                  <div style={local.finalPassTitle}>{t('company.candidate.finalPass')}</div>
+                  <div style={local.finalPassSub}>{t('company.candidate.finalPassSub')}</div>
+                </div>
+              ) : (
+                <div style={local.decisionRow}>
+                  {isOwner ? (
+                    <>
+                      {nextStage && (
+                        <button onClick={moveNext} style={local.btnAdvance}>
+                          {t('company.candidate.nextShort', { emoji: nextStage.emoji, label: t(`company.stage.${nextStage.key}`) })}
+                        </button>
+                      )}
+                      <button onClick={() => setRejectModal('new')} style={local.btnRejectSolid}>
+                        {t('company.reject.btnShort')}
                       </button>
-                    )}
-                    <button onClick={() => setRejectModal('new')} style={local.btnRejectSolid}>
-                      {t('company.reject.btnShort')}
-                    </button>
-                  </>
-                ) : (
-                  <>
-                    {nextStage && (
+                    </>
+                  ) : (
+                    <>
+                      {nextStage && (
+                        <button disabled style={local.btnDecisionLocked}>
+                          {t('company.candidate.nextShortLocked', { label: t(`company.stage.${nextStage.key}`) })}
+                        </button>
+                      )}
                       <button disabled style={local.btnDecisionLocked}>
-                        {t('company.candidate.nextShortLocked', { label: t(`company.stage.${nextStage.key}`) })}
+                        {t('company.reject.btnShortLocked')}
                       </button>
-                    )}
-                    <button disabled style={local.btnDecisionLocked}>
-                      {t('company.reject.btnShortLocked')}
-                    </button>
-                  </>
-                )}
-              </div>
+                    </>
+                  )}
+                </div>
+              )}
             </section>
           )}
 
@@ -397,6 +427,53 @@ export default function CandidateDetail({ appId, mode = 'page', onClose, company
               </div>
             </section>
           )}
+
+          {(() => {
+            const showInterview = !app.rejected_at && (app.status === 'viewed' || app.status === 'reviewing') && isOwner;
+            const lastStep = app.rejected_at ? 2 : (showInterview ? 4 : 3);
+            const defaultTpl = app.rejected_at ? 'reject'
+              : app.status === 'pending' ? 'received'
+              : (app.status === 'viewed' || app.status === 'reviewing') ? 'interview'
+              : 'offer';
+            return (
+              <section style={local.section}>
+                <div style={local.stepHead}>
+                  <span style={{ ...local.stepBadge, background: '#0891B2' }}>{lastStep}</span>
+                  <span style={local.stepTitle}>{t('company.candidate.step4')}</span>
+                </div>
+                {isOwner && (
+                  <button
+                    onClick={() => setMailModal({ templateKey: defaultTpl, withSlots: defaultTpl === 'interview' })}
+                    style={local.btnMailCompose}
+                  >
+                    {t('company.candidate.mailComposeBtn')}
+                  </button>
+                )}
+                <div style={local.mailLogWrap}>
+                  <div style={local.mailLogH}>{t('company.candidate.mailLogH')} ({mailLog.length})</div>
+                  {mailLog.length === 0 ? (
+                    <div style={local.mailLogEmpty}>{t('company.candidate.mailLogEmpty')}</div>
+                  ) : (
+                    <div style={local.mailLogList}>
+                      {mailLog.map(m => {
+                        // template_key는 새 시스템에선 사람이 읽을 수 있는 템플릿 이름, 옛 시스템에선 'received' 같은 키
+                        const legacyTpl = m.template_key && ['received', 'interview', 'offer', 'reject'].includes(m.template_key);
+                        const tplLabel = legacyTpl ? t(`company.tpl.${m.template_key}.label`) : (m.template_key || '—');
+                        const when = new Date(m.created_at).toLocaleString(undefined, { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+                        return (
+                          <div key={m.id} style={local.mailLogRow}>
+                            <span style={local.mailLogTpl}>{tplLabel}</span>
+                            <span style={local.mailLogTime}>{when}</span>
+                            {m.subject && <div style={local.mailLogSubject}>{m.subject}</div>}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              </section>
+            );
+          })()}
         </aside>
       </div>
 
@@ -406,12 +483,12 @@ export default function CandidateDetail({ appId, mode = 'page', onClose, company
           candidateEmail={email}
           jobTitle={job.title}
           companyName={companyName}
+          companyId={job?.company_id}
           applicationId={app.id}
-          initialTemplateKey={mailModal.templateKey}
-          withSlots={mailModal.withSlots}
+          stage={app.status}
           stageNote={t('company.ats.stageNote', { stage: t(`company.stage.${app.status}`) })}
           onClose={() => setMailModal(null)}
-          onSent={() => setMailModal(null)}
+          onSent={() => { setMailModal(null); reloadMailLog(app.id); }}
         />
       )}
 
@@ -440,12 +517,6 @@ export default function CandidateDetail({ appId, mode = 'page', onClose, company
             setApp({ ...app, ...payload });
             onStageChange?.(app.id, payload);
             setRejectModal(null);
-          }}
-          onSavedAndMail={(payload) => {
-            setApp({ ...app, ...payload });
-            onStageChange?.(app.id, payload);
-            setRejectModal(null);
-            setMailModal({ templateKey: 'reject', withSlots: false });
           }}
         />
       )}
@@ -735,76 +806,87 @@ function formatSlots(slots) {
 }
 
 function fillVars(text, vars) {
+  const round = vars.stage === 'viewed' ? (vars.lang === 'vi' ? 'Phỏng vấn vòng 1' : '1차 인터뷰')
+              : vars.stage === 'reviewing' ? (vars.lang === 'vi' ? 'Phỏng vấn vòng 2' : '2차 인터뷰')
+              : (vars.lang === 'vi' ? 'Phỏng vấn' : '인터뷰');
   return (text || '')
     .split('{후보이름}').join(vars.name)
     .split('{공고명}').join(vars.jobTitle)
     .split('{회사명}').join(vars.companyName || '—')
-    .split('{인터뷰일정}').join(vars.slotsText || '');
+    .split('{인터뷰일정}').join(vars.slotsText || '')
+    .split('{차수인터뷰}').join(round);
 }
 
 export function MailComposer({
-  candidateName, candidateEmail, jobTitle, companyName,
-  applicationId, initialTemplateKey, stageNote, withSlots = false, onClose, onSent,
+  candidateName, candidateEmail, jobTitle, companyName, companyId,
+  applicationId, stage, stageNote, onClose, onSent,
 }) {
-  const { t } = useT();
-  const templates = TPL_KEYS.map(key => ({
-    key,
-    label: t(`company.tpl.${key}.label`),
-    subject: t(`company.tpl.${key}.subject`),
-    body: t(`company.tpl.${key}.body`),
-  }));
-  const startTpl = templates.find(x => x.key === initialTemplateKey) || templates[0];
-  const [tplKey, setTplKey] = useState(startTpl.key);
-  const [slots, setSlots] = useState([{ date: '', time: '14:00' }]);
-  const slotsText = formatSlots(slots);
-  const vars = { name: candidateName, jobTitle, companyName, slotsText };
-  const [subject, setSubject] = useState(fillVars(startTpl.subject, vars));
-  const [body, setBody] = useState(fillVars(startTpl.body, vars));
+  const { t, lang } = useT();
+  const [templates, setTemplates] = useState([]);
+  const [selectedId, setSelectedId] = useState('');
+  const [subject, setSubject] = useState('');
+  const [body, setBody] = useState('');
+  const [slots, setSlots] = useState([{ date: '', time: '14:00' }, { date: '', time: '14:00' }, { date: '', time: '14:00' }]);
+  const [showSlots, setShowSlots] = useState(false);
   const [sending, setSending] = useState(false);
   const [err, setErr] = useState('');
+  const [showSaveDialog, setShowSaveDialog] = useState(false);
+  const [newTplName, setNewTplName] = useState('');
+  const [savingTpl, setSavingTpl] = useState(false);
+  const [userId, setUserId] = useState(null);
 
-  // 슬롯/템플릿 변경 시 본문 자동 갱신 (사용자가 본문을 직접 편집한 경우는 덮어쓰지 않도록 마지막 자동값과 비교)
-  const [lastAutoBody, setLastAutoBody] = useState(fillVars(startTpl.body, vars));
   useEffect(() => {
-    const newAuto = fillVars(templates.find(x => x.key === tplKey)?.body, { ...vars, slotsText });
-    if (body === lastAutoBody) {
-      setBody(newAuto);
-    }
-    setLastAutoBody(newAuto);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tplKey, slots]);
+    if (!companyId) return;
+    (async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      setUserId(session?.user?.id || null);
+      const { data } = await supabase
+        .from('recruiter_mail_templates')
+        .select('id, created_by, name, subject, body')
+        .eq('company_id', companyId)
+        .order('created_at', { ascending: true });
+      setTemplates(data || []);
+    })();
+  }, [companyId]);
 
-  const pickTemplate = (key) => {
-    const tpl = templates.find(x => x.key === key);
+  const slotsText = showSlots ? formatSlots(slots) : '';
+  const vars = { name: candidateName, jobTitle, companyName, slotsText, stage, lang };
+
+  const pickTemplate = (id) => {
+    setSelectedId(id);
+    if (!id) { setSubject(''); setBody(''); return; }
+    const tpl = templates.find(x => x.id === id);
     if (!tpl) return;
-    setTplKey(key);
-    setSubject(fillVars(tpl.subject, { ...vars, slotsText }));
+    setSubject(fillVars(tpl.subject, { ...vars, slotsText: showSlots ? slotsText : '{인터뷰일정}' }));
+    setBody(fillVars(tpl.body, { ...vars, slotsText: showSlots ? slotsText : '{인터뷰일정}' }));
   };
 
-  const updateSlot = (i, field, value) => setSlots(prev => prev.map((s, idx) => idx === i ? { ...s, [field]: value } : s));
-  const addSlot = () => setSlots(prev => prev.length >= 3 ? prev : [...prev, { date: '', time: '14:00' }]);
-  const removeSlot = (i) => setSlots(prev => prev.length <= 1 ? prev : prev.filter((_, idx) => idx !== i));
+  // 슬롯 변경 시 본문/제목의 {인터뷰일정} 부분 갱신 — 사용자가 직접 편집해도 변수가 남아있으면 치환
+  useEffect(() => {
+    if (!showSlots) return;
+    setSubject(prev => prev.split('{인터뷰일정}').join(slotsText));
+    setBody(prev => prev.split('{인터뷰일정}').join(slotsText));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [slotsText, showSlots]);
 
-  const showSlots = withSlots && tplKey === 'interview';
+  const updateSlot = (i, field, value) => setSlots(prev => prev.map((s, idx) => idx === i ? { ...s, [field]: value } : s));
 
   const send = async () => {
     setErr('');
     if (!applicationId) { setErr(t('company.err.noAppId')); return; }
+    if (!subject.trim() || !body.trim()) { setErr(t('company.mail.tplSaveErrFields')); return; }
     setSending(true);
     try {
       const { data: { session } } = await supabase.auth.getSession();
+      const tplName = selectedId ? (templates.find(x => x.id === selectedId)?.name || '') : '';
       const res = await fetch('/api/company/send-mail', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${session?.access_token || ''}`,
-        },
-        body: JSON.stringify({ appId: applicationId, subject, body, templateKey: tplKey }),
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session?.access_token || ''}` },
+        body: JSON.stringify({ appId: applicationId, subject, body, templateKey: tplName }),
       });
       const json = await res.json().catch(() => ({}));
       if (!res.ok) { setErr(json.error || t('company.err.mailFail')); setSending(false); return; }
 
-      // 면접 슬롯 입력이 있으면 DB에도 첫 슬롯 + admin_note 저장
       if (showSlots) {
         const valid = slots.filter(s => s?.date);
         if (valid.length > 0) {
@@ -818,7 +900,7 @@ export function MailComposer({
         }
       }
 
-      onSent?.(tplKey);
+      onSent?.();
       onClose();
     } catch (e) {
       setErr(t('company.err.mailErr') + (e?.message || ''));
@@ -826,62 +908,127 @@ export function MailComposer({
     }
   };
 
+  const saveAsTemplate = async () => {
+    setErr('');
+    if (!newTplName.trim()) { setErr(t('company.mail.tplSaveErrName')); return; }
+    if (!subject.trim() || !body.trim()) { setErr(t('company.mail.tplSaveErrFields')); return; }
+    setSavingTpl(true);
+    const { data, error } = await supabase
+      .from('recruiter_mail_templates')
+      .insert({ company_id: companyId, created_by: userId, name: newTplName.trim(), subject, body })
+      .select('id, created_by, name, subject, body').single();
+    setSavingTpl(false);
+    if (error) { setErr(t('company.mail.tplSaveErr') + error.message); return; }
+    setTemplates(prev => [...prev, data]);
+    setSelectedId(data.id);
+    setShowSaveDialog(false);
+    setNewTplName('');
+  };
+
+  const deleteTemplate = async (tpl) => {
+    if (!tpl.created_by) { setErr(t('company.mail.tplDeleteSystem')); return; }
+    if (!window.confirm(t('company.mail.tplDeleteConfirm', { name: tpl.name }))) return;
+    const { error } = await supabase.from('recruiter_mail_templates').delete().eq('id', tpl.id);
+    if (error) { setErr(error.message); return; }
+    setTemplates(prev => prev.filter(x => x.id !== tpl.id));
+    if (selectedId === tpl.id) { setSelectedId(''); setSubject(''); setBody(''); }
+  };
+
   const openMailApp = () => {
     window.location.href = `mailto:${encodeURIComponent(candidateEmail)}`
       + `?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
   };
 
+  const selectedTpl = templates.find(x => x.id === selectedId);
+  const canDeleteSelected = !!(selectedTpl && selectedTpl.created_by === userId);
+
   return (
     <div style={modal.overlay} onClick={sending ? undefined : onClose}>
-      <div style={{ ...modal.box, maxWidth: 560 }} onClick={(e) => e.stopPropagation()}>
+      <div style={{ ...modal.box, maxWidth: 620 }} onClick={(e) => e.stopPropagation()}>
         <header style={modal.head}>
           <h2 style={modal.h}>{t('company.mail.h')}</h2>
           <button onClick={onClose} style={modal.closeBtn}>✕</button>
         </header>
         <div style={modal.body}>
           {stageNote && <div style={mc.stageNote}>{stageNote}</div>}
-          <div style={mc.tplRow}>
-            {templates.map(x => (
-              <button key={x.key} onClick={() => pickTemplate(x.key)}
-                style={x.key === tplKey ? mc.tplActive : mc.tpl}>
-                {x.label}
-              </button>
-            ))}
+
+          <div style={modal.field}>
+            <label style={modal.label}>{t('company.mail.tplLabel')}</label>
+            <div style={mc.tplPickerRow}>
+              <select value={selectedId} onChange={(e) => pickTemplate(e.target.value)} style={{ ...modal.inp, flex: 1 }}>
+                <option value="">{t('company.mail.tplBlank')}</option>
+                {templates.map(x => (
+                  <option key={x.id} value={x.id}>
+                    {x.name}{!x.created_by ? ` (${t('company.mail.systemTplBadge')})` : ''}
+                  </option>
+                ))}
+              </select>
+              {selectedId && canDeleteSelected && (
+                <button onClick={() => deleteTemplate(selectedTpl)} style={mc.tplDeleteBtn} title={t('company.mail.tplDeleteBtn')}>🗑</button>
+              )}
+            </div>
           </div>
+
           <div style={modal.field}>
             <label style={modal.label}>{t('company.mail.to')}</label>
             <input value={candidateEmail} readOnly style={{ ...modal.inp, background: '#F1F5F9', color: '#737373' }} />
           </div>
+
           <div style={modal.field}>
             <label style={modal.label}>{t('company.mail.subject')}</label>
             <input value={subject} onChange={(e) => setSubject(e.target.value)} style={modal.inp} />
           </div>
+
+          <label style={mc.slotsToggle}>
+            <input type="checkbox" checked={showSlots} onChange={(e) => setShowSlots(e.target.checked)} />
+            <span>{t('company.mail.slotsToggle')}</span>
+          </label>
           {showSlots && (
             <div style={modal.field}>
-              <label style={modal.label}>{t('company.interview.slotsLabel')}</label>
-              {slots.map((s, i) => (
+              {slots.slice(0, 3).map((s, i) => (
                 <div key={i} style={slot.row}>
                   <span style={slot.num}>{i + 1}</span>
                   <input type="date" value={s.date} onChange={(e) => updateSlot(i, 'date', e.target.value)} style={{ ...modal.inp, flex: 1 }} />
                   <input type="time" value={s.time} onChange={(e) => updateSlot(i, 'time', e.target.value)} style={{ ...modal.inp, width: 110 }} />
-                  {slots.length > 1 && (
-                    <button type="button" onClick={() => removeSlot(i)} style={slot.removeBtn} title={t('company.interview.removeSlot')}>✕</button>
-                  )}
                 </div>
               ))}
-              {slots.length < 3 && (
-                <button type="button" onClick={addSlot} style={slot.addBtn}>{t('company.interview.addSlot')}</button>
-              )}
-              <p style={modal.hint}>{t('company.interview.slotsAutoHint')}</p>
+              <p style={modal.hint}>{t('company.mail.slotsHint')}</p>
             </div>
           )}
+
           <div style={modal.field}>
             <label style={modal.label}>{t('company.mail.body')}</label>
             <textarea value={body} onChange={(e) => setBody(e.target.value)} rows={12}
               style={{ ...modal.inp, resize: 'vertical', fontFamily: 'inherit', lineHeight: 1.6 }} />
+            <p style={modal.hint}>{t('company.mail.varsHint')}</p>
           </div>
+
+          {showSaveDialog ? (
+            <div style={mc.saveDialog}>
+              <div style={mc.saveDialogH}>{t('company.mail.tplSaveTitle')}</div>
+              <input
+                value={newTplName}
+                onChange={(e) => setNewTplName(e.target.value)}
+                placeholder={t('company.mail.tplSaveNamePh')}
+                style={modal.inp}
+                autoFocus
+              />
+              <div style={mc.saveDialogActions}>
+                <button onClick={() => { setShowSaveDialog(false); setNewTplName(''); setErr(''); }} style={modal.btnGhost} disabled={savingTpl}>
+                  {t('company.cancel')}
+                </button>
+                <button onClick={saveAsTemplate} disabled={savingTpl} style={savingTpl ? modal.btnDisabled : modal.btnPrimary}>
+                  {savingTpl ? t('company.savingShort') : t('company.mail.tplSaveSaveBtn')}
+                </button>
+              </div>
+            </div>
+          ) : (
+            <button onClick={() => setShowSaveDialog(true)} style={mc.saveAsTplBtn}>
+              {t('company.mail.tplSaveBtn')}
+            </button>
+          )}
+
           {err && <div style={local.errBox}>{err}</div>}
-          <p style={modal.hint}>{t('company.mail.hint')}</p>
         </div>
         <footer style={modal.foot}>
           <button onClick={onClose} style={modal.btnGhost}>{stageNote ? t('company.skip') : t('company.cancel')}</button>
@@ -894,6 +1041,39 @@ export function MailComposer({
     </div>
   );
 }
+
+export function ConfirmModal({ title, message, confirmLabel, cancelLabel, tone = 'primary', variant = 'confirm', onConfirm, onCancel }) {
+  const { t } = useT();
+  const isAlert = variant === 'alert';
+  const confirmStyle = tone === 'danger' ? modal.btnDanger : modal.btnPrimary;
+  return (
+    <div style={modal.overlay} onClick={onCancel}>
+      <div style={{ ...modal.box, maxWidth: 440 }} onClick={(e) => e.stopPropagation()}>
+        <header style={modal.head}>
+          <h2 style={modal.h}>{title}</h2>
+          <button onClick={onCancel} style={modal.closeBtn}>✕</button>
+        </header>
+        <div style={modal.body}>
+          <p style={cm.message}>{message}</p>
+        </div>
+        <footer style={modal.foot}>
+          {!isAlert && (
+            <button onClick={onCancel} style={modal.btnGhost}>
+              {cancelLabel || t('company.cancel')}
+            </button>
+          )}
+          <button onClick={onConfirm} style={confirmStyle || modal.btnPrimary}>
+            {confirmLabel || t('company.confirm')}
+          </button>
+        </footer>
+      </div>
+    </div>
+  );
+}
+
+const cm = {
+  message: { fontSize: 13.5, color: '#1A1A1A', lineHeight: 1.65, whiteSpace: 'pre-line', margin: 0 },
+};
 
 export function InterviewConfirmModal({ app, onClose, onSaved }) {
   const { t } = useT();
@@ -988,13 +1168,12 @@ export function InterviewConfirmModal({ app, onClose, onSaved }) {
 
 const REJECT_REASONS = ['not_fit', 'comp_mismatch', 'withdrew', 'spam', 'other'];
 
-export function RejectionModal({ app, stageKey, candidateName, mode = 'new', initialReason = '', initialNote = '', onClose, onSaved, onSavedAndMail }) {
+export function RejectionModal({ app, stageKey, candidateName, mode = 'new', initialReason = '', initialNote = '', onClose, onSaved }) {
   const { t } = useT();
   const isEdit = mode === 'edit';
   const isUnreject = mode === 'unreject';
   const [reason, setReason] = useState(initialReason || '');
   const [note, setNote] = useState(initialNote || '');
-  const [sendMail, setSendMail] = useState(!isEdit);
   const [saving, setSaving] = useState(false);
   const [err, setErr] = useState('');
 
@@ -1032,7 +1211,7 @@ export function RejectionModal({ app, stageKey, candidateName, mode = 'new', ini
     const { error } = await supabase.from('job_applications').update(payload).eq('id', app.id);
     setSaving(false);
     if (error) { setErr(t('company.reject.errSave') + error.message); return; }
-    if (sendMail) onSavedAndMail(payload); else onSaved(payload);
+    onSaved(payload);
   };
 
   return (
@@ -1082,16 +1261,6 @@ export function RejectionModal({ app, stageKey, candidateName, mode = 'new', ini
                 <p style={modal.hint}>{t('company.reject.reasonHint')}</p>
               </div>
 
-              <label style={rj.checkRow}>
-                <input
-                  type="checkbox"
-                  checked={sendMail}
-                  onChange={(e) => setSendMail(e.target.checked)}
-                  disabled={saving}
-                />
-                <span>{isEdit ? t('company.reject.editSaveAndMail') : t('company.reject.sendMail')}</span>
-              </label>
-              <p style={modal.hint}>{isEdit ? t('company.reject.editSendMailHint') : t('company.reject.sendMailHint')}</p>
             </>
           )}
 
@@ -1109,8 +1278,8 @@ export function RejectionModal({ app, stageKey, candidateName, mode = 'new', ini
               isUnreject
                 ? t('company.reject.unrejectConfirm')
                 : isEdit
-                  ? (sendMail ? t('company.reject.editSaveAndMail') : t('company.reject.editSave'))
-                  : (sendMail ? t('company.reject.confirmAndMail') : t('company.reject.confirm'))
+                  ? t('company.reject.editSave')
+                  : t('company.reject.confirm')
             )}
           </button>
         </footer>
@@ -1127,10 +1296,14 @@ const rj = {
 };
 
 const mc = {
-  tplRow: { display: 'flex', gap: 6, flexWrap: 'wrap' },
-  tpl: { padding: '7px 12px', borderRadius: 999, border: '1px solid #E5E7EB', background: '#fff', color: '#525252', fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' },
-  tplActive: { padding: '7px 12px', borderRadius: 999, border: '1.5px solid #EA580C', background: '#FFF7ED', color: '#EA580C', fontSize: 12, fontWeight: 800, cursor: 'pointer', fontFamily: 'inherit' },
   stageNote: { background: '#FFF7ED', border: '1px solid #FED7AA', color: '#9A3412', padding: '9px 12px', borderRadius: 8, fontSize: 12.5, fontWeight: 600, lineHeight: 1.5 },
+  tplPickerRow: { display: 'flex', gap: 6, alignItems: 'center' },
+  tplDeleteBtn: { padding: '8px 12px', borderRadius: 8, border: '1px solid #FECACA', background: '#fff', color: '#B91C1C', fontSize: 14, cursor: 'pointer', fontFamily: 'inherit' },
+  slotsToggle: { display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 13, color: '#1A1A1A', fontWeight: 600, padding: '10px 12px', background: '#F8FAFC', borderRadius: 8, border: '1px solid #E5E7EB' },
+  saveAsTplBtn: { alignSelf: 'flex-start', padding: '8px 14px', borderRadius: 8, border: '1px dashed #BFDBFE', background: '#fff', color: '#1D4ED8', fontSize: 12.5, fontWeight: 800, cursor: 'pointer', fontFamily: 'inherit' },
+  saveDialog: { padding: '12px 14px', background: '#F0F9FF', border: '1px solid #BAE6FD', borderRadius: 8, display: 'flex', flexDirection: 'column', gap: 8 },
+  saveDialogH: { fontSize: 12.5, fontWeight: 800, color: '#0C4A6E' },
+  saveDialogActions: { display: 'flex', justifyContent: 'flex-end', gap: 6 },
 };
 
 const local = {
@@ -1203,6 +1376,9 @@ const local = {
   btnAdvance: { flex: 1, minWidth: 0, padding: '12px 14px', borderRadius: 8, border: 'none', background: 'linear-gradient(135deg,#F97316,#EA580C)', color: '#fff', fontSize: 13, fontWeight: 800, cursor: 'pointer', fontFamily: 'inherit', boxShadow: '0 4px 12px rgba(234,88,12,0.22)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' },
   btnRejectSolid: { flex: 1, minWidth: 0, padding: '12px 14px', borderRadius: 8, border: 'none', background: 'linear-gradient(135deg,#EF4444,#B91C1C)', color: '#fff', fontSize: 13, fontWeight: 800, cursor: 'pointer', fontFamily: 'inherit', boxShadow: '0 4px 12px rgba(185,28,28,0.22)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' },
   btnDecisionLocked: { flex: 1, minWidth: 0, padding: '12px 14px', borderRadius: 8, border: '1px dashed #D1D5DB', background: '#F8FAFC', color: '#94A3B8', fontSize: 13, fontWeight: 700, cursor: 'not-allowed', fontFamily: 'inherit', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' },
+  finalPassCard: { padding: '16px 18px', borderRadius: 10, background: 'linear-gradient(135deg,#ECFDF5,#D1FAE5)', border: '1px solid #6EE7B7', display: 'flex', flexDirection: 'column', gap: 4, alignItems: 'center', textAlign: 'center' },
+  finalPassTitle: { fontSize: 15, fontWeight: 900, color: '#047857' },
+  finalPassSub: { fontSize: 11.5, fontWeight: 600, color: '#065F46' },
   rejectedCard: { padding: '12px 14px', borderRadius: 8, background: '#FEF2F2', border: '1px solid #FECACA', display: 'flex', flexDirection: 'column', gap: 4 },
   rejectedHead: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 },
   rejectedTitle: { fontSize: 12.5, fontWeight: 800, color: '#991B1B' },
@@ -1213,6 +1389,15 @@ const local = {
   interviewCardTitle: { fontSize: 13, fontWeight: 800, color: '#1E3A8A' },
   interviewEditBtn: { padding: '4px 10px', borderRadius: 6, border: '1px solid #BFDBFE', background: '#fff', color: '#1D4ED8', fontSize: 11.5, fontWeight: 800, cursor: 'pointer', fontFamily: 'inherit', flexShrink: 0 },
   interviewMeta: { fontSize: 12, color: '#1E40AF', fontWeight: 600 },
+  btnMailCompose: { width: '100%', padding: '11px 14px', borderRadius: 8, border: '1px solid #BFDBFE', background: '#EFF6FF', color: '#1D4ED8', fontSize: 13, fontWeight: 800, cursor: 'pointer', fontFamily: 'inherit', marginBottom: 10 },
+  mailLogWrap: { marginTop: 4 },
+  mailLogH: { fontSize: 11, fontWeight: 800, color: '#737373', textTransform: 'uppercase', letterSpacing: 0.4, marginBottom: 6 },
+  mailLogEmpty: { fontSize: 12, color: '#94A3B8', fontStyle: 'italic', padding: '8px 0' },
+  mailLogList: { display: 'flex', flexDirection: 'column', gap: 6 },
+  mailLogRow: { padding: '8px 10px', background: '#FAFAFA', border: '1px solid #E5E7EB', borderRadius: 6, display: 'flex', flexDirection: 'column', gap: 2 },
+  mailLogTpl: { fontSize: 12, fontWeight: 800, color: '#1A1A1A' },
+  mailLogTime: { fontSize: 10.5, color: '#737373', fontWeight: 600 },
+  mailLogSubject: { fontSize: 11.5, color: '#525252', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' },
   rejectedActions: { display: 'flex', gap: 6, flexShrink: 0 },
   rejectedEditBtn: { padding: '4px 10px', borderRadius: 6, border: '1px solid #FCA5A5', background: '#fff', color: '#B91C1C', fontSize: 11.5, fontWeight: 800, cursor: 'pointer', fontFamily: 'inherit', flexShrink: 0 },
   rejectedUnrejectBtn: { padding: '4px 10px', borderRadius: 6, border: '1px solid #BFDBFE', background: '#fff', color: '#1D4ED8', fontSize: 11.5, fontWeight: 800, cursor: 'pointer', fontFamily: 'inherit', flexShrink: 0 },
@@ -1231,6 +1416,7 @@ const modal = {
   hint: { fontSize: 11.5, color: '#737373', marginTop: 4, lineHeight: 1.55 },
   foot: { display: 'flex', justifyContent: 'flex-end', gap: 8, padding: '14px 24px', borderTop: '1px solid #E5E7EB', flexShrink: 0 },
   btnPrimary: { padding: '10px 20px', borderRadius: 8, border: 'none', background: 'linear-gradient(135deg,#EF4444,#F97316)', color: '#fff', fontSize: 13, fontWeight: 800, cursor: 'pointer', fontFamily: 'inherit' },
+  btnDanger: { padding: '10px 20px', borderRadius: 8, border: 'none', background: 'linear-gradient(135deg,#DC2626,#B91C1C)', color: '#fff', fontSize: 13, fontWeight: 800, cursor: 'pointer', fontFamily: 'inherit' },
   btnGhost: { padding: '10px 20px', borderRadius: 8, border: '1px solid #D1D5DB', background: '#fff', color: '#1A1A1A', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' },
   btnDisabled: { padding: '10px 20px', borderRadius: 8, border: 'none', background: '#E5E7EB', color: '#94A3B8', fontSize: 13, fontWeight: 800, cursor: 'not-allowed', fontFamily: 'inherit' },
 };
