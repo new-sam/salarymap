@@ -1,5 +1,6 @@
 import "@/styles/globals.css";
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/router';
 import { I18nProvider, LanguageSwitcher, useT } from '../lib/i18n';
 import { supabase } from '../lib/supabaseClient';
 import MobileTabBar from '../components/MobileTabBar';
@@ -41,15 +42,20 @@ function GlobalLoginModal() {
 }
 
 export default function App({ Component, pageProps }) {
+  const router = useRouter();
+  // Admin pages use their own KO/EN toggle — hide the global footer switcher to avoid two competing controls
+  const isAdmin = router.pathname.startsWith('/admin');
   return (
     <I18nProvider>
       <Component {...pageProps} />
-      <footer style={{
-        background: '#0a0a09', borderTop: '1px solid rgba(255,255,255,0.06)',
-        padding: '24px 40px', display: 'flex', alignItems: 'center', justifyContent: 'center',
-      }}>
-        <LanguageSwitcher />
-      </footer>
+      {!isAdmin && (
+        <footer style={{
+          background: '#0a0a09', borderTop: '1px solid rgba(255,255,255,0.06)',
+          padding: '24px 40px', display: 'flex', alignItems: 'center', justifyContent: 'center',
+        }}>
+          <LanguageSwitcher />
+        </footer>
+      )}
       <MobileTabBar />
       <GlobalLoginModal />
     </I18nProvider>

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import Head from 'next/head'
 import dynamic from 'next/dynamic'
 import { supabase } from '../../lib/supabaseClient'
+import { useT } from '../../lib/i18n'
 import Icon from '../../components/Icon'
 import FunnelView from '../../components/admin/FunnelView'
 import UtmView from '../../components/admin/UtmView'
@@ -51,7 +52,9 @@ export default function AdminDashboard() {
   const [experiments, setExperiments] = useState([])
   const [expForm, setExpForm] = useState({ title: '', date: '', color: EXP_COLORS[0], metrics: [] })
   const [showExpForm, setShowExpForm] = useState(false)
-  const [lang, setLang] = useState('ko')
+  const { lang: globalLang, setLang } = useT()
+  // Admin dashboard only ships ko/en; fall back to en for any other global lang (e.g. vi)
+  const lang = globalLang === 'ko' ? 'ko' : 'en'
   const [tab, setTab] = useState('trend')
   const [funnelKeys, setFunnelKeys] = useState([])
   const [chartMode, setChartMode] = useState('1d')
