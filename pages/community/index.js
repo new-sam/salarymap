@@ -3,6 +3,7 @@ import Head from 'next/head'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { supabase } from '../../lib/supabaseClient'
+import { track } from '../../lib/track'
 import GlobalNav from '../../components/GlobalNav'
 import SalaryBadge from '../../components/SalaryBadge'
 import { useT } from '../../lib/i18n'
@@ -71,6 +72,7 @@ export default function CommunityPage() {
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => setSession(session))
+    track('view_community', { page: '/community' })
     try {
       setReadPosts(new Set(JSON.parse(localStorage.getItem('comm_read_posts') || '[]')))
     } catch {}
@@ -216,11 +218,13 @@ export default function CommunityPage() {
       window.dispatchEvent(new CustomEvent('fyi-show-login'))
       return
     }
+    track('click_community_post', { meta: { post_id: postId }, page: '/community' })
     markRead(postId)
   }
 
   const handleWrite = () => {
     if (!session) { window.dispatchEvent(new CustomEvent('fyi-show-login')); return }
+    track('click_community_write', { page: '/community' })
     router.push('/community/write')
   }
 

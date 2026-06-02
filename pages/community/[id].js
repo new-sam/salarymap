@@ -3,6 +3,7 @@ import Head from 'next/head'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { supabase } from '../../lib/supabaseClient'
+import { track } from '../../lib/track'
 import GlobalNav from '../../components/GlobalNav'
 import SalaryBadge from '../../components/SalaryBadge'
 import { useT } from '../../lib/i18n'
@@ -62,9 +63,11 @@ export default function CommunityPostPage() {
 
   useEffect(() => {
     if (!id) return
-    fetchPost(!viewCounted.current)
+    const firstView = !viewCounted.current
+    fetchPost(firstView)
     viewCounted.current = true
     fetchComments()
+    if (firstView) track('view_community_post', { meta: { post_id: id }, page: '/community/[id]' })
     // Mark this post as read so the list dims it
     try {
       const read = new Set(JSON.parse(localStorage.getItem('comm_read_posts') || '[]'))

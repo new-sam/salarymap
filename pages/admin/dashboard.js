@@ -12,6 +12,7 @@ import ResumesView from '../../components/admin/ResumesView'
 import RetentionView from '../../components/admin/RetentionView'
 import GA4View from '../../components/admin/GA4View'
 import VerificationsView from '../../components/admin/VerificationsView'
+import CommunityView from '../../components/admin/CommunityView'
 import {
   T, METRICS_BASE, EXP_COLORS, COLORS,
   inputStyle, sectionStyle, sectionTitle,
@@ -415,7 +416,7 @@ export default function AdminDashboard() {
 
         {/* Tab switcher */}
         <div className="adm-tabs">
-          {['trend', 'funnel', 'ga4', 'utm', 'retention', 'users', 'applications', 'resumes', 'verifications'].map(k => (
+          {['trend', 'funnel', 'ga4', 'utm', 'retention', 'users', 'applications', 'resumes', 'verifications', 'community'].map(k => (
             <button key={k} onClick={() => setTab(k)}
               className="adm-tab-btn"
               style={{
@@ -940,6 +941,11 @@ export default function AdminDashboard() {
         {/* Verifications Tab */}
         {tab === 'verifications' && (
           <VerificationsView token={token} />
+        )}
+
+        {/* Community Tab */}
+        {tab === 'community' && (
+          <CommunityView token={token} lang={lang} dateRange={dateRange} />
         )}
 
       </div>
