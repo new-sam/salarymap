@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { supabase } from '../../lib/supabaseClient';
 import { Sidebar, css } from './jobs/new';
-import CandidateDetail, { MailComposer } from '../../components/company/CandidateDetail';
+import CandidateDetail, { MailComposer, RejectionModal, InterviewConfirmModal } from '../../components/company/CandidateDetail';
 import TeamPopover from '../../components/company/TeamPopover';
 import { useT } from '../../lib/i18n';
 
@@ -36,6 +36,17 @@ export default function CompanyATSPage() {
   const [draggingId, setDraggingId] = useState(null);
   const [dragOverCol, setDragOverCol] = useState(null);
   const [mailFor, setMailFor] = useState(null);
+  const [showRejected, setShowRejected] = useState(true);
+  const [menuOpenId, setMenuOpenId] = useState(null);
+  const [rejectingApp, setRejectingApp] = useState(null);
+  const [interviewApp, setInterviewApp] = useState(null);
+
+  useEffect(() => {
+    if (!menuOpenId) return;
+    const onDocClick = () => setMenuOpenId(null);
+    document.addEventListener('click', onDocClick);
+    return () => document.removeEventListener('click', onDocClick);
+  }, [menuOpenId]);
 
   useEffect(() => {
     if (!jobId) return;
@@ -66,11 +77,12 @@ export default function CompanyATSPage() {
       }
       setJob(jobData);
 
-      const { data: appsData } = await supabase
+      const { data: appsData, error: appsErr } = await supabase
         .from('job_applications')
-        .select('id, status, applicant_name, applicant_email, applicant_salary, applicant_role, applicant_experience, applicant_company, resume_url, user_id, created_at, admin_note, interview_at')
+        .select('id, status, applicant_name, applicant_email, applicant_salary, applicant_role, applicant_experience, applicant_company, resume_url, user_id, created_at, admin_note, interview_at, rejected_at, rejected_at_stage, rejection_reason')
         .eq('job_id', jobId)
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: true });
+      if (appsErr) { console.error('[ats] apps load error:', appsErr); setErr('지원자 로드 실패: ' + appsErr.message); }
       setApps(appsData || []);
 
       const userIds = [...new Set((appsData || []).map(a => a.user_id).filter(Boolean))];
@@ -87,13 +99,19 @@ export default function CompanyATSPage() {
     })();
   }, [jobId, t]);
 
-  const setStage = async (appId, newStatus) => {
+  const setStage = async (appId, newStatus, resetInterview = false) => {
     const app = apps.find(a => a.id === appId);
     if (!app || app.status === newStatus) return;
-    setApps(prev => prev.map(a => a.id === appId ? { ...a, status: newStatus } : a));
-    const { error } = await supabase.from('job_applications').update({ status: newStatus, updated_at: new Date().toISOString() }).eq('id', appId);
+    const patch = { status: newStatus };
+    if (resetInterview) {
+      patch.interview_at = null;
+      patch.interview_location = null;
+      patch.interview_interviewer = null;
+    }
+    setApps(prev => prev.map(a => a.id === appId ? { ...a, ...patch } : a));
+    const { error } = await supabase.from('job_applications').update({ ...patch, updated_at: new Date().toISOString() }).eq('id', appId);
     if (error) {
-      setApps(prev => prev.map(a => a.id === appId ? { ...a, status: app.status } : a));
+      setApps(prev => prev.map(a => a.id === appId ? { ...a, status: app.status, interview_at: app.interview_at, interview_location: app.interview_location, interview_interviewer: app.interview_interviewer } : a));
       setErr(t('company.err.stageChange') + error.message);
     }
   };
@@ -110,7 +128,16 @@ export default function CompanyATSPage() {
     const app = apps.find(a => a.id === appId);
     if (!app || app.status === newStatus) return;
     const forward = STAGE_ORDER.indexOf(newStatus) > STAGE_ORDER.indexOf(app.status);
-    setStage(appId, newStatus);
+    // 인터뷰 일정 확정된 상태에서 전진 이동 시 합격 확인
+    const hasInterview = !!app.interview_at && (app.status === 'viewed' || app.status === 'reviewing');
+    if (forward && hasInterview) {
+      const ok = window.confirm(t('company.ats.advanceConfirm', {
+        from: t(`company.stage.${app.status}`),
+        to: t(`company.stage.${newStatus}`),
+      }));
+      if (!ok) return;
+    }
+    setStage(appId, newStatus, forward && hasInterview);
     const profile = app.user_id ? profileMap[app.user_id] : null;
     const email = app.applicant_email || profile?.email || '';
     if (forward && STAGE_MAIL[newStatus] && email) {
@@ -129,7 +156,10 @@ export default function CompanyATSPage() {
     return [a.applicant_name, a.applicant_email, a.applicant_role, a.applicant_company, profile?.full_name, profile?.email]
       .filter(Boolean).join(' ').toLowerCase().includes(q);
   };
-  const grouped = STAGES.map(s => ({ ...s, apps: apps.filter(a => a.status === s.key && matchesQuery(a)) }));
+  const visibleApps = apps.filter(a => showRejected || !a.rejected_at);
+  const activeCount = apps.filter(a => !a.rejected_at).length;
+  const rejectedCount = apps.length - activeCount;
+  const grouped = STAGES.map(s => ({ ...s, apps: visibleApps.filter(a => a.status === s.key && matchesQuery(a)) }));
 
   if (status === 'loading') return <div style={css.loading}>{t('company.loading')}</div>;
   if (status === 'unauthed') {
@@ -166,12 +196,13 @@ export default function CompanyATSPage() {
               <div style={localCss.crumb}><Link href="/company" style={localCss.crumbLink}>{t('company.backDashboard')}</Link></div>
               <h1 style={css.mainH}>{job.title}</h1>
               <p style={css.mainP}>
-                {job.location} · {job.type} · ₫{Math.round(job.salary_min/1e6)}M–{Math.round(job.salary_max/1e6)}M · {t('company.ats.totalApps', { n: apps.length })}
+                {job.location} · {job.type} · ₫{Math.round(job.salary_min/1e6)}M–{Math.round(job.salary_max/1e6)}M · {t('company.ats.countSplit', { active: activeCount, rejected: rejectedCount })}
               </p>
             </div>
             <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
               <TeamPopover jobId={job.id} canInvite={!job.created_by || job.created_by === user?.id} />
               <Link href={`/company/jobs/${job.id}/edit`} style={css.btnGhost}>{t('company.ats.editJob')}</Link>
+              <Link href="/company/jobs/new" style={localCss.btnNewJob}>{t('company.ats.newJob')}</Link>
             </div>
           </header>
 
@@ -185,6 +216,14 @@ export default function CompanyATSPage() {
               style={localCss.search}
             />
             {query && <button onClick={() => setQuery('')} style={localCss.searchClear}>{t('company.clear')}</button>}
+            <label style={localCss.toggleLabel}>
+              <input
+                type="checkbox"
+                checked={showRejected}
+                onChange={(e) => setShowRejected(e.target.checked)}
+              />
+              <span>{t('company.ats.showRejected')} ({rejectedCount})</span>
+            </label>
             <span style={localCss.dragHint}>{isOwner ? t('company.ats.dragHint') : t('company.ats.dragHintLocked')}</span>
           </div>
 
@@ -210,24 +249,83 @@ export default function CompanyATSPage() {
                     const interviewWhen = app.interview_at
                       ? new Date(app.interview_at).toLocaleString(undefined, { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' })
                       : null;
+                    const isRejected = !!app.rejected_at;
+                    const canDrag = isOwner && !isRejected;
+                    const menuOpen = menuOpenId === app.id;
+                    const appliedAt = new Date(app.created_at);
+                    const todayMidnight = new Date(); todayMidnight.setHours(0, 0, 0, 0);
+                    const appliedMidnight = new Date(appliedAt); appliedMidnight.setHours(0, 0, 0, 0);
+                    const daysAgo = Math.max(0, Math.round((todayMidnight.getTime() - appliedMidnight.getTime()) / 86400000));
+                    const dateText = appliedAt.toLocaleDateString(undefined, { month: 'numeric', day: 'numeric' });
+                    const dateLabel = daysAgo === 0
+                      ? t('company.ats.appliedToday', { date: dateText })
+                      : t('company.ats.appliedDaysAgo', { date: dateText, n: daysAgo });
+                    const urgencyStyle = isRejected
+                      ? localCss.applyDateLow
+                      : (daysAgo >= 8 ? localCss.applyDateHigh : daysAgo >= 4 ? localCss.applyDateMid : localCss.applyDateLow);
                     return (
                       <div
                         key={app.id}
-                        draggable={isOwner}
-                        onDragStart={() => isOwner && setDraggingId(app.id)}
+                        draggable={canDrag}
+                        onDragStart={() => canDrag && setDraggingId(app.id)}
                         onDragEnd={() => { setDraggingId(null); setDragOverCol(null); }}
                         onClick={() => setSelectedAppId(app.id)}
-                        style={{...localCss.card, ...(selectedAppId === app.id ? localCss.cardActive : {}), ...(draggingId === app.id ? localCss.cardDragging : {})}}
+                        style={{
+                          ...localCss.card,
+                          ...(selectedAppId === app.id ? localCss.cardActive : {}),
+                          ...(draggingId === app.id ? localCss.cardDragging : {}),
+                          ...(isRejected ? localCss.cardRejected : {}),
+                          position: 'relative',
+                        }}
                       >
-                        <div style={localCss.cardName}>{name}</div>
+                        {!isRejected && (
+                          <div style={localCss.kebabWrap}>
+                            <button
+                              onClick={(e) => { e.stopPropagation(); setMenuOpenId(menuOpen ? null : app.id); }}
+                              style={localCss.kebabBtn}
+                              title="더보기"
+                            >⋮</button>
+                            {menuOpen && (
+                              <div style={localCss.kebabMenu} onClick={(e) => e.stopPropagation()}>
+                                {isOwner && showInterviewBadge && (
+                                  <button
+                                    onClick={(e) => { e.stopPropagation(); setInterviewApp(app); setMenuOpenId(null); }}
+                                    style={localCss.kebabItemNeutral}
+                                  >{interviewWhen ? t('company.interview.confirmEditBtn') : t('company.interview.confirmBtn')}</button>
+                                )}
+                                {isOwner ? (
+                                  <button
+                                    onClick={(e) => { e.stopPropagation(); setRejectingApp(app); setMenuOpenId(null); }}
+                                    style={localCss.kebabItem}
+                                  >{t('company.reject.btn')}</button>
+                                ) : (
+                                  <button disabled style={localCss.kebabItemLocked}>
+                                    {t('company.reject.btnLocked')}
+                                  </button>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        )}
+                        <div style={urgencyStyle}>{dateLabel}</div>
+                        <div style={localCss.nameRow}>
+                          <span style={localCss.cardName}>{name}</span>
+                          {isRejected && <span style={localCss.rejectedInline}>🚫 {t('company.ats.rejectedBadge')}</span>}
+                        </div>
                         {app.applicant_role && <div style={localCss.cardMeta}>{app.applicant_role} · {app.applicant_experience || 0}{t('company.years')}</div>}
                         {app.applicant_salary && <div style={localCss.cardSalary}>{t('company.ats.wishSalary', { n: Math.round(app.applicant_salary/1e6) })}</div>}
-                        {showInterviewBadge && (
-                          <div style={interviewWhen ? localCss.interviewSet : localCss.interviewPending}>
+                        {!isRejected && showInterviewBadge && (
+                          <div
+                            style={{
+                              ...(interviewWhen ? localCss.interviewSet : localCss.interviewPending),
+                              ...(isOwner ? { cursor: 'pointer' } : {}),
+                            }}
+                            onClick={(e) => { if (isOwner) { e.stopPropagation(); setInterviewApp(app); } }}
+                            title={isOwner ? (interviewWhen ? '클릭하여 일정 수정' : '클릭하여 일정 확정') : undefined}
+                          >
                             {interviewWhen ? t('company.ats.interviewSet', { when: interviewWhen }) : t('company.ats.interviewPending')}
                           </div>
                         )}
-                        <div style={localCss.cardDate}>{new Date(app.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}</div>
                       </div>
                     );
                   })}
@@ -245,10 +343,51 @@ export default function CompanyATSPage() {
                 mode="overlay"
                 companyId={job.company_id}
                 onClose={() => setSelectedAppId(null)}
-                onStageChange={(id, st) => setApps(prev => prev.map(a => a.id === id ? { ...a, status: st } : a))}
+                onStageChange={(id, patch) => setApps(prev => prev.map(a => a.id === id ? { ...a, ...patch } : a))}
               />
             </div>
           </div>
+        )}
+
+        {rejectingApp && (() => {
+          const profile = rejectingApp.user_id ? profileMap[rejectingApp.user_id] : null;
+          const name = rejectingApp.applicant_name || profile?.full_name || `${t('company.candidatePrefix')}${rejectingApp.id.slice(-6).toUpperCase()}`;
+          const email = rejectingApp.applicant_email || profile?.email || '';
+          return (
+            <RejectionModal
+              app={rejectingApp}
+              stageKey={rejectingApp.status}
+              candidateName={name}
+              mode="new"
+              onClose={() => setRejectingApp(null)}
+              onSaved={(payload) => {
+                setApps(prev => prev.map(a => a.id === rejectingApp.id ? { ...a, ...payload } : a));
+                setRejectingApp(null);
+              }}
+              onSavedAndMail={(payload) => {
+                setApps(prev => prev.map(a => a.id === rejectingApp.id ? { ...a, ...payload } : a));
+                setRejectingApp(null);
+                if (email) {
+                  setMailFor({
+                    app: { ...rejectingApp, ...payload }, profile, email,
+                    templateKey: 'reject',
+                    stageLabel: t(`company.stage.${rejectingApp.status}`),
+                  });
+                }
+              }}
+            />
+          );
+        })()}
+
+        {interviewApp && (
+          <InterviewConfirmModal
+            app={interviewApp}
+            onClose={() => setInterviewApp(null)}
+            onSaved={(payload) => {
+              setApps(prev => prev.map(a => a.id === interviewApp.id ? { ...a, ...payload } : a));
+              setInterviewApp(null);
+            }}
+          />
         )}
 
         {mailFor && (
@@ -274,8 +413,8 @@ const localCss = {
   crumb: { fontSize: 12, color: '#94A3B8', marginBottom: 4 },
   crumbLink: { color: '#525252', textDecoration: 'none' },
 
-  kanban: { display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12, alignItems: 'flex-start' },
-  col: { background: '#fff', border: '1px solid #E5E7EB', borderRadius: 10, padding: 12, display: 'flex', flexDirection: 'column', gap: 10, minHeight: 240 },
+  kanban: { display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12, alignItems: 'stretch', minHeight: 'calc(100vh - 240px)' },
+  col: { background: '#fff', border: '1px solid #E5E7EB', borderRadius: 10, padding: 12, display: 'flex', flexDirection: 'column', gap: 10 },
   colHead: { display: 'flex', alignItems: 'center', gap: 8, padding: '6px 8px 12px', borderBottom: '1px solid #E5E7EB' },
   colEmoji: { fontSize: 14 },
   colLabel: { fontSize: 13, fontWeight: 800, color: '#1A1A1A' },
@@ -297,7 +436,23 @@ const localCss = {
   cardName: { fontSize: 13.5, fontWeight: 800, color: '#1A1A1A' },
   cardMeta: { fontSize: 11.5, color: '#525252' },
   cardSalary: { fontSize: 11.5, color: '#059669', fontWeight: 600 },
-  cardDate: { fontSize: 10.5, color: '#94A3B8', marginTop: 2 },
+  applyDateLow: { alignSelf: 'flex-start', padding: '3px 9px', borderRadius: 999, background: '#F1F5F9', border: '1px solid #E5E7EB', color: '#475569', fontSize: 10.5, fontWeight: 700, marginBottom: 2 },
+  applyDateMid: { alignSelf: 'flex-start', padding: '3px 9px', borderRadius: 999, background: '#FFF7ED', border: '1px solid #FED7AA', color: '#C2410C', fontSize: 10.5, fontWeight: 800, marginBottom: 2 },
+  applyDateHigh: { alignSelf: 'flex-start', padding: '3px 9px', borderRadius: 999, background: '#FEE2E2', border: '1px solid #FCA5A5', color: '#B91C1C', fontSize: 10.5, fontWeight: 800, marginBottom: 2 },
   interviewSet: { marginTop: 4, padding: '6px 10px', background: '#ECFDF5', border: '1px solid #A7F3D0', borderRadius: 6, fontSize: 11, fontWeight: 700, color: '#047857' },
   interviewPending: { marginTop: 4, padding: '6px 10px', background: '#FFFBEB', border: '1px solid #FDE68A', borderRadius: 6, fontSize: 11, fontWeight: 700, color: '#B45309' },
+
+  cardRejected: { background: '#F1F5F9', border: '1px dashed #CBD5E1', opacity: 0.7, cursor: 'pointer' },
+  nameRow: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 6 },
+  rejectedInline: { fontSize: 11, fontWeight: 800, color: '#DC2626', flexShrink: 0 },
+
+  toggleLabel: { display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: '#525252', fontWeight: 600, cursor: 'pointer', padding: '6px 10px', background: '#fff', border: '1px solid #D1D5DB', borderRadius: 8 },
+  btnNewJob: { padding: '12px 24px', borderRadius: 8, background: 'linear-gradient(135deg,#F97316,#EA580C)', color: '#fff', fontSize: 14, fontWeight: 800, textDecoration: 'none', boxShadow: '0 4px 12px rgba(234,88,12,0.25)', display: 'inline-flex', alignItems: 'center' },
+
+  kebabWrap: { position: 'absolute', top: 6, right: 6 },
+  kebabBtn: { width: 24, height: 24, borderRadius: 6, border: 'none', background: 'transparent', color: '#94A3B8', fontSize: 18, fontWeight: 800, cursor: 'pointer', lineHeight: 1, display: 'grid', placeItems: 'center', fontFamily: 'inherit' },
+  kebabMenu: { position: 'absolute', top: 28, right: 0, minWidth: 160, background: '#fff', border: '1px solid #E5E7EB', borderRadius: 8, boxShadow: '0 10px 24px rgba(0,0,0,0.12)', padding: 4, zIndex: 30, display: 'flex', flexDirection: 'column' },
+  kebabItem: { padding: '9px 12px', border: 'none', background: 'transparent', color: '#B91C1C', fontSize: 12.5, fontWeight: 700, cursor: 'pointer', textAlign: 'left', borderRadius: 6, fontFamily: 'inherit' },
+  kebabItemNeutral: { padding: '9px 12px', border: 'none', background: 'transparent', color: '#1A1A1A', fontSize: 12.5, fontWeight: 700, cursor: 'pointer', textAlign: 'left', borderRadius: 6, fontFamily: 'inherit' },
+  kebabItemLocked: { padding: '9px 12px', border: 'none', background: 'transparent', color: '#94A3B8', fontSize: 12.5, fontWeight: 700, cursor: 'not-allowed', textAlign: 'left', borderRadius: 6, fontFamily: 'inherit' },
 };

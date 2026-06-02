@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, Fragment } from 'react';
 import Head from 'next/head';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
@@ -345,8 +345,11 @@ export default function CompanyDashboard() {
                 <span><b style={localCss.kpiStrong}>{appsCount}</b>{t('company.kpiApps', { n: '' })}</span>
               </div>
 
-              <div style={localCss.list}>
-                {jobs.map(job => {
+              {(() => {
+                const groupOf = (s) => s === 'live' ? 'active' : s === 'pending_review' ? 'pending' : 'inactive';
+                const grouped = { active: [], pending: [], inactive: [] };
+                jobs.forEach(j => { grouped[groupOf(j.status)].push(j); });
+                const renderCard = (job) => {
                   const s = STATUS_STYLE[job.status] || STATUS_STYLE.draft;
                   const stats = appsByJob[job.id] || { total: 0, new: 0 };
                   return (
@@ -396,8 +399,16 @@ export default function CompanyDashboard() {
                       </div>
                     </div>
                   );
-                })}
-              </div>
+                };
+                return ['active', 'pending', 'inactive'].map(g => grouped[g].length === 0 ? null : (
+                  <section key={g} style={localCss.groupSection}>
+                    <h2 style={localCss.groupTitle}>{t(`company.jobGroup.${g}`, { n: grouped[g].length })}</h2>
+                    <div style={localCss.list}>
+                      {grouped[g].map(renderCard)}
+                    </div>
+                  </section>
+                ));
+              })()}
             </>
           )}
         </main>
@@ -562,6 +573,8 @@ const localCss = {
   kpiSep: { color: '#CBD5E1' },
 
   list: { display: 'flex', flexDirection: 'column', gap: 10 },
+  groupSection: { display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 24 },
+  groupTitle: { fontSize: 14, fontWeight: 800, color: '#1A1A1A', margin: 0, padding: '4px 2px', borderLeft: '3px solid #EA580C', paddingLeft: 10 },
   card: {
     display: 'flex', justifyContent: 'space-between', alignItems: 'center',
     padding: '18px 22px', background: '#fff', border: '1px solid #E5E7EB',

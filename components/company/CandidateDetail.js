@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Fragment } from 'react';
 import Link from 'next/link';
 import { supabase } from '../../lib/supabaseClient';
 import { useT } from '../../lib/i18n';
@@ -28,6 +28,8 @@ export default function CandidateDetail({ appId, mode = 'page', onClose, company
   const [userId, setUserId] = useState(null);
   const [reviewerName, setReviewerName] = useState('');
   const [mailModal, setMailModal] = useState(null); // { templateKey, withSlots }
+  const [rejectModal, setRejectModal] = useState(null); // null | 'new' | 'edit' | 'unreject'
+  const [interviewModal, setInterviewModal] = useState(false);
   const [evals, setEvals] = useState([]);
   const [expandedStages, setExpandedStages] = useState(new Set());
   const [evalComment, setEvalComment] = useState('');
@@ -96,7 +98,7 @@ export default function CandidateDetail({ appId, mode = 'page', onClose, company
       setErr(t('company.err.stageChange') + error.message);
       return;
     }
-    onStageChange?.(app.id, newStatus);
+    onStageChange?.(app.id, { status: newStatus });
     // 단계 전진 시 메일 + 면접 일정 통합 모달 자동 띄움
     const tpl = STAGE_MAIL_TPL[newStatus];
     if (tpl) setMailModal({ templateKey: tpl, withSlots: tpl === 'interview' });
@@ -258,7 +260,39 @@ export default function CandidateDetail({ appId, mode = 'page', onClose, company
             <div style={local.interviewerHint}>🔒 {t('company.candidate.interviewerHint')}</div>
           )}
 
-          <EvaluationSection
+          {!app.rejected_at && (app.status === 'viewed' || app.status === 'reviewing') && isOwner && (
+            <section style={local.section}>
+              <div style={local.stepHead}>
+                <span style={{ ...local.stepBadge, background: '#1D4ED8' }}>1</span>
+                <span style={local.stepTitle}>{t('company.candidate.step1')}</span>
+              </div>
+              {app.interview_at ? (
+                <div style={local.interviewCard}>
+                  <div style={local.interviewCardHead}>
+                    <span style={local.interviewCardTitle}>
+                      📅 {new Date(app.interview_at).toLocaleString(undefined, { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                    </span>
+                    <button onClick={() => setInterviewModal(true)} style={local.interviewEditBtn}>
+                      {t('company.interview.confirmEditBtn')}
+                    </button>
+                  </div>
+                  {app.interview_location && <div style={local.interviewMeta}>📍 {app.interview_location}</div>}
+                  {app.interview_interviewer && <div style={local.interviewMeta}>👤 {app.interview_interviewer}</div>}
+                </div>
+              ) : (
+                <button onClick={() => setInterviewModal(true)} style={local.btnInterview}>
+                  {t('company.interview.confirmBtn')}
+                </button>
+              )}
+            </section>
+          )}
+
+          <section style={local.section}>
+            <div style={local.stepHead}>
+              <span style={{ ...local.stepBadge, background: '#7C3AED' }}>{(!app.rejected_at && (app.status === 'viewed' || app.status === 'reviewing') && isOwner) ? 2 : 1}</span>
+              <span style={local.stepTitle}>{t('company.candidate.step2')}</span>
+            </div>
+            <EvaluationSection
             t={t}
             stages={STAGES}
             currentStage={app.status}
@@ -275,23 +309,93 @@ export default function CandidateDetail({ appId, mode = 'page', onClose, company
             onEdit={startEditEval}
             onDelete={deleteEvaluation}
           />
+          </section>
 
-          {isOwner ? (
-            <>
-              {nextStage && (
-                <section style={local.section}>
-                  <button onClick={moveNext} style={local.btnNext}>
-                    {t('company.candidate.nextStage')} {nextStage.emoji} {t(`company.stage.${nextStage.key}`)}
-                  </button>
-                </section>
-              )}
-            </>
-          ) : (
-            nextStage && (
-              <section style={local.section}>
-                <button disabled style={local.btnLocked}>{t('company.candidate.nextLocked')}</button>
-              </section>
-            )
+          {!app.rejected_at && (
+            <section style={local.section}>
+              <div style={local.stepHead}>
+                <span style={{ ...local.stepBadge, background: '#EA580C' }}>{((app.status === 'viewed' || app.status === 'reviewing') && isOwner) ? 3 : 2}</span>
+                <span style={local.stepTitle}>{t('company.candidate.step3')}</span>
+                <span style={{ ...local.decisionCurrent, marginLeft: 'auto' }}>
+                  {t('company.candidate.currentStage')} <strong>{currentStage?.emoji} {t(`company.stage.${app.status}`)}</strong>
+                </span>
+              </div>
+              <div style={local.stepper}>
+                {STAGES.map((s, i) => {
+                  const cidx = STAGE_ORDER.indexOf(app.status);
+                  const isCurrent = i === cidx;
+                  const isPast = i < cidx;
+                  return (
+                    <Fragment key={s.key}>
+                      {i > 0 && <div style={(isPast || isCurrent) ? local.connDone : local.conn} />}
+                      <div
+                        style={{ ...local.dot, ...(isCurrent ? local.dotCurrent : isPast ? local.dotPast : local.dotFuture) }}
+                        title={t(`company.stage.${s.key}`)}
+                      >{s.emoji}</div>
+                    </Fragment>
+                  );
+                })}
+              </div>
+              <div style={local.decisionRow}>
+                {isOwner ? (
+                  <>
+                    {nextStage && (
+                      <button onClick={moveNext} style={local.btnAdvance}>
+                        {t('company.candidate.nextShort', { emoji: nextStage.emoji, label: t(`company.stage.${nextStage.key}`) })}
+                      </button>
+                    )}
+                    <button onClick={() => setRejectModal('new')} style={local.btnRejectSolid}>
+                      {t('company.reject.btnShort')}
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    {nextStage && (
+                      <button disabled style={local.btnDecisionLocked}>
+                        {t('company.candidate.nextShortLocked', { label: t(`company.stage.${nextStage.key}`) })}
+                      </button>
+                    )}
+                    <button disabled style={local.btnDecisionLocked}>
+                      {t('company.reject.btnShortLocked')}
+                    </button>
+                  </>
+                )}
+              </div>
+            </section>
+          )}
+
+          {app.rejected_at && (
+            <section style={local.section}>
+              <div style={local.rejectedCard}>
+                <div style={local.rejectedHead}>
+                  <div style={local.rejectedTitle}>
+                    {t('company.candidate.rejectedAt', {
+                      date: new Date(app.rejected_at).toLocaleDateString(),
+                      stage: t(`company.stage.${app.rejected_at_stage || app.status}`),
+                    })}
+                  </div>
+                  {isOwner && (
+                    <div style={local.rejectedActions}>
+                      <button onClick={() => setRejectModal('edit')} style={local.rejectedEditBtn}>
+                        {t('company.reject.editBtn')}
+                      </button>
+                      <button onClick={() => setRejectModal('unreject')} style={local.rejectedUnrejectBtn}>
+                        {t('company.reject.unrejectBtn')}
+                      </button>
+                    </div>
+                  )}
+                </div>
+                {app.rejection_reason && (
+                  <div style={local.rejectedReason}>
+                    {t('company.candidate.rejectedReason', {
+                      reason: app.rejection_reason === 'other'
+                        ? (app.rejection_note || '—')
+                        : t(`company.reject.reason.${app.rejection_reason}`),
+                    })}
+                  </div>
+                )}
+              </div>
+            </section>
           )}
         </aside>
       </div>
@@ -308,6 +412,41 @@ export default function CandidateDetail({ appId, mode = 'page', onClose, company
           stageNote={t('company.ats.stageNote', { stage: t(`company.stage.${app.status}`) })}
           onClose={() => setMailModal(null)}
           onSent={() => setMailModal(null)}
+        />
+      )}
+
+      {interviewModal && (
+        <InterviewConfirmModal
+          app={app}
+          onClose={() => setInterviewModal(false)}
+          onSaved={(payload) => {
+            setApp({ ...app, ...payload });
+            onStageChange?.(app.id, payload);
+            setInterviewModal(false);
+          }}
+        />
+      )}
+
+      {rejectModal && (
+        <RejectionModal
+          app={app}
+          stageKey={rejectModal === 'new' ? app.status : (app.rejected_at_stage || app.status)}
+          candidateName={name}
+          mode={rejectModal}
+          initialReason={rejectModal === 'edit' ? app.rejection_reason : ''}
+          initialNote={rejectModal === 'edit' ? app.rejection_note : ''}
+          onClose={() => setRejectModal(null)}
+          onSaved={(payload) => {
+            setApp({ ...app, ...payload });
+            onStageChange?.(app.id, payload);
+            setRejectModal(null);
+          }}
+          onSavedAndMail={(payload) => {
+            setApp({ ...app, ...payload });
+            onStageChange?.(app.id, payload);
+            setRejectModal(null);
+            setMailModal({ templateKey: 'reject', withSlots: false });
+          }}
         />
       )}
 
@@ -375,12 +514,7 @@ function EvaluationSection({
   const myCurrentEval = evals.find(e => e.stage === currentStage && e.reviewer_user_id === currentUserId);
 
   return (
-    <section style={local.section}>
-      <div style={ev.head}>
-        <h3 style={local.sectionH}>{t('company.eval.h')}</h3>
-        <span style={ev.sub}>{t('company.eval.sub')}</span>
-      </div>
-
+    <>
       <div style={ev.cards}>
         {stages.map(s => {
           const stageEvals = evals.filter(e => e.stage === s.key);
@@ -468,7 +602,7 @@ function EvaluationSection({
           );
         })}
       </div>
-    </section>
+    </>
   );
 }
 
@@ -605,7 +739,7 @@ function fillVars(text, vars) {
     .split('{후보이름}').join(vars.name)
     .split('{공고명}').join(vars.jobTitle)
     .split('{회사명}').join(vars.companyName || '—')
-    .split('{면접일정}').join(vars.slotsText || '');
+    .split('{인터뷰일정}').join(vars.slotsText || '');
 }
 
 export function MailComposer({
@@ -761,6 +895,237 @@ export function MailComposer({
   );
 }
 
+export function InterviewConfirmModal({ app, onClose, onSaved }) {
+  const { t } = useT();
+  const existing = app.interview_at ? new Date(app.interview_at) : null;
+  const [date, setDate] = useState(existing ? existing.toISOString().slice(0, 10) : '');
+  const [time, setTime] = useState(existing ? `${String(existing.getHours()).padStart(2, '0')}:${String(existing.getMinutes()).padStart(2, '0')}` : '14:00');
+  const [location, setLocation] = useState(app.interview_location || '');
+  const [interviewer, setInterviewer] = useState(app.interview_interviewer || '');
+  const [saving, setSaving] = useState(false);
+  const [err, setErr] = useState('');
+  const isEdit = !!app.interview_at;
+
+  const save = async () => {
+    setErr('');
+    if (!date) { setErr(t('company.interview.confirmErrDate')); return; }
+    setSaving(true);
+    const payload = {
+      interview_at: new Date(`${date}T${time || '00:00'}`).toISOString(),
+      interview_location: location.trim() || null,
+      interview_interviewer: interviewer.trim() || null,
+      updated_at: new Date().toISOString(),
+    };
+    const { error } = await supabase.from('job_applications').update(payload).eq('id', app.id);
+    setSaving(false);
+    if (error) { setErr(t('company.err.saveFailed') + error.message); return; }
+    onSaved(payload);
+  };
+
+  const clear = async () => {
+    if (!window.confirm(t('company.interview.confirmClear') + '?')) return;
+    setSaving(true);
+    const payload = {
+      interview_at: null,
+      interview_location: null,
+      interview_interviewer: null,
+      updated_at: new Date().toISOString(),
+    };
+    const { error } = await supabase.from('job_applications').update(payload).eq('id', app.id);
+    setSaving(false);
+    if (error) { setErr(t('company.err.saveFailed') + error.message); return; }
+    onSaved(payload);
+  };
+
+  return (
+    <div style={modal.overlay} onClick={saving ? undefined : onClose}>
+      <div style={modal.box} onClick={(e) => e.stopPropagation()}>
+        <header style={modal.head}>
+          <h2 style={modal.h}>{t('company.interview.confirmH')}</h2>
+          <button onClick={onClose} style={modal.closeBtn}>✕</button>
+        </header>
+        <div style={modal.body}>
+          <p style={modal.hint}>{t('company.interview.confirmSub')}</p>
+
+          <div style={{ display: 'flex', gap: 8 }}>
+            <div style={{ ...modal.field, flex: 1 }}>
+              <label style={modal.label}>{t('company.interview.confirmDateLabel')}</label>
+              <input type="date" value={date} onChange={(e) => setDate(e.target.value)} style={modal.inp} disabled={saving} />
+            </div>
+            <div style={{ ...modal.field, width: 140 }}>
+              <label style={modal.label}>{t('company.interview.confirmTimeLabel')}</label>
+              <input type="time" value={time} onChange={(e) => setTime(e.target.value)} style={modal.inp} disabled={saving} />
+            </div>
+          </div>
+
+          <div style={modal.field}>
+            <label style={modal.label}>{t('company.interview.locLabel')}</label>
+            <input value={location} onChange={(e) => setLocation(e.target.value)} placeholder={t('company.interview.locPh')} style={modal.inp} disabled={saving} />
+          </div>
+
+          <div style={modal.field}>
+            <label style={modal.label}>{t('company.interview.interviewerLabel')}</label>
+            <input value={interviewer} onChange={(e) => setInterviewer(e.target.value)} placeholder={t('company.interview.interviewerPh')} style={modal.inp} disabled={saving} />
+          </div>
+
+          {err && <div style={local.errBox}>{err}</div>}
+        </div>
+        <footer style={modal.foot}>
+          {isEdit && (
+            <button onClick={clear} style={{ ...modal.btnGhost, color: '#B91C1C', borderColor: '#FCA5A5', marginRight: 'auto' }} disabled={saving}>
+              {t('company.interview.confirmClear')}
+            </button>
+          )}
+          <button onClick={onClose} style={modal.btnGhost} disabled={saving}>{t('company.cancel')}</button>
+          <button onClick={save} disabled={saving} style={saving ? modal.btnDisabled : modal.btnPrimary}>
+            {saving ? t('company.savingShort') : t('company.interview.confirmSave')}
+          </button>
+        </footer>
+      </div>
+    </div>
+  );
+}
+
+const REJECT_REASONS = ['not_fit', 'comp_mismatch', 'withdrew', 'spam', 'other'];
+
+export function RejectionModal({ app, stageKey, candidateName, mode = 'new', initialReason = '', initialNote = '', onClose, onSaved, onSavedAndMail }) {
+  const { t } = useT();
+  const isEdit = mode === 'edit';
+  const isUnreject = mode === 'unreject';
+  const [reason, setReason] = useState(initialReason || '');
+  const [note, setNote] = useState(initialNote || '');
+  const [sendMail, setSendMail] = useState(!isEdit);
+  const [saving, setSaving] = useState(false);
+  const [err, setErr] = useState('');
+
+  const stageLabel = t(`company.stage.${stageKey}`);
+
+  const save = async () => {
+    setErr('');
+    if (isUnreject) {
+      setSaving(true);
+      const payload = {
+        rejected_at: null,
+        rejected_at_stage: null,
+        rejection_reason: null,
+        rejection_note: null,
+        updated_at: new Date().toISOString(),
+      };
+      const { error } = await supabase.from('job_applications').update(payload).eq('id', app.id);
+      setSaving(false);
+      if (error) { setErr(t('company.reject.errSave') + error.message); return; }
+      onSaved(payload);
+      return;
+    }
+    if (!reason) { setErr(t('company.reject.errReason')); return; }
+    if (reason === 'other' && !note.trim()) { setErr(t('company.reject.errNote')); return; }
+    setSaving(true);
+    const payload = {
+      rejection_reason: reason,
+      rejection_note: reason === 'other' ? note.trim() : null,
+      updated_at: new Date().toISOString(),
+    };
+    if (!isEdit) {
+      payload.rejected_at = new Date().toISOString();
+      payload.rejected_at_stage = stageKey;
+    }
+    const { error } = await supabase.from('job_applications').update(payload).eq('id', app.id);
+    setSaving(false);
+    if (error) { setErr(t('company.reject.errSave') + error.message); return; }
+    if (sendMail) onSavedAndMail(payload); else onSaved(payload);
+  };
+
+  return (
+    <div style={modal.overlay} onClick={saving ? undefined : onClose}>
+      <div style={modal.box} onClick={(e) => e.stopPropagation()}>
+        <header style={modal.head}>
+          <h2 style={modal.h}>{isUnreject ? t('company.reject.unrejectH') : isEdit ? t('company.reject.editH') : t('company.reject.h')}</h2>
+          <button onClick={onClose} style={modal.closeBtn}>✕</button>
+        </header>
+        <div style={modal.body}>
+          {isUnreject ? (
+            <div style={rj.subBanner}>
+              {t('company.reject.unrejectMsg', { name: candidateName, stage: stageLabel })}
+            </div>
+          ) : (
+            <>
+              <div style={rj.subBanner}>
+                {t('company.reject.sub', { name: candidateName, stage: stageLabel })}
+              </div>
+
+              <div style={modal.field}>
+                <label style={modal.label}>{t('company.reject.reasonLabel')}</label>
+                <div style={rj.radioGroup}>
+                  {REJECT_REASONS.map(r => (
+                    <label key={r} style={rj.radioRow}>
+                      <input
+                        type="radio"
+                        name="reject-reason"
+                        value={r}
+                        checked={reason === r}
+                        onChange={() => setReason(r)}
+                        disabled={saving}
+                      />
+                      <span>{t(`company.reject.reason.${r}`)}</span>
+                    </label>
+                  ))}
+                </div>
+                {reason === 'other' && (
+                  <input
+                    value={note}
+                    onChange={(e) => setNote(e.target.value)}
+                    placeholder={t('company.reject.notePh')}
+                    style={modal.inp}
+                    disabled={saving}
+                  />
+                )}
+                <p style={modal.hint}>{t('company.reject.reasonHint')}</p>
+              </div>
+
+              <label style={rj.checkRow}>
+                <input
+                  type="checkbox"
+                  checked={sendMail}
+                  onChange={(e) => setSendMail(e.target.checked)}
+                  disabled={saving}
+                />
+                <span>{isEdit ? t('company.reject.editSaveAndMail') : t('company.reject.sendMail')}</span>
+              </label>
+              <p style={modal.hint}>{isEdit ? t('company.reject.editSendMailHint') : t('company.reject.sendMailHint')}</p>
+            </>
+          )}
+
+          {err && <div style={local.errBox}>{err}</div>}
+        </div>
+        <footer style={modal.foot}>
+          <button onClick={onClose} style={modal.btnGhost} disabled={saving}>
+            {t('company.cancel')}
+          </button>
+          <button
+            onClick={save}
+            disabled={saving}
+            style={saving ? modal.btnDisabled : modal.btnPrimary}>
+            {saving ? t('company.savingShort') : (
+              isUnreject
+                ? t('company.reject.unrejectConfirm')
+                : isEdit
+                  ? (sendMail ? t('company.reject.editSaveAndMail') : t('company.reject.editSave'))
+                  : (sendMail ? t('company.reject.confirmAndMail') : t('company.reject.confirm'))
+            )}
+          </button>
+        </footer>
+      </div>
+    </div>
+  );
+}
+
+const rj = {
+  subBanner: { background: '#FEF2F2', border: '1px solid #FECACA', color: '#991B1B', padding: '10px 12px', borderRadius: 8, fontSize: 12.5, fontWeight: 600, lineHeight: 1.5 },
+  radioGroup: { display: 'flex', flexDirection: 'column', gap: 8, padding: '4px 0' },
+  radioRow: { display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 13, color: '#1A1A1A' },
+  checkRow: { display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 13, color: '#1A1A1A', fontWeight: 600, padding: '10px 12px', background: '#F8FAFC', borderRadius: 8, border: '1px solid #E5E7EB' },
+};
+
 const mc = {
   tplRow: { display: 'flex', gap: 6, flexWrap: 'wrap' },
   tpl: { padding: '7px 12px', borderRadius: 999, border: '1px solid #E5E7EB', background: '#fff', color: '#525252', fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' },
@@ -820,6 +1185,37 @@ const local = {
 
   interviewerHint: { padding: '10px 12px', borderRadius: 8, background: '#F0F9FF', border: '1px solid #BAE6FD', color: '#0369A1', fontSize: 12, fontWeight: 600, lineHeight: 1.5 },
   btnLocked: { width: '100%', padding: '11px 14px', borderRadius: 8, border: '1px dashed #D1D5DB', background: '#F8FAFC', color: '#94A3B8', fontSize: 13, fontWeight: 700, cursor: 'not-allowed', fontFamily: 'inherit' },
+  btnReject: { width: '100%', padding: '11px 14px', borderRadius: 8, border: '1px solid #FECACA', background: '#fff', color: '#B91C1C', fontSize: 13, fontWeight: 800, cursor: 'pointer', fontFamily: 'inherit' },
+  decisionLabel: { fontSize: 11, fontWeight: 800, color: '#737373', textTransform: 'uppercase', letterSpacing: 0.4 },
+  stepHead: { display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 },
+  stepBadge: { width: 22, height: 22, borderRadius: '50%', color: '#fff', fontSize: 12, fontWeight: 800, display: 'grid', placeItems: 'center', fontFamily: 'inherit', flexShrink: 0 },
+  stepTitle: { fontSize: 14, fontWeight: 800, color: '#1A1A1A' },
+  decisionHead: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10, gap: 8 },
+  decisionCurrent: { fontSize: 11.5, color: '#525252', fontWeight: 600 },
+  stepper: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '4px 2px 12px', gap: 0 },
+  dot: { width: 30, height: 30, borderRadius: '50%', display: 'grid', placeItems: 'center', fontSize: 14, background: '#F1F5F9', border: '1.5px solid #E5E7EB', flexShrink: 0 },
+  dotCurrent: { background: '#FFF7ED', border: '2px solid #EA580C', boxShadow: '0 0 0 4px rgba(234,88,12,0.18)', transform: 'scale(1.05)' },
+  dotPast: { background: '#ECFDF5', border: '1.5px solid #A7F3D0', opacity: 0.95 },
+  dotFuture: { opacity: 0.5 },
+  conn: { flex: 1, height: 2, background: '#E5E7EB', margin: '0 4px' },
+  connDone: { flex: 1, height: 2, background: '#A7F3D0', margin: '0 4px' },
+  decisionRow: { display: 'flex', gap: 8 },
+  btnAdvance: { flex: 1, minWidth: 0, padding: '12px 14px', borderRadius: 8, border: 'none', background: 'linear-gradient(135deg,#F97316,#EA580C)', color: '#fff', fontSize: 13, fontWeight: 800, cursor: 'pointer', fontFamily: 'inherit', boxShadow: '0 4px 12px rgba(234,88,12,0.22)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' },
+  btnRejectSolid: { flex: 1, minWidth: 0, padding: '12px 14px', borderRadius: 8, border: 'none', background: 'linear-gradient(135deg,#EF4444,#B91C1C)', color: '#fff', fontSize: 13, fontWeight: 800, cursor: 'pointer', fontFamily: 'inherit', boxShadow: '0 4px 12px rgba(185,28,28,0.22)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' },
+  btnDecisionLocked: { flex: 1, minWidth: 0, padding: '12px 14px', borderRadius: 8, border: '1px dashed #D1D5DB', background: '#F8FAFC', color: '#94A3B8', fontSize: 13, fontWeight: 700, cursor: 'not-allowed', fontFamily: 'inherit', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' },
+  rejectedCard: { padding: '12px 14px', borderRadius: 8, background: '#FEF2F2', border: '1px solid #FECACA', display: 'flex', flexDirection: 'column', gap: 4 },
+  rejectedHead: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 },
+  rejectedTitle: { fontSize: 12.5, fontWeight: 800, color: '#991B1B' },
+  rejectedReason: { fontSize: 12, fontWeight: 600, color: '#7F1D1D' },
+  btnInterview: { width: '100%', padding: '11px 14px', borderRadius: 8, border: '1px solid #BFDBFE', background: '#EFF6FF', color: '#1D4ED8', fontSize: 13, fontWeight: 800, cursor: 'pointer', fontFamily: 'inherit' },
+  interviewCard: { padding: '12px 14px', borderRadius: 8, background: '#EFF6FF', border: '1px solid #BFDBFE', display: 'flex', flexDirection: 'column', gap: 4 },
+  interviewCardHead: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 },
+  interviewCardTitle: { fontSize: 13, fontWeight: 800, color: '#1E3A8A' },
+  interviewEditBtn: { padding: '4px 10px', borderRadius: 6, border: '1px solid #BFDBFE', background: '#fff', color: '#1D4ED8', fontSize: 11.5, fontWeight: 800, cursor: 'pointer', fontFamily: 'inherit', flexShrink: 0 },
+  interviewMeta: { fontSize: 12, color: '#1E40AF', fontWeight: 600 },
+  rejectedActions: { display: 'flex', gap: 6, flexShrink: 0 },
+  rejectedEditBtn: { padding: '4px 10px', borderRadius: 6, border: '1px solid #FCA5A5', background: '#fff', color: '#B91C1C', fontSize: 11.5, fontWeight: 800, cursor: 'pointer', fontFamily: 'inherit', flexShrink: 0 },
+  rejectedUnrejectBtn: { padding: '4px 10px', borderRadius: 6, border: '1px solid #BFDBFE', background: '#fff', color: '#1D4ED8', fontSize: 11.5, fontWeight: 800, cursor: 'pointer', fontFamily: 'inherit', flexShrink: 0 },
 };
 
 const modal = {

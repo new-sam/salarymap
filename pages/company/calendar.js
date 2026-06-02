@@ -1,6 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Fragment } from 'react';
 import Head from 'next/head';
 import Link from 'next/link';
+import { useRouter } from 'next/router';
 import { supabase } from '../../lib/supabaseClient';
 import { Sidebar, css } from './jobs/new';
 import { useT } from '../../lib/i18n';
@@ -9,14 +10,18 @@ const LOCALES = { vi: 'vi-VN', en: 'en-US', ko: 'ko-KR' };
 const dateKey = (d) => `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
 
 export default function CompanyCalendarPage() {
+  const router = useRouter();
   const { t, lang } = useT();
   const [status, setStatus] = useState('loading');
   const [user, setUser] = useState(null);
   const [companyName, setCompanyName] = useState('');
   const [items, setItems] = useState([]);
+  const [view, setView] = useState(() => {
+    const d = new Date();
+    return { year: d.getFullYear(), month: d.getMonth() };
+  });
 
   const locale = LOCALES[lang] || LOCALES.vi;
-  const fmtDateLabel = (d) => d.toLocaleDateString(locale, { month: 'long', day: 'numeric', weekday: 'short' });
   const fmtTime = (d) => d.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit', hour12: false });
 
   useEffect(() => {
@@ -62,46 +67,43 @@ export default function CompanyCalendarPage() {
     );
   }
 
-  const todayStart = new Date(); todayStart.setHours(0, 0, 0, 0);
-  const upcoming = items.filter(i => new Date(i.interview_at) >= todayStart);
-  const past = items.filter(i => new Date(i.interview_at) < todayStart).reverse();
+  // 월간 그리드 셀 계산 (6주 = 42칸)
+  const firstDay = new Date(view.year, view.month, 1);
+  const lastDay = new Date(view.year, view.month + 1, 0);
+  const daysInMonth = lastDay.getDate();
+  const startWeekday = firstDay.getDay();
+  const prevLastDay = new Date(view.year, view.month, 0).getDate();
 
-  const renderGroups = (list, dim) => {
-    const groups = [];
-    list.forEach(it => {
-      const d = new Date(it.interview_at);
-      const k = dateKey(d);
-      let g = groups.find(x => x.k === k);
-      if (!g) { g = { k, d, rows: [] }; groups.push(g); }
-      g.rows.push(it);
-    });
-    return groups.map(g => {
-      const isToday = dateKey(g.d) === dateKey(new Date());
-      return (
-        <div key={g.k} style={localCss.group}>
-          <div style={{ ...localCss.dateHead, ...(isToday ? localCss.dateHeadToday : {}), ...(dim ? localCss.dim : {}) }}>
-            {fmtDateLabel(g.d)}{isToday && <span style={localCss.todayTag}>{t('company.calendar.today')}</span>}
-          </div>
-          {g.rows.map(it => (
-            <div key={it.id} style={{ ...localCss.row, ...(dim ? localCss.dim : {}) }}>
-              <div style={localCss.time}>{fmtTime(new Date(it.interview_at))}</div>
-              <div style={localCss.rowMain}>
-                <div style={localCss.cand}>
-                  {it.applicant_name || t('company.candidatePrefix').replace('#', '').trim()}
-                  <span style={localCss.stage}>{t(`company.stage.${it.status}`) || it.status}</span>
-                </div>
-                <div style={localCss.sub}>{it.jobTitle}</div>
-                <div style={localCss.meta}>
-                  📍 {it.interview_location || t('company.calendar.locTbd')}
-                  {it.interview_interviewer && <> · 👤 {it.interview_interviewer}</>}
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      );
-    });
-  };
+  const cells = [];
+  for (let i = startWeekday - 1; i >= 0; i--) {
+    cells.push({ day: prevLastDay - i, otherMonth: true, date: new Date(view.year, view.month - 1, prevLastDay - i) });
+  }
+  for (let d = 1; d <= daysInMonth; d++) {
+    cells.push({ day: d, otherMonth: false, date: new Date(view.year, view.month, d) });
+  }
+  let nextDay = 1;
+  while (cells.length < 42) {
+    cells.push({ day: nextDay, otherMonth: true, date: new Date(view.year, view.month + 1, nextDay) });
+    nextDay++;
+  }
+
+  // 날짜별 items
+  const itemsByDate = {};
+  items.forEach(it => {
+    const d = new Date(it.interview_at);
+    const k = dateKey(d);
+    if (!itemsByDate[k]) itemsByDate[k] = [];
+    itemsByDate[k].push(it);
+  });
+  Object.values(itemsByDate).forEach(list => list.sort((a, b) => new Date(a.interview_at) - new Date(b.interview_at)));
+
+  const todayKey = dateKey(new Date());
+
+  const prevMonth = () => setView(v => v.month === 0 ? { year: v.year - 1, month: 11 } : { ...v, month: v.month - 1 });
+  const nextMonth = () => setView(v => v.month === 11 ? { year: v.year + 1, month: 0 } : { ...v, month: v.month + 1 });
+  const goToday = () => { const d = new Date(); setView({ year: d.getFullYear(), month: d.getMonth() }); };
+
+  const goCandidate = (jobId) => router.push(`/company/ats?job=${jobId}`);
 
   return (
     <>
@@ -117,54 +119,93 @@ export default function CompanyCalendarPage() {
             </div>
           </header>
 
-          {items.length === 0 ? (
-            <div style={localCss.empty}>
-              <div style={localCss.emptyIco}>📅</div>
-              <h2 style={localCss.emptyH}>{t('company.calendar.emptyH')}</h2>
-              <p style={localCss.emptyP}>{t('company.calendar.emptyDesc')}</p>
+          <div style={cal.toolbar}>
+            <h2 style={cal.monthTitle}>{t('company.calendar.monthLabel', { year: view.year, month: view.month + 1 })}</h2>
+            <div style={cal.navBtns}>
+              <button onClick={prevMonth} style={cal.navBtn} title={t('company.calendar.navPrev')}>‹</button>
+              <button onClick={goToday} style={cal.todayBtn}>{t('company.calendar.todayBtn')}</button>
+              <button onClick={nextMonth} style={cal.navBtn} title={t('company.calendar.navNext')}>›</button>
             </div>
-          ) : (
-            <>
-              <section>
-                <h2 style={localCss.sectionH}>{t('company.calendar.upcoming', { n: upcoming.length })}</h2>
-                {upcoming.length === 0
-                  ? <div style={localCss.noneHint}>{t('company.calendar.noUpcoming')}</div>
-                  : renderGroups(upcoming, false)}
-              </section>
-              {past.length > 0 && (
-                <section style={{ marginTop: 28 }}>
-                  <h2 style={localCss.sectionH}>{t('company.calendar.past', { n: past.length })}</h2>
-                  {renderGroups(past, true)}
-                </section>
-              )}
-            </>
-          )}
+          </div>
+
+          <div style={cal.weekHead}>
+            {[0,1,2,3,4,5,6].map(i => (
+              <div key={i} style={{ ...cal.weekdayCell, ...(i === 0 ? cal.weekdaySun : i === 6 ? cal.weekdaySat : {}) }}>
+                {t(`company.calendar.weekday.${i}`)}
+              </div>
+            ))}
+          </div>
+
+          <div style={cal.grid}>
+            {cells.map((c, i) => {
+              const k = dateKey(c.date);
+              const isToday = k === todayKey;
+              const dayOfWeek = c.date.getDay();
+              const dayItems = itemsByDate[k] || [];
+              return (
+                <div key={i} style={{
+                  ...cal.dayCell,
+                  ...(c.otherMonth ? cal.otherMonthCell : {}),
+                  ...(isToday ? cal.todayCell : {}),
+                }}>
+                  <div style={{
+                    ...cal.dayNum,
+                    ...(c.otherMonth ? cal.dayNumOther : {}),
+                    ...(isToday ? cal.dayNumToday : {}),
+                    ...(dayOfWeek === 0 ? cal.dayNumSun : dayOfWeek === 6 ? cal.dayNumSat : {}),
+                  }}>{c.day}</div>
+                  <div style={cal.dayItems}>
+                    {dayItems.map(it => {
+                      const time = fmtTime(new Date(it.interview_at));
+                      const name = it.applicant_name || t('company.candidatePrefix').replace('#', '').trim();
+                      return (
+                        <div
+                          key={it.id}
+                          style={cal.itemRow}
+                          onClick={() => goCandidate(it.job_id)}
+                          title={`${time} ${name} · ${it.jobTitle}${it.interview_location ? ' · ' + it.interview_location : ''}`}
+                        >
+                          <span style={cal.itemTime}>{time}</span>
+                          <span style={cal.itemName}>[{name}] {it.jobTitle}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
         </main>
       </div>
     </>
   );
 }
 
-const localCss = {
-  empty: { border: '2px dashed #E5E7EB', borderRadius: 12, padding: '48px 24px', textAlign: 'center', background: '#fff' },
-  emptyIco: { fontSize: 36, marginBottom: 12, opacity: 0.5 },
-  emptyH: { fontSize: 18, fontWeight: 800, color: '#1A1A1A', marginBottom: 8 },
-  emptyP: { fontSize: 13.5, color: '#525252', maxWidth: 380, margin: '0 auto', lineHeight: 1.65 },
+const cal = {
+  toolbar: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14, padding: '0 2px' },
+  monthTitle: { fontSize: 18, fontWeight: 800, color: '#1A1A1A', margin: 0 },
+  navBtns: { display: 'flex', gap: 4, alignItems: 'center' },
+  navBtn: { width: 30, height: 30, borderRadius: 6, border: '1px solid #D1D5DB', background: '#fff', color: '#525252', fontSize: 16, fontWeight: 800, cursor: 'pointer', display: 'grid', placeItems: 'center', fontFamily: 'inherit' },
+  todayBtn: { padding: '6px 14px', borderRadius: 6, border: '1px solid #D1D5DB', background: '#fff', color: '#1A1A1A', fontSize: 12, fontWeight: 800, cursor: 'pointer', fontFamily: 'inherit' },
 
-  sectionH: { fontSize: 13, fontWeight: 800, color: '#737373', letterSpacing: '0.04em', textTransform: 'uppercase', marginBottom: 12 },
-  noneHint: { fontSize: 13, color: '#94A3B8', padding: '8px 0' },
+  weekHead: { display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', background: '#F8FAFC', border: '1px solid #E5E7EB', borderRadius: '8px 8px 0 0', overflow: 'hidden' },
+  weekdayCell: { padding: '10px 0', textAlign: 'center', fontSize: 12, fontWeight: 800, color: '#525252' },
+  weekdaySun: { color: '#DC2626' },
+  weekdaySat: { color: '#2563EB' },
 
-  group: { marginBottom: 16 },
-  dateHead: { fontSize: 13, fontWeight: 800, color: '#1A1A1A', padding: '6px 0', display: 'flex', alignItems: 'center', gap: 8 },
-  dateHeadToday: { color: '#EA580C' },
-  todayTag: { fontSize: 10.5, fontWeight: 800, color: '#fff', background: '#EA580C', padding: '2px 7px', borderRadius: 999 },
-  dim: { opacity: 0.55 },
+  grid: { display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', borderLeft: '1px solid #E5E7EB', borderRight: '1px solid #E5E7EB', borderBottom: '1px solid #E5E7EB', borderRadius: '0 0 8px 8px', overflow: 'hidden', background: '#fff' },
+  dayCell: { minHeight: 110, padding: '6px 6px 8px', borderTop: '1px solid #E5E7EB', borderRight: '1px solid #E5E7EB', display: 'flex', flexDirection: 'column', gap: 4, background: '#fff' },
+  otherMonthCell: { background: '#FAFAFA' },
+  todayCell: { background: '#FFF7ED' },
 
-  row: { display: 'flex', gap: 14, padding: '12px 16px', background: '#fff', border: '1px solid #E5E7EB', borderRadius: 10, marginBottom: 6 },
-  time: { fontSize: 14, fontWeight: 900, color: '#EA580C', fontVariantNumeric: 'tabular-nums', minWidth: 48 },
-  rowMain: { display: 'flex', flexDirection: 'column', gap: 3, minWidth: 0 },
-  cand: { fontSize: 14, fontWeight: 800, color: '#1A1A1A', display: 'flex', alignItems: 'center', gap: 8 },
-  stage: { fontSize: 10.5, fontWeight: 800, color: '#525252', background: '#F1F5F9', padding: '2px 8px', borderRadius: 999 },
-  sub: { fontSize: 12.5, color: '#525252' },
-  meta: { fontSize: 11.5, color: '#94A3B8' },
+  dayNum: { fontSize: 12, fontWeight: 800, color: '#1A1A1A', padding: '2px 4px' },
+  dayNumOther: { color: '#94A3B8' },
+  dayNumToday: { color: '#EA580C', fontWeight: 900 },
+  dayNumSun: { color: '#DC2626' },
+  dayNumSat: { color: '#2563EB' },
+
+  dayItems: { display: 'flex', flexDirection: 'column', gap: 2, overflow: 'hidden' },
+  itemRow: { padding: '3px 6px', borderRadius: 4, background: '#EFF6FF', border: '1px solid #BFDBFE', fontSize: 10.5, fontWeight: 700, color: '#1E3A8A', cursor: 'pointer', display: 'flex', gap: 4, alignItems: 'center', overflow: 'hidden' },
+  itemTime: { fontWeight: 800, color: '#1D4ED8', flexShrink: 0, fontVariantNumeric: 'tabular-nums' },
+  itemName: { overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: 0 },
 };
