@@ -36,26 +36,38 @@ export default async function handler(req, res) {
     }
   }
 
-  const { data, error } = await supabase
-    .from('job_applications')
-    .insert({
-      job_id: jobId,
-      job_title: resolvedTitle,
-      job_company: resolvedCompany,
-      user_id: userId || null,
-      resume_url: resumeUrl || null,
-      applicant_role: applicantRole || null,
-      applicant_experience: applicantExperience || null,
-      applicant_salary: applicantSalary || null,
-      applicant_company: applicantCompany || null,
-      applicant_email: applicantEmail || null,
-      applicant_name: applicantName || null,
-      utm_source: utmSource || null,
-      utm_medium: utmMedium || null,
-      utm_campaign: utmCampaign || null,
-    })
-    .select('id')
-    .single()
+  const baseRow = {
+    job_id: jobId,
+    job_title: resolvedTitle,
+    job_company: resolvedCompany,
+    user_id: userId || null,
+    resume_url: resumeUrl || null,
+    applicant_role: applicantRole || null,
+    applicant_experience: applicantExperience || null,
+    applicant_salary: applicantSalary || null,
+    applicant_company: applicantCompany || null,
+    applicant_email: applicantEmail || null,
+    applicant_name: applicantName || null,
+  }
+  const utmRow = {
+    utm_source: utmSource || null,
+    utm_medium: utmMedium || null,
+    utm_campaign: utmCampaign || null,
+  }
+
+  const insert = (row) =>
+    supabase.from('job_applications').insert(row).select('id').single()
+
+  let { data, error } = await insert({ ...baseRow, ...utmRow })
+
+  // The UTM columns are added by a separate migration (20260601_add_utm_tracking.sql).
+  // If that migration hasn't been applied yet, PostgREST reports the missing column
+  // (code PGRST204). Don't let it block the application — retry without UTM fields so
+  // the candidate's CV is still recorded.
+  if (error && (error.code === 'PGRST204' || /utm_/.test(error.message || ''))) {
+    console.warn('[JOB APPLICATION] utm columns missing, retrying without UTM:', error.message)
+    ;({ data, error } = await insert(baseRow))
+  }
 
   if (error) {
     return res.status(500).json({ error: error.message })

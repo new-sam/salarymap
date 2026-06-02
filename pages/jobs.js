@@ -461,6 +461,20 @@ export default function JobsPage() {
     if (typeof fbq === 'function') fbq('track', 'Lead', { content_name: 'job_apply_confirmed', content_category: target.title })
   }
 
+  // Kick off login for the apply flow. Return the user straight back to the open
+  // job (via ?jobId=) so the detail panel reopens and they can submit their CV in
+  // one authenticated step — instead of losing the panel + selected file and
+  // landing on a bare page.
+  const loginForJob = (jobId) => {
+    const dest = jobId ? `/jobs?jobId=${jobId}` : '/jobs'
+    localStorage.setItem('fyi_login_return', dest)
+    try {
+      supabase.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: window.location.origin + '/auth/callback' } })
+    } catch {
+      window.location.href = '/api/auth/google?return=' + encodeURIComponent(dest)
+    }
+  }
+
   const showToast = (msg) => {
     setToast(msg)
     setTimeout(() => setToast(null), 2000)
@@ -1415,7 +1429,7 @@ export default function JobsPage() {
                 </div>
 
                 <button className="jd-apply-btn" style={{ width: '100%', marginTop: 12 }} onClick={() => {
-                  if (!isLoggedIn) { localStorage.setItem('fyi_login_return', '/jobs'); supabase.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: window.location.origin + '/auth/callback' } }); return; }
+                  if (!isLoggedIn) { loginForJob(detailJob.id); return; }
                   handleApply(detailJob);
                 }} disabled={applying || !resumeFile}>
                   {!isLoggedIn ? t('jobs.loginToApply') : applying ? t('jobs.sending') : t('jobs.submitApplication')}
@@ -1440,7 +1454,11 @@ export default function JobsPage() {
                       {t('jobs.applied')}
                     </button>
                   ) : (
-                    <button className="jd-apply-btn" style={{ flex: 1 }} onClick={() => { setDetailApplyMode(true); track('click_apply_button','/jobs',{jobId:detailJob.id,title:detailJob.title,company:detailJob.company}) }}>
+                    <button className="jd-apply-btn" style={{ flex: 1 }} onClick={() => {
+                      track('click_apply_button','/jobs',{jobId:detailJob.id,title:detailJob.title,company:detailJob.company});
+                      if (!isLoggedIn) { loginForJob(detailJob.id); return; }
+                      setDetailApplyMode(true);
+                    }}>
                       {t('jobs.apply')}
                     </button>
                   )}
@@ -1492,7 +1510,7 @@ export default function JobsPage() {
                 </div>
 
                 <button className="ap-btn" onClick={() => {
-                  if (!isLoggedIn) { localStorage.setItem('fyi_login_return', '/jobs'); window.location.href = '/api/auth/google?return=' + encodeURIComponent('/jobs'); return; }
+                  if (!isLoggedIn) { loginForJob(selectedJob.id); return; }
                   handleApply();
                 }} disabled={applying || !resumeFile}>
                   {!isLoggedIn ? t('jobs.loginToApply') : applying ? t('jobs.sending') : t('jobs.submitApplication')}
