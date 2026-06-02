@@ -10,6 +10,7 @@ import Icon from '../../components/Icon'
 import { DEFAULT_IMAGES } from '../../constants/jobs'
 import { COMPANY_PROFILES } from '../../data/companyProfiles.js'
 import { generateCompanyDescription } from '../../utils/companyDescription'
+import { getStoredUtm } from '../../lib/utm'
 
 function decodeHTML(str) {
   if (!str || typeof str !== 'string') return str
@@ -93,9 +94,8 @@ export default function JobDetailPage({ job }) {
       fd.append('jobId', job.id)
       fd.append('jobTitle', job.title)
       fd.append('company', job.company)
-      if (router.query.utm_source) fd.append('utmSource', router.query.utm_source)
-      if (router.query.utm_medium) fd.append('utmMedium', router.query.utm_medium)
-      if (router.query.utm_campaign) fd.append('utmCampaign', router.query.utm_campaign)
+      // Attribution captured on landing (router.query is empty by apply time).
+      Object.entries(getStoredUtm()).forEach(([k, v]) => { if (v) fd.append(k, v) })
       await fetch('/api/job-applications', { method: 'POST', headers: token ? { Authorization: `Bearer ${token}` } : {}, body: fd })
       setApplied(true)
       const aj = JSON.parse(localStorage.getItem('fyi_applied_jobs') || '[]')

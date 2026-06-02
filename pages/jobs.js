@@ -10,6 +10,7 @@ import { DEFAULT_IMAGES, ROLE_OPTIONS, TYPE_OPTIONS, TECH_OPTIONS, JOBS_PER_PAGE
 import { COMPANY_PROFILES } from '../data/companyProfiles.js'
 import { formatSalaryCard, getHighSalaryThreshold } from '../utils/salary'
 import { generateCompanyDescription } from '../utils/companyDescription'
+import { getStoredUtm } from '../lib/utm'
 
 function decodeHTML(str) {
   if (!str || typeof str !== 'string') return str
@@ -155,6 +156,13 @@ export default function JobsPage() {
           sessionStorage.setItem(k, v)
         }
       })
+    }
+    // Persist the original landing referrer once, so non-UTM channel attribution
+    // survives client-side navigation up to the moment the candidate applies.
+    if (!sessionStorage.getItem('fyi_referrer') && document.referrer && !document.referrer.includes(window.location.host)) {
+      const expires = new Date(Date.now() + 30 * 86400000).toUTCString()
+      sessionStorage.setItem('fyi_referrer', document.referrer)
+      document.cookie = `fyi_referrer=${encodeURIComponent(document.referrer)};path=/;expires=${expires};SameSite=Lax`
     }
     const getUtm = (k) => {
       const p = params.get(k)
@@ -423,9 +431,8 @@ export default function JobsPage() {
         applicantCompany: userCompany,
         applicantEmail: session.user.email,
         applicantName: session.user.user_metadata?.full_name || '',
-        utmSource: router.query.utm_source || null,
-        utmMedium: router.query.utm_medium || null,
-        utmCampaign: router.query.utm_campaign || null,
+        // Use the attribution captured on landing — router.query is empty by apply time.
+        ...getStoredUtm(),
       }),
     })
     if (!applyRes.ok) {

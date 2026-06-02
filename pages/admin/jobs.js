@@ -403,6 +403,18 @@ export default function AdminJobs() {
                     {app.applicant_company && <> · {app.applicant_company}</>}
                     {app.resume_url && <> · <a href={app.resume_url} target="_blank" rel="noopener" style={{ color: '#ff4400' }}>Resume</a></>}
                   </div>
+                  {(() => {
+                    const refHost = app.referrer ? (() => { try { return new URL(app.referrer).hostname } catch { return app.referrer } })() : null
+                    const src = app.utm_source || refHost || 'direct'
+                    const detail = [app.utm_medium, app.utm_campaign, app.utm_content].filter(Boolean).join(' / ')
+                    return (
+                      <div style={{ fontSize: 11, color: '#888', marginTop: 2 }}>
+                        <span style={{ ...S.badge, background: '#ecfdf5', color: '#047857' }}>Source: {src}</span>
+                        {detail && <span style={{ marginLeft: 6 }}>{detail}</span>}
+                        {app.referrer && <span style={{ marginLeft: 6, color: '#bbb' }} title={app.referrer}>· ref: {refHost}</span>}
+                      </div>
+                    )
+                  })()}
                   <div style={{ fontSize: 11, color: '#bbb' }}>{new Date(app.created_at).toLocaleString()}</div>
                 </div>
                 <select value={app.status || 'applied'} onChange={e => handleStatusChange(app.id, e.target.value)} style={S.sel}>

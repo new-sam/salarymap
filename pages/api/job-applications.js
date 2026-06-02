@@ -14,7 +14,7 @@ export default async function handler(req, res) {
     jobId, jobTitle, jobCompany, userId, resumeUrl,
     applicantRole, applicantExperience, applicantSalary,
     applicantCompany, applicantEmail, applicantName,
-    utmSource, utmMedium, utmCampaign,
+    utmSource, utmMedium, utmCampaign, utmContent, referrer,
   } = req.body
 
   if (!jobId) {
@@ -53,6 +53,8 @@ export default async function handler(req, res) {
     utm_source: utmSource || null,
     utm_medium: utmMedium || null,
     utm_campaign: utmCampaign || null,
+    utm_content: utmContent || null,
+    referrer: referrer || null,
   }
 
   const insert = (row) =>
@@ -60,12 +62,13 @@ export default async function handler(req, res) {
 
   let { data, error } = await insert({ ...baseRow, ...utmRow })
 
-  // The UTM columns are added by a separate migration (20260601_add_utm_tracking.sql).
-  // If that migration hasn't been applied yet, PostgREST reports the missing column
-  // (code PGRST204). Don't let it block the application — retry without UTM fields so
+  // The source-tracking columns are added by separate migrations
+  // (20260601_add_utm_tracking.sql, 20260602_add_utm_content_referrer.sql). If a
+  // migration hasn't been applied yet, PostgREST reports the missing column (code
+  // PGRST204). Don't let it block the application — retry without source fields so
   // the candidate's CV is still recorded.
-  if (error && (error.code === 'PGRST204' || /utm_/.test(error.message || ''))) {
-    console.warn('[JOB APPLICATION] utm columns missing, retrying without UTM:', error.message)
+  if (error && (error.code === 'PGRST204' || /utm_|referrer/.test(error.message || ''))) {
+    console.warn('[JOB APPLICATION] source columns missing, retrying without UTM/referrer:', error.message)
     ;({ data, error } = await insert(baseRow))
   }
 
