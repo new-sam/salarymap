@@ -43,6 +43,7 @@ export default function CommunityPostPage() {
   const [loadingComments, setLoadingComments] = useState(true)
   const [commentText, setCommentText] = useState('')
   const [commentAnonymous, setCommentAnonymous] = useState(true)
+  const [commentSubmitting, setCommentSubmitting] = useState(false)
   const [showPostMenu, setShowPostMenu] = useState(false)
   const postMenuRef = React.useRef(null)
 
@@ -100,7 +101,8 @@ export default function CommunityPostPage() {
   }
 
   const submitComment = async () => {
-    if (!commentText.trim() || !session) return
+    if (!commentText.trim() || !session || commentSubmitting) return
+    setCommentSubmitting(true)
     try {
       const res = await fetch('/api/community/comments', {
         method: 'POST',
@@ -114,6 +116,7 @@ export default function CommunityPostPage() {
         setPost(prev => prev ? { ...prev, comment_count: (prev.comment_count || 0) + 1 } : prev)
       }
     } catch (e) { console.error(e) }
+    setCommentSubmitting(false)
   }
 
   const deleteComment = async (commentId) => {
@@ -314,9 +317,9 @@ export default function CommunityPostPage() {
                         placeholder={t('comm.commentPlaceholder')}
                         value={commentText}
                         onChange={e => setCommentText(e.target.value)}
-                        onKeyDown={e => e.key === 'Enter' && submitComment()}
+                        onKeyDown={e => { if (e.key === 'Enter' && !e.nativeEvent.isComposing) submitComment() }}
                       />
-                      <button className="cp-send" disabled={!commentText.trim()} onClick={submitComment}>
+                      <button className="cp-send" disabled={!commentText.trim() || commentSubmitting} onClick={submitComment}>
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
                       </button>
                     </div>
