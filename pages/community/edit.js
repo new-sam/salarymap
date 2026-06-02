@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import Head from 'next/head'
 import { useRouter } from 'next/router'
 import { supabase } from '../../lib/supabaseClient'
+import { useAdminGuard } from '../../lib/useAdminGuard'
 import GlobalNav from '../../components/GlobalNav'
 import { useT } from '../../lib/i18n'
 
@@ -15,6 +16,7 @@ export default function CommunityEditPage() {
   const router = useRouter()
   const { id } = router.query
   const { t } = useT()
+  const { checking } = useAdminGuard()
   const [session, setSession] = useState(null)
   const [category, setCategory] = useState('ask_company')
   const [title, setTitle] = useState('')
@@ -25,11 +27,8 @@ export default function CommunityEditPage() {
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session: s } }) => {
-      if (!s) {
-        router.replace('/community')
-        return
-      }
-      setSession(s)
+      // Logged-out / non-admin redirect is handled by useAdminGuard.
+      if (s) setSession(s)
     })
   }, [])
 
@@ -69,6 +68,15 @@ export default function CommunityEditPage() {
       }
     } catch (e) { console.error(e) }
     setSubmitting(false)
+  }
+
+  if (checking) {
+    return (
+      <>
+        <GlobalNav activePage="community" />
+        <div style={{ minHeight: '60vh', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#bbb', fontSize: 14 }}>Loading...</div>
+      </>
+    )
   }
 
   return (

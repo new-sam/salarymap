@@ -236,6 +236,7 @@ export default function ProfilePage() {
   const [saving, setSaving] = useState(false)
   const [msg, setMsg] = useState(null)
   const [tab, setTab] = useState('profile') // profile | posts | employment | badges
+  const [isAdmin, setIsAdmin] = useState(false)
   const [showOnboard, setShowOnboard] = useState(false)
   const [showAlert, setShowAlert] = useState(null)
   const [submissions, setSubmissions] = useState([])
@@ -305,6 +306,19 @@ export default function ProfilePage() {
       if (!session) { router.replace('/'); return }
       setUser(session.user)
       setToken(session.access_token)
+
+      // Admin check (cached) — community/posts gated to admins for now
+      const cachedAdmin = sessionStorage.getItem('fyi_is_admin')
+      if (cachedAdmin !== null) {
+        setIsAdmin(cachedAdmin === 'true')
+      } else {
+        try {
+          const r = await fetch(`/api/admin/check?email=${encodeURIComponent(session.user.email)}`)
+          const d = await r.json()
+          setIsAdmin(d.isAdmin)
+          sessionStorage.setItem('fyi_is_admin', String(d.isAdmin))
+        } catch {}
+      }
 
       // Fetch profile and submissions in parallel
       const [profileRes, subsResult] = await Promise.all([
@@ -684,7 +698,9 @@ export default function ProfilePage() {
         {/* Tabs */}
         <div className="pw-tabs">
           <button className={`pw-tab${tab === 'profile' ? ' on' : ''}`} onClick={() => handleTabChange('profile')}>{t('profile.tab.talent')}</button>
-          <button className={`pw-tab${tab === 'posts' ? ' on' : ''}`} onClick={() => handleTabChange('posts')}>{t('profile.tab.posts') || '내 게시물'}</button>
+          {isAdmin && (
+            <button className={`pw-tab${tab === 'posts' ? ' on' : ''}`} onClick={() => handleTabChange('posts')}>{t('profile.tab.posts') || '내 게시물'}</button>
+          )}
           <button className={`pw-tab${tab === 'employment' ? ' on' : ''}`} onClick={() => handleTabChange('employment')}>{t('profile.tab.employment') || '재직정보'}</button>
           <button className={`pw-tab${tab === 'badges' ? ' on' : ''}`} onClick={() => handleTabChange('badges')}>{t('profile.tab.badges') || '뱃지'}</button>
         </div>
