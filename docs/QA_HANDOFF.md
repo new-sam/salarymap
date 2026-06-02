@@ -30,7 +30,8 @@ env: 루트 `.env.example` 참고해서 `.env.local` 채우기.
 
 ### 리포트 (docs/)
 - `FYI_COMPANY_QA.html` — P0~P3 수정 내역 (전부 ✓ 해결)
-- `FYI_COMPANY_GAPS.html` — 짝꿍 기능 누락 24건 (영역 A~H, 심각도별)
+- `FYI_COMPANY_GAPS.html` — 짝꿍 기능 누락 29건 (영역 A~H, 심각도별) — 보기용
+- `FYI_COMPANY_GAPS.csv` — 위 29건을 상태·메모 적어가며 추적하는 편집용 (엑셀/시트)
 - `QA_CHECKLIST.csv` — 수동 클릭 체크리스트 (O/X 칸 비어 있음 — 실기기/실로그인 확인용)
 
 ## 남은 작업 (GAPS 리포트 기준)
