@@ -12,7 +12,7 @@ const EMPTY_JOB = {
   deadline: '', headcount: '', apply_url: '', is_featured: false,
 }
 
-const ROLES = ['Backend','Frontend','Fullstack','Mobile','Data','DevOps','PM','Design','QA']
+const ROLES = ['Backend','Frontend','Fullstack','Mobile','Data','DevOps','PM','Design','QA','Non-IT']
 const TYPES = ['remote','onsite','hybrid']
 const COUNTRIES = ['korea','vietnam','global']
 

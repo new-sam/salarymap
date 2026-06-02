@@ -21,7 +21,7 @@ export default async function handler(req, res) {
     const fields = req.body
     // Whitelist allowed fields
     const allowed = [
-      'full_name', 'headline', 'position', 'yoe_months', 'intro', 'skills',
+      'full_name', 'current_company', 'headline', 'position', 'yoe_months', 'intro', 'skills',
       'english_cert', 'korean_cert', 'location', 'birthdate', 'university',
       'major', 'graduation_year', 'gpa', 'salary_min', 'salary_max', 'salary_currency', 'work_type',
       'job_signal', 'hr_visible', 'photo_url', 'resume_url',

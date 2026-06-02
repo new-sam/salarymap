@@ -15,7 +15,12 @@ const EXCLUDED_COMPANIES = new Set([
   'secret', 'cant say', 'ẩn danh', 'tên công ty được giữ ẩn danh',
   'anonymous', 'hide', 'm*',
 ])
-const EXCLUDED_EMAIL_DOMAINS = ['likelion.net']
+const EXCLUDED_EMAIL_DOMAINS = ['likelion.net', 'dummy.local', 'system.local']
+
+// Banned/deactivated auth users (e.g. seed system account) should not count as signups
+function isBannedUser(user) {
+  return user.banned_until && new Date(user.banned_until) > new Date()
+}
 
 function isExcludedSubmission(sub) {
   if (sub.company && EXCLUDED_COMPANIES.has(sub.company.trim().toLowerCase())) return true
@@ -36,6 +41,7 @@ function dedupeSubmissions(subs) {
 
 function isExcludedSignup(user) {
   if (user.email && EXCLUDED_EMAIL_DOMAINS.some(d => user.email.endsWith('@' + d))) return true
+  if (isBannedUser(user)) return true
   return false
 }
 

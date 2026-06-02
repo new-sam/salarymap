@@ -3,7 +3,7 @@ import Link from 'next/link'
 import { supabase } from '../lib/supabaseClient'
 import { useT } from '../lib/i18n'
 
-export default function GlobalNav({ activePage, onLogin, onJobsClick }) {
+export default function GlobalNav({ activePage, onLogin, onJobsClick, mobileSearch }) {
   const { t } = useT()
   const [isLoggedIn, setIsLoggedIn] = useState(false)
   const [user, setUser] = useState(null)
@@ -114,12 +114,18 @@ export default function GlobalNav({ activePage, onLogin, onJobsClick }) {
         .gnav-toggle-opt { font-size: 11px; font-weight: 600; padding: 4px 12px; border-radius: 100px; cursor: pointer; border: none; background: none; color: rgba(255,255,255,0.3); font-family: 'Barlow', sans-serif; transition: all .2s; white-space: nowrap; }
         .gnav-toggle-opt.active { background: rgba(255,96,0,0.2); color: #ff6000; }
         .gnav-toggle-opt:hover:not(.active) { color: rgba(255,255,255,0.5); }
+        .gnav-r-mobile { display: none; }
         @media (max-width: 768px) {
           .gnav { position: fixed; top: 0; left: 0; right: 0; padding: 0 16px; height: 52px; }
           .gnav-logo span { display: none; }
           .gnav-logo img { width: 32px; height: 32px; }
           .gnav-r { display: none; }
+          .gnav-r-mobile { display: flex; align-items: center; gap: 10px; }
         }
+        .gnav-mobile-profile { display: flex; align-items: center; gap: 6px; padding: 4px 10px 4px 4px; border-radius: 100px; border: 1px solid rgba(255,255,255,0.12); cursor: pointer; text-decoration: none; background: none; }
+        .gnav-mobile-login { font-size: 12px; font-weight: 600; color: rgba(255,255,255,0.5); background: none; border: 1px solid rgba(255,255,255,0.15); padding: 6px 14px; border-radius: 100px; cursor: pointer; font-family: 'Barlow', sans-serif; }
+        .gnav-mobile-search-btn { display: flex; align-items: center; justify-content: center; width: 32px; height: 32px; border: none; background: none; cursor: pointer; padding: 0; }
+        .gnav-mobile-search-btn svg { width: 16px; height: 16px; color: rgba(255,255,255,0.5); }
       `}</style>
 
       <nav className="gnav">
@@ -129,6 +135,39 @@ export default function GlobalNav({ activePage, onLogin, onJobsClick }) {
             <span>FOR YOUR <span style={{ color: '#ff6000' }}>'SALARY'</span> INFORMATION</span>
           </Link>
         </div>
+        <div className="gnav-r-mobile">
+          {mobileSearch && (
+            <button className="gnav-mobile-search-btn" onClick={() => mobileSearch.onToggle()}>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+            </button>
+          )}
+          {!ready ? null : !isLoggedIn ? (
+            <button className="gnav-mobile-login" onClick={async () => {
+              if (onLogin) return onLogin();
+              if (typeof window === 'undefined') return;
+              localStorage.setItem('fyi_login_return', window.location.pathname);
+              if (window.location.hostname === 'localhost') {
+                await supabase.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: window.location.origin + '/auth/callback' } });
+              } else {
+                window.location.href = '/api/auth/google?return=' + encodeURIComponent(window.location.pathname);
+              }
+            }}>
+              {t('nav.login')}
+            </button>
+          ) : (
+            <div style={{ position: 'relative' }}>
+              <Link href="/profile" className="gnav-mobile-profile">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ color: 'rgba(255,255,255,0.6)' }}><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                {profileScore != null && profileScore < 100 && (
+                  <span className="gnav-score" style={{ color: profileScore >= 60 ? '#4ade80' : '#fbbf24', background: profileScore >= 60 ? 'rgba(74,222,128,0.1)' : 'rgba(251,191,36,0.1)' }}>{profileScore}%</span>
+                )}
+              </Link>
+              {!hasResume && activePage === 'home' && (
+                <a href="/profile" className="gnav-ai-bubble" style={{ pointerEvents: 'auto', textDecoration: 'none', color: '#fff' }}>✨ {t('nav.aiResume')}</a>
+              )}
+            </div>
+          )}
+        </div>
         <div className="gnav-r">
           {activePage === 'home' ? (
             <button className="gnav-link on" onClick={() => document.getElementById('submit')?.scrollIntoView({behavior:'smooth'})}>{t('nav.amIUnderpaid')}</button>
@@ -137,6 +176,9 @@ export default function GlobalNav({ activePage, onLogin, onJobsClick }) {
           )}
           {activePage === 'home' && (
             <button className="gnav-link" onClick={() => document.getElementById('companies')?.scrollIntoView({behavior:'smooth'})}>{t('nav.whoPaysMost')}</button>
+          )}
+          {isAdmin && (
+            <Link href="/community" className={`gnav-link${activePage === 'community' ? ' on' : ''}`}>Community</Link>
           )}
           {activePage !== 'jobs' && (
             <Link href="/jobs" className="gnav-link gnav-jobs-cta" onClick={() => onJobsClick?.()}>
@@ -203,19 +245,12 @@ export default function GlobalNav({ activePage, onLogin, onJobsClick }) {
               )}
             </div>
 
-            {!hasResume && !showMenu && (
+            {!hasResume && !showMenu && activePage === 'home' && (
               <a href="/profile" className="gnav-ai-bubble" onClick={e => e.stopPropagation()} style={{ pointerEvents: 'auto', textDecoration: 'none', color: '#fff' }}>✨ {t('nav.aiResume')}</a>
             )}
           </div>
           )}
 
-          {ready && !isSubmitted && (
-            activePage === 'home' ? (
-              <button className="gnav-submit" onClick={() => document.getElementById('submit')?.scrollIntoView({behavior:'smooth'})}>{t('nav.submitSalary')}</button>
-            ) : (
-              <Link href="/#submit" className="gnav-submit">{t('nav.submitSalary')}</Link>
-            )
-          )}
         </div>
       </nav>
     </>

@@ -235,7 +235,8 @@ export default function ProfilePage() {
   const [profile, setProfile] = useState(null)
   const [saving, setSaving] = useState(false)
   const [msg, setMsg] = useState(null)
-  const [tab, setTab] = useState('profile') // profile | salary
+  const [tab, setTab] = useState('profile') // profile | posts | employment | badges
+  const [isAdmin, setIsAdmin] = useState(false)
   const [showOnboard, setShowOnboard] = useState(false)
   const [showAlert, setShowAlert] = useState(null)
   const [submissions, setSubmissions] = useState([])
@@ -245,9 +246,19 @@ export default function ProfilePage() {
   const [showLeaveConfirm, setShowLeaveConfirm] = useState(false)
   const [sharingResume, setSharingResume] = useState(false)
   const [showPublishPrompt, setShowPublishPrompt] = useState(false)
+  const [myPosts, setMyPosts] = useState([])
+  const [myPostsLoading, setMyPostsLoading] = useState(false)
+  const [verifications, setVerifications] = useState([])
+  const [verificationsLoading, setVerificationsLoading] = useState(false)
+  const [verifyForm, setVerifyForm] = useState({ document_type: 'payslip', salary_amount: '' })
+  const [verifyUploading, setVerifyUploading] = useState(false)
+  const [verifyMsg, setVerifyMsg] = useState(null)
+  const [badges, setBadges] = useState([])
+  const [badgesLoading, setBadgesLoading] = useState(false)
   const pendingRoute = useRef(null)
   const photoRef = useRef(null)
   const resumeRef = useRef(null)
+  const salaryDocRef = useRef(null)
 
   // Form state
   const [form, setForm] = useState({})
@@ -257,6 +268,18 @@ export default function ProfilePage() {
   const df = (k) => { const a = form[k], b = initialForm[k]; const changed = typeof a === 'object' ? JSON.stringify(a) !== JSON.stringify(b) : a !== b; return changed && a ? ' dirty' : '' }
   const isDirtyRef = useRef(false)
   isDirtyRef.current = isDirty
+  const [showTabConfirm, setShowTabConfirm] = useState(false)
+  const pendingTab = useRef(null)
+
+  const handleTabChange = (newTab) => {
+    if (newTab === tab) return
+    if (isDirty && tab === 'profile') {
+      pendingTab.current = newTab
+      setShowTabConfirm(true)
+    } else {
+      setTab(newTab)
+    }
+  }
 
   // Browser tab close / refresh guard
   useEffect(() => {
@@ -284,6 +307,19 @@ export default function ProfilePage() {
       setUser(session.user)
       setToken(session.access_token)
 
+      // Admin check (cached) — community/posts gated to admins for now
+      const cachedAdmin = sessionStorage.getItem('fyi_is_admin')
+      if (cachedAdmin !== null) {
+        setIsAdmin(cachedAdmin === 'true')
+      } else {
+        try {
+          const r = await fetch(`/api/admin/check?email=${encodeURIComponent(session.user.email)}`)
+          const d = await r.json()
+          setIsAdmin(d.isAdmin)
+          sessionStorage.setItem('fyi_is_admin', String(d.isAdmin))
+        } catch {}
+      }
+
       // Fetch profile and submissions in parallel
       const [profileRes, subsResult] = await Promise.all([
         fetch('/api/profile/talent', { headers: { Authorization: `Bearer ${session.access_token}` } }),
@@ -296,6 +332,7 @@ export default function ProfilePage() {
           setProfile(p)
           const formData = {
             full_name: p.full_name || session.user.user_metadata?.full_name || '',
+            current_company: p.current_company || '',
             headline: p.headline || '',
             position: p.position || '',
             yoe_months: p.yoe_months ?? '',
@@ -361,6 +398,74 @@ export default function ProfilePage() {
       setLoading(false)
     })
   }, [])
+
+  useEffect(() => {
+    if (tab !== 'posts' || !token || myPosts.length > 0) return
+    setMyPostsLoading(true)
+    fetch('/api/community/posts?mine=1', { headers: { Authorization: `Bearer ${token}` } })
+      .then(r => r.json())
+      .then(d => setMyPosts(d.posts || []))
+      .catch(() => {})
+      .finally(() => setMyPostsLoading(false))
+  }, [tab, token])
+
+  useEffect(() => {
+    if (tab !== 'employment' || !token) return
+    setVerificationsLoading(true)
+    fetch('/api/salary-verification', { headers: { Authorization: `Bearer ${token}` } })
+      .then(r => r.json())
+      .then(d => setVerifications(d.verifications || []))
+      .catch(() => {})
+      .finally(() => setVerificationsLoading(false))
+  }, [tab, token])
+
+  useEffect(() => {
+    if (tab !== 'badges' || !token) return
+    setBadgesLoading(true)
+    fetch('/api/badges', { headers: { Authorization: `Bearer ${token}` } })
+      .then(r => r.json())
+      .then(d => setBadges(d.badges || []))
+      .catch(() => {})
+      .finally(() => setBadgesLoading(false))
+  }, [tab, token])
+
+  const handleVerifyUpload = async () => {
+    const file = salaryDocRef.current?.files?.[0]
+    if (!file) return
+    setVerifyUploading(true)
+    setVerifyMsg(null)
+    const fd = new FormData()
+    fd.append('file', file)
+    fd.append('document_type', verifyForm.document_type)
+    if (verifyForm.salary_amount) fd.append('salary_amount', String(parseInt(verifyForm.salary_amount) * 10000))
+    try {
+      const res = await fetch('/api/salary-verification/upload', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+        body: fd,
+      })
+      if (res.ok) {
+        const { verification } = await res.json()
+        setVerifications(prev => [verification, ...prev])
+        setVerifyMsg(t('profile.employment.success'))
+        salaryDocRef.current.value = ''
+        setVerifyForm({ document_type: 'payslip', salary_amount: '' })
+        setTimeout(() => setVerifyMsg(null), 3000)
+      }
+    } catch (e) {}
+    setVerifyUploading(false)
+  }
+
+  const handleToggleBadge = async (badgeType, currentActive) => {
+    const res = await fetch('/api/badges', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ badge_type: badgeType, is_active: !currentActive }),
+    })
+    if (res.ok) {
+      setBadges(prev => prev.map(b => b.badge_type === badgeType ? { ...b, is_active: !currentActive } : b))
+    }
+  }
 
   const handleSave = async () => {
     setSaving(true)
@@ -493,9 +598,23 @@ export default function ProfilePage() {
       <style>{`
         body { background: #fafafa; }
         .pw { max-width: 580px; margin: 0 auto; padding: 32px 20px 80px; font-family: 'Barlow', system-ui, sans-serif; }
-        .pw-tabs { display: flex; gap: 4px; margin-bottom: 24px; }
-        .pw-tab { font-size: 13px; font-weight: 600; color: rgba(0,0,0,0.35); background: none; border: none; padding: 8px 16px; border-radius: 8px; cursor: pointer; font-family: inherit; }
-        .pw-tab.on { color: #111; background: rgba(0,0,0,0.06); }
+        .pw-header { margin-bottom: 20px; display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+        .pw-header-left { flex: 1; min-width: 0; }
+        .pw-header-name { font-size: 22px; font-weight: 800; color: #111; margin: 0 0 4px; }
+        .pw-header-photo { width: 56px; height: 56px; border-radius: 50%; object-fit: cover; border: 2px solid rgba(0,0,0,0.08); flex-shrink: 0; }
+        .pw-header-photo-placeholder { width: 56px; height: 56px; border-radius: 50%; background: rgba(0,0,0,0.04); border: 2px solid rgba(0,0,0,0.08); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+        .pw-header-company { display: flex; align-items: center; gap: 6px; font-size: 14px; color: #888; }
+        .pw-header-company input { border: none; outline: none; font-size: 14px; color: #888; font-family: inherit; background: none; padding: 0; width: 200px; }
+        .pw-header-company input::placeholder { color: #ccc; }
+        .pw-header-company input:focus { color: #111; }
+        .pw-tabs { display: flex; gap: 0; margin-bottom: 24px; border-bottom: 1px solid rgba(0,0,0,0.08); }
+        .pw-tab { font-size: 13px; font-weight: 600; color: rgba(0,0,0,0.35); background: none; border: none; padding: 12px 12px; cursor: pointer; font-family: inherit; position: relative; white-space: nowrap; }
+        .pw-tab.on { color: #111; }
+        .pw-tab.on::after { content: ''; position: absolute; bottom: -1px; left: 0; right: 0; height: 2px; background: #ff6000; }
+        .pw-post-item { display: block; padding: 14px 0; border-bottom: 1px solid rgba(0,0,0,0.06); text-decoration: none; }
+        .pw-post-item:last-child { border-bottom: none; }
+        .pw-post-title { font-size: 14px; font-weight: 600; color: #111; margin-bottom: 4px; }
+        .pw-post-meta { font-size: 12px; color: #aaa; display: flex; gap: 10px; }
         .pcard { background: #fff; border: 1px solid rgba(0,0,0,0.06); border-radius: 12px; padding: 24px; margin-bottom: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
         .pcard-h { font-size: 13px; font-weight: 700; color: rgba(0,0,0,0.6); letter-spacing: .02em; margin-bottom: 16px; }
         .pfield { margin-bottom: 16px; }
@@ -530,7 +649,7 @@ export default function ProfilePage() {
         .ptoggle-switch.on { background: #ff6000; }
         .ptoggle-switch::after { content: ''; width: 18px; height: 18px; border-radius: 50%; background: #fff; position: absolute; top: 3px; left: 3px; transition: transform .2s; box-shadow: 0 1px 3px rgba(0,0,0,0.15); }
         .ptoggle-switch.on::after { transform: translateX(20px); }
-        .pinline { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        .pinline { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px; }
         @media (max-width: 500px) { .pinline { grid-template-columns: 1fr; } }
         .plist-item { background: rgba(0,0,0,0.02); border: 1px solid rgba(0,0,0,0.05); border-radius: 10px; padding: 16px; margin-bottom: 12px; }
         .plist-item:last-of-type { margin-bottom: 0; }
@@ -554,21 +673,45 @@ export default function ProfilePage() {
       <GlobalNav activePage="profile" />
 
       <div className="pw">
+        {/* Header */}
+        <div className="pw-header">
+          <div className="pw-header-left">
+            <h1 className="pw-header-name">{form.full_name || user?.user_metadata?.full_name || ''}</h1>
+            <div className="pw-header-company">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>
+              <input
+                value={form.current_company || ''}
+                onChange={e => set('current_company', e.target.value)}
+                placeholder={t('profile.companyPlaceholder') || '재직 회사를 입력하세요'}
+              />
+            </div>
+          </div>
+          {form.photo_url ? (
+            <img src={form.photo_url} className="pw-header-photo" alt="" />
+          ) : (
+            <div className="pw-header-photo-placeholder">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="rgba(0,0,0,0.2)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+            </div>
+          )}
+        </div>
+
         {/* Tabs */}
         <div className="pw-tabs">
-          <button className={`pw-tab${tab === 'profile' ? ' on' : ''}`} onClick={() => setTab('profile')}>{t('profile.tab.talent')}</button>
-          <button className={`pw-tab${tab === 'salary' ? ' on' : ''}`} onClick={() => setTab('salary')}>{t('profile.tab.salary')}</button>
+          <button className={`pw-tab${tab === 'profile' ? ' on' : ''}`} onClick={() => handleTabChange('profile')}>{t('profile.tab.talent')}</button>
+          {isAdmin && (
+            <button className={`pw-tab${tab === 'posts' ? ' on' : ''}`} onClick={() => handleTabChange('posts')}>{t('profile.tab.posts') || '내 게시물'}</button>
+          )}
+          <button className={`pw-tab${tab === 'employment' ? ' on' : ''}`} onClick={() => handleTabChange('employment')}>{t('profile.tab.employment') || '재직정보'}</button>
+          <button className={`pw-tab${tab === 'badges' ? ' on' : ''}`} onClick={() => handleTabChange('badges')}>{t('profile.tab.badges') || '뱃지'}</button>
         </div>
 
         {tab === 'profile' && (<>
-          {/* HR Visibility Banner */}
-          <div className="phr-banner">
-            <div style={{ display: 'flex', alignItems: 'start', justifyContent: 'space-between', gap: 16 }}>
+          {/* HR + Job Signal + Work Type — single card */}
+          <div className="pcard">
+            <div style={{ display: 'flex', alignItems: 'start', justifyContent: 'space-between', gap: 12, marginBottom: 16 }}>
               <div>
-                <div style={{ fontSize: 14, fontWeight: 700, color: '#111', marginBottom: 4 }}>{t('profile.hr.title')}</div>
-                <div style={{ fontSize: 12, color: 'rgba(0,0,0,0.45)', lineHeight: 1.5 }}>
-                  {t('profile.hr.desc')}
-                </div>
+                <div style={{ fontSize: 14, fontWeight: 700, color: '#111', marginBottom: 2 }}>{t('profile.hr.title')}</div>
+                <div style={{ fontSize: 11, color: 'rgba(0,0,0,0.4)', lineHeight: 1.4 }}>{t('profile.hr.desc')}</div>
               </div>
               <button className={`ptoggle-switch${form.hr_visible ? ' on' : ''}`} onClick={() => {
                 if (score < 60 && !form.hr_visible) {
@@ -578,40 +721,38 @@ export default function ProfilePage() {
                 set('hr_visible', !form.hr_visible)
               }} />
             </div>
-          </div>
-
-          {/* Job Signal */}
-          <div className="pcard">
-            <div className="pcard-h">{t('profile.signal')}</div>
-            <div className="psignal">
-              {['active','open','passive'].map(v => {
-                const isOn = form.job_signal === v
-                const icon = v === 'active' ? (
-                  <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-                    <circle cx="7" cy="7" r="5.5" stroke={isOn ? '#16a34a' : 'rgba(0,0,0,0.2)'} strokeWidth="1.5"/>
-                    <circle cx="7" cy="7" r="3" fill={isOn ? '#16a34a' : 'rgba(0,0,0,0.1)'}/>
-                  </svg>
-                ) : v === 'open' ? (
-                  <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-                    <circle cx="7" cy="7" r="5.5" stroke={isOn ? '#f59e0b' : 'rgba(0,0,0,0.2)'} strokeWidth="1.5"/>
-                    <path d="M7 4v3.5" stroke={isOn ? '#f59e0b' : 'rgba(0,0,0,0.15)'} strokeWidth="1.5" strokeLinecap="round"/>
-                    <circle cx="7" cy="10" r="0.75" fill={isOn ? '#f59e0b' : 'rgba(0,0,0,0.15)'}/>
-                  </svg>
-                ) : (
-                  <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-                    <circle cx="7" cy="7" r="5.5" stroke={isOn ? '#ff6000' : 'rgba(0,0,0,0.2)'} strokeWidth="1.5"/>
-                    <path d="M5 5l4 4M9 5l-4 4" stroke={isOn ? '#ff6000' : 'rgba(0,0,0,0.15)'} strokeWidth="1.3" strokeLinecap="round"/>
-                  </svg>
-                )
-                return (
-                  <button key={v} className={`psignal-btn${isOn ? ' on' : ''}`} onClick={() => set('job_signal', v)}>
-                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>{icon} {t(`profile.signal.${v}`)}</span>
-                  </button>
-                )
-              })}
+            <div style={{ borderTop: '1px solid rgba(0,0,0,0.06)', paddingTop: 14 }}>
+              <div style={{ fontSize: 12, fontWeight: 700, color: 'rgba(0,0,0,0.4)', marginBottom: 8 }}>{t('profile.signal')}</div>
+              <div className="psignal">
+                {['active','open','passive'].map(v => {
+                  const isOn = form.job_signal === v
+                  const icon = v === 'active' ? (
+                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                      <circle cx="7" cy="7" r="5.5" stroke={isOn ? '#16a34a' : 'rgba(0,0,0,0.2)'} strokeWidth="1.5"/>
+                      <circle cx="7" cy="7" r="3" fill={isOn ? '#16a34a' : 'rgba(0,0,0,0.1)'}/>
+                    </svg>
+                  ) : v === 'open' ? (
+                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                      <circle cx="7" cy="7" r="5.5" stroke={isOn ? '#f59e0b' : 'rgba(0,0,0,0.2)'} strokeWidth="1.5"/>
+                      <path d="M7 4v3.5" stroke={isOn ? '#f59e0b' : 'rgba(0,0,0,0.15)'} strokeWidth="1.5" strokeLinecap="round"/>
+                      <circle cx="7" cy="10" r="0.75" fill={isOn ? '#f59e0b' : 'rgba(0,0,0,0.15)'}/>
+                    </svg>
+                  ) : (
+                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                      <circle cx="7" cy="7" r="5.5" stroke={isOn ? '#ff6000' : 'rgba(0,0,0,0.2)'} strokeWidth="1.5"/>
+                      <path d="M5 5l4 4M9 5l-4 4" stroke={isOn ? '#ff6000' : 'rgba(0,0,0,0.15)'} strokeWidth="1.3" strokeLinecap="round"/>
+                    </svg>
+                  )
+                  return (
+                    <button key={v} className={`psignal-btn${isOn ? ' on' : ''}`} onClick={() => set('job_signal', v)}>
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>{icon} {t(`profile.signal.${v}`)}</span>
+                    </button>
+                  )
+                })}
+              </div>
             </div>
             {form.job_signal && form.job_signal !== 'passive' && (
-              <div style={{ marginTop: 16, paddingTop: 16, borderTop: '1px solid rgba(0,0,0,0.06)' }}>
+              <div style={{ marginTop: 14, paddingTop: 14, borderTop: '1px solid rgba(0,0,0,0.06)' }}>
                 <div className="pinline">
                   <div className="pfield">
                     <div className="pfield-label">{t('profile.position')}</div>
@@ -634,24 +775,22 @@ export default function ProfilePage() {
                 </div>
               </div>
             )}
-          </div>
-
-          {/* Work Type Preference */}
-          <div className="pcard">
-            <div className="pcard-h">{t('profile.worktype.title')}</div>
-            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-              {['All', 'Remote', 'On-site'].map(v => {
-                const isOn = form.work_type === v
-                return (
-                  <button key={v} onClick={() => set('work_type', isOn ? '' : v)} style={{
-                    padding: '8px 16px', borderRadius: 20, border: isOn ? '1.5px solid #ff6000' : '1.5px solid rgba(0,0,0,0.1)',
-                    background: isOn ? 'rgba(255,96,0,0.06)' : '#fff', color: isOn ? '#ff6000' : 'rgba(0,0,0,0.5)',
-                    fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', transition: 'all .15s',
-                  }}>
-                    {t(`profile.worktype.${v.toLowerCase()}`)}
-                  </button>
-                )
-              })}
+            <div style={{ borderTop: '1px solid rgba(0,0,0,0.06)', paddingTop: 14, marginTop: 14 }}>
+              <div style={{ fontSize: 12, fontWeight: 700, color: 'rgba(0,0,0,0.4)', marginBottom: 8 }}>{t('profile.worktype.title')}</div>
+              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                {['All', 'Remote', 'On-site'].map(v => {
+                  const isOn = form.work_type === v
+                  return (
+                    <button key={v} onClick={() => set('work_type', isOn ? '' : v)} style={{
+                      padding: '8px 16px', borderRadius: 20, border: isOn ? '1.5px solid #ff6000' : '1.5px solid rgba(0,0,0,0.1)',
+                      background: isOn ? 'rgba(255,96,0,0.06)' : '#fff', color: isOn ? '#ff6000' : 'rgba(0,0,0,0.5)',
+                      fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', transition: 'all .15s',
+                    }}>
+                      {t(`profile.worktype.${v.toLowerCase()}`)}
+                    </button>
+                  )
+                })}
+              </div>
             </div>
           </div>
 
@@ -669,7 +808,6 @@ export default function ProfilePage() {
           </div>
 
           {msg && <div className="pmsg">{msg}</div>}
-
           <div className="pcard" style={{ position: 'relative', overflow: 'visible' }}>
             <div className="pcard-h">{t('profile.resume')}</div>
             {!form.resume_url && !aiParsing && (
@@ -903,50 +1041,187 @@ export default function ProfilePage() {
             )}
           </div>
 
+          {msg && <div className="pmsg">{msg}</div>}
         </>)}
 
-        {tab === 'salary' && (<>
-          {/* Salary tab — existing content */}
-          {percentile && (
-            <div style={{ background: '#fff', borderRadius: 12, padding: '28px 24px', marginBottom: 16, textAlign: 'center', border: '1px solid rgba(0,0,0,0.06)', boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
-              <div style={{ fontSize: 11, fontWeight: 700, color: 'rgba(0,0,0,0.35)', textTransform: 'uppercase', letterSpacing: '.06em', marginBottom: 8 }}>{t('profile.salary.where')}</div>
-              <div><span style={{ fontSize: 42, fontWeight: 800, color: '#111' }}>Top </span><span style={{ fontSize: 42, fontWeight: 800, color: '#ff6000' }}>{percentile.percentile}%</span></div>
-              <div style={{ fontSize: 13, color: 'rgba(0,0,0,0.45)', marginBottom: 20 }}>Among {submissions[0]?.role} with {submissions[0]?.experience} experience</div>
-              <div style={{ display: 'flex', justifyContent: 'center', gap: 16 }}>
-                {[{ l: 'You', v: `${percentile.userSalary}M`, c: '#111' }, { l: 'Median', v: `${percentile.marketMedian}M`, c: 'rgba(0,0,0,0.45)' }, { l: 'Diff', v: `${percentile.diff >= 0 ? '+' : ''}${percentile.diff}M`, c: percentile.diff >= 0 ? '#16a34a' : '#dc2626' }].map((d, i) => (
-                  <div key={i} style={{ background: 'rgba(0,0,0,0.03)', borderRadius: 8, padding: '10px 18px' }}>
-                    <div style={{ fontSize: 10, color: 'rgba(0,0,0,0.35)', textTransform: 'uppercase', marginBottom: 2 }}>{d.l}</div>
-                    <div style={{ fontSize: 18, fontWeight: 800, color: d.c }}>{d.v}</div>
-                  </div>
-                ))}
-              </div>
+        {tab === 'posts' && (<>
+          {myPostsLoading ? (
+            <div style={{ textAlign: 'center', padding: '40px 20px', color: '#bbb', fontSize: 14 }}>Loading...</div>
+          ) : myPosts.length === 0 ? (
+            <div className="pcard" style={{ textAlign: 'center', padding: '40px 24px' }}>
+              <div style={{ fontSize: 14, color: 'rgba(0,0,0,0.35)' }}>{t('comm.empty') || '게시물이 없습니다'}</div>
+              <a href="/community" style={{ fontSize: 13, color: '#ff6000', marginTop: 8, display: 'inline-block' }}>{t('comm.write') || '글쓰기'}</a>
             </div>
-          )}
-
-          {submissions.length > 0 && (
+          ) : (
             <div className="pcard">
-              <div className="pcard-h">My Submissions ({submissions.length})</div>
-              {submissions.map((sub, i) => (
-                <div key={sub.id} style={{ padding: '14px 0', borderBottom: i < submissions.length - 1 ? '1px solid rgba(0,0,0,0.05)' : 'none', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
-                  <div>
-                    <div style={{ fontSize: 14, fontWeight: 600, color: '#111' }}>{sub.role} · {sub.experience}</div>
-                    <div style={{ fontSize: 13, color: 'rgba(0,0,0,0.4)' }}>{sub.company || '—'}</div>
+              {myPosts.map(post => (
+                <a key={post.id} href={`/community/${post.id}`} className="pw-post-item">
+                  <div className="pw-post-title">{post.title}</div>
+                  <div className="pw-post-meta">
+                    <span>{new Date(post.created_at).toLocaleDateString()}</span>
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3 }}><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg> {post.like_count || 0}</span>
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3 }}><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg> {post.comment_count || 0}</span>
                   </div>
-                  <div style={{ textAlign: 'right' }}>
-                    <div style={{ fontSize: 16, fontWeight: 800, color: '#ff6000' }}>{sub.salary}M VND</div>
-                    <div style={{ fontSize: 11, color: 'rgba(0,0,0,0.3)' }}>{new Date(sub.created_at).toLocaleDateString()}</div>
-                  </div>
-                </div>
+                </a>
               ))}
             </div>
           )}
+        </>)}
 
-          {submissions.length === 0 && (
-            <div className="pcard" style={{ textAlign: 'center', padding: '40px 24px' }}>
-              <div style={{ fontSize: 14, color: 'rgba(0,0,0,0.35)' }}>{t('profile.salary.none')}</div>
-              <a href="/#submit" style={{ fontSize: 13, color: '#ff6000', marginTop: 8, display: 'inline-block' }}>{t('profile.salary.submit')}</a>
+        {tab === 'employment' && (<>
+          <div className="pcard">
+            <div className="pcard-h">{t('profile.employment.title')}</div>
+            <div style={{ fontSize: 13, color: 'rgba(0,0,0,0.5)', lineHeight: 1.6, marginBottom: 20 }}>
+              {t('profile.employment.desc')}
             </div>
-          )}
+
+            {/* Document Type */}
+            <div className="pfield">
+              <div className="pfield-label">{t('profile.employment.docType')}</div>
+              <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                {['payslip', 'contract', 'tax_return', 'other'].map(dt => (
+                  <button key={dt} type="button"
+                    className={`psignal-btn${verifyForm.document_type === dt ? ' on' : ''}`}
+                    style={{ minWidth: 'auto', flex: 'none', padding: '8px 14px' }}
+                    onClick={() => setVerifyForm(prev => ({ ...prev, document_type: dt }))}>
+                    {t(`profile.employment.docType.${dt}`)}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Salary Amount */}
+            <div className="pfield">
+              <div className="pfield-label">{t('profile.employment.salary')}</div>
+              <input className="pinput" type="number" value={verifyForm.salary_amount}
+                onChange={e => setVerifyForm(prev => ({ ...prev, salary_amount: e.target.value }))}
+                placeholder={t('profile.employment.salaryPh')} />
+            </div>
+
+            {/* File Upload */}
+            <div className="pfield">
+              <div className="pfield-label">{t('profile.employment.upload')}</div>
+              <input ref={salaryDocRef} type="file" accept=".pdf,.jpg,.jpeg,.png"
+                style={{ display: 'none' }} />
+              <button type="button" className="presume-upload-btn" onClick={() => salaryDocRef.current?.click()}>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#ff6000" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
+                </svg>
+                {t('profile.employment.upload')}
+              </button>
+              <div style={{ fontSize: 11, color: 'rgba(0,0,0,0.35)', marginTop: 6 }}>{t('profile.employment.uploadHint')}</div>
+            </div>
+
+            {verifyMsg && <div className="pmsg" style={{ background: 'rgba(34,197,94,0.08)', color: '#16a34a', border: '1px solid rgba(34,197,94,0.2)' }}>{verifyMsg}</div>}
+
+            <button type="button" onClick={handleVerifyUpload} disabled={verifyUploading}
+              style={{ width: '100%', padding: 14, borderRadius: 10, border: 'none', background: '#ff6000', color: '#fff', fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', opacity: verifyUploading ? 0.5 : 1 }}>
+              {verifyUploading ? t('profile.employment.submitting') : t('profile.employment.submit')}
+            </button>
+          </div>
+
+          {/* Verification History */}
+          <div className="pcard">
+            <div className="pcard-h">{t('profile.employment.history')}</div>
+            {verificationsLoading ? (
+              <div style={{ textAlign: 'center', padding: '20px 0', color: '#bbb', fontSize: 13 }}>Loading...</div>
+            ) : verifications.length === 0 ? (
+              <div style={{ textAlign: 'center', padding: '20px 0', color: 'rgba(0,0,0,0.3)', fontSize: 13 }}>{t('profile.employment.noHistory')}</div>
+            ) : (
+              <div>
+                {verifications.map(v => (
+                  <div key={v.id} style={{ padding: '14px 0', borderBottom: '1px solid rgba(0,0,0,0.06)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div>
+                      <div style={{ fontSize: 13, fontWeight: 600, color: '#111' }}>
+                        {t(`profile.employment.docType.${v.document_type}`)}
+                        {v.salary_amount ? ` — ${(v.salary_amount / 10000).toLocaleString()}만원` : ''}
+                      </div>
+                      <div style={{ fontSize: 11, color: 'rgba(0,0,0,0.35)', marginTop: 2 }}>
+                        {new Date(v.created_at).toLocaleDateString()}
+                      </div>
+                      {v.admin_note && (
+                        <div style={{ fontSize: 11, color: 'rgba(0,0,0,0.4)', marginTop: 4, fontStyle: 'italic' }}>{v.admin_note}</div>
+                      )}
+                    </div>
+                    <span style={{
+                      fontSize: 11, fontWeight: 700, padding: '4px 10px', borderRadius: 20,
+                      ...(v.status === 'pending' ? { background: 'rgba(245,158,11,0.1)', color: '#d97706' }
+                        : v.status === 'approved' ? { background: 'rgba(34,197,94,0.1)', color: '#16a34a' }
+                        : { background: 'rgba(239,68,68,0.1)', color: '#dc2626' })
+                    }}>
+                      {t(`profile.employment.status.${v.status}`)}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </>)}
+
+        {tab === 'badges' && (<>
+          <div className="pcard">
+            <div className="pcard-h">{t('profile.badges.title')}</div>
+            <div style={{ fontSize: 13, color: 'rgba(0,0,0,0.5)', lineHeight: 1.6, marginBottom: 20 }}>
+              {t('profile.badges.desc')}
+            </div>
+
+            {badgesLoading ? (
+              <div style={{ textAlign: 'center', padding: '20px 0', color: '#bbb', fontSize: 13 }}>Loading...</div>
+            ) : badges.length === 0 ? (
+              <div style={{ textAlign: 'center', padding: '40px 20px' }}>
+                <div style={{ width: 56, height: 56, borderRadius: '50%', background: 'rgba(0,0,0,0.04)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="rgba(0,0,0,0.2)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <circle cx="12" cy="8" r="6"/><path d="M15.477 12.89L17 22l-5-3-5 3 1.523-9.11"/>
+                  </svg>
+                </div>
+                <div style={{ fontSize: 14, color: 'rgba(0,0,0,0.35)', marginBottom: 4 }}>{t('profile.badges.noBadges')}</div>
+                <div style={{ fontSize: 12, color: 'rgba(0,0,0,0.25)', lineHeight: 1.5 }}>{t('profile.badges.noBadgesHint')}</div>
+                <button type="button" onClick={() => setTab('employment')}
+                  style={{ marginTop: 16, padding: '10px 20px', borderRadius: 8, border: '1px solid rgba(255,96,0,0.3)', background: 'rgba(255,96,0,0.04)', color: '#ff6000', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>
+                  {t('profile.tab.employment')}
+                </button>
+              </div>
+            ) : (
+              <div>
+                {badges.map(badge => (
+                  <div key={badge.id} style={{
+                    padding: 16, borderRadius: 12, border: '1px solid rgba(0,0,0,0.06)', background: badge.is_active ? 'rgba(255,96,0,0.04)' : '#fff',
+                    display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, marginBottom: 12,
+                  }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                      <div style={{
+                        width: 44, height: 44, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        background: badge.badge_type === 'high_salary' ? 'linear-gradient(135deg, #ff6000, #ff8c00)' : 'rgba(0,0,0,0.06)',
+                      }}>
+                        {badge.badge_type === 'high_salary' && (
+                          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <circle cx="12" cy="8" r="6"/><path d="M15.477 12.89L17 22l-5-3-5 3 1.523-9.11"/>
+                          </svg>
+                        )}
+                      </div>
+                      <div>
+                        <div style={{ fontSize: 14, fontWeight: 700, color: '#111' }}>
+                          {badge.badge_type === 'high_salary' ? t('profile.badges.highSalary') : badge.badge_type}
+                        </div>
+                        <div style={{ fontSize: 11, color: 'rgba(0,0,0,0.4)', marginTop: 2 }}>
+                          {badge.badge_type === 'high_salary' ? t('profile.badges.highSalaryDesc') : ''}
+                        </div>
+                      </div>
+                    </div>
+                    <button type="button" onClick={() => handleToggleBadge(badge.badge_type, badge.is_active)}
+                      style={{
+                        padding: '8px 16px', borderRadius: 8, border: 'none', cursor: 'pointer', fontFamily: 'inherit', fontSize: 12, fontWeight: 700,
+                        ...(badge.is_active
+                          ? { background: '#ff6000', color: '#fff' }
+                          : { background: 'rgba(0,0,0,0.06)', color: 'rgba(0,0,0,0.5)' }),
+                      }}>
+                      {badge.is_active ? t('profile.badges.active') : t('profile.badges.activate')}
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         </>)}
 
         {/* Logout — mobile only */}
@@ -1030,6 +1305,25 @@ export default function ProfilePage() {
                 {t('profile.leave.no')}
               </button>
               <button onClick={async () => { setShowLeaveConfirm(false); await handleSave(); router.push(pendingRoute.current) }}
+                style={{ flex: 1, padding: 11, borderRadius: 8, border: 'none', background: '#ff6000', color: '#fff', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>
+                {t('profile.leave.yes')}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showTabConfirm && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.3)', zIndex: 1100, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
+          <div style={{ background: '#fff', borderRadius: 16, maxWidth: 340, width: '100%', padding: '28px 24px', textAlign: 'center', fontFamily: "'Barlow', system-ui", boxShadow: '0 20px 60px rgba(0,0,0,0.15)' }}>
+            <div style={{ fontSize: 15, fontWeight: 700, color: '#111', marginBottom: 6 }}>{t('profile.leave.title')}</div>
+            <div style={{ fontSize: 13, color: 'rgba(0,0,0,0.45)', marginBottom: 20, lineHeight: 1.5 }}>{t('profile.leave.desc')}</div>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button onClick={() => { setShowTabConfirm(false); setForm({ ...initialForm }); setTab(pendingTab.current) }}
+                style={{ flex: 1, padding: 11, borderRadius: 8, border: '1px solid rgba(0,0,0,0.1)', background: '#fff', color: '#111', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>
+                {t('profile.leave.no')}
+              </button>
+              <button onClick={async () => { setShowTabConfirm(false); await handleSave(); setTab(pendingTab.current) }}
                 style={{ flex: 1, padding: 11, borderRadius: 8, border: 'none', background: '#ff6000', color: '#fff', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>
                 {t('profile.leave.yes')}
               </button>

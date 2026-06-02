@@ -423,6 +423,9 @@ export default function JobsPage() {
         applicantCompany: userCompany,
         applicantEmail: session.user.email,
         applicantName: session.user.user_metadata?.full_name || '',
+        utmSource: router.query.utm_source || null,
+        utmMedium: router.query.utm_medium || null,
+        utmCampaign: router.query.utm_campaign || null,
       }),
     })
     if (!applyRes.ok) {
