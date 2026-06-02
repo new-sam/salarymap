@@ -24,7 +24,7 @@ export default async function handler(req, res) {
     const status = req.query.status || 'pending'
     let query = supabase
       .from('salary_verifications')
-      .select('*, user:user_id(email, raw_user_meta_data)')
+      .select('*')
       .order('created_at', { ascending: false })
 
     if (status !== 'all') {
