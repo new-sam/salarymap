@@ -556,7 +556,7 @@ export default function AdminDashboard() {
                   </label>
                   <input type="text" value={expForm.title} placeholder={t.expPlaceholder}
                     onChange={e => setExpForm(f => ({ ...f, title: e.target.value }))}
-                    onKeyDown={e => e.key === 'Enter' && addExperiment()}
+                    onKeyDown={e => { if (e.key === 'Enter' && !e.nativeEvent.isComposing) addExperiment() }}
                     style={{ ...inputStyle, flex: 1 }} />
                   <div style={{ display: 'flex', gap: 4 }}>
                     {EXP_COLORS.map(c => (
@@ -598,7 +598,7 @@ export default function AdminDashboard() {
                           <input type="date" value={editingExp.date} onChange={e => setEditingExp(f => ({ ...f, date: e.target.value }))}
                             style={{ ...inputStyle, width: 140 }} />
                           <input type="text" value={editingExp.title} onChange={e => setEditingExp(f => ({ ...f, title: e.target.value }))}
-                            onKeyDown={e => e.key === 'Enter' && updateExperiment()}
+                            onKeyDown={e => { if (e.key === 'Enter' && !e.nativeEvent.isComposing) updateExperiment() }}
                             style={{ ...inputStyle, flex: 1 }} />
                           <div style={{ display: 'flex', gap: 3 }}>
                             {EXP_COLORS.map(c => (

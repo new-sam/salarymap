@@ -425,7 +425,7 @@ export default function CommunityPage() {
                 placeholder={t('comm.searchPlaceholder')}
                 value={searchInput}
                 onChange={e => setSearchInput(e.target.value)}
-                onKeyDown={e => { if (e.key === 'Enter') { setSearch(searchInput); setPage(1) } }}
+                onKeyDown={e => { if (e.key === 'Enter' && !e.nativeEvent.isComposing) { setSearch(searchInput); setPage(1) } }}
               />
               {searchInput && (
                 <button className="comm-search-clear" onClick={() => { setSearchInput(''); setSearch(''); setPage(1) }}>×</button>
@@ -546,7 +546,7 @@ export default function CommunityPage() {
               placeholder={t('comm.searchPlaceholder')}
               value={mobileSearchInput}
               onChange={e => setMobileSearchInput(e.target.value)}
-              onKeyDown={e => { if (e.key === 'Enter' && mobileSearchInput.trim()) setMobileSearchQuery(mobileSearchInput.trim()) }}
+              onKeyDown={e => { if (e.key === 'Enter' && !e.nativeEvent.isComposing && mobileSearchInput.trim()) setMobileSearchQuery(mobileSearchInput.trim()) }}
             />
             {mobileSearchInput && (
               <button className="comm-ms-clear" onClick={() => { setMobileSearchInput(''); setMobileSearchQuery(''); setMobileSearchResults([]); mobileSearchRef.current?.focus() }}>×</button>

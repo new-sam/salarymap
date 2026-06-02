@@ -471,7 +471,7 @@ export default function AdminJobs() {
                 placeholder="email@example.com"
                 value={newAdminEmail}
                 onChange={e => setNewAdminEmail(e.target.value)}
-                onKeyDown={e => e.key === 'Enter' && handleAddAdmin()}
+                onKeyDown={e => { if (e.key === 'Enter' && !e.nativeEvent.isComposing) handleAddAdmin() }}
                 style={{ ...S.inp, flex: 1 }}
               />
               <button style={S.btnP} onClick={handleAddAdmin} disabled={!newAdminEmail.includes('@')}>

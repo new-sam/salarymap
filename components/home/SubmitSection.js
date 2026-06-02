@@ -33,7 +33,7 @@ function SubmitSection({
   const salPct = Math.round(((sal - 5) / (200 - 5)) * 100);
 
   const handleSubmit = async () => {
-    if (!wCompany.trim()) return;
+    if (!wCompany.trim() || submitting) return;
     setSubmitting(true);
     await onSubmit();
     setSubmitting(false);
@@ -352,7 +352,7 @@ function SubmitSection({
                       onKeyDown={e => {
                         if (e.key === 'ArrowDown') { e.preventDefault(); setAcHighlight(h => Math.min(h + 1, acResults.length - 1)); }
                         else if (e.key === 'ArrowUp') { e.preventDefault(); setAcHighlight(h => Math.max(h - 1, -1)); }
-                        else if (e.key === 'Enter') { e.preventDefault(); if (acHighlight >= 0 && acResults[acHighlight]) selectCompany(acResults[acHighlight]); else if (wCompany.trim()) { setAcOpen(false); handleSubmit(); } }
+                        else if (e.key === 'Enter' && !e.nativeEvent.isComposing) { e.preventDefault(); if (acHighlight >= 0 && acResults[acHighlight]) selectCompany(acResults[acHighlight]); else if (wCompany.trim()) { setAcOpen(false); handleSubmit(); } }
                         else if (e.key === 'Escape') setAcOpen(false);
                       }}
                       autoFocus autoComplete="off"

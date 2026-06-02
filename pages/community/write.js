@@ -31,7 +31,7 @@ export default function CommunityWritePage() {
   }, [])
 
   const handleSubmit = async () => {
-    if (!title.trim() || !content.trim() || !session) return
+    if (!title.trim() || !content.trim() || !session || submitting) return
     setSubmitting(true)
     try {
       const res = await fetch('/api/community/posts', {
