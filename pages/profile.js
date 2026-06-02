@@ -439,7 +439,7 @@ export default function ProfilePage() {
     const fd = new FormData()
     fd.append('file', file)
     fd.append('document_type', verifyForm.document_type)
-    if (verifyForm.salary_amount) fd.append('salary_amount', String(parseInt(verifyForm.salary_amount) * 10000))
+    if (verifyForm.salary_amount) fd.append('salary_amount', String(parseInt(verifyForm.salary_amount) * 1000000))
     try {
       const res = await fetch('/api/salary-verification/upload', {
         method: 'POST',
@@ -1136,7 +1136,7 @@ export default function ProfilePage() {
                     <div>
                       <div style={{ fontSize: 13, fontWeight: 600, color: '#111' }}>
                         {t(`profile.employment.docType.${v.document_type}`)}
-                        {v.salary_amount ? ` — ${(v.salary_amount / 10000).toLocaleString()}만원` : ''}
+                        {v.salary_amount ? ` — ${(v.salary_amount / 1000000).toLocaleString()} ${t('salary.unitMonthly')}` : ''}
                       </div>
                       <div style={{ fontSize: 11, color: 'rgba(0,0,0,0.35)', marginTop: 2 }}>
                         {new Date(v.created_at).toLocaleDateString()}

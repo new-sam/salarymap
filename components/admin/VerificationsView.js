@@ -20,7 +20,7 @@ export default function VerificationsView({ token }) {
   const [filter, setFilter] = useState('pending')
   const [actionLoading, setActionLoading] = useState(null)
   const [noteInput, setNoteInput] = useState({})
-  const [salaryInput, setSalaryInput] = useState({}) // per-id, in 만원
+  const [salaryInput, setSalaryInput] = useState({}) // per-id, monthly in 백만 VND (triệu)
 
   const fetchData = async () => {
     setLoading(true)
@@ -31,11 +31,11 @@ export default function VerificationsView({ token }) {
       if (res.ok) {
         const { verifications: data } = await res.json()
         setVerifications(data)
-        // Prefill the salary input with the user-submitted amount (converted to 만원).
+        // Prefill the salary input with the user-submitted amount (converted to 백만 VND).
         setSalaryInput(prev => {
           const next = { ...prev }
           data.forEach(v => {
-            if (next[v.id] === undefined && v.salary_amount) next[v.id] = String(Math.round(v.salary_amount / 10000))
+            if (next[v.id] === undefined && v.salary_amount) next[v.id] = String(Math.round(v.salary_amount / 1000000))
           })
           return next
         })
@@ -49,22 +49,22 @@ export default function VerificationsView({ token }) {
   useEffect(() => { fetchData() }, [token, filter])
 
   const handleAction = async (id, status) => {
-    // Approval requires an admin-entered salary amount (만원) → stored as won.
-    let salaryWon = null
+    // Approval requires an admin-entered monthly salary (백만 VND / triệu) → stored as VND.
+    let salaryVnd = null
     if (status === 'approved') {
-      const man = parseInt(salaryInput[id], 10)
-      if (!man || man <= 0) {
-        alert('연봉 금액(만원)을 입력해야 승인할 수 있습니다.')
+      const trieu = parseInt(salaryInput[id], 10)
+      if (!trieu || trieu <= 0) {
+        alert('월급(백만 VND)을 입력해야 승인할 수 있습니다.')
         return
       }
-      salaryWon = man * 10000
+      salaryVnd = trieu * 1000000
     }
     setActionLoading(id)
     try {
       const res = await fetch('/api/salary-verification/admin', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ id, status, admin_note: noteInput[id] || '', salary_amount: salaryWon }),
+        body: JSON.stringify({ id, status, admin_note: noteInput[id] || '', salary_amount: salaryVnd }),
       })
       if (res.ok) {
         setVerifications(prev => prev.filter(v => v.id !== id))
@@ -140,8 +140,8 @@ export default function VerificationsView({ token }) {
                   <div style={{ fontWeight: 600, color: '#111' }}>{DOC_LABELS[v.document_type] || v.document_type}</div>
                 </div>
                 <div>
-                  <div style={{ color: 'rgba(0,0,0,0.4)', marginBottom: 2 }}>연봉</div>
-                  <div style={{ fontWeight: 600, color: '#111' }}>{v.salary_amount ? `${(v.salary_amount / 10000).toLocaleString()}만원` : '-'}</div>
+                  <div style={{ color: 'rgba(0,0,0,0.4)', marginBottom: 2 }}>월급</div>
+                  <div style={{ fontWeight: 600, color: '#111' }}>{v.salary_amount ? `${(v.salary_amount / 1000000).toLocaleString()}M VND` : '-'}</div>
                 </div>
                 <div>
                   <div style={{ color: 'rgba(0,0,0,0.4)', marginBottom: 2 }}>요청일</div>
@@ -162,8 +162,8 @@ export default function VerificationsView({ token }) {
 
               {/* Admin Actions */}
               {v.status === 'pending' && (() => {
-                const man = parseInt(salaryInput[v.id], 10)
-                const tier = man > 0 ? getSalaryTier(man * 10000) : null
+                const trieu = parseInt(salaryInput[v.id], 10)
+                const tier = trieu > 0 ? getSalaryTier(trieu * 1000000) : null
                 return (
                 <div style={{ borderTop: '1px solid rgba(0,0,0,0.06)', paddingTop: 12, marginTop: 4 }}>
                   {/* Verified salary amount → determines the badge tier */}
@@ -173,10 +173,10 @@ export default function VerificationsView({ token }) {
                         type="number"
                         value={salaryInput[v.id] || ''}
                         onChange={e => setSalaryInput(prev => ({ ...prev, [v.id]: e.target.value }))}
-                        placeholder="인증 연봉 (만원)"
-                        style={{ width: '100%', padding: '8px 44px 8px 12px', border: '1px solid rgba(255,96,0,0.3)', borderRadius: 8, fontSize: 13, fontWeight: 600, fontFamily: 'inherit', outline: 'none' }}
+                        placeholder="인증 월급 (백만 VND)"
+                        style={{ width: '100%', padding: '8px 64px 8px 12px', border: '1px solid rgba(255,96,0,0.3)', borderRadius: 8, fontSize: 13, fontWeight: 600, fontFamily: 'inherit', outline: 'none' }}
                       />
-                      <span style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', fontSize: 12, color: 'rgba(0,0,0,0.4)' }}>만원</span>
+                      <span style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', fontSize: 12, color: 'rgba(0,0,0,0.4)' }}>백만 VND</span>
                     </div>
                     {tier && (
                       <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, padding: '6px 12px', borderRadius: 8, background: tier.grad, color: '#fff', fontSize: 12, fontWeight: 800, whiteSpace: 'nowrap' }}>
