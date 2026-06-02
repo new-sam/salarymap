@@ -24,6 +24,29 @@ async function salaryTierMap(userIds) {
   return map
 }
 
+// Map of user_id -> verified company name (active verified_company badge).
+async function companyVerifiedMap(userIds) {
+  const ids = [...new Set(userIds)].filter(Boolean)
+  if (!ids.length) return {}
+  const { data: badges } = await supabase
+    .from('user_badges')
+    .select('user_id')
+    .in('user_id', ids)
+    .eq('badge_type', 'verified_company')
+    .eq('is_active', true)
+  const verifiedIds = (badges || []).map(b => b.user_id)
+  if (!verifiedIds.length) return {}
+  const { data: profiles } = await supabase
+    .from('user_profiles')
+    .select('id, verified_company_name')
+    .in('id', verifiedIds)
+  const map = {}
+  ;(profiles || []).forEach(p => {
+    if (p.verified_company_name) map[p.id] = p.verified_company_name
+  })
+  return map
+}
+
 export default async function handler(req, res) {
   if (req.method === 'GET') {
     const { post_id } = req.query
@@ -54,9 +77,10 @@ export default async function handler(req, res) {
     }
 
     const tierMap = await salaryTierMap(data.map(c => c.user_id))
+    const cvMap = await companyVerifiedMap(data.map(c => c.user_id))
 
     return res.status(200).json({
-      comments: data.map(c => ({ ...c, is_liked: likedCommentIds.includes(c.id), author_salary_tier: tierMap[c.user_id] || null }))
+      comments: data.map(c => ({ ...c, is_liked: likedCommentIds.includes(c.id), author_salary_tier: tierMap[c.user_id] || null, author_verified_company: cvMap[c.user_id] || null }))
     })
   }
 

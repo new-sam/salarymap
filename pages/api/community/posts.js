@@ -25,6 +25,30 @@ async function salaryTierMap(userIds) {
   return map
 }
 
+// Map of user_id -> verified company name for users with an active verified_company
+// badge. Shown next to authors as a ✓ trust signal (work-email verified).
+async function companyVerifiedMap(userIds) {
+  const ids = [...new Set(userIds)].filter(Boolean)
+  if (!ids.length) return {}
+  const { data: badges } = await supabase
+    .from('user_badges')
+    .select('user_id')
+    .in('user_id', ids)
+    .eq('badge_type', 'verified_company')
+    .eq('is_active', true)
+  const verifiedIds = (badges || []).map(b => b.user_id)
+  if (!verifiedIds.length) return {}
+  const { data: profiles } = await supabase
+    .from('user_profiles')
+    .select('id, verified_company_name')
+    .in('id', verifiedIds)
+  const map = {}
+  ;(profiles || []).forEach(p => {
+    if (p.verified_company_name) map[p.id] = p.verified_company_name
+  })
+  return map
+}
+
 export default async function handler(req, res) {
   if (req.method === 'GET') {
     const { category, page = 1, limit = 20, sort = 'recent', search, id: postId, mine } = req.query
@@ -62,6 +86,8 @@ export default async function handler(req, res) {
       }
       const tierMap = await salaryTierMap([post.user_id])
       post.author_salary_tier = tierMap[post.user_id] || null
+      const cvMap = await companyVerifiedMap([post.user_id])
+      post.author_verified_company = cvMap[post.user_id] || null
       return res.status(200).json({ post })
     }
 
@@ -118,9 +144,10 @@ export default async function handler(req, res) {
     }
 
     const tierMap = await salaryTierMap(data.map(p => p.user_id))
+    const cvMap = await companyVerifiedMap(data.map(p => p.user_id))
 
     return res.status(200).json({
-      posts: data.map(p => ({ ...p, is_liked: likedPostIds.includes(p.id), author_salary_tier: tierMap[p.user_id] || null })),
+      posts: data.map(p => ({ ...p, is_liked: likedPostIds.includes(p.id), author_salary_tier: tierMap[p.user_id] || null, author_verified_company: cvMap[p.user_id] || null })),
       total: count,
       page: parseInt(page),
       totalPages: Math.ceil(count / parseInt(limit))

@@ -255,6 +255,13 @@ export default function ProfilePage() {
   const [verifyForm, setVerifyForm] = useState({ document_type: 'payslip', salary_amount: '' })
   const [verifyUploading, setVerifyUploading] = useState(false)
   const [verifyMsg, setVerifyMsg] = useState(null)
+  // Company email verification (work-email ownership -> verified_company badge)
+  const [companyEmail, setCompanyEmail] = useState('')
+  const [companyCode, setCompanyCode] = useState('')
+  const [cvStep, setCvStep] = useState('idle') // idle | sent | verified
+  const [cvCompany, setCvCompany] = useState(null)
+  const [cvMsg, setCvMsg] = useState(null)
+  const [cvLoading, setCvLoading] = useState(false)
   const [badges, setBadges] = useState([])
   const [badgesLoading, setBadgesLoading] = useState(false)
   const pendingRoute = useRef(null)
@@ -366,6 +373,11 @@ export default function ProfilePage() {
           }
           setForm(formData)
           setInitialForm(formData)
+          // Reflect company-verification status in the header
+          if (p.company_verified_at) {
+            setCvStep('verified')
+            setCvCompany(p.verified_company_name || p.current_company || null)
+          }
           // Auto-save Google name if DB is empty
           if (!p.full_name && formData.full_name) {
             fetch('/api/profile/talent', {
@@ -419,7 +431,57 @@ export default function ProfilePage() {
       .then(d => setVerifications(d.verifications || []))
       .catch(() => {})
       .finally(() => setVerificationsLoading(false))
+    // Current company-verification status
+    fetch('/api/company-verification', { headers: { Authorization: `Bearer ${token}` } })
+      .then(r => r.json())
+      .then(d => { if (d.verified) { setCvStep('verified'); setCvCompany(d.company_name) } })
+      .catch(() => {})
   }, [tab, token])
+
+  const handleSendCompanyCode = async () => {
+    setCvLoading(true)
+    setCvMsg(null)
+    try {
+      const res = await fetch('/api/company-verification/send-code', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ email: companyEmail.trim() }),
+      })
+      const d = await res.json()
+      if (res.ok) {
+        setCvStep('sent')
+        setCvMsg({ ok: true, text: '인증 코드를 메일로 보냈어요. 메일함을 확인해주세요.' })
+      } else {
+        setCvMsg({ ok: false, text: d.message || '발송에 실패했습니다.' })
+      }
+    } catch (e) {
+      setCvMsg({ ok: false, text: '발송에 실패했습니다.' })
+    }
+    setCvLoading(false)
+  }
+
+  const handleVerifyCompanyCode = async () => {
+    setCvLoading(true)
+    setCvMsg(null)
+    try {
+      const res = await fetch('/api/company-verification/verify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ email: companyEmail.trim(), code: companyCode.trim() }),
+      })
+      const d = await res.json()
+      if (res.ok) {
+        setCvStep('verified')
+        setCvCompany(d.company_name)
+        setCvMsg(null)
+      } else {
+        setCvMsg({ ok: false, text: d.message || '인증에 실패했습니다.' })
+      }
+    } catch (e) {
+      setCvMsg({ ok: false, text: '인증에 실패했습니다.' })
+    }
+    setCvLoading(false)
+  }
 
   useEffect(() => {
     if (tab !== 'badges' || !token) return
@@ -681,11 +743,17 @@ export default function ProfilePage() {
             <h1 className="pw-header-name">{form.full_name || user?.user_metadata?.full_name || ''}</h1>
             <div className="pw-header-company">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>
-              <input
-                value={form.current_company || ''}
-                onChange={e => set('current_company', e.target.value)}
-                placeholder={t('profile.companyPlaceholder') || '재직 회사를 입력하세요'}
-              />
+              {cvStep === 'verified' && cvCompany ? (
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontWeight: 700, color: '#0a7d4b' }}>
+                  {cvCompany}
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="#0a7d4b" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" stroke="none"/><path d="M8 12.5l2.5 2.5L16 9.5"/></svg>
+                </span>
+              ) : (
+                <button type="button" onClick={() => handleTabChange('employment')}
+                  style={{ background: 'none', border: 'none', padding: 0, color: '#ff6000', fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', fontSize: 'inherit', textDecoration: 'underline', textUnderlineOffset: 2 }}>
+                  {t('profile.companyVerifyPrompt') || '회사 인증을 진행해주세요'}
+                </button>
+              )}
             </div>
           </div>
           {form.photo_url ? (
@@ -1071,6 +1139,59 @@ export default function ProfilePage() {
         </>)}
 
         {tab === 'employment' && (<>
+          {/* Company email verification — work-email ownership grants a verified-company badge */}
+          <div className="pcard">
+            <div className="pcard-h">회사 인증</div>
+            {cvStep === 'verified' ? (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '12px 0' }}>
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="#0a7d4b" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="12" cy="12" r="10" stroke="none" /><path d="M8 12.5l2.5 2.5L16 9.5" />
+                </svg>
+                <span style={{ fontSize: 14, fontWeight: 700, color: '#0a7d4b' }}>{cvCompany} 인증 완료</span>
+              </div>
+            ) : (<>
+              <div style={{ fontSize: 13, color: 'rgba(0,0,0,0.5)', lineHeight: 1.6, marginBottom: 20 }}>
+                회사 이메일로 인증하면 커뮤니티 글에 ✓ 인증 회사 배지가 표시돼요. (개인 이메일은 사용할 수 없습니다)
+              </div>
+              <div className="pfield">
+                <div className="pfield-label">회사 이메일</div>
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <input className="pinput" type="email" value={companyEmail}
+                    disabled={cvStep === 'sent'}
+                    onChange={e => setCompanyEmail(e.target.value)}
+                    placeholder="you@company.com" style={{ flex: 1 }} />
+                  <button type="button" onClick={handleSendCompanyCode}
+                    disabled={cvLoading || !companyEmail.trim()}
+                    style={{ padding: '0 16px', borderRadius: 10, border: 'none', background: '#ff6000', color: '#fff', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', whiteSpace: 'nowrap', opacity: (cvLoading || !companyEmail.trim()) ? 0.5 : 1 }}>
+                    {cvStep === 'sent' ? '재전송' : '코드 받기'}
+                  </button>
+                </div>
+              </div>
+              {cvStep === 'sent' && (
+                <div className="pfield">
+                  <div className="pfield-label">인증 코드</div>
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    <input className="pinput" type="text" inputMode="numeric" maxLength={6} value={companyCode}
+                      onChange={e => setCompanyCode(e.target.value.replace(/\D/g, ''))}
+                      placeholder="6자리 코드" style={{ flex: 1, letterSpacing: 4 }} />
+                    <button type="button" onClick={handleVerifyCompanyCode}
+                      disabled={cvLoading || companyCode.length !== 6}
+                      style={{ padding: '0 16px', borderRadius: 10, border: 'none', background: '#111', color: '#fff', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', whiteSpace: 'nowrap', opacity: (cvLoading || companyCode.length !== 6) ? 0.5 : 1 }}>
+                      인증
+                    </button>
+                  </div>
+                </div>
+              )}
+              {cvMsg && (
+                <div className="pmsg" style={cvMsg.ok
+                  ? { background: 'rgba(34,197,94,0.08)', color: '#16a34a', border: '1px solid rgba(34,197,94,0.2)' }
+                  : { background: 'rgba(239,68,68,0.08)', color: '#dc2626', border: '1px solid rgba(239,68,68,0.2)' }}>
+                  {cvMsg.text}
+                </div>
+              )}
+            </>)}
+          </div>
+
           <div className="pcard">
             <div className="pcard-h">{t('profile.employment.title')}</div>
             <div style={{ fontSize: 13, color: 'rgba(0,0,0,0.5)', lineHeight: 1.6, marginBottom: 20 }}>

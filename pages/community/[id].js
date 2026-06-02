@@ -280,7 +280,7 @@ export default function CommunityPostPage() {
                   )}
                 </div>
                 <div className="cp-author-row">
-                  <span className="cp-company">{post.is_salary_verified ? (post.author_company || t('comm.unemployed')) : t('comm.unemployed')}</span>
+                  <span className="cp-company">{post.author_verified_company || t('comm.unemployed')}</span>
                   <span className="cp-dot">·</span>
                   <span className="cp-nickname">{post.author_name}</span>
                   {post.author_salary_tier && <SalaryBadge tierKey={post.author_salary_tier} t={t} />}
@@ -337,7 +337,7 @@ export default function CommunityPostPage() {
                     <div key={comment.id} className="cp-comment">
                       <div className="cp-comment-top">
                         <span className="cp-comment-author">
-                          <span className="cp-company">{comment.is_salary_verified ? (comment.author_company || t('comm.unemployed')) : t('comm.unemployed')}</span>
+                          <span className="cp-company">{comment.author_verified_company || t('comm.unemployed')}</span>
                           <span className="cp-dot">·</span>
                           {comment.author_name}
                           {comment.author_salary_tier && <SalaryBadge tierKey={comment.author_salary_tier} t={t} />}

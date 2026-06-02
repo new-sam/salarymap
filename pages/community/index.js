@@ -474,7 +474,7 @@ export default function CommunityPage() {
                       <span className="comm-card-time">{timeAgo(post.created_at)}</span>
                     </div>
                     <div className="comm-card-author">
-                      <span>{post.is_salary_verified ? (post.author_company || t('comm.unemployed')) : t('comm.unemployed')}</span>
+                      <span>{post.author_verified_company || t('comm.unemployed')}</span>
                       <span className="comm-card-dot">·</span>
                       <span>{post.author_name}</span>
                       {post.author_salary_tier && <SalaryBadge tierKey={post.author_salary_tier} t={t} />}
