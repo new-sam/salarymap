@@ -48,6 +48,10 @@ captures/
 data/
 !data/companyProfiles.js
 
+# service account keys
+ga4-service-account.json
+VERCEL_ENV_SETUP.md
+
 # claude code
 .claude/
 .mcp.json
@@ -55,3 +59,4 @@ data/
 # PII — screenshots / raw captures, never commit
 clipboard_capture.png
 scripts/candidate-detail-raw.png
+.playwright-mcp/

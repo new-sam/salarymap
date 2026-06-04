@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Fragment } from 'react';
 import Head from 'next/head';
 import { useRouter } from 'next/router';
 import Link from 'next/link';
@@ -154,8 +154,9 @@ export default function NewJobPage() {
       title: form.title.trim(),
       company: companyName,
       company_id: companyId,
-      status: 'pending_review',
-      is_active: false,
+      // TODO: 게재 검토 어드민 구축 후 'pending_review' + is_active=false 로 복원
+      status: 'live',
+      is_active: true,
       created_by: user?.id || null,
       description: form.description.trim(),
       role: form.role, type: form.type, country: form.country, location: form.location,
@@ -472,35 +473,45 @@ export function Sidebar({ companyName, userEmail, activePage = 'home', activeJob
         <div style={css.sideCompany}>{companyName || t('company.sidebar.myCompany')}</div>
         <div style={css.sideUser}>{userEmail}</div>
       </div>
-      <nav className="company-side-nav" style={css.sideNav}>
-        <Link href="/company" style={{...css.navItem, ...(isActive('home') ? css.navItemActive : {})}}><span style={css.navIco}>🏠</span>{t('company.sidebar.dashboard')}</Link>
+      <nav style={css.sideNav}>
         <Link href="/company/jobs/new" style={css.navItem}><span style={css.navIco}>➕</span>{t('company.sidebar.newJob')}</Link>
+        <Link href="/company" style={{...css.navItem, ...(isActive('home') ? css.navItemActive : {})}}><span style={css.navIco}>🏠</span>{t('company.sidebar.dashboard')}</Link>
         <Link href="/company/calendar" style={{...css.navItem, ...(isActive('calendar') ? css.navItemActive : {})}}><span style={css.navIco}>📅</span>{t('company.sidebar.calendar')}</Link>
       </nav>
 
-      {jobs.length > 0 && (
-        <div className="company-sidejobs" style={{ display: 'contents' }}>
-          <div style={css.sideDivider} />
-          <div style={css.sideSectionTitle}>{t('company.sidebar.myJobs', { n: jobs.length })}</div>
-          <div style={css.sideJobList}>
-            {jobs.map(j => {
-              const dotColor = DOT_COLOR[j.status] || DOT_COLOR.draft;
-              const isCurrent = activeJobId === j.id;
-              return (
-                <Link
-                  key={j.id}
-                  href={`/company/ats?job=${j.id}`}
-                  style={{...css.sideJobItem, ...(isCurrent ? css.sideJobItemActive : {})}}
-                  title={j.title}
-                >
-                  <span style={{...css.sideJobDot, background: dotColor}} />
-                  <span style={css.sideJobTitle}>{j.title}</span>
-                </Link>
-              );
-            })}
-          </div>
-        </div>
-      )}
+      {jobs.length > 0 && (() => {
+        const groupOf = (s) => s === 'live' ? 'active' : s === 'pending_review' ? 'pending' : 'inactive';
+        const grouped = { active: [], pending: [], inactive: [] };
+        jobs.forEach(j => { grouped[groupOf(j.status)].push(j); });
+        return (
+          <>
+            <div style={css.sideDivider} />
+            <div style={css.sideSectionTitle}>{t('company.sidebar.myJobs', { n: jobs.length })}</div>
+            <div style={css.sideJobList}>
+              {['active', 'pending', 'inactive'].map(g => grouped[g].length === 0 ? null : (
+                <Fragment key={g}>
+                  <div style={css.sideSubGroupTitle}>{t(`company.jobGroup.${g}`, { n: grouped[g].length })}</div>
+                  {grouped[g].map(j => {
+                    const dotColor = DOT_COLOR[j.status] || DOT_COLOR.draft;
+                    const isCurrent = activeJobId === j.id;
+                    return (
+                      <Link
+                        key={j.id}
+                        href={`/company/ats?job=${j.id}`}
+                        style={{...css.sideJobItem, ...(isCurrent ? css.sideJobItemActive : {})}}
+                        title={j.title}
+                      >
+                        <span style={{...css.sideJobDot, background: dotColor}} />
+                        <span style={css.sideJobTitle}>{j.title}</span>
+                      </Link>
+                    );
+                  })}
+                </Fragment>
+              ))}
+            </div>
+          </>
+        );
+      })()}
 
       <div className="company-side-bottom" style={css.sideBottom}>
         <a onClick={signOut} style={css.signoutLink}>{t('company.sidebar.signOut')}</a>
@@ -533,6 +544,7 @@ export const css = {
 
   sideDivider: { height: 1, background: '#E5E7EB', margin: '12px 8px' },
   sideSectionTitle: { fontSize: 10.5, color: '#94A3B8', fontWeight: 800, letterSpacing: '0.06em', textTransform: 'uppercase', padding: '4px 10px 6px' },
+  sideSubGroupTitle: { fontSize: 11, color: '#525252', fontWeight: 700, padding: '8px 10px 4px' },
   sideJobList: { display: 'flex', flexDirection: 'column', gap: 1, maxHeight: 360, overflowY: 'auto' },
   sideJobItem: { display: 'flex', alignItems: 'center', gap: 8, padding: '7px 10px', borderRadius: 6, fontSize: 12.5, color: '#525252', fontWeight: 600, textDecoration: 'none' },
   sideJobItemActive: { background: '#FFF7ED', color: '#EA580C', fontWeight: 800 },

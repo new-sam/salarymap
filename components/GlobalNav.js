@@ -3,21 +3,33 @@ import Link from 'next/link'
 import { supabase } from '../lib/supabaseClient'
 import { useT } from '../lib/i18n'
 
-export default function GlobalNav({ activePage }) {
+export default function GlobalNav({ activePage, onLogin, onJobsClick, mobileSearch }) {
   const { t } = useT()
   const [isLoggedIn, setIsLoggedIn] = useState(false)
   const [user, setUser] = useState(null)
   const [showMenu, setShowMenu] = useState(false)
   const [isAdmin, setIsAdmin] = useState(false)
   const [ready, setReady] = useState(false)
+  const [isSubmitted, setIsSubmitted] = useState(true)
   const [savedCount, setSavedCount] = useState(0)
   const [profileScore, setProfileScore] = useState(null)
+  const [hasResume, setHasResume] = useState(true)
   const menuRef = useRef(null)
 
   useEffect(() => {
     const handleClick = (e) => { if (menuRef.current && !menuRef.current.contains(e.target)) setShowMenu(false) }
     document.addEventListener('mousedown', handleClick)
     return () => document.removeEventListener('mousedown', handleClick)
+  }, [])
+
+  useEffect(() => {
+    const onProfileUpdate = (e) => {
+      const p = e.detail
+      const checks = [p.photo_url, p.full_name, p.headline, p.location, p.resume_url, p.skills?.length > 0, p.university, p.experiences?.length > 0]
+      setProfileScore(Math.round(checks.filter(Boolean).length / checks.length * 100))
+    }
+    window.addEventListener('profile-updated', onProfileUpdate)
+    return () => window.removeEventListener('profile-updated', onProfileUpdate)
   }, [])
 
   useEffect(() => {
@@ -41,7 +53,19 @@ export default function GlobalNav({ activePage }) {
           const bData = await bRes.json()
           if (bData.bookmarks) setSavedCount(bData.bookmarks.length)
         } catch {}
+        try {
+          const pRes = await fetch('/api/profile/talent', { headers: { Authorization: `Bearer ${session.access_token}` } })
+          if (pRes.ok) {
+            const { profile: p } = await pRes.json()
+            if (p) {
+              const checks = [p.photo_url, p.full_name, p.headline, p.location, p.resume_url, p.skills?.length > 0, p.university, p.experiences?.length > 0]
+              setProfileScore(Math.round(checks.filter(Boolean).length / checks.length * 100))
+              setHasResume(!!p.resume_url)
+            }
+          }
+        } catch {}
       }
+      setIsSubmitted(localStorage.getItem('fyi_submitted') === 'true')
       setReady(true)
     })
   }, [])
@@ -67,16 +91,18 @@ export default function GlobalNav({ activePage }) {
         @keyframes jobsShimmer { 0% { left: -100%; } 50% { left: 120%; } 100% { left: 120%; } }
         .gnav-jobs-icon { display: inline-flex; align-items: center; flex-shrink: 0; }
         .gnav-jobs-icon svg { width: 14px; height: 14px; }
-        .gnav-jobs-bubble { position: absolute; top: calc(100% + 14px); left: 50%; transform: translateX(-50%); background: #fff; padding: 5px 12px; border-radius: 8px; white-space: nowrap; font-size: 11px; font-weight: 700; color: #ff6000; pointer-events: none; animation: bubbleFloat 3s ease-in-out infinite; box-shadow: 0 2px 12px rgba(0,0,0,0.25); }
-        .gnav-jobs-bubble::before { content: ''; position: absolute; top: -4px; left: 50%; transform: translateX(-50%) rotate(45deg); width: 8px; height: 8px; background: #fff; }
-        @keyframes bubbleFloat { 0%,100% { transform: translateX(-50%) translateY(0); } 50% { transform: translateX(-50%) translateY(-3px); } }
+
         .gnav-login { font-size: 13px; font-weight: 600; color: rgba(255,255,255,0.5); background: none; border: 1px solid rgba(255,255,255,0.15); padding: 7px 16px; border-radius: 100px; cursor: pointer; font-family: 'Barlow', sans-serif; }
         .gnav-submit { font-size: 12px; font-weight: 600; background: #ff6000; color: #fff; border: none; padding: 8px 18px; border-radius: 2px; cursor: pointer; font-family: 'Barlow', sans-serif; }
-        .gnav-user { display: flex; align-items: center; gap: 6px; padding: 4px 10px 4px 4px; border-radius: 100px; border: 1px solid rgba(255,255,255,0.12); cursor: pointer; position: relative; flex-shrink: 0; }
+        .gnav-user { display: flex; align-items: center; gap: 6px; padding: 4px 10px 4px 4px; border-radius: 100px; border: 1px solid rgba(255,255,255,0.12); cursor: pointer; flex-shrink: 0; }
         .gnav-avatar { width: 24px; height: 24px; border-radius: 50%; object-fit: cover; }
         .gnav-avatar-ini { width: 24px; height: 24px; border-radius: 50%; background: #ff6000; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 800; color: black; }
         .gnav-name { font-size: 12px; font-weight: 600; color: rgba(255,255,255,0.7); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 80px; }
+        .gnav-score { font-size: 10px; font-weight: 700; padding: 2px 6px; border-radius: 100px; line-height: 1; }
         .gnav-caret { font-size: 10px; color: rgba(255,255,255,0.3); }
+        .gnav-ai-bubble { position: absolute; top: calc(100% + 10px); right: 0; background: #ff6000; padding: 6px 12px; border-radius: 8px; white-space: nowrap; font-size: 11px; font-weight: 700; color: #fff; cursor: pointer; animation: gnav-aiBounce 3s ease-in-out infinite; box-shadow: 0 2px 12px rgba(255,96,0,0.4); z-index: 201; }
+        .gnav-ai-bubble::before { content: ''; position: absolute; top: -4px; right: 16px; width: 8px; height: 8px; background: #ff6000; transform: rotate(45deg); border-radius: 1px; }
+        @keyframes gnav-aiBounce { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-3px); } }
         .gnav-menu { position: absolute; top: calc(100% + 8px); right: 0; background: #1a1a1a; border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 6px; min-width: 160px; z-index: 500; box-shadow: 0 8px 32px rgba(0,0,0,0.4); }
         .gnav-menu-email { padding: 10px 14px; font-size: 12px; color: rgba(255,255,255,0.35); border-bottom: 1px solid rgba(255,255,255,0.06); margin-bottom: 4px; }
         .gnav-menu-item { display: block; width: 100%; padding: 10px 14px; border-radius: 8px; border: none; background: none; color: rgba(255,255,255,0.6); font-size: 13px; cursor: pointer; text-align: left; text-decoration: none; font-family: 'Barlow', sans-serif; transition: background .1s; }
@@ -88,22 +114,18 @@ export default function GlobalNav({ activePage }) {
         .gnav-toggle-opt { font-size: 11px; font-weight: 600; padding: 4px 12px; border-radius: 100px; cursor: pointer; border: none; background: none; color: rgba(255,255,255,0.3); font-family: 'Barlow', sans-serif; transition: all .2s; white-space: nowrap; }
         .gnav-toggle-opt.active { background: rgba(255,96,0,0.2); color: #ff6000; }
         .gnav-toggle-opt:hover:not(.active) { color: rgba(255,255,255,0.5); }
+        .gnav-r-mobile { display: none; }
         @media (max-width: 768px) {
-          .gnav { padding: 0 12px; height: 48px; }
-          .gnav-logo { font-size: 11px; gap: 6px; }
-          .gnav-logo img { width: 22px; height: 22px; }
-          .gnav-r { gap: 8px; }
-          .gnav-link { display: none; }
-          .gnav-toggle-opt { font-size: 9px; padding: 3px 8px; }
-          .gnav-jobs-cta { display: inline-flex !important; font-size: 10px; padding: 4px 10px !important; gap: 4px; white-space: nowrap; }
-          .gnav-jobs-icon svg { width: 12px; height: 12px; }
-          .gnav-jobs-bubble { display: none; }
-          .gnav-login { font-size: 10px; padding: 4px 10px; white-space: nowrap; }
-          .gnav-submit { font-size: 9px; padding: 5px 8px; white-space: nowrap; }
+          .gnav { position: fixed; top: 0; left: 0; right: 0; padding: 0 16px; height: 52px; }
+          .gnav-logo span { display: none; }
+          .gnav-logo img { width: 32px; height: 32px; }
+          .gnav-r { display: none; }
+          .gnav-r-mobile { display: flex; align-items: center; gap: 10px; }
         }
-        @media (max-width: 400px) {
-          .gnav-name { display: none; }
-        }
+        .gnav-mobile-profile { display: flex; align-items: center; gap: 6px; padding: 4px 10px 4px 4px; border-radius: 100px; border: 1px solid rgba(255,255,255,0.12); cursor: pointer; text-decoration: none; background: none; }
+        .gnav-mobile-login { font-size: 12px; font-weight: 600; color: rgba(255,255,255,0.5); background: none; border: 1px solid rgba(255,255,255,0.15); padding: 6px 14px; border-radius: 100px; cursor: pointer; font-family: 'Barlow', sans-serif; }
+        .gnav-mobile-search-btn { display: flex; align-items: center; justify-content: center; width: 32px; height: 32px; border: none; background: none; cursor: pointer; padding: 0; }
+        .gnav-mobile-search-btn svg { width: 16px; height: 16px; color: rgba(255,255,255,0.5); }
       `}</style>
 
       <nav className="gnav">
@@ -113,33 +135,72 @@ export default function GlobalNav({ activePage }) {
             <span>FOR YOUR <span style={{ color: '#ff6000' }}>'SALARY'</span> INFORMATION</span>
           </Link>
         </div>
+        <div className="gnav-r-mobile">
+          {mobileSearch && (
+            <button className="gnav-mobile-search-btn" onClick={() => mobileSearch.onToggle()}>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+            </button>
+          )}
+          {!ready ? null : !isLoggedIn ? (
+            <button className="gnav-mobile-login" onClick={async () => {
+              if (onLogin) return onLogin();
+              if (typeof window === 'undefined') return;
+              localStorage.setItem('fyi_login_return', window.location.pathname);
+              if (window.location.hostname === 'localhost') {
+                await supabase.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: window.location.origin + '/auth/callback' } });
+              } else {
+                window.location.href = '/api/auth/google?return=' + encodeURIComponent(window.location.pathname);
+              }
+            }}>
+              {t('nav.login')}
+            </button>
+          ) : (
+            <div style={{ position: 'relative' }}>
+              <Link href="/profile" className="gnav-mobile-profile">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ color: 'rgba(255,255,255,0.6)' }}><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                {profileScore != null && profileScore < 100 && (
+                  <span className="gnav-score" style={{ color: profileScore >= 60 ? '#4ade80' : '#fbbf24', background: profileScore >= 60 ? 'rgba(74,222,128,0.1)' : 'rgba(251,191,36,0.1)' }}>{profileScore}%</span>
+                )}
+              </Link>
+              {!hasResume && activePage === 'home' && (
+                <a href="/profile" className="gnav-ai-bubble" style={{ pointerEvents: 'auto', textDecoration: 'none', color: '#fff' }}>✨ {t('nav.aiResume')}</a>
+              )}
+            </div>
+          )}
+        </div>
         <div className="gnav-r">
-          <Link href="/" className={`gnav-link${activePage === 'home' ? ' on' : ''}`}>{t('nav.amIUnderpaid')}</Link>
+          {activePage === 'home' ? (
+            <button className="gnav-link on" onClick={() => document.getElementById('submit')?.scrollIntoView({behavior:'smooth'})}>{t('nav.amIUnderpaid')}</button>
+          ) : (
+            <Link href="/" className="gnav-link">{t('nav.amIUnderpaid')}</Link>
+          )}
+          {activePage === 'home' && (
+            <button className="gnav-link" onClick={() => document.getElementById('companies')?.scrollIntoView({behavior:'smooth'})}>{t('nav.whoPaysMost')}</button>
+          )}
+          <Link href="/community" className={`gnav-link${activePage === 'community' ? ' on' : ''}`}>Community</Link>
           {activePage !== 'jobs' && (
-            <Link href="/jobs" className="gnav-link gnav-jobs-cta">
+            <Link href="/jobs" className="gnav-link gnav-jobs-cta" onClick={() => onJobsClick?.()}>
               <span className="gnav-jobs-shimmer"></span>
               <span className="gnav-jobs-icon"><svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="3" y="7" width="18" height="13" rx="2" stroke="currentColor" strokeWidth="2"/><path d="M8 7V5a2 2 0 012-2h4a2 2 0 012 2v2" stroke="currentColor" strokeWidth="2"/><path d="M12 11v4M10 13h4" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg></span>
               {t('nav.jobs')}
-              <span className="gnav-jobs-bubble">{t('nav.jobsSub')}</span>
             </Link>
           )}
 
           {!ready ? null : !isLoggedIn ? (
-            <>
-              <button className="gnav-login" onClick={async () => {
-                if (typeof window === 'undefined') return;
-                localStorage.setItem('fyi_login_return', window.location.pathname);
-                if (window.location.hostname === 'localhost') {
-                  await supabase.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: window.location.origin + '/auth/callback' } });
-                } else {
-                  window.location.href = '/api/auth/google?return=' + encodeURIComponent(window.location.pathname);
-                }
-              }}>
-                {t('nav.login')}
-              </button>
-              <Link href="/#submit" className="gnav-submit">{t('nav.submitSalary')}</Link>
-            </>
+            <button className="gnav-login" onClick={async () => {
+              if (onLogin) return onLogin();
+              if (typeof window === 'undefined') return;
+              localStorage.setItem('fyi_login_return', window.location.pathname);
+              if (window.location.hostname === 'localhost') {
+                await supabase.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: window.location.origin + '/auth/callback' } });
+              } else {
+                window.location.href = '/api/auth/google?return=' + encodeURIComponent(window.location.pathname);
+              }
+            }}>
+              {t('nav.login')}
+            </button>
           ) : (
+            <div style={{ position: 'relative' }}>
             <div className="gnav-user" ref={menuRef} onClick={() => setShowMenu(v => !v)}>
               {user?.user_metadata?.avatar_url ? (
                 <img src={user.user_metadata.avatar_url} className="gnav-avatar" alt="" />
@@ -151,6 +212,9 @@ export default function GlobalNav({ activePage }) {
               <span className="gnav-name">
                 {(user?.user_metadata?.full_name || user?.user_metadata?.name)?.split(' ')[0] || user?.email?.split('@')[0] || 'Account'}
               </span>
+              {profileScore != null && profileScore < 100 && (
+                <span className="gnav-score" style={{ color: profileScore >= 60 ? '#4ade80' : '#fbbf24', background: profileScore >= 60 ? 'rgba(74,222,128,0.1)' : 'rgba(251,191,36,0.1)' }}>{profileScore}%</span>
+              )}
               <span className="gnav-caret">▾</span>
 
               {showMenu && (
@@ -159,7 +223,7 @@ export default function GlobalNav({ activePage }) {
                   <a href="/profile" className="gnav-menu-item" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                       <span>{t('nav.myProfile')}</span>
                       {profileScore != null && profileScore < 100 && (
-                        <span style={{ fontSize: 10, fontWeight: 700, color: profileScore >= 80 ? '#4ade80' : '#fbbf24', background: profileScore >= 80 ? 'rgba(74,222,128,0.1)' : 'rgba(251,191,36,0.1)', padding: '2px 8px', borderRadius: 100 }}>{profileScore}%</span>
+                        <span style={{ fontSize: 10, fontWeight: 700, color: profileScore >= 60 ? '#4ade80' : '#fbbf24', background: profileScore >= 60 ? 'rgba(74,222,128,0.1)' : 'rgba(251,191,36,0.1)', padding: '2px 8px', borderRadius: 100 }}>{profileScore}%</span>
                       )}
                     </a>
                     <a href="/my-applications" className="gnav-menu-item">{t('nav.myApplications')}</a>
@@ -178,7 +242,13 @@ export default function GlobalNav({ activePage }) {
                 </div>
               )}
             </div>
+
+            {!hasResume && !showMenu && activePage === 'home' && (
+              <a href="/profile" className="gnav-ai-bubble" onClick={e => e.stopPropagation()} style={{ pointerEvents: 'auto', textDecoration: 'none', color: '#fff' }}>✨ {t('nav.aiResume')}</a>
+            )}
+          </div>
           )}
+
         </div>
       </nav>
     </>

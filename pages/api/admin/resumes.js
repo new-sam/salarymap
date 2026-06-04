@@ -1,0 +1,52 @@
+import { createClient } from '@supabase/supabase-js'
+import { verifyAdmin } from './check'
+
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL,
+  process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+)
+
+export default async function handler(req, res) {
+  const admin = await verifyAdmin(req)
+  if (!admin) return res.status(401).json({ error: 'Unauthorized' })
+
+  if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' })
+
+  try {
+    const { data, error } = await supabase
+      .from('user_profiles')
+      .select('id, full_name, headline, position, yoe_months, location, resume_url, photo_url, is_resume_public, skills, university, major, work_type, salary_min, salary_max, salary_currency, updated_at, created_at')
+      .not('resume_url', 'is', null)
+      .order('updated_at', { ascending: false })
+
+    if (error) return res.status(500).json({ error: error.message })
+
+    // Fetch emails from auth
+    const userIds = data.map(d => d.id)
+    const emails = {}
+    if (userIds.length > 0) {
+      let page = 1
+      while (true) {
+        const { data: { users }, error: authErr } = await supabase.auth.admin.listUsers({
+          page,
+          perPage: 1000,
+        })
+        if (authErr || !users || users.length === 0) break
+        for (const u of users) {
+          if (userIds.includes(u.id)) emails[u.id] = u.email
+        }
+        if (users.length < 1000) break
+        page++
+      }
+    }
+
+    const result = data.map(p => ({
+      ...p,
+      email: emails[p.id] || '',
+    }))
+
+    return res.status(200).json(result)
+  } catch (e) {
+    return res.status(500).json({ error: e.message })
+  }
+}

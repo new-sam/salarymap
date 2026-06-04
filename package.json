@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "next dev --webpack",
     "build": "next build",
     "start": "next start"
   },
@@ -13,10 +13,12 @@
     "formidable": "^3.5.4",
     "lottie-react": "^2.4.1",
     "next": "16.1.7",
+    "openai": "^6.38.0",
+    "pdf-parse": "^1.1.1",
     "react": "19.2.3",
     "react-dom": "19.2.3",
     "recharts": "^3.8.1",
-    "resend": "^6.12.3"
+    "resend": "^6.12.4"
   },
   "devDependencies": {
     "@playwright/test": "^1.59.1",

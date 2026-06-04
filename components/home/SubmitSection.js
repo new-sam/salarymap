@@ -33,7 +33,7 @@ function SubmitSection({
   const salPct = Math.round(((sal - 5) / (200 - 5)) * 100);
 
   const handleSubmit = async () => {
-    if (!wCompany.trim()) return;
+    if (!wCompany.trim() || submitting) return;
     setSubmitting(true);
     await onSubmit();
     setSubmitting(false);
@@ -61,6 +61,17 @@ function SubmitSection({
     } catch (e) {}
     setRatingSubmitting(false);
   };
+
+  // Auto-advance when all 3 ratings are filled
+  useEffect(() => {
+    if (wizardStep === 5 && ratingWorklife && ratingSalary && ratingGrowth) {
+      const timer = setTimeout(async () => {
+        await handleRatingSubmit();
+        setWizardStep(6);
+      }, 500);
+      return () => clearTimeout(timer);
+    }
+  }, [ratingWorklife, ratingSalary, ratingGrowth, wizardStep]);
 
   const StarRow = ({ label, value, onChange }) => (
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 0', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
@@ -120,6 +131,8 @@ function SubmitSection({
         body: JSON.stringify({ name: item.name, domain: item.domain }),
       }).catch(() => {});
     }
+    // Auto-submit after company selection
+    setTimeout(() => handleSubmit(), 400);
   };
 
   const clearSelectedItem = () => {
@@ -339,7 +352,7 @@ function SubmitSection({
                       onKeyDown={e => {
                         if (e.key === 'ArrowDown') { e.preventDefault(); setAcHighlight(h => Math.min(h + 1, acResults.length - 1)); }
                         else if (e.key === 'ArrowUp') { e.preventDefault(); setAcHighlight(h => Math.max(h - 1, -1)); }
-                        else if (e.key === 'Enter') { e.preventDefault(); if (acHighlight >= 0 && acResults[acHighlight]) selectCompany(acResults[acHighlight]); else if (wCompany.trim()) { setAcOpen(false); handleSubmit(); } }
+                        else if (e.key === 'Enter' && !e.nativeEvent.isComposing) { e.preventDefault(); if (acHighlight >= 0 && acResults[acHighlight]) selectCompany(acResults[acHighlight]); else if (wCompany.trim()) { setAcOpen(false); handleSubmit(); } }
                         else if (e.key === 'Escape') setAcOpen(false);
                       }}
                       autoFocus autoComplete="off"
@@ -384,10 +397,7 @@ function SubmitSection({
                   </>
                 )}
               </div>
-              <button onClick={handleSubmit} disabled={!wCompany.trim() || submitting}
-                style={{ ...ctaStyle, opacity: wCompany.trim() ? 1 : 0.4, cursor: wCompany.trim() ? 'pointer' : 'not-allowed' }}>
-                {submitting ? t('wizard.submitting') : t('wizard.viewRank')}
-              </button>
+              {submitting && <div style={{ textAlign: 'center', fontSize: '13px', color: 'rgba(255,255,255,0.5)', marginTop: '16px' }}>{t('wizard.submitting')}</div>}
               <div style={{ textAlign: 'center', fontSize: '11px', color: 'rgba(255,255,255,0.18)', marginTop: '12px' }}>
                 {t('wizard.anonymous')}
               </div>
@@ -401,17 +411,10 @@ function SubmitSection({
               <StarRow label="Work-life balance" value={ratingWorklife} onChange={setRatingWorklife} />
               <StarRow label="Salary fairness" value={ratingSalary} onChange={setRatingSalary} />
               <StarRow label="Growth opportunity" value={ratingGrowth} onChange={setRatingGrowth} />
-              <div style={{ display: 'flex', gap: '10px', marginTop: '28px' }}>
-                <button onClick={async () => { await handleRatingSubmit(); setWizardStep(6); }}
-                  disabled={(!ratingWorklife && !ratingSalary && !ratingGrowth) || ratingSubmitting}
-                  style={{ ...ctaStyle, flex: 1, opacity: (ratingWorklife || ratingSalary || ratingGrowth) ? 1 : 0.4 }}>
-                  {ratingSubmitting ? t('wizard.savingRating') : t('wizard.submitRating')}
-                </button>
-                <button onClick={() => setWizardStep(6)}
-                  style={{ ...quizBtn, padding: '16px 20px', background: 'none', color: 'rgba(255,255,255,0.4)', fontSize: '14px', fontWeight: 700, borderRadius: '14px' }}>
-                  {t('wizard.skip')}
-                </button>
-              </div>
+              <button onClick={() => setWizardStep(6)}
+                style={{ ...quizBtn, marginTop: '28px', background: 'none', color: 'rgba(255,255,255,0.25)', fontSize: '12px', display: 'block', width: '100%', textAlign: 'center' }}>
+                {t('wizard.skip')}
+              </button>
             </div>
           )}
         </div>

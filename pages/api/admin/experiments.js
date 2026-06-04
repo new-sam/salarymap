@@ -20,10 +20,12 @@ export default async function handler(req, res) {
   }
 
   if (req.method === 'POST') {
-    const { title, date, color, metrics } = req.body
+    const { title, date, color, metrics, status, end_date, result_note } = req.body
     if (!title || !date) return res.status(400).json({ error: 'title, date 필수' })
-    const row = { title, date, color: color || '#FF6B6B' }
+    const row = { title, date, color: color || '#FF6B6B', status: status || 'running' }
     if (metrics?.length) row.metrics = metrics
+    if (end_date) row.end_date = end_date
+    if (result_note) row.result_note = result_note
     const { data, error } = await supabase
       .from('experiments')
       .insert([row])
@@ -34,13 +36,16 @@ export default async function handler(req, res) {
   }
 
   if (req.method === 'PUT') {
-    const { id, title, date, color, metrics } = req.body
+    const { id, title, date, color, metrics, status, end_date, result_note } = req.body
     if (!id) return res.status(400).json({ error: 'id 필수' })
     const update = {}
     if (title !== undefined) update.title = title
     if (date !== undefined) update.date = date
     if (color !== undefined) update.color = color
     if (metrics !== undefined) update.metrics = metrics
+    if (status !== undefined) update.status = status
+    if (end_date !== undefined) update.end_date = end_date
+    if (result_note !== undefined) update.result_note = result_note
     const { data, error } = await supabase
       .from('experiments')
       .update(update)

@@ -1,0 +1,281 @@
+- generic [ref=e1]:
+  - generic [ref=e3]:
+    - generic [ref=e4]:
+      - banner [ref=e6]:
+        - generic [ref=e7]:
+          - generic [ref=e8]:
+            - link "Supabase" [ref=e9] [cursor=pointer]:
+              - /url: /dashboard/org/vgpinykggpsbqprqsodw
+              - img "Supabase" [ref=e10]
+            - generic [ref=e11]:
+              - img [ref=e13]
+              - generic [ref=e15]:
+                - link "LION VNVN Pro" [ref=e16] [cursor=pointer]:
+                  - /url: /dashboard/org/vgpinykggpsbqprqsodw
+                  - img [ref=e17]
+                  - generic [ref=e27]: LION VNVN
+                  - generic [ref=e28]: Pro
+                - button [ref=e29] [cursor=pointer]:
+                  - img [ref=e31]
+              - generic [ref=e34]:
+                - img [ref=e36]
+                - generic [ref=e38]:
+                  - link "MVP PROJECT" [ref=e39] [cursor=pointer]:
+                    - /url: /dashboard/project/twpxsbnkypocjfnerfmd
+                    - img [ref=e40]
+                    - generic "MVP PROJECT" [ref=e43]
+                  - button [ref=e44] [cursor=pointer]:
+                    - img [ref=e46]
+                - img [ref=e50]
+                - generic [ref=e52]:
+                  - link "main Production" [ref=e53] [cursor=pointer]:
+                    - /url: /dashboard/project/twpxsbnkypocjfnerfmd
+                    - generic "main" [ref=e54]
+                    - generic [ref=e55]: Production
+                  - button [ref=e56] [cursor=pointer]:
+                    - img [ref=e58]
+            - button "Connect" [ref=e62] [cursor=pointer]:
+              - img [ref=e64]
+              - generic [ref=e66]: Connect
+          - generic [ref=e67]:
+            - generic [ref=e69] [cursor=pointer]: Feedback
+            - generic [ref=e70]:
+              - button "Search..." [ref=e71]:
+                - generic [ref=e72]:
+                  - img [ref=e73]
+                  - paragraph [ref=e76]: Search...
+                - generic [ref=e78]: Ctrl K
+              - button "Help" [ref=e79] [cursor=pointer]:
+                - generic [ref=e80]:
+                  - img [ref=e81]
+                  - generic [ref=e84]: Help
+              - button "Advisor Center" [ref=e86] [cursor=pointer]:
+                - generic [ref=e87]:
+                  - img [ref=e88]
+                  - generic [ref=e90]: Advisor Center
+              - button "SQL Editor" [ref=e92] [cursor=pointer]:
+                - generic [ref=e93]:
+                  - img [ref=e94]
+                  - generic [ref=e96]: SQL Editor
+              - button "AI Assistant" [ref=e97] [cursor=pointer]:
+                - generic [ref=e98]:
+                  - img [ref=e101]
+                  - generic [ref=e104]: AI Assistant
+            - button "younghunhun" [ref=e105] [cursor=pointer]:
+              - img "younghunhun" [ref=e107]
+      - generic [ref=e108]:
+        - generic [ref=e112]:
+          - list [ref=e115]:
+            - generic [ref=e116]:
+              - listitem [ref=e117]:
+                - link "Project Overview" [ref=e118] [cursor=pointer]:
+                  - /url: /dashboard/project/twpxsbnkypocjfnerfmd
+                  - img [ref=e119]
+                  - generic: Project Overview
+              - listitem [ref=e121]:
+                - link "Table Editor" [ref=e122] [cursor=pointer]:
+                  - /url: /dashboard/project/twpxsbnkypocjfnerfmd/editor
+                  - img [ref=e123]
+                  - generic: Table Editor
+              - listitem [ref=e125]:
+                - link "SQL Editor" [ref=e126] [cursor=pointer]:
+                  - /url: /dashboard/project/twpxsbnkypocjfnerfmd/sql
+                  - img [ref=e127]
+                  - generic: SQL Editor
+            - generic [ref=e129]:
+              - listitem [ref=e130]:
+                - link "Database" [ref=e131] [cursor=pointer]:
+                  - /url: /dashboard/project/twpxsbnkypocjfnerfmd/database/schemas
+                  - img [ref=e132]
+                  - generic: Database
+              - listitem [ref=e136]:
+                - link "Authentication" [ref=e137] [cursor=pointer]:
+                  - /url: /dashboard/project/twpxsbnkypocjfnerfmd/auth/users
+                  - img [ref=e138]
+                  - generic: Authentication
+              - listitem [ref=e140]:
+                - link "Storage" [ref=e141] [cursor=pointer]:
+                  - /url: /dashboard/project/twpxsbnkypocjfnerfmd/storage/files
+                  - img [ref=e142]
+                  - generic: Storage
+              - listitem [ref=e144]:
+                - link "Edge Functions" [ref=e145] [cursor=pointer]:
+                  - /url: /dashboard/project/twpxsbnkypocjfnerfmd/functions
+                  - img [ref=e146]
+                  - generic: Edge Functions
+              - listitem [ref=e151]:
+                - link "Realtime" [ref=e152] [cursor=pointer]:
+                  - /url: /dashboard/project/twpxsbnkypocjfnerfmd/realtime/inspector
+                  - img [ref=e153]
+                  - generic: Realtime
+            - generic [ref=e155]:
+              - listitem [ref=e157]:
+                - link "Advisors" [ref=e158] [cursor=pointer]:
+                  - /url: /dashboard/project/twpxsbnkypocjfnerfmd/advisors/security
+                  - img [ref=e159]
+                  - generic: Advisors
+              - listitem [ref=e161]:
+                - link "Observability" [ref=e162] [cursor=pointer]:
+                  - /url: /dashboard/project/twpxsbnkypocjfnerfmd/observability
+                  - img [ref=e163]
+                  - generic: Observability
+              - listitem [ref=e171]:
+                - link "Logs" [ref=e172] [cursor=pointer]:
+                  - /url: /dashboard/project/twpxsbnkypocjfnerfmd/logs/explorer
+                  - img [ref=e173]
+                  - generic: Logs
+              - listitem [ref=e174]:
+                - link "Integrations" [ref=e175] [cursor=pointer]:
+                  - /url: /dashboard/project/twpxsbnkypocjfnerfmd/integrations
+                  - img [ref=e176]
+                  - generic: Integrations
+            - listitem [ref=e180]:
+              - link "Project Settings" [ref=e181] [cursor=pointer]:
+                - /url: /dashboard/project/twpxsbnkypocjfnerfmd/settings/general
+                - img [ref=e182]
+                - generic: Project Settings
+          - button "Sidebar control" [ref=e187] [cursor=pointer]:
+            - img [ref=e189]
+        - generic [ref=e196]:
+          - generic [ref=e200]:
+            - heading "SQL Editor" [level=4] [ref=e202]
+            - generic [ref=e204]:
+              - generic [ref=e205]:
+                - generic [ref=e206]:
+                  - generic [ref=e208]:
+                    - generic [ref=e209]: Search queries
+                    - textbox "Search queries..." [ref=e210]
+                    - button [ref=e211]:
+                      - img [ref=e212]
+                    - img [ref=e215]
+                  - button [ref=e218] [cursor=pointer]:
+                    - img [ref=e220]
+                - button "Shared" [ref=e223]:
+                  - img [ref=e224]
+                  - generic [ref=e226]: Shared
+                - button "Favorites" [ref=e229]:
+                  - img [ref=e230]
+                  - generic [ref=e232]: Favorites
+                - generic [ref=e234]:
+                  - button "PRIVATE (3)" [expanded] [ref=e409]:
+                    - img [ref=e236]
+                    - generic [ref=e238]: PRIVATE (3)
+                  - tree "private-snippets" [ref=e240]:
+                    - generic "List Reject-Related Columns" [ref=e450] [cursor=pointer]:
+                      - generic [ref=e412]:
+                        - img [ref=e413]
+                        - generic [ref=e419]: List Reject-Related Columns
+                    - generic "List Job Application Reject Columns" [ref=e241] [cursor=pointer]:
+                      - generic [ref=e242]:
+                        - img [ref=e243]
+                        - generic [ref=e249]: List Job Application Reject Columns
+                    - generic "Fetch User Profile Records" [ref=e250] [cursor=pointer]:
+                      - generic [ref=e251]:
+                        - img [ref=e252]
+                        - generic [ref=e258]: Fetch User Profile Records
+                - generic [ref=e260]:
+                  - button "Reference" [expanded] [ref=e261]:
+                    - img [ref=e262]
+                    - generic [ref=e264]: Reference
+                  - generic [ref=e265]:
+                    - link "templates" [ref=e266] [cursor=pointer]:
+                      - /url: /dashboard/project/twpxsbnkypocjfnerfmd/sql/templates
+                      - img [ref=e267]
+                      - text: templates
+                    - link "examples" [ref=e269] [cursor=pointer]:
+                      - /url: /dashboard/project/twpxsbnkypocjfnerfmd/sql/examples
+                      - img [ref=e270]
+                      - text: examples
+              - button "View running queries" [ref=e274] [cursor=pointer]:
+                - generic [ref=e275]: View running queries
+          - separator [ref=e276]:
+            - img [ref=e278]
+          - main [ref=e287]:
+            - generic [ref=e288]:
+              - generic [ref=e289]:
+                - generic [ref=e290]:
+                  - button "Collapse sidebar" [ref=e291]:
+                    - img [ref=e292]
+                    - generic [ref=e295]: Collapse sidebar
+                  - tablist [ref=e296]:
+                    - button "List Reject-Related Columns" [ref=e451]:
+                      - tab "List Reject-Related Columns" [selected] [ref=e452]:
+                        - img [ref=e423]
+                        - generic [ref=e430]: List Reject-Related Columns
+                        - button [ref=e431] [cursor=pointer]:
+                          - img [ref=e432]
+                      - separator [ref=e436]
+                    - button [ref=e437]:
+                      - img [ref=e438]
+                - status [ref=e307]
+              - generic [ref=e310]:
+                - code [ref=e317]:
+                  - generic [ref=e318]:
+                    - generic [ref=e441]: "1"
+                    - generic [ref=e445]: SELECT column_name FROM information_schema.columns WHERE table_name = 'job_applications' AND column_name LIKE 'reject%';
+                    - textbox "Editor content" [active] [ref=e331]: SELECT column_name FROM information_schema.columns WHERE table_name = 'job_applications' AND column_name LIKE 'reject%';
+                - separator [ref=e332]:
+                  - img [ref=e334]
+                - generic [ref=e343]:
+                  - tablist [ref=e344]:
+                    - generic [ref=e345]:
+                      - tab "Results" [selected] [ref=e346]:
+                        - generic [ref=e347]: Results
+                      - tab "Explain" [ref=e348]:
+                        - generic [ref=e349]: Explain
+                      - tab "Chart" [ref=e350]:
+                        - generic [ref=e351]: Chart
+                      - button "Export" [disabled]:
+                        - generic: Export
+                        - generic:
+                          - img
+                    - generic [ref=e352]:
+                      - button [ref=e447]:
+                        - img [ref=e448]
+                      - generic [ref=e353]:
+                        - button [ref=e354] [cursor=pointer]:
+                          - img [ref=e356]
+                        - button [ref=e358] [cursor=pointer]:
+                          - img [ref=e360]
+                        - button [ref=e362] [cursor=pointer]:
+                          - img [ref=e364]
+                      - generic [ref=e366]:
+                        - generic [ref=e367] [cursor=pointer]:
+                          - generic [ref=e368]: Source
+                          - button "Primary database" [ref=e369]:
+                            - generic [ref=e370]: Primary database
+                            - img [ref=e372]
+                        - button "Role postgres" [ref=e374] [cursor=pointer]:
+                          - generic [ref=e376]:
+                            - generic [ref=e377]: Role
+                            - generic [ref=e378]: postgres
+                            - img [ref=e379]
+                        - button "Run Ctrl ↵" [ref=e381] [cursor=pointer]:
+                          - generic [ref=e382]: Run
+                          - generic [ref=e453]: Ctrl ↵
+                  - paragraph [ref=e454]: Success. No rows returned
+                - generic "Table grid footer" [ref=e455]:
+                  - button "0 row (Limited to only 100 rows)" [ref=e456]:
+                    - paragraph [ref=e457]:
+                      - generic [ref=e458]: 0 row
+                      - text: (Limited to only 100 rows)
+                  - 'button "Limit results to: 100 rows" [ref=e459] [cursor=pointer]':
+                    - generic [ref=e460]: "Limit results to: 100 rows"
+                    - img [ref=e462]
+    - generic [ref=e392]:
+      - generic:
+        - img "Background pattern"
+      - generic [ref=e393]:
+        - button "Close banner" [ref=e395] [cursor=pointer]:
+          - img [ref=e397]
+        - generic [ref=e400]:
+          - generic [ref=e401]: Notice
+          - generic [ref=e402]:
+            - paragraph [ref=e403]: We've updated our Terms of Service
+            - paragraph [ref=e404]: Updates define the responsibilities of both you and Supabase in the use of AI.
+          - button "Learn more" [ref=e405] [cursor=pointer]:
+            - generic [ref=e406]: Learn more
+  - alert [ref=e407]: SQL Editor | MVP PROJECT | LION VNVN | Supabase
+  - generic [ref=e408]:
+    - alert
+    - alert

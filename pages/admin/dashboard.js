@@ -2,11 +2,17 @@ import { useState, useEffect } from 'react'
 import Head from 'next/head'
 import dynamic from 'next/dynamic'
 import { supabase } from '../../lib/supabaseClient'
+import { useT } from '../../lib/i18n'
 import Icon from '../../components/Icon'
 import FunnelView from '../../components/admin/FunnelView'
 import UtmView from '../../components/admin/UtmView'
 import UsersView from '../../components/admin/UsersView'
 import ApplicationsView from '../../components/admin/ApplicationsView'
+import ResumesView from '../../components/admin/ResumesView'
+import RetentionView from '../../components/admin/RetentionView'
+import GA4View from '../../components/admin/GA4View'
+import VerificationsView from '../../components/admin/VerificationsView'
+import CommunityView from '../../components/admin/CommunityView'
 import {
   T, METRICS_BASE, EXP_COLORS, COLORS,
   inputStyle, sectionStyle, sectionTitle,
@@ -15,8 +21,9 @@ import { aggregateDaily, localDate } from '../../utils/dashboard'
 
 const MetricChart = dynamic(() => import('../../components/DashboardCharts'), { ssr: false })
 
-// Columns for the Daily Detail table (order matches T.tableHeaders after the date col)
-const DETAIL_COLS = [
+// Detail-table metric columns, in the same order as T.tableHeaders (after the date col)
+const TABLE_COLS = [
+  { key: 'sessions', color: '#2563EB', bold: true, dash: true },
   { key: 'submissions', color: null, bold: true },
   { key: 'ad', color: '#4F46E5' },
   { key: 'organic', color: '#10B981' },
@@ -27,9 +34,9 @@ const DETAIL_COLS = [
   { key: 'jobsPageViews', color: '#06B6D4' },
   { key: 'applyClicks', color: '#D946EF' },
   { key: 'saveClicks', color: '#F472B6' },
+  { key: 'resumeUploads', color: '#14B8A6' },
   { key: 'jobApps', color: '#EF4444' },
 ]
-const DETAIL_DELTA_LABEL = { '1d': 'DoD', weekly: 'WoW', monthly: 'MoM' }
 function cellPct(cur, prev) {
   if (cur === null || cur === undefined || prev === null || prev === undefined) return null
   if (prev === 0) return cur > 0 ? 100 : 0
@@ -41,18 +48,22 @@ export default function AdminDashboard() {
   const [token, setToken] = useState(null)
   const [data, setData] = useState(null)
   const [loading, setLoading] = useState(true)
-  const [selected, setSelected] = useState(null)
+  const [selected, setSelected] = useState([])
   const [lastUpdated, setLastUpdated] = useState(null)
   const [experiments, setExperiments] = useState([])
   const [expForm, setExpForm] = useState({ title: '', date: '', color: EXP_COLORS[0], metrics: [] })
   const [showExpForm, setShowExpForm] = useState(false)
-  const [lang, setLang] = useState('ko')
+  const { lang: globalLang, setLang } = useT()
+  // Admin dashboard only ships ko/en; fall back to en for any other global lang (e.g. vi)
+  const lang = globalLang === 'ko' ? 'ko' : 'en'
   const [tab, setTab] = useState('trend')
   const [funnelKeys, setFunnelKeys] = useState([])
   const [chartMode, setChartMode] = useState('1d')
-  const [detailMode, setDetailMode] = useState('1d')
+  const [tableView, setTableView] = useState('daily')
+  const [dualAxis, setDualAxis] = useState(true)
   const [realtime, setRealtime] = useState(null)
   const [realtimeLoading, setRealtimeLoading] = useState(false)
+  const [ga4, setGa4] = useState(null)
   const [autoRefresh, setAutoRefresh] = useState(true)
   const yesterday = (() => {
     const d = new Date(Date.now() - 86400000)
@@ -86,6 +97,7 @@ export default function AdminDashboard() {
     fetchData()
     fetchExperiments()
     fetchRealtime()
+    fetchGA4()
   }, [auth, token, dateRange, lang])
 
   useEffect(() => {
@@ -140,6 +152,18 @@ export default function AdminDashboard() {
     setRealtimeLoading(false)
   }
 
+  async function fetchGA4() {
+    try {
+      const res = await fetch(
+        `/api/admin/ga4?from=${dateRange.from}&to=${dateRange.to}`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      )
+      if (res.ok) setGa4(await res.json())
+    } catch (e) {
+      console.error('GA4 fetch error:', e)
+    }
+  }
+
   async function fetchExperiments() {
     try {
       const res = await fetch('/api/admin/experiments', { headers: headers() })
@@ -186,14 +210,29 @@ export default function AdminDashboard() {
   if (auth === 'loading') return <div style={{ padding: 40, textAlign: 'center' }}>{t.loading}</div>
   if (auth === 'denied') return <div style={{ padding: 40, textAlign: 'center' }}>{t.denied}</div>
 
-  const selectedMetric = METRICS.find(m => m.key === selected)
+  const selectedMetrics = METRICS.filter(m => selected.includes(m.key))
 
   const dailyWithToday = (() => {
-    if (!data?.daily || !realtime) return data?.daily
+    if (!data?.daily) return data?.daily
+    // Merge GA4 sessions into daily data
+    const ga4Map = {}
+    if (ga4?.daily) {
+      for (const d of ga4.daily) ga4Map[d.date] = { sessions: d.sessions, totalUsers: d.totalUsers, newUsers: d.newUsers, engagedSessions: d.engagedSessions }
+    }
+    let merged = data.daily.map(d => ({
+      ...d,
+      sessions: ga4Map[d.date]?.sessions ?? 0,
+      ga4Users: ga4Map[d.date]?.totalUsers ?? 0,
+      ga4NewUsers: ga4Map[d.date]?.newUsers ?? 0,
+      ga4Engaged: ga4Map[d.date]?.engagedSessions ?? 0,
+    }))
+
+    if (!realtime) return merged
     const today = realtime.date
-    if (today > dateRange.to && today !== localDate(Date.now())) return data.daily
+    if (today > dateRange.to && today !== localDate(Date.now())) return merged
     const todayData = {
       date: today,
+      sessions: ga4?.today?.sessions ?? 0,
       submissions: realtime.submissions,
       ad: realtime.ad,
       organic: realtime.organic,
@@ -203,19 +242,27 @@ export default function AdminDashboard() {
       cardClicks: realtime.cardClicks,
       jobApps: realtime.jobApps,
     }
-    const exists = data.daily.some(d => d.date === today)
-    if (exists) return data.daily.map(d => d.date === today ? todayData : d)
-    return [...data.daily, todayData]
+    const exists = merged.some(d => d.date === today)
+    if (exists) return merged.map(d => d.date === today ? todayData : d)
+    return [...merged, todayData]
   })()
 
   const summary = (() => {
-    if (!data?.summary || !realtime) return data?.summary
+    if (!data?.summary) return data?.summary
+    const base = {
+      ...data.summary,
+      totalSessions: ga4?.totals?.sessions ?? 0,
+      ga4TotalUsers: ga4?.totals?.totalUsers ?? 0,
+      ga4NewUsers: ga4?.totals?.newUsers ?? 0,
+      ga4EngagedSessions: ga4?.totals?.engagedSessions ?? 0,
+    }
+    if (!realtime) return base
     const today = realtime.date
     const todayInRange = data.daily?.find(d => d.date === today)
-    if (!todayInRange && today > dateRange.to) return data.summary
+    if (!todayInRange && today > dateRange.to) return base
     const diff = (rtKey, dayKey) => (realtime[rtKey] ?? 0) - (todayInRange?.[dayKey ?? rtKey] ?? 0)
     return {
-      ...data.summary,
+      ...base,
       totalSubmissions: data.summary.totalSubmissions + diff('submissions'),
       adSubmissions: data.summary.adSubmissions + diff('ad'),
       organicSubmissions: data.summary.organicSubmissions + diff('organic'),
@@ -226,21 +273,126 @@ export default function AdminDashboard() {
     }
   })()
 
+  const weeklyTableData = (() => {
+    if (!dailyWithToday || tableView !== 'weekly') return null
+    const weeks = {}
+    for (const d of dailyWithToday) {
+      const dt = new Date(d.date + 'T00:00:00')
+      const day = dt.getDay()
+      const mon = new Date(dt)
+      mon.setDate(dt.getDate() - ((day + 6) % 7))
+      const key = mon.toISOString().slice(0, 10)
+      if (!weeks[key]) weeks[key] = { start: key, end: d.date, days: [] }
+      weeks[key].end = d.date
+      weeks[key].days.push(d)
+    }
+    return Object.values(weeks).map(w => {
+      const sum = (k) => {
+        const vals = w.days.map(d => d[k]).filter(v => v !== null && v !== undefined)
+        return vals.length ? vals.reduce((a, b) => a + b, 0) : null
+      }
+      return {
+        label: `${w.start.slice(5)} ~ ${w.end.slice(5)}`,
+        sessions: sum('sessions'),
+        submissions: sum('submissions') ?? 0,
+        ad: sum('ad') ?? 0,
+        organic: sum('organic') ?? 0,
+        signups: sum('signups') ?? 0,
+        companies: sum('companies') ?? 0,
+        jobClicks: sum('jobClicks'),
+        cardClicks: sum('cardClicks'),
+        jobsPageViews: sum('jobsPageViews'),
+        applyClicks: sum('applyClicks'),
+        saveClicks: sum('saveClicks'),
+        resumeUploads: sum('resumeUploads'),
+        jobApps: sum('jobApps') ?? 0,
+      }
+    })
+  })()
+
+  const monthlyTableData = (() => {
+    if (!dailyWithToday || tableView !== 'monthly') return null
+    const months = {}
+    for (const d of dailyWithToday) {
+      const key = d.date.slice(0, 7)
+      if (!months[key]) months[key] = { label: key, days: [] }
+      months[key].days.push(d)
+    }
+    return Object.values(months).map(w => {
+      const sum = (k) => {
+        const vals = w.days.map(d => d[k]).filter(v => v !== null && v !== undefined)
+        return vals.length ? vals.reduce((a, b) => a + b, 0) : null
+      }
+      return {
+        label: w.label,
+        sessions: sum('sessions'),
+        submissions: sum('submissions') ?? 0,
+        ad: sum('ad') ?? 0,
+        organic: sum('organic') ?? 0,
+        signups: sum('signups') ?? 0,
+        companies: sum('companies') ?? 0,
+        jobClicks: sum('jobClicks'),
+        cardClicks: sum('cardClicks'),
+        jobsPageViews: sum('jobsPageViews'),
+        applyClicks: sum('applyClicks'),
+        saveClicks: sum('saveClicks'),
+        resumeUploads: sum('resumeUploads'),
+        jobApps: sum('jobApps') ?? 0,
+      }
+    })
+  })()
+
   const chartData = aggregateDaily(dailyWithToday, chartMode)
-  const detailRows = dailyWithToday ? aggregateDaily(dailyWithToday, detailMode) : []
-  const visibleExperiments = experiments.filter(e => e.date >= dateRange.from && e.date <= (realtime?.date || dateRange.to) && (!e.metrics?.length || !selected || e.metrics.includes(selected)))
+  const visibleExperiments = experiments.filter(e => (!e.status || e.status === 'running') && e.date >= dateRange.from && e.date <= (realtime?.date || dateRange.to) && (!e.metrics?.length || selected.length === 0 || selected.some(k => e.metrics.includes(k))))
 
   return (
     <>
       <Head><title>FYI {t.title}</title></Head>
-      <div style={{ maxWidth: 1200, margin: '0 auto', padding: '24px 16px', fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif' }}>
+      <style>{`
+        .adm-dash { max-width: 1200px; margin: 0 auto; padding: 24px 16px; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+        .adm-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
+        .adm-header-title { display: flex; align-items: center; gap: 12px; }
+        .adm-header-controls { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+        .adm-tabs { display: flex; gap: 0; margin-bottom: 24px; border-bottom: 2px solid #e5e7eb; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+        .adm-tabs::-webkit-scrollbar { display: none; }
+        .adm-tab-btn { padding: 10px 24px; font-size: 14px; font-weight: 600; cursor: pointer; border: none; background: none; margin-bottom: -2px; transition: all 0.15s; white-space: nowrap; flex-shrink: 0; }
+        .adm-grid-2col { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 24px; }
+        @media (max-width: 768px) {
+          .adm-dash { padding: 16px 12px 80px 12px; }
+          .adm-header { flex-direction: column; align-items: flex-start; gap: 12px; }
+          .adm-header-controls { width: 100%; flex-wrap: wrap; }
+          .adm-header-controls input[type="date"] { width: 110px; font-size: 12px; }
+          .adm-tab-btn { padding: 8px 14px; font-size: 12px; }
+          .adm-grid-2col { grid-template-columns: 1fr; }
+          .adm-metric-cards { grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)) !important; gap: 8px !important; }
+          .adm-metric-cards > div { padding: 12px 14px !important; }
+          .adm-metric-cards .adm-metric-value { font-size: 22px !important; }
+          .adm-realtime-grid { grid-template-columns: repeat(auto-fit, minmax(80px, 1fr)) !important; gap: 6px !important; }
+          .adm-realtime-grid > div { padding: 8px 6px !important; }
+          .adm-realtime-grid .adm-rt-value { font-size: 18px !important; }
+        }
+      `}</style>
+      <div className="adm-dash">
         {/* Header */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+        <div className="adm-header">
+          <div className="adm-header-title">
             <a href="/admin/jobs" style={{ color: '#888', textDecoration: 'none', fontSize: 20 }} title={t.backTitle}>&larr;</a>
             <h1 style={{ fontSize: 24, fontWeight: 700, margin: 0 }}>{t.title}</h1>
+            <div style={{ display: 'flex', gap: 2, background: '#f3f4f6', borderRadius: 6, padding: 2 }}>
+              {['ko', 'en'].map(l => (
+                <button key={l} onClick={() => setLang(l)}
+                  style={{
+                    padding: '3px 10px', borderRadius: 4, fontSize: 11, fontWeight: 600, cursor: 'pointer',
+                    border: 'none',
+                    background: lang === l ? '#111' : 'transparent',
+                    color: lang === l ? '#fff' : '#999',
+                  }}>
+                  {l === 'ko' ? 'KO' : 'EN'}
+                </button>
+              ))}
+            </div>
           </div>
-          <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
+          <div className="adm-header-controls">
             {[{ label: '7D', days: 7 }, { label: '14D', days: 14 }, { label: '30D', days: 30 }, { label: 'All', days: 0 }].map(p => (
               <button key={p.label} onClick={() => p.days ? applyPreset(p.days) : applyRange('2026-04-20', yesterday)}
                 style={{ padding: '5px 10px', border: '1px solid #d1d5db', borderRadius: 6, fontSize: 12, background: '#fff', cursor: 'pointer', fontWeight: 600 }}>
@@ -263,14 +415,13 @@ export default function AdminDashboard() {
         </div>
 
         {/* Tab switcher */}
-        <div style={{ display: 'flex', gap: 0, marginBottom: 24, borderBottom: '2px solid #e5e7eb' }}>
-          {['trend', 'funnel', 'utm', 'users', 'applications'].map(k => (
+        <div className="adm-tabs">
+          {['trend', 'funnel', 'ga4', 'utm', 'retention', 'users', 'applications', 'resumes', 'verifications', 'community'].map(k => (
             <button key={k} onClick={() => setTab(k)}
+              className="adm-tab-btn"
               style={{
-                padding: '10px 24px', fontSize: 14, fontWeight: 600, cursor: 'pointer',
-                border: 'none', borderBottom: tab === k ? '2px solid #111' : '2px solid transparent',
-                background: 'none', color: tab === k ? '#111' : '#999',
-                marginBottom: -2, transition: 'all 0.15s',
+                borderBottom: tab === k ? '2px solid #111' : '2px solid transparent',
+                color: tab === k ? '#111' : '#999',
               }}>
               {t[k]}
             </button>
@@ -301,8 +452,9 @@ export default function AdminDashboard() {
                 )}
               </div>
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(100px, 1fr))', gap: 8 }}>
+            <div className="adm-realtime-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(100px, 1fr))', gap: 8 }}>
               {[
+                { label: t.metrics.sessions, value: ga4?.today?.sessions ?? '-', color: '#2563EB' },
                 { label: t.metrics.submissions, value: realtime.submissions, color: '#e2e8f0' },
                 { label: t.metrics.ad, value: realtime.ad, color: '#818cf8' },
                 { label: t.metrics.organic, value: realtime.organic, color: '#34d399' },
@@ -310,6 +462,7 @@ export default function AdminDashboard() {
                 { label: t.pageViews, value: realtime.landings, color: '#a78bfa' },
                 { label: t.metrics.jobClicks, value: realtime.jobClicks, color: '#fb923c' },
                 { label: t.metrics.cardClicks, value: realtime.cardClicks, color: '#f472b6' },
+                { label: t.metrics.resumeUploads, value: realtime.resumeUploads, color: '#14B8A6' },
                 { label: t.metrics.jobApps, value: realtime.jobApps, color: '#f87171' },
               ].map(item => (
                 <div key={item.label} style={{
@@ -335,20 +488,25 @@ export default function AdminDashboard() {
         {/* Trend Tab */}
         {summary && !loading && tab === 'trend' && (
           <>
-            {/* Metric Cards (cumulative totals over the selected range) */}
-            <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginBottom: 10 }}>
-              <span style={{ fontSize: 13, fontWeight: 700, color: '#374151' }}>{lang === 'ko' ? '누적' : 'Cumulative'}</span>
-              <span style={{ fontSize: 11, color: '#9CA3AF' }}>{dateRange.from} ~ {dateRange.to}</span>
-            </div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))', gap: 12, marginBottom: 24 }}>
+            {/* Metric Cards */}
+            {selected.length > 1 && (
+              <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 8 }}>
+                <button onClick={() => setSelected([])}
+                  style={{ padding: '3px 10px', border: '1px solid #d1d5db', borderRadius: 6, fontSize: 11, background: '#fff', cursor: 'pointer', color: '#888' }}>
+                  {lang === 'ko' ? '선택 초기화' : 'Clear selection'} ({selected.length})
+                </button>
+              </div>
+            )}
+            <div className="adm-metric-cards" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))', gap: 12, marginBottom: 24 }}>
               {METRICS.map(m => {
                 const isEventMetric = m.key === 'jobClicks' || m.key === 'cardClicks'
                 const noTracking = isEventMetric && !summary.hasEventTracking
                 const value = noTracking ? '-' : summary[m.summaryKey]
-                const isActive = selected === m.key
+                const dod = noTracking ? null : getDoD(chartData, m.dataKey)
+                const isActive = selected.includes(m.key)
                 return (
                   <div key={m.key}
-                    onClick={() => setSelected(isActive ? null : m.key)}
+                    onClick={() => setSelected(prev => isActive ? prev.filter(k => k !== m.key) : [...prev, m.key])}
                     style={{
                       background: isActive ? m.color : '#fff',
                       border: `2px solid ${isActive ? m.color : '#e5e7eb'}`,
@@ -365,31 +523,44 @@ export default function AdminDashboard() {
             </div>
 
             {/* Chart */}
-            {selectedMetric && (
+            {selectedMetrics.length > 0 && (
               <div style={sectionStyle}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-                  <h3 style={{ ...sectionTitle, margin: 0 }}>{selectedMetric.label} {t.trend}</h3>
-                  <div style={{ display: 'flex', gap: 0, background: '#f3f4f6', borderRadius: 8, padding: 2 }}>
-                    {[
-                      { key: '1d', label: t.chart1d },
-                      { key: '3d', label: t.chart3d },
-                      { key: 'weekly', label: t.chartWeekly },
-                      { key: 'monthly', label: t.chartMonthly },
-                    ].map(m => (
-                      <button key={m.key} onClick={() => setChartMode(m.key)}
+                <div className="adm-chart-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, flexWrap: 'wrap', gap: 8 }}>
+                  <h3 style={{ ...sectionTitle, margin: 0 }}>{selectedMetrics.map(m => m.label).join(' + ')} {t.trend}</h3>
+                  <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                    {selectedMetrics.length === 2 && (
+                      <button onClick={() => setDualAxis(v => !v)}
                         style={{
-                          padding: '5px 12px', borderRadius: 6, fontSize: 12, fontWeight: 600,
-                          border: 'none', cursor: 'pointer', transition: 'all 0.15s',
-                          background: chartMode === m.key ? '#fff' : 'transparent',
-                          color: chartMode === m.key ? '#111' : '#999',
-                          boxShadow: chartMode === m.key ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
+                          padding: '5px 10px', borderRadius: 6, fontSize: 11, fontWeight: 600,
+                          border: '1px solid #d1d5db', cursor: 'pointer', transition: 'all 0.15s',
+                          background: dualAxis ? '#EEF2FF' : '#fff',
+                          color: dualAxis ? '#4F46E5' : '#999',
                         }}>
-                        {m.label}
+                        {lang === 'ko' ? (dualAxis ? 'Y축 분리' : 'Y축 공유') : (dualAxis ? 'Dual Y' : 'Shared Y')}
                       </button>
-                    ))}
+                    )}
+                    <div style={{ display: 'flex', gap: 0, background: '#f3f4f6', borderRadius: 8, padding: 2 }}>
+                      {[
+                        { key: '1d', label: t.chart1d },
+                        { key: '3d', label: t.chart3d },
+                        { key: 'weekly', label: t.chartWeekly },
+                        { key: 'monthly', label: t.chartMonthly },
+                      ].map(m => (
+                        <button key={m.key} onClick={() => setChartMode(m.key)}
+                          style={{
+                            padding: '5px 12px', borderRadius: 6, fontSize: 12, fontWeight: 600,
+                            border: 'none', cursor: 'pointer', transition: 'all 0.15s',
+                            background: chartMode === m.key ? '#fff' : 'transparent',
+                            color: chartMode === m.key ? '#111' : '#999',
+                            boxShadow: chartMode === m.key ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
+                          }}>
+                          {m.label}
+                        </button>
+                      ))}
+                    </div>
                   </div>
                 </div>
-                <MetricChart daily={chartData} metric={selectedMetric} experiments={chartMode === '1d' ? visibleExperiments : []} avgLabel={t.avg} lang={lang} />
+                <MetricChart daily={chartData} metrics={selectedMetrics} experiments={chartMode === '1d' ? visibleExperiments : []} avgLabel={t.avg} lang={lang} dualAxis={dualAxis} />
 
                 {visibleExperiments.length > 0 && (
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 12, paddingTop: 12, borderTop: '1px solid #f3f4f6' }}>
@@ -433,7 +604,7 @@ export default function AdminDashboard() {
                   </label>
                   <input type="text" value={expForm.title} placeholder={t.expPlaceholder}
                     onChange={e => setExpForm(f => ({ ...f, title: e.target.value }))}
-                    onKeyDown={e => e.key === 'Enter' && addExperiment()}
+                    onKeyDown={e => { if (e.key === 'Enter' && !e.nativeEvent.isComposing) addExperiment() }}
                     style={{ ...inputStyle, flex: 1 }} />
                   <div style={{ display: 'flex', gap: 4 }}>
                     {EXP_COLORS.map(c => (
@@ -475,7 +646,7 @@ export default function AdminDashboard() {
                           <input type="date" value={editingExp.date} onChange={e => setEditingExp(f => ({ ...f, date: e.target.value }))}
                             style={{ ...inputStyle, width: 140 }} />
                           <input type="text" value={editingExp.title} onChange={e => setEditingExp(f => ({ ...f, title: e.target.value }))}
-                            onKeyDown={e => e.key === 'Enter' && updateExperiment()}
+                            onKeyDown={e => { if (e.key === 'Enter' && !e.nativeEvent.isComposing) updateExperiment() }}
                             style={{ ...inputStyle, flex: 1 }} />
                           <div style={{ display: 'flex', gap: 3 }}>
                             {EXP_COLORS.map(c => (
@@ -495,6 +666,35 @@ export default function AdminDashboard() {
                             )
                           })}
                         </div>
+                        {/* Status & Result */}
+                        <div style={{ padding: '10px 0', borderTop: '1px solid #e5e7eb', marginTop: 4 }}>
+                          <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 8 }}>
+                            <span style={{ fontSize: 11, color: '#888', minWidth: 32 }}>{t.expStatus}</span>
+                            {['running', 'success', 'failure'].map(s => {
+                              const on = (editingExp.status || 'running') === s
+                              const colors = { running: '#2563EB', success: '#10B981', failure: '#EF4444' }
+                              const labels = { running: t.expRunning, success: t.expSuccess, failure: t.expFailure }
+                              return (
+                                <button key={s} onClick={() => setEditingExp(f => ({ ...f, status: s, ...(s !== 'running' && !f.end_date ? { end_date: new Date().toISOString().slice(0, 10) } : {}) }))}
+                                  style={{ padding: '3px 10px', borderRadius: 12, fontSize: 11, fontWeight: 600, border: on ? `1.5px solid ${colors[s]}` : '1px solid #ddd', background: on ? colors[s] + '18' : '#fff', color: on ? colors[s] : '#999', cursor: 'pointer' }}>
+                                  {labels[s]}
+                                </button>
+                              )
+                            })}
+                            {(editingExp.status === 'success' || editingExp.status === 'failure') && (
+                              <label style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, color: '#888', marginLeft: 8 }}>
+                                {t.expEndDate}
+                                <input type="date" value={editingExp.end_date || ''} onChange={e => setEditingExp(f => ({ ...f, end_date: e.target.value }))}
+                                  style={{ ...inputStyle, width: 130, fontSize: 12 }} />
+                              </label>
+                            )}
+                          </div>
+                          {(editingExp.status === 'success' || editingExp.status === 'failure') && (
+                            <textarea value={editingExp.result_note || ''} onChange={e => setEditingExp(f => ({ ...f, result_note: e.target.value }))}
+                              placeholder={t.expResultPlaceholder}
+                              style={{ ...inputStyle, width: '100%', minHeight: 60, resize: 'vertical', fontFamily: 'inherit', boxSizing: 'border-box' }} />
+                          )}
+                        </div>
                         <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end' }}>
                           <button onClick={() => setEditingExp(null)}
                             style={{ padding: '4px 12px', border: '1px solid #d1d5db', borderRadius: 6, fontSize: 12, background: '#fff', cursor: 'pointer' }}>
@@ -513,19 +713,50 @@ export default function AdminDashboard() {
                     )
                     return (
                     <div key={exp.id} onClick={() => setEditingExp({ ...exp, metrics: exp.metrics || [] })} style={{
-                      display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                      display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between',
                       padding: '8px 12px', borderRadius: 8, background: '#fafafa', fontSize: 13, cursor: 'pointer',
                     }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-                        <span style={{ width: 10, height: 10, borderRadius: '50%', background: exp.color, flexShrink: 0 }} />
-                        <span style={{ color: '#888', fontSize: 12, minWidth: 80 }}>{exp.date}</span>
-                        <span style={{ fontWeight: 500 }}>{exp.title}</span>
-                        {exp.metrics?.map(mk => {
-                          const mb = METRICS_BASE.find(x => x.key === mk)
-                          return mb ? <span key={mk} style={{ fontSize: 9, padding: '1px 6px', borderRadius: 8, background: mb.color + '18', color: mb.color, fontWeight: 600 }}>{t.metrics[mk] || mk}</span> : null
-                        })}
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 3, flex: 1, minWidth: 0 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                          <span style={{ width: 10, height: 10, borderRadius: '50%', background: exp.color, flexShrink: 0 }} />
+                          <span style={{ fontWeight: 500 }}>{exp.title}</span>
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginLeft: 18, flexWrap: 'wrap' }}>
+                          <span style={{ color: '#999', fontSize: 11 }}>{exp.date}{exp.end_date ? ` → ${exp.end_date}` : ''}</span>
+                          {exp.metrics?.length > 0 && (
+                            <>
+                              <span style={{ color: '#ddd', fontSize: 11 }}>·</span>
+                              {exp.metrics.map(mk => {
+                                const mb = METRICS_BASE.find(x => x.key === mk)
+                                return mb ? <span key={mk} style={{ fontSize: 9, padding: '1px 6px', borderRadius: 8, background: mb.color + '18', color: mb.color, fontWeight: 600 }}>{t.metrics[mk] || mk}</span> : null
+                              })}
+                            </>
+                          )}
+                        </div>
                       </div>
-                      <Icon name="edit" size={11} color="#ccc" />
+                      <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8, flexShrink: 0 }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 4 }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                            {(() => {
+                              const s = exp.status || 'running'
+                              const cfg = { running: { bg: '#DBEAFE', color: '#1E40AF', icon: '●' }, success: { bg: '#D1FAE5', color: '#065F46', icon: '✓' }, failure: { bg: '#FEE2E2', color: '#991B1B', icon: '✗' } }
+                              const c = cfg[s]
+                              const labels = { running: t.expRunning, success: t.expSuccess, failure: t.expFailure }
+                              return <span style={{ fontSize: 11, padding: '2px 10px', borderRadius: 4, background: c.bg, color: c.color, fontWeight: 700, whiteSpace: 'nowrap' }}>{c.icon} {labels[s]}</span>
+                            })()}
+                            {(!exp.status || exp.status === 'running') && (
+                              <button onClick={e => { e.stopPropagation(); setEditingExp({ ...exp, metrics: exp.metrics || [], status: 'success', end_date: new Date().toISOString().slice(0, 10) }) }}
+                                style={{ padding: '3px 10px', border: '1px solid #d1d5db', borderRadius: 6, fontSize: 11, background: '#fff', cursor: 'pointer', fontWeight: 600, color: '#374151', whiteSpace: 'nowrap' }}>
+                                {t.expEnd}
+                              </button>
+                            )}
+                          </div>
+                          {exp.result_note && (
+                            <div style={{ fontSize: 11, color: '#888', lineHeight: 1.4, maxWidth: 200, textAlign: 'right' }}>{exp.result_note}</div>
+                          )}
+                        </div>
+                        <Icon name="edit" size={11} color="#ccc" style={{ marginTop: 4 }} />
+                      </div>
                     </div>
                     )
                   })}
@@ -540,7 +771,7 @@ export default function AdminDashboard() {
             </div>
 
             {/* Intent & Top Companies */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24, marginBottom: 24 }}>
+            <div className="adm-grid-2col">
               <div style={sectionStyle}>
                 <h3 style={sectionTitle}>{t.intentTitle}</h3>
                 {data.intent.filter(i => i.value > 0).map((item, i) => {
@@ -580,28 +811,28 @@ export default function AdminDashboard() {
 
             {/* Daily Detail Table */}
             <div style={sectionStyle}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-                <h3 style={{ ...sectionTitle, margin: 0 }}>
-                  {t.dailyDetail}
-                  {detailMode !== '1d' && (
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 0 }}>
+                <h3 style={sectionTitle}>
+                  {tableView === 'weekly' ? t.weeklyDetail : tableView === 'monthly' ? t.monthlyDetail : t.dailyDetail}
+                  {tableView !== 'daily' && (
                     <span style={{ fontSize: 11, fontWeight: 500, color: '#9CA3AF', marginLeft: 8 }}>
-                      {lang === 'ko' ? '변화율' : 'Change'}: {DETAIL_DELTA_LABEL[detailMode]}
+                      {lang === 'ko' ? '변화율' : 'Change'}: {tableView === 'weekly' ? 'WoW' : 'MoM'}
                     </span>
                   )}
                 </h3>
                 <div style={{ display: 'flex', gap: 0, background: '#f3f4f6', borderRadius: 8, padding: 2 }}>
                   {[
-                    { key: '1d', label: t.chart1d },
-                    { key: 'weekly', label: t.chartWeekly },
-                    { key: 'monthly', label: t.chartMonthly },
+                    { key: 'daily', label: lang === 'ko' ? '일별' : 'Daily' },
+                    { key: 'weekly', label: lang === 'ko' ? '주별' : 'Weekly' },
+                    { key: 'monthly', label: lang === 'ko' ? '월별' : 'Monthly' },
                   ].map(m => (
-                    <button key={m.key} onClick={() => setDetailMode(m.key)}
+                    <button key={m.key} onClick={() => setTableView(m.key)}
                       style={{
                         padding: '5px 12px', borderRadius: 6, fontSize: 12, fontWeight: 600,
                         border: 'none', cursor: 'pointer', transition: 'all 0.15s',
-                        background: detailMode === m.key ? '#fff' : 'transparent',
-                        color: detailMode === m.key ? '#111' : '#999',
-                        boxShadow: detailMode === m.key ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
+                        background: tableView === m.key ? '#fff' : 'transparent',
+                        color: tableView === m.key ? '#111' : '#999',
+                        boxShadow: tableView === m.key ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
                       }}>
                       {m.label}
                     </button>
@@ -618,15 +849,14 @@ export default function AdminDashboard() {
                     </tr>
                   </thead>
                   <tbody>
-                    {detailRows.map((d, i) => (
+                    {(tableView === 'weekly' ? weeklyTableData : tableView === 'monthly' ? monthlyTableData : dailyWithToday).map((d, i, arr) => (
                       <tr key={i} style={{ borderBottom: '1px solid #f3f4f6', background: i % 2 === 0 ? '#fff' : '#fafafa' }}>
-                        <td style={{ padding: '6px 12px' }}>{d.date}</td>
-                        {DETAIL_COLS.map(col => {
-                          const hideCompanies = col.key === 'companies' && detailMode !== '1d'
-                          const val = hideCompanies ? null : d[col.key]
-                          const prev = (i > 0 && !hideCompanies) ? detailRows[i - 1][col.key] : null
-                          const pct = detailMode === '1d' ? null : cellPct(val, prev)
+                        <td style={{ padding: '6px 12px' }}>{tableView === 'daily' ? d.date : d.label}</td>
+                        {TABLE_COLS.map(col => {
+                          const val = d[col.key]
                           const isNull = val === null || val === undefined
+                          const prev = (tableView !== 'daily' && i > 0) ? arr[i - 1][col.key] : null
+                          const pct = tableView !== 'daily' ? cellPct(val, prev) : null
                           return (
                             <td key={col.key} style={{ padding: '6px 12px', textAlign: 'right', color: isNull ? '#ccc' : (col.color || undefined), fontWeight: col.bold ? 600 : undefined }}>
                               <div>{isNull ? '-' : val}</div>
@@ -642,6 +872,7 @@ export default function AdminDashboard() {
                     ))}
                     <tr style={{ borderTop: '2px solid #e5e7eb', fontWeight: 700 }}>
                       <td style={{ padding: '8px 12px' }}>{t.total}</td>
+                      <td style={{ padding: '8px 12px', textAlign: 'right', color: '#2563EB' }}>{summary.totalSessions ?? '-'}</td>
                       <td style={{ padding: '8px 12px', textAlign: 'right' }}>{summary.totalSubmissions}</td>
                       <td style={{ padding: '8px 12px', textAlign: 'right', color: '#4F46E5' }}>{summary.adSubmissions}</td>
                       <td style={{ padding: '8px 12px', textAlign: 'right', color: '#10B981' }}>{summary.organicSubmissions}</td>
@@ -652,6 +883,7 @@ export default function AdminDashboard() {
                       <td style={{ padding: '8px 12px', textAlign: 'right', color: summary.hasEventTracking ? '#06B6D4' : '#ccc' }}>{summary.hasEventTracking ? summary.totalJobsPageViews : '-'}</td>
                       <td style={{ padding: '8px 12px', textAlign: 'right', color: summary.hasEventTracking ? '#D946EF' : '#ccc' }}>{summary.hasEventTracking ? summary.totalApplyClicks : '-'}</td>
                       <td style={{ padding: '8px 12px', textAlign: 'right', color: summary.hasEventTracking ? '#F472B6' : '#ccc' }}>{summary.hasEventTracking ? summary.totalSaveClicks : '-'}</td>
+                      <td style={{ padding: '8px 12px', textAlign: 'right', color: '#14B8A6' }}>{summary.totalResumeUploads ?? '-'}</td>
                       <td style={{ padding: '8px 12px', textAlign: 'right', color: '#EF4444' }}>{summary.totalJobApps}</td>
                     </tr>
                   </tbody>
@@ -663,12 +895,22 @@ export default function AdminDashboard() {
 
         {/* Funnel Tab */}
         {data?.summary && !loading && tab === 'funnel' && (
-          <FunnelView data={data} metrics={METRICS} summary={summary} funnelKeys={funnelKeys} setFunnelKeys={setFunnelKeys} t={t} lang={lang} />
+          <FunnelView data={{ ...data, daily: dailyWithToday }} metrics={METRICS} summary={summary} funnelKeys={funnelKeys} setFunnelKeys={setFunnelKeys} t={t} lang={lang} />
+        )}
+
+        {/* GA4 Tab */}
+        {!loading && tab === 'ga4' && (
+          <GA4View ga4={ga4} t={t} />
         )}
 
         {/* UTM Tab */}
         {data && !loading && tab === 'utm' && (
           <UtmView utm={data.utm} t={t} />
+        )}
+
+        {/* Retention Tab */}
+        {tab === 'retention' && (
+          <RetentionView token={token} t={t} />
         )}
 
         {/* Users Tab */}
@@ -678,23 +920,24 @@ export default function AdminDashboard() {
 
         {/* Applications Tab */}
         {tab === 'applications' && (
-          <ApplicationsView token={token} t={t} />
+          <ApplicationsView token={token} t={t} dateRange={dateRange} />
         )}
 
-        {/* Language Switcher */}
-        <div style={{ display: 'flex', justifyContent: 'center', gap: 8, padding: '16px 0', borderTop: '1px solid #f3f4f6' }}>
-          {['ko', 'en'].map(l => (
-            <button key={l} onClick={() => setLang(l)}
-              style={{
-                padding: '4px 14px', borderRadius: 6, fontSize: 13, fontWeight: 600, cursor: 'pointer',
-                border: lang === l ? '1px solid #111' : '1px solid #d1d5db',
-                background: lang === l ? '#111' : '#fff',
-                color: lang === l ? '#fff' : '#666',
-              }}>
-              {l === 'ko' ? '한국어' : 'English'}
-            </button>
-          ))}
-        </div>
+        {/* Resumes Tab */}
+        {tab === 'resumes' && (
+          <ResumesView token={token} t={t} />
+        )}
+
+        {/* Verifications Tab */}
+        {tab === 'verifications' && (
+          <VerificationsView token={token} />
+        )}
+
+        {/* Community Tab */}
+        {tab === 'community' && (
+          <CommunityView token={token} lang={lang} dateRange={dateRange} />
+        )}
+
       </div>
     </>
   )

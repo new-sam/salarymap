@@ -1,0 +1,101 @@
+[     862ms] [WARNING] iso_swr: SSR fetch failed for "/api/dashboard/deployments/dpl_5Dbvzu1MtSnmXQbVpUrqt6M6MosT?includeDeleted=true&projectName=salarymap&teamId=slsvm1013-6708s-projects" {error: iso_swr_fetch_error, message: The request is missing an authentication token} @ https://vercel.com/slsvm1013-6708s-projects/salarymap/5Dbvzu1MtSnmXQbVpUrqt6M6MosT:1479
+[     863ms] [WARNING] iso_swr: SSR fetch failed for "/v1/dashboard/projects/salarymap?teamId=slsvm1013-6708s-projects" {error: iso_swr_fetch_error, message: The request is missing an authentication token} @ https://vercel.com/slsvm1013-6708s-projects/salarymap/5Dbvzu1MtSnmXQbVpUrqt6M6MosT:1498
+[     946ms] [WARNING] iso_swr: SSR fetch failed for "/v1/dashboard/deployments/dpl_5Dbvzu1MtSnmXQbVpUrqt6M6MosT?includeDeleted=true&projectName=salarymap&teamId=slsvm1013-6708s-projects" {error: iso_swr_fetch_error, message: The request is missing an authentication token} @ https://vercel.com/slsvm1013-6708s-projects/salarymap/5Dbvzu1MtSnmXQbVpUrqt6M6MosT:1517
+[     976ms] [LOG] %c
+▲
+
+__  __                                     _            __
+\ \/ /___  __  __   _________ _____       (_)_  _______/ /_
+ \  / __ \/ / / /  / ___/ __ `/ __ \     / / / / / ___/ __/
+ / / /_/ / /_/ /  / /__/ /_/ / / / /    / / /_/ (__  ) /_
+/_/\____/\__,_/   \___/\__,_/_/ /_/  __/ /\__,_/____/\__/
+         __    _          __  __    /___/
+   _____/ /_  (_)___     / /_/ /_  (_)___  ____ ______
+  / ___/ __ \/ / __ \   / __/ __ \/ / __ \/ __ `/ ___/
+ (__  ) / / / / /_/ /  / /_/ / / / / / / / /_/ (__  )
+/____/_/ /_/_/ .___/   \__/_/ /_/_/_/ /_/\__, /____/
+            /_/                         /____/
+  
+
+Hello!
+
+- Open Source https://vercel.com/oss
+- Careers https://vercel.com/careers
+- Status https://vercel-status.com
+
+ font-family: "Geist Mono", monospace; white-space: pre; line-height: 1; @ https://vercel.com/_next/static/immutable/chunks/0-ks46k3iq52l.js:78
+[    1305ms] [WARNING] iso_swr: SSR fetch failed for "/api/v2/teams/slsvm1013-6708s-projects" {error: iso_swr_fetch_error, message: The request is missing an authentication token} @ https://vercel.com/slsvm1013-6708s-projects/salarymap/5Dbvzu1MtSnmXQbVpUrqt6M6MosT:1547
+[    1306ms] [WARNING] iso_swr: SSR fetch failed for "/api/v9/projects/salarymap?latestDeployments=0&rollbackInfo=true&teamId=slsvm1013-6708s-projects" {error: iso_swr_fetch_error, message: The request is missing an authentication token} @ https://vercel.com/slsvm1013-6708s-projects/salarymap/5Dbvzu1MtSnmXQbVpUrqt6M6MosT:1547
+[    2865ms] [WARNING] iso_swr[warn] [client] fallback error for key: "/api/v2/teams/slsvm1013-6708s-projects" {error: iso_swr_fetch_error, message: The request is missing an authentication token} @ https://vercel.com/_next/static/immutable/chunks/02_j21lflgwpt.js:2
+[    2935ms] [WARNING] iso_swr[warn] [client] fallback error for key: "/v1/dashboard/projects/salarymap?teamId=slsvm1013-6708s-projects" {error: iso_swr_fetch_error, message: The request is missing an authentication token} @ https://vercel.com/_next/static/immutable/chunks/02_j21lflgwpt.js:2
+[    2959ms] [WARNING] iso_swr[warn] [client] fallback error for key: "/api/v9/projects/salarymap?latestDeployments=0&rollbackInfo=true&teamId=slsvm1013-6708s-projects" {error: iso_swr_fetch_error, message: The request is missing an authentication token} @ https://vercel.com/_next/static/immutable/chunks/02_j21lflgwpt.js:2
+[    3048ms] [WARNING] iso_swr[warn] [client] fallback error for key: "/v1/dashboard/deployments/dpl_5Dbvzu1MtSnmXQbVpUrqt6M6MosT?includeDeleted=true&projectName=salarymap&teamId=slsvm1013-6708s-projects" {error: iso_swr_fetch_error, message: The request is missing an authentication token} @ https://vercel.com/_next/static/immutable/chunks/02_j21lflgwpt.js:2
+[    4476ms] [ERROR] Failed to load resource: the server responded with a status of 403 () @ https://vercel.com/api/v1/dashboard/projects/salarymap?teamId=slsvm1013-6708s-projects:0
+[    4477ms] [ERROR] Failed to load resource: the server responded with a status of 403 () @ https://vercel.com/api/jwt:0
+[    4477ms] [ERROR] Failed to load resource: the server responded with a status of 403 () @ https://vercel.com/api/v1/notifications/push:0
+[    4481ms] [ERROR] Failed to load resource: the server responded with a status of 403 () @ https://vercel.com/api/v2/teams/slsvm1013-6708s-projects:0
+[    4482ms] [ERROR] Failed to load resource: the server responded with a status of 403 () @ https://vercel.com/api/v9/projects/salarymap?latestDeployments=0&rollbackInfo=true&teamId=slsvm1013-6708s-projects:0
+[    4483ms] [ERROR] Failed to load resource: the server responded with a status of 403 () @ https://vercel.com/api/v1/dashboard/deployments/dpl_5Dbvzu1MtSnmXQbVpUrqt6M6MosT?includeDeleted=true&projectName=salarymap&teamId=slsvm1013-6708s-projects:0
+[    4483ms] [ERROR] Failed to load resource: the server responded with a status of 403 () @ https://vercel.com/api/user/permissions?projectIdOrName=salarymap&slug=slsvm1013-6708s-projects:0
+[    4547ms] [LOG] Ignored request error TypeError: Failed to fetch @ https://vercel.com/_next/static/immutable/chunks/1xadcgfeg-4_q.js:11
+[    4548ms] [LOG] Ignored request error CustomFetchError: Unexpected Error
+    at g (https://vercel.com/_next/static/immutable/chunks/0c_ixzldbzlr5.js:2:37547)
+    at async https://vercel.com/_next/static/immutable/chunks/3ju7s9709dxkc.js:2:12183 @ https://vercel.com/_next/static/immutable/chunks/1xadcgfeg-4_q.js:11
+[    4548ms] [LOG] Ignored request error CustomFetchError: Unexpected Error
+    at g (https://vercel.com/_next/static/immutable/chunks/0c_ixzldbzlr5.js:2:37547)
+    at async https://vercel.com/_next/static/immutable/chunks/3ju7s9709dxkc.js:2:12183 @ https://vercel.com/_next/static/immutable/chunks/1xadcgfeg-4_q.js:11
+[    4549ms] [WARNING] [omniagent] chat stream failed TypeError: Failed to fetch
+    at window.fetch (https://vercel.com/slsvm1013-6708s-projects/salarymap/5Dbvzu1MtSnmXQbVpUrqt6M6MosT:1:21504)
+    at oS.reconnectToStream (https://vercel.com/_next/static/immutable/chunks/0ptceisbtumvk.js:38:47891)
+    at async ae.makeRequest (https://vercel.com/_next/static/immutable/chunks/0ptceisbtumvk.js:23:47520)
+    at async ae.resumeStream (https://vercel.com/_next/static/immutable/chunks/0ptceisbtumvk.js:23:44598) @ https://vercel.com/_next/static/immutable/chunks/403bidaxwqz62.js:1
+[    4549ms] [LOG] Ignored request error CustomFetchError: Unexpected Error
+    at g (https://vercel.com/_next/static/immutable/chunks/0c_ixzldbzlr5.js:2:37547)
+    at async https://vercel.com/_next/static/immutable/chunks/33d33epilv3f6.js:2:25645
+    at async https://vercel.com/_next/static/immutable/chunks/3ju7s9709dxkc.js:2:12183 @ https://vercel.com/_next/static/immutable/chunks/1xadcgfeg-4_q.js:11
+[    4554ms] [LOG] Ignored request error TypeError: A network error has occurred. Please check your connection and try again.
+    at _ (https://vercel.com/_next/static/immutable/chunks/31ghsfozo4zc0.js:2:5649)
+    at async eb (https://vercel.com/_next/static/immutable/chunks/1lrp6hqt67n8p.js:3:4827)
+    at async https://vercel.com/_next/static/immutable/chunks/3ju7s9709dxkc.js:2:12183 @ https://vercel.com/_next/static/immutable/chunks/1xadcgfeg-4_q.js:11
+[    4554ms] [LOG] Ignored request error TypeError: A network error has occurred. Please check your connection and try again.
+    at _ (https://vercel.com/_next/static/immutable/chunks/31ghsfozo4zc0.js:2:5649)
+    at async revalidateIfStale (https://vercel.com/_next/static/immutable/chunks/1lrp6hqt67n8p.js:3:95540)
+    at async https://vercel.com/_next/static/immutable/chunks/3ju7s9709dxkc.js:2:12183 @ https://vercel.com/_next/static/immutable/chunks/1xadcgfeg-4_q.js:11
+[    4712ms] [LOG] %c
+▲
+
+    ____                               _ __
+   / __ \________  ____ _____ ___     (_) /_
+  / / / / ___/ _ \/ __ `/ __ `__ \   / / __/
+ / /_/ / /  /  __/ /_/ / / / / / /  / / /__
+/_____/_/   \___/\__,_/_/ /_/ /_/  /_/\__( )
+   _____ __    _          _ __           |/
+  / ___// /_  (_)___     (_) /_
+  \__ \/ __ \/ / __ \   / / __/
+ ___/ / / / / / /_/ /  / / /_
+/____/_/ /_/_/ .___/  /_/\__/
+            /_/
+  
+
+Hello!
+
+- Open Source https://vercel.com/oss
+- Careers https://vercel.com/careers
+- Status https://vercel-status.com
+
+ font-family: "Geist Mono", monospace; white-space: pre; line-height: 1; @ https://vercel.com/_next/static/immutable/chunks/0-ks46k3iq52l.js:78
+[    5281ms] [ERROR] Failed to load resource: the server responded with a status of 403 () @ https://vercel.com/api/jwt:0
+[    5368ms] [WARNING] [GSI_LOGGER]: Your client application uses one of the Google One Tap prompt UI status methods that may stop functioning when FedCM becomes mandatory. Refer to the migration guide to update your code accordingly and opt-in to FedCM to test your changes. Learn more: https://developers.google.com/identity/gsi/web/guides/fedcm-migration?s=dc#display_moment and https://developers.google.com/identity/gsi/web/guides/fedcm-migration?s=dc#skipped_moment @ https://accounts.google.com/gsi/client:84
+[    5649ms] [WARNING] Deprecated API for given entry type. @ https://vercel.com/_next/static/immutable/chunks/2tnbrlqru_fp5.js:18
+[    8956ms] [WARNING] The resource https://vercel.com/_next/static/immutable/media/adobe-dark.1yc1msmmj95aw.svg was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally. @ https://vercel.com/login?next=%2Fslsvm1013-6708s-projects%2Fsalarymap%2F5Dbvzu1MtSnmXQbVpUrqt6M6MosT:0
+[    8956ms] [WARNING] The resource https://vercel.com/_next/static/immutable/media/ebay-dark.34mho2a18qqlt.svg was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally. @ https://vercel.com/login?next=%2Fslsvm1013-6708s-projects%2Fsalarymap%2F5Dbvzu1MtSnmXQbVpUrqt6M6MosT:0
+[    8956ms] [WARNING] The resource https://vercel.com/_next/static/immutable/media/stripe-light.2l_1jctpe6k_4.svg was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally. @ https://vercel.com/login?next=%2Fslsvm1013-6708s-projects%2Fsalarymap%2F5Dbvzu1MtSnmXQbVpUrqt6M6MosT:0
+[    8956ms] [WARNING] The resource https://vercel.com/_next/static/immutable/media/stripe-dark.16ozjth2vgb_3.svg was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally. @ https://vercel.com/login?next=%2Fslsvm1013-6708s-projects%2Fsalarymap%2F5Dbvzu1MtSnmXQbVpUrqt6M6MosT:0
+[    8956ms] [WARNING] The resource https://vercel.com/_next/static/immutable/media/adobe-light.406_7oryl71va.svg was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally. @ https://vercel.com/login?next=%2Fslsvm1013-6708s-projects%2Fsalarymap%2F5Dbvzu1MtSnmXQbVpUrqt6M6MosT:0
+[    8956ms] [WARNING] The resource https://vercel.com/_next/static/immutable/media/ebay-light.3ft_ki8203ov0.svg was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally. @ https://vercel.com/login?next=%2Fslsvm1013-6708s-projects%2Fsalarymap%2F5Dbvzu1MtSnmXQbVpUrqt6M6MosT:0
+[   18566ms] [WARNING] The resource https://vercel.com/_next/static/immutable/media/adobe-dark.1yc1msmmj95aw.svg was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally. @ https://vercel.com/login?next=%2Fslsvm1013-6708s-projects%2Fsalarymap%2F5Dbvzu1MtSnmXQbVpUrqt6M6MosT:0
+[   18566ms] [WARNING] The resource https://vercel.com/_next/static/immutable/media/ebay-dark.34mho2a18qqlt.svg was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally. @ https://vercel.com/login?next=%2Fslsvm1013-6708s-projects%2Fsalarymap%2F5Dbvzu1MtSnmXQbVpUrqt6M6MosT:0
+[   18566ms] [WARNING] The resource https://vercel.com/_next/static/immutable/media/stripe-light.2l_1jctpe6k_4.svg was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally. @ https://vercel.com/login?next=%2Fslsvm1013-6708s-projects%2Fsalarymap%2F5Dbvzu1MtSnmXQbVpUrqt6M6MosT:0
+[   18566ms] [WARNING] The resource https://vercel.com/_next/static/immutable/media/stripe-dark.16ozjth2vgb_3.svg was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally. @ https://vercel.com/login?next=%2Fslsvm1013-6708s-projects%2Fsalarymap%2F5Dbvzu1MtSnmXQbVpUrqt6M6MosT:0
+[   18566ms] [WARNING] The resource https://vercel.com/_next/static/immutable/media/adobe-light.406_7oryl71va.svg was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally. @ https://vercel.com/login?next=%2Fslsvm1013-6708s-projects%2Fsalarymap%2F5Dbvzu1MtSnmXQbVpUrqt6M6MosT:0
+[   18566ms] [WARNING] The resource https://vercel.com/_next/static/immutable/media/ebay-light.3ft_ki8203ov0.svg was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally. @ https://vercel.com/login?next=%2Fslsvm1013-6708s-projects%2Fsalarymap%2F5Dbvzu1MtSnmXQbVpUrqt6M6MosT:0
