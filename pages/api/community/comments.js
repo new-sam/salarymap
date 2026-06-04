@@ -6,6 +6,12 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 )
 
+// Accept only a public URL from our own Supabase storage, else null.
+function sanitizeImageUrl(value) {
+  const base = process.env.NEXT_PUBLIC_SUPABASE_URL || ''
+  return typeof value === 'string' && base && value.startsWith(base) ? value : null
+}
+
 // Map of user_id -> salary tier key for users with an active salary-range badge.
 async function salaryTierMap(userIds) {
   const ids = [...new Set(userIds)].filter(Boolean)
@@ -92,7 +98,8 @@ export default async function handler(req, res) {
     if (!user) return res.status(401).json({ error: 'Unauthorized' })
 
     const { post_id, content, is_anonymous } = req.body
-    if (!post_id || !content) {
+    const image_url = sanitizeImageUrl(req.body.image_url)
+    if (!post_id || (!content && !image_url)) {
       return res.status(400).json({ error: 'Missing required fields' })
     }
 
@@ -116,6 +123,7 @@ export default async function handler(req, res) {
         user_id: user.id,
         author_name: authorName,
         content,
+        image_url,
         is_anonymous: is_anonymous !== false,
         is_op: isOp
       })
