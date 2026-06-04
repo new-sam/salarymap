@@ -7,6 +7,7 @@ import { track } from '../../lib/track'
 import GlobalNav from '../../components/GlobalNav'
 import SalaryBadge from '../../components/SalaryBadge'
 import { useT } from '../../lib/i18n'
+import { uploadCommunityImage } from '../../lib/communityImages'
 
 function timeAgo(dateStr) {
   const diff = Date.now() - new Date(dateStr).getTime()
@@ -44,8 +45,12 @@ export default function CommunityPostPage() {
   const [commentText, setCommentText] = useState('')
   const [commentAnonymous, setCommentAnonymous] = useState(true)
   const [commentSubmitting, setCommentSubmitting] = useState(false)
+  const [commentImage, setCommentImage] = useState(null)
+  const [commentUploading, setCommentUploading] = useState(false)
+  const [lightbox, setLightbox] = useState(null)
   const [showPostMenu, setShowPostMenu] = useState(false)
   const postMenuRef = React.useRef(null)
+  const commentFileRef = React.useRef(null)
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session: s } }) => {
@@ -102,19 +107,35 @@ export default function CommunityPostPage() {
     setLoadingComments(false)
   }
 
+  const handleCommentFile = async (e) => {
+    const file = e.target.files?.[0]
+    e.target.value = ''
+    if (!file || !session) return
+    setCommentUploading(true)
+    try {
+      const url = await uploadCommunityImage(file, session.user.id)
+      setCommentImage(url)
+    } catch (err) {
+      console.error(err)
+      alert(t('comm.imageError'))
+    }
+    setCommentUploading(false)
+  }
+
   const submitComment = async () => {
-    if (!commentText.trim() || !session || commentSubmitting) return
+    if ((!commentText.trim() && !commentImage) || !session || commentSubmitting) return
     setCommentSubmitting(true)
     try {
       const res = await fetch('/api/community/comments', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
-        body: JSON.stringify({ post_id: id, content: commentText.trim(), is_anonymous: commentAnonymous })
+        body: JSON.stringify({ post_id: id, content: commentText.trim(), is_anonymous: commentAnonymous, image_url: commentImage })
       })
       if (res.ok) {
         const newComment = await res.json()
         setComments(prev => [...prev, newComment])
         setCommentText('')
+        setCommentImage(null)
         setPost(prev => prev ? { ...prev, comment_count: (prev.comment_count || 0) + 1 } : prev)
       }
     } catch (e) { console.error(e) }
@@ -189,6 +210,21 @@ export default function CommunityPostPage() {
         .cp-nickname { font-size: 13px; color: #888; font-weight: 400; }
         .cp-info-row { display: flex; align-items: center; gap: 6px; font-size: 12px; color: #999; margin-bottom: 28px; padding-bottom: 20px; border-bottom: 1px solid #eee; }
         .cp-content { font-size: 15px; color: #333; line-height: 1.85; white-space: pre-wrap; word-break: break-word; margin-bottom: 28px; }
+        .cp-images { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin-bottom: 28px; }
+        .cp-images.single { grid-template-columns: 1fr; }
+        .cp-images img { width: 100%; max-height: 480px; object-fit: cover; border-radius: 10px; border: 1px solid #eee; cursor: zoom-in; display: block; }
+        .cp-comment-image { margin-top: 8px; }
+        .cp-comment-image img { max-width: 220px; max-height: 220px; border-radius: 8px; border: 1px solid #eee; cursor: zoom-in; display: block; }
+        .cp-cimg-preview { position: relative; width: 64px; height: 64px; border-radius: 8px; overflow: hidden; border: 1px solid #eee; flex-shrink: 0; }
+        .cp-cimg-preview img { width: 100%; height: 100%; object-fit: cover; display: block; }
+        .cp-cimg-x { position: absolute; top: 2px; right: 2px; width: 18px; height: 18px; border-radius: 50%; border: none; background: rgba(0,0,0,0.6); color: #fff; font-size: 12px; line-height: 1; cursor: pointer; padding: 0; }
+        .cp-attach { width: 36px; height: 36px; border-radius: 8px; border: 1px solid #ddd; background: #fff; color: #888; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+        .cp-attach:hover { border-color: #ff6000; color: #ff6000; }
+        .cp-attach:disabled { opacity: 0.4; cursor: default; }
+        .cp-lightbox { position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 1000; display: flex; align-items: center; justify-content: center; padding: 24px; cursor: zoom-out; }
+        .cp-lightbox img { max-width: 95vw; max-height: 92vh; object-fit: contain; border-radius: 6px; }
+        .cp-spin { animation: cp-spin 0.8s linear infinite; }
+        @keyframes cp-spin { to { transform: rotate(360deg); } }
 
         .cp-actions { display: flex; gap: 12px; padding: 14px 0; border-top: 1px solid #eee; border-bottom: 1px solid #eee; margin-bottom: 32px; }
         .cp-action { display: flex; align-items: center; gap: 6px; padding: 8px 14px; border-radius: 8px; border: none; background: transparent; color: #888; font-size: 13px; font-weight: 600; cursor: pointer; font-family: 'Barlow', sans-serif; transition: all 0.15s; }
@@ -286,6 +322,14 @@ export default function CommunityPostPage() {
                 </div>
                 <div className="cp-content">{post.content}</div>
 
+                {post.image_urls?.length > 0 && (
+                  <div className={`cp-images${post.image_urls.length === 1 ? ' single' : ''}`}>
+                    {post.image_urls.map(url => (
+                      <img key={url} src={url} alt="" onClick={() => setLightbox(url)} />
+                    ))}
+                  </div>
+                )}
+
                 <div className="cp-actions">
                   <button className={`cp-action${post.is_liked ? ' liked' : ''}`} onClick={toggleLike}>
                     <svg viewBox="0 0 24 24" fill={post.is_liked ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg>
@@ -306,6 +350,12 @@ export default function CommunityPostPage() {
                       {t('comm.anon')}
                     </label>
                     <div className="cp-input-row">
+                      {commentImage && (
+                        <div className="cp-cimg-preview">
+                          <img src={commentImage} alt="" />
+                          <button className="cp-cimg-x" onClick={() => setCommentImage(null)}>×</button>
+                        </div>
+                      )}
                       <input
                         className="cp-comment-input"
                         placeholder={t('comm.commentPlaceholder')}
@@ -313,7 +363,15 @@ export default function CommunityPostPage() {
                         onChange={e => setCommentText(e.target.value)}
                         onKeyDown={e => { if (e.key === 'Enter' && !e.nativeEvent.isComposing) submitComment() }}
                       />
-                      <button className="cp-send" disabled={!commentText.trim() || commentSubmitting} onClick={submitComment}>
+                      <input ref={commentFileRef} type="file" accept="image/*" hidden onChange={handleCommentFile} />
+                      <button className="cp-attach" disabled={commentUploading || !!commentImage} onClick={() => commentFileRef.current?.click()} title={t('comm.addImage')}>
+                        {commentUploading ? (
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="cp-spin"><path d="M21 12a9 9 0 11-6.219-8.56"/></svg>
+                        ) : (
+                          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
+                        )}
+                      </button>
+                      <button className="cp-send" disabled={(!commentText.trim() && !commentImage) || commentSubmitting || commentUploading} onClick={submitComment}>
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
                       </button>
                     </div>
@@ -340,7 +398,12 @@ export default function CommunityPostPage() {
                           <button className="cp-comment-delete" onClick={() => deleteComment(comment.id)}>{t('comm.delete')}</button>
                         )}
                       </div>
-                      <div className="cp-comment-body">{comment.content}</div>
+                      {comment.content && <div className="cp-comment-body">{comment.content}</div>}
+                      {comment.image_url && (
+                        <div className="cp-comment-image">
+                          <img src={comment.image_url} alt="" onClick={() => setLightbox(comment.image_url)} />
+                        </div>
+                      )}
                     </div>
                   ))
                 )}
@@ -350,6 +413,12 @@ export default function CommunityPostPage() {
 
         </div>
       </div>
+
+      {lightbox && (
+        <div className="cp-lightbox" onClick={() => setLightbox(null)}>
+          <img src={lightbox} alt="" onClick={e => e.stopPropagation()} />
+        </div>
+      )}
     </>
   )
 }

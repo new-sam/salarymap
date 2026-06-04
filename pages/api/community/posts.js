@@ -6,6 +6,16 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 )
 
+// Accept only public URLs from our own Supabase storage, capped at `max` items.
+// Guards against arbitrary/external URLs being stored and rendered as <img>.
+function sanitizeImageUrls(value, max = 4) {
+  if (!Array.isArray(value)) return []
+  const base = process.env.NEXT_PUBLIC_SUPABASE_URL || ''
+  return value
+    .filter(u => typeof u === 'string' && base && u.startsWith(base))
+    .slice(0, max)
+}
+
 // Map of user_id -> salary tier key for users with an active salary-range badge.
 // Shown next to authors (incl. anonymous) as a trust signal.
 async function salaryTierMap(userIds) {
@@ -165,6 +175,7 @@ export default async function handler(req, res) {
     if (!category || !title || !content) {
       return res.status(400).json({ error: 'Missing required fields' })
     }
+    const image_urls = sanitizeImageUrls(req.body.image_urls)
 
     const validCategories = ['ask_company', 'daily', 'job_change']
     if (!validCategories.includes(category)) {
@@ -188,6 +199,7 @@ export default async function handler(req, res) {
         category,
         title,
         content,
+        image_urls,
         is_anonymous: is_anonymous !== false
       })
       .select()
@@ -209,10 +221,11 @@ export default async function handler(req, res) {
     if (!category || !title || !content) {
       return res.status(400).json({ error: 'Missing required fields' })
     }
+    const image_urls = sanitizeImageUrls(req.body.image_urls)
 
     const { data, error } = await supabase
       .from('community_posts')
-      .update({ category, title, content })
+      .update({ category, title, content, image_urls })
       .eq('id', id)
       .eq('user_id', user.id)
       .select()
