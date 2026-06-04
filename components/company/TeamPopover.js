@@ -114,26 +114,6 @@ export default function TeamPopover({ jobId, canInvite = true }) {
   }, [open, confirmCfg]);
 
   const count = team.members.length + team.invites.length;
-  const isOwner = team.ownerUserId && team.ownerUserId === team.currentUserId;
-
-  const remove = async ({ userId, inviteId, displayName }) => {
-    const msg = userId
-      ? t('company.team.confirmRemove', { name: displayName })
-      : t('company.team.confirmCancelInvite', { email: displayName });
-    if (!confirm(msg)) return;
-    try {
-      const { data } = await supabase.auth.getSession();
-      const token = data?.session?.access_token;
-      const res = await fetch('/api/company/remove-member', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ jobId, userId, inviteId }),
-      });
-      const j = await res.json();
-      if (!res.ok) { alert(j.error || 'error'); return; }
-      load();
-    } catch (e) { alert(e.message || 'error'); }
-  };
 
   return (
     <div ref={ref} style={s.wrap}>
@@ -175,8 +155,8 @@ export default function TeamPopover({ jobId, canInvite = true }) {
                     <div style={s.rowName}>{name}{isMe && <span style={s.meTag}> ({t('company.team.you')})</span>}</div>
                     <div style={s.rowEmail}>{m.email}</div>
                   </div>
-                  <div style={isRowOwner ? s.ownerTag : s.roleTag}>
-                    {t(`company.team.role.${isRowOwner ? 'owner' : 'interviewer'}`)}
+                  <div style={isOwner ? s.ownerTag : s.roleTag}>
+                    {t(`company.team.role.${isOwner ? 'owner' : 'interviewer'}`)}
                   </div>
                   {canRemove && (
                     <button onClick={() => removeMember(m)} style={s.removeBtn} title={t('company.team.removeBtn')}>✕</button>

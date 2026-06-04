@@ -109,10 +109,10 @@ export default function CompanyCalendarPage() {
   return (
     <>
       <Head><title>{t('company.head.calendar')}</title></Head>
-      <div className="company-app" style={css.app}>
+      <div style={css.app}>
         <Sidebar companyName={companyName} userEmail={user?.email} activePage="calendar" />
 
-        <main className="company-main" style={css.main}>
+        <main style={css.main}>
           <header style={css.mainHead}>
             <div>
               <h1 style={css.mainH}>{t('company.calendar.h')}</h1>

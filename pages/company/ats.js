@@ -225,10 +225,10 @@ export default function CompanyATSPage() {
   return (
     <>
       <Head><title>{job.title} · FYI</title></Head>
-      <div className="company-app" style={css.app}>
+      <div style={css.app}>
         <Sidebar companyName={companyName} userEmail={user?.email} activePage="jobs" activeJobId={job.id} />
 
-        <main className="company-main" style={css.main}>
+        <main style={css.main}>
           <header style={css.mainHead}>
             <div>
               <div style={localCss.crumb}><Link href="/company" style={localCss.crumbLink}>{t('company.backDashboard')}</Link></div>
@@ -265,7 +265,7 @@ export default function CompanyATSPage() {
             <span style={localCss.dragHint}>{isOwner ? t('company.ats.dragHint') : t('company.ats.dragHintLocked')}</span>
           </div>
 
-          <div className="company-kanban" style={localCss.kanban}>
+          <div style={localCss.kanban}>
             {grouped.map((col) => (
               <div
                 key={col.key}

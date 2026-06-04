@@ -262,7 +262,7 @@ export default function CandidateDetail({ appId, mode = 'page', onClose, company
 
       {err && <div style={local.errBox}>{err}</div>}
 
-      <div className="company-candidate-grid" style={local.bodyGrid}>
+      <div style={local.bodyGrid}>
         <section style={local.resumeCol}>
           <div style={local.colHead}>
             <span>{t('company.candidate.resume')}</span>
@@ -741,11 +741,10 @@ function InterviewModal({ app, onClose, onSaved }) {
       interview_at: ictInputToUtc(first.date, first.time || '00:00'),
       interview_location: location || null,
       interview_interviewer: interviewer || null,
-    };
-    const { error } = await supabase.from('job_applications').update(fields).eq('id', app.id);
+    }).eq('id', app.id);
     setSaving(false);
     if (error) { setErr(t('company.err.saveFailed') + error.message); return; }
-    onSaved(fields);
+    onSaved(summary);
   };
 
   return (
@@ -1354,9 +1353,6 @@ const local = {
   stageBtnActive: { padding: '7px 10px', borderRadius: 6, border: '1.5px solid #EA580C', background: '#FFF7ED', color: '#EA580C', fontSize: 11.5, fontWeight: 800, cursor: 'pointer', fontFamily: 'inherit', textAlign: 'left' },
   btnNext: { width: '100%', padding: '11px 14px', borderRadius: 8, border: 'none', background: 'linear-gradient(135deg,#EF4444,#F97316)', color: '#fff', fontSize: 13, fontWeight: 800, cursor: 'pointer', fontFamily: 'inherit', boxShadow: '0 4px 12px rgba(234,88,12,0.22)' },
   btnAction: { width: '100%', padding: '11px 14px', borderRadius: 8, border: '1px solid #D1D5DB', background: '#fff', color: '#1A1A1A', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' },
-  interviewBox: { background: '#FFF7ED', border: '1px solid #FED7AA', borderRadius: 8, padding: '10px 12px', marginBottom: 10, display: 'flex', flexDirection: 'column', gap: 3 },
-  interviewBoxLabel: { fontSize: 10.5, fontWeight: 800, color: '#9A3412', letterSpacing: '0.04em', textTransform: 'uppercase', marginBottom: 2 },
-  interviewLine: { fontSize: 12.5, color: '#7C2D12', fontWeight: 600 },
   btnMail: { width: '100%', padding: '11px 14px', borderRadius: 8, border: 'none', background: 'linear-gradient(135deg,#EF4444,#F97316)', color: '#fff', fontSize: 13, fontWeight: 800, cursor: 'pointer', fontFamily: 'inherit', boxShadow: '0 4px 12px rgba(234,88,12,0.22)' },
   btnMailDisabled: { width: '100%', padding: '11px 14px', borderRadius: 8, border: '1px solid #E5E7EB', background: '#F1F5F9', color: '#94A3B8', fontSize: 13, fontWeight: 800, cursor: 'not-allowed', fontFamily: 'inherit' },
   mailHint: { fontSize: 11, color: '#94A3B8', marginTop: 6 },

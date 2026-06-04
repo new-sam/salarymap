@@ -7,40 +7,6 @@ import Brand from '../../../components/company/Brand';
 import LangToggle from '../../../components/company/LangToggle';
 import { useT } from '../../../lib/i18n';
 
-// 기업 화면 공용 모바일 반응형 — 인라인 스타일을 덮어쓰려면 !important 필요.
-// Sidebar 가 모든 기업 페이지에 렌더되므로 여기서 한 번만 주입한다.
-export const companyResponsiveCss = `
-  @media (max-width: 860px) {
-    .company-app { grid-template-columns: 1fr !important; }
-    .company-sidebar {
-      flex-direction: row !important;
-      flex-wrap: wrap !important;
-      align-items: center !important;
-      gap: 8px 14px !important;
-      border-right: none !important;
-      border-bottom: 1px solid #E5E7EB !important;
-      padding: 12px 16px !important;
-      position: sticky !important;
-      top: 0 !important;
-      z-index: 30 !important;
-    }
-    .company-side-head {
-      border-bottom: none !important;
-      margin-bottom: 0 !important;
-      padding: 0 !important;
-      flex: 1 1 auto !important;
-    }
-    .company-side-nav { flex-direction: row !important; flex-wrap: wrap !important; flex: 1 1 100% !important; }
-    .company-sidejobs { display: none !important; }
-    .company-side-bottom { margin-top: 0 !important; margin-left: auto !important; padding: 0 !important; }
-    .company-main { padding: 20px 16px 48px !important; }
-    .company-main > header { flex-direction: column !important; align-items: flex-start !important; gap: 12px !important; }
-    .company-kanban { grid-template-columns: 1fr !important; }
-    .company-formshell { grid-template-columns: 1fr !important; }
-    .company-candidate-grid { grid-template-columns: 1fr !important; }
-  }
-`;
-
 const ROLES = ['Backend', 'Frontend', 'Fullstack', 'Mobile', 'Data', 'DevOps', 'PM', 'Design', 'QA'];
 const TYPES = ['remote', 'onsite', 'hybrid'];
 const LOCATIONS = ['Hà Nội', 'Hồ Chí Minh', 'Đà Nẵng', 'Hải Phòng', 'Cần Thơ'];
@@ -176,18 +142,7 @@ export default function NewJobPage() {
     if (data?.id && user?.id) {
       await supabase.from('job_team').insert({ job_id: data.id, user_id: user.id, role: 'owner' });
     }
-    // 어드민 알림 (베스트에포트 — 실패해도 진행)
-    if (data?.id) {
-      try {
-        const { data: sess } = await supabase.auth.getSession();
-        await fetch('/api/admin/notify-pending-job', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${sess?.session?.access_token}` },
-          body: JSON.stringify({ jobId: data.id }),
-        });
-      } catch (_) {}
-    }
-    setStatus('submitted');
+    router.replace('/company/jobs');
   };
 
   if (status === 'loading') return <div style={css.loading}>{t('company.loading')}</div>;
@@ -199,37 +154,6 @@ export default function NewJobPage() {
           <h1 style={css.cardH}>{t('company.loginRequired')}</h1>
           <p style={css.cardP}>{err || t('company.err.loginRequired')}</p>
           <Link href="/company" style={css.btnPrimary}>{t('company.loginOrSignup')}</Link>
-        </div>
-      </div>
-    );
-  }
-
-  if (status === 'submitted') {
-    return (
-      <div style={css.fullCenter}>
-        <div style={{...css.lightCard, maxWidth: 480, textAlign: 'center'}}>
-          <div style={{
-            width: 60, height: 60, borderRadius: '50%', margin: '0 auto 18px',
-            display: 'grid', placeItems: 'center', background: '#10b981',
-            color: '#fff', fontSize: 30, fontWeight: 900,
-          }}>✓</div>
-          <h1 style={css.cardH}>{t('company.jobsnew.submitted.title')}</h1>
-          <p style={css.cardP}>{t('company.jobsnew.submitted.lead')}</p>
-          <div style={{
-            background: '#FFF7ED', border: '1px solid #FED7AA', borderRadius: 10,
-            padding: '12px 14px', margin: '16px 0 22px',
-            fontSize: 13, color: '#9A3412', fontWeight: 700, lineHeight: 1.55, textAlign: 'left',
-          }}>
-            📩 {t('company.jobsnew.submitted.mailNote')}
-          </div>
-          <div style={{ display: 'flex', gap: 8, justifyContent: 'center', flexWrap: 'wrap' }}>
-            <Link href="/company" style={css.btnPrimary}>{t('company.jobsnew.submitted.toDashboard')}</Link>
-            <button
-              type="button"
-              onClick={() => { setForm(EMPTY); setStatus('ready'); setErr(''); }}
-              style={{...css.btnGhost, cursor: 'pointer'}}
-            >{t('company.jobsnew.submitted.another')}</button>
-          </div>
         </div>
       </div>
     );
@@ -261,10 +185,10 @@ export default function NewJobPage() {
   return (
     <>
       <Head><title>{t('company.head.newJob')}</title></Head>
-      <div className="company-app" style={css.app}>
+      <div style={css.app}>
         <Sidebar companyName={companyName} userEmail={user?.email} activePage="jobs" />
 
-        <main className="company-main" style={css.main}>
+        <main style={css.main}>
           <header style={css.mainHead}>
             <div>
               <h1 style={css.mainH}>{t('company.jobsnew.h')}</h1>
@@ -272,7 +196,7 @@ export default function NewJobPage() {
             </div>
           </header>
 
-          <form onSubmit={onSubmit} className="company-formshell" style={css.formShell}>
+          <form onSubmit={onSubmit} style={css.formShell}>
             <div style={css.formCol}>
               <h2 style={css.sectionTitle}>{t('company.jobsnew.photoH')}</h2>
 
@@ -463,9 +387,8 @@ export function Sidebar({ companyName, userEmail, activePage = 'home', activeJob
   const isActive = (k) => activePage === k;
 
   return (
-    <aside className="company-sidebar" style={css.sidebar}>
-      <style>{companyResponsiveCss}</style>
-      <div className="company-side-head" style={css.sideHead}>
+    <aside style={css.sidebar}>
+      <div style={css.sideHead}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 6, marginBottom: 12 }}>
           <Brand href="/company" size="sm" />
           <LangToggle align="right" />
@@ -513,7 +436,7 @@ export function Sidebar({ companyName, userEmail, activePage = 'home', activeJob
         );
       })()}
 
-      <div className="company-side-bottom" style={css.sideBottom}>
+      <div style={css.sideBottom}>
         <a onClick={signOut} style={css.signoutLink}>{t('company.sidebar.signOut')}</a>
       </div>
     </aside>
