@@ -142,7 +142,9 @@ export default function CommunityPage() {
     try {
       const headers = {}
       if (session?.access_token) headers.Authorization = `Bearer ${session.access_token}`
-      const res = await fetch(`/api/community/posts?category=${category}&sort=${sort}&page=${page}${search ? '&search=' + encodeURIComponent(search) : ''}`, { headers })
+      const mine = sort === 'mine'
+      const sortParam = mine ? 'recent' : sort
+      const res = await fetch(`/api/community/posts?category=${category}&sort=${sortParam}&page=${page}${mine ? '&mine=1' : ''}${search ? '&search=' + encodeURIComponent(search) : ''}`, { headers })
       const data = await res.json()
       setPosts(data.posts || [])
       setTotalPages(data.totalPages || 1)
@@ -406,6 +408,12 @@ export default function CommunityPage() {
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M12 2c.5 3.5 4 6 4 10a6 6 0 01-12 0c0-4 3.5-6.5 4-10 .5 2 2 3 4 3s3.5-1 4-3z" fill="#ff6000" stroke="#ff6000" strokeWidth="1.5" strokeLinejoin="round"/></svg>
                   {t('comm.popular')}
                 </button>
+                {session && (
+                  <button className={`comm-sort-btn${sort === 'mine' ? ' active' : ''}`} onClick={() => { setSort('mine'); setPage(1) }}>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#10b981" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                    {t('comm.mine')}
+                  </button>
+                )}
               </div>
               <button className="comm-write-btn" onClick={handleWrite}>{t('comm.write')}</button>
             </div>
@@ -442,7 +450,7 @@ export default function CommunityPage() {
             {loading ? (
               <div className="comm-empty">{t('comm.loading')}</div>
             ) : posts.length === 0 ? (
-              <div className="comm-empty">{t('comm.empty')}</div>
+              <div className="comm-empty">{sort === 'mine' ? t('comm.emptyMine') : t('comm.empty')}</div>
             ) : (<>
               <div className="comm-list">
                 {posts.map(post => (
