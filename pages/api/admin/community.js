@@ -109,14 +109,17 @@ export default async function handler(req, res) {
     else if (e.event === 'click_community_write') bump(e.created_at, 'writeClicks')
   })
 
-  // Fill empty dates so the trend table has no gaps
+  // Fill gaps only within the active window (skip pre-launch empty dates)
   {
-    const cur = new Date(startDate + 'T00:00:00')
-    const end = new Date(endDate + 'T00:00:00')
-    while (cur <= end) {
-      const key = cur.toISOString().slice(0, 10)
-      if (!dailyMap[key]) dailyMap[key] = newDay(key)
-      cur.setDate(cur.getDate() + 1)
+    const activeDates = Object.keys(dailyMap).sort()
+    if (activeDates.length) {
+      const cur = new Date(activeDates[0] + 'T00:00:00')
+      const end = new Date(activeDates[activeDates.length - 1] + 'T00:00:00')
+      while (cur <= end) {
+        const key = cur.toISOString().slice(0, 10)
+        if (!dailyMap[key]) dailyMap[key] = newDay(key)
+        cur.setDate(cur.getDate() + 1)
+      }
     }
   }
   const daily = Object.values(dailyMap).sort((a, b) => a.date.localeCompare(b.date))
