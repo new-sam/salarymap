@@ -95,18 +95,6 @@ async function saveCompanyRecruiter(user) {
   }
 }
 
-// 가입 직후 본인 이메일로 와 있던 채용팀 초대를 job_team 에 자동 합류시킴
-async function acceptPendingInvites(session) {
-  try {
-    await fetch('/api/company/accept-invites', {
-      method: 'POST',
-      headers: { Authorization: `Bearer ${session.access_token}` },
-    });
-  } catch (e) {
-    // silent — 본 흐름을 막지 않음
-  }
-}
-
 export default function AuthCallback() {
   const router = useRouter()
 
@@ -136,7 +124,6 @@ export default function AuthCallback() {
           const intentEarly = typeof window !== 'undefined' && localStorage.getItem('fyi_intent')
           if (intentEarly === 'company') {
             await saveCompanyRecruiter(data.session.user)
-            await acceptPendingInvites(data.session)
           } else {
             await saveProfile(data.session.user)
           }
@@ -179,7 +166,6 @@ export default function AuthCallback() {
             const intent2Early = typeof window !== 'undefined' && localStorage.getItem('fyi_intent')
             if (intent2Early === 'company') {
               await saveCompanyRecruiter(exchangeData.session.user)
-              await acceptPendingInvites(exchangeData.session)
             } else {
               await saveProfile(exchangeData.session.user)
             }

@@ -17,7 +17,7 @@ import {
   T, METRICS_BASE, EXP_COLORS, COLORS,
   inputStyle, sectionStyle, sectionTitle,
 } from '../../constants/dashboard'
-import { aggregateDaily, localDate } from '../../utils/dashboard'
+import { getDoD, aggregateDaily, localDate } from '../../utils/dashboard'
 
 const MetricChart = dynamic(() => import('../../components/DashboardCharts'), { ssr: false })
 
@@ -516,6 +516,16 @@ export default function AdminDashboard() {
                     <div style={{ fontSize: 12, color: isActive ? 'rgba(255,255,255,0.7)' : '#6B7280', marginBottom: 4 }}>{m.label}</div>
                     <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
                       <div style={{ fontSize: 28, fontWeight: 700, color: isActive ? '#fff' : m.color }}>{value}</div>
+                      {dod !== null && (
+                        <span style={{
+                          fontSize: 13, fontWeight: 600,
+                          color: isActive
+                            ? 'rgba(255,255,255,0.8)'
+                            : dod > 0 ? '#EF4444' : dod < 0 ? '#3B82F6' : '#9CA3AF'
+                        }}>
+                          {dod > 0 ? '+' : ''}{dod}%
+                        </span>
+                      )}
                     </div>
                   </div>
                 )

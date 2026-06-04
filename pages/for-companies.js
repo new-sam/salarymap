@@ -177,7 +177,7 @@ export default function ForCompanies() {
             </div>
             <div style={css.talentVisualWrap}>
               <img
-                src="/company-talent-pool-proof-tilted.png"
+                src="/company-talent-pool-proof.png"
                 alt={t('company.landing.talentProof.alt')}
                 style={css.talentVisual}
               />
