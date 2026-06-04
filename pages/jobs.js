@@ -10,9 +10,30 @@ import { DEFAULT_IMAGES, ROLE_OPTIONS, TYPE_OPTIONS, TECH_OPTIONS, JOBS_PER_PAGE
 import { COMPANY_PROFILES } from '../data/companyProfiles.js'
 import { formatSalaryCard, getHighSalaryThreshold } from '../utils/salary'
 import { generateCompanyDescription } from '../utils/companyDescription'
+import { getStoredUtm } from '../lib/utm'
+
+function decodeHTML(str) {
+  if (!str || typeof str !== 'string') return str
+  const el = typeof document !== 'undefined' && document.createElement('textarea')
+  if (!el) return str
+  el.innerHTML = str
+  return el.value
+}
 
 // Module-level: survives client-side navigation, resets on full page reload
 let _cachedProfile = null
+
+// 같은 회사·제목 공고 중복 제거 — 크롤러 중복 삽입 + 대소문자/공백 변형 방어.
+// /api/jobs가 created_at desc 정렬이라 첫 항목(최신)이 유지된다.
+function dedupeJobs(list) {
+  const seen = new Set()
+  return (list || []).filter(j => {
+    const key = `${(j.company || '').trim().toLowerCase().replace(/\s+/g, ' ')}::${(j.title || '').trim().toLowerCase().replace(/\s+/g, ' ')}`
+    if (seen.has(key)) return false
+    seen.add(key)
+    return true
+  })
+}
 
 export default function JobsPage() {
   const router = useRouter()
@@ -52,12 +73,25 @@ export default function JobsPage() {
   const [applying, setApplying] = useState(false)
   const [applied, setApplied] = useState(false)
   const [detailApplyMode, setDetailApplyMode] = useState(false)
+
+  useEffect(() => {
+    if (detailJob) {
+      document.body.style.overflow = 'hidden'
+    } else {
+      document.body.style.overflow = ''
+    }
+    return () => { document.body.style.overflow = '' }
+  }, [detailJob])
   const [aiSummaryReady, setAiSummaryReady] = useState(false)
   const [showUserMenu, setShowUserMenu] = useState(false)
   const [isAdminUser, setIsAdminUser] = useState(false)
   const [bookmarks, setBookmarks] = useState([])
   const [appliedJobs, setAppliedJobs] = useState([])
   const [toast, setToast] = useState(null)
+  const [appliedInfo, setAppliedInfo] = useState(null)
+  const [showAiProfilePrompt, setShowAiProfilePrompt] = useState(null)
+  const [aiParsing, setAiParsing] = useState(0)
+  const [hasProfileResume, setHasProfileResume] = useState(false)
   const [visibleCount, setVisibleCount] = useState(JOBS_PER_PAGE)
   const barPlaceholderRef = useRef(null)
   const stickyRef = useRef(null)
@@ -123,6 +157,13 @@ export default function JobsPage() {
         }
       })
     }
+    // Persist the original landing referrer once, so non-UTM channel attribution
+    // survives client-side navigation up to the moment the candidate applies.
+    if (!sessionStorage.getItem('fyi_referrer') && document.referrer && !document.referrer.includes(window.location.host)) {
+      const expires = new Date(Date.now() + 30 * 86400000).toUTCString()
+      sessionStorage.setItem('fyi_referrer', document.referrer)
+      document.cookie = `fyi_referrer=${encodeURIComponent(document.referrer)};path=/;expires=${expires};SameSite=Lax`
+    }
     const getUtm = (k) => {
       const p = params.get(k)
       if (p) return p
@@ -179,15 +220,20 @@ export default function JobsPage() {
             sessionStorage.setItem('fyi_is_admin', String(isAdmin))
           } catch { }
         }
-        // Load bookmarks from DB
+        // Load bookmarks from DB + check profile resume
         try {
-          const bRes = await fetch(`/api/job-bookmarks?userId=${s.user.id}`)
+          const [bRes, pRes] = await Promise.all([
+            fetch(`/api/job-bookmarks?userId=${s.user.id}`),
+            fetch('/api/profile/talent', { headers: { Authorization: `Bearer ${s.access_token}` } }),
+          ])
           const bData = await bRes.json()
           if (bData.bookmarks) {
             const ids = bData.bookmarks.map(b => b.job_id)
             setBookmarks(ids)
             localStorage.setItem('fyi_bookmarks', JSON.stringify(ids))
           }
+          const pData = await pRes.json()
+          if (pData.resume_url) setHasProfileResume(true)
         } catch { }
       }
       setAuthLoading(false)
@@ -205,7 +251,7 @@ export default function JobsPage() {
           retries++
           setTimeout(load, 1000)
         } else {
-          setJobs(d); setJobsLoaded(true)
+          setJobs(dedupeJobs(d)); setJobsLoaded(true)
           // Open job detail if jobId query param exists
           const qJobId = new URLSearchParams(window.location.search).get('jobId')
           if (qJobId) {
@@ -306,12 +352,10 @@ export default function JobsPage() {
         }
         return 999
       }
-      const featured = filtered.filter(j => j.is_featured)
-      const rest = filtered.filter(j => !j.is_featured)
-      rest.sort((a, b) => getBrand(a.company) - getBrand(b.company))
+      filtered.sort((a, b) => getBrand(a.company) - getBrand(b.company))
       // 같은 회사 분산
       const byCompany = {}
-      rest.forEach(job => {
+      filtered.forEach(job => {
         const key = job.company || ''
         if (!byCompany[key]) byCompany[key] = []
         byCompany[key].push(job)
@@ -319,18 +363,36 @@ export default function JobsPage() {
       const queues = Object.entries(byCompany)
         .sort((a, b) => getBrand(a[0]) - getBrand(b[0]))
         .map(([, jobs]) => jobs)
-      const result = []
+      const spread = []
       while (queues.some(q => q.length > 0)) {
         for (const q of queues) {
-          if (q.length > 0) result.push(q.shift())
+          if (q.length > 0) spread.push(q.shift())
         }
       }
-      return [...featured, ...result]
+      // wanted/non-wanted 1:1 인터리빙
+      const wanted = spread.filter(j => j.source === 'wanted')
+      const other = spread.filter(j => j.source !== 'wanted')
+      const result = []
+      let wi = 0, oi = 0
+      while (wi < wanted.length || oi < other.length) {
+        if (oi < other.length) result.push(other[oi++])
+        if (wi < wanted.length) result.push(wanted[wi++])
+      }
+      return result
     }
-    // featured 공고 상단 고정 (다른 정렬에서도)
-    const featured = filtered.filter(j => j.is_featured)
-    const rest = filtered.filter(j => !j.is_featured)
-    return [...featured, ...rest]
+    // wanted/non-wanted 1:1 인터리빙
+    const interleave = (list) => {
+      const wanted = list.filter(j => j.source === 'wanted')
+      const other = list.filter(j => j.source !== 'wanted')
+      const result = []
+      let wi = 0, oi = 0
+      while (wi < wanted.length || oi < other.length) {
+        if (oi < other.length) result.push(other[oi++])
+        if (wi < wanted.length) result.push(wanted[wi++])
+      }
+      return result
+    }
+    return interleave(filtered)
   })()
 
   const handleApply = async (job) => {
@@ -369,12 +431,14 @@ export default function JobsPage() {
         applicantCompany: userCompany,
         applicantEmail: session.user.email,
         applicantName: session.user.user_metadata?.full_name || '',
+        // Use the attribution captured on landing — router.query is empty by apply time.
+        ...getStoredUtm(),
       }),
     })
     if (!applyRes.ok) {
       setApplying(false)
       const err = await applyRes.json().catch(() => ({}))
-      alert('지원 처리에 실패했습니다: ' + (err.error || 'unknown error'))
+      alert(t('jobs.applyError', { error: err.error || 'unknown error' }))
       return
     }
     setApplying(false)
@@ -397,11 +461,25 @@ export default function JobsPage() {
       })
       localStorage.setItem('fyi_my_applications', JSON.stringify(cached))
     } catch {}
-    // Redirect to confirmation page
-    router.push({
-      pathname: '/jobs/applied',
-      query: { title: target.title, company: target.company },
-    })
+    // Show success modal + push URL for Meta Pixel conversion tracking
+    setAppliedInfo({ title: target.title, company: target.company, resumeUrl })
+    setDetailJob(null)
+    window.history.pushState(null, '', `/jobs/applied?title=${encodeURIComponent(target.title)}&company=${encodeURIComponent(target.company)}`)
+    if (typeof fbq === 'function') fbq('track', 'Lead', { content_name: 'job_apply_confirmed', content_category: target.title })
+  }
+
+  // Kick off login for the apply flow. Return the user straight back to the open
+  // job (via ?jobId=) so the detail panel reopens and they can submit their CV in
+  // one authenticated step — instead of losing the panel + selected file and
+  // landing on a bare page.
+  const loginForJob = (jobId) => {
+    const dest = jobId ? `/jobs?jobId=${jobId}` : '/jobs'
+    localStorage.setItem('fyi_login_return', dest)
+    // Use our own server-side Google flow, which fully controls the return path.
+    // (Supabase's hosted signInWithOAuth falls back to the project Site URL — the
+    //  salary homepage — whenever redirectTo isn't in the allow-list, which dropped
+    //  users on the salary page instead of bringing them back to the job.)
+    window.location.href = '/api/auth/google?return=' + encodeURIComponent(dest)
   }
 
   const showToast = (msg) => {
@@ -449,7 +527,7 @@ export default function JobsPage() {
       <Head>
         <title>{t('jobs.title')}</title>
         <meta name="description" content="Curated IT jobs in Vietnam with higher pay. Our headhunter personally introduces you to top companies. Remote, Korean, and global opportunities." />
-        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
         <meta property="og:type" content="website" />
         <meta property="og:url" content="https://salary-fyi.com/jobs" />
         <meta property="og:title" content="Jobs — Higher Pay, Better Roles | FYI Salary" />
@@ -589,7 +667,7 @@ export default function JobsPage() {
         .jc-co { font-size: 13px; color: #777; margin-bottom: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         .jc-sal { font-size: 15px; font-weight: 800; color: #ff4400; margin-top: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; letter-spacing: -0.3px; }
         .jc-bottom { margin-top: auto; }
-        .jc-m { font-size: 12px; color: #999; white-space: nowrap; overflow: visible; text-overflow: ellipsis; display: flex; align-items: center; }
+        .jc-m { font-size: 12px; color: #999; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: flex; align-items: center; }
         .jc-m b { color: #ff4400; font-weight: 700; }
         .jc-tag { font-size: 11px; font-weight: 500; color: #555; background: #f0f0f0; padding: 2px 7px; border-radius: 4px; }
         .jc-tag-more { color: #999; }
@@ -650,9 +728,11 @@ export default function JobsPage() {
 
         /* Job Detail Panel */
         .jd-bg { position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 60; }
-        .jd { position: fixed; top: 0; right: 0; width: 50%; height: 100vh; background: #fafaf8; z-index: 61; overflow-y: auto; animation: jdSlide .3s ease; box-shadow: -8px 0 40px rgba(0,0,0,0.1); }
+        .jd { position: fixed; top: 0; right: 0; width: 50%; height: 100vh; background: #fafaf8; z-index: 61; overflow-y: auto; overscroll-behavior: contain; animation: jdSlide .3s ease; box-shadow: -8px 0 40px rgba(0,0,0,0.1); }
         @keyframes jdSlide { from { transform: translateX(100%); } to { transform: translateX(0); } }
         .jd-x { position: absolute; top: 16px; right: 20px; font-size: 24px; color: #999; cursor: pointer; background: none; border: none; z-index: 2; line-height: 1; }
+        .jd-back { display: none; align-items: center; gap: 8px; padding: 12px 16px; border-bottom: 1px solid #f0f0f0; background: #fafaf8; font-size: 14px; font-weight: 600; color: #333; cursor: pointer; border: none; width: 100%; flex-shrink: 0; }
+        .jd-scroll { display: contents; }
         .jd-img { width: 100%; max-height: 400px; background: #f0f0f0; background-size: contain; background-position: center; background-repeat: no-repeat; aspect-ratio: 16/9; }
         .jd-body { padding: 28px 32px 40px; }
         .jd-company { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; }
@@ -715,7 +795,7 @@ export default function JobsPage() {
 
         @media (max-width: 900px) { .jg { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
         @media (max-width: 768px) {
-          .jn { padding: 0 16px; height: 48px; }
+          .jn { display: none; }
           .jn-l { gap: 16px; }
           .jn-tab { font-size: 13px; height: 48px; padding: 0 12px; }
           .jw { padding: 28px 16px 60px; }
@@ -725,20 +805,23 @@ export default function JobsPage() {
           .jbm-icon { width: 30px; height: 30px; border-radius: 8px; }
           .jbm-icon svg { width: 15px; height: 15px; }
           .jbm-tag { font-size: 12px; padding: 3px 8px; }
-          .jf-sticky { top: 48px; }
+          .jf-sticky { top: 52px; }
           .jf { gap: 6px; }
           .jf-dd-btn { font-size: 12px; padding: 7px 10px; }
           .jf-sort { flex-wrap: wrap; }
           .jf-sort-btn { font-size: 12px; padding: 6px 10px; }
           .jgate-box { padding: 36px 24px; }
           .ap { padding: 20px 20px 32px; }
-          .jd { width: 100%; }
+          .jd { width: 100%; top: 52px; height: calc(100vh - 52px); z-index: 100000; padding-bottom: 68px; }
+          .jd-x { display: none; }
+          .jd-back { display: flex !important; position: sticky; top: 0; z-index: 3; }
+          .jd-scroll { display: contents; }
           .jd-body { padding: 20px 16px 32px; }
           .jd-img { max-height: 280px; }
           .jd-title { font-size: 18px; }
           .jd-work-info { grid-template-columns: 1fr; }
           .jd-co-overview-stats { grid-template-columns: 1fr 1fr; }
-          .jd-apply-float { padding: 12px 16px; }
+          .jd-apply-float { position: fixed; bottom: 0; left: 0; right: 0; padding: 12px 16px; background: #fafaf8; border-top: 1px solid #f0f0f0; z-index: 100001; }
           .jd-save-btn { width: 44px; height: 44px; }
           .jd-apply-btn { padding: 12px; font-size: 14px; }
           .toast { font-size: 13px; padding: 10px 20px; bottom: 24px; }
@@ -755,6 +838,7 @@ export default function JobsPage() {
         .jc-skel-line { border-radius: 4px; background: #e9e9e9; }
         .shimmer { background: linear-gradient(90deg, #e9e9e9 25%, #f5f5f5 50%, #e9e9e9 75%); background-size: 200% 100%; animation: shimmer 1.5s infinite; }
         @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
       `}</style>
 
       <GlobalNav activePage="jobs" />
@@ -872,20 +956,17 @@ export default function JobsPage() {
             {/* Hot jobs section */}
             {jobs.length > 0 && !searchQuery && !roleFilter && !typeFilter && !techFilter && expMin === '' && expMax === '' && (() => {
               const now = new Date()
-              const featuredJobs = jobs.filter(j => j.is_featured).sort((a, b) => (b.salary_max || 0) - (a.salary_max || 0)).slice(0, 4)
-              let hotJobs
-              if (featuredJobs.length >= 4) {
-                hotJobs = featuredJobs
-              } else {
-                const closing = jobs
-                  .filter(j => !j.is_featured && j.deadline && new Date(j.deadline) > now && Math.ceil((new Date(j.deadline) - now) / 86400000) <= 14)
-                  .sort((a, b) => new Date(a.deadline) - new Date(b.deadline))
-                  .slice(0, 2)
-                const noDeadline = jobs
-                  .filter(j => !j.is_featured && !j.deadline && !closing.find(c => c.id === j.id))
-                  .slice(0, 2)
-                hotJobs = [...featuredJobs, ...closing, ...noDeadline].slice(0, 4)
-              }
+              // remote 2개 + onsite 2개 자동 선택
+              const scored = jobs.map(j => {
+                let score = 0
+                if (j.is_featured) score += 100
+                if (j.deadline && new Date(j.deadline) > now && Math.ceil((new Date(j.deadline) - now) / 86400000) <= 14) score += 50
+                score += (j.salary_max || 0) / 1000
+                return { ...j, _score: score }
+              }).sort((a, b) => b._score - a._score)
+              const remoteJobs = scored.filter(j => j.type === 'remote').slice(0, 2)
+              const onsiteJobs = scored.filter(j => j.type !== 'remote').slice(0, 2)
+              const hotJobs = [...remoteJobs, ...onsiteJobs].slice(0, 4)
               if (hotJobs.length === 0) return null
               const fakeCount = (id) => 20 + (id.charCodeAt(0) + id.charCodeAt(id.length - 1)) % 21
               return (
@@ -900,10 +981,10 @@ export default function JobsPage() {
                         <div key={job.id} className="jc" onClick={() => { setCarouselIdx(0); setDetailApplyMode(false); setApplied(false); setResumeFile(null); setDetailJob({ ...job, _imgFallback: DEFAULT_IMAGES[idx % 3] }); track('click_job_card','jobs',{jobId:job.id,title:job.title,company:job.company}) }}>
                           <div className="jc-img">
                             <div className="jc-img-in" style={(() => { const hasImg = job.image_url || job.images?.[0]; const src = hasImg || job.logo_url || DEFAULT_IMAGES[idx % 3]; const mode = !hasImg && job.logo_url ? '60%' : 'cover'; return { background: `#fff url(${src}) center/${mode} no-repeat` } })()}>
-                              {!job.is_featured && bump !== null && bump > 0 && (
+                              {bump !== null && bump > 0 && (
                                 <div className="jc-bump" dangerouslySetInnerHTML={{ __html: t('jobs.bumpVs', { bump }) }} />
                               )}
-                              {!job.is_featured && matched && <div className="jc-match" style={bump > 0 ? { top: 38 } : undefined}>{t('jobs.profileBadge')}</div>}
+                              {matched && <div className="jc-match" style={bump > 0 ? { top: 38 } : undefined}>{t('jobs.profileBadge')}</div>}
                               <button className="jc-bm" aria-label="Bookmark" onClick={e => { e.stopPropagation(); toggleBookmark(job.id) }}>
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill={bookmarks.includes(job.id) ? '#ff4400' : 'none'} stroke={bookmarks.includes(job.id) ? '#ff4400' : '#999'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                                   <path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z" />
@@ -1003,10 +1084,10 @@ export default function JobsPage() {
                         <div key={job.id} className="jc" onClick={() => { setCarouselIdx(0); setDetailApplyMode(false); setApplied(false); setResumeFile(null); setDetailJob({ ...job, _imgFallback: DEFAULT_IMAGES[idx % 3] }); track('click_job_card','jobs',{jobId:job.id,title:job.title,company:job.company}) }}>
                           <div className="jc-img">
                             <div className="jc-img-in" style={(() => { const hasImg = job.image_url || job.images?.[0]; const src = hasImg || job.logo_url || DEFAULT_IMAGES[idx % 3]; const mode = !hasImg && job.logo_url ? '60%' : 'cover'; return { background: `#fff url(${src}) center/${mode} no-repeat` } })()}>
-                              {!job.is_featured && bump !== null && bump > 0 && (
+                              {bump !== null && bump > 0 && (
                                 <div className="jc-bump" dangerouslySetInnerHTML={{ __html: t('jobs.bumpVs', { bump }) }} />
                               )}
-                              {!job.is_featured && matched && <div className="jc-match" style={bump > 0 ? { top: 38 } : undefined}>{t('jobs.profileBadge')}</div>}
+                              {matched && <div className="jc-match" style={bump > 0 ? { top: 38 } : undefined}>{t('jobs.profileBadge')}</div>}
                               <button className="jc-bm" aria-label="Bookmark" onClick={e => { e.stopPropagation(); toggleBookmark(job.id) }}>
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill={bookmarks.includes(job.id) ? '#ff4400' : 'none'} stroke={bookmarks.includes(job.id) ? '#ff4400' : '#999'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                                   <path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z" />
@@ -1070,7 +1151,12 @@ export default function JobsPage() {
           <div className="jd-bg" onClick={() => setDetailJob(null)} />
           <div className="jd">
             <button className="jd-x" onClick={() => setDetailJob(null)}>×</button>
+            <button className="jd-back" onClick={() => setDetailJob(null)}>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+              {t('jobs.back') || 'Back'}
+            </button>
 
+            <div className="jd-scroll">
             {/* Hero image / Carousel */}
             {(() => {
               const uploaded = detailJob.images?.length ? detailJob.images : []
@@ -1285,7 +1371,7 @@ export default function JobsPage() {
               {/* Description */}
               <div className="jd-section-title">{t('jobs.about')}</div>
               <div className="jd-desc">
-                {detailJob.description || `${detailJob.company} is looking for a ${detailJob.title} to join their team in ${detailJob.location}.\n\nThis is a ${detailJob.type} position offering ${Math.round(detailJob.salary_min / 1e6)}M–${Math.round(detailJob.salary_max / 1e6)}M VND, ideal for candidates with ${detailJob.experience_min}–${detailJob.experience_max} years of experience in ${detailJob.role}.\n\nOur headhunter team will personally introduce you and support you throughout the process.`}
+                {decodeHTML(detailJob.description) || `${detailJob.company} is looking for a ${detailJob.title} to join their team in ${detailJob.location}.\n\nThis is a ${detailJob.type} position offering ${Math.round(detailJob.salary_min / 1e6)}M–${Math.round(detailJob.salary_max / 1e6)}M VND, ideal for candidates with ${detailJob.experience_min}–${detailJob.experience_max} years of experience in ${detailJob.role}.\n\nOur headhunter team will personally introduce you and support you throughout the process.`}
               </div>
 
               {/* Benefits */}
@@ -1295,7 +1381,7 @@ export default function JobsPage() {
                   <div className="jd-section-title">Benefits</div>
                   <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 24 }}>
                     {detailJob.benefits.map(b => (
-                      <span key={b} style={{ fontSize: 13, color: '#166534', background: '#f0fff4', border: '1px solid #86efac', padding: '5px 12px', borderRadius: 6 }}>{b}</span>
+                      <span key={b} style={{ fontSize: 13, color: '#166534', background: '#f0fff4', border: '1px solid #86efac', padding: '5px 12px', borderRadius: 6 }}>{decodeHTML(b)}</span>
                     ))}
                   </div>
                 </>
@@ -1306,7 +1392,7 @@ export default function JobsPage() {
                 <>
                   <div className="jd-divider" />
                   <div className="jd-section-title">Hiring Process</div>
-                  <div style={{ fontSize: 14, color: '#444', marginBottom: 24 }}>{detailJob.hiring_process}</div>
+                  <div style={{ fontSize: 14, color: '#444', marginBottom: 24 }}>{decodeHTML(detailJob.hiring_process)}</div>
                 </>
               )}
 
@@ -1350,13 +1436,15 @@ export default function JobsPage() {
                 </div>
 
                 <button className="jd-apply-btn" style={{ width: '100%', marginTop: 12 }} onClick={() => {
-                  if (!isLoggedIn) { localStorage.setItem('fyi_login_return', '/jobs'); supabase.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: window.location.origin + '/auth/callback' } }); return; }
+                  if (!isLoggedIn) { loginForJob(detailJob.id); return; }
                   handleApply(detailJob);
                 }} disabled={applying || !resumeFile}>
                   {!isLoggedIn ? t('jobs.loginToApply') : applying ? t('jobs.sending') : t('jobs.submitApplication')}
                 </button>
               </div>
             )}
+
+            </div>{/* /jd-scroll */}
 
             {/* Floating Apply CTA */}
             {!detailApplyMode && (
@@ -1365,12 +1453,19 @@ export default function JobsPage() {
                   <button className="jd-save-btn" onClick={() => toggleBookmark(detailJob.id)} title={bookmarks.includes(detailJob.id) ? t('jobs.saved') : t('jobs.save')}>
                     <svg width="18" height="18" viewBox="0 0 24 24" fill={bookmarks.includes(detailJob.id) ? '#ff4400' : 'none'} stroke={bookmarks.includes(detailJob.id) ? '#ff4400' : '#666'} strokeWidth="2"><path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z"/></svg>
                   </button>
+                  <button className="jd-save-btn" onClick={() => { navigator.clipboard.writeText(`${window.location.origin}/jobs/${detailJob.id}`); setToast('Link copied!'); setTimeout(() => setToast(null), 2000) }} title="Share">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#666" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+                  </button>
                   {appliedJobs.includes(detailJob.id) ? (
                     <button className="jd-apply-btn" disabled style={{ background: '#ccc', flex: 1 }}>
                       {t('jobs.applied')}
                     </button>
                   ) : (
-                    <button className="jd-apply-btn" style={{ flex: 1 }} onClick={() => { setDetailApplyMode(true); track('click_apply_button','/jobs',{jobId:detailJob.id,title:detailJob.title,company:detailJob.company}) }}>
+                    <button className="jd-apply-btn" style={{ flex: 1 }} onClick={() => {
+                      track('click_apply_button','/jobs',{jobId:detailJob.id,title:detailJob.title,company:detailJob.company});
+                      if (!isLoggedIn) { loginForJob(detailJob.id); return; }
+                      setDetailApplyMode(true);
+                    }}>
                       {t('jobs.apply')}
                     </button>
                   )}
@@ -1422,7 +1517,7 @@ export default function JobsPage() {
                 </div>
 
                 <button className="ap-btn" onClick={() => {
-                  if (!isLoggedIn) { localStorage.setItem('fyi_login_return', '/jobs'); window.location.href = '/api/auth/google?return=' + encodeURIComponent('/jobs'); return; }
+                  if (!isLoggedIn) { loginForJob(selectedJob.id); return; }
                   handleApply();
                 }} disabled={applying || !resumeFile}>
                   {!isLoggedIn ? t('jobs.loginToApply') : applying ? t('jobs.sending') : t('jobs.submitApplication')}
@@ -1444,6 +1539,89 @@ export default function JobsPage() {
         <div className="toast">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="#ff4400" stroke="none"><path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z"/></svg>
           {toast}
+        </div>
+      )}
+
+      {appliedInfo && (
+        <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.6)',zIndex:1100,display:'flex',alignItems:'center',justifyContent:'center',padding:'20px'}}
+          onClick={e => { if(e.target===e.currentTarget) { if(appliedInfo.resumeUrl && !hasProfileResume){setShowAiProfilePrompt({resumeUrl:appliedInfo.resumeUrl})} setAppliedInfo(null); window.history.replaceState(null, '', '/jobs'); } }}>
+          <div style={{background:'#fff',borderRadius:'20px',padding:'40px 36px',maxWidth:'420px',width:'100%',fontFamily:"'Barlow',sans-serif",textAlign:'center'}}>
+            <div style={{width:'56px',height:'56px',borderRadius:'50%',background:'#ff4400',display:'flex',alignItems:'center',justifyContent:'center',margin:'0 auto 16px'}}>
+              <span style={{color:'#fff',fontSize:'28px',lineHeight:1}}>&#10003;</span>
+            </div>
+            <div style={{fontSize:'22px',fontWeight:900,color:'#111',letterSpacing:'-0.5px',marginBottom:'8px'}}>{t('jobs.appliedModalTitle')}</div>
+            <div style={{fontSize:'14px',color:'#666',lineHeight:1.6,marginBottom:'24px'}}>
+              {t('jobs.appliedModalDesc', { company: appliedInfo.company, title: appliedInfo.title })}
+            </div>
+            <button onClick={() => { if(appliedInfo.resumeUrl && !hasProfileResume){setShowAiProfilePrompt({resumeUrl:appliedInfo.resumeUrl})} setAppliedInfo(null); window.history.replaceState(null, '', '/jobs'); }}
+              style={{background:'#ff4400',color:'#fff',fontSize:'14px',fontWeight:700,padding:'14px 32px',borderRadius:'10px',border:'none',cursor:'pointer',fontFamily:"'Barlow',sans-serif"}}>
+              {t('jobs.confirm')}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {showAiProfilePrompt && (
+        <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.6)',zIndex:1100,display:'flex',alignItems:'center',justifyContent:'center',padding:'20px'}}
+          onClick={e => { if(e.target===e.currentTarget && !aiParsing) setShowAiProfilePrompt(null); }}>
+          <div style={{background:'#fff',borderRadius:'20px',padding:'40px 36px',maxWidth:'420px',width:'100%',fontFamily:"'Barlow',sans-serif",textAlign:'center'}}>
+            {aiParsing ? (
+              <>
+                <div style={{fontSize:'40px',marginBottom:'16px'}}>&#10024;</div>
+                <div style={{fontSize:'18px',fontWeight:800,color:'#111',marginBottom:'8px'}}>{t('jobs.aiParsingTitle')}</div>
+                <div style={{fontSize:'13px',color:'#888',lineHeight:1.6,marginBottom:'20px'}}>{t('jobs.aiParsingSub')}</div>
+                <div style={{background:'#f0f0f0',borderRadius:'8px',height:'8px',overflow:'hidden',marginBottom:'10px'}}>
+                  <div style={{background:'#ff4400',height:'100%',borderRadius:'8px',width:`${aiParsing}%`,transition:'width 0.4s ease'}} />
+                </div>
+                <div style={{fontSize:'13px',fontWeight:700,color:'#ff4400'}}>{aiParsing}%</div>
+              </>
+            ) : (
+              <>
+                <div style={{fontSize:'40px',marginBottom:'16px'}}>&#10024;</div>
+                <div style={{fontSize:'20px',fontWeight:900,color:'#111',letterSpacing:'-0.5px',marginBottom:'8px'}}>{t('jobs.aiProfileTitle')}</div>
+                <div style={{fontSize:'14px',color:'#666',lineHeight:1.6,marginBottom:'24px'}}>{t('jobs.aiProfileDesc')}</div>
+                <div style={{display:'flex',gap:'10px'}}>
+                  <button onClick={() => setShowAiProfilePrompt(null)}
+                    style={{flex:1,background:'#f0f0f0',color:'#555',fontSize:'14px',fontWeight:700,padding:'14px',borderRadius:'10px',border:'none',cursor:'pointer',fontFamily:"'Barlow',sans-serif"}}>
+                    {t('jobs.aiProfileSkip')}
+                  </button>
+                  <button onClick={async () => {
+                    setAiParsing(5)
+                    try {
+                      const token = (await supabase.auth.getSession()).data.session?.access_token
+                      setAiParsing(15)
+                      await fetch('/api/profile/talent', {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+                        body: JSON.stringify({ resume_url: showAiProfilePrompt.resumeUrl }),
+                      })
+                      setAiParsing(30)
+                      const tick = setInterval(() => { setAiParsing(p => p < 85 ? p + Math.random() * 8 >> 0 : p) }, 800)
+                      const parseRes = await fetch('/api/profile/parse-resume', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+                      })
+                      clearInterval(tick)
+                      setAiParsing(95)
+                      if (!parseRes.ok) throw new Error('parse failed')
+                      setAiParsing(100)
+                      await new Promise(r => setTimeout(r, 400))
+                      router.push('/profile?from=ai-resume')
+                    } catch (err) {
+                      console.error('AI profile parse error:', err)
+                      alert(t('jobs.aiProfileError'))
+                    } finally {
+                      setAiParsing(0)
+                      setShowAiProfilePrompt(null)
+                    }
+                  }}
+                    style={{flex:1,background:'#ff4400',color:'#fff',fontSize:'14px',fontWeight:700,padding:'14px',borderRadius:'10px',border:'none',cursor:'pointer',fontFamily:"'Barlow',sans-serif"}}>
+                    {t('jobs.aiProfileConfirm')}
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
         </div>
       )}
 

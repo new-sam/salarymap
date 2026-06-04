@@ -1,0 +1,370 @@
+- generic [active] [ref=e1]:
+  - link "Skip to content":
+    - /url: "#geist-skip-nav"
+  - main [ref=e3]:
+    - generic [ref=e4]:
+      - generic [ref=e5]:
+        - generic [ref=e6]:
+          - generic [ref=e9]:
+            - link "younghunhun's projects Hobby" [ref=e10] [cursor=pointer]:
+              - /url: /likelion1
+              - img [ref=e11]
+              - generic [ref=e12]:
+                - generic [ref=e13]: younghunhun's projects
+                - generic [ref=e15]: Hobby
+            - button [ref=e16] [cursor=pointer]:
+              - img [ref=e18]
+          - button "Find… F" [ref=e21]:
+            - generic [ref=e23]:
+              - img [ref=e25]
+              - generic [ref=e27]: Find…
+              - generic [ref=e29]: F
+        - navigation [ref=e31]:
+          - generic [ref=e34]:
+            - link "Projects" [ref=e35] [cursor=pointer]:
+              - /url: /likelion1
+              - img [ref=e37]
+              - generic [ref=e40]: Projects
+            - link "Deployments" [ref=e41] [cursor=pointer]:
+              - /url: /likelion1/~/deployments
+              - img [ref=e43]
+              - generic [ref=e46]: Deployments
+            - link "Logs" [ref=e47] [cursor=pointer]:
+              - /url: /likelion1/~/logs
+              - img [ref=e49]
+              - generic [ref=e52]: Logs
+            - link "Analytics" [ref=e53] [cursor=pointer]:
+              - /url: /likelion1/~/analytics
+              - img [ref=e55]
+              - generic [ref=e58]: Analytics
+            - link "Speed Insights" [ref=e59] [cursor=pointer]:
+              - /url: /likelion1/~/speed-insights
+              - img [ref=e61]
+              - generic [ref=e64]: Speed Insights
+            - link "Observability" [ref=e65] [cursor=pointer]:
+              - /url: /likelion1/~/observability
+              - img [ref=e67]
+              - generic [ref=e70]: Observability
+              - img [ref=e72]
+            - link "Firewall" [ref=e74] [cursor=pointer]:
+              - /url: /likelion1/~/firewall
+              - img [ref=e76]
+              - generic [ref=e80]: Firewall
+            - link "CDN" [ref=e81] [cursor=pointer]:
+              - /url: /likelion1/~/cdn
+              - img [ref=e83]
+              - generic [ref=e86]: CDN
+            - separator [ref=e87]
+            - link "Environment Variables" [ref=e88] [cursor=pointer]:
+              - /url: /likelion1/~/settings/environment-variables
+              - img [ref=e90]
+              - generic [ref=e93]: Environment Variables
+            - link "Domains" [ref=e94] [cursor=pointer]:
+              - /url: /likelion1/~/domains
+              - img [ref=e96]
+              - generic [ref=e99]: Domains
+            - link "Integrations" [ref=e100] [cursor=pointer]:
+              - /url: /likelion1/~/integrations
+              - img [ref=e102]
+              - generic [ref=e105]: Integrations
+            - link "Storage" [ref=e106] [cursor=pointer]:
+              - /url: /likelion1/~/stores
+              - img [ref=e108]
+              - generic [ref=e111]: Storage
+            - link "Flags" [ref=e112] [cursor=pointer]:
+              - /url: /likelion1/~/experimentation/collections
+              - img [ref=e114]
+              - generic [ref=e117]: Flags
+            - link "Agent" [ref=e118] [cursor=pointer]:
+              - /url: /likelion1/~/agent
+              - img [ref=e120]
+              - generic [ref=e123]: Agent
+              - img [ref=e125]
+            - link "AI Gateway" [ref=e127] [cursor=pointer]:
+              - /url: /likelion1/~/ai-gateway
+              - img [ref=e129]
+              - generic [ref=e132]: AI Gateway
+              - img [ref=e134]
+            - link "Sandboxes" [ref=e136] [cursor=pointer]:
+              - /url: /likelion1/~/sandboxes
+              - img [ref=e138]
+              - generic [ref=e141]: Sandboxes
+            - link "Workflows" [ref=e142] [cursor=pointer]:
+              - /url: /likelion1/~/workflows
+              - img [ref=e144]
+              - generic [ref=e147]: Workflows
+            - separator [ref=e148]
+            - link "Usage" [ref=e149] [cursor=pointer]:
+              - /url: /likelion1/~/usage
+              - img [ref=e151]
+              - generic [ref=e154]: Usage
+            - link "Support" [ref=e155] [cursor=pointer]:
+              - /url: /likelion1/~/support
+              - img [ref=e157]
+              - generic [ref=e160]: Support
+            - link "Settings" [ref=e161] [cursor=pointer]:
+              - /url: /likelion1/~/settings
+              - img [ref=e163]
+              - generic [ref=e166]: Settings
+              - img [ref=e168]
+        - generic [ref=e172]:
+          - generic [ref=e173]:
+            - generic [ref=e174]:
+              - generic [ref=e177]:
+                - generic [ref=e178]: Ship
+                - generic [ref=e180]: "26"
+              - button "Dismiss" [ref=e181] [cursor=pointer]:
+                - img [ref=e183]
+            - generic [ref=e185]:
+              - generic [ref=e186]: Coming to five cities worldwide.
+              - button "Get your ticket" [ref=e188] [cursor=pointer]:
+                - generic [ref=e189]: Get your ticket
+          - generic [ref=e191]:
+            - button "Avatar for younghunhun younghunhun" [ref=e192] [cursor=pointer]:
+              - img "Avatar for younghunhun" [ref=e193]:
+                - img "Avatar for younghunhun" [ref=e194]
+              - generic [ref=e196]: younghunhun
+              - img [ref=e198]
+            - button "4 unseen notifications" [ref=e202] [cursor=pointer]:
+              - generic [ref=e203]:
+                - generic [ref=e204]:
+                  - img
+                - img [ref=e205]
+      - button [ref=e208] [cursor=pointer]:
+        - img [ref=e209]
+    - generic [ref=e212]:
+      - generic [ref=e213]:
+        - button "All projects" [ref=e217] [cursor=pointer]:
+          - generic [ref=e218]: All projects
+          - img [ref=e220]
+        - generic [ref=e224]: Overview
+        - button "Open page actions menu" [ref=e226] [cursor=pointer]:
+          - img [ref=e228]
+      - generic [ref=e233]:
+        - generic [ref=e235]:
+          - generic [ref=e236]:
+            - searchbox "Search" [ref=e237]
+            - img [ref=e239]
+          - button "Filter and Sort Projects" [ref=e241] [cursor=pointer]:
+            - img [ref=e243]
+          - generic [ref=e245]:
+            - generic [ref=e246]:
+              - radio "grid" [checked] [ref=e247]
+              - generic [ref=e248] [cursor=pointer]:
+                - img [ref=e249]
+                - generic [ref=e251]: grid
+            - generic [ref=e252]:
+              - radio "list" [ref=e253]
+              - generic [ref=e254] [cursor=pointer]:
+                - img [ref=e255]
+                - generic [ref=e257]: list
+          - button "Add New..." [ref=e258] [cursor=pointer]:
+            - generic [ref=e259]: Add New...
+            - img [ref=e261]
+        - generic [ref=e263]:
+          - generic [ref=e266]:
+            - generic [ref=e267]:
+              - link "Usage" [ref=e269] [cursor=pointer]:
+                - /url: /likelion1/~/usage
+              - generic [ref=e270]:
+                - generic [ref=e271]:
+                  - link "Last 30 days" [ref=e273] [cursor=pointer]:
+                    - /url: /likelion1/~/usage
+                  - button "Upgrade" [ref=e274] [cursor=pointer]:
+                    - generic [ref=e275]: Upgrade
+                - list [ref=e276]:
+                  - listitem [ref=e277]:
+                    - link "4.015083355 Fast Data Transfer 4.02 GB / 100 GB 1 TB" [ref=e278] [cursor=pointer]:
+                      - /url: /likelion1/~/usage/networking-fast-data-transfer
+                      - progressbar [ref=e279]:
+                        - img [ref=e280]
+                      - generic [ref=e283]:
+                        - generic [ref=e284]: Fast Data Transfer
+                        - img [ref=e287]
+                      - generic [ref=e290]:
+                        - text: 4.02 GB /
+                        - generic [ref=e291]: 100 GB
+                      - generic: 1 TB
+                  - listitem [ref=e292]:
+                    - link "0.45339999999999997 Edge Requests 4.5K / 1M 10M" [ref=e293] [cursor=pointer]:
+                      - /url: /likelion1/~/usage/networking-edge-requests
+                      - progressbar [ref=e294]:
+                        - img [ref=e295]
+                      - generic [ref=e298]:
+                        - generic [ref=e299]: Edge Requests
+                        - img [ref=e302]
+                      - generic [ref=e305]:
+                        - text: 4.5K /
+                        - generic [ref=e306]: 1M
+                      - generic: 10M
+                  - listitem [ref=e307]:
+                    - link "0.025 Edge Request CPU Duration 1s / 1h" [ref=e308] [cursor=pointer]:
+                      - /url: /likelion1/~/usage/networking-edge-request-cpu-duration
+                      - progressbar [ref=e309]:
+                        - img [ref=e310]
+                      - generic [ref=e313]:
+                        - generic [ref=e314]: Edge Request CPU Duration
+                        - img [ref=e317]
+                      - generic [ref=e320]: 1s / 1h
+                  - listitem [ref=e321]:
+                    - link "0.006510730000000001 Fast Origin Transfer 651.07 kB / 10 GB 100 GB" [ref=e322] [cursor=pointer]:
+                      - /url: /likelion1/~/usage/networking-fast-origin-transfer
+                      - progressbar [ref=e323]:
+                        - img [ref=e324]
+                      - generic [ref=e327]:
+                        - generic [ref=e328]: Fast Origin Transfer
+                        - img [ref=e331]
+                      - generic [ref=e334]:
+                        - text: 651.07 kB /
+                        - generic [ref=e335]: 10 GB
+                      - generic: 100 GB
+                  - listitem [ref=e336]:
+                    - link "0.0006000000000000001 Function Invocations 6 / 1M" [ref=e337] [cursor=pointer]:
+                      - /url: /likelion1/~/usage/vercel-functions-invocations
+                      - progressbar [ref=e338]:
+                        - img [ref=e339]
+                      - generic [ref=e342]:
+                        - generic [ref=e343]: Function Invocations
+                        - img [ref=e346]
+                      - generic [ref=e349]: 6 / 1M
+                  - listitem [ref=e350]:
+                    - link "0.00048611111111111115 Fluid Active CPU 0s / 4h 16h" [ref=e351] [cursor=pointer]:
+                      - /url: /likelion1/~/usage/vercel-functions-fluid-cpu-duration
+                      - progressbar [ref=e352]:
+                        - img [ref=e353]
+                      - generic [ref=e356]:
+                        - generic [ref=e357]: Fluid Active CPU
+                        - img [ref=e360]
+                      - generic [ref=e363]:
+                        - text: 0s /
+                        - generic [ref=e364]: 4h
+                      - generic: 16h
+                  - listitem [ref=e365]:
+                    - link "0.000018962962962962963 Fluid Provisioned Memory 0 GB-Hrs / 360 GB-Hrs 1,440 GB-Hrs" [ref=e366] [cursor=pointer]:
+                      - /url: /likelion1/~/usage/vercel-functions-fluid-duration
+                      - progressbar [ref=e367]:
+                        - img [ref=e368]
+                      - generic [ref=e371]:
+                        - generic [ref=e372]: Fluid Provisioned Memory
+                        - img [ref=e375]
+                      - generic [ref=e378]:
+                        - text: 0 GB-Hrs /
+                        - generic [ref=e379]: 360 GB-Hrs
+                      - generic: 1,440 GB-Hrs
+                  - listitem [ref=e380]:
+                    - link "0 Microfrontends Routing 0 / 50K" [ref=e381] [cursor=pointer]:
+                      - /url: /likelion1/~/usage/networking-microfrontends-routing
+                      - progressbar [ref=e382]:
+                        - img [ref=e383]
+                      - generic [ref=e386]:
+                        - generic [ref=e387]: Microfrontends Routing
+                        - img [ref=e390]
+                      - generic [ref=e393]: 0 / 50K
+                  - listitem [ref=e394]:
+                    - link "0 ISR Reads 0 / 1M 10M" [ref=e395] [cursor=pointer]:
+                      - /url: /likelion1/~/usage/isr-reads
+                      - progressbar [ref=e396]:
+                        - img [ref=e397]
+                      - generic [ref=e400]:
+                        - generic [ref=e401]: ISR Reads
+                        - img [ref=e404]
+                      - generic [ref=e407]:
+                        - text: 0 /
+                        - generic [ref=e408]: 1M
+                      - generic: 10M
+                  - listitem [ref=e409]:
+                    - link "0 ISR Writes 0 / 200K 2M" [ref=e410] [cursor=pointer]:
+                      - /url: /likelion1/~/usage/isr-writes
+                      - progressbar [ref=e411]:
+                        - img [ref=e412]
+                      - generic [ref=e415]:
+                        - generic [ref=e416]: ISR Writes
+                        - img [ref=e419]
+                      - generic [ref=e422]:
+                        - text: 0 /
+                        - generic [ref=e423]: 200K
+                      - generic: 2M
+              - button "Show More Usage" [ref=e424] [cursor=pointer]:
+                - img [ref=e426]
+            - generic [ref=e428]:
+              - link "Alerts" [ref=e430] [cursor=pointer]:
+                - /url: /likelion1/~/observability/alerts
+              - generic [ref=e435]:
+                - generic [ref=e436]:
+                  - generic [ref=e437]: Get alerted for anomalies
+                  - generic [ref=e438]: Automatically monitor your projects for anomalies and get notified.
+                - button "Upgrade to Pro" [ref=e439] [cursor=pointer]:
+                  - generic [ref=e440]: Upgrade to Pro
+            - generic [ref=e441]:
+              - generic [ref=e443]: Recent Previews
+              - list [ref=e444]:
+                - generic [ref=e446]:
+                  - img [ref=e448]
+                  - generic [ref=e451]: Preview deployments that you have recently visited or created will appear here.
+          - generic [ref=e453]:
+            - generic [ref=e455]: Projects
+            - list [ref=e456]:
+              - listitem [ref=e457]:
+                - link [ref=e458] [cursor=pointer]:
+                  - /url: /likelion1/yunjobs
+                - generic [ref=e459]:
+                  - link [ref=e460] [cursor=pointer]:
+                    - /url: /likelion1/yunjobs
+                    - img [ref=e462]
+                  - generic [ref=e463]:
+                    - link "yunjobs" [ref=e464] [cursor=pointer]:
+                      - /url: /likelion1/yunjobs
+                      - generic [ref=e466]: yunjobs
+                    - link "yun-tuvi-mvp.vercel.app" [ref=e467] [cursor=pointer]:
+                      - /url: https://yun-tuvi-mvp.vercel.app
+                  - link "20" [ref=e468] [cursor=pointer]:
+                    - /url: /likelion1/yunjobs#production-checklist
+                    - progressbar [ref=e470]:
+                      - img [ref=e471]
+                      - img [ref=e476]
+                  - button "Project Menu" [ref=e478] [cursor=pointer]:
+                    - img [ref=e480]
+                - generic [ref=e482]:
+                  - link "Connect Git Repository" [ref=e483] [cursor=pointer]:
+                    - /url: /likelion1/yunjobs/settings/git
+                  - generic [ref=e487] [cursor=pointer]: May 22
+              - listitem [ref=e488]:
+                - link [ref=e489] [cursor=pointer]:
+                  - /url: /likelion1/likelion-resume-translator
+                - generic [ref=e490]:
+                  - link [ref=e491] [cursor=pointer]:
+                    - /url: /likelion1/likelion-resume-translator
+                    - img [ref=e493]
+                  - generic [ref=e494]:
+                    - link "likelion-resume-translator" [ref=e495] [cursor=pointer]:
+                      - /url: /likelion1/likelion-resume-translator
+                      - generic [ref=e497]: likelion-resume-translator
+                    - link "likelion-resume-translator.vercel.app" [ref=e498] [cursor=pointer]:
+                      - /url: https://likelion-resume-translator.vercel.app
+                  - link "20" [ref=e499] [cursor=pointer]:
+                    - /url: /likelion1/likelion-resume-translator#production-checklist
+                    - progressbar [ref=e501]:
+                      - img [ref=e502]
+                      - img [ref=e507]
+                  - button "Project Menu" [ref=e509] [cursor=pointer]:
+                    - img [ref=e511]
+                - link "github younghunhun/likelion-resume-translator" [ref=e514] [cursor=pointer]:
+                  - /url: /likelion1?repo=https%3A%2F%2Fgithub.com%2Fyounghunhun%2Flikelion-resume-translator
+                  - img "github" [ref=e515]
+                  - generic [ref=e517]: younghunhun/likelion-resume-translator
+                - generic [ref=e518]:
+                  - link "Add files via upload" [ref=e519] [cursor=pointer]:
+                    - /url: /likelion1/likelion-resume-translator/4R6a8U7rtndK4zcjUWzrEUZAki4a
+                  - generic [ref=e520]:
+                    - generic [ref=e521]:
+                      - generic [ref=e523] [cursor=pointer]: Apr 18
+                      - text: "on"
+                    - img [ref=e524]
+                    - link "main" [ref=e526] [cursor=pointer]:
+                      - /url: /likelion1/likelion-resume-translator/deployments?filterBranch=main
+  - alert [ref=e528]
+  - generic:
+    - generic:
+      - generic:
+        - generic:
+          - img

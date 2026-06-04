@@ -2,6 +2,7 @@
 const nextConfig = {
   /* config options here */
   reactStrictMode: false,
+  serverExternalPackages: ['googleapis', 'google-auth-library'],
   async redirects() {
     return [
       { source: '/ig', destination: '/?utm_source=instagram&utm_medium=social', permanent: false },

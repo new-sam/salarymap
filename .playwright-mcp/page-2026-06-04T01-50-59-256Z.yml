@@ -1,0 +1,99 @@
+- generic [active] [ref=e1]:
+  - link "Skip to content":
+    - /url: "#geist-skip-nav"
+  - main [ref=e3]:
+    - generic [ref=e4]:
+      - generic [ref=e5]:
+        - generic [ref=e6]:
+          - link "Back" [ref=e10] [cursor=pointer]:
+            - /url: /dashboard
+            - img [ref=e12]
+            - generic [ref=e14]: Back
+          - button "Find… F" [ref=e16]:
+            - generic [ref=e18]:
+              - img [ref=e20]
+              - generic [ref=e22]: Find…
+              - generic [ref=e24]: F
+        - navigation [ref=e26]:
+          - generic [ref=e29]:
+            - link "Overview" [ref=e30] [cursor=pointer]:
+              - /url: /account
+              - img [ref=e32]
+              - generic [ref=e35]: Overview
+            - link "Domains" [ref=e36] [cursor=pointer]:
+              - /url: /account/domains
+              - img [ref=e38]
+              - generic [ref=e41]: Domains
+            - link "Activity" [ref=e42] [cursor=pointer]:
+              - /url: /account/activity
+              - img [ref=e44]
+              - generic [ref=e47]: Activity
+            - link "Support" [ref=e48] [cursor=pointer]:
+              - /url: /account/support
+              - img [ref=e50]
+              - generic [ref=e53]: Support
+            - separator [ref=e54]
+            - link "Settings" [ref=e55] [cursor=pointer]:
+              - /url: /account/settings
+              - img [ref=e57]
+              - generic [ref=e60]: Settings
+            - link "Authentication" [ref=e61] [cursor=pointer]:
+              - /url: /account/settings/authentication
+              - generic [ref=e64]: Authentication
+            - link "Sign in with Vercel" [ref=e65] [cursor=pointer]:
+              - /url: /account/settings/sign-in-with-vercel
+              - generic [ref=e68]: Sign in with Vercel
+            - link "Billing Information" [ref=e69] [cursor=pointer]:
+              - /url: /account/settings/billing-information
+              - generic [ref=e72]: Billing Information
+            - link "Billing Items" [ref=e73] [cursor=pointer]:
+              - /url: /account/settings/billing-items
+              - generic [ref=e76]: Billing Items
+            - link "Invoices" [ref=e77] [cursor=pointer]:
+              - /url: /account/settings/invoices
+              - generic [ref=e80]: Invoices
+            - link "Tokens" [ref=e81] [cursor=pointer]:
+              - /url: /account/settings/tokens
+              - generic [ref=e84]: Tokens
+        - generic [ref=e87]:
+          - button "Avatar for younghunhun younghunhun" [ref=e88] [cursor=pointer]:
+            - img "Avatar for younghunhun" [ref=e89]:
+              - img "Avatar for younghunhun" [ref=e90]
+            - generic [ref=e92]: younghunhun
+            - img [ref=e94]
+          - img [ref=e98]
+      - button [ref=e101] [cursor=pointer]:
+        - img [ref=e102]
+    - generic [ref=e105]:
+      - generic [ref=e106]:
+        - generic [ref=e109]: Overview
+        - button "Open page actions menu" [ref=e111] [cursor=pointer]:
+          - img [ref=e113]
+      - generic [ref=e121]:
+        - generic [ref=e122]:
+          - generic [ref=e123]:
+            - heading "Teams" [level=3] [ref=e124]
+            - paragraph [ref=e125]: The teams that are associated with your Vercel account.
+          - button "Create a Team" [ref=e126] [cursor=pointer]:
+            - generic [ref=e127]: Create a Team
+        - generic [ref=e129]:
+          - searchbox "Search" [ref=e130]
+          - img [ref=e132]
+        - list [ref=e135]:
+          - listitem [ref=e136]:
+            - img [ref=e137]
+            - generic [ref=e138]:
+              - paragraph [ref=e139]:
+                - generic [ref=e140]: younghunhun's projects
+                - generic [ref=e142]: Hobby
+              - paragraph
+              - paragraph [ref=e143]: Owner
+              - paragraph
+            - button "Team younghunhun's projects actions" [ref=e144] [cursor=pointer]:
+              - img [ref=e146]
+  - alert [ref=e148]
+  - generic:
+    - generic:
+      - generic:
+        - generic:
+          - img

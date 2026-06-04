@@ -54,23 +54,11 @@ export default function CompanyDetailPanel({
     return () => window.removeEventListener('keydown', h)
   }, [isOpen, onClose])
 
-  // Scroll lock (including iOS Safari)
+  // Scroll lock
   useEffect(() => {
     if (isOpen) {
-      const scrollY = window.scrollY
-      document.body.style.position = 'fixed'
-      document.body.style.top = `-${scrollY}px`
-      document.body.style.left = '0'
-      document.body.style.right = '0'
       document.body.style.overflow = 'hidden'
-      return () => {
-        document.body.style.position = ''
-        document.body.style.top = ''
-        document.body.style.left = ''
-        document.body.style.right = ''
-        document.body.style.overflow = ''
-        window.scrollTo(0, scrollY)
-      }
+      return () => { document.body.style.overflow = '' }
     }
   }, [isOpen])
 
@@ -144,8 +132,9 @@ export default function CompanyDetailPanel({
   // ── Panel style ──
   const panelStyle = isMobile ? {
     position: 'fixed', bottom: 0, left: 0, right: 0,
-    maxHeight: '90vh', background: '#fff', zIndex: 300,
-    borderRadius: '20px 20px 0 0', overflowY: 'auto',
+    maxHeight: '85vh', background: '#fff', zIndex: 100000,
+    borderRadius: '16px 16px 0 0', overflowY: 'auto',
+    overscrollBehavior: 'contain',
     transform: isOpen ? 'translateY(0)' : 'translateY(100%)',
     transition: 'transform 0.3s ease',
     boxShadow: '0 -4px 30px rgba(0,0,0,0.2)',
@@ -207,7 +196,7 @@ export default function CompanyDetailPanel({
               background: 'rgba(255,255,255,0.06)', borderRadius: 8, padding: '10px 10px', textAlign: 'center',
             }}>
               <div style={{ fontSize: 16, fontWeight: 700, color: s.accent ? '#ff6000' : '#fff' }}>{s.value}</div>
-              <div style={{ fontSize: 9, color: 'rgba(255,255,255,0.3)', marginTop: 2, letterSpacing: '0.04em' }}>{s.label}</div>
+              <div style={{ fontSize: isMobile ? 11 : 9, color: 'rgba(255,255,255,0.3)', marginTop: 2, letterSpacing: '0.04em' }}>{s.label}</div>
             </div>
           ))}
         </div>
@@ -218,7 +207,7 @@ export default function CompanyDetailPanel({
   const renderRoleTabs = () => (
     <div style={{
       display: 'flex', gap: 6, overflowX: 'auto', padding: '14px 0 10px',
-      WebkitOverflowScrolling: 'touch',
+      WebkitOverflowScrolling: 'touch', scrollbarWidth: 'none', msOverflowStyle: 'none',
     }}>
       {allRoles.map(role => {
         const active = role === activeRole
@@ -241,7 +230,7 @@ export default function CompanyDetailPanel({
     if (!summaryData && !blurred) {
       return (
         <div style={{ marginBottom: 16 }}>
-          <div style={{ fontSize: 11, fontWeight: 700, color: '#333', marginBottom: 4 }}>{t('detail.salaryAnalysis')}</div>
+          <div style={{ fontSize: isMobile ? 13 : 11, fontWeight: 700, color: '#333', marginBottom: 4 }}>{t('detail.salaryAnalysis')}</div>
           <div style={{
             background: '#f5f5f5', borderRadius: 12, padding: '20px 16px', textAlign: 'center',
           }}>
@@ -268,10 +257,10 @@ export default function CompanyDetailPanel({
     return (
       <div style={blurred ? { filter: 'blur(6px)', pointerEvents: 'none', userSelect: 'none' } : {}}>
         {/* Section title */}
-        <div style={{ fontSize: 11, fontWeight: 700, color: '#333', marginBottom: 4 }}>
+        <div style={{ fontSize: isMobile ? 13 : 11, fontWeight: 700, color: '#333', marginBottom: 4 }}>
           {t('detail.salaryAnalysis')}
         </div>
-        <div style={{ fontSize: 11, color: '#999', lineHeight: 1.5, marginBottom: 12 }}>
+        <div style={{ fontSize: isMobile ? 13 : 11, color: '#999', lineHeight: 1.5, marginBottom: 12 }}>
           {isSubmitted && userRole
             ? t('detail.salaryRange', { role: activeRole === 'All' ? 'All' : activeRole, company })
             : t('detail.salaryRangeAnon', { role: activeRole === 'All' ? 'All' : activeRole, company })}
@@ -284,12 +273,12 @@ export default function CompanyDetailPanel({
               borderRadius: 12, padding: '16px 10px', textAlign: 'center',
             }}>
               <div style={{ fontSize: 22, fontWeight: 800, color: s.hl ? '#ff6000' : '#1a1a1a', letterSpacing: '-0.02em' }}>{s.value}</div>
-              <div style={{ fontSize: 10, fontWeight: 600, color: s.hl ? '#ff6000' : '#888', marginTop: 4 }}>{s.label}</div>
+              <div style={{ fontSize: isMobile ? 12 : 10, fontWeight: 600, color: s.hl ? '#ff6000' : '#888', marginTop: 4 }}>{s.label}</div>
             </div>
           ))}
         </div>
         {summaryData && (
-          <div style={{ fontSize: 10, color: '#bbb', textAlign: 'center', marginBottom: 4 }}>
+          <div style={{ fontSize: isMobile ? 12 : 10, color: '#bbb', textAlign: 'center', marginBottom: 4 }}>
             {t('detail.basedOn', { count: summaryData.count })}
           </div>
         )}
@@ -314,10 +303,10 @@ export default function CompanyDetailPanel({
     const barLeft = displayRange > 0 ? Math.round(((summaryData.min - displayMin) / displayRange) * 100) : 0
     return (
       <div style={{ margin: '14px 0 18px' }}>
-        <div style={{ fontSize: 11, fontWeight: 700, color: '#333', marginBottom: 4 }}>
+        <div style={{ fontSize: isMobile ? 13 : 11, fontWeight: 700, color: '#333', marginBottom: 4 }}>
           {t('detail.yourPosition')}
         </div>
-        <div style={{ fontSize: 11, color: '#999', lineHeight: 1.5, marginBottom: 10 }}>
+        <div style={{ fontSize: isMobile ? 13 : 11, color: '#999', lineHeight: 1.5, marginBottom: 10 }}>
           {youExceedsMax
             ? t('detail.exceedsRange', { salary: fmtShort(userSalary), min: fmtShort(summaryData.min), max: fmtShort(summaryData.max) })
             : youBelowMin
@@ -408,14 +397,14 @@ export default function CompanyDetailPanel({
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
             <span style={{ fontSize: 13, fontWeight: 600, color: '#1a1a1a' }}>{row.role}</span>
-            {isYou && <span style={{ fontSize: 9, fontWeight: 700, color: '#ff6000', background: 'rgba(255,68,0,0.08)', padding: '1px 6px', borderRadius: 3 }}>YOU</span>}
-            {!isYou && row.mostSimilar && isSubmitted && <span style={{ fontSize: 9, fontWeight: 700, color: '#22c55e', background: 'rgba(34,197,94,0.08)', padding: '1px 6px', borderRadius: 3 }}>{t('detail.similar')}</span>}
+            {isYou && <span style={{ fontSize: isMobile ? 11 : 9, fontWeight: 700, color: '#ff6000', background: 'rgba(255,68,0,0.08)', padding: '1px 6px', borderRadius: 3 }}>YOU</span>}
+            {!isYou && row.mostSimilar && isSubmitted && <span style={{ fontSize: isMobile ? 11 : 9, fontWeight: 700, color: '#22c55e', background: 'rgba(34,197,94,0.08)', padding: '1px 6px', borderRadius: 3 }}>{t('detail.similar')}</span>}
           </div>
-          <div style={{ fontSize: 10, color: '#999', marginTop: 2 }}>{fmtExp(row.experience)}</div>
+          <div style={{ fontSize: isMobile ? 12 : 10, color: '#999', marginTop: 2 }}>{fmtExp(row.experience)}</div>
         </div>
         <div style={{ textAlign: 'right', flexShrink: 0 }}>
           <div style={{ fontSize: 15, fontWeight: 700, color: isYou ? '#ff6000' : '#1a1a1a' }}>{fmt(row.salary)}</div>
-          <div style={{ fontSize: 9, color: '#bbb', marginTop: 1 }}>{t('detail.perMonth')}</div>
+          <div style={{ fontSize: isMobile ? 11 : 9, color: '#bbb', marginTop: 1 }}>{t('detail.perMonth')}</div>
         </div>
       </div>
     )
@@ -429,10 +418,10 @@ export default function CompanyDetailPanel({
       : visibleFeed
     return (
       <div style={blurred ? { filter: 'blur(6px)', pointerEvents: 'none', userSelect: 'none' } : {}}>
-        <div style={{ fontSize: 11, fontWeight: 700, color: '#333', marginBottom: 4 }}>
+        <div style={{ fontSize: isMobile ? 13 : 11, fontWeight: 700, color: '#333', marginBottom: 4 }}>
           {t('detail.individualSalary')}
         </div>
-        <div style={{ fontSize: 11, color: '#999', lineHeight: 1.5, marginBottom: 10 }}>
+        <div style={{ fontSize: isMobile ? 13 : 11, color: '#999', lineHeight: 1.5, marginBottom: 10 }}>
           {isSubmitted
             ? t('detail.individualDesc')
             : t('detail.individualDescAnon')}
@@ -476,7 +465,7 @@ export default function CompanyDetailPanel({
         ...(blurred ? { filter: 'blur(6px)', pointerEvents: 'none', userSelect: 'none' } : {}),
       }}>
         {/* Section header */}
-        <div style={{ fontSize: 11, fontWeight: 700, color: '#333', marginBottom: 4 }}>
+        <div style={{ fontSize: isMobile ? 13 : 11, fontWeight: 700, color: '#333', marginBottom: 4 }}>
           {t('detail.satisfaction')}
         </div>
         <div style={{ fontSize: 11, color: '#999', lineHeight: 1.5, marginBottom: 14 }}>
@@ -607,7 +596,7 @@ export default function CompanyDetailPanel({
     <>
       {/* Backdrop */}
       {isOpen && <div onClick={onClose} style={{
-        position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 299,
+        position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: isMobile ? 99999 : 299,
       }} />}
 
       {/* Panel */}
@@ -616,14 +605,14 @@ export default function CompanyDetailPanel({
           <>
             {/* Mobile handle */}
             {isMobile && (
-              <div style={{ display: 'flex', justifyContent: 'center', padding: '10px 0 0' }}>
-                <div style={{ width: 36, height: 4, borderRadius: 2, background: '#ddd' }} />
+              <div style={{ display: 'flex', justifyContent: 'center', padding: '8px 0 0', background: '#111', borderRadius: '16px 16px 0 0' }}>
+                <div style={{ width: 36, height: 4, borderRadius: 2, background: 'rgba(255,255,255,0.3)' }} />
               </div>
             )}
 
             {renderHeader()}
 
-            <div style={{ padding: '0 20px 40px' }}>
+            <div style={{ padding: '0 20px 40px', ...(isMobile ? { fontSize: 14 } : {}) }}>
 
               {loading && (
                 <div style={{ textAlign: 'center', padding: '60px 0', fontSize: 13, color: '#ccc' }}>{t('detail.loading')}</div>
@@ -659,7 +648,7 @@ export default function CompanyDetailPanel({
                   {renderDistribution()}
                   {renderRating(false)}
                   {renderFeed(false)}
-                  <a href={`/jobs?company=${encodeURIComponent(company)}`} style={{
+                  <a href="/jobs" style={{
                     display: 'block', marginTop: 20, padding: '14px 20px',
                     background: '#1a0d07', border: '1px solid rgba(255,96,0,0.25)',
                     borderRadius: 10, textAlign: 'center', textDecoration: 'none',

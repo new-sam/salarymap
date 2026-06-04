@@ -1,0 +1,222 @@
+- generic [active] [ref=e1]:
+  - link "Skip to content":
+    - /url: "#geist-skip-nav"
+  - main [ref=e3]:
+    - generic [ref=e4]:
+      - generic [ref=e5]:
+        - generic [ref=e6]:
+          - generic [ref=e9]:
+            - link "younghunhun's projects Hobby" [ref=e10] [cursor=pointer]:
+              - /url: /likelion1
+              - img [ref=e11]
+              - generic [ref=e12]:
+                - generic [ref=e13]: younghunhun's projects
+                - generic [ref=e15]: Hobby
+            - button [ref=e16] [cursor=pointer]:
+              - img [ref=e18]
+          - button "Find… F" [ref=e21]:
+            - generic [ref=e23]:
+              - img [ref=e25]
+              - generic [ref=e27]: Find…
+              - generic [ref=e29]: F
+        - navigation [ref=e31]:
+          - generic [ref=e34]:
+            - link "Overview" [ref=e35] [cursor=pointer]:
+              - /url: /likelion1/salarymap
+              - generic [ref=e38]: Overview
+            - link "Deployments" [ref=e39] [cursor=pointer]:
+              - /url: /likelion1/salarymap/deployments
+              - img [ref=e41]
+              - generic [ref=e44]: Deployments
+            - link "Logs" [ref=e45] [cursor=pointer]:
+              - /url: /likelion1/salarymap/logs
+              - img [ref=e47]
+              - generic [ref=e50]: Logs
+            - link "Analytics" [ref=e51] [cursor=pointer]:
+              - /url: /likelion1/salarymap/analytics
+              - img [ref=e53]
+              - generic [ref=e56]: Analytics
+            - link "Speed Insights" [ref=e57] [cursor=pointer]:
+              - /url: /likelion1/salarymap/speed-insights
+              - img [ref=e59]
+              - generic [ref=e62]: Speed Insights
+            - link "Observability" [ref=e63] [cursor=pointer]:
+              - /url: /likelion1/salarymap/observability
+              - img [ref=e65]
+              - generic [ref=e68]: Observability
+              - img [ref=e70]
+            - link "Firewall" [ref=e72] [cursor=pointer]:
+              - /url: /likelion1/salarymap/firewall
+              - img [ref=e74]
+              - generic [ref=e78]: Firewall
+              - img [ref=e80]
+            - link "CDN" [ref=e82] [cursor=pointer]:
+              - /url: /likelion1/salarymap/cdn
+              - img [ref=e84]
+              - generic [ref=e87]: CDN
+              - img [ref=e89]
+            - separator [ref=e91]
+            - link "Environment Variables" [ref=e92] [cursor=pointer]:
+              - /url: /likelion1/salarymap/settings/environment-variables
+              - img [ref=e94]
+              - generic [ref=e97]: Environment Variables
+            - link "Domains" [ref=e98] [cursor=pointer]:
+              - /url: /likelion1/salarymap/settings/domains
+              - img [ref=e100]
+              - generic [ref=e103]: Domains
+            - link "Integrations" [ref=e104] [cursor=pointer]:
+              - /url: /likelion1/salarymap/settings/integrations
+              - img [ref=e106]
+              - generic [ref=e109]: Integrations
+            - link "Storage" [ref=e110] [cursor=pointer]:
+              - /url: /likelion1/salarymap/stores
+              - img [ref=e112]
+              - generic [ref=e115]: Storage
+            - link "Flags" [ref=e116] [cursor=pointer]:
+              - /url: /likelion1/salarymap/flags
+              - img [ref=e118]
+              - generic [ref=e121]: Flags
+              - img [ref=e123]
+            - link "Agent" [ref=e125] [cursor=pointer]:
+              - /url: /likelion1/salarymap/agent
+              - img [ref=e127]
+              - generic [ref=e130]: Agent
+              - img [ref=e132]
+            - link "AI Gateway" [ref=e134] [cursor=pointer]:
+              - /url: /likelion1/salarymap/ai-gateway
+              - img [ref=e136]
+              - generic [ref=e139]: AI Gateway
+              - img [ref=e141]
+            - link "Sandboxes" [ref=e143] [cursor=pointer]:
+              - /url: /likelion1/salarymap/sandboxes
+              - img [ref=e145]
+              - generic [ref=e148]: Sandboxes
+            - link "Workflows" [ref=e149] [cursor=pointer]:
+              - /url: /likelion1/salarymap/workflows
+              - img [ref=e151]
+              - generic [ref=e154]: Workflows
+            - separator [ref=e155]
+            - link "Usage" [ref=e156] [cursor=pointer]:
+              - /url: /likelion1/salarymap/usage
+              - img [ref=e158]
+              - generic [ref=e161]: Usage
+            - link "Support" [ref=e162] [cursor=pointer]:
+              - /url: /likelion1/salarymap/support
+              - img [ref=e164]
+              - generic [ref=e167]: Support
+            - link "Settings" [ref=e168] [cursor=pointer]:
+              - /url: /likelion1/salarymap/settings
+              - img [ref=e170]
+              - generic [ref=e173]: Settings
+              - img [ref=e175]
+        - generic [ref=e179]:
+          - button "Avatar for younghunhun younghunhun" [disabled]:
+            - img "Avatar for younghunhun":
+              - img "Avatar for younghunhun"
+            - generic:
+              - generic: younghunhun
+            - generic:
+              - img
+          - img [ref=e182]
+      - button [ref=e185] [cursor=pointer]:
+        - img [ref=e186]
+    - generic [ref=e189]:
+      - generic [ref=e190]:
+        - generic [ref=e193]:
+          - link "salarymap" [ref=e194] [cursor=pointer]:
+            - /url: /likelion1/salarymap
+            - generic [ref=e197]: salarymap
+          - button [ref=e198] [cursor=pointer]:
+            - img [ref=e200]
+          - link "Back to team view" [ref=e204] [cursor=pointer]:
+            - /url: /likelion1
+            - img [ref=e206]
+        - generic [ref=e210]: Overview
+        - button "Open page actions menu" [ref=e212] [cursor=pointer]:
+          - img [ref=e214]
+      - generic [ref=e218]:
+        - generic [ref=e223]:
+          - heading "Production Deployment" [level=3] [ref=e225]
+          - generic [ref=e240]:
+            - generic [ref=e243]:
+              - term [ref=e244]: Deployment
+              - definition [ref=e245]
+            - generic [ref=e250]:
+              - term [ref=e251]:
+                - generic [ref=e253]:
+                  - text: Domains
+                  - link [ref=e254] [cursor=pointer]:
+                    - /url: /likelion1/salarymap/settings/domains
+                    - img [ref=e255]
+              - definition [ref=e257]
+            - generic [ref=e259]:
+              - generic [ref=e260]:
+                - term [ref=e261]: Status
+                - definition [ref=e262]
+              - generic [ref=e265]:
+                - term [ref=e266]: Created
+                - definition [ref=e267]
+            - generic [ref=e270]:
+              - term [ref=e271]: Source
+              - definition [ref=e272]
+          - button "Deployment Settings" [disabled] [ref=e278]:
+            - generic [ref=e279]:
+              - img [ref=e280]
+              - generic [ref=e283]: Deployment Settings
+        - generic [ref=e292]:
+          - generic [ref=e293]:
+            - generic [ref=e294]:
+              - generic [ref=e295]:
+                - paragraph [ref=e296]:
+                  - strong [ref=e297]: Production Checklist
+                - generic [ref=e299]: 0/5
+              - button "Go to page" [ref=e300] [cursor=pointer]:
+                - img [ref=e302]
+              - button [ref=e304] [cursor=pointer]
+            - generic [ref=e308]:
+              - button "Connect Git Repository" [ref=e309] [cursor=pointer]:
+                - img [ref=e310]
+                - generic [ref=e312]: Connect Git Repository
+              - button "Add Custom Domain" [ref=e313] [cursor=pointer]:
+                - img [ref=e314]
+                - generic [ref=e316]: Add Custom Domain
+              - button "Preview Deployment" [ref=e317] [cursor=pointer]:
+                - img [ref=e318]
+                - generic [ref=e320]: Preview Deployment
+              - button "Enable Web Analytics" [ref=e321] [cursor=pointer]:
+                - img [ref=e322]
+                - generic [ref=e324]: Enable Web Analytics
+              - button "Enable Speed Insights" [ref=e325] [cursor=pointer]:
+                - img [ref=e326]
+                - generic [ref=e328]: Enable Speed Insights
+          - generic [ref=e329]:
+            - generic [ref=e330]:
+              - generic [ref=e331]:
+                - paragraph [ref=e332]:
+                  - strong [ref=e333]: Observability
+                - time [ref=e334]: 6h
+              - link "Go to page" [ref=e335] [cursor=pointer]:
+                - /url: "#"
+                - img [ref=e337]
+              - link [ref=e339] [cursor=pointer]:
+                - /url: "#"
+            - generic [ref=e341]:
+              - generic [ref=e343]: Edge Requests
+              - generic [ref=e348]: Function Invocations
+              - generic [ref=e353]: Error Rate
+          - generic [ref=e359]:
+            - paragraph [ref=e360]:
+              - strong [ref=e361]: Analytics
+            - time [ref=e362]: 1w
+        - generic [ref=e376]:
+          - img [ref=e379]
+          - img [ref=e390]
+          - img [ref=e401]
+          - img [ref=e412]
+          - generic [ref=e421]:
+            - img [ref=e424]
+            - img [ref=e435]
+            - img [ref=e446]
+            - img [ref=e457]
+            - img [ref=e468]
+            - img [ref=e479]

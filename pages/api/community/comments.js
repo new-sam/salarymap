@@ -1,0 +1,185 @@
+import { createClient } from '@supabase/supabase-js'
+import { getSalaryTier } from '../../../lib/salaryTiers'
+
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL,
+  process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+)
+
+// Map of user_id -> salary tier key for users with an active salary-range badge.
+async function salaryTierMap(userIds) {
+  const ids = [...new Set(userIds)].filter(Boolean)
+  if (!ids.length) return {}
+  const { data } = await supabase
+    .from('user_badges')
+    .select('user_id, salary_amount')
+    .in('user_id', ids)
+    .eq('badge_type', 'salary_range')
+    .eq('is_active', true)
+  const map = {}
+  ;(data || []).forEach(b => {
+    const tier = getSalaryTier(b.salary_amount)
+    if (tier) map[b.user_id] = tier.key
+  })
+  return map
+}
+
+// Map of user_id -> verified company name (active verified_company badge).
+async function companyVerifiedMap(userIds) {
+  const ids = [...new Set(userIds)].filter(Boolean)
+  if (!ids.length) return {}
+  const { data: badges } = await supabase
+    .from('user_badges')
+    .select('user_id')
+    .in('user_id', ids)
+    .eq('badge_type', 'verified_company')
+    .eq('is_active', true)
+  const verifiedIds = (badges || []).map(b => b.user_id)
+  if (!verifiedIds.length) return {}
+  const { data: profiles } = await supabase
+    .from('user_profiles')
+    .select('id, verified_company_name')
+    .in('id', verifiedIds)
+  const map = {}
+  ;(profiles || []).forEach(p => {
+    if (p.verified_company_name) map[p.id] = p.verified_company_name
+  })
+  return map
+}
+
+export default async function handler(req, res) {
+  if (req.method === 'GET') {
+    const { post_id } = req.query
+    if (!post_id) return res.status(400).json({ error: 'post_id required' })
+
+    const { data, error } = await supabase
+      .from('community_comments')
+      .select('*')
+      .eq('post_id', post_id)
+      .order('created_at', { ascending: true })
+
+    if (error) return res.status(500).json({ error: error.message })
+
+    // Check likes for logged in user
+    const token = req.headers.authorization?.replace('Bearer ', '')
+    let likedCommentIds = []
+    if (token && data.length > 0) {
+      const { data: { user } } = await supabase.auth.getUser(token)
+      if (user) {
+        const commentIds = data.map(c => c.id)
+        const { data: likes } = await supabase
+          .from('community_likes')
+          .select('comment_id')
+          .eq('user_id', user.id)
+          .in('comment_id', commentIds)
+        likedCommentIds = (likes || []).map(l => l.comment_id)
+      }
+    }
+
+    const tierMap = await salaryTierMap(data.map(c => c.user_id))
+    const cvMap = await companyVerifiedMap(data.map(c => c.user_id))
+
+    return res.status(200).json({
+      comments: data.map(c => ({ ...c, is_liked: likedCommentIds.includes(c.id), author_salary_tier: tierMap[c.user_id] || null, author_verified_company: cvMap[c.user_id] || null }))
+    })
+  }
+
+  if (req.method === 'POST') {
+    const token = req.headers.authorization?.replace('Bearer ', '')
+    if (!token) return res.status(401).json({ error: 'Unauthorized' })
+
+    const { data: { user } } = await supabase.auth.getUser(token)
+    if (!user) return res.status(401).json({ error: 'Unauthorized' })
+
+    const { post_id, content, is_anonymous } = req.body
+    if (!post_id || !content) {
+      return res.status(400).json({ error: 'Missing required fields' })
+    }
+
+    const realName = user.user_metadata?.full_name || user.email?.split('@')[0] || 'User'
+    const authorName = is_anonymous
+      ? (realName.charAt(0) + '**')
+      : realName
+
+    // Fetch the post to flag original-poster (OP) comments and to bump the count
+    const { data: postData } = await supabase
+      .from('community_posts')
+      .select('user_id, comment_count')
+      .eq('id', post_id)
+      .single()
+    const isOp = !!(postData && postData.user_id === user.id)
+
+    const { data, error } = await supabase
+      .from('community_comments')
+      .insert({
+        post_id,
+        user_id: user.id,
+        author_name: authorName,
+        content,
+        is_anonymous: is_anonymous !== false,
+        is_op: isOp
+      })
+      .select()
+      .single()
+
+    if (error) return res.status(500).json({ error: error.message })
+
+    // Increment comment count on the post
+    if (postData) {
+      await supabase
+        .from('community_posts')
+        .update({ comment_count: (postData.comment_count || 0) + 1 })
+        .eq('id', post_id)
+    }
+
+    // Enrich the response with the same author trust signals the GET returns,
+    // so the freshly-posted comment shows company / salary badge without a reload.
+    const tierMap = await salaryTierMap([user.id])
+    const cvMap = await companyVerifiedMap([user.id])
+
+    return res.status(201).json({
+      ...data,
+      is_liked: false,
+      author_salary_tier: tierMap[user.id] || null,
+      author_verified_company: cvMap[user.id] || null,
+    })
+  }
+
+  if (req.method === 'DELETE') {
+    const token = req.headers.authorization?.replace('Bearer ', '')
+    if (!token) return res.status(401).json({ error: 'Unauthorized' })
+
+    const { data: { user } } = await supabase.auth.getUser(token)
+    if (!user) return res.status(401).json({ error: 'Unauthorized' })
+
+    const { id, post_id } = req.query
+    if (!id) return res.status(400).json({ error: 'id required' })
+
+    const { error } = await supabase
+      .from('community_comments')
+      .delete()
+      .eq('id', id)
+      .eq('user_id', user.id)
+
+    if (error) return res.status(500).json({ error: error.message })
+
+    // Decrement comment count
+    if (post_id) {
+      const { data: p } = await supabase
+        .from('community_posts')
+        .select('comment_count')
+        .eq('id', post_id)
+        .single()
+      if (p) {
+        await supabase
+          .from('community_posts')
+          .update({ comment_count: Math.max(0, (p.comment_count || 0) - 1) })
+          .eq('id', post_id)
+      }
+    }
+
+    return res.status(200).json({ ok: true })
+  }
+
+  return res.status(405).json({ error: 'Method not allowed' })
+}

@@ -14,6 +14,7 @@ export default async function handler(req, res) {
     jobId, jobTitle, jobCompany, userId, resumeUrl,
     applicantRole, applicantExperience, applicantSalary,
     applicantCompany, applicantEmail, applicantName,
+    utmSource, utmMedium, utmCampaign, utmContent, referrer,
   } = req.body
 
   if (!jobId) {
@@ -35,23 +36,41 @@ export default async function handler(req, res) {
     }
   }
 
-  const { data, error } = await supabase
-    .from('job_applications')
-    .insert({
-      job_id: jobId,
-      job_title: resolvedTitle,
-      job_company: resolvedCompany,
-      user_id: userId || null,
-      resume_url: resumeUrl || null,
-      applicant_role: applicantRole || null,
-      applicant_experience: applicantExperience || null,
-      applicant_salary: applicantSalary || null,
-      applicant_company: applicantCompany || null,
-      applicant_email: applicantEmail || null,
-      applicant_name: applicantName || null,
-    })
-    .select('id')
-    .single()
+  const baseRow = {
+    job_id: jobId,
+    job_title: resolvedTitle,
+    job_company: resolvedCompany,
+    user_id: userId || null,
+    resume_url: resumeUrl || null,
+    applicant_role: applicantRole || null,
+    applicant_experience: applicantExperience || null,
+    applicant_salary: applicantSalary || null,
+    applicant_company: applicantCompany || null,
+    applicant_email: applicantEmail || null,
+    applicant_name: applicantName || null,
+  }
+  const utmRow = {
+    utm_source: utmSource || null,
+    utm_medium: utmMedium || null,
+    utm_campaign: utmCampaign || null,
+    utm_content: utmContent || null,
+    referrer: referrer || null,
+  }
+
+  const insert = (row) =>
+    supabase.from('job_applications').insert(row).select('id').single()
+
+  let { data, error } = await insert({ ...baseRow, ...utmRow })
+
+  // The source-tracking columns are added by separate migrations
+  // (20260601_add_utm_tracking.sql, 20260602_add_utm_content_referrer.sql). If a
+  // migration hasn't been applied yet, PostgREST reports the missing column (code
+  // PGRST204). Don't let it block the application — retry without source fields so
+  // the candidate's CV is still recorded.
+  if (error && (error.code === 'PGRST204' || /utm_|referrer/.test(error.message || ''))) {
+    console.warn('[JOB APPLICATION] source columns missing, retrying without UTM/referrer:', error.message)
+    ;({ data, error } = await insert(baseRow))
+  }
 
   if (error) {
     return res.status(500).json({ error: error.message })

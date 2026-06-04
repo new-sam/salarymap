@@ -4,11 +4,11 @@ import Head from 'next/head';
 import supabaseClient from '../lib/supabaseClient';
 import CompanyCard from '../components/CompanyCard';
 import CompanyDetailPanel from '../components/CompanyDetailPanel';
-import AnonymousSection from '../components/AnonymousSection';
 import SubmitSection from '../components/home/SubmitSection';
 import { useT } from '../lib/i18n';
 import Icon from '../components/Icon';
 import { homeCss } from '../constants/homeStyles';
+import GlobalNav from '../components/GlobalNav';
 
 const css = homeCss;
 
@@ -75,57 +75,6 @@ const bodyHTML = `<section class="hero">
 <!-- SUBMIT WIZARD (3rd section) -->
 <!-- SUBMIT_REACT_PLACEHOLDER -->
 
-<!-- WE GO FIRST (4th section) -->
-<section class="trust-section" style="background:#0c0c0b; padding:20px 0 60px;">
-  <div class="wgf-section">
-    <div class="wgf-eyebrow" data-wgf="badge">LƯƠNG THẬT · NGƯỜI THẬT</div>
-
-    <div class="wgf-director-row">
-      <div class="wgf-photo-wrap" data-wgf="director">
-        <div class="wgf-accent"></div>
-        <img src="/LL1.png" alt="Director — 100M/Month">
-      </div>
-      <div class="wgf-story">
-        <div>
-          <div class="wgf-quote-mark" data-wgf="quote">"</div>
-          <h2 class="wgf-headline" data-wgf="headline">
-            Nếu chúng tôi yêu cầu bạn<br>chia sẻ lương,<br>
-            <span>chúng tôi chia sẻ trước.</span>
-          </h2>
-        </div>
-        <p class="wgf-body" data-wgf="body1">
-          Tôi đã chứng kiến nhiều năm các kỹ sư ở Việt Nam bị trả thấp — không phải vì
-          họ không đủ giỏi, mà vì
-          <strong>họ không biết thị trường thực sự trả bao nhiêu.</strong>
-        </p>
-        <p class="wgf-body" data-wgf="body2">
-          FYI ra đời để giải quyết sự bất đối xứng thông tin đó.
-        </p>
-        <div class="wgf-sig" data-wgf="sig">
-          <div class="wgf-sig-name">— Director, LikeLion Vietnam</div>
-        </div>
-      </div>
-    </div>
-
-    <div class="wgf-divider" data-wgf="divider"><span>Và cả đội ngũ cũng vậy</span></div>
-
-    <div class="wgf-team-grid">
-      <div class="wgf-team-card" data-wgf="team1"><img src="/LL2.png" alt="Head of Business — 40M/Month"></div>
-      <div class="wgf-team-card" data-wgf="team2"><img src="/LL3.png" alt="Marketing Lead — 30M/Month"></div>
-      <div class="wgf-team-card" data-wgf="team3"><img src="/LL4.png" alt="Content Marketer — 15M/Month"></div>
-    </div>
-
-    <div class="wgf-bottom-cta">
-      <p>Chúng tôi đã chia sẻ. <strong>Giờ hãy xem bạn đứng đâu.</strong></p>
-      <button class="wgf-cta-btn" onclick="document.getElementById('submit').scrollIntoView({behavior:'smooth'})">
-        Tôi có bị trả thấp? →
-      </button>
-    </div>
-  </div>
-</section>
-
-<!-- ANONYMOUS (5th section) -->
-<div id="anonymous-section-root"></div>
 
 
 <div id="full-feed">
@@ -341,6 +290,11 @@ function coSearchClose() { document.getElementById('co-search-drop').classList.r
 async function coSelect(name) {
   document.getElementById('co-search-input').value = name;
   coSearchClose();
+  if (!window.isUnlocked) {
+    const submitEl = document.querySelector('.submit-outer');
+    if (submitEl) submitEl.scrollIntoView({ behavior: 'smooth' });
+    return;
+  }
   const panel = document.getElementById('co-result-panel');
   const body = document.getElementById('co-result-body');
   document.getElementById('co-result-name').textContent = name;
@@ -619,18 +573,8 @@ export default function Home({ initialCompanies = [] }) {
   const [detailOpen, setDetailOpen] = useState(false);
   const [detailCardIndex, setDetailCardIndex] = useState(0);
   const [showAuthModal, setShowAuthModal] = useState(false);
-  const [isAdminUser, setIsAdminUser] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [user, setUser] = useState(null);
-  const [showUserMenu, setShowUserMenu] = useState(false);
-  const [profileScore, setProfileScore] = useState(null);
-  const userMenuRef = useRef(null);
-
-  useEffect(() => {
-    const handleClick = (e) => { if (userMenuRef.current && !userMenuRef.current.contains(e.target)) setShowUserMenu(false) }
-    document.addEventListener('mousedown', handleClick)
-    return () => document.removeEventListener('mousedown', handleClick)
-  }, [])
 
   // Derived: card/panel unlock state — only unlocked after submitting salary info
   const isUnlocked = isSubmitted;
@@ -794,24 +738,6 @@ export default function Home({ initialCompanies = [] }) {
       if (session) {
         setIsLoggedIn(true);
         setUser(session.user);
-        const cached = sessionStorage.getItem('fyi_is_admin');
-        if (cached !== null) {
-          setIsAdminUser(cached === 'true');
-          if (cached === 'true') {}
-        } else {
-          fetch(`/api/admin/check?email=${encodeURIComponent(session.user.email)}`)
-            .then(r => r.json()).then(d => { setIsAdminUser(d.isAdmin); sessionStorage.setItem('fyi_is_admin', String(d.isAdmin)); }).catch(() => {});
-        }
-
-        // Fetch profile score
-        fetch('/api/profile/talent', { headers: { Authorization: `Bearer ${session.access_token}` } })
-          .then(r => r.json()).then(({ profile: p }) => {
-            if (p) {
-              const checks = [p.photo_url, p.full_name, p.headline, p.position, p.yoe_months != null, p.intro, p.skills?.length > 0, p.english_cert, p.location, p.university, p.resume_url, p.job_signal && p.job_signal !== 'passive', p.experiences?.length > 0, p.salary_min];
-              setProfileScore(Math.round(checks.filter(Boolean).length / checks.length * 100));
-            }
-          }).catch(() => {});
-
         // Only restore submission state for logged-in users
         const submitted = localStorage.getItem('fyi_submitted') === 'true';
         if (submitted) {
@@ -918,21 +844,6 @@ export default function Home({ initialCompanies = [] }) {
     if (sectionSub) sectionSub.textContent = t('companies.sub');
     const searchInput = document.getElementById('co-search-input');
     if (searchInput) searchInput.placeholder = t('companies.searchPlaceholder');
-    // WGF section
-    const wgfEye = document.querySelector('.wgf-eyebrow');
-    if (wgfEye) wgfEye.innerHTML = t('wgf.eyebrow');
-    const wgfHeadline = document.querySelector('.wgf-headline');
-    if (wgfHeadline) wgfHeadline.innerHTML = t('wgf.headline');
-    const wgfBody1 = document.querySelector('[data-wgf="body1"]');
-    if (wgfBody1) wgfBody1.innerHTML = t('wgf.body1');
-    const wgfBody2 = document.querySelector('[data-wgf="body2"]');
-    if (wgfBody2) wgfBody2.textContent = t('wgf.body2');
-    const wgfDivider = document.querySelector('.wgf-divider span');
-    if (wgfDivider) wgfDivider.textContent = t('wgf.divider');
-    const wgfBottom = document.querySelector('.wgf-bottom-cta p');
-    if (wgfBottom) wgfBottom.innerHTML = t('wgf.bottomText');
-    const wgfCtaBtn = document.querySelector('.wgf-cta-btn');
-    if (wgfCtaBtn) wgfCtaBtn.textContent = t('wgf.bottomCta');
   }, [lang, t]);
 
   useEffect(() => {
@@ -994,77 +905,6 @@ export default function Home({ initialCompanies = [] }) {
     try { new Function(js)(); } catch(e) { /* inline script init — safe to ignore in dev */ }
   }, []);
 
-  // WGF continuous scroll-driven animations
-  useEffect(() => {
-    const section = document.querySelector('.wgf-section');
-    if (!section) return;
-    const els = section.querySelectorAll('[data-wgf]');
-    if (!els.length) return;
-
-    // Photos only — text stays still so it's readable
-    const photoKeys = new Set(['director', 'team1', 'team2', 'team3']);
-    const config = {
-      director: { y: 60,  x: -80, rot: -3,  scale: 0.88 },
-      team1:    { y: 100, x: -30, rot: -5,  scale: 0.8  },
-      team2:    { y: 120, x: 0,   rot: 0,   scale: 0.78 },
-      team3:    { y: 100, x: 30,  rot: 5,   scale: 0.8  },
-    };
-    const photoEls = [...els].filter(el => photoKeys.has(el.getAttribute('data-wgf')));
-    // Text elements: just do a one-time fade in
-    const textEls = [...els].filter(el => !photoKeys.has(el.getAttribute('data-wgf')));
-    const textDelays = {badge:0,quote:200,headline:350,body1:500,body2:600,sig:750,divider:900};
-    let textFired = false;
-    const textObs = new IntersectionObserver((entries) => {
-      entries.forEach((entry) => {
-        if (entry.isIntersecting && !textFired) {
-          textFired = true;
-          textObs.disconnect();
-          textEls.forEach((el) => {
-            const key = el.getAttribute('data-wgf');
-            const d = textDelays[key] || 0;
-            setTimeout(() => {
-              el.style.transition = 'opacity .7s cubic-bezier(.22,1,.36,1), transform .7s cubic-bezier(.22,1,.36,1)';
-              el.style.opacity = '1';
-              el.style.transform = 'translate(0,0)';
-            }, d);
-          });
-        }
-      });
-    }, { threshold: 0.1 });
-    requestAnimationFrame(() => textObs.observe(section));
-
-    let ticking = false;
-    const onScroll = () => {
-      if (ticking) return;
-      ticking = true;
-      requestAnimationFrame(() => {
-        const vh = window.innerHeight;
-        const center = vh * 0.45;
-        photoEls.forEach((el) => {
-          const key = el.getAttribute('data-wgf');
-          const c = config[key];
-          const rect = el.getBoundingClientRect();
-          const elCenter = rect.top + rect.height / 2;
-          const dist = Math.abs(elCenter - center) / (vh * 0.6);
-          const away = Math.min(dist, 1);
-          const eased = Math.pow(away, 2);
-          const dir = elCenter > center ? 1 : -1;
-          const opacity = 1 - eased * 0.85;
-          const ty = c.y * eased * dir;
-          const tx = c.x * eased * dir;
-          const rot = c.rot * eased * dir;
-          const scale = 1 - (1 - c.scale) * eased;
-          el.style.opacity = opacity;
-          el.style.transform = `translate(${tx}px, ${ty}px) rotate(${rot}deg) scale(${scale})`;
-        });
-        ticking = false;
-      });
-    };
-
-    window.addEventListener('scroll', onScroll, { passive: true });
-    onScroll(); // initial check
-    return () => { window.removeEventListener('scroll', onScroll); textObs.disconnect(); };
-  }, []);
 
   const d = lbCompany ? lbData[lbCompany] : null;
   const company = d ? { name: lbCompany, ...d } : null;
@@ -1078,7 +918,7 @@ export default function Home({ initialCompanies = [] }) {
         <title>FYI — Vietnam IT Salary Intelligence | Check If You're Underpaid</title>
         <meta name="description" content="Compare your salary with real data from 4,600+ real salary entries across Vietnam. Anonymous, instant results. Find out if you're underpaid and discover higher-paying roles." />
         <meta name="keywords" content="Vietnam IT salary, salary comparison, tech salary Vietnam, developer salary, software engineer salary, IT jobs Vietnam" />
-        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
         {/* Open Graph */}
         <meta property="og:type" content="website" />
         <meta property="og:url" content="https://salary-fyi.com" />
@@ -1100,110 +940,14 @@ export default function Home({ initialCompanies = [] }) {
         <style dangerouslySetInnerHTML={{ __html: css }} />
       </Head>
 
-      {/* ── Nav — React controlled for auth state ── */}
-      <nav>
-        <div className="logo" onClick={() => window.location.reload()} style={{cursor:'pointer'}}>
-          <img src="/logo.png" style={{width:28,height:28,objectFit:'contain'}} />
-          <span>FOR YOUR <span style={{color:'var(--orange)'}}>&#39;SALARY&#39;</span> INFORMATION</span>
-        </div>
-        <div className="nav-r">
-          <button className="nav-link" onClick={() => document.getElementById('submit')?.scrollIntoView({behavior:'smooth'})}>{t('nav.amIUnderpaid')}</button>
-          <button className="nav-link" onClick={() => document.getElementById('companies')?.scrollIntoView({behavior:'smooth'})}>{t('nav.whoPaysMost')}</button>
-          <a
-            href="/for-companies"
-            onClick={() => {
-              fetch('/api/track', { method: 'POST', headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ event: 'click_for_companies', page: 'home', email: user?.email }) }).catch(() => {})
-            }}
-            style={{
-              display:'inline-flex', alignItems:'center', gap:4,
-              padding:'6px 10px', borderRadius:6,
-              border:'1px solid rgba(255,255,255,0.12)', background:'transparent',
-              color:'rgba(255,255,255,0.7)', fontSize:12, fontWeight:600,
-              textDecoration:'none', whiteSpace:'nowrap', cursor:'pointer',
-              transition:'all .15s',
-            }}
-            onMouseEnter={(e) => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.25)'; e.currentTarget.style.color = '#fff'; }}
-            onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.12)'; e.currentTarget.style.color = 'rgba(255,255,255,0.7)'; }}
-          >
-            기업 채용
-            <span style={{fontSize:10, opacity:0.7}}>↗</span>
-          </a>
-          <a className="nav-jobs-cta" href="/jobs" onClick={() => {
-            fetch('/api/track', { method: 'POST', headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ event: 'click_jobs_cta', page: 'home', email: user?.email }) }).catch(() => {})
-          }}>
-            <span className="nav-jobs-shimmer"></span>
-            <span className="nav-jobs-icon"><svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="3" y="7" width="18" height="13" rx="2" stroke="currentColor" strokeWidth="2"/><path d="M8 7V5a2 2 0 012-2h4a2 2 0 012 2v2" stroke="currentColor" strokeWidth="2"/><path d="M12 11v4M10 13h4" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg></span>
-            {t('nav.jobs')}
-            <span className="nav-jobs-bubble">{t('nav.jobsSub')}</span>
-          </a>
-
-
-          {!isLoggedIn ? (
-            <button
-              onClick={() => setShowAuthModal(true)}
-              className="nav-login-btn">
-              {t('nav.login')}
-            </button>
-          ) : (
-            <div
-              ref={userMenuRef}
-              style={{display:'flex', alignItems:'center', gap:'6px', padding:'4px 10px 4px 4px', borderRadius:'100px', border:'1px solid rgba(255,255,255,0.12)', cursor:'pointer', position:'relative', flexShrink:0}}
-              onClick={() => setShowUserMenu(prev => !prev)}>
-              {user?.user_metadata?.avatar_url ? (
-                <img src={user.user_metadata.avatar_url} style={{width:24,height:24,borderRadius:'50%',objectFit:'cover'}} />
-              ) : (
-                <div style={{width:24,height:24,borderRadius:'50%',background:'#ff6000',display:'flex',alignItems:'center',justifyContent:'center',fontSize:10,fontWeight:800,color:'black'}}>
-                  {(user?.user_metadata?.full_name || user?.user_metadata?.name || user?.email || 'U')[0].toUpperCase()}
-                </div>
-              )}
-              <span className="nav-user-name" style={{fontSize:12,fontWeight:600,color:'rgba(255,255,255,0.7)',whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis',maxWidth:'80px'}}>
-                {(user?.user_metadata?.full_name || user?.user_metadata?.name)?.split(' ')[0] || user?.email?.split('@')[0] || 'Account'}
-              </span>
-              <span style={{fontSize:10,color:'rgba(255,255,255,0.3)'}}>▾</span>
-
-              {showUserMenu && (
-                <div style={{position:'absolute',top:'calc(100% + 8px)',right:0,background:'#1a1a1a',border:'1px solid rgba(255,255,255,0.1)',borderRadius:12,padding:'6px',minWidth:160,zIndex:500,boxShadow:'0 8px 32px rgba(0,0,0,0.4)'}}>
-                  <div style={{padding:'10px 14px',fontSize:12,color:'rgba(255,255,255,0.35)',borderBottom:'1px solid rgba(255,255,255,0.06)',marginBottom:'4px'}}>
-                    {user?.email}
-                  </div>
-                  <a href="/profile" onClick={e => e.stopPropagation()}
-                    style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'10px 14px',borderRadius:8,color:'rgba(255,255,255,0.6)',fontSize:13,textDecoration:'none',fontFamily:"'Barlow',sans-serif"}}>
-                    <span>{t('nav.myProfile')}</span>
-                    {profileScore != null && profileScore < 100 && (
-                      <span style={{fontSize:10,fontWeight:700,color:profileScore >= 80 ? '#4ade80' : '#fbbf24',background:profileScore >= 80 ? 'rgba(74,222,128,0.1)' : 'rgba(251,191,36,0.1)',padding:'2px 8px',borderRadius:100}}>{profileScore}%</span>
-                    )}
-                  </a>
-                  <a href="/my-applications" onClick={e => e.stopPropagation()}
-                    style={{display:'block',padding:'10px 14px',borderRadius:8,color:'rgba(255,255,255,0.6)',fontSize:13,textDecoration:'none',fontFamily:"'Barlow',sans-serif"}}>
-                    {t('nav.myApplications')}
-                  </a>
-                  {isAdminUser && (
-                    <a href="/admin/jobs" onClick={e => e.stopPropagation()}
-                      style={{display:'block',padding:'10px 14px',borderRadius:8,color:'#ff6000',fontSize:13,textDecoration:'none',fontFamily:"'Barlow',sans-serif"}}>
-                      Admin Dashboard
-                    </a>
-                  )}
-                  <button
-                    onClick={async (e) => {
-                      e.stopPropagation();
-                      await supabaseClient.auth.signOut();
-                      setIsLoggedIn(false);
-                      setUser(null);
-                      setShowUserMenu(false);
-                      // DO NOT touch isSubmitted or localStorage 'fyi_submitted'
-                    }}
-                    style={{width:'100%',padding:'10px 14px',borderRadius:8,border:'none',background:'transparent',color:'rgba(255,255,255,0.6)',fontSize:13,cursor:'pointer',textAlign:'left',fontFamily:"'Barlow',sans-serif"}}>
-                    {t('nav.logout')}
-                  </button>
-                </div>
-              )}
-            </div>
-          )}
-
-        </div>
-      </nav>
+      <GlobalNav
+        activePage="home"
+        onLogin={() => setShowAuthModal(true)}
+        onJobsClick={() => {
+          fetch('/api/track', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ event: 'click_jobs_cta', page: 'home', email: user?.email }) }).catch(() => {})
+        }}
+      />
 
       <div suppressHydrationWarning dangerouslySetInnerHTML={PAGE_HTML_PRE} />
 
@@ -1388,10 +1132,6 @@ export default function Home({ initialCompanies = [] }) {
         </div>
       )}
 
-      {/* Portal: render AnonymousSection */}
-      {gridReady && typeof document !== 'undefined' && document.getElementById('anonymous-section-root') &&
-        createPortal(<AnonymousSection />, document.getElementById('anonymous-section-root'))
-      }
 
       {/* Portal: render CompanyCards into #company-grid-root */}
       {gridReady && typeof document !== 'undefined' && document.getElementById('company-grid-root') &&
@@ -1409,18 +1149,18 @@ export default function Home({ initialCompanies = [] }) {
                 ));
               }
               const filtered = cardSearchQuery
-                ? apiCompanies.filter(c => (c.name || c.company || '').toLowerCase().includes(cardSearchQuery))
-                : apiCompanies;
+                ? apiCompanies.map((c, origIdx) => ({ ...c, _origIndex: origIdx })).filter(c => (c.name || c.company || '').toLowerCase().includes(cardSearchQuery))
+                : apiCompanies.map((c, origIdx) => ({ ...c, _origIndex: origIdx }));
               const visible = filtered.slice(0, visibleCount);
               return (
                 <>
-                  {visible.map((c, i) => (
+                  {visible.map((c) => (
                     <CompanyCard
                       key={c.company}
                       company={c}
-                      index={i}
+                      index={c._origIndex}
                       isUnlocked={isUnlocked}
-                      onClick={(co) => { setDetailCompany(co.name || co.company); setDetailCardIndex(i); setDetailOpen(true); }}
+                      onClick={(co) => { setDetailCompany(co.name || co.company); setDetailCardIndex(c._origIndex); setDetailOpen(true); }}
                       onLockedClick={() => { if(typeof gtag==='function') gtag('event','locked_card_click'); document.getElementById('submit')?.scrollIntoView({ behavior: 'smooth' }); }}
                     />
                   ))}

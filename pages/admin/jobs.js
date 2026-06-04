@@ -12,7 +12,7 @@ const EMPTY_JOB = {
   deadline: '', headcount: '', apply_url: '', is_featured: false,
 }
 
-const ROLES = ['Backend','Frontend','Fullstack','Mobile','Data','DevOps','PM','Design','QA']
+const ROLES = ['Backend','Frontend','Fullstack','Mobile','Data','DevOps','PM','Design','QA','Non-IT']
 const TYPES = ['remote','onsite','hybrid']
 const COUNTRIES = ['korea','vietnam','global']
 
@@ -446,6 +446,18 @@ export default function AdminJobs() {
                     {app.applicant_company && <> · {app.applicant_company}</>}
                     {app.resume_url && <> · <a href={app.resume_url} target="_blank" rel="noopener" style={{ color: '#ff4400' }}>Resume</a></>}
                   </div>
+                  {(() => {
+                    const refHost = app.referrer ? (() => { try { return new URL(app.referrer).hostname } catch { return app.referrer } })() : null
+                    const src = app.utm_source || refHost || 'direct'
+                    const detail = [app.utm_medium, app.utm_campaign, app.utm_content].filter(Boolean).join(' / ')
+                    return (
+                      <div style={{ fontSize: 11, color: '#888', marginTop: 2 }}>
+                        <span style={{ ...S.badge, background: '#ecfdf5', color: '#047857' }}>Source: {src}</span>
+                        {detail && <span style={{ marginLeft: 6 }}>{detail}</span>}
+                        {app.referrer && <span style={{ marginLeft: 6, color: '#bbb' }} title={app.referrer}>· ref: {refHost}</span>}
+                      </div>
+                    )
+                  })()}
                   <div style={{ fontSize: 11, color: '#bbb' }}>{new Date(app.created_at).toLocaleString()}</div>
                 </div>
                 <select value={app.status || 'applied'} onChange={e => handleStatusChange(app.id, e.target.value)} style={S.sel}>
@@ -514,7 +526,7 @@ export default function AdminJobs() {
                 placeholder="email@example.com"
                 value={newAdminEmail}
                 onChange={e => setNewAdminEmail(e.target.value)}
-                onKeyDown={e => e.key === 'Enter' && handleAddAdmin()}
+                onKeyDown={e => { if (e.key === 'Enter' && !e.nativeEvent.isComposing) handleAddAdmin() }}
                 style={{ ...S.inp, flex: 1 }}
               />
               <button style={S.btnP} onClick={handleAddAdmin} disabled={!newAdminEmail.includes('@')}>

@@ -6,6 +6,14 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 )
 
+// Exclude internal/seed/system accounts and banned users from signup counts
+const EXCLUDED_EMAIL_DOMAINS = ['likelion.net', 'dummy.local', 'system.local']
+function isExcludedSignup(user) {
+  if (user.email && EXCLUDED_EMAIL_DOMAINS.some(d => user.email.endsWith('@' + d))) return true
+  if (user.banned_until && new Date(user.banned_until) > new Date()) return true
+  return false
+}
+
 export default async function handler(req, res) {
   const user = await verifyAdmin(req)
   if (!user) return res.status(401).json({ error: 'Unauthorized' })
@@ -16,7 +24,7 @@ export default async function handler(req, res) {
   const startISO = new Date(`${today}T00:00:00+07:00`).toISOString()
   const endISO = new Date(`${today}T23:59:59+07:00`).toISOString()
 
-  const [subsRes, jaRes, evRes, pvRes, landingRes] = await Promise.all([
+  const [subsRes, jaRes, evRes, pvRes, landingRes, resumeRes] = await Promise.all([
     supabase.from('submissions')
       .select('id, utm_source, utm_medium, utm_campaign', { count: 'exact', head: false })
       .gte('created_at', startISO).lte('created_at', endISO)
@@ -37,6 +45,10 @@ export default async function handler(req, res) {
       .select('id', { count: 'exact', head: true })
       .eq('event', 'landing')
       .gte('created_at', startISO).lte('created_at', endISO),
+    supabase.from('events')
+      .select('id', { count: 'exact', head: true })
+      .eq('event', 'resume_upload')
+      .gte('created_at', startISO).lte('created_at', endISO),
   ])
 
   const subs = subsRes.data || []
@@ -48,7 +60,7 @@ export default async function handler(req, res) {
     while (true) {
       const { data: { users }, error } = await supabase.auth.admin.listUsers({ page, perPage: 1000 })
       if (error || !users || users.length === 0) break
-      todaySignups += users.filter(u => u.created_at >= startISO && u.created_at <= endISO).length
+      todaySignups += users.filter(u => u.created_at >= startISO && u.created_at <= endISO && !isExcludedSignup(u)).length
       if (users.length < 1000) break
       page++
     }
@@ -67,5 +79,6 @@ export default async function handler(req, res) {
     cardClicks: events.filter(e => e.event === 'click_job_card').length,
     pageViews: pvRes.count || 0,
     landings: landingRes.count || 0,
+    resumeUploads: resumeRes.count || 0,
   })
 }
