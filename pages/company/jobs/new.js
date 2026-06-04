@@ -120,8 +120,9 @@ export default function NewJobPage() {
       title: form.title.trim(),
       company: companyName,
       company_id: companyId,
-      status: 'pending_review',
-      is_active: false,
+      // TODO: 게재 검토 어드민 구축 후 'pending_review' + is_active=false 로 복원
+      status: 'live',
+      is_active: true,
       created_by: user?.id || null,
       description: form.description.trim(),
       role: form.role, type: form.type, country: form.country, location: form.location,
