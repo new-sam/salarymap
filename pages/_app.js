@@ -43,12 +43,13 @@ function GlobalLoginModal() {
 
 export default function App({ Component, pageProps }) {
   const router = useRouter();
-  // Admin pages use their own KO/EN toggle — hide the global footer switcher to avoid two competing controls
+  // Company pages have their own language switcher; admin pages also have their own.
+  const isCompany = router.pathname.startsWith('/company') || router.pathname === '/for-companies';
   const isAdmin = router.pathname.startsWith('/admin');
   return (
     <I18nProvider>
       <Component {...pageProps} />
-      {!isAdmin && (
+      {!isCompany && !isAdmin && (
         <footer style={{
           background: '#0a0a09', borderTop: '1px solid rgba(255,255,255,0.06)',
           padding: '24px 40px', display: 'flex', alignItems: 'center', justifyContent: 'center',

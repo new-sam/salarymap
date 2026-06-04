@@ -55,3 +55,8 @@ VERCEL_ENV_SETUP.md
 # claude code
 .claude/
 .mcp.json
+
+# PII — screenshots / raw captures, never commit
+clipboard_capture.png
+scripts/candidate-detail-raw.png
+.playwright-mcp/

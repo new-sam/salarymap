@@ -1,0 +1,1247 @@
+- generic [ref=e2]:
+  - generic [ref=e3]:
+    - link "Skip to content" [ref=e4] [cursor=pointer]:
+      - /url: "#start-of-content"
+    - banner "Global Navigation Menu" [ref=e8]:
+      - generic [ref=e9]:
+        - generic [ref=e10]:
+          - button "Open menu" [ref=e12] [cursor=pointer]:
+            - img [ref=e13]
+          - link "Homepage (g then d)" [ref=e15] [cursor=pointer]:
+            - /url: /
+            - img [ref=e16]
+        - generic [ref=e18]:
+          - navigation "Breadcrumbs" [ref=e19]:
+            - list [ref=e20]:
+              - listitem [ref=e21]:
+                - link "new-sam" [ref=e22] [cursor=pointer]:
+                  - /url: /new-sam
+                  - generic [ref=e23]: new-sam
+              - listitem [ref=e24]:
+                - link "salarymap" [ref=e25] [cursor=pointer]:
+                  - /url: /new-sam/salarymap
+                  - generic [ref=e26]: salarymap
+          - button "Search or jump to…" [ref=e29] [cursor=pointer]:
+            - generic [ref=e30]:
+              - generic:
+                - img
+              - generic [ref=e31]:
+                - generic:
+                  - text: Type
+                  - generic: /
+                  - text: to search
+        - generic [ref=e32]:
+          - generic [ref=e33]:
+            - generic [ref=e36]:
+              - link "Chat with Copilot" [ref=e38] [cursor=pointer]:
+                - /url: /copilot
+                - img [ref=e39]
+              - button "Open Copilot…" [ref=e43] [cursor=pointer]:
+                - generic:
+                  - img
+            - button "Create new..." [ref=e45] [cursor=pointer]:
+              - generic [ref=e46]:
+                - generic:
+                  - img
+              - generic:
+                - img
+            - generic [ref=e47]:
+              - link "All issues" [ref=e48] [cursor=pointer]:
+                - /url: /issues
+                - img [ref=e49]
+              - link "All pull requests" [ref=e52] [cursor=pointer]:
+                - /url: /pulls
+                - img [ref=e53]
+              - link "All repositories" [ref=e55] [cursor=pointer]:
+                - /url: /repos
+                - img [ref=e56]
+          - link "You have no unread notifications (g then n)" [ref=e58] [cursor=pointer]:
+            - /url: /notifications
+            - img [ref=e59]
+          - button "Open user navigation menu" [ref=e62] [cursor=pointer]:
+            - img "User avatar" [ref=e63]
+      - heading "Repository navigation" [level=2] [ref=e64]
+      - navigation "Repository" [ref=e65]:
+        - list [ref=e66]:
+          - listitem [ref=e67]:
+            - link "Code" [ref=e68] [cursor=pointer]:
+              - /url: /new-sam/salarymap
+              - img [ref=e70]
+              - generic [ref=e72]: Code
+          - listitem [ref=e73]:
+            - link "Issues (2)" [ref=e74] [cursor=pointer]:
+              - /url: /new-sam/salarymap/issues
+              - img [ref=e76]
+              - generic [ref=e79]: Issues
+              - generic [ref=e80]:
+                - generic [ref=e81]: "2"
+                - generic [ref=e82]: (2)
+          - listitem [ref=e83]:
+            - link "Pull requests (3)" [ref=e84] [cursor=pointer]:
+              - /url: /new-sam/salarymap/pulls
+              - img [ref=e86]
+              - generic [ref=e88]: Pull requests
+              - generic [ref=e89]:
+                - generic [ref=e90]: "3"
+                - generic [ref=e91]: (3)
+          - listitem [ref=e92]:
+            - link "Agents" [ref=e93] [cursor=pointer]:
+              - /url: /new-sam/salarymap/agents?author=younghunhun
+              - img [ref=e95]
+              - generic [ref=e98]: Agents
+          - listitem [ref=e99]:
+            - link "Actions" [ref=e100] [cursor=pointer]:
+              - /url: /new-sam/salarymap/actions
+              - img [ref=e102]
+              - generic [ref=e104]: Actions
+          - listitem [ref=e105]:
+            - link "Projects" [ref=e106] [cursor=pointer]:
+              - /url: /new-sam/salarymap/projects
+              - img [ref=e108]
+              - generic [ref=e110]: Projects
+          - listitem [ref=e111]:
+            - link "Wiki" [ref=e112] [cursor=pointer]:
+              - /url: /new-sam/salarymap/wiki
+              - img [ref=e114]
+              - generic [ref=e116]: Wiki
+          - listitem [ref=e117]:
+            - link "Security and quality" [ref=e118] [cursor=pointer]:
+              - /url: /new-sam/salarymap/security
+              - img [ref=e120]
+              - generic [ref=e122]: Security and quality
+          - listitem [ref=e123]:
+            - link "Insights" [ref=e124] [cursor=pointer]:
+              - /url: /new-sam/salarymap/pulse
+              - img [ref=e126]
+              - generic [ref=e128]: Insights
+          - listitem [ref=e129]:
+            - link "Settings" [ref=e130] [cursor=pointer]:
+              - /url: /new-sam/salarymap/settings
+              - img [ref=e132]
+              - generic [ref=e134]: Settings
+  - main [ref=e138]:
+    - generic [ref=e145]:
+      - generic [ref=e148]:
+        - 'heading "feat(ats): rejection + mail templates + custom modals + team management #14 Edit title" [level=1] [ref=e150]':
+          - text: "feat(ats): rejection + mail templates + custom modals + team management"
+          - generic [ref=e151]:
+            - generic [ref=e152]: "#14"
+            - button "Edit title" [ref=e153] [cursor=pointer]:
+              - img [ref=e154]
+        - generic [ref=e157]:
+          - generic [ref=e158]:
+            - button "View status View status" [disabled] [ref=e159]:
+              - generic [ref=e160]:
+                - generic:
+                  - generic:
+                    - img
+                    - generic: Loading
+            - generic [ref=e162]: Loading merge status
+          - button "Code" [ref=e163] [cursor=pointer]:
+            - generic [ref=e164]:
+              - generic [ref=e165]: Code
+              - generic:
+                - img
+        - generic [ref=e167]:
+          - generic [ref=e169]:
+            - img "Pull request" [ref=e170]
+            - text: Open
+          - generic [ref=e173]:
+            - link "younghunhun" [ref=e174] [cursor=pointer]:
+              - /url: /younghunhun
+            - text: wants to merge 41 commits into
+            - generic [ref=e175]:
+              - link "main" [ref=e176] [cursor=pointer]:
+                - /url: /new-sam/salarymap/tree/main
+              - generic [ref=e177]: from
+              - generic [ref=e178]:
+                - link "feat/ats-ui-copy" [ref=e179] [cursor=pointer]:
+                  - /url: /new-sam/salarymap/tree/feat/ats-ui-copy
+                - button "Copy head branch name to clipboard" [ref=e180] [cursor=pointer]:
+                  - img [ref=e181]
+        - generic [ref=e184]:
+          - generic [ref=e186]:
+            - generic [ref=e187]: +8,373
+            - generic [ref=e188]: "-56"
+            - generic [ref=e189]: "Lines changed: 8373 additions & 56 deletions"
+          - navigation "Pull request navigation tabs" [ref=e198]:
+            - tablist [ref=e199]:
+              - tab "Conversation (1)" [selected] [ref=e200] [cursor=pointer]:
+                - img [ref=e201]
+                - text: Conversation
+                - generic [ref=e203]: "1"
+                - generic [ref=e204]: (1)
+              - tab "Commits (41)" [ref=e205] [cursor=pointer]:
+                - img [ref=e206]
+                - text: Commits
+                - generic [ref=e208]: "41"
+                - generic [ref=e209]: (41)
+              - tab "Checks (1)" [ref=e210] [cursor=pointer]:
+                - img [ref=e211]
+                - text: Checks
+                - generic [ref=e213]: "1"
+                - generic [ref=e214]: (1)
+              - tab "Files changed (73)" [ref=e215] [cursor=pointer]:
+                - img [ref=e216]
+                - text: Files changed
+                - generic [ref=e218]: "73"
+                - generic [ref=e219]: (73)
+      - generic [ref=e224]:
+        - generic [ref=e226]:
+          - heading "Conversation" [level=2] [ref=e227]
+          - generic [ref=e228]:
+            - generic [ref=e229]:
+              - generic [ref=e231]:
+                - link "@younghunhun" [ref=e232] [cursor=pointer]:
+                  - /url: /younghunhun
+                  - img "@younghunhun" [ref=e233]
+                - generic [ref=e235]:
+                  - generic [ref=e236]:
+                    - generic [ref=e237]:
+                      - group [ref=e239]:
+                        - button "Show options" [ref=e240] [cursor=pointer]:
+                          - img "Show options" [ref=e243]
+                      - generic "You have been invited to collaborate on the salarymap repository." [ref=e246]:
+                        - generic [ref=e247]: Collaborator
+                    - heading "younghunhun commented Jun 4, 2026now" [level=3] [ref=e248]:
+                      - generic [ref=e249]:
+                        - strong [ref=e250]:
+                          - link "younghunhun" [ref=e251] [cursor=pointer]:
+                            - /url: /younghunhun
+                        - text: commented
+                        - link "Jun 4, 2026now" [ref=e252] [cursor=pointer]:
+                          - /url: "#issue-4584981674"
+                  - generic [ref=e256]:
+                    - heading "Summary" [level=2] [ref=e257]
+                    - paragraph [ref=e258]: ATS 핵심 워크플로 강화 + UX 폴리시 + 신규 회사 자동 메일 시드 + 공고 즉시 게재.
+                    - heading "주요 변경" [level=3] [ref=e259]
+                    - paragraph [ref=e260]:
+                      - strong [ref=e261]: 기능
+                    - list [ref=e262]:
+                      - listitem [ref=e263]:
+                        - text: "메일 템플릿 시스템: 회사별 저장/불러오기/삭제. 기본 4개 시드 (지원접수/인터뷰/합격/불합격),"
+                        - code [ref=e264]: "{차수인터뷰}"
+                        - text: 변수 자동 채움 (1차/2차)
+                      - listitem [ref=e265]: "메일 발송 진입점 통합: 칸반 케밥 + 사이드 패널 step 4. 자동 트리거 모두 제거"
+                      - listitem [ref=e266]: "메일 발송 이력: 사이드 패널 step 4에서 발송 내역 표시"
+                      - listitem [ref=e267]: "인터뷰 일정 확정 모달: 칸반 케밥 + 사이드 패널. 메인 캘린더 자동 반영"
+                      - listitem [ref=e268]: "캘린더 월간 그리드 (그리팅 벤치마킹): 일정 클릭 → 후보자 상세 페이지"
+                      - listitem [ref=e269]: "드래그앤드롭 정책: 단계 건너뛰기 허용, 정/역방향 confirm (역방향만 인터뷰 일정 초기화 안내)"
+                      - listitem [ref=e270]: "사이드 패널 단계 통일: ① 인터뷰 → ② 평가 → ③ 합격/불합격 → ④ 안내 메일. 입사 제안 단계는 '🎉 최종 합격' 카드"
+                      - listitem [ref=e271]: "채용팀 popover: 본인 항상 표시 (관리자/면접관 자동 합성). 관리자만 ✕로 면접관/초대 제거"
+                      - listitem [ref=e272]:
+                        - code [ref=e273]: window.confirm
+                        - text: /
+                        - code [ref=e274]: alert
+                        - text: → 플랫폼 자체 ConfirmModal로 전부 교체
+                    - paragraph [ref=e275]:
+                      - strong [ref=e276]: UX 폴리시
+                    - list [ref=e277]:
+                      - listitem [ref=e278]: 케밥 메뉴 디자인 정돈 (아이콘 고정 폭, 폰트/줄간격 통일)
+                      - listitem [ref=e279]: 공고 그룹화 (활성/승인 중/비활성) — 사이드바, 대시보드
+                      - listitem [ref=e280]: "카드 UX: 지원일 pill (경과 일수별 색상), 인터뷰 뱃지 클릭 → 일정 모달, 이름 옆 inline 불합격"
+                      - listitem [ref=e281]: "워딩 통일: 오너→관리자, 인터뷰어→면접관, 지원/신규→총 지원자/검토 전, 일시중지→비활성화"
+                      - listitem [ref=e282]: "'+ 새 공고' 버튼 우측 상단 (주황) 추가"
+                    - paragraph [ref=e283]:
+                      - strong [ref=e284]: 임시 우회 (TODO 명시)
+                    - list [ref=e285]:
+                      - listitem [ref=e286]:
+                        - text: 공고 게재 검토 (
+                        - code [ref=e287]: pending_review
+                        - text: ") 임시 우회: status='live' + is_active=true 즉시 게재. 게재 검토 어드민이 운영되면 복원"
+                    - heading "DB 마이그레이션 (production 적용 완료)" [level=3] [ref=e288]
+                    - list [ref=e289]:
+                      - listitem [ref=e290]:
+                        - code [ref=e291]: 20260601_job_apps_status_owner_only.sql
+                        - text: — 단계 변경 owner-only 트리거
+                      - listitem [ref=e292]:
+                        - code [ref=e293]: 20260602_rejection.sql
+                        - text: — 불합격 컬럼/트리거
+                      - listitem [ref=e294]:
+                        - code [ref=e295]: 20260602_mail_templates.sql
+                        - text: — 메일 템플릿 테이블 + 기본 4개 시드
+                      - listitem [ref=e296]:
+                        - code [ref=e297]: 20260604_mail_templates_auto_seed.sql
+                        - text: — 신규 회사 가입 시 자동 시드 트리거
+                    - heading "미흡 (별도 작업)" [level=3] [ref=e298]
+                    - list [ref=e299]:
+                      - listitem [ref=e300]:
+                        - code [ref=e301]: RESEND_API_KEY
+                        - text: 환경변수 추가 → 메일 발송 활성화 (미설정 시 503)
+                      - listitem [ref=e302]: 모바일 반응형 검증
+                      - listitem [ref=e303]:
+                        - text: 게재 검토 어드민 정식 구축 →
+                        - code [ref=e304]: pending_review
+                        - text: 흐름 복원
+                    - heading "Test plan" [level=2] [ref=e305]
+                    - list [ref=e306]:
+                      - listitem [ref=e307]:
+                        - img [ref=e309]
+                        - checkbox "Incomplete task" [ref=e311]
+                        - text: 칸반 카드 케밥 → 인터뷰 일정 / 안내 메일 / 불합격 처리 동작
+                      - listitem [ref=e312]:
+                        - img [ref=e314]
+                        - checkbox "Incomplete task" [ref=e316]
+                        - text: 카드 클릭 → 사이드 패널 step 1~4 흐름
+                      - listitem [ref=e317]:
+                        - img [ref=e319]
+                        - checkbox "Incomplete task" [ref=e321]
+                        - text: 정방향 드래그 → 합격 confirm → 일정 초기화
+                      - listitem [ref=e322]:
+                        - img [ref=e324]
+                        - checkbox "Incomplete task" [ref=e326]
+                        - text: 역방향 드래그 → 되돌리기 confirm
+                      - listitem [ref=e327]:
+                        - img [ref=e329]
+                        - checkbox "Incomplete task" [ref=e331]
+                        - text: "메일 모달: 템플릿 선택 / 새 템플릿 저장 / 슬롯 입력"
+                      - listitem [ref=e332]:
+                        - img [ref=e334]
+                        - checkbox "Incomplete task" [ref=e336]
+                        - text: "채용팀 popover: 본인이 (나)로 표시 / 관리자만 ✕"
+                      - listitem [ref=e337]:
+                        - img [ref=e339]
+                        - checkbox "Incomplete task" [ref=e341]
+                        - text: 캘린더 월간 그리드 + 일정 클릭 → 후보자 상세
+                      - listitem [ref=e342]:
+                        - img [ref=e344]
+                        - checkbox "Incomplete task" [ref=e346]
+                        - text: 신규 공고 작성 → 바로 게재 (pending_review 우회)
+                    - paragraph [ref=e347]:
+                      - text: 🤖 Generated with
+                      - link "Claude Code" [ref=e348] [cursor=pointer]:
+                        - /url: https://claude.com/claude-code
+                  - group [ref=e352]:
+                    - generic "Add or remove reactions" [ref=e353] [cursor=pointer]:
+                      - img [ref=e354]
+              - generic [ref=e356]:
+                - generic [ref=e358]:
+                  - generic [ref=e359]:
+                    - img [ref=e361]
+                    - generic [ref=e363]:
+                      - text: SalaryMap and others added 30 commits
+                      - link "May 14, 2026 16:383 weeks ago" [ref=e364] [cursor=pointer]:
+                        - /url: "#commits-pushed-ff22329"
+                  - generic [ref=e365]:
+                    - generic [ref=e366]:
+                      - img [ref=e368]
+                      - generic [ref=e373]:
+                        - link "@claude" [ref=e376] [cursor=pointer]:
+                          - /url: /claude
+                          - img "@claude" [ref=e377]
+                        - generic [ref=e378]:
+                          - code [ref=e379]:
+                            - 'link "feat: company recruitment Phase 1 - landing + signup + recruiter tables" [ref=e380] [cursor=pointer]':
+                              - /url: /new-sam/salarymap/pull/14/commits/ff22329e7bb9a25f36fe94d495f9a3e234767b6b
+                          - button "Commit message body" [ref=e382] [cursor=pointer]: …
+                        - group [ref=e386]:
+                          - generic "1 / 2 checks OK" [ref=e387] [cursor=pointer]:
+                            - img "1 / 2 checks OK" [ref=e388]
+                        - code [ref=e391]:
+                          - link "ff22329" [ref=e392] [cursor=pointer]:
+                            - /url: /new-sam/salarymap/pull/14/commits/ff22329e7bb9a25f36fe94d495f9a3e234767b6b
+                    - generic [ref=e393]:
+                      - img [ref=e395]
+                      - generic [ref=e400]:
+                        - link "@claude" [ref=e403] [cursor=pointer]:
+                          - /url: /claude
+                          - img "@claude" [ref=e404]
+                        - generic [ref=e405]:
+                          - code [ref=e406]:
+                            - 'link "feat: company recruitment Phase 2 - ATS kanban + candidate detail + e…" [ref=e407] [cursor=pointer]':
+                              - /url: /new-sam/salarymap/pull/14/commits/56af9cbfddec7e6cc59b1127ea722d88eff5aa80
+                          - button "Commit message body" [ref=e409] [cursor=pointer]: …
+                        - code [ref=e413]:
+                          - link "56af9cb" [ref=e414] [cursor=pointer]:
+                            - /url: /new-sam/salarymap/pull/14/commits/56af9cbfddec7e6cc59b1127ea722d88eff5aa80
+                    - generic [ref=e415]:
+                      - img [ref=e417]
+                      - generic [ref=e422]:
+                        - generic [ref=e424]:
+                          - code [ref=e425]:
+                            - link "Merge remote-tracking branch 'origin/main' into feat/company-flow" [ref=e426] [cursor=pointer]:
+                              - /url: /new-sam/salarymap/pull/14/commits/46ef5266e06a28fe6c6b5bda69fee92601af18c2
+                          - button "Commit message body" [ref=e428] [cursor=pointer]: …
+                        - code [ref=e432]:
+                          - link "46ef526" [ref=e433] [cursor=pointer]:
+                            - /url: /new-sam/salarymap/pull/14/commits/46ef5266e06a28fe6c6b5bda69fee92601af18c2
+                    - generic [ref=e434]:
+                      - img [ref=e436]
+                      - generic [ref=e441]:
+                        - link "@claude" [ref=e444] [cursor=pointer]:
+                          - /url: /claude
+                          - img "@claude" [ref=e445]
+                        - generic [ref=e446]:
+                          - code [ref=e447]:
+                            - 'link "docs: update ATS_HR_CLEANUP.html post-merge" [ref=e448] [cursor=pointer]':
+                              - /url: /new-sam/salarymap/pull/14/commits/f5314ab6e93f253e22076c9cb9e5d1f8d8afba10
+                          - button "Commit message body" [ref=e450] [cursor=pointer]: …
+                        - group [ref=e454]:
+                          - generic "1 / 2 checks OK" [ref=e455] [cursor=pointer]:
+                            - img "1 / 2 checks OK" [ref=e456]
+                        - code [ref=e459]:
+                          - link "f5314ab" [ref=e460] [cursor=pointer]:
+                            - /url: /new-sam/salarymap/pull/14/commits/f5314ab6e93f253e22076c9cb9e5d1f8d8afba10
+                    - generic [ref=e461]:
+                      - img [ref=e463]
+                      - generic [ref=e468]:
+                        - link "@claude" [ref=e471] [cursor=pointer]:
+                          - /url: /claude
+                          - img "@claude" [ref=e472]
+                        - generic [ref=e473]:
+                          - code [ref=e474]:
+                            - 'link "feat: refine /for-companies landing — plain copy + real captures" [ref=e475] [cursor=pointer]':
+                              - /url: /new-sam/salarymap/pull/14/commits/1361c7004e25cdece955989f31056d476e89d89a
+                          - button "Commit message body" [ref=e477] [cursor=pointer]: …
+                        - group [ref=e481]:
+                          - generic "1 / 2 checks OK" [ref=e482] [cursor=pointer]:
+                            - img "1 / 2 checks OK" [ref=e483]
+                        - code [ref=e486]:
+                          - link "1361c70" [ref=e487] [cursor=pointer]:
+                            - /url: /new-sam/salarymap/pull/14/commits/1361c7004e25cdece955989f31056d476e89d89a
+                    - generic [ref=e488]:
+                      - img [ref=e490]
+                      - generic [ref=e495]:
+                        - link "@claude" [ref=e498] [cursor=pointer]:
+                          - /url: /claude
+                          - img "@claude" [ref=e499]
+                        - generic [ref=e500]:
+                          - code [ref=e501]:
+                            - 'link "chore: keep PII captures out of the web-served public/ dir" [ref=e502] [cursor=pointer]':
+                              - /url: /new-sam/salarymap/pull/14/commits/b2ae9eae853ea4805bf8bce2da7a68b217064705
+                          - button "Commit message body" [ref=e504] [cursor=pointer]: …
+                        - group [ref=e508]:
+                          - generic "1 / 2 checks OK" [ref=e509] [cursor=pointer]:
+                            - img "1 / 2 checks OK" [ref=e510]
+                        - code [ref=e513]:
+                          - link "b2ae9ea" [ref=e514] [cursor=pointer]:
+                            - /url: /new-sam/salarymap/pull/14/commits/b2ae9eae853ea4805bf8bce2da7a68b217064705
+                    - generic [ref=e515]:
+                      - img [ref=e517]
+                      - generic [ref=e522]:
+                        - link "@claude" [ref=e525] [cursor=pointer]:
+                          - /url: /claude
+                          - img "@claude" [ref=e526]
+                        - generic [ref=e527]:
+                          - code [ref=e528]:
+                            - 'link "fix: company ATS QA — applicant pipeline, kanban sync, RLS gaps" [ref=e529] [cursor=pointer]':
+                              - /url: /new-sam/salarymap/pull/14/commits/083f9306c0193411ac624eb1c6c286653a45761c
+                          - button "Commit message body" [ref=e531] [cursor=pointer]: …
+                        - code [ref=e535]:
+                          - link "083f930" [ref=e536] [cursor=pointer]:
+                            - /url: /new-sam/salarymap/pull/14/commits/083f9306c0193411ac624eb1c6c286653a45761c
+                    - generic [ref=e537]:
+                      - img [ref=e539]
+                      - generic [ref=e544]:
+                        - link "@claude" [ref=e547] [cursor=pointer]:
+                          - /url: /claude
+                          - img "@claude" [ref=e548]
+                        - generic [ref=e549]:
+                          - code [ref=e550]:
+                            - 'link "feat: company ATS — drag kanban, in-app mail, calendar + login redesign" [ref=e551] [cursor=pointer]':
+                              - /url: /new-sam/salarymap/pull/14/commits/2bfaa21e58952f929de6718255191ead51bde505
+                          - button "Commit message body" [ref=e553] [cursor=pointer]: …
+                        - group [ref=e557]:
+                          - generic "2 / 2 checks OK" [ref=e558] [cursor=pointer]:
+                            - img "2 / 2 checks OK" [ref=e559]
+                        - code [ref=e562]:
+                          - link "2bfaa21" [ref=e563] [cursor=pointer]:
+                            - /url: /new-sam/salarymap/pull/14/commits/2bfaa21e58952f929de6718255191ead51bde505
+                    - generic [ref=e564]:
+                      - img [ref=e566]
+                      - generic [ref=e571]:
+                        - link "@claude" [ref=e574] [cursor=pointer]:
+                          - /url: /claude
+                          - img "@claude" [ref=e575]
+                        - generic [ref=e576]:
+                          - code [ref=e577]:
+                            - 'link "feat: i18n for company/ATS — Vietnamese support + language toggle" [ref=e578] [cursor=pointer]':
+                              - /url: /new-sam/salarymap/pull/14/commits/9feb677887445c034f2ad1168233db34957ca60b
+                          - button "Commit message body" [ref=e580] [cursor=pointer]: …
+                        - group [ref=e584]:
+                          - generic "2 / 2 checks OK" [ref=e585] [cursor=pointer]:
+                            - img "2 / 2 checks OK" [ref=e586]
+                        - code [ref=e589]:
+                          - link "9feb677" [ref=e590] [cursor=pointer]:
+                            - /url: /new-sam/salarymap/pull/14/commits/9feb677887445c034f2ad1168233db34957ca60b
+                    - generic [ref=e591]:
+                      - img [ref=e593]
+                      - generic [ref=e598]:
+                        - link "@claude" [ref=e601] [cursor=pointer]:
+                          - /url: /claude
+                          - img "@claude" [ref=e602]
+                        - generic [ref=e603]:
+                          - code [ref=e604]:
+                            - 'link "feat: i18n landing page /for-companies + LanguageSwitcher in nav" [ref=e605] [cursor=pointer]':
+                              - /url: /new-sam/salarymap/pull/14/commits/2b6de65c31160307124e74d2828e71ee96ff2ce3
+                          - button "Commit message body" [ref=e607] [cursor=pointer]: …
+                        - group [ref=e611]:
+                          - generic "2 / 2 checks OK" [ref=e612] [cursor=pointer]:
+                            - img "2 / 2 checks OK" [ref=e613]
+                        - code [ref=e616]:
+                          - link "2b6de65" [ref=e617] [cursor=pointer]:
+                            - /url: /new-sam/salarymap/pull/14/commits/2b6de65c31160307124e74d2828e71ee96ff2ce3
+                    - generic [ref=e618]:
+                      - img [ref=e620]
+                      - generic [ref=e625]:
+                        - link "@claude" [ref=e628] [cursor=pointer]:
+                          - /url: /claude
+                          - img "@claude" [ref=e629]
+                        - generic [ref=e630]:
+                          - code [ref=e631]:
+                            - 'link "fix(landing): unify HOW IT WORKS screenshot sizes" [ref=e632] [cursor=pointer]':
+                              - /url: /new-sam/salarymap/pull/14/commits/ad3278502ac8dd401687a5224de9803f5c9c0db2
+                          - button "Commit message body" [ref=e634] [cursor=pointer]: …
+                        - group [ref=e638]:
+                          - generic "2 / 2 checks OK" [ref=e639] [cursor=pointer]:
+                            - img "2 / 2 checks OK" [ref=e640]
+                        - code [ref=e643]:
+                          - link "ad32785" [ref=e644] [cursor=pointer]:
+                            - /url: /new-sam/salarymap/pull/14/commits/ad3278502ac8dd401687a5224de9803f5c9c0db2
+                    - generic [ref=e645]:
+                      - img [ref=e647]
+                      - generic [ref=e652]:
+                        - link "@claude" [ref=e655] [cursor=pointer]:
+                          - /url: /claude
+                          - img "@claude" [ref=e656]
+                        - generic [ref=e657]:
+                          - code [ref=e658]:
+                            - 'link "fix(landing): keep step 02 image column the same width as step 01" [ref=e659] [cursor=pointer]':
+                              - /url: /new-sam/salarymap/pull/14/commits/09fc972581a3ee1d87641e13b4cd9e9f034292df
+                          - button "Commit message body" [ref=e661] [cursor=pointer]: …
+                        - group [ref=e665]:
+                          - generic "2 / 2 checks OK" [ref=e666] [cursor=pointer]:
+                            - img "2 / 2 checks OK" [ref=e667]
+                        - code [ref=e670]:
+                          - link "09fc972" [ref=e671] [cursor=pointer]:
+                            - /url: /new-sam/salarymap/pull/14/commits/09fc972581a3ee1d87641e13b4cd9e9f034292df
+                    - generic [ref=e672]:
+                      - img [ref=e674]
+                      - generic [ref=e679]:
+                        - link "@claude" [ref=e682] [cursor=pointer]:
+                          - /url: /claude
+                          - img "@claude" [ref=e683]
+                        - generic [ref=e684]:
+                          - code [ref=e685]:
+                            - 'link "feat(landing): hero redesign — centered layout with floating stat cards" [ref=e686] [cursor=pointer]':
+                              - /url: /new-sam/salarymap/pull/14/commits/0904b01f2fb897a8ece59dfa87e49c0945d17c0c
+                          - button "Commit message body" [ref=e688] [cursor=pointer]: …
+                        - group [ref=e692]:
+                          - generic "2 / 2 checks OK" [ref=e693] [cursor=pointer]:
+                            - img "2 / 2 checks OK" [ref=e694]
+                        - code [ref=e697]:
+                          - link "0904b01" [ref=e698] [cursor=pointer]:
+                            - /url: /new-sam/salarymap/pull/14/commits/0904b01f2fb897a8ece59dfa87e49c0945d17c0c
+                    - generic [ref=e699]:
+                      - img [ref=e701]
+                      - generic [ref=e706]:
+                        - code [ref=e709]:
+                          - 'link "feat(landing): refine company hero proof cards" [ref=e710] [cursor=pointer]':
+                            - /url: /new-sam/salarymap/pull/14/commits/9866bc77d00a411a14da0349bdeaf04c95255b21
+                        - group [ref=e714]:
+                          - generic "2 / 2 checks OK" [ref=e715] [cursor=pointer]:
+                            - img "2 / 2 checks OK" [ref=e716]
+                        - code [ref=e719]:
+                          - link "9866bc7" [ref=e720] [cursor=pointer]:
+                            - /url: /new-sam/salarymap/pull/14/commits/9866bc77d00a411a14da0349bdeaf04c95255b21
+                    - generic [ref=e721]:
+                      - img [ref=e723]
+                      - generic [ref=e728]:
+                        - generic [ref=e730]:
+                          - code [ref=e731]:
+                            - 'link "Revert \"feat(landing): refine company hero proof cards\"" [ref=e732] [cursor=pointer]':
+                              - /url: /new-sam/salarymap/pull/14/commits/310fedf8b15633b6f783c87f90af6fe3fd9525dd
+                          - button "Commit message body" [ref=e734] [cursor=pointer]: …
+                        - group [ref=e738]:
+                          - generic "2 / 2 checks OK" [ref=e739] [cursor=pointer]:
+                            - img "2 / 2 checks OK" [ref=e740]
+                        - code [ref=e743]:
+                          - link "310fedf" [ref=e744] [cursor=pointer]:
+                            - /url: /new-sam/salarymap/pull/14/commits/310fedf8b15633b6f783c87f90af6fe3fd9525dd
+                    - generic [ref=e745]:
+                      - img [ref=e747]
+                      - generic [ref=e752]:
+                        - code [ref=e755]:
+                          - 'link "feat(landing): replace company hero image" [ref=e756] [cursor=pointer]':
+                            - /url: /new-sam/salarymap/pull/14/commits/7ceff6d6df350f6387013b9699aae0eb4ac915ef
+                        - group [ref=e760]:
+                          - generic "2 / 2 checks OK" [ref=e761] [cursor=pointer]:
+                            - img "2 / 2 checks OK" [ref=e762]
+                        - code [ref=e765]:
+                          - link "7ceff6d" [ref=e766] [cursor=pointer]:
+                            - /url: /new-sam/salarymap/pull/14/commits/7ceff6d6df350f6387013b9699aae0eb4ac915ef
+                    - generic [ref=e767]:
+                      - img [ref=e769]
+                      - generic [ref=e774]:
+                        - code [ref=e777]:
+                          - 'link "feat(landing): add icon process section" [ref=e778] [cursor=pointer]':
+                            - /url: /new-sam/salarymap/pull/14/commits/5907efe13e6ee0109408cf8bb60230140180d5ce
+                        - group [ref=e782]:
+                          - generic "2 / 2 checks OK" [ref=e783] [cursor=pointer]:
+                            - img "2 / 2 checks OK" [ref=e784]
+                        - code [ref=e787]:
+                          - link "5907efe" [ref=e788] [cursor=pointer]:
+                            - /url: /new-sam/salarymap/pull/14/commits/5907efe13e6ee0109408cf8bb60230140180d5ce
+                    - generic [ref=e789]:
+                      - img [ref=e791]
+                      - generic [ref=e796]:
+                        - link "@SeungjuWI" [ref=e799] [cursor=pointer]:
+                          - /url: /SeungjuWI
+                          - img "@SeungjuWI" [ref=e800]
+                        - code [ref=e802]:
+                          - 'link "auto: 2026-05-28 16:00" [ref=e803] [cursor=pointer]':
+                            - /url: /new-sam/salarymap/pull/14/commits/caad07fd07bad81531a561df282f36f6fb7c002f
+                        - group [ref=e807]:
+                          - generic "2 / 2 checks OK" [ref=e808] [cursor=pointer]:
+                            - img "2 / 2 checks OK" [ref=e809]
+                        - code [ref=e812]:
+                          - link "caad07f" [ref=e813] [cursor=pointer]:
+                            - /url: /new-sam/salarymap/pull/14/commits/caad07fd07bad81531a561df282f36f6fb7c002f
+                    - generic [ref=e814]:
+                      - img [ref=e816]
+                      - generic [ref=e821]:
+                        - link "@claude" [ref=e824] [cursor=pointer]:
+                          - /url: /claude
+                          - img "@claude" [ref=e825]
+                        - generic [ref=e826]:
+                          - code [ref=e827]:
+                            - 'link "fix(landing): hero copy — kill salesy claims, swap CTAs (landing-crit…" [ref=e828] [cursor=pointer]':
+                              - /url: /new-sam/salarymap/pull/14/commits/5d78ee650cf1347802deda1ddf5a7e92bbfce332
+                          - button "Commit message body" [ref=e830] [cursor=pointer]: …
+                        - group [ref=e834]:
+                          - generic "2 / 2 checks OK" [ref=e835] [cursor=pointer]:
+                            - img "2 / 2 checks OK" [ref=e836]
+                        - code [ref=e839]:
+                          - link "5d78ee6" [ref=e840] [cursor=pointer]:
+                            - /url: /new-sam/salarymap/pull/14/commits/5d78ee650cf1347802deda1ddf5a7e92bbfce332
+                    - generic [ref=e841]:
+                      - img [ref=e843]
+                      - generic [ref=e848]:
+                        - link "@claude" [ref=e851] [cursor=pointer]:
+                          - /url: /claude
+                          - img "@claude" [ref=e852]
+                        - generic [ref=e853]:
+                          - code [ref=e854]:
+                            - 'link "fix(landing): hero subtitle → sincere/mission voice, not promo" [ref=e855] [cursor=pointer]':
+                              - /url: /new-sam/salarymap/pull/14/commits/6165f8cd8957ebec6477e1b5cb440c06ffb0381c
+                          - button "Commit message body" [ref=e857] [cursor=pointer]: …
+                        - group [ref=e861]:
+                          - generic "2 / 2 checks OK" [ref=e862] [cursor=pointer]:
+                            - img "2 / 2 checks OK" [ref=e863]
+                        - code [ref=e866]:
+                          - link "6165f8c" [ref=e867] [cursor=pointer]:
+                            - /url: /new-sam/salarymap/pull/14/commits/6165f8cd8957ebec6477e1b5cb440c06ffb0381c
+                    - generic [ref=e868]:
+                      - img [ref=e870]
+                      - generic [ref=e875]:
+                        - link "@claude" [ref=e878] [cursor=pointer]:
+                          - /url: /claude
+                          - img "@claude" [ref=e879]
+                        - generic [ref=e880]:
+                          - code [ref=e881]:
+                            - 'link "fix: route Google OAuth through Supabase on preview/local domains" [ref=e882] [cursor=pointer]':
+                              - /url: /new-sam/salarymap/pull/14/commits/0c439a4f61ae999260d61e2d4cff41b709486bf6
+                          - button "Commit message body" [ref=e884] [cursor=pointer]: …
+                        - group [ref=e888]:
+                          - generic "2 / 2 checks OK" [ref=e889] [cursor=pointer]:
+                            - img "2 / 2 checks OK" [ref=e890]
+                        - code [ref=e893]:
+                          - link "0c439a4" [ref=e894] [cursor=pointer]:
+                            - /url: /new-sam/salarymap/pull/14/commits/0c439a4f61ae999260d61e2d4cff41b709486bf6
+                    - generic [ref=e895]:
+                      - img [ref=e897]
+                      - generic [ref=e902]:
+                        - code [ref=e905]:
+                          - 'link "feat(landing): add process pictogram cards" [ref=e906] [cursor=pointer]':
+                            - /url: /new-sam/salarymap/pull/14/commits/10b6ccc7f93fb4fe5b1110c1ba352e107e3c1c5d
+                        - code [ref=e910]:
+                          - link "10b6ccc" [ref=e911] [cursor=pointer]:
+                            - /url: /new-sam/salarymap/pull/14/commits/10b6ccc7f93fb4fe5b1110c1ba352e107e3c1c5d
+                    - generic [ref=e912]:
+                      - img [ref=e914]
+                      - generic [ref=e919]:
+                        - code [ref=e922]:
+                          - 'link "feat(landing): simplify company flow section" [ref=e923] [cursor=pointer]':
+                            - /url: /new-sam/salarymap/pull/14/commits/42a964c95035e50ea6848998d2ec5c0570091d1e
+                        - group [ref=e927]:
+                          - generic "2 / 2 checks OK" [ref=e928] [cursor=pointer]:
+                            - img "2 / 2 checks OK" [ref=e929]
+                        - code [ref=e932]:
+                          - link "42a964c" [ref=e933] [cursor=pointer]:
+                            - /url: /new-sam/salarymap/pull/14/commits/42a964c95035e50ea6848998d2ec5c0570091d1e
+                    - generic [ref=e934]:
+                      - img [ref=e936]
+                      - generic [ref=e941]:
+                        - code [ref=e944]:
+                          - 'link "feat(landing): add talent pool proof section" [ref=e945] [cursor=pointer]':
+                            - /url: /new-sam/salarymap/pull/14/commits/1fb08113e4a8d12c4a289fba396041f8ae267d9a
+                        - group [ref=e949]:
+                          - generic "2 / 2 checks OK" [ref=e950] [cursor=pointer]:
+                            - img "2 / 2 checks OK" [ref=e951]
+                        - code [ref=e954]:
+                          - link "1fb0811" [ref=e955] [cursor=pointer]:
+                            - /url: /new-sam/salarymap/pull/14/commits/1fb08113e4a8d12c4a289fba396041f8ae267d9a
+                    - generic [ref=e956]:
+                      - img [ref=e958]
+                      - generic [ref=e963]:
+                        - code [ref=e966]:
+                          - 'link "refactor(landing): fold verified data into talent proof" [ref=e967] [cursor=pointer]':
+                            - /url: /new-sam/salarymap/pull/14/commits/f34b1d9b35c52fbd49a83866075107590b6747c3
+                        - group [ref=e971]:
+                          - generic "2 / 2 checks OK" [ref=e972] [cursor=pointer]:
+                            - img "2 / 2 checks OK" [ref=e973]
+                        - code [ref=e976]:
+                          - link "f34b1d9" [ref=e977] [cursor=pointer]:
+                            - /url: /new-sam/salarymap/pull/14/commits/f34b1d9b35c52fbd49a83866075107590b6747c3
+                    - generic [ref=e978]:
+                      - img [ref=e980]
+                      - generic [ref=e985]:
+                        - code [ref=e988]:
+                          - 'link "feat(landing): replace pricing table with closing proof" [ref=e989] [cursor=pointer]':
+                            - /url: /new-sam/salarymap/pull/14/commits/3a36f898e717ebed4e383a57558334863271de1b
+                        - group [ref=e993]:
+                          - generic "2 / 2 checks OK" [ref=e994] [cursor=pointer]:
+                            - img "2 / 2 checks OK" [ref=e995]
+                        - code [ref=e998]:
+                          - link "3a36f89" [ref=e999] [cursor=pointer]:
+                            - /url: /new-sam/salarymap/pull/14/commits/3a36f898e717ebed4e383a57558334863271de1b
+                    - generic [ref=e1000]:
+                      - img [ref=e1002]
+                      - generic [ref=e1007]:
+                        - code [ref=e1010]:
+                          - 'link "fix(landing): attach KPI strip to hero" [ref=e1011] [cursor=pointer]':
+                            - /url: /new-sam/salarymap/pull/14/commits/1d516b5523f81e97b3c76f5fbd7bd29e5e10878b
+                        - group [ref=e1015]:
+                          - generic "2 / 2 checks OK" [ref=e1016] [cursor=pointer]:
+                            - img "2 / 2 checks OK" [ref=e1017]
+                        - code [ref=e1020]:
+                          - link "1d516b5" [ref=e1021] [cursor=pointer]:
+                            - /url: /new-sam/salarymap/pull/14/commits/1d516b5523f81e97b3c76f5fbd7bd29e5e10878b
+                    - generic [ref=e1022]:
+                      - img [ref=e1024]
+                      - generic [ref=e1029]:
+                        - link "@claude" [ref=e1032] [cursor=pointer]:
+                          - /url: /claude
+                          - img "@claude" [ref=e1033]
+                        - generic [ref=e1034]:
+                          - code [ref=e1035]:
+                            - 'link "fix(ats): show new applicants in kanban — recognize ''pending'' as firs…" [ref=e1036] [cursor=pointer]':
+                              - /url: /new-sam/salarymap/pull/14/commits/96d0ca5a822cb20a359ca07cad371f8bda0cd125
+                          - button "Commit message body" [ref=e1038] [cursor=pointer]: …
+                        - group [ref=e1042]:
+                          - generic "2 / 2 checks OK" [ref=e1043] [cursor=pointer]:
+                            - img "2 / 2 checks OK" [ref=e1044]
+                        - code [ref=e1047]:
+                          - link "96d0ca5" [ref=e1048] [cursor=pointer]:
+                            - /url: /new-sam/salarymap/pull/14/commits/96d0ca5a822cb20a359ca07cad371f8bda0cd125
+                    - generic [ref=e1049]:
+                      - img [ref=e1051]
+                      - generic [ref=e1056]:
+                        - link "@claude" [ref=e1059] [cursor=pointer]:
+                          - /url: /claude
+                          - img "@claude" [ref=e1060]
+                        - generic [ref=e1061]:
+                          - code [ref=e1062]:
+                            - 'link "feat(company): team invite flow + job ownership + admin approval" [ref=e1063] [cursor=pointer]':
+                              - /url: /new-sam/salarymap/pull/14/commits/3c53ff5317980819b3228036c7cff0b1f7dd7721
+                          - button "Commit message body" [ref=e1065] [cursor=pointer]: …
+                        - group [ref=e1069]:
+                          - generic "2 / 2 checks OK" [ref=e1070] [cursor=pointer]:
+                            - img "2 / 2 checks OK" [ref=e1071]
+                        - code [ref=e1074]:
+                          - link "3c53ff5" [ref=e1075] [cursor=pointer]:
+                            - /url: /new-sam/salarymap/pull/14/commits/3c53ff5317980819b3228036c7cff0b1f7dd7721
+                    - generic [ref=e1076]:
+                      - img [ref=e1078]
+                      - generic [ref=e1083]:
+                        - link "@claude" [ref=e1086] [cursor=pointer]:
+                          - /url: /claude
+                          - img "@claude" [ref=e1087]
+                        - generic [ref=e1088]:
+                          - code [ref=e1089]:
+                            - 'link "feat(company): team popover scoped per-job — owner only by default" [ref=e1090] [cursor=pointer]':
+                              - /url: /new-sam/salarymap/pull/14/commits/8715025e719f8c14fa8aebe8fa82ceedeab1e050
+                          - button "Commit message body" [ref=e1092] [cursor=pointer]: …
+                        - group [ref=e1096]:
+                          - generic "2 / 2 checks OK" [ref=e1097] [cursor=pointer]:
+                            - img "2 / 2 checks OK" [ref=e1098]
+                        - code [ref=e1101]:
+                          - link "8715025" [ref=e1102] [cursor=pointer]:
+                            - /url: /new-sam/salarymap/pull/14/commits/8715025e719f8c14fa8aebe8fa82ceedeab1e050
+                - generic [ref=e1104]:
+                  - generic [ref=e1105]:
+                    - img [ref=e1107]
+                    - generic [ref=e1109]:
+                      - text: SalaryMap and others added 11 commits
+                      - link "June 1, 2026 19:193 days ago" [ref=e1110] [cursor=pointer]:
+                        - /url: "#commits-pushed-231c58a"
+                  - generic [ref=e1111]:
+                    - generic [ref=e1112]:
+                      - img [ref=e1114]
+                      - generic [ref=e1119]:
+                        - link "@claude" [ref=e1122] [cursor=pointer]:
+                          - /url: /claude
+                          - img "@claude" [ref=e1123]
+                        - generic [ref=e1124]:
+                          - code [ref=e1125]:
+                            - 'link "fix(company): invite UX — actually send mail, surface result, copy-li…" [ref=e1126] [cursor=pointer]':
+                              - /url: /new-sam/salarymap/pull/14/commits/231c58a39c48307d9bc66cc4a60b4cfc8e087c06
+                          - button "Commit message body" [ref=e1128] [cursor=pointer]: …
+                        - group [ref=e1132]:
+                          - generic "2 / 2 checks OK" [ref=e1133] [cursor=pointer]:
+                            - img "2 / 2 checks OK" [ref=e1134]
+                        - code [ref=e1137]:
+                          - link "231c58a" [ref=e1138] [cursor=pointer]:
+                            - /url: /new-sam/salarymap/pull/14/commits/231c58a39c48307d9bc66cc4a60b4cfc8e087c06
+                    - generic [ref=e1139]:
+                      - img [ref=e1141]
+                      - generic [ref=e1146]:
+                        - generic [ref=e1148]:
+                          - link "@younghunhun" [ref=e1149] [cursor=pointer]:
+                            - /url: /younghunhun
+                            - img "@younghunhun" [ref=e1150]
+                          - link "@claude" [ref=e1151] [cursor=pointer]:
+                            - /url: /claude
+                            - img "@claude" [ref=e1152]
+                        - generic [ref=e1153]:
+                          - code [ref=e1154]:
+                            - 'link "feat(ats): rename kanban stages — 지원 접수 / 1·2차 인터뷰 / 입사 제안" [ref=e1155] [cursor=pointer]':
+                              - /url: /new-sam/salarymap/pull/14/commits/9404675e49b780616eeaf6c437cca0df94ffb6d2
+                          - button "Commit message body" [ref=e1157] [cursor=pointer]: …
+                        - code [ref=e1161]:
+                          - link "9404675" [ref=e1162] [cursor=pointer]:
+                            - /url: /new-sam/salarymap/pull/14/commits/9404675e49b780616eeaf6c437cca0df94ffb6d2
+                    - generic [ref=e1163]:
+                      - img [ref=e1165]
+                      - generic [ref=e1170]:
+                        - generic [ref=e1172]:
+                          - link "@younghunhun" [ref=e1173] [cursor=pointer]:
+                            - /url: /younghunhun
+                            - img "@younghunhun" [ref=e1174]
+                          - link "@claude" [ref=e1175] [cursor=pointer]:
+                            - /url: /claude
+                            - img "@claude" [ref=e1176]
+                        - generic [ref=e1177]:
+                          - code [ref=e1178]:
+                            - 'link "feat(ats): role-based candidate panel — owner vs interviewer" [ref=e1179] [cursor=pointer]':
+                              - /url: /new-sam/salarymap/pull/14/commits/abdd30d50ca3d8086d651800949f6f1202002990
+                          - button "Commit message body" [ref=e1181] [cursor=pointer]: …
+                        - code [ref=e1185]:
+                          - link "abdd30d" [ref=e1186] [cursor=pointer]:
+                            - /url: /new-sam/salarymap/pull/14/commits/abdd30d50ca3d8086d651800949f6f1202002990
+                    - generic [ref=e1187]:
+                      - img [ref=e1189]
+                      - generic [ref=e1194]:
+                        - generic [ref=e1196]:
+                          - link "@younghunhun" [ref=e1197] [cursor=pointer]:
+                            - /url: /younghunhun
+                            - img "@younghunhun" [ref=e1198]
+                          - link "@claude" [ref=e1199] [cursor=pointer]:
+                            - /url: /claude
+                            - img "@claude" [ref=e1200]
+                        - generic [ref=e1201]:
+                          - code [ref=e1202]:
+                            - 'link "feat(ats): server-side owner-only enforcement (Phase B)" [ref=e1203] [cursor=pointer]':
+                              - /url: /new-sam/salarymap/pull/14/commits/b4912a7f8c40af067fbc133352c2ee7a5d76782c
+                          - button "Commit message body" [ref=e1205] [cursor=pointer]: …
+                        - code [ref=e1209]:
+                          - link "b4912a7" [ref=e1210] [cursor=pointer]:
+                            - /url: /new-sam/salarymap/pull/14/commits/b4912a7f8c40af067fbc133352c2ee7a5d76782c
+                    - generic [ref=e1211]:
+                      - img [ref=e1213]
+                      - generic [ref=e1218]:
+                        - generic [ref=e1220]:
+                          - link "@younghunhun" [ref=e1221] [cursor=pointer]:
+                            - /url: /younghunhun
+                            - img "@younghunhun" [ref=e1222]
+                          - link "@claude" [ref=e1223] [cursor=pointer]:
+                            - /url: /claude
+                            - img "@claude" [ref=e1224]
+                        - generic [ref=e1225]:
+                          - code [ref=e1226]:
+                            - 'link "feat(ats): stage-by-stage candidate evaluation system (Phase C)" [ref=e1227] [cursor=pointer]':
+                              - /url: /new-sam/salarymap/pull/14/commits/3a98da226531457da30ee0af7c09e5e67140d906
+                          - button "Commit message body" [ref=e1229] [cursor=pointer]: …
+                        - code [ref=e1233]:
+                          - link "3a98da2" [ref=e1234] [cursor=pointer]:
+                            - /url: /new-sam/salarymap/pull/14/commits/3a98da226531457da30ee0af7c09e5e67140d906
+                    - generic [ref=e1235]:
+                      - img [ref=e1237]
+                      - generic [ref=e1242]:
+                        - generic [ref=e1244]:
+                          - link "@younghunhun" [ref=e1245] [cursor=pointer]:
+                            - /url: /younghunhun
+                            - img "@younghunhun" [ref=e1246]
+                          - link "@claude" [ref=e1247] [cursor=pointer]:
+                            - /url: /claude
+                            - img "@claude" [ref=e1248]
+                        - generic [ref=e1249]:
+                          - code [ref=e1250]:
+                            - 'link "refactor(ats): simplify candidate panel actions per MVP feedback" [ref=e1251] [cursor=pointer]':
+                              - /url: /new-sam/salarymap/pull/14/commits/82650caf0380cbddb5cdf3cb51b979a32448bfa0
+                          - button "Commit message body" [ref=e1253] [cursor=pointer]: …
+                        - code [ref=e1257]:
+                          - link "82650ca" [ref=e1258] [cursor=pointer]:
+                            - /url: /new-sam/salarymap/pull/14/commits/82650caf0380cbddb5cdf3cb51b979a32448bfa0
+                    - generic [ref=e1259]:
+                      - img [ref=e1261]
+                      - generic [ref=e1266]:
+                        - generic [ref=e1268]:
+                          - link "@younghunhun" [ref=e1269] [cursor=pointer]:
+                            - /url: /younghunhun
+                            - img "@younghunhun" [ref=e1270]
+                          - link "@claude" [ref=e1271] [cursor=pointer]:
+                            - /url: /claude
+                            - img "@claude" [ref=e1272]
+                        - generic [ref=e1273]:
+                          - code [ref=e1274]:
+                            - 'link "refactor(ats): mail-interview unified modal + evaluation edit/delete" [ref=e1275] [cursor=pointer]':
+                              - /url: /new-sam/salarymap/pull/14/commits/f5ee4904fb08af39050bc8d1c8e715e2068d0c4e
+                          - button "Commit message body" [ref=e1277] [cursor=pointer]: …
+                        - group [ref=e1281]:
+                          - generic "1 / 2 checks OK" [ref=e1282] [cursor=pointer]:
+                            - img "1 / 2 checks OK" [ref=e1283]
+                        - code [ref=e1286]:
+                          - link "f5ee490" [ref=e1287] [cursor=pointer]:
+                            - /url: /new-sam/salarymap/pull/14/commits/f5ee4904fb08af39050bc8d1c8e715e2068d0c4e
+                    - generic [ref=e1288]:
+                      - img [ref=e1290]
+                      - generic [ref=e1295]:
+                        - generic [ref=e1297]:
+                          - link "@younghunhun" [ref=e1298] [cursor=pointer]:
+                            - /url: /younghunhun
+                            - img "@younghunhun" [ref=e1299]
+                          - link "@claude" [ref=e1300] [cursor=pointer]:
+                            - /url: /claude
+                            - img "@claude" [ref=e1301]
+                        - generic [ref=e1302]:
+                          - code [ref=e1303]:
+                            - 'link "feat(ats): rejection workflow + interview confirmation + monthly cale…" [ref=e1304] [cursor=pointer]':
+                              - /url: /new-sam/salarymap/pull/14/commits/e2b969368fde6b438db8e5be4b729a41193aa26f
+                          - button "Commit message body" [ref=e1306] [cursor=pointer]: …
+                        - code [ref=e1310]:
+                          - link "e2b9693" [ref=e1311] [cursor=pointer]:
+                            - /url: /new-sam/salarymap/pull/14/commits/e2b969368fde6b438db8e5be4b729a41193aa26f
+                    - generic [ref=e1312]:
+                      - img [ref=e1314]
+                      - generic [ref=e1319]:
+                        - generic [ref=e1321]:
+                          - link "@younghunhun" [ref=e1322] [cursor=pointer]:
+                            - /url: /younghunhun
+                            - img "@younghunhun" [ref=e1323]
+                          - link "@claude" [ref=e1324] [cursor=pointer]:
+                            - /url: /claude
+                            - img "@claude" [ref=e1325]
+                        - generic [ref=e1326]:
+                          - code [ref=e1327]:
+                            - 'link "feat(ats): mail templates + custom modals + team management + UX polish" [ref=e1328] [cursor=pointer]':
+                              - /url: /new-sam/salarymap/pull/14/commits/6c7c882f52276f386aa82d6215bbae10e4cf459e
+                          - button "Commit message body" [ref=e1330] [cursor=pointer]: …
+                        - group [ref=e1334]:
+                          - generic "1 / 2 checks OK" [ref=e1335] [cursor=pointer]:
+                            - img "1 / 2 checks OK" [ref=e1336]
+                        - code [ref=e1339]:
+                          - link "6c7c882" [ref=e1340] [cursor=pointer]:
+                            - /url: /new-sam/salarymap/pull/14/commits/6c7c882f52276f386aa82d6215bbae10e4cf459e
+                    - generic [ref=e1341]:
+                      - img [ref=e1343]
+                      - generic [ref=e1348]:
+                        - generic [ref=e1350]:
+                          - link "@younghunhun" [ref=e1351] [cursor=pointer]:
+                            - /url: /younghunhun
+                            - img "@younghunhun" [ref=e1352]
+                          - link "@claude" [ref=e1353] [cursor=pointer]:
+                            - /url: /claude
+                            - img "@claude" [ref=e1354]
+                        - generic [ref=e1355]:
+                          - code [ref=e1356]:
+                            - 'link "chore(vercel): enable preview deployment for feat/ats-ui-copy" [ref=e1357] [cursor=pointer]':
+                              - /url: /new-sam/salarymap/pull/14/commits/a623882521338601aa97e131f9a43818202c6715
+                          - button "Commit message body" [ref=e1359] [cursor=pointer]: …
+                        - group [ref=e1363]:
+                          - generic "1 / 2 checks OK" [ref=e1364] [cursor=pointer]:
+                            - img "1 / 2 checks OK" [ref=e1365]
+                        - code [ref=e1368]:
+                          - link "a623882" [ref=e1369] [cursor=pointer]:
+                            - /url: /new-sam/salarymap/pull/14/commits/a623882521338601aa97e131f9a43818202c6715
+                    - generic [ref=e1370]:
+                      - img [ref=e1372]
+                      - generic [ref=e1377]:
+                        - generic [ref=e1379]:
+                          - link "@younghunhun" [ref=e1380] [cursor=pointer]:
+                            - /url: /younghunhun
+                            - img "@younghunhun" [ref=e1381]
+                          - link "@claude" [ref=e1382] [cursor=pointer]:
+                            - /url: /claude
+                            - img "@claude" [ref=e1383]
+                        - generic [ref=e1384]:
+                          - code [ref=e1385]:
+                            - 'link "fix(jobs): bypass review queue + auto-seed mail templates for new com…" [ref=e1386] [cursor=pointer]':
+                              - /url: /new-sam/salarymap/pull/14/commits/3d19ce65870bd97ba5006080c9de90087159eddf
+                          - button "Commit message body" [ref=e1388] [cursor=pointer]: …
+                        - group [ref=e1392]:
+                          - generic "1 / 2 checks OK" [ref=e1393] [cursor=pointer]:
+                            - img "1 / 2 checks OK" [ref=e1394]
+                        - code [ref=e1397]:
+                          - link "3d19ce6" [ref=e1398] [cursor=pointer]:
+                            - /url: /new-sam/salarymap/pull/14/commits/3d19ce65870bd97ba5006080c9de90087159eddf
+                - generic [ref=e1400]:
+                  - link "@vercel" [ref=e1402] [cursor=pointer]:
+                    - /url: /apps/vercel
+                    - img "@vercel" [ref=e1403]
+                  - generic [ref=e1405]:
+                    - generic [ref=e1406]:
+                      - group [ref=e1409]:
+                        - button "Show options" [ref=e1410] [cursor=pointer]:
+                          - img "Show options" [ref=e1413]
+                      - heading "vercel Bot commented Jun 4, 2026now" [level=3] [ref=e1415]:
+                        - generic [ref=e1416]:
+                          - strong [ref=e1417]:
+                            - link "vercel" [ref=e1418] [cursor=pointer]:
+                              - /url: /apps/vercel
+                            - generic [ref=e1419]: Bot
+                          - text: commented
+                          - link "Jun 4, 2026now" [ref=e1420] [cursor=pointer]:
+                            - /url: "#issuecomment-4618159656"
+                    - generic [ref=e1421]:
+                      - table [ref=e1423]:
+                        - rowgroup [ref=e1424]:
+                          - row "The latest updates on your projects. Learn more about Vercel for GitHub. Project Deployment Actions Updated (UTC) salarymap Error Error Jun 4, 2026 1:29am Request Review" [ref=e1425]:
+                            - cell "The latest updates on your projects. Learn more about Vercel for GitHub. Project Deployment Actions Updated (UTC) salarymap Error Error Jun 4, 2026 1:29am Request Review" [ref=e1426]:
+                              - paragraph [ref=e1427]:
+                                - text: The latest updates on your projects. Learn more about
+                                - link "Vercel for GitHub" [ref=e1428] [cursor=pointer]:
+                                  - /url: https://vercel.link/github-learn-more
+                                - text: .
+                              - table [ref=e1430]:
+                                - rowgroup [ref=e1431]:
+                                  - row "Project Deployment Actions Updated (UTC)" [ref=e1432]:
+                                    - columnheader "Project" [ref=e1433]
+                                    - columnheader "Deployment" [ref=e1434]
+                                    - columnheader "Actions" [ref=e1435]
+                                    - columnheader "Updated (UTC)" [ref=e1436]
+                                - rowgroup [ref=e1437]:
+                                  - row "salarymap Error Error Jun 4, 2026 1:29am" [ref=e1438]:
+                                    - cell "salarymap" [ref=e1439]:
+                                      - link "salarymap" [ref=e1440] [cursor=pointer]:
+                                        - /url: https://vercel.com/slsvm1013-6708s-projects/salarymap
+                                    - cell "Error Error" [ref=e1441]:
+                                      - link "Error" [ref=e1442] [cursor=pointer]:
+                                        - /url: https://camo.githubusercontent.com/c8e61d200f0eb56ad472897e4e969521a3524c1fda9849a9ff53fb16793b1fa3/68747470733a2f2f76657263656c2e636f6d2f7374617469632f7374617475732f6572726f722e737667
+                                        - img "Error" [ref=e1443]
+                                      - link "Error" [ref=e1444] [cursor=pointer]:
+                                        - /url: https://vercel.com/slsvm1013-6708s-projects/salarymap/5Dbvzu1MtSnmXQbVpUrqt6M6MosT
+                                    - cell [ref=e1445]
+                                    - cell "Jun 4, 2026 1:29am" [ref=e1446]
+                              - paragraph [ref=e1447]:
+                                - link "Request Review" [ref=e1448] [cursor=pointer]:
+                                  - /url: https://vercel.com/vercel-agent/request-review?owner=new-sam&repo=salarymap&pr=14
+                                  - img "Request Review" [ref=e1451]
+                      - group [ref=e1456]:
+                        - generic "Add or remove reactions" [ref=e1457] [cursor=pointer]:
+                          - img [ref=e1458]
+                - generic [ref=e1462]:
+                  - button "Show environments" [ref=e1463] [cursor=pointer]:
+                    - generic [ref=e1465]: Show environments
+                  - generic [ref=e1466]:
+                    - img [ref=e1468]
+                    - heading "This branch had an error being deployed" [level=3] [ref=e1470]
+                    - text: 1 failed deployment
+            - generic [ref=e1473]:
+              - img [ref=e1474]
+              - generic [ref=e1477]: Loading
+            - generic [ref=e1480]:
+              - link "@younghunhun" [ref=e1482] [cursor=pointer]:
+                - /url: /younghunhun
+                - img "@younghunhun" [ref=e1483]
+              - form "Add a comment" [ref=e1485]:
+                - group [ref=e1486]:
+                  - heading "Add a comment" [level=4] [ref=e1489]
+                  - generic [ref=e1490]: Comment
+                  - generic [ref=e1491]:
+                    - generic [ref=e1492]:
+                      - tablist "Add a comment" [ref=e1493]:
+                        - tab "Write" [selected] [ref=e1494] [cursor=pointer]
+                        - tab "Preview" [ref=e1495] [cursor=pointer]
+                      - toolbar [ref=e1496]:
+                        - generic [ref=e1497]:
+                          - button "Heading" [ref=e1499] [cursor=pointer]:
+                            - img
+                          - button "Bold" [ref=e1501] [cursor=pointer]:
+                            - img
+                          - button "Italic" [ref=e1503] [cursor=pointer]:
+                            - img
+                          - button "Quote" [ref=e1505] [cursor=pointer]:
+                            - img
+                          - button "Code" [ref=e1507] [cursor=pointer]:
+                            - img
+                          - button "Link" [ref=e1509] [cursor=pointer]:
+                            - img
+                          - separator [ref=e1510]
+                          - button "Numbered list" [ref=e1512] [cursor=pointer]:
+                            - img
+                          - button "Unordered list" [ref=e1514] [cursor=pointer]:
+                            - img
+                          - button "Task list" [ref=e1516] [cursor=pointer]:
+                            - img
+                          - separator [ref=e1517]
+                          - button "Attach files" [ref=e1519] [cursor=pointer]:
+                            - img
+                          - button "Mention" [ref=e1521] [cursor=pointer]:
+                            - img
+                          - button "Reference" [ref=e1523] [cursor=pointer]:
+                            - img
+                          - button "Saved replies" [ref=e1525] [cursor=pointer]:
+                            - img
+                          - button "Slash commands" [ref=e1527] [cursor=pointer]:
+                            - img
+                    - tabpanel "Write" [ref=e1528]:
+                      - generic [ref=e1532]:
+                        - textbox "Comment" [ref=e1533]:
+                          - /placeholder: " "
+                        - paragraph: Add your comment here...
+                      - generic [ref=e1534]:
+                        - link "Markdown is supported" [ref=e1536] [cursor=pointer]:
+                          - /url: https://docs.github.com/github/writing-on-github/getting-started-with-writing-and-formatting-on-github/basic-writing-and-formatting-syntax
+                          - generic [ref=e1537]:
+                            - generic:
+                              - img
+                            - generic [ref=e1538]: Markdown is supported
+                        - button "Paste, drop, or click to add files" [ref=e1539] [cursor=pointer]:
+                          - generic [ref=e1540]:
+                            - generic:
+                              - img
+                            - generic [ref=e1541]: Paste, drop, or click to add files
+                - generic [ref=e1544]:
+                  - button "Close pull request" [ref=e1546] [cursor=pointer]:
+                    - img [ref=e1547]
+                    - text: Close pull request
+                  - button "Comment" [disabled] [ref=e1550]
+              - generic [ref=e1551]:
+                - img [ref=e1552]
+                - generic [ref=e1554]:
+                  - text: Remember, contributions to this repository should follow our
+                  - link "GitHub Community Guidelines" [ref=e1555] [cursor=pointer]:
+                    - /url: https://docs.github.com/articles/github-community-guidelines
+                  - text: .
+              - generic [ref=e1556]:
+                - img [ref=e1557]
+                - strong [ref=e1559]: ProTip!
+                - text: Add comments to specific lines under
+                - link "Files changed" [ref=e1560] [cursor=pointer]:
+                  - /url: /new-sam/salarymap/pull/14/files
+                - text: .
+        - generic [ref=e1564]:
+          - form "Select reviewers" [ref=e1566]:
+            - group [ref=e1567]:
+              - button "Reviewers" [ref=e1568] [cursor=pointer]:
+                - img [ref=e1569]
+                - text: Reviewers
+            - generic [ref=e1571]:
+              - paragraph [ref=e1572]: Suggestions
+              - paragraph [ref=e1573]:
+                - button "Request" [ref=e1575] [cursor=pointer]:
+                  - generic [ref=e1577]: Request
+                - generic [ref=e1578]:
+                  - link "@SeungjuWI" [ref=e1579] [cursor=pointer]:
+                    - /url: /SeungjuWI
+                    - img "@SeungjuWI" [ref=e1580]
+                  - link "SeungjuWI" [ref=e1581] [cursor=pointer]:
+                    - /url: /SeungjuWI
+            - generic [ref=e1582]:
+              - generic [ref=e1583]: Still in progress?
+              - group [ref=e1584]:
+                - button "Convert to draft" [ref=e1585] [cursor=pointer]
+          - form "Select assignees" [ref=e1587]:
+            - group [ref=e1588]:
+              - button "Assignees" [ref=e1589] [cursor=pointer]:
+                - img [ref=e1590]
+                - text: Assignees
+            - generic [ref=e1592]:
+              - text: No one—
+              - button "assign yourself" [ref=e1593] [cursor=pointer]
+          - generic [ref=e1594]:
+            - group [ref=e1595]:
+              - button "Labels" [ref=e1596] [cursor=pointer]:
+                - img [ref=e1597]
+                - text: Labels
+            - generic [ref=e1599]: None yet
+          - form "Select projects" [ref=e1601]:
+            - group [ref=e1602]:
+              - button "Projects" [ref=e1603] [cursor=pointer]:
+                - img [ref=e1604]
+                - text: Projects
+            - text: None yet
+          - form "Select milestones" [ref=e1607]:
+            - group [ref=e1608]:
+              - button "Milestone" [ref=e1609] [cursor=pointer]:
+                - img [ref=e1610]
+                - text: Milestone
+            - text: No milestone
+          - form "Link issues" [ref=e1617]:
+            - group [ref=e1618]:
+              - button "Development" [ref=e1619] [cursor=pointer]:
+                - img [ref=e1620]
+                - text: Development
+            - paragraph [ref=e1622]: Successfully merging this pull request may close these issues.
+            - paragraph [ref=e1624]: None yet
+          - generic [ref=e1626]:
+            - button "Notifications Customize" [ref=e1629] [cursor=pointer]:
+              - generic [ref=e1630]:
+                - generic [ref=e1631]: Notifications
+                - generic [ref=e1632]: Customize
+            - button "Unsubscribe" [ref=e1634] [cursor=pointer]:
+              - generic [ref=e1635]:
+                - generic:
+                  - img
+                - generic [ref=e1636]: Unsubscribe
+            - paragraph [ref=e1637]: You’re receiving notifications because you authored the thread.
+          - generic [ref=e1639]:
+            - heading "2 participants" [level=3] [ref=e1640]
+            - generic [ref=e1641]:
+              - link "@younghunhun" [ref=e1642] [cursor=pointer]:
+                - /url: /younghunhun
+                - img "@younghunhun" [ref=e1643]
+              - link "@SeungjuWI" [ref=e1644] [cursor=pointer]:
+                - /url: /SeungjuWI
+                - img "@SeungjuWI" [ref=e1645]
+          - group [ref=e1647]:
+            - button "Lock conversation" [ref=e1648] [cursor=pointer]:
+              - img [ref=e1649]
+              - strong [ref=e1651]: Lock conversation
+  - contentinfo [ref=e1652]:
+    - heading "Footer" [level=2] [ref=e1653]
+    - generic [ref=e1654]:
+      - generic [ref=e1655]:
+        - link "GitHub Homepage" [ref=e1656] [cursor=pointer]:
+          - /url: https://github.com
+          - img [ref=e1657]
+        - generic [ref=e1659]: © 2026 GitHub, Inc.
+      - navigation "Footer" [ref=e1660]:
+        - heading "Footer navigation" [level=3] [ref=e1661]
+        - list "Footer navigation" [ref=e1662]:
+          - listitem [ref=e1663]:
+            - link "Terms" [ref=e1664] [cursor=pointer]:
+              - /url: https://docs.github.com/site-policy/github-terms/github-terms-of-service
+          - listitem [ref=e1665]:
+            - link "Privacy" [ref=e1666] [cursor=pointer]:
+              - /url: https://docs.github.com/site-policy/privacy-policies/github-privacy-statement
+          - listitem [ref=e1667]:
+            - link "Security" [ref=e1668] [cursor=pointer]:
+              - /url: https://github.com/security
+          - listitem [ref=e1669]:
+            - link "Status" [ref=e1670] [cursor=pointer]:
+              - /url: https://www.githubstatus.com/
+          - listitem [ref=e1671]:
+            - link "Community" [ref=e1672] [cursor=pointer]:
+              - /url: https://github.community/
+          - listitem [ref=e1673]:
+            - link "Docs" [ref=e1674] [cursor=pointer]:
+              - /url: https://docs.github.com/
+          - listitem [ref=e1675]:
+            - link "Contact" [ref=e1676] [cursor=pointer]:
+              - /url: https://support.github.com?tags=dotcom-footer
+          - listitem [ref=e1677]:
+            - button "Manage cookies" [ref=e1679] [cursor=pointer]
+          - listitem [ref=e1680]:
+            - button "Do not share my personal information" [ref=e1682] [cursor=pointer]

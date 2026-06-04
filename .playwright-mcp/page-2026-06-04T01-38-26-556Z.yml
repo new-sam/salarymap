@@ -1,0 +1,12 @@
+- generic [ref=e2]:
+  - main [ref=e3]:
+    - generic [ref=e4]:
+      - status [ref=e5]:
+        - generic [ref=e18]: Loading...
+      - heading "Deployment has failed" [level=1] [ref=e19]
+    - link "View Build" [ref=e20] [cursor=pointer]:
+      - /url: https://vercel.com/deployments/salarymap-4uwgjeo3h-slsvm1013-6708s-projects.vercel.app?redirect=1
+      - paragraph [ref=e24]: View Build
+      - img [ref=e26]
+  - contentinfo [ref=e28]:
+    - paragraph [ref=e29]: This page will update once the build completes.

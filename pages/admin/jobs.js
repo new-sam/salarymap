@@ -137,6 +137,16 @@ export default function AdminJobs() {
     fetchJobs()
   }
 
+  const handleApprove = async (job) => {
+    await fetch('/api/admin/jobs', { method: 'PUT', headers: headers(), body: JSON.stringify({ id: job.id, status: 'live', is_active: true }) })
+    flash('Approved'); fetchJobs()
+  }
+  const handleReject = async (job) => {
+    if (!confirm('이 공고를 반려하시겠습니까?')) return
+    await fetch('/api/admin/jobs', { method: 'PUT', headers: headers(), body: JSON.stringify({ id: job.id, status: 'rejected', is_active: false }) })
+    flash('Rejected'); fetchJobs()
+  }
+
   const handleStatusChange = async (appId, status) => {
     await fetch('/api/admin/applications', { method: 'PUT', headers: headers(), body: JSON.stringify({ id: appId, status }) })
     fetchApps()
@@ -360,27 +370,60 @@ export default function AdminJobs() {
             <div style={S.card}>
               <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 12 }}>All Jobs</div>
               {jobs.length === 0 && <div style={{ color: '#aaa', fontSize: 13 }}>No jobs yet</div>}
-              {jobs.map(job => (
-                <div key={job.id} style={S.row}>
-                  <div style={{ flex: 1 }}>
-                    <div style={{ fontSize: 14, fontWeight: 600 }}>
-                      {job.title}
-                      <span style={{ ...S.badge, background: job.is_active ? '#dcfce7' : '#fee2e2', color: job.is_active ? '#166534' : '#991b1b' }}>
-                        {job.is_active ? 'Active' : 'Inactive'}
-                      </span>
-                      {job.is_featured && <span style={{ ...S.badge, background: '#fef3c7', color: '#92400e' }}>Featured</span>}
-                    </div>
-                    <div style={{ fontSize: 12, color: '#888' }}>
-                      {job.company} · {job.location} · {job.type} · {Math.round(job.salary_min/1e6)}M–{Math.round(job.salary_max/1e6)}M VND
-                    </div>
-                  </div>
-                  <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
-                    <button style={S.btnS} onClick={() => startEdit(job)}>Edit</button>
-                    <button style={S.btnS} onClick={() => handleToggle(job)}>{job.is_active ? 'Deactivate' : 'Activate'}</button>
-                    <button style={{ ...S.btnS, color: '#dc2626' }} onClick={() => handleDelete(job.id)}>Delete</button>
-                  </div>
-                </div>
-              ))}
+              {(() => {
+                const sorted = [...jobs].sort((a, b) => {
+                  const ap = a.status === 'pending_review' ? 0 : 1;
+                  const bp = b.status === 'pending_review' ? 0 : 1;
+                  return ap - bp;
+                });
+                const pendingCount = jobs.filter(j => j.status === 'pending_review').length;
+                return (
+                  <>
+                    {pendingCount > 0 && (
+                      <div style={{ background:'#fff7ed', border:'1px solid #fdba74', color:'#9a3412', padding:'8px 12px', borderRadius:6, marginBottom:10, fontSize:13, fontWeight:700 }}>
+                        ⏳ {pendingCount} job(s) awaiting approval
+                      </div>
+                    )}
+                    {sorted.map(job => (
+                      <div key={job.id} style={S.row}>
+                        <div style={{ flex: 1 }}>
+                          <div style={{ fontSize: 14, fontWeight: 600 }}>
+                            {job.title}
+                            {job.status === 'pending_review' && (
+                              <span style={{ ...S.badge, background: '#fff7ed', color: '#c2410c' }}>Pending Approval</span>
+                            )}
+                            {job.status === 'rejected' && (
+                              <span style={{ ...S.badge, background: '#fee2e2', color: '#991b1b' }}>Rejected</span>
+                            )}
+                            {job.status !== 'pending_review' && job.status !== 'rejected' && (
+                              <span style={{ ...S.badge, background: job.is_active ? '#dcfce7' : '#fee2e2', color: job.is_active ? '#166534' : '#991b1b' }}>
+                                {job.is_active ? 'Active' : 'Inactive'}
+                              </span>
+                            )}
+                            {job.is_featured && <span style={{ ...S.badge, background: '#fef3c7', color: '#92400e' }}>Featured</span>}
+                          </div>
+                          <div style={{ fontSize: 12, color: '#888' }}>
+                            {job.company} · {job.location} · {job.type} · {Math.round(job.salary_min/1e6)}M–{Math.round(job.salary_max/1e6)}M VND
+                          </div>
+                        </div>
+                        <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
+                          {job.status === 'pending_review' && (
+                            <>
+                              <button style={{ ...S.btnS, background:'#059669', color:'#fff', fontWeight:800 }} onClick={() => handleApprove(job)}>Approve</button>
+                              <button style={{ ...S.btnS, color: '#dc2626' }} onClick={() => handleReject(job)}>Reject</button>
+                            </>
+                          )}
+                          <button style={S.btnS} onClick={() => startEdit(job)}>Edit</button>
+                          {job.status !== 'pending_review' && (
+                            <button style={S.btnS} onClick={() => handleToggle(job)}>{job.is_active ? 'Deactivate' : 'Activate'}</button>
+                          )}
+                          <button style={{ ...S.btnS, color: '#dc2626' }} onClick={() => handleDelete(job.id)}>Delete</button>
+                        </div>
+                      </div>
+                    ))}
+                  </>
+                );
+              })()}
             </div>
           </>
         )}

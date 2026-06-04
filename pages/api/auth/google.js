@@ -1,14 +1,28 @@
-// Initiates Google OAuth from our own domain (instead of routing through
-// Supabase's domain). Redirects the browser to Google's auth page so the
-// "Continue to <site>" prompt shows our domain, not the Supabase URL.
+// Initiates Google OAuth.
+// - Production (our own domain): route through our /api/auth/google/callback so
+//   the Google consent screen shows our domain, not the Supabase URL.
+// - Preview (*.vercel.app) / local: Google has no redirect_uri registered for
+//   dynamic Vercel domains, so route through Supabase's own OAuth endpoint
+//   (its callback IS registered in Google). Supabase then redirects back to our
+//   /auth/callback, which is allow-listed in Supabase Redirect URLs.
 
 export default function handler(req, res) {
   const proto = req.headers['x-forwarded-proto'] || 'https';
-  const host = req.headers.host;
-  const redirectUri = `${proto}://${host}/api/auth/google/callback`;
-
-  // Encode return path and optional role into state
+  const host = req.headers.host || '';
   const returnTo = typeof req.query.return === 'string' ? req.query.return : '/';
+
+  const isPreviewOrLocal = host.endsWith('.vercel.app') || host.startsWith('localhost');
+
+  if (isPreviewOrLocal) {
+    const supaUrl = (process.env.NEXT_PUBLIC_SUPABASE_URL || '').trim();
+    const redirectTo = `${proto}://${host}/auth/callback?return=${encodeURIComponent(returnTo)}`;
+    return res.redirect(
+      `${supaUrl}/auth/v1/authorize?provider=google&redirect_to=${encodeURIComponent(redirectTo)}`
+    );
+  }
+
+  // Production — our own domain is a registered Google redirect_uri.
+  const redirectUri = `${proto}://${host}/api/auth/google/callback`;
   const role = req.query.role === 'hr' ? 'hr' : '';
   const state = role ? JSON.stringify({ return: returnTo, role }) : returnTo;
 

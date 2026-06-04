@@ -1,0 +1,139 @@
+- generic [active] [ref=e1]:
+  - link "Skip to content":
+    - /url: "#geist-skip-nav"
+  - main [ref=e3]:
+    - generic [ref=e4]:
+      - generic [ref=e5]:
+        - generic [ref=e6]:
+          - button [disabled] [ref=e13] [cursor=pointer]:
+            - img [ref=e15]
+          - button "Find… F" [ref=e18]:
+            - generic [ref=e20]:
+              - img [ref=e22]
+              - generic [ref=e24]: Find…
+              - generic [ref=e26]: F
+        - navigation [ref=e28]:
+          - generic [ref=e31]:
+            - link "Overview" [ref=e32] [cursor=pointer]:
+              - /url: /slsvm1013-6708s-projects/salarymap
+              - generic [ref=e35]: Overview
+            - link "Deployments" [ref=e36] [cursor=pointer]:
+              - /url: /slsvm1013-6708s-projects/salarymap/deployments
+              - img [ref=e38]
+              - generic [ref=e41]: Deployments
+            - link "Logs" [ref=e42] [cursor=pointer]:
+              - /url: /slsvm1013-6708s-projects/salarymap/logs
+              - img [ref=e44]
+              - generic [ref=e47]: Logs
+            - link "Analytics" [ref=e48] [cursor=pointer]:
+              - /url: /slsvm1013-6708s-projects/salarymap/analytics
+              - img [ref=e50]
+              - generic [ref=e53]: Analytics
+            - link "Speed Insights" [ref=e54] [cursor=pointer]:
+              - /url: /slsvm1013-6708s-projects/salarymap/speed-insights
+              - img [ref=e56]
+              - generic [ref=e59]: Speed Insights
+            - link "Observability" [ref=e60] [cursor=pointer]:
+              - /url: /slsvm1013-6708s-projects/salarymap/observability
+              - img [ref=e62]
+              - generic [ref=e65]: Observability
+              - img [ref=e67]
+            - link "Firewall" [ref=e69] [cursor=pointer]:
+              - /url: /slsvm1013-6708s-projects/salarymap/firewall
+              - img [ref=e71]
+              - generic [ref=e75]: Firewall
+              - img [ref=e77]
+            - link "CDN" [ref=e79] [cursor=pointer]:
+              - /url: /slsvm1013-6708s-projects/salarymap/cdn
+              - img [ref=e81]
+              - generic [ref=e84]: CDN
+              - img [ref=e86]
+            - separator [ref=e88]
+            - link "Environment Variables" [ref=e89] [cursor=pointer]:
+              - /url: /slsvm1013-6708s-projects/salarymap/settings/environment-variables
+              - img [ref=e91]
+              - generic [ref=e94]: Environment Variables
+            - link "Domains" [ref=e95] [cursor=pointer]:
+              - /url: /slsvm1013-6708s-projects/salarymap/settings/domains
+              - img [ref=e97]
+              - generic [ref=e100]: Domains
+            - link "Integrations" [ref=e101] [cursor=pointer]:
+              - /url: /slsvm1013-6708s-projects/salarymap/settings/integrations
+              - img [ref=e103]
+              - generic [ref=e106]: Integrations
+            - link "Storage" [ref=e107] [cursor=pointer]:
+              - /url: /slsvm1013-6708s-projects/salarymap/stores
+              - img [ref=e109]
+              - generic [ref=e112]: Storage
+            - link "Flags" [ref=e113] [cursor=pointer]:
+              - /url: /slsvm1013-6708s-projects/salarymap/flags
+              - img [ref=e115]
+              - generic [ref=e118]: Flags
+              - img [ref=e120]
+            - link "Agent" [ref=e122] [cursor=pointer]:
+              - /url: /slsvm1013-6708s-projects/salarymap/agent
+              - img [ref=e124]
+              - generic [ref=e127]: Agent
+              - img [ref=e129]
+            - link "AI Gateway" [ref=e131] [cursor=pointer]:
+              - /url: /slsvm1013-6708s-projects/salarymap/ai-gateway
+              - img [ref=e133]
+              - generic [ref=e136]: AI Gateway
+              - img [ref=e138]
+            - link "Sandboxes" [ref=e140] [cursor=pointer]:
+              - /url: /slsvm1013-6708s-projects/salarymap/sandboxes
+              - img [ref=e142]
+              - generic [ref=e145]: Sandboxes
+            - link "Workflows" [ref=e146] [cursor=pointer]:
+              - /url: /slsvm1013-6708s-projects/salarymap/workflows
+              - img [ref=e148]
+              - generic [ref=e151]: Workflows
+            - separator [ref=e152]
+            - link "Usage" [ref=e153] [cursor=pointer]:
+              - /url: /slsvm1013-6708s-projects/salarymap/usage
+              - img [ref=e155]
+              - generic [ref=e158]: Usage
+            - link "Support" [ref=e159] [cursor=pointer]:
+              - /url: /slsvm1013-6708s-projects/salarymap/support
+              - img [ref=e161]
+              - generic [ref=e164]: Support
+            - link "Settings" [ref=e165] [cursor=pointer]:
+              - /url: /slsvm1013-6708s-projects/salarymap/settings
+              - img [ref=e167]
+              - generic [ref=e170]: Settings
+              - img [ref=e172]
+        - generic [ref=e176]:
+          - button [disabled]:
+            - img
+            - generic:
+              - img
+          - img [ref=e179]
+      - button [ref=e182] [cursor=pointer]:
+        - img [ref=e183]
+    - generic [ref=e195]:
+      - generic [ref=e197]:
+        - link "Deployment" [ref=e198] [cursor=pointer]:
+          - /url: "#intent:global:deployment"
+        - link "Logs" [ref=e199] [cursor=pointer]:
+          - /url: "#intent:global:logs"
+        - link "Resources" [ref=e200] [cursor=pointer]:
+          - /url: "#intent:global:resources"
+        - link "Source" [ref=e201] [cursor=pointer]:
+          - /url: "#intent:global:source"
+        - link "Open Graph" [ref=e202] [cursor=pointer]:
+          - /url: "#intent:global:open-graph"
+      - generic [ref=e203]:
+        - generic [ref=e205]:
+          - heading "Deployment Details" [level=3] [ref=e208]
+          - generic [ref=e216]:
+            - generic [ref=e217]:
+              - generic [ref=e219]: Created
+              - generic [ref=e223]: Status
+              - generic [ref=e227]: Duration
+              - generic [ref=e231]: Environment
+            - generic [ref=e235]: Domains
+            - generic [ref=e241]: Source
+        - generic [ref=e247]:
+          - heading [level=2] [ref=e249]
+          - heading [level=2] [ref=e251]
+          - heading [level=2] [ref=e253]
