@@ -173,6 +173,23 @@ export default function CommunityPostPage() {
     } catch (e) { console.error(e) }
   }
 
+  const toggleCommentLike = async (commentId) => {
+    if (!session) return
+    try {
+      const res = await fetch('/api/community/likes', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
+        body: JSON.stringify({ comment_id: commentId })
+      })
+      const { liked } = await res.json()
+      setComments(prev => prev.map(c => c.id === commentId ? {
+        ...c,
+        is_liked: liked,
+        like_count: liked ? (c.like_count || 0) + 1 : Math.max(0, (c.like_count || 0) - 1)
+      } : c))
+    } catch (e) { console.error(e) }
+  }
+
   const deletePost = async () => {
     if (!confirm(t('comm.deleteConfirm'))) return
     try {
@@ -186,6 +203,18 @@ export default function CommunityPostPage() {
 
   const catColor = post ? CATEGORY_COLORS[post.category] : null
   const catLabel = post && CATEGORY_LABELS[post.category] ? t(CATEGORY_LABELS[post.category]) : ''
+
+  // Pull the single most-liked comment to the top as the "Best" comment, like
+  // 에브리타임 — but only once it has at least 5 likes. The rest stay chronological.
+  const BEST_MIN_LIKES = 5
+  const bestComment = comments.reduce(
+    (best, c) => ((c.like_count || 0) > (best?.like_count || 0) ? c : best),
+    null
+  )
+  const bestId = bestComment && (bestComment.like_count || 0) >= BEST_MIN_LIKES ? bestComment.id : null
+  const orderedComments = bestId
+    ? [comments.find(c => c.id === bestId), ...comments.filter(c => c.id !== bestId)]
+    : comments
 
   return (
     <>
@@ -249,6 +278,14 @@ export default function CommunityPostPage() {
         .cp-op-badge { font-size: 10px; font-weight: 700; color: #ff6000; background: #fff1e8; border: 1px solid #ffd4b8; border-radius: 4px; padding: 1px 5px; margin-left: 2px; line-height: 1.4; }
         .cp-comment-time { font-size: 11px; color: #bbb; }
         .cp-comment-body { font-size: 14px; color: #444; line-height: 1.6; white-space: pre-wrap; word-break: break-word; }
+        .cp-comment.best { background: #fff8f3; border: 1px solid #ffe0cc; border-radius: 10px; padding: 14px; }
+        .cp-best-badge { font-size: 10px; font-weight: 800; color: #fff; background: #ff6000; border-radius: 4px; padding: 2px 6px; letter-spacing: 0.5px; line-height: 1.4; flex-shrink: 0; }
+        .cp-comment-actions { margin-top: 8px; }
+        .cp-clike { display: inline-flex; align-items: center; gap: 4px; padding: 4px 0; background: none; border: none; color: #aaa; font-size: 12px; font-weight: 600; cursor: pointer; font-family: 'Barlow', sans-serif; transition: color 0.15s; }
+        .cp-clike:hover { color: #ff6000; }
+        .cp-clike.liked { color: #ff6000; }
+        .cp-clike:disabled { cursor: default; }
+        .cp-clike svg { width: 14px; height: 14px; }
         .cp-comment-delete { margin-left: auto; font-size: 11px; color: #bbb; background: none; border: none; cursor: pointer; font-family: 'Barlow', sans-serif; }
         .cp-comment-delete:hover { color: #ef4444; }
         .cp-no-comments { color: #bbb; font-size: 13px; padding: 24px 0; text-align: center; }
@@ -383,9 +420,10 @@ export default function CommunityPostPage() {
                 ) : comments.length === 0 ? (
                   <div className="cp-no-comments">{t('comm.noComments')}</div>
                 ) : (
-                  comments.map(comment => (
-                    <div key={comment.id} className="cp-comment">
+                  orderedComments.map(comment => (
+                    <div key={comment.id} className={`cp-comment${comment.id === bestId ? ' best' : ''}`}>
                       <div className="cp-comment-top">
+                        {comment.id === bestId && <span className="cp-best-badge">{t('comm.bestBadge')}</span>}
                         <span className="cp-comment-author">
                           <span className="cp-company">{comment.author_verified_company || t('comm.unemployed')}</span>
                           <span className="cp-dot">·</span>
@@ -404,6 +442,16 @@ export default function CommunityPostPage() {
                           <img src={comment.image_url} alt="" onClick={() => setLightbox(comment.image_url)} />
                         </div>
                       )}
+                      <div className="cp-comment-actions">
+                        <button
+                          className={`cp-clike${comment.is_liked ? ' liked' : ''}`}
+                          onClick={() => toggleCommentLike(comment.id)}
+                          disabled={!session}
+                        >
+                          <svg viewBox="0 0 24 24" fill={comment.is_liked ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg>
+                          {comment.like_count || 0}
+                        </button>
+                      </div>
                     </div>
                   ))
                 )}
