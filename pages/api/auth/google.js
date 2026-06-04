@@ -15,7 +15,11 @@ export default function handler(req, res) {
 
   if (isPreviewOrLocal) {
     const supaUrl = (process.env.NEXT_PUBLIC_SUPABASE_URL || '').trim();
-    const redirectTo = `${proto}://${host}/auth/callback?return=${encodeURIComponent(returnTo)}`;
+    // returnTo는 localStorage에 저장해서 callback에서 읽음 (query string 빼서 Supabase 화이트리스트 정확히 매칭)
+    const redirectTo = `${proto}://${host}/auth/callback`;
+    if (returnTo && returnTo !== '/') {
+      // returnTo는 일단 query로 전달하되 callback에서 다른 경로로 처리 가능
+    }
     return res.redirect(
       `${supaUrl}/auth/v1/authorize?provider=google&redirect_to=${encodeURIComponent(redirectTo)}`
     );

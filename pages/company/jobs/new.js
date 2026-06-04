@@ -378,7 +378,7 @@ export function Sidebar({ companyName, userEmail, activePage = 'home', activeJob
         .from('jobs')
         .select('id, title, status')
         .eq('company_id', rec.company_id)
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: true });
       setJobs(jobsData || []);
     })();
   }, []);

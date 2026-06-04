@@ -166,7 +166,7 @@ export default function CompanyDashboard() {
         .from('jobs')
         .select('id, title, location, type, status, salary_min, salary_max, experience_min, experience_max, created_at, is_active')
         .eq('company_id', rec.company_id)
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: true });
       const jobList = jobsData || [];
       setJobs(jobList);
 
@@ -369,6 +369,9 @@ export default function CompanyDashboard() {
                         </div>
                         <div style={localCss.cardMeta}>
                           {job.location} · {job.type} · ₫{Math.round(job.salary_min/1e6)}M–{Math.round(job.salary_max/1e6)}M/월
+                        </div>
+                        <div style={localCss.cardPosted}>
+                          {t('company.card.postedAt', { date: new Date(job.created_at).toLocaleDateString() })}
                         </div>
                         {/* 공고 게재 검토 정책 MVP에서 보류 — 다음 마일스톤에서 어드민 구축 후 복원 */}
                       </div>
@@ -580,6 +583,7 @@ const localCss = {
   cardTitleRow: { display: 'flex', alignItems: 'center', gap: 10, marginBottom: 5 },
   cardTitle: { fontSize: 15, fontWeight: 800, color: '#1A1A1A' },
   cardMeta: { fontSize: 12.5, color: '#525252' },
+  cardPosted: { fontSize: 11.5, color: '#94A3B8', fontWeight: 600, marginTop: 4 },
   cardRight: { display: 'flex', alignItems: 'center', gap: 16 },
   badge: { padding: '3px 9px', borderRadius: 999, fontSize: 10.5, fontWeight: 800, letterSpacing: '0.04em', textTransform: 'uppercase' },
 
