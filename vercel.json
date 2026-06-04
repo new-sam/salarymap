@@ -1,9 +1,6 @@
 {
   "git": {
-    "deploymentEnabled": {
-      "main": true,
-      "feat/ats-ui-copy": true
-    }
+    "deploymentEnabled": true
   },
   "crons": []
 }
