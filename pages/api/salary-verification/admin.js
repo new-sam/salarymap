@@ -38,7 +38,7 @@ export default async function handler(req, res) {
     const userIds = [...new Set(data.map(d => d.user_id))]
     const { data: profiles } = await supabase
       .from('user_profiles')
-      .select('id, full_name, current_company, photo_url')
+      .select('id, full_name, verified_company_name, photo_url')
       .in('id', userIds)
 
     const profileMap = {}

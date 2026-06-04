@@ -74,16 +74,14 @@ export default async function handler(req, res) {
   }
 
   // Cache on profile + grant the verified_company badge (shown by default).
-  // Also fill current_company so downstream readers (community author label,
-  // completion score) reflect the verified employer — verification is the only
-  // way company is set now.
+  // The email-verified company name is the single source of truth — downstream
+  // readers (community author label, admin dashboard) all read verified_company_name.
   await supabase
     .from('user_profiles')
     .update({
       verified_company_name: companyName,
       verified_company_domain: row.domain,
       company_verified_at: new Date().toISOString(),
-      current_company: companyName,
     })
     .eq('id', user.id)
 

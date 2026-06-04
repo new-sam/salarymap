@@ -341,7 +341,6 @@ export default function ProfilePage() {
           setProfile(p)
           const formData = {
             full_name: p.full_name || session.user.user_metadata?.full_name || '',
-            current_company: p.current_company || '',
             headline: p.headline || '',
             position: p.position || '',
             yoe_months: p.yoe_months ?? '',
@@ -376,7 +375,7 @@ export default function ProfilePage() {
           // Reflect company-verification status in the header
           if (p.company_verified_at) {
             setCvStep('verified')
-            setCvCompany(p.verified_company_name || p.current_company || null)
+            setCvCompany(p.verified_company_name || null)
           }
           // Auto-save Google name if DB is empty
           if (!p.full_name && formData.full_name) {

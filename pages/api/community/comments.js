@@ -101,18 +101,6 @@ export default async function handler(req, res) {
       ? (realName.charAt(0) + '**')
       : realName
 
-    let isSalaryVerified = false
-    let authorCompany = null
-    const { data: userProfile } = await supabase
-      .from('user_profiles')
-      .select('current_company')
-      .eq('id', user.id)
-      .maybeSingle()
-    if (userProfile?.current_company) {
-      isSalaryVerified = true
-      authorCompany = userProfile.current_company
-    }
-
     // Fetch the post to flag original-poster (OP) comments and to bump the count
     const { data: postData } = await supabase
       .from('community_posts')
@@ -129,8 +117,6 @@ export default async function handler(req, res) {
         author_name: authorName,
         content,
         is_anonymous: is_anonymous !== false,
-        is_salary_verified: isSalaryVerified,
-        author_company: authorCompany,
         is_op: isOp
       })
       .select()
@@ -146,7 +132,17 @@ export default async function handler(req, res) {
         .eq('id', post_id)
     }
 
-    return res.status(201).json(data)
+    // Enrich the response with the same author trust signals the GET returns,
+    // so the freshly-posted comment shows company / salary badge without a reload.
+    const tierMap = await salaryTierMap([user.id])
+    const cvMap = await companyVerifiedMap([user.id])
+
+    return res.status(201).json({
+      ...data,
+      is_liked: false,
+      author_salary_tier: tierMap[user.id] || null,
+      author_verified_company: cvMap[user.id] || null,
+    })
   }
 
   if (req.method === 'DELETE') {

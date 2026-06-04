@@ -21,6 +21,11 @@ const CATEGORY_COLORS = {
   job_change: '#8b5cf6',
 }
 
+function isNew(dateStr) {
+  if (!dateStr) return false
+  return Date.now() - new Date(dateStr).getTime() < 24 * 60 * 60 * 1000
+}
+
 function timeAgo(dateStr) {
   const diff = Date.now() - new Date(dateStr).getTime()
   const mins = Math.floor(diff / 60000)
@@ -297,6 +302,7 @@ export default function CommunityPage() {
         .comm-row:hover { background: #fafafa; }
         .comm-row-cat { font-size: 13px; font-weight: 600; color: #888; flex-shrink: 0; min-width: 80px; }
         .comm-row-title { flex: 1; font-size: 14px; font-weight: 600; color: #222; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+        .comm-new-badge { display: inline-flex; align-items: center; justify-content: center; vertical-align: middle; margin-left: 6px; height: 15px; padding: 0 5px; border-radius: 4px; background: #ff6000; color: #fff; font-size: 9px; font-weight: 800; letter-spacing: 0.3px; line-height: 1; font-family: 'Barlow', sans-serif; flex-shrink: 0; }
         .comm-row-stats { display: flex; align-items: center; gap: 14px; flex-shrink: 0; }
         .comm-row-stat { display: flex; align-items: center; gap: 3px; font-size: 13px; color: #bbb; white-space: nowrap; }
         .comm-row-stat svg { width: 14px; height: 14px; }
@@ -443,6 +449,7 @@ export default function CommunityPage() {
                     <Link key={post.id} href={`/community/${post.id}`} className={`comm-row${readPosts.has(post.id) ? ' is-read' : ''}`} onClick={e => handlePostClick(e, post.id)}>
                       <span className="comm-row-cat">{getCatLabel(post.category)}</span>
                       <span className="comm-row-title">{post.title}</span>
+                      {isNew(post.created_at) && <span className="comm-new-badge">NEW</span>}
                       <div className="comm-row-stats">
                         <span
                           className={`comm-row-stat${post.is_liked ? ' liked' : ''}`}
@@ -465,6 +472,7 @@ export default function CommunityPage() {
                     <div className="comm-card-meta">
                       <span className="comm-card-cat">{getCatLabel(post.category)}</span>
                       <span className="comm-card-time">{timeAgo(post.created_at)}</span>
+                      {isNew(post.created_at) && <span className="comm-new-badge">NEW</span>}
                     </div>
                     <div className="comm-card-author">
                       <span>{post.author_verified_company || t('comm.unemployed')}</span>

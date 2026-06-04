@@ -121,7 +121,7 @@ export default function VerificationsView({ token }) {
                       {v.profile?.full_name || 'Unknown'}
                     </div>
                     <div style={{ fontSize: 11, color: 'rgba(0,0,0,0.4)' }}>
-                      {v.profile?.current_company || '-'}
+                      {v.profile?.verified_company_name || '-'}
                     </div>
                   </div>
                 </div>

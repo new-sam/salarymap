@@ -176,19 +176,9 @@ export default async function handler(req, res) {
       ? (realName.charAt(0) + '**')
       : realName
 
-    // Get company from user profile
-    let isSalaryVerified = false
-    let authorCompany = null
-    const { data: userProfile } = await supabase
-      .from('user_profiles')
-      .select('current_company')
-      .eq('id', user.id)
-      .maybeSingle()
-    if (userProfile?.current_company) {
-      isSalaryVerified = true
-      authorCompany = userProfile.current_company
-    }
-
+    // Author company / salary badges are derived at read time from the
+    // email-verified company badge (see companyVerifiedMap / salaryTierMap),
+    // not from any self-entered field at write time.
     const { data, error } = await supabase
       .from('community_posts')
       .insert({
@@ -198,9 +188,7 @@ export default async function handler(req, res) {
         category,
         title,
         content,
-        is_anonymous: is_anonymous !== false,
-        is_salary_verified: isSalaryVerified,
-        author_company: authorCompany
+        is_anonymous: is_anonymous !== false
       })
       .select()
       .single()
