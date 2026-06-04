@@ -30,6 +30,7 @@ export default function MobileTabBar() {
   const [isLoggedIn, setIsLoggedIn] = useState(false)
   const [isAdmin, setIsAdmin] = useState(false)
   const [hasResume, setHasResume] = useState(true)
+  const [commActivity, setCommActivity] = useState(0)
 
   useEffect(() => {
     supabase.auth.getSession().then(async ({ data: { session } }) => {
@@ -55,6 +56,13 @@ export default function MobileTabBar() {
         } catch {}
       }
     })
+  }, [])
+
+  useEffect(() => {
+    fetch('/api/community/activity')
+      .then(r => r.json())
+      .then(d => setCommActivity(d.count || 0))
+      .catch(() => {})
   }, [])
 
   const getActiveKey = () => {
@@ -92,6 +100,7 @@ export default function MobileTabBar() {
           .mtab-item.admin-tab .mtab-label { color: rgba(255,96,0,0.5); font-size: 9px; }
           .mtab-item.admin-tab.on svg { color: #ff6000; }
           .mtab-item.admin-tab.on .mtab-label { color: #ff6000; }
+          .mtab-badge { position: absolute; top: 2px; left: 50%; margin-left: 6px; min-width: 16px; height: 16px; padding: 0 4px; border-radius: 8px; background: #ff6000; color: #fff; font-size: 9px; font-weight: 800; line-height: 16px; text-align: center; box-sizing: border-box; }
           @keyframes mtabBounce { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-4px); } }
         }
       `}</style>
@@ -105,6 +114,9 @@ export default function MobileTabBar() {
             onClick={(e) => handleTabClick(e, tab)}
           >
             {tab.icon}
+            {tab.key === 'community' && commActivity > 0 && active !== 'community' && (
+              <span className="mtab-badge">{commActivity > 99 ? '99+' : commActivity}</span>
+            )}
             <span className="mtab-label">{tab.label}</span>
           </Link>
         ))}
