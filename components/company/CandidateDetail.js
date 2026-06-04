@@ -712,7 +712,7 @@ const ev = {
 };
 
 function InterviewModal({ app, onClose, onSaved }) {
-  const { t } = useT();
+  const { t, lang } = useT();
   const [slots, setSlots] = useState([{ date: '', time: '14:00' }]);
   const [location, setLocation] = useState('');
   const [interviewer, setInterviewer] = useState('');
@@ -768,8 +768,8 @@ function InterviewModal({ app, onClose, onSaved }) {
             {slots.map((s, i) => (
               <div key={i} style={slot.row}>
                 <span style={slot.num}>{i + 1}</span>
-                <input type="date" value={s.date} onChange={(e) => updateSlot(i, 'date', e.target.value)} style={{ ...modal.inp, flex: 1 }} />
-                <input type="time" value={s.time} onChange={(e) => updateSlot(i, 'time', e.target.value)} style={{ ...modal.inp, width: 110 }} />
+                <input type="date" lang={lang} value={s.date} onChange={(e) => updateSlot(i, 'date', e.target.value)} style={{ ...modal.inp, flex: 1 }} />
+                <input type="time" lang={lang} value={s.time} onChange={(e) => updateSlot(i, 'time', e.target.value)} style={{ ...modal.inp, width: 110 }} />
                 {slots.length > 1 && (
                   <button type="button" onClick={() => removeSlot(i)} style={slot.removeBtn} title={t('company.interview.removeSlot')}>✕</button>
                 )}
@@ -989,8 +989,8 @@ export function MailComposer({
               {slots.slice(0, 3).map((s, i) => (
                 <div key={i} style={slot.row}>
                   <span style={slot.num}>{i + 1}</span>
-                  <input type="date" value={s.date} onChange={(e) => updateSlot(i, 'date', e.target.value)} style={{ ...modal.inp, flex: 1 }} />
-                  <input type="time" value={s.time} onChange={(e) => updateSlot(i, 'time', e.target.value)} style={{ ...modal.inp, width: 110 }} />
+                  <input type="date" lang={lang} value={s.date} onChange={(e) => updateSlot(i, 'date', e.target.value)} style={{ ...modal.inp, flex: 1 }} />
+                  <input type="time" lang={lang} value={s.time} onChange={(e) => updateSlot(i, 'time', e.target.value)} style={{ ...modal.inp, width: 110 }} />
                 </div>
               ))}
               <p style={modal.hint}>{t('company.mail.slotsHint')}</p>
@@ -1077,7 +1077,7 @@ const cm = {
 };
 
 export function InterviewConfirmModal({ app, onClose, onSaved }) {
-  const { t } = useT();
+  const { t, lang } = useT();
   const initial = utcToIctInput(app.interview_at);
   const [date, setDate] = useState(initial.date);
   const [time, setTime] = useState(initial.time);
@@ -1131,11 +1131,11 @@ export function InterviewConfirmModal({ app, onClose, onSaved }) {
           <div style={{ display: 'flex', gap: 8 }}>
             <div style={{ ...modal.field, flex: 1 }}>
               <label style={modal.label}>{t('company.interview.confirmDateLabel')}</label>
-              <input type="date" value={date} onChange={(e) => setDate(e.target.value)} style={modal.inp} disabled={saving} />
+              <input type="date" lang={lang} value={date} onChange={(e) => setDate(e.target.value)} style={modal.inp} disabled={saving} />
             </div>
             <div style={{ ...modal.field, width: 140 }}>
               <label style={modal.label}>{t('company.interview.confirmTimeLabel')}</label>
-              <input type="time" value={time} onChange={(e) => setTime(e.target.value)} style={modal.inp} disabled={saving} />
+              <input type="time" lang={lang} value={time} onChange={(e) => setTime(e.target.value)} style={modal.inp} disabled={saving} />
             </div>
           </div>
 
