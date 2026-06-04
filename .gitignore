@@ -59,3 +59,4 @@ VERCEL_ENV_SETUP.md
 # PII — screenshots / raw captures, never commit
 clipboard_capture.png
 scripts/candidate-detail-raw.png
+.playwright-mcp/

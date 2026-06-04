@@ -2,6 +2,7 @@ import { useState, useEffect, Fragment } from 'react';
 import Link from 'next/link';
 import { supabase } from '../../lib/supabaseClient';
 import { useT } from '../../lib/i18n';
+import { formatICT, ictInputToUtc, utcToIctInput, ICT_LABEL } from '../../lib/timezone';
 
 const STAGES = [
   { key: 'pending', emoji: '📥' },
@@ -293,7 +294,7 @@ export default function CandidateDetail({ appId, mode = 'page', onClose, company
                 <div style={local.interviewCard}>
                   <div style={local.interviewCardHead}>
                     <span style={local.interviewCardTitle}>
-                      📅 {new Date(app.interview_at).toLocaleString(undefined, { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                      📅 {formatICT(app.interview_at, { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false })} {ICT_LABEL}
                     </span>
                     <button onClick={() => setInterviewModal(true)} style={local.interviewEditBtn}>
                       {t('company.interview.confirmEditBtn')}
@@ -737,7 +738,7 @@ function InterviewModal({ app, onClose, onSaved }) {
     const first = validSlots[0];
     const { error } = await supabase.from('job_applications').update({
       admin_note: summary,
-      interview_at: new Date(`${first.date}T${first.time || '00:00'}`).toISOString(),
+      interview_at: ictInputToUtc(first.date, first.time || '00:00'),
       interview_location: location || null,
       interview_interviewer: interviewer || null,
     }).eq('id', app.id);
@@ -802,7 +803,7 @@ const slot = {
 function formatSlots(slots) {
   const valid = slots.filter(s => s?.date);
   if (valid.length === 0) return '';
-  return valid.map((s, i) => `${i + 1}) ${s.date} ${s.time || '00:00'}`).join('\n');
+  return valid.map((s, i) => `${i + 1}) ${s.date} ${s.time || '00:00'} ${ICT_LABEL}`).join('\n');
 }
 
 function fillVars(text, vars) {
@@ -891,10 +892,10 @@ export function MailComposer({
         const valid = slots.filter(s => s?.date);
         if (valid.length > 0) {
           const first = valid[0];
-          const slotLines = valid.map((s, i) => `${i + 1}) ${s.date} ${s.time || '00:00'}`).join('\n');
+          const slotLines = valid.map((s, i) => `${i + 1}) ${s.date} ${s.time || '00:00'} ${ICT_LABEL}`).join('\n');
           const noteSummary = `[Interview]\n📅 ${t('company.interview.slotsTitle')}:\n${slotLines}`;
           await supabase.from('job_applications').update({
-            interview_at: new Date(`${first.date}T${first.time || '00:00'}`).toISOString(),
+            interview_at: ictInputToUtc(first.date, first.time || '00:00'),
             admin_note: noteSummary,
           }).eq('id', applicationId);
         }
@@ -1077,9 +1078,9 @@ const cm = {
 
 export function InterviewConfirmModal({ app, onClose, onSaved }) {
   const { t } = useT();
-  const existing = app.interview_at ? new Date(app.interview_at) : null;
-  const [date, setDate] = useState(existing ? existing.toISOString().slice(0, 10) : '');
-  const [time, setTime] = useState(existing ? `${String(existing.getHours()).padStart(2, '0')}:${String(existing.getMinutes()).padStart(2, '0')}` : '14:00');
+  const initial = utcToIctInput(app.interview_at);
+  const [date, setDate] = useState(initial.date);
+  const [time, setTime] = useState(initial.time);
   const [location, setLocation] = useState(app.interview_location || '');
   const [interviewer, setInterviewer] = useState(app.interview_interviewer || '');
   const [saving, setSaving] = useState(false);
@@ -1091,7 +1092,7 @@ export function InterviewConfirmModal({ app, onClose, onSaved }) {
     if (!date) { setErr(t('company.interview.confirmErrDate')); return; }
     setSaving(true);
     const payload = {
-      interview_at: new Date(`${date}T${time || '00:00'}`).toISOString(),
+      interview_at: ictInputToUtc(date, time || '00:00'),
       interview_location: location.trim() || null,
       interview_interviewer: interviewer.trim() || null,
       updated_at: new Date().toISOString(),

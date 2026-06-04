@@ -5,6 +5,7 @@ import { useRouter } from 'next/router';
 import { supabase } from '../../lib/supabaseClient';
 import { Sidebar, css } from './jobs/new';
 import { useT } from '../../lib/i18n';
+import { ICT_TZ, ICT_LABEL } from '../../lib/timezone';
 
 const LOCALES = { vi: 'vi-VN', en: 'en-US', ko: 'ko-KR' };
 const dateKey = (d) => `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
@@ -22,7 +23,7 @@ export default function CompanyCalendarPage() {
   });
 
   const locale = LOCALES[lang] || LOCALES.vi;
-  const fmtTime = (d) => d.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit', hour12: false });
+  const fmtTime = (d) => d.toLocaleTimeString(locale, { timeZone: ICT_TZ, hour: '2-digit', minute: '2-digit', hour12: false });
 
   useEffect(() => {
     (async () => {

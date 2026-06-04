@@ -5,6 +5,7 @@ import { useRouter } from 'next/router';
 import { supabase } from '../../lib/supabaseClient';
 import { Sidebar, css } from './jobs/new';
 import CandidateDetail, { MailComposer, RejectionModal, InterviewConfirmModal, ConfirmModal } from '../../components/company/CandidateDetail';
+import { formatICT, ICT_LABEL } from '../../lib/timezone';
 import TeamPopover from '../../components/company/TeamPopover';
 import { useT } from '../../lib/i18n';
 
@@ -284,7 +285,7 @@ export default function CompanyATSPage() {
                     const name = app.applicant_name || profile?.full_name || `${t('company.candidatePrefix')}${app.id.slice(-6).toUpperCase()}`;
                     const showInterviewBadge = app.status === 'viewed' || app.status === 'reviewing';
                     const interviewWhen = app.interview_at
-                      ? new Date(app.interview_at).toLocaleString(undefined, { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' })
+                      ? `${formatICT(app.interview_at, { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false })} ${ICT_LABEL}`
                       : null;
                     const isRejected = !!app.rejected_at;
                     const canDrag = isOwner && !isRejected;
