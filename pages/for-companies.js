@@ -299,7 +299,7 @@ export default function ForCompanies() {
             </div>
           </section>
 
-          <section id="pricing" className="fc-reveal" style={css.closeSection}>
+          <section id="pricing" style={css.closeSection}>
             <div className="fc-close-wrap" style={css.closeWrap}>
               <div style={css.closeLeft}>
                 <div style={css.closeNumber}>
