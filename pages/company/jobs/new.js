@@ -437,6 +437,7 @@ export function Sidebar({ companyName, userEmail, activePage = 'home', activeJob
       })()}
 
       <div style={css.sideBottom}>
+        <Link href="/for-companies" style={css.landingLink}>{t('company.sidebar.landingHome')}</Link>
         <a onClick={signOut} style={css.signoutLink}>{t('company.sidebar.signOut')}</a>
       </div>
     </aside>
@@ -462,7 +463,8 @@ export const css = {
   navItem: { display: 'flex', alignItems: 'center', gap: 9, padding: '9px 10px', borderRadius: 7, fontSize: 13, color: '#525252', fontWeight: 600, textDecoration: 'none' },
   navItemActive: { background: '#FFF7ED', color: '#EA580C', fontWeight: 800 },
   navIco: { width: 14, textAlign: 'center', fontSize: 13 },
-  sideBottom: { marginTop: 'auto', padding: 10 },
+  sideBottom: { marginTop: 'auto', padding: 10, display: 'flex', flexDirection: 'column', gap: 8 },
+  landingLink: { fontSize: 11.5, color: '#525252', fontWeight: 700, textDecoration: 'none' },
   signoutLink: { fontSize: 11.5, color: '#737373', cursor: 'pointer', textDecoration: 'underline' },
 
   sideDivider: { height: 1, background: '#E5E7EB', margin: '12px 8px' },
