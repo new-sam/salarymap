@@ -19,11 +19,32 @@ async function notify({ email, companyName, position, contactName, phone, messag
 
   // Slack — AM이 바로 대응하는 상담 전용 채널 (KPI 봇 웹훅과 분리)
   if (process.env.SLACK_CONTACT_WEBHOOK_URL) {
+    // 사용자 입력의 mrkdwn 특수문자 이스케이프
+    const esc = (v) => String(v || '-').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    let detail =
+      `*포지션:* ${esc(position)}\n` +
+      `*담당자:* ${esc(contactName)}\n` +
+      `*연락처:* ${esc(phone)}\n` +
+      `*이메일:* ${esc(email)}`;
+    if (message) detail += `\n*요청:* ${esc(message)}`;
     try {
       await fetch(process.env.SLACK_CONTACT_WEBHOOK_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text: `:wave: *기업 상담 요청*\n${lines.join('\n')}` }),
+        body: JSON.stringify({
+          // 묶음 밖 첫 문장
+          text: '축하합니다! 새로운 기업 문의가 도착했습니다. VN AM분들은 빠르게 연락 바랍니다.',
+          // 초록 띠로 묶인 카드
+          attachments: [
+            {
+              color: '#2EB67D',
+              blocks: [
+                { type: 'section', text: { type: 'mrkdwn', text: `*${esc(companyName)}*` } },
+                { type: 'section', text: { type: 'mrkdwn', text: detail } },
+              ],
+            },
+          ],
+        }),
       });
     } catch (_) {}
   }
