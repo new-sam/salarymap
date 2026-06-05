@@ -146,7 +146,7 @@ export default function ForCompanies() {
 
             <div className="fc-hero-visual" style={css.heroVisual}>
               <div style={css.heroImgWrap}>
-                <img src="/company-hero-interview-candidate.png" alt={t('company.landing.heroAlt')} style={css.heroImg} />
+                <img src="/company-hero-interview-flow.png" alt={t('company.landing.heroAlt')} style={css.heroImg} />
               </div>
             </div>
           </section>
