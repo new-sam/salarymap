@@ -134,7 +134,7 @@ export default function ForCompanies() {
             <div style={css.heroBadge}>{t('company.landing.heroBadge')}</div>
             <h1 style={css.h1}>
               {t('company.landing.h1.line1')}<br />
-              <span style={css.highlight}>{t('company.landing.h1.highlight')}</span> {t('company.landing.h1.line2')}
+              {t('company.landing.h1.line2')} <span style={css.highlight}>{t('company.landing.h1.highlight')}</span>
             </h1>
             <p style={css.lead}>{t('company.landing.lead')}</p>
             <div className="fc-hero-ctas" style={css.heroCtas}>
