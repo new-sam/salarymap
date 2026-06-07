@@ -14,7 +14,7 @@ import { Button } from '../../components/ui/button';
 import { Badge } from '../../components/ui/badge';
 import { Input } from '../../components/ui/input';
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator } from '../../components/ui/dropdown-menu';
-import { MoreVertical, Calendar, Mail, Ban, Lock, Plus, Search as SearchIcon, X as XIcon, ArrowLeft, Inbox, MessageCircle, Handshake, PartyPopper } from 'lucide-react';
+import { MoreVertical, Calendar, Mail, Ban, Lock, Plus, Search as SearchIcon, X as XIcon, ArrowLeft, Inbox, MessageCircle, Handshake, PartyPopper, Bell, Activity, CheckCircle2, XCircle, CalendarClock } from 'lucide-react';
 
 const STAGE_ICONS = {
   pending: Inbox,
@@ -217,6 +217,14 @@ export default function CompanyATSPage() {
   const visibleApps = apps.filter(a => showRejected || !a.rejected_at);
   const activeCount = apps.filter(a => !a.rejected_at).length;
   const rejectedCount = apps.length - activeCount;
+
+  // CPO 추가: 채용 담당자가 화면에서 가장 알아야 하는 5개 지표
+  const nowMs = Date.now();
+  const newReviewCount = apps.filter(a => !a.rejected_at && a.status === 'pending').length;
+  const upcomingInterviewCount = apps.filter(a => !a.rejected_at && a.interview_at && new Date(a.interview_at).getTime() > nowMs).length;
+  const hiredCount = apps.filter(a => !a.rejected_at && a.status === 'decided').length;
+  const inProgressCount = apps.filter(a => !a.rejected_at && a.status !== 'decided' && a.status !== 'pending').length;
+
   const grouped = STAGES.map(s => ({ ...s, apps: visibleApps.filter(a => a.status === s.key && matchesQuery(a)) }));
 
   if (status === 'loading') return <div style={css.loading}>{t('company.loading')}</div>;
@@ -250,28 +258,16 @@ export default function CompanyATSPage() {
 
         <main className="px-8 py-7 pb-16 flex flex-col gap-6 min-w-0">
           {/* Header */}
-          <header className="flex items-end justify-between gap-4">
+          <header className="flex items-start justify-between gap-4">
             <div className="min-w-0">
               <Link href="/company" className="inline-flex items-center gap-1.5 text-xs font-semibold text-gray-500 hover:text-gray-800 transition-colors mb-2">
                 <ArrowLeft className="h-3.5 w-3.5" />
-                {t('company.backDashboard')}
+                대시보드
               </Link>
               <h1 className="text-3xl font-extrabold text-gray-900 tracking-tight leading-tight">{job.title}</h1>
               <p className="text-sm text-gray-600 mt-2 font-medium">
                 {job.location} · {job.type} · ₫{Math.round(job.salary_min/1e6)}M–{Math.round(job.salary_max/1e6)}M
               </p>
-              {/* KPI inline */}
-              <div className="flex items-center gap-6 mt-4">
-                <div>
-                  <div className="text-xs font-bold text-gray-500 uppercase tracking-wider">진행중</div>
-                  <div className="text-3xl font-black text-gray-900 leading-none mt-1 tabular-nums">{activeCount}</div>
-                </div>
-                <div className="h-10 w-px bg-gray-200" />
-                <div>
-                  <div className="text-xs font-bold text-gray-500 uppercase tracking-wider">불합격</div>
-                  <div className="text-3xl font-black text-gray-400 leading-none mt-1 tabular-nums">{rejectedCount}</div>
-                </div>
-              </div>
             </div>
             <div className="flex gap-2 items-center shrink-0">
               <TeamPopover jobId={job.id} canInvite={!job.created_by || job.created_by === user?.id} />
@@ -283,6 +279,78 @@ export default function CompanyATSPage() {
               </Button>
             </div>
           </header>
+
+          {/* KPI cards — sellable ATS의 표준 5지표 */}
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+            {/* 신규 검토 — 가장 중요. "오늘의 할 일" 강조 */}
+            <div className={cn(
+              'rounded-xl border bg-card p-4 transition-all duration-200',
+              newReviewCount > 0
+                ? 'border-primary-300 shadow-brand ring-1 ring-primary-200'
+                : 'border-border shadow-soft-xs'
+            )}>
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-extrabold text-gray-500 uppercase tracking-wider">신규 검토</span>
+                <div className={cn('w-8 h-8 rounded-lg grid place-items-center',
+                  newReviewCount > 0 ? 'bg-primary-100 text-primary-700' : 'bg-gray-100 text-gray-400'
+                )}>
+                  <Bell className="h-4 w-4" />
+                </div>
+              </div>
+              <div className={cn('text-[32px] font-black mt-2 leading-none tabular-nums',
+                newReviewCount > 0 ? 'text-primary-700' : 'text-gray-900'
+              )}>{newReviewCount}</div>
+              <div className="text-[11px] font-semibold mt-1.5 text-gray-500">미확인 지원자</div>
+            </div>
+
+            {/* 인터뷰 예정 */}
+            <div className="rounded-xl border border-border bg-card p-4 shadow-soft-xs">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-extrabold text-gray-500 uppercase tracking-wider">인터뷰 예정</span>
+                <div className="w-8 h-8 rounded-lg grid place-items-center bg-blue-50 text-blue-700">
+                  <CalendarClock className="h-4 w-4" />
+                </div>
+              </div>
+              <div className="text-[32px] font-black mt-2 leading-none tabular-nums text-blue-700">{upcomingInterviewCount}</div>
+              <div className="text-[11px] font-semibold mt-1.5 text-gray-500">다가오는 일정</div>
+            </div>
+
+            {/* 진행중 */}
+            <div className="rounded-xl border border-border bg-card p-4 shadow-soft-xs">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-extrabold text-gray-500 uppercase tracking-wider">진행중</span>
+                <div className="w-8 h-8 rounded-lg grid place-items-center bg-gray-100 text-gray-700">
+                  <Activity className="h-4 w-4" />
+                </div>
+              </div>
+              <div className="text-[32px] font-black mt-2 leading-none tabular-nums text-gray-900">{inProgressCount}</div>
+              <div className="text-[11px] font-semibold mt-1.5 text-gray-500">인터뷰 단계</div>
+            </div>
+
+            {/* 합격 */}
+            <div className="rounded-xl border border-border bg-card p-4 shadow-soft-xs">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-extrabold text-gray-500 uppercase tracking-wider">합격</span>
+                <div className="w-8 h-8 rounded-lg grid place-items-center bg-emerald-50 text-emerald-700">
+                  <CheckCircle2 className="h-4 w-4" />
+                </div>
+              </div>
+              <div className="text-[32px] font-black mt-2 leading-none tabular-nums text-emerald-700">{hiredCount}</div>
+              <div className="text-[11px] font-semibold mt-1.5 text-gray-500">최종 합격</div>
+            </div>
+
+            {/* 불합격 — 가장 약하게 */}
+            <div className="rounded-xl border border-border bg-card p-4 shadow-soft-xs">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-extrabold text-gray-500 uppercase tracking-wider">불합격</span>
+                <div className="w-8 h-8 rounded-lg grid place-items-center bg-gray-100 text-gray-500">
+                  <XCircle className="h-4 w-4" />
+                </div>
+              </div>
+              <div className="text-[32px] font-black mt-2 leading-none tabular-nums text-gray-400">{rejectedCount}</div>
+              <div className="text-[11px] font-semibold mt-1.5 text-gray-500">종료</div>
+            </div>
+          </div>
 
           {err && (
             <div className="rounded-lg bg-red-50 border border-red-200 text-red-700 px-4 py-3 text-sm font-semibold">{err}</div>
