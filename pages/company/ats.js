@@ -472,19 +472,19 @@ const localCss = {
   crumbLink: { color: '#525252', textDecoration: 'none' },
 
   // ── Kanban ──
-  kanban: { display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: space[4], alignItems: 'stretch', minHeight: 'calc(100vh - 240px)' },
-  col: { background: color.surface, border: `1px solid ${color.border}`, borderRadius: radius.xl, padding: space[4], display: 'flex', flexDirection: 'column', gap: space[3], boxShadow: shadow.xs },
-  colOver: { background: color.primary[50], borderColor: color.primary[300], boxShadow: shadow.sm },
+  kanban: { display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: space[5], alignItems: 'stretch', minHeight: 'calc(100vh - 240px)' },
+  col: { background: color.gray[50], border: `1px solid ${color.border}`, borderRadius: radius.xl, padding: space[5], display: 'flex', flexDirection: 'column', gap: space[3] },
+  colOver: { background: color.primary[50], borderColor: color.primary[400], boxShadow: shadow.md },
   colHead: { display: 'flex', alignItems: 'center', gap: space[2], padding: `${space[1]}px ${space[2]}px ${space[3]}px`, borderBottom: `1px solid ${color.border}` },
-  colEmoji: { fontSize: font.size.md },
-  colLabel: { fontSize: font.size.md, fontWeight: font.weight.bold, color: color.textHi, letterSpacing: font.letterSpacing.tight },
-  colCount: { marginLeft: 'auto', background: color.gray[100], color: color.gray[700], fontSize: font.size.xs, fontWeight: font.weight.extra, padding: `2px ${space[2]}px`, borderRadius: radius.full },
+  colEmoji: { fontSize: font.size.lg },
+  colLabel: { fontSize: font.size.lg, fontWeight: font.weight.extra, color: color.textHi, letterSpacing: font.letterSpacing.tight },
+  colCount: { marginLeft: 'auto', background: color.surface, color: color.text, fontSize: font.size.sm, fontWeight: font.weight.extra, padding: `3px ${space[3]}px`, borderRadius: radius.full, border: `1px solid ${color.border}`, minWidth: 28, textAlign: 'center' },
   colBody: { display: 'flex', flexDirection: 'column', gap: space[2] },
   colEmpty: { fontSize: font.size.sm, color: color.textMute, textAlign: 'center', padding: `${space[6]}px 0`, fontWeight: font.weight.medium },
 
-  // ── Card ──
-  card: { background: color.surface, border: `1px solid ${color.border}`, borderRadius: radius.lg, padding: space[4], display: 'flex', flexDirection: 'column', gap: space[1], cursor: 'grab', transition: motion.base, textDecoration: 'none', boxShadow: shadow.xs },
-  cardActive: { background: color.primary[50], border: `1.5px solid ${color.primary[400]}`, boxShadow: shadow.brand, transform: 'translateY(-1px)' },
+  // ── Card (흰색 카드가 회색 컬럼 위에 떠 있는 느낌) ──
+  card: { background: color.surface, border: `1px solid ${color.border}`, borderRadius: radius.lg, padding: space[4], display: 'flex', flexDirection: 'column', gap: space[2], cursor: 'grab', transition: motion.base, textDecoration: 'none', boxShadow: shadow.sm },
+  cardActive: { background: color.primary[50], border: `1.5px solid ${color.primary[400]}`, boxShadow: shadow.brand, transform: 'translateY(-2px)' },
   cardDragging: { opacity: 0.4, boxShadow: 'none' },
   cardRejected: { background: color.gray[50], border: `1px dashed ${color.gray[300]}`, opacity: 0.7, cursor: 'pointer', boxShadow: 'none' },
 
