@@ -1,3 +1,6 @@
+/* ── Pretendard Variable (multilingual: ko/en/vi) — cdn.jsdelivr ─── */
+@import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -35,6 +38,10 @@ html {
 
 body {
   max-width: 100vw;
+  font-family: 'Pretendard Variable', 'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  font-feature-settings: 'tnum' on, 'lnum' on;
 }
 html {
   overflow-x: clip;

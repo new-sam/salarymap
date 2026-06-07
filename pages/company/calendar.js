@@ -1,4 +1,4 @@
-import { useState, useEffect, Fragment } from 'react';
+import { useState, useEffect } from 'react';
 import Head from 'next/head';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
@@ -6,6 +6,12 @@ import { supabase } from '../../lib/supabaseClient';
 import { Sidebar, css } from './jobs/new';
 import { useT } from '../../lib/i18n';
 import { ICT_TZ, ICT_LABEL } from '../../lib/timezone';
+import { cn } from '../../lib/cn';
+import { Button as UButton } from '../../components/ui/button';
+import { PageHeader } from '../../components/ui/page-header';
+import { Skeleton } from '../../components/ui/skeleton';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
+import CandidateDetail from '../../components/company/CandidateDetail';
 
 const LOCALES = { vi: 'vi-VN', en: 'en-US', ko: 'ko-KR' };
 const dateKey = (d) => `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
@@ -16,7 +22,9 @@ export default function CompanyCalendarPage() {
   const [status, setStatus] = useState('loading');
   const [user, setUser] = useState(null);
   const [companyName, setCompanyName] = useState('');
+  const [companyId, setCompanyId] = useState(null);
   const [items, setItems] = useState([]);
+  const [selectedAppId, setSelectedAppId] = useState(null);
   const [view, setView] = useState(() => {
     const d = new Date();
     return { year: d.getFullYear(), month: d.getMonth() };
@@ -37,6 +45,7 @@ export default function CompanyCalendarPage() {
         .eq('user_id', session.user.id).maybeSingle();
       if (!rec?.company_id) { setStatus('unauthed'); return; }
       setCompanyName(rec.recruiter_companies?.name || '');
+      setCompanyId(rec.company_id);
 
       const { data: jobs } = await supabase
         .from('jobs').select('id, title').eq('company_id', rec.company_id);
@@ -56,7 +65,21 @@ export default function CompanyCalendarPage() {
     })();
   }, []);
 
-  if (status === 'loading') return <div style={css.loading}>{t('company.loading')}</div>;
+  if (status === 'loading') {
+    return (
+      <div style={css.app}>
+        <Sidebar companyName="" userEmail="" activePage="calendar" />
+        <main style={css.main}>
+          <div className="space-y-2 mb-3 pb-3 border-b border-border">
+            <Skeleton className="h-6 w-32" />
+            <Skeleton className="h-3 w-56" />
+          </div>
+          <Skeleton className="h-7 w-32 mb-3" />
+          <Skeleton className="h-[480px] rounded-lg" />
+        </main>
+      </div>
+    );
+  }
   if (status === 'unauthed') {
     return (
       <div style={css.fullCenter}>
@@ -104,7 +127,7 @@ export default function CompanyCalendarPage() {
   const nextMonth = () => setView(v => v.month === 11 ? { year: v.year + 1, month: 0 } : { ...v, month: v.month + 1 });
   const goToday = () => { const d = new Date(); setView({ year: d.getFullYear(), month: d.getMonth() }); };
 
-  const goCandidate = (appId) => router.push(`/company/candidates/${appId}`);
+  const goCandidate = (appId) => setSelectedAppId(appId);
 
   return (
     <>
@@ -112,50 +135,73 @@ export default function CompanyCalendarPage() {
       <div style={css.app}>
         <Sidebar companyName={companyName} userEmail={user?.email} activePage="calendar" />
 
-        <main style={css.main}>
-          <header style={css.mainHead}>
-            <div>
-              <h1 style={css.mainH}>{t('company.calendar.h')}</h1>
-              <p style={css.mainP}>{t('company.calendar.sub')}</p>
-            </div>
-          </header>
+        <main style={css.main} className="!h-screen !overflow-hidden flex flex-col">
+          <PageHeader title={t('company.calendar.h')} subtitle={t('company.calendar.sub')} />
 
-          <div style={cal.toolbar}>
-            <h2 style={cal.monthTitle}>{t('company.calendar.monthLabel', { year: view.year, month: view.month + 1 })}</h2>
-            <div style={cal.navBtns}>
-              <button onClick={prevMonth} style={cal.navBtn} title={t('company.calendar.navPrev')}>‹</button>
-              <button onClick={goToday} style={cal.todayBtn}>{t('company.calendar.todayBtn')}</button>
-              <button onClick={nextMonth} style={cal.navBtn} title={t('company.calendar.navNext')}>›</button>
+          <div className="flex items-center justify-between mb-2 px-1">
+            <h2 className="text-[15px] font-extrabold text-foreground tracking-tight">
+              {t('company.calendar.monthLabel', { year: view.year, month: view.month + 1 })}
+            </h2>
+            <div className="flex items-center gap-1.5">
+              <UButton variant="outline" size="icon" onClick={prevMonth} title={t('company.calendar.navPrev')} className="h-8 w-8">
+                <ChevronLeft className="h-4 w-4" />
+              </UButton>
+              <UButton variant="outline" size="sm" onClick={goToday} className="h-8 px-3 text-xs">
+                {t('company.calendar.todayBtn')}
+              </UButton>
+              <UButton variant="outline" size="icon" onClick={nextMonth} title={t('company.calendar.navNext')} className="h-8 w-8">
+                <ChevronRight className="h-4 w-4" />
+              </UButton>
             </div>
           </div>
 
-          <div style={cal.weekHead}>
-            {[0,1,2,3,4,5,6].map(i => (
-              <div key={i} style={{ ...cal.weekdayCell, ...(i === 0 ? cal.weekdaySun : i === 6 ? cal.weekdaySat : {}) }}>
-                {t(`company.calendar.weekday.${i}`)}
-              </div>
-            ))}
-          </div>
+          <div className="flex-1 min-h-0 flex flex-col">
+            <div className="grid grid-cols-7 bg-[#F7F8FA] border border-[#E5E8EC] rounded-t-lg overflow-hidden flex-shrink-0">
+              {[0,1,2,3,4,5,6].map(i => (
+                <div
+                  key={i}
+                  className={cn(
+                    'py-1.5 text-center text-[11px] font-extrabold uppercase tracking-[0.06em]',
+                    i === 0 ? 'text-red-500' : i === 6 ? 'text-blue-500' : 'text-gray-500'
+                  )}
+                >
+                  {t(`company.calendar.weekday.${i}`)}
+                </div>
+              ))}
+            </div>
 
-          <div style={cal.grid}>
+            <div className="grid grid-cols-7 grid-rows-6 border-l border-r border-b border-[#E5E8EC] rounded-b-lg overflow-hidden bg-white flex-1 min-h-0">
             {cells.map((c, i) => {
               const k = dateKey(c.date);
               const isToday = k === todayKey;
               const dayOfWeek = c.date.getDay();
               const dayItems = itemsByDate[k] || [];
+              const isRightEdge = (i + 1) % 7 === 0;
+              const isFirstRow = i < 7;
               return (
-                <div key={i} style={{
-                  ...cal.dayCell,
-                  ...(c.otherMonth ? cal.otherMonthCell : {}),
-                  ...(isToday ? cal.todayCell : {}),
-                }}>
-                  <div style={{
-                    ...cal.dayNum,
-                    ...(c.otherMonth ? cal.dayNumOther : {}),
-                    ...(isToday ? cal.dayNumToday : {}),
-                    ...(dayOfWeek === 0 ? cal.dayNumSun : dayOfWeek === 6 ? cal.dayNumSat : {}),
-                  }}>{c.day}</div>
-                  <div style={cal.dayItems}>
+                <div
+                  key={i}
+                  className={cn(
+                    'p-1.5 flex flex-col gap-1 min-h-0',
+                    !isFirstRow && 'border-t border-[#E5E8EC]',
+                    !isRightEdge && 'border-r border-[#E5E8EC]',
+                    c.otherMonth && 'bg-gray-50/50',
+                    isToday && 'bg-primary-50/30'
+                  )}
+                >
+                  <div className={cn(
+                    'text-xs font-extrabold px-1 py-0.5 tabular-nums flex-shrink-0',
+                    c.otherMonth && 'text-gray-300',
+                    !c.otherMonth && dayOfWeek === 0 && 'text-red-600',
+                    !c.otherMonth && dayOfWeek === 6 && 'text-blue-600',
+                    !c.otherMonth && dayOfWeek !== 0 && dayOfWeek !== 6 && 'text-gray-900',
+                    isToday && !c.otherMonth && 'text-primary-700 font-black'
+                  )}>
+                    {isToday && !c.otherMonth ? (
+                      <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-primary-600 text-white text-[10.5px]">{c.day}</span>
+                    ) : c.day}
+                  </div>
+                  <div className="flex flex-col gap-0.5 overflow-y-auto flex-1 min-h-0 pr-0.5">
                     {dayItems.map(it => {
                       const time = fmtTime(new Date(it.interview_at));
                       const name = it.applicant_name || t('company.candidatePrefix').replace('#', '').trim();
@@ -163,12 +209,12 @@ export default function CompanyCalendarPage() {
                       return (
                         <div
                           key={it.id}
-                          style={cal.itemRow}
                           onClick={() => goCandidate(it.id)}
                           title={`${time} ${stageLabel} · ${name} · ${it.jobTitle}${it.interview_location ? ' · ' + it.interview_location : ''}`}
+                          className="flex items-center gap-1 px-1.5 py-0.5 rounded bg-blue-50 border-l-2 border-blue-500 text-[10.5px] font-bold text-blue-900 cursor-pointer hover:bg-blue-100 transition-colors overflow-hidden"
                         >
-                          <span style={cal.itemTime}>{time}</span>
-                          <span style={cal.itemName}>[{name}] {stageLabel} · {it.jobTitle}</span>
+                          <span className="font-extrabold text-blue-700 tabular-nums flex-shrink-0">{time}</span>
+                          <span className="truncate min-w-0">{name} · {it.jobTitle}</span>
                         </div>
                       );
                     })}
@@ -176,38 +222,30 @@ export default function CompanyCalendarPage() {
                 </div>
               );
             })}
+            </div>
           </div>
         </main>
+
+        {selectedAppId && (
+          <div
+            className="fixed inset-0 z-50 bg-gray-900/45 backdrop-blur-[2px]"
+            onClick={() => setSelectedAppId(null)}
+          >
+            <div
+              className="absolute top-4 left-4 right-4 bottom-4 bg-background rounded-2xl overflow-hidden shadow-soft-xl flex flex-col"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <CandidateDetail
+                appId={selectedAppId}
+                mode="overlay"
+                companyId={companyId}
+                onClose={() => setSelectedAppId(null)}
+              />
+            </div>
+          </div>
+        )}
       </div>
     </>
   );
 }
 
-const cal = {
-  toolbar: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14, padding: '0 2px' },
-  monthTitle: { fontSize: 18, fontWeight: 800, color: '#1A1A1A', margin: 0 },
-  navBtns: { display: 'flex', gap: 4, alignItems: 'center' },
-  navBtn: { width: 30, height: 30, borderRadius: 6, border: '1px solid #D1D5DB', background: '#fff', color: '#525252', fontSize: 16, fontWeight: 800, cursor: 'pointer', display: 'grid', placeItems: 'center', fontFamily: 'inherit' },
-  todayBtn: { padding: '6px 14px', borderRadius: 6, border: '1px solid #D1D5DB', background: '#fff', color: '#1A1A1A', fontSize: 12, fontWeight: 800, cursor: 'pointer', fontFamily: 'inherit' },
-
-  weekHead: { display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', background: '#F8FAFC', border: '1px solid #E5E7EB', borderRadius: '8px 8px 0 0', overflow: 'hidden' },
-  weekdayCell: { padding: '10px 0', textAlign: 'center', fontSize: 12, fontWeight: 800, color: '#525252' },
-  weekdaySun: { color: '#DC2626' },
-  weekdaySat: { color: '#2563EB' },
-
-  grid: { display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', borderLeft: '1px solid #E5E7EB', borderRight: '1px solid #E5E7EB', borderBottom: '1px solid #E5E7EB', borderRadius: '0 0 8px 8px', overflow: 'hidden', background: '#fff' },
-  dayCell: { minHeight: 110, padding: '6px 6px 8px', borderTop: '1px solid #E5E7EB', borderRight: '1px solid #E5E7EB', display: 'flex', flexDirection: 'column', gap: 4, background: '#fff' },
-  otherMonthCell: { background: '#FAFAFA' },
-  todayCell: { background: '#FFF7ED' },
-
-  dayNum: { fontSize: 12, fontWeight: 800, color: '#1A1A1A', padding: '2px 4px' },
-  dayNumOther: { color: '#94A3B8' },
-  dayNumToday: { color: '#EA580C', fontWeight: 900 },
-  dayNumSun: { color: '#DC2626' },
-  dayNumSat: { color: '#2563EB' },
-
-  dayItems: { display: 'flex', flexDirection: 'column', gap: 2, overflow: 'hidden' },
-  itemRow: { padding: '3px 6px', borderRadius: 4, background: '#EFF6FF', border: '1px solid #BFDBFE', fontSize: 10.5, fontWeight: 700, color: '#1E3A8A', cursor: 'pointer', display: 'flex', gap: 4, alignItems: 'center', overflow: 'hidden' },
-  itemTime: { fontWeight: 800, color: '#1D4ED8', flexShrink: 0, fontVariantNumeric: 'tabular-nums' },
-  itemName: { overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: 0 },
-};

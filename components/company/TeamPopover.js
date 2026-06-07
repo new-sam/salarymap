@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { supabase } from '../../lib/supabaseClient';
 import { useT } from '../../lib/i18n';
 import { ConfirmModal } from './CandidateDetail';
+import { X as XIcon, Check, Mail as MailIcon, Users as UsersIcon } from 'lucide-react';
 
 const AVATAR_COLORS = ['#fb923c', '#60a5fa', '#34d399', '#f472b6', '#a78bfa', '#fbbf24', '#22d3ee', '#f87171'];
 function colorFor(seed = '') {
@@ -116,15 +117,15 @@ export default function TeamPopover({ jobId, canInvite = true }) {
   const count = team.members.length + team.invites.length;
 
   return (
-    <div ref={ref} style={s.wrap}>
-      <button type="button" onClick={() => setOpen(v => !v)} style={s.btn}>
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: 6 }}>
-          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
-          <circle cx="9" cy="7" r="4"/>
-          <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
-          <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
-        </svg>
-        {t('company.team.btn')} {count}
+    <div ref={ref} className="relative inline-block">
+      <button
+        type="button"
+        onClick={() => setOpen(v => !v)}
+        className="inline-flex items-center gap-1.5 h-9 px-3 rounded-md border border-input bg-card text-[13px] font-bold text-foreground shadow-soft-xs hover:bg-secondary transition-all duration-200 ease-spring active:scale-[0.98]"
+      >
+        <UsersIcon className="w-3.5 h-3.5" />
+        {t('company.team.btn')}
+        <span className="text-gray-900 font-extrabold tabular-nums">{count}</span>
       </button>
 
       {open && (
@@ -159,7 +160,7 @@ export default function TeamPopover({ jobId, canInvite = true }) {
                     {t(`company.team.role.${isOwner ? 'owner' : 'interviewer'}`)}
                   </div>
                   {canRemove && (
-                    <button onClick={() => removeMember(m)} style={s.removeBtn} title={t('company.team.removeBtn')}>✕</button>
+                    <button onClick={() => removeMember(m)} style={s.removeBtn} title={t('company.team.removeBtn')}><XIcon className="w-3 h-3" /></button>
                   )}
                 </div>
               );
@@ -177,7 +178,7 @@ export default function TeamPopover({ jobId, canInvite = true }) {
                   </div>
                   <div style={s.pendTag}>{t('company.team.pending')}</div>
                   {iAmOwner && (
-                    <button onClick={() => cancelInvite(iv)} style={s.removeBtn} title={t('company.team.removeBtn')}>✕</button>
+                    <button onClick={() => cancelInvite(iv)} style={s.removeBtn} title={t('company.team.removeBtn')}><XIcon className="w-3 h-3" /></button>
                   )}
                 </div>
               );
@@ -265,7 +266,7 @@ function InviteModal({ jobId, onClose, onDone }) {
 
         {result && result.addedDirectly && (
           <div style={{ textAlign: 'center' }}>
-            <div style={s.doneIcon}>✓</div>
+            <div style={s.doneIcon}><Check className="w-6 h-6" strokeWidth={3} /></div>
             <h3 style={s.modalTitle}>{t('company.invite.done.added.title')}</h3>
             <p style={s.modalLead}>{t('company.invite.done.added.lead', { name: result.memberName || email })}</p>
             <button type="button" style={s.submit} onClick={finish}>{t('company.invite.close')}</button>
@@ -274,7 +275,7 @@ function InviteModal({ jobId, onClose, onDone }) {
 
         {result && !result.addedDirectly && result.mailSent && (
           <div style={{ textAlign: 'center' }}>
-            <div style={s.doneIcon}>✉</div>
+            <div style={s.doneIcon}><MailIcon className="w-6 h-6" /></div>
             <h3 style={s.modalTitle}>{t('company.invite.done.mailed.title')}</h3>
             <p style={s.modalLead}>{t('company.invite.done.mailed.lead', { email })}</p>
             <button type="button" style={s.submit} onClick={finish}>{t('company.invite.close')}</button>
@@ -306,12 +307,13 @@ const s = {
     fontFamily: 'inherit', cursor: 'pointer',
   },
   pop: {
-    position: 'absolute', top: 'calc(100% + 8px)', right: 0, zIndex: 60,
-    width: 320, maxHeight: 440, overflowY: 'auto',
-    background: '#fff', borderRadius: 14, border: '1px solid rgba(0,0,0,0.08)',
-    boxShadow: '0 20px 50px rgba(0,0,0,0.18)', padding: 14,
+    position: 'absolute', top: 'calc(100% + 6px)', right: 0, zIndex: 60,
+    width: 308, maxHeight: 440, overflowY: 'auto',
+    background: '#fff', borderRadius: 12, border: '1px solid rgba(17,24,39,0.06)',
+    boxShadow: '0 12px 32px rgba(17,24,39,0.10), 0 2px 6px rgba(17,24,39,0.04)', padding: 12,
+    fontFamily: "'Pretendard Variable','Pretendard',sans-serif",
   },
-  popHead: { fontSize: 13, fontWeight: 900, color: '#111', marginBottom: 8, letterSpacing: '-0.01em' },
+  popHead: { fontSize: 12, fontWeight: 800, color: '#111', marginBottom: 8, letterSpacing: '0.02em', textTransform: 'uppercase' },
   list: { display: 'flex', flexDirection: 'column', gap: 8 },
   empty: { padding: '20px 0', textAlign: 'center', color: '#9ca3af', fontSize: 13 },
   row: { display: 'flex', alignItems: 'center', gap: 10, padding: '6px 4px' },

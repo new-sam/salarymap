@@ -74,7 +74,7 @@ module.exports = {
         },
       },
       fontFamily: {
-        sans: ["'Pretendard'", '-apple-system', 'BlinkMacSystemFont', "'Segoe UI'", 'sans-serif'],
+        sans: ["'Pretendard Variable'", "'Pretendard'", '-apple-system', 'BlinkMacSystemFont', "'Segoe UI'", 'sans-serif'],
       },
       fontSize: {
         kpi: ['36px', { lineHeight: '1.2', letterSpacing: '-0.02em', fontWeight: '900' }],

@@ -7,6 +7,13 @@ import { Sidebar, css } from './jobs/new';
 import Brand from '../../components/company/Brand';
 import LangToggle from '../../components/company/LangToggle';
 import { useT } from '../../lib/i18n';
+import { cn } from '../../lib/cn';
+import { Button as UButton } from '../../components/ui/button';
+import { Badge as UBadge } from '../../components/ui/badge';
+import { Plus, FileText, Edit3, ArrowRight, Briefcase, CheckCircle2, Users } from 'lucide-react';
+import { EmptyState } from '../../components/ui/empty-state';
+import { PageHeader } from '../../components/ui/page-header';
+import { DashboardSkeleton } from '../../components/ui/page-skeleton';
 
 const FREE_MAIL_DOMAINS = new Set([
   'gmail.com', 'naver.com', 'yahoo.com', 'hotmail.com', 'outlook.com',
@@ -192,7 +199,14 @@ export default function CompanyDashboard() {
     return () => { mounted = false; };
   }, [router.isReady]);
 
-  if (status === 'loading') return <div style={css.loading}>{t('company.loading')}</div>;
+  if (status === 'loading') {
+    return (
+      <div style={css.app}>
+        <Sidebar companyName="" userEmail="" activePage="home" />
+        <DashboardSkeleton />
+      </div>
+    );
+  }
 
   if (status === 'unauthed') {
     const signupFrame = router.query.mode === 'signup';
@@ -311,6 +325,13 @@ export default function CompanyDashboard() {
   const activeCount = jobs.filter(j => j.status === 'live').length;
   const goKanban = (jobId) => router.push(`/company/ats?job=${jobId}`);
 
+  const statusBadgeVariant = (s) => {
+    if (s === 'live') return 'success';
+    if (s === 'pending_review') return 'warning';
+    if (s === 'paused') return 'warning';
+    return 'secondary';
+  };
+
   return (
     <>
       <Head><title>{t('company.head.dashboard')}</title></Head>
@@ -318,31 +339,70 @@ export default function CompanyDashboard() {
         <Sidebar companyName={companyName} userEmail={user?.email} activePage="home" />
 
         <main style={css.main}>
-          <header style={css.mainHead}>
-            <div>
-              <h1 style={css.mainH}>{fullName ? t('company.welcomeName', { name: fullName }) : t('company.welcome')}</h1>
-              <p style={css.mainP}>
-                {companyName ? `${companyName} ` : ''}— {t('company.dashSub')}
-              </p>
-            </div>
-            <Link href="/company/jobs/new" style={css.btnPrimary}>{t('company.newJobBtn')}</Link>
-          </header>
+          <PageHeader
+            title={fullName ? t('company.welcomeName', { name: fullName }) : t('company.welcome')}
+            subtitle={`${companyName ? `${companyName} ` : ''}— ${t('company.dashSub')}`}
+            right={(
+              <UButton asChild>
+                <Link href="/company/jobs/new">
+                  <Plus className="w-4 h-4" />
+                  {t('company.newJobBtn')}
+                </Link>
+              </UButton>
+            )}
+          />
 
           {jobs.length === 0 ? (
-            <div style={localCss.empty}>
-              <div style={localCss.emptyIco}>📋</div>
-              <h2 style={localCss.emptyH}>{t('company.emptyTitle')}</h2>
-              <p style={localCss.emptyP}>{t('company.emptyDesc')}</p>
-              <Link href="/company/jobs/new" style={css.btnPrimary}>{t('company.emptyCta')}</Link>
+            <div className="rounded-2xl border-2 border-dashed border-gray-200 bg-white">
+              <EmptyState
+                icon={FileText}
+                tone="brand"
+                title={t('company.emptyTitle')}
+                description={t('company.emptyDesc')}
+                className="py-14"
+                action={(
+                  <UButton asChild>
+                    <Link href="/company/jobs/new">
+                      <Plus className="w-4 h-4" />
+                      {t('company.emptyCta')}
+                    </Link>
+                  </UButton>
+                )}
+              />
             </div>
           ) : (
             <>
-              <div style={localCss.kpiInline}>
-                <span><b style={localCss.kpiStrong}>{jobs.length}</b>{t('company.kpiJobs', { n: '' })}</span>
-                <span style={localCss.kpiSep}>·</span>
-                <span><b style={localCss.kpiStrong}>{activeCount}</b>{t('company.kpiActive', { n: '' })}</span>
-                <span style={localCss.kpiSep}>·</span>
-                <span><b style={localCss.kpiStrong}>{appsCount}</b>{t('company.kpiApps', { n: '' })}</span>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 mb-4">
+                <div className="rounded-xl bg-white border border-border p-3 shadow-soft-xs">
+                  <div className="flex items-center gap-2 mb-1.5">
+                    <Briefcase className="w-4 h-4 text-gray-500" />
+                    <div className="text-[10px] font-extrabold uppercase tracking-[0.08em] text-gray-500">{t('company.kpiJobs')}</div>
+                  </div>
+                  <div className="mt-1 flex items-baseline gap-1 text-foreground">
+                    <span className="text-2xl font-extrabold tracking-tight tabular-nums">{jobs.length}</span>
+                    <span className="text-[12px] font-bold text-gray-400">{t('company.unit.count')}</span>
+                  </div>
+                </div>
+                <div className="rounded-xl bg-white border border-border p-3 shadow-soft-xs">
+                  <div className="flex items-center gap-2 mb-1.5">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                    <div className="text-[10px] font-extrabold uppercase tracking-[0.08em] text-gray-500">{t('company.kpiActive')}</div>
+                  </div>
+                  <div className="mt-1 flex items-baseline gap-1 text-emerald-600">
+                    <span className="text-2xl font-extrabold tracking-tight tabular-nums">{activeCount}</span>
+                    <span className="text-[12px] font-bold text-emerald-400">{t('company.unit.count')}</span>
+                  </div>
+                </div>
+                <div className="rounded-xl bg-white border border-border p-3 shadow-soft-xs">
+                  <div className="flex items-center gap-2 mb-1.5">
+                    <Users className="w-4 h-4 text-primary-600" />
+                    <div className="text-[10px] font-extrabold uppercase tracking-[0.08em] text-gray-500">{t('company.kpiApps')}</div>
+                  </div>
+                  <div className="mt-1 flex items-baseline gap-1 text-primary-600">
+                    <span className="text-2xl font-extrabold tracking-tight tabular-nums">{appsCount}</span>
+                    <span className="text-[12px] font-bold text-primary-400">{t('company.unit.people')}</span>
+                  </div>
+                </div>
               </div>
 
               {(() => {
@@ -350,61 +410,64 @@ export default function CompanyDashboard() {
                 const grouped = { active: [], pending: [], inactive: [] };
                 jobs.forEach(j => { grouped[groupOf(j.status)].push(j); });
                 const renderCard = (job) => {
-                  const s = STATUS_STYLE[job.status] || STATUS_STYLE.draft;
                   const stats = appsByJob[job.id] || { total: 0, new: 0 };
                   return (
                     <div
                       key={job.id}
                       onClick={() => goKanban(job.id)}
-                      style={localCss.card}
-                      onMouseEnter={(e) => { e.currentTarget.style.borderColor = '#FCA5A5'; e.currentTarget.style.boxShadow = '0 4px 12px rgba(234,88,12,0.08)'; }}
-                      onMouseLeave={(e) => { e.currentTarget.style.borderColor = '#E5E7EB'; e.currentTarget.style.boxShadow = 'none'; }}
+                      className="group flex items-center justify-between gap-4 rounded-xl bg-white border border-border px-4 py-3 cursor-pointer transition-all duration-200 ease-spring hover:border-primary-300 hover:shadow-soft-sm hover:-translate-y-px"
                     >
-                      <div style={localCss.cardLeft}>
-                        <div style={localCss.cardTitleRow}>
-                          <span style={localCss.cardTitle}>{job.title}</span>
-                          <span style={{...localCss.badge, background: s.bg, color: s.color}}>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="text-[15px] font-bold text-foreground truncate tracking-tight">{job.title}</span>
+                          <UBadge variant={statusBadgeVariant(job.status)} className="flex-shrink-0">
                             {t(`company.status.${job.status}`)}
-                          </span>
+                          </UBadge>
                         </div>
-                        <div style={localCss.cardMeta}>
+                        <div className="text-[12px] text-gray-900 font-semibold truncate">
                           {job.location} · {job.type} · ₫{Math.round(job.salary_min/1e6)}M–{Math.round(job.salary_max/1e6)}M/월
                         </div>
-                        <div style={localCss.cardPosted}>
+                        <div className="text-[11px] text-gray-500 font-semibold mt-1 truncate">
                           {t('company.card.postedAt', { date: new Date(job.created_at).toLocaleDateString() })}
                         </div>
-                        {/* 공고 게재 검토 정책 MVP에서 보류 — 다음 마일스톤에서 어드민 구축 후 복원 */}
                       </div>
-                      <div style={localCss.cardRight}>
-                        <div style={localCss.stats}>
-                          <div style={localCss.statBox}>
-                            <div style={localCss.statVal}>{stats.total}</div>
-                            <div style={localCss.statLab}>{t('company.stat.apps')}</div>
+                      <div className="flex items-center gap-4 flex-shrink-0">
+                        <div className="flex gap-4">
+                          <div className="text-center min-w-[44px]">
+                            <div className="text-xl font-extrabold text-foreground tabular-nums leading-none">{stats.total}</div>
+                            <div className="text-[10px] text-gray-500 font-extrabold uppercase tracking-[0.08em] mt-1.5">{t('company.stat.apps')}</div>
                           </div>
-                          {stats.new > 0 && (
-                            <div style={{...localCss.statBox, ...localCss.statBoxNew}}>
-                              <div style={localCss.statVal}>{stats.new}</div>
-                              <div style={localCss.statLab}>{t('company.stat.new')}</div>
-                            </div>
-                          )}
+                          <div className="text-center min-w-[44px]">
+                            <div className={cn('text-xl font-extrabold tabular-nums leading-none', stats.new > 0 ? 'text-primary-600' : 'text-gray-300')}>{stats.new || '—'}</div>
+                            <div className={cn('text-[10px] font-extrabold uppercase tracking-[0.08em] mt-1.5', stats.new > 0 ? 'text-primary-600' : 'text-gray-300')}>{t('company.stat.new')}</div>
+                          </div>
                         </div>
-                        <button
+                        <UButton
+                          variant="outline"
+                          size="sm"
                           onClick={(e) => { e.stopPropagation(); router.push(`/company/jobs/${job.id}/edit`); }}
-                          style={localCss.editBtn}
                         >
+                          <Edit3 className="w-3.5 h-3.5" />
                           {t('company.editBtn')}
-                        </button>
-                        <span style={localCss.arrow}>→</span>
+                        </UButton>
                       </div>
                     </div>
                   );
                 };
-                return ['active', 'pending', 'inactive'].map(g => grouped[g].length === 0 ? null : (
-                  <section key={g} style={localCss.groupSection}>
-                    <h2 style={localCss.groupTitle}>{t(`company.jobGroup.${g}`, { n: grouped[g].length })}</h2>
-                    <div style={localCss.list}>
-                      {grouped[g].map(renderCard)}
-                    </div>
+                return ['active', 'pending', 'inactive'].map(g => (
+                  <section key={g} className="mb-5">
+                    <h2 className="text-[11px] font-extrabold text-gray-500 uppercase tracking-[0.08em] pl-2.5 mb-2 border-l-[3px] border-primary-500">
+                      {t(`company.jobGroup.${g}`, { n: grouped[g].length })}
+                    </h2>
+                    {grouped[g].length === 0 ? (
+                      <div className="text-[12px] text-gray-400 font-medium px-2.5 py-2">
+                        —
+                      </div>
+                    ) : (
+                      <div className="flex flex-col gap-2.5">
+                        {grouped[g].map(renderCard)}
+                      </div>
+                    )}
                   </section>
                 ));
               })()}

@@ -1,22 +1,63 @@
-import { useState, useEffect, Fragment } from 'react';
+import { useState, useEffect, useRef, Fragment } from 'react';
 import Link from 'next/link';
 import { supabase } from '../../lib/supabaseClient';
 import { useT } from '../../lib/i18n';
+import { toast } from 'sonner';
 import { formatICT, ictInputToUtc, utcToIctInput, ICT_LABEL } from '../../lib/timezone';
+import { cn } from '../../lib/cn';
+import { Button as UButton } from '../ui/button';
+import { Badge as UBadge } from '../ui/badge';
+import { Input as UInput } from '../ui/input';
+import { Dialog as UDialog, DialogContent as UDialogContent, DialogHeader as UDialogHeader, DialogTitle as UDialogTitle, DialogDescription as UDialogDescription, DialogFooter as UDialogFooter } from '../ui/dialog';
+import { Calendar, Mail, Ban, Lock, Check, X as XIcon, Edit3, RotateCcw, Send, Save, Trash2, MapPin, User as UserIcon, Briefcase, AlertCircle, MessageSquare, Star, ChevronRight, ChevronLeft, FileX, Lightbulb, History, MessageCircle as MessageCircleIcon, StickyNote, ThumbsUp, ExternalLink, Trophy, Inbox } from 'lucide-react';
+import { EmptyState } from '../ui/empty-state';
+import { CandidateDetailSkeleton } from '../ui/page-skeleton';
+import { BackLink } from '../ui/back-link';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '../ui/tabs';
+import { StarRating } from '../ui/star-rating';
+import { avatarColorFor, initialOf } from '../../lib/avatar-color';
+import { ka, eul, ro } from '../../lib/josa';
 
 const STAGES = [
-  { key: 'pending', emoji: '📥' },
-  { key: 'viewed', emoji: '💬' },
-  { key: 'reviewing', emoji: '🤝' },
-  { key: 'decided', emoji: '🎉' },
+  { key: 'pending', emoji: '' },
+  { key: 'viewed', emoji: '' },
+  { key: 'reviewing', emoji: '' },
+  { key: 'decided', emoji: '' },
 ];
+
+const STAGE_DOT_CLASS = {
+  pending: 'bg-gray-400',
+  viewed: 'bg-blue-500',
+  reviewing: 'bg-violet-500',
+  decided: 'bg-emerald-500',
+};
+const STAGE_SOLID_CLASS = {
+  pending: 'bg-gray-700',
+  viewed: 'bg-blue-600',
+  reviewing: 'bg-violet-600',
+  decided: 'bg-emerald-600',
+};
+// Evaluation-section label (different from kanban stage label).
+// 'decided' is excluded — no evaluation after the final decision.
+const EVAL_STAGE_LABEL = {
+  pending: '서류 평가',
+  viewed: '1차 인터뷰 평가',
+  reviewing: '2차 인터뷰 평가',
+};
 const STAGE_ORDER = STAGES.map(s => s.key);
 
 
 /**
  * mode: 'page' | 'overlay'
+ * navIndex / navTotal / onPrev / onNext drive ←/→ candidate navigation
+ *   when rendered inside ATS overlay. Optional — fall back to no nav.
  */
-export default function CandidateDetail({ appId, mode = 'page', onClose, companyId, onStageChange }) {
+export default function CandidateDetail({
+  appId, mode = 'page', onClose, companyId, onStageChange,
+  navIndex = null, navTotal = null, onPrev = null, onNext = null,
+  stageIndex = null, stageTotal = null, stageCounts = null, stageOrder = null,
+  onJumpToStage = null, onPrevStage = null, onNextStage = null,
+}) {
   const { t } = useT();
   const [status, setStatus] = useState('loading');
   const [app, setApp] = useState(null);
@@ -30,6 +71,67 @@ export default function CandidateDetail({ appId, mode = 'page', onClose, company
   const [rejectModal, setRejectModal] = useState(null); // null | 'new' | 'edit' | 'unreject'
   const [interviewModal, setInterviewModal] = useState(false);
   const [mailLog, setMailLog] = useState([]);
+  const [editingEval, setEditingEval] = useState(null);
+
+  const [tab, setTab] = useState('eval');
+  const [noteDraft, setNoteDraft] = useState('');
+  const [noteSavedAt, setNoteSavedAt] = useState(null);
+  const [noteSavedByName, setNoteSavedByName] = useState(null);
+  const [savingNote, setSavingNote] = useState(false);
+  const [noteDirty, setNoteDirty] = useState(false);
+  const [noteExpanded, setNoteExpanded] = useState(false);
+
+  // Reset the draft buffer whenever we switch candidates.
+  useEffect(() => {
+    setNoteDraft('');
+    setNoteDirty(false);
+    setNoteSavedAt(null);
+    setNoteSavedByName(null);
+    setNoteExpanded(false);
+  }, [app?.id]);
+
+  // Save note via secure API endpoint (service role, bypass RLS)
+  const saveNote = async (silent = false) => {
+    setSavingNote(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const res = await fetch('/api/company/save-candidate-note', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session?.access_token || ''}` },
+        body: JSON.stringify({ appId: app.id, note: noteDraft }),
+      });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        toast.error(json.error || '메모 저장 실패');
+        return;
+      }
+      setApp(prev => ({ ...prev, admin_note: noteDraft, admin_note_updated_at: json.updatedAt }));
+      setNoteSavedAt(json.updatedAt);
+      setNoteSavedByName(json.updatedByName);
+      setNoteDirty(false);
+      if (!silent) toast.success('메모가 저장되었습니다');
+    } finally {
+      setSavingNote(false);
+    }
+  };
+
+  // Toast when navigating to a candidate in a different stage — prevents
+  // mis-clicks when sweeping through candidates with ← / →.
+  const prevStageRef = useRef(null);
+  useEffect(() => {
+    if (mode !== 'overlay' || !app?.status) return;
+    const prevStage = prevStageRef.current;
+    const currentStage = app.status;
+    if (prevStage && prevStage !== currentStage) {
+      const fromLabel = t(`company.stage.${prevStage}`);
+      const toLabel = t(`company.stage.${currentStage}`);
+      toast(`${fromLabel} → ${toLabel}`, {
+        description: '다른 단계의 후보로 이동했습니다',
+        duration: 1500,
+      });
+    }
+    prevStageRef.current = currentStage;
+  }, [app?.id, app?.status, mode, t]);
 
   const reloadMailLog = async (appId) => {
     if (!appId) return;
@@ -41,6 +143,61 @@ export default function CandidateDetail({ appId, mode = 'page', onClose, company
     setMailLog(data || []);
   };
 
+  // Keyboard shortcuts in overlay mode:
+  //   ← / →        prev / next candidate (within current visible list)
+  //   Shift + ←/→  jump to first candidate of prev / next stage
+  //   Esc          close
+  //   E            open mail compose
+  //   R            open reject modal (owner only)
+  //   Enter        advance to next stage (owner only)
+  //   J / K        vim-style next / prev
+  useEffect(() => {
+    if (mode !== 'overlay') return;
+    const handler = (e) => {
+      const target = e.target;
+      const tag = (target?.tagName || '').toLowerCase();
+      const isFormField = tag === 'input' || tag === 'textarea' || tag === 'select' || target?.isContentEditable;
+      if (isFormField) return;
+      // Skip when an inner modal is already open (interview/reject/mail/edit)
+      if (mailModal || rejectModal || interviewModal || editingEval) return;
+      if (e.metaKey || e.ctrlKey || e.altKey) return;
+
+      const key = e.key;
+      // Shift + arrows → cross-stage jump
+      if (e.shiftKey) {
+        if (key === 'ArrowLeft' && onPrevStage) { e.preventDefault(); onPrevStage(); return; }
+        if (key === 'ArrowRight' && onNextStage) { e.preventDefault(); onNextStage(); return; }
+      }
+      if (key === 'ArrowLeft' || key === 'k' || key === 'K') { if (onPrev) { e.preventDefault(); onPrev(); } }
+      else if (key === 'ArrowRight' || key === 'j' || key === 'J') { if (onNext) { e.preventDefault(); onNext(); } }
+      else if (key === 'Escape') { if (onClose) { e.preventDefault(); onClose(); } }
+      else if ((key === 'e' || key === 'E') && app && !app.rejected_at) {
+        e.preventDefault();
+        const defaultTpl = app.status === 'pending' ? 'received'
+          : (app.status === 'viewed' || app.status === 'reviewing') ? 'interview'
+          : 'offer';
+        setMailModal({ templateKey: defaultTpl, withSlots: defaultTpl === 'interview' });
+      }
+      else if ((key === 'r' || key === 'R') && app && !app.rejected_at) {
+        const ownerNow = !job?.created_by || job?.created_by === userId;
+        if (!ownerNow) return;
+        e.preventDefault();
+        setRejectModal('new');
+      }
+      else if (key === 'Enter' && app && !app.rejected_at) {
+        const ownerNow = !job?.created_by || job?.created_by === userId;
+        if (!ownerNow) return;
+        const i = STAGE_ORDER.indexOf(app.status);
+        if (i < STAGE_ORDER.length - 1) {
+          e.preventDefault();
+          moveNext();
+        }
+      }
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [mode, onPrev, onNext, onPrevStage, onNextStage, onClose, mailModal, rejectModal, interviewModal, editingEval, app, job, userId]);
+
   useEffect(() => {
     if (app?.id) reloadMailLog(app.id);
   }, [app?.id]);
@@ -49,7 +206,6 @@ export default function CandidateDetail({ appId, mode = 'page', onClose, company
   const [evalComment, setEvalComment] = useState('');
   const [evalScore, setEvalScore] = useState('');
   const [savingEval, setSavingEval] = useState(false);
-  const [editingEval, setEditingEval] = useState(null);
   const [editComment, setEditComment] = useState('');
   const [editScore, setEditScore] = useState('');
   const [savingEdit, setSavingEdit] = useState(false);
@@ -167,16 +323,18 @@ export default function CandidateDetail({ appId, mode = 'page', onClose, company
       .select()
       .single();
     setSavingEdit(false);
-    if (error) { setErr('수정 실패: ' + error.message); return; }
+    if (error) { setErr('수정 실패: ' + error.message); toast.error('수정 실패: ' + error.message); return; }
     setEvals(prev => prev.map(e => e.id === data.id ? data : e));
     setEditingEval(null);
+    toast.success(t('company.eval.editBtn'));
   };
 
   const deleteEvaluation = async (row) => {
     if (!window.confirm(t('company.eval.confirmDelete'))) return;
     const { error } = await supabase.from('application_evaluations').delete().eq('id', row.id);
-    if (error) { setErr('삭제 실패: ' + error.message); return; }
+    if (error) { setErr('삭제 실패: ' + error.message); toast.error('삭제 실패: ' + error.message); return; }
     setEvals(prev => prev.filter(e => e.id !== row.id));
+    toast.success(t('company.eval.deleteBtn'));
   };
 
   const submitEvaluation = async () => {
@@ -207,18 +365,19 @@ export default function CandidateDetail({ appId, mode = 'page', onClose, company
       .select()
       .single();
     setSavingEval(false);
-    if (error) { setErr('평가 저장 실패: ' + error.message); return; }
+    if (error) { setErr('평가 저장 실패: ' + error.message); toast.error('평가 저장 실패: ' + error.message); return; }
     setEvals(prev => {
       const exists = prev.some(e => e.id === data.id);
       return exists ? prev.map(e => e.id === data.id ? data : e) : [...prev, data];
     });
     setEvalComment('');
     setEvalScore('');
+    toast.success(t('company.eval.submit'));
   };
 
-  if (status === 'loading') return <div style={local.loading}>{t('company.loading')}</div>;
-  if (status === 'unauthed') return <div style={local.errBox}>{t('company.err.loginRequired')}</div>;
-  if (status === 'error') return <div style={local.errBox}>{err}</div>;
+  if (status === 'loading') return <CandidateDetailSkeleton mode={mode} />;
+  if (status === 'unauthed') return <div className="m-6 rounded-lg bg-red-50 border border-red-200 px-3 py-2 text-sm text-red-700 font-semibold">{t('company.err.loginRequired')}</div>;
+  if (status === 'error') return <div className="m-6 rounded-lg bg-red-50 border border-red-200 px-3 py-2 text-sm text-red-700 font-semibold">{err}</div>;
 
   const name = app.applicant_name || profile?.full_name || `${t('company.candidatePrefix')}${app.id.slice(-6).toUpperCase()}`;
   const email = app.applicant_email || profile?.email || '—';
@@ -230,251 +389,578 @@ export default function CandidateDetail({ appId, mode = 'page', onClose, company
   const isOwner = !job?.created_by || job?.created_by === userId;
   const companyName = job?.recruiter_companies?.name || '';
 
+  const avatarPalette = avatarColorFor(email || name);
+  const initial = initialOf(name);
+  // Per-stage decision label, e.g. pending → "서류" → "서류 합격" / "서류 불합격"
+  const STAGE_DECISION_LABEL = { pending: '서류', viewed: '1차 인터뷰', reviewing: '2차 인터뷰' };
+  const decisionPrefix = STAGE_DECISION_LABEL[app.status] || t(`company.stage.${app.status}`);
+  const wishSalaryLabel = app.applicant_salary
+    ? `₫${Math.round(app.applicant_salary / 1e6)}M/월`
+    : null;
+  const canRunQuick = isOwner;
+  const showInterviewStage = app.status === 'viewed' || app.status === 'reviewing';
+  const defaultMailTpl = app.rejected_at ? 'reject'
+    : app.status === 'pending' ? 'received'
+    : (app.status === 'viewed' || app.status === 'reviewing') ? 'interview'
+    : 'offer';
+  const openMailCompose = () => setMailModal({ templateKey: defaultMailTpl, withSlots: defaultMailTpl === 'interview' });
+
+  // ─── Smart Hint flowchart (action-granular) ─────────────────────
+  // Always returns { tone, eyebrow, title } — strictly the single next action.
+  // Branches drill down to the *next concrete action* at the current state.
+  //
+  // Owner flow per stage:
+  //   pending   ─ no eval → write eval ─ has eval → decide (pass/fail)
+  //   viewed    ─ no interview_at → schedule
+  //             ─ future interview + mail not sent → send interview mail
+  //             ─ future interview + mail sent      → wait until interview
+  //             ─ past interview  + no eval         → write eval
+  //             ─ past interview  + has eval        → decide (next stage / fail)
+  //   reviewing ─ same shape as viewed but for "2차"
+  //   decided   ─ offer mail not sent → send offer mail
+  //             ─ offer mail sent     → run salary/start-date negotiation
+  //   rejected  ─ reject mail not sent → send reject mail
+  //             ─ reject mail sent     → terminal
+  //
+  // Interviewer flow:
+  //   pending → waiting (not yet assigned)
+  //   viewed/reviewing → write eval / done (waiting on owner decision)
+  //   decided → terminal (passed)
+  //   rejected → terminal (failed)
+  const smartHint = (() => {
+    const evalStageLabel = EVAL_STAGE_LABEL[app.status] || '';
+    const myEvalThisStage = evals.find(e => e.stage === app.status && e.reviewer_user_id === userId);
+    const hasMyEval = !!myEvalThisStage;
+    const stageEvals = evals.filter(e => e.stage === app.status);
+    const hasAnyEvalThisStage = stageEvals.length > 0;
+    const daysSinceApplied = Math.max(0, Math.floor((Date.now() - new Date(app.created_at).getTime()) / 86400000));
+
+    const interviewWhen = app.interview_at
+      ? `${formatICT(app.interview_at, { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false })} ${ICT_LABEL}`
+      : null;
+    const interviewPast = app.interview_at && new Date(app.interview_at).getTime() < Date.now();
+
+    // Mail tracking — heuristic: was the relevant template ever sent?
+    // For interview mail we only count those sent within 21 days before the
+    // current interview_at so a stale 1차 mail doesn't suppress the 2차 prompt.
+    const offerMailSent = mailLog.some(m => m.template_key === 'offer');
+    const rejectMailSent = mailLog.some(m => m.template_key === 'reject');
+    const interviewMailForCurrent = app.interview_at && mailLog.some(m => {
+      if (m.template_key !== 'interview') return false;
+      const sentAt = new Date(m.created_at).getTime();
+      const iv = new Date(app.interview_at).getTime();
+      return sentAt <= iv && (iv - sentAt) < 21 * 86400000;
+    });
+
+    // ── Rejected (terminal) ────────────────────────────────────────
+    if (app.rejected_at) {
+      if (!isOwner) {
+        return {
+          tone: 'gray',
+          eyebrow: '면접관 · 종결',
+          title: '불합격 처리된 후보입니다',
+        };
+      }
+      if (!rejectMailSent) {
+        return {
+          tone: 'gray',
+          eyebrow: '공고 관리자 · 안내 메일 필요',
+          title: '불합격 안내 메일을 발송하세요',
+        };
+      }
+      return {
+        tone: 'gray',
+        eyebrow: '공고 관리자 · 종결',
+        title: '불합격 안내가 완료되었습니다',
+      };
+    }
+
+    // ── Interviewer flow ──────────────────────────────────────────
+    if (!isOwner) {
+      if (app.status === 'pending') {
+        return {
+          tone: 'gray',
+          eyebrow: '면접관 · 대기',
+          title: '아직 평가 요청을 받지 않았습니다',
+        };
+      }
+      if (app.status === 'decided') {
+        return {
+          tone: 'emerald',
+          eyebrow: '면접관 · 종결',
+          title: '이 후보는 최종 합격되었습니다',
+        };
+      }
+      // viewed / reviewing
+      if (hasMyEval) {
+        return {
+          tone: 'emerald',
+          eyebrow: '면접관 · 평가 완료',
+          title: `${evalStageLabel}를 완료했습니다`,
+        };
+      }
+      return {
+        tone: 'blue',
+        eyebrow: '면접관 · 평가 필요',
+        title: `${evalStageLabel}를 작성해주세요`,
+      };
+    }
+
+    // ── Owner flow ────────────────────────────────────────────────
+    // 지원 접수 — 평가 → 결정
+    if (app.status === 'pending') {
+      if (!hasAnyEvalThisStage) {
+        if (daysSinceApplied >= 7) {
+          return {
+            tone: 'primary',
+            eyebrow: `검토 ${daysSinceApplied}일 경과`,
+            title: '빠른 결정이 필요합니다',
+          };
+        }
+        if (!hasResume) {
+          return {
+            tone: 'primary',
+            eyebrow: '공고 관리자 · 서류 검토',
+            title: '이력서가 첨부되지 않았습니다',
+          };
+        }
+        return {
+          tone: 'primary',
+          eyebrow: '공고 관리자 · 서류 평가',
+          title: '이력서를 검토하고 서류 평가를 작성하세요',
+        };
+      }
+      // 평가 작성됨 → 결정
+      return {
+        tone: 'primary',
+        eyebrow: '공고 관리자 · 결정 필요',
+        title: '서류 합격 또는 불합격을 결정하세요',
+      };
+    }
+
+    // 1차/2차 인터뷰 — 일정 → 메일 → 인터뷰 → 평가 → 결정
+    if (app.status === 'viewed' || app.status === 'reviewing') {
+      const tone = app.status === 'viewed' ? 'blue' : 'violet';
+      const stageLabel = app.status === 'viewed' ? '1차 인터뷰' : '2차 인터뷰';
+
+      // (1) 일정 없음 → 일정 등록
+      if (!app.interview_at) {
+        return {
+          tone,
+          eyebrow: `공고 관리자 · ${stageLabel}`,
+          title: `${stageLabel} 일정을 등록하세요`,
+        };
+      }
+
+      // (2) 일정 미래 + 메일 미발송 → 메일 발송
+      if (!interviewPast && !interviewMailForCurrent) {
+        return {
+          tone,
+          eyebrow: `공고 관리자 · 안내 메일 필요`,
+          title: `${stageLabel} 안내 메일을 발송하세요`,
+        };
+      }
+
+      // (3) 일정 미래 + 메일 발송됨 → 인터뷰까지 대기
+      if (!interviewPast) {
+        return {
+          tone,
+          eyebrow: '공고 관리자 · 인터뷰 예정',
+          title: `${stageLabel}가 ${interviewWhen}에 예정되어 있습니다`,
+        };
+      }
+
+      // (4) 일정 종료 + 본인 평가 없음 → 평가 작성
+      if (!hasMyEval) {
+        return {
+          tone,
+          eyebrow: '공고 관리자 · 평가 필요',
+          title: `${stageLabel} 평가를 작성하세요`,
+        };
+      }
+
+      // (5) 일정 종료 + 평가 있음 → 결정
+      return {
+        tone,
+        eyebrow: '공고 관리자 · 결정 필요',
+        title: app.status === 'viewed' ? '다음 단계를 결정하세요' : '최종 결정을 내려주세요',
+      };
+    }
+
+    // 최종 합격 — 합격 메일 → 처우 협의
+    if (app.status === 'decided') {
+      if (!offerMailSent) {
+        return {
+          tone: 'emerald',
+          eyebrow: '공고 관리자 · 안내 메일 필요',
+          title: '합격 안내 메일을 발송하세요',
+        };
+      }
+      return {
+        tone: 'emerald',
+        eyebrow: '공고 관리자 · 처우 협의',
+        title: '입사 협의를 진행하세요',
+      };
+    }
+
+    return null;
+  })();
+  const hintToneClass = {
+    primary: 'bg-primary-50 border-primary-200 text-primary-900',
+    blue: 'bg-blue-50 border-blue-200 text-blue-900',
+    violet: 'bg-violet-50 border-violet-200 text-violet-900',
+    emerald: 'bg-emerald-50 border-emerald-200 text-emerald-900',
+    gray: 'bg-gray-50 border-gray-200 text-gray-900',
+  }[smartHint?.tone || 'gray'];
+  const hintEyebrowClass = {
+    primary: 'text-primary-700',
+    blue: 'text-blue-700',
+    violet: 'text-violet-700',
+    emerald: 'text-emerald-700',
+    gray: 'text-gray-500',
+  }[smartHint?.tone || 'gray'];
+
   return (
-    <div style={mode === 'overlay' ? local.overlayBody : local.pageBody}>
-      <header style={local.head}>
-        {mode === 'page' && (
-          <div style={local.crumb}>
-            <Link href={`/company/ats?job=${job.id}`} style={local.crumbLink}>{t('company.candidate.backToKanban', { job: job.title })}</Link>
-          </div>
-        )}
-        <div style={local.headRow}>
-          <div>
-            <h1 style={local.name}>{name}</h1>
-            <div style={local.subline}>
-              {email}
-              {app.applicant_role && <> · {app.applicant_role}</>}
-              {(app.applicant_experience !== null && app.applicant_experience !== undefined) && <> · {app.applicant_experience}{t('company.years')}</>}
-              {mode === 'overlay' && <> · {job.title}</>}
-              <> · {t('company.candidate.appliedShort')} {appliedAtLabel}</>
-            </div>
-          </div>
-          <div style={local.headRight}>
-            <div style={local.stageChip}>
-              {t('company.candidate.currentStage')} <strong style={local.stageStrong}>{currentStage?.emoji} {t(`company.stage.${app.status}`)}</strong>
-            </div>
-            {mode === 'overlay' && (
-              <button onClick={onClose} style={local.closeBtn} title="✕">✕</button>
+    <div className={cn(
+      mode === 'overlay'
+        ? 'flex flex-col h-full bg-[#FAFAFA]'
+        : 'min-h-screen bg-gray-50 px-6 py-6 max-w-[1400px] mx-auto'
+    )}>
+      {/* Hero header — full-width sticky banner with avatar, meta, quick actions, navigation.
+          Left-edge color bar reflects current stage so candidate-to-candidate sweeps make
+          the stage change immediately visible. */}
+      <header className={cn(
+        'relative flex flex-col gap-3',
+        mode === 'overlay' ? 'px-5 pt-3 pb-3 border-b border-border bg-white' : 'mb-5'
+      )}>
+        {mode === 'overlay' && (
+          <div
+            className={cn(
+              'absolute top-0 bottom-0 left-0 w-1.5',
+              app.rejected_at ? 'bg-red-400' : STAGE_DOT_CLASS[app.status]?.replace('bg-', 'bg-') || 'bg-gray-400'
             )}
-          </div>
-        </div>
-      </header>
-
-      {err && <div style={local.errBox}>{err}</div>}
-
-      <div style={local.bodyGrid}>
-        <section style={local.resumeCol}>
-          <div style={local.colHead}>
-            <span>{t('company.candidate.resume')}</span>
-            {hasResume && <a href={app.resume_url} target="_blank" rel="noopener noreferrer" style={local.openInNew}>{t('company.candidate.openNewTab')}</a>}
-          </div>
-          {hasResume ? (
-            <iframe src={app.resume_url} style={local.iframe} title="resume" />
-          ) : (
-            <div style={local.resumeEmpty}>
-              <div style={{fontSize:40, opacity:0.4, marginBottom:12}}>📄</div>
-              <p>{t('company.candidate.noResume')}</p>
-              <p style={local.resumeEmptySub}>{t('company.candidate.noResumeSub')}</p>
-            </div>
-          )}
-        </section>
-
-        <aside style={local.sideCol}>
-          {!isOwner && (
-            <div style={local.interviewerHint}>🔒 {t('company.candidate.interviewerHint')}</div>
-          )}
-
-          {!app.rejected_at && (app.status === 'viewed' || app.status === 'reviewing') && isOwner && (
-            <section style={local.section}>
-              <div style={local.stepHead}>
-                <span style={{ ...local.stepBadge, background: '#1D4ED8' }}>1</span>
-                <span style={local.stepTitle}>{t('company.candidate.step1')}</span>
-              </div>
-              {app.interview_at ? (
-                <div style={local.interviewCard}>
-                  <div style={local.interviewCardHead}>
-                    <span style={local.interviewCardTitle}>
-                      📅 {formatICT(app.interview_at, { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false })} {ICT_LABEL}
-                    </span>
-                    <button onClick={() => setInterviewModal(true)} style={local.interviewEditBtn}>
-                      {t('company.interview.confirmEditBtn')}
-                    </button>
-                  </div>
-                  {app.interview_location && <div style={local.interviewMeta}>📍 {app.interview_location}</div>}
-                  {app.interview_interviewer && <div style={local.interviewMeta}>👤 {app.interview_interviewer}</div>}
-                </div>
-              ) : (
-                <button onClick={() => setInterviewModal(true)} style={local.btnInterview}>
-                  {t('company.interview.confirmBtn')}
-                </button>
-              )}
-            </section>
-          )}
-
-          <section style={local.section}>
-            <div style={local.stepHead}>
-              <span style={{ ...local.stepBadge, background: '#7C3AED' }}>{(!app.rejected_at && (app.status === 'viewed' || app.status === 'reviewing') && isOwner) ? 2 : 1}</span>
-              <span style={local.stepTitle}>{t('company.candidate.step2')}</span>
-            </div>
-            <EvaluationSection
-            t={t}
-            stages={STAGES}
-            currentStage={app.status}
-            evals={evals}
-            expandedStages={expandedStages}
-            onToggle={toggleStage}
-            currentUserId={userId}
-            evalComment={evalComment}
-            setEvalComment={setEvalComment}
-            evalScore={evalScore}
-            setEvalScore={setEvalScore}
-            onSubmit={submitEvaluation}
-            saving={savingEval}
-            onEdit={startEditEval}
-            onDelete={deleteEvaluation}
           />
-          </section>
+        )}
 
-          {!app.rejected_at && (
-            <section style={local.section}>
-              <div style={local.stepHead}>
-                <span style={{ ...local.stepBadge, background: '#EA580C' }}>{((app.status === 'viewed' || app.status === 'reviewing') && isOwner) ? 3 : 2}</span>
-                <span style={local.stepTitle}>{t('company.candidate.step3')}</span>
-                <span style={{ ...local.decisionCurrent, marginLeft: 'auto' }}>
-                  {t('company.candidate.currentStage')} <strong>{currentStage?.emoji} {t(`company.stage.${app.status}`)}</strong>
-                </span>
-              </div>
-              <div style={local.stepper}>
-                {STAGES.map((s, i) => {
-                  const cidx = STAGE_ORDER.indexOf(app.status);
-                  const isCurrent = i === cidx;
-                  const isPast = i < cidx;
+        {/* Top strip: stage minimap (left) + navigation + close (right).
+            Always rendered for overlay mode so close/← → are always at the very top. */}
+        {mode === 'overlay' && (
+          <div className="flex items-center gap-2 -mt-1">
+            {stageCounts && stageOrder && (
+              <div className="flex items-center gap-1.5 -mx-1 overflow-x-auto min-w-0 flex-1">
+                {stageOrder.map((sKey) => {
+                  const label = t(`company.stage.${sKey}`);
+                  const cnt = stageCounts[sKey] ?? 0;
+                  const isActive = sKey === app.status && !app.rejected_at;
+                  const clickable = !!onJumpToStage && cnt > 0;
                   return (
-                    <Fragment key={s.key}>
-                      {i > 0 && <div style={(isPast || isCurrent) ? local.connDone : local.conn} />}
-                      <div
-                        style={{ ...local.dot, ...(isCurrent ? local.dotCurrent : isPast ? local.dotPast : local.dotFuture) }}
-                        title={t(`company.stage.${s.key}`)}
-                      >{s.emoji}</div>
-                    </Fragment>
+                    <button
+                      key={sKey}
+                      type="button"
+                      disabled={!clickable}
+                      onClick={() => clickable && onJumpToStage(sKey)}
+                      className={cn(
+                        'inline-flex items-center gap-1.5 h-7 px-2.5 rounded-full text-[11px] font-bold transition-all whitespace-nowrap',
+                        isActive
+                          ? cn('text-white shadow-soft-xs', STAGE_SOLID_CLASS[sKey])
+                          : clickable
+                            ? 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                            : 'bg-gray-50 text-gray-400 cursor-default',
+                      )}
+                    >
+                      <span className={cn('w-1.5 h-1.5 rounded-full',
+                        isActive ? 'bg-white' : STAGE_DOT_CLASS[sKey]
+                      )} />
+                      {label}
+                      <span className={cn('tabular-nums font-extrabold', isActive ? 'text-white/90' : 'text-gray-900')}>
+                        {cnt}
+                      </span>
+                    </button>
                   );
                 })}
               </div>
-              {app.status === 'decided' ? (
-                <div style={local.finalPassCard}>
-                  <div style={local.finalPassTitle}>{t('company.candidate.finalPass')}</div>
-                  <div style={local.finalPassSub}>{t('company.candidate.finalPassSub')}</div>
-                </div>
-              ) : (
-                <div style={local.decisionRow}>
-                  {isOwner ? (
-                    <>
-                      {nextStage && (
-                        <button onClick={moveNext} style={local.btnAdvance}>
-                          {t('company.candidate.nextShort', { emoji: nextStage.emoji, label: t(`company.stage.${nextStage.key}`) })}
-                        </button>
-                      )}
-                      <button onClick={() => setRejectModal('new')} style={local.btnRejectSolid}>
-                        {t('company.reject.btnShort')}
-                      </button>
-                    </>
-                  ) : (
-                    <>
-                      {nextStage && (
-                        <button disabled style={local.btnDecisionLocked}>
-                          {t('company.candidate.nextShortLocked', { label: t(`company.stage.${nextStage.key}`) })}
-                        </button>
-                      )}
-                      <button disabled style={local.btnDecisionLocked}>
-                        {t('company.reject.btnShortLocked')}
-                      </button>
-                    </>
-                  )}
-                </div>
+            )}
+            <div className="flex items-center gap-1.5 flex-shrink-0 ml-auto">
+              {(onPrev || onNext) && (
+                <>
+                  <UButton variant="outline" size="icon" onClick={onPrev} disabled={!onPrev} className="h-8 w-8" title="이전 후보 (←)">
+                    <ChevronLeft className="w-4 h-4" />
+                  </UButton>
+                  <div className="inline-flex items-center gap-1.5 h-8 px-2.5 rounded-md bg-gray-50 border border-border">
+                    <span className={cn('w-1.5 h-1.5 rounded-full flex-shrink-0', STAGE_DOT_CLASS[app.status])} />
+                    <span className="text-[11.5px] font-bold text-gray-900 truncate">{t(`company.stage.${app.status}`)}</span>
+                    {stageTotal != null && stageIndex != null && stageTotal > 0 && (
+                      <span className="text-[11px] font-extrabold text-gray-900 tabular-nums">
+                        {stageIndex + 1}<span className="text-gray-400">/{stageTotal}</span>
+                      </span>
+                    )}
+                  </div>
+                  <UButton variant="outline" size="icon" onClick={onNext} disabled={!onNext} className="h-8 w-8" title="다음 후보 (→)">
+                    <ChevronRight className="w-4 h-4" />
+                  </UButton>
+                  <div className="w-px h-6 bg-border mx-1" />
+                </>
               )}
-            </section>
-          )}
+              <UButton variant="ghost" size="icon" onClick={onClose} className="h-8 w-8" title="닫기 (Esc)">
+                <XIcon className="w-4 h-4" />
+              </UButton>
+            </div>
+          </div>
+        )}
+        {mode === 'page' && (
+          <BackLink href={`/company/ats?job=${job.id}`} className="mb-1.5 w-fit">
+            {t('company.candidate.backToKanban', { job: job.title })}
+          </BackLink>
+        )}
 
-          {app.rejected_at && (
-            <section style={local.section}>
-              <div style={local.rejectedCard}>
-                <div style={local.rejectedHead}>
-                  <div style={local.rejectedTitle}>
-                    {t('company.candidate.rejectedAt', {
-                      date: new Date(app.rejected_at).toLocaleDateString(),
-                      stage: t(`company.stage.${app.rejected_at_stage || app.status}`),
-                    })}
-                  </div>
-                  {isOwner && (
-                    <div style={local.rejectedActions}>
-                      <button onClick={() => setRejectModal('edit')} style={local.rejectedEditBtn}>
-                        {t('company.reject.editBtn')}
-                      </button>
-                      <button onClick={() => setRejectModal('unreject')} style={local.rejectedUnrejectBtn}>
-                        {t('company.reject.unrejectBtn')}
-                      </button>
-                    </div>
-                  )}
-                </div>
-                {app.rejection_reason && (
-                  <div style={local.rejectedReason}>
-                    {t('company.candidate.rejectedReason', {
-                      reason: app.rejection_reason === 'other'
-                        ? (app.rejection_note || '—')
-                        : t(`company.reject.reason.${app.rejection_reason}`),
-                    })}
-                  </div>
-                )}
+        {/* Row 1: avatar + name + meta (left) | all actions (right) */}
+        <div className="flex items-start gap-3 flex-wrap">
+          <div className={cn(
+            'flex-shrink-0 w-12 h-12 rounded-full flex items-center justify-center text-base font-extrabold',
+            avatarPalette.bg, avatarPalette.text
+          )}>
+            {initial}
+          </div>
+          <div className="min-w-0 flex-1">
+            <h1 className="text-xl font-extrabold text-gray-900 tracking-tight truncate">{name}</h1>
+            <div className="mt-1 text-[12.5px] text-gray-900 font-semibold truncate flex items-center flex-wrap gap-x-1.5">
+              <span>{email}</span>
+              {app.applicant_role && <><span className="text-gray-400">·</span><span>{app.applicant_role}</span></>}
+              {(app.applicant_experience !== null && app.applicant_experience !== undefined) && (
+                <><span className="text-gray-400">·</span><span>{app.applicant_experience}{t('company.years')}</span></>
+              )}
+              {wishSalaryLabel && <><span className="text-gray-400">·</span><span className="text-emerald-700">{wishSalaryLabel}</span></>}
+              {mode === 'overlay' && <><span className="text-gray-400">·</span><span className="text-gray-500">{job.title}</span></>}
+              <span className="text-gray-400">·</span><span className="text-gray-500">{t('company.candidate.appliedShort')} {appliedAtLabel}</span>
+            </div>
+          </div>
+
+          {/* All actions on the right: communication | divider | decision.
+              Aligned to the bottom of Row 1 so they sit below the name/meta block. */}
+          <div className="flex items-center gap-2 flex-shrink-0 flex-wrap self-end">
+            {canRunQuick && (
+              <UButton variant="outline" size="sm" onClick={openMailCompose} title="메일 작성 (E)" className="h-9">
+                <Mail className="w-3.5 h-3.5 text-emerald-600" />
+                {t('company.candidate.mailComposeBtn')}
+              </UButton>
+            )}
+            {canRunQuick && showInterviewStage && (
+              <UButton variant="outline" size="sm" onClick={() => setInterviewModal(true)} className="h-9">
+                <Calendar className="w-3.5 h-3.5 text-blue-600" />
+                {app.interview_at ? t('company.interview.confirmEditBtn') : t('company.interview.confirmBtn')}
+              </UButton>
+            )}
+            {!canRunQuick && (
+              <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-amber-800 bg-amber-50 border border-amber-200 rounded-md px-2 py-1.5">
+                <Lock className="w-3 h-3" />
+                {t('company.candidate.interviewerHint')}
+              </span>
+            )}
+
+            {/* Divider between communication and decision groups */}
+            {canRunQuick && !app.rejected_at && nextStage && (
+              <div className="w-px h-7 bg-border mx-1" />
+            )}
+
+            {canRunQuick && !app.rejected_at && nextStage && (
+              <div className="inline-flex items-stretch h-9 rounded-md border-2 border-primary-300 bg-white shadow-soft-xs overflow-hidden">
+                <button
+                  type="button"
+                  onClick={moveNext}
+                  title="합격 (Enter)"
+                  className="inline-flex items-center gap-1.5 px-3 text-[13px] font-bold text-emerald-700 bg-emerald-50/60 hover:bg-emerald-100 transition-colors"
+                >
+                  <Check className="w-3.5 h-3.5" />
+                  {decisionPrefix} 합격
+                </button>
+                <div className="w-px bg-primary-300" />
+                <button
+                  type="button"
+                  onClick={() => setRejectModal('new')}
+                  title="불합격 (R)"
+                  className="inline-flex items-center gap-1.5 px-3 text-[13px] font-bold text-red-700 bg-red-50/60 hover:bg-red-100 transition-colors"
+                >
+                  <Ban className="w-3.5 h-3.5" />
+                  {decisionPrefix} 불합격
+                </button>
               </div>
-            </section>
-          )}
+            )}
+            {canRunQuick && app.rejected_at && (
+              <UButton variant="outline" size="sm" onClick={() => setRejectModal('unreject')} className="h-9">
+                <RotateCcw className="w-3.5 h-3.5" />
+                {t('company.reject.unrejectBtn')}
+              </UButton>
+            )}
+            {!app.rejected_at && app.status === 'decided' && (
+              <UBadge variant="success" className="py-1.5">
+                <Trophy className="w-3 h-3" />
+                {t('company.candidate.finalPass')}
+              </UBadge>
+            )}
+          </div>
+        </div>
 
-          {(() => {
-            const showInterview = !app.rejected_at && (app.status === 'viewed' || app.status === 'reviewing') && isOwner;
-            const lastStep = app.rejected_at ? 2 : (showInterview ? 4 : 3);
-            const defaultTpl = app.rejected_at ? 'reject'
-              : app.status === 'pending' ? 'received'
-              : (app.status === 'viewed' || app.status === 'reviewing') ? 'interview'
-              : 'offer';
-            return (
-              <section style={local.section}>
-                <div style={local.stepHead}>
-                  <span style={{ ...local.stepBadge, background: '#0891B2' }}>{lastStep}</span>
-                  <span style={local.stepTitle}>{t('company.candidate.step4')}</span>
-                </div>
+        {/* Smart hint — eyebrow + title only.
+            Flowchart-driven: surfaces just the single next action for the current role × stage × state. */}
+        {smartHint && (
+          <div className={cn('flex items-center gap-2.5 rounded-lg border px-3 py-2', hintToneClass)}>
+            <Lightbulb className="w-4 h-4 flex-shrink-0" />
+            <div className="min-w-0 flex-1 space-y-0.5">
+              <div className={cn('text-[10.5px] font-extrabold uppercase tracking-[0.06em]', hintEyebrowClass)}>
+                {smartHint.eyebrow}
+              </div>
+              <div className="text-[13px] font-bold leading-snug">{smartHint.title}</div>
+            </div>
+          </div>
+        )}
+      </header>
+
+      {err && (
+        <div className={cn(
+          'rounded-lg bg-red-50 border border-red-200 px-3 py-2 text-sm text-red-700 font-semibold',
+          mode === 'overlay' ? 'mx-6 mt-3' : 'mb-3'
+        )}>{err}</div>
+      )}
+
+      <div className={cn(
+        'grid gap-4 flex-1 min-h-0',
+        mode === 'overlay' ? 'grid-cols-1 lg:grid-cols-[1fr_400px] px-5 pt-3 pb-5 overflow-auto' : 'grid-cols-1 lg:grid-cols-[1fr_400px]'
+      )}>
+        <section className="flex flex-col bg-white rounded-2xl border border-border shadow-soft-xs overflow-hidden min-h-[600px]">
+          <div className="flex items-center justify-between px-3.5 py-1.5 border-b border-border bg-gray-50/50">
+            <span className="text-[13px] font-bold text-foreground">{t('company.candidate.resume')}</span>
+            {hasResume && (
+              <a
+                href={app.resume_url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1 h-7 px-2 rounded-md text-[11.5px] font-bold text-gray-700 hover:text-gray-900 hover:bg-gray-100 transition-colors"
+              >
+                <ExternalLink className="w-3 h-3" />
+                {t('company.candidate.openNewTab')}
+              </a>
+            )}
+          </div>
+          {hasResume ? (
+            // #view=FitH forces PDF viewers to fit page width, so the document
+            // fills the panel cleanly instead of floating with side gutters.
+            <iframe
+              src={`${app.resume_url}${app.resume_url.includes('#') ? '&' : '#'}view=FitH`}
+              className="flex-1 w-full border-0 min-h-[720px] bg-[#f3f4f6]"
+              title="resume"
+            />
+          ) : (
+            <EmptyState
+              icon={FileX}
+              title={t('company.candidate.noResume')}
+              description={t('company.candidate.noResumeSub')}
+              className="flex-1 min-h-[480px]"
+            />
+          )}
+        </section>
+
+        <aside className="flex flex-col min-h-0">
+          <Tabs value={tab} onValueChange={setTab} className="flex flex-col min-h-0">
+            <TabsList>
+              <TabsTrigger value="eval"><Star className="w-3.5 h-3.5" />평가</TabsTrigger>
+              <TabsTrigger value="mail">
+                <Mail className="w-3.5 h-3.5" />메일
+                <span className={cn('font-extrabold', tab === 'mail' ? 'text-gray-900' : 'text-gray-400')}>{mailLog.length}</span>
+              </TabsTrigger>
+              <TabsTrigger value="history"><History className="w-3.5 h-3.5" />히스토리</TabsTrigger>
+            </TabsList>
+
+            {/* ─── Eval tab ─── */}
+            <TabsContent value="eval">
+              <div className="rounded-2xl bg-white border border-border shadow-soft-xs p-4 space-y-3">
+                <EvaluationSection
+                  t={t}
+                  stages={STAGES}
+                  currentStage={app.status}
+                  evals={evals}
+                  expandedStages={expandedStages}
+                  onToggle={toggleStage}
+                  currentUserId={userId}
+                  evalComment={evalComment}
+                  setEvalComment={setEvalComment}
+                  evalScore={evalScore}
+                  setEvalScore={setEvalScore}
+                  onSubmit={submitEvaluation}
+                  saving={savingEval}
+                  onEdit={startEditEval}
+                  onDelete={deleteEvaluation}
+                />
+              </div>
+
+              {/* Internal notes — collapsible card matching evaluation stage cards.
+                  Multiple notes are appended (history), not overwritten. */}
+              <div className="mt-1.5">
+                <NoteSection
+                  app={app}
+                  evals={evals}
+                  setEvals={setEvals}
+                  userId={userId}
+                  reviewerName={reviewerName}
+                  isOwner={isOwner}
+                  expanded={noteExpanded}
+                  onToggle={() => setNoteExpanded(v => !v)}
+                  draft={noteDraft}
+                  setDraft={setNoteDraft}
+                  saving={savingNote}
+                  setSaving={setSavingNote}
+                />
+              </div>
+            </TabsContent>
+
+            {/* ─── History tab — activity timeline ─── */}
+            <TabsContent value="history">
+              <div className="rounded-2xl bg-white border border-border shadow-soft-xs p-4">
+                <ActivityTimeline t={t} app={app} evals={evals} mailLog={mailLog} />
+              </div>
+            </TabsContent>
+
+            {/* ─── Mail tab — log + compose ─── */}
+            <TabsContent value="mail">
+              <div className="rounded-2xl bg-white border border-border shadow-soft-xs p-4 space-y-3">
                 {isOwner && (
-                  <button
-                    onClick={() => setMailModal({ templateKey: defaultTpl, withSlots: defaultTpl === 'interview' })}
-                    style={local.btnMailCompose}
-                  >
+                  <UButton onClick={openMailCompose} variant="outline" className="w-full">
+                    <Mail className="w-3.5 h-3.5" />
                     {t('company.candidate.mailComposeBtn')}
-                  </button>
+                  </UButton>
                 )}
-                <div style={local.mailLogWrap}>
-                  <div style={local.mailLogH}>{t('company.candidate.mailLogH')} ({mailLog.length})</div>
+                <div className="space-y-2">
+                  <div className="text-[10.5px] font-extrabold text-gray-500 uppercase tracking-[0.08em]">
+                    {t('company.candidate.mailLogH')} · {mailLog.length}
+                  </div>
                   {mailLog.length === 0 ? (
-                    <div style={local.mailLogEmpty}>{t('company.candidate.mailLogEmpty')}</div>
+                    <div className="flex items-center justify-center gap-1.5 py-6 text-[11.5px] text-gray-400 font-semibold border border-dashed border-gray-200 rounded-md">
+                      <Mail className="w-3.5 h-3.5" />
+                      {t('company.candidate.mailLogEmpty')}
+                    </div>
                   ) : (
-                    <div style={local.mailLogList}>
+                    <div className="space-y-1.5">
                       {mailLog.map(m => {
-                        // template_key는 새 시스템에선 사람이 읽을 수 있는 템플릿 이름, 옛 시스템에선 'received' 같은 키
                         const legacyTpl = m.template_key && ['received', 'interview', 'offer', 'reject'].includes(m.template_key);
                         const tplLabel = legacyTpl ? t(`company.tpl.${m.template_key}.label`) : (m.template_key || '—');
                         const when = new Date(m.created_at).toLocaleString(undefined, { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' });
                         return (
-                          <div key={m.id} style={local.mailLogRow}>
-                            <span style={local.mailLogTpl}>{tplLabel}</span>
-                            <span style={local.mailLogTime}>{when}</span>
-                            {m.subject && <div style={local.mailLogSubject}>{m.subject}</div>}
+                          <div key={m.id} className="rounded-lg border border-border px-2.5 py-2 space-y-0.5">
+                            <div className="flex items-center justify-between">
+                              <span className="text-[12px] font-bold text-gray-900">{tplLabel}</span>
+                              <span className="text-[10.5px] text-gray-500 font-semibold">{when}</span>
+                            </div>
+                            {m.subject && <div className="text-[11.5px] text-gray-700 truncate">{m.subject}</div>}
                           </div>
                         );
                       })}
                     </div>
                   )}
                 </div>
-              </section>
-            );
-          })()}
+              </div>
+            </TabsContent>
+
+            {/* ─── Note tab — internal team-shared note ─── */}
+          </Tabs>
         </aside>
       </div>
 
@@ -523,30 +1009,47 @@ export default function CandidateDetail({ appId, mode = 'page', onClose, company
       )}
 
       {editingEval && (
-        <div style={modal.overlay} onClick={() => setEditingEval(null)}>
-          <div style={modal.box} onClick={(e) => e.stopPropagation()}>
-            <header style={modal.head}>
-              <h2 style={modal.h}>{t('company.eval.editH')}</h2>
-              <button onClick={() => setEditingEval(null)} style={modal.closeBtn}>✕</button>
-            </header>
-            <div style={modal.body}>
-              <div style={modal.field}>
-                <label style={modal.label}>{t('company.candidate.note')}</label>
-                <textarea value={editComment} onChange={(e) => setEditComment(e.target.value)} rows={4} style={{ ...modal.inp, resize: 'vertical', fontFamily: 'inherit' }} />
+        <UDialog open onOpenChange={(open) => { if (!open && !savingEdit) setEditingEval(null); }}>
+          <UDialogContent className="max-w-md">
+            <UDialogHeader>
+              <UDialogTitle>{t('company.eval.editH')}</UDialogTitle>
+            </UDialogHeader>
+            <div className="space-y-3">
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-gray-700">{t('company.candidate.note')}</label>
+                <textarea
+                  value={editComment}
+                  onChange={(e) => setEditComment(e.target.value)}
+                  rows={4}
+                  className="w-full px-3 py-2 bg-white border border-input rounded-md text-sm leading-relaxed resize-y focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-1"
+                />
               </div>
-              <div style={modal.field}>
-                <label style={modal.label}>{t('company.eval.scorePh')}</label>
-                <input type="number" min={0} max={100} value={editScore} onChange={(e) => setEditScore(e.target.value)} style={{ ...modal.inp, width: 120 }} />
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-gray-700">평점</label>
+                <div className="flex items-center gap-2">
+                  <UInput
+                    type="number"
+                    min={0}
+                    max={100}
+                    value={editScore}
+                    onChange={(e) => setEditScore(e.target.value)}
+                    placeholder="0 ~ 100"
+                    className="w-28 h-9 text-sm tabular-nums"
+                  />
+                  <span className="text-[12px] font-bold text-gray-500">점 / 100</span>
+                </div>
               </div>
             </div>
-            <footer style={modal.foot}>
-              <button onClick={() => setEditingEval(null)} style={modal.btnGhost}>{t('company.cancel')}</button>
-              <button onClick={saveEditEval} disabled={savingEdit} style={savingEdit ? modal.btnDisabled : modal.btnPrimary}>
+            <UDialogFooter>
+              <UButton variant="outline" onClick={() => setEditingEval(null)} disabled={savingEdit}>
+                {t('company.cancel')}
+              </UButton>
+              <UButton onClick={saveEditEval} disabled={savingEdit}>
                 {savingEdit ? t('company.savingShort') : t('company.eval.editBtn')}
-              </button>
-            </footer>
-          </div>
-        </div>
+              </UButton>
+            </UDialogFooter>
+          </UDialogContent>
+        </UDialog>
       )}
 
     </div>
@@ -582,99 +1085,125 @@ function EvaluationSection({
   evalComment, setEvalComment, evalScore, setEvalScore, onSubmit, saving,
   onEdit, onDelete,
 }) {
-  const currentStageLabel = t(`company.stage.${currentStage}`);
+  const currentStageLabel = EVAL_STAGE_LABEL[currentStage] || t(`company.stage.${currentStage}`);
   const myCurrentEval = evals.find(e => e.stage === currentStage && e.reviewer_user_id === currentUserId);
+  const evalStages = stages.filter(s => EVAL_STAGE_LABEL[s.key]);
 
   return (
-    <>
-      <div style={ev.cards}>
-        {stages.map(s => {
-          const stageEvals = evals.filter(e => e.stage === s.key);
-          const avg = avgScore(stageEvals);
-          const expanded = expandedStages.has(s.key);
-          return (
-            <div key={s.key} style={ev.stageCard}>
-              <button
-                onClick={() => onToggle(s.key)}
-                style={{ ...ev.stageHead, ...(s.key === currentStage ? ev.stageHeadCurrent : {}) }}
-              >
-                <span style={ev.stageEmoji}>{s.emoji}</span>
-                <span style={ev.stageLabel}>{t(`company.stage.${s.key}`)}</span>
-                <span style={avg != null ? ev.avgBadge : ev.notRatedBadge}>
-                  {avg != null ? t('company.eval.avgScore', { n: avg }) : t('company.eval.notRated')}
+    <div className="flex flex-col gap-1.5">
+      {evalStages.map(s => {
+        const stageEvals = evals.filter(e => e.stage === s.key);
+        const avg = avgScore(stageEvals);
+        const expanded = expandedStages.has(s.key);
+        const isCurrent = s.key === currentStage;
+        return (
+          <div key={s.key} className="bg-gray-50 border border-border rounded-lg overflow-hidden">
+            <button
+              type="button"
+              onClick={() => onToggle(s.key)}
+              className={cn(
+                'w-full flex items-center gap-2 px-3 py-2 text-left transition-colors',
+                isCurrent ? 'bg-primary-50/50 hover:bg-primary-50' : 'bg-gray-50 hover:bg-gray-100'
+              )}
+            >
+              <span className={cn('w-1.5 h-1.5 rounded-full', STAGE_DOT_CLASS[s.key])} />
+              <span className="text-xs font-extrabold text-foreground flex-1">{EVAL_STAGE_LABEL[s.key] || t(`company.stage.${s.key}`)}</span>
+              {avg != null ? (
+                <span className="text-[10.5px] font-extrabold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full tabular-nums">
+                  평균 {avg}점
                 </span>
-                <span style={ev.toggleIcon}>{expanded ? '▾' : '▸'}</span>
-              </button>
-              {expanded && (
-                <div style={ev.stageBody}>
-                  {stageEvals.map(e => {
-                    const isMe = e.reviewer_user_id === currentUserId;
-                    const isOwnerRole = e.reviewer_role === 'owner';
-                    return (
-                      <div key={e.id} style={ev.reviewer}>
-                        <div style={ev.reviewerHead}>
-                          <span style={ev.reviewerName}>
-                            {isMe ? `${t('company.eval.me')} (${e.reviewer_name || ''})` : (e.reviewer_name || '—')}
+              ) : (
+                <span className="text-[10.5px] font-bold text-gray-400 bg-white border border-dashed border-gray-300 px-2 py-0.5 rounded-full">
+                  {t('company.eval.notRated')}
+                </span>
+              )}
+              <ChevronRight className={cn('w-3.5 h-3.5 text-gray-400 transition-transform', expanded && 'rotate-90')} />
+            </button>
+            {expanded && (
+              <div className="px-3 py-2.5 border-t border-border bg-white flex flex-col gap-1.5">
+                {stageEvals.map(e => {
+                  const isMe = e.reviewer_user_id === currentUserId;
+                  const isOwnerRole = e.reviewer_role === 'owner';
+                  return (
+                    <div key={e.id} className="bg-gray-50/70 border border-border rounded-md px-2.5 py-2">
+                      <div className="flex items-center gap-1.5 mb-1 flex-wrap">
+                        <span className="text-[11.5px] font-bold text-foreground">
+                          {isMe ? `${t('company.eval.me')} (${e.reviewer_name || ''})` : (e.reviewer_name || '—')}
+                        </span>
+                        <span className={cn(
+                          'text-[9.5px] font-extrabold px-1.5 py-0.5 rounded',
+                          isOwnerRole
+                            ? 'text-primary-700 bg-primary-50 border border-primary-200'
+                            : 'text-sky-700 bg-sky-50 border border-sky-200'
+                        )}>
+                          {t(`company.eval.role.${isOwnerRole ? 'owner' : 'interviewer'}`)}
+                        </span>
+                        <span className="ml-auto text-[10.5px] text-gray-400 font-medium">{formatEvalTime(e.created_at)}</span>
+                        {isMe && (
+                          <span className="flex gap-1">
+                            <button
+                              onClick={() => onEdit(e)}
+                              className="px-1.5 py-0.5 text-[10px] font-bold text-gray-700 bg-white border border-border rounded hover:bg-gray-50 transition-colors"
+                            >{t('company.eval.editBtn')}</button>
+                            <button
+                              onClick={() => onDelete(e)}
+                              className="px-1.5 py-0.5 text-[10px] font-bold text-red-600 bg-white border border-red-200 rounded hover:bg-red-50 transition-colors"
+                            >{t('company.eval.deleteBtn')}</button>
                           </span>
-                          <span style={isOwnerRole ? ev.roleTagOwner : ev.roleTagInterviewer}>
-                            {t(`company.eval.role.${isOwnerRole ? 'owner' : 'interviewer'}`)}
-                          </span>
-                          <span style={ev.reviewerTime}>{formatEvalTime(e.created_at)}</span>
-                          {isMe && (
-                            <span style={ev.evalActions}>
-                              <button onClick={() => onEdit(e)} style={ev.evalActionBtn}>{t('company.eval.editBtn')}</button>
-                              <button onClick={() => onDelete(e)} style={ev.evalActionBtn}>{t('company.eval.deleteBtn')}</button>
-                            </span>
-                          )}
-                        </div>
-                        <div style={ev.reviewerBody}>
-                          <span style={ev.comment}>{e.comment}</span>
-                          {typeof e.score === 'number' && (
-                            <span style={ev.scoreBadge}>{e.score}{t('company.eval.scoreUnit')}</span>
-                          )}
-                        </div>
+                        )}
                       </div>
-                    );
-                  })}
-                  {stageEvals.length === 0 && s.key !== currentStage && (
-                    <div style={ev.empty}>{t('company.eval.empty')}</div>
-                  )}
-                  {s.key === currentStage && (
-                    <div style={ev.form}>
-                      <textarea
-                        value={evalComment}
-                        onChange={(e) => setEvalComment(e.target.value)}
-                        placeholder={t('company.eval.placeholder', { stage: currentStageLabel })}
-                        rows={3}
-                        style={ev.formText}
-                      />
-                      <div style={ev.formRow}>
-                        <input
-                          type="number"
-                          min={0}
-                          max={100}
-                          value={evalScore}
-                          onChange={(e) => setEvalScore(e.target.value)}
-                          placeholder={t('company.eval.scorePh')}
-                          style={ev.formScore}
-                        />
-                        <button
-                          onClick={onSubmit}
-                          disabled={saving || !evalComment.trim()}
-                          style={(saving || !evalComment.trim()) ? ev.submitDisabled : ev.submit}
-                        >
-                          {saving ? '...' : (myCurrentEval ? t('company.eval.update') : t('company.eval.submit'))}
-                        </button>
+                      <div className="flex justify-between gap-2 items-start">
+                        <span className="text-xs text-gray-700 leading-relaxed whitespace-pre-wrap flex-1">{e.comment}</span>
+                        {typeof e.score === 'number' && (
+                          <span className="text-[10.5px] font-extrabold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded flex-shrink-0 tabular-nums">
+                            {e.score}점
+                          </span>
+                        )}
                       </div>
                     </div>
-                  )}
-                </div>
-              )}
-            </div>
-          );
-        })}
-      </div>
-    </>
+                  );
+                })}
+                {stageEvals.length === 0 && !isCurrent && (
+                  <div className="text-[11px] text-gray-400 italic py-1">{t('company.eval.empty')}</div>
+                )}
+                {isCurrent && (
+                  <div className="mt-2 p-2.5 bg-gray-50/70 border border-dashed border-border rounded-md flex flex-col gap-2">
+                    <textarea
+                      value={evalComment}
+                      onChange={(e) => setEvalComment(e.target.value)}
+                      placeholder={t('company.eval.placeholder', { stage: currentStageLabel })}
+                      rows={3}
+                      className="w-full px-2.5 py-2 bg-white border border-border rounded-md text-xs leading-relaxed resize-y focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-1"
+                    />
+                    <div className="flex items-center gap-2">
+                      <span className="text-[11px] font-bold text-gray-700">평점</span>
+                      <UInput
+                        type="number"
+                        min={0}
+                        max={100}
+                        value={evalScore}
+                        onChange={(e) => setEvalScore(e.target.value)}
+                        placeholder="0 ~ 100"
+                        className="w-24 h-8 text-xs tabular-nums"
+                      />
+                      <span className="text-[11px] font-bold text-gray-500">점 / 100</span>
+                      <UButton
+                        size="sm"
+                        onClick={onSubmit}
+                        disabled={saving || !evalComment.trim()}
+                        className="ml-auto"
+                      >
+                        {saving ? '...' : (myCurrentEval ? t('company.eval.update') : t('company.eval.submit'))}
+                      </UButton>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        );
+      })}
+    </div>
   );
 }
 
@@ -752,7 +1281,7 @@ function InterviewModal({ app, onClose, onSaved }) {
       <div style={modal.box} onClick={(e) => e.stopPropagation()}>
         <header style={modal.head}>
           <h2 style={modal.h}>{t('company.interview.h')}</h2>
-          <button onClick={onClose} style={modal.closeBtn}>✕</button>
+          <button onClick={onClose} style={modal.closeBtn}><XIcon className="w-4 h-4" /></button>
         </header>
         <div style={modal.body}>
           <div style={modal.field}>
@@ -771,7 +1300,7 @@ function InterviewModal({ app, onClose, onSaved }) {
                 <input type="date" lang={lang} value={s.date} onChange={(e) => updateSlot(i, 'date', e.target.value)} style={{ ...modal.inp, flex: 1 }} />
                 <input type="time" lang={lang} value={s.time} onChange={(e) => updateSlot(i, 'time', e.target.value)} style={{ ...modal.inp, width: 110 }} />
                 {slots.length > 1 && (
-                  <button type="button" onClick={() => removeSlot(i)} style={slot.removeBtn} title={t('company.interview.removeSlot')}>✕</button>
+                  <button type="button" onClick={() => removeSlot(i)} style={slot.removeBtn} title={t('company.interview.removeSlot')}><XIcon className="w-3 h-3" /></button>
                 )}
               </div>
             ))}
@@ -816,6 +1345,295 @@ function fillVars(text, vars) {
     .split('{회사명}').join(vars.companyName || '—')
     .split('{인터뷰일정}').join(vars.slotsText || '')
     .split('{차수인터뷰}').join(round);
+}
+
+// ─── Note section ──────────────────────────────────────────────────
+// Collapsible card styled exactly like the EvaluationSection stage cards.
+// Notes are appended (never overwritten) and shown reverse-chronologically.
+function NoteSection({ app, evals, setEvals, userId, reviewerName, isOwner, expanded, onToggle, draft, setDraft, saving, setSaving }) {
+  const notes = (evals || []).filter(e => e.stage === 'note').sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+
+  const submit = async () => {
+    const content = draft.trim();
+    if (!content) return;
+    setSaving(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const res = await fetch('/api/company/add-candidate-note', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session?.access_token || ''}` },
+        body: JSON.stringify({ appId: app.id, content }),
+      });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) { toast.error(json.error || '메모 저장 실패'); return; }
+      setEvals(prev => [...prev, json.note]);
+      setDraft('');
+      toast.success('메모가 추가되었습니다');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const remove = async (noteId) => {
+    if (!window.confirm('이 메모를 삭제하시겠어요?')) return;
+    const { data: { session } } = await supabase.auth.getSession();
+    const res = await fetch('/api/company/delete-candidate-note', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session?.access_token || ''}` },
+      body: JSON.stringify({ noteId }),
+    });
+    const json = await res.json().catch(() => ({}));
+    if (!res.ok) { toast.error(json.error || '삭제 실패'); return; }
+    setEvals(prev => prev.filter(e => e.id !== noteId));
+    toast.success('메모가 삭제되었습니다');
+  };
+
+  return (
+    <div className="bg-gray-50 border border-border rounded-lg overflow-hidden">
+      <button
+        type="button"
+        onClick={onToggle}
+        className="w-full flex items-center gap-2 px-3 py-2 text-left transition-colors bg-amber-50/40 hover:bg-amber-50"
+      >
+        <StickyNote className="w-3.5 h-3.5 text-amber-600" />
+        <span className="text-xs font-extrabold text-foreground flex-1">메모</span>
+        <span className={cn(
+          'text-[10.5px] font-extrabold px-2 py-0.5 rounded-full tabular-nums',
+          notes.length > 0
+            ? 'text-amber-700 bg-amber-100 border border-amber-200'
+            : 'text-gray-400 bg-white border border-dashed border-gray-300',
+        )}>
+          {notes.length > 0 ? `${notes.length}건` : '없음'}
+        </span>
+        <ChevronRight className={cn('w-3.5 h-3.5 text-gray-400 transition-transform', expanded && 'rotate-90')} />
+      </button>
+      {expanded && (
+        <div className="px-3 py-2.5 border-t border-border bg-white flex flex-col gap-1.5">
+          {notes.map(n => {
+            const isMine = n.reviewer_user_id === userId;
+            const isOwnerRole = n.reviewer_role === 'owner';
+            return (
+              <div key={n.id} className="bg-gray-50/70 border border-border rounded-md px-2.5 py-2">
+                <div className="flex items-center gap-1.5 mb-1 flex-wrap">
+                  <span className="text-[11.5px] font-bold text-foreground">
+                    {n.reviewer_name || '익명'}
+                  </span>
+                  <span className={cn(
+                    'text-[9.5px] font-extrabold px-1.5 py-0.5 rounded',
+                    isOwnerRole
+                      ? 'text-primary-700 bg-primary-50 border border-primary-200'
+                      : 'text-sky-700 bg-sky-50 border border-sky-200'
+                  )}>
+                    {isOwnerRole ? '공고 관리자' : '면접관'}
+                  </span>
+                  <span className="ml-auto text-[10.5px] text-gray-400 font-medium">{formatEvalTime(n.created_at)}</span>
+                  {isMine && (
+                    <button
+                      type="button"
+                      onClick={() => remove(n.id)}
+                      className="px-1.5 py-0.5 text-[10px] font-bold text-red-600 bg-white border border-red-200 rounded hover:bg-red-50 transition-colors"
+                    >
+                      삭제
+                    </button>
+                  )}
+                </div>
+                <div className="text-xs text-gray-700 leading-relaxed whitespace-pre-wrap">{n.comment}</div>
+              </div>
+            );
+          })}
+          {notes.length === 0 && (
+            <div className="text-[11px] text-gray-400 italic py-1">아직 메모가 없어요</div>
+          )}
+          <div className="mt-2 p-2.5 bg-gray-50/70 border border-dashed border-border rounded-md flex flex-col gap-2">
+            <textarea
+              value={draft}
+              onChange={(e) => setDraft(e.target.value)}
+              onKeyDown={(e) => { if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') { e.preventDefault(); submit(); } }}
+              placeholder="이 후보자에 대한 메모를 남기세요"
+              rows={3}
+              className="w-full px-2.5 py-2 bg-white border border-border rounded-md text-xs leading-relaxed resize-y focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-1"
+            />
+            <div className="flex justify-end">
+              <UButton
+                size="sm"
+                onClick={submit}
+                disabled={saving || !draft.trim()}
+              >
+                <Save className="w-3.5 h-3.5" />
+                {saving ? '저장 중…' : '메모 남기기'}
+              </UButton>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Activity timeline ─────────────────────────────────────────────
+// Each event = { when, icon, iconClass, actor, action, detail }
+//   actor   = who did it (candidate name / reviewer / "관리자" / "시스템")
+//   action  = what they did (verb phrase, neutral tone)
+//   detail  = optional metadata (score, reason, schedule, subject)
+function ActivityTimeline({ t, app, evals, mailLog }) {
+  const candidateName = app.applicant_name || `${t('company.candidatePrefix')}${app.id.slice(-6).toUpperCase()}`;
+  const events = [];
+
+  // ① Applied — actor = candidate themselves
+  events.push({
+    when: app.created_at,
+    icon: Inbox,
+    iconClass: 'text-gray-700 bg-gray-100',
+    actor: candidateName,
+    action: '지원서를 제출했습니다',
+  });
+
+  // ② Interview scheduled — actor unknown (not tracked in DB), shown as "관리자"
+  if (app.interview_at) {
+    const when = formatICT(app.interview_at, { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false });
+    const interviewerNote = app.interview_interviewer ? ` · 면접관 ${app.interview_interviewer}` : '';
+    events.push({
+      when: app.interview_at,
+      icon: Calendar,
+      iconClass: 'text-blue-700 bg-blue-100',
+      actor: '공고 관리자',
+      action: '인터뷰 일정을 등록했습니다',
+      detail: `${when} ${ICT_LABEL}${app.interview_location ? ' · ' + app.interview_location : ''}${interviewerNote}`,
+    });
+  }
+
+  // ③ Evaluations & internal notes — actor = reviewer / author
+  (evals || []).forEach(e => {
+    const role = e.reviewer_role === 'owner' ? '공고 관리자' : '면접관';
+    const isNote = e.stage === 'note';
+    events.push({
+      when: e.created_at,
+      icon: isNote ? StickyNote : Star,
+      iconClass: isNote ? 'text-amber-700 bg-amber-100' : 'text-amber-700 bg-amber-100',
+      actor: e.reviewer_name || '익명',
+      actorRole: role,
+      action: isNote ? '메모를 남겼습니다' : `${t(`company.stage.${e.stage}`)} 평가를 남겼습니다`,
+      detail: e.comment || null,
+      badge: !isNote && typeof e.score === 'number' ? { text: `${e.score}점`, tone: 'amber' } : null,
+    });
+  });
+
+  // ④ Mails — actor unknown, shown as "관리자"
+  (mailLog || []).forEach(m => {
+    const legacyTpl = m.template_key && ['received', 'interview', 'offer', 'reject'].includes(m.template_key);
+    const tplLabel = legacyTpl ? t(`company.tpl.${m.template_key}.label`) : (m.template_key || '메일');
+    events.push({
+      when: m.created_at,
+      icon: Send,
+      iconClass: 'text-cyan-700 bg-cyan-100',
+      actor: '공고 관리자',
+      action: '안내 메일을 발송했습니다',
+      detail: m.subject || null,
+      badge: { text: tplLabel, tone: 'cyan' },
+    });
+  });
+
+  // ⑤ Rejected — actor unknown, shown as "관리자"
+  if (app.rejected_at) {
+    const reason = app.rejection_reason === 'other'
+      ? (app.rejection_note || '')
+      : (app.rejection_reason ? t(`company.reject.reason.${app.rejection_reason}`) : '');
+    const rejectedStage = app.rejected_at_stage ? t(`company.stage.${app.rejected_at_stage}`) : null;
+    events.push({
+      when: app.rejected_at,
+      icon: Ban,
+      iconClass: 'text-red-700 bg-red-100',
+      actor: '공고 관리자',
+      action: rejectedStage ? `${rejectedStage} 단계에서 불합격 처리했습니다` : '불합격 처리했습니다',
+      detail: reason ? `사유: ${reason}` : null,
+    });
+  }
+
+  // ⑥ Current stage marker (only if past first stage and not rejected)
+  if (app.status !== 'pending' && !app.rejected_at) {
+    events.push({
+      when: app.updated_at || app.created_at,
+      icon: ChevronRight,
+      iconClass: 'text-primary-700 bg-primary-100',
+      actor: '공고 관리자',
+      action: `${t(`company.stage.${app.status}`)} 단계로 이동했습니다`,
+    });
+  }
+
+  events.sort((a, b) => new Date(b.when) - new Date(a.when));
+
+  const fmt = (iso) => new Date(iso).toLocaleString(undefined, {
+    month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false,
+  });
+
+  if (events.length === 0) {
+    return (
+      <div className="flex items-center justify-center gap-1.5 py-6 text-[11.5px] text-gray-400 font-semibold border border-dashed border-gray-200 rounded-md">
+        <History className="w-3.5 h-3.5" />
+        활동 내역이 없습니다
+      </div>
+    );
+  }
+
+  const badgeToneClass = {
+    amber:   'text-amber-700 bg-amber-50 border border-amber-200',
+    cyan:    'text-cyan-700 bg-cyan-50 border border-cyan-200',
+    emerald: 'text-emerald-700 bg-emerald-50 border border-emerald-200',
+    red:     'text-red-700 bg-red-50 border border-red-200',
+  };
+
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center justify-between">
+        <div className="text-[10.5px] font-extrabold text-gray-500 uppercase tracking-[0.08em]">
+          활동 타임라인
+        </div>
+        <span className="text-[10.5px] font-bold text-gray-400 tabular-nums">{events.length}건</span>
+      </div>
+      <div className="relative space-y-3.5">
+        {events.map((e, i) => {
+          const Icon = e.icon;
+          return (
+            <div key={i} className="flex gap-2.5 relative">
+              {/* connector line */}
+              {i < events.length - 1 && (
+                <div className="absolute left-[13px] top-7 bottom-[-14px] w-px bg-gray-200" />
+              )}
+              <div className={cn('relative flex-shrink-0 w-7 h-7 rounded-full grid place-items-center', e.iconClass)}>
+                <Icon className="w-3.5 h-3.5" />
+              </div>
+              <div className="min-w-0 flex-1 pt-0.5 pb-0.5">
+                <div className="flex items-baseline justify-between gap-2 flex-wrap">
+                  <div className="text-[12.5px] leading-snug min-w-0 flex-1">
+                    <span className="font-extrabold text-gray-900">{e.actor}</span>
+                    {e.actorRole && (
+                      <span className="ml-1 text-[10.5px] font-bold text-gray-500">({e.actorRole})</span>
+                    )}
+                    <span className="text-gray-700 font-medium">{ka(e.actor)} {e.action}.</span>
+                  </div>
+                  <span className="text-[10.5px] font-semibold text-gray-500 flex-shrink-0 tabular-nums">{fmt(e.when)}</span>
+                </div>
+                {(e.detail || e.badge) && (
+                  <div className="mt-1 flex items-start gap-1.5 flex-wrap">
+                    {e.badge && (
+                      <span className={cn('text-[10.5px] font-extrabold px-1.5 py-0.5 rounded tabular-nums', badgeToneClass[e.badge.tone] || badgeToneClass.amber)}>
+                        {e.badge.text}
+                      </span>
+                    )}
+                    {e.detail && (
+                      <span className="text-[11.5px] text-gray-700 leading-relaxed whitespace-pre-line line-clamp-2 flex-1 min-w-0">
+                        {e.detail}
+                      </span>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
 }
 
 export function MailComposer({
@@ -944,19 +1762,27 @@ export function MailComposer({
   const canDeleteSelected = !!(selectedTpl && selectedTpl.created_by === userId);
 
   return (
-    <div style={modal.overlay} onClick={sending ? undefined : onClose}>
-      <div style={{ ...modal.box, maxWidth: 620 }} onClick={(e) => e.stopPropagation()}>
-        <header style={modal.head}>
-          <h2 style={modal.h}>{t('company.mail.h')}</h2>
-          <button onClick={onClose} style={modal.closeBtn}>✕</button>
-        </header>
-        <div style={modal.body}>
-          {stageNote && <div style={mc.stageNote}>{stageNote}</div>}
+    <UDialog open onOpenChange={(open) => { if (!open && !sending) onClose(); }}>
+      <UDialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <UDialogHeader>
+          <UDialogTitle>{t('company.mail.h')}</UDialogTitle>
+        </UDialogHeader>
 
-          <div style={modal.field}>
-            <label style={modal.label}>{t('company.mail.tplLabel')}</label>
-            <div style={mc.tplPickerRow}>
-              <select value={selectedId} onChange={(e) => pickTemplate(e.target.value)} style={{ ...modal.inp, flex: 1 }}>
+        <div className="space-y-4">
+          {stageNote && (
+            <div className="rounded-lg bg-amber-50 border border-amber-200 px-3 py-2.5 text-sm text-amber-900 font-semibold leading-relaxed flex items-start gap-2">
+              <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
+              <span>{stageNote}</span>
+            </div>
+          )}
+
+          <div className="space-y-1.5">
+            <label className="text-xs font-bold text-gray-700">{t('company.mail.tplLabel')}</label>
+            <div className="flex items-center gap-2">
+              <select
+                value={selectedId}
+                onChange={(e) => pickTemplate(e.target.value)}
+                className="flex h-10 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-1">
                 <option value="">{t('company.mail.tplBlank')}</option>
                 {templates.map(x => (
                   <option key={x.id} value={x.id}>
@@ -965,116 +1791,122 @@ export function MailComposer({
                 ))}
               </select>
               {selectedId && canDeleteSelected && (
-                <button onClick={() => deleteTemplate(selectedTpl)} style={mc.tplDeleteBtn} title={t('company.mail.tplDeleteBtn')}>🗑</button>
+                <UButton variant="outline" size="icon" onClick={() => deleteTemplate(selectedTpl)} title={t('company.mail.tplDeleteBtn')} className="text-destructive border-red-200 hover:bg-red-50">
+                  <Trash2 className="w-4 h-4" />
+                </UButton>
               )}
             </div>
           </div>
 
-          <div style={modal.field}>
-            <label style={modal.label}>{t('company.mail.to')}</label>
-            <input value={candidateEmail} readOnly style={{ ...modal.inp, background: '#F1F5F9', color: '#737373' }} />
+          <div className="space-y-1.5">
+            <label className="text-xs font-bold text-gray-700">{t('company.mail.to')}</label>
+            <UInput value={candidateEmail} readOnly className="bg-gray-100 text-gray-500" />
           </div>
 
-          <div style={modal.field}>
-            <label style={modal.label}>{t('company.mail.subject')}</label>
-            <input value={subject} onChange={(e) => setSubject(e.target.value)} style={modal.inp} />
+          <div className="space-y-1.5">
+            <label className="text-xs font-bold text-gray-700">{t('company.mail.subject')}</label>
+            <UInput value={subject} onChange={(e) => setSubject(e.target.value)} />
           </div>
 
-          <label style={mc.slotsToggle}>
-            <input type="checkbox" checked={showSlots} onChange={(e) => setShowSlots(e.target.checked)} />
+          <label className="flex items-center gap-2.5 cursor-pointer text-sm font-semibold text-foreground py-1">
+            <input type="checkbox" checked={showSlots} onChange={(e) => setShowSlots(e.target.checked)} className="w-4 h-4 accent-primary-500" />
+            <Calendar className="w-4 h-4 text-primary-600" />
             <span>{t('company.mail.slotsToggle')}</span>
           </label>
           {showSlots && (
-            <div style={modal.field}>
+            <div className="space-y-2 rounded-lg bg-gray-50 border border-gray-200 p-3">
               {slots.slice(0, 3).map((s, i) => (
-                <div key={i} style={slot.row}>
-                  <span style={slot.num}>{i + 1}</span>
-                  <input type="date" lang={lang} value={s.date} onChange={(e) => updateSlot(i, 'date', e.target.value)} style={{ ...modal.inp, flex: 1 }} />
-                  <input type="time" lang={lang} value={s.time} onChange={(e) => updateSlot(i, 'time', e.target.value)} style={{ ...modal.inp, width: 110 }} />
+                <div key={i} className="flex items-center gap-2">
+                  <span className="flex-shrink-0 w-6 h-6 rounded-full bg-primary-100 text-primary-700 flex items-center justify-center text-xs font-bold">{i + 1}</span>
+                  <UInput type="date" lang={lang} value={s.date} onChange={(e) => updateSlot(i, 'date', e.target.value)} className="flex-1" />
+                  <UInput type="time" lang={lang} value={s.time} onChange={(e) => updateSlot(i, 'time', e.target.value)} className="w-28" />
                 </div>
               ))}
-              <p style={modal.hint}>{t('company.mail.slotsHint')}</p>
+              <p className="text-xs text-gray-500 mt-1">{t('company.mail.slotsHint')}</p>
             </div>
           )}
 
-          <div style={modal.field}>
-            <label style={modal.label}>{t('company.mail.body')}</label>
-            <textarea value={body} onChange={(e) => setBody(e.target.value)} rows={12}
-              style={{ ...modal.inp, resize: 'vertical', fontFamily: 'inherit', lineHeight: 1.6 }} />
-            <p style={modal.hint}>{t('company.mail.varsHint')}</p>
+          <div className="space-y-1.5">
+            <label className="text-xs font-bold text-gray-700">{t('company.mail.body')}</label>
+            <textarea
+              value={body}
+              onChange={(e) => setBody(e.target.value)}
+              rows={12}
+              className="flex w-full rounded-lg border border-input bg-background px-3 py-2.5 text-sm font-medium leading-relaxed resize-y focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-1"
+            />
+            <p className="text-xs text-gray-500">{t('company.mail.varsHint')}</p>
           </div>
 
           {showSaveDialog ? (
-            <div style={mc.saveDialog}>
-              <div style={mc.saveDialogH}>{t('company.mail.tplSaveTitle')}</div>
-              <input
+            <div className="rounded-lg bg-primary-50/50 border border-primary-200 p-3 space-y-2.5">
+              <div className="text-sm font-bold text-primary-800">{t('company.mail.tplSaveTitle')}</div>
+              <UInput
                 value={newTplName}
                 onChange={(e) => setNewTplName(e.target.value)}
                 placeholder={t('company.mail.tplSaveNamePh')}
-                style={modal.inp}
                 autoFocus
               />
-              <div style={mc.saveDialogActions}>
-                <button onClick={() => { setShowSaveDialog(false); setNewTplName(''); setErr(''); }} style={modal.btnGhost} disabled={savingTpl}>
+              <div className="flex justify-end gap-2">
+                <UButton variant="outline" size="sm" onClick={() => { setShowSaveDialog(false); setNewTplName(''); setErr(''); }} disabled={savingTpl}>
                   {t('company.cancel')}
-                </button>
-                <button onClick={saveAsTemplate} disabled={savingTpl} style={savingTpl ? modal.btnDisabled : modal.btnPrimary}>
+                </UButton>
+                <UButton size="sm" onClick={saveAsTemplate} disabled={savingTpl}>
                   {savingTpl ? t('company.savingShort') : t('company.mail.tplSaveSaveBtn')}
-                </button>
+                </UButton>
               </div>
             </div>
           ) : (
-            <button onClick={() => setShowSaveDialog(true)} style={mc.saveAsTplBtn}>
+            <UButton variant="ghost" size="sm" onClick={() => setShowSaveDialog(true)} className="text-primary-700 hover:bg-primary-50">
+              <Save className="w-4 h-4" />
               {t('company.mail.tplSaveBtn')}
-            </button>
+            </UButton>
           )}
 
-          {err && <div style={local.errBox}>{err}</div>}
+          {err && (
+            <div className="rounded-lg bg-red-50 border border-red-200 px-3 py-2 text-sm text-red-700 font-semibold">{err}</div>
+          )}
         </div>
-        <footer style={modal.foot}>
-          <button onClick={onClose} style={modal.btnGhost}>{stageNote ? t('company.skip') : t('company.cancel')}</button>
-          <button onClick={openMailApp} style={modal.btnGhost}>{t('company.mail.openApp')}</button>
-          <button onClick={send} disabled={sending} style={sending ? modal.btnDisabled : modal.btnPrimary}>
+
+        <UDialogFooter>
+          <UButton variant="outline" onClick={onClose}>{stageNote ? t('company.skip') : t('company.cancel')}</UButton>
+          <UButton variant="outline" onClick={openMailApp}>
+            <Mail className="w-4 h-4" />
+            {t('company.mail.openApp')}
+          </UButton>
+          <UButton onClick={send} disabled={sending}>
+            <Send className="w-4 h-4" />
             {sending ? t('company.mail.sending') : t('company.mail.send')}
-          </button>
-        </footer>
-      </div>
-    </div>
+          </UButton>
+        </UDialogFooter>
+      </UDialogContent>
+    </UDialog>
   );
 }
 
 export function ConfirmModal({ title, message, confirmLabel, cancelLabel, tone = 'primary', variant = 'confirm', onConfirm, onCancel }) {
   const { t } = useT();
   const isAlert = variant === 'alert';
-  const confirmStyle = tone === 'danger' ? modal.btnDanger : modal.btnPrimary;
   return (
-    <div style={modal.overlay} onClick={onCancel}>
-      <div style={{ ...modal.box, maxWidth: 440 }} onClick={(e) => e.stopPropagation()}>
-        <header style={modal.head}>
-          <h2 style={modal.h}>{title}</h2>
-          <button onClick={onCancel} style={modal.closeBtn}>✕</button>
-        </header>
-        <div style={modal.body}>
-          <p style={cm.message}>{message}</p>
-        </div>
-        <footer style={modal.foot}>
+    <UDialog open onOpenChange={(open) => { if (!open) onCancel(); }}>
+      <UDialogContent className="max-w-md">
+        <UDialogHeader>
+          <UDialogTitle>{title}</UDialogTitle>
+        </UDialogHeader>
+        <p className="text-sm text-foreground leading-relaxed whitespace-pre-line">{message}</p>
+        <UDialogFooter>
           {!isAlert && (
-            <button onClick={onCancel} style={modal.btnGhost}>
+            <UButton variant="outline" onClick={onCancel}>
               {cancelLabel || t('company.cancel')}
-            </button>
+            </UButton>
           )}
-          <button onClick={onConfirm} style={confirmStyle || modal.btnPrimary}>
+          <UButton variant={tone === 'danger' ? 'destructive' : 'default'} onClick={onConfirm}>
             {confirmLabel || t('company.confirm')}
-          </button>
-        </footer>
-      </div>
-    </div>
+          </UButton>
+        </UDialogFooter>
+      </UDialogContent>
+    </UDialog>
   );
 }
-
-const cm = {
-  message: { fontSize: 13.5, color: '#1A1A1A', lineHeight: 1.65, whiteSpace: 'pre-line', margin: 0 },
-};
 
 export function InterviewConfirmModal({ app, onClose, onSaved }) {
   const { t, lang } = useT();
@@ -1119,51 +1951,54 @@ export function InterviewConfirmModal({ app, onClose, onSaved }) {
   };
 
   return (
-    <div style={modal.overlay} onClick={saving ? undefined : onClose}>
-      <div style={modal.box} onClick={(e) => e.stopPropagation()}>
-        <header style={modal.head}>
-          <h2 style={modal.h}>{t('company.interview.confirmH')}</h2>
-          <button onClick={onClose} style={modal.closeBtn}>✕</button>
-        </header>
-        <div style={modal.body}>
-          <p style={modal.hint}>{t('company.interview.confirmSub')}</p>
+    <UDialog open onOpenChange={(open) => { if (!open && !saving) onClose(); }}>
+      <UDialogContent className="max-w-lg">
+        <UDialogHeader>
+          <UDialogTitle>{t('company.interview.confirmH')}</UDialogTitle>
+          <UDialogDescription>{t('company.interview.confirmSub')}</UDialogDescription>
+        </UDialogHeader>
 
-          <div style={{ display: 'flex', gap: 8 }}>
-            <div style={{ ...modal.field, flex: 1 }}>
-              <label style={modal.label}>{t('company.interview.confirmDateLabel')}</label>
-              <input type="date" lang={lang} value={date} onChange={(e) => setDate(e.target.value)} style={modal.inp} disabled={saving} />
+        <div className="space-y-4">
+          <div className="flex gap-3">
+            <div className="flex-1 space-y-1.5">
+              <label className="text-xs font-bold text-gray-700">{t('company.interview.confirmDateLabel')}</label>
+              <UInput type="date" lang={lang} value={date} onChange={(e) => setDate(e.target.value)} disabled={saving} />
             </div>
-            <div style={{ ...modal.field, width: 140 }}>
-              <label style={modal.label}>{t('company.interview.confirmTimeLabel')}</label>
-              <input type="time" lang={lang} value={time} onChange={(e) => setTime(e.target.value)} style={modal.inp} disabled={saving} />
+            <div className="w-36 space-y-1.5">
+              <label className="text-xs font-bold text-gray-700">{t('company.interview.confirmTimeLabel')}</label>
+              <UInput type="time" lang={lang} value={time} onChange={(e) => setTime(e.target.value)} disabled={saving} />
             </div>
           </div>
 
-          <div style={modal.field}>
-            <label style={modal.label}>{t('company.interview.locLabel')}</label>
-            <input value={location} onChange={(e) => setLocation(e.target.value)} placeholder={t('company.interview.locPh')} style={modal.inp} disabled={saving} />
+          <div className="space-y-1.5">
+            <label className="text-xs font-bold text-gray-700">{t('company.interview.locLabel')}</label>
+            <UInput value={location} onChange={(e) => setLocation(e.target.value)} placeholder={t('company.interview.locPh')} disabled={saving} />
           </div>
 
-          <div style={modal.field}>
-            <label style={modal.label}>{t('company.interview.interviewerLabel')}</label>
-            <input value={interviewer} onChange={(e) => setInterviewer(e.target.value)} placeholder={t('company.interview.interviewerPh')} style={modal.inp} disabled={saving} />
+          <div className="space-y-1.5">
+            <label className="text-xs font-bold text-gray-700">{t('company.interview.interviewerLabel')}</label>
+            <UInput value={interviewer} onChange={(e) => setInterviewer(e.target.value)} placeholder={t('company.interview.interviewerPh')} disabled={saving} />
           </div>
 
-          {err && <div style={local.errBox}>{err}</div>}
-        </div>
-        <footer style={modal.foot}>
-          {isEdit && (
-            <button onClick={clear} style={{ ...modal.btnGhost, color: '#B91C1C', borderColor: '#FCA5A5', marginRight: 'auto' }} disabled={saving}>
-              {t('company.interview.confirmClear')}
-            </button>
+          {err && (
+            <div className="rounded-lg bg-red-50 border border-red-200 px-3 py-2 text-sm text-red-700 font-semibold">{err}</div>
           )}
-          <button onClick={onClose} style={modal.btnGhost} disabled={saving}>{t('company.cancel')}</button>
-          <button onClick={save} disabled={saving} style={saving ? modal.btnDisabled : modal.btnPrimary}>
+        </div>
+
+        <UDialogFooter>
+          {isEdit && (
+            <UButton variant="outline" onClick={clear} disabled={saving} className="mr-auto text-destructive border-red-200 hover:bg-red-50">
+              <Trash2 className="w-4 h-4" />
+              {t('company.interview.confirmClear')}
+            </UButton>
+          )}
+          <UButton variant="outline" onClick={onClose} disabled={saving}>{t('company.cancel')}</UButton>
+          <UButton onClick={save} disabled={saving}>
             {saving ? t('company.savingShort') : t('company.interview.confirmSave')}
-          </button>
-        </footer>
-      </div>
-    </div>
+          </UButton>
+        </UDialogFooter>
+      </UDialogContent>
+    </UDialog>
   );
 }
 
@@ -1216,28 +2051,28 @@ export function RejectionModal({ app, stageKey, candidateName, mode = 'new', ini
   };
 
   return (
-    <div style={modal.overlay} onClick={saving ? undefined : onClose}>
-      <div style={modal.box} onClick={(e) => e.stopPropagation()}>
-        <header style={modal.head}>
-          <h2 style={modal.h}>{isUnreject ? t('company.reject.unrejectH') : isEdit ? t('company.reject.editH') : t('company.reject.h')}</h2>
-          <button onClick={onClose} style={modal.closeBtn}>✕</button>
-        </header>
-        <div style={modal.body}>
+    <UDialog open onOpenChange={(open) => { if (!open && !saving) onClose(); }}>
+      <UDialogContent className="max-w-lg">
+        <UDialogHeader>
+          <UDialogTitle>{isUnreject ? t('company.reject.unrejectH') : isEdit ? t('company.reject.editH') : t('company.reject.h')}</UDialogTitle>
+        </UDialogHeader>
+
+        <div className="space-y-4">
           {isUnreject ? (
-            <div style={rj.subBanner}>
+            <div className="rounded-lg bg-red-50 border border-red-200 px-3 py-2.5 text-sm text-red-800 font-semibold leading-relaxed">
               {t('company.reject.unrejectMsg', { name: candidateName, stage: stageLabel })}
             </div>
           ) : (
             <>
-              <div style={rj.subBanner}>
+              <div className="rounded-lg bg-red-50 border border-red-200 px-3 py-2.5 text-sm text-red-800 font-semibold leading-relaxed">
                 {t('company.reject.sub', { name: candidateName, stage: stageLabel })}
               </div>
 
-              <div style={modal.field}>
-                <label style={modal.label}>{t('company.reject.reasonLabel')}</label>
-                <div style={rj.radioGroup}>
+              <div className="space-y-2">
+                <label className="text-xs font-bold text-gray-700">{t('company.reject.reasonLabel')}</label>
+                <div className="flex flex-col gap-2 py-1">
                   {REJECT_REASONS.map(r => (
-                    <label key={r} style={rj.radioRow}>
+                    <label key={r} className="flex items-center gap-2.5 cursor-pointer text-sm text-foreground hover:text-primary-700 transition-colors">
                       <input
                         type="radio"
                         name="reject-reason"
@@ -1245,36 +2080,38 @@ export function RejectionModal({ app, stageKey, candidateName, mode = 'new', ini
                         checked={reason === r}
                         onChange={() => setReason(r)}
                         disabled={saving}
+                        className="w-4 h-4 accent-primary-500"
                       />
                       <span>{t(`company.reject.reason.${r}`)}</span>
                     </label>
                   ))}
                 </div>
                 {reason === 'other' && (
-                  <input
+                  <UInput
                     value={note}
                     onChange={(e) => setNote(e.target.value)}
                     placeholder={t('company.reject.notePh')}
-                    style={modal.inp}
                     disabled={saving}
                   />
                 )}
-                <p style={modal.hint}>{t('company.reject.reasonHint')}</p>
+                <p className="text-xs text-gray-500">{t('company.reject.reasonHint')}</p>
               </div>
-
             </>
           )}
 
-          {err && <div style={local.errBox}>{err}</div>}
+          {err && (
+            <div className="rounded-lg bg-red-50 border border-red-200 px-3 py-2 text-sm text-red-700 font-semibold">{err}</div>
+          )}
         </div>
-        <footer style={modal.foot}>
-          <button onClick={onClose} style={modal.btnGhost} disabled={saving}>
+
+        <UDialogFooter>
+          <UButton variant="outline" onClick={onClose} disabled={saving}>
             {t('company.cancel')}
-          </button>
-          <button
+          </UButton>
+          <UButton
+            variant={isUnreject ? 'default' : 'destructive'}
             onClick={save}
-            disabled={saving}
-            style={saving ? modal.btnDisabled : modal.btnPrimary}>
+            disabled={saving}>
             {saving ? t('company.savingShort') : (
               isUnreject
                 ? t('company.reject.unrejectConfirm')
@@ -1282,10 +2119,10 @@ export function RejectionModal({ app, stageKey, candidateName, mode = 'new', ini
                   ? t('company.reject.editSave')
                   : t('company.reject.confirm')
             )}
-          </button>
-        </footer>
-      </div>
-    </div>
+          </UButton>
+        </UDialogFooter>
+      </UDialogContent>
+    </UDialog>
   );
 }
 

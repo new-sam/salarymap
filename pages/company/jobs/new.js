@@ -1,7 +1,10 @@
 import { useState, useEffect, Fragment } from 'react';
 import { color as tc, font as tf, space as ts, radius as tr, shadow as tsh, motion as tm } from '../../../lib/theme';
 import { cn } from '../../../lib/cn';
-import { Plus, Home, CalendarDays } from 'lucide-react';
+import { Plus, Home, CalendarDays, ImageIcon, MapPin, Building2, Briefcase, Users as UsersIcon } from 'lucide-react';
+import { Button as UButton } from '../../../components/ui/button';
+import { Input as UInput } from '../../../components/ui/input';
+import { PageHeader } from '../../../components/ui/page-header';
 import Head from 'next/head';
 import { useRouter } from 'next/router';
 import Link from 'next/link';
@@ -9,6 +12,7 @@ import { supabase } from '../../../lib/supabaseClient';
 import Brand from '../../../components/company/Brand';
 import LangToggle from '../../../components/company/LangToggle';
 import { useT } from '../../../lib/i18n';
+import { toast } from 'sonner';
 
 const ROLES = ['Backend', 'Frontend', 'Fullstack', 'Mobile', 'Data', 'DevOps', 'PM', 'Design', 'QA'];
 const TYPES = ['remote', 'onsite', 'hybrid'];
@@ -145,6 +149,7 @@ export default function NewJobPage() {
     if (data?.id && user?.id) {
       await supabase.from('job_team').insert({ job_id: data.id, user_id: user.id, role: 'owner' });
     }
+    toast.success(t('company.jobsnew.publish'));
     router.replace('/company/jobs');
   };
 
@@ -189,161 +194,238 @@ export default function NewJobPage() {
     <>
       <Head><title>{t('company.head.newJob')}</title></Head>
       <div style={css.app}>
-        <Sidebar companyName={companyName} userEmail={user?.email} activePage="jobs" />
+        <Sidebar companyName={companyName} userEmail={user?.email} activePage="new" />
 
         <main style={css.main}>
-          <header style={css.mainHead}>
-            <div>
-              <h1 style={css.mainH}>{t('company.jobsnew.h')}</h1>
-              <p style={css.mainP}>{t('company.jobsnew.sub')}</p>
-            </div>
-          </header>
+          <PageHeader
+            title={t('company.jobsnew.h')}
+            subtitle={t('company.jobsnew.sub')}
+            right={(
+              <>
+                <UButton asChild variant="outline">
+                  <Link href="/company/jobs">{t('company.cancel')}</Link>
+                </UButton>
+                <UButton type="submit" form="job-new-form" disabled={status === 'saving'}>
+                  {status === 'saving' ? t('company.saving') : t('company.jobsnew.publish')}
+                </UButton>
+              </>
+            )}
+          />
 
-          <form onSubmit={onSubmit} style={css.formShell}>
-            <div style={css.formCol}>
-              <h2 style={css.sectionTitle}>{t('company.jobsnew.photoH')}</h2>
+          <form id="job-new-form" onSubmit={onSubmit} className="grid grid-cols-1 lg:grid-cols-[1.4fr_1fr] gap-6 items-start">
+            <div className="flex flex-col">
+              <h2 className="text-[12px] font-extrabold text-gray-500 uppercase tracking-[0.08em] mb-3">{t('company.jobsnew.photoH')}</h2>
 
-              <div style={css.row2}>
+              <div className="grid grid-cols-2 gap-3 mb-3">
                 <Field label={t('company.jobsnew.imageLabel')}>
                   {form.image_url ? (
-                    <div style={localCss.imgRow}>
-                      <img src={form.image_url} alt="thumbnail" style={localCss.imgPreview} />
-                      <button type="button" onClick={() => setF('image_url', '')} style={localCss.imgRemove}>{t('company.remove')}</button>
+                    <div className="flex items-center gap-2.5 p-2.5 border border-border rounded-lg bg-white">
+                      <img src={form.image_url} alt="thumbnail" className="h-14 w-24 rounded-md object-cover" />
+                      <UButton type="button" variant="outline" size="sm" onClick={() => setF('image_url', '')} className="ml-auto h-7 px-2 text-xs text-red-600 border-red-200 hover:bg-red-50">{t('company.remove')}</UButton>
                     </div>
                   ) : (
                     <input type="file" accept="image/*" disabled={uploading}
                       onChange={(e) => e.target.files?.[0] && uploadImage(e.target.files[0], 'image_url')}
-                      style={localCss.fileInp} />
+                      className="text-xs text-gray-700 border border-dashed border-gray-300 rounded-lg p-2 bg-gray-50 cursor-pointer w-full" />
                   )}
                 </Field>
                 <Field label={t('company.jobsnew.logoLabel')}>
                   {form.logo_url ? (
-                    <div style={localCss.imgRow}>
-                      <img src={form.logo_url} alt="logo" style={localCss.logoPreview} />
-                      <button type="button" onClick={() => setF('logo_url', '')} style={localCss.imgRemove}>{t('company.remove')}</button>
+                    <div className="flex items-center gap-2.5 p-2.5 border border-border rounded-lg bg-white">
+                      <img src={form.logo_url} alt="logo" className="h-10 w-10 rounded-md object-contain bg-gray-50" />
+                      <UButton type="button" variant="outline" size="sm" onClick={() => setF('logo_url', '')} className="ml-auto h-7 px-2 text-xs text-red-600 border-red-200 hover:bg-red-50">{t('company.remove')}</UButton>
                     </div>
                   ) : (
                     <input type="file" accept="image/*" disabled={uploading}
                       onChange={(e) => e.target.files?.[0] && uploadImage(e.target.files[0], 'logo_url')}
-                      style={localCss.fileInp} />
+                      className="text-xs text-gray-700 border border-dashed border-gray-300 rounded-lg p-2 bg-gray-50 cursor-pointer w-full" />
                   )}
                 </Field>
               </div>
               {uploading
-                ? <div style={localCss.uploadHint}>{t('company.uploading')}</div>
-                : <div style={localCss.photoHint}>{t('company.jobsnew.photoHint')}</div>}
+                ? <div className="text-xs text-primary-600 font-semibold mb-3">{t('company.uploading')}</div>
+                : <div className="text-xs text-gray-400 font-semibold mb-5">{t('company.jobsnew.photoHint')}</div>}
 
-              <h2 style={{...css.sectionTitle, marginTop: 28}}>{t('company.jobsnew.basicH')}</h2>
+              <h2 className="text-[12px] font-extrabold text-gray-500 uppercase tracking-[0.08em] mt-3 mb-3">{t('company.jobsnew.basicH')}</h2>
 
               <Field label={t('company.jobsnew.title')}>
-                <input value={form.title} onChange={e => setF('title', e.target.value)} placeholder="Senior Backend Engineer" style={css.inp} />
+                <UInput value={form.title} onChange={e => setF('title', e.target.value)} placeholder="Senior Backend Engineer" />
               </Field>
 
               <Field label={t('company.jobsnew.descLabel')}>
                 <textarea value={form.description} onChange={e => setF('description', e.target.value)} rows={4}
-                  placeholder={t('company.jobsnew.descPh')} style={{...css.inp, resize: 'vertical', minHeight: 110}} />
+                  placeholder={t('company.jobsnew.descPh')}
+                  className="flex w-full rounded-lg border border-input bg-background px-3 py-2.5 text-sm font-medium leading-relaxed resize-y min-h-[110px] focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-1" />
               </Field>
 
-              <div style={css.row2}>
+              <div className="grid grid-cols-2 gap-3">
                 <Field label={t('company.jobsnew.role')}>
-                  <select value={form.role} onChange={e => setF('role', e.target.value)} style={css.inp}>
+                  <SelectInput value={form.role} onChange={e => setF('role', e.target.value)}>
                     {ROLES.map(r => <option key={r} value={r}>{r}</option>)}
-                  </select>
+                  </SelectInput>
                 </Field>
                 <Field label={t('company.jobsnew.type')}>
-                  <select value={form.type} onChange={e => setF('type', e.target.value)} style={css.inp}>
+                  <SelectInput value={form.type} onChange={e => setF('type', e.target.value)}>
                     {TYPES.map(tp => <option key={tp} value={tp}>{tp}</option>)}
-                  </select>
+                  </SelectInput>
                 </Field>
               </div>
 
               <Field label={t('company.jobsnew.location')}>
-                <select value={form.location} onChange={e => setF('location', e.target.value)} style={css.inp}>
+                <SelectInput value={form.location} onChange={e => setF('location', e.target.value)}>
                   {LOCATIONS.map(l => <option key={l} value={l}>{l}</option>)}
-                </select>
+                </SelectInput>
               </Field>
 
-              <h2 style={{...css.sectionTitle, marginTop: 28}}>{t('company.jobsnew.expSalH')}</h2>
+              <h2 className="text-[12px] font-extrabold text-gray-500 uppercase tracking-[0.08em] mt-5 mb-3">{t('company.jobsnew.expSalH')}</h2>
 
-              <div style={css.row2}>
+              <div className="grid grid-cols-2 gap-3">
                 <Field label={t('company.jobsnew.expMin')}>
-                  <input type="number" value={form.experience_min} onChange={e => setF('experience_min', e.target.value)} style={css.inp} />
+                  <UInput type="number" value={form.experience_min} onChange={e => setF('experience_min', e.target.value)} />
                 </Field>
                 <Field label={t('company.jobsnew.expMax')}>
-                  <input type="number" value={form.experience_max} onChange={e => setF('experience_max', e.target.value)} style={css.inp} />
+                  <UInput type="number" value={form.experience_max} onChange={e => setF('experience_max', e.target.value)} />
                 </Field>
               </div>
 
-              <div style={css.row2}>
+              <div className="grid grid-cols-2 gap-3">
                 <Field label={t('company.jobsnew.salaryMin')}>
-                  <input type="number" value={form.salary_min} onChange={e => setF('salary_min', e.target.value)} style={css.inp} />
-                  <div style={css.hint}>{t('company.jobsnew.vndHint', { n: Math.round(form.salary_min / 1e6) })}</div>
+                  <UInput type="number" value={form.salary_min} onChange={e => setF('salary_min', e.target.value)} />
+                  <div className="text-xs text-gray-500 mt-1">{t('company.jobsnew.vndHint', { n: Math.round(form.salary_min / 1e6) })}</div>
                 </Field>
                 <Field label={t('company.jobsnew.salaryMax')}>
-                  <input type="number" value={form.salary_max} onChange={e => setF('salary_max', e.target.value)} style={css.inp} />
-                  <div style={css.hint}>{t('company.jobsnew.vndHint', { n: Math.round(form.salary_max / 1e6) })}</div>
+                  <UInput type="number" value={form.salary_max} onChange={e => setF('salary_max', e.target.value)} />
+                  <div className="text-xs text-gray-500 mt-1">{t('company.jobsnew.vndHint', { n: Math.round(form.salary_max / 1e6) })}</div>
                 </Field>
               </div>
 
-              <h2 style={{...css.sectionTitle, marginTop: 28}}>{t('company.jobsnew.skillH')}</h2>
+              <h2 className="text-[12px] font-extrabold text-gray-500 uppercase tracking-[0.08em] mt-5 mb-3">{t('company.jobsnew.skillH')}</h2>
 
               <Field label={t('company.jobsnew.tech')}>
-                <input value={form.tech_stack} onChange={e => setF('tech_stack', e.target.value)}
-                  placeholder="Node.js, PostgreSQL, AWS" style={css.inp} />
+                <UInput value={form.tech_stack} onChange={e => setF('tech_stack', e.target.value)} placeholder="Node.js, PostgreSQL, AWS" />
               </Field>
 
               <Field label={t('company.jobsnew.benefits')}>
-                <input value={form.benefits} onChange={e => setF('benefits', e.target.value)}
-                  placeholder="13th-month, Health insurance" style={css.inp} />
+                <UInput value={form.benefits} onChange={e => setF('benefits', e.target.value)} placeholder="13th-month, Health insurance" />
               </Field>
 
-              <div style={css.row2}>
+              <div className="grid grid-cols-2 gap-3">
                 <Field label={t('company.jobsnew.headcount')}>
-                  <input type="number" value={form.headcount} onChange={e => setF('headcount', e.target.value)} placeholder="1" style={css.inp} />
+                  <UInput type="number" value={form.headcount} onChange={e => setF('headcount', e.target.value)} placeholder="1" />
                 </Field>
                 <Field label={t('company.jobsnew.deadline')}>
-                  <input type="date" value={form.deadline} onChange={e => setF('deadline', e.target.value)} style={css.inp} />
+                  <UInput type="date" value={form.deadline} onChange={e => setF('deadline', e.target.value)} />
                 </Field>
               </div>
             </div>
 
-            <aside style={css.previewCol}>
-              <div style={css.previewLabel}>{t('company.jobsnew.previewLabel')}</div>
-              <div style={localCss.pvCard}>
-                {form.image_url
-                  ? <img src={form.image_url} alt="" style={localCss.pvImg} />
-                  : <div style={localCss.pvImgEmpty}>{t('company.jobsnew.previewEmpty')}</div>}
-                <div style={localCss.pvBody}>
-                  <div style={localCss.pvCompanyRow}>
-                    {form.logo_url
-                      ? <img src={form.logo_url} alt="" style={localCss.pvLogo} />
-                      : <div style={localCss.pvLogoEmpty} />}
-                    <span style={localCss.pvCompany}>{companyName || t('company.previewCompanyDef')}</span>
+            <aside className="bg-white border border-border rounded-2xl p-4 pb-5 flex flex-col gap-3 sticky top-[88px] shadow-soft-xs max-h-[calc(100vh-100px)] overflow-y-auto">
+              <div className="text-[10.5px] font-extrabold uppercase tracking-[0.08em] text-gray-500">{t('company.jobsnew.previewLabel')}</div>
+
+              <div className="bg-white border border-border rounded-xl overflow-hidden">
+                {form.image_url ? (
+                  <img src={form.image_url} alt="" className="w-full h-32 object-cover block" />
+                ) : (
+                  <div className="w-full h-32 bg-gray-100 flex items-center justify-center text-[11px] text-gray-400 font-semibold gap-2">
+                    <ImageIcon className="w-3.5 h-3.5" />
+                    {t('company.jobsnew.previewEmpty')}
                   </div>
-                  <div style={localCss.pvTitle}>{form.title || t('company.previewTitleDef')}</div>
-                  <div style={localCss.pvSalary}>
-                    ₫{Math.round(form.salary_min/1e6)}M–{Math.round(form.salary_max/1e6)}M/월
+                )}
+                <div className="p-4 space-y-3">
+                  <div className="flex items-center gap-2.5">
+                    {form.logo_url ? (
+                      <img src={form.logo_url} alt="" className="w-8 h-8 rounded-md object-contain bg-gray-50 border border-border" />
+                    ) : (
+                      <div className="w-8 h-8 rounded-md bg-gray-100 flex items-center justify-center border border-border">
+                        <Building2 className="w-4 h-4 text-gray-400" />
+                      </div>
+                    )}
+                    <div className="min-w-0">
+                      <div className="text-[13px] text-gray-900 font-bold truncate">{companyName || t('company.previewCompanyDef')}</div>
+                      <div className="text-[11.5px] text-gray-900 font-semibold truncate">{form.location} · {form.type}</div>
+                    </div>
                   </div>
+
+                  <div className="text-[17px] font-extrabold text-foreground leading-tight tracking-tight">
+                    {form.title || t('company.previewTitleDef')}
+                  </div>
+
+                  <div className="text-[16px] font-extrabold text-emerald-600 tabular-nums leading-none">
+                    {Math.round(form.salary_min/1e6)}M – {Math.round(form.salary_max/1e6)}M VND
+                  </div>
+
                   {(form.tech_stack || '').trim() && (
-                    <div style={localCss.pvTags}>
-                      {form.tech_stack.split(',').map(s => s.trim()).filter(Boolean).slice(0, 4).map(tg => (
-                        <span key={tg} style={localCss.pvTag}>{tg}</span>
+                    <div className="flex flex-wrap gap-1">
+                      {form.tech_stack.split(',').map(s => s.trim()).filter(Boolean).slice(0, 6).map(tg => (
+                        <span key={tg} className="text-[11.5px] font-semibold text-gray-700 bg-gray-100 px-2 py-0.5 rounded">{tg}</span>
                       ))}
                     </div>
                   )}
-                  <div style={localCss.pvLoc}>📍 {form.location} · {form.type} · {form.experience_min}–{form.experience_max}y</div>
+
+                  {(form.description || '').trim() && (
+                    <div className="pt-3 border-t border-border">
+                      <div className="text-[10.5px] font-extrabold uppercase tracking-[0.06em] text-gray-400 mb-1.5">업무 설명</div>
+                      <div className="text-[12.5px] text-gray-700 leading-relaxed whitespace-pre-line max-h-20 overflow-y-auto pr-1">
+                        {form.description}
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="grid grid-cols-2 gap-3 pt-3 border-t border-border">
+                    <div>
+                      <div className="text-[10.5px] font-extrabold uppercase tracking-[0.06em] text-gray-400 mb-1 flex items-center gap-1">
+                        <Briefcase className="w-3 h-3" />
+                        포지션
+                      </div>
+                      <div className="text-[13px] font-bold text-foreground">{form.role}</div>
+                    </div>
+                    <div>
+                      <div className="text-[10.5px] font-extrabold uppercase tracking-[0.06em] text-gray-400 mb-1">경력</div>
+                      <div className="text-[13px] font-bold text-foreground tabular-nums">{form.experience_min}–{form.experience_max}년</div>
+                    </div>
+                    {form.headcount && (
+                      <div>
+                        <div className="text-[10.5px] font-extrabold uppercase tracking-[0.06em] text-gray-400 mb-1 flex items-center gap-1">
+                          <UsersIcon className="w-3 h-3" />
+                          채용 인원
+                        </div>
+                        <div className="text-[13px] font-bold text-foreground tabular-nums">{form.headcount}명</div>
+                      </div>
+                    )}
+                    {form.deadline && (
+                      <div>
+                        <div className="text-[10.5px] font-extrabold uppercase tracking-[0.06em] text-gray-400 mb-1 flex items-center gap-1">
+                          <CalendarDays className="w-3 h-3" />
+                          마감
+                        </div>
+                        <div className="text-[13px] font-bold text-foreground tabular-nums">{form.deadline}</div>
+                      </div>
+                    )}
+                  </div>
+
+                  {(form.benefits || '').trim() && (
+                    <div className="pt-3 border-t border-border">
+                      <div className="text-[10.5px] font-extrabold uppercase tracking-[0.06em] text-gray-400 mb-1.5">복지</div>
+                      <div className="flex flex-wrap gap-1">
+                        {form.benefits.split(',').map(s => s.trim()).filter(Boolean).map(b => (
+                          <span key={b} className="text-[11px] font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full">
+                            {b}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
+              </div>
+
+              <div className="text-[10.5px] text-gray-400 font-medium leading-relaxed">
+                실시간 입력값이 반영됩니다. 저장 후 공개 페이지에서 실제 화면을 확인할 수 있습니다.
               </div>
             </aside>
 
-            {err && <div style={css.err}>{err}</div>}
-
-            <div style={css.formFoot}>
-              <Link href="/company/jobs" style={css.btnGhost}>{t('company.cancel')}</Link>
-              <button type="submit" disabled={status === 'saving'} style={status === 'saving' ? css.btnDisabled : css.btnPrimary}>
-                {status === 'saving' ? t('company.saving') : t('company.jobsnew.publish')}
-              </button>
-            </div>
+            {err && (
+              <div className="col-span-full rounded-lg bg-red-50 border border-red-200 px-3 py-2 text-sm text-red-700 font-semibold">{err}</div>
+            )}
           </form>
         </main>
       </div>
@@ -353,10 +435,22 @@ export default function NewJobPage() {
 
 export function Field({ label, children }) {
   return (
-    <div style={css.field}>
-      <label style={css.fieldLabel}>{label}</label>
+    <div className="flex flex-col gap-1.5 mb-3.5">
+      <label className="text-[13px] font-bold text-gray-700">{label}</label>
       {children}
     </div>
+  );
+}
+
+export function SelectInput({ value, onChange, children }) {
+  return (
+    <select
+      value={value}
+      onChange={onChange}
+      className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-2 text-[13px] font-medium focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-1"
+    >
+      {children}
+    </select>
   );
 }
 
@@ -390,41 +484,53 @@ export function Sidebar({ companyName, userEmail, activePage = 'home', activeJob
   const isActive = (k) => activePage === k;
 
   return (
-    <aside className="bg-card border-r border-border px-3 py-4 flex flex-col gap-1 w-[240px] shrink-0">
+    <aside className="hidden md:flex bg-[#0A0A0A] border-r border-white/5 px-2 py-3 flex-col gap-0.5 w-[210px] shrink-0 h-screen sticky top-0 overflow-y-auto">
       {/* Brand + user */}
-      <div className="px-2.5 pb-3 mb-2 border-b border-border">
-        <div className="flex items-center justify-between gap-1.5 mb-3">
+      <div className="px-2 pb-2.5 mb-1.5 border-b border-white/8">
+        <div className="flex items-center justify-between gap-1.5 mb-2">
           <Brand href="/company" size="sm" />
           <LangToggle align="right" />
         </div>
-        <div className="text-sm font-extrabold text-gray-900 tracking-tight truncate">{companyName || t('company.sidebar.myCompany')}</div>
-        <div className="text-xs text-gray-500 mt-0.5 truncate">{userEmail}</div>
+        <div className="text-[13px] font-extrabold text-white tracking-tight truncate">{companyName || t('company.sidebar.myCompany')}</div>
+        <div className="text-[11px] text-gray-500 mt-0.5 truncate font-medium">{userEmail}</div>
       </div>
 
       {/* Nav */}
       <nav className="flex flex-col gap-0.5">
-        <Link href="/company/jobs/new" className="flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm font-semibold text-gray-700 hover:bg-gray-100 transition-colors">
-          <Plus className="h-4 w-4" />
+        <Link
+          href="/company/jobs/new"
+          className={cn(
+            'flex items-center gap-2 px-2.5 py-1.5 rounded-md text-[13px] font-semibold transition-colors',
+            isActive('new')
+              ? 'bg-primary-500/15 text-primary-300'
+              : 'text-gray-300 hover:bg-white/5 hover:text-white'
+          )}
+        >
+          <Plus className="h-3.5 w-3.5" />
           {t('company.sidebar.newJob')}
         </Link>
         <Link
           href="/company"
           className={cn(
-            'flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm font-semibold transition-colors',
-            isActive('home') ? 'bg-primary-50 text-primary-700' : 'text-gray-700 hover:bg-gray-100'
+            'flex items-center gap-2 px-2.5 py-1.5 rounded-md text-[13px] font-semibold transition-colors',
+            isActive('home')
+              ? 'bg-primary-500/15 text-primary-300'
+              : 'text-gray-300 hover:bg-white/5 hover:text-white'
           )}
         >
-          <Home className="h-4 w-4" />
+          <Home className="h-3.5 w-3.5" />
           {t('company.sidebar.dashboard')}
         </Link>
         <Link
           href="/company/calendar"
           className={cn(
-            'flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm font-semibold transition-colors',
-            isActive('calendar') ? 'bg-primary-50 text-primary-700' : 'text-gray-700 hover:bg-gray-100'
+            'flex items-center gap-2 px-2.5 py-1.5 rounded-md text-[13px] font-semibold transition-colors',
+            isActive('calendar')
+              ? 'bg-primary-500/15 text-primary-300'
+              : 'text-gray-300 hover:bg-white/5 hover:text-white'
           )}
         >
-          <CalendarDays className="h-4 w-4" />
+          <CalendarDays className="h-3.5 w-3.5" />
           {t('company.sidebar.calendar')}
         </Link>
       </nav>
@@ -435,16 +541,22 @@ export function Sidebar({ companyName, userEmail, activePage = 'home', activeJob
         jobs.forEach(j => { grouped[groupOf(j.status)].push(j); });
         return (
           <>
-            <div className="h-px bg-border my-3 mx-2" />
-            <div className="px-3 pt-1 pb-2 text-[11px] font-extrabold text-gray-400 uppercase tracking-wider">
+            {/* Section divider with title — myJobs */}
+            <div className="h-px bg-white/15 my-3 mx-1" />
+            <div className="px-2.5 pt-0.5 pb-1.5 text-[10px] font-extrabold text-gray-500 uppercase tracking-[0.08em]">
               {t('company.sidebar.myJobs', { n: jobs.length })}
             </div>
             <div className="flex flex-col gap-0.5 max-h-[400px] overflow-y-auto">
-              {['active', 'pending', 'inactive'].map(g => grouped[g].length === 0 ? null : (
+              {['active', 'pending', 'inactive'].map(g => (
                 <Fragment key={g}>
-                  <div className="px-3 pt-2 pb-1 text-xs font-bold text-gray-500">
+                  <div className="px-2.5 pt-1.5 pb-0.5 text-[10.5px] font-bold text-gray-500">
                     {t(`company.jobGroup.${g}`, { n: grouped[g].length })}
                   </div>
+                  {grouped[g].length === 0 && (
+                    <div className="px-2.5 py-1 text-[11.5px] text-gray-600 font-medium">
+                      —
+                    </div>
+                  )}
                   {grouped[g].map(j => {
                     const dotColor = DOT_COLOR[j.status] || DOT_COLOR.draft;
                     const isCurrent = activeJobId === j.id;
@@ -453,8 +565,10 @@ export function Sidebar({ companyName, userEmail, activePage = 'home', activeJob
                         key={j.id}
                         href={`/company/ats?job=${j.id}`}
                         className={cn(
-                          'flex items-center gap-2 px-3 py-2 rounded-lg text-[13px] font-semibold transition-colors',
-                          isCurrent ? 'bg-primary-50 text-primary-700' : 'text-gray-700 hover:bg-gray-100'
+                          'flex items-center gap-2 px-2.5 py-1.5 rounded-md text-[12.5px] font-semibold transition-colors',
+                          isCurrent
+                            ? 'bg-primary-500/15 text-primary-300'
+                            : 'text-gray-300 hover:bg-white/5 hover:text-white'
                         )}
                         title={j.title}
                       >
@@ -470,8 +584,8 @@ export function Sidebar({ companyName, userEmail, activePage = 'home', activeJob
         );
       })()}
 
-      <div className="mt-auto pt-4 px-2.5">
-        <button onClick={signOut} className="text-xs text-gray-500 hover:text-gray-800 underline-offset-2 hover:underline transition-colors">
+      <div className="mt-auto pt-3 px-2.5">
+        <button onClick={signOut} className="text-[11px] text-gray-500 hover:text-gray-300 underline-offset-2 hover:underline transition-colors">
           {t('company.sidebar.signOut')}
         </button>
       </div>
@@ -487,7 +601,7 @@ export const css = {
   cardH: { fontSize: 20, fontWeight: 800, color: '#1A1A1A', marginBottom: 8 },
   cardP: { fontSize: 13.5, color: '#525252', marginBottom: 22, lineHeight: 1.65 },
 
-  app: { display: 'grid', gridTemplateColumns: '220px 1fr', minHeight: '100vh', background: '#FAFAFA', color: '#1A1A1A', fontFamily: "'Pretendard', sans-serif" },
+  app: { display: 'flex', minHeight: '100vh', background: '#FAFAFA', color: '#1A1A1A', fontFamily: "'Pretendard', sans-serif" },
 
   // Sidebar (light)
   sidebar: { background: '#fff', borderRight: '1px solid #E5E7EB', padding: '16px 12px', display: 'flex', flexDirection: 'column', gap: 4 },
@@ -510,8 +624,8 @@ export const css = {
   sideJobDot: { width: 7, height: 7, borderRadius: '50%', flexShrink: 0 },
   sideJobTitle: { whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' },
 
-  // Main
-  main: { padding: '28px 32px 60px', display: 'flex', flexDirection: 'column', gap: 22 },
+  // Main — flex-1 min-w-0 so it lives nicely in flex shell. Top padding kept thin since PageHeader is sticky.
+  main: { flex: 1, minWidth: 0, paddingLeft: 'clamp(16px, 3vw, 28px)', paddingRight: 'clamp(16px, 3vw, 28px)', paddingTop: 0, paddingBottom: 40, display: 'flex', flexDirection: 'column', gap: 14 },
   mainHead: { display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' },
   mainH: { fontSize: 26, fontWeight: 800, color: '#1A1A1A', letterSpacing: '-0.01em' },
   mainP: { fontSize: 13.5, color: '#525252', marginTop: 4 },

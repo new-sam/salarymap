@@ -4,7 +4,7 @@ import { cva } from 'class-variance-authority';
 import { cn } from '../../lib/cn';
 
 const buttonVariants = cva(
-  'inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-bold ring-offset-background transition-all duration-200 ease-spring focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 active:scale-[0.98]',
+  'inline-flex items-center justify-center gap-1.5 whitespace-nowrap rounded-md font-bold ring-offset-background transition-all duration-200 ease-spring focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 active:scale-[0.98]',
   {
     variants: {
       variant: {
@@ -17,9 +17,9 @@ const buttonVariants = cva(
         soft: 'bg-primary-50 text-primary-700 hover:bg-primary-100',
       },
       size: {
-        default: 'h-10 px-5 py-2 text-sm',
-        sm: 'h-9 rounded-md px-3 text-xs',
-        lg: 'h-12 rounded-lg px-7 text-base',
+        default: 'h-9 px-4 text-[13px]',
+        sm: 'h-8 rounded-md px-2.5 text-[12px]',
+        lg: 'h-11 rounded-lg px-6 text-sm',
         icon: 'h-9 w-9',
       },
     },

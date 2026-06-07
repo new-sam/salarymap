@@ -1,6 +1,7 @@
 import "@/styles/globals.css";
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
+import { Toaster } from 'sonner';
 import { I18nProvider, LanguageSwitcher, useT } from '../lib/i18n';
 import { supabase } from '../lib/supabaseClient';
 import MobileTabBar from '../components/MobileTabBar';
@@ -59,6 +60,14 @@ export default function App({ Component, pageProps }) {
       )}
       <MobileTabBar />
       <GlobalLoginModal />
+      <Toaster
+        position="bottom-right"
+        richColors
+        closeButton
+        toastOptions={{
+          style: { fontFamily: "'Pretendard', sans-serif", fontWeight: 600 },
+        }}
+      />
     </I18nProvider>
   );
 }

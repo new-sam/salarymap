@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
 import { supabase } from '../../lib/supabaseClient';
 import { useT } from '../../lib/i18n';
+import { Check } from 'lucide-react';
 
 export default function ContactModal({ open, onClose }) {
   const { t } = useT();
@@ -100,7 +101,7 @@ export default function ContactModal({ open, onClose }) {
 
         {phase === 'done' && (
           <div style={{ textAlign: 'center' }}>
-            <div style={s.doneIcon}>✓</div>
+            <div style={s.doneIcon}><Check className="w-6 h-6" strokeWidth={3} /></div>
             <h3 style={s.title}>{t('company.landing.contact.doneTitle')}</h3>
             <p style={s.lead}>{t('company.landing.contact.doneLead')}</p>
             <button type="button" style={s.btnPrimary} onClick={onClose}>

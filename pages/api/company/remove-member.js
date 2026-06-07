@@ -33,7 +33,7 @@ export default async function handler(req, res) {
 
   // 관리자(공고 owner)만 가능. legacy(created_by NULL)는 회사 멤버 누구나.
   if (job.created_by && job.created_by !== user.id) {
-    return res.status(403).json({ error: '관리자만 팀원을 내보낼 수 있어요.' });
+    return res.status(403).json({ error: '공고 관리자만 팀원을 내보낼 수 있어요.' });
   }
   // 본인을 내보내지 못함
   if (userId && userId === user.id) {
@@ -41,7 +41,7 @@ export default async function handler(req, res) {
   }
   // 공고 owner를 내보내지 못함
   if (userId && job.created_by && userId === job.created_by) {
-    return res.status(400).json({ error: '관리자(공고 작성자)는 내보낼 수 없어요.' });
+    return res.status(400).json({ error: '공고 관리자(공고 작성자)는 내보낼 수 없어요.' });
   }
 
   if (userId) {

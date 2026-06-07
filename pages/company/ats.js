@@ -9,18 +9,27 @@ import { formatICT, ICT_LABEL } from '../../lib/timezone';
 import { color, font, space, radius, shadow, motion } from '../../lib/theme';
 import TeamPopover from '../../components/company/TeamPopover';
 import { useT } from '../../lib/i18n';
+import { toast } from 'sonner';
 import { cn } from '../../lib/cn';
 import { Button } from '../../components/ui/button';
 import { Badge } from '../../components/ui/badge';
 import { Input } from '../../components/ui/input';
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator } from '../../components/ui/dropdown-menu';
-import { MoreVertical, Calendar, Mail, Ban, Lock, Plus, Search as SearchIcon, X as XIcon, ArrowLeft, Inbox, MessageCircle, Handshake, PartyPopper, Bell, Activity, CheckCircle2, XCircle, CalendarClock } from 'lucide-react';
+import { MoreVertical, Calendar, Mail, Ban, Lock, Plus, Search as SearchIcon, X as XIcon, Inbox, MessageSquare, Users, Trophy, Activity, CheckCircle2, XCircle, Edit3, Clock } from 'lucide-react';
+import { PageHeader } from '../../components/ui/page-header';
+import { KanbanSkeleton } from '../../components/ui/page-skeleton';
 
 const STAGE_ICONS = {
   pending: Inbox,
-  viewed: MessageCircle,
-  reviewing: Handshake,
-  decided: PartyPopper,
+  viewed: MessageSquare,
+  reviewing: Users,
+  decided: Trophy,
+};
+const STAGE_ICON_CLASS = {
+  pending:   'text-gray-500',
+  viewed:    'text-blue-500',
+  reviewing: 'text-violet-500',
+  decided:   'text-emerald-500',
 };
 const STAGE_COLORS = {
   pending:   'text-gray-700 bg-gray-100',
@@ -30,10 +39,10 @@ const STAGE_COLORS = {
 };
 
 const STAGES = [
-  { key: 'pending', emoji: '📥' },
-  { key: 'viewed', emoji: '💬' },
-  { key: 'reviewing', emoji: '🤝' },
-  { key: 'decided', emoji: '🎉' },
+  { key: 'pending', emoji: '' },
+  { key: 'viewed', emoji: '' },
+  { key: 'reviewing', emoji: '' },
+  { key: 'decided', emoji: '' },
 ];
 
 const STAGE_ORDER = STAGES.map(s => s.key);
@@ -56,7 +65,8 @@ export default function CompanyATSPage() {
   const [draggingId, setDraggingId] = useState(null);
   const [dragOverCol, setDragOverCol] = useState(null);
   const [mailFor, setMailFor] = useState(null);
-  const [showRejected, setShowRejected] = useState(true);
+  const [kpiFilter, setKpiFilter] = useState(null); // null | 'new' | 'inProgress' | 'hired' | 'rejected'
+  const [mobileStage, setMobileStage] = useState('pending'); // mobile-only stage selector
   const [menuOpenId, setMenuOpenId] = useState(null);
   const [rejectingApp, setRejectingApp] = useState(null);
   const [interviewApp, setInterviewApp] = useState(null);
@@ -150,6 +160,10 @@ export default function CompanyATSPage() {
     if (error) {
       setApps(prev => prev.map(a => a.id === appId ? { ...a, status: app.status, interview_at: app.interview_at, interview_location: app.interview_location, interview_interviewer: app.interview_interviewer } : a));
       setErr(t('company.err.stageChange') + error.message);
+      toast.error(t('company.err.stageChange') + error.message);
+    } else {
+      const name = app.applicant_name || `${t('company.candidatePrefix')}${app.id.slice(-6).toUpperCase()}`;
+      toast.success(t(`company.stage.${newStatus}`) + ' → ' + name);
     }
   };
 
@@ -214,7 +228,7 @@ export default function CompanyATSPage() {
     return [a.applicant_name, a.applicant_email, a.applicant_role, a.applicant_company, profile?.full_name, profile?.email]
       .filter(Boolean).join(' ').toLowerCase().includes(q);
   };
-  const visibleApps = apps.filter(a => showRejected || !a.rejected_at);
+  const visibleApps = apps.filter(a => kpiFilter === 'rejected' || !a.rejected_at);
   const activeCount = apps.filter(a => !a.rejected_at).length;
   const rejectedCount = apps.length - activeCount;
 
@@ -225,9 +239,26 @@ export default function CompanyATSPage() {
   const hiredCount = apps.filter(a => !a.rejected_at && a.status === 'decided').length;
   const inProgressCount = apps.filter(a => !a.rejected_at && a.status !== 'decided' && a.status !== 'pending').length;
 
-  const grouped = STAGES.map(s => ({ ...s, apps: visibleApps.filter(a => a.status === s.key && matchesQuery(a)) }));
+  const matchesKpiFilter = (a) => {
+    if (!kpiFilter) return true;
+    if (kpiFilter === 'new') return !a.rejected_at && a.status === 'pending';
+    if (kpiFilter === 'inProgress') return !a.rejected_at && a.status !== 'decided' && a.status !== 'pending';
+    if (kpiFilter === 'hired') return !a.rejected_at && a.status === 'decided';
+    if (kpiFilter === 'rejected') return !!a.rejected_at;
+    return true;
+  };
 
-  if (status === 'loading') return <div style={css.loading}>{t('company.loading')}</div>;
+  const grouped = STAGES.map(s => ({ ...s, apps: visibleApps.filter(a => a.status === s.key && matchesQuery(a) && matchesKpiFilter(a)) }));
+  const toggleKpi = (key) => setKpiFilter(prev => prev === key ? null : key);
+
+  if (status === 'loading') {
+    return (
+      <div style={css.app}>
+        <Sidebar companyName={companyName} userEmail={user?.email} activePage="jobs" />
+        <KanbanSkeleton />
+      </div>
+    );
+  }
   if (status === 'unauthed') {
     return (
       <div style={css.fullCenter}>
@@ -256,104 +287,130 @@ export default function CompanyATSPage() {
       <div style={css.app}>
         <Sidebar companyName={companyName} userEmail={user?.email} activePage="jobs" activeJobId={job.id} />
 
-        <main className="px-8 py-7 pb-16 flex flex-col gap-6 min-w-0">
-          {/* Header */}
-          <header className="flex items-start justify-between gap-4">
-            <div className="min-w-0">
-              <Link href="/company" className="inline-flex items-center gap-1.5 text-xs font-semibold text-gray-500 hover:text-gray-800 transition-colors mb-2">
-                <ArrowLeft className="h-3.5 w-3.5" />
-                대시보드
-              </Link>
-              <h1 className="text-3xl font-extrabold text-gray-900 tracking-tight leading-tight">{job.title}</h1>
-              <p className="text-sm text-gray-600 mt-2 font-medium">
-                {job.location} · {job.type} · ₫{Math.round(job.salary_min/1e6)}M–{Math.round(job.salary_max/1e6)}M
-              </p>
-            </div>
-            <div className="flex gap-2 items-center shrink-0">
-              <TeamPopover jobId={job.id} canInvite={!job.created_by || job.created_by === user?.id} />
-              <Button asChild variant="outline" size="sm">
-                <Link href={`/company/jobs/${job.id}/edit`}>{t('company.ats.editJob')}</Link>
-              </Button>
-              <Button asChild size="sm">
-                <Link href="/company/jobs/new"><Plus className="h-4 w-4 mr-1" />{t('company.ats.newJob')}</Link>
-              </Button>
-            </div>
-          </header>
+        <main className="px-4 md:px-6 pb-3 flex flex-col gap-3 min-w-0 flex-1 h-screen overflow-hidden">
+          <PageHeader
+            title={job.title}
+            subtitle={`${job.location} · ${job.type} · ₫${Math.round(job.salary_min/1e6)}M–${Math.round(job.salary_max/1e6)}M`}
+            right={(
+              <>
+                <TeamPopover jobId={job.id} canInvite={!job.created_by || job.created_by === user?.id} />
+                <Button asChild variant="outline">
+                  <Link href={`/company/jobs/${job.id}/edit`}>
+                    <Edit3 className="h-3.5 w-3.5" />
+                    {t('company.ats.editJob')}
+                  </Link>
+                </Button>
+              </>
+            )}
+          />
 
-          {/* KPI cards — sellable ATS의 표준 5지표 */}
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+          {/* KPI cards — 4 metrics (interview schedule lives in the calendar nav) */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             {/* 신규 검토 — 가장 중요. "오늘의 할 일" 강조 */}
-            <div className={cn(
-              'rounded-xl border bg-card p-4 transition-all duration-200',
-              newReviewCount > 0
-                ? 'border-primary-300 shadow-brand ring-1 ring-primary-200'
-                : 'border-border shadow-soft-xs'
-            )}>
-              <div className="flex items-center justify-between">
-                <span className="text-[11px] font-extrabold text-gray-500 uppercase tracking-wider">신규 검토</span>
-                <div className={cn('w-8 h-8 rounded-lg grid place-items-center',
+            <button
+              type="button"
+              onClick={() => toggleKpi('new')}
+              className={cn(
+                'rounded-lg border bg-card px-3 py-2.5 transition-all duration-200 text-left cursor-pointer',
+                kpiFilter === 'new'
+                  ? 'border-primary-500 ring-2 ring-primary-200'
+                  : newReviewCount > 0
+                    ? 'border-primary-200 shadow-soft-xs hover:border-primary-400'
+                    : 'border-border shadow-soft-xs hover:border-gray-300'
+              )}>
+              <div className="flex items-center gap-1.5">
+                <div className={cn('w-6 h-6 rounded-md grid place-items-center',
                   newReviewCount > 0 ? 'bg-primary-100 text-primary-700' : 'bg-gray-100 text-gray-400'
                 )}>
-                  <Bell className="h-4 w-4" />
+                  <Inbox className="h-3.5 w-3.5" />
                 </div>
+                <span className="text-[10px] font-extrabold text-gray-500 uppercase tracking-[0.08em]">{t('company.kpi.new')}</span>
               </div>
-              <div className={cn('text-[32px] font-black mt-2 leading-none tabular-nums',
+              <div className={cn('text-[22px] font-black mt-1 leading-none tabular-nums',
                 newReviewCount > 0 ? 'text-primary-700' : 'text-gray-900'
               )}>{newReviewCount}</div>
-              <div className="text-[11px] font-semibold mt-1.5 text-gray-500">미확인 지원자</div>
-            </div>
-
-            {/* 인터뷰 예정 */}
-            <div className="rounded-xl border border-border bg-card p-4 shadow-soft-xs">
-              <div className="flex items-center justify-between">
-                <span className="text-[11px] font-extrabold text-gray-500 uppercase tracking-wider">인터뷰 예정</span>
-                <div className="w-8 h-8 rounded-lg grid place-items-center bg-blue-50 text-blue-700">
-                  <CalendarClock className="h-4 w-4" />
-                </div>
-              </div>
-              <div className="text-[32px] font-black mt-2 leading-none tabular-nums text-blue-700">{upcomingInterviewCount}</div>
-              <div className="text-[11px] font-semibold mt-1.5 text-gray-500">다가오는 일정</div>
-            </div>
+            </button>
 
             {/* 진행중 */}
-            <div className="rounded-xl border border-border bg-card p-4 shadow-soft-xs">
-              <div className="flex items-center justify-between">
-                <span className="text-[11px] font-extrabold text-gray-500 uppercase tracking-wider">진행중</span>
-                <div className="w-8 h-8 rounded-lg grid place-items-center bg-gray-100 text-gray-700">
-                  <Activity className="h-4 w-4" />
+            <button
+              type="button"
+              onClick={() => toggleKpi('inProgress')}
+              className={cn(
+                'rounded-lg border bg-card px-3 py-2.5 transition-all duration-200 text-left cursor-pointer',
+                kpiFilter === 'inProgress'
+                  ? 'border-violet-500 shadow-soft-md ring-2 ring-violet-200'
+                  : 'border-border shadow-soft-xs hover:border-violet-300'
+              )}>
+              <div className="flex items-center gap-1.5">
+                <div className="w-6 h-6 rounded-md grid place-items-center bg-gray-100 text-gray-700">
+                  <Activity className="h-3.5 w-3.5" />
                 </div>
+                <span className="text-[10px] font-extrabold text-gray-500 uppercase tracking-[0.08em]">{t('company.kpi.inProgress')}</span>
               </div>
-              <div className="text-[32px] font-black mt-2 leading-none tabular-nums text-gray-900">{inProgressCount}</div>
-              <div className="text-[11px] font-semibold mt-1.5 text-gray-500">인터뷰 단계</div>
-            </div>
+              <div className="text-2xl font-extrabold mt-1 leading-none tabular-nums text-gray-900">{inProgressCount}</div>
+            </button>
 
             {/* 합격 */}
-            <div className="rounded-xl border border-border bg-card p-4 shadow-soft-xs">
-              <div className="flex items-center justify-between">
-                <span className="text-[11px] font-extrabold text-gray-500 uppercase tracking-wider">합격</span>
-                <div className="w-8 h-8 rounded-lg grid place-items-center bg-emerald-50 text-emerald-700">
-                  <CheckCircle2 className="h-4 w-4" />
+            <button
+              type="button"
+              onClick={() => toggleKpi('hired')}
+              className={cn(
+                'rounded-lg border bg-card px-3 py-2.5 transition-all duration-200 text-left cursor-pointer',
+                kpiFilter === 'hired'
+                  ? 'border-emerald-500 shadow-soft-md ring-2 ring-emerald-200'
+                  : 'border-border shadow-soft-xs hover:border-emerald-300'
+              )}>
+              <div className="flex items-center gap-1.5">
+                <div className="w-6 h-6 rounded-md grid place-items-center bg-emerald-50 text-emerald-700">
+                  <CheckCircle2 className="h-3.5 w-3.5" />
                 </div>
+                <span className="text-[10px] font-extrabold text-gray-500 uppercase tracking-[0.08em]">{t('company.kpi.hired')}</span>
               </div>
-              <div className="text-[32px] font-black mt-2 leading-none tabular-nums text-emerald-700">{hiredCount}</div>
-              <div className="text-[11px] font-semibold mt-1.5 text-gray-500">최종 합격</div>
-            </div>
+              <div className="text-2xl font-extrabold mt-1 leading-none tabular-nums text-emerald-700">{hiredCount}</div>
+            </button>
 
             {/* 불합격 — 가장 약하게 */}
-            <div className="rounded-xl border border-border bg-card p-4 shadow-soft-xs">
-              <div className="flex items-center justify-between">
-                <span className="text-[11px] font-extrabold text-gray-500 uppercase tracking-wider">불합격</span>
-                <div className="w-8 h-8 rounded-lg grid place-items-center bg-gray-100 text-gray-500">
-                  <XCircle className="h-4 w-4" />
+            <button
+              type="button"
+              onClick={() => toggleKpi('rejected')}
+              className={cn(
+                'rounded-lg border bg-card px-3 py-2.5 transition-all duration-200 text-left cursor-pointer',
+                kpiFilter === 'rejected'
+                  ? 'border-gray-500 shadow-soft-md ring-2 ring-gray-200'
+                  : 'border-border shadow-soft-xs hover:border-gray-300'
+              )}>
+              <div className="flex items-center gap-1.5">
+                <div className="w-6 h-6 rounded-md grid place-items-center bg-gray-100 text-gray-500">
+                  <XCircle className="h-3.5 w-3.5" />
                 </div>
+                <span className="text-[10px] font-extrabold text-gray-500 uppercase tracking-[0.08em]">{t('company.kpi.rejected')}</span>
               </div>
-              <div className="text-[32px] font-black mt-2 leading-none tabular-nums text-gray-400">{rejectedCount}</div>
-              <div className="text-[11px] font-semibold mt-1.5 text-gray-500">종료</div>
-            </div>
+              <div className="text-2xl font-extrabold mt-1 leading-none tabular-nums text-gray-400">{rejectedCount}</div>
+            </button>
           </div>
 
           {err && (
             <div className="rounded-lg bg-red-50 border border-red-200 text-red-700 px-4 py-3 text-sm font-semibold">{err}</div>
+          )}
+
+          {/* Active KPI filter pill */}
+          {kpiFilter && (
+            <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-primary-50 border border-primary-200 text-xs font-bold text-primary-800">
+              <span>{t('company.filter.label')}</span>
+              <span className="font-extrabold">
+                {kpiFilter === 'new' && t('company.kpi.new')}
+                {kpiFilter === 'inProgress' && t('company.kpi.inProgress')}
+                {kpiFilter === 'hired' && t('company.kpi.hired')}
+                {kpiFilter === 'rejected' && t('company.kpi.rejected')}
+              </span>
+              <button
+                onClick={() => setKpiFilter(null)}
+                className="ml-auto inline-flex items-center gap-1 text-primary-700 hover:text-primary-900 transition-colors"
+              >
+                <XIcon className="h-3.5 w-3.5" />
+                {t('company.filter.clear')}
+              </button>
+            </div>
           )}
 
           {/* Toolbar */}
@@ -364,7 +421,7 @@ export default function CompanyATSPage() {
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 placeholder={t('company.ats.searchPh')}
-                className="pl-9 h-10"
+                className="pl-9 h-9 text-[13px] font-medium"
               />
               {query && (
                 <button
@@ -376,51 +433,73 @@ export default function CompanyATSPage() {
                 </button>
               )}
             </div>
-            <label className="flex items-center gap-2 px-3 h-10 bg-card border border-border rounded-lg text-sm font-semibold text-gray-700 cursor-pointer hover:bg-gray-50 transition-colors">
-              <input
-                type="checkbox"
-                checked={showRejected}
-                onChange={(e) => setShowRejected(e.target.checked)}
-                className="rounded border-gray-300 text-primary focus:ring-primary focus:ring-offset-0"
-              />
-              <span>{t('company.ats.showRejected')}</span>
-              <Badge variant="secondary" className="ml-1">{rejectedCount}</Badge>
-            </label>
-            <span className="ml-auto text-xs text-gray-400 font-semibold flex items-center gap-1.5">
-              {!isOwner && <Lock className="h-3 w-3" />}
-              {isOwner ? t('company.ats.dragHint') : t('company.ats.dragHintLocked')}
-            </span>
+            {!isOwner && (
+              <span className="ml-auto text-[11px] text-gray-400 font-semibold flex items-center gap-1.5">
+                <Lock className="h-3 w-3" />
+                {t('company.ats.dragHintLocked')}
+              </span>
+            )}
           </div>
 
-          {/* Kanban */}
-          <div className="grid grid-cols-4 gap-5 items-stretch" style={{ minHeight: 'calc(100vh - 320px)' }}>
+          {/* Mobile stage tabs */}
+          <div className="md:hidden flex items-center gap-1 px-1 -mx-1 overflow-x-auto">
+            {grouped.map((col) => {
+              const isActive = mobileStage === col.key;
+              const TabIcon = STAGE_ICONS[col.key];
+              return (
+                <button
+                  key={col.key}
+                  type="button"
+                  onClick={() => setMobileStage(col.key)}
+                  className={cn(
+                    'flex items-center gap-1.5 px-3 py-2 rounded-full text-[13px] font-bold transition-all whitespace-nowrap',
+                    isActive ? 'bg-primary-500 text-white shadow-brand' : 'bg-white border border-border text-gray-700 hover:border-gray-300'
+                  )}
+                >
+                  <TabIcon className={cn('w-3.5 h-3.5', isActive ? 'text-white' : STAGE_ICON_CLASS[col.key])} />
+                  {t(`company.stage.${col.key}`)}
+                  <span className={cn('text-[11px] tabular-nums', isActive ? 'opacity-80' : 'text-gray-400')}>
+                    {col.apps.length}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Kanban — fills remaining viewport, columns scroll internally */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 items-stretch flex-1 min-h-0">
             {grouped.map((col) => {
               const StageIcon = STAGE_ICONS[col.key];
               const isOver = dragOverCol === col.key;
+              const hiddenOnMobile = mobileStage !== col.key;
               return (
                 <div
                   key={col.key}
                   onDragOver={(e) => { e.preventDefault(); if (dragOverCol !== col.key) setDragOverCol(col.key); }}
                   onDrop={() => handleDrop(col.key)}
                   className={cn(
-                    'rounded-2xl border p-5 flex flex-col gap-3 transition-all duration-200',
-                    isOver ? 'bg-primary-50 border-primary-300 shadow-soft-md' : 'bg-gray-50 border-gray-200'
+                    'rounded-lg border p-2.5 flex flex-col gap-2 transition-all duration-200 min-h-0',
+                    isOver ? 'bg-primary-50 border-primary-300 shadow-soft-md' : 'bg-[#F7F8FA] border-[#EEF0F3]',
+                    hiddenOnMobile && 'hidden md:flex'
                   )}
                 >
-                  {/* Column header */}
-                  <div className="flex items-center gap-2.5 pb-3 border-b border-gray-200">
-                    <div className={cn('w-7 h-7 rounded-lg flex items-center justify-center', STAGE_COLORS[col.key])}>
-                      <StageIcon className="h-4 w-4" />
-                    </div>
-                    <span className="text-base font-extrabold text-gray-900 tracking-tight flex-1">{t(`company.stage.${col.key}`)}</span>
-                    <span className="bg-card border border-border text-gray-800 text-xs font-extrabold px-2.5 py-0.5 rounded-full min-w-[28px] text-center tabular-nums">{col.apps.length}</span>
+                  {/* Column header — Greeting style: stage icon + text + count */}
+                  <div className="flex items-center gap-2 px-1 pb-2 border-b border-[#E5E8EC]">
+                    <StageIcon className={cn('w-3.5 h-3.5', STAGE_ICON_CLASS[col.key])} />
+                    <span className="text-[13px] font-extrabold text-gray-900 tracking-tight flex-1">{t(`company.stage.${col.key}`)}</span>
+                    <span className="text-[11px] font-extrabold text-gray-900 tabular-nums bg-white border border-[#E5E8EC] rounded-full min-w-[22px] text-center px-1.5 py-0.5">{col.apps.length}</span>
                   </div>
 
-                  {/* Cards */}
-                  <div className="flex flex-col gap-2.5">
+                  {/* Cards — scrolls internally so column header stays pinned */}
+                  <div className="flex flex-col gap-2 flex-1 overflow-y-auto overflow-x-visible px-0.5 -mx-0.5 pr-1.5 -mr-1.5 pt-0.5">
                     {col.apps.length === 0 && (
-                      <div className="text-center py-10 text-sm text-gray-400 font-semibold">
-                        {isOver ? t('company.ats.dropHere') : '—'}
+                      <div className={cn(
+                        'flex items-center justify-center py-10 text-[11px] font-semibold rounded-md border border-dashed',
+                        isOver
+                          ? 'text-primary-700 bg-primary-50/60 border-primary-300'
+                          : 'text-gray-400 border-gray-200'
+                      )}>
+                        {isOver ? t('company.ats.dropHere') : t('company.ats.emptyColumn')}
                       </div>
                     )}
                     {col.apps.map(app => {
@@ -440,7 +519,7 @@ export default function CompanyATSPage() {
                       const dateLabel = daysAgo === 0
                         ? t('company.ats.appliedToday', { date: dateText })
                         : t('company.ats.appliedDaysAgo', { date: dateText, n: daysAgo });
-                      const urgencyClass = isRejected ? 'bg-gray-100 text-gray-600 border-gray-200'
+                      const urgencyClass = isRejected ? 'bg-gray-100 text-gray-700 border-gray-200'
                         : daysAgo >= 8 ? 'bg-red-50 text-red-700 border-red-200'
                         : daysAgo >= 4 ? 'bg-amber-50 text-amber-700 border-amber-200'
                         : 'bg-gray-100 text-gray-700 border-gray-200';
@@ -458,25 +537,25 @@ export default function CompanyATSPage() {
                           onDragEnd={() => { setDraggingId(null); setDragOverCol(null); }}
                           onClick={() => setSelectedAppId(app.id)}
                           className={cn(
-                            'relative rounded-xl border p-4 flex flex-col gap-2 cursor-pointer transition-all duration-200 ease-spring',
-                            'bg-card border-border shadow-soft-sm hover:shadow-soft-md hover:-translate-y-0.5',
-                            selectedAppId === app.id && 'bg-primary-50 border-primary-400 shadow-brand -translate-y-0.5',
-                            draggingId === app.id && 'opacity-40 shadow-none',
-                            isRejected && 'bg-gray-50 border-dashed border-gray-300 opacity-70 shadow-none hover:translate-y-0',
+                            'relative rounded-md border p-2.5 flex flex-col gap-1 cursor-pointer transition-all duration-200 ease-spring',
+                            'bg-white border-[#E5E8EC] hover:border-primary-300 hover:shadow-soft-sm hover:-translate-y-px',
+                            selectedAppId === app.id && 'bg-primary-50/40 border-primary-400 ring-1 ring-primary-200 -translate-y-px shadow-soft-sm',
+                            draggingId === app.id && 'opacity-40',
+                            isRejected && 'bg-gray-50/50 border-dashed opacity-70 hover:translate-y-0',
                             canDrag && !selectedAppId && 'active:cursor-grabbing'
                           )}
                         >
                           {/* Kebab */}
                           {!isRejected && (
-                            <div className="absolute top-2.5 right-2.5">
+                            <div className="absolute top-2 right-2">
                               <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
                                   <button
                                     onClick={(e) => e.stopPropagation()}
-                                    className="w-7 h-7 rounded-md text-gray-400 hover:text-gray-700 hover:bg-gray-100 grid place-items-center transition-colors"
+                                    className="w-6 h-6 rounded-md text-gray-400 hover:text-gray-700 hover:bg-gray-100 grid place-items-center transition-colors"
                                     aria-label="more"
                                   >
-                                    <MoreVertical className="h-4 w-4" />
+                                    <MoreVertical className="h-3.5 w-3.5" />
                                   </button>
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
@@ -508,18 +587,18 @@ export default function CompanyATSPage() {
                             </div>
                           )}
 
-                          {/* Date pill */}
-                          <div className={cn('self-start inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-bold border', urgencyClass)}>
-                            <Calendar className="h-3 w-3" />
-                            {dateLabel.replace('📅 ', '')}
+                          {/* Date pill — Clock: time since applied */}
+                          <div className={cn('self-start inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider border', urgencyClass)}>
+                            <Clock className="h-2.5 w-2.5" />
+                            {dateLabel}
                           </div>
 
                           {/* Name row */}
                           <div className="flex items-center justify-between gap-2 pr-6">
-                            <span className="text-base font-extrabold text-gray-900 tracking-tight leading-tight truncate">{name}</span>
+                            <span className="text-[14px] font-bold text-gray-900 tracking-tight leading-tight truncate">{name}</span>
                             {isRejected && (
-                              <span className="text-xs font-extrabold text-red-600 shrink-0 inline-flex items-center gap-1">
-                                <Ban className="h-3 w-3" />
+                              <span className="text-[10px] font-extrabold text-red-600 shrink-0 inline-flex items-center gap-0.5 uppercase tracking-wider">
+                                <Ban className="h-2.5 w-2.5" />
                                 {t('company.ats.rejectedBadge')}
                               </span>
                             )}
@@ -527,12 +606,12 @@ export default function CompanyATSPage() {
 
                           {/* Meta */}
                           {app.applicant_role && (
-                            <div className="text-sm text-gray-600 font-medium">
+                            <div className="text-[12px] text-gray-900 font-semibold truncate">
                               {app.applicant_role} · {app.applicant_experience || 0}{t('company.years')}
                             </div>
                           )}
                           {app.applicant_salary && (
-                            <div className="text-sm text-emerald-600 font-bold">
+                            <div className="text-[12px] text-emerald-600 font-bold tabular-nums">
                               {t('company.ats.wishSalary', { n: Math.round(app.applicant_salary/1e6) })}
                             </div>
                           )}
@@ -543,14 +622,14 @@ export default function CompanyATSPage() {
                               onClick={(e) => { if (isOwner) { e.stopPropagation(); setInterviewApp(app); } }}
                               disabled={!isOwner}
                               className={cn(
-                                'mt-1 inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold border w-full',
+                                'mt-1 inline-flex items-center gap-1.5 px-2 py-1.5 rounded-md text-[11px] font-bold border w-full',
                                 interviewWhen
                                   ? 'bg-emerald-50 border-emerald-200 text-emerald-700'
                                   : 'bg-amber-50 border-amber-200 text-amber-700',
                                 isOwner && 'cursor-pointer hover:opacity-80 transition-opacity'
                               )}
                             >
-                              <Calendar className="h-3.5 w-3.5" />
+                              <Calendar className="h-3 w-3" />
                               {interviewWhen ? t('company.ats.interviewSet', { when: interviewWhen }) : t('company.ats.interviewPending')}
                             </button>
                           )}
@@ -564,19 +643,67 @@ export default function CompanyATSPage() {
           </div>
         </main>
 
-        {selectedAppId && (
-          <div style={localCss.overlay} onClick={() => setSelectedAppId(null)}>
-            <div style={localCss.panel} onClick={(e) => e.stopPropagation()}>
-              <CandidateDetail
-                appId={selectedAppId}
-                mode="overlay"
-                companyId={job.company_id}
-                onClose={() => setSelectedAppId(null)}
-                onStageChange={(id, patch) => setApps(prev => prev.map(a => a.id === id ? { ...a, ...patch } : a))}
-              />
+        {selectedAppId && (() => {
+          // Flat visible list across columns (driven by current filter/search)
+          const flatVisible = grouped.flatMap(c => c.apps);
+          const navIds = flatVisible.map(a => a.id);
+          const idx = navIds.indexOf(selectedAppId);
+          const total = navIds.length;
+          const prevId = idx > 0 ? navIds[idx - 1] : null;
+          const nextId = idx < total - 1 ? navIds[idx + 1] : null;
+
+          // Stage-level navigation: count per stage + index within current stage
+          const selectedApp = flatVisible.find(a => a.id === selectedAppId);
+          const stageCounts = grouped.reduce((acc, c) => { acc[c.key] = c.apps.length; return acc; }, {});
+          const sameStageList = selectedApp ? grouped.find(c => c.key === selectedApp.status)?.apps || [] : [];
+          const stageIdx = sameStageList.findIndex(a => a.id === selectedAppId);
+          const stageTotal = sameStageList.length;
+
+          // Shift+arrows: jump to the first app of the prev/next stage (with people in it)
+          const orderedStageKeys = grouped.map(c => c.key);
+          const currentStageOrderIdx = selectedApp ? orderedStageKeys.indexOf(selectedApp.status) : -1;
+          const findNextStageFirstApp = (dir) => {
+            if (currentStageOrderIdx < 0) return null;
+            let i = currentStageOrderIdx + dir;
+            while (i >= 0 && i < orderedStageKeys.length) {
+              const col = grouped[i];
+              if (col?.apps?.length) return col.apps[0].id;
+              i += dir;
+            }
+            return null;
+          };
+          const prevStageFirstId = findNextStageFirstApp(-1);
+          const nextStageFirstId = findNextStageFirstApp(+1);
+
+          return (
+            <div style={localCss.overlay} onClick={() => setSelectedAppId(null)}>
+              <div style={localCss.panel} onClick={(e) => e.stopPropagation()}>
+                <CandidateDetail
+                  key={selectedAppId}
+                  appId={selectedAppId}
+                  mode="overlay"
+                  companyId={job.company_id}
+                  navIndex={idx}
+                  navTotal={total}
+                  stageIndex={stageIdx}
+                  stageTotal={stageTotal}
+                  stageCounts={stageCounts}
+                  stageOrder={orderedStageKeys}
+                  onPrev={prevId ? () => setSelectedAppId(prevId) : null}
+                  onNext={nextId ? () => setSelectedAppId(nextId) : null}
+                  onJumpToStage={(stageKey) => {
+                    const first = grouped.find(c => c.key === stageKey)?.apps?.[0]?.id;
+                    if (first) setSelectedAppId(first);
+                  }}
+                  onPrevStage={prevStageFirstId ? () => setSelectedAppId(prevStageFirstId) : null}
+                  onNextStage={nextStageFirstId ? () => setSelectedAppId(nextStageFirstId) : null}
+                  onClose={() => setSelectedAppId(null)}
+                  onStageChange={(id, patch) => setApps(prev => prev.map(a => a.id === id ? { ...a, ...patch } : a))}
+                />
+              </div>
             </div>
-          </div>
-        )}
+          );
+        })()}
 
         {rejectingApp && (() => {
           const profile = rejectingApp.user_id ? profileMap[rejectingApp.user_id] : null;
@@ -592,6 +719,7 @@ export default function CompanyATSPage() {
               onSaved={(payload) => {
                 setApps(prev => prev.map(a => a.id === rejectingApp.id ? { ...a, ...payload } : a));
                 setRejectingApp(null);
+                toast.success(t('company.reject.h'));
               }}
             />
           );
@@ -606,6 +734,7 @@ export default function CompanyATSPage() {
             onSaved={(payload) => {
               setApps(prev => prev.map(a => a.id === interviewApp.id ? { ...a, ...payload } : a));
               setInterviewApp(null);
+              toast.success(payload.interview_at ? t('company.interview.confirmSave') : t('company.interview.confirmClear'));
             }}
           />
         )}
@@ -621,7 +750,7 @@ export default function CompanyATSPage() {
             stage={mailFor.stage || mailFor.app.status}
             stageNote={t('company.ats.stageNote', { stage: mailFor.stageLabel })}
             onClose={() => setMailFor(null)}
-            onSent={() => setMailFor(null)}
+            onSent={() => { setMailFor(null); toast.success(t('company.mail.send')); }}
           />
         )}
       </div>
