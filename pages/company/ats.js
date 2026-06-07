@@ -6,6 +6,7 @@ import { supabase } from '../../lib/supabaseClient';
 import { Sidebar, css } from './jobs/new';
 import CandidateDetail, { MailComposer, RejectionModal, InterviewConfirmModal, ConfirmModal } from '../../components/company/CandidateDetail';
 import { formatICT, ICT_LABEL } from '../../lib/timezone';
+import { color, font, space, radius, shadow, motion } from '../../lib/theme';
 import TeamPopover from '../../components/company/TeamPopover';
 import { useT } from '../../lib/i18n';
 
@@ -470,48 +471,59 @@ const localCss = {
   crumb: { fontSize: 12, color: '#94A3B8', marginBottom: 4 },
   crumbLink: { color: '#525252', textDecoration: 'none' },
 
-  kanban: { display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12, alignItems: 'stretch', minHeight: 'calc(100vh - 240px)' },
-  col: { background: '#fff', border: '1px solid #E5E7EB', borderRadius: 10, padding: 12, display: 'flex', flexDirection: 'column', gap: 10 },
-  colHead: { display: 'flex', alignItems: 'center', gap: 8, padding: '6px 8px 12px', borderBottom: '1px solid #E5E7EB' },
-  colEmoji: { fontSize: 14 },
-  colLabel: { fontSize: 13, fontWeight: 800, color: '#1A1A1A' },
-  colCount: { marginLeft: 'auto', background: '#F1F5F9', color: '#525252', fontSize: 11, fontWeight: 800, padding: '2px 8px', borderRadius: 999 },
-  colBody: { display: 'flex', flexDirection: 'column', gap: 8 },
-  colEmpty: { fontSize: 12, color: '#94A3B8', textAlign: 'center', padding: '24px 0' },
+  // ── Kanban ──
+  kanban: { display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: space[4], alignItems: 'stretch', minHeight: 'calc(100vh - 240px)' },
+  col: { background: color.surface, border: `1px solid ${color.border}`, borderRadius: radius.xl, padding: space[4], display: 'flex', flexDirection: 'column', gap: space[3], boxShadow: shadow.xs },
+  colOver: { background: color.primary[50], borderColor: color.primary[300], boxShadow: shadow.sm },
+  colHead: { display: 'flex', alignItems: 'center', gap: space[2], padding: `${space[1]}px ${space[2]}px ${space[3]}px`, borderBottom: `1px solid ${color.border}` },
+  colEmoji: { fontSize: font.size.md },
+  colLabel: { fontSize: font.size.md, fontWeight: font.weight.bold, color: color.textHi, letterSpacing: font.letterSpacing.tight },
+  colCount: { marginLeft: 'auto', background: color.gray[100], color: color.gray[700], fontSize: font.size.xs, fontWeight: font.weight.extra, padding: `2px ${space[2]}px`, borderRadius: radius.full },
+  colBody: { display: 'flex', flexDirection: 'column', gap: space[2] },
+  colEmpty: { fontSize: font.size.sm, color: color.textMute, textAlign: 'center', padding: `${space[6]}px 0`, fontWeight: font.weight.medium },
 
-  card: { background: '#FAFAFA', border: '1px solid #E5E7EB', borderRadius: 8, padding: '12px 14px', display: 'flex', flexDirection: 'column', gap: 4, cursor: 'grab', transition: 'all 0.15s', textDecoration: 'none' },
-  cardActive: { background: '#FFF7ED', border: '1.5px solid #FCA5A5', boxShadow: '0 4px 12px rgba(234,88,12,0.12)' },
-  cardDragging: { opacity: 0.4 },
+  // ── Card ──
+  card: { background: color.surface, border: `1px solid ${color.border}`, borderRadius: radius.lg, padding: space[4], display: 'flex', flexDirection: 'column', gap: space[1], cursor: 'grab', transition: motion.base, textDecoration: 'none', boxShadow: shadow.xs },
+  cardActive: { background: color.primary[50], border: `1.5px solid ${color.primary[400]}`, boxShadow: shadow.brand, transform: 'translateY(-1px)' },
+  cardDragging: { opacity: 0.4, boxShadow: 'none' },
+  cardRejected: { background: color.gray[50], border: `1px dashed ${color.gray[300]}`, opacity: 0.7, cursor: 'pointer', boxShadow: 'none' },
 
-  toolbar: { display: 'flex', alignItems: 'center', gap: 8 },
-  search: { flex: '0 1 320px', padding: '9px 12px', border: '1px solid #D1D5DB', borderRadius: 8, fontSize: 13, color: '#1A1A1A', fontFamily: 'inherit', outline: 'none' },
-  searchClear: { padding: '8px 12px', border: '1px solid #D1D5DB', borderRadius: 8, background: '#fff', color: '#525252', fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' },
-  dragHint: { marginLeft: 'auto', fontSize: 11.5, color: '#94A3B8', fontWeight: 600 },
-  colOver: { background: '#FFF7ED', borderColor: '#FCA5A5' },
-  overlay: { position: 'fixed', inset: 0, background: 'rgba(15,23,42,0.55)', zIndex: 50 },
-  panel: { position: 'absolute', top: 16, left: 16, right: 16, bottom: 16, background: '#FAFAFA', borderRadius: 14, overflow: 'hidden', boxShadow: '0 20px 60px rgba(0,0,0,0.35)', display: 'flex', flexDirection: 'column' },
-  cardName: { fontSize: 13.5, fontWeight: 800, color: '#1A1A1A' },
-  cardMeta: { fontSize: 11.5, color: '#525252' },
-  cardSalary: { fontSize: 11.5, color: '#059669', fontWeight: 600 },
-  applyDateLow: { alignSelf: 'flex-start', padding: '3px 9px', borderRadius: 999, background: '#F1F5F9', border: '1px solid #E5E7EB', color: '#475569', fontSize: 10.5, fontWeight: 700, marginBottom: 2 },
-  applyDateMid: { alignSelf: 'flex-start', padding: '3px 9px', borderRadius: 999, background: '#FFF7ED', border: '1px solid #FED7AA', color: '#C2410C', fontSize: 10.5, fontWeight: 800, marginBottom: 2 },
-  applyDateHigh: { alignSelf: 'flex-start', padding: '3px 9px', borderRadius: 999, background: '#FEE2E2', border: '1px solid #FCA5A5', color: '#B91C1C', fontSize: 10.5, fontWeight: 800, marginBottom: 2 },
-  interviewSet: { marginTop: 4, padding: '6px 10px', background: '#ECFDF5', border: '1px solid #A7F3D0', borderRadius: 6, fontSize: 11, fontWeight: 700, color: '#047857' },
-  interviewPending: { marginTop: 4, padding: '6px 10px', background: '#FFFBEB', border: '1px solid #FDE68A', borderRadius: 6, fontSize: 11, fontWeight: 700, color: '#B45309' },
+  cardName: { fontSize: font.size.lg, fontWeight: font.weight.extra, color: color.textHi, letterSpacing: font.letterSpacing.tight, lineHeight: font.lineHeight.tight },
+  cardMeta: { fontSize: font.size.sm, color: color.textSub, fontWeight: font.weight.medium },
+  cardSalary: { fontSize: font.size.sm, color: color.success.fg, fontWeight: font.weight.semi },
+  nameRow: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: space[2] },
+  rejectedInline: { fontSize: font.size.xs, fontWeight: font.weight.bold, color: color.danger.fg, flexShrink: 0 },
 
-  cardRejected: { background: '#F1F5F9', border: '1px dashed #CBD5E1', opacity: 0.7, cursor: 'pointer' },
-  nameRow: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 6 },
-  rejectedInline: { fontSize: 11, fontWeight: 800, color: '#DC2626', flexShrink: 0 },
+  // ── Card pill: 지원 경과일 ──
+  applyDateLow:  { alignSelf: 'flex-start', padding: `3px ${space[2]}px`, borderRadius: radius.full, background: color.gray[100], border: `1px solid ${color.border}`, color: color.gray[700], fontSize: font.size.xs, fontWeight: font.weight.bold, marginBottom: space[1] },
+  applyDateMid:  { alignSelf: 'flex-start', padding: `3px ${space[2]}px`, borderRadius: radius.full, background: color.warning.bg, border: `1px solid ${color.warning.border}`, color: color.warning.fg, fontSize: font.size.xs, fontWeight: font.weight.extra, marginBottom: space[1] },
+  applyDateHigh: { alignSelf: 'flex-start', padding: `3px ${space[2]}px`, borderRadius: radius.full, background: color.danger.bg, border: `1px solid ${color.danger.border}`, color: color.danger.fg, fontSize: font.size.xs, fontWeight: font.weight.extra, marginBottom: space[1] },
 
-  toggleLabel: { display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: '#525252', fontWeight: 600, cursor: 'pointer', padding: '6px 10px', background: '#fff', border: '1px solid #D1D5DB', borderRadius: 8 },
-  btnNewJob: { padding: '12px 24px', borderRadius: 8, background: 'linear-gradient(135deg,#F97316,#EA580C)', color: '#fff', fontSize: 14, fontWeight: 800, textDecoration: 'none', boxShadow: '0 4px 12px rgba(234,88,12,0.25)', display: 'inline-flex', alignItems: 'center' },
+  // ── Card: 인터뷰 뱃지 ──
+  interviewSet:     { marginTop: space[1], padding: `${space[2]}px ${space[3]}px`, background: color.success.bg, border: `1px solid ${color.success.border}`, borderRadius: radius.md, fontSize: font.size.xs, fontWeight: font.weight.bold, color: color.success.fg },
+  interviewPending: { marginTop: space[1], padding: `${space[2]}px ${space[3]}px`, background: color.warning.bg, border: `1px solid ${color.warning.border}`, borderRadius: radius.md, fontSize: font.size.xs, fontWeight: font.weight.bold, color: color.warning.fg },
 
-  kebabWrap: { position: 'absolute', top: 6, right: 6 },
-  kebabBtn: { width: 26, height: 26, borderRadius: 6, border: 'none', background: 'transparent', color: '#94A3B8', fontSize: 18, fontWeight: 800, cursor: 'pointer', lineHeight: 1, display: 'grid', placeItems: 'center', fontFamily: 'inherit' },
-  kebabMenu: { position: 'absolute', top: 30, right: 0, minWidth: 200, background: '#fff', border: '1px solid #E5E7EB', borderRadius: 10, boxShadow: '0 12px 28px rgba(0,0,0,0.14)', padding: 6, zIndex: 30, display: 'flex', flexDirection: 'column', gap: 2 },
-  kebabItem: { display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', width: '100%', border: 'none', background: 'transparent', color: '#B91C1C', cursor: 'pointer', textAlign: 'left', borderRadius: 6, fontFamily: 'inherit' },
-  kebabItemNeutral: { display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', width: '100%', border: 'none', background: 'transparent', color: '#1A1A1A', cursor: 'pointer', textAlign: 'left', borderRadius: 6, fontFamily: 'inherit' },
-  kebabItemLocked: { display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', width: '100%', border: 'none', background: '#F8FAFC', color: '#94A3B8', cursor: 'not-allowed', textAlign: 'left', borderRadius: 6, fontFamily: 'inherit' },
-  kebabIcon: { width: 18, fontSize: 14, lineHeight: 1, display: 'inline-flex', justifyContent: 'center', alignItems: 'center', flexShrink: 0, fontFamily: 'inherit' },
-  kebabText: { fontSize: 13, fontWeight: 700, lineHeight: 1.4, flex: 1, fontFamily: 'inherit' },
+  // ── Toolbar ──
+  toolbar: { display: 'flex', alignItems: 'center', gap: space[2] },
+  search: { flex: '0 1 320px', padding: `${space[3]}px ${space[4]}px`, border: `1px solid ${color.border}`, borderRadius: radius.md, fontSize: font.size.base, color: color.text, fontFamily: 'inherit', outline: 'none', background: color.surface, transition: motion.base },
+  searchClear: { padding: `${space[2]}px ${space[3]}px`, border: `1px solid ${color.border}`, borderRadius: radius.md, background: color.surface, color: color.textSub, fontSize: font.size.sm, fontWeight: font.weight.semi, cursor: 'pointer', fontFamily: 'inherit', transition: motion.base },
+  dragHint: { marginLeft: 'auto', fontSize: font.size.sm, color: color.textMute, fontWeight: font.weight.medium },
+  toggleLabel: { display: 'flex', alignItems: 'center', gap: space[2], fontSize: font.size.sm, color: color.text, fontWeight: font.weight.semi, cursor: 'pointer', padding: `${space[2]}px ${space[3]}px`, background: color.surface, border: `1px solid ${color.border}`, borderRadius: radius.md, transition: motion.base },
+
+  // ── Header buttons ──
+  btnNewJob: { padding: `${space[3]}px ${space[6]}px`, borderRadius: radius.md, background: `linear-gradient(135deg, ${color.primary[400]}, ${color.primary[600]})`, color: color.white, fontSize: font.size.base, fontWeight: font.weight.extra, textDecoration: 'none', boxShadow: shadow.brand, display: 'inline-flex', alignItems: 'center', transition: motion.base, letterSpacing: font.letterSpacing.tight },
+
+  // ── Candidate detail overlay ──
+  overlay: { position: 'fixed', inset: 0, background: 'rgba(17, 24, 39, 0.45)', backdropFilter: 'blur(2px)', zIndex: 50 },
+  panel: { position: 'absolute', top: 16, left: 16, right: 16, bottom: 16, background: color.bg, borderRadius: radius['2xl'], overflow: 'hidden', boxShadow: shadow.xl, display: 'flex', flexDirection: 'column' },
+
+  // ── Kebab menu ──
+  kebabWrap: { position: 'absolute', top: 8, right: 8 },
+  kebabBtn: { width: 28, height: 28, borderRadius: radius.md, border: 'none', background: 'transparent', color: color.textMute, fontSize: 18, fontWeight: font.weight.extra, cursor: 'pointer', lineHeight: 1, display: 'grid', placeItems: 'center', fontFamily: 'inherit', transition: motion.base },
+  kebabMenu: { position: 'absolute', top: 34, right: 0, minWidth: 220, background: color.surface, border: `1px solid ${color.border}`, borderRadius: radius.lg, boxShadow: shadow.lg, padding: space[2], zIndex: 30, display: 'flex', flexDirection: 'column', gap: 2 },
+  kebabItem:        { display: 'flex', alignItems: 'center', gap: space[3], padding: `${space[3]}px ${space[3]}px`, width: '100%', border: 'none', background: 'transparent', color: color.danger.fg, cursor: 'pointer', textAlign: 'left', borderRadius: radius.md, fontFamily: 'inherit', transition: motion.base },
+  kebabItemNeutral: { display: 'flex', alignItems: 'center', gap: space[3], padding: `${space[3]}px ${space[3]}px`, width: '100%', border: 'none', background: 'transparent', color: color.text, cursor: 'pointer', textAlign: 'left', borderRadius: radius.md, fontFamily: 'inherit', transition: motion.base },
+  kebabItemLocked:  { display: 'flex', alignItems: 'center', gap: space[3], padding: `${space[3]}px ${space[3]}px`, width: '100%', border: 'none', background: color.gray[50], color: color.textMute, cursor: 'not-allowed', textAlign: 'left', borderRadius: radius.md, fontFamily: 'inherit' },
+  kebabIcon: { width: 18, fontSize: font.size.md, lineHeight: 1, display: 'inline-flex', justifyContent: 'center', alignItems: 'center', flexShrink: 0, fontFamily: 'inherit' },
+  kebabText: { fontSize: font.size.base, fontWeight: font.weight.semi, lineHeight: 1.4, flex: 1, fontFamily: 'inherit' },
 };
