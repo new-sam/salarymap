@@ -27,7 +27,7 @@ export default function MobileNav({ active, companyName, userEmail }) {
   const tabs = [
     { key: 'todo',     href: '/company/todo',     icon: CheckSquare, label: t('company.sidebar.todo') },
     { key: 'home',     href: '/company',          icon: Briefcase,   label: t('company.mobileNav.jobs') },
-    { key: 'calendar', href: '/company/calendar', icon: Calendar,    label: t('company.sidebar.calendar') },
+    { key: 'calendar', href: '/company/calendar', icon: Calendar,    label: t('company.mobileNav.calendar') },
   ];
 
   return (
@@ -88,14 +88,14 @@ export default function MobileNav({ active, companyName, userEmail }) {
               key={tab.key}
               href={tab.href}
               className={cn(
-                'flex-1 inline-flex items-center justify-center gap-1.5 h-11 text-[12.5px] font-extrabold transition-colors border-b-2',
+                'flex-1 min-w-0 inline-flex items-center justify-center gap-1.5 h-11 text-[12.5px] font-extrabold transition-colors border-b-2 px-1',
                 isActive
                   ? 'text-primary-300 bg-primary-500/15 border-primary-400'
                   : 'text-gray-400 border-transparent hover:bg-white/5'
               )}
             >
-              <Icon className="w-4 h-4" />
-              {tab.label}
+              <Icon className="w-4 h-4 flex-shrink-0" />
+              <span className="truncate">{tab.label}</span>
             </Link>
           );
         })}
