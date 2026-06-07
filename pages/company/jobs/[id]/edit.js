@@ -10,7 +10,8 @@ import { Button as UButton } from '../../../../components/ui/button';
 import { Input as UInput } from '../../../../components/ui/input';
 import { Badge as UBadge } from '../../../../components/ui/badge';
 import { PageHeader } from '../../../../components/ui/page-header';
-import { ImageIcon, MapPin, Building2, EyeOff, Eye, Trash2, ExternalLink, Briefcase, CalendarDays, Users } from 'lucide-react';
+import { ImageIcon, MapPin, Building2, EyeOff, Eye, Trash2, ExternalLink, Briefcase, CalendarDays, Users, Maximize2, X as XIcon } from 'lucide-react';
+import JobPreview from '../../../../components/jobs/JobPreview';
 
 const ROLES = ['Backend', 'Frontend', 'Fullstack', 'Mobile', 'Data', 'DevOps', 'PM', 'Design', 'QA'];
 const TYPES = ['remote', 'onsite', 'hybrid'];
@@ -80,6 +81,7 @@ export default function EditJobPage() {
   const setF = (k, v) => setForm({ ...form, [k]: v });
 
   const [uploading, setUploading] = useState(false);
+  const [previewFull, setPreviewFull] = useState(false);
   const uploadImage = async (file, field) => {
     if (!file || !user) return;
     setUploading(true);
@@ -167,9 +169,9 @@ export default function EditJobPage() {
     <>
       <Head><title>공고 수정 · FYI</title></Head>
       <div style={css.app}>
-        <Sidebar companyName={companyName} userEmail={user?.email} activePage="jobs" />
+        <Sidebar companyName={companyName} userEmail={user?.email} activePage="jobs" activeJobId={id} />
 
-        <main style={css.main}>
+        <main style={css.main} className="!h-screen !overflow-hidden !pb-0">
           <PageHeader
             title={t('company.editJob.h')}
             subtitle={(
@@ -207,59 +209,18 @@ export default function EditJobPage() {
             )}
           />
 
-          <form id="job-edit-form" onSubmit={onSubmit} className="grid grid-cols-1 lg:grid-cols-[1.4fr_1fr] gap-6 items-start">
-            <div className="flex flex-col">
-              <h2 className="text-[12px] font-extrabold text-gray-500 uppercase tracking-[0.08em] mb-3">기본 정보</h2>
-              <Field label="포지션명"><UInput value={form.title} onChange={e => setF('title', e.target.value)} /></Field>
-              <Field label="업무 설명">
-                <textarea
-                  value={form.description}
-                  onChange={e => setF('description', e.target.value)}
-                  rows={4}
-                  className="flex w-full rounded-lg border border-input bg-background px-3 py-2.5 text-sm font-medium leading-relaxed resize-y min-h-[110px] focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-1"
-                />
-              </Field>
-              <div className="grid grid-cols-2 gap-3">
-                <Field label="역할 카테고리"><SelectInput value={form.role} onChange={e => setF('role', e.target.value)}>{ROLES.map(r => <option key={r}>{r}</option>)}</SelectInput></Field>
-                <Field label="근무 형태"><SelectInput value={form.type} onChange={e => setF('type', e.target.value)}>{TYPES.map(t => <option key={t}>{t}</option>)}</SelectInput></Field>
-              </div>
-              <Field label="근무지"><SelectInput value={form.location} onChange={e => setF('location', e.target.value)}>{LOCATIONS.map(l => <option key={l}>{l}</option>)}</SelectInput></Field>
+          {/* Form is a flex row so each column inherits the form's visible height. */}
+          <form id="job-edit-form" onSubmit={onSubmit} className="flex-1 min-h-0 flex flex-col lg:flex-row gap-6 overflow-hidden">
+            <div className="flex-[1.4] flex flex-col overflow-y-auto min-h-0 px-1 pb-10">
+              {/* Mirrors /company/jobs/new exactly — same headers, fields, order, and i18n keys. */}
+              <h2 className="text-[12px] font-extrabold text-gray-500 uppercase tracking-[0.08em] mb-3">{t('company.jobsnew.photoH')}</h2>
 
-              <h2 className="text-[12px] font-extrabold text-gray-500 uppercase tracking-[0.08em] mt-5 mb-3">경력 · 연봉</h2>
-              <div className="grid grid-cols-2 gap-3">
-                <Field label="경력 최소 (년)"><UInput type="number" value={form.experience_min} onChange={e => setF('experience_min', e.target.value)} /></Field>
-                <Field label="경력 최대 (년)"><UInput type="number" value={form.experience_max} onChange={e => setF('experience_max', e.target.value)} /></Field>
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <Field label="연봉 최소 (VND, 월)">
-                  <UInput type="number" value={form.salary_min} onChange={e => setF('salary_min', e.target.value)} />
-                  <div className="text-xs text-gray-500 mt-1">{Math.round(form.salary_min / 1e6)}M VND/월</div>
-                </Field>
-                <Field label="연봉 최대 (VND, 월)">
-                  <UInput type="number" value={form.salary_max} onChange={e => setF('salary_max', e.target.value)} />
-                  <div className="text-xs text-gray-500 mt-1">{Math.round(form.salary_max / 1e6)}M VND/월</div>
-                </Field>
-              </div>
-
-              <h2 className="text-[12px] font-extrabold text-gray-500 uppercase tracking-[0.08em] mt-5 mb-3">이미지</h2>
-              <div className="grid grid-cols-2 gap-3">
-                <Field label="회사 로고">
-                  {form.logo_url ? (
-                    <div className="flex items-center gap-2.5 p-2.5 border border-border rounded-lg bg-white">
-                      <img src={form.logo_url} alt="logo" className="h-10 w-10 rounded-md object-contain bg-gray-50" />
-                      <UButton type="button" variant="outline" size="sm" onClick={() => setF('logo_url', '')} className="ml-auto h-7 px-2 text-xs text-red-600 border-red-200 hover:bg-red-50">제거</UButton>
-                    </div>
-                  ) : (
-                    <input type="file" accept="image/*" disabled={uploading}
-                      onChange={(e) => e.target.files?.[0] && uploadImage(e.target.files[0], 'logo_url')}
-                      className="text-xs text-gray-700 border border-dashed border-gray-300 rounded-lg p-2 bg-gray-50 cursor-pointer w-full" />
-                  )}
-                </Field>
-                <Field label="공고 대표 이미지">
+              <div className="grid grid-cols-2 gap-3 mb-3">
+                <Field label={t('company.jobsnew.imageLabel')}>
                   {form.image_url ? (
                     <div className="flex items-center gap-2.5 p-2.5 border border-border rounded-lg bg-white">
                       <img src={form.image_url} alt="thumbnail" className="h-14 w-24 rounded-md object-cover" />
-                      <UButton type="button" variant="outline" size="sm" onClick={() => setF('image_url', '')} className="ml-auto h-7 px-2 text-xs text-red-600 border-red-200 hover:bg-red-50">제거</UButton>
+                      <UButton type="button" variant="outline" size="sm" onClick={() => setF('image_url', '')} className="ml-auto h-7 px-2 text-xs text-red-600 border-red-200 hover:bg-red-50">{t('company.remove')}</UButton>
                     </div>
                   ) : (
                     <input type="file" accept="image/*" disabled={uploading}
@@ -267,125 +228,106 @@ export default function EditJobPage() {
                       className="text-xs text-gray-700 border border-dashed border-gray-300 rounded-lg p-2 bg-gray-50 cursor-pointer w-full" />
                   )}
                 </Field>
+                <Field label={t('company.jobsnew.logoLabel')}>
+                  {form.logo_url ? (
+                    <div className="flex items-center gap-2.5 p-2.5 border border-border rounded-lg bg-white">
+                      <img src={form.logo_url} alt="logo" className="h-10 w-10 rounded-md object-contain bg-gray-50" />
+                      <UButton type="button" variant="outline" size="sm" onClick={() => setF('logo_url', '')} className="ml-auto h-7 px-2 text-xs text-red-600 border-red-200 hover:bg-red-50">{t('company.remove')}</UButton>
+                    </div>
+                  ) : (
+                    <input type="file" accept="image/*" disabled={uploading}
+                      onChange={(e) => e.target.files?.[0] && uploadImage(e.target.files[0], 'logo_url')}
+                      className="text-xs text-gray-700 border border-dashed border-gray-300 rounded-lg p-2 bg-gray-50 cursor-pointer w-full" />
+                  )}
+                </Field>
               </div>
-              {uploading && <div className="text-xs text-primary-600 font-semibold mb-3">업로드 중...</div>}
+              {uploading
+                ? <div className="text-xs text-primary-600 font-semibold mb-3">{t('company.uploading')}</div>
+                : <div className="text-xs text-gray-400 font-semibold mb-5">{t('company.jobsnew.photoHint')}</div>}
 
-              <h2 className="text-[12px] font-extrabold text-gray-500 uppercase tracking-[0.08em] mt-5 mb-3">스킬·복지·기타</h2>
-              <Field label="기술 스택 (콤마 구분)"><UInput value={form.tech_stack} onChange={e => setF('tech_stack', e.target.value)} /></Field>
-              <Field label="복지 (콤마 구분, 선택)"><UInput value={form.benefits} onChange={e => setF('benefits', e.target.value)} /></Field>
+              <h2 className="text-[12px] font-extrabold text-gray-500 uppercase tracking-[0.08em] mt-3 mb-3">{t('company.jobsnew.basicH')}</h2>
+
+              <Field label={t('company.jobsnew.title')}>
+                <UInput value={form.title} onChange={e => setF('title', e.target.value)} placeholder="Senior Backend Engineer" />
+              </Field>
+
+              <Field label={t('company.jobsnew.descLabel')}>
+                <textarea value={form.description} onChange={e => setF('description', e.target.value)} rows={4}
+                  placeholder={t('company.jobsnew.descPh')}
+                  className="flex w-full rounded-lg border border-input bg-background px-3 py-2.5 text-sm font-medium leading-relaxed resize-y min-h-[110px] focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-1" />
+              </Field>
+
               <div className="grid grid-cols-2 gap-3">
-                <Field label="채용 인원 (선택)"><UInput type="number" value={form.headcount} onChange={e => setF('headcount', e.target.value)} /></Field>
-                <Field label="마감일 (선택)"><UInput type="date" value={form.deadline} onChange={e => setF('deadline', e.target.value)} /></Field>
+                <Field label={t('company.jobsnew.role')}>
+                  <SelectInput value={form.role} onChange={e => setF('role', e.target.value)}>
+                    {ROLES.map(r => <option key={r} value={r}>{r}</option>)}
+                  </SelectInput>
+                </Field>
+                <Field label={t('company.jobsnew.type')}>
+                  <SelectInput value={form.type} onChange={e => setF('type', e.target.value)}>
+                    {TYPES.map(tp => <option key={tp} value={tp}>{tp}</option>)}
+                  </SelectInput>
+                </Field>
+              </div>
+
+              <Field label={t('company.jobsnew.location')}>
+                <SelectInput value={form.location} onChange={e => setF('location', e.target.value)}>
+                  {LOCATIONS.map(l => <option key={l} value={l}>{l}</option>)}
+                </SelectInput>
+              </Field>
+
+              <h2 className="text-[12px] font-extrabold text-gray-500 uppercase tracking-[0.08em] mt-5 mb-3">{t('company.jobsnew.expSalH')}</h2>
+
+              <div className="grid grid-cols-2 gap-3">
+                <Field label={t('company.jobsnew.expMin')}>
+                  <UInput type="number" value={form.experience_min} onChange={e => setF('experience_min', e.target.value)} />
+                </Field>
+                <Field label={t('company.jobsnew.expMax')}>
+                  <UInput type="number" value={form.experience_max} onChange={e => setF('experience_max', e.target.value)} />
+                </Field>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <Field label={t('company.jobsnew.salaryMin')}>
+                  <UInput type="number" value={form.salary_min} onChange={e => setF('salary_min', e.target.value)} />
+                  <div className="text-xs text-gray-500 mt-1">{t('company.jobsnew.vndHint', { n: Math.round(form.salary_min / 1e6) })}</div>
+                </Field>
+                <Field label={t('company.jobsnew.salaryMax')}>
+                  <UInput type="number" value={form.salary_max} onChange={e => setF('salary_max', e.target.value)} />
+                  <div className="text-xs text-gray-500 mt-1">{t('company.jobsnew.vndHint', { n: Math.round(form.salary_max / 1e6) })}</div>
+                </Field>
+              </div>
+
+              <h2 className="text-[12px] font-extrabold text-gray-500 uppercase tracking-[0.08em] mt-5 mb-3">{t('company.jobsnew.skillH')}</h2>
+
+              <Field label={t('company.jobsnew.tech')}>
+                <UInput value={form.tech_stack} onChange={e => setF('tech_stack', e.target.value)} placeholder="Node.js, PostgreSQL, AWS" />
+              </Field>
+
+              <Field label={t('company.jobsnew.benefits')}>
+                <UInput value={form.benefits} onChange={e => setF('benefits', e.target.value)} placeholder="13th-month, Health insurance" />
+              </Field>
+
+              <div className="grid grid-cols-2 gap-3">
+                <Field label={t('company.jobsnew.headcount')}>
+                  <UInput type="number" value={form.headcount} onChange={e => setF('headcount', e.target.value)} placeholder="1" />
+                </Field>
+                <Field label={t('company.jobsnew.deadline')}>
+                  <UInput type="date" value={form.deadline} onChange={e => setF('deadline', e.target.value)} />
+                </Field>
               </div>
             </div>
 
-            <aside className="bg-white border border-border rounded-2xl p-4 pb-5 flex flex-col gap-3 sticky top-[88px] shadow-soft-xs max-h-[calc(100vh-100px)] overflow-y-auto">
-              <div className="text-[10.5px] font-extrabold uppercase tracking-[0.08em] text-gray-500">미리보기</div>
-
-              {/* Public job card preview — mirrors /jobs/[id] */}
-              <div className="bg-white border border-border rounded-xl overflow-hidden">
-                {form.image_url ? (
-                  <img src={form.image_url} alt="" className="w-full h-32 object-cover block" />
-                ) : (
-                  <div className="w-full h-32 bg-gray-100 flex items-center justify-center text-[11px] text-gray-400 font-semibold gap-2">
-                    <ImageIcon className="w-3.5 h-3.5" />
-                    공고 대표 이미지 영역
-                  </div>
-                )}
-                <div className="p-4 space-y-3">
-                  <div className="flex items-center gap-2.5">
-                    {form.logo_url ? (
-                      <img src={form.logo_url} alt="" className="w-8 h-8 rounded-md object-contain bg-gray-50 border border-border" />
-                    ) : (
-                      <div className="w-8 h-8 rounded-md bg-gray-100 flex items-center justify-center border border-border">
-                        <Building2 className="w-4 h-4 text-gray-400" />
-                      </div>
-                    )}
-                    <div className="min-w-0">
-                      <div className="text-[13px] text-gray-900 font-bold truncate">{companyName || '회사명'}</div>
-                      <div className="text-[11.5px] text-gray-900 font-semibold truncate">{form.location} · {form.type}</div>
-                    </div>
-                  </div>
-
-                  <div className="text-[17px] font-extrabold text-foreground leading-tight tracking-tight">
-                    {form.title || '포지션명'}
-                  </div>
-
-                  <div className="text-[16px] font-extrabold text-emerald-600 tabular-nums leading-none">
-                    {Math.round(form.salary_min/1e6)}M – {Math.round(form.salary_max/1e6)}M VND
-                  </div>
-
-                  {(form.tech_stack || '').trim() && (
-                    <div className="flex flex-wrap gap-1">
-                      {form.tech_stack.split(',').map(s => s.trim()).filter(Boolean).slice(0, 6).map(tag => (
-                        <span key={tag} className="text-[11.5px] font-semibold text-gray-700 bg-gray-100 px-2 py-0.5 rounded">
-                          {tag}
-                        </span>
-                      ))}
-                    </div>
-                  )}
-
-                  {(form.description || '').trim() && (
-                    <div className="pt-3 border-t border-border">
-                      <div className="text-[10.5px] font-extrabold uppercase tracking-[0.06em] text-gray-400 mb-1.5">업무 설명</div>
-                      <div className="text-[12.5px] text-gray-700 leading-relaxed whitespace-pre-line max-h-20 overflow-y-auto pr-1">
-                        {form.description}
-                      </div>
-                    </div>
-                  )}
-
-                  <div className="grid grid-cols-2 gap-3 pt-3 border-t border-border">
-                    <div>
-                      <div className="text-[10.5px] font-extrabold uppercase tracking-[0.06em] text-gray-400 mb-1 flex items-center gap-1">
-                        <Briefcase className="w-3 h-3" />
-                        포지션
-                      </div>
-                      <div className="text-[13px] font-bold text-foreground">{form.role}</div>
-                    </div>
-                    <div>
-                      <div className="text-[10.5px] font-extrabold uppercase tracking-[0.06em] text-gray-400 mb-1">
-                        경력
-                      </div>
-                      <div className="text-[13px] font-bold text-foreground tabular-nums">{form.experience_min}–{form.experience_max}년</div>
-                    </div>
-                    {form.headcount && (
-                      <div>
-                        <div className="text-[10.5px] font-extrabold uppercase tracking-[0.06em] text-gray-400 mb-1 flex items-center gap-1">
-                          <Users className="w-3 h-3" />
-                          채용 인원
-                        </div>
-                        <div className="text-[13px] font-bold text-foreground tabular-nums">{form.headcount}명</div>
-                      </div>
-                    )}
-                    {form.deadline && (
-                      <div>
-                        <div className="text-[10.5px] font-extrabold uppercase tracking-[0.06em] text-gray-400 mb-1 flex items-center gap-1">
-                          <CalendarDays className="w-3 h-3" />
-                          마감
-                        </div>
-                        <div className="text-[13px] font-bold text-foreground tabular-nums">{form.deadline}</div>
-                      </div>
-                    )}
-                  </div>
-
-                  {(form.benefits || '').trim() && (
-                    <div className="pt-3 border-t border-border">
-                      <div className="text-[10.5px] font-extrabold uppercase tracking-[0.06em] text-gray-400 mb-1.5">복지</div>
-                      <div className="flex flex-wrap gap-1">
-                        {form.benefits.split(',').map(s => s.trim()).filter(Boolean).map(b => (
-                          <span key={b} className="text-[11px] font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full">
-                            {b}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
+            {/* Preview column — JobPreview faithfully mirrors /jobs/[id] layout. */}
+            <aside className="flex-1 overflow-y-auto min-h-0 pl-2 pr-1 pb-10 flex flex-col gap-3">
+              <div className="flex items-center justify-between flex-shrink-0">
+                <div className="text-[10.5px] font-extrabold uppercase tracking-[0.08em] text-gray-500">{t('company.jobsnew.previewLabel')}</div>
+                <UButton type="button" size="sm" variant="outline" onClick={() => setPreviewFull(true)} className="h-7 px-2.5 text-[11.5px]">
+                  <Maximize2 className="w-3.5 h-3.5" />
+                  {t('company.jobsnew.previewFull')}
+                </UButton>
               </div>
-
-              <div className="text-[10.5px] text-gray-400 font-medium leading-relaxed">
-                실시간 입력값이 반영됩니다. 저장 후 상단의 "공개 페이지" 버튼으로 실제 화면을 확인할 수 있습니다.
-              </div>
+              <JobPreview form={form} companyName={companyName} />
             </aside>
 
             {err && (
@@ -393,6 +335,27 @@ export default function EditJobPage() {
             )}
           </form>
         </main>
+
+        {previewFull && (
+          <div
+            className="fixed inset-0 z-50 bg-gray-900/55 backdrop-blur-[2px] overflow-y-auto"
+            onClick={() => setPreviewFull(false)}
+          >
+            <div className="min-h-full flex items-start justify-center py-8 px-4">
+              <div className="relative w-full max-w-[760px]" onClick={(e) => e.stopPropagation()}>
+                <button
+                  type="button"
+                  onClick={() => setPreviewFull(false)}
+                  className="absolute -top-2 right-0 w-9 h-9 rounded-full bg-white shadow-md border border-border flex items-center justify-center text-gray-700 hover:bg-gray-50"
+                  title={t('company.jobsnew.previewClose')}
+                >
+                  <XIcon className="w-4 h-4" />
+                </button>
+                <JobPreview form={form} companyName={companyName} fullscreen />
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </>
   );

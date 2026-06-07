@@ -74,10 +74,20 @@ module.exports = {
         },
       },
       fontFamily: {
-        sans: ["'Pretendard Variable'", "'Pretendard'", '-apple-system', 'BlinkMacSystemFont', "'Segoe UI'", 'sans-serif'],
+        // Pretendard first (ko/en/vi covered with the full glyph set),
+        // Inter as a clean Latin fallback before system stack.
+        sans: ["'Pretendard Variable'", "'Pretendard'", "'Inter'", '-apple-system', 'BlinkMacSystemFont', "'Segoe UI'", "'Helvetica Neue'", 'sans-serif'],
       },
       fontSize: {
-        kpi: ['36px', { lineHeight: '1.2', letterSpacing: '-0.02em', fontWeight: '900' }],
+        // Semantic display sizes paired with sensible line-heights and tracking.
+        // Use these instead of arbitrary text-[Npx] for hero/section/KPI headers.
+        kpi:       ['36px', { lineHeight: '1.2',  letterSpacing: '-0.02em',  fontWeight: '900' }],
+        hero:      ['28px', { lineHeight: '1.22', letterSpacing: '-0.022em', fontWeight: '800' }],
+        section:   ['20px', { lineHeight: '1.3',  letterSpacing: '-0.015em', fontWeight: '800' }],
+        cardTitle: ['15px', { lineHeight: '1.4',  letterSpacing: '-0.01em',  fontWeight: '700' }],
+        body:      ['14px', { lineHeight: '1.55', letterSpacing: '-0.005em', fontWeight: '500' }],
+        meta:      ['12.5px', { lineHeight: '1.55', letterSpacing: '0',      fontWeight: '500' }],
+        caption:   ['11px',  { lineHeight: '1.5',  letterSpacing: '0.02em',  fontWeight: '700' }],
       },
       borderRadius: {
         lg: 'var(--radius)',
@@ -106,10 +116,17 @@ module.exports = {
           from: { height: 'var(--radix-accordion-content-height)' },
           to: { height: '0' },
         },
+        // Subtle hover-y for the sidebar to-do counter — draws the eye
+        // without feeling spammy.
+        float: {
+          '0%, 100%': { transform: 'translateY(0)' },
+          '50%':      { transform: 'translateY(-2px)' },
+        },
       },
       animation: {
         'accordion-down': 'accordion-down 0.2s ease-out',
         'accordion-up': 'accordion-up 0.2s ease-out',
+        float: 'float 1.8s ease-in-out infinite',
       },
     },
   },

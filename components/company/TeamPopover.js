@@ -351,10 +351,10 @@ const s = {
   roleBtn: { flex: 1, padding: '10px 12px', border: '1px solid #D4D7DD', background: '#fff', borderRadius: 9, fontSize: 13, fontWeight: 800, color: '#374151', cursor: 'pointer', fontFamily: 'inherit' },
   roleBtnActive: { background: '#fff7ed', borderColor: '#fb923c', color: '#ea580c' },
   err: { marginTop: 12, background: '#FEF2F2', border: '1px solid #FECACA', borderRadius: 8, padding: '9px 12px', fontSize: 12.5, color: '#dc2626', fontWeight: 600 },
-  submit: { width: '100%', marginTop: 16, border: 0, borderRadius: 10, padding: '13px 18px', background: 'linear-gradient(135deg,#ef4444,#f97316)', color: '#fff', fontSize: 14, fontWeight: 850, fontFamily: 'inherit', cursor: 'pointer' },
+  submit: { width: '100%', marginTop: 16, border: 0, borderRadius: 10, padding: '13px 18px', background: '#EA580C', color: '#fff', fontSize: 14, fontWeight: 850, fontFamily: 'inherit', cursor: 'pointer' },
   doneIcon: {
     width: 52, height: 52, borderRadius: '50%', margin: '4px auto 14px',
-    display: 'grid', placeItems: 'center', background: '#10b981', color: '#fff',
+    display: 'grid', placeItems: 'center', background: '#EA580C', color: '#fff',
     fontSize: 26, fontWeight: 900,
   },
   linkBox: {

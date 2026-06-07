@@ -10,7 +10,7 @@ import { cn } from '../../lib/cn';
 import { Button as UButton } from '../../components/ui/button';
 import { PageHeader } from '../../components/ui/page-header';
 import { Skeleton } from '../../components/ui/skeleton';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight, CalendarDays as CalendarIcon } from 'lucide-react';
 import CandidateDetail from '../../components/company/CandidateDetail';
 
 const LOCALES = { vi: 'vi-VN', en: 'en-US', ko: 'ko-KR' };
@@ -19,11 +19,15 @@ const dateKey = (d) => `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
 export default function CompanyCalendarPage() {
   const router = useRouter();
   const { t, lang } = useT();
-  const [status, setStatus] = useState('loading');
+  // Hydrate from sessionStorage so a return-to-calendar paints instantly.
+  const calCache = typeof window !== 'undefined'
+    ? (() => { try { return JSON.parse(sessionStorage.getItem('fyi.calendar.v1') || 'null'); } catch { return null; } })()
+    : null;
+  const [status, setStatus] = useState(calCache ? 'ready' : 'loading');
   const [user, setUser] = useState(null);
-  const [companyName, setCompanyName] = useState('');
+  const [companyName, setCompanyName] = useState(calCache?.companyName || '');
   const [companyId, setCompanyId] = useState(null);
-  const [items, setItems] = useState([]);
+  const [items, setItems] = useState(calCache?.items || []);
   const [selectedAppId, setSelectedAppId] = useState(null);
   const [view, setView] = useState(() => {
     const d = new Date();
@@ -60,8 +64,14 @@ export default function CompanyCalendarPage() {
         .in('job_id', jobIds)
         .not('interview_at', 'is', null)
         .order('interview_at', { ascending: true });
-      setItems((apps || []).map(a => ({ ...a, jobTitle: jobMap[a.job_id] || '—' })));
+      const list = (apps || []).map(a => ({ ...a, jobTitle: jobMap[a.job_id] || '—' }));
+      setItems(list);
       setStatus('ready');
+      try {
+        sessionStorage.setItem('fyi.calendar.v1', JSON.stringify({
+          items: list, companyName: rec.recruiter_companies?.name || '',
+        }));
+      } catch {}
     })();
   }, []);
 
@@ -105,11 +115,13 @@ export default function CompanyCalendarPage() {
   for (let d = 1; d <= daysInMonth; d++) {
     cells.push({ day: d, otherMonth: false, date: new Date(view.year, view.month, d) });
   }
+  // Only fill enough trailing cells to complete the final week — keeps each cell roomy.
   let nextDay = 1;
-  while (cells.length < 42) {
+  while (cells.length % 7 !== 0) {
     cells.push({ day: nextDay, otherMonth: true, date: new Date(view.year, view.month + 1, nextDay) });
     nextDay++;
   }
+  const weekCount = cells.length / 7;
 
   // 날짜별 items
   const itemsByDate = {};
@@ -121,6 +133,15 @@ export default function CompanyCalendarPage() {
   });
   Object.values(itemsByDate).forEach(list => list.sort((a, b) => new Date(a.interview_at) - new Date(b.interview_at)));
 
+  const nowMs = Date.now();
+  const upcomingCount = items.filter(it => new Date(it.interview_at).getTime() > nowMs).length;
+  // Counts scoped to the month currently in view — for the heading row chips.
+  const monthItems = items.filter(it => {
+    const d = new Date(it.interview_at);
+    return d.getFullYear() === view.year && d.getMonth() === view.month;
+  });
+  const monthDoneCount = monthItems.filter(it => new Date(it.interview_at).getTime() < nowMs).length;
+  const monthUpcomingCount = monthItems.length - monthDoneCount;
   const todayKey = dateKey(new Date());
 
   const prevMonth = () => setView(v => v.month === 0 ? { year: v.year - 1, month: 11 } : { ...v, month: v.month - 1 });
@@ -136,12 +157,33 @@ export default function CompanyCalendarPage() {
         <Sidebar companyName={companyName} userEmail={user?.email} activePage="calendar" />
 
         <main style={css.main} className="!h-screen !overflow-hidden flex flex-col">
-          <PageHeader title={t('company.calendar.h')} subtitle={t('company.calendar.sub')} />
+          <PageHeader
+            title={(
+              <span className="flex items-center gap-2.5">
+                <CalendarIcon className="w-5 h-5 text-primary-600" />
+                {t('company.calendar.h')}
+                {upcomingCount > 0 && (
+                  <span className="inline-flex items-center min-w-[28px] h-[22px] px-2 rounded-full bg-primary-50 border border-primary-200 text-primary-700 text-[12px] font-extrabold tabular-nums">
+                    {t('company.unit.items', { n: upcomingCount })}
+                  </span>
+                )}
+              </span>
+            )}
+            subtitle={t('company.calendar.sub')}
+          />
 
           <div className="flex items-center justify-between mb-2 px-1">
-            <h2 className="text-[15px] font-extrabold text-foreground tracking-tight">
-              {t('company.calendar.monthLabel', { year: view.year, month: view.month + 1 })}
-            </h2>
+            <div className="flex items-center gap-2">
+              <h2 className="text-[15px] font-extrabold text-foreground tracking-tight">
+                {t('company.calendar.monthLabel', { year: view.year, month: view.month + 1 })}
+              </h2>
+              <span className="inline-flex items-center h-[22px] px-2 rounded-full bg-green-100 border border-green-200 text-green-800 text-[11.5px] font-extrabold tabular-nums">
+                {t('company.calendar.doneChip', { n: monthDoneCount })}
+              </span>
+              <span className="inline-flex items-center h-[22px] px-2 rounded-full bg-sky-100 border border-sky-200 text-sky-800 text-[11.5px] font-extrabold tabular-nums">
+                {t('company.calendar.upcomingChip', { n: monthUpcomingCount })}
+              </span>
+            </div>
             <div className="flex items-center gap-1.5">
               <UButton variant="outline" size="icon" onClick={prevMonth} title={t('company.calendar.navPrev')} className="h-8 w-8">
                 <ChevronLeft className="h-4 w-4" />
@@ -170,7 +212,10 @@ export default function CompanyCalendarPage() {
               ))}
             </div>
 
-            <div className="grid grid-cols-7 grid-rows-6 border-l border-r border-b border-[#E5E8EC] rounded-b-lg overflow-hidden bg-white flex-1 min-h-0">
+            <div
+              className="grid grid-cols-7 border-l border-r border-b border-[#E5E8EC] rounded-b-lg overflow-hidden bg-white flex-1 min-h-0"
+              style={{ gridTemplateRows: `repeat(${weekCount}, minmax(0, 1fr))` }}
+            >
             {cells.map((c, i) => {
               const k = dateKey(c.date);
               const isToday = k === todayKey;
@@ -206,14 +251,23 @@ export default function CompanyCalendarPage() {
                       const time = fmtTime(new Date(it.interview_at));
                       const name = it.applicant_name || t('company.candidatePrefix').replace('#', '').trim();
                       const stageLabel = t(`company.stage.${it.status}`);
+                      const isPast = new Date(it.interview_at).getTime() < nowMs;
                       return (
                         <div
                           key={it.id}
                           onClick={() => goCandidate(it.id)}
                           title={`${time} ${stageLabel} · ${name} · ${it.jobTitle}${it.interview_location ? ' · ' + it.interview_location : ''}`}
-                          className="flex items-center gap-1 px-1.5 py-0.5 rounded bg-blue-50 border-l-2 border-blue-500 text-[10.5px] font-bold text-blue-900 cursor-pointer hover:bg-blue-100 transition-colors overflow-hidden"
+                          className={cn(
+                            'flex items-center gap-1 px-1.5 py-0.5 rounded border-l-2 text-[10.5px] font-bold cursor-pointer transition-colors overflow-hidden',
+                            isPast
+                              ? 'bg-green-50 border-green-500 text-green-900 hover:bg-green-100'
+                              : 'bg-sky-50 border-sky-500 text-sky-900 hover:bg-sky-100'
+                          )}
                         >
-                          <span className="font-extrabold text-blue-700 tabular-nums flex-shrink-0">{time}</span>
+                          <span className={cn(
+                            'font-extrabold tabular-nums flex-shrink-0',
+                            isPast ? 'text-green-700' : 'text-sky-700'
+                          )}>{time}</span>
                           <span className="truncate min-w-0">{name} · {it.jobTitle}</span>
                         </div>
                       );
@@ -232,7 +286,7 @@ export default function CompanyCalendarPage() {
             onClick={() => setSelectedAppId(null)}
           >
             <div
-              className="absolute top-4 left-4 right-4 bottom-4 bg-background rounded-2xl overflow-hidden shadow-soft-xl flex flex-col"
+              className="absolute top-4 left-4 right-4 bottom-4 bg-background rounded-xl overflow-hidden shadow-soft-xl flex flex-col"
               onClick={(e) => e.stopPropagation()}
             >
               <CandidateDetail

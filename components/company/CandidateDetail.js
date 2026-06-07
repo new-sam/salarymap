@@ -3,13 +3,15 @@ import Link from 'next/link';
 import { supabase } from '../../lib/supabaseClient';
 import { useT } from '../../lib/i18n';
 import { toast } from 'sonner';
-import { formatICT, ictInputToUtc, utcToIctInput, ICT_LABEL } from '../../lib/timezone';
+import { formatICT, formatInterviewShort, formatLocalShort, ictInputToUtc, utcToIctInput, ICT_LABEL } from '../../lib/timezone';
 import { cn } from '../../lib/cn';
 import { Button as UButton } from '../ui/button';
 import { Badge as UBadge } from '../ui/badge';
 import { Input as UInput } from '../ui/input';
 import { Dialog as UDialog, DialogContent as UDialogContent, DialogHeader as UDialogHeader, DialogTitle as UDialogTitle, DialogDescription as UDialogDescription, DialogFooter as UDialogFooter } from '../ui/dialog';
-import { Calendar, Mail, Ban, Lock, Check, X as XIcon, Edit3, RotateCcw, Send, Save, Trash2, MapPin, User as UserIcon, Briefcase, AlertCircle, MessageSquare, Star, ChevronRight, ChevronLeft, FileX, Lightbulb, History, MessageCircle as MessageCircleIcon, StickyNote, ThumbsUp, ExternalLink, Trophy, Inbox } from 'lucide-react';
+import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from '../ui/dropdown-menu';
+import { ConfirmDialog } from '../ui/confirm-dialog';
+import { Calendar, Mail, Ban, Lock, Check, X as XIcon, Edit3, RotateCcw, Send, Save, Trash2, MapPin, User as UserIcon, Briefcase, AlertCircle, MessageSquare, Star, ChevronRight, ChevronLeft, FileX, Lightbulb, History, MessageCircle as MessageCircleIcon, StickyNote, ThumbsUp, ExternalLink, Trophy, Inbox, MoreVertical, Plus, PartyPopper } from 'lucide-react';
 import { EmptyState } from '../ui/empty-state';
 import { CandidateDetailSkeleton } from '../ui/page-skeleton';
 import { BackLink } from '../ui/back-link';
@@ -25,25 +27,25 @@ const STAGES = [
   { key: 'decided', emoji: '' },
 ];
 
+// All stage dots/solids share a single neutral palette.
+// Stage identity comes from the label text, not arbitrary hue.
+// Only "decided" (final pass) keeps the primary accent so success is recognisable.
 const STAGE_DOT_CLASS = {
-  pending: 'bg-gray-400',
-  viewed: 'bg-blue-500',
-  reviewing: 'bg-violet-500',
-  decided: 'bg-emerald-500',
+  pending: 'bg-gray-300',
+  viewed: 'bg-gray-400',
+  reviewing: 'bg-gray-500',
+  decided: 'bg-primary-500',
 };
 const STAGE_SOLID_CLASS = {
-  pending: 'bg-gray-700',
-  viewed: 'bg-blue-600',
-  reviewing: 'bg-violet-600',
-  decided: 'bg-emerald-600',
+  pending: 'bg-gray-500',
+  viewed: 'bg-gray-600',
+  reviewing: 'bg-gray-700',
+  decided: 'bg-primary-600',
 };
-// Evaluation-section label (different from kanban stage label).
-// 'decided' is excluded — no evaluation after the final decision.
-const EVAL_STAGE_LABEL = {
-  pending: '서류 평가',
-  viewed: '1차 인터뷰 평가',
-  reviewing: '2차 인터뷰 평가',
-};
+// Evaluation-section labels are resolved via t('company.stageLabel.eval.<key>').
+// We still expose the set of stages that have evaluations so the eval section
+// can filter (decided has no evaluation step).
+const EVAL_STAGE_KEYS = ['pending', 'viewed', 'reviewing'];
 const STAGE_ORDER = STAGES.map(s => s.key);
 
 
@@ -72,6 +74,10 @@ export default function CandidateDetail({
   const [interviewModal, setInterviewModal] = useState(false);
   const [mailLog, setMailLog] = useState([]);
   const [editingEval, setEditingEval] = useState(null);
+  // In-app confirmation modal payload. Replaces window.confirm everywhere.
+  // Shape: { title, description, confirmLabel, destructive, onConfirm }
+  const [confirmState, setConfirmState] = useState(null);
+  const [confirmBusy, setConfirmBusy] = useState(false);
 
   const [tab, setTab] = useState('eval');
   const [noteDraft, setNoteDraft] = useState('');
@@ -102,14 +108,14 @@ export default function CandidateDetail({
       });
       const json = await res.json().catch(() => ({}));
       if (!res.ok) {
-        toast.error(json.error || '메모 저장 실패');
+        toast.error(json.error || t('company.toast.noteSaveFailed'));
         return;
       }
       setApp(prev => ({ ...prev, admin_note: noteDraft, admin_note_updated_at: json.updatedAt }));
       setNoteSavedAt(json.updatedAt);
       setNoteSavedByName(json.updatedByName);
       setNoteDirty(false);
-      if (!silent) toast.success('메모가 저장되었습니다');
+      if (!silent) toast.success(t('company.toast.noteSaved'));
     } finally {
       setSavingNote(false);
     }
@@ -126,7 +132,7 @@ export default function CandidateDetail({
       const fromLabel = t(`company.stage.${prevStage}`);
       const toLabel = t(`company.stage.${currentStage}`);
       toast(`${fromLabel} → ${toLabel}`, {
-        description: '다른 단계의 후보로 이동했습니다',
+        description: t('company.toast.stageMovedDesc'),
         duration: 1500,
       });
     }
@@ -172,6 +178,9 @@ export default function CandidateDetail({
       else if (key === 'ArrowRight' || key === 'j' || key === 'J') { if (onNext) { e.preventDefault(); onNext(); } }
       else if (key === 'Escape') { if (onClose) { e.preventDefault(); onClose(); } }
       else if ((key === 'e' || key === 'E') && app && !app.rejected_at) {
+        // Only the job owner can compose mail — same gate as the toolbar button.
+        const ownerNow = !job?.created_by || job?.created_by === userId;
+        if (!ownerNow) return;
         e.preventDefault();
         const defaultTpl = app.status === 'pending' ? 'received'
           : (app.status === 'viewed' || app.status === 'reviewing') ? 'interview'
@@ -183,15 +192,6 @@ export default function CandidateDetail({
         if (!ownerNow) return;
         e.preventDefault();
         setRejectModal('new');
-      }
-      else if (key === 'Enter' && app && !app.rejected_at) {
-        const ownerNow = !job?.created_by || job?.created_by === userId;
-        if (!ownerNow) return;
-        const i = STAGE_ORDER.indexOf(app.status);
-        if (i < STAGE_ORDER.length - 1) {
-          e.preventDefault();
-          moveNext();
-        }
       }
     };
     window.addEventListener('keydown', handler);
@@ -257,37 +257,48 @@ export default function CandidateDetail({
     })();
   }, [appId, companyId, t]);
 
-  const setStage = async (newStatus) => {
-    if (!app || app.status === newStatus) return;
-    const prev = app.status;
-    const fromIdx = STAGE_ORDER.indexOf(prev);
-    const toIdx = STAGE_ORDER.indexOf(newStatus);
-    const forward = toIdx > fromIdx;
-    const hasInterview = !!app.interview_at && (prev === 'viewed' || prev === 'reviewing');
-    const resetInterview = forward && hasInterview;
+  // Stage moves are handled exclusively from the kanban (drag-and-drop).
+  // The panel only manages evaluation, mail, interview schedule, and the
+  // 합격/불합격 decisions for the *current* stage.
 
-    const patch = { status: newStatus };
-    if (resetInterview) {
-      patch.interview_at = null;
-      patch.interview_location = null;
-      patch.interview_interviewer = null;
+  // Mark this stage as "합격 결정" — decision only, no stage move yet.
+  // The next step ("다음 전형으로 넘기기") is the explicit move.
+  // Goes through the server endpoint so RLS doesn't block the audit insert
+  // and so the actor name resolves consistently from recruiter_users.
+  const markStagePass = async () => {
+    if (!app || app.rejected_at) return;
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const res = await fetch('/api/company/mark-stage-pass', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session?.access_token || ''}` },
+        body: JSON.stringify({ appId: app.id }),
+      });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) { toast.error(json.error || t('company.toast.passFailed')); return; }
+      if (json.row) setEvals(prev => [...prev, json.row]);
+      toast.success(t('company.toast.passDecided', { stage: t(`company.stageLabel.short.${app.status}`) || app.status }));
+    } catch (e) {
+      toast.error(t('company.toast.passFailed'));
     }
-
-    setApp({ ...app, ...patch });
-    const { error } = await supabase.from('job_applications')
-      .update({ ...patch, updated_at: new Date().toISOString() }).eq('id', app.id);
-    if (error) {
-      setApp({ ...app, status: prev });
-      setErr(t('company.err.stageChange') + error.message);
-      return;
-    }
-    onStageChange?.(app.id, patch);
   };
 
-  const moveNext = async () => {
-    const i = STAGE_ORDER.indexOf(app.status);
-    if (i >= STAGE_ORDER.length - 1) return;
-    await setStage(STAGE_ORDER[i + 1]);
+  const unmarkStagePass = async () => {
+    if (!passedAtCurrentStage) return;
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const res = await fetch('/api/company/unmark-stage-pass', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session?.access_token || ''}` },
+        body: JSON.stringify({ rowId: passedAtCurrentStage.id }),
+      });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) { toast.error(json.error || t('company.toast.passCancelFailed')); return; }
+      setEvals(prev => prev.filter(e => e.id !== passedAtCurrentStage.id));
+      toast.success(t('company.toast.passCanceled'));
+    } catch (e) {
+      toast.error(t('company.toast.passCancelFailed'));
+    }
   };
 
   const toggleStage = (key) => {
@@ -307,14 +318,12 @@ export default function CandidateDetail({
 
   const saveEditEval = async () => {
     setErr('');
+    // Comment optional, fit/unfit verdict required.
     const comment = editComment.trim();
-    if (!comment) { setErr(t('company.eval.errEmpty')); return; }
-    let score = null;
-    if (editScore !== '') {
-      const n = parseInt(editScore, 10);
-      if (Number.isNaN(n) || n < 0 || n > 100) { setErr(t('company.eval.errScore')); return; }
-      score = n;
+    if (editScore !== '0' && editScore !== '1' && editScore !== 0 && editScore !== 1) {
+      setErr(t('company.eval.errVerdictRequired')); return;
     }
+    const score = (editScore === '1' || editScore === 1) ? 1 : 0;
     setSavingEdit(true);
     const { data, error } = await supabase
       .from('application_evaluations')
@@ -323,30 +332,47 @@ export default function CandidateDetail({
       .select()
       .single();
     setSavingEdit(false);
-    if (error) { setErr('수정 실패: ' + error.message); toast.error('수정 실패: ' + error.message); return; }
+    if (error) { setErr(t('company.toast.evalUpdateFailed')); toast.error(t('company.toast.evalUpdateFailed')); return; }
     setEvals(prev => prev.map(e => e.id === data.id ? data : e));
     setEditingEval(null);
-    toast.success(t('company.eval.editBtn'));
+    toast.success(t('company.toast.evalUpdated'));
   };
 
-  const deleteEvaluation = async (row) => {
-    if (!window.confirm(t('company.eval.confirmDelete'))) return;
-    const { error } = await supabase.from('application_evaluations').delete().eq('id', row.id);
-    if (error) { setErr('삭제 실패: ' + error.message); toast.error('삭제 실패: ' + error.message); return; }
-    setEvals(prev => prev.filter(e => e.id !== row.id));
-    toast.success(t('company.eval.deleteBtn'));
+  // Open the in-app confirmation modal. The caller passes a handler that
+  // runs only after the user confirms; busy state + close are handled here.
+  const askConfirm = ({ onConfirm, ...rest }) => {
+    setConfirmState({
+      ...rest,
+      onConfirm: async () => {
+        setConfirmBusy(true);
+        try { await onConfirm?.(); }
+        finally { setConfirmBusy(false); setConfirmState(null); }
+      },
+    });
+  };
+
+  const deleteEvaluation = (row) => {
+    askConfirm({
+      title: t('company.eval.confirmDelete'),
+      confirmLabel: t('company.eval.deleteBtn'),
+      destructive: true,
+      onConfirm: async () => {
+        const { error } = await supabase.from('application_evaluations').delete().eq('id', row.id);
+        if (error) { toast.error(t('company.toast.evalDeleteFailed')); return; }
+        setEvals(prev => prev.filter(e => e.id !== row.id));
+        toast.success(t('company.toast.evalDeleted'));
+      },
+    });
   };
 
   const submitEvaluation = async () => {
     setErr('');
-    const comment = evalComment.trim();
-    if (!comment) { setErr(t('company.eval.errEmpty')); return; }
-    let score = null;
-    if (evalScore !== '') {
-      const n = parseInt(evalScore, 10);
-      if (Number.isNaN(n) || n < 0 || n > 100) { setErr(t('company.eval.errScore')); return; }
-      score = n;
+    // Fit/unfit verdict is required (stored as 1=fit, 0=unfit), comment is optional.
+    if (evalScore !== '0' && evalScore !== '1' && evalScore !== 0 && evalScore !== 1) {
+      setErr(t('company.eval.errVerdictRequired')); return;
     }
+    const score = (evalScore === '1' || evalScore === 1) ? 1 : 0;
+    const comment = evalComment.trim();
     setSavingEval(true);
     const isOwnerNow = !job?.created_by || job?.created_by === userId;
     const payload = {
@@ -365,14 +391,14 @@ export default function CandidateDetail({
       .select()
       .single();
     setSavingEval(false);
-    if (error) { setErr('평가 저장 실패: ' + error.message); toast.error('평가 저장 실패: ' + error.message); return; }
+    if (error) { setErr(t('company.toast.evalSaveFailed')); toast.error(t('company.toast.evalSaveFailed')); return; }
     setEvals(prev => {
       const exists = prev.some(e => e.id === data.id);
       return exists ? prev.map(e => e.id === data.id ? data : e) : [...prev, data];
     });
     setEvalComment('');
     setEvalScore('');
-    toast.success(t('company.eval.submit'));
+    toast.success(t('company.toast.evalSaved'));
   };
 
   if (status === 'loading') return <CandidateDetailSkeleton mode={mode} />;
@@ -391,11 +417,16 @@ export default function CandidateDetail({
 
   const avatarPalette = avatarColorFor(email || name);
   const initial = initialOf(name);
-  // Per-stage decision label, e.g. pending → "서류" → "서류 합격" / "서류 불합격"
-  const STAGE_DECISION_LABEL = { pending: '서류', viewed: '1차 인터뷰', reviewing: '2차 인터뷰' };
-  const decisionPrefix = STAGE_DECISION_LABEL[app.status] || t(`company.stage.${app.status}`);
+  // Per-stage decision label, e.g. pending → "서류" → "서류 합격 처리" / "서류 불합격 처리"
+  const decisionPrefix = t(`company.stageLabel.short.${app.status}`) || t(`company.stage.${app.status}`);
+
+  // Stage-pass audit row (separates "결정" from "이동").
+  // Once marked, the buttons swap from 합격/불합격 to a pass-badge + "다음 전형으로 넘기기".
+  const passedAtCurrentStage = evals.find(e => e.stage === `${app.status}_pass`);
+  const hasStagePassed = !!passedAtCurrentStage;
+
   const wishSalaryLabel = app.applicant_salary
-    ? `₫${Math.round(app.applicant_salary / 1e6)}M/월`
+    ? t('company.candidate.salaryMonthly', { n: Math.round(app.applicant_salary / 1e6) })
     : null;
   const canRunQuick = isOwner;
   const showInterviewStage = app.status === 'viewed' || app.status === 'reviewing';
@@ -428,197 +459,215 @@ export default function CandidateDetail({
   //   decided → terminal (passed)
   //   rejected → terminal (failed)
   const smartHint = (() => {
-    const evalStageLabel = EVAL_STAGE_LABEL[app.status] || '';
+    const evalStageLabel = EVAL_STAGE_KEYS.includes(app.status) ? t(`company.stageLabel.eval.${app.status}`) : '';
     const myEvalThisStage = evals.find(e => e.stage === app.status && e.reviewer_user_id === userId);
     const hasMyEval = !!myEvalThisStage;
     const stageEvals = evals.filter(e => e.stage === app.status);
     const hasAnyEvalThisStage = stageEvals.length > 0;
     const daysSinceApplied = Math.max(0, Math.floor((Date.now() - new Date(app.created_at).getTime()) / 86400000));
 
-    const interviewWhen = app.interview_at
-      ? `${formatICT(app.interview_at, { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false })} ${ICT_LABEL}`
-      : null;
+    const interviewWhen = app.interview_at ? formatInterviewShort(app.interview_at) : null;
     const interviewPast = app.interview_at && new Date(app.interview_at).getTime() < Date.now();
 
-    // Mail tracking — heuristic: was the relevant template ever sent?
-    // For interview mail we only count those sent within 21 days before the
-    // current interview_at so a stale 1차 mail doesn't suppress the 2차 prompt.
+    // Mail tracking — only the offer/reject decision mails are gated by
+    // Smart Hint now. Interview scheduling mail is sent at the pass-decision
+    // moment of the previous stage, not as a separate step in this stage.
     const offerMailSent = mailLog.some(m => m.template_key === 'offer');
     const rejectMailSent = mailLog.some(m => m.template_key === 'reject');
-    const interviewMailForCurrent = app.interview_at && mailLog.some(m => {
-      if (m.template_key !== 'interview') return false;
-      const sentAt = new Date(m.created_at).getTime();
-      const iv = new Date(app.interview_at).getTime();
-      return sentAt <= iv && (iv - sentAt) < 21 * 86400000;
-    });
 
     // ── Rejected (terminal) ────────────────────────────────────────
     if (app.rejected_at) {
       if (!isOwner) {
         return {
           tone: 'gray',
-          eyebrow: '면접관 · 종결',
-          title: '불합격 처리된 후보입니다',
+          eyebrow: t('company.smartHint.eb.interviewerDone'),
+          title: t('company.smartHint.title.rejectedFinal'),
         };
       }
       if (!rejectMailSent) {
         return {
           tone: 'gray',
-          eyebrow: '공고 관리자 · 안내 메일 필요',
-          title: '불합격 안내 메일을 발송하세요',
+          eyebrow: t('company.smartHint.eb.todo'),
+          title: t('company.smartHint.title.sendRejectMail'),
+          step: 1, total: 1, steps: [t('company.smartHint.step.mail')],
         };
       }
       return {
         tone: 'gray',
-        eyebrow: '공고 관리자 · 종결',
-        title: '불합격 안내가 완료되었습니다',
+        eyebrow: t('company.smartHint.eb.ownerDone'),
+        title: t('company.smartHint.title.rejectComplete'),
       };
     }
 
     // ── Interviewer flow ──────────────────────────────────────────
+    // Policy #2: both 공고 관리자 AND 면접관 evaluate. So the interviewer
+    // has an active evaluation step in pending / viewed / reviewing.
     if (!isOwner) {
-      if (app.status === 'pending') {
-        return {
-          tone: 'gray',
-          eyebrow: '면접관 · 대기',
-          title: '아직 평가 요청을 받지 않았습니다',
-        };
-      }
       if (app.status === 'decided') {
         return {
           tone: 'emerald',
-          eyebrow: '면접관 · 종결',
-          title: '이 후보는 최종 합격되었습니다',
+          eyebrow: t('company.smartHint.eb.interviewerDone'),
+          title: t('company.smartHint.title.interviewerFinalPass'),
         };
       }
-      // viewed / reviewing
+      // pending / viewed / reviewing — interviewer can evaluate at every stage
       if (hasMyEval) {
         return {
           tone: 'emerald',
-          eyebrow: '면접관 · 평가 완료',
-          title: `${evalStageLabel}를 완료했습니다`,
+          eyebrow: t('company.smartHint.eb.interviewerEvalDone'),
+          title: t('company.smartHint.title.interviewerEvalDone', { stage: evalStageLabel }),
+          step: 1, total: 1, steps: [t('company.smartHint.step.eval')],
         };
       }
       return {
         tone: 'blue',
-        eyebrow: '면접관 · 평가 필요',
-        title: `${evalStageLabel}를 작성해주세요`,
+        eyebrow: t('company.smartHint.eb.todo'),
+        title: t('company.smartHint.title.interviewerWriteEval', { stage: evalStageLabel }),
+        step: 1, total: 1, steps: [t('company.smartHint.step.eval')],
       };
     }
 
     // ── Owner flow ────────────────────────────────────────────────
-    // 지원 접수 — 평가 → 결정
+    // 지원 접수 — 2-step: 평가 → 결정 (결정 step 안에서 합격 마킹 → 이동 sub-state)
     if (app.status === 'pending') {
+      const pendingSteps = [t('company.smartHint.step.eval'), t('company.smartHint.step.decide')];
       if (!hasAnyEvalThisStage) {
         if (daysSinceApplied >= 7) {
           return {
             tone: 'primary',
-            eyebrow: `검토 ${daysSinceApplied}일 경과`,
-            title: '빠른 결정이 필요합니다',
+            eyebrow: t('company.smartHint.eb.todoOverdue', { days: daysSinceApplied }),
+            title: t('company.smartHint.title.fastDecision'),
+            step: 1, total: 2, steps: pendingSteps,
           };
         }
         if (!hasResume) {
           return {
             tone: 'primary',
-            eyebrow: '공고 관리자 · 서류 검토',
-            title: '이력서가 첨부되지 않았습니다',
+            eyebrow: t('company.smartHint.eb.todo'),
+            title: t('company.smartHint.title.noResume'),
+            step: 1, total: 2, steps: pendingSteps,
           };
         }
         return {
           tone: 'primary',
-          eyebrow: '공고 관리자 · 서류 평가',
-          title: '이력서를 검토하고 서류 평가를 작성하세요',
+          eyebrow: t('company.smartHint.eb.todo'),
+          title: t('company.smartHint.title.writeDocEval'),
+          step: 1, total: 2, steps: pendingSteps,
         };
       }
-      // 평가 작성됨 → 결정
+      // 평가 작성됨 → 결정 (합격 마킹 안 됨)
+      if (!hasStagePassed) {
+        return {
+          tone: 'primary',
+          eyebrow: t('company.smartHint.eb.todo'),
+          title: t('company.smartHint.title.decideDoc'),
+          step: 2, total: 2, steps: pendingSteps,
+        };
+      }
+      // 합격 마킹 됨 → 다음 전형으로 이동
       return {
         tone: 'primary',
-        eyebrow: '공고 관리자 · 결정 필요',
-        title: '서류 합격 또는 불합격을 결정하세요',
+        eyebrow: t('company.smartHint.eb.todo'),
+        title: t('company.smartHint.title.advanceDoc'),
+        step: 2, total: 2, steps: pendingSteps,
       };
     }
 
-    // 1차/2차 인터뷰 — 일정 → 메일 → 인터뷰 → 평가 → 결정
+    // 1차/2차 인터뷰 — 3-step: 일정 → 평가 → 결정
+    // Owner view uses `hasAnyEvalThisStage` (anyone in the team has rated)
+    // so the hint moves on to "결정" as soon as a single evaluation lands —
+    // even if the owner themselves hasn't written one yet.
     if (app.status === 'viewed' || app.status === 'reviewing') {
       const tone = app.status === 'viewed' ? 'blue' : 'violet';
-      const stageLabel = app.status === 'viewed' ? '1차 인터뷰' : '2차 인터뷰';
+      const stageLabel = t(`company.stageLabel.short.${app.status}`);
+      const total = 3;
+      const interviewSteps = [
+        t('company.smartHint.step.schedule'),
+        t('company.smartHint.step.eval'),
+        t('company.smartHint.step.decide'),
+      ];
 
       // (1) 일정 없음 → 일정 등록
       if (!app.interview_at) {
         return {
           tone,
-          eyebrow: `공고 관리자 · ${stageLabel}`,
-          title: `${stageLabel} 일정을 등록하세요`,
+          eyebrow: t('company.smartHint.eb.todo'),
+          title: t('company.smartHint.title.scheduleInterview', { stage: stageLabel }),
+          step: 1, total, steps: interviewSteps,
         };
       }
 
-      // (2) 일정 미래 + 메일 미발송 → 메일 발송
-      if (!interviewPast && !interviewMailForCurrent) {
+      // (2) 일정 있음 + 아직 누구도 평가 안 함 → 평가 단계
+      if (!hasAnyEvalThisStage) {
+        if (!interviewPast) {
+          return {
+            tone,
+            eyebrow: t('company.smartHint.eb.todo'),
+            title: t('company.smartHint.title.interviewUpcoming', { stage: stageLabel, when: interviewWhen }),
+            step: 2, total, steps: interviewSteps,
+          };
+        }
         return {
           tone,
-          eyebrow: `공고 관리자 · 안내 메일 필요`,
-          title: `${stageLabel} 안내 메일을 발송하세요`,
+          eyebrow: t('company.smartHint.eb.todo'),
+          title: t('company.smartHint.title.writeInterviewEval', { stage: stageLabel }),
+          step: 2, total, steps: interviewSteps,
         };
       }
 
-      // (3) 일정 미래 + 메일 발송됨 → 인터뷰까지 대기
-      if (!interviewPast) {
+      // (3) 평가 있음 → 결정 (합격 마킹 전/후 sub-state)
+      if (!hasStagePassed) {
         return {
           tone,
-          eyebrow: '공고 관리자 · 인터뷰 예정',
-          title: `${stageLabel}가 ${interviewWhen}에 예정되어 있습니다`,
+          eyebrow: t('company.smartHint.eb.todo'),
+          title: t('company.smartHint.title.decideInterview', { stage: stageLabel }),
+          step: 3, total, steps: interviewSteps,
         };
       }
-
-      // (4) 일정 종료 + 본인 평가 없음 → 평가 작성
-      if (!hasMyEval) {
-        return {
-          tone,
-          eyebrow: '공고 관리자 · 평가 필요',
-          title: `${stageLabel} 평가를 작성하세요`,
-        };
-      }
-
-      // (5) 일정 종료 + 평가 있음 → 결정
+      const nextLabel = app.status === 'viewed'
+        ? t('company.stageLabel.short.reviewing')
+        : t('company.stageLabel.short.decided');
       return {
         tone,
-        eyebrow: '공고 관리자 · 결정 필요',
-        title: app.status === 'viewed' ? '다음 단계를 결정하세요' : '최종 결정을 내려주세요',
+        eyebrow: t('company.smartHint.eb.todo'),
+        title: t('company.smartHint.title.advanceInterview', { stage: stageLabel, next: nextLabel }),
+        step: 3, total, steps: interviewSteps,
       };
     }
 
-    // 최종 합격 — 합격 메일 → 처우 협의
+    // 최종 합격 — 2-step: 합격·입사 제안 메일 → 입사 협의
     if (app.status === 'decided') {
+      const decidedSteps = [
+        t('company.smartHint.step.passNotice'),
+        t('company.smartHint.step.onboardTalk'),
+      ];
       if (!offerMailSent) {
         return {
           tone: 'emerald',
-          eyebrow: '공고 관리자 · 안내 메일 필요',
-          title: '합격 안내 메일을 발송하세요',
+          eyebrow: t('company.smartHint.eb.todo'),
+          title: t('company.smartHint.title.sendOfferMail'),
+          step: 1, total: 2, steps: decidedSteps,
         };
       }
       return {
         tone: 'emerald',
-        eyebrow: '공고 관리자 · 처우 협의',
-        title: '입사 협의를 진행하세요',
+        eyebrow: t('company.smartHint.eb.ownerNegotiation'),
+        title: t('company.smartHint.title.followUp'),
+        step: 2, total: 2, steps: decidedSteps,
       };
     }
 
     return null;
   })();
-  const hintToneClass = {
-    primary: 'bg-primary-50 border-primary-200 text-primary-900',
-    blue: 'bg-blue-50 border-blue-200 text-blue-900',
-    violet: 'bg-violet-50 border-violet-200 text-violet-900',
-    emerald: 'bg-emerald-50 border-emerald-200 text-emerald-900',
-    gray: 'bg-gray-50 border-gray-200 text-gray-900',
-  }[smartHint?.tone || 'gray'];
-  const hintEyebrowClass = {
-    primary: 'text-primary-700',
-    blue: 'text-blue-700',
-    violet: 'text-violet-700',
-    emerald: 'text-emerald-700',
-    gray: 'text-gray-500',
-  }[smartHint?.tone || 'gray'];
+
+  // Checklist missing items for the current stage. Used to soft-gate
+
+  // Smart Hint = the one intentionally accented surface in the panel.
+  // It's the "what to do next" cue, so we let the brand color through —
+  // soft primary tint + a primary eyebrow + a primary-tinted lightbulb.
+  // The rest of the UI stays neutral so this card actually draws the eye.
+  const hintToneClass = 'bg-primary-50/70 border-primary-200 text-gray-900';
+  const hintEyebrowClass = 'text-primary-700';
 
   return (
     <div className={cn(
@@ -683,7 +732,7 @@ export default function CandidateDetail({
             <div className="flex items-center gap-1.5 flex-shrink-0 ml-auto">
               {(onPrev || onNext) && (
                 <>
-                  <UButton variant="outline" size="icon" onClick={onPrev} disabled={!onPrev} className="h-8 w-8" title="이전 후보 (←)">
+                  <UButton variant="outline" size="icon" onClick={onPrev} disabled={!onPrev} className="h-8 w-8" title={t('company.candidate.prevCandidate')}>
                     <ChevronLeft className="w-4 h-4" />
                   </UButton>
                   <div className="inline-flex items-center gap-1.5 h-8 px-2.5 rounded-md bg-gray-50 border border-border">
@@ -695,13 +744,13 @@ export default function CandidateDetail({
                       </span>
                     )}
                   </div>
-                  <UButton variant="outline" size="icon" onClick={onNext} disabled={!onNext} className="h-8 w-8" title="다음 후보 (→)">
+                  <UButton variant="outline" size="icon" onClick={onNext} disabled={!onNext} className="h-8 w-8" title={t('company.candidate.nextCandidate')}>
                     <ChevronRight className="w-4 h-4" />
                   </UButton>
                   <div className="w-px h-6 bg-border mx-1" />
                 </>
               )}
-              <UButton variant="ghost" size="icon" onClick={onClose} className="h-8 w-8" title="닫기 (Esc)">
+              <UButton variant="ghost" size="icon" onClick={onClose} className="h-8 w-8" title={t('company.candidate.closePanel')}>
                 <XIcon className="w-4 h-4" />
               </UButton>
             </div>
@@ -722,14 +771,14 @@ export default function CandidateDetail({
             {initial}
           </div>
           <div className="min-w-0 flex-1">
-            <h1 className="text-xl font-extrabold text-gray-900 tracking-tight truncate">{name}</h1>
-            <div className="mt-1 text-[12.5px] text-gray-900 font-semibold truncate flex items-center flex-wrap gap-x-1.5">
+            <h1 className="text-hero text-gray-900 truncate">{name}</h1>
+            <div className="mt-1.5 text-[13.5px] text-gray-900 font-semibold truncate flex items-center flex-wrap gap-x-2">
               <span>{email}</span>
               {app.applicant_role && <><span className="text-gray-400">·</span><span>{app.applicant_role}</span></>}
               {(app.applicant_experience !== null && app.applicant_experience !== undefined) && (
                 <><span className="text-gray-400">·</span><span>{app.applicant_experience}{t('company.years')}</span></>
               )}
-              {wishSalaryLabel && <><span className="text-gray-400">·</span><span className="text-emerald-700">{wishSalaryLabel}</span></>}
+              {wishSalaryLabel && <><span className="text-gray-400">·</span><span className="text-gray-700 font-bold">{wishSalaryLabel}</span></>}
               {mode === 'overlay' && <><span className="text-gray-400">·</span><span className="text-gray-500">{job.title}</span></>}
               <span className="text-gray-400">·</span><span className="text-gray-500">{t('company.candidate.appliedShort')} {appliedAtLabel}</span>
             </div>
@@ -738,78 +787,169 @@ export default function CandidateDetail({
           {/* All actions on the right: communication | divider | decision.
               Aligned to the bottom of Row 1 so they sit below the name/meta block. */}
           <div className="flex items-center gap-2 flex-shrink-0 flex-wrap self-end">
-            {canRunQuick && (
-              <UButton variant="outline" size="sm" onClick={openMailCompose} title="메일 작성 (E)" className="h-9">
-                <Mail className="w-3.5 h-3.5 text-emerald-600" />
-                {t('company.candidate.mailComposeBtn')}
-              </UButton>
-            )}
+            {/* Communication actions — ordered by workflow:
+                interview scheduling first, then notification mail.
+                When a schedule exists, show it as a chip to the LEFT of the button
+                so HR can read the confirmed time at a glance. */}
+            {canRunQuick && showInterviewStage && app.interview_at && (() => {
+              const isPast = new Date(app.interview_at).getTime() < Date.now();
+              const when = formatInterviewShort(app.interview_at);
+              return (
+                <span className={cn(
+                  'inline-flex items-center gap-1.5 h-9 px-3 rounded-md border text-[12.5px] font-extrabold tabular-nums whitespace-nowrap',
+                  isPast
+                    ? 'bg-green-50 border-green-200 text-green-800'
+                    : 'bg-sky-50 border-sky-200 text-sky-800'
+                )}>
+                  {isPast
+                    ? <Check className="w-3.5 h-3.5 text-green-600" />
+                    : <Calendar className="w-3.5 h-3.5 text-sky-600" />}
+                  <span>{isPast ? t('company.ats.interviewDone') : t('company.ats.interviewWord')} {when}</span>
+                </span>
+              );
+            })()}
             {canRunQuick && showInterviewStage && (
               <UButton variant="outline" size="sm" onClick={() => setInterviewModal(true)} className="h-9">
-                <Calendar className="w-3.5 h-3.5 text-blue-600" />
+                <Calendar className="w-3.5 h-3.5 text-gray-500" />
                 {app.interview_at ? t('company.interview.confirmEditBtn') : t('company.interview.confirmBtn')}
               </UButton>
             )}
+            {canRunQuick && (
+              <UButton variant="outline" size="sm" onClick={openMailCompose} title={t('company.candidate.composeMailTitle')} className="h-9">
+                <Mail className="w-3.5 h-3.5 text-gray-500" />
+                {t('company.candidate.mailComposeBtn')}
+              </UButton>
+            )}
             {!canRunQuick && (
-              <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-amber-800 bg-amber-50 border border-amber-200 rounded-md px-2 py-1.5">
+              <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-gray-600 bg-gray-50 border border-gray-200 rounded-md px-2 py-1.5">
                 <Lock className="w-3 h-3" />
                 {t('company.candidate.interviewerHint')}
               </span>
             )}
 
-            {/* Divider between communication and decision groups */}
-            {canRunQuick && !app.rejected_at && nextStage && (
+            {/* Divider between communication and decision groups.
+                Shown whenever a decision action follows — pass/fail box or "결정 취소". */}
+            {canRunQuick && (nextStage || app.rejected_at) && (
               <div className="w-px h-7 bg-border mx-1" />
             )}
 
-            {canRunQuick && !app.rejected_at && nextStage && (
-              <div className="inline-flex items-stretch h-9 rounded-md border-2 border-primary-300 bg-white shadow-soft-xs overflow-hidden">
+            {/* Decision area — two phases:
+                Phase A (결정 전): "{prefix} 합격 처리" + "{prefix} 불합격 처리"
+                Phase B (합격 마킹 후): "{prefix} 전형 합격" 뱃지 + "다음 전형으로 넘기기"
+                Splitting "결정" from "이동" lets HR explicitly mark the call
+                first, then ship the candidate to the next stage. */}
+            {canRunQuick && !app.rejected_at && nextStage && !hasStagePassed && (
+              <>
                 <button
                   type="button"
-                  onClick={moveNext}
-                  title="합격 (Enter)"
-                  className="inline-flex items-center gap-1.5 px-3 text-[13px] font-bold text-emerald-700 bg-emerald-50/60 hover:bg-emerald-100 transition-colors"
+                  onClick={markStagePass}
+                  title={t('company.ats.stagePass', { stage: decisionPrefix })}
+                  className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-md border border-green-200 bg-green-50 text-[14px] font-extrabold text-green-700 hover:bg-green-100 hover:border-green-300 shadow-soft-xs transition-colors"
                 >
                   <Check className="w-3.5 h-3.5" />
-                  {decisionPrefix} 합격
+                  {t('company.ats.stagePass', { stage: decisionPrefix })}
                 </button>
-                <div className="w-px bg-primary-300" />
                 <button
                   type="button"
                   onClick={() => setRejectModal('new')}
-                  title="불합격 (R)"
-                  className="inline-flex items-center gap-1.5 px-3 text-[13px] font-bold text-red-700 bg-red-50/60 hover:bg-red-100 transition-colors"
+                  title={`${t('company.ats.stageReject', { stage: decisionPrefix })} (R)`}
+                  className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-md border border-red-200 bg-red-50 text-[14px] font-extrabold text-red-700 hover:bg-red-100 hover:border-red-300 shadow-soft-xs transition-colors"
                 >
                   <Ban className="w-3.5 h-3.5" />
-                  {decisionPrefix} 불합격
+                  {t('company.ats.stageReject', { stage: decisionPrefix })}
                 </button>
-              </div>
+              </>
             )}
-            {canRunQuick && app.rejected_at && (
-              <UButton variant="outline" size="sm" onClick={() => setRejectModal('unreject')} className="h-9">
-                <RotateCcw className="w-3.5 h-3.5" />
-                {t('company.reject.unrejectBtn')}
-              </UButton>
+            {canRunQuick && !app.rejected_at && nextStage && hasStagePassed && (
+              <span className="inline-flex items-center gap-1.5 h-9 px-3 rounded-md bg-green-50 border border-green-200 text-[13px] font-extrabold text-green-800">
+                <Check className="w-3.5 h-3.5" />
+                {t('company.candidate.stagePassed', { stage: decisionPrefix })}
+                <button
+                  type="button"
+                  onClick={unmarkStagePass}
+                  title={t('company.candidate.passCancelTitle')}
+                  className="ml-1 text-[11.5px] font-bold text-green-700/70 hover:text-green-900 underline underline-offset-2"
+                >
+                  {t('company.candidate.cancel')}
+                </button>
+              </span>
             )}
+            {canRunQuick && app.rejected_at && (() => {
+              const rejectedStageLabel = app.rejected_at_stage ? t(`company.stage.${app.rejected_at_stage}`) : null;
+              const reasonText = app.rejection_reason === 'other'
+                ? (app.rejection_note || '').trim()
+                : (app.rejection_reason ? t(`company.reject.reason.${app.rejection_reason}`) : null);
+              return (
+                <span className="inline-flex items-center gap-1.5 h-9 px-3 rounded-md bg-red-50 border border-red-200 text-[13px] font-extrabold text-red-800 max-w-[320px]">
+                  <Ban className="w-3.5 h-3.5 flex-shrink-0" />
+                  <span className="truncate">
+                    {rejectedStageLabel ? t('company.candidate.rejectedAtStageLabel', { stage: rejectedStageLabel }) : t('company.candidate.rejectedSimple')}
+                    {reasonText ? ` · ${reasonText}` : ''}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setRejectModal('unreject')}
+                    title={t('company.reject.unrejectBtn')}
+                    className="ml-1 text-[11.5px] font-bold text-red-700/70 hover:text-red-900 underline underline-offset-2 flex-shrink-0"
+                  >
+                    {t('company.candidate.cancel')}
+                  </button>
+                </span>
+              );
+            })()}
+            {/* Final-hire celebration — being in the 최종 합격 column IS the final-hire state.
+                To revert, move the candidate to a different stage on the kanban. */}
             {!app.rejected_at && app.status === 'decided' && (
-              <UBadge variant="success" className="py-1.5">
-                <Trophy className="w-3 h-3" />
+              <span className="inline-flex items-center gap-1.5 h-9 px-3 rounded-md bg-primary-50 border border-primary-200 text-[13px] font-extrabold text-primary-800">
+                <PartyPopper className="w-4 h-4" />
                 {t('company.candidate.finalPass')}
-              </UBadge>
+              </span>
             )}
           </div>
         </div>
 
-        {/* Smart hint — eyebrow + title only.
-            Flowchart-driven: surfaces just the single next action for the current role × stage × state. */}
+        {/* Smart hint — 2-row layout.
+            Row 1: eyebrow | Stage Checklist progress stepper (inline, divider-separated)
+            Row 2: numbered title (the single next action to take) */}
         {smartHint && (
-          <div className={cn('flex items-center gap-2.5 rounded-lg border px-3 py-2', hintToneClass)}>
-            <Lightbulb className="w-4 h-4 flex-shrink-0" />
-            <div className="min-w-0 flex-1 space-y-0.5">
-              <div className={cn('text-[10.5px] font-extrabold uppercase tracking-[0.06em]', hintEyebrowClass)}>
-                {smartHint.eyebrow}
+          <div className={cn('flex items-start gap-2.5 rounded-lg border px-3.5 py-2.5', hintToneClass)}>
+            <Lightbulb className="w-[18px] h-[18px] flex-shrink-0 mt-0.5 text-primary-600" />
+            <div className="min-w-0 flex-1 space-y-1.5">
+              <div className="flex items-center gap-2.5 flex-wrap">
+                <span className={cn('text-[11.5px] font-extrabold uppercase tracking-[0.06em]', hintEyebrowClass)}>
+                  {smartHint.eyebrow}
+                </span>
+                {smartHint.steps && smartHint.total > 1 && (
+                  <>
+                    <span className="w-px h-3.5 bg-current opacity-25" />
+                    <div className="flex items-center gap-1 flex-wrap text-[12px]">
+                      {smartHint.steps.map((label, i) => {
+                        const idx = i + 1;
+                        const isDone = idx < smartHint.step;
+                        const isCurrent = idx === smartHint.step;
+                        return (
+                          <span key={i} className="flex items-center gap-1">
+                            {i > 0 && <span className="text-gray-300 select-none">›</span>}
+                            <span className={cn(
+                              'inline-flex items-center gap-1 rounded-full px-2 py-0.5 font-extrabold transition-colors',
+                              isCurrent ? 'bg-primary-50 text-primary-700 ring-1 ring-primary-200' : 'text-gray-400'
+                            )}>
+                              <span className={cn(
+                                'w-1.5 h-1.5 rounded-full',
+                                isCurrent ? 'bg-primary-600' : isDone ? 'bg-gray-500' : 'bg-gray-300'
+                              )} />
+                              <span>{label}</span>
+                            </span>
+                          </span>
+                        );
+                      })}
+                    </div>
+                  </>
+                )}
               </div>
-              <div className="text-[13px] font-bold leading-snug">{smartHint.title}</div>
+              <div className="text-[14.5px] font-bold leading-snug text-gray-900">
+                {smartHint.title}
+              </div>
             </div>
           </div>
         )}
@@ -826,7 +966,7 @@ export default function CandidateDetail({
         'grid gap-4 flex-1 min-h-0',
         mode === 'overlay' ? 'grid-cols-1 lg:grid-cols-[1fr_400px] px-5 pt-3 pb-5 overflow-auto' : 'grid-cols-1 lg:grid-cols-[1fr_400px]'
       )}>
-        <section className="flex flex-col bg-white rounded-2xl border border-border shadow-soft-xs overflow-hidden min-h-[600px]">
+        <section className="flex flex-col bg-white rounded-xl border border-border shadow-soft-xs overflow-hidden min-h-[600px]">
           <div className="flex items-center justify-between px-3.5 py-1.5 border-b border-border bg-gray-50/50">
             <span className="text-[13px] font-bold text-foreground">{t('company.candidate.resume')}</span>
             {hasResume && (
@@ -862,17 +1002,17 @@ export default function CandidateDetail({
         <aside className="flex flex-col min-h-0">
           <Tabs value={tab} onValueChange={setTab} className="flex flex-col min-h-0">
             <TabsList>
-              <TabsTrigger value="eval"><Star className="w-3.5 h-3.5" />평가</TabsTrigger>
+              <TabsTrigger value="eval"><Star className="w-3.5 h-3.5" />{t('company.candidate.tab.eval')}</TabsTrigger>
               <TabsTrigger value="mail">
-                <Mail className="w-3.5 h-3.5" />메일
+                <Mail className="w-3.5 h-3.5" />{t('company.candidate.tab.mail')}
                 <span className={cn('font-extrabold', tab === 'mail' ? 'text-gray-900' : 'text-gray-400')}>{mailLog.length}</span>
               </TabsTrigger>
-              <TabsTrigger value="history"><History className="w-3.5 h-3.5" />히스토리</TabsTrigger>
+              <TabsTrigger value="history"><History className="w-3.5 h-3.5" />{t('company.candidate.tab.history')}</TabsTrigger>
             </TabsList>
 
             {/* ─── Eval tab ─── */}
             <TabsContent value="eval">
-              <div className="rounded-2xl bg-white border border-border shadow-soft-xs p-4 space-y-3">
+              <div className="rounded-xl bg-white border border-border shadow-soft-xs p-4 space-y-3">
                 <EvaluationSection
                   t={t}
                   stages={STAGES}
@@ -901,27 +1041,27 @@ export default function CandidateDetail({
                   setEvals={setEvals}
                   userId={userId}
                   reviewerName={reviewerName}
-                  isOwner={isOwner}
                   expanded={noteExpanded}
                   onToggle={() => setNoteExpanded(v => !v)}
                   draft={noteDraft}
                   setDraft={setNoteDraft}
                   saving={savingNote}
                   setSaving={setSavingNote}
+                  askConfirm={askConfirm}
                 />
               </div>
             </TabsContent>
 
             {/* ─── History tab — activity timeline ─── */}
             <TabsContent value="history">
-              <div className="rounded-2xl bg-white border border-border shadow-soft-xs p-4">
+              <div className="rounded-xl bg-white border border-border shadow-soft-xs p-4">
                 <ActivityTimeline t={t} app={app} evals={evals} mailLog={mailLog} />
               </div>
             </TabsContent>
 
             {/* ─── Mail tab — log + compose ─── */}
             <TabsContent value="mail">
-              <div className="rounded-2xl bg-white border border-border shadow-soft-xs p-4 space-y-3">
+              <div className="rounded-xl bg-white border border-border shadow-soft-xs p-4 space-y-3">
                 {isOwner && (
                   <UButton onClick={openMailCompose} variant="outline" className="w-full">
                     <Mail className="w-3.5 h-3.5" />
@@ -942,7 +1082,7 @@ export default function CandidateDetail({
                       {mailLog.map(m => {
                         const legacyTpl = m.template_key && ['received', 'interview', 'offer', 'reject'].includes(m.template_key);
                         const tplLabel = legacyTpl ? t(`company.tpl.${m.template_key}.label`) : (m.template_key || '—');
-                        const when = new Date(m.created_at).toLocaleString(undefined, { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+                        const when = formatLocalShort(m.created_at);
                         return (
                           <div key={m.id} className="rounded-lg border border-border px-2.5 py-2 space-y-0.5">
                             <div className="flex items-center justify-between">
@@ -973,9 +1113,9 @@ export default function CandidateDetail({
           companyId={job?.company_id}
           applicationId={app.id}
           stage={app.status}
-          stageNote={t('company.ats.stageNote', { stage: t(`company.stage.${app.status}`) })}
           onClose={() => setMailModal(null)}
           onSent={() => { setMailModal(null); reloadMailLog(app.id); }}
+          askConfirm={askConfirm}
         />
       )}
 
@@ -988,6 +1128,7 @@ export default function CandidateDetail({
             onStageChange?.(app.id, payload);
             setInterviewModal(false);
           }}
+          askConfirm={askConfirm}
         />
       )}
 
@@ -1025,18 +1166,34 @@ export default function CandidateDetail({
                 />
               </div>
               <div className="space-y-1.5">
-                <label className="text-xs font-bold text-gray-700">평점</label>
-                <div className="flex items-center gap-2">
-                  <UInput
-                    type="number"
-                    min={0}
-                    max={100}
-                    value={editScore}
-                    onChange={(e) => setEditScore(e.target.value)}
-                    placeholder="0 ~ 100"
-                    className="w-28 h-9 text-sm tabular-nums"
-                  />
-                  <span className="text-[12px] font-bold text-gray-500">점 / 100</span>
+                <label className="text-xs font-bold text-gray-700">
+                  {t('company.eval.verdictLabel')} <span className="text-red-500">*</span>
+                </label>
+                <div className="inline-flex rounded-md border border-border overflow-hidden">
+                  <button
+                    type="button"
+                    onClick={() => setEditScore('1')}
+                    className={cn(
+                      'px-4 h-9 text-[13px] font-extrabold transition-colors',
+                      editScore === '1' || editScore === 1
+                        ? 'bg-green-500 text-white'
+                        : 'bg-white text-gray-700 hover:bg-green-50/60'
+                    )}
+                  >
+                    {t('company.eval.fit')}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setEditScore('0')}
+                    className={cn(
+                      'px-4 h-9 text-[13px] font-extrabold transition-colors border-l border-border',
+                      editScore === '0' || editScore === 0
+                        ? 'bg-red-500 text-white'
+                        : 'bg-white text-gray-700 hover:bg-red-50/60'
+                    )}
+                  >
+                    {t('company.eval.unfit')}
+                  </button>
                 </div>
               </div>
             </div>
@@ -1052,6 +1209,18 @@ export default function CandidateDetail({
         </UDialog>
       )}
 
+      {/* Platform-native confirmation modal — replaces window.confirm */}
+      <ConfirmDialog
+        open={!!confirmState}
+        onOpenChange={(o) => { if (!o) setConfirmState(null); }}
+        title={confirmState?.title}
+        description={confirmState?.description}
+        confirmLabel={confirmState?.confirmLabel}
+        cancelLabel={confirmState?.cancelLabel}
+        destructive={confirmState?.destructive}
+        onConfirm={() => confirmState?.onConfirm?.()}
+        busy={confirmBusy}
+      />
     </div>
   );
 }
@@ -1065,10 +1234,14 @@ function Info({ label, children }) {
   );
 }
 
-function avgScore(list) {
+// Fit/unfit summary for a stage. Returns null when no one has rated yet.
+// Otherwise: { fit, unfit, total } so the UI can show "적합 3 · 부적합 1".
+function fitSummary(list) {
   const scored = list.filter(e => typeof e.score === 'number');
   if (scored.length === 0) return null;
-  return Math.round(scored.reduce((s, e) => s + e.score, 0) / scored.length);
+  const fit = scored.filter(e => e.score === 1).length;
+  const unfit = scored.length - fit;
+  return { fit, unfit, total: scored.length };
 }
 
 function formatEvalTime(ts) {
@@ -1085,15 +1258,15 @@ function EvaluationSection({
   evalComment, setEvalComment, evalScore, setEvalScore, onSubmit, saving,
   onEdit, onDelete,
 }) {
-  const currentStageLabel = EVAL_STAGE_LABEL[currentStage] || t(`company.stage.${currentStage}`);
+  const currentStageLabel = EVAL_STAGE_KEYS.includes(currentStage) ? t(`company.stageLabel.eval.${currentStage}`) : t(`company.stage.${currentStage}`);
   const myCurrentEval = evals.find(e => e.stage === currentStage && e.reviewer_user_id === currentUserId);
-  const evalStages = stages.filter(s => EVAL_STAGE_LABEL[s.key]);
+  const evalStages = stages.filter(s => EVAL_STAGE_KEYS.includes(s.key));
 
   return (
     <div className="flex flex-col gap-1.5">
       {evalStages.map(s => {
         const stageEvals = evals.filter(e => e.stage === s.key);
-        const avg = avgScore(stageEvals);
+        const summary = fitSummary(stageEvals);
         const expanded = expandedStages.has(s.key);
         const isCurrent = s.key === currentStage;
         return (
@@ -1107,10 +1280,11 @@ function EvaluationSection({
               )}
             >
               <span className={cn('w-1.5 h-1.5 rounded-full', STAGE_DOT_CLASS[s.key])} />
-              <span className="text-xs font-extrabold text-foreground flex-1">{EVAL_STAGE_LABEL[s.key] || t(`company.stage.${s.key}`)}</span>
-              {avg != null ? (
-                <span className="text-[10.5px] font-extrabold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full tabular-nums">
-                  평균 {avg}점
+              <span className="text-xs font-extrabold text-foreground flex-1">{EVAL_STAGE_KEYS.includes(s.key) ? t(`company.stageLabel.eval.${s.key}`) : t(`company.stage.${s.key}`)}</span>
+              {summary ? (
+                <span className="flex items-center gap-1 text-[10.5px] font-extrabold tabular-nums">
+                  <span className="text-green-700 bg-green-50 border border-green-200 px-1.5 py-0.5 rounded-full">{t('company.eval.fitSummary', { n: summary.fit })}</span>
+                  <span className="text-red-700 bg-red-50 border border-red-200 px-1.5 py-0.5 rounded-full">{t('company.eval.unfitSummary', { n: summary.unfit })}</span>
                 </span>
               ) : (
                 <span className="text-[10.5px] font-bold text-gray-400 bg-white border border-dashed border-gray-300 px-2 py-0.5 rounded-full">
@@ -1125,38 +1299,43 @@ function EvaluationSection({
                   const isMe = e.reviewer_user_id === currentUserId;
                   const isOwnerRole = e.reviewer_role === 'owner';
                   return (
-                    <div key={e.id} className="bg-gray-50/70 border border-border rounded-md px-2.5 py-2">
-                      <div className="flex items-center gap-1.5 mb-1 flex-wrap">
-                        <span className="text-[11.5px] font-bold text-foreground">
+                    <div key={e.id} className="bg-gray-50/70 border border-border rounded-md px-3 py-2.5">
+                      <div className="flex items-center gap-1.5 mb-1.5 flex-wrap">
+                        <span className="text-[13px] font-bold text-foreground">
                           {isMe ? `${t('company.eval.me')} (${e.reviewer_name || ''})` : (e.reviewer_name || '—')}
                         </span>
                         <span className={cn(
-                          'text-[9.5px] font-extrabold px-1.5 py-0.5 rounded',
+                          'text-[10.5px] font-extrabold px-1.5 py-0.5 rounded border',
                           isOwnerRole
-                            ? 'text-primary-700 bg-primary-50 border border-primary-200'
-                            : 'text-sky-700 bg-sky-50 border border-sky-200'
+                            ? 'text-gray-700 bg-gray-100 border-gray-200'
+                            : 'text-gray-500 bg-white border-gray-200'
                         )}>
                           {t(`company.eval.role.${isOwnerRole ? 'owner' : 'interviewer'}`)}
                         </span>
-                        <span className="ml-auto text-[10.5px] text-gray-400 font-medium">{formatEvalTime(e.created_at)}</span>
+                        <span className="ml-auto text-[11.5px] text-gray-400 font-medium">{formatEvalTime(e.created_at)}</span>
                         {isMe && (
                           <span className="flex gap-1">
                             <button
                               onClick={() => onEdit(e)}
-                              className="px-1.5 py-0.5 text-[10px] font-bold text-gray-700 bg-white border border-border rounded hover:bg-gray-50 transition-colors"
+                              className="px-2 py-0.5 text-[11px] font-bold text-gray-700 bg-white border border-border rounded hover:bg-gray-50 transition-colors"
                             >{t('company.eval.editBtn')}</button>
                             <button
                               onClick={() => onDelete(e)}
-                              className="px-1.5 py-0.5 text-[10px] font-bold text-red-600 bg-white border border-red-200 rounded hover:bg-red-50 transition-colors"
+                              className="px-2 py-0.5 text-[11px] font-bold text-red-600 bg-white border border-red-200 rounded hover:bg-red-50 transition-colors"
                             >{t('company.eval.deleteBtn')}</button>
                           </span>
                         )}
                       </div>
                       <div className="flex justify-between gap-2 items-start">
-                        <span className="text-xs text-gray-700 leading-relaxed whitespace-pre-wrap flex-1">{e.comment}</span>
+                        <span className="text-[13px] text-gray-700 leading-relaxed whitespace-pre-wrap flex-1">{e.comment || <span className="text-gray-400 italic">{t('company.eval.noComment')}</span>}</span>
                         {typeof e.score === 'number' && (
-                          <span className="text-[10.5px] font-extrabold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded flex-shrink-0 tabular-nums">
-                            {e.score}점
+                          <span className={cn(
+                            'text-[11.5px] font-extrabold px-2 py-0.5 rounded-full flex-shrink-0 border whitespace-nowrap',
+                            e.score === 1
+                              ? 'text-green-700 bg-green-50 border-green-200'
+                              : 'text-red-700 bg-red-50 border-red-200'
+                          )}>
+                            {e.score === 1 ? t('company.eval.fit') : t('company.eval.unfit')}
                           </span>
                         )}
                       </div>
@@ -1167,30 +1346,48 @@ function EvaluationSection({
                   <div className="text-[11px] text-gray-400 italic py-1">{t('company.eval.empty')}</div>
                 )}
                 {isCurrent && (
-                  <div className="mt-2 p-2.5 bg-gray-50/70 border border-dashed border-border rounded-md flex flex-col gap-2">
+                  <div className="mt-2 p-3 bg-gray-50/70 border border-dashed border-border rounded-md flex flex-col gap-2.5">
                     <textarea
                       value={evalComment}
                       onChange={(e) => setEvalComment(e.target.value)}
-                      placeholder={t('company.eval.placeholder', { stage: currentStageLabel })}
+                      placeholder={t('company.eval.commentPh')}
                       rows={3}
-                      className="w-full px-2.5 py-2 bg-white border border-border rounded-md text-xs leading-relaxed resize-y focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-1"
+                      className="w-full px-3 py-2 bg-white border border-border rounded-md text-[13px] leading-relaxed resize-y focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-1"
                     />
-                    <div className="flex items-center gap-2">
-                      <span className="text-[11px] font-bold text-gray-700">평점</span>
-                      <UInput
-                        type="number"
-                        min={0}
-                        max={100}
-                        value={evalScore}
-                        onChange={(e) => setEvalScore(e.target.value)}
-                        placeholder="0 ~ 100"
-                        className="w-24 h-8 text-xs tabular-nums"
-                      />
-                      <span className="text-[11px] font-bold text-gray-500">점 / 100</span>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="text-[12.5px] font-bold text-gray-700">
+                        {t('company.eval.verdictLabel')} <span className="text-red-500">*</span>
+                      </span>
+                      <div className="inline-flex rounded-md border border-border overflow-hidden">
+                        <button
+                          type="button"
+                          onClick={() => setEvalScore('1')}
+                          className={cn(
+                            'px-3.5 h-9 text-[13px] font-extrabold transition-colors',
+                            evalScore === '1' || evalScore === 1
+                              ? 'bg-green-500 text-white'
+                              : 'bg-white text-gray-700 hover:bg-green-50/60'
+                          )}
+                        >
+                          {t('company.eval.fit')}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setEvalScore('0')}
+                          className={cn(
+                            'px-3.5 h-9 text-[13px] font-extrabold transition-colors border-l border-border',
+                            evalScore === '0' || evalScore === 0
+                              ? 'bg-red-500 text-white'
+                              : 'bg-white text-gray-700 hover:bg-red-50/60'
+                          )}
+                        >
+                          {t('company.eval.unfit')}
+                        </button>
+                      </div>
                       <UButton
                         size="sm"
                         onClick={onSubmit}
-                        disabled={saving || !evalComment.trim()}
+                        disabled={saving || (evalScore !== '0' && evalScore !== '1' && evalScore !== 0 && evalScore !== 1)}
                         className="ml-auto"
                       >
                         {saving ? '...' : (myCurrentEval ? t('company.eval.update') : t('company.eval.submit'))}
@@ -1335,6 +1532,86 @@ function formatSlots(slots) {
   return valid.map((s, i) => `${i + 1}) ${s.date} ${s.time || '00:00'} ${ICT_LABEL}`).join('\n');
 }
 
+// Built-in funnel-ordered presets shown as buttons inside the mail composer.
+// `needsSlots: true` auto-opens the interview-slot picker since those mails always
+// follow a "결과 + 다음 인터뷰 일정 제안" pattern.
+const MAIL_PRESETS = [
+  {
+    key: 'received',
+    labelKey: 'company.mail.preset.received',
+    needsSlots: false,
+    subject: '[{회사명}] {공고명} 지원 접수 안내',
+    body: `{후보이름}님, 안녕하세요.
+{회사명} 채용 담당자입니다.
+
+{공고명} 포지션에 지원해 주셔서 감사합니다.
+제출해 주신 지원서를 잘 받았으며 검토 중입니다. 결과는 확인되는 대로 다시 안내드리겠습니다.
+
+감사합니다.`,
+  },
+  {
+    key: 'doc_pass',
+    labelKey: 'company.mail.preset.docPass',
+    needsSlots: true,
+    subject: '[{회사명}] {공고명} 서류 평가 합격 및 1차 인터뷰 안내',
+    body: `{후보이름}님, 안녕하세요.
+{회사명} 채용 담당자입니다.
+
+{공고명} 포지션 서류 전형 결과, 다음 단계로 함께 진행하고 싶습니다. 축하드립니다.
+{후보이름}님과 1차 인터뷰를 진행하고자 합니다. 아래 가능한 일정 중 회신해 주시면 확정하겠습니다.
+
+{인터뷰일정}
+
+장소와 방식은 일정 확정 후 안내드리겠습니다.
+감사합니다.`,
+  },
+  {
+    key: 'interview1_pass',
+    labelKey: 'company.mail.preset.interview1Pass',
+    needsSlots: true,
+    subject: '[{회사명}] {공고명} 1차 인터뷰 합격 및 2차 인터뷰 안내',
+    body: `{후보이름}님, 안녕하세요.
+{회사명} 채용 담당자입니다.
+
+{공고명} 포지션 1차 인터뷰 결과, 다음 단계로 함께 진행하고 싶습니다. 축하드립니다.
+{후보이름}님과 2차 인터뷰를 진행하고자 합니다. 아래 가능한 일정 중 회신해 주시면 확정하겠습니다.
+
+{인터뷰일정}
+
+장소와 방식은 일정 확정 후 안내드리겠습니다.
+감사합니다.`,
+  },
+  {
+    key: 'final_offer',
+    labelKey: 'company.mail.preset.interview2Pass',
+    needsSlots: false,
+    subject: '[{회사명}] {공고명} 최종 합격 안내',
+    body: `{후보이름}님, 안녕하세요.
+{회사명} 채용 담당자입니다.
+
+{공고명} 포지션에 {후보이름}님을 모시기로 결정했습니다. 축하드립니다.
+입사 절차와 처우 조건은 별도로 안내드리겠습니다.
+
+함께하게 되어 기쁩니다.
+감사합니다.`,
+  },
+  {
+    key: 'reject',
+    labelKey: 'company.mail.preset.reject',
+    needsSlots: false,
+    subject: '[{회사명}] {공고명} 전형 결과 안내',
+    body: `{후보이름}님, 안녕하세요.
+{회사명} 채용 담당자입니다.
+
+{공고명} 포지션에 관심을 갖고 지원해 주셔서 감사합니다.
+아쉽게도 이번 전형에서는 함께하지 못하게 되었습니다.
+
+지원에 들인 시간과 노력에 깊이 감사드리며, 좋은 기회로 다시 뵙기를 바랍니다.
+
+감사합니다.`,
+  },
+];
+
 function fillVars(text, vars) {
   const round = vars.stage === 'viewed' ? (vars.lang === 'vi' ? 'Phỏng vấn vòng 1' : '1차 인터뷰')
               : vars.stage === 'reviewing' ? (vars.lang === 'vi' ? 'Phỏng vấn vòng 2' : '2차 인터뷰')
@@ -1350,7 +1627,8 @@ function fillVars(text, vars) {
 // ─── Note section ──────────────────────────────────────────────────
 // Collapsible card styled exactly like the EvaluationSection stage cards.
 // Notes are appended (never overwritten) and shown reverse-chronologically.
-function NoteSection({ app, evals, setEvals, userId, reviewerName, isOwner, expanded, onToggle, draft, setDraft, saving, setSaving }) {
+function NoteSection({ app, evals, setEvals, userId, reviewerName, expanded, onToggle, draft, setDraft, saving, setSaving, askConfirm }) {
+  const { t } = useT();
   const notes = (evals || []).filter(e => e.stage === 'note').sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
 
   const submit = async () => {
@@ -1365,27 +1643,33 @@ function NoteSection({ app, evals, setEvals, userId, reviewerName, isOwner, expa
         body: JSON.stringify({ appId: app.id, content }),
       });
       const json = await res.json().catch(() => ({}));
-      if (!res.ok) { toast.error(json.error || '메모 저장 실패'); return; }
+      if (!res.ok) { toast.error(json.error || t('company.toast.noteSaveFailed')); return; }
       setEvals(prev => [...prev, json.note]);
       setDraft('');
-      toast.success('메모가 추가되었습니다');
+      toast.success(t('company.toast.noteCreated'));
     } finally {
       setSaving(false);
     }
   };
 
-  const remove = async (noteId) => {
-    if (!window.confirm('이 메모를 삭제하시겠어요?')) return;
-    const { data: { session } } = await supabase.auth.getSession();
-    const res = await fetch('/api/company/delete-candidate-note', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session?.access_token || ''}` },
-      body: JSON.stringify({ noteId }),
+  const remove = (noteId) => {
+    askConfirm({
+      title: t('company.note.confirmDeleteTitle'),
+      confirmLabel: t('company.note.confirmDeleteLabel'),
+      destructive: true,
+      onConfirm: async () => {
+        const { data: { session } } = await supabase.auth.getSession();
+        const res = await fetch('/api/company/delete-candidate-note', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session?.access_token || ''}` },
+          body: JSON.stringify({ noteId }),
+        });
+        const json = await res.json().catch(() => ({}));
+        if (!res.ok) { toast.error(json.error || t('company.toast.noteDeleteFailed')); return; }
+        setEvals(prev => prev.filter(e => e.id !== noteId));
+        toast.success(t('company.toast.noteDeleted'));
+      },
     });
-    const json = await res.json().catch(() => ({}));
-    if (!res.ok) { toast.error(json.error || '삭제 실패'); return; }
-    setEvals(prev => prev.filter(e => e.id !== noteId));
-    toast.success('메모가 삭제되었습니다');
   };
 
   return (
@@ -1393,17 +1677,17 @@ function NoteSection({ app, evals, setEvals, userId, reviewerName, isOwner, expa
       <button
         type="button"
         onClick={onToggle}
-        className="w-full flex items-center gap-2 px-3 py-2 text-left transition-colors bg-amber-50/40 hover:bg-amber-50"
+        className="w-full flex items-center gap-2 px-3 py-2 text-left transition-colors bg-gray-50 hover:bg-gray-100"
       >
-        <StickyNote className="w-3.5 h-3.5 text-amber-600" />
-        <span className="text-xs font-extrabold text-foreground flex-1">메모</span>
+        <StickyNote className="w-3.5 h-3.5 text-gray-500" />
+        <span className="text-xs font-extrabold text-foreground flex-1">{t('company.note.h')}</span>
         <span className={cn(
           'text-[10.5px] font-extrabold px-2 py-0.5 rounded-full tabular-nums',
           notes.length > 0
-            ? 'text-amber-700 bg-amber-100 border border-amber-200'
+            ? 'text-gray-700 bg-gray-100 border border-gray-200'
             : 'text-gray-400 bg-white border border-dashed border-gray-300',
         )}>
-          {notes.length > 0 ? `${notes.length}건` : '없음'}
+          {notes.length > 0 ? t('company.note.count', { n: notes.length }) : t('company.note.none')}
         </span>
         <ChevronRight className={cn('w-3.5 h-3.5 text-gray-400 transition-transform', expanded && 'rotate-90')} />
       </button>
@@ -1415,43 +1699,43 @@ function NoteSection({ app, evals, setEvals, userId, reviewerName, isOwner, expa
             return (
               <div key={n.id} className="bg-gray-50/70 border border-border rounded-md px-2.5 py-2">
                 <div className="flex items-center gap-1.5 mb-1 flex-wrap">
-                  <span className="text-[11.5px] font-bold text-foreground">
-                    {n.reviewer_name || '익명'}
+                  <span className="text-[13px] font-bold text-foreground">
+                    {n.reviewer_name || t('company.role.anon')}
                   </span>
                   <span className={cn(
-                    'text-[9.5px] font-extrabold px-1.5 py-0.5 rounded',
+                    'text-[10.5px] font-extrabold px-1.5 py-0.5 rounded border',
                     isOwnerRole
-                      ? 'text-primary-700 bg-primary-50 border border-primary-200'
-                      : 'text-sky-700 bg-sky-50 border border-sky-200'
+                      ? 'text-gray-700 bg-gray-100 border-gray-200'
+                      : 'text-gray-500 bg-white border-gray-200'
                   )}>
-                    {isOwnerRole ? '공고 관리자' : '면접관'}
+                    {isOwnerRole ? t('company.role.owner') : t('company.role.interviewer')}
                   </span>
-                  <span className="ml-auto text-[10.5px] text-gray-400 font-medium">{formatEvalTime(n.created_at)}</span>
+                  <span className="ml-auto text-[11.5px] text-gray-400 font-medium">{formatEvalTime(n.created_at)}</span>
                   {isMine && (
                     <button
                       type="button"
                       onClick={() => remove(n.id)}
-                      className="px-1.5 py-0.5 text-[10px] font-bold text-red-600 bg-white border border-red-200 rounded hover:bg-red-50 transition-colors"
+                      className="px-2 py-0.5 text-[11px] font-bold text-red-600 bg-white border border-red-200 rounded hover:bg-red-50 transition-colors"
                     >
-                      삭제
+                      {t('company.note.delete')}
                     </button>
                   )}
                 </div>
-                <div className="text-xs text-gray-700 leading-relaxed whitespace-pre-wrap">{n.comment}</div>
+                <div className="text-[13px] text-gray-700 leading-relaxed whitespace-pre-wrap">{n.comment}</div>
               </div>
             );
           })}
           {notes.length === 0 && (
-            <div className="text-[11px] text-gray-400 italic py-1">아직 메모가 없어요</div>
+            <div className="text-[12.5px] text-gray-400 italic py-1">{t('company.note.empty')}</div>
           )}
-          <div className="mt-2 p-2.5 bg-gray-50/70 border border-dashed border-border rounded-md flex flex-col gap-2">
+          <div className="mt-2 p-3 bg-gray-50/70 border border-dashed border-border rounded-md flex flex-col gap-2.5">
             <textarea
               value={draft}
               onChange={(e) => setDraft(e.target.value)}
               onKeyDown={(e) => { if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') { e.preventDefault(); submit(); } }}
-              placeholder="이 후보자에 대한 메모를 남기세요"
+              placeholder={t('company.note.ph')}
               rows={3}
-              className="w-full px-2.5 py-2 bg-white border border-border rounded-md text-xs leading-relaxed resize-y focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-1"
+              className="w-full px-3 py-2 bg-white border border-border rounded-md text-[13px] leading-relaxed resize-y focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-1"
             />
             <div className="flex justify-end">
               <UButton
@@ -1460,7 +1744,7 @@ function NoteSection({ app, evals, setEvals, userId, reviewerName, isOwner, expa
                 disabled={saving || !draft.trim()}
               >
                 <Save className="w-3.5 h-3.5" />
-                {saving ? '저장 중…' : '메모 남기기'}
+                {saving ? t('company.note.savingShort') : t('company.note.save')}
               </UButton>
             </div>
           </div>
@@ -1485,51 +1769,86 @@ function ActivityTimeline({ t, app, evals, mailLog }) {
     icon: Inbox,
     iconClass: 'text-gray-700 bg-gray-100',
     actor: candidateName,
-    action: '지원서를 제출했습니다',
+    action: t('company.activity.applied'),
   });
 
   // ② Interview scheduled — actor unknown (not tracked in DB), shown as "관리자"
   if (app.interview_at) {
-    const when = formatICT(app.interview_at, { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false });
-    const interviewerNote = app.interview_interviewer ? ` · 면접관 ${app.interview_interviewer}` : '';
+    const when = formatInterviewShort(app.interview_at, { withZone: false });
+    const interviewerNote = app.interview_interviewer ? ` · ${t('company.activity.interviewerPrefix', { name: app.interview_interviewer })}` : '';
     events.push({
       when: app.interview_at,
       icon: Calendar,
-      iconClass: 'text-blue-700 bg-blue-100',
-      actor: '공고 관리자',
-      action: '인터뷰 일정을 등록했습니다',
+      iconClass: 'text-gray-700 bg-gray-100',
+      actor: t('company.role.owner'),
+      action: t('company.activity.interviewScheduled'),
       detail: `${when} ${ICT_LABEL}${app.interview_location ? ' · ' + app.interview_location : ''}${interviewerNote}`,
     });
   }
 
-  // ③ Evaluations & internal notes — actor = reviewer / author
+  // ③ Evaluations, internal notes, and system audit rows
+  // Audit row stages: 'note' (memo), 'unreject' (rejection reversed),
+  // 'stage_move' (stage change), '${stage}_pass' (stage-pass decision).
   (evals || []).forEach(e => {
-    const role = e.reviewer_role === 'owner' ? '공고 관리자' : '면접관';
+    // `${stage}_snap` rows store per-stage interview snapshots — internal
+    // bookkeeping, not user-facing history. Hide them from the timeline.
+    if (typeof e.stage === 'string' && e.stage.endsWith('_snap')) return;
+    const role = e.reviewer_role === 'owner' ? t('company.role.owner') : t('company.role.interviewer');
     const isNote = e.stage === 'note';
+    const isUnreject = e.stage === 'unreject';
+    const isStageMove = e.stage === 'stage_move';
+    const isStagePass = typeof e.stage === 'string' && e.stage.endsWith('_pass');
+    const isAudit = isNote || isUnreject || isStageMove || isStagePass;
+    let icon = Star;
+    if (isStageMove) icon = ChevronRight;
+    else if (isStagePass) icon = ThumbsUp;
+    else if (isUnreject) icon = RotateCcw;
+    else if (isNote) icon = StickyNote;
+    let action;
+    if (isStageMove) {
+      // comment may be either a legacy plain stage key ('viewed') or a
+      // JSON blob carrying { newStage, prevStage, snapshot }. Handle both.
+      let newStageKey = e.comment;
+      try {
+        const parsed = JSON.parse(e.comment);
+        if (parsed && parsed.newStage) newStageKey = parsed.newStage;
+      } catch {}
+      action = t('company.activity.stageMoved', { stage: t(`company.stage.${newStageKey}`) });
+    }
+    else if (isStagePass) {
+      const stageKey = e.stage.replace('_pass', '');
+      const stageLabel = t(`company.stageLabel.short.${stageKey}`) || stageKey;
+      action = t('company.activity.stagePassed', { stage: stageLabel });
+    }
+    else if (isUnreject) action = t('company.activity.unrejected');
+    else if (isNote) action = t('company.activity.noteLeft');
+    else action = t('company.activity.evalLeft', { stage: t(`company.stage.${e.stage}`) });
     events.push({
       when: e.created_at,
-      icon: isNote ? StickyNote : Star,
-      iconClass: isNote ? 'text-amber-700 bg-amber-100' : 'text-amber-700 bg-amber-100',
-      actor: e.reviewer_name || '익명',
+      icon,
+      iconClass: 'text-gray-700 bg-gray-100',
+      actor: e.reviewer_name || t('company.role.anon'),
       actorRole: role,
-      action: isNote ? '메모를 남겼습니다' : `${t(`company.stage.${e.stage}`)} 평가를 남겼습니다`,
-      detail: e.comment || null,
-      badge: !isNote && typeof e.score === 'number' ? { text: `${e.score}점`, tone: 'amber' } : null,
+      action,
+      detail: isAudit ? null : (e.comment || null),
+      badge: !isAudit && typeof e.score === 'number'
+        ? (e.score === 1 ? { text: t('company.eval.fitShort'), tone: 'fit' } : { text: t('company.eval.unfitShort'), tone: 'red' })
+        : null,
     });
   });
 
   // ④ Mails — actor unknown, shown as "관리자"
   (mailLog || []).forEach(m => {
     const legacyTpl = m.template_key && ['received', 'interview', 'offer', 'reject'].includes(m.template_key);
-    const tplLabel = legacyTpl ? t(`company.tpl.${m.template_key}.label`) : (m.template_key || '메일');
+    const tplLabel = legacyTpl ? t(`company.tpl.${m.template_key}.label`) : (m.template_key || t('company.activity.mailFallback'));
     events.push({
       when: m.created_at,
       icon: Send,
-      iconClass: 'text-cyan-700 bg-cyan-100',
-      actor: '공고 관리자',
-      action: '안내 메일을 발송했습니다',
+      iconClass: 'text-gray-700 bg-gray-100',
+      actor: t('company.role.owner'),
+      action: t('company.activity.mailSent'),
       detail: m.subject || null,
-      badge: { text: tplLabel, tone: 'cyan' },
+      badge: { text: tplLabel, tone: 'gray' },
     });
   });
 
@@ -1543,52 +1862,46 @@ function ActivityTimeline({ t, app, evals, mailLog }) {
       when: app.rejected_at,
       icon: Ban,
       iconClass: 'text-red-700 bg-red-100',
-      actor: '공고 관리자',
-      action: rejectedStage ? `${rejectedStage} 단계에서 불합격 처리했습니다` : '불합격 처리했습니다',
-      detail: reason ? `사유: ${reason}` : null,
+      actor: t('company.role.owner'),
+      action: rejectedStage
+        ? t('company.activity.rejectedAtStage', { stage: rejectedStage })
+        : t('company.activity.rejectedPlain'),
+      detail: reason ? t('company.activity.reasonPrefix', { reason }) : null,
     });
   }
 
-  // ⑥ Current stage marker (only if past first stage and not rejected)
-  if (app.status !== 'pending' && !app.rejected_at) {
-    events.push({
-      when: app.updated_at || app.created_at,
-      icon: ChevronRight,
-      iconClass: 'text-primary-700 bg-primary-100',
-      actor: '공고 관리자',
-      action: `${t(`company.stage.${app.status}`)} 단계로 이동했습니다`,
-    });
-  }
+  // ⑥ (removed) — stage moves are now tracked per move via stage_move audit
+  // rows in application_evaluations (handled in ③ above), so a single static
+  // marker would duplicate or shadow the real history.
 
   events.sort((a, b) => new Date(b.when) - new Date(a.when));
 
-  const fmt = (iso) => new Date(iso).toLocaleString(undefined, {
-    month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false,
-  });
+  const fmt = (iso) => formatLocalShort(iso);
 
   if (events.length === 0) {
     return (
       <div className="flex items-center justify-center gap-1.5 py-6 text-[11.5px] text-gray-400 font-semibold border border-dashed border-gray-200 rounded-md">
         <History className="w-3.5 h-3.5" />
-        활동 내역이 없습니다
+        {t('company.activity.empty')}
       </div>
     );
   }
 
+  // Mostly neutral; "red" stays for rejection, "fit" uses green so an
+  // "적합" verdict reads as a positive signal next to the gray defaults.
   const badgeToneClass = {
-    amber:   'text-amber-700 bg-amber-50 border border-amber-200',
-    cyan:    'text-cyan-700 bg-cyan-50 border border-cyan-200',
-    emerald: 'text-emerald-700 bg-emerald-50 border border-emerald-200',
-    red:     'text-red-700 bg-red-50 border border-red-200',
+    gray: 'text-gray-700 bg-gray-100 border border-gray-200',
+    red:  'text-red-700 bg-red-50 border border-red-200',
+    fit:  'text-green-700 bg-green-50 border border-green-200',
   };
 
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
         <div className="text-[10.5px] font-extrabold text-gray-500 uppercase tracking-[0.08em]">
-          활동 타임라인
+          {t('company.activity.h')}
         </div>
-        <span className="text-[10.5px] font-bold text-gray-400 tabular-nums">{events.length}건</span>
+        <span className="text-[10.5px] font-bold text-gray-400 tabular-nums">{t('company.activity.countUnit', { n: events.length })}</span>
       </div>
       <div className="relative space-y-3.5">
         {events.map((e, i) => {
@@ -1599,29 +1912,29 @@ function ActivityTimeline({ t, app, evals, mailLog }) {
               {i < events.length - 1 && (
                 <div className="absolute left-[13px] top-7 bottom-[-14px] w-px bg-gray-200" />
               )}
-              <div className={cn('relative flex-shrink-0 w-7 h-7 rounded-full grid place-items-center', e.iconClass)}>
-                <Icon className="w-3.5 h-3.5" />
+              <div className={cn('relative flex-shrink-0 w-8 h-8 rounded-full grid place-items-center', e.iconClass)}>
+                <Icon className="w-4 h-4" />
               </div>
               <div className="min-w-0 flex-1 pt-0.5 pb-0.5">
                 <div className="flex items-baseline justify-between gap-2 flex-wrap">
-                  <div className="text-[12.5px] leading-snug min-w-0 flex-1">
+                  <div className="text-[13.5px] leading-snug min-w-0 flex-1">
                     <span className="font-extrabold text-gray-900">{e.actor}</span>
                     {e.actorRole && (
-                      <span className="ml-1 text-[10.5px] font-bold text-gray-500">({e.actorRole})</span>
+                      <span className="ml-1 text-[11.5px] font-bold text-gray-500">({e.actorRole})</span>
                     )}
                     <span className="text-gray-700 font-medium">{ka(e.actor)} {e.action}.</span>
                   </div>
-                  <span className="text-[10.5px] font-semibold text-gray-500 flex-shrink-0 tabular-nums">{fmt(e.when)}</span>
+                  <span className="text-[11.5px] font-semibold text-gray-500 flex-shrink-0 tabular-nums">{fmt(e.when)}</span>
                 </div>
                 {(e.detail || e.badge) && (
-                  <div className="mt-1 flex items-start gap-1.5 flex-wrap">
+                  <div className="mt-1.5 flex items-start gap-1.5 flex-wrap">
                     {e.badge && (
-                      <span className={cn('text-[10.5px] font-extrabold px-1.5 py-0.5 rounded tabular-nums', badgeToneClass[e.badge.tone] || badgeToneClass.amber)}>
+                      <span className={cn('text-[11.5px] font-extrabold px-2 py-0.5 rounded tabular-nums', badgeToneClass[e.badge.tone] || badgeToneClass.gray)}>
                         {e.badge.text}
                       </span>
                     )}
                     {e.detail && (
-                      <span className="text-[11.5px] text-gray-700 leading-relaxed whitespace-pre-line line-clamp-2 flex-1 min-w-0">
+                      <span className="text-[13px] text-gray-700 leading-relaxed whitespace-pre-line line-clamp-2 flex-1 min-w-0">
                         {e.detail}
                       </span>
                     )}
@@ -1638,14 +1951,19 @@ function ActivityTimeline({ t, app, evals, mailLog }) {
 
 export function MailComposer({
   candidateName, candidateEmail, jobTitle, companyName, companyId,
-  applicationId, stage, stageNote, onClose, onSent,
+  applicationId, stage, onClose, onSent, askConfirm,
 }) {
   const { t, lang } = useT();
   const [templates, setTemplates] = useState([]);
   const [selectedId, setSelectedId] = useState('');
+  const [selectedPresetKey, setSelectedPresetKey] = useState('');
+  // 'blank' when the user picked the 직접 입력 button in the 내 템플릿 row.
+  const [pickedBlank, setPickedBlank] = useState(false);
+  // When set, the composer is in edit mode for the given custom template id.
+  const [editingTplId, setEditingTplId] = useState(null);
   const [subject, setSubject] = useState('');
   const [body, setBody] = useState('');
-  const [slots, setSlots] = useState([{ date: '', time: '14:00' }, { date: '', time: '14:00' }, { date: '', time: '14:00' }]);
+  const [slots, setSlots] = useState([{ date: '', time: '14:00' }]);
   const [showSlots, setShowSlots] = useState(false);
   const [sending, setSending] = useState(false);
   const [err, setErr] = useState('');
@@ -1668,27 +1986,92 @@ export function MailComposer({
     })();
   }, [companyId]);
 
-  const slotsText = showSlots ? formatSlots(slots) : '';
-  const vars = { name: candidateName, jobTitle, companyName, slotsText, stage, lang };
+  // Slots are filled into the body manually via per-row "입력" buttons now,
+  // so the placeholder stays in subject/body until the user clicks insert.
+  const vars = { name: candidateName, jobTitle, companyName, slotsText: '{인터뷰일정}', stage, lang };
 
   const pickTemplate = (id) => {
+    setSelectedPresetKey('');
+    setPickedBlank(false);
+    setEditingTplId(null);
     setSelectedId(id);
     if (!id) { setSubject(''); setBody(''); return; }
     const tpl = templates.find(x => x.id === id);
     if (!tpl) return;
-    setSubject(fillVars(tpl.subject, { ...vars, slotsText: showSlots ? slotsText : '{인터뷰일정}' }));
-    setBody(fillVars(tpl.body, { ...vars, slotsText: showSlots ? slotsText : '{인터뷰일정}' }));
+    setSubject(fillVars(tpl.subject, vars));
+    setBody(fillVars(tpl.body, vars));
   };
 
-  // 슬롯 변경 시 본문/제목의 {인터뷰일정} 부분 갱신 — 사용자가 직접 편집해도 변수가 남아있으면 치환
-  useEffect(() => {
-    if (!showSlots) return;
-    setSubject(prev => prev.split('{인터뷰일정}').join(slotsText));
-    setBody(prev => prev.split('{인터뷰일정}').join(slotsText));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [slotsText, showSlots]);
+  const pickPreset = (preset) => {
+    setSelectedId('');
+    setPickedBlank(false);
+    setEditingTplId(null);
+    setSelectedPresetKey(preset.key);
+    if (preset.needsSlots && !showSlots) setShowSlots(true);
+    setSubject(fillVars(preset.subject, vars));
+    setBody(fillVars(preset.body, vars));
+  };
+
+  const useBlankTemplate = () => {
+    setSelectedId('');
+    setSelectedPresetKey('');
+    setEditingTplId(null);
+    setPickedBlank(true);
+    setSubject('');
+    setBody('');
+  };
+
+  const startEditTemplate = (tpl) => {
+    setSelectedPresetKey('');
+    setPickedBlank(false);
+    setSelectedId(tpl.id);
+    setEditingTplId(tpl.id);
+    setSubject(tpl.subject);
+    setBody(tpl.body);
+  };
+
+  const updateTemplate = async () => {
+    setErr('');
+    if (!subject.trim() || !body.trim()) { setErr(t('company.mail.tplSaveErrFields')); return; }
+    setSavingTpl(true);
+    const { data, error } = await supabase
+      .from('recruiter_mail_templates')
+      .update({ subject, body })
+      .eq('id', editingTplId)
+      .select('id, created_by, name, subject, body').single();
+    setSavingTpl(false);
+    if (error) { setErr(t('company.mail.tplSaveErr') + error.message); return; }
+    setTemplates(prev => prev.map(x => x.id === data.id ? data : x));
+    setEditingTplId(null);
+  };
 
   const updateSlot = (i, field, value) => setSlots(prev => prev.map((s, idx) => idx === i ? { ...s, [field]: value } : s));
+  const addSlot = () => setSlots(prev => [...prev, { date: '', time: '14:00' }]);
+  const removeSlot = (i) => setSlots(prev => prev.length <= 1 ? prev : prev.filter((_, idx) => idx !== i));
+
+  // Insert one slot line into the body. Order of operations so that repeated
+  // "입력" clicks stack the slots contiguously:
+  //   1) replace the first {인터뷰일정} placeholder, OR
+  //   2) splice right after the last existing slot line, OR
+  //   3) append to the end.
+  // Numbering uses (existing slot count + 1) — independent of which row was clicked.
+  const insertSlot = (i) => {
+    const s = slots[i];
+    if (!s?.date) { setErr(t('company.mail.tplSaveErrFields')); return; }
+    setErr('');
+    setBody(prev => {
+      const SLOT_RE = /\d+\)\s\d{4}-\d{2}-\d{2}\s\d{2}:\d{2}\s\(ICT\)/g;
+      const matches = [...prev.matchAll(SLOT_RE)];
+      const line = `${matches.length + 1}) ${s.date} ${s.time || '00:00'} ${ICT_LABEL}`;
+      if (prev.includes('{인터뷰일정}')) return prev.replace('{인터뷰일정}', line);
+      if (matches.length > 0) {
+        const last = matches[matches.length - 1];
+        const insertAt = last.index + last[0].length;
+        return prev.slice(0, insertAt) + '\n' + line + prev.slice(insertAt);
+      }
+      return prev && !prev.endsWith('\n') ? prev + '\n' + line : prev + line;
+    });
+  };
 
   const send = async () => {
     setErr('');
@@ -1697,7 +2080,9 @@ export function MailComposer({
     setSending(true);
     try {
       const { data: { session } } = await supabase.auth.getSession();
-      const tplName = selectedId ? (templates.find(x => x.id === selectedId)?.name || '') : '';
+      const tplName = selectedPresetKey
+        ? t(MAIL_PRESETS.find(p => p.key === selectedPresetKey)?.labelKey || '')
+        : selectedId ? (templates.find(x => x.id === selectedId)?.name || '') : '';
       const res = await fetch('/api/company/send-mail', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session?.access_token || ''}` },
@@ -1744,22 +2129,26 @@ export function MailComposer({
     setNewTplName('');
   };
 
-  const deleteTemplate = async (tpl) => {
+  const deleteTemplate = (tpl) => {
     if (!tpl.created_by) { setErr(t('company.mail.tplDeleteSystem')); return; }
-    if (!window.confirm(t('company.mail.tplDeleteConfirm', { name: tpl.name }))) return;
-    const { error } = await supabase.from('recruiter_mail_templates').delete().eq('id', tpl.id);
-    if (error) { setErr(error.message); return; }
-    setTemplates(prev => prev.filter(x => x.id !== tpl.id));
-    if (selectedId === tpl.id) { setSelectedId(''); setSubject(''); setBody(''); }
-  };
-
-  const openMailApp = () => {
-    window.location.href = `mailto:${encodeURIComponent(candidateEmail)}`
-      + `?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+    askConfirm?.({
+      title: t('company.mail.tplDeleteConfirm', { name: tpl.name }),
+      confirmLabel: t('company.mail.tplDeleteBtn') || '삭제',
+      destructive: true,
+      onConfirm: async () => {
+        const { error } = await supabase.from('recruiter_mail_templates').delete().eq('id', tpl.id);
+        if (error) { setErr(error.message); return; }
+        setTemplates(prev => prev.filter(x => x.id !== tpl.id));
+        if (selectedId === tpl.id) { setSelectedId(''); setSubject(''); setBody(''); }
+      },
+    });
   };
 
   const selectedTpl = templates.find(x => x.id === selectedId);
   const canDeleteSelected = !!(selectedTpl && selectedTpl.created_by === userId);
+  // Hide system-seeded templates (created_by NULL) from the dropdown — they are
+  // superseded by the preset buttons above. Only show user-saved custom ones.
+  const customTemplates = templates.filter(x => x.created_by !== null);
 
   return (
     <UDialog open onOpenChange={(open) => { if (!open && !sending) onClose(); }}>
@@ -1769,32 +2158,97 @@ export function MailComposer({
         </UDialogHeader>
 
         <div className="space-y-4">
-          {stageNote && (
-            <div className="rounded-lg bg-amber-50 border border-amber-200 px-3 py-2.5 text-sm text-amber-900 font-semibold leading-relaxed flex items-start gap-2">
-              <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
-              <span>{stageNote}</span>
-            </div>
-          )}
 
           <div className="space-y-1.5">
-            <label className="text-xs font-bold text-gray-700">{t('company.mail.tplLabel')}</label>
-            <div className="flex items-center gap-2">
-              <select
-                value={selectedId}
-                onChange={(e) => pickTemplate(e.target.value)}
-                className="flex h-10 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-1">
-                <option value="">{t('company.mail.tplBlank')}</option>
-                {templates.map(x => (
-                  <option key={x.id} value={x.id}>
-                    {x.name}{!x.created_by ? ` (${t('company.mail.systemTplBadge')})` : ''}
-                  </option>
-                ))}
-              </select>
-              {selectedId && canDeleteSelected && (
-                <UButton variant="outline" size="icon" onClick={() => deleteTemplate(selectedTpl)} title={t('company.mail.tplDeleteBtn')} className="text-destructive border-red-200 hover:bg-red-50">
-                  <Trash2 className="w-4 h-4" />
-                </UButton>
-              )}
+            <label className="text-xs font-bold text-gray-700">{t('company.mail.presetH')}</label>
+            <div className="flex flex-wrap gap-1.5">
+              {MAIL_PRESETS.map(p => {
+                const active = selectedPresetKey === p.key;
+                return (
+                  <button
+                    key={p.key}
+                    type="button"
+                    onClick={() => pickPreset(p)}
+                    className={cn(
+                      'h-8 px-3 rounded-full text-[12px] font-bold border transition-colors',
+                      active
+                        ? 'bg-primary-600 border-primary-600 text-white hover:bg-primary-700'
+                        : 'bg-white border-gray-200 text-gray-800 hover:bg-gray-50'
+                    )}
+                  >
+                    {t(p.labelKey)}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          <div className="space-y-1.5">
+            <label className="text-xs font-bold text-gray-700">{t('company.mail.myTplH')}</label>
+            <div className="flex flex-wrap gap-1.5">
+              <button
+                type="button"
+                onClick={useBlankTemplate}
+                className={cn(
+                  'h-8 px-3 rounded-full text-[12px] font-bold border transition-colors',
+                  pickedBlank
+                    ? 'bg-primary-600 border-primary-600 text-white hover:bg-primary-700'
+                    : 'bg-white border-gray-200 text-gray-800 hover:bg-gray-50'
+                )}
+              >
+                {t('company.mail.blank')}
+              </button>
+              {customTemplates.map(tpl => {
+                const active = selectedId === tpl.id;
+                const canManage = tpl.created_by === userId;
+                return (
+                  <div key={tpl.id} className="relative inline-flex">
+                    <button
+                      type="button"
+                      onClick={() => pickTemplate(tpl.id)}
+                      className={cn(
+                        'h-8 pl-3 rounded-full text-[12px] font-bold border transition-colors',
+                        canManage ? 'pr-8' : 'pr-3',
+                        active
+                          ? 'bg-primary-600 border-primary-600 text-white hover:bg-primary-700'
+                          : 'bg-white border-gray-200 text-gray-800 hover:bg-gray-50'
+                      )}
+                    >
+                      {tpl.name}
+                      {editingTplId === tpl.id && (
+                        <span className="ml-1.5 text-[10.5px] font-extrabold opacity-80">{t('company.mail.editingBadge')}</span>
+                      )}
+                    </button>
+                    {canManage && (
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <button
+                            type="button"
+                            onClick={(e) => e.stopPropagation()}
+                            className={cn(
+                              'absolute right-0.5 top-1/2 -translate-y-1/2 w-7 h-7 rounded-full flex items-center justify-center transition-colors',
+                              active ? 'text-white/90 hover:bg-white/15' : 'text-gray-500 hover:bg-gray-200'
+                            )}
+                            title={t('company.mail.tplMore')}
+                          >
+                            <MoreVertical className="w-3.5 h-3.5" />
+                          </button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
+                          <DropdownMenuItem onClick={() => startEditTemplate(tpl)}>
+                            <Edit3 className="h-4 w-4 text-gray-500" />
+                            {t('company.mail.tplEdit')}
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => deleteTemplate(tpl)} className="text-red-600 focus:text-red-700">
+                            <Trash2 className="h-4 w-4 text-red-500" />
+                            {t('company.mail.tplDelete')}
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    )}
+                  </div>
+                );
+              })}
             </div>
           </div>
 
@@ -1811,18 +2265,28 @@ export function MailComposer({
           <label className="flex items-center gap-2.5 cursor-pointer text-sm font-semibold text-foreground py-1">
             <input type="checkbox" checked={showSlots} onChange={(e) => setShowSlots(e.target.checked)} className="w-4 h-4 accent-primary-500" />
             <Calendar className="w-4 h-4 text-primary-600" />
-            <span>{t('company.mail.slotsToggle')}</span>
+            <span>{t('company.mail.slotsH')}</span>
           </label>
           {showSlots && (
             <div className="space-y-2 rounded-lg bg-gray-50 border border-gray-200 p-3">
-              {slots.slice(0, 3).map((s, i) => (
+              {slots.map((s, i) => (
                 <div key={i} className="flex items-center gap-2">
                   <span className="flex-shrink-0 w-6 h-6 rounded-full bg-primary-100 text-primary-700 flex items-center justify-center text-xs font-bold">{i + 1}</span>
-                  <UInput type="date" lang={lang} value={s.date} onChange={(e) => updateSlot(i, 'date', e.target.value)} className="flex-1" />
-                  <UInput type="time" lang={lang} value={s.time} onChange={(e) => updateSlot(i, 'time', e.target.value)} className="w-28" />
+                  <UInput type="date" lang={lang} value={s.date} onChange={(e) => updateSlot(i, 'date', e.target.value)} className="flex-[1.6] min-w-0" />
+                  <UInput type="time" lang={lang} value={s.time} onChange={(e) => updateSlot(i, 'time', e.target.value)} className="flex-1 min-w-0" />
+                  <UButton type="button" size="sm" variant="outline" onClick={() => insertSlot(i)} disabled={!s.date} className="h-9 px-3 text-xs font-bold flex-shrink-0">
+                    {t('company.mail.slotInsert')}
+                  </UButton>
+                  {slots.length > 1 && (
+                    <UButton type="button" size="icon" variant="ghost" onClick={() => removeSlot(i)} className="h-9 w-9 text-gray-500 hover:text-red-600 flex-shrink-0" title={t('company.mail.slotRemove')}>
+                      <XIcon className="w-4 h-4" />
+                    </UButton>
+                  )}
                 </div>
               ))}
-              <p className="text-xs text-gray-500 mt-1">{t('company.mail.slotsHint')}</p>
+              <UButton type="button" size="sm" variant="outline" onClick={addSlot} className="h-8 px-3 text-xs font-bold">
+                {t('company.mail.slotAdd')}
+              </UButton>
             </div>
           )}
 
@@ -1837,7 +2301,17 @@ export function MailComposer({
             <p className="text-xs text-gray-500">{t('company.mail.varsHint')}</p>
           </div>
 
-          {showSaveDialog ? (
+          {editingTplId ? (
+            <div className="flex items-center gap-2">
+              <UButton variant="outline" size="sm" onClick={() => setEditingTplId(null)} disabled={savingTpl}>
+                {t('company.mail.editCancel')}
+              </UButton>
+              <UButton size="sm" onClick={updateTemplate} disabled={savingTpl}>
+                <Save className="w-4 h-4" />
+                {savingTpl ? t('company.savingShort') : t('company.mail.editDone')}
+              </UButton>
+            </div>
+          ) : showSaveDialog ? (
             <div className="rounded-lg bg-primary-50/50 border border-primary-200 p-3 space-y-2.5">
               <div className="text-sm font-bold text-primary-800">{t('company.mail.tplSaveTitle')}</div>
               <UInput
@@ -1868,11 +2342,7 @@ export function MailComposer({
         </div>
 
         <UDialogFooter>
-          <UButton variant="outline" onClick={onClose}>{stageNote ? t('company.skip') : t('company.cancel')}</UButton>
-          <UButton variant="outline" onClick={openMailApp}>
-            <Mail className="w-4 h-4" />
-            {t('company.mail.openApp')}
-          </UButton>
+          <UButton variant="outline" onClick={onClose}>{t('company.cancel')}</UButton>
           <UButton onClick={send} disabled={sending}>
             <Send className="w-4 h-4" />
             {sending ? t('company.mail.sending') : t('company.mail.send')}
@@ -1908,13 +2378,12 @@ export function ConfirmModal({ title, message, confirmLabel, cancelLabel, tone =
   );
 }
 
-export function InterviewConfirmModal({ app, onClose, onSaved }) {
+export function InterviewConfirmModal({ app, onClose, onSaved, askConfirm }) {
   const { t, lang } = useT();
   const initial = utcToIctInput(app.interview_at);
   const [date, setDate] = useState(initial.date);
   const [time, setTime] = useState(initial.time);
   const [location, setLocation] = useState(app.interview_location || '');
-  const [interviewer, setInterviewer] = useState(app.interview_interviewer || '');
   const [saving, setSaving] = useState(false);
   const [err, setErr] = useState('');
   const isEdit = !!app.interview_at;
@@ -1926,7 +2395,8 @@ export function InterviewConfirmModal({ app, onClose, onSaved }) {
     const payload = {
       interview_at: ictInputToUtc(date, time || '00:00'),
       interview_location: location.trim() || null,
-      interview_interviewer: interviewer.trim() || null,
+      // Interviewer selection has been removed from the form; keep the column
+      // as-is on edit so legacy data isn't wiped.
       updated_at: new Date().toISOString(),
     };
     const { error } = await supabase.from('job_applications').update(payload).eq('id', app.id);
@@ -1935,19 +2405,25 @@ export function InterviewConfirmModal({ app, onClose, onSaved }) {
     onSaved(payload);
   };
 
-  const clear = async () => {
-    if (!window.confirm(t('company.interview.confirmClear') + '?')) return;
-    setSaving(true);
-    const payload = {
-      interview_at: null,
-      interview_location: null,
-      interview_interviewer: null,
-      updated_at: new Date().toISOString(),
-    };
-    const { error } = await supabase.from('job_applications').update(payload).eq('id', app.id);
-    setSaving(false);
-    if (error) { setErr(t('company.err.saveFailed') + error.message); return; }
-    onSaved(payload);
+  const clear = () => {
+    askConfirm?.({
+      title: t('company.interview.confirmClear'),
+      confirmLabel: t('company.delete') || '삭제',
+      destructive: true,
+      onConfirm: async () => {
+        setSaving(true);
+        const payload = {
+          interview_at: null,
+          interview_location: null,
+          interview_interviewer: null,
+          updated_at: new Date().toISOString(),
+        };
+        const { error } = await supabase.from('job_applications').update(payload).eq('id', app.id);
+        setSaving(false);
+        if (error) { setErr(t('company.err.saveFailed') + error.message); return; }
+        onSaved(payload);
+      },
+    });
   };
 
   return (
@@ -1959,13 +2435,17 @@ export function InterviewConfirmModal({ app, onClose, onSaved }) {
         </UDialogHeader>
 
         <div className="space-y-4">
-          <div className="flex gap-3">
-            <div className="flex-1 space-y-1.5">
-              <label className="text-xs font-bold text-gray-700">{t('company.interview.confirmDateLabel')}</label>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-gray-700">
+                {t('company.interview.confirmDateLabel')} <span className="text-red-500">*</span>
+              </label>
               <UInput type="date" lang={lang} value={date} onChange={(e) => setDate(e.target.value)} disabled={saving} />
             </div>
-            <div className="w-36 space-y-1.5">
-              <label className="text-xs font-bold text-gray-700">{t('company.interview.confirmTimeLabel')}</label>
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-gray-700">
+                {t('company.interview.confirmTimeLabel')} <span className="text-red-500">*</span>
+              </label>
               <UInput type="time" lang={lang} value={time} onChange={(e) => setTime(e.target.value)} disabled={saving} />
             </div>
           </div>
@@ -1973,11 +2453,6 @@ export function InterviewConfirmModal({ app, onClose, onSaved }) {
           <div className="space-y-1.5">
             <label className="text-xs font-bold text-gray-700">{t('company.interview.locLabel')}</label>
             <UInput value={location} onChange={(e) => setLocation(e.target.value)} placeholder={t('company.interview.locPh')} disabled={saving} />
-          </div>
-
-          <div className="space-y-1.5">
-            <label className="text-xs font-bold text-gray-700">{t('company.interview.interviewerLabel')}</label>
-            <UInput value={interviewer} onChange={(e) => setInterviewer(e.target.value)} placeholder={t('company.interview.interviewerPh')} disabled={saving} />
           </div>
 
           {err && (
@@ -2019,18 +2494,35 @@ export function RejectionModal({ app, stageKey, candidateName, mode = 'new', ini
     setErr('');
     if (isUnreject) {
       setSaving(true);
-      const payload = {
-        rejected_at: null,
-        rejected_at_stage: null,
-        rejection_reason: null,
-        rejection_note: null,
-        updated_at: new Date().toISOString(),
-      };
-      const { error } = await supabase.from('job_applications').update(payload).eq('id', app.id);
-      setSaving(false);
-      if (error) { setErr(t('company.reject.errSave') + error.message); return; }
-      onSaved(payload);
-      return;
+      // Go through server endpoint so an audit row (stage='unreject') is
+      // recorded in application_evaluations for the activity timeline.
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        const r = await fetch('/api/company/unreject-candidate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session?.access_token || ''}` },
+          body: JSON.stringify({ appId: app.id }),
+        });
+        const j = await r.json();
+        if (!r.ok) {
+          setSaving(false);
+          setErr(t('company.reject.errSave') + (j?.error || ''));
+          return;
+        }
+        setSaving(false);
+        onSaved({
+          rejected_at: null,
+          rejected_at_stage: null,
+          rejection_reason: null,
+          rejection_note: null,
+          updated_at: new Date().toISOString(),
+        });
+        return;
+      } catch (e) {
+        setSaving(false);
+        setErr(t('company.reject.errSave') + (e?.message || ''));
+        return;
+      }
     }
     if (!reason) { setErr(t('company.reject.errReason')); return; }
     if (reason === 'other' && !note.trim()) { setErr(t('company.reject.errNote')); return; }
@@ -2188,9 +2680,9 @@ const local = {
   stageBtns: { display: 'flex', flexDirection: 'column', gap: 5, marginBottom: 10 },
   stageBtn: { padding: '7px 10px', borderRadius: 6, border: '1px solid #E5E7EB', background: '#fff', color: '#525252', fontSize: 11.5, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', textAlign: 'left' },
   stageBtnActive: { padding: '7px 10px', borderRadius: 6, border: '1.5px solid #EA580C', background: '#FFF7ED', color: '#EA580C', fontSize: 11.5, fontWeight: 800, cursor: 'pointer', fontFamily: 'inherit', textAlign: 'left' },
-  btnNext: { width: '100%', padding: '11px 14px', borderRadius: 8, border: 'none', background: 'linear-gradient(135deg,#EF4444,#F97316)', color: '#fff', fontSize: 13, fontWeight: 800, cursor: 'pointer', fontFamily: 'inherit', boxShadow: '0 4px 12px rgba(234,88,12,0.22)' },
+  btnNext: { width: '100%', padding: '11px 14px', borderRadius: 8, border: 'none', background: '#EA580C', color: '#fff', fontSize: 13, fontWeight: 800, cursor: 'pointer', fontFamily: 'inherit', boxShadow: '0 4px 12px rgba(234,88,12,0.22)' },
   btnAction: { width: '100%', padding: '11px 14px', borderRadius: 8, border: '1px solid #D1D5DB', background: '#fff', color: '#1A1A1A', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' },
-  btnMail: { width: '100%', padding: '11px 14px', borderRadius: 8, border: 'none', background: 'linear-gradient(135deg,#EF4444,#F97316)', color: '#fff', fontSize: 13, fontWeight: 800, cursor: 'pointer', fontFamily: 'inherit', boxShadow: '0 4px 12px rgba(234,88,12,0.22)' },
+  btnMail: { width: '100%', padding: '11px 14px', borderRadius: 8, border: 'none', background: '#EA580C', color: '#fff', fontSize: 13, fontWeight: 800, cursor: 'pointer', fontFamily: 'inherit', boxShadow: '0 4px 12px rgba(234,88,12,0.22)' },
   btnMailDisabled: { width: '100%', padding: '11px 14px', borderRadius: 8, border: '1px solid #E5E7EB', background: '#F1F5F9', color: '#94A3B8', fontSize: 13, fontWeight: 800, cursor: 'not-allowed', fontFamily: 'inherit' },
   mailHint: { fontSize: 11, color: '#94A3B8', marginTop: 6 },
 
@@ -2211,10 +2703,10 @@ const local = {
   conn: { flex: 1, height: 2, background: '#E5E7EB', margin: '0 4px' },
   connDone: { flex: 1, height: 2, background: '#A7F3D0', margin: '0 4px' },
   decisionRow: { display: 'flex', gap: 8 },
-  btnAdvance: { flex: 1, minWidth: 0, padding: '12px 14px', borderRadius: 8, border: 'none', background: 'linear-gradient(135deg,#F97316,#EA580C)', color: '#fff', fontSize: 13, fontWeight: 800, cursor: 'pointer', fontFamily: 'inherit', boxShadow: '0 4px 12px rgba(234,88,12,0.22)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' },
-  btnRejectSolid: { flex: 1, minWidth: 0, padding: '12px 14px', borderRadius: 8, border: 'none', background: 'linear-gradient(135deg,#EF4444,#B91C1C)', color: '#fff', fontSize: 13, fontWeight: 800, cursor: 'pointer', fontFamily: 'inherit', boxShadow: '0 4px 12px rgba(185,28,28,0.22)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' },
+  btnAdvance: { flex: 1, minWidth: 0, padding: '12px 14px', borderRadius: 8, border: 'none', background: '#EA580C', color: '#fff', fontSize: 13, fontWeight: 800, cursor: 'pointer', fontFamily: 'inherit', boxShadow: '0 4px 12px rgba(234,88,12,0.22)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' },
+  btnRejectSolid: { flex: 1, minWidth: 0, padding: '12px 14px', borderRadius: 8, border: 'none', background: '#B91C1C', color: '#fff', fontSize: 13, fontWeight: 800, cursor: 'pointer', fontFamily: 'inherit', boxShadow: '0 4px 12px rgba(185,28,28,0.22)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' },
   btnDecisionLocked: { flex: 1, minWidth: 0, padding: '12px 14px', borderRadius: 8, border: '1px dashed #D1D5DB', background: '#F8FAFC', color: '#94A3B8', fontSize: 13, fontWeight: 700, cursor: 'not-allowed', fontFamily: 'inherit', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' },
-  finalPassCard: { padding: '16px 18px', borderRadius: 10, background: 'linear-gradient(135deg,#ECFDF5,#D1FAE5)', border: '1px solid #6EE7B7', display: 'flex', flexDirection: 'column', gap: 4, alignItems: 'center', textAlign: 'center' },
+  finalPassCard: { padding: '16px 18px', borderRadius: 10, background: '#FFF7ED', border: '1px solid #FED7AA', display: 'flex', flexDirection: 'column', gap: 4, alignItems: 'center', textAlign: 'center' },
   finalPassTitle: { fontSize: 15, fontWeight: 900, color: '#047857' },
   finalPassSub: { fontSize: 11.5, fontWeight: 600, color: '#065F46' },
   rejectedCard: { padding: '12px 14px', borderRadius: 8, background: '#FEF2F2', border: '1px solid #FECACA', display: 'flex', flexDirection: 'column', gap: 4 },
@@ -2253,8 +2745,8 @@ const modal = {
   inp: { padding: '10px 12px', border: '1px solid #D1D5DB', borderRadius: 8, fontSize: 13, color: '#1A1A1A', fontFamily: 'inherit', boxSizing: 'border-box' },
   hint: { fontSize: 11.5, color: '#737373', marginTop: 4, lineHeight: 1.55 },
   foot: { display: 'flex', justifyContent: 'flex-end', gap: 8, padding: '14px 24px', borderTop: '1px solid #E5E7EB', flexShrink: 0 },
-  btnPrimary: { padding: '10px 20px', borderRadius: 8, border: 'none', background: 'linear-gradient(135deg,#EF4444,#F97316)', color: '#fff', fontSize: 13, fontWeight: 800, cursor: 'pointer', fontFamily: 'inherit' },
-  btnDanger: { padding: '10px 20px', borderRadius: 8, border: 'none', background: 'linear-gradient(135deg,#DC2626,#B91C1C)', color: '#fff', fontSize: 13, fontWeight: 800, cursor: 'pointer', fontFamily: 'inherit' },
+  btnPrimary: { padding: '10px 20px', borderRadius: 8, border: 'none', background: '#EA580C', color: '#fff', fontSize: 13, fontWeight: 800, cursor: 'pointer', fontFamily: 'inherit' },
+  btnDanger: { padding: '10px 20px', borderRadius: 8, border: 'none', background: '#B91C1C', color: '#fff', fontSize: 13, fontWeight: 800, cursor: 'pointer', fontFamily: 'inherit' },
   btnGhost: { padding: '10px 20px', borderRadius: 8, border: '1px solid #D1D5DB', background: '#fff', color: '#1A1A1A', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' },
   btnDisabled: { padding: '10px 20px', borderRadius: 8, border: 'none', background: '#E5E7EB', color: '#94A3B8', fontSize: 13, fontWeight: 800, cursor: 'not-allowed', fontFamily: 'inherit' },
 };

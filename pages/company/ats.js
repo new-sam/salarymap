@@ -1,11 +1,11 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, memo } from 'react';
 import Head from 'next/head';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { supabase } from '../../lib/supabaseClient';
 import { Sidebar, css } from './jobs/new';
 import CandidateDetail, { MailComposer, RejectionModal, InterviewConfirmModal, ConfirmModal } from '../../components/company/CandidateDetail';
-import { formatICT, ICT_LABEL } from '../../lib/timezone';
+import { formatICT, formatInterviewShort, formatLocalShortDate, ICT_LABEL } from '../../lib/timezone';
 import { color, font, space, radius, shadow, motion } from '../../lib/theme';
 import TeamPopover from '../../components/company/TeamPopover';
 import { useT } from '../../lib/i18n';
@@ -15,7 +15,7 @@ import { Button } from '../../components/ui/button';
 import { Badge } from '../../components/ui/badge';
 import { Input } from '../../components/ui/input';
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator } from '../../components/ui/dropdown-menu';
-import { MoreVertical, Calendar, Mail, Ban, Lock, Plus, Search as SearchIcon, X as XIcon, Inbox, MessageSquare, Users, Trophy, Activity, CheckCircle2, XCircle, Edit3, Clock } from 'lucide-react';
+import { MoreVertical, Calendar, Mail, Ban, Lock, Plus, Search as SearchIcon, X as XIcon, Inbox, MessageSquare, Users, Trophy, Activity, CheckCircle2, XCircle, Edit3, Clock, Check, MoveHorizontal, Briefcase, PartyPopper } from 'lucide-react';
 import { PageHeader } from '../../components/ui/page-header';
 import { KanbanSkeleton } from '../../components/ui/page-skeleton';
 
@@ -25,17 +25,18 @@ const STAGE_ICONS = {
   reviewing: Users,
   decided: Trophy,
 };
+// Neutral palette — only "decided" keeps the brand accent for the final pass moment.
 const STAGE_ICON_CLASS = {
-  pending:   'text-gray-500',
-  viewed:    'text-blue-500',
-  reviewing: 'text-violet-500',
-  decided:   'text-emerald-500',
+  pending:   'text-gray-400',
+  viewed:    'text-gray-500',
+  reviewing: 'text-gray-600',
+  decided:   'text-primary-600',
 };
 const STAGE_COLORS = {
   pending:   'text-gray-700 bg-gray-100',
-  viewed:    'text-blue-700 bg-blue-50',
-  reviewing: 'text-purple-700 bg-purple-50',
-  decided:   'text-emerald-700 bg-emerald-50',
+  viewed:    'text-gray-700 bg-gray-100',
+  reviewing: 'text-gray-700 bg-gray-100',
+  decided:   'text-primary-700 bg-primary-50',
 };
 
 const STAGES = [
@@ -51,7 +52,7 @@ const STAGE_ORDER = STAGES.map(s => s.key);
 export default function CompanyATSPage() {
   const router = useRouter();
   const { t } = useT();
-  const { job: jobId } = router.query;
+  const { job: jobId, app: appQueryId } = router.query;
 
   const [status, setStatus] = useState('loading');
   const [user, setUser] = useState(null);
@@ -61,7 +62,13 @@ export default function CompanyATSPage() {
   const [err, setErr] = useState('');
   const [selectedAppId, setSelectedAppId] = useState(null);
   const [profileMap, setProfileMap] = useState({});
+  // Map<appId, Set<stagePassKey>> — which stages each candidate has been
+  // marked as "합격 결정" for. Lets the kanban card show a pending-move flag.
+  const [stagePassMap, setStagePassMap] = useState({});
   const [query, setQuery] = useState('');
+  // Drag-and-drop stage move.
+  // - 정방향 +1: 즉시 이동 (확인 X) — 합격/불합격 결정은 카드 케밥/패널에서 별도로 처리.
+  // - 역방향 -1: 확인 후 이동. stage_pass(전형 결과) row만 초기화, 평가/메모/메일/인터뷰 등은 그대로.
   const [draggingId, setDraggingId] = useState(null);
   const [dragOverCol, setDragOverCol] = useState(null);
   const [mailFor, setMailFor] = useState(null);
@@ -97,8 +104,25 @@ export default function CompanyATSPage() {
 
   useEffect(() => {
     if (!jobId) return;
+    const cacheKey = `fyi.ats.${jobId}.v1`;
+
+    // 1) Hydrate from cache for instant paint — same-session navigation feels seamless.
+    const cached = typeof window !== 'undefined'
+      ? (() => { try { return JSON.parse(sessionStorage.getItem(cacheKey) || 'null'); } catch { return null; } })()
+      : null;
+    if (cached) {
+      setJob(cached.job);
+      setApps(cached.apps || []);
+      setProfileMap(cached.profileMap || {});
+      setCompanyName(cached.companyName || '');
+      const spm = {};
+      Object.entries(cached.stagePassMap || {}).forEach(([k, v]) => { spm[k] = new Set(v); });
+      setStagePassMap(spm);
+      setStatus('ready');
+    }
+
     (async () => {
-      setStatus('loading');
+      if (!cached) setStatus('loading');
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) { setStatus('unauthed'); return; }
       setUser(session.user);
@@ -109,126 +133,259 @@ export default function CompanyATSPage() {
         .eq('user_id', session.user.id)
         .maybeSingle();
       if (!rec?.company_id) { setStatus('unauthed'); return; }
-      setCompanyName(rec.recruiter_companies?.name || '');
+      const cName = rec.recruiter_companies?.name || '';
+      setCompanyName(cName);
 
-      const { data: jobData, error: jobErr } = await supabase
-        .from('jobs')
-        .select('id, title, status, location, type, salary_min, salary_max, company_id, created_at, created_by')
-        .eq('id', jobId)
-        .eq('company_id', rec.company_id)
-        .maybeSingle();
-      if (jobErr || !jobData) {
-        setErr(t('company.ats.notFound'));
-        setStatus('error');
-        return;
-      }
+      // 2) Job header + applications fired in parallel — both depend only on rec/jobId.
+      const [jobRes, appsRes] = await Promise.all([
+        supabase
+          .from('jobs')
+          .select('id, title, status, location, type, salary_min, salary_max, company_id, created_at, created_by')
+          .eq('id', jobId).eq('company_id', rec.company_id).maybeSingle(),
+        supabase
+          .from('job_applications')
+          .select('id, status, applicant_name, applicant_email, applicant_salary, applicant_role, applicant_experience, applicant_company, resume_url, user_id, created_at, admin_note, interview_at, rejected_at, rejected_at_stage, rejection_reason')
+          .eq('job_id', jobId).order('created_at', { ascending: true }),
+      ]);
+      const { data: jobData, error: jobErr } = jobRes;
+      if (jobErr || !jobData) { setErr(t('company.ats.notFound')); setStatus('error'); return; }
       setJob(jobData);
+      const { data: appsData, error: appsErr } = appsRes;
+      if (appsErr) { console.error('[ats] apps load error:', appsErr); setErr(t('company.ats.errLoad') + appsErr.message); }
+      const appsList = appsData || [];
+      setApps(appsList);
 
-      const { data: appsData, error: appsErr } = await supabase
-        .from('job_applications')
-        .select('id, status, applicant_name, applicant_email, applicant_salary, applicant_role, applicant_experience, applicant_company, resume_url, user_id, created_at, admin_note, interview_at, rejected_at, rejected_at_stage, rejection_reason')
-        .eq('job_id', jobId)
-        .order('created_at', { ascending: true });
-      if (appsErr) { console.error('[ats] apps load error:', appsErr); setErr('지원자 로드 실패: ' + appsErr.message); }
-      setApps(appsData || []);
+      // 3) Profiles + stage-pass audit rows in parallel — both depend only on appsList.
+      const userIds = [...new Set(appsList.map(a => a.user_id).filter(Boolean))];
+      const appIds = appsList.map(a => a.id);
+      const [profilesRes, passesRes] = await Promise.all([
+        userIds.length > 0
+          ? supabase.from('user_profiles').select('id, email, full_name').in('id', userIds)
+          : Promise.resolve({ data: [] }),
+        appIds.length > 0
+          ? supabase.from('application_evaluations').select('application_id, stage').in('application_id', appIds).in('stage', ['pending_pass', 'viewed_pass', 'reviewing_pass', 'decided_pass'])
+          : Promise.resolve({ data: [] }),
+      ]);
+      const m = {};
+      (profilesRes.data || []).forEach(p => { m[p.id] = p; });
+      setProfileMap(m);
+      const spm = {};
+      (passesRes.data || []).forEach(r => {
+        if (!spm[r.application_id]) spm[r.application_id] = new Set();
+        spm[r.application_id].add(r.stage);
+      });
+      setStagePassMap(spm);
 
-      const userIds = [...new Set((appsData || []).map(a => a.user_id).filter(Boolean))];
-      if (userIds.length > 0) {
-        const { data: profiles } = await supabase
-          .from('user_profiles')
-          .select('id, email, full_name')
-          .in('id', userIds);
-        const m = {};
-        (profiles || []).forEach(p => { m[p.id] = p; });
-        setProfileMap(m);
-      }
       setStatus('ready');
+
+      // 4) Persist for instant paint on next entry to this job.
+      try {
+        const spmSerialized = {};
+        Object.entries(spm).forEach(([k, v]) => { spmSerialized[k] = Array.from(v); });
+        sessionStorage.setItem(cacheKey, JSON.stringify({
+          job: jobData, apps: appsList, profileMap: m, stagePassMap: spmSerialized, companyName: cName,
+        }));
+      } catch {}
     })();
   }, [jobId, t]);
 
-  const setStage = async (appId, newStatus, resetInterview = false) => {
-    const app = apps.find(a => a.id === appId);
-    if (!app || app.status === newStatus) return;
-    const patch = { status: newStatus };
-    if (resetInterview) {
-      patch.interview_at = null;
-      patch.interview_location = null;
-      patch.interview_interviewer = null;
+  // Auto-open the candidate panel if /company/ats?app=<id> is passed in
+  // (used by the to-do feed for one-click access to the actionable candidate).
+  useEffect(() => {
+    if (appQueryId && typeof appQueryId === 'string') {
+      setSelectedAppId(appQueryId);
     }
+  }, [appQueryId]);
+
+  // Load stage-pass audit rows (one per stage decision) for every visible
+  // candidate. Returns a Map<appId, Set<'pending_pass' | 'viewed_pass' | ...>>.
+  const loadStagePasses = async (appIds) => {
+    if (!appIds || appIds.length === 0) { setStagePassMap({}); return; }
+    const { data } = await supabase
+      .from('application_evaluations')
+      .select('application_id, stage')
+      .in('application_id', appIds)
+      .in('stage', ['pending_pass', 'viewed_pass', 'reviewing_pass', 'decided_pass']);
+    const m = {};
+    (data || []).forEach(r => {
+      if (!m[r.application_id]) m[r.application_id] = new Set();
+      m[r.application_id].add(r.stage);
+    });
+    setStagePassMap(m);
+  };
+
+  // Free stage move with per-stage snapshot persistence.
+  //
+  // Policy:
+  // - On every stage move (forward OR backward), snapshot the leaving stage's
+  //   interview info into application_evaluations with stage='${prev}_snap'.
+  // - On entering a stage, restore that stage's most recent snapshot
+  //   (interview_at / location / interviewer). Falls back to null if none.
+  // - Rejected candidates can't move (drag is disabled at the card level).
+  // - stage_pass (합격 결정) is *not* auto-cleared on backward moves —
+  //   the user can explicitly cancel inside the candidate panel.
+  const setStage = async (appId, newStatus) => {
+    const app = apps.find(a => a.id === appId);
+    if (!app || app.status === newStatus || app.rejected_at) return;
+    const prevStage = app.status;
+
+    const { data: { session } } = await supabase.auth.getSession();
+    const sessionUserId = session?.user?.id;
+    let reviewerName = t('company.role.owner');
+    if (sessionUserId) {
+      const { data: rec } = await supabase
+        .from('recruiter_users').select('full_name, email').eq('user_id', sessionUserId).maybeSingle();
+      reviewerName = rec?.full_name || (rec?.email || '').split('@')[0] || t('company.role.owner');
+    }
+
+    // 1) Save the leaving stage's snapshot so future visits restore it.
+    const prevSnapshot = {
+      interview_at: app.interview_at || null,
+      interview_location: app.interview_location || null,
+      interview_interviewer: app.interview_interviewer || null,
+    };
+    if (sessionUserId) {
+      await supabase.from('application_evaluations').insert({
+        application_id: appId,
+        job_id: app.job_id,
+        stage: `${prevStage}_snap`,
+        reviewer_user_id: sessionUserId,
+        reviewer_name: reviewerName,
+        reviewer_role: isOwner ? 'owner' : 'interviewer',
+        comment: JSON.stringify(prevSnapshot),
+        score: null,
+      });
+    }
+
+    // 2) Load the most recent snapshot for the target stage (if any).
+    const { data: snapRows } = await supabase
+      .from('application_evaluations')
+      .select('comment, created_at')
+      .eq('application_id', appId)
+      .eq('stage', `${newStatus}_snap`)
+      .order('created_at', { ascending: false })
+      .limit(1);
+    let restored = null;
+    if (snapRows && snapRows[0]) {
+      try { restored = JSON.parse(snapRows[0].comment); } catch {}
+    }
+
+    // 3) Build the patch — restored snapshot or a clean slate.
+    const patch = {
+      status: newStatus,
+      interview_at: restored?.interview_at || null,
+      interview_location: restored?.interview_location || null,
+      interview_interviewer: restored?.interview_interviewer || null,
+    };
+
     setApps(prev => prev.map(a => a.id === appId ? { ...a, ...patch } : a));
-    const { error } = await supabase.from('job_applications').update({ ...patch, updated_at: new Date().toISOString() }).eq('id', appId);
+    const { error } = await supabase
+      .from('job_applications')
+      .update({ ...patch, updated_at: new Date().toISOString() })
+      .eq('id', appId);
     if (error) {
-      setApps(prev => prev.map(a => a.id === appId ? { ...a, status: app.status, interview_at: app.interview_at, interview_location: app.interview_location, interview_interviewer: app.interview_interviewer } : a));
+      // Rollback on failure.
+      setApps(prev => prev.map(a => a.id === appId ? {
+        ...a,
+        status: prevStage,
+        interview_at: app.interview_at,
+        interview_location: app.interview_location,
+        interview_interviewer: app.interview_interviewer,
+      } : a));
       setErr(t('company.err.stageChange') + error.message);
       toast.error(t('company.err.stageChange') + error.message);
-    } else {
-      const name = app.applicant_name || `${t('company.candidatePrefix')}${app.id.slice(-6).toUpperCase()}`;
-      toast.success(t(`company.stage.${newStatus}`) + ' → ' + name);
+      return;
     }
+
+    // 4) Audit row (stage_move) so the timeline records the transition.
+    if (sessionUserId) {
+      await supabase.from('application_evaluations').insert({
+        application_id: appId,
+        job_id: app.job_id,
+        stage: 'stage_move',
+        reviewer_user_id: sessionUserId,
+        reviewer_name: reviewerName,
+        reviewer_role: isOwner ? 'owner' : 'interviewer',
+        comment: newStatus,
+        score: null,
+      });
+    }
+    const name = app.applicant_name || `${t('company.candidatePrefix')}${app.id.slice(-6).toUpperCase()}`;
+    toast.success(t(`company.stage.${newStatus}`) + ' → ' + name);
   };
 
   const isOwner = !job?.created_by || job?.created_by === user?.id;
 
-  // 카드를 다른 단계 컬럼에 드롭 — 정책:
-  // (1) 같은 단계: 무시 (2) +2 이상 / -2 이상: 차단
-  // (3) 정방향 +1: 합격 확인 → 인터뷰 일정 초기화 → 메일 모달
-  // (4) 역방향 -1: 되돌리기 확인 → 인터뷰 일정 초기화 (메일 없음)
+  // Drag-and-drop drop handler — free movement, no confirm modals.
+  // Each stage carries its own snapshot, so the destination simply restores
+  // its most recent state. Rejected cards are non-draggable at the source.
+  // Skipping stages (±2 or more) is allowed too — each visited stage carries
+  // its own history independently.
   const handleDrop = async (newStatus) => {
     const appId = draggingId;
     setDraggingId(null);
     setDragOverCol(null);
-    if (!appId) return;
+    if (!appId || !isOwner) return;
     const app = apps.find(a => a.id === appId);
-    if (!app || app.status === newStatus) return;
-
-    if (!isOwner) {
-      await showAlert({
-        title: t('company.ats.lockedDragTitle'),
-        message: t('company.ats.lockedDrag'),
-        tone: 'danger',
-      });
-      return;
+    if (!app || app.status === newStatus || app.rejected_at) return;
+    await setStage(appId, newStatus);
+    // Special case: dropping into "최종 합격" is itself the final-hire decision —
+    // auto-mark decided_pass so the celebration shows without a separate click.
+    if (newStatus === 'decided') {
+      const alreadyPassed = stagePassMap[appId]?.has('decided_pass');
+      if (!alreadyPassed) {
+        try {
+          const { data: { session } } = await supabase.auth.getSession();
+          await fetch('/api/company/mark-stage-pass', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session?.access_token || ''}` },
+            body: JSON.stringify({ appId, stage: 'decided' }),
+          });
+        } catch {}
+      }
     }
+    await loadStagePasses(apps.map(a => a.id));
+  };
 
-    const fromIdx = STAGE_ORDER.indexOf(app.status);
-    const toIdx = STAGE_ORDER.indexOf(newStatus);
-    const diff = toIdx - fromIdx;
-    const fromLabel = t(`company.stage.${app.status}`);
-    const toLabel = t(`company.stage.${newStatus}`);
-    const hasInterview = !!app.interview_at && (app.status === 'viewed' || app.status === 'reviewing');
+  // Stable handlers for memoized KanbanCard — refs only change on real dependency moves.
+  const handleSelectApp = useCallback((appId) => setSelectedAppId(appId), []);
+  const handleCardDragStart = useCallback((appId) => setDraggingId(appId), []);
+  const handleCardDragEnd = useCallback(() => { setDraggingId(null); setDragOverCol(null); }, []);
+  const handleOpenInterview = useCallback((app) => setInterviewApp(app), []);
+  const handleComposeMail = useCallback((payload) => setMailFor(payload), []);
+  const handleRejectApp = useCallback((app) => setRejectingApp(app), []);
 
-    if (diff > 0) {
-      const ok = await askConfirm({
-        title: t('company.ats.advanceTitle'),
-        message: t('company.ats.advanceConfirmBasic', { from: fromLabel, to: toLabel }),
-        confirmLabel: t('company.ats.advanceTitle'),
+  // Quick stage-pass mark from the kanban kebab menu.
+  const markStagePassFromKanban = async (appId, stage) => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const res = await fetch('/api/company/mark-stage-pass', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session?.access_token || ''}` },
+        body: JSON.stringify({ appId, stage }),
       });
-      if (!ok) return;
-      setStage(appId, newStatus, hasInterview);
-      return;
-    }
-
-    if (diff < 0) {
-      const msgKey = hasInterview ? 'company.ats.backConfirmWithInterview' : 'company.ats.backConfirmBasic';
-      const ok = await askConfirm({
-        title: t('company.ats.backTitle'),
-        message: t(msgKey, { from: fromLabel, to: toLabel }),
-        confirmLabel: t('company.ats.backTitle'),
-      });
-      if (!ok) return;
-      setStage(appId, newStatus, hasInterview);
-      return;
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) { toast.error(json.error || t('company.ats.errStagePass')); return; }
+      toast.success(t('company.ats.stagePassedShort', { stage: t(`company.stage.${stage}`) }));
+      await loadStagePasses(apps.map(a => a.id));
+    } catch (e) {
+      toast.error(t('company.ats.errStagePass'));
     }
   };
 
+  // Name-only search — match against the applicant name and the linked
+  // user profile name. Email/role/company are intentionally excluded so the
+  // filter stays simple and predictable.
   const matchesQuery = (a) => {
     const q = query.trim().toLowerCase();
     if (!q) return true;
     const profile = a.user_id ? profileMap[a.user_id] : null;
-    return [a.applicant_name, a.applicant_email, a.applicant_role, a.applicant_company, profile?.full_name, profile?.email]
+    return [a.applicant_name, profile?.full_name]
       .filter(Boolean).join(' ').toLowerCase().includes(q);
   };
-  const visibleApps = apps.filter(a => kpiFilter === 'rejected' || !a.rejected_at);
+  // Default view shows every applicant including rejected ones — KPI filters
+  // (matchesKpiFilter) narrow it down when selected.
+  const visibleApps = apps;
   const activeCount = apps.filter(a => !a.rejected_at).length;
   const rejectedCount = apps.length - activeCount;
 
@@ -289,10 +446,23 @@ export default function CompanyATSPage() {
 
         <main className="px-4 md:px-6 pb-3 flex flex-col gap-3 min-w-0 flex-1 h-screen overflow-hidden">
           <PageHeader
-            title={job.title}
+            title={(
+              <span className="flex items-center gap-2.5">
+                <Briefcase className="w-5 h-5 text-primary-600" />
+                {job.title}
+              </span>
+            )}
             subtitle={`${job.location} · ${job.type} · ₫${Math.round(job.salary_min/1e6)}M–${Math.round(job.salary_max/1e6)}M`}
             right={(
               <>
+                <span className={cn(
+                  'inline-flex items-center gap-1 h-9 px-2.5 rounded-md border text-[12px] font-extrabold whitespace-nowrap',
+                  isOwner
+                    ? 'bg-primary-50 border-primary-200 text-primary-700'
+                    : 'bg-gray-100 border-gray-200 text-gray-700'
+                )}>
+                  {isOwner ? t('company.ats.roleOwnerJoined') : t('company.ats.roleInterviewerJoined')}
+                </span>
                 <TeamPopover jobId={job.id} canInvite={!job.created_by || job.created_by === user?.id} />
                 <Button asChild variant="outline">
                   <Link href={`/company/jobs/${job.id}/edit`}>
@@ -324,9 +494,11 @@ export default function CompanyATSPage() {
                 )}>
                   <Inbox className="h-3.5 w-3.5" />
                 </div>
-                <span className="text-[10px] font-extrabold text-gray-500 uppercase tracking-[0.08em]">{t('company.kpi.new')}</span>
+                <span className={cn('text-[12.5px] font-extrabold uppercase tracking-[0.08em]',
+                  newReviewCount > 0 ? 'text-primary-700' : 'text-gray-500'
+                )}>{t('company.kpi.new')}</span>
               </div>
-              <div className={cn('text-[22px] font-black mt-1 leading-none tabular-nums',
+              <div className={cn('text-[26px] font-black mt-1.5 leading-none tabular-nums',
                 newReviewCount > 0 ? 'text-primary-700' : 'text-gray-900'
               )}>{newReviewCount}</div>
             </button>
@@ -338,54 +510,54 @@ export default function CompanyATSPage() {
               className={cn(
                 'rounded-lg border bg-card px-3 py-2.5 transition-all duration-200 text-left cursor-pointer',
                 kpiFilter === 'inProgress'
-                  ? 'border-violet-500 shadow-soft-md ring-2 ring-violet-200'
-                  : 'border-border shadow-soft-xs hover:border-violet-300'
+                  ? 'border-gray-500 shadow-soft-md ring-2 ring-gray-200'
+                  : 'border-border shadow-soft-xs hover:border-gray-300'
               )}>
               <div className="flex items-center gap-1.5">
                 <div className="w-6 h-6 rounded-md grid place-items-center bg-gray-100 text-gray-700">
                   <Activity className="h-3.5 w-3.5" />
                 </div>
-                <span className="text-[10px] font-extrabold text-gray-500 uppercase tracking-[0.08em]">{t('company.kpi.inProgress')}</span>
+                <span className="text-[12.5px] font-extrabold text-gray-700 uppercase tracking-[0.08em]">{t('company.kpi.inProgress')}</span>
               </div>
-              <div className="text-2xl font-extrabold mt-1 leading-none tabular-nums text-gray-900">{inProgressCount}</div>
+              <div className="text-[26px] font-black mt-1.5 leading-none tabular-nums text-gray-900">{inProgressCount}</div>
             </button>
 
-            {/* 합격 */}
+            {/* 합격 — green accent (matches the platform-wide pass = green rule). */}
             <button
               type="button"
               onClick={() => toggleKpi('hired')}
               className={cn(
                 'rounded-lg border bg-card px-3 py-2.5 transition-all duration-200 text-left cursor-pointer',
                 kpiFilter === 'hired'
-                  ? 'border-emerald-500 shadow-soft-md ring-2 ring-emerald-200'
-                  : 'border-border shadow-soft-xs hover:border-emerald-300'
+                  ? 'border-green-500 shadow-soft-md ring-2 ring-green-200'
+                  : 'border-border shadow-soft-xs hover:border-green-300'
               )}>
               <div className="flex items-center gap-1.5">
-                <div className="w-6 h-6 rounded-md grid place-items-center bg-emerald-50 text-emerald-700">
+                <div className="w-6 h-6 rounded-md grid place-items-center bg-green-50 text-green-700">
                   <CheckCircle2 className="h-3.5 w-3.5" />
                 </div>
-                <span className="text-[10px] font-extrabold text-gray-500 uppercase tracking-[0.08em]">{t('company.kpi.hired')}</span>
+                <span className="text-[12.5px] font-extrabold text-green-700 uppercase tracking-[0.08em]">{t('company.kpi.hired')}</span>
               </div>
-              <div className="text-2xl font-extrabold mt-1 leading-none tabular-nums text-emerald-700">{hiredCount}</div>
+              <div className="text-[26px] font-black mt-1.5 leading-none tabular-nums text-green-700">{hiredCount}</div>
             </button>
 
-            {/* 불합격 — 가장 약하게 */}
+            {/* 불합격 — red accent (matches the platform-wide fail = red rule). */}
             <button
               type="button"
               onClick={() => toggleKpi('rejected')}
               className={cn(
                 'rounded-lg border bg-card px-3 py-2.5 transition-all duration-200 text-left cursor-pointer',
                 kpiFilter === 'rejected'
-                  ? 'border-gray-500 shadow-soft-md ring-2 ring-gray-200'
-                  : 'border-border shadow-soft-xs hover:border-gray-300'
+                  ? 'border-red-400 shadow-soft-md ring-2 ring-red-100'
+                  : 'border-border shadow-soft-xs hover:border-red-200'
               )}>
               <div className="flex items-center gap-1.5">
-                <div className="w-6 h-6 rounded-md grid place-items-center bg-gray-100 text-gray-500">
+                <div className="w-6 h-6 rounded-md grid place-items-center bg-red-50 text-red-600">
                   <XCircle className="h-3.5 w-3.5" />
                 </div>
-                <span className="text-[10px] font-extrabold text-gray-500 uppercase tracking-[0.08em]">{t('company.kpi.rejected')}</span>
+                <span className="text-[12.5px] font-extrabold text-red-600 uppercase tracking-[0.08em]">{t('company.kpi.rejected')}</span>
               </div>
-              <div className="text-2xl font-extrabold mt-1 leading-none tabular-nums text-gray-400">{rejectedCount}</div>
+              <div className="text-[26px] font-black mt-1.5 leading-none tabular-nums text-red-600">{rejectedCount}</div>
             </button>
           </div>
 
@@ -433,6 +605,12 @@ export default function CompanyATSPage() {
                 </button>
               )}
             </div>
+            {isOwner && (
+              <span className="ml-auto text-[12px] text-gray-500 font-semibold flex items-center gap-1.5 whitespace-nowrap">
+                <MoveHorizontal className="h-3.5 w-3.5 text-gray-400" />
+                {t('company.ats.dragHintHowto')}
+              </span>
+            )}
             {!isOwner && (
               <span className="ml-auto text-[11px] text-gray-400 font-semibold flex items-center gap-1.5">
                 <Lock className="h-3 w-3" />
@@ -470,8 +648,8 @@ export default function CompanyATSPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 items-stretch flex-1 min-h-0">
             {grouped.map((col) => {
               const StageIcon = STAGE_ICONS[col.key];
-              const isOver = dragOverCol === col.key;
               const hiddenOnMobile = mobileStage !== col.key;
+              const isOver = dragOverCol === col.key;
               return (
                 <div
                   key={col.key}
@@ -493,149 +671,29 @@ export default function CompanyATSPage() {
                   {/* Cards — scrolls internally so column header stays pinned */}
                   <div className="flex flex-col gap-2 flex-1 overflow-y-auto overflow-x-visible px-0.5 -mx-0.5 pr-1.5 -mr-1.5 pt-0.5">
                     {col.apps.length === 0 && (
-                      <div className={cn(
-                        'flex items-center justify-center py-10 text-[11px] font-semibold rounded-md border border-dashed',
-                        isOver
-                          ? 'text-primary-700 bg-primary-50/60 border-primary-300'
-                          : 'text-gray-400 border-gray-200'
-                      )}>
-                        {isOver ? t('company.ats.dropHere') : t('company.ats.emptyColumn')}
+                      <div className="flex items-center justify-center py-10 text-[11px] font-semibold rounded-md border border-dashed text-gray-400 border-gray-200">
+                        {t('company.ats.emptyColumn')}
                       </div>
                     )}
-                    {col.apps.map(app => {
-                      const profile = app.user_id ? profileMap[app.user_id] : null;
-                      const name = app.applicant_name || profile?.full_name || `${t('company.candidatePrefix')}${app.id.slice(-6).toUpperCase()}`;
-                      const showInterviewBadge = app.status === 'viewed' || app.status === 'reviewing';
-                      const interviewWhen = app.interview_at
-                        ? `${formatICT(app.interview_at, { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false })} ${ICT_LABEL}`
-                        : null;
-                      const isRejected = !!app.rejected_at;
-                      const canDrag = isOwner && !isRejected;
-                      const appliedAt = new Date(app.created_at);
-                      const todayMidnight = new Date(); todayMidnight.setHours(0, 0, 0, 0);
-                      const appliedMidnight = new Date(appliedAt); appliedMidnight.setHours(0, 0, 0, 0);
-                      const daysAgo = Math.max(0, Math.round((todayMidnight.getTime() - appliedMidnight.getTime()) / 86400000));
-                      const dateText = appliedAt.toLocaleDateString(undefined, { month: 'numeric', day: 'numeric' });
-                      const dateLabel = daysAgo === 0
-                        ? t('company.ats.appliedToday', { date: dateText })
-                        : t('company.ats.appliedDaysAgo', { date: dateText, n: daysAgo });
-                      const urgencyClass = isRejected ? 'bg-gray-100 text-gray-700 border-gray-200'
-                        : daysAgo >= 8 ? 'bg-red-50 text-red-700 border-red-200'
-                        : daysAgo >= 4 ? 'bg-amber-50 text-amber-700 border-amber-200'
-                        : 'bg-gray-100 text-gray-700 border-gray-200';
-                      const profileForMail = app.user_id ? profileMap[app.user_id] : null;
-                      const email = app.applicant_email || profileForMail?.email || '';
-                      const defaultTpl = app.status === 'pending' ? 'received'
-                        : (app.status === 'viewed' || app.status === 'reviewing') ? 'interview'
-                        : 'offer';
-
-                      return (
-                        <div
-                          key={app.id}
-                          draggable={canDrag}
-                          onDragStart={() => canDrag && setDraggingId(app.id)}
-                          onDragEnd={() => { setDraggingId(null); setDragOverCol(null); }}
-                          onClick={() => setSelectedAppId(app.id)}
-                          className={cn(
-                            'relative rounded-md border p-2.5 flex flex-col gap-1 cursor-pointer transition-all duration-200 ease-spring',
-                            'bg-white border-[#E5E8EC] hover:border-primary-300 hover:shadow-soft-sm hover:-translate-y-px',
-                            selectedAppId === app.id && 'bg-primary-50/40 border-primary-400 ring-1 ring-primary-200 -translate-y-px shadow-soft-sm',
-                            draggingId === app.id && 'opacity-40',
-                            isRejected && 'bg-gray-50/50 border-dashed opacity-70 hover:translate-y-0',
-                            canDrag && !selectedAppId && 'active:cursor-grabbing'
-                          )}
-                        >
-                          {/* Kebab */}
-                          {!isRejected && (
-                            <div className="absolute top-2 right-2">
-                              <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                  <button
-                                    onClick={(e) => e.stopPropagation()}
-                                    className="w-6 h-6 rounded-md text-gray-400 hover:text-gray-700 hover:bg-gray-100 grid place-items-center transition-colors"
-                                    aria-label="more"
-                                  >
-                                    <MoreVertical className="h-3.5 w-3.5" />
-                                  </button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
-                                  {isOwner && showInterviewBadge && (
-                                    <DropdownMenuItem onClick={() => { setInterviewApp(app); }}>
-                                      <Calendar className="h-4 w-4 text-blue-600" />
-                                      {interviewWhen ? t('company.kebab.interviewEdit') : t('company.kebab.interviewSet')}
-                                    </DropdownMenuItem>
-                                  )}
-                                  {isOwner && email && (
-                                    <DropdownMenuItem onClick={() => setMailFor({ app, profile: profileForMail, email, templateKey: defaultTpl, stageLabel: t(`company.stage.${app.status}`) })}>
-                                      <Mail className="h-4 w-4 text-emerald-600" />
-                                      {t('company.kebab.composeMail')}
-                                    </DropdownMenuItem>
-                                  )}
-                                  {isOwner ? (
-                                    <DropdownMenuItem tone="danger" onClick={() => setRejectingApp(app)}>
-                                      <Ban className="h-4 w-4" />
-                                      {t('company.kebab.reject')}
-                                    </DropdownMenuItem>
-                                  ) : (
-                                    <DropdownMenuItem disabled>
-                                      <Lock className="h-4 w-4 text-gray-400" />
-                                      {t('company.kebab.rejectLocked')}
-                                    </DropdownMenuItem>
-                                  )}
-                                </DropdownMenuContent>
-                              </DropdownMenu>
-                            </div>
-                          )}
-
-                          {/* Date pill — Clock: time since applied */}
-                          <div className={cn('self-start inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider border', urgencyClass)}>
-                            <Clock className="h-2.5 w-2.5" />
-                            {dateLabel}
-                          </div>
-
-                          {/* Name row */}
-                          <div className="flex items-center justify-between gap-2 pr-6">
-                            <span className="text-[14px] font-bold text-gray-900 tracking-tight leading-tight truncate">{name}</span>
-                            {isRejected && (
-                              <span className="text-[10px] font-extrabold text-red-600 shrink-0 inline-flex items-center gap-0.5 uppercase tracking-wider">
-                                <Ban className="h-2.5 w-2.5" />
-                                {t('company.ats.rejectedBadge')}
-                              </span>
-                            )}
-                          </div>
-
-                          {/* Meta */}
-                          {app.applicant_role && (
-                            <div className="text-[12px] text-gray-900 font-semibold truncate">
-                              {app.applicant_role} · {app.applicant_experience || 0}{t('company.years')}
-                            </div>
-                          )}
-                          {app.applicant_salary && (
-                            <div className="text-[12px] text-emerald-600 font-bold tabular-nums">
-                              {t('company.ats.wishSalary', { n: Math.round(app.applicant_salary/1e6) })}
-                            </div>
-                          )}
-
-                          {/* Interview badge */}
-                          {!isRejected && showInterviewBadge && (
-                            <button
-                              onClick={(e) => { if (isOwner) { e.stopPropagation(); setInterviewApp(app); } }}
-                              disabled={!isOwner}
-                              className={cn(
-                                'mt-1 inline-flex items-center gap-1.5 px-2 py-1.5 rounded-md text-[11px] font-bold border w-full',
-                                interviewWhen
-                                  ? 'bg-emerald-50 border-emerald-200 text-emerald-700'
-                                  : 'bg-amber-50 border-amber-200 text-amber-700',
-                                isOwner && 'cursor-pointer hover:opacity-80 transition-opacity'
-                              )}
-                            >
-                              <Calendar className="h-3 w-3" />
-                              {interviewWhen ? t('company.ats.interviewSet', { when: interviewWhen }) : t('company.ats.interviewPending')}
-                            </button>
-                          )}
-                        </div>
-                      );
-                    })}
+                    {col.apps.map(app => (
+                      <KanbanCard
+                        key={app.id}
+                        app={app}
+                        profile={app.user_id ? profileMap[app.user_id] : null}
+                        isOwner={isOwner}
+                        stagePassSet={stagePassMap[app.id]}
+                        isSelected={selectedAppId === app.id}
+                        isDragging={draggingId === app.id}
+                        t={t}
+                        onSelect={handleSelectApp}
+                        onDragStart={handleCardDragStart}
+                        onDragEnd={handleCardDragEnd}
+                        onOpenInterview={handleOpenInterview}
+                        onComposeMail={handleComposeMail}
+                        onMarkStagePass={markStagePassFromKanban}
+                        onReject={handleRejectApp}
+                      />
+                    ))}
                   </div>
                 </div>
               );
@@ -676,7 +734,7 @@ export default function CompanyATSPage() {
           const nextStageFirstId = findNextStageFirstApp(+1);
 
           return (
-            <div style={localCss.overlay} onClick={() => setSelectedAppId(null)}>
+            <div style={localCss.overlay} onClick={() => { setSelectedAppId(null); loadStagePasses(apps.map(a => a.id)); }}>
               <div style={localCss.panel} onClick={(e) => e.stopPropagation()}>
                 <CandidateDetail
                   key={selectedAppId}
@@ -689,16 +747,16 @@ export default function CompanyATSPage() {
                   stageTotal={stageTotal}
                   stageCounts={stageCounts}
                   stageOrder={orderedStageKeys}
-                  onPrev={prevId ? () => setSelectedAppId(prevId) : null}
-                  onNext={nextId ? () => setSelectedAppId(nextId) : null}
+                  onPrev={prevId ? () => { loadStagePasses(apps.map(a => a.id)); setSelectedAppId(prevId); } : null}
+                  onNext={nextId ? () => { loadStagePasses(apps.map(a => a.id)); setSelectedAppId(nextId); } : null}
                   onJumpToStage={(stageKey) => {
                     const first = grouped.find(c => c.key === stageKey)?.apps?.[0]?.id;
-                    if (first) setSelectedAppId(first);
+                    if (first) { loadStagePasses(apps.map(a => a.id)); setSelectedAppId(first); }
                   }}
-                  onPrevStage={prevStageFirstId ? () => setSelectedAppId(prevStageFirstId) : null}
-                  onNextStage={nextStageFirstId ? () => setSelectedAppId(nextStageFirstId) : null}
-                  onClose={() => setSelectedAppId(null)}
-                  onStageChange={(id, patch) => setApps(prev => prev.map(a => a.id === id ? { ...a, ...patch } : a))}
+                  onPrevStage={prevStageFirstId ? () => { loadStagePasses(apps.map(a => a.id)); setSelectedAppId(prevStageFirstId); } : null}
+                  onNextStage={nextStageFirstId ? () => { loadStagePasses(apps.map(a => a.id)); setSelectedAppId(nextStageFirstId); } : null}
+                  onClose={() => { setSelectedAppId(null); loadStagePasses(apps.map(a => a.id)); }}
+                  onStageChange={(id, patch) => { setApps(prev => prev.map(a => a.id === id ? { ...a, ...patch } : a)); loadStagePasses(apps.map(a => a.id)); }}
                 />
               </div>
             </div>
@@ -748,7 +806,6 @@ export default function CompanyATSPage() {
             companyId={job?.company_id}
             applicationId={mailFor.app.id}
             stage={mailFor.stage || mailFor.app.status}
-            stageNote={t('company.ats.stageNote', { stage: mailFor.stageLabel })}
             onClose={() => setMailFor(null)}
             onSent={() => { setMailFor(null); toast.success(t('company.mail.send')); }}
           />
@@ -802,7 +859,7 @@ const localCss = {
   toggleLabel: { display: 'flex', alignItems: 'center', gap: space[2], fontSize: font.size.sm, color: color.text, fontWeight: font.weight.semi, cursor: 'pointer', padding: `${space[2]}px ${space[3]}px`, background: color.surface, border: `1px solid ${color.border}`, borderRadius: radius.md, transition: motion.base },
 
   // ── Header buttons ──
-  btnNewJob: { padding: `${space[3]}px ${space[6]}px`, borderRadius: radius.md, background: `linear-gradient(135deg, ${color.primary[400]}, ${color.primary[600]})`, color: color.white, fontSize: font.size.base, fontWeight: font.weight.extra, textDecoration: 'none', boxShadow: shadow.brand, display: 'inline-flex', alignItems: 'center', transition: motion.base, letterSpacing: font.letterSpacing.tight },
+  btnNewJob: { padding: `${space[3]}px ${space[6]}px`, borderRadius: radius.md, background: color.primary[600], color: color.white, fontSize: font.size.base, fontWeight: font.weight.extra, textDecoration: 'none', boxShadow: shadow.brand, display: 'inline-flex', alignItems: 'center', transition: motion.base, letterSpacing: font.letterSpacing.tight },
 
   // ── Candidate detail overlay ──
   overlay: { position: 'fixed', inset: 0, background: 'rgba(17, 24, 39, 0.45)', backdropFilter: 'blur(2px)', zIndex: 50 },
@@ -818,3 +875,161 @@ const localCss = {
   kebabIcon: { width: 18, fontSize: font.size.md, lineHeight: 1, display: 'inline-flex', justifyContent: 'center', alignItems: 'center', flexShrink: 0, fontFamily: 'inherit' },
   kebabText: { fontSize: font.size.base, fontWeight: font.weight.semi, lineHeight: 1.4, flex: 1, fontFamily: 'inherit' },
 };
+
+// ─────────────────────────────────────────────────────────────────────────────
+// KanbanCard — extracted + memoized so per-card hover/drag/select state on one
+// card doesn't re-render every sibling card. Parent passes stable callbacks
+// (useCallback'd) and `isSelected` / `isDragging` booleans so the diff is cheap.
+// ─────────────────────────────────────────────────────────────────────────────
+const KanbanCard = memo(function KanbanCard({
+  app, profile, isOwner, stagePassSet, isSelected, isDragging, t,
+  onSelect, onDragStart, onDragEnd, onOpenInterview, onComposeMail, onMarkStagePass, onReject,
+}) {
+  const name = app.applicant_name || profile?.full_name || `${t('company.candidatePrefix')}${app.id.slice(-6).toUpperCase()}`;
+  const showInterviewBadge = app.status === 'viewed' || app.status === 'reviewing';
+  const interviewWhen = app.interview_at ? formatInterviewShort(app.interview_at) : null;
+  const interviewPast = app.interview_at && new Date(app.interview_at).getTime() < Date.now();
+  const isRejected = !!app.rejected_at;
+  const appliedAt = new Date(app.created_at);
+  const todayMidnight = new Date(); todayMidnight.setHours(0, 0, 0, 0);
+  const appliedMidnight = new Date(appliedAt); appliedMidnight.setHours(0, 0, 0, 0);
+  const daysAgo = Math.max(0, Math.round((todayMidnight.getTime() - appliedMidnight.getTime()) / 86400000));
+  const dateText = formatLocalShortDate(appliedAt);
+  const dateLabel = daysAgo === 0
+    ? t('company.ats.appliedToday', { date: dateText })
+    : t('company.ats.appliedDaysAgo', { date: dateText, n: daysAgo });
+  const urgencyClass = 'bg-amber-50 text-amber-700 border-amber-200';
+  const email = app.applicant_email || profile?.email || '';
+  const defaultTpl = app.status === 'pending' ? 'received'
+    : (app.status === 'viewed' || app.status === 'reviewing') ? 'interview'
+    : 'offer';
+  const hasStagePassed = stagePassSet?.has(`${app.status}_pass`);
+  const canDragCard = isOwner && !isRejected;
+
+  return (
+    <div
+      draggable={canDragCard}
+      onDragStart={() => canDragCard && onDragStart(app.id)}
+      onDragEnd={onDragEnd}
+      onClick={() => onSelect(app.id)}
+      className={cn(
+        'relative rounded-md border p-2.5 flex flex-col gap-1 cursor-pointer transition-all duration-200 ease-spring',
+        !hasStagePassed && !isRejected && 'bg-white border-[#E5E8EC] hover:border-primary-300 hover:bg-primary-50/30 hover:shadow-soft-sm hover:-translate-y-px',
+        !isRejected && hasStagePassed && 'bg-green-50/60 border-green-300 hover:border-green-400 hover:shadow-soft-sm hover:-translate-y-px',
+        isRejected && 'bg-red-50/40 border-red-200 opacity-65',
+        isSelected && !hasStagePassed && !isRejected && 'bg-primary-50/70 border-primary-500 ring-2 ring-primary-200 -translate-y-0.5 shadow-soft-md',
+        isSelected && hasStagePassed && !isRejected && 'border-green-500 ring-2 ring-green-200 -translate-y-0.5 shadow-soft-md',
+        isSelected && isRejected && 'border-red-500 ring-2 ring-red-200 -translate-y-0.5 shadow-soft-md',
+        isDragging && 'opacity-40',
+        canDragCard && !isSelected && 'active:cursor-grabbing'
+      )}
+    >
+      <div className="absolute top-2 right-2">
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button onClick={(e) => e.stopPropagation()} className="w-6 h-6 rounded-md text-gray-900 hover:bg-gray-100 grid place-items-center transition-colors" aria-label="more">
+              <MoreVertical className="h-4 w-4" />
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
+            {isOwner && showInterviewBadge && !isRejected && (
+              <DropdownMenuItem onClick={() => onOpenInterview(app)}>
+                <Calendar className="h-4 w-4 text-gray-500" />
+                {interviewWhen ? t('company.kebab.interviewEdit') : t('company.kebab.interviewSet')}
+              </DropdownMenuItem>
+            )}
+            {isOwner && email && (
+              <DropdownMenuItem onClick={() => onComposeMail({ app, profile, email, templateKey: defaultTpl, stageLabel: t(`company.stage.${app.status}`) })}>
+                <Mail className="h-4 w-4 text-gray-500" />
+                {t('company.kebab.composeMail')}
+              </DropdownMenuItem>
+            )}
+            {isOwner && !hasStagePassed && !isRejected && app.status !== 'decided' && (
+              <DropdownMenuItem onClick={() => onMarkStagePass(app.id, app.status)}>
+                <Check className="h-4 w-4 text-green-600" />
+                {t('company.ats.stagePass', { stage: t(`company.stage.${app.status}`) })}
+              </DropdownMenuItem>
+            )}
+            {isOwner && !isRejected && (
+              <DropdownMenuItem tone="danger" onClick={() => onReject(app)}>
+                <Ban className="h-4 w-4" />
+                {t('company.ats.stageReject', { stage: t(`company.stage.${app.status}`) })}
+              </DropdownMenuItem>
+            )}
+            {isOwner && isRejected && (
+              <DropdownMenuItem onClick={() => onSelect(app.id)}>
+                <Edit3 className="h-4 w-4 text-gray-500" />
+                {t('company.ats.viewDetails')}
+              </DropdownMenuItem>
+            )}
+            {!isOwner && (
+              <DropdownMenuItem disabled>
+                <Lock className="h-4 w-4 text-gray-400" />
+                {t('company.kebab.rejectLocked')}
+              </DropdownMenuItem>
+            )}
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
+
+      <div className={cn('self-start inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider border', urgencyClass)}>
+        <Clock className="h-2.5 w-2.5" />
+        {dateLabel}
+      </div>
+
+      <div className="flex items-center justify-between gap-2 pr-6">
+        <span className="text-[15px] font-extrabold text-gray-900 tracking-tight leading-tight truncate">{name}</span>
+        {isRejected && (
+          <span className="text-[10.5px] font-extrabold text-red-600 shrink-0 inline-flex items-center gap-0.5 uppercase tracking-wider">
+            <Ban className="h-2.5 w-2.5" />
+            {t('company.ats.rejectedBadge')}
+          </span>
+        )}
+        {!isRejected && hasStagePassed && app.status !== 'decided' && (
+          <span className="text-[10.5px] font-extrabold text-green-700 bg-green-100 border border-green-200 shrink-0 inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded">
+            {t('company.ats.passBadge')}
+          </span>
+        )}
+      </div>
+
+      {app.applicant_role && (
+        <div className="text-[13px] text-gray-900 font-semibold truncate">
+          {app.applicant_role} · {app.applicant_experience || 0}{t('company.years')}
+        </div>
+      )}
+      {app.applicant_salary && (
+        <div className="text-[13px] text-gray-700 font-bold tabular-nums">
+          {t('company.ats.wishSalary', { n: Math.round(app.applicant_salary/1e6) })}
+        </div>
+      )}
+
+      {!isRejected && showInterviewBadge && (
+        <button
+          onClick={(e) => { if (isOwner) { e.stopPropagation(); onOpenInterview(app); } }}
+          disabled={!isOwner}
+          className={cn(
+            'mt-1 inline-flex items-center gap-1.5 px-2 py-1.5 rounded-md text-[12px] font-bold border w-full',
+            interviewWhen && interviewPast && 'bg-green-50 border-green-200 text-green-800',
+            interviewWhen && !interviewPast && 'bg-sky-50 border-sky-200 text-sky-800',
+            !interviewWhen && 'bg-white border-dashed border-gray-300 text-gray-500',
+            isOwner && 'cursor-pointer hover:opacity-80 transition-opacity'
+          )}
+        >
+          {interviewWhen && interviewPast
+            ? <Check className="h-3.5 w-3.5" />
+            : <Calendar className="h-3.5 w-3.5" />}
+          {interviewWhen
+            ? `${interviewPast ? t('company.ats.interviewDone') : t('company.ats.interviewWord')} ${interviewWhen}`
+            : t('company.ats.interviewPending')}
+        </button>
+      )}
+
+      {app.status === 'decided' && !isRejected && (
+        <div className="mt-1 inline-flex items-center justify-center gap-1.5 px-2 py-1.5 rounded-md bg-primary-50 border border-primary-200 text-primary-700 text-[12px] font-extrabold w-full">
+          <PartyPopper className="w-3.5 h-3.5" />
+          {t('company.candidate.finalPass')}
+        </div>
+      )}
+    </div>
+  );
+});

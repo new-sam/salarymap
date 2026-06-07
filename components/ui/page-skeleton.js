@@ -100,10 +100,10 @@ export function CandidateDetailSkeleton({ mode = 'overlay' }) {
         <Skeleton className="h-3 w-2/3" />
       </div>
       <div className="grid grid-cols-1 lg:grid-cols-[1fr_400px] gap-4 p-6">
-        <Skeleton className="h-[480px] rounded-2xl" />
+        <Skeleton className="h-[480px] rounded-xl" />
         <aside className="space-y-3">
           {Array.from({ length: 4 }).map((_, i) => (
-            <div key={i} className="rounded-2xl border border-border bg-white p-4 space-y-3">
+            <div key={i} className="rounded-xl border border-border bg-white p-4 space-y-3">
               <div className="flex items-center gap-2">
                 <Skeleton className="h-6 w-6 rounded-full" />
                 <Skeleton className="h-4 w-24" />

@@ -10,7 +10,7 @@ import { useT } from '../../lib/i18n';
 import { cn } from '../../lib/cn';
 import { Button as UButton } from '../../components/ui/button';
 import { Badge as UBadge } from '../../components/ui/badge';
-import { Plus, FileText, Edit3, ArrowRight, Briefcase, CheckCircle2, Users } from 'lucide-react';
+import { Plus, FileText, Edit3, ArrowRight, Briefcase, CheckCircle2, Users, Home } from 'lucide-react';
 import { EmptyState } from '../../components/ui/empty-state';
 import { PageHeader } from '../../components/ui/page-header';
 import { DashboardSkeleton } from '../../components/ui/page-skeleton';
@@ -20,12 +20,14 @@ const FREE_MAIL_DOMAINS = new Set([
   'icloud.com', 'daum.net', 'kakao.com', 'protonmail.com',
 ]);
 
+// Neutral status palette — only "pending_review" keeps the brand accent
+// because it's the one state that calls for the user's attention.
 const STATUS_STYLE = {
-  draft: { bg: '#F1F5F9', color: '#64748B' },
+  draft: { bg: '#F2F4F6', color: '#6B7684' },
   pending_review: { bg: '#FFF7ED', color: '#EA580C' },
-  live: { bg: '#ECFDF5', color: '#059669' },
-  paused: { bg: '#FFFBEB', color: '#D97706' },
-  closed: { bg: '#F1F5F9', color: '#94A3B8' },
+  live: { bg: '#F2F4F6', color: '#191F28' },
+  paused: { bg: '#F2F4F6', color: '#6B7684' },
+  closed: { bg: '#F2F4F6', color: '#B0B8C1' },
 };
 
 const authResponsiveCss = `
@@ -54,13 +56,17 @@ const authResponsiveCss = `
 export default function CompanyDashboard() {
   const router = useRouter();
   const { t } = useT();
-  const [status, setStatus] = useState('loading');
+  // Hydrate from cache so a return-to-dashboard paints instantly; background revalidates.
+  const dashCache = typeof window !== 'undefined'
+    ? (() => { try { return JSON.parse(sessionStorage.getItem('fyi.dashboard.v1') || 'null'); } catch { return null; } })()
+    : null;
+  const [status, setStatus] = useState(dashCache ? 'ready' : 'loading');
   const [user, setUser] = useState(null);
   const [companyName, setCompanyName] = useState('');
   const [fullName, setFullName] = useState('');
-  const [jobs, setJobs] = useState([]);
-  const [appsCount, setAppsCount] = useState(0);
-  const [appsByJob, setAppsByJob] = useState({});
+  const [jobs, setJobs] = useState(dashCache?.jobs || []);
+  const [appsCount, setAppsCount] = useState(dashCache?.appsCount || 0);
+  const [appsByJob, setAppsByJob] = useState(dashCache?.appsByJob || {});
   const [authErr, setAuthErr] = useState('');
   const [setupName, setSetupName] = useState('');
   const [setupCompany, setSetupCompany] = useState('');
@@ -171,7 +177,7 @@ export default function CompanyDashboard() {
 
       const { data: jobsData } = await supabase
         .from('jobs')
-        .select('id, title, location, type, status, salary_min, salary_max, experience_min, experience_max, created_at, is_active')
+        .select('id, title, location, type, status, salary_min, salary_max, experience_min, experience_max, created_at, is_active, created_by')
         .eq('company_id', rec.company_id)
         .order('created_at', { ascending: true });
       const jobList = jobsData || [];
@@ -193,6 +199,11 @@ export default function CompanyDashboard() {
           if (a.status === 'pending') grouped[a.job_id].new += 1;
         });
         setAppsByJob(grouped);
+        try {
+          sessionStorage.setItem('fyi.dashboard.v1', JSON.stringify({
+            jobs: jobList, appsCount: apps.length, appsByJob: grouped,
+          }));
+        } catch {}
       }
       setStatus('ready');
     })();
@@ -340,7 +351,12 @@ export default function CompanyDashboard() {
 
         <main style={css.main}>
           <PageHeader
-            title={fullName ? t('company.welcomeName', { name: fullName }) : t('company.welcome')}
+            title={(
+              <span className="flex items-center gap-2.5">
+                <Home className="w-5 h-5 text-primary-600" />
+                {fullName ? t('company.welcomeName', { name: fullName }) : t('company.welcome')}
+              </span>
+            )}
             subtitle={`${companyName ? `${companyName} ` : ''}— ${t('company.dashSub')}`}
             right={(
               <UButton asChild>
@@ -353,7 +369,7 @@ export default function CompanyDashboard() {
           />
 
           {jobs.length === 0 ? (
-            <div className="rounded-2xl border-2 border-dashed border-gray-200 bg-white">
+            <div className="rounded-xl border-2 border-dashed border-gray-200 bg-white">
               <EmptyState
                 icon={FileText}
                 tone="brand"
@@ -372,45 +388,67 @@ export default function CompanyDashboard() {
             </div>
           ) : (
             <>
+              {/* Dashboard KPI — same color + size rules as the per-job ATS top KPIs.
+                  Gray = informational, primary = action target, green = positive state. */}
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 mb-4">
-                <div className="rounded-xl bg-white border border-border p-3 shadow-soft-xs">
-                  <div className="flex items-center gap-2 mb-1.5">
-                    <Briefcase className="w-4 h-4 text-gray-500" />
-                    <div className="text-[10px] font-extrabold uppercase tracking-[0.08em] text-gray-500">{t('company.kpiJobs')}</div>
+                {/* 공고 (총) — gray */}
+                <div className="rounded-lg border border-border bg-card px-3 py-2.5 shadow-soft-xs">
+                  <div className="flex items-center gap-1.5">
+                    <div className="w-6 h-6 rounded-md grid place-items-center bg-gray-100 text-gray-700">
+                      <Briefcase className="h-3.5 w-3.5" />
+                    </div>
+                    <span className="text-[12.5px] font-extrabold text-gray-700 uppercase tracking-[0.08em]">{t('company.kpiJobs')}</span>
                   </div>
-                  <div className="mt-1 flex items-baseline gap-1 text-foreground">
-                    <span className="text-2xl font-extrabold tracking-tight tabular-nums">{jobs.length}</span>
-                    <span className="text-[12px] font-bold text-gray-400">{t('company.unit.count')}</span>
-                  </div>
-                </div>
-                <div className="rounded-xl bg-white border border-border p-3 shadow-soft-xs">
-                  <div className="flex items-center gap-2 mb-1.5">
-                    <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                    <div className="text-[10px] font-extrabold uppercase tracking-[0.08em] text-gray-500">{t('company.kpiActive')}</div>
-                  </div>
-                  <div className="mt-1 flex items-baseline gap-1 text-emerald-600">
-                    <span className="text-2xl font-extrabold tracking-tight tabular-nums">{activeCount}</span>
-                    <span className="text-[12px] font-bold text-emerald-400">{t('company.unit.count')}</span>
+                  <div className="mt-1.5 flex items-baseline gap-1 text-gray-900">
+                    <span className="text-[26px] font-black leading-none tracking-tight tabular-nums">{jobs.length}</span>
+                    <span className="text-[13px] font-bold text-gray-900">{t('company.unit.count')}</span>
                   </div>
                 </div>
-                <div className="rounded-xl bg-white border border-border p-3 shadow-soft-xs">
-                  <div className="flex items-center gap-2 mb-1.5">
-                    <Users className="w-4 h-4 text-primary-600" />
-                    <div className="text-[10px] font-extrabold uppercase tracking-[0.08em] text-gray-500">{t('company.kpiApps')}</div>
+                {/* 활성 공고 — green (positive state) */}
+                <div className="rounded-lg border border-border bg-card px-3 py-2.5 shadow-soft-xs">
+                  <div className="flex items-center gap-1.5">
+                    <div className="w-6 h-6 rounded-md grid place-items-center bg-green-50 text-green-700">
+                      <CheckCircle2 className="h-3.5 w-3.5" />
+                    </div>
+                    <span className="text-[12.5px] font-extrabold text-green-700 uppercase tracking-[0.08em]">{t('company.kpiActive')}</span>
                   </div>
-                  <div className="mt-1 flex items-baseline gap-1 text-primary-600">
-                    <span className="text-2xl font-extrabold tracking-tight tabular-nums">{appsCount}</span>
-                    <span className="text-[12px] font-bold text-primary-400">{t('company.unit.people')}</span>
+                  <div className="mt-1.5 flex items-baseline gap-1 text-green-700">
+                    <span className="text-[26px] font-black leading-none tracking-tight tabular-nums">{activeCount}</span>
+                    <span className="text-[13px] font-bold text-green-700">{t('company.unit.count')}</span>
+                  </div>
+                </div>
+                {/* 지원자 — primary (action target) */}
+                <div className="rounded-lg border border-border bg-card px-3 py-2.5 shadow-soft-xs">
+                  <div className="flex items-center gap-1.5">
+                    <div className={cn('w-6 h-6 rounded-md grid place-items-center',
+                      appsCount > 0 ? 'bg-primary-100 text-primary-700' : 'bg-gray-100 text-gray-400'
+                    )}>
+                      <Users className="h-3.5 w-3.5" />
+                    </div>
+                    <span className={cn('text-[12.5px] font-extrabold uppercase tracking-[0.08em]',
+                      appsCount > 0 ? 'text-primary-700' : 'text-gray-500'
+                    )}>{t('company.kpiApps')}</span>
+                  </div>
+                  <div className={cn('mt-1.5 flex items-baseline gap-1',
+                    appsCount > 0 ? 'text-primary-700' : 'text-gray-900'
+                  )}>
+                    <span className="text-[26px] font-black leading-none tracking-tight tabular-nums">{appsCount}</span>
+                    <span className={cn('text-[13px] font-bold',
+                      appsCount > 0 ? 'text-primary-700' : 'text-gray-900'
+                    )}>{t('company.unit.people')}</span>
                   </div>
                 </div>
               </div>
 
               {(() => {
-                const groupOf = (s) => s === 'live' ? 'active' : s === 'pending_review' ? 'pending' : 'inactive';
-                const grouped = { active: [], pending: [], inactive: [] };
+                // Approval policy is dropped for this sprint — no more 'pending' group.
+                // Legacy pending_review jobs collapse into 'inactive'.
+                const groupOf = (s) => s === 'live' ? 'active' : 'inactive';
+                const grouped = { active: [], inactive: [] };
                 jobs.forEach(j => { grouped[groupOf(j.status)].push(j); });
                 const renderCard = (job) => {
                   const stats = appsByJob[job.id] || { total: 0, new: 0 };
+                  const isJobOwner = job.created_by && user?.id && job.created_by === user.id;
                   return (
                     <div
                       key={job.id}
@@ -418,11 +456,19 @@ export default function CompanyDashboard() {
                       className="group flex items-center justify-between gap-4 rounded-xl bg-white border border-border px-4 py-3 cursor-pointer transition-all duration-200 ease-spring hover:border-primary-300 hover:shadow-soft-sm hover:-translate-y-px"
                     >
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-1">
+                        <div className="flex items-center gap-2 mb-1 flex-wrap">
                           <span className="text-[15px] font-bold text-foreground truncate tracking-tight">{job.title}</span>
                           <UBadge variant={statusBadgeVariant(job.status)} className="flex-shrink-0">
                             {t(`company.status.${job.status}`)}
                           </UBadge>
+                          <span className={cn(
+                            'inline-flex items-center gap-1 text-[10.5px] font-extrabold px-1.5 py-0.5 rounded border flex-shrink-0',
+                            isJobOwner
+                              ? 'bg-primary-50 border-primary-200 text-primary-700'
+                              : 'bg-gray-100 border-gray-200 text-gray-700'
+                          )}>
+                            {isJobOwner ? t('company.role.ownerJoined') : t('company.role.interviewerJoined')}
+                          </span>
                         </div>
                         <div className="text-[12px] text-gray-900 font-semibold truncate">
                           {job.location} · {job.type} · ₫{Math.round(job.salary_min/1e6)}M–{Math.round(job.salary_max/1e6)}M/월
@@ -454,13 +500,13 @@ export default function CompanyDashboard() {
                     </div>
                   );
                 };
-                return ['active', 'pending', 'inactive'].map(g => (
-                  <section key={g} className="mb-5">
-                    <h2 className="text-[11px] font-extrabold text-gray-500 uppercase tracking-[0.08em] pl-2.5 mb-2 border-l-[3px] border-primary-500">
+                return ['active', 'inactive'].map(g => (
+                  <section key={g} className="mb-6">
+                    <h2 className="text-[15px] font-extrabold text-gray-800 tracking-tight pl-3 mb-3 border-l-[3px] border-primary-500">
                       {t(`company.jobGroup.${g}`, { n: grouped[g].length })}
                     </h2>
                     {grouped[g].length === 0 ? (
-                      <div className="text-[12px] text-gray-400 font-medium px-2.5 py-2">
+                      <div className="text-[13.5px] text-gray-400 font-medium px-3 py-2">
                         —
                       </div>
                     ) : (
@@ -574,7 +620,7 @@ const localCss = {
     borderRadius: 999,
     padding: '14px 18px',
     color: '#fff',
-    background: 'linear-gradient(135deg,#ef4444,#f97316)',
+    background: '#EA580C',
     fontSize: 14.5,
     fontWeight: 900,
     fontFamily: 'inherit',
@@ -621,7 +667,7 @@ const localCss = {
     margin: '0 auto 18px',
     borderRadius: '50%',
     color: '#fff',
-    background: 'linear-gradient(135deg,#ef4444,#f97316)',
+    background: '#EA580C',
     fontSize: 24,
     fontWeight: 900,
   },

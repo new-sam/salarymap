@@ -5,7 +5,7 @@ export function EmptyState({ icon: Icon, title, description, action, className, 
     default: 'bg-gray-100 text-gray-400',
     brand: 'bg-primary-50 text-primary-600',
     success: 'bg-emerald-50 text-emerald-600',
-    info: 'bg-blue-50 text-blue-600',
+    info: 'bg-gray-100 text-gray-500',
   }[tone];
 
   return (
@@ -14,7 +14,7 @@ export function EmptyState({ icon: Icon, title, description, action, className, 
       className
     )}>
       {Icon && (
-        <div className={cn('w-12 h-12 rounded-2xl grid place-items-center mb-3', toneClass)}>
+        <div className={cn('w-12 h-12 rounded-xl grid place-items-center mb-3', toneClass)}>
           <Icon className="w-5 h-5" />
         </div>
       )}

@@ -1,7 +1,9 @@
 import { useState, useEffect, Fragment } from 'react';
 import { color as tc, font as tf, space as ts, radius as tr, shadow as tsh, motion as tm } from '../../../lib/theme';
 import { cn } from '../../../lib/cn';
-import { Plus, Home, CalendarDays, ImageIcon, MapPin, Building2, Briefcase, Users as UsersIcon } from 'lucide-react';
+import { Plus, Home, CalendarDays, ImageIcon, MapPin, Building2, Briefcase, Users as UsersIcon, CheckSquare, Maximize2, X as XIcon } from 'lucide-react';
+import JobPreview from '../../../components/jobs/JobPreview';
+import { nextActionFor } from '../../../lib/smart-hint';
 import { Button as UButton } from '../../../components/ui/button';
 import { Input as UInput } from '../../../components/ui/input';
 import { PageHeader } from '../../../components/ui/page-header';
@@ -64,6 +66,7 @@ export default function NewJobPage() {
   const setF = (k, v) => setForm({ ...form, [k]: v });
 
   const [uploading, setUploading] = useState(false);
+  const [previewFull, setPreviewFull] = useState(false);
   const uploadImage = async (file, field) => {
     if (!file || !user) return;
     setUploading(true);
@@ -196,7 +199,7 @@ export default function NewJobPage() {
       <div style={css.app}>
         <Sidebar companyName={companyName} userEmail={user?.email} activePage="new" />
 
-        <main style={css.main}>
+        <main style={css.main} className="!h-screen !overflow-hidden !pb-0">
           <PageHeader
             title={t('company.jobsnew.h')}
             subtitle={t('company.jobsnew.sub')}
@@ -212,8 +215,10 @@ export default function NewJobPage() {
             )}
           />
 
-          <form id="job-new-form" onSubmit={onSubmit} className="grid grid-cols-1 lg:grid-cols-[1.4fr_1fr] gap-6 items-start">
-            <div className="flex flex-col">
+          {/* Form is a flex row so each column gets the form's full visible
+              height. `min-h-0` on every child lets overflow-y-auto engage. */}
+          <form id="job-new-form" onSubmit={onSubmit} className="flex-1 min-h-0 flex flex-col lg:flex-row gap-6 overflow-hidden">
+            <div className="flex-[1.4] flex flex-col overflow-y-auto min-h-0 px-1 pb-10">
               <h2 className="text-[12px] font-extrabold text-gray-500 uppercase tracking-[0.08em] mb-3">{t('company.jobsnew.photoH')}</h2>
 
               <div className="grid grid-cols-2 gap-3 mb-3">
@@ -319,108 +324,16 @@ export default function NewJobPage() {
               </div>
             </div>
 
-            <aside className="bg-white border border-border rounded-2xl p-4 pb-5 flex flex-col gap-3 sticky top-[88px] shadow-soft-xs max-h-[calc(100vh-100px)] overflow-y-auto">
-              <div className="text-[10.5px] font-extrabold uppercase tracking-[0.08em] text-gray-500">{t('company.jobsnew.previewLabel')}</div>
-
-              <div className="bg-white border border-border rounded-xl overflow-hidden">
-                {form.image_url ? (
-                  <img src={form.image_url} alt="" className="w-full h-32 object-cover block" />
-                ) : (
-                  <div className="w-full h-32 bg-gray-100 flex items-center justify-center text-[11px] text-gray-400 font-semibold gap-2">
-                    <ImageIcon className="w-3.5 h-3.5" />
-                    {t('company.jobsnew.previewEmpty')}
-                  </div>
-                )}
-                <div className="p-4 space-y-3">
-                  <div className="flex items-center gap-2.5">
-                    {form.logo_url ? (
-                      <img src={form.logo_url} alt="" className="w-8 h-8 rounded-md object-contain bg-gray-50 border border-border" />
-                    ) : (
-                      <div className="w-8 h-8 rounded-md bg-gray-100 flex items-center justify-center border border-border">
-                        <Building2 className="w-4 h-4 text-gray-400" />
-                      </div>
-                    )}
-                    <div className="min-w-0">
-                      <div className="text-[13px] text-gray-900 font-bold truncate">{companyName || t('company.previewCompanyDef')}</div>
-                      <div className="text-[11.5px] text-gray-900 font-semibold truncate">{form.location} · {form.type}</div>
-                    </div>
-                  </div>
-
-                  <div className="text-[17px] font-extrabold text-foreground leading-tight tracking-tight">
-                    {form.title || t('company.previewTitleDef')}
-                  </div>
-
-                  <div className="text-[16px] font-extrabold text-emerald-600 tabular-nums leading-none">
-                    {Math.round(form.salary_min/1e6)}M – {Math.round(form.salary_max/1e6)}M VND
-                  </div>
-
-                  {(form.tech_stack || '').trim() && (
-                    <div className="flex flex-wrap gap-1">
-                      {form.tech_stack.split(',').map(s => s.trim()).filter(Boolean).slice(0, 6).map(tg => (
-                        <span key={tg} className="text-[11.5px] font-semibold text-gray-700 bg-gray-100 px-2 py-0.5 rounded">{tg}</span>
-                      ))}
-                    </div>
-                  )}
-
-                  {(form.description || '').trim() && (
-                    <div className="pt-3 border-t border-border">
-                      <div className="text-[10.5px] font-extrabold uppercase tracking-[0.06em] text-gray-400 mb-1.5">업무 설명</div>
-                      <div className="text-[12.5px] text-gray-700 leading-relaxed whitespace-pre-line max-h-20 overflow-y-auto pr-1">
-                        {form.description}
-                      </div>
-                    </div>
-                  )}
-
-                  <div className="grid grid-cols-2 gap-3 pt-3 border-t border-border">
-                    <div>
-                      <div className="text-[10.5px] font-extrabold uppercase tracking-[0.06em] text-gray-400 mb-1 flex items-center gap-1">
-                        <Briefcase className="w-3 h-3" />
-                        포지션
-                      </div>
-                      <div className="text-[13px] font-bold text-foreground">{form.role}</div>
-                    </div>
-                    <div>
-                      <div className="text-[10.5px] font-extrabold uppercase tracking-[0.06em] text-gray-400 mb-1">경력</div>
-                      <div className="text-[13px] font-bold text-foreground tabular-nums">{form.experience_min}–{form.experience_max}년</div>
-                    </div>
-                    {form.headcount && (
-                      <div>
-                        <div className="text-[10.5px] font-extrabold uppercase tracking-[0.06em] text-gray-400 mb-1 flex items-center gap-1">
-                          <UsersIcon className="w-3 h-3" />
-                          채용 인원
-                        </div>
-                        <div className="text-[13px] font-bold text-foreground tabular-nums">{form.headcount}명</div>
-                      </div>
-                    )}
-                    {form.deadline && (
-                      <div>
-                        <div className="text-[10.5px] font-extrabold uppercase tracking-[0.06em] text-gray-400 mb-1 flex items-center gap-1">
-                          <CalendarDays className="w-3 h-3" />
-                          마감
-                        </div>
-                        <div className="text-[13px] font-bold text-foreground tabular-nums">{form.deadline}</div>
-                      </div>
-                    )}
-                  </div>
-
-                  {(form.benefits || '').trim() && (
-                    <div className="pt-3 border-t border-border">
-                      <div className="text-[10.5px] font-extrabold uppercase tracking-[0.06em] text-gray-400 mb-1.5">복지</div>
-                      <div className="flex flex-wrap gap-1">
-                        {form.benefits.split(',').map(s => s.trim()).filter(Boolean).map(b => (
-                          <span key={b} className="text-[11px] font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full">
-                            {b}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
+            {/* Preview column — JobPreview faithfully mirrors /jobs/[id] layout. */}
+            <aside className="flex-1 overflow-y-auto min-h-0 pl-2 pr-1 pb-10 flex flex-col gap-3">
+              <div className="flex items-center justify-between flex-shrink-0">
+                <div className="text-[10.5px] font-extrabold uppercase tracking-[0.08em] text-gray-500">{t('company.jobsnew.previewLabel')}</div>
+                <UButton type="button" size="sm" variant="outline" onClick={() => setPreviewFull(true)} className="h-7 px-2.5 text-[11.5px]">
+                  <Maximize2 className="w-3.5 h-3.5" />
+                  {t('company.jobsnew.previewFull')}
+                </UButton>
               </div>
-
-              <div className="text-[10.5px] text-gray-400 font-medium leading-relaxed">
-                실시간 입력값이 반영됩니다. 저장 후 공개 페이지에서 실제 화면을 확인할 수 있습니다.
-              </div>
+              <JobPreview form={form} companyName={companyName} />
             </aside>
 
             {err && (
@@ -428,6 +341,27 @@ export default function NewJobPage() {
             )}
           </form>
         </main>
+
+        {previewFull && (
+          <div
+            className="fixed inset-0 z-50 bg-gray-900/55 backdrop-blur-[2px] overflow-y-auto"
+            onClick={() => setPreviewFull(false)}
+          >
+            <div className="min-h-full flex items-start justify-center py-8 px-4">
+              <div className="relative w-full max-w-[760px]" onClick={(e) => e.stopPropagation()}>
+                <button
+                  type="button"
+                  onClick={() => setPreviewFull(false)}
+                  className="absolute -top-2 right-0 w-9 h-9 rounded-full bg-white shadow-md border border-border flex items-center justify-center text-gray-700 hover:bg-gray-50"
+                  title={t('company.jobsnew.previewClose')}
+                >
+                  <XIcon className="w-4 h-4" />
+                </button>
+                <JobPreview form={form} companyName={companyName} fullscreen />
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </>
   );
@@ -459,7 +393,14 @@ const DOT_COLOR = { live: '#10b981', paused: '#f59e0b', closed: '#94a3b8', draft
 export function Sidebar({ companyName, userEmail, activePage = 'home', activeJobId = null }) {
   const router = useRouter();
   const { t } = useT();
-  const [jobs, setJobs] = useState([]);
+  // Hydrate counts/jobs from sessionStorage cache so navigation paints instantly;
+  // the effect below revalidates in the background and updates if values changed.
+  const cached = typeof window !== 'undefined'
+    ? (() => { try { return JSON.parse(sessionStorage.getItem('fyi.sidebar.v1') || 'null'); } catch { return null; } })()
+    : null;
+  const [jobs, setJobs] = useState(cached?.jobs || []);
+  const [todoCount, setTodoCount] = useState(cached?.todoCount || 0);
+  const [interviewCount, setInterviewCount] = useState(cached?.interviewCount || 0);
 
   useEffect(() => {
     (async () => {
@@ -473,12 +414,70 @@ export function Sidebar({ companyName, userEmail, activePage = 'home', activeJob
       if (!rec?.company_id) return;
       const { data: jobsData } = await supabase
         .from('jobs')
-        .select('id, title, status')
+        .select('id, title, status, created_by')
         .eq('company_id', rec.company_id)
         .order('created_at', { ascending: true });
       setJobs(jobsData || []);
+
+      // To-do + interview counts — re-uses the same nextActionFor logic the to-do page renders.
+      let nextTodoCount = 0;
+      let nextInterviewCount = 0;
+      try {
+        const jobIds = (jobsData || []).map(j => j.id);
+        if (jobIds.length > 0) {
+          const { data: apps } = await supabase
+            .from('job_applications')
+            .select('id, job_id, status, interview_at, rejected_at')
+            .in('job_id', jobIds)
+            .is('rejected_at', null);
+          const nowMs = Date.now();
+          nextInterviewCount = (apps || []).filter(a => a.interview_at && new Date(a.interview_at).getTime() > nowMs).length;
+          const appIds = (apps || []).map(a => a.id);
+          const evalsByApp = {};
+          const mailsByApp = {};
+          if (appIds.length > 0) {
+            // Parallelize evals + mails — these two queries are independent.
+            const [evalsRes, mailsRes] = await Promise.all([
+              supabase.from('application_evaluations').select('application_id, stage').in('application_id', appIds),
+              supabase.from('recruiter_mail_log').select('application_id, template_key').in('application_id', appIds),
+            ]);
+            (evalsRes.data || []).forEach(e => {
+              (evalsByApp[e.application_id] ||= []).push(e);
+            });
+            (mailsRes.data || []).forEach(m => {
+              (mailsByApp[m.application_id] ||= []).push(m);
+            });
+          }
+          for (const app of (apps || [])) {
+            const job = (jobsData || []).find(j => j.id === app.job_id);
+            const isOwner = job?.created_by === session.user.id;
+            const action = nextActionFor({
+              app,
+              evals: evalsByApp[app.id] || [],
+              mailLog: mailsByApp[app.id] || [],
+              isOwner,
+              t,
+            });
+            if (action) nextTodoCount++;
+          }
+        }
+        setTodoCount(nextTodoCount);
+        setInterviewCount(nextInterviewCount);
+        // Persist for instant paint on the next navigation.
+        try {
+          sessionStorage.setItem('fyi.sidebar.v1', JSON.stringify({
+            jobs: jobsData || [],
+            todoCount: nextTodoCount,
+            interviewCount: nextInterviewCount,
+          }));
+        } catch {}
+      } catch (e) {
+        console.error('[Sidebar] count refresh failed:', e);
+      }
     })();
-  }, []);
+    // Re-run when lang changes so Smart Hint–driven todo count picks up
+    // the new language (nextActionFor uses t internally).
+  }, [t]);
 
   const signOut = async () => { await supabase.auth.signOut(); router.replace('/for-companies'); };
   const isActive = (k) => activePage === k;
@@ -522,6 +521,23 @@ export function Sidebar({ companyName, userEmail, activePage = 'home', activeJob
           {t('company.sidebar.dashboard')}
         </Link>
         <Link
+          href="/company/todo"
+          className={cn(
+            'flex items-center gap-2 px-2.5 py-1.5 rounded-md text-[13px] font-semibold transition-colors',
+            isActive('todo')
+              ? 'bg-primary-500/15 text-primary-300'
+              : 'text-gray-300 hover:bg-white/5 hover:text-white'
+          )}
+        >
+          <CheckSquare className="h-3.5 w-3.5" />
+          <span className="flex-1">{t('company.sidebar.todo')}</span>
+          {todoCount > 0 && (
+            <span className="inline-flex items-center justify-center px-1.5 py-0.5 rounded-full bg-primary-500 text-white text-[11.5px] font-extrabold tabular-nums">
+              {t('company.unit.items', { n: todoCount })}
+            </span>
+          )}
+        </Link>
+        <Link
           href="/company/calendar"
           className={cn(
             'flex items-center gap-2 px-2.5 py-1.5 rounded-md text-[13px] font-semibold transition-colors',
@@ -531,25 +547,32 @@ export function Sidebar({ companyName, userEmail, activePage = 'home', activeJob
           )}
         >
           <CalendarDays className="h-3.5 w-3.5" />
-          {t('company.sidebar.calendar')}
+          <span className="flex-1">{t('company.sidebar.calendar')}</span>
+          {interviewCount > 0 && (
+            <span className="inline-flex items-center justify-center px-1.5 py-0.5 rounded-full bg-primary-500 text-white text-[11.5px] font-extrabold tabular-nums">
+              {t('company.unit.items', { n: interviewCount })}
+            </span>
+          )}
         </Link>
       </nav>
 
       {jobs.length > 0 && (() => {
-        const groupOf = (s) => s === 'live' ? 'active' : s === 'pending_review' ? 'pending' : 'inactive';
-        const grouped = { active: [], pending: [], inactive: [] };
+        // Approval policy is dropped for this sprint — no more 'pending' group.
+        // Legacy pending_review jobs collapse into 'inactive'.
+        const groupOf = (s) => s === 'live' ? 'active' : 'inactive';
+        const grouped = { active: [], inactive: [] };
         jobs.forEach(j => { grouped[groupOf(j.status)].push(j); });
         return (
           <>
             {/* Section divider with title — myJobs */}
             <div className="h-px bg-white/15 my-3 mx-1" />
-            <div className="px-2.5 pt-0.5 pb-1.5 text-[10px] font-extrabold text-gray-500 uppercase tracking-[0.08em]">
+            <div className="px-2.5 pt-0.5 pb-1.5 text-[11.5px] font-extrabold text-gray-400 uppercase tracking-[0.08em]">
               {t('company.sidebar.myJobs', { n: jobs.length })}
             </div>
             <div className="flex flex-col gap-0.5 max-h-[400px] overflow-y-auto">
-              {['active', 'pending', 'inactive'].map(g => (
+              {['active', 'inactive'].map(g => (
                 <Fragment key={g}>
-                  <div className="px-2.5 pt-1.5 pb-0.5 text-[10.5px] font-bold text-gray-500">
+                  <div className="px-2.5 pt-1.5 pb-0.5 text-[12px] font-bold text-gray-300">
                     {t(`company.jobGroup.${g}`, { n: grouped[g].length })}
                   </div>
                   {grouped[g].length === 0 && (
@@ -645,13 +668,13 @@ export const css = {
   previewCard: { background: '#FAFAFA', border: '1px solid #E5E7EB', borderRadius: 8, padding: 14 },
   pTitle: { fontSize: 14, fontWeight: 800, color: '#1A1A1A', marginBottom: 5 },
   pMeta: { fontSize: 11.5, color: '#525252', marginTop: 2 },
-  pLoc: { fontSize: 11.5, color: '#10b981', marginTop: 6 },
+  pLoc: { fontSize: 11.5, color: '#6B7684', marginTop: 6 },
 
   err: { gridColumn: '1 / -1', background: '#FEF2F2', border: '1px solid #FECACA', borderRadius: 6, padding: '10px 12px', fontSize: 12.5, color: '#B91C1C' },
 
   formFoot: { gridColumn: '1 / -1', display: 'flex', justifyContent: 'flex-end', gap: 8, paddingTop: 16, borderTop: '1px solid #E5E7EB', marginTop: 8 },
 
-  btnPrimary: { padding: '12px 24px', borderRadius: 8, border: 'none', background: 'linear-gradient(135deg,#EF4444,#F97316)', color: '#fff', fontSize: 14, fontWeight: 800, cursor: 'pointer', fontFamily: 'inherit', textDecoration: 'none', display: 'inline-block', boxShadow: '0 4px 12px rgba(234,88,12,0.25)' },
+  btnPrimary: { padding: '12px 24px', borderRadius: 8, border: 'none', background: '#EA580C', color: '#fff', fontSize: 14, fontWeight: 800, cursor: 'pointer', fontFamily: 'inherit', textDecoration: 'none', display: 'inline-block', boxShadow: '0 4px 12px rgba(234,88,12,0.18)' },
   btnGhost: { padding: '12px 24px', borderRadius: 8, border: '1px solid #D1D5DB', background: '#fff', color: '#1A1A1A', fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', textDecoration: 'none', display: 'inline-block' },
   btnDisabled: { padding: '12px 24px', borderRadius: 8, border: 'none', background: '#E5E7EB', color: '#94A3B8', fontSize: 14, fontWeight: 800, cursor: 'not-allowed', fontFamily: 'inherit' },
   btnDanger: { padding: '12px 22px', borderRadius: 8, border: '1px solid #FECACA', background: '#FEF2F2', color: '#B91C1C', fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' },
@@ -676,7 +699,7 @@ const localCss = {
   pvLogoEmpty: { width: 20, height: 20, borderRadius: 5, background: '#E5E7EB' },
   pvCompany: { fontSize: 11.5, color: '#737373', fontWeight: 700 },
   pvTitle: { fontSize: 15, fontWeight: 800, color: '#1A1A1A', marginBottom: 6, lineHeight: 1.3 },
-  pvSalary: { fontSize: 13, color: '#059669', fontWeight: 800, marginBottom: 7 },
+  pvSalary: { fontSize: 13, color: '#EA580C', fontWeight: 800, marginBottom: 7 },
   pvTags: { display: 'flex', flexWrap: 'wrap', gap: 5, marginBottom: 8 },
   pvTag: { fontSize: 10.5, fontWeight: 700, color: '#525252', background: '#F1F5F9', padding: '3px 8px', borderRadius: 999 },
   pvLoc: { fontSize: 11.5, color: '#737373' },

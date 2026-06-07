@@ -1,5 +1,8 @@
-/* ── Pretendard Variable (multilingual: ko/en/vi) — cdn.jsdelivr ─── */
-@import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css');
+/* ── Pretendard Variable — full glyph set so ko/en/vi all render in one
+   typeface (the dynamic subset misses Vietnamese Latin-Extended chars).
+   Pair with Inter for the Latin fallback before system fonts kick in. */
+@import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -38,10 +41,33 @@ html {
 
 body {
   max-width: 100vw;
-  font-family: 'Pretendard Variable', 'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  /* Pretendard first (ko/en/vi covered), Inter as the Latin fallback,
+     then system stack. Reads cleanly across all three languages. */
+  font-family: 'Pretendard Variable', 'Pretendard', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  font-feature-settings: 'tnum' on, 'lnum' on;
+  text-rendering: optimizeLegibility;
+  /* tnum/lnum keep numbers tabular; ss06 enables Pretendard's open-curl '6/9'
+     and the comma fix so dense ATS lists read better. */
+  font-feature-settings: 'tnum' on, 'lnum' on, 'ss06' on;
+  /* Slight tracking pull-in for Korean — feels tighter without being cramped. */
+  letter-spacing: -0.005em;
+  line-height: 1.55;
+  color: #191F28;
+}
+
+/* Headings: tighter tracking + slightly tighter line-height for visual weight.
+   Targets common heading wrappers without forcing every tailwind text-* class. */
+h1, h2, h3, h4 {
+  letter-spacing: -0.015em;
+  line-height: 1.3;
+}
+
+/* Tabular numbers everywhere they appear inline — fixes wobble in KPI rows,
+   evaluation badges, salary text, etc. without per-element classes. */
+.tabular-nums,
+[class*="tabular"] {
+  font-variant-numeric: tabular-nums lining-nums;
 }
 html {
   overflow-x: clip;

@@ -150,7 +150,7 @@ const s = {
   },
   btnPrimary: {
     width: '100%', marginTop: 18, border: 0, borderRadius: 10, padding: '14px 18px',
-    background: 'linear-gradient(135deg,#ef4444,#f97316)', color: '#fff',
+    background: '#EA580C', color: '#fff',
     fontSize: 14.5, fontWeight: 850, fontFamily: 'inherit', cursor: 'pointer',
   },
   btnGhost: {
@@ -160,7 +160,7 @@ const s = {
   },
   doneIcon: {
     width: 52, height: 52, borderRadius: '50%', margin: '4px auto 16px',
-    display: 'grid', placeItems: 'center', background: '#10b981', color: '#fff',
+    display: 'grid', placeItems: 'center', background: '#EA580C', color: '#fff',
     fontSize: 26, fontWeight: 900,
   },
 };

@@ -31,7 +31,7 @@ export default function CompanySignup() {
           <div style={css.note}>
             <b style={css.noteB}>개인 계정과 별개입니다</b>
             <span style={css.noteText}>
-              기존 salary-fyi.com 후보자 계정을 갖고 있어도, 회사 계정은 새로 만들어야 합니다. (역할 충돌 방지)
+              기존 salary-fyi.com 지원자 계정을 갖고 있어도, 회사 계정은 새로 만들어야 합니다. (역할 충돌 방지)
             </span>
           </div>
 
