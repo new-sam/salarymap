@@ -1,5 +1,7 @@
 import { useState, useEffect, Fragment } from 'react';
 import { color as tc, font as tf, space as ts, radius as tr, shadow as tsh, motion as tm } from '../../../lib/theme';
+import { cn } from '../../../lib/cn';
+import { Plus, Home, CalendarDays } from 'lucide-react';
 import Head from 'next/head';
 import { useRouter } from 'next/router';
 import Link from 'next/link';
@@ -388,19 +390,43 @@ export function Sidebar({ companyName, userEmail, activePage = 'home', activeJob
   const isActive = (k) => activePage === k;
 
   return (
-    <aside style={css.sidebar}>
-      <div style={css.sideHead}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 6, marginBottom: 12 }}>
+    <aside className="bg-card border-r border-border px-3 py-4 flex flex-col gap-1 w-[240px] shrink-0">
+      {/* Brand + user */}
+      <div className="px-2.5 pb-3 mb-2 border-b border-border">
+        <div className="flex items-center justify-between gap-1.5 mb-3">
           <Brand href="/company" size="sm" />
           <LangToggle align="right" />
         </div>
-        <div style={css.sideCompany}>{companyName || t('company.sidebar.myCompany')}</div>
-        <div style={css.sideUser}>{userEmail}</div>
+        <div className="text-sm font-extrabold text-gray-900 tracking-tight truncate">{companyName || t('company.sidebar.myCompany')}</div>
+        <div className="text-xs text-gray-500 mt-0.5 truncate">{userEmail}</div>
       </div>
-      <nav style={css.sideNav}>
-        <Link href="/company/jobs/new" style={css.navItem}><span style={css.navIco}>➕</span>{t('company.sidebar.newJob')}</Link>
-        <Link href="/company" style={{...css.navItem, ...(isActive('home') ? css.navItemActive : {})}}><span style={css.navIco}>🏠</span>{t('company.sidebar.dashboard')}</Link>
-        <Link href="/company/calendar" style={{...css.navItem, ...(isActive('calendar') ? css.navItemActive : {})}}><span style={css.navIco}>📅</span>{t('company.sidebar.calendar')}</Link>
+
+      {/* Nav */}
+      <nav className="flex flex-col gap-0.5">
+        <Link href="/company/jobs/new" className="flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm font-semibold text-gray-700 hover:bg-gray-100 transition-colors">
+          <Plus className="h-4 w-4" />
+          {t('company.sidebar.newJob')}
+        </Link>
+        <Link
+          href="/company"
+          className={cn(
+            'flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm font-semibold transition-colors',
+            isActive('home') ? 'bg-primary-50 text-primary-700' : 'text-gray-700 hover:bg-gray-100'
+          )}
+        >
+          <Home className="h-4 w-4" />
+          {t('company.sidebar.dashboard')}
+        </Link>
+        <Link
+          href="/company/calendar"
+          className={cn(
+            'flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm font-semibold transition-colors',
+            isActive('calendar') ? 'bg-primary-50 text-primary-700' : 'text-gray-700 hover:bg-gray-100'
+          )}
+        >
+          <CalendarDays className="h-4 w-4" />
+          {t('company.sidebar.calendar')}
+        </Link>
       </nav>
 
       {jobs.length > 0 && (() => {
@@ -409,12 +435,16 @@ export function Sidebar({ companyName, userEmail, activePage = 'home', activeJob
         jobs.forEach(j => { grouped[groupOf(j.status)].push(j); });
         return (
           <>
-            <div style={css.sideDivider} />
-            <div style={css.sideSectionTitle}>{t('company.sidebar.myJobs', { n: jobs.length })}</div>
-            <div style={css.sideJobList}>
+            <div className="h-px bg-border my-3 mx-2" />
+            <div className="px-3 pt-1 pb-2 text-[11px] font-extrabold text-gray-400 uppercase tracking-wider">
+              {t('company.sidebar.myJobs', { n: jobs.length })}
+            </div>
+            <div className="flex flex-col gap-0.5 max-h-[400px] overflow-y-auto">
               {['active', 'pending', 'inactive'].map(g => grouped[g].length === 0 ? null : (
                 <Fragment key={g}>
-                  <div style={css.sideSubGroupTitle}>{t(`company.jobGroup.${g}`, { n: grouped[g].length })}</div>
+                  <div className="px-3 pt-2 pb-1 text-xs font-bold text-gray-500">
+                    {t(`company.jobGroup.${g}`, { n: grouped[g].length })}
+                  </div>
                   {grouped[g].map(j => {
                     const dotColor = DOT_COLOR[j.status] || DOT_COLOR.draft;
                     const isCurrent = activeJobId === j.id;
@@ -422,11 +452,14 @@ export function Sidebar({ companyName, userEmail, activePage = 'home', activeJob
                       <Link
                         key={j.id}
                         href={`/company/ats?job=${j.id}`}
-                        style={{...css.sideJobItem, ...(isCurrent ? css.sideJobItemActive : {})}}
+                        className={cn(
+                          'flex items-center gap-2 px-3 py-2 rounded-lg text-[13px] font-semibold transition-colors',
+                          isCurrent ? 'bg-primary-50 text-primary-700' : 'text-gray-700 hover:bg-gray-100'
+                        )}
                         title={j.title}
                       >
-                        <span style={{...css.sideJobDot, background: dotColor}} />
-                        <span style={css.sideJobTitle}>{j.title}</span>
+                        <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: dotColor }} />
+                        <span className="truncate">{j.title}</span>
                       </Link>
                     );
                   })}
@@ -437,8 +470,10 @@ export function Sidebar({ companyName, userEmail, activePage = 'home', activeJob
         );
       })()}
 
-      <div style={css.sideBottom}>
-        <a onClick={signOut} style={css.signoutLink}>{t('company.sidebar.signOut')}</a>
+      <div className="mt-auto pt-4 px-2.5">
+        <button onClick={signOut} className="text-xs text-gray-500 hover:text-gray-800 underline-offset-2 hover:underline transition-colors">
+          {t('company.sidebar.signOut')}
+        </button>
       </div>
     </aside>
   );
