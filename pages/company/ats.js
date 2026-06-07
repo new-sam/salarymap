@@ -9,6 +9,25 @@ import { formatICT, ICT_LABEL } from '../../lib/timezone';
 import { color, font, space, radius, shadow, motion } from '../../lib/theme';
 import TeamPopover from '../../components/company/TeamPopover';
 import { useT } from '../../lib/i18n';
+import { cn } from '../../lib/cn';
+import { Button } from '../../components/ui/button';
+import { Badge } from '../../components/ui/badge';
+import { Input } from '../../components/ui/input';
+import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator } from '../../components/ui/dropdown-menu';
+import { MoreVertical, Calendar, Mail, Ban, Lock, Plus, Search as SearchIcon, X as XIcon, ArrowLeft, Inbox, MessageCircle, Handshake, PartyPopper } from 'lucide-react';
+
+const STAGE_ICONS = {
+  pending: Inbox,
+  viewed: MessageCircle,
+  reviewing: Handshake,
+  decided: PartyPopper,
+};
+const STAGE_COLORS = {
+  pending:   'text-gray-700 bg-gray-100',
+  viewed:    'text-blue-700 bg-blue-50',
+  reviewing: 'text-purple-700 bg-purple-50',
+  decided:   'text-emerald-700 bg-emerald-50',
+};
 
 const STAGES = [
   { key: 'pending', emoji: '📥' },
@@ -229,176 +248,251 @@ export default function CompanyATSPage() {
       <div style={css.app}>
         <Sidebar companyName={companyName} userEmail={user?.email} activePage="jobs" activeJobId={job.id} />
 
-        <main style={css.main}>
-          <header style={css.mainHead}>
-            <div>
-              <div style={localCss.crumb}><Link href="/company" style={localCss.crumbLink}>{t('company.backDashboard')}</Link></div>
-              <h1 style={css.mainH}>{job.title}</h1>
-              <p style={css.mainP}>
-                {job.location} · {job.type} · ₫{Math.round(job.salary_min/1e6)}M–{Math.round(job.salary_max/1e6)}M · {t('company.ats.countSplit', { active: activeCount, rejected: rejectedCount })}
+        <main className="px-8 py-7 pb-16 flex flex-col gap-6 min-w-0">
+          {/* Header */}
+          <header className="flex items-end justify-between gap-4">
+            <div className="min-w-0">
+              <Link href="/company" className="inline-flex items-center gap-1.5 text-xs font-semibold text-gray-500 hover:text-gray-800 transition-colors mb-2">
+                <ArrowLeft className="h-3.5 w-3.5" />
+                {t('company.backDashboard')}
+              </Link>
+              <h1 className="text-3xl font-extrabold text-gray-900 tracking-tight leading-tight">{job.title}</h1>
+              <p className="text-sm text-gray-600 mt-2 font-medium">
+                {job.location} · {job.type} · ₫{Math.round(job.salary_min/1e6)}M–{Math.round(job.salary_max/1e6)}M
               </p>
+              {/* KPI inline */}
+              <div className="flex items-center gap-6 mt-4">
+                <div>
+                  <div className="text-xs font-bold text-gray-500 uppercase tracking-wider">진행중</div>
+                  <div className="text-3xl font-black text-gray-900 leading-none mt-1 tabular-nums">{activeCount}</div>
+                </div>
+                <div className="h-10 w-px bg-gray-200" />
+                <div>
+                  <div className="text-xs font-bold text-gray-500 uppercase tracking-wider">불합격</div>
+                  <div className="text-3xl font-black text-gray-400 leading-none mt-1 tabular-nums">{rejectedCount}</div>
+                </div>
+              </div>
             </div>
-            <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+            <div className="flex gap-2 items-center shrink-0">
               <TeamPopover jobId={job.id} canInvite={!job.created_by || job.created_by === user?.id} />
-              <Link href={`/company/jobs/${job.id}/edit`} style={css.btnGhost}>{t('company.ats.editJob')}</Link>
-              <Link href="/company/jobs/new" style={localCss.btnNewJob}>{t('company.ats.newJob')}</Link>
+              <Button asChild variant="outline" size="sm">
+                <Link href={`/company/jobs/${job.id}/edit`}>{t('company.ats.editJob')}</Link>
+              </Button>
+              <Button asChild size="sm">
+                <Link href="/company/jobs/new"><Plus className="h-4 w-4 mr-1" />{t('company.ats.newJob')}</Link>
+              </Button>
             </div>
           </header>
 
-          {err && <div style={css.err}>{err}</div>}
+          {err && (
+            <div className="rounded-lg bg-red-50 border border-red-200 text-red-700 px-4 py-3 text-sm font-semibold">{err}</div>
+          )}
 
-          <div style={localCss.toolbar}>
-            <input
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder={t('company.ats.searchPh')}
-              style={localCss.search}
-            />
-            {query && <button onClick={() => setQuery('')} style={localCss.searchClear}>{t('company.clear')}</button>}
-            <label style={localCss.toggleLabel}>
+          {/* Toolbar */}
+          <div className="flex items-center gap-3 flex-wrap">
+            <div className="relative flex-1 min-w-[260px] max-w-md">
+              <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <Input
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder={t('company.ats.searchPh')}
+                className="pl-9 h-10"
+              />
+              {query && (
+                <button
+                  onClick={() => setQuery('')}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded hover:bg-gray-100 text-gray-400 hover:text-gray-700 transition-colors"
+                  aria-label="clear"
+                >
+                  <XIcon className="h-4 w-4" />
+                </button>
+              )}
+            </div>
+            <label className="flex items-center gap-2 px-3 h-10 bg-card border border-border rounded-lg text-sm font-semibold text-gray-700 cursor-pointer hover:bg-gray-50 transition-colors">
               <input
                 type="checkbox"
                 checked={showRejected}
                 onChange={(e) => setShowRejected(e.target.checked)}
+                className="rounded border-gray-300 text-primary focus:ring-primary focus:ring-offset-0"
               />
-              <span>{t('company.ats.showRejected')} ({rejectedCount})</span>
+              <span>{t('company.ats.showRejected')}</span>
+              <Badge variant="secondary" className="ml-1">{rejectedCount}</Badge>
             </label>
-            <span style={localCss.dragHint}>{isOwner ? t('company.ats.dragHint') : t('company.ats.dragHintLocked')}</span>
+            <span className="ml-auto text-xs text-gray-400 font-semibold flex items-center gap-1.5">
+              {!isOwner && <Lock className="h-3 w-3" />}
+              {isOwner ? t('company.ats.dragHint') : t('company.ats.dragHintLocked')}
+            </span>
           </div>
 
-          <div style={localCss.kanban}>
-            {grouped.map((col) => (
-              <div
-                key={col.key}
-                style={{...localCss.col, ...(dragOverCol === col.key ? localCss.colOver : {})}}
-                onDragOver={(e) => { e.preventDefault(); if (dragOverCol !== col.key) setDragOverCol(col.key); }}
-                onDrop={() => handleDrop(col.key)}
-              >
-                <div style={localCss.colHead}>
-                  <span style={localCss.colEmoji}>{col.emoji}</span>
-                  <span style={localCss.colLabel}>{t(`company.stage.${col.key}`)}</span>
-                  <span style={localCss.colCount}>{col.apps.length}</span>
-                </div>
-                <div style={localCss.colBody}>
-                  {col.apps.length === 0 && <div style={localCss.colEmpty}>{dragOverCol === col.key ? t('company.ats.dropHere') : '—'}</div>}
-                  {col.apps.map(app => {
-                    const profile = app.user_id ? profileMap[app.user_id] : null;
-                    const name = app.applicant_name || profile?.full_name || `${t('company.candidatePrefix')}${app.id.slice(-6).toUpperCase()}`;
-                    const showInterviewBadge = app.status === 'viewed' || app.status === 'reviewing';
-                    const interviewWhen = app.interview_at
-                      ? `${formatICT(app.interview_at, { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false })} ${ICT_LABEL}`
-                      : null;
-                    const isRejected = !!app.rejected_at;
-                    const canDrag = isOwner && !isRejected;
-                    const menuOpen = menuOpenId === app.id;
-                    const appliedAt = new Date(app.created_at);
-                    const todayMidnight = new Date(); todayMidnight.setHours(0, 0, 0, 0);
-                    const appliedMidnight = new Date(appliedAt); appliedMidnight.setHours(0, 0, 0, 0);
-                    const daysAgo = Math.max(0, Math.round((todayMidnight.getTime() - appliedMidnight.getTime()) / 86400000));
-                    const dateText = appliedAt.toLocaleDateString(undefined, { month: 'numeric', day: 'numeric' });
-                    const dateLabel = daysAgo === 0
-                      ? t('company.ats.appliedToday', { date: dateText })
-                      : t('company.ats.appliedDaysAgo', { date: dateText, n: daysAgo });
-                    const urgencyStyle = isRejected
-                      ? localCss.applyDateLow
-                      : (daysAgo >= 8 ? localCss.applyDateHigh : daysAgo >= 4 ? localCss.applyDateMid : localCss.applyDateLow);
-                    return (
-                      <div
-                        key={app.id}
-                        draggable={canDrag}
-                        onDragStart={() => canDrag && setDraggingId(app.id)}
-                        onDragEnd={() => { setDraggingId(null); setDragOverCol(null); }}
-                        onClick={() => setSelectedAppId(app.id)}
-                        style={{
-                          ...localCss.card,
-                          ...(selectedAppId === app.id ? localCss.cardActive : {}),
-                          ...(draggingId === app.id ? localCss.cardDragging : {}),
-                          ...(isRejected ? localCss.cardRejected : {}),
-                          position: 'relative',
-                        }}
-                      >
-                        {!isRejected && (
-                          <div style={localCss.kebabWrap}>
-                            <button
-                              onClick={(e) => { e.stopPropagation(); setMenuOpenId(menuOpen ? null : app.id); }}
-                              style={localCss.kebabBtn}
-                              title="더보기"
-                            >⋮</button>
-                            {menuOpen && (
-                              <div style={localCss.kebabMenu} onClick={(e) => e.stopPropagation()}>
-                                {isOwner && showInterviewBadge && (
+          {/* Kanban */}
+          <div className="grid grid-cols-4 gap-5 items-stretch" style={{ minHeight: 'calc(100vh - 320px)' }}>
+            {grouped.map((col) => {
+              const StageIcon = STAGE_ICONS[col.key];
+              const isOver = dragOverCol === col.key;
+              return (
+                <div
+                  key={col.key}
+                  onDragOver={(e) => { e.preventDefault(); if (dragOverCol !== col.key) setDragOverCol(col.key); }}
+                  onDrop={() => handleDrop(col.key)}
+                  className={cn(
+                    'rounded-2xl border p-5 flex flex-col gap-3 transition-all duration-200',
+                    isOver ? 'bg-primary-50 border-primary-300 shadow-soft-md' : 'bg-gray-50 border-gray-200'
+                  )}
+                >
+                  {/* Column header */}
+                  <div className="flex items-center gap-2.5 pb-3 border-b border-gray-200">
+                    <div className={cn('w-7 h-7 rounded-lg flex items-center justify-center', STAGE_COLORS[col.key])}>
+                      <StageIcon className="h-4 w-4" />
+                    </div>
+                    <span className="text-base font-extrabold text-gray-900 tracking-tight flex-1">{t(`company.stage.${col.key}`)}</span>
+                    <span className="bg-card border border-border text-gray-800 text-xs font-extrabold px-2.5 py-0.5 rounded-full min-w-[28px] text-center tabular-nums">{col.apps.length}</span>
+                  </div>
+
+                  {/* Cards */}
+                  <div className="flex flex-col gap-2.5">
+                    {col.apps.length === 0 && (
+                      <div className="text-center py-10 text-sm text-gray-400 font-semibold">
+                        {isOver ? t('company.ats.dropHere') : '—'}
+                      </div>
+                    )}
+                    {col.apps.map(app => {
+                      const profile = app.user_id ? profileMap[app.user_id] : null;
+                      const name = app.applicant_name || profile?.full_name || `${t('company.candidatePrefix')}${app.id.slice(-6).toUpperCase()}`;
+                      const showInterviewBadge = app.status === 'viewed' || app.status === 'reviewing';
+                      const interviewWhen = app.interview_at
+                        ? `${formatICT(app.interview_at, { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false })} ${ICT_LABEL}`
+                        : null;
+                      const isRejected = !!app.rejected_at;
+                      const canDrag = isOwner && !isRejected;
+                      const appliedAt = new Date(app.created_at);
+                      const todayMidnight = new Date(); todayMidnight.setHours(0, 0, 0, 0);
+                      const appliedMidnight = new Date(appliedAt); appliedMidnight.setHours(0, 0, 0, 0);
+                      const daysAgo = Math.max(0, Math.round((todayMidnight.getTime() - appliedMidnight.getTime()) / 86400000));
+                      const dateText = appliedAt.toLocaleDateString(undefined, { month: 'numeric', day: 'numeric' });
+                      const dateLabel = daysAgo === 0
+                        ? t('company.ats.appliedToday', { date: dateText })
+                        : t('company.ats.appliedDaysAgo', { date: dateText, n: daysAgo });
+                      const urgencyClass = isRejected ? 'bg-gray-100 text-gray-600 border-gray-200'
+                        : daysAgo >= 8 ? 'bg-red-50 text-red-700 border-red-200'
+                        : daysAgo >= 4 ? 'bg-amber-50 text-amber-700 border-amber-200'
+                        : 'bg-gray-100 text-gray-700 border-gray-200';
+                      const profileForMail = app.user_id ? profileMap[app.user_id] : null;
+                      const email = app.applicant_email || profileForMail?.email || '';
+                      const defaultTpl = app.status === 'pending' ? 'received'
+                        : (app.status === 'viewed' || app.status === 'reviewing') ? 'interview'
+                        : 'offer';
+
+                      return (
+                        <div
+                          key={app.id}
+                          draggable={canDrag}
+                          onDragStart={() => canDrag && setDraggingId(app.id)}
+                          onDragEnd={() => { setDraggingId(null); setDragOverCol(null); }}
+                          onClick={() => setSelectedAppId(app.id)}
+                          className={cn(
+                            'relative rounded-xl border p-4 flex flex-col gap-2 cursor-pointer transition-all duration-200 ease-spring',
+                            'bg-card border-border shadow-soft-sm hover:shadow-soft-md hover:-translate-y-0.5',
+                            selectedAppId === app.id && 'bg-primary-50 border-primary-400 shadow-brand -translate-y-0.5',
+                            draggingId === app.id && 'opacity-40 shadow-none',
+                            isRejected && 'bg-gray-50 border-dashed border-gray-300 opacity-70 shadow-none hover:translate-y-0',
+                            canDrag && !selectedAppId && 'active:cursor-grabbing'
+                          )}
+                        >
+                          {/* Kebab */}
+                          {!isRejected && (
+                            <div className="absolute top-2.5 right-2.5">
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
                                   <button
-                                    onClick={(e) => { e.stopPropagation(); setInterviewApp(app); setMenuOpenId(null); }}
-                                    style={localCss.kebabItemNeutral}
+                                    onClick={(e) => e.stopPropagation()}
+                                    className="w-7 h-7 rounded-md text-gray-400 hover:text-gray-700 hover:bg-gray-100 grid place-items-center transition-colors"
+                                    aria-label="more"
                                   >
-                                    <span style={localCss.kebabIcon}>📅</span>
-                                    <span style={localCss.kebabText}>{interviewWhen ? t('company.kebab.interviewEdit') : t('company.kebab.interviewSet')}</span>
+                                    <MoreVertical className="h-4 w-4" />
                                   </button>
-                                )}
-                                {isOwner && (() => {
-                                  const profile = app.user_id ? profileMap[app.user_id] : null;
-                                  const email = app.applicant_email || profile?.email || '';
-                                  if (!email) return null;
-                                  const defaultTpl = app.status === 'pending' ? 'received'
-                                    : (app.status === 'viewed' || app.status === 'reviewing') ? 'interview'
-                                    : 'offer';
-                                  return (
-                                    <button
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        setMailFor({ app, profile, email, templateKey: defaultTpl, stageLabel: t(`company.stage.${app.status}`) });
-                                        setMenuOpenId(null);
-                                      }}
-                                      style={localCss.kebabItemNeutral}
-                                    >
-                                      <span style={localCss.kebabIcon}>✉</span>
-                                      <span style={localCss.kebabText}>{t('company.kebab.composeMail')}</span>
-                                    </button>
-                                  );
-                                })()}
-                                {isOwner ? (
-                                  <button
-                                    onClick={(e) => { e.stopPropagation(); setRejectingApp(app); setMenuOpenId(null); }}
-                                    style={localCss.kebabItem}
-                                  >
-                                    <span style={localCss.kebabIcon}>🚫</span>
-                                    <span style={localCss.kebabText}>{t('company.kebab.reject')}</span>
-                                  </button>
-                                ) : (
-                                  <button disabled style={localCss.kebabItemLocked}>
-                                    <span style={localCss.kebabIcon}>🔒</span>
-                                    <span style={localCss.kebabText}>{t('company.kebab.rejectLocked')}</span>
-                                  </button>
-                                )}
-                              </div>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
+                                  {isOwner && showInterviewBadge && (
+                                    <DropdownMenuItem onClick={() => { setInterviewApp(app); }}>
+                                      <Calendar className="h-4 w-4 text-blue-600" />
+                                      {interviewWhen ? t('company.kebab.interviewEdit') : t('company.kebab.interviewSet')}
+                                    </DropdownMenuItem>
+                                  )}
+                                  {isOwner && email && (
+                                    <DropdownMenuItem onClick={() => setMailFor({ app, profile: profileForMail, email, templateKey: defaultTpl, stageLabel: t(`company.stage.${app.status}`) })}>
+                                      <Mail className="h-4 w-4 text-emerald-600" />
+                                      {t('company.kebab.composeMail')}
+                                    </DropdownMenuItem>
+                                  )}
+                                  {isOwner ? (
+                                    <DropdownMenuItem tone="danger" onClick={() => setRejectingApp(app)}>
+                                      <Ban className="h-4 w-4" />
+                                      {t('company.kebab.reject')}
+                                    </DropdownMenuItem>
+                                  ) : (
+                                    <DropdownMenuItem disabled>
+                                      <Lock className="h-4 w-4 text-gray-400" />
+                                      {t('company.kebab.rejectLocked')}
+                                    </DropdownMenuItem>
+                                  )}
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+                            </div>
+                          )}
+
+                          {/* Date pill */}
+                          <div className={cn('self-start inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-bold border', urgencyClass)}>
+                            <Calendar className="h-3 w-3" />
+                            {dateLabel.replace('📅 ', '')}
+                          </div>
+
+                          {/* Name row */}
+                          <div className="flex items-center justify-between gap-2 pr-6">
+                            <span className="text-base font-extrabold text-gray-900 tracking-tight leading-tight truncate">{name}</span>
+                            {isRejected && (
+                              <span className="text-xs font-extrabold text-red-600 shrink-0 inline-flex items-center gap-1">
+                                <Ban className="h-3 w-3" />
+                                {t('company.ats.rejectedBadge')}
+                              </span>
                             )}
                           </div>
-                        )}
-                        <div style={urgencyStyle}>{dateLabel}</div>
-                        <div style={localCss.nameRow}>
-                          <span style={localCss.cardName}>{name}</span>
-                          {isRejected && <span style={localCss.rejectedInline}>🚫 {t('company.ats.rejectedBadge')}</span>}
+
+                          {/* Meta */}
+                          {app.applicant_role && (
+                            <div className="text-sm text-gray-600 font-medium">
+                              {app.applicant_role} · {app.applicant_experience || 0}{t('company.years')}
+                            </div>
+                          )}
+                          {app.applicant_salary && (
+                            <div className="text-sm text-emerald-600 font-bold">
+                              {t('company.ats.wishSalary', { n: Math.round(app.applicant_salary/1e6) })}
+                            </div>
+                          )}
+
+                          {/* Interview badge */}
+                          {!isRejected && showInterviewBadge && (
+                            <button
+                              onClick={(e) => { if (isOwner) { e.stopPropagation(); setInterviewApp(app); } }}
+                              disabled={!isOwner}
+                              className={cn(
+                                'mt-1 inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold border w-full',
+                                interviewWhen
+                                  ? 'bg-emerald-50 border-emerald-200 text-emerald-700'
+                                  : 'bg-amber-50 border-amber-200 text-amber-700',
+                                isOwner && 'cursor-pointer hover:opacity-80 transition-opacity'
+                              )}
+                            >
+                              <Calendar className="h-3.5 w-3.5" />
+                              {interviewWhen ? t('company.ats.interviewSet', { when: interviewWhen }) : t('company.ats.interviewPending')}
+                            </button>
+                          )}
                         </div>
-                        {app.applicant_role && <div style={localCss.cardMeta}>{app.applicant_role} · {app.applicant_experience || 0}{t('company.years')}</div>}
-                        {app.applicant_salary && <div style={localCss.cardSalary}>{t('company.ats.wishSalary', { n: Math.round(app.applicant_salary/1e6) })}</div>}
-                        {!isRejected && showInterviewBadge && (
-                          <div
-                            style={{
-                              ...(interviewWhen ? localCss.interviewSet : localCss.interviewPending),
-                              ...(isOwner ? { cursor: 'pointer' } : {}),
-                            }}
-                            onClick={(e) => { if (isOwner) { e.stopPropagation(); setInterviewApp(app); } }}
-                            title={isOwner ? (interviewWhen ? '클릭하여 일정 수정' : '클릭하여 일정 확정') : undefined}
-                          >
-                            {interviewWhen ? t('company.ats.interviewSet', { when: interviewWhen }) : t('company.ats.interviewPending')}
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
+                      );
+                    })}
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </main>
 

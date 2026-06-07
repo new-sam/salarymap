@@ -1,5 +1,5 @@
 import { useState, useEffect, Fragment } from 'react';
-import { color as tc, font as tf, space as ts, radius as tr, shadow as tsh, motion as tm } from '../../lib/theme';
+import { color as tc, font as tf, space as ts, radius as tr, shadow as tsh, motion as tm } from '../../../lib/theme';
 import Head from 'next/head';
 import { useRouter } from 'next/router';
 import Link from 'next/link';
