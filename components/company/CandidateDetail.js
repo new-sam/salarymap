@@ -1078,7 +1078,7 @@ export default function CandidateDetail({
           mode === 'page' && mobileTab === 'info' && 'hidden md:flex'
         )}>
           <Tabs value={tab} onValueChange={setTab} className="flex flex-col min-h-0">
-            <TabsList className="hidden md:flex">
+            <TabsList className="hidden md:grid">
               <TabsTrigger value="eval"><Star className="w-3.5 h-3.5" />{t('company.candidate.tab.eval')}</TabsTrigger>
               <TabsTrigger value="mail">
                 <Mail className="w-3.5 h-3.5" />{t('company.candidate.tab.mail')}
