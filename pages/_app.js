@@ -47,6 +47,14 @@ export default function App({ Component, pageProps }) {
   // Company pages have their own language switcher; admin pages also have their own.
   const isCompany = router.pathname.startsWith('/company') || router.pathname === '/for-companies';
   const isAdmin = router.pathname.startsWith('/admin');
+
+  // Flag the body so the mobile-only top/bottom reservations (52/60px in
+  // globals.css) collapse for company pages — they render their own header.
+  useEffect(() => {
+    if (typeof document === 'undefined') return;
+    if (isCompany) document.body.dataset.companyMobile = '1';
+    else delete document.body.dataset.companyMobile;
+  }, [isCompany]);
   return (
     <I18nProvider>
       <Component {...pageProps} />
@@ -58,7 +66,7 @@ export default function App({ Component, pageProps }) {
           <LanguageSwitcher />
         </footer>
       )}
-      <MobileTabBar />
+      {!isCompany && <MobileTabBar />}
       <GlobalLoginModal />
       <Toaster
         position="bottom-right"

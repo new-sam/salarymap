@@ -4,6 +4,8 @@ import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { supabase } from '../../lib/supabaseClient';
 import { Sidebar, css } from './jobs/new';
+import MobileNav from '../../components/company/MobileNav';
+import Truncate from '../../components/ui/truncate';
 import Brand from '../../components/company/Brand';
 import LangToggle from '../../components/company/LangToggle';
 import { useT } from '../../lib/i18n';
@@ -350,6 +352,10 @@ export default function CompanyDashboard() {
         <Sidebar companyName={companyName} userEmail={user?.email} activePage="home" />
 
         <main style={css.main}>
+          <MobileNav active="home" companyName={companyName} userEmail={user?.email} />
+          {/* PageHeader hides on mobile — MobileNav already carries company context
+              and the welcome line just eats vertical space on small screens. */}
+          <div className="hidden md:block">
           <PageHeader
             title={(
               <span className="flex items-center gap-2.5">
@@ -359,7 +365,7 @@ export default function CompanyDashboard() {
             )}
             subtitle={`${companyName ? `${companyName} ` : ''}— ${t('company.dashSub')}`}
             right={(
-              <UButton asChild>
+              <UButton asChild className="hidden md:inline-flex">
                 <Link href="/company/jobs/new">
                   <Plus className="w-4 h-4" />
                   {t('company.newJobBtn')}
@@ -367,6 +373,7 @@ export default function CompanyDashboard() {
               </UButton>
             )}
           />
+          </div>
 
           {jobs.length === 0 ? (
             <div className="rounded-xl border-2 border-dashed border-gray-200 bg-white">
@@ -388,9 +395,9 @@ export default function CompanyDashboard() {
             </div>
           ) : (
             <>
-              {/* Dashboard KPI — same color + size rules as the per-job ATS top KPIs.
-                  Gray = informational, primary = action target, green = positive state. */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 mb-4">
+              {/* Dashboard KPI — desktop only; mobile MVP is a focused job list à la Greeting,
+                  not a dashboard. Recruiters open mobile to drill into jobs, not skim stats. */}
+              <div className="hidden md:grid grid-cols-1 sm:grid-cols-3 gap-2.5 mb-4">
                 {/* 공고 (총) — gray */}
                 <div className="rounded-lg border border-border bg-card px-3 py-2.5 shadow-soft-xs">
                   <div className="flex items-center gap-1.5">
@@ -456,13 +463,14 @@ export default function CompanyDashboard() {
                       className="group flex items-center justify-between gap-4 rounded-xl bg-white border border-border px-4 py-3 cursor-pointer transition-all duration-200 ease-spring hover:border-primary-300 hover:shadow-soft-sm hover:-translate-y-px"
                     >
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-1 flex-wrap">
-                          <span className="text-[15px] font-bold text-foreground truncate tracking-tight">{job.title}</span>
-                          <UBadge variant={statusBadgeVariant(job.status)} className="flex-shrink-0">
+                        {/* Title row — full info on desktop, just the title on mobile. */}
+                        <div className="flex items-center gap-2 md:mb-1 flex-wrap">
+                          <Truncate className="text-[15px] font-bold text-foreground tracking-tight">{job.title}</Truncate>
+                          <UBadge variant={statusBadgeVariant(job.status)} className="hidden md:inline-flex flex-shrink-0">
                             {t(`company.status.${job.status}`)}
                           </UBadge>
                           <span className={cn(
-                            'inline-flex items-center gap-1 text-[10.5px] font-extrabold px-1.5 py-0.5 rounded border flex-shrink-0',
+                            'hidden md:inline-flex items-center gap-1 text-[10.5px] font-extrabold px-1.5 py-0.5 rounded border flex-shrink-0',
                             isJobOwner
                               ? 'bg-primary-50 border-primary-200 text-primary-700'
                               : 'bg-gray-100 border-gray-200 text-gray-700'
@@ -470,15 +478,22 @@ export default function CompanyDashboard() {
                             {isJobOwner ? t('company.role.ownerJoined') : t('company.role.interviewerJoined')}
                           </span>
                         </div>
-                        <div className="text-[12px] text-gray-900 font-semibold truncate">
+                        {/* Desktop secondary info */}
+                        <div className="hidden md:block text-[12px] text-gray-900 font-semibold truncate">
                           {job.location} · {job.type} · ₫{Math.round(job.salary_min/1e6)}M–{Math.round(job.salary_max/1e6)}M/월
                         </div>
-                        <div className="text-[11px] text-gray-500 font-semibold mt-1 truncate">
+                        <div className="hidden md:block text-[11px] text-gray-500 font-semibold mt-1 truncate">
                           {t('company.card.postedAt', { date: new Date(job.created_at).toLocaleDateString() })}
+                        </div>
+                        {/* Mobile minimal info — just total applicant count. */}
+                        <div className="md:hidden flex items-center gap-1.5 mt-1 text-[12px] text-gray-600 font-bold">
+                          <Users className="w-3.5 h-3.5 text-gray-400" />
+                          <span className="tabular-nums">{t('company.card.appliedCount', { n: stats.total })}</span>
                         </div>
                       </div>
                       <div className="flex items-center gap-4 flex-shrink-0">
-                        <div className="flex gap-4">
+                        {/* Desktop stats + edit (mobile uses inline count above). */}
+                        <div className="hidden md:flex gap-4">
                           <div className="text-center min-w-[44px]">
                             <div className="text-xl font-extrabold text-foreground tabular-nums leading-none">{stats.total}</div>
                             <div className="text-[10px] text-gray-500 font-extrabold uppercase tracking-[0.08em] mt-1.5">{t('company.stat.apps')}</div>
@@ -492,6 +507,7 @@ export default function CompanyDashboard() {
                           variant="outline"
                           size="sm"
                           onClick={(e) => { e.stopPropagation(); router.push(`/company/jobs/${job.id}/edit`); }}
+                          className="hidden md:inline-flex"
                         >
                           <Edit3 className="w-3.5 h-3.5" />
                           {t('company.editBtn')}
@@ -501,8 +517,12 @@ export default function CompanyDashboard() {
                   );
                 };
                 return ['active', 'inactive'].map(g => (
-                  <section key={g} className="mb-6">
-                    <h2 className="text-[15px] font-extrabold text-gray-800 tracking-tight pl-3 mb-3 border-l-[3px] border-primary-500">
+                  <section key={g} className={cn('mb-3 md:mb-6', g === 'inactive' && 'hidden md:block')}>
+                    <h2 className={cn(
+                      'text-[15px] font-extrabold text-gray-800 tracking-tight pl-3 mb-3 border-l-[3px] border-primary-500',
+                      // Group header is redundant on mobile when only active is shown.
+                      g === 'active' && 'hidden md:block'
+                    )}>
                       {t(`company.jobGroup.${g}`, { n: grouped[g].length })}
                     </h2>
                     {grouped[g].length === 0 ? (

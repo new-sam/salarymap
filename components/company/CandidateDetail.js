@@ -10,6 +10,7 @@ import { Badge as UBadge } from '../ui/badge';
 import { Input as UInput } from '../ui/input';
 import { Dialog as UDialog, DialogContent as UDialogContent, DialogHeader as UDialogHeader, DialogTitle as UDialogTitle, DialogDescription as UDialogDescription, DialogFooter as UDialogFooter } from '../ui/dialog';
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from '../ui/dropdown-menu';
+import Truncate from '../ui/truncate';
 import { ConfirmDialog } from '../ui/confirm-dialog';
 import { Calendar, Mail, Ban, Lock, Check, X as XIcon, Edit3, RotateCcw, Send, Save, Trash2, MapPin, User as UserIcon, Briefcase, AlertCircle, MessageSquare, Star, ChevronRight, ChevronLeft, FileX, Lightbulb, History, MessageCircle as MessageCircleIcon, StickyNote, ThumbsUp, ExternalLink, Trophy, Inbox, MoreVertical, Plus, PartyPopper } from 'lucide-react';
 import { EmptyState } from '../ui/empty-state';
@@ -80,6 +81,13 @@ export default function CandidateDetail({
   const [confirmBusy, setConfirmBusy] = useState(false);
 
   const [tab, setTab] = useState('eval');
+  // Mobile-only 3-tab nav: info / eval / history. On mobile we hide
+  // everything else and let the user drill into just these three areas.
+  const [mobileTab, setMobileTabState] = useState('info');
+  const setMobileTab = (mt) => {
+    setMobileTabState(mt);
+    if (mt === 'eval' || mt === 'history') setTab(mt);
+  };
   const [noteDraft, setNoteDraft] = useState('');
   const [noteSavedAt, setNoteSavedAt] = useState(null);
   const [noteSavedByName, setNoteSavedByName] = useState(null);
@@ -669,18 +677,73 @@ export default function CandidateDetail({
   const hintToneClass = 'bg-primary-50/70 border-primary-200 text-gray-900';
   const hintEyebrowClass = 'text-primary-700';
 
+  // Mobile-only 3-tab nav definition — kept inside the component so it picks
+  // up t() updates on language change.
+  const mobileTabs = [
+    { key: 'info',    label: t('company.candidate.tab.info') },
+    { key: 'eval',    label: t('company.candidate.tab.eval') },
+    { key: 'history', label: t('company.candidate.tab.history') },
+  ];
+
   return (
     <div className={cn(
       mode === 'overlay'
         ? 'flex flex-col h-full bg-[#FAFAFA]'
-        : 'min-h-screen bg-gray-50 px-6 py-6 max-w-[1400px] mx-auto'
+        : 'min-h-screen bg-gray-50 px-4 py-4 md:px-6 md:py-6 max-w-[1400px] mx-auto'
     )}>
+      {/* Mobile top bar — icon-only back + 3-tab nav. Replaces hero clutter on small screens. */}
+      {mode === 'page' && (
+        <div className="md:hidden -mx-4 -mt-4 mb-3 bg-white border-b border-border sticky top-0 z-30">
+          <div className="flex items-center gap-1 px-2 h-12 border-b border-gray-100">
+            <Link
+              href={`/company/ats?job=${job.id}&stage=${app.status}`}
+              aria-label={t('company.back')}
+              className="inline-flex items-center justify-center w-10 h-10 rounded-md text-gray-700 hover:bg-gray-100 transition-colors"
+            >
+              <ChevronLeft className="w-5 h-5" />
+            </Link>
+            <Truncate as="span" className="text-[15px] font-extrabold text-gray-900 tracking-tight min-w-0">
+              {name}
+            </Truncate>
+            {/* Current-stage chip — primary tone for active stages, red for rejected. */}
+            <span className={cn(
+              'ml-2 inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10.5px] font-extrabold flex-shrink-0 border',
+              app.rejected_at
+                ? 'bg-red-50 border-red-200 text-red-700'
+                : 'bg-primary-50 border-primary-200 text-primary-700'
+            )}>
+              {app.rejected_at ? t('company.ats.rejectedBadge') : t(`company.stage.${app.status}`)}
+            </span>
+          </div>
+          <div className="flex">
+            {mobileTabs.map(mt => {
+              const isActive = mobileTab === mt.key;
+              return (
+                <button
+                  key={mt.key}
+                  type="button"
+                  onClick={() => setMobileTab(mt.key)}
+                  className={cn(
+                    'flex-1 h-10 text-[12.5px] font-extrabold transition-colors border-b-2',
+                    isActive ? 'text-gray-900 border-gray-900' : 'text-gray-500 border-transparent'
+                  )}
+                >
+                  {mt.label}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
       {/* Hero header — full-width sticky banner with avatar, meta, quick actions, navigation.
           Left-edge color bar reflects current stage so candidate-to-candidate sweeps make
           the stage change immediately visible. */}
       <header className={cn(
         'relative flex flex-col gap-3',
-        mode === 'overlay' ? 'px-5 pt-3 pb-3 border-b border-border bg-white' : 'mb-5'
+        mode === 'overlay' ? 'px-5 pt-3 pb-3 border-b border-border bg-white' : 'mb-5',
+        // Mobile page mode: hero hidden entirely — the top bar already carries
+        // the back / name / stage, and 정보 tab is the resume preview only.
+        mode === 'page' && 'hidden md:flex'
       )}>
         {mode === 'overlay' && (
           <div
@@ -696,7 +759,7 @@ export default function CandidateDetail({
         {mode === 'overlay' && (
           <div className="flex items-center gap-2 -mt-1">
             {stageCounts && stageOrder && (
-              <div className="flex items-center gap-1.5 -mx-1 overflow-x-auto min-w-0 flex-1">
+              <div className="hidden md:flex items-center gap-1.5 -mx-1 overflow-x-auto min-w-0 flex-1">
                 {stageOrder.map((sKey) => {
                   const label = t(`company.stage.${sKey}`);
                   const cnt = stageCounts[sKey] ?? 0;
@@ -732,10 +795,10 @@ export default function CandidateDetail({
             <div className="flex items-center gap-1.5 flex-shrink-0 ml-auto">
               {(onPrev || onNext) && (
                 <>
-                  <UButton variant="outline" size="icon" onClick={onPrev} disabled={!onPrev} className="h-8 w-8" title={t('company.candidate.prevCandidate')}>
+                  <UButton variant="outline" size="icon" onClick={onPrev} disabled={!onPrev} className="hidden md:inline-flex h-8 w-8" title={t('company.candidate.prevCandidate')}>
                     <ChevronLeft className="w-4 h-4" />
                   </UButton>
-                  <div className="inline-flex items-center gap-1.5 h-8 px-2.5 rounded-md bg-gray-50 border border-border">
+                  <div className="hidden md:inline-flex items-center gap-1.5 h-8 px-2.5 rounded-md bg-gray-50 border border-border">
                     <span className={cn('w-1.5 h-1.5 rounded-full flex-shrink-0', STAGE_DOT_CLASS[app.status])} />
                     <span className="text-[11.5px] font-bold text-gray-900 truncate">{t(`company.stage.${app.status}`)}</span>
                     {stageTotal != null && stageIndex != null && stageTotal > 0 && (
@@ -744,10 +807,10 @@ export default function CandidateDetail({
                       </span>
                     )}
                   </div>
-                  <UButton variant="outline" size="icon" onClick={onNext} disabled={!onNext} className="h-8 w-8" title={t('company.candidate.nextCandidate')}>
+                  <UButton variant="outline" size="icon" onClick={onNext} disabled={!onNext} className="hidden md:inline-flex h-8 w-8" title={t('company.candidate.nextCandidate')}>
                     <ChevronRight className="w-4 h-4" />
                   </UButton>
-                  <div className="w-px h-6 bg-border mx-1" />
+                  <div className="hidden md:block w-px h-6 bg-border mx-1" />
                 </>
               )}
               <UButton variant="ghost" size="icon" onClick={onClose} className="h-8 w-8" title={t('company.candidate.closePanel')}>
@@ -757,7 +820,7 @@ export default function CandidateDetail({
           </div>
         )}
         {mode === 'page' && (
-          <BackLink href={`/company/ats?job=${job.id}`} className="mb-1.5 w-fit">
+          <BackLink href={`/company/ats?job=${job.id}`} className="hidden md:inline-flex mb-1.5 w-fit">
             {t('company.candidate.backToKanban', { job: job.title })}
           </BackLink>
         )}
@@ -771,8 +834,13 @@ export default function CandidateDetail({
             {initial}
           </div>
           <div className="min-w-0 flex-1">
-            <h1 className="text-hero text-gray-900 truncate">{name}</h1>
-            <div className="mt-1.5 text-[13.5px] text-gray-900 font-semibold truncate flex items-center flex-wrap gap-x-2">
+            <Truncate as="h1" className="text-hero text-gray-900">{name}</Truncate>
+            {/* Compact mobile meta — just email so the line fits without ellipsis. */}
+            <div className="mt-1.5 md:hidden text-[13px] text-gray-900 font-semibold break-all">
+              {email}
+            </div>
+            {/* Full desktop meta line */}
+            <div className="mt-1.5 hidden md:flex text-[13.5px] text-gray-900 font-semibold truncate items-center flex-wrap gap-x-2">
               <span>{email}</span>
               {app.applicant_role && <><span className="text-gray-400">·</span><span>{app.applicant_role}</span></>}
               {(app.applicant_experience !== null && app.applicant_experience !== undefined) && (
@@ -785,8 +853,8 @@ export default function CandidateDetail({
           </div>
 
           {/* All actions on the right: communication | divider | decision.
-              Aligned to the bottom of Row 1 so they sit below the name/meta block. */}
-          <div className="flex items-center gap-2 flex-shrink-0 flex-wrap self-end">
+              Hidden entirely on mobile — Greeting-style: mobile shows only info/eval/history. */}
+          <div className="hidden md:flex items-center gap-2 flex-shrink-0 flex-wrap self-end">
             {/* Communication actions — ordered by workflow:
                 interview scheduling first, then notification mail.
                 When a schedule exists, show it as a chip to the LEFT of the button
@@ -912,7 +980,7 @@ export default function CandidateDetail({
             Row 1: eyebrow | Stage Checklist progress stepper (inline, divider-separated)
             Row 2: numbered title (the single next action to take) */}
         {smartHint && (
-          <div className={cn('flex items-start gap-2.5 rounded-lg border px-3.5 py-2.5', hintToneClass)}>
+          <div className={cn('hidden md:flex items-start gap-2.5 rounded-lg border px-3.5 py-2.5', hintToneClass)}>
             <Lightbulb className="w-[18px] h-[18px] flex-shrink-0 mt-0.5 text-primary-600" />
             <div className="min-w-0 flex-1 space-y-1.5">
               <div className="flex items-center gap-2.5 flex-wrap">
@@ -921,8 +989,8 @@ export default function CandidateDetail({
                 </span>
                 {smartHint.steps && smartHint.total > 1 && (
                   <>
-                    <span className="w-px h-3.5 bg-current opacity-25" />
-                    <div className="flex items-center gap-1 flex-wrap text-[12px]">
+                    <span className="hidden md:inline w-px h-3.5 bg-current opacity-25" />
+                    <div className="hidden md:flex items-center gap-1 flex-wrap text-[12px]">
                       {smartHint.steps.map((label, i) => {
                         const idx = i + 1;
                         const isDone = idx < smartHint.step;
@@ -966,7 +1034,12 @@ export default function CandidateDetail({
         'grid gap-4 flex-1 min-h-0',
         mode === 'overlay' ? 'grid-cols-1 lg:grid-cols-[1fr_400px] px-5 pt-3 pb-5 overflow-auto' : 'grid-cols-1 lg:grid-cols-[1fr_400px]'
       )}>
-        <section className="flex flex-col bg-white rounded-xl border border-border shadow-soft-xs overflow-hidden min-h-[600px]">
+        <section className={cn(
+          'flex flex-col bg-white rounded-xl border border-border shadow-soft-xs overflow-hidden min-h-[420px] md:min-h-[600px]',
+          // Mobile (page mode): visible only when the 정보 tab is active.
+          // Mobile (overlay) + non-info mobile tabs: hidden.
+          mode === 'page' && mobileTab === 'info' ? '' : 'hidden md:flex'
+        )}>
           <div className="flex items-center justify-between px-3.5 py-1.5 border-b border-border bg-gray-50/50">
             <span className="text-[13px] font-bold text-foreground">{t('company.candidate.resume')}</span>
             {hasResume && (
@@ -986,7 +1059,7 @@ export default function CandidateDetail({
             // fills the panel cleanly instead of floating with side gutters.
             <iframe
               src={`${app.resume_url}${app.resume_url.includes('#') ? '&' : '#'}view=FitH`}
-              className="flex-1 w-full border-0 min-h-[720px] bg-[#f3f4f6]"
+              className="flex-1 w-full border-0 min-h-[420px] md:min-h-[720px] bg-[#f3f4f6]"
               title="resume"
             />
           ) : (
@@ -999,9 +1072,13 @@ export default function CandidateDetail({
           )}
         </section>
 
-        <aside className="flex flex-col min-h-0">
+        <aside className={cn(
+          'flex flex-col min-h-0',
+          // On mobile show only when the 평가 or 히스토리 tab is active.
+          mode === 'page' && mobileTab === 'info' && 'hidden md:flex'
+        )}>
           <Tabs value={tab} onValueChange={setTab} className="flex flex-col min-h-0">
-            <TabsList>
+            <TabsList className="hidden md:flex">
               <TabsTrigger value="eval"><Star className="w-3.5 h-3.5" />{t('company.candidate.tab.eval')}</TabsTrigger>
               <TabsTrigger value="mail">
                 <Mail className="w-3.5 h-3.5" />{t('company.candidate.tab.mail')}
@@ -1089,7 +1166,7 @@ export default function CandidateDetail({
                               <span className="text-[12px] font-bold text-gray-900">{tplLabel}</span>
                               <span className="text-[10.5px] text-gray-500 font-semibold">{when}</span>
                             </div>
-                            {m.subject && <div className="text-[11.5px] text-gray-700 truncate">{m.subject}</div>}
+                            {m.subject && <Truncate as="div" className="text-[11.5px] text-gray-700">{m.subject}</Truncate>}
                           </div>
                         );
                       })}
@@ -1934,7 +2011,7 @@ function ActivityTimeline({ t, app, evals, mailLog }) {
                       </span>
                     )}
                     {e.detail && (
-                      <span className="text-[13px] text-gray-700 leading-relaxed whitespace-pre-line line-clamp-2 flex-1 min-w-0">
+                      <span className="text-[13px] text-gray-700 leading-relaxed whitespace-pre-line flex-1 min-w-0 break-words">
                         {e.detail}
                       </span>
                     )}

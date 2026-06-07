@@ -8,6 +8,8 @@ import { useT } from '../../lib/i18n';
 import { cn } from '../../lib/cn';
 import { PageHeader } from '../../components/ui/page-header';
 import { Skeleton } from '../../components/ui/skeleton';
+import MobileNav from '../../components/company/MobileNav';
+import Truncate from '../../components/ui/truncate';
 import { nextActionFor, STAGE_LABEL_KO } from '../../lib/smart-hint';
 import { CheckSquare, Star, Calendar, Mail, Check, Ban, ChevronRight } from 'lucide-react';
 
@@ -28,6 +30,15 @@ const TONE_CLASS = {
   green:   'text-green-700  bg-green-50  border-green-200',
   red:     'text-red-700    bg-red-50    border-red-200',
   gray:    'text-gray-700   bg-gray-100  border-gray-200',
+};
+
+// Tone → mobile card left-edge color. Heavier accent on primary/red so urgent
+// items pop, neutral on green/gray. Used only on the touch-friendly mobile card.
+const TONE_BORDER_L = {
+  primary: 'border-l-primary-500',
+  green:   'border-l-green-500',
+  red:     'border-l-red-500',
+  gray:    'border-l-gray-300',
 };
 
 export default function CompanyTodoPage() {
@@ -174,20 +185,24 @@ export default function CompanyTodoPage() {
         <Sidebar companyName={companyName} userEmail={user?.email} activePage="todo" />
 
         <main style={css.main} className="!pb-10">
-          <PageHeader
-            title={(
-              <span className="flex items-center gap-2.5">
-                <CheckSquare className="w-5 h-5 text-primary-600" />
-                {t('company.todo.h')}
-                {items.length > 0 && (
-                  <span className="inline-flex items-center min-w-[28px] h-[22px] px-2 rounded-full bg-primary-50 border border-primary-200 text-primary-700 text-[12px] font-extrabold tabular-nums">
-                    {t('company.todo.count', { n: items.length })}
-                  </span>
-                )}
-              </span>
-            )}
-            subtitle={t('company.todo.sub')}
-          />
+          <MobileNav active="todo" companyName={companyName} userEmail={user?.email} />
+          {/* PageHeader hides on mobile — MobileNav already labels the page. */}
+          <div className="hidden md:block">
+            <PageHeader
+              title={(
+                <span className="flex items-center gap-2.5">
+                  <CheckSquare className="w-5 h-5 text-primary-600" />
+                  {t('company.todo.h')}
+                  {items.length > 0 && (
+                    <span className="inline-flex items-center min-w-[28px] h-[22px] px-2 rounded-full bg-primary-50 border border-primary-200 text-primary-700 text-[12px] font-extrabold tabular-nums">
+                      {t('company.todo.count', { n: items.length })}
+                    </span>
+                  )}
+                </span>
+              )}
+              subtitle={t('company.todo.sub')}
+            />
+          </div>
 
           {items.length === 0 ? (
             <div className="rounded-xl border border-dashed border-gray-200 bg-white p-10 text-center">
@@ -202,7 +217,10 @@ export default function CompanyTodoPage() {
                   <section
                     key={jid}
                     className={cn(
-                      'flex flex-col gap-2 py-5',
+                      'flex flex-col gap-2 py-3 md:py-5',
+                      // First section has no top padding on mobile so it hugs the
+                      // top nav like the dashboard does.
+                      sIdx === 0 && 'pt-0 md:pt-5',
                       sIdx > 0 && 'border-t border-gray-300'
                     )}
                   >
@@ -213,12 +231,14 @@ export default function CompanyTodoPage() {
                       </span>
                       <Link
                         href={`/company/ats?job=${jid}`}
-                        className="ml-auto text-[12px] font-bold text-primary-700 hover:text-primary-900 underline underline-offset-2"
+                        className="hidden md:inline-block ml-auto text-[12px] font-bold text-primary-700 hover:text-primary-900 underline underline-offset-2"
                       >
                         {t('company.todo.openJob')}
                       </Link>
                     </header>
-                    <div className="rounded-xl border border-border bg-white overflow-hidden divide-y divide-border">
+                    {/* Mobile: separate touch-friendly cards with tone-colored left edge + press feedback.
+                        Desktop: traditional divided list for dense scanning. */}
+                    <div className="flex flex-col gap-2 md:gap-0 md:rounded-xl md:border md:border-border md:bg-white md:overflow-hidden md:divide-y md:divide-border">
                       {jobItems.map(({ candidate, action, isOwner }) => {
                         const Icon = KIND_ICON[action.kind] || Star;
                         const profile = candidate.user_id ? profileMap[candidate.user_id] : null;
@@ -229,22 +249,29 @@ export default function CompanyTodoPage() {
                             key={candidate.id}
                             type="button"
                             onClick={() => openAction(job.id, candidate.id, action.kind)}
-                            className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-gray-50 transition-colors"
+                            className={cn(
+                              'w-full flex items-center gap-3 text-left transition-all',
+                              // Mobile: subtle card — radius + soft border + tap shrink (no tone-color edge)
+                              'bg-white rounded-xl border border-border px-4 py-3.5 shadow-soft-xs active:scale-[0.98] active:bg-gray-50',
+                              // Desktop: revert to flat list row inside the wrapper
+                              'md:rounded-none md:border-0 md:shadow-none md:px-4 md:py-3 md:hover:bg-gray-50 md:active:scale-100'
+                            )}
                           >
+                            {/* Action-kind icon — hidden on mobile to give text full width. */}
                             <span className={cn(
-                              'w-8 h-8 rounded-md grid place-items-center flex-shrink-0 border',
+                              'hidden md:grid w-8 h-8 rounded-md place-items-center flex-shrink-0 border',
                               TONE_CLASS[action.tone] || TONE_CLASS.gray
                             )}>
                               <Icon className="w-4 h-4" />
                             </span>
                             <div className="min-w-0 flex-1">
                               <div className="flex items-center gap-1.5 flex-wrap mb-0.5">
-                                <span className="text-[13.5px] font-extrabold text-gray-900 truncate">{name}</span>
-                                <span className="text-[10.5px] font-extrabold px-1.5 py-0.5 rounded border border-gray-200 bg-gray-100 text-gray-700">
+                                <Truncate className="text-[13.5px] font-extrabold text-gray-900" stopPropagation={false}>{name}</Truncate>
+                                <span className="hidden md:inline-flex text-[10.5px] font-extrabold px-1.5 py-0.5 rounded border border-gray-200 bg-gray-100 text-gray-700">
                                   {stageLabel}
                                 </span>
                                 <span className={cn(
-                                  'text-[10.5px] font-extrabold px-1.5 py-0.5 rounded border',
+                                  'hidden md:inline-flex text-[10.5px] font-extrabold px-1.5 py-0.5 rounded border',
                                   isOwner
                                     ? 'bg-primary-50 border-primary-200 text-primary-700'
                                     : 'bg-gray-100 border-gray-200 text-gray-700'
@@ -252,9 +279,11 @@ export default function CompanyTodoPage() {
                                   {isOwner ? t('company.todo.roleOwner') : t('company.todo.roleInterviewer')}
                                 </span>
                               </div>
-                              <div className="text-[13px] text-gray-700 font-semibold truncate">{action.title}</div>
+                              <Truncate as="div" className="text-[13px] text-gray-700 font-semibold" stopPropagation={false}>{action.title}</Truncate>
                             </div>
-                            <span className="inline-flex items-center gap-1 h-8 px-3 rounded-md border border-gray-200 bg-white text-[12px] font-bold text-gray-700 hover:bg-gray-100 transition-colors flex-shrink-0">
+                            {/* Mobile: just a chevron as a tap affordance. Desktop: full "처리하기 ›" button. */}
+                            <ChevronRight className="md:hidden w-4 h-4 text-gray-400 flex-shrink-0" />
+                            <span className="hidden md:inline-flex items-center gap-1 h-8 px-3 rounded-md border border-gray-200 bg-white text-[12px] font-bold text-gray-700 hover:bg-gray-100 transition-colors flex-shrink-0">
                               {t('company.todo.go')}
                               <ChevronRight className="w-3.5 h-3.5" />
                             </span>

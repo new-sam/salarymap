@@ -5,9 +5,11 @@ import { useRouter } from 'next/router';
 import { supabase } from '../../../lib/supabaseClient';
 import { Sidebar, css } from '../jobs/new';
 import CandidateDetail from '../../../components/company/CandidateDetail';
+import { useT } from '../../../lib/i18n';
 
 export default function CandidatePage() {
   const router = useRouter();
+  const { t } = useT();
   const { id } = router.query;
 
   const [status, setStatus] = useState('loading');
@@ -31,13 +33,13 @@ export default function CandidatePage() {
     })();
   }, []);
 
-  if (status === 'loading') return <div style={css.loading}>Loading…</div>;
+  if (status === 'loading') return <div style={css.loading}>{t('company.loading')}</div>;
   if (status === 'unauthed') {
     return (
       <div style={css.fullCenter}>
         <div style={css.lightCard}>
-          <h1 style={css.cardH}>로그인 필요</h1>
-          <Link href="/company/signup" style={css.btnPrimary}>로그인 / 가입</Link>
+          <h1 style={css.cardH}>{t('company.loginRequired')}</h1>
+          <Link href="/company/signup" style={css.btnPrimary}>{t('company.loginOrSignup')}</Link>
         </div>
       </div>
     );
@@ -48,7 +50,7 @@ export default function CandidatePage() {
       <Head><title>지원자 · FYI</title></Head>
       <div style={css.app}>
         <Sidebar companyName={companyName} userEmail={user?.email} activePage="jobs" />
-        <main style={{minWidth:0}}>
+        <main style={{minWidth:0, flex:1}}>
           <CandidateDetail appId={id} mode="page" companyId={companyId} />
         </main>
       </div>

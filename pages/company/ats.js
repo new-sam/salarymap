@@ -15,9 +15,10 @@ import { Button } from '../../components/ui/button';
 import { Badge } from '../../components/ui/badge';
 import { Input } from '../../components/ui/input';
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator } from '../../components/ui/dropdown-menu';
-import { MoreVertical, Calendar, Mail, Ban, Lock, Plus, Search as SearchIcon, X as XIcon, Inbox, MessageSquare, Users, Trophy, Activity, CheckCircle2, XCircle, Edit3, Clock, Check, MoveHorizontal, Briefcase, PartyPopper } from 'lucide-react';
+import { MoreVertical, Calendar, Mail, Ban, Lock, Plus, Search as SearchIcon, X as XIcon, Inbox, MessageSquare, Users, Trophy, Activity, CheckCircle2, XCircle, Edit3, Clock, Check, MoveHorizontal, Briefcase, PartyPopper, ChevronLeft } from 'lucide-react';
 import { PageHeader } from '../../components/ui/page-header';
 import { KanbanSkeleton } from '../../components/ui/page-skeleton';
+import Truncate from '../../components/ui/truncate';
 
 const STAGE_ICONS = {
   pending: Inbox,
@@ -52,7 +53,7 @@ const STAGE_ORDER = STAGES.map(s => s.key);
 export default function CompanyATSPage() {
   const router = useRouter();
   const { t } = useT();
-  const { job: jobId, app: appQueryId } = router.query;
+  const { job: jobId, app: appQueryId, stage: stageQuery } = router.query;
 
   const [status, setStatus] = useState('loading');
   const [user, setUser] = useState(null);
@@ -191,11 +192,24 @@ export default function CompanyATSPage() {
 
   // Auto-open the candidate panel if /company/ats?app=<id> is passed in
   // (used by the to-do feed for one-click access to the actionable candidate).
+  // On mobile, route straight to the full candidate page instead of opening
+  // the overlay so the experience matches direct tap-from-kanban.
   useEffect(() => {
-    if (appQueryId && typeof appQueryId === 'string') {
+    if (!appQueryId || typeof appQueryId !== 'string') return;
+    if (typeof window !== 'undefined' && window.matchMedia('(max-width: 767px)').matches) {
+      router.replace(`/company/candidates/${appQueryId}`);
+    } else {
       setSelectedAppId(appQueryId);
     }
-  }, [appQueryId]);
+  }, [appQueryId, router]);
+
+  // Honor ?stage=<key> — used when returning from a candidate page so the
+  // kanban lands on the stage the candidate sits in (mobile drilldown).
+  useEffect(() => {
+    if (stageQuery && typeof stageQuery === 'string' && STAGE_ORDER.includes(stageQuery)) {
+      setMobileStage(stageQuery);
+    }
+  }, [stageQuery]);
 
   // Load stage-pass audit rows (one per stage decision) for every visible
   // candidate. Returns a Map<appId, Set<'pending_pass' | 'viewed_pass' | ...>>.
@@ -348,7 +362,15 @@ export default function CompanyATSPage() {
   };
 
   // Stable handlers for memoized KanbanCard — refs only change on real dependency moves.
-  const handleSelectApp = useCallback((appId) => setSelectedAppId(appId), []);
+  // Desktop opens an overlay modal; mobile navigates to a dedicated page so
+  // the candidate detail has the full viewport and a real back button.
+  const handleSelectApp = useCallback((appId) => {
+    if (typeof window !== 'undefined' && window.matchMedia('(max-width: 767px)').matches) {
+      router.push(`/company/candidates/${appId}`);
+    } else {
+      setSelectedAppId(appId);
+    }
+  }, [router]);
   const handleCardDragStart = useCallback((appId) => setDraggingId(appId), []);
   const handleCardDragEnd = useCallback(() => { setDraggingId(null); setDragOverCol(null); }, []);
   const handleOpenInterview = useCallback((app) => setInterviewApp(app), []);
@@ -445,26 +467,49 @@ export default function CompanyATSPage() {
         <Sidebar companyName={companyName} userEmail={user?.email} activePage="jobs" activeJobId={job.id} />
 
         <main className="px-4 md:px-6 pb-3 flex flex-col gap-3 min-w-0 flex-1 h-screen overflow-hidden">
+          {/* Mobile top bar — same structure as the candidate detail's brand row
+              so the two pages share a unified header look on small screens. */}
+          <div className="md:hidden -mx-4 sticky top-0 z-30 bg-white border-b border-gray-100 flex items-center gap-1 px-2 h-12">
+            <Link
+              href="/company"
+              aria-label={t('company.back')}
+              className="inline-flex items-center justify-center w-10 h-10 rounded-md text-gray-700 hover:bg-gray-100 transition-colors"
+            >
+              <ChevronLeft className="w-5 h-5" />
+            </Link>
+            <Truncate as="span" className="text-[15px] font-extrabold text-gray-900 tracking-tight min-w-0">
+              {job.title}
+            </Truncate>
+          </div>
+
+          {/* Desktop PageHeader (mobile uses the custom bar above). */}
           <PageHeader
+            className="hidden md:flex"
             title={(
-              <span className="flex items-center gap-2.5">
+              <span className="flex items-center gap-2 md:gap-2.5 text-xl">
                 <Briefcase className="w-5 h-5 text-primary-600" />
                 {job.title}
               </span>
             )}
-            subtitle={`${job.location} · ${job.type} · ₫${Math.round(job.salary_min/1e6)}M–${Math.round(job.salary_max/1e6)}M`}
+            subtitle={(
+              <span className="hidden md:inline">
+                {job.location} · {job.type} · ₫{Math.round(job.salary_min/1e6)}M–{Math.round(job.salary_max/1e6)}M
+              </span>
+            )}
             right={(
               <>
                 <span className={cn(
-                  'inline-flex items-center gap-1 h-9 px-2.5 rounded-md border text-[12px] font-extrabold whitespace-nowrap',
+                  'hidden md:inline-flex items-center gap-1 h-9 px-2.5 rounded-md border text-[12px] font-extrabold whitespace-nowrap',
                   isOwner
                     ? 'bg-primary-50 border-primary-200 text-primary-700'
                     : 'bg-gray-100 border-gray-200 text-gray-700'
                 )}>
                   {isOwner ? t('company.ats.roleOwnerJoined') : t('company.ats.roleInterviewerJoined')}
                 </span>
-                <TeamPopover jobId={job.id} canInvite={!job.created_by || job.created_by === user?.id} />
-                <Button asChild variant="outline">
+                <span className="hidden md:inline-flex">
+                  <TeamPopover jobId={job.id} canInvite={!job.created_by || job.created_by === user?.id} />
+                </span>
+                <Button asChild variant="outline" className="hidden md:inline-flex">
                   <Link href={`/company/jobs/${job.id}/edit`}>
                     <Edit3 className="h-3.5 w-3.5" />
                     {t('company.ats.editJob')}
@@ -474,8 +519,9 @@ export default function CompanyATSPage() {
             )}
           />
 
-          {/* KPI cards — 4 metrics (interview schedule lives in the calendar nav) */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          {/* KPI cards — desktop only; mobile keeps the kanban-as-list focused on the task,
+              not on stats (Greeting-style minimalism). */}
+          <div className="hidden md:grid grid-cols-2 md:grid-cols-4 gap-3">
             {/* 신규 검토 — 가장 중요. "오늘의 할 일" 강조 */}
             <button
               type="button"
@@ -565,29 +611,13 @@ export default function CompanyATSPage() {
             <div className="rounded-lg bg-red-50 border border-red-200 text-red-700 px-4 py-3 text-sm font-semibold">{err}</div>
           )}
 
-          {/* Active KPI filter pill */}
-          {kpiFilter && (
-            <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-primary-50 border border-primary-200 text-xs font-bold text-primary-800">
-              <span>{t('company.filter.label')}</span>
-              <span className="font-extrabold">
-                {kpiFilter === 'new' && t('company.kpi.new')}
-                {kpiFilter === 'inProgress' && t('company.kpi.inProgress')}
-                {kpiFilter === 'hired' && t('company.kpi.hired')}
-                {kpiFilter === 'rejected' && t('company.kpi.rejected')}
-              </span>
-              <button
-                onClick={() => setKpiFilter(null)}
-                className="ml-auto inline-flex items-center gap-1 text-primary-700 hover:text-primary-900 transition-colors"
-              >
-                <XIcon className="h-3.5 w-3.5" />
-                {t('company.filter.clear')}
-              </button>
-            </div>
-          )}
+          {/* Filter pill removed — the active KPI card / meta tab already shows the state.
+              A separate pill just adds vertical noise without informing more. */}
 
-          {/* Toolbar */}
-          <div className="flex items-center gap-3 flex-wrap">
-            <div className="relative flex-1 min-w-[260px] max-w-md">
+          {/* Toolbar — desktop-only entirely on mobile: search hidden, drag hint hidden, so
+              rendering this wrapper just contributes a flex-gap line with no content. */}
+          <div className="hidden md:flex items-center gap-3 flex-wrap">
+            <div className="hidden md:block relative flex-1 min-w-[260px] max-w-md">
               <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
               <Input
                 value={query}
@@ -606,37 +636,35 @@ export default function CompanyATSPage() {
               )}
             </div>
             {isOwner && (
-              <span className="ml-auto text-[12px] text-gray-500 font-semibold flex items-center gap-1.5 whitespace-nowrap">
+              <span className="hidden md:flex ml-auto text-[12px] text-gray-500 font-semibold items-center gap-1.5 whitespace-nowrap">
                 <MoveHorizontal className="h-3.5 w-3.5 text-gray-400" />
                 {t('company.ats.dragHintHowto')}
               </span>
             )}
             {!isOwner && (
-              <span className="ml-auto text-[11px] text-gray-400 font-semibold flex items-center gap-1.5">
+              <span className="hidden md:flex ml-auto text-[11px] text-gray-400 font-semibold items-center gap-1.5">
                 <Lock className="h-3 w-3" />
                 {t('company.ats.dragHintLocked')}
               </span>
             )}
           </div>
 
-          {/* Mobile stage tabs */}
-          <div className="md:hidden flex items-center gap-1 px-1 -mx-1 overflow-x-auto">
+          {/* Mobile stage tabs — 4 chips, evenly distributed across the viewport width. */}
+          <div className="md:hidden flex items-center gap-1">
             {grouped.map((col) => {
               const isActive = mobileStage === col.key;
-              const TabIcon = STAGE_ICONS[col.key];
               return (
                 <button
                   key={col.key}
                   type="button"
                   onClick={() => setMobileStage(col.key)}
                   className={cn(
-                    'flex items-center gap-1.5 px-3 py-2 rounded-full text-[13px] font-bold transition-all whitespace-nowrap',
-                    isActive ? 'bg-primary-500 text-white shadow-brand' : 'bg-white border border-border text-gray-700 hover:border-gray-300'
+                    'flex-1 min-w-0 inline-flex items-center justify-center gap-1 px-1 py-2 rounded-full text-[12px] font-bold transition-all',
+                    isActive ? 'bg-primary-500 text-white shadow-brand' : 'bg-white border border-border text-gray-700'
                   )}
                 >
-                  <TabIcon className={cn('w-3.5 h-3.5', isActive ? 'text-white' : STAGE_ICON_CLASS[col.key])} />
-                  {t(`company.stage.${col.key}`)}
-                  <span className={cn('text-[11px] tabular-nums', isActive ? 'opacity-80' : 'text-gray-400')}>
+                  <span className="truncate">{t(`company.stage.${col.key}`)}</span>
+                  <span className={cn('text-[11px] tabular-nums flex-shrink-0', isActive ? 'opacity-80' : 'text-gray-400')}>
                     {col.apps.length}
                   </span>
                 </button>
@@ -661,8 +689,9 @@ export default function CompanyATSPage() {
                     hiddenOnMobile && 'hidden md:flex'
                   )}
                 >
-                  {/* Column header — Greeting style: stage icon + text + count */}
-                  <div className="flex items-center gap-2 px-1 pb-2 border-b border-[#E5E8EC]">
+                  {/* Column header — hidden on mobile since the stage chip above
+                      already shows the same info; redundancy hurts mobile space. */}
+                  <div className="hidden md:flex items-center gap-2 px-1 pb-2 border-b border-[#E5E8EC]">
                     <StageIcon className={cn('w-3.5 h-3.5', STAGE_ICON_CLASS[col.key])} />
                     <span className="text-[13px] font-extrabold text-gray-900 tracking-tight flex-1">{t(`company.stage.${col.key}`)}</span>
                     <span className="text-[11px] font-extrabold text-gray-900 tabular-nums bg-white border border-[#E5E8EC] rounded-full min-w-[22px] text-center px-1.5 py-0.5">{col.apps.length}</span>
@@ -924,7 +953,7 @@ const KanbanCard = memo(function KanbanCard({
         canDragCard && !isSelected && 'active:cursor-grabbing'
       )}
     >
-      <div className="absolute top-2 right-2">
+      <div className="absolute top-2 right-2 hidden md:block">
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <button onClick={(e) => e.stopPropagation()} className="w-6 h-6 rounded-md text-gray-900 hover:bg-gray-100 grid place-items-center transition-colors" aria-label="more">
@@ -977,8 +1006,8 @@ const KanbanCard = memo(function KanbanCard({
         {dateLabel}
       </div>
 
-      <div className="flex items-center justify-between gap-2 pr-6">
-        <span className="text-[15px] font-extrabold text-gray-900 tracking-tight leading-tight truncate">{name}</span>
+      <div className="flex items-center justify-between gap-2 md:pr-6">
+        <Truncate className="text-[15px] font-extrabold text-gray-900 tracking-tight leading-tight">{name}</Truncate>
         {isRejected && (
           <span className="text-[10.5px] font-extrabold text-red-600 shrink-0 inline-flex items-center gap-0.5 uppercase tracking-wider">
             <Ban className="h-2.5 w-2.5" />
@@ -1005,14 +1034,19 @@ const KanbanCard = memo(function KanbanCard({
 
       {!isRejected && showInterviewBadge && (
         <button
-          onClick={(e) => { if (isOwner) { e.stopPropagation(); onOpenInterview(app); } }}
+          onClick={(e) => {
+            // Mobile: let the parent card click handle (or do nothing) — no edit modal.
+            if (typeof window !== 'undefined' && window.matchMedia('(max-width: 767px)').matches) return;
+            if (isOwner) { e.stopPropagation(); onOpenInterview(app); }
+          }}
           disabled={!isOwner}
           className={cn(
             'mt-1 inline-flex items-center gap-1.5 px-2 py-1.5 rounded-md text-[12px] font-bold border w-full',
             interviewWhen && interviewPast && 'bg-green-50 border-green-200 text-green-800',
             interviewWhen && !interviewPast && 'bg-sky-50 border-sky-200 text-sky-800',
             !interviewWhen && 'bg-white border-dashed border-gray-300 text-gray-500',
-            isOwner && 'cursor-pointer hover:opacity-80 transition-opacity'
+            // Cursor / hover only on desktop — mobile lets the card-level tap handle.
+            isOwner && 'md:cursor-pointer md:hover:opacity-80 transition-opacity'
           )}
         >
           {interviewWhen && interviewPast

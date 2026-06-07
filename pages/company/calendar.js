@@ -12,6 +12,8 @@ import { PageHeader } from '../../components/ui/page-header';
 import { Skeleton } from '../../components/ui/skeleton';
 import { ChevronLeft, ChevronRight, CalendarDays as CalendarIcon } from 'lucide-react';
 import CandidateDetail from '../../components/company/CandidateDetail';
+import MobileNav from '../../components/company/MobileNav';
+import Truncate from '../../components/ui/truncate';
 
 const LOCALES = { vi: 'vi-VN', en: 'en-US', ko: 'ko-KR' };
 const dateKey = (d) => `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
@@ -148,7 +150,15 @@ export default function CompanyCalendarPage() {
   const nextMonth = () => setView(v => v.month === 11 ? { year: v.year + 1, month: 0 } : { ...v, month: v.month + 1 });
   const goToday = () => { const d = new Date(); setView({ year: d.getFullYear(), month: d.getMonth() }); };
 
-  const goCandidate = (appId) => setSelectedAppId(appId);
+  // Desktop opens an overlay modal; mobile navigates to a dedicated page so
+  // the candidate detail has the full viewport and a real back button.
+  const goCandidate = (appId) => {
+    if (typeof window !== 'undefined' && window.matchMedia('(max-width: 767px)').matches) {
+      router.push(`/company/candidates/${appId}`);
+    } else {
+      setSelectedAppId(appId);
+    }
+  };
 
   return (
     <>
@@ -157,6 +167,9 @@ export default function CompanyCalendarPage() {
         <Sidebar companyName={companyName} userEmail={user?.email} activePage="calendar" />
 
         <main style={css.main} className="!h-screen !overflow-hidden flex flex-col">
+          <MobileNav active="calendar" companyName={companyName} userEmail={user?.email} />
+          {/* PageHeader hides on mobile — MobileNav already labels the page. */}
+          <div className="hidden md:block">
           <PageHeader
             title={(
               <span className="flex items-center gap-2.5">
@@ -171,8 +184,9 @@ export default function CompanyCalendarPage() {
             )}
             subtitle={t('company.calendar.sub')}
           />
+          </div>
 
-          <div className="flex items-center justify-between mb-2 px-1">
+          <div className="hidden md:flex items-center justify-between mb-2 px-1">
             <div className="flex items-center gap-2">
               <h2 className="text-[15px] font-extrabold text-foreground tracking-tight">
                 {t('company.calendar.monthLabel', { year: view.year, month: view.month + 1 })}
@@ -197,7 +211,7 @@ export default function CompanyCalendarPage() {
             </div>
           </div>
 
-          <div className="flex-1 min-h-0 flex flex-col">
+          <div className="flex-1 min-h-0 hidden md:flex flex-col">
             <div className="grid grid-cols-7 bg-[#F7F8FA] border border-[#E5E8EC] rounded-t-lg overflow-hidden flex-shrink-0">
               {[0,1,2,3,4,5,6].map(i => (
                 <div
@@ -277,6 +291,71 @@ export default function CompanyCalendarPage() {
               );
             })}
             </div>
+          </div>
+
+          {/* Mobile chronological list — date-grouped, replaces the calendar grid under md. */}
+          <div className="md:hidden flex-1 min-h-0 overflow-y-auto pb-6">
+            {items.length === 0 ? (
+              <div className="text-center py-16 text-gray-400 text-[13px] font-semibold">
+                {t('company.calendar.emptyDesc')}
+              </div>
+            ) : (() => {
+              const groups = {};
+              items.forEach(it => {
+                const d = new Date(it.interview_at);
+                const k = dateKey(d);
+                if (!groups[k]) groups[k] = { date: d, items: [] };
+                groups[k].items.push(it);
+              });
+              const orderedKeys = Object.keys(groups).sort((a, b) => groups[a].date - groups[b].date);
+              const tomorrow = new Date(); tomorrow.setDate(tomorrow.getDate() + 1);
+              const tomorrowK = dateKey(tomorrow);
+              const labelFor = (d, k) => {
+                if (k === todayKey) return t('company.calendar.todayBtn');
+                if (k === tomorrowK) return t('company.calendar.tomorrow');
+                return t('company.calendar.dateLabel', { m: d.getMonth() + 1, d: d.getDate(), w: t(`company.calendar.weekday.${d.getDay()}`) });
+              };
+              return orderedKeys.map(k => {
+                const grp = groups[k];
+                return (
+                  <section key={k} className="mb-4">
+                    <div className="text-[11.5px] font-extrabold text-gray-500 uppercase tracking-[0.06em] mb-2 px-1">
+                      {labelFor(grp.date, k)}
+                    </div>
+                    <div className="flex flex-col gap-1.5">
+                      {grp.items.map(it => {
+                        const time = fmtTime(new Date(it.interview_at));
+                        const isPast = new Date(it.interview_at).getTime() < nowMs;
+                        const stageLabel = t(`company.stage.${it.status}`);
+                        const name = it.applicant_name || t('company.candidatePrefix').replace('#', '').trim();
+                        return (
+                          <button
+                            key={it.id}
+                            type="button"
+                            onClick={() => goCandidate(it.id)}
+                            className={cn(
+                              'flex items-center gap-3 px-3 py-2.5 rounded-md border text-left transition-colors',
+                              isPast ? 'bg-green-50 border-green-200 text-green-900' : 'bg-sky-50 border-sky-200 text-sky-900'
+                            )}
+                          >
+                            <span className={cn(
+                              'text-[13px] font-extrabold tabular-nums flex-shrink-0 w-12',
+                              isPast ? 'text-green-700' : 'text-sky-700'
+                            )}>
+                              {time}
+                            </span>
+                            <div className="flex-1 min-w-0">
+                              <Truncate as="div" className="text-[14px] font-extrabold text-gray-900" stopPropagation={false}>{name}</Truncate>
+                              <Truncate as="div" className="text-[12px] text-gray-700 font-semibold" stopPropagation={false}>{it.jobTitle} · {stageLabel}</Truncate>
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </section>
+                );
+              });
+            })()}
           </div>
         </main>
 

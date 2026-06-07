@@ -91,6 +91,12 @@ a {
     padding-top: 52px !important;
     padding-bottom: calc(60px + env(safe-area-inset-bottom)) !important;
   }
+  /* Company pages render their own MobileNav (top) and have no candidate-side
+     MobileTabBar, so reset the global reservations. */
+  body[data-company-mobile="1"] {
+    padding-top: 0 !important;
+    padding-bottom: 0 !important;
+  }
   .mtab {
     display: flex !important;
     position: fixed !important;
