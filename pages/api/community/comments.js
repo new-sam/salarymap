@@ -53,6 +53,23 @@ async function companyVerifiedMap(userIds) {
   return map
 }
 
+// Map of user_id -> profile photo (user_profiles.photo_url), the picture the user
+// uploaded in-app. Used to set author_avatar on non-anonymous comments so the
+// in-app photo shows. Anonymous comments skip this.
+async function avatarMap(userIds) {
+  const ids = [...new Set(userIds)].filter(Boolean)
+  if (!ids.length) return {}
+  const { data } = await supabase
+    .from('user_profiles')
+    .select('id, photo_url')
+    .in('id', ids)
+  const map = {}
+  ;(data || []).forEach(p => {
+    if (p.photo_url) map[p.id] = p.photo_url
+  })
+  return map
+}
+
 // User ids the caller has blocked — their comments are excluded from GET responses.
 async function blockedIdsFor(token) {
   if (!token) return []
@@ -99,9 +116,10 @@ export default async function handler(req, res) {
 
     const tierMap = await salaryTierMap(data.map(c => c.user_id))
     const cvMap = await companyVerifiedMap(data.map(c => c.user_id))
+    const avMap = await avatarMap(data.map(c => c.user_id))
 
     return res.status(200).json({
-      comments: data.map(c => ({ ...c, is_liked: likedCommentIds.includes(c.id), author_salary_tier: tierMap[c.user_id] || null, author_verified_company: cvMap[c.user_id] || null }))
+      comments: data.map(c => ({ ...c, is_liked: likedCommentIds.includes(c.id), author_salary_tier: tierMap[c.user_id] || null, author_verified_company: cvMap[c.user_id] || null, author_avatar: c.is_anonymous ? null : (avMap[c.user_id] || null) }))
     })
   }
 
@@ -159,12 +177,14 @@ export default async function handler(req, res) {
     // so the freshly-posted comment shows company / salary badge without a reload.
     const tierMap = await salaryTierMap([user.id])
     const cvMap = await companyVerifiedMap([user.id])
+    const avMap = await avatarMap([user.id])
 
     return res.status(201).json({
       ...data,
       is_liked: false,
       author_salary_tier: tierMap[user.id] || null,
       author_verified_company: cvMap[user.id] || null,
+      author_avatar: data.is_anonymous ? null : (avMap[user.id] || null),
     })
   }
 
