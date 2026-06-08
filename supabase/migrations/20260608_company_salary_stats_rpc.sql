@@ -54,5 +54,8 @@ as $$
     sal.max_salary,
     top.role as top_role
   from sal
-  full join top on sal.company = top.company;
+  full join top on sal.company = top.company
+  -- 안정적 정렬 필수: PostgREST가 요청당 1000행으로 잘라 페이지네이션하므로
+  -- ORDER BY가 없으면 페이지 간 행이 겹치거나 누락됨.
+  order by 1;
 $$;

@@ -120,13 +120,22 @@ async function fetchAll(query) {
 async function fetchSalaryStats(role, experience) {
   const map = {};
 
-  // Preferred path: Postgres aggregation via RPC
-  const { data, error } = await supabase.rpc('get_company_salary_stats', {
-    p_role: role || null,
-    p_experience: experience || null,
-  });
-
-  if (!error && Array.isArray(data)) {
+  // Preferred path: Postgres aggregation via RPC.
+  // PostgREST caps each response at 1000 rows, so paginate with .range() —
+  // the RPC's `order by` makes the slices stable. (>1000 companies have data.)
+  const PAGE = 1000;
+  let from = 0;
+  let rpcFailed = false;
+  while (true) {
+    const { data, error } = await supabase
+      .rpc('get_company_salary_stats', { p_role: role || null, p_experience: experience || null })
+      .range(from, from + PAGE - 1);
+    if (error) {
+      console.warn('get_company_salary_stats RPC unavailable, falling back:', error.message);
+      rpcFailed = true;
+      break;
+    }
+    if (!data || data.length === 0) break;
     data.forEach(r => {
       const key = (r.company || '').trim().toLowerCase();
       if (!key) return;
@@ -138,11 +147,14 @@ async function fetchSalaryStats(role, experience) {
         topRole: r.top_role || null,
       };
     });
-    return map;
+    if (data.length < PAGE) break;
+    from += PAGE;
   }
 
-  // Fallback: client-side aggregation (RPC not deployed)
-  console.warn('get_company_salary_stats RPC unavailable, falling back:', error?.message);
+  if (!rpcFailed) return map;
+
+  // Fallback: client-side aggregation (RPC not deployed) — discard any partial RPC data
+  for (const k in map) delete map[k];
   const raw = {};
   let q = supabase.from('submissions').select('company, salary, role, experience');
   if (role) q = q.eq('role', role);
@@ -182,34 +194,24 @@ export default async function handler(req, res) {
       supabase.from('companies').select('id, name, tier')
     );
 
-    // 2. Fast RPC for total counts
-    const { data: rpcData } = await supabase.rpc('get_company_stats');
-    const totalCountMap = {};
-    (rpcData || []).forEach(r => {
-      const key = r.company.trim().toLowerCase();
-      totalCountMap[key] = Number(r.cnt);
-    });
-
-    // 3. Salary stats — server-side aggregation via RPC (count/median/min/max/top_role)
-    //    Falls back to client-side aggregation if the RPC isn't deployed yet.
+    // 2. Salary stats — server-side aggregation via RPC. Single source for
+    //    count/median/min/max/topRole so they always come from the same
+    //    normalized-company bucket. Falls back to client-side aggregation if
+    //    the RPC isn't deployed.
     const salaryMap = await fetchSalaryStats(role, experience);
 
-    // 4. Join companies + salary data
+    // 3. Join companies + salary data
     const cards = companies.map((co, i) => {
       const key = co.name.trim().toLowerCase();
       const sub = salaryMap[key];
-      const hasFilteredData = !!(sub && sub.count >= 1);
-      const hasData = hasFilteredData || (totalCountMap[key] || 0) > 0;
-      const salaryStats = hasFilteredData
+      const hasData = !!(sub && sub.count >= 1);
+      const salaryStats = hasData
         ? { count: sub.count, median: sub.median, min: sub.min, max: sub.max }
         : { count: 0, median: 0, min: 0, max: 0 };
 
-      // Total count from unfiltered submissions — exact DB value
-      const displayCount = totalCountMap[key] || 0;
-
       const domain = DOMAIN_MAP[key] || null;
       const image = IMAGE_MAP[co.name] || BG_POOL[i % BG_POOL.length];
-      const topRole = sub ? sub.topRole || null : null;
+      const topRole = hasData ? sub.topRole || null : null;
 
       return {
         name: co.name,
@@ -218,7 +220,7 @@ export default async function handler(req, res) {
         tier: co.tier || 3,
         hasData,
         topRole,
-        count: displayCount,
+        count: salaryStats.count,
         median: salaryStats.median,
         min: salaryStats.min,
         max: salaryStats.max,
