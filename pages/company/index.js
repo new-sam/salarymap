@@ -143,6 +143,18 @@ export default function CompanyDashboard() {
     }
   };
 
+  const cancelSetupAndSignOut = async () => {
+    setAuthErr('');
+    try { await supabase.auth.signOut(); } catch {}
+    if (typeof window !== 'undefined') {
+      try {
+        localStorage.removeItem('fyi_intent');
+        localStorage.removeItem('fyi_login_return');
+      } catch {}
+    }
+    router.push('/for-companies');
+  };
+
   useEffect(() => {
     // Hydrate from sessionStorage after mount (avoids SSR/CSR mismatch).
     try {
@@ -295,7 +307,12 @@ export default function CompanyDashboard() {
         <style>{authResponsiveCss}</style>
         <div className="company-auth-shell" style={localCss.authShell}>
           <div style={localCss.topRow}>
-            <Brand href="/for-companies" />
+            <div style={localCss.topRowLeft}>
+              <Brand href="/for-companies" />
+              <Link href="/for-companies" style={localCss.backLink}>
+                {t('company.setupBack')}
+              </Link>
+            </div>
             <LangToggle />
           </div>
 
@@ -341,6 +358,13 @@ export default function CompanyDashboard() {
                 {authErr && <div style={localCss.authErr}>{authErr}</div>}
                 <button type="submit" disabled={setupBusy} style={localCss.primaryBtn}>
                   {setupBusy ? t('company.connecting') : t('company.connectBtn')}
+                </button>
+                <button
+                  type="button"
+                  onClick={cancelSetupAndSignOut}
+                  style={localCss.switchAccountBtn}
+                >
+                  {t('company.setupSwitch')}
                 </button>
               </form>
             </section>
@@ -572,6 +596,16 @@ const localCss = {
     display: 'flex', alignItems: 'center', justifyContent: 'space-between',
     marginBottom: 58, gap: 12, flexWrap: 'wrap',
   },
+  topRowLeft: {
+    display: 'flex', alignItems: 'center', gap: 18,
+  },
+  backLink: {
+    color: '#525252',
+    fontSize: 13,
+    fontWeight: 700,
+    textDecoration: 'none',
+    letterSpacing: '-0.005em',
+  },
   authGrid: {
     display: 'grid',
     gridTemplateColumns: 'minmax(0, 0.95fr) minmax(380px, 0.72fr)',
@@ -664,6 +698,46 @@ const localCss = {
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
+  },
+  primaryBtnDisabled: {
+    background: '#E5E7EB',
+    color: '#9CA3AF',
+    cursor: 'not-allowed',
+  },
+  consent: {
+    marginTop: 4,
+    border: '1px solid #E5E7EB',
+    borderRadius: 12,
+    padding: '14px 16px',
+    background: '#FAFAFA',
+  },
+  consentAll: {
+    display: 'flex', alignItems: 'center', gap: 9,
+    fontSize: 13.5, fontWeight: 800, color: '#111', cursor: 'pointer',
+  },
+  consentDivider: { height: 1, background: '#E5E7EB', margin: '11px 0' },
+  consentRow: {
+    display: 'flex', alignItems: 'center', gap: 9,
+    fontSize: 12.5, color: '#374151', cursor: 'pointer', padding: '4px 0',
+  },
+  consentText: { flex: 1, lineHeight: 1.4 },
+  consentReq: { color: '#EA580C', fontWeight: 800 },
+  consentOpt: { color: '#9CA3AF', fontWeight: 800 },
+  consentView: { color: '#6B7280', fontSize: 11.5, fontWeight: 700, textDecoration: 'underline', flexShrink: 0 },
+  checkbox: { width: 16, height: 16, accentColor: '#EA580C', cursor: 'pointer', flexShrink: 0 },
+  switchAccountBtn: {
+    marginTop: 10,
+    width: '100%',
+    border: 'none',
+    borderRadius: 999,
+    padding: '8px 16px',
+    color: '#6B7280',
+    background: 'transparent',
+    fontSize: 12.5,
+    fontWeight: 700,
+    fontFamily: 'inherit',
+    cursor: 'pointer',
+    textAlign: 'center',
   },
   googleBtn: {
     marginTop: 5,
