@@ -10,7 +10,7 @@ import { PageHeader } from '../../components/ui/page-header';
 import { Skeleton } from '../../components/ui/skeleton';
 import MobileNav from '../../components/company/MobileNav';
 import Truncate from '../../components/ui/truncate';
-import { nextActionFor, STAGE_LABEL_KO } from '../../lib/smart-hint';
+import { nextActionFor } from '../../lib/smart-hint';
 import { CheckSquare, Star, Calendar, Mail, Check, Ban, ChevronRight } from 'lucide-react';
 
 // Map action kind → icon so the row visual matches the meaning at a glance.
@@ -262,7 +262,10 @@ export default function CompanyTodoPage() {
                         const Icon = KIND_ICON[action.kind] || Star;
                         const profile = candidate.user_id ? profileMap[candidate.user_id] : null;
                         const name = candidate.applicant_name || profile?.full_name || `지원자 ${candidate.id.slice(-6).toUpperCase()}`;
-                        const stageLabel = STAGE_LABEL_KO[action.stage] || t(`company.stage.${action.stage}`);
+                        // Use t() directly so the chip respects the language
+                        // setting — STAGE_LABEL_KO was hardcoded Korean and
+                        // shadowed the en/vi translations.
+                        const stageLabel = t(`company.stage.${action.stage}`) || action.stage;
                         return (
                           <button
                             key={candidate.id}
