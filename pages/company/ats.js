@@ -53,7 +53,11 @@ const STAGE_ORDER = STAGES.map(s => s.key);
 export default function CompanyATSPage() {
   const router = useRouter();
   const { t } = useT();
-  const { job: jobId, app: appQueryId, stage: stageQuery } = router.query;
+  const { job: jobId, app: appQueryId, stage: stageQuery, from: fromQuery } = router.query;
+  // Where the candidate panel close button should send the user. Defaults to
+  // staying on the kanban; `?from=todo` returns to the to-do feed so a click
+  // from /company/todo round-trips back instead of stranding the user here.
+  const closeReturnPath = fromQuery === 'todo' ? '/company/todo' : null;
 
   const [status, setStatus] = useState('loading');
   const [user, setUser] = useState(null);
@@ -238,11 +242,16 @@ export default function CompanyATSPage() {
   useEffect(() => {
     if (!appQueryId || typeof appQueryId !== 'string') return;
     if (typeof window !== 'undefined' && window.matchMedia('(max-width: 767px)').matches) {
-      router.replace(`/company/candidates/${appQueryId}`);
+      // Forward the `from` hint so the mobile candidate page knows to return
+      // to /company/todo on close (matches the desktop overlay behavior).
+      const target = fromQuery === 'todo'
+        ? `/company/candidates/${appQueryId}?from=todo`
+        : `/company/candidates/${appQueryId}`;
+      router.replace(target);
     } else {
       setSelectedAppId(appQueryId);
     }
-  }, [appQueryId, router]);
+  }, [appQueryId, fromQuery, router]);
 
   // Honor ?stage=<key> — used when returning from a candidate page so the
   // kanban lands on the stage the candidate sits in (mobile drilldown).
@@ -936,7 +945,11 @@ export default function CompanyATSPage() {
                   }}
                   onPrevStage={prevStageFirstId ? () => { loadStagePasses(apps.map(a => a.id)); setSelectedAppId(prevStageFirstId); } : null}
                   onNextStage={nextStageFirstId ? () => { loadStagePasses(apps.map(a => a.id)); setSelectedAppId(nextStageFirstId); } : null}
-                  onClose={() => { setSelectedAppId(null); loadStagePasses(apps.map(a => a.id)); }}
+                  onClose={() => {
+                    setSelectedAppId(null);
+                    loadStagePasses(apps.map(a => a.id));
+                    if (closeReturnPath) router.push(closeReturnPath);
+                  }}
                   onStageChange={(id, patch) => { setApps(prev => prev.map(a => a.id === id ? { ...a, ...patch } : a)); loadStagePasses(apps.map(a => a.id)); }}
                   onAdvanceStage={setStage}
                 />

@@ -2257,13 +2257,15 @@ export function MailComposer({
     setSending(true);
     try {
       const { data: { session } } = await supabase.auth.getSession();
-      const tplName = selectedPresetKey
-        ? t(MAIL_PRESETS.find(p => p.key === selectedPresetKey)?.labelKey || '')
-        : selectedId ? (templates.find(x => x.id === selectedId)?.name || '') : '';
+      // Store the canonical preset key (e.g. 'doc_pass', 'final_offer', 'reject')
+      // so the smart hint can reliably detect which mails have been sent.
+      // For custom user templates, store the template name as a stable identifier.
+      const tplKey = selectedPresetKey
+        || (selectedId ? `custom:${templates.find(x => x.id === selectedId)?.name || ''}` : '');
       const res = await fetch('/api/company/send-mail', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session?.access_token || ''}` },
-        body: JSON.stringify({ appId: applicationId, subject, body, templateKey: tplName }),
+        body: JSON.stringify({ appId: applicationId, subject, body, templateKey: tplKey }),
       });
       const json = await res.json().catch(() => ({}));
       if (!res.ok) { setErr(json.error || t('company.err.mailFail')); setSending(false); return; }

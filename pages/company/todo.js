@@ -20,9 +20,26 @@ const KIND_ICON = {
   advance: ChevronRight,
   schedule: Calendar,
   send_interview_mail: Mail,
+  send_pass_mail: Mail,
   send_offer_mail: Mail,
   send_reject_mail: Mail,
   follow_up: Check,
+};
+
+// Map action kind → button label key so the CTA names the actual verb
+// (예: "평가하기", "메일 보내기") instead of a generic "처리하기".
+// Policy: UI 라벨에는 "처리" 단어를 쓰지 않고 액션 동사를 직접 노출한다.
+const KIND_LABEL_KEY = {
+  evaluate: 'company.todo.go.evaluate',
+  decide: 'company.todo.go.decide',
+  advance: 'company.todo.go.advance',
+  schedule: 'company.todo.go.schedule',
+  await_interview: 'company.todo.go.awaitInterview',
+  send_interview_mail: 'company.todo.go.sendMail',
+  send_pass_mail: 'company.todo.go.sendMail',
+  send_offer_mail: 'company.todo.go.sendMail',
+  send_reject_mail: 'company.todo.go.sendMail',
+  follow_up: 'company.todo.go.followUp',
 };
 
 const TONE_CLASS = {
@@ -140,9 +157,11 @@ export default function CompanyTodoPage() {
   // Route based on action kind:
   // - 'advance' (다음 전형으로 넘기세요) → kanban only, so the user can drag.
   // - everything else → kanban + auto-open the candidate panel.
+  // `from=todo` lets the ATS page (and the mobile candidate detail route) know
+  // to return here on close instead of leaving the user stranded on the kanban.
   const openAction = (jobId, appId, kind) => {
-    if (kind === 'advance') router.push(`/company/ats?job=${jobId}`);
-    else router.push(`/company/ats?job=${jobId}&app=${appId}`);
+    if (kind === 'advance') router.push(`/company/ats?job=${jobId}&from=todo`);
+    else router.push(`/company/ats?job=${jobId}&app=${appId}&from=todo`);
   };
 
   // Group items by job for the feed.
@@ -281,10 +300,10 @@ export default function CompanyTodoPage() {
                               </div>
                               <Truncate as="div" className="text-[13px] text-gray-700 font-semibold" stopPropagation={false}>{action.title}</Truncate>
                             </div>
-                            {/* Mobile: just a chevron as a tap affordance. Desktop: full "처리하기 ›" button. */}
+                            {/* Mobile: just a chevron as a tap affordance. Desktop: full action-verb button. */}
                             <ChevronRight className="md:hidden w-4 h-4 text-gray-400 flex-shrink-0" />
                             <span className="hidden md:inline-flex items-center gap-1 h-8 px-3 rounded-md border border-gray-200 bg-white text-[12px] font-bold text-gray-700 hover:bg-gray-100 transition-colors flex-shrink-0">
-                              {t('company.todo.go')}
+                              {t(KIND_LABEL_KEY[action.kind] || 'company.todo.go')}
                               <ChevronRight className="w-3.5 h-3.5" />
                             </span>
                           </button>

@@ -10,7 +10,7 @@ import { useT } from '../../../lib/i18n';
 export default function CandidatePage() {
   const router = useRouter();
   const { t } = useT();
-  const { id } = router.query;
+  const { id, from } = router.query;
 
   const [status, setStatus] = useState('loading');
   const [user, setUser] = useState(null);
@@ -51,7 +51,12 @@ export default function CandidatePage() {
       <div style={css.app}>
         <Sidebar companyName={companyName} userEmail={user?.email} activePage="jobs" />
         <main style={{minWidth:0, flex:1}}>
-          <CandidateDetail appId={id} mode="page" companyId={companyId} />
+          <CandidateDetail
+            appId={id}
+            mode="page"
+            companyId={companyId}
+            onClose={from === 'todo' ? () => router.push('/company/todo') : undefined}
+          />
         </main>
       </div>
     </>
