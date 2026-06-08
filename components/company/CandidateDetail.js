@@ -49,6 +49,14 @@ const STAGE_SOLID_CLASS = {
 const EVAL_STAGE_KEYS = ['pending', 'viewed', 'reviewing'];
 const STAGE_ORDER = STAGES.map(s => s.key);
 
+// Next stage after a pass decision. Returns null at the terminal stage so
+// callers can skip the auto-advance step. Used by both the kanban kebab
+// flow (ats.js setStage) and the detail panel direct status update.
+export function nextStageAfter(stage) {
+  const i = STAGE_ORDER.indexOf(stage);
+  return i >= 0 && i < STAGE_ORDER.length - 1 ? STAGE_ORDER[i + 1] : null;
+}
+
 
 /**
  * mode: 'page' | 'overlay'
@@ -56,7 +64,7 @@ const STAGE_ORDER = STAGES.map(s => s.key);
  *   when rendered inside ATS overlay. Optional — fall back to no nav.
  */
 export default function CandidateDetail({
-  appId, mode = 'page', onClose, companyId, onStageChange,
+  appId, mode = 'page', onClose, companyId, onStageChange, onAdvanceStage = null,
   navIndex = null, navTotal = null, onPrev = null, onNext = null,
   stageIndex = null, stageTotal = null, stageCounts = null, stageOrder = null,
   onJumpToStage = null, onPrevStage = null, onNextStage = null,
@@ -286,9 +294,60 @@ export default function CandidateDetail({
       if (!res.ok) { toast.error(json.error || t('company.toast.passFailed')); return; }
       if (json.row) setEvals(prev => [...prev, json.row]);
       toast.success(t('company.toast.passDecided', { stage: t(`company.stageLabel.short.${app.status}`) || app.status }));
+      promptDecisionMail({ decision: 'pass', stage: app.status });
     } catch (e) {
       toast.error(t('company.toast.passFailed'));
     }
+  };
+
+  // After a pass/reject decision, ask whether to draft the result email now.
+  // On confirm, opens MailComposer with the stage-correct preset preloaded.
+  // Auto-advances to the next stage after a pass decision regardless of the
+  // mail choice (UX: 합/불 결정 + 메일 안내 흐름을 끝낸 후엔 카드가 자연스럽게 다음 단계로 넘어감).
+  const promptDecisionMail = ({ decision, stage }) => {
+    const advance = () => advanceAfterPass({ decision, stage });
+    if (!email || email === '—') {
+      advance();
+      return;
+    }
+    const stageLabel = t(`company.stageLabel.short.${stage}`) || t(`company.stage.${stage}`) || stage;
+    const titleKey = decision === 'reject'
+      ? 'company.decision.mailPromptTitleReject'
+      : 'company.decision.mailPromptTitlePass';
+    setConfirmState({
+      title: t(titleKey, { stage: stageLabel }),
+      description: t('company.decision.mailPromptDesc', { name }),
+      confirmLabel: t('company.decision.mailPromptConfirm'),
+      cancelLabel: t('company.decision.mailPromptCancel'),
+      onConfirm: () => {
+        setConfirmState(null);
+        const tplKey = templateKeyForDecision({ decision, stage });
+        if (tplKey) setMailModal({ templateKey: tplKey });
+        advance();
+      },
+      onCancel: () => { advance(); },
+    });
+  };
+
+  // Move the card to the next stage after a pass decision. Reject does not
+  // advance (rejected_at already moves the candidate out of the active pipeline).
+  // Prefers parent-provided onAdvanceStage (ats.js setStage with snapshot/audit);
+  // falls back to a direct supabase status update for the mobile candidate page.
+  const advanceAfterPass = async ({ decision, stage }) => {
+    if (decision !== 'pass') return;
+    const next = nextStageAfter(stage);
+    if (!next || !app) return;
+    if (onAdvanceStage) {
+      try { await onAdvanceStage(app.id, next); } catch {}
+      return;
+    }
+    const { error } = await supabase
+      .from('job_applications')
+      .update({ status: next, updated_at: new Date().toISOString() })
+      .eq('id', app.id);
+    if (error) return;
+    setApp(prev => prev ? { ...prev, status: next } : prev);
+    onStageChange?.(app.id, { status: next });
   };
 
   const unmarkStagePass = async () => {
@@ -348,9 +407,12 @@ export default function CandidateDetail({
 
   // Open the in-app confirmation modal. The caller passes a handler that
   // runs only after the user confirms; busy state + close are handled here.
-  const askConfirm = ({ onConfirm, ...rest }) => {
+  // Optional `onCancel` fires when the user dismisses without confirming
+  // (needed for the pass/reject mail prompt which auto-advances regardless).
+  const askConfirm = ({ onConfirm, onCancel, ...rest }) => {
     setConfirmState({
       ...rest,
+      onCancel,
       onConfirm: async () => {
         setConfirmBusy(true);
         try { await onConfirm?.(); }
@@ -1190,6 +1252,7 @@ export default function CandidateDetail({
           companyId={job?.company_id}
           applicationId={app.id}
           stage={app.status}
+          templateKey={mailModal.templateKey}
           onClose={() => setMailModal(null)}
           onSent={() => { setMailModal(null); reloadMailLog(app.id); }}
           askConfirm={askConfirm}
@@ -1219,9 +1282,12 @@ export default function CandidateDetail({
           initialNote={rejectModal === 'edit' ? app.rejection_note : ''}
           onClose={() => setRejectModal(null)}
           onSaved={(payload) => {
+            const wasNew = rejectModal === 'new';
+            const stageAtReject = wasNew ? app.status : (app.rejected_at_stage || app.status);
             setApp({ ...app, ...payload });
             onStageChange?.(app.id, payload);
             setRejectModal(null);
+            if (wasNew) promptDecisionMail({ decision: 'reject', stage: stageAtReject });
           }}
         />
       )}
@@ -1289,7 +1355,13 @@ export default function CandidateDetail({
       {/* Platform-native confirmation modal — replaces window.confirm */}
       <ConfirmDialog
         open={!!confirmState}
-        onOpenChange={(o) => { if (!o) setConfirmState(null); }}
+        onOpenChange={(o) => {
+          if (!o) {
+            const cancelCb = confirmState?.onCancel;
+            setConfirmState(null);
+            cancelCb?.();
+          }
+        }}
         title={confirmState?.title}
         description={confirmState?.description}
         confirmLabel={confirmState?.confirmLabel}
@@ -1689,6 +1761,23 @@ const MAIL_PRESETS = [
   },
 ];
 
+// Returns the right preset key to auto-load in MailComposer for a pass/reject
+// decision at the given stage. Pass-mail templates announce the *next* round,
+// so the mapping uses the stage that was just decided on.
+//   reject     → 'reject'   (모든 단계 공통)
+//   pending    → 'doc_pass' (서류 합격 + 1차 면접 안내)
+//   viewed     → 'interview1_pass' (1차 합격 + 2차 면접 안내)
+//   reviewing  → 'final_offer' (2차 합격 → 최종 합격)
+//   decided    → 'final_offer' (드래그→최종 합격 컬럼 드롭)
+export function templateKeyForDecision({ decision, stage }) {
+  if (decision === 'reject') return 'reject';
+  if (stage === 'pending') return 'doc_pass';
+  if (stage === 'viewed') return 'interview1_pass';
+  if (stage === 'reviewing') return 'final_offer';
+  if (stage === 'decided') return 'final_offer';
+  return null;
+}
+
 function fillVars(text, vars) {
   const round = vars.stage === 'viewed' ? (vars.lang === 'vi' ? 'Phỏng vấn vòng 1' : '1차 인터뷰')
               : vars.stage === 'reviewing' ? (vars.lang === 'vi' ? 'Phỏng vấn vòng 2' : '2차 인터뷰')
@@ -2028,7 +2117,7 @@ function ActivityTimeline({ t, app, evals, mailLog }) {
 
 export function MailComposer({
   candidateName, candidateEmail, jobTitle, companyName, companyId,
-  applicationId, stage, onClose, onSent, askConfirm,
+  applicationId, stage, templateKey, onClose, onSent, askConfirm,
 }) {
   const { t, lang } = useT();
   const [templates, setTemplates] = useState([]);
@@ -2088,6 +2177,17 @@ export function MailComposer({
     setSubject(fillVars(preset.subject, vars));
     setBody(fillVars(preset.body, vars));
   };
+
+  // Auto-select the preset matching `templateKey` when the composer mounts.
+  // Used by the pass/reject decision flow so the right template is preloaded
+  // (e.g. 서류 합격 처리 → doc_pass, 불합격 처리 → reject) without a click.
+  // Empty body+subject check avoids clobbering an in-progress draft on rerender.
+  useEffect(() => {
+    if (!templateKey || subject || body) return;
+    const preset = MAIL_PRESETS.find(p => p.key === templateKey);
+    if (preset) pickPreset(preset);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [templateKey]);
 
   const useBlankTemplate = () => {
     setSelectedId('');

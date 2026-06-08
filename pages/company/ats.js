@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { supabase } from '../../lib/supabaseClient';
 import { Sidebar, css } from './jobs/new';
-import CandidateDetail, { MailComposer, RejectionModal, InterviewConfirmModal, ConfirmModal } from '../../components/company/CandidateDetail';
+import CandidateDetail, { MailComposer, RejectionModal, InterviewConfirmModal, ConfirmModal, templateKeyForDecision, nextStageAfter } from '../../components/company/CandidateDetail';
 import { formatICT, formatInterviewShort, formatLocalShortDate, ICT_LABEL } from '../../lib/timezone';
 import { color, font, space, radius, shadow, motion } from '../../lib/theme';
 import TeamPopover from '../../components/company/TeamPopover';
@@ -96,6 +96,40 @@ export default function CompanyATSPage() {
     });
   });
 
+  // Pure mail-prompt step: ask whether to draft the result email and (on yes)
+  // open MailComposer with the stage-correct preset preloaded. Does NOT move
+  // the card. Skipped silently when the candidate has no email on file.
+  const promptResultMail = async ({ app, decision, stage }) => {
+    const profile = app.user_id ? profileMap[app.user_id] : null;
+    const email = app.applicant_email || profile?.email || '';
+    if (!email) return;
+    const stageLabel = t(`company.stageLabel.short.${stage}`) || t(`company.stage.${stage}`) || stage;
+    const name = app.applicant_name || profile?.full_name || `${t('company.candidatePrefix')}${app.id.slice(-6).toUpperCase()}`;
+    const titleKey = decision === 'reject'
+      ? 'company.decision.mailPromptTitleReject'
+      : 'company.decision.mailPromptTitlePass';
+    const ok = await askConfirm({
+      title: t(titleKey, { stage: stageLabel }),
+      message: t('company.decision.mailPromptDesc', { name }),
+      confirmLabel: t('company.decision.mailPromptConfirm'),
+      cancelLabel: t('company.decision.mailPromptCancel'),
+    });
+    if (!ok) return;
+    const tplKey = templateKeyForDecision({ decision, stage });
+    if (tplKey) setMailFor({ app, profile, email, templateKey: tplKey, stage });
+  };
+
+  // Decision from the kanban kebab or 최종 합격 drop: run the mail prompt and
+  // then auto-advance the card to the next stage (pass only).
+  // Reject does not advance — rejected_at already takes the card out of the flow.
+  const promptDecisionMailFromKanban = async ({ app, decision, stage }) => {
+    await promptResultMail({ app, decision, stage });
+    if (decision === 'pass') {
+      const next = nextStageAfter(stage);
+      if (next) await setStage(app.id, next);
+    }
+  };
+
   useEffect(() => {
     if (!menuOpenId) return;
     const onDocClick = () => setMenuOpenId(null);
@@ -105,7 +139,7 @@ export default function CompanyATSPage() {
 
   useEffect(() => {
     if (!jobId) return;
-    const cacheKey = `fyi.ats.${jobId}.v1`;
+    const cacheKey = `fyi.ats.${jobId}.v2`;
 
     // 1) Hydrate from cache for instant paint — same-session navigation feels seamless.
     const cached = typeof window !== 'undefined'
@@ -117,7 +151,13 @@ export default function CompanyATSPage() {
       setProfileMap(cached.profileMap || {});
       setCompanyName(cached.companyName || '');
       const spm = {};
-      Object.entries(cached.stagePassMap || {}).forEach(([k, v]) => { spm[k] = new Set(v); });
+      // Serialized shape: { appId: [[stage_pass_key, rowId], ...] } — reconstruct as Map.
+      // Older caches stored flat string arrays (Set values); detect & skip those.
+      Object.entries(cached.stagePassMap || {}).forEach(([k, v]) => {
+        if (!Array.isArray(v)) return;
+        if (v.length > 0 && !Array.isArray(v[0])) return; // legacy Set-shape — ignore
+        spm[k] = new Map(v);
+      });
       setStagePassMap(spm);
       setStatus('ready');
     }
@@ -164,7 +204,7 @@ export default function CompanyATSPage() {
           ? supabase.from('user_profiles').select('id, email, full_name').in('id', userIds)
           : Promise.resolve({ data: [] }),
         appIds.length > 0
-          ? supabase.from('application_evaluations').select('application_id, stage').in('application_id', appIds).in('stage', ['pending_pass', 'viewed_pass', 'reviewing_pass', 'decided_pass'])
+          ? supabase.from('application_evaluations').select('id, application_id, stage').in('application_id', appIds).in('stage', ['pending_pass', 'viewed_pass', 'reviewing_pass', 'decided_pass'])
           : Promise.resolve({ data: [] }),
       ]);
       const m = {};
@@ -172,17 +212,18 @@ export default function CompanyATSPage() {
       setProfileMap(m);
       const spm = {};
       (passesRes.data || []).forEach(r => {
-        if (!spm[r.application_id]) spm[r.application_id] = new Set();
-        spm[r.application_id].add(r.stage);
+        if (!spm[r.application_id]) spm[r.application_id] = new Map();
+        spm[r.application_id].set(r.stage, r.id);
       });
       setStagePassMap(spm);
 
       setStatus('ready');
 
       // 4) Persist for instant paint on next entry to this job.
+      // Map serializes to [[k,v], ...] tuples so cache restore can rebuild via `new Map(arr)`.
       try {
         const spmSerialized = {};
-        Object.entries(spm).forEach(([k, v]) => { spmSerialized[k] = Array.from(v); });
+        Object.entries(spm).forEach(([k, v]) => { spmSerialized[k] = Array.from(v.entries()); });
         sessionStorage.setItem(cacheKey, JSON.stringify({
           job: jobData, apps: appsList, profileMap: m, stagePassMap: spmSerialized, companyName: cName,
         }));
@@ -212,18 +253,21 @@ export default function CompanyATSPage() {
   }, [stageQuery]);
 
   // Load stage-pass audit rows (one per stage decision) for every visible
-  // candidate. Returns a Map<appId, Set<'pending_pass' | 'viewed_pass' | ...>>.
+  // candidate. Returns a Map<appId, Map<stage_pass_key, rowId>> — Map (not Set)
+  // so the backward-drag rollback flow can fetch the rowId to delete via the
+  // unmark-stage-pass endpoint. `.has(stageKey)` still works for the kanban
+  // card/kebab consumers that only check existence.
   const loadStagePasses = async (appIds) => {
     if (!appIds || appIds.length === 0) { setStagePassMap({}); return; }
     const { data } = await supabase
       .from('application_evaluations')
-      .select('application_id, stage')
+      .select('id, application_id, stage')
       .in('application_id', appIds)
       .in('stage', ['pending_pass', 'viewed_pass', 'reviewing_pass', 'decided_pass']);
     const m = {};
     (data || []).forEach(r => {
-      if (!m[r.application_id]) m[r.application_id] = new Set();
-      m[r.application_id].add(r.stage);
+      if (!m[r.application_id]) m[r.application_id] = new Map();
+      m[r.application_id].set(r.stage, r.id);
     });
     setStagePassMap(m);
   };
@@ -330,11 +374,22 @@ export default function CompanyATSPage() {
 
   const isOwner = !job?.created_by || job?.created_by === user?.id;
 
-  // Drag-and-drop drop handler — free movement, no confirm modals.
-  // Each stage carries its own snapshot, so the destination simply restores
+  // Drag-and-drop drop handler.
+  //
+  // Movement policy:
+  // - Forward drag (e.g. pending → viewed): if the source stage isn't yet
+  //   pass-marked, ask whether to record the pass + draft the result email.
+  //   Drag still moves the card either way; the popup only adds the audit
+  //   row + mail composer when the user confirms.
+  // - Backward drag (e.g. reviewing → viewed): if the destination stage has
+  //   an existing pass-mark, ask first whether to clear that decision. On no,
+  //   the drag is cancelled (no move). On yes, clear the pass and proceed.
+  // - 최종 합격 drop keeps its existing implicit decided_pass auto-mark and
+  //   final_offer mail prompt; the new forward popup is skipped to avoid two
+  //   stacked mail prompts that resolve to the same template.
+  //
+  // Each stage still carries its own snapshot, so the destination restores
   // its most recent state. Rejected cards are non-draggable at the source.
-  // Skipping stages (±2 or more) is allowed too — each visited stage carries
-  // its own history independently.
   const handleDrop = async (newStatus) => {
     const appId = draggingId;
     setDraggingId(null);
@@ -342,23 +397,118 @@ export default function CompanyATSPage() {
     if (!appId || !isOwner) return;
     const app = apps.find(a => a.id === appId);
     if (!app || app.status === newStatus || app.rejected_at) return;
+
+    const prevStage = app.status;
+    const prevIdx = STAGE_ORDER.indexOf(prevStage);
+    const newIdx = STAGE_ORDER.indexOf(newStatus);
+    const isForward = newIdx > prevIdx;
+    const isBackward = newIdx < prevIdx;
+
+    // Backward drag with SOURCE stage pass-marked → confirm reset BEFORE moving.
+    // The source is the stage being left — its pass-mark is the "result" the
+    // user recorded for that stage. Rolling back to a previous stage means
+    // discarding that decision. Cards without a source pass-mark move freely
+    // (nothing to clear).
+    if (isBackward) {
+      const sourcePassRowId = stagePassMap[appId]?.get(`${prevStage}_pass`);
+      if (sourcePassRowId) {
+        const sourceShort = t(`company.stageLabel.short.${prevStage}`) || t(`company.stage.${prevStage}`) || prevStage;
+        const destFull = t(`company.stage.${newStatus}`) || newStatus;
+        const name = app.applicant_name || (app.user_id ? profileMap[app.user_id]?.full_name : null)
+          || `${t('company.candidatePrefix')}${app.id.slice(-6).toUpperCase()}`;
+        const ok = await askConfirm({
+          title: t('company.dragBack.title', { stage: sourceShort }),
+          message: t('company.dragBack.desc', { name, sourceStage: sourceShort, destStage: destFull }),
+          confirmLabel: t('company.dragBack.confirm'),
+          cancelLabel: t('company.dragBack.cancel'),
+        });
+        if (!ok) return;
+        try {
+          const { data: { session } } = await supabase.auth.getSession();
+          const res = await fetch('/api/company/unmark-stage-pass', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session?.access_token || ''}` },
+            body: JSON.stringify({ rowId: sourcePassRowId }),
+          });
+          if (!res.ok) {
+            const json = await res.json().catch(() => ({}));
+            toast.error(json.error || t('company.toast.passCancelFailed'));
+            return;
+          }
+        } catch {
+          toast.error(t('company.toast.passCancelFailed'));
+          return;
+        }
+      }
+    }
+
     await setStage(appId, newStatus);
+
     // Special case: dropping into "최종 합격" is itself the final-hire decision —
     // auto-mark decided_pass so the celebration shows without a separate click.
+    let triggerDecidedMailPrompt = false;
     if (newStatus === 'decided') {
       const alreadyPassed = stagePassMap[appId]?.has('decided_pass');
       if (!alreadyPassed) {
         try {
           const { data: { session } } = await supabase.auth.getSession();
-          await fetch('/api/company/mark-stage-pass', {
+          const res = await fetch('/api/company/mark-stage-pass', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session?.access_token || ''}` },
             body: JSON.stringify({ appId, stage: 'decided' }),
           });
+          if (res.ok) triggerDecidedMailPrompt = true;
         } catch {}
       }
     }
     await loadStagePasses(apps.map(a => a.id));
+
+    if (triggerDecidedMailPrompt) {
+      promptDecisionMailFromKanban({ app, decision: 'pass', stage: 'decided' });
+      return;
+    }
+
+    // Forward drag to a non-decided stage: if source isn't pass-marked yet,
+    // offer to record the pass + draft the result mail.
+    if (isForward && newStatus !== 'decided') {
+      const sourceAlreadyPassed = stagePassMap[appId]?.has(`${prevStage}_pass`);
+      if (!sourceAlreadyPassed) {
+        await promptForwardDragPass({ app, sourceStage: prevStage });
+      }
+    }
+  };
+
+  // Forward-drag follow-up: after a card has been moved forward, ask whether
+  // to also pass-mark the source stage. On yes, record the mark + run the
+  // mail prompt for that stage's template (doc_pass / interview1_pass / final_offer).
+  // No auto-advance — the card is already at the destination.
+  const promptForwardDragPass = async ({ app, sourceStage }) => {
+    const sourceLabel = t(`company.stageLabel.short.${sourceStage}`) || t(`company.stage.${sourceStage}`) || sourceStage;
+    const name = app.applicant_name || (app.user_id ? profileMap[app.user_id]?.full_name : null)
+      || `${t('company.candidatePrefix')}${app.id.slice(-6).toUpperCase()}`;
+    const ok = await askConfirm({
+      title: t('company.dragPass.title', { stage: sourceLabel }),
+      message: t('company.dragPass.desc', { name, stage: sourceLabel }),
+      confirmLabel: t('company.dragPass.confirm'),
+      cancelLabel: t('company.dragPass.cancel'),
+    });
+    if (!ok) return;
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const res = await fetch('/api/company/mark-stage-pass', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session?.access_token || ''}` },
+        body: JSON.stringify({ appId: app.id, stage: sourceStage }),
+      });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) { toast.error(json.error || t('company.ats.errStagePass')); return; }
+      toast.success(t('company.ats.stagePassedShort', { stage: t(`company.stage.${sourceStage}`) }));
+      await loadStagePasses(apps.map(a => a.id));
+    } catch {
+      toast.error(t('company.ats.errStagePass'));
+      return;
+    }
+    await promptResultMail({ app, decision: 'pass', stage: sourceStage });
   };
 
   // Stable handlers for memoized KanbanCard — refs only change on real dependency moves.
@@ -390,6 +540,8 @@ export default function CompanyATSPage() {
       if (!res.ok) { toast.error(json.error || t('company.ats.errStagePass')); return; }
       toast.success(t('company.ats.stagePassedShort', { stage: t(`company.stage.${stage}`) }));
       await loadStagePasses(apps.map(a => a.id));
+      const app = apps.find(a => a.id === appId);
+      if (app) promptDecisionMailFromKanban({ app, decision: 'pass', stage });
     } catch (e) {
       toast.error(t('company.ats.errStagePass'));
     }
@@ -786,6 +938,7 @@ export default function CompanyATSPage() {
                   onNextStage={nextStageFirstId ? () => { loadStagePasses(apps.map(a => a.id)); setSelectedAppId(nextStageFirstId); } : null}
                   onClose={() => { setSelectedAppId(null); loadStagePasses(apps.map(a => a.id)); }}
                   onStageChange={(id, patch) => { setApps(prev => prev.map(a => a.id === id ? { ...a, ...patch } : a)); loadStagePasses(apps.map(a => a.id)); }}
+                  onAdvanceStage={setStage}
                 />
               </div>
             </div>
@@ -804,9 +957,12 @@ export default function CompanyATSPage() {
               mode="new"
               onClose={() => setRejectingApp(null)}
               onSaved={(payload) => {
+                const stageAtReject = rejectingApp.status;
+                const appAtReject = rejectingApp;
                 setApps(prev => prev.map(a => a.id === rejectingApp.id ? { ...a, ...payload } : a));
                 setRejectingApp(null);
                 toast.success(t('company.reject.h'));
+                promptDecisionMailFromKanban({ app: appAtReject, decision: 'reject', stage: stageAtReject });
               }}
             />
           );
@@ -835,6 +991,7 @@ export default function CompanyATSPage() {
             companyId={job?.company_id}
             applicationId={mailFor.app.id}
             stage={mailFor.stage || mailFor.app.status}
+            templateKey={mailFor.templateKey}
             onClose={() => setMailFor(null)}
             onSent={() => { setMailFor(null); toast.success(t('company.mail.send')); }}
           />

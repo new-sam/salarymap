@@ -303,7 +303,7 @@ export default function CompanyCalendarPage() {
           <div className="md:hidden flex-1 min-h-0 overflow-y-auto pb-6">
             {items.length === 0 ? (
               <div className="text-center py-16 text-gray-400 text-[13px] font-semibold">
-                {t('company.calendar.emptyDesc')}
+                {t('company.calendar.emptyH')}
               </div>
             ) : (() => {
               const groups = {};
