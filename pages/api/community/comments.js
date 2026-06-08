@@ -176,6 +176,18 @@ export default async function handler(req, res) {
         .eq('id', post_id)
     }
 
+    // 댓글 알림 — 내 글이 아니면 글 작성자에게 푸시(카테고리 'comment').
+    if (postData?.user_id && !isOp) {
+      const who = effectiveAnon ? 'Ẩn danh' : realName
+      const snippet = (content || '').trim().slice(0, 50)
+      sendPush([postData.user_id], {
+        title: postData.title || 'Cộng đồng FYI',
+        body: snippet ? `${who}: ${snippet}` : `${who} đã bình luận bài viết của bạn`,
+        category: 'comment',
+        data: { url: `/community/${post_id}` },
+      })
+    }
+
     // Enrich the response with the same author trust signals the GET returns,
     // so the freshly-posted comment shows company / salary badge without a reload.
     const tierMap = await salaryTierMap([user.id])
