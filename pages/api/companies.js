@@ -115,6 +115,24 @@ async function fetchAll(query) {
   return all;
 }
 
+// The `companies` table holds case/whitespace-variant duplicate rows
+// (e.g. "FPT Software" / "fpt software" / "FPT software") that all normalize
+// to the same salary bucket. Collapse them to one card per normalized name,
+// keeping the best-cased variant so the same company never shows twice.
+function dedupeCompanies(companies) {
+  const byKey = new Map();
+  const score = c =>
+    (IMAGE_MAP[c.name] ? 4 : 0) +                  // curated image → the real display name
+    (c.name !== c.name.toLowerCase() ? 2 : 0) +    // has capitalization
+    (5 - (c.tier || 3)) * 0.1;                      // tiebreak: slight nudge to higher tier
+  for (const co of companies) {
+    const key = co.name.trim().toLowerCase();
+    const cur = byKey.get(key);
+    if (!cur || score(co) > score(cur)) byKey.set(key, co);
+  }
+  return [...byKey.values()];
+}
+
 // Per-company salary stats, keyed by normalized (lower+trim) company name.
 // Shape: { [key]: { count, median, min, max, topRole } }
 async function fetchSalaryStats(role, experience) {
@@ -189,10 +207,11 @@ export default async function handler(req, res) {
     const { role: rawRole, experience } = req.query;
     const role = rawRole ? resolveRole(rawRole) : null;
 
-    // 1. All companies (source of truth) — paginate past Supabase's 1000-row cap
-    const companies = await fetchAll(
+    // 1. All companies (source of truth) — paginate past Supabase's 1000-row cap,
+    //    then collapse case/whitespace-variant duplicate rows into one per company.
+    const companies = dedupeCompanies(await fetchAll(
       supabase.from('companies').select('id, name, tier')
-    );
+    ));
 
     // 2. Salary stats — server-side aggregation via RPC. Single source for
     //    count/median/min/max/topRole so they always come from the same
