@@ -267,6 +267,23 @@ export default function JobsPage() {
     load()
   }, [])
 
+  // 상세 패널 열릴 때 무거운 필드(description/benefits/hiring_process)를 lazy fetch.
+  // 리스트(/api/jobs)는 카드용 필드만 내려주므로 detailJob엔 이 필드들이 없다.
+  useEffect(() => {
+    const id = detailJob?.id
+    if (!id || detailJob._full) return
+    let cancelled = false
+    fetch(`/api/jobs/${id}`)
+      .then(r => r.ok ? r.json() : null)
+      .then(full => {
+        if (cancelled || !full) return
+        // 카드 데이터(prev)를 우선 유지하고, 빠진 무거운 필드만 full에서 채운다.
+        setDetailJob(prev => (prev && prev.id === full.id) ? { ...full, ...prev, _full: true } : prev)
+      })
+      .catch(() => {})
+    return () => { cancelled = true }
+  }, [detailJob?.id])
+
   // 드롭다운 바깥 클릭 시 닫기
   useEffect(() => {
     if (!openDropdown) return

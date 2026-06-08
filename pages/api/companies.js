@@ -115,6 +115,63 @@ async function fetchAll(query) {
   return all;
 }
 
+// Per-company salary stats, keyed by normalized (lower+trim) company name.
+// Shape: { [key]: { count, median, min, max, topRole } }
+async function fetchSalaryStats(role, experience) {
+  const map = {};
+
+  // Preferred path: Postgres aggregation via RPC
+  const { data, error } = await supabase.rpc('get_company_salary_stats', {
+    p_role: role || null,
+    p_experience: experience || null,
+  });
+
+  if (!error && Array.isArray(data)) {
+    data.forEach(r => {
+      const key = (r.company || '').trim().toLowerCase();
+      if (!key) return;
+      map[key] = {
+        count: Number(r.cnt) || 0,
+        median: r.median != null ? Math.round(Number(r.median)) : 0,
+        min: r.min_salary != null ? Number(r.min_salary) : 0,
+        max: r.max_salary != null ? Number(r.max_salary) : 0,
+        topRole: r.top_role || null,
+      };
+    });
+    return map;
+  }
+
+  // Fallback: client-side aggregation (RPC not deployed)
+  console.warn('get_company_salary_stats RPC unavailable, falling back:', error?.message);
+  const raw = {};
+  let q = supabase.from('submissions').select('company, salary, role, experience');
+  if (role) q = q.eq('role', role);
+  if (experience) q = q.eq('experience', experience);
+  const rows = await fetchAll(q);
+  (rows || []).forEach(s => {
+    if (!s.company) return;
+    const key = s.company.trim().toLowerCase();
+    if (!raw[key]) raw[key] = { salaries: [], roles: {} };
+    if (s.salary && s.salary >= 5 && s.salary <= 200) raw[key].salaries.push(s.salary);
+    if (s.role) raw[key].roles[s.role] = (raw[key].roles[s.role] || 0) + 1;
+  });
+  Object.entries(raw).forEach(([key, v]) => {
+    const sorted = [...v.salaries].sort((a, b) => a - b);
+    const mid = Math.floor(sorted.length / 2);
+    const median = sorted.length === 0 ? 0
+      : sorted.length % 2 === 0 ? Math.round((sorted[mid - 1] + sorted[mid]) / 2)
+      : sorted[mid];
+    map[key] = {
+      count: sorted.length,
+      median,
+      min: sorted[0] || 0,
+      max: sorted[sorted.length - 1] || 0,
+      topRole: Object.entries(v.roles).sort((a, b) => b[1] - a[1])[0]?.[0] || null,
+    };
+  });
+  return map;
+}
+
 export default async function handler(req, res) {
   try {
     const { role: rawRole, experience } = req.query;
@@ -133,60 +190,30 @@ export default async function handler(req, res) {
       totalCountMap[key] = Number(r.cnt);
     });
 
-    // 3. Fetch submissions for salary stats (always needed)
-    const salaryMap = {};
-    let filteredQuery = supabase.from('submissions').select('company, salary, role, experience');
-    if (role) filteredQuery = filteredQuery.eq('role', role);
-    if (experience) filteredQuery = filteredQuery.eq('experience', experience);
-    const filteredResult = await fetchAll(filteredQuery);
-    (filteredResult || []).forEach(s => {
-      if (!s.company) return;
-      const key = s.company.trim().toLowerCase();
-      if (!salaryMap[key]) salaryMap[key] = { salaries: [], roles: {} };
-      if (s.salary && s.salary >= 5 && s.salary <= 200) {
-        salaryMap[key].salaries.push(s.salary);
-      }
-      if (s.role) salaryMap[key].roles[s.role] = (salaryMap[key].roles[s.role] || 0) + 1;
-    });
-
-    const getSummary = (arr) => {
-      const sorted = [...arr].sort((a, b) => a - b);
-      const mid = Math.floor(sorted.length / 2);
-      const median = sorted.length % 2 === 0
-        ? Math.round((sorted[mid - 1] + sorted[mid]) / 2)
-        : sorted[mid];
-      return {
-        count: sorted.length,
-        median,
-        min: sorted[0],
-        max: sorted[sorted.length - 1],
-      };
-    };
+    // 3. Salary stats — server-side aggregation via RPC (count/median/min/max/top_role)
+    //    Falls back to client-side aggregation if the RPC isn't deployed yet.
+    const salaryMap = await fetchSalaryStats(role, experience);
 
     // 4. Join companies + salary data
     const cards = companies.map((co, i) => {
       const key = co.name.trim().toLowerCase();
       const sub = salaryMap[key];
-      const hasFilteredData = !!(sub && sub.salaries.length >= 1);
+      const hasFilteredData = !!(sub && sub.count >= 1);
       const hasData = hasFilteredData || (totalCountMap[key] || 0) > 0;
       const salaryStats = hasFilteredData
-        ? getSummary(sub.salaries)
+        ? { count: sub.count, median: sub.median, min: sub.min, max: sub.max }
         : { count: 0, median: 0, min: 0, max: 0 };
 
       // Total count from unfiltered submissions — exact DB value
       const displayCount = totalCountMap[key] || 0;
 
       const domain = DOMAIN_MAP[key] || null;
-      const logo = domain ? `https://www.google.com/s2/favicons?domain=${domain}&sz=128` : null;
       const image = IMAGE_MAP[co.name] || BG_POOL[i % BG_POOL.length];
-      const topRole = sub ? Object.entries(sub.roles).sort((a, b) => b[1] - a[1])[0]?.[0] || null : null;
+      const topRole = sub ? sub.topRole || null : null;
 
       return {
-        id: co.id,
         name: co.name,
-        company: co.name,
         domain,
-        logo,
         image,
         tier: co.tier || 3,
         hasData,
@@ -202,7 +229,7 @@ export default async function handler(req, res) {
     const withData = cards.filter(c => c.hasData);
     const sortedByMedian = [...withData].sort((a, b) => b.median - a.median);
     withData.forEach(c => {
-      const rank = sortedByMedian.findIndex(x => x.company === c.company);
+      const rank = sortedByMedian.findIndex(x => x.name === c.name);
       const raw = Math.round(((rank + 1) / withData.length) * 100);
       c.topPct = Math.max(5, Math.round(raw / 5) * 5);
     });
@@ -213,7 +240,7 @@ export default async function handler(req, res) {
       if (!a.hasData && b.hasData) return 1;
       if (a.hasData && b.hasData) return b.count - a.count;
       if (a.tier !== b.tier) return a.tier - b.tier;
-      return a.company.localeCompare(b.company);
+      return a.name.localeCompare(b.name);
     });
 
     // Strip heavy fields from cards without data to reduce payload

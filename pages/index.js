@@ -1149,18 +1149,18 @@ export default function Home({ initialCompanies = [] }) {
                 ));
               }
               const filtered = cardSearchQuery
-                ? apiCompanies.map((c, origIdx) => ({ ...c, _origIndex: origIdx })).filter(c => (c.name || c.company || '').toLowerCase().includes(cardSearchQuery))
+                ? apiCompanies.map((c, origIdx) => ({ ...c, _origIndex: origIdx })).filter(c => (c.name || '').toLowerCase().includes(cardSearchQuery))
                 : apiCompanies.map((c, origIdx) => ({ ...c, _origIndex: origIdx }));
               const visible = filtered.slice(0, visibleCount);
               return (
                 <>
                   {visible.map((c) => (
                     <CompanyCard
-                      key={c.company}
+                      key={c.name}
                       company={c}
                       index={c._origIndex}
                       isUnlocked={isUnlocked}
-                      onClick={(co) => { setDetailCompany(co.name || co.company); setDetailCardIndex(c._origIndex); setDetailOpen(true); }}
+                      onClick={(co) => { setDetailCompany(co.name); setDetailCardIndex(c._origIndex); setDetailOpen(true); }}
                       onLockedClick={() => { if(typeof gtag==='function') gtag('event','locked_card_click'); document.getElementById('submit')?.scrollIntoView({ behavior: 'smooth' }); }}
                     />
                   ))}

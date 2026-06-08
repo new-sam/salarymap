@@ -6,8 +6,8 @@ export default function CompanyCard({ company, index, isUnlocked, onClick, onLoc
   const { t } = useT();
   const [logoError, setLogoError] = useState(false);
 
-  const initials = company.company.slice(0, 2).toUpperCase();
-  const logoUrl = company.logo || null;
+  const initials = company.name.slice(0, 2).toUpperCase();
+  const logoUrl = company.domain ? `https://www.google.com/s2/favicons?domain=${company.domain}&sz=128` : null;
   const cardUnlocked = isUnlocked || index < 3;
   const bgImage = company.image || null;
 
@@ -20,7 +20,7 @@ export default function CompanyCard({ company, index, isUnlocked, onClick, onLoc
         <div className="card-bg" style={bgImage ? { backgroundImage: `url(${bgImage})`, backgroundSize: 'cover', backgroundPosition: 'center' } : { background: 'linear-gradient(135deg, #1a1a18 0%, #2a2a28 100%)' }} />
         {logoUrl && !logoError && (
           <div className="card-logo-wrap">
-            <img className="card-logo-img" src={logoUrl} alt={company.company} onError={() => setLogoError(true)} />
+            <img className="card-logo-img" src={logoUrl} alt={company.name} onError={() => setLogoError(true)} />
           </div>
         )}
         <div className="card-overlay" />
@@ -31,7 +31,7 @@ export default function CompanyCard({ company, index, isUnlocked, onClick, onLoc
           justifyContent: 'center', gap: '8px', cursor: 'pointer', borderRadius: '14px',
         }}>
           <Icon name="lock" size={22} color="white" />
-          <span style={{ fontSize: '14px', fontWeight: 800, color: 'white' }}>{company.company}</span>
+          <span style={{ fontSize: '14px', fontWeight: 800, color: 'white' }}>{company.name}</span>
           <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)' }}>{t('companies.salaryData', { count: company.count })}</span>
           <span
             onClick={(e) => { e.stopPropagation(); onLockedClick(); }}
@@ -53,7 +53,7 @@ export default function CompanyCard({ company, index, isUnlocked, onClick, onLoc
       <div className="card-bg" style={bgImage ? { backgroundImage: `url(${bgImage})`, backgroundSize: 'cover', backgroundPosition: 'center' } : { background: 'linear-gradient(135deg, #1a1a18 0%, #2a2a28 100%)' }} />
       {logoUrl && !logoError && (
         <div className="card-logo-wrap">
-          <img className="card-logo-img" src={logoUrl} alt={company.company} onError={() => setLogoError(true)} />
+          <img className="card-logo-img" src={logoUrl} alt={company.name} onError={() => setLogoError(true)} />
         </div>
       )}
       <div className="card-overlay" />
@@ -62,7 +62,7 @@ export default function CompanyCard({ company, index, isUnlocked, onClick, onLoc
       </div>
       <div className="card-bottom">
         <div className="card-name-row">
-          <div className="card-name">{company.company}</div>
+          <div className="card-name">{company.name}</div>
           <div className="card-count">{company.count > 0 ? t('companies.salaryData', { count: company.count }) : 'New'}</div>
         </div>
         <div className="card-divider" />
