@@ -120,12 +120,10 @@ export default async function handler(req, res) {
     const { role: rawRole, experience } = req.query;
     const role = rawRole ? resolveRole(rawRole) : null;
 
-    // 1. All companies (source of truth)
-    const { data: companies, error: cErr } = await supabase
-      .from('companies')
-      .select('id, name, tier');
-
-    if (cErr) throw cErr;
+    // 1. All companies (source of truth) — paginate past Supabase's 1000-row cap
+    const companies = await fetchAll(
+      supabase.from('companies').select('id, name, tier')
+    );
 
     // 2. Fast RPC for total counts
     const { data: rpcData } = await supabase.rpc('get_company_stats');
