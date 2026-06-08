@@ -10,13 +10,10 @@ function CountUp({ end, decimals = 0, duration = 1200, suffix = '' }) {
   const [val, setVal] = useState(0);
   const ref = useRef(null);
   const animRef = useRef(null);
-  const hasRunRef = useRef(false);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
     const run = () => {
-      if (hasRunRef.current) return;
-      hasRunRef.current = true;
       if (animRef.current) cancelAnimationFrame(animRef.current);
       let start = null;
       const tick = (ts) => {
@@ -62,23 +59,6 @@ export default function ForCompanies() {
   const router = useRouter();
   const { t } = useT();
   const [contactOpen, setContactOpen] = useState(false);
-
-  useEffect(() => {
-    if (typeof window === 'undefined') return undefined;
-    const targets = Array.from(document.querySelectorAll('.fc-reveal'));
-    if (!targets.length) return undefined;
-
-    const io = new IntersectionObserver((entries) => {
-      entries.forEach((entry) => {
-        if (!entry.isIntersecting) return;
-        entry.target.classList.add('is-visible');
-        io.unobserve(entry.target);
-      });
-    }, { threshold: 0.18, rootMargin: '0px 0px -10% 0px' });
-
-    targets.forEach((target) => io.observe(target));
-    return () => io.disconnect();
-  }, []);
 
   return (
     <>
@@ -134,73 +114,6 @@ export default function ForCompanies() {
           8%, 22% { opacity: 1; transform: translateY(0); }
           27%, 100% { opacity: 0; transform: translateY(-12px); }
         }
-        .fc-hero-visual {
-          animation: fcHeroReveal 900ms cubic-bezier(.16, 1, .3, 1) 120ms both;
-        }
-        .fc-hero-visual img {
-          animation: fcHeroDrift 9s ease-in-out 1.2s infinite alternate;
-          transform-origin: 50% 58%;
-          will-change: transform;
-        }
-        .fc-reveal {
-          opacity: 0;
-          transform: translateY(22px);
-          filter: blur(8px);
-          transition:
-            opacity 760ms cubic-bezier(.16, 1, .3, 1),
-            transform 760ms cubic-bezier(.16, 1, .3, 1),
-            filter 760ms cubic-bezier(.16, 1, .3, 1);
-        }
-        .fc-reveal.is-visible {
-          opacity: 1;
-          transform: translateY(0);
-          filter: blur(0);
-        }
-        .fc-flow-grid article {
-          transition:
-            opacity 680ms cubic-bezier(.16, 1, .3, 1),
-            transform 680ms cubic-bezier(.16, 1, .3, 1),
-            box-shadow 220ms ease,
-            border-color 220ms ease;
-        }
-        .fc-flow-stage.fc-reveal article {
-          opacity: 0;
-          transform: translateY(18px);
-        }
-        .fc-flow-stage.fc-reveal.is-visible article {
-          opacity: 1;
-          transform: translateY(0);
-        }
-        .fc-flow-stage.fc-reveal.is-visible article:nth-child(2) { transition-delay: 80ms; }
-        .fc-flow-stage.fc-reveal.is-visible article:nth-child(3) { transition-delay: 160ms; }
-        .fc-flow-stage.fc-reveal.is-visible article:nth-child(4) { transition-delay: 240ms; }
-        .fc-flow-stage.is-visible .fc-flow-grid article:hover {
-          transform: translateY(-4px);
-          border-color: rgba(249,115,22,0.2);
-          box-shadow: 0 24px 48px rgba(15,23,42,0.11);
-        }
-        @keyframes fcHeroReveal {
-          from { opacity: 0; transform: translateY(24px) scale(.985); filter: blur(14px); }
-          to { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); }
-        }
-        @keyframes fcHeroDrift {
-          from { transform: scale(1.004) translate3d(0, 0, 0); }
-          to { transform: scale(1.018) translate3d(0, -4px, 0); }
-        }
-        @media (prefers-reduced-motion: reduce) {
-          .fc-hero-visual,
-          .fc-hero-visual img,
-          .fc-close-quote {
-            animation: none !important;
-          }
-          .fc-reveal,
-          .fc-flow-grid article {
-            opacity: 1 !important;
-            transform: none !important;
-            filter: none !important;
-            transition: none !important;
-          }
-        }
       `}</style>
       <div style={css.page}>
         <nav className="fc-company-nav" style={css.nav}>
@@ -221,7 +134,7 @@ export default function ForCompanies() {
             <div style={css.heroBadge}>{t('company.landing.heroBadge')}</div>
             <h1 style={css.h1}>
               {t('company.landing.h1.line1')}<br />
-              {t('company.landing.h1.line2')} <span style={css.highlight}>{t('company.landing.h1.highlight')}</span>
+              <span style={css.highlight}>{t('company.landing.h1.highlight')}</span> {t('company.landing.h1.line2')}
             </h1>
             <p style={css.lead}>{t('company.landing.lead')}</p>
             <div className="fc-hero-ctas" style={css.heroCtas}>
@@ -233,7 +146,7 @@ export default function ForCompanies() {
 
             <div className="fc-hero-visual" style={css.heroVisual}>
               <div style={css.heroImgWrap}>
-                <img src="/company-hero-interview-flow.png" alt={t('company.landing.heroAlt')} style={css.heroImg} />
+                <img src="/company-hero-fyi-vn.png" alt={t('company.landing.heroAlt')} style={css.heroImg} />
               </div>
             </div>
           </section>
@@ -253,7 +166,7 @@ export default function ForCompanies() {
             </div>
           </section>
 
-          <section className="fc-reveal" style={css.talentProof}>
+          <section style={css.talentProof}>
             <div style={css.talentProofHead}>
               <div style={css.eyebrowDark}>{t('company.landing.talentProof.eyebrow')}</div>
               <h2 style={css.talentProofTitle}>
@@ -279,7 +192,7 @@ export default function ForCompanies() {
                 {t('company.landing.offerH2')}
               </h2>
             </div>
-            <div className="fc-flow-stage fc-reveal" style={css.flowStage}>
+            <div className="fc-flow-stage" style={css.flowStage}>
               <div className="fc-flow-grid" style={css.flowGrid}>
                 {SERVICE_FLOW.map((item, idx) => (
                   <article key={item.no} style={css.flowItem}>

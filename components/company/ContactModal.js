@@ -9,7 +9,7 @@ export default function ContactModal({ open, onClose }) {
   const router = useRouter();
   const [phase, setPhase] = useState('loading'); // loading | guest | form | done
   const [user, setUser] = useState(null);
-  const [form, setForm] = useState({ companyName: '', position: '', contactName: '', phone: '', message: '', website: '' });
+  const [form, setForm] = useState({ companyName: '', contactName: '', phone: '', message: '' });
   const [sending, setSending] = useState(false);
   const [err, setErr] = useState('');
 
@@ -21,7 +21,7 @@ export default function ContactModal({ open, onClose }) {
       const { data } = await supabase.auth.getSession();
       const u = data?.session?.user || null;
       setUser(u);
-      setPhase('form');
+      setPhase(u ? 'form' : 'guest');
     })();
   }, [open]);
 
@@ -29,7 +29,7 @@ export default function ContactModal({ open, onClose }) {
 
   const submit = async () => {
     setErr('');
-    if (!form.companyName.trim() || !form.position.trim() || !form.phone.trim()) {
+    if (!form.contactName.trim() || !form.phone.trim()) {
       setErr(t('company.landing.contact.errRequired'));
       return;
     }
@@ -61,19 +61,29 @@ export default function ContactModal({ open, onClose }) {
 
         {phase === 'loading' && <div style={s.loading}>···</div>}
 
+        {phase === 'guest' && (
+          <>
+            <h3 style={s.title}>{t('company.landing.contact.title')}</h3>
+            <p style={s.lead}>{t('company.landing.contact.guestLead')}</p>
+            <button type="button" style={s.btnPrimary} onClick={() => router.push('/company?mode=signup')}>
+              {t('company.landing.contact.guestBtn')}
+            </button>
+            <button type="button" style={s.btnGhost} onClick={() => router.push('/company')}>
+              {t('company.landing.contact.guestLogin')}
+            </button>
+          </>
+        )}
+
         {phase === 'form' && (
           <>
             <h3 style={s.title}>{t('company.landing.contact.title')}</h3>
             <p style={s.lead}>{t('company.landing.contact.formLead')}</p>
             {user?.email && <div style={s.emailHint}>{user.email}</div>}
 
-            <label style={s.label}>{t('company.landing.contact.fieldCompany')} *</label>
+            <label style={s.label}>{t('company.landing.contact.fieldCompany')}</label>
             <input style={s.input} value={form.companyName} onChange={set('companyName')} />
 
-            <label style={s.label}>{t('company.landing.contact.fieldPosition')} *</label>
-            <input style={s.input} value={form.position} onChange={set('position')} placeholder={t('company.landing.contact.fieldPositionPh')} />
-
-            <label style={s.label}>{t('company.landing.contact.fieldName')}</label>
+            <label style={s.label}>{t('company.landing.contact.fieldName')} *</label>
             <input style={s.input} value={form.contactName} onChange={set('contactName')} />
 
             <label style={s.label}>{t('company.landing.contact.fieldPhone')} *</label>
@@ -82,25 +92,10 @@ export default function ContactModal({ open, onClose }) {
             <label style={s.label}>{t('company.landing.contact.fieldMessage')}</label>
             <textarea style={{ ...s.input, ...s.textarea }} value={form.message} onChange={set('message')} rows={3} />
 
-            {/* honeypot — 사람에겐 안 보이고 봇만 채운다 */}
-            <input
-              style={{ position: 'absolute', left: '-9999px', width: 1, height: 1, opacity: 0 }}
-              tabIndex={-1}
-              autoComplete="off"
-              aria-hidden="true"
-              value={form.website}
-              onChange={set('website')}
-            />
-
             {err && <div style={s.err}>{err}</div>}
             <button type="button" style={{ ...s.btnPrimary, opacity: sending ? 0.6 : 1 }} disabled={sending} onClick={submit}>
               {sending ? t('company.landing.contact.sending') : t('company.landing.contact.submit')}
             </button>
-            {!user && (
-              <button type="button" style={s.btnGhost} onClick={() => router.push('/company')}>
-                {t('company.landing.contact.guestLogin')}
-              </button>
-            )}
           </>
         )}
 
