@@ -430,13 +430,17 @@ export function Sidebar({ companyName, userEmail, activePage = 'home', activeJob
       try {
         const jobIds = (jobsData || []).map(j => j.id);
         if (jobIds.length > 0) {
+          // Include rejected apps too — they still drive a to-do action
+          // ("send the reject mail") until that mail is sent, so the sidebar
+          // count must match the to-do page's count (which doesn't filter).
           const { data: apps } = await supabase
             .from('job_applications')
-            .select('id, job_id, status, interview_at, rejected_at')
-            .in('job_id', jobIds)
-            .is('rejected_at', null);
+            .select('id, job_id, status, interview_at, rejected_at, rejected_at_stage')
+            .in('job_id', jobIds);
           const nowMs = Date.now();
-          nextInterviewCount = (apps || []).filter(a => a.interview_at && new Date(a.interview_at).getTime() > nowMs).length;
+          // Upcoming-interview count excludes rejected candidates — their
+          // scheduled interview no longer counts as a future event.
+          nextInterviewCount = (apps || []).filter(a => !a.rejected_at && a.interview_at && new Date(a.interview_at).getTime() > nowMs).length;
           const appIds = (apps || []).map(a => a.id);
           const evalsByApp = {};
           const mailsByApp = {};

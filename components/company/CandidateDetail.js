@@ -539,11 +539,19 @@ export default function CandidateDetail({
     const interviewWhen = app.interview_at ? formatInterviewShort(app.interview_at) : null;
     const interviewPast = app.interview_at && new Date(app.interview_at).getTime() < Date.now();
 
-    // Mail tracking — only the offer/reject decision mails are gated by
-    // Smart Hint now. Interview scheduling mail is sent at the pass-decision
-    // moment of the previous stage, not as a separate step in this stage.
-    const offerMailSent = mailLog.some(m => m.template_key === 'offer');
+    // Mail tracking — uses the canonical preset keys saved by MailComposer.
+    // final_offer + (legacy) offer cover the "최종 합격 안내" mail; reject the
+    // rejection mail. doc_pass / interview1_pass surface per-stage pass mails
+    // that the user skipped via "나중에" in the post-decision prompt.
+    const offerMailSent = mailLog.some(m => m.template_key === 'final_offer' || m.template_key === 'offer');
     const rejectMailSent = mailLog.some(m => m.template_key === 'reject');
+    const passMailSentFor = (stageKey) => {
+      const key = stageKey === 'pending' ? 'doc_pass'
+        : stageKey === 'viewed' ? 'interview1_pass'
+        : stageKey === 'reviewing' ? 'final_offer'
+        : null;
+      return key ? mailLog.some(m => m.template_key === key) : false;
+    };
 
     // ── Rejected (terminal) ────────────────────────────────────────
     if (app.rejected_at) {
@@ -656,6 +664,20 @@ export default function CandidateDetail({
         t('company.smartHint.step.eval'),
         t('company.smartHint.step.decide'),
       ];
+
+      // (0) New policy: if the previous stage's pass mail was skipped via
+      // "나중에", surface it as the first action so the candidate gets the
+      // round announcement before the interview is scheduled.
+      const prevStage = app.status === 'viewed' ? 'pending' : 'viewed';
+      const prevPassRow = evals.some(e => e.stage === `${prevStage}_pass`);
+      if (prevPassRow && !passMailSentFor(prevStage)) {
+        return {
+          tone,
+          eyebrow: t('company.smartHint.eb.todo'),
+          title: t('company.smartHint.title.sendPassMail', { stage: t(`company.smartStage.${prevStage}`) }),
+          step: 1, total: 1, steps: [t('company.smartHint.step.mail')],
+        };
+      }
 
       // (1) 일정 없음 → 일정 등록
       if (!app.interview_at) {
