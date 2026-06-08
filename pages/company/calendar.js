@@ -3,6 +3,7 @@ import Head from 'next/head';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { supabase } from '../../lib/supabaseClient';
+import { loadAccessibleJobIds } from '../../lib/company-access';
 import { Sidebar, css } from './jobs/new';
 import { useT } from '../../lib/i18n';
 import { ICT_TZ, ICT_LABEL } from '../../lib/timezone';
@@ -59,11 +60,17 @@ export default function CompanyCalendarPage() {
       setCompanyName(rec.recruiter_companies?.name || '');
       setCompanyId(rec.company_id);
 
-      const { data: jobs } = await supabase
-        .from('jobs').select('id, title').eq('company_id', rec.company_id);
+      // Scope to jobs the user owns or was invited to.
+      const accessibleIds = await loadAccessibleJobIds(session.user.id, rec.company_id);
+      let jobs = [];
+      if (accessibleIds.size > 0) {
+        const { data } = await supabase
+          .from('jobs').select('id, title').in('id', Array.from(accessibleIds));
+        jobs = data || [];
+      }
       const jobMap = {};
-      (jobs || []).forEach(j => { jobMap[j.id] = j.title; });
-      const jobIds = (jobs || []).map(j => j.id);
+      jobs.forEach(j => { jobMap[j.id] = j.title; });
+      const jobIds = jobs.map(j => j.id);
       if (jobIds.length === 0) { setItems([]); setStatus('ready'); return; }
 
       const { data: apps } = await supabase

@@ -11,6 +11,7 @@ import { Skeleton } from '../../components/ui/skeleton';
 import MobileNav from '../../components/company/MobileNav';
 import Truncate from '../../components/ui/truncate';
 import { nextActionFor } from '../../lib/smart-hint';
+import { loadAccessibleJobIds } from '../../lib/company-access';
 import { CheckSquare, Star, Calendar, Mail, Check, Ban, ChevronRight } from 'lucide-react';
 
 // Map action kind → icon so the row visual matches the meaning at a glance.
@@ -80,15 +81,22 @@ export default function CompanyTodoPage() {
       if (!rec?.company_id) { setStatus('unauthed'); return; }
       setCompanyName(rec.recruiter_companies?.name || '');
 
-      const { data: jobs } = await supabase
-        .from('jobs')
-        .select('id, title, status, created_by')
-        .eq('company_id', rec.company_id)
-        .neq('status', 'closed');
+      // Scope to jobs the user owns or was invited to — same workspace tenancy
+      // alone does not surface every job in the to-do feed.
+      const accessibleIds = await loadAccessibleJobIds(session.user.id, rec.company_id);
+      let jobs = [];
+      if (accessibleIds.size > 0) {
+        const { data } = await supabase
+          .from('jobs')
+          .select('id, title, status, created_by')
+          .in('id', Array.from(accessibleIds))
+          .neq('status', 'closed');
+        jobs = data || [];
+      }
       const jobMap = {};
-      (jobs || []).forEach(j => { jobMap[j.id] = j; });
+      jobs.forEach(j => { jobMap[j.id] = j; });
 
-      const jobIds = (jobs || []).map(j => j.id);
+      const jobIds = jobs.map(j => j.id);
       if (jobIds.length === 0) { setItems([]); setStatus('ready'); return; }
 
       const { data: apps } = await supabase

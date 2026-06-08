@@ -3,6 +3,7 @@ import Head from 'next/head';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { supabase } from '../../lib/supabaseClient';
+import { loadAccessibleJobIds } from '../../lib/company-access';
 import { Sidebar, css } from './jobs/new';
 import MobileNav from '../../components/company/MobileNav';
 import Truncate from '../../components/ui/truncate';
@@ -184,12 +185,19 @@ export default function CompanyDashboard() {
         return;
       }
 
-      const { data: jobsData } = await supabase
-        .from('jobs')
-        .select('id, title, location, type, status, salary_min, salary_max, experience_min, experience_max, created_at, is_active, created_by')
-        .eq('company_id', rec.company_id)
-        .order('created_at', { ascending: true });
-      const jobList = jobsData || [];
+      // Only surface jobs the user owns or was invited to. Same likelion.net
+      // tenant ≠ shared visibility.
+      const accessibleIds = await loadAccessibleJobIds(session.user.id, rec.company_id);
+      let jobsData = [];
+      if (accessibleIds.size > 0) {
+        const { data } = await supabase
+          .from('jobs')
+          .select('id, title, location, type, status, salary_min, salary_max, experience_min, experience_max, created_at, is_active, created_by')
+          .in('id', Array.from(accessibleIds))
+          .order('created_at', { ascending: true });
+        jobsData = data || [];
+      }
+      const jobList = jobsData;
       setJobs(jobList);
 
       if (jobList.length > 0) {

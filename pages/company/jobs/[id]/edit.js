@@ -55,6 +55,13 @@ export default function EditJobPage() {
         setStatus('error');
         return;
       }
+      // Editing is restricted to the job owner; team members can view via ATS
+      // but cannot edit the posting itself.
+      if (job.created_by !== session.user.id) {
+        setErr('공고를 찾을 수 없거나 접근 권한이 없습니다.');
+        setStatus('error');
+        return;
+      }
       setForm({
         title: job.title || '',
         description: job.description || '',

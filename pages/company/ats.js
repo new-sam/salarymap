@@ -194,6 +194,14 @@ export default function CompanyATSPage() {
       ]);
       const { data: jobData, error: jobErr } = jobRes;
       if (jobErr || !jobData) { setErr(t('company.ats.notFound')); setStatus('error'); return; }
+      // Tenancy + invitation check: must own the job or be invited to it.
+      // Same-company doesn't grant blanket ATS access to other people's jobs.
+      const isOwnerOfJob = jobData.created_by === session.user.id;
+      if (!isOwnerOfJob) {
+        const { data: teamRow } = await supabase
+          .from('job_team').select('user_id').eq('job_id', jobId).eq('user_id', session.user.id).maybeSingle();
+        if (!teamRow) { setErr(t('company.ats.notFound')); setStatus('error'); return; }
+      }
       setJob(jobData);
       const { data: appsData, error: appsErr } = appsRes;
       if (appsErr) { console.error('[ats] apps load error:', appsErr); setErr(t('company.ats.errLoad') + appsErr.message); }

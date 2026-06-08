@@ -4,6 +4,7 @@ import { cn } from '../../../lib/cn';
 import { Plus, Home, CalendarDays, ImageIcon, MapPin, Building2, Briefcase, Users as UsersIcon, CheckSquare, Maximize2, X as XIcon } from 'lucide-react';
 import JobPreview from '../../../components/jobs/JobPreview';
 import { nextActionFor } from '../../../lib/smart-hint';
+import { loadAccessibleJobIds } from '../../../lib/company-access';
 import { Button as UButton } from '../../../components/ui/button';
 import { Input as UInput } from '../../../components/ui/input';
 import { PageHeader } from '../../../components/ui/page-header';
@@ -417,12 +418,20 @@ export function Sidebar({ companyName, userEmail, activePage = 'home', activeJob
         .eq('user_id', session.user.id)
         .maybeSingle();
       if (!rec?.company_id) return;
-      const { data: jobsData } = await supabase
-        .from('jobs')
-        .select('id, title, status, created_by')
-        .eq('company_id', rec.company_id)
-        .order('created_at', { ascending: true });
-      setJobs(jobsData || []);
+      // Per-recruiter scoping: only show jobs the user owns or was invited to,
+      // not every job in the workspace. Shared company tenancy (likelion.net)
+      // doesn't imply visibility.
+      const accessibleIds = await loadAccessibleJobIds(session.user.id, rec.company_id);
+      let jobsData = [];
+      if (accessibleIds.size > 0) {
+        const { data } = await supabase
+          .from('jobs')
+          .select('id, title, status, created_by')
+          .in('id', Array.from(accessibleIds))
+          .order('created_at', { ascending: true });
+        jobsData = data || [];
+      }
+      setJobs(jobsData);
 
       // To-do + interview counts — re-uses the same nextActionFor logic the to-do page renders.
       let nextTodoCount = 0;
