@@ -61,7 +61,7 @@ async function companyVerifiedMap(userIds) {
 
 export default async function handler(req, res) {
   if (req.method === 'GET') {
-    const { category, page = 1, limit = 20, sort = 'recent', search, id: postId, mine } = req.query
+    const { category, page = 1, limit = 20, sort = 'recent', search, id: postId, mine, interests } = req.query
 
     // Single post fetch
     if (postId) {
@@ -102,6 +102,58 @@ export default async function handler(req, res) {
     }
 
     const offset = (parseInt(page) - 1) * parseInt(limit)
+
+    // "Interests": posts the signed-in user has liked OR commented on. Requires auth.
+    // We gather the post ids from both signals, union them, then page over the posts.
+    if (interests) {
+      const token = req.headers.authorization?.replace('Bearer ', '')
+      if (!token) return res.status(401).json({ error: 'Unauthorized' })
+      const { data: { user } } = await supabase.auth.getUser(token)
+      if (!user) return res.status(401).json({ error: 'Unauthorized' })
+
+      const [likes, comments] = await Promise.all([
+        supabase.from('community_likes').select('post_id').eq('user_id', user.id).not('post_id', 'is', null),
+        supabase.from('community_comments').select('post_id').eq('user_id', user.id),
+      ])
+      const ids = [...new Set([
+        ...(likes.data || []).map(l => l.post_id),
+        ...(comments.data || []).map(c => c.post_id),
+      ].filter(Boolean))]
+
+      if (ids.length === 0) {
+        return res.status(200).json({ posts: [], total: 0, page: parseInt(page), totalPages: 0 })
+      }
+
+      let iq = supabase.from('community_posts').select('*', { count: 'exact' }).in('id', ids)
+      if (category && category !== 'all') iq = iq.eq('category', category)
+      if (search && search.trim()) {
+        iq = iq.or(`title.ilike.%${search.trim()}%,content.ilike.%${search.trim()}%`)
+      }
+      iq = iq.order('created_at', { ascending: false }).range(offset, offset + parseInt(limit) - 1)
+
+      const { data: iData, error: iErr, count: iCount } = await iq
+      if (iErr) return res.status(500).json({ error: iErr.message })
+
+      const iPostIds = iData.map(p => p.id)
+      let iLiked = []
+      if (iPostIds.length > 0) {
+        const { data: ls } = await supabase
+          .from('community_likes')
+          .select('post_id')
+          .eq('user_id', user.id)
+          .in('post_id', iPostIds)
+        iLiked = (ls || []).map(l => l.post_id)
+      }
+      const iTierMap = await salaryTierMap(iData.map(p => p.user_id))
+      const iCvMap = await companyVerifiedMap(iData.map(p => p.user_id))
+
+      return res.status(200).json({
+        posts: iData.map(p => ({ ...p, is_liked: iLiked.includes(p.id), author_salary_tier: iTierMap[p.user_id] || null, author_verified_company: iCvMap[p.user_id] || null })),
+        total: iCount,
+        page: parseInt(page),
+        totalPages: Math.ceil(iCount / parseInt(limit))
+      })
+    }
 
     let query = supabase
       .from('community_posts')
