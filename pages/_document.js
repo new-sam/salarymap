@@ -10,8 +10,10 @@ export default function Document() {
         {/* Font preconnect */}
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:ital,wght@0,400;0,600;0,700;0,800;0,900;1,700;1,800;1,900&display=swap" rel="stylesheet" />
-        <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:ital,wght@0,400;0,600;0,700;0,800;0,900;1,700;1,800;1,900&display=swap" rel="stylesheet" />
+        {/* Be Vietnam Pro powers the :lang(vi) font-family in globals.css — full
+            roman + italic weight set so 500/600 mid-weight UI labels render
+            without faux-bold synthesis. */}
+        <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:ital,wght@0,400;0,500;0,600;0,700;0,800;0,900;1,400;1,500;1,600;1,700;1,800;1,900&display=swap" rel="stylesheet" />
         <link rel="preconnect" href="https://images.unsplash.com" />
         <link rel="preconnect" href="https://www.google.com" />
         {/* SEO defaults */}

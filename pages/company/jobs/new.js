@@ -574,7 +574,10 @@ export function Sidebar({ companyName, userEmail, activePage = 'home', activeJob
         </Link>
       </nav>
 
-      {jobs.length > 0 && (() => {
+      {/* Always render the section skeleton — 내 공고 / 활성화된 공고 / 비활성화된 공고
+          headers stay visible even when the recruiter has zero jobs so the
+          left rail doesn't look broken. Each group falls back to "—". */}
+      {(() => {
         // Approval policy is dropped for this sprint — no more 'pending' group.
         // Legacy pending_review jobs collapse into 'inactive'.
         const groupOf = (s) => s === 'live' ? 'active' : 'inactive';

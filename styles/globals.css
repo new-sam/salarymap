@@ -1,8 +1,11 @@
-/* ── Pretendard Variable — full glyph set so ko/en/vi all render in one
-   typeface (the dynamic subset misses Vietnamese Latin-Extended chars).
-   Pair with Inter for the Latin fallback before system fonts kick in. */
+/* ── Pretendard Variable — primary face for Korean (ss06 etc. tuned for ko).
+   Pretendard's Latin glyphs are clean but its diacritic positioning isn't
+   tuned for Vietnamese, so vi-marked accents (ế, ậ, ữ…) read oddly. We swap
+   in Be Vietnam Pro — Google's Vietnamese-first geometric sans — under
+   :lang(vi) so Vietnamese visitors get proper diacritic shaping while
+   Korean stays on Pretendard. Inter is the cross-locale Latin fallback. */
 @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css');
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800;900&family=Inter:wght@400;500;600;700;800;900&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -41,8 +44,8 @@ html {
 
 body {
   max-width: 100vw;
-  /* Pretendard first (ko/en/vi covered), Inter as the Latin fallback,
-     then system stack. Reads cleanly across all three languages. */
+  /* Pretendard first (ko/en covered), Inter as the Latin fallback,
+     then system stack. Reads cleanly across Korean and English. */
   font-family: 'Pretendard Variable', 'Pretendard', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -54,6 +57,19 @@ body {
   letter-spacing: -0.005em;
   line-height: 1.55;
   color: #191F28;
+}
+
+/* Vietnamese visitors: route to Be Vietnam Pro so diacritic stacks
+   (ế, ậ, ữ, ằ…) get proper shaping. Falls back to Inter and the system
+   stack — Pretendard intentionally dropped so the vi diacritics don't
+   inherit its Latin metrics. Form controls reset their own font-family
+   in some browsers, so target them explicitly. */
+:lang(vi) body,
+:lang(vi) button,
+:lang(vi) input,
+:lang(vi) textarea,
+:lang(vi) select {
+  font-family: 'Be Vietnam Pro', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', sans-serif;
 }
 
 /* Headings: tighter tracking + slightly tighter line-height for visual weight.
