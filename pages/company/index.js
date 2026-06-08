@@ -518,15 +518,19 @@ export default function CompanyDashboard() {
                             <div className={cn('text-[10px] font-extrabold uppercase tracking-[0.08em] mt-1.5', stats.new > 0 ? 'text-primary-600' : 'text-gray-300')}>{t('company.stat.new')}</div>
                           </div>
                         </div>
-                        <UButton
-                          variant="outline"
-                          size="sm"
-                          onClick={(e) => { e.stopPropagation(); router.push(`/company/jobs/${job.id}/edit`); }}
-                          className="hidden md:inline-flex"
-                        >
-                          <Edit3 className="w-3.5 h-3.5" />
-                          {t('company.editBtn')}
-                        </UButton>
+                        {/* Edit is owner-only — interviewers viewing this job from
+                            the dashboard don't see the button. */}
+                        {isJobOwner && (
+                          <UButton
+                            variant="outline"
+                            size="sm"
+                            onClick={(e) => { e.stopPropagation(); router.push(`/company/jobs/${job.id}/edit`); }}
+                            className="hidden md:inline-flex"
+                          >
+                            <Edit3 className="w-3.5 h-3.5" />
+                            {t('company.editBtn')}
+                          </UButton>
+                        )}
                       </div>
                     </div>
                   );

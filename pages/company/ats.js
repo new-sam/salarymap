@@ -678,12 +678,16 @@ export default function CompanyATSPage() {
                 <span className="hidden md:inline-flex">
                   <TeamPopover jobId={job.id} canInvite={!job.created_by || job.created_by === user?.id} />
                 </span>
-                <Button asChild variant="outline" className="hidden md:inline-flex">
-                  <Link href={`/company/jobs/${job.id}/edit`}>
-                    <Edit3 className="h-3.5 w-3.5" />
-                    {t('company.ats.editJob')}
-                  </Link>
-                </Button>
+                {/* Edit is owner-only; interviewers don't see the button at all
+                    to keep their view focused on evaluation actions. */}
+                {isOwner && (
+                  <Button asChild variant="outline" className="hidden md:inline-flex">
+                    <Link href={`/company/jobs/${job.id}/edit`}>
+                      <Edit3 className="h-3.5 w-3.5" />
+                      {t('company.ats.editJob')}
+                    </Link>
+                  </Button>
+                )}
               </>
             )}
           />
