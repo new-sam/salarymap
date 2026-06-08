@@ -59,9 +59,23 @@ async function companyVerifiedMap(userIds) {
   return map
 }
 
+// User ids the caller has blocked — their content is excluded from GET responses.
+// Returns [] for anon callers. (Reads the same token the GET handlers already use.)
+async function blockedIdsFor(token) {
+  if (!token) return []
+  const { data: { user } } = await supabase.auth.getUser(token)
+  if (!user) return []
+  const { data } = await supabase
+    .from('community_blocks')
+    .select('blocked_id')
+    .eq('blocker_id', user.id)
+  return (data || []).map(b => b.blocked_id)
+}
+
 export default async function handler(req, res) {
   if (req.method === 'GET') {
     const { category, page = 1, limit = 20, sort = 'recent', search, id: postId, mine, interests } = req.query
+    const blockedIds = await blockedIdsFor(req.headers.authorization?.replace('Bearer ', ''))
 
     // Single post fetch
     if (postId) {
@@ -71,6 +85,7 @@ export default async function handler(req, res) {
         .eq('id', postId)
         .single()
       if (error || !post) return res.status(404).json({ error: 'Not found' })
+      if (blockedIds.includes(post.user_id)) return res.status(404).json({ error: 'Not found' })
 
       // Increment view count only when explicitly requested
       if (req.query.view === '1') {
@@ -125,6 +140,7 @@ export default async function handler(req, res) {
       }
 
       let iq = supabase.from('community_posts').select('*', { count: 'exact' }).in('id', ids)
+      if (blockedIds.length) iq = iq.not('user_id', 'in', `(${blockedIds.join(',')})`)
       if (category && category !== 'all') iq = iq.eq('category', category)
       if (search && search.trim()) {
         iq = iq.or(`title.ilike.%${search.trim()}%,content.ilike.%${search.trim()}%`)
@@ -158,6 +174,8 @@ export default async function handler(req, res) {
     let query = supabase
       .from('community_posts')
       .select('*', { count: 'exact' })
+
+    if (blockedIds.length) query = query.not('user_id', 'in', `(${blockedIds.join(',')})`)
 
     if (mine) {
       const token = req.headers.authorization?.replace('Bearer ', '')

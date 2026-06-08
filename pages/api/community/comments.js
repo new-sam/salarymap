@@ -53,16 +53,31 @@ async function companyVerifiedMap(userIds) {
   return map
 }
 
+// User ids the caller has blocked — their comments are excluded from GET responses.
+async function blockedIdsFor(token) {
+  if (!token) return []
+  const { data: { user } } = await supabase.auth.getUser(token)
+  if (!user) return []
+  const { data } = await supabase
+    .from('community_blocks')
+    .select('blocked_id')
+    .eq('blocker_id', user.id)
+  return (data || []).map(b => b.blocked_id)
+}
+
 export default async function handler(req, res) {
   if (req.method === 'GET') {
     const { post_id } = req.query
     if (!post_id) return res.status(400).json({ error: 'post_id required' })
 
-    const { data, error } = await supabase
+    const blockedIds = await blockedIdsFor(req.headers.authorization?.replace('Bearer ', ''))
+    let cq = supabase
       .from('community_comments')
       .select('*')
       .eq('post_id', post_id)
       .order('created_at', { ascending: true })
+    if (blockedIds.length) cq = cq.not('user_id', 'in', `(${blockedIds.join(',')})`)
+    const { data, error } = await cq
 
     if (error) return res.status(500).json({ error: error.message })
 
