@@ -1,5 +1,17 @@
 import { createClient } from '@supabase/supabase-js'
+import { sendPush } from '../../../lib/push'
 import { verifyAdmin } from './check'
+
+// 지원 상태 → 지원자에게 보낼 단계 안내 문구(vi, 1차 시장 기준).
+const STATUS_PUSH_VI = {
+  applied: 'Hồ sơ của bạn đã được tiếp nhận',
+  pending: 'Hồ sơ của bạn đã được tiếp nhận',
+  viewed: 'Nhà tuyển dụng đã xem hồ sơ của bạn',
+  reviewing: 'Hồ sơ của bạn đang được xem xét',
+  decided: 'Đã có kết quả cho hồ sơ ứng tuyển của bạn',
+  accepted: 'Chúc mừng! Hồ sơ của bạn đã được chấp nhận',
+  rejected: 'Đã có cập nhật cho hồ sơ ứng tuyển của bạn',
+}
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
@@ -47,6 +59,25 @@ export default async function handler(req, res) {
       .update(updates)
       .eq('id', id)
     if (error) return res.status(500).json({ error: error.message })
+
+    // 지원 단계 변경 알림 — 지원자 본인에게 푸시(카테고리 'application').
+    if (status && STATUS_PUSH_VI[status]) {
+      const { data: app } = await supabase
+        .from('job_applications')
+        .select('user_id, job_title, job_company')
+        .eq('id', id)
+        .maybeSingle()
+      if (app?.user_id) {
+        const where = [app.job_company, app.job_title].filter(Boolean).join(' · ')
+        sendPush([app.user_id], {
+          title: where || 'Cập nhật ứng tuyển',
+          body: STATUS_PUSH_VI[status],
+          category: 'application',
+          data: { url: '/jobs/applications' },
+        })
+      }
+    }
+
     return res.status(200).json({ success: true })
   }
 

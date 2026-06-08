@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js'
+import { sendPush } from '../../../lib/push'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
@@ -61,10 +62,11 @@ export default async function handler(req, res) {
     const { error } = await supabase.from('community_likes').insert(insertData)
     if (error) return res.status(500).json({ error: error.message })
 
-    // Increment like count
+    // Increment like count (also fetch owner + deep-link fields for the notification)
+    const selectCols = post_id ? 'like_count, user_id, title' : 'like_count, user_id, post_id'
     const { data: target } = await supabase
       .from(targetTable)
-      .select('like_count')
+      .select(selectCols)
       .eq('id', matchValue)
       .single()
 
@@ -73,6 +75,19 @@ export default async function handler(req, res) {
         .from(targetTable)
         .update({ like_count: (target.like_count || 0) + 1 })
         .eq('id', matchValue)
+
+      // 좋아요 알림 — 본인 콘텐츠가 아니면 작성자에게 푸시(카테고리 'like').
+      if (target.user_id && target.user_id !== user.id) {
+        const deepPostId = post_id || target.post_id
+        sendPush([target.user_id], {
+          title: post_id ? (target.title || 'Cộng đồng FYI') : 'Cộng đồng FYI',
+          body: post_id
+            ? 'Ai đó đã thích bài viết của bạn'
+            : 'Ai đó đã thích bình luận của bạn',
+          category: 'like',
+          data: deepPostId ? { url: `/community/${deepPostId}` } : {},
+        })
+      }
     }
 
     return res.status(200).json({ liked: true })

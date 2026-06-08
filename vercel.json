@@ -2,5 +2,7 @@
   "git": {
     "deploymentEnabled": true
   },
-  "crons": []
+  "crons": [
+    { "path": "/api/cron/daily-hot-post", "schedule": "0 1 * * *" }
+  ]
 }
