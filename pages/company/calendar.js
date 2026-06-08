@@ -21,15 +21,12 @@ const dateKey = (d) => `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
 export default function CompanyCalendarPage() {
   const router = useRouter();
   const { t, lang } = useT();
-  // Hydrate from sessionStorage so a return-to-calendar paints instantly.
-  const calCache = typeof window !== 'undefined'
-    ? (() => { try { return JSON.parse(sessionStorage.getItem('fyi.calendar.v1') || 'null'); } catch { return null; } })()
-    : null;
-  const [status, setStatus] = useState(calCache ? 'ready' : 'loading');
+  // Cached values hydrate inside useEffect to avoid SSR/CSR mismatch.
+  const [status, setStatus] = useState('loading');
   const [user, setUser] = useState(null);
-  const [companyName, setCompanyName] = useState(calCache?.companyName || '');
+  const [companyName, setCompanyName] = useState('');
   const [companyId, setCompanyId] = useState(null);
-  const [items, setItems] = useState(calCache?.items || []);
+  const [items, setItems] = useState([]);
   const [selectedAppId, setSelectedAppId] = useState(null);
   const [view, setView] = useState(() => {
     const d = new Date();
@@ -40,6 +37,15 @@ export default function CompanyCalendarPage() {
   const fmtTime = (d) => d.toLocaleTimeString(locale, { timeZone: ICT_TZ, hour: '2-digit', minute: '2-digit', hour12: false });
 
   useEffect(() => {
+    // Hydrate from sessionStorage after mount (avoids SSR/CSR mismatch).
+    try {
+      const cached = JSON.parse(sessionStorage.getItem('fyi.calendar.v1') || 'null');
+      if (cached) {
+        setItems(cached.items || []);
+        setCompanyName(cached.companyName || '');
+        setStatus('ready');
+      }
+    } catch {}
     (async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) { setStatus('unauthed'); return; }

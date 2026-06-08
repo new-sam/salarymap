@@ -393,16 +393,21 @@ const DOT_COLOR = { live: '#10b981', paused: '#f59e0b', closed: '#94a3b8', draft
 export function Sidebar({ companyName, userEmail, activePage = 'home', activeJobId = null }) {
   const router = useRouter();
   const { t } = useT();
-  // Hydrate counts/jobs from sessionStorage cache so navigation paints instantly;
-  // the effect below revalidates in the background and updates if values changed.
-  const cached = typeof window !== 'undefined'
-    ? (() => { try { return JSON.parse(sessionStorage.getItem('fyi.sidebar.v1') || 'null'); } catch { return null; } })()
-    : null;
-  const [jobs, setJobs] = useState(cached?.jobs || []);
-  const [todoCount, setTodoCount] = useState(cached?.todoCount || 0);
-  const [interviewCount, setInterviewCount] = useState(cached?.interviewCount || 0);
+  // Counts/jobs hydrate from sessionStorage AFTER mount (inside useEffect)
+  // to avoid SSR/CSR mismatch — initial render must equal server's empty state.
+  const [jobs, setJobs] = useState([]);
+  const [todoCount, setTodoCount] = useState(0);
+  const [interviewCount, setInterviewCount] = useState(0);
 
   useEffect(() => {
+    try {
+      const cached = JSON.parse(sessionStorage.getItem('fyi.sidebar.v1') || 'null');
+      if (cached) {
+        setJobs(cached.jobs || []);
+        setTodoCount(cached.todoCount || 0);
+        setInterviewCount(cached.interviewCount || 0);
+      }
+    } catch {}
     (async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) return;

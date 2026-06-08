@@ -58,17 +58,14 @@ const authResponsiveCss = `
 export default function CompanyDashboard() {
   const router = useRouter();
   const { t } = useT();
-  // Hydrate from cache so a return-to-dashboard paints instantly; background revalidates.
-  const dashCache = typeof window !== 'undefined'
-    ? (() => { try { return JSON.parse(sessionStorage.getItem('fyi.dashboard.v1') || 'null'); } catch { return null; } })()
-    : null;
-  const [status, setStatus] = useState(dashCache ? 'ready' : 'loading');
+  const [status, setStatus] = useState('loading');
   const [user, setUser] = useState(null);
   const [companyName, setCompanyName] = useState('');
   const [fullName, setFullName] = useState('');
-  const [jobs, setJobs] = useState(dashCache?.jobs || []);
-  const [appsCount, setAppsCount] = useState(dashCache?.appsCount || 0);
-  const [appsByJob, setAppsByJob] = useState(dashCache?.appsByJob || {});
+  // Cached values hydrate inside useEffect to avoid SSR/CSR mismatch.
+  const [jobs, setJobs] = useState([]);
+  const [appsCount, setAppsCount] = useState(0);
+  const [appsByJob, setAppsByJob] = useState({});
   const [authErr, setAuthErr] = useState('');
   const [setupName, setSetupName] = useState('');
   const [setupCompany, setSetupCompany] = useState('');
@@ -146,6 +143,16 @@ export default function CompanyDashboard() {
   };
 
   useEffect(() => {
+    // Hydrate from sessionStorage after mount (avoids SSR/CSR mismatch).
+    try {
+      const cached = JSON.parse(sessionStorage.getItem('fyi.dashboard.v1') || 'null');
+      if (cached) {
+        setJobs(cached.jobs || []);
+        setAppsCount(cached.appsCount || 0);
+        setAppsByJob(cached.appsByJob || {});
+        setStatus('ready');
+      }
+    } catch {}
     let mounted = true;
     (async () => {
       if (!router.isReady) return;
