@@ -137,17 +137,19 @@ export default async function handler(req, res) {
     }
 
     const realName = user.user_metadata?.full_name || user.email?.split('@')[0] || 'User'
-    const authorName = is_anonymous
-      ? (realName.charAt(0) + '**')
-      : realName
 
-    // Fetch the post to flag original-poster (OP) comments and to bump the count
+    // Fetch the post to flag original-poster (OP) comments, inherit its privacy, and bump the count.
     const { data: postData } = await supabase
       .from('community_posts')
-      .select('user_id, comment_count')
+      .select('user_id, comment_count, is_anonymous')
       .eq('id', post_id)
       .single()
     const isOp = !!(postData && postData.user_id === user.id)
+
+    // OP가 자기 글에 다는 댓글은 글의 공개/익명을 그대로 상속(익명글→익명, 공개글→공개).
+    // 그 외 댓글은 작성자가 고른 is_anonymous를 따른다(기본 익명).
+    const effectiveAnon = isOp ? (postData?.is_anonymous !== false) : (is_anonymous !== false)
+    const authorName = effectiveAnon ? (realName.charAt(0) + '**') : realName
 
     const { data, error } = await supabase
       .from('community_comments')
@@ -157,7 +159,7 @@ export default async function handler(req, res) {
         author_name: authorName,
         content,
         image_url,
-        is_anonymous: is_anonymous !== false,
+        is_anonymous: effectiveAnon,
         is_op: isOp
       })
       .select()
