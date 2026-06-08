@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js'
 import { getSalaryTier } from '../../../lib/salaryTiers'
+import { sendPush } from '../../../lib/push'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
@@ -141,7 +142,7 @@ export default async function handler(req, res) {
     // Fetch the post to flag original-poster (OP) comments, inherit its privacy, and bump the count.
     const { data: postData } = await supabase
       .from('community_posts')
-      .select('user_id, comment_count, is_anonymous')
+      .select('user_id, comment_count, is_anonymous, title')
       .eq('id', post_id)
       .single()
     const isOp = !!(postData && postData.user_id === user.id)
