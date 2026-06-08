@@ -2698,16 +2698,33 @@ export function RejectionModal({ app, stageKey, candidateName, mode = 'new', ini
       // Go through server endpoint so an audit row (stage='unreject') is
       // recorded in application_evaluations for the activity timeline.
       try {
-        const { data: { session } } = await supabase.auth.getSession();
+        // Long-open modals (the user may have left this dialog up for >1 hour)
+        // can outlive the 1h Supabase access token. Refresh proactively so the
+        // server doesn't reject the call with "세션이 만료되었습니다.".
+        let session = (await supabase.auth.getSession())?.data?.session;
+        const isStale = !session?.access_token
+          || (session.expires_at && session.expires_at * 1000 < Date.now() + 60_000);
+        if (isStale) {
+          const refreshed = await supabase.auth.refreshSession();
+          session = refreshed?.data?.session || session;
+        }
+        if (!session?.access_token) {
+          setSaving(false);
+          setErr(t('company.reject.errSessionRelogin'));
+          return;
+        }
         const r = await fetch('/api/company/unreject-candidate', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session?.access_token || ''}` },
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
           body: JSON.stringify({ appId: app.id }),
         });
-        const j = await r.json();
+        const j = await r.json().catch(() => ({}));
         if (!r.ok) {
           setSaving(false);
-          setErr(t('company.reject.errSave') + (j?.error || ''));
+          // 401 from this endpoint means the refresh above also failed —
+          // surface a clearer "please log in again" copy.
+          if (r.status === 401) setErr(t('company.reject.errSessionRelogin'));
+          else setErr(t('company.reject.errSave') + (j?.error || ''));
           return;
         }
         setSaving(false);
