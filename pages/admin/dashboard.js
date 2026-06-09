@@ -512,58 +512,50 @@ export default function AdminDashboard() {
                 </button>
               </div>
             )}
-            {['basic', 'talent'].map(sec => (
-              <div key={sec} style={{ marginBottom: 18 }}>
-                <div style={{ fontSize: 13, fontWeight: 800, color: '#374151', marginBottom: 8 }}>{SECTION_LABELS[sec][lang]}</div>
-                <div className="adm-metric-cards" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))', gap: 12 }}>
-                  {METRICS.filter(m => m.section === sec).map(m => {
-                    const isEventMetric = m.key === 'jobClicks' || m.key === 'cardClicks'
-                    const noTracking = isEventMetric && !summary.hasEventTracking
-                    const value = noTracking ? '-' : summary[m.summaryKey]
-                    const dod = noTracking ? null : getDoD(chartData, m.dataKey)
-                    const isActive = selected.includes(m.key)
-                    return (
-                      <div key={m.key}
-                        onClick={() => setSelected(prev => isActive ? prev.filter(k => k !== m.key) : [...prev, m.key])}
-                        style={{
-                          background: isActive ? m.color : '#fff',
-                          border: `2px solid ${isActive ? m.color : '#e5e7eb'}`,
-                          borderRadius: 12, padding: '16px 20px', cursor: 'pointer',
-                          transition: 'all 0.15s ease',
-                        }}>
-                        <div style={{ fontSize: 12, color: isActive ? 'rgba(255,255,255,0.7)' : '#6B7280', marginBottom: 4 }}>{m.label}</div>
-                        <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
-                          <div style={{ fontSize: 28, fontWeight: 700, color: isActive ? '#fff' : m.color }}>{value}</div>
-                          {dod !== null && (
-                            <span style={{
-                              fontSize: 13, fontWeight: 600,
-                              color: isActive
-                                ? 'rgba(255,255,255,0.8)'
-                                : dod > 0 ? '#EF4444' : dod < 0 ? '#3B82F6' : '#9CA3AF'
-                            }}>
-                              {dod > 0 ? '+' : ''}{dod}%
-                            </span>
-                          )}
+            {['basic', 'talent', 'company'].map(sec => {
+              const cards = sec === 'company'
+                ? B2B_CARDS.map(c => ({ key: c.key, label: c[lang] || c.ko, value: summary[c.summaryKey] ?? '-', dod: null, clickable: false }))
+                : METRICS.filter(m => m.section === sec).map(m => {
+                    const noTracking = (m.key === 'jobClicks' || m.key === 'cardClicks') && !summary.hasEventTracking
+                    return {
+                      key: m.key, label: m.label,
+                      value: noTracking ? '-' : summary[m.summaryKey],
+                      dod: noTracking ? null : getDoD(chartData, m.dataKey),
+                      clickable: true,
+                    }
+                  })
+              return (
+                <div key={sec} style={{ marginBottom: 22 }}>
+                  <div style={{ fontSize: 11.5, fontWeight: 800, color: '#8B95A1', letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: 10 }}>{SECTION_LABELS[sec][lang]}</div>
+                  <div className="adm-metric-cards" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(146px, 1fr))', gap: 10 }}>
+                    {cards.map(c => {
+                      const isActive = c.clickable && selected.includes(c.key)
+                      return (
+                        <div key={c.key}
+                          onClick={c.clickable ? () => setSelected(prev => isActive ? prev.filter(k => k !== c.key) : [...prev, c.key]) : undefined}
+                          style={{
+                            background: isActive ? '#FFF7ED' : '#fff',
+                            border: `1px solid ${isActive ? '#FDBA74' : '#EDF0F2'}`,
+                            borderRadius: 10, padding: '13px 15px',
+                            cursor: c.clickable ? 'pointer' : 'default',
+                            transition: 'border-color 0.12s ease, background 0.12s ease',
+                          }}>
+                          <div style={{ fontSize: 12, color: '#8B95A1', marginBottom: 6, fontWeight: 600 }}>{c.label}</div>
+                          <div style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}>
+                            <div style={{ fontSize: 25, fontWeight: 800, color: '#191F28', letterSpacing: '-0.02em', fontVariantNumeric: 'tabular-nums' }}>{c.value}</div>
+                            {c.dod !== null && c.dod !== undefined && (
+                              <span style={{ fontSize: 12, fontWeight: 700, color: c.dod > 0 ? '#EF4444' : c.dod < 0 ? '#3B82F6' : '#9CA3AF' }}>
+                                {c.dod > 0 ? '+' : ''}{c.dod}%
+                              </span>
+                            )}
+                          </div>
                         </div>
-                      </div>
-                    )
-                  })}
-                </div>
-              </div>
-            ))}
-
-            {/* 기업 채용 지표 — 요약 카드 */}
-            <div style={{ marginBottom: 24 }}>
-              <div style={{ fontSize: 13, fontWeight: 800, color: '#374151', marginBottom: 8 }}>{SECTION_LABELS.company[lang]}</div>
-              <div className="adm-metric-cards" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))', gap: 12 }}>
-                {B2B_CARDS.map(c => (
-                  <div key={c.key} style={{ background: '#fff', border: '2px solid #e5e7eb', borderRadius: 12, padding: '16px 20px' }}>
-                    <div style={{ fontSize: 12, color: '#6B7280', marginBottom: 4 }}>{c[lang] || c.ko}</div>
-                    <div style={{ fontSize: 28, fontWeight: 700, color: c.color }}>{summary[c.summaryKey] ?? '-'}</div>
+                      )
+                    })}
                   </div>
-                ))}
-              </div>
-            </div>
+                </div>
+              )
+            })}
 
             {/* Chart */}
             {selectedMetrics.length > 0 && (
