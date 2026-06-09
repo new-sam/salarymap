@@ -282,19 +282,19 @@ export const T = {
 }
 
 export const METRICS_BASE = [
-  { key: 'sessions', dataKey: 'sessions', color: '#2563EB', summaryKey: 'totalSessions' },
-  { key: 'submissions', dataKey: 'submissions', color: '#374151', summaryKey: 'totalSubmissions' },
-  { key: 'ad', dataKey: 'ad', color: '#4F46E5', summaryKey: 'adSubmissions' },
-  { key: 'organic', dataKey: 'organic', color: '#10B981', summaryKey: 'organicSubmissions' },
-  { key: 'signups', dataKey: 'signups', color: '#F59E0B', summaryKey: 'totalSignups' },
-  { key: 'jobClicks', dataKey: 'jobClicks', color: '#F97316', summaryKey: 'totalJobClicks' },
-  { key: 'cardClicks', dataKey: 'cardClicks', color: '#EC4899', summaryKey: 'totalCardClicks' },
-  { key: 'jobsPageViews', dataKey: 'jobsPageViews', color: '#06B6D4', summaryKey: 'totalJobsPageViews' },
-  { key: 'applyClicks', dataKey: 'applyClicks', color: '#D946EF', summaryKey: 'totalApplyClicks' },
-  { key: 'saveClicks', dataKey: 'saveClicks', color: '#F472B6', summaryKey: 'totalSaveClicks' },
-  { key: 'jobApps', dataKey: 'jobApps', color: '#EF4444', summaryKey: 'totalJobApps' },
-  { key: 'resumeUploads', dataKey: 'resumeUploads', color: '#14B8A6', summaryKey: 'totalResumeUploads' },
-  { key: 'companies', dataKey: 'companies', color: '#6B7280', summaryKey: 'uniqueCompanies' },
+  { key: 'sessions', dataKey: 'sessions', color: '#2563EB', summaryKey: 'totalSessions', section: 'basic' },
+  { key: 'submissions', dataKey: 'submissions', color: '#374151', summaryKey: 'totalSubmissions', section: 'basic' },
+  { key: 'ad', dataKey: 'ad', color: '#4F46E5', summaryKey: 'adSubmissions', section: 'basic' },
+  { key: 'organic', dataKey: 'organic', color: '#10B981', summaryKey: 'organicSubmissions', section: 'basic' },
+  { key: 'signups', dataKey: 'signups', color: '#F59E0B', summaryKey: 'totalSignups', section: 'basic' },
+  { key: 'companies', dataKey: 'companies', color: '#6B7280', summaryKey: 'uniqueCompanies', section: 'basic' },
+  { key: 'jobClicks', dataKey: 'jobClicks', color: '#F97316', summaryKey: 'totalJobClicks', section: 'talent' },
+  { key: 'cardClicks', dataKey: 'cardClicks', color: '#EC4899', summaryKey: 'totalCardClicks', section: 'talent' },
+  { key: 'jobsPageViews', dataKey: 'jobsPageViews', color: '#06B6D4', summaryKey: 'totalJobsPageViews', section: 'talent' },
+  { key: 'applyClicks', dataKey: 'applyClicks', color: '#D946EF', summaryKey: 'totalApplyClicks', section: 'talent' },
+  { key: 'saveClicks', dataKey: 'saveClicks', color: '#F472B6', summaryKey: 'totalSaveClicks', section: 'talent' },
+  { key: 'jobApps', dataKey: 'jobApps', color: '#EF4444', summaryKey: 'totalJobApps', section: 'talent' },
+  { key: 'resumeUploads', dataKey: 'resumeUploads', color: '#14B8A6', summaryKey: 'totalResumeUploads', section: 'talent' },
 ]
 
 export const EXP_COLORS = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7', '#DDA0DD', '#98D8C8', '#F7DC6F']

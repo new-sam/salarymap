@@ -6,6 +6,7 @@ import Brand from '../components/company/Brand';
 import ContactModal from '../components/company/ContactModal';
 import { useT } from '../lib/i18n';
 import { supabase } from '../lib/supabaseClient';
+import { track } from '../lib/track';
 
 function CountUp({ end, decimals = 0, duration = 1200, suffix = '' }) {
   const [val, setVal] = useState(0);
@@ -74,6 +75,7 @@ export default function ForCompanies() {
 
   // '무료 공고 올리기' — 로그인됨 → 바로 공고 작성 / 미로그인 → 로그인 후 공고 작성으로 복귀
   const goPostJob = async () => {
+    track('click_post_job', { page: '/for-companies' });
     const { data } = await supabase.auth.getSession();
     if (data?.session) { router.push('/company/jobs/new'); return; }
     router.push('/company?mode=signup&next=' + encodeURIComponent('/company/jobs/new'));
@@ -240,7 +242,7 @@ export default function ForCompanies() {
             </h1>
             <p style={css.lead}>{t('company.landing.lead')}</p>
             <div className="fc-hero-ctas" style={css.heroCtas}>
-              <button type="button" onClick={() => setContactOpen(true)} style={css.btnOutline}>💬 {t('company.landing.heroCtaContact')}</button>
+              <button type="button" onClick={() => { track('click_contact_owner', { page: '/for-companies' }); setContactOpen(true); }} style={css.btnOutline}>💬 {t('company.landing.heroCtaContact')}</button>
               <button type="button" onClick={goPostJob} style={css.btnDark}>
                 📝 {t('company.landing.heroCtaPost')} -&gt;
               </button>

@@ -182,6 +182,13 @@ export default async function handler(req, res) {
     )
   } catch (e) {}
 
+  // 공고 승인 대기 현황 (현재 pending_review 공고 수, 기간 무관)
+  let pendingJobs = 0
+  try {
+    const { count } = await supabase.from('jobs').select('*', { count: 'exact', head: true }).eq('status', 'pending_review')
+    pendingJobs = count || 0
+  } catch (e) {}
+
   // --- Aggregate daily trend ---
   const toVN = (iso) => new Date(new Date(iso).getTime() + 7 * 3600000).toISOString().slice(0, 10)
   const dailyMap = {}
@@ -323,7 +330,10 @@ export default async function handler(req, res) {
     totalSaveClicks: events.filter(e => e.event === 'save_job' && e.created_at.slice(0, 10) >= '2026-05-11').length,
     totalResumeUploads: resumeUsers.length,
     totalForCompaniesClicks: events.filter(e => e.event === 'click_for_companies' && e.created_at.slice(0, 10) >= EVENT_TRACKING_START).length,
+    totalContactOwnerClicks: events.filter(e => e.event === 'click_contact_owner' && e.created_at.slice(0, 10) >= EVENT_TRACKING_START).length,
+    totalPostJobClicks: events.filter(e => e.event === 'click_post_job' && e.created_at.slice(0, 10) >= EVENT_TRACKING_START).length,
     totalCompanySignups: companySignups.length,
+    pendingJobs,
     hasEventTracking: endDate >= EVENT_TRACKING_START,
     eventTrackingStart: EVENT_TRACKING_START,
     uniqueCompanies: uniqueCompanies.size,

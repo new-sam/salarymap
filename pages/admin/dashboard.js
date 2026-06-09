@@ -43,6 +43,21 @@ function cellPct(cur, prev) {
   return Math.round(((cur - prev) / prev) * 100)
 }
 
+// 퍼포먼스 대시보드 섹션 구분
+const SECTION_LABELS = {
+  basic: { ko: '기본 정보', en: 'Basics' },
+  talent: { ko: '인재 채용 지표', en: 'Talent funnel' },
+  company: { ko: '기업 채용 지표', en: 'Company funnel' },
+}
+// 기업 채용 섹션 카드 (요약 숫자 — 일별 차트 미연동)
+const B2B_CARDS = [
+  { key: 'forClicks', summaryKey: 'totalForCompaniesClicks', color: '#EA580C', ko: '홈→기업채용', en: 'For-companies clicks' },
+  { key: 'contactClicks', summaryKey: 'totalContactOwnerClicks', color: '#0EA5E9', ko: '담당자 대화', en: 'Contact clicks' },
+  { key: 'postJobClicks', summaryKey: 'totalPostJobClicks', color: '#F97316', ko: '공고 올리기', en: 'Post-job clicks' },
+  { key: 'pendingJobs', summaryKey: 'pendingJobs', color: '#EAB308', ko: '승인 대기', en: 'Pending approval' },
+  { key: 'companySignups', summaryKey: 'totalCompanySignups', color: '#2563EB', ko: '기업 가입자', en: 'Company signups' },
+]
+
 export default function AdminDashboard() {
   const [auth, setAuth] = useState('loading')
   const [token, setToken] = useState(null)
@@ -497,50 +512,56 @@ export default function AdminDashboard() {
                 </button>
               </div>
             )}
-            <div className="adm-metric-cards" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))', gap: 12, marginBottom: 24 }}>
-              {METRICS.map(m => {
-                const isEventMetric = m.key === 'jobClicks' || m.key === 'cardClicks'
-                const noTracking = isEventMetric && !summary.hasEventTracking
-                const value = noTracking ? '-' : summary[m.summaryKey]
-                const dod = noTracking ? null : getDoD(chartData, m.dataKey)
-                const isActive = selected.includes(m.key)
-                return (
-                  <div key={m.key}
-                    onClick={() => setSelected(prev => isActive ? prev.filter(k => k !== m.key) : [...prev, m.key])}
-                    style={{
-                      background: isActive ? m.color : '#fff',
-                      border: `2px solid ${isActive ? m.color : '#e5e7eb'}`,
-                      borderRadius: 12, padding: '16px 20px', cursor: 'pointer',
-                      transition: 'all 0.15s ease',
-                    }}>
-                    <div style={{ fontSize: 12, color: isActive ? 'rgba(255,255,255,0.7)' : '#6B7280', marginBottom: 4 }}>{m.label}</div>
-                    <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
-                      <div style={{ fontSize: 28, fontWeight: 700, color: isActive ? '#fff' : m.color }}>{value}</div>
-                      {dod !== null && (
-                        <span style={{
-                          fontSize: 13, fontWeight: 600,
-                          color: isActive
-                            ? 'rgba(255,255,255,0.8)'
-                            : dod > 0 ? '#EF4444' : dod < 0 ? '#3B82F6' : '#9CA3AF'
+            {['basic', 'talent'].map(sec => (
+              <div key={sec} style={{ marginBottom: 18 }}>
+                <div style={{ fontSize: 13, fontWeight: 800, color: '#374151', marginBottom: 8 }}>{SECTION_LABELS[sec][lang]}</div>
+                <div className="adm-metric-cards" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))', gap: 12 }}>
+                  {METRICS.filter(m => m.section === sec).map(m => {
+                    const isEventMetric = m.key === 'jobClicks' || m.key === 'cardClicks'
+                    const noTracking = isEventMetric && !summary.hasEventTracking
+                    const value = noTracking ? '-' : summary[m.summaryKey]
+                    const dod = noTracking ? null : getDoD(chartData, m.dataKey)
+                    const isActive = selected.includes(m.key)
+                    return (
+                      <div key={m.key}
+                        onClick={() => setSelected(prev => isActive ? prev.filter(k => k !== m.key) : [...prev, m.key])}
+                        style={{
+                          background: isActive ? m.color : '#fff',
+                          border: `2px solid ${isActive ? m.color : '#e5e7eb'}`,
+                          borderRadius: 12, padding: '16px 20px', cursor: 'pointer',
+                          transition: 'all 0.15s ease',
                         }}>
-                          {dod > 0 ? '+' : ''}{dod}%
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                )
-              })}
-            </div>
-
-            {/* 기업(B2B) 지표 */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))', gap: 12, marginBottom: 24 }}>
-              <div style={{ background: '#fff', border: '2px solid #e5e7eb', borderRadius: 12, padding: '16px 20px' }}>
-                <div style={{ fontSize: 12, color: '#6B7280', marginBottom: 4 }}>기업 채용 클릭</div>
-                <div style={{ fontSize: 28, fontWeight: 700, color: '#EA580C' }}>{summary.totalForCompaniesClicks ?? '-'}</div>
+                        <div style={{ fontSize: 12, color: isActive ? 'rgba(255,255,255,0.7)' : '#6B7280', marginBottom: 4 }}>{m.label}</div>
+                        <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
+                          <div style={{ fontSize: 28, fontWeight: 700, color: isActive ? '#fff' : m.color }}>{value}</div>
+                          {dod !== null && (
+                            <span style={{
+                              fontSize: 13, fontWeight: 600,
+                              color: isActive
+                                ? 'rgba(255,255,255,0.8)'
+                                : dod > 0 ? '#EF4444' : dod < 0 ? '#3B82F6' : '#9CA3AF'
+                            }}>
+                              {dod > 0 ? '+' : ''}{dod}%
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
               </div>
-              <div style={{ background: '#fff', border: '2px solid #e5e7eb', borderRadius: 12, padding: '16px 20px' }}>
-                <div style={{ fontSize: 12, color: '#6B7280', marginBottom: 4 }}>기업 가입자</div>
-                <div style={{ fontSize: 28, fontWeight: 700, color: '#2563EB' }}>{summary.totalCompanySignups ?? '-'}</div>
+            ))}
+
+            {/* 기업 채용 지표 — 요약 카드 */}
+            <div style={{ marginBottom: 24 }}>
+              <div style={{ fontSize: 13, fontWeight: 800, color: '#374151', marginBottom: 8 }}>{SECTION_LABELS.company[lang]}</div>
+              <div className="adm-metric-cards" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))', gap: 12 }}>
+                {B2B_CARDS.map(c => (
+                  <div key={c.key} style={{ background: '#fff', border: '2px solid #e5e7eb', borderRadius: 12, padding: '16px 20px' }}>
+                    <div style={{ fontSize: 12, color: '#6B7280', marginBottom: 4 }}>{c[lang] || c.ko}</div>
+                    <div style={{ fontSize: 28, fontWeight: 700, color: c.color }}>{summary[c.summaryKey] ?? '-'}</div>
+                  </div>
+                ))}
               </div>
             </div>
 
