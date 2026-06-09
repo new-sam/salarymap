@@ -70,8 +70,11 @@ export default async function handler(req, res) {
     return all
   }
 
-  // 모든 쿼리 병렬 실행 (기존엔 await 직렬 → Promise.all 로 로딩 시간 = 합계가 아니라 최대값)
-  const [submissionsRaw, signups, jobApps, events, pageViews, landings, resumeUsers, companySignups, pendingJobs] = await Promise.all([
+  const toVN = (iso) => new Date(new Date(iso).getTime() + 7 * 3600000).toISOString().slice(0, 10)
+  const EVENT_NAMES = ['click_jobs_cta', 'click_job_card', 'view_jobs_page', 'click_apply_button', 'save_job', 'click_for_companies', 'click_contact_owner', 'click_post_job', 'landing']
+
+  // 모든 쿼리 병렬 실행. 이벤트는 DB에서 집계(RPC)해 수만 행 전송을 없앰. (직렬 await → Promise.all)
+  const [submissionsRaw, signups, jobApps, eventDaily, utmPv, resumeUsers, companySignups, pendingJobs] = await Promise.all([
     // submissions (페이지네이션)
     fetchAll(
       supabase.from('submissions')
@@ -96,18 +99,34 @@ export default async function handler(req, res) {
     // job applications
     fetchAll(supabase.from('job_applications').select('id, created_at')
       .gte('created_at', startISO).lte('created_at', endISO)).catch(() => []),
-    // click events (인재 + 기업 funnel — 기업 이벤트 포함)
-    fetchAll(supabase.from('events').select('id, event, meta, created_at')
-      .in('event', ['click_jobs_cta', 'click_job_card', 'view_jobs_page', 'click_apply_button', 'save_job', 'click_for_companies', 'click_contact_owner', 'click_post_job'])
-      .gte('created_at', startISO).lte('created_at', endISO)).catch(() => []),
-    // page_view events (UTM 어트리뷰션)
-    fetchAll(supabase.from('events').select('id, meta, created_at')
-      .in('event', ['page_view', 'view_jobs_page'])
-      .gte('created_at', startISO).lte('created_at', endISO)).catch(() => []),
-    // landing events (전체 방문자)
-    fetchAll(supabase.from('events').select('id, created_at')
-      .eq('event', 'landing')
-      .gte('created_at', startISO).lte('created_at', endISO)).catch(() => []),
+    // 이벤트 일별 카운트 — DB 집계 RPC (실패 시 행 fetch 폴백)
+    (async () => {
+      try {
+        const { data, error } = await supabase.rpc('admin_event_daily', { p_start: startISO, p_end: endISO })
+        if (error) throw error
+        return (data || []).map(r => ({ d: r.d, event: r.event, cnt: Number(r.cnt) }))
+      } catch (e) {
+        const rows = await fetchAll(supabase.from('events').select('event, created_at')
+          .in('event', EVENT_NAMES).gte('created_at', startISO).lte('created_at', endISO)).catch(() => [])
+        const m = {}
+        for (const r of rows) { const k = toVN(r.created_at) + '|' + r.event; m[k] = (m[k] || 0) + 1 }
+        return Object.entries(m).map(([k, cnt]) => ({ d: k.slice(0, k.indexOf('|')), event: k.slice(k.indexOf('|') + 1), cnt }))
+      }
+    })(),
+    // UTM 차원별 page_view 카운트 — DB 집계 RPC (실패 시 행 fetch 폴백)
+    (async () => {
+      try {
+        const { data, error } = await supabase.rpc('admin_utm_pageviews', { p_start: startISO, p_end: endISO })
+        if (error) throw error
+        return (data || []).map(r => ({ d: r.d, utm_source: r.utm_source, utm_campaign: r.utm_campaign, utm_content: r.utm_content, cnt: Number(r.cnt) }))
+      } catch (e) {
+        const rows = await fetchAll(supabase.from('events').select('meta, created_at')
+          .in('event', ['page_view', 'view_jobs_page']).gte('created_at', startISO).lte('created_at', endISO)).catch(() => [])
+        const m = {}
+        for (const r of rows) { const mt = r.meta || {}; const d = toVN(r.created_at); const k = d + '|' + (mt.utm_source || '') + '|' + (mt.utm_campaign || '') + '|' + (mt.utm_content || ''); if (!m[k]) m[k] = { d, s: mt.utm_source, c: mt.utm_campaign, ct: mt.utm_content, n: 0 }; m[k].n++ }
+        return Object.values(m).map(x => ({ d: x.d, utm_source: x.s, utm_campaign: x.c, utm_content: x.ct, cnt: x.n }))
+      }
+    })(),
     // resume users (이력서 보유)
     (async () => {
       try {
@@ -131,7 +150,6 @@ export default async function handler(req, res) {
   const submissions = dedupeSubmissions(submissionsRaw.filter(s => !isExcludedSubmission(s)))
 
   // --- Aggregate daily trend ---
-  const toVN = (iso) => new Date(new Date(iso).getTime() + 7 * 3600000).toISOString().slice(0, 10)
   const dailyMap = {}
   const newDay = () => ({ date: '', submissions: 0, ad: 0, organic: 0, signups: 0, companies: new Set(), jobApps: 0, jobClicks: 0, cardClicks: 0, jobsPageViews: 0, applyClicks: 0, saveClicks: 0, resumeUploads: 0, landings: 0, forCompaniesClicks: 0, contactClicks: 0, postJobClicks: 0, companySignups: 0 })
   for (const sub of submissions) {
@@ -158,17 +176,12 @@ export default async function handler(req, res) {
     dailyMap[date].jobApps++
   }
 
-  for (const ev of events) {
-    const date = toVN(ev.created_at)
+  const EVENT_FIELD = { click_jobs_cta: 'jobClicks', click_job_card: 'cardClicks', view_jobs_page: 'jobsPageViews', click_apply_button: 'applyClicks', save_job: 'saveClicks', click_for_companies: 'forCompaniesClicks', click_contact_owner: 'contactClicks', click_post_job: 'postJobClicks', landing: 'landings' }
+  for (const r of eventDaily) {
+    const date = r.d
     if (!dailyMap[date]) dailyMap[date] = { ...newDay(), date }
-    if (ev.event === 'click_jobs_cta') dailyMap[date].jobClicks++
-    if (ev.event === 'click_job_card') dailyMap[date].cardClicks++
-    if (ev.event === 'view_jobs_page') dailyMap[date].jobsPageViews++
-    if (ev.event === 'click_apply_button') dailyMap[date].applyClicks++
-    if (ev.event === 'save_job') dailyMap[date].saveClicks++
-    if (ev.event === 'click_for_companies') dailyMap[date].forCompaniesClicks++
-    if (ev.event === 'click_contact_owner') dailyMap[date].contactClicks++
-    if (ev.event === 'click_post_job') dailyMap[date].postJobClicks++
+    const field = EVENT_FIELD[r.event]
+    if (field) dailyMap[date][field] += r.cnt
   }
 
   for (const cs of companySignups) {
@@ -183,13 +196,9 @@ export default async function handler(req, res) {
     dailyMap[date].resumeUploads++
   }
 
-  for (const l of landings) {
-    const date = toVN(l.created_at)
-    if (!dailyMap[date]) dailyMap[date] = { ...newDay(), date }
-    dailyMap[date].landings++
-  }
-
   const EVENT_TRACKING_START = '2026-05-06'
+  // 이벤트 일별집계(eventDaily) 합으로 요약 카운트 (날짜는 VN기준, gate 이후만)
+  const evtSum = (event, gate = EVENT_TRACKING_START) => eventDaily.filter(r => r.event === event && r.d >= gate).reduce((a, r) => a + r.cnt, 0)
 
   // Fill in all dates in range (including dates with no data)
   const allDates = []
@@ -275,16 +284,16 @@ export default async function handler(req, res) {
     organicSubmissions: submissions.filter(s => !s.utm_source && !s.utm_medium && !s.utm_campaign).length,
     totalSignups: signups.length,
     totalJobApps: jobApps.length,
-    totalLandings: landings.filter(l => l.created_at.slice(0, 10) >= EVENT_TRACKING_START).length,
-    totalJobClicks: events.filter(e => e.event === 'click_jobs_cta' && e.created_at.slice(0, 10) >= EVENT_TRACKING_START).length,
-    totalCardClicks: events.filter(e => e.event === 'click_job_card' && e.created_at.slice(0, 10) >= EVENT_TRACKING_START).length,
-    totalJobsPageViews: events.filter(e => e.event === 'view_jobs_page' && e.created_at.slice(0, 10) >= EVENT_TRACKING_START).length,
-    totalApplyClicks: events.filter(e => e.event === 'click_apply_button' && e.created_at.slice(0, 10) >= EVENT_TRACKING_START).length,
-    totalSaveClicks: events.filter(e => e.event === 'save_job' && e.created_at.slice(0, 10) >= '2026-05-11').length,
+    totalLandings: evtSum('landing'),
+    totalJobClicks: evtSum('click_jobs_cta'),
+    totalCardClicks: evtSum('click_job_card'),
+    totalJobsPageViews: evtSum('view_jobs_page'),
+    totalApplyClicks: evtSum('click_apply_button'),
+    totalSaveClicks: evtSum('save_job', '2026-05-11'),
     totalResumeUploads: resumeUsers.length,
-    totalForCompaniesClicks: events.filter(e => e.event === 'click_for_companies' && e.created_at.slice(0, 10) >= EVENT_TRACKING_START).length,
-    totalContactOwnerClicks: events.filter(e => e.event === 'click_contact_owner' && e.created_at.slice(0, 10) >= EVENT_TRACKING_START).length,
-    totalPostJobClicks: events.filter(e => e.event === 'click_post_job' && e.created_at.slice(0, 10) >= EVENT_TRACKING_START).length,
+    totalForCompaniesClicks: evtSum('click_for_companies'),
+    totalContactOwnerClicks: evtSum('click_contact_owner'),
+    totalPostJobClicks: evtSum('click_post_job'),
     totalCompanySignups: companySignups.length,
     pendingJobs,
     hasEventTracking: endDate >= EVENT_TRACKING_START,
@@ -298,19 +307,18 @@ export default async function handler(req, res) {
   const utmBreakdown = { bySource: {}, byCampaign: {}, byContent: {} }
 
   // Count page views by UTM dimensions
-  for (const pv of pageViews) {
-    const m = pv.meta || {}
-    if (m.utm_source) {
-      utmBreakdown.bySource[m.utm_source] = utmBreakdown.bySource[m.utm_source] || { views: 0, submissions: 0 }
-      utmBreakdown.bySource[m.utm_source].views++
+  for (const pv of utmPv) {
+    if (pv.utm_source) {
+      utmBreakdown.bySource[pv.utm_source] = utmBreakdown.bySource[pv.utm_source] || { views: 0, submissions: 0 }
+      utmBreakdown.bySource[pv.utm_source].views += pv.cnt
     }
-    if (m.utm_campaign) {
-      utmBreakdown.byCampaign[m.utm_campaign] = utmBreakdown.byCampaign[m.utm_campaign] || { views: 0, submissions: 0 }
-      utmBreakdown.byCampaign[m.utm_campaign].views++
+    if (pv.utm_campaign) {
+      utmBreakdown.byCampaign[pv.utm_campaign] = utmBreakdown.byCampaign[pv.utm_campaign] || { views: 0, submissions: 0 }
+      utmBreakdown.byCampaign[pv.utm_campaign].views += pv.cnt
     }
-    if (m.utm_content) {
-      utmBreakdown.byContent[m.utm_content] = utmBreakdown.byContent[m.utm_content] || { views: 0, submissions: 0 }
-      utmBreakdown.byContent[m.utm_content].views++
+    if (pv.utm_content) {
+      utmBreakdown.byContent[pv.utm_content] = utmBreakdown.byContent[pv.utm_content] || { views: 0, submissions: 0 }
+      utmBreakdown.byContent[pv.utm_content].views += pv.cnt
     }
   }
 
@@ -337,12 +345,10 @@ export default async function handler(req, res) {
 
   // Daily views per campaign (for trend chart in UTM tab)
   const dailyCampaignMap = {}
-  for (const pv of pageViews) {
-    const campaign = pv.meta?.utm_campaign
-    if (!campaign) continue
-    const date = pv.created_at.slice(0, 10)
-    if (!dailyCampaignMap[campaign]) dailyCampaignMap[campaign] = {}
-    dailyCampaignMap[campaign][date] = (dailyCampaignMap[campaign][date] || 0) + 1
+  for (const pv of utmPv) {
+    if (!pv.utm_campaign) continue
+    if (!dailyCampaignMap[pv.utm_campaign]) dailyCampaignMap[pv.utm_campaign] = {}
+    dailyCampaignMap[pv.utm_campaign][pv.d] = (dailyCampaignMap[pv.utm_campaign][pv.d] || 0) + pv.cnt
   }
   const dailyByCampaign = Object.entries(dailyCampaignMap).map(([name, dates]) => ({
     name,
@@ -354,7 +360,7 @@ export default async function handler(req, res) {
     byCampaign: toSorted(utmBreakdown.byCampaign),
     byContent: toSorted(utmBreakdown.byContent),
     dailyByCampaign,
-    totalPageViews: pageViews.length,
+    totalPageViews: utmPv.reduce((a, r) => a + r.cnt, 0),
   }
 
   res.json({ summary, daily, intent, topCompanies, utm })
