@@ -30,6 +30,9 @@ export default async function handler(req, res) {
       'nationality', 'awards', 'languages',
       'career_public', 'education_public', 'skills_public',
       'awards_public', 'languages_public', 'projects_public',
+      // Student/worker classification (20260609_user_type_school_verification.sql).
+      // 'student' | 'worker'. School/company NAMES stay server-controlled (set on verify).
+      'user_type',
     ]
     const update = { updated_at: new Date().toISOString() }
     for (const key of allowed) {

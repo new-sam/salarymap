@@ -59,6 +59,34 @@ async function companyVerifiedMap(userIds) {
   return map
 }
 
+// Map of user_id -> { user_type, verified_school }. user_type ('student'|'worker')
+// drives the community author label's no-company fallback (학생 vs 직장인). The
+// verified school name is the student-side mirror of verified_company_name and is
+// only surfaced when the verified_school badge is active.
+async function userTypeMap(userIds) {
+  const ids = [...new Set(userIds)].filter(Boolean)
+  if (!ids.length) return {}
+  const { data: badges } = await supabase
+    .from('user_badges')
+    .select('user_id')
+    .in('user_id', ids)
+    .eq('badge_type', 'verified_school')
+    .eq('is_active', true)
+  const schoolIds = new Set((badges || []).map(b => b.user_id))
+  const { data: profiles } = await supabase
+    .from('user_profiles')
+    .select('id, user_type, verified_school_name')
+    .in('id', ids)
+  const map = {}
+  ;(profiles || []).forEach(p => {
+    map[p.id] = {
+      user_type: p.user_type || null,
+      verified_school: schoolIds.has(p.id) ? (p.verified_school_name || null) : null,
+    }
+  })
+  return map
+}
+
 // Map of user_id -> profile photo (user_profiles.photo_url), the picture the user
 // uploaded in-app. Used to override author_avatar on non-anonymous posts so the
 // in-app photo shows even when there's no social avatar. Anonymous posts skip this.
@@ -130,6 +158,9 @@ export default async function handler(req, res) {
       post.author_salary_tier = tierMap[post.user_id] || null
       const cvMap = await companyVerifiedMap([post.user_id])
       post.author_verified_company = cvMap[post.user_id] || null
+      const utMap = await userTypeMap([post.user_id])
+      post.author_user_type = utMap[post.user_id]?.user_type || null
+      post.author_verified_school = utMap[post.user_id]?.verified_school || null
       const avMap = await avatarMap([post.user_id])
       post.author_avatar = post.is_anonymous ? null : (avMap[post.user_id] || post.author_avatar || null)
       return res.status(200).json({ post })
@@ -181,10 +212,11 @@ export default async function handler(req, res) {
       }
       const iTierMap = await salaryTierMap(iData.map(p => p.user_id))
       const iCvMap = await companyVerifiedMap(iData.map(p => p.user_id))
+      const iUtMap = await userTypeMap(iData.map(p => p.user_id))
       const iAvMap = await avatarMap(iData.map(p => p.user_id))
 
       return res.status(200).json({
-        posts: iData.map(p => ({ ...p, is_liked: iLiked.includes(p.id), author_salary_tier: iTierMap[p.user_id] || null, author_verified_company: iCvMap[p.user_id] || null, author_avatar: p.is_anonymous ? null : (iAvMap[p.user_id] || p.author_avatar || null) })),
+        posts: iData.map(p => ({ ...p, is_liked: iLiked.includes(p.id), author_salary_tier: iTierMap[p.user_id] || null, author_verified_company: iCvMap[p.user_id] || null, author_user_type: iUtMap[p.user_id]?.user_type || null, author_verified_school: iUtMap[p.user_id]?.verified_school || null, author_avatar: p.is_anonymous ? null : (iAvMap[p.user_id] || p.author_avatar || null) })),
         total: iCount,
         page: parseInt(page),
         totalPages: Math.ceil(iCount / parseInt(limit))
@@ -245,10 +277,11 @@ export default async function handler(req, res) {
 
     const tierMap = await salaryTierMap(data.map(p => p.user_id))
     const cvMap = await companyVerifiedMap(data.map(p => p.user_id))
+    const utMap = await userTypeMap(data.map(p => p.user_id))
     const avMap = await avatarMap(data.map(p => p.user_id))
 
     return res.status(200).json({
-      posts: data.map(p => ({ ...p, is_liked: likedPostIds.includes(p.id), author_salary_tier: tierMap[p.user_id] || null, author_verified_company: cvMap[p.user_id] || null, author_avatar: p.is_anonymous ? null : (avMap[p.user_id] || p.author_avatar || null) })),
+      posts: data.map(p => ({ ...p, is_liked: likedPostIds.includes(p.id), author_salary_tier: tierMap[p.user_id] || null, author_verified_company: cvMap[p.user_id] || null, author_user_type: utMap[p.user_id]?.user_type || null, author_verified_school: utMap[p.user_id]?.verified_school || null, author_avatar: p.is_anonymous ? null : (avMap[p.user_id] || p.author_avatar || null) })),
       total: count,
       page: parseInt(page),
       totalPages: Math.ceil(count / parseInt(limit))

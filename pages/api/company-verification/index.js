@@ -15,14 +15,23 @@ export default async function handler(req, res) {
 
   const { data } = await supabase
     .from('user_profiles')
-    .select('verified_company_name, verified_company_domain, company_verified_at')
+    .select('user_type, verified_company_name, verified_company_domain, company_verified_at, verified_school_name, verified_school_domain, school_verified_at')
     .eq('id', user.id)
     .maybeSingle()
 
   return res.json({
+    // Company fields kept at top level for backward compatibility with existing callers.
     verified: !!data?.company_verified_at,
     company_name: data?.verified_company_name || null,
     domain: data?.verified_company_domain || null,
     verified_at: data?.company_verified_at || null,
+    // Declared student/worker classification + the student-side school verification.
+    user_type: data?.user_type || null,
+    school: {
+      verified: !!data?.school_verified_at,
+      school_name: data?.verified_school_name || null,
+      domain: data?.verified_school_domain || null,
+      verified_at: data?.school_verified_at || null,
+    },
   })
 }

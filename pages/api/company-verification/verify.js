@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js'
 import { hashCode } from '../../../lib/companyVerifyCode'
+import { isSchoolDomain } from '../../../lib/schoolEmailDomains'
 
 const supabase = createClient(
   (process.env.NEXT_PUBLIC_SUPABASE_URL || '').trim(),
@@ -11,6 +12,51 @@ const supabase = createClient(
 function guessCompanyName(domain) {
   const root = domain.split('.')[0] || domain
   return root.charAt(0).toUpperCase() + root.slice(1)
+}
+
+// Derive a display school name from a domain — the first significant label,
+// skipping academic TLD parts. e.g. 'snu.ac.kr' -> 'Snu', 'mit.edu' -> 'Mit'.
+// Admin can refine school_domains afterwards.
+function guessSchoolName(domain) {
+  const root = domain.split('.').find(l => l && l !== 'ac' && l !== 'edu') || domain
+  return root.charAt(0).toUpperCase() + root.slice(1)
+}
+
+// Resolve + cache a verified SCHOOL on the profile and grant the verified_school
+// badge — the student-side mirror of the company path below.
+async function grantSchoolVerification(userId, domain) {
+  const { data: mapped } = await supabase
+    .from('school_domains')
+    .select('school_name')
+    .eq('domain', domain)
+    .maybeSingle()
+
+  let schoolName = mapped?.school_name
+  if (!schoolName) {
+    schoolName = guessSchoolName(domain)
+    await supabase.from('school_domains').insert({ domain, school_name: schoolName })
+  }
+
+  await supabase
+    .from('user_profiles')
+    .update({
+      verified_school_name: schoolName,
+      verified_school_domain: domain,
+      school_verified_at: new Date().toISOString(),
+      user_type: 'student',
+    })
+    .eq('id', userId)
+
+  await supabase
+    .from('user_badges')
+    .upsert({
+      user_id: userId,
+      badge_type: 'verified_school',
+      is_active: true,
+      granted_at: new Date().toISOString(),
+    }, { onConflict: 'user_id,badge_type' })
+
+  return schoolName
 }
 
 export default async function handler(req, res) {
@@ -60,6 +106,13 @@ export default async function handler(req, res) {
     .update({ verified_at: new Date().toISOString() })
     .eq('id', row.id)
 
+  // A school email proves *student* status, not employment — branch on the domain
+  // so academic emails grant the school badge instead of a (wrong) company badge.
+  if (isSchoolDomain(row.domain)) {
+    const schoolName = await grantSchoolVerification(user.id, row.domain)
+    return res.json({ ok: true, type: 'school', school_name: schoolName })
+  }
+
   // Resolve company name (curated mapping, else auto-create a guess).
   const { data: mapped } = await supabase
     .from('company_domains')
@@ -82,6 +135,7 @@ export default async function handler(req, res) {
       verified_company_name: companyName,
       verified_company_domain: row.domain,
       company_verified_at: new Date().toISOString(),
+      user_type: 'worker',
     })
     .eq('id', user.id)
 
@@ -94,5 +148,5 @@ export default async function handler(req, res) {
       granted_at: new Date().toISOString(),
     }, { onConflict: 'user_id,badge_type' })
 
-  return res.json({ ok: true, company_name: companyName })
+  return res.json({ ok: true, type: 'company', company_name: companyName })
 }

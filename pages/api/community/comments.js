@@ -54,6 +54,33 @@ async function companyVerifiedMap(userIds) {
   return map
 }
 
+// Map of user_id -> { user_type, verified_school }. user_type ('student'|'worker')
+// drives the author label's no-company fallback (학생 vs 직장인); the verified
+// school name is the student-side mirror of verified_company_name (badge-gated).
+async function userTypeMap(userIds) {
+  const ids = [...new Set(userIds)].filter(Boolean)
+  if (!ids.length) return {}
+  const { data: badges } = await supabase
+    .from('user_badges')
+    .select('user_id')
+    .in('user_id', ids)
+    .eq('badge_type', 'verified_school')
+    .eq('is_active', true)
+  const schoolIds = new Set((badges || []).map(b => b.user_id))
+  const { data: profiles } = await supabase
+    .from('user_profiles')
+    .select('id, user_type, verified_school_name')
+    .in('id', ids)
+  const map = {}
+  ;(profiles || []).forEach(p => {
+    map[p.id] = {
+      user_type: p.user_type || null,
+      verified_school: schoolIds.has(p.id) ? (p.verified_school_name || null) : null,
+    }
+  })
+  return map
+}
+
 // Map of user_id -> profile photo (user_profiles.photo_url), the picture the user
 // uploaded in-app. Used to set author_avatar on non-anonymous comments so the
 // in-app photo shows. Anonymous comments skip this.
@@ -117,10 +144,11 @@ export default async function handler(req, res) {
 
     const tierMap = await salaryTierMap(data.map(c => c.user_id))
     const cvMap = await companyVerifiedMap(data.map(c => c.user_id))
+    const utMap = await userTypeMap(data.map(c => c.user_id))
     const avMap = await avatarMap(data.map(c => c.user_id))
 
     return res.status(200).json({
-      comments: data.map(c => ({ ...c, is_liked: likedCommentIds.includes(c.id), author_salary_tier: tierMap[c.user_id] || null, author_verified_company: cvMap[c.user_id] || null, author_avatar: c.is_anonymous ? null : (avMap[c.user_id] || null) }))
+      comments: data.map(c => ({ ...c, is_liked: likedCommentIds.includes(c.id), author_salary_tier: tierMap[c.user_id] || null, author_verified_company: cvMap[c.user_id] || null, author_user_type: utMap[c.user_id]?.user_type || null, author_verified_school: utMap[c.user_id]?.verified_school || null, author_avatar: c.is_anonymous ? null : (avMap[c.user_id] || null) }))
     })
   }
 
@@ -192,6 +220,7 @@ export default async function handler(req, res) {
     // so the freshly-posted comment shows company / salary badge without a reload.
     const tierMap = await salaryTierMap([user.id])
     const cvMap = await companyVerifiedMap([user.id])
+    const utMap = await userTypeMap([user.id])
     const avMap = await avatarMap([user.id])
 
     return res.status(201).json({
@@ -199,6 +228,8 @@ export default async function handler(req, res) {
       is_liked: false,
       author_salary_tier: tierMap[user.id] || null,
       author_verified_company: cvMap[user.id] || null,
+      author_user_type: utMap[user.id]?.user_type || null,
+      author_verified_school: utMap[user.id]?.verified_school || null,
       author_avatar: data.is_anonymous ? null : (avMap[user.id] || null),
     })
   }

@@ -22,7 +22,7 @@ export default async function handler(req, res) {
   }
   const domain = email.split('@')[1]
   if (isFreeDomain(domain)) {
-    return res.status(400).json({ error: 'free_email', message: '개인 이메일은 사용할 수 없습니다. 회사 이메일을 입력해주세요.' })
+    return res.status(400).json({ error: 'free_email', message: '개인 이메일은 사용할 수 없습니다. 회사 또는 학교 이메일을 입력해주세요.' })
   }
 
   // One work email can verify only one account.
