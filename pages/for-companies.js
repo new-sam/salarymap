@@ -63,6 +63,14 @@ export default function ForCompanies() {
   const router = useRouter();
   const { t } = useT();
   const [contactOpen, setContactOpen] = useState(false);
+  const [loggedIn, setLoggedIn] = useState(false);
+
+  // 로그인 상태 추적 — 상단 '기업 로그인'/'대시보드' 토글용
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data }) => setLoggedIn(!!data?.session));
+    const { data: sub } = supabase.auth.onAuthStateChange((_e, s) => setLoggedIn(!!s));
+    return () => sub?.subscription?.unsubscribe?.();
+  }, []);
 
   // '무료 공고 올리기' — 로그인됨 → 바로 공고 작성 / 미로그인 → 로그인 후 공고 작성으로 복귀
   const goPostJob = async () => {
@@ -218,7 +226,7 @@ export default function ForCompanies() {
             <a href="#pricing" style={css.navLink}>{t('company.landing.nav.pricing')}</a>
           </div>
           <div style={css.navRight}>
-            <Link href="/company" style={css.btnGhost}>{t('company.landing.nav.login')}</Link>
+            <Link href="/company" style={css.btnGhost}>{loggedIn ? t('company.landing.nav.dashboard') : t('company.landing.nav.login')}</Link>
             <button type="button" onClick={goPostJob} style={css.btnPrimary}>{t('company.landing.nav.cta')}</button>
           </div>
         </nav>

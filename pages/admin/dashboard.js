@@ -532,6 +532,18 @@ export default function AdminDashboard() {
               })}
             </div>
 
+            {/* 기업(B2B) 지표 */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))', gap: 12, marginBottom: 24 }}>
+              <div style={{ background: '#fff', border: '2px solid #e5e7eb', borderRadius: 12, padding: '16px 20px' }}>
+                <div style={{ fontSize: 12, color: '#6B7280', marginBottom: 4 }}>기업 채용 클릭</div>
+                <div style={{ fontSize: 28, fontWeight: 700, color: '#EA580C' }}>{summary.totalForCompaniesClicks ?? '-'}</div>
+              </div>
+              <div style={{ background: '#fff', border: '2px solid #e5e7eb', borderRadius: 12, padding: '16px 20px' }}>
+                <div style={{ fontSize: 12, color: '#6B7280', marginBottom: 4 }}>기업 가입자</div>
+                <div style={{ fontSize: 28, fontWeight: 700, color: '#2563EB' }}>{summary.totalCompanySignups ?? '-'}</div>
+              </div>
+            </div>
+
             {/* Chart */}
             {selectedMetrics.length > 0 && (
               <div style={sectionStyle}>

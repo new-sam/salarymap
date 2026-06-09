@@ -173,6 +173,15 @@ export default async function handler(req, res) {
     resumeUsers = (data || []).filter(r => r.updated_at)
   } catch (e) {}
 
+  // Fetch company (recruiter) signups in date range — 기업 가입자
+  let companySignups = []
+  try {
+    companySignups = await fetchAll(
+      supabase.from('recruiter_users').select('id, created_at')
+        .gte('created_at', startISO).lte('created_at', endISO)
+    )
+  } catch (e) {}
+
   // --- Aggregate daily trend ---
   const toVN = (iso) => new Date(new Date(iso).getTime() + 7 * 3600000).toISOString().slice(0, 10)
   const dailyMap = {}
@@ -313,6 +322,8 @@ export default async function handler(req, res) {
     totalApplyClicks: events.filter(e => e.event === 'click_apply_button' && e.created_at.slice(0, 10) >= EVENT_TRACKING_START).length,
     totalSaveClicks: events.filter(e => e.event === 'save_job' && e.created_at.slice(0, 10) >= '2026-05-11').length,
     totalResumeUploads: resumeUsers.length,
+    totalForCompaniesClicks: events.filter(e => e.event === 'click_for_companies' && e.created_at.slice(0, 10) >= EVENT_TRACKING_START).length,
+    totalCompanySignups: companySignups.length,
     hasEventTracking: endDate >= EVENT_TRACKING_START,
     eventTrackingStart: EVENT_TRACKING_START,
     uniqueCompanies: uniqueCompanies.size,
