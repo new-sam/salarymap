@@ -55,11 +55,11 @@ const TIER_LABELS = {
 }
 // 기업 채용 섹션 카드 (요약 숫자 — 일별 차트 미연동)
 const B2B_CARDS = [
-  { key: 'companySignups', summaryKey: 'totalCompanySignups', ko: '기업 가입자', en: 'Company signups', tier: 'primary' },
-  { key: 'pendingJobs', summaryKey: 'pendingJobs', ko: '승인 대기', en: 'Pending approval', tier: 'primary' },
-  { key: 'forClicks', summaryKey: 'totalForCompaniesClicks', ko: '홈→기업채용', en: 'For-companies clicks', tier: 'secondary' },
-  { key: 'contactClicks', summaryKey: 'totalContactOwnerClicks', ko: '담당자 대화', en: 'Contact clicks', tier: 'secondary' },
-  { key: 'postJobClicks', summaryKey: 'totalPostJobClicks', ko: '공고 올리기', en: 'Post-job clicks', tier: 'secondary' },
+  { key: 'companySignups', summaryKey: 'totalCompanySignups', ko: '기업 회원 가입', en: 'Company sign-ups', tier: 'primary' },
+  { key: 'pendingJobs', summaryKey: 'pendingJobs', ko: '기업 공고 승인 대기', en: 'Jobs pending approval', tier: 'primary' },
+  { key: 'forClicks', summaryKey: 'totalForCompaniesClicks', ko: '홈→기업채용 클릭', en: 'Home→For-companies click', tier: 'secondary' },
+  { key: 'contactClicks', summaryKey: 'totalContactOwnerClicks', ko: '담당자 대화 버튼 클릭', en: 'Contact button clicks', tier: 'secondary' },
+  { key: 'postJobClicks', summaryKey: 'totalPostJobClicks', ko: '공고 올리기 버튼 클릭', en: 'Post-job button clicks', tier: 'secondary' },
 ]
 
 export default function AdminDashboard() {
