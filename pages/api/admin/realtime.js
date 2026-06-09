@@ -24,7 +24,7 @@ export default async function handler(req, res) {
   const startISO = new Date(`${today}T00:00:00+07:00`).toISOString()
   const endISO = new Date(`${today}T23:59:59+07:00`).toISOString()
 
-  const [subsRes, jaRes, evRes, pvRes, landingRes, resumeRes] = await Promise.all([
+  const [subsRes, jaRes, evRes, pvRes, landingRes, resumeRes, csRes] = await Promise.all([
     supabase.from('submissions')
       .select('id, utm_source, utm_medium, utm_campaign', { count: 'exact', head: false })
       .gte('created_at', startISO).lte('created_at', endISO)
@@ -34,7 +34,7 @@ export default async function handler(req, res) {
       .gte('created_at', startISO).lte('created_at', endISO),
     supabase.from('events')
       .select('id, event')
-      .in('event', ['click_jobs_cta', 'click_job_card'])
+      .in('event', ['click_jobs_cta', 'click_job_card', 'view_jobs_page', 'click_apply_button', 'save_job', 'click_for_companies', 'click_contact_owner', 'click_post_job'])
       .gte('created_at', startISO).lte('created_at', endISO)
       .limit(10000),
     supabase.from('events')
@@ -48,6 +48,9 @@ export default async function handler(req, res) {
     supabase.from('events')
       .select('id', { count: 'exact', head: true })
       .eq('event', 'resume_upload')
+      .gte('created_at', startISO).lte('created_at', endISO),
+    supabase.from('recruiter_users')
+      .select('id', { count: 'exact', head: true })
       .gte('created_at', startISO).lte('created_at', endISO),
   ])
 
@@ -67,6 +70,7 @@ export default async function handler(req, res) {
   } catch (e) {}
 
   const ad = subs.filter(s => s.utm_source || s.utm_medium || s.utm_campaign).length
+  const evCount = (name) => events.filter(e => e.event === name).length
 
   res.json({
     date: today,
@@ -75,8 +79,15 @@ export default async function handler(req, res) {
     organic: subs.length - ad,
     signups: todaySignups,
     jobApps: jaRes.count || 0,
-    jobClicks: events.filter(e => e.event === 'click_jobs_cta').length,
-    cardClicks: events.filter(e => e.event === 'click_job_card').length,
+    jobClicks: evCount('click_jobs_cta'),
+    cardClicks: evCount('click_job_card'),
+    jobsPageViews: evCount('view_jobs_page'),
+    applyClicks: evCount('click_apply_button'),
+    saveClicks: evCount('save_job'),
+    forCompaniesClicks: evCount('click_for_companies'),
+    contactClicks: evCount('click_contact_owner'),
+    postJobClicks: evCount('click_post_job'),
+    companySignups: csRes.count || 0,
     pageViews: pvRes.count || 0,
     landings: landingRes.count || 0,
     resumeUploads: resumeRes.count || 0,

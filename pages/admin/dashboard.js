@@ -246,6 +246,15 @@ export default function AdminDashboard() {
       jobClicks: realtime.jobClicks,
       cardClicks: realtime.cardClicks,
       jobApps: realtime.jobApps,
+      jobsPageViews: realtime.jobsPageViews ?? 0,
+      applyClicks: realtime.applyClicks ?? 0,
+      saveClicks: realtime.saveClicks ?? 0,
+      resumeUploads: realtime.resumeUploads ?? 0,
+      landings: realtime.landings ?? 0,
+      forCompaniesClicks: realtime.forCompaniesClicks ?? 0,
+      contactClicks: realtime.contactClicks ?? 0,
+      postJobClicks: realtime.postJobClicks ?? 0,
+      companySignups: realtime.companySignups ?? 0,
     }
     const exists = merged.some(d => d.date === today)
     if (exists) return merged.map(d => d.date === today ? todayData : d)
