@@ -39,6 +39,22 @@ export default async function handler(req, res) {
       if (key in fields) update[key] = fields[key]
     }
 
+    // user_type is a one-way transition: student → worker is allowed (e.g. a student
+    // graduates and verifies a company email), but worker → student is NOT. Also reject
+    // any value outside the enum. Enforced here so onboarding / any client obeys it.
+    if ('user_type' in update) {
+      if (update.user_type !== 'student' && update.user_type !== 'worker') {
+        delete update.user_type
+      } else if (update.user_type === 'student') {
+        const { data: cur } = await supabase
+          .from('user_profiles')
+          .select('user_type')
+          .eq('id', user.id)
+          .maybeSingle()
+        if (cur?.user_type === 'worker') delete update.user_type // no worker → student downgrade
+      }
+    }
+
     const { error } = await supabase.from('user_profiles').update(update).eq('id', user.id)
     if (error) return res.status(500).json({ error: error.message })
     return res.json({ success: true })

@@ -37,15 +37,21 @@ async function grantSchoolVerification(userId, domain) {
     await supabase.from('school_domains').insert({ domain, school_name: schoolName })
   }
 
-  await supabase
+  // user_type is one-way: never downgrade an existing worker back to student. Cache the
+  // verified school regardless, but only claim 'student' when not already a worker.
+  const { data: cur } = await supabase
     .from('user_profiles')
-    .update({
-      verified_school_name: schoolName,
-      verified_school_domain: domain,
-      school_verified_at: new Date().toISOString(),
-      user_type: 'student',
-    })
+    .select('user_type')
     .eq('id', userId)
+    .maybeSingle()
+  const update = {
+    verified_school_name: schoolName,
+    verified_school_domain: domain,
+    school_verified_at: new Date().toISOString(),
+  }
+  if (cur?.user_type !== 'worker') update.user_type = 'student'
+
+  await supabase.from('user_profiles').update(update).eq('id', userId)
 
   await supabase
     .from('user_badges')
