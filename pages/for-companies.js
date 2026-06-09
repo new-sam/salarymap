@@ -4,7 +4,7 @@ import { useRouter } from 'next/router';
 import { useEffect, useRef, useState } from 'react';
 import Brand from '../components/company/Brand';
 import ContactModal from '../components/company/ContactModal';
-import { useT, LanguageSwitcher } from '../lib/i18n';
+import { useT } from '../lib/i18n';
 import { supabase } from '../lib/supabaseClient';
 
 function CountUp({ end, decimals = 0, duration = 1200, suffix = '' }) {
@@ -218,7 +218,6 @@ export default function ForCompanies() {
             <a href="#pricing" style={css.navLink}>{t('company.landing.nav.pricing')}</a>
           </div>
           <div style={css.navRight}>
-            <LanguageSwitcher />
             <Link href="/company" style={css.btnGhost}>{t('company.landing.nav.login')}</Link>
             <button type="button" onClick={goPostJob} style={css.btnPrimary}>{t('company.landing.nav.cta')}</button>
           </div>

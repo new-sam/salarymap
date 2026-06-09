@@ -47,6 +47,8 @@ export default function App({ Component, pageProps }) {
   // Company pages have their own language switcher; admin pages also have their own.
   const isCompany = router.pathname.startsWith('/company') || router.pathname === '/for-companies';
   const isAdmin = router.pathname.startsWith('/admin');
+  // /for-companies 는 공개 랜딩이라 하단 글로벌 언어 스위처를 메인 랜딩과 동일하게 노출한다.
+  const isForCompaniesLanding = router.pathname === '/for-companies';
 
   // Flag the body so the mobile-only top/bottom reservations (52/60px in
   // globals.css) collapse for company pages — they render their own header.
@@ -58,7 +60,7 @@ export default function App({ Component, pageProps }) {
   return (
     <I18nProvider>
       <Component {...pageProps} />
-      {!isCompany && !isAdmin && (
+      {(!isCompany || isForCompaniesLanding) && !isAdmin && (
         <footer style={{
           background: '#0a0a09', borderTop: '1px solid rgba(255,255,255,0.06)',
           padding: '24px 40px', display: 'flex', alignItems: 'center', justifyContent: 'center',
