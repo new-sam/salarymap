@@ -6,12 +6,34 @@ const supabase = createClient(
 )
 
 export default async function handler(req, res) {
-  if (req.method !== 'GET') return res.status(405).json({ error: 'method not allowed' })
+  if (req.method !== 'GET' && req.method !== 'DELETE') {
+    return res.status(405).json({ error: 'method not allowed' })
+  }
 
   const token = req.headers.authorization?.replace('Bearer ', '')
   if (!token) return res.status(401).json({ error: 'unauthorized' })
   const { data: { user }, error: authErr } = await supabase.auth.getUser(token)
   if (authErr || !user) return res.status(401).json({ error: 'unauthorized' })
+
+  // DELETE — 호출자 본인의 재직/재학 인증과 student/worker 분류를 모두 비운다.
+  // 자기 자신의 행만 건드리므로(=배지 회수일 뿐) 보안 위험은 없고, 인증 플로우 재테스트에 쓴다.
+  if (req.method === 'DELETE') {
+    const { error } = await supabase
+      .from('user_profiles')
+      .update({
+        user_type: null,
+        verified_company_name: null,
+        verified_company_domain: null,
+        company_verified_at: null,
+        verified_school_name: null,
+        verified_school_domain: null,
+        school_verified_at: null,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', user.id)
+    if (error) return res.status(500).json({ error: error.message })
+    return res.json({ success: true })
+  }
 
   const { data } = await supabase
     .from('user_profiles')

@@ -295,6 +295,19 @@ export default async function handler(req, res) {
     const { data: { user } } = await supabase.auth.getUser(token)
     if (!user) return res.status(401).json({ error: 'Unauthorized' })
 
+    // Member-only gate (student/worker). OFF by default — flip COMMUNITY_REQUIRE_MEMBER=true
+    // only once the mobile onboarding build is live, otherwise non-onboarded users get locked out.
+    if (process.env.COMMUNITY_REQUIRE_MEMBER === 'true') {
+      const { data: prof } = await supabase
+        .from('user_profiles')
+        .select('user_type')
+        .eq('id', user.id)
+        .maybeSingle()
+      if (!prof?.user_type) {
+        return res.status(403).json({ error: 'not_member', message: '학생 또는 직장인 인증 후 글을 작성할 수 있어요.' })
+      }
+    }
+
     const { category, title, content, is_anonymous } = req.body
     if (!category || !title || !content) {
       return res.status(400).json({ error: 'Missing required fields' })

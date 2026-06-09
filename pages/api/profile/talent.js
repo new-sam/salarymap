@@ -30,29 +30,13 @@ export default async function handler(req, res) {
       'nationality', 'awards', 'languages',
       'career_public', 'education_public', 'skills_public',
       'awards_public', 'languages_public', 'projects_public',
-      // Student/worker classification (20260609_user_type_school_verification.sql).
-      // 'student' | 'worker'. School/company NAMES stay server-controlled (set on verify).
-      'user_type',
     ]
+    // NOTE: user_type is intentionally NOT whitelisted. Student/worker status is earned
+    // ONLY by email verification (company-verification/verify.js) — never self-declared —
+    // so a client cannot PUT user_type to bypass verification and unlock posting.
     const update = { updated_at: new Date().toISOString() }
     for (const key of allowed) {
       if (key in fields) update[key] = fields[key]
-    }
-
-    // user_type is a one-way transition: student → worker is allowed (e.g. a student
-    // graduates and verifies a company email), but worker → student is NOT. Also reject
-    // any value outside the enum. Enforced here so onboarding / any client obeys it.
-    if ('user_type' in update) {
-      if (update.user_type !== 'student' && update.user_type !== 'worker') {
-        delete update.user_type
-      } else if (update.user_type === 'student') {
-        const { data: cur } = await supabase
-          .from('user_profiles')
-          .select('user_type')
-          .eq('id', user.id)
-          .maybeSingle()
-        if (cur?.user_type === 'worker') delete update.user_type // no worker → student downgrade
-      }
     }
 
     const { error } = await supabase.from('user_profiles').update(update).eq('id', user.id)

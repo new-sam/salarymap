@@ -62,6 +62,7 @@ export default async function handler(req, res) {
   try {
     await sendVerificationCode(email, code)
   } catch (e) {
+    console.error('[send-code] sendVerificationCode failed:', e.message)
     return res.status(502).json({ error: 'send_failed', message: '이메일 발송에 실패했습니다. 잠시 후 다시 시도해주세요.' })
   }
 
