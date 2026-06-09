@@ -187,7 +187,7 @@ export default function CompanyDashboard() {
 
       // Only surface jobs the user owns or was invited to. Same likelion.net
       // tenant ≠ shared visibility.
-      const accessibleIds = await loadAccessibleJobIds(session.user.id, rec.company_id);
+      const accessibleIds = await loadAccessibleJobIds(data.session.user.id, rec.company_id);
       let jobsData = [];
       if (accessibleIds.size > 0) {
         const { data } = await supabase

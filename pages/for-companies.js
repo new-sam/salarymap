@@ -138,9 +138,9 @@ export default function ForCompanies() {
             </h1>
             <p style={css.lead}>{t('company.landing.lead')}</p>
             <div className="fc-hero-ctas" style={css.heroCtas}>
-              <button type="button" onClick={() => setContactOpen(true)} style={css.btnOutline}>{t('company.landing.heroCtaContact')}</button>
+              <button type="button" onClick={() => setContactOpen(true)} style={css.btnOutline}>💬 {t('company.landing.heroCtaContact')}</button>
               <button type="button" onClick={() => router.push('/company?mode=signup')} style={css.btnDark}>
-                {t('company.landing.heroCtaPost')} -&gt;
+                📝 {t('company.landing.heroCtaPost')} -&gt;
               </button>
             </div>
 
@@ -394,7 +394,8 @@ const css = {
     border: 0,
     borderRadius: 999,
     padding: '14px 26px',
-    background: '#111',
+    background: 'linear-gradient(135deg,#ef4444,#f97316)',
+    boxShadow: '0 6px 18px rgba(234,88,12,0.28)',
     color: '#fff',
     fontSize: 14,
     fontWeight: 850,
