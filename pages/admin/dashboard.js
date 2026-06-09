@@ -43,11 +43,15 @@ function cellPct(cur, prev) {
   return Math.round(((cur - prev) / prev) * 100)
 }
 
-// 퍼포먼스 대시보드 섹션 구분
+// 퍼포먼스 대시보드 섹션 구분 (섹션별 강조색)
 const SECTION_LABELS = {
-  basic: { ko: '기본 정보', en: 'Basics' },
-  talent: { ko: '인재 채용 지표', en: 'Talent funnel' },
-  company: { ko: '기업 채용 지표', en: 'Company funnel' },
+  basic: { ko: '기본 정보', en: 'Basics', accent: '#2563EB' },
+  talent: { ko: '인재 채용 지표', en: 'Talent funnel', accent: '#0D9488' },
+  company: { ko: '기업 채용 지표', en: 'Company funnel', accent: '#EA580C' },
+}
+const TIER_LABELS = {
+  primary: { ko: '주요 지표', en: 'Key metrics' },
+  secondary: { ko: '보조 지표', en: 'Sub metrics' },
 }
 // 기업 채용 섹션 카드 (요약 숫자 — 일별 차트 미연동)
 const B2B_CARDS = [
@@ -523,6 +527,7 @@ export default function AdminDashboard() {
                       tier: m.tier, clickable: true,
                     }
                   })
+              const accent = SECTION_LABELS[sec].accent
               const primary = cards.filter(c => c.tier === 'primary')
               const secondary = cards.filter(c => c.tier !== 'primary')
               const renderCard = (c, big) => {
@@ -531,26 +536,41 @@ export default function AdminDashboard() {
                   <div key={c.key}
                     onClick={c.clickable ? () => setSelected(prev => isActive ? prev.filter(k => k !== c.key) : [...prev, c.key]) : undefined}
                     style={{
-                      background: isActive ? '#FFF7ED' : '#fff',
-                      border: `1px solid ${isActive ? '#FDBA74' : '#EDF0F2'}`,
-                      borderRadius: 10, padding: big ? '16px 18px' : '11px 13px',
+                      background: isActive ? accent + '14' : (big ? '#fff' : '#F8FAFB'),
+                      border: `1px solid ${isActive ? accent : (big ? '#E5E8EB' : '#EEF1F3')}`,
+                      borderLeft: big ? `3px solid ${accent}` : undefined,
+                      borderRadius: big ? 10 : 8, padding: big ? '15px 17px' : '10px 12px',
                       cursor: c.clickable ? 'pointer' : 'default',
                       transition: 'border-color 0.12s ease, background 0.12s ease',
                     }}>
                     <div style={{ fontSize: big ? 13 : 11.5, color: big ? '#4E5968' : '#8B95A1', marginBottom: big ? 7 : 4, fontWeight: big ? 700 : 600 }}>{c.label}</div>
-                    <div style={{ fontSize: big ? 30 : 19, fontWeight: 800, color: '#191F28', letterSpacing: '-0.02em', fontVariantNumeric: 'tabular-nums', lineHeight: 1.1 }}>{c.value}</div>
+                    <div style={{ fontSize: big ? 30 : 18, fontWeight: 800, color: big ? accent : '#4E5968', letterSpacing: '-0.02em', fontVariantNumeric: 'tabular-nums', lineHeight: 1.05 }}>{c.value}</div>
                   </div>
                 )
               }
+              const tierLabel = (tier) => (
+                <div style={{ fontSize: 11, fontWeight: 700, color: '#8B95A1', margin: '0 0 7px', letterSpacing: '0.02em' }}>{TIER_LABELS[tier][lang]}</div>
+              )
               return (
-                <div key={sec} style={{ marginBottom: 24 }}>
-                  <div style={{ fontSize: 11.5, fontWeight: 800, color: '#8B95A1', letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: 10 }}>{SECTION_LABELS[sec][lang]}</div>
-                  <div className="adm-metric-cards" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 10, marginBottom: secondary.length ? 8 : 0 }}>
-                    {primary.map(c => renderCard(c, true))}
+                <div key={sec} style={{ marginBottom: 28 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14, paddingBottom: 9, borderBottom: '1px solid #EEF1F3' }}>
+                    <span style={{ width: 4, height: 17, borderRadius: 2, background: accent }} />
+                    <span style={{ fontSize: 16, fontWeight: 800, color: '#191F28', letterSpacing: '-0.01em' }}>{SECTION_LABELS[sec][lang]}</span>
                   </div>
+                  {primary.length > 0 && (
+                    <div style={{ marginBottom: secondary.length ? 16 : 0 }}>
+                      {tierLabel('primary')}
+                      <div className="adm-metric-cards" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(190px, 1fr))', gap: 10 }}>
+                        {primary.map(c => renderCard(c, true))}
+                      </div>
+                    </div>
+                  )}
                   {secondary.length > 0 && (
-                    <div className="adm-metric-cards" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(118px, 1fr))', gap: 8 }}>
-                      {secondary.map(c => renderCard(c, false))}
+                    <div>
+                      {tierLabel('secondary')}
+                      <div className="adm-metric-cards" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(116px, 1fr))', gap: 8 }}>
+                        {secondary.map(c => renderCard(c, false))}
+                      </div>
                     </div>
                   )}
                 </div>
