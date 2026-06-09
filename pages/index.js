@@ -91,6 +91,15 @@ const bodyHTML = `<section class="hero">
       <div style="font-size:11px;color:rgba(242,240,235,.4);margin-top:4px;">dữ liệu lương</div><div class="bcard-metrics"><div class="bm"><span class="bm-dot mi"></span><span class="bm-label">Market</span><span class="bm-val" style="color:var(--orange)">Median</span></div><div class="bm"><span class="bm-dot hi"></span><span class="bm-label">n</span><span class="bm-val">n=58</span></div></div><div class="bcard-quote">"Senior engineers negotiate well here."<div class="bcard-quote-src">— Current · Senior · 7 yrs</div></div><div class="bcard-n">58 dữ liệu lương</div></div></div>
   </div>
 </div>
+
+<footer style="border-top:1px solid rgba(255,255,255,0.07);padding:40px 52px;margin-top:40px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px;">
+  <div style="font-family:'Geist Mono',monospace;font-size:12px;color:rgba(242,240,235,0.42);">© 2026 SalaryMap · Likelion Vietnam</div>
+  <div style="display:flex;gap:24px;flex-wrap:wrap;">
+    <a href="/how-it-works" style="font-size:13px;color:rgba(242,240,235,0.42);text-decoration:none;">How it works</a>
+    <a href="/privacy" style="font-size:13px;color:rgba(242,240,235,0.42);text-decoration:none;">Privacy Policy</a>
+    <a href="/terms" style="font-size:13px;color:rgba(242,240,235,0.42);text-decoration:none;">Terms of Service</a>
+  </div>
+</footer>
 `;
 
 const js = `// CAROUSEL }

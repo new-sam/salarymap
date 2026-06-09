@@ -56,7 +56,7 @@ const html = `
   <div class="section">
     <div class="section-num">01</div>
     <div class="section-title">How we collect data</div>
-    <div class="section-body">Engineers submit their salary anonymously. No name, no email, no company login required. Just role, experience level, and monthly salary.</div>
+    <div class="section-body">On the website, engineers submit their salary anonymously — no account required, just role, experience level, and monthly salary. In the mobile app, you can optionally create an account (Sign in with Apple) to access community and profile features; account data is collected only with your consent. See our <a href="/privacy" style="color:var(--orange);text-decoration:none;">Privacy Policy</a>.</div>
   </div>
 
   <div class="section">
@@ -68,7 +68,7 @@ const html = `
   <div class="section">
     <div class="section-num">03</div>
     <div class="section-title">What we never do</div>
-    <div class="section-body">We never store personal identifiers. We never sell data to recruiters or companies. We never show individual salaries — only aggregated ranges per company.</div>
+    <div class="section-body">We never sell your data to recruiters or companies. We never show individual identified salaries — only aggregated ranges per company. Website submissions stay anonymous, and any account data you provide in the app is used only to run the service, never sold.</div>
   </div>
 
   <div class="section">
