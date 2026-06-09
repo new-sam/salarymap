@@ -10,7 +10,7 @@ import { DEFAULT_IMAGES, ROLE_OPTIONS, TYPE_OPTIONS, TECH_OPTIONS, JOBS_PER_PAGE
 import { COMPANY_PROFILES } from '../data/companyProfiles.js'
 import { formatSalaryCard, getHighSalaryThreshold } from '../utils/salary'
 import { generateCompanyDescription } from '../utils/companyDescription'
-import { getStoredUtm } from '../lib/utm'
+import { getStoredUtm, getApplicationSource } from '../lib/utm'
 
 function decodeHTML(str) {
   if (!str || typeof str !== 'string') return str
@@ -156,6 +156,11 @@ export default function JobsPage() {
           sessionStorage.setItem(k, v)
         }
       })
+    }
+    // Mark this visit as coming from a salary submission so the application is
+    // attributed to the 'salary' funnel even after navigating around the jobs page.
+    if (params.get('from') === 'salary') {
+      try { sessionStorage.setItem('fyi_apply_source', 'salary') } catch {}
     }
     // Persist the original landing referrer once, so non-UTM channel attribution
     // survives client-side navigation up to the moment the candidate applies.
@@ -450,6 +455,7 @@ export default function JobsPage() {
         applicantName: session.user.user_metadata?.full_name || '',
         // Use the attribution captured on landing — router.query is empty by apply time.
         ...getStoredUtm(),
+        applicationSource: getApplicationSource(),
       }),
     })
     if (!applyRes.ok) {

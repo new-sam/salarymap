@@ -183,9 +183,9 @@ export default function ResultSection({ salary, role, experience, company, isLog
           if (typeof gtag === 'function') gtag('event', 'cta_click_view_jobs', { source: 'result_nudge' })
           if (typeof fbq === 'function') fbq('trackCustom', 'CTAClickViewJobs', { source: 'result_nudge' })
           if (isLoggedIn) {
-            router.push('/jobs')
+            router.push('/jobs?from=salary')
           } else {
-            localStorage.setItem('fyi_login_return', '/jobs')
+            localStorage.setItem('fyi_login_return', '/jobs?from=salary')
             supabase.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: window.location.origin + '/auth/callback' } })
           }
         }} style={{ marginTop:'16px', background:'rgba(255,68,0,0.06)',
@@ -227,7 +227,7 @@ export default function ResultSection({ salary, role, experience, company, isLog
             <div style={{ fontSize:'14px', fontWeight:700, color:'#fff' }}>{t('result.companiesHigher', { count: topCompanies.length })}</div>
             <div style={{ fontSize:'11px', color:'rgba(255,255,255,0.4)' }}>{t('result.headhunterIntro')}</div>
           </div>
-          <a href="/jobs" style={{ background:'#ff4400', color:'#fff', border:'none', padding:'10px 20px',
+          <a href="/jobs?from=salary" style={{ background:'#ff4400', color:'#fff', border:'none', padding:'10px 20px',
             borderRadius:'10px', fontSize:'13px', fontWeight:700, textDecoration:'none', whiteSpace:'nowrap' }}>
             {t('result.viewJobs')}
           </a>

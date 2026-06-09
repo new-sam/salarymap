@@ -176,9 +176,9 @@ export default function NextStepSheet({ role, experience, percentile, topCompani
                   if (typeof fbq === 'function') fbq('trackCustom', 'CTAClickViewJobs', { intent: selected, source: 'nextstep_sheet' })
                   const { data: { session } } = await supabase.auth.getSession()
                   if (session) {
-                    router.push('/jobs')
+                    router.push('/jobs?from=salary')
                   } else {
-                    localStorage.setItem('fyi_login_return', '/jobs')
+                    localStorage.setItem('fyi_login_return', '/jobs?from=salary')
                     supabase.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: window.location.origin + '/auth/callback' } })
                   }
                 }}>{t('nextstep.viewAllJobs')}</button>
