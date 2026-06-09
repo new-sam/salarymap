@@ -17,7 +17,7 @@ import {
   T, METRICS_BASE, EXP_COLORS, COLORS,
   inputStyle, sectionStyle, sectionTitle,
 } from '../../constants/dashboard'
-import { getDoD, aggregateDaily, localDate } from '../../utils/dashboard'
+import { aggregateDaily, localDate } from '../../utils/dashboard'
 
 const MetricChart = dynamic(() => import('../../components/DashboardCharts'), { ssr: false })
 
@@ -51,11 +51,11 @@ const SECTION_LABELS = {
 }
 // 기업 채용 섹션 카드 (요약 숫자 — 일별 차트 미연동)
 const B2B_CARDS = [
-  { key: 'forClicks', summaryKey: 'totalForCompaniesClicks', color: '#EA580C', ko: '홈→기업채용', en: 'For-companies clicks' },
-  { key: 'contactClicks', summaryKey: 'totalContactOwnerClicks', color: '#0EA5E9', ko: '담당자 대화', en: 'Contact clicks' },
-  { key: 'postJobClicks', summaryKey: 'totalPostJobClicks', color: '#F97316', ko: '공고 올리기', en: 'Post-job clicks' },
-  { key: 'pendingJobs', summaryKey: 'pendingJobs', color: '#EAB308', ko: '승인 대기', en: 'Pending approval' },
-  { key: 'companySignups', summaryKey: 'totalCompanySignups', color: '#2563EB', ko: '기업 가입자', en: 'Company signups' },
+  { key: 'companySignups', summaryKey: 'totalCompanySignups', ko: '기업 가입자', en: 'Company signups', tier: 'primary' },
+  { key: 'pendingJobs', summaryKey: 'pendingJobs', ko: '승인 대기', en: 'Pending approval', tier: 'primary' },
+  { key: 'forClicks', summaryKey: 'totalForCompaniesClicks', ko: '홈→기업채용', en: 'For-companies clicks', tier: 'secondary' },
+  { key: 'contactClicks', summaryKey: 'totalContactOwnerClicks', ko: '담당자 대화', en: 'Contact clicks', tier: 'secondary' },
+  { key: 'postJobClicks', summaryKey: 'totalPostJobClicks', ko: '공고 올리기', en: 'Post-job clicks', tier: 'secondary' },
 ]
 
 export default function AdminDashboard() {
@@ -514,45 +514,45 @@ export default function AdminDashboard() {
             )}
             {['basic', 'talent', 'company'].map(sec => {
               const cards = sec === 'company'
-                ? B2B_CARDS.map(c => ({ key: c.key, label: c[lang] || c.ko, value: summary[c.summaryKey] ?? '-', dod: null, clickable: false }))
+                ? B2B_CARDS.map(c => ({ key: c.key, label: c[lang] || c.ko, value: summary[c.summaryKey] ?? '-', tier: c.tier, clickable: false }))
                 : METRICS.filter(m => m.section === sec).map(m => {
                     const noTracking = (m.key === 'jobClicks' || m.key === 'cardClicks') && !summary.hasEventTracking
                     return {
                       key: m.key, label: m.label,
                       value: noTracking ? '-' : summary[m.summaryKey],
-                      dod: noTracking ? null : getDoD(chartData, m.dataKey),
-                      clickable: true,
+                      tier: m.tier, clickable: true,
                     }
                   })
-              return (
-                <div key={sec} style={{ marginBottom: 22 }}>
-                  <div style={{ fontSize: 11.5, fontWeight: 800, color: '#8B95A1', letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: 10 }}>{SECTION_LABELS[sec][lang]}</div>
-                  <div className="adm-metric-cards" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(146px, 1fr))', gap: 10 }}>
-                    {cards.map(c => {
-                      const isActive = c.clickable && selected.includes(c.key)
-                      return (
-                        <div key={c.key}
-                          onClick={c.clickable ? () => setSelected(prev => isActive ? prev.filter(k => k !== c.key) : [...prev, c.key]) : undefined}
-                          style={{
-                            background: isActive ? '#FFF7ED' : '#fff',
-                            border: `1px solid ${isActive ? '#FDBA74' : '#EDF0F2'}`,
-                            borderRadius: 10, padding: '13px 15px',
-                            cursor: c.clickable ? 'pointer' : 'default',
-                            transition: 'border-color 0.12s ease, background 0.12s ease',
-                          }}>
-                          <div style={{ fontSize: 12, color: '#8B95A1', marginBottom: 6, fontWeight: 600 }}>{c.label}</div>
-                          <div style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}>
-                            <div style={{ fontSize: 25, fontWeight: 800, color: '#191F28', letterSpacing: '-0.02em', fontVariantNumeric: 'tabular-nums' }}>{c.value}</div>
-                            {c.dod !== null && c.dod !== undefined && (
-                              <span style={{ fontSize: 12, fontWeight: 700, color: c.dod > 0 ? '#EF4444' : c.dod < 0 ? '#3B82F6' : '#9CA3AF' }}>
-                                {c.dod > 0 ? '+' : ''}{c.dod}%
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                      )
-                    })}
+              const primary = cards.filter(c => c.tier === 'primary')
+              const secondary = cards.filter(c => c.tier !== 'primary')
+              const renderCard = (c, big) => {
+                const isActive = c.clickable && selected.includes(c.key)
+                return (
+                  <div key={c.key}
+                    onClick={c.clickable ? () => setSelected(prev => isActive ? prev.filter(k => k !== c.key) : [...prev, c.key]) : undefined}
+                    style={{
+                      background: isActive ? '#FFF7ED' : '#fff',
+                      border: `1px solid ${isActive ? '#FDBA74' : '#EDF0F2'}`,
+                      borderRadius: 10, padding: big ? '16px 18px' : '11px 13px',
+                      cursor: c.clickable ? 'pointer' : 'default',
+                      transition: 'border-color 0.12s ease, background 0.12s ease',
+                    }}>
+                    <div style={{ fontSize: big ? 13 : 11.5, color: big ? '#4E5968' : '#8B95A1', marginBottom: big ? 7 : 4, fontWeight: big ? 700 : 600 }}>{c.label}</div>
+                    <div style={{ fontSize: big ? 30 : 19, fontWeight: 800, color: '#191F28', letterSpacing: '-0.02em', fontVariantNumeric: 'tabular-nums', lineHeight: 1.1 }}>{c.value}</div>
                   </div>
+                )
+              }
+              return (
+                <div key={sec} style={{ marginBottom: 24 }}>
+                  <div style={{ fontSize: 11.5, fontWeight: 800, color: '#8B95A1', letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: 10 }}>{SECTION_LABELS[sec][lang]}</div>
+                  <div className="adm-metric-cards" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 10, marginBottom: secondary.length ? 8 : 0 }}>
+                    {primary.map(c => renderCard(c, true))}
+                  </div>
+                  {secondary.length > 0 && (
+                    <div className="adm-metric-cards" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(118px, 1fr))', gap: 8 }}>
+                      {secondary.map(c => renderCard(c, false))}
+                    </div>
+                  )}
                 </div>
               )
             })}
