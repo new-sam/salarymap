@@ -63,10 +63,12 @@ export default async function handler(req, res) {
     await sendVerificationCode(email, code)
   } catch (e) {
     console.error('[send-code] sendVerificationCode failed:', e.message)
-    // [DEBUG] 실제 원인을 앱 화면까지 노출 — 원인 확인 후 아래 message를 원래 문구로 되돌릴 것.
+    // [DEBUG] 결정적 정보(키·from)를 맨 앞으로 — UI가 뒤를 잘라도 핵심이 보이게. 원인 확인 후 원복할 것.
+    const k = (process.env.RESEND_API_KEY || 'UNSET').trim()
+    const f = (process.env.RESEND_FROM || 'UNSET').trim()
     return res.status(502).json({
       error: 'send_failed',
-      message: `발송 실패(디버그): ${e.message} | from=${(process.env.RESEND_FROM || 'UNSET').trim()} | key=${(process.env.RESEND_API_KEY || 'UNSET').trim().slice(0, 8)}…`,
+      message: `key=${k.slice(0, 8)}(len${k.length}) from=[${f}] :: ${e.message}`,
     })
   }
 
