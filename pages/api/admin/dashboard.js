@@ -56,52 +56,6 @@ export default async function handler(req, res) {
   const startISO = `${startDate}T00:00:00`
   const endISO = `${endDate}T23:59:59`
 
-  // Fetch all submissions in date range (paginate to avoid 1000-row default limit)
-  let submissions = []
-  {
-    let from = 0
-    const PAGE = 1000
-    while (true) {
-      const { data, error: fetchErr } = await supabase
-        .from('submissions')
-        .select('id, created_at, company, intent, utm_source, utm_medium, utm_campaign, utm_content, user_id, email')
-        .gte('created_at', startISO)
-        .lte('created_at', endISO)
-        .order('created_at', { ascending: true })
-        .range(from, from + PAGE - 1)
-      if (fetchErr) return res.status(500).json({ error: fetchErr.message })
-      submissions = submissions.concat(data || [])
-      if (!data || data.length < PAGE) break
-      from += PAGE
-    }
-  }
-  // Apply data quality filters: exclude internal/garbage entries and dedupe
-  submissions = dedupeSubmissions(submissions.filter(s => !isExcludedSubmission(s)))
-
-  // Fetch sign-ups (auth.users) in date range using admin API
-  let signups = []
-  try {
-    // Use admin API to list users - paginate through all
-    let page = 1
-    let allUsers = []
-    while (true) {
-      const { data: { users }, error: authErr } = await supabase.auth.admin.listUsers({
-        page,
-        perPage: 1000,
-      })
-      if (authErr || !users || users.length === 0) break
-      allUsers = allUsers.concat(users)
-      if (users.length < 1000) break
-      page++
-    }
-    signups = allUsers.filter(u => {
-      const d = u.created_at
-      return d >= startISO && d <= endISO && !isExcludedSignup(u)
-    })
-  } catch (e) {
-    // If admin API not available, skip signups
-  }
-
   // Helper to fetch all rows with pagination
   async function fetchAll(query) {
     let all = []
@@ -116,78 +70,65 @@ export default async function handler(req, res) {
     return all
   }
 
-  // Fetch job applications in date range
-  let jobApps = []
-  try {
-    jobApps = await fetchAll(
-      supabase.from('job_applications').select('id, created_at')
+  // 모든 쿼리 병렬 실행 (기존엔 await 직렬 → Promise.all 로 로딩 시간 = 합계가 아니라 최대값)
+  const [submissionsRaw, signups, jobApps, events, pageViews, landings, resumeUsers, companySignups, pendingJobs] = await Promise.all([
+    // submissions (페이지네이션)
+    fetchAll(
+      supabase.from('submissions')
+        .select('id, created_at, company, intent, utm_source, utm_medium, utm_campaign, utm_content, user_id, email')
         .gte('created_at', startISO).lte('created_at', endISO)
-    )
-  } catch (e) {
-    // table may not exist
-  }
+        .order('created_at', { ascending: true })
+    ).catch(() => []),
+    // sign-ups (auth.users admin API — 전체 페이지)
+    (async () => {
+      try {
+        let page = 1, allUsers = []
+        while (true) {
+          const { data: { users }, error } = await supabase.auth.admin.listUsers({ page, perPage: 1000 })
+          if (error || !users || users.length === 0) break
+          allUsers = allUsers.concat(users)
+          if (users.length < 1000) break
+          page++
+        }
+        return allUsers.filter(u => u.created_at >= startISO && u.created_at <= endISO && !isExcludedSignup(u))
+      } catch (e) { return [] }
+    })(),
+    // job applications
+    fetchAll(supabase.from('job_applications').select('id, created_at')
+      .gte('created_at', startISO).lte('created_at', endISO)).catch(() => []),
+    // click events (인재 + 기업 funnel — 기업 이벤트 포함)
+    fetchAll(supabase.from('events').select('id, event, meta, created_at')
+      .in('event', ['click_jobs_cta', 'click_job_card', 'view_jobs_page', 'click_apply_button', 'save_job', 'click_for_companies', 'click_contact_owner', 'click_post_job'])
+      .gte('created_at', startISO).lte('created_at', endISO)).catch(() => []),
+    // page_view events (UTM 어트리뷰션)
+    fetchAll(supabase.from('events').select('id, meta, created_at')
+      .in('event', ['page_view', 'view_jobs_page'])
+      .gte('created_at', startISO).lte('created_at', endISO)).catch(() => []),
+    // landing events (전체 방문자)
+    fetchAll(supabase.from('events').select('id, created_at')
+      .eq('event', 'landing')
+      .gte('created_at', startISO).lte('created_at', endISO)).catch(() => []),
+    // resume users (이력서 보유)
+    (async () => {
+      try {
+        const { data } = await supabase.from('user_profiles').select('id, updated_at').not('resume_url', 'is', null)
+        return (data || []).filter(r => r.updated_at)
+      } catch (e) { return [] }
+    })(),
+    // company (recruiter) signups — 기업 가입자
+    fetchAll(supabase.from('recruiter_users').select('id, created_at')
+      .gte('created_at', startISO).lte('created_at', endISO)).catch(() => []),
+    // 공고 승인 대기 현황 (현재 pending_review 수)
+    (async () => {
+      try {
+        const { count } = await supabase.from('jobs').select('*', { count: 'exact', head: true }).eq('status', 'pending_review')
+        return count || 0
+      } catch (e) { return 0 }
+    })(),
+  ])
 
-  // Fetch click events in date range
-  let events = []
-  try {
-    events = await fetchAll(
-      supabase.from('events').select('id, event, meta, created_at')
-        .in('event', ['click_jobs_cta', 'click_job_card', 'view_jobs_page', 'click_apply_button', 'save_job'])
-        .gte('created_at', startISO).lte('created_at', endISO)
-    )
-  } catch (e) {
-    // events table may not exist yet
-  }
-
-  // Fetch page_view events with UTM for campaign attribution (include view_jobs_page)
-  let pageViews = []
-  try {
-    pageViews = await fetchAll(
-      supabase.from('events').select('id, meta, created_at')
-        .in('event', ['page_view', 'view_jobs_page'])
-        .gte('created_at', startISO).lte('created_at', endISO)
-    )
-  } catch (e) {
-    // events table may not exist yet
-  }
-
-  // Fetch landing events (all visitors)
-  let landings = []
-  try {
-    landings = await fetchAll(
-      supabase.from('events').select('id, created_at')
-        .eq('event', 'landing')
-        .gte('created_at', startISO).lte('created_at', endISO)
-    )
-  } catch (e) {
-    // events table may not exist yet
-  }
-
-  // Fetch resume users (unique users with resume_url)
-  let resumeUsers = []
-  try {
-    const { data } = await supabase
-      .from('user_profiles')
-      .select('id, updated_at')
-      .not('resume_url', 'is', null)
-    resumeUsers = (data || []).filter(r => r.updated_at)
-  } catch (e) {}
-
-  // Fetch company (recruiter) signups in date range — 기업 가입자
-  let companySignups = []
-  try {
-    companySignups = await fetchAll(
-      supabase.from('recruiter_users').select('id, created_at')
-        .gte('created_at', startISO).lte('created_at', endISO)
-    )
-  } catch (e) {}
-
-  // 공고 승인 대기 현황 (현재 pending_review 공고 수, 기간 무관)
-  let pendingJobs = 0
-  try {
-    const { count } = await supabase.from('jobs').select('*', { count: 'exact', head: true }).eq('status', 'pending_review')
-    pendingJobs = count || 0
-  } catch (e) {}
+  // Apply data quality filters: exclude internal/garbage entries and dedupe
+  const submissions = dedupeSubmissions(submissionsRaw.filter(s => !isExcludedSubmission(s)))
 
   // --- Aggregate daily trend ---
   const toVN = (iso) => new Date(new Date(iso).getTime() + 7 * 3600000).toISOString().slice(0, 10)
