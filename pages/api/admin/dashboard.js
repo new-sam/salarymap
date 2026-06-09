@@ -192,7 +192,7 @@ export default async function handler(req, res) {
   // --- Aggregate daily trend ---
   const toVN = (iso) => new Date(new Date(iso).getTime() + 7 * 3600000).toISOString().slice(0, 10)
   const dailyMap = {}
-  const newDay = () => ({ date: '', submissions: 0, ad: 0, organic: 0, signups: 0, companies: new Set(), jobApps: 0, jobClicks: 0, cardClicks: 0, jobsPageViews: 0, applyClicks: 0, saveClicks: 0, resumeUploads: 0, landings: 0 })
+  const newDay = () => ({ date: '', submissions: 0, ad: 0, organic: 0, signups: 0, companies: new Set(), jobApps: 0, jobClicks: 0, cardClicks: 0, jobsPageViews: 0, applyClicks: 0, saveClicks: 0, resumeUploads: 0, landings: 0, forCompaniesClicks: 0, contactClicks: 0, postJobClicks: 0, companySignups: 0 })
   for (const sub of submissions) {
     const date = toVN(sub.created_at)
     if (!dailyMap[date]) dailyMap[date] = { ...newDay(), date }
@@ -225,6 +225,15 @@ export default async function handler(req, res) {
     if (ev.event === 'view_jobs_page') dailyMap[date].jobsPageViews++
     if (ev.event === 'click_apply_button') dailyMap[date].applyClicks++
     if (ev.event === 'save_job') dailyMap[date].saveClicks++
+    if (ev.event === 'click_for_companies') dailyMap[date].forCompaniesClicks++
+    if (ev.event === 'click_contact_owner') dailyMap[date].contactClicks++
+    if (ev.event === 'click_post_job') dailyMap[date].postJobClicks++
+  }
+
+  for (const cs of companySignups) {
+    const date = toVN(cs.created_at)
+    if (!dailyMap[date]) dailyMap[date] = { ...newDay(), date }
+    dailyMap[date].companySignups++
   }
 
   for (const ru of resumeUsers) {
@@ -270,6 +279,9 @@ export default async function handler(req, res) {
       applyClicks: d.date < EVENT_TRACKING_START ? null : d.applyClicks,
       saveClicks: d.date < '2026-05-11' ? null : d.saveClicks,
       resumeUploads: d.date < '2026-05-19' ? null : d.resumeUploads,
+      forCompaniesClicks: d.date < EVENT_TRACKING_START ? null : d.forCompaniesClicks,
+      contactClicks: d.date < EVENT_TRACKING_START ? null : d.contactClicks,
+      postJobClicks: d.date < EVENT_TRACKING_START ? null : d.postJobClicks,
     }))
 
   // --- Intent breakdown ---

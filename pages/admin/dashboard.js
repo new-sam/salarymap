@@ -21,22 +21,6 @@ import { aggregateDaily, localDate } from '../../utils/dashboard'
 
 const MetricChart = dynamic(() => import('../../components/DashboardCharts'), { ssr: false })
 
-// Detail-table metric columns, in the same order as T.tableHeaders (after the date col)
-const TABLE_COLS = [
-  { key: 'sessions', color: '#2563EB', bold: true, dash: true },
-  { key: 'submissions', color: null, bold: true },
-  { key: 'ad', color: '#4F46E5' },
-  { key: 'organic', color: '#10B981' },
-  { key: 'signups', color: '#F59E0B' },
-  { key: 'companies', color: '#8B5CF6' },
-  { key: 'jobClicks', color: '#F97316' },
-  { key: 'cardClicks', color: '#EC4899' },
-  { key: 'jobsPageViews', color: '#06B6D4' },
-  { key: 'applyClicks', color: '#D946EF' },
-  { key: 'saveClicks', color: '#F472B6' },
-  { key: 'resumeUploads', color: '#14B8A6' },
-  { key: 'jobApps', color: '#EF4444' },
-]
 function cellPct(cur, prev) {
   if (cur === null || cur === undefined || prev === null || prev === undefined) return null
   if (prev === 0) return cur > 0 ? 100 : 0
@@ -79,6 +63,7 @@ export default function AdminDashboard() {
   const [funnelKeys, setFunnelKeys] = useState([])
   const [chartMode, setChartMode] = useState('1d')
   const [tableView, setTableView] = useState('daily')
+  const [tableSection, setTableSection] = useState('basic')
   const [dualAxis, setDualAxis] = useState(true)
   const [realtime, setRealtime] = useState(null)
   const [realtimeLoading, setRealtimeLoading] = useState(false)
@@ -325,6 +310,10 @@ export default function AdminDashboard() {
         saveClicks: sum('saveClicks'),
         resumeUploads: sum('resumeUploads'),
         jobApps: sum('jobApps') ?? 0,
+        forCompaniesClicks: sum('forCompaniesClicks'),
+        contactClicks: sum('contactClicks'),
+        postJobClicks: sum('postJobClicks'),
+        companySignups: sum('companySignups') ?? 0,
       }
     })
   })()
@@ -357,11 +346,25 @@ export default function AdminDashboard() {
         saveClicks: sum('saveClicks'),
         resumeUploads: sum('resumeUploads'),
         jobApps: sum('jobApps') ?? 0,
+        forCompaniesClicks: sum('forCompaniesClicks'),
+        contactClicks: sum('contactClicks'),
+        postJobClicks: sum('postJobClicks'),
+        companySignups: sum('companySignups') ?? 0,
       }
     })
   })()
 
   const chartData = aggregateDaily(dailyWithToday, chartMode)
+
+  // 일별/주별/월별 테이블 컬럼 — 섹션 단위로 묶어서 표시 (가로 폭 폭주 방지)
+  const tableColumns = tableSection === 'company'
+    ? [
+        { key: 'companySignups', label: lang === 'ko' ? '기업 회원 가입' : 'Company sign-ups', summaryKey: 'totalCompanySignups' },
+        { key: 'forCompaniesClicks', label: lang === 'ko' ? '홈→기업채용 클릭' : 'Home→For-companies', summaryKey: 'totalForCompaniesClicks' },
+        { key: 'contactClicks', label: lang === 'ko' ? '담당자 대화 클릭' : 'Contact clicks', summaryKey: 'totalContactOwnerClicks' },
+        { key: 'postJobClicks', label: lang === 'ko' ? '공고 올리기 클릭' : 'Post-job clicks', summaryKey: 'totalPostJobClicks' },
+      ]
+    : METRICS.filter(m => m.section === tableSection).map(m => ({ key: m.dataKey, label: m.label, summaryKey: m.summaryKey }))
   const visibleExperiments = experiments.filter(e => (!e.status || e.status === 'running') && e.date >= dateRange.from && e.date <= (realtime?.date || dateRange.to) && (!e.metrics?.length || selected.length === 0 || selected.some(k => e.metrics.includes(k))))
 
   return (
@@ -894,12 +897,28 @@ export default function AdminDashboard() {
                   ))}
                 </div>
               </div>
+              {/* 섹션 선택 — 누른 섹션의 지표들만 열로 (가로 폭주 방지) */}
+              <div style={{ display: 'flex', gap: 6, marginBottom: 12 }}>
+                {['basic', 'talent', 'company'].map(s => (
+                  <button key={s} onClick={() => setTableSection(s)}
+                    style={{
+                      padding: '6px 14px', borderRadius: 999, fontSize: 12.5, fontWeight: 700,
+                      border: `1px solid ${tableSection === s ? SECTION_LABELS[s].accent : '#E5E8EB'}`,
+                      background: tableSection === s ? SECTION_LABELS[s].accent + '14' : '#fff',
+                      color: tableSection === s ? SECTION_LABELS[s].accent : '#6B7280',
+                      cursor: 'pointer', transition: 'all 0.12s',
+                    }}>
+                    {SECTION_LABELS[s][lang]}
+                  </button>
+                ))}
+              </div>
               <div style={{ overflowX: 'auto' }}>
                 <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
                   <thead>
                     <tr style={{ borderBottom: '2px solid #e5e7eb' }}>
-                      {t.tableHeaders.map((h, i) => (
-                        <th key={h} style={{ padding: '8px 12px', textAlign: i === 0 ? 'left' : 'right', fontWeight: 600, color: '#374151' }}>{h}</th>
+                      <th style={{ padding: '8px 12px', textAlign: 'left', fontWeight: 600, color: '#374151' }}>{tableView === 'daily' ? (lang === 'ko' ? '날짜' : 'Date') : (lang === 'ko' ? '기간' : 'Period')}</th>
+                      {tableColumns.map(c => (
+                        <th key={c.key} style={{ padding: '8px 12px', textAlign: 'right', fontWeight: 600, color: '#374151' }}>{c.label}</th>
                       ))}
                     </tr>
                   </thead>
@@ -907,7 +926,7 @@ export default function AdminDashboard() {
                     {(tableView === 'weekly' ? weeklyTableData : tableView === 'monthly' ? monthlyTableData : dailyWithToday).map((d, i, arr) => (
                       <tr key={i} style={{ borderBottom: '1px solid #f3f4f6', background: i % 2 === 0 ? '#fff' : '#fafafa' }}>
                         <td style={{ padding: '6px 12px' }}>{tableView === 'daily' ? d.date : d.label}</td>
-                        {TABLE_COLS.map(col => {
+                        {tableColumns.map(col => {
                           const val = d[col.key]
                           const isNull = val === null || val === undefined
                           const prev = (tableView !== 'daily' && i > 0) ? arr[i - 1][col.key] : null
@@ -927,19 +946,9 @@ export default function AdminDashboard() {
                     ))}
                     <tr style={{ borderTop: '2px solid #e5e7eb', fontWeight: 700 }}>
                       <td style={{ padding: '8px 12px' }}>{t.total}</td>
-                      <td style={{ padding: '8px 12px', textAlign: 'right', color: '#2563EB' }}>{summary.totalSessions ?? '-'}</td>
-                      <td style={{ padding: '8px 12px', textAlign: 'right' }}>{summary.totalSubmissions}</td>
-                      <td style={{ padding: '8px 12px', textAlign: 'right', color: '#4F46E5' }}>{summary.adSubmissions}</td>
-                      <td style={{ padding: '8px 12px', textAlign: 'right', color: '#10B981' }}>{summary.organicSubmissions}</td>
-                      <td style={{ padding: '8px 12px', textAlign: 'right', color: '#F59E0B' }}>{summary.totalSignups}</td>
-                      <td style={{ padding: '8px 12px', textAlign: 'right', color: '#8B5CF6' }}>{summary.uniqueCompanies}</td>
-                      <td style={{ padding: '8px 12px', textAlign: 'right', color: summary.hasEventTracking ? '#F97316' : '#ccc' }}>{summary.hasEventTracking ? summary.totalJobClicks : '-'}</td>
-                      <td style={{ padding: '8px 12px', textAlign: 'right', color: summary.hasEventTracking ? '#EC4899' : '#ccc' }}>{summary.hasEventTracking ? summary.totalCardClicks : '-'}</td>
-                      <td style={{ padding: '8px 12px', textAlign: 'right', color: summary.hasEventTracking ? '#06B6D4' : '#ccc' }}>{summary.hasEventTracking ? summary.totalJobsPageViews : '-'}</td>
-                      <td style={{ padding: '8px 12px', textAlign: 'right', color: summary.hasEventTracking ? '#D946EF' : '#ccc' }}>{summary.hasEventTracking ? summary.totalApplyClicks : '-'}</td>
-                      <td style={{ padding: '8px 12px', textAlign: 'right', color: summary.hasEventTracking ? '#F472B6' : '#ccc' }}>{summary.hasEventTracking ? summary.totalSaveClicks : '-'}</td>
-                      <td style={{ padding: '8px 12px', textAlign: 'right', color: '#14B8A6' }}>{summary.totalResumeUploads ?? '-'}</td>
-                      <td style={{ padding: '8px 12px', textAlign: 'right', color: '#EF4444' }}>{summary.totalJobApps}</td>
+                      {tableColumns.map(c => (
+                        <td key={c.key} style={{ padding: '8px 12px', textAlign: 'right', color: '#191F28' }}>{summary[c.summaryKey] ?? '-'}</td>
+                      ))}
                     </tr>
                   </tbody>
                 </table>
