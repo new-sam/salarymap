@@ -6,26 +6,29 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 )
 
-// service_role로 신고/차단/피드백 테이블을 읽는다(이들 테이블엔 SELECT 정책이 없어 운영자만 조회 가능).
+// service_role로 신고/피드백을 읽고(이들 테이블엔 SELECT 정책이 없어 운영자만 조회 가능),
+// 신고 처리(대상 글·댓글 삭제 / 신고 무시)를 수행한다.
 export default async function handler(req, res) {
   const admin = await verifyAdmin(req)
   if (!admin) return res.status(401).json({ error: 'Unauthorized' })
-  if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' })
 
+  if (req.method === 'GET') return getQueue(res)
+  if (req.method === 'POST') return handleAction(req, res)
+  return res.status(405).json({ error: 'Method not allowed' })
+}
+
+async function getQueue(res) {
   try {
-    const [reportsR, blocksR, feedbackR] = await Promise.all([
+    const [reportsR, feedbackR] = await Promise.all([
       supabase.from('community_reports').select('*').order('created_at', { ascending: false }).limit(500),
-      supabase.from('community_blocks').select('*').order('created_at', { ascending: false }).limit(500),
       supabase.from('app_feedback').select('*').order('created_at', { ascending: false }).limit(500),
     ])
     const reports = reportsR.data || []
-    const blocks = blocksR.data || []
     const feedback = feedbackR.data || []
 
     // 유저 id → 이메일/이름 매핑(user_profiles).
     const userIds = [...new Set([
       ...reports.map(r => r.reporter_id),
-      ...blocks.flatMap(b => [b.blocker_id, b.blocked_id]),
       ...feedback.map(f => f.user_id),
     ].filter(Boolean))]
     const profileMap = {}
@@ -51,33 +54,68 @@ export default async function handler(req, res) {
       const { data } = await supabase.from('community_comments').select('id, content').in('id', commentIds)
       ;(data || []).forEach(c => { commentMap[c.id] = c })
     }
-    const targetPreview = (r) => {
+    const preview = (r) => {
       if (r.target_type === 'post') {
         const p = postMap[r.target_id]
-        if (!p) return '(삭제됨)'
-        return [p.title, p.content].filter(Boolean).join(' — ').slice(0, 140)
+        return p ? [p.title, p.content].filter(Boolean).join(' — ').slice(0, 140) : null
       }
       const c = commentMap[r.target_id]
-      if (!c) return '(삭제됨)'
-      return (c.content || '').slice(0, 140)
+      return c ? (c.content || '').slice(0, 140) : null
     }
 
     return res.status(200).json({
       reports: reports.map(r => ({
         ...r,
         reporter_email: who(r.reporter_id),
-        target_preview: targetPreview(r),
+        target_preview: preview(r),
+        target_deleted: preview(r) === null, // 이미 삭제된 대상
       })),
-      blocks: blocks.map(b => ({
-        ...b,
-        blocker_email: who(b.blocker_id),
-        blocked_email: who(b.blocked_id),
-      })),
-      feedback: feedback.map(f => ({
-        ...f,
-        user_email: who(f.user_id),
-      })),
+      feedback: feedback.map(f => ({ ...f, user_email: who(f.user_id) })),
     })
+  } catch (e) {
+    return res.status(500).json({ error: e.message })
+  }
+}
+
+// action: 'delete-content' → 신고된 글/댓글 삭제 + 관련 신고 제거
+//         'dismiss'        → 신고만 제거(콘텐츠 유지)
+async function handleAction(req, res) {
+  const { action, target_type, target_id } = req.body || {}
+  if (!['post', 'comment'].includes(target_type) || !target_id) {
+    return res.status(400).json({ error: 'invalid target' })
+  }
+
+  try {
+    if (action === 'delete-content') {
+      if (target_type === 'post') {
+        // FK ON DELETE CASCADE가 댓글·좋아요까지 정리한다.
+        const { error } = await supabase.from('community_posts').delete().eq('id', target_id)
+        if (error) return res.status(500).json({ error: error.message })
+      } else {
+        // 댓글: 부모 글 comment_count를 수동 차감해야 한다(트리거 없음).
+        const { data: c } = await supabase
+          .from('community_comments').select('post_id').eq('id', target_id).single()
+        const { error } = await supabase.from('community_comments').delete().eq('id', target_id)
+        if (error) return res.status(500).json({ error: error.message })
+        if (c?.post_id) {
+          const { data: p } = await supabase
+            .from('community_posts').select('comment_count').eq('id', c.post_id).single()
+          if (p) {
+            await supabase.from('community_posts')
+              .update({ comment_count: Math.max(0, (p.comment_count || 0) - 1) })
+              .eq('id', c.post_id)
+          }
+        }
+      }
+    } else if (action !== 'dismiss') {
+      return res.status(400).json({ error: 'invalid action' })
+    }
+
+    // 처리 완료 → 해당 대상의 신고를 큐에서 제거.
+    await supabase.from('community_reports')
+      .delete().eq('target_type', target_type).eq('target_id', target_id)
+
+    return res.status(200).json({ ok: true })
   } catch (e) {
     return res.status(500).json({ error: e.message })
   }
