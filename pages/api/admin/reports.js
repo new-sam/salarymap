@@ -77,10 +77,21 @@ async function getQueue(res) {
   }
 }
 
-// action: 'delete-content' → 신고된 글/댓글 삭제 + 관련 신고 제거
-//         'dismiss'        → 신고만 제거(콘텐츠 유지)
+// action: 'delete-content'   → 신고된 글/댓글 삭제 + 관련 신고 제거
+//         'dismiss'          → 신고만 제거(콘텐츠 유지)
+//         'feedback-handled' → 피드백 처리완료 토글
 async function handleAction(req, res) {
-  const { action, target_type, target_id } = req.body || {}
+  const { action, target_type, target_id, id, handled } = req.body || {}
+
+  // 피드백 처리완료 토글.
+  if (action === 'feedback-handled') {
+    if (!id) return res.status(400).json({ error: 'id required' })
+    const { error } = await supabase
+      .from('app_feedback').update({ handled: !!handled }).eq('id', id)
+    if (error) return res.status(500).json({ error: error.message })
+    return res.status(200).json({ ok: true })
+  }
+
   if (!['post', 'comment'].includes(target_type) || !target_id) {
     return res.status(400).json({ error: 'invalid target' })
   }

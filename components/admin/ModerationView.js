@@ -81,6 +81,22 @@ export default function ModerationView({ token }) {
     setBusy(null)
   }
 
+  async function toggleFeedback(f) {
+    setBusy('fb:' + f.id)
+    try {
+      const res = await fetch('/api/admin/reports', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ action: 'feedback-handled', id: f.id, handled: !f.handled }),
+      })
+      if (!res.ok) { const e = await res.json().catch(() => ({})); alert('실패: ' + (e.error || res.status)) }
+      else await load()
+    } catch (e) {
+      alert('실패: ' + e.message)
+    }
+    setBusy(null)
+  }
+
   if (loading) return <div style={{ textAlign: 'center', padding: 40, color: '#666' }}>불러오는 중...</div>
   if (!data) return <div style={{ textAlign: 'center', padding: 40, color: '#999' }}>데이터를 불러오지 못했어요</div>
 
@@ -155,17 +171,19 @@ export default function ModerationView({ token }) {
                 <th style={th}>환경</th>
                 <th style={th}>시각</th>
                 <th style={th}>답장</th>
+                <th style={th}>상태</th>
               </tr>
             </thead>
             <tbody>
               {feedback.length === 0 ? (
-                <tr><td style={muted} colSpan={7}>아직 들어온 피드백이 없어요</td></tr>
+                <tr><td style={muted} colSpan={8}>아직 들어온 피드백이 없어요</td></tr>
               ) : feedback.map((f, i) => {
                 const meta = CATEGORY[f.category] || CATEGORY.other
                 const replyTo = f.contact_email || (f.user_email && f.user_email.includes('@') ? f.user_email : null)
                 const subject = encodeURIComponent('[salary.fyi] 문의 답변')
+                const isBusy = busy === 'fb:' + f.id
                 return (
-                  <tr key={f.id} style={{ borderBottom: '1px solid #f3f4f6', background: i % 2 ? '#fafafa' : '#fff' }}>
+                  <tr key={f.id} style={{ borderBottom: '1px solid #f3f4f6', background: f.handled ? '#f3faf4' : (i % 2 ? '#fafafa' : '#fff'), opacity: f.handled ? 0.6 : 1 }}>
                     <td style={{ ...td, color: '#999' }}>{i + 1}</td>
                     <td style={td}><Badge label={meta.label} color={meta.color} /></td>
                     <td style={{ ...td, maxWidth: 420, color: '#333', whiteSpace: 'pre-wrap' }}>{f.message}</td>
@@ -181,6 +199,11 @@ export default function ModerationView({ token }) {
                           답장
                         </a>
                       ) : <span style={{ color: '#bbb', fontSize: 12 }}>이메일 없음</span>}
+                    </td>
+                    <td style={{ ...td, whiteSpace: 'nowrap' }}>
+                      <button disabled={isBusy} onClick={() => toggleFeedback(f)} style={btn(isBusy ? '#9CA3AF' : (f.handled ? '#6b7280' : '#10b981'))}>
+                        {f.handled ? '완료취소' : '처리완료'}
+                      </button>
                     </td>
                   </tr>
                 )
