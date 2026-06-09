@@ -73,11 +73,14 @@ export default function CompanyDashboard() {
   const [setupBusy, setSetupBusy] = useState(false);
 
   const loginWithGoogle = async () => {
+    // 로그인 후 복귀 경로: ?next 가 있으면 거기로(랜딩 '공고 올리기' → /company/jobs/new), 없으면 대시보드
+    const next = router.query.next ? String(router.query.next) : '';
+    const returnTo = next.startsWith('/company') ? next : '/company';
     if (typeof window !== 'undefined') {
       localStorage.setItem('fyi_intent', 'company');
-      localStorage.setItem('fyi_login_return', '/company');
+      localStorage.setItem('fyi_login_return', returnTo);
     }
-    window.location.href = '/api/auth/google?return=' + encodeURIComponent('/company');
+    window.location.href = '/api/auth/google?return=' + encodeURIComponent(returnTo);
   };
 
   const completeCompanySetup = async (e) => {

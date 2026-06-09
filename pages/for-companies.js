@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from 'react';
 import Brand from '../components/company/Brand';
 import ContactModal from '../components/company/ContactModal';
 import { useT, LanguageSwitcher } from '../lib/i18n';
+import { supabase } from '../lib/supabaseClient';
 
 function CountUp({ end, decimals = 0, duration = 1200, suffix = '' }) {
   const [val, setVal] = useState(0);
@@ -59,6 +60,14 @@ export default function ForCompanies() {
   const router = useRouter();
   const { t } = useT();
   const [contactOpen, setContactOpen] = useState(false);
+
+  // '무료 공고 올리기' — 로그인 상태별 분기:
+  // 로그인됨 → 바로 공고 작성 / 미로그인 → 로그인 페이지(로그인 후 공고 작성으로 복귀)
+  const goPostJob = async () => {
+    const { data } = await supabase.auth.getSession();
+    if (data?.session) { router.push('/company/jobs/new'); return; }
+    router.push('/company?mode=signup&next=' + encodeURIComponent('/company/jobs/new'));
+  };
 
   return (
     <>
@@ -125,7 +134,7 @@ export default function ForCompanies() {
           <div style={css.navRight}>
             <LanguageSwitcher />
             <Link href="/company" style={css.btnGhost}>{t('company.landing.nav.login')}</Link>
-            <Link href="/company?mode=signup" style={css.btnPrimary}>{t('company.landing.nav.cta')}</Link>
+            <button type="button" onClick={goPostJob} style={css.btnPrimary}>{t('company.landing.nav.cta')}</button>
           </div>
         </nav>
 
@@ -139,7 +148,7 @@ export default function ForCompanies() {
             <p style={css.lead}>{t('company.landing.lead')}</p>
             <div className="fc-hero-ctas" style={css.heroCtas}>
               <button type="button" onClick={() => setContactOpen(true)} style={css.btnOutline}>💬 {t('company.landing.heroCtaContact')}</button>
-              <button type="button" onClick={() => router.push('/company?mode=signup')} style={css.btnDark}>
+              <button type="button" onClick={goPostJob} style={css.btnDark}>
                 📝 {t('company.landing.heroCtaPost')} -&gt;
               </button>
             </div>
