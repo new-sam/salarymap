@@ -5,6 +5,19 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 )
 
+// A salary-funnel application is one the visitor reached after using the salary
+// product. The client's ?from=salary CTA marker (applicationSource) only fires when
+// the user clicks a specific post-submission button, so it misses people who browse
+// from the salary page to /jobs and apply without that button — they leak in as
+// 'direct'. The original landing referrer recovers them: when it points at the salary
+// domain, classify as 'salary'. Same rule as scripts/backfill-application-source.js.
+const SALARY_REFERRER_RE = /salary-fyi\.com/i
+function classifySource(applicationSource, referrer) {
+  if (applicationSource === 'salary') return 'salary'
+  if (referrer && SALARY_REFERRER_RE.test(referrer)) return 'salary'
+  return 'direct'
+}
+
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' })
@@ -55,7 +68,7 @@ export default async function handler(req, res) {
     utm_campaign: utmCampaign || null,
     utm_content: utmContent || null,
     referrer: referrer || null,
-    application_source: applicationSource || 'direct',
+    application_source: classifySource(applicationSource, referrer),
   }
 
   const insert = (row) =>
