@@ -498,7 +498,7 @@ export default function CompanyDashboard() {
                         </div>
                         {/* Desktop secondary info */}
                         <div className="hidden md:block text-[12px] text-gray-900 font-semibold truncate">
-                          {job.location} · {job.type} · ₫{Math.round(job.salary_min/1e6)}M–{Math.round(job.salary_max/1e6)}M/월
+                          {job.location} · {job.type} · ₫{Math.round(job.salary_min/1e6)}M–{Math.round(job.salary_max/1e6)}M/tháng
                         </div>
                         <div className="hidden md:block text-[11px] text-gray-500 font-semibold mt-1 truncate">
                           {t('company.card.postedAt', { date: new Date(job.created_at).toLocaleDateString() })}

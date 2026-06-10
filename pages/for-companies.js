@@ -265,7 +265,7 @@ export default function ForCompanies() {
               <span>{t('company.landing.kpi2Label')}</span>
             </div>
             <div className="fc-kpi" style={css.kpi}>
-              <strong><CountUp end={15723} suffix={t('company.landing.kpi3Suffix')} /></strong>
+              <strong><CountUp end={7000} suffix={t('company.landing.kpi3Suffix')} /></strong>
               <span>{t('company.landing.kpi3Label')}</span>
             </div>
           </section>

@@ -1711,75 +1711,75 @@ const MAIL_PRESETS = [
     key: 'received',
     labelKey: 'company.mail.preset.received',
     needsSlots: false,
-    subject: '[{회사명}] {공고명} 지원 접수 안내',
-    body: `{후보이름}님, 안녕하세요.
-{회사명} 채용 담당자입니다.
+    subject: '[{회사명}] Xác nhận đã nhận hồ sơ — {공고명}',
+    body: `Xin chào {후보이름},
+Tôi là người phụ trách tuyển dụng tại {회사명}.
 
-{공고명} 포지션에 지원해 주셔서 감사합니다.
-제출해 주신 지원서를 잘 받았으며 검토 중입니다. 결과는 확인되는 대로 다시 안내드리겠습니다.
+Cảm ơn bạn đã ứng tuyển vị trí {공고명}.
+Chúng tôi đã nhận được hồ sơ của bạn và đang xem xét. Kết quả sẽ được thông báo ngay khi có.
 
-감사합니다.`,
+Trân trọng.`,
   },
   {
     key: 'doc_pass',
     labelKey: 'company.mail.preset.docPass',
     needsSlots: true,
-    subject: '[{회사명}] {공고명} 서류 평가 합격 및 1차 인터뷰 안내',
-    body: `{후보이름}님, 안녕하세요.
-{회사명} 채용 담당자입니다.
+    subject: '[{회사명}] Đậu vòng hồ sơ & mời phỏng vấn vòng 1 — {공고명}',
+    body: `Xin chào {후보이름},
+Tôi là người phụ trách tuyển dụng tại {회사명}.
 
-{공고명} 포지션 서류 전형 결과, 다음 단계로 함께 진행하고 싶습니다. 축하드립니다.
-{후보이름}님과 1차 인터뷰를 진행하고자 합니다. 아래 가능한 일정 중 회신해 주시면 확정하겠습니다.
+Chúc mừng! Sau khi xét hồ sơ vị trí {공고명}, chúng tôi muốn tiếp tục cùng bạn ở bước tiếp theo.
+Chúng tôi muốn mời {후보이름} tham gia phỏng vấn vòng 1. Vui lòng phản hồi một trong các khung giờ dưới đây để xác nhận.
 
 {인터뷰일정}
 
-장소와 방식은 일정 확정 후 안내드리겠습니다.
-감사합니다.`,
+Địa điểm và hình thức sẽ được thông báo sau khi chốt lịch.
+Trân trọng.`,
   },
   {
     key: 'interview1_pass',
     labelKey: 'company.mail.preset.interview1Pass',
     needsSlots: true,
-    subject: '[{회사명}] {공고명} 1차 인터뷰 합격 및 2차 인터뷰 안내',
-    body: `{후보이름}님, 안녕하세요.
-{회사명} 채용 담당자입니다.
+    subject: '[{회사명}] Đậu phỏng vấn vòng 1 & mời phỏng vấn vòng 2 — {공고명}',
+    body: `Xin chào {후보이름},
+Tôi là người phụ trách tuyển dụng tại {회사명}.
 
-{공고명} 포지션 1차 인터뷰 결과, 다음 단계로 함께 진행하고 싶습니다. 축하드립니다.
-{후보이름}님과 2차 인터뷰를 진행하고자 합니다. 아래 가능한 일정 중 회신해 주시면 확정하겠습니다.
+Chúc mừng! Sau vòng phỏng vấn 1 cho vị trí {공고명}, chúng tôi muốn tiếp tục cùng bạn.
+Chúng tôi muốn mời {후보이름} tham gia phỏng vấn vòng 2. Vui lòng phản hồi một trong các khung giờ dưới đây để xác nhận.
 
 {인터뷰일정}
 
-장소와 방식은 일정 확정 후 안내드리겠습니다.
-감사합니다.`,
+Địa điểm và hình thức sẽ được thông báo sau khi chốt lịch.
+Trân trọng.`,
   },
   {
     key: 'final_offer',
     labelKey: 'company.mail.preset.interview2Pass',
     needsSlots: false,
-    subject: '[{회사명}] {공고명} 최종 합격 안내',
-    body: `{후보이름}님, 안녕하세요.
-{회사명} 채용 담당자입니다.
+    subject: '[{회사명}] Thông báo trúng tuyển — {공고명}',
+    body: `Xin chào {후보이름},
+Tôi là người phụ trách tuyển dụng tại {회사명}.
 
-{공고명} 포지션에 {후보이름}님을 모시기로 결정했습니다. 축하드립니다.
-입사 절차와 처우 조건은 별도로 안내드리겠습니다.
+Chúng tôi quyết định mời {후보이름} cho vị trí {공고명}. Xin chúc mừng!
+Quy trình nhận việc và các điều khoản đãi ngộ sẽ được trao đổi riêng.
 
-함께하게 되어 기쁩니다.
-감사합니다.`,
+Rất vui được đồng hành cùng bạn.
+Trân trọng.`,
   },
   {
     key: 'reject',
     labelKey: 'company.mail.preset.reject',
     needsSlots: false,
-    subject: '[{회사명}] {공고명} 전형 결과 안내',
-    body: `{후보이름}님, 안녕하세요.
-{회사명} 채용 담당자입니다.
+    subject: '[{회사명}] Kết quả tuyển chọn — {공고명}',
+    body: `Xin chào {후보이름},
+Tôi là người phụ trách tuyển dụng tại {회사명}.
 
-{공고명} 포지션에 관심을 갖고 지원해 주셔서 감사합니다.
-아쉽게도 이번 전형에서는 함께하지 못하게 되었습니다.
+Cảm ơn bạn đã quan tâm và ứng tuyển vị trí {공고명}.
+Rất tiếc, lần này chúng tôi chưa thể đồng hành cùng bạn.
 
-지원에 들인 시간과 노력에 깊이 감사드리며, 좋은 기회로 다시 뵙기를 바랍니다.
+Chân thành cảm ơn thời gian và công sức bạn đã dành, mong sớm gặp lại ở một cơ hội khác.
 
-감사합니다.`,
+Trân trọng.`,
   },
 ];
 
