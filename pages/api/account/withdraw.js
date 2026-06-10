@@ -4,7 +4,11 @@ import { createClient } from '@supabase/supabase-js'
 // service_role로 Bearer 토큰의 user.id를 검증한 뒤:
 //   1) account_withdrawals에 사유 적재(이메일 스냅샷 포함)
 //   2) 익명 연봉 제보(submissions)는 보존하되 개인 식별자만 제거(user_id/email → null)
-//   3) auth.users 행 삭제 → 프로필·커뮤니티 글/댓글/좋아요·배지·인증 등은 FK cascade로 정리
+//   3) FK cascade가 보장되지 않는 개인정보 테이블을 명시적으로 삭제
+//      - user_profiles: 대시보드 생성이라 auth.users→cascade가 보장되지 않음(이름·사진·이력서·인증회사명 보유)
+//      - job_bookmarks: FK 자체가 없어 cascade로 안 지워짐
+//      - push_tokens: 안 지우면 탈퇴한 기기로 푸시가 계속 발송됨
+//   4) auth.users 행 삭제 → 커뮤니티 글/댓글/좋아요·배지·인증·동의 등 cascade FK는 함께 정리
 const supabase = createClient(
   (process.env.NEXT_PUBLIC_SUPABASE_URL || '').trim(),
   (process.env.SUPABASE_SERVICE_ROLE_KEY || '').trim(),
@@ -50,7 +54,15 @@ export default async function handler(req, res) {
   //    submissions에 cascade FK가 걸려 있어도, 미리 user_id를 끊어두면 삭제에 휩쓸리지 않는다.
   await supabase.from('submissions').update({ user_id: null, email: null }).eq('user_id', user.id)
 
-  // 3) 계정 본체 삭제. 커뮤니티/배지/인증 등 user_id FK는 on delete cascade로 함께 정리됨.
+  // 3) cascade가 보장되지 않는 개인정보를 직접 삭제한다(계정 삭제 전에).
+  //    user_profiles는 PK가 id(=auth user id), 나머지는 user_id 컬럼.
+  const { error: profileErr } = await supabase.from('user_profiles').delete().eq('id', user.id)
+  if (profileErr) return res.status(500).json({ error: profileErr.message })
+  // bookmarks/push_tokens 정리는 베스트 에포트 — 실패해도 계정 삭제 자체는 막지 않는다.
+  await supabase.from('job_bookmarks').delete().eq('user_id', user.id)
+  await supabase.from('push_tokens').delete().eq('user_id', user.id)
+
+  // 4) 계정 본체 삭제. 커뮤니티/배지/인증/동의 등 user_id FK는 on delete cascade로 함께 정리됨.
   const { error: delErr } = await supabase.auth.admin.deleteUser(user.id)
   if (delErr) return res.status(500).json({ error: delErr.message })
 
