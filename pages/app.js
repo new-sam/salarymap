@@ -8,6 +8,7 @@ import { useT } from '../lib/i18n';
 const APP_STORE_URL = 'https://apps.apple.com/app/idXXXXXXXXXX'; // TODO: 실제 앱 ID로 교체
 // const PLAY_STORE_URL = 'https://play.google.com/store/apps/details?id=com.salaryfyi'; // 안드로이드 출시 시
 const LOGO = '/fyi-logo.png';
+const MOCKUP = '/app-mockup.png';
 
 // 미세한 필름 그레인 (feTurbulence) — 다크 배경의 밴딩 제거 + 질감
 const GRAIN = "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E\")";
@@ -88,30 +89,10 @@ nav { position:fixed; top:0; left:0; right:0; z-index:200; padding:0 52px; heigh
 .dl-btn.soon:hover { transform:none; box-shadow:0 10px 30px -10px rgba(255,255,255,0.4); }
 .nav-btn.soon:hover { transform:none; box-shadow:0 6px 20px -6px rgba(255,96,0,0.7); }
 
-/* ---------- phone mockup ---------- */
-.phone { position:relative; margin:66px auto 0; width:270px; transform:translate(calc(var(--px,0)*-22px), calc(var(--py,0)*-14px)); transition:transform .25s ease-out; }
-.phone-glow { position:absolute; inset:-40px; border-radius:50%; background:radial-gradient(ellipse at center, rgba(255,96,0,0.28), transparent 65%); filter:blur(20px); z-index:-1; }
-.phone-frame { position:relative; aspect-ratio:9/19.2; border-radius:40px; padding:11px; background:linear-gradient(160deg,#26261f,#101010); border:1px solid rgba(255,255,255,0.1); box-shadow:0 40px 80px -30px rgba(0,0,0,0.8), inset 0 1px 0 rgba(255,255,255,0.12); animation:float 7s ease-in-out infinite; }
-.phone-screen { position:relative; height:100%; border-radius:30px; overflow:hidden; background:linear-gradient(180deg,#111110,#0a0a09); display:flex; flex-direction:column; }
-.phone-frame::before { content:''; position:absolute; top:13px; left:50%; transform:translateX(-50%); width:90px; height:22px; background:#000; border-radius:0 0 14px 14px; z-index:5; }
-.ph-status { display:flex; justify-content:space-between; align-items:center; padding:13px 20px 8px; font-family:'Geist',sans-serif; font-size:11px; font-weight:600; color:var(--white); }
-.ph-status .ph-net { width:34px; height:9px; border-radius:3px; background:linear-gradient(90deg,var(--white) 70%,rgba(242,240,235,0.3) 70%); }
-.ph-appbar { display:flex; align-items:center; gap:7px; padding:6px 18px 12px; }
-.ph-appbar img { height:15px; width:auto; filter:drop-shadow(0 1px 4px rgba(255,96,0,0.4)); }
-.ph-appbar span { font-size:13px; font-weight:700; letter-spacing:-.3px; color:var(--white); }
-.ph-rows { display:flex; flex-direction:column; gap:8px; padding:2px 14px; }
-.ph-row { position:relative; overflow:hidden; display:flex; align-items:center; gap:10px; padding:10px 11px; border-radius:13px; background:rgba(255,255,255,0.035); border:1px solid rgba(255,255,255,0.06); opacity:0; transform:translateY(8px); animation:rowin .5s ease forwards; }
-@keyframes rowin { to { opacity:1; transform:translateY(0);} }
-.ph-row::after { content:''; position:absolute; inset:0; background:linear-gradient(100deg,transparent,rgba(255,255,255,0.07),transparent); transform:translateX(-100%); animation:rowshine 4.5s ease-in-out infinite; }
-@keyframes rowshine { 0%,60%{ transform:translateX(-100%);} 80%,100%{ transform:translateX(100%);} }
-.ph-ava { width:28px; height:28px; flex-shrink:0; border-radius:9px; background:linear-gradient(145deg,var(--orange),#c44a00); display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:700; color:#fff; }
-.ph-ava.g2 { background:linear-gradient(145deg,#5b6cff,#3a44b8);} .ph-ava.g3 { background:linear-gradient(145deg,#23c184,#0f7d54);} .ph-ava.g4 { background:linear-gradient(145deg,#e85d9b,#a8316b);} .ph-ava.g5 { background:linear-gradient(145deg,#9a6bff,#5e35b8);}
-.ph-meta { flex:1; min-width:0; }
-.ph-name { font-size:11px; font-weight:600; color:var(--white); margin-bottom:5px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-.ph-bar { height:4px; border-radius:3px; background:rgba(255,255,255,0.08); overflow:hidden; }
-.ph-bar span { display:block; height:100%; border-radius:3px; background:linear-gradient(90deg,var(--orange),var(--orange-lt)); width:0; animation:barfill 1.1s cubic-bezier(.2,.7,.2,1) forwards; }
-@keyframes barfill { to { width:var(--w,60%);} }
-.ph-val { font-family:'Geist Mono',monospace; font-size:11px; font-weight:600; color:var(--orange-lt); flex-shrink:0; }
+/* ---------- app mockup ---------- */
+.hero-mock { position:relative; margin:54px auto 0; width:min(500px,94vw); transform:translate(calc(var(--px,0)*-20px), calc(var(--py,0)*-12px)); transition:transform .25s ease-out; }
+.hero-mock-glow { position:absolute; inset:2% 0 6%; border-radius:50%; background:radial-gradient(ellipse at center, rgba(255,96,0,0.34), transparent 62%); filter:blur(30px); z-index:-1; }
+.hero-mock img { width:100%; height:auto; display:block; filter:drop-shadow(0 44px 72px rgba(0,0,0,0.62)); animation:float 7s ease-in-out infinite; }
 
 /* ---------- features ---------- */
 .features { max-width:1040px; margin:0 auto; padding:50px 52px 90px; display:flex; flex-direction:column; gap:24px; }
@@ -174,32 +155,12 @@ footer { position:relative; border-top:1px solid var(--line); padding:40px 52px;
 
 @media(prefers-reduced-motion:reduce){
   html { scroll-behavior:auto; }
-  .mg *, .blob, .hero-logo img, .phone-frame, .cta-logo img, .hero-h1 span, .dl-btn::after, .ph-row, .ph-row::after, .ph-bar span, .kicker::after { animation:none !important; }
+  .mg *, .blob, .hero-logo img, .hero-mock img, .cta-logo img, .hero-h1 span, .dl-btn::after, .kicker::after { animation:none !important; }
   .mg .ring-fg { stroke-dashoffset:27; }
-  .ph-row { opacity:1; transform:none; }
-  .ph-bar span { width:var(--w,60%); }
   .reveal { opacity:1 !important; transform:none !important; filter:none !important; }
   .cursor-glow, .progress { display:none; }
 }
 `;
-
-const ROWS = [
-  ['Senior Backend', '$2.4–3.1k', 86, ''],
-  ['Product Designer', '$1.8–2.4k', 64, 'g2'],
-  ['Data Scientist', '$2.6–3.4k', 92, 'g3'],
-  ['Frontend Eng', '$1.9–2.6k', 70, 'g4'],
-  ['Product Manager', '$2.2–3.0k', 78, 'g5'],
-];
-
-const phoneRows = ROWS.map((r, i) => `
-        <div class="ph-row" style="animation-delay:${0.25 + i * 0.12}s">
-          <div class="ph-ava ${r[3]}">${r[0][0]}</div>
-          <div class="ph-meta">
-            <div class="ph-name">${r[0]}</div>
-            <div class="ph-bar"><span style="--w:${r[2]}%; animation-delay:${0.4 + i * 0.12}s"></span></div>
-          </div>
-          <div class="ph-val">${r[1]}</div>
-        </div>`).join('');
 
 const buildHtml = (t) => `
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -251,16 +212,9 @@ const buildHtml = (t) => `
     -->
   </div>
 
-  <div class="phone reveal" style="--d:.42s" role="img" aria-label="${t('app.hero.shot')}">
-    <div class="phone-glow"></div>
-    <div class="phone-frame">
-      <div class="phone-screen">
-        <div class="ph-status"><span>9:41</span><span class="ph-net"></span></div>
-        <div class="ph-appbar"><img src="${LOGO}" alt=""/><span>Salaries</span></div>
-        <div class="ph-rows">${phoneRows}
-        </div>
-      </div>
-    </div>
+  <div class="hero-mock reveal" style="--d:.42s">
+    <div class="hero-mock-glow"></div>
+    <img src="${MOCKUP}" alt="${t('app.hero.shot')}"/>
   </div>
 </section>
 
