@@ -104,6 +104,32 @@ async function avatarMap(userIds) {
   return map
 }
 
+// Map of user_id -> current display name (user_profiles.full_name). Overrides the
+// author_name snapshotted at write time so a nickname change reflects on ALL of the
+// user's existing posts. Anonymous rows are re-masked to first-char + '**'.
+async function nameMap(userIds) {
+  const ids = [...new Set(userIds)].filter(Boolean)
+  if (!ids.length) return {}
+  const { data } = await supabase
+    .from('user_profiles')
+    .select('id, full_name')
+    .in('id', ids)
+  const map = {}
+  ;(data || []).forEach(p => {
+    if (p.full_name) map[p.id] = p.full_name
+  })
+  return map
+}
+
+// Resolve the author name shown for a row: prefer the user's current profile name,
+// fall back to the stored snapshot when there's no profile row. Anonymous rows are
+// masked to first-char + '**' (so "sean" -> "s**").
+function resolveAuthorName(row, nMap) {
+  const current = nMap[row.user_id]
+  if (!current) return row.author_name
+  return row.is_anonymous ? (current.charAt(0) + '**') : current
+}
+
 // User ids the caller has blocked — their content is excluded from GET responses.
 // Returns [] for anon callers. (Reads the same token the GET handlers already use.)
 async function blockedIdsFor(token) {
@@ -163,6 +189,8 @@ export default async function handler(req, res) {
       post.author_verified_school = utMap[post.user_id]?.verified_school || null
       const avMap = await avatarMap([post.user_id])
       post.author_avatar = post.is_anonymous ? null : (avMap[post.user_id] || post.author_avatar || null)
+      const nMap = await nameMap([post.user_id])
+      post.author_name = resolveAuthorName(post, nMap)
       return res.status(200).json({ post })
     }
 
@@ -214,9 +242,10 @@ export default async function handler(req, res) {
       const iCvMap = await companyVerifiedMap(iData.map(p => p.user_id))
       const iUtMap = await userTypeMap(iData.map(p => p.user_id))
       const iAvMap = await avatarMap(iData.map(p => p.user_id))
+      const iNameMap = await nameMap(iData.map(p => p.user_id))
 
       return res.status(200).json({
-        posts: iData.map(p => ({ ...p, is_liked: iLiked.includes(p.id), author_salary_tier: iTierMap[p.user_id] || null, author_verified_company: iCvMap[p.user_id] || null, author_user_type: iUtMap[p.user_id]?.user_type || null, author_verified_school: iUtMap[p.user_id]?.verified_school || null, author_avatar: p.is_anonymous ? null : (iAvMap[p.user_id] || p.author_avatar || null) })),
+        posts: iData.map(p => ({ ...p, is_liked: iLiked.includes(p.id), author_salary_tier: iTierMap[p.user_id] || null, author_verified_company: iCvMap[p.user_id] || null, author_user_type: iUtMap[p.user_id]?.user_type || null, author_verified_school: iUtMap[p.user_id]?.verified_school || null, author_avatar: p.is_anonymous ? null : (iAvMap[p.user_id] || p.author_avatar || null), author_name: resolveAuthorName(p, iNameMap) })),
         total: iCount,
         page: parseInt(page),
         totalPages: Math.ceil(iCount / parseInt(limit))
@@ -279,9 +308,10 @@ export default async function handler(req, res) {
     const cvMap = await companyVerifiedMap(data.map(p => p.user_id))
     const utMap = await userTypeMap(data.map(p => p.user_id))
     const avMap = await avatarMap(data.map(p => p.user_id))
+    const nMap = await nameMap(data.map(p => p.user_id))
 
     return res.status(200).json({
-      posts: data.map(p => ({ ...p, is_liked: likedPostIds.includes(p.id), author_salary_tier: tierMap[p.user_id] || null, author_verified_company: cvMap[p.user_id] || null, author_user_type: utMap[p.user_id]?.user_type || null, author_verified_school: utMap[p.user_id]?.verified_school || null, author_avatar: p.is_anonymous ? null : (avMap[p.user_id] || p.author_avatar || null) })),
+      posts: data.map(p => ({ ...p, is_liked: likedPostIds.includes(p.id), author_salary_tier: tierMap[p.user_id] || null, author_verified_company: cvMap[p.user_id] || null, author_user_type: utMap[p.user_id]?.user_type || null, author_verified_school: utMap[p.user_id]?.verified_school || null, author_avatar: p.is_anonymous ? null : (avMap[p.user_id] || p.author_avatar || null), author_name: resolveAuthorName(p, nMap) })),
       total: count,
       page: parseInt(page),
       totalPages: Math.ceil(count / parseInt(limit))
@@ -319,7 +349,14 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'Invalid category' })
     }
 
-    const realName = user.user_metadata?.full_name || user.email?.split('@')[0] || 'User'
+    // Use the user's current profile name (editable via /api/profile/talent),
+    // NOT the auth signup metadata which is frozen at sign-up time.
+    const { data: authorProfile } = await supabase
+      .from('user_profiles')
+      .select('full_name')
+      .eq('id', user.id)
+      .maybeSingle()
+    const realName = authorProfile?.full_name || user.user_metadata?.full_name || user.email?.split('@')[0] || 'User'
     const authorName = is_anonymous
       ? (realName.charAt(0) + '**')
       : realName

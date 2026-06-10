@@ -98,6 +98,31 @@ async function avatarMap(userIds) {
   return map
 }
 
+// Map of user_id -> current display name (user_profiles.full_name). Overrides the
+// author_name snapshotted at write time so a nickname change reflects on ALL of the
+// user's existing comments. Anonymous rows are re-masked to first-char + '**'.
+async function nameMap(userIds) {
+  const ids = [...new Set(userIds)].filter(Boolean)
+  if (!ids.length) return {}
+  const { data } = await supabase
+    .from('user_profiles')
+    .select('id, full_name')
+    .in('id', ids)
+  const map = {}
+  ;(data || []).forEach(p => {
+    if (p.full_name) map[p.id] = p.full_name
+  })
+  return map
+}
+
+// Resolve the author name shown for a row: prefer the user's current profile name,
+// fall back to the stored snapshot. Anonymous rows are masked to first-char + '**'.
+function resolveAuthorName(row, nMap) {
+  const current = nMap[row.user_id]
+  if (!current) return row.author_name
+  return row.is_anonymous ? (current.charAt(0) + '**') : current
+}
+
 // User ids the caller has blocked — their comments are excluded from GET responses.
 async function blockedIdsFor(token) {
   if (!token) return []
@@ -146,9 +171,10 @@ export default async function handler(req, res) {
     const cvMap = await companyVerifiedMap(data.map(c => c.user_id))
     const utMap = await userTypeMap(data.map(c => c.user_id))
     const avMap = await avatarMap(data.map(c => c.user_id))
+    const nMap = await nameMap(data.map(c => c.user_id))
 
     return res.status(200).json({
-      comments: data.map(c => ({ ...c, is_liked: likedCommentIds.includes(c.id), author_salary_tier: tierMap[c.user_id] || null, author_verified_company: cvMap[c.user_id] || null, author_user_type: utMap[c.user_id]?.user_type || null, author_verified_school: utMap[c.user_id]?.verified_school || null, author_avatar: c.is_anonymous ? null : (avMap[c.user_id] || null) }))
+      comments: data.map(c => ({ ...c, is_liked: likedCommentIds.includes(c.id), author_salary_tier: tierMap[c.user_id] || null, author_verified_company: cvMap[c.user_id] || null, author_user_type: utMap[c.user_id]?.user_type || null, author_verified_school: utMap[c.user_id]?.verified_school || null, author_avatar: c.is_anonymous ? null : (avMap[c.user_id] || null), author_name: resolveAuthorName(c, nMap) }))
     })
   }
 
@@ -178,7 +204,14 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'Missing required fields' })
     }
 
-    const realName = user.user_metadata?.full_name || user.email?.split('@')[0] || 'User'
+    // Use the user's current profile name (editable via /api/profile/talent),
+    // NOT the auth signup metadata which is frozen at sign-up time.
+    const { data: authorProfile } = await supabase
+      .from('user_profiles')
+      .select('full_name')
+      .eq('id', user.id)
+      .maybeSingle()
+    const realName = authorProfile?.full_name || user.user_metadata?.full_name || user.email?.split('@')[0] || 'User'
 
     // Fetch the post to flag original-poster (OP) comments, inherit its privacy, and bump the count.
     const { data: postData } = await supabase
