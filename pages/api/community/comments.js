@@ -167,11 +167,15 @@ export default async function handler(req, res) {
       }
     }
 
-    const tierMap = await salaryTierMap(data.map(c => c.user_id))
-    const cvMap = await companyVerifiedMap(data.map(c => c.user_id))
-    const utMap = await userTypeMap(data.map(c => c.user_id))
-    const avMap = await avatarMap(data.map(c => c.user_id))
-    const nMap = await nameMap(data.map(c => c.user_id))
+    // 작성자 부가정보 맵은 서로 독립적이라 병렬로 받아 응답 시간을 줄인다.
+    const ids = data.map(c => c.user_id)
+    const [tierMap, cvMap, utMap, avMap, nMap] = await Promise.all([
+      salaryTierMap(ids),
+      companyVerifiedMap(ids),
+      userTypeMap(ids),
+      avatarMap(ids),
+      nameMap(ids),
+    ])
 
     return res.status(200).json({
       comments: data.map(c => ({ ...c, is_liked: likedCommentIds.includes(c.id), author_salary_tier: tierMap[c.user_id] || null, author_verified_company: cvMap[c.user_id] || null, author_user_type: utMap[c.user_id]?.user_type || null, author_verified_school: utMap[c.user_id]?.verified_school || null, author_avatar: c.is_anonymous ? null : (avMap[c.user_id] || null), author_name: resolveAuthorName(c, nMap) }))

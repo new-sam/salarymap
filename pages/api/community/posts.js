@@ -180,16 +180,19 @@ export default async function handler(req, res) {
           post.is_liked = !!like
         }
       }
-      const tierMap = await salaryTierMap([post.user_id])
+      const uid = [post.user_id]
+      const [tierMap, cvMap, utMap, avMap, nMap] = await Promise.all([
+        salaryTierMap(uid),
+        companyVerifiedMap(uid),
+        userTypeMap(uid),
+        avatarMap(uid),
+        nameMap(uid),
+      ])
       post.author_salary_tier = tierMap[post.user_id] || null
-      const cvMap = await companyVerifiedMap([post.user_id])
       post.author_verified_company = cvMap[post.user_id] || null
-      const utMap = await userTypeMap([post.user_id])
       post.author_user_type = utMap[post.user_id]?.user_type || null
       post.author_verified_school = utMap[post.user_id]?.verified_school || null
-      const avMap = await avatarMap([post.user_id])
       post.author_avatar = post.is_anonymous ? null : (avMap[post.user_id] || post.author_avatar || null)
-      const nMap = await nameMap([post.user_id])
       post.author_name = resolveAuthorName(post, nMap)
       return res.status(200).json({ post })
     }
@@ -238,11 +241,14 @@ export default async function handler(req, res) {
           .in('post_id', iPostIds)
         iLiked = (ls || []).map(l => l.post_id)
       }
-      const iTierMap = await salaryTierMap(iData.map(p => p.user_id))
-      const iCvMap = await companyVerifiedMap(iData.map(p => p.user_id))
-      const iUtMap = await userTypeMap(iData.map(p => p.user_id))
-      const iAvMap = await avatarMap(iData.map(p => p.user_id))
-      const iNameMap = await nameMap(iData.map(p => p.user_id))
+      const iIds = iData.map(p => p.user_id)
+      const [iTierMap, iCvMap, iUtMap, iAvMap, iNameMap] = await Promise.all([
+        salaryTierMap(iIds),
+        companyVerifiedMap(iIds),
+        userTypeMap(iIds),
+        avatarMap(iIds),
+        nameMap(iIds),
+      ])
 
       return res.status(200).json({
         posts: iData.map(p => ({ ...p, is_liked: iLiked.includes(p.id), author_salary_tier: iTierMap[p.user_id] || null, author_verified_company: iCvMap[p.user_id] || null, author_user_type: iUtMap[p.user_id]?.user_type || null, author_verified_school: iUtMap[p.user_id]?.verified_school || null, author_avatar: p.is_anonymous ? null : (iAvMap[p.user_id] || p.author_avatar || null), author_name: resolveAuthorName(p, iNameMap) })),
@@ -304,11 +310,15 @@ export default async function handler(req, res) {
       }
     }
 
-    const tierMap = await salaryTierMap(data.map(p => p.user_id))
-    const cvMap = await companyVerifiedMap(data.map(p => p.user_id))
-    const utMap = await userTypeMap(data.map(p => p.user_id))
-    const avMap = await avatarMap(data.map(p => p.user_id))
-    const nMap = await nameMap(data.map(p => p.user_id))
+    // 작성자 부가정보 맵은 서로 독립적이라 병렬로 받아 응답 시간을 줄인다.
+    const ids = data.map(p => p.user_id)
+    const [tierMap, cvMap, utMap, avMap, nMap] = await Promise.all([
+      salaryTierMap(ids),
+      companyVerifiedMap(ids),
+      userTypeMap(ids),
+      avatarMap(ids),
+      nameMap(ids),
+    ])
 
     return res.status(200).json({
       posts: data.map(p => ({ ...p, is_liked: likedPostIds.includes(p.id), author_salary_tier: tierMap[p.user_id] || null, author_verified_company: cvMap[p.user_id] || null, author_user_type: utMap[p.user_id]?.user_type || null, author_verified_school: utMap[p.user_id]?.verified_school || null, author_avatar: p.is_anonymous ? null : (avMap[p.user_id] || p.author_avatar || null), author_name: resolveAuthorName(p, nMap) })),
