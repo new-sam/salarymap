@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import Head from 'next/head'
 import dynamic from 'next/dynamic'
 import { supabase } from '../../lib/supabaseClient'
@@ -65,6 +65,13 @@ export default function AdminDashboard() {
   const [chartMode, setChartMode] = useState('1d')
   const [tableView, setTableView] = useState('daily')
   const [tableSection, setTableSection] = useState('basic')
+  const tableScrollRef = useRef(null)
+  // 일별 뷰 진입/섹션 변경/데이터 로드 시 최신(맨 아래)로 스크롤
+  useEffect(() => {
+    if (tableView === 'daily' && tableScrollRef.current) {
+      tableScrollRef.current.scrollTop = tableScrollRef.current.scrollHeight
+    }
+  }, [tableView, tableSection, loading])
   const [dualAxis, setDualAxis] = useState(true)
   const [realtime, setRealtime] = useState(null)
   const [realtimeLoading, setRealtimeLoading] = useState(false)
@@ -922,13 +929,13 @@ export default function AdminDashboard() {
                   </button>
                 ))}
               </div>
-              <div style={{ overflowX: 'auto' }}>
+              <div ref={tableScrollRef} style={{ maxHeight: 420, overflow: 'auto' }}>
                 <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
                   <thead>
-                    <tr style={{ borderBottom: '2px solid #e5e7eb' }}>
-                      <th style={{ padding: '8px 12px', textAlign: 'left', fontWeight: 600, color: '#374151' }}>{tableView === 'daily' ? (lang === 'ko' ? '날짜' : 'Date') : (lang === 'ko' ? '기간' : 'Period')}</th>
+                    <tr>
+                      <th style={{ padding: '8px 12px', textAlign: 'left', fontWeight: 600, color: '#374151', position: 'sticky', top: 0, background: '#fff', boxShadow: 'inset 0 -2px 0 #e5e7eb', zIndex: 3 }}>{tableView === 'daily' ? (lang === 'ko' ? '날짜' : 'Date') : (lang === 'ko' ? '기간' : 'Period')}</th>
                       {tableColumns.map(c => (
-                        <th key={c.key} style={{ padding: '8px 12px', textAlign: 'right', fontWeight: 600, color: '#374151' }}>{c.label}</th>
+                        <th key={c.key} style={{ padding: '8px 12px', textAlign: 'right', fontWeight: 600, color: '#374151', position: 'sticky', top: 0, background: '#fff', boxShadow: 'inset 0 -2px 0 #e5e7eb', zIndex: 3 }}>{c.label}</th>
                       ))}
                     </tr>
                   </thead>
@@ -954,10 +961,10 @@ export default function AdminDashboard() {
                         })}
                       </tr>
                     ))}
-                    <tr style={{ borderTop: '2px solid #e5e7eb', fontWeight: 700 }}>
-                      <td style={{ padding: '8px 12px' }}>{t.total}</td>
+                    <tr style={{ fontWeight: 700 }}>
+                      <td style={{ padding: '8px 12px', position: 'sticky', bottom: 0, background: '#fff', boxShadow: 'inset 0 2px 0 #e5e7eb' }}>{t.total}</td>
                       {tableColumns.map(c => (
-                        <td key={c.key} style={{ padding: '8px 12px', textAlign: 'right', color: '#191F28' }}>{summary[c.summaryKey] ?? '-'}</td>
+                        <td key={c.key} style={{ padding: '8px 12px', textAlign: 'right', color: '#191F28', position: 'sticky', bottom: 0, background: '#fff', boxShadow: 'inset 0 2px 0 #e5e7eb' }}>{summary[c.summaryKey] ?? '-'}</td>
                       ))}
                     </tr>
                   </tbody>
