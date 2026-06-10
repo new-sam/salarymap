@@ -284,9 +284,9 @@ export const T = {
 }
 
 export const METRICS_BASE = [
-  { key: 'signups', dataKey: 'signups', color: '#F59E0B', summaryKey: 'totalSignups', section: 'basic', tier: 'primary' },
+  { key: 'sessions', dataKey: 'sessions', color: '#2563EB', summaryKey: 'totalSessions', section: 'basic', tier: 'primary' },
   { key: 'submissions', dataKey: 'submissions', color: '#374151', summaryKey: 'totalSubmissions', section: 'basic', tier: 'primary' },
-  { key: 'sessions', dataKey: 'sessions', color: '#2563EB', summaryKey: 'totalSessions', section: 'basic', tier: 'secondary' },
+  { key: 'signups', dataKey: 'signups', color: '#F59E0B', summaryKey: 'totalSignups', section: 'basic', tier: 'primary' },
   { key: 'ad', dataKey: 'ad', color: '#4F46E5', summaryKey: 'adSubmissions', section: 'basic', tier: 'secondary' },
   { key: 'organic', dataKey: 'organic', color: '#10B981', summaryKey: 'organicSubmissions', section: 'basic', tier: 'secondary' },
   { key: 'companies', dataKey: 'companies', color: '#6B7280', summaryKey: 'uniqueCompanies', section: 'basic', tier: 'secondary' },

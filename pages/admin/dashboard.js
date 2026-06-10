@@ -586,8 +586,10 @@ export default function AdminDashboard() {
                     </div>
                   )}
                   {secondary.length > 0 && (
-                    <div>
-                      {tierLabel('secondary')}
+                    <div style={sec === 'basic' ? { paddingLeft: 14, borderLeft: '2px solid #EEF1F3', marginLeft: 2 } : undefined}>
+                      <div style={{ fontSize: 11, fontWeight: 700, color: '#8B95A1', margin: '0 0 7px', letterSpacing: '0.02em' }}>
+                        {sec === 'basic' ? (lang === 'ko' ? '↳ 연봉 제출 구성 (광고·자연·회사수)' : '↳ Submission breakdown') : TIER_LABELS.secondary[lang]}
+                      </div>
                       <div className="adm-metric-cards" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(116px, 1fr))', gap: 8 }}>
                         {secondary.map(c => renderCard(c, false))}
                       </div>
