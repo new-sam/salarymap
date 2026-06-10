@@ -61,6 +61,9 @@ export default async function handler(req, res) {
   // bookmarks/push_tokens 정리는 베스트 에포트 — 실패해도 계정 삭제 자체는 막지 않는다.
   await supabase.from('job_bookmarks').delete().eq('user_id', user.id)
   await supabase.from('push_tokens').delete().eq('user_id', user.id)
+  // company_email_verifications: cascade에만 맡기면 행이 남아 같은 회사 이메일로 재인증이
+  //   '이미 다른 계정에서 인증된 이메일'로 막힌다(send-code.js의 email_taken 체크). 명시적으로 지운다.
+  await supabase.from('company_email_verifications').delete().eq('user_id', user.id)
 
   // 4) 계정 본체 삭제. 커뮤니티/배지/인증/동의 등 user_id FK는 on delete cascade로 함께 정리됨.
   const { error: delErr } = await supabase.auth.admin.deleteUser(user.id)
