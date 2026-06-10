@@ -95,6 +95,7 @@ const bodyHTML = `<section class="hero">
 <footer style="border-top:1px solid rgba(255,255,255,0.07);padding:40px 52px;margin-top:40px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px;">
   <div style="font-family:'Geist Mono',monospace;font-size:12px;color:rgba(242,240,235,0.42);">© 2026 SalaryMap · Likelion Vietnam</div>
   <div style="display:flex;gap:24px;flex-wrap:wrap;">
+    <a href="/app" style="font-size:13px;color:#ff6000;text-decoration:none;font-weight:600;">📱 Download App</a>
     <a href="/how-it-works" style="font-size:13px;color:rgba(242,240,235,0.42);text-decoration:none;">How it works</a>
     <a href="/privacy" style="font-size:13px;color:rgba(242,240,235,0.42);text-decoration:none;">Privacy Policy</a>
     <a href="/terms" style="font-size:13px;color:rgba(242,240,235,0.42);text-decoration:none;">Terms of Service</a>
