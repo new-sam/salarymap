@@ -48,7 +48,13 @@ Return a JSON object with these fields:
 - full_name (string): Full name of the person
 - headline (string): A short professional headline, e.g. "Senior Backend Engineer" or "Full-stack Developer with 5+ years experience"
 - location (string): City/Country if mentioned
-- position (string): Best matching category from: Backend, Frontend, Fullstack, Mobile, AI/Data, DevOps, QA, Design, PM, Other
+- position (string): The single best-matching job category. Choose from this list (do NOT invent new values):
+  Engineering: "Backend", "Frontend", "Fullstack", "Mobile", "AI/Data", "DevOps", "QA", "Security", "Embedded", "Game"
+  Product & Design: "PM", "Planning", "Design", "UX"
+  Data & Growth: "Data Analyst", "Data Scientist", "Marketing", "Growth"
+  Business & Ops: "Sales", "Business Dev", "Strategy", "Operations", "HR", "Finance", "PR/Content"
+  Fallback: "Other"
+  Mapping hints: Product Owner / PO / 프로덕트 매니저 → "PM". 서비스 기획 / 사업 기획 / 기획자 / Service Planner → "Planning". UX/UI 기획·리서치 → "UX". Only use "Other" when nothing above fits.
 - yoe_months (number): Total months of professional work experience, calculated from experience dates. If unclear, estimate from context.
 - skills (string[]): List of technical skills, frameworks, languages, tools mentioned
 - university (string): University/college name
