@@ -40,11 +40,11 @@ const TIER_LABELS = {
 }
 // 기업 채용 섹션 카드 (요약 숫자 — 일별 차트 미연동)
 const B2B_CARDS = [
+  { key: 'forClicks', summaryKey: 'totalForCompaniesClicks', ko: '홈→기업채용 클릭', en: 'Home→For-companies click', tier: 'primary' },
+  { key: 'contactClicks', summaryKey: 'totalContactOwnerClicks', ko: '담당자 대화 버튼 클릭', en: 'Contact button clicks', tier: 'primary' },
+  { key: 'postJobClicks', summaryKey: 'totalPostJobClicks', ko: '공고 올리기 버튼 클릭', en: 'Post-job button clicks', tier: 'primary' },
   { key: 'companySignups', summaryKey: 'totalCompanySignups', ko: '기업 회원 가입', en: 'Company sign-ups', tier: 'primary' },
   { key: 'pendingJobs', summaryKey: 'pendingJobs', ko: '기업 공고 승인 대기', en: 'Jobs pending approval', tier: 'primary' },
-  { key: 'forClicks', summaryKey: 'totalForCompaniesClicks', ko: '홈→기업채용 클릭', en: 'Home→For-companies click', tier: 'secondary' },
-  { key: 'contactClicks', summaryKey: 'totalContactOwnerClicks', ko: '담당자 대화 버튼 클릭', en: 'Contact button clicks', tier: 'secondary' },
-  { key: 'postJobClicks', summaryKey: 'totalPostJobClicks', ko: '공고 올리기 버튼 클릭', en: 'Post-job button clicks', tier: 'secondary' },
 ]
 
 export default function AdminDashboard() {
@@ -376,10 +376,10 @@ export default function AdminDashboard() {
   // 일별/주별/월별 테이블 컬럼 — 섹션 단위로 묶어서 표시 (가로 폭 폭주 방지)
   const tableColumns = tableSection === 'company'
     ? [
-        { key: 'companySignups', label: lang === 'ko' ? '기업 회원 가입' : 'Company sign-ups', summaryKey: 'totalCompanySignups' },
         { key: 'forCompaniesClicks', label: lang === 'ko' ? '홈→기업채용 클릭' : 'Home→For-companies', summaryKey: 'totalForCompaniesClicks' },
         { key: 'contactClicks', label: lang === 'ko' ? '담당자 대화 클릭' : 'Contact clicks', summaryKey: 'totalContactOwnerClicks' },
         { key: 'postJobClicks', label: lang === 'ko' ? '공고 올리기 클릭' : 'Post-job clicks', summaryKey: 'totalPostJobClicks' },
+        { key: 'companySignups', label: lang === 'ko' ? '기업 회원 가입' : 'Company sign-ups', summaryKey: 'totalCompanySignups' },
       ]
     : tableSection === 'basic'
     ? (() => {
@@ -590,7 +590,7 @@ export default function AdminDashboard() {
                   </div>
                   {primary.length > 0 && (
                     <div style={{ marginBottom: secondary.length ? 16 : 0 }}>
-                      {tierLabel('primary')}
+                      {secondary.length > 0 && tierLabel('primary')}
                       <div className="adm-metric-cards" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(190px, 1fr))', gap: 10 }}>
                         {primary.map(c => renderCard(c, true))}
                       </div>

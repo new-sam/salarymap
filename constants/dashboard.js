@@ -290,13 +290,13 @@ export const METRICS_BASE = [
   { key: 'ad', dataKey: 'ad', color: '#4F46E5', summaryKey: 'adSubmissions', section: 'basic', tier: 'secondary' },
   { key: 'organic', dataKey: 'organic', color: '#10B981', summaryKey: 'organicSubmissions', section: 'basic', tier: 'secondary' },
   { key: 'companies', dataKey: 'companies', color: '#6B7280', summaryKey: 'uniqueCompanies', section: 'basic', tier: 'secondary' },
+  { key: 'jobClicks', dataKey: 'jobClicks', color: '#F97316', summaryKey: 'totalJobClicks', section: 'talent', tier: 'primary' },
+  { key: 'jobsPageViews', dataKey: 'jobsPageViews', color: '#06B6D4', summaryKey: 'totalJobsPageViews', section: 'talent', tier: 'primary' },
+  { key: 'cardClicks', dataKey: 'cardClicks', color: '#EC4899', summaryKey: 'totalCardClicks', section: 'talent', tier: 'primary' },
+  { key: 'applyClicks', dataKey: 'applyClicks', color: '#D946EF', summaryKey: 'totalApplyClicks', section: 'talent', tier: 'primary' },
   { key: 'jobApps', dataKey: 'jobApps', color: '#EF4444', summaryKey: 'totalJobApps', section: 'talent', tier: 'primary' },
+  { key: 'saveClicks', dataKey: 'saveClicks', color: '#F472B6', summaryKey: 'totalSaveClicks', section: 'talent', tier: 'primary' },
   { key: 'resumeUploads', dataKey: 'resumeUploads', color: '#14B8A6', summaryKey: 'totalResumeUploads', section: 'talent', tier: 'primary' },
-  { key: 'jobClicks', dataKey: 'jobClicks', color: '#F97316', summaryKey: 'totalJobClicks', section: 'talent', tier: 'secondary' },
-  { key: 'cardClicks', dataKey: 'cardClicks', color: '#EC4899', summaryKey: 'totalCardClicks', section: 'talent', tier: 'secondary' },
-  { key: 'jobsPageViews', dataKey: 'jobsPageViews', color: '#06B6D4', summaryKey: 'totalJobsPageViews', section: 'talent', tier: 'secondary' },
-  { key: 'applyClicks', dataKey: 'applyClicks', color: '#D946EF', summaryKey: 'totalApplyClicks', section: 'talent', tier: 'secondary' },
-  { key: 'saveClicks', dataKey: 'saveClicks', color: '#F472B6', summaryKey: 'totalSaveClicks', section: 'talent', tier: 'secondary' },
 ]
 
 export const EXP_COLORS = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7', '#DDA0DD', '#98D8C8', '#F7DC6F']
