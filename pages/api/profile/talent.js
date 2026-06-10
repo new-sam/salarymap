@@ -34,12 +34,16 @@ export default async function handler(req, res) {
     // NOTE: user_type is intentionally NOT whitelisted. Student/worker status is earned
     // ONLY by email verification (company-verification/verify.js) — never self-declared —
     // so a client cannot PUT user_type to bypass verification and unlock posting.
-    const update = { updated_at: new Date().toISOString() }
+    // id/email are server-derived from the auth token (not client input) so the upsert can
+    // CREATE the row when it's missing — mobile users sign in via native OAuth and never hit
+    // the web /auth/callback that would otherwise insert their user_profiles row, so a plain
+    // .update() here silently affected 0 rows and dropped their edits.
+    const update = { id: user.id, email: user.email, updated_at: new Date().toISOString() }
     for (const key of allowed) {
       if (key in fields) update[key] = fields[key]
     }
 
-    const { error } = await supabase.from('user_profiles').update(update).eq('id', user.id)
+    const { error } = await supabase.from('user_profiles').upsert(update, { onConflict: 'id' })
     if (error) return res.status(500).json({ error: error.message })
     return res.json({ success: true })
   }

@@ -39,12 +39,16 @@ export default async function handler(req, res) {
   const { data: urlData } = supabase.storage.from(bucket).getPublicUrl(path)
   const publicUrl = urlData.publicUrl
 
-  // Update profile
+  // Update profile (upsert, not update: mobile OAuth users may not have a user_profiles
+  // row yet — they never hit the web /auth/callback that inserts it — so a plain .update()
+  // would silently affect 0 rows and the uploaded URL would never be saved).
   const updateField = type === 'photo' ? 'photo_url' : 'resume_url'
-  await supabase.from('user_profiles').update({
+  await supabase.from('user_profiles').upsert({
+    id: user.id,
+    email: user.email,
     [updateField]: publicUrl,
     updated_at: new Date().toISOString(),
-  }).eq('id', user.id)
+  }, { onConflict: 'id' })
 
   res.json({ url: publicUrl })
 }

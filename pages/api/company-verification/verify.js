@@ -24,7 +24,7 @@ function guessSchoolName(domain) {
 
 // Resolve + cache a verified SCHOOL on the profile and grant the verified_school
 // badge — the student-side mirror of the company path below.
-async function grantSchoolVerification(userId, domain) {
+async function grantSchoolVerification(userId, email, domain) {
   const { data: mapped } = await supabase
     .from('school_domains')
     .select('school_name')
@@ -45,13 +45,17 @@ async function grantSchoolVerification(userId, domain) {
     .eq('id', userId)
     .maybeSingle()
   const update = {
+    id: userId,
+    email,
     verified_school_name: schoolName,
     verified_school_domain: domain,
     school_verified_at: new Date().toISOString(),
   }
   if (cur?.user_type !== 'worker') update.user_type = 'student'
 
-  await supabase.from('user_profiles').update(update).eq('id', userId)
+  // upsert (not update): mobile OAuth users have no user_profiles row yet (they never hit
+  // the web /auth/callback that inserts it), so a plain .update() saved nothing.
+  await supabase.from('user_profiles').upsert(update, { onConflict: 'id' })
 
   await supabase
     .from('user_badges')
@@ -115,7 +119,7 @@ export default async function handler(req, res) {
   // A school email proves *student* status, not employment — branch on the domain
   // so academic emails grant the school badge instead of a (wrong) company badge.
   if (isSchoolDomain(row.domain)) {
-    const schoolName = await grantSchoolVerification(user.id, row.domain)
+    const schoolName = await grantSchoolVerification(user.id, user.email, row.domain)
     return res.json({ ok: true, type: 'school', school_name: schoolName })
   }
 
@@ -135,15 +139,19 @@ export default async function handler(req, res) {
   // Cache on profile + grant the verified_company badge (shown by default).
   // The email-verified company name is the single source of truth — downstream
   // readers (community author label, admin dashboard) all read verified_company_name.
+  // upsert (not update): mobile OAuth users have no user_profiles row yet (they never hit
+  // the web /auth/callback that inserts it), so a plain .update() saved nothing — the badge
+  // landed in user_badges but the company name / user_type never reached user_profiles.
   await supabase
     .from('user_profiles')
-    .update({
+    .upsert({
+      id: user.id,
+      email: user.email,
       verified_company_name: companyName,
       verified_company_domain: row.domain,
       company_verified_at: new Date().toISOString(),
       user_type: 'worker',
-    })
-    .eq('id', user.id)
+    }, { onConflict: 'id' })
 
   await supabase
     .from('user_badges')
