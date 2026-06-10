@@ -50,7 +50,7 @@ export default async function handler(req, res) {
       .eq('event', 'resume_upload')
       .gte('created_at', startISO).lte('created_at', endISO),
     supabase.from('recruiter_users')
-      .select('id', { count: 'exact', head: true })
+      .select('email')
       .gte('created_at', startISO).lte('created_at', endISO),
   ])
 
@@ -87,7 +87,7 @@ export default async function handler(req, res) {
     forCompaniesClicks: evCount('click_for_companies'),
     contactClicks: evCount('click_contact_owner'),
     postJobClicks: evCount('click_post_job'),
-    companySignups: csRes.count || 0,
+    companySignups: (csRes.data || []).filter(r => !EXCLUDED_EMAIL_DOMAINS.some(d => (r.email || '').toLowerCase().endsWith('@' + d))).length,
     pageViews: pvRes.count || 0,
     landings: landingRes.count || 0,
     resumeUploads: resumeRes.count || 0,

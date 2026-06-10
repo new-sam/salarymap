@@ -134,9 +134,11 @@ export default async function handler(req, res) {
         return (data || []).filter(r => r.updated_at)
       } catch (e) { return [] }
     })(),
-    // company (recruiter) signups — 기업 가입자
-    fetchAll(supabase.from('recruiter_users').select('id, created_at')
-      .gte('created_at', startISO).lte('created_at', endISO)).catch(() => []),
+    // company (recruiter) signups — 기업 가입자 (likelion/내부 도메인 제외)
+    fetchAll(supabase.from('recruiter_users').select('id, created_at, email')
+      .gte('created_at', startISO).lte('created_at', endISO))
+      .then(rows => rows.filter(r => !EXCLUDED_EMAIL_DOMAINS.some(d => (r.email || '').toLowerCase().endsWith('@' + d))))
+      .catch(() => []),
     // 공고 승인 대기 현황 (현재 pending_review 수)
     (async () => {
       try {
