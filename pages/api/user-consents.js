@@ -9,7 +9,7 @@ const supabase = createClient(
 )
 
 export default async function handler(req, res) {
-  if (req.method !== 'POST') {
+  if (req.method !== 'POST' && req.method !== 'GET') {
     return res.status(405).json({ error: 'method not allowed' })
   }
 
@@ -17,6 +17,24 @@ export default async function handler(req, res) {
   if (!token) return res.status(401).json({ error: 'unauthorized' })
   const { data: { user }, error: authErr } = await supabase.auth.getUser(token)
   if (authErr || !user) return res.status(401).json({ error: 'unauthorized' })
+
+  // GET: 이 계정이 특정 약관 버전에 이미 동의했는지 조회(모바일 로그인 후 동의 게이트 판단용).
+  // 기기가 아닌 '계정' 단위로 동의를 판정하기 위해 서버 기록을 직접 확인한다.
+  if (req.method === 'GET') {
+    const version = (req.query.terms_version || '').toString().trim()
+    const { data: record, error: readErr } = await supabase
+      .from('user_consents')
+      .select('terms_version, marketing_opt_in')
+      .eq('user_id', user.id)
+      .maybeSingle()
+    if (readErr) return res.status(500).json({ error: readErr.message })
+    const consented = !!record && (!version || record.terms_version === version)
+    return res.status(200).json({
+      consented,
+      terms_version: record?.terms_version ?? null,
+      marketing_opt_in: record?.marketing_opt_in ?? null,
+    })
+  }
 
   const { terms_version, marketing_opt_in, platform } = req.body || {}
   if (typeof terms_version !== 'string' || !terms_version.trim()) {
