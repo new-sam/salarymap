@@ -381,6 +381,17 @@ export default function AdminDashboard() {
         { key: 'contactClicks', label: lang === 'ko' ? '담당자 대화 클릭' : 'Contact clicks', summaryKey: 'totalContactOwnerClicks' },
         { key: 'postJobClicks', label: lang === 'ko' ? '공고 올리기 클릭' : 'Post-job clicks', summaryKey: 'totalPostJobClicks' },
       ]
+    : tableSection === 'basic'
+    ? (() => {
+        const byKey = (k) => METRICS.find(m => m.key === k)
+        const subLabel = { ad: lang === 'ko' ? '└ 광고' : '└ Ad', organic: lang === 'ko' ? '└ 자연' : '└ Organic', companies: lang === 'ko' ? '└ 회사수' : '└ Companies' }
+        // 퍼널 순서(세션→제출→가입) + 광고/자연/회사수는 '연봉 제출' 바로 옆 하위로
+        return ['sessions', 'submissions', 'ad', 'organic', 'companies', 'signups'].map(k => {
+          const m = byKey(k)
+          const sub = k === 'ad' || k === 'organic' || k === 'companies'
+          return { key: m.dataKey, label: sub ? subLabel[k] : m.label, summaryKey: m.summaryKey, sub }
+        })
+      })()
     : METRICS.filter(m => m.section === tableSection).map(m => ({ key: m.dataKey, label: m.label, summaryKey: m.summaryKey }))
   const visibleExperiments = experiments.filter(e => (!e.status || e.status === 'running') && e.date >= dateRange.from && e.date <= (realtime?.date || dateRange.to) && (!e.metrics?.length || selected.length === 0 || selected.some(k => e.metrics.includes(k))))
 
@@ -937,7 +948,7 @@ export default function AdminDashboard() {
                     <tr>
                       <th style={{ padding: '8px 12px', textAlign: 'left', fontWeight: 600, color: '#374151', position: 'sticky', top: 0, background: '#fff', boxShadow: 'inset 0 -2px 0 #e5e7eb', zIndex: 3 }}>{tableView === 'daily' ? (lang === 'ko' ? '날짜' : 'Date') : (lang === 'ko' ? '기간' : 'Period')}</th>
                       {tableColumns.map(c => (
-                        <th key={c.key} style={{ padding: '8px 12px', textAlign: 'right', fontWeight: 600, color: '#374151', position: 'sticky', top: 0, background: '#fff', boxShadow: 'inset 0 -2px 0 #e5e7eb', zIndex: 3 }}>{c.label}</th>
+                        <th key={c.key} style={{ padding: '8px 12px', textAlign: 'right', fontWeight: c.sub ? 500 : 600, color: c.sub ? '#9CA3AF' : '#374151', fontSize: c.sub ? 12 : undefined, position: 'sticky', top: 0, background: c.sub ? '#F6F8FA' : '#fff', boxShadow: 'inset 0 -2px 0 #e5e7eb', zIndex: 3 }}>{c.label}</th>
                       ))}
                     </tr>
                   </thead>
@@ -951,7 +962,7 @@ export default function AdminDashboard() {
                           const prev = (tableView !== 'daily' && i > 0) ? arr[i - 1][col.key] : null
                           const pct = tableView !== 'daily' ? cellPct(val, prev) : null
                           return (
-                            <td key={col.key} style={{ padding: '6px 12px', textAlign: 'right', color: isNull ? '#ccc' : (col.color || undefined), fontWeight: col.bold ? 600 : undefined }}>
+                            <td key={col.key} style={{ padding: '6px 12px', textAlign: 'right', color: isNull ? '#ccc' : (col.sub ? '#8B95A1' : (col.color || undefined)), fontWeight: col.bold ? 600 : undefined, background: col.sub ? '#F6F8FA' : undefined }}>
                               <div>{isNull ? '-' : val}</div>
                               {pct !== null && (
                                 <div style={{ fontSize: 10, fontWeight: 600, color: pct > 0 ? '#EF4444' : pct < 0 ? '#3B82F6' : '#9CA3AF' }}>
@@ -966,7 +977,7 @@ export default function AdminDashboard() {
                     <tr style={{ fontWeight: 700 }}>
                       <td style={{ padding: '8px 12px', position: 'sticky', bottom: 0, background: '#fff', boxShadow: 'inset 0 2px 0 #e5e7eb' }}>{t.total}</td>
                       {tableColumns.map(c => (
-                        <td key={c.key} style={{ padding: '8px 12px', textAlign: 'right', color: '#191F28', position: 'sticky', bottom: 0, background: '#fff', boxShadow: 'inset 0 2px 0 #e5e7eb' }}>{summary[c.summaryKey] ?? '-'}</td>
+                        <td key={c.key} style={{ padding: '8px 12px', textAlign: 'right', color: c.sub ? '#8B95A1' : '#191F28', position: 'sticky', bottom: 0, background: c.sub ? '#F6F8FA' : '#fff', boxShadow: 'inset 0 2px 0 #e5e7eb' }}>{summary[c.summaryKey] ?? '-'}</td>
                       ))}
                     </tr>
                   </tbody>
