@@ -250,7 +250,7 @@ const VI = {
 };
 
 export default function Terms() {
-  const [lang, setLang] = useState('en');
+  const [lang, setLang] = useState('vi');
   const t = lang === 'en' ? EN : VI;
   return (
     <>
