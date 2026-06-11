@@ -299,20 +299,11 @@ export default function CommunityPage() {
         .comm-sort-btn.active { background: #f0f0f0; color: #111; }
         .comm-write-btn { padding: 9px 24px; border-radius: 8px; border: none; background: #ff6000; color: #fff; font-size: 13px; font-weight: 700; cursor: pointer; font-family: 'Barlow', sans-serif; transition: all 0.15s; }
         .comm-write-btn:hover { background: #ff7a1a; transform: translateY(-1px); box-shadow: 0 4px 16px rgba(255,96,0,0.3); }
-        .comm-list { display: flex; flex-direction: column; gap: 0; border-top: 1px solid #eee; }
-        .comm-row { display: flex; align-items: center; gap: 12px; padding: 14px 4px; border-bottom: 1px solid #eee; text-decoration: none; transition: background 0.1s; cursor: pointer; }
-        .comm-row:hover { background: #fafafa; }
-        .comm-row-cat { font-size: 13px; font-weight: 600; color: #888; flex-shrink: 0; min-width: 80px; }
-        .comm-row-title { flex: 1; font-size: 14px; font-weight: 600; color: #222; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
-        .comm-new-badge { display: inline-flex; align-items: center; justify-content: center; vertical-align: middle; margin-left: 6px; height: 15px; padding: 0 5px; border-radius: 4px; background: #ff6000; color: #fff; font-size: 9px; font-weight: 800; letter-spacing: 0.3px; line-height: 1; font-family: 'Barlow', sans-serif; flex-shrink: 0; }
-        .comm-row-stats { display: flex; align-items: center; gap: 14px; flex-shrink: 0; }
-        .comm-row-stat { display: flex; align-items: center; gap: 3px; font-size: 13px; color: #bbb; white-space: nowrap; }
-        .comm-row-stat svg { width: 14px; height: 14px; }
-        .comm-row-stat.liked { color: #ff6000; }
+        .comm-new-badge { display: inline-flex; align-items: center; justify-content: center; vertical-align: middle; height: 15px; padding: 0 5px; border-radius: 4px; background: #ff6000; color: #fff; font-size: 9px; font-weight: 800; letter-spacing: 0.3px; line-height: 1; font-family: 'Barlow', sans-serif; flex-shrink: 0; }
         /* Read (already-viewed) posts: dim & desaturate */
-        .comm-row.is-read, .comm-card-item.is-read, .comm-ms-item.is-read { opacity: 0.5; filter: saturate(0.7); }
-        .comm-row.is-read:hover, .comm-card-item.is-read:hover, .comm-ms-item.is-read:hover { opacity: 0.72; }
-        .comm-row.is-read .comm-row-title, .comm-card-item.is-read .comm-card-title, .comm-ms-item.is-read .comm-ms-item-title { color: #999; font-weight: 500; }
+        .comm-card.is-read, .comm-ms-item.is-read { opacity: 0.5; filter: saturate(0.7); }
+        .comm-card.is-read:hover, .comm-ms-item.is-read:hover { opacity: 0.72; }
+        .comm-card.is-read .comm-card-title, .comm-ms-item.is-read .comm-ms-item-title { color: #999; font-weight: 500; }
         .comm-empty { text-align: center; padding: 80px 20px; color: #bbb; font-size: 14px; }
         .comm-pager { display: flex; justify-content: center; gap: 8px; margin-top: 28px; padding-top: 4px; }
         .comm-pager-btn { padding: 8px 18px; border-radius: 8px; border: 1px solid #ddd; background: transparent; color: #666; font-size: 13px; cursor: pointer; font-family: 'Barlow', sans-serif; }
@@ -358,18 +349,19 @@ export default function CommunityPage() {
         .comm-ms-item-preview { font-size: 13px; color: #888; line-height: 1.5; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
         .comm-ms-empty { text-align: center; padding: 60px 20px; color: #bbb; font-size: 14px; }
         .comm-ms-loading { text-align: center; padding: 60px 20px; color: #bbb; font-size: 14px; }
-        .comm-card-list { display: none; }
-        .comm-card-item { display: block; padding: 16px 0; border-bottom: 1px solid #eee; text-decoration: none; }
-        .comm-card-meta { display: flex; align-items: center; gap: 8px; margin-bottom: 2px; }
-        .comm-card-cat { font-size: 12px; font-weight: 600; color: #ff6000; }
+        .comm-feed { display: flex; flex-direction: column; gap: 12px; }
+        .comm-card { display: block; padding: 18px 20px; border: 1px solid #ececec; border-radius: 14px; background: #fff; text-decoration: none; cursor: pointer; transition: border-color 0.15s, box-shadow 0.15s, transform 0.15s; }
+        .comm-card:hover { border-color: #e0e0e0; box-shadow: 0 6px 22px rgba(0,0,0,0.06); transform: translateY(-1px); }
+        .comm-card-meta { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+        .comm-card-cat { display: inline-flex; align-items: center; padding: 3px 9px; border-radius: 6px; font-size: 12px; font-weight: 700; line-height: 1.4; }
         .comm-card-time { font-size: 11px; color: #bbb; }
-        .comm-card-author { font-size: 12px; color: #aaa; margin-bottom: 10px; display: flex; align-items: center; gap: 4px; }
-        .comm-card-dot { color: #ccc; }
-        .comm-card-title { font-size: 15px; font-weight: 700; color: #111; margin-bottom: 6px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
-        .comm-card-preview { font-size: 13px; color: #888; line-height: 1.5; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; margin-bottom: 10px; }
-        .comm-card-footer { display: flex; align-items: center; gap: 14px; }
-        .comm-card-stat { display: flex; align-items: center; gap: 4px; font-size: 12px; color: #bbb; }
-        .comm-card-stat svg { width: 14px; height: 14px; }
+        .comm-card-author { font-size: 12px; color: #999; margin-bottom: 11px; display: flex; align-items: center; gap: 5px; flex-wrap: wrap; }
+        .comm-card-dot { color: #ddd; }
+        .comm-card-title { font-size: 16px; font-weight: 700; color: #111; margin-bottom: 7px; line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+        .comm-card-preview { font-size: 13px; color: #888; line-height: 1.6; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; margin-bottom: 12px; }
+        .comm-card-footer { display: flex; align-items: center; gap: 16px; }
+        .comm-card-stat { display: flex; align-items: center; gap: 5px; font-size: 13px; color: #bbb; }
+        .comm-card-stat svg { width: 15px; height: 15px; }
         .comm-card-stat.liked { color: #ff6000; }
         .comm-pull { display: none; justify-content: center; align-items: center; color: #bbb; font-size: 12px; font-family: 'Barlow', sans-serif; overflow: hidden; transition: height 0.2s; }
         .comm-pull-spinner { width: 18px; height: 18px; border: 2px solid #ddd; border-top-color: #ff6000; border-radius: 50%; animation: comm-spin 0.6s linear infinite; }
@@ -387,8 +379,6 @@ export default function CommunityPage() {
           .comm-write-btn { display: none; }
           .comm-fab { display: flex; }
           .comm-sidebar { display: none; }
-          .comm-list { display: none; }
-          .comm-card-list { display: flex; flex-direction: column; }
         }
       `}</style>
 
@@ -451,34 +441,14 @@ export default function CommunityPage() {
               <div className="comm-empty">{t('comm.loading')}</div>
             ) : posts.length === 0 ? (
               <div className="comm-empty">{sort === 'mine' ? t('comm.emptyMine') : t('comm.empty')}</div>
-            ) : (<>
-              <div className="comm-list">
+            ) : (
+              <div className="comm-feed">
                 {posts.map(post => (
-                    <Link key={post.id} href={`/community/${post.id}`} className={`comm-row${readPosts.has(post.id) ? ' is-read' : ''}`} onClick={e => handlePostClick(e, post.id)}>
-                      <span className="comm-row-cat">{getCatLabel(post.category)}</span>
-                      <span className="comm-row-title">{post.title}</span>
-                      {isNew(post.created_at) && <span className="comm-new-badge">NEW</span>}
-                      <div className="comm-row-stats">
-                        <span
-                          className={`comm-row-stat${post.is_liked ? ' liked' : ''}`}
-                          onClick={(e) => { e.preventDefault(); e.stopPropagation(); toggleLike(post.id) }}
-                        >
-                          <svg viewBox="0 0 24 24" fill={post.is_liked ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg>
-                          {post.like_count || 0}
-                        </span>
-                        <span className="comm-row-stat">
-                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
-                          {post.comment_count || 0}
-                        </span>
-                      </div>
-                    </Link>
-                ))}
-              </div>
-              <div className="comm-card-list">
-                {posts.map(post => (
-                  <Link key={post.id} href={`/community/${post.id}`} className={`comm-card-item${readPosts.has(post.id) ? ' is-read' : ''}`} onClick={e => handlePostClick(e, post.id)}>
+                  <Link key={post.id} href={`/community/${post.id}`} className={`comm-card${readPosts.has(post.id) ? ' is-read' : ''}`} onClick={e => handlePostClick(e, post.id)}>
                     <div className="comm-card-meta">
-                      <span className="comm-card-cat">{getCatLabel(post.category)}</span>
+                      <span className="comm-card-cat" style={{ color: CATEGORY_COLORS[post.category] || '#777', background: (CATEGORY_COLORS[post.category] || '#777') + '18' }}>
+                        {getCatLabel(post.category)}
+                      </span>
                       <span className="comm-card-time">{timeAgo(post.created_at)}</span>
                       {isNew(post.created_at) && <span className="comm-new-badge">NEW</span>}
                     </div>
@@ -506,7 +476,7 @@ export default function CommunityPage() {
                   </Link>
                 ))}
               </div>
-            </>)}
+            )}
 
             {totalPages > 1 && (
               <div className="comm-pager">
