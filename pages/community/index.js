@@ -356,6 +356,8 @@ export default function CommunityPage() {
         .comm-card-cat { display: inline-flex; align-items: center; padding: 3px 9px; border-radius: 6px; font-size: 12px; font-weight: 700; line-height: 1.4; }
         .comm-card-time { font-size: 11px; color: #bbb; }
         .comm-card-author { font-size: 12px; color: #999; margin-bottom: 11px; display: flex; align-items: center; gap: 5px; flex-wrap: wrap; }
+        .comm-card-company { color: #ff6000; cursor: pointer; }
+        .comm-card-company:hover { text-decoration: underline; }
         .comm-card-dot { color: #ddd; }
         .comm-card-title { font-size: 16px; font-weight: 700; color: #111; margin-bottom: 7px; line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
         .comm-card-preview { font-size: 13px; color: #888; line-height: 1.6; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; margin-bottom: 12px; }
@@ -453,7 +455,14 @@ export default function CommunityPage() {
                       {isNew(post.created_at) && <span className="comm-new-badge">NEW</span>}
                     </div>
                     <div className="comm-card-author">
-                      <span>{post.author_verified_company || t('comm.unemployed')}</span>
+                      {post.author_verified_company ? (
+                        <span
+                          className="comm-card-company"
+                          onClick={(e) => { e.preventDefault(); e.stopPropagation(); router.push(`/companies/${encodeURIComponent(post.author_verified_company)}`) }}
+                        >{post.author_verified_company}</span>
+                      ) : (
+                        <span>{t('comm.unemployed')}</span>
+                      )}
                       <span className="comm-card-dot">·</span>
                       <span>{post.author_name}</span>
                       {post.author_salary_tier && <SalaryBadge tierKey={post.author_salary_tier} t={t} />}

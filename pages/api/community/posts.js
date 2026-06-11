@@ -280,6 +280,13 @@ export default async function handler(req, res) {
       query = query.or(`title.ilike.%${search.trim()}%,content.ilike.%${search.trim()}%`)
     }
 
+    // 회사 페이지 "소식" 탭: 제목/내용에 회사명이 언급된 글을 모은다.
+    // PostgREST or() 파싱을 깨뜨리는 쉼표/괄호는 공백으로 치환.
+    if (req.query.company && req.query.company.trim()) {
+      const c = req.query.company.trim().replace(/[(),]/g, ' ')
+      query = query.or(`title.ilike.%${c}%,content.ilike.%${c}%`)
+    }
+
     if (sort === 'popular') {
       const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()
       query = query.gte('created_at', weekAgo).order('like_count', { ascending: false })

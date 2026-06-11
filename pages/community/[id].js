@@ -235,6 +235,8 @@ export default function CommunityPostPage() {
         .cp-title { font-size: 26px; font-weight: 800; color: #111; margin: 0 0 12px; line-height: 1.35; }
         .cp-author-row { display: flex; align-items: center; gap: 6px; margin-bottom: 6px; }
         .cp-company { font-size: 14px; color: #ff6000; font-weight: 700; }
+        .cp-company-link { cursor: pointer; }
+        .cp-company-link:hover { text-decoration: underline; }
         .cp-dot { color: #ccc; font-size: 12px; }
         .cp-nickname { font-size: 13px; color: #888; font-weight: 400; }
         .cp-info-row { display: flex; align-items: center; gap: 6px; font-size: 12px; color: #999; margin-bottom: 28px; padding-bottom: 20px; border-bottom: 1px solid #eee; }
@@ -345,7 +347,14 @@ export default function CommunityPostPage() {
                   )}
                 </div>
                 <div className="cp-author-row">
-                  <span className="cp-company">{post.author_verified_company || t('comm.unemployed')}</span>
+                  {post.author_verified_company ? (
+                    <span
+                      className="cp-company cp-company-link"
+                      onClick={() => router.push(`/companies/${encodeURIComponent(post.author_verified_company)}`)}
+                    >{post.author_verified_company}</span>
+                  ) : (
+                    <span className="cp-company">{t('comm.unemployed')}</span>
+                  )}
                   <span className="cp-dot">·</span>
                   <span className="cp-nickname">{post.author_name}</span>
                   {post.author_salary_tier && <SalaryBadge tierKey={post.author_salary_tier} t={t} />}
