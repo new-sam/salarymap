@@ -71,6 +71,7 @@ export default function CommunityPage() {
 
   // Trending (sidebar)
   const [trending, setTrending] = useState([])
+  const [followedCompanies, setFollowedCompanies] = useState([])
 
   // Read posts (dim already-viewed posts)
   const [readPosts, setReadPosts] = useState(() => new Set())
@@ -109,6 +110,15 @@ export default function CommunityPage() {
       .then(d => setTrending(d.posts || []))
       .catch(() => {})
   }, [])
+
+  // 내가 팔로우한 회사 목록 (로그인 시)
+  useEffect(() => {
+    if (!session?.access_token) { setFollowedCompanies([]); return }
+    fetch('/api/companies/follow', { headers: { Authorization: `Bearer ${session.access_token}` } })
+      .then(r => r.json())
+      .then(d => setFollowedCompanies(d.follows || []))
+      .catch(() => {})
+  }, [session])
 
   useEffect(() => {
     if (mobileSearchOpen && mobileSearchRef.current) {
@@ -358,6 +368,12 @@ export default function CommunityPage() {
         .comm-card-author { font-size: 12px; color: #999; margin-bottom: 11px; display: flex; align-items: center; gap: 5px; flex-wrap: wrap; }
         .comm-card-company { color: #ff6000; cursor: pointer; }
         .comm-card-company:hover { text-decoration: underline; }
+        .comm-follows { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
+        .comm-follows-label { font-size: 12px; font-weight: 700; color: #999; flex-shrink: 0; }
+        .comm-follows-chips { display: flex; gap: 7px; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+        .comm-follows-chips::-webkit-scrollbar { display: none; }
+        .comm-follow-chip { flex-shrink: 0; padding: 5px 12px; border-radius: 999px; background: #fff5ef; border: 1px solid #ffd9c2; color: #ff6000; font-size: 12px; font-weight: 700; text-decoration: none; white-space: nowrap; text-transform: capitalize; }
+        .comm-follow-chip:hover { background: #ffe9dc; }
         .comm-card-dot { color: #ddd; }
         .comm-card-title { font-size: 16px; font-weight: 700; color: #111; margin-bottom: 7px; line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
         .comm-card-preview { font-size: 13px; color: #888; line-height: 1.6; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; margin-bottom: 12px; }
@@ -417,6 +433,19 @@ export default function CommunityPage() {
                 </button>
               ))}
             </div>
+
+            {followedCompanies.length > 0 && (
+              <div className="comm-follows">
+                <span className="comm-follows-label">{t('comm.followingTitle')}</span>
+                <div className="comm-follows-chips">
+                  {followedCompanies.map(f => (
+                    <Link key={f.company_name} href={`/companies/${encodeURIComponent(f.company_name)}`} className="comm-follow-chip">
+                      {f.company_name}
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            )}
 
             <div className="comm-search">
               <svg className="comm-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
