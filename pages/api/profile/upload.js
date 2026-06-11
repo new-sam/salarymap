@@ -36,8 +36,12 @@ export default async function handler(req, res) {
   })
   if (uploadErr) return res.status(500).json({ error: uploadErr.message })
 
+  // 경로가 user.id로 고정(upsert)이라 public URL이 매번 동일하다.
+  // 그대로 두면 (1) 앱의 resume_url/photo_url이 안 바뀌어 변경을 못 알아채고
+  // (2) Storage CDN 캐시(기본 max-age=3600)가 교체 전 옛 파일을 계속 서빙한다.
+  // 업로드마다 바뀌는 버전 쿼리를 붙여 URL을 갱신 → 캐시 우회 + 클라이언트 변경 감지.
   const { data: urlData } = supabase.storage.from(bucket).getPublicUrl(path)
-  const publicUrl = urlData.publicUrl
+  const publicUrl = `${urlData.publicUrl}?v=${Date.now()}`
 
   // Update profile (upsert, not update: mobile OAuth users may not have a user_profiles
   // row yet — they never hit the web /auth/callback that inserts it — so a plain .update()
