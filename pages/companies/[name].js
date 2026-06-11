@@ -47,6 +47,14 @@ export async function getServerSideProps({ params }) {
     .limit(1)
   if (co && co.length) return { props: { companyName: co[0].name } }
 
+  // 커뮤니티 글이 해당 회사를 author_company로 달고 있으면(시드/더미 포함) 페이지를 연다.
+  const { data: cp } = await supabaseServer
+    .from('community_posts')
+    .select('author_company')
+    .ilike('author_company', name)
+    .limit(1)
+  if (cp && cp.length) return { props: { companyName: cp[0].author_company } }
+
   return { notFound: true }
 }
 

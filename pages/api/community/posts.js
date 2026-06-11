@@ -280,11 +280,19 @@ export default async function handler(req, res) {
       query = query.or(`title.ilike.%${search.trim()}%,content.ilike.%${search.trim()}%`)
     }
 
-    // 회사 페이지 "소식" 탭: 제목/내용에 회사명이 언급된 글을 모은다.
+    // 회사 페이지 "소식" 탭: 제목/내용에 회사명이 언급됐거나, 그 글의 댓글
+    // 내용에 회사명이 언급된 글을 모은다. (글쓴이 소속이 아니라 "언급" 기준.)
     // PostgREST or() 파싱을 깨뜨리는 쉼표/괄호는 공백으로 치환.
     if (req.query.company && req.query.company.trim()) {
       const c = req.query.company.trim().replace(/[(),]/g, ' ')
-      query = query.or(`title.ilike.%${c}%,content.ilike.%${c}%`)
+      const { data: cmts } = await supabase
+        .from('community_comments')
+        .select('post_id')
+        .ilike('content', `%${c}%`)
+      const commentPostIds = [...new Set((cmts || []).map(x => x.post_id).filter(Boolean))]
+      const ors = [`title.ilike.%${c}%`, `content.ilike.%${c}%`]
+      if (commentPostIds.length) ors.push(`id.in.(${commentPostIds.join(',')})`)
+      query = query.or(ors.join(','))
     }
 
     if (sort === 'popular') {

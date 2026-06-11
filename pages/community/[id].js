@@ -347,11 +347,11 @@ export default function CommunityPostPage() {
                   )}
                 </div>
                 <div className="cp-author-row">
-                  {post.author_verified_company ? (
+                  {(post.author_verified_company || post.author_company) ? (
                     <span
                       className="cp-company cp-company-link"
-                      onClick={() => router.push(`/companies/${encodeURIComponent(post.author_verified_company)}`)}
-                    >{post.author_verified_company}</span>
+                      onClick={() => router.push(`/companies/${encodeURIComponent(post.author_verified_company || post.author_company)}`)}
+                    >{post.author_verified_company || post.author_company}</span>
                   ) : (
                     <span className="cp-company">{t('comm.unemployed')}</span>
                   )}

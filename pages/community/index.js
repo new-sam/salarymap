@@ -455,11 +455,11 @@ export default function CommunityPage() {
                       {isNew(post.created_at) && <span className="comm-new-badge">NEW</span>}
                     </div>
                     <div className="comm-card-author">
-                      {post.author_verified_company ? (
+                      {(post.author_verified_company || post.author_company) ? (
                         <span
                           className="comm-card-company"
-                          onClick={(e) => { e.preventDefault(); e.stopPropagation(); router.push(`/companies/${encodeURIComponent(post.author_verified_company)}`) }}
-                        >{post.author_verified_company}</span>
+                          onClick={(e) => { e.preventDefault(); e.stopPropagation(); router.push(`/companies/${encodeURIComponent(post.author_verified_company || post.author_company)}`) }}
+                        >{post.author_verified_company || post.author_company}</span>
                       ) : (
                         <span>{t('comm.unemployed')}</span>
                       )}
