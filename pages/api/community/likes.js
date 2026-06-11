@@ -1,6 +1,19 @@
 import { createClient } from '@supabase/supabase-js'
 import { sendPush } from '../../../lib/push'
 
+// 토큰 locale(vi|ko|en)별로 push.js가 선택. 글 제목이 없을 때의 제목 폴백.
+const COMMUNITY_TITLE = { vi: 'Cộng đồng FYI', ko: 'FYI 커뮤니티', en: 'FYI Community' }
+const LIKE_POST_BODY = {
+  vi: 'Ai đó đã thích bài viết của bạn',
+  ko: '누군가 회원님의 글을 좋아합니다',
+  en: 'Someone liked your post',
+}
+const LIKE_COMMENT_BODY = {
+  vi: 'Ai đó đã thích bình luận của bạn',
+  ko: '누군가 회원님의 댓글을 좋아합니다',
+  en: 'Someone liked your comment',
+}
+
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
   process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
@@ -79,11 +92,10 @@ export default async function handler(req, res) {
       // 좋아요 알림 — 본인 콘텐츠가 아니면 작성자에게 푸시(카테고리 'like').
       if (target.user_id && target.user_id !== user.id) {
         const deepPostId = post_id || target.post_id
+        // 글 좋아요는 글 제목(사용자 데이터, 언어 중립)을 제목으로, 없으면 언어별 폴백.
         sendPush([target.user_id], {
-          title: post_id ? (target.title || 'Cộng đồng FYI') : 'Cộng đồng FYI',
-          body: post_id
-            ? 'Ai đó đã thích bài viết của bạn'
-            : 'Ai đó đã thích bình luận của bạn',
+          title: post_id ? (target.title || COMMUNITY_TITLE) : COMMUNITY_TITLE,
+          body: post_id ? LIKE_POST_BODY : LIKE_COMMENT_BODY,
           category: 'like',
           data: deepPostId ? { url: `/community/${deepPostId}` } : {},
         })

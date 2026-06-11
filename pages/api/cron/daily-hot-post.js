@@ -43,9 +43,18 @@ export default async function handler(req, res) {
   const userIds = [...new Set((tokenRows || []).map((r) => r.user_id).filter(Boolean))];
   if (!userIds.length) return res.status(200).json({ ok: true, sent: 0, reason: 'no tokens' });
 
+  // 토큰 locale(vi|ko|en)별로 push.js가 선택. 본문은 글 제목(언어 중립)이 우선, 없으면 언어별 폴백.
   await sendPush(userIds, {
-    title: 'Bài viết nổi bật hôm qua 🔥',
-    body: top.title || 'Xem bài viết được quan tâm nhất hôm qua',
+    title: {
+      vi: 'Bài viết nổi bật hôm qua 🔥',
+      ko: '어제의 인기글 🔥',
+      en: "Yesterday's hot post 🔥",
+    },
+    body: top.title || {
+      vi: 'Xem bài viết được quan tâm nhất hôm qua',
+      ko: '어제 가장 주목받은 글을 확인하세요',
+      en: 'See the most talked-about post from yesterday',
+    },
     category: 'daily_hot',
     data: { url: `/community/${top.id}` },
   });

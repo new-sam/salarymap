@@ -256,11 +256,22 @@ export default async function handler(req, res) {
 
     // 댓글 알림 — 내 글이 아니면 글 작성자에게 푸시(카테고리 'comment').
     if (postData?.user_id && !isOp) {
-      const who = effectiveAnon ? 'Ẩn danh' : realName
       const snippet = (content || '').trim().slice(0, 50)
+      // who(익명 라벨)는 언어별, 본문 스니펫은 사용자 데이터. 토큰 locale별로 본문을 구성한다.
+      const ANON = { vi: 'Ẩn danh', ko: '익명', en: 'Anonymous' }
+      const COMMENTED_SUFFIX = {
+        vi: ' đã bình luận bài viết của bạn',
+        ko: '님이 회원님의 글에 댓글을 남겼습니다',
+        en: ' commented on your post',
+      }
+      const COMMENT_TITLE = { vi: 'Cộng đồng FYI', ko: 'FYI 커뮤니티', en: 'FYI Community' }
+      const bodyFor = (loc) => {
+        const who = effectiveAnon ? ANON[loc] : realName
+        return snippet ? `${who}: ${snippet}` : `${who}${COMMENTED_SUFFIX[loc]}`
+      }
       sendPush([postData.user_id], {
-        title: postData.title || 'Cộng đồng FYI',
-        body: snippet ? `${who}: ${snippet}` : `${who} đã bình luận bài viết của bạn`,
+        title: postData.title || COMMENT_TITLE,
+        body: { vi: bodyFor('vi'), ko: bodyFor('ko'), en: bodyFor('en') },
         category: 'comment',
         data: { url: `/community/${post_id}` },
       })

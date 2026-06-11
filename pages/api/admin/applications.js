@@ -2,15 +2,50 @@ import { createClient } from '@supabase/supabase-js'
 import { sendPush } from '../../../lib/push'
 import { verifyAdmin } from './check'
 
-// 지원 상태 → 지원자에게 보낼 단계 안내 문구(vi, 1차 시장 기준).
-const STATUS_PUSH_VI = {
-  applied: 'Hồ sơ của bạn đã được tiếp nhận',
-  pending: 'Hồ sơ của bạn đã được tiếp nhận',
-  viewed: 'Nhà tuyển dụng đã xem hồ sơ của bạn',
-  reviewing: 'Hồ sơ của bạn đang được xem xét',
-  decided: 'Đã có kết quả cho hồ sơ ứng tuyển của bạn',
-  accepted: 'Chúc mừng! Hồ sơ của bạn đã được chấp nhận',
-  rejected: 'Đã có cập nhật cho hồ sơ ứng tuyển của bạn',
+// 지원 상태 → 지원자에게 보낼 단계 안내 문구. 토큰 locale(vi|ko|en)별로 push.js가 선택.
+const STATUS_PUSH = {
+  applied: {
+    vi: 'Hồ sơ của bạn đã được tiếp nhận',
+    ko: '지원서가 접수되었습니다',
+    en: 'Your application has been received',
+  },
+  pending: {
+    vi: 'Hồ sơ của bạn đã được tiếp nhận',
+    ko: '지원서가 접수되었습니다',
+    en: 'Your application has been received',
+  },
+  viewed: {
+    vi: 'Nhà tuyển dụng đã xem hồ sơ của bạn',
+    ko: '채용 담당자가 지원서를 열람했습니다',
+    en: 'The recruiter viewed your application',
+  },
+  reviewing: {
+    vi: 'Hồ sơ của bạn đang được xem xét',
+    ko: '지원서를 검토하고 있습니다',
+    en: 'Your application is under review',
+  },
+  decided: {
+    vi: 'Đã có kết quả cho hồ sơ ứng tuyển của bạn',
+    ko: '지원 결과가 나왔습니다',
+    en: 'A decision has been made on your application',
+  },
+  accepted: {
+    vi: 'Chúc mừng! Hồ sơ của bạn đã được chấp nhận',
+    ko: '축하합니다! 지원서가 합격되었습니다',
+    en: 'Congratulations! Your application was accepted',
+  },
+  rejected: {
+    vi: 'Đã có cập nhật cho hồ sơ ứng tuyển của bạn',
+    ko: '지원서에 업데이트가 있습니다',
+    en: 'There is an update on your application',
+  },
+}
+
+// 회사·직무가 없을 때의 제목 폴백.
+const APP_FALLBACK_TITLE = {
+  vi: 'Cập nhật ứng tuyển',
+  ko: '지원 현황 업데이트',
+  en: 'Application update',
 }
 
 const supabase = createClient(
@@ -61,17 +96,18 @@ export default async function handler(req, res) {
     if (error) return res.status(500).json({ error: error.message })
 
     // 지원 단계 변경 알림 — 지원자 본인에게 푸시(카테고리 'application').
-    if (status && STATUS_PUSH_VI[status]) {
+    if (status && STATUS_PUSH[status]) {
       const { data: app } = await supabase
         .from('job_applications')
         .select('user_id, job_title, job_company')
         .eq('id', id)
         .maybeSingle()
       if (app?.user_id) {
+        // 회사·직무는 사용자 데이터라 언어 중립. 없으면 언어별 폴백 제목.
         const where = [app.job_company, app.job_title].filter(Boolean).join(' · ')
         sendPush([app.user_id], {
-          title: where || 'Cập nhật ứng tuyển',
-          body: STATUS_PUSH_VI[status],
+          title: where || APP_FALLBACK_TITLE,
+          body: STATUS_PUSH[status],
           category: 'application',
           data: { url: '/jobs/applications' },
         })

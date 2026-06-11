@@ -1,9 +1,12 @@
 // 푸시 토큰 등록/선호 관리 — 모바일 앱(salary-fyi)이 호출.
 // 인증: Authorization: Bearer <supabase access_token> (likes.js와 동일 패턴).
-//  POST { expo_push_token, platform, prefs? } → 토큰 업서트(로그인 사용자에 매핑)
+//  POST { expo_push_token, platform, locale?, prefs? } → 토큰 업서트(로그인 사용자에 매핑)
 //  GET  → 현재 사용자의 카테고리 선호 반환
 //  PUT  { prefs } → 현재 사용자의 모든 토큰에 선호 반영(설정 토글)
 import supabaseAdmin from '../../../lib/supabaseAdmin';
+
+// 발송 문구 언어 — 모바일 i18n과 동일 집합. 그 외 값은 무시(null 저장 → push.js가 기본 vi).
+const SUPPORTED_LOCALES = ['vi', 'ko', 'en'];
 
 async function getUser(req) {
   const token = (req.headers.authorization || '').replace(/^Bearer\s+/i, '');
@@ -19,7 +22,7 @@ export default async function handler(req, res) {
   if (!user) return res.status(401).json({ error: 'Unauthorized' });
 
   if (req.method === 'POST') {
-    const { expo_push_token, platform, prefs } = req.body || {};
+    const { expo_push_token, platform, locale, prefs } = req.body || {};
     if (!expo_push_token) {
       return res.status(400).json({ error: 'expo_push_token required' });
     }
@@ -27,6 +30,7 @@ export default async function handler(req, res) {
       user_id: user.id,
       expo_push_token,
       platform: platform || null,
+      locale: SUPPORTED_LOCALES.includes(locale) ? locale : null,
       enabled: true,
       updated_at: new Date().toISOString(),
     };
