@@ -40,9 +40,10 @@ export default async function handler(req, res) {
   ];
 
   // Slack (옵션)
-  if (process.env.SLACK_WEBHOOK_URL) {
+  const slackUrl = process.env.SLACK_CONTACT_WEBHOOK_URL || process.env.SLACK_WEBHOOK_URL;
+  if (slackUrl) {
     try {
-      await fetch(process.env.SLACK_WEBHOOK_URL, {
+      await fetch(slackUrl, {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ text: `:mailbox_with_mail: *새 공고 승인 대기*\n${lines.join('\n')}` }),
       });

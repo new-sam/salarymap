@@ -17,9 +17,10 @@ async function notify({ email, companyName, contactName, phone, message }) {
   ];
 
   // Slack
-  if (process.env.SLACK_WEBHOOK_URL) {
+  const slackUrl = process.env.SLACK_CONTACT_WEBHOOK_URL || process.env.SLACK_WEBHOOK_URL;
+  if (slackUrl) {
     try {
-      await fetch(process.env.SLACK_WEBHOOK_URL, {
+      await fetch(slackUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ text: `:wave: *기업 상담 요청*\n${lines.join('\n')}` }),
