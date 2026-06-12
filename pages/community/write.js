@@ -26,6 +26,10 @@ export default function CommunityWritePage() {
   const [images, setImages] = useState([])
   const [uploading, setUploading] = useState(false)
   const fileRef = useRef(null)
+  const [pollEnabled, setPollEnabled] = useState(false)
+  const [pollA, setPollA] = useState('')
+  const [pollB, setPollB] = useState('')
+  const [pollDuration, setPollDuration] = useState(72) // 시간 단위, 기본 3일
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session: s } }) => {
@@ -56,14 +60,19 @@ export default function CommunityWritePage() {
 
   const removeImage = (url) => setImages(prev => prev.filter(u => u !== url))
 
+  const pollValid = pollEnabled && pollA.trim() && pollB.trim()
+
   const handleSubmit = async () => {
     if (!title.trim() || !content.trim() || !session || submitting) return
+    if (pollEnabled && !pollValid) { alert(t('comm.pollIncomplete')); return }
     setSubmitting(true)
     try {
+      const body = { category, title: title.trim(), content: content.trim(), is_anonymous: anonymous, image_urls: images }
+      if (pollValid) body.poll = { option_a: pollA.trim(), option_b: pollB.trim(), duration_hours: pollDuration }
       const res = await fetch('/api/community/posts', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
-        body: JSON.stringify({ category, title: title.trim(), content: content.trim(), is_anonymous: anonymous, image_urls: images })
+        body: JSON.stringify(body)
       })
       if (res.ok) {
         router.push('/community')
@@ -105,6 +114,29 @@ export default function CommunityWritePage() {
         .cw-add-img { width: 88px; height: 88px; border-radius: 10px; border: 1px dashed #ccc; background: #fafafa; color: #999; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; font-size: 11px; font-family: 'Barlow', sans-serif; }
         .cw-add-img:hover { border-color: #ff6000; color: #ff6000; }
         .cw-add-img:disabled { opacity: 0.5; cursor: default; }
+        .cw-poll-toggle { display: flex; align-items: center; gap: 12px; width: 100%; padding: 14px 16px; border: 1px solid #e6e6e6; border-radius: 12px; background: #fff; cursor: pointer; margin: 4px 0 12px; font-family: 'Barlow', sans-serif; transition: all 0.15s; }
+        .cw-poll-toggle:hover { border-color: #ffcdb0; }
+        .cw-poll-toggle.on { border-color: #ff6000; background: #fff8f3; }
+        .cw-poll-toggle-ico { color: #ff6000; display: flex; align-items: center; flex-shrink: 0; }
+        .cw-poll-toggle-text { flex: 1; text-align: left; }
+        .cw-poll-toggle-title { display: block; font-size: 14px; font-weight: 700; color: #222; }
+        .cw-poll-toggle-desc { display: block; font-size: 12px; color: #999; margin-top: 2px; }
+        .cw-switch { width: 42px; height: 24px; border-radius: 12px; background: #dcdcdc; position: relative; transition: background 0.15s; flex-shrink: 0; }
+        .cw-poll-toggle.on .cw-switch { background: #ff6000; }
+        .cw-switch::after { content: ''; position: absolute; top: 2px; left: 2px; width: 20px; height: 20px; border-radius: 50%; background: #fff; transition: transform 0.15s; box-shadow: 0 1px 2px rgba(0,0,0,0.2); }
+        .cw-poll-toggle.on .cw-switch::after { transform: translateX(18px); }
+        .cw-poll-box { border: 1px solid #ececec; background: #fafafa; border-radius: 12px; padding: 16px; margin-bottom: 12px; }
+        .cw-poll-opt-row { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+        .cw-poll-chip { width: 28px; height: 28px; border-radius: 8px; background: #ff6000; color: #fff; font-size: 13px; font-weight: 800; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+        .cw-poll-chip.b { background: #2b2b2b; }
+        .cw-poll-opt { flex: 1; padding: 11px 14px; border-radius: 9px; border: 1px solid #ddd; background: #fff; color: #111; font-size: 14px; font-family: 'Barlow', sans-serif; outline: none; box-sizing: border-box; transition: border-color 0.15s; }
+        .cw-poll-opt:focus { border-color: #ff6000; }
+        .cw-poll-dur { display: flex; align-items: center; gap: 12px; margin-top: 14px; padding-top: 14px; border-top: 1px solid #ececec; }
+        .cw-poll-dur-label { font-size: 13px; color: #777; font-weight: 600; }
+        .cw-poll-dur-btns { display: inline-flex; border: 1px solid #ddd; border-radius: 9px; overflow: hidden; }
+        .cw-poll-dur-btn { padding: 7px 16px; border: none; border-right: 1px solid #ddd; background: #fff; color: #666; font-size: 13px; font-weight: 600; cursor: pointer; font-family: 'Barlow', sans-serif; transition: all 0.12s; }
+        .cw-poll-dur-btn:last-child { border-right: none; }
+        .cw-poll-dur-btn.active { background: #ff6000; color: #fff; }
         .cw-footer { display: flex; justify-content: space-between; align-items: center; margin-top: 12px; }
         .cw-anon { display: flex; align-items: center; gap: 8px; font-size: 13px; color: #666; cursor: pointer; }
         .cw-anon input { width: 18px; height: 18px; accent-color: #ff6000; }
@@ -156,6 +188,40 @@ export default function CommunityWritePage() {
             )}
           </div>
           <input ref={fileRef} type="file" accept="image/*" multiple hidden onChange={handleFiles} />
+
+          <button type="button" className={`cw-poll-toggle${pollEnabled ? ' on' : ''}`} onClick={() => setPollEnabled(v => !v)}>
+            <span className="cw-poll-toggle-ico">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><path d="M4 20V10M12 20V4M20 20v-6"/></svg>
+            </span>
+            <span className="cw-poll-toggle-text">
+              <span className="cw-poll-toggle-title">{t('comm.pollAdd')}</span>
+              <span className="cw-poll-toggle-desc">{t('comm.pollAddDesc')}</span>
+            </span>
+            <span className="cw-switch" />
+          </button>
+
+          {pollEnabled && (
+            <div className="cw-poll-box">
+              <div className="cw-poll-opt-row">
+                <span className="cw-poll-chip">A</span>
+                <input className="cw-poll-opt" placeholder={t('comm.pollOptionA')} value={pollA} onChange={e => setPollA(e.target.value)} maxLength={80} />
+              </div>
+              <div className="cw-poll-opt-row">
+                <span className="cw-poll-chip b">B</span>
+                <input className="cw-poll-opt" placeholder={t('comm.pollOptionB')} value={pollB} onChange={e => setPollB(e.target.value)} maxLength={80} />
+              </div>
+              <div className="cw-poll-dur">
+                <span className="cw-poll-dur-label">{t('comm.pollDuration')}</span>
+                <div className="cw-poll-dur-btns">
+                  {[{ h: 24, k: 'comm.pollDur1d' }, { h: 72, k: 'comm.pollDur3d' }, { h: 168, k: 'comm.pollDur7d' }].map(d => (
+                    <button key={d.h} type="button" className={`cw-poll-dur-btn${pollDuration === d.h ? ' active' : ''}`} onClick={() => setPollDuration(d.h)}>
+                      {t(d.k)}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
 
           <div className="cw-footer">
             <label className="cw-anon">

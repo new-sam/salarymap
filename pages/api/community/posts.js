@@ -6,6 +6,11 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 )
 
+// 인기글 가중치 — 홈/모바일/daily-hot-post와 동일(댓글>좋아요>조회).
+function hotScore(p) {
+  return (p.comment_count || 0) * 4 + (p.like_count || 0) * 3 + (p.view_count || 0) * 0.3
+}
+
 // Accept only public URLs from our own Supabase storage, capped at `max` items.
 // Guards against arbitrary/external URLs being stored and rendered as <img>.
 function sanitizeImageUrls(value, max = 4) {
@@ -143,6 +148,40 @@ async function blockedIdsFor(token) {
   return (data || []).map(b => b.blocked_id)
 }
 
+// Map of post_id -> poll(현황 + 호출자의 투표 여부). 피드/미리보기 카드에서 바로
+// 투표할 수 있도록 리스트 응답에 첨부한다. userId 없으면 my_vote는 항상 null.
+async function pollsForPosts(postIds, userId) {
+  const ids = [...new Set(postIds)].filter(Boolean)
+  if (!ids.length) return {}
+  const { data: polls } = await supabase
+    .from('community_polls')
+    .select('*')
+    .in('post_id', ids)
+  if (!polls?.length) return {}
+  let voteMap = {}
+  if (userId) {
+    const { data: votes } = await supabase
+      .from('community_poll_votes')
+      .select('poll_id, choice')
+      .eq('user_id', userId)
+      .in('poll_id', polls.map(p => p.id))
+    ;(votes || []).forEach(v => { voteMap[v.poll_id] = v.choice })
+  }
+  const map = {}
+  polls.forEach(p => {
+    map[p.post_id] = {
+      id: p.id,
+      option_a: p.option_a,
+      option_b: p.option_b,
+      votes_a: p.votes_a,
+      votes_b: p.votes_b,
+      ends_at: p.ends_at,
+      my_vote: voteMap[p.id] || null,
+    }
+  })
+  return map
+}
+
 export default async function handler(req, res) {
   if (req.method === 'GET') {
     const { category, page = 1, limit = 20, sort = 'recent', search, id: postId, mine, interests } = req.query
@@ -194,6 +233,38 @@ export default async function handler(req, res) {
       post.author_verified_school = utMap[post.user_id]?.verified_school || null
       post.author_avatar = post.is_anonymous ? null : (avMap[post.user_id] || post.author_avatar || null)
       post.author_name = resolveAuthorName(post, nMap)
+
+      // A/B 투표 첨부(있으면). 현황 + 로그인 사용자의 투표 여부.
+      const { data: pollRow } = await supabase
+        .from('community_polls')
+        .select('*')
+        .eq('post_id', postId)
+        .maybeSingle()
+      if (pollRow) {
+        let myVote = null
+        const tok = req.headers.authorization?.replace('Bearer ', '')
+        if (tok) {
+          const { data: { user: u } } = await supabase.auth.getUser(tok)
+          if (u) {
+            const { data: v } = await supabase
+              .from('community_poll_votes')
+              .select('choice')
+              .eq('poll_id', pollRow.id)
+              .eq('user_id', u.id)
+              .maybeSingle()
+            myVote = v?.choice || null
+          }
+        }
+        post.poll = {
+          id: pollRow.id,
+          option_a: pollRow.option_a,
+          option_b: pollRow.option_b,
+          votes_a: pollRow.votes_a,
+          votes_b: pollRow.votes_b,
+          ends_at: pollRow.ends_at,
+          my_vote: myVote,
+        }
+      }
       return res.status(200).json({ post })
     }
 
@@ -295,24 +366,36 @@ export default async function handler(req, res) {
       query = query.or(ors.join(','))
     }
 
+    let data, count
     if (sort === 'popular') {
-      const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()
-      query = query.gte('created_at', weekAgo).order('like_count', { ascending: false })
+      // 인기글 = hotScore(댓글>좋아요>조회) 랭킹. 최근 30일 글을 후보로 삼되,
+      // 그 안에 글이 없으면 전체 최신글로 fallback해 인기게시글 영역이 비지 않게 한다.
+      const { data: pool, error: poolErr } = await query
+        .order('created_at', { ascending: false })
+        .limit(200)
+      if (poolErr) return res.status(500).json({ error: poolErr.message })
+      const monthAgo = Date.now() - 30 * 24 * 60 * 60 * 1000
+      const recent = (pool || []).filter(p => new Date(p.created_at).getTime() >= monthAgo)
+      const ranked = (recent.length ? recent : (pool || [])).sort((a, b) => hotScore(b) - hotScore(a))
+      count = ranked.length
+      data = ranked.slice(offset, offset + parseInt(limit))
     } else {
-      query = query.order('created_at', { ascending: false })
+      const { data: d, error: e, count: c } = await query
+        .order('created_at', { ascending: false })
+        .range(offset, offset + parseInt(limit) - 1)
+      if (e) return res.status(500).json({ error: e.message })
+      data = d
+      count = c
     }
-
-    query = query.range(offset, offset + parseInt(limit) - 1)
-
-    const { data, error, count } = await query
-    if (error) return res.status(500).json({ error: error.message })
 
     // If user is logged in, check which posts they've liked
     const token = req.headers.authorization?.replace('Bearer ', '')
     let likedPostIds = []
+    let currentUserId = null
     if (token) {
       const { data: { user } } = await supabase.auth.getUser(token)
       if (user) {
+        currentUserId = user.id
         const postIds = data.map(p => p.id)
         if (postIds.length > 0) {
           const { data: likes } = await supabase
@@ -327,16 +410,17 @@ export default async function handler(req, res) {
 
     // 작성자 부가정보 맵은 서로 독립적이라 병렬로 받아 응답 시간을 줄인다.
     const ids = data.map(p => p.user_id)
-    const [tierMap, cvMap, utMap, avMap, nMap] = await Promise.all([
+    const [tierMap, cvMap, utMap, avMap, nMap, pollMap] = await Promise.all([
       salaryTierMap(ids),
       companyVerifiedMap(ids),
       userTypeMap(ids),
       avatarMap(ids),
       nameMap(ids),
+      pollsForPosts(data.map(p => p.id), currentUserId),
     ])
 
     return res.status(200).json({
-      posts: data.map(p => ({ ...p, is_liked: likedPostIds.includes(p.id), author_salary_tier: tierMap[p.user_id] || null, author_verified_company: cvMap[p.user_id] || null, author_user_type: utMap[p.user_id]?.user_type || null, author_verified_school: utMap[p.user_id]?.verified_school || null, author_avatar: p.is_anonymous ? null : (avMap[p.user_id] || p.author_avatar || null), author_name: resolveAuthorName(p, nMap) })),
+      posts: data.map(p => ({ ...p, is_liked: likedPostIds.includes(p.id), poll: pollMap[p.id] || null, author_salary_tier: tierMap[p.user_id] || null, author_verified_company: cvMap[p.user_id] || null, author_user_type: utMap[p.user_id]?.user_type || null, author_verified_school: utMap[p.user_id]?.verified_school || null, author_avatar: p.is_anonymous ? null : (avMap[p.user_id] || p.author_avatar || null), author_name: resolveAuthorName(p, nMap) })),
       total: count,
       page: parseInt(page),
       totalPages: Math.ceil(count / parseInt(limit))
@@ -405,6 +489,21 @@ export default async function handler(req, res) {
       .single()
 
     if (error) return res.status(500).json({ error: error.message })
+
+    // 선택: A/B 투표 첨부. 두 선택지가 모두 있고 마감시간이 유효할 때만 생성.
+    const poll = req.body.poll
+    if (poll && typeof poll.option_a === 'string' && typeof poll.option_b === 'string'
+        && poll.option_a.trim() && poll.option_b.trim()) {
+      const hours = Math.min(Math.max(parseInt(poll.duration_hours) || 24, 1), 720) // 1시간~30일
+      const endsAt = new Date(Date.now() + hours * 60 * 60 * 1000).toISOString()
+      await supabase.from('community_polls').insert({
+        post_id: data.id,
+        option_a: poll.option_a.trim().slice(0, 80),
+        option_b: poll.option_b.trim().slice(0, 80),
+        ends_at: endsAt,
+      })
+    }
+
     return res.status(201).json(data)
   }
 

@@ -21,6 +21,16 @@ function timeAgo(dateStr) {
   return `${Math.floor(days / 30)}mo`
 }
 
+// 투표 마감까지 남은 시간(대략). 마감됐으면 null.
+function pollTimeLeft(endsAt) {
+  const diff = new Date(endsAt).getTime() - Date.now()
+  if (diff <= 0) return null
+  const hrs = Math.floor(diff / 3600000)
+  if (hrs >= 24) return `${Math.floor(hrs / 24)}d`
+  if (hrs >= 1) return `${hrs}h`
+  return `${Math.max(1, Math.floor(diff / 60000))}m`
+}
+
 const CATEGORY_LABELS = {
   ask_company: 'comm.askCompany',
   daily: 'comm.daily',
@@ -190,6 +200,26 @@ export default function CommunityPostPage() {
     } catch (e) { console.error(e) }
   }
 
+  const [pollVoting, setPollVoting] = useState(false)
+  const votePoll = async (choice) => {
+    if (!post?.poll || pollVoting) return
+    if (!session) { window.dispatchEvent(new CustomEvent('fyi-show-login')); return }
+    if (post.poll.my_vote || new Date(post.poll.ends_at).getTime() <= Date.now()) return
+    setPollVoting(true)
+    try {
+      const res = await fetch('/api/community/poll-vote', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
+        body: JSON.stringify({ poll_id: post.poll.id, choice })
+      })
+      const d = await res.json()
+      if (res.ok || d.error === 'already_voted') {
+        setPost(prev => ({ ...prev, poll: { ...prev.poll, my_vote: choice, votes_a: d.votes_a ?? prev.poll.votes_a, votes_b: d.votes_b ?? prev.poll.votes_b } }))
+      }
+    } catch (e) { console.error(e) }
+    setPollVoting(false)
+  }
+
   const deletePost = async () => {
     if (!confirm(t('comm.deleteConfirm'))) return
     try {
@@ -243,7 +273,8 @@ export default function CommunityPostPage() {
         .cp-content { font-size: 15px; color: #333; line-height: 1.85; white-space: pre-wrap; word-break: break-word; margin-bottom: 28px; }
         .cp-images { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin-bottom: 28px; }
         .cp-images.single { grid-template-columns: 1fr; }
-        .cp-images img { width: 100%; max-height: 480px; object-fit: cover; border-radius: 10px; border: 1px solid #eee; cursor: zoom-in; display: block; }
+        .cp-images img { display: block; width: 100%; height: auto; border-radius: 10px; border: 1px solid #eee; cursor: zoom-in; }
+        .cp-images.single img { width: auto; max-width: 100%; max-height: 600px; }
         .cp-comment-image { margin-top: 8px; }
         .cp-comment-image img { max-width: 220px; max-height: 220px; border-radius: 8px; border: 1px solid #eee; cursor: zoom-in; display: block; }
         .cp-cimg-preview { position: relative; width: 64px; height: 64px; border-radius: 8px; overflow: hidden; border: 1px solid #eee; flex-shrink: 0; }
@@ -257,6 +288,25 @@ export default function CommunityPostPage() {
         .cp-spin { animation: cp-spin 0.8s linear infinite; }
         @keyframes cp-spin { to { transform: rotate(360deg); } }
 
+        .cp-poll { border: 1px solid #ffd9c2; background: #fff8f3; border-radius: 14px; padding: 18px; margin-bottom: 28px; }
+        .cp-poll-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+        .cp-poll-tag { display: inline-flex; align-items: center; gap: 5px; font-size: 13px; font-weight: 800; color: #ff6000; }
+        .cp-poll-time { font-size: 12px; font-weight: 600; color: #999; }
+        .cp-poll-vote { display: flex; align-items: stretch; gap: 10px; }
+        .cp-poll-btn { flex: 1; padding: 18px 14px; border-radius: 12px; border: 2px solid #ffcdb0; background: #fff; color: #333; font-size: 15px; font-weight: 700; cursor: pointer; font-family: 'Barlow', sans-serif; transition: all 0.15s; word-break: break-word; }
+        .cp-poll-btn:hover:not(:disabled) { border-color: #ff6000; background: #fff1e8; color: #ff6000; }
+        .cp-poll-btn:disabled { opacity: 0.6; cursor: default; }
+        .cp-poll-vs { display: flex; align-items: center; font-size: 13px; font-weight: 800; color: #ff6000; flex-shrink: 0; }
+        .cp-poll-results { display: flex; flex-direction: column; gap: 10px; }
+        .cp-poll-res { position: relative; border-radius: 10px; border: 1px solid #eee; background: #fff; overflow: hidden; }
+        .cp-poll-res.lead { border-color: #ff6000; }
+        .cp-poll-res.mine { box-shadow: 0 0 0 2px #ff6000 inset; }
+        .cp-poll-res-fill { position: absolute; inset: 0 auto 0 0; background: #ffe2d1; transition: width 0.5s ease; }
+        .cp-poll-res.lead .cp-poll-res-fill { background: #ffd0b3; }
+        .cp-poll-res-row { position: relative; display: flex; align-items: center; justify-content: space-between; padding: 13px 16px; }
+        .cp-poll-res-label { font-size: 14px; font-weight: 700; color: #333; word-break: break-word; }
+        .cp-poll-res-pct { font-size: 15px; font-weight: 800; color: #ff6000; flex-shrink: 0; margin-left: 10px; }
+        .cp-poll-total { font-size: 12px; color: #999; margin-top: 12px; text-align: right; }
         .cp-actions { display: flex; gap: 12px; padding: 14px 0; border-top: 1px solid #eee; border-bottom: 1px solid #eee; margin-bottom: 32px; }
         .cp-action { display: flex; align-items: center; gap: 6px; padding: 8px 14px; border-radius: 8px; border: none; background: transparent; color: #888; font-size: 13px; font-weight: 600; cursor: pointer; font-family: 'Barlow', sans-serif; transition: all 0.15s; }
         .cp-action:hover { background: #f5f5f5; color: #111; }
@@ -367,6 +417,48 @@ export default function CommunityPostPage() {
                   <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3 }}><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg> {post.comment_count || 0}</span>
                 </div>
                 <div className="cp-content">{post.content}</div>
+
+                {post.poll && (() => {
+                  const { option_a, option_b, votes_a, votes_b, my_vote, ends_at } = post.poll
+                  const timeLeft = pollTimeLeft(ends_at)
+                  const ended = !timeLeft
+                  const showResults = ended || !!my_vote
+                  const total = votes_a + votes_b
+                  const pctA = total ? Math.round((votes_a / total) * 100) : 0
+                  const pctB = total ? 100 - pctA : 0
+                  const leadA = votes_a >= votes_b
+                  return (
+                    <div className="cp-poll">
+                      <div className="cp-poll-head">
+                        <span className="cp-poll-tag">
+                          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><path d="M4 20V10M12 20V4M20 20v-6"/></svg>
+                          {t('comm.pollBattle')}
+                        </span>
+                        <span className="cp-poll-time">{ended ? t('comm.pollEnded') : t('comm.pollEndsIn', { time: timeLeft })}</span>
+                      </div>
+                      {showResults ? (
+                        <div className="cp-poll-results">
+                          {[{ k: 'a', label: option_a, pct: pctA, votes: votes_a, lead: leadA }, { k: 'b', label: option_b, pct: pctB, votes: votes_b, lead: !leadA }].map(o => (
+                            <div key={o.k} className={`cp-poll-res${my_vote === o.k ? ' mine' : ''}${total && o.lead ? ' lead' : ''}`}>
+                              <div className="cp-poll-res-fill" style={{ width: `${o.pct}%` }} />
+                              <div className="cp-poll-res-row">
+                                <span className="cp-poll-res-label">{o.label}{my_vote === o.k && ' ✓'}</span>
+                                <span className="cp-poll-res-pct">{o.pct}%</span>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="cp-poll-vote">
+                          <button className="cp-poll-btn a" disabled={pollVoting} onClick={() => votePoll('a')}>{option_a}</button>
+                          <span className="cp-poll-vs">VS</span>
+                          <button className="cp-poll-btn b" disabled={pollVoting} onClick={() => votePoll('b')}>{option_b}</button>
+                        </div>
+                      )}
+                      <div className="cp-poll-total">{t('comm.pollTotal', { n: total })}</div>
+                    </div>
+                  )
+                })()}
 
                 {post.image_urls?.length > 0 && (
                   <div className={`cp-images${post.image_urls.length === 1 ? ' single' : ''}`}>
