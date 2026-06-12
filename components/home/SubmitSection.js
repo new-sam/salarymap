@@ -422,20 +422,6 @@ function SubmitSection({
         /* Result + rate nudge */
         <div style={{ maxWidth: '900px', margin: '0 auto' }}>
           <ResultSection salary={sal} role={wRole} experience={wExp} company={wCompany} isLoggedIn={isLoggedIn} />
-
-          {/* Rate your company nudge */}
-          <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)',
-            borderRadius: '16px', padding: '16px', marginTop: '20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px' }}>
-            <div>
-              <div style={{ fontSize: '13px', fontWeight: 700, color: '#fff' }}>{t('wizard.rateCompany', { company: wCompany })}</div>
-              <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.3)', marginTop: '2px' }}>{t('wizard.rateCompanySub')}</div>
-            </div>
-            <button onClick={() => setWizardStep(5)}
-              style={{ ...quizBtn, padding: '8px 16px', background: 'rgba(255,68,0,0.15)', border: '1px solid rgba(255,68,0,0.3)',
-                color: '#ff4400', fontSize: '12px', fontWeight: 700, borderRadius: '10px', whiteSpace: 'nowrap' }}>
-              {t('wizard.rateCta')}
-            </button>
-          </div>
         </div>
       )}
     </section>
