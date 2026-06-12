@@ -6,6 +6,7 @@ import { createClient } from '@supabase/supabase-js'
 import { supabase } from '../../lib/supabaseClient'
 import GlobalNav from '../../components/GlobalNav'
 import { useT } from '../../lib/i18n'
+import { domainFor, logoUrlFor } from '../../lib/companyDomains'
 
 export async function getServerSideProps({ params }) {
   const name = decodeURIComponent(params.name || '')
@@ -25,37 +26,57 @@ export async function getServerSideProps({ params }) {
     .ilike('company', name)
     .limit(500)
 
+  let companyName = null
+
   if (subs && subs.length > 0) {
     // 표기용 정식 명칭: 가장 흔한 원본 대소문자 변형을 고른다.
     const freq = {}
     subs.forEach(s => { if (s.company) freq[s.company] = (freq[s.company] || 0) + 1 })
-    const canonical = Object.keys(freq).sort((a, b) => freq[b] - freq[a])[0] || name
-    return { props: { companyName: canonical } }
+    companyName = Object.keys(freq).sort((a, b) => freq[b] - freq[a])[0] || name
   }
 
-  const { data: dom } = await supabaseServer
-    .from('company_domains')
-    .select('company_name')
-    .ilike('company_name', name)
-    .limit(1)
-  if (dom && dom.length) return { props: { companyName: dom[0].company_name } }
+  if (!companyName) {
+    const { data: dom } = await supabaseServer
+      .from('company_domains')
+      .select('company_name')
+      .ilike('company_name', name)
+      .limit(1)
+    if (dom && dom.length) companyName = dom[0].company_name
+  }
 
-  const { data: co } = await supabaseServer
-    .from('companies')
-    .select('name')
-    .ilike('name', name)
-    .limit(1)
-  if (co && co.length) return { props: { companyName: co[0].name } }
+  if (!companyName) {
+    const { data: co } = await supabaseServer
+      .from('companies')
+      .select('name')
+      .ilike('name', name)
+      .limit(1)
+    if (co && co.length) companyName = co[0].name
+  }
 
-  // 커뮤니티 글이 해당 회사를 author_company로 달고 있으면(시드/더미 포함) 페이지를 연다.
-  const { data: cp } = await supabaseServer
-    .from('community_posts')
-    .select('author_company')
-    .ilike('author_company', name)
-    .limit(1)
-  if (cp && cp.length) return { props: { companyName: cp[0].author_company } }
+  if (!companyName) {
+    // 커뮤니티 글이 해당 회사를 author_company로 달고 있으면(시드/더미 포함) 페이지를 연다.
+    const { data: cp } = await supabaseServer
+      .from('community_posts')
+      .select('author_company')
+      .ilike('author_company', name)
+      .limit(1)
+    if (cp && cp.length) companyName = cp[0].author_company
+  }
 
-  return { notFound: true }
+  if (!companyName) return { notFound: true }
+
+  // 로고용 도메인: 큐레이션 맵 우선, 없으면 인증 테이블(company_domains)에서 조회.
+  let domain = domainFor(companyName)
+  if (!domain) {
+    const { data: d2 } = await supabaseServer
+      .from('company_domains')
+      .select('domain')
+      .ilike('company_name', companyName)
+      .limit(1)
+    if (d2 && d2.length && d2[0].domain) domain = d2[0].domain
+  }
+
+  return { props: { companyName, domain: domain || null } }
 }
 
 function timeAgo(iso) {
@@ -66,7 +87,7 @@ function timeAgo(iso) {
   return `${Math.floor(d / 86400)}d`
 }
 
-export default function CompanyPage({ companyName }) {
+export default function CompanyPage({ companyName, domain }) {
   const { t } = useT()
   const router = useRouter()
   const [tab, setTab] = useState('news')
@@ -82,6 +103,8 @@ export default function CompanyPage({ companyName }) {
   const [followBusy, setFollowBusy] = useState(false)
 
   const initial = (companyName || '?').trim().charAt(0).toUpperCase()
+  const [logoError, setLogoError] = useState(false)
+  const logoUrl = logoUrlFor(domain)
   const enc = encodeURIComponent(companyName)
 
   const loadFollow = useCallback(async () => {
@@ -147,7 +170,9 @@ export default function CompanyPage({ companyName }) {
         .cpg-page { background: #fff; min-height: 100vh; }
         .cpg { max-width: 760px; margin: 0 auto; padding: 0 16px 80px; color: #111; font-family: 'Barlow', sans-serif; }
         .cpg-hero { display: flex; align-items: center; gap: 16px; padding: 28px 0 20px; }
-        .cpg-logo { width: 64px; height: 64px; border-radius: 16px; background: linear-gradient(135deg,#ff6000,#ff8a3d); display: flex; align-items: center; justify-content: center; font-size: 28px; font-weight: 700; color: #fff; flex-shrink: 0; }
+        .cpg-logo { width: 64px; height: 64px; border-radius: 16px; background: linear-gradient(135deg,#ff6000,#ff8a3d); display: flex; align-items: center; justify-content: center; font-size: 28px; font-weight: 700; color: #fff; flex-shrink: 0; overflow: hidden; }
+        .cpg-logo.has-img { background: #fff; border: 1px solid #ececec; }
+        .cpg-logo.has-img img { width: 100%; height: 100%; object-fit: contain; padding: 10px; box-sizing: border-box; }
         .cpg-hmeta { flex: 1; min-width: 0; }
         .cpg-name { font-size: 24px; font-weight: 800; margin: 0 0 4px; color: #111; }
         .cpg-followers { font-size: 13px; color: #888; }
@@ -196,7 +221,11 @@ export default function CompanyPage({ companyName }) {
           {t('cpage.back')}
         </button>
         <div className="cpg-hero">
-          <div className="cpg-logo">{initial}</div>
+          <div className={`cpg-logo${logoUrl && !logoError ? ' has-img' : ''}`}>
+            {logoUrl && !logoError
+              ? <img src={logoUrl} alt={companyName} onError={() => setLogoError(true)} />
+              : initial}
+          </div>
           <div className="cpg-hmeta">
             <h1 className="cpg-name">{companyName}</h1>
             <div className="cpg-followers">{followerCount.toLocaleString()} {t('cpage.followers')}</div>

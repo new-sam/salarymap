@@ -1,4 +1,5 @@
 import supabase from '../../lib/supabaseAdmin';
+import { domainFor } from '../../lib/companyDomains';
 
 // Curated background images per company
 const px = id => `https://images.pexels.com/photos/${id}/pexels-photo-${id}.jpeg?auto=compress&cs=tinysrgb&w=800&h=500&fit=crop`;
@@ -45,48 +46,6 @@ const BG_POOL = [
   px('3861969'), px('1181406'), px('2182973'), px('3184292'),
   px('1181671'), px('3184360'), px('1036808'), px('3861958'),
 ];
-
-// Domain lookup
-const DOMAIN_MAP = {
-  'grab vietnam': 'grab.com',
-  'vng corporation': 'vng.com.vn',
-  'shopee vietnam': 'shopee.vn',
-  'fpt software': 'fpt.com.vn',
-  'tiki': 'tiki.vn',
-  'momo': 'momo.vn',
-  'zalo': 'zalo.me',
-  'vpbank': 'vpbank.com.vn',
-  'techcombank': 'techcombank.com.vn',
-  'sky mavis': 'skymavis.com',
-  'vnpt technology': 'vnpt.com.vn',
-  'shb finance': 'shbfinance.com.vn',
-  'onemount group': 'onemount.com',
-  'logivan': 'logivan.com',
-  'base.vn': 'base.vn',
-  'sendo': 'sendo.vn',
-  'ghn': 'ghn.vn',
-  'ghn express': 'ghn.vn',
-  'rever': 'rever.vn',
-  'nashtech': 'nashtechglobal.com',
-  'nashtech global': 'nashtechglobal.com',
-  'kiotviet': 'kiotviet.vn',
-  'tokyotech vn': 'tokyotechlab.com',
-  'got it': 'got-it.ai',
-  'katalon': 'katalon.com',
-  'harvey nash': 'harveynash.vn',
-  'axon active': 'axonactive.com',
-  'teko vietnam': 'teko.vn',
-  'bhd star': 'bhdstar.vn',
-  'viettel': 'viettel.com.vn',
-  'sacombank digital': 'sacombank.com.vn',
-  'kms technology': 'kms-technology.com',
-  'amanotes': 'amanotes.com',
-  'mbbank': 'mbbank.com.vn',
-  'fossil group vn': 'fossil.com',
-  'trusting social': 'trustingsocial.com',
-  'likelion vietnam': 'likelion.net',
-  'toss vietnam': 'toss.im',
-};
 
 // Map wizard role names to DB role names
 const ROLE_MAP = {
@@ -228,7 +187,7 @@ export default async function handler(req, res) {
         ? { count: sub.count, median: sub.median, min: sub.min, max: sub.max }
         : { count: 0, median: 0, min: 0, max: 0 };
 
-      const domain = DOMAIN_MAP[key] || null;
+      const domain = domainFor(co.name);
       const image = IMAGE_MAP[co.name] || BG_POOL[i % BG_POOL.length];
       const topRole = hasData ? sub.topRole || null : null;
 
