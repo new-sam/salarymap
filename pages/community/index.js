@@ -15,10 +15,11 @@ const CATEGORIES = [
   { key: 'job_change', tKey: 'comm.jobChange' },
 ]
 
-const CATEGORY_COLORS = {
-  ask_company: '#3b82f6',
-  daily: '#10b981',
-  job_change: '#8b5cf6',
+// 게시판 구분용 아이콘. 블라인드식으로 상단 필터 칩에 노출한다.
+const CATEGORY_ICONS = {
+  ask_company: '🏢',
+  daily: '☕',
+  job_change: '🚀',
 }
 
 function isNew(dateStr) {
@@ -79,51 +80,46 @@ export default function CommunityPage() {
   const swipeStartY = useRef(0)
   const swipeLocked = useRef(null)
 
-  // Trending (sidebar)
-  const [trending, setTrending] = useState([])
-  const [activePolls, setActivePolls] = useState([])
   const [followedCompanies, setFollowedCompanies] = useState([])
 
-  // Read posts (dim already-viewed posts)
-  const [readPosts, setReadPosts] = useState(() => new Set())
+  // 최상단 고정 HOT 글 — 현재 카테고리 기준 인기글 1개(정렬과 무관)
+  const [hotPost, setHotPost] = useState(null)
+
+  // 실시간 인기 회사(FYI에서 많이 검색된 회사 TOP 10 + 순위 변동)
+  const [hotCompanies, setHotCompanies] = useState([])
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => setSession(session))
     track('view_community', { page: '/community' })
-    try {
-      setReadPosts(new Set(JSON.parse(localStorage.getItem('comm_read_posts') || '[]')))
-    } catch {}
+    // 데이터 초기라 30일(720h) 창으로 집계
+    fetch('/api/trending-companies?hours=720')
+      .then(r => r.json())
+      .then(d => setHotCompanies(d.companies || []))
+      .catch(() => {})
   }, [])
 
-  const markRead = (postId) => {
-    setReadPosts(prev => {
-      if (prev.has(postId)) return prev
-      const next = new Set(prev)
-      next.add(postId)
-      try { localStorage.setItem('comm_read_posts', JSON.stringify([...next])) } catch {}
-      return next
-    })
-  }
-
-
   useEffect(() => { fetchPosts() }, [category, sort, page, session, search])
+
+  // HOT 글은 현재 카테고리 안에서 가장 인기 있는 글 1개. 검색/내 글/2페이지+ 에선 숨김.
+  // 인증 포함으로 좋아요/투표 상태까지 정확히 반영한다.
+  useEffect(() => {
+    if (search || sort === 'mine' || page !== 1) { setHotPost(null); return }
+    let cancelled = false
+    const headers = {}
+    if (session?.access_token) headers.Authorization = `Bearer ${session.access_token}`
+    const catParam = category && category !== 'all' ? `&category=${category}` : ''
+    fetch(`/api/community/posts?sort=popular&limit=1${catParam}`, { headers })
+      .then(r => r.json())
+      .then(d => { if (!cancelled) setHotPost(d.posts?.[0] || null) })
+      .catch(() => { if (!cancelled) setHotPost(null) })
+    return () => { cancelled = true }
+  }, [category, sort, page, search, session])
 
   useEffect(() => {
     const t0 = setTimeout(() => setShowFabTip(true), 1000)
     const t1 = setTimeout(() => setFabTipHiding(true), 3700)
     const t2 = setTimeout(() => setShowFabTip(false), 4000)
     return () => { clearTimeout(t0); clearTimeout(t1); clearTimeout(t2) }
-  }, [])
-
-  useEffect(() => {
-    fetch('/api/community/posts?sort=popular&limit=5')
-      .then(r => r.json())
-      .then(d => setTrending(d.posts || []))
-      .catch(() => {})
-    fetch('/api/community/active-polls?limit=4')
-      .then(r => r.json())
-      .then(d => setActivePolls(d.polls || []))
-      .catch(() => {})
   }, [])
 
   // 내가 팔로우한 회사 목록 (로그인 시)
@@ -251,13 +247,19 @@ export default function CommunityPage() {
       return
     }
     track('click_community_post', { meta: { post_id: postId }, page: '/community' })
-    markRead(postId)
   }
 
   const handleWrite = () => {
     if (!session) { window.dispatchEvent(new CustomEvent('fyi-show-login')); return }
     track('click_community_write', { page: '/community' })
     router.push('/community/write')
+  }
+
+  // 검색어를 실시간 인기 회사 랭킹 신호로 기록(검색어=회사명 가정). 2글자 미만은 무시.
+  const trackCompanySearch = (q) => {
+    const term = (q || '').trim()
+    if (term.length < 2) return
+    track('search_company', { meta: { company: term }, page: '/community' })
   }
 
   const toggleLike = async (postId) => {
@@ -312,6 +314,100 @@ export default function CommunityPage() {
     return found ? t(found.tKey) : catKey
   }
 
+  // 카드 한 장 렌더. hot=true면 최상단 고정 카드로 HOT 뱃지를 단다.
+  const renderCard = (post, hot = false) => (
+    <Link key={post.id} href={`/community/${post.id}`} className="comm-card" onClick={e => handlePostClick(e, post.id)}>
+      <div className="comm-card-meta">
+        {hot && <span className="comm-hot-badge">HOT</span>}
+        {isNew(post.created_at) && <span className="comm-new-badge">NEW</span>}
+        <span className="comm-card-cat">{getCatLabel(post.category)}</span>
+      </div>
+      <div className="comm-card-author">
+        {(post.author_verified_company || post.author_company) ? (
+          <span
+            className="comm-card-company"
+            onClick={(e) => { e.preventDefault(); e.stopPropagation(); router.push(`/companies/${encodeURIComponent(post.author_verified_company || post.author_company)}`) }}
+          >{post.author_verified_company || post.author_company}</span>
+        ) : (
+          <span>{t('comm.unemployed')}</span>
+        )}
+        <span className="comm-card-dot">·</span>
+        <span>{post.author_name}</span>
+        {post.author_salary_tier && <SalaryBadge tierKey={post.author_salary_tier} t={t} />}
+      </div>
+      <div className="comm-card-main">
+        <div className="comm-card-text">
+          <div className="comm-card-title">{post.title}</div>
+          {post.content && <div className="comm-card-preview">{post.content}</div>}
+        </div>
+        {post.image_urls?.length > 0 && (
+          <div className="comm-card-thumb">
+            <img src={post.image_urls[0]} alt="" />
+            {post.image_urls.length > 1 && (
+              <span className="comm-card-thumb-more">+{post.image_urls.length - 1}</span>
+            )}
+          </div>
+        )}
+      </div>
+
+      {post.poll && (() => {
+        const { id: pollId, option_a, option_b, votes_a, votes_b, my_vote, ends_at } = post.poll
+        const left = pollTimeLeft(ends_at)
+        const ended = !left
+        const showResults = ended || !!my_vote
+        const total = votes_a + votes_b
+        const pctA = total ? Math.round((votes_a / total) * 100) : 0
+        const pctB = total ? 100 - pctA : 0
+        const leadA = votes_a >= votes_b
+        return (
+          <div className="comm-poll" onClick={e => { e.preventDefault(); e.stopPropagation() }}>
+            <div className="comm-poll-head">
+              <span className="comm-poll-tag">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><path d="M4 20V10M12 20V4M20 20v-6"/></svg>
+                {t('comm.pollBattle')}
+              </span>
+              <span className="comm-poll-time">{ended ? t('comm.pollEnded') : t('comm.pollEndsIn', { time: left })} · {t('comm.pollTotal', { n: total })}</span>
+            </div>
+            {showResults ? (
+              <div className="comm-poll-results">
+                {[{ k: 'a', label: option_a, pct: pctA, lead: leadA }, { k: 'b', label: option_b, pct: pctB, lead: !leadA }].map(o => (
+                  <div key={o.k} className={`comm-poll-res${my_vote === o.k ? ' mine' : ''}${total && o.lead ? ' lead' : ''}`}>
+                    <div className="comm-poll-res-fill" style={{ width: `${o.pct}%` }} />
+                    <div className="comm-poll-res-row">
+                      <span className="comm-poll-res-label">{o.label}{my_vote === o.k && ' ✓'}</span>
+                      <span className="comm-poll-res-pct">{o.pct}%</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="comm-poll-vote">
+                <button className="comm-poll-btn" onClick={() => votePoll(post, 'a')}>{option_a}</button>
+                <span className="comm-poll-vs">VS</span>
+                <button className="comm-poll-btn" onClick={() => votePoll(post, 'b')}>{option_b}</button>
+              </div>
+            )}
+          </div>
+        )
+      })()}
+
+      <div className="comm-card-footer">
+        <span
+          className={`comm-card-stat${post.is_liked ? ' liked' : ''}`}
+          onClick={(e) => { e.preventDefault(); e.stopPropagation(); toggleLike(post.id) }}
+        >
+          <svg viewBox="0 0 24 24" fill={post.is_liked ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg>
+          {post.like_count || 0}
+        </span>
+        <span className="comm-card-stat">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+          {post.comment_count || 0}
+        </span>
+        <span className="comm-card-time">{timeAgo(post.created_at)}</span>
+      </div>
+    </Link>
+  )
+
   return (
     <>
       <Head><title>{t('comm.title')}</title><meta name="robots" content="noindex" /></Head>
@@ -321,13 +417,31 @@ export default function CommunityPage() {
 
       <style>{`
         .comm-page { background: #fff; min-height: 100vh; }
-        .comm-container { max-width: 1080px; margin: 0 auto; padding: 60px 40px 60px; display: grid; grid-template-columns: 1fr 300px; gap: 32px; }
-        .comm-header { grid-column: 1 / -1; margin-bottom: 0; }
+        .comm-container { max-width: 1180px; margin: 0 auto; padding: 60px 40px 60px; display: grid; grid-template-columns: 1fr 280px; gap: 28px; align-items: start; }
+        .comm-sidebar { display: flex; flex-direction: column; gap: 20px; position: sticky; top: 80px; align-self: start; }
+        .comm-hotco-card { background: #fff; border: 1px solid #eee; border-radius: 14px; padding: 18px 18px 8px; }
+        .comm-hotco-title { display: flex; align-items: center; gap: 6px; font-size: 14px; font-weight: 800; color: #111; margin: 0 0 4px; font-family: 'Barlow', sans-serif; }
+        .comm-hotco-sub { font-size: 11px; color: #aaa; margin: 0 0 12px; }
+        .comm-hotco-live { width: 6px; height: 6px; border-radius: 50%; background: #ff3b30; box-shadow: 0 0 0 0 rgba(255,59,48,0.5); animation: comm-live-pulse 1.6s ease-out infinite; }
+        @keyframes comm-live-pulse { 0% { box-shadow: 0 0 0 0 rgba(255,59,48,0.5); } 70% { box-shadow: 0 0 0 5px rgba(255,59,48,0); } 100% { box-shadow: 0 0 0 0 rgba(255,59,48,0); } }
+        .comm-hotco-row { display: flex; align-items: center; gap: 10px; padding: 7px 0; text-decoration: none; }
+        .comm-hotco-row + .comm-hotco-row { border-top: 1px solid #f4f4f4; }
+        .comm-hotco-rank { width: 18px; flex-shrink: 0; font-size: 13px; font-weight: 800; color: #bbb; text-align: center; font-family: 'Barlow', sans-serif; }
+        .comm-hotco-rank.top { color: #ff6000; }
+        .comm-hotco-name { flex: 1; min-width: 0; font-size: 13px; font-weight: 600; color: #333; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-transform: capitalize; transition: color 0.15s; }
+        .comm-hotco-row:hover .comm-hotco-name { color: #ff6000; }
+        .comm-hotco-move { flex-shrink: 0; width: 30px; text-align: right; font-size: 11px; font-weight: 800; line-height: 1; }
+        .comm-hotco-move.up { color: #16a34a; }
+        .comm-hotco-move.down { color: #ef4444; }
+        .comm-hotco-move.same { color: #ddd; }
+        .comm-hotco-move.new { color: #ff6000; }
+        .comm-hotco-new { display: inline-block; padding: 1px 4px; border-radius: 3px; background: #ff6000; color: #fff; font-size: 8px; font-weight: 800; letter-spacing: 0.3px; }
         .comm-title { font-size: 32px; font-weight: 800; color: #111; margin: 0 0 6px; font-family: 'Barlow', sans-serif; }
         .comm-subtitle { font-size: 14px; color: #888; margin: 0; }
         .comm-main { display: flex; flex-direction: column; gap: 16px; }
         .comm-cats { display: flex; gap: 8px; flex-wrap: wrap; }
-        .comm-cat-btn { padding: 5px 14px; border-radius: 14px; border: 1px solid #ddd; background: transparent; color: #666; font-size: 12px; font-weight: 600; cursor: pointer; transition: all 0.15s; font-family: 'Barlow', sans-serif; }
+        .comm-cat-btn { display: inline-flex; align-items: center; gap: 5px; padding: 5px 14px; border-radius: 14px; border: 1px solid #ddd; background: transparent; color: #666; font-size: 12px; font-weight: 600; cursor: pointer; transition: all 0.15s; font-family: 'Barlow', sans-serif; }
+        .comm-cat-btn-ico { font-size: 13px; line-height: 1; }
         .comm-cat-btn:hover { border-color: #999; color: #111; }
         .comm-cat-btn.active { background: #ff6000; border-color: #ff6000; color: #fff; }
         .comm-search { position: relative; }
@@ -345,40 +459,11 @@ export default function CommunityPage() {
         .comm-write-btn { padding: 9px 24px; border-radius: 8px; border: none; background: #ff6000; color: #fff; font-size: 13px; font-weight: 700; cursor: pointer; font-family: 'Barlow', sans-serif; transition: all 0.15s; }
         .comm-write-btn:hover { background: #ff7a1a; transform: translateY(-1px); box-shadow: 0 4px 16px rgba(255,96,0,0.3); }
         .comm-new-badge { display: inline-flex; align-items: center; justify-content: center; vertical-align: middle; height: 15px; padding: 0 5px; border-radius: 4px; background: #ff6000; color: #fff; font-size: 9px; font-weight: 800; letter-spacing: 0.3px; line-height: 1; font-family: 'Barlow', sans-serif; flex-shrink: 0; }
-        /* Read (already-viewed) posts: dim & desaturate */
-        .comm-card.is-read, .comm-ms-item.is-read { opacity: 0.5; filter: saturate(0.7); }
-        .comm-card.is-read:hover, .comm-ms-item.is-read:hover { opacity: 0.72; }
-        .comm-card.is-read .comm-card-title, .comm-ms-item.is-read .comm-ms-item-title { color: #999; font-weight: 500; }
+        .comm-hot-badge { display: inline-flex; align-items: center; justify-content: center; vertical-align: middle; height: 15px; padding: 0 6px; border-radius: 4px; background: #ef4444; color: #fff; font-size: 9px; font-weight: 800; letter-spacing: 0.5px; line-height: 1; font-family: 'Barlow', sans-serif; flex-shrink: 0; }
         .comm-empty { text-align: center; padding: 80px 20px; color: #bbb; font-size: 14px; }
         .comm-pager { display: flex; justify-content: center; gap: 8px; margin-top: 28px; padding-top: 4px; }
         .comm-pager-btn { padding: 8px 18px; border-radius: 8px; border: 1px solid #ddd; background: transparent; color: #666; font-size: 13px; cursor: pointer; font-family: 'Barlow', sans-serif; }
         .comm-pager-btn:disabled { opacity: 0.25; cursor: default; }
-        .comm-sidebar { display: flex; flex-direction: column; gap: 20px; position: sticky; top: 80px; align-self: start; }
-        .comm-sb-card { background: #fafafa; border: 1px solid #eee; border-radius: 12px; padding: 20px; }
-        .comm-sb-title { font-size: 14px; font-weight: 700; color: #333; margin: 0 0 14px; font-family: 'Barlow', sans-serif; }
-        .comm-sb-trending { display: flex; flex-direction: column; gap: 12px; }
-        .comm-sb-item { cursor: pointer; text-decoration: none; display: block; }
-        .comm-sb-item:hover .comm-sb-item-title { color: #ff6000; }
-        .comm-sb-item-title { font-size: 13px; font-weight: 600; color: #555; line-height: 1.4; transition: color 0.15s; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
-        .comm-sb-item-meta { font-size: 11px; color: #bbb; margin-top: 3px; display: flex; gap: 10px; }
-        .comm-sb-title-icon { display: flex; align-items: center; gap: 6px; }
-        .comm-sb-polls { display: flex; flex-direction: column; gap: 16px; }
-        .comm-sb-poll { display: block; text-decoration: none; }
-        .comm-sb-poll-title { font-size: 13px; font-weight: 700; color: #444; line-height: 1.35; margin-bottom: 7px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; transition: color 0.15s; }
-        .comm-sb-poll:hover .comm-sb-poll-title { color: #ff6000; }
-        .comm-sb-poll-bar { height: 6px; border-radius: 3px; background: #eee; overflow: hidden; }
-        .comm-sb-poll-fill { height: 100%; background: #ff6000; border-radius: 3px; }
-        .comm-sb-poll-meta { display: flex; justify-content: space-between; gap: 8px; margin-top: 5px; }
-        .comm-sb-poll-opt { font-size: 11px; font-weight: 700; color: #ff6000; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .comm-sb-poll-opt.b { color: #999; text-align: right; }
-        .comm-sb-poll-total { font-size: 10px; color: #bbb; margin-top: 4px; }
-        .comm-sb-follows { display: flex; flex-wrap: wrap; gap: 6px; }
-        .comm-sb-follow { padding: 6px 12px; border-radius: 16px; border: 1px solid #eee; background: #fff; color: #555; font-size: 12px; font-weight: 600; text-decoration: none; transition: all 0.15s; }
-        .comm-sb-follow:hover { border-color: #ff6000; color: #ff6000; }
-        .comm-sb-about { font-size: 13px; color: #777; line-height: 1.6; margin-bottom: 14px; }
-        .comm-sb-guide { display: flex; flex-direction: column; gap: 8px; }
-        .comm-sb-guide-item { font-size: 12px; color: #666; display: flex; align-items: flex-start; gap: 6px; line-height: 1.4; }
-        .comm-sb-guide-dot { width: 4px; height: 4px; border-radius: 50%; background: #ff6000; margin-top: 5px; flex-shrink: 0; }
         .comm-delete-btn { margin-left: auto; font-size: 12px; color: #bbb; background: none; border: none; cursor: pointer; font-family: 'Barlow', sans-serif; }
         .comm-delete-btn:hover { color: #ef4444; }
         .comm-fab { display: none; position: fixed; bottom: 80px; right: 20px; width: 52px; height: 52px; border-radius: 50%; border: none; background: #ff6000; color: #fff; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 4px 16px rgba(255,96,0,0.4); z-index: 100; }
@@ -408,11 +493,13 @@ export default function CommunityPage() {
         .comm-ms-item-preview { font-size: 13px; color: #888; line-height: 1.5; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
         .comm-ms-empty { text-align: center; padding: 60px 20px; color: #bbb; font-size: 14px; }
         .comm-ms-loading { text-align: center; padding: 60px 20px; color: #bbb; font-size: 14px; }
-        .comm-feed { display: flex; flex-direction: column; gap: 12px; }
-        .comm-card { display: block; padding: 18px 20px; border: 1px solid #ececec; border-radius: 14px; background: #fff; text-decoration: none; cursor: pointer; transition: border-color 0.15s, box-shadow 0.15s, transform 0.15s; }
+        /* 데스크탑 2열 그리드(블라인드식). 모바일은 아래 미디어쿼리에서 1열. */
+        /* align-items: stretch(기본)로 같은 행 카드 높이를 통일 → 내용이 짧아도 카드 크기 동일. */
+        .comm-feed { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        .comm-card { display: flex; flex-direction: column; padding: 18px 20px; border: 1px solid #ececec; border-radius: 14px; background: #fff; text-decoration: none; cursor: pointer; transition: border-color 0.15s, box-shadow 0.15s, transform 0.15s; }
         .comm-card:hover { border-color: #e0e0e0; box-shadow: 0 6px 22px rgba(0,0,0,0.06); transform: translateY(-1px); }
         .comm-card-meta { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
-        .comm-card-cat { display: inline-flex; align-items: center; padding: 3px 9px; border-radius: 6px; font-size: 12px; font-weight: 700; line-height: 1.4; }
+        .comm-card-cat { font-size: 12px; font-weight: 700; color: #999; line-height: 1.4; }
         .comm-card-time { font-size: 11px; color: #bbb; }
         .comm-card-author { font-size: 12px; color: #999; margin-bottom: 11px; display: flex; align-items: center; gap: 5px; flex-wrap: wrap; }
         .comm-card-company { color: #ff6000; cursor: pointer; }
@@ -448,28 +535,27 @@ export default function CommunityPage() {
         .comm-poll-res-row { position: relative; display: flex; align-items: center; justify-content: space-between; padding: 9px 12px; }
         .comm-poll-res-label { font-size: 12px; font-weight: 700; color: #444; word-break: break-word; }
         .comm-poll-res-pct { font-size: 13px; font-weight: 800; color: #ff6000; flex-shrink: 0; margin-left: 8px; }
-        .comm-card-footer { display: flex; align-items: center; gap: 16px; }
+        .comm-card-footer { display: flex; align-items: center; gap: 16px; margin-top: auto; }
+        .comm-card-footer .comm-card-time { margin-left: auto; }
         .comm-card-stat { display: flex; align-items: center; gap: 5px; font-size: 13px; color: #bbb; }
         .comm-card-stat svg { width: 15px; height: 15px; }
         .comm-card-stat.liked { color: #ff6000; }
         .comm-pull { display: none; justify-content: center; align-items: center; color: #bbb; font-size: 12px; font-family: 'Barlow', sans-serif; overflow: hidden; transition: height 0.2s; }
         .comm-pull-spinner { width: 18px; height: 18px; border: 2px solid #ddd; border-top-color: #ff6000; border-radius: 50%; animation: comm-spin 0.6s linear infinite; }
         @keyframes comm-spin { to { transform: rotate(360deg); } }
-        /* 데스크탑은 사이드바에 팔로우 회사를 표시하므로 피드 상단 칩은 모바일에서만 */
-        @media (min-width: 769px) { .comm-follows { display: none; } }
         @media (max-width: 768px) { .comm-pull { display: flex; } }
         @media (max-width: 768px) {
-          .comm-container { grid-template-columns: 1fr; padding: 52px 14px 90px; gap: 12px; }
-          .comm-sidebar { position: static; }
+          .comm-container { grid-template-columns: 1fr; padding: 52px 14px 90px; }
+          .comm-sidebar { display: none; }
           .comm-title { font-size: 24px; }
           .comm-cats { overflow-x: auto; flex-wrap: nowrap; padding-bottom: 4px; -webkit-overflow-scrolling: touch; }
           .comm-cats::-webkit-scrollbar { display: none; }
           .comm-cat-btn { flex-shrink: 0; }
           .comm-search { display: none; }
+          .comm-feed { grid-template-columns: 1fr; }
           .comm-card { padding: 16px; }
           .comm-write-btn { display: none; }
           .comm-fab { display: flex; }
-          .comm-sidebar { display: none; }
         }
       `}</style>
 
@@ -502,6 +588,7 @@ export default function CommunityPage() {
             <div className="comm-cats">
               {CATEGORIES.map(cat => (
                 <button key={cat.key} className={`comm-cat-btn${category === cat.key ? ' active' : ''}`} onClick={() => { setCategory(cat.key); setPage(1) }}>
+                  {CATEGORY_ICONS[cat.key] && <span className="comm-cat-btn-ico">{CATEGORY_ICONS[cat.key]}</span>}
                   {t(cat.tKey)}
                 </button>
               ))}
@@ -527,7 +614,7 @@ export default function CommunityPage() {
                 placeholder={t('comm.searchPlaceholder')}
                 value={searchInput}
                 onChange={e => setSearchInput(e.target.value)}
-                onKeyDown={e => { if (e.key === 'Enter' && !e.nativeEvent.isComposing) { setSearch(searchInput); setPage(1) } }}
+                onKeyDown={e => { if (e.key === 'Enter' && !e.nativeEvent.isComposing) { setSearch(searchInput); setPage(1); trackCompanySearch(searchInput) } }}
               />
               {searchInput && (
                 <button className="comm-search-clear" onClick={() => { setSearchInput(''); setSearch(''); setPage(1) }}>×</button>
@@ -547,99 +634,8 @@ export default function CommunityPage() {
               <div className="comm-empty">{sort === 'mine' ? t('comm.emptyMine') : t('comm.empty')}</div>
             ) : (
               <div className="comm-feed">
-                {posts.map(post => (
-                  <Link key={post.id} href={`/community/${post.id}`} className={`comm-card${readPosts.has(post.id) ? ' is-read' : ''}`} onClick={e => handlePostClick(e, post.id)}>
-                    <div className="comm-card-meta">
-                      <span className="comm-card-cat" style={{ color: CATEGORY_COLORS[post.category] || '#777', background: (CATEGORY_COLORS[post.category] || '#777') + '18' }}>
-                        {getCatLabel(post.category)}
-                      </span>
-                      <span className="comm-card-time">{timeAgo(post.created_at)}</span>
-                      {isNew(post.created_at) && <span className="comm-new-badge">NEW</span>}
-                    </div>
-                    <div className="comm-card-author">
-                      {(post.author_verified_company || post.author_company) ? (
-                        <span
-                          className="comm-card-company"
-                          onClick={(e) => { e.preventDefault(); e.stopPropagation(); router.push(`/companies/${encodeURIComponent(post.author_verified_company || post.author_company)}`) }}
-                        >{post.author_verified_company || post.author_company}</span>
-                      ) : (
-                        <span>{t('comm.unemployed')}</span>
-                      )}
-                      <span className="comm-card-dot">·</span>
-                      <span>{post.author_name}</span>
-                      {post.author_salary_tier && <SalaryBadge tierKey={post.author_salary_tier} t={t} />}
-                    </div>
-                    <div className="comm-card-main">
-                      <div className="comm-card-text">
-                        <div className="comm-card-title">{post.title}</div>
-                        {post.content && <div className="comm-card-preview">{post.content}</div>}
-                      </div>
-                      {post.image_urls?.length > 0 && (
-                        <div className="comm-card-thumb">
-                          <img src={post.image_urls[0]} alt="" />
-                          {post.image_urls.length > 1 && (
-                            <span className="comm-card-thumb-more">+{post.image_urls.length - 1}</span>
-                          )}
-                        </div>
-                      )}
-                    </div>
-
-                    {post.poll && (() => {
-                      const { id: pollId, option_a, option_b, votes_a, votes_b, my_vote, ends_at } = post.poll
-                      const left = pollTimeLeft(ends_at)
-                      const ended = !left
-                      const showResults = ended || !!my_vote
-                      const total = votes_a + votes_b
-                      const pctA = total ? Math.round((votes_a / total) * 100) : 0
-                      const pctB = total ? 100 - pctA : 0
-                      const leadA = votes_a >= votes_b
-                      return (
-                        <div className="comm-poll" onClick={e => { e.preventDefault(); e.stopPropagation() }}>
-                          <div className="comm-poll-head">
-                            <span className="comm-poll-tag">
-                              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><path d="M4 20V10M12 20V4M20 20v-6"/></svg>
-                              {t('comm.pollBattle')}
-                            </span>
-                            <span className="comm-poll-time">{ended ? t('comm.pollEnded') : t('comm.pollEndsIn', { time: left })} · {t('comm.pollTotal', { n: total })}</span>
-                          </div>
-                          {showResults ? (
-                            <div className="comm-poll-results">
-                              {[{ k: 'a', label: option_a, pct: pctA, lead: leadA }, { k: 'b', label: option_b, pct: pctB, lead: !leadA }].map(o => (
-                                <div key={o.k} className={`comm-poll-res${my_vote === o.k ? ' mine' : ''}${total && o.lead ? ' lead' : ''}`}>
-                                  <div className="comm-poll-res-fill" style={{ width: `${o.pct}%` }} />
-                                  <div className="comm-poll-res-row">
-                                    <span className="comm-poll-res-label">{o.label}{my_vote === o.k && ' ✓'}</span>
-                                    <span className="comm-poll-res-pct">{o.pct}%</span>
-                                  </div>
-                                </div>
-                              ))}
-                            </div>
-                          ) : (
-                            <div className="comm-poll-vote">
-                              <button className="comm-poll-btn" onClick={() => votePoll(post, 'a')}>{option_a}</button>
-                              <span className="comm-poll-vs">VS</span>
-                              <button className="comm-poll-btn" onClick={() => votePoll(post, 'b')}>{option_b}</button>
-                            </div>
-                          )}
-                        </div>
-                      )
-                    })()}
-
-                    <div className="comm-card-footer">
-                      <span
-                        className={`comm-card-stat${post.is_liked ? ' liked' : ''}`}
-                        onClick={(e) => { e.preventDefault(); e.stopPropagation(); toggleLike(post.id) }}
-                      >
-                        <svg viewBox="0 0 24 24" fill={post.is_liked ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg>
-                        {post.like_count || 0}
-                      </span>
-                      <span className="comm-card-stat">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
-                        {post.comment_count || 0}
-                      </span>
-                    </div>
-                  </Link>
-                ))}
+                {hotPost && renderCard(hotPost, true)}
+                {posts.filter(p => !hotPost || p.id !== hotPost.id).map(post => renderCard(post))}
               </div>
             )}
 
@@ -653,66 +649,26 @@ export default function CommunityPage() {
             </div>
           </div>
 
-          <div className="comm-sidebar">
-            {activePolls.length > 0 && (
-              <div className="comm-sb-card">
-                <h3 className="comm-sb-title comm-sb-title-icon">
-                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#ff6000" strokeWidth="2.2" strokeLinecap="round"><path d="M4 20V10M12 20V4M20 20v-6"/></svg>
-                  {t('comm.activePollsTitle')}
-                </h3>
-                <div className="comm-sb-polls">
-                  {activePolls.map(p => {
-                    const total = p.votes_a + p.votes_b
-                    const pctA = total ? Math.round((p.votes_a / total) * 100) : 50
-                    return (
-                      <Link key={p.poll_id} href={`/community/${p.post_id}`} className="comm-sb-poll">
-                        <div className="comm-sb-poll-title">{p.title}</div>
-                        <div className="comm-sb-poll-bar">
-                          <div className="comm-sb-poll-fill" style={{ width: `${pctA}%` }} />
-                        </div>
-                        <div className="comm-sb-poll-meta">
-                          <span className="comm-sb-poll-opt">{p.option_a} {pctA}%</span>
-                          <span className="comm-sb-poll-opt b">{100 - pctA}% {p.option_b}</span>
-                        </div>
-                        <div className="comm-sb-poll-total">{t('comm.pollTotal', { n: total })}</div>
-                      </Link>
-                    )
-                  })}
-                </div>
+          <aside className="comm-sidebar">
+            {hotCompanies.length > 0 && (
+              <div className="comm-hotco-card">
+                <h3 className="comm-hotco-title"><span className="comm-hotco-live" />{t('comm.hotCompaniesTitle')}</h3>
+                <p className="comm-hotco-sub">{t('comm.hotCompaniesSub')}</p>
+                {hotCompanies.map(c => (
+                  <Link key={c.company} href={`/companies/${encodeURIComponent(c.company)}`} className="comm-hotco-row">
+                    <span className={`comm-hotco-rank${c.rank <= 3 ? ' top' : ''}`}>{c.rank}</span>
+                    <span className="comm-hotco-name">{c.company}</span>
+                    <span className={`comm-hotco-move ${c.move}`}>
+                      {c.move === 'new' ? <span className="comm-hotco-new">NEW</span>
+                        : c.move === 'up' ? '▲'
+                        : c.move === 'down' ? '▼'
+                        : '–'}
+                    </span>
+                  </Link>
+                ))}
               </div>
             )}
-
-            {followedCompanies.length > 0 && (
-              <div className="comm-sb-card">
-                <h3 className="comm-sb-title">{t('comm.followingTitle')}</h3>
-                <div className="comm-sb-follows">
-                  {followedCompanies.map(f => (
-                    <Link key={f.company_name} href={`/companies/${encodeURIComponent(f.company_name)}`} className="comm-sb-follow">
-                      {f.company_name}
-                    </Link>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {trending.length > 0 && (
-              <div className="comm-sb-card">
-                <h3 className="comm-sb-title">{t('comm.trendingTitle')}</h3>
-                <div className="comm-sb-trending">
-                  {trending.map(p => (
-                    <Link key={p.id} href={`/community/${p.id}`} className="comm-sb-item">
-                      <div className="comm-sb-item-title">{p.title}</div>
-                      <div className="comm-sb-item-meta">
-                        <span>{getCatLabel(p.category)}</span>
-                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3 }}><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg> {p.like_count || 0}</span>
-                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3 }}><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg> {p.comment_count || 0}</span>
-                      </div>
-                    </Link>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
+          </aside>
         </div>
       </div>
 
@@ -733,7 +689,7 @@ export default function CommunityPage() {
               placeholder={t('comm.searchPlaceholder')}
               value={mobileSearchInput}
               onChange={e => setMobileSearchInput(e.target.value)}
-              onKeyDown={e => { if (e.key === 'Enter' && !e.nativeEvent.isComposing && mobileSearchInput.trim()) setMobileSearchQuery(mobileSearchInput.trim()) }}
+              onKeyDown={e => { if (e.key === 'Enter' && !e.nativeEvent.isComposing && mobileSearchInput.trim()) { setMobileSearchQuery(mobileSearchInput.trim()); trackCompanySearch(mobileSearchInput) } }}
             />
             {mobileSearchInput && (
               <button className="comm-ms-clear" onClick={() => { setMobileSearchInput(''); setMobileSearchQuery(''); setMobileSearchResults([]); mobileSearchRef.current?.focus() }}>×</button>
@@ -752,7 +708,7 @@ export default function CommunityPage() {
             <div className="comm-ms-empty">{t('comm.empty')}</div>
           ) : (
             mobileSearchResults.map(post => (
-              <Link key={post.id} href={`/community/${post.id}`} className={`comm-ms-item${readPosts.has(post.id) ? ' is-read' : ''}`} onClick={e => handlePostClick(e, post.id)}>
+              <Link key={post.id} href={`/community/${post.id}`} className="comm-ms-item" onClick={e => handlePostClick(e, post.id)}>
                 <div className="comm-ms-item-meta">
                   <span className="comm-ms-item-cat">{getCatLabel(post.category)}</span>
                   <span className="comm-ms-item-time">{timeAgo(post.created_at)}</span>

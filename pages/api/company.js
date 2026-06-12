@@ -10,6 +10,12 @@ export default async function handler(req, res) {
   const { name } = req.query;
   if (!name) return res.status(400).json({ error: 'name required' });
 
+  // 실시간 인기 회사(많이 검색된 회사) 랭킹용 신호. 검색 1건당 1행.
+  // 조회 응답을 막지 않도록 실패는 무시한다.
+  try {
+    await supabase.from('events').insert([{ event: 'search_company', page: '/', meta: { company: name.trim() } }]);
+  } catch {}
+
   // 1. 해당 회사 제출 데이터
   const { data: subs } = await supabase
     .from('submissions')
