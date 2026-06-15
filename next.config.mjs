@@ -2,6 +2,7 @@
 const nextConfig = {
   /* config options here */
   reactStrictMode: false,
+  devIndicators: false,
   serverExternalPackages: ['googleapis', 'google-auth-library'],
   async redirects() {
     return [

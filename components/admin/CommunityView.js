@@ -8,8 +8,10 @@ const L = {
     note: '* 내부/시드 계정 제외, 선택한 기간 기준',
     posts: '게시글', comments: '댓글', likes: '좋아요', authors: '참여자',
     postViews: '글 조회', listViews: '목록 방문', writeClicks: '글쓰기 클릭',
-    navClicks: '탭/네비 클릭',
+    navClicks: '탭/네비 클릭', follows: '회사 팔로우',
     avgComments: '글당 평균 댓글',
+    followTitle: '회사 팔로우 TOP',
+    thCompany: '회사', thFollows: '팔로우', thUnfollows: '언팔', thNet: '순증',
     funnelTitle: '유입 퍼널',
     fNav: '탭/네비 클릭', fList: '목록 방문', fPost: '글 클릭', fWrite: '글쓰기 클릭', fCreate: '작성 완료',
     fNavToList: '탭 경유 유입', fOfList: '목록 대비',
@@ -29,8 +31,10 @@ const L = {
     note: '* Excludes internal/seed accounts, within selected range',
     posts: 'Posts', comments: 'Comments', likes: 'Likes', authors: 'Authors',
     postViews: 'Post Views', listViews: 'List Views', writeClicks: 'Write Clicks',
-    navClicks: 'Tab/Nav Clicks',
+    navClicks: 'Tab/Nav Clicks', follows: 'Company Follows',
     avgComments: 'Avg Comments / Post',
+    followTitle: 'Top Followed Companies',
+    thCompany: 'Company', thFollows: 'Follows', thUnfollows: 'Unfollows', thNet: 'Net',
     funnelTitle: 'Entry Funnel',
     fNav: 'Tab/Nav Click', fList: 'List View', fPost: 'Post Click', fWrite: 'Write Click', fCreate: 'Posted',
     fNavToList: 'via tab/nav', fOfList: 'of list views',
@@ -56,10 +60,12 @@ const CARD = [
   { key: 'navClicks', color: '#ec4899' },
   { key: 'postViews', color: '#06b6d4' },
   { key: 'writeClicks', color: '#f59e0b' },
+  { key: 'follows', color: '#14b8a6' },
 ]
 const CARD_LABEL = {
   totalPosts: 'posts', totalComments: 'comments', totalLikes: 'likes',
   uniqueAuthors: 'authors', navClicks: 'navClicks', postViews: 'postViews', writeClicks: 'writeClicks',
+  follows: 'follows',
 }
 
 export default function CommunityView({ token, lang = 'ko', dateRange }) {
@@ -85,7 +91,7 @@ export default function CommunityView({ token, lang = 'ko', dateRange }) {
   if (loading) return <div style={{ textAlign: 'center', padding: 40, color: '#666' }}>{t.loading}</div>
   if (!data || !data.summary) return <div style={{ textAlign: 'center', padding: 40, color: '#999' }}>{t.empty}</div>
 
-  const { summary, daily, byCategory, topPosts, funnel } = data
+  const { summary, daily, byCategory, topPosts, funnel, topFollowedCompanies = [] } = data
   const maxCat = Math.max(1, ...byCategory.map(c => c.posts))
   const catName = (k) => t.cats[k] || k
 
@@ -174,6 +180,36 @@ export default function CommunityView({ token, lang = 'ko', dateRange }) {
         </div>
       </div>
 
+      {/* Top followed companies */}
+      {topFollowedCompanies.length > 0 && (
+        <div style={{ ...sectionStyle, marginBottom: 24 }}>
+          <h3 style={sectionTitle}>{t.followTitle}</h3>
+          <div style={{ overflowX: 'auto' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+              <thead>
+                <tr style={{ borderBottom: '2px solid #e5e7eb' }}>
+                  {[t.thCompany, t.thFollows, t.thUnfollows, t.thNet].map((h, i) => (
+                    <th key={h} style={{ padding: '8px 12px', textAlign: i === 0 ? 'left' : 'right', fontWeight: 600, color: '#374151' }}>{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {topFollowedCompanies.map((c, i) => (
+                  <tr key={c.company} style={{ borderBottom: '1px solid #f3f4f6', background: i % 2 === 0 ? '#fff' : '#fafafa' }}>
+                    <td style={{ padding: '6px 12px' }}>
+                      <a href={`/companies/${encodeURIComponent(c.company)}`} target="_blank" rel="noopener noreferrer" style={{ color: '#111', textDecoration: 'none' }}>{c.company}</a>
+                    </td>
+                    <td style={{ padding: '6px 12px', textAlign: 'right', color: '#14b8a6', fontWeight: 600 }}>{c.follows}</td>
+                    <td style={{ padding: '6px 12px', textAlign: 'right', color: '#9CA3AF' }}>{c.unfollows || '-'}</td>
+                    <td style={{ padding: '6px 12px', textAlign: 'right', fontWeight: 600, color: c.net >= 0 ? '#111' : '#ef4444' }}>{c.net > 0 ? `+${c.net}` : c.net}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
       {/* Daily detail */}
       <div style={sectionStyle}>
         <h3 style={sectionTitle}>{t.dailyTitle}</h3>
@@ -181,7 +217,7 @@ export default function CommunityView({ token, lang = 'ko', dateRange }) {
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
             <thead>
               <tr style={{ borderBottom: '2px solid #e5e7eb' }}>
-                {[t.thDate, t.thPosts, t.thComments, t.thLikes, t.thNavClicks, t.thPostViews, t.thListViews, t.thWriteClicks].map((h, i) => (
+                {[t.thDate, t.thPosts, t.thComments, t.thLikes, t.thNavClicks, t.thPostViews, t.thListViews, t.thWriteClicks, t.thFollows].map((h, i) => (
                   <th key={h} style={{ padding: '8px 12px', textAlign: i === 0 ? 'left' : 'right', fontWeight: 600, color: '#374151' }}>{h}</th>
                 ))}
               </tr>
@@ -197,6 +233,7 @@ export default function CommunityView({ token, lang = 'ko', dateRange }) {
                   <td style={{ padding: '6px 12px', textAlign: 'right', color: '#06b6d4' }}>{d.postViews || '-'}</td>
                   <td style={{ padding: '6px 12px', textAlign: 'right', color: '#9CA3AF' }}>{d.listViews || '-'}</td>
                   <td style={{ padding: '6px 12px', textAlign: 'right', color: '#f59e0b' }}>{d.writeClicks || '-'}</td>
+                  <td style={{ padding: '6px 12px', textAlign: 'right', color: '#14b8a6' }}>{d.follows || '-'}</td>
                 </tr>
               ))}
               <tr style={{ borderTop: '2px solid #e5e7eb', fontWeight: 700 }}>
@@ -208,6 +245,7 @@ export default function CommunityView({ token, lang = 'ko', dateRange }) {
                 <td style={{ padding: '8px 12px', textAlign: 'right', color: '#06b6d4' }}>{summary.postViews}</td>
                 <td style={{ padding: '8px 12px', textAlign: 'right', color: '#9CA3AF' }}>{summary.listViews}</td>
                 <td style={{ padding: '8px 12px', textAlign: 'right', color: '#f59e0b' }}>{summary.writeClicks}</td>
+                <td style={{ padding: '8px 12px', textAlign: 'right', color: '#14b8a6' }}>{summary.follows}</td>
               </tr>
             </tbody>
           </table>

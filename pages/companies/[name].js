@@ -7,6 +7,7 @@ import { supabase } from '../../lib/supabaseClient'
 import GlobalNav from '../../components/GlobalNav'
 import { useT } from '../../lib/i18n'
 import { domainFor, logoUrlFor } from '../../lib/companyDomains'
+import { track } from '../../lib/track'
 
 export async function getServerSideProps({ params }) {
   const name = decodeURIComponent(params.name || '')
@@ -181,6 +182,7 @@ export default function CompanyPage({ companyName, domain }) {
         method: next ? 'POST' : 'DELETE',
         headers: { Authorization: `Bearer ${session.access_token}` },
       })
+      track(next ? 'follow_company' : 'unfollow_company', { meta: { company: companyName }, page: 'company' })
     } catch {
       // 실패 시 롤백
       setFollowing(!next)
