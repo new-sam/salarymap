@@ -771,6 +771,15 @@ export default function JobsPage() {
         .jd-divider { height: 1px; background: #f0f0f0; margin: 24px 0; }
         .jd-section-title { font-size: 11px; font-weight: 700; color: #999; text-transform: uppercase; letter-spacing: .06em; margin-bottom: 12px; }
         .jd-desc { font-size: 14px; color: #444; line-height: 1.8; margin-bottom: 24px; white-space: pre-line; }
+        .jd-comm-cta { display: flex; align-items: center; gap: 14px; padding: 16px 18px; margin-bottom: 24px; border: 1px solid #ffd6c8; background: #fff7f5; border-radius: 12px; text-decoration: none; transition: border-color .15s, box-shadow .15s; animation: aiFadeIn 0.6s ease-out 0.2s both; }
+        .jd-comm-cta:hover { border-color: #ff8a3d; box-shadow: 0 2px 12px rgba(255,68,0,0.08); }
+        .jd-comm-cta-emoji { font-size: 26px; line-height: 1; flex-shrink: 0; }
+        .jd-comm-cta-body { flex: 1; min-width: 0; }
+        .jd-comm-cta-title { font-size: 15px; font-weight: 700; color: #111; margin-bottom: 3px; }
+        .jd-comm-cta-co { color: #ff4400; font-weight: 800; }
+        .jd-comm-cta-desc { font-size: 13px; color: #777; line-height: 1.5; }
+        .jd-comm-cta-btn { flex-shrink: 0; padding: 9px 16px; border-radius: 999px; background: #ff4400; color: #fff; font-size: 13px; font-weight: 700; white-space: nowrap; }
+        @media (max-width: 560px) { .jd-comm-cta { flex-wrap: wrap; } .jd-comm-cta-btn { width: 100%; text-align: center; } }
         .jd-meta-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 24px; }
 
         /* Work Information */
@@ -1343,6 +1352,26 @@ export default function JobsPage() {
                   </div>
                 )}
               </div>
+
+              {/* Community CTA */}
+              {aiSummaryReady && (
+                <Link
+                  href="/community"
+                  className="jd-comm-cta"
+                  onClick={() => track('click_community_cta', '/jobs', { jobId: detailJob.id, company: detailJob.company })}
+                >
+                  <div className="jd-comm-cta-emoji">💬</div>
+                  <div className="jd-comm-cta-body">
+                    <div className="jd-comm-cta-title">
+                      {t('jobs.commCtaTitle', { company: '\u0000' }).split('\u0000').map((s, i, arr) => (
+                        <span key={i}>{s}{i < arr.length - 1 && <span className="jd-comm-cta-co">{detailJob.company}</span>}</span>
+                      ))}
+                    </div>
+                    <div className="jd-comm-cta-desc">{t('jobs.commCtaDesc')}</div>
+                  </div>
+                  <span className="jd-comm-cta-btn">{t('jobs.commCtaBtn')}</span>
+                </Link>
+              )}
 
               <div className="jd-divider" />
 
