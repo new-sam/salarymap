@@ -62,13 +62,6 @@ export default function CommunityPage() {
   const [totalCount, setTotalCount] = useState(0)
   const [search, setSearch] = useState('')
   const [searchInput, setSearchInput] = useState('')
-  const [mobileSearchOpen, setMobileSearchOpen] = useState(false)
-  const [mobileSearchInput, setMobileSearchInput] = useState('')
-  const [mobileSearchQuery, setMobileSearchQuery] = useState('')
-  const [mobileSearchResults, setMobileSearchResults] = useState([])
-  const [mobileSearchLoading, setMobileSearchLoading] = useState(false)
-  const [mobileSearchTotal, setMobileSearchTotal] = useState(0)
-  const mobileSearchRef = useRef(null)
   const [showFabTip, setShowFabTip] = useState(false)
   const [fabTipHiding, setFabTipHiding] = useState(false)
   const [pullY, setPullY] = useState(0)
@@ -79,8 +72,6 @@ export default function CommunityPage() {
   const swipeStartX = useRef(0)
   const swipeStartY = useRef(0)
   const swipeLocked = useRef(null)
-
-  const [followedCompanies, setFollowedCompanies] = useState([])
 
   // 최상단 고정 HOT 글 — 현재 카테고리 기준 인기글 1개(정렬과 무관)
   const [hotPost, setHotPost] = useState(null)
@@ -121,42 +112,6 @@ export default function CommunityPage() {
     const t2 = setTimeout(() => setShowFabTip(false), 4000)
     return () => { clearTimeout(t0); clearTimeout(t1); clearTimeout(t2) }
   }, [])
-
-  // 내가 팔로우한 회사 목록 (로그인 시)
-  useEffect(() => {
-    if (!session?.access_token) { setFollowedCompanies([]); return }
-    fetch('/api/companies/follow', { headers: { Authorization: `Bearer ${session.access_token}` } })
-      .then(r => r.json())
-      .then(d => setFollowedCompanies(d.follows || []))
-      .catch(() => {})
-  }, [session])
-
-  useEffect(() => {
-    if (mobileSearchOpen && mobileSearchRef.current) {
-      mobileSearchRef.current.focus()
-    }
-  }, [mobileSearchOpen])
-
-  useEffect(() => {
-    if (!mobileSearchQuery) { setMobileSearchResults([]); setMobileSearchTotal(0); return }
-    let cancelled = false
-    const doSearch = async () => {
-      setMobileSearchLoading(true)
-      try {
-        const headers = {}
-        if (session?.access_token) headers.Authorization = `Bearer ${session.access_token}`
-        const res = await fetch(`/api/community/posts?search=${encodeURIComponent(mobileSearchQuery)}&limit=20`, { headers })
-        const data = await res.json()
-        if (!cancelled) {
-          setMobileSearchResults(data.posts || [])
-          setMobileSearchTotal(data.total || 0)
-        }
-      } catch (e) { console.error(e) }
-      if (!cancelled) setMobileSearchLoading(false)
-    }
-    doSearch()
-    return () => { cancelled = true }
-  }, [mobileSearchQuery, session])
 
   const fetchPosts = useCallback(async () => {
     setLoading(true)
@@ -411,9 +366,7 @@ export default function CommunityPage() {
   return (
     <>
       <Head><title>{t('comm.title')}</title><meta name="robots" content="noindex" /></Head>
-      <GlobalNav activePage="community" mobileSearch={{
-        onToggle: () => setMobileSearchOpen(true),
-      }} />
+      <GlobalNav activePage="community" />
 
       <style>{`
         .comm-page { background: #fff; min-height: 100vh; }
@@ -473,26 +426,6 @@ export default function CommunityPage() {
         .comm-fab-tip.hide { animation: comm-fab-tip-out 0.3s ease-in forwards; }
         @keyframes comm-fab-tip-in { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
         @keyframes comm-fab-tip-out { from { opacity: 1; transform: translateY(0); } to { opacity: 0; transform: translateY(6px); } }
-        .comm-mobile-search-page { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: #fff; z-index: 200; flex-direction: column; }
-        .comm-mobile-search-page.open { display: flex; }
-        .comm-ms-header { display: flex; align-items: center; gap: 10px; padding: 12px 14px; border-bottom: 1px solid #eee; }
-        .comm-ms-back { width: 36px; height: 36px; border: none; background: none; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; color: #333; }
-        .comm-ms-input-wrap { flex: 1; position: relative; }
-        .comm-ms-input { width: 100%; padding: 10px 36px 10px 14px; border-radius: 8px; border: 1px solid #ddd; background: #f5f5f5; color: #111; font-size: 14px; font-family: 'Barlow', sans-serif; outline: none; box-sizing: border-box; }
-        .comm-ms-input:focus { border-color: #ff6000; background: #fff; }
-        .comm-ms-input::placeholder { color: #bbb; }
-        .comm-ms-clear { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); width: 20px; height: 20px; border-radius: 50%; border: none; background: #ddd; color: #888; font-size: 14px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
-        .comm-ms-body { flex: 1; overflow-y: auto; padding: 0; }
-        .comm-ms-result-info { padding: 12px 16px; font-size: 13px; color: #666; border-bottom: 1px solid #f0f0f0; }
-        .comm-ms-result-info strong { color: #ff6000; }
-        .comm-ms-item { display: block; padding: 14px 16px; border-bottom: 1px solid #f0f0f0; text-decoration: none; }
-        .comm-ms-item-meta { display: flex; align-items: center; gap: 8px; margin-bottom: 2px; }
-        .comm-ms-item-cat { font-size: 12px; font-weight: 600; color: #ff6000; }
-        .comm-ms-item-time { font-size: 11px; color: #bbb; }
-        .comm-ms-item-title { font-size: 15px; font-weight: 700; color: #111; margin-bottom: 4px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
-        .comm-ms-item-preview { font-size: 13px; color: #888; line-height: 1.5; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
-        .comm-ms-empty { text-align: center; padding: 60px 20px; color: #bbb; font-size: 14px; }
-        .comm-ms-loading { text-align: center; padding: 60px 20px; color: #bbb; font-size: 14px; }
         /* 데스크탑 2열 그리드(블라인드식). 모바일은 아래 미디어쿼리에서 1열. */
         /* align-items: stretch(기본)로 같은 행 카드 높이를 통일 → 내용이 짧아도 카드 크기 동일. */
         .comm-feed { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
@@ -504,12 +437,6 @@ export default function CommunityPage() {
         .comm-card-author { font-size: 12px; color: #999; margin-bottom: 11px; display: flex; align-items: center; gap: 5px; flex-wrap: wrap; }
         .comm-card-company { color: #ff6000; cursor: pointer; }
         .comm-card-company:hover { text-decoration: underline; }
-        .comm-follows { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
-        .comm-follows-label { font-size: 12px; font-weight: 700; color: #999; flex-shrink: 0; }
-        .comm-follows-chips { display: flex; gap: 7px; overflow-x: auto; -webkit-overflow-scrolling: touch; }
-        .comm-follows-chips::-webkit-scrollbar { display: none; }
-        .comm-follow-chip { flex-shrink: 0; padding: 5px 12px; border-radius: 999px; background: #fff5ef; border: 1px solid #ffd9c2; color: #ff6000; font-size: 12px; font-weight: 700; text-decoration: none; white-space: nowrap; text-transform: capitalize; }
-        .comm-follow-chip:hover { background: #ffe9dc; }
         .comm-card-dot { color: #ddd; }
         .comm-card-title { font-size: 16px; font-weight: 700; color: #111; margin-bottom: 7px; line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
         .comm-card-preview { font-size: 13px; color: #888; line-height: 1.6; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
@@ -551,7 +478,6 @@ export default function CommunityPage() {
           .comm-cats { overflow-x: auto; flex-wrap: nowrap; padding-bottom: 4px; -webkit-overflow-scrolling: touch; }
           .comm-cats::-webkit-scrollbar { display: none; }
           .comm-cat-btn { flex-shrink: 0; }
-          .comm-search { display: none; }
           .comm-feed { grid-template-columns: 1fr; }
           .comm-card { padding: 16px; }
           .comm-write-btn { display: none; }
@@ -593,19 +519,6 @@ export default function CommunityPage() {
                 </button>
               ))}
             </div>
-
-            {followedCompanies.length > 0 && (
-              <div className="comm-follows">
-                <span className="comm-follows-label">{t('comm.followingTitle')}</span>
-                <div className="comm-follows-chips">
-                  {followedCompanies.map(f => (
-                    <Link key={f.company_name} href={`/companies/${encodeURIComponent(f.company_name)}`} className="comm-follow-chip">
-                      {f.company_name}
-                    </Link>
-                  ))}
-                </div>
-              </div>
-            )}
 
             <div className="comm-search">
               <svg className="comm-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
@@ -676,50 +589,6 @@ export default function CommunityPage() {
       <button className="comm-fab" onClick={handleWrite}>
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M12 5v14M5 12h14"/></svg>
       </button>
-
-      <div className={`comm-mobile-search-page${mobileSearchOpen ? ' open' : ''}`}>
-        <div className="comm-ms-header">
-          <button className="comm-ms-back" onClick={() => { setMobileSearchOpen(false); setMobileSearchInput(''); setMobileSearchQuery(''); setMobileSearchResults([]) }}>
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
-          </button>
-          <div className="comm-ms-input-wrap">
-            <input
-              ref={mobileSearchRef}
-              className="comm-ms-input"
-              placeholder={t('comm.searchPlaceholder')}
-              value={mobileSearchInput}
-              onChange={e => setMobileSearchInput(e.target.value)}
-              onKeyDown={e => { if (e.key === 'Enter' && !e.nativeEvent.isComposing && mobileSearchInput.trim()) { setMobileSearchQuery(mobileSearchInput.trim()); trackCompanySearch(mobileSearchInput) } }}
-            />
-            {mobileSearchInput && (
-              <button className="comm-ms-clear" onClick={() => { setMobileSearchInput(''); setMobileSearchQuery(''); setMobileSearchResults([]); mobileSearchRef.current?.focus() }}>×</button>
-            )}
-          </div>
-        </div>
-        <div className="comm-ms-body">
-          {mobileSearchQuery && !mobileSearchLoading && (
-            <div className="comm-ms-result-info">
-              &lsquo;<strong>{mobileSearchQuery}</strong>&rsquo; {t('comm.searchResult', { count: mobileSearchTotal })}
-            </div>
-          )}
-          {mobileSearchLoading ? (
-            <div className="comm-ms-loading">{t('comm.loading')}</div>
-          ) : mobileSearchQuery && mobileSearchResults.length === 0 ? (
-            <div className="comm-ms-empty">{t('comm.empty')}</div>
-          ) : (
-            mobileSearchResults.map(post => (
-              <Link key={post.id} href={`/community/${post.id}`} className="comm-ms-item" onClick={e => handlePostClick(e, post.id)}>
-                <div className="comm-ms-item-meta">
-                  <span className="comm-ms-item-cat">{getCatLabel(post.category)}</span>
-                  <span className="comm-ms-item-time">{timeAgo(post.created_at)}</span>
-                </div>
-                <div className="comm-ms-item-title">{post.title}</div>
-                {post.content && <div className="comm-ms-item-preview">{post.content}</div>}
-              </Link>
-            ))
-          )}
-        </div>
-      </div>
 
     </>
   )
