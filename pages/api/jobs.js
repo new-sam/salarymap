@@ -16,11 +16,16 @@ const LIST_FIELDS = [
 ].join(', ')
 
 export default async function handler(req, res) {
-  const { data, error } = await supabase
+  let query = supabase
     .from('jobs')
     .select(LIST_FIELDS)
     .eq('is_active', true)
     .order('created_at', { ascending: false })
+
+  // 회사 페이지에서 특정 회사의 공고만 요청할 때 사용 (?company=)
+  if (req.query.company) query = query.ilike('company', String(req.query.company))
+
+  const { data, error } = await query
 
   if (error || !data) {
     res.setHeader('Cache-Control', 'no-store')

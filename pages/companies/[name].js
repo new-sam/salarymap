@@ -63,6 +63,16 @@ export async function getServerSideProps({ params }) {
     if (cp && cp.length) companyName = cp[0].author_company
   }
 
+  if (!companyName) {
+    // 채용 공고만 있는 회사(연봉/커뮤니티 데이터 없음)도 jobs 카드에서 넘어오면 페이지를 연다.
+    const { data: jb } = await supabaseServer
+      .from('jobs')
+      .select('company')
+      .ilike('company', name)
+      .limit(1)
+    if (jb && jb.length) companyName = jb[0].company
+  }
+
   if (!companyName) return { notFound: true }
 
   // 로고용 도메인: 큐레이션 맵 우선, 없으면 인증 테이블(company_domains)에서 조회.
@@ -97,6 +107,10 @@ export default function CompanyPage({ companyName, domain }) {
   const [postsLoading, setPostsLoading] = useState(true)
   const [salary, setSalary] = useState(null)
   const [salaryLoading, setSalaryLoading] = useState(true)
+  const [jobs, setJobs] = useState([])
+  const [jobsLoading, setJobsLoading] = useState(true)
+  const [tabTouched, setTabTouched] = useState(false)
+  const selectTab = (x) => { setTabTouched(true); setTab(x) }
 
   const [following, setFollowing] = useState(false)
   const [followerCount, setFollowerCount] = useState(0)
@@ -133,8 +147,22 @@ export default function CompanyPage({ companyName, domain }) {
       .catch(() => setSalary(null))
       .finally(() => setSalaryLoading(false))
 
+    setJobsLoading(true)
+    fetch(`/api/jobs?company=${enc}`)
+      .then(r => r.json())
+      .then(d => setJobs(Array.isArray(d) ? d : []))
+      .catch(() => setJobs([]))
+      .finally(() => setJobsLoading(false))
+
     loadFollow()
   }, [enc, loadFollow])
+
+  // 채용 공고만 있고 소식이 없는 회사(예: jobs에서 넘어온 한국 기업)는
+  // 사용자가 직접 탭을 바꾸기 전까지 채용중 탭을 기본으로 보여준다.
+  useEffect(() => {
+    if (tabTouched || postsLoading || jobsLoading) return
+    if (posts.length === 0 && jobs.length > 0) setTab('jobs')
+  }, [tabTouched, postsLoading, jobsLoading, posts.length, jobs.length])
 
   const toggleFollow = async () => {
     const { data: { session } } = await supabase.auth.getSession()
@@ -189,6 +217,7 @@ export default function CompanyPage({ companyName, domain }) {
         .cpg-card-meta { font-size: 12px; color: #999; margin-bottom: 6px; }
         .cpg-card-title { font-size: 16px; font-weight: 700; color: #111; margin-bottom: 5px; line-height: 1.4; }
         .cpg-card-preview { font-size: 13px; color: #888; line-height: 1.6; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+        .cpg-job-sal { font-size: 14px; font-weight: 800; color: #ff6000; margin-top: 4px; }
         .cpg-headline { text-align: center; padding: 24px 0; border: 1px solid #ececec; border-radius: 14px; margin-bottom: 16px; background: #fafafa; }
         .cpg-headline-n { font-size: 40px; font-weight: 800; color: #ff6000; line-height: 1; }
         .cpg-headline-l { font-size: 13px; color: #888; margin-top: 8px; }
@@ -240,9 +269,10 @@ export default function CompanyPage({ companyName, domain }) {
         </div>
 
         <div className="cpg-tabs">
-          <button className={`cpg-tab${tab === 'news' ? ' on' : ''}`} onClick={() => setTab('news')}>{t('cpage.tabNews')}</button>
-          <button className={`cpg-tab${tab === 'salary' ? ' on' : ''}`} onClick={() => setTab('salary')}>{t('cpage.tabSalary')}</button>
-          <button className={`cpg-tab${tab === 'info' ? ' on' : ''}`} onClick={() => setTab('info')}>{t('cpage.tabInfo')}</button>
+          <button className={`cpg-tab${tab === 'news' ? ' on' : ''}`} onClick={() => selectTab('news')}>{t('cpage.tabNews')}</button>
+          <button className={`cpg-tab${tab === 'jobs' ? ' on' : ''}`} onClick={() => selectTab('jobs')}>{t('cpage.tabJobs')}{jobs.length > 0 ? ` ${jobs.length}` : ''}</button>
+          <button className={`cpg-tab${tab === 'salary' ? ' on' : ''}`} onClick={() => selectTab('salary')}>{t('cpage.tabSalary')}</button>
+          <button className={`cpg-tab${tab === 'info' ? ' on' : ''}`} onClick={() => selectTab('info')}>{t('cpage.tabInfo')}</button>
         </div>
 
         {tab === 'news' && (
@@ -256,6 +286,24 @@ export default function CompanyPage({ companyName, domain }) {
                 <div className="cpg-card-meta">{p.author_name} · {timeAgo(p.created_at)}</div>
                 <div className="cpg-card-title">{p.title}</div>
                 {p.content && <div className="cpg-card-preview">{p.content}</div>}
+              </Link>
+            ))
+          )
+        )}
+
+        {tab === 'jobs' && (
+          jobsLoading ? (
+            <div className="cpg-empty">···</div>
+          ) : jobs.length === 0 ? (
+            <div className="cpg-empty">{t('cpage.jobsEmpty')}</div>
+          ) : (
+            jobs.map(j => (
+              <Link key={j.id} href={`/jobs?jobId=${j.id}`} className="cpg-card">
+                <div className="cpg-card-meta">{[j.location, j.type].filter(Boolean).join(' · ')}</div>
+                <div className="cpg-card-title">{j.title}</div>
+                {j.salary_min > 0 && (
+                  <div className="cpg-job-sal">{Math.round(j.salary_min / 1e6)}M – {Math.round(j.salary_max / 1e6)}M VND</div>
+                )}
               </Link>
             ))
           )

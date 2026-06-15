@@ -688,6 +688,10 @@ export default function JobsPage() {
         .jc-body { flex: 1; display: flex; flex-direction: column; }
         .jc-t { font-size: 15px; font-weight: 600; color: #111; margin-bottom: 3px; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; }
         .jc-co { font-size: 13px; color: #777; margin-bottom: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .jc-co-link { cursor: pointer; display: inline-block; max-width: 100%; }
+        .jc-co-link:hover { color: #ff4400; text-decoration: underline; }
+        .jd-co-link { cursor: pointer; text-decoration: none; }
+        .jd-co-link:hover { color: #ff4400; text-decoration: underline; }
         .jc-sal { font-size: 15px; font-weight: 800; color: #ff4400; margin-top: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; letter-spacing: -0.3px; }
         .jc-bottom { margin-top: auto; }
         .jc-m { font-size: 12px; color: #999; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: flex; align-items: center; }
@@ -1029,7 +1033,7 @@ export default function JobsPage() {
                           </div>
                           <div className="jc-body">
                             <div className="jc-t">{job.title}</div>
-                            <div className="jc-co">{job.company}</div>
+                            <div className="jc-co jc-co-link" onClick={e => { e.stopPropagation(); router.push(`/companies/${encodeURIComponent(job.company)}`) }}>{job.company}</div>
                             <div className="jc-bottom">
                               <div className="jc-m">
                                 {[
@@ -1132,7 +1136,7 @@ export default function JobsPage() {
                           </div>
                           <div className="jc-body">
                             <div className="jc-t">{job.title}</div>
-                            <div className="jc-co">{job.company}</div>
+                            <div className="jc-co jc-co-link" onClick={e => { e.stopPropagation(); router.push(`/companies/${encodeURIComponent(job.company)}`) }}>{job.company}</div>
                             <div className="jc-bottom">
                               <div className="jc-m">
                                 {[
@@ -1226,7 +1230,7 @@ export default function JobsPage() {
               <div className="jd-company">
                 <div className="jd-co-ini">{detailJob.company_initials || detailJob.company.slice(0, 2).toUpperCase()}</div>
                 <div>
-                  <div className="jd-co-name">{detailJob.company}</div>
+                  <Link href={`/companies/${encodeURIComponent(detailJob.company)}`} className="jd-co-name jd-co-link">{detailJob.company}</Link>
                   <div className="jd-co-loc">
                     {detailJob.location} · {typeLabel(detailJob.type)}
                     {detailJob.company_url && <> · <a href={detailJob.company_url} target="_blank" rel="noopener noreferrer" style={{ color: '#ff4400', textDecoration: 'none' }}>Website</a></>}
