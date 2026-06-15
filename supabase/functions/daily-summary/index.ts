@@ -14,7 +14,38 @@ const GA4_PRIVATE_KEY = (Deno.env.get("GA4_PRIVATE_KEY") || "").replace(/\\n/g, 
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
 
 const CAMPAIGN_START = "2026-04-20";
-const EXCLUDE_COMPANIES = ["likelion", "like lion", "alice testing", "likelion vn"];
+
+// CANONICAL SPEC — keep in sync with pages/api/admin/dashboard.js
+// Exact-match (case-folded) garbage company list. Strict, NOT substring.
+const EXCLUDED_COMPANIES = new Set([
+  "likelion", "likelion vn", "likelion vietnam",
+  "{company}", "dwqdqwd", "gggg", "kkk", "xx", "yy", "tt", "xd", "blah", "idk",
+  "úud", "ừv", "khôbg", "bcagnecu", "hi", "boo", "cac", "say gex", "12",
+  "alice testing", "alice testing 2", "jobtest", "...", "bimat", "bí mật",
+  "secret", "cant say", "ẩn danh", "tên công ty được giữ ẩn danh",
+  "anonymous", "hide", "m*",
+]);
+const EXCLUDED_EMAIL_DOMAINS = ["likelion.net", "dummy.local", "system.local"];
+const PAID_SOURCES = new Set(["meta", "MT"]);
+const EXCLUDED_SOURCES = new Set(["qa-local", "", null]);
+
+function isExcludedSubmission(r: any): boolean {
+  if (r.company && EXCLUDED_COMPANIES.has(r.company.trim().toLowerCase())) return true;
+  if (r.email && EXCLUDED_EMAIL_DOMAINS.some((d) => r.email.endsWith("@" + d))) return true;
+  if (EXCLUDED_SOURCES.has(r.source)) return true;
+  return false;
+}
+
+function dedupeSubmissions(rows: any[]): any[] {
+  const seen = new Set<string>();
+  return rows.filter((r) => {
+    if (!r.user_id || !r.company) return true;
+    const key = r.user_id + "::" + r.company.trim().toLowerCase();
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
 
 // ─── Helpers ───
 function getVietnamDate(daysAgo = 0): string {
@@ -177,30 +208,17 @@ async function getSubmissions(dateStr: string) {
 
   const { data, error } = await supabase
     .from("submissions")
-    .select("source, company, email")
+    .select("source, company, email, user_id")
     .eq("is_seed", false)
     .gte("created_at", startUtc)
     .lte("created_at", endUtc);
 
   if (error) throw error;
 
-  const filtered = (data || []).filter(
-    (r: any) =>
-      !EXCLUDE_COMPANIES.some((ex) => r.company?.toLowerCase().includes(ex.toLowerCase())) &&
-      r.source !== "qa-local" && r.source !== "" && r.source !== null
-  );
+  const deduped = dedupeSubmissions((data || []).filter((r: any) => !isExcludedSubmission(r)));
 
-  const seen = new Set();
-  const deduped = filtered.filter((r: any) => {
-    if (!r.email) return true;
-    const key = r.email.toLowerCase();
-    if (seen.has(key)) return false;
-    seen.add(key);
-    return true;
-  });
-
-  const ad = deduped.filter((r: any) => r.source === "MT" || r.source === "meta").length;
-  const companies = new Set(deduped.map((r: any) => r.company).filter(Boolean)).size;
+  const ad = deduped.filter((r: any) => PAID_SOURCES.has(r.source)).length;
+  const companies = new Set(deduped.map((r: any) => r.company?.trim().toLowerCase()).filter(Boolean)).size;
 
   return { total: deduped.length, ad, organic: deduped.length - ad, companies };
 }
@@ -233,27 +251,15 @@ async function getCumulative(startDate: string, endDate: string) {
 
   const { data: subs, error: subsErr } = await supabase
     .from("submissions")
-    .select("source, company, email")
+    .select("source, company, email, user_id")
     .eq("is_seed", false)
     .gte("created_at", startUtc)
     .lte("created_at", endUtc);
   if (subsErr) throw subsErr;
 
-  const filtered = (subs || []).filter(
-    (r: any) =>
-      !EXCLUDE_COMPANIES.some((ex) => r.company?.toLowerCase().includes(ex.toLowerCase())) &&
-      r.source !== "qa-local" && r.source !== "" && r.source !== null
-  );
-  const seen = new Set();
-  const deduped = filtered.filter((r: any) => {
-    if (!r.email) return true;
-    const key = r.email.toLowerCase();
-    if (seen.has(key)) return false;
-    seen.add(key);
-    return true;
-  });
-  const totalAd = deduped.filter((r: any) => r.source === "MT" || r.source === "meta").length;
-  const totalCompanies = new Set(deduped.map((r: any) => r.company).filter(Boolean)).size;
+  const deduped = dedupeSubmissions((subs || []).filter((r: any) => !isExcludedSubmission(r)));
+  const totalAd = deduped.filter((r: any) => PAID_SOURCES.has(r.source)).length;
+  const totalCompanies = new Set(deduped.map((r: any) => r.company?.trim().toLowerCase()).filter(Boolean)).size;
 
   const { data: signups } = await supabase.rpc("count_signups", { start_ts: startUtc, end_ts: endUtc });
   const { count: jobApps } = await supabase

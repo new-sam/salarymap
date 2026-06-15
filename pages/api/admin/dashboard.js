@@ -19,7 +19,10 @@ const EXCLUDED_EMAIL_DOMAINS = ['likelion.net', 'dummy.local', 'system.local']
 
 // Paid traffic sources. Everything else (organic threads, direct, etc.) is Organic.
 // Extend when new paid channels (e.g. google, tiktok) launch.
-const PAID_SOURCES = new Set(['meta'])
+// CANONICAL SPEC — keep in sync with supabase/functions/daily-summary/index.ts
+const PAID_SOURCES = new Set(['meta', 'MT'])
+// `source` values that mean "not a real user submission" — QA test / unset.
+const EXCLUDED_SOURCES = new Set(['qa-local', '', null])
 
 // Banned/deactivated auth users (e.g. seed system account) should not count as signups
 function isBannedUser(user) {
@@ -29,6 +32,7 @@ function isBannedUser(user) {
 function isExcludedSubmission(sub) {
   if (sub.company && EXCLUDED_COMPANIES.has(sub.company.trim().toLowerCase())) return true
   if (sub.email && EXCLUDED_EMAIL_DOMAINS.some(d => sub.email.endsWith('@' + d))) return true
+  if (EXCLUDED_SOURCES.has(sub.source)) return true
   return false
 }
 
@@ -57,8 +61,10 @@ export default async function handler(req, res) {
   const startDate = from || new Date(Date.now() - 30 * 86400000).toISOString().slice(0, 10)
   const endDate = to || new Date().toISOString().slice(0, 10)
 
-  const startISO = `${startDate}T00:00:00`
-  const endISO = `${endDate}T23:59:59`
+  // VN-day (UTC+7) bounds, expressed as UTC ISO so they work for both Postgres
+  // timestamptz queries and JS string compare against auth.users.created_at.
+  const startISO = new Date(`${startDate}T00:00:00+07:00`).toISOString()
+  const endISO = new Date(`${endDate}T23:59:59+07:00`).toISOString()
 
   // Helper to fetch all rows with pagination
   async function fetchAll(query) {
@@ -82,7 +88,8 @@ export default async function handler(req, res) {
     // submissions (페이지네이션)
     fetchAll(
       supabase.from('submissions')
-        .select('id, created_at, company, intent, utm_source, utm_medium, utm_campaign, utm_content, user_id, email')
+        .select('id, created_at, company, intent, utm_source, utm_medium, utm_campaign, utm_content, user_id, email, source')
+        .eq('is_seed', false)
         .gte('created_at', startISO).lte('created_at', endISO)
         .order('created_at', { ascending: true })
     ).catch(() => []),
@@ -162,7 +169,7 @@ export default async function handler(req, res) {
     const date = toVN(sub.created_at)
     if (!dailyMap[date]) dailyMap[date] = { ...newDay(), date }
     dailyMap[date].submissions++
-    if (PAID_SOURCES.has(sub.utm_source)) {
+    if (PAID_SOURCES.has(sub.source)) {
       dailyMap[date].ad++
     } else {
       dailyMap[date].organic++
@@ -286,8 +293,8 @@ export default async function handler(req, res) {
 
   const summary = {
     totalSubmissions: submissions.length,
-    adSubmissions: submissions.filter(s => PAID_SOURCES.has(s.utm_source)).length,
-    organicSubmissions: submissions.filter(s => !PAID_SOURCES.has(s.utm_source)).length,
+    adSubmissions: submissions.filter(s => PAID_SOURCES.has(s.source)).length,
+    organicSubmissions: submissions.filter(s => !PAID_SOURCES.has(s.source)).length,
     totalSignups: signups.length,
     totalJobApps: jobApps.length,
     totalLandings: evtSum('landing'),
