@@ -1,13 +1,11 @@
 import { createClient } from '@supabase/supabase-js'
 import { verifyAdmin } from './check'
+import { EXCLUDED_EMAIL_DOMAINS } from '../../../lib/admin-metrics'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
   process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 )
-
-// Exclude internal / seed / banned accounts so the dashboard reflects real users.
-const EXCLUDED_EMAIL_DOMAINS = ['likelion.net', 'dummy.local', 'system.local']
 
 export default async function handler(req, res) {
   const user = await verifyAdmin(req)
@@ -16,8 +14,9 @@ export default async function handler(req, res) {
   const { from, to } = req.query
   const startDate = from || new Date(Date.now() - 30 * 86400000).toISOString().slice(0, 10)
   const endDate = to || new Date().toISOString().slice(0, 10)
-  const startISO = `${startDate}T00:00:00`
-  const endISO = `${endDate}T23:59:59`
+  // VN-day (UTC+7) bounds — matches toVN bucketing below + dashboard.js convention.
+  const startISO = new Date(`${startDate}T00:00:00+07:00`).toISOString()
+  const endISO = new Date(`${endDate}T23:59:59+07:00`).toISOString()
 
   // Generic paginated fetch (Supabase caps at 1000 rows/request)
   async function fetchAll(buildQuery) {

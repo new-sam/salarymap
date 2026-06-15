@@ -1,18 +1,11 @@
 import { createClient } from '@supabase/supabase-js'
 import { verifyAdmin } from './check'
+import { isExcludedSignup } from '../../../lib/admin-metrics'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
   process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 )
-
-// Exclude seed/system accounts and banned users from the signup list
-const EXCLUDED_EMAIL_DOMAINS = ['dummy.local', 'system.local']
-function isExcluded(user) {
-  if (user.email && EXCLUDED_EMAIL_DOMAINS.some(d => user.email.endsWith('@' + d))) return true
-  if (user.banned_until && new Date(user.banned_until) > new Date()) return true
-  return false
-}
 
 export default async function handler(req, res) {
   const admin = await verifyAdmin(req)
@@ -35,7 +28,7 @@ export default async function handler(req, res) {
     }
 
     const result = allUsers
-      .filter(u => !isExcluded(u))
+      .filter(u => !isExcludedSignup(u))
       .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
       .map(u => ({
         id: u.id,

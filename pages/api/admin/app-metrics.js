@@ -24,7 +24,9 @@ export default async function handler(req, res) {
   const { from, to } = req.query
   const endDate = to || new Date().toISOString().slice(0, 10)
   const startDate = from || new Date(Date.now() - 30 * DAY).toISOString().slice(0, 10)
-  const endISO = `${endDate}T23:59:59`
+  // VN-day (UTC+7) bounds — matches toVN bucketing + retention day arithmetic below.
+  const endISO = new Date(`${endDate}T23:59:59+07:00`).toISOString()
+  const appStartISO = new Date(`${APP_EVENT_START}T00:00:00+07:00`).toISOString()
 
   async function fetchAll(query) {
     let all = []
@@ -46,7 +48,7 @@ export default async function handler(req, res) {
       supabase.from('events')
         .select('event, meta, created_at')
         .eq('meta->>platform', 'app')
-        .gte('created_at', `${APP_EVENT_START}T00:00:00`)
+        .gte('created_at', appStartISO)
         .lte('created_at', endISO)
         .order('created_at', { ascending: true })
     )
@@ -150,13 +152,13 @@ export default async function handler(req, res) {
     // 기존 RetentionView와 동일 정의: eligible = (now-firstSeen)>=N일, retained = 최대 offset>=N (N일 후에도 활동).
     const clients = Object.keys(firstSeen)
     const maxOffset = (c) => {
-      const f = new Date(firstSeen[c] + 'T00:00:00').getTime()
+      const f = new Date(firstSeen[c] + 'T00:00:00+07:00').getTime()
       let mx = 0
-      for (const d of activeDays[c]) mx = Math.max(mx, Math.round((new Date(d + 'T00:00:00').getTime() - f) / DAY))
+      for (const d of activeDays[c]) mx = Math.max(mx, Math.round((new Date(d + 'T00:00:00+07:00').getTime() - f) / DAY))
       return mx
     }
     const calcRet = (n) => {
-      const eligible = clients.filter(c => (now - new Date(firstSeen[c] + 'T00:00:00').getTime()) >= n * DAY)
+      const eligible = clients.filter(c => (now - new Date(firstSeen[c] + 'T00:00:00+07:00').getTime()) >= n * DAY)
       const retained = eligible.filter(c => maxOffset(c) >= n)
       return { eligible: eligible.length, retained: retained.length, rate: eligible.length ? ((retained.length / eligible.length) * 100).toFixed(1) : '0' }
     }
@@ -165,6 +167,9 @@ export default async function handler(req, res) {
     // 주간 코호트(가입주차 = first-seen 월요일 기준), W1~W4
     const cohortMap = {}
     for (const c of clients) {
+      // For weekday math, parse as naive (UTC midnight) so getDate/getDay return
+      // the same calendar date as the YYYY-MM-DD string. Using +07:00 here would
+      // shift to the previous calendar day on a UTC server.
       const f = new Date(firstSeen[c] + 'T00:00:00')
       const mon = new Date(f); mon.setDate(f.getDate() - ((f.getDay() + 6) % 7))
       const wk = mon.toISOString().slice(0, 10)
@@ -174,7 +179,7 @@ export default async function handler(req, res) {
       week, total: cs.length,
       weeks: [1, 2, 3, 4].map(w => {
         const n = w * 7
-        const eligible = cs.filter(c => (now - new Date(firstSeen[c] + 'T00:00:00').getTime()) >= n * DAY)
+        const eligible = cs.filter(c => (now - new Date(firstSeen[c] + 'T00:00:00+07:00').getTime()) >= n * DAY)
         if (!eligible.length) return null
         const retained = eligible.filter(c => maxOffset(c) >= n)
         return { eligible: eligible.length, retained: retained.length, rate: ((retained.length / eligible.length) * 100).toFixed(1) }
@@ -192,7 +197,7 @@ export default async function handler(req, res) {
     const wauSet = new Set(), mauSet = new Set()
     for (const c of clients) {
       for (const d of activeDays[c]) {
-        const age = (now - new Date(d + 'T00:00:00').getTime())
+        const age = (now - new Date(d + 'T00:00:00+07:00').getTime())
         if (age < 7 * DAY) wauSet.add(c)
         if (age < 30 * DAY) mauSet.add(c)
       }
@@ -206,6 +211,8 @@ export default async function handler(req, res) {
 
     // ---- 일별 시리즈 정렬 + 범위 전 날짜 채우기 ----
     const allDates = []
+    // Iterate dates as labels: parse naive (UTC midnight) so .slice(0,10) returns
+    // the same YYYY-MM-DD we want. Adding +07:00 here would emit the previous day.
     for (let cur = new Date(startDate + 'T00:00:00'), end = new Date(endDate + 'T00:00:00'); cur <= end; cur.setDate(cur.getDate() + 1)) {
       allDates.push(cur.toISOString().slice(0, 10))
     }
