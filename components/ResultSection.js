@@ -3,11 +3,81 @@ import { useRouter } from 'next/router'
 import NextStepSheet from './NextStepSheet'
 import { useT } from '../lib/i18n'
 import { supabase } from '../lib/supabaseClient'
+import { formatSalaryCard } from '../utils/salary'
+
+// submission role (vd 'Data · AI') → job role (vd 'Data'). Phần tử [0] là khớp chính xác,
+// các phần tử sau là role tương tự (điểm thấp hơn).
+const ROLE_MAP = {
+  'Backend': ['Backend', 'Fullstack'],
+  'Frontend': ['Frontend', 'Fullstack'],
+  'Mobile': ['Mobile'],
+  'Data · AI': ['Data'],
+  'DevOps': ['DevOps'],
+  'PM · PO': ['PM'],
+  'Design': ['Design'],
+  'QA': ['QA'],
+}
+
+function roleScore(userRole, jobRole) {
+  if (!userRole || !jobRole) return 0
+  const list = ROLE_MAP[userRole] || [userRole]
+  const idx = list.indexOf(jobRole)
+  if (idx === 0) return 1      // khớp chính xác
+  if (idx > 0) return 0.6      // role tương tự
+  return 0
+}
+
+function expYears(experience) {
+  const n = parseInt(String(experience || '').replace(/[^0-9]/g, ''), 10)
+  return Number.isFinite(n) ? n : 0
+}
+
+// Lọc job theo cascade nới lỏng dần. Trả về tier để UI đổi tiêu đề cho khớp dữ liệu thật.
+function buildJobSuggestions(allJobs, salaryVnd, role, experience) {
+  const years = expYears(experience)
+  const now = new Date()
+  const active = allJobs.filter(j => !j.deadline || new Date(j.deadline) >= now)
+  const salMin = (j) => formatSalaryCard(j).min
+
+  const bumpReason = (j) => {
+    const b = ((salMin(j) - salaryVnd) / salaryVnd) * 100
+    if (b <= 0) return 0
+    if (b <= 80) return 1         // mức nhảy hợp lý
+    if (b <= 150) return 0.6
+    return 0.3                    // >150% phi thực tế → hạ điểm
+  }
+  const expScore = (j) => {
+    if (j.experience_min == null || j.experience_max == null) return 0.5
+    return years >= j.experience_min && years <= j.experience_max ? 1 : 0.2
+  }
+  const score = (j) =>
+    roleScore(role, j.role) * 3 +
+    expScore(j) * 1.5 +
+    bumpReason(j) +
+    (j.is_featured ? 0.3 : 0) +
+    (j.created_at && (now - new Date(j.created_at)) < 14 * 864e5 ? 0.2 : 0)
+  const rank = (pool) => [...pool].sort((a, b) => score(b) - score(a))
+
+  // T1 — đúng vai trò + trả cao hơn lương hiện tại
+  let pool = active.filter(j => roleScore(role, j.role) > 0 && salMin(j) > salaryVnd)
+  if (pool.length) return { tier: 'higher', jobs: rank(pool), total: pool.length }
+
+  // T2 — đúng vai trò (mọi mức lương)
+  pool = active.filter(j => roleScore(role, j.role) > 0)
+  if (pool.length) return { tier: 'role', jobs: rank(pool), total: pool.length }
+
+  // T3 — trả cao hơn nhưng vai trò khác
+  pool = active.filter(j => salMin(j) > salaryVnd)
+  if (pool.length) return { tier: 'related', jobs: rank(pool), total: pool.length }
+
+  // T4 — không có job nào
+  return { tier: 'empty', jobs: [], total: 0 }
+}
 
 export default function ResultSection({ salary, role, experience, company, isLoggedIn }) {
   const { t } = useT()
   const [result, setResult] = useState(null)
-  const [jobs, setJobs] = useState([])
+  const [jobData, setJobData] = useState(null)
   const [sheetDismissed, setSheetDismissed] = useState(false)
   const [showSheet, setShowSheet] = useState(true)
   const router = useRouter()
@@ -25,7 +95,7 @@ export default function ResultSection({ salary, role, experience, company, isLog
         const res = await fetch('/api/jobs')
         if (!res.ok) return
         const data = await res.json()
-        setJobs(data.filter(j => j.salary_min > (salary * 1000000) && j.role?.toLowerCase().includes(role?.toLowerCase()?.split(' ')[0])))
+        setJobData(buildJobSuggestions(data, salary * 1000000, role, experience))
       } catch {}
     }
     if (salary) { fetchResult(); fetchJobs(); }
@@ -62,9 +132,18 @@ export default function ResultSection({ salary, role, experience, company, isLog
     return { h, isUser, belowUser: pos < userPos }
   })
 
-  const jobCount = jobs.length
   const salaryVnd = salary * 1000000
-  const avgBump = jobCount > 0 ? Math.round(jobs.reduce((a, j) => a + ((j.salary_min - salaryVnd) / salaryVnd * 100), 0) / jobCount) : 0
+
+  const goToJobs = () => {
+    if (typeof gtag === 'function') gtag('event', 'cta_click_view_jobs', { source: 'result_jobs' })
+    if (typeof fbq === 'function') fbq('trackCustom', 'CTAClickViewJobs', { source: 'result_jobs' })
+    router.push('/jobs?from=salary')
+  }
+
+  const goToJob = (id) => {
+    if (!id) return goToJobs()
+    router.push(`/jobs/${id}`)
+  }
 
   return (
     <div style={{ fontFamily: "'Be Vietnam Pro','Barlow',sans-serif", WebkitFontSmoothing: 'antialiased' }}>
@@ -146,60 +225,89 @@ export default function ResultSection({ salary, role, experience, company, isLog
         </div>
       </div>
 
-      {/* Companies paying more */}
-      {topCompanies && topCompanies.length > 0 && (
-        <div style={{ marginTop:'20px' }}>
-          <div style={{ fontSize:'10px', fontWeight:700, letterSpacing:'.1em', color:'rgba(255,255,255,0.25)',
-            textTransform:'uppercase', marginBottom:'12px' }}>
-            {t('result.companiesPayMore')}
-          </div>
-          <div style={{ display:'flex', flexDirection:'column', gap:'8px' }}>
-            {topCompanies.slice(0, 5).map((co, i) => {
-              const locked = i >= 2
-              return (
-                <div key={i} className="rs-co-row" style={locked ? { filter:'blur(4px)', pointerEvents:'none' } : {}}>
-                  <div style={{ width:36, height:36, borderRadius:'8px', background:'rgba(255,255,255,0.08)',
-                    display:'flex', alignItems:'center', justifyContent:'center', fontSize:'11px', fontWeight:800,
-                    color:'rgba(255,255,255,0.4)', flexShrink:0 }}>
-                    {co.name.slice(0, 2).toUpperCase()}
+      {/* Job suggestions */}
+      {jobData && jobData.tier !== 'empty' && (() => {
+        const { tier, jobs: jobList, total } = jobData
+        const shown = jobList.slice(0, 5)
+        const moreCount = Math.max(0, total - shown.length)
+        const headKey = { higher:'result.jobsHeadHigher', role:'result.jobsHeadRole', related:'result.jobsHeadRelated' }[tier]
+        const subKey = { higher:'result.jobsSubHigher', role:'result.jobsSubRole', related:'result.jobsSubRelated' }[tier]
+        const showBump = tier === 'higher' || tier === 'related'
+        return (
+          <div style={{ marginTop:'24px', background:'linear-gradient(180deg,rgba(255,68,0,0.06),rgba(255,68,0,0))',
+            border:'1px solid rgba(255,68,0,0.18)', borderRadius:'18px', padding:'18px 16px' }}>
+            <div style={{ display:'flex', alignItems:'center', gap:'8px', marginBottom:'10px' }}>
+              <span style={{ width:'26px', height:'26px', borderRadius:'8px', background:'rgba(255,68,0,0.15)',
+                display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#ff4400" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="2" y="7" width="20" height="14" rx="2" /><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2" /></svg>
+              </span>
+              <span style={{ fontSize:'10px', fontWeight:800, letterSpacing:'.12em', textTransform:'uppercase', color:'#ff4400' }}>
+                {t('result.jobsEyebrow')}
+              </span>
+            </div>
+            <div style={{ fontSize:'21px', fontWeight:900, color:'#fff', lineHeight:1.2, letterSpacing:'-.01em', marginBottom:'8px' }}>
+              {t(headKey, { role })}
+            </div>
+            <div style={{ fontSize:'13px', color:'rgba(255,255,255,0.55)', marginBottom:'16px' }}>
+              {t(subKey, { count: total, role })}
+            </div>
+            <div style={{ display:'flex', flexDirection:'column' }}>
+              {shown.map((job, i) => {
+                const locked = i >= 2
+                const sal = formatSalaryCard(job)
+                const min = Math.round(sal.min / 1e6), max = Math.round(sal.max / 1e6)
+                const bump = sal.min > salaryVnd ? Math.round(((sal.min - salaryVnd) / salaryVnd) * 100) : null
+                return (
+                  <div key={job.id || i} onClick={() => !locked && goToJob(job.id)} style={{ display:'flex', alignItems:'center', gap:'10px', padding:'12px 4px',
+                    borderBottom: i < shown.length - 1 ? '1px solid rgba(255,255,255,0.06)' : 'none', borderRadius:'8px',
+                    cursor: locked ? 'default' : 'pointer', transition:'background .12s',
+                    ...(locked ? { filter:'blur(5px)', opacity:0.4, pointerEvents:'none', userSelect:'none' } : {}) }}
+                    onMouseEnter={e => { if (!locked) e.currentTarget.style.background = 'rgba(255,255,255,0.04)' }}
+                    onMouseLeave={e => { e.currentTarget.style.background = 'transparent' }}>
+                    <div style={{ width:38, height:38, borderRadius:'9px', background:'rgba(255,255,255,0.06)',
+                      border:'1px solid rgba(255,255,255,0.1)', display:'flex', alignItems:'center', justifyContent:'center',
+                      fontSize:'12px', fontWeight:800, color:'rgba(255,255,255,0.45)', flexShrink:0, overflow:'hidden' }}>
+                      {job.logo_url
+                        ? <img src={job.logo_url} alt="" style={{ width:'100%', height:'100%', objectFit:'cover' }} />
+                        : (job.company_initials || job.company?.slice(0, 2) || '–').toUpperCase()}
+                    </div>
+                    <div style={{ flex:1, minWidth:0 }}>
+                      <div style={{ fontSize:'14px', fontWeight:700, color:'#fff', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{job.company}</div>
+                      <div style={{ fontSize:'11px', color:'rgba(255,255,255,0.4)', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', marginTop:'2px' }}>
+                        {job.title}{job.location ? ` · ${job.location}` : ''}
+                      </div>
+                    </div>
+                    <div style={{ textAlign:'right', flexShrink:0 }}>
+                      <div style={{ fontSize:'14px', fontWeight:700, color:'#fff', whiteSpace:'nowrap' }}>{min}–{max}M</div>
+                      {showBump && bump > 0
+                        ? <div style={{ fontSize:'11px', fontWeight:700, color:'#ff4400', marginTop:'2px' }}>+{bump}%</div>
+                        : <div style={{ fontSize:'10px', color:'rgba(255,255,255,0.3)', marginTop:'2px' }}>{t('result.perMonth')}</div>}
+                    </div>
                   </div>
-                  <div style={{ flex:1, minWidth:0 }}>
-                    <div style={{ fontSize:'14px', fontWeight:700, color:'#fff', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{co.name}</div>
-                  </div>
-                  <span style={{ fontSize:'13px', fontWeight:700, color:'#ff4400', background:'rgba(255,68,0,0.1)',
-                    padding:'4px 10px', borderRadius:'8px', whiteSpace:'nowrap', flexShrink:0 }}>
-                    +{co.premiumPct}%
-                  </span>
-                </div>
-              )
-            })}
+                )
+              })}
+            </div>
+            <button onClick={goToJobs} style={{ width:'100%', marginTop:'14px', background:'#ff4400', color:'#fff',
+              border:'none', borderRadius:'12px', padding:'13px', fontSize:'13px', fontWeight:700, cursor:'pointer',
+              fontFamily:"'Be Vietnam Pro',sans-serif" }}>
+              {moreCount > 0 ? t('result.seeMoreJobs', { count: moreCount }) : t('result.jobsEmptyCta')}
+            </button>
           </div>
-        </div>
-      )}
+        )
+      })()}
 
-      {/* Jobs nudge */}
-      {state !== 'high' && jobCount > 0 && (
-        <div onClick={async () => {
-          if (typeof gtag === 'function') gtag('event', 'cta_click_view_jobs', { source: 'result_nudge' })
-          if (typeof fbq === 'function') fbq('trackCustom', 'CTAClickViewJobs', { source: 'result_nudge' })
-          if (isLoggedIn) {
-            router.push('/jobs?from=salary')
-          } else {
-            localStorage.setItem('fyi_login_return', '/jobs?from=salary')
-            supabase.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: window.location.origin + '/auth/callback' } })
-          }
-        }} style={{ marginTop:'16px', background:'rgba(255,68,0,0.06)',
-          border:'1px solid rgba(255,68,0,0.2)', borderRadius:'14px', padding:'16px', cursor:'pointer',
-          display:'flex', alignItems:'center', justifyContent:'space-between', gap:'12px' }}>
-          <div>
-            <div style={{ fontSize:'14px', fontWeight:700, color:'#fff' }}>
-              {t('result.jobsPayMore', { count: jobCount, bump: avgBump })}
-            </div>
-            <div style={{ fontSize:'11px', color:'rgba(255,255,255,0.35)', marginTop:'2px' }}>
-              For {role} with {experience}
-            </div>
-          </div>
-          <span style={{ fontSize:'13px', fontWeight:700, color:'#ff4400', whiteSpace:'nowrap' }}>{t('result.viewJobs')}</span>
+      {/* Job suggestions — empty state (T4) */}
+      {jobData && jobData.tier === 'empty' && (
+        <div style={{ marginTop:'20px', background:'rgba(255,255,255,0.03)', border:'1px solid rgba(255,255,255,0.08)',
+          borderRadius:'14px', padding:'20px', textAlign:'center' }}>
+          <div style={{ fontSize:'14px', fontWeight:700, color:'#fff', marginBottom:'4px' }}>{t('result.jobsEmptyHead')}</div>
+          <div style={{ fontSize:'12px', color:'rgba(255,255,255,0.4)', marginBottom:'14px' }}>{t('result.jobsEmptySub', { role })}</div>
+          <button onClick={goToJobs} style={{ width:'100%', background:'rgba(255,68,0,0.1)', color:'#ff4400',
+            border:'1px solid rgba(255,68,0,0.25)', borderRadius:'12px', padding:'13px', fontSize:'13px', fontWeight:700,
+            cursor:'pointer', fontFamily:"'Be Vietnam Pro',sans-serif" }}>
+            {t('result.jobsEmptyCta')}
+          </button>
         </div>
       )}
 
@@ -217,20 +325,6 @@ export default function ResultSection({ salary, role, experience, company, isLog
               fontFamily:"'Be Vietnam Pro',sans-serif" }}>
             {t('result.connectHigher')}
           </button>
-        </div>
-      )}
-      {/* Logged-in CTA */}
-      {result && isLoggedIn && topCompanies?.length > 0 && (
-        <div style={{ marginTop:'16px', background:'linear-gradient(135deg,#1a0d07,#111)', border:'1px solid rgba(255,96,0,0.2)',
-          borderRadius:'14px', padding:'16px 20px', display:'flex', alignItems:'center', justifyContent:'space-between', gap:'12px', flexWrap:'wrap' }}>
-          <div>
-            <div style={{ fontSize:'14px', fontWeight:700, color:'#fff' }}>{t('result.companiesHigher', { count: topCompanies.length })}</div>
-            <div style={{ fontSize:'11px', color:'rgba(255,255,255,0.4)' }}>{t('result.headhunterIntro')}</div>
-          </div>
-          <a href="/jobs?from=salary" style={{ background:'#ff4400', color:'#fff', border:'none', padding:'10px 20px',
-            borderRadius:'10px', fontSize:'13px', fontWeight:700, textDecoration:'none', whiteSpace:'nowrap' }}>
-            {t('result.viewJobs')}
-          </a>
         </div>
       )}
     </div>
