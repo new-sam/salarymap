@@ -1,4 +1,12 @@
 import supabase from '../../lib/supabaseAdmin';
+import { sendPush } from '../../lib/push';
+
+// 토큰 locale(vi|ko|en)별로 push.js가 고른다. 제목은 회사명(언어 중립)을 그대로 쓴다.
+const NEW_SALARY_BODY = {
+  vi: 'Có dữ liệu lương mới cho công ty bạn theo dõi',
+  ko: '팔로우한 회사에 새 연봉 정보가 올라왔어요',
+  en: 'New salary data for a company you follow',
+};
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -67,6 +75,26 @@ export default async function handler(req, res) {
         { name: company.trim(), tier: 4 },
         { onConflict: 'name', ignoreDuplicates: true }
       );
+
+    // 팔로워 알림 — 이 회사를 팔로우한 사용자에게 "새 연봉 정보" 푸시(카테고리 company_follow).
+    // company_follows.company_name은 lower(trim())로 정규화 저장되므로 동일하게 맞춰 조회한다.
+    // 제보자 본인은 제외. 발송 실패가 제보 응답을 막지 않도록 await하지 않고 흘려보낸다(sendPush는 throw 안 함).
+    const norm = company.trim().toLowerCase();
+    const { data: followers } = await supabase
+      .from('company_follows')
+      .select('user_id')
+      .eq('company_name', norm);
+    const userIds = (followers || [])
+      .map((f) => f.user_id)
+      .filter((id) => id && id !== user_id);
+    if (userIds.length) {
+      sendPush(userIds, {
+        title: company.trim(),
+        body: NEW_SALARY_BODY,
+        category: 'company_follow',
+        data: { type: 'company_follow', company: company.trim() },
+      });
+    }
   }
 
   return res.status(201).json({ success: true, data });
