@@ -526,7 +526,7 @@ export default function CommunityPostPage() {
                       <div className="cp-comment-top">
                         {comment.id === bestId && <span className="cp-best-badge">{t('comm.bestBadge')}</span>}
                         <span className="cp-comment-author">
-                          <span className="cp-company">{comment.author_verified_company || t('comm.unemployed')}</span>
+                          <span className="cp-company">{comment.author_verified_company || comment.author_company || t('comm.unemployed')}</span>
                           <span className="cp-dot">·</span>
                           {comment.author_name}
                           {comment.author_salary_tier && <SalaryBadge tierKey={comment.author_salary_tier} t={t} />}
