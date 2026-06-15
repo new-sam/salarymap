@@ -7,6 +7,7 @@ import { track } from '../../lib/track'
 import GlobalNav from '../../components/GlobalNav'
 import SalaryBadge from '../../components/SalaryBadge'
 import { useT } from '../../lib/i18n'
+import { domainFor, logoUrlFor } from '../../lib/companyDomains'
 
 const CATEGORIES = [
   { key: 'all', tKey: 'comm.all' },
@@ -62,6 +63,7 @@ export default function CommunityPage() {
   const [totalCount, setTotalCount] = useState(0)
   const [search, setSearch] = useState('')
   const [searchInput, setSearchInput] = useState('')
+  const [companyMatches, setCompanyMatches] = useState([])
   const [showFabTip, setShowFabTip] = useState(false)
   const [fabTipHiding, setFabTipHiding] = useState(false)
   const [pullY, setPullY] = useState(0)
@@ -91,6 +93,14 @@ export default function CommunityPage() {
 
   useEffect(() => { fetchPosts() }, [category, sort, page, session, search])
 
+  // 검색어를 URL(?q=)과 동기화 → 회사/글 상세 갔다가 뒤로 와도 검색결과가 복원됨
+  useEffect(() => {
+    if (!router.isReady) return
+    const q = typeof router.query.q === 'string' ? router.query.q : ''
+    setSearch(q)
+    setSearchInput(q)
+  }, [router.isReady, router.query.q])
+
   // HOT 글은 현재 카테고리 안에서 가장 인기 있는 글 1개. 검색/내 글/2페이지+ 에선 숨김.
   // 인증 포함으로 좋아요/투표 상태까지 정확히 반영한다.
   useEffect(() => {
@@ -112,6 +122,19 @@ export default function CommunityPage() {
     const t2 = setTimeout(() => setShowFabTip(false), 4000)
     return () => { clearTimeout(t0); clearTimeout(t1); clearTimeout(t2) }
   }, [])
+
+  // 검색 시 매칭되는 회사를 결과 상단에 노출. 실제 연봉 제출 건수 기준 상위 회사만
+  // (오타/대소문자 변형은 건수가 적어 자동으로 밀려남) → /api/community/company-search
+  useEffect(() => {
+    const q = search.trim()
+    if (!q) { setCompanyMatches([]); return }
+    let cancelled = false
+    fetch(`/api/community/company-search?q=${encodeURIComponent(q)}`)
+      .then(r => r.json())
+      .then(d => { if (!cancelled) setCompanyMatches(d.companies || []) })
+      .catch(() => { if (!cancelled) setCompanyMatches([]) })
+    return () => { cancelled = true }
+  }, [search])
 
   const fetchPosts = useCallback(async () => {
     setLoading(true)
@@ -215,6 +238,14 @@ export default function CommunityPage() {
     const term = (q || '').trim()
     if (term.length < 2) return
     track('search_company', { meta: { company: term }, page: '/community' })
+  }
+
+  // 검색 실행/해제는 URL을 통해 처리(뒤로가기 복원용). search 상태는 위 effect가 URL에서 채움.
+  const submitSearch = (term) => {
+    const q = (term || '').trim()
+    setPage(1)
+    trackCompanySearch(q)
+    router.push(q ? `/community?q=${encodeURIComponent(q)}` : '/community', undefined, { shallow: true })
   }
 
   const toggleLike = async (postId) => {
@@ -404,6 +435,21 @@ export default function CommunityPage() {
         .comm-search-input::placeholder { color: #bbb; }
         .comm-search-result { font-size: 13px; color: #666; }
         .comm-search-result strong { color: #ff6000; }
+        .comm-sresult-head { display: flex; align-items: center; gap: 8px; margin: 16px 0 10px; }
+        .comm-sresult-back { width: 30px; height: 30px; flex-shrink: 0; border: none; background: none; cursor: pointer; color: #333; display: flex; align-items: center; justify-content: center; border-radius: 8px; }
+        .comm-sresult-back:hover { background: #f3f3f3; }
+        .comm-sresult-back svg { width: 20px; height: 20px; }
+        .comm-sresult-title { font-size: 18px; font-weight: 800; color: #111; }
+        .comm-sresult-title strong { color: #ff6000; }
+        .comm-cmatch { margin: 14px 0 4px; }
+        .comm-cmatch-label { font-size: 12px; font-weight: 700; color: #999; margin-bottom: 8px; }
+        .comm-cmatch-row { display: flex; align-items: center; gap: 12px; padding: 11px 14px; border: 1px solid #eee; border-radius: 12px; text-decoration: none; margin-bottom: 8px; transition: border-color 0.15s, background 0.15s; }
+        .comm-cmatch-row:hover { border-color: #ff6000; background: #fff8f4; }
+        .comm-cmatch-logo { width: 36px; height: 36px; border-radius: 9px; background: linear-gradient(135deg,#ff6000,#ff8a3d); display: flex; align-items: center; justify-content: center; color: #fff; font-weight: 700; font-size: 16px; flex-shrink: 0; overflow: hidden; }
+        .comm-cmatch-logo.has-img { background: #fff; border: 1px solid #ececec; }
+        .comm-cmatch-logo.has-img img { width: 100%; height: 100%; object-fit: contain; padding: 5px; box-sizing: border-box; }
+        .comm-cmatch-name { flex: 1; min-width: 0; font-size: 15px; font-weight: 700; color: #111; text-transform: capitalize; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .comm-cmatch-go { font-size: 12px; color: #ff6000; font-weight: 700; flex-shrink: 0; }
         .comm-search-clear { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); width: 20px; height: 20px; border-radius: 50%; border: none; background: #eee; color: #888; font-size: 14px; cursor: pointer; display: flex; align-items: center; justify-content: center; line-height: 1; }
         .comm-toolbar { display: flex; justify-content: space-between; align-items: center; }
         .comm-sort { display: flex; gap: 4px; }
@@ -527,16 +573,44 @@ export default function CommunityPage() {
                 placeholder={t('comm.searchPlaceholder')}
                 value={searchInput}
                 onChange={e => setSearchInput(e.target.value)}
-                onKeyDown={e => { if (e.key === 'Enter' && !e.nativeEvent.isComposing) { setSearch(searchInput); setPage(1); trackCompanySearch(searchInput) } }}
+                onKeyDown={e => { if (e.key === 'Enter' && !e.nativeEvent.isComposing) submitSearch(searchInput) }}
               />
               {searchInput && (
-                <button className="comm-search-clear" onClick={() => { setSearchInput(''); setSearch(''); setPage(1) }}>×</button>
+                <button className="comm-search-clear" onClick={() => { setSearchInput(''); submitSearch('') }}>×</button>
               )}
             </div>
 
+            {search && (
+              <div className="comm-sresult-head">
+                <button className="comm-sresult-back" onClick={() => router.back()} aria-label="back">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+                </button>
+                <span className="comm-sresult-title">&lsquo;<strong>{search}</strong>&rsquo; {t('comm.searchResultTitle')}</span>
+              </div>
+            )}
+
+            {search && companyMatches.length > 0 && (
+              <div className="comm-cmatch">
+                <div className="comm-cmatch-label">{t('comm.searchCompanyLabel')}</div>
+                {companyMatches.map(c => {
+                  const dom = domainFor(c.name)
+                  const logo = dom ? logoUrlFor(dom) : null
+                  return (
+                    <Link key={c.name} href={`/companies/${encodeURIComponent(c.name)}`} className="comm-cmatch-row">
+                      <span className={`comm-cmatch-logo${logo ? ' has-img' : ''}`}>
+                        {logo ? <img src={logo} alt="" /> : c.name.charAt(0).toUpperCase()}
+                      </span>
+                      <span className="comm-cmatch-name">{c.name}</span>
+                      <span className="comm-cmatch-go">{t('comm.searchCompanyGo')} →</span>
+                    </Link>
+                  )
+                })}
+              </div>
+            )}
+
             {search && !loading && (
               <div className="comm-search-result">
-                &lsquo;<strong>{search}</strong>&rsquo; {t('comm.searchResult', { count: totalCount })}
+                {t('comm.searchResult', { count: totalCount })}
               </div>
             )}
 

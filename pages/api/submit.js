@@ -1,5 +1,6 @@
 import supabase from '../../lib/supabaseAdmin';
 import { sendPush } from '../../lib/push';
+import { canonicalCompanyName } from '../../lib/canonicalCompany';
 
 // 토큰 locale(vi|ko|en)별로 push.js가 고른다. 제목은 회사명(언어 중립)을 그대로 쓴다.
 const NEW_SALARY_BODY = {
@@ -48,8 +49,13 @@ export default async function handler(req, res) {
     return res.status(201).json({ success: true, data: { id: 'dev-mock' } });
   }
 
+  // 회사명 분산 방지: 같은 회사의 대소문자 변형을 기존 대표 표기로 통일해 저장한다.
+  const canonicalCompany = company && company.trim()
+    ? await canonicalCompanyName(company)
+    : null;
+
   // Insert into submissions table — link to user if logged in
-  const record = { role, experience, salary: salNum, company: company?.trim() || null, source };
+  const record = { role, experience, salary: salNum, company: canonicalCompany, source };
   if (user_id) record.user_id = user_id;
   if (email && email.trim()) record.email = email.trim();
   if (utm_source) record.utm_source = utm_source;
@@ -68,18 +74,18 @@ export default async function handler(req, res) {
   }
 
   // Auto-add company to companies table if not exists
-  if (company && company.trim()) {
+  if (canonicalCompany) {
     await supabase
       .from('companies')
       .upsert(
-        { name: company.trim(), tier: 4 },
+        { name: canonicalCompany, tier: 4 },
         { onConflict: 'name', ignoreDuplicates: true }
       );
 
     // 팔로워 알림 — 이 회사를 팔로우한 사용자에게 "새 연봉 정보" 푸시(카테고리 company_follow).
     // company_follows.company_name은 lower(trim())로 정규화 저장되므로 동일하게 맞춰 조회한다.
     // 제보자 본인은 제외. 발송 실패가 제보 응답을 막지 않도록 await하지 않고 흘려보낸다(sendPush는 throw 안 함).
-    const norm = company.trim().toLowerCase();
+    const norm = canonicalCompany.toLowerCase();
     const { data: followers } = await supabase
       .from('company_follows')
       .select('user_id')
@@ -89,10 +95,10 @@ export default async function handler(req, res) {
       .filter((id) => id && id !== user_id);
     if (userIds.length) {
       sendPush(userIds, {
-        title: company.trim(),
+        title: canonicalCompany,
         body: NEW_SALARY_BODY,
         category: 'company_follow',
-        data: { type: 'company_follow', company: company.trim() },
+        data: { type: 'company_follow', company: canonicalCompany },
       });
     }
   }
