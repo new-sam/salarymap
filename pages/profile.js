@@ -6,6 +6,7 @@ import GlobalNav from '../components/GlobalNav'
 import SalaryBadge from '../components/SalaryBadge'
 import { SALARY_TIERS, getSalaryTier } from '../lib/salaryTiers'
 import { useT } from '../lib/i18n'
+import Icon from '../components/Icon'
 
 const POSITIONS = ['Backend','Frontend','Fullstack','Mobile','AI/Data','DevOps','QA','Design','PM','Other']
 const YOE_OPTIONS = [
@@ -218,6 +219,10 @@ function OnboardModal({ t, onClose }) {
 }
 const WORK_TYPES = ['Remote', 'Hybrid', 'On-site']
 
+// 지원 현황 stepper (my-applications와 동일)
+const APP_STEPS = ['applied', 'viewed', 'reviewing', 'decided']
+const APP_STATUS_TO_STEP = { pending: 'applied', applied: 'applied', viewed: 'viewed', reviewing: 'reviewing', decided: 'decided', accepted: 'decided', rejected: 'decided' }
+
 // 소개·경력·학력·스킬·희망연봉·이력서 6개 기준(모바일 앱과 동일).
 // 명함·수상·프로젝트·언어 등 선택 항목과 사진·이름·지역은 완성도에서 제외.
 function completionScore(p) {
@@ -242,7 +247,7 @@ export default function ProfilePage() {
   const [profile, setProfile] = useState(null)
   const [saving, setSaving] = useState(false)
   const [msg, setMsg] = useState(null)
-  const [tab, setTab] = useState('profile') // profile | posts | employment | badges
+  const [tab, setTab] = useState('profile') // profile | posts | employment | badges | applications
   const [isAdmin, setIsAdmin] = useState(false)
   const [showOnboard, setShowOnboard] = useState(false)
   const [showAlert, setShowAlert] = useState(null)
@@ -269,6 +274,8 @@ export default function ProfilePage() {
   const [cvLoading, setCvLoading] = useState(false)
   const [badges, setBadges] = useState([])
   const [badgesLoading, setBadgesLoading] = useState(false)
+  const [applications, setApplications] = useState([])
+  const [applicationsLoading, setApplicationsLoading] = useState(false)
   const pendingRoute = useRef(null)
   const photoRef = useRef(null)
   const resumeRef = useRef(null)
@@ -497,6 +504,16 @@ export default function ProfilePage() {
       .finally(() => setBadgesLoading(false))
   }, [tab, token])
 
+  useEffect(() => {
+    if (tab !== 'applications' || !user?.id || applications.length > 0) return
+    setApplicationsLoading(true)
+    fetch(`/api/my-applications?userId=${user.id}`)
+      .then(r => r.json())
+      .then(d => setApplications(d.data || []))
+      .catch(() => {})
+      .finally(() => setApplicationsLoading(false))
+  }, [tab, user])
+
   const handleVerifyUpload = async () => {
     const file = salaryDocRef.current?.files?.[0]
     if (!file) return
@@ -683,6 +700,25 @@ export default function ProfilePage() {
         .pw-post-item:last-child { border-bottom: none; }
         .pw-post-title { font-size: 14px; font-weight: 600; color: #111; margin-bottom: 4px; }
         .pw-post-meta { font-size: 12px; color: #aaa; display: flex; gap: 10px; }
+        .ma-card { background: #fff; border: 1px solid #eee; border-radius: 12px; padding: 20px 24px; margin-bottom: 12px; cursor: pointer; transition: border-color .15s, box-shadow .15s; }
+        .ma-card:hover { border-color: #ff4400; box-shadow: 0 2px 8px rgba(255,68,0,0.1); }
+        .ma-top { display: flex; align-items: center; gap: 14px; margin-bottom: 16px; }
+        .ma-logo { width: 44px; height: 44px; border-radius: 10px; background: #f0f0f0; display: flex; align-items: center; justify-content: center; overflow: hidden; flex-shrink: 0; font-size: 16px; font-weight: 800; color: #999; }
+        .ma-logo img { width: 100%; height: 100%; object-fit: cover; }
+        .ma-info { flex: 1; min-width: 0; }
+        .ma-title { font-size: 15px; font-weight: 700; color: #111; }
+        .ma-company { font-size: 13px; color: #888; margin-top: 2px; }
+        .ma-date { font-size: 11px; color: #888; background: #f0f0ee; padding: 4px 10px; border-radius: 100px; white-space: nowrap; }
+        .ma-stepper { display: flex; align-items: flex-start; }
+        .ma-step { flex: 1; display: flex; flex-direction: column; align-items: center; position: relative; }
+        .ma-step-line { position: absolute; top: 11px; right: 50%; width: 100%; height: 2px; z-index: 0; }
+        .ma-step-dot { width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; color: #fff; font-weight: 700; z-index: 1; position: relative; }
+        .ma-step-dot.next { animation: dotPulse 2s ease-in-out infinite; }
+        .ma-step-line.next { background: linear-gradient(90deg, #ff4400, #e0e0e0) !important; background-size: 200% 100% !important; animation: lineFill 2s ease-in-out infinite !important; }
+        @keyframes dotPulse { 0%,100% { background: #e0e0e0; box-shadow: none; } 50% { background: #ffb088; box-shadow: 0 0 8px rgba(255,68,0,0.3); } }
+        @keyframes lineFill { 0%,100% { background-position: 100% 0; } 50% { background-position: 0% 0; } }
+        .ma-step-label { font-size: 10px; font-weight: 600; margin-top: 5px; text-align: center; }
+        .ma-msg { margin-top: 14px; padding: 10px 14px; background: #f9f9f7; border-radius: 8px; font-size: 13px; color: #666; line-height: 1.5; text-align: center; white-space: pre-line; }
         .pcard { background: #fff; border: 1px solid rgba(0,0,0,0.06); border-radius: 12px; padding: 24px; margin-bottom: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
         .pcard-h { font-size: 13px; font-weight: 700; color: rgba(0,0,0,0.6); letter-spacing: .02em; margin-bottom: 16px; }
         .pfield { margin-bottom: 16px; }
@@ -777,6 +813,7 @@ export default function ProfilePage() {
           )}
           <button className={`pw-tab${tab === 'employment' ? ' on' : ''}`} onClick={() => handleTabChange('employment')}>{t('profile.tab.employment') || '재직정보'}</button>
           <button className={`pw-tab${tab === 'badges' ? ' on' : ''}`} onClick={() => handleTabChange('badges')}>{t('profile.tab.badges') || '뱃지'}</button>
+          <button className={`pw-tab${tab === 'applications' ? ' on' : ''}`} onClick={() => handleTabChange('applications')}>{t('profile.tab.applications') || '지원 현황'}</button>
         </div>
 
         {tab === 'profile' && (<>
@@ -1358,6 +1395,59 @@ export default function ProfilePage() {
               </>)
             })()}
           </div>
+        </>)}
+
+        {tab === 'applications' && (<>
+          {applicationsLoading && applications.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: '40px 20px', color: '#bbb', fontSize: 14 }}>Loading...</div>
+          ) : applications.length === 0 ? (
+            <div className="pcard" style={{ textAlign: 'center', padding: '40px 24px' }}>
+              <div style={{ marginBottom: 12 }}><Icon name="clipboard" size={40} color="#ccc" /></div>
+              <div style={{ fontSize: 14, fontWeight: 700, color: 'rgba(0,0,0,0.5)', marginBottom: 6 }}>{t('apps.emptyTitle')}</div>
+              <div style={{ fontSize: 13, color: 'rgba(0,0,0,0.35)', marginBottom: 16 }}>{t('apps.emptyDesc')}</div>
+              <a href="/jobs" style={{ fontSize: 13, fontWeight: 700, color: '#ff6000', textDecoration: 'none' }}>{t('apps.browseJobs')}</a>
+            </div>
+          ) : (
+            applications.map(app => {
+              const st = app.status || 'applied'
+              const mappedStep = APP_STATUS_TO_STEP[st] || 'applied'
+              const currentStep = Math.max(0, APP_STEPS.indexOf(mappedStep))
+              const stepLabel = { applied: t('apps.applied'), viewed: t('apps.viewed'), reviewing: t('apps.reviewing'), decided: t('apps.decided') }
+              const stepMessage = { applied: t('apps.msgApplied'), viewed: t('apps.msgViewed'), reviewing: t('apps.msgReviewing'), accepted: t('apps.msgAccepted'), rejected: t('apps.msgRejected') }[st] || ''
+              return (
+                <div key={app.id} className="ma-card" onClick={() => router.push(`/jobs?jobId=${app.job_id}`)}>
+                  <div className="ma-top">
+                    <div className="ma-logo">
+                      {(app.jobs?.logo_url || app.jobs?.image_url)
+                        ? <img src={app.jobs.logo_url || app.jobs.image_url} alt="" />
+                        : (app.job_company || '?').slice(0, 2).toUpperCase()}
+                    </div>
+                    <div className="ma-info">
+                      <div className="ma-title">{app.job_title}</div>
+                      <div className="ma-company">{app.job_company}</div>
+                    </div>
+                    <div className="ma-date">{t('apps.appliedDate')} {new Date(app.created_at).toLocaleDateString()}</div>
+                  </div>
+                  <div className="ma-stepper">
+                    {APP_STEPS.map((step, si) => (
+                      <div key={step} className="ma-step">
+                        {si > 0 && (
+                          <div className={`ma-step-line${si === currentStep + 1 ? ' next' : ''}`} style={{ background: si <= currentStep ? '#ff4400' : '#e0e0e0' }} />
+                        )}
+                        <div className={`ma-step-dot${si === currentStep + 1 ? ' next' : ''}`} style={{ background: si <= currentStep ? '#ff4400' : si === currentStep + 1 ? undefined : '#e0e0e0' }}>
+                          {si <= currentStep ? <Icon name="check" size={12} color="#fff" /> : ''}
+                        </div>
+                        <div className="ma-step-label" style={{ color: si <= currentStep ? '#ff4400' : '#bbb' }}>{stepLabel[step]}</div>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="ma-msg">{stepMessage}
+                    {st === 'accepted' && <span style={{ display: 'inline-block', marginLeft: 6 }}><Icon name="party" size={16} color="#065F46" /></span>}
+                  </div>
+                </div>
+              )
+            })
+          )}
         </>)}
 
         {/* Logout — mobile only */}

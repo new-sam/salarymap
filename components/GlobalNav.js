@@ -123,7 +123,6 @@ export default function GlobalNav({ activePage, onLogin, onJobsClick, mobileSear
           .gnav-r { display: none; }
           .gnav-r-mobile { display: flex; align-items: center; gap: 10px; }
         }
-        .gnav-mobile-profile { display: flex; align-items: center; gap: 6px; padding: 4px 10px 4px 4px; border-radius: 100px; border: 1px solid rgba(255,255,255,0.12); cursor: pointer; text-decoration: none; background: none; }
         .gnav-mobile-login { font-size: 12px; font-weight: 600; color: rgba(255,255,255,0.5); background: none; border: 1px solid rgba(255,255,255,0.15); padding: 6px 14px; border-radius: 100px; cursor: pointer; font-family: 'Barlow', sans-serif; }
         .gnav-mobile-search-btn { display: flex; align-items: center; justify-content: center; width: 32px; height: 32px; border: none; background: none; cursor: pointer; padding: 0; }
         .gnav-mobile-search-btn svg { width: 16px; height: 16px; color: rgba(255,255,255,0.5); }
@@ -157,12 +156,7 @@ export default function GlobalNav({ activePage, onLogin, onJobsClick, mobileSear
             </button>
           ) : (
             <div style={{ position: 'relative' }}>
-              <Link href="/profile" className="gnav-mobile-profile">
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ color: 'rgba(255,255,255,0.6)' }}><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-                {profileScore != null && profileScore < 100 && (
-                  <span className="gnav-score" style={{ color: profileScore >= 60 ? '#4ade80' : '#fbbf24', background: profileScore >= 60 ? 'rgba(74,222,128,0.1)' : 'rgba(251,191,36,0.1)' }}>{profileScore}%</span>
-                )}
-              </Link>
+              {/* 프로필 진입은 하단 My Page 탭으로 이동. 홈에서는 AI 이력서 넛지만 유지 */}
               {!hasResume && activePage === 'home' && (
                 <a href="/profile" className="gnav-ai-bubble" style={{ pointerEvents: 'auto', textDecoration: 'none', color: '#fff' }}>✨ {t('nav.aiResume')}</a>
               )}
