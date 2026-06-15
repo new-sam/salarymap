@@ -1,10 +1,19 @@
 import { createClient } from '@supabase/supabase-js'
 import { getSalaryTier } from '../../../lib/salaryTiers'
+import { sendPush } from '../../../lib/push'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
   process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 )
+
+// 토큰 locale(vi|ko|en)별로 push.js가 고른다. 글 제목이 없을 때의 제목 폴백.
+const COMMUNITY_TITLE = { vi: 'Cộng đồng FYI', ko: 'FYI 커뮤니티', en: 'FYI Community' }
+const FOLLOW_POST_BODY = {
+  vi: 'Có bài viết mới liên quan đến công ty bạn theo dõi',
+  ko: '팔로우한 회사 관련 새 글이 올라왔어요',
+  en: 'New post about a company you follow',
+}
 
 // 인기글 가중치 — 홈/모바일/daily-hot-post와 동일(댓글>좋아요>조회).
 function hotScore(p) {
@@ -502,6 +511,35 @@ export default async function handler(req, res) {
         option_b: poll.option_b.trim().slice(0, 80),
         ends_at: endsAt,
       })
+    }
+
+    // 팔로우 회사 알림 — 글 제목/내용에 "누군가 팔로우한 회사"가 언급되면 그 회사 팔로워에게 푸시.
+    // 회사 페이지 "소식" 탭과 동일한 부분 문자열(ilike) 매칭 기준이라, 알림을 누르면 그 글이 소식 탭에도 보인다.
+    // company_follows.company_name은 lower(trim()) 정규화 저장 → haystack도 소문자로 비교.
+    // 여러 회사가 언급돼도 사용자당 1건만 가도록 user_id를 Set으로 합치고, 작성자 본인은 제외한다.
+    // 실패가 글 작성 응답을 막지 않도록 try/catch로 감싼다(sendPush 자체도 throw 안 함).
+    try {
+      const haystack = `${title}\n${content}`.toLowerCase()
+      const { data: followRows } = await supabase
+        .from('company_follows')
+        .select('company_name, user_id')
+      const targets = new Set()
+      for (const row of followRows || []) {
+        if (row.company_name && row.user_id && row.user_id !== user.id
+            && haystack.includes(row.company_name)) {
+          targets.add(row.user_id)
+        }
+      }
+      if (targets.size) {
+        sendPush([...targets], {
+          title: title || COMMUNITY_TITLE,
+          body: FOLLOW_POST_BODY,
+          category: 'company_follow',
+          data: { type: 'company_follow', url: `/community/${data.id}` },
+        })
+      }
+    } catch (e) {
+      console.error('[posts] follow-notify failed:', e)
     }
 
     return res.status(201).json(data)
