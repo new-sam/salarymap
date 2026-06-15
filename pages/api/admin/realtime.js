@@ -1,18 +1,17 @@
 import { createClient } from '@supabase/supabase-js'
 import { verifyAdmin } from './check'
+import {
+  EXCLUDED_EMAIL_DOMAINS,
+  PAID_SOURCES,
+  isExcludedSubmission,
+  dedupeSubmissions,
+  isExcludedSignup,
+} from '../../../lib/admin-metrics'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
   process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 )
-
-// Exclude internal/seed/system accounts and banned users from signup counts
-const EXCLUDED_EMAIL_DOMAINS = ['likelion.net', 'dummy.local', 'system.local']
-function isExcludedSignup(user) {
-  if (user.email && EXCLUDED_EMAIL_DOMAINS.some(d => user.email.endsWith('@' + d))) return true
-  if (user.banned_until && new Date(user.banned_until) > new Date()) return true
-  return false
-}
 
 export default async function handler(req, res) {
   const user = await verifyAdmin(req)
@@ -26,7 +25,8 @@ export default async function handler(req, res) {
 
   const [subsRes, jaRes, evRes, pvRes, landingRes, resumeRes, csRes] = await Promise.all([
     supabase.from('submissions')
-      .select('id, utm_source, utm_medium, utm_campaign', { count: 'exact', head: false })
+      .select('id, company, email, user_id, source')
+      .eq('is_seed', false)
       .gte('created_at', startISO).lte('created_at', endISO)
       .limit(10000),
     supabase.from('job_applications')
@@ -54,7 +54,8 @@ export default async function handler(req, res) {
       .gte('created_at', startISO).lte('created_at', endISO),
   ])
 
-  const subs = subsRes.data || []
+  // Apply canonical submission filter + dedup — same as dashboard.js + the bot.
+  const submissions = dedupeSubmissions((subsRes.data || []).filter(s => !isExcludedSubmission(s)))
   const events = evRes.data || []
 
   let todaySignups = 0
@@ -69,14 +70,16 @@ export default async function handler(req, res) {
     }
   } catch (e) {}
 
-  const ad = subs.filter(s => s.utm_source || s.utm_medium || s.utm_campaign).length
+  const ad = submissions.filter(s => PAID_SOURCES.has(s.source)).length
+  const companies = new Set(submissions.map(s => s.company?.trim().toLowerCase()).filter(Boolean)).size
   const evCount = (name) => events.filter(e => e.event === name).length
 
   res.json({
     date: today,
-    submissions: subs.length,
+    submissions: submissions.length,
     ad,
-    organic: subs.length - ad,
+    organic: submissions.length - ad,
+    companies,
     signups: todaySignups,
     jobApps: jaRes.count || 0,
     jobClicks: evCount('click_jobs_cta'),

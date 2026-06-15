@@ -1,57 +1,17 @@
 import { createClient } from '@supabase/supabase-js'
 import { verifyAdmin } from './check'
+import {
+  EXCLUDED_EMAIL_DOMAINS,
+  PAID_SOURCES,
+  isExcludedSubmission,
+  dedupeSubmissions,
+  isExcludedSignup,
+} from '../../../lib/admin-metrics'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
   process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 )
-
-// --- Data quality filters ---
-const EXCLUDED_COMPANIES = new Set([
-  'likelion', 'likelion vn', 'likelion vietnam',
-  '{company}', 'dwqdqwd', 'gggg', 'kkk', 'xx', 'yy', 'tt', 'xd', 'blah', 'idk',
-  'úud', 'ừv', 'khôbg', 'bcagnecu', 'hi', 'boo', 'cac', 'say gex', '12',
-  'alice testing', 'alice testing 2', 'jobtest', '...', 'bimat', 'bí mật',
-  'secret', 'cant say', 'ẩn danh', 'tên công ty được giữ ẩn danh',
-  'anonymous', 'hide', 'm*',
-])
-const EXCLUDED_EMAIL_DOMAINS = ['likelion.net', 'dummy.local', 'system.local']
-
-// Paid traffic sources. Everything else (organic threads, direct, etc.) is Organic.
-// Extend when new paid channels (e.g. google, tiktok) launch.
-// CANONICAL SPEC — keep in sync with supabase/functions/daily-summary/index.ts
-const PAID_SOURCES = new Set(['meta', 'MT'])
-// `source` values that mean "not a real user submission" — QA test / unset.
-const EXCLUDED_SOURCES = new Set(['qa-local', '', null])
-
-// Banned/deactivated auth users (e.g. seed system account) should not count as signups
-function isBannedUser(user) {
-  return user.banned_until && new Date(user.banned_until) > new Date()
-}
-
-function isExcludedSubmission(sub) {
-  if (sub.company && EXCLUDED_COMPANIES.has(sub.company.trim().toLowerCase())) return true
-  if (sub.email && EXCLUDED_EMAIL_DOMAINS.some(d => sub.email.endsWith('@' + d))) return true
-  if (EXCLUDED_SOURCES.has(sub.source)) return true
-  return false
-}
-
-function dedupeSubmissions(subs) {
-  const seen = new Set()
-  return subs.filter(s => {
-    if (!s.user_id || !s.company) return true
-    const key = s.user_id + '::' + s.company.trim().toLowerCase()
-    if (seen.has(key)) return false
-    seen.add(key)
-    return true
-  })
-}
-
-function isExcludedSignup(user) {
-  if (user.email && EXCLUDED_EMAIL_DOMAINS.some(d => user.email.endsWith('@' + d))) return true
-  if (isBannedUser(user)) return true
-  return false
-}
 
 export default async function handler(req, res) {
   const user = await verifyAdmin(req)

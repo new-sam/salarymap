@@ -250,7 +250,7 @@ export default function AdminDashboard() {
       ad: realtime.ad,
       organic: realtime.organic,
       signups: realtime.signups,
-      companies: 0,
+      companies: realtime.companies ?? 0,
       jobClicks: realtime.jobClicks,
       cardClicks: realtime.cardClicks,
       jobApps: realtime.jobApps,
