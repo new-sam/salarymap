@@ -8,12 +8,16 @@ const L = {
     note: '* 내부/시드 계정 제외, 선택한 기간 기준',
     posts: '게시글', comments: '댓글', likes: '좋아요', authors: '참여자',
     postViews: '글 조회', listViews: '목록 방문', writeClicks: '글쓰기 클릭',
+    navClicks: '탭/네비 클릭',
     avgComments: '글당 평균 댓글',
+    funnelTitle: '유입 퍼널',
+    fNav: '탭/네비 클릭', fList: '목록 방문', fPost: '글 클릭', fWrite: '글쓰기 클릭', fCreate: '작성 완료',
+    fNavToList: '탭 경유 유입', fOfList: '목록 대비',
     catTitle: '카테고리별 게시글',
     topTitle: '인기 게시글 TOP',
     dailyTitle: '일별 상세',
     thDate: '날짜', thPosts: '글', thComments: '댓글', thLikes: '좋아요',
-    thPostViews: '글조회', thWriteClicks: '글쓰기', thListViews: '목록방문',
+    thPostViews: '글조회', thWriteClicks: '글쓰기', thListViews: '목록방문', thNavClicks: '탭클릭',
     thTitle: '제목', thCat: '카테고리', thLike: '♥', thComment: '💬', thView: '👁',
     anon: '익명',
     cats: { ask_company: '회사 질문', daily: '일상', job_change: '이직' },
@@ -25,12 +29,16 @@ const L = {
     note: '* Excludes internal/seed accounts, within selected range',
     posts: 'Posts', comments: 'Comments', likes: 'Likes', authors: 'Authors',
     postViews: 'Post Views', listViews: 'List Views', writeClicks: 'Write Clicks',
+    navClicks: 'Tab/Nav Clicks',
     avgComments: 'Avg Comments / Post',
+    funnelTitle: 'Entry Funnel',
+    fNav: 'Tab/Nav Click', fList: 'List View', fPost: 'Post Click', fWrite: 'Write Click', fCreate: 'Posted',
+    fNavToList: 'via tab/nav', fOfList: 'of list views',
     catTitle: 'Posts by Category',
     topTitle: 'Top Posts',
     dailyTitle: 'Daily Detail',
     thDate: 'Date', thPosts: 'Posts', thComments: 'Comments', thLikes: 'Likes',
-    thPostViews: 'Views', thWriteClicks: 'Write', thListViews: 'List Views',
+    thPostViews: 'Views', thWriteClicks: 'Write', thListViews: 'List Views', thNavClicks: 'Tab Clicks',
     thTitle: 'Title', thCat: 'Category', thLike: '♥', thComment: '💬', thView: '👁',
     anon: 'Anon',
     cats: { ask_company: 'Ask Company', daily: 'Daily', job_change: 'Job Change' },
@@ -45,12 +53,13 @@ const CARD = [
   { key: 'totalComments', color: '#3b82f6' },
   { key: 'totalLikes', color: '#ef4444' },
   { key: 'uniqueAuthors', color: '#8b5cf6' },
+  { key: 'navClicks', color: '#ec4899' },
   { key: 'postViews', color: '#06b6d4' },
   { key: 'writeClicks', color: '#f59e0b' },
 ]
 const CARD_LABEL = {
   totalPosts: 'posts', totalComments: 'comments', totalLikes: 'likes',
-  uniqueAuthors: 'authors', postViews: 'postViews', writeClicks: 'writeClicks',
+  uniqueAuthors: 'authors', navClicks: 'navClicks', postViews: 'postViews', writeClicks: 'writeClicks',
 }
 
 export default function CommunityView({ token, lang = 'ko', dateRange }) {
@@ -76,9 +85,18 @@ export default function CommunityView({ token, lang = 'ko', dateRange }) {
   if (loading) return <div style={{ textAlign: 'center', padding: 40, color: '#666' }}>{t.loading}</div>
   if (!data || !data.summary) return <div style={{ textAlign: 'center', padding: 40, color: '#999' }}>{t.empty}</div>
 
-  const { summary, daily, byCategory, topPosts } = data
+  const { summary, daily, byCategory, topPosts, funnel } = data
   const maxCat = Math.max(1, ...byCategory.map(c => c.posts))
   const catName = (k) => t.cats[k] || k
+
+  const fmtPct = (v) => (v == null ? '—' : `${v}%`)
+  const funnelSteps = funnel ? [
+    { label: t.fNav, value: funnel.navClicks, conv: null, color: '#ec4899' },
+    { label: t.fList, value: funnel.listViews, conv: funnel.navToList, convLabel: t.fNavToList, color: '#9CA3AF' },
+    { label: t.fPost, value: funnel.postClicks, conv: funnel.postRate, convLabel: t.fOfList, color: '#06b6d4' },
+    { label: t.fWrite, value: funnel.writeClicks, conv: funnel.writeRate, convLabel: t.fOfList, color: '#f59e0b' },
+    { label: t.fCreate, value: funnel.created, conv: funnel.createRate, convLabel: t.fOfList, color: '#ff6000' },
+  ] : []
 
   return (
     <>
@@ -95,6 +113,27 @@ export default function CommunityView({ token, lang = 'ko', dateRange }) {
         {t.note} · {t.avgComments}: <strong>{summary.avgCommentsPerPost}</strong>
         {!summary.hasEventTracking && <span style={{ marginLeft: 8 }}>{t.noTracking}</span>}
       </div>
+
+      {/* Entry funnel */}
+      {funnel && (
+        <div style={{ ...sectionStyle, marginBottom: 24 }}>
+          <h3 style={sectionTitle}>{t.funnelTitle}</h3>
+          <div style={{ display: 'flex', alignItems: 'stretch', gap: 6, flexWrap: 'wrap' }}>
+            {funnelSteps.map((s, i) => (
+              <div key={s.label} style={{ display: 'flex', alignItems: 'center', gap: 6, flex: '1 1 0', minWidth: 110 }}>
+                <div style={{ flex: 1, background: '#fafafa', border: '1px solid #eee', borderRadius: 10, padding: '12px 10px', textAlign: 'center' }}>
+                  <div style={{ fontSize: 11, color: '#6B7280', marginBottom: 4 }}>{s.label}</div>
+                  <div style={{ fontSize: 24, fontWeight: 700, color: s.color }}>{s.value}</div>
+                  {s.conv != null && (
+                    <div style={{ fontSize: 11, color: '#9CA3AF', marginTop: 3 }}>{fmtPct(s.conv)} <span style={{ color: '#cbcbcb' }}>{s.convLabel}</span></div>
+                  )}
+                </div>
+                {i < funnelSteps.length - 1 && <span style={{ color: '#d1d5db', fontSize: 16 }}>→</span>}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Category + Top posts */}
       <div className="adm-grid-2col">
@@ -142,7 +181,7 @@ export default function CommunityView({ token, lang = 'ko', dateRange }) {
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
             <thead>
               <tr style={{ borderBottom: '2px solid #e5e7eb' }}>
-                {[t.thDate, t.thPosts, t.thComments, t.thLikes, t.thPostViews, t.thListViews, t.thWriteClicks].map((h, i) => (
+                {[t.thDate, t.thPosts, t.thComments, t.thLikes, t.thNavClicks, t.thPostViews, t.thListViews, t.thWriteClicks].map((h, i) => (
                   <th key={h} style={{ padding: '8px 12px', textAlign: i === 0 ? 'left' : 'right', fontWeight: 600, color: '#374151' }}>{h}</th>
                 ))}
               </tr>
@@ -154,6 +193,7 @@ export default function CommunityView({ token, lang = 'ko', dateRange }) {
                   <td style={{ padding: '6px 12px', textAlign: 'right', color: '#ff6000', fontWeight: 600 }}>{d.posts || '-'}</td>
                   <td style={{ padding: '6px 12px', textAlign: 'right', color: '#3b82f6' }}>{d.comments || '-'}</td>
                   <td style={{ padding: '6px 12px', textAlign: 'right', color: '#ef4444' }}>{d.likes || '-'}</td>
+                  <td style={{ padding: '6px 12px', textAlign: 'right', color: '#ec4899' }}>{d.navClicks || '-'}</td>
                   <td style={{ padding: '6px 12px', textAlign: 'right', color: '#06b6d4' }}>{d.postViews || '-'}</td>
                   <td style={{ padding: '6px 12px', textAlign: 'right', color: '#9CA3AF' }}>{d.listViews || '-'}</td>
                   <td style={{ padding: '6px 12px', textAlign: 'right', color: '#f59e0b' }}>{d.writeClicks || '-'}</td>
@@ -164,6 +204,7 @@ export default function CommunityView({ token, lang = 'ko', dateRange }) {
                 <td style={{ padding: '8px 12px', textAlign: 'right', color: '#ff6000' }}>{summary.totalPosts}</td>
                 <td style={{ padding: '8px 12px', textAlign: 'right', color: '#3b82f6' }}>{summary.totalComments}</td>
                 <td style={{ padding: '8px 12px', textAlign: 'right', color: '#ef4444' }}>{summary.totalLikes}</td>
+                <td style={{ padding: '8px 12px', textAlign: 'right', color: '#ec4899' }}>{summary.navClicks}</td>
                 <td style={{ padding: '8px 12px', textAlign: 'right', color: '#06b6d4' }}>{summary.postViews}</td>
                 <td style={{ padding: '8px 12px', textAlign: 'right', color: '#9CA3AF' }}>{summary.listViews}</td>
                 <td style={{ padding: '8px 12px', textAlign: 'right', color: '#f59e0b' }}>{summary.writeClicks}</td>

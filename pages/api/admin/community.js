@@ -83,7 +83,7 @@ export default async function handler(req, res) {
     events = await fetchAll((a, b) => supabase
       .from('events')
       .select('event, meta, created_at')
-      .in('event', ['view_community', 'view_community_post', 'click_community_write'])
+      .in('event', ['view_community', 'view_community_post', 'click_community_write', 'click_community_post', 'click_community_nav', 'click_community_tab'])
       .gte('created_at', startISO).lte('created_at', endISO)
       .range(a, b)
     )
@@ -94,7 +94,7 @@ export default async function handler(req, res) {
   // --- Daily aggregation (VN timezone, matching the rest of the dashboard) ---
   const toVN = (iso) => new Date(new Date(iso).getTime() + 7 * 3600000).toISOString().slice(0, 10)
   const dailyMap = {}
-  const newDay = (date) => ({ date, posts: 0, comments: 0, likes: 0, listViews: 0, postViews: 0, writeClicks: 0 })
+  const newDay = (date) => ({ date, posts: 0, comments: 0, likes: 0, listViews: 0, postViews: 0, writeClicks: 0, navClicks: 0 })
   const bump = (iso, key) => {
     const date = toVN(iso)
     if (!dailyMap[date]) dailyMap[date] = newDay(date)
@@ -107,6 +107,7 @@ export default async function handler(req, res) {
     if (e.event === 'view_community') bump(e.created_at, 'listViews')
     else if (e.event === 'view_community_post') bump(e.created_at, 'postViews')
     else if (e.event === 'click_community_write') bump(e.created_at, 'writeClicks')
+    else if (e.event === 'click_community_nav' || e.event === 'click_community_tab') bump(e.created_at, 'navClicks')
   })
 
   // Fill gaps only within the active window (skip pre-launch empty dates)
@@ -146,17 +147,38 @@ export default async function handler(req, res) {
   posts.forEach(p => authorSet.add(p.user_id))
   comments.forEach(c => authorSet.add(c.user_id))
 
+  const listViews = events.filter(e => e.event === 'view_community').length
+  const navClicks = events.filter(e => e.event === 'click_community_nav' || e.event === 'click_community_tab').length
+  const postClicks = events.filter(e => e.event === 'click_community_post').length
+  const writeClicks = events.filter(e => e.event === 'click_community_write').length
+
   const summary = {
     totalPosts: posts.length,
     totalComments: comments.length,
     totalLikes: likes.length,
     uniqueAuthors: authorSet.size,
     postViews: events.filter(e => e.event === 'view_community_post').length,
-    listViews: events.filter(e => e.event === 'view_community').length,
-    writeClicks: events.filter(e => e.event === 'click_community_write').length,
+    listViews,
+    writeClicks,
+    navClicks,
     avgCommentsPerPost: posts.length ? (comments.length / posts.length).toFixed(1) : '0',
     hasEventTracking: events.length > 0,
   }
 
-  res.json({ summary, daily, byCategory, topPosts })
+  // --- Entry funnel: tab/nav click → list view → post click / write / create ---
+  // Consumption & creation both branch from the list view, so rates use listViews as base.
+  const pct = (n, d) => (d > 0 ? +((n / d) * 100).toFixed(1) : null)
+  const funnel = {
+    navClicks,
+    listViews,
+    postClicks,
+    writeClicks,
+    created: posts.length,
+    navToList: pct(listViews, navClicks),   // share of arrivals reached via the nav/tab
+    postRate: pct(postClicks, listViews),   // list → opened a post
+    writeRate: pct(writeClicks, listViews), // list → clicked write
+    createRate: pct(posts.length, listViews), // list → actually posted
+  }
+
+  res.json({ summary, daily, byCategory, topPosts, funnel })
 }

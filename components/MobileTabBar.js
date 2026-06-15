@@ -3,6 +3,7 @@ import { useRouter } from 'next/router'
 import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabaseClient'
 import { useT } from '../lib/i18n'
+import { track } from '../lib/track'
 
 const baseTabs = [
   { key: 'home', href: '/', label: 'Home', icon: (
@@ -78,6 +79,9 @@ export default function MobileTabBar() {
   const active = getActiveKey()
   const tabs = isAdmin ? [...baseTabs, communityTab, adminTab] : [...baseTabs, communityTab]
   const handleTabClick = (e, tab) => {
+    if (tab.key === 'community') {
+      track('click_community_tab', { meta: { source: 'mobile' }, page: router.pathname })
+    }
     if (tab.key === 'applications' && !isLoggedIn) {
       e.preventDefault()
       window.dispatchEvent(new CustomEvent('fyi-show-login'))
