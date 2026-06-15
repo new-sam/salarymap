@@ -17,6 +17,10 @@ const EXCLUDED_COMPANIES = new Set([
 ])
 const EXCLUDED_EMAIL_DOMAINS = ['likelion.net', 'dummy.local', 'system.local']
 
+// Paid traffic sources. Everything else (organic threads, direct, etc.) is Organic.
+// Extend when new paid channels (e.g. google, tiktok) launch.
+const PAID_SOURCES = new Set(['meta'])
+
 // Banned/deactivated auth users (e.g. seed system account) should not count as signups
 function isBannedUser(user) {
   return user.banned_until && new Date(user.banned_until) > new Date()
@@ -158,7 +162,7 @@ export default async function handler(req, res) {
     const date = toVN(sub.created_at)
     if (!dailyMap[date]) dailyMap[date] = { ...newDay(), date }
     dailyMap[date].submissions++
-    if (sub.utm_source || sub.utm_medium || sub.utm_campaign) {
+    if (PAID_SOURCES.has(sub.utm_source)) {
       dailyMap[date].ad++
     } else {
       dailyMap[date].organic++
@@ -282,8 +286,8 @@ export default async function handler(req, res) {
 
   const summary = {
     totalSubmissions: submissions.length,
-    adSubmissions: submissions.filter(s => s.utm_source || s.utm_medium || s.utm_campaign).length,
-    organicSubmissions: submissions.filter(s => !s.utm_source && !s.utm_medium && !s.utm_campaign).length,
+    adSubmissions: submissions.filter(s => PAID_SOURCES.has(s.utm_source)).length,
+    organicSubmissions: submissions.filter(s => !PAID_SOURCES.has(s.utm_source)).length,
     totalSignups: signups.length,
     totalJobApps: jobApps.length,
     totalLandings: evtSum('landing'),
