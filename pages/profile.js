@@ -218,12 +218,17 @@ function OnboardModal({ t, onClose }) {
 }
 const WORK_TYPES = ['Remote', 'Hybrid', 'On-site']
 
+// 소개·경력·학력·스킬·희망연봉·이력서 6개 기준(모바일 앱과 동일).
+// 명함·수상·프로젝트·언어 등 선택 항목과 사진·이름·지역은 완성도에서 제외.
 function completionScore(p) {
   if (!p) return 0
   const checks = [
-    p.photo_url, p.full_name, p.headline, p.location,
-    p.resume_url, Array.isArray(p.skills) ? p.skills.length > 0 : !!p.skills,
-    p.university, p.experiences?.length > 0,
+    !!p.intro,
+    (p.experiences?.filter(e => e && (e.company || e.role)).length || 0) > 0,
+    !!p.university,
+    Array.isArray(p.skills) ? p.skills.length > 0 : !!p.skills,
+    !!p.salary_min || !!p.salary_max,
+    !!p.resume_url,
   ]
   return Math.round(checks.filter(Boolean).length / checks.length * 100)
 }
