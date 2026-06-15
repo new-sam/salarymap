@@ -375,6 +375,37 @@ export default async function handler(req, res) {
       query = query.or(ors.join(','))
     }
 
+    // 커뮤니티 "팔로잉" 탭: 로그인 사용자가 팔로우한 회사들이 제목/내용/댓글에 언급된 글.
+    // 회사 "소식" 탭과 동일한 언급(ilike) 기준을, 팔로우한 회사 전체로 확장한 것. 로그인 필요.
+    if (req.query.following) {
+      const token = req.headers.authorization?.replace('Bearer ', '')
+      if (!token) return res.status(401).json({ error: 'Unauthorized' })
+      const { data: { user } } = await supabase.auth.getUser(token)
+      if (!user) return res.status(401).json({ error: 'Unauthorized' })
+
+      const { data: follows } = await supabase
+        .from('company_follows')
+        .select('company_name')
+        .eq('user_id', user.id)
+      // PostgREST or() 파싱을 깨뜨리는 쉼표/괄호는 공백으로 치환.
+      const companies = [...new Set((follows || []).map(f => f.company_name).filter(Boolean))]
+        .map(c => c.replace(/[(),]/g, ' ').trim())
+        .filter(Boolean)
+      // 팔로우한 회사가 없으면 보여줄 글도 없다.
+      if (!companies.length) {
+        return res.status(200).json({ posts: [], total: 0, page: parseInt(page), totalPages: 0 })
+      }
+      const { data: cmts } = await supabase
+        .from('community_comments')
+        .select('post_id')
+        .or(companies.map(c => `content.ilike.%${c}%`).join(','))
+      const commentPostIds = [...new Set((cmts || []).map(x => x.post_id).filter(Boolean))]
+      const ors = []
+      companies.forEach(c => { ors.push(`title.ilike.%${c}%`, `content.ilike.%${c}%`) })
+      if (commentPostIds.length) ors.push(`id.in.(${commentPostIds.join(',')})`)
+      query = query.or(ors.join(','))
+    }
+
     let data, count
     if (sort === 'popular') {
       // 인기글 = hotScore(댓글>좋아요>조회) 랭킹. 최근 30일 글을 후보로 삼되,
