@@ -59,11 +59,12 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'id and valid status required' })
     }
 
-    // Approval requires the admin-verified salary amount (won) — it determines the badge tier.
-    let verifiedAmount = null
+    // Approval requires the admin-verified monthly salary in 백만 VND (triệu) — it
+    // determines the badge tier. Stored on the row in triệu; converted to VND for the badge.
+    let verifiedTrieu = null
     if (status === 'approved') {
-      verifiedAmount = parseInt(salary_amount, 10)
-      if (!verifiedAmount || verifiedAmount <= 0) {
+      verifiedTrieu = parseInt(salary_amount, 10)
+      if (!verifiedTrieu || verifiedTrieu <= 0) {
         return res.status(400).json({ error: 'salary_amount required to approve' })
       }
     }
@@ -75,7 +76,7 @@ export default async function handler(req, res) {
       reviewed_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     }
-    if (verifiedAmount != null) updateFields.salary_amount = verifiedAmount
+    if (verifiedTrieu != null) updateFields.salary_amount = verifiedTrieu
 
     const { data: verification, error: updateErr } = await supabase
       .from('salary_verifications')
@@ -86,9 +87,10 @@ export default async function handler(req, res) {
 
     if (updateErr) return res.status(500).json({ error: updateErr.message })
 
-    // If approved, grant/refresh the salary-range badge. The tier is derived from
-    // salary_amount in app code (lib/salaryTiers). Keep existing is_active so a
-    // re-approval doesn't silently hide a badge the user already chose to show.
+    // If approved, grant/refresh the salary-range badge. The badge stores the raw
+    // monthly amount in VND (triệu * 1,000,000) because the tier engine (lib/salaryTiers
+    // and the app) thresholds in VND. Keep existing is_active so a re-approval doesn't
+    // silently hide a badge the user already chose to show.
     if (status === 'approved') {
       const { data: existing } = await supabase
         .from('user_badges')
@@ -102,7 +104,7 @@ export default async function handler(req, res) {
         .upsert({
           user_id: verification.user_id,
           badge_type: 'salary_range',
-          salary_amount: verifiedAmount,
+          salary_amount: verifiedTrieu * 1000000,
           is_active: existing?.is_active ?? false,
           granted_at: new Date().toISOString(),
         }, { onConflict: 'user_id,badge_type' })

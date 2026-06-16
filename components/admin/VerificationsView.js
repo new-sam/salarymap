@@ -31,11 +31,12 @@ export default function VerificationsView({ token }) {
       if (res.ok) {
         const { verifications: data } = await res.json()
         setVerifications(data)
-        // Prefill the salary input with the user-submitted amount (converted to 백만 VND).
+        // Prefill the salary input with the user-submitted amount. The submitted
+        // salary_amount is already in 백만 VND (triệu), matching the mobile app.
         setSalaryInput(prev => {
           const next = { ...prev }
           data.forEach(v => {
-            if (next[v.id] === undefined && v.salary_amount) next[v.id] = String(Math.round(v.salary_amount / 1000000))
+            if (next[v.id] === undefined && v.salary_amount) next[v.id] = String(v.salary_amount)
           })
           return next
         })
@@ -49,22 +50,23 @@ export default function VerificationsView({ token }) {
   useEffect(() => { fetchData() }, [token, filter])
 
   const handleAction = async (id, status) => {
-    // Approval requires an admin-entered monthly salary (백만 VND / triệu) → stored as VND.
-    let salaryVnd = null
+    // Approval requires an admin-entered monthly salary in 백만 VND (triệu). Sent as-is;
+    // stored on the verification row in triệu, converted to VND for the badge tier server-side.
+    let salaryTrieu = null
     if (status === 'approved') {
       const trieu = parseInt(salaryInput[id], 10)
       if (!trieu || trieu <= 0) {
         alert('월급(백만 VND)을 입력해야 승인할 수 있습니다.')
         return
       }
-      salaryVnd = trieu * 1000000
+      salaryTrieu = trieu
     }
     setActionLoading(id)
     try {
       const res = await fetch('/api/salary-verification/admin', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ id, status, admin_note: noteInput[id] || '', salary_amount: salaryVnd }),
+        body: JSON.stringify({ id, status, admin_note: noteInput[id] || '', salary_amount: salaryTrieu }),
       })
       if (res.ok) {
         setVerifications(prev => prev.filter(v => v.id !== id))
@@ -141,7 +143,7 @@ export default function VerificationsView({ token }) {
                 </div>
                 <div>
                   <div style={{ color: 'rgba(0,0,0,0.4)', marginBottom: 2 }}>월급</div>
-                  <div style={{ fontWeight: 600, color: '#111' }}>{v.salary_amount ? `${(v.salary_amount / 1000000).toLocaleString()}M VND` : '-'}</div>
+                  <div style={{ fontWeight: 600, color: '#111' }}>{v.salary_amount ? `${v.salary_amount.toLocaleString()}M VND` : '-'}</div>
                 </div>
                 <div>
                   <div style={{ color: 'rgba(0,0,0,0.4)', marginBottom: 2 }}>요청일</div>
