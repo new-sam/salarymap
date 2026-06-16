@@ -83,7 +83,8 @@ export default function CommunityPage() {
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => setSession(session))
-    track('view_community', { page: '/community' })
+    const from = new URLSearchParams(window.location.search).get('from')
+    track('view_community', { page: '/community', meta: { from } })
     // 데이터 초기라 30일(720h) 창으로 집계
     fetch('/api/trending-companies?hours=720')
       .then(r => r.json())

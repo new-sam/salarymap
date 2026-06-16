@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/router'
-import NextStepSheet from './NextStepSheet'
+import CommunityAskTeaser from './CommunityAskTeaser'
 import { useT } from '../lib/i18n'
 import { supabase } from '../lib/supabaseClient'
 import { formatSalaryCard } from '../utils/salary'
@@ -78,8 +78,6 @@ export default function ResultSection({ salary, role, experience, company, isLog
   const { t } = useT()
   const [result, setResult] = useState(null)
   const [jobData, setJobData] = useState(null)
-  const [sheetDismissed, setSheetDismissed] = useState(false)
-  const [showSheet, setShowSheet] = useState(true)
   const router = useRouter()
 
   useEffect(() => {
@@ -110,7 +108,7 @@ export default function ResultSection({ salary, role, experience, company, isLog
     </div>
   )
 
-  const { percentile, userSalary, marketMedian, diff, topCompanies } = result
+  const { percentile, userSalary, marketMedian, diff } = result
   const isPositive = diff >= 0
   const state = percentile <= 33 ? 'high' : percentile <= 66 ? 'mid' : 'low'
 
@@ -137,7 +135,12 @@ export default function ResultSection({ salary, role, experience, company, isLog
   const goToJobs = () => {
     if (typeof gtag === 'function') gtag('event', 'cta_click_view_jobs', { source: 'result_jobs' })
     if (typeof fbq === 'function') fbq('trackCustom', 'CTAClickViewJobs', { source: 'result_jobs' })
-    router.push('/jobs?from=salary')
+    if (isLoggedIn) {
+      router.push('/jobs?from=salary')
+    } else {
+      localStorage.setItem('fyi_login_return', '/jobs?from=salary')
+      supabase.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: window.location.origin + '/auth/callback' } })
+    }
   }
 
   const goToJob = (id) => {
@@ -311,22 +314,7 @@ export default function ResultSection({ salary, role, experience, company, isLog
         </div>
       )}
 
-      {/* NextStep sheet */}
-      {result && !isLoggedIn && showSheet && (
-        <NextStepSheet role={role} experience={experience} percentile={percentile} topCompanies={topCompanies}
-          onDismiss={() => { setShowSheet(false); setSheetDismissed(true); }} />
-      )}
-      {/* Reopen button after dismiss */}
-      {result && !isLoggedIn && sheetDismissed && !showSheet && (
-        <div style={{ marginTop:'16px', textAlign:'center' }}>
-          <button onClick={() => { setShowSheet(true); setSheetDismissed(false); }}
-            style={{ background:'rgba(0,128,255,0.1)', border:'1px solid rgba(0,128,255,0.3)', borderRadius:'12px',
-              padding:'12px 24px', fontSize:'13px', fontWeight:700, color:'#0080FF', cursor:'pointer',
-              fontFamily:"'Be Vietnam Pro',sans-serif" }}>
-            {t('result.connectHigher')}
-          </button>
-        </div>
-      )}
+      {result && <CommunityAskTeaser t={t} />}
     </div>
   )
 }
