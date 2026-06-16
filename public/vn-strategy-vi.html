@@ -1,0 +1,271 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Chiến lược Việt Nam · Bánh đà Nhân tài ↔ Doanh nghiệp · FYI</title>
+
+<!--
+  ────────────────────────────────────────────────
+   Hướng dẫn chỉnh sửa
+   · Chữ trong mỗi node của bánh đà: sửa trong <text> ... </text>
+   · Màu trạng thái: chỉ đổi class của node <g>
+       done  = Hoàn thành (xanh)  /  wip = Đang làm (vàng)
+       task  = Nhiệm vụ chính (đen)  /  next = Sắp tới (xám)
+   · Nội dung timeline / nhiệm vụ: sửa trực tiếp trong văn bản
+  ────────────────────────────────────────────────
+-->
+
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: #f6f7f9; color: #111;
+    font-family: -apple-system, BlinkMacSystemFont, "Pretendard", "Apple SD Gothic Neo", sans-serif;
+    padding: 48px 24px 90px; line-height: 1.55;
+  }
+  .wrap { max-width: 980px; margin: 0 auto; }
+
+  .brand { display:flex; align-items:center; justify-content:center; margin-bottom:16px; }
+  .brand img { height: 26px; }
+  .title { font-size: 30px; font-weight: 800; text-align: center; letter-spacing: -0.7px; }
+  .subtitle { text-align: center; color: #6b7280; font-size: 13px; margin-top: 6px; margin-bottom: 18px; }
+
+  .thesis {
+    background:#111; color:#fff; border-radius:18px; padding:26px 32px;
+    text-align:center; font-size:18px; font-weight:700; line-height:1.6; margin-bottom: 8px;
+  }
+  .thesis .hl { background:#fde047; color:#111; padding:2px 9px; border-radius:6px; font-weight:800; }
+
+  .sec { font-size:18px; font-weight:800; margin:44px 0 16px; display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+  .sec .n { background:#111; color:#fff; width:24px; height:24px; border-radius:7px; display:inline-flex; align-items:center; justify-content:center; font-size:13px; }
+  .sec .sub { color:#9ca3af; font-size:12.5px; font-weight:500; }
+
+  /* ── Bánh đà ── */
+  .wheelbox { background:#fff; border:1px solid #e5e7eb; border-radius:20px; padding:18px 18px 26px; }
+  .wheel { width:100%; max-width:620px; margin:0 auto; display:block; }
+
+  .node-bubble { stroke-width:2; }
+  .node .lbl { font-size:15px; font-weight:800; fill:#111; }
+  .node .st  { font-size:11px; font-weight:700; }
+
+  .node.done .node-bubble { fill:#dcfce7; stroke:#86efac; }
+  .node.done .st { fill:#15803d; }
+  .node.wip  .node-bubble { fill:#fef9c3; stroke:#fde047; }
+  .node.wip  .st { fill:#a16207; }
+  .node.next .node-bubble { fill:#f3f4f6; stroke:#e5e7eb; }
+  .node.next .st { fill:#9ca3af; }
+  .node.next .lbl { fill:#6b7280; }
+  .node.task .node-bubble { fill:#111; stroke:#111; }
+  .node.task .lbl { fill:#fff; }
+  .node.task .st  { fill:#fde047; }
+
+  .ring { fill:none; stroke:#e5e7eb; stroke-width:2; }
+  .ring-arrow { fill:none; stroke:#cbd5e1; stroke-width:3; }
+  .hub { fill:#fafafa; stroke:#e5e7eb; stroke-width:2; }
+  .hub-t1 { font-size:15px; font-weight:800; fill:#111; }
+  .hub-t2 { font-size:11px; font-weight:700; fill:#9ca3af; letter-spacing:2px; }
+
+  .legend { display:flex; gap:18px; justify-content:center; flex-wrap:wrap; margin-top:6px; }
+  .legend span { font-size:12px; color:#4b5563; display:inline-flex; align-items:center; gap:7px; font-weight:600; }
+  .legend i { width:13px; height:13px; border-radius:4px; display:inline-block; }
+  .lg-done { background:#dcfce7; border:1px solid #86efac; }
+  .lg-wip  { background:#fef9c3; border:1px solid #fde047; }
+  .lg-task { background:#111; }
+  .lg-next { background:#f3f4f6; border:1px solid #e5e7eb; }
+
+  /* ── Đồ thị giai đoạn ── */
+  .stages { display:grid; grid-template-columns: repeat(5, 1fr); gap:0; }
+  .stage { position:relative; text-align:center; padding:0 6px; }
+  .stage .dot { width:30px; height:30px; border-radius:50%; margin:0 auto 12px; display:flex; align-items:center; justify-content:center; font-size:15px; font-weight:800; color:#fff; position:relative; z-index:2; }
+  .stage .bar { position:absolute; top:15px; left:50%; width:100%; height:4px; z-index:1; }
+  .stage:last-child .bar { display:none; }
+  .stage .nm { font-size:13px; font-weight:800; }
+  .stage .ds { font-size:11px; color:#9ca3af; margin-top:3px; }
+  .stage.d .dot { background:#16a34a; } .stage.d .bar { background:#86efac; }
+  .stage.w .dot { background:#ca8a04; } .stage.w .bar { background:#e5e7eb; }
+  .stage.n .dot { background:#d1d5db; } .stage.n .bar { background:#e5e7eb; }
+  .stage.n .nm { color:#9ca3af; }
+
+  /* ── Timeline ── */
+  .tl { position:relative; padding-left:30px; }
+  .tl::before { content:""; position:absolute; left:9px; top:6px; bottom:6px; width:2px; background:#e5e7eb; }
+  .tl .ph { position:relative; padding:0 0 26px; }
+  .tl .ph:last-child { padding-bottom:0; }
+  .tl .ph::before { content:""; position:absolute; left:-26px; top:3px; width:14px; height:14px; border-radius:50%; background:#fff; border:3px solid #d1d5db; }
+  .tl .ph.done::before { border-color:#16a34a; background:#16a34a; }
+  .tl .ph.wip::before  { border-color:#ca8a04; background:#fde047; }
+  .tl .ph .tag { font-size:10.5px; font-weight:800; letter-spacing:0.5px; padding:2px 9px; border-radius:999px; display:inline-block; margin-bottom:6px; }
+  .tl .ph.done .tag { background:#dcfce7; color:#15803d; }
+  .tl .ph.wip  .tag { background:#fef9c3; color:#a16207; }
+  .tl .ph.next .tag { background:#f3f4f6; color:#6b7280; }
+  .tl .ph .h { font-size:16px; font-weight:800; margin-bottom:2px; }
+  .tl .ph .d { font-size:13.5px; color:#4b5563; }
+
+  /* ── 2 nhiệm vụ chính ── */
+  .tasks { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+  .tk { background:#111; color:#fff; border-radius:16px; padding:24px 26px; }
+  .tk .no { font-size:12px; font-weight:800; color:#fde047; letter-spacing:1px; margin-bottom:10px; }
+  .tk .h { font-size:19px; font-weight:800; margin-bottom:8px; }
+  .tk .h .hl { background:#fde047; color:#111; padding:1px 8px; border-radius:5px; }
+  .tk .d { font-size:13.5px; color:rgba(255,255,255,0.7); line-height:1.6; }
+
+  .foot { text-align:center; color:#9ca3af; font-size:11.5px; margin-top:50px; }
+
+  @media (max-width:760px){
+    .tasks { grid-template-columns:1fr; }
+    .stages { grid-template-columns:1fr; gap:14px; }
+    .stage .bar { display:none; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="brand"><img src="/logo.png" alt="FYI" onerror="this.style.display='none'" /></div>
+  <div class="title">Chiến lược Việt Nam</div>
+  <div class="subtitle">Bánh đà Nhân tài ↔ Doanh nghiệp · 2026.06</div>
+
+  <div class="thesis">
+    Dùng <span class="hl">dữ liệu</span> để thu hút <span class="hl">nhân tài</span>, rồi gắn <span class="hl">doanh nghiệp</span> lên trên để quay bánh đà.<br/>
+    Mỗi vòng quay lại tích lũy thêm dữ liệu, và vòng tiếp theo sẽ quay nhanh hơn.
+  </div>
+
+  <!-- ───── 1. Bánh đà ───── -->
+  <div class="sec"><span class="n">1</span> Bánh đà <span class="sub">Một khi bắt đầu quay, nó tự tăng tốc</span></div>
+
+  <div class="wheelbox">
+    <svg class="wheel" viewBox="0 0 600 600" role="img" aria-label="Banh da Nhan tai - Doanh nghiep">
+      <defs>
+        <marker id="ah" markerWidth="10" markerHeight="10" refX="6" refY="3" orient="auto">
+          <path d="M0,0 L6,3 L0,6 Z" fill="#94a3b8" />
+        </marker>
+      </defs>
+
+      <!-- Vòng quay + mũi tên hướng (theo chiều kim đồng hồ) -->
+      <circle class="ring" cx="300" cy="300" r="200" />
+      <path class="ring-arrow" marker-end="url(#ah)" d="M361.8 109.8 A200 200 0 0 1 433.8 151.4" />
+      <path class="ring-arrow" marker-end="url(#ah)" d="M495.6 258.4 A200 200 0 0 1 495.6 341.6" />
+      <path class="ring-arrow" marker-end="url(#ah)" d="M433.8 448.6 A200 200 0 0 1 361.8 490.2" />
+      <path class="ring-arrow" marker-end="url(#ah)" d="M238.2 490.2 A200 200 0 0 1 166.2 448.6" />
+      <path class="ring-arrow" marker-end="url(#ah)" d="M104.4 341.6 A200 200 0 0 1 104.4 258.4" />
+      <path class="ring-arrow" marker-end="url(#ah)" d="M166.2 151.4 A200 200 0 0 1 238.2 109.8" />
+
+      <!-- Trung tâm -->
+      <circle class="hub" cx="300" cy="300" r="92" />
+      <text class="hub-t1" x="300" y="290" text-anchor="middle">Nhân tài ↔</text>
+      <text class="hub-t1" x="300" y="310" text-anchor="middle">Doanh nghiệp</text>
+      <text class="hub-t2" x="300" y="332" text-anchor="middle">FLYWHEEL</text>
+
+      <!-- Node 1: Dữ liệu lương (top) -->
+      <g class="node done">
+        <circle class="node-bubble" cx="300" cy="100" r="60" />
+        <text class="lbl" x="300" y="96"  text-anchor="middle">Dữ liệu lương</text>
+        <text class="st"  x="300" y="118" text-anchor="middle">✓ Đã thu hút</text>
+      </g>
+
+      <!-- Node 2: Người dùng·Dữ liệu -->
+      <g class="node done">
+        <circle class="node-bubble" cx="473" cy="200" r="60" />
+        <text class="lbl" x="473" y="190" text-anchor="middle">Người dùng</text>
+        <text class="lbl" x="473" y="208" text-anchor="middle">·Dữ liệu</text>
+        <text class="st"  x="473" y="226" text-anchor="middle">✓ Đang tích lũy</text>
+      </g>
+
+      <!-- Node 3: Ứng tuyển -->
+      <g class="node wip">
+        <circle class="node-bubble" cx="473" cy="400" r="60" />
+        <text class="lbl" x="473" y="396" text-anchor="middle">Ứng tuyển</text>
+        <text class="st"  x="473" y="418" text-anchor="middle">◐ Vận hành 1 phần</text>
+      </g>
+
+      <!-- Node 4: Chuyển thành nhân tài (nhiệm vụ) -->
+      <g class="node task">
+        <circle class="node-bubble" cx="300" cy="500" r="60" />
+        <text class="lbl" x="300" y="490" text-anchor="middle">Chuyển thành</text>
+        <text class="lbl" x="300" y="508" text-anchor="middle">nhân tài</text>
+        <text class="st"  x="300" y="526" text-anchor="middle">★ Nhiệm vụ chính</text>
+      </g>
+
+      <!-- Node 5: Thu hút doanh nghiệp (nhiệm vụ) -->
+      <g class="node task">
+        <circle class="node-bubble" cx="127" cy="400" r="60" />
+        <text class="lbl" x="127" y="390" text-anchor="middle">Thu hút</text>
+        <text class="lbl" x="127" y="408" text-anchor="middle">doanh nghiệp</text>
+        <text class="st"  x="127" y="426" text-anchor="middle">★ Nhiệm vụ chính</text>
+      </g>
+
+      <!-- Node 6: Tuyển dụng thành công → quay lại -->
+      <g class="node next">
+        <circle class="node-bubble" cx="127" cy="200" r="60" />
+        <text class="lbl" x="127" y="190" text-anchor="middle">Tuyển dụng</text>
+        <text class="lbl" x="127" y="208" text-anchor="middle">thành công</text>
+        <text class="st"  x="127" y="226" text-anchor="middle">Dữ liệu quay lại ↻</text>
+      </g>
+    </svg>
+
+    <div class="legend">
+      <span><i class="lg-done"></i> Hoàn thành</span>
+      <span><i class="lg-wip"></i> Đang tiến hành</span>
+      <span><i class="lg-task"></i> Nhiệm vụ chính</span>
+      <span><i class="lg-next"></i> Sắp tới</span>
+    </div>
+  </div>
+
+  <!-- ───── 2. Hiện đang ở đâu ───── -->
+  <div class="sec"><span class="n">2</span> Hiện đang ở đâu <span class="sub">Tiến theo thứ tự Dữ liệu → Nhân tài → Doanh nghiệp</span></div>
+
+  <div class="stages">
+    <div class="stage d"><div class="bar"></div><div class="dot">✓</div><div class="nm">Dữ liệu lương</div><div class="ds">Đã kiểm chứng</div></div>
+    <div class="stage d"><div class="bar"></div><div class="dot">✓</div><div class="nm">Người dùng·DL</div><div class="ds">Đang tích lũy</div></div>
+    <div class="stage w"><div class="bar"></div><div class="dot">◐</div><div class="nm">Ứng tuyển</div><div class="ds">Vận hành 1 phần</div></div>
+    <div class="stage n"><div class="bar"></div><div class="dot">3</div><div class="nm">Chuyển → nhân tài</div><div class="ds">Nhiệm vụ kế</div></div>
+    <div class="stage n"><div class="dot">4</div><div class="nm">Thu hút DN</div><div class="ds">Nhiệm vụ kế</div></div>
+  </div>
+
+  <!-- ───── 3. Timeline ───── -->
+  <div class="sec"><span class="n">3</span> Các cột mốc theo giai đoạn <span class="sub">Thứ tự hoàn thiện bánh đà</span></div>
+
+  <div class="tl">
+    <div class="ph done">
+      <span class="tag">HOÀN THÀNH</span>
+      <div class="h">Đã tạo điểm khởi đầu bằng dữ liệu lương</div>
+      <div class="d">Việc thu hút người dùng bằng dữ liệu lương đã được kiểm chứng. Người dùng và dữ liệu vẫn tiếp tục được tích lũy.</div>
+    </div>
+    <div class="ph wip">
+      <span class="tag">ĐANG TIẾN HÀNH</span>
+      <div class="h">Đang chuyển một phần người dùng sang ứng tuyển</div>
+      <div class="d">Bắt đầu chuyển người nhập lương · người dùng sang nộp hồ sơ ứng tuyển. Hiện mới vận hành một phần.</div>
+    </div>
+    <div class="ph next">
+      <span class="tag">SẮP TỚI</span>
+      <div class="h">Chuyển dữ liệu thành "nhân tài"</div>
+      <div class="d">Biến dữ liệu lương · người dùng · hồ sơ ứng tuyển đang thu thập thành nguồn nhân tài mà doanh nghiệp có thể sử dụng.</div>
+    </div>
+    <div class="ph next">
+      <span class="tag">SẮP TỚI</span>
+      <div class="h">Đưa doanh nghiệp vào để quay bánh đà</div>
+      <div class="d">Gắn doanh nghiệp lên nguồn nhân tài. Khi tuyển dụng thành công, dữ liệu lại tích lũy và bánh đà tăng tốc.</div>
+    </div>
+  </div>
+
+  <!-- ───── 4. 2 nhiệm vụ chính ───── -->
+  <div class="sec"><span class="n">4</span> Hai nhiệm vụ phía trước <span class="sub">Hai điều này hoàn thiện bánh đà</span></div>
+
+  <div class="tasks">
+    <div class="tk">
+      <div class="no">NHIỆM VỤ 01</div>
+      <div class="h">Biến dữ liệu thành <span class="hl">nhân tài</span></div>
+      <div class="d">Dữ liệu lương · Người dùng · Hồ sơ ứng tuyển — chuyển dữ liệu đang thu thập thành "nhân tài" mà doanh nghiệp tìm kiếm.</div>
+    </div>
+    <div class="tk">
+      <div class="no">NHIỆM VỤ 02</div>
+      <div class="h">Đưa <span class="hl">doanh nghiệp</span> vào</div>
+      <div class="d">Gắn doanh nghiệp lên nguồn nhân tài. Khi có tuyển dụng, dữ liệu lại tích lũy và bánh đà quay nhanh hơn.</div>
+    </div>
+  </div>
+
+  <div class="foot">FYI · Bánh đà Nhân tài ↔ Doanh nghiệp - Việt Nam · Tài liệu nội bộ</div>
+
+</div>
+</body>
+</html>

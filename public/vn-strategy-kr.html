@@ -1,0 +1,266 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>베트남 법인 전략 · 인재 ↔ 기업 플라이휠 · FYI</title>
+
+<!--
+  ────────────────────────────────────────────────
+   편집 가이드
+   · 플라이휠 각 노드의 글자는 <text> ... </text> 안을 고치면 됨
+   · 상태 색은 노드 <g> 의 class 만 바꾸면 자동 변경
+       done  = 완료(초록)  /  wip = 진행(노랑계열)
+       task  = 향후 핵심 과제(검정 강조)  /  next = 향후(회색)
+   · 타임라인/과제 텍스트는 그냥 본문 수정
+  ────────────────────────────────────────────────
+-->
+
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: #f6f7f9; color: #111;
+    font-family: -apple-system, BlinkMacSystemFont, "Pretendard", "Apple SD Gothic Neo", sans-serif;
+    padding: 48px 24px 90px; line-height: 1.55;
+  }
+  .wrap { max-width: 980px; margin: 0 auto; }
+
+  .brand { display:flex; align-items:center; justify-content:center; margin-bottom:16px; }
+  .brand img { height: 26px; }
+  .title { font-size: 30px; font-weight: 800; text-align: center; letter-spacing: -0.7px; }
+  .subtitle { text-align: center; color: #6b7280; font-size: 13px; margin-top: 6px; margin-bottom: 18px; }
+
+  .thesis {
+    background:#111; color:#fff; border-radius:18px; padding:26px 32px;
+    text-align:center; font-size:18px; font-weight:700; line-height:1.6; margin-bottom: 8px;
+  }
+  .thesis .hl { background:#fde047; color:#111; padding:2px 9px; border-radius:6px; font-weight:800; }
+
+  .sec { font-size:18px; font-weight:800; margin:44px 0 16px; display:flex; align-items:center; gap:10px; }
+  .sec .n { background:#111; color:#fff; width:24px; height:24px; border-radius:7px; display:inline-flex; align-items:center; justify-content:center; font-size:13px; }
+  .sec .sub { color:#9ca3af; font-size:12.5px; font-weight:500; }
+
+  /* ── 플라이휠 ── */
+  .wheelbox { background:#fff; border:1px solid #e5e7eb; border-radius:20px; padding:18px 18px 26px; }
+  .wheel { width:100%; max-width:620px; margin:0 auto; display:block; }
+
+  .node-bubble { stroke-width:2; }
+  .node .lbl { font-size:16px; font-weight:800; fill:#111; }
+  .node .st  { font-size:11.5px; font-weight:700; }
+
+  .node.done .node-bubble { fill:#dcfce7; stroke:#86efac; }
+  .node.done .st { fill:#15803d; }
+  .node.wip  .node-bubble { fill:#fef9c3; stroke:#fde047; }
+  .node.wip  .st { fill:#a16207; }
+  .node.next .node-bubble { fill:#f3f4f6; stroke:#e5e7eb; }
+  .node.next .st { fill:#9ca3af; }
+  .node.next .lbl { fill:#6b7280; }
+  .node.task .node-bubble { fill:#111; stroke:#111; }
+  .node.task .lbl { fill:#fff; }
+  .node.task .st  { fill:#fde047; }
+
+  .ring { fill:none; stroke:#e5e7eb; stroke-width:2; }
+  .ring-arrow { fill:none; stroke:#cbd5e1; stroke-width:3; }
+  .hub { fill:#fafafa; stroke:#e5e7eb; stroke-width:2; }
+  .hub-t1 { font-size:18px; font-weight:800; fill:#111; }
+  .hub-t2 { font-size:11px; font-weight:700; fill:#9ca3af; letter-spacing:2px; }
+
+  .legend { display:flex; gap:18px; justify-content:center; flex-wrap:wrap; margin-top:6px; }
+  .legend span { font-size:12px; color:#4b5563; display:inline-flex; align-items:center; gap:7px; font-weight:600; }
+  .legend i { width:13px; height:13px; border-radius:4px; display:inline-block; }
+  .lg-done { background:#dcfce7; border:1px solid #86efac; }
+  .lg-wip  { background:#fef9c3; border:1px solid #fde047; }
+  .lg-task { background:#111; }
+  .lg-next { background:#f3f4f6; border:1px solid #e5e7eb; }
+
+  /* ── 진행 단계 그래프 ── */
+  .stages { display:grid; grid-template-columns: repeat(5, 1fr); gap:0; }
+  .stage { position:relative; text-align:center; padding:0 6px; }
+  .stage .dot { width:30px; height:30px; border-radius:50%; margin:0 auto 12px; display:flex; align-items:center; justify-content:center; font-size:15px; font-weight:800; color:#fff; position:relative; z-index:2; }
+  .stage .bar { position:absolute; top:15px; left:50%; width:100%; height:4px; z-index:1; }
+  .stage:last-child .bar { display:none; }
+  .stage .nm { font-size:13px; font-weight:800; }
+  .stage .ds { font-size:11px; color:#9ca3af; margin-top:3px; }
+  .stage.d .dot { background:#16a34a; } .stage.d .bar { background:#86efac; }
+  .stage.w .dot { background:#ca8a04; } .stage.w .bar { background:#e5e7eb; }
+  .stage.n .dot { background:#d1d5db; } .stage.n .bar { background:#e5e7eb; }
+  .stage.n .nm { color:#9ca3af; }
+
+  /* ── 타임라인 ── */
+  .tl { position:relative; padding-left:30px; }
+  .tl::before { content:""; position:absolute; left:9px; top:6px; bottom:6px; width:2px; background:#e5e7eb; }
+  .tl .ph { position:relative; padding:0 0 26px; }
+  .tl .ph:last-child { padding-bottom:0; }
+  .tl .ph::before { content:""; position:absolute; left:-26px; top:3px; width:14px; height:14px; border-radius:50%; background:#fff; border:3px solid #d1d5db; }
+  .tl .ph.done::before { border-color:#16a34a; background:#16a34a; }
+  .tl .ph.wip::before  { border-color:#ca8a04; background:#fde047; }
+  .tl .ph .tag { font-size:10.5px; font-weight:800; letter-spacing:0.5px; padding:2px 9px; border-radius:999px; display:inline-block; margin-bottom:6px; }
+  .tl .ph.done .tag { background:#dcfce7; color:#15803d; }
+  .tl .ph.wip  .tag { background:#fef9c3; color:#a16207; }
+  .tl .ph.next .tag { background:#f3f4f6; color:#6b7280; }
+  .tl .ph .h { font-size:16px; font-weight:800; margin-bottom:2px; }
+  .tl .ph .d { font-size:13.5px; color:#4b5563; }
+
+  /* ── 핵심 과제 2개 ── */
+  .tasks { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+  .tk { background:#111; color:#fff; border-radius:16px; padding:24px 26px; }
+  .tk .no { font-size:12px; font-weight:800; color:#fde047; letter-spacing:1px; margin-bottom:10px; }
+  .tk .h { font-size:19px; font-weight:800; margin-bottom:8px; }
+  .tk .h .hl { background:#fde047; color:#111; padding:1px 8px; border-radius:5px; }
+  .tk .d { font-size:13.5px; color:rgba(255,255,255,0.7); line-height:1.6; }
+
+  .foot { text-align:center; color:#9ca3af; font-size:11.5px; margin-top:50px; }
+
+  @media (max-width:760px){
+    .tasks { grid-template-columns:1fr; }
+    .stages { grid-template-columns:1fr; gap:14px; }
+    .stage .bar { display:none; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="brand"><img src="/logo.png" alt="FYI" onerror="this.style.display='none'" /></div>
+  <div class="title">베트남 법인 전략</div>
+  <div class="subtitle">인재 ↔ 기업 플라이휠 · 2026.06</div>
+
+  <div class="thesis">
+    데이터로 <span class="hl">인재</span>를 모으고, 그 위에 <span class="hl">기업</span>을 붙여 휠을 돌린다.<br/>
+    휠이 한 바퀴 돌 때마다 데이터가 쌓이고, 다음 바퀴는 더 빨라진다.
+  </div>
+
+  <!-- ───── 1. 플라이휠 ───── -->
+  <div class="sec"><span class="n">1</span> 플라이휠 <span class="sub">한 번 돌기 시작하면 스스로 가속된다</span></div>
+
+  <div class="wheelbox">
+    <svg class="wheel" viewBox="0 0 600 600" role="img" aria-label="인재-기업 플라이휠">
+      <defs>
+        <marker id="ah" markerWidth="10" markerHeight="10" refX="6" refY="3" orient="auto">
+          <path d="M0,0 L6,3 L0,6 Z" fill="#94a3b8" />
+        </marker>
+      </defs>
+
+      <!-- 회전 링 + 방향 화살표 (시계방향) -->
+      <circle class="ring" cx="300" cy="300" r="200" />
+      <path class="ring-arrow" marker-end="url(#ah)" d="M361.8 109.8 A200 200 0 0 1 433.8 151.4" />
+      <path class="ring-arrow" marker-end="url(#ah)" d="M495.6 258.4 A200 200 0 0 1 495.6 341.6" />
+      <path class="ring-arrow" marker-end="url(#ah)" d="M433.8 448.6 A200 200 0 0 1 361.8 490.2" />
+      <path class="ring-arrow" marker-end="url(#ah)" d="M238.2 490.2 A200 200 0 0 1 166.2 448.6" />
+      <path class="ring-arrow" marker-end="url(#ah)" d="M104.4 341.6 A200 200 0 0 1 104.4 258.4" />
+      <path class="ring-arrow" marker-end="url(#ah)" d="M166.2 151.4 A200 200 0 0 1 238.2 109.8" />
+
+      <!-- 허브 -->
+      <circle class="hub" cx="300" cy="300" r="92" />
+      <text class="hub-t1" x="300" y="294" text-anchor="middle">인재 ↔ 기업</text>
+      <text class="hub-t2" x="300" y="320" text-anchor="middle">FLYWHEEL</text>
+
+      <!-- 노드 1: 연봉 정보 (top) -->
+      <g class="node done">
+        <circle class="node-bubble" cx="300" cy="100" r="60" />
+        <text class="lbl" x="300" y="96"  text-anchor="middle">연봉 정보</text>
+        <text class="st"  x="300" y="118" text-anchor="middle">✓ 후킹 완료</text>
+      </g>
+
+      <!-- 노드 2: 가입자·데이터 -->
+      <g class="node done">
+        <circle class="node-bubble" cx="473" cy="200" r="60" />
+        <text class="lbl" x="473" y="196" text-anchor="middle">가입자·데이터</text>
+        <text class="st"  x="473" y="218" text-anchor="middle">✓ 축적 중</text>
+      </g>
+
+      <!-- 노드 3: 채용 지원 -->
+      <g class="node wip">
+        <circle class="node-bubble" cx="473" cy="400" r="60" />
+        <text class="lbl" x="473" y="396" text-anchor="middle">채용 지원</text>
+        <text class="st"  x="473" y="418" text-anchor="middle">◐ 일부 가동</text>
+      </g>
+
+      <!-- 노드 4: 인재로 치환 (과제) -->
+      <g class="node task">
+        <circle class="node-bubble" cx="300" cy="500" r="60" />
+        <text class="lbl" x="300" y="496" text-anchor="middle">인재로 치환</text>
+        <text class="st"  x="300" y="518" text-anchor="middle">★ 핵심 과제</text>
+      </g>
+
+      <!-- 노드 5: 기업 유치 (과제) -->
+      <g class="node task">
+        <circle class="node-bubble" cx="127" cy="400" r="60" />
+        <text class="lbl" x="127" y="396" text-anchor="middle">기업 유치</text>
+        <text class="st"  x="127" y="418" text-anchor="middle">★ 핵심 과제</text>
+      </g>
+
+      <!-- 노드 6: 채용 성사 → 환류 -->
+      <g class="node next">
+        <circle class="node-bubble" cx="127" cy="200" r="60" />
+        <text class="lbl" x="127" y="196" text-anchor="middle">채용 성사</text>
+        <text class="st"  x="127" y="218" text-anchor="middle">데이터 환류 ↻</text>
+      </g>
+    </svg>
+
+    <div class="legend">
+      <span><i class="lg-done"></i> 완료·검증</span>
+      <span><i class="lg-wip"></i> 진행 중</span>
+      <span><i class="lg-task"></i> 핵심 과제</span>
+      <span><i class="lg-next"></i> 향후</span>
+    </div>
+  </div>
+
+  <!-- ───── 2. 지금 어디까지 왔나 ───── -->
+  <div class="sec"><span class="n">2</span> 지금 어디까지 왔나 <span class="sub">데이터 → 인재 → 기업 순으로 전진</span></div>
+
+  <div class="stages">
+    <div class="stage d"><div class="bar"></div><div class="dot">✓</div><div class="nm">연봉 정보</div><div class="ds">유입 검증</div></div>
+    <div class="stage d"><div class="bar"></div><div class="dot">✓</div><div class="nm">가입자·데이터</div><div class="ds">축적 중</div></div>
+    <div class="stage w"><div class="bar"></div><div class="dot">◐</div><div class="nm">채용 지원</div><div class="ds">일부 가동</div></div>
+    <div class="stage n"><div class="bar"></div><div class="dot">3</div><div class="nm">인재로 치환</div><div class="ds">다음 과제</div></div>
+    <div class="stage n"><div class="dot">4</div><div class="nm">기업 유치</div><div class="ds">다음 과제</div></div>
+  </div>
+
+  <!-- ───── 3. 타임라인 ───── -->
+  <div class="sec"><span class="n">3</span> 단계별 마일스톤 <span class="sub">휠을 완성해 가는 순서</span></div>
+
+  <div class="tl">
+    <div class="ph done">
+      <span class="tag">완료</span>
+      <div class="h">연봉 정보로 시작점을 만들었다</div>
+      <div class="d">연봉 데이터를 미끼로 한 유입이 검증됨. 가입자와 데이터가 계속 쌓이는 중.</div>
+    </div>
+    <div class="ph wip">
+      <span class="tag">진행 중</span>
+      <div class="h">모은 사람을 채용 지원으로 일부 돌리고 있다</div>
+      <div class="d">연봉 기입자·가입자를 이력서 지원으로 전환하기 시작. 아직 일부만 가동.</div>
+    </div>
+    <div class="ph next">
+      <span class="tag">다음</span>
+      <div class="h">데이터를 '인재'로 치환한다</div>
+      <div class="d">지금 모으는 연봉 정보·가입자·이력서 지원을 기업이 쓸 수 있는 인재 풀로 바꾼다.</div>
+    </div>
+    <div class="ph next">
+      <span class="tag">다음</span>
+      <div class="h">기업을 데려와 휠을 돌린다</div>
+      <div class="d">인재 풀 위에 기업을 붙인다. 채용이 성사되면 데이터가 다시 쌓이고 휠이 가속된다.</div>
+    </div>
+  </div>
+
+  <!-- ───── 4. 핵심 과제 ───── -->
+  <div class="sec"><span class="n">4</span> 앞으로의 두 가지 과제 <span class="sub">이 둘이 휠을 완성한다</span></div>
+
+  <div class="tasks">
+    <div class="tk">
+      <div class="no">과제 01</div>
+      <div class="h">데이터를 <span class="hl">인재</span>로</div>
+      <div class="d">연봉 정보 · 가입자 · 이력서 지원 — 지금 모으고 있는 데이터를 기업이 찾는 '인재'로 치환한다.</div>
+    </div>
+    <div class="tk">
+      <div class="no">과제 02</div>
+      <div class="h"><span class="hl">기업</span>을 데려오기</div>
+      <div class="d">인재 풀 위에 기업을 붙인다. 채용이 일어나면 데이터가 다시 쌓여 휠이 더 빨리 돈다.</div>
+    </div>
+  </div>
+
+  <div class="foot">FYI · 베트남 법인 인재↔기업 플라이휠 · 내부 작업 문서</div>
+
+</div>
+</body>
+</html>
