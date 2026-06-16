@@ -44,9 +44,18 @@ export default async function handler(req, res) {
     const profileMap = {}
     profiles?.forEach(p => { profileMap[p.id] = p })
 
-    const enriched = data.map(d => ({
-      ...d,
-      profile: profileMap[d.user_id] || null,
+    // salary-docs is a private bucket; the stored document_url is a public URL that
+    // returns "Bucket not found". Re-sign each doc so the admin can open it (1h TTL).
+    const enriched = await Promise.all(data.map(async d => {
+      let document_url = d.document_url
+      const marker = '/salary-docs/'
+      const i = d.document_url?.indexOf(marker) ?? -1
+      if (i !== -1) {
+        const path = decodeURIComponent(d.document_url.slice(i + marker.length).split('?')[0])
+        const { data: signed } = await supabase.storage.from('salary-docs').createSignedUrl(path, 3600)
+        if (signed?.signedUrl) document_url = signed.signedUrl
+      }
+      return { ...d, document_url, profile: profileMap[d.user_id] || null }
     }))
 
     return res.json({ verifications: enriched })
@@ -89,8 +98,9 @@ export default async function handler(req, res) {
 
     // If approved, grant/refresh the salary-range badge. The badge stores the raw
     // monthly amount in VND (triệu * 1,000,000) because the tier engine (lib/salaryTiers
-    // and the app) thresholds in VND. Keep existing is_active so a re-approval doesn't
-    // silently hide a badge the user already chose to show.
+    // and the app) thresholds in VND. New badges default to visible (is_active=true) so an
+    // approval shows up immediately in the app, which has no toggle; a re-approval keeps the
+    // user's existing choice (so toggling off on the web isn't undone).
     if (status === 'approved') {
       const { data: existing } = await supabase
         .from('user_badges')
@@ -105,7 +115,7 @@ export default async function handler(req, res) {
           user_id: verification.user_id,
           badge_type: 'salary_range',
           salary_amount: verifiedTrieu * 1000000,
-          is_active: existing?.is_active ?? false,
+          is_active: existing?.is_active ?? true,
           granted_at: new Date().toISOString(),
         }, { onConflict: 'user_id,badge_type' })
     }
