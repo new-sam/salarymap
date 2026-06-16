@@ -5,7 +5,7 @@ const EXCLUDED_DOMAINS = ['likelion.net']
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' })
 
-  const { event, page, meta, email } = req.body
+  const { event, page, meta, email, userId, clientId } = req.body
   if (!event) return res.status(400).json({ error: 'event required' })
 
   if (email && EXCLUDED_DOMAINS.some(d => email.endsWith('@' + d))) {
@@ -24,7 +24,7 @@ export default async function handler(req, res) {
 
   const { error } = await supabase
     .from('events')
-    .insert([{ event, page: page || null, meta: meta || null }])
+    .insert([{ event, page: page || null, meta: meta || null, user_id: userId || null, client_id: clientId || null }])
 
   if (error) return res.status(500).json({ error: error.message })
   res.json({ ok: true })
