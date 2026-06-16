@@ -414,9 +414,12 @@ export default async function handler(req, res) {
         .order('created_at', { ascending: false })
         .limit(200)
       if (poolErr) return res.status(500).json({ error: poolErr.message })
-      const monthAgo = Date.now() - 30 * 24 * 60 * 60 * 1000
-      const recent = (pool || []).filter(p => new Date(p.created_at).getTime() >= monthAgo)
-      const ranked = (recent.length ? recent : (pool || [])).sort((a, b) => hotScore(b) - hotScore(a))
+      // window=N(일) 안의 글을 후보로. 기본 30일(인기탭). HOT 카드는 window=7로 호출.
+      // 좁힌 창이 비면 30일 → 전체 순으로 fallback해 HOT 영역이 비지 않게 한다.
+      const days = ([7, 30].includes(parseInt(req.query.window)) ? parseInt(req.query.window) : 30)
+      const within = n => (pool || []).filter(p => Date.now() - new Date(p.created_at).getTime() < n * 24 * 60 * 60 * 1000)
+      const recent = within(days).length ? within(days) : (within(30).length ? within(30) : (pool || []))
+      const ranked = recent.sort((a, b) => hotScore(b) - hotScore(a))
       count = ranked.length
       data = ranked.slice(offset, offset + parseInt(limit))
     } else {

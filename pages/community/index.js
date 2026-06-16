@@ -109,7 +109,7 @@ export default function CommunityPage() {
     const headers = {}
     if (session?.access_token) headers.Authorization = `Bearer ${session.access_token}`
     const catParam = category && category !== 'all' ? `&category=${category}` : ''
-    fetch(`/api/community/posts?sort=popular&limit=1${catParam}`, { headers })
+    fetch(`/api/community/posts?sort=popular&window=7&limit=1${catParam}`, { headers })
       .then(r => r.json())
       .then(d => { if (!cancelled) setHotPost(d.posts?.[0] || null) })
       .catch(() => { if (!cancelled) setHotPost(null) })
