@@ -14,16 +14,23 @@ async function saveProfile(user) {
     const utm_source = typeof sessionStorage !== 'undefined' ? sessionStorage.getItem('utm_source') : null;
     const utm_medium = typeof sessionStorage !== 'undefined' ? sessionStorage.getItem('utm_medium') : null;
     const utm_campaign = typeof sessionStorage !== 'undefined' ? sessionStorage.getItem('utm_campaign') : null;
-    const { error } = await supabase.from('user_profiles').upsert({
+    // Don't clobber a name the user edited (web or app). Seed full_name from the
+    // Google identity only when the profile doesn't have one yet.
+    const { data: existing } = await supabase
+      .from('user_profiles').select('full_name').eq('id', user.id).maybeSingle();
+    const payload = {
       id: user.id,
       email: user.email,
-      full_name: user.user_metadata?.full_name || user.user_metadata?.name || null,
       provider: user.app_metadata?.provider || null,
       utm_source: utm_source || null,
       utm_medium: utm_medium || null,
       utm_campaign: utm_campaign || null,
       updated_at: new Date().toISOString(),
-    }, { onConflict: 'id' })
+    };
+    if (!existing?.full_name) {
+      payload.full_name = user.user_metadata?.full_name || user.user_metadata?.name || null;
+    }
+    const { error } = await supabase.from('user_profiles').upsert(payload, { onConflict: 'id' })
   } catch(e) {
     // silent fail
   }

@@ -674,16 +674,23 @@ export default function Home({ initialCompanies = [] }) {
 
   const saveUserProfile = async (u) => {
     try {
+      // Don't clobber a name the user edited (web or app). Seed full_name from the
+      // Google identity only when the profile doesn't have one yet.
+      const { data: existing } = await supabaseClient
+        .from('user_profiles').select('full_name').eq('id', u.id).maybeSingle();
+      const payload = {
+        id: u.id,
+        email: u.email,
+        avatar_url: u.user_metadata?.avatar_url || null,
+        provider: u.app_metadata?.provider || null,
+        updated_at: new Date().toISOString(),
+      };
+      if (!existing?.full_name) {
+        payload.full_name = u.user_metadata?.full_name || u.user_metadata?.name || null;
+      }
       const { error } = await supabaseClient
         .from('user_profiles')
-        .upsert({
-          id: u.id,
-          email: u.email,
-          full_name: u.user_metadata?.full_name || u.user_metadata?.name || null,
-          avatar_url: u.user_metadata?.avatar_url || null,
-          provider: u.app_metadata?.provider || null,
-          updated_at: new Date().toISOString(),
-        }, { onConflict: 'id' });
+        .upsert(payload, { onConflict: 'id' });
       if (error) return;
     } catch(e) {
       // silent fail
