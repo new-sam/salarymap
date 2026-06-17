@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
+import { useAdmin } from '../../lib/adminSwr'
 
 // 유입 플랫폼 배지: app=앱 / web=웹 / null=미상(기록 전 행).
 function PlatformBadge({ platform }) {
@@ -16,30 +17,13 @@ function PlatformBadge({ platform }) {
 }
 
 export default function ResumesView({ token, t }) {
-  const [resumes, setResumes] = useState(null)
-  const [loading, setLoading] = useState(true)
+  const { data: resumes, isLoading: loading, mutate } = useAdmin('/api/admin/resumes', token)
   const [search, setSearch] = useState('')
   const [filter, setFilter] = useState('all') // all, public, private
   const [platformFilter, setPlatformFilter] = useState('all') // all, app, web
   const [parsing, setParsing] = useState(false)
   const [parseProgress, setParseProgress] = useState({ current: 0, total: 0, name: '' })
   const [parseResults, setParseResults] = useState(null)
-
-  useEffect(() => {
-    async function fetchResumes() {
-      setLoading(true)
-      try {
-        const res = await fetch('/api/admin/resumes', {
-          headers: { Authorization: `Bearer ${token}` },
-        })
-        if (res.ok) setResumes(await res.json())
-      } catch (e) {
-        console.error(e)
-      }
-      setLoading(false)
-    }
-    fetchResumes()
-  }, [token])
 
   function downloadCsv() {
     if (!resumes || resumes.length === 0) return
@@ -90,7 +74,7 @@ export default function ResumesView({ token, t }) {
         if (res.ok) {
           const parsed = await res.json()
           // Update local state
-          setResumes(prev => prev.map(r => r.id === user.id ? { ...r, ...parsed, skills: parsed.skills } : r))
+          mutate(prev => prev.map(r => r.id === user.id ? { ...r, ...parsed, skills: parsed.skills } : r), false)
           results.success++
         } else {
           const err = await res.json()

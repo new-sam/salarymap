@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import Head from 'next/head'
 import dynamic from 'next/dynamic'
 import { supabase } from '../../lib/supabaseClient'
+import { useAdmin } from '../../lib/adminSwr'
 import { useT } from '../../lib/i18n'
 import Icon from '../../components/Icon'
 import FunnelView from '../../components/admin/FunnelView'
@@ -51,11 +52,8 @@ const B2B_CARDS = [
 export default function AdminDashboard() {
   const [auth, setAuth] = useState('loading')
   const [token, setToken] = useState(null)
-  const [data, setData] = useState(null)
-  const [loading, setLoading] = useState(true)
   const [selected, setSelected] = useState([])
   const [lastUpdated, setLastUpdated] = useState(null)
-  const [experiments, setExperiments] = useState([])
   const [expForm, setExpForm] = useState({ title: '', date: '', color: EXP_COLORS[0], metrics: [] })
   const [showExpForm, setShowExpForm] = useState(false)
   const { lang: globalLang, setLang } = useT()
@@ -67,16 +65,7 @@ export default function AdminDashboard() {
   const [tableView, setTableView] = useState('daily')
   const [tableSection, setTableSection] = useState('basic')
   const tableScrollRef = useRef(null)
-  // 일별 뷰 진입/섹션 변경/데이터 로드 시 최신(맨 아래)로 스크롤
-  useEffect(() => {
-    if (tableView === 'daily' && tableScrollRef.current) {
-      tableScrollRef.current.scrollTop = tableScrollRef.current.scrollHeight
-    }
-  }, [tableView, tableSection, loading])
   const [dualAxis, setDualAxis] = useState(true)
-  const [realtime, setRealtime] = useState(null)
-  const [realtimeLoading, setRealtimeLoading] = useState(false)
-  const [ga4, setGa4] = useState(null)
   const [autoRefresh, setAutoRefresh] = useState(true)
   const yesterday = (() => {
     const d = new Date(Date.now() - 86400000)
@@ -84,6 +73,26 @@ export default function AdminDashboard() {
   })()
   const [dateInput, setDateInput] = useState({ from: '2026-04-20', to: yesterday })
   const [dateRange, setDateRange] = useState({ from: '2026-04-20', to: yesterday })
+
+  // SWR: 캐시로 탭 전환/페이지 재방문 시 즉시 표시 + 백그라운드 갱신. 키에 날짜/언어 포함.
+  const { data, isLoading: loading } = useAdmin(
+    `/api/admin/dashboard?from=${dateRange.from}&to=${dateRange.to}&lang=${lang}`, token
+  )
+  const { data: ga4 } = useAdmin(`/api/admin/ga4?from=${dateRange.from}&to=${dateRange.to}`, token)
+  const { data: realtime } = useAdmin('/api/admin/realtime', token, {
+    refreshInterval: autoRefresh ? 30000 : 0,
+  })
+  const { data: experiments = [], mutate: mutateExperiments } = useAdmin('/api/admin/experiments', token)
+
+  // 마지막 갱신 시각 표시용 — 데이터/실시간 갱신 때마다 기록
+  useEffect(() => { if (data || realtime) setLastUpdated(new Date()) }, [data, realtime])
+
+  // 일별 뷰 진입/섹션 변경/데이터 로드 시 최신(맨 아래)로 스크롤
+  useEffect(() => {
+    if (tableView === 'daily' && tableScrollRef.current) {
+      tableScrollRef.current.scrollTop = tableScrollRef.current.scrollHeight
+    }
+  }, [tableView, tableSection, loading])
 
   const t = T[lang]
   const METRICS = METRICS_BASE.map(m => ({ ...m, label: t.metrics[m.key] }))
@@ -105,20 +114,6 @@ export default function AdminDashboard() {
     })
   }, [])
 
-  useEffect(() => {
-    if (auth !== 'ok' || !token) return
-    fetchData()
-    fetchExperiments()
-    fetchRealtime()
-    fetchGA4()
-  }, [auth, token, dateRange, lang])
-
-  useEffect(() => {
-    if (!autoRefresh || auth !== 'ok' || !token) return
-    const id = setInterval(fetchRealtime, 30000)
-    return () => clearInterval(id)
-  }, [autoRefresh, auth, token])
-
   function applyRange(from, to) {
     setDateInput({ from, to })
     setDateRange({ from, to })
@@ -134,58 +129,6 @@ export default function AdminDashboard() {
     setDateRange({ ...dateInput })
   }
 
-  async function fetchData() {
-    setLoading(true)
-    try {
-      const res = await fetch(
-        `/api/admin/dashboard?from=${dateRange.from}&to=${dateRange.to}&lang=${lang}`,
-        { headers: { Authorization: `Bearer ${token}` } }
-      )
-      const json = await res.json()
-      if (json.error) { console.error('Dashboard API error:', json.error); setLoading(false); return }
-      setData(json)
-      setLastUpdated(new Date())
-    } catch (e) {
-      console.error(e)
-    }
-    setLoading(false)
-  }
-
-  async function fetchRealtime() {
-    setRealtimeLoading(true)
-    try {
-      const res = await fetch('/api/admin/realtime', { headers: { Authorization: `Bearer ${token}` } })
-      if (res.ok) {
-        setRealtime(await res.json())
-        setLastUpdated(new Date())
-      }
-    } catch (e) {
-      console.error(e)
-    }
-    setRealtimeLoading(false)
-  }
-
-  async function fetchGA4() {
-    try {
-      const res = await fetch(
-        `/api/admin/ga4?from=${dateRange.from}&to=${dateRange.to}`,
-        { headers: { Authorization: `Bearer ${token}` } }
-      )
-      if (res.ok) setGa4(await res.json())
-    } catch (e) {
-      console.error('GA4 fetch error:', e)
-    }
-  }
-
-  async function fetchExperiments() {
-    try {
-      const res = await fetch('/api/admin/experiments', { headers: headers() })
-      if (res.ok) setExperiments(await res.json())
-    } catch (e) {
-      console.error(e)
-    }
-  }
-
   const [editingExp, setEditingExp] = useState(null)
 
   async function addExperiment() {
@@ -196,7 +139,7 @@ export default function AdminDashboard() {
     if (res.ok) {
       setExpForm({ title: '', date: '', color: EXP_COLORS[experiments.length % EXP_COLORS.length], metrics: [] })
       setShowExpForm(false)
-      fetchExperiments()
+      mutateExperiments()
     }
   }
 
@@ -207,7 +150,7 @@ export default function AdminDashboard() {
     })
     if (res.ok) {
       setEditingExp(null)
-      fetchExperiments()
+      mutateExperiments()
     }
   }
 
@@ -217,7 +160,7 @@ export default function AdminDashboard() {
       method: 'DELETE', headers: headers(), body: JSON.stringify({ id })
     })
     setEditingExp(null)
-    fetchExperiments()
+    mutateExperiments()
   }
 
   if (auth === 'loading') return <div style={{ padding: 40, textAlign: 'center' }}>{t.loading}</div>

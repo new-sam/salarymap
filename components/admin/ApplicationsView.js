@@ -1,5 +1,6 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { STATUS_OPTIONS, STATUS_COLORS } from '../../constants/dashboard'
+import { useAdmin } from '../../lib/adminSwr'
 
 // 유입 플랫폼 배지: app=앱 / web=웹 / null=미상(기록 전 행).
 function PlatformBadge({ platform }) {
@@ -17,8 +18,6 @@ function PlatformBadge({ platform }) {
 }
 
 export default function ApplicationsView({ token, t, dateRange }) {
-  const [apps, setApps] = useState(null)
-  const [loading, setLoading] = useState(true)
   const [platformFilter, setPlatformFilter] = useState('all') // all, app, web
   const [editingNote, setEditingNote] = useState({})
   const [parsing, setParsing] = useState(false)
@@ -26,25 +25,10 @@ export default function ApplicationsView({ token, t, dateRange }) {
   const [parseResults, setParseResults] = useState(null)
   const [parsedData, setParsedData] = useState({}) // { [appId]: { position, skills, yoe, headline } }
 
-  useEffect(() => {
-    fetchApps()
-  }, [token, dateRange])
-
-  async function fetchApps() {
-    setLoading(true)
-    try {
-      const params = new URLSearchParams()
-      if (dateRange?.from) params.set('from', dateRange.from)
-      if (dateRange?.to) params.set('to', dateRange.to)
-      const res = await fetch(`/api/admin/applications?${params}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      })
-      if (res.ok) setApps(await res.json())
-    } catch (e) {
-      console.error(e)
-    }
-    setLoading(false)
-  }
+  const params = new URLSearchParams()
+  if (dateRange?.from) params.set('from', dateRange.from)
+  if (dateRange?.to) params.set('to', dateRange.to)
+  const { data: apps, isLoading: loading, mutate } = useAdmin(`/api/admin/applications?${params}`, token)
 
   async function updateStatus(id, status) {
     await fetch('/api/admin/applications', {
@@ -52,7 +36,7 @@ export default function ApplicationsView({ token, t, dateRange }) {
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
       body: JSON.stringify({ id, status }),
     })
-    fetchApps()
+    mutate()
   }
 
   async function saveNote(id) {
@@ -62,7 +46,7 @@ export default function ApplicationsView({ token, t, dateRange }) {
       body: JSON.stringify({ id, admin_note: editingNote[id] || '' }),
     })
     setEditingNote(prev => { const n = { ...prev }; delete n[id]; return n })
-    fetchApps()
+    mutate()
   }
 
   // Applicants with resume but no role parsed yet
@@ -114,8 +98,8 @@ export default function ApplicationsView({ token, t, dateRange }) {
         if (res.ok) {
           const data = await res.json()
           setParsedData(prev => ({ ...prev, [app.id]: data }))
-          // Update local apps state
-          setApps(prev => prev.map(a => a.id === app.id ? { ...a, applicant_role: data.position, applicant_experience: data.yoe } : a))
+          // Update local apps cache (no revalidation)
+          mutate(prev => (prev || []).map(a => a.id === app.id ? { ...a, applicant_role: data.position, applicant_experience: data.yoe } : a), false)
           results.success++
         } else {
           const err = await res.json()

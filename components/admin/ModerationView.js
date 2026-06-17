@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
+import { useAdmin } from '../../lib/adminSwr'
 
 const REASON = {
   spam: { label: '스팸/광고', color: '#f59e0b' },
@@ -42,22 +43,8 @@ const btn = (bg) => ({
 })
 
 export default function ModerationView({ token }) {
-  const [data, setData] = useState(null)
-  const [loading, setLoading] = useState(true)
+  const { data, isLoading: loading, mutate } = useAdmin('/api/admin/reports', token)
   const [busy, setBusy] = useState(null) // `${target_type}:${target_id}` 처리 중
-
-  async function load() {
-    setLoading(true)
-    try {
-      const res = await fetch('/api/admin/reports', { headers: { Authorization: `Bearer ${token}` } })
-      if (res.ok) setData(await res.json())
-    } catch (e) {
-      console.error(e)
-    }
-    setLoading(false)
-  }
-
-  useEffect(() => { load() }, [token])
 
   async function act(report, action) {
     const what = report.target_type === 'post' ? '게시글' : '댓글'
@@ -74,7 +61,7 @@ export default function ModerationView({ token }) {
         body: JSON.stringify({ action, target_type: report.target_type, target_id: report.target_id }),
       })
       if (!res.ok) { const e = await res.json().catch(() => ({})); alert('실패: ' + (e.error || res.status)) }
-      else await load()
+      else mutate()
     } catch (e) {
       alert('실패: ' + e.message)
     }
@@ -90,7 +77,7 @@ export default function ModerationView({ token }) {
         body: JSON.stringify({ action: 'feedback-handled', id: f.id, handled: !f.handled }),
       })
       if (!res.ok) { const e = await res.json().catch(() => ({})); alert('실패: ' + (e.error || res.status)) }
-      else await load()
+      else mutate()
     } catch (e) {
       alert('실패: ' + e.message)
     }

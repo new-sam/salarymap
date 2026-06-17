@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import Head from 'next/head'
 import { supabase } from '../../lib/supabaseClient'
+import { useAdmin } from '../../lib/adminSwr'
 import Icon from '../../components/Icon'
 
 const EMPTY_JOB = {
@@ -20,10 +21,6 @@ export default function AdminJobs() {
   const [auth, setAuth] = useState('loading')
   const [token, setToken] = useState(null)
   const [currentEmail, setCurrentEmail] = useState(null)
-  const [jobs, setJobs] = useState([])
-  const [apps, setApps] = useState([])
-  const [admins, setAdmins] = useState([])
-  const [targets, setTargets] = useState([])
   const [tab, setTab] = useState('jobs')
   const [editing, setEditing] = useState(null)
   const [form, setForm] = useState(EMPTY_JOB)
@@ -54,45 +51,29 @@ export default function AdminJobs() {
 
   const headers = () => ({ 'Content-Type': 'application/json', Authorization: `Bearer ${token}` })
 
-  useEffect(() => {
-    if (auth !== 'ok') return
-    fetchJobs(); fetchApps(); fetchAdmins(); fetchTargets()
-  }, [auth])
-
-  const fetchJobs = async () => {
-    const res = await fetch('/api/admin/jobs', { headers: headers() })
-    if (res.ok) setJobs(await res.json())
-  }
-  const fetchApps = async () => {
-    const res = await fetch('/api/admin/applications', { headers: headers() })
-    if (res.ok) setApps(await res.json())
-  }
-  const fetchAdmins = async () => {
-    const res = await fetch('/api/admin/users', { headers: headers() })
-    if (res.ok) setAdmins(await res.json())
-  }
-  const fetchTargets = async () => {
-    const res = await fetch('/api/admin/crawl-targets', { headers: headers() })
-    if (res.ok) setTargets(await res.json())
-  }
+  // SWR: 캐시로 페이지 재방문 즉시 표시. 액션 후엔 해당 목록만 mutate()로 갱신.
+  const { data: jobs = [], mutate: mutateJobs } = useAdmin('/api/admin/jobs', token)
+  const { data: apps = [], mutate: mutateApps } = useAdmin('/api/admin/applications', token)
+  const { data: admins = [], mutate: mutateAdmins } = useAdmin('/api/admin/users', token)
+  const { data: targets = [], mutate: mutateTargets } = useAdmin('/api/admin/crawl-targets', token)
   const handleAddTarget = async () => {
     if (!targetForm.company_name || !targetForm.slug) return
     setTargetSaving(true)
     const res = await fetch('/api/admin/crawl-targets', { method: 'POST', headers: headers(), body: JSON.stringify(targetForm) })
-    if (res.ok) { flash('Target added'); setTargetForm({ company_name: '', slug: '', source_type: 'greenhouse', career_url: '' }); fetchTargets() }
+    if (res.ok) { flash('Target added'); setTargetForm({ company_name: '', slug: '', source_type: 'greenhouse', career_url: '' }); mutateTargets() }
     else { const d = await res.json(); flash(d.error || 'Failed') }
     setTargetSaving(false)
   }
 
   const handleToggleTarget = async (target) => {
     await fetch('/api/admin/crawl-targets', { method: 'PUT', headers: headers(), body: JSON.stringify({ id: target.id, is_active: !target.is_active }) })
-    fetchTargets()
+    mutateTargets()
   }
 
   const handleDeleteTarget = async (id) => {
     if (!confirm('Delete this target?')) return
     await fetch('/api/admin/crawl-targets', { method: 'DELETE', headers: headers(), body: JSON.stringify({ id }) })
-    flash('Deleted'); fetchTargets()
+    flash('Deleted'); mutateTargets()
   }
 
   const flash = (text) => { setMsg(text); setTimeout(() => setMsg(null), 3000) }
@@ -123,46 +104,46 @@ export default function AdminJobs() {
       await fetch('/api/admin/jobs', { method: 'POST', headers: headers(), body: JSON.stringify(payload) })
       flash('Created')
     }
-    setSaving(false); setEditing(null); setForm(EMPTY_JOB); fetchJobs()
+    setSaving(false); setEditing(null); setForm(EMPTY_JOB); mutateJobs()
   }
 
   const handleDelete = async (id) => {
     if (!confirm('Delete this job?')) return
     await fetch('/api/admin/jobs', { method: 'DELETE', headers: headers(), body: JSON.stringify({ id }) })
-    flash('Deleted'); fetchJobs()
+    flash('Deleted'); mutateJobs()
   }
 
   const handleToggle = async (job) => {
     await fetch('/api/admin/jobs', { method: 'PUT', headers: headers(), body: JSON.stringify({ id: job.id, is_active: !job.is_active }) })
-    fetchJobs()
+    mutateJobs()
   }
 
   const handleApprove = async (job) => {
     await fetch('/api/admin/jobs', { method: 'PUT', headers: headers(), body: JSON.stringify({ id: job.id, status: 'live', is_active: true }) })
-    flash('Approved'); fetchJobs()
+    flash('Approved'); mutateJobs()
   }
   const handleReject = async (job) => {
     if (!confirm('이 공고를 반려하시겠습니까?')) return
     await fetch('/api/admin/jobs', { method: 'PUT', headers: headers(), body: JSON.stringify({ id: job.id, status: 'rejected', is_active: false }) })
-    flash('Rejected'); fetchJobs()
+    flash('Rejected'); mutateJobs()
   }
 
   const handleStatusChange = async (appId, status) => {
     await fetch('/api/admin/applications', { method: 'PUT', headers: headers(), body: JSON.stringify({ id: appId, status }) })
-    fetchApps()
+    mutateApps()
   }
 
   const handleAddAdmin = async () => {
     if (!newAdminEmail.includes('@')) return
     const res = await fetch('/api/admin/users', { method: 'POST', headers: headers(), body: JSON.stringify({ email: newAdminEmail.trim() }) })
-    if (res.ok) { flash('Admin added'); setNewAdminEmail(''); fetchAdmins() }
+    if (res.ok) { flash('Admin added'); setNewAdminEmail(''); mutateAdmins() }
     else { const d = await res.json(); flash(d.error || 'Failed') }
   }
 
   const handleRemoveAdmin = async (email) => {
     if (!confirm(`Remove ${email} from admin?`)) return
     const res = await fetch('/api/admin/users', { method: 'DELETE', headers: headers(), body: JSON.stringify({ email }) })
-    if (res.ok) { flash('Removed'); fetchAdmins() }
+    if (res.ok) { flash('Removed'); mutateAdmins() }
     else { const d = await res.json(); flash(d.error || 'Failed') }
   }
 

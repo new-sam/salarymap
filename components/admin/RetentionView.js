@@ -1,28 +1,11 @@
-import { useState, useEffect } from 'react'
+import { useAdmin } from '../../lib/adminSwr'
 
 const sectionStyle = {
   background: '#fff', border: '1px solid #e5e7eb', borderRadius: 12, padding: 20, marginBottom: 24,
 }
 
 export default function RetentionView({ token, t }) {
-  const [data, setData] = useState(null)
-  const [loading, setLoading] = useState(true)
-
-  useEffect(() => {
-    async function fetch_() {
-      setLoading(true)
-      try {
-        const res = await fetch('/api/admin/retention', {
-          headers: { Authorization: `Bearer ${token}` },
-        })
-        if (res.ok) setData(await res.json())
-      } catch (e) {
-        console.error(e)
-      }
-      setLoading(false)
-    }
-    fetch_()
-  }, [token])
+  const { data, isLoading: loading } = useAdmin('/api/admin/retention', token)
 
   if (loading) return <div style={{ textAlign: 'center', padding: 40, color: '#666' }}>{t.retentionLoading}</div>
   if (!data) return <div style={{ textAlign: 'center', padding: 40, color: '#999' }}>{t.retentionEmpty}</div>

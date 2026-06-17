@@ -1,24 +1,7 @@
-import { useState, useEffect } from 'react'
+import { useAdmin } from '../../lib/adminSwr'
 
 export default function UsersView({ token, t }) {
-  const [users, setUsers] = useState(null)
-  const [loading, setLoading] = useState(true)
-
-  useEffect(() => {
-    async function fetchUsers() {
-      setLoading(true)
-      try {
-        const res = await fetch('/api/admin/signup-users', {
-          headers: { Authorization: `Bearer ${token}` },
-        })
-        if (res.ok) setUsers(await res.json())
-      } catch (e) {
-        console.error(e)
-      }
-      setLoading(false)
-    }
-    fetchUsers()
-  }, [token])
+  const { data: users, isLoading: loading } = useAdmin('/api/admin/signup-users', token)
 
   function downloadCsv() {
     if (!users || users.length === 0) return

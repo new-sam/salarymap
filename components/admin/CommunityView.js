@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react'
 import { sectionStyle, sectionTitle } from '../../constants/dashboard'
+import { useAdmin } from '../../lib/adminSwr'
 
 const L = {
   ko: {
@@ -70,23 +70,8 @@ const CARD_LABEL = {
 
 export default function CommunityView({ token, lang = 'ko', dateRange }) {
   const t = L[lang] || L.ko
-  const [data, setData] = useState(null)
-  const [loading, setLoading] = useState(true)
-
-  useEffect(() => {
-    let active = true
-    async function load() {
-      setLoading(true)
-      try {
-        const qs = dateRange ? `?from=${dateRange.from}&to=${dateRange.to}` : ''
-        const res = await fetch(`/api/admin/community${qs}`, { headers: { Authorization: `Bearer ${token}` } })
-        if (res.ok && active) setData(await res.json())
-      } catch (e) { console.error(e) }
-      if (active) setLoading(false)
-    }
-    if (token) load()
-    return () => { active = false }
-  }, [token, dateRange?.from, dateRange?.to])
+  const qs = dateRange ? `?from=${dateRange.from}&to=${dateRange.to}` : ''
+  const { data, isLoading: loading } = useAdmin(`/api/admin/community${qs}`, token)
 
   if (loading) return <div style={{ textAlign: 'center', padding: 40, color: '#666' }}>{t.loading}</div>
   if (!data || !data.summary) return <div style={{ textAlign: 'center', padding: 40, color: '#999' }}>{t.empty}</div>

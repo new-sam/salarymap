@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
+import { useAdmin } from '../../lib/adminSwr'
 import { getSalaryTier } from '../../lib/salaryTiers'
 
 const STATUS_COLORS = {
@@ -15,39 +16,29 @@ const DOC_LABELS = {
 }
 
 export default function VerificationsView({ token }) {
-  const [verifications, setVerifications] = useState([])
-  const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState('pending')
   const [actionLoading, setActionLoading] = useState(null)
   const [noteInput, setNoteInput] = useState({})
   const [salaryInput, setSalaryInput] = useState({}) // per-id, monthly in 백만 VND (triệu)
 
-  const fetchData = async () => {
-    setLoading(true)
-    try {
-      const res = await fetch(`/api/salary-verification/admin?status=${filter}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      })
-      if (res.ok) {
-        const { verifications: data } = await res.json()
-        setVerifications(data)
+  const { data, isLoading: loading, mutate } = useAdmin(
+    `/api/salary-verification/admin?status=${filter}`,
+    token,
+    {
+      onSuccess: ({ verifications: list }) => {
         // Prefill the salary input with the user-submitted amount. The submitted
         // salary_amount is already in 백만 VND (triệu), matching the mobile app.
         setSalaryInput(prev => {
           const next = { ...prev }
-          data.forEach(v => {
+          list.forEach(v => {
             if (next[v.id] === undefined && v.salary_amount) next[v.id] = String(v.salary_amount)
           })
           return next
         })
-      }
-    } catch (e) {
-      console.error(e)
+      },
     }
-    setLoading(false)
-  }
-
-  useEffect(() => { fetchData() }, [token, filter])
+  )
+  const verifications = data?.verifications || []
 
   const handleAction = async (id, status) => {
     // Approval requires an admin-entered monthly salary in 백만 VND (triệu). Sent as-is;
@@ -69,7 +60,7 @@ export default function VerificationsView({ token }) {
         body: JSON.stringify({ id, status, admin_note: noteInput[id] || '', salary_amount: salaryTrieu }),
       })
       if (res.ok) {
-        setVerifications(prev => prev.filter(v => v.id !== id))
+        mutate(prev => ({ ...prev, verifications: (prev?.verifications || []).filter(v => v.id !== id) }), false)
       }
     } catch (e) {
       console.error(e)

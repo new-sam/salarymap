@@ -1,9 +1,10 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import {
   LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer, ReferenceLine,
 } from 'recharts'
 import MetricChart from '../DashboardCharts'
+import { useAdmin } from '../../lib/adminSwr'
 
 // 앱(모바일) 행동지표 뷰 — /api/admin/app-metrics 집계를 렌더.
 // 전략 톱라인(회의브리프: D7 잔존 · 글당 답글 · 푸시 재방문)을 최상단에 고정하고,
@@ -239,27 +240,13 @@ function FunnelChart({ steps, color = '#4F46E5' }) {
 
 export default function AppMetricsView({ token, dateRange, lang }) {
   const t = L[lang === 'en' ? 'en' : 'ko']
-  const [data, setData] = useState(null)
-  const [loading, setLoading] = useState(true)
+  // 백그라운드 자동 폴링(30초): keepPreviousData로 화면 깜빡임 없이 데이터만 교체.
+  const { data, isLoading: loading } = useAdmin(
+    `/api/admin/app-metrics?from=${dateRange.from}&to=${dateRange.to}`,
+    token,
+    { refreshInterval: 30000 },
+  )
   const [sub, setSub] = useState('overview')
-
-  useEffect(() => {
-    let cancelled = false
-    // showSpinner=false면 백그라운드 갱신(자동 폴링): 화면 깜빡임 없이 데이터만 교체.
-    async function run(showSpinner) {
-      if (showSpinner) setLoading(true)
-      try {
-        const res = await fetch(`/api/admin/app-metrics?from=${dateRange.from}&to=${dateRange.to}`, {
-          headers: { Authorization: `Bearer ${token}` },
-        })
-        if (res.ok && !cancelled) setData(await res.json())
-      } catch (e) { console.error(e) }
-      if (showSpinner && !cancelled) setLoading(false)
-    }
-    run(true)
-    const id = setInterval(() => run(false), 30000)
-    return () => { cancelled = true; clearInterval(id) }
-  }, [token, dateRange])
 
   if (loading) return <div style={{ textAlign: 'center', padding: 40, color: '#666' }}>{t.loading}</div>
   if (!data || !data.meta.totalAppEvents) return <div style={{ textAlign: 'center', padding: 40, color: '#999' }}>{t.empty}</div>
