@@ -415,9 +415,30 @@ export default async function handler(req, res) {
       depth: { powerCurve, rangeClients: rangeClientCount, multiDayRate, featureAdoption, featureCountDist, featureDenom: featDenom },
     }
 
+    // ---- 웹 모달 → 앱스토어 유도 (web 이벤트라 platform='app' 필터에서 제외됨, 별도 집계) ----
+    const promoStartISO = new Date(`${startDate}T00:00:00+07:00`).toISOString()
+    const promoRows = await fetchAll(
+      supabase.from('events')
+        .select('event')
+        .in('event', ['view_app_promo_modal', 'click_app_download'])
+        .gte('created_at', promoStartISO)
+        .lte('created_at', endISO)
+    )
+    let promoImpr = 0, promoClick = 0
+    for (const r of promoRows) {
+      if (r.event === 'view_app_promo_modal') promoImpr++
+      else if (r.event === 'click_app_download') promoClick++
+    }
+    const webAppPromo = {
+      impressions: promoImpr,
+      clicks: promoClick,
+      ctr: promoImpr > 0 ? ((promoClick / promoImpr) * 100).toFixed(1) : null,
+    }
+
     // ---- 응답 ----
     res.setHeader('Cache-Control', 'no-store')
     res.json({
+      webAppPromo,
       meta: {
         appEventStart: APP_EVENT_START,
         totalAppEvents: rows.length,

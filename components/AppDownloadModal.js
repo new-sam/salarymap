@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import { useT } from '../lib/i18n';
+import { track } from '../lib/track';
 
 // 웹 방문자에게 "FYI를 앱으로 만나보세요" 중앙 모달을 띄운다.
 // 저장 안 함 — 하드 새로고침(마운트) 때만 한 번 뜬다. SPA 페이지 이동으로는 절대 안 뜸.
@@ -17,7 +18,10 @@ export default function AppDownloadModal() {
   useEffect(() => {
     const path = router.pathname;
     if (path.startsWith('/app') || path.startsWith('/admin')) return;
-    const id = setTimeout(() => setShow(true), 700);
+    const id = setTimeout(() => {
+      setShow(true);
+      track('view_app_promo_modal', { meta: { source: 'web_modal' }, page: path });
+    }, 700);
     return () => clearTimeout(id);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -100,7 +104,7 @@ export default function AppDownloadModal() {
           href={APP_STORE_URL}
           target="_blank"
           rel="noopener noreferrer"
-          onClick={dismiss}
+          onClick={() => { track('click_app_download', { meta: { source: 'web_modal' }, page: router.pathname }); dismiss(); }}
           style={{ display:'flex', alignItems:'center', justifyContent:'center', width:'100%', background:'#ff6000', color:'#fff', fontSize:'14.5px', fontWeight:800, padding:'13px', borderRadius:'11px', textDecoration:'none', marginBottom:'8px' }}
         >{t('appPromo.cta')}</a>
 

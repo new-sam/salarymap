@@ -19,6 +19,9 @@ const L = {
     loading: '앱 지표 불러오는 중...', empty: '앱 이벤트 데이터가 아직 없습니다.',
     metaLine: (m) => `집계: ${m.from} ~ ${m.to} · 범위 내 이벤트 ${m.rangeEvents.toLocaleString()}건 (앱 누적 ${m.totalAppEvents.toLocaleString()}건, ${m.appEventStart}~)`,
     toplineTitle: '전략 톱라인 — 한 달 뒤 볼 숫자 3개',
+    webPromoTitle: '웹 → 앱 다운로드 유도 (웹 모달)',
+    webPromoCtr: '다운로드 버튼 클릭률', webPromoCtrSub: '모달 본 사람 중 스토어로 이동',
+    webPromoImp: '모달 노출', webPromoClick: '다운로드 클릭',
     d7: '앱 D7 잔존율', d7sub: '다시 오는가 (최우선)',
     cpp: '글당 답글 수', cppSub: '커뮤니티 생존 (0이면 사망)',
     pushRe: '푸시 재방문', pushReSub: '엔진이 도는가',
@@ -71,6 +74,9 @@ const L = {
     loading: 'Loading app metrics...', empty: 'No app events yet.',
     metaLine: (m) => `Range: ${m.from} ~ ${m.to} · ${m.rangeEvents.toLocaleString()} events in range (${m.totalAppEvents.toLocaleString()} app events total, since ${m.appEventStart})`,
     toplineTitle: 'Strategy Topline — 3 numbers for next month',
+    webPromoTitle: 'Web → App download prompt (web modal)',
+    webPromoCtr: 'Download button CTR', webPromoCtrSub: 'Of those who saw the modal, went to store',
+    webPromoImp: 'Modal impressions', webPromoClick: 'Download clicks',
     d7: 'App D7 Retention', d7sub: 'Do they come back (top priority)',
     cpp: 'Replies per Post', cppSub: 'Community survival (0 = dead)',
     pushRe: 'Push Re-engagement', pushReSub: 'Is the engine running',
@@ -256,7 +262,7 @@ export default function AppMetricsView({ token, dateRange, lang }) {
   if (loading) return <div style={{ textAlign: 'center', padding: 40, color: '#666' }}>{t.loading}</div>
   if (!data || !data.meta.totalAppEvents) return <div style={{ textAlign: 'center', padding: 40, color: '#999' }}>{t.empty}</div>
 
-  const { meta, topline, retention, community, conversion, push, segments, daily } = data
+  const { meta, topline, retention, community, conversion, push, segments, daily, webAppPromo } = data
   // 분석가 모듈(부분 배포 대비 기본값). 백엔드 갱신 후엔 항상 채워짐.
   const analytics = data.analytics || {
     stickiness: {}, newUsersInRange: 0, retentionCurve: [], activation: {},
@@ -309,6 +315,18 @@ export default function AppMetricsView({ token, dateRange, lang }) {
           <Card big label={t.pushRe} value={push.clicks.toLocaleString()} sub={`${t.pushReSub} · ${push.clickUsers} users`} color="#8B5CF6" />
         </div>
       </div>
+
+      {/* 웹 모달 → 앱스토어 유도 CTR */}
+      {webAppPromo && (
+        <div style={sectionStyle}>
+          <h3 style={sectionTitle}>{t.webPromoTitle}</h3>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12 }}>
+            <Card big label={t.webPromoCtr} value={webAppPromo.ctr != null ? `${webAppPromo.ctr}%` : '-'} sub={`${t.webPromoCtrSub} · ${webAppPromo.clicks.toLocaleString()}/${webAppPromo.impressions.toLocaleString()}`} color="#EA580C" />
+            <Card label={t.webPromoImp} value={webAppPromo.impressions.toLocaleString()} color="#2563EB" />
+            <Card label={t.webPromoClick} value={webAppPromo.clicks.toLocaleString()} color="#8B5CF6" />
+          </div>
+        </div>
+      )}
 
       {/* 서브탭 */}
       <div style={{ display: 'flex', gap: 0, marginBottom: 20, borderBottom: '2px solid #e5e7eb' }}>
