@@ -3,6 +3,7 @@
     "deploymentEnabled": true
   },
   "crons": [
-    { "path": "/api/cron/daily-hot-post", "schedule": "0 1 * * *" }
+    { "path": "/api/cron/daily-hot-post", "schedule": "0 1 * * *" },
+    { "path": "/api/cron/follow-digest", "schedule": "0 12 * * *" }
   ]
 }
