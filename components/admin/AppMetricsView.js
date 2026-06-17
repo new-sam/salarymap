@@ -245,18 +245,20 @@ export default function AppMetricsView({ token, dateRange, lang }) {
 
   useEffect(() => {
     let cancelled = false
-    async function run() {
-      setLoading(true)
+    // showSpinner=false면 백그라운드 갱신(자동 폴링): 화면 깜빡임 없이 데이터만 교체.
+    async function run(showSpinner) {
+      if (showSpinner) setLoading(true)
       try {
         const res = await fetch(`/api/admin/app-metrics?from=${dateRange.from}&to=${dateRange.to}`, {
           headers: { Authorization: `Bearer ${token}` },
         })
         if (res.ok && !cancelled) setData(await res.json())
       } catch (e) { console.error(e) }
-      if (!cancelled) setLoading(false)
+      if (showSpinner && !cancelled) setLoading(false)
     }
-    run()
-    return () => { cancelled = true }
+    run(true)
+    const id = setInterval(() => run(false), 30000)
+    return () => { cancelled = true; clearInterval(id) }
   }, [token, dateRange])
 
   if (loading) return <div style={{ textAlign: 'center', padding: 40, color: '#666' }}>{t.loading}</div>
