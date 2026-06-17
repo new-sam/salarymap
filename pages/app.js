@@ -4,8 +4,8 @@ import { useT } from '../lib/i18n';
 
 // 앱 다운로드/소개 페이지 (salary-fyi.com/app).
 // Apple 심사용 마케팅 URL로 첨부하는 용도. 기능 목업은 .feature 슬롯에 나중에 추가.
-// 실제 App Store 링크가 나오면 APP_STORE_URL을 교체할 것.
-const APP_STORE_URL = 'https://apps.apple.com/app/idXXXXXXXXXX'; // TODO: 실제 앱 ID로 교체
+// App Store 링크. 지역/언어 강제 없이 방문자 스토어로 자동 분기되는 정규형 사용.
+const APP_STORE_URL = 'https://apps.apple.com/app/id6778311550';
 // const PLAY_STORE_URL = 'https://play.google.com/store/apps/details?id=com.salaryfyi'; // 안드로이드 출시 시
 const LOGO = '/fyi-logo.png';
 const MOCKUP = '/app-mockup.png';

@@ -5,6 +5,7 @@ import { Toaster } from 'sonner';
 import { I18nProvider, LanguageSwitcher, useT } from '../lib/i18n';
 import { supabase } from '../lib/supabaseClient';
 import MobileTabBar from '../components/MobileTabBar';
+import AppDownloadModal from '../components/AppDownloadModal';
 
 function GlobalLoginModal() {
   const { t } = useT();
@@ -70,6 +71,7 @@ export default function App({ Component, pageProps }) {
       )}
       {!isCompany && <MobileTabBar />}
       <GlobalLoginModal />
+      {!isAdmin && <AppDownloadModal />}
       <Toaster
         position="bottom-right"
         richColors
