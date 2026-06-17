@@ -30,6 +30,10 @@ export default async function handler(req, res) {
     utmSource, utmMedium, utmCampaign, utmContent, referrer, applicationSource,
   } = req.body
 
+  // 유입 플랫폼: 앱(salary-fyi)은 모든 요청에 X-Client-Platform: app 헤더를 붙인다.
+  // 헤더가 없으면 웹 직접 호출이므로 'web'. application_source(direct/salary)와는 별개 축.
+  const platform = req.headers['x-client-platform'] === 'app' ? 'app' : 'web'
+
   if (!jobId) {
     return res.status(400).json({ error: 'jobId required' })
   }
@@ -69,6 +73,7 @@ export default async function handler(req, res) {
     utm_content: utmContent || null,
     referrer: referrer || null,
     application_source: classifySource(applicationSource, referrer),
+    platform,
   }
 
   const insert = (row) =>
@@ -81,7 +86,7 @@ export default async function handler(req, res) {
   // 20260609_add_application_source.sql). If a migration hasn't been applied yet,
   // PostgREST reports the missing column (code PGRST204). Don't let it block the
   // application — retry without source fields so the candidate's CV is still recorded.
-  if (error && (error.code === 'PGRST204' || /utm_|referrer|application_source/.test(error.message || ''))) {
+  if (error && (error.code === 'PGRST204' || /utm_|referrer|application_source|platform/.test(error.message || ''))) {
     console.warn('[JOB APPLICATION] source columns missing, retrying without UTM/referrer:', error.message)
     ;({ data, error } = await insert(baseRow))
   }

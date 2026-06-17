@@ -15,7 +15,7 @@ export default async function handler(req, res) {
   try {
     const { data, error } = await supabase
       .from('user_profiles')
-      .select('id, full_name, headline, position, yoe_months, location, resume_url, photo_url, is_resume_public, skills, university, major, work_type, salary_min, salary_max, salary_currency, updated_at, created_at')
+      .select('id, full_name, headline, position, yoe_months, location, resume_url, photo_url, is_resume_public, skills, university, major, work_type, salary_min, salary_max, salary_currency, resume_platform, updated_at, created_at')
       .not('resume_url', 'is', null)
       .order('updated_at', { ascending: false })
 

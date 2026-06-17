@@ -1,10 +1,26 @@
 import { useState, useEffect } from 'react'
 
+// 유입 플랫폼 배지: app=앱 / web=웹 / null=미상(기록 전 행).
+function PlatformBadge({ platform }) {
+  const map = {
+    app: { label: '앱', bg: '#EEF2FF', color: '#4F46E5' },
+    web: { label: '웹', bg: '#F0FDF4', color: '#15803D' },
+  }
+  const s = map[platform]
+  if (!s) return <span style={{ color: '#ccc', fontSize: 11 }}>미상</span>
+  return (
+    <span style={{ padding: '2px 8px', borderRadius: 12, fontSize: 11, fontWeight: 600, background: s.bg, color: s.color }}>
+      {s.label}
+    </span>
+  )
+}
+
 export default function ResumesView({ token, t }) {
   const [resumes, setResumes] = useState(null)
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [filter, setFilter] = useState('all') // all, public, private
+  const [platformFilter, setPlatformFilter] = useState('all') // all, app, web
   const [parsing, setParsing] = useState(false)
   const [parseProgress, setParseProgress] = useState({ current: 0, total: 0, name: '' })
   const [parseResults, setParseResults] = useState(null)
@@ -27,10 +43,11 @@ export default function ResumesView({ token, t }) {
 
   function downloadCsv() {
     if (!resumes || resumes.length === 0) return
-    const headers = ['Name', 'Email', 'Position', 'YoE (months)', 'Skills', 'Location', 'University', 'Major', 'Work Type', 'Public', 'Resume URL', 'Updated']
-    const rows = resumes.map(r => [
+    const headers = ['Name', 'Email', 'Source', 'Position', 'YoE (months)', 'Skills', 'Location', 'University', 'Major', 'Work Type', 'Public', 'Resume URL', 'Updated']
+    const rows = filtered.map(r => [
       r.full_name,
       r.email,
+      r.resume_platform || '',
       r.position || '',
       r.yoe_months ?? '',
       Array.isArray(r.skills) ? r.skills.join(', ') : (r.skills || ''),
@@ -96,6 +113,7 @@ export default function ResumesView({ token, t }) {
   const filtered = resumes.filter(r => {
     if (filter === 'public' && !r.is_resume_public) return false
     if (filter === 'private' && r.is_resume_public) return false
+    if (platformFilter !== 'all' && (r.resume_platform || null) !== platformFilter) return false
     if (search) {
       const q = search.toLowerCase()
       return (r.full_name || '').toLowerCase().includes(q)
@@ -151,6 +169,24 @@ export default function ResumesView({ token, t }) {
                   background: filter === f.key ? '#fff' : 'transparent',
                   color: filter === f.key ? '#111' : '#999',
                   boxShadow: filter === f.key ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
+                }}>
+                {f.label}
+              </button>
+            ))}
+          </div>
+          <div style={{ display: 'flex', gap: 0, background: '#f3f4f6', borderRadius: 8, padding: 2 }}>
+            {[
+              { key: 'all', label: '전체' },
+              { key: 'app', label: '앱' },
+              { key: 'web', label: '웹' },
+            ].map(f => (
+              <button key={f.key} onClick={() => setPlatformFilter(f.key)}
+                style={{
+                  padding: '5px 12px', borderRadius: 6, fontSize: 12, fontWeight: 600,
+                  border: 'none', cursor: 'pointer', transition: 'all 0.15s',
+                  background: platformFilter === f.key ? '#fff' : 'transparent',
+                  color: platformFilter === f.key ? '#111' : '#999',
+                  boxShadow: platformFilter === f.key ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
                 }}>
                 {f.label}
               </button>
@@ -219,6 +255,7 @@ export default function ResumesView({ token, t }) {
                 <th style={{ padding: '10px 12px', textAlign: 'left', fontWeight: 600, color: '#374151' }}>#</th>
                 <th style={{ padding: '10px 12px', textAlign: 'left', fontWeight: 600, color: '#374151' }}>{t.resumesName}</th>
                 <th style={{ padding: '10px 12px', textAlign: 'left', fontWeight: 600, color: '#374151' }}>{t.resumesEmail}</th>
+                <th style={{ padding: '10px 12px', textAlign: 'left', fontWeight: 600, color: '#374151' }}>유입</th>
                 <th style={{ padding: '10px 12px', textAlign: 'left', fontWeight: 600, color: '#374151' }}>{t.resumesPosition}</th>
                 <th style={{ padding: '10px 12px', textAlign: 'left', fontWeight: 600, color: '#374151' }}>{t.resumesYoe}</th>
                 <th style={{ padding: '10px 12px', textAlign: 'left', fontWeight: 600, color: '#374151' }}>Skills</th>
@@ -249,6 +286,7 @@ export default function ResumesView({ token, t }) {
                     </div>
                   </td>
                   <td style={{ padding: '8px 12px', color: '#666' }}>{r.email || '-'}</td>
+                  <td style={{ padding: '8px 12px' }}><PlatformBadge platform={r.resume_platform} /></td>
                   <td style={{ padding: '8px 12px' }}>
                     {r.position ? (
                       <span style={{ padding: '2px 8px', borderRadius: 12, fontSize: 11, fontWeight: 600, background: '#EEF2FF', color: '#4F46E5' }}>

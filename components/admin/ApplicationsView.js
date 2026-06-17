@@ -1,9 +1,25 @@
 import { useState, useEffect } from 'react'
 import { STATUS_OPTIONS, STATUS_COLORS } from '../../constants/dashboard'
 
+// 유입 플랫폼 배지: app=앱 / web=웹 / null=미상(기록 전 행).
+function PlatformBadge({ platform }) {
+  const map = {
+    app: { label: '앱', bg: '#EEF2FF', color: '#4F46E5' },
+    web: { label: '웹', bg: '#F0FDF4', color: '#15803D' },
+  }
+  const s = map[platform]
+  if (!s) return <span style={{ color: '#ccc', fontSize: 11 }}>미상</span>
+  return (
+    <span style={{ padding: '2px 8px', borderRadius: 12, fontSize: 11, fontWeight: 600, background: s.bg, color: s.color }}>
+      {s.label}
+    </span>
+  )
+}
+
 export default function ApplicationsView({ token, t, dateRange }) {
   const [apps, setApps] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [platformFilter, setPlatformFilter] = useState('all') // all, app, web
   const [editingNote, setEditingNote] = useState({})
   const [parsing, setParsing] = useState(false)
   const [parseProgress, setParseProgress] = useState({ current: 0, total: 0, name: '' })
@@ -54,10 +70,11 @@ export default function ApplicationsView({ token, t, dateRange }) {
 
   function downloadCsv() {
     if (!apps || apps.length === 0) return
-    const headers = ['Name', 'Email', 'Job', 'Company', 'Position', 'YoE', 'Skills', 'Headline', 'Status', 'Resume URL', 'Note', 'Applied']
-    const rows = apps.map(a => [
+    const headers = ['Name', 'Email', 'Source', 'Job', 'Company', 'Position', 'YoE', 'Skills', 'Headline', 'Status', 'Resume URL', 'Note', 'Applied']
+    const rows = visible.map(a => [
       a.user_name || a.applicant_name || '',
       a.user_email || a.applicant_email || '',
+      a.platform || '',
       a.job_title || a.jobs?.title || '',
       a.job_company || a.jobs?.company || '',
       a.applicant_role || parsedData[a.id]?.position || '',
@@ -118,14 +135,42 @@ export default function ApplicationsView({ token, t, dateRange }) {
   if (loading) return <div style={{ textAlign: 'center', padding: 40, color: '#666' }}>{t.appsLoading}</div>
   if (!apps || apps.length === 0) return <div style={{ textAlign: 'center', padding: 40, color: '#999' }}>{t.appsEmpty}</div>
 
+  const visible = apps.filter(a => platformFilter === 'all' || (a.platform || null) === platformFilter)
+  const appCount = apps.filter(a => a.platform === 'app').length
+  const webCount = apps.filter(a => a.platform === 'web').length
+
   return (
     <>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, flexWrap: 'wrap', gap: 12 }}>
         <div style={{ display: 'flex', alignItems: 'baseline', gap: 12 }}>
           <h3 style={{ fontSize: 16, fontWeight: 600, margin: 0 }}>{t.appsTitle}</h3>
-          <span style={{ fontSize: 14, color: '#6B7280' }}>{t.appsTotal}: <strong style={{ color: '#4F46E5' }}>{apps.length}</strong></span>
+          <span style={{ fontSize: 14, color: '#6B7280' }}>
+            {t.appsTotal}: <strong style={{ color: '#4F46E5' }}>{visible.length}</strong>
+            <span style={{ margin: '0 6px', color: '#ddd' }}>|</span>
+            앱 <strong style={{ color: '#4F46E5' }}>{appCount}</strong>
+            <span style={{ margin: '0 4px', color: '#ddd' }}>·</span>
+            웹 <strong style={{ color: '#15803D' }}>{webCount}</strong>
+          </span>
         </div>
-        <div style={{ display: 'flex', gap: 8 }}>
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+          <div style={{ display: 'flex', gap: 0, background: '#f3f4f6', borderRadius: 8, padding: 2 }}>
+            {[
+              { key: 'all', label: '전체' },
+              { key: 'app', label: '앱' },
+              { key: 'web', label: '웹' },
+            ].map(f => (
+              <button key={f.key} onClick={() => setPlatformFilter(f.key)}
+                style={{
+                  padding: '5px 12px', borderRadius: 6, fontSize: 12, fontWeight: 600,
+                  border: 'none', cursor: 'pointer', transition: 'all 0.15s',
+                  background: platformFilter === f.key ? '#fff' : 'transparent',
+                  color: platformFilter === f.key ? '#111' : '#999',
+                  boxShadow: platformFilter === f.key ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
+                }}>
+                {f.label}
+              </button>
+            ))}
+          </div>
           <button onClick={runAiParse} disabled={parsing || unparsed.length === 0}
             style={{
               padding: '8px 16px', border: 'none', borderRadius: 8, fontSize: 13,
@@ -192,6 +237,7 @@ export default function ApplicationsView({ token, t, dateRange }) {
                 <th style={{ padding: '10px 12px', textAlign: 'left', fontWeight: 600, color: '#374151' }}>{t.appsCompany}</th>
                 <th style={{ padding: '10px 12px', textAlign: 'left', fontWeight: 600, color: '#374151' }}>{t.appsApplicant}</th>
                 <th style={{ padding: '10px 12px', textAlign: 'left', fontWeight: 600, color: '#374151' }}>{t.appsEmail}</th>
+                <th style={{ padding: '10px 12px', textAlign: 'left', fontWeight: 600, color: '#374151' }}>유입</th>
                 <th style={{ padding: '10px 12px', textAlign: 'left', fontWeight: 600, color: '#374151' }}>Position</th>
                 <th style={{ padding: '10px 12px', textAlign: 'left', fontWeight: 600, color: '#374151' }}>YoE</th>
                 <th style={{ padding: '10px 12px', textAlign: 'left', fontWeight: 600, color: '#374151' }}>Skills</th>
@@ -202,7 +248,7 @@ export default function ApplicationsView({ token, t, dateRange }) {
               </tr>
             </thead>
             <tbody>
-              {apps.map((a, i) => {
+              {visible.map((a, i) => {
                 const sc = STATUS_COLORS[a.status] || STATUS_COLORS.applied
                 const isEditingNote = editingNote.hasOwnProperty(a.id)
                 return (
@@ -212,6 +258,7 @@ export default function ApplicationsView({ token, t, dateRange }) {
                     <td style={{ padding: '8px 12px', color: '#666' }}>{a.job_company || a.jobs?.company || '-'}</td>
                     <td style={{ padding: '8px 12px', fontWeight: 500 }}>{a.user_name || '-'}</td>
                     <td style={{ padding: '8px 12px', color: '#666', fontSize: 12 }}>{a.user_email || '-'}</td>
+                    <td style={{ padding: '8px 12px' }}><PlatformBadge platform={a.platform} /></td>
                     <td style={{ padding: '8px 12px' }}>
                       {(a.applicant_role || parsedData[a.id]?.position) ? (
                         <span style={{ padding: '2px 8px', borderRadius: 12, fontSize: 11, fontWeight: 600, background: '#EEF2FF', color: '#4F46E5' }}>

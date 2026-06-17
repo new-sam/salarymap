@@ -47,12 +47,25 @@ export default async function handler(req, res) {
   // row yet — they never hit the web /auth/callback that inserts it — so a plain .update()
   // would silently affect 0 rows and the uploaded URL would never be saved).
   const updateField = type === 'photo' ? 'photo_url' : 'resume_url'
-  await supabase.from('user_profiles').upsert({
+  const profileRow = {
     id: user.id,
     email: user.email,
     [updateField]: publicUrl,
     updated_at: new Date().toISOString(),
-  }, { onConflict: 'id' })
+  }
+  // 이력서 업로드 출처(app/web) 기록. 앱(salary-fyi)은 X-Client-Platform: app 헤더를 붙인다.
+  if (type === 'resume') {
+    profileRow.resume_platform = req.headers['x-client-platform'] === 'app' ? 'app' : 'web'
+  }
+
+  const upsert = (row) => supabase.from('user_profiles').upsert(row, { onConflict: 'id' })
+  let { error: profileErr } = await upsert(profileRow)
+  // resume_platform 컬럼은 20260617 마이그레이션이 추가한다. 아직 미적용이면 PostgREST가
+  // 컬럼 부재(PGRST204)를 알린다 — 업로드 자체는 막지 말고 출처 없이 재시도해 URL은 저장한다.
+  if (profileErr && (profileErr.code === 'PGRST204' || /resume_platform/.test(profileErr.message || ''))) {
+    const { resume_platform, ...withoutPlatform } = profileRow
+    await upsert(withoutPlatform)
+  }
 
   res.json({ url: publicUrl })
 }
