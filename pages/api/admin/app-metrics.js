@@ -76,6 +76,24 @@ export default async function handler(req, res) {
       dailyMap[date][key] = (dailyMap[date][key] || 0) + 1
     }
 
+    // ---- 분석가 모듈용 누적기 ----
+    const firstSeenMs = {}                 // client -> 최초 관측 ms(VN)
+    const rangeClients = new Set()         // [from,to] 내 활성 client (기능 채택 분모)
+    const clientFeatures = {}              // client -> Set(feature) (범위 내)
+    const actEvents = {}                   // client -> Set(event) (최초 ACT_WINDOW일 내, 액티베이션용)
+    const ACT_WINDOW = 3                   // 신규유저 액티베이션 관측 창(일)
+    const RET_MAX = 14                     // 언바운드 리텐션 커브 최대 offset(일)
+    const dayMs = (d) => new Date(d + 'T00:00:00+07:00').getTime()
+    // 이벤트 → 기능 버킷 (기능 채택률용)
+    const featureOf = (e) => {
+      if (e === 'submit_salary') return 'salary'
+      if (e === 'resume_upload') return 'resume'
+      if (e === 'push_click') return 'push'
+      if (e === 'view_jobs_page' || e === 'click_job_card' || e === 'click_apply_button' || e === 'submit_application' || e === 'save_job') return 'jobs'
+      if (e.indexOf('community') !== -1) return 'community'
+      return null
+    }
+
     for (const r of rows) {
       const m = r.meta || {}
       const date = toVN(r.created_at)
@@ -85,11 +103,21 @@ export default async function handler(req, res) {
       // --- 전 기간: 리텐션 축 ---
       if (c) {
         if (!firstSeen[c] || date < firstSeen[c]) firstSeen[c] = date
+        const dms = dayMs(date)
+        if (firstSeenMs[c] == null || dms < firstSeenMs[c]) firstSeenMs[c] = dms
         ;(activeDays[c] || (activeDays[c] = new Set())).add(date)
+        // 액티베이션: 최초 관측일로부터 ACT_WINDOW일 이내 행동만 적재(범위 무관, rows는 오름차순이라 firstSeenMs 확정 상태)
+        const off = Math.round((dms - firstSeenMs[c]) / DAY)
+        if (off >= 0 && off <= ACT_WINDOW) (actEvents[c] || (actEvents[c] = new Set())).add(ev)
       }
 
       if (!inRange(date)) continue
       // --- 범위 내: 볼륨/분포/퍼널 ---
+      if (c) {
+        rangeClients.add(c)
+        const f = featureOf(ev)
+        if (f) (clientFeatures[c] || (clientFeatures[c] = new Set())).add(f)
+      }
       eventCounts[ev] = (eventCounts[ev] || 0) + 1
       bumpDaily(date, ev)
       if (c) {
@@ -293,6 +321,100 @@ export default async function handler(req, res) {
     // ---- 세그먼트 ----
     const segments = { os: setDist(osSet), appVersion: setDist(verSet) }
 
+    // ===== 분석가 모듈 =====
+    const weekOf = (dstr) => {
+      // 월요일 시작 ISO주. 요일 계산은 naive(UTC자정) 파싱 — cohort 로직과 동일.
+      const f = new Date(dstr + 'T00:00:00')
+      const mon = new Date(f); mon.setDate(f.getDate() - ((f.getDay() + 6) % 7))
+      return mon.toISOString().slice(0, 10)
+    }
+
+    // 1) 스티키니스 — 평균 DAU 기준 DAU/MAU·WAU/MAU + 기간 신규유저
+    const avgDau = dauSeries.length ? Math.round(dauSeries.reduce((a, s) => a + s.active, 0) / dauSeries.length) : 0
+    const stickiness = {
+      avgDau,
+      dauMau: mauSet.size ? ((avgDau / mauSet.size) * 100).toFixed(1) : null,
+      wauMau: mauSet.size ? ((wauSet.size / mauSet.size) * 100).toFixed(1) : null,
+    }
+    const newUsersInRange = clients.filter(c => inRange(firstSeen[c])).length
+
+    // 2) 언바운드 리텐션 커브(D0~RET_MAX) — offset별 eligible/retained
+    const offsetsByClient = {}
+    for (const c of clients) {
+      const s = new Set()
+      for (const d of activeDays[c]) s.add(Math.round((dayMs(d) - firstSeenMs[c]) / DAY))
+      offsetsByClient[c] = s
+    }
+    const retentionCurve = []
+    for (let n = 0; n <= RET_MAX; n++) {
+      const elig = clients.filter(c => (now - firstSeenMs[c]) >= n * DAY)
+      const ret = elig.filter(c => offsetsByClient[c].has(n))
+      retentionCurve.push({ day: n, eligible: elig.length, retained: ret.length, rate: elig.length ? ((ret.length / elig.length) * 100).toFixed(1) : null })
+    }
+
+    // 3) 신규유저 액티베이션 퍼널 — 코호트=범위 내 최초관측 & 관측창 경과, 최초 ACT_WINDOW일 내 행동
+    const cohort = clients.filter(c => inRange(firstSeen[c]) && (now - firstSeenMs[c]) >= ACT_WINDOW * DAY)
+    const hasAny = (c, arr) => { const s = actEvents[c]; return !!s && arr.some(e => s.has(e)) }
+    const A_VIEW = ['view_jobs_page', 'view_community']
+    const A_ENGAGE = ['click_job_card', 'click_community_post', 'view_community_post', 'search_community', 'save_job', 'filter_community_category']
+    const A_CONVERT = ['submit_salary', 'submit_application', 'create_community_post', 'create_community_comment', 'resume_upload']
+    const aView = cohort.filter(c => hasAny(c, A_VIEW)).length
+    const aEngage = cohort.filter(c => hasAny(c, A_ENGAGE)).length
+    const aConvert = cohort.filter(c => hasAny(c, A_CONVERT)).length
+    const activation = {
+      window: ACT_WINDOW, cohort: cohort.length, view: aView, engage: aEngage, convert: aConvert,
+      viewRate: rate(aView, cohort.length), engageRate: rate(aEngage, cohort.length), convertRate: rate(aConvert, cohort.length),
+    }
+
+    // 4) 그로스 어카운팅(주간) — new/retained/resurrected/churned + Quick Ratio
+    const clientWeeks = {}
+    for (const c of clients) { const s = new Set(); for (const d of activeDays[c]) s.add(weekOf(d)); clientWeeks[c] = s }
+    const firstWeek = {}; for (const c of clients) firstWeek[c] = weekOf(firstSeen[c])
+    const allWeeks = [...new Set(clients.flatMap(c => [...clientWeeks[c]]))].sort()
+    const prevWeekStr = (w) => { const d = new Date(w + 'T00:00:00'); d.setDate(d.getDate() - 7); return d.toISOString().slice(0, 10) }
+    const growthWeeks = allWeeks.map(w => {
+      const pw = prevWeekStr(w)
+      let nu = 0, ret = 0, resur = 0, ch = 0
+      for (const c of clients) {
+        const a = clientWeeks[c].has(w), p = clientWeeks[c].has(pw)
+        if (a) { if (firstWeek[c] === w) nu++; else if (p) ret++; else resur++ }
+        else if (p) ch++
+      }
+      return { week: w, new: nu, retained: ret, resurrected: resur, churned: ch, wau: nu + ret + resur, quickRatio: ch > 0 ? ((nu + resur) / ch).toFixed(2) : null }
+    })
+
+    // 5) 인게이지먼트 깊이 — 파워유저 곡선(범위 내 활성일수 분포)
+    const powerBuckets = { '1': 0, '2': 0, '3': 0, '4-5': 0, '6-7': 0, '8+': 0 }
+    let rangeClientCount = 0
+    for (const c of clients) {
+      let cnt = 0; for (const d of activeDays[c]) if (inRange(d)) cnt++
+      if (cnt === 0) continue
+      rangeClientCount++
+      const b = cnt >= 8 ? '8+' : cnt >= 6 ? '6-7' : cnt >= 4 ? '4-5' : String(cnt)
+      powerBuckets[b]++
+    }
+    const powerCurve = Object.entries(powerBuckets).map(([name, count]) => ({ name, count }))
+    const multiDayRate = rate(rangeClientCount - powerBuckets['1'], rangeClientCount)
+
+    // 6) 기능 채택률 + 멀티기능 중첩
+    const FEATURES = ['community', 'jobs', 'salary', 'resume', 'push']
+    const featureCounts = Object.fromEntries(FEATURES.map(f => [f, 0]))
+    const fcDist = {}
+    for (const c of Object.keys(clientFeatures)) {
+      const s = clientFeatures[c]
+      for (const f of s) if (featureCounts[f] != null) featureCounts[f]++
+      fcDist[s.size] = (fcDist[s.size] || 0) + 1
+    }
+    const featDenom = rangeClients.size || 1
+    const featureAdoption = FEATURES.map(f => ({ name: f, count: featureCounts[f], rate: rate(featureCounts[f], featDenom) }))
+    const featureCountDist = Object.entries(fcDist).map(([n, count]) => ({ n: Number(n), count })).sort((a, b) => a.n - b.n)
+
+    const analytics = {
+      stickiness, newUsersInRange, retentionCurve, activation,
+      growth: { weeks: growthWeeks, latest: growthWeeks.length ? growthWeeks[growthWeeks.length - 1] : null },
+      depth: { powerCurve, rangeClients: rangeClientCount, multiDayRate, featureAdoption, featureCountDist, featureDenom: featDenom },
+    }
+
     // ---- 응답 ----
     res.setHeader('Cache-Control', 'no-store')
     res.json({
@@ -316,6 +438,7 @@ export default async function handler(req, res) {
       conversion,
       push,
       segments,
+      analytics,
       eventCounts: distArr(eventCounts),
       daily,
     })
