@@ -67,6 +67,13 @@ function getDayName(dateStr: string): string {
   return days[d.getUTCDay()];
 }
 
+// YYYY-MM-DD에서 delta일 가감(앱 MAU 30일 구간 계산용).
+function addDays(dateStr: string, delta: number): string {
+  const d = new Date(dateStr + "T12:00:00Z");
+  d.setUTCDate(d.getUTCDate() + delta);
+  return d.toISOString().slice(0, 10);
+}
+
 function pctChange(current: number, previous: number): string {
   if (previous === 0 && current === 0) return "-";
   if (previous === 0) return "NEW";
@@ -281,6 +288,114 @@ async function getCumulative(startDate: string, endDate: string) {
   };
 }
 
+// ─── App Metrics (모바일 앱 — events 테이블, meta.platform='app') ───
+// 웹 GA4와 무관. 앱은 GA4를 안 쓰고 모든 행동이 events 테이블에 meta.platform='app'로 쌓인다.
+// 식별자(client_id/session_id/user_id)는 전부 meta 안에 있다 — 최상위 컬럼은 앱 이벤트에서 null.
+type AppStats = {
+  devices: number; sessions: number; loggedIn: number; newDevices: number;
+  salary: number; apply: number; resume: number; community: number;
+  ios: number; android: number; clients: Set<string>;
+};
+
+// 기간 내 앱 이벤트 전부(event+meta만). 1000행 페이지네이션으로 누락 없이 가져온다.
+async function fetchAppEvents(startUtc: string, endUtc: string): Promise<any[]> {
+  const pageSize = 1000;
+  let from = 0;
+  const out: any[] = [];
+  while (true) {
+    const { data, error } = await supabase
+      .from("events")
+      .select("event, meta")
+      .eq("meta->>platform", "app")
+      .gte("created_at", startUtc)
+      .lte("created_at", endUtc)
+      .order("created_at", { ascending: true })
+      .range(from, from + pageSize - 1);
+    if (error) throw error;
+    out.push(...(data || []));
+    if (!data || data.length < pageSize) break;
+    from += pageSize;
+  }
+  return out;
+}
+
+function computeAppStats(events: any[]): AppStats {
+  const clients = new Set<string>();
+  const sessions = new Set<string>();
+  const users = new Set<string>();
+  const osByClient = new Map<string, string>();
+  const cnt = (k: string) => events.reduce((n, e) => n + (e.event === k ? 1 : 0), 0);
+
+  for (const e of events) {
+    const m = e.meta || {};
+    if (m.client_id) {
+      clients.add(m.client_id);
+      if (m.os && !osByClient.has(m.client_id)) osByClient.set(m.client_id, m.os);
+    }
+    if (m.session_id) sessions.add(m.session_id);
+    if (m.user_id) users.add(m.user_id);
+  }
+  let ios = 0, android = 0;
+  for (const os of osByClient.values()) {
+    if (os === "ios") ios++;
+    else if (os === "android") android++;
+  }
+  return {
+    devices: clients.size,
+    sessions: sessions.size,
+    loggedIn: users.size,
+    newDevices: 0, // getAppStats가 채운다
+    salary: cnt("submit_salary"),
+    apply: cnt("submit_application"),
+    resume: cnt("resume_upload"),
+    community: cnt("create_community_post") + cnt("create_community_comment"),
+    ios, android, clients,
+  };
+}
+
+// 신규 디바이스 = 기간 내 활성 client_id 중 기간 시작 이전에 이벤트가 없던 것.
+// 활성 디바이스 목록(작음)으로만 조회를 좁혀 스케일 안전.
+async function countNewDevices(clients: Set<string>, startUtc: string): Promise<number> {
+  if (clients.size === 0) return 0;
+  const list = [...clients];
+  const { data, error } = await supabase
+    .from("events")
+    .select("meta")
+    .eq("meta->>platform", "app")
+    .in("meta->>client_id", list)
+    .lt("created_at", startUtc)
+    .limit(50000);
+  if (error) {
+    console.error("App newDevices error:", error.message);
+    return clients.size; // 알 수 없으면 전부 신규로 본다
+  }
+  const before = new Set((data || []).map((r: any) => r.meta?.client_id).filter(Boolean));
+  return list.filter((c) => !before.has(c)).length;
+}
+
+async function getAppStats(startUtc: string, endUtc: string): Promise<AppStats> {
+  const stats = computeAppStats(await fetchAppEvents(startUtc, endUtc));
+  stats.newDevices = await countNewDevices(stats.clients, startUtc);
+  return stats;
+}
+
+// MAU = 기간 종료일 기준 직전 30일 고유 디바이스 수.
+async function getAppMau(endDate: string): Promise<number> {
+  const events = await fetchAppEvents(
+    `${addDays(endDate, -29)}T00:00:00+07:00`,
+    `${endDate}T23:59:59+07:00`,
+  );
+  const clients = new Set<string>();
+  for (const e of events) if (e.meta?.client_id) clients.add(e.meta.client_id);
+  return clients.size;
+}
+
+// 푸시 옵트인: 총 enabled 토큰 수. (push_tokens엔 created_at이 없어 "기간 내 신규"는 집계 불가)
+async function getPushTotal(): Promise<number> {
+  const t = await supabase.from("push_tokens").select("*", { count: "exact", head: true }).eq("enabled", true);
+  return t.error ? 0 : (t.count || 0);
+}
+
 // ─── Alert Detection ───
 async function detectAlerts(todayTotal: number): Promise<string[]> {
   const alerts: string[] = [];
@@ -428,6 +543,49 @@ function buildWeeklyMessage(
   };
 }
 
+// ─── App Report Attachments (웹 메시지에 별도 카드로 덧붙임) ───
+const APP_COLOR = "#5865F2"; // 앱 블록을 웹과 구분하는 색상바
+
+function buildAppDailyAttachment(stats: AppStats, prev: AppStats, pushTotal: number) {
+  return {
+    color: APP_COLOR,
+    blocks: [
+      { type: "header", text: { type: "plain_text", text: "📱 App Report (DoD)", emoji: true } },
+      { type: "section", text: { type: "mrkdwn", text: [
+        `*Active devices*  \`${stats.devices}\`  ${pctChange(stats.devices, prev.devices)}${dodEmoji(stats.devices, prev.devices)}`,
+        `*Sessions*  \`${stats.sessions}\`  ${pctChange(stats.sessions, prev.sessions)}${dodEmoji(stats.sessions, prev.sessions)}`,
+        `*New devices*  \`${stats.newDevices}\`  ${pctChange(stats.newDevices, prev.newDevices)}`,
+        `*Logged-in*  \`${stats.loggedIn}\` / ${stats.devices}`,
+        `*Push opt-in*  total \`${pushTotal}\``,
+        ``,
+        `*Key actions*   Salary \`${stats.salary}\`  ·  Apply \`${stats.apply}\`  ·  Resume \`${stats.resume}\`  ·  Community \`${stats.community}\``,
+        `*OS*   iOS \`${stats.ios}\` / Android \`${stats.android}\``,
+      ].join("\n") } },
+    ],
+  };
+}
+
+function buildAppWeeklyAttachment(thisW: AppStats, lastW: AppStats, mau: number, pushTotal: number) {
+  const stickiness = mau > 0 ? convRate(thisW.devices, mau) : "—";
+  return {
+    color: APP_COLOR,
+    blocks: [
+      { type: "header", text: { type: "plain_text", text: "📱 App Report (WoW)", emoji: true } },
+      { type: "section", text: { type: "mrkdwn", text: [
+        `*Active devices (WAU)*  \`${thisW.devices}\`  ${pctChange(thisW.devices, lastW.devices)}`,
+        `*MAU (30d)*  \`${mau}\`   ·   *Stickiness*  ${stickiness}`,
+        `*Sessions*  \`${thisW.sessions}\`  ${pctChange(thisW.sessions, lastW.sessions)}`,
+        `*New devices*  \`${thisW.newDevices}\`  ${pctChange(thisW.newDevices, lastW.newDevices)}`,
+        `*Logged-in*  \`${thisW.loggedIn}\``,
+        `*Push opt-in*  total \`${pushTotal}\``,
+        ``,
+        `*Key actions*   Salary \`${thisW.salary}\`  ·  Apply \`${thisW.apply}\`  ·  Resume \`${thisW.resume}\`  ·  Community \`${thisW.community}\``,
+        `*OS*   iOS \`${thisW.ios}\` / Android \`${thisW.android}\``,
+      ].join("\n") } },
+    ],
+  };
+}
+
 // ─── Health Check ───
 const HEALTHCHECK_URL = "https://salary-fyi.com/";
 const HEALTHCHECK_TIMEOUT = 15000; // 15s
@@ -553,6 +711,19 @@ Deno.serve(async (req) => {
       const alerts = await detectAlerts(stats.total);
 
       const message = buildDailyMessage(yesterday, sessions, prevSessions, stats, prevStats, signups, prevSignups, jobApps, cum, alerts);
+
+      // 앱 리포트 카드 덧붙임 — 실패해도 웹 리포트는 그대로 발송.
+      try {
+        const [appStats, appPrev] = await Promise.all([
+          getAppStats(`${yesterday}T00:00:00+07:00`, `${yesterday}T23:59:59+07:00`),
+          getAppStats(`${dayBefore}T00:00:00+07:00`, `${dayBefore}T23:59:59+07:00`),
+        ]);
+        const pushTotal = await getPushTotal();
+        message.attachments.push(buildAppDailyAttachment(appStats, appPrev, pushTotal));
+      } catch (e) {
+        console.error("App daily report error:", (e as Error).message);
+      }
+
       await sendToSlack(message);
       return new Response(JSON.stringify({ success: true, mode: "daily", date: yesterday }), { headers: { "Content-Type": "application/json" } });
     }
@@ -573,6 +744,20 @@ Deno.serve(async (req) => {
       ]);
 
       const message = buildWeeklyMessage(`${thisWeekStart} ~ ${thisWeekEnd}`, thisWeek, lastWeek);
+
+      // 앱 리포트 카드 덧붙임 — 실패해도 웹 리포트는 그대로 발송.
+      try {
+        const [appThis, appLast, mau] = await Promise.all([
+          getAppStats(`${thisWeekStart}T00:00:00+07:00`, `${thisWeekEnd}T23:59:59+07:00`),
+          getAppStats(`${lastWeekStart}T00:00:00+07:00`, `${lastWeekEnd}T23:59:59+07:00`),
+          getAppMau(thisWeekEnd),
+        ]);
+        const pushTotal = await getPushTotal();
+        message.attachments.push(buildAppWeeklyAttachment(appThis, appLast, mau, pushTotal));
+      } catch (e) {
+        console.error("App weekly report error:", (e as Error).message);
+      }
+
       await sendToSlack(message);
       return new Response(JSON.stringify({ success: true, mode: "weekly", week: `${thisWeekStart} ~ ${thisWeekEnd}` }), { headers: { "Content-Type": "application/json" } });
     }
