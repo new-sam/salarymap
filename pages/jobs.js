@@ -343,6 +343,13 @@ export default function JobsPage() {
       }
       return true
     })
+    // featured(프리미엄) 공고는 어떤 정렬이든 최상단 핀 고정 (featured끼리는 최신순)
+    const pinFeatured = (list) => {
+      const feat = list.filter(j => j.is_featured)
+        .sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0))
+      const rest = list.filter(j => !j.is_featured)
+      return [...feat, ...rest]
+    }
     // 스크랩 필터
     if (sortBy === 'saved') {
       return filtered.filter(job => bookmarks.includes(job.id))
@@ -400,7 +407,7 @@ export default function JobsPage() {
         if (oi < other.length) result.push(other[oi++])
         if (wi < wanted.length) result.push(wanted[wi++])
       }
-      return result
+      return pinFeatured(result)
     }
     // wanted/non-wanted 1:1 인터리빙
     const interleave = (list) => {
@@ -414,7 +421,7 @@ export default function JobsPage() {
       }
       return result
     }
-    return interleave(filtered)
+    return pinFeatured(interleave(filtered))
   })()
 
   const handleApply = async (job) => {
@@ -678,6 +685,7 @@ export default function JobsPage() {
         /* Card */
         .jc { cursor: pointer; display: flex; flex-direction: column; min-width: 0; }
         .jc-match { position: absolute; top: 10px; left: 10px; background: #ff4400; color: #fff; font-size: 11px; font-weight: 700; padding: 4px 10px; border-radius: 4px; z-index: 2; }
+        .jc-feat { position: absolute; top: 10px; left: 10px; background: linear-gradient(135deg, #ff4400 0%, #ff6b35 100%); color: #fff; font-size: 11px; font-weight: 800; padding: 4px 10px; border-radius: 4px; z-index: 3; letter-spacing: 0.2px; box-shadow: 0 2px 8px rgba(255,68,0,0.32); }
         .jc-img { border-radius: 8px; overflow: hidden; position: relative; padding-top: 62%; margin-bottom: 11px; background: #f0f0f0; flex-shrink: 0; border: 1px solid rgba(0,0,0,0.06); }
         .jc-img-in { position: absolute; inset: 0; transition: transform .25s ease; background-color: #f0f0f0; background-size: cover; background-position: center; background-repeat: no-repeat; }
         .jc:hover .jc-img-in { transform: scale(1.04); }
@@ -992,17 +1000,17 @@ export default function JobsPage() {
             {/* Hot jobs section */}
             {jobs.length > 0 && !searchQuery && !roleFilter && !typeFilter && !techFilter && expMin === '' && expMax === '' && (() => {
               const now = new Date()
-              // remote 2개 + onsite 2개 자동 선택
-              const scored = jobs.map(j => {
-                let score = 0
-                if (j.is_featured) score += 100
-                if (j.deadline && new Date(j.deadline) > now && Math.ceil((new Date(j.deadline) - now) / 86400000) <= 14) score += 50
-                score += (j.salary_max || 0) / 1000
-                return { ...j, _score: score }
-              }).sort((a, b) => b._score - a._score)
-              const remoteJobs = scored.filter(j => j.type === 'remote').slice(0, 2)
-              const onsiteJobs = scored.filter(j => j.type !== 'remote').slice(0, 2)
-              const hotJobs = [...remoteJobs, ...onsiteJobs].slice(0, 4)
+              // 프리미엄(적극 채용) 공고 우선 노출 — 부족하면 마감임박·고연봉순으로 채움
+              const hotScore = (j) => {
+                let s = 0
+                if (j.deadline && new Date(j.deadline) > now && Math.ceil((new Date(j.deadline) - now) / 86400000) <= 14) s += 50
+                s += (j.salary_max || 0) / 1000
+                return s
+              }
+              const featuredJobs = jobs.filter(j => j.is_featured)
+                .sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0))
+              const fillJobs = jobs.filter(j => !j.is_featured).sort((a, b) => hotScore(b) - hotScore(a))
+              const hotJobs = [...featuredJobs, ...fillJobs].slice(0, 4)
               if (hotJobs.length === 0) return null
               const fakeCount = (id) => 20 + (id.charCodeAt(0) + id.charCodeAt(id.length - 1)) % 21
               return (
@@ -1017,10 +1025,13 @@ export default function JobsPage() {
                         <div key={job.id} className="jc" onClick={() => { setCarouselIdx(0); setDetailApplyMode(false); setApplied(false); setResumeFile(null); setDetailJob({ ...job, _imgFallback: DEFAULT_IMAGES[idx % 3] }); track('click_job_card','jobs',{jobId:job.id,title:job.title,company:job.company}) }}>
                           <div className="jc-img">
                             <div className="jc-img-in" style={(() => { const hasImg = job.image_url || job.images?.[0]; const src = hasImg || job.logo_url || DEFAULT_IMAGES[idx % 3]; const mode = !hasImg && job.logo_url ? '60%' : 'cover'; return { background: `#fff url(${src}) center/${mode} no-repeat` } })()}>
-                              {bump !== null && bump > 0 && (
-                                <div className="jc-bump" dangerouslySetInnerHTML={{ __html: t('jobs.bumpVs', { bump }) }} />
+                              {job.is_featured && (
+                                <div className="jc-feat">★ {t('jobs.featuredBadge')}</div>
                               )}
-                              {matched && <div className="jc-match" style={bump > 0 ? { top: 38 } : undefined}>{t('jobs.profileBadge')}</div>}
+                              {bump !== null && bump > 0 && (
+                                <div className="jc-bump" style={{ top: job.is_featured ? 40 : 10 }} dangerouslySetInnerHTML={{ __html: t('jobs.bumpVs', { bump }) }} />
+                              )}
+                              {matched && <div className="jc-match" style={{ top: (job.is_featured ? 40 : 10) + (bump > 0 ? 28 : 0) }}>{t('jobs.profileBadge')}</div>}
                               <button className="jc-bm" aria-label="Bookmark" onClick={e => { e.stopPropagation(); toggleBookmark(job.id) }}>
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill={bookmarks.includes(job.id) ? '#ff4400' : 'none'} stroke={bookmarks.includes(job.id) ? '#ff4400' : '#999'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                                   <path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z" />
@@ -1120,10 +1131,13 @@ export default function JobsPage() {
                         <div key={job.id} className="jc" onClick={() => { setCarouselIdx(0); setDetailApplyMode(false); setApplied(false); setResumeFile(null); setDetailJob({ ...job, _imgFallback: DEFAULT_IMAGES[idx % 3] }); track('click_job_card','jobs',{jobId:job.id,title:job.title,company:job.company}) }}>
                           <div className="jc-img">
                             <div className="jc-img-in" style={(() => { const hasImg = job.image_url || job.images?.[0]; const src = hasImg || job.logo_url || DEFAULT_IMAGES[idx % 3]; const mode = !hasImg && job.logo_url ? '60%' : 'cover'; return { background: `#fff url(${src}) center/${mode} no-repeat` } })()}>
-                              {bump !== null && bump > 0 && (
-                                <div className="jc-bump" dangerouslySetInnerHTML={{ __html: t('jobs.bumpVs', { bump }) }} />
+                              {job.is_featured && (
+                                <div className="jc-feat">★ {t('jobs.featuredBadge')}</div>
                               )}
-                              {matched && <div className="jc-match" style={bump > 0 ? { top: 38 } : undefined}>{t('jobs.profileBadge')}</div>}
+                              {bump !== null && bump > 0 && (
+                                <div className="jc-bump" style={{ top: job.is_featured ? 40 : 10 }} dangerouslySetInnerHTML={{ __html: t('jobs.bumpVs', { bump }) }} />
+                              )}
+                              {matched && <div className="jc-match" style={{ top: (job.is_featured ? 40 : 10) + (bump > 0 ? 28 : 0) }}>{t('jobs.profileBadge')}</div>}
                               <button className="jc-bm" aria-label="Bookmark" onClick={e => { e.stopPropagation(); toggleBookmark(job.id) }}>
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill={bookmarks.includes(job.id) ? '#ff4400' : 'none'} stroke={bookmarks.includes(job.id) ? '#ff4400' : '#999'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                                   <path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z" />

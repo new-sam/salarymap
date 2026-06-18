@@ -118,6 +118,12 @@ export default function AdminJobs() {
     mutateJobs()
   }
 
+  const handleToggleFeatured = async (job) => {
+    await fetch('/api/admin/jobs', { method: 'PUT', headers: headers(), body: JSON.stringify({ id: job.id, is_featured: !job.is_featured }) })
+    flash(job.is_featured ? '프리미엄 해제됨' : '⭐ 프리미엄 등록됨 — 적극 채용 중 노출')
+    mutateJobs()
+  }
+
   const handleApprove = async (job) => {
     await fetch('/api/admin/jobs', { method: 'PUT', headers: headers(), body: JSON.stringify({ id: job.id, status: 'live', is_active: true }) })
     flash('Approved'); mutateJobs()
@@ -271,9 +277,21 @@ export default function AdminJobs() {
                   <F label="Deadline" value={form.deadline} type="date" set={v => setForm({ ...form, deadline: v })} />
                   <F label="Headcount" value={form.headcount} type="number" set={v => setForm({ ...form, headcount: v })} />
                   <F label="Apply URL" value={form.apply_url} set={v => setForm({ ...form, apply_url: v })} />
-                  <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, cursor: 'pointer' }}>
-                    <input type="checkbox" checked={form.is_featured || false} onChange={e => setForm({ ...form, is_featured: e.target.checked })} />
-                    Featured (추천 상단 고정)
+                  <label style={{
+                    gridColumn: '1 / -1', display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer',
+                    padding: '12px 14px', borderRadius: 8,
+                    border: `1.5px solid ${form.is_featured ? '#ff4400' : '#eee'}`,
+                    background: form.is_featured ? '#fff7ed' : '#fafafa',
+                  }}>
+                    <input type="checkbox" checked={form.is_featured || false} onChange={e => setForm({ ...form, is_featured: e.target.checked })} style={{ width: 18, height: 18, flexShrink: 0 }} />
+                    <div>
+                      <div style={{ fontSize: 13, fontWeight: 800, color: form.is_featured ? '#92400e' : '#333' }}>
+                        ⭐ 프리미엄 노출 {form.is_featured && '(활성)'}
+                      </div>
+                      <div style={{ fontSize: 11, color: '#999', marginTop: 2 }}>
+                        구직 페이지 “적극 채용 중인 회사” 섹션 노출 + 목록 최상단 핀 + ★추천 배지
+                      </div>
+                    </div>
                   </label>
                 </div>
               </div>
@@ -358,6 +376,7 @@ export default function AdminJobs() {
                   return ap - bp;
                 });
                 const pendingCount = jobs.filter(j => j.status === 'pending_review').length;
+                const premiumCount = jobs.filter(j => j.is_featured).length;
                 return (
                   <>
                     {pendingCount > 0 && (
@@ -365,6 +384,9 @@ export default function AdminJobs() {
                         ⏳ {pendingCount} job(s) awaiting approval
                       </div>
                     )}
+                    <div style={{ background:'#fffbeb', border:'1px solid #fcd34d', color:'#92400e', padding:'8px 12px', borderRadius:6, marginBottom:10, fontSize:13, fontWeight:700 }}>
+                      ⭐ 프리미엄 노출 {premiumCount}개 · “적극 채용 중인 회사” 섹션 + 최상단 노출
+                    </div>
                     {sorted.map(job => (
                       <div key={job.id} style={S.row}>
                         <div style={{ flex: 1 }}>
@@ -395,6 +417,15 @@ export default function AdminJobs() {
                             </>
                           )}
                           <button style={S.btnS} onClick={() => startEdit(job)}>Edit</button>
+                          {job.status !== 'pending_review' && (
+                            <button
+                              style={{ ...S.btnS, ...(job.is_featured ? { background: '#fef3c7', color: '#92400e', fontWeight: 800 } : { color: '#92400e' }) }}
+                              onClick={() => handleToggleFeatured(job)}
+                              title="적극 채용 중 섹션 노출 토글"
+                            >
+                              {job.is_featured ? '★ 프리미엄' : '프리미엄 등록'}
+                            </button>
+                          )}
                           {job.status !== 'pending_review' && (
                             <button style={S.btnS} onClick={() => handleToggle(job)}>{job.is_active ? 'Deactivate' : 'Activate'}</button>
                           )}
