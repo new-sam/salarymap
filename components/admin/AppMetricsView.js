@@ -240,9 +240,17 @@ function FunnelChart({ steps, color = '#4F46E5' }) {
 
 export default function AppMetricsView({ token, dateRange, lang }) {
   const t = L[lang === 'en' ? 'en' : 'ko']
+  // 종료일이 기본값(어제)이면 오늘까지 포함해 조회한다 → 어제까지는 완결 집계,
+  // 오늘은 30초 폴링으로 갱신되는 실시간 부분일로 함께 보인다.
+  // (사용자가 과거 종료일을 직접 고른 경우엔 그 선택을 존중)
+  const pad = (n) => String(n).padStart(2, '0')
+  const ymd = (ms) => { const d = new Date(ms); return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}` }
+  const today = ymd(Date.now())
+  const yesterday = ymd(Date.now() - 86400000)
+  const effectiveTo = dateRange.to >= yesterday ? today : dateRange.to
   // 백그라운드 자동 폴링(30초): keepPreviousData로 화면 깜빡임 없이 데이터만 교체.
   const { data, isLoading: loading } = useAdmin(
-    `/api/admin/app-metrics?from=${dateRange.from}&to=${dateRange.to}`,
+    `/api/admin/app-metrics?from=${dateRange.from}&to=${effectiveTo}`,
     token,
     { refreshInterval: 30000 },
   )
