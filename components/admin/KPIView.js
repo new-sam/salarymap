@@ -48,9 +48,9 @@ function tone(actual, target, lowerBetter) {
 function Cell({ actual, display, target, targetDisplay, lowerBetter }) {
   return (
     <td style={td}>
-      <span style={{ fontWeight: 700, color: tone(actual, target, lowerBetter) }}>{display ?? '·'}</span>
+      <div style={{ fontWeight: 700, color: tone(actual, target, lowerBetter) }}>{display ?? '·'}</div>
       {targetDisplay && (
-        <span style={{ color: '#cbd5e1', fontSize: 11, marginLeft: 4 }}>/{targetDisplay}</span>
+        <div style={{ color: '#6b7280', fontSize: 11, marginTop: 1, fontWeight: 600 }}>목표 {targetDisplay}</div>
       )}
     </td>
   )
