@@ -39,19 +39,23 @@ export default async function handler(req, res) {
     `승인: ${adminUrl}`,
   ];
 
+  // 승인 대기(외부) vs 즉시 게시(내부) 구분
+  const isPending = job.status === 'pending_review';
+  const slackTitle = isPending ? ':mailbox_with_mail: *새 공고 승인 대기*' : ':memo: *새 기업 공고 등록 (즉시 게시)*';
+
   // Slack (옵션)
   const slackUrl = process.env.SLACK_CONTACT_WEBHOOK_URL || process.env.SLACK_WEBHOOK_URL;
   if (slackUrl) {
     try {
       await fetch(slackUrl, {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text: `:mailbox_with_mail: *새 공고 승인 대기*\n${lines.join('\n')}` }),
+        body: JSON.stringify({ text: `${slackTitle}\n${lines.join('\n')}` }),
       });
     } catch (_) {}
   }
 
-  // Email
-  if (process.env.RESEND_API_KEY) {
+  // Email — 승인이 필요한(외부) 공고만 어드민에 메일
+  if (isPending && process.env.RESEND_API_KEY) {
     try {
       const { Resend } = await import('resend');
       const resend = new Resend(process.env.RESEND_API_KEY);
