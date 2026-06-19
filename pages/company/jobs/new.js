@@ -127,13 +127,16 @@ export default function NewJobPage() {
     const techArr = form.tech_stack.split(',').map(s => s.trim()).filter(Boolean);
     const benefitsArr = form.benefits.split(',').map(s => s.trim()).filter(Boolean);
 
+    // 내부(likelion) 계정은 즉시 게시, 외부 기업은 어드민 승인 대기
+    const submitDomain = (user?.email || '').split('@')[1]?.toLowerCase();
+    const isInternal = submitDomain === 'likelion.net';
+
     const payload = {
       title: form.title.trim(),
       company: companyName,
       company_id: companyId,
-      // TODO: 게재 검토 어드민 구축 후 'pending_review' + is_active=false 로 복원
-      status: 'live',
-      is_active: true,
+      status: isInternal ? 'live' : 'pending_review',
+      is_active: isInternal,
       created_by: user?.id || null,
       description: form.description.trim(),
       role: form.role, type: form.type, country: form.country, location: form.location,
@@ -153,7 +156,7 @@ export default function NewJobPage() {
     if (data?.id && user?.id) {
       await supabase.from('job_team').insert({ job_id: data.id, user_id: user.id, role: 'owner' });
     }
-    toast.success(t('company.jobsnew.publish'));
+    toast.success(isInternal ? t('company.jobsnew.publish') : t('company.jobsnew.pendingReview'));
     router.replace('/company/jobs');
   };
 
