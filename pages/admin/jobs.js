@@ -58,6 +58,8 @@ export default function AdminJobs() {
   const { data: admins = [], mutate: mutateAdmins } = useAdmin('/api/admin/users', token)
   const { data: targets = [], mutate: mutateTargets } = useAdmin('/api/admin/crawl-targets', token)
   const { data: progress = [] } = useAdmin('/api/admin/job-progress', token)
+  const { data: companies = [], mutate: mutateCompanies } = useAdmin('/api/admin/companies', token)
+  const { data: kpi = null } = useAdmin('/api/admin/company-kpi', token)
   const handleAddTarget = async () => {
     if (!targetForm.company_name || !targetForm.slug) return
     setTargetSaving(true)
@@ -120,6 +122,11 @@ export default function AdminJobs() {
     mutateJobs()
   }
 
+  const handleToggleVerify = async (c) => {
+    await fetch('/api/admin/companies', { method: 'PUT', headers: headers(), body: JSON.stringify({ id: c.id, verified: !c.verified_at }) })
+    flash(c.verified_at ? '인증 해제됨' : '✅ 인증 완료'); mutateCompanies()
+  }
+
   const handleToggleFeatured = async (job) => {
     await fetch('/api/admin/jobs', { method: 'PUT', headers: headers(), body: JSON.stringify({ id: job.id, is_featured: !job.is_featured }) })
     flash(job.is_featured ? '프리미엄 해제됨' : '⭐ 프리미엄 등록됨 — 적극 채용 중 노출')
@@ -128,7 +135,9 @@ export default function AdminJobs() {
 
   const handleApprove = async (job) => {
     await fetch('/api/admin/jobs', { method: 'PUT', headers: headers(), body: JSON.stringify({ id: job.id, status: 'live', is_active: true }) })
-    flash('Approved'); mutateJobs()
+    // 승인 알림 (기업에게, 베스트에포트)
+    try { await fetch('/api/admin/notify-job-approved', { method: 'POST', headers: headers(), body: JSON.stringify({ jobId: job.id }) }) } catch (_) {}
+    flash('✅ 승인됨 — 기업에 알림 발송'); mutateJobs()
   }
   const handleReject = async (job) => {
     if (!confirm('이 공고를 반려하시겠습니까?')) return
@@ -229,9 +238,9 @@ export default function AdminJobs() {
             </div>
           </div>
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
-            {['jobs','progress','applications','crawl','admins'].map(t => (
+            {['kpi','jobs','progress','companies','applications','crawl','admins'].map(t => (
               <button key={t} style={{ ...S.tab, ...(tab === t ? S.tabOn : {}) }} onClick={() => setTab(t)}>
-                {t === 'jobs' ? `Jobs (${jobs.length})` : t === 'progress' ? `진행현황 (${progress.length})` : t === 'applications' ? `Applications (${apps.length})` : t === 'crawl' ? `Crawl Targets (${targets.length})` : `Admins (${admins.length})`}
+                {t === 'kpi' ? '📊 지표' : t === 'jobs' ? `Jobs (${jobs.length})` : t === 'progress' ? `진행현황 (${progress.length})` : t === 'companies' ? `회사 (${companies.length})` : t === 'applications' ? `Applications (${apps.length})` : t === 'crawl' ? `Crawl Targets (${targets.length})` : `Admins (${admins.length})`}
               </button>
             ))}
             <a href="/admin/dashboard" style={{ fontSize: 13, fontWeight: 600, color: '#4F46E5', textDecoration: 'none', padding: '7px 16px', border: '1px solid #4F46E5', borderRadius: 8 }}>
@@ -465,6 +474,74 @@ export default function AdminJobs() {
               })()}
             </div>
           </>
+        )}
+
+        {/* KPI TAB (기업/채용 지표 요약) */}
+        {tab === 'kpi' && (
+          <div style={S.card}>
+            <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 16 }}>📊 기업·채용 지표</div>
+            {!kpi && <div style={{ color: '#aaa', fontSize: 13 }}>불러오는 중...</div>}
+            {kpi && (() => {
+              const Stat = ({ label, value, sub }) => (
+                <div style={{ flex: '1 1 140px', minWidth: 140, background: '#fafafa', border: '1px solid #eee', borderRadius: 10, padding: '14px 16px' }}>
+                  <div style={{ fontSize: 11, color: '#999', fontWeight: 700 }}>{label}</div>
+                  <div style={{ fontSize: 24, fontWeight: 800, marginTop: 4 }}>{value}</div>
+                  {sub && <div style={{ fontSize: 11, color: '#888', marginTop: 2 }}>{sub}</div>}
+                </div>
+              )
+              const fc = kpi.forCompanies
+              return (
+                <>
+                  <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginBottom: 18 }}>
+                    <Stat label="가입 회사" value={kpi.companies} sub={`멤버 ${kpi.members}명`} />
+                    <Stat label="기업 등록 공고" value={kpi.jobs.companySelf} sub={`크롤 ${kpi.jobs.crawled} · 전체 ${kpi.jobs.total}`} />
+                    <Stat label="승인 대기" value={kpi.jobs.pending} sub={`노출중 ${kpi.jobs.live}`} />
+                    <Stat label="총 지원" value={kpi.applications.total} />
+                  </div>
+                  <div style={{ fontSize: 13, fontWeight: 700, margin: '6px 0 8px' }}>for-companies 퍼널 <span style={{ fontWeight: 500, color: '#999', fontSize: 11 }}>(전체 · 30일 · 7일)</span></div>
+                  <div style={{ border: '1px solid #eee', borderRadius: 10, overflow: 'hidden' }}>
+                    {[['진입(nav 클릭)', fc.enter], ['공고 등록 클릭', fc.postJob], ['문의 클릭', fc.contact]].map(([label, m], i) => (
+                      <div key={label} style={{ display: 'flex', alignItems: 'center', padding: '10px 14px', borderTop: i ? '1px solid #f0f0f0' : 'none' }}>
+                        <div style={{ flex: 1, fontSize: 13, fontWeight: 600 }}>{label}</div>
+                        <div style={{ fontSize: 13 }}><b>{m.all}</b> <span style={{ color: '#999' }}>· {m.d30} · {m.d7}</span></div>
+                      </div>
+                    ))}
+                  </div>
+                  <div style={{ fontSize: 11, color: '#aaa', marginTop: 10 }}>※ for-companies는 페이지뷰 이벤트 미계측 — 진입은 nav 클릭 기준. 문의 리드는 Slack으로 전송됨.</div>
+                </>
+              )
+            })()}
+          </div>
+        )}
+
+        {/* COMPANIES TAB (가입 회사 계정 + 인증) */}
+        {tab === 'companies' && (
+          <div style={S.card}>
+            <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 4 }}>가입 회사 계정</div>
+            <div style={{ fontSize: 12, color: '#999', marginBottom: 16 }}>공고를 등록할 수 있는 기업 계정. 인증(verified) 상태를 관리합니다.</div>
+            {companies.length === 0 && <div style={{ color: '#aaa', fontSize: 13 }}>가입 회사 없음</div>}
+            {companies.map(c => (
+              <div key={c.id} style={S.row}>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: 14, fontWeight: 600 }}>
+                    {c.name}
+                    {c.verified_at
+                      ? <span style={{ ...S.badge, background: '#dcfce7', color: '#166534' }}>✓ 인증됨</span>
+                      : <span style={{ ...S.badge, background: '#f3f4f6', color: '#6b7280' }}>미인증</span>}
+                  </div>
+                  <div style={{ fontSize: 12, color: '#888' }}>
+                    {c.email_domain || '도메인 없음'} · 멤버 {c.member_count}명 · 공고 {c.job_count}개(노출 {c.live_count}) · 가입 {c.created_at ? new Date(c.created_at).toLocaleDateString() : '-'}
+                  </div>
+                </div>
+                <button
+                  style={{ ...S.btnS, ...(c.verified_at ? { color: '#dc2626' } : { background: '#059669', color: '#fff', fontWeight: 800 }) }}
+                  onClick={() => handleToggleVerify(c)}
+                >
+                  {c.verified_at ? '인증 해제' : '인증하기'}
+                </button>
+              </div>
+            ))}
+          </div>
         )}
 
         {/* PROGRESS TAB (오버사이트: 기업 등록 공고 진행현황, 읽기 전용) */}
