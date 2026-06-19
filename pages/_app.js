@@ -48,6 +48,9 @@ export default function App({ Component, pageProps }) {
   // Company pages have their own language switcher; admin pages also have their own.
   const isCompany = router.pathname.startsWith('/company') || router.pathname === '/for-companies';
   const isAdmin = router.pathname.startsWith('/admin');
+  // Job detail renders its own bottom Apply/Save CTA, so it hides the global
+  // MobileTabBar (which would otherwise cover the CTA at bottom:0).
+  const isJobDetail = router.pathname === '/jobs/[id]';
   // /for-companies 는 공개 랜딩이라 하단 글로벌 언어 스위처를 메인 랜딩과 동일하게 노출한다.
   const isForCompaniesLanding = router.pathname === '/for-companies';
 
@@ -57,7 +60,9 @@ export default function App({ Component, pageProps }) {
     if (typeof document === 'undefined') return;
     if (isCompany) document.body.dataset.companyMobile = '1';
     else delete document.body.dataset.companyMobile;
-  }, [isCompany]);
+    if (isJobDetail) document.body.dataset.jobDetailMobile = '1';
+    else delete document.body.dataset.jobDetailMobile;
+  }, [isCompany, isJobDetail]);
   return (
     <I18nProvider>
       <Component {...pageProps} />
@@ -69,7 +74,7 @@ export default function App({ Component, pageProps }) {
           <LanguageSwitcher />
         </footer>
       )}
-      {!isCompany && <MobileTabBar />}
+      {!isCompany && !isJobDetail && <MobileTabBar />}
       <GlobalLoginModal />
       {!isAdmin && <AppDownloadModal />}
       <Toaster

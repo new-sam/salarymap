@@ -113,6 +113,11 @@ a {
     padding-top: 0 !important;
     padding-bottom: 0 !important;
   }
+  /* Job detail hides the MobileTabBar in favor of its own bottom Apply/Save CTA,
+     so drop the 60px reservation that would leave an empty gap above the CTA. */
+  body[data-job-detail-mobile="1"] {
+    padding-bottom: 0 !important;
+  }
   .mtab {
     display: flex !important;
     position: fixed !important;
