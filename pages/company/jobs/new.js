@@ -156,6 +156,17 @@ export default function NewJobPage() {
     if (data?.id && user?.id) {
       await supabase.from('job_team').insert({ job_id: data.id, user_id: user.id, role: 'owner' });
     }
+    // 외부 기업 공고는 승인 대기 → 어드민에 알림 (베스트에포트)
+    if (data?.id && !isInternal) {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        await fetch('/api/admin/notify-pending-job', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session?.access_token}` },
+          body: JSON.stringify({ jobId: data.id }),
+        });
+      } catch (_) {}
+    }
     toast.success(isInternal ? t('company.jobsnew.publish') : t('company.jobsnew.pendingReview'));
     router.replace('/company/jobs');
   };
