@@ -22,6 +22,7 @@ export default function AdminJobs() {
   const [token, setToken] = useState(null)
   const [currentEmail, setCurrentEmail] = useState(null)
   const [tab, setTab] = useState('jobs')
+  const [jobFilter, setJobFilter] = useState('all')
   const [editing, setEditing] = useState(null)
   const [form, setForm] = useState(EMPTY_JOB)
   const [saving, setSaving] = useState(false)
@@ -370,23 +371,41 @@ export default function AdminJobs() {
               <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 12 }}>All Jobs</div>
               {jobs.length === 0 && <div style={{ color: '#aaa', fontSize: 13 }}>No jobs yet</div>}
               {(() => {
-                const sorted = [...jobs].sort((a, b) => {
-                  const ap = a.status === 'pending_review' ? 0 : 1;
-                  const bp = b.status === 'pending_review' ? 0 : 1;
-                  return ap - bp;
-                });
                 const pendingCount = jobs.filter(j => j.status === 'pending_review').length;
                 const premiumCount = jobs.filter(j => j.is_featured).length;
+                const companyCount = jobs.filter(j => j.source === 'company_self').length;
+                const filtered = jobs.filter(j => {
+                  if (jobFilter === 'company') return j.source === 'company_self';
+                  if (jobFilter === 'pending') return j.status === 'pending_review';
+                  return true;
+                });
+                const sorted = [...filtered].sort((a, b) => {
+                  const ap = a.status === 'pending_review' ? 0 : 1;
+                  const bp = b.status === 'pending_review' ? 0 : 1;
+                  if (ap !== bp) return ap - bp;
+                  return new Date(b.created_at || 0) - new Date(a.created_at || 0);
+                });
+                const fmtDate = (d) => d ? new Date(d).toLocaleDateString() : '-';
+                const FILTERS = [['all', '전체', jobs.length], ['company', '🏢 기업 등록', companyCount], ['pending', '⏳ 승인 대기', pendingCount]];
                 return (
                   <>
+                    <div style={{ display: 'flex', gap: 6, marginBottom: 12, flexWrap: 'wrap' }}>
+                      {FILTERS.map(([key, label, n]) => (
+                        <button key={key} onClick={() => setJobFilter(key)}
+                          style={{ ...S.tab, ...(jobFilter === key ? S.tabOn : {}), ...(key === 'pending' && n > 0 && jobFilter !== key ? { color: '#c2410c', borderColor: '#fdba74' } : {}) }}>
+                          {label} ({n})
+                        </button>
+                      ))}
+                    </div>
                     {pendingCount > 0 && (
                       <div style={{ background:'#fff7ed', border:'1px solid #fdba74', color:'#9a3412', padding:'8px 12px', borderRadius:6, marginBottom:10, fontSize:13, fontWeight:700 }}>
-                        ⏳ {pendingCount} job(s) awaiting approval
+                        ⏳ 승인 대기 {pendingCount}건 — 각 줄의 Approve / Reject로 처리
                       </div>
                     )}
                     <div style={{ background:'#fffbeb', border:'1px solid #fcd34d', color:'#92400e', padding:'8px 12px', borderRadius:6, marginBottom:10, fontSize:13, fontWeight:700 }}>
                       ⭐ 프리미엄 노출 {premiumCount}개 · “적극 채용 중인 회사” 섹션 + 최상단 노출
                     </div>
+                    {sorted.length === 0 && <div style={{ color: '#aaa', fontSize: 13, padding: '8px 0' }}>해당 공고 없음</div>}
                     {sorted.map(job => (
                       <div key={job.id} style={S.row}>
                         <div style={{ flex: 1 }}>
@@ -403,11 +422,17 @@ export default function AdminJobs() {
                                 {job.is_active ? 'Active' : 'Inactive'}
                               </span>
                             )}
+                            {job.source === 'company_self' && <span style={{ ...S.badge, background: '#eff6ff', color: '#1d4ed8' }}>🏢 기업등록</span>}
                             {job.is_featured && <span style={{ ...S.badge, background: '#fef3c7', color: '#92400e' }}>Featured</span>}
                           </div>
                           <div style={{ fontSize: 12, color: '#888' }}>
                             {job.company} · {job.location} · {job.type} · {Math.round(job.salary_min/1e6)}M–{Math.round(job.salary_max/1e6)}M VND
                           </div>
+                          {job.source === 'company_self' && (
+                            <div style={{ fontSize: 11, color: '#aaa', marginTop: 2 }}>
+                              👤 {job.poster_email || '(등록자 미상)'} · 등록 {fmtDate(job.created_at)}
+                            </div>
+                          )}
                         </div>
                         <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
                           {job.status === 'pending_review' && (

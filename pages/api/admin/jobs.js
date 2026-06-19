@@ -15,7 +15,18 @@ export default async function handler(req, res) {
       .from('jobs')
       .select('*')
       .order('created_at', { ascending: false })
-    return res.status(200).json(data || [])
+    const jobs = data || []
+    // 등록자 이메일 매핑 (created_by -> recruiter_users.email)
+    const creatorIds = [...new Set(jobs.map(j => j.created_by).filter(Boolean))]
+    let emailMap = {}
+    if (creatorIds.length) {
+      const { data: ru } = await supabase
+        .from('recruiter_users')
+        .select('user_id, email')
+        .in('user_id', creatorIds)
+      emailMap = Object.fromEntries((ru || []).map(u => [u.user_id, u.email]))
+    }
+    return res.status(200).json(jobs.map(j => ({ ...j, poster_email: emailMap[j.created_by] || null })))
   }
 
   if (req.method === 'POST') {
