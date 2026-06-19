@@ -430,6 +430,7 @@ export default function AdminJobs() {
                           </div>
                           {job.source === 'company_self' && (
                             <div style={{ fontSize: 11, color: '#aaa', marginTop: 2 }}>
+                              {job.account_company && <>🏢 계정: <b style={{ color: '#1d4ed8' }}>{job.account_company}</b> · </>}
                               👤 {job.poster_email || '(등록자 미상)'} · 등록 {fmtDate(job.created_at)}
                             </div>
                           )}

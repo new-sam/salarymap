@@ -26,7 +26,21 @@ export default async function handler(req, res) {
         .in('user_id', creatorIds)
       emailMap = Object.fromEntries((ru || []).map(u => [u.user_id, u.email]))
     }
-    return res.status(200).json(jobs.map(j => ({ ...j, poster_email: emailMap[j.created_by] || null })))
+    // 계정(회사) 매핑 (company_id -> recruiter_companies.name)
+    const companyIds = [...new Set(jobs.map(j => j.company_id).filter(Boolean))]
+    let companyMap = {}
+    if (companyIds.length) {
+      const { data: rc } = await supabase
+        .from('recruiter_companies')
+        .select('id, name')
+        .in('id', companyIds)
+      companyMap = Object.fromEntries((rc || []).map(c => [c.id, c.name]))
+    }
+    return res.status(200).json(jobs.map(j => ({
+      ...j,
+      poster_email: emailMap[j.created_by] || null,
+      account_company: companyMap[j.company_id] || null,
+    })))
   }
 
   if (req.method === 'POST') {
