@@ -378,6 +378,11 @@ deno_version = 2
 # [edge_runtime.secrets]
 # secret_key = "env(SECRET_VALUE)"
 
+# Slack 슬래시 커맨드/스케줄 cron이 Supabase JWT 없이 호출하므로 JWT 검증 비활성.
+# 이게 없으면 `supabase functions deploy`가 매번 verify_jwt=true로 리셋 → 401로 봇이 죽는다.
+[functions.daily-summary]
+verify_jwt = false
+
 [analytics]
 enabled = true
 port = 54327
