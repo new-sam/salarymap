@@ -252,9 +252,19 @@ export default function CandidateDetail({
         setStatus('error');
         return;
       }
-      setApp(appData);
+      // 열람(read) 로직: 신규(pending) 지원자를 처음 열면 자동 '열람(viewed)' 처리 → NEW 카운트 감소
+      const willMarkViewed = appData.status === 'pending' && !appData.rejected_at;
+      const effectiveStatus = willMarkViewed ? 'viewed' : appData.status;
+      setApp(willMarkViewed ? { ...appData, status: 'viewed' } : appData);
       setJob(appData.jobs);
-      setExpandedStages(new Set([appData.status]));
+      setExpandedStages(new Set([effectiveStatus]));
+      if (willMarkViewed) {
+        supabase
+          .from('job_applications')
+          .update({ status: 'viewed', updated_at: new Date().toISOString() })
+          .eq('id', appId)
+          .then(({ error }) => { if (!error) onStageChange?.(appId, { status: 'viewed' }); });
+      }
 
       if (appData.user_id) {
         const { data: prof } = await supabase
