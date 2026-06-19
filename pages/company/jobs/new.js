@@ -156,8 +156,8 @@ export default function NewJobPage() {
     if (data?.id && user?.id) {
       await supabase.from('job_team').insert({ job_id: data.id, user_id: user.id, role: 'owner' });
     }
-    // 외부 기업 공고는 승인 대기 → 어드민에 알림 (베스트에포트)
-    if (data?.id && !isInternal) {
+    // 기업 공고 등록 알림 (베스트에포트) — 외부=승인대기 메일+Slack, 내부=Slack
+    if (data?.id) {
       try {
         const { data: { session } } = await supabase.auth.getSession();
         await fetch('/api/admin/notify-pending-job', {
