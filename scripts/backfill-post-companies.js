@@ -1,11 +1,11 @@
-// Backfill community_posts.author_company for seeded posts that were inserted
-// with a null company. Mirrors the employment distribution used for comments in
-// insert-bulk-community.js (~33% unemployed, ~52% big, ~15% startup).
+// Backfill community_posts.author_company for SEEDED (bot) posts that were
+// inserted with a null company. Mirrors the employment distribution used for
+// comments in insert-bulk-community.js (~33% unemployed, ~52% big, ~15% startup).
 //
 // Safe-guards:
+//  - ONLY touches posts authored by the system seed account
+//    (community@system.local) — never real users' posts
 //  - only touches posts where author_company IS NULL
-//  - skips authors who have an active verified_company badge (real verified
-//    users — their display company comes from the badge, not this field)
 //
 // Usage: node scripts/backfill-post-companies.js [--dry]
 require('dotenv').config({ path: '.env.local' })
@@ -29,24 +29,33 @@ function rollCompany() {
   return pick(STARTUP)
 }
 
+async function findSystemAccountId() {
+  let page = 1
+  while (true) {
+    const { data, error } = await supabase.auth.admin.listUsers({ page, perPage: 1000 })
+    if (error) throw error
+    const sys = data.users.find((u) => u.email === 'community@system.local')
+    if (sys) return sys.id
+    if (data.users.length < 1000) break
+    page++
+  }
+  return null
+}
+
 async function main() {
   const dry = process.argv.includes('--dry')
 
-  const { data: posts, error } = await supabase
+  const sysId = await findSystemAccountId()
+  if (!sysId) throw new Error('system account community@system.local not found')
+
+  // Only the bot's own posts — never real users'.
+  const { data: targets, error } = await supabase
     .from('community_posts')
     .select('id, user_id, author_company')
+    .eq('user_id', sysId)
     .is('author_company', null)
   if (error) throw error
 
-  // Exclude users with an active verified_company badge.
-  const { data: badges } = await supabase
-    .from('user_badges')
-    .select('user_id')
-    .eq('badge_type', 'verified_company')
-    .eq('is_active', true)
-  const verified = new Set((badges || []).map((b) => b.user_id))
-
-  const targets = posts.filter((p) => !verified.has(p.user_id))
   let filled = 0
   let unemployed = 0
 
@@ -62,8 +71,7 @@ async function main() {
     filled++
   }
 
-  console.log(`posts null-company: ${posts.length}`)
-  console.log(`skipped (verified author): ${posts.length - targets.length}`)
+  console.log(`bot posts null-company: ${targets.length}`)
   console.log(`${dry ? '[dry] would fill' : 'filled'} with company: ${filled}`)
   console.log(`left unemployed (~33%): ${unemployed}`)
 }

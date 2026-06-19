@@ -295,6 +295,19 @@ type AppStats = {
   devices: number; sessions: number; loggedIn: number; newDevices: number;
   salary: number; apply: number; resume: number; community: number;
   ios: number; android: number; clients: Set<string>;
+  // 신규 기기 집합 + 그중 핵심행동까지 도달한 활성화 지표(getAppStats가 채운다)
+  newClientSet: Set<string>;
+  activatedNew: number;
+  firstAction: { salary: number; apply: number; resume: number; community: number };
+};
+
+// 핵심행동 이벤트 → 카테고리 매핑. 활성화(첫 핵심행동) 집계에 사용.
+const KEY_ACTION_MAP: Record<string, string> = {
+  submit_salary: "salary",
+  submit_application: "apply",
+  resume_upload: "resume",
+  create_community_post: "community",
+  create_community_comment: "community",
 };
 
 // 기간 내 앱 이벤트 전부(event+meta만). 1000행 페이지네이션으로 누락 없이 가져온다.
@@ -350,13 +363,31 @@ function computeAppStats(events: any[]): AppStats {
     resume: cnt("resume_upload"),
     community: cnt("create_community_post") + cnt("create_community_comment"),
     ios, android, clients,
+    newClientSet: new Set(), // getAppStats가 채운다
+    activatedNew: 0,
+    firstAction: { salary: 0, apply: 0, resume: 0, community: 0 },
   };
+}
+
+// 신규 기기 중 기간 내 첫 핵심행동까지 도달한 기기 수 + 첫 행동 분포.
+// events는 created_at 오름차순이라, 기기별 첫 핵심행동이 자동으로 먼저 잡힌다.
+function computeActivation(events: any[], newSet: Set<string>) {
+  const firstAction = { salary: 0, apply: 0, resume: 0, community: 0 } as Record<string, number>;
+  const counted = new Set<string>();
+  for (const e of events) {
+    const cat = KEY_ACTION_MAP[e.event];
+    const cid = e.meta?.client_id;
+    if (!cat || !cid || !newSet.has(cid) || counted.has(cid)) continue;
+    counted.add(cid);
+    firstAction[cat]++;
+  }
+  return { activated: counted.size, firstAction };
 }
 
 // 신규 디바이스 = 기간 내 활성 client_id 중 기간 시작 이전에 이벤트가 없던 것.
 // 활성 디바이스 목록(작음)으로만 조회를 좁혀 스케일 안전.
-async function countNewDevices(clients: Set<string>, startUtc: string): Promise<number> {
-  if (clients.size === 0) return 0;
+async function filterNewClients(clients: Set<string>, startUtc: string): Promise<Set<string>> {
+  if (clients.size === 0) return new Set();
   const list = [...clients];
   const { data, error } = await supabase
     .from("events")
@@ -367,15 +398,29 @@ async function countNewDevices(clients: Set<string>, startUtc: string): Promise<
     .limit(50000);
   if (error) {
     console.error("App newDevices error:", error.message);
-    return clients.size; // 알 수 없으면 전부 신규로 본다
+    return new Set(list); // 알 수 없으면 전부 신규로 본다
   }
   const before = new Set((data || []).map((r: any) => r.meta?.client_id).filter(Boolean));
-  return list.filter((c) => !before.has(c)).length;
+  return new Set(list.filter((c) => !before.has(c)));
+}
+
+// 특정 날짜(현지)에 "처음 등장한" 기기 집합. 잔존 코호트 산출용.
+async function getNewClients(date: string): Promise<Set<string>> {
+  const startUtc = `${date}T00:00:00+07:00`;
+  const events = await fetchAppEvents(startUtc, `${date}T23:59:59+07:00`);
+  const active = new Set<string>();
+  for (const e of events) if (e.meta?.client_id) active.add(e.meta.client_id);
+  return filterNewClients(active, startUtc);
 }
 
 async function getAppStats(startUtc: string, endUtc: string): Promise<AppStats> {
-  const stats = computeAppStats(await fetchAppEvents(startUtc, endUtc));
-  stats.newDevices = await countNewDevices(stats.clients, startUtc);
+  const events = await fetchAppEvents(startUtc, endUtc);
+  const stats = computeAppStats(events);
+  stats.newClientSet = await filterNewClients(stats.clients, startUtc);
+  stats.newDevices = stats.newClientSet.size;
+  const act = computeActivation(events, stats.newClientSet);
+  stats.activatedNew = act.activated;
+  stats.firstAction = act.firstAction;
   return stats;
 }
 
@@ -546,20 +591,44 @@ function buildWeeklyMessage(
 // ─── App Report Attachments (웹 메시지에 별도 카드로 덧붙임) ───
 const APP_COLOR = "#5865F2"; // 앱 블록을 웹과 구분하는 색상바
 
-function buildAppDailyAttachment(stats: AppStats, prev: AppStats, pushTotal: number) {
+type RetCohort = { size: number; retained: number; date: string };
+type DailyRet = { d1: RetCohort; d7: RetCohort };
+
+function retLine(label: string, r: RetCohort): string {
+  if (r.size === 0) return `*${label}*  —  _(no cohort)_`;
+  return `*${label}*  \`${r.retained}/${r.size}\`  (${convRate(r.retained, r.size)})  ·  cohort ${r.date}`;
+}
+
+function buildAppDailyAttachment(stats: AppStats, prev: AppStats, ret: DailyRet, mau: number, dateStr: string) {
+  const dau = stats.devices;
+  const stickiness = mau > 0 ? convRate(dau, mau) : "—";
+  const spd = stats.devices > 0 ? (stats.sessions / stats.devices).toFixed(1) : "—";
+  const actRate = stats.newDevices > 0 ? convRate(stats.activatedNew, stats.newDevices) : "—";
+  const fa = stats.firstAction;
+  const firstActionLine = stats.activatedNew > 0
+    ? `*First action*   Salary \`${fa.salary}\`  ·  Apply \`${fa.apply}\`  ·  Resume \`${fa.resume}\`  ·  Community \`${fa.community}\``
+    : `*First action*   —`;
   return {
     color: APP_COLOR,
     blocks: [
-      { type: "header", text: { type: "plain_text", text: "📱 App Report (DoD)", emoji: true } },
+      { type: "header", text: { type: "plain_text", text: `📱 App Report (DoD · ${dateStr} ${getDayName(dateStr)})`, emoji: true } },
       { type: "section", text: { type: "mrkdwn", text: [
+        `*— Retention —*`,
+        retLine("D1", ret.d1),
+        retLine("D7", ret.d7),
+        `*Stickiness*  \`${stickiness}\`  (DAU ${dau} / MAU ${mau})`,
+        ``,
+        `*— Activation —*`,
+        `*New → action*  \`${stats.activatedNew}/${stats.newDevices}\`  (${actRate})`,
+        firstActionLine,
+        ``,
+        `*— Reach —*`,
         `*Active devices*  \`${stats.devices}\`  ${pctChange(stats.devices, prev.devices)}${dodEmoji(stats.devices, prev.devices)}`,
-        `*Sessions*  \`${stats.sessions}\`  ${pctChange(stats.sessions, prev.sessions)}${dodEmoji(stats.sessions, prev.sessions)}`,
         `*New devices*  \`${stats.newDevices}\`  ${pctChange(stats.newDevices, prev.newDevices)}`,
         `*Logged-in*  \`${stats.loggedIn}\` / ${stats.devices}`,
-        `*Push opt-in*  total \`${pushTotal}\``,
+        `*Sessions/device*  \`${spd}\``,
         ``,
         `*Key actions*   Salary \`${stats.salary}\`  ·  Apply \`${stats.apply}\`  ·  Resume \`${stats.resume}\`  ·  Community \`${stats.community}\``,
-        `*OS*   iOS \`${stats.ios}\` / Android \`${stats.android}\``,
       ].join("\n") } },
     ],
   };
@@ -580,7 +649,6 @@ function buildAppWeeklyAttachment(thisW: AppStats, lastW: AppStats, mau: number,
         `*Push opt-in*  total \`${pushTotal}\``,
         ``,
         `*Key actions*   Salary \`${thisW.salary}\`  ·  Apply \`${thisW.apply}\`  ·  Resume \`${thisW.resume}\`  ·  Community \`${thisW.community}\``,
-        `*OS*   iOS \`${thisW.ios}\` / Android \`${thisW.android}\``,
       ].join("\n") } },
     ],
   };
@@ -718,8 +786,16 @@ Deno.serve(async (req) => {
           getAppStats(`${yesterday}T00:00:00+07:00`, `${yesterday}T23:59:59+07:00`),
           getAppStats(`${dayBefore}T00:00:00+07:00`, `${dayBefore}T23:59:59+07:00`),
         ]);
-        const pushTotal = await getPushTotal();
-        message.attachments.push(buildAppDailyAttachment(appStats, appPrev, pushTotal));
+        // 잔존: D1 코호트 = 그저께 신규(이미 appPrev에 계산됨), D7 코호트 = 7일 전 신규.
+        // 둘 다 "어제 활성(appStats.clients)"에 남아있는 비율로 측정.
+        const d7Date = addDays(yesterday, -7);
+        const [d7Cohort, mau] = await Promise.all([getNewClients(d7Date), getAppMau(yesterday)]);
+        const inActive = (cohort: Set<string>) => [...cohort].filter((c) => appStats.clients.has(c)).length;
+        const ret: DailyRet = {
+          d1: { size: appPrev.newClientSet.size, retained: inActive(appPrev.newClientSet), date: dayBefore },
+          d7: { size: d7Cohort.size, retained: inActive(d7Cohort), date: d7Date },
+        };
+        message.attachments.push(buildAppDailyAttachment(appStats, appPrev, ret, mau, yesterday));
       } catch (e) {
         console.error("App daily report error:", (e as Error).message);
       }
