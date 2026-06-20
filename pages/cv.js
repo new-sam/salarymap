@@ -354,7 +354,6 @@ export default function CvLanding() {
                   <img src="/cv/flow-step-1.png" alt="STEP 1. CV upload" />
                 </div>
                 <div className="cv-flow-copy">
-                  <span>STEP 1</span>
                   <h3>이력서 등록</h3>
                   <p>PDF 한 장을 올리면 FYI가 확인합니다.</p>
                 </div>
@@ -367,7 +366,6 @@ export default function CvLanding() {
                   <img src="/cv/flow-step-2.png" alt="STEP 2. FYI match" />
                 </div>
                 <div className="cv-flow-copy">
-                  <span>STEP 2</span>
                   <h3>맞는 포지션 제안</h3>
                   <p>등록된 이력서를 바탕으로 어울리는 오퍼를 연결합니다.</p>
                 </div>
@@ -380,16 +378,12 @@ export default function CvLanding() {
                   <img src="/cv/flow-step-3.png" alt="STEP 3. Hired and reward received" />
                 </div>
                 <div className="cv-flow-copy">
-                  <span>STEP 3</span>
                   <h3>합격 축하금 지급</h3>
                   <p>FYI를 통해 입사하면 2,000,000 VND를 드립니다.</p>
+                  <p className="cv-flow-disclaimer">입사 후 2개월(60일) 근속이 확인된 뒤 지급됩니다.</p>
                 </div>
               </article>
             </div>
-
-            <p className="cv-flow-note">
-              이력서 등록부터 포지션 제안, 합격 축하금까지 한 흐름으로 이어집니다.
-            </p>
 
             <div className="cv-steps" hidden>
               <div className="cv-step cv-step-upload">
@@ -1026,20 +1020,6 @@ export default function CvLanding() {
           margin-top: 18px;
           padding: 0 8px;
         }
-        .cv-flow-copy span {
-          display: none;
-          align-items: center;
-          justify-content: center;
-          height: 26px;
-          padding: 0 12px;
-          border-radius: 999px;
-          background: rgba(255,96,0,0.09);
-          color: #ff6000;
-          font-family: 'Geist Mono', monospace;
-          font-size: 11px;
-          font-weight: 800;
-          letter-spacing: 1px;
-        }
         .cv-flow-copy h3 {
           margin: 0 0 8px;
           font-size: 20px;
@@ -1054,6 +1034,12 @@ export default function CvLanding() {
           line-height: 1.6;
           color: rgba(26,22,18,0.58);
           word-break: keep-all;
+        }
+        .cv-flow-copy .cv-flow-disclaimer {
+          margin-top: 6px;
+          font-size: 12px;
+          line-height: 1.5;
+          color: rgba(26,22,18,0.42);
         }
         .cv-flow-arrow {
           width: 44px;
