@@ -632,34 +632,6 @@ export default function CvLanding() {
           </section>
         )}
 
-        {/* ───── FINAL CTA (DARK CLOSER) ───── */}
-        <section className="cv-final">
-          <div className="cv-final-bg" aria-hidden />
-          <div className="cv-final-inner">
-            <div className="cv-section-kicker cv-kicker-dark" style={{ justifyContent: 'center' }}><span className="kdot" />지금 시작하세요</div>
-            <h2 className="cv-final-h">
-              <em>2,000,000 VND</em>가<br/>
-              당신을 기다리고 있어요.
-            </h2>
-            <p className="cv-final-sub">이력서 한 장이면 충분해요. 1분도 안 걸려요.</p>
-            <button className="cv-btn cv-btn-final" onClick={scrollToForm}>
-              이력서 등록하기 <IconArrowRight />
-            </button>
-
-            <div className="cv-conds">
-              <div className="cv-conds-title">합격 축하금 지급 조건</div>
-              <ul className="cv-conds-list">
-                <li><span className="cv-conds-check"><IconCheck /></span>FYI를 통해 제안받은 포지션으로 입사한 경우</li>
-                <li><span className="cv-conds-check"><IconCheck /></span>수습 계약 2개월(60일) 통과 시</li>
-                <li><span className="cv-conds-check"><IconCheck /></span>입사일 기준 익월 10일 지급</li>
-                <li><span className="cv-conds-check"><IconCheck /></span>1인 1회 한정</li>
-              </ul>
-              <div className="cv-conds-link">
-                자세한 약관 <a href="/promo/welcome-bonus">합격 축하금 안내 페이지 →</a>
-              </div>
-            </div>
-          </div>
-        </section>
       </main>
 
       <div className="cv-sticky">
