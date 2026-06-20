@@ -579,70 +579,6 @@ export default function CvLanding() {
           </div>
         </section>
 
-        {/* ───── JOBS (rail) — moved above testimonials ───── */}
-        {jobs.length > 0 && (
-          <section className="cv-jobs">
-            <div className="cv-section-inner">
-              <div className="cv-section-kicker"><span className="kdot" />지금 적극 채용 중</div>
-              <h2 className="cv-h2">이런 회사들이 인재를 찾고 있어요.</h2>
-              <p className="cv-h2-sub">이력서만 등록해두면 이 중 맞는 포지션을 제안해드려요.</p>
-            </div>
-            <div className="cv-jobs-rail-wrap">
-              <div className="cv-jobs-rail">
-                {[...jobs, ...jobs].map((j, i) => (
-                  <a key={`${j.id}-${i}`} href={`/jobs/${j.id}`} className="cv-job">
-                    <div className="cv-job-accent" aria-hidden />
-                    {j.logo_url ? (
-                      <img src={j.logo_url} alt={j.company} className="cv-job-logo" />
-                    ) : (
-                      <div className="cv-job-logo cv-job-logo-fallback">{(j.company || '').slice(0, 2).toUpperCase()}</div>
-                    )}
-                    <div className="cv-job-meta">
-                      <div className="cv-job-co">{j.company}</div>
-                      <div className="cv-job-title">{j.title}</div>
-                      <div className="cv-job-tags">
-                        {j.location && <span className="cv-job-tag">{j.location}</span>}
-                        {(j.salary_min || j.salary_max) && <span className="cv-job-tag cv-job-tag-sal tabular-nums">{fmtSal(j.salary_min, j.salary_max)}</span>}
-                      </div>
-                    </div>
-                  </a>
-                ))}
-              </div>
-            </div>
-          </section>
-        )}
-
-        {/* ───── TESTIMONIALS ───── */}
-        <section className="cv-test">
-          <div className="cv-section-inner">
-            <div className="cv-section-kicker"><span className="kdot" />합격 축하금 받은 분들</div>
-            <h2 className="cv-h2">실제로 받은 분들의 이야기.</h2>
-            <p className="cv-h2-sub">FYI 매칭으로 합격하고 축하금까지 받은 베트남 IT 인재들.</p>
-          </div>
-
-          <div className="cv-test-rail-wrap">
-            <div className="cv-test-rail">
-              {[...TESTIMONIALS, ...TESTIMONIALS].map((t, i) => (
-                <div key={i} className="cv-test-card">
-                  <div className="cv-test-quote-mark"><IconQuote /></div>
-                  <div className="cv-test-quote">{t.text}</div>
-                  <div className="cv-test-footer">
-                    <img src={t.img} alt={t.name} className="cv-test-avatar-img" />
-                    <div className="cv-test-author">
-                      <div className="cv-test-name">
-                        {t.name}
-                        <span className="cv-test-verified" title="FYI 매칭으로 합격"><IconVerified /></span>
-                      </div>
-                      <div className="cv-test-role">{t.role} · <span className="cv-test-co">{t.company}</span></div>
-                    </div>
-                  </div>
-                  <div className="cv-test-badge">FYI 매칭 · 2,000,000 VND 수령</div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
-
       </main>
 
       <div className="cv-sticky">
@@ -1624,7 +1560,7 @@ export default function CvLanding() {
 
         /* ───── Form section ───── */
         .cv-form-section {
-          padding: 110px 0;
+          padding: 100px 24px 120px;
           scroll-margin-top: 80px;
           background: #fff;
         }
@@ -1634,7 +1570,19 @@ export default function CvLanding() {
         }
         .cv-form-wrap .cv-card {
           width: 100%;
-          max-width: 580px;
+          max-width: 720px;
+          padding: 56px 52px;
+          border-radius: 22px;
+        }
+        .cv-form-wrap .cv-card-h {
+          font-size: 42px;
+          letter-spacing: -1.6px;
+          margin: 14px 0 18px;
+        }
+        .cv-form-wrap .cv-card-sub {
+          font-size: 16px;
+          line-height: 1.6;
+          margin-bottom: 32px;
         }
         .cv-bullets {
           list-style: none;
