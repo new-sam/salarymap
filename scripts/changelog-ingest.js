@@ -1,12 +1,18 @@
 /**
- * main에 올라간 커밋을 라우트(기능)별로 분류해 events(event='changelog')에 적재.
- * GitHub Actions(push: main)에서 실행. 누가 푸시하든 자동으로 쌓인다.
- * 이미 적재된 커밋은 건너뛴다(멱등).
+ * main(운영) 배포 시 그 커밋들을 라우트(기능)별로 분류해 events(event='changelog')에 적재.
+ * Vercel 운영 빌드의 prebuild 단계에서 실행 — 누가 푸시하든 자동으로 쌓인다.
+ * 안전장치: 운영 빌드에서만 동작 / 멱등(이미 적재된 sha 스킵) / 타임아웃·에러 시 조용히 exit 0
+ * (어떤 경우에도 빌드를 깨지 않는다)
  */
 const { execSync } = require('child_process');
-const { createClient } = require('@supabase/supabase-js');
 
-const sb = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
+// 빌드를 절대 막지 않도록 하드 타임아웃
+const timer = setTimeout(() => { console.log('changelog: timeout, skip'); process.exit(0); }, 20000);
+const done = (msg) => { if (msg) console.log(msg); clearTimeout(timer); process.exit(0); };
+
+// 운영(production) 빌드에서만. 프리뷰/로컬은 스킵.
+if (process.env.VERCEL && process.env.VERCEL_ENV !== 'production') done('changelog: non-prod, skip');
+if (!process.env.SUPABASE_SERVICE_ROLE_KEY || !process.env.NEXT_PUBLIC_SUPABASE_URL) done('changelog: no supabase env, skip');
 
 // 위에서부터 먼저 매칭. 파일 경로 → 기능(라우트) 라벨.
 const ROUTES = [
@@ -24,14 +30,22 @@ const ROUTES = [
   [/^pages\/companies\//, '기업 프로필 (/companies)'],
   [/^pages\/api\/cron|^scripts\//, '크론/자동화'],
 ];
-const classify = (f) => { for (const [re, label] of ROUTES) if (re.test(f)) return label; return null; };
+const classifyFile = (f) => { for (const [re, label] of ROUTES) if (re.test(f)) return label; return null; };
+// 파일을 못 읽는 얕은 클론 대비 — 커밋 스코프(feat(admin) 등)로 폴백 분류
+const SCOPE = { admin: '어드민 (/admin)', company: '기업 (/company)', notify: '알림 (notify)', salary: '연봉 통계 (/api/percentile,stats)', jobs: '구직 보드 (/jobs)', premium: '어드민 (/admin)', community: '커뮤니티 (/community)' };
+const scopeRoute = (subj) => { const m = subj.match(/^\w+\(([^)]+)\)/); return m ? SCOPE[m[1].trim().toLowerCase()] || null : null; };
 
 (async () => {
-  const { data: existing } = await sb.from('events').select('meta').eq('event', 'changelog').limit(2000);
+  const { createClient } = require('@supabase/supabase-js');
+  const sb = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
+
+  const { data: existing } = await sb.from('events').select('meta').eq('event', 'changelog').limit(3000);
   const logged = new Set((existing || []).map((r) => r.meta && r.meta.commit).filter(Boolean));
 
-  const lines = execSync('git log -n 40 --no-merges --format=%H%x09%cI%x09%an%x09%s')
-    .toString().trim().split('\n').filter(Boolean);
+  let lines = [];
+  try {
+    lines = execSync('git log -n 30 --no-merges --format=%H%x09%cI%x09%an%x09%s').toString().trim().split('\n').filter(Boolean);
+  } catch (_) { done('changelog: git unavailable, skip'); }
 
   const rows = [];
   for (const line of lines) {
@@ -43,8 +57,8 @@ const classify = (f) => { for (const [re, label] of ROUTES) if (re.test(f)) retu
       files = execSync(`git show --stat --format="" ${full}`).toString()
         .split('\n').map((l) => l.trim().split(' ')[0]).filter((f) => /\.(js|jsx|ts|tsx|sql)$/.test(f));
     } catch (_) {}
-    const routes = [...new Set(files.map(classify).filter(Boolean))];
-    if (!routes.length) routes.push('기타');
+    let routes = [...new Set(files.map(classifyFile).filter(Boolean))];
+    if (!routes.length) { const s = scopeRoute(subj); routes = [s || '기타']; }
     const category = (subj.match(/^(\w+)/) || ['', 'chore'])[1];
     const summary = subj.replace(/\s*\(#\d+\)\s*$/, '');
     for (const routeLabel of routes) {
@@ -52,7 +66,7 @@ const classify = (f) => { for (const [re, label] of ROUTES) if (re.test(f)) retu
     }
   }
 
-  if (!rows.length) { console.log('changelog: nothing new'); return; }
+  if (!rows.length) done('changelog: nothing new');
   const { error } = await sb.from('events').insert(rows);
-  console.log(error ? 'changelog ERROR: ' + error.message : `changelog: inserted ${rows.length} entries`);
-})().catch((e) => { console.error('changelog ingest failed:', e.message); process.exit(0); });
+  done(error ? 'changelog ERROR: ' + error.message : `changelog: inserted ${rows.length}`);
+})().catch((e) => done('changelog ingest failed: ' + e.message));
