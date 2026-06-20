@@ -430,7 +430,7 @@ export default function CvLanding() {
                 </div>
                 <div className="cv-step-num">01</div>
                 <div className="cv-step-title">FYI에 이력서 등록</div>
-                <div className="cv-step-desc">PDF 한 장이면 충분해요.<br/>1분 안에 끝납니다.</div>
+                <div className="cv-step-desc">{t('cv.how.step1.desc')}</div>
               </div>
 
               <div className="cv-step cv-step-match">
@@ -450,7 +450,7 @@ export default function CvLanding() {
                 </div>
                 <div className="cv-step-num">02</div>
                 <div className="cv-step-title">맞는 포지션 제안</div>
-                <div className="cv-step-desc">당신의 경력에 딱 맞는 회사·포지션을<br/>FYI가 직접 제안합니다.</div>
+                <div className="cv-step-desc">{t('cv.how.step2.desc')}</div>
               </div>
 
               <div className="cv-step cv-step-prize">
