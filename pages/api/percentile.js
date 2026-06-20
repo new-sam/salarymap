@@ -1,4 +1,5 @@
 import supabase from '../../lib/supabaseAdmin';
+import { excludeSuspicious } from '../../lib/salaryQuality';
 
 function median(arr) {
   const s = [...arr].sort((a, b) => a - b);
@@ -124,9 +125,10 @@ export default async function handler(req, res) {
   const sal = parseInt(salary);
 
   // Fetch all submissions for this role + experience (including company)
-  const data = await fetchAll(
+  // 슬라이더 기본값(62) 미입력 통과 의심값은 공개 통계에서 제외
+  const data = excludeSuspicious(await fetchAll(
     supabase.from('submissions').select('salary, company').eq('role', role).eq('experience', experience)
-  );
+  ), experience);
 
   if (!data || data.length < 5) {
     const topCompanies = seedTopCompanies(role, experience, sal, company || '');
@@ -163,9 +165,9 @@ export default async function handler(req, res) {
   }
 
   // Build companiesPayingMore: all companies for this role with median > user salary
-  const allRoleSubs = await fetchAll(
-    supabase.from('submissions').select('company, salary').eq('role', role)
-  );
+  const allRoleSubs = excludeSuspicious(await fetchAll(
+    supabase.from('submissions').select('company, salary, experience').eq('role', role)
+  ));
 
   const byCoAll = {};
   (allRoleSubs || []).forEach(row => {

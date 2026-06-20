@@ -18,6 +18,8 @@ function SubmitSection({
   const [submitting, setSubmitting] = useState(false);
   const [ratingWorklife, setRatingWorklife] = useState(0);
   const [ratingSalary, setRatingSalary] = useState(0);
+  // 연봉 슬라이더를 실제로 건드렸는지 — 미건드림 통과(기본값 박힘) 방지
+  const [salaryTouched, setSalaryTouched] = useState(false);
   const [ratingGrowth, setRatingGrowth] = useState(0);
   const [ratingSubmitting, setRatingSubmitting] = useState(false);
   const [acResults, setAcResults] = useState([]);
@@ -303,18 +305,19 @@ function SubmitSection({
             <div>
               <BlurredTeaser />
               <div style={{ textAlign: 'center', marginBottom: '24px' }}>
-                <span style={{ fontSize: '56px', fontWeight: 900, fontStyle: 'italic', color: '#fff', lineHeight: 1 }}>{sal}</span>
+                <span style={{ fontSize: '56px', fontWeight: 900, fontStyle: 'italic', color: salaryTouched ? '#fff' : 'rgba(255,255,255,0.3)', lineHeight: 1 }}>{salaryTouched ? sal : '—'}</span>
                 <span style={{ fontSize: '16px', color: 'rgba(255,255,255,0.25)', marginLeft: '8px' }}>{t('wizard.salaryUnit')}</span>
               </div>
               <input type="range" min="5" max="200" value={sal}
-                onChange={e => setWSalary(Number(e.target.value))}
+                onChange={e => { setWSalary(Number(e.target.value)); setSalaryTouched(true); }}
                 style={{ width: '100%', accentColor: '#ff4400', height: '4px', marginBottom: '24px' }}
               />
               <div style={{ textAlign: 'center', fontSize: '11px', color: 'rgba(255,255,255,0.18)', marginBottom: '20px' }}>
-                {t('wizard.salaryPrivacy')}
+                {salaryTouched ? t('wizard.salaryPrivacy') : t('wizard.salaryHint')}
               </div>
-              <button onClick={() => { if(typeof gtag==='function') gtag('event','wizard_step_3',{salary:wSalary}); setWizardStep(4); }}
-                style={ctaStyle}>
+              <button onClick={() => { if (!salaryTouched) return; if(typeof gtag==='function') gtag('event','wizard_step_3',{salary:wSalary}); setWizardStep(4); }}
+                disabled={!salaryTouched}
+                style={{ ...ctaStyle, ...(salaryTouched ? {} : { opacity: 0.4, cursor: 'not-allowed' }) }}>
                 {t('wizard.almostDone')}
               </button>
               <button onClick={() => setWizardStep(2)} style={{ ...quizBtn, marginTop: '12px', background: 'none', color: 'rgba(255,255,255,0.25)', fontSize: '12px', display: 'block', width: '100%', textAlign: 'center' }}>{t('wizard.back')}</button>
