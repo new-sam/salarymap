@@ -68,7 +68,7 @@ export default function AdminJobs() {
   const { data: progress = [] } = useAdmin('/api/admin/job-progress', token)
   const { data: companies = [], mutate: mutateCompanies } = useAdmin('/api/admin/companies', token)
   const { data: kpi = null } = useAdmin('/api/admin/company-kpi', token)
-  const { data: activityLog = [], mutate: mutateLog } = useAdmin('/api/admin/activity-log', token)
+  const { data: activityLog = { changelog: [], actions: [] }, mutate: mutateLog } = useAdmin('/api/admin/activity-log', token)
   const handleAddTarget = async () => {
     if (!targetForm.company_name || !targetForm.slug) return
     setTargetSaving(true)
@@ -489,27 +489,52 @@ export default function AdminJobs() {
           </>
         )}
 
-        {/* LOG TAB (어드민 활동 로그) */}
-        {tab === 'log' && (
-          <div style={S.card}>
-            <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 4 }}>📝 활동 로그</div>
-            <div style={{ fontSize: 12, color: '#999', marginBottom: 16 }}>어드민 조치·시스템 변경 이력 (최근 200건).</div>
-            {activityLog.length === 0 && <div style={{ color: '#aaa', fontSize: 13 }}>로그 없음</div>}
-            {(() => {
-              const CAT = { approval: ['#059669', '#ecfdf5'], premium: ['#92400e', '#fef3c7'], company: ['#1d4ed8', '#eff6ff'], data: ['#7c3aed', '#f5f3ff'], action: ['#555', '#f3f4f6'] }
-              return activityLog.map(l => {
-                const [fg, bg] = CAT[l.category] || CAT.action
-                return (
-                  <div key={l.id} style={{ display: 'flex', alignItems: 'baseline', gap: 10, padding: '10px 0', borderBottom: '1px solid #f5f5f5' }}>
-                    <span style={{ ...S.badge, marginLeft: 0, background: bg, color: fg, flexShrink: 0 }}>{l.action}</span>
+        {/* LOG TAB (기능별 변경 이력 changelog + 운영 액션) */}
+        {tab === 'log' && (() => {
+          const CAT = { feat: ['#059669', '#ecfdf5'], fix: ['#b45309', '#fffbeb'], perf: ['#1d4ed8', '#eff6ff'], style: ['#7c3aed', '#f5f3ff'], docs: ['#555', '#f3f4f6'], approval: ['#059669', '#ecfdf5'], premium: ['#92400e', '#fef3c7'], company: ['#1d4ed8', '#eff6ff'], data: ['#7c3aed', '#f5f3ff'], action: ['#555', '#f3f4f6'] }
+          const badge = (cat, text) => { const [fg, bg] = CAT[cat] || CAT.action; return <span style={{ ...S.badge, marginLeft: 0, background: bg, color: fg, flexShrink: 0 }}>{text}</span> }
+          // changelog를 라우트별로 그룹
+          const groups = {}
+          ;(activityLog.changelog || []).forEach(c => { const k = c.routeLabel || '기타'; (groups[k] = groups[k] || []).push(c) })
+          const groupKeys = Object.keys(groups).sort()
+          return (
+            <>
+              <div style={S.card}>
+                <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 4 }}>📝 변경 이력 (기능별)</div>
+                <div style={{ fontSize: 12, color: '#999', marginBottom: 16 }}>배포된 작업을 라우트(기능) 단위로 분류한 changelog.</div>
+                {groupKeys.length === 0 && <div style={{ color: '#aaa', fontSize: 13 }}>changelog 없음</div>}
+                {groupKeys.map(k => (
+                  <div key={k} style={{ marginBottom: 18 }}>
+                    <div style={{ fontSize: 12, fontWeight: 800, color: '#111', padding: '6px 0', borderBottom: '2px solid #f0f0f0', marginBottom: 6 }}>
+                      {k} <span style={{ color: '#bbb', fontWeight: 600 }}>· {groups[k].length}</span>
+                    </div>
+                    {groups[k].map(c => (
+                      <div key={c.id} style={{ display: 'flex', alignItems: 'baseline', gap: 10, padding: '7px 0', borderBottom: '1px solid #f7f7f7' }}>
+                        {badge(c.category, c.category)}
+                        <span style={{ flex: 1, fontSize: 13, color: '#333' }}>{c.summary}</span>
+                        {c.commit && <code style={{ fontSize: 11, color: '#aaa' }}>{c.commit}</code>}
+                        <span style={{ fontSize: 11, color: '#bbb', flexShrink: 0 }}>{c.created_at ? new Date(c.created_at).toLocaleDateString() : ''}</span>
+                      </div>
+                    ))}
+                  </div>
+                ))}
+              </div>
+
+              <div style={S.card}>
+                <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 4 }}>운영 액션</div>
+                <div style={{ fontSize: 12, color: '#999', marginBottom: 12 }}>어드민이 누른 조치(승인·프리미엄·인증) 기록.</div>
+                {(activityLog.actions || []).length === 0 && <div style={{ color: '#aaa', fontSize: 13 }}>액션 없음</div>}
+                {(activityLog.actions || []).map(l => (
+                  <div key={l.id} style={{ display: 'flex', alignItems: 'baseline', gap: 10, padding: '9px 0', borderBottom: '1px solid #f5f5f5' }}>
+                    {badge(l.category, l.action)}
                     <span style={{ flex: 1, fontSize: 13, color: '#333' }}>{l.summary}</span>
                     <span style={{ fontSize: 11, color: '#aaa', flexShrink: 0 }}>{l.actor ? l.actor.split('@')[0] + ' · ' : ''}{l.created_at ? new Date(l.created_at).toLocaleString() : ''}</span>
                   </div>
-                )
-              })
-            })()}
-          </div>
-        )}
+                ))}
+              </div>
+            </>
+          )
+        })()}
 
         {/* KPI TAB (기업/채용 지표 요약) */}
         {tab === 'kpi' && (
