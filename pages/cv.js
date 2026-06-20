@@ -445,33 +445,6 @@ export default function CvLanding() {
         {/* ───── FORM ───── */}
         <section className="cv-form-section" id="cv-form" ref={formAnchorRef}>
           <div className="cv-section-inner cv-form-wrap">
-            <div className="cv-form-side">
-              <h2 className="cv-h2">이력서 한 장으로<br/>모든 게 시작돼요.</h2>
-              <ul className="cv-bullets">
-                <li>
-                  <span className="cv-bullet-check"><IconCheck /></span>
-                  <div>
-                    <div className="cv-bullet-title">회원가입은 간단히</div>
-                    <div className="cv-bullet-desc">구글 계정으로 바로 시작해요</div>
-                  </div>
-                </li>
-                <li>
-                  <span className="cv-bullet-check"><IconCheck /></span>
-                  <div>
-                    <div className="cv-bullet-title">이력서에 딱 맞는 포지션 제안</div>
-                    <div className="cv-bullet-desc">FYI가 직접 매칭해 알려드려요</div>
-                  </div>
-                </li>
-                <li>
-                  <span className="cv-bullet-check"><IconCheck /></span>
-                  <div>
-                    <div className="cv-bullet-title">검증된 기업 담당자가 직접 열람</div>
-                    <div className="cv-bullet-desc">신원이 확인된 채용 담당자만 볼 수 있어요</div>
-                  </div>
-                </li>
-              </ul>
-            </div>
-
             {status === 'success' ? (
               <div className="cv-card">
                 <div className="cv-check-circle">
@@ -508,7 +481,7 @@ export default function CvLanding() {
               </div>
             ) : (
               <div className="cv-card">
-                <h3 className="cv-card-h">이력서 <em>업로드</em></h3>
+                <h3 className="cv-card-h">이력서 <em>등록하기</em></h3>
                 <p className="cv-card-sub">아래 두 단계만 따라하시면 끝나요.</p>
 
                 {pendingHint && (
@@ -1656,10 +1629,12 @@ export default function CvLanding() {
           background: #fff;
         }
         .cv-form-wrap {
-          display: grid;
-          grid-template-columns: 1fr 1fr;
-          gap: 80px;
-          align-items: center;
+          display: flex;
+          justify-content: center;
+        }
+        .cv-form-wrap .cv-card {
+          width: 100%;
+          max-width: 580px;
         }
         .cv-bullets {
           list-style: none;
