@@ -13,21 +13,10 @@ export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'method not allowed' })
 
   const token = req.headers.authorization?.replace('Bearer ', '')
-  if (!token) return res.status(401).json({ error: 'unauthorized', reason: 'no_token' })
+  if (!token) return res.status(401).json({ error: 'unauthorized' })
 
   const { data: { user }, error: authErr } = await supabase.auth.getUser(token)
-  if (authErr || !user) {
-    // Temporary diag — 401 hit in prod /cv flow. Surfaces the supabase-js
-    // verify error so we can tell whether it's an expired token, a wrong
-    // project URL, or a missing SERVICE_ROLE_KEY. Strip once root cause known.
-    return res.status(401).json({
-      error: 'unauthorized',
-      reason: 'getUser_failed',
-      detail: (authErr?.message || '').slice(0, 160),
-      url_host: (process.env.NEXT_PUBLIC_SUPABASE_URL || '').replace(/^https?:\/\//, '').split('.')[0],
-      has_service_key: !!process.env.SUPABASE_SERVICE_ROLE_KEY,
-    })
-  }
+  if (authErr || !user) return res.status(401).json({ error: 'unauthorized' })
 
   const form = formidable({ maxFileSize: 10 * 1024 * 1024 })
   const [fields, files] = await form.parse(req)
