@@ -332,21 +332,15 @@ export default function CvLanding() {
           <div className="cv-hero-bg" aria-hidden />
           <div className="cv-hero-inner">
             <h1 className="cv-h1">
-              <span className="cv-h1-line cv-h1-soft">FYI 통해</span>
-              <span className="cv-h1-line cv-h1-soft">이직·취업하면</span>
+              <span className="cv-h1-line cv-h1-soft">FYI 통해 이직, 취업하면</span>
               <span className="cv-h1-line cv-h1-hero"><em>2,000,000 VND</em> 드려요</span>
             </h1>
-            <div className="cv-money-rain" aria-hidden>
-              <div className="cv-money-note n1"><span>500K</span><b>VND</b></div>
-              <div className="cv-money-note n2"><span>500K</span><b>VND</b></div>
-              <div className="cv-money-note n3"><span>500K</span><b>VND</b></div>
-              <div className="cv-money-note n4"><span>500K</span><b>VND</b></div>
-              <div className="cv-money-stack">
-                <i className="s1" />
-                <i className="s2" />
-                <i className="s3" />
-                <i className="s4" />
-                <i className="s5" />
+            <div className="cv-banknote-showcase" aria-hidden>
+              <div className="cv-banknote-pack">
+                <i className="cv-banknote b1"><span>500,000</span><b>VND</b></i>
+                <i className="cv-banknote b2"><span>500,000</span><b>VND</b></i>
+                <i className="cv-banknote b3"><span>500,000</span><b>VND</b></i>
+                <i className="cv-banknote b4"><span>500,000</span><b>VND</b></i>
               </div>
             </div>
           </div>
@@ -757,16 +751,16 @@ export default function CvLanding() {
           display: block;
           white-space: nowrap;
         }
-        /* 위 두 줄: 작고 얇게 (frame role) */
+        /* 위 한 줄: 굵게 유지 + 적당한 크기 (wanted-style) */
         .cv-h1-soft {
-          font-size: 0.55em;
-          font-weight: 300;
-          letter-spacing: -1.5px;
-          color: rgba(255,255,255,0.78);
+          font-size: 0.5em;
+          font-weight: 800;
+          letter-spacing: -1.6px;
+          color: #ffffff;
         }
-        /* 마지막 줄: 강조 (visual center) */
+        /* 마지막 줄: visual center (full size + glow) */
         .cv-h1-hero {
-          margin-top: 12px;
+          margin-top: 16px;
           font-weight: 900;
         }
         .cv-h1 em {
@@ -780,164 +774,122 @@ export default function CvLanding() {
           font-size: 1.12em;
           letter-spacing: -3.6px;
         }
-        .cv-money-rain {
+        .cv-banknote-showcase {
           position: relative;
-          width: min(560px, 100%);
-          height: 148px;
-          margin: -14px auto 32px;
-          overflow: hidden;
+          width: min(820px, 100%);
+          height: 260px;
+          margin: 72px auto 0;
           pointer-events: none;
+          perspective: 900px;
         }
-        .cv-money-rain::before {
+        .cv-banknote-showcase::before {
           content: "";
           position: absolute;
           left: 50%;
-          bottom: 0;
-          width: 380px;
-          height: 70px;
+          bottom: 18px;
+          width: 620px;
+          height: 118px;
           transform: translateX(-50%);
-          background: radial-gradient(ellipse at center, rgba(45,212,191,0.22), transparent 68%);
-          filter: blur(2px);
-        }
-        .cv-money-note {
-          position: absolute;
-          top: -46px;
-          left: 50%;
-          width: 132px;
-          height: 56px;
-          border: 1px solid rgba(167,243,208,0.78);
-          border-radius: 8px;
           background:
-            linear-gradient(90deg, transparent 0 18%, rgba(255,255,255,0.5) 18% 20%, transparent 20%),
-            radial-gradient(circle at 27% 50%, rgba(240,253,250,0.45) 0 18%, transparent 19%),
-            radial-gradient(circle at 78% 50%, rgba(5,150,105,0.2) 0 18%, transparent 19%),
-            repeating-linear-gradient(135deg, rgba(255,255,255,0.13) 0 2px, transparent 2px 6px),
-            linear-gradient(135deg, #d9f99d 0%, #5eead4 40%, #10b981 72%, #047857 100%);
+            radial-gradient(ellipse at center, rgba(20,184,166,0.28), transparent 66%),
+            radial-gradient(ellipse at center, rgba(255,138,64,0.12), transparent 72%);
+          filter: blur(12px);
+        }
+        .cv-banknote-showcase::after {
+          content: "";
+          position: absolute;
+          left: 50%;
+          bottom: 26px;
+          width: 520px;
+          height: 42px;
+          transform: translateX(-50%);
+          background: radial-gradient(ellipse at center, rgba(0,0,0,0.46), transparent 68%);
+          filter: blur(10px);
+        }
+        .cv-banknote-pack {
+          position: absolute;
+          left: 50%;
+          bottom: 52px;
+          width: 560px;
+          height: 170px;
+          transform: translateX(-50%) rotateX(10deg);
+          transform-style: preserve-3d;
+        }
+        .cv-banknote {
+          position: absolute;
+          left: 50%;
+          top: 50%;
+          width: 390px;
+          height: 166px;
+          border-radius: 16px;
+          border: 1px solid rgba(204,251,241,0.78);
+          overflow: hidden;
+          background:
+            linear-gradient(90deg, transparent 0 16%, rgba(255,255,255,0.62) 16% 18%, transparent 18%),
+            radial-gradient(ellipse at 24% 52%, rgba(240,253,250,0.52) 0 16%, transparent 17%),
+            radial-gradient(ellipse at 79% 50%, rgba(6,95,70,0.26) 0 18%, transparent 19%),
+            repeating-linear-gradient(135deg, rgba(255,255,255,0.14) 0 2px, transparent 2px 7px),
+            linear-gradient(135deg, #d9f99d 0%, #67e8f9 40%, #14b8a6 68%, #047857 100%);
           box-shadow:
-            inset 0 0 0 3px rgba(236,253,245,0.38),
-            inset 0 0 0 7px rgba(6,95,70,0.2),
-            0 16px 30px rgba(0,0,0,0.34);
-          color: #064e3b;
-          display: block;
-          padding: 0;
+            inset 0 0 0 5px rgba(236,253,245,0.38),
+            inset 0 0 0 14px rgba(4,120,87,0.2),
+            inset 0 -34px 60px rgba(6,78,59,0.22),
+            0 30px 54px rgba(0,0,0,0.38);
+          transform: translate(-50%, -50%) rotate(var(--r)) translate(var(--x), var(--y));
           font-family: 'Barlow', sans-serif;
-          font-weight: 900;
-          transform-origin: center;
-          opacity: 0;
-          animation: cvNoteDrop 3.6s cubic-bezier(.32,.72,.18,1) infinite;
         }
-        .cv-money-note::before {
+        .cv-banknote::before {
           content: "";
           position: absolute;
-          left: 17px;
-          top: 10px;
-          width: 28px;
-          height: 36px;
+          left: 46px;
+          top: 34px;
+          width: 74px;
+          height: 96px;
           border-radius: 999px;
           background:
-            radial-gradient(circle at 50% 22%, rgba(6,78,59,0.36) 0 18%, transparent 19%),
-            radial-gradient(ellipse at 50% 72%, rgba(6,78,59,0.32) 0 35%, transparent 36%),
-            rgba(236,253,245,0.3);
-          box-shadow: 0 0 0 1px rgba(6,95,70,0.18), inset 0 0 10px rgba(255,255,255,0.35);
-        }
-        .cv-money-note::after {
-          content: "";
-          position: absolute;
-          left: 53px;
-          top: 7px;
-          width: 7px;
-          height: 42px;
-          border-radius: 999px;
-          background: linear-gradient(180deg, rgba(253,224,71,0.78), rgba(14,165,233,0.5), rgba(253,224,71,0.78));
-          box-shadow: 0 0 12px rgba(253,224,71,0.28);
-        }
-        .cv-money-note span {
-          position: absolute;
-          right: 11px;
-          top: 8px;
-          font-size: 21px;
-          letter-spacing: 0;
-          color: #fef3c7;
-          text-shadow: 0 1px 0 rgba(6,78,59,0.65), 0 0 10px rgba(255,255,255,0.22);
-        }
-        .cv-money-note b {
-          position: absolute;
-          right: 13px;
-          bottom: 8px;
-          font-size: 10px;
-          color: rgba(236,253,245,0.9);
-          letter-spacing: 0.8px;
-        }
-        .cv-money-note.n1 { margin-left: -166px; animation-delay: 0s; }
-        .cv-money-note.n2 { margin-left: -54px; animation-delay: .55s; animation-duration: 3.4s; }
-        .cv-money-note.n3 { margin-left: 78px; animation-delay: 1.1s; animation-duration: 3.8s; }
-        .cv-money-note.n4 { margin-left: -8px; animation-delay: 1.75s; animation-duration: 3.5s; }
-        .cv-money-stack {
-          position: absolute;
-          left: 50%;
-          bottom: 17px;
-          width: 260px;
-          height: 66px;
-          transform: translateX(-50%);
-        }
-        .cv-money-stack i {
-          position: absolute;
-          left: 50%;
-          bottom: 0;
-          width: 220px;
-          height: 42px;
-          border-radius: 8px;
-          border: 1px solid rgba(209,250,229,0.75);
-          background:
-            linear-gradient(90deg, transparent 0 18%, rgba(255,255,255,0.48) 18% 20%, transparent 20%),
-            radial-gradient(circle at 26% 50%, rgba(240,253,250,0.38) 0 18%, transparent 19%),
-            repeating-linear-gradient(135deg, rgba(255,255,255,0.12) 0 2px, transparent 2px 6px),
-            linear-gradient(135deg, #bef264 0%, #5eead4 45%, #10b981 72%, #047857 100%);
+            radial-gradient(circle at 50% 23%, rgba(5,46,22,0.34) 0 18%, transparent 19%),
+            radial-gradient(ellipse at 50% 72%, rgba(5,46,22,0.3) 0 36%, transparent 37%),
+            rgba(236,253,245,0.34);
           box-shadow:
-            inset 0 0 0 3px rgba(236,253,245,0.38),
-            inset 0 0 0 7px rgba(6,95,70,0.2),
-            0 10px 18px rgba(0,0,0,0.3);
-          transform: translateX(-50%) translateY(12px) rotate(var(--r));
-          opacity: 0;
-          animation: cvStackBuild 3.6s ease-out infinite;
+            0 0 0 1px rgba(6,95,70,0.2),
+            inset 0 0 24px rgba(255,255,255,0.42);
         }
-        .cv-money-stack i::before {
-          content: "500K";
+        .cv-banknote::after {
+          content: "";
+          position: absolute;
+          left: 144px;
+          top: 19px;
+          width: 14px;
+          height: 128px;
+          border-radius: 999px;
+          background: linear-gradient(180deg, rgba(253,224,71,0.88), rgba(125,211,252,0.55), rgba(253,224,71,0.88));
+          box-shadow: 0 0 20px rgba(253,224,71,0.32);
+        }
+        .cv-banknote span {
+          position: absolute;
+          right: 36px;
+          top: 46px;
+          color: #fef3c7;
+          font-size: 46px;
+          font-weight: 900;
+          letter-spacing: -1.2px;
+          text-shadow:
+            0 2px 0 rgba(6,78,59,0.7),
+            0 0 18px rgba(255,255,255,0.24);
+        }
+        .cv-banknote b {
           position: absolute;
           right: 42px;
-          top: 9px;
-          font-family: 'Barlow', sans-serif;
-          font-size: 16px;
+          top: 96px;
+          color: rgba(236,253,245,0.92);
+          font-size: 18px;
           font-weight: 900;
-          color: #fef3c7;
-          text-shadow: 0 1px 0 rgba(6,78,59,0.65);
+          letter-spacing: 2px;
         }
-        .cv-money-stack i::after {
-          content: "VND";
-          position: absolute;
-          right: 14px;
-          top: 13px;
-          font-family: 'Barlow', sans-serif;
-          font-size: 10px;
-          font-weight: 900;
-          color: rgba(236,253,245,0.9);
-        }
-        .cv-money-stack .s1 { --r: -5deg; bottom: 0; animation-delay: .55s; }
-        .cv-money-stack .s2 { --r: 3deg; bottom: 8px; width: 236px; animation-delay: 1.05s; }
-        .cv-money-stack .s3 { --r: -2deg; bottom: 16px; width: 228px; animation-delay: 1.55s; }
-        .cv-money-stack .s4 { --r: 4deg; bottom: 24px; width: 242px; animation-delay: 2.05s; }
-        .cv-money-stack .s5 { --r: -3deg; bottom: 32px; width: 224px; animation-delay: 2.55s; }
-        @keyframes cvNoteDrop {
-          0% { opacity: 0; transform: translateY(-48px) rotate(-16deg) scale(.92); }
-          12% { opacity: 1; }
-          58% { opacity: 1; transform: translateY(118px) rotate(8deg) scale(1); }
-          70%, 100% { opacity: 0; transform: translateY(132px) rotate(4deg) scale(.96); }
-        }
-        @keyframes cvStackBuild {
-          0%, 12% { opacity: 0; transform: translateX(-50%) translateY(12px) rotate(var(--r)) scale(.96); }
-          24%, 76% { opacity: 1; transform: translateX(-50%) translateY(0) rotate(var(--r)) scale(1); }
-          100% { opacity: 0; transform: translateX(-50%) translateY(-3px) rotate(var(--r)) scale(.99); }
-        }
+        .cv-banknote.b1 { --r: -9deg; --x: -80px; --y: 28px; z-index: 1; opacity: 0.72; }
+        .cv-banknote.b2 { --r: 6deg; --x: 64px; --y: 18px; z-index: 2; opacity: 0.82; }
+        .cv-banknote.b3 { --r: -3deg; --x: -18px; --y: -10px; z-index: 3; opacity: 0.94; }
+        .cv-banknote.b4 { --r: 2deg; --x: 42px; --y: -34px; z-index: 4; }
         .cv-hero-sub {
           font-size: 17.5px;
           color: rgba(250,246,240,0.65);
@@ -1826,7 +1778,15 @@ export default function CvLanding() {
               linear-gradient(180deg, #1f1813 0%, #181410 100%);
           }
           .cv-hero-inner { grid-template-columns: 1fr; gap: 56px; }
-          .cv-money-rain { width: min(500px, 100%); }
+          .cv-banknote-showcase {
+            width: min(680px, 100%);
+            height: 230px;
+            margin-top: 62px;
+          }
+          .cv-banknote-pack {
+            width: 500px;
+            transform: translateX(-50%) rotateX(9deg) scale(.88);
+          }
           .cv-prize { min-height: 340px; }
           .cv-steps { grid-template-columns: 1fr; }
           .cv-step-connector { height: 32px; padding: 0 20px; }
@@ -1840,59 +1800,31 @@ export default function CvLanding() {
           .cv-section-inner { padding: 0 20px; }
           .cv-how, .cv-test, .cv-jobs, .cv-form-section { padding: 80px 0 64px; }
           .cv-final { padding: 90px 20px 120px; }
-          .cv-h1 { letter-spacing: -1.2px; }
+          .cv-h1 {
+            letter-spacing: -1.2px;
+            gap: 8px;
+          }
           .cv-h1-line { white-space: normal; }
-          .cv-money-rain {
-            height: 118px;
-            margin: -18px auto 26px;
+          .cv-h1-soft { font-size: 0.46em; }
+          .cv-h1-hero { margin-top: 18px; }
+          .cv-banknote-showcase {
+            height: 188px;
+            margin-top: 54px;
           }
-          .cv-money-note {
-            width: 104px;
-            height: 44px;
+          .cv-banknote-showcase::before {
+            width: 340px;
+            height: 82px;
+            bottom: 18px;
           }
-          .cv-money-note::before {
-            left: 13px;
-            top: 8px;
-            width: 22px;
-            height: 28px;
+          .cv-banknote-showcase::after {
+            width: 300px;
+            bottom: 24px;
           }
-          .cv-money-note::after {
-            left: 42px;
-            top: 6px;
-            height: 32px;
+          .cv-banknote-pack {
+            width: 360px;
+            bottom: 22px;
+            transform: translateX(-50%) rotateX(8deg) scale(.62);
           }
-          .cv-money-note span {
-            right: 9px;
-            top: 7px;
-            font-size: 16px;
-          }
-          .cv-money-note b { font-size: 9px; }
-          .cv-money-note.n1 { margin-left: -130px; }
-          .cv-money-note.n2 { margin-left: -40px; }
-          .cv-money-note.n3 { margin-left: 56px; }
-          .cv-money-note.n4 { margin-left: -4px; }
-          .cv-money-stack {
-            width: 210px;
-            height: 54px;
-            bottom: 13px;
-          }
-          .cv-money-stack i {
-            width: 170px;
-            height: 32px;
-          }
-          .cv-money-stack i::before {
-            right: 36px;
-            top: 7px;
-            font-size: 13px;
-          }
-          .cv-money-stack i::after {
-            top: 10px;
-            font-size: 9px;
-          }
-          .cv-money-stack .s2 { width: 184px; }
-          .cv-money-stack .s3 { width: 178px; }
-          .cv-money-stack .s4 { width: 190px; }
-          .cv-money-stack .s5 { width: 176px; }
           .cv-h2 { letter-spacing: -0.8px; }
           .cv-test-card { flex-basis: 290px; padding: 26px 22px 20px; }
           .cv-jobs-grid { padding: 0 20px; }
@@ -1901,14 +1833,6 @@ export default function CvLanding() {
           .cv-trust-line { gap: 18px; }
           .cv-trust-divider { display: none; }
           .cv-conds { padding: 24px; }
-        }
-        @media (prefers-reduced-motion: reduce) {
-          .cv-money-note,
-          .cv-money-stack i {
-            animation: none;
-            opacity: 1;
-          }
-          .cv-money-note { display: none; }
         }
       `}</style>
     </>
