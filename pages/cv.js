@@ -214,7 +214,6 @@ export default function CvLanding() {
           .filter(j => j.is_active !== false)
           .sort((a, b) => (b.is_featured ? 1 : 0) - (a.is_featured ? 1 : 0))
           .filter(j => { if (seen.has(j.company)) return false; seen.add(j.company); return true })
-          .slice(0, 6)
         setJobs(sorted)
       })
       .catch(() => {})
@@ -349,7 +348,50 @@ export default function CvLanding() {
           <div className="cv-section-inner">
             <h2 className="cv-h2">이력서만 등록하면 끝.</h2>
 
-            <div className="cv-steps">
+            <div className="cv-flow" aria-label="FYI resume reward flow">
+              <article className="cv-flow-card">
+                <div className="cv-flow-image">
+                  <img src="/cv/flow-step-1.png" alt="STEP 1. CV upload" />
+                </div>
+                <div className="cv-flow-copy">
+                  <span>STEP 1</span>
+                  <h3>이력서 등록</h3>
+                  <p>PDF 한 장을 올리면 FYI가 확인합니다.</p>
+                </div>
+              </article>
+
+              <div className="cv-flow-arrow" aria-hidden>→</div>
+
+              <article className="cv-flow-card">
+                <div className="cv-flow-image">
+                  <img src="/cv/flow-step-2.png" alt="STEP 2. FYI match" />
+                </div>
+                <div className="cv-flow-copy">
+                  <span>STEP 2</span>
+                  <h3>맞는 포지션 제안</h3>
+                  <p>등록된 이력서를 바탕으로 어울리는 오퍼를 연결합니다.</p>
+                </div>
+              </article>
+
+              <div className="cv-flow-arrow" aria-hidden>→</div>
+
+              <article className="cv-flow-card">
+                <div className="cv-flow-image">
+                  <img src="/cv/flow-step-3.png" alt="STEP 3. Hired and reward received" />
+                </div>
+                <div className="cv-flow-copy">
+                  <span>STEP 3</span>
+                  <h3>합격 축하금 지급</h3>
+                  <p>FYI를 통해 입사하면 2,000,000 VND를 드립니다.</p>
+                </div>
+              </article>
+            </div>
+
+            <p className="cv-flow-note">
+              이력서 등록부터 포지션 제안, 합격 축하금까지 한 흐름으로 이어집니다.
+            </p>
+
+            <div className="cv-steps" hidden>
               <div className="cv-step cv-step-upload">
                 <div className="cv-step-art" aria-hidden>
                   <div className="cv-person scene-upload">
@@ -951,6 +993,91 @@ export default function CvLanding() {
         .cv-how .cv-h2,
         .cv-how .cv-h2-sub {
           text-align: center;
+        }
+        .cv-flow {
+          max-width: 1180px;
+          margin: 62px auto 0;
+          display: grid;
+          grid-template-columns: minmax(0, 1fr) 44px minmax(0, 1fr) 44px minmax(0, 1fr);
+          gap: 18px;
+          align-items: start;
+        }
+        .cv-flow-card {
+          min-width: 0;
+        }
+        .cv-flow-image {
+          aspect-ratio: 1 / 1;
+          border-radius: 28px;
+          overflow: hidden;
+          background: #fff8ef;
+          border: 1px solid rgba(26,22,18,0.06);
+          box-shadow:
+            0 1px 2px rgba(26,22,18,0.05),
+            0 24px 58px -22px rgba(26,22,18,0.2);
+        }
+        .cv-flow-image img {
+          display: block;
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+        }
+        .cv-flow-copy {
+          text-align: center;
+          margin-top: 18px;
+          padding: 0 8px;
+        }
+        .cv-flow-copy span {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          height: 26px;
+          padding: 0 12px;
+          border-radius: 999px;
+          background: rgba(255,96,0,0.09);
+          color: #ff6000;
+          font-family: 'Geist Mono', monospace;
+          font-size: 11px;
+          font-weight: 800;
+          letter-spacing: 1px;
+        }
+        .cv-flow-copy h3 {
+          margin: 12px 0 8px;
+          font-size: 20px;
+          line-height: 1.28;
+          font-weight: 850;
+          letter-spacing: -0.45px;
+          color: #1a1612;
+        }
+        .cv-flow-copy p {
+          margin: 0;
+          font-size: 14px;
+          line-height: 1.6;
+          color: rgba(26,22,18,0.58);
+          word-break: keep-all;
+        }
+        .cv-flow-arrow {
+          width: 44px;
+          height: 44px;
+          margin-top: min(13vw, 174px);
+          border-radius: 50%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          background: #fff;
+          border: 1px solid rgba(255,96,0,0.16);
+          color: #ff6000;
+          font-size: 24px;
+          font-weight: 900;
+          box-shadow: 0 14px 34px -18px rgba(255,96,0,0.4);
+        }
+        .cv-flow-note {
+          max-width: 560px;
+          margin: 34px auto 0;
+          text-align: center;
+          font-size: 15px;
+          line-height: 1.7;
+          color: rgba(26,22,18,0.56);
+          word-break: keep-all;
         }
         .cv-steps {
           position: relative;
@@ -2226,6 +2353,22 @@ export default function CvLanding() {
           }
           .cv-banknote-img { width: min(560px, 100%); }
           .cv-prize { min-height: 340px; }
+          .cv-flow {
+            max-width: 460px;
+            grid-template-columns: 1fr;
+            gap: 14px;
+            margin-top: 42px;
+          }
+          .cv-flow-arrow {
+            margin: 0 auto;
+            transform: rotate(90deg);
+          }
+          .cv-flow-copy {
+            margin-top: 16px;
+          }
+          .cv-flow-card + .cv-flow-arrow {
+            margin-top: 4px;
+          }
           .cv-steps {
             grid-template-columns: 1fr;
             gap: 18px;
@@ -2286,6 +2429,23 @@ export default function CvLanding() {
           }
           .cv-banknote-img { width: 360px; }
           .cv-h2 { letter-spacing: -0.8px; }
+          .cv-flow {
+            margin-top: 36px;
+            gap: 12px;
+          }
+          .cv-flow-image {
+            border-radius: 22px;
+          }
+          .cv-flow-copy h3 {
+            font-size: 19px;
+          }
+          .cv-flow-copy p,
+          .cv-flow-note {
+            font-size: 13.5px;
+          }
+          .cv-flow-note {
+            margin-top: 28px;
+          }
           .cv-test-card { flex-basis: 290px; padding: 26px 22px 20px; }
           .cv-jobs-grid { padding: 0 20px; }
           .cv-sticky { display: block; }
