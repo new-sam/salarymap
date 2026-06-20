@@ -429,7 +429,7 @@ export default function CvLanding() {
                   <div className="cv-scene-tray" />
                 </div>
                 <div className="cv-step-num">01</div>
-                <div className="cv-step-title">FYI에 이력서 등록</div>
+                <div className="cv-step-title">{t('cv.how.step1.title')}</div>
                 <div className="cv-step-desc">{t('cv.how.step1.desc')}</div>
               </div>
 
@@ -449,7 +449,7 @@ export default function CvLanding() {
                   <div className="cv-scene-bubble">✓</div>
                 </div>
                 <div className="cv-step-num">02</div>
-                <div className="cv-step-title">맞는 포지션 제안</div>
+                <div className="cv-step-title">{t('cv.how.step2.title')}</div>
                 <div className="cv-step-desc">{t('cv.how.step2.desc')}</div>
               </div>
 
@@ -466,8 +466,8 @@ export default function CvLanding() {
                   <div className="cv-scene-coin c2">₫</div>
                 </div>
                 <div className="cv-step-num">03</div>
-                <div className="cv-step-title">합격 시 <em>2,000,000 VND</em></div>
-                <div className="cv-step-desc">FYI를 통해 받은 오퍼로 입사하면<br/>축하금을 드려요.</div>
+                <div className="cv-step-title">{t('cv.how.step3.title')}</div>
+                <div className="cv-step-desc">{t('cv.how.step3.desc')}</div>
               </div>
             </div>
           </div>
