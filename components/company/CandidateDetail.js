@@ -259,11 +259,14 @@ export default function CandidateDetail({
       setJob(appData.jobs);
       setExpandedStages(new Set([effectiveStatus]));
       if (willMarkViewed) {
-        supabase
-          .from('job_applications')
-          .update({ status: 'viewed', updated_at: new Date().toISOString() })
-          .eq('id', appId)
-          .then(({ error }) => { if (!error) onStageChange?.(appId, { status: 'viewed' }); });
+        // 서비스롤 API로 처리(직접 update는 RLS에 막힐 수 있음)
+        supabase.auth.getSession().then(({ data: { session } }) => {
+          fetch('/api/company/mark-viewed', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session?.access_token || ''}` },
+            body: JSON.stringify({ appId }),
+          }).then(r => { if (r.ok) onStageChange?.(appId, { status: 'viewed' }); }).catch(() => {});
+        });
       }
 
       if (appData.user_id) {

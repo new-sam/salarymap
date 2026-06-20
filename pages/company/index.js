@@ -356,6 +356,20 @@ export default function CompanyDashboard() {
   const activeCount = jobs.filter(j => j.status === 'live').length;
   const goKanban = (jobId) => router.push(`/company/ats?job=${jobId}`);
 
+  const jobActionHeaders = async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    return { 'Content-Type': 'application/json', Authorization: `Bearer ${session?.access_token || ''}` };
+  };
+  const toggleJobActive = async (job) => {
+    const res = await fetch('/api/company/job', { method: 'PUT', headers: await jobActionHeaders(), body: JSON.stringify({ jobId: job.id, action: job.is_active ? 'deactivate' : 'activate' }) });
+    if (res.ok) setJobs(prev => prev.map(j => j.id === job.id ? { ...j, is_active: !job.is_active, status: !job.is_active ? 'live' : 'paused' } : j));
+  };
+  const deleteJob = async (job) => {
+    if (!window.confirm(`${job.title} — ${t('company.editJob.delete')}?`)) return;
+    const res = await fetch('/api/company/job', { method: 'DELETE', headers: await jobActionHeaders(), body: JSON.stringify({ jobId: job.id }) });
+    if (res.ok) setJobs(prev => prev.filter(j => j.id !== job.id));
+  };
+
   const statusBadgeVariant = (s) => {
     if (s === 'live') return 'success';
     if (s === 'pending_review') return 'warning';
@@ -532,6 +546,26 @@ export default function CompanyDashboard() {
                           >
                             <Edit3 className="w-3.5 h-3.5" />
                             {t('company.editBtn')}
+                          </UButton>
+                        )}
+                        {isJobOwner && (
+                          <UButton
+                            variant="outline"
+                            size="sm"
+                            onClick={(e) => { e.stopPropagation(); toggleJobActive(job); }}
+                            className="hidden md:inline-flex"
+                          >
+                            {job.is_active ? t('company.editJob.deactivate') : t('company.editJob.activate')}
+                          </UButton>
+                        )}
+                        {isJobOwner && (
+                          <UButton
+                            variant="outline"
+                            size="sm"
+                            onClick={(e) => { e.stopPropagation(); deleteJob(job); }}
+                            className="hidden md:inline-flex text-red-600 hover:text-red-700"
+                          >
+                            {t('company.editJob.delete')}
                           </UButton>
                         )}
                       </div>
