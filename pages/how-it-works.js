@@ -1,5 +1,5 @@
 import Head from 'next/head';
-import { useState } from 'react';
+import { useT } from '../lib/i18n';
 
 const css = `
 *, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
@@ -103,7 +103,10 @@ const VI = {
 };
 
 export default function HowItWorks() {
-  const [lang, setLang] = useState('vi');
+  // Drive locale from the global LanguageSwitcher (footer). This page only
+  // has EN/VI copy; ko visitors get the EN content as the closest fit.
+  const { lang: gLang } = useT();
+  const lang = gLang === 'vi' ? 'vi' : 'en';
   const t = lang === 'en' ? EN : VI;
   return (
     <>
@@ -124,10 +127,6 @@ export default function HowItWorks() {
         <div className="nav-r">
           <a className="nav-link" href="/">{t.navHome}</a>
           <a className="nav-link active" href="/how-it-works">{t.navHow}</a>
-          <div className="lang-toggle">
-            <button className={`lang-btn ${lang === 'en' ? 'active' : ''}`} onClick={() => setLang('en')}>EN</button>
-            <button className={`lang-btn ${lang === 'vi' ? 'active' : ''}`} onClick={() => setLang('vi')}>VI</button>
-          </div>
           <button className="nav-btn" onClick={() => { window.location.href = '/' }}>{t.navCta}</button>
         </div>
       </nav>

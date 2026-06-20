@@ -1,5 +1,5 @@
 import Head from 'next/head';
-import { useState } from 'react';
+import { useT } from '../lib/i18n';
 
 // NOTE for operators: operating entity = Likelion Vietnam; contact placeholder below.
 // Governing law set to Vietnam. Have a Vietnamese lawyer review before relying on it.
@@ -250,7 +250,10 @@ const VI = {
 };
 
 export default function Terms() {
-  const [lang, setLang] = useState('vi');
+  // Drive locale from the global LanguageSwitcher (footer). Legal copy only
+  // lives in EN/VI; ko visitors fall back to EN since this is staff-facing.
+  const { lang: gLang } = useT();
+  const lang = gLang === 'vi' ? 'vi' : 'en';
   const t = lang === 'en' ? EN : VI;
   return (
     <>
@@ -268,10 +271,6 @@ export default function Terms() {
         <div className="nav-r">
           <a className="nav-link" href="/how-it-works">How it works</a>
           <a className="nav-link" href="/privacy">Privacy</a>
-          <div className="lang-toggle">
-            <button className={`lang-btn ${lang === 'en' ? 'active' : ''}`} onClick={() => setLang('en')}>EN</button>
-            <button className={`lang-btn ${lang === 'vi' ? 'active' : ''}`} onClick={() => setLang('vi')}>VI</button>
-          </div>
         </div>
       </nav>
       <div className="page">

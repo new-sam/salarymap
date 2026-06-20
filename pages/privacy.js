@@ -1,5 +1,5 @@
 import Head from 'next/head';
-import { useState } from 'react';
+import { useT } from '../lib/i18n';
 
 // NOTE for operators:
 //  - Operating entity: Likelion Vietnam (data controller).
@@ -462,7 +462,10 @@ const VI = {
 };
 
 export default function Privacy() {
-  const [lang, setLang] = useState('vi');
+  // Drive locale from the global LanguageSwitcher (footer). Legal copy only
+  // lives in EN/VI; ko visitors fall back to EN since this is staff-facing.
+  const { lang: gLang } = useT();
+  const lang = gLang === 'vi' ? 'vi' : 'en';
   const t = lang === 'en' ? EN : VI;
   return (
     <>
@@ -480,10 +483,6 @@ export default function Privacy() {
         <div className="nav-r">
           <a className="nav-link" href="/how-it-works">How it works</a>
           <a className="nav-link" href="/terms">Terms</a>
-          <div className="lang-toggle">
-            <button className={`lang-btn ${lang === 'en' ? 'active' : ''}`} onClick={() => setLang('en')}>EN</button>
-            <button className={`lang-btn ${lang === 'vi' ? 'active' : ''}`} onClick={() => setLang('vi')}>VI</button>
-          </div>
         </div>
       </nav>
       <div className="page">
