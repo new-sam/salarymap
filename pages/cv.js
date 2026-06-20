@@ -332,23 +332,14 @@ export default function CvLanding() {
           <div className="cv-hero-bg" aria-hidden />
           <div className="cv-hero-inner">
             <h1 className="cv-h1">
-              <span className="cv-h1-line cv-h1-soft">FYI 통해 이직, 취업하면</span>
+              <span className="cv-h1-line cv-h1-soft">
+                <img src="/fyi-logo.png" alt="FYI" className="cv-h1-logo" />
+                <span>통해 이직, 취업하면</span>
+              </span>
               <span className="cv-h1-line cv-h1-hero"><em>2,000,000 VND</em> 드려요</span>
             </h1>
             <div className="cv-banknote-showcase" aria-hidden>
-              <div className="cv-reward-graphic">
-                <div className="cv-reward-card card-back" />
-                <div className="cv-reward-card card-mid" />
-                <div className="cv-reward-card card-front">
-                  <span className="cv-reward-mark">FYI</span>
-                  <span className="cv-reward-amount">2M</span>
-                  <span className="cv-reward-currency">VND</span>
-                </div>
-                <div className="cv-reward-coin coin-left">₫</div>
-                <div className="cv-reward-coin coin-right">₫</div>
-                <div className="cv-reward-spark s-a" />
-                <div className="cv-reward-spark s-b" />
-              </div>
+              <img src="/cv/banknote-prize-v1.png" alt="" className="cv-banknote-img" />
             </div>
           </div>
         </section>
@@ -356,48 +347,58 @@ export default function CvLanding() {
         {/* ───── HOW IT WORKS ───── */}
         <section className="cv-how">
           <div className="cv-section-inner">
-            <div className="cv-section-kicker"><span className="kdot" />작동 방식</div>
             <h2 className="cv-h2">이력서만 등록하면 끝.</h2>
-            <p className="cv-h2-sub">나머지는 FYI가 알아서 합니다.</p>
 
             <div className="cv-steps">
-              <div className="cv-step">
-                <div className="cv-step-head">
-                  <div className="cv-step-icon"><IconResume /></div>
-                  <div className="cv-step-num">01</div>
+              <div className="cv-step cv-step-upload">
+                <div className="cv-step-art" aria-hidden>
+                  <div className="cv-person scene-upload">
+                    <div className="cv-person-head" />
+                    <div className="cv-person-body" />
+                    <div className="cv-person-arm arm-left" />
+                    <div className="cv-person-arm arm-right" />
+                  </div>
+                  <div className="cv-scene-doc"><span /><span /><span /></div>
+                  <div className="cv-scene-tray" />
                 </div>
+                <div className="cv-step-num">01</div>
                 <div className="cv-step-title">FYI에 이력서 등록</div>
                 <div className="cv-step-desc">PDF 한 장이면 충분해요.<br/>1분 안에 끝납니다.</div>
               </div>
 
-              <div className="cv-step-connector" aria-hidden>
-                <svg width="100%" height="2" viewBox="0 0 100 2" preserveAspectRatio="none">
-                  <line x1="0" y1="1" x2="100" y2="1" stroke="rgba(255,96,0,0.35)" strokeWidth="1.5" strokeDasharray="3 4" />
-                </svg>
-                <div className="cv-step-connector-dot" />
-              </div>
-
-              <div className="cv-step">
-                <div className="cv-step-head">
-                  <div className="cv-step-icon"><IconSparkle /></div>
-                  <div className="cv-step-num">02</div>
+              <div className="cv-step cv-step-match">
+                <div className="cv-step-art" aria-hidden>
+                  <div className="cv-person scene-match">
+                    <div className="cv-person-head" />
+                    <div className="cv-person-body" />
+                    <div className="cv-person-arm arm-left" />
+                    <div className="cv-person-arm arm-right" />
+                  </div>
+                  <div className="cv-scene-offer">
+                    <span />
+                    <span />
+                    <b />
+                  </div>
+                  <div className="cv-scene-bubble">✓</div>
                 </div>
+                <div className="cv-step-num">02</div>
                 <div className="cv-step-title">맞는 포지션 제안</div>
                 <div className="cv-step-desc">당신의 경력에 딱 맞는 회사·포지션을<br/>FYI가 직접 제안합니다.</div>
               </div>
 
-              <div className="cv-step-connector" aria-hidden>
-                <svg width="100%" height="2" viewBox="0 0 100 2" preserveAspectRatio="none">
-                  <line x1="0" y1="1" x2="100" y2="1" stroke="rgba(255,96,0,0.35)" strokeWidth="1.5" strokeDasharray="3 4" />
-                </svg>
-                <div className="cv-step-connector-dot" />
-              </div>
-
               <div className="cv-step cv-step-prize">
-                <div className="cv-step-head">
-                  <div className="cv-step-icon cv-step-icon-prize"><IconGift /></div>
-                  <div className="cv-step-num">03</div>
+                <div className="cv-step-art" aria-hidden>
+                  <div className="cv-person scene-prize">
+                    <div className="cv-person-head" />
+                    <div className="cv-person-body" />
+                    <div className="cv-person-arm arm-left" />
+                    <div className="cv-person-arm arm-right" />
+                  </div>
+                  <div className="cv-scene-ticket"><span>2M</span><b>VND</b></div>
+                  <div className="cv-scene-coin c1">₫</div>
+                  <div className="cv-scene-coin c2">₫</div>
                 </div>
+                <div className="cv-step-num">03</div>
                 <div className="cv-step-title">합격 시 <em>2,000,000 VND</em></div>
                 <div className="cv-step-desc">FYI를 통해 받은 오퍼로 입사하면<br/>축하금을 드려요.</div>
               </div>
@@ -409,9 +410,7 @@ export default function CvLanding() {
         <section className="cv-form-section" id="cv-form" ref={formAnchorRef}>
           <div className="cv-section-inner cv-form-wrap">
             <div className="cv-form-side">
-              <div className="cv-section-kicker"><span className="kdot" />1분이면 끝나요</div>
               <h2 className="cv-h2">이력서 한 장으로<br/>모든 게 시작돼요.</h2>
-              <p className="cv-h2-sub">번거롭지 않고, 빠르고 쉽게.</p>
               <ul className="cv-bullets">
                 <li>
                   <span className="cv-bullet-check"><IconCheck /></span>
@@ -698,14 +697,15 @@ export default function CvLanding() {
            Page rhythm: Hero (dark) → How (cream) → ... → Final (dark) closer. */
         .cv-hero {
           position: relative;
-          padding: 80px 40px;
+          padding: 116px 40px 104px;
           overflow: hidden;
-          min-height: 92vh;
+          min-height: 100vh;
           display: flex;
           align-items: center;
           justify-content: center;
           background:
-            radial-gradient(1000px circle at 50% 50%, rgba(255,96,0,0.16), transparent 70%),
+            radial-gradient(780px circle at 50% 39%, rgba(255,96,0,0.14), transparent 58%),
+            radial-gradient(860px circle at 50% 68%, rgba(0,0,0,0.98), transparent 68%),
             #000;
         }
         .cv-hero-bg {
@@ -769,6 +769,17 @@ export default function CvLanding() {
           letter-spacing: -0.8px;
           color: #ffffff;
           margin-bottom: 12px;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          gap: 6px;
+        }
+        .cv-h1-logo {
+          width: auto;
+          height: 1.72em;
+          object-fit: contain;
+          transform: translateY(0.02em);
+          filter: drop-shadow(0 5px 14px rgba(0,0,0,0.42));
         }
         /* 마지막 줄: visual center (full size + glow), 여백으로 격리 */
         .cv-h1-hero {
@@ -788,8 +799,8 @@ export default function CvLanding() {
         .cv-banknote-showcase {
           position: relative;
           width: min(820px, 100%);
-          height: 250px;
-          margin: 84px auto 0;
+          height: 310px;
+          margin: 104px auto 0;
           pointer-events: none;
           isolation: isolate;
         }
@@ -797,184 +808,43 @@ export default function CvLanding() {
           content: "";
           position: absolute;
           left: 50%;
-          bottom: 24px;
-          width: 560px;
-          height: 150px;
+          bottom: 28px;
+          width: 680px;
+          height: 190px;
           transform: translateX(-50%);
-          background:
-            radial-gradient(ellipse at 44% 50%, rgba(255,96,0,0.28), transparent 62%),
-            radial-gradient(ellipse at 58% 62%, rgba(255,178,92,0.14), transparent 70%);
-          filter: blur(20px);
+          background: radial-gradient(ellipse at center, rgba(0,0,0,0.98), transparent 72%);
+          filter: blur(22px);
           z-index: -2;
         }
         .cv-banknote-showcase::after {
           content: "";
           position: absolute;
           left: 50%;
-          bottom: 20px;
-          width: 430px;
-          height: 46px;
+          bottom: 32px;
+          width: 510px;
+          height: 58px;
           transform: translateX(-50%);
-          background: radial-gradient(ellipse at center, rgba(0,0,0,0.5), transparent 70%);
-          filter: blur(12px);
+          background: radial-gradient(ellipse at center, rgba(0,0,0,0.58), transparent 70%);
+          filter: blur(14px);
           z-index: -1;
         }
-        .cv-reward-graphic {
+        .cv-banknote-img {
           position: absolute;
           left: 50%;
-          bottom: 32px;
-          width: 520px;
-          height: 172px;
+          bottom: 58px;
+          width: min(620px, 100%);
+          height: auto;
           transform: translateX(-50%);
-        }
-        .cv-reward-card {
-          position: absolute;
-          left: 50%;
-          top: 50%;
-          width: 360px;
-          height: 126px;
-          border-radius: 22px;
-          transform: translate(-50%, -50%) rotate(var(--r)) translate(var(--x), var(--y));
-          box-shadow:
-            0 28px 50px rgba(0,0,0,0.38),
-            inset 0 1px 0 rgba(255,255,255,0.35);
-        }
-        .cv-reward-card::before {
-          content: "";
-          position: absolute;
-          inset: 12px;
-          border-radius: 16px;
-          border: 1px solid rgba(255,255,255,0.22);
-        }
-        .cv-reward-card::after {
-          content: "";
-          position: absolute;
-          right: 24px;
-          top: 24px;
-          width: 54px;
-          height: 54px;
-          border-radius: 50%;
-          background:
-            radial-gradient(circle at 35% 32%, rgba(255,255,255,0.55), transparent 26%),
-            rgba(255,255,255,0.13);
-        }
-        .card-back {
-          --r: -8deg;
-          --x: -68px;
-          --y: 18px;
-          background: linear-gradient(135deg, #3b2b20 0%, #8a4524 50%, #ff8a40 100%);
-          opacity: 0.72;
-        }
-        .card-mid {
-          --r: 5deg;
-          --x: 46px;
-          --y: 8px;
-          background: linear-gradient(135deg, #fff1df 0%, #ffb15f 44%, #ff6000 100%);
-          opacity: 0.9;
-        }
-        .card-front {
-          --r: -2deg;
-          --x: 0;
-          --y: -18px;
-          background:
-            radial-gradient(circle at 18% 28%, rgba(255,255,255,0.28), transparent 20%),
-            linear-gradient(135deg, #fff7ec 0%, #ffb15f 34%, #ff6000 74%, #a8350a 100%);
-          border: 1px solid rgba(255,214,170,0.72);
-          z-index: 3;
-        }
-        .cv-reward-mark {
-          position: absolute;
-          left: 32px;
-          top: 26px;
-          font-size: 13px;
-          font-weight: 900;
-          letter-spacing: 1.8px;
-          color: rgba(26,22,18,0.74);
-        }
-        .cv-reward-amount {
-          position: absolute;
-          left: 30px;
-          bottom: 25px;
-          font-family: 'Barlow', sans-serif;
-          font-size: 58px;
-          font-weight: 900;
-          letter-spacing: -2px;
-          color: #fff;
-          text-shadow: 0 3px 0 rgba(120,38,0,0.2);
-        }
-        .cv-reward-currency {
-          position: absolute;
-          left: 132px;
-          bottom: 34px;
-          font-size: 18px;
-          font-weight: 900;
-          letter-spacing: 1.4px;
-          color: rgba(255,255,255,0.76);
-        }
-        .cv-reward-coin {
-          position: absolute;
-          z-index: 4;
-          width: 76px;
-          height: 76px;
-          border-radius: 50%;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          font-family: 'Barlow', sans-serif;
-          font-size: 38px;
-          font-weight: 900;
-          color: #fff7ec;
-          background:
-            radial-gradient(circle at 35% 30%, #ffd19c 0 18%, transparent 19%),
-            linear-gradient(135deg, #ffb15f 0%, #ff6000 62%, #9a3412 100%);
-          box-shadow:
-            inset 0 0 0 5px rgba(255,255,255,0.22),
-            0 18px 34px rgba(0,0,0,0.34),
-            0 0 28px rgba(255,96,0,0.28);
-        }
-        .coin-left {
-          left: 62px;
-          bottom: 8px;
-          transform: rotate(-9deg);
-        }
-        .coin-right {
-          right: 70px;
-          top: 6px;
-          width: 62px;
-          height: 62px;
-          font-size: 30px;
-          opacity: 0.9;
-          transform: rotate(12deg);
-        }
-        .cv-reward-spark {
-          position: absolute;
-          border-radius: 999px;
-          background: #ff8a40;
-          box-shadow: 0 0 18px rgba(255,96,0,0.6);
-        }
-        .cv-reward-spark::before,
-        .cv-reward-spark::after {
-          content: "";
-          position: absolute;
-          inset: 0;
-          border-radius: inherit;
-          background: inherit;
-        }
-        .cv-reward-spark::before { transform: rotate(90deg); }
-        .s-a {
-          width: 9px;
-          height: 36px;
-          right: 24px;
-          bottom: 34px;
-          transform: rotate(42deg);
-        }
-        .s-b {
-          width: 7px;
-          height: 26px;
-          left: 18px;
-          top: 36px;
-          transform: rotate(-28deg);
-          opacity: 0.72;
+          mix-blend-mode: lighten;
+          -webkit-mask-image: radial-gradient(ellipse 66% 58% at 50% 52%, #000 56%, rgba(0,0,0,0.58) 68%, transparent 82%);
+          mask-image: radial-gradient(ellipse 66% 58% at 50% 52%, #000 56%, rgba(0,0,0,0.58) 68%, transparent 82%);
+          filter:
+            sepia(0.06)
+            saturate(0.96)
+            contrast(1.1)
+            brightness(1.03)
+            drop-shadow(0 38px 64px rgba(0,0,0,0.52))
+            drop-shadow(0 0 28px rgba(0,0,0,0.72));
         }
         .cv-hero-sub {
           font-size: 17.5px;
@@ -1101,59 +971,81 @@ export default function CvLanding() {
           border-top: 1px solid rgba(26,22,18,0.06);
           border-bottom: 1px solid rgba(26,22,18,0.06);
         }
+        .cv-how .cv-section-kicker {
+          justify-content: center;
+        }
+        .cv-how .cv-h2,
+        .cv-how .cv-h2-sub {
+          text-align: center;
+        }
         .cv-steps {
+          position: relative;
           display: grid;
-          grid-template-columns: 1fr 64px 1fr 64px 1fr;
-          gap: 0;
-          align-items: stretch;
+          grid-template-columns: minmax(0, 680px);
+          gap: 18px;
+          align-items: start;
+          margin-top: 58px;
+          margin-left: auto;
+          margin-right: auto;
+          justify-content: center;
         }
         .cv-step {
+          position: relative;
+          display: grid;
+          grid-template-columns: 170px 1fr;
+          column-gap: 24px;
+          align-items: center;
           background: #fff;
           border: 1px solid rgba(26,22,18,0.07);
-          border-radius: 20px;
-          padding: 30px 28px 32px;
+          border-radius: 22px;
+          padding: 18px 24px 18px 18px;
+          min-height: 188px;
+          overflow: hidden;
           transition: transform .2s ease, box-shadow .2s ease, border-color .2s ease;
           box-shadow: 0 1px 2px rgba(26,22,18,0.04), 0 8px 32px -8px rgba(26,22,18,0.06);
         }
+        .cv-step::before {
+          content: "";
+          position: absolute;
+          inset: 0;
+          background:
+            radial-gradient(260px circle at 50% 22%, rgba(255,96,0,0.08), transparent 62%),
+            linear-gradient(180deg, rgba(255,250,245,0.92), rgba(255,255,255,0));
+          pointer-events: none;
+        }
         .cv-step:hover {
-          transform: translateY(-3px);
+          transform: translateY(-5px);
           border-color: rgba(255,96,0,0.25);
           box-shadow: 0 1px 2px rgba(26,22,18,0.04), 0 20px 50px -10px rgba(255,96,0,0.15);
         }
         .cv-step-prize {
-          background: linear-gradient(160deg, #fff5ec 0%, #fffaf5 100%);
+          background: linear-gradient(160deg, #fff8f0 0%, #fff 100%);
           border-color: rgba(255,96,0,0.28);
           box-shadow: 0 1px 2px rgba(26,22,18,0.04), 0 20px 50px -10px rgba(255,96,0,0.18);
         }
-        .cv-step-head {
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          margin-bottom: 20px;
-        }
-        .cv-step-icon {
-          width: 44px; height: 44px;
-          border-radius: 12px;
-          background: #fff5ec;
-          color: #ff6000;
-          display: flex; align-items: center; justify-content: center;
-          border: 1px solid rgba(255,96,0,0.18);
-        }
-        .cv-step-icon-prize {
-          background: linear-gradient(135deg, #ff6000, #ff8a40);
-          color: #fff;
-          border-color: rgba(255,96,0,0.6);
-          box-shadow: 0 8px 20px rgba(255,96,0,0.32);
-        }
         .cv-step-num {
+          position: relative;
+          z-index: 2;
+          grid-column: 2;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          width: 42px;
+          height: 28px;
+          border-radius: 999px;
+          background: rgba(255,96,0,0.09);
           font-family: 'Geist Mono', monospace;
-          font-size: 12px;
-          font-weight: 700;
-          color: rgba(26,22,18,0.3);
+          font-size: 11px;
+          font-weight: 800;
+          color: #ff6000;
           letter-spacing: 1.2px;
+          margin: 0 0 14px;
         }
         .cv-step-title {
-          font-size: 19px;
+          position: relative;
+          z-index: 2;
+          grid-column: 2;
+          font-size: 20px;
           font-weight: 800;
           color: #1a1612;
           letter-spacing: -0.5px;
@@ -1162,26 +1054,509 @@ export default function CvLanding() {
         }
         .cv-step-title em { font-style: normal; color: #ff6000; font-variant-numeric: tabular-nums; white-space: nowrap; }
         .cv-step-desc {
-          font-size: 13.5px;
+          position: relative;
+          z-index: 2;
+          grid-column: 2;
+          font-size: 14px;
           color: rgba(26,22,18,0.55);
           line-height: 1.65;
         }
-        .cv-step-connector {
-          align-self: center;
+        .cv-step-art {
           position: relative;
-          height: 2px;
-          width: 100%;
+          z-index: 2;
+          grid-column: 1;
+          grid-row: 1 / 4;
+          height: 148px;
+          margin-bottom: 0;
+          border-radius: 18px;
+          background:
+            radial-gradient(circle at 50% 42%, rgba(255,96,0,0.14), transparent 56%),
+            linear-gradient(180deg, #fff7ee 0%, #fff 100%);
+          border: 1px solid rgba(255,96,0,0.08);
+          overflow: hidden;
+        }
+        .cv-step-art::after {
+          content: "";
+          position: absolute;
+          left: 50%;
+          bottom: 14px;
+          width: 150px;
+          height: 26px;
+          transform: translateX(-50%);
+          background: radial-gradient(ellipse at center, rgba(26,22,18,0.16), transparent 70%);
+          filter: blur(7px);
+        }
+        .cv-person {
+          position: absolute;
+          left: 32px;
+          bottom: 20px;
+          width: 82px;
+          height: 110px;
+          z-index: 2;
+          animation: cvPersonBreathe 4s ease-in-out infinite;
+        }
+        .cv-person-head {
+          position: absolute;
+          left: 25px;
+          top: 2px;
+          width: 34px;
+          height: 34px;
+          border-radius: 50%;
+          background:
+            radial-gradient(circle at 38% 36%, rgba(255,255,255,0.65), transparent 18%),
+            linear-gradient(135deg, #ffd0a0, #ff9f62);
+          box-shadow: 0 10px 18px rgba(26,22,18,0.12);
+        }
+        .cv-person-head::before,
+        .cv-person-head::after {
+          content: "";
+          position: absolute;
+          top: 15px;
+          width: 4px;
+          height: 4px;
+          border-radius: 50%;
+          background: #1a1612;
+          opacity: .78;
+        }
+        .cv-person-head::before { left: 10px; }
+        .cv-person-head::after { right: 10px; }
+        .cv-person-body {
+          position: absolute;
+          left: 16px;
+          top: 38px;
+          width: 52px;
+          height: 62px;
+          border-radius: 22px 22px 16px 16px;
+          background: linear-gradient(135deg, #1a1612 0%, #3b2b20 48%, #ff6000 100%);
+          box-shadow: 0 18px 24px rgba(26,22,18,0.16);
+        }
+        .cv-person-body::after {
+          content: "";
+          position: absolute;
+          left: 14px;
+          bottom: -12px;
+          width: 24px;
+          height: 18px;
+          border-radius: 0 0 12px 12px;
+          background: #ff6000;
+        }
+        .cv-person-arm {
+          position: absolute;
+          top: 50px;
+          width: 14px;
+          height: 48px;
+          border-radius: 999px;
+          background: linear-gradient(180deg, #ffd0a0, #ff9f62);
+          transform-origin: top center;
+        }
+        .cv-person-arm.arm-left {
+          left: 8px;
+          transform: rotate(18deg);
+        }
+        .cv-person-arm.arm-right {
+          right: 6px;
+          transform: rotate(-34deg);
+          animation: cvWave 2.7s ease-in-out infinite;
+        }
+        .scene-match {
+          left: 42px;
+        }
+        .scene-match .cv-person-body {
+          background: linear-gradient(135deg, #14532d 0%, #0f766e 46%, #ff6000 100%);
+        }
+        .scene-prize {
+          left: 28px;
+          bottom: 18px;
+          z-index: 3;
+        }
+        .scene-prize .cv-person-body {
+          background: linear-gradient(135deg, #4a2512 0%, #ff6000 52%, #ff9a45 100%);
+        }
+        .scene-prize .arm-left {
+          transform: rotate(-118deg);
+          left: 5px;
+          top: 46px;
+        }
+        .scene-prize .arm-right {
+          transform: rotate(118deg);
+          right: 4px;
+          top: 46px;
+        }
+        .cv-scene-doc {
+          position: absolute;
+          right: 34px;
+          top: 28px;
+          width: 72px;
+          height: 88px;
+          border-radius: 14px;
+          background: #fff;
+          border: 1px solid rgba(26,22,18,0.08);
+          box-shadow: 0 18px 32px rgba(26,22,18,0.13);
+          transform: rotate(5deg);
+          animation: cvDocHandOff 3.4s ease-in-out infinite;
+        }
+        .cv-scene-doc::before {
+          content: "";
+          position: absolute;
+          right: 0;
+          top: 0;
+          border-style: solid;
+          border-width: 0 20px 20px 0;
+          border-color: transparent #ffe1c7 transparent transparent;
+        }
+        .cv-scene-doc span {
+          display: block;
+          width: 42px;
+          height: 5px;
+          margin-left: 15px;
+          border-radius: 999px;
+          background: rgba(255,96,0,0.22);
+        }
+        .cv-scene-doc span:first-child { margin-top: 34px; width: 48px; }
+        .cv-scene-doc span + span { margin-top: 10px; }
+        .cv-scene-tray {
+          position: absolute;
+          right: 28px;
+          bottom: 24px;
+          width: 90px;
+          height: 14px;
+          border-radius: 999px;
+          background: rgba(255,96,0,0.18);
+        }
+        .cv-scene-offer {
+          position: absolute;
+          right: 28px;
+          top: 31px;
+          width: 112px;
+          height: 86px;
+          border-radius: 18px;
+          background: #fff;
+          border: 1px solid rgba(26,22,18,0.08);
+          box-shadow: 0 18px 32px rgba(26,22,18,0.13);
+          animation: cvOfferFloat 3.8s ease-in-out infinite;
+        }
+        .cv-scene-offer span {
+          display: block;
+          width: 62px;
+          height: 7px;
+          margin-left: 18px;
+          border-radius: 999px;
+          background: rgba(26,22,18,0.12);
+        }
+        .cv-scene-offer span:first-child { margin-top: 23px; width: 76px; background: rgba(255,96,0,0.28); }
+        .cv-scene-offer span + span { margin-top: 12px; }
+        .cv-scene-offer b {
+          position: absolute;
+          left: 18px;
+          bottom: 14px;
+          width: 46px;
+          height: 18px;
+          border-radius: 999px;
+          background: #ff6000;
+        }
+        .cv-scene-bubble {
+          position: absolute;
+          right: 18px;
+          top: 18px;
+          width: 36px;
+          height: 36px;
+          border-radius: 50%;
+          background: #16a34a;
+          color: #fff;
           display: flex;
           align-items: center;
+          justify-content: center;
+          font-weight: 900;
+          box-shadow: 0 12px 22px rgba(22,163,74,0.2);
+          animation: cvBubblePop 2.8s ease-in-out infinite;
         }
-        .cv-step-connector-dot {
+        .cv-scene-ticket {
           position: absolute;
-          right: -4px; top: 50%;
-          width: 8px; height: 8px;
+          right: 10px;
+          top: 44px;
+          width: 126px;
+          height: 62px;
+          z-index: 1;
+          border-radius: 18px;
+          background: linear-gradient(135deg, #fff1df 0%, #ff9a45 42%, #ff6000 100%);
+          box-shadow: 0 18px 34px rgba(255,96,0,0.24);
+          transform: rotate(-4deg);
+          animation: cvTicketFloat 4s ease-in-out infinite;
+        }
+        .cv-scene-ticket span {
+          position: absolute;
+          left: 42px;
+          top: 14px;
+          font-family: 'Barlow', sans-serif;
+          font-size: 26px;
+          font-weight: 900;
+          color: #fff;
+          letter-spacing: -1px;
+        }
+        .cv-scene-ticket b {
+          position: absolute;
+          left: 88px;
+          top: 26px;
+          font-size: 12px;
+          color: rgba(255,255,255,0.78);
+          letter-spacing: 1px;
+        }
+        .cv-scene-coin {
+          position: absolute;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          width: 44px;
+          height: 44px;
+          border-radius: 50%;
+          background: linear-gradient(135deg, #ffbe7a, #ff6000);
+          color: #fff;
+          font-family: 'Barlow', sans-serif;
+          font-size: 22px;
+          font-weight: 900;
+          z-index: 4;
+          box-shadow: inset 0 0 0 4px rgba(255,255,255,0.2), 0 14px 26px rgba(255,96,0,0.22);
+        }
+        .cv-scene-coin.c1 { left: 86px; top: 28px; animation: cvCoinBob 3.1s ease-in-out infinite; }
+        .cv-scene-coin.c2 { right: 34px; bottom: 20px; width: 34px; height: 34px; font-size: 17px; animation: cvCoinBob 3.1s .5s ease-in-out infinite; }
+        @keyframes cvPersonBreathe {
+          0%, 100% { transform: translateY(0); }
+          50% { transform: translateY(-4px); }
+        }
+        @keyframes cvWave {
+          0%, 100% { transform: rotate(-34deg); }
+          50% { transform: rotate(-48deg); }
+        }
+        @keyframes cvDocHandOff {
+          0%, 100% { transform: translateY(0) rotate(5deg); }
+          50% { transform: translateY(-7px) rotate(2deg); }
+        }
+        @keyframes cvOfferFloat {
+          0%, 100% { transform: translateY(0) rotate(1deg); }
+          50% { transform: translateY(-7px) rotate(-1deg); }
+        }
+        @keyframes cvBubblePop {
+          0%, 100% { transform: scale(1); }
+          50% { transform: scale(1.08); }
+        }
+        .cv-art-doc {
+          position: absolute;
+          left: 50%;
+          top: 30px;
+          width: 76px;
+          height: 92px;
+          transform: translateX(-50%);
+          border-radius: 14px;
+          background: #fff;
+          border: 1px solid rgba(26,22,18,0.08);
+          box-shadow: 0 18px 36px rgba(26,22,18,0.12);
+          animation: cvDocFloat 4.2s ease-in-out infinite;
+        }
+        .cv-art-doc::before {
+          content: "";
+          position: absolute;
+          right: 0;
+          top: 0;
+          border-style: solid;
+          border-width: 0 22px 22px 0;
+          border-color: transparent #ffe1c7 transparent transparent;
+        }
+        .cv-art-doc span {
+          display: block;
+          width: 42px;
+          height: 5px;
+          margin-left: 16px;
+          border-radius: 999px;
+          background: rgba(255,96,0,0.22);
+        }
+        .cv-art-doc span:first-child { margin-top: 34px; width: 48px; }
+        .cv-art-doc span + span { margin-top: 10px; }
+        .cv-art-upload-arrow {
+          position: absolute;
+          left: 50%;
+          bottom: 24px;
+          width: 22px;
+          height: 38px;
+          transform: translateX(-50%);
+          color: #ff6000;
+          animation: cvArrowLift 1.9s ease-in-out infinite;
+        }
+        .cv-art-upload-arrow::before {
+          content: "";
+          position: absolute;
+          left: 9px;
+          top: 9px;
+          width: 4px;
+          height: 28px;
+          border-radius: 999px;
+          background: currentColor;
+        }
+        .cv-art-upload-arrow::after {
+          content: "";
+          position: absolute;
+          left: 4px;
+          top: 6px;
+          width: 14px;
+          height: 14px;
+          border-left: 4px solid currentColor;
+          border-top: 4px solid currentColor;
+          transform: rotate(45deg);
+          border-radius: 2px;
+        }
+        .cv-art-upload-base {
+          position: absolute;
+          left: 50%;
+          bottom: 20px;
+          width: 76px;
+          height: 12px;
+          transform: translateX(-50%);
+          border-radius: 999px;
+          background: rgba(255,96,0,0.18);
+        }
+        .cv-art-node {
+          position: absolute;
+          width: 54px;
+          height: 54px;
+          border-radius: 18px;
+          background: #fff;
+          border: 1px solid rgba(26,22,18,0.08);
+          box-shadow: 0 16px 30px rgba(26,22,18,0.1);
+        }
+        .cv-art-node::after {
+          content: "";
+          position: absolute;
+          inset: 15px;
           border-radius: 50%;
           background: #ff6000;
+        }
+        .cv-art-node.n1 { left: 34px; top: 30px; animation: cvNodePulse 3.2s ease-in-out infinite; }
+        .cv-art-node.n2 { right: 40px; top: 22px; animation: cvNodePulse 3.2s .35s ease-in-out infinite; }
+        .cv-art-node.n3 { left: 84px; bottom: 22px; animation: cvNodePulse 3.2s .7s ease-in-out infinite; }
+        .cv-art-line {
+          position: absolute;
+          height: 2px;
+          background: linear-gradient(90deg, rgba(255,96,0,0), rgba(255,96,0,0.55), rgba(255,96,0,0));
+          transform-origin: left center;
+        }
+        .cv-art-line.l1 { left: 86px; top: 57px; width: 114px; transform: rotate(-6deg); }
+        .cv-art-line.l2 { left: 104px; top: 94px; width: 94px; transform: rotate(-28deg); }
+        .cv-art-target {
+          position: absolute;
+          right: 28px;
+          bottom: 22px;
+          width: 66px;
+          height: 66px;
+          border-radius: 50%;
+          border: 2px solid rgba(255,96,0,0.28);
+          animation: cvTargetScan 2.7s ease-in-out infinite;
+        }
+        .cv-art-target::before,
+        .cv-art-target::after {
+          content: "";
+          position: absolute;
+          inset: 14px;
+          border-radius: inherit;
+          border: 2px solid rgba(255,96,0,0.42);
+        }
+        .cv-art-target::after {
+          inset: 28px;
+          background: #ff6000;
+          border: 0;
+        }
+        .cv-art-ticket {
+          position: absolute;
+          left: 50%;
+          top: 42px;
+          width: 142px;
+          height: 70px;
+          transform: translateX(-50%) rotate(-4deg);
+          border-radius: 18px;
+          background: linear-gradient(135deg, #fff1df 0%, #ff9a45 42%, #ff6000 100%);
+          box-shadow: 0 18px 36px rgba(255,96,0,0.24);
+          animation: cvTicketFloat 4s ease-in-out infinite;
+        }
+        .cv-art-ticket::before,
+        .cv-art-ticket::after {
+          content: "";
+          position: absolute;
+          top: 50%;
+          width: 20px;
+          height: 20px;
+          border-radius: 50%;
+          background: #fffaf5;
           transform: translateY(-50%);
-          box-shadow: 0 0 12px rgba(255,96,0,0.5);
+        }
+        .cv-art-ticket::before { left: -10px; }
+        .cv-art-ticket::after { right: -10px; }
+        .cv-art-ticket span {
+          position: absolute;
+          left: 24px;
+          top: 17px;
+          font-family: 'Barlow', sans-serif;
+          font-size: 34px;
+          font-weight: 900;
+          color: #fff;
+          letter-spacing: -1px;
+        }
+        .cv-art-coin {
+          position: absolute;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          width: 48px;
+          height: 48px;
+          border-radius: 50%;
+          background: linear-gradient(135deg, #ffbe7a, #ff6000);
+          color: #fff;
+          font-family: 'Barlow', sans-serif;
+          font-size: 24px;
+          font-weight: 900;
+          box-shadow: inset 0 0 0 4px rgba(255,255,255,0.2), 0 14px 26px rgba(255,96,0,0.22);
+        }
+        .cv-art-coin.c1 { left: 42px; bottom: 28px; animation: cvCoinBob 3.1s ease-in-out infinite; }
+        .cv-art-coin.c2 { right: 46px; top: 24px; width: 40px; height: 40px; font-size: 20px; animation: cvCoinBob 3.1s .5s ease-in-out infinite; }
+        .cv-art-spark {
+          position: absolute;
+          right: 64px;
+          bottom: 42px;
+          width: 8px;
+          height: 32px;
+          border-radius: 999px;
+          background: #ff6000;
+          box-shadow: 0 0 14px rgba(255,96,0,0.45);
+          transform: rotate(42deg);
+        }
+        .cv-art-spark::before {
+          content: "";
+          position: absolute;
+          inset: 0;
+          border-radius: inherit;
+          background: inherit;
+          transform: rotate(90deg);
+        }
+        @keyframes cvDocFloat {
+          0%, 100% { transform: translateX(-50%) translateY(0) rotate(-1deg); }
+          50% { transform: translateX(-50%) translateY(-8px) rotate(1deg); }
+        }
+        @keyframes cvArrowLift {
+          0%, 100% { transform: translateX(-50%) translateY(4px); opacity: .55; }
+          50% { transform: translateX(-50%) translateY(-6px); opacity: 1; }
+        }
+        @keyframes cvNodePulse {
+          0%, 100% { transform: scale(1); }
+          50% { transform: scale(1.06); }
+        }
+        @keyframes cvTargetScan {
+          0%, 100% { box-shadow: 0 0 0 0 rgba(255,96,0,0.08); }
+          50% { box-shadow: 0 0 0 12px rgba(255,96,0,0.08); }
+        }
+        @keyframes cvTicketFloat {
+          0%, 100% { transform: translateX(-50%) translateY(0) rotate(-4deg); }
+          50% { transform: translateX(-50%) translateY(-8px) rotate(-2deg); }
+        }
+        @keyframes cvCoinBob {
+          0%, 100% { transform: translateY(0); }
+          50% { transform: translateY(-7px); }
         }
 
         /* ───── Form section ───── */
@@ -1859,8 +2234,8 @@ export default function CvLanding() {
           .cv-hero {
             padding: 80px 28px 80px;
             background:
-              radial-gradient(800px circle at 50% 75%, rgba(255,96,0,0.22), transparent 60%),
-              radial-gradient(700px circle at 20% 15%, rgba(255,96,0,0.14), transparent 55%),
+              radial-gradient(700px circle at 50% 32%, rgba(255,96,0,0.13), transparent 56%),
+              radial-gradient(700px circle at 50% 70%, rgba(0,0,0,0.98), transparent 68%),
               linear-gradient(180deg, #1f1813 0%, #181410 100%);
           }
           .cv-hero-inner { grid-template-columns: 1fr; gap: 56px; }
@@ -1869,12 +2244,31 @@ export default function CvLanding() {
             height: 230px;
             margin-top: 62px;
           }
-          .cv-reward-graphic {
-            bottom: 30px;
-            transform: translateX(-50%) scale(.88);
-          }
+          .cv-banknote-img { width: min(560px, 100%); }
           .cv-prize { min-height: 340px; }
-          .cv-steps { grid-template-columns: 1fr; }
+          .cv-steps {
+            grid-template-columns: 1fr;
+            gap: 18px;
+            margin-top: 40px;
+          }
+          .cv-step,
+          .cv-step:nth-child(2),
+          .cv-step:nth-child(3) {
+            margin-top: 0;
+            min-height: auto;
+            grid-template-columns: 1fr;
+            padding: 18px 18px 22px;
+          }
+          .cv-step-art,
+          .cv-step-num,
+          .cv-step-title,
+          .cv-step-desc {
+            grid-column: 1;
+          }
+          .cv-step-art {
+            grid-row: auto;
+            margin-bottom: 18px;
+          }
           .cv-step-connector { height: 32px; padding: 0 20px; }
           .cv-step-connector svg { transform: rotate(90deg); width: 28px; height: 100%; }
           .cv-step-connector-dot { right: 50%; top: auto; bottom: -4px; transform: translateX(50%); }
@@ -1882,7 +2276,7 @@ export default function CvLanding() {
           .cv-jobs-grid { grid-template-columns: 1fr; }
         }
         @media (max-width: 600px) {
-          .cv-hero { padding: 64px 20px 64px; }
+          .cv-hero { padding: 64px 20px 48px; }
           .cv-section-inner { padding: 0 20px; }
           .cv-how, .cv-test, .cv-jobs, .cv-form-section { padding: 80px 0 64px; }
           .cv-final { padding: 90px 20px 120px; }
@@ -1891,7 +2285,11 @@ export default function CvLanding() {
             gap: 8px;
           }
           .cv-h1-line { white-space: normal; }
-          .cv-h1-soft { font-size: 0.46em; }
+          .cv-h1-soft {
+            font-size: 0.46em;
+            gap: 5px;
+          }
+          .cv-h1-logo { height: 1.55em; }
           .cv-h1-hero { margin-top: 18px; }
           .cv-banknote-showcase {
             height: 188px;
@@ -1906,11 +2304,7 @@ export default function CvLanding() {
             width: 300px;
             bottom: 24px;
           }
-          .cv-reward-graphic {
-            bottom: 12px;
-            width: 390px;
-            transform: translateX(-50%) scale(.68);
-          }
+          .cv-banknote-img { width: 360px; }
           .cv-h2 { letter-spacing: -0.8px; }
           .cv-test-card { flex-basis: 290px; padding: 26px 22px 20px; }
           .cv-jobs-grid { padding: 0 20px; }
