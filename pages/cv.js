@@ -322,29 +322,11 @@ export default function CvLanding() {
                 <span className="cv-h1-line">이력서만 등록하면</span>
                 <span className="cv-h1-line">합격 시 <em>2,000,000 VND</em></span>
               </h1>
-              <p className="cv-hero-sub">FYI가 당신에게 딱 맞는 포지션을 제안해드려요.<br/>합격하면 축하금이 따라옵니다.</p>
               <div className="cv-hero-cta-wrap">
                 <button className="cv-btn cv-btn-hero" onClick={scrollToForm}>
                   1분만에 이력서 등록하기 <IconArrowRight />
                 </button>
                 <div className="cv-hero-fine">*수습 계약 2개월 통과 시 지급</div>
-              </div>
-
-              <div className="cv-trust-line">
-                <div className="cv-trust-item">
-                  <span className="cv-trust-num">120+</span>
-                  <span className="cv-trust-label">IT 기업</span>
-                </div>
-                <span className="cv-trust-divider" />
-                <div className="cv-trust-item">
-                  <span className="cv-trust-num">5,000+</span>
-                  <span className="cv-trust-label">이력서</span>
-                </div>
-                <span className="cv-trust-divider" />
-                <div className="cv-trust-item">
-                  <span className="cv-trust-num">2M VND</span>
-                  <span className="cv-trust-label">합격 축하금</span>
-                </div>
               </div>
             </div>
 
