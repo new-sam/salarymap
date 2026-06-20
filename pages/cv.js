@@ -336,11 +336,18 @@ export default function CvLanding() {
               <span className="cv-h1-line cv-h1-hero"><em>2,000,000 VND</em> 드려요</span>
             </h1>
             <div className="cv-banknote-showcase" aria-hidden>
-              <div className="cv-banknote-pack">
-                <i className="cv-banknote b1"><span>500,000</span><b>VND</b></i>
-                <i className="cv-banknote b2"><span>500,000</span><b>VND</b></i>
-                <i className="cv-banknote b3"><span>500,000</span><b>VND</b></i>
-                <i className="cv-banknote b4"><span>500,000</span><b>VND</b></i>
+              <div className="cv-reward-graphic">
+                <div className="cv-reward-card card-back" />
+                <div className="cv-reward-card card-mid" />
+                <div className="cv-reward-card card-front">
+                  <span className="cv-reward-mark">FYI</span>
+                  <span className="cv-reward-amount">2M</span>
+                  <span className="cv-reward-currency">VND</span>
+                </div>
+                <div className="cv-reward-coin coin-left">₫</div>
+                <div className="cv-reward-coin coin-right">₫</div>
+                <div className="cv-reward-spark s-a" />
+                <div className="cv-reward-spark s-b" />
               </div>
             </div>
           </div>
@@ -691,10 +698,14 @@ export default function CvLanding() {
            Page rhythm: Hero (dark) → How (cream) → ... → Final (dark) closer. */
         .cv-hero {
           position: relative;
-          padding: 120px 40px 120px;
+          padding: 80px 40px;
           overflow: hidden;
+          min-height: 92vh;
+          display: flex;
+          align-items: center;
+          justify-content: center;
           background:
-            radial-gradient(900px circle at 50% 40%, rgba(255,96,0,0.18), transparent 65%),
+            radial-gradient(1000px circle at 50% 50%, rgba(255,96,0,0.16), transparent 70%),
             #000;
         }
         .cv-hero-bg {
@@ -736,31 +747,31 @@ export default function CvLanding() {
         /* Hero kicker — orange, centered */
         .cv-hero .cv-kicker { color: #ff8a40; justify-content: center; }
         .cv-h1 {
-          font-size: clamp(44px, 6vw, 92px);
+          font-size: clamp(38px, 5vw, 78px);
           font-weight: 900;
-          line-height: 1.05;
-          letter-spacing: -3.2px;
+          line-height: 1.12;
+          letter-spacing: -2.4px;
           color: #ffffff;
           margin-bottom: 0;
           display: flex;
           flex-direction: column;
-          gap: 10px;
+          gap: 20px;
           align-items: center;
         }
         .cv-h1-line {
           display: block;
           white-space: nowrap;
         }
-        /* 위 한 줄: 굵게 유지 + 적당한 크기 (wanted-style) */
+        /* 위 한 줄: 작게 + 적당한 weight (frame role, breathable) */
         .cv-h1-soft {
-          font-size: 0.5em;
-          font-weight: 800;
-          letter-spacing: -1.6px;
+          font-size: 0.42em;
+          font-weight: 600;
+          letter-spacing: -0.8px;
           color: #ffffff;
+          margin-bottom: 12px;
         }
-        /* 마지막 줄: visual center (full size + glow) */
+        /* 마지막 줄: visual center (full size + glow), 여백으로 격리 */
         .cv-h1-hero {
-          margin-top: 16px;
           font-weight: 900;
         }
         .cv-h1 em {
@@ -768,128 +779,203 @@ export default function CvLanding() {
           color: #ff8a40;
           font-variant-numeric: tabular-nums;
           text-shadow:
-            0 0 30px rgba(255,138,64,0.55),
-            0 0 60px rgba(255,96,0,0.35);
+            0 0 28px rgba(255,138,64,0.5),
+            0 0 56px rgba(255,96,0,0.3);
           white-space: nowrap;
-          font-size: 1.12em;
-          letter-spacing: -3.6px;
+          font-size: 1.08em;
+          letter-spacing: -2.8px;
         }
         .cv-banknote-showcase {
           position: relative;
           width: min(820px, 100%);
-          height: 260px;
-          margin: 72px auto 0;
+          height: 250px;
+          margin: 84px auto 0;
           pointer-events: none;
-          perspective: 900px;
+          isolation: isolate;
         }
         .cv-banknote-showcase::before {
           content: "";
           position: absolute;
           left: 50%;
-          bottom: 18px;
-          width: 620px;
-          height: 118px;
+          bottom: 24px;
+          width: 560px;
+          height: 150px;
           transform: translateX(-50%);
           background:
-            radial-gradient(ellipse at center, rgba(20,184,166,0.28), transparent 66%),
-            radial-gradient(ellipse at center, rgba(255,138,64,0.12), transparent 72%);
-          filter: blur(12px);
+            radial-gradient(ellipse at 44% 50%, rgba(255,96,0,0.28), transparent 62%),
+            radial-gradient(ellipse at 58% 62%, rgba(255,178,92,0.14), transparent 70%);
+          filter: blur(20px);
+          z-index: -2;
         }
         .cv-banknote-showcase::after {
           content: "";
           position: absolute;
           left: 50%;
-          bottom: 26px;
-          width: 520px;
-          height: 42px;
+          bottom: 20px;
+          width: 430px;
+          height: 46px;
           transform: translateX(-50%);
-          background: radial-gradient(ellipse at center, rgba(0,0,0,0.46), transparent 68%);
-          filter: blur(10px);
+          background: radial-gradient(ellipse at center, rgba(0,0,0,0.5), transparent 70%);
+          filter: blur(12px);
+          z-index: -1;
         }
-        .cv-banknote-pack {
+        .cv-reward-graphic {
           position: absolute;
           left: 50%;
-          bottom: 52px;
-          width: 560px;
-          height: 170px;
-          transform: translateX(-50%) rotateX(10deg);
-          transform-style: preserve-3d;
+          bottom: 32px;
+          width: 520px;
+          height: 172px;
+          transform: translateX(-50%);
         }
-        .cv-banknote {
+        .cv-reward-card {
           position: absolute;
           left: 50%;
           top: 50%;
-          width: 390px;
-          height: 166px;
-          border-radius: 16px;
-          border: 1px solid rgba(204,251,241,0.78);
-          overflow: hidden;
-          background:
-            linear-gradient(90deg, transparent 0 16%, rgba(255,255,255,0.62) 16% 18%, transparent 18%),
-            radial-gradient(ellipse at 24% 52%, rgba(240,253,250,0.52) 0 16%, transparent 17%),
-            radial-gradient(ellipse at 79% 50%, rgba(6,95,70,0.26) 0 18%, transparent 19%),
-            repeating-linear-gradient(135deg, rgba(255,255,255,0.14) 0 2px, transparent 2px 7px),
-            linear-gradient(135deg, #d9f99d 0%, #67e8f9 40%, #14b8a6 68%, #047857 100%);
-          box-shadow:
-            inset 0 0 0 5px rgba(236,253,245,0.38),
-            inset 0 0 0 14px rgba(4,120,87,0.2),
-            inset 0 -34px 60px rgba(6,78,59,0.22),
-            0 30px 54px rgba(0,0,0,0.38);
+          width: 360px;
+          height: 126px;
+          border-radius: 22px;
           transform: translate(-50%, -50%) rotate(var(--r)) translate(var(--x), var(--y));
-          font-family: 'Barlow', sans-serif;
-        }
-        .cv-banknote::before {
-          content: "";
-          position: absolute;
-          left: 46px;
-          top: 34px;
-          width: 74px;
-          height: 96px;
-          border-radius: 999px;
-          background:
-            radial-gradient(circle at 50% 23%, rgba(5,46,22,0.34) 0 18%, transparent 19%),
-            radial-gradient(ellipse at 50% 72%, rgba(5,46,22,0.3) 0 36%, transparent 37%),
-            rgba(236,253,245,0.34);
           box-shadow:
-            0 0 0 1px rgba(6,95,70,0.2),
-            inset 0 0 24px rgba(255,255,255,0.42);
+            0 28px 50px rgba(0,0,0,0.38),
+            inset 0 1px 0 rgba(255,255,255,0.35);
         }
-        .cv-banknote::after {
+        .cv-reward-card::before {
           content: "";
           position: absolute;
-          left: 144px;
-          top: 19px;
-          width: 14px;
-          height: 128px;
-          border-radius: 999px;
-          background: linear-gradient(180deg, rgba(253,224,71,0.88), rgba(125,211,252,0.55), rgba(253,224,71,0.88));
-          box-shadow: 0 0 20px rgba(253,224,71,0.32);
+          inset: 12px;
+          border-radius: 16px;
+          border: 1px solid rgba(255,255,255,0.22);
         }
-        .cv-banknote span {
+        .cv-reward-card::after {
+          content: "";
           position: absolute;
-          right: 36px;
-          top: 46px;
-          color: #fef3c7;
-          font-size: 46px;
+          right: 24px;
+          top: 24px;
+          width: 54px;
+          height: 54px;
+          border-radius: 50%;
+          background:
+            radial-gradient(circle at 35% 32%, rgba(255,255,255,0.55), transparent 26%),
+            rgba(255,255,255,0.13);
+        }
+        .card-back {
+          --r: -8deg;
+          --x: -68px;
+          --y: 18px;
+          background: linear-gradient(135deg, #3b2b20 0%, #8a4524 50%, #ff8a40 100%);
+          opacity: 0.72;
+        }
+        .card-mid {
+          --r: 5deg;
+          --x: 46px;
+          --y: 8px;
+          background: linear-gradient(135deg, #fff1df 0%, #ffb15f 44%, #ff6000 100%);
+          opacity: 0.9;
+        }
+        .card-front {
+          --r: -2deg;
+          --x: 0;
+          --y: -18px;
+          background:
+            radial-gradient(circle at 18% 28%, rgba(255,255,255,0.28), transparent 20%),
+            linear-gradient(135deg, #fff7ec 0%, #ffb15f 34%, #ff6000 74%, #a8350a 100%);
+          border: 1px solid rgba(255,214,170,0.72);
+          z-index: 3;
+        }
+        .cv-reward-mark {
+          position: absolute;
+          left: 32px;
+          top: 26px;
+          font-size: 13px;
           font-weight: 900;
-          letter-spacing: -1.2px;
-          text-shadow:
-            0 2px 0 rgba(6,78,59,0.7),
-            0 0 18px rgba(255,255,255,0.24);
+          letter-spacing: 1.8px;
+          color: rgba(26,22,18,0.74);
         }
-        .cv-banknote b {
+        .cv-reward-amount {
           position: absolute;
-          right: 42px;
-          top: 96px;
-          color: rgba(236,253,245,0.92);
+          left: 30px;
+          bottom: 25px;
+          font-family: 'Barlow', sans-serif;
+          font-size: 58px;
+          font-weight: 900;
+          letter-spacing: -2px;
+          color: #fff;
+          text-shadow: 0 3px 0 rgba(120,38,0,0.2);
+        }
+        .cv-reward-currency {
+          position: absolute;
+          left: 132px;
+          bottom: 34px;
           font-size: 18px;
           font-weight: 900;
-          letter-spacing: 2px;
+          letter-spacing: 1.4px;
+          color: rgba(255,255,255,0.76);
         }
-        .cv-banknote.b1 { --r: -9deg; --x: -80px; --y: 28px; z-index: 1; opacity: 0.72; }
-        .cv-banknote.b2 { --r: 6deg; --x: 64px; --y: 18px; z-index: 2; opacity: 0.82; }
-        .cv-banknote.b3 { --r: -3deg; --x: -18px; --y: -10px; z-index: 3; opacity: 0.94; }
-        .cv-banknote.b4 { --r: 2deg; --x: 42px; --y: -34px; z-index: 4; }
+        .cv-reward-coin {
+          position: absolute;
+          z-index: 4;
+          width: 76px;
+          height: 76px;
+          border-radius: 50%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-family: 'Barlow', sans-serif;
+          font-size: 38px;
+          font-weight: 900;
+          color: #fff7ec;
+          background:
+            radial-gradient(circle at 35% 30%, #ffd19c 0 18%, transparent 19%),
+            linear-gradient(135deg, #ffb15f 0%, #ff6000 62%, #9a3412 100%);
+          box-shadow:
+            inset 0 0 0 5px rgba(255,255,255,0.22),
+            0 18px 34px rgba(0,0,0,0.34),
+            0 0 28px rgba(255,96,0,0.28);
+        }
+        .coin-left {
+          left: 62px;
+          bottom: 8px;
+          transform: rotate(-9deg);
+        }
+        .coin-right {
+          right: 70px;
+          top: 6px;
+          width: 62px;
+          height: 62px;
+          font-size: 30px;
+          opacity: 0.9;
+          transform: rotate(12deg);
+        }
+        .cv-reward-spark {
+          position: absolute;
+          border-radius: 999px;
+          background: #ff8a40;
+          box-shadow: 0 0 18px rgba(255,96,0,0.6);
+        }
+        .cv-reward-spark::before,
+        .cv-reward-spark::after {
+          content: "";
+          position: absolute;
+          inset: 0;
+          border-radius: inherit;
+          background: inherit;
+        }
+        .cv-reward-spark::before { transform: rotate(90deg); }
+        .s-a {
+          width: 9px;
+          height: 36px;
+          right: 24px;
+          bottom: 34px;
+          transform: rotate(42deg);
+        }
+        .s-b {
+          width: 7px;
+          height: 26px;
+          left: 18px;
+          top: 36px;
+          transform: rotate(-28deg);
+          opacity: 0.72;
+        }
         .cv-hero-sub {
           font-size: 17.5px;
           color: rgba(250,246,240,0.65);
@@ -1783,9 +1869,9 @@ export default function CvLanding() {
             height: 230px;
             margin-top: 62px;
           }
-          .cv-banknote-pack {
-            width: 500px;
-            transform: translateX(-50%) rotateX(9deg) scale(.88);
+          .cv-reward-graphic {
+            bottom: 30px;
+            transform: translateX(-50%) scale(.88);
           }
           .cv-prize { min-height: 340px; }
           .cv-steps { grid-template-columns: 1fr; }
@@ -1809,7 +1895,7 @@ export default function CvLanding() {
           .cv-h1-hero { margin-top: 18px; }
           .cv-banknote-showcase {
             height: 188px;
-            margin-top: 54px;
+            margin-top: 64px;
           }
           .cv-banknote-showcase::before {
             width: 340px;
@@ -1820,10 +1906,10 @@ export default function CvLanding() {
             width: 300px;
             bottom: 24px;
           }
-          .cv-banknote-pack {
-            width: 360px;
-            bottom: 22px;
-            transform: translateX(-50%) rotateX(8deg) scale(.62);
+          .cv-reward-graphic {
+            bottom: 12px;
+            width: 390px;
+            transform: translateX(-50%) scale(.68);
           }
           .cv-h2 { letter-spacing: -0.8px; }
           .cv-test-card { flex-basis: 290px; padding: 26px 22px 20px; }
