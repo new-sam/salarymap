@@ -534,11 +534,11 @@ export default function CvLanding() {
                   <div className="cv-hint">PDF / DOCX · 최대 10MB</div>
                 </div>
 
-                {/* ─── STEP 2: 회원가입 + 등록 ─── */}
+                {/* ─── STEP 2: 회원가입 (미인증) 또는 등록 (인증) ─── */}
                 <div className={`cv-stepblock ${!file ? 'inactive' : ''}`}>
                   <div className="cv-stepblock-label">
                     <span className="cv-stepblock-num">2</span>
-                    STEP 2 · 회원가입
+                    {user ? 'STEP 2 · 이력서 등록' : 'STEP 2 · 회원가입'}
                   </div>
 
                   {errMsg && <div className="cv-err">{errMsg}</div>}
@@ -559,15 +559,17 @@ export default function CvLanding() {
                   )}
                 </div>
 
-                {/* ─── Reassurance footer (Step 3 아님 — action 없는 promise) ─── */}
-                <div className="cv-promise">
-                  <span className="cv-promise-check"><IconCheck /></span>
-                  <div>
-                    위 두 단계만 완료하시면
-                    <br/>
-                    <b>가입과 이력서 등록이 한 번에</b> 자동 처리돼요.
+                {/* ─── Reassurance footer — 미인증일 때만 (가입+등록 한 번에 약속) ─── */}
+                {!user && (
+                  <div className="cv-promise">
+                    <span className="cv-promise-check"><IconCheck /></span>
+                    <div>
+                      위 두 단계만 완료하시면
+                      <br/>
+                      <b>가입과 이력서 등록이 한 번에</b> 자동 처리돼요.
+                    </div>
                   </div>
-                </div>
+                )}
 
                 <div className="cv-fine">
                   등록 시 인증된 채용 담당자가 FYI 인재풀에서 당신의 이력서를 열람할 수 있어요.
