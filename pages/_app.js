@@ -78,7 +78,7 @@ export default function App({ Component, pageProps }) {
       )}
       {!isCompany && !isJobDetail && !isAdLanding && <MobileTabBar />}
       <GlobalLoginModal />
-      {!isAdmin && <AppDownloadModal />}
+      {!isAdmin && !isAdLanding && <AppDownloadModal />}
       <Toaster
         position="bottom-right"
         richColors

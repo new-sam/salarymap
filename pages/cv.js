@@ -124,6 +124,21 @@ const IconGoogle = () => (
     <path fill="#1976D2" d="M43.611 20.083H42V20H24v8h11.303a12.04 12.04 0 01-4.087 5.571l.003-.002 6.19 5.238C36.971 39.205 44 34 44 24c0-1.341-.138-2.65-.389-3.917z"/>
   </svg>
 )
+const IconCoin = () => (
+  <svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+    {/* Drop shadow */}
+    <ellipse cx="32" cy="56" rx="20" ry="3" fill="rgba(0,0,0,0.35)"/>
+    {/* Coin rim */}
+    <circle cx="32" cy="30" r="22" fill="#ff8a40" stroke="#1a1612" strokeWidth="2.5"/>
+    {/* Coin inner ring */}
+    <circle cx="32" cy="30" r="17" fill="#ff6000" stroke="#1a1612" strokeWidth="1.5"/>
+    {/* ₫ symbol (Vietnamese dong) */}
+    <text x="32" y="39" textAnchor="middle" fontSize="22" fontWeight="900" fill="#fff7ee" style={{ fontFamily: 'Barlow, sans-serif' }}>₫</text>
+    {/* Sparkle accents */}
+    <path d="M52 14 L53 17 L56 18 L53 19 L52 22 L51 19 L48 18 L51 17 Z" fill="#ffd1a0"/>
+    <path d="M10 18 L10.7 20 L13 20.5 L10.7 21 L10 23 L9.3 21 L7 20.5 L9.3 20 Z" fill="#ffd1a0"/>
+  </svg>
+)
 const IconLinkedIn = () => (
   <svg width="16" height="16" viewBox="0 0 24 24" fill="#0A66C2" style={{ marginRight: 8 }}>
     <path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z"/>
@@ -312,26 +327,20 @@ export default function CvLanding() {
       <GlobalNav />
 
       <main className="cv-page">
-        {/* ───── HERO ───── */}
+        {/* ───── HERO (center-aligned, black bg, white text) ───── */}
         <section className="cv-hero">
           <div className="cv-hero-bg" aria-hidden />
           <div className="cv-hero-inner">
-            <div className="cv-hero-copy">
-              <div className="cv-kicker"><span className="kdot" />베트남 IT 인재 한정 캠페인</div>
-              <h1 className="cv-h1">
-                <span className="cv-h1-line">이력서만 등록하면</span>
-                <span className="cv-h1-line">합격 시 <em>2,000,000 VND</em></span>
-              </h1>
-              <div className="cv-hero-cta-wrap">
-                <button className="cv-btn cv-btn-hero" onClick={scrollToForm}>
-                  1분만에 이력서 등록하기 <IconArrowRight />
-                </button>
-                <div className="cv-hero-fine">*수습 계약 2개월 통과 시 지급</div>
-              </div>
-            </div>
-
-            <div className="cv-prize" aria-hidden>
-              <img src="/cv/hero-prize.png" alt="" className="cv-prize-img" />
+            <h1 className="cv-h1">
+              <span className="cv-h1-line">FYI에 이력서 등록하고</span>
+              <span className="cv-h1-line">이직·취업 성공하면</span>
+              <span className="cv-h1-line">합격 축하금 <em>2,000,000 VND</em> 드려요</span>
+            </h1>
+            <div className="cv-hero-cta-wrap">
+              <button className="cv-btn cv-btn-hero" onClick={scrollToForm}>
+                1분만에 이력서 등록하기 <IconArrowRight />
+              </button>
+              <div className="cv-hero-fine">*수습 계약 2개월 통과 시 지급</div>
             </div>
           </div>
         </section>
@@ -681,36 +690,35 @@ export default function CvLanding() {
            Page rhythm: Hero (dark) → How (cream) → ... → Final (dark) closer. */
         .cv-hero {
           position: relative;
-          padding: 100px 40px 100px;
+          padding: 120px 40px 120px;
           overflow: hidden;
           background:
-            /* Warm orange ambient around prize (right side) */
-            radial-gradient(900px circle at 78% 50%, rgba(255,96,0,0.20), transparent 60%),
-            /* Warm orange ambient on copy side */
-            radial-gradient(800px circle at 18% 30%, rgba(255,96,0,0.14), transparent 55%),
-            radial-gradient(700px circle at 25% 95%, rgba(255,96,0,0.06), transparent 55%),
-            /* Dark base with subtle warm tilt */
-            linear-gradient(135deg, #1f1813 0%, #181410 55%, #14100c 100%);
+            radial-gradient(900px circle at 50% 40%, rgba(255,96,0,0.18), transparent 65%),
+            #000;
         }
         .cv-hero-bg {
-          /* subtle grid texture across the hero */
           position: absolute;
           inset: 0;
           background-image:
             linear-gradient(rgba(255,255,255,0.04) 1px, transparent 1px),
             linear-gradient(90deg, rgba(255,255,255,0.04) 1px, transparent 1px);
           background-size: 80px 80px;
-          mask-image: radial-gradient(ellipse 90% 80% at center, #000 35%, transparent 90%);
+          mask-image: radial-gradient(ellipse 70% 65% at center, #000 30%, transparent 90%);
           pointer-events: none;
         }
         .cv-hero-inner {
           position: relative;
-          max-width: 1240px;
+          max-width: 1320px;
           margin: 0 auto;
-          display: grid;
-          grid-template-columns: 1.1fr 1fr;
-          gap: 56px;
+          display: flex;
+          flex-direction: column;
           align-items: center;
+          text-align: center;
+        }
+        .cv-hero-picto {
+          margin-bottom: 22px;
+          filter: drop-shadow(0 14px 32px rgba(255,96,0,0.45));
+          animation: cvPrizeFloat 6s ease-in-out infinite;
         }
         .cv-kicker {
           font-family: 'Geist Mono', monospace;
@@ -724,18 +732,19 @@ export default function CvLanding() {
           gap: 10px;
           font-weight: 700;
         }
-        /* Hero copy lives on the dark side — invert colors */
-        .cv-hero-copy .cv-kicker { color: #ff8a40; }
+        /* Hero kicker — orange, centered */
+        .cv-hero .cv-kicker { color: #ff8a40; justify-content: center; }
         .cv-h1 {
-          font-size: clamp(34px, 4.4vw, 58px);
+          font-size: clamp(34px, 4.2vw, 60px);
           font-weight: 900;
-          line-height: 1.12;
-          letter-spacing: -1.6px;
-          color: #faf6f0;
-          margin-bottom: 24px;
+          line-height: 1.15;
+          letter-spacing: -1.8px;
+          color: #ffffff;
+          margin-bottom: 40px;
           display: flex;
           flex-direction: column;
-          gap: 4px;
+          gap: 8px;
+          align-items: center;
         }
         .cv-h1-line {
           display: block;
@@ -758,10 +767,9 @@ export default function CvLanding() {
         }
         .cv-hero-cta-wrap {
           display: flex;
+          flex-direction: column;
           align-items: center;
-          gap: 22px;
-          margin-bottom: 44px;
-          flex-wrap: wrap;
+          gap: 14px;
         }
         .cv-hero-fine {
           font-size: 12.5px;
