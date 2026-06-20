@@ -332,7 +332,7 @@ const VI = {
 
 export default function Terms() {
   // Drive locale from the global LanguageSwitcher (footer).
-  const { lang } = useT();
+  const { lang, t: gt } = useT();
   const t = lang === 'ko' ? KO : lang === 'en' ? EN : VI;
   return (
     <>
@@ -351,8 +351,8 @@ export default function Terms() {
           <span>FOR YOUR <em>'SALARY'</em> INFORMATION</span>
         </a>
         <div className="nav-r">
-          <a className="nav-link" href="/how-it-works">How it works</a>
-          <a className="nav-link" href="/privacy">Privacy</a>
+          <a className="nav-link" href="/how-it-works">{gt('footer.howItWorks')}</a>
+          <a className="nav-link" href="/privacy">{gt('footer.privacy')}</a>
         </div>
       </nav>
       <div className="page">

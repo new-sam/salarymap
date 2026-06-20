@@ -21,6 +21,27 @@ function activePageFor(pathname) {
   return null;
 }
 
+function GlobalFooter() {
+  const { t } = useT();
+  return (
+    <footer style={{
+      background: '#0a0a09', borderTop: '1px solid rgba(255,255,255,0.06)',
+      padding: '24px 40px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 24, flexWrap: 'wrap',
+    }}>
+      <div style={{ fontFamily: "'Geist Mono', monospace", fontSize: 12, color: 'rgba(242,240,235,0.42)' }}>
+        {t('footer.copyright')}
+      </div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 24, flexWrap: 'wrap' }}>
+        <a href="/app" style={{ fontSize: 13, color: '#ff6000', textDecoration: 'none', fontWeight: 600 }}>📱 {t('footer.downloadApp')}</a>
+        <a href="/how-it-works" style={{ fontSize: 13, color: 'rgba(242,240,235,0.42)', textDecoration: 'none' }}>{t('footer.howItWorks')}</a>
+        <a href="/privacy" style={{ fontSize: 13, color: 'rgba(242,240,235,0.42)', textDecoration: 'none' }}>{t('footer.privacy')}</a>
+        <a href="/terms" style={{ fontSize: 13, color: 'rgba(242,240,235,0.42)', textDecoration: 'none' }}>{t('footer.terms')}</a>
+        <LanguageSwitcher />
+      </div>
+    </footer>
+  );
+}
+
 function GlobalLoginModal() {
   const { t } = useT();
   const [show, setShow] = useState(false);
@@ -104,12 +125,7 @@ export default function App({ Component, pageProps }) {
       )}
       <Component {...pageProps} />
       {(!isCompany || isForCompaniesLanding) && !isAdmin && !isPromoLanding && (
-        <footer style={{
-          background: '#0a0a09', borderTop: '1px solid rgba(255,255,255,0.06)',
-          padding: '24px 40px', display: 'flex', alignItems: 'center', justifyContent: 'center',
-        }}>
-          <LanguageSwitcher />
-        </footer>
+        <GlobalFooter />
       )}
       {!isCompany && !isJobDetail && <MobileTabBar />}
       <GlobalLoginModal />
