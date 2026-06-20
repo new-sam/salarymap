@@ -517,6 +517,7 @@ export default function AdminJobs() {
                       <div key={c.id} style={{ display: 'flex', alignItems: 'baseline', gap: 10, padding: '7px 0', borderBottom: '1px solid #f7f7f7' }}>
                         {badge(c.category, c.category)}
                         <span style={{ flex: 1, fontSize: 13, color: '#333' }}>{c.summary}</span>
+                        {c.actor && c.actor !== 'deploy' && <span style={{ fontSize: 11, color: '#888', flexShrink: 0, fontWeight: 600 }}>{c.actor}</span>}
                         {c.commit && <code style={{ fontSize: 11, color: '#aaa' }}>{c.commit}</code>}
                         <span style={{ fontSize: 11, color: '#bbb', flexShrink: 0 }}>{c.created_at ? new Date(c.created_at).toLocaleDateString() : ''}</span>
                       </div>
