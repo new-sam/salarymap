@@ -14,19 +14,26 @@ export default async function handler(req, res) {
   if (req.method === 'GET') {
     const { data } = await supabase
       .from('events')
-      .select('id, meta, created_at')
-      .eq('event', 'admin_action')
+      .select('id, event, meta, created_at')
+      .in('event', ['changelog', 'admin_action'])
       .order('created_at', { ascending: false })
-      .limit(200)
-    const logs = (data || []).map(r => ({
+      .limit(400)
+    const rows = (data || []).map(r => ({
       id: r.id,
+      type: r.event === 'changelog' ? 'changelog' : 'action',
       created_at: r.created_at,
+      route: r.meta?.route || '',
+      routeLabel: r.meta?.routeLabel || r.meta?.route || '기타',
       action: r.meta?.action || '',
       summary: r.meta?.summary || '',
       actor: r.meta?.actor || '',
+      commit: r.meta?.commit || '',
       category: r.meta?.category || 'action',
     }))
-    return res.status(200).json(logs)
+    return res.status(200).json({
+      changelog: rows.filter(r => r.type === 'changelog'),
+      actions: rows.filter(r => r.type === 'action'),
+    })
   }
 
   if (req.method === 'POST') {
