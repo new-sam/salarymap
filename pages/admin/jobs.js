@@ -52,6 +52,14 @@ export default function AdminJobs() {
 
   const headers = () => ({ 'Content-Type': 'application/json', Authorization: `Bearer ${token}` })
 
+  // 어드민 활동 로그 기록 (베스트에포트)
+  const logAction = async (action, summary, category = 'action') => {
+    try {
+      await fetch('/api/admin/activity-log', { method: 'POST', headers: headers(), body: JSON.stringify({ action, summary, category }) })
+      mutateLog?.()
+    } catch (_) {}
+  }
+
   // SWR: 캐시로 페이지 재방문 즉시 표시. 액션 후엔 해당 목록만 mutate()로 갱신.
   const { data: jobs = [], mutate: mutateJobs } = useAdmin('/api/admin/jobs', token)
   const { data: apps = [], mutate: mutateApps } = useAdmin('/api/admin/applications', token)
@@ -60,6 +68,7 @@ export default function AdminJobs() {
   const { data: progress = [] } = useAdmin('/api/admin/job-progress', token)
   const { data: companies = [], mutate: mutateCompanies } = useAdmin('/api/admin/companies', token)
   const { data: kpi = null } = useAdmin('/api/admin/company-kpi', token)
+  const { data: activityLog = [], mutate: mutateLog } = useAdmin('/api/admin/activity-log', token)
   const handleAddTarget = async () => {
     if (!targetForm.company_name || !targetForm.slug) return
     setTargetSaving(true)
@@ -125,12 +134,14 @@ export default function AdminJobs() {
   const handleToggleVerify = async (c) => {
     await fetch('/api/admin/companies', { method: 'PUT', headers: headers(), body: JSON.stringify({ id: c.id, verified: !c.verified_at }) })
     flash(c.verified_at ? '인증 해제됨' : '✅ 인증 완료'); mutateCompanies()
+    logAction(c.verified_at ? '회사 인증 해제' : '회사 인증', c.name, 'company')
   }
 
   const handleToggleFeatured = async (job) => {
     await fetch('/api/admin/jobs', { method: 'PUT', headers: headers(), body: JSON.stringify({ id: job.id, is_featured: !job.is_featured }) })
     flash(job.is_featured ? '프리미엄 해제됨' : '⭐ 프리미엄 등록됨 — 적극 채용 중 노출')
     mutateJobs()
+    logAction(job.is_featured ? '프리미엄 해제' : '프리미엄 등록', `${job.title} (${job.company})`, 'premium')
   }
 
   const handleApprove = async (job) => {
@@ -138,11 +149,13 @@ export default function AdminJobs() {
     // 승인 알림 (기업에게, 베스트에포트)
     try { await fetch('/api/admin/notify-job-approved', { method: 'POST', headers: headers(), body: JSON.stringify({ jobId: job.id }) }) } catch (_) {}
     flash('✅ 승인됨 — 기업에 알림 발송'); mutateJobs()
+    logAction('공고 승인', `${job.title} (${job.company})`, 'approval')
   }
   const handleReject = async (job) => {
     if (!confirm('이 공고를 반려하시겠습니까?')) return
     await fetch('/api/admin/jobs', { method: 'PUT', headers: headers(), body: JSON.stringify({ id: job.id, status: 'rejected', is_active: false }) })
     flash('Rejected'); mutateJobs()
+    logAction('공고 반려', `${job.title} (${job.company})`, 'approval')
   }
 
   const handleStatusChange = async (appId, status) => {
@@ -238,9 +251,9 @@ export default function AdminJobs() {
             </div>
           </div>
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
-            {['kpi','jobs','progress','companies','applications','crawl','admins'].map(t => (
+            {['kpi','jobs','progress','companies','applications','log','crawl','admins'].map(t => (
               <button key={t} style={{ ...S.tab, ...(tab === t ? S.tabOn : {}) }} onClick={() => setTab(t)}>
-                {t === 'kpi' ? '📊 지표' : t === 'jobs' ? `Jobs (${jobs.length})` : t === 'progress' ? `진행현황 (${progress.length})` : t === 'companies' ? `회사 (${companies.length})` : t === 'applications' ? `Applications (${apps.length})` : t === 'crawl' ? `Crawl Targets (${targets.length})` : `Admins (${admins.length})`}
+                {t === 'kpi' ? '📊 지표' : t === 'jobs' ? `Jobs (${jobs.length})` : t === 'progress' ? `진행현황 (${progress.length})` : t === 'companies' ? `회사 (${companies.length})` : t === 'applications' ? `Applications (${apps.length})` : t === 'log' ? '📝 로그' : t === 'crawl' ? `Crawl Targets (${targets.length})` : `Admins (${admins.length})`}
               </button>
             ))}
             <a href="/admin/dashboard" style={{ fontSize: 13, fontWeight: 600, color: '#4F46E5', textDecoration: 'none', padding: '7px 16px', border: '1px solid #4F46E5', borderRadius: 8 }}>
@@ -474,6 +487,28 @@ export default function AdminJobs() {
               })()}
             </div>
           </>
+        )}
+
+        {/* LOG TAB (어드민 활동 로그) */}
+        {tab === 'log' && (
+          <div style={S.card}>
+            <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 4 }}>📝 활동 로그</div>
+            <div style={{ fontSize: 12, color: '#999', marginBottom: 16 }}>어드민 조치·시스템 변경 이력 (최근 200건).</div>
+            {activityLog.length === 0 && <div style={{ color: '#aaa', fontSize: 13 }}>로그 없음</div>}
+            {(() => {
+              const CAT = { approval: ['#059669', '#ecfdf5'], premium: ['#92400e', '#fef3c7'], company: ['#1d4ed8', '#eff6ff'], data: ['#7c3aed', '#f5f3ff'], action: ['#555', '#f3f4f6'] }
+              return activityLog.map(l => {
+                const [fg, bg] = CAT[l.category] || CAT.action
+                return (
+                  <div key={l.id} style={{ display: 'flex', alignItems: 'baseline', gap: 10, padding: '10px 0', borderBottom: '1px solid #f5f5f5' }}>
+                    <span style={{ ...S.badge, marginLeft: 0, background: bg, color: fg, flexShrink: 0 }}>{l.action}</span>
+                    <span style={{ flex: 1, fontSize: 13, color: '#333' }}>{l.summary}</span>
+                    <span style={{ fontSize: 11, color: '#aaa', flexShrink: 0 }}>{l.actor ? l.actor.split('@')[0] + ' · ' : ''}{l.created_at ? new Date(l.created_at).toLocaleString() : ''}</span>
+                  </div>
+                )
+              })
+            })()}
+          </div>
         )}
 
         {/* KPI TAB (기업/채용 지표 요약) */}
