@@ -332,9 +332,9 @@ export default function CvLanding() {
           <div className="cv-hero-bg" aria-hidden />
           <div className="cv-hero-inner">
             <h1 className="cv-h1">
-              <span className="cv-h1-line">FYI에 이력서 등록하고</span>
-              <span className="cv-h1-line">이직·취업 성공하면</span>
-              <span className="cv-h1-line">합격 축하금 <em>2,000,000 VND</em> 드려요</span>
+              <span className="cv-h1-line">FYI 통해</span>
+              <span className="cv-h1-line">이직·취업하면</span>
+              <span className="cv-h1-line"><em>2,000,000 VND</em> 드려요</span>
             </h1>
             <div className="cv-hero-cta-wrap">
               <button className="cv-btn cv-btn-hero" onClick={scrollToForm}>
