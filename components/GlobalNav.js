@@ -4,8 +4,14 @@ import { supabase } from '../lib/supabaseClient'
 import { useT } from '../lib/i18n'
 import { track } from '../lib/track'
 
+const LANGS = [
+  { code: 'vi', label: 'Tiếng Việt' },
+  { code: 'en', label: 'English' },
+  { code: 'ko', label: '한국어' },
+]
+
 export default function GlobalNav({ activePage, onLogin, onJobsClick, mobileSearch }) {
-  const { t } = useT()
+  const { t, lang, setLang } = useT()
   const [isLoggedIn, setIsLoggedIn] = useState(false)
   const [user, setUser] = useState(null)
   const [showMenu, setShowMenu] = useState(false)
@@ -15,13 +21,22 @@ export default function GlobalNav({ activePage, onLogin, onJobsClick, mobileSear
   const [savedCount, setSavedCount] = useState(0)
   const [profileScore, setProfileScore] = useState(null)
   const [hasResume, setHasResume] = useState(true)
+  const [showLang, setShowLang] = useState(false)
   const menuRef = useRef(null)
+  const langRef = useRef(null)
 
   useEffect(() => {
     const handleClick = (e) => { if (menuRef.current && !menuRef.current.contains(e.target)) setShowMenu(false) }
     document.addEventListener('mousedown', handleClick)
     return () => document.removeEventListener('mousedown', handleClick)
   }, [])
+
+  useEffect(() => {
+    if (!showLang) return
+    const h = (e) => { if (langRef.current && !langRef.current.contains(e.target)) setShowLang(false) }
+    document.addEventListener('mousedown', h)
+    return () => document.removeEventListener('mousedown', h)
+  }, [showLang])
 
   useEffect(() => {
     const onProfileUpdate = (e) => {
@@ -74,16 +89,61 @@ export default function GlobalNav({ activePage, onLogin, onJobsClick, mobileSear
   return (
     <>
       <style>{`
-        .gnav { position: sticky; top: 0; z-index: 200; height: 56px; background: rgba(12,12,11,0.95); backdrop-filter: blur(14px); border-bottom: 1px solid rgba(255,255,255,0.07); display: flex; align-items: center; justify-content: space-between; padding: 0 52px; font-family: 'Barlow', sans-serif; }
-        .gnav-l { display: flex; align-items: center; gap: 10px; }
-        .gnav-logo { display: flex; align-items: center; gap: 10px; font-size: 13px; font-weight: 600; color: #f2f0eb; text-decoration: none; cursor: pointer; }
+        .gnav { position: sticky; top: 0; z-index: 200; height: 56px; background: #0c0c0b; border-bottom: 1px solid rgba(255,255,255,0.07); display: flex; align-items: center; justify-content: space-between; padding: 0 52px; font-family: 'Barlow', sans-serif; }
+        .gnav-l { display: flex; align-items: center; gap: 36px; }
+        .gnav-l-menu { display: flex; align-items: center; gap: 22px; }
+        @media (max-width: 768px) { .gnav-l-menu { display: none; } }
+        .gnav-logo { display: flex; align-items: center; gap: 10px; font-size: 13px; font-weight: 400; color: #f2f0eb; text-decoration: none; cursor: pointer; }
         .gnav-logo img { width: 28px; height: 28px; object-fit: contain; }
         .gnav-r { display: flex; align-items: center; gap: 24px; }
-        .gnav-link { font-size: 13px; color: rgba(242,240,235,0.42); text-decoration: none; background: none; border: none; cursor: pointer; font-family: 'Barlow', sans-serif; padding: 0; transition: color .2s; position: relative; }
+        .gnav-link { font-size: 14px; color: rgba(242,240,235,0.42); text-decoration: none; background: none; border: none; cursor: pointer; font-family: 'Barlow', sans-serif; padding: 0; transition: color .2s; position: relative; }
         .gnav-link:hover { color: #f0ece4; }
         .gnav-link.on { color: #f0ece4; }
+        .gnav-link-accent { color: #ff6000 !important; font-weight: 400; }
+        .gnav-link-accent:hover { color: #ff8a40 !important; }
+        .gnav-link-light { color: #f2f0eb !important; font-weight: 400; }
+        .gnav-link-light:hover { color: #f2f0eb !important; opacity: 0.85; }
+        /* Welcome-bonus pill CTA — same shimmer as the old jobs CTA */
+        .gnav-welcome-cta { position: relative; display: inline-flex; align-items: center; background: #ff6000; padding: 7px 16px !important; border-radius: 100px; color: #fff !important; font-size: 14px; font-weight: 400; transition: background .15s; }
+        .gnav-welcome-cta:hover { background: #ff7218; }
+        .gnav-welcome-cta.on::after { display: none; }
+        /* Floating bubble under the pill */
+        .gnav-welcome-bubble {
+          position: absolute;
+          z-index: 250;
+          top: calc(100% + 8px);
+          left: 50%;
+          transform: translateX(-50%);
+          font-size: 10px;
+          font-weight: 700;
+          letter-spacing: 0.3px;
+          color: #fff;
+          background: #ff6000;
+          padding: 4px 10px;
+          border-radius: 100px;
+          white-space: nowrap;
+          box-shadow: 0 4px 14px rgba(255,96,0,0.5);
+          pointer-events: none;
+          animation: gnav-bubbleFloat 2.4s ease-in-out infinite;
+        }
+        .gnav-welcome-bubble::before {
+          content: '';
+          position: absolute;
+          top: -3px;
+          left: 50%;
+          transform: translateX(-50%) rotate(45deg);
+          width: 6px; height: 6px;
+          background: #ff6000;
+        }
+        @keyframes gnav-bubbleFloat {
+          0%, 100% { transform: translateX(-50%) translateY(0); }
+          50% { transform: translateX(-50%) translateY(-3px); }
+        }
         .gnav-link.on::after { content: ''; position: absolute; bottom: -2px; left: 0; right: 0; height: 2px; background: #ff6000; }
-        .gnav-jobs-cta { display: inline-flex; align-items: center; gap: 6px; background: #ff6000; border: none; padding: 7px 16px !important; border-radius: 100px; color: #fff !important; font-weight: 700; transition: all .25s; position: relative; }
+        /* Buttons (jobs CTA pill, login pill) — never show the active underline */
+        .gnav-jobs-cta.on::after { display: none; }
+        .gnav-login.on::after { display: none; }
+        .gnav-jobs-cta { display: inline-flex; align-items: center; gap: 6px; background: #ff6000; border: none; padding: 7px 16px !important; border-radius: 100px; color: #fff !important; font-weight: 400; font-size: 14px; transition: all .25s; position: relative; }
         .gnav-jobs-shimmer { position: absolute; inset: 0; border-radius: 100px; overflow: hidden; pointer-events: none; }
         .gnav-jobs-shimmer::before { content: ''; position: absolute; top: 0; left: -100%; width: 60%; height: 100%; background: linear-gradient(90deg, transparent, rgba(255,255,255,0.25), transparent); animation: jobsShimmer 2.5s ease-in-out infinite; }
         .gnav-jobs-cta:hover { background: #ff7a1a; box-shadow: 0 0 20px rgba(255,96,0,0.4); transform: translateY(-1px); }
@@ -93,7 +153,17 @@ export default function GlobalNav({ activePage, onLogin, onJobsClick, mobileSear
         .gnav-jobs-icon { display: inline-flex; align-items: center; flex-shrink: 0; }
         .gnav-jobs-icon svg { width: 14px; height: 14px; }
 
-        .gnav-login { font-size: 13px; font-weight: 600; color: rgba(255,255,255,0.5); background: none; border: 1px solid rgba(255,255,255,0.15); padding: 7px 16px; border-radius: 100px; cursor: pointer; font-family: 'Barlow', sans-serif; }
+        .gnav-login { font-size: 14px; font-weight: 400; color: #f2f0eb; background: none; border: 1px solid #f2f0eb; padding: 7px 16px; border-radius: 100px; cursor: pointer; font-family: 'Barlow', sans-serif; transition: background .15s, color .15s; }
+        .gnav-login:hover { background: #f2f0eb; color: #0c0c0b; }
+
+        .gnav-lang { position: relative; flex-shrink: 0; }
+        .gnav-lang-btn { display: inline-flex; align-items: center; gap: 6px; height: 30px; padding: 0 10px; background: none; border: 1px solid #f2f0eb; border-radius: 8px; color: #f2f0eb; cursor: pointer; font-family: 'Barlow', sans-serif; transition: background .15s, color .15s; }
+        .gnav-lang-btn:hover { background: #f2f0eb; color: #0c0c0b; }
+        .gnav-lang-code { font-size: 11px; font-weight: 400; letter-spacing: 1px; }
+        .gnav-lang-menu { position: absolute; top: calc(100% + 6px); right: 0; min-width: 160px; background: #141414; border: 1px solid rgba(255,255,255,0.1); border-radius: 10px; padding: 4px; box-shadow: 0 12px 32px rgba(0,0,0,0.45); z-index: 600; }
+        .gnav-lang-item { display: flex; align-items: center; justify-content: space-between; gap: 8px; width: 100%; padding: 8px 12px; background: none; border: none; border-radius: 6px; cursor: pointer; font-family: 'Barlow', sans-serif; font-size: 13px; color: rgba(242,240,235,0.7); text-align: left; transition: background .12s, color .12s; }
+        .gnav-lang-item:hover { background: rgba(242,240,235,0.06); color: #f2f0eb; }
+        .gnav-lang-item.on { background: rgba(255,96,0,0.14); color: #ff8a40; font-weight: 400; }
         .gnav-submit { font-size: 12px; font-weight: 600; background: #ff6000; color: #fff; border: none; padding: 8px 18px; border-radius: 2px; cursor: pointer; font-family: 'Barlow', sans-serif; }
         .gnav-user { display: flex; align-items: center; gap: 6px; padding: 4px 10px 4px 4px; border-radius: 100px; border: 1px solid rgba(255,255,255,0.12); cursor: pointer; flex-shrink: 0; }
         .gnav-avatar { width: 24px; height: 24px; border-radius: 50%; object-fit: cover; }
@@ -134,6 +204,15 @@ export default function GlobalNav({ activePage, onLogin, onJobsClick, mobileSear
             <img src="/logo.png" alt="FYI" />
             <span>FOR YOUR <span style={{ color: '#ff6000' }}>'SALARY'</span> INFORMATION</span>
           </Link>
+          <div className="gnav-l-menu">
+            <Link href="/" className={`gnav-link gnav-link-light${activePage === 'home' ? ' on' : ''}`}>{t('nav.salaryCompare')}</Link>
+            <Link href="/cv" className={`gnav-link gnav-link-light${activePage === 'cv' ? ' on' : ''}`} onClick={() => track('click_welcome_bonus_nav', { meta: { source: 'web' }, page: activePage || null })}>
+              {t('nav.welcomeBonus')}
+              <span className="gnav-welcome-bubble">{t('nav.welcomeBonusBubble')}</span>
+            </Link>
+            <Link href="/jobs" className={`gnav-link gnav-link-light${activePage === 'jobs' ? ' on' : ''}`} onClick={() => onJobsClick?.()}>{t('nav.jobs')}</Link>
+            <Link href="/community" className={`gnav-link gnav-link-light${activePage === 'community' ? ' on' : ''}`} onClick={() => track('click_community_nav', { meta: { source: 'web' }, page: activePage || null })}>{t('nav.community')}</Link>
+          </div>
         </div>
         <div className="gnav-r-mobile">
           {mobileSearch && (
@@ -164,19 +243,6 @@ export default function GlobalNav({ activePage, onLogin, onJobsClick, mobileSear
           )}
         </div>
         <div className="gnav-r">
-          {activePage === 'home' && (
-            <button className="gnav-link" onClick={() => document.getElementById('companies')?.scrollIntoView({behavior:'smooth'})}>{t('nav.whoPaysMost')}</button>
-          )}
-          <Link href="/community" className={`gnav-link${activePage === 'community' ? ' on' : ''}`} onClick={() => track('click_community_nav', { meta: { source: 'web' }, page: activePage || null })}>Community</Link>
-          <Link href="/for-companies" className={`gnav-link${activePage === 'forCompanies' ? ' on' : ''}`} onClick={() => track('click_for_companies', { page: activePage || null })}>{t('nav.forCompanies')}</Link>
-          {activePage !== 'jobs' && (
-            <Link href="/jobs" className="gnav-link gnav-jobs-cta" onClick={() => onJobsClick?.()}>
-              <span className="gnav-jobs-shimmer"></span>
-              <span className="gnav-jobs-icon"><svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="3" y="7" width="18" height="13" rx="2" stroke="currentColor" strokeWidth="2"/><path d="M8 7V5a2 2 0 012-2h4a2 2 0 012 2v2" stroke="currentColor" strokeWidth="2"/><path d="M12 11v4M10 13h4" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg></span>
-              {t('nav.jobs')}
-            </Link>
-          )}
-
           {!ready ? null : !isLoggedIn ? (
             <button className="gnav-login" onClick={async () => {
               if (onLogin) return onLogin();
@@ -240,6 +306,7 @@ export default function GlobalNav({ activePage, onLogin, onJobsClick, mobileSear
           </div>
           )}
 
+          <Link href="/for-companies" className={`gnav-link gnav-link-light${activePage === 'forCompanies' ? ' on' : ''}`} onClick={() => track('click_for_companies', { page: activePage || null })}>{t('nav.forCompanies')}</Link>
         </div>
       </nav>
     </>

@@ -3,6 +3,24 @@ import Head from 'next/head'
 import { useRouter } from 'next/router'
 import { supabase } from '../lib/supabaseClient'
 import GlobalNav from '../components/GlobalNav'
+import { useT } from '../lib/i18n'
+import { track } from '../lib/track'
+
+/* Funnel-event meta — UTM (sessionStorage) + language preference, attached to
+   every /cv event so we can slice by ad campaign and locale in analytics. */
+function cvMeta() {
+  if (typeof window === 'undefined') return {}
+  return {
+    utm_source: sessionStorage.getItem('utm_source') || null,
+    utm_medium: sessionStorage.getItem('utm_medium') || null,
+    utm_campaign: sessionStorage.getItem('utm_campaign') || null,
+    lang: localStorage.getItem('fyi_lang') || 'ko',
+  }
+}
+function fileMeta(f) {
+  if (!f) return {}
+  return { file_ext: (f.name.split('.').pop() || '').toLowerCase(), file_size: f.size }
+}
 
 /* ──────── IndexedDB utils for pending CV blob ────────
    Stores the chosen file across OAuth redirect so user doesn't re-pick it.
@@ -146,6 +164,7 @@ const IconLinkedIn = () => (
 )
 
 export default function CvLanding() {
+  const { t } = useT()
   const router = useRouter()
   const [user, setUser] = useState(null)
   const [file, setFile] = useState(null)
@@ -166,6 +185,7 @@ export default function CvLanding() {
       const v = p.get(k)
       if (v) sessionStorage.setItem(k, v)
     })
+    track('cv_view', { meta: cvMeta(), page: '/cv' })
   }, [])
 
   useEffect(() => {
@@ -221,9 +241,14 @@ export default function CvLanding() {
 
   const handleFile = (f) => {
     if (!f) return
-    if (f.size > 10 * 1024 * 1024) { setErrMsg('파일이 너무 큽니다 (최대 10MB)'); return }
+    if (f.size > 10 * 1024 * 1024) {
+      setErrMsg(t('cv.err.fileTooBig'))
+      track('cv_attach_rejected', { meta: { ...cvMeta(), ...fileMeta(f), reason: 'too_big' }, page: '/cv' })
+      return
+    }
     setFile(f)
     setErrMsg('')
+    track('cv_attach_file', { meta: { ...cvMeta(), ...fileMeta(f) }, page: '/cv' })
     idbPutCv(f).catch(() => {
       try { sessionStorage.setItem('cv_pending_filename', f.name) } catch {}
     })
@@ -234,6 +259,7 @@ export default function CvLanding() {
       setTimeout(() => {
         localStorage.setItem('fyi_login_return', '/cv?continue=1')
         localStorage.setItem('fyi_intent', 'cv_signup')
+        track('cv_oauth_start', { meta: { ...cvMeta(), provider: pending, has_file: true, auto: true }, page: '/cv' })
         if (pending === 'linkedin') {
           supabase.auth.signInWithOAuth({
             provider: 'linkedin_oidc',
@@ -253,7 +279,7 @@ export default function CvLanding() {
     try {
       const { data: { session } } = await supabase.auth.getSession()
       const token = session?.access_token
-      if (!token) throw new Error('로그인이 필요해요. 다시 시도해주세요.')
+      if (!token) throw new Error(t('cv.err.notLoggedIn'))
       const fd = new FormData()
       fd.append('type', 'resume')
       fd.append('file', fileToUpload)
@@ -272,10 +298,13 @@ export default function CvLanding() {
       }
       if (typeof gtag === 'function') gtag('event', 'cv_register', { source: 'ad-landing' })
       if (typeof fbq === 'function') fbq('trackCustom', 'CVRegister', { source: 'ad-landing' })
+      track('cv_register_success', { meta: { ...cvMeta(), ...fileMeta(fileToUpload) }, page: '/cv' })
       await idbClearCv()
       setStatus('success')
     } catch (e) {
-      setErrMsg(e.message || '오류가 발생했어요. 다시 시도해주세요.')
+      const msg = e.message || t('cv.err.generic')
+      track('cv_register_error', { meta: { ...cvMeta(), ...fileMeta(fileToUpload), error_message: msg }, page: '/cv' })
+      setErrMsg(msg)
       setStatus('error')
     }
   }
@@ -284,12 +313,14 @@ export default function CvLanding() {
     if (!file) {
       // remember CTA intent so handleFile auto-progresses to OAuth after pick
       oauthAfterPick.current = 'google'
+      track('cv_click_cta', { meta: { ...cvMeta(), provider: 'google', has_file: false }, page: '/cv' })
       fileRef.current?.click()
       return
     }
     if (!user) {
       localStorage.setItem('fyi_login_return', '/cv?continue=1')
       localStorage.setItem('fyi_intent', 'cv_signup')
+      track('cv_oauth_start', { meta: { ...cvMeta(), provider: 'google', has_file: true, auto: false }, page: '/cv' })
       window.location.href = '/api/auth/google?return=' + encodeURIComponent('/cv?continue=1')
       return
     }
@@ -299,12 +330,14 @@ export default function CvLanding() {
   const onLinkedInSubmit = async () => {
     if (!file) {
       oauthAfterPick.current = 'linkedin'
+      track('cv_click_cta', { meta: { ...cvMeta(), provider: 'linkedin', has_file: false }, page: '/cv' })
       fileRef.current?.click()
       return
     }
     if (user) { await doUpload(file); return }
     localStorage.setItem('fyi_login_return', '/cv?continue=1')
     localStorage.setItem('fyi_intent', 'cv_signup')
+    track('cv_oauth_start', { meta: { ...cvMeta(), provider: 'linkedin', has_file: true, auto: false }, page: '/cv' })
     await supabase.auth.signInWithOAuth({
       provider: 'linkedin_oidc',
       options: {
@@ -319,11 +352,11 @@ export default function CvLanding() {
   return (
     <>
       <Head>
-        <title>이력서만 등록하세요 — 합격 시 2,000,000 VND | FYI</title>
-        <meta name="description" content="FYI에서 이력서 등록하고 이직, 취업하면 합격 축하금 2,000,000 VND를 드려요." />
+        <title>{t('cv.meta.title')}</title>
+        <meta name="description" content={t('cv.meta.description')} />
       </Head>
 
-      <GlobalNav />
+      <GlobalNav activePage="cv" />
 
       <main className="cv-page">
         {/* ───── HERO (center-aligned, black bg, white text) ───── */}
@@ -332,10 +365,11 @@ export default function CvLanding() {
           <div className="cv-hero-inner">
             <h1 className="cv-h1">
               <span className="cv-h1-line cv-h1-soft">
+                {t('cv.hero.line1Pre')}
                 <img src="/fyi-logo.png" alt="FYI" className="cv-h1-logo" />
-                <span>통해 이직, 취업하면</span>
+                <span>{t('cv.hero.line1Post')}</span>
               </span>
-              <span className="cv-h1-line cv-h1-hero"><em>2,000,000 VND</em> 드려요</span>
+              <span className="cv-h1-line cv-h1-hero"><em>2,000,000 VND</em>{t('cv.hero.line2.suffix')}</span>
             </h1>
             <div className="cv-banknote-showcase" aria-hidden>
               <img src="/cv/banknote-prize-v1.png" alt="" className="cv-banknote-img" />
@@ -346,7 +380,7 @@ export default function CvLanding() {
         {/* ───── HOW IT WORKS ───── */}
         <section className="cv-how">
           <div className="cv-section-inner">
-            <h2 className="cv-h2">이력서만 등록하면 돼요.</h2>
+            <h2 className="cv-h2">{t('cv.how.heading')}</h2>
 
             <div className="cv-flow" aria-label="FYI resume reward flow">
               <article className="cv-flow-card">
@@ -354,8 +388,8 @@ export default function CvLanding() {
                   <img src="/cv/flow-step-1.png" alt="STEP 1. CV upload" />
                 </div>
                 <div className="cv-flow-copy">
-                  <h3>이력서 등록</h3>
-                  <p>PDF 한 장을 올리면 FYI가 확인합니다.</p>
+                  <h3>{t('cv.how.step1.title')}</h3>
+                  <p>{t('cv.how.step1.desc')}</p>
                 </div>
               </article>
 
@@ -366,8 +400,8 @@ export default function CvLanding() {
                   <img src="/cv/flow-step-2.png" alt="STEP 2. FYI match" />
                 </div>
                 <div className="cv-flow-copy">
-                  <h3>맞는 포지션 제안</h3>
-                  <p>등록된 이력서를 바탕으로 어울리는 오퍼를 연결합니다.</p>
+                  <h3>{t('cv.how.step2.title')}</h3>
+                  <p>{t('cv.how.step2.desc')}</p>
                 </div>
               </article>
 
@@ -378,9 +412,9 @@ export default function CvLanding() {
                   <img src="/cv/flow-step-3.png" alt="STEP 3. Hired and reward received" />
                 </div>
                 <div className="cv-flow-copy">
-                  <h3>합격 축하금 지급</h3>
-                  <p>FYI를 통해 입사하면 2,000,000 VND를 드립니다.</p>
-                  <p className="cv-flow-disclaimer">입사 후 2개월(60일) 근속이 확인된 뒤 지급됩니다.</p>
+                  <h3>{t('cv.how.step3.title')}</h3>
+                  <p>{t('cv.how.step3.desc')}</p>
+                  <p className="cv-flow-disclaimer">{t('cv.how.step3.disclaimer')}</p>
                 </div>
               </article>
             </div>
@@ -450,30 +484,30 @@ export default function CvLanding() {
                 <div className="cv-check-circle">
                   <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
                 </div>
-                <div className="cv-card-step-pill">완료</div>
-                <h3 className="cv-card-h">감사합니다.<br/><em>곧 연락드릴게요.</em></h3>
-                <p className="cv-card-sub">당신의 이력서에 딱 맞는 포지션이 생기면, 이메일로 알려드릴게요.</p>
+                <div className="cv-card-step-pill">{t('cv.success.pill')}</div>
+                <h3 className="cv-card-h">{t('cv.success.headingPrefix')}<br/><em>{t('cv.success.headingEm')}</em></h3>
+                <p className="cv-card-sub">{t('cv.success.sub')}</p>
                 <div className="cv-reward">
                   <div className="cv-reward-meta">
-                    <div className="cv-reward-title">합격 축하금 2,000,000 VND</div>
-                    <div className="cv-reward-sub">*수습 2개월 통과 시 지급</div>
+                    <div className="cv-reward-title">{t('cv.success.rewardTitle')}</div>
+                    <div className="cv-reward-sub">{t('cv.success.rewardSub')}</div>
                   </div>
                 </div>
-                <a href="/jobs" className="cv-btn">채용 공고 보러가기 <IconArrowRight /></a>
+                <a href="/jobs" className="cv-btn">{t('cv.success.cta')} <IconArrowRight /></a>
               </div>
             ) : status === 'uploading' && router.query.continue === '1' ? (
               <div className="cv-card cv-interstitial">
                 <div className="cv-spinner" />
-                <div className="cv-card-step-pill">등록 중</div>
-                <h3 className="cv-card-h">잠시만요...<br/><em>이력서를 등록하고 있어요.</em></h3>
-                <p className="cv-card-sub">Google 계정으로 가입과 이력서 등록을 처리 중입니다. 5초도 안 걸려요.</p>
+                <div className="cv-card-step-pill">{t('cv.interstitial.pill')}</div>
+                <h3 className="cv-card-h">{t('cv.interstitial.headingPrefix')}<br/><em>{t('cv.interstitial.headingEm')}</em></h3>
+                <p className="cv-card-sub">{t('cv.interstitial.sub')}</p>
                 {file && (
                   <div className="cv-file">
                     <div className="cv-file-info">
                       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#16a34a" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
                       <div className="cv-file-meta">
                         <div className="cv-file-name">{file.name}</div>
-                        <div className="cv-file-size">{(file.size / 1024 / 1024).toFixed(1)} MB · 업로드 중</div>
+                        <div className="cv-file-size">{(file.size / 1024 / 1024).toFixed(1)} {t('cv.interstitial.uploadingTag')}</div>
                       </div>
                     </div>
                   </div>
@@ -481,14 +515,14 @@ export default function CvLanding() {
               </div>
             ) : (
               <div className="cv-card">
-                <h3 className="cv-card-h">이력서 <em>등록하기</em></h3>
-                <p className="cv-card-sub">아래 두 단계만 따라하시면 끝나요.</p>
+                <h3 className="cv-card-h">{t('cv.form.card.headingPrefix')}<em>{t('cv.form.card.headingAction')}</em></h3>
+                <p className="cv-card-sub">{t('cv.form.card.sub')}</p>
 
                 {pendingHint && (
                   <div className="cv-ai-bubble">
                     <div className="cv-ai-bubble-inner">
                       <span className="cv-ai-bubble-icon"><IconCheck /></span>
-                      <span>로그인 완료. <b>{pendingHint}</b> 파일을 다시 선택해주세요.</span>
+                      <span>{t('cv.form.pendingPrefix')}<b>{pendingHint}</b>{t('cv.form.pendingSuffix')}</span>
                     </div>
                   </div>
                 )}
@@ -499,7 +533,7 @@ export default function CvLanding() {
                 <div className={`cv-stepblock ${file ? 'done' : ''}`}>
                   <div className="cv-stepblock-label">
                     <span className="cv-stepblock-num">{file ? <IconCheck /> : '1'}</span>
-                    STEP 1 · 이력서 첨부
+                    {t('cv.form.step1Label')}
                   </div>
                   {file ? (
                     <div className="cv-file">
@@ -510,7 +544,7 @@ export default function CvLanding() {
                           <div className="cv-file-size">{(file.size / 1024 / 1024).toFixed(1)} MB</div>
                         </div>
                       </div>
-                      <button type="button" className="cv-change" onClick={() => fileRef.current?.click()} disabled={status === 'uploading'}>다른 파일</button>
+                      <button type="button" className="cv-change" onClick={() => fileRef.current?.click()} disabled={status === 'uploading'}>{t('cv.form.changeFile')}</button>
                     </div>
                   ) : (
                     <button
@@ -528,32 +562,32 @@ export default function CvLanding() {
                       }}
                     >
                       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#ff6000" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-                      <span>이력서를 드래그하거나 선택하세요</span>
+                      <span>{t('cv.form.dropZone')}</span>
                     </button>
                   )}
-                  <div className="cv-hint">PDF / DOCX · 최대 10MB</div>
+                  <div className="cv-hint">{t('cv.form.fileHint')}</div>
                 </div>
 
                 {/* ─── STEP 2: 회원가입 (미인증) 또는 등록 (인증) ─── */}
                 <div className={`cv-stepblock ${!file ? 'inactive' : ''}`}>
                   <div className="cv-stepblock-label">
                     <span className="cv-stepblock-num">2</span>
-                    {user ? 'STEP 2 · 이력서 등록' : 'STEP 2 · 회원가입'}
+                    {user ? t('cv.form.step2LabelRegister') : t('cv.form.step2LabelSignup')}
                   </div>
 
                   {errMsg && <div className="cv-err">{errMsg}</div>}
 
                   <button className="cv-btn" onClick={onSubmit} disabled={status === 'uploading'}>
-                    {status === 'uploading' ? '업로드 중...' :
-                      user && file ? <>이력서 등록 <IconArrowRight /></> :
-                      <><IconGoogle />Google 계정으로 시작 <IconArrowRight /></>}
+                    {status === 'uploading' ? t('cv.form.uploading') :
+                      user && file ? <>{t('cv.form.cta.register')} <IconArrowRight /></> :
+                      <><IconGoogle />{t('cv.form.cta.google')} <IconArrowRight /></>}
                   </button>
 
                   {!user && (
                     <>
-                      <div className="cv-or-divider"><span>또는</span></div>
+                      <div className="cv-or-divider"><span>{t('cv.form.or')}</span></div>
                       <button className="cv-btn-linkedin" onClick={onLinkedInSubmit}>
-                        <IconLinkedIn />LinkedIn으로 시작
+                        <IconLinkedIn />{t('cv.form.cta.linkedin')}
                       </button>
                     </>
                   )}
@@ -564,17 +598,17 @@ export default function CvLanding() {
                   <div className="cv-promise">
                     <span className="cv-promise-check"><IconCheck /></span>
                     <div>
-                      위 두 단계만 완료하시면
+                      {t('cv.form.promise.line1')}
                       <br/>
-                      <b>가입과 이력서 등록이 한 번에</b> 자동 처리돼요.
+                      <b>{t('cv.form.promise.line2Prefix')}</b>{t('cv.form.promise.line2Suffix')}
                     </div>
                   </div>
                 )}
 
                 <div className="cv-fine">
-                  등록 시 인증된 채용 담당자가 FYI 인재풀에서 당신의 이력서를 열람할 수 있어요.
+                  {t('cv.form.fine.body')}
                   <br/>
-                  <a href="/terms">이용약관</a> · <a href="/privacy">개인정보처리방침</a>
+                  <a href="/terms">{t('cv.form.fine.terms')}</a> · <a href="/privacy">{t('cv.form.fine.privacy')}</a>
                 </div>
               </div>
             )}
@@ -583,15 +617,8 @@ export default function CvLanding() {
 
       </main>
 
-      <div className="cv-sticky">
-        <button className="cv-btn cv-btn-sticky" onClick={scrollToForm}>1분만에 이력서 등록 <IconArrowRight /></button>
-      </div>
-
       <style jsx global>{`
         .tabular-nums { font-variant-numeric: tabular-nums lining-nums; }
-        /* /cv: don't sticky the global nav on this ad landing */
-        .gnav { position: static !important; }
-        @media (max-width: 768px) { .gnav { position: static !important; } }
       `}</style>
 
       <style jsx>{`
@@ -2243,8 +2270,9 @@ export default function CvLanding() {
         .cv-sticky {
           display: none;
           position: fixed;
-          bottom: 0; left: 0; right: 0;
-          padding: 12px 16px calc(12px + env(safe-area-inset-bottom));
+          bottom: calc(60px + env(safe-area-inset-bottom));
+          left: 0; right: 0;
+          padding: 12px 16px;
           background: rgba(250,246,240,0.94);
           backdrop-filter: blur(14px);
           border-top: 1px solid rgba(26,22,18,0.08);

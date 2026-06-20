@@ -89,6 +89,12 @@ html {
   overflow-x: clip;
 }
 
+/* Nav stickiness policy:
+   - App pages (default): GlobalNav is sticky (set inside the component itself)
+   - Ad-landing routes (/cv, /promo/*): GlobalNav becomes static so it scrolls
+     out with the hero, removing distraction from the conversion message. */
+body[data-ad-landing="1"] .gnav { position: relative !important; z-index: 200; }
+
 * {
   box-sizing: border-box;
   padding: 0;
@@ -112,6 +118,11 @@ a {
   body[data-company-mobile="1"] {
     padding-top: 0 !important;
     padding-bottom: 0 !important;
+  }
+  /* Ad-landing pages keep the nav in normal flow (not sticky), so the global
+     52px top reservation would stack on top of the nav itself. Remove it. */
+  body[data-ad-landing="1"] {
+    padding-top: 0 !important;
   }
   /* Job detail hides the MobileTabBar in favor of its own bottom Apply/Save CTA,
      so drop the 60px reservation that would leave an empty gap above the CTA. */

@@ -54,7 +54,7 @@ export default function App({ Component, pageProps }) {
   // /for-companies 는 공개 랜딩이라 하단 글로벌 언어 스위처를 메인 랜딩과 동일하게 노출한다.
   const isForCompaniesLanding = router.pathname === '/for-companies';
   // /cv 는 광고 랜딩이라 하단 탭바·언어 스위처를 노출하지 않는다 (exit leak 차단).
-  const isAdLanding = router.pathname === '/cv';
+  const isAdLanding = router.pathname === '/cv' || router.pathname.startsWith('/promo');
 
   // Flag the body so the mobile-only top/bottom reservations (52/60px in
   // globals.css) collapse for company pages — they render their own header.
@@ -64,7 +64,10 @@ export default function App({ Component, pageProps }) {
     else delete document.body.dataset.companyMobile;
     if (isJobDetail) document.body.dataset.jobDetailMobile = '1';
     else delete document.body.dataset.jobDetailMobile;
-  }, [isCompany, isJobDetail]);
+    // Ad-landing routes (/cv, /promo/*) get a static nav (not sticky)
+    if (isAdLanding) document.body.dataset.adLanding = '1';
+    else delete document.body.dataset.adLanding;
+  }, [isCompany, isJobDetail, isAdLanding]);
   return (
     <I18nProvider>
       <Component {...pageProps} />
@@ -76,7 +79,7 @@ export default function App({ Component, pageProps }) {
           <LanguageSwitcher />
         </footer>
       )}
-      {!isCompany && !isJobDetail && !isAdLanding && <MobileTabBar />}
+      {!isCompany && !isJobDetail && <MobileTabBar />}
       <GlobalLoginModal />
       {!isAdmin && !isAdLanding && <AppDownloadModal />}
       <Toaster
