@@ -164,11 +164,6 @@ export default function GlobalNav({ activePage, onLogin, onJobsClick, mobileSear
           )}
         </div>
         <div className="gnav-r">
-          {activePage === 'home' ? (
-            <button className="gnav-link on" onClick={() => document.getElementById('submit')?.scrollIntoView({behavior:'smooth'})}>{t('nav.amIUnderpaid')}</button>
-          ) : (
-            <Link href="/" className="gnav-link">{t('nav.amIUnderpaid')}</Link>
-          )}
           {activePage === 'home' && (
             <button className="gnav-link" onClick={() => document.getElementById('companies')?.scrollIntoView({behavior:'smooth'})}>{t('nav.whoPaysMost')}</button>
           )}
