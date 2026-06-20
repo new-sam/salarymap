@@ -336,11 +336,18 @@ export default function CvLanding() {
               <span className="cv-h1-line">이직·취업하면</span>
               <span className="cv-h1-line"><em>2,000,000 VND</em> 드려요</span>
             </h1>
-            <div className="cv-hero-cta-wrap">
-              <button className="cv-btn cv-btn-hero" onClick={scrollToForm}>
-                1분만에 이력서 등록하기 <IconArrowRight />
-              </button>
-              <div className="cv-hero-fine">*수습 계약 2개월 통과 시 지급</div>
+            <div className="cv-money-rain" aria-hidden>
+              <div className="cv-money-note n1"><span>500K</span><b>VND</b></div>
+              <div className="cv-money-note n2"><span>200K</span><b>VND</b></div>
+              <div className="cv-money-note n3"><span>500K</span><b>VND</b></div>
+              <div className="cv-money-note n4"><span>100K</span><b>VND</b></div>
+              <div className="cv-money-stack">
+                <i className="s1" />
+                <i className="s2" />
+                <i className="s3" />
+                <i className="s4" />
+                <i className="s5" />
+              </div>
             </div>
           </div>
         </section>
@@ -708,7 +715,7 @@ export default function CvLanding() {
         }
         .cv-hero-inner {
           position: relative;
-          max-width: 1320px;
+          max-width: 1480px;
           margin: 0 auto;
           display: flex;
           flex-direction: column;
@@ -735,15 +742,15 @@ export default function CvLanding() {
         /* Hero kicker — orange, centered */
         .cv-hero .cv-kicker { color: #ff8a40; justify-content: center; }
         .cv-h1 {
-          font-size: clamp(34px, 4.2vw, 60px);
+          font-size: clamp(44px, 6vw, 92px);
           font-weight: 900;
-          line-height: 1.15;
-          letter-spacing: -1.8px;
+          line-height: 1.05;
+          letter-spacing: -3.2px;
           color: #ffffff;
-          margin-bottom: 40px;
+          margin-bottom: 0;
           display: flex;
           flex-direction: column;
-          gap: 8px;
+          gap: 10px;
           align-items: center;
         }
         .cv-h1-line {
@@ -754,8 +761,129 @@ export default function CvLanding() {
           font-style: normal;
           color: #ff8a40;
           font-variant-numeric: tabular-nums;
-          text-shadow: 0 0 40px rgba(255,138,64,0.35);
+          text-shadow:
+            0 0 30px rgba(255,138,64,0.55),
+            0 0 60px rgba(255,96,0,0.35);
           white-space: nowrap;
+          font-size: 1.12em;
+          letter-spacing: -3.6px;
+        }
+        .cv-money-rain {
+          position: relative;
+          width: min(560px, 100%);
+          height: 148px;
+          margin: -14px auto 32px;
+          overflow: hidden;
+          pointer-events: none;
+        }
+        .cv-money-rain::before {
+          content: "";
+          position: absolute;
+          left: 50%;
+          bottom: 0;
+          width: 380px;
+          height: 70px;
+          transform: translateX(-50%);
+          background: radial-gradient(ellipse at center, rgba(255,138,64,0.24), transparent 68%);
+          filter: blur(2px);
+        }
+        .cv-money-note {
+          position: absolute;
+          top: -46px;
+          left: 50%;
+          width: 102px;
+          height: 42px;
+          border: 1px solid rgba(209,250,229,0.7);
+          border-radius: 7px;
+          background:
+            radial-gradient(circle at 50% 50%, rgba(255,255,255,0.22) 0 17%, transparent 18%),
+            linear-gradient(135deg, #d9f99d 0%, #6ee7b7 45%, #22c55e 100%);
+          box-shadow:
+            inset 0 0 0 4px rgba(6,95,70,0.22),
+            0 12px 26px rgba(0,0,0,0.3);
+          color: #064e3b;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          padding: 0 12px;
+          font-family: 'Barlow', sans-serif;
+          font-weight: 900;
+          transform-origin: center;
+          opacity: 0;
+          animation: cvNoteDrop 3.6s cubic-bezier(.32,.72,.18,1) infinite;
+        }
+        .cv-money-note::before,
+        .cv-money-note::after {
+          content: "";
+          width: 8px;
+          height: 8px;
+          border-radius: 999px;
+          background: rgba(6,95,70,0.22);
+        }
+        .cv-money-note span {
+          font-size: 18px;
+          letter-spacing: 0;
+        }
+        .cv-money-note b {
+          font-size: 10px;
+          color: #047857;
+          letter-spacing: 0.8px;
+        }
+        .cv-money-note.n1 { margin-left: -150px; animation-delay: 0s; }
+        .cv-money-note.n2 { margin-left: -34px; animation-delay: .55s; animation-duration: 3.4s; }
+        .cv-money-note.n3 { margin-left: 88px; animation-delay: 1.1s; animation-duration: 3.8s; }
+        .cv-money-note.n4 { margin-left: 8px; animation-delay: 1.75s; animation-duration: 3.5s; }
+        .cv-money-stack {
+          position: absolute;
+          left: 50%;
+          bottom: 17px;
+          width: 260px;
+          height: 66px;
+          transform: translateX(-50%);
+        }
+        .cv-money-stack i {
+          position: absolute;
+          left: 50%;
+          bottom: 0;
+          width: 190px;
+          height: 32px;
+          border-radius: 8px;
+          border: 1px solid rgba(209,250,229,0.75);
+          background:
+            radial-gradient(circle at 50% 50%, rgba(255,255,255,0.22) 0 18%, transparent 19%),
+            linear-gradient(135deg, #bef264 0%, #5eead4 48%, #16a34a 100%);
+          box-shadow:
+            inset 0 0 0 4px rgba(6,95,70,0.22),
+            0 9px 18px rgba(0,0,0,0.28);
+          transform: translateX(-50%) translateY(12px) rotate(var(--r));
+          opacity: 0;
+          animation: cvStackBuild 3.6s ease-out infinite;
+        }
+        .cv-money-stack i::after {
+          content: "VND";
+          position: absolute;
+          right: 14px;
+          top: 9px;
+          font-family: 'Barlow', sans-serif;
+          font-size: 10px;
+          font-weight: 900;
+          color: rgba(6,78,59,0.75);
+        }
+        .cv-money-stack .s1 { --r: -5deg; bottom: 0; animation-delay: .55s; }
+        .cv-money-stack .s2 { --r: 3deg; bottom: 8px; width: 204px; animation-delay: 1.05s; }
+        .cv-money-stack .s3 { --r: -2deg; bottom: 16px; width: 198px; animation-delay: 1.55s; }
+        .cv-money-stack .s4 { --r: 4deg; bottom: 24px; width: 212px; animation-delay: 2.05s; }
+        .cv-money-stack .s5 { --r: -3deg; bottom: 32px; width: 196px; animation-delay: 2.55s; }
+        @keyframes cvNoteDrop {
+          0% { opacity: 0; transform: translateY(-48px) rotate(-16deg) scale(.92); }
+          12% { opacity: 1; }
+          58% { opacity: 1; transform: translateY(118px) rotate(8deg) scale(1); }
+          70%, 100% { opacity: 0; transform: translateY(132px) rotate(4deg) scale(.96); }
+        }
+        @keyframes cvStackBuild {
+          0%, 12% { opacity: 0; transform: translateX(-50%) translateY(12px) rotate(var(--r)) scale(.96); }
+          24%, 76% { opacity: 1; transform: translateX(-50%) translateY(0) rotate(var(--r)) scale(1); }
+          100% { opacity: 0; transform: translateX(-50%) translateY(-3px) rotate(var(--r)) scale(.99); }
         }
         .cv-hero-sub {
           font-size: 17.5px;
@@ -1645,6 +1773,7 @@ export default function CvLanding() {
               linear-gradient(180deg, #1f1813 0%, #181410 100%);
           }
           .cv-hero-inner { grid-template-columns: 1fr; gap: 56px; }
+          .cv-money-rain { width: min(500px, 100%); }
           .cv-prize { min-height: 340px; }
           .cv-steps { grid-template-columns: 1fr; }
           .cv-step-connector { height: 32px; padding: 0 20px; }
@@ -1659,6 +1788,35 @@ export default function CvLanding() {
           .cv-how, .cv-test, .cv-jobs, .cv-form-section { padding: 80px 0 64px; }
           .cv-final { padding: 90px 20px 120px; }
           .cv-h1 { letter-spacing: -1.2px; }
+          .cv-h1-line { white-space: normal; }
+          .cv-money-rain {
+            height: 118px;
+            margin: -18px auto 26px;
+          }
+          .cv-money-note {
+            width: 82px;
+            height: 34px;
+            padding: 0 9px;
+          }
+          .cv-money-note span { font-size: 14px; }
+          .cv-money-note b { font-size: 9px; }
+          .cv-money-note.n1 { margin-left: -118px; }
+          .cv-money-note.n2 { margin-left: -32px; }
+          .cv-money-note.n3 { margin-left: 58px; }
+          .cv-money-note.n4 { margin-left: 0; }
+          .cv-money-stack {
+            width: 210px;
+            height: 54px;
+            bottom: 13px;
+          }
+          .cv-money-stack i {
+            width: 150px;
+            height: 26px;
+          }
+          .cv-money-stack .s2 { width: 164px; }
+          .cv-money-stack .s3 { width: 158px; }
+          .cv-money-stack .s4 { width: 170px; }
+          .cv-money-stack .s5 { width: 156px; }
           .cv-h2 { letter-spacing: -0.8px; }
           .cv-test-card { flex-basis: 290px; padding: 26px 22px 20px; }
           .cv-jobs-grid { padding: 0 20px; }
@@ -1667,6 +1825,14 @@ export default function CvLanding() {
           .cv-trust-line { gap: 18px; }
           .cv-trust-divider { display: none; }
           .cv-conds { padding: 24px; }
+        }
+        @media (prefers-reduced-motion: reduce) {
+          .cv-money-note,
+          .cv-money-stack i {
+            animation: none;
+            opacity: 1;
+          }
+          .cv-money-note { display: none; }
         }
       `}</style>
     </>
