@@ -23,6 +23,7 @@ export default function AdminJobs() {
   const [currentEmail, setCurrentEmail] = useState(null)
   const [tab, setTab] = useState('jobs')
   const [jobFilter, setJobFilter] = useState('all')
+  const [logTag, setLogTag] = useState('all')
   const [editing, setEditing] = useState(null)
   const [form, setForm] = useState(EMPTY_JOB)
   const [saving, setSaving] = useState(false)
@@ -65,7 +66,6 @@ export default function AdminJobs() {
   const { data: apps = [], mutate: mutateApps } = useAdmin('/api/admin/applications', token)
   const { data: admins = [], mutate: mutateAdmins } = useAdmin('/api/admin/users', token)
   const { data: targets = [], mutate: mutateTargets } = useAdmin('/api/admin/crawl-targets', token)
-  const { data: progress = [] } = useAdmin('/api/admin/job-progress', token)
   const { data: companies = [], mutate: mutateCompanies } = useAdmin('/api/admin/companies', token)
   const { data: kpi = null } = useAdmin('/api/admin/company-kpi', token)
   const { data: activityLog = { changelog: [], actions: [] }, mutate: mutateLog } = useAdmin('/api/admin/activity-log', token)
@@ -251,9 +251,9 @@ export default function AdminJobs() {
             </div>
           </div>
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
-            {['kpi','jobs','progress','companies','applications','log','crawl','admins'].map(t => (
+            {['kpi','jobs','companies','applications','log','crawl','admins'].map(t => (
               <button key={t} style={{ ...S.tab, ...(tab === t ? S.tabOn : {}) }} onClick={() => setTab(t)}>
-                {t === 'kpi' ? '📊 지표' : t === 'jobs' ? `Jobs (${jobs.length})` : t === 'progress' ? `진행현황 (${progress.length})` : t === 'companies' ? `회사 (${companies.length})` : t === 'applications' ? `Applications (${apps.length})` : t === 'log' ? '📝 로그' : t === 'crawl' ? `Crawl Targets (${targets.length})` : `Admins (${admins.length})`}
+                {t === 'kpi' ? '📊 지표' : t === 'jobs' ? `Jobs (${jobs.length})` : t === 'companies' ? `회사 (${companies.length})` : t === 'applications' ? `Applications (${apps.length})` : t === 'log' ? '📝 로그' : t === 'crawl' ? `Crawl Targets (${targets.length})` : `Admins (${admins.length})`}
               </button>
             ))}
             <a href="/admin/dashboard" style={{ fontSize: 13, fontWeight: 600, color: '#4F46E5', textDecoration: 'none', padding: '7px 16px', border: '1px solid #4F46E5', borderRadius: 8 }}>
@@ -501,9 +501,14 @@ export default function AdminJobs() {
             <>
               <div style={S.card}>
                 <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 4 }}>📝 변경 이력 (기능별)</div>
-                <div style={{ fontSize: 12, color: '#999', marginBottom: 16 }}>배포된 작업을 라우트(기능) 단위로 분류한 changelog.</div>
+                <div style={{ fontSize: 12, color: '#999', marginBottom: 12 }}>태그(라우트)를 눌러 기능별로 모아 보세요.</div>
+                <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 16 }}>
+                  {[['all', `전체 ${(activityLog.changelog || []).length}`]].concat(groupKeys.map(k => [k, `${k} ${groups[k].length}`])).map(([key, label]) => (
+                    <button key={key} onClick={() => setLogTag(key)} style={{ ...S.tab, fontSize: 12, padding: '5px 12px', ...(logTag === key ? S.tabOn : {}) }}>{label}</button>
+                  ))}
+                </div>
                 {groupKeys.length === 0 && <div style={{ color: '#aaa', fontSize: 13 }}>changelog 없음</div>}
-                {groupKeys.map(k => (
+                {(logTag === 'all' ? groupKeys : groupKeys.filter(k => k === logTag)).map(k => (
                   <div key={k} style={{ marginBottom: 18 }}>
                     <div style={{ fontSize: 12, fontWeight: 800, color: '#111', padding: '6px 0', borderBottom: '2px solid #f0f0f0', marginBottom: 6 }}>
                       {k} <span style={{ color: '#bbb', fontWeight: 600 }}>· {groups[k].length}</span>
@@ -601,43 +606,6 @@ export default function AdminJobs() {
                 </button>
               </div>
             ))}
-          </div>
-        )}
-
-        {/* PROGRESS TAB (오버사이트: 기업 등록 공고 진행현황, 읽기 전용) */}
-        {tab === 'progress' && (
-          <div style={S.card}>
-            <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 4 }}>기업 등록 공고 진행현황</div>
-            <div style={{ fontSize: 12, color: '#999', marginBottom: 16 }}>기업이 직접 올린 공고별 지원 현황 요약 (읽기 전용). 단계 관리는 기업 ATS에서 진행됩니다.</div>
-            {progress.length === 0 && <div style={{ color: '#aaa', fontSize: 13 }}>기업 등록 공고 없음</div>}
-            {(() => {
-              const STAGES = [['pending', '지원', '#64748b'], ['viewed', '열람', '#0891b2'], ['reviewing', '검토중', '#7c3aed'], ['decided', '결과', '#059669'], ['rejected', '반려', '#dc2626']]
-              const fmt = (d) => d ? new Date(d).toLocaleDateString() : '-'
-              return [...progress].sort((a, b) => b.total - a.total).map(p => (
-                <div key={p.id} style={{ padding: '14px 0', borderBottom: '1px solid #f5f5f5' }}>
-                  <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, flexWrap: 'wrap' }}>
-                    <span style={{ fontSize: 14, fontWeight: 700 }}>{p.title}</span>
-                    <span style={{ fontSize: 12, color: '#888' }}>· {p.account_company || p.company}</span>
-                    {p.status === 'pending_review' && <span style={{ ...S.badge, background: '#fff7ed', color: '#c2410c', marginLeft: 0 }}>승인대기</span>}
-                    {!p.is_active && p.status !== 'pending_review' && <span style={{ ...S.badge, background: '#fee2e2', color: '#991b1b', marginLeft: 0 }}>비활성</span>}
-                    {p.is_featured && <span style={{ ...S.badge, background: '#fef3c7', color: '#92400e', marginLeft: 0 }}>★프리미엄</span>}
-                  </div>
-                  <div style={{ fontSize: 11, color: '#aaa', margin: '3px 0 8px' }}>
-                    👤 {p.poster_email || '-'} · 등록 {fmt(p.created_at)} · 최근활동 {fmt(p.last_activity)}
-                  </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap' }}>
-                    <span style={{ fontSize: 18, fontWeight: 800 }}>{p.total}<span style={{ fontSize: 12, fontWeight: 600, color: '#888' }}> 지원</span></span>
-                    <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                      {STAGES.map(([key, label, color]) => (
-                        <span key={key} style={{ fontSize: 12, color: (p.funnel[key] || 0) > 0 ? color : '#ccc', fontWeight: (p.funnel[key] || 0) > 0 ? 700 : 500 }}>
-                          {label} {p.funnel[key] || 0}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              ))
-            })()}
           </div>
         )}
 
