@@ -346,7 +346,7 @@ export default function CvLanding() {
         {/* ───── HOW IT WORKS ───── */}
         <section className="cv-how">
           <div className="cv-section-inner">
-            <h2 className="cv-h2">이력서만 등록하면 끝.</h2>
+            <h2 className="cv-h2">이력서만 등록하면 돼요.</h2>
 
             <div className="cv-flow" aria-label="FYI resume reward flow">
               <article className="cv-flow-card">
@@ -713,9 +713,9 @@ export default function CvLanding() {
            Page rhythm: Hero (dark) → How (cream) → ... → Final (dark) closer. */
         .cv-hero {
           position: relative;
-          padding: 116px 40px 104px;
+          padding: 96px 40px 72px;
           overflow: hidden;
-          min-height: 100vh;
+          min-height: 78vh;
           display: flex;
           align-items: center;
           justify-content: center;
@@ -1027,7 +1027,7 @@ export default function CvLanding() {
           padding: 0 8px;
         }
         .cv-flow-copy span {
-          display: inline-flex;
+          display: none;
           align-items: center;
           justify-content: center;
           height: 26px;
@@ -1041,7 +1041,7 @@ export default function CvLanding() {
           letter-spacing: 1px;
         }
         .cv-flow-copy h3 {
-          margin: 12px 0 8px;
+          margin: 0 0 8px;
           font-size: 20px;
           line-height: 1.28;
           font-weight: 850;
@@ -1089,6 +1089,9 @@ export default function CvLanding() {
           margin-left: auto;
           margin-right: auto;
           justify-content: center;
+        }
+        .cv-steps[hidden] {
+          display: none !important;
         }
         .cv-step {
           position: relative;
