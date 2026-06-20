@@ -1562,7 +1562,7 @@ export default function CvLanding() {
 
         /* ───── Form section ───── */
         .cv-form-section {
-          padding: 100px 24px 120px;
+          padding: 90px 24px 64px;
           scroll-margin-top: 80px;
           background: #fff;
         }
