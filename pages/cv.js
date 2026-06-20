@@ -570,6 +570,39 @@ export default function CvLanding() {
           </div>
         </section>
 
+        {/* ───── JOBS (rail) — moved above testimonials ───── */}
+        {jobs.length > 0 && (
+          <section className="cv-jobs">
+            <div className="cv-section-inner">
+              <div className="cv-section-kicker"><span className="kdot" />지금 적극 채용 중</div>
+              <h2 className="cv-h2">이런 회사들이 인재를 찾고 있어요.</h2>
+              <p className="cv-h2-sub">이력서만 등록해두면 이 중 맞는 포지션을 제안해드려요.</p>
+            </div>
+            <div className="cv-jobs-rail-wrap">
+              <div className="cv-jobs-rail">
+                {[...jobs, ...jobs].map((j, i) => (
+                  <a key={`${j.id}-${i}`} href={`/jobs/${j.id}`} className="cv-job">
+                    <div className="cv-job-accent" aria-hidden />
+                    {j.logo_url ? (
+                      <img src={j.logo_url} alt={j.company} className="cv-job-logo" />
+                    ) : (
+                      <div className="cv-job-logo cv-job-logo-fallback">{(j.company || '').slice(0, 2).toUpperCase()}</div>
+                    )}
+                    <div className="cv-job-meta">
+                      <div className="cv-job-co">{j.company}</div>
+                      <div className="cv-job-title">{j.title}</div>
+                      <div className="cv-job-tags">
+                        {j.location && <span className="cv-job-tag">{j.location}</span>}
+                        {(j.salary_min || j.salary_max) && <span className="cv-job-tag cv-job-tag-sal tabular-nums">{fmtSal(j.salary_min, j.salary_max)}</span>}
+                      </div>
+                    </div>
+                  </a>
+                ))}
+              </div>
+            </div>
+          </section>
+        )}
+
         {/* ───── TESTIMONIALS ───── */}
         <section className="cv-test">
           <div className="cv-section-inner">
@@ -600,37 +633,6 @@ export default function CvLanding() {
             </div>
           </div>
         </section>
-
-        {/* ───── JOBS ───── */}
-        {jobs.length > 0 && (
-          <section className="cv-jobs">
-            <div className="cv-section-inner">
-              <div className="cv-section-kicker"><span className="kdot" />지금 적극 채용 중</div>
-              <h2 className="cv-h2">이런 회사들이 인재를 찾고 있어요.</h2>
-              <p className="cv-h2-sub">이력서만 등록해두면 이 중 맞는 포지션을 제안해드려요.</p>
-            </div>
-            <div className="cv-jobs-grid">
-              {jobs.slice(0, 6).map(j => (
-                <a key={j.id} href={`/jobs/${j.id}`} className="cv-job">
-                  <div className="cv-job-accent" aria-hidden />
-                  {j.logo_url ? (
-                    <img src={j.logo_url} alt={j.company} className="cv-job-logo" />
-                  ) : (
-                    <div className="cv-job-logo cv-job-logo-fallback">{(j.company || '').slice(0, 2).toUpperCase()}</div>
-                  )}
-                  <div className="cv-job-meta">
-                    <div className="cv-job-co">{j.company}</div>
-                    <div className="cv-job-title">{j.title}</div>
-                    <div className="cv-job-tags">
-                      {j.location && <span className="cv-job-tag">{j.location}</span>}
-                      {(j.salary_min || j.salary_max) && <span className="cv-job-tag cv-job-tag-sal tabular-nums">{fmtSal(j.salary_min, j.salary_max)}</span>}
-                    </div>
-                  </div>
-                </a>
-              ))}
-            </div>
-          </section>
-        )}
 
       </main>
 
@@ -1993,15 +1995,21 @@ export default function CvLanding() {
           padding: 110px 0 90px;
           background: #fff;
         }
-        .cv-jobs-grid {
-          max-width: 1240px;
-          margin: 50px auto 0;
-          padding: 0 40px;
-          display: grid;
-          grid-template-columns: repeat(3, 1fr);
-          gap: 16px;
+        .cv-jobs-rail-wrap {
+          margin-top: 50px;
+          overflow: hidden;
+          mask-image: linear-gradient(to right, transparent 0%, #000 6%, #000 94%, transparent 100%);
         }
+        .cv-jobs-rail {
+          display: flex;
+          gap: 16px;
+          animation: cvSlide 70s linear infinite;
+          width: fit-content;
+          padding: 0 8px;
+        }
+        .cv-jobs-rail:hover { animation-play-state: paused; }
         .cv-job {
+          flex: 0 0 360px;
           position: relative;
           background: linear-gradient(135deg, #1f1813 0%, #181410 100%);
           border: 1px solid rgba(255,255,255,0.06);
