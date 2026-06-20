@@ -32,11 +32,11 @@ function GlobalFooter() {
         {t('footer.copyright')}
       </div>
       <div style={{ display: 'flex', alignItems: 'center', gap: 24, flexWrap: 'wrap' }}>
+        <LanguageSwitcher />
         <a href="/app" style={{ fontSize: 13, color: '#ff6000', textDecoration: 'none', fontWeight: 600 }}>📱 {t('footer.downloadApp')}</a>
         <a href="/how-it-works" style={{ fontSize: 13, color: 'rgba(242,240,235,0.42)', textDecoration: 'none' }}>{t('footer.howItWorks')}</a>
         <a href="/privacy" style={{ fontSize: 13, color: 'rgba(242,240,235,0.42)', textDecoration: 'none' }}>{t('footer.privacy')}</a>
         <a href="/terms" style={{ fontSize: 13, color: 'rgba(242,240,235,0.42)', textDecoration: 'none' }}>{t('footer.terms')}</a>
-        <LanguageSwitcher />
       </div>
     </footer>
   );

@@ -95,6 +95,7 @@ export default function GlobalNav({ activePage, onLogin, onJobsClick, mobileSear
         @media (max-width: 768px) { .gnav-l-menu { display: none; } }
         .gnav-logo { display: flex; align-items: center; gap: 10px; font-size: 13px; font-weight: 400; color: #f2f0eb; text-decoration: none; cursor: pointer; }
         .gnav-logo img { width: 28px; height: 28px; object-fit: contain; }
+        .gnav-logo em { color: #ff6000; font-style: normal; }
         .gnav-r { display: flex; align-items: center; gap: 24px; }
         .gnav-link { font-size: 14px; color: rgba(242,240,235,0.42); text-decoration: none; background: none; border: none; cursor: pointer; font-family: 'Barlow', sans-serif; padding: 0; transition: color .2s; position: relative; }
         .gnav-link:hover { color: #f0ece4; }
@@ -202,7 +203,7 @@ export default function GlobalNav({ activePage, onLogin, onJobsClick, mobileSear
         <div className="gnav-l">
           <Link href="/" className="gnav-logo">
             <img src="/logo.png" alt="FYI" />
-            <span>FOR YOUR <span style={{ color: '#ff6000' }}>'SALARY'</span> INFORMATION</span>
+            <span dangerouslySetInnerHTML={{ __html: t('nav.brandTagline') }} />
           </Link>
           <div className="gnav-l-menu">
             <Link href="/" className={`gnav-link gnav-link-light${activePage === 'home' ? ' on' : ''}`}>{t('nav.salaryCompare')}</Link>

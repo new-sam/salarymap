@@ -348,7 +348,7 @@ export default function Terms() {
       <nav>
         <a className="logo" href="/">
           <img src="/logo.png" alt="FYI" />
-          <span>FOR YOUR <em>'SALARY'</em> INFORMATION</span>
+          <span dangerouslySetInnerHTML={{ __html: gt('nav.brandTagline') }} />
         </a>
         <div className="nav-r">
           <a className="nav-link" href="/how-it-works">{gt('footer.howItWorks')}</a>

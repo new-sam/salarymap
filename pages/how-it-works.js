@@ -133,7 +133,7 @@ const VI = {
 
 export default function HowItWorks() {
   // Drive locale from the global LanguageSwitcher (footer).
-  const { lang } = useT();
+  const { lang, t: gt } = useT();
   const t = lang === 'ko' ? KO : lang === 'en' ? EN : VI;
   return (
     <>
@@ -152,7 +152,7 @@ export default function HowItWorks() {
       <nav>
         <a className="logo" href="/">
           <img src="/logo.png" alt="FYI" />
-          <span>FOR YOUR <em>'SALARY'</em> INFORMATION</span>
+          <span dangerouslySetInnerHTML={{ __html: gt('nav.brandTagline') }} />
         </a>
         <div className="nav-r">
           <a className="nav-link" href="/">{t.navHome}</a>
