@@ -4,7 +4,6 @@ import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { createClient } from '@supabase/supabase-js'
 import { supabase } from '../../lib/supabaseClient'
-import GlobalNav from '../../components/GlobalNav'
 import { useT } from '../../lib/i18n'
 import Icon from '../../components/Icon'
 import { DEFAULT_IMAGES } from '../../constants/jobs'
@@ -133,7 +132,6 @@ export default function JobDetailPage({ job }) {
         <meta name="twitter:image" content={ogImage} />
       </Head>
 
-      <GlobalNav activePage="jobs" />
 
       <div className="jd-page">
         <div className="jd-page-inner">

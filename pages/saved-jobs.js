@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react'
 import Head from 'next/head'
 import { useRouter } from 'next/router'
 import { supabase } from '../lib/supabaseClient'
-import GlobalNav from '../components/GlobalNav'
 import { useT } from '../lib/i18n'
 
 export default function SavedJobs() {
@@ -83,7 +82,6 @@ export default function SavedJobs() {
         }
       `}</style>
 
-      <GlobalNav activePage="saved-jobs" />
 
       <div className="sv-wrap">
         <div className="sv-h">{t('nav.savedJobs')}</div>

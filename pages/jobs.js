@@ -3,7 +3,6 @@ import Head from 'next/head'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { supabase } from '../lib/supabaseClient'
-import GlobalNav from '../components/GlobalNav'
 import { useT } from '../lib/i18n'
 import Icon from '../components/Icon'
 import { DEFAULT_IMAGES, ROLE_OPTIONS, TYPE_OPTIONS, TECH_OPTIONS, JOBS_PER_PAGE } from '../constants/jobs'
@@ -884,8 +883,6 @@ export default function JobsPage() {
         @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
         @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
       `}</style>
-
-      <GlobalNav activePage="jobs" />
 
       <div className="jw">
         {/* HEADER */}

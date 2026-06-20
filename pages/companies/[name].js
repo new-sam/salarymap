@@ -4,7 +4,6 @@ import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { createClient } from '@supabase/supabase-js'
 import { supabase } from '../../lib/supabaseClient'
-import GlobalNav from '../../components/GlobalNav'
 import { useT } from '../../lib/i18n'
 import { domainFor, logoUrlFor } from '../../lib/companyDomains'
 import { track } from '../../lib/track'
@@ -195,7 +194,6 @@ export default function CompanyPage({ companyName, domain }) {
   return (
     <>
       <Head><title>{companyName} · Salary FYI</title></Head>
-      <GlobalNav activePage="community" />
       <style>{`
         .cpg-page { background: #fff; min-height: 100vh; }
         .cpg { max-width: 760px; margin: 0 auto; padding: 0 16px 80px; color: #111; font-family: 'Barlow', sans-serif; }

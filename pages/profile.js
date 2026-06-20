@@ -2,7 +2,6 @@ import { useState, useEffect, useRef } from 'react'
 import Head from 'next/head'
 import { useRouter } from 'next/router'
 import { supabase } from '../lib/supabaseClient'
-import GlobalNav from '../components/GlobalNav'
 import SalaryBadge from '../components/SalaryBadge'
 import { SALARY_TIERS, getSalaryTier } from '../lib/salaryTiers'
 import { useT } from '../lib/i18n'
@@ -774,7 +773,6 @@ export default function ProfilePage() {
         }
       `}</style>
 
-      <GlobalNav activePage="profile" />
 
       <div className="pw">
         {/* Header */}

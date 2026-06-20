@@ -8,7 +8,6 @@ import SubmitSection from '../components/home/SubmitSection';
 import { useT } from '../lib/i18n';
 import Icon from '../components/Icon';
 import { homeCss } from '../constants/homeStyles';
-import GlobalNav from '../components/GlobalNav';
 
 const css = homeCss;
 
@@ -946,15 +945,6 @@ export default function Home({ initialCompanies = [] }) {
         />
         <style dangerouslySetInnerHTML={{ __html: css }} />
       </Head>
-
-      <GlobalNav
-        activePage="home"
-        onLogin={() => setShowAuthModal(true)}
-        onJobsClick={() => {
-          fetch('/api/track', { method: 'POST', headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ event: 'click_jobs_cta', page: 'home', email: user?.email }) }).catch(() => {})
-        }}
-      />
 
       <div suppressHydrationWarning dangerouslySetInnerHTML={PAGE_HTML_PRE} />
 

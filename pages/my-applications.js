@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react'
 import Head from 'next/head'
 import { useRouter } from 'next/router'
 import { supabase } from '../lib/supabaseClient'
-import GlobalNav from '../components/GlobalNav'
 import { useT } from '../lib/i18n'
 import Icon from '../components/Icon'
 
@@ -97,7 +96,6 @@ export default function MyApplications() {
         }
       `}</style>
 
-      <GlobalNav activePage="my-applications" />
 
       <div className="ma-wrap">
         <div className="ma-h">{t('apps.title')}</div>

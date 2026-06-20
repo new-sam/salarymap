@@ -2,7 +2,6 @@ import { useState, useEffect, useRef } from 'react'
 import Head from 'next/head'
 import { useRouter } from 'next/router'
 import { supabase } from '../lib/supabaseClient'
-import GlobalNav from '../components/GlobalNav'
 import { useT } from '../lib/i18n'
 import { track } from '../lib/track'
 
@@ -355,8 +354,6 @@ export default function CvLanding() {
         <title>{t('cv.meta.title')}</title>
         <meta name="description" content={t('cv.meta.description')} />
       </Head>
-
-      <GlobalNav activePage="cv" />
 
       <main className="cv-page">
         {/* ───── HERO (center-aligned, black bg, white text) ───── */}

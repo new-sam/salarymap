@@ -3,7 +3,6 @@ import Head from 'next/head'
 import { useRouter } from 'next/router'
 import { supabase } from '../../lib/supabaseClient'
 import { useLoginGuard } from '../../lib/useLoginGuard'
-import GlobalNav from '../../components/GlobalNav'
 import { useT } from '../../lib/i18n'
 import { uploadCommunityImage, MAX_POST_IMAGES } from '../../lib/communityImages'
 
@@ -100,7 +99,6 @@ export default function CommunityEditPage() {
   if (checking) {
     return (
       <>
-        <GlobalNav activePage="community" />
         <div style={{ minHeight: '60vh', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#bbb', fontSize: 14 }}>Loading...</div>
       </>
     )
@@ -109,7 +107,6 @@ export default function CommunityEditPage() {
   return (
     <>
       <Head><title>{t('comm.edit')}</title></Head>
-      <GlobalNav activePage="community" />
 
       <style>{`
         .cw-page { background: #fff; min-height: 100vh; }

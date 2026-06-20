@@ -6,6 +6,20 @@ import { I18nProvider, LanguageSwitcher, useT } from '../lib/i18n';
 import { supabase } from '../lib/supabaseClient';
 import MobileTabBar from '../components/MobileTabBar';
 import AppDownloadModal from '../components/AppDownloadModal';
+import GlobalNav from '../components/GlobalNav';
+
+/* pathname → GlobalNav activePage key. The set determines whether GlobalNav
+   renders at all (company/admin/standalone pages have their own headers). */
+function activePageFor(pathname) {
+  if (pathname === '/') return 'home';
+  if (pathname === '/cv') return 'cv';
+  if (pathname === '/jobs' || pathname === '/jobs/[id]') return 'jobs';
+  if (pathname.startsWith('/community') || pathname.startsWith('/companies/')) return 'community';
+  if (pathname === '/my-applications') return 'my-applications';
+  if (pathname === '/saved-jobs') return 'saved-jobs';
+  if (pathname === '/profile') return 'profile';
+  return null;
+}
 
 function GlobalLoginModal() {
   const { t } = useT();
@@ -53,8 +67,10 @@ export default function App({ Component, pageProps }) {
   const isJobDetail = router.pathname === '/jobs/[id]';
   // /for-companies 는 공개 랜딩이라 하단 글로벌 언어 스위처를 메인 랜딩과 동일하게 노출한다.
   const isForCompaniesLanding = router.pathname === '/for-companies';
-  // /cv 는 광고 랜딩이라 하단 탭바·언어 스위처를 노출하지 않는다 (exit leak 차단).
+  // Ad-landing routes get a static nav. /promo 는 푸터까지 차단(exit leak),
+  // /cv 는 푸터에 언어 스위처가 필요해 노출한다.
   const isAdLanding = router.pathname === '/cv' || router.pathname.startsWith('/promo');
+  const isPromoLanding = router.pathname.startsWith('/promo');
 
   // Flag the body so the mobile-only top/bottom reservations (52/60px in
   // globals.css) collapse for company pages — they render their own header.
@@ -68,10 +84,26 @@ export default function App({ Component, pageProps }) {
     if (isAdLanding) document.body.dataset.adLanding = '1';
     else delete document.body.dataset.adLanding;
   }, [isCompany, isJobDetail, isAdLanding]);
+  const activePage = activePageFor(router.pathname);
   return (
     <I18nProvider>
+      {activePage && (
+        <GlobalNav
+          activePage={activePage}
+          onLogin={() => {
+            if (typeof window === 'undefined') return;
+            if (typeof window.openAuthModal === 'function') window.openAuthModal();
+            else window.dispatchEvent(new Event('fyi-show-login'));
+          }}
+          onJobsClick={() => {
+            if (router.pathname !== '/') return;
+            fetch('/api/track', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ event: 'click_jobs_cta', page: 'home' }) }).catch(() => {});
+          }}
+        />
+      )}
       <Component {...pageProps} />
-      {(!isCompany || isForCompaniesLanding) && !isAdmin && !isAdLanding && (
+      {(!isCompany || isForCompaniesLanding) && !isAdmin && !isPromoLanding && (
         <footer style={{
           background: '#0a0a09', borderTop: '1px solid rgba(255,255,255,0.06)',
           padding: '24px 40px', display: 'flex', alignItems: 'center', justifyContent: 'center',

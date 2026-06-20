@@ -4,7 +4,6 @@ import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { supabase } from '../../lib/supabaseClient'
 import { track } from '../../lib/track'
-import GlobalNav from '../../components/GlobalNav'
 import SalaryBadge from '../../components/SalaryBadge'
 import { useT } from '../../lib/i18n'
 import { domainFor, logoUrlFor } from '../../lib/companyDomains'
@@ -398,7 +397,6 @@ export default function CommunityPage() {
   return (
     <>
       <Head><title>{t('comm.title')}</title><meta name="robots" content="noindex" /></Head>
-      <GlobalNav activePage="community" />
 
       <style>{`
         .comm-page { background: #fff; min-height: 100vh; }
