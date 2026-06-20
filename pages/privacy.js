@@ -24,15 +24,13 @@ const css = `
 }
 html { scroll-behavior:smooth; }
 body { background:var(--bg); color:var(--white); font-family:'Geist',sans-serif; -webkit-font-smoothing:antialiased; }
-nav { position:fixed; top:0; left:0; right:0; z-index:200; padding:0 52px; height:56px; display:flex; align-items:center; justify-content:space-between; background:rgba(12,12,11,0.9); backdrop-filter:blur(14px); border-bottom:1px solid var(--line); }
-.logo { font-family:'Geist Mono',monospace; font-size:13px; font-weight:500; color:var(--white); text-decoration:none; }
-.logo span { color:var(--orange); }
+nav { position:fixed; top:0; left:0; right:0; z-index:200; padding:0 52px; height:56px; display:flex; align-items:center; justify-content:space-between; background:#0c0c0b; border-bottom:1px solid var(--line); }
+.logo { display:flex; align-items:center; gap:10px; font-family:'Barlow',sans-serif; font-size:13px; font-weight:400; color:var(--white); text-decoration:none; letter-spacing:-0.08px; }
+.logo img { width:28px; height:28px; object-fit:contain; }
+.logo em { color:var(--orange); font-style:normal; }
 .nav-r { display:flex; align-items:center; gap:32px; }
-.nav-link { font-size:13px; color:var(--mid); text-decoration:none; transition:color .15s; }
-.nav-link:hover { color:var(--white); }
-.lang-toggle { display:flex; gap:0; border:1px solid var(--line); border-radius:3px; overflow:hidden; }
-.lang-btn { font-family:'Geist Mono',monospace; font-size:11px; font-weight:500; padding:6px 12px; background:transparent; color:var(--mid); border:none; cursor:pointer; transition:all .15s; }
-.lang-btn.active { background:var(--orange); color:#fff; }
+.nav-link { font-family:'Barlow',sans-serif; font-size:14px; color:var(--white); text-decoration:none; transition:color .15s; }
+.nav-link:hover { color:var(--orange); }
 .page { max-width:760px; margin:0 auto; padding:120px 52px 100px; }
 .kicker { font-family:'Geist Mono',monospace; font-size:11px; color:var(--orange); letter-spacing:2.5px; text-transform:uppercase; margin-bottom:24px; }
 .page-h1 { font-size:clamp(30px,4vw,46px); font-weight:800; letter-spacing:-1.5px; line-height:1.1; margin-bottom:14px; }
@@ -264,6 +262,164 @@ const EN = {
   ],
 };
 
+const KO = {
+  kicker: '개인정보',
+  h1: '개인정보 처리방침',
+  sub: `시행일: ${EFFECTIVE}. 본 방침은 ${ENTITY}가 운영하는 SalaryMap이 어떤 개인정보를 수집하고 어떻게 사용하는지, 그리고 베트남법상 이용자의 권리를 설명합니다.`,
+  sections: [
+    {
+      num: '01',
+      title: '운영자',
+      body: (
+        <>
+          SalaryMap(이하 “저희”)은 베트남 IT 커뮤니티를 위한 연봉 투명성 서비스이며, <strong>{ENTITY}</strong>가 이용자 개인정보의 <strong>데이터 컨트롤러</strong>(Bên Kiểm soát dữ liệu)로서 운영합니다. 개인정보 관련 문의나 권리 행사는 <a href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a>로 연락 주세요.
+        </>
+      ),
+    },
+    {
+      num: '02',
+      title: '적용 범위 — 웹사이트와 앱',
+      body: (
+        <>
+          <strong>웹사이트(salary-fyi.com):</strong> 연봉 정보는 <strong>계정 없이 익명으로</strong> 제출할 수 있으며, 이때 직무·경력·연봉 등 입력하신 데이터만 수집합니다.
+          <br />
+          <br />
+          <strong>모바일 앱:</strong> 커뮤니티·프로필 기능을 이용하시려면 계정을 선택적으로 생성할 수 있으며, 이 경우 아래에 설명된 추가 개인정보가 수집됩니다.
+        </>
+      ),
+    },
+    {
+      num: '03',
+      title: '수집 항목',
+      body: (
+        <>
+          <ul>
+            <li>
+              <strong>계정 정보</strong> — Apple 로그인 시: 이메일 주소(또는 Apple 비공개 릴레이 주소), 표시 이름(공유 시), 사용자 식별자.
+            </li>
+            <li>
+              <strong>프로필 정보</strong> — 회사, 직무·직급, 연봉, 경력, 학력, 연령, 레벨 등 본인이 직접 입력한 항목.
+            </li>
+            <li>
+              <strong>인증 정보</strong> — 재직·재학 인증을 위한 회사·학교 이메일 주소.
+            </li>
+            <li>
+              <strong>이용자 콘텐츠</strong> — 연봉 제출, 커뮤니티 글·댓글, 지원 내역, 스크랩, 신고 및 피드백.
+            </li>
+            <li>
+              <strong>기술 정보</strong> — 기기 정보, 앱 이용 로그·IP, 알림 활성화 시 푸시 토큰.
+            </li>
+            <li>
+              <strong>AI 자동 입력 데이터</strong> — 프로필 자동 입력 기능 이용 시, 입력하신 텍스트가 프로필 구조화를 위해 외부 AI 제공업체로 전송됩니다.
+            </li>
+          </ul>
+        </>
+      ),
+    },
+    {
+      num: '04',
+      title: '이용 목적',
+      body: (
+        <>
+          서비스 운영·제공, <strong>집계</strong> 형태의 연봉 통계 표시(개별 식별 연봉은 절대 공개하지 않으며, 제출 수가 적은 회사는 범위만 노출), 재직·재학 인증, 동의하신 알림 발송, 프로필 자동 입력, 커뮤니티 안전(검수·신고·차단) 운영에 사용합니다. 위 목적 외에는 이용하지 않습니다.
+        </>
+      ),
+    },
+    {
+      num: '05',
+      title: '법적 근거 및 동의',
+      body: (
+        <>
+          저희는 베트남 개인정보 보호법(91/2025/QH15)과 시행령 13/2023/NĐ-CP에 따라, 수집 전 받은 <strong>이용자의 동의</strong>(가입 시 및 데이터 제출 시) 및 법령상 허용되는 그 밖의 법적 근거에 따라 개인정보를 처리합니다. 동의는 위 목적에 한정되며 자발적입니다. 계정 삭제 또는 연락을 통해 <strong>언제든지 동의를 철회</strong>할 수 있으며, 철회 이전에 이미 수행된 처리에는 영향을 미치지 않습니다.
+        </>
+      ),
+    },
+    {
+      num: '06',
+      title: '공유 및 제3자',
+      body: (
+        <>
+          개인정보를 <strong>판매하지 않으며</strong>, 식별 가능한 형태로 채용 담당자나 회사와 공유하지 않습니다. 저희를 대신하여 데이터를 처리하는 서비스 제공업체와만 공유합니다:
+          <ul>
+            <li>
+              <strong>Supabase</strong> — 데이터베이스 및 호스팅(계정·프로필·콘텐츠 저장).
+            </li>
+            <li>
+              <strong>Apple</strong> — Apple 로그인 및 알림용 Apple Push Notification 서비스.
+            </li>
+            <li>
+              <strong>AI 제공업체</strong> — 자동 입력 기능 이용 시 한정, 입력 텍스트 구조화 목적.
+            </li>
+          </ul>
+        </>
+      ),
+    },
+    {
+      num: '07',
+      title: '국외 이전',
+      body: (
+        <>
+          데이터베이스 및 호스팅(Supabase)은 <strong>베트남 외부</strong>(싱가포르 리전)에 위치합니다. 따라서 이용자의 개인정보는 해외로 이전·처리됩니다. 보호를 위해 계약적·기술적 보호 조치를 적용하며, 필요한 경우 베트남 개인정보 보호법에 따라 국외 이전 영향평가를 수행합니다. 서비스 이용 시 본 이전에 대해 안내받고 동의하신 것으로 봅니다.
+        </>
+      ),
+    },
+    {
+      num: '08',
+      title: '보관 및 삭제',
+      body: (
+        <>
+          개인정보는 계정이 활성화된 동안 또는 서비스 제공과 법적 의무 이행에 필요한 기간 동안만 보관합니다. 앱 내에서 언제든지 <strong>계정을 삭제</strong>할 수 있으며, 삭제 시 프로필과 개인정보가 제거됩니다. 집계 및 비식별 통계는 보관될 수 있습니다. 이메일을 통해서도 삭제를 요청할 수 있습니다.
+        </>
+      ),
+    },
+    {
+      num: '09',
+      title: '이용자의 권리',
+      body: (
+        <>
+          베트남법에 따라 이용자는 다음의 권리를 가집니다: 데이터 열람, 정정, 삭제, 처리 제한 또는 거부, 동의 철회, 사본 요청, 그리고 신고. 권리 행사를 위해 <a href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a>로 연락해 주세요. 관할 기관(공안부 산하 사이버보안·하이테크범죄 예방국, A05)에 신고할 수도 있습니다.
+        </>
+      ),
+    },
+    {
+      num: '10',
+      title: '보안',
+      body: (
+        <>
+          전송 구간 암호화, 접근 통제, 데이터베이스 행 단위 보안(RLS) 등을 통해 데이터를 보호합니다. 완벽한 시스템은 없지만, 연봉 데이터의 민감도에 맞춰 합리적인 조치를 적용하고 있습니다.
+        </>
+      ),
+    },
+    {
+      num: '11',
+      title: '미성년자',
+      body: (
+        <>
+          본 서비스는 만 15세 이상의 직장인과 학생을 대상으로 합니다. 부모·보호자의 검증된 동의 없이 만 15세 미만 아동의 데이터를 의도적으로 수집하지 않습니다. 자녀의 데이터가 제공된 사실을 알게 된 경우 연락 주시면 삭제하겠습니다.
+        </>
+      ),
+    },
+    {
+      num: '12',
+      title: '방침의 변경',
+      body: (
+        <>
+          본 방침은 변경될 수 있습니다. 변경된 방침은 새 시행일과 함께 본 페이지에 게시되며, 중대한 변경의 경우 앱 내에서 알려 드립니다.
+        </>
+      ),
+    },
+    {
+      num: '13',
+      title: '문의',
+      body: (
+        <>
+          {ENTITY} — <a href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a>.
+        </>
+      ),
+    },
+  ],
+};
+
 const VI = {
   kicker: 'Quyền riêng tư',
   h1: 'Chính sách Quyền riêng tư',
@@ -462,11 +618,9 @@ const VI = {
 };
 
 export default function Privacy() {
-  // Drive locale from the global LanguageSwitcher (footer). Legal copy only
-  // lives in EN/VI; ko visitors fall back to EN since this is staff-facing.
-  const { lang: gLang } = useT();
-  const lang = gLang === 'vi' ? 'vi' : 'en';
-  const t = lang === 'en' ? EN : VI;
+  // Drive locale from the global LanguageSwitcher (footer).
+  const { lang } = useT();
+  const t = lang === 'ko' ? KO : lang === 'en' ? EN : VI;
   return (
     <>
       <Head>
@@ -479,7 +633,10 @@ export default function Privacy() {
       </Head>
       <style dangerouslySetInnerHTML={{ __html: css }} />
       <nav>
-        <a className="logo" href="/">Salary<span>Map</span>.vn</a>
+        <a className="logo" href="/">
+          <img src="/logo.png" alt="FYI" />
+          <span>FOR YOUR <em>'SALARY'</em> INFORMATION</span>
+        </a>
         <div className="nav-r">
           <a className="nav-link" href="/how-it-works">How it works</a>
           <a className="nav-link" href="/terms">Terms</a>

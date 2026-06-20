@@ -11,17 +11,15 @@ const css = `
 }
 html { scroll-behavior:smooth; }
 body { background:var(--bg); color:var(--white); font-family:'Geist',sans-serif; -webkit-font-smoothing:antialiased; }
-nav { position:fixed; top:0; left:0; right:0; z-index:200; padding:0 52px; height:56px; display:flex; align-items:center; justify-content:space-between; background:rgba(12,12,11,0.9); backdrop-filter:blur(14px); border-bottom:1px solid var(--line); }
-.logo { font-family:'Geist Mono',monospace; font-size:13px; font-weight:500; color:var(--white); text-decoration:none; }
-.logo span { color:var(--orange); }
+nav { position:fixed; top:0; left:0; right:0; z-index:200; padding:0 52px; height:56px; display:flex; align-items:center; justify-content:space-between; background:#0c0c0b; border-bottom:1px solid var(--line); }
+.logo { display:flex; align-items:center; gap:10px; font-family:'Barlow',sans-serif; font-size:13px; font-weight:400; color:var(--white); text-decoration:none; letter-spacing:-0.08px; }
+.logo img { width:28px; height:28px; object-fit:contain; }
+.logo em { color:var(--orange); font-style:normal; }
 .nav-r { display:flex; align-items:center; gap:32px; }
-.nav-link { font-size:13px; color:var(--mid); text-decoration:none; transition:color .15s; }
-.nav-link:hover { color:var(--white); }
-.nav-link.active { color:var(--white); }
-.nav-btn { font-family:'Geist',sans-serif; font-size:12px; font-weight:600; background:var(--orange); color:#fff; border:none; padding:8px 18px; border-radius:2px; cursor:pointer; }
-.lang-toggle { display:flex; gap:0; border:1px solid var(--line); border-radius:3px; overflow:hidden; }
-.lang-btn { font-family:'Geist Mono',monospace; font-size:11px; font-weight:500; padding:6px 12px; background:transparent; color:var(--mid); border:none; cursor:pointer; transition:all .15s; }
-.lang-btn.active { background:var(--orange); color:#fff; }
+.nav-link { font-family:'Barlow',sans-serif; font-size:14px; color:var(--white); text-decoration:none; transition:color .15s; }
+.nav-link:hover { color:var(--orange); }
+.nav-link.active { color:var(--orange); }
+.nav-btn { font-family:'Barlow',sans-serif; font-size:13px; font-weight:600; background:var(--orange); color:#fff; border:none; padding:8px 18px; border-radius:100px; cursor:pointer; }
 .page { max-width:720px; margin:0 auto; padding:120px 52px 80px; }
 .kicker { font-family:'Geist Mono',monospace; font-size:11px; color:var(--orange); letter-spacing:2.5px; text-transform:uppercase; margin-bottom:24px; }
 .page-h1 { font-size:clamp(32px,4vw,52px); font-weight:800; letter-spacing:-2px; line-height:1.08; margin-bottom:16px; }
@@ -71,6 +69,37 @@ const EN = {
   ],
 };
 
+const KO = {
+  navHome: '홈',
+  navHow: '서비스 안내',
+  navCta: '연봉 제출하기',
+  kicker: '투명성',
+  h1: 'SalaryMap은 이렇게 작동합니다',
+  sub: '베트남 IT 커뮤니티를 위해 만든 투명하고 익명성이 보장된 서비스입니다.',
+  sections: [
+    {
+      num: '01',
+      title: '데이터를 어떻게 모으나요',
+      body: <>웹사이트에서는 개발자가 익명으로 연봉을 제출합니다 — 계정 없이 직무, 경력, 월 급여만 입력하면 됩니다. 모바일 앱에서는 선택적으로 계정(Apple 로그인)을 만들어 커뮤니티·프로필 기능을 이용할 수 있고, 계정 정보는 동의를 받은 경우에만 수집합니다. 자세한 내용은 <a href="/privacy">개인정보 처리방침</a>을 참고해 주세요.</>,
+    },
+    {
+      num: '02',
+      title: '데이터를 어떻게 검증하나요',
+      body: <>제출된 모든 데이터는 ITviec 2024–2025 시장 벤치마크와 교차 검증됩니다. 이상치는 따로 표시해 검토합니다. 제출 건수가 3건 미만인 회사는 개별 수치 없이 범위만 노출합니다.</>,
+    },
+    {
+      num: '03',
+      title: '절대 하지 않는 것',
+      body: <>채용 담당자나 회사에 사용자의 데이터를 판매하지 않습니다. 식별 가능한 개인 연봉은 절대 표시하지 않으며, 회사별 합산 범위만 보여줍니다. 웹사이트 제출 데이터는 익명을 유지하고, 앱에서 제공한 계정 정보는 서비스 운영에만 사용되며 제3자에게 판매되지 않습니다.</>,
+    },
+    {
+      num: '04',
+      title: '누가 만들었나요',
+      body: <>SalaryMap은 2020년부터 베트남 개발자 수천 명과 함께해 온 테크 교육 기업 Likelion Vietnam이 만들었습니다. 연봉 투명성이 생태계 모두에게 이롭다고 믿고 만든 서비스입니다.</>,
+    },
+  ],
+};
+
 const VI = {
   navHome: 'Trang chủ',
   navHow: 'Cách hoạt động',
@@ -103,11 +132,9 @@ const VI = {
 };
 
 export default function HowItWorks() {
-  // Drive locale from the global LanguageSwitcher (footer). This page only
-  // has EN/VI copy; ko visitors get the EN content as the closest fit.
-  const { lang: gLang } = useT();
-  const lang = gLang === 'vi' ? 'vi' : 'en';
-  const t = lang === 'en' ? EN : VI;
+  // Drive locale from the global LanguageSwitcher (footer).
+  const { lang } = useT();
+  const t = lang === 'ko' ? KO : lang === 'en' ? EN : VI;
   return (
     <>
       <Head>
@@ -123,7 +150,10 @@ export default function HowItWorks() {
       </Head>
       <style dangerouslySetInnerHTML={{ __html: css }} />
       <nav>
-        <a className="logo" href="/">Salary<span>Map</span>.vn</a>
+        <a className="logo" href="/">
+          <img src="/logo.png" alt="FYI" />
+          <span>FOR YOUR <em>'SALARY'</em> INFORMATION</span>
+        </a>
         <div className="nav-r">
           <a className="nav-link" href="/">{t.navHome}</a>
           <a className="nav-link active" href="/how-it-works">{t.navHow}</a>

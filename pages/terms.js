@@ -18,15 +18,13 @@ const css = `
 }
 html { scroll-behavior:smooth; }
 body { background:var(--bg); color:var(--white); font-family:'Geist',sans-serif; -webkit-font-smoothing:antialiased; }
-nav { position:fixed; top:0; left:0; right:0; z-index:200; padding:0 52px; height:56px; display:flex; align-items:center; justify-content:space-between; background:rgba(12,12,11,0.9); backdrop-filter:blur(14px); border-bottom:1px solid var(--line); }
-.logo { font-family:'Geist Mono',monospace; font-size:13px; font-weight:500; color:var(--white); text-decoration:none; }
-.logo span { color:var(--orange); }
+nav { position:fixed; top:0; left:0; right:0; z-index:200; padding:0 52px; height:56px; display:flex; align-items:center; justify-content:space-between; background:#0c0c0b; border-bottom:1px solid var(--line); }
+.logo { display:flex; align-items:center; gap:10px; font-family:'Barlow',sans-serif; font-size:13px; font-weight:400; color:var(--white); text-decoration:none; letter-spacing:-0.08px; }
+.logo img { width:28px; height:28px; object-fit:contain; }
+.logo em { color:var(--orange); font-style:normal; }
 .nav-r { display:flex; align-items:center; gap:32px; }
-.nav-link { font-size:13px; color:var(--mid); text-decoration:none; transition:color .15s; }
-.nav-link:hover { color:var(--white); }
-.lang-toggle { display:flex; gap:0; border:1px solid var(--line); border-radius:3px; overflow:hidden; }
-.lang-btn { font-family:'Geist Mono',monospace; font-size:11px; font-weight:500; padding:6px 12px; background:transparent; color:var(--mid); border:none; cursor:pointer; transition:all .15s; }
-.lang-btn.active { background:var(--orange); color:#fff; }
+.nav-link { font-family:'Barlow',sans-serif; font-size:14px; color:var(--white); text-decoration:none; transition:color .15s; }
+.nav-link:hover { color:var(--orange); }
 .page { max-width:760px; margin:0 auto; padding:120px 52px 100px; }
 .kicker { font-family:'Geist Mono',monospace; font-size:11px; color:var(--orange); letter-spacing:2.5px; text-transform:uppercase; margin-bottom:24px; }
 .page-h1 { font-size:clamp(30px,4vw,46px); font-weight:800; letter-spacing:-1.5px; line-height:1.1; margin-bottom:14px; }
@@ -166,6 +164,89 @@ const EN = {
   ],
 };
 
+const KO = {
+  kicker: '이용약관',
+  h1: '서비스 이용약관',
+  sub: `시행일: ${EFFECTIVE}. 본 약관은 ${ENTITY}가 운영하는 SalaryMap의 이용에 적용됩니다. 서비스를 이용함으로써 본 약관에 동의하신 것으로 봅니다.`,
+  sections: [
+    {
+      num: '01',
+      title: '약관의 동의',
+      body: <>SalaryMap(웹사이트 및 모바일 앱, 이하 “서비스”)을 이용하거나 접속함으로써 본 약관과 <a href="/privacy">개인정보 처리방침</a>에 동의하신 것으로 봅니다. 동의하지 않으시면 서비스를 이용하지 말아 주세요.</>,
+    },
+    {
+      num: '02',
+      title: '이용 자격',
+      body: <>계정 기능을 이용하시려면 만 15세 이상이며 현직자 또는 학생이어야 합니다. 계정 생성 시 입력하신 정보가 사실이며, 공유할 권리가 있음을 확인하는 것으로 간주합니다.</>,
+    },
+    {
+      num: '03',
+      title: '계정',
+      body: <>앱 계정은 <strong>Apple 로그인</strong>을 이용합니다. 계정에서 일어나는 활동에 대한 책임은 본인에게 있습니다. 언제든 앱 내에서 계정을 삭제할 수 있습니다.</>,
+    },
+    {
+      num: '04',
+      title: '회원의 게시물',
+      body: (
+        <>
+          연봉 데이터를 제출하거나 커뮤니티에 글을 작성할 수 있습니다. 이때 다음에 동의하신 것으로 봅니다:
+          <ul>
+            <li>제출 내용은 본인이 아는 한 <strong>진실하고 정확</strong>합니다;</li>
+            <li>당사자의 동의 없이 <strong>타인의 연봉이나 개인정보</strong>를 공개하지 않습니다;</li>
+            <li>기밀정보, 영업비밀 또는 계약상 공유가 금지된 내용을 게시하지 않습니다;</li>
+            <li>명예훼손, 괴롭힘, 불법, 또는 오인을 유발하는 내용을 게시하지 않습니다.</li>
+          </ul>
+        </>
+      ),
+    },
+    {
+      num: '05',
+      title: '금지 행위',
+      body: <>다음 행위는 금지됩니다: 데이터의 스크래핑·수집·대량 추출, 타인 사칭, 허위·조작된 연봉 데이터 제출, 다른 이용자의 익명성 해제 시도, 서비스 방해 또는 공격, 그 밖에 불법적인 목적의 이용.</>,
+    },
+    {
+      num: '06',
+      title: '콘텐츠 라이선스',
+      body: <>제출하신 콘텐츠의 소유권은 본인에게 있습니다. 본인은 <strong>{ENTITY}</strong>에 본 콘텐츠를 호스팅·처리·표시할 수 있는 전 세계적·무상 라이선스를 부여하며, 이는 서비스 운영 및 개선을 위한 <strong>집계 및 비식별</strong> 형태의 이용을 포함합니다.</>,
+    },
+    {
+      num: '07',
+      title: '검수, 신고 및 차단',
+      body: <>본 약관을 위반한 콘텐츠는 검토·관리·삭제될 수 있습니다. 앱에서는 이용자 및 콘텐츠를 <strong>신고</strong>하고 <strong>차단</strong>할 수 있는 기능을 제공하며, 부적절한 신고에 대해 조치를 취합니다. 약관을 위반한 계정은 정지되거나 해지될 수 있습니다.</>,
+    },
+    {
+      num: '08',
+      title: '면책 조항',
+      body: <>연봉 수치는 <strong>이용자가 제출한 데이터를 집계</strong>한 것으로, 정확성을 보장하지 않으며 정보 제공 목적으로 “있는 그대로” 제공됩니다. 커리어·법률·재무 자문이 아닙니다. 서비스는 예고 없이 중단되거나 변경될 수 있습니다.</>,
+    },
+    {
+      num: '09',
+      title: '책임의 제한',
+      body: <>관련 법령이 허용하는 최대 범위 내에서, {ENTITY}는 서비스 이용이나 데이터 신뢰로 인해 발생한 간접·부수·결과적 손해에 대해 책임을 지지 않습니다.</>,
+    },
+    {
+      num: '10',
+      title: '이용 종료',
+      body: <>언제든지 서비스 이용을 중단하고 계정을 삭제할 수 있습니다. 본 약관 위반 시 또는 법령상 필요한 경우, 접근이 일시 중단되거나 해지될 수 있습니다.</>,
+    },
+    {
+      num: '11',
+      title: '준거법',
+      body: <>본 약관은 <strong>베트남</strong>법을 준거법으로 합니다. 분쟁은 강행법규가 달리 정하지 않는 한 베트남의 관할 법원에서 해결합니다.</>,
+    },
+    {
+      num: '12',
+      title: '약관의 변경',
+      body: <>본 약관은 변경될 수 있습니다. 최신 버전과 시행일은 본 페이지에 게시되며, 변경 후에도 서비스를 계속 이용하시면 변경 사항에 동의하신 것으로 봅니다.</>,
+    },
+    {
+      num: '13',
+      title: '문의',
+      body: <>{ENTITY} — <a href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a>.</>,
+    },
+  ],
+};
+
 const VI = {
   kicker: 'Điều khoản',
   h1: 'Điều khoản Dịch vụ',
@@ -250,11 +331,9 @@ const VI = {
 };
 
 export default function Terms() {
-  // Drive locale from the global LanguageSwitcher (footer). Legal copy only
-  // lives in EN/VI; ko visitors fall back to EN since this is staff-facing.
-  const { lang: gLang } = useT();
-  const lang = gLang === 'vi' ? 'vi' : 'en';
-  const t = lang === 'en' ? EN : VI;
+  // Drive locale from the global LanguageSwitcher (footer).
+  const { lang } = useT();
+  const t = lang === 'ko' ? KO : lang === 'en' ? EN : VI;
   return (
     <>
       <Head>
@@ -267,7 +346,10 @@ export default function Terms() {
       </Head>
       <style dangerouslySetInnerHTML={{ __html: css }} />
       <nav>
-        <a className="logo" href="/">Salary<span>Map</span>.vn</a>
+        <a className="logo" href="/">
+          <img src="/logo.png" alt="FYI" />
+          <span>FOR YOUR <em>'SALARY'</em> INFORMATION</span>
+        </a>
         <div className="nav-r">
           <a className="nav-link" href="/how-it-works">How it works</a>
           <a className="nav-link" href="/privacy">Privacy</a>
