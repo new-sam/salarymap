@@ -599,9 +599,8 @@ export default function CvLanding() {
            Brand: #ff6000, Accent muted: #efe7d6
            ─────────────────────────────────────── */
         .cv-page {
-          background: #faf6f0;
+          background: #fff;
           color: #1a1612;
-          padding-bottom: 80px;
         }
         .kdot {
           width: 6px; height: 6px; border-radius: 50%;
