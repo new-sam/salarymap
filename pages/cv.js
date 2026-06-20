@@ -587,6 +587,9 @@ export default function CvLanding() {
 
       <style jsx global>{`
         .tabular-nums { font-variant-numeric: tabular-nums lining-nums; }
+        /* /cv: don't sticky the global nav on this ad landing */
+        .gnav { position: static !important; }
+        @media (max-width: 768px) { .gnav { position: static !important; } }
       `}</style>
 
       <style jsx>{`
