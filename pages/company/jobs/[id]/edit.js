@@ -132,19 +132,24 @@ export default function EditJobPage() {
     router.replace('/company/jobs');
   };
 
+  const jobApiHeaders = async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    return { 'Content-Type': 'application/json', Authorization: `Bearer ${session?.access_token || ''}` };
+  };
+
   const onDelete = async () => {
     if (!confirm('이 공고를 삭제하시겠어요? 되돌릴 수 없습니다.')) return;
     setStatus('saving');
-    const { error } = await supabase.from('jobs').delete().eq('id', id);
-    if (error) { setErr(error.message); toast.error(error.message); setStatus('ready'); return; }
+    const res = await fetch('/api/company/job', { method: 'DELETE', headers: await jobApiHeaders(), body: JSON.stringify({ jobId: id }) });
+    if (!res.ok) { const j = await res.json().catch(() => ({})); setErr(j.error || 'error'); toast.error(j.error || '삭제 실패'); setStatus('ready'); return; }
     toast.success('공고가 삭제되었습니다');
     router.replace('/company/jobs');
   };
 
   const toggleActive = async () => {
     const newStatus = origStatus === 'live' ? 'paused' : 'live';
-    const { error } = await supabase.from('jobs').update({ status: newStatus, is_active: newStatus === 'live' }).eq('id', id);
-    if (error) { setErr(error.message); toast.error(error.message); return; }
+    const res = await fetch('/api/company/job', { method: 'PUT', headers: await jobApiHeaders(), body: JSON.stringify({ jobId: id, action: newStatus === 'live' ? 'activate' : 'deactivate' }) });
+    if (!res.ok) { const j = await res.json().catch(() => ({})); setErr(j.error || 'error'); toast.error(j.error || '변경 실패'); return; }
     setOrigStatus(newStatus);
     toast.success(newStatus === 'live' ? '공고가 활성화 되었습니다' : '공고가 비활성화 되었습니다');
   };
