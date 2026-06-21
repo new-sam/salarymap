@@ -173,6 +173,44 @@ export default function CvLanding() {
   const [jobs, setJobs] = useState([])
   const fileRef = useRef(null)
   const formAnchorRef = useRef(null)
+  const showSuccess = status === 'success' || (process.env.NODE_ENV !== 'production' && router.query.successPreview === '1')
+  // 4-step journey to the 2,000,000 VND bonus. The bar grows from 0 to
+  // step-1 ("Resume registered") and "lands" on it — at that instant the
+  // step label flips to "등록 완료" and a single viewport-wide confetti
+  // burst fires. Everything else stays still to keep the hero on the bar.
+  const STEP1_FILL_MS = 1100
+  const [stepReached, setStepReached] = useState(false)
+  useEffect(() => {
+    if (!showSuccess || typeof window === 'undefined') {
+      setStepReached(false)
+      return
+    }
+    let cancelled = false
+    let landTimer
+    const landPromise = import('canvas-confetti').then(({ default: confetti }) => {
+      if (cancelled) return
+      landTimer = setTimeout(() => {
+        if (cancelled) return
+        setStepReached(true)
+        const fire = (x, angle) => confetti({
+          particleCount: 60,
+          angle,
+          spread: 60,
+          startVelocity: 52,
+          origin: { x, y: 0.82 },
+          colors: ['#ff6000', '#ffb36b', '#16a34a', '#fde047'],
+          scalar: 0.95,
+          gravity: 1.0,
+          ticks: 240,
+          disableForReducedMotion: true,
+          zIndex: 9999,
+        })
+        fire(0.2, 60)
+        fire(0.8, 120)
+      }, STEP1_FILL_MS)
+    })
+    return () => { cancelled = true; if (landTimer) clearTimeout(landTimer); landPromise.catch(() => {}) }
+  }, [showSuccess])
   /* When user clicks a sign-in CTA without a file, we open the file picker
      and remember which OAuth to kick off after a file is chosen. */
   const oauthAfterPick = useRef(null)
@@ -291,7 +329,7 @@ export default function CvLanding() {
       fd.append('file', fileToUpload)
       const r = await fetch('/api/profile/upload', {
         method: 'POST',
-        headers: { Authorization: `Bearer ${token}` },
+        headers: { Authorization: `Bearer ${token}`, 'X-Resume-Source': 'cv' },
         body: fd,
       })
       if (!r.ok) {
@@ -483,21 +521,46 @@ export default function CvLanding() {
         {/* ───── FORM ───── */}
         <section className="cv-form-section" id="cv-form" ref={formAnchorRef}>
           <div className="cv-section-inner cv-form-wrap">
-            {status === 'success' ? (
-              <div className="cv-card">
-                <div className="cv-check-circle">
-                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+            {showSuccess ? (
+              <div className="cv-card cv-success-card">
+                <div className="cv-success-medal">
+                  <IconCheck />
                 </div>
-                <div className="cv-card-step-pill">{t('cv.success.pill')}</div>
-                <h3 className="cv-card-h">{t('cv.success.headingPrefix')}<br/><em>{t('cv.success.headingEm')}</em></h3>
-                <p className="cv-card-sub">{t('cv.success.sub')}</p>
-                <div className="cv-reward">
-                  <div className="cv-reward-meta">
-                    <div className="cv-reward-title">{t('cv.success.rewardTitle')}</div>
-                    <div className="cv-reward-sub">{t('cv.success.rewardSub')}</div>
+                <h3 className="cv-card-h cv-success-h">{t('cv.success.heading')}</h3>
+                <div className="cv-journey">
+                  <div className="cv-journey-goal-line">
+                    <span className="cv-journey-goal-side">{t('cv.success.goalPre')}</span>
+                    <span className="cv-journey-goal">{t('cv.success.rewardTitle')}</span>
+                    <span className="cv-journey-goal-side">{t('cv.success.goalPost')}</span>
+                  </div>
+                  <div className="cv-journey-disclaimer">{t('cv.success.rewardSub')}</div>
+                  <div className={`cv-stepper${stepReached ? ' is-step1' : ''}`} style={{ '--cv-stepper-fill-ms': STEP1_FILL_MS + 'ms' }}>
+                    <div className="cv-stepper-track">
+                      <div className="cv-stepper-fill" />
+                      <div className="cv-stepper-dots">
+                        {[0, 1, 2].map((i) => (
+                          <div key={i} className={`cv-stepnode-dot${i === 0 && stepReached ? ' done' : ''}${i === 2 ? ' goal' : ''}`}>
+                            {i === 0 && stepReached ? '✓' : i + 1}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                    <div className="cv-stepper-labels">
+                      {[
+                        { k: 'step1', label: stepReached ? t('cv.success.step1Done') : t('cv.success.step1'), done: stepReached, goal: false },
+                        { k: 'step2', label: t('cv.success.step2'), done: false, goal: false },
+                        { k: 'step4', label: t('cv.success.step4'), done: false, goal: true },
+                      ].map((s) => (
+                        <div key={s.k} className={`cv-stepnode-label${s.done ? ' done' : ''}${s.goal ? ' goal' : ''}`}>{s.label}</div>
+                      ))}
+                    </div>
                   </div>
                 </div>
-                <a href="/jobs" className="cv-btn">{t('cv.success.cta')} <IconArrowRight /></a>
+                <div className="cv-success-next">
+                  <b>{t('cv.success.nextTitle')}</b>
+                  <span>{t('cv.success.nextBody')}</span>
+                </div>
+                <a href="/jobs" className="cv-btn cv-success-cta">{t('cv.success.cta')} <IconArrowRight /></a>
               </div>
             ) : status === 'uploading' && router.query.continue === '1' ? (
               <div className="cv-card cv-interstitial">
@@ -1799,6 +1862,281 @@ export default function CvLanding() {
           display: flex; align-items: center; justify-content: center;
           box-shadow: 0 14px 32px rgba(255,96,0,0.4);
         }
+        .cv-success-card {
+          /* overflow visible so the step pill (top:-12px) and the bonus
+             number's text-shadow can bleed past the card edge cleanly. */
+          overflow: visible;
+          padding: 42px 34px 36px;
+          text-align: left;
+          /* Lower the ambient orange tint — the medal and the CTA already
+             carry the brand color. A near-white surface lets the gold goal
+             dot stand out from step #1's orange "done" dot. */
+          background:
+            radial-gradient(520px circle at 50% 10%, rgba(255,96,0,0.05), transparent 58%),
+            #fff;
+        }
+        .cv-success-medal {
+          position: relative;
+          z-index: 2;
+          width: 68px;
+          height: 68px;
+          margin: 0 auto 22px;
+          border-radius: 50%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          color: #fff;
+          background: linear-gradient(135deg, #ff6000, #ff8a40);
+          box-shadow:
+            0 18px 38px rgba(255,96,0,0.36),
+            0 0 0 14px rgba(255,96,0,0.08);
+          animation: cvLevelPop .72s cubic-bezier(.18,.89,.32,1.28) both;
+        }
+        .cv-success-medal svg {
+          width: 24px;
+          height: 24px;
+        }
+        .cv-success-h,
+        .cv-journey,
+        .cv-success-next,
+        .cv-success-cta {
+          position: relative;
+          z-index: 2;
+        }
+        .cv-success-h {
+          margin-top: 0;
+          text-align: center;
+        }
+        /* Journey card — kept near-white so the gold goal dot and the
+           orange "completed" dot read as distinct accents instead of
+           getting absorbed into an all-orange wash. Subtle warm tint only. */
+        .cv-journey {
+          margin: 18px 0 22px;
+          padding: 22px 22px 18px;
+          border-radius: 16px;
+          text-align: center;
+          background: #fbfaf7;
+          border: 1px solid rgba(26,22,18,0.06);
+        }
+        /* Goal line: small side text on the left + hero number + small side
+           text on the right, all baseline-aligned. The hero number stays
+           the loudest object. Side text uses the locale's natural word
+           order (ko: prefix + suffix; en/vi: prefix only). */
+        .cv-journey-goal-line {
+          display: flex;
+          align-items: baseline;
+          justify-content: center;
+          gap: 10px;
+          flex-wrap: wrap;
+          margin: 4px 0 2px;
+        }
+        .cv-journey-goal-side {
+          font-size: clamp(13px, 1.4vw, 15px);
+          font-weight: 700;
+          color: rgba(26,22,18,0.55);
+          letter-spacing: -0.2px;
+        }
+        .cv-journey-goal-side:empty { display: none; }
+        .cv-journey-goal {
+          display: inline-block;
+          font-family: 'Geist', sans-serif;
+          font-weight: 900;
+          font-size: clamp(32px, 5.2vw, 48px);
+          letter-spacing: -1px;
+          line-height: 1.2;
+          font-variant-numeric: tabular-nums;
+          padding: 0 2px;
+          /* Solid brand orange — no gradient clipping, no comma artifacts,
+             cleaner read against the near-white card surface. */
+          color: #ff6000;
+          animation:
+            cvRewardPop .8s cubic-bezier(.18,.89,.32,1.28) both,
+            cvRewardBreathe 2.6s 1.4s ease-in-out infinite;
+          transform-origin: center bottom;
+        }
+        /* Bonus payout disclaimer — sits directly under the hero number as
+           a fine-print qualifier, not a separate centered note. */
+        .cv-journey-disclaimer {
+          font-size: 11.5px;
+          color: rgba(26,22,18,0.45);
+          margin-top: 4px;
+        }
+        /* Stepper: track + fill behind 4 evenly-spaced step nodes. The fill
+           grows from 0 to the position of node #1 in STEP1_FILL_MS, "lands"
+           on it, and that instant flips node #1 to its done state + fires
+           the confetti burst (see useEffect in cv.js). */
+        /* Track spans 0% → 100% of the card so step #4 (the bonus) sits on
+           the right edge. Dots are absolutely placed at 0 / 33 / 67 / 100,
+           so step #1 starts the journey and step #4 is the destination. */
+        .cv-stepper {
+          position: relative;
+          margin: 22px 0 6px;
+          padding: 22px 0 0;
+        }
+        .cv-stepper-track {
+          position: relative;
+          height: 6px;
+          border-radius: 999px;
+          background: rgba(26,22,18,0.09);
+          /* Pull the track in enough that the end-dots' labels can sit
+             centered under each dot without overflowing the card. */
+          margin: 0 64px;
+          overflow: visible;
+          box-shadow: inset 0 1px 2px rgba(26,22,18,0.06);
+        }
+        .cv-stepper-fill {
+          position: absolute;
+          left: 0;
+          top: 0;
+          bottom: 0;
+          width: 0;
+          border-radius: inherit;
+          /* Balanced around the brand color: step #1 sits one notch warmer
+             than #ff6000, step #3 sits one notch deeper. The midpoint
+             literally IS the brand orange so the gradient reads as the
+             brand tonal range, not a separate palette. */
+          background: linear-gradient(90deg, #ff8a40 0%, #ff6000 50%, #d44a00 100%);
+          transition: width var(--cv-stepper-fill-ms, 1100ms) cubic-bezier(.4, .0, .2, 1);
+          box-shadow: 0 0 14px rgba(255,96,0,0.42);
+        }
+        /* 3-stage journey, evenly spaced — completing step #1 fills the
+           first half of the bar exactly to the middle dot. */
+        .cv-stepper.is-step1 .cv-stepper-fill { width: 50%; }
+        .cv-stepper-dots {
+          position: absolute;
+          top: 50%;
+          left: 0;
+          right: 0;
+          height: 0;
+          z-index: 2;
+          pointer-events: none;
+        }
+        .cv-stepnode-dot {
+          position: absolute;
+          top: 0;
+          width: 28px;
+          height: 28px;
+          border-radius: 50%;
+          background: #fff;
+          border: 2px solid rgba(26,22,18,0.18);
+          color: rgba(26,22,18,0.4);
+          font-family: 'Geist Mono', monospace;
+          font-size: 12px;
+          font-weight: 800;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          transition: transform .25s, border-color .25s, color .25s, background .25s, box-shadow .25s;
+        }
+        /* Evenly spaced 3 dots — start, midpoint, goal. All dots are
+           centered on their track position so their labels can sit
+           centered underneath without horizontal kerning hacks. */
+        .cv-stepnode-dot:nth-child(1) { left: 0;    transform: translate(-50%, -50%); }
+        .cv-stepnode-dot:nth-child(2) { left: 50%;  transform: translate(-50%, -50%); }
+        .cv-stepnode-dot:nth-child(3) { left: 100%; transform: translate(-50%, -50%); }
+        /* Step #1 (done) — one notch warmer than the brand orange. Still
+           reads as brand, just lighter than the goal. */
+        .cv-stepnode-dot.done {
+          border-color: #ff8a40;
+          background: #ff8a40;
+          color: #fff;
+          box-shadow: 0 8px 20px rgba(255,138,64,0.5), 0 0 0 6px rgba(255,138,64,0.16);
+        }
+        .cv-stepnode-dot:nth-child(1).done { transform: translate(-50%, -50%) scale(1.12); }
+        /* Step #3 (goal) — one notch deeper than the brand orange. Same
+           family as #1, just richer; tonal endpoint of the ramp. */
+        .cv-stepnode-dot.goal {
+          width: 40px;
+          height: 40px;
+          border: none;
+          background: #d44a00;
+          color: #fff;
+          font-size: 15px;
+          box-shadow:
+            0 10px 26px rgba(212,74,0,0.55),
+            0 0 0 8px rgba(212,74,0,0.16);
+          animation: cvGoalPulse 2.4s ease-in-out infinite;
+        }
+        .cv-stepnode-dot:nth-child(3).goal { transform: translate(-50%, -50%); }
+        .cv-stepper-labels {
+          position: relative;
+          margin-top: 28px;
+          height: 20px;
+        }
+        .cv-stepnode-label {
+          position: absolute;
+          top: 0;
+          font-size: 13.5px;
+          font-weight: 700;
+          color: rgba(26,22,18,0.55);
+          letter-spacing: -0.1px;
+          white-space: nowrap;
+        }
+        /* Labels mirror the dot positions (track margin + 0 / 50% / 100%)
+           so each label sits centered directly under its dot. */
+        .cv-stepnode-label:nth-child(1) { left: 64px;             transform: translateX(-50%); }
+        .cv-stepnode-label:nth-child(2) { left: 50%;              transform: translateX(-50%); }
+        .cv-stepnode-label:nth-child(3) { left: calc(100% - 64px); transform: translateX(-50%); }
+        .cv-stepnode-label.done {
+          color: #ff8a40;
+          font-weight: 800;
+        }
+        .cv-stepnode-label.goal {
+          color: #d44a00;
+          font-weight: 900;
+          font-size: 14.5px;
+        }
+        .cv-success-next {
+          margin: 20px 0 24px;
+          padding: 16px 18px;
+          border-radius: 14px;
+          background: #fafaf7;
+          border: 1px solid rgba(26,22,18,0.07);
+          color: rgba(26,22,18,0.62);
+          line-height: 1.62;
+          font-size: 14px;
+        }
+        .cv-success-next b {
+          display: block;
+          color: #1a1612;
+          font-size: 14.5px;
+          margin-bottom: 4px;
+        }
+        /* DOM-based fireworks/confetti removed — viewport-wide single-shot
+           burst now handled by canvas-confetti (see useEffect in cv.js). */
+        @keyframes cvLevelPop {
+          0% { transform: scale(.72); opacity: 0; }
+          70% { transform: scale(1.08); opacity: 1; }
+          100% { transform: scale(1); opacity: 1; }
+        }
+        @keyframes cvProgressGrow {
+          from { transform: scaleX(0); }
+          to { transform: scaleX(1); }
+        }
+        @keyframes cvProgressShine {
+          0% { transform: translateX(-110%); }
+          55%, 100% { transform: translateX(120%); }
+        }
+        @keyframes cvDotPop {
+          to { transform: translate(-50%, -50%) scale(1); }
+        }
+        @keyframes cvRewardPop {
+          0%   { transform: scale(.4) translateY(8px); opacity: 0; }
+          60%  { transform: scale(1.08) translateY(0);  opacity: 1; }
+          100% { transform: scale(1) translateY(0);     opacity: 1; }
+        }
+        @keyframes cvRewardBreathe {
+          0%, 100% { transform: scale(1); }
+          50%      { transform: scale(1.02); }
+        }
+        @keyframes cvGoalPulse {
+          0%, 100% { box-shadow: 0 10px 26px rgba(212,74,0,0.55), 0 0 0 8px  rgba(212,74,0,0.16); }
+          50%      { box-shadow: 0 12px 32px rgba(212,74,0,0.68), 0 0 0 18px rgba(212,74,0,0.05); }
+        }
+        @keyframes cvDotPulse {
+          0%, 100% { box-shadow: 0 12px 28px rgba(255,96,0,0.45), 0 0 0 6px rgba(255,96,0,0.15); }
+          50%      { box-shadow: 0 12px 28px rgba(255,96,0,0.55), 0 0 0 14px rgba(255,96,0,0.05); }
+        }
         /* Interstitial (auto-upload after OAuth return) */
         .cv-interstitial { text-align: left; }
         .cv-spinner {
@@ -2377,6 +2715,54 @@ export default function CvLanding() {
           }
           .cv-banknote-img { width: 360px; }
           .cv-h2 { letter-spacing: -0.8px; }
+          .cv-success-card {
+            padding: 34px 18px 92px;
+            margin-bottom: 28px;
+          }
+          .cv-success-medal {
+            width: 56px;
+            height: 56px;
+            margin-bottom: 18px;
+            box-shadow:
+              0 14px 30px rgba(255,96,0,0.32),
+              0 0 0 10px rgba(255,96,0,0.08);
+          }
+          .cv-success-h {
+            font-size: 29px;
+            letter-spacing: -1px;
+          }
+          .cv-success-sub {
+            font-size: 14px;
+            margin-bottom: 20px;
+          }
+          .cv-success-reward {
+            padding: 18px 16px 16px;
+            margin-bottom: 18px;
+          }
+          .cv-success-reward .cv-reward-title {
+            font-size: 22px;
+          }
+          .cv-progress {
+            height: 16px;
+            margin-top: 16px;
+          }
+          .cv-progress-dot {
+            width: 26px;
+            height: 26px;
+            border-width: 6px;
+          }
+          .cv-success-next {
+            margin: 18px 0 20px;
+            padding: 15px 16px;
+            font-size: 13.5px;
+          }
+          .cv-success-cta {
+            font-size: 14px;
+            padding-left: 14px;
+            padding-right: 14px;
+          }
+          .fw-1 { right: 42px; }
+          .fw-2 { left: 38px; }
           .cv-flow {
             margin-top: 36px;
             gap: 12px;
