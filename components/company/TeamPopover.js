@@ -268,7 +268,12 @@ function InviteModal({ jobId, onClose, onDone }) {
           <div style={{ textAlign: 'center' }}>
             <div style={s.doneIcon}><Check className="w-6 h-6" strokeWidth={3} /></div>
             <h3 style={s.modalTitle}>{t('company.invite.done.added.title')}</h3>
-            <p style={s.modalLead}>{t('company.invite.done.added.lead', { name: result.memberName || email })}</p>
+            <p style={s.modalLead}>
+              {t(
+                result.mailSent ? 'company.invite.done.added.leadMailed' : 'company.invite.done.added.lead',
+                { name: result.memberName || email }
+              )}
+            </p>
             <button type="button" style={s.submit} onClick={finish}>{t('company.invite.close')}</button>
           </div>
         )}
