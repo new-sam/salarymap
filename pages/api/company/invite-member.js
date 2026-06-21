@@ -13,6 +13,13 @@ function buildInviteLink(req, jobId) {
   return `${proto}://${host}/company?invite=${jobId}`;
 }
 
+// 이미 회사 계정이 있는 사람은 가입 단계 없이 곧바로 ATS 로 보낸다.
+function buildAtsLink(req, jobId) {
+  const proto = req.headers['x-forwarded-proto'] || 'https';
+  const host = req.headers.host;
+  return `${proto}://${host}/company/ats?jobId=${jobId}`;
+}
+
 async function sendInviteMail({ toEmail, companyName, inviterEmail, jobTitle, link }) {
   if (!process.env.RESEND_API_KEY) return { ok: false, reason: 'no_resend_key' };
   try {
@@ -31,6 +38,37 @@ ${link}
   <h2 style="font-size:20px;margin:0 0 12px">${companyName} 채용팀 초대</h2>
   <p style="line-height:1.6;color:#374151">${inviterEmail} 님이 <b>${jobTitle}</b> 채용팀에 당신을 초대했습니다.</p>
   <p style="margin:24px 0"><a href="${link}" style="background:#ea580c;color:#fff;padding:12px 18px;border-radius:8px;text-decoration:none;font-weight:800">가입하고 팀 합류 →</a></p>
+  <p style="font-size:12px;color:#9ca3af">링크: ${link}</p>
+</div>`;
+    const r = await resend.emails.send({ from: RESEND_FROM, to: toEmail, replyTo: inviterEmail || undefined, subject, text, html });
+    if (r.error) return { ok: false, reason: r.error.message || 'resend_error' };
+    return { ok: true };
+  } catch (e) {
+    return { ok: false, reason: e.message || 'send_failed' };
+  }
+}
+
+// 같은 회사에 이미 가입된 멤버를 면접관으로 추가했을 때 보내는 알림 메일.
+// 가입 단계 없이 ATS로 바로 들어갈 수 있게 메시지/링크가 다르다.
+async function sendMemberAddedMail({ toEmail, companyName, inviterEmail, jobTitle, link }) {
+  if (!process.env.RESEND_API_KEY) return { ok: false, reason: 'no_resend_key' };
+  try {
+    const { Resend } = await import('resend');
+    const resend = new Resend(process.env.RESEND_API_KEY);
+    const subject = `[FYI] ${companyName} ${jobTitle} 채용팀에 합류됐어요`;
+    const text =
+`${inviterEmail} 님이 ${companyName}의 채용팀(${jobTitle})에 당신을 면접관으로 추가했습니다.
+
+이미 가입된 계정이라 별도 가입 없이 바로 합류됐어요. 아래 링크에서 지원자 현황을 확인할 수 있습니다:
+${link}
+
+— FYI for Companies`;
+    const html =
+`<div style="font-family:'Pretendard',Arial,sans-serif;color:#111;max-width:520px">
+  <h2 style="font-size:20px;margin:0 0 12px">${companyName} 채용팀 합류</h2>
+  <p style="line-height:1.6;color:#374151">${inviterEmail} 님이 <b>${jobTitle}</b> 채용팀에 당신을 면접관으로 추가했습니다.</p>
+  <p style="line-height:1.6;color:#374151">이미 가입된 계정이라 별도 가입 없이 바로 합류됐어요.</p>
+  <p style="margin:24px 0"><a href="${link}" style="background:#ea580c;color:#fff;padding:12px 18px;border-radius:8px;text-decoration:none;font-weight:800">지원자 보러 가기 →</a></p>
   <p style="font-size:12px;color:#9ca3af">링크: ${link}</p>
 </div>`;
     const r = await resend.emails.send({ from: RESEND_FROM, to: toEmail, replyTo: inviterEmail || undefined, subject, text, html });
@@ -83,6 +121,10 @@ export default async function handler(req, res) {
     .maybeSingle();
 
   if (existing?.user_id) {
+    // 이미 같은 회사에 가입된 멤버 → job_team 직접 추가하지만, 사용자가
+    // "자기가 면접관으로 추가됐다"는 사실을 모르고 지나치지 않도록 알림
+    // 메일도 함께 발송하고, 감사용으로 recruiter_invites 에도 accepted
+    // 상태로 기록을 남긴다.
     const { error: e } = await admin
       .from('job_team')
       .upsert({
@@ -92,11 +134,40 @@ export default async function handler(req, res) {
         added_by: user.id,
       }, { onConflict: 'job_id,user_id' });
     if (e) return res.status(500).json({ error: '추가 실패: ' + e.message });
+
+    // 감사 기록 — duplicate 는 무시 (이미 한 번 초대된 같은 이메일일 수 있음)
+    const { error: invErr } = await admin
+      .from('recruiter_invites')
+      .insert({
+        company_id: rec.company_id,
+        email: cleanEmail,
+        role: cleanRole,
+        job_id: jobId,
+        invited_by: user.id,
+        status: 'accepted',
+      });
+    if (invErr && !String(invErr.message || '').match(/duplicate|unique/i)) {
+      // 메일/UI는 막지 않고 로그만 — recruiter_invites 컬럼 정책이 환경별로
+      // 다를 수 있어 hard fail 시키지 않는다.
+      console.error('invite audit log failed (existing member):', invErr.message);
+    }
+
+    const link = buildAtsLink(req, jobId);
+    const mailResult = await sendMemberAddedMail({
+      toEmail: cleanEmail,
+      companyName,
+      inviterEmail: user.email,
+      jobTitle: job.title,
+      link,
+    });
+
     return res.status(200).json({
       success: true,
       addedDirectly: true,
-      mailSent: false,
+      mailSent: !!mailResult.ok,
+      mailErrorReason: mailResult.ok ? null : mailResult.reason,
       memberName: existing.full_name || existing.email,
+      inviteLink: link,
     });
   }
 
