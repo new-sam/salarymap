@@ -21,8 +21,14 @@ export default function CvCompletePage() {
         <section className="cv-shell">
           <div className="cv-visual" aria-label="FYI celebration">
             <div className="cv-glow" />
-            <div className="cv-party">🎉</div>
-            <div className="cv-chip">FYI</div>
+            <div className="cv-burst" aria-hidden="true">
+              <span />
+              <span />
+              <span />
+              <span />
+              <span />
+            </div>
+            <div className="cv-fyi-mark">FY<i /></div>
           </div>
 
           <h1>이력서 등록 완료!</h1>
@@ -84,44 +90,67 @@ export default function CvCompletePage() {
           position: relative;
           display: grid;
           place-items: center;
-          width: 330px;
-          height: 220px;
-          margin-bottom: 2px;
+          width: 240px;
+          height: 142px;
+          margin-bottom: 4px;
         }
 
         .cv-glow {
           position: absolute;
-          inset: 34px 10px 0;
+          inset: 34px 10px 4px;
           border-radius: 999px;
           background: radial-gradient(circle, rgba(255, 90, 0, .18), transparent 68%);
           filter: blur(18px);
         }
 
-        .cv-party {
+        .cv-fyi-mark {
           position: relative;
-          z-index: 2;
-          font-size: 142px;
-          line-height: 1;
-          transform: rotate(-8deg);
-          filter: drop-shadow(0 24px 34px rgba(255, 90, 0, .16));
+          z-index: 3;
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          color: #f8efe7;
+          font-size: 66px;
+          line-height: .88;
+          font-weight: 950;
+          letter-spacing: -.08em;
+          text-shadow:
+            0 2px 0 #cf4200,
+            0 6px 0 #a92d00,
+            0 18px 34px rgba(255, 90, 0, .28);
           animation: cvPop 900ms cubic-bezier(.16, 1, .3, 1) both;
         }
 
-        .cv-chip {
-          position: absolute;
-          right: 38px;
-          bottom: 30px;
-          z-index: 3;
-          padding: 9px 14px;
-          border: 1px solid rgba(255, 90, 0, .18);
-          border-radius: 999px;
-          background: rgba(255, 255, 255, .86);
-          color: #dd3f00;
-          font-size: 15px;
-          font-weight: 950;
-          letter-spacing: .04em;
-          box-shadow: 0 18px 40px rgba(70, 42, 20, .1);
+        .cv-fyi-mark i {
+          display: block;
+          width: 30px;
+          height: 62px;
+          border-radius: 8px;
+          background: linear-gradient(135deg, #ffb165 0 24%, #ff5a00 25% 62%, #b53200 63% 100%);
+          transform: skewX(-18deg) translateY(4px);
+          box-shadow: 0 14px 24px rgba(255, 90, 0, .28);
         }
+
+        .cv-burst {
+          position: absolute;
+          z-index: 1;
+          width: 178px;
+          height: 94px;
+        }
+
+        .cv-burst span {
+          position: absolute;
+          display: block;
+          border-radius: 999px;
+          background: #ff8a2a;
+          opacity: .86;
+        }
+
+        .cv-burst span:nth-child(1) { left: 36px; top: 20px; width: 7px; height: 34px; transform: rotate(-34deg); }
+        .cv-burst span:nth-child(2) { right: 32px; top: 24px; width: 7px; height: 34px; transform: rotate(34deg); }
+        .cv-burst span:nth-child(3) { left: 82px; top: 0; width: 7px; height: 44px; background: #ffc15d; }
+        .cv-burst span:nth-child(4) { left: 22px; bottom: 22px; width: 10px; height: 10px; background: #4f8dff; }
+        .cv-burst span:nth-child(5) { right: 18px; bottom: 25px; width: 10px; height: 10px; background: #ff5b5b; }
 
         h1 {
           margin: 0;
@@ -290,11 +319,11 @@ export default function CvCompletePage() {
         @keyframes cvPop {
           from {
             opacity: 0;
-            transform: translateY(18px) rotate(-12deg) scale(.9);
+            transform: translateY(14px) scale(.92);
           }
           to {
             opacity: 1;
-            transform: translateY(0) rotate(-8deg) scale(1);
+            transform: translateY(0) scale(1);
           }
         }
 
@@ -305,18 +334,23 @@ export default function CvCompletePage() {
           }
 
           .cv-visual {
-            width: 220px;
-            height: 150px;
+            width: 190px;
+            height: 112px;
           }
 
-          .cv-party {
-            font-size: 104px;
+          .cv-fyi-mark {
+            font-size: 50px;
           }
 
-          .cv-chip {
-            right: 8px;
-            bottom: 12px;
-            font-size: 12px;
+          .cv-fyi-mark i {
+            width: 22px;
+            height: 48px;
+            border-radius: 6px;
+          }
+
+          .cv-burst {
+            width: 146px;
+            height: 78px;
           }
 
           h1 {
