@@ -537,21 +537,17 @@ export default function CvLanding() {
                   <div className={`cv-stepper${stepReached ? ' is-step1' : ''}`} style={{ '--cv-stepper-fill-ms': STEP1_FILL_MS + 'ms' }}>
                     <div className="cv-stepper-track">
                       <div className="cv-stepper-fill" />
-                      <div className="cv-stepper-dots">
-                        {[0, 1, 2].map((i) => (
-                          <div key={i} className={`cv-stepnode-dot${i === 0 && stepReached ? ' done' : ''}${i === 2 ? ' goal' : ''}`}>
-                            {i === 0 && stepReached ? '✓' : i + 1}
-                          </div>
-                        ))}
-                      </div>
                     </div>
-                    <div className="cv-stepper-labels">
+                    <div className="cv-stepper-nodes">
                       {[
                         { k: 'step1', label: stepReached ? t('cv.success.step1Done') : t('cv.success.step1'), done: stepReached, goal: false },
                         { k: 'step2', label: t('cv.success.step2'), done: false, goal: false },
                         { k: 'step4', label: t('cv.success.step4'), done: false, goal: true },
-                      ].map((s) => (
-                        <div key={s.k} className={`cv-stepnode-label${s.done ? ' done' : ''}${s.goal ? ' goal' : ''}`}>{s.label}</div>
+                      ].map((s, i) => (
+                        <div key={s.k} className={`cv-stepnode${s.done ? ' done' : ''}${s.goal ? ' goal' : ''}`}>
+                          <div className="cv-stepnode-dot">{s.done ? '✓' : i + 1}</div>
+                          <div className="cv-stepnode-label">{s.label}</div>
+                        </div>
                       ))}
                     </div>
                   </div>
@@ -1157,6 +1153,12 @@ export default function CvLanding() {
           font-size: 14px;
           color: rgba(26,22,18,0.55);
           line-height: 1.65;
+          /* Korean/Vietnamese line breaks should respect word boundaries —
+             keep-all prevents the browser from breaking mid-phrase like
+             "FYI가 당신에게 / 맞는 더 좋은" and instead lands the break at
+             a natural space. */
+          word-break: keep-all;
+          overflow-wrap: break-word;
         }
         .cv-step-art {
           position: relative;
@@ -1965,89 +1967,82 @@ export default function CvLanding() {
            grows from 0 to the position of node #1 in STEP1_FILL_MS, "lands"
            on it, and that instant flips node #1 to its done state + fires
            the confetti burst (see useEffect in cv.js). */
-        /* Track spans 0% → 100% of the card so step #4 (the bonus) sits on
-           the right edge. Dots are absolutely placed at 0 / 33 / 67 / 100,
-           so step #1 starts the journey and step #4 is the destination. */
+        /* Desktop: horizontal stepper. Mobile: switches to vertical via the
+           media query at the bottom of this block so labels stay readable
+           on narrow viewports. */
         .cv-stepper {
           position: relative;
           margin: 22px 0 6px;
           padding: 22px 0 0;
         }
         .cv-stepper-track {
-          position: relative;
+          position: absolute;
+          top: 38px;
+          left: calc(16.66% + 4px);
+          right: calc(16.66% + 4px);
           height: 6px;
           border-radius: 999px;
           background: rgba(26,22,18,0.09);
-          /* Pull the track in enough that the end-dots' labels can sit
-             centered under each dot without overflowing the card. */
-          margin: 0 64px;
           overflow: visible;
           box-shadow: inset 0 1px 2px rgba(26,22,18,0.06);
+          z-index: 0;
         }
         .cv-stepper-fill {
           position: absolute;
           left: 0;
           top: 0;
-          bottom: 0;
           width: 0;
+          height: 100%;
           border-radius: inherit;
-          /* Balanced around the brand color: step #1 sits one notch warmer
-             than #ff6000, step #3 sits one notch deeper. The midpoint
-             literally IS the brand orange so the gradient reads as the
-             brand tonal range, not a separate palette. */
           background: linear-gradient(90deg, #ff8a40 0%, #ff6000 50%, #d44a00 100%);
-          transition: width var(--cv-stepper-fill-ms, 1100ms) cubic-bezier(.4, .0, .2, 1);
+          transition: width var(--cv-stepper-fill-ms, 1100ms) cubic-bezier(.4, .0, .2, 1),
+                      height var(--cv-stepper-fill-ms, 1100ms) cubic-bezier(.4, .0, .2, 1);
           box-shadow: 0 0 14px rgba(255,96,0,0.42);
         }
         /* 3-stage journey, evenly spaced — completing step #1 fills the
            first half of the bar exactly to the middle dot. */
         .cv-stepper.is-step1 .cv-stepper-fill { width: 50%; }
-        .cv-stepper-dots {
-          position: absolute;
-          top: 50%;
-          left: 0;
-          right: 0;
-          height: 0;
-          z-index: 2;
-          pointer-events: none;
+        /* Each step = a dot + a label, evenly distributed across 3 columns.
+           In horizontal mode the track sits behind the dot row. */
+        .cv-stepper-nodes {
+          position: relative;
+          display: grid;
+          grid-template-columns: repeat(3, 1fr);
+          z-index: 1;
+        }
+        .cv-stepnode {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 14px;
+          text-align: center;
         }
         .cv-stepnode-dot {
-          position: absolute;
-          top: 0;
-          width: 28px;
-          height: 28px;
+          width: 32px;
+          height: 32px;
           border-radius: 50%;
           background: #fff;
           border: 2px solid rgba(26,22,18,0.18);
           color: rgba(26,22,18,0.4);
           font-family: 'Geist Mono', monospace;
-          font-size: 12px;
+          font-size: 13px;
           font-weight: 800;
           display: flex;
           align-items: center;
           justify-content: center;
           transition: transform .25s, border-color .25s, color .25s, background .25s, box-shadow .25s;
+          flex-shrink: 0;
         }
-        /* Evenly spaced 3 dots — start, midpoint, goal. All dots are
-           centered on their track position so their labels can sit
-           centered underneath without horizontal kerning hacks. */
-        .cv-stepnode-dot:nth-child(1) { left: 0;    transform: translate(-50%, -50%); }
-        .cv-stepnode-dot:nth-child(2) { left: 50%;  transform: translate(-50%, -50%); }
-        .cv-stepnode-dot:nth-child(3) { left: 100%; transform: translate(-50%, -50%); }
-        /* Step #1 (done) — one notch warmer than the brand orange. Still
-           reads as brand, just lighter than the goal. */
-        .cv-stepnode-dot.done {
+        .cv-stepnode.done .cv-stepnode-dot {
           border-color: #ff8a40;
           background: #ff8a40;
           color: #fff;
+          transform: scale(1.08);
           box-shadow: 0 8px 20px rgba(255,138,64,0.5), 0 0 0 6px rgba(255,138,64,0.16);
         }
-        .cv-stepnode-dot:nth-child(1).done { transform: translate(-50%, -50%) scale(1.12); }
-        /* Step #3 (goal) — one notch deeper than the brand orange. Same
-           family as #1, just richer; tonal endpoint of the ramp. */
-        .cv-stepnode-dot.goal {
-          width: 40px;
-          height: 40px;
+        .cv-stepnode.goal .cv-stepnode-dot {
+          width: 42px;
+          height: 42px;
           border: none;
           background: #d44a00;
           color: #fff;
@@ -2057,34 +2052,75 @@ export default function CvLanding() {
             0 0 0 8px rgba(212,74,0,0.16);
           animation: cvGoalPulse 2.4s ease-in-out infinite;
         }
-        .cv-stepnode-dot:nth-child(3).goal { transform: translate(-50%, -50%); }
-        .cv-stepper-labels {
-          position: relative;
-          margin-top: 28px;
-          height: 20px;
-        }
         .cv-stepnode-label {
-          position: absolute;
-          top: 0;
           font-size: 13.5px;
           font-weight: 700;
           color: rgba(26,22,18,0.55);
           letter-spacing: -0.1px;
-          white-space: nowrap;
+          word-break: keep-all;
+          line-height: 1.3;
         }
-        /* Labels mirror the dot positions (track margin + 0 / 50% / 100%)
-           so each label sits centered directly under its dot. */
-        .cv-stepnode-label:nth-child(1) { left: 64px;             transform: translateX(-50%); }
-        .cv-stepnode-label:nth-child(2) { left: 50%;              transform: translateX(-50%); }
-        .cv-stepnode-label:nth-child(3) { left: calc(100% - 64px); transform: translateX(-50%); }
-        .cv-stepnode-label.done {
+        .cv-stepnode.done .cv-stepnode-label {
           color: #ff8a40;
           font-weight: 800;
         }
-        .cv-stepnode-label.goal {
+        .cv-stepnode.goal .cv-stepnode-label {
           color: #d44a00;
           font-weight: 900;
           font-size: 14.5px;
+        }
+        /* Mobile: rotate the stepper 90deg into a vertical list. Each step
+           gets its own row (dot on the left, label on the right), the
+           track becomes a vertical spine, and the fill grows downward. */
+        @media (max-width: 640px) {
+          .cv-stepper { padding: 6px 0 0; }
+          .cv-stepper-track {
+            top: 22px;
+            bottom: 22px;
+            left: 21px;
+            right: auto;
+            width: 6px;
+            height: auto;
+          }
+          .cv-stepper-fill {
+            width: 100%;
+            height: 0;
+          }
+          .cv-stepper.is-step1 .cv-stepper-fill {
+            width: 100%;
+            height: 50%;
+          }
+          .cv-stepper-fill {
+            background: linear-gradient(180deg, #ff8a40 0%, #ff6000 50%, #d44a00 100%);
+          }
+          .cv-stepper-nodes {
+            display: flex;
+            flex-direction: column;
+            gap: 22px;
+          }
+          .cv-stepnode {
+            flex-direction: row;
+            align-items: center;
+            gap: 16px;
+            text-align: left;
+          }
+          .cv-stepnode-dot {
+            width: 32px;
+            height: 32px;
+          }
+          .cv-stepnode.goal .cv-stepnode-dot {
+            width: 38px;
+            height: 38px;
+            margin-left: -3px;
+          }
+          .cv-stepnode-label {
+            font-size: 14.5px;
+            text-align: left;
+            white-space: normal;
+          }
+          .cv-stepnode.goal .cv-stepnode-label {
+            font-size: 15.5px;
+          }
         }
         .cv-success-next {
           margin: 20px 0 24px;
