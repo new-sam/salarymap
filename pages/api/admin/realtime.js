@@ -47,7 +47,8 @@ export default async function handler(req, res) {
       .gte('created_at', startISO).lte('created_at', endISO),
     supabase.from('events')
       .select('id', { count: 'exact', head: true })
-      .eq('event', 'resume_upload')
+      // /cv 이력서 등록 완료(cv_register_success) + 레거시 프로필 업로드(resume_upload)
+      .in('event', ['cv_register_success', 'resume_upload'])
       .gte('created_at', startISO).lte('created_at', endISO),
     supabase.from('recruiter_users')
       .select('email')
