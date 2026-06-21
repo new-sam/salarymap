@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useAdmin } from '../../lib/adminSwr'
-import { getSalaryTier } from '../../lib/salaryTiers'
+import { getSalaryTier, normalizeTrieu } from '../../lib/salaryTiers'
 
 const STATUS_COLORS = {
   pending: { bg: 'rgba(245,158,11,0.1)', color: '#d97706' },
@@ -26,12 +26,14 @@ export default function VerificationsView({ token }) {
     token,
     {
       onSuccess: ({ verifications: list }) => {
-        // Prefill the salary input with the user-submitted amount. The submitted
-        // salary_amount is already in 백만 VND (triệu), matching the mobile app.
+        // Prefill the salary input with the user-submitted amount, expected in
+        // 백만 VND (triệu). normalizeTrieu coerces a raw-VND amount typed by
+        // mistake (e.g. 50000000) back into triệu so the prefill — and any
+        // approval taken from it — uses the correct unit.
         setSalaryInput(prev => {
           const next = { ...prev }
           list.forEach(v => {
-            if (next[v.id] === undefined && v.salary_amount) next[v.id] = String(v.salary_amount)
+            if (next[v.id] === undefined && v.salary_amount) next[v.id] = String(normalizeTrieu(v.salary_amount))
           })
           return next
         })
@@ -45,7 +47,7 @@ export default function VerificationsView({ token }) {
     // stored on the verification row in triệu, converted to VND for the badge tier server-side.
     let salaryTrieu = null
     if (status === 'approved') {
-      const trieu = parseInt(salaryInput[id], 10)
+      const trieu = normalizeTrieu(parseInt(salaryInput[id], 10))
       if (!trieu || trieu <= 0) {
         alert('월급(백만 VND)을 입력해야 승인할 수 있습니다.')
         return
@@ -134,7 +136,7 @@ export default function VerificationsView({ token }) {
                 </div>
                 <div>
                   <div style={{ color: 'rgba(0,0,0,0.4)', marginBottom: 2 }}>월급</div>
-                  <div style={{ fontWeight: 600, color: '#111' }}>{v.salary_amount ? `${v.salary_amount.toLocaleString()}M VND` : '-'}</div>
+                  <div style={{ fontWeight: 600, color: '#111' }}>{v.salary_amount ? `${normalizeTrieu(v.salary_amount).toLocaleString()}M VND` : '-'}</div>
                 </div>
                 <div>
                   <div style={{ color: 'rgba(0,0,0,0.4)', marginBottom: 2 }}>요청일</div>
@@ -155,7 +157,7 @@ export default function VerificationsView({ token }) {
 
               {/* Admin Actions */}
               {v.status === 'pending' && (() => {
-                const trieu = parseInt(salaryInput[v.id], 10)
+                const trieu = normalizeTrieu(parseInt(salaryInput[v.id], 10))
                 const tier = trieu > 0 ? getSalaryTier(trieu * 1000000) : null
                 return (
                 <div style={{ borderTop: '1px solid rgba(0,0,0,0.06)', paddingTop: 12, marginTop: 4 }}>

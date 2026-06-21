@@ -3,7 +3,7 @@ import Head from 'next/head'
 import { useRouter } from 'next/router'
 import { supabase } from '../lib/supabaseClient'
 import SalaryBadge from '../components/SalaryBadge'
-import { SALARY_TIERS, getSalaryTier } from '../lib/salaryTiers'
+import { SALARY_TIERS, getSalaryTier, isRawVndMistake } from '../lib/salaryTiers'
 import { useT } from '../lib/i18n'
 import Icon from '../components/Icon'
 
@@ -516,6 +516,10 @@ export default function ProfilePage() {
   const handleVerifyUpload = async () => {
     const file = salaryDocRef.current?.files?.[0]
     if (!file) return
+    if (isRawVndMistake(verifyForm.salary_amount)) {
+      alert(t('profile.employment.salaryUnitError'))
+      return
+    }
     setVerifyUploading(true)
     setVerifyMsg(null)
     const fd = new FormData()

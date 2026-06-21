@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js'
+import { normalizeTrieu } from '../../../lib/salaryTiers'
 
 const supabase = createClient(
   (process.env.NEXT_PUBLIC_SUPABASE_URL || '').trim(),
@@ -72,7 +73,9 @@ export default async function handler(req, res) {
     // determines the badge tier. Stored on the row in triệu; converted to VND for the badge.
     let verifiedTrieu = null
     if (status === 'approved') {
-      verifiedTrieu = parseInt(salary_amount, 10)
+      // Coerce a raw-VND amount sent by mistake (e.g. 50000000) back into triệu
+      // so the badge tier — which is irreversible once granted — uses the right unit.
+      verifiedTrieu = normalizeTrieu(parseInt(salary_amount, 10))
       if (!verifiedTrieu || verifiedTrieu <= 0) {
         return res.status(400).json({ error: 'salary_amount required to approve' })
       }

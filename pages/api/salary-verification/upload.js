@@ -1,6 +1,7 @@
 import { createClient } from '@supabase/supabase-js'
 import formidable from 'formidable'
 import fs from 'fs'
+import { normalizeTrieu } from '../../../lib/salaryTiers'
 
 export const config = { api: { bodyParser: false } }
 
@@ -23,7 +24,10 @@ export default async function handler(req, res) {
 
   const file = files.file?.[0]
   const documentType = fields.document_type?.[0] || 'other'
-  const salaryAmount = fields.salary_amount?.[0] ? parseInt(fields.salary_amount[0]) : null
+  // Stored in 백만 VND (triệu). normalizeTrieu coerces a raw-VND amount sent by
+  // mistake (e.g. 50000000) back into triệu so the stored value, admin prefill and
+  // the user's own profile display all stay in the right unit.
+  const salaryAmount = fields.salary_amount?.[0] ? normalizeTrieu(parseInt(fields.salary_amount[0])) : null
 
   if (!file) return res.status(400).json({ error: 'file required' })
 
