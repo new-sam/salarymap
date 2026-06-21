@@ -14,26 +14,35 @@ const done = (msg) => { if (msg) console.log(msg); clearTimeout(timer); process.
 if (process.env.VERCEL && process.env.VERCEL_ENV !== 'production') done('changelog: non-prod, skip');
 if (!process.env.SUPABASE_SERVICE_ROLE_KEY || !process.env.NEXT_PUBLIC_SUPABASE_URL) done('changelog: no supabase env, skip');
 
-// 위에서부터 먼저 매칭. 파일 경로 → 기능(라우트) 라벨.
+// 네비게이션 기준 버킷. 파일 경로 → 네비 섹션. 위에서부터 먼저 매칭.
+// (lib/translations, lib/i18n 등 부수 파일은 null → 무시: 스퍼리어스 분류 방지)
 const ROUTES = [
-  [/notify/, '알림 (notify)'],
-  [/^pages\/admin\/dashboard|app-metrics|realtime|api\/admin\/dashboard/, '어드민 대시보드'],
-  [/^pages\/(api\/)?admin\//, '어드민 (/admin)'],
-  [/^pages\/company\/jobs\/new/, '기업 공고 등록 (/company/jobs/new)'],
-  [/^(components\/company\/CandidateDetail|pages\/company\/ats|pages\/company\/candidates)/, '기업 ATS (/company/ats)'],
-  [/^pages\/auth\/callback/, '기업 가입/온보딩'],
-  [/^(pages\/company\b|components\/company\b)/, '기업 (/company)'],
-  [/^(pages\/api\/percentile|pages\/api\/stats|lib\/salaryQuality)/, '연봉 통계 (/api/percentile,stats)'],
-  [/^(components\/home\/SubmitSection|pages\/index)/, '연봉 위저드 (/)'],
-  [/^pages\/jobs(\.js|\/)/, '구직 보드 (/jobs)'],
+  [/^(pages\/admin\/|pages\/api\/admin\/|components\/admin\/)/, '⚙️ 어드민'],
+  [/^(pages\/cv(\.js|\/)|components\/cv\/)/, '이력서 등록 (/cv)'],
   [/community/i, '커뮤니티 (/community)'],
-  [/^pages\/companies\//, '기업 프로필 (/companies)'],
-  [/^pages\/api\/cron|^scripts\//, '크론/자동화'],
+  [/^(pages\/for-companies|pages\/companies\/|pages\/company\b|pages\/company\/|components\/company\/|pages\/api\/company\/|pages\/auth\/callback)/, '기업 서비스 (/for-companies)'],
+  [/notify/, '기업 서비스 (/for-companies)'],
+  [/^(pages\/jobs(\.js|\/)|pages\/api\/jobs|pages\/api\/job-)/, '채용 공고 (/jobs)'],
+  [/^(pages\/profile|pages\/my-applications|pages\/saved-jobs|pages\/api\/profile|pages\/api\/my-applications|pages\/api\/job-bookmarks)/, '내 프로필 (/profile)'],
+  [/^(pages\/index|components\/home\/|components\/AnonymousSection|pages\/api\/percentile|pages\/api\/stats|pages\/api\/submit|pages\/api\/result|lib\/salaryQuality)/, '연봉 비교 (/)'],
+  [/^(components\/GlobalNav|components\/MobileTabBar|components\/MobileNav|pages\/_app|pages\/_document)/, '네비/공통'],
+  [/^(pages\/api\/cron|scripts\/)/, '크론/자동화'],
 ];
 const classifyFile = (f) => { for (const [re, label] of ROUTES) if (re.test(f)) return label; return null; };
 // 파일을 못 읽는 얕은 클론 대비 — 커밋 스코프(feat(admin) 등)로 폴백 분류
-const SCOPE = { admin: '어드민 (/admin)', company: '기업 (/company)', notify: '알림 (notify)', salary: '연봉 통계 (/api/percentile,stats)', jobs: '구직 보드 (/jobs)', premium: '어드민 (/admin)', community: '커뮤니티 (/community)' };
-const scopeRoute = (subj) => { const m = subj.match(/^\w+\(([^)]+)\)/); return m ? SCOPE[m[1].trim().toLowerCase()] || null : null; };
+const SCOPE = {
+  admin: '⚙️ 어드민', premium: '⚙️ 어드민',
+  cv: '이력서 등록 (/cv)', community: '커뮤니티 (/community)',
+  company: '기업 서비스 (/for-companies)', notify: '기업 서비스 (/for-companies)',
+  jobs: '채용 공고 (/jobs)', profile: '내 프로필 (/profile)',
+  salary: '연봉 비교 (/)', nav: '네비/공통',
+};
+const scopeRoute = (subj) => {
+  const m = subj.match(/^\w+\(([^)]+)\)/);
+  if (!m) return null;
+  for (const s of m[1].split(',').map((x) => x.trim().toLowerCase())) if (SCOPE[s]) return SCOPE[s];
+  return null;
+};
 
 (async () => {
   const { createClient } = require('@supabase/supabase-js');
