@@ -189,7 +189,7 @@ export default function CompanyATSPage() {
           .eq('id', jobId).eq('company_id', rec.company_id).maybeSingle(),
         supabase
           .from('job_applications')
-          .select('id, status, applicant_name, applicant_email, applicant_salary, applicant_role, applicant_experience, applicant_company, resume_url, user_id, created_at, admin_note, interview_at, rejected_at, rejected_at_stage, rejection_reason')
+          .select('id, status, viewed_at, applicant_name, applicant_email, applicant_salary, applicant_role, applicant_experience, applicant_company, resume_url, user_id, created_at, admin_note, interview_at, rejected_at, rejected_at_stage, rejection_reason')
           .eq('job_id', jobId).order('created_at', { ascending: true }),
       ]);
       const { data: jobData, error: jobErr } = jobRes;
@@ -582,14 +582,16 @@ export default function CompanyATSPage() {
 
   // CPO 추가: 채용 담당자가 화면에서 가장 알아야 하는 5개 지표
   const nowMs = Date.now();
-  const newReviewCount = apps.filter(a => !a.rejected_at && a.status === 'pending').length;
+  // 신규 = 아직 한 번도 열람 안 한 서류 단계 지원자.
+  // status='pending' 만 보는 게 아니라 viewed_at IS NULL 도 함께 본다.
+  const newReviewCount = apps.filter(a => !a.rejected_at && a.status === 'pending' && !a.viewed_at).length;
   const upcomingInterviewCount = apps.filter(a => !a.rejected_at && a.interview_at && new Date(a.interview_at).getTime() > nowMs).length;
   const hiredCount = apps.filter(a => !a.rejected_at && a.status === 'decided').length;
   const inProgressCount = apps.filter(a => !a.rejected_at && a.status !== 'decided' && a.status !== 'pending').length;
 
   const matchesKpiFilter = (a) => {
     if (!kpiFilter) return true;
-    if (kpiFilter === 'new') return !a.rejected_at && a.status === 'pending';
+    if (kpiFilter === 'new') return !a.rejected_at && a.status === 'pending' && !a.viewed_at;
     if (kpiFilter === 'inProgress') return !a.rejected_at && a.status !== 'decided' && a.status !== 'pending';
     if (kpiFilter === 'hired') return !a.rejected_at && a.status === 'decided';
     if (kpiFilter === 'rejected') return !!a.rejected_at;

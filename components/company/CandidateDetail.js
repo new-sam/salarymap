@@ -252,20 +252,22 @@ export default function CandidateDetail({
         setStatus('error');
         return;
       }
-      // 열람(read) 로직: 신규(pending) 지원자를 처음 열면 자동 '열람(viewed)' 처리 → NEW 카운트 감소
-      const willMarkViewed = appData.status === 'pending' && !appData.rejected_at;
-      const effectiveStatus = willMarkViewed ? 'viewed' : appData.status;
-      setApp(willMarkViewed ? { ...appData, status: 'viewed' } : appData);
+      // 열람(read) 로직: 신규 지원자를 처음 열면 viewed_at 만 채워 NEW 카운트
+      // 에서 제외한다. status 는 명시적인 stage 이동(드래그/다음 단계)에서만
+      // 바뀌어야 하므로 여기서는 절대 손대지 않는다.
+      const nowIso = new Date().toISOString();
+      const willMarkRead = !appData.viewed_at && !appData.rejected_at;
+      setApp(willMarkRead ? { ...appData, viewed_at: nowIso } : appData);
       setJob(appData.jobs);
-      setExpandedStages(new Set([effectiveStatus]));
-      if (willMarkViewed) {
-        // 서비스롤 API로 처리(직접 update는 RLS에 막힐 수 있음)
+      setExpandedStages(new Set([appData.status]));
+      if (willMarkRead) {
+        // 서비스롤 API로 viewed_at 만 기록. status 는 그대로.
         supabase.auth.getSession().then(({ data: { session } }) => {
           fetch('/api/company/mark-viewed', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session?.access_token || ''}` },
             body: JSON.stringify({ appId }),
-          }).then(r => { if (r.ok) onStageChange?.(appId, { status: 'viewed' }); }).catch(() => {});
+          }).then(r => { if (r.ok) onStageChange?.(appId, { viewed_at: nowIso }); }).catch(() => {});
         });
       }
 
