@@ -139,13 +139,20 @@ export default function AuthCallback() {
         }
 
         if (data.session) {
-          const intentEarly = typeof window !== 'undefined' && localStorage.getItem('fyi_intent')
+          // Pull intent/return from the callback URL first; localStorage is
+          // a fallback for older flows. URL-driven values survive existing-
+          // member fast paths where the callback may fire twice and the
+          // first call already consumed the localStorage keys.
+          const urlParams = new URLSearchParams(window.location.search)
+          const urlIntent = urlParams.get('intent')
+          const urlReturn = urlParams.get('return')
+          const intentEarly = urlIntent || (typeof window !== 'undefined' && localStorage.getItem('fyi_intent'))
           if (intentEarly === 'company') {
             await saveCompanyRecruiter(data.session.user)
           } else {
             await saveProfile(data.session.user)
           }
-          const returnTo = typeof window !== 'undefined' && localStorage.getItem('fyi_login_return')
+          const returnTo = urlReturn || (typeof window !== 'undefined' && localStorage.getItem('fyi_login_return'))
           const intent = intentEarly
           localStorage.removeItem('fyi_login_return')
           localStorage.removeItem('fyi_intent')
@@ -186,13 +193,16 @@ export default function AuthCallback() {
             await supabase.auth.exchangeCodeForSession(code)
 
           if (exchangeData?.session) {
-            const intent2Early = typeof window !== 'undefined' && localStorage.getItem('fyi_intent')
+            const urlParams2 = new URLSearchParams(window.location.search)
+            const urlIntent2 = urlParams2.get('intent')
+            const urlReturn2 = urlParams2.get('return')
+            const intent2Early = urlIntent2 || (typeof window !== 'undefined' && localStorage.getItem('fyi_intent'))
             if (intent2Early === 'company') {
               await saveCompanyRecruiter(exchangeData.session.user)
             } else {
               await saveProfile(exchangeData.session.user)
             }
-            const returnTo = typeof window !== 'undefined' && localStorage.getItem('fyi_login_return')
+            const returnTo = urlReturn2 || (typeof window !== 'undefined' && localStorage.getItem('fyi_login_return'))
             const intent2 = intent2Early
             localStorage.removeItem('fyi_login_return')
             localStorage.removeItem('fyi_intent')

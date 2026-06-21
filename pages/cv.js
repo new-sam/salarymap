@@ -260,9 +260,16 @@ export default function CvLanding() {
         localStorage.setItem('fyi_intent', 'cv_signup')
         track('cv_oauth_start', { meta: { ...cvMeta(), provider: pending, has_file: true, auto: true }, page: '/cv' })
         if (pending === 'linkedin') {
+          // Intent/return are also stored in localStorage, but pass them
+          // via the callback URL so the destination survives even if the
+          // OAuth provider returns fast (existing members) and the
+          // callback consumes localStorage before we can read it.
           supabase.auth.signInWithOAuth({
             provider: 'linkedin_oidc',
-            options: { redirectTo: window.location.origin + '/auth/callback', scopes: 'openid profile email' },
+            options: {
+              redirectTo: window.location.origin + '/auth/callback?intent=cv_signup&return=' + encodeURIComponent('/cv?continue=1'),
+              scopes: 'openid profile email',
+            },
           })
         } else {
           window.location.href = '/api/auth/google?return=' + encodeURIComponent('/cv?continue=1')
@@ -340,7 +347,7 @@ export default function CvLanding() {
     await supabase.auth.signInWithOAuth({
       provider: 'linkedin_oidc',
       options: {
-        redirectTo: window.location.origin + '/auth/callback',
+        redirectTo: window.location.origin + '/auth/callback?intent=cv_signup&return=' + encodeURIComponent('/cv?continue=1'),
         scopes: 'openid profile email',
       }
     })
