@@ -161,6 +161,11 @@ export default function AuthCallback() {
           let destination;
           if (returnTo) {
             destination = returnTo;
+          } else if (intent === 'cv_signup') {
+            // Existing LinkedIn members can hit this path on the fast
+            // /cv flow when fyi_login_return is already consumed — keep
+            // them on the /cv resume-upload track.
+            destination = '/cv?continue=1';
           } else if (intent === 'company') {
             destination = '/company';
           } else if (intent && jobIntents.includes(intent)) {
@@ -202,6 +207,8 @@ export default function AuthCallback() {
             let dest2;
             if (returnTo) {
               dest2 = returnTo;
+            } else if (intent2 === 'cv_signup') {
+              dest2 = '/cv?continue=1';
             } else if (intent2 === 'company') {
               dest2 = '/company';
             } else if (intent2 && jobIntents2.includes(intent2)) {
