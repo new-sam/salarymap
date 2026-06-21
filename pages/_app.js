@@ -48,6 +48,7 @@ export default function App({ Component, pageProps }) {
   // Company pages have their own language switcher; admin pages also have their own.
   const isCompany = router.pathname.startsWith('/company') || router.pathname === '/for-companies';
   const isAdmin = router.pathname.startsWith('/admin');
+  const isStandaloneLanding = router.pathname === '/resume-reward' || router.pathname === '/cv';
   // Job detail renders its own bottom Apply/Save CTA, so it hides the global
   // MobileTabBar (which would otherwise cover the CTA at bottom:0).
   const isJobDetail = router.pathname === '/jobs/[id]';
@@ -58,15 +59,15 @@ export default function App({ Component, pageProps }) {
   // globals.css) collapse for company pages — they render their own header.
   useEffect(() => {
     if (typeof document === 'undefined') return;
-    if (isCompany) document.body.dataset.companyMobile = '1';
+    if (isCompany || isStandaloneLanding) document.body.dataset.companyMobile = '1';
     else delete document.body.dataset.companyMobile;
     if (isJobDetail) document.body.dataset.jobDetailMobile = '1';
     else delete document.body.dataset.jobDetailMobile;
-  }, [isCompany, isJobDetail]);
+  }, [isCompany, isJobDetail, isStandaloneLanding]);
   return (
     <I18nProvider>
       <Component {...pageProps} />
-      {(!isCompany || isForCompaniesLanding) && !isAdmin && (
+      {(!isCompany || isForCompaniesLanding) && !isAdmin && !isStandaloneLanding && (
         <footer style={{
           background: '#0a0a09', borderTop: '1px solid rgba(255,255,255,0.06)',
           padding: '24px 40px', display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -74,9 +75,9 @@ export default function App({ Component, pageProps }) {
           <LanguageSwitcher />
         </footer>
       )}
-      {!isCompany && !isJobDetail && <MobileTabBar />}
+      {!isCompany && !isJobDetail && !isStandaloneLanding && <MobileTabBar />}
       <GlobalLoginModal />
-      {!isAdmin && <AppDownloadModal />}
+      {!isAdmin && !isStandaloneLanding && <AppDownloadModal />}
       <Toaster
         position="bottom-right"
         richColors
