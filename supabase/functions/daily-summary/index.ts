@@ -794,12 +794,32 @@ async function sendToSlack(payload: object) {
 }
 
 // ─── Main Handler ───
+// 같은 realtime 페이로드를 슬래시 커맨드 (response_url 비동기) 와 cron
+// (직접 Slack webhook) 양쪽에서 재사용한다. listUsers + submissions
+// 페이지네이션 때문에 응답이 5초 가까이 걸려서 Slack 3초 ack 한계를
+// 넘는다 → /fyi 는 즉시 200 ack 만 응답하고 response_url 로 follow-up.
+async function buildRealtimePayload(slashCommand: boolean) {
+  const today = getVietnamDate(0);
+  const timeStr = getVietnamTime();
+
+  const [sessions, stats, signups, jobApps, resumes] = await Promise.all([
+    getGA4TodaySessions(),
+    getSubmissions(today),
+    getSignups(today),
+    getJobApps(today),
+    getResumeUploadsForDate(today),
+  ]);
+  const cum = await getCumulative(CAMPAIGN_START, today);
+  return buildRealtimeMessage(today, timeStr, sessions, stats, signups, jobApps, resumes, cum, slashCommand);
+}
+
 Deno.serve(async (req) => {
   try {
     const url = new URL(req.url);
     let mode = url.searchParams.get("mode") || "daily";
 
     let slashCommand = false;
+    let slashResponseUrl: string | null = null;
     if (req.method === "POST") {
       const contentType = req.headers.get("content-type") || "";
       if (contentType.includes("application/x-www-form-urlencoded")) {
@@ -808,30 +828,55 @@ Deno.serve(async (req) => {
         if (params.get("command")) {
           slashCommand = true;
           mode = "realtime";
+          slashResponseUrl = params.get("response_url");
         }
       }
     }
 
     if (mode === "realtime") {
-      const today = getVietnamDate(0);
-      const timeStr = getVietnamTime();
-
-      const [sessions, stats, signups, jobApps, resumes] = await Promise.all([
-        getGA4TodaySessions(),
-        getSubmissions(today),
-        getSignups(today),
-        getJobApps(today),
-        getResumeUploadsForDate(today),
-      ]);
-      const cum = await getCumulative(CAMPAIGN_START, today);
-
-      const message = buildRealtimeMessage(today, timeStr, sessions, stats, signups, jobApps, resumes, cum, slashCommand);
-
-      if (slashCommand) {
-        return new Response(JSON.stringify(message), { headers: { "Content-Type": "application/json" } });
+      // /fyi 슬래시 커맨드: 누적/세션 수집이 무거워 동기 응답이 Slack 의
+      // 3초 ack 한계를 넘는다. 즉시 ack 하고 백그라운드로 response_url
+      // 에 실 메시지를 POST.
+      if (slashCommand && slashResponseUrl) {
+        const responseUrl = slashResponseUrl;
+        const task = (async () => {
+          try {
+            const message = await buildRealtimePayload(true);
+            // 채널 게시 (in_channel) — 슬래시 커맨드 응답 표준 필드.
+            (message as any).response_type = "in_channel";
+            await fetch(responseUrl, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(message),
+            });
+          } catch (e) {
+            console.error("Slash deferred error:", (e as Error).message);
+            await fetch(responseUrl, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                response_type: "ephemeral",
+                text: `:warning: 리포트 생성 중 오류: ${(e as Error).message}`,
+              }),
+            });
+          }
+        })();
+        // Supabase Edge runtime keeps the worker alive until waitUntil resolves.
+        // @ts-ignore — EdgeRuntime is a Supabase-injected global.
+        if (typeof EdgeRuntime !== "undefined" && EdgeRuntime.waitUntil) {
+          // @ts-ignore
+          EdgeRuntime.waitUntil(task);
+        }
+        // 3초 안에 응답 — Slack 에 보이는 "처리 중..." 카드.
+        return new Response(JSON.stringify({
+          response_type: "ephemeral",
+          text: ":hourglass_flowing_sand: FYI 리포트 가져오는 중...",
+        }), { headers: { "Content-Type": "application/json" } });
       }
+
+      const message = await buildRealtimePayload(false);
       await sendToSlack(message);
-      return new Response(JSON.stringify({ success: true, mode: "realtime", date: today }), { headers: { "Content-Type": "application/json" } });
+      return new Response(JSON.stringify({ success: true, mode: "realtime", date: getVietnamDate(0) }), { headers: { "Content-Type": "application/json" } });
     }
 
     if (mode === "daily") {
