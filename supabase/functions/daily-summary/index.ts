@@ -267,21 +267,19 @@ async function getJobApps(dateStr: string): Promise<number> {
   return count || 0;
 }
 
-// 이력서 등록 = 하루 동안 이력서를 등록한 *사람 수* (unique user).
-// cv_register_success(/cv 페이지) + resume_upload(/profile 및 앱) 이벤트를
-// 합집합으로 보고 user_id 로 dedupe 한다. /api/track 이 likelion.net 은 이미
-// 차단하니 직원 잡티는 자동으로 제외.
+// 이력서 등록 = cv_register_success(/cv 페이지 등록) + resume_upload(/profile
+// 및 앱 등록) 이벤트 횟수. admin dashboard 의 resumeUploads 와 동일한 정의
+// (이벤트 raw count, user_id dedupe 안 함) 로 맞춰서 양쪽 숫자가 일치하도록.
+// /api/track 이 likelion.net 은 이미 차단하니 직원 잡티는 자동 제외.
 async function getResumeUploads(startUtc: string, endUtc: string): Promise<number> {
-  const { data, error } = await supabase
+  const { count, error } = await supabase
     .from("events")
-    .select("user_id")
+    .select("id", { count: "exact", head: true })
     .in("event", ["cv_register_success", "resume_upload"])
     .gte("created_at", startUtc)
-    .lte("created_at", endUtc)
-    .not("user_id", "is", null);
+    .lte("created_at", endUtc);
   if (error) { console.error("Resume uploads error:", JSON.stringify(error)); return 0; }
-  const unique = new Set((data || []).map((r: any) => r.user_id));
-  return unique.size;
+  return count || 0;
 }
 
 async function getResumeUploadsForDate(dateStr: string): Promise<number> {
