@@ -66,8 +66,8 @@ const L = {
     salaryTitle: '연봉 제출 (앱 핵심 전환)', salaryCount: '제출 수', salaryUsers: '제출 유저(고유)',
     byRole: '직군 분포', byExp: '연차 분포',
     resumeTitle: '이력서 등록', resumeUploads: '업로드 수', resumeUsers: '업로드 유저', uploadToApply: '업로드→지원 전환',
-    pushTitle: '푸시 (재참여 엔진)', pushClicks: '클릭(재방문)', pushClickUsers: '클릭 유저', pushReceived: '수신(포그라운드)',
-    pushByCat: '푸시 종류별 클릭', pushNote: '⚠ 정상 클릭률(클릭/발송)의 분모(발송 수)는 서버 발송 로그가 출처입니다. 여기선 클릭 볼륨·재방문 유저·종류별 분해를 봅니다. 수신은 OS 한계로 앱 실행 중(포그라운드)만 잡힙니다.',
+    pushTitle: '푸시 (재참여 엔진)', pushSent: '발송', pushCtr: '클릭률(클릭/발송)', pushClicks: '클릭(재방문)', pushClickUsers: '클릭 유저', pushReceived: '수신(포그라운드)',
+    pushByCat: '푸시 종류별 클릭', pushNote: '⚠ 클릭률 = 클릭/발송. 발송 수는 서버 발송 로그(push_sent)에서 집계되며 배포 시점부터 누적됩니다(이전 발송분은 분모에 없음). 수신은 OS 한계로 앱 실행 중(포그라운드)만 잡힙니다.',
     osTitle: 'OS 분포', verTitle: '앱 버전 분포 (릴리스 코호트)',
     count: '건', noData: '데이터 없음',
   },
@@ -118,8 +118,8 @@ const L = {
     salaryTitle: 'Salary Submission (core conversion)', salaryCount: 'Submissions', salaryUsers: 'Unique submitters',
     byRole: 'By role', byExp: 'By experience',
     resumeTitle: 'Resume Upload', resumeUploads: 'Uploads', resumeUsers: 'Upload users', uploadToApply: 'Upload→apply conv',
-    pushTitle: 'Push (re-engagement engine)', pushClicks: 'Clicks (returns)', pushClickUsers: 'Click users', pushReceived: 'Received (foreground)',
-    pushByCat: 'Clicks by push type', pushNote: '⚠ True CTR (clicks/sent) needs the sent-count from server push logs. Here we show click volume, return users, and per-type breakdown. Received only fires in foreground (OS limit).',
+    pushTitle: 'Push (re-engagement engine)', pushSent: 'Sent', pushCtr: 'CTR (clicks/sent)', pushClicks: 'Clicks (returns)', pushClickUsers: 'Click users', pushReceived: 'Received (foreground)',
+    pushByCat: 'Clicks by push type', pushNote: '⚠ CTR = clicks/sent. Sent count comes from server push logs (push_sent) and accumulates from deploy time (earlier sends are not in the denominator). Received only fires in foreground (OS limit).',
     osTitle: 'OS Breakdown', verTitle: 'App Version Breakdown (release cohort)',
     count: '', noData: 'No data',
   },
@@ -296,7 +296,7 @@ export default function AppMetricsView({ token, dateRange, lang }) {
     convert: [M('submit_salary', t.ovSalary, '#10B981'), M('submit_application', t.ovApply, '#2563EB'), M('resume_upload', t.resumeUploads, '#8B5CF6')],
     community: [M('view_community', t.fView, '#0EA5E9'), M('create_community_post', t.posts, '#10B981'), M('create_community_comment', t.comments, '#F59E0B')],
     jobs: [M('view_jobs_page', t.jView, '#0EA5E9'), M('click_job_card', t.jCard, '#8B5CF6'), M('click_apply_button', t.jApply, '#F59E0B')],
-    push: [M('push_click', t.pushClicks, '#8B5CF6'), M('push_received', t.pushReceived, '#C4B5FD')],
+    push: [M('push_sent', t.pushSent, '#0EA5E9'), M('push_click', t.pushClicks, '#8B5CF6'), M('push_received', t.pushReceived, '#C4B5FD')],
   }
 
   return (
@@ -627,7 +627,9 @@ export default function AppMetricsView({ token, dateRange, lang }) {
         <div style={sectionStyle}>
           <h3 style={sectionTitle}>{t.pushTitle}</h3>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 12, marginBottom: 16 }}>
+            <Card label={t.pushSent} value={push.sent} color="#0EA5E9" />
             <Card label={t.pushClicks} value={push.clicks} color="#8B5CF6" />
+            <Card label={t.pushCtr} value={push.ctr == null ? '–' : push.ctr + '%'} color="#10B981" />
             <Card label={t.pushClickUsers} value={push.clickUsers} color="#7C3AED" />
             <Card label={t.pushReceived} value={push.received} color="#6B7280" />
           </div>

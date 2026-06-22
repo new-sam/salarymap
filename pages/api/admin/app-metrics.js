@@ -99,9 +99,11 @@ export default async function handler(req, res) {
       const date = toVN(r.created_at)
       const c = cid(m)
       const ev = r.event
+      // push_sent는 서버 발송(유저 활동 아님) — 볼륨/푸시 지표엔 세지만 활동·리텐션 축에선 제외.
+      const isActivity = ev !== 'push_sent'
 
       // --- 전 기간: 리텐션 축 ---
-      if (c) {
+      if (c && isActivity) {
         if (!firstSeen[c] || date < firstSeen[c]) firstSeen[c] = date
         const dms = dayMs(date)
         if (firstSeenMs[c] == null || dms < firstSeenMs[c]) firstSeenMs[c] = dms
@@ -113,7 +115,7 @@ export default async function handler(req, res) {
 
       if (!inRange(date)) continue
       // --- 범위 내: 볼륨/분포/퍼널 ---
-      if (c) {
+      if (c && isActivity) {
         rangeClients.add(c)
         const f = featureOf(ev)
         if (f) (clientFeatures[c] || (clientFeatures[c] = new Set())).add(f)
@@ -153,12 +155,17 @@ export default async function handler(req, res) {
           break
         case 'push_click': {
           const k = m.category || '(none)'
-          ;(pushCat[k] || (pushCat[k] = { click: 0, received: 0 })).click++
+          ;(pushCat[k] || (pushCat[k] = { click: 0, received: 0, sent: 0 })).click++
           break
         }
         case 'push_received': {
           const k = m.category || '(none)'
-          ;(pushCat[k] || (pushCat[k] = { click: 0, received: 0 })).received++
+          ;(pushCat[k] || (pushCat[k] = { click: 0, received: 0, sent: 0 })).received++
+          break
+        }
+        case 'push_sent': {
+          const k = m.category || '(none)'
+          ;(pushCat[k] || (pushCat[k] = { click: 0, received: 0, sent: 0 })).sent++
           break
         }
       }
@@ -173,6 +180,7 @@ export default async function handler(req, res) {
         if (ev === 'submit_application') setOf('applyUsers').add(c)
         if (ev === 'submit_salary') setOf('salaryUsers').add(c)
         if (ev === 'push_click') setOf('pushClickUsers').add(c)
+        if (ev === 'push_sent') setOf('pushSentUsers').add(c)
       }
     }
 
@@ -309,13 +317,17 @@ export default async function handler(req, res) {
     }
 
     // ---- 푸시 (재참여 엔진) ----
+    const pctOf = (num, den) => (den ? +((num / den) * 100).toFixed(1) : null)
     const push = {
+      sent: cnt('push_sent'),               // 발송수(클릭률 분모) — 서버 발송 로그(push_sent)
+      sentUsers: sizeOf('pushSentUsers'),
       clicks: cnt('push_click'),
       clickUsers: sizeOf('pushClickUsers'),
       received: cnt('push_received'),       // 포그라운드 수신만(OS 한계)
-      byCategory: Object.entries(pushCat).map(([name, v]) => ({ name, ...v })).sort((a, b) => b.click - a.click),
-      // 정상 CTR(클릭/발송)의 분모(발송수)는 서버 발송 로그가 출처 — 여기선 클릭 볼륨/유저만 책임.
-      ctrNote: 'sent_denominator_server_side',
+      ctr: pctOf(cnt('push_click'), cnt('push_sent')),  // 클릭률 = 클릭/발송 (%)
+      byCategory: Object.entries(pushCat)
+        .map(([name, v]) => ({ name, ...v, ctr: pctOf(v.click, v.sent) }))
+        .sort((a, b) => b.sent - a.sent),
     }
 
     // ---- 세그먼트 ----

@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js'
-import { resolveDisplayTier } from '../../../lib/salaryTiers'
+import { resolveDisplayTier, getSalaryTierByKey } from '../../../lib/salaryTiers'
+import { isEngagementKey } from '../../../lib/engagementBadges'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
@@ -21,25 +22,46 @@ function sanitizeImageUrls(value, max = 4) {
     .slice(0, max)
 }
 
-// Map of user_id -> salary tier key for users with an active salary-range badge.
-// Shown next to authors (incl. anonymous) as a trust signal.
-async function salaryTierMap(userIds) {
+// Map of user_id -> 커뮤니티에 노출할 대표 뱃지 key(검증됨). 연봉 등급 키(nghindo 등) 또는
+// 참여형 key(comment_500 등). 사용자가 고르고 실제 획득한 것만. 미선택/미획득이면 키 없음.
+async function representativeBadgeMap(userIds) {
   const ids = [...new Set(userIds)].filter(Boolean)
   if (!ids.length) return {}
-  // 활성 연봉 뱃지(실제 등급) + 대표 등급 선택값을 함께 조회해 표시 등급을 결정.
-  const [{ data: badges }, { data: profiles }] = await Promise.all([
-    supabase.from('user_badges').select('user_id, salary_amount')
-      .in('user_id', ids).eq('badge_type', 'salary_range').eq('is_active', true),
-    supabase.from('user_profiles').select('id, representative_tier').in('id', ids),
-  ])
-  const repMap = {}
-  ;(profiles || []).forEach(p => { if (p.representative_tier) repMap[p.id] = p.representative_tier })
-  const map = {}
-  ;(badges || []).forEach(b => {
-    const key = resolveDisplayTier(b.salary_amount, repMap[b.user_id])
-    if (key) map[b.user_id] = key
+  const { data: profiles } = await supabase
+    .from('user_profiles').select('id, representative_badge, representative_tier').in('id', ids)
+  const wanted = {}
+  ;(profiles || []).forEach(p => {
+    const key = p.representative_badge || p.representative_tier
+    if (key) wanted[p.id] = key
   })
-  return map
+  const repIds = Object.keys(wanted)
+  if (!repIds.length) return {}
+  const salaryIds = repIds.filter(id => getSalaryTierByKey(wanted[id]))
+  const engIds = repIds.filter(id => isEngagementKey(wanted[id]))
+  const out = {}
+  if (salaryIds.length) {
+    // 연봉 대표 — 실제 인증 등급 이하인지 검증.
+    const { data } = await supabase.from('user_badges').select('user_id, salary_amount')
+      .in('user_id', salaryIds).eq('badge_type', 'salary_range').eq('is_active', true)
+    const amt = {}
+    ;(data || []).forEach(b => { amt[b.user_id] = b.salary_amount })
+    salaryIds.forEach(id => {
+      const key = resolveDisplayTier(amt[id], wanted[id])
+      if (key) out[id] = key
+    })
+  }
+  if (engIds.length) {
+    // 참여형 대표 — 부여된(획득) 뱃지 row가 있는지 검증.
+    const { data } = await supabase.from('user_badges').select('user_id, badge_type').in('user_id', engIds)
+    const have = new Set((data || []).map(b => b.user_id + '|' + b.badge_type))
+    engIds.forEach(id => { if (have.has(id + '|' + wanted[id])) out[id] = wanted[id] })
+  }
+  return out
+}
+
+// 대표 뱃지 key가 연봉 등급이면 그 키, 아니면 null(연봉 뱃지 슬롯 back-compat용).
+function salaryTierOf(repKey) {
+  return repKey && getSalaryTierByKey(repKey) ? repKey : null
 }
 
 // Map of user_id -> verified company name for users with an active verified_company
@@ -223,13 +245,14 @@ export default async function handler(req, res) {
       }
       const uid = [post.user_id]
       const [tierMap, cvMap, utMap, avMap, nMap] = await Promise.all([
-        salaryTierMap(uid),
+        representativeBadgeMap(uid),
         companyVerifiedMap(uid),
         userTypeMap(uid),
         avatarMap(uid),
         nameMap(uid),
       ])
-      post.author_salary_tier = tierMap[post.user_id] || null
+      post.author_badge = tierMap[post.user_id] || null
+      post.author_salary_tier = salaryTierOf(tierMap[post.user_id])
       post.author_verified_company = cvMap[post.user_id] || null
       post.author_user_type = utMap[post.user_id]?.user_type || null
       post.author_verified_school = utMap[post.user_id]?.verified_school || null
@@ -316,7 +339,7 @@ export default async function handler(req, res) {
       }
       const iIds = iData.map(p => p.user_id)
       const [iTierMap, iCvMap, iUtMap, iAvMap, iNameMap] = await Promise.all([
-        salaryTierMap(iIds),
+        representativeBadgeMap(iIds),
         companyVerifiedMap(iIds),
         userTypeMap(iIds),
         avatarMap(iIds),
@@ -324,7 +347,7 @@ export default async function handler(req, res) {
       ])
 
       return res.status(200).json({
-        posts: iData.map(p => ({ ...p, is_liked: iLiked.includes(p.id), author_salary_tier: iTierMap[p.user_id] || null, author_verified_company: iCvMap[p.user_id] || null, author_user_type: iUtMap[p.user_id]?.user_type || null, author_verified_school: iUtMap[p.user_id]?.verified_school || null, author_avatar: p.is_anonymous ? null : (iAvMap[p.user_id] || p.author_avatar || null), author_name: resolveAuthorName(p, iNameMap) })),
+        posts: iData.map(p => ({ ...p, is_liked: iLiked.includes(p.id), author_badge: iTierMap[p.user_id] || null, author_salary_tier: salaryTierOf(iTierMap[p.user_id]), author_verified_company: iCvMap[p.user_id] || null, author_user_type: iUtMap[p.user_id]?.user_type || null, author_verified_school: iUtMap[p.user_id]?.verified_school || null, author_avatar: p.is_anonymous ? null : (iAvMap[p.user_id] || p.author_avatar || null), author_name: resolveAuthorName(p, iNameMap) })),
         total: iCount,
         page: parseInt(page),
         totalPages: Math.ceil(iCount / parseInt(limit))
@@ -447,7 +470,7 @@ export default async function handler(req, res) {
     // 작성자 부가정보 맵은 서로 독립적이라 병렬로 받아 응답 시간을 줄인다.
     const ids = data.map(p => p.user_id)
     const [tierMap, cvMap, utMap, avMap, nMap, pollMap] = await Promise.all([
-      salaryTierMap(ids),
+      representativeBadgeMap(ids),
       companyVerifiedMap(ids),
       userTypeMap(ids),
       avatarMap(ids),
@@ -456,7 +479,7 @@ export default async function handler(req, res) {
     ])
 
     return res.status(200).json({
-      posts: data.map(p => ({ ...p, is_liked: likedPostIds.includes(p.id), poll: pollMap[p.id] || null, author_salary_tier: tierMap[p.user_id] || null, author_verified_company: cvMap[p.user_id] || null, author_user_type: utMap[p.user_id]?.user_type || null, author_verified_school: utMap[p.user_id]?.verified_school || null, author_avatar: p.is_anonymous ? null : (avMap[p.user_id] || p.author_avatar || null), author_name: resolveAuthorName(p, nMap) })),
+      posts: data.map(p => ({ ...p, is_liked: likedPostIds.includes(p.id), poll: pollMap[p.id] || null, author_badge: tierMap[p.user_id] || null, author_salary_tier: salaryTierOf(tierMap[p.user_id]), author_verified_company: cvMap[p.user_id] || null, author_user_type: utMap[p.user_id]?.user_type || null, author_verified_school: utMap[p.user_id]?.verified_school || null, author_avatar: p.is_anonymous ? null : (avMap[p.user_id] || p.author_avatar || null), author_name: resolveAuthorName(p, nMap) })),
       total: count,
       page: parseInt(page),
       totalPages: Math.ceil(count / parseInt(limit))
@@ -507,7 +530,7 @@ export default async function handler(req, res) {
       : realName
 
     // Author company / salary badges are derived at read time from the
-    // email-verified company badge (see companyVerifiedMap / salaryTierMap),
+    // email-verified company badge (see companyVerifiedMap / representativeBadgeMap),
     // not from any self-entered field at write time.
     const { data, error } = await supabase
       .from('community_posts')
