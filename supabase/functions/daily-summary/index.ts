@@ -243,7 +243,7 @@ async function fetchSubmissions(startUtc: string, endUtc: string): Promise<any[]
   while (true) {
     const { data, error } = await supabase
       .from("submissions")
-      .select("source, company, email, user_id")
+      .select("source, company, email, user_id, created_at")
       .eq("is_seed", false)
       .gte("created_at", startUtc)
       .lte("created_at", endUtc)
