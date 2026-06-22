@@ -55,6 +55,16 @@ function getVietnamDate(daysAgo = 0): string {
   return vn.toISOString().slice(0, 10);
 }
 
+// "YYYY-MM-DD" → 그 전날의 "YYYY-MM-DD" (UTC 기반 산술이지만 자정 처리만
+// 정확하면 되므로 OK — getCumulative 에서 sessions/companies 의 endDate 를
+// 어제로 자르는 용도).
+function previousDay(dateStr: string): string {
+  const [y, m, d] = dateStr.split("-").map(Number);
+  const dt = new Date(Date.UTC(y, m - 1, d));
+  dt.setUTCDate(dt.getUTCDate() - 1);
+  return dt.toISOString().slice(0, 10);
+}
+
 function getVietnamTime(): string {
   const now = new Date();
   const vn = new Date(now.getTime() + 7 * 60 * 60 * 1000);
@@ -317,13 +327,17 @@ async function getJobApps(dateStr: string): Promise<number> {
 //   events.cv_register_success + resume_upload 의 raw count.
 //
 // 정의가 한쪽으로 통일 안 된 건 admin 측 결정이라 봇이 그대로 따라간다.
-async function getResumeUploadsCumulative(startUtc: string, endUtc: string): Promise<number> {
+//
+// 누적 정의 추가 주의 — admin/dashboard.js (API) line 102-106 의
+// resumeUsers 는 시간 필터 없이 user_profiles 의 resume_url 보유자 전체를
+// 뽑고 .length 를 totalResumeUploads 로 쓴다. 캠페인 시작일 이전 등록자도
+// 포함된다. 봇도 그대로 따라가야 admin 의 "전체 기간 누적 — 이력서 등록"
+// 카드 숫자와 정확히 일치한다.
+async function getResumeUploadsCumulative(): Promise<number> {
   const { count, error } = await supabase
     .from("user_profiles")
     .select("id", { count: "exact", head: true })
-    .not("resume_url", "is", null)
-    .gte("updated_at", startUtc)
-    .lte("updated_at", endUtc);
+    .not("resume_url", "is", null);
   if (error) { console.error("Resume cumulative error:", JSON.stringify(error)); return 0; }
   return count || 0;
 }
@@ -344,21 +358,47 @@ async function getResumeUploadsForDate(dateStr: string): Promise<number> {
 }
 
 async function getCumulative(startDate: string, endDate: string) {
+  // ADMIN PARITY — admin/dashboard.js 의 누적 카드는 base = 4/20~어제
+  // (data.summary, from `/api/admin/dashboard`) 위에 오늘 분 diff 를 일부
+  // 메트릭에만 더해서 표시한다. 정확한 매핑:
+  //   submissions / ad / organic / signups / jobApps → base + 오늘 diff
+  //     = 사실상 4/20 ~ 오늘 (봇과 동일)
+  //   sessions / companies / resumeUploads → base 만 (오늘 diff 없음)
+  //     = 4/20 ~ 어제 까지 (sessions/companies), 또는 시간 무관 snapshot
+  //     (resumeUploads). 봇도 같은 비대칭을 그대로 구현해야 두 화면이
+  //     모두 일치한다. 이 비대칭은 admin/dashboard.js:224-248 에서
+  //     diff('xxx') 호출이 어느 키에 적용되는지에 의해 결정된다.
   const startUtc = `${startDate}T00:00:00+07:00`;
   const endUtc = `${endDate}T23:59:59+07:00`;
-  // Force /api/admin/dashboard-parity: paginate submissions + filter auth users.
+
+  // 1) 오늘 포함 메트릭 (admin 이 today diff 를 더함):
   const subs = await fetchSubmissions(startUtc, endUtc);
   const deduped = dedupeSubmissions(subs.filter((r: any) => !isExcludedSubmission(r)));
   const totalAd = deduped.filter((r: any) => PAID_SOURCES.has(r.source)).length;
-  const totalCompanies = new Set(deduped.map((r: any) => r.company?.trim().toLowerCase()).filter(Boolean)).size;
   const totalSignups = await getSignupsInRange(startUtc, endUtc);
   const { count: jobApps } = await supabase
     .from("job_applications")
     .select("*", { count: "exact", head: true })
     .gte("created_at", startUtc)
     .lte("created_at", endUtc);
-  const sessions = await getGA4SessionsRange(startDate, endDate);
-  const totalResumes = await getResumeUploadsCumulative(startUtc, endUtc);
+
+  // 2) 오늘 미포함 메트릭 (admin 이 today diff 안 더함):
+  //    - sessions: GA4(4/20 ~ 어제). admin/dashboard.js:228 = ga4.totals.sessions,
+  //      그리고 ga4 호출의 to 는 dateRange.to = 어제 default.
+  //    - companies: 같은 submissions 데이터에서 어제까지 row 만 Set.
+  const yesterday = previousDay(endDate);
+  const sessions = await getGA4SessionsRange(startDate, yesterday);
+  const yesterdayEndUtc = `${yesterday}T23:59:59+07:00`;
+  const dedupedToYesterday = deduped.filter((r: any) => r.created_at <= yesterdayEndUtc);
+  const totalCompanies = new Set(
+    dedupedToYesterday.map((r: any) => r.company?.trim().toLowerCase()).filter(Boolean)
+  ).size;
+
+  // 3) 시간 무관 snapshot:
+  //    - resumeUploads: admin/dashboard.js (API) line 102-106 = user_profiles
+  //      의 resume_url 보유자 전체 (시간 필터 없음).
+  const totalResumes = await getResumeUploadsCumulative();
+
   return {
     sessions,
     totalSubs: deduped.length,
