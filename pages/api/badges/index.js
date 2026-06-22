@@ -25,7 +25,7 @@ export default async function handler(req, res) {
   }
 
   // PUT: 대표 연봉 등급 선택 — user_profiles.representative_tier 저장.
-  // 본인이 획득한 등급 이하만 허용(없는 상위 등급 사칭 방지). null이면 해제(자동=최고 등급).
+  // 본인이 획득한 등급 이하만 허용(없는 상위 등급 사칭 방지). null이면 비공개(커뮤니티 미노출).
   if (req.method === 'PUT' && 'representative_tier' in req.body) {
     const rep = req.body.representative_tier
     if (rep !== null) {
