@@ -34,11 +34,13 @@ export default async function handler(req, res) {
   if (error) return res.status(500).json({ error: error.message })
 
   // 로그인 사용자의 활동이면 오늘(베트남 기준) 출석을 기록 — 출석 streak 뱃지용.
+  // 모바일 앱은 user_id를 meta 안에 넣어 보내므로 top-level/meta 둘 다에서 찾는다.
   // 중복은 PK(user_id, day)로 무시. 실패해도 트래킹 응답은 막지 않는다.
-  if (userId) {
+  const activeUserId = userId || (meta && meta.user_id) || null
+  if (activeUserId) {
     await supabase
       .from('user_activity_days')
-      .upsert({ user_id: userId, day: vnDay() }, { onConflict: 'user_id,day', ignoreDuplicates: true })
+      .upsert({ user_id: activeUserId, day: vnDay() }, { onConflict: 'user_id,day', ignoreDuplicates: true })
   }
 
   res.json({ ok: true })
