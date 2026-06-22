@@ -89,6 +89,21 @@ function dodEmoji(current: number, previous: number): string {
   return "";
 }
 
+// 신규 가입 / 이력서 등록처럼 "오늘 갑자기 튀었는지" 가 중요한 지표는
+// 일반 ▲▽ 대신 🔥/🔥🔥 으로 한눈에 잡히게 한다.
+//   +100% 이상 → 🔥
+//   +200% 이상 → 🔥🔥
+//   0 → 양수 = NEW → 🔥🔥
+//   그 외엔 일반 dodEmoji 와 동일.
+function boostEmoji(current: number, previous: number): string {
+  if (previous === 0 && current > 0) return " 🔥🔥";
+  if (previous === 0) return "";
+  const change = (current - previous) / previous;
+  if (change >= 2.0) return " 🔥🔥";
+  if (change >= 1.0) return " 🔥";
+  return dodEmoji(current, previous);
+}
+
 function convRate(num: number, den: number): string {
   if (den === 0) return "0.0%";
   return ((num / den) * 100).toFixed(1) + "%";
@@ -252,6 +267,27 @@ async function getJobApps(dateStr: string): Promise<number> {
   return count || 0;
 }
 
+// 이력서 등록 = 하루 동안 이력서를 등록한 *사람 수* (unique user).
+// cv_register_success(/cv 페이지) + resume_upload(/profile 및 앱) 이벤트를
+// 합집합으로 보고 user_id 로 dedupe 한다. /api/track 이 likelion.net 은 이미
+// 차단하니 직원 잡티는 자동으로 제외.
+async function getResumeUploads(startUtc: string, endUtc: string): Promise<number> {
+  const { data, error } = await supabase
+    .from("events")
+    .select("user_id")
+    .in("event", ["cv_register_success", "resume_upload"])
+    .gte("created_at", startUtc)
+    .lte("created_at", endUtc)
+    .not("user_id", "is", null);
+  if (error) { console.error("Resume uploads error:", JSON.stringify(error)); return 0; }
+  const unique = new Set((data || []).map((r: any) => r.user_id));
+  return unique.size;
+}
+
+async function getResumeUploadsForDate(dateStr: string): Promise<number> {
+  return getResumeUploads(`${dateStr}T00:00:00+07:00`, `${dateStr}T23:59:59+07:00`);
+}
+
 async function getCumulative(startDate: string, endDate: string) {
   const startUtc = `${startDate}T00:00:00+07:00`;
   const endUtc = `${endDate}T23:59:59+07:00`;
@@ -276,6 +312,7 @@ async function getCumulative(startDate: string, endDate: string) {
     .lte("created_at", endUtc);
 
   const sessions = await getGA4SessionsRange(startDate, endDate);
+  const totalResumes = await getResumeUploads(startUtc, endUtc);
 
   return {
     sessions,
@@ -285,6 +322,7 @@ async function getCumulative(startDate: string, endDate: string) {
     totalSignups: signups || 0,
     totalJobApps: jobApps || 0,
     totalCompanies,
+    totalResumes,
   };
 }
 
@@ -470,6 +508,7 @@ function buildRealtimeMessage(
   stats: { total: number; ad: number; organic: number; companies: number },
   signups: number,
   jobApps: number,
+  resumes: number,
   cum: Awaited<ReturnType<typeof getCumulative>>,
   slashCommand: boolean,
 ) {
@@ -481,22 +520,22 @@ function buildRealtimeMessage(
     attachments: [{
       color: "#2ea44f",
       blocks: [
-        { type: "header", text: { type: "plain_text", text: `FYI Realtime - ${today} (${dayName}) ${timeStr} UTC+7` } },
+        { type: "header", text: { type: "plain_text", text: `FYI 실시간 — ${today} (${dayName}) ${timeStr} UTC+7` } },
         { type: "divider" },
         { type: "section", text: { type: "mrkdwn", text: [
-          `*Today so far* (${today} 00:00 ~ ${timeStr} UTC+7)`,
+          `*오늘 누적* (${today} 00:00 ~ ${timeStr} UTC+7)`,
           ``,
-          `*Main Funnel*`,
-          `Session \`${sessions}\` -> Subs \`${stats.total}\` -> Sign-up \`${signups}\` -> Apply \`${jobApps}\``,
+          `*주요 지표*`,
+          `세션 \`${sessions}\` → 연봉 제출 \`${stats.total}\` → 신규 가입 \`${signups}\` → 이력서 등록 \`${resumes}\` → 공고 지원 \`${jobApps}\``,
           ``,
-          `Subs: Ad \`${stats.ad}\` / Organic \`${stats.organic}\``,
-          `Companies: \`${stats.companies}\``,
+          `연봉 제출: 광고 \`${stats.ad}\` / 자연유입 \`${stats.organic}\``,
+          `신규 회사: \`${stats.companies}\``,
         ].join("\n") }},
         { type: "divider" },
         { type: "section", text: { type: "mrkdwn", text: [
-          `*Accumulated* (${CAMPAIGN_START} ~ ${today})`,
-          `Session \`${cum.sessions.toLocaleString()}\` -> Subs \`${cum.totalSubs}\` -> Sign-up \`${cum.totalSignups}\` (${signupRate}) -> Apply \`${cum.totalJobApps}\``,
-          `Companies: \`${cum.totalCompanies}\``,
+          `*캠페인 누적* (${CAMPAIGN_START} ~ ${today})`,
+          `세션 \`${cum.sessions.toLocaleString()}\` → 연봉 제출 \`${cum.totalSubs}\` → 신규 가입 \`${cum.totalSignups}\` (${signupRate}) → 이력서 등록 \`${cum.totalResumes}\` → 공고 지원 \`${cum.totalJobApps}\``,
+          `신규 회사: \`${cum.totalCompanies}\``,
         ].join("\n") }},
       ],
     }],
@@ -512,6 +551,8 @@ function buildDailyMessage(
   signups: number,
   prevSignups: number,
   jobApps: number,
+  resumes: number,
+  prevResumes: number,
   cum: Awaited<ReturnType<typeof getCumulative>>,
   alerts: string[],
 ) {
@@ -527,27 +568,28 @@ function buildDailyMessage(
     attachments: [{
       color: trendColor,
       blocks: [
-        { type: "header", text: { type: "plain_text", text: `FYI Daily Report - ${targetDate} (${dayName})` } },
-        { type: "context", elements: [{ type: "mrkdwn", text: `Data period: ${targetDate} 00:00 ~ 23:59 (UTC+7)` }] },
+        { type: "header", text: { type: "plain_text", text: `FYI 일일 리포트 — ${targetDate} (${dayName})` } },
+        { type: "context", elements: [{ type: "mrkdwn", text: `데이터 기간: ${targetDate} 00:00 ~ 23:59 (UTC+7)` }] },
         { type: "divider" },
         { type: "section", text: { type: "mrkdwn", text: [
-          `*Main Funnel (DoD)*`,
-          `*Session*  \`${sessions}\`  ${pctChange(sessions, prevSessions)}${dodEmoji(sessions, prevSessions)}`,
-          ` -> ${convRate(stats.total, sessions)}`,
-          `*Subs*  \`${stats.total}\`  ${pctChange(stats.total, prevStats.total)}${dodEmoji(stats.total, prevStats.total)}`,
-          `    Ad \`${stats.ad}\` / Organic \`${stats.organic}\``,
-          ` -> ${convRate(signups, stats.total)}`,
-          `*Sign-up*  \`${signups}\`  ${pctChange(signups, prevSignups)}${dodEmoji(signups, prevSignups)}`,
-          ` -> ${convRate(jobApps, signups)}`,
-          `*Apply*  \`${jobApps}\``,
+          `*주요 지표 (전일 대비)*`,
+          `*세션*  \`${sessions}\`  ${pctChange(sessions, prevSessions)}${dodEmoji(sessions, prevSessions)}`,
+          ` → ${convRate(stats.total, sessions)}`,
+          `*연봉 제출*  \`${stats.total}\`  ${pctChange(stats.total, prevStats.total)}${dodEmoji(stats.total, prevStats.total)}`,
+          `    광고 \`${stats.ad}\` / 자연유입 \`${stats.organic}\``,
+          ` → ${convRate(signups, stats.total)}`,
+          `*신규 가입*  \`${signups}\`  ${pctChange(signups, prevSignups)}${boostEmoji(signups, prevSignups)}`,
+          `*이력서 등록*  \`${resumes}\`  ${pctChange(resumes, prevResumes)}${boostEmoji(resumes, prevResumes)}`,
+          ` → ${convRate(jobApps, signups)}`,
+          `*공고 지원*  \`${jobApps}\``,
           ``,
-          `Companies: \`${stats.companies}\``,
+          `신규 회사: \`${stats.companies}\``,
         ].join("\n") }},
         { type: "divider" },
         { type: "section", text: { type: "mrkdwn", text: [
-          `*Accumulated* (${CAMPAIGN_START} ~ ${targetDate})`,
-          `Session \`${cum.sessions.toLocaleString()}\` -> Subs \`${cum.totalSubs}\` -> Sign-up \`${cum.totalSignups}\` (${signupRate}) -> Apply \`${cum.totalJobApps}\``,
-          `Companies: \`${cum.totalCompanies}\``,
+          `*캠페인 누적* (${CAMPAIGN_START} ~ ${targetDate})`,
+          `세션 \`${cum.sessions.toLocaleString()}\` → 연봉 제출 \`${cum.totalSubs}\` → 신규 가입 \`${cum.totalSignups}\` (${signupRate}) → 이력서 등록 \`${cum.totalResumes}\` → 공고 지원 \`${cum.totalJobApps}\``,
+          `신규 회사: \`${cum.totalCompanies}\``,
         ].join("\n") }},
         ...alertBlock,
       ],
@@ -567,21 +609,22 @@ function buildWeeklyMessage(
     attachments: [{
       color: trendColor,
       blocks: [
-        { type: "header", text: { type: "plain_text", text: `FYI Weekly Report - ${weekLabel}` } },
+        { type: "header", text: { type: "plain_text", text: `FYI 주간 리포트 — ${weekLabel}` } },
         { type: "divider" },
         { type: "section", text: { type: "mrkdwn", text: [
-          `*Main Funnel (WoW)*`,
-          `*Session*  \`${thisWeek.sessions.toLocaleString()}\`  ${pctChange(thisWeek.sessions, lastWeek.sessions)}`,
-          ` -> ${convRate(thisWeek.totalSubs, thisWeek.sessions)}`,
-          `*Subs*  \`${thisWeek.totalSubs}\`  ${pctChange(thisWeek.totalSubs, lastWeek.totalSubs)}`,
-          `    Ad \`${thisWeek.totalAd}\` / Organic \`${thisWeek.totalOrganic}\``,
-          ` -> ${convRate(thisWeek.totalSignups, thisWeek.totalSubs)}`,
-          `*Sign-up*  \`${thisWeek.totalSignups}\`  ${pctChange(thisWeek.totalSignups, lastWeek.totalSignups)}`,
-          ` -> ${convRate(thisWeek.totalJobApps, thisWeek.totalSignups)}`,
-          `*Apply*  \`${thisWeek.totalJobApps}\`  ${pctChange(thisWeek.totalJobApps, lastWeek.totalJobApps)}`,
+          `*주요 지표 (전주 대비)*`,
+          `*세션*  \`${thisWeek.sessions.toLocaleString()}\`  ${pctChange(thisWeek.sessions, lastWeek.sessions)}`,
+          ` → ${convRate(thisWeek.totalSubs, thisWeek.sessions)}`,
+          `*연봉 제출*  \`${thisWeek.totalSubs}\`  ${pctChange(thisWeek.totalSubs, lastWeek.totalSubs)}`,
+          `    광고 \`${thisWeek.totalAd}\` / 자연유입 \`${thisWeek.totalOrganic}\``,
+          ` → ${convRate(thisWeek.totalSignups, thisWeek.totalSubs)}`,
+          `*신규 가입*  \`${thisWeek.totalSignups}\`  ${pctChange(thisWeek.totalSignups, lastWeek.totalSignups)}${boostEmoji(thisWeek.totalSignups, lastWeek.totalSignups)}`,
+          `*이력서 등록*  \`${thisWeek.totalResumes}\`  ${pctChange(thisWeek.totalResumes, lastWeek.totalResumes)}${boostEmoji(thisWeek.totalResumes, lastWeek.totalResumes)}`,
+          ` → ${convRate(thisWeek.totalJobApps, thisWeek.totalSignups)}`,
+          `*공고 지원*  \`${thisWeek.totalJobApps}\`  ${pctChange(thisWeek.totalJobApps, lastWeek.totalJobApps)}`,
           ``,
-          `Sign-up Rate: ${signupRate}`,
-          `Companies: \`${thisWeek.totalCompanies}\``,
+          `가입률: ${signupRate}`,
+          `신규 회사: \`${thisWeek.totalCompanies}\``,
         ].join("\n") }},
       ],
     }],
@@ -744,15 +787,16 @@ Deno.serve(async (req) => {
       const today = getVietnamDate(0);
       const timeStr = getVietnamTime();
 
-      const [sessions, stats, signups, jobApps] = await Promise.all([
+      const [sessions, stats, signups, jobApps, resumes] = await Promise.all([
         getGA4TodaySessions(),
         getSubmissions(today),
         getSignups(today),
         getJobApps(today),
+        getResumeUploadsForDate(today),
       ]);
       const cum = await getCumulative(CAMPAIGN_START, today);
 
-      const message = buildRealtimeMessage(today, timeStr, sessions, stats, signups, jobApps, cum, slashCommand);
+      const message = buildRealtimeMessage(today, timeStr, sessions, stats, signups, jobApps, resumes, cum, slashCommand);
 
       if (slashCommand) {
         return new Response(JSON.stringify(message), { headers: { "Content-Type": "application/json" } });
@@ -765,7 +809,7 @@ Deno.serve(async (req) => {
       const yesterday = getVietnamDate(1);
       const dayBefore = getVietnamDate(2);
 
-      const [sessions, prevSessions, stats, prevStats, signups, prevSignups, jobApps] = await Promise.all([
+      const [sessions, prevSessions, stats, prevStats, signups, prevSignups, jobApps, resumes, prevResumes] = await Promise.all([
         getGA4Sessions(yesterday),
         getGA4Sessions(dayBefore),
         getSubmissions(yesterday),
@@ -773,12 +817,14 @@ Deno.serve(async (req) => {
         getSignups(yesterday),
         getSignups(dayBefore),
         getJobApps(yesterday),
+        getResumeUploadsForDate(yesterday),
+        getResumeUploadsForDate(dayBefore),
       ]);
 
       const cum = await getCumulative(CAMPAIGN_START, yesterday);
       const alerts = await detectAlerts(stats.total);
 
-      const message = buildDailyMessage(yesterday, sessions, prevSessions, stats, prevStats, signups, prevSignups, jobApps, cum, alerts);
+      const message = buildDailyMessage(yesterday, sessions, prevSessions, stats, prevStats, signups, prevSignups, jobApps, resumes, prevResumes, cum, alerts);
 
       // 앱 리포트 카드 덧붙임 — 실패해도 웹 리포트는 그대로 발송.
       try {
