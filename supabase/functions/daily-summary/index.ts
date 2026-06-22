@@ -395,8 +395,13 @@ async function getCumulative(startDate: string, endDate: string) {
   //    - companies: 같은 submissions 데이터에서 어제까지 row 만 Set.
   const yesterday = previousDay(endDate);
   const sessions = await getGA4SessionsRange(startDate, yesterday);
-  const yesterdayEndUtc = `${yesterday}T23:59:59+07:00`;
-  const dedupedToYesterday = deduped.filter((r: any) => r.created_at <= yesterdayEndUtc);
+  // admin/dashboard.js:26-27 의 endISO 와 동일 — KST 자정 직전을 UTC ms 로
+  // 환산해서 비교. 문자열 비교(예: "...Z" vs "...+07:00") 는 timezone
+  // prefix 가 어긋나 KST 새벽 시간대가 잘못 포함되므로 반드시 Date 객체로.
+  const yesterdayCutoffMs = new Date(`${yesterday}T23:59:59+07:00`).getTime();
+  const dedupedToYesterday = deduped.filter(
+    (r: any) => new Date(r.created_at).getTime() <= yesterdayCutoffMs
+  );
   const totalCompanies = new Set(
     dedupedToYesterday.map((r: any) => r.company?.trim().toLowerCase()).filter(Boolean)
   ).size;
@@ -627,7 +632,7 @@ function buildRealtimeMessage(
         { type: "section", text: { type: "mrkdwn", text: [
           `*전체 기간 누적 (All-time)* — ${CAMPAIGN_START} ~ ${today}`,
           `세션 (Sessions) \`${cum.sessions.toLocaleString()}\` → 연봉 제출 (Submissions) \`${cum.totalSubs}\` → 신규 가입 (Sign-ups) \`${cum.totalSignups}\` (${signupRate}) → 이력서 등록 (Resume uploads) \`${cum.totalResumes}\` → 공고 지원 (Job apps) \`${cum.totalJobApps}\``,
-          `신규 회사 (Companies): \`${cum.totalCompanies}\``,
+          `누적 회사 (Companies): \`${cum.totalCompanies}\``,
         ].join("\n") }},
       ],
     }],
@@ -681,7 +686,7 @@ function buildDailyMessage(
         { type: "section", text: { type: "mrkdwn", text: [
           `*전체 기간 누적 (All-time)* — ${CAMPAIGN_START} ~ ${targetDate}`,
           `세션 (Sessions) \`${cum.sessions.toLocaleString()}\` → 연봉 제출 (Submissions) \`${cum.totalSubs}\` → 신규 가입 (Sign-ups) \`${cum.totalSignups}\` (${signupRate}) → 이력서 등록 (Resume uploads) \`${cum.totalResumes}\` → 공고 지원 (Job apps) \`${cum.totalJobApps}\``,
-          `신규 회사 (Companies): \`${cum.totalCompanies}\``,
+          `누적 회사 (Companies): \`${cum.totalCompanies}\``,
         ].join("\n") }},
         ...alertBlock,
       ],
@@ -716,7 +721,7 @@ function buildWeeklyMessage(
           `*공고 지원 (Job apps)*  \`${thisWeek.totalJobApps}\`  ${pctChange(thisWeek.totalJobApps, lastWeek.totalJobApps)}`,
           ``,
           `가입률 (Sign-up rate): ${signupRate}`,
-          `신규 회사 (Companies): \`${thisWeek.totalCompanies}\``,
+          `회사 (Companies): \`${thisWeek.totalCompanies}\``,
         ].join("\n") }},
       ],
     }],
