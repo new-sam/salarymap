@@ -896,7 +896,7 @@ async function buildRealtimePayload(slashCommand: boolean) {
     getSubmissions(today),
     getSignups(today),
     getJobApps(today),
-    getResumeUploadsForDate(today),
+    getResumeUploadsForDateProfileBased(today),
   ]);
   const cum = await getCumulative(CAMPAIGN_START, today);
   return buildRealtimeMessage(today, timeStr, sessions, stats, signups, jobApps, resumes, cum, slashCommand);
