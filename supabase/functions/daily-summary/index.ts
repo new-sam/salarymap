@@ -579,7 +579,7 @@ async function detectAlerts(todayTotal: number): Promise<string[]> {
       if (recent[i] >= recent[i + 1]) { declining = false; break; }
     }
     if (declining) {
-      alerts.push(`:chart_with_downwards_trend: Submissions ${recent.length}일 연속 하락 중 (${[...recent].reverse().join(" -> ")})`);
+      alerts.push(`:chart_with_downwards_trend: 연봉 제출 (Submissions) ${recent.length}일 연속 하락 중 / ${recent.length}-day decline (${[...recent].reverse().join(" -> ")})`);
     }
   }
   return alerts;
@@ -605,22 +605,22 @@ function buildRealtimeMessage(
     attachments: [{
       color: "#2ea44f",
       blocks: [
-        { type: "header", text: { type: "plain_text", text: `FYI 실시간 — ${today} (${dayName}) ${timeStr} UTC+7` } },
+        { type: "header", text: { type: "plain_text", text: `FYI 실시간 / Live — ${today} (${dayName}) ${timeStr} UTC+7` } },
         { type: "divider" },
         { type: "section", text: { type: "mrkdwn", text: [
-          `*오늘 누적* (${today} 00:00 ~ ${timeStr} UTC+7)`,
+          `*오늘 누적 (Today)* — ${today} 00:00 ~ ${timeStr} UTC+7`,
           ``,
-          `*주요 지표*`,
-          `세션 \`${sessions}\` → 연봉 제출 \`${stats.total}\` → 신규 가입 \`${signups}\` → 이력서 등록 \`${resumes}\` → 공고 지원 \`${jobApps}\``,
+          `*주요 지표 (Key metrics)*`,
+          `세션 (Sessions) \`${sessions}\` → 연봉 제출 (Submissions) \`${stats.total}\` → 신규 가입 (Sign-ups) \`${signups}\` → 이력서 등록 (Resume uploads) \`${resumes}\` → 공고 지원 (Job apps) \`${jobApps}\``,
           ``,
-          `연봉 제출: 광고 \`${stats.ad}\` / 자연유입 \`${stats.organic}\``,
-          `신규 회사: \`${stats.companies}\``,
+          `연봉 제출 (Submissions): 광고 (Paid) \`${stats.ad}\` / 자연유입 (Organic) \`${stats.organic}\``,
+          `신규 회사 (Companies): \`${stats.companies}\``,
         ].join("\n") }},
         { type: "divider" },
         { type: "section", text: { type: "mrkdwn", text: [
-          `*전체 기간 누적* (${CAMPAIGN_START} ~ ${today})`,
-          `세션 \`${cum.sessions.toLocaleString()}\` → 연봉 제출 \`${cum.totalSubs}\` → 신규 가입 \`${cum.totalSignups}\` (${signupRate}) → 이력서 등록 \`${cum.totalResumes}\` → 공고 지원 \`${cum.totalJobApps}\``,
-          `신규 회사: \`${cum.totalCompanies}\``,
+          `*전체 기간 누적 (All-time)* — ${CAMPAIGN_START} ~ ${today}`,
+          `세션 (Sessions) \`${cum.sessions.toLocaleString()}\` → 연봉 제출 (Submissions) \`${cum.totalSubs}\` → 신규 가입 (Sign-ups) \`${cum.totalSignups}\` (${signupRate}) → 이력서 등록 (Resume uploads) \`${cum.totalResumes}\` → 공고 지원 (Job apps) \`${cum.totalJobApps}\``,
+          `신규 회사 (Companies): \`${cum.totalCompanies}\``,
         ].join("\n") }},
       ],
     }],
@@ -653,28 +653,28 @@ function buildDailyMessage(
     attachments: [{
       color: trendColor,
       blocks: [
-        { type: "header", text: { type: "plain_text", text: `FYI 일일 리포트 — ${targetDate} (${dayName})` } },
-        { type: "context", elements: [{ type: "mrkdwn", text: `데이터 기간: ${targetDate} 00:00 ~ 23:59 (UTC+7)` }] },
+        { type: "header", text: { type: "plain_text", text: `FYI 일일 리포트 / Daily — ${targetDate} (${dayName})` } },
+        { type: "context", elements: [{ type: "mrkdwn", text: `데이터 기간 (Data range): ${targetDate} 00:00 ~ 23:59 (UTC+7)` }] },
         { type: "divider" },
         { type: "section", text: { type: "mrkdwn", text: [
-          `*주요 지표 (전일 대비)*`,
-          `*세션*  \`${sessions}\`  ${pctChange(sessions, prevSessions)}${dodEmoji(sessions, prevSessions)}`,
+          `*주요 지표 / Key metrics (전일 대비 · DoD)*`,
+          `*세션 (Sessions)*  \`${sessions}\`  ${pctChange(sessions, prevSessions)}${dodEmoji(sessions, prevSessions)}`,
           ` → ${convRate(stats.total, sessions)}`,
-          `*연봉 제출*  \`${stats.total}\`  ${pctChange(stats.total, prevStats.total)}${dodEmoji(stats.total, prevStats.total)}`,
-          `    광고 \`${stats.ad}\` / 자연유입 \`${stats.organic}\``,
+          `*연봉 제출 (Submissions)*  \`${stats.total}\`  ${pctChange(stats.total, prevStats.total)}${dodEmoji(stats.total, prevStats.total)}`,
+          `    광고 (Paid) \`${stats.ad}\` / 자연유입 (Organic) \`${stats.organic}\``,
           ` → ${convRate(signups, stats.total)}`,
-          `*신규 가입*  \`${signups}\`  ${pctChange(signups, prevSignups)}${boostEmoji(signups, prevSignups)}`,
-          `*이력서 등록*  \`${resumes}\`  ${pctChange(resumes, prevResumes)}${boostEmoji(resumes, prevResumes)}`,
+          `*신규 가입 (Sign-ups)*  \`${signups}\`  ${pctChange(signups, prevSignups)}${boostEmoji(signups, prevSignups)}`,
+          `*이력서 등록 (Resume uploads)*  \`${resumes}\`  ${pctChange(resumes, prevResumes)}${boostEmoji(resumes, prevResumes)}`,
           ` → ${convRate(jobApps, signups)}`,
-          `*공고 지원*  \`${jobApps}\``,
+          `*공고 지원 (Job apps)*  \`${jobApps}\``,
           ``,
-          `신규 회사: \`${stats.companies}\``,
+          `신규 회사 (Companies): \`${stats.companies}\``,
         ].join("\n") }},
         { type: "divider" },
         { type: "section", text: { type: "mrkdwn", text: [
-          `*전체 기간 누적* (${CAMPAIGN_START} ~ ${targetDate})`,
-          `세션 \`${cum.sessions.toLocaleString()}\` → 연봉 제출 \`${cum.totalSubs}\` → 신규 가입 \`${cum.totalSignups}\` (${signupRate}) → 이력서 등록 \`${cum.totalResumes}\` → 공고 지원 \`${cum.totalJobApps}\``,
-          `신규 회사: \`${cum.totalCompanies}\``,
+          `*전체 기간 누적 (All-time)* — ${CAMPAIGN_START} ~ ${targetDate}`,
+          `세션 (Sessions) \`${cum.sessions.toLocaleString()}\` → 연봉 제출 (Submissions) \`${cum.totalSubs}\` → 신규 가입 (Sign-ups) \`${cum.totalSignups}\` (${signupRate}) → 이력서 등록 (Resume uploads) \`${cum.totalResumes}\` → 공고 지원 (Job apps) \`${cum.totalJobApps}\``,
+          `신규 회사 (Companies): \`${cum.totalCompanies}\``,
         ].join("\n") }},
         ...alertBlock,
       ],
@@ -694,22 +694,22 @@ function buildWeeklyMessage(
     attachments: [{
       color: trendColor,
       blocks: [
-        { type: "header", text: { type: "plain_text", text: `FYI 주간 리포트 — ${weekLabel}` } },
+        { type: "header", text: { type: "plain_text", text: `FYI 주간 리포트 / Weekly — ${weekLabel}` } },
         { type: "divider" },
         { type: "section", text: { type: "mrkdwn", text: [
-          `*주요 지표 (전주 대비)*`,
-          `*세션*  \`${thisWeek.sessions.toLocaleString()}\`  ${pctChange(thisWeek.sessions, lastWeek.sessions)}`,
+          `*주요 지표 / Key metrics (전주 대비 · WoW)*`,
+          `*세션 (Sessions)*  \`${thisWeek.sessions.toLocaleString()}\`  ${pctChange(thisWeek.sessions, lastWeek.sessions)}`,
           ` → ${convRate(thisWeek.totalSubs, thisWeek.sessions)}`,
-          `*연봉 제출*  \`${thisWeek.totalSubs}\`  ${pctChange(thisWeek.totalSubs, lastWeek.totalSubs)}`,
-          `    광고 \`${thisWeek.totalAd}\` / 자연유입 \`${thisWeek.totalOrganic}\``,
+          `*연봉 제출 (Submissions)*  \`${thisWeek.totalSubs}\`  ${pctChange(thisWeek.totalSubs, lastWeek.totalSubs)}`,
+          `    광고 (Paid) \`${thisWeek.totalAd}\` / 자연유입 (Organic) \`${thisWeek.totalOrganic}\``,
           ` → ${convRate(thisWeek.totalSignups, thisWeek.totalSubs)}`,
-          `*신규 가입*  \`${thisWeek.totalSignups}\`  ${pctChange(thisWeek.totalSignups, lastWeek.totalSignups)}${boostEmoji(thisWeek.totalSignups, lastWeek.totalSignups)}`,
-          `*이력서 등록*  \`${thisWeek.totalResumes}\`  ${pctChange(thisWeek.totalResumes, lastWeek.totalResumes)}${boostEmoji(thisWeek.totalResumes, lastWeek.totalResumes)}`,
+          `*신규 가입 (Sign-ups)*  \`${thisWeek.totalSignups}\`  ${pctChange(thisWeek.totalSignups, lastWeek.totalSignups)}${boostEmoji(thisWeek.totalSignups, lastWeek.totalSignups)}`,
+          `*이력서 등록 (Resume uploads)*  \`${thisWeek.totalResumes}\`  ${pctChange(thisWeek.totalResumes, lastWeek.totalResumes)}${boostEmoji(thisWeek.totalResumes, lastWeek.totalResumes)}`,
           ` → ${convRate(thisWeek.totalJobApps, thisWeek.totalSignups)}`,
-          `*공고 지원*  \`${thisWeek.totalJobApps}\`  ${pctChange(thisWeek.totalJobApps, lastWeek.totalJobApps)}`,
+          `*공고 지원 (Job apps)*  \`${thisWeek.totalJobApps}\`  ${pctChange(thisWeek.totalJobApps, lastWeek.totalJobApps)}`,
           ``,
-          `가입률: ${signupRate}`,
-          `신규 회사: \`${thisWeek.totalCompanies}\``,
+          `가입률 (Sign-up rate): ${signupRate}`,
+          `신규 회사 (Companies): \`${thisWeek.totalCompanies}\``,
         ].join("\n") }},
       ],
     }],
@@ -832,7 +832,7 @@ function buildHealthAlertMessage(result: { ok: boolean; status: number; latency:
           `Reason: \`${reason}\``,
           `Latency: \`${result.latency}ms\``,
           ``,
-          `<!channel> 서버 확인이 필요합니다!`,
+          `<!channel> 서버 확인이 필요합니다! / Server check needed!`,
         ].join("\n") } },
       ],
     }],
@@ -912,7 +912,7 @@ Deno.serve(async (req) => {
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({
                 response_type: "ephemeral",
-                text: `:warning: 리포트 생성 중 오류: ${(e as Error).message}`,
+                text: `:warning: 리포트 생성 중 오류 / Report error: ${(e as Error).message}`,
               }),
             });
           }
@@ -926,7 +926,7 @@ Deno.serve(async (req) => {
         // 3초 안에 응답 — Slack 에 보이는 "처리 중..." 카드.
         return new Response(JSON.stringify({
           response_type: "ephemeral",
-          text: ":hourglass_flowing_sand: FYI 리포트 가져오는 중...",
+          text: ":hourglass_flowing_sand: FYI 리포트 가져오는 중... / Fetching report...",
         }), { headers: { "Content-Type": "application/json" } });
       }
 
