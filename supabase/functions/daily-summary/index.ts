@@ -284,9 +284,16 @@ async function listAllAuthUsers(): Promise<any[]> {
 }
 
 async function getSignupsInRange(startUtc: string, endUtc: string): Promise<number> {
+  // ADMIN PARITY — admin/realtime.js:23 가 비교 기준을 `new Date(...).toISOString()`
+  // 로 정규화한다 (= "...Z"). 호출 측이 "...+07:00" 문자열을 그대로 넘기면
+  // u.created_at ("...Z") 와 prefix 가 어긋나서 KST 00:00~07:00 가입자가
+  // 모조리 누락된다 (UTC 일자 prefix 가 어제로 잡혀 string 비교에서 빠짐).
+  // 들어온 시간을 무조건 ISO-UTC 로 다시 직렬화.
+  const startISO = new Date(startUtc).toISOString();
+  const endISO = new Date(endUtc).toISOString();
   try {
     const all = await listAllAuthUsers();
-    return all.filter((u: any) => u.created_at >= startUtc && u.created_at <= endUtc && !isExcludedSignup(u)).length;
+    return all.filter((u: any) => u.created_at >= startISO && u.created_at <= endISO && !isExcludedSignup(u)).length;
   } catch (e) {
     console.error("Sign-ups listUsers error:", (e as Error).message);
     return 0;
