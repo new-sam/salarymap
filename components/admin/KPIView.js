@@ -168,6 +168,7 @@ export default function KPIView({ token }) {
                 <th style={thP}>활성</th>
                 <th style={thP}>작성자</th>
                 <th style={thP}>글/댓글</th>
+                <th style={th}>리텐션<br/>W→W+1</th>
                 <th style={th}>팔로우</th>
                 <th style={th}>인증재직</th>
                 <th style={th}>이력서등록</th>
@@ -179,7 +180,7 @@ export default function KPIView({ token }) {
                 const t = TARGETS[r.w]
                 const x = r.act
                 const b = x.byPlatform[plat]
-                if (r.isFuture) return <tr key={r.w} style={{ opacity: 0.45 }}>{wLabel(r)}<td style={td} colSpan={9}>—</td></tr>
+                if (r.isFuture) return <tr key={r.w} style={{ opacity: 0.45 }}>{wLabel(r)}<td style={td} colSpan={10}>—</td></tr>
                 return (
                   <tr key={r.w} style={{ background: rowBg(r.w) }}>
                     {wLabel(r)}
@@ -188,6 +189,12 @@ export default function KPIView({ token }) {
                     <Cell actual={b.activeUsers} display={b.activeUsers} />
                     <Cell actual={b.writers} display={b.writers} />
                     <Cell actual={b.posts} display={`${b.posts}/${b.comments}`} />
+                    <td style={td}>
+                      <div style={{ fontWeight: 700, color: x.retention == null ? '#9ca3af' : '#111827' }}>
+                        {x.retention == null ? '·' : pct(x.retention)}{x.retentionPartial ? '*' : ''}
+                      </div>
+                      {x.retentionCohort > 0 && <div style={{ color: '#6b7280', fontSize: 11, marginTop: 1, fontWeight: 600 }}>n={x.retentionCohort}</div>}
+                    </td>
                     <Cell actual={x.follows} display={x.follows} />
                     <Cell actual={x.verifiedWorkers} display={x.verifiedWorkers} />
                     <Cell actual={x.resumeRate} display={pct(x.resumeRate)} />
@@ -200,7 +207,8 @@ export default function KPIView({ token }) {
         </div>
         <p style={{ ...sub, marginTop: 14, marginBottom: 0 }}>
           <span style={{ color: '#ff6000', fontWeight: 700 }}>주황 열</span>(작성자비율·활성·작성자·글댓글)만 App/Web 토글 적용 · 나머지(치환율·팔로우·인증재직·이력서·공개ON)는 플랫폼 컬럼이 없어 항상 합산 ·
-          ⭐작성자비율 = 그 주 활성(로그인) 유저 중 글·댓글 쓴 % · ⭐치환율차이 = 작성자 이력서등록률 ÷ 비작성자 등록률(배수, 주말 누적) · 시드봇/내부계정 제외
+          ⭐작성자비율 = 그 주 활성(로그인) 유저 중 글·댓글 쓴 % · ⭐치환율차이 = 작성자 이력서등록률 ÷ 비작성자 등록률(배수, 주말 누적) ·
+          리텐션 = 그 주 가입 유저(n) 중 다음 주에도 활성(이벤트 1건+)인 비율(합산, *=다음주 진행중 부분집계) · 시드봇/내부계정 제외
         </p>
       </div>
     </div>

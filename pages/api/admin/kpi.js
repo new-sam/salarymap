@@ -140,6 +140,8 @@ export default async function handler(req, res) {
     const inRange = (i) => i >= 0 && i < WEEKS
 
     const signups = mk()
+    // 가입주 코호트(리텐션 분모) — auth.users 가입일 기준, 합산(가입엔 플랫폼 없음).
+    const cohortSet = mkSet()
     // 활성(로그인) 유저 — 플랫폼별 + 합산
     const activeApp = mkSet(), activeWeb = mkSet(), activeAll = mkSet()
     // 앱 작성자(앱 create 이벤트 발사자) + 앱 작성이벤트 카운트 — 분리 귀속용
@@ -153,7 +155,7 @@ export default async function handler(req, res) {
 
     for (const u of authUsers) {
       const i = idxOf(u.day)
-      if (inRange(i)) signups[i]++
+      if (inRange(i)) { signups[i]++; cohortSet[i].add(u.id) }
     }
     for (const r of events) {
       const uid = r.user_id
@@ -256,6 +258,17 @@ export default async function handler(req, res) {
         if (wrote) { pTot++; if (pr?.hasResume) pRes++ }
         else { nTot++; if (pr?.hasResume) nRes++ }
       }
+      // 주간 리텐션 — 가입주(i) 코호트가 다음주(i+1)에도 활성(이벤트 1건+)인 비율. 합산 기준.
+      //  · 다음주가 시작된 코호트만 산출. i+1==curIdx면 다음주 진행중 → partial(부분집계).
+      const cohortSize = cohortSet[i].size
+      let retention = null, retentionPartial = false
+      if (i + 1 < WEEKS && i + 1 <= curIdx && cohortSize > 0) {
+        let retained = 0
+        for (const uid of cohortSet[i]) if (activeAll[i + 1].has(uid)) retained++
+        retention = rate(retained, cohortSize)
+        retentionPartial = i + 1 === curIdx
+      }
+
       const convParticipant = rate(pRes, pTot)
       const convNon = rate(nRes, nTot)
       const act = {
@@ -267,6 +280,9 @@ export default async function handler(req, res) {
         verifiedWorkers: verified,
         resumeRate: rate(resHolders, popTot),
         publicToggleRate: rate(pubHolders, resHolders),
+        retention,
+        retentionCohort: cohortSize,
+        retentionPartial,
       }
 
       return { w: i + 1, start, end, isFuture, acq, act }
