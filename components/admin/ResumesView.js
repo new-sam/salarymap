@@ -1,33 +1,29 @@
 import { useState } from 'react'
 import { useAdmin } from '../../lib/adminSwr'
 
-// 유입 출처 배지. resume_source(cv/profile/jobs/app)가 있으면 그걸로, 없으면
-// 구버전 데이터의 resume_platform(app/web)로 폴백. NULL은 '미상'.
-function SourceBadge({ source, platform }) {
-  const sourceMap = {
-    cv:      { label: 'CV 광고',   bg: '#FFEDD5', color: '#C2410C' },
-    profile: { label: '프로필',    bg: '#DBEAFE', color: '#1D4ED8' },
-    jobs:    { label: '채용 지원', bg: '#FCE7F3', color: '#BE185D' },
-    app:     { label: '앱',        bg: '#EEF2FF', color: '#4F46E5' },
-  }
-  if (source && sourceMap[source]) {
-    const s = sourceMap[source]
-    return <span style={{ padding: '2px 8px', borderRadius: 12, fontSize: 11, fontWeight: 600, background: s.bg, color: s.color }}>{s.label}</span>
-  }
-  // Legacy rows: source 미기록 → platform 기준 거친 분류.
-  const platformMap = {
-    app: { label: '앱',        bg: '#EEF2FF', color: '#4F46E5' },
-    web: { label: '웹 (이전)', bg: '#F0FDF4', color: '#15803D' },
-  }
-  const p = platformMap[platform]
-  if (!p) return <span style={{ color: '#ccc', fontSize: 11 }}>미상</span>
-  return <span style={{ padding: '2px 8px', borderRadius: 12, fontSize: 11, fontWeight: 600, background: p.bg, color: p.color }}>{p.label}</span>
+// 유입 출처 배지. resume_source(cv/profile/jobs/app)가 있으면 그걸로,
+// 없으면 platform 기준으로 추정해서 채운다 — 옛 행도 어디서 등록된 건지
+// 추정해서 표시한다 ("웹 (이전)" 처럼 모호한 라벨을 쓰지 않는다).
+const SOURCE_MAP = {
+  cv:      { label: 'CV 페이지',  bg: '#FFEDD5', color: '#C2410C' },
+  profile: { label: '프로필',     bg: '#DBEAFE', color: '#1D4ED8' },
+  jobs:    { label: '채용 지원',  bg: '#FCE7F3', color: '#BE185D' },
+  app:     { label: '앱',         bg: '#EEF2FF', color: '#4F46E5' },
 }
 
+function SourceBadge({ source, platform }) {
+  const key = resolveSource({ resume_source: source, resume_platform: platform })
+  const s = SOURCE_MAP[key]
+  if (!s) return <span style={{ color: '#ccc', fontSize: 11 }}>미상</span>
+  return <span style={{ padding: '2px 8px', borderRadius: 12, fontSize: 11, fontWeight: 600, background: s.bg, color: s.color }}>{s.label}</span>
+}
+
+// resume_source 가 명시되어 있으면 그대로, 없으면 platform 으로 추정.
+// 옛 행은 app=앱, web/null=profile(가장 흔한 직접 등록 경로) 로 본다.
 function resolveSource(r) {
   if (r.resume_source) return r.resume_source
   if (r.resume_platform === 'app') return 'app'
-  if (r.resume_platform === 'web') return 'web_legacy'
+  if (r.resume_url) return 'profile' // legacy fallback: 직접 등록이 기본 경로
   return null
 }
 
@@ -179,13 +175,12 @@ export default function ResumesView({ token, t }) {
           </div>
           <div style={{ display: 'flex', gap: 0, background: '#f3f4f6', borderRadius: 8, padding: 2, flexWrap: 'wrap' }}>
             {[
-              { key: 'all',        label: '전체' },
-              { key: 'cv',         label: 'CV 광고' },
-              { key: 'profile',    label: '프로필' },
-              { key: 'jobs',       label: '채용 지원' },
-              { key: 'app',        label: '앱' },
-              { key: 'web_legacy', label: '웹 (이전)' },
-              { key: 'unknown',    label: '미상' },
+              { key: 'all',     label: '전체' },
+              { key: 'cv',      label: 'CV 페이지' },
+              { key: 'profile', label: '프로필' },
+              { key: 'jobs',    label: '채용 지원' },
+              { key: 'app',     label: '앱' },
+              { key: 'unknown', label: '미상' },
             ].map(f => {
               const count = f.key === 'all' ? resumes.length
                 : f.key === 'unknown' ? resumes.filter(r => resolveSource(r) === null).length
