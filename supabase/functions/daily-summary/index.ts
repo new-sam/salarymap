@@ -308,23 +308,39 @@ async function getJobApps(dateStr: string): Promise<number> {
   return count || 0;
 }
 
-// 이력서 등록 = 기간 내 user_profiles 가 갱신됐고 resume_url 이 채워진
-// 사용자 수. /admin/dashboard 의 resumeUploads 와 동일한 정의 — 같은
-// 사용자가 여러 번 올려도 한 명으로 친다(events 기반 카운트와의 정의
-// 충돌이 어제 봇 vs 대시보드 숫자 불일치의 원인이었음).
-async function getResumeUploads(startUtc: string, endUtc: string): Promise<number> {
+// 이력서 등록 — admin 의 두 화면이 정의를 다르게 쓴다. 슬랙봇도 그에
+// 맞춰 분리한다.
+//
+// 누적 (전체 기간) = /admin/dashboard 의 resumeUploads 와 동일 ⇒
+//   user_profiles 의 resume_url 보유 사용자 수 (사람 기준, dedupe).
+// 오늘 = /api/admin/realtime 의 resumeUploads 와 동일 ⇒
+//   events.cv_register_success + resume_upload 의 raw count.
+//
+// 정의가 한쪽으로 통일 안 된 건 admin 측 결정이라 봇이 그대로 따라간다.
+async function getResumeUploadsCumulative(startUtc: string, endUtc: string): Promise<number> {
   const { count, error } = await supabase
     .from("user_profiles")
     .select("id", { count: "exact", head: true })
     .not("resume_url", "is", null)
     .gte("updated_at", startUtc)
     .lte("updated_at", endUtc);
-  if (error) { console.error("Resume uploads error:", JSON.stringify(error)); return 0; }
+  if (error) { console.error("Resume cumulative error:", JSON.stringify(error)); return 0; }
+  return count || 0;
+}
+
+async function getResumeUploadsToday(startUtc: string, endUtc: string): Promise<number> {
+  const { count, error } = await supabase
+    .from("events")
+    .select("id", { count: "exact", head: true })
+    .in("event", ["cv_register_success", "resume_upload"])
+    .gte("created_at", startUtc)
+    .lte("created_at", endUtc);
+  if (error) { console.error("Resume today error:", JSON.stringify(error)); return 0; }
   return count || 0;
 }
 
 async function getResumeUploadsForDate(dateStr: string): Promise<number> {
-  return getResumeUploads(`${dateStr}T00:00:00+07:00`, `${dateStr}T23:59:59+07:00`);
+  return getResumeUploadsToday(`${dateStr}T00:00:00+07:00`, `${dateStr}T23:59:59+07:00`);
 }
 
 async function getCumulative(startDate: string, endDate: string) {
@@ -342,7 +358,7 @@ async function getCumulative(startDate: string, endDate: string) {
     .gte("created_at", startUtc)
     .lte("created_at", endUtc);
   const sessions = await getGA4SessionsRange(startDate, endDate);
-  const totalResumes = await getResumeUploads(startUtc, endUtc);
+  const totalResumes = await getResumeUploadsCumulative(startUtc, endUtc);
   return {
     sessions,
     totalSubs: deduped.length,
