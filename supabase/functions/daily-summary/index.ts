@@ -948,8 +948,11 @@ Deno.serve(async (req) => {
     }
 
     if (mode === "daily") {
-      const yesterday = getVietnamDate(1);
-      const dayBefore = getVietnamDate(2);
+      // ?date=YYYY-MM-DD 로 임의 일자 백필/테스트 가능. cron 은 date 안
+      // 넘기므로 기본은 어제(VN).
+      const dateOverride = url.searchParams.get("date");
+      const yesterday = dateOverride || getVietnamDate(1);
+      const dayBefore = dateOverride ? previousDay(yesterday) : getVietnamDate(2);
 
       const [sessions, prevSessions, stats, prevStats, signups, prevSignups, jobApps, resumes, prevResumes] = await Promise.all([
         getGA4Sessions(yesterday),
