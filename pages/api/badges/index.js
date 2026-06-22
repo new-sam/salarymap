@@ -1,6 +1,6 @@
 import { createClient } from '@supabase/supabase-js'
 import { getSalaryTier, getSalaryTierByKey, tierRank } from '../../../lib/salaryTiers'
-import { isEngagementKey } from '../../../lib/engagementBadges'
+import { isEngagementKey, isGoldEngagementKey } from '../../../lib/engagementBadges'
 
 const supabase = createClient(
   (process.env.NEXT_PUBLIC_SUPABASE_URL || '').trim(),
@@ -67,7 +67,9 @@ export default async function handler(req, res) {
       return res.json({ representative_badge: rep })
     }
     if (isEngagementKey(rep)) {
-      // 참여형 — 부여된(획득) 뱃지만. engagement 엔드포인트가 달성 시 user_badges에 부여.
+      // 참여형 — 골드(각 그룹 최상위)만 장착 가능. 일반 뱃지는 컬렉션 전용.
+      if (!isGoldEngagementKey(rep)) return res.status(403).json({ error: 'not equippable' })
+      // 부여된(획득) 뱃지만. engagement 엔드포인트가 달성 시 user_badges에 부여.
       const { data: row } = await supabase
         .from('user_badges')
         .select('badge_type')

@@ -1,6 +1,6 @@
 import { createClient } from '@supabase/supabase-js'
 import { resolveDisplayTier, getSalaryTierByKey } from '../../../lib/salaryTiers'
-import { isEngagementKey } from '../../../lib/engagementBadges'
+import { isEngagementKey, isGoldEngagementKey } from '../../../lib/engagementBadges'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
@@ -37,7 +37,8 @@ async function representativeBadgeMap(userIds) {
   const repIds = Object.keys(wanted)
   if (!repIds.length) return {}
   const salaryIds = repIds.filter(id => getSalaryTierByKey(wanted[id]))
-  const engIds = repIds.filter(id => isEngagementKey(wanted[id]))
+  // 참여형은 골드만 노출(일반 뱃지는 장착 불가 — 혹시 남은 값이 있어도 표시 안 함).
+  const engIds = repIds.filter(id => isEngagementKey(wanted[id]) && isGoldEngagementKey(wanted[id]))
   const out = {}
   if (salaryIds.length) {
     // 연봉 대표 — 실제 인증 등급 이하인지 검증.

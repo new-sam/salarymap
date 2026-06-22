@@ -1,6 +1,6 @@
 import { createClient } from '@supabase/supabase-js'
 import { resolveDisplayTier, getSalaryTierByKey } from '../../../lib/salaryTiers'
-import { isEngagementKey } from '../../../lib/engagementBadges'
+import { isEngagementKey, isGoldEngagementKey } from '../../../lib/engagementBadges'
 
 // 대표 뱃지 key가 연봉 등급이면 그 키, 아니면 null(연봉 뱃지 슬롯 back-compat용).
 function salaryTierOf(repKey) {
@@ -33,7 +33,8 @@ async function representativeBadgeMap(userIds) {
   const repIds = Object.keys(wanted)
   if (!repIds.length) return {}
   const salaryIds = repIds.filter(id => getSalaryTierByKey(wanted[id]))
-  const engIds = repIds.filter(id => isEngagementKey(wanted[id]))
+  // 참여형은 골드만 노출(일반 뱃지는 장착 불가).
+  const engIds = repIds.filter(id => isEngagementKey(wanted[id]) && isGoldEngagementKey(wanted[id]))
   const map = {}
   if (salaryIds.length) {
     const { data } = await supabase.from('user_badges').select('user_id, salary_amount')
