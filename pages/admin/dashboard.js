@@ -101,6 +101,14 @@ export default function AdminDashboard() {
   const headers = () => ({ 'Content-Type': 'application/json', Authorization: `Bearer ${token}` })
 
   useEffect(() => {
+    // Dev convenience: skip OAuth + admin check locally so admin views can
+    // be previewed without redoing login on every browser/profile. Paired
+    // with verifyAdminOrDevStub on the API side. Production untouched.
+    if (process.env.NODE_ENV === 'development') {
+      setAuth('ok')
+      setToken('dev-local')
+      return
+    }
     supabase.auth.getSession().then(async ({ data: { session } }) => {
       if (!session) { setAuth('denied'); return }
       try {

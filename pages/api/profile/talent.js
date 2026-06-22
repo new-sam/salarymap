@@ -43,7 +43,25 @@ export default async function handler(req, res) {
       if (key in fields) update[key] = fields[key]
     }
 
-    const { error } = await supabase.from('user_profiles').upsert(update, { onConflict: 'id' })
+    // If this PUT is the moment a resume_url first lands on the profile
+    // (most commonly the jobs-apply → AI prompt path), tag where it came
+    // from. X-Resume-Source mirrors what /api/profile/upload reads.
+    if ('resume_url' in fields && fields.resume_url) {
+      const isApp = req.headers['x-client-platform'] === 'app'
+      const rawSource = (req.headers['x-resume-source'] || '').toString().trim().toLowerCase()
+      const validSources = new Set(['cv', 'profile', 'jobs'])
+      update.resume_platform = isApp ? 'app' : 'web'
+      if (isApp) update.resume_source = 'app'
+      else if (validSources.has(rawSource)) update.resume_source = rawSource
+    }
+
+    const upsert = (row) => supabase.from('user_profiles').upsert(row, { onConflict: 'id' })
+    let { error } = await upsert(update)
+    // If the resume_source/platform columns don't exist yet (older env), retry without them.
+    if (error && (error.code === 'PGRST204' || /resume_(platform|source)/.test(error.message || ''))) {
+      const { resume_platform, resume_source, ...withoutSource } = update
+      ;({ error } = await upsert(withoutSource))
+    }
     if (error) return res.status(500).json({ error: error.message })
     return res.json({ success: true })
   }

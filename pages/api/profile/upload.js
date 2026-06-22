@@ -54,17 +54,25 @@ export default async function handler(req, res) {
     updated_at: new Date().toISOString(),
   }
   // 이력서 업로드 출처(app/web) 기록. 앱(salary-fyi)은 X-Client-Platform: app 헤더를 붙인다.
+  // 한 단계 더 세분화된 X-Resume-Source(cv | profile | jobs)는 웹 안에서 어느 경로로
+  // 들어왔는지 가른다. app 플랫폼은 source 도 자동으로 'app'으로 정규화.
   if (type === 'resume') {
-    profileRow.resume_platform = req.headers['x-client-platform'] === 'app' ? 'app' : 'web'
+    const isApp = req.headers['x-client-platform'] === 'app'
+    profileRow.resume_platform = isApp ? 'app' : 'web'
+    const rawSource = (req.headers['x-resume-source'] || '').toString().trim().toLowerCase()
+    const validSources = new Set(['cv', 'profile', 'jobs'])
+    if (isApp) profileRow.resume_source = 'app'
+    else if (validSources.has(rawSource)) profileRow.resume_source = rawSource
   }
 
   const upsert = (row) => supabase.from('user_profiles').upsert(row, { onConflict: 'id' })
   let { error: profileErr } = await upsert(profileRow)
-  // resume_platform 컬럼은 20260617 마이그레이션이 추가한다. 아직 미적용이면 PostgREST가
-  // 컬럼 부재(PGRST204)를 알린다 — 업로드 자체는 막지 말고 출처 없이 재시도해 URL은 저장한다.
-  if (profileErr && (profileErr.code === 'PGRST204' || /resume_platform/.test(profileErr.message || ''))) {
-    const { resume_platform, ...withoutPlatform } = profileRow
-    await upsert(withoutPlatform)
+  // resume_platform/resume_source 컬럼은 20260617 / 20260621 마이그레이션이 추가한다.
+  // 아직 미적용이면 PostgREST가 컬럼 부재(PGRST204)를 알린다 — 업로드 자체는 막지 말고
+  // 출처 없이 재시도해 URL은 저장한다.
+  if (profileErr && (profileErr.code === 'PGRST204' || /resume_(platform|source)/.test(profileErr.message || ''))) {
+    const { resume_platform, resume_source, ...withoutSource } = profileRow
+    await upsert(withoutSource)
   }
 
   res.json({ url: publicUrl })

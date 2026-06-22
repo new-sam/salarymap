@@ -27,6 +27,31 @@ export async function verifyAdmin(req) {
   return user
 }
 
+// Diagnostic variant — returns { ok, reason, detail, email } so callers can
+// surface why a 401 happened (no token / token verify failed / not admin).
+// Use only for endpoints under active debugging.
+export async function verifyAdminVerbose(req) {
+  const token = req.headers.authorization?.replace('Bearer ', '')
+  if (!token) return { ok: false, reason: 'no_token' }
+  const { data: { user }, error } = await supabase.auth.getUser(token)
+  if (error) return { ok: false, reason: 'getUser_failed', detail: (error.message || '').slice(0, 200) }
+  if (!user) return { ok: false, reason: 'no_user' }
+  const admin = await isAdmin(user.email)
+  if (!admin) return { ok: false, reason: 'not_admin', email: user.email }
+  return { ok: true, user }
+}
+
+// Dev convenience: under `next dev` we let the admin views render with a stub
+// user even without a logged-in session, so design tweaks on /admin can be
+// previewed locally without redoing OAuth on every browser/profile. Guarded
+// by NODE_ENV so production builds never take this branch.
+export async function verifyAdminOrDevStub(req) {
+  if (process.env.NODE_ENV === 'development') {
+    return { id: 'dev-local', email: 'dev@local.likelion.net' }
+  }
+  return verifyAdmin(req)
+}
+
 export default async function handler(req, res) {
   const { email } = req.query
   if (!email) return res.status(400).json({ isAdmin: false })

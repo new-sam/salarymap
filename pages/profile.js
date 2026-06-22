@@ -621,7 +621,7 @@ export default function ProfilePage() {
     fd.append('type', type)
     const res = await fetch('/api/profile/upload', {
       method: 'POST',
-      headers: { Authorization: `Bearer ${token}` },
+      headers: { Authorization: `Bearer ${token}`, 'X-Resume-Source': 'profile' },
       body: fd,
     })
     if (res.ok) {

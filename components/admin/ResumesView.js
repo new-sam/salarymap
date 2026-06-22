@@ -1,36 +1,52 @@
 import { useState } from 'react'
 import { useAdmin } from '../../lib/adminSwr'
 
-// 유입 플랫폼 배지: app=앱 / web=웹 / null=미상(기록 전 행).
-function PlatformBadge({ platform }) {
-  const map = {
-    app: { label: '앱', bg: '#EEF2FF', color: '#4F46E5' },
-    web: { label: '웹', bg: '#F0FDF4', color: '#15803D' },
+// 유입 출처 배지. resume_source(cv/profile/jobs/app)가 있으면 그걸로, 없으면
+// 구버전 데이터의 resume_platform(app/web)로 폴백. NULL은 '미상'.
+function SourceBadge({ source, platform }) {
+  const sourceMap = {
+    cv:      { label: 'CV 광고',   bg: '#FFEDD5', color: '#C2410C' },
+    profile: { label: '프로필',    bg: '#DBEAFE', color: '#1D4ED8' },
+    jobs:    { label: '채용 지원', bg: '#FCE7F3', color: '#BE185D' },
+    app:     { label: '앱',        bg: '#EEF2FF', color: '#4F46E5' },
   }
-  const s = map[platform]
-  if (!s) return <span style={{ color: '#ccc', fontSize: 11 }}>미상</span>
-  return (
-    <span style={{ padding: '2px 8px', borderRadius: 12, fontSize: 11, fontWeight: 600, background: s.bg, color: s.color }}>
-      {s.label}
-    </span>
-  )
+  if (source && sourceMap[source]) {
+    const s = sourceMap[source]
+    return <span style={{ padding: '2px 8px', borderRadius: 12, fontSize: 11, fontWeight: 600, background: s.bg, color: s.color }}>{s.label}</span>
+  }
+  // Legacy rows: source 미기록 → platform 기준 거친 분류.
+  const platformMap = {
+    app: { label: '앱',        bg: '#EEF2FF', color: '#4F46E5' },
+    web: { label: '웹 (이전)', bg: '#F0FDF4', color: '#15803D' },
+  }
+  const p = platformMap[platform]
+  if (!p) return <span style={{ color: '#ccc', fontSize: 11 }}>미상</span>
+  return <span style={{ padding: '2px 8px', borderRadius: 12, fontSize: 11, fontWeight: 600, background: p.bg, color: p.color }}>{p.label}</span>
+}
+
+function resolveSource(r) {
+  if (r.resume_source) return r.resume_source
+  if (r.resume_platform === 'app') return 'app'
+  if (r.resume_platform === 'web') return 'web_legacy'
+  return null
 }
 
 export default function ResumesView({ token, t }) {
   const { data: resumes, isLoading: loading, mutate } = useAdmin('/api/admin/resumes', token)
   const [search, setSearch] = useState('')
   const [filter, setFilter] = useState('all') // all, public, private
-  const [platformFilter, setPlatformFilter] = useState('all') // all, app, web
+  const [sourceFilter, setSourceFilter] = useState('all') // all | cv | profile | jobs | app | web_legacy
   const [parsing, setParsing] = useState(false)
   const [parseProgress, setParseProgress] = useState({ current: 0, total: 0, name: '' })
   const [parseResults, setParseResults] = useState(null)
 
   function downloadCsv() {
     if (!resumes || resumes.length === 0) return
-    const headers = ['Name', 'Email', 'Source', 'Position', 'YoE (months)', 'Skills', 'Location', 'University', 'Major', 'Work Type', 'Public', 'Resume URL', 'Updated']
+    const headers = ['Name', 'Email', 'Source', 'Platform', 'Position', 'YoE (months)', 'Skills', 'Location', 'University', 'Major', 'Work Type', 'Public', 'Resume URL', 'Updated']
     const rows = filtered.map(r => [
       r.full_name,
       r.email,
+      r.resume_source || '',
       r.resume_platform || '',
       r.position || '',
       r.yoe_months ?? '',
@@ -97,7 +113,10 @@ export default function ResumesView({ token, t }) {
   const filtered = resumes.filter(r => {
     if (filter === 'public' && !r.is_resume_public) return false
     if (filter === 'private' && r.is_resume_public) return false
-    if (platformFilter !== 'all' && (r.resume_platform || null) !== platformFilter) return false
+    if (sourceFilter !== 'all') {
+      const s = resolveSource(r)
+      if (sourceFilter === 'unknown' ? s !== null : s !== sourceFilter) return false
+    }
     if (search) {
       const q = search.toLowerCase()
       return (r.full_name || '').toLowerCase().includes(q)
@@ -158,23 +177,32 @@ export default function ResumesView({ token, t }) {
               </button>
             ))}
           </div>
-          <div style={{ display: 'flex', gap: 0, background: '#f3f4f6', borderRadius: 8, padding: 2 }}>
+          <div style={{ display: 'flex', gap: 0, background: '#f3f4f6', borderRadius: 8, padding: 2, flexWrap: 'wrap' }}>
             {[
-              { key: 'all', label: '전체' },
-              { key: 'app', label: '앱' },
-              { key: 'web', label: '웹' },
-            ].map(f => (
-              <button key={f.key} onClick={() => setPlatformFilter(f.key)}
-                style={{
-                  padding: '5px 12px', borderRadius: 6, fontSize: 12, fontWeight: 600,
-                  border: 'none', cursor: 'pointer', transition: 'all 0.15s',
-                  background: platformFilter === f.key ? '#fff' : 'transparent',
-                  color: platformFilter === f.key ? '#111' : '#999',
-                  boxShadow: platformFilter === f.key ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
-                }}>
-                {f.label}
-              </button>
-            ))}
+              { key: 'all',        label: '전체' },
+              { key: 'cv',         label: 'CV 광고' },
+              { key: 'profile',    label: '프로필' },
+              { key: 'jobs',       label: '채용 지원' },
+              { key: 'app',        label: '앱' },
+              { key: 'web_legacy', label: '웹 (이전)' },
+              { key: 'unknown',    label: '미상' },
+            ].map(f => {
+              const count = f.key === 'all' ? resumes.length
+                : f.key === 'unknown' ? resumes.filter(r => resolveSource(r) === null).length
+                : resumes.filter(r => resolveSource(r) === f.key).length
+              return (
+                <button key={f.key} onClick={() => setSourceFilter(f.key)}
+                  style={{
+                    padding: '5px 10px', borderRadius: 6, fontSize: 12, fontWeight: 600,
+                    border: 'none', cursor: 'pointer', transition: 'all 0.15s',
+                    background: sourceFilter === f.key ? '#fff' : 'transparent',
+                    color: sourceFilter === f.key ? '#111' : '#999',
+                    boxShadow: sourceFilter === f.key ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
+                  }}>
+                  {f.label} <span style={{ color: '#9CA3AF', fontWeight: 500 }}>{count}</span>
+                </button>
+              )
+            })}
           </div>
           <button onClick={runAiParse} disabled={parsing || unfilled.length === 0}
             style={{
@@ -270,7 +298,7 @@ export default function ResumesView({ token, t }) {
                     </div>
                   </td>
                   <td style={{ padding: '8px 12px', color: '#666' }}>{r.email || '-'}</td>
-                  <td style={{ padding: '8px 12px' }}><PlatformBadge platform={r.resume_platform} /></td>
+                  <td style={{ padding: '8px 12px' }}><SourceBadge source={r.resume_source} platform={r.resume_platform} /></td>
                   <td style={{ padding: '8px 12px' }}>
                     {r.position ? (
                       <span style={{ padding: '2px 8px', borderRadius: 12, fontSize: 11, fontWeight: 600, background: '#EEF2FF', color: '#4F46E5' }}>

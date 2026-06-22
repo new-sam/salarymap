@@ -1659,7 +1659,7 @@ export default function JobsPage() {
                       setAiParsing(15)
                       await fetch('/api/profile/talent', {
                         method: 'PUT',
-                        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+                        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}`, 'X-Resume-Source': 'jobs' },
                         body: JSON.stringify({ resume_url: showAiProfilePrompt.resumeUrl }),
                       })
                       setAiParsing(30)

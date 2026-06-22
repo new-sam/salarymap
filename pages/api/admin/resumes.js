@@ -1,5 +1,5 @@
 import { createClient } from '@supabase/supabase-js'
-import { verifyAdmin } from './check'
+import { verifyAdminOrDevStub } from './check'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
@@ -7,17 +7,30 @@ const supabase = createClient(
 )
 
 export default async function handler(req, res) {
-  const admin = await verifyAdmin(req)
+  const admin = await verifyAdminOrDevStub(req)
   if (!admin) return res.status(401).json({ error: 'Unauthorized' })
 
   if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' })
 
   try {
-    const { data, error } = await supabase
+    const COLUMNS_FULL = 'id, full_name, headline, position, yoe_months, location, resume_url, photo_url, is_resume_public, skills, university, major, work_type, salary_min, salary_max, salary_currency, resume_platform, resume_source, updated_at, created_at'
+    const COLUMNS_FALLBACK = 'id, full_name, headline, position, yoe_months, location, resume_url, photo_url, is_resume_public, skills, university, major, work_type, salary_min, salary_max, salary_currency, resume_platform, updated_at, created_at'
+
+    let { data, error } = await supabase
       .from('user_profiles')
-      .select('id, full_name, headline, position, yoe_months, location, resume_url, photo_url, is_resume_public, skills, university, major, work_type, salary_min, salary_max, salary_currency, resume_platform, updated_at, created_at')
+      .select(COLUMNS_FULL)
       .not('resume_url', 'is', null)
       .order('updated_at', { ascending: false })
+
+    // resume_source column is added by 20260621 migration; until it lands in
+    // a given env, retry without it so the admin view still works.
+    if (error && /resume_source/.test(error.message || '')) {
+      ;({ data, error } = await supabase
+        .from('user_profiles')
+        .select(COLUMNS_FALLBACK)
+        .not('resume_url', 'is', null)
+        .order('updated_at', { ascending: false }))
+    }
 
     if (error) return res.status(500).json({ error: error.message })
 
