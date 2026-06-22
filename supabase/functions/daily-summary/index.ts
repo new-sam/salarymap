@@ -631,7 +631,7 @@ function buildRealtimeMessage(
         { type: "divider" },
         { type: "section", text: { type: "mrkdwn", text: [
           `*전체 기간 누적 (All-time)* — ${CAMPAIGN_START} ~ ${today}`,
-          `세션 (Sessions) \`${cum.sessions.toLocaleString()}\` → 연봉 제출 (Submissions) \`${cum.totalSubs}\` → 신규 가입 (Sign-ups) \`${cum.totalSignups}\` (${signupRate}) → 이력서 등록 (Resume uploads) \`${cum.totalResumes}\` → 공고 지원 (Job apps) \`${cum.totalJobApps}\``,
+          `세션 (Sessions) \`${cum.sessions.toLocaleString()}\` → 연봉 제출 (Submissions) \`${cum.totalSubs}\` → 신규 가입 (Sign-ups) \`${cum.totalSignups}\` → 이력서 등록 (Resume uploads) \`${cum.totalResumes}\` → 공고 지원 (Job apps) \`${cum.totalJobApps}\``,
           `누적 회사 (Companies): \`${cum.totalCompanies}\``,
         ].join("\n") }},
       ],
@@ -685,7 +685,7 @@ function buildDailyMessage(
         { type: "divider" },
         { type: "section", text: { type: "mrkdwn", text: [
           `*전체 기간 누적 (All-time)* — ${CAMPAIGN_START} ~ ${targetDate}`,
-          `세션 (Sessions) \`${cum.sessions.toLocaleString()}\` → 연봉 제출 (Submissions) \`${cum.totalSubs}\` → 신규 가입 (Sign-ups) \`${cum.totalSignups}\` (${signupRate}) → 이력서 등록 (Resume uploads) \`${cum.totalResumes}\` → 공고 지원 (Job apps) \`${cum.totalJobApps}\``,
+          `세션 (Sessions) \`${cum.sessions.toLocaleString()}\` → 연봉 제출 (Submissions) \`${cum.totalSubs}\` → 신규 가입 (Sign-ups) \`${cum.totalSignups}\` → 이력서 등록 (Resume uploads) \`${cum.totalResumes}\` → 공고 지원 (Job apps) \`${cum.totalJobApps}\``,
           `누적 회사 (Companies): \`${cum.totalCompanies}\``,
         ].join("\n") }},
         ...alertBlock,
