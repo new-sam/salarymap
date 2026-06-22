@@ -40,7 +40,7 @@ export default async function handler(req, res) {
 
   const { error } = await supabase
     .from('events')
-    .insert([{ event, page: page || null, meta: meta || null, user_id: userId || null, client_id: clientId || null }])
+    .insert([{ event, page: page || null, meta: meta || null, user_id: activeUserId, client_id: clientId || null }])
 
   if (error) return res.status(500).json({ error: error.message })
 
