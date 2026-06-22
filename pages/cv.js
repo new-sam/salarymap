@@ -13,6 +13,8 @@ function cvMeta() {
     utm_source: sessionStorage.getItem('utm_source') || null,
     utm_medium: sessionStorage.getItem('utm_medium') || null,
     utm_campaign: sessionStorage.getItem('utm_campaign') || null,
+    utm_content: sessionStorage.getItem('utm_content') || null,
+    utm_term: sessionStorage.getItem('utm_term') || null,
     lang: localStorage.getItem('fyi_lang') || 'ko',
   }
 }
@@ -218,7 +220,7 @@ export default function CvLanding() {
   useEffect(() => {
     if (typeof window === 'undefined') return
     const p = new URLSearchParams(window.location.search)
-    ;['utm_source', 'utm_medium', 'utm_campaign'].forEach(k => {
+    ;['utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term'].forEach(k => {
       const v = p.get(k)
       if (v) sessionStorage.setItem(k, v)
     })
