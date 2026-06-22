@@ -1,5 +1,5 @@
 import { createClient } from '@supabase/supabase-js'
-import { getSalaryTier } from '../../../lib/salaryTiers'
+import { resolveDisplayTier } from '../../../lib/salaryTiers'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
@@ -26,16 +26,18 @@ function sanitizeImageUrls(value, max = 4) {
 async function salaryTierMap(userIds) {
   const ids = [...new Set(userIds)].filter(Boolean)
   if (!ids.length) return {}
-  const { data } = await supabase
-    .from('user_badges')
-    .select('user_id, salary_amount')
-    .in('user_id', ids)
-    .eq('badge_type', 'salary_range')
-    .eq('is_active', true)
+  // 활성 연봉 뱃지(실제 등급) + 대표 등급 선택값을 함께 조회해 표시 등급을 결정.
+  const [{ data: badges }, { data: profiles }] = await Promise.all([
+    supabase.from('user_badges').select('user_id, salary_amount')
+      .in('user_id', ids).eq('badge_type', 'salary_range').eq('is_active', true),
+    supabase.from('user_profiles').select('id, representative_tier').in('id', ids),
+  ])
+  const repMap = {}
+  ;(profiles || []).forEach(p => { if (p.representative_tier) repMap[p.id] = p.representative_tier })
   const map = {}
-  ;(data || []).forEach(b => {
-    const tier = getSalaryTier(b.salary_amount)
-    if (tier) map[b.user_id] = tier.key
+  ;(badges || []).forEach(b => {
+    const key = resolveDisplayTier(b.salary_amount, repMap[b.user_id])
+    if (key) map[b.user_id] = key
   })
   return map
 }
