@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { supabase } from '../../lib/supabaseClient'
 import { track } from '../../lib/track'
-import SalaryBadge from '../../components/SalaryBadge'
+import Badge from '../../components/Badge'
 import { useT } from '../../lib/i18n'
 import { domainFor, logoUrlFor } from '../../lib/companyDomains'
 
@@ -319,7 +319,7 @@ export default function CommunityPage() {
         )}
         <span className="comm-card-dot">·</span>
         <span>{post.author_name}</span>
-        {post.author_salary_tier && <SalaryBadge tierKey={post.author_salary_tier} t={t} />}
+        {post.author_badge && <Badge keyName={post.author_badge} t={t} variant="pill" />}
       </div>
       <div className="comm-card-main">
         <div className="comm-card-text">

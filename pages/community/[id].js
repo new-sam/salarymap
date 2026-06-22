@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { supabase } from '../../lib/supabaseClient'
 import { track } from '../../lib/track'
-import SalaryBadge from '../../components/SalaryBadge'
+import Badge from '../../components/Badge'
 import { useT } from '../../lib/i18n'
 import { uploadCommunityImage } from '../../lib/communityImages'
 
@@ -405,7 +405,7 @@ export default function CommunityPostPage() {
                   )}
                   <span className="cp-dot">·</span>
                   <span className="cp-nickname">{post.author_name}</span>
-                  {post.author_salary_tier && <SalaryBadge tierKey={post.author_salary_tier} t={t} />}
+                  {post.author_badge && <Badge keyName={post.author_badge} t={t} variant="pill" />}
                 </div>
                 <div className="cp-info-row">
                   <span>{timeAgo(post.created_at)}</span>
@@ -527,7 +527,7 @@ export default function CommunityPostPage() {
                           <span className="cp-company">{comment.author_verified_company || comment.author_company || t('comm.unemployed')}</span>
                           <span className="cp-dot">·</span>
                           {comment.author_name}
-                          {comment.author_salary_tier && <SalaryBadge tierKey={comment.author_salary_tier} t={t} />}
+                          {comment.author_badge && <Badge keyName={comment.author_badge} t={t} variant="pill" />}
                           {comment.is_op && <span className="cp-op-badge">{t('comm.opBadge')}</span>}
                         </span>
                         <span className="cp-comment-time">{timeAgo(comment.created_at)}</span>
