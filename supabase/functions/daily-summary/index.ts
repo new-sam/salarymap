@@ -662,9 +662,13 @@ function buildDailyMessage(
     : [];
 
   return {
+    // top-level text 에 <!here> 를 둬서 채널 멤버 전원 알림. attachments 의
+    // body 본문은 그대로 유지 — 알림 트리거는 top-level text 가 가장 확실.
+    text: "<!here>",
     attachments: [{
       color: trendColor,
       blocks: [
+        { type: "section", text: { type: "mrkdwn", text: "<!here> 오늘의 FYI 일일 리포트 / Today's FYI Daily Report" } },
         { type: "header", text: { type: "plain_text", text: `FYI 일일 리포트 / Daily — ${targetDate} (${dayName})` } },
         { type: "context", elements: [{ type: "mrkdwn", text: `데이터 기간 (Data range): ${targetDate} 00:00 ~ 23:59 (UTC+7)` }] },
         { type: "divider" },
