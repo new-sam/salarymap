@@ -364,6 +364,23 @@ async function getResumeUploadsForDate(dateStr: string): Promise<number> {
   return getResumeUploadsToday(`${dateStr}T00:00:00+07:00`, `${dateStr}T23:59:59+07:00`);
 }
 
+// daily / weekly 의 "어제(또는 특정일) 이력서 등록" 행은 admin/dashboard 의
+// 일별 카드와 같은 user_profiles 기반 unique 사용자 수를 써야 한다. realtime
+// 의 오늘 카드만 events count (admin/realtime 식). admin/dashboard.js (API)
+// line 102-106, 166-170 에서 dailyMap[date].resumeUploads++ 가 정확히 이 식.
+async function getResumeUploadsForDateProfileBased(dateStr: string): Promise<number> {
+  const startUtc = new Date(`${dateStr}T00:00:00+07:00`).toISOString();
+  const endUtc = new Date(`${dateStr}T23:59:59+07:00`).toISOString();
+  const { count, error } = await supabase
+    .from("user_profiles")
+    .select("id", { count: "exact", head: true })
+    .not("resume_url", "is", null)
+    .gte("updated_at", startUtc)
+    .lte("updated_at", endUtc);
+  if (error) { console.error("Resume daily error:", JSON.stringify(error)); return 0; }
+  return count || 0;
+}
+
 async function getCumulative(startDate: string, endDate: string) {
   // ADMIN PARITY — admin/dashboard.js 의 누적 카드는 base = 4/20~어제
   // (data.summary, from `/api/admin/dashboard`) 위에 오늘 분 diff 를 일부
@@ -966,8 +983,8 @@ Deno.serve(async (req) => {
         getSignups(yesterday),
         getSignups(dayBefore),
         getJobApps(yesterday),
-        getResumeUploadsForDate(yesterday),
-        getResumeUploadsForDate(dayBefore),
+        getResumeUploadsForDateProfileBased(yesterday),
+        getResumeUploadsForDateProfileBased(dayBefore),
       ]);
 
       const cum = await getCumulative(CAMPAIGN_START, yesterday);
