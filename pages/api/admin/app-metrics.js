@@ -10,8 +10,9 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 )
 
-// 앱 이벤트 수집 시작(이 이전엔 앱 트래픽 없음). 리텐션 first-seen 정확도를 위해 범위와 무관하게 이 시점부터 전부 읽는다.
-const APP_EVENT_START = '2026-06-01'
+// 앱 출시일 = 앱 이벤트 수집 시작(이 이전엔 앱 트래픽 없음). 리텐션 first-seen 정확도를 위해
+// 범위와 무관하게 이 시점부터 전부 읽고, 시계열 차트도 이 날부터 그린다(meta.appEventStart).
+const APP_EVENT_START = '2026-06-16'
 
 const DAY = 86400000
 // VN(UTC+7) 기준 날짜 문자열 — 웹 대시보드(toVN)와 동일 기준.

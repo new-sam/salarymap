@@ -238,11 +238,11 @@ function FunnelChart({ steps, color = '#4F46E5' }) {
   )
 }
 
-// 시계열 앞쪽의 "전부 0"인 날들(앱 출시 이전 구간)을 잘라 첫 이벤트일부터 그린다.
-// 중간의 0인 날(실제 공백)은 보존. 전부 0이면 원본 유지(빈 차트 방지).
-function trimLeadingZero(rows) {
-  const i = (rows || []).findIndex(r => Object.entries(r).some(([k, v]) => k !== 'date' && typeof v === 'number' && v !== 0))
-  return i <= 0 ? (rows || []) : rows.slice(i)
+// 시계열을 앱 이벤트 시작일(meta.appEventStart) 이후로만 자른다. 앱 출시 전 구간은
+// 어차피 데이터가 없으니 안 그린다. 시작일 이후의 0인 날은 그대로 보존(실제 0).
+function clampToStart(rows, start) {
+  if (!start) return rows || []
+  return (rows || []).filter(r => r.date >= start)
 }
 
 export default function AppMetricsView({ token, dateRange, lang }) {
@@ -278,7 +278,7 @@ export default function AppMetricsView({ token, dateRange, lang }) {
 
   // 시계열: 일별 이벤트 카운트(daily) + 일별 활성유저(dauSeries)를 날짜축으로 0-채움 병합.
   const dauByDate = Object.fromEntries((retention.dauSeries || []).map(d => [d.date, d]))
-  const ts = trimLeadingZero((daily || []).map(d => ({
+  const ts = clampToStart((daily || []).map(d => ({
     date: d.date,
     active: dauByDate[d.date]?.active || 0,
     newU: dauByDate[d.date]?.new || 0,
@@ -294,7 +294,7 @@ export default function AppMetricsView({ token, dateRange, lang }) {
     click_apply_button: d.click_apply_button || 0,
     push_click: d.push_click || 0,
     push_received: d.push_received || 0,
-  })))
+  })), meta.appEventStart)
   // 시계열 metric 정의 (key=dataKey=label=color)
   const M = (dataKey, label, color) => ({ key: dataKey, dataKey, label, color })
   const series = {
@@ -401,7 +401,7 @@ export default function AppMetricsView({ token, dateRange, lang }) {
           {retention.dauSeries.length > 0 && (
             <div style={sectionStyle}>
               <h3 style={sectionTitle}>{t.dauTitle}</h3>
-              <DauChart series={trimLeadingZero(retention.dauSeries)} t={t} />
+              <DauChart series={clampToStart(retention.dauSeries, meta.appEventStart)} t={t} />
             </div>
           )}
 
