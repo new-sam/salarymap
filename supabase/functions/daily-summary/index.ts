@@ -364,10 +364,17 @@ async function getResumeUploadsForDate(dateStr: string): Promise<number> {
   return getResumeUploadsToday(`${dateStr}T00:00:00+07:00`, `${dateStr}T23:59:59+07:00`);
 }
 
-// daily / weekly 의 "어제(또는 특정일) 이력서 등록" 행은 admin/dashboard 의
-// 일별 카드와 같은 user_profiles 기반 unique 사용자 수를 써야 한다. realtime
-// 의 오늘 카드만 events count (admin/realtime 식). admin/dashboard.js (API)
-// line 102-106, 166-170 에서 dailyMap[date].resumeUploads++ 가 정확히 이 식.
+// admin UI 의 *일별 행* 정의 — 다만 dashboard.js:199-217 의 todayData
+// 로직이 "그 시점의 오늘 행" 만 realtime(events count) 으로 덮어쓰기
+// 한다. 따라서 호출 시점이 그 날짜와 같으면 events 식, 어제 이전이면
+// user_profiles 식을 쓰는 wrapper 가 admin UI 와 정확히 매칭.
+async function getResumeUploadsForDateAdminUI(dateStr: string): Promise<number> {
+  if (dateStr === getVietnamDate(0)) {
+    return getResumeUploadsForDate(dateStr); // events count (admin todayData overlay)
+  }
+  return getResumeUploadsForDateProfileBased(dateStr); // user_profiles (admin daily row)
+}
+
 async function getResumeUploadsForDateProfileBased(dateStr: string): Promise<number> {
   const startUtc = new Date(`${dateStr}T00:00:00+07:00`).toISOString();
   const endUtc = new Date(`${dateStr}T23:59:59+07:00`).toISOString();
@@ -896,7 +903,7 @@ async function buildRealtimePayload(slashCommand: boolean) {
     getSubmissions(today),
     getSignups(today),
     getJobApps(today),
-    getResumeUploadsForDateProfileBased(today),
+    getResumeUploadsForDate(today),
   ]);
   const cum = await getCumulative(CAMPAIGN_START, today);
   return buildRealtimeMessage(today, timeStr, sessions, stats, signups, jobApps, resumes, cum, slashCommand);
@@ -963,7 +970,11 @@ Deno.serve(async (req) => {
         }), { headers: { "Content-Type": "application/json" } });
       }
 
-      const message = await buildRealtimePayload(false);
+      const message = await buildRealtimePayload(true);
+      // ?dryRun=1 → 슬랙 안 쏘고 payload 만 응답. 터미널에서 메시지 미리보기/검증 용도.
+      if (url.searchParams.get("dryRun") === "1") {
+        return new Response(JSON.stringify({ success: true, mode: "realtime", date: getVietnamDate(0), message }, null, 2), { headers: { "Content-Type": "application/json" } });
+      }
       await sendToSlack(message);
       return new Response(JSON.stringify({ success: true, mode: "realtime", date: getVietnamDate(0) }), { headers: { "Content-Type": "application/json" } });
     }
@@ -983,8 +994,8 @@ Deno.serve(async (req) => {
         getSignups(yesterday),
         getSignups(dayBefore),
         getJobApps(yesterday),
-        getResumeUploadsForDateProfileBased(yesterday),
-        getResumeUploadsForDateProfileBased(dayBefore),
+        getResumeUploadsForDateAdminUI(yesterday),
+        getResumeUploadsForDateAdminUI(dayBefore),
       ]);
 
       const cum = await getCumulative(CAMPAIGN_START, yesterday);
@@ -1012,6 +1023,18 @@ Deno.serve(async (req) => {
         console.error("App daily report error:", (e as Error).message);
       }
 
+      // ?dryRun=1 → 슬랙 안 쏘고 payload 만 응답. 터미널에서 메시지 미리보기 용도.
+      if (url.searchParams.get("dryRun") === "1") {
+        return new Response(JSON.stringify({ success: true, mode: "daily", date: yesterday, message }, null, 2), { headers: { "Content-Type": "application/json" } });
+      }
+      // ?noHere=1 → @here 멘션 빼고 발송 (테스트용). cron 호출엔 영향 없음.
+      if (url.searchParams.get("noHere") === "1") {
+        delete (message as any).text;
+        const blocks = (message as any).attachments?.[0]?.blocks;
+        if (blocks?.[0]?.type === "section" && blocks[0]?.text?.text?.includes("<!here>")) {
+          blocks.shift();
+        }
+      }
       await sendToSlack(message);
       return new Response(JSON.stringify({ success: true, mode: "daily", date: yesterday }), { headers: { "Content-Type": "application/json" } });
     }
