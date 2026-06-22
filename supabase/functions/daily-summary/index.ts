@@ -224,35 +224,76 @@ async function getGA4TodaySessions(): Promise<number> {
 }
 
 // ─── Supabase Data ───
+// 누적이 1000행을 넘으면 supabase-js 기본 limit 에 잘리므로 페이지네이션해서
+// 모두 가져온다. /api/admin/dashboard 의 fetchAll 와 동일 동작.
+async function fetchSubmissions(startUtc: string, endUtc: string): Promise<any[]> {
+  const PAGE = 1000;
+  let from = 0;
+  const out: any[] = [];
+  while (true) {
+    const { data, error } = await supabase
+      .from("submissions")
+      .select("source, company, email, user_id")
+      .eq("is_seed", false)
+      .gte("created_at", startUtc)
+      .lte("created_at", endUtc)
+      .order("created_at", { ascending: true })
+      .range(from, from + PAGE - 1);
+    if (error) throw error;
+    out.push(...(data || []));
+    if (!data || data.length < PAGE) break;
+    from += PAGE;
+  }
+  return out;
+}
+
 async function getSubmissions(dateStr: string) {
   const startUtc = `${dateStr}T00:00:00+07:00`;
   const endUtc = `${dateStr}T23:59:59+07:00`;
-
-  const { data, error } = await supabase
-    .from("submissions")
-    .select("source, company, email, user_id")
-    .eq("is_seed", false)
-    .gte("created_at", startUtc)
-    .lte("created_at", endUtc);
-
-  if (error) throw error;
-
-  const deduped = dedupeSubmissions((data || []).filter((r: any) => !isExcludedSubmission(r)));
-
+  const data = await fetchSubmissions(startUtc, endUtc);
+  const deduped = dedupeSubmissions(data.filter((r: any) => !isExcludedSubmission(r)));
   const ad = deduped.filter((r: any) => PAID_SOURCES.has(r.source)).length;
   const companies = new Set(deduped.map((r: any) => r.company?.trim().toLowerCase()).filter(Boolean)).size;
-
   return { total: deduped.length, ad, organic: deduped.length - ad, companies };
+}
+
+// auth.users 페이지네이션 + isExcludedSignup 필터. /api/admin/dashboard 와
+// 동일한 식. 기존엔 count_signups RPC 를 호출했는데 RPC 가 likelion 같은
+// 내부 도메인을 제외하지 않을 수 있어 대시보드와 숫자가 어긋났다.
+async function listAllAuthUsers(): Promise<any[]> {
+  const out: any[] = [];
+  let page = 1;
+  while (true) {
+    const { data: { users }, error } = await supabase.auth.admin.listUsers({ page, perPage: 1000 });
+    if (error || !users || users.length === 0) break;
+    out.push(...users);
+    if (users.length < 1000) break;
+    page++;
+  }
+  return out;
+}
+
+async function getSignupsInRange(startUtc: string, endUtc: string): Promise<number> {
+  try {
+    const all = await listAllAuthUsers();
+    return all.filter((u: any) => u.created_at >= startUtc && u.created_at <= endUtc && !isExcludedSignup(u)).length;
+  } catch (e) {
+    console.error("Sign-ups listUsers error:", (e as Error).message);
+    return 0;
+  }
 }
 
 async function getSignups(dateStr: string): Promise<number> {
   const startUtc = `${dateStr}T00:00:00+07:00`;
   const endUtc = `${dateStr}T23:59:59+07:00`;
-  try {
-    const { data, error } = await supabase.rpc("count_signups", { start_ts: startUtc, end_ts: endUtc });
-    if (error) { console.error("Sign-ups RPC error:", JSON.stringify(error)); return 0; }
-    return data || 0;
-  } catch { return 0; }
+  return getSignupsInRange(startUtc, endUtc);
+}
+
+function isExcludedSignup(user: any): boolean {
+  const email = (user.email || "").toLowerCase();
+  if (email && EXCLUDED_EMAIL_DOMAINS.some((d) => email.endsWith("@" + d))) return true;
+  if (user.banned_until && new Date(user.banned_until) > new Date()) return true;
+  return false;
 }
 
 async function getJobApps(dateStr: string): Promise<number> {
@@ -289,35 +330,25 @@ async function getResumeUploadsForDate(dateStr: string): Promise<number> {
 async function getCumulative(startDate: string, endDate: string) {
   const startUtc = `${startDate}T00:00:00+07:00`;
   const endUtc = `${endDate}T23:59:59+07:00`;
-
-  const { data: subs, error: subsErr } = await supabase
-    .from("submissions")
-    .select("source, company, email, user_id")
-    .eq("is_seed", false)
-    .gte("created_at", startUtc)
-    .lte("created_at", endUtc);
-  if (subsErr) throw subsErr;
-
-  const deduped = dedupeSubmissions((subs || []).filter((r: any) => !isExcludedSubmission(r)));
+  // Force /api/admin/dashboard-parity: paginate submissions + filter auth users.
+  const subs = await fetchSubmissions(startUtc, endUtc);
+  const deduped = dedupeSubmissions(subs.filter((r: any) => !isExcludedSubmission(r)));
   const totalAd = deduped.filter((r: any) => PAID_SOURCES.has(r.source)).length;
   const totalCompanies = new Set(deduped.map((r: any) => r.company?.trim().toLowerCase()).filter(Boolean)).size;
-
-  const { data: signups } = await supabase.rpc("count_signups", { start_ts: startUtc, end_ts: endUtc });
+  const totalSignups = await getSignupsInRange(startUtc, endUtc);
   const { count: jobApps } = await supabase
     .from("job_applications")
     .select("*", { count: "exact", head: true })
     .gte("created_at", startUtc)
     .lte("created_at", endUtc);
-
   const sessions = await getGA4SessionsRange(startDate, endDate);
   const totalResumes = await getResumeUploads(startUtc, endUtc);
-
   return {
     sessions,
     totalSubs: deduped.length,
     totalAd,
     totalOrganic: deduped.length - totalAd,
-    totalSignups: signups || 0,
+    totalSignups,
     totalJobApps: jobApps || 0,
     totalCompanies,
     totalResumes,
