@@ -262,6 +262,17 @@ export default async function handler(req, res) {
     const distArr = (obj) => Object.entries(obj).map(([name, count]) => ({ name, count })).sort((a, b) => b.count - a.count)
     const setDist = (obj) => Object.entries(obj).map(([name, s]) => ({ name, count: s.size })).sort((a, b) => b.count - a.count)
 
+    // ---- 이력서 제출·공개(앱) — 이벤트가 아니라 프로필 DB 상태로 집계 ----
+    // resume_platform='app'으로 등록한 이력서 누적 + 그중 기업 공개(is_resume_public) 누적.
+    // 토글 시점 이벤트가 없어 현재 상태 스냅샷(기간 무관 누적)이다 — 어드민 이력서 탭 카운트와 동일 기준.
+    const { data: appResumeRows } = await supabase
+      .from('user_profiles')
+      .select('is_resume_public')
+      .eq('resume_platform', 'app')
+      .not('resume_url', 'is', null)
+    const appResumeSubmitted = (appResumeRows || []).length
+    const appResumePublic = (appResumeRows || []).filter(p => p.is_resume_public).length
+
     // ---- 커뮤니티 ----
     const posts = cnt('create_community_post')
     const comments = cnt('create_community_comment')
@@ -308,6 +319,9 @@ export default async function handler(req, res) {
       resume: {
         uploads: cnt('resume_upload'),
         uploadUsers: sizeOf('resumeUsers'),
+        // 앱 등록 이력서 누적(제출) + 그중 기업 공개 누적(공개 전환). 프로필 DB 상태 기준(기간 무관).
+        appSubmitted: appResumeSubmitted,
+        appPublic: appResumePublic,
         applyUsers: sizeOf('applyUsers'),
         // 이력서 올린 유저 중 지원 완료 유저 비율
         uploadToApply: rate(

@@ -30,7 +30,7 @@ const L = {
     // 요약(Overview)
     ovTitle: '핵심 지표 요약', ovD7: 'D7 잔존', ovStick: '스티키니스(DAU/MAU)', ovWau: 'WAU', ovMau: 'MAU',
     ovNew: '신규 유저(기간)', ovAct: '액티베이션 전환', ovQr: 'Quick Ratio(최근주)', ovCpp: '글당 답글',
-    ovSalary: '연봉 제출', ovApply: '지원 완료', ovPush: '푸시 재방문', ovPower: '파워유저(2일+)',
+    ovSalary: '연봉 제출', ovApply: '지원 완료', ovResume: '이력서 제출', ovResumePublic: '이력서 공개 전환', ovCumSub: '앱 누적', ovPush: '푸시 재방문', ovPower: '파워유저(2일+)',
     ovCurveTitle: '리텐션 커브 (D0~D14)', ovGrowthTitle: '주간 WAU 분해',
     tsNewRet: '신규 vs 재방문 (일별)', tsConvert: '핵심 전환 추이 (일별)', tsCommunity: '커뮤니티 활동 추이 (일별)',
     tsJobs: '채용 퍼널 추이 (일별)', tsPush: '푸시 추이 (일별)',
@@ -66,6 +66,7 @@ const L = {
     salaryTitle: '연봉 제출 (앱 핵심 전환)', salaryCount: '제출 수', salaryUsers: '제출 유저(고유)',
     byRole: '직군 분포', byExp: '연차 분포',
     resumeTitle: '이력서 등록', resumeUploads: '업로드 수', resumeUsers: '업로드 유저', uploadToApply: '업로드→지원 전환',
+    resumePublic: '공개 전환', resumePublicSub: '기업 공개 · 앱 누적',
     pushTitle: '푸시 (재참여 엔진)', pushSent: '발송', pushCtr: '클릭률(클릭/발송)', pushClicks: '클릭(재방문)', pushClickUsers: '클릭 유저', pushReceived: '수신(포그라운드)',
     pushByCat: '푸시 종류별 클릭', pushNote: '⚠ 클릭률 = 클릭/발송. 발송 수는 서버 발송 로그(push_sent)에서 집계되며 배포 시점부터 누적됩니다(이전 발송분은 분모에 없음). 수신은 OS 한계로 앱 실행 중(포그라운드)만 잡힙니다.',
     osTitle: 'OS 분포', verTitle: '앱 버전 분포 (릴리스 코호트)',
@@ -84,7 +85,7 @@ const L = {
     tabs: { overview: 'Overview', retention: 'Retention', users: 'Users', community: 'Community', conversion: 'Conversion', push: 'Push', segments: 'Segments' },
     ovTitle: 'Key Metrics', ovD7: 'D7 Retention', ovStick: 'Stickiness(DAU/MAU)', ovWau: 'WAU', ovMau: 'MAU',
     ovNew: 'New users (range)', ovAct: 'Activation', ovQr: 'Quick Ratio(last wk)', ovCpp: 'Replies/post',
-    ovSalary: 'Salary submits', ovApply: 'Applications', ovPush: 'Push returns', ovPower: 'Power users(2d+)',
+    ovSalary: 'Salary submits', ovApply: 'Applications', ovResume: 'Resume uploads', ovResumePublic: 'Resume made public', ovCumSub: 'app · cumulative', ovPush: 'Push returns', ovPower: 'Power users(2d+)',
     ovCurveTitle: 'Retention Curve (D0–D14)', ovGrowthTitle: 'Weekly WAU breakdown',
     tsNewRet: 'New vs Returning (daily)', tsConvert: 'Key conversions (daily)', tsCommunity: 'Community activity (daily)',
     tsJobs: 'Jobs funnel (daily)', tsPush: 'Push (daily)',
@@ -118,6 +119,7 @@ const L = {
     salaryTitle: 'Salary Submission (core conversion)', salaryCount: 'Submissions', salaryUsers: 'Unique submitters',
     byRole: 'By role', byExp: 'By experience',
     resumeTitle: 'Resume Upload', resumeUploads: 'Uploads', resumeUsers: 'Upload users', uploadToApply: 'Upload→apply conv',
+    resumePublic: 'Public conversions', resumePublicSub: 'Made public · app, cumulative',
     pushTitle: 'Push (re-engagement engine)', pushSent: 'Sent', pushCtr: 'CTR (clicks/sent)', pushClicks: 'Clicks (returns)', pushClickUsers: 'Click users', pushReceived: 'Received (foreground)',
     pushByCat: 'Clicks by push type', pushNote: '⚠ CTR = clicks/sent. Sent count comes from server push logs (push_sent) and accumulates from deploy time (earlier sends are not in the denominator). Received only fires in foreground (OS limit).',
     osTitle: 'OS Breakdown', verTitle: 'App Version Breakdown (release cohort)',
@@ -358,13 +360,15 @@ export default function AppMetricsView({ token, dateRange, lang }) {
           { label: t.ovCpp, value: topline.commentsPerPost, color: cppNum < 1 ? '#EF4444' : '#10B981' },
           { label: t.ovSalary, value: conversion.salary.count, color: '#059669' },
           { label: t.ovApply, value: conversion.jobs.submit, color: '#2563EB' },
+          { label: t.ovResume, value: conversion.resume.appSubmitted, color: '#2563EB', sub: t.ovCumSub },
+          { label: t.ovResumePublic, value: conversion.resume.appPublic, color: '#EA580C', sub: t.ovCumSub },
           { label: t.ovPush, value: push.clicks, color: '#8B5CF6' },
           { label: t.ovPower, value: analytics.depth.multiDayRate != null ? `${analytics.depth.multiDayRate}%` : '-', color: '#7C3AED' },
         ]
         return (
           <>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 12, marginBottom: 20 }}>
-              {cards.map(c => <Card key={c.label} label={c.label} value={c.value} color={c.color} />)}
+              {cards.map(c => <Card key={c.label} label={c.label} value={c.value} sub={c.sub} color={c.color} />)}
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(440px, 1fr))', gap: 16 }}>
               <TsCard title={t.dauTitle} data={ts} metrics={series.dau} lang={lang} />
@@ -623,6 +627,7 @@ export default function AppMetricsView({ token, dateRange, lang }) {
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 12 }}>
               <Card label={t.resumeUploads} value={conversion.resume.uploads} color="#2563EB" />
               <Card label={t.resumeUsers} value={conversion.resume.uploadUsers} color="#2563EB" />
+              <Card label={t.resumePublic} value={conversion.resume.appPublic} sub={t.resumePublicSub} color="#EA580C" />
               <Card label={t.uploadToApply} value={conversion.resume.uploadToApply != null ? `${conversion.resume.uploadToApply}%` : '-'} color="#10B981" />
             </div>
           </div>
