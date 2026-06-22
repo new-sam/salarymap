@@ -531,7 +531,7 @@ function buildRealtimeMessage(
         ].join("\n") }},
         { type: "divider" },
         { type: "section", text: { type: "mrkdwn", text: [
-          `*캠페인 누적* (${CAMPAIGN_START} ~ ${today})`,
+          `*전체 기간 누적* (${CAMPAIGN_START} ~ ${today})`,
           `세션 \`${cum.sessions.toLocaleString()}\` → 연봉 제출 \`${cum.totalSubs}\` → 신규 가입 \`${cum.totalSignups}\` (${signupRate}) → 이력서 등록 \`${cum.totalResumes}\` → 공고 지원 \`${cum.totalJobApps}\``,
           `신규 회사: \`${cum.totalCompanies}\``,
         ].join("\n") }},
@@ -585,7 +585,7 @@ function buildDailyMessage(
         ].join("\n") }},
         { type: "divider" },
         { type: "section", text: { type: "mrkdwn", text: [
-          `*캠페인 누적* (${CAMPAIGN_START} ~ ${targetDate})`,
+          `*전체 기간 누적* (${CAMPAIGN_START} ~ ${targetDate})`,
           `세션 \`${cum.sessions.toLocaleString()}\` → 연봉 제출 \`${cum.totalSubs}\` → 신규 가입 \`${cum.totalSignups}\` (${signupRate}) → 이력서 등록 \`${cum.totalResumes}\` → 공고 지원 \`${cum.totalJobApps}\``,
           `신규 회사: \`${cum.totalCompanies}\``,
         ].join("\n") }},
