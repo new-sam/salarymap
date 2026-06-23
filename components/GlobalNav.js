@@ -65,7 +65,7 @@ export default function GlobalNav({ activePage, onLogin, onJobsClick, mobileSear
           } catch {}
         }
         try {
-          const bRes = await fetch(`/api/job-bookmarks?userId=${session.user.id}`)
+          const bRes = await fetch('/api/job-bookmarks', { headers: { Authorization: `Bearer ${session.access_token}` } })
           const bData = await bRes.json()
           if (bData.bookmarks) setSavedCount(bData.bookmarks.length)
         } catch {}

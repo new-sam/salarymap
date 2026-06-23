@@ -516,7 +516,7 @@ export default function ProfilePage() {
   useEffect(() => {
     if (tab !== 'applications' || !user?.id || applications.length > 0) return
     setApplicationsLoading(true)
-    fetch(`/api/my-applications?userId=${user.id}`)
+    fetch('/api/my-applications', { headers: { Authorization: `Bearer ${token}` } })
       .then(r => r.json())
       .then(d => setApplications(d.data || []))
       .catch(() => {})

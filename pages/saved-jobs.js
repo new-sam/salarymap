@@ -10,13 +10,15 @@ export default function SavedJobs() {
   const [loading, setLoading] = useState(true)
   const [savedJobs, setSavedJobs] = useState([])
   const [user, setUser] = useState(null)
+  const [token, setToken] = useState(null)
 
   useEffect(() => {
     supabase.auth.getSession().then(async ({ data: { session } }) => {
       if (!session) { router.replace('/'); return }
       setUser(session.user)
+      setToken(session.access_token)
       try {
-        const res = await fetch(`/api/job-bookmarks?userId=${session.user.id}`)
+        const res = await fetch('/api/job-bookmarks', { headers: { Authorization: `Bearer ${session.access_token}` } })
         const data = await res.json()
         if (data.bookmarks) setSavedJobs(data.bookmarks)
       } catch {}
@@ -30,8 +32,8 @@ export default function SavedJobs() {
       try {
         await fetch('/api/job-bookmarks', {
           method: 'DELETE',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ userId: user.id, jobId }),
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+          body: JSON.stringify({ jobId }),
         })
         // sync localStorage
         const ids = savedJobs.filter(b => b.job_id !== jobId).map(b => b.job_id)

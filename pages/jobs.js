@@ -227,7 +227,7 @@ export default function JobsPage() {
         // Load bookmarks from DB + check profile resume
         try {
           const [bRes, pRes] = await Promise.all([
-            fetch(`/api/job-bookmarks?userId=${s.user.id}`),
+            fetch('/api/job-bookmarks', { headers: { Authorization: `Bearer ${s.access_token}` } }),
             fetch('/api/profile/talent', { headers: { Authorization: `Bearer ${s.access_token}` } }),
           ])
           const bData = await bRes.json()
@@ -532,8 +532,8 @@ export default function JobsPage() {
     track(isRemoving ? 'unsave_job' : 'save_job', '/jobs', { jobId, title: job?.title, company: job?.company })
     fetch('/api/job-bookmarks', {
       method: isRemoving ? 'DELETE' : 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ userId: user.id, jobId }),
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session?.access_token}` },
+      body: JSON.stringify({ jobId }),
     }).catch(() => {})
   }
 

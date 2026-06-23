@@ -24,7 +24,7 @@ export default function MyApplications() {
     supabase.auth.getSession().then(async ({ data: { session } }) => {
       if (!session) { router.replace('/'); return }
       try {
-        const res = await fetch(`/api/my-applications?userId=${session.user.id}`)
+        const res = await fetch('/api/my-applications', { headers: { Authorization: `Bearer ${session.access_token}` } })
         const data = await res.json()
         if (data.data) {
           setApplications(data.data)
