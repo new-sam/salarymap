@@ -780,28 +780,34 @@ function buildRealtimeMessage(
   const yLabel = yesterday.slice(5).replace("-", "/"); // "06-22" → "06/22"
   const tLabel = today.slice(5).replace("-", "/");
 
+  // 코드 블록 안에선 mrkdwn(*bold*) 적용 안 되므로 평문 mrkdwn 으로 라인별
+  // 출력. 오늘값을 *볼드* 로 강조 — 시선이 자연스럽게 최신 숫자로 향함.
+  const line = (label: string, prev: number, curr: number, isBoost = false) => {
+    const em = (isBoost ? boostEmoji(curr, prev) : dodEmoji(curr, prev));
+    return `${label}  ${prev.toLocaleString()} → *${curr.toLocaleString()}*  ${pctChange(curr, prev)}${em}`;
+  };
+
   return {
     response_type: slashCommand ? "in_channel" : undefined,
     attachments: [{
       color: "#2ea44f",
       blocks: [
         { type: "header", text: { type: "plain_text", text: `FYI 실시간 / Live — ${today} (${dayName}) ${timeStr} UTC+7` } },
-        { type: "context", elements: [{ type: "mrkdwn", text: `${yLabel} 어제 같은 시각까지 vs ${tLabel} 오늘 ${timeStr} 까지 (DoD)` }] },
+        { type: "context", elements: [{ type: "mrkdwn", text: `${yLabel} 어제 같은 시각까지  →  *${tLabel} 오늘 ${timeStr} 까지* (DoD)` }] },
         { type: "divider" },
         { type: "section", text: { type: "mrkdwn", text:
-          `*주요 지표 / Key metrics*\n` + codeBlock([
-            metricHeader3(yLabel, tLabel),
-            metricLine3("• 세션 (Sessions)", p.sessions, s.sessions),
-            metricLine3("• 연봉 제출 (Submissions)", p.submissions, s.submissions),
-            metricLine3("   ↳ 광고 (Paid)", p.ad, s.ad),
-            metricLine3("   ↳ 자연유입 (Organic)", p.organic, s.organic),
-            metricLine3("• 신규 가입 (Sign-ups)", p.signups, s.signups, true),
-            metricLine3("   ↳ 웹 (Web)", p.signupWeb, s.signupWeb),
-            metricLine3("   ↳ 앱 (App)", p.signupApp, s.signupApp),
-            metricLine3("• 이력서 등록 (Resume uploads)", p.resumes, s.resumes, true),
-            metricLine3("• 공고 지원 (Job apps)", p.jobApps, s.jobApps),
-            metricLine3("• 회사 (Companies)", p.companies, s.companies),
-          ])
+          `*주요 지표 / Key metrics*\n` + [
+            line("• 세션 (Sessions)", p.sessions, s.sessions),
+            line("• 연봉 제출 (Submissions)", p.submissions, s.submissions),
+            line("   ↳ 광고 (Paid)", p.ad, s.ad),
+            line("   ↳ 자연유입 (Organic)", p.organic, s.organic),
+            line("• 신규 가입 (Sign-ups)", p.signups, s.signups, true),
+            line("   ↳ 웹 (Web)", p.signupWeb, s.signupWeb),
+            line("   ↳ 앱 (App)", p.signupApp, s.signupApp),
+            line("• 이력서 등록 (Resume uploads)", p.resumes, s.resumes, true),
+            line("• 공고 지원 (Job apps)", p.jobApps, s.jobApps),
+            line("• 회사 (Companies)", p.companies, s.companies),
+          ].join("\n")
         }},
       ],
     }],
