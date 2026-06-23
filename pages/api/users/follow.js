@@ -62,25 +62,30 @@ export default async function handler(req, res) {
       .upsert({ follower_id: me.id, following_id: followingId }, { onConflict: 'follower_id,following_id' })
     if (error) return res.status(500).json({ error: error.message })
 
-    // 새 팔로우만 알림. 팔로워 신원은 본문에 넣지 않는다(익명성 배려) — 탭하면 내 프로필로.
+    // 새 팔로우만 알림. 팔로우는 익명 활동이 아니므로 팔로워 실명을 노출한다(인스타/트위터식).
     if (!existing) {
+      // 현재 프로필 이름(편집 가능) 우선, 없으면 가입 메타/이메일 앞부분.
+      const { data: prof } = await supabase
+        .from('user_profiles').select('full_name').eq('id', me.id).maybeSingle()
+      const followerName =
+        prof?.full_name || me.user_metadata?.full_name || me.email?.split('@')[0] || 'User'
       sendPush([followingId], {
         title: { vi: 'FYI Cộng đồng', ko: 'FYI 커뮤니티', en: 'FYI Community' },
         body: {
-          vi: 'Ai đó đã bắt đầu theo dõi bạn',
-          ko: '누군가 회원님을 팔로우했습니다',
-          en: 'Someone started following you',
+          vi: `${followerName} đã bắt đầu theo dõi bạn`,
+          ko: `${followerName}님이 회원님을 팔로우했습니다`,
+          en: `${followerName} started following you`,
         },
         category: 'follow',
         // 모바일은 data.user를 받으면 그 사람 공개 프로필 모달을 띄운다(routeFromNotification).
         data: { user: me.id },
       })
-      // 인앱 알림함에도 적재. 익명성 배려로 actor_name은 비우고(클라가 "누군가"),
-      // 탭하면 푸시와 동일하게 data.user로 팔로워 공개 프로필을 연다.
+      // 인앱 알림함에도 적재. actor_name에 팔로워 실명을 넣어 클라가 "{name}님이 팔로우" 표기.
+      // 탭하면 data.user로 팔로워 공개 프로필을 연다.
       createNotification({
         userId: followingId,
         actorId: me.id,
-        actorName: null,
+        actorName: followerName,
         type: 'follow',
         data: { user: me.id },
       })
