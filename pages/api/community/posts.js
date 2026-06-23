@@ -118,8 +118,10 @@ async function userTypeMap(userIds) {
 }
 
 // Map of user_id -> profile photo (user_profiles.photo_url), the picture the user
-// uploaded in-app. Used to override author_avatar on non-anonymous posts so the
-// in-app photo shows even when there's no social avatar. Anonymous posts skip this.
+// registered in-app. This is the ONLY avatar source for non-anonymous posts; if a
+// user never set an in-app photo, author_avatar is null → client renders initials.
+// Social login avatars (google/apple user_metadata.avatar_url) are never used.
+// Anonymous posts skip this.
 async function avatarMap(userIds) {
   const ids = [...new Set(userIds)].filter(Boolean)
   if (!ids.length) return {}
@@ -257,7 +259,7 @@ export default async function handler(req, res) {
       post.author_verified_company = cvMap[post.user_id] || null
       post.author_user_type = utMap[post.user_id]?.user_type || null
       post.author_verified_school = utMap[post.user_id]?.verified_school || null
-      post.author_avatar = post.is_anonymous ? null : (avMap[post.user_id] || post.author_avatar || null)
+      post.author_avatar = post.is_anonymous ? null : (avMap[post.user_id] || null)
       post.author_name = resolveAuthorName(post, nMap)
 
       // A/B 투표 첨부(있으면). 현황 + 로그인 사용자의 투표 여부.
@@ -348,7 +350,7 @@ export default async function handler(req, res) {
       ])
 
       return res.status(200).json({
-        posts: iData.map(p => ({ ...p, is_liked: iLiked.includes(p.id), author_badge: iTierMap[p.user_id] || null, author_salary_tier: salaryTierOf(iTierMap[p.user_id]), author_verified_company: iCvMap[p.user_id] || null, author_user_type: iUtMap[p.user_id]?.user_type || null, author_verified_school: iUtMap[p.user_id]?.verified_school || null, author_avatar: p.is_anonymous ? null : (iAvMap[p.user_id] || p.author_avatar || null), author_name: resolveAuthorName(p, iNameMap) })),
+        posts: iData.map(p => ({ ...p, is_liked: iLiked.includes(p.id), author_badge: iTierMap[p.user_id] || null, author_salary_tier: salaryTierOf(iTierMap[p.user_id]), author_verified_company: iCvMap[p.user_id] || null, author_user_type: iUtMap[p.user_id]?.user_type || null, author_verified_school: iUtMap[p.user_id]?.verified_school || null, author_avatar: p.is_anonymous ? null : (iAvMap[p.user_id] || null), author_name: resolveAuthorName(p, iNameMap) })),
         total: iCount,
         page: parseInt(page),
         totalPages: Math.ceil(iCount / parseInt(limit))
@@ -486,7 +488,7 @@ export default async function handler(req, res) {
     ])
 
     return res.status(200).json({
-      posts: data.map(p => ({ ...p, is_liked: likedPostIds.includes(p.id), poll: pollMap[p.id] || null, author_badge: tierMap[p.user_id] || null, author_salary_tier: salaryTierOf(tierMap[p.user_id]), author_verified_company: cvMap[p.user_id] || null, author_user_type: utMap[p.user_id]?.user_type || null, author_verified_school: utMap[p.user_id]?.verified_school || null, author_avatar: p.is_anonymous ? null : (avMap[p.user_id] || p.author_avatar || null), author_name: resolveAuthorName(p, nMap) })),
+      posts: data.map(p => ({ ...p, is_liked: likedPostIds.includes(p.id), poll: pollMap[p.id] || null, author_badge: tierMap[p.user_id] || null, author_salary_tier: salaryTierOf(tierMap[p.user_id]), author_verified_company: cvMap[p.user_id] || null, author_user_type: utMap[p.user_id]?.user_type || null, author_verified_school: utMap[p.user_id]?.verified_school || null, author_avatar: p.is_anonymous ? null : (avMap[p.user_id] || null), author_name: resolveAuthorName(p, nMap) })),
       total: count,
       page: parseInt(page),
       totalPages: Math.ceil(count / parseInt(limit))
@@ -528,7 +530,7 @@ export default async function handler(req, res) {
     // NOT the auth signup metadata which is frozen at sign-up time.
     const { data: authorProfile } = await supabase
       .from('user_profiles')
-      .select('full_name')
+      .select('full_name, photo_url')
       .eq('id', user.id)
       .maybeSingle()
     const realName = authorProfile?.full_name || user.user_metadata?.full_name || user.email?.split('@')[0] || 'User'
@@ -544,7 +546,9 @@ export default async function handler(req, res) {
       .insert({
         user_id: user.id,
         author_name: authorName,
-        author_avatar: is_anonymous ? null : user.user_metadata?.avatar_url,
+        // 앱에서 직접 등록한 프사(user_profiles.photo_url)만 사용한다.
+        // 구글/애플 소셜 아바타(user_metadata.avatar_url)는 쓰지 않는다 — 프사 미등록이면 이니셜로.
+        author_avatar: is_anonymous ? null : (authorProfile?.photo_url || null),
         category,
         title,
         content,
