@@ -369,6 +369,12 @@ export default async function handler(req, res) {
       }
     }
 
+    // 공개 프로필 "최근활동" 탭: 특정 유저가 공개(비익명)로 쓴 글만. 익명 글은 user_id로
+    // 역추적되면 안 되므로 is_anonymous=false로 못박는다(익명 글은 애초에 프로필도 안 열림).
+    if (req.query.author_id) {
+      query = query.eq('user_id', req.query.author_id).eq('is_anonymous', false)
+    }
+
     if (category && category !== 'all') {
       query = query.eq('category', category)
     }
