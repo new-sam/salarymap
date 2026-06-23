@@ -5,6 +5,7 @@
 //  DELETE ?following_id=   언팔로우
 import supabase from '../../../lib/supabaseAdmin'
 import { sendPush } from '../../../lib/push'
+import { createNotification } from '../../../lib/notify'
 
 async function userFromReq(req) {
   const token = req.headers.authorization?.replace('Bearer ', '')
@@ -72,6 +73,15 @@ export default async function handler(req, res) {
         },
         category: 'follow',
         // 모바일은 data.user를 받으면 그 사람 공개 프로필 모달을 띄운다(routeFromNotification).
+        data: { user: me.id },
+      })
+      // 인앱 알림함에도 적재. 익명성 배려로 actor_name은 비우고(클라가 "누군가"),
+      // 탭하면 푸시와 동일하게 data.user로 팔로워 공개 프로필을 연다.
+      createNotification({
+        userId: followingId,
+        actorId: me.id,
+        actorName: null,
+        type: 'follow',
         data: { user: me.id },
       })
     }

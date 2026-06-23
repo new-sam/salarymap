@@ -7,6 +7,7 @@ function salaryTierOf(repKey) {
   return repKey && getSalaryTierByKey(repKey) ? repKey : null
 }
 import { sendPush } from '../../../lib/push'
+import { createNotification } from '../../../lib/notify'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
@@ -296,6 +297,18 @@ export default async function handler(req, res) {
         title: postData.title || COMMENT_TITLE,
         body: { vi: bodyFor('vi'), ko: bodyFor('ko'), en: bodyFor('en') },
         category: 'comment',
+        data: { url: `/community/${post_id}` },
+      })
+      // 인앱 알림함 적재. 익명 댓글이면 actor_name은 비우고(클라가 "익명"),
+      // 실명글이면 실명을 그대로 넣어 푸시와 동일한 신원 노출 규칙을 따른다.
+      createNotification({
+        userId: postData.user_id,
+        actorId: user.id,
+        actorName: effectiveAnon ? null : realName,
+        type: 'comment',
+        postId: post_id,
+        commentId: data.id,
+        body: snippet || null,
         data: { url: `/community/${post_id}` },
       })
     }

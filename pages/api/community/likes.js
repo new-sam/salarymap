@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js'
 import { sendPush } from '../../../lib/push'
+import { createNotification } from '../../../lib/notify'
 
 // 토큰 locale(vi|ko|en)별로 push.js가 선택. 글 제목이 없을 때의 제목 폴백.
 const COMMUNITY_TITLE = { vi: 'Cộng đồng FYI', ko: 'FYI 커뮤니티', en: 'FYI Community' }
@@ -93,11 +94,22 @@ export default async function handler(req, res) {
       if (target.user_id && target.user_id !== user.id) {
         const deepPostId = post_id || target.post_id
         // 글 좋아요는 글 제목(사용자 데이터, 언어 중립)을 제목으로, 없으면 언어별 폴백.
+        const likeData = deepPostId ? { url: `/community/${deepPostId}` } : {}
         sendPush([target.user_id], {
           title: post_id ? (target.title || COMMUNITY_TITLE) : COMMUNITY_TITLE,
           body: post_id ? LIKE_POST_BODY : LIKE_COMMENT_BODY,
           category: 'like',
-          data: deepPostId ? { url: `/community/${deepPostId}` } : {},
+          data: likeData,
+        })
+        // 인앱 알림함 적재. 좋아요는 푸시와 동일하게 익명("누군가") — actor_name 비움.
+        createNotification({
+          userId: target.user_id,
+          actorId: user.id,
+          actorName: null,
+          type: 'like',
+          postId: deepPostId || null,
+          commentId: comment_id || null,
+          data: likeData,
         })
       }
     }
