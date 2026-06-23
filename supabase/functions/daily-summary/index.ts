@@ -793,7 +793,7 @@ function buildRealtimeMessage(
       color: "#2ea44f",
       blocks: [
         { type: "header", text: { type: "plain_text", text: `FYI 실시간 / Live — ${today} (${dayName}) ${timeStr} UTC+7` } },
-        { type: "context", elements: [{ type: "mrkdwn", text: `${yLabel} 어제 같은 시각까지  →  *${tLabel} 오늘 ${timeStr} 까지* (DoD)` }] },
+        { type: "context", elements: [{ type: "mrkdwn", text: `${yLabel} 어제 같은 시각까지 (Yesterday same hour)  →  *${tLabel} 오늘 ${timeStr} 까지 (Today)*  (DoD)` }] },
         { type: "divider" },
         { type: "section", text: { type: "mrkdwn", text:
           `*주요 지표 / Key metrics*\n` + [
@@ -1051,6 +1051,19 @@ async function sendToSlack(payload: object) {
   if (!res.ok) throw new Error(`Slack error: ${res.status} ${await res.text()}`);
 }
 
+// 중복 발송 방지 — daily/weekly cron 이 외부 시스템(옛 fyi-daily-summary
+// 의 잔여 cron 등)과 동시 호출돼도 한 번만 발송되게.
+// cron_locks 테이블에 UNIQUE key 로 lock 행 insert; 두 번째 호출은 PK
+// 위반(23505) → false 반환해 호출 측이 skip. fail-open: 다른 DB 오류 시엔
+// true 반환해서 발송 누락 안 되게.
+async function acquireSendLock(lockKey: string): Promise<boolean> {
+  const { error } = await supabase.from("cron_locks").insert({ key: lockKey });
+  if (!error) return true;
+  if ((error as any).code === "23505") return false;
+  console.error("Lock acquire error:", JSON.stringify(error));
+  return true;
+}
+
 // ─── Main Handler ───
 // 같은 realtime 페이로드를 슬래시 커맨드 (response_url 비동기) 와 cron
 // (직접 Slack webhook) 양쪽에서 재사용한다. listUsers + submissions
@@ -1211,6 +1224,16 @@ Deno.serve(async (req) => {
           blocks.shift();
         }
       }
+      // ?force=1 → lock 우회 (테스트/백필용). 평소엔 lock 으로 같은 일자
+      // 두 번째 호출 자동 skip — 우리 cron 과 외부 잔여 cron 이 동시
+      // 발동해도 한 번만 발송.
+      const force = url.searchParams.get("force") === "1";
+      if (!force) {
+        const ok = await acquireSendLock(`daily-${yesterday}`);
+        if (!ok) {
+          return new Response(JSON.stringify({ success: true, mode: "daily", date: yesterday, skipped: "duplicate" }), { headers: { "Content-Type": "application/json" } });
+        }
+      }
       await sendToSlack(message);
       return new Response(JSON.stringify({ success: true, mode: "daily", date: yesterday }), { headers: { "Content-Type": "application/json" } });
     }
@@ -1245,6 +1268,13 @@ Deno.serve(async (req) => {
         console.error("App weekly report error:", (e as Error).message);
       }
 
+      const force = url.searchParams.get("force") === "1";
+      if (!force) {
+        const ok = await acquireSendLock(`weekly-${thisWeekStart}`);
+        if (!ok) {
+          return new Response(JSON.stringify({ success: true, mode: "weekly", week: `${thisWeekStart} ~ ${thisWeekEnd}`, skipped: "duplicate" }), { headers: { "Content-Type": "application/json" } });
+        }
+      }
       await sendToSlack(message);
       return new Response(JSON.stringify({ success: true, mode: "weekly", week: `${thisWeekStart} ~ ${thisWeekEnd}` }), { headers: { "Content-Type": "application/json" } });
     }
