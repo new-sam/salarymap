@@ -323,7 +323,6 @@ async function getRangeBundle(startUtc: string, endUtc: string) {
   const subs = await fetchSubmissions(startUtc, endUtc);
   const deduped = dedupeSubmissions(subs.filter((r: any) => !isExcludedSubmission(r)));
   const ad = deduped.filter((r: any) => PAID_SOURCES.has(r.source)).length;
-  const companies = new Set(deduped.map((r: any) => r.company?.trim().toLowerCase()).filter(Boolean)).size;
   const signupRes = await getSignupsInRange(startUtc, endUtc);
   const signupSplit = await splitSignupPlatform(signupRes.ids);
   const [jobAppsSplit, resumesSplit] = await Promise.all([
@@ -334,7 +333,6 @@ async function getRangeBundle(startUtc: string, endUtc: string) {
     submissions: deduped.length,
     ad,
     organic: deduped.length - ad,
-    companies,
     signups: signupRes.count,
     signupWeb: signupSplit.web,
     signupApp: signupSplit.app,
@@ -787,7 +785,6 @@ type StatsBundle = {
   resumes: number;
   resumeWeb: number;
   resumeApp: number;
-  companies: number;
 };
 
 function dod(curr: number, prev: number): string {
@@ -834,7 +831,6 @@ function metricLinesSection(s: StatsBundle, p: StatsBundle, prevLabel: string, c
     metricLine3("• 공고 지원 (Job apps)", p.jobApps, s.jobApps),
     metricLine3("   ↳ 웹 (Web)", p.jobAppsWeb, s.jobAppsWeb),
     metricLine3("   ↳ 앱 (App)", p.jobAppsApp, s.jobAppsApp),
-    metricLine3("• 회사 (Companies)", p.companies, s.companies),
   ]);
 }
 
