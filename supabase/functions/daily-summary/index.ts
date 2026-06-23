@@ -326,17 +326,10 @@ async function getRangeBundle(startUtc: string, endUtc: string) {
   const companies = new Set(deduped.map((r: any) => r.company?.trim().toLowerCase()).filter(Boolean)).size;
   const signupRes = await getSignupsInRange(startUtc, endUtc);
   const signupSplit = await splitSignupPlatform(signupRes.ids);
-  const { count: jobApps } = await supabase
-    .from("job_applications")
-    .select("*", { count: "exact", head: true })
-    .gte("created_at", startUtc)
-    .lte("created_at", endUtc);
-  const { count: resumes } = await supabase
-    .from("events")
-    .select("id", { count: "exact", head: true })
-    .in("event", ["cv_register_success", "resume_upload"])
-    .gte("created_at", startUtc)
-    .lte("created_at", endUtc);
+  const [jobAppsSplit, resumesSplit] = await Promise.all([
+    getJobAppsSplit(startUtc, endUtc),
+    getResumeEventsSplit(startUtc, endUtc), // realtime / daily-today overlay 식
+  ]);
   return {
     submissions: deduped.length,
     ad,
@@ -345,8 +338,12 @@ async function getRangeBundle(startUtc: string, endUtc: string) {
     signups: signupRes.count,
     signupWeb: signupSplit.web,
     signupApp: signupSplit.app,
-    jobApps: jobApps || 0,
-    resumes: resumes || 0,
+    jobApps: jobAppsSplit.total,
+    jobAppsWeb: jobAppsSplit.web,
+    jobAppsApp: jobAppsSplit.app,
+    resumes: resumesSplit.total,
+    resumeWeb: resumesSplit.web,
+    resumeApp: resumesSplit.app,
   };
 }
 
@@ -457,43 +454,89 @@ async function getResumeUploadsCumulative(): Promise<number> {
   return count || 0;
 }
 
-async function getResumeUploadsToday(startUtc: string, endUtc: string): Promise<number> {
-  const { count, error } = await supabase
-    .from("events")
-    .select("id", { count: "exact", head: true })
-    .in("event", ["cv_register_success", "resume_upload"])
-    .gte("created_at", startUtc)
-    .lte("created_at", endUtc);
-  if (error) { console.error("Resume today error:", JSON.stringify(error)); return 0; }
-  return count || 0;
-}
+// ─ Web/App split helpers ─
+// 6/17 마이그레이션의 source-of-truth 컬럼을 직접 사용 (job_applications.platform
+// / user_profiles.resume_platform). events.meta.platform 은 fire-and-forget
+// 분석용 근사치라 누락 가능 — 이력서 등록 events 식만 어쩔 수 없이 사용.
+// 셋 다 null = web 으로 default (앱은 명시적 헤더가 있을 때만 'app' 기록).
+type Split = { total: number; web: number; app: number };
 
-async function getResumeUploadsForDate(dateStr: string): Promise<number> {
-  return getResumeUploadsToday(`${dateStr}T00:00:00+07:00`, `${dateStr}T23:59:59+07:00`);
-}
-
-// admin UI 의 *일별 행* 정의 — 다만 dashboard.js:199-217 의 todayData
-// 로직이 "그 시점의 오늘 행" 만 realtime(events count) 으로 덮어쓰기
-// 한다. 따라서 호출 시점이 그 날짜와 같으면 events 식, 어제 이전이면
-// user_profiles 식을 쓰는 wrapper 가 admin UI 와 정확히 매칭.
-async function getResumeUploadsForDateAdminUI(dateStr: string): Promise<number> {
-  if (dateStr === getVietnamDate(0)) {
-    return getResumeUploadsForDate(dateStr); // events count (admin todayData overlay)
+async function getResumeEventsSplit(startUtc: string, endUtc: string): Promise<Split> {
+  const PAGE = 1000;
+  let from = 0, app = 0, web = 0;
+  while (true) {
+    const { data, error } = await supabase
+      .from("events")
+      .select("meta")
+      .in("event", ["cv_register_success", "resume_upload"])
+      .gte("created_at", startUtc)
+      .lte("created_at", endUtc)
+      .order("created_at", { ascending: true })
+      .range(from, from + PAGE - 1);
+    if (error) { console.error("Resume events split error:", JSON.stringify(error)); break; }
+    for (const r of data || []) {
+      if (r.meta?.platform === "app") app++; else web++;
+    }
+    if (!data || data.length < PAGE) break;
+    from += PAGE;
   }
-  return getResumeUploadsForDateProfileBased(dateStr); // user_profiles (admin daily row)
+  return { total: app + web, web, app };
 }
 
-async function getResumeUploadsForDateProfileBased(dateStr: string): Promise<number> {
-  const startUtc = new Date(`${dateStr}T00:00:00+07:00`).toISOString();
-  const endUtc = new Date(`${dateStr}T23:59:59+07:00`).toISOString();
-  const { count, error } = await supabase
-    .from("user_profiles")
-    .select("id", { count: "exact", head: true })
-    .not("resume_url", "is", null)
-    .gte("updated_at", startUtc)
-    .lte("updated_at", endUtc);
-  if (error) { console.error("Resume daily error:", JSON.stringify(error)); return 0; }
-  return count || 0;
+async function getResumeProfilesSplit(startUtc: string, endUtc: string): Promise<Split> {
+  const PAGE = 1000;
+  let from = 0, app = 0, web = 0;
+  while (true) {
+    const { data, error } = await supabase
+      .from("user_profiles")
+      .select("resume_platform")
+      .not("resume_url", "is", null)
+      .gte("updated_at", startUtc)
+      .lte("updated_at", endUtc)
+      .range(from, from + PAGE - 1);
+    if (error) { console.error("Resume profiles split error:", JSON.stringify(error)); break; }
+    for (const r of data || []) {
+      if (r.resume_platform === "app") app++; else web++;
+    }
+    if (!data || data.length < PAGE) break;
+    from += PAGE;
+  }
+  return { total: app + web, web, app };
+}
+
+async function getJobAppsSplit(startUtc: string, endUtc: string): Promise<Split> {
+  const PAGE = 1000;
+  let from = 0, app = 0, web = 0;
+  while (true) {
+    const { data, error } = await supabase
+      .from("job_applications")
+      .select("platform")
+      .gte("created_at", startUtc)
+      .lte("created_at", endUtc)
+      .range(from, from + PAGE - 1);
+    if (error) { console.error("Job apps split error:", JSON.stringify(error)); break; }
+    for (const r of data || []) {
+      if (r.platform === "app") app++; else web++;
+    }
+    if (!data || data.length < PAGE) break;
+    from += PAGE;
+  }
+  return { total: app + web, web, app };
+}
+
+// admin UI 의 *일별 행* 정의 — dashboard.js:199-217 의 todayData 로직이
+// "그 시점의 오늘 행" 만 realtime(events count) 으로 덮어쓴다. 호출 시점이
+// 그 날짜와 같으면 events 식, 어제 이전이면 user_profiles 식.
+async function getResumeUploadsForDateAdminUI(dateStr: string): Promise<Split> {
+  const startTz = `${dateStr}T00:00:00+07:00`;
+  const endTz = `${dateStr}T23:59:59+07:00`;
+  if (dateStr === getVietnamDate(0)) {
+    return getResumeEventsSplit(startTz, endTz); // events (admin todayData overlay)
+  }
+  return getResumeProfilesSplit(
+    new Date(startTz).toISOString(),
+    new Date(endTz).toISOString()
+  ); // user_profiles (admin daily row)
 }
 
 async function getCumulative(startDate: string, endDate: string) {
@@ -739,7 +782,11 @@ type StatsBundle = {
   signupWeb: number;
   signupApp: number;
   jobApps: number;
+  jobAppsWeb: number;
+  jobAppsApp: number;
   resumes: number;
+  resumeWeb: number;
+  resumeApp: number;
   companies: number;
 };
 
@@ -768,25 +815,27 @@ function metricHeader3(prevLabel: string, currLabel: string): string {
   return padLabel("", LABEL_W) + cjkPadStart(prevLabel, VAL_W) + cjkPadStart(currLabel, VAL_W) + "  " + cjkPadStart("DoD", PCT_W);
 }
 
-// realtime / daily 공통 — 라인별 mrkdwn + 오늘값(curr) 볼드 강조 + DoD%.
-function metricLineMrkdwn(label: string, prev: number, curr: number, isBoost = false): string {
-  const em = (isBoost ? boostEmoji(curr, prev) : dodEmoji(curr, prev));
-  return `${label}  ${prev.toLocaleString()} → *${curr.toLocaleString()}*  ${pctChange(curr, prev)}${em}`;
-}
-
-function metricLinesSection(s: StatsBundle, p: StatsBundle): string {
-  return [
-    metricLineMrkdwn("• 세션 (Sessions)", p.sessions, s.sessions),
-    metricLineMrkdwn("• 연봉 제출 (Submissions)", p.submissions, s.submissions),
-    metricLineMrkdwn("   ↳ 광고 (Paid)", p.ad, s.ad),
-    metricLineMrkdwn("   ↳ 자연유입 (Organic)", p.organic, s.organic),
-    metricLineMrkdwn("• 신규 가입 (Sign-ups)", p.signups, s.signups, true),
-    metricLineMrkdwn("   ↳ 웹 (Web)", p.signupWeb, s.signupWeb),
-    metricLineMrkdwn("   ↳ 앱 (App)", p.signupApp, s.signupApp),
-    metricLineMrkdwn("• 이력서 등록 (Resume uploads)", p.resumes, s.resumes, true),
-    metricLineMrkdwn("• 공고 지원 (Job apps)", p.jobApps, s.jobApps),
-    metricLineMrkdwn("• 회사 (Companies)", p.companies, s.companies),
-  ].join("\n");
+// realtime / daily 공통 — 전체를 fenced code block(monospace) 으로 감싸 정렬.
+// 3컬럼 포맷: 라벨(LABEL_W=32) + 어제값(VAL_W=7) + 오늘값(VAL_W=7) + DoD%(PCT_W=5) + 이모지.
+// 첫 줄은 헤더(어제 날짜 / 오늘 날짜 / DoD). prevLabel/currLabel 은 MM/DD 식.
+function metricLinesSection(s: StatsBundle, p: StatsBundle, prevLabel: string, currLabel: string): string {
+  return codeBlock([
+    metricHeader3(prevLabel, currLabel),
+    metricLine3("• 세션 (Sessions)", p.sessions, s.sessions),
+    metricLine3("• 연봉 제출 (Submissions)", p.submissions, s.submissions),
+    metricLine3("   ↳ 광고 (Paid)", p.ad, s.ad),
+    metricLine3("   ↳ 자연유입 (Organic)", p.organic, s.organic),
+    metricLine3("• 신규 가입 (Sign-ups)", p.signups, s.signups, true),
+    metricLine3("   ↳ 웹 (Web)", p.signupWeb, s.signupWeb),
+    metricLine3("   ↳ 앱 (App)", p.signupApp, s.signupApp),
+    metricLine3("• 이력서 등록 (Resume uploads)", p.resumes, s.resumes, true),
+    metricLine3("   ↳ 웹 (Web)", p.resumeWeb, s.resumeWeb),
+    metricLine3("   ↳ 앱 (App)", p.resumeApp, s.resumeApp),
+    metricLine3("• 공고 지원 (Job apps)", p.jobApps, s.jobApps),
+    metricLine3("   ↳ 웹 (Web)", p.jobAppsWeb, s.jobAppsWeb),
+    metricLine3("   ↳ 앱 (App)", p.jobAppsApp, s.jobAppsApp),
+    metricLine3("• 회사 (Companies)", p.companies, s.companies),
+  ]);
 }
 
 function buildRealtimeMessage(
@@ -798,8 +847,6 @@ function buildRealtimeMessage(
   slashCommand: boolean,
 ) {
   const dayName = getDayName(today);
-  const yLabel = yesterday.slice(5).replace("-", "/");
-  const tLabel = today.slice(5).replace("-", "/");
 
   return {
     response_type: slashCommand ? "in_channel" : undefined,
@@ -807,9 +854,9 @@ function buildRealtimeMessage(
       color: "#2ea44f",
       blocks: [
         { type: "header", text: { type: "plain_text", text: `FYI 실시간 / Live — ${today} (${dayName}) ${timeStr} UTC+7` } },
-        { type: "context", elements: [{ type: "mrkdwn", text: `${yLabel} 어제 같은 시각까지 (Yesterday same hour)  →  *${tLabel} 오늘 ${timeStr} 까지 (Today)*  (DoD)` }] },
+        { type: "context", elements: [{ type: "mrkdwn", text: `데이터 기간 (Data range): ${today} 00:00 ~ ${timeStr} (UTC+7) · 어제 같은 시각 대비 (DoD)` }] },
         { type: "divider" },
-        { type: "section", text: { type: "mrkdwn", text: `*주요 지표 / Key metrics*\n` + metricLinesSection(s, p) }},
+        { type: "section", text: { type: "mrkdwn", text: `*주요 지표 / Key metrics*\n` + metricLinesSection(s, p, yesterday.slice(5).replace("-", "/"), today.slice(5).replace("-", "/")) }},
       ],
     }],
   };
@@ -824,8 +871,6 @@ function buildDailyMessage(
 ) {
   const dayName = getDayName(targetDate);
   const trendColor = s.submissions > p.submissions ? "#cc0000" : s.submissions < p.submissions ? "#1D6CE0" : "#999999";
-  const yLabel = dayBefore.slice(5).replace("-", "/");
-  const tLabel = targetDate.slice(5).replace("-", "/");
 
   const alertBlock = alerts.length > 0
     ? [{ type: "section", text: { type: "mrkdwn", text: alerts.join("\n") } }]
@@ -838,9 +883,9 @@ function buildDailyMessage(
       blocks: [
         { type: "section", text: { type: "mrkdwn", text: "<!here> 오늘의 FYI 일일 리포트 / Today's FYI Daily Report" } },
         { type: "header", text: { type: "plain_text", text: `FYI 일일 리포트 / Daily — ${targetDate} (${dayName})` } },
-        { type: "context", elements: [{ type: "mrkdwn", text: `${yLabel} 그저께 (Day before)  →  *${tLabel} 어제 (Yesterday)*  (DoD)` }] },
+        { type: "context", elements: [{ type: "mrkdwn", text: `데이터 기간 (Data range): ${targetDate} 00:00 ~ 23:59 (UTC+7) · 전일 대비 (DoD)` }] },
         { type: "divider" },
-        { type: "section", text: { type: "mrkdwn", text: `*주요 지표 / Key metrics*\n` + metricLinesSection(s, p) }},
+        { type: "section", text: { type: "mrkdwn", text: `*주요 지표 / Key metrics*\n` + metricLinesSection(s, p, dayBefore.slice(5).replace("-", "/"), targetDate.slice(5).replace("-", "/")) }},
         ...alertBlock,
       ],
     }],
@@ -1153,8 +1198,20 @@ Deno.serve(async (req) => {
         getResumeUploadsForDateAdminUI(dayBefore),
       ]);
 
-      const stats: StatsBundle = { sessions: ySessions, ...yBundle, resumes: yResume };
-      const prevStats: StatsBundle = { sessions: dbSessions, ...dbBundle, resumes: dbResume };
+      const stats: StatsBundle = {
+        sessions: ySessions,
+        ...yBundle,
+        resumes: yResume.total,
+        resumeWeb: yResume.web,
+        resumeApp: yResume.app,
+      };
+      const prevStats: StatsBundle = {
+        sessions: dbSessions,
+        ...dbBundle,
+        resumes: dbResume.total,
+        resumeWeb: dbResume.web,
+        resumeApp: dbResume.app,
+      };
       const alerts = await detectAlerts(stats.submissions);
 
       const message = buildDailyMessage(yesterday, dayBefore, stats, prevStats, alerts);
