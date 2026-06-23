@@ -209,6 +209,27 @@ async function pollsForPosts(postIds, userId) {
   return map
 }
 
+// Set of author user_ids the signed-in caller already follows — drives the per-card
+// "팔로우" 칩. Empty for anon callers. Self/anonymous are filtered at the call site.
+async function followingSet(userIds, currentUserId) {
+  if (!currentUserId) return new Set()
+  const ids = [...new Set(userIds)].filter(Boolean)
+  if (!ids.length) return new Set()
+  const { data } = await supabase
+    .from('user_follows')
+    .select('following_id')
+    .eq('follower_id', currentUserId)
+    .in('following_id', ids)
+  return new Set((data || []).map(f => f.following_id))
+}
+
+// true/false → 그 상태로 팔로우 버튼 노출. null → 버튼 숨김(본인 글·익명 글·비로그인 호출).
+// 클라가 작성자 신원/본인 여부를 추측하지 않도록 서버가 못박는다.
+function authorIsFollowing(p, followSet, currentUserId) {
+  if (!currentUserId || p.is_anonymous || p.user_id === currentUserId) return null
+  return followSet.has(p.user_id)
+}
+
 export default async function handler(req, res) {
   if (req.method === 'GET') {
     const { category, page = 1, limit = 20, sort = 'recent', search, id: postId, mine, interests } = req.query
@@ -233,6 +254,7 @@ export default async function handler(req, res) {
         post.view_count = (post.view_count || 0) + 1
       }
 
+      post.author_is_following = null
       const token = req.headers.authorization?.replace('Bearer ', '')
       if (token) {
         const { data: { user } } = await supabase.auth.getUser(token)
@@ -244,6 +266,7 @@ export default async function handler(req, res) {
             .eq('post_id', postId)
             .maybeSingle()
           post.is_liked = !!like
+          post.author_is_following = authorIsFollowing(post, await followingSet([post.user_id], user.id), user.id)
         }
       }
       const uid = [post.user_id]
@@ -341,16 +364,17 @@ export default async function handler(req, res) {
         iLiked = (ls || []).map(l => l.post_id)
       }
       const iIds = iData.map(p => p.user_id)
-      const [iTierMap, iCvMap, iUtMap, iAvMap, iNameMap] = await Promise.all([
+      const [iTierMap, iCvMap, iUtMap, iAvMap, iNameMap, iFollowSet] = await Promise.all([
         representativeBadgeMap(iIds),
         companyVerifiedMap(iIds),
         userTypeMap(iIds),
         avatarMap(iIds),
         nameMap(iIds),
+        followingSet(iIds, user.id),
       ])
 
       return res.status(200).json({
-        posts: iData.map(p => ({ ...p, is_liked: iLiked.includes(p.id), author_badge: iTierMap[p.user_id] || null, author_salary_tier: salaryTierOf(iTierMap[p.user_id]), author_verified_company: iCvMap[p.user_id] || null, author_user_type: iUtMap[p.user_id]?.user_type || null, author_verified_school: iUtMap[p.user_id]?.verified_school || null, author_avatar: p.is_anonymous ? null : (iAvMap[p.user_id] || null), author_name: resolveAuthorName(p, iNameMap) })),
+        posts: iData.map(p => ({ ...p, is_liked: iLiked.includes(p.id), author_badge: iTierMap[p.user_id] || null, author_salary_tier: salaryTierOf(iTierMap[p.user_id]), author_verified_company: iCvMap[p.user_id] || null, author_user_type: iUtMap[p.user_id]?.user_type || null, author_verified_school: iUtMap[p.user_id]?.verified_school || null, author_avatar: p.is_anonymous ? null : (iAvMap[p.user_id] || null), author_name: resolveAuthorName(p, iNameMap), author_is_following: authorIsFollowing(p, iFollowSet, user.id) })),
         total: iCount,
         page: parseInt(page),
         totalPages: Math.ceil(iCount / parseInt(limit))
@@ -478,17 +502,18 @@ export default async function handler(req, res) {
 
     // 작성자 부가정보 맵은 서로 독립적이라 병렬로 받아 응답 시간을 줄인다.
     const ids = data.map(p => p.user_id)
-    const [tierMap, cvMap, utMap, avMap, nMap, pollMap] = await Promise.all([
+    const [tierMap, cvMap, utMap, avMap, nMap, pollMap, followSet] = await Promise.all([
       representativeBadgeMap(ids),
       companyVerifiedMap(ids),
       userTypeMap(ids),
       avatarMap(ids),
       nameMap(ids),
       pollsForPosts(data.map(p => p.id), currentUserId),
+      followingSet(ids, currentUserId),
     ])
 
     return res.status(200).json({
-      posts: data.map(p => ({ ...p, is_liked: likedPostIds.includes(p.id), poll: pollMap[p.id] || null, author_badge: tierMap[p.user_id] || null, author_salary_tier: salaryTierOf(tierMap[p.user_id]), author_verified_company: cvMap[p.user_id] || null, author_user_type: utMap[p.user_id]?.user_type || null, author_verified_school: utMap[p.user_id]?.verified_school || null, author_avatar: p.is_anonymous ? null : (avMap[p.user_id] || null), author_name: resolveAuthorName(p, nMap) })),
+      posts: data.map(p => ({ ...p, is_liked: likedPostIds.includes(p.id), poll: pollMap[p.id] || null, author_badge: tierMap[p.user_id] || null, author_salary_tier: salaryTierOf(tierMap[p.user_id]), author_verified_company: cvMap[p.user_id] || null, author_user_type: utMap[p.user_id]?.user_type || null, author_verified_school: utMap[p.user_id]?.verified_school || null, author_avatar: p.is_anonymous ? null : (avMap[p.user_id] || null), author_name: resolveAuthorName(p, nMap), author_is_following: authorIsFollowing(p, followSet, currentUserId) })),
       total: count,
       page: parseInt(page),
       totalPages: Math.ceil(count / parseInt(limit))
