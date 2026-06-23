@@ -94,8 +94,9 @@ function pctChange(current: number, previous: number): string {
 }
 
 function dodEmoji(current: number, previous: number): string {
-  if (current > previous) return " :small_red_triangle:";
-  if (current < previous) return " :small_red_triangle_down:";
+  // 코드 블록(```)안에서 emoji shortcode 가 변환 안 되므로 unicode 사용.
+  if (current > previous) return " ▲";
+  if (current < previous) return " ▽";
   return "";
 }
 
@@ -117,6 +118,35 @@ function boostEmoji(current: number, previous: number): string {
 function convRate(num: number, den: number): string {
   if (den === 0) return "0.0%";
   return ((num / den) * 100).toFixed(1) + "%";
+}
+
+// 코드 블록 안에서 한글/영문 폭 보정. desktop slack 의 모노스페이스 폰트
+// (Mac: Menlo / Win: Consolas) 의 CJK fallback 폰트는 한글 한 글자 ≒ ASCII
+// 두 칸. emoji 는 일반적으로 2 칸이지만 라인 끝에만 두면 정렬에 영향 없음.
+function widthOf(s: string): number {
+  return [...s].reduce((w, ch) => w + (ch.charCodeAt(0) > 127 ? 2 : 1), 0);
+}
+function padLabel(label: string, total: number): string {
+  return label + " ".repeat(Math.max(1, total - widthOf(label)));
+}
+
+const LABEL_W = 32;
+const VAL_W = 7;
+const PCT_W = 5;
+
+function metricLine(label: string, curr: number, prev: number, isBoost = false): string {
+  const val = curr.toLocaleString().padStart(VAL_W);
+  const pct = pctChange(curr, prev).padStart(PCT_W);
+  const em = (isBoost ? boostEmoji(curr, prev) : dodEmoji(curr, prev)).trim();
+  return padLabel(label, LABEL_W) + val + "  " + pct + (em ? " " + em : "");
+}
+
+function cumLine(label: string, value: number): string {
+  return padLabel(label, LABEL_W) + value.toLocaleString().padStart(VAL_W);
+}
+
+function codeBlock(lines: string[]): string {
+  return "```\n" + lines.join("\n") + "\n```";
 }
 
 // ─── GA4 API ───
@@ -708,36 +738,39 @@ function buildRealtimeMessage(
         { type: "header", text: { type: "plain_text", text: `FYI 실시간 / Live — ${today} (${dayName}) ${timeStr} UTC+7` } },
         { type: "context", elements: [{ type: "mrkdwn", text: `오늘 누적 (Today) — ${today} 00:00 ~ ${timeStr} UTC+7\n비교는 어제 같은 시각까지 누적 (DoD)` }] },
         { type: "divider" },
-        { type: "section", text: { type: "mrkdwn", text: [
-          `*주요 지표 / Key metrics*`,
-          `• 세션 (Sessions) \`${s.sessions.toLocaleString()}\`${dod(s.sessions, p.sessions)}`,
-          `• 연봉 제출 (Submissions) \`${s.submissions}\`${dod(s.submissions, p.submissions)}`,
-          `   - 광고 (Paid) \`${s.ad}\`${dod(s.ad, p.ad)}`,
-          `   - 자연유입 (Organic) \`${s.organic}\`${dod(s.organic, p.organic)}`,
-          `• 신규 가입 (Sign-ups) \`${s.signups}\`${boost(s.signups, p.signups)}`,
-          `• 이력서 등록 (Resume uploads) \`${s.resumes}\`${boost(s.resumes, p.resumes)}`,
-          `• 공고 지원 (Job apps) \`${s.jobApps}\`${dod(s.jobApps, p.jobApps)}`,
-          `• 회사 (Companies) \`${s.companies}\`${dod(s.companies, p.companies)}`,
-        ].join("\n") }},
+        { type: "section", text: { type: "mrkdwn", text:
+          `*주요 지표 / Key metrics*\n` + codeBlock([
+            metricLine("• 세션 (Sessions)", s.sessions, p.sessions),
+            metricLine("• 연봉 제출 (Submissions)", s.submissions, p.submissions),
+            metricLine("   ↳ 광고 (Paid)", s.ad, p.ad),
+            metricLine("   ↳ 자연유입 (Organic)", s.organic, p.organic),
+            metricLine("• 신규 가입 (Sign-ups)", s.signups, p.signups, true),
+            metricLine("• 이력서 등록 (Resume uploads)", s.resumes, p.resumes, true),
+            metricLine("• 공고 지원 (Job apps)", s.jobApps, p.jobApps),
+            metricLine("• 회사 (Companies)", s.companies, p.companies),
+          ])
+        }},
         { type: "divider" },
-        { type: "section", text: { type: "mrkdwn", text: [
-          `*전환율 / Conversion*`,
-          `• 세션 → 연봉 제출 \`${convRate(s.submissions, s.sessions)}\``,
-          `• 연봉 제출 → 신규 가입 \`${convRate(s.signups, s.submissions)}\``,
-          `• 신규 가입 → 공고 지원 \`${convRate(s.jobApps, s.signups)}\``,
-        ].join("\n") }},
+        { type: "section", text: { type: "mrkdwn", text:
+          `*전환율 / Conversion*\n` + codeBlock([
+            padLabel("• 세션 → 연봉 제출", LABEL_W) + convRate(s.submissions, s.sessions).padStart(VAL_W),
+            padLabel("• 연봉 제출 → 신규 가입", LABEL_W) + convRate(s.signups, s.submissions).padStart(VAL_W),
+            padLabel("• 신규 가입 → 공고 지원", LABEL_W) + convRate(s.jobApps, s.signups).padStart(VAL_W),
+          ])
+        }},
         { type: "divider" },
-        { type: "section", text: { type: "mrkdwn", text: [
-          `*전체 기간 누적 (All-time)* — ${CAMPAIGN_START} ~ ${today}`,
-          `• 세션 (Sessions) \`${cum.sessions.toLocaleString()}\``,
-          `• 연봉 제출 (Submissions) \`${cum.totalSubs.toLocaleString()}\``,
-          `   - 광고 (Paid) \`${cum.totalAd.toLocaleString()}\``,
-          `   - 자연유입 (Organic) \`${cum.totalOrganic.toLocaleString()}\``,
-          `• 신규 가입 (Sign-ups) \`${cum.totalSignups.toLocaleString()}\``,
-          `• 이력서 등록 (Resume uploads) \`${cum.totalResumes.toLocaleString()}\``,
-          `• 공고 지원 (Job apps) \`${cum.totalJobApps.toLocaleString()}\``,
-          `• 누적 회사 (Companies) \`${cum.totalCompanies.toLocaleString()}\``,
-        ].join("\n") }},
+        { type: "section", text: { type: "mrkdwn", text:
+          `*전체 기간 누적 (All-time)* — ${CAMPAIGN_START} ~ ${today}\n` + codeBlock([
+            cumLine("• 세션 (Sessions)", cum.sessions),
+            cumLine("• 연봉 제출 (Submissions)", cum.totalSubs),
+            cumLine("   ↳ 광고 (Paid)", cum.totalAd),
+            cumLine("   ↳ 자연유입 (Organic)", cum.totalOrganic),
+            cumLine("• 신규 가입 (Sign-ups)", cum.totalSignups),
+            cumLine("• 이력서 등록 (Resume uploads)", cum.totalResumes),
+            cumLine("• 공고 지원 (Job apps)", cum.totalJobApps),
+            cumLine("• 누적 회사 (Companies)", cum.totalCompanies),
+          ])
+        }},
       ],
     }],
   };
@@ -767,36 +800,39 @@ function buildDailyMessage(
         { type: "header", text: { type: "plain_text", text: `FYI 일일 리포트 / Daily — ${targetDate} (${dayName})` } },
         { type: "context", elements: [{ type: "mrkdwn", text: `데이터 기간 (Data range): ${targetDate} 00:00 ~ 23:59 (UTC+7) · 전일 대비 (DoD)` }] },
         { type: "divider" },
-        { type: "section", text: { type: "mrkdwn", text: [
-          `*주요 지표 / Key metrics*`,
-          `• 세션 (Sessions) \`${s.sessions.toLocaleString()}\`${dod(s.sessions, p.sessions)}`,
-          `• 연봉 제출 (Submissions) \`${s.submissions}\`${dod(s.submissions, p.submissions)}`,
-          `   - 광고 (Paid) \`${s.ad}\`${dod(s.ad, p.ad)}`,
-          `   - 자연유입 (Organic) \`${s.organic}\`${dod(s.organic, p.organic)}`,
-          `• 신규 가입 (Sign-ups) \`${s.signups}\`${boost(s.signups, p.signups)}`,
-          `• 이력서 등록 (Resume uploads) \`${s.resumes}\`${boost(s.resumes, p.resumes)}`,
-          `• 공고 지원 (Job apps) \`${s.jobApps}\`${dod(s.jobApps, p.jobApps)}`,
-          `• 회사 (Companies) \`${s.companies}\`${dod(s.companies, p.companies)}`,
-        ].join("\n") }},
+        { type: "section", text: { type: "mrkdwn", text:
+          `*주요 지표 / Key metrics*\n` + codeBlock([
+            metricLine("• 세션 (Sessions)", s.sessions, p.sessions),
+            metricLine("• 연봉 제출 (Submissions)", s.submissions, p.submissions),
+            metricLine("   ↳ 광고 (Paid)", s.ad, p.ad),
+            metricLine("   ↳ 자연유입 (Organic)", s.organic, p.organic),
+            metricLine("• 신규 가입 (Sign-ups)", s.signups, p.signups, true),
+            metricLine("• 이력서 등록 (Resume uploads)", s.resumes, p.resumes, true),
+            metricLine("• 공고 지원 (Job apps)", s.jobApps, p.jobApps),
+            metricLine("• 회사 (Companies)", s.companies, p.companies),
+          ])
+        }},
         { type: "divider" },
-        { type: "section", text: { type: "mrkdwn", text: [
-          `*전환율 / Conversion*`,
-          `• 세션 → 연봉 제출 \`${convRate(s.submissions, s.sessions)}\``,
-          `• 연봉 제출 → 신규 가입 \`${convRate(s.signups, s.submissions)}\``,
-          `• 신규 가입 → 공고 지원 \`${convRate(s.jobApps, s.signups)}\``,
-        ].join("\n") }},
+        { type: "section", text: { type: "mrkdwn", text:
+          `*전환율 / Conversion*\n` + codeBlock([
+            padLabel("• 세션 → 연봉 제출", LABEL_W) + convRate(s.submissions, s.sessions).padStart(VAL_W),
+            padLabel("• 연봉 제출 → 신규 가입", LABEL_W) + convRate(s.signups, s.submissions).padStart(VAL_W),
+            padLabel("• 신규 가입 → 공고 지원", LABEL_W) + convRate(s.jobApps, s.signups).padStart(VAL_W),
+          ])
+        }},
         { type: "divider" },
-        { type: "section", text: { type: "mrkdwn", text: [
-          `*전체 기간 누적 (All-time)* — ${CAMPAIGN_START} ~ ${targetDate}`,
-          `• 세션 (Sessions) \`${cum.sessions.toLocaleString()}\``,
-          `• 연봉 제출 (Submissions) \`${cum.totalSubs.toLocaleString()}\``,
-          `   - 광고 (Paid) \`${cum.totalAd.toLocaleString()}\``,
-          `   - 자연유입 (Organic) \`${cum.totalOrganic.toLocaleString()}\``,
-          `• 신규 가입 (Sign-ups) \`${cum.totalSignups.toLocaleString()}\``,
-          `• 이력서 등록 (Resume uploads) \`${cum.totalResumes.toLocaleString()}\``,
-          `• 공고 지원 (Job apps) \`${cum.totalJobApps.toLocaleString()}\``,
-          `• 누적 회사 (Companies) \`${cum.totalCompanies.toLocaleString()}\``,
-        ].join("\n") }},
+        { type: "section", text: { type: "mrkdwn", text:
+          `*전체 기간 누적 (All-time)* — ${CAMPAIGN_START} ~ ${targetDate}\n` + codeBlock([
+            cumLine("• 세션 (Sessions)", cum.sessions),
+            cumLine("• 연봉 제출 (Submissions)", cum.totalSubs),
+            cumLine("   ↳ 광고 (Paid)", cum.totalAd),
+            cumLine("   ↳ 자연유입 (Organic)", cum.totalOrganic),
+            cumLine("• 신규 가입 (Sign-ups)", cum.totalSignups),
+            cumLine("• 이력서 등록 (Resume uploads)", cum.totalResumes),
+            cumLine("• 공고 지원 (Job apps)", cum.totalJobApps),
+            cumLine("• 누적 회사 (Companies)", cum.totalCompanies),
+          ])
+        }},
         ...alertBlock,
       ],
     }],
@@ -817,24 +853,26 @@ function buildWeeklyMessage(
         { type: "header", text: { type: "plain_text", text: `FYI 주간 리포트 / Weekly — ${weekLabel}` } },
         { type: "context", elements: [{ type: "mrkdwn", text: "전주 대비 (WoW)" }] },
         { type: "divider" },
-        { type: "section", text: { type: "mrkdwn", text: [
-          `*주요 지표 / Key metrics*`,
-          `• 세션 (Sessions) \`${t.sessions.toLocaleString()}\`${dod(t.sessions, l.sessions)}`,
-          `• 연봉 제출 (Submissions) \`${t.totalSubs}\`${dod(t.totalSubs, l.totalSubs)}`,
-          `   - 광고 (Paid) \`${t.totalAd}\`${dod(t.totalAd, l.totalAd)}`,
-          `   - 자연유입 (Organic) \`${t.totalOrganic}\`${dod(t.totalOrganic, l.totalOrganic)}`,
-          `• 신규 가입 (Sign-ups) \`${t.totalSignups}\`${boost(t.totalSignups, l.totalSignups)}`,
-          `• 이력서 등록 (Resume uploads) \`${t.totalResumes}\`${boost(t.totalResumes, l.totalResumes)}`,
-          `• 공고 지원 (Job apps) \`${t.totalJobApps}\`${dod(t.totalJobApps, l.totalJobApps)}`,
-          `• 회사 (Companies) \`${t.totalCompanies}\`${dod(t.totalCompanies, l.totalCompanies)}`,
-        ].join("\n") }},
+        { type: "section", text: { type: "mrkdwn", text:
+          `*주요 지표 / Key metrics*\n` + codeBlock([
+            metricLine("• 세션 (Sessions)", t.sessions, l.sessions),
+            metricLine("• 연봉 제출 (Submissions)", t.totalSubs, l.totalSubs),
+            metricLine("   ↳ 광고 (Paid)", t.totalAd, l.totalAd),
+            metricLine("   ↳ 자연유입 (Organic)", t.totalOrganic, l.totalOrganic),
+            metricLine("• 신규 가입 (Sign-ups)", t.totalSignups, l.totalSignups, true),
+            metricLine("• 이력서 등록 (Resume uploads)", t.totalResumes, l.totalResumes, true),
+            metricLine("• 공고 지원 (Job apps)", t.totalJobApps, l.totalJobApps),
+            metricLine("• 회사 (Companies)", t.totalCompanies, l.totalCompanies),
+          ])
+        }},
         { type: "divider" },
-        { type: "section", text: { type: "mrkdwn", text: [
-          `*전환율 / Conversion*`,
-          `• 세션 → 연봉 제출 \`${convRate(t.totalSubs, t.sessions)}\``,
-          `• 연봉 제출 → 신규 가입 \`${convRate(t.totalSignups, t.totalSubs)}\``,
-          `• 신규 가입 → 공고 지원 \`${convRate(t.totalJobApps, t.totalSignups)}\``,
-        ].join("\n") }},
+        { type: "section", text: { type: "mrkdwn", text:
+          `*전환율 / Conversion*\n` + codeBlock([
+            padLabel("• 세션 → 연봉 제출", LABEL_W) + convRate(t.totalSubs, t.sessions).padStart(VAL_W),
+            padLabel("• 연봉 제출 → 신규 가입", LABEL_W) + convRate(t.totalSignups, t.totalSubs).padStart(VAL_W),
+            padLabel("• 신규 가입 → 공고 지원", LABEL_W) + convRate(t.totalJobApps, t.totalSignups).padStart(VAL_W),
+          ])
+        }},
       ],
     }],
   };
