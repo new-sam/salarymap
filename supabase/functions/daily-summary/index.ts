@@ -324,7 +324,8 @@ async function getRangeBundle(startUtc: string, endUtc: string) {
   const deduped = dedupeSubmissions(subs.filter((r: any) => !isExcludedSubmission(r)));
   const ad = deduped.filter((r: any) => PAID_SOURCES.has(r.source)).length;
   const companies = new Set(deduped.map((r: any) => r.company?.trim().toLowerCase()).filter(Boolean)).size;
-  const signups = await getSignupsInRange(startUtc, endUtc);
+  const signupRes = await getSignupsInRange(startUtc, endUtc);
+  const signupSplit = await splitSignupPlatform(signupRes.ids);
   const { count: jobApps } = await supabase
     .from("job_applications")
     .select("*", { count: "exact", head: true })
@@ -341,7 +342,9 @@ async function getRangeBundle(startUtc: string, endUtc: string) {
     ad,
     organic: deduped.length - ad,
     companies,
-    signups,
+    signups: signupRes.count,
+    signupWeb: signupSplit.web,
+    signupApp: signupSplit.app,
     jobApps: jobApps || 0,
     resumes: resumes || 0,
   };
@@ -363,21 +366,46 @@ async function listAllAuthUsers(): Promise<any[]> {
   return out;
 }
 
-async function getSignupsInRange(startUtc: string, endUtc: string): Promise<number> {
-  // ADMIN PARITY — admin/realtime.js:23 가 비교 기준을 `new Date(...).toISOString()`
-  // 로 정규화한다 (= "...Z"). 호출 측이 "...+07:00" 문자열을 그대로 넘기면
-  // u.created_at ("...Z") 와 prefix 가 어긋나서 KST 00:00~07:00 가입자가
-  // 모조리 누락된다 (UTC 일자 prefix 가 어제로 잡혀 string 비교에서 빠짐).
-  // 들어온 시간을 무조건 ISO-UTC 로 다시 직렬화.
+async function getSignupsInRange(startUtc: string, endUtc: string): Promise<{ count: number; ids: string[] }> {
+  // ADMIN PARITY — admin/realtime.js:23 와 같은 ISO-UTC 정규화. count 와
+  // user_id 목록 모두 반환 (id 는 web/app split 산출용).
   const startISO = new Date(startUtc).toISOString();
   const endISO = new Date(endUtc).toISOString();
   try {
     const all = await listAllAuthUsers();
-    return all.filter((u: any) => u.created_at >= startISO && u.created_at <= endISO && !isExcludedSignup(u)).length;
+    const filtered = all.filter((u: any) => u.created_at >= startISO && u.created_at <= endISO && !isExcludedSignup(u));
+    return { count: filtered.length, ids: filtered.map((u: any) => u.id) };
   } catch (e) {
     console.error("Sign-ups listUsers error:", (e as Error).message);
-    return 0;
+    return { count: 0, ids: [] };
   }
+}
+
+// 신규 가입 user_id 목록 → events 의 첫 이벤트 platform 으로 web/app 분류.
+// 모바일 앱은 events.meta.platform = 'app' 로 식별. 웹은 그 외(null 포함).
+// events 가 전혀 없는 user 는 web 으로 default (가입만 한 dormant).
+async function splitSignupPlatform(userIds: string[]): Promise<{ web: number; app: number }> {
+  if (userIds.length === 0) return { web: 0, app: 0 };
+  const platformByUid: Record<string, string> = {};
+  // .in() 의 large list 안전 처리: 200 명씩 chunk.
+  for (let i = 0; i < userIds.length; i += 200) {
+    const chunk = userIds.slice(i, i + 200);
+    const { data } = await supabase
+      .from("events")
+      .select("user_id, meta, created_at")
+      .in("user_id", chunk)
+      .order("created_at", { ascending: true });
+    for (const e of data || []) {
+      if (!platformByUid[e.user_id]) {
+        platformByUid[e.user_id] = e.meta?.platform === "app" ? "app" : "web";
+      }
+    }
+  }
+  let app = 0, web = 0;
+  for (const uid of userIds) {
+    if (platformByUid[uid] === "app") app++; else web++;
+  }
+  return { web, app };
 }
 
 async function getSignups(dateStr: string): Promise<number> {
@@ -486,7 +514,7 @@ async function getCumulative(startDate: string, endDate: string) {
   const subs = await fetchSubmissions(startUtc, endUtc);
   const deduped = dedupeSubmissions(subs.filter((r: any) => !isExcludedSubmission(r)));
   const totalAd = deduped.filter((r: any) => PAID_SOURCES.has(r.source)).length;
-  const totalSignups = await getSignupsInRange(startUtc, endUtc);
+  const totalSignups = (await getSignupsInRange(startUtc, endUtc)).count;
   const { count: jobApps } = await supabase
     .from("job_applications")
     .select("*", { count: "exact", head: true })
@@ -708,6 +736,8 @@ type StatsBundle = {
   ad: number;
   organic: number;
   signups: number;
+  signupWeb: number;
+  signupApp: number;
   jobApps: number;
   resumes: number;
   companies: number;
@@ -720,15 +750,35 @@ function boost(curr: number, prev: number): string {
   return ` ${pctChange(curr, prev)}${boostEmoji(curr, prev)}`;
 }
 
+// CJK 보정 padStart — 한글 글자 1개 = ASCII 2 칸.
+function cjkPadStart(s: string, total: number): string {
+  return " ".repeat(Math.max(0, total - widthOf(s))) + s;
+}
+
+// /fyi 의 3 컬럼 행: 라벨 | 어제값 | 오늘값 | DoD%.
+function metricLine3(label: string, prev: number, curr: number, isBoost = false): string {
+  const prv = prev.toLocaleString().padStart(VAL_W);
+  const cur = curr.toLocaleString().padStart(VAL_W);
+  const pct = pctChange(curr, prev).padStart(PCT_W);
+  const em = (isBoost ? boostEmoji(curr, prev) : dodEmoji(curr, prev)).trim();
+  return padLabel(label, LABEL_W) + prv + cur + "  " + pct + (em ? " " + em : "");
+}
+
+function metricHeader3(prevLabel: string, currLabel: string): string {
+  return padLabel("", LABEL_W) + cjkPadStart(prevLabel, VAL_W) + cjkPadStart(currLabel, VAL_W) + "  " + cjkPadStart("DoD", PCT_W);
+}
+
 function buildRealtimeMessage(
   today: string,
+  yesterday: string,
   timeStr: string,
   s: StatsBundle,
   p: StatsBundle,
-  cum: Awaited<ReturnType<typeof getCumulative>>,
   slashCommand: boolean,
 ) {
   const dayName = getDayName(today);
+  const yLabel = yesterday.slice(5).replace("-", "/"); // "06-22" → "06/22"
+  const tLabel = today.slice(5).replace("-", "/");
 
   return {
     response_type: slashCommand ? "in_channel" : undefined,
@@ -736,39 +786,21 @@ function buildRealtimeMessage(
       color: "#2ea44f",
       blocks: [
         { type: "header", text: { type: "plain_text", text: `FYI 실시간 / Live — ${today} (${dayName}) ${timeStr} UTC+7` } },
-        { type: "context", elements: [{ type: "mrkdwn", text: `오늘 누적 (Today) — ${today} 00:00 ~ ${timeStr} UTC+7\n비교는 어제 같은 시각까지 누적 (DoD)` }] },
+        { type: "context", elements: [{ type: "mrkdwn", text: `${yLabel} 어제 같은 시각까지 vs ${tLabel} 오늘 ${timeStr} 까지 (DoD)` }] },
         { type: "divider" },
         { type: "section", text: { type: "mrkdwn", text:
           `*주요 지표 / Key metrics*\n` + codeBlock([
-            metricLine("• 세션 (Sessions)", s.sessions, p.sessions),
-            metricLine("• 연봉 제출 (Submissions)", s.submissions, p.submissions),
-            metricLine("   ↳ 광고 (Paid)", s.ad, p.ad),
-            metricLine("   ↳ 자연유입 (Organic)", s.organic, p.organic),
-            metricLine("• 신규 가입 (Sign-ups)", s.signups, p.signups, true),
-            metricLine("• 이력서 등록 (Resume uploads)", s.resumes, p.resumes, true),
-            metricLine("• 공고 지원 (Job apps)", s.jobApps, p.jobApps),
-            metricLine("• 회사 (Companies)", s.companies, p.companies),
-          ])
-        }},
-        { type: "divider" },
-        { type: "section", text: { type: "mrkdwn", text:
-          `*전환율 / Conversion*\n` + codeBlock([
-            padLabel("• 세션 → 연봉 제출", LABEL_W) + convRate(s.submissions, s.sessions).padStart(VAL_W),
-            padLabel("• 연봉 제출 → 신규 가입", LABEL_W) + convRate(s.signups, s.submissions).padStart(VAL_W),
-            padLabel("• 신규 가입 → 공고 지원", LABEL_W) + convRate(s.jobApps, s.signups).padStart(VAL_W),
-          ])
-        }},
-        { type: "divider" },
-        { type: "section", text: { type: "mrkdwn", text:
-          `*전체 기간 누적 (All-time)* — ${CAMPAIGN_START} ~ ${today}\n` + codeBlock([
-            cumLine("• 세션 (Sessions)", cum.sessions),
-            cumLine("• 연봉 제출 (Submissions)", cum.totalSubs),
-            cumLine("   ↳ 광고 (Paid)", cum.totalAd),
-            cumLine("   ↳ 자연유입 (Organic)", cum.totalOrganic),
-            cumLine("• 신규 가입 (Sign-ups)", cum.totalSignups),
-            cumLine("• 이력서 등록 (Resume uploads)", cum.totalResumes),
-            cumLine("• 공고 지원 (Job apps)", cum.totalJobApps),
-            cumLine("• 누적 회사 (Companies)", cum.totalCompanies),
+            metricHeader3(yLabel, tLabel),
+            metricLine3("• 세션 (Sessions)", p.sessions, s.sessions),
+            metricLine3("• 연봉 제출 (Submissions)", p.submissions, s.submissions),
+            metricLine3("   ↳ 광고 (Paid)", p.ad, s.ad),
+            metricLine3("   ↳ 자연유입 (Organic)", p.organic, s.organic),
+            metricLine3("• 신규 가입 (Sign-ups)", p.signups, s.signups, true),
+            metricLine3("   ↳ 웹 (Web)", p.signupWeb, s.signupWeb),
+            metricLine3("   ↳ 앱 (App)", p.signupApp, s.signupApp),
+            metricLine3("• 이력서 등록 (Resume uploads)", p.resumes, s.resumes, true),
+            metricLine3("• 공고 지원 (Job apps)", p.jobApps, s.jobApps),
+            metricLine3("• 회사 (Companies)", p.companies, s.companies),
           ])
         }},
       ],
@@ -807,6 +839,8 @@ function buildDailyMessage(
             metricLine("   ↳ 광고 (Paid)", s.ad, p.ad),
             metricLine("   ↳ 자연유입 (Organic)", s.organic, p.organic),
             metricLine("• 신규 가입 (Sign-ups)", s.signups, p.signups, true),
+            metricLine("   ↳ 웹 (Web)", s.signupWeb, p.signupWeb),
+            metricLine("   ↳ 앱 (App)", s.signupApp, p.signupApp),
             metricLine("• 이력서 등록 (Resume uploads)", s.resumes, p.resumes, true),
             metricLine("• 공고 지원 (Job apps)", s.jobApps, p.jobApps),
             metricLine("• 회사 (Companies)", s.companies, p.companies),
@@ -1028,18 +1062,17 @@ async function buildRealtimePayload(slashCommand: boolean) {
   // 어제 같은 시각까지 — fair DoD 비교 base (광고 트래픽 시간대 편향 제거).
   const yestSameTime = `${yesterday}T${timeStr}:59+07:00`;
 
-  const [todaySessions, prevSessions, todayBundle, prevBundle, cum] = await Promise.all([
+  const [todaySessions, prevSessions, todayBundle, prevBundle] = await Promise.all([
     getGA4TodaySessions(),
     getGA4SessionsUpToHour(yesterday, currentHour),
     getRangeBundle(todayStart, todayEnd),
     getRangeBundle(yestStart, yestSameTime),
-    getCumulative(CAMPAIGN_START, today),
   ]);
 
   const todayStats = { sessions: todaySessions, ...todayBundle };
   const prevStats = { sessions: prevSessions, ...prevBundle };
 
-  return buildRealtimeMessage(today, timeStr, todayStats, prevStats, cum, slashCommand);
+  return buildRealtimeMessage(today, yesterday, timeStr, todayStats, prevStats, slashCommand);
 }
 
 Deno.serve(async (req) => {
