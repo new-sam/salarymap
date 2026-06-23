@@ -768,6 +768,27 @@ function metricHeader3(prevLabel: string, currLabel: string): string {
   return padLabel("", LABEL_W) + cjkPadStart(prevLabel, VAL_W) + cjkPadStart(currLabel, VAL_W) + "  " + cjkPadStart("DoD", PCT_W);
 }
 
+// realtime / daily 공통 — 라인별 mrkdwn + 오늘값(curr) 볼드 강조 + DoD%.
+function metricLineMrkdwn(label: string, prev: number, curr: number, isBoost = false): string {
+  const em = (isBoost ? boostEmoji(curr, prev) : dodEmoji(curr, prev));
+  return `${label}  ${prev.toLocaleString()} → *${curr.toLocaleString()}*  ${pctChange(curr, prev)}${em}`;
+}
+
+function metricLinesSection(s: StatsBundle, p: StatsBundle): string {
+  return [
+    metricLineMrkdwn("• 세션 (Sessions)", p.sessions, s.sessions),
+    metricLineMrkdwn("• 연봉 제출 (Submissions)", p.submissions, s.submissions),
+    metricLineMrkdwn("   ↳ 광고 (Paid)", p.ad, s.ad),
+    metricLineMrkdwn("   ↳ 자연유입 (Organic)", p.organic, s.organic),
+    metricLineMrkdwn("• 신규 가입 (Sign-ups)", p.signups, s.signups, true),
+    metricLineMrkdwn("   ↳ 웹 (Web)", p.signupWeb, s.signupWeb),
+    metricLineMrkdwn("   ↳ 앱 (App)", p.signupApp, s.signupApp),
+    metricLineMrkdwn("• 이력서 등록 (Resume uploads)", p.resumes, s.resumes, true),
+    metricLineMrkdwn("• 공고 지원 (Job apps)", p.jobApps, s.jobApps),
+    metricLineMrkdwn("• 회사 (Companies)", p.companies, s.companies),
+  ].join("\n");
+}
+
 function buildRealtimeMessage(
   today: string,
   yesterday: string,
@@ -777,15 +798,8 @@ function buildRealtimeMessage(
   slashCommand: boolean,
 ) {
   const dayName = getDayName(today);
-  const yLabel = yesterday.slice(5).replace("-", "/"); // "06-22" → "06/22"
+  const yLabel = yesterday.slice(5).replace("-", "/");
   const tLabel = today.slice(5).replace("-", "/");
-
-  // 코드 블록 안에선 mrkdwn(*bold*) 적용 안 되므로 평문 mrkdwn 으로 라인별
-  // 출력. 오늘값을 *볼드* 로 강조 — 시선이 자연스럽게 최신 숫자로 향함.
-  const line = (label: string, prev: number, curr: number, isBoost = false) => {
-    const em = (isBoost ? boostEmoji(curr, prev) : dodEmoji(curr, prev));
-    return `${label}  ${prev.toLocaleString()} → *${curr.toLocaleString()}*  ${pctChange(curr, prev)}${em}`;
-  };
 
   return {
     response_type: slashCommand ? "in_channel" : undefined,
@@ -795,20 +809,7 @@ function buildRealtimeMessage(
         { type: "header", text: { type: "plain_text", text: `FYI 실시간 / Live — ${today} (${dayName}) ${timeStr} UTC+7` } },
         { type: "context", elements: [{ type: "mrkdwn", text: `${yLabel} 어제 같은 시각까지 (Yesterday same hour)  →  *${tLabel} 오늘 ${timeStr} 까지 (Today)*  (DoD)` }] },
         { type: "divider" },
-        { type: "section", text: { type: "mrkdwn", text:
-          `*주요 지표 / Key metrics*\n` + [
-            line("• 세션 (Sessions)", p.sessions, s.sessions),
-            line("• 연봉 제출 (Submissions)", p.submissions, s.submissions),
-            line("   ↳ 광고 (Paid)", p.ad, s.ad),
-            line("   ↳ 자연유입 (Organic)", p.organic, s.organic),
-            line("• 신규 가입 (Sign-ups)", p.signups, s.signups, true),
-            line("   ↳ 웹 (Web)", p.signupWeb, s.signupWeb),
-            line("   ↳ 앱 (App)", p.signupApp, s.signupApp),
-            line("• 이력서 등록 (Resume uploads)", p.resumes, s.resumes, true),
-            line("• 공고 지원 (Job apps)", p.jobApps, s.jobApps),
-            line("• 회사 (Companies)", p.companies, s.companies),
-          ].join("\n")
-        }},
+        { type: "section", text: { type: "mrkdwn", text: `*주요 지표 / Key metrics*\n` + metricLinesSection(s, p) }},
       ],
     }],
   };
@@ -816,63 +817,30 @@ function buildRealtimeMessage(
 
 function buildDailyMessage(
   targetDate: string,
+  dayBefore: string,
   s: StatsBundle,
   p: StatsBundle,
-  cum: Awaited<ReturnType<typeof getCumulative>>,
   alerts: string[],
 ) {
   const dayName = getDayName(targetDate);
   const trendColor = s.submissions > p.submissions ? "#cc0000" : s.submissions < p.submissions ? "#1D6CE0" : "#999999";
+  const yLabel = dayBefore.slice(5).replace("-", "/");
+  const tLabel = targetDate.slice(5).replace("-", "/");
 
   const alertBlock = alerts.length > 0
     ? [{ type: "section", text: { type: "mrkdwn", text: alerts.join("\n") } }]
     : [];
 
   return {
-    // top-level text 에 <!here> 를 둬서 채널 멤버 전원 알림.
     text: "<!here>",
     attachments: [{
       color: trendColor,
       blocks: [
         { type: "section", text: { type: "mrkdwn", text: "<!here> 오늘의 FYI 일일 리포트 / Today's FYI Daily Report" } },
         { type: "header", text: { type: "plain_text", text: `FYI 일일 리포트 / Daily — ${targetDate} (${dayName})` } },
-        { type: "context", elements: [{ type: "mrkdwn", text: `데이터 기간 (Data range): ${targetDate} 00:00 ~ 23:59 (UTC+7) · 전일 대비 (DoD)` }] },
+        { type: "context", elements: [{ type: "mrkdwn", text: `${yLabel} 그저께 (Day before)  →  *${tLabel} 어제 (Yesterday)*  (DoD)` }] },
         { type: "divider" },
-        { type: "section", text: { type: "mrkdwn", text:
-          `*주요 지표 / Key metrics*\n` + codeBlock([
-            metricLine("• 세션 (Sessions)", s.sessions, p.sessions),
-            metricLine("• 연봉 제출 (Submissions)", s.submissions, p.submissions),
-            metricLine("   ↳ 광고 (Paid)", s.ad, p.ad),
-            metricLine("   ↳ 자연유입 (Organic)", s.organic, p.organic),
-            metricLine("• 신규 가입 (Sign-ups)", s.signups, p.signups, true),
-            metricLine("   ↳ 웹 (Web)", s.signupWeb, p.signupWeb),
-            metricLine("   ↳ 앱 (App)", s.signupApp, p.signupApp),
-            metricLine("• 이력서 등록 (Resume uploads)", s.resumes, p.resumes, true),
-            metricLine("• 공고 지원 (Job apps)", s.jobApps, p.jobApps),
-            metricLine("• 회사 (Companies)", s.companies, p.companies),
-          ])
-        }},
-        { type: "divider" },
-        { type: "section", text: { type: "mrkdwn", text:
-          `*전환율 / Conversion*\n` + codeBlock([
-            padLabel("• 세션 → 연봉 제출", LABEL_W) + convRate(s.submissions, s.sessions).padStart(VAL_W),
-            padLabel("• 연봉 제출 → 신규 가입", LABEL_W) + convRate(s.signups, s.submissions).padStart(VAL_W),
-            padLabel("• 신규 가입 → 공고 지원", LABEL_W) + convRate(s.jobApps, s.signups).padStart(VAL_W),
-          ])
-        }},
-        { type: "divider" },
-        { type: "section", text: { type: "mrkdwn", text:
-          `*전체 기간 누적 (All-time)* — ${CAMPAIGN_START} ~ ${targetDate}\n` + codeBlock([
-            cumLine("• 세션 (Sessions)", cum.sessions),
-            cumLine("• 연봉 제출 (Submissions)", cum.totalSubs),
-            cumLine("   ↳ 광고 (Paid)", cum.totalAd),
-            cumLine("   ↳ 자연유입 (Organic)", cum.totalOrganic),
-            cumLine("• 신규 가입 (Sign-ups)", cum.totalSignups),
-            cumLine("• 이력서 등록 (Resume uploads)", cum.totalResumes),
-            cumLine("• 공고 지원 (Job apps)", cum.totalJobApps),
-            cumLine("• 누적 회사 (Companies)", cum.totalCompanies),
-          ])
-        }},
+        { type: "section", text: { type: "mrkdwn", text: `*주요 지표 / Key metrics*\n` + metricLinesSection(s, p) }},
         ...alertBlock,
       ],
     }],
@@ -1176,21 +1144,20 @@ Deno.serve(async (req) => {
       const startDB = `${dayBefore}T00:00:00+07:00`;
       const endDB = `${dayBefore}T23:59:59+07:00`;
 
-      const [ySessions, dbSessions, yBundle, dbBundle, yResume, dbResume, cum] = await Promise.all([
+      const [ySessions, dbSessions, yBundle, dbBundle, yResume, dbResume] = await Promise.all([
         getGA4Sessions(yesterday),
         getGA4Sessions(dayBefore),
         getRangeBundle(startY, endY),
         getRangeBundle(startDB, endDB),
         getResumeUploadsForDateAdminUI(yesterday),
         getResumeUploadsForDateAdminUI(dayBefore),
-        getCumulative(CAMPAIGN_START, yesterday),
       ]);
 
       const stats: StatsBundle = { sessions: ySessions, ...yBundle, resumes: yResume };
       const prevStats: StatsBundle = { sessions: dbSessions, ...dbBundle, resumes: dbResume };
       const alerts = await detectAlerts(stats.submissions);
 
-      const message = buildDailyMessage(yesterday, stats, prevStats, cum, alerts);
+      const message = buildDailyMessage(yesterday, dayBefore, stats, prevStats, alerts);
 
       // 앱 리포트 카드 덧붙임 — 실패해도 웹 리포트는 그대로 발송.
       try {
