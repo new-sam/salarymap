@@ -396,7 +396,14 @@ export default function CommunityPage() {
 
   return (
     <>
-      <Head><title>{t('comm.title')}</title><meta name="robots" content="noindex" /></Head>
+      <Head>
+        <title>FYI Community — Vietnam IT Salary & Career Talk</title>
+        <meta name="description" content="Real, anonymous talk about salaries, companies, and careers in Vietnam's IT scene. Ask about pay, compare offers, and share what working there is really like." />
+        <link rel="canonical" href="https://salary-fyi.com/community" />
+        <meta property="og:type" content="website" />
+        <meta property="og:title" content="FYI Community — Vietnam IT Salary & Career Talk" />
+        <meta property="og:url" content="https://salary-fyi.com/community" />
+      </Head>
 
       <style>{`
         .comm-page { background: #fff; min-height: 100vh; }

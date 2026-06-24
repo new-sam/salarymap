@@ -2,11 +2,17 @@ import React, { useState, useEffect } from 'react'
 import Head from 'next/head'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
+import { createClient } from '@supabase/supabase-js'
 import { supabase } from '../../lib/supabaseClient'
+import { EXCLUDED_EMAIL_DOMAINS } from '../../lib/admin-metrics'
 import { track } from '../../lib/track'
 import Badge from '../../components/Badge'
 import { useT } from '../../lib/i18n'
 import { uploadCommunityImage } from '../../lib/communityImages'
+
+function metaDescription(content) {
+  return (content || '').replace(/\s+/g, ' ').trim().slice(0, 155)
+}
 
 function timeAgo(dateStr) {
   const diff = Date.now() - new Date(dateStr).getTime()
@@ -42,13 +48,43 @@ const CATEGORY_COLORS = {
   job_change: '#8b5cf6',
 }
 
-export default function CommunityPostPage() {
+export async function getServerSideProps({ params }) {
+  const supabaseServer = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL,
+    process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+  )
+  const { data: post } = await supabaseServer
+    .from('community_posts')
+    .select('*')
+    .eq('id', params.id)
+    .single()
+
+  if (!post) return { notFound: true }
+
+  // Index only real-user posts. Seed/team/banned authors stay noindex so Google
+  // isn't fed thin/fake content. Resolving the author email needs the service role;
+  // without it we default to noindex rather than risk indexing seed content.
+  let indexable = false
+  if (process.env.SUPABASE_SERVICE_ROLE_KEY) {
+    try {
+      const { data: u } = await supabaseServer.auth.admin.getUserById(post.user_id)
+      const user = u?.user
+      const banned = user?.banned_until && new Date(user.banned_until) > new Date()
+      const internal = user?.email && EXCLUDED_EMAIL_DOMAINS.some((d) => user.email.endsWith('@' + d))
+      indexable = !!user && !banned && !internal
+    } catch { indexable = false }
+  }
+
+  return { props: { initialPost: post, indexable } }
+}
+
+export default function CommunityPostPage({ initialPost = null, indexable = false }) {
   const router = useRouter()
   const { id } = router.query
   const { t } = useT()
   const [session, setSession] = useState(null)
-  const [post, setPost] = useState(null)
-  const [loading, setLoading] = useState(true)
+  const [post, setPost] = useState(initialPost)
+  const [loading, setLoading] = useState(!initialPost)
   const [comments, setComments] = useState([])
   const [loadingComments, setLoadingComments] = useState(true)
   const [commentText, setCommentText] = useState('')
@@ -247,7 +283,21 @@ export default function CommunityPostPage() {
 
   return (
     <>
-      <Head><title>{post ? post.title : t('comm.title')}</title><meta name="robots" content="noindex" /></Head>
+      <Head>
+        <title>{post ? `${post.title} | FYI Community` : t('comm.title')}</title>
+        {indexable && post ? (
+          <>
+            <meta name="description" content={metaDescription(post.content)} />
+            <link rel="canonical" href={`https://salary-fyi.com/community/${post.id}`} />
+            <meta property="og:type" content="article" />
+            <meta property="og:title" content={post.title} />
+            <meta property="og:description" content={metaDescription(post.content)} />
+            <meta property="og:url" content={`https://salary-fyi.com/community/${post.id}`} />
+          </>
+        ) : (
+          <meta name="robots" content="noindex" />
+        )}
+      </Head>
 
       <style>{`
         .cp-page { background: #fff; min-height: 100vh; }
@@ -366,7 +416,7 @@ export default function CommunityPostPage() {
       <div className="cp-page">
         <div className="cp-outer">
           <div className="cp-container">
-            {loading ? (
+            {!post && loading ? (
               <div className="cp-loading">{t('comm.loading')}</div>
             ) : !post ? (
               <div className="cp-loading">Post not found</div>
