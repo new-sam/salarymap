@@ -161,78 +161,103 @@ async function fetchSalaryStats(role, experience) {
   return map;
 }
 
+// 회사 카드 계산(연봉 집계 + 정렬 + payload 슬림화). 무거운 부분 전부가 여기 모인다.
+// role/experience 없으면 기본 뷰(모바일/홈) — cron이 미리 계산해 company_cards_cache에 적재한다.
+export async function computeCompanyCards(role, experience) {
+  // 1. All companies (source of truth) — paginate past Supabase's 1000-row cap,
+  //    then collapse case/whitespace-variant duplicate rows into one per company.
+  const companies = dedupeCompanies(await fetchAll(
+    supabase.from('companies').select('id, name, tier')
+  ));
+
+  // 2. Salary stats — server-side aggregation via RPC. Single source for
+  //    count/median/min/max/topRole so they always come from the same
+  //    normalized-company bucket. Falls back to client-side aggregation if
+  //    the RPC isn't deployed.
+  const salaryMap = await fetchSalaryStats(role, experience);
+
+  // 3. Join companies + salary data
+  const cards = companies.map((co, i) => {
+    const key = co.name.trim().toLowerCase();
+    const sub = salaryMap[key];
+    const hasData = !!(sub && sub.count >= 1);
+    const salaryStats = hasData
+      ? { count: sub.count, median: sub.median, min: sub.min, max: sub.max }
+      : { count: 0, median: 0, min: 0, max: 0 };
+
+    const domain = domainFor(co.name);
+    const image = IMAGE_MAP[co.name] || BG_POOL[i % BG_POOL.length];
+    const topRole = hasData ? sub.topRole || null : null;
+
+    return {
+      name: co.name,
+      domain,
+      image,
+      tier: co.tier || 3,
+      hasData,
+      topRole,
+      count: salaryStats.count,
+      median: salaryStats.median,
+      min: salaryStats.min,
+      max: salaryStats.max,
+    };
+  });
+
+  // 5. Compute topPct for companies with data
+  const withData = cards.filter(c => c.hasData);
+  const sortedByMedian = [...withData].sort((a, b) => b.median - a.median);
+  withData.forEach(c => {
+    const rank = sortedByMedian.findIndex(x => x.name === c.name);
+    const raw = Math.round(((rank + 1) / withData.length) * 100);
+    c.topPct = Math.max(5, Math.round(raw / 5) * 5);
+  });
+
+  // 6. Sort: hasData first (by count desc), then no data (by tier asc, name asc)
+  cards.sort((a, b) => {
+    if (a.hasData && !b.hasData) return -1;
+    if (!a.hasData && b.hasData) return 1;
+    if (a.hasData && b.hasData) return b.count - a.count;
+    if (a.tier !== b.tier) return a.tier - b.tier;
+    return a.name.localeCompare(b.name);
+  });
+
+  // Strip heavy fields from cards without data to reduce payload
+  return cards.map(c => {
+    if (!c.hasData) {
+      const { image, topRole, topPct, ...rest } = c;
+      return rest;
+    }
+    return c;
+  });
+}
+
+const LIST_CACHE = 'public, max-age=300, s-maxage=1800, stale-while-revalidate=3600';
+
 export default async function handler(req, res) {
   try {
     const { role: rawRole, experience } = req.query;
     const role = rawRole ? resolveRole(rawRole) : null;
 
-    // 1. All companies (source of truth) — paginate past Supabase's 1000-row cap,
-    //    then collapse case/whitespace-variant duplicate rows into one per company.
-    const companies = dedupeCompanies(await fetchAll(
-      supabase.from('companies').select('id, name, tier')
-    ));
-
-    // 2. Salary stats — server-side aggregation via RPC. Single source for
-    //    count/median/min/max/topRole so they always come from the same
-    //    normalized-company bucket. Falls back to client-side aggregation if
-    //    the RPC isn't deployed.
-    const salaryMap = await fetchSalaryStats(role, experience);
-
-    // 3. Join companies + salary data
-    const cards = companies.map((co, i) => {
-      const key = co.name.trim().toLowerCase();
-      const sub = salaryMap[key];
-      const hasData = !!(sub && sub.count >= 1);
-      const salaryStats = hasData
-        ? { count: sub.count, median: sub.median, min: sub.min, max: sub.max }
-        : { count: 0, median: 0, min: 0, max: 0 };
-
-      const domain = domainFor(co.name);
-      const image = IMAGE_MAP[co.name] || BG_POOL[i % BG_POOL.length];
-      const topRole = hasData ? sub.topRole || null : null;
-
-      return {
-        name: co.name,
-        domain,
-        image,
-        tier: co.tier || 3,
-        hasData,
-        topRole,
-        count: salaryStats.count,
-        median: salaryStats.median,
-        min: salaryStats.min,
-        max: salaryStats.max,
-      };
-    });
-
-    // 5. Compute topPct for companies with data
-    const withData = cards.filter(c => c.hasData);
-    const sortedByMedian = [...withData].sort((a, b) => b.median - a.median);
-    withData.forEach(c => {
-      const rank = sortedByMedian.findIndex(x => x.name === c.name);
-      const raw = Math.round(((rank + 1) / withData.length) * 100);
-      c.topPct = Math.max(5, Math.round(raw / 5) * 5);
-    });
-
-    // 6. Sort: hasData first (by count desc), then no data (by tier asc, name asc)
-    cards.sort((a, b) => {
-      if (a.hasData && !b.hasData) return -1;
-      if (!a.hasData && b.hasData) return 1;
-      if (a.hasData && b.hasData) return b.count - a.count;
-      if (a.tier !== b.tier) return a.tier - b.tier;
-      return a.name.localeCompare(b.name);
-    });
-
-    // Strip heavy fields from cards without data to reduce payload
-    const lightCards = cards.map(c => {
-      if (!c.hasData) {
-        const { image, topRole, topPct, ...rest } = c;
-        return rest;
+    // 기본 뷰(필터 없음 = 모바일/홈)는 cron이 미리 계산해둔 캐시 테이블을 읽어 콜드 집계(~3초)를 피한다.
+    if (!role && !experience) {
+      const { data: cacheRow } = await supabase
+        .from('company_cards_cache').select('cards').eq('id', 1).maybeSingle();
+      if (cacheRow?.cards) {
+        res.setHeader('Cache-Control', LIST_CACHE);
+        return res.status(200).json(cacheRow.cards);
       }
-      return c;
-    });
+      // 캐시가 비어 있으면(최초 배포 직후 등) 라이브 계산 후 캐시를 채운다(self-heal). 쓰기는 실패해도 무시.
+      const fresh = await computeCompanyCards(null, null);
+      supabase.from('company_cards_cache')
+        .upsert({ id: 1, cards: fresh, updated_at: new Date().toISOString() })
+        .then(() => {}, () => {});
+      res.setHeader('Cache-Control', LIST_CACHE);
+      return res.status(200).json(fresh);
+    }
 
-    res.setHeader('Cache-Control', 'public, max-age=300, s-maxage=1800, stale-while-revalidate=3600');
+    // 필터(role/experience) 지정 — 라이브 계산(웹 위저드 등, 빈도 낮음).
+    const lightCards = await computeCompanyCards(role, experience);
+    res.setHeader('Cache-Control', LIST_CACHE);
     return res.status(200).json(lightCards);
 
   } catch (err) {
@@ -240,3 +265,4 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: err.message });
   }
 }
+

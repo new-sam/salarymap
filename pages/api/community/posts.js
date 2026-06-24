@@ -381,9 +381,10 @@ export default async function handler(req, res) {
       })
     }
 
-    let query = supabase
-      .from('community_posts')
-      .select('*', { count: 'exact' })
+    // 인기글은 count를 아래에서 ranked.length로 다시 구하므로, 비싼 exact-count(전체 COUNT 스캔)를 생략한다.
+    let query = sort === 'popular'
+      ? supabase.from('community_posts').select('*')
+      : supabase.from('community_posts').select('*', { count: 'exact' })
 
     if (blockedIds.length) query = query.not('user_id', 'in', `(${blockedIds.join(',')})`)
 
@@ -511,6 +512,13 @@ export default async function handler(req, res) {
       pollsForPosts(data.map(p => p.id), currentUserId),
       followingSet(ids, currentUserId),
     ])
+
+    // 익명(비로그인) 목록은 모두에게 동일 → 짧게 CDN 캐시(홈 인기글 콜드 ~3초 → 캐시 즉시 응답).
+    // 토큰이 있으면 is_liked/팔로우 등 개인화가 섞이므로 캐시하지 않는다.
+    res.setHeader(
+      'Cache-Control',
+      req.headers.authorization ? 'no-store' : 'public, s-maxage=60, stale-while-revalidate=300',
+    )
 
     return res.status(200).json({
       posts: data.map(p => ({ ...p, is_liked: likedPostIds.includes(p.id), poll: pollMap[p.id] || null, author_badge: tierMap[p.user_id] || null, author_salary_tier: salaryTierOf(tierMap[p.user_id]), author_verified_company: cvMap[p.user_id] || null, author_user_type: utMap[p.user_id]?.user_type || null, author_verified_school: utMap[p.user_id]?.verified_school || null, author_avatar: p.is_anonymous ? null : (avMap[p.user_id] || null), author_name: resolveAuthorName(p, nMap), author_is_following: authorIsFollowing(p, followSet, currentUserId) })),
