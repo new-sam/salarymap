@@ -120,7 +120,7 @@ export default function AdminJobs() {
       await fetch('/api/admin/jobs', { method: 'POST', headers: headers(), body: JSON.stringify(payload) })
       flash('Created')
     }
-    setSaving(false); setEditing(null); setForm(EMPTY_JOB); mutateJobs()
+    setSaving(false); setEditing(null); setForm(EMPTY_JOB); mutateJobs(); router.push({ pathname: '/admin/jobs', query: { tab: 'jobs' } }, undefined, { shallow: true })
   }
 
   const handleDelete = async (id) => {
@@ -221,8 +221,9 @@ export default function AdminJobs() {
     setForm(prev => ({ ...prev, images: (prev.images || []).filter((_, i) => i !== idx) }))
   }
 
-  const startEdit = (job) => { setEditing(job); setForm({ ...job, images: job.images || [] }) }
-  const startNew = () => { setEditing(null); setForm(EMPTY_JOB) }
+  const goTab = (t) => router.push({ pathname: '/admin/jobs', query: { tab: t } }, undefined, { shallow: true })
+  const startEdit = (job) => { setEditing(job); setForm({ ...job, images: job.images || [] }); goTab('job-new') }
+  const startNew = () => { setEditing(null); setForm(EMPTY_JOB); goTab('jobs') }
 
   if (auth === 'loading') return <div style={S.center}>Loading...</div>
   if (auth === 'denied') return (
@@ -259,8 +260,7 @@ export default function AdminJobs() {
         {msg && <div style={S.flash}>{msg}</div>}
 
         {/* JOBS TAB */}
-        {tab === 'jobs' && (
-          <>
+        {tab === 'job-new' && (
             <div style={S.card}>
               <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 16 }}>
                 {editing ? `Edit: ${editing.title}` : 'New Job'}
@@ -383,7 +383,9 @@ export default function AdminJobs() {
                 {editing && <button style={S.btnG} onClick={startNew}>Cancel</button>}
               </div>
             </div>
+        )}
 
+        {tab === 'jobs' && (
             <div style={S.card}>
               <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 12 }}>All Jobs</div>
               {jobs.length === 0 && <div style={{ color: '#aaa', fontSize: 13 }}>No jobs yet</div>}
@@ -480,7 +482,6 @@ export default function AdminJobs() {
                 );
               })()}
             </div>
-          </>
         )}
 
         {/* LOG TAB (기능별 변경 이력 changelog + 운영 액션) */}
