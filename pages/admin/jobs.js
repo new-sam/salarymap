@@ -370,102 +370,98 @@ export default function AdminJobs() {
         )}
 
         {tab === 'jobs' && (
-            <div style={S.card}>
-              <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 12 }}>All Jobs</div>
-              {jobs.length === 0 && <div style={{ color: '#aaa', fontSize: 13 }}>No jobs yet</div>}
-              {(() => {
-                const pendingCount = jobs.filter(j => j.status === 'pending_review').length;
-                const premiumCount = jobs.filter(j => j.is_featured).length;
-                const companyCount = jobs.filter(j => j.source === 'company_self').length;
-                const filtered = jobs.filter(j => {
-                  if (jobFilter === 'company') return j.source === 'company_self';
-                  if (jobFilter === 'pending') return j.status === 'pending_review';
-                  return true;
-                });
-                const sorted = [...filtered].sort((a, b) => {
-                  const ap = a.status === 'pending_review' ? 0 : 1;
-                  const bp = b.status === 'pending_review' ? 0 : 1;
-                  if (ap !== bp) return ap - bp;
-                  return new Date(b.created_at || 0) - new Date(a.created_at || 0);
-                });
-                const fmtDate = (d) => d ? new Date(d).toLocaleDateString() : '-';
-                const FILTERS = [['all', '전체', jobs.length], ['company', '🏢 기업 등록', companyCount], ['pending', '⏳ 승인 대기', pendingCount]];
-                return (
-                  <>
-                    <div style={{ display: 'flex', gap: 6, marginBottom: 12, flexWrap: 'wrap' }}>
-                      {FILTERS.map(([key, label, n]) => (
+          <div>
+            {jobs.length === 0 && <div style={{ color: '#aaa', fontSize: 13 }}>No jobs yet</div>}
+            {(() => {
+              const pendingCount = jobs.filter(j => j.status === 'pending_review').length;
+              const companyCount = jobs.filter(j => j.source === 'company_self').length;
+              const filtered = jobs.filter(j => {
+                if (jobFilter === 'company') return j.source === 'company_self';
+                if (jobFilter === 'pending') return j.status === 'pending_review';
+                return true;
+              });
+              const sorted = [...filtered].sort((a, b) => {
+                const ap = a.status === 'pending_review' ? 0 : 1;
+                const bp = b.status === 'pending_review' ? 0 : 1;
+                if (ap !== bp) return ap - bp;
+                return new Date(b.created_at || 0) - new Date(a.created_at || 0);
+              });
+              const fmtDate = (d) => d ? new Date(d).toLocaleDateString() : '-';
+              const FILTERS = [['all', '전체', jobs.length], ['company', '기업 등록', companyCount], ['pending', '승인 대기', pendingCount]];
+              const chip = { display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 12, fontWeight: 600, color: '#4E5968', background: '#F2F4F6', borderRadius: 8, padding: '4px 9px' };
+              const actBtn = { fontSize: 12, fontWeight: 600, color: '#4E5968', background: '#fff', border: '1px solid #E5E8EB', padding: '6px 12px', borderRadius: 8, cursor: 'pointer' };
+              return (
+                <>
+                  <div style={{ display: 'flex', gap: 6, marginBottom: 16, flexWrap: 'wrap' }}>
+                    {FILTERS.map(([key, label, n]) => {
+                      const on = jobFilter === key;
+                      return (
                         <button key={key} onClick={() => setJobFilter(key)}
-                          style={{ ...S.tab, ...(jobFilter === key ? S.tabOn : {}), ...(key === 'pending' && n > 0 && jobFilter !== key ? { color: '#c2410c', borderColor: '#fdba74' } : {}) }}>
-                          {label} ({n})
+                          style={{
+                            fontSize: 13, fontWeight: 600, cursor: 'pointer', borderRadius: 999, padding: '7px 14px',
+                            border: '1px solid', borderColor: on ? '#191F28' : '#E5E8EB',
+                            background: on ? '#191F28' : '#fff', color: on ? '#fff' : '#4E5968',
+                          }}>
+                          {label} <span style={{ opacity: on ? 0.7 : 0.5 }}>{n}</span>
                         </button>
-                      ))}
-                    </div>
-                    {pendingCount > 0 && (
-                      <div style={{ background:'#fff7ed', border:'1px solid #fdba74', color:'#9a3412', padding:'8px 12px', borderRadius:6, marginBottom:10, fontSize:13, fontWeight:700 }}>
-                        ⏳ 승인 대기 {pendingCount}건 — 각 줄의 Approve / Reject로 처리
-                      </div>
-                    )}
-                    <div style={{ background:'#fffbeb', border:'1px solid #fcd34d', color:'#92400e', padding:'8px 12px', borderRadius:6, marginBottom:10, fontSize:13, fontWeight:700 }}>
-                      ⭐ 프리미엄 노출 {premiumCount}개 · “적극 채용 중인 회사” 섹션 + 최상단 노출
-                    </div>
-                    {sorted.length === 0 && <div style={{ color: '#aaa', fontSize: 13, padding: '8px 0' }}>해당 공고 없음</div>}
-                    {sorted.map(job => (
-                      <div key={job.id} style={S.row}>
-                        <div style={{ flex: 1 }}>
-                          <div style={{ fontSize: 14, fontWeight: 600 }}>
-                            {job.title}
-                            {job.status === 'pending_review' && (
-                              <span style={{ ...S.badge, background: '#fff7ed', color: '#c2410c' }}>Pending Approval</span>
-                            )}
-                            {job.status === 'rejected' && (
-                              <span style={{ ...S.badge, background: '#fee2e2', color: '#991b1b' }}>Rejected</span>
-                            )}
-                            {job.status !== 'pending_review' && job.status !== 'rejected' && (
-                              <span style={{ ...S.badge, background: job.is_active ? '#dcfce7' : '#fee2e2', color: job.is_active ? '#166534' : '#991b1b' }}>
-                                {job.is_active ? 'Active' : 'Inactive'}
-                              </span>
-                            )}
-                            {job.source === 'company_self' && <span style={{ ...S.badge, background: '#eff6ff', color: '#1d4ed8' }}>🏢 기업등록</span>}
-                            {job.is_featured && <span style={{ ...S.badge, background: '#fef3c7', color: '#92400e' }}>Featured</span>}
+                      );
+                    })}
+                  </div>
+                  {sorted.length === 0 && <div style={{ color: '#aaa', fontSize: 13, padding: '8px 0' }}>해당 공고 없음</div>}
+                  {sorted.map(job => {
+                    const st = job.status === 'pending_review'
+                      ? { label: '승인 대기', bg: '#FFF4E5', color: '#C2410C' }
+                      : job.status === 'rejected'
+                      ? { label: '반려', bg: '#FEE2E2', color: '#991B1B' }
+                      : job.is_active
+                      ? { label: '노출중', bg: '#E7F6EC', color: '#1B7A43' }
+                      : { label: '비노출', bg: '#F1F3F5', color: '#868E96' };
+                    return (
+                      <div key={job.id} style={{ background: '#fff', border: '1px solid #EEF0F2', borderRadius: 14, padding: '15px 17px', marginBottom: 10 }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 }}>
+                          <div style={{ minWidth: 0 }}>
+                            <div style={{ fontSize: 12.5, fontWeight: 600, color: '#8B95A1', marginBottom: 3 }}>{job.company}</div>
+                            <div style={{ fontSize: 16, fontWeight: 700, color: '#191F28', letterSpacing: '-0.01em' }}>{job.title}</div>
                           </div>
-                          <div style={{ fontSize: 12, color: '#888' }}>
-                            {job.company} · {job.location} · {job.type} · {Math.round(job.salary_min/1e6)}M–{Math.round(job.salary_max/1e6)}M VND
-                          </div>
-                          {job.source === 'company_self' && (
-                            <div style={{ fontSize: 11, color: '#aaa', marginTop: 2 }}>
-                              {job.account_company && <>🏢 계정: <b style={{ color: '#1d4ed8' }}>{job.account_company}</b> · </>}
-                              👤 {job.poster_email || '(등록자 미상)'} · 등록 {fmtDate(job.created_at)}
-                            </div>
-                          )}
+                          <span style={{ flexShrink: 0, fontSize: 11.5, fontWeight: 700, padding: '4px 10px', borderRadius: 999, background: st.bg, color: st.color }}>{st.label}</span>
                         </div>
-                        <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 10 }}>
+                          {job.location && <span style={chip}>{job.location}</span>}
+                          {job.type && <span style={chip}>{job.type}</span>}
+                          <span style={{ ...chip, color: '#191F28', fontWeight: 700 }}>{Math.round(job.salary_min/1e6)}–{Math.round(job.salary_max/1e6)}M</span>
+                          {job.source === 'company_self' && <span style={{ ...chip, background: '#EAF2FE', color: '#1D4ED8' }}>기업등록</span>}
+                          {job.is_featured && <span style={{ ...chip, background: '#FEF6E0', color: '#92660E' }}>프리미엄</span>}
+                        </div>
+                        {job.source === 'company_self' && (
+                          <div style={{ fontSize: 11.5, color: '#ADB5BD', marginTop: 8 }}>
+                            {job.account_company && <>계정 {job.account_company} · </>}{job.poster_email || '등록자 미상'} · {fmtDate(job.created_at)}
+                          </div>
+                        )}
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 13, paddingTop: 13, borderTop: '1px solid #F2F4F6' }}>
                           {job.status === 'pending_review' && (
                             <>
-                              <button style={{ ...S.btnS, background:'#059669', color:'#fff', fontWeight:800 }} onClick={() => handleApprove(job)}>Approve</button>
-                              <button style={{ ...S.btnS, color: '#dc2626' }} onClick={() => handleReject(job)}>Reject</button>
+                              <button style={{ ...actBtn, border: 'none', background: '#1B7A43', color: '#fff' }} onClick={() => handleApprove(job)}>승인</button>
+                              <button style={{ ...actBtn, border: 'none', background: '#FEE2E2', color: '#C92A2A' }} onClick={() => handleReject(job)}>반려</button>
                             </>
                           )}
-                          <button style={S.btnS} onClick={() => startEdit(job)}>Edit</button>
+                          <button style={actBtn} onClick={() => startEdit(job)}>수정</button>
                           {job.status !== 'pending_review' && (
-                            <button
-                              style={{ ...S.btnS, ...(job.is_featured ? { background: '#fef3c7', color: '#92400e', fontWeight: 800 } : { color: '#92400e' }) }}
-                              onClick={() => handleToggleFeatured(job)}
-                              title="적극 채용 중 섹션 노출 토글"
-                            >
-                              {job.is_featured ? '★ 프리미엄' : '프리미엄 등록'}
+                            <button style={job.is_featured ? { ...actBtn, borderColor: '#F3D98B', background: '#FEF6E0', color: '#92660E' } : actBtn} onClick={() => handleToggleFeatured(job)} title="적극 채용 중 섹션 노출 토글">
+                              {job.is_featured ? '프리미엄 해제' : '프리미엄'}
                             </button>
                           )}
                           {job.status !== 'pending_review' && (
-                            <button style={S.btnS} onClick={() => handleToggle(job)}>{job.is_active ? 'Deactivate' : 'Activate'}</button>
+                            <button style={actBtn} onClick={() => handleToggle(job)}>{job.is_active ? '비노출' : '노출'}</button>
                           )}
-                          <button style={{ ...S.btnS, color: '#dc2626' }} onClick={() => handleDelete(job.id)}>Delete</button>
+                          <button style={{ ...actBtn, marginLeft: 'auto', color: '#C92A2A', borderColor: '#F5D5D5' }} onClick={() => handleDelete(job.id)}>삭제</button>
                         </div>
                       </div>
-                    ))}
-                  </>
-                );
-              })()}
-            </div>
+                    );
+                  })}
+                </>
+              );
+            })()}
+          </div>
         )}
 
         {/* LOG TAB (기능별 변경 이력 changelog + 운영 액션) */}
