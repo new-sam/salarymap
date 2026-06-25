@@ -1,5 +1,6 @@
 import { sectionStyle, sectionTitle } from '../../constants/dashboard'
 import { useAdmin } from '../../lib/adminSwr'
+import UserAssetCards from './UserAssetCards'
 
 const L = {
   ko: {
@@ -91,6 +92,7 @@ export default function CommunityView({ token, lang = 'ko', dateRange }) {
 
   return (
     <>
+      <UserAssetCards token={token} keys={['userFollows', 'subscriptions']} />
       {/* Summary cards */}
       <div className="adm-metric-cards" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 12, marginBottom: 12 }}>
         {CARD.map(c => (

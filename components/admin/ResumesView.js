@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useAdmin } from '../../lib/adminSwr'
+import UserAssetCards from './UserAssetCards'
 
 // 유입 출처 배지. resume_source(cv/profile/jobs/app)가 있으면 그걸로,
 // 없으면 platform 기준으로 추정해서 채운다 — 옛 행도 어디서 등록된 건지
@@ -137,6 +138,7 @@ export default function ResumesView({ token, t }) {
 
   return (
     <>
+      <UserAssetCards token={token} keys={['resumeHolders', 'resumePublic']} />
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, flexWrap: 'wrap', gap: 12 }}>
         <div style={{ display: 'flex', alignItems: 'baseline', gap: 12 }}>
           <h3 style={{ fontSize: 16, fontWeight: 600, margin: 0 }}>{t.resumesTitle}</h3>

@@ -13,32 +13,16 @@ function buildNav(lang) {
   const L = (ko, en) => (lang === 'ko' ? ko : en)
   return [
     {
-      label: L('성과 · 지표', 'Metrics'),
+      label: 'Performance',
       items: [
         { label: L('추이', 'Trend'), pathname: '/admin/dashboard', tab: 'trend' },
         { label: L('퍼널', 'Funnel'), pathname: '/admin/dashboard', tab: 'funnel' },
-      ],
-    },
-    {
-      label: L('성과 · 유저', 'Users'),
-      items: [
-        { label: L('리텐션', 'Retention'), pathname: '/admin/dashboard', tab: 'retention' },
-        { label: L('커뮤니티', 'Community'), pathname: '/admin/dashboard', tab: 'community' },
-        { label: L('신고/피드백', 'Reports'), pathname: '/admin/dashboard', tab: 'reports' },
-      ],
-    },
-    {
-      label: L('성과 · 채용', 'Recruiting'),
-      items: [
         { label: L('지원자', 'Applicants'), pathname: '/admin/dashboard', tab: 'applications' },
         { label: L('이력서', 'Resumes'), pathname: '/admin/dashboard', tab: 'resumes' },
         { label: L('인재풀', 'Talent'), pathname: '/admin/dashboard', tab: 'talent' },
         { label: L('연봉 인증', 'Verifications'), pathname: '/admin/dashboard', tab: 'verifications' },
-      ],
-    },
-    {
-      label: L('성과 · 앱', 'App'),
-      items: [
+        { label: L('커뮤니티', 'Community'), pathname: '/admin/dashboard', tab: 'community' },
+        { label: L('신고/피드백', 'Reports'), pathname: '/admin/dashboard', tab: 'reports' },
         { label: L('앱 지표', 'App metrics'), pathname: '/admin/dashboard', tab: 'appMetrics' },
       ],
     },

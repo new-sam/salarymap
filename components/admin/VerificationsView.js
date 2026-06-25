@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import UserAssetCards from './UserAssetCards'
 import { useAdmin } from '../../lib/adminSwr'
 import { getSalaryTier, normalizeTrieu } from '../../lib/salaryTiers'
 
@@ -72,6 +73,7 @@ export default function VerificationsView({ token }) {
 
   return (
     <div>
+      <UserAssetCards token={token} keys={['verifiedWorkers']} />
       {/* Filter Tabs */}
       <div style={{ display: 'flex', gap: 8, marginBottom: 20 }}>
         {['pending', 'approved', 'rejected', 'all'].map(s => (

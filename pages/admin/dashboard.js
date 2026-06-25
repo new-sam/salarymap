@@ -11,7 +11,6 @@ import FunnelView from '../../components/admin/FunnelView'
 import ApplicationsView from '../../components/admin/ApplicationsView'
 import ResumesView from '../../components/admin/ResumesView'
 import TalentPoolView from '../../components/admin/TalentPoolView'
-import RetentionView from '../../components/admin/RetentionView'
 import VerificationsView from '../../components/admin/VerificationsView'
 import CommunityView from '../../components/admin/CommunityView'
 import ModerationView from '../../components/admin/ModerationView'
@@ -926,11 +925,6 @@ export default function AdminDashboard() {
         {/* Funnel Tab */}
         {data?.summary && !loading && tab === 'funnel' && (
           <FunnelView data={{ ...data, daily: dailyWithToday }} metrics={METRICS} summary={summary} funnelKeys={funnelKeys} setFunnelKeys={setFunnelKeys} t={t} lang={lang} />
-        )}
-
-        {/* Retention Tab */}
-        {tab === 'retention' && (
-          <RetentionView token={token} t={t} />
         )}
 
         {/* Applications Tab */}
