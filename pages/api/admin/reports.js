@@ -1,5 +1,5 @@
 import { createClient } from '@supabase/supabase-js'
-import { verifyAdmin } from './check'
+import { verifyAdminOrDevStub } from './check'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
@@ -9,7 +9,7 @@ const supabase = createClient(
 // service_role로 신고/피드백을 읽고(이들 테이블엔 SELECT 정책이 없어 운영자만 조회 가능),
 // 신고 처리(대상 글·댓글 삭제 / 신고 무시)를 수행한다.
 export default async function handler(req, res) {
-  const admin = await verifyAdmin(req)
+  const admin = await verifyAdminOrDevStub(req)
   if (!admin) return res.status(401).json({ error: 'Unauthorized' })
 
   if (req.method === 'GET') return getQueue(res)

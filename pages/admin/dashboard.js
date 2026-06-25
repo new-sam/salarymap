@@ -4,6 +4,8 @@ import dynamic from 'next/dynamic'
 import { supabase } from '../../lib/supabaseClient'
 import { useAdmin } from '../../lib/adminSwr'
 import { useT } from '../../lib/i18n'
+import { useRouter } from 'next/router'
+import AdminLayout from '../../components/admin/AdminLayout'
 import Icon from '../../components/Icon'
 import FunnelView from '../../components/admin/FunnelView'
 import UtmView from '../../components/admin/UtmView'
@@ -61,7 +63,8 @@ export default function AdminDashboard() {
   const { lang: globalLang, setLang } = useT()
   // Admin dashboard only ships ko/en; fall back to en for any other global lang (e.g. vi)
   const lang = globalLang === 'ko' ? 'ko' : 'en'
-  const [tab, setTab] = useState('trend')
+  const router = useRouter()
+  const tab = router.query.tab || 'trend'
   const [funnelKeys, setFunnelKeys] = useState([])
   const [chartMode, setChartMode] = useState('1d')
   const [tableView, setTableView] = useState('daily')
@@ -357,16 +360,12 @@ export default function AdminDashboard() {
         .adm-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
         .adm-header-title { display: flex; align-items: center; gap: 12px; }
         .adm-header-controls { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
-        .adm-tabs { display: flex; gap: 0; margin-bottom: 24px; border-bottom: 2px solid #e5e7eb; overflow-x: auto; -webkit-overflow-scrolling: touch; }
-        .adm-tabs::-webkit-scrollbar { display: none; }
-        .adm-tab-btn { padding: 10px 24px; font-size: 14px; font-weight: 600; cursor: pointer; border: none; background: none; margin-bottom: -2px; transition: all 0.15s; white-space: nowrap; flex-shrink: 0; }
         .adm-grid-2col { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 24px; }
         @media (max-width: 768px) {
           .adm-dash { padding: 16px 12px 80px 12px; }
           .adm-header { flex-direction: column; align-items: flex-start; gap: 12px; }
           .adm-header-controls { width: 100%; flex-wrap: wrap; }
           .adm-header-controls input[type="date"] { width: 110px; font-size: 12px; }
-          .adm-tab-btn { padding: 8px 14px; font-size: 12px; }
           .adm-grid-2col { grid-template-columns: 1fr; }
           .adm-metric-cards { grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)) !important; gap: 8px !important; }
           .adm-metric-cards > div { padding: 12px 14px !important; }
@@ -376,6 +375,7 @@ export default function AdminDashboard() {
           .adm-realtime-grid .adm-rt-value { font-size: 18px !important; }
         }
       `}</style>
+      <AdminLayout>
       <div className="adm-dash">
         {/* Header */}
         <div className="adm-header">
@@ -416,20 +416,6 @@ export default function AdminDashboard() {
               {loading ? '...' : lang === 'ko' ? '조회' : 'Search'}
             </button>
           </div>
-        </div>
-
-        {/* Tab switcher */}
-        <div className="adm-tabs">
-          {['trend', 'kpi', 'funnel', 'ga4', 'utm', 'retention', 'users', 'applications', 'resumes', 'talent', 'verifications', 'community', 'reports', 'appMetrics'].map(k => (
-            <button key={k} onClick={() => setTab(k)}
-              className="adm-tab-btn"
-              style={{
-                borderBottom: tab === k ? '2px solid #111' : '2px solid transparent',
-                color: tab === k ? '#111' : '#999',
-              }}>
-              {t[k]}
-            </button>
-          ))}
         </div>
 
         {/* Today Realtime */}
@@ -1007,6 +993,7 @@ export default function AdminDashboard() {
         )}
 
       </div>
+      </AdminLayout>
     </>
   )
 }

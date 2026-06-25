@@ -1,5 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import Head from 'next/head'
+import { useRouter } from 'next/router'
+import AdminLayout from '../../components/admin/AdminLayout'
 import { supabase } from '../../lib/supabaseClient'
 import { useAdmin } from '../../lib/adminSwr'
 import Icon from '../../components/Icon'
@@ -21,7 +23,8 @@ export default function AdminJobs() {
   const [auth, setAuth] = useState('loading')
   const [token, setToken] = useState(null)
   const [currentEmail, setCurrentEmail] = useState(null)
-  const [tab, setTab] = useState('jobs')
+  const router = useRouter()
+  const tab = router.query.tab || 'jobs'
   const [jobFilter, setJobFilter] = useState('all')
   const [logTag, setLogTag] = useState('all')
   const [editing, setEditing] = useState(null)
@@ -241,6 +244,7 @@ export default function AdminJobs() {
         body { background: #f7f7f5; font-family: -apple-system, 'Helvetica Neue', Arial, sans-serif; }
       `}</style>
 
+      <AdminLayout>
       <div style={S.shell}>
         <div style={S.header}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
@@ -249,16 +253,6 @@ export default function AdminJobs() {
               <div style={{ fontSize: 20, fontWeight: 800 }}>Admin Dashboard</div>
               <div style={{ fontSize: 12, color: '#aaa' }}>{currentEmail}</div>
             </div>
-          </div>
-          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
-            {['kpi','jobs','companies','applications','log','crawl','admins'].map(t => (
-              <button key={t} style={{ ...S.tab, ...(tab === t ? S.tabOn : {}) }} onClick={() => setTab(t)}>
-                {t === 'kpi' ? '📊 지표' : t === 'jobs' ? `Jobs (${jobs.length})` : t === 'companies' ? `회사 (${companies.length})` : t === 'applications' ? `Applications (${apps.length})` : t === 'log' ? '📝 로그' : t === 'crawl' ? `Crawl Targets (${targets.length})` : `Admins (${admins.length})`}
-              </button>
-            ))}
-            <a href="/admin/dashboard" style={{ fontSize: 13, fontWeight: 600, color: '#4F46E5', textDecoration: 'none', padding: '7px 16px', border: '1px solid #4F46E5', borderRadius: 8 }}>
-              Performance
-            </a>
           </div>
         </div>
 
@@ -735,6 +729,7 @@ export default function AdminJobs() {
           </div>
         )}
       </div>
+      </AdminLayout>
     </>
   )
 }

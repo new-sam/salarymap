@@ -1,6 +1,6 @@
 import { createClient } from '@supabase/supabase-js'
 import { sendPush } from '../../../lib/push'
-import { verifyAdmin } from './check'
+import { verifyAdminOrDevStub } from './check'
 
 // 지원 상태 → 지원자에게 보낼 단계 안내 문구. 토큰 locale(vi|ko|en)별로 push.js가 선택.
 const STATUS_PUSH = {
@@ -54,7 +54,7 @@ const supabase = createClient(
 )
 
 export default async function handler(req, res) {
-  const admin = await verifyAdmin(req)
+  const admin = await verifyAdminOrDevStub(req)
   if (!admin) return res.status(401).json({ error: 'Unauthorized' })
 
   if (req.method === 'GET') {
