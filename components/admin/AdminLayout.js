@@ -45,7 +45,7 @@ function buildNav(lang) {
 
 export default function AdminLayout({ children }) {
   const router = useRouter()
-  const { lang: globalLang } = useT()
+  const { lang: globalLang, setLang } = useT()
   const lang = globalLang === 'ko' ? 'ko' : 'en'
   const [open, setOpen] = useState(false)
 
@@ -78,10 +78,11 @@ export default function AdminLayout({ children }) {
           font-size: 16px; font-weight: 700; letter-spacing: -0.01em; color: #1d1d1f;
         }
         .al-brand-dot { width: 9px; height: 9px; border-radius: 50%; background: #ff4400; }
-        .al-group { margin-bottom: 14px; }
+        .al-group { margin-bottom: 2px; }
+        .al-group:not(:first-of-type) { margin-top: 16px; padding-top: 16px; border-top: 1px solid #E8E8EA; }
         .al-group-label {
-          font-size: 11px; font-weight: 700; color: #86868b; text-transform: uppercase;
-          letter-spacing: 0.04em; padding: 6px 10px 4px;
+          font-size: 10.5px; font-weight: 800; color: #9AA0A6; text-transform: uppercase;
+          letter-spacing: 0.08em; padding: 2px 10px 9px;
         }
         .al-item {
           display: block; padding: 7px 10px; margin: 1px 0; border-radius: 7px;
@@ -135,6 +136,18 @@ export default function AdminLayout({ children }) {
             </div>
           ))}
         </nav>
+        <div style={{ marginTop: 'auto', paddingTop: 16 }}>
+          <div style={{ display: 'flex', gap: 2, background: '#EFEFF2', borderRadius: 9, padding: 3 }}>
+            {['ko', 'en'].map((l) => (
+              <button key={l} onClick={() => setLang(l)} style={{
+                flex: 1, padding: '6px 0', borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: 'pointer', border: 'none',
+                background: lang === l ? '#fff' : 'transparent',
+                color: lang === l ? '#1d1d1f' : '#86868b',
+                boxShadow: lang === l ? '0 1px 2px rgba(0,0,0,0.08)' : 'none',
+              }}>{l === 'ko' ? '한국어' : 'English'}</button>
+            ))}
+          </div>
+        </div>
       </aside>
 
       <button className="al-burger" aria-label="menu" onClick={() => setOpen((v) => !v)}>
