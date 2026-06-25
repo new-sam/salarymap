@@ -37,7 +37,6 @@ function buildNav(lang) {
         { label: L('공고 목록', 'Jobs'), pathname: '/admin/jobs', tab: 'jobs' },
         { label: L('회사', 'Companies'), pathname: '/admin/jobs', tab: 'companies' },
         { label: L('공고 지표', 'Job KPI'), pathname: '/admin/jobs', tab: 'kpi' },
-        { label: L('로그', 'Log'), pathname: '/admin/jobs', tab: 'log' },
         { label: 'Crawl', pathname: '/admin/jobs', tab: 'crawl' },
         { label: 'Admins', pathname: '/admin/jobs', tab: 'admins' },
       ],
@@ -78,7 +77,7 @@ export default function AdminLayout({ children }) {
           display: flex; align-items: center; gap: 8px; padding: 4px 10px 16px;
           font-size: 16px; font-weight: 700; letter-spacing: -0.01em; color: #1d1d1f;
         }
-        .al-brand-dot { width: 9px; height: 9px; border-radius: 50%; background: #0071e3; }
+        .al-brand-dot { width: 9px; height: 9px; border-radius: 50%; background: #ff4400; }
         .al-group { margin-bottom: 14px; }
         .al-group-label {
           font-size: 11px; font-weight: 700; color: #86868b; text-transform: uppercase;
@@ -90,7 +89,7 @@ export default function AdminLayout({ children }) {
           line-height: 1.3; transition: background 0.12s, color 0.12s; cursor: pointer;
         }
         .al-item:hover { background: #efeff2; }
-        .al-item.active { background: #e8f0fe; color: #0066cc; font-weight: 600; }
+        .al-item.active { background: #FFF1EC; color: #ff4400; font-weight: 600; }
         .al-main { flex: 1; min-width: 0; }
         .al-pagehead { padding: 40px 0 0; }
         .al-pagehead h1 { margin: 0; font-size: 22px; font-weight: 700; letter-spacing: -0.02em; color: #1d1d1f; }
