@@ -1,0 +1,738 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>KTC · 베트남 EOR 채용 파트너</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css">
+<style>
+  :root{
+    --black:#0B0A09; --ink:#16130F; --cream:#F4EDE3; --cream2:#ECE3D5;
+    --orange:#F4521E; --orange-bright:#FF6A1F; --orange-deep:#B8350F;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{font-family:"Pretendard",system-ui,sans-serif;background:#2a2724;color:#fff;-webkit-font-smoothing:antialiased;}
+
+  /* ---- deck scaffolding: each slide is a 16:9 stage that letterboxes to fit ---- */
+  .deck{scroll-snap-type:y mandatory;}
+  .wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;scroll-snap-align:center;padding:3vmin;}
+  .slide{position:relative;overflow:hidden;
+    width:min(100%, calc((100vh - 6vmin) * 16 / 9));aspect-ratio:16/9;container-type:inline-size;
+    border-radius:.6cqw;box-shadow:0 2cqw 6cqw rgba(0,0,0,.45);}
+
+  /* ---- themes (faithful to source PDF) ---- */
+  .t-cream{background:var(--cream);color:var(--ink);--chrome:rgba(20,19,15,.42);--ph:rgba(20,19,15,.32);--phbg:rgba(20,19,15,.04);}
+  .t-dark{background:var(--black);color:#fff;--chrome:rgba(255,255,255,.5);--ph:rgba(255,255,255,.34);--phbg:rgba(255,255,255,.05);}
+  .t-black{background:#000;color:#fff;--chrome:rgba(255,255,255,.5);--ph:rgba(255,255,255,.34);--phbg:rgba(255,255,255,.05);}
+  .t-orange{color:#fff;--chrome:rgba(255,255,255,.66);--ph:rgba(255,255,255,.4);--phbg:rgba(255,255,255,.08);
+    background:repeating-linear-gradient(90deg, rgba(0,0,0,.06) 0 1.4cqw, rgba(0,0,0,0) 1.4cqw 2.8cqw),
+      radial-gradient(120% 120% at 78% 38%, var(--orange-bright) 0%, var(--orange) 34%, #8f2c0c 84%, #1c0a04 100%);}
+  .t-ember{color:#fff;--chrome:rgba(255,255,255,.55);--ph:rgba(255,255,255,.34);--phbg:rgba(255,255,255,.05);
+    background:repeating-linear-gradient(90deg, rgba(255,255,255,.025) 0 1.4cqw, rgba(255,255,255,0) 1.4cqw 2.8cqw),
+      linear-gradient(95deg, #120a06 0%, #2e1407 36%, #7a2f0e 78%, #aa3d10 100%);}
+
+  /* big angular accent for orange slides */
+  .mark{position:absolute;inset:0;pointer-events:none;opacity:.16;}
+  .mark svg{position:absolute;right:6cqw;top:18cqw;width:46cqw;height:auto;}
+
+  /* ---- chrome (injected) ---- */
+  .top,.bot{position:absolute;left:0;right:0;display:flex;align-items:center;
+    padding:0 4.2cqw;font-size:.92cqw;letter-spacing:.02em;color:var(--chrome);font-weight:500;}
+  .top{top:3.2cqw;justify-content:space-between;}
+  .bot{bottom:3.2cqw;justify-content:space-between;}
+  .top .ver{position:absolute;left:0;right:0;display:flex;justify-content:center;gap:14cqw;pointer-events:none;}
+  .top .ver span:last-child{transform:translateX(34cqw);}
+  .count{position:fixed;right:2.4vmin;bottom:2.4vmin;z-index:50;
+    font-size:13px;letter-spacing:.12em;color:rgba(255,255,255,.7);font-weight:600;
+    background:rgba(0,0,0,.4);padding:7px 12px;border-radius:99px;backdrop-filter:blur(6px);}
+
+  /* ---- content primitives ---- */
+  .pad{position:absolute;inset:0;padding:9.5cqw 4.6cqw 8.5cqw;}
+  .eyebrow{font-size:1.15cqw;font-weight:800;letter-spacing:.26em;text-transform:uppercase;}
+  h1{font-weight:800;font-size:4.55cqw;line-height:1.16;letter-spacing:-.015em;}
+  h1.big{font-size:5.1cqw;}
+  .lede{font-weight:600;font-size:1.45cqw;line-height:1.5;opacity:.85;}
+  .dot{color:var(--orange);}
+  .t-cream .dot{color:var(--orange-deep);}
+
+  /* image placeholder — intentional empty-state for real photos */
+  .ph{border:.1cqw solid var(--ph);background:var(--phbg);border-radius:1cqw;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.7cqw;
+    text-align:center;color:var(--ph);padding:1cqw;}
+  .ph::before{content:"";width:2.6cqw;height:2cqw;border-radius:.35cqw;border:.16cqw solid var(--ph);opacity:.7;}
+  .ph b{font-size:1cqw;font-weight:700;letter-spacing:.02em;opacity:.9;}
+  .ph small{font-size:.88cqw;font-weight:500;line-height:1.4;max-width:80%;opacity:.85;}
+
+  /* product frame for real screenshots */
+  .frame{border-radius:1.1cqw;overflow:hidden;box-shadow:0 1.8cqw 5cqw rgba(0,0,0,.45);background:#fff;}
+  .frame .bar{height:2.6cqw;background:#e9e9ea;display:flex;align-items:center;gap:.6cqw;padding:0 1.2cqw;}
+  .frame .bar i{width:1cqw;height:1cqw;border-radius:50%;background:#cfcfd2;display:block;}
+  .frame.dark .bar{background:#1c1a18;}
+  .frame.dark .bar i{background:#3a3a3a;}
+  .frame .url{font-size:.95cqw;color:rgba(255,255,255,.45);margin-left:1cqw;}
+  .frame img{display:block;width:100%;}
+
+  /* needs-real flag (screen only) */
+  .flag{position:absolute;top:7.5cqw;right:4.6cqw;background:#FFE08A;color:#7c2d12;
+    font-size:.85cqw;font-weight:800;padding:.5cqw .9cqw;border-radius:.5cqw;z-index:8;}
+
+  @media (prefers-reduced-motion:no-preference){
+    .slide{opacity:0;transform:translateY(18px);transition:opacity .6s ease, transform .6s ease;}
+    .slide.in{opacity:1;transform:none;}
+  }
+  @media print{
+    @page{size:1280px 720px;margin:0;}
+    html,body{background:#fff;}
+    .deck{scroll-snap-type:none;}
+    .wrap{min-height:auto;height:720px;padding:0;page-break-after:always;}
+    .slide{width:1280px;height:720px;box-shadow:none;border-radius:0;opacity:1!important;transform:none!important;}
+    .count{display:none;} .flag{display:none;}
+  }
+</style>
+</head>
+<body>
+<div class="deck" id="deck">
+
+<!-- ============ 01 COVER ============ -->
+<div class="wrap"><section class="slide t-orange">
+  <div class="mark"><svg viewBox="0 0 200 200"><polygon points="20,10 90,10 90,80 70,80 70,120 130,120 130,70 110,70 110,40 190,90 130,140 130,160 50,160 50,120 20,120" fill="#fff"/></svg></div>
+  <div class="pad" style="display:flex;flex-direction:column;justify-content:center;">
+    <img src="assets/fyi-logo.png" style="width:13cqw;margin-bottom:3.2cqw;filter:drop-shadow(0 1cqw 2cqw rgba(0,0,0,.25))" alt="FYI">
+    <h1 class="big" style="max-width:88%">인건비는 절반으로,<br>베트남 IT 인재가 팀에 합류합니다.</h1>
+    <div style="position:absolute;left:4.6cqw;bottom:9cqw;display:flex;gap:8cqw;">
+      <div><div style="font-size:1cqw;font-weight:600;opacity:.8;margin-bottom:.6cqw">인건비</div><div style="font-size:1.55cqw;font-weight:800">최대 1/3 · 평균 53%↓</div></div>
+      <div><div style="font-size:1cqw;font-weight:600;opacity:.8;margin-bottom:.6cqw">직군</div><div style="font-size:1.55cqw;font-weight:800">개발 ｜ 디자인 ｜ 마케팅</div></div>
+      <div><div style="font-size:1cqw;font-weight:600;opacity:.8;margin-bottom:.6cqw">지원</div><div style="font-size:1.55cqw;font-weight:800">번역 ｜ 업무관리 툴</div></div>
+    </div>
+  </div>
+</section></div>
+
+<!-- ============ 02 PROBLEM (emotional) ============ -->
+<div class="wrap"><section class="slide t-dark">
+  <div style="position:absolute;inset:0;background:radial-gradient(120% 130% at 75% 10%, #5a1c0a 0%, #2a0f06 45%, #100a07 100%);"></div>
+  <div class="pad" style="display:flex;flex-direction:column;justify-content:center;">
+    <div class="eyebrow" style="margin-bottom:2.6cqw">Hiring Pressure</div>
+    <h1>비용은 줄여야 하는데,<br>왜 좋은 IT 인재를 빠르게 채용하기는<br><span class="dot">더 어려워질까요?</span></h1>
+  </div>
+</section></div>
+
+<!-- ============ 03 PROBLEM (numbers) ============ -->
+<div class="wrap"><section class="slide t-ember">
+  <div class="pad">
+    <div class="eyebrow" style="margin-bottom:2.4cqw">Hiring Pressure</div>
+    <div style="display:flex;align-items:flex-end;gap:3.5cqw;margin-bottom:3.2cqw">
+      <h1 style="white-space:nowrap">좋은 사람은 비싸고,<br>채용은 오래 걸립니다.</h1>
+      <p class="lede" style="padding-bottom:.4cqw">국내 채용만으로 비용과 속도를 맞추기 어렵다면,<br>후보군을 해외까지 넓혀야 합니다.</p>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:1.6cqw;position:absolute;left:4.6cqw;right:4.6cqw;bottom:8.5cqw;">
+      <div style="background:rgba(255,255,255,.06);border:.1cqw solid rgba(255,255,255,.12);border-radius:1.2cqw;padding:2.4cqw 2cqw;">
+        <div style="font-size:3cqw;font-weight:800;text-align:center;margin-bottom:2cqw">₩6,000,000~</div>
+        <div style="font-size:1.5cqw;font-weight:800">600만원 이상</div><div style="opacity:.7;font-size:1.1cqw;margin-top:.4cqw">시니어 개발자 월 인건비</div>
+      </div>
+      <div style="background:rgba(255,255,255,.06);border:.1cqw solid rgba(255,255,255,.12);border-radius:1.2cqw;padding:2.4cqw 2cqw;">
+        <div style="font-size:3cqw;font-weight:800;text-align:center;margin-bottom:2cqw">2-3 months</div>
+        <div style="font-size:1.5cqw;font-weight:800">평균 2-3개월 이상</div><div style="opacity:.7;font-size:1.1cqw;margin-top:.4cqw">공고부터 입사까지 소요 기간</div>
+      </div>
+      <div style="background:rgba(255,255,255,.06);border:.1cqw solid rgba(255,255,255,.12);border-radius:1.2cqw;padding:2.4cqw 2cqw;">
+        <div style="font-size:3cqw;font-weight:800;text-align:center;margin-bottom:2cqw">Uncertainty</div>
+        <div style="font-size:1.5cqw;font-weight:800">채용 후에도 불확실성</div><div style="opacity:.7;font-size:1.1cqw;margin-top:.4cqw">조기 퇴사·성과 미달 리스크</div>
+      </div>
+    </div>
+  </div>
+</section></div>
+
+<!-- ============ 04 COST ADVANTAGE ============ -->
+<div class="wrap"><section class="slide t-cream">
+  <div class="pad">
+    <div class="eyebrow" style="margin-bottom:2.4cqw">Cost Advantage</div>
+    <h1 style="max-width:56%">같은 실력,<br>최대 1/3 비용으로<br>채용할 수 있습니다.</h1>
+    <div style="position:absolute;left:4.6cqw;bottom:9cqw;">
+      <div style="font-size:8.6cqw;font-weight:800;letter-spacing:-.03em;line-height:1;color:var(--orange-deep)">53%<span style="font-size:6cqw">↓</span></div>
+      <div style="font-size:1.4cqw;font-weight:800;margin-top:1cqw">한국 대비 전 직군 평균 절감율</div>
+      <div style="font-size:1cqw;opacity:.55;margin-top:.5cqw">* 출처 : IT Viec · Vietnam IT Salary Report 2025–2026</div>
+    </div>
+    <div style="position:absolute;right:4.6cqw;bottom:9cqw;display:flex;align-items:flex-end;gap:1.6cqw;">
+      <div style="width:11cqw">
+        <div style="font-size:1.4cqw;font-weight:800;margin-bottom:.9cqw">마케터 <span style="font-size:.95cqw;font-weight:600;opacity:.6">(5년차/월)</span></div>
+        <div style="height:18cqw;border-radius:.9cqw;overflow:hidden;display:flex;flex-direction:column;background:linear-gradient(180deg,#fff,#fbe9df);">
+          <div style="flex:0 0 30%;display:flex;align-items:center;padding:0 1.1cqw;font-weight:700">400만원</div>
+          <div style="flex:1"></div>
+          <div style="flex:0 0 44%;background:linear-gradient(180deg,#ff7a3d,var(--orange));color:#fff;display:flex;align-items:flex-end;padding:0 1.1cqw 1.1cqw;font-weight:800;font-size:1.5cqw">167만원</div>
+        </div>
+        <div style="margin-top:1cqw;background:#fff;border-radius:99px;padding:.7cqw 0;text-align:center;font-weight:800;font-size:1.6cqw">월 58%↓</div>
+        <div style="text-align:center;font-weight:700;font-size:1.2cqw;margin-top:.7cqw">연 2,796만원 절감</div>
+      </div>
+      <div style="width:11cqw">
+        <div style="font-size:1.4cqw;font-weight:800;margin-bottom:.9cqw">디자이너 <span style="font-size:.95cqw;font-weight:600;opacity:.6">(5년차/월)</span></div>
+        <div style="height:21cqw;border-radius:.9cqw;overflow:hidden;display:flex;flex-direction:column;background:linear-gradient(180deg,#fff,#fbe9df);">
+          <div style="flex:0 0 26%;display:flex;align-items:center;padding:0 1.1cqw;font-weight:700">350만원</div>
+          <div style="flex:1"></div>
+          <div style="flex:0 0 48%;background:linear-gradient(180deg,#ff7a3d,var(--orange));color:#fff;display:flex;align-items:flex-end;padding:0 1.1cqw 1.1cqw;font-weight:800;font-size:1.5cqw">186만원</div>
+        </div>
+        <div style="margin-top:1cqw;background:#fff;border-radius:99px;padding:.7cqw 0;text-align:center;font-weight:800;font-size:1.6cqw">월 47%↓</div>
+        <div style="text-align:center;font-weight:700;font-size:1.2cqw;margin-top:.7cqw">연 1,968만원 절감</div>
+      </div>
+      <div style="width:11cqw">
+        <div style="font-size:1.4cqw;font-weight:800;margin-bottom:.9cqw">개발자 <span style="font-size:.95cqw;font-weight:600;opacity:.6">(5년차/월)</span></div>
+        <div style="height:24cqw;border-radius:.9cqw;overflow:hidden;display:flex;flex-direction:column;background:linear-gradient(180deg,#fff,#fbe9df);">
+          <div style="flex:0 0 22%;display:flex;align-items:center;padding:0 1.1cqw;font-weight:700">470만원</div>
+          <div style="flex:1"></div>
+          <div style="flex:0 0 52%;background:linear-gradient(180deg,#ff7a3d,var(--orange));color:#fff;display:flex;align-items:flex-end;padding:0 1.1cqw 1.1cqw;font-weight:800;font-size:1.5cqw">319만원</div>
+        </div>
+        <div style="margin-top:1cqw;background:#fff;border-radius:99px;padding:.7cqw 0;text-align:center;font-weight:800;font-size:1.6cqw">월 32%↓</div>
+        <div style="text-align:center;font-weight:700;font-size:1.2cqw;margin-top:.7cqw">연 1,812만원 절감</div>
+      </div>
+    </div>
+  </div>
+</section></div>
+
+<!-- ============ 05 FYI PLATFORM (real screenshot) ============ -->
+<div class="wrap"><section class="slide t-dark">
+  <div class="pad" style="display:flex;align-items:center;gap:3cqw;">
+    <div style="flex:0 0 40%;">
+      <div class="eyebrow" style="margin-bottom:2.4cqw;color:var(--orange-bright)">Talent Platform · FYI</div>
+      <h1>베트남 현지에서<br>직접 운영하는<br>채용 플랫폼입니다.</h1>
+      <p class="lede" style="margin-top:2.2cqw">인재를 외부에서 수소문하는 게 아닙니다.<br>이미 현지에서 인재 데이터를 직접 쌓고 있습니다.</p>
+      <div style="display:flex;gap:3cqw;margin-top:3.4cqw;">
+        <div><div style="font-size:3cqw;font-weight:800">4,000<span style="color:var(--orange-bright)">+</span></div><div style="opacity:.7;font-size:1.1cqw">등록 인재</div></div>
+        <div><div style="font-size:3cqw;font-weight:800">250<span style="color:var(--orange-bright)">+</span></div><div style="opacity:.7;font-size:1.1cqw">취업 연계</div></div>
+        <div><div style="font-size:3cqw;font-weight:800">10,000<span style="color:var(--orange-bright)">+</span></div><div style="opacity:.7;font-size:1.1cqw">인재 데이터</div></div>
+      </div>
+    </div>
+    <div style="flex:1;">
+      <div class="frame dark" style="border:.12cqw solid rgba(255,255,255,.1);">
+        <div class="bar"><i></i><i></i><i></i><span class="url">fyi.vn / talents</span></div>
+        <img src="assets/talent-pool.png" alt="FYI Talent Pool">
+      </div>
+    </div>
+  </div>
+</section></div>
+
+<!-- ============ 06 PROVEN TALENT — VTM ============ -->
+<div class="wrap"><section class="slide t-dark">
+  <div class="flag">VTM 실제 인재 캡쳐로 교체 가능</div>
+  <div class="pad" style="display:flex;align-items:center;gap:3cqw;">
+    <div style="flex:0 0 38%;">
+      <div class="eyebrow" style="margin-bottom:2.4cqw;color:var(--orange-bright)">Proven Talent · VTM</div>
+      <h1 style="font-size:3.55cqw;line-height:1.22">이력서로 거르지<br>않습니다.<br>실력으로 검증합니다.</h1>
+      <p class="lede" style="margin-top:2.4cqw">상위권 대학 출신부터 즉시 전력까지 —<br>점수·핵심 스킬·포트폴리오·경력을 면접 전에 봅니다.</p>
+      <div style="display:flex;gap:1cqw;margin-top:3cqw;flex-wrap:wrap;">
+        <span style="background:rgba(255,255,255,.07);border:.1cqw solid rgba(255,255,255,.14);border-radius:99px;padding:.8cqw 1.6cqw;font-size:1.1cqw;font-weight:700">종합 점수</span>
+        <span style="background:rgba(255,255,255,.07);border:.1cqw solid rgba(255,255,255,.14);border-radius:99px;padding:.8cqw 1.6cqw;font-size:1.1cqw;font-weight:700">핵심 스킬</span>
+        <span style="background:rgba(255,255,255,.07);border:.1cqw solid rgba(255,255,255,.14);border-radius:99px;padding:.8cqw 1.6cqw;font-size:1.1cqw;font-weight:700">포트폴리오</span>
+      </div>
+    </div>
+    <div style="flex:1;position:relative;">
+      <div style="position:absolute;right:-1cqw;top:-1.6cqw;width:96%;height:97%;background:rgba(255,255,255,.05);border:.1cqw solid rgba(255,255,255,.08);border-radius:1.4cqw;transform:rotate(2.5deg)"></div>
+      <div style="position:absolute;right:.6cqw;top:-.8cqw;width:97%;height:98%;background:rgba(255,255,255,.07);border:.1cqw solid rgba(255,255,255,.1);border-radius:1.4cqw;transform:rotate(-1.2deg)"></div>
+      <div style="position:relative;display:grid;grid-template-columns:1fr 1fr 1fr;gap:1.1cqw;">
+        <!-- card -->
+        <div style="background:#fff;color:var(--ink);border-radius:1.1cqw;padding:1.6cqw 1.3cqw;">
+          <div style="display:flex;align-items:center;gap:.7cqw"><div style="width:2.6cqw;height:2.6cqw;border-radius:50%;background:linear-gradient(135deg,#ff7a3d,var(--orange));color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:1cqw">Ph</div><div style="margin-left:auto;text-align:right"><b style="font-size:1.6cqw;color:var(--orange-deep);line-height:1">89</b><div style="font-size:.6cqw;font-weight:800;opacity:.5;letter-spacing:.08em">SCORE</div></div></div>
+          <div style="font-size:1.15cqw;font-weight:800;margin-top:1.1cqw">Fullstack Dev</div>
+          <div style="font-size:.78cqw;opacity:.6;font-weight:600">VNU 하노이공대</div>
+          <div style="display:flex;flex-wrap:wrap;gap:.35cqw;margin-top:1.1cqw">
+            <span style="font-size:.72cqw;font-weight:700;background:var(--cream);border-radius:.4cqw;padding:.35cqw .6cqw">React</span>
+            <span style="font-size:.72cqw;font-weight:700;background:var(--cream);border-radius:.4cqw;padding:.35cqw .6cqw">Node</span>
+            <span style="font-size:.72cqw;font-weight:700;background:var(--cream);border-radius:.4cqw;padding:.35cqw .6cqw">AWS</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;margin-top:1.2cqw;padding-top:.9cqw;border-top:.1cqw solid rgba(0,0,0,.08)">
+            <div style="font-size:.7cqw;opacity:.6;font-weight:600">경력<b style="display:block;font-size:.95cqw;opacity:1;color:var(--ink)">5년</b></div>
+            <div style="font-size:.7cqw;opacity:.6;font-weight:600;text-align:right">희망급여<b style="display:block;font-size:.95cqw;opacity:1;color:var(--ink)">28M VND</b></div>
+          </div>
+          <div style="display:inline-flex;align-items:center;gap:.4cqw;font-size:.7cqw;font-weight:800;color:#0a7d33;background:#e7f6ec;border-radius:.4cqw;padding:.4cqw .65cqw;margin-top:1cqw">● 즉시 투입</div>
+        </div>
+        <!-- card -->
+        <div style="background:#fff;color:var(--ink);border-radius:1.1cqw;padding:1.6cqw 1.3cqw;">
+          <div style="display:flex;align-items:center;gap:.7cqw"><div style="width:2.6cqw;height:2.6cqw;border-radius:50%;background:linear-gradient(135deg,#ff7a3d,var(--orange));color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:1cqw">Tr</div><div style="margin-left:auto;text-align:right"><b style="font-size:1.6cqw;color:var(--orange-deep);line-height:1">92</b><div style="font-size:.6cqw;font-weight:800;opacity:.5;letter-spacing:.08em">SCORE</div></div></div>
+          <div style="font-size:1.15cqw;font-weight:800;margin-top:1.1cqw">Product Designer</div>
+          <div style="font-size:.78cqw;opacity:.6;font-weight:600">호치민 인문사회대</div>
+          <div style="display:flex;flex-wrap:wrap;gap:.35cqw;margin-top:1.1cqw">
+            <span style="font-size:.72cqw;font-weight:700;background:var(--cream);border-radius:.4cqw;padding:.35cqw .6cqw">Figma</span>
+            <span style="font-size:.72cqw;font-weight:700;background:var(--cream);border-radius:.4cqw;padding:.35cqw .6cqw">UX</span>
+            <span style="font-size:.72cqw;font-weight:700;background:var(--cream);border-radius:.4cqw;padding:.35cqw .6cqw">Design Sys</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;margin-top:1.2cqw;padding-top:.9cqw;border-top:.1cqw solid rgba(0,0,0,.08)">
+            <div style="font-size:.7cqw;opacity:.6;font-weight:600">경력<b style="display:block;font-size:.95cqw;opacity:1;color:var(--ink)">4년</b></div>
+            <div style="font-size:.7cqw;opacity:.6;font-weight:600;text-align:right">희망급여<b style="display:block;font-size:.95cqw;opacity:1;color:var(--ink)">22M VND</b></div>
+          </div>
+          <div style="display:inline-flex;align-items:center;gap:.4cqw;font-size:.7cqw;font-weight:800;color:#0a7d33;background:#e7f6ec;border-radius:.4cqw;padding:.4cqw .65cqw;margin-top:1cqw">● 즉시 투입</div>
+        </div>
+        <!-- card -->
+        <div style="background:#fff;color:var(--ink);border-radius:1.1cqw;padding:1.6cqw 1.3cqw;">
+          <div style="display:flex;align-items:center;gap:.7cqw"><div style="width:2.6cqw;height:2.6cqw;border-radius:50%;background:linear-gradient(135deg,#ff7a3d,var(--orange));color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:1cqw">Ng</div><div style="margin-left:auto;text-align:right"><b style="font-size:1.6cqw;color:var(--orange-deep);line-height:1">87</b><div style="font-size:.6cqw;font-weight:800;opacity:.5;letter-spacing:.08em">SCORE</div></div></div>
+          <div style="font-size:1.15cqw;font-weight:800;margin-top:1.1cqw">Growth Marketer</div>
+          <div style="font-size:.78cqw;opacity:.6;font-weight:600">외국무역대(FTU)</div>
+          <div style="display:flex;flex-wrap:wrap;gap:.35cqw;margin-top:1.1cqw">
+            <span style="font-size:.72cqw;font-weight:700;background:var(--cream);border-radius:.4cqw;padding:.35cqw .6cqw">Meta Ads</span>
+            <span style="font-size:.72cqw;font-weight:700;background:var(--cream);border-radius:.4cqw;padding:.35cqw .6cqw">GA4</span>
+            <span style="font-size:.72cqw;font-weight:700;background:var(--cream);border-radius:.4cqw;padding:.35cqw .6cqw">CRM</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;margin-top:1.2cqw;padding-top:.9cqw;border-top:.1cqw solid rgba(0,0,0,.08)">
+            <div style="font-size:.7cqw;opacity:.6;font-weight:600">경력<b style="display:block;font-size:.95cqw;opacity:1;color:var(--ink)">3년</b></div>
+            <div style="font-size:.7cqw;opacity:.6;font-weight:600;text-align:right">희망급여<b style="display:block;font-size:.95cqw;opacity:1;color:var(--ink)">18M VND</b></div>
+          </div>
+          <div style="display:inline-flex;align-items:center;gap:.4cqw;font-size:.7cqw;font-weight:800;color:#0a7d33;background:#e7f6ec;border-radius:.4cqw;padding:.4cqw .65cqw;margin-top:1cqw">● 즉시 투입</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section></div>
+
+<!-- ============ 07 CAPABILITY — DEVELOPMENT ============ -->
+<div class="wrap"><section class="slide t-cream">
+  <div class="pad" style="display:flex;flex-direction:column;padding:6.8cqw 4.6cqw 6cqw;">
+    <div class="eyebrow" style="margin-bottom:1.2cqw">What We Deliver · 개발</div>
+    <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:2cqw">
+      <h1 style="font-size:3.4cqw">필요한 개발, <span class="dot">다 있습니다.</span></h1>
+      <p class="lede" style="text-align:right;flex:0 0 30cqw;padding-bottom:.4cqw">한국 기업이 자주 맡기는 일 —<br>같은 결과물, 1/3 비용.</p>
+    </div>
+    <div style="display:grid;grid-template-columns:32% 1fr;gap:2.8cqw;flex:1;margin-top:1.5cqw;">
+      <!-- domains -->
+      <div>
+        <div style="display:flex;gap:.8cqw;padding:.72cqw 0;border-top:.12cqw solid rgba(20,19,15,.12)"><span style="color:var(--orange-deep);font-weight:800;font-size:1.1cqw">●</span><div><b style="font-size:1.25cqw;font-weight:800">백엔드 API · 서버</b><div style="font-size:.95cqw;opacity:.6">결제·주문·인증 연동</div></div></div>
+        <div style="display:flex;gap:.8cqw;padding:.72cqw 0;border-top:.12cqw solid rgba(20,19,15,.12)"><span style="color:var(--orange-deep);font-weight:800;font-size:1.1cqw">●</span><div><b style="font-size:1.25cqw;font-weight:800">쇼핑몰 · 커머스 구축</b><div style="font-size:.95cqw;opacity:.6">자사몰·결제·마켓 연동</div></div></div>
+        <div style="display:flex;gap:.8cqw;padding:.72cqw 0;border-top:.12cqw solid rgba(20,19,15,.12)"><span style="color:var(--orange-deep);font-weight:800;font-size:1.1cqw">●</span><div><b style="font-size:1.25cqw;font-weight:800">유지보수 · 운영</b><div style="font-size:.95cqw;opacity:.6">레거시 안정화, 장애 대응</div></div></div>
+        <div style="display:flex;gap:.8cqw;padding:.72cqw 0;border-top:.12cqw solid rgba(20,19,15,.12)"><span style="color:var(--orange-deep);font-weight:800;font-size:1.1cqw">●</span><div><b style="font-size:1.25cqw;font-weight:800">어드민 · 대시보드</b><div style="font-size:.95cqw;opacity:.6">내부 운영 툴, 데이터 시각화</div></div></div>
+        <div style="display:flex;gap:.8cqw;padding:.72cqw 0;border-top:.12cqw solid rgba(20,19,15,.12)"><span style="color:var(--orange-deep);font-weight:800;font-size:1.1cqw">●</span><div><b style="font-size:1.25cqw;font-weight:800">웹 · 모바일 앱</b><div style="font-size:.95cqw;opacity:.6">React · Flutter, 반응형</div></div></div>
+        <div style="display:flex;gap:.8cqw;padding:.72cqw 0;border-top:.12cqw solid rgba(20,19,15,.12)"><span style="color:var(--orange-deep);font-weight:800;font-size:1.1cqw">●</span><div><b style="font-size:1.25cqw;font-weight:800">데이터 · 자동화</b><div style="font-size:.95cqw;opacity:.6">크롤링, 파이프라인, 배치</div></div></div>
+      </div>
+      <!-- mockups -->
+      <div style="display:grid;grid-template-rows:1.25fr 1fr;gap:1.2cqw;min-height:0;">
+        <div class="frame">
+          <div class="bar"><i></i><i></i><i></i><span style="font-size:.85cqw;color:#8B95A1;margin-left:.8cqw">admin.shop.vn</span></div>
+          <div style="background:#fff;padding:1.3cqw">
+            <div style="font-size:1cqw;font-weight:800;color:#191F28;margin-bottom:.9cqw">운영 대시보드</div>
+            <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:.7cqw">
+              <div style="background:#f2f4f6;border-radius:.6cqw;padding:.8cqw"><div style="font-size:.7cqw;color:#8B95A1">매출</div><div style="font-size:1.25cqw;font-weight:800;color:#191F28">₫1.24B</div></div>
+              <div style="background:#f2f4f6;border-radius:.6cqw;padding:.8cqw"><div style="font-size:.7cqw;color:#8B95A1">주문</div><div style="font-size:1.25cqw;font-weight:800;color:#191F28">3,180</div></div>
+              <div style="background:#fff1ea;border-radius:.6cqw;padding:.8cqw"><div style="font-size:.7cqw;color:#B8350F">전환율</div><div style="font-size:1.25cqw;font-weight:800;color:var(--orange-deep)">4.8%</div></div>
+            </div>
+            <div style="display:flex;align-items:flex-end;gap:.5cqw;height:5.2cqw;margin-top:1cqw">
+              <div style="flex:1;height:45%;background:#dfe3e8;border-radius:.3cqw"></div>
+              <div style="flex:1;height:62%;background:#dfe3e8;border-radius:.3cqw"></div>
+              <div style="flex:1;height:38%;background:#dfe3e8;border-radius:.3cqw"></div>
+              <div style="flex:1;height:78%;background:#dfe3e8;border-radius:.3cqw"></div>
+              <div style="flex:1;height:55%;background:#dfe3e8;border-radius:.3cqw"></div>
+              <div style="flex:1;height:90%;background:linear-gradient(180deg,#ff7a3d,var(--orange));border-radius:.3cqw"></div>
+            </div>
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:.85fr 1.3fr;gap:1.2cqw;min-height:0;">
+          <div style="background:#1a1a1a;border-radius:1.4cqw;padding:.45cqw;box-shadow:0 1.4cqw 3cqw rgba(0,0,0,.3)">
+            <div style="background:#fff;border-radius:1.1cqw;height:100%;overflow:hidden;display:flex;flex-direction:column">
+              <div style="background:linear-gradient(135deg,#ff7a3d,var(--orange));height:3.4cqw;display:flex;align-items:center;padding:0 .9cqw;color:#fff;font-size:.8cqw;font-weight:800">MyShop</div>
+              <div style="padding:.8cqw;display:flex;flex-direction:column;gap:.5cqw">
+                <div style="background:#eef0f2;border-radius:.5cqw;height:2.6cqw"></div>
+                <div style="background:#eef0f2;border-radius:.4cqw;height:.7cqw;width:80%"></div>
+                <div style="background:#eef0f2;border-radius:.4cqw;height:.7cqw;width:55%"></div>
+                <div style="background:var(--orange);border-radius:.5cqw;height:1.6cqw;margin-top:.3cqw"></div>
+              </div>
+            </div>
+          </div>
+          <div class="frame dark">
+            <div class="bar"><i></i><i></i><i></i><span class="url" style="color:rgba(255,255,255,.4)">api/orders.ts</span></div>
+            <div style="background:#0d1117;padding:1cqw 1.1cqw;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.72cqw;line-height:1.85;height:100%">
+              <div><span style="color:#ff7b72">export</span> <span style="color:#d2a8ff">async</span> <span style="color:#79c0ff">createOrder</span>(req) {</div>
+              <div style="padding-left:1.2cqw"><span style="color:#ff7b72">const</span> <span style="color:#c9d1d9">user =</span> <span style="color:#d2a8ff">await</span> <span style="color:#79c0ff">verify</span>(req)</div>
+              <div style="padding-left:1.2cqw"><span style="color:#ff7b72">const</span> <span style="color:#c9d1d9">pay =</span> <span style="color:#d2a8ff">await</span> pg.<span style="color:#79c0ff">charge</span>(...)</div>
+              <div style="padding-left:1.2cqw"><span style="color:#ff7b72">return</span> <span style="color:#a5d6ff">{ ok: true }</span></div>
+              <div>}</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div style="margin-top:1.1cqw;display:flex;align-items:center;gap:1.4cqw;font-size:1.1cqw;font-weight:800">
+      <span style="background:var(--ink);color:#fff;border-radius:99px;padding:.6cqw 1.4cqw">한국 수준 결과물</span>
+      <span style="background:var(--ink);color:#fff;border-radius:99px;padding:.6cqw 1.4cqw">즉시 투입</span>
+      <span style="background:linear-gradient(90deg,#ff7a3d,var(--orange));color:#fff;border-radius:99px;padding:.6cqw 1.4cqw">1/3 비용</span>
+    </div>
+  </div>
+</section></div>
+
+<!-- ============ 08 CAPABILITY — DESIGN ============ -->
+<div class="wrap"><section class="slide t-dark">
+  <div class="pad" style="display:flex;flex-direction:column;padding:6.8cqw 4.6cqw 6cqw;">
+    <div class="eyebrow" style="margin-bottom:1.2cqw;color:var(--orange-bright)">What We Deliver · 디자인</div>
+    <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:2cqw">
+      <h1 style="font-size:3.4cqw">전환되는 디자인, <span class="dot">바로 뽑습니다.</span></h1>
+      <p class="lede" style="text-align:right;flex:0 0 30cqw;padding-bottom:.4cqw">상세페이지부터 브랜딩까지 —<br>한국 감도, 1/3 비용.</p>
+    </div>
+    <div style="display:grid;grid-template-columns:32% 1fr;gap:2.8cqw;flex:1;margin-top:1.5cqw;">
+      <!-- domains -->
+      <div>
+        <div style="display:flex;gap:.8cqw;padding:.72cqw 0;border-top:.12cqw solid rgba(255,255,255,.14)"><span style="color:var(--orange-bright);font-weight:800;font-size:1.1cqw">●</span><div><b style="font-size:1.25cqw;font-weight:800">상세페이지</b><div style="font-size:.95cqw;opacity:.6">상품 상세, 랜딩, 전환 설계</div></div></div>
+        <div style="display:flex;gap:.8cqw;padding:.72cqw 0;border-top:.12cqw solid rgba(255,255,255,.14)"><span style="color:var(--orange-bright);font-weight:800;font-size:1.1cqw">●</span><div><b style="font-size:1.25cqw;font-weight:800">마켓플레이스 썸네일</b><div style="font-size:.95cqw;opacity:.6">쇼피·틱톡샵 상품 이미지 대량</div></div></div>
+        <div style="display:flex;gap:.8cqw;padding:.72cqw 0;border-top:.12cqw solid rgba(255,255,255,.14)"><span style="color:var(--orange-bright);font-weight:800;font-size:1.1cqw">●</span><div><b style="font-size:1.25cqw;font-weight:800">브랜딩</b><div style="font-size:.95cqw;opacity:.6">로고, 가이드, 패키지</div></div></div>
+        <div style="display:flex;gap:.8cqw;padding:.72cqw 0;border-top:.12cqw solid rgba(255,255,255,.14)"><span style="color:var(--orange-bright);font-weight:800;font-size:1.1cqw">●</span><div><b style="font-size:1.25cqw;font-weight:800">UI / UX</b><div style="font-size:.95cqw;opacity:.6">앱·웹 화면 설계, 프로토타입</div></div></div>
+        <div style="display:flex;gap:.8cqw;padding:.72cqw 0;border-top:.12cqw solid rgba(255,255,255,.14)"><span style="color:var(--orange-bright);font-weight:800;font-size:1.1cqw">●</span><div><b style="font-size:1.25cqw;font-weight:800">SNS 콘텐츠</b><div style="font-size:.95cqw;opacity:.6">카드뉴스, 릴스·썸네일</div></div></div>
+        <div style="display:flex;gap:.8cqw;padding:.72cqw 0;border-top:.12cqw solid rgba(255,255,255,.14)"><span style="color:var(--orange-bright);font-weight:800;font-size:1.1cqw">●</span><div><b style="font-size:1.25cqw;font-weight:800">광고 크리에이티브</b><div style="font-size:.95cqw;opacity:.6">광고 소재, 배너, GIF</div></div></div>
+      </div>
+      <!-- mockups -->
+      <div style="display:grid;grid-template-columns:.8fr 1fr 1fr;gap:1.2cqw;min-height:0;">
+        <!-- 상세페이지 -->
+        <div class="frame" style="display:flex;flex-direction:column">
+          <div class="bar"><i></i><i></i><i></i></div>
+          <div style="background:#fff;flex:1;overflow:hidden;display:flex;flex-direction:column">
+            <div style="background:linear-gradient(160deg,#ffe1d2,#ffb38a);height:7cqw;display:flex;align-items:flex-end;padding:.8cqw"><div style="font-size:.85cqw;font-weight:800;color:#7c2d12">NEW ARRIVAL</div></div>
+            <div style="padding:.9cqw;display:flex;flex-direction:column;gap:.5cqw">
+              <div style="font-size:1cqw;font-weight:800;color:#191F28">프리미엄 세럼</div>
+              <div style="font-size:1.1cqw;font-weight:800;color:var(--orange-deep)">₫390,000</div>
+              <div style="background:#191F28;color:#fff;border-radius:.5cqw;text-align:center;font-size:.75cqw;font-weight:800;padding:.6cqw">구매하기</div>
+              <div style="background:#eef0f2;border-radius:.4cqw;height:.65cqw;margin-top:.4cqw"></div>
+              <div style="background:#eef0f2;border-radius:.4cqw;height:.65cqw;width:70%"></div>
+              <div style="background:#eef0f2;border-radius:.6cqw;height:3.4cqw;margin-top:.3cqw"></div>
+            </div>
+          </div>
+        </div>
+        <!-- 브랜드 보드 -->
+        <div style="background:#fff;border-radius:1.1cqw;padding:1.2cqw;color:#191F28;display:flex;flex-direction:column;box-shadow:0 1.4cqw 3cqw rgba(0,0,0,.3)">
+          <div style="font-size:.72cqw;font-weight:800;letter-spacing:.1em;color:#8B95A1">BRAND BOARD</div>
+          <div style="display:flex;align-items:center;gap:.7cqw;margin-top:.9cqw">
+            <div style="width:2.6cqw;height:2.6cqw;border-radius:50%;background:linear-gradient(135deg,#ff7a3d,var(--orange))"></div>
+            <div style="font-size:1.5cqw;font-weight:900;letter-spacing:-.02em">Lumé</div>
+          </div>
+          <div style="display:flex;gap:.45cqw;margin-top:1.2cqw">
+            <div style="flex:1;height:2cqw;border-radius:.4cqw;background:var(--orange)"></div>
+            <div style="flex:1;height:2cqw;border-radius:.4cqw;background:#191F28"></div>
+            <div style="flex:1;height:2cqw;border-radius:.4cqw;background:#ffb38a"></div>
+            <div style="flex:1;height:2cqw;border-radius:.4cqw;background:#F2F4F6"></div>
+          </div>
+          <div style="margin-top:auto;font-size:2.2cqw;font-weight:900;letter-spacing:-.03em">Aa<span style="font-weight:400;color:#8B95A1">Bb</span></div>
+          <div style="font-size:.7cqw;color:#8B95A1;margin-top:.2cqw">Pretendard · 로고/타입 시스템</div>
+        </div>
+        <!-- SNS 그리드 -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;grid-template-rows:repeat(3,1fr);gap:.6cqw;min-height:0">
+          <div style="background:linear-gradient(135deg,#ff7a3d,var(--orange));border-radius:.7cqw;display:flex;align-items:flex-end;padding:.5cqw;font-size:.62cqw;font-weight:800;color:#fff">신상 출시</div>
+          <div style="background:#2a2724;border-radius:.7cqw;display:flex;align-items:flex-end;padding:.5cqw;font-size:.62cqw;font-weight:800;color:#fff">사용 전/후</div>
+          <div style="background:#ffb38a;border-radius:.7cqw;display:flex;align-items:flex-end;padding:.5cqw;font-size:.62cqw;font-weight:800;color:#7c2d12">리뷰 모음</div>
+          <div style="background:#191F28;border-radius:.7cqw;display:flex;align-items:flex-end;padding:.5cqw;font-size:.62cqw;font-weight:800;color:#fff">이벤트</div>
+          <div style="background:#ffe1d2;border-radius:.7cqw;display:flex;align-items:flex-end;padding:.5cqw;font-size:.62cqw;font-weight:800;color:#7c2d12">성분 설명</div>
+          <div style="background:var(--orange-deep);border-radius:.7cqw;display:flex;align-items:flex-end;padding:.5cqw;font-size:.62cqw;font-weight:800;color:#fff">할인</div>
+        </div>
+      </div>
+    </div>
+    <div style="margin-top:1.1cqw;display:flex;align-items:center;gap:1.4cqw;font-size:1.1cqw;font-weight:800">
+      <span style="background:#fff;color:var(--ink);border-radius:99px;padding:.6cqw 1.4cqw">한국 감도</span>
+      <span style="background:#fff;color:var(--ink);border-radius:99px;padding:.6cqw 1.4cqw">즉시 투입</span>
+      <span style="background:linear-gradient(90deg,#ff7a3d,var(--orange));color:#fff;border-radius:99px;padding:.6cqw 1.4cqw">1/3 비용</span>
+    </div>
+  </div>
+</section></div>
+
+<!-- ============ 09 CAPABILITY — MARKETING ============ -->
+<div class="wrap"><section class="slide t-ember">
+  <div class="pad" style="display:flex;flex-direction:column;padding:6.8cqw 4.6cqw 6cqw;">
+    <div class="eyebrow" style="margin-bottom:1.2cqw;color:#ffc9a8">What We Deliver · 마케팅 · 커머스 운영</div>
+    <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:2cqw">
+      <h1 style="font-size:3.4cqw">현지 판매·운영, <span class="dot" style="color:#ffb38a">통째로 됩니다.</span></h1>
+      <p class="lede" style="text-align:right;flex:0 0 30cqw;padding-bottom:.4cqw">시딩·틱톡샵·쇼피·CS까지 —<br>현지 인력이 직접 굴립니다.</p>
+    </div>
+    <div style="display:grid;grid-template-columns:32% 1fr;gap:2.8cqw;flex:1;margin-top:1.5cqw;">
+      <!-- domains -->
+      <div>
+        <div style="display:flex;gap:.8cqw;padding:.72cqw 0;border-top:.12cqw solid rgba(255,255,255,.14)"><span style="color:#ffb38a;font-weight:800;font-size:1.1cqw">●</span><div><b style="font-size:1.25cqw;font-weight:800">현지 크리에이터 시딩</b><div style="font-size:.95cqw;opacity:.65">틱톡·인스타 KOL 발굴·관리</div></div></div>
+        <div style="display:flex;gap:.8cqw;padding:.72cqw 0;border-top:.12cqw solid rgba(255,255,255,.14)"><span style="color:#ffb38a;font-weight:800;font-size:1.1cqw">●</span><div><b style="font-size:1.25cqw;font-weight:800">틱톡샵 운영</b><div style="font-size:.95cqw;opacity:.65">라이브 커머스·주문·정산</div></div></div>
+        <div style="display:flex;gap:.8cqw;padding:.72cqw 0;border-top:.12cqw solid rgba(255,255,255,.14)"><span style="color:#ffb38a;font-weight:800;font-size:1.1cqw">●</span><div><b style="font-size:1.25cqw;font-weight:800">쇼피 · 라자다 운영</b><div style="font-size:.95cqw;opacity:.65">입점·상품 등록·물류</div></div></div>
+        <div style="display:flex;gap:.8cqw;padding:.72cqw 0;border-top:.12cqw solid rgba(255,255,255,.14)"><span style="color:#ffb38a;font-weight:800;font-size:1.1cqw">●</span><div><b style="font-size:1.25cqw;font-weight:800">퍼포먼스 광고</b><div style="font-size:.95cqw;opacity:.65">메타·틱톡·구글 Ads</div></div></div>
+        <div style="display:flex;gap:.8cqw;padding:.72cqw 0;border-top:.12cqw solid rgba(255,255,255,.14)"><span style="color:#ffb38a;font-weight:800;font-size:1.1cqw">●</span><div><b style="font-size:1.25cqw;font-weight:800">고객 CS · 응대</b><div style="font-size:.95cqw;opacity:.65">현지어 채팅·리뷰 관리</div></div></div>
+      </div>
+      <!-- mockups -->
+      <div style="display:grid;grid-template-columns:1.15fr 1fr;grid-template-rows:1fr 1fr;gap:1.2cqw;min-height:0;">
+        <!-- 틱톡샵/쇼피 셀러 대시보드 -->
+        <div style="grid-row:span 2;background:#fff;border-radius:1.1cqw;padding:1.2cqw;color:#191F28;box-shadow:0 1.4cqw 3cqw rgba(0,0,0,.35);display:flex;flex-direction:column">
+          <div style="display:flex;align-items:center;gap:.6cqw">
+            <div style="font-size:.85cqw;font-weight:800">TikTok Shop · 셀러</div>
+            <span style="margin-left:auto;background:#ff2d55;color:#fff;font-size:.62cqw;font-weight:800;padding:.3cqw .7cqw;border-radius:99px">● LIVE</span>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:.6cqw;margin-top:.9cqw">
+            <div style="background:#f2f4f6;border-radius:.6cqw;padding:.8cqw"><div style="font-size:.7cqw;color:#8B95A1">GMV</div><div style="font-size:1.25cqw;font-weight:800">₫860M</div></div>
+            <div style="background:#fff1ea;border-radius:.6cqw;padding:.8cqw"><div style="font-size:.7cqw;color:#B8350F">주문</div><div style="font-size:1.25cqw;font-weight:800;color:var(--orange-deep)">4,210</div></div>
+          </div>
+          <div style="font-size:.7cqw;color:#8B95A1;margin-top:1cqw;margin-bottom:.3cqw">베스트셀러</div>
+          <div style="display:flex;align-items:center;gap:.6cqw;padding:.5cqw 0;border-top:.1cqw solid #eef0f2"><div style="width:1.6cqw;height:1.6cqw;border-radius:.4cqw;background:linear-gradient(135deg,#ff7a3d,var(--orange))"></div><div style="flex:1;font-size:.78cqw;font-weight:700">세럼 30ml</div><div style="font-size:.7cqw;color:#8B95A1;font-weight:700">1,820</div></div>
+          <div style="display:flex;align-items:center;gap:.6cqw;padding:.5cqw 0;border-top:.1cqw solid #eef0f2"><div style="width:1.6cqw;height:1.6cqw;border-radius:.4cqw;background:#191F28"></div><div style="flex:1;font-size:.78cqw;font-weight:700">클렌징 폼</div><div style="font-size:.7cqw;color:#8B95A1;font-weight:700">1,140</div></div>
+          <div style="display:flex;align-items:center;gap:.6cqw;padding:.5cqw 0;border-top:.1cqw solid #eef0f2"><div style="width:1.6cqw;height:1.6cqw;border-radius:.4cqw;background:#ffb38a"></div><div style="flex:1;font-size:.78cqw;font-weight:700">선크림 SPF50</div><div style="font-size:.7cqw;color:#8B95A1;font-weight:700">980</div></div>
+          <div style="margin-top:auto;display:flex;gap:.5cqw;padding-top:.9cqw">
+            <span style="font-size:.66cqw;font-weight:800;background:#ee4d2d;color:#fff;border-radius:.4cqw;padding:.35cqw .6cqw">Shopee</span>
+            <span style="font-size:.66cqw;font-weight:800;background:#0f146d;color:#fff;border-radius:.4cqw;padding:.35cqw .6cqw">Lazada</span>
+            <span style="font-size:.66cqw;font-weight:800;background:#000;color:#fff;border-radius:.4cqw;padding:.35cqw .6cqw">TikTok Shop</span>
+          </div>
+        </div>
+        <!-- 크리에이터 시딩 (compact) -->
+        <div style="background:rgba(255,255,255,.07);border:.1cqw solid rgba(255,255,255,.14);border-radius:.9cqw;padding:1cqw;display:flex;flex-direction:column">
+          <div style="font-size:.78cqw;font-weight:800;opacity:.9;margin-bottom:.5cqw">크리에이터 시딩 <span style="opacity:.6;font-weight:600">· 24명</span></div>
+          <div style="display:flex;align-items:center;gap:.6cqw;padding:.45cqw 0"><div style="width:1.7cqw;height:1.7cqw;border-radius:50%;background:linear-gradient(135deg,#ff7a3d,var(--orange))"></div><div style="flex:1"><div style="font-size:.78cqw;font-weight:800">@linh.beauty</div><div style="font-size:.62cqw;opacity:.6">TikTok · 뷰티</div></div><div style="font-size:.85cqw;font-weight:800">412K</div></div>
+          <div style="display:flex;align-items:center;gap:.6cqw;padding:.45cqw 0"><div style="width:1.7cqw;height:1.7cqw;border-radius:50%;background:#ffb38a"></div><div style="flex:1"><div style="font-size:.78cqw;font-weight:800">@minh.food</div><div style="font-size:.62cqw;opacity:.6">Instagram · 푸드</div></div><div style="font-size:.85cqw;font-weight:800">208K</div></div>
+          <div style="margin-top:auto;font-size:.68cqw;opacity:.6;padding-top:.4cqw">누적 도달 <b style="font-size:.95cqw;opacity:1;color:#ffb38a">2.4M+</b></div>
+        </div>
+        <!-- 고객 CS 채팅 -->
+        <div style="background:rgba(255,255,255,.07);border:.1cqw solid rgba(255,255,255,.14);border-radius:.9cqw;padding:1cqw;display:flex;flex-direction:column">
+          <div style="font-size:.78cqw;font-weight:800;opacity:.9;margin-bottom:.7cqw">고객 CS · 실시간 응대</div>
+          <div style="margin-bottom:.6cqw">
+            <div style="background:rgba(255,255,255,.16);border-radius:.7cqw .7cqw .7cqw .2cqw;padding:.5cqw .7cqw;max-width:88%;font-size:.74cqw;font-weight:600">Còn size M không shop?</div>
+            <div style="font-size:.62cqw;opacity:.55;margin-top:.25cqw;padding-left:.3cqw">↳ “M 사이즈 있나요?”</div>
+          </div>
+          <div style="margin-top:auto">
+            <div style="margin-left:auto;width:fit-content;max-width:88%;background:var(--orange);border-radius:.7cqw .7cqw .2cqw .7cqw;padding:.5cqw .7cqw;font-size:.74cqw;font-weight:700">Dạ còn ạ! 🙌</div>
+            <div style="text-align:right;font-size:.62cqw;opacity:.55;margin-top:.25cqw;padding-right:.3cqw">↳ “네, 재고 있습니다!”</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div style="margin-top:1.1cqw;display:flex;align-items:center;gap:1.4cqw;font-size:1.1cqw;font-weight:800">
+      <span style="background:#fff;color:var(--ink);border-radius:99px;padding:.6cqw 1.4cqw">현지 네트워크</span>
+      <span style="background:#fff;color:var(--ink);border-radius:99px;padding:.6cqw 1.4cqw">한국 기준 리포트</span>
+      <span style="background:linear-gradient(90deg,#ff7a3d,var(--orange));color:#fff;border-radius:99px;padding:.6cqw 1.4cqw">1/3 비용</span>
+    </div>
+  </div>
+</section></div>
+
+<!-- ============ 10 SPEED — 2 WEEK FLOW ============ -->
+<div class="wrap"><section class="slide t-cream">
+  <div class="pad">
+    <div class="eyebrow" style="margin-bottom:2.2cqw">2-Week Flow</div>
+    <h1 style="margin-bottom:1.8cqw">채용 공고만 전달주시면<br>평균 7.2일 내 1차 면접을 조율합니다.</h1>
+    <p class="lede" style="margin-bottom:3.2cqw">이미 검증된 인재 풀에서 먼저 고르니, 처음부터 빠릅니다.</p>
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:1.6cqw;position:absolute;left:4.6cqw;right:4.6cqw;bottom:8.5cqw;">
+      <div>
+        <div style="font-size:1cqw;font-weight:800;letter-spacing:.1em;opacity:.55">STEP 1</div>
+        <div style="font-size:1.7cqw;font-weight:800;margin:.6cqw 0 .4cqw">JD 전달</div>
+        <div style="font-size:1.1cqw;opacity:.65;margin-bottom:1.2cqw">직무·경력·급여 범위</div>
+        <div class="ph" style="height:13cqw"><b>［ 이미지 ］</b><small>JD 양식</small></div>
+      </div>
+      <div>
+        <div style="font-size:1cqw;font-weight:800;letter-spacing:.1em;opacity:.55">STEP 2</div>
+        <div style="font-size:1.7cqw;font-weight:800;margin:.6cqw 0 .4cqw">후보 발굴·검증</div>
+        <div style="font-size:1.1cqw;opacity:.65;margin-bottom:1.2cqw">4,000명+ 인재풀 + 신규 소싱</div>
+        <div class="ph" style="height:13cqw"><b>［ 이미지 ］</b><small>인재풀 화면</small></div>
+      </div>
+      <div>
+        <div style="font-size:1cqw;font-weight:800;letter-spacing:.1em;opacity:.55">STEP 3</div>
+        <div style="font-size:1.7cqw;font-weight:800;margin:.6cqw 0 .4cqw">AI 인터뷰</div>
+        <div style="font-size:1.1cqw;opacity:.65;margin-bottom:1.2cqw">언어·역량·태도 사전 검증</div>
+        <div class="ph" style="height:13cqw"><b>［ 이미지 ］</b><small>AI 인터뷰 화면</small></div>
+      </div>
+      <div>
+        <div style="font-size:1cqw;font-weight:800;letter-spacing:.1em;opacity:.55">STEP 4</div>
+        <div style="font-size:1.7cqw;font-weight:800;margin:.6cqw 0 .4cqw">면접 결정</div>
+        <div style="font-size:1.1cqw;opacity:.65;margin-bottom:1.2cqw">일정 조율·한/베 통역 지원</div>
+        <div class="ph" style="height:13cqw"><b>［ 이미지 ］</b><small>면접 일정 조율</small></div>
+      </div>
+    </div>
+  </div>
+</section></div>
+
+<!-- ============ 08 WORK SYSTEM (real screenshot) ============ -->
+<div class="wrap"><section class="slide t-dark">
+  <div class="pad" style="display:flex;align-items:center;gap:3cqw;">
+    <div style="flex:0 0 36%;">
+      <div class="eyebrow" style="margin-bottom:2.4cqw;color:var(--orange-bright)">Work System</div>
+      <h1 style="font-size:3.5cqw;line-height:1.24">해외 팀원이어도,<br>우리 팀처럼<br>관리됩니다.</h1>
+      <p class="lede" style="margin-top:2.2cqw">출퇴근·태스크·후보 현황까지<br>한 화면에서 봅니다.</p>
+      <div style="display:flex;gap:1cqw;margin-top:3cqw;flex-wrap:wrap;">
+        <span style="background:rgba(255,255,255,.07);border:.1cqw solid rgba(255,255,255,.14);border-radius:99px;padding:.8cqw 1.6cqw;font-size:1.1cqw;font-weight:700">근태 관리</span>
+        <span style="background:rgba(255,255,255,.07);border:.1cqw solid rgba(255,255,255,.14);border-radius:99px;padding:.8cqw 1.6cqw;font-size:1.1cqw;font-weight:700">태스크·마감</span>
+        <span style="background:rgba(255,255,255,.07);border:.1cqw solid rgba(255,255,255,.14);border-radius:99px;padding:.8cqw 1.6cqw;font-size:1.1cqw;font-weight:700">한국인 매니저</span>
+      </div>
+    </div>
+    <div style="flex:1;">
+      <div class="frame dark" style="border:.12cqw solid rgba(255,255,255,.1);">
+        <div class="bar"><i></i><i></i><i></i><span class="url">workspace</span></div>
+        <img src="assets/interview-flow.png" alt="업무관리 워크스페이스">
+      </div>
+    </div>
+  </div>
+</section></div>
+
+<!-- ============ 09 ON-SITE COMMUTE ============ -->
+<div class="wrap"><section class="slide t-cream">
+  <div class="pad" style="display:flex;flex-direction:column;">
+    <div style="display:grid;grid-template-columns:1.3fr 1fr 1fr;gap:1.6cqw;height:30cqw;">
+      <div class="ph" style="height:100%"><b>［ 이미지 ］</b><small>호치민 현지 오피스</small></div>
+      <div class="ph" style="height:100%"><b>［ 이미지 ］</b><small>업무 현장</small></div>
+      <div class="ph" style="height:100%"><b>［ 이미지 ］</b><small>팀 협업</small></div>
+    </div>
+    <div style="margin-top:auto;padding-top:3cqw;">
+      <div class="eyebrow" style="margin-bottom:2cqw">On-site Commute</div>
+      <h1>저희 오피스로 출근합니다.</h1>
+      <p class="lede" style="margin-top:1.8cqw">호치민 현지 오피스로 출·퇴근하며,<br>한국인 매니저가 근태를 직접 관리합니다.</p>
+    </div>
+  </div>
+</section></div>
+
+<!-- ============ 10 AI TRANSLATION ============ -->
+<div class="wrap"><section class="slide t-dark">
+  <div class="pad" style="display:flex;flex-direction:column;justify-content:center;">
+    <div class="eyebrow" style="margin-bottom:2.4cqw;color:var(--orange-bright)">AI Translation</div>
+    <h1>한국어로 지시하면,<br>베트남어로 <span class="dot">정확히</span> 전달됩니다.</h1>
+    <p class="lede" style="margin-top:2.4cqw;max-width:46cqw">Slack 기반 번역·연결 도구로 업무 지시, 피드백, 회의 내용을 놓치지 않습니다. 언어 장벽 없이 바로 일합니다.</p>
+  </div>
+  <div style="position:absolute;right:6cqw;top:50%;transform:translateY(-50%);width:30cqw;background:#15110e;border:.12cqw solid rgba(255,255,255,.12);border-radius:1.4cqw;padding:1.6cqw;box-shadow:0 2cqw 5cqw rgba(0,0,0,.4)">
+    <div style="display:flex;align-items:center;gap:.6cqw;margin-bottom:1.3cqw"><div style="width:1.5cqw;height:1.5cqw;border-radius:.4cqw;background:#611f69"></div><div style="font-size:.85cqw;font-weight:800;opacity:.85">#dev-team · Slack</div></div>
+    <div style="margin-left:auto;width:fit-content;max-width:88%;background:var(--orange);border-radius:.8cqw .8cqw .2cqw .8cqw;padding:.7cqw .9cqw;font-size:.92cqw;font-weight:700">로그인 버그부터 고쳐주세요</div>
+    <div style="text-align:right;font-size:.7cqw;opacity:.5;margin:.35cqw .3cqw 1.3cqw 0">PM · 한국어</div>
+    <div style="width:fit-content;max-width:88%;background:rgba(255,255,255,.1);border-radius:.8cqw .8cqw .8cqw .2cqw;padding:.7cqw .9cqw;font-size:.92cqw;font-weight:600">Sửa lỗi đăng nhập trước nhé!</div>
+    <div style="font-size:.7cqw;opacity:.55;margin:.35cqw 0 0 .3cqw">Dev · 자동 번역됨 ✓</div>
+  </div>
+</section></div>
+
+<!-- ============ 11 PM TOOL + ONBOARDING ============ -->
+<div class="wrap"><section class="slide t-cream">
+  <div class="pad" style="display:flex;flex-direction:column;">
+    <div style="display:grid;grid-template-columns:1fr 1.2fr;gap:1.6cqw;height:28cqw;">
+      <div class="ph" style="height:100%"><b>［ 이미지 ］</b><small>온보딩 세션</small></div>
+      <div class="ph" style="height:100%"><b>［ 이미지 ］</b><small>주간/월간 리포트</small></div>
+    </div>
+    <div style="margin-top:auto;padding-top:3cqw;">
+      <div class="eyebrow" style="margin-bottom:2cqw">PM Tool + Onboarding</div>
+      <h1>첫 달 목표와 보고 방식을<br>근무 전에 맞춥니다.</h1>
+      <p class="lede" style="margin-top:1.8cqw">온보딩 세션에서 업무 목표, 회의 주기, 보고 방식, 이슈 채널을 정리하고,<br>주간/월간 리포트로 공유합니다.</p>
+    </div>
+  </div>
+</section></div>
+
+<!-- ============ 12 REPLACEMENT GUARANTEE ============ -->
+<div class="wrap"><section class="slide t-dark">
+  <div class="pad" style="display:flex;flex-direction:column;justify-content:center;">
+    <div class="eyebrow" style="margin-bottom:2.4cqw;color:var(--orange-bright)">Replacement Guarantee</div>
+    <h1>성과가 맞지 않으면<br><span class="dot">교체 프로세스</span>까지 지원합니다.</h1>
+    <p class="lede" style="margin-top:2.4cqw;max-width:46cqw">수습 계약 기반으로 운영하며, 성과 미달 시 경고, 해체, 대체 후보 추천, 공백 기간 보완을 지원합니다.</p>
+  </div>
+  <div class="ph" style="position:absolute;right:7cqw;top:50%;transform:translateY(-50%);width:27cqw;height:30cqw;border-radius:1.6cqw"><b>［ 이미지 ］</b><small>교체 보장 프로세스</small></div>
+</section></div>
+
+<!-- ============ 13 BEST CASE — JINOSYS ============ -->
+<div class="wrap"><section class="slide t-cream">
+  <div class="pad" style="display:flex;align-items:center;gap:3cqw;">
+    <div style="flex:0 0 50%;">
+      <div class="eyebrow" style="margin-bottom:2.4cqw">Best Case · JINOSYS</div>
+      <h1>도입 기업은 비용 절감 후<br>채용을 줄이지 않고<br><span class="dot">늘렸습니다.</span></h1>
+      <div style="font-size:8.6cqw;font-weight:800;letter-spacing:-.03em;margin-top:2.4cqw;line-height:1;color:var(--orange-deep)">+66%</div>
+      <div style="font-size:1.5cqw;font-weight:800;margin-top:1cqw">2025년 3명 채용 → 2026년 5명으로 확대</div>
+      <div style="font-size:1cqw;opacity:.55;margin-top:.6cqw">* JINOSYS 협력 사례</div>
+    </div>
+    <div style="flex:1;display:grid;grid-template-rows:auto 1fr;gap:1.4cqw;height:42cqw;">
+      <div class="ph" style="height:16cqw;background:#fff;color:rgba(20,19,15,.4);border-color:rgba(20,19,15,.22)"><b style="font-size:1.4cqw">［ 로고 ］</b><small>JINOSYS 로고</small></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.4cqw;">
+        <div class="ph"><b>［ 이미지 ］</b><small>근무 현장</small></div>
+        <div style="background:linear-gradient(135deg,var(--orange-deep),var(--orange));border-radius:1cqw;padding:2cqw;display:flex;flex-direction:column;justify-content:space-between;color:#fff">
+          <h1 style="font-size:1.9cqw;line-height:1.3">절반의 비용으로<br>같은 성과,<br>그래서 또 채용합니다.</h1>
+          <div style="font-size:1cqw;font-weight:700;opacity:.9">JINOSYS CEO Interview</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section></div>
+
+<!-- ============ 14 CUSTOMER PROOF ============ -->
+<div class="wrap"><section class="slide t-black">
+  <div class="pad">
+    <div class="eyebrow" style="margin-bottom:2.4cqw">Customer Proof</div>
+    <h1 style="margin-bottom:4cqw">다시 채용했다는 것,<br>가장 확실한 만족의 증거입니다.</h1>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:1.6cqw;position:absolute;left:4.6cqw;right:4.6cqw;bottom:8cqw;">
+      <div>
+        <div style="display:inline-block;background:#fff;color:#000;font-weight:800;font-size:1cqw;padding:.55cqw 1.3cqw;border-radius:99px;letter-spacing:.06em">PROOF 1</div>
+        <div style="background:#fff;color:#000;border-radius:1cqw;padding:2cqw;margin-top:1cqw;height:14cqw;display:flex;flex-direction:column;justify-content:space-between;">
+          <div><div style="font-size:3.4cqw;font-weight:800">9개월+</div><div style="font-size:1.2cqw;opacity:.6">평균 근속 기간</div></div>
+          <div style="font-size:1.1cqw;opacity:.7">단기 용역이 아닌 장기 협업 중심</div>
+        </div>
+        <div style="font-weight:800;font-size:1.3cqw;margin-top:1.2cqw">Lomen ｜ 2025·2026년 연속 채용</div>
+        <div style="opacity:.7;font-size:1.1cqw;margin-top:.4cqw">“성과는 그대로인데 비용이 줄었어요”</div>
+      </div>
+      <div>
+        <div style="display:inline-block;background:#fff;color:#000;font-weight:800;font-size:1cqw;padding:.55cqw 1.3cqw;border-radius:99px;letter-spacing:.06em">PROOF 2</div>
+        <div style="background:#fff;color:#000;border-radius:1cqw;padding:2cqw;margin-top:1cqw;height:14cqw;display:flex;flex-direction:column;justify-content:space-between;">
+          <div><div style="font-size:3.4cqw;font-weight:800">83%</div><div style="font-size:1.2cqw;opacity:.6">재채용률</div></div>
+          <div style="font-size:1.1cqw;opacity:.7">계약 만료 후 연장 또는 추가 채용</div>
+        </div>
+        <div style="font-weight:800;font-size:1.3cqw;margin-top:1.2cqw">Nexacode ｜ 2025·2026년 연속 채용</div>
+        <div style="opacity:.7;font-size:1.1cqw;margin-top:.4cqw">“인재 역량이 기대 이상이었습니다”</div>
+      </div>
+      <div>
+        <div style="display:inline-block;background:#fff;color:#000;font-weight:800;font-size:1cqw;padding:.55cqw 1.3cqw;border-radius:99px;letter-spacing:.06em">PROOF 3</div>
+        <div style="background:#fff;color:#000;border-radius:1cqw;padding:2cqw;margin-top:1cqw;height:14cqw;display:flex;flex-direction:column;justify-content:space-between;">
+          <div><div style="font-size:3.4cqw;font-weight:800">4.5+</div><div style="font-size:1.2cqw;opacity:.6">기업 만족도</div></div>
+          <div style="font-size:1.1cqw;opacity:.7">도입 기업 설문 기준</div>
+        </div>
+        <div style="font-weight:800;font-size:1.3cqw;margin-top:1.2cqw">MnF Solution ｜ 2025·2026년 연속 채용</div>
+        <div style="opacity:.7;font-size:1.1cqw;margin-top:.4cqw">“경험해보고 신뢰가 생겨 올해도 재진행합니다”</div>
+      </div>
+    </div>
+  </div>
+</section></div>
+
+<!-- ============ 15 CTA ============ -->
+<div class="wrap"><section class="slide t-orange">
+  <div class="mark"><svg viewBox="0 0 200 200"><polygon points="20,10 90,10 90,80 70,80 70,120 130,120 130,70 110,70 110,40 190,90 130,140 130,160 50,160 50,120 20,120" fill="#fff"/></svg></div>
+  <div class="pad" style="display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;">
+    <div class="eyebrow" style="margin-bottom:3cqw">Experience Our Service Now</div>
+    <h1 class="big">지금 채용 중인<br>포지션을 보내주세요.</h1>
+    <p class="lede" style="margin-top:2.6cqw;opacity:.95">1주 내 후보군으로 답하겠습니다.<br>직무, 경력, 급여 범위만 알려주시면 됩니다.</p>
+    <div style="position:absolute;left:4.6cqw;bottom:8cqw;display:flex;align-items:flex-end;justify-content:space-between;right:4.6cqw;">
+      <div style="display:flex;gap:1.6cqw;">
+        <div>
+          <div style="font-size:1cqw;font-weight:600;opacity:.85;margin-bottom:.7cqw">도입 문의</div>
+          <div style="background:linear-gradient(90deg,#ffd2b8,#ffb38a);color:#3a1606;border-radius:99px;padding:1.1cqw 2.2cqw;font-weight:800;font-size:1.4cqw;display:flex;align-items:center;gap:1.4cqw">후보 추천 받기 <span>→</span></div>
+        </div>
+        <div>
+          <div style="font-size:1cqw;font-weight:600;opacity:.85;margin-bottom:.7cqw">사례 문의</div>
+          <div style="background:linear-gradient(90deg,#ffd2b8,#ffb38a);color:#3a1606;border-radius:99px;padding:1.1cqw 2.2cqw;font-weight:800;font-size:1.4cqw;display:flex;align-items:center;gap:1.4cqw">실제 사례 보기 <span>→</span></div>
+        </div>
+      </div>
+      <div style="text-align:right">
+        <div style="font-size:1cqw;font-weight:600;opacity:.85;margin-bottom:.7cqw">contact</div>
+        <div style="font-size:1.9cqw;font-weight:800">ktc@likelion.net</div>
+      </div>
+    </div>
+  </div>
+</section></div>
+
+<!-- ============ 16 ENDING ============ -->
+<div class="wrap"><section class="slide t-orange">
+  <div class="mark" style="opacity:.22"><svg viewBox="0 0 200 200"><polygon points="20,10 90,10 90,80 70,80 70,120 130,120 130,70 110,70 110,40 190,90 130,140 130,160 50,160 50,120 20,120" fill="#fff"/></svg></div>
+  <div class="pad" style="display:flex;align-items:center;justify-content:center;">
+    <img src="assets/fyi-logo.png" style="width:16cqw;filter:drop-shadow(0 1.4cqw 3cqw rgba(0,0,0,.3))" alt="FYI">
+  </div>
+</section></div>
+
+</div>
+
+<div class="count" id="count">01 / 19</div>
+
+<script>
+  const slides = [...document.querySelectorAll('.slide')];
+  const N = slides.length;
+  slides.forEach((s)=>{
+    const top = document.createElement('div'); top.className='top';
+    top.innerHTML = `<span>KTC · 베트남 EOR 채용 파트너</span><div class="ver"><span>VER 1.0</span><span>2026. 06</span></div>`;
+    const bot = document.createElement('div'); bot.className='bot';
+    bot.innerHTML = `<span>LIKELION × JOBKOREA × KOSME × 중소벤처기업부</span><span>ktc.likelion.net</span>`;
+    s.prepend(top); s.appendChild(bot);
+  });
+
+  const counter = document.getElementById('count');
+  const io = new IntersectionObserver((es)=>{
+    es.forEach(e=>{ if(e.isIntersecting){
+      e.target.classList.add('in');
+      const idx = slides.indexOf(e.target)+1;
+      counter.textContent = String(idx).padStart(2,'0')+' / '+String(N).padStart(2,'0');
+    }});
+  },{threshold:.4});
+  slides.forEach(s=>io.observe(s));
+
+  const wraps = [...document.querySelectorAll('.wrap')];
+  let cur = 0;
+  function go(d){ cur = Math.max(0, Math.min(wraps.length-1, cur+d)); wraps[cur].scrollIntoView({behavior:'smooth'}); }
+  addEventListener('keydown', e=>{
+    if(['ArrowDown','ArrowRight','PageDown',' '].includes(e.key)){e.preventDefault(); go(1);}
+    if(['ArrowUp','ArrowLeft','PageUp'].includes(e.key)){e.preventDefault(); go(-1);}
+    if(e.key==='p'||e.key==='P'){window.print();}
+  });
+  const io2 = new IntersectionObserver((es)=>{es.forEach(e=>{if(e.isIntersecting) cur = wraps.indexOf(e.target.closest('.wrap'));});},{threshold:.5});
+  slides.forEach(s=>io2.observe(s));
+</script>
+</body>
+</html>
