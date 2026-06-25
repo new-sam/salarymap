@@ -8,13 +8,11 @@ import { useRouter } from 'next/router'
 import AdminLayout from '../../components/admin/AdminLayout'
 import Icon from '../../components/Icon'
 import FunnelView from '../../components/admin/FunnelView'
-import UtmView from '../../components/admin/UtmView'
 import UsersView from '../../components/admin/UsersView'
 import ApplicationsView from '../../components/admin/ApplicationsView'
 import ResumesView from '../../components/admin/ResumesView'
 import TalentPoolView from '../../components/admin/TalentPoolView'
 import RetentionView from '../../components/admin/RetentionView'
-import GA4View from '../../components/admin/GA4View'
 import VerificationsView from '../../components/admin/VerificationsView'
 import CommunityView from '../../components/admin/CommunityView'
 import ModerationView from '../../components/admin/ModerationView'
@@ -929,16 +927,6 @@ export default function AdminDashboard() {
         {/* Funnel Tab */}
         {data?.summary && !loading && tab === 'funnel' && (
           <FunnelView data={{ ...data, daily: dailyWithToday }} metrics={METRICS} summary={summary} funnelKeys={funnelKeys} setFunnelKeys={setFunnelKeys} t={t} lang={lang} />
-        )}
-
-        {/* GA4 Tab */}
-        {!loading && tab === 'ga4' && (
-          <GA4View ga4={ga4} t={t} />
-        )}
-
-        {/* UTM Tab */}
-        {data && !loading && tab === 'utm' && (
-          <UtmView utm={data.utm} t={t} />
         )}
 
         {/* Retention Tab */}
