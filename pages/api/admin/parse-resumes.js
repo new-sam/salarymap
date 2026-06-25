@@ -10,22 +10,26 @@ const supabase = createClient(
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
 
-const SYSTEM_PROMPT = `You are a resume parser. Extract structured profile data from the resume text below.
+const SYSTEM_PROMPT = `You are a resume parser for a staffing agency that places candidates at Korean companies. Extract structured profile data that a Korean hiring manager uses to judge a candidate's calibre (school, employers, seniority, language ability).
 
 Return a JSON object with these fields:
 - full_name (string): Full name of the person
 - headline (string): A short professional headline, e.g. "Senior Backend Engineer" or "Full-stack Developer with 5+ years experience"
 - location (string): City/Country if mentioned
 - position (string): Best matching category from: Backend, Frontend, Fullstack, Mobile, AI/Data, DevOps, QA, Design, PM, Other
-- yoe_months (number): Total months of professional work experience, calculated from experience dates. If unclear, estimate from context.
+- yoe_months (number): Total months of professional work experience, calculated from experience dates. New graduate with no work experience = 0. If unclear, estimate from context.
 - skills (string[]): List of technical skills, frameworks, languages, tools mentioned
-- university (string): University/college name
+- university (string): University/college name (keep the official name so its prestige is recognizable)
 - major (string): Field of study
+- graduation_year (string): Year of graduation (most recent degree), e.g. "2021". Empty if unknown.
+- experiences (array): Work history, MOST RECENT FIRST. Each item: { "company": string, "title": string, "start": "YYYY-MM" or "YYYY", "end": "YYYY-MM"/"YYYY" or "Present", "months": number }. Keep official company names. Exclude internships shorter than ~2 months only if clearly trivial.
+- english_level (string): English proficiency if stated — a test score ("TOEIC 900", "IELTS 7.0") or a self-described level ("Native", "Fluent", "Business"). Empty if not mentioned.
+- korean_level (string): Korean proficiency if stated — TOPIK level ("TOPIK 5"), or a level ("Native", "Business", "Conversational"). Empty if not mentioned.
 
 Rules:
-- Only include information explicitly found in the resume. Do not fabricate.
+- Only include information explicitly found in the resume. Do not fabricate company names, scores, or schools.
 - For missing fields, use empty string "" or empty array [].
-- For yoe_months, calculate precisely from work experience dates. Round to nearest month.
+- For yoe_months and experience months, calculate precisely from dates. Round to nearest month.
 - Skills should be specific (e.g. "React", "PostgreSQL") not generic (e.g. "programming").
 - Return ONLY valid JSON, no markdown or extra text.`
 
@@ -80,10 +84,14 @@ export default async function handler(req, res) {
       headline: parsed.headline || '',
       location: parsed.location || '',
       position: parsed.position || '',
-      yoe_months: parsed.yoe_months || null,
+      yoe_months: parsed.yoe_months ?? null,
       skills: parsed.skills || [],
       university: parsed.university || '',
       major: parsed.major || '',
+      graduation_year: parsed.graduation_year || '',
+      experiences: Array.isArray(parsed.experiences) ? parsed.experiences : [],
+      english_cert: parsed.english_level || '',
+      korean_cert: parsed.korean_level || '',
       updated_at: new Date().toISOString(),
     }
 

@@ -10,6 +10,7 @@ import UtmView from '../../components/admin/UtmView'
 import UsersView from '../../components/admin/UsersView'
 import ApplicationsView from '../../components/admin/ApplicationsView'
 import ResumesView from '../../components/admin/ResumesView'
+import TalentPoolView from '../../components/admin/TalentPoolView'
 import RetentionView from '../../components/admin/RetentionView'
 import GA4View from '../../components/admin/GA4View'
 import VerificationsView from '../../components/admin/VerificationsView'
@@ -419,7 +420,7 @@ export default function AdminDashboard() {
 
         {/* Tab switcher */}
         <div className="adm-tabs">
-          {['trend', 'kpi', 'funnel', 'ga4', 'utm', 'retention', 'users', 'applications', 'resumes', 'verifications', 'community', 'reports', 'appMetrics'].map(k => (
+          {['trend', 'kpi', 'funnel', 'ga4', 'utm', 'retention', 'users', 'applications', 'resumes', 'talent', 'verifications', 'community', 'reports', 'appMetrics'].map(k => (
             <button key={k} onClick={() => setTab(k)}
               className="adm-tab-btn"
               style={{
@@ -973,6 +974,11 @@ export default function AdminDashboard() {
         {/* Resumes Tab */}
         {tab === 'resumes' && (
           <ResumesView token={token} t={t} />
+        )}
+
+        {/* Talent Pool Tab — 공개 이력서 인재풀 */}
+        {tab === 'talent' && (
+          <TalentPoolView token={token} t={t} />
         )}
 
         {/* Verifications Tab */}

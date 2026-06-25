@@ -237,6 +237,16 @@ export default async function handler(req, res) {
 
     // Single post fetch
     if (postId) {
+      // 가벼운 존재 확인(알림 탭 시 삭제 여부 선확인). 무거운 작성자 집계 없이 id만 보고 빠르게 응답한다.
+      // 모바일이 이걸로 먼저 확인해, 삭제된 글이면 상세로 push하지 않고 인앱 모달만 띄운다.
+      if (req.query.exists === '1') {
+        const { data: row } = await supabase
+          .from('community_posts').select('id, user_id').eq('id', postId).maybeSingle()
+        const exists = !!row && !blockedIds.includes(row.user_id)
+        res.setHeader('Cache-Control', 'no-store')
+        return res.status(200).json({ exists })
+      }
+
       const { data: post, error } = await supabase
         .from('community_posts')
         .select('*')

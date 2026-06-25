@@ -13,8 +13,8 @@ export default async function handler(req, res) {
   if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' })
 
   try {
-    const COLUMNS_FULL = 'id, full_name, headline, position, yoe_months, location, resume_url, photo_url, is_resume_public, skills, university, major, work_type, salary_min, salary_max, salary_currency, resume_platform, resume_source, updated_at, created_at'
-    const COLUMNS_FALLBACK = 'id, full_name, headline, position, yoe_months, location, resume_url, photo_url, is_resume_public, skills, university, major, work_type, salary_min, salary_max, salary_currency, resume_platform, updated_at, created_at'
+    const COLUMNS_FULL = 'id, full_name, headline, position, yoe_months, location, resume_url, photo_url, is_resume_public, skills, university, major, graduation_year, experiences, english_cert, korean_cert, work_type, salary_min, salary_max, salary_currency, resume_platform, resume_source, updated_at, created_at'
+    const COLUMNS_FALLBACK = 'id, full_name, headline, position, yoe_months, location, resume_url, photo_url, is_resume_public, skills, university, major, graduation_year, experiences, english_cert, korean_cert, work_type, salary_min, salary_max, salary_currency, resume_platform, updated_at, created_at'
 
     let { data, error } = await supabase
       .from('user_profiles')
