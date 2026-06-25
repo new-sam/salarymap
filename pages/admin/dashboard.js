@@ -8,7 +8,6 @@ import { useRouter } from 'next/router'
 import AdminLayout from '../../components/admin/AdminLayout'
 import Icon from '../../components/Icon'
 import FunnelView from '../../components/admin/FunnelView'
-import UsersView from '../../components/admin/UsersView'
 import ApplicationsView from '../../components/admin/ApplicationsView'
 import ResumesView from '../../components/admin/ResumesView'
 import TalentPoolView from '../../components/admin/TalentPoolView'
@@ -932,11 +931,6 @@ export default function AdminDashboard() {
         {/* Retention Tab */}
         {tab === 'retention' && (
           <RetentionView token={token} t={t} />
-        )}
-
-        {/* Users Tab */}
-        {tab === 'users' && (
-          <UsersView token={token} t={t} />
         )}
 
         {/* Applications Tab */}

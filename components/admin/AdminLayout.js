@@ -22,7 +22,6 @@ function buildNav(lang) {
     {
       label: L('성과 · 유저', 'Users'),
       items: [
-        { label: L('가입자', 'Signups'), pathname: '/admin/dashboard', tab: 'users' },
         { label: L('리텐션', 'Retention'), pathname: '/admin/dashboard', tab: 'retention' },
         { label: L('커뮤니티', 'Community'), pathname: '/admin/dashboard', tab: 'community' },
         { label: L('신고/피드백', 'Reports'), pathname: '/admin/dashboard', tab: 'reports' },
