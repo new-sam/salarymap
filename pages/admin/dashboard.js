@@ -415,8 +415,8 @@ export default function AdminDashboard() {
           </div>
         </div>
 
-        {/* Today Realtime */}
-        {realtime && (
+        {/* Today Realtime — 추이 탭에서만 표시 */}
+        {realtime && tab === 'trend' && (
           <div style={{
             background: 'linear-gradient(135deg, #1e1b4b 0%, #312e81 100%)',
             borderRadius: 12, padding: '16px 20px', marginBottom: 24, color: '#fff',
