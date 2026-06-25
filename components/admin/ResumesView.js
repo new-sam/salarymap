@@ -7,17 +7,22 @@ import UserAssetCards from './UserAssetCards'
 // 없으면 platform 기준으로 추정해서 채운다 — 옛 행도 어디서 등록된 건지
 // 추정해서 표시한다 ("웹 (이전)" 처럼 모호한 라벨을 쓰지 않는다).
 const SOURCE_MAP = {
-  cv:      { label: '축하금 이벤트',  bg: '#FFEDD5', color: '#C2410C' },
-  profile: { label: '프로필',     bg: '#DBEAFE', color: '#1D4ED8' },
-  jobs:    { label: '채용 지원',  bg: '#FCE7F3', color: '#BE185D' },
-  app:     { label: '앱',         bg: '#EEF2FF', color: '#4F46E5' },
+  cv:      { ko: '축하금 이벤트', en: 'Event',     dot: '#ff4400' },
+  profile: { ko: '프로필',       en: 'Profile',   dot: '#64748B' },
+  jobs:    { ko: '채용 지원',     en: 'Job apply', dot: '#2563EB' },
+  app:     { ko: '앱',           en: 'App',       dot: '#0F172A' },
 }
 
-function SourceBadge({ source, platform }) {
+function SourceBadge({ source, platform, lang = 'ko' }) {
   const key = resolveSource({ resume_source: source, resume_platform: platform })
   const s = SOURCE_MAP[key]
-  if (!s) return <span style={{ color: '#ccc', fontSize: 11 }}>미상</span>
-  return <span style={{ display: 'inline-block', padding: '2px 8px', borderRadius: 12, fontSize: 11, fontWeight: 600, background: s.bg, color: s.color, whiteSpace: 'nowrap' }}>{s.label}</span>
+  if (!s) return <span style={{ color: '#C7CDD4', fontSize: 11 }}>{lang === 'ko' ? '미상' : 'Unknown'}</span>
+  return (
+    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, padding: '3px 9px', borderRadius: 999, fontSize: 11, fontWeight: 600, background: '#F2F4F6', color: '#4E5968', whiteSpace: 'nowrap' }}>
+      <span style={{ width: 6, height: 6, borderRadius: '50%', background: s.dot, flexShrink: 0 }} />
+      {lang === 'ko' ? s.ko : s.en}
+    </span>
+  )
 }
 
 // resume_source 가 명시되어 있으면 그대로, 없으면 platform 으로 추정.
@@ -186,7 +191,7 @@ export default function ResumesView({ token, t, lang = 'ko' }) {
         </div>
         <span style={{ width: 1, height: 16, background: '#E5E8EB', flexShrink: 0 }} />
         <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
-          {[{ key: 'all', label: '전체' }, { key: 'cv', label: '축하금 이벤트' }, { key: 'profile', label: '프로필' }, { key: 'jobs', label: '채용 지원' }, { key: 'app', label: '앱' }, { key: 'unknown', label: '미상' }].map(f => {
+          {[{ key: 'all', label: lang === 'ko' ? '전체' : 'All' }, { key: 'cv', label: lang === 'ko' ? '축하금 이벤트' : 'Event' }, { key: 'profile', label: lang === 'ko' ? '프로필' : 'Profile' }, { key: 'jobs', label: lang === 'ko' ? '채용 지원' : 'Job apply' }, { key: 'app', label: lang === 'ko' ? '앱' : 'App' }, { key: 'unknown', label: lang === 'ko' ? '미상' : 'Unknown' }].map(f => {
             const count = f.key === 'all' ? resumes.length : f.key === 'unknown' ? resumes.filter(r => resolveSource(r) === null).length : resumes.filter(r => resolveSource(r) === f.key).length
             const on = sourceFilter === f.key
             return <button key={f.key} onClick={() => setSourceFilter(f.key)} style={pillStyle(on)}>{f.label} <span style={{ opacity: on ? 0.7 : 0.5 }}>{count}</span></button>
@@ -267,10 +272,10 @@ export default function ResumesView({ token, t, lang = 'ko' }) {
                       </div>
                     </div>
                   </td>
-                  <td style={{ padding: '8px 12px', whiteSpace: 'nowrap' }}><SourceBadge source={r.resume_source} platform={r.resume_platform} /></td>
+                  <td style={{ padding: '8px 12px', whiteSpace: 'nowrap' }}><SourceBadge source={r.resume_source} platform={r.resume_platform} lang={lang} /></td>
                   <td style={{ padding: '8px 12px' }}>
                     {r.position ? (
-                      <span style={{ padding: '2px 8px', borderRadius: 12, fontSize: 11, fontWeight: 600, background: '#EEF2FF', color: '#4F46E5' }}>
+                      <span style={{ display: 'inline-block', padding: '2px 9px', borderRadius: 999, fontSize: 11, fontWeight: 600, background: '#F2F4F6', color: '#4E5968', whiteSpace: 'nowrap' }}>
                         {r.position}
                       </span>
                     ) : '-'}
@@ -283,11 +288,11 @@ export default function ResumesView({ token, t, lang = 'ko' }) {
                   </td>
                   <td style={{ padding: '8px 12px', textAlign: 'center' }}>
                     <span style={{
-                      padding: '2px 8px', borderRadius: 12, fontSize: 11, fontWeight: 600,
-                      background: r.is_resume_public ? '#D1FAE5' : '#F3F4F6',
-                      color: r.is_resume_public ? '#065F46' : '#999',
+                      display: 'inline-block', padding: '2px 9px', borderRadius: 999, fontSize: 11, fontWeight: 600, whiteSpace: 'nowrap',
+                      background: r.is_resume_public ? '#E7F6EC' : '#F1F3F5',
+                      color: r.is_resume_public ? '#1B7A43' : '#868E96',
                     }}>
-                      {r.is_resume_public ? 'Public' : 'Private'}
+                      {r.is_resume_public ? (lang === 'ko' ? '공개' : 'Public') : (lang === 'ko' ? '비공개' : 'Private')}
                     </span>
                   </td>
                   <td style={{ padding: '8px 12px', textAlign: 'center' }}>

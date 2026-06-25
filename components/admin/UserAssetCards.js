@@ -6,8 +6,8 @@ const METRICS = {
   userFollows: { label: '유저 팔로우', accent: '#4F46E5' },
   subscriptions: { label: '구독 (기업)', accent: '#0D9488' },
   verifiedWorkers: { label: '재직 인증', accent: '#2563EB' },
-  resumeHolders: { label: '이력서 등록', accent: '#EA580C' },
-  resumePublic: { label: '이력서 공개', accent: '#DB2777' },
+  resumeHolders: { label: '이력서 등록', accent: '#334155' },
+  resumePublic: { label: '이력서 공개', accent: '#059669' },
 }
 
 export default function UserAssetCards({ token, keys, title = '유저 자산 · 관계' }) {

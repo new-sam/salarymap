@@ -25,16 +25,16 @@ const STATUS_LABEL = {
 const statusLabel = (s, lang) => STATUS_LABEL[s]?.[lang === 'ko' ? 'ko' : 'en'] || s
 
 // 유입 플랫폼 배지: app=앱 / web=웹 / null=미상(기록 전 행).
-function PlatformBadge({ platform }) {
+function PlatformBadge({ platform, lang }) {
   const map = {
-    app: { label: '앱', bg: '#1F2937', color: '#fff' },      // 다크 슬레이트
-    web: { label: '웹', bg: '#EDEFF2', color: '#4E5968' },   // 라이트 그레이
+    app: { ko: '앱', en: 'App', bg: '#1F2937', color: '#fff' },      // 다크 슬레이트
+    web: { ko: '웹', en: 'Web', bg: '#EDEFF2', color: '#4E5968' },   // 라이트 그레이
   }
   const s = map[platform]
-  if (!s) return <span style={{ color: '#C7CDD4', fontSize: 11 }}>미상</span>
+  if (!s) return <span style={{ color: '#C7CDD4', fontSize: 11 }}>{lang === 'ko' ? '미상' : 'N/A'}</span>
   return (
     <span style={{ display: 'inline-block', padding: '2px 9px', borderRadius: 999, fontSize: 11, fontWeight: 700, background: s.bg, color: s.color, whiteSpace: 'nowrap' }}>
-      {s.label}
+      {lang === 'ko' ? s.ko : s.en}
     </span>
   )
 }
@@ -168,14 +168,14 @@ export default function ApplicationsView({ token, t, dateRange, lang = 'ko' }) {
           <span style={{ fontSize: 13, color: '#6B7280' }}>
             {t.appsTotal} <strong style={{ color: '#191F28' }}>{visible.length}</strong>
             <span style={{ margin: '0 6px', color: '#DDE1E6' }}>·</span>
-            앱 <strong style={{ color: '#191F28' }}>{appCount}</strong>
+            {lang === 'ko' ? '앱' : 'App'} <strong style={{ color: '#191F28' }}>{appCount}</strong>
             <span style={{ margin: '0 4px', color: '#DDE1E6' }}>·</span>
-            웹 <strong style={{ color: '#191F28' }}>{webCount}</strong>
+            {lang === 'ko' ? '웹' : 'Web'} <strong style={{ color: '#191F28' }}>{webCount}</strong>
           </span>
         </div>
         <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
           <div style={{ display: 'flex', gap: 6 }}>
-            {[{ key: 'all', label: '전체' }, { key: 'app', label: '앱' }, { key: 'web', label: '웹' }].map(f => (
+            {[{ key: 'all', label: lang === 'ko' ? '전체' : 'All' }, { key: 'app', label: lang === 'ko' ? '앱' : 'App' }, { key: 'web', label: lang === 'ko' ? '웹' : 'Web' }].map(f => (
               <button key={f.key} onClick={() => setPlatformFilter(f.key)} style={pillStyle(platformFilter === f.key)}>{f.label}</button>
             ))}
           </div>
@@ -214,7 +214,7 @@ export default function ApplicationsView({ token, t, dateRange, lang = 'ko' }) {
                       <div style={{ fontWeight: 500, color: '#191F28' }}>{a.job_title || a.jobs?.title || '-'}</div>
                       <div style={{ fontSize: 11.5, color: '#8B95A1', marginTop: 1 }}>{a.job_company || a.jobs?.company || '-'}</div>
                     </td>
-                    <td style={{ ...td, whiteSpace: 'nowrap' }}><PlatformBadge platform={a.platform} /></td>
+                    <td style={{ ...td, whiteSpace: 'nowrap' }}><PlatformBadge platform={a.platform} lang={lang} /></td>
                     <td style={{ ...td, whiteSpace: 'nowrap' }}>
                       {pos ? <span style={{ display: 'inline-block', padding: '2px 9px', borderRadius: 999, fontSize: 11, fontWeight: 600, background: '#F2F4F6', color: '#4E5968', whiteSpace: 'nowrap' }}>{pos}</span> : <span style={{ color: '#C7CDD4' }}>-</span>}
                     </td>
