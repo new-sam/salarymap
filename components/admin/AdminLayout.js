@@ -16,7 +16,6 @@ function buildNav(lang) {
       label: L('성과 · 지표', 'Metrics'),
       items: [
         { label: L('추이', 'Trend'), pathname: '/admin/dashboard', tab: 'trend' },
-        { label: 'KPI', pathname: '/admin/dashboard', tab: 'kpi' },
         { label: L('퍼널', 'Funnel'), pathname: '/admin/dashboard', tab: 'funnel' },
         { label: 'GA4', pathname: '/admin/dashboard', tab: 'ga4' },
         { label: 'UTM', pathname: '/admin/dashboard', tab: 'utm' },

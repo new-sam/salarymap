@@ -19,7 +19,6 @@ import VerificationsView from '../../components/admin/VerificationsView'
 import CommunityView from '../../components/admin/CommunityView'
 import ModerationView from '../../components/admin/ModerationView'
 import AppMetricsView from '../../components/admin/AppMetricsView'
-import KPIView from '../../components/admin/KPIView'
 import {
   T, METRICS_BASE, EXP_COLORS, COLORS,
   inputStyle, sectionStyle, sectionTitle,
@@ -985,11 +984,6 @@ export default function AdminDashboard() {
         {/* App Metrics Tab */}
         {tab === 'appMetrics' && (
           <AppMetricsView token={token} lang={lang} dateRange={dateRange} />
-        )}
-
-        {/* KPI Tab — 12주 트래커 */}
-        {tab === 'kpi' && (
-          <KPIView token={token} />
         )}
 
       </div>

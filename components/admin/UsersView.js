@@ -2,6 +2,7 @@ import { useAdmin } from '../../lib/adminSwr'
 
 export default function UsersView({ token, t }) {
   const { data: users, isLoading: loading } = useAdmin('/api/admin/signup-users', token)
+  const { data: assets } = useAdmin('/api/admin/user-assets', token)
 
   function downloadCsv() {
     if (!users || users.length === 0) return
@@ -29,6 +30,31 @@ export default function UsersView({ token, t }) {
 
   return (
     <>
+      {/* 전체(web+app) 유저 자산·관계 누적 — 구 KPI 트래커에서 이관 */}
+      {assets && (
+        <div style={{ marginBottom: 20 }}>
+          <div style={{ fontSize: 13, fontWeight: 700, color: '#374151', marginBottom: 10 }}>
+            유저 자산 · 관계 <span style={{ fontSize: 11, fontWeight: 500, color: '#9CA3AF', marginLeft: 4 }}>전체(web+app) 누적</span>
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 10 }}>
+            {[
+              { label: '유저 팔로우', value: assets.userFollows, accent: '#4F46E5' },
+              { label: '구독 (기업)', value: assets.subscriptions, accent: '#0D9488' },
+              { label: '재직 인증', value: assets.verifiedWorkers, accent: '#2563EB' },
+              { label: '이력서 등록', value: assets.resumeHolders, accent: '#EA580C' },
+              { label: '이력서 공개', value: assets.resumePublic, accent: '#DB2777' },
+            ].map(c => (
+              <div key={c.label} style={{ background: '#fff', border: '1px solid #E5E8EB', borderLeft: `3px solid ${c.accent}`, borderRadius: 10, padding: '13px 15px' }}>
+                <div style={{ fontSize: 12, color: '#6B7280', marginBottom: 6, fontWeight: 600 }}>{c.label}</div>
+                <div style={{ fontSize: 26, fontWeight: 800, color: c.accent, letterSpacing: '-0.02em', fontVariantNumeric: 'tabular-nums' }}>
+                  {c.value != null ? c.value.toLocaleString() : '-'}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
         <div style={{ display: 'flex', alignItems: 'baseline', gap: 12 }}>
           <h3 style={{ fontSize: 16, fontWeight: 600, margin: 0 }}>{t.usersTitle}</h3>
