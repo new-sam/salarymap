@@ -66,7 +66,6 @@ export default function AdminJobs() {
 
   // SWR: 캐시로 페이지 재방문 즉시 표시. 액션 후엔 해당 목록만 mutate()로 갱신.
   const { data: jobs = [], mutate: mutateJobs } = useAdmin('/api/admin/jobs', token)
-  const { data: apps = [], mutate: mutateApps } = useAdmin('/api/admin/applications', token)
   const { data: admins = [], mutate: mutateAdmins } = useAdmin('/api/admin/users', token)
   const { data: targets = [], mutate: mutateTargets } = useAdmin('/api/admin/crawl-targets', token)
   const { data: companies = [], mutate: mutateCompanies } = useAdmin('/api/admin/companies', token)
@@ -159,11 +158,6 @@ export default function AdminJobs() {
     await fetch('/api/admin/jobs', { method: 'PUT', headers: headers(), body: JSON.stringify({ id: job.id, status: 'rejected', is_active: false }) })
     flash('Rejected'); mutateJobs()
     logAction('공고 반려', `${job.title} (${job.company})`, 'approval')
-  }
-
-  const handleStatusChange = async (appId, status) => {
-    await fetch('/api/admin/applications', { method: 'PUT', headers: headers(), body: JSON.stringify({ id: appId, status }) })
-    mutateApps()
   }
 
   const handleAddAdmin = async () => {
@@ -590,49 +584,6 @@ export default function AdminJobs() {
                 >
                   {c.verified_at ? '인증 해제' : '인증하기'}
                 </button>
-              </div>
-            ))}
-          </div>
-        )}
-
-        {/* APPLICATIONS TAB */}
-        {tab === 'applications' && (
-          <div style={S.card}>
-            <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 12 }}>Applications</div>
-            {apps.length === 0 && <div style={{ color: '#aaa', fontSize: 13 }}>No applications yet</div>}
-            {apps.map(app => (
-              <div key={app.id} style={S.row}>
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: 14, fontWeight: 600 }}>
-                    {app.user_name} <span style={{ fontWeight: 400, color: '#888' }}>({app.user_email})</span>
-                  </div>
-                  <div style={{ fontSize: 12, color: '#888' }}>
-                    Applied for: {app.jobs?.title || '—'} at {app.jobs?.company || '—'}
-                    {app.applicant_role && <> · {app.applicant_role}</>}
-                    {app.applicant_salary && <> · {Math.round(app.applicant_salary/1e6)}M VND</>}
-                    {app.applicant_company && <> · {app.applicant_company}</>}
-                    {app.resume_url && <> · <a href={app.resume_url} target="_blank" rel="noopener" style={{ color: '#ff4400' }}>Resume</a></>}
-                  </div>
-                  {(() => {
-                    const refHost = app.referrer ? (() => { try { return new URL(app.referrer).hostname } catch { return app.referrer } })() : null
-                    const src = app.utm_source || refHost || 'direct'
-                    const detail = [app.utm_medium, app.utm_campaign, app.utm_content].filter(Boolean).join(' / ')
-                    return (
-                      <div style={{ fontSize: 11, color: '#888', marginTop: 2 }}>
-                        <span style={{ ...S.badge, background: '#ecfdf5', color: '#047857' }}>Source: {src}</span>
-                        {detail && <span style={{ marginLeft: 6 }}>{detail}</span>}
-                        {app.referrer && <span style={{ marginLeft: 6, color: '#bbb' }} title={app.referrer}>· ref: {refHost}</span>}
-                      </div>
-                    )
-                  })()}
-                  <div style={{ fontSize: 11, color: '#bbb' }}>{new Date(app.created_at).toLocaleString()}</div>
-                </div>
-                <select value={app.status || 'applied'} onChange={e => handleStatusChange(app.id, e.target.value)} style={S.sel}>
-                  <option value="applied">지원 완료</option>
-                  <option value="viewed">담당자 열람</option>
-                  <option value="reviewing">검토중</option>
-                  <option value="decided">결과 확인</option>
-                </select>
               </div>
             ))}
           </div>

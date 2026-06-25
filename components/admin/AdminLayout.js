@@ -36,7 +36,6 @@ function buildNav(lang) {
         { label: L('공고 등록', 'New job'), pathname: '/admin/jobs', tab: 'job-new' },
         { label: L('공고 목록', 'Jobs'), pathname: '/admin/jobs', tab: 'jobs' },
         { label: L('회사', 'Companies'), pathname: '/admin/jobs', tab: 'companies' },
-        { label: 'Applications', pathname: '/admin/jobs', tab: 'applications' },
         { label: L('공고 지표', 'Job KPI'), pathname: '/admin/jobs', tab: 'kpi' },
         { label: L('로그', 'Log'), pathname: '/admin/jobs', tab: 'log' },
         { label: 'Crawl', pathname: '/admin/jobs', tab: 'crawl' },
