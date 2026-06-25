@@ -15,10 +15,16 @@ export default async function handler(req, res) {
   const token = req.headers.authorization?.replace('Bearer ', '')
   if (!token) return res.status(401).json({ error: 'unauthorized' })
 
-  const { data: { user }, error: authErr } = await supabase.auth.getUser(token)
-  if (authErr || !user) return res.status(401).json({ error: 'unauthorized' })
-
-  if (!(await isAdmin(user.email))) return res.status(403).json({ error: 'forbidden' })
+  // Dev: dev-local 토큰이면 스텁 어드민으로 통과 (NODE_ENV 가드 — 프로덕션 동작 불변).
+  let user
+  if (process.env.NODE_ENV === 'development' && token === 'dev-local') {
+    user = { id: 'dev-local', email: 'dev@local.likelion.net' }
+  } else {
+    const { data: { user: u }, error: authErr } = await supabase.auth.getUser(token)
+    if (authErr || !u) return res.status(401).json({ error: 'unauthorized' })
+    if (!(await isAdmin(u.email))) return res.status(403).json({ error: 'forbidden' })
+    user = u
+  }
 
   // GET: list all verification requests
   if (req.method === 'GET') {

@@ -17,14 +17,15 @@ export default async function handler(req, res) {
 
   const headCount = (q) => q.then(({ count }) => count ?? 0)
 
-  const [userFollows, subscriptions, verifiedWorkers, resumeHolders, resumePublic] = await Promise.all([
+  const [userFollows, subscriptions, verifiedWorkers, resumeHolders, resumePublic, approvedVerifications] = await Promise.all([
     headCount(supabase.from('user_follows').select('id', { count: 'exact', head: true })),
     headCount(supabase.from('company_follows').select('id', { count: 'exact', head: true })),
     headCount(supabase.from('user_profiles').select('id', { count: 'exact', head: true }).not('verified_company_name', 'is', null)),
     headCount(supabase.from('user_profiles').select('id', { count: 'exact', head: true }).not('resume_url', 'is', null)),
     headCount(supabase.from('user_profiles').select('id', { count: 'exact', head: true }).not('resume_url', 'is', null).eq('is_resume_public', true)),
+    headCount(supabase.from('salary_verifications').select('id', { count: 'exact', head: true }).eq('status', 'approved')),
   ])
 
   res.setHeader('Cache-Control', 'no-store')
-  res.status(200).json({ userFollows, subscriptions, verifiedWorkers, resumeHolders, resumePublic })
+  res.status(200).json({ userFollows, subscriptions, verifiedWorkers, resumeHolders, resumePublic, approvedVerifications })
 }
