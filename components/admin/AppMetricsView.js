@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import ModerationView from './ModerationView'
 import {
   LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer, ReferenceLine,
@@ -26,7 +27,7 @@ const L = {
     d7: '앱 D7 잔존율', d7sub: '다시 오는가 (최우선)',
     cpp: '글당 답글 수', cppSub: '커뮤니티 생존 (0이면 사망)',
     pushRe: '푸시 재방문', pushReSub: '엔진이 도는가',
-    tabs: { overview: '요약', retention: '리텐션', users: '유저분석', community: '커뮤니티', conversion: '전환', push: '푸시', segments: '세그먼트' },
+    tabs: { overview: '요약', retention: '리텐션', users: '유저분석', community: '커뮤니티', conversion: '전환', push: '푸시', segments: '세그먼트', reports: '신고/피드백' },
     // 요약(Overview)
     ovTitle: '핵심 지표 요약', ovD7: 'D7 잔존', ovStick: '스티키니스(DAU/MAU)', ovWau: 'WAU', ovMau: 'MAU',
     ovNew: '신규 유저(기간)', ovAct: '액티베이션 전환', ovQr: 'Quick Ratio(최근주)', ovCpp: '글당 답글',
@@ -82,7 +83,7 @@ const L = {
     d7: 'App D7 Retention', d7sub: 'Do they come back (top priority)',
     cpp: 'Replies per Post', cppSub: 'Community survival (0 = dead)',
     pushRe: 'Push Re-engagement', pushReSub: 'Is the engine running',
-    tabs: { overview: 'Overview', retention: 'Retention', users: 'Users', community: 'Community', conversion: 'Conversion', push: 'Push', segments: 'Segments' },
+    tabs: { overview: 'Overview', retention: 'Retention', users: 'Users', community: 'Community', conversion: 'Conversion', push: 'Push', segments: 'Segments', reports: 'Reports' },
     ovTitle: 'Key Metrics', ovD7: 'D7 Retention', ovStick: 'Stickiness(DAU/MAU)', ovWau: 'WAU', ovMau: 'MAU',
     ovNew: 'New users (range)', ovAct: 'Activation', ovQr: 'Quick Ratio(last wk)', ovCpp: 'Replies/post',
     ovSalary: 'Salary submits', ovApply: 'Applications', ovResume: 'Resume uploads', ovResumePublic: 'Resume made public', ovCumSub: 'app · cumulative', ovPush: 'Push returns', ovPower: 'Power users(2d+)',
@@ -276,7 +277,7 @@ export default function AppMetricsView({ token, dateRange, lang }) {
     depth: { powerCurve: [], featureAdoption: [], featureCountDist: [], rangeClients: 0, featureDenom: 0, multiDayRate: null },
   }
   const cppNum = parseFloat(topline.commentsPerPost)
-  const SUB_TABS = ['overview', 'retention', 'users', 'community', 'conversion', 'push', 'segments']
+  const SUB_TABS = ['overview', 'retention', 'users', 'community', 'conversion', 'push', 'segments', 'reports']
 
   // 시계열: 일별 이벤트 카운트(daily) + 일별 활성유저(dauSeries)를 날짜축으로 0-채움 병합.
   const dauByDate = Object.fromEntries((retention.dauSeries || []).map(d => [d.date, d]))
@@ -310,6 +311,7 @@ export default function AppMetricsView({ token, dateRange, lang }) {
 
   return (
     <>
+      {sub !== 'reports' && (<>
       <div style={{ fontSize: 12, color: '#9CA3AF', marginBottom: 16 }}>{t.metaLine(meta)}</div>
 
       {/* 전략 톱라인 */}
@@ -333,6 +335,7 @@ export default function AppMetricsView({ token, dateRange, lang }) {
           </div>
         </div>
       )}
+      </>)}
 
       {/* 서브탭 */}
       <div style={{ display: 'flex', gap: 0, marginBottom: 20, borderBottom: '2px solid #e5e7eb' }}>
@@ -669,6 +672,8 @@ export default function AppMetricsView({ token, dateRange, lang }) {
           </div>
         </div>
       )}
+
+      {sub === 'reports' && <ModerationView token={token} />}
     </>
   )
 }

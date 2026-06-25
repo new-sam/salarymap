@@ -13,7 +13,6 @@ import ResumesView from '../../components/admin/ResumesView'
 import TalentPoolView from '../../components/admin/TalentPoolView'
 import VerificationsView from '../../components/admin/VerificationsView'
 import CommunityView from '../../components/admin/CommunityView'
-import ModerationView from '../../components/admin/ModerationView'
 import AppMetricsView from '../../components/admin/AppMetricsView'
 import {
   T, METRICS_BASE, EXP_COLORS, COLORS,
@@ -950,11 +949,6 @@ export default function AdminDashboard() {
         {/* Community Tab */}
         {tab === 'community' && (
           <CommunityView token={token} lang={lang} dateRange={dateRange} />
-        )}
-
-        {/* Reports / Moderation Tab */}
-        {tab === 'reports' && (
-          <ModerationView token={token} />
         )}
 
         {/* App Metrics Tab */}

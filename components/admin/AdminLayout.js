@@ -22,8 +22,12 @@ function buildNav(lang) {
         { label: L('인재풀', 'Talent'), pathname: '/admin/dashboard', tab: 'talent' },
         { label: L('연봉 인증', 'Verifications'), pathname: '/admin/dashboard', tab: 'verifications' },
         { label: L('커뮤니티', 'Community'), pathname: '/admin/dashboard', tab: 'community' },
-        { label: L('신고/피드백', 'Reports'), pathname: '/admin/dashboard', tab: 'reports' },
-        { label: L('앱 지표', 'App metrics'), pathname: '/admin/dashboard', tab: 'appMetrics' },
+      ],
+    },
+    {
+      label: L('앱 대시보드', 'App dashboard'),
+      items: [
+        { label: L('앱 대시보드', 'App dashboard'), pathname: '/admin/dashboard', tab: 'appMetrics' },
       ],
     },
     {
