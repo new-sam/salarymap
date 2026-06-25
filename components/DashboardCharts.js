@@ -76,7 +76,7 @@ function MultiTooltip({ active, payload, label, daily, metrics, experiments, lan
   )
 }
 
-export default function MetricChart({ daily, metrics, experiments = [], avgLabel = '평균', lang = 'ko', dualAxis = true }) {
+export default function MetricChart({ daily, metrics, experiments = [], avgLabel = '평균', lang = 'ko', dualAxis = true, lineType = 'monotone', dots = true }) {
   const metricList = Array.isArray(metrics) ? metrics : [metrics]
   const isMulti = metricList.length > 1
   const useDualAxis = isMulti && metricList.length === 2 && dualAxis
@@ -123,10 +123,10 @@ export default function MetricChart({ daily, metrics, experiments = [], avgLabel
           <Area
             key={m.key}
             yAxisId={useDualAxis && i === 1 ? 'right' : 'left'}
-            type="monotone" dataKey={m.dataKey} name={m.label}
+            type={lineType} dataKey={m.dataKey} name={m.label}
             stroke={m.color} strokeWidth={2.5}
             fill={`url(#grad-${m.key})`}
-            dot={{ r: 3, fill: m.color, strokeWidth: 0 }}
+            dot={dots ? { r: 3, fill: m.color, strokeWidth: 0 } : false}
             activeDot={{ r: 5, fill: m.color, strokeWidth: 2, stroke: '#fff' }}
             connectNulls={false}
           />

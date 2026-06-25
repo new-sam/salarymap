@@ -183,7 +183,7 @@ export default function ResumesView({ token, t, lang = 'ko' }) {
       </div>
 
       {/* Row 2: 필터 (공개여부 · 유입) — 별도 줄로 분리해 줄바꿈 방지 */}
-      <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'nowrap', overflowX: 'auto', marginBottom: 16, paddingBottom: 2 }}>
+      <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'nowrap', overflowX: 'auto', overflowY: 'hidden', marginBottom: 16, paddingBottom: 2 }}>
         <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
           {[{ key: 'all', label: t.resumesFilterAll }, { key: 'public', label: t.resumesFilterPublic }, { key: 'private', label: t.resumesFilterPrivate }].map(f => (
             <button key={f.key} onClick={() => setFilter(f.key)} style={pillStyle(filter === f.key)}>{f.label}</button>

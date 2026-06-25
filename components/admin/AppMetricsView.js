@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useRouter } from 'next/router'
 import ModerationView from './ModerationView'
 import {
   LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
@@ -11,8 +12,8 @@ import { useAdmin } from '../../lib/adminSwr'
 // 전략 톱라인(회의브리프: D7 잔존 · 글당 답글 · 푸시 재방문)을 최상단에 고정하고,
 // 서브탭으로 리텐션 / 커뮤니티 / 전환 / 푸시 / 세그먼트를 분리.
 
-const sectionStyle = { background: '#fff', border: '1px solid #e5e7eb', borderRadius: 12, padding: 20, marginBottom: 24 }
-const sectionTitle = { fontSize: 16, fontWeight: 600, margin: '0 0 16px 0' }
+const sectionStyle = { background: '#fff', border: '1px solid #EEF0F2', borderRadius: 14, padding: 20, marginBottom: 20 }
+const sectionTitle = { fontSize: 15, fontWeight: 700, color: '#191F28', margin: '0 0 16px 0' }
 const thStyle = { padding: '8px 12px', textAlign: 'left', fontWeight: 600, color: '#374151', borderBottom: '2px solid #e5e7eb' }
 const tdStyle = { padding: '8px 12px' }
 
@@ -128,12 +129,12 @@ const L = {
   },
 }
 
-function Card({ label, value, sub, color = '#111', big }) {
+function Card({ label, value, sub, big }) {
   return (
-    <div style={{ background: '#fff', border: '1px solid #e5e7eb', borderRadius: 12, padding: '16px 20px', textAlign: 'center' }}>
-      <div style={{ fontSize: 12, color: '#6B7280', marginBottom: 6 }}>{label}</div>
-      <div style={{ fontSize: big ? 32 : 24, fontWeight: 700, color }}>{value}</div>
-      {sub != null && <div style={{ fontSize: 12, color: '#9CA3AF', marginTop: 2 }}>{sub}</div>}
+    <div style={{ background: '#fff', border: '1px solid #EEF0F2', borderRadius: 12, padding: '15px 18px' }}>
+      <div style={{ fontSize: 12, color: '#8B95A1', marginBottom: 6, fontWeight: 600 }}>{label}</div>
+      <div style={{ fontSize: big ? 30 : 23, fontWeight: 800, color: '#191F28', letterSpacing: '-0.02em', fontVariantNumeric: 'tabular-nums', lineHeight: 1.1 }}>{value}</div>
+      {sub != null && <div style={{ fontSize: 11.5, color: '#ADB5BD', marginTop: 3 }}>{sub}</div>}
     </div>
   )
 }
@@ -170,8 +171,8 @@ function DistTable({ rows, t, color = '#6B7280' }) {
 }
 
 // ===== 앰플리튜드식 차트 컴포넌트 =====
-const chartCard = { background: '#fff', border: '1px solid #e5e7eb', borderRadius: 12, padding: 16 }
-const chartCardTitle = { fontSize: 14, fontWeight: 600, margin: '0 0 2px 0', color: '#111' }
+const chartCard = { background: '#fff', border: '1px solid #EEF0F2', borderRadius: 14, padding: 16 }
+const chartCardTitle = { fontSize: 14, fontWeight: 700, margin: '0 0 2px 0', color: '#191F28' }
 const chartCardSub = { fontSize: 11, color: '#9CA3AF', marginBottom: 8 }
 
 // 색 점 + 라벨 범례 (차트 하단)
@@ -188,13 +189,118 @@ function ChartLegend({ metrics }) {
 }
 
 // 시계열 차트 카드 — DashboardCharts의 MetricChart(area) 재사용 + 범례.
-function TsCard({ title, sub, data, metrics, lang, dualAxis = false }) {
+function TsCard({ title, sub, data, metrics, lang, dualAxis = false, chartKey, onOpen }) {
   return (
-    <div style={chartCard}>
+    <div style={{ ...chartCard, cursor: onOpen ? 'pointer' : 'default' }} onClick={onOpen ? () => onOpen(chartKey) : undefined}>
       <h4 style={chartCardTitle}>{title}</h4>
       {sub && <div style={chartCardSub}>{sub}</div>}
-      <MetricChart daily={data} metrics={metrics} lang={lang} dualAxis={dualAxis} avgLabel={lang === 'en' ? 'avg' : '평균'} />
+      <MetricChart daily={aggregateBy(data, metrics, 'day')} metrics={metrics} lang={lang} dualAxis={dualAxis} lineType="linear" dots={false} avgLabel={lang === 'en' ? 'avg' : '평균'} />
       <ChartLegend metrics={metrics} />
+    </div>
+  )
+}
+
+// 일/주/월 집계. 일은 최근 30일(이벤트 없던 날도 빈칸으로 표시), 주(월~일)·월은 기간 합산.
+function aggregateBy(rows, metrics, gran) {
+  const sorted = [...rows].sort((a, b) => (a.date < b.date ? -1 : 1))
+  if (gran === 'day') {
+    if (!sorted.length) return []
+    const map = {}
+    for (const d of sorted) map[d.date] = d
+    const end = new Date(sorted[sorted.length - 1].date + 'T00:00:00')
+    const out = []
+    for (let i = 29; i >= 0; i--) {
+      const dt = new Date(end); dt.setDate(end.getDate() - i)
+      const key = `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}-${String(dt.getDate()).padStart(2, '0')}`
+      if (map[key]) { out.push(map[key]); continue }
+      // 없는 날: 차트는 0으로 채워 선이 이어지게, 표는 '-'(_empty 플래그)
+      const e = { date: key, _empty: true }
+      metrics.forEach(m => { e[m.dataKey] = 0 })
+      out.push(e)
+    }
+    return out
+  }
+  // 주(월~일)·월: 최근 윈도우(주 ~12개 / 월 ~6개)를 연속 생성. 이벤트 없던 기간도 _empty로 표시.
+  if (!sorted.length) return []
+  const map = {}
+  for (const d of sorted) map[d.date] = d
+  const lastDate = new Date(sorted[sorted.length - 1].date + 'T00:00:00')
+  const pad = (n) => String(n).padStart(2, '0')
+  const periodKey = (dt) => {
+    if (gran === 'month') return `${dt.getFullYear()}-${pad(dt.getMonth() + 1)}`
+    const mon = new Date(dt); mon.setDate(dt.getDate() - ((dt.getDay() + 6) % 7))
+    return `${mon.getFullYear()}-${pad(mon.getMonth() + 1)}-${pad(mon.getDate())}`
+  }
+  const windowDays = gran === 'month' ? 183 : 84
+  const buckets = {}
+  const order = []
+  for (let i = windowDays - 1; i >= 0; i--) {
+    const dt = new Date(lastDate); dt.setDate(lastDate.getDate() - i)
+    const pkey = periodKey(dt)
+    if (!buckets[pkey]) { buckets[pkey] = { date: pkey, _empty: true }; metrics.forEach(m => { buckets[pkey][m.dataKey] = 0 }); order.push(pkey) }
+    const row = map[`${dt.getFullYear()}-${pad(dt.getMonth() + 1)}-${pad(dt.getDate())}`]
+    if (row) { buckets[pkey]._empty = false; metrics.forEach(m => { if (row[m.dataKey] != null) buckets[pkey][m.dataKey] += row[m.dataKey] }) }
+  }
+  return order.map(k => buckets[k])
+}
+
+// 그래프 클릭 시 한 뎁스 깊은 상세 페이지 — App Store Connect식: 뒤로 + 제목 + 일/주/월 토글 + 직선 차트 + 일별 표.
+function ChartDetail({ title, data, metrics, lang, onBack }) {
+  const [gran, setGran] = useState('day')
+  const view = aggregateBy(data || [], metrics, gran)
+  const rows = [...view].sort((a, b) => (a.date < b.date ? 1 : -1))
+  const single = metrics.length === 1
+  const mth = { padding: '10px 12px', textAlign: 'right', fontWeight: 700, color: '#8B95A1', fontSize: 12, whiteSpace: 'nowrap' }
+  const mtd = { padding: '9px 12px', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }
+  const sum = (key) => view.reduce((s, d) => s + (d[key] ?? 0), 0)
+  const GRANS = [['day', '일'], ['week', '주'], ['month', '월']]
+  return (
+    <div>
+      <button onClick={onBack} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, border: '1px solid #E5E8EB', background: '#fff', borderRadius: 9, padding: '7px 13px', fontSize: 13, fontWeight: 600, color: '#4E5968', cursor: 'pointer', marginBottom: 16 }}>← 뒤로</button>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12, flexWrap: 'wrap', marginBottom: 14 }}>
+        <div>
+          <h2 style={{ fontSize: 18, fontWeight: 800, color: '#191F28', margin: '0 0 2px' }}>{title}</h2>
+          {single && <div style={{ fontSize: 30, fontWeight: 800, color: '#191F28', letterSpacing: '-0.02em' }}>{sum(metrics[0].dataKey).toLocaleString()}</div>}
+        </div>
+        <div style={{ display: 'flex', gap: 2, background: '#F2F4F6', borderRadius: 9, padding: 3 }}>
+          {GRANS.map(([k, label]) => (
+            <button key={k} onClick={() => setGran(k)} style={{
+              padding: '6px 14px', borderRadius: 6, fontSize: 12.5, fontWeight: 600, cursor: 'pointer', border: 'none',
+              background: gran === k ? '#fff' : 'transparent', color: gran === k ? '#ff4400' : '#86868b',
+              boxShadow: gran === k ? '0 1px 2px rgba(0,0,0,0.08)' : 'none',
+            }}>{label}</button>
+          ))}
+        </div>
+      </div>
+      <div style={{ ...chartCard, marginBottom: 16 }}>
+        <MetricChart daily={view} metrics={metrics} lang={lang} lineType="linear" dots={false} avgLabel={lang === 'en' ? 'avg' : '평균'} />
+        <ChartLegend metrics={metrics} />
+      </div>
+      <div style={{ ...chartCard, overflowX: 'auto' }}>
+        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+          <thead>
+            <tr style={{ borderBottom: '1px solid #EEF0F2' }}>
+              <th style={{ ...mth, textAlign: 'left' }}>날짜</th>
+              {metrics.map(m => <th key={m.dataKey} style={mth}>{m.label}</th>)}
+            </tr>
+          </thead>
+          <tbody>
+            <tr style={{ borderBottom: '1px solid #EEF0F2', fontWeight: 700 }}>
+              <td style={{ ...mtd, textAlign: 'left', color: '#191F28' }}>합계</td>
+              {metrics.map(m => <td key={m.dataKey} style={{ ...mtd, color: '#191F28' }}>{sum(m.dataKey).toLocaleString()}</td>)}
+            </tr>
+            {rows.map(d => (
+              <tr key={d.date} style={{ borderBottom: '1px solid #F7F8FA' }}>
+                <td style={{ ...mtd, textAlign: 'left', color: '#4E5968' }}>{d.date}</td>
+                {metrics.map(m => {
+                  const v = d._empty ? null : d[m.dataKey]
+                  return <td key={m.dataKey} style={{ ...mtd, color: v == null ? '#C7CDD4' : '#191F28' }}>{v == null ? '-' : v.toLocaleString()}</td>
+                })}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   )
 }
@@ -265,6 +371,7 @@ export default function AppMetricsView({ token, dateRange, lang }) {
     { refreshInterval: 30000 },
   )
   const [sub, setSub] = useState('overview')
+  const router = useRouter()
 
   if (loading) return <div style={{ textAlign: 'center', padding: 40, color: '#666' }}>{t.loading}</div>
   if (!data || !data.meta.totalAppEvents) return <div style={{ textAlign: 'center', padding: 40, color: '#999' }}>{t.empty}</div>
@@ -301,49 +408,39 @@ export default function AppMetricsView({ token, dateRange, lang }) {
   // 시계열 metric 정의 (key=dataKey=label=color)
   const M = (dataKey, label, color) => ({ key: dataKey, dataKey, label, color })
   const series = {
-    dau: [M('active', 'DAU', '#4F46E5')],
-    newRet: [M('returning', t.retU, '#2563EB'), M('newU', t.newU, '#93C5FD')],
-    convert: [M('submit_salary', t.ovSalary, '#10B981'), M('submit_application', t.ovApply, '#2563EB'), M('resume_upload', t.resumeUploads, '#8B5CF6')],
-    community: [M('view_community', t.fView, '#0EA5E9'), M('create_community_post', t.posts, '#10B981'), M('create_community_comment', t.comments, '#F59E0B')],
-    jobs: [M('view_jobs_page', t.jView, '#0EA5E9'), M('click_job_card', t.jCard, '#8B5CF6'), M('click_apply_button', t.jApply, '#F59E0B')],
-    push: [M('push_sent', t.pushSent, '#0EA5E9'), M('push_click', t.pushClicks, '#8B5CF6'), M('push_received', t.pushReceived, '#C4B5FD')],
+    dau: [M('active', 'DAU', '#ff4400')],
+    newRet: [M('returning', t.retU, '#ff4400'), M('newU', t.newU, '#3F3F46')],
+    convert: [M('submit_salary', t.ovSalary, '#ff4400'), M('submit_application', t.ovApply, '#3F3F46'), M('resume_upload', t.resumeUploads, '#A1A1AA')],
+    community: [M('view_community', t.fView, '#ff4400'), M('create_community_post', t.posts, '#3F3F46'), M('create_community_comment', t.comments, '#A1A1AA')],
+    jobs: [M('view_jobs_page', t.jView, '#ff4400'), M('click_job_card', t.jCard, '#3F3F46'), M('click_apply_button', t.jApply, '#A1A1AA')],
+    push: [M('push_sent', t.pushSent, '#ff4400'), M('push_click', t.pushClicks, '#3F3F46'), M('push_received', t.pushReceived, '#A1A1AA')],
+  }
+
+  // 그래프 클릭 → URL(?chart=)로 한 뎁스 더 깊은 상세 페이지. 뒤로가기로 복귀.
+  const goChart = (key) => router.push({ pathname: router.pathname, query: { ...router.query, chart: key } }, undefined, { shallow: true })
+  const backFromChart = () => { const q = { ...router.query }; delete q.chart; router.push({ pathname: router.pathname, query: q }, undefined, { shallow: true }) }
+  const CHARTS = {
+    dau: { title: t.dauTitle, metrics: series.dau },
+    newRet: { title: t.tsNewRet, metrics: series.newRet },
+    convert: { title: t.tsConvert, metrics: series.convert },
+    community: { title: t.tsCommunity, metrics: series.community },
+    jobs: { title: t.tsJobs, metrics: series.jobs },
+    push: { title: t.tsPush, metrics: series.push },
+  }
+  const openChart = CHARTS[router.query.chart]
+  if (openChart) {
+    return <ChartDetail title={openChart.title} data={ts} metrics={openChart.metrics} lang={lang} onBack={backFromChart} />
   }
 
   return (
     <>
-      {sub !== 'reports' && (<>
-      <div style={{ fontSize: 12, color: '#9CA3AF', marginBottom: 16 }}>{t.metaLine(meta)}</div>
-
-      {/* 전략 톱라인 */}
-      <div style={sectionStyle}>
-        <h3 style={sectionTitle}>{t.toplineTitle}</h3>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12 }}>
-          <Card big label={t.d7} value={`${topline.d7.rate}%`} sub={`${t.d7sub} · ${topline.d7.retained}/${topline.d7.eligible}`} color={rateColor(topline.d7.rate)} />
-          <Card big label={t.cpp} value={topline.commentsPerPost} sub={t.cppSub} color={isNaN(cppNum) || cppNum < 1 ? '#EF4444' : '#10B981'} />
-          <Card big label={t.pushRe} value={push.clicks.toLocaleString()} sub={`${t.pushReSub} · ${push.clickUsers} users`} color="#8B5CF6" />
-        </div>
-      </div>
-
-      {/* 웹 모달 → 앱스토어 유도 CTR */}
-      {webAppPromo && (
-        <div style={sectionStyle}>
-          <h3 style={sectionTitle}>{t.webPromoTitle}</h3>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12 }}>
-            <Card big label={t.webPromoCtr} value={webAppPromo.ctr != null ? `${webAppPromo.ctr}%` : '-'} sub={`${t.webPromoCtrSub} · ${webAppPromo.clicks.toLocaleString()}/${webAppPromo.impressions.toLocaleString()}`} color="#EA580C" />
-            <Card label={t.webPromoImp} value={webAppPromo.impressions.toLocaleString()} color="#2563EB" />
-            <Card label={t.webPromoClick} value={webAppPromo.clicks.toLocaleString()} color="#8B5CF6" />
-          </div>
-        </div>
-      )}
-      </>)}
-
-      {/* 서브탭 */}
-      <div style={{ display: 'flex', gap: 0, marginBottom: 20, borderBottom: '2px solid #e5e7eb' }}>
+      {/* 서브탭 (상단) */}
+      <div style={{ display: 'flex', gap: 0, marginBottom: 22, borderBottom: '1px solid #EEF0F2', overflowX: 'auto', overflowY: 'hidden' }}>
         {SUB_TABS.map(k => (
           <button key={k} onClick={() => setSub(k)} style={{
-            padding: '8px 16px', fontSize: 13, fontWeight: 600, cursor: 'pointer', border: 'none', background: 'none',
-            borderBottom: sub === k ? '2px solid #4F46E5' : '2px solid transparent', marginBottom: -2,
-            color: sub === k ? '#4F46E5' : '#999',
+            padding: '9px 14px', fontSize: 13, fontWeight: 600, cursor: 'pointer', border: 'none', background: 'none',
+            borderBottom: sub === k ? '2px solid #ff4400' : '2px solid transparent', marginBottom: -1,
+            color: sub === k ? '#ff4400' : '#8B95A1', whiteSpace: 'nowrap', flexShrink: 0,
           }}>{t.tabs[k]}</button>
         ))}
       </div>
@@ -374,10 +471,10 @@ export default function AppMetricsView({ token, dateRange, lang }) {
               {cards.map(c => <Card key={c.label} label={c.label} value={c.value} sub={c.sub} color={c.color} />)}
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(440px, 1fr))', gap: 16 }}>
-              <TsCard title={t.dauTitle} data={ts} metrics={series.dau} lang={lang} />
-              <TsCard title={t.tsNewRet} data={ts} metrics={series.newRet} lang={lang} />
-              <TsCard title={t.tsConvert} data={ts} metrics={series.convert} lang={lang} />
-              <TsCard title={t.tsCommunity} data={ts} metrics={series.community} lang={lang} />
+              <TsCard title={t.dauTitle} data={ts} metrics={series.dau} lang={lang} chartKey="dau" onOpen={goChart} />
+              <TsCard title={t.tsNewRet} data={ts} metrics={series.newRet} lang={lang} chartKey="newRet" onOpen={goChart} />
+              <TsCard title={t.tsConvert} data={ts} metrics={series.convert} lang={lang} chartKey="convert" onOpen={goChart} />
+              <TsCard title={t.tsCommunity} data={ts} metrics={series.community} lang={lang} chartKey="community" onOpen={goChart} />
               <div style={chartCard}>
                 <h4 style={chartCardTitle}>{t.curveTitle}</h4>
                 <div style={chartCardSub}>{t.ovCurveTitle}</div>
@@ -389,6 +486,28 @@ export default function AppMetricsView({ token, dateRange, lang }) {
                 <GrowthChart weeks={analytics.growth.weeks} t={t} />
               </div>
             </div>
+
+            {/* 전략 톱라인 (요약 하단으로 이동) */}
+            <div style={{ ...sectionStyle, marginTop: 20 }}>
+              <h3 style={sectionTitle}>{t.toplineTitle}</h3>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12 }}>
+                <Card big label={t.d7} value={`${topline.d7.rate}%`} sub={`${t.d7sub} · ${topline.d7.retained}/${topline.d7.eligible}`} />
+                <Card big label={t.cpp} value={topline.commentsPerPost} sub={t.cppSub} />
+                <Card big label={t.pushRe} value={push.clicks.toLocaleString()} sub={`${t.pushReSub} · ${push.clickUsers} users`} />
+              </div>
+            </div>
+
+            {/* 웹 → 앱 다운로드 유도 */}
+            {webAppPromo && (
+              <div style={sectionStyle}>
+                <h3 style={sectionTitle}>{t.webPromoTitle}</h3>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12 }}>
+                  <Card big label={t.webPromoCtr} value={webAppPromo.ctr != null ? `${webAppPromo.ctr}%` : '-'} sub={`${t.webPromoCtrSub} · ${webAppPromo.clicks.toLocaleString()}/${webAppPromo.impressions.toLocaleString()}`} />
+                  <Card label={t.webPromoImp} value={webAppPromo.impressions.toLocaleString()} />
+                  <Card label={t.webPromoClick} value={webAppPromo.clicks.toLocaleString()} />
+                </div>
+              </div>
+            )}
           </>
         )
       })()}
@@ -519,7 +638,7 @@ export default function AppMetricsView({ token, dateRange, lang }) {
         <>
           <div style={sectionStyle}>
             <h3 style={sectionTitle}>{t.tsCommunity}</h3>
-            <MetricChart daily={ts} metrics={series.community} lang={lang} />
+            <MetricChart daily={aggregateBy(ts, series.community, "day")} metrics={series.community} lang={lang} lineType="linear" dots={false} />
             <ChartLegend metrics={series.community} />
           </div>
 
@@ -579,7 +698,7 @@ export default function AppMetricsView({ token, dateRange, lang }) {
         <>
           <div style={sectionStyle}>
             <h3 style={sectionTitle}>{t.tsConvert}</h3>
-            <MetricChart daily={ts} metrics={series.convert} lang={lang} />
+            <MetricChart daily={aggregateBy(ts, series.convert, "day")} metrics={series.convert} lang={lang} lineType="linear" dots={false} />
             <ChartLegend metrics={series.convert} />
           </div>
 
@@ -602,7 +721,7 @@ export default function AppMetricsView({ token, dateRange, lang }) {
             </div>
             <div style={{ marginTop: 20 }}>
               <h4 style={{ fontSize: 13, fontWeight: 600, color: '#374151', margin: '0 0 10px' }}>{t.tsJobs}</h4>
-              <MetricChart daily={ts} metrics={series.jobs} lang={lang} />
+              <MetricChart daily={aggregateBy(ts, series.jobs, "day")} metrics={series.jobs} lang={lang} lineType="linear" dots={false} />
               <ChartLegend metrics={series.jobs} />
             </div>
           </div>
@@ -649,7 +768,7 @@ export default function AppMetricsView({ token, dateRange, lang }) {
             <Card label={t.pushReceived} value={push.received} color="#6B7280" />
           </div>
           <h4 style={{ fontSize: 13, fontWeight: 600, color: '#374151', margin: '0 0 10px' }}>{t.tsPush}</h4>
-          <MetricChart daily={ts} metrics={series.push} lang={lang} dualAxis={false} />
+          <MetricChart daily={aggregateBy(ts, series.push, "day")} metrics={series.push} lang={lang} dualAxis={false} lineType="linear" dots={false} />
           <ChartLegend metrics={series.push} />
           <h4 style={{ fontSize: 13, fontWeight: 600, color: '#374151', margin: '20px 0 10px' }}>{t.pushByCat}</h4>
           <BarDist rows={push.byCategory.map(c => ({ name: c.name, count: c.click }))} color="#8B5CF6" />
@@ -713,8 +832,8 @@ function RetentionCurveChart({ curve }) {
         <XAxis dataKey="day" fontSize={12} />
         <YAxis fontSize={12} unit="%" domain={[0, 100]} />
         <Tooltip formatter={(v, n, p) => [`${v}% (${p.payload.retained}/${p.payload.eligible})`, '잔존']} />
-        <Line type="monotone" dataKey="rate" stroke="#4F46E5" strokeWidth={2.5}
-          dot={{ r: 3, fill: '#4F46E5', strokeWidth: 0 }} activeDot={{ r: 5, stroke: '#fff', strokeWidth: 2 }} />
+        <Line type="linear" dataKey="rate" stroke="#ff4400" strokeWidth={2.5}
+          dot={false} activeDot={{ r: 5, stroke: '#fff', strokeWidth: 2 }} />
       </LineChart>
     </ResponsiveContainer>
   )
