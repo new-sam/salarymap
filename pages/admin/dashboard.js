@@ -374,8 +374,6 @@ export default function AdminDashboard() {
         {/* Header */}
         <div className="adm-header">
           <div className="adm-header-title">
-            <a href="/admin/jobs" style={{ color: '#888', textDecoration: 'none', fontSize: 20 }} title={t.backTitle}>&larr;</a>
-            <h1 style={{ fontSize: 24, fontWeight: 700, margin: 0 }}>{t.title}</h1>
             <div style={{ display: 'flex', gap: 2, background: '#f3f4f6', borderRadius: 6, padding: 2 }}>
               {['ko', 'en'].map(l => (
                 <button key={l} onClick={() => setLang(l)}

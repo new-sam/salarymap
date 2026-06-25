@@ -247,16 +247,6 @@ export default function AdminJobs() {
 
       <AdminLayout>
       <div style={S.shell}>
-        <div style={S.header}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            <a href="/" style={{ color: '#888', textDecoration: 'none', fontSize: 20 }} title="Back to Home">&larr;</a>
-            <div>
-              <div style={{ fontSize: 20, fontWeight: 800 }}>Admin Dashboard</div>
-              <div style={{ fontSize: 12, color: '#aaa' }}>{currentEmail}</div>
-            </div>
-          </div>
-        </div>
-
         {msg && <div style={S.flash}>{msg}</div>}
 
         {/* JOBS TAB */}
@@ -756,8 +746,7 @@ function Sel({ label, value, opts, set }) {
 
 const S = {
   center: { display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100vh', fontFamily: "-apple-system, 'Helvetica Neue', Arial, sans-serif" },
-  shell: { maxWidth: 900, margin: '0 auto', padding: '0 20px 60px' },
-  header: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '24px 0 20px', flexWrap: 'wrap', gap: 12 },
+  shell: { maxWidth: 900, margin: '0 auto', padding: '24px 20px 60px' },
   tab: { fontSize: 13, fontWeight: 600, color: '#888', background: '#fff', border: '1px solid #eee', padding: '7px 16px', borderRadius: 8, cursor: 'pointer' },
   tabOn: { background: '#111', color: '#fff', borderColor: '#111' },
   card: { background: '#fff', borderRadius: 12, border: '1px solid #eee', padding: '20px 24px', marginBottom: 16 },

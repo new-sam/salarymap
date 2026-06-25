@@ -58,6 +58,9 @@ export default function AdminLayout({ children }) {
   const nav = buildNav(lang)
   const curTab = router.query.tab || ROUTE_DEFAULT[router.pathname]
   const isActive = (it) => router.pathname === it.pathname && curTab === it.tab
+  const activeItem = nav.flatMap((g) => g.items).find(isActive)
+  const contentMax = router.pathname === '/admin/jobs' ? 900 : 1200
+  const contentPad = router.pathname === '/admin/jobs' ? 20 : 16
 
   return (
     <div className={`al-shell${open ? ' open' : ''}`}>
@@ -90,6 +93,8 @@ export default function AdminLayout({ children }) {
         .al-item:hover { background: #efeff2; }
         .al-item.active { background: #e8f0fe; color: #0066cc; font-weight: 600; }
         .al-main { flex: 1; min-width: 0; }
+        .al-pagehead { padding: 40px 0 0; }
+        .al-pagehead h1 { margin: 0; font-size: 22px; font-weight: 700; letter-spacing: -0.02em; color: #1d1d1f; }
         .al-burger {
           display: none; position: fixed; top: 12px; left: 12px; z-index: 50;
           width: 40px; height: 40px; border-radius: 10px; border: 1px solid #e3e3e6;
@@ -139,7 +144,16 @@ export default function AdminLayout({ children }) {
       </button>
       <div className="al-scrim" onClick={() => setOpen(false)} />
 
-      <main className="al-main">{children}</main>
+      <main className="al-main">
+        {activeItem && (
+          <div className="al-pagehead">
+            <div style={{ maxWidth: contentMax, margin: '0 auto', padding: `0 ${contentPad}px` }}>
+              <h1>{activeItem.label}</h1>
+            </div>
+          </div>
+        )}
+        {children}
+      </main>
     </div>
   )
 }
