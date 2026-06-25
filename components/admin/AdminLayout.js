@@ -37,7 +37,6 @@ function buildNav(lang) {
         { label: L('공고 목록', 'Jobs'), pathname: '/admin/jobs', tab: 'jobs' },
         { label: L('회사', 'Companies'), pathname: '/admin/jobs', tab: 'companies' },
         { label: L('공고 지표', 'Job KPI'), pathname: '/admin/jobs', tab: 'kpi' },
-        { label: 'Crawl', pathname: '/admin/jobs', tab: 'crawl' },
         { label: 'Admins', pathname: '/admin/jobs', tab: 'admins' },
       ],
     },
@@ -63,6 +62,7 @@ export default function AdminLayout({ children }) {
   return (
     <div className={`al-shell${open ? ' open' : ''}`}>
       <style>{`
+        html { scrollbar-gutter: stable; }
         .al-shell {
           display: flex; min-height: 100vh;
           font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;

@@ -26,13 +26,12 @@ export default function AdminJobs() {
   const router = useRouter()
   const tab = router.query.tab || 'jobs'
   const [jobFilter, setJobFilter] = useState('all')
+  const [jobSearch, setJobSearch] = useState('')
   const [editing, setEditing] = useState(null)
   const [form, setForm] = useState(EMPTY_JOB)
   const [saving, setSaving] = useState(false)
   const [msg, setMsg] = useState(null)
   const [newAdminEmail, setNewAdminEmail] = useState('')
-  const [targetForm, setTargetForm] = useState({ company_name: '', slug: '', source_type: 'greenhouse', career_url: '' })
-  const [targetSaving, setTargetSaving] = useState(false)
   const [imageUploading, setImageUploading] = useState(false)
   const imgInputRef = useRef(null)
 
@@ -58,29 +57,8 @@ export default function AdminJobs() {
   // SWR: 캐시로 페이지 재방문 즉시 표시. 액션 후엔 해당 목록만 mutate()로 갱신.
   const { data: jobs = [], mutate: mutateJobs } = useAdmin('/api/admin/jobs', token)
   const { data: admins = [], mutate: mutateAdmins } = useAdmin('/api/admin/users', token)
-  const { data: targets = [], mutate: mutateTargets } = useAdmin('/api/admin/crawl-targets', token)
   const { data: companies = [], mutate: mutateCompanies } = useAdmin('/api/admin/companies', token)
   const { data: kpi = null } = useAdmin('/api/admin/company-kpi', token)
-  const handleAddTarget = async () => {
-    if (!targetForm.company_name || !targetForm.slug) return
-    setTargetSaving(true)
-    const res = await fetch('/api/admin/crawl-targets', { method: 'POST', headers: headers(), body: JSON.stringify(targetForm) })
-    if (res.ok) { flash('Target added'); setTargetForm({ company_name: '', slug: '', source_type: 'greenhouse', career_url: '' }); mutateTargets() }
-    else { const d = await res.json(); flash(d.error || 'Failed') }
-    setTargetSaving(false)
-  }
-
-  const handleToggleTarget = async (target) => {
-    await fetch('/api/admin/crawl-targets', { method: 'PUT', headers: headers(), body: JSON.stringify({ id: target.id, is_active: !target.is_active }) })
-    mutateTargets()
-  }
-
-  const handleDeleteTarget = async (id) => {
-    if (!confirm('Delete this target?')) return
-    await fetch('/api/admin/crawl-targets', { method: 'DELETE', headers: headers(), body: JSON.stringify({ id }) })
-    flash('Deleted'); mutateTargets()
-  }
-
   const flash = (text) => { setMsg(text); setTimeout(() => setMsg(null), 3000) }
 
   const handleSave = async () => {
@@ -380,12 +358,14 @@ export default function AdminJobs() {
         })()}
 
         {tab === 'jobs' && (
-          <div>
+          <div style={{ minHeight: '70vh' }}>
             {jobs.length === 0 && <div style={{ color: '#aaa', fontSize: 13 }}>No jobs yet</div>}
             {(() => {
-              const pendingCount = jobs.filter(j => j.status === 'pending_review').length;
-              const companyCount = jobs.filter(j => j.source === 'company_self').length;
-              const filtered = jobs.filter(j => {
+              const q = jobSearch.trim().toLowerCase();
+              const searched = q ? jobs.filter(j => [j.title, j.company, j.location, j.role].some(v => (v || '').toLowerCase().includes(q))) : jobs;
+              const pendingCount = searched.filter(j => j.status === 'pending_review').length;
+              const companyCount = searched.filter(j => j.source === 'company_self').length;
+              const filtered = searched.filter(j => {
                 if (jobFilter === 'company') return j.source === 'company_self';
                 if (jobFilter === 'pending') return j.status === 'pending_review';
                 return true;
@@ -397,11 +377,13 @@ export default function AdminJobs() {
                 return new Date(b.created_at || 0) - new Date(a.created_at || 0);
               });
               const fmtDate = (d) => d ? new Date(d).toLocaleDateString() : '-';
-              const FILTERS = [['all', '전체', jobs.length], ['company', '기업 등록', companyCount], ['pending', '승인 대기', pendingCount]];
+              const FILTERS = [['all', '전체', searched.length], ['company', '기업 등록', companyCount], ['pending', '승인 대기', pendingCount]];
               const chip = { display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 12, fontWeight: 600, color: '#4E5968', background: '#F2F4F6', borderRadius: 8, padding: '4px 9px' };
               const actBtn = { fontSize: 12, fontWeight: 600, color: '#4E5968', background: '#fff', border: '1px solid #E5E8EB', padding: '6px 12px', borderRadius: 8, cursor: 'pointer' };
               return (
                 <>
+                  <input value={jobSearch} onChange={e => setJobSearch(e.target.value)} placeholder="검색  ·  직무 · 회사 · 지역"
+                    style={{ width: '100%', maxWidth: 380, fontSize: 13.5, padding: '10px 13px', border: '1px solid #E5E8EB', borderRadius: 10, outline: 'none', marginBottom: 12, boxSizing: 'border-box' }} />
                   <div style={{ display: 'flex', gap: 6, marginBottom: 16, flexWrap: 'wrap' }}>
                     {FILTERS.map(([key, label, n]) => {
                       const on = jobFilter === key;
@@ -539,49 +521,6 @@ export default function AdminJobs() {
                 </button>
               </div>
             ))}
-          </div>
-        )}
-
-        {/* CRAWL TARGETS TAB */}
-        {tab === 'crawl' && (
-          <div style={S.card}>
-            <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 16 }}>Crawl Targets</div>
-
-            <div style={{ ...S.grid, marginBottom: 16 }}>
-              <F label="Company Name" value={targetForm.company_name} set={v => setTargetForm({ ...targetForm, company_name: v })} />
-              <F label="Slug" value={targetForm.slug} set={v => setTargetForm({ ...targetForm, slug: v })} />
-              <Sel label="Source Type" value={targetForm.source_type} opts={['greenhouse', 'lever', 'workable', 'greetinghr']} set={v => setTargetForm({ ...targetForm, source_type: v })} />
-              <F label="Career URL (optional)" value={targetForm.career_url} set={v => setTargetForm({ ...targetForm, career_url: v })} />
-            </div>
-            <button style={S.btnP} onClick={handleAddTarget} disabled={targetSaving || !targetForm.company_name || !targetForm.slug}>
-              {targetSaving ? 'Adding...' : 'Add Target'}
-            </button>
-
-            <div style={{ marginTop: 20 }}>
-              {targets.length === 0 && <div style={{ color: '#aaa', fontSize: 13 }}>No targets yet</div>}
-              {targets.map(t => (
-                <div key={t.id} style={S.row}>
-                  <div style={{ flex: 1 }}>
-                    <div style={{ fontSize: 14, fontWeight: 600 }}>
-                      {t.company_name}
-                      <span style={{ ...S.badge, background: '#eef2ff', color: '#4338ca', marginLeft: 8 }}>{t.source_type}</span>
-                      <span style={{ ...S.badge, background: t.is_active ? '#dcfce7' : '#fee2e2', color: t.is_active ? '#166534' : '#991b1b' }}>
-                        {t.is_active ? 'Active' : 'Inactive'}
-                      </span>
-                    </div>
-                    <div style={{ fontSize: 12, color: '#888' }}>
-                      slug: {t.slug}
-                      {t.career_url && <> · <a href={t.career_url} target="_blank" rel="noopener" style={{ color: '#ff4400' }}>{t.career_url}</a></>}
-                      {t.last_crawled_at && <> · Last crawled: {new Date(t.last_crawled_at).toLocaleString()}</>}
-                    </div>
-                  </div>
-                  <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
-                    <button style={S.btnS} onClick={() => handleToggleTarget(t)}>{t.is_active ? 'Deactivate' : 'Activate'}</button>
-                    <button style={{ ...S.btnS, color: '#dc2626' }} onClick={() => handleDeleteTarget(t.id)}>Delete</button>
-                  </div>
-                </div>
-              ))}
-            </div>
           </div>
         )}
 
