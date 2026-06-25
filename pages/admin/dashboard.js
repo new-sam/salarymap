@@ -890,7 +890,7 @@ export default function AdminDashboard() {
 
         {/* Resumes Tab */}
         {tab === 'resumes' && (
-          <ResumesView token={token} t={t} />
+          <ResumesView token={token} t={t} lang={lang} />
         )}
 
         {/* Talent Pool Tab — 공개 이력서 인재풀 */}

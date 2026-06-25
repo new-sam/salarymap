@@ -1,12 +1,13 @@
 import { useState } from 'react'
 import { useAdmin } from '../../lib/adminSwr'
+import { cityLabel } from '../../lib/cities'
 import UserAssetCards from './UserAssetCards'
 
 // 유입 출처 배지. resume_source(cv/profile/jobs/app)가 있으면 그걸로,
 // 없으면 platform 기준으로 추정해서 채운다 — 옛 행도 어디서 등록된 건지
 // 추정해서 표시한다 ("웹 (이전)" 처럼 모호한 라벨을 쓰지 않는다).
 const SOURCE_MAP = {
-  cv:      { label: 'CV 페이지',  bg: '#FFEDD5', color: '#C2410C' },
+  cv:      { label: '축하금 이벤트',  bg: '#FFEDD5', color: '#C2410C' },
   profile: { label: '프로필',     bg: '#DBEAFE', color: '#1D4ED8' },
   jobs:    { label: '채용 지원',  bg: '#FCE7F3', color: '#BE185D' },
   app:     { label: '앱',         bg: '#EEF2FF', color: '#4F46E5' },
@@ -16,7 +17,7 @@ function SourceBadge({ source, platform }) {
   const key = resolveSource({ resume_source: source, resume_platform: platform })
   const s = SOURCE_MAP[key]
   if (!s) return <span style={{ color: '#ccc', fontSize: 11 }}>미상</span>
-  return <span style={{ padding: '2px 8px', borderRadius: 12, fontSize: 11, fontWeight: 600, background: s.bg, color: s.color }}>{s.label}</span>
+  return <span style={{ display: 'inline-block', padding: '2px 8px', borderRadius: 12, fontSize: 11, fontWeight: 600, background: s.bg, color: s.color, whiteSpace: 'nowrap' }}>{s.label}</span>
 }
 
 // resume_source 가 명시되어 있으면 그대로, 없으면 platform 으로 추정.
@@ -28,7 +29,7 @@ function resolveSource(r) {
   return null
 }
 
-export default function ResumesView({ token, t }) {
+export default function ResumesView({ token, t, lang = 'ko' }) {
   const { data: resumes, isLoading: loading, mutate } = useAdmin('/api/admin/resumes', token)
   const [search, setSearch] = useState('')
   const [filter, setFilter] = useState('all') // all, public, private
@@ -39,7 +40,7 @@ export default function ResumesView({ token, t }) {
 
   function downloadCsv() {
     if (!resumes || resumes.length === 0) return
-    const headers = ['Name', 'Email', 'Source', 'Platform', 'Position', 'YoE (months)', 'Skills', 'Location', 'University', 'Major', 'Work Type', 'Public', 'Resume URL', 'Updated']
+    const headers = ['Name', 'Email', 'Source', 'Platform', 'Position', 'YoE (months)', 'Location', 'University', 'Major', 'Work Type', 'Public', 'Resume URL', 'Updated']
     const rows = filtered.map(r => [
       r.full_name,
       r.email,
@@ -47,7 +48,6 @@ export default function ResumesView({ token, t }) {
       r.resume_platform || '',
       r.position || '',
       r.yoe_months ?? '',
-      Array.isArray(r.skills) ? r.skills.join(', ') : (r.skills || ''),
       r.location || '',
       r.university || '',
       r.major || '',
@@ -128,93 +128,69 @@ export default function ResumesView({ token, t }) {
 
   function formatYoe(months) {
     if (months === null || months === undefined) return '-'
-    if (months === 0) return 'New grad'
+    const ko = lang === 'ko'
+    if (months === 0) return ko ? '신입' : 'New grad'
     const y = Math.floor(months / 12)
     const m = months % 12
+    if (ko) {
+      if (y === 0) return `${m}개월`
+      if (m === 0) return `${y}년`
+      return `${y}년 ${m}개월`
+    }
     if (y === 0) return `${m}m`
     if (m === 0) return `${y}y`
     return `${y}y ${m}m`
   }
 
+  const pillStyle = (on) => ({
+    fontSize: 12.5, fontWeight: 600, cursor: 'pointer', borderRadius: 999, padding: '6px 12px',
+    border: '1px solid', borderColor: on ? '#ff4400' : '#E5E8EB',
+    background: on ? '#FFF1EC' : '#fff', color: on ? '#ff4400' : '#4E5968',
+    whiteSpace: 'nowrap', flexShrink: 0,
+  })
+
   return (
     <>
       <UserAssetCards token={token} keys={['resumeHolders', 'resumePublic']} />
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, flexWrap: 'wrap', gap: 12 }}>
-        <div style={{ display: 'flex', alignItems: 'baseline', gap: 12 }}>
-          <h3 style={{ fontSize: 16, fontWeight: 600, margin: 0 }}>{t.resumesTitle}</h3>
-          <span style={{ fontSize: 14, color: '#6B7280' }}>
-            {t.resumesTotal}: <strong style={{ color: '#14B8A6' }}>{resumes.length}</strong>{t.resumesUnit}
-            <span style={{ margin: '0 6px', color: '#ddd' }}>|</span>
-            {t.resumesPublic}: <strong style={{ color: '#10B981' }}>{publicCount}</strong>{t.resumesUnit}
+
+      {/* Row 1: 제목 · 카운트 | 검색 · 액션 */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12, marginBottom: 14 }}>
+        <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, flexWrap: 'wrap' }}>
+          <h3 style={{ fontSize: 16, fontWeight: 700, margin: 0, color: '#191F28' }}>{t.resumesTitle}</h3>
+          <span style={{ fontSize: 13, color: '#6B7280' }}>
+            {t.resumesTotal} <strong style={{ color: '#191F28' }}>{resumes.length}</strong>{t.resumesUnit}
+            <span style={{ margin: '0 6px', color: '#DDE1E6' }}>·</span>
+            {t.resumesPublic} <strong style={{ color: '#191F28' }}>{publicCount}</strong>{t.resumesUnit}
           </span>
-          <span style={{ fontSize: 11, color: '#aaa' }}>{t.resumesNote}</span>
         </div>
-        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-          <input
-            type="text"
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-            placeholder={t.resumesSearch}
-            style={{ padding: '6px 10px', border: '1px solid #d1d5db', borderRadius: 6, fontSize: 13, width: 200 }}
-          />
-          <div style={{ display: 'flex', gap: 0, background: '#f3f4f6', borderRadius: 8, padding: 2 }}>
-            {[
-              { key: 'all', label: t.resumesFilterAll },
-              { key: 'public', label: t.resumesFilterPublic },
-              { key: 'private', label: t.resumesFilterPrivate },
-            ].map(f => (
-              <button key={f.key} onClick={() => setFilter(f.key)}
-                style={{
-                  padding: '5px 12px', borderRadius: 6, fontSize: 12, fontWeight: 600,
-                  border: 'none', cursor: 'pointer', transition: 'all 0.15s',
-                  background: filter === f.key ? '#fff' : 'transparent',
-                  color: filter === f.key ? '#111' : '#999',
-                  boxShadow: filter === f.key ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
-                }}>
-                {f.label}
-              </button>
-            ))}
-          </div>
-          <div style={{ display: 'flex', gap: 0, background: '#f3f4f6', borderRadius: 8, padding: 2, flexWrap: 'wrap' }}>
-            {[
-              { key: 'all',     label: '전체' },
-              { key: 'cv',      label: 'CV 페이지' },
-              { key: 'profile', label: '프로필' },
-              { key: 'jobs',    label: '채용 지원' },
-              { key: 'app',     label: '앱' },
-              { key: 'unknown', label: '미상' },
-            ].map(f => {
-              const count = f.key === 'all' ? resumes.length
-                : f.key === 'unknown' ? resumes.filter(r => resolveSource(r) === null).length
-                : resumes.filter(r => resolveSource(r) === f.key).length
-              return (
-                <button key={f.key} onClick={() => setSourceFilter(f.key)}
-                  style={{
-                    padding: '5px 10px', borderRadius: 6, fontSize: 12, fontWeight: 600,
-                    border: 'none', cursor: 'pointer', transition: 'all 0.15s',
-                    background: sourceFilter === f.key ? '#fff' : 'transparent',
-                    color: sourceFilter === f.key ? '#111' : '#999',
-                    boxShadow: sourceFilter === f.key ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
-                  }}>
-                  {f.label} <span style={{ color: '#9CA3AF', fontWeight: 500 }}>{count}</span>
-                </button>
-              )
-            })}
-          </div>
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+          <input type="text" value={search} onChange={e => setSearch(e.target.value)} placeholder={t.resumesSearch}
+            style={{ padding: '8px 12px', border: '1px solid #E5E8EB', borderRadius: 8, fontSize: 13, width: 200, outline: 'none', boxSizing: 'border-box' }} />
           <button onClick={runAiParse} disabled={parsing || unfilled.length === 0}
-            style={{
-              padding: '8px 16px', border: 'none', borderRadius: 8, fontSize: 13,
-              background: parsing ? '#9CA3AF' : '#4F46E5', color: '#fff', cursor: parsing ? 'not-allowed' : 'pointer', fontWeight: 600,
-            }}>
-            {parsing ? `AI 분석 중... (${parseProgress.current}/${parseProgress.total})` : `AI 분석 돌리기 (${unfilled.length}명)`}
+            style={{ padding: '8px 13px', border: '1px solid #E5E8EB', borderRadius: 8, fontSize: 13, fontWeight: 600, background: '#fff', color: unfilled.length === 0 ? '#ADB5BD' : '#4E5968', cursor: parsing || unfilled.length === 0 ? 'default' : 'pointer', whiteSpace: 'nowrap' }}>
+            {parsing ? `AI 분석 중 ${parseProgress.current}/${parseProgress.total}` : `AI 분석 ${unfilled.length}`}
           </button>
           <button onClick={downloadCsv}
-            style={{
-              padding: '8px 16px', border: 'none', borderRadius: 8, fontSize: 13,
-              background: '#10B981', color: '#fff', cursor: 'pointer', fontWeight: 600,
-            }}>
-            {t.resumesDownloadCsv}
+            style={{ padding: '8px 13px', border: '1px solid #E5E8EB', borderRadius: 8, fontSize: 13, fontWeight: 600, background: '#fff', color: '#4E5968', cursor: 'pointer' }}>
+            CSV
           </button>
+        </div>
+      </div>
+
+      {/* Row 2: 필터 (공개여부 · 유입) — 별도 줄로 분리해 줄바꿈 방지 */}
+      <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'nowrap', overflowX: 'auto', marginBottom: 16, paddingBottom: 2 }}>
+        <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
+          {[{ key: 'all', label: t.resumesFilterAll }, { key: 'public', label: t.resumesFilterPublic }, { key: 'private', label: t.resumesFilterPrivate }].map(f => (
+            <button key={f.key} onClick={() => setFilter(f.key)} style={pillStyle(filter === f.key)}>{f.label}</button>
+          ))}
+        </div>
+        <span style={{ width: 1, height: 16, background: '#E5E8EB', flexShrink: 0 }} />
+        <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
+          {[{ key: 'all', label: '전체' }, { key: 'cv', label: '축하금 이벤트' }, { key: 'profile', label: '프로필' }, { key: 'jobs', label: '채용 지원' }, { key: 'app', label: '앱' }, { key: 'unknown', label: '미상' }].map(f => {
+            const count = f.key === 'all' ? resumes.length : f.key === 'unknown' ? resumes.filter(r => resolveSource(r) === null).length : resumes.filter(r => resolveSource(r) === f.key).length
+            const on = sourceFilter === f.key
+            return <button key={f.key} onClick={() => setSourceFilter(f.key)} style={pillStyle(on)}>{f.label} <span style={{ opacity: on ? 0.7 : 0.5 }}>{count}</span></button>
+          })}
         </div>
       </div>
 
@@ -263,11 +239,9 @@ export default function ResumesView({ token, t }) {
               <tr style={{ borderBottom: '2px solid #e5e7eb', background: '#fafafa' }}>
                 <th style={{ padding: '10px 12px', textAlign: 'left', fontWeight: 600, color: '#374151' }}>#</th>
                 <th style={{ padding: '10px 12px', textAlign: 'left', fontWeight: 600, color: '#374151' }}>{t.resumesName}</th>
-                <th style={{ padding: '10px 12px', textAlign: 'left', fontWeight: 600, color: '#374151' }}>{t.resumesEmail}</th>
                 <th style={{ padding: '10px 12px', textAlign: 'left', fontWeight: 600, color: '#374151' }}>유입</th>
                 <th style={{ padding: '10px 12px', textAlign: 'left', fontWeight: 600, color: '#374151' }}>{t.resumesPosition}</th>
                 <th style={{ padding: '10px 12px', textAlign: 'left', fontWeight: 600, color: '#374151' }}>{t.resumesYoe}</th>
-                <th style={{ padding: '10px 12px', textAlign: 'left', fontWeight: 600, color: '#374151' }}>Skills</th>
                 <th style={{ padding: '10px 12px', textAlign: 'left', fontWeight: 600, color: '#374151' }}>{t.resumesLocation}</th>
                 <th style={{ padding: '10px 12px', textAlign: 'left', fontWeight: 600, color: '#374151' }}>{t.resumesUniversity}</th>
                 <th style={{ padding: '10px 12px', textAlign: 'center', fontWeight: 600, color: '#374151' }}>{t.resumesPublicLabel}</th>
@@ -290,12 +264,10 @@ export default function ResumesView({ token, t }) {
                       )}
                       <div>
                         <div>{r.full_name || '-'}</div>
-                        {r.headline && <div style={{ fontSize: 11, color: '#999', marginTop: 1 }}>{r.headline}</div>}
                       </div>
                     </div>
                   </td>
-                  <td style={{ padding: '8px 12px', color: '#666' }}>{r.email || '-'}</td>
-                  <td style={{ padding: '8px 12px' }}><SourceBadge source={r.resume_source} platform={r.resume_platform} /></td>
+                  <td style={{ padding: '8px 12px', whiteSpace: 'nowrap' }}><SourceBadge source={r.resume_source} platform={r.resume_platform} /></td>
                   <td style={{ padding: '8px 12px' }}>
                     {r.position ? (
                       <span style={{ padding: '2px 8px', borderRadius: 12, fontSize: 11, fontWeight: 600, background: '#EEF2FF', color: '#4F46E5' }}>
@@ -304,19 +276,7 @@ export default function ResumesView({ token, t }) {
                     ) : '-'}
                   </td>
                   <td style={{ padding: '8px 12px', color: '#666' }}>{formatYoe(r.yoe_months)}</td>
-                  <td style={{ padding: '8px 12px', maxWidth: 200 }}>
-                    {r.skills && (Array.isArray(r.skills) ? r.skills : r.skills.split(', ')).filter(Boolean).length > 0 ? (
-                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 3 }}>
-                        {(Array.isArray(r.skills) ? r.skills : r.skills.split(', ')).filter(Boolean).slice(0, 5).map((s, i) => (
-                          <span key={i} style={{ padding: '1px 6px', borderRadius: 8, fontSize: 10, background: '#F3F4F6', color: '#374151' }}>{s}</span>
-                        ))}
-                        {(Array.isArray(r.skills) ? r.skills : r.skills.split(', ')).filter(Boolean).length > 5 && (
-                          <span style={{ fontSize: 10, color: '#999' }}>+{(Array.isArray(r.skills) ? r.skills : r.skills.split(', ')).filter(Boolean).length - 5}</span>
-                        )}
-                      </div>
-                    ) : '-'}
-                  </td>
-                  <td style={{ padding: '8px 12px', color: '#666' }}>{r.location || '-'}</td>
+                  <td style={{ padding: '8px 12px', color: '#666' }}>{cityLabel(r.location, lang) || '-'}</td>
                   <td style={{ padding: '8px 12px', color: '#666', fontSize: 12 }}>
                     {r.university || '-'}
                     {r.major && <span style={{ color: '#999' }}> / {r.major}</span>}
@@ -337,7 +297,7 @@ export default function ResumesView({ token, t }) {
                     </a>
                   </td>
                   <td style={{ padding: '8px 12px', color: '#666', fontSize: 12 }}>
-                    {r.updated_at ? new Date(r.updated_at).toLocaleString('ko-KR') : '-'}
+                    {r.updated_at ? new Date(r.updated_at).toLocaleDateString('ko-KR') : '-'}
                   </td>
                 </tr>
               ))}
