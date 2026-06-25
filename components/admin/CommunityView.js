@@ -21,7 +21,7 @@ const L = {
     dailyTitle: '일별 상세',
     thDate: '날짜', thPosts: '글', thComments: '댓글', thLikes: '좋아요',
     thPostViews: '글조회', thWriteClicks: '글쓰기', thListViews: '목록방문', thNavClicks: '탭클릭',
-    thTitle: '제목', thCat: '카테고리', thLike: '♥', thComment: '💬', thView: '👁',
+    thTitle: '제목', thCat: '카테고리', thLike: '좋아요', thComment: '댓글', thView: '조회',
     anon: '익명',
     cats: { ask_company: '회사 질문', daily: '일상', job_change: '이직' },
     noTracking: '* 조회/클릭 이벤트는 트래킹 시작 이후부터 집계됩니다.',
@@ -44,7 +44,7 @@ const L = {
     dailyTitle: 'Daily Detail',
     thDate: 'Date', thPosts: 'Posts', thComments: 'Comments', thLikes: 'Likes',
     thPostViews: 'Views', thWriteClicks: 'Write', thListViews: 'List Views', thNavClicks: 'Tab Clicks',
-    thTitle: 'Title', thCat: 'Category', thLike: '♥', thComment: '💬', thView: '👁',
+    thTitle: 'Title', thCat: 'Category', thLike: 'Likes', thComment: 'Comments', thView: 'Views',
     anon: 'Anon',
     cats: { ask_company: 'Ask Company', daily: 'Daily', job_change: 'Job Change' },
     noTracking: '* View/click events are counted from when tracking started.',
@@ -53,16 +53,6 @@ const L = {
 
 const CAT_COLORS = { ask_company: '#3b82f6', daily: '#10b981', job_change: '#8b5cf6' }
 
-const CARD = [
-  { key: 'totalPosts', color: '#ff6000' },
-  { key: 'totalComments', color: '#3b82f6' },
-  { key: 'totalLikes', color: '#ef4444' },
-  { key: 'uniqueAuthors', color: '#8b5cf6' },
-  { key: 'navClicks', color: '#ec4899' },
-  { key: 'postViews', color: '#06b6d4' },
-  { key: 'writeClicks', color: '#f59e0b' },
-  { key: 'follows', color: '#14b8a6' },
-]
 const CARD_LABEL = {
   totalPosts: 'posts', totalComments: 'comments', totalLikes: 'likes',
   uniqueAuthors: 'authors', navClicks: 'navClicks', postViews: 'postViews', writeClicks: 'writeClicks',
@@ -93,17 +83,33 @@ export default function CommunityView({ token, lang = 'ko', dateRange }) {
   return (
     <>
       <UserAssetCards token={token} keys={['userFollows', 'subscriptions']} />
-      {/* Summary cards */}
-      <div className="adm-metric-cards" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 12, marginBottom: 12 }}>
-        {CARD.map(c => (
-          <div key={c.key} style={{ background: '#fff', border: '2px solid #e5e7eb', borderRadius: 12, padding: '16px 20px' }}>
-            <div style={{ fontSize: 12, color: '#6B7280', marginBottom: 4 }}>{t[CARD_LABEL[c.key]]}</div>
-            <div className="adm-metric-value" style={{ fontSize: 28, fontWeight: 700, color: c.color }}>{summary[c.key]}</div>
-          </div>
-        ))}
+      {/* 핵심 활동 */}
+      <div style={{ marginBottom: 18 }}>
+        <div style={{ fontSize: 11.5, fontWeight: 700, color: '#8B95A1', letterSpacing: '0.02em', marginBottom: 10 }}>{lang === 'ko' ? '핵심 활동' : 'Core activity'}</div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 10 }}>
+          {['totalPosts', 'totalComments', 'totalLikes', 'uniqueAuthors'].map(k => (
+            <div key={k} style={{ background: '#fff', border: '1px solid #EEF0F2', borderLeft: '3px solid #ff4400', borderRadius: 12, padding: '15px 17px' }}>
+              <div style={{ fontSize: 12.5, color: '#6B7280', marginBottom: 6, fontWeight: 600 }}>{t[CARD_LABEL[k]]}</div>
+              <div style={{ fontSize: 28, fontWeight: 800, color: '#191F28', letterSpacing: '-0.02em', fontVariantNumeric: 'tabular-nums', lineHeight: 1.05 }}>{summary[k]}</div>
+            </div>
+          ))}
+        </div>
       </div>
-      <div style={{ fontSize: 11, color: '#aaa', marginBottom: 24 }}>
-        {t.note} · {t.avgComments}: <strong>{summary.avgCommentsPerPost}</strong>
+
+      {/* 참여 · 유입 */}
+      <div style={{ marginBottom: 10 }}>
+        <div style={{ fontSize: 11.5, fontWeight: 700, color: '#8B95A1', letterSpacing: '0.02em', marginBottom: 10 }}>{lang === 'ko' ? '참여 · 유입' : 'Engagement'}</div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(116px, 1fr))', gap: 8 }}>
+          {['postViews', 'writeClicks', 'navClicks', 'follows'].map(k => (
+            <div key={k} style={{ background: '#F8FAFB', border: '1px solid #EEF1F3', borderRadius: 10, padding: '11px 13px' }}>
+              <div style={{ fontSize: 11.5, color: '#8B95A1', marginBottom: 4, fontWeight: 600 }}>{t[CARD_LABEL[k]]}</div>
+              <div style={{ fontSize: 19, fontWeight: 700, color: '#4E5968', fontVariantNumeric: 'tabular-nums' }}>{summary[k]}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+      <div style={{ fontSize: 11, color: '#ADB5BD', marginBottom: 24 }}>
+        {t.note} · {t.avgComments}: <strong style={{ color: '#6B7280' }}>{summary.avgCommentsPerPost}</strong>
         {!summary.hasEventTracking && <span style={{ marginLeft: 8 }}>{t.noTracking}</span>}
       </div>
 
@@ -114,9 +120,9 @@ export default function CommunityView({ token, lang = 'ko', dateRange }) {
           <div style={{ display: 'flex', alignItems: 'stretch', gap: 6, flexWrap: 'wrap' }}>
             {funnelSteps.map((s, i) => (
               <div key={s.label} style={{ display: 'flex', alignItems: 'center', gap: 6, flex: '1 1 0', minWidth: 110 }}>
-                <div style={{ flex: 1, background: '#fafafa', border: '1px solid #eee', borderRadius: 10, padding: '12px 10px', textAlign: 'center' }}>
+                <div style={{ flex: 1, alignSelf: 'stretch', display: 'flex', flexDirection: 'column', justifyContent: 'center', background: '#fafafa', border: '1px solid #eee', borderRadius: 10, padding: '12px 10px', textAlign: 'center' }}>
                   <div style={{ fontSize: 11, color: '#6B7280', marginBottom: 4 }}>{s.label}</div>
-                  <div style={{ fontSize: 24, fontWeight: 700, color: s.color }}>{s.value}</div>
+                  <div style={{ fontSize: 24, fontWeight: 700, color: i === funnelSteps.length - 1 ? '#ff4400' : '#191F28' }}>{s.value}</div>
                   {s.conv != null && (
                     <div style={{ fontSize: 11, color: '#9CA3AF', marginTop: 3 }}>{fmtPct(s.conv)} <span style={{ color: '#cbcbcb' }}>{s.convLabel}</span></div>
                   )}
@@ -158,9 +164,9 @@ export default function CommunityView({ token, lang = 'ko', dateRange }) {
                 <span style={{ color: '#999', width: 18, textAlign: 'right', fontSize: 11, flexShrink: 0 }}>{i + 1}</span>
                 <span style={{ flexShrink: 0, fontSize: 10, fontWeight: 600, color: CAT_COLORS[p.category] || '#888' }}>{catName(p.category)}</span>
                 <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: 0 }}>{p.title}</span>
-                <span style={{ flexShrink: 0, color: '#ef4444', fontSize: 12 }}>{t.thLike} {p.like_count}</span>
-                <span style={{ flexShrink: 0, color: '#3b82f6', fontSize: 12 }}>{t.thComment} {p.comment_count}</span>
-                <span style={{ flexShrink: 0, color: '#999', fontSize: 12 }}>{t.thView} {p.view_count}</span>
+                <span style={{ flexShrink: 0, color: '#868E96', fontSize: 11.5, fontVariantNumeric: 'tabular-nums' }}>{t.thLike} {p.like_count}</span>
+                <span style={{ flexShrink: 0, color: '#868E96', fontSize: 11.5, fontVariantNumeric: 'tabular-nums' }}>{t.thComment} {p.comment_count}</span>
+                <span style={{ flexShrink: 0, color: '#868E96', fontSize: 11.5, fontVariantNumeric: 'tabular-nums' }}>{t.thView} {p.view_count}</span>
               </a>
             ))}
           </div>

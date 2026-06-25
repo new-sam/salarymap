@@ -6,6 +6,7 @@ import { useAdmin } from '../../lib/adminSwr'
 import { useT } from '../../lib/i18n'
 import { useRouter } from 'next/router'
 import AdminLayout from '../../components/admin/AdminLayout'
+import DateRangePicker from '../../components/admin/DateRangePicker'
 import Icon from '../../components/Icon'
 import FunnelView from '../../components/admin/FunnelView'
 import ApplicationsView from '../../components/admin/ApplicationsView'
@@ -59,6 +60,8 @@ export default function AdminDashboard() {
   const lang = globalLang === 'ko' ? 'ko' : 'en'
   const router = useRouter()
   const tab = router.query.tab || 'trend'
+  // 날짜 범위를 실제로 쓰는 탭에서만 날짜 피커 노출 (이력서/인재풀/연봉인증은 누적 목록이라 무관)
+  const showDatePicker = ['trend', 'funnel', 'applications', 'community', 'appMetrics'].includes(tab)
   const [funnelKeys, setFunnelKeys] = useState([])
   const [chartMode, setChartMode] = useState('1d')
   const [tableView, setTableView] = useState('daily')
@@ -70,7 +73,6 @@ export default function AdminDashboard() {
     const d = new Date(Date.now() - 86400000)
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
   })()
-  const [dateInput, setDateInput] = useState({ from: '2026-04-20', to: yesterday })
   const [dateRange, setDateRange] = useState({ from: '2026-04-20', to: yesterday })
 
   // SWR: 캐시로 탭 전환/페이지 재방문 시 즉시 표시 + 백그라운드 갱신. 키에 날짜/언어 포함.
@@ -121,20 +123,6 @@ export default function AdminDashboard() {
     })
   }, [])
 
-  function applyRange(from, to) {
-    setDateInput({ from, to })
-    setDateRange({ from, to })
-  }
-
-  function applyPreset(days) {
-    const to = localDate(Date.now() - 86400000)
-    const from = localDate(Date.now() - days * 86400000)
-    applyRange(from, to)
-  }
-
-  function handleSearch() {
-    setDateRange({ ...dateInput })
-  }
 
   const [editingExp, setEditingExp] = useState(null)
 
@@ -371,29 +359,15 @@ export default function AdminDashboard() {
       `}</style>
       <AdminLayout>
       <div className="adm-dash">
-        {/* Header */}
-        <div className="adm-header">
-          <div className="adm-header-controls">
-            {[{ label: '7D', days: 7 }, { label: '14D', days: 14 }, { label: '30D', days: 30 }, { label: 'All', days: 0 }].map(p => (
-              <button key={p.label} onClick={() => p.days ? applyPreset(p.days) : applyRange('2026-04-20', yesterday)}
-                style={{ padding: '5px 10px', border: '1px solid #d1d5db', borderRadius: 6, fontSize: 12, background: '#fff', cursor: 'pointer', fontWeight: 600 }}>
-                {p.label}
-              </button>
-            ))}
-            <span style={{ color: '#ddd', margin: '0 2px' }}>|</span>
-            <input type="date" value={dateInput.from}
-              onChange={e => setDateInput(r => ({ ...r, from: e.target.value }))}
-              style={inputStyle} />
-            <span style={{ color: '#666' }}>~</span>
-            <input type="date" value={dateInput.to}
-              onChange={e => setDateInput(r => ({ ...r, to: e.target.value }))}
-              style={inputStyle} />
-            <button onClick={handleSearch} disabled={loading}
-              style={{ padding: '6px 14px', border: 'none', borderRadius: 6, fontSize: 13, background: '#111', color: '#fff', cursor: 'pointer', fontWeight: 600 }}>
-              {loading ? '...' : lang === 'ko' ? '조회' : 'Search'}
-            </button>
+        {/* Header — 날짜 피커는 날짜 쓰는 탭에서만 */}
+        {showDatePicker && (
+          <div className="adm-header">
+            <div className="adm-header-controls">
+              <DateRangePicker value={dateRange} onChange={(from, to) => setDateRange({ from, to })} />
+              {loading && <span style={{ fontSize: 12, color: '#9AA0A6' }}>{lang === 'ko' ? '불러오는 중…' : 'Loading…'}</span>}
+            </div>
           </div>
-        </div>
+        )}
 
         {/* Today Realtime — 추이 탭에서만 표시 */}
         {realtime && tab === 'trend' && (
