@@ -180,21 +180,21 @@ export default function CommunityView({ token, lang = 'ko', dateRange }) {
           <div style={{ overflowX: 'auto' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
               <thead>
-                <tr style={{ borderBottom: '2px solid #e5e7eb' }}>
+                <tr style={{ borderBottom: '1px solid #EEF0F2', background: '#FAFBFC' }}>
                   {[t.thCompany, t.thFollows, t.thUnfollows, t.thNet].map((h, i) => (
-                    <th key={h} style={{ padding: '8px 12px', textAlign: i === 0 ? 'left' : 'right', fontWeight: 600, color: '#374151' }}>{h}</th>
+                    <th key={h} style={{ padding: '9px 12px', textAlign: i === 0 ? 'left' : 'right', fontWeight: 700, color: '#8B95A1', fontSize: 11.5 }}>{h}</th>
                   ))}
                 </tr>
               </thead>
               <tbody>
                 {topFollowedCompanies.map((c, i) => (
-                  <tr key={c.company} style={{ borderBottom: '1px solid #f3f4f6', background: i % 2 === 0 ? '#fff' : '#fafafa' }}>
-                    <td style={{ padding: '6px 12px' }}>
-                      <a href={`/companies/${encodeURIComponent(c.company)}`} target="_blank" rel="noopener noreferrer" style={{ color: '#111', textDecoration: 'none' }}>{c.company}</a>
+                  <tr key={c.company} style={{ borderBottom: '1px solid #F7F8FA' }}>
+                    <td style={{ padding: '7px 12px' }}>
+                      <a href={`/companies/${encodeURIComponent(c.company)}`} target="_blank" rel="noopener noreferrer" style={{ color: '#191F28', textDecoration: 'none' }}>{c.company}</a>
                     </td>
-                    <td style={{ padding: '6px 12px', textAlign: 'right', color: '#14b8a6', fontWeight: 600 }}>{c.follows}</td>
-                    <td style={{ padding: '6px 12px', textAlign: 'right', color: '#9CA3AF' }}>{c.unfollows || '-'}</td>
-                    <td style={{ padding: '6px 12px', textAlign: 'right', fontWeight: 600, color: c.net >= 0 ? '#111' : '#ef4444' }}>{c.net > 0 ? `+${c.net}` : c.net}</td>
+                    <td style={{ padding: '7px 12px', textAlign: 'right', color: '#191F28', fontWeight: 600 }}>{c.follows}</td>
+                    <td style={{ padding: '7px 12px', textAlign: 'right', color: '#ADB5BD' }}>{c.unfollows || '-'}</td>
+                    <td style={{ padding: '7px 12px', textAlign: 'right', fontWeight: 600, color: c.net >= 0 ? '#191F28' : '#DC2626' }}>{c.net > 0 ? `+${c.net}` : c.net}</td>
                   </tr>
                 ))}
               </tbody>
@@ -203,43 +203,33 @@ export default function CommunityView({ token, lang = 'ko', dateRange }) {
         </div>
       )}
 
-      {/* Daily detail */}
+      {/* Daily detail — 최근 날짜 먼저(역순), 합계 상단, 색 중립 */}
       <div style={sectionStyle}>
         <h3 style={sectionTitle}>{t.dailyTitle}</h3>
-        <div style={{ overflowX: 'auto' }}>
+        <div style={{ overflowX: 'auto', border: '1px solid #F2F4F6', borderRadius: 10 }}>
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
             <thead>
-              <tr style={{ borderBottom: '2px solid #e5e7eb' }}>
+              <tr>
                 {[t.thDate, t.thPosts, t.thComments, t.thLikes, t.thNavClicks, t.thPostViews, t.thListViews, t.thWriteClicks, t.thFollows].map((h, i) => (
-                  <th key={h} style={{ padding: '8px 12px', textAlign: i === 0 ? 'left' : 'right', fontWeight: 600, color: '#374151' }}>{h}</th>
+                  <th key={h} style={{ background: '#FAFBFC', padding: '9px 12px', textAlign: i === 0 ? 'left' : 'right', fontWeight: 700, color: '#8B95A1', fontSize: 11.5, whiteSpace: 'nowrap', borderBottom: '1px solid #EEF0F2' }}>{h}</th>
                 ))}
               </tr>
             </thead>
             <tbody>
-              {daily.map((d, i) => (
-                <tr key={d.date} style={{ borderBottom: '1px solid #f3f4f6', background: i % 2 === 0 ? '#fff' : '#fafafa' }}>
-                  <td style={{ padding: '6px 12px' }}>{d.date}</td>
-                  <td style={{ padding: '6px 12px', textAlign: 'right', color: '#ff6000', fontWeight: 600 }}>{d.posts || '-'}</td>
-                  <td style={{ padding: '6px 12px', textAlign: 'right', color: '#3b82f6' }}>{d.comments || '-'}</td>
-                  <td style={{ padding: '6px 12px', textAlign: 'right', color: '#ef4444' }}>{d.likes || '-'}</td>
-                  <td style={{ padding: '6px 12px', textAlign: 'right', color: '#ec4899' }}>{d.navClicks || '-'}</td>
-                  <td style={{ padding: '6px 12px', textAlign: 'right', color: '#06b6d4' }}>{d.postViews || '-'}</td>
-                  <td style={{ padding: '6px 12px', textAlign: 'right', color: '#9CA3AF' }}>{d.listViews || '-'}</td>
-                  <td style={{ padding: '6px 12px', textAlign: 'right', color: '#f59e0b' }}>{d.writeClicks || '-'}</td>
-                  <td style={{ padding: '6px 12px', textAlign: 'right', color: '#14b8a6' }}>{d.follows || '-'}</td>
+              <tr style={{ fontWeight: 700, borderBottom: '1px solid #EEF0F2', background: '#FCFCFD' }}>
+                <td style={{ padding: '9px 12px' }}>{lang === 'ko' ? '합계' : 'Total'}</td>
+                {['totalPosts', 'totalComments', 'totalLikes', 'navClicks', 'postViews', 'listViews', 'writeClicks', 'follows'].map(k => (
+                  <td key={k} style={{ padding: '9px 12px', textAlign: 'right', color: '#191F28', fontVariantNumeric: 'tabular-nums' }}>{summary[k]}</td>
+                ))}
+              </tr>
+              {[...daily].sort((a, b) => (a.date < b.date ? 1 : -1)).map((d) => (
+                <tr key={d.date} style={{ borderBottom: '1px solid #F7F8FA' }}>
+                  <td style={{ padding: '7px 12px', color: '#4E5968', whiteSpace: 'nowrap' }}>{d.date}</td>
+                  {['posts', 'comments', 'likes', 'navClicks', 'postViews', 'listViews', 'writeClicks', 'follows'].map(k => (
+                    <td key={k} style={{ padding: '7px 12px', textAlign: 'right', color: d[k] ? '#191F28' : '#C7CDD4', fontVariantNumeric: 'tabular-nums' }}>{d[k] || '-'}</td>
+                  ))}
                 </tr>
               ))}
-              <tr style={{ borderTop: '2px solid #e5e7eb', fontWeight: 700 }}>
-                <td style={{ padding: '8px 12px' }}>{lang === 'ko' ? '합계' : 'Total'}</td>
-                <td style={{ padding: '8px 12px', textAlign: 'right', color: '#ff6000' }}>{summary.totalPosts}</td>
-                <td style={{ padding: '8px 12px', textAlign: 'right', color: '#3b82f6' }}>{summary.totalComments}</td>
-                <td style={{ padding: '8px 12px', textAlign: 'right', color: '#ef4444' }}>{summary.totalLikes}</td>
-                <td style={{ padding: '8px 12px', textAlign: 'right', color: '#ec4899' }}>{summary.navClicks}</td>
-                <td style={{ padding: '8px 12px', textAlign: 'right', color: '#06b6d4' }}>{summary.postViews}</td>
-                <td style={{ padding: '8px 12px', textAlign: 'right', color: '#9CA3AF' }}>{summary.listViews}</td>
-                <td style={{ padding: '8px 12px', textAlign: 'right', color: '#f59e0b' }}>{summary.writeClicks}</td>
-                <td style={{ padding: '8px 12px', textAlign: 'right', color: '#14b8a6' }}>{summary.follows}</td>
-              </tr>
             </tbody>
           </table>
         </div>

@@ -137,6 +137,9 @@ export default function AdminLayout({ children }) {
           ))}
         </nav>
         <div style={{ marginTop: 'auto', paddingTop: 16 }}>
+          <a href="/" style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 10px', marginBottom: 8, borderRadius: 8, fontSize: 13, fontWeight: 500, color: '#86868b', textDecoration: 'none', border: '1px solid #E8E8EA' }}>
+            <span style={{ fontSize: 15, lineHeight: 1 }}>←</span>{lang === 'ko' ? '사이트로 돌아가기' : 'Back to site'}
+          </a>
           <div style={{ display: 'flex', gap: 2, background: '#EFEFF2', borderRadius: 9, padding: 3 }}>
             {['ko', 'en'].map((l) => (
               <button key={l} onClick={() => setLang(l)} style={{

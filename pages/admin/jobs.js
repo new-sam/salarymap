@@ -189,7 +189,7 @@ export default function AdminJobs() {
       <div style={{ marginBottom: 16 }}><Icon name="lock" size={48} color="#1a1a1a" /></div>
       <div style={{ fontSize: 18, fontWeight: 700, marginBottom: 8 }}>Admin access required</div>
       <div style={{ color: '#888', marginBottom: 24 }}>Sign in with an admin account.</div>
-      <button style={S.btnP} onClick={() => { window.location.href = '/api/auth/google?return=' + encodeURIComponent('/admin/jobs'); }}>
+      <button style={S.btnP} onClick={() => { window.location.href = '/api/auth/google?return=' + encodeURIComponent('/admin/dashboard'); }}>
         Sign in with Google
       </button>
     </div>

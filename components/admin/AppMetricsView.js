@@ -129,11 +129,11 @@ const L = {
   },
 }
 
-function Card({ label, value, sub, big }) {
+function Card({ label, value, sub, big, color = '#191F28' }) {
   return (
     <div style={{ background: '#fff', border: '1px solid #EEF0F2', borderRadius: 12, padding: '15px 18px' }}>
       <div style={{ fontSize: 12, color: '#8B95A1', marginBottom: 6, fontWeight: 600 }}>{label}</div>
-      <div style={{ fontSize: big ? 30 : 23, fontWeight: 800, color: '#191F28', letterSpacing: '-0.02em', fontVariantNumeric: 'tabular-nums', lineHeight: 1.1 }}>{value}</div>
+      <div style={{ fontSize: big ? 30 : 23, fontWeight: 800, color, letterSpacing: '-0.02em', fontVariantNumeric: 'tabular-nums', lineHeight: 1.1 }}>{value}</div>
       {sub != null && <div style={{ fontSize: 11.5, color: '#ADB5BD', marginTop: 3 }}>{sub}</div>}
     </div>
   )
