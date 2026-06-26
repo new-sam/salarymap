@@ -383,7 +383,6 @@ export default function AppMetricsView({ token, dateRange, lang }) {
     growth: { weeks: [], latest: null },
     depth: { powerCurve: [], featureAdoption: [], featureCountDist: [], rangeClients: 0, featureDenom: 0, multiDayRate: null },
   }
-  const cppNum = parseFloat(topline.commentsPerPost)
   const SUB_TABS = ['overview', 'retention', 'users', 'community', 'conversion', 'push', 'segments', 'reports']
 
   // 시계열: 일별 이벤트 카운트(daily) + 일별 활성유저(dauSeries)를 날짜축으로 0-채움 병합.
@@ -448,27 +447,26 @@ export default function AppMetricsView({ token, dateRange, lang }) {
       {/* ── 요약(Overview) — 앰플리튜드식 스코어카드 + 차트 그리드 ── */}
       {sub === 'overview' && (() => {
         const g = analytics.growth.latest
-        const qrNum = g ? parseFloat(g.quickRatio) : NaN
         const cards = [
-          { label: t.ovD7, value: `${topline.d7.rate}%`, color: rateColor(topline.d7.rate) },
-          { label: t.ovStick, value: analytics.stickiness.dauMau != null ? `${analytics.stickiness.dauMau}%` : '-', color: '#2563EB' },
-          { label: t.ovWau, value: retention.wau, color: '#2563EB' },
-          { label: t.ovMau, value: retention.mau, color: '#10B981' },
-          { label: t.ovNew, value: analytics.newUsersInRange, color: '#0EA5E9' },
-          { label: t.ovAct, value: analytics.activation.convertRate != null ? `${analytics.activation.convertRate}%` : '-', color: rateColor(analytics.activation.convertRate) },
-          { label: t.ovQr, value: g && g.quickRatio != null ? g.quickRatio : '-', color: isNaN(qrNum) ? '#9CA3AF' : qrNum >= 1 ? '#10B981' : '#EF4444' },
-          { label: t.ovCpp, value: topline.commentsPerPost, color: cppNum < 1 ? '#EF4444' : '#10B981' },
-          { label: t.ovSalary, value: conversion.salary.count, color: '#059669' },
-          { label: t.ovApply, value: conversion.jobs.submit, color: '#2563EB' },
-          { label: t.ovResume, value: conversion.resume.appSubmitted, color: '#2563EB', sub: t.ovCumSub },
-          { label: t.ovResumePublic, value: conversion.resume.appPublic, color: '#EA580C', sub: t.ovCumSub },
-          { label: t.ovPush, value: push.clicks, color: '#8B5CF6' },
-          { label: t.ovPower, value: analytics.depth.multiDayRate != null ? `${analytics.depth.multiDayRate}%` : '-', color: '#7C3AED' },
+          { label: t.ovD7, value: `${topline.d7.rate}%` },
+          { label: t.ovStick, value: analytics.stickiness.dauMau != null ? `${analytics.stickiness.dauMau}%` : '-' },
+          { label: t.ovWau, value: retention.wau },
+          { label: t.ovMau, value: retention.mau },
+          { label: t.ovNew, value: analytics.newUsersInRange },
+          { label: t.ovAct, value: analytics.activation.convertRate != null ? `${analytics.activation.convertRate}%` : '-' },
+          { label: t.ovQr, value: g && g.quickRatio != null ? g.quickRatio : '-' },
+          { label: t.ovCpp, value: topline.commentsPerPost },
+          { label: t.ovSalary, value: conversion.salary.count },
+          { label: t.ovApply, value: conversion.jobs.submit },
+          { label: t.ovResume, value: conversion.resume.appSubmitted, sub: t.ovCumSub },
+          { label: t.ovResumePublic, value: conversion.resume.appPublic, sub: t.ovCumSub },
+          { label: t.ovPush, value: push.clicks },
+          { label: t.ovPower, value: analytics.depth.multiDayRate != null ? `${analytics.depth.multiDayRate}%` : '-' },
         ]
         return (
           <>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 12, marginBottom: 20 }}>
-              {cards.map(c => <Card key={c.label} label={c.label} value={c.value} sub={c.sub} color={c.color} />)}
+              {cards.map(c => <Card key={c.label} label={c.label} value={c.value} sub={c.sub} />)}
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(440px, 1fr))', gap: 16 }}>
               <TsCard title={t.dauTitle} data={ts} metrics={series.dau} lang={lang} chartKey="dau" onOpen={goChart} />
@@ -519,9 +517,9 @@ export default function AppMetricsView({ token, dateRange, lang }) {
             <Card label={t.dau} value={retention.dau} />
             <Card label={t.wau} value={retention.wau} />
             <Card label={t.mau} value={retention.mau} />
-            <Card label="D1" value={`${retention.d1.rate}%`} sub={`${retention.d1.retained}/${retention.d1.eligible}`} color={rateColor(retention.d1.rate)} />
-            <Card label="D7" value={`${retention.d7.rate}%`} sub={`${retention.d7.retained}/${retention.d7.eligible}`} color={rateColor(retention.d7.rate)} />
-            <Card label="D30" value={`${retention.d30.rate}%`} sub={`${retention.d30.retained}/${retention.d30.eligible}`} color={rateColor(retention.d30.rate)} />
+            <Card label="D1" value={`${retention.d1.rate}%`} sub={`${retention.d1.retained}/${retention.d1.eligible}`} />
+            <Card label="D7" value={`${retention.d7.rate}%`} sub={`${retention.d7.retained}/${retention.d7.eligible}`} />
+            <Card label="D30" value={`${retention.d30.rate}%`} sub={`${retention.d30.retained}/${retention.d30.eligible}`} />
           </div>
 
           {retention.dauSeries.length > 0 && (
@@ -561,9 +559,9 @@ export default function AppMetricsView({ token, dateRange, lang }) {
           <div style={sectionStyle}>
             <h3 style={sectionTitle}>{t.stickTitle}</h3>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 12 }}>
-              <Card label={t.dauMau} value={analytics.stickiness.dauMau != null ? `${analytics.stickiness.dauMau}%` : '-'} color="#2563EB" />
-              <Card label={t.wauMau} value={analytics.stickiness.wauMau != null ? `${analytics.stickiness.wauMau}%` : '-'} color="#8B5CF6" />
-              <Card label={t.avgDau} value={analytics.stickiness.avgDau} color="#374151" />
+              <Card label={t.dauMau} value={analytics.stickiness.dauMau != null ? `${analytics.stickiness.dauMau}%` : '-'} />
+              <Card label={t.wauMau} value={analytics.stickiness.wauMau != null ? `${analytics.stickiness.wauMau}%` : '-'} />
+              <Card label={t.avgDau} value={analytics.stickiness.avgDau} />
             </div>
             <div style={{ fontSize: 11, color: '#9CA3AF', marginTop: 12 }}>{t.stickNote}</div>
           </div>
@@ -654,26 +652,26 @@ export default function AppMetricsView({ token, dateRange, lang }) {
               return <FunnelChart steps={steps} color="#4F46E5" />
             })()}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 12, marginTop: 16 }}>
-              <Card label={t.ctr} value={community.ctr != null ? `${community.ctr}%` : '-'} color="#4F46E5" />
-              <Card label={t.engageRate} value={community.engageRate != null ? `${community.engageRate}%` : '-'} color="#8B5CF6" />
-              <Card label={t.writeConv} value={community.writeConv != null ? `${community.writeConv}%` : '-'} color="#10B981" />
+              <Card label={t.ctr} value={community.ctr != null ? `${community.ctr}%` : '-'} />
+              <Card label={t.engageRate} value={community.engageRate != null ? `${community.engageRate}%` : '-'} />
+              <Card label={t.writeConv} value={community.writeConv != null ? `${community.writeConv}%` : '-'} />
             </div>
           </div>
 
           <div style={sectionStyle}>
             <h3 style={sectionTitle}>{t.supplyTitle}</h3>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: 12 }}>
-              <Card label={t.posts} value={community.posts} color="#2563EB" />
-              <Card label={t.comments} value={community.comments} color="#2563EB" />
-              <Card label={t.cpp} value={community.commentsPerPost} color={cppNum < 1 ? '#EF4444' : '#10B981'} />
-              <Card label={t.anonPost} value={community.anonPostRate != null ? `${community.anonPostRate}%` : '-'} color="#6B7280" />
-              <Card label={t.anonComment} value={community.anonCommentRate != null ? `${community.anonCommentRate}%` : '-'} color="#6B7280" />
+              <Card label={t.posts} value={community.posts} />
+              <Card label={t.comments} value={community.comments} />
+              <Card label={t.cpp} value={community.commentsPerPost} />
+              <Card label={t.anonPost} value={community.anonPostRate != null ? `${community.anonPostRate}%` : '-'} />
+              <Card label={t.anonComment} value={community.anonCommentRate != null ? `${community.anonCommentRate}%` : '-'} />
             </div>
             <h4 style={{ fontSize: 13, fontWeight: 600, color: '#374151', margin: '20px 0 10px' }}>{t.roles}</h4>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }}>
-              <Card label={t.creators} value={community.creators} color="#EF4444" />
-              <Card label={t.reactors} value={community.reactors} color="#F59E0B" />
-              <Card label={t.viewers} value={community.viewers} color="#6B7280" />
+              <Card label={t.creators} value={community.creators} />
+              <Card label={t.reactors} value={community.reactors} />
+              <Card label={t.viewers} value={community.viewers} />
             </div>
           </div>
 
@@ -714,10 +712,10 @@ export default function AppMetricsView({ token, dateRange, lang }) {
               return <FunnelChart steps={steps} color="#2563EB" />
             })()}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: 12, marginTop: 16 }}>
-              <Card label={t.viewRate} value={conversion.jobs.viewRate != null ? `${conversion.jobs.viewRate}%` : '-'} color="#2563EB" />
-              <Card label={t.applyRate} value={conversion.jobs.applyRate != null ? `${conversion.jobs.applyRate}%` : '-'} color="#8B5CF6" />
-              <Card label={t.submitRate} value={conversion.jobs.submitRate != null ? `${conversion.jobs.submitRate}%` : '-'} sub={t.submitLeak} color={rateColor(conversion.jobs.submitRate)} />
-              <Card label={t.saveRate} value={conversion.jobs.saveRate != null ? `${conversion.jobs.saveRate}%` : '-'} color="#6B7280" />
+              <Card label={t.viewRate} value={conversion.jobs.viewRate != null ? `${conversion.jobs.viewRate}%` : '-'} />
+              <Card label={t.applyRate} value={conversion.jobs.applyRate != null ? `${conversion.jobs.applyRate}%` : '-'} />
+              <Card label={t.submitRate} value={conversion.jobs.submitRate != null ? `${conversion.jobs.submitRate}%` : '-'} sub={t.submitLeak} />
+              <Card label={t.saveRate} value={conversion.jobs.saveRate != null ? `${conversion.jobs.saveRate}%` : '-'} />
             </div>
             <div style={{ marginTop: 20 }}>
               <h4 style={{ fontSize: 13, fontWeight: 600, color: '#374151', margin: '0 0 10px' }}>{t.tsJobs}</h4>
@@ -729,8 +727,8 @@ export default function AppMetricsView({ token, dateRange, lang }) {
           <div style={sectionStyle}>
             <h3 style={sectionTitle}>{t.salaryTitle}</h3>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 12, marginBottom: 16 }}>
-              <Card label={t.salaryCount} value={conversion.salary.count} color="#10B981" />
-              <Card label={t.salaryUsers} value={conversion.salary.uniqueUsers} color="#059669" />
+              <Card label={t.salaryCount} value={conversion.salary.count} />
+              <Card label={t.salaryUsers} value={conversion.salary.uniqueUsers} />
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24 }}>
               <div>
@@ -747,10 +745,10 @@ export default function AppMetricsView({ token, dateRange, lang }) {
           <div style={sectionStyle}>
             <h3 style={sectionTitle}>{t.resumeTitle}</h3>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 12 }}>
-              <Card label={t.resumeUploads} value={conversion.resume.uploads} color="#2563EB" />
-              <Card label={t.resumeUsers} value={conversion.resume.uploadUsers} color="#2563EB" />
-              <Card label={t.resumePublic} value={conversion.resume.appPublic} sub={t.resumePublicSub} color="#EA580C" />
-              <Card label={t.uploadToApply} value={conversion.resume.uploadToApply != null ? `${conversion.resume.uploadToApply}%` : '-'} color="#10B981" />
+              <Card label={t.resumeUploads} value={conversion.resume.uploads} />
+              <Card label={t.resumeUsers} value={conversion.resume.uploadUsers} />
+              <Card label={t.resumePublic} value={conversion.resume.appPublic} sub={t.resumePublicSub} />
+              <Card label={t.uploadToApply} value={conversion.resume.uploadToApply != null ? `${conversion.resume.uploadToApply}%` : '-'} />
             </div>
           </div>
         </>
@@ -761,11 +759,11 @@ export default function AppMetricsView({ token, dateRange, lang }) {
         <div style={sectionStyle}>
           <h3 style={sectionTitle}>{t.pushTitle}</h3>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 12, marginBottom: 16 }}>
-            <Card label={t.pushSent} value={push.sent} color="#0EA5E9" />
-            <Card label={t.pushClicks} value={push.clicks} color="#8B5CF6" />
-            <Card label={t.pushCtr} value={push.ctr == null ? '–' : push.ctr + '%'} color="#10B981" />
-            <Card label={t.pushClickUsers} value={push.clickUsers} color="#7C3AED" />
-            <Card label={t.pushReceived} value={push.received} color="#6B7280" />
+            <Card label={t.pushSent} value={push.sent} />
+            <Card label={t.pushClicks} value={push.clicks} />
+            <Card label={t.pushCtr} value={push.ctr == null ? '–' : push.ctr + '%'} />
+            <Card label={t.pushClickUsers} value={push.clickUsers} />
+            <Card label={t.pushReceived} value={push.received} />
           </div>
           <h4 style={{ fontSize: 13, fontWeight: 600, color: '#374151', margin: '0 0 10px' }}>{t.tsPush}</h4>
           <MetricChart daily={aggregateBy(ts, series.push, "day")} metrics={series.push} lang={lang} dualAxis={false} lineType="linear" dots={false} />

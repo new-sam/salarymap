@@ -280,7 +280,7 @@ export default function ResumesView({ token, t, lang = 'ko' }) {
                       </span>
                     ) : '-'}
                   </td>
-                  <td style={{ padding: '8px 12px', color: '#666' }}>{formatYoe(r.yoe_months)}</td>
+                  <td style={{ padding: '8px 12px', color: '#666', whiteSpace: 'nowrap' }}>{formatYoe(r.yoe_months)}</td>
                   <td style={{ padding: '8px 12px', color: '#666' }}>{cityLabel(r.location, lang) || '-'}</td>
                   <td style={{ padding: '8px 12px', color: '#666', fontSize: 12 }}>
                     {r.university || '-'}
