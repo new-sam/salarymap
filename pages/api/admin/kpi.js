@@ -1,5 +1,5 @@
 import { createClient } from '@supabase/supabase-js'
-import { verifyAdmin } from './check'
+import { verifyAdminOrDevStub } from './check'
 import { EXCLUDED_EMAIL_DOMAINS } from '../../../lib/admin-metrics'
 
 // FYI 12주 KPI 트래커 — 주간(W1~W12) 실측 집계.
@@ -73,7 +73,7 @@ async function fetchMeta(sinceDay, untilDay) {
 const CREATE_EVENTS = ['create_community_post', 'create_community_comment']
 
 export default async function handler(req, res) {
-  const admin = await verifyAdmin(req)
+  const admin = await verifyAdminOrDevStub(req)
   if (!admin) return res.status(401).json({ error: 'Unauthorized' })
 
   const startISO = new Date(`${W1_START}T00:00:00+07:00`).toISOString()

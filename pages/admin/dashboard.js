@@ -4,20 +4,17 @@ import dynamic from 'next/dynamic'
 import { supabase } from '../../lib/supabaseClient'
 import { useAdmin } from '../../lib/adminSwr'
 import { useT } from '../../lib/i18n'
+import { useRouter } from 'next/router'
+import AdminLayout from '../../components/admin/AdminLayout'
+import DateRangePicker from '../../components/admin/DateRangePicker'
 import Icon from '../../components/Icon'
 import FunnelView from '../../components/admin/FunnelView'
-import UtmView from '../../components/admin/UtmView'
-import UsersView from '../../components/admin/UsersView'
 import ApplicationsView from '../../components/admin/ApplicationsView'
 import ResumesView from '../../components/admin/ResumesView'
 import TalentPoolView from '../../components/admin/TalentPoolView'
-import RetentionView from '../../components/admin/RetentionView'
-import GA4View from '../../components/admin/GA4View'
 import VerificationsView from '../../components/admin/VerificationsView'
 import CommunityView from '../../components/admin/CommunityView'
-import ModerationView from '../../components/admin/ModerationView'
 import AppMetricsView from '../../components/admin/AppMetricsView'
-import KPIView from '../../components/admin/KPIView'
 import {
   T, METRICS_BASE, EXP_COLORS, COLORS,
   inputStyle, sectionStyle, sectionTitle,
@@ -58,10 +55,13 @@ export default function AdminDashboard() {
   const [lastUpdated, setLastUpdated] = useState(null)
   const [expForm, setExpForm] = useState({ title: '', date: '', color: EXP_COLORS[0], metrics: [] })
   const [showExpForm, setShowExpForm] = useState(false)
-  const { lang: globalLang, setLang } = useT()
+  const { lang: globalLang } = useT()
   // Admin dashboard only ships ko/en; fall back to en for any other global lang (e.g. vi)
   const lang = globalLang === 'ko' ? 'ko' : 'en'
-  const [tab, setTab] = useState('trend')
+  const router = useRouter()
+  const tab = router.query.tab || 'trend'
+  // 날짜 범위를 실제로 쓰는 탭에서만 날짜 피커 노출 (이력서/인재풀/연봉인증은 누적 목록이라 무관)
+  const showDatePicker = ['trend', 'funnel', 'applications', 'community', 'appMetrics'].includes(tab)
   const [funnelKeys, setFunnelKeys] = useState([])
   const [chartMode, setChartMode] = useState('1d')
   const [tableView, setTableView] = useState('daily')
@@ -73,7 +73,6 @@ export default function AdminDashboard() {
     const d = new Date(Date.now() - 86400000)
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
   })()
-  const [dateInput, setDateInput] = useState({ from: '2026-04-20', to: yesterday })
   const [dateRange, setDateRange] = useState({ from: '2026-04-20', to: yesterday })
 
   // SWR: 캐시로 탭 전환/페이지 재방문 시 즉시 표시 + 백그라운드 갱신. 키에 날짜/언어 포함.
@@ -124,20 +123,6 @@ export default function AdminDashboard() {
     })
   }, [])
 
-  function applyRange(from, to) {
-    setDateInput({ from, to })
-    setDateRange({ from, to })
-  }
-
-  function applyPreset(days) {
-    const to = localDate(Date.now() - 86400000)
-    const from = localDate(Date.now() - days * 86400000)
-    applyRange(from, to)
-  }
-
-  function handleSearch() {
-    setDateRange({ ...dateInput })
-  }
 
   const [editingExp, setEditingExp] = useState(null)
 
@@ -357,16 +342,12 @@ export default function AdminDashboard() {
         .adm-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
         .adm-header-title { display: flex; align-items: center; gap: 12px; }
         .adm-header-controls { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
-        .adm-tabs { display: flex; gap: 0; margin-bottom: 24px; border-bottom: 2px solid #e5e7eb; overflow-x: auto; -webkit-overflow-scrolling: touch; }
-        .adm-tabs::-webkit-scrollbar { display: none; }
-        .adm-tab-btn { padding: 10px 24px; font-size: 14px; font-weight: 600; cursor: pointer; border: none; background: none; margin-bottom: -2px; transition: all 0.15s; white-space: nowrap; flex-shrink: 0; }
         .adm-grid-2col { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 24px; }
         @media (max-width: 768px) {
           .adm-dash { padding: 16px 12px 80px 12px; }
           .adm-header { flex-direction: column; align-items: flex-start; gap: 12px; }
           .adm-header-controls { width: 100%; flex-wrap: wrap; }
           .adm-header-controls input[type="date"] { width: 110px; font-size: 12px; }
-          .adm-tab-btn { padding: 8px 14px; font-size: 12px; }
           .adm-grid-2col { grid-template-columns: 1fr; }
           .adm-metric-cards { grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)) !important; gap: 8px !important; }
           .adm-metric-cards > div { padding: 12px 14px !important; }
@@ -376,64 +357,20 @@ export default function AdminDashboard() {
           .adm-realtime-grid .adm-rt-value { font-size: 18px !important; }
         }
       `}</style>
+      <AdminLayout>
       <div className="adm-dash">
-        {/* Header */}
-        <div className="adm-header">
-          <div className="adm-header-title">
-            <a href="/admin/jobs" style={{ color: '#888', textDecoration: 'none', fontSize: 20 }} title={t.backTitle}>&larr;</a>
-            <h1 style={{ fontSize: 24, fontWeight: 700, margin: 0 }}>{t.title}</h1>
-            <div style={{ display: 'flex', gap: 2, background: '#f3f4f6', borderRadius: 6, padding: 2 }}>
-              {['ko', 'en'].map(l => (
-                <button key={l} onClick={() => setLang(l)}
-                  style={{
-                    padding: '3px 10px', borderRadius: 4, fontSize: 11, fontWeight: 600, cursor: 'pointer',
-                    border: 'none',
-                    background: lang === l ? '#111' : 'transparent',
-                    color: lang === l ? '#fff' : '#999',
-                  }}>
-                  {l === 'ko' ? 'KO' : 'EN'}
-                </button>
-              ))}
+        {/* Header — 날짜 피커는 날짜 쓰는 탭에서만 */}
+        {showDatePicker && (
+          <div className="adm-header">
+            <div className="adm-header-controls">
+              <DateRangePicker value={dateRange} onChange={(from, to) => setDateRange({ from, to })} />
+              {loading && <span style={{ fontSize: 12, color: '#9AA0A6' }}>{lang === 'ko' ? '불러오는 중…' : 'Loading…'}</span>}
             </div>
           </div>
-          <div className="adm-header-controls">
-            {[{ label: '7D', days: 7 }, { label: '14D', days: 14 }, { label: '30D', days: 30 }, { label: 'All', days: 0 }].map(p => (
-              <button key={p.label} onClick={() => p.days ? applyPreset(p.days) : applyRange('2026-04-20', yesterday)}
-                style={{ padding: '5px 10px', border: '1px solid #d1d5db', borderRadius: 6, fontSize: 12, background: '#fff', cursor: 'pointer', fontWeight: 600 }}>
-                {p.label}
-              </button>
-            ))}
-            <span style={{ color: '#ddd', margin: '0 2px' }}>|</span>
-            <input type="date" value={dateInput.from}
-              onChange={e => setDateInput(r => ({ ...r, from: e.target.value }))}
-              style={inputStyle} />
-            <span style={{ color: '#666' }}>~</span>
-            <input type="date" value={dateInput.to}
-              onChange={e => setDateInput(r => ({ ...r, to: e.target.value }))}
-              style={inputStyle} />
-            <button onClick={handleSearch} disabled={loading}
-              style={{ padding: '6px 14px', border: 'none', borderRadius: 6, fontSize: 13, background: '#111', color: '#fff', cursor: 'pointer', fontWeight: 600 }}>
-              {loading ? '...' : lang === 'ko' ? '조회' : 'Search'}
-            </button>
-          </div>
-        </div>
+        )}
 
-        {/* Tab switcher */}
-        <div className="adm-tabs">
-          {['trend', 'kpi', 'funnel', 'ga4', 'utm', 'retention', 'users', 'applications', 'resumes', 'talent', 'verifications', 'community', 'reports', 'appMetrics'].map(k => (
-            <button key={k} onClick={() => setTab(k)}
-              className="adm-tab-btn"
-              style={{
-                borderBottom: tab === k ? '2px solid #111' : '2px solid transparent',
-                color: tab === k ? '#111' : '#999',
-              }}>
-              {t[k]}
-            </button>
-          ))}
-        </div>
-
-        {/* Today Realtime */}
-        {realtime && (
+        {/* Today Realtime — 추이 탭에서만 표시 */}
+        {realtime && tab === 'trend' && (
           <div style={{
             background: 'linear-gradient(135deg, #1e1b4b 0%, #312e81 100%)',
             borderRadius: 12, padding: '16px 20px', marginBottom: 24, color: '#fff',
@@ -946,34 +883,14 @@ export default function AdminDashboard() {
           <FunnelView data={{ ...data, daily: dailyWithToday }} metrics={METRICS} summary={summary} funnelKeys={funnelKeys} setFunnelKeys={setFunnelKeys} t={t} lang={lang} />
         )}
 
-        {/* GA4 Tab */}
-        {!loading && tab === 'ga4' && (
-          <GA4View ga4={ga4} t={t} />
-        )}
-
-        {/* UTM Tab */}
-        {data && !loading && tab === 'utm' && (
-          <UtmView utm={data.utm} t={t} />
-        )}
-
-        {/* Retention Tab */}
-        {tab === 'retention' && (
-          <RetentionView token={token} t={t} />
-        )}
-
-        {/* Users Tab */}
-        {tab === 'users' && (
-          <UsersView token={token} t={t} />
-        )}
-
         {/* Applications Tab */}
         {tab === 'applications' && (
-          <ApplicationsView token={token} t={t} dateRange={dateRange} />
+          <ApplicationsView token={token} t={t} dateRange={dateRange} lang={lang} />
         )}
 
         {/* Resumes Tab */}
         {tab === 'resumes' && (
-          <ResumesView token={token} t={t} />
+          <ResumesView token={token} t={t} lang={lang} />
         )}
 
         {/* Talent Pool Tab — 공개 이력서 인재풀 */}
@@ -991,22 +908,13 @@ export default function AdminDashboard() {
           <CommunityView token={token} lang={lang} dateRange={dateRange} />
         )}
 
-        {/* Reports / Moderation Tab */}
-        {tab === 'reports' && (
-          <ModerationView token={token} />
-        )}
-
         {/* App Metrics Tab */}
         {tab === 'appMetrics' && (
           <AppMetricsView token={token} lang={lang} dateRange={dateRange} />
         )}
 
-        {/* KPI Tab — 12주 트래커 */}
-        {tab === 'kpi' && (
-          <KPIView token={token} />
-        )}
-
       </div>
+      </AdminLayout>
     </>
   )
 }

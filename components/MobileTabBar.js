@@ -87,7 +87,7 @@ export default function MobileTabBar() {
     { key: 'community', href: '/community', label: t('nav.tabs.community'), icon: TAB_ICONS.community },
     { key: 'mypage', href: '/profile', label: t('nav.tabs.mypage'), icon: TAB_ICONS.mypage },
   ]
-  if (isAdmin) tabs.push({ key: 'admin', href: '/admin/jobs', label: t('nav.tabs.admin'), icon: TAB_ICONS.admin })
+  if (isAdmin) tabs.push({ key: 'admin', href: '/admin/dashboard', label: t('nav.tabs.admin'), icon: TAB_ICONS.admin })
   const handleTabClick = (e, tab) => {
     if (tab.key === 'community') {
       track('click_community_tab', { meta: { source: 'mobile' }, page: router.pathname })

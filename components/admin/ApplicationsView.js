@@ -1,29 +1,108 @@
-import { useState } from 'react'
-import { STATUS_OPTIONS, STATUS_COLORS } from '../../constants/dashboard'
+import { useState, useEffect, useRef } from 'react'
+import { STATUS_OPTIONS } from '../../constants/dashboard'
 import { useAdmin } from '../../lib/adminSwr'
 
+// 상태 색 — 솔리드 채도 + 흰 글씨(또렷·구분). 기본(지원완료)은 차분한 슬레이트, 액션 상태만 컬러.
+const STATUS_STYLE = {
+  pending:   { bg: '#64748B', color: '#fff' },
+  applied:   { bg: '#64748B', color: '#fff' },
+  viewed:    { bg: '#D97706', color: '#fff' },
+  reviewing: { bg: '#2563EB', color: '#fff' },
+  accepted:  { bg: '#059669', color: '#fff' },
+  rejected:  { bg: '#DC2626', color: '#fff' },
+}
+const statusStyle = (s) => STATUS_STYLE[s] || STATUS_STYLE.applied
+
+// 지원 상태 라벨 (토글 언어). pending = 초기/미확인 상태.
+const STATUS_LABEL = {
+  pending:   { ko: '지원 완료',  en: 'Applied' }, // DB 초기 기본값 — applied 와 동일 취급
+  applied:   { ko: '지원 완료',  en: 'Applied' },
+  viewed:    { ko: '열람',      en: 'Viewed' },
+  reviewing: { ko: '검토중',    en: 'Reviewing' },
+  accepted:  { ko: '합격',      en: 'Accepted' },
+  rejected:  { ko: '불합격',    en: 'Rejected' },
+}
+const statusLabel = (s, lang) => STATUS_LABEL[s]?.[lang === 'ko' ? 'ko' : 'en'] || s
+
 // 유입 플랫폼 배지: app=앱 / web=웹 / null=미상(기록 전 행).
-function PlatformBadge({ platform }) {
+function PlatformBadge({ platform, lang }) {
   const map = {
-    app: { label: '앱', bg: '#EEF2FF', color: '#4F46E5' },
-    web: { label: '웹', bg: '#F0FDF4', color: '#15803D' },
+    app: { ko: '앱', en: 'App', bg: '#1F2937', color: '#fff' },      // 다크 슬레이트
+    web: { ko: '웹', en: 'Web', bg: '#EDEFF2', color: '#4E5968' },   // 라이트 그레이
   }
   const s = map[platform]
-  if (!s) return <span style={{ color: '#ccc', fontSize: 11 }}>미상</span>
+  if (!s) return <span style={{ color: '#C7CDD4', fontSize: 11 }}>{lang === 'ko' ? '미상' : 'N/A'}</span>
   return (
-    <span style={{ padding: '2px 8px', borderRadius: 12, fontSize: 11, fontWeight: 600, background: s.bg, color: s.color }}>
-      {s.label}
+    <span style={{ display: 'inline-block', padding: '2px 9px', borderRadius: 999, fontSize: 11, fontWeight: 700, background: s.bg, color: s.color, whiteSpace: 'nowrap' }}>
+      {lang === 'ko' ? s.ko : s.en}
     </span>
   )
 }
 
-export default function ApplicationsView({ token, t, dateRange }) {
+// 상태 드롭다운 (자체 디자인). 표가 가로 스크롤 안이라 팝업은 fixed 위치로 띄워 잘림 방지.
+function StatusDropdown({ value, onChange, lang }) {
+  const [open, setOpen] = useState(false)
+  const [pos, setPos] = useState({ top: 0, left: 0 })
+  const btnRef = useRef(null)
+  const popRef = useRef(null)
+  const cur = statusStyle(value)
+
+  const toggle = () => {
+    if (!open && btnRef.current) {
+      const r = btnRef.current.getBoundingClientRect()
+      setPos({ top: r.bottom + 4, left: r.left })
+    }
+    setOpen(o => !o)
+  }
+  useEffect(() => {
+    if (!open) return
+    const onDoc = (e) => { if (!btnRef.current?.contains(e.target) && !popRef.current?.contains(e.target)) setOpen(false) }
+    const onKey = (e) => { if (e.key === 'Escape') setOpen(false) }
+    const onScroll = () => setOpen(false)
+    document.addEventListener('mousedown', onDoc)
+    document.addEventListener('keydown', onKey)
+    window.addEventListener('scroll', onScroll, true)
+    window.addEventListener('resize', onScroll)
+    return () => {
+      document.removeEventListener('mousedown', onDoc)
+      document.removeEventListener('keydown', onKey)
+      window.removeEventListener('scroll', onScroll, true)
+      window.removeEventListener('resize', onScroll)
+    }
+  }, [open])
+
+  return (
+    <>
+      <button ref={btnRef} onClick={toggle}
+        style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'space-between', gap: 5, minWidth: 80, padding: '5px 10px', borderRadius: 999, fontSize: 11.5, fontWeight: 600, border: 'none', cursor: 'pointer', background: cur.bg, color: cur.color, whiteSpace: 'nowrap' }}>
+        {statusLabel(value || 'applied', lang)}
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" style={{ transform: open ? 'rotate(180deg)' : 'none', transition: 'transform .15s' }}>
+          <path d="M6 9l6 6 6-6" stroke={cur.color} strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      </button>
+      {open && (
+        <div ref={popRef} style={{ position: 'fixed', top: pos.top, left: pos.left, zIndex: 1000, minWidth: 140, background: '#fff', border: '1px solid #E5E8EB', borderRadius: 10, boxShadow: '0 8px 24px rgba(0,0,0,0.12)', padding: 4 }}>
+          {STATUS_OPTIONS.map(s => {
+            const c = statusStyle(s)
+            const on = s === value
+            return (
+              <div key={s} onClick={() => { onChange(s); setOpen(false) }}
+                style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 10px', borderRadius: 7, cursor: 'pointer', background: on ? '#F8F9FA' : 'transparent' }}
+                onMouseEnter={e => { if (!on) e.currentTarget.style.background = '#F8F9FA' }}
+                onMouseLeave={e => { if (!on) e.currentTarget.style.background = 'transparent' }}>
+                <span style={{ width: 8, height: 8, borderRadius: '50%', background: c.bg, flexShrink: 0 }} />
+                <span style={{ fontSize: 12.5, fontWeight: on ? 700 : 500, color: '#191F28' }}>{statusLabel(s, lang)}</span>
+              </div>
+            )
+          })}
+        </div>
+      )}
+    </>
+  )
+}
+
+export default function ApplicationsView({ token, t, dateRange, lang = 'ko' }) {
   const [platformFilter, setPlatformFilter] = useState('all') // all, app, web
-  const [editingNote, setEditingNote] = useState({})
-  const [parsing, setParsing] = useState(false)
-  const [parseProgress, setParseProgress] = useState({ current: 0, total: 0, name: '' })
-  const [parseResults, setParseResults] = useState(null)
-  const [parsedData, setParsedData] = useState({}) // { [appId]: { position, skills, yoe, headline } }
 
   const params = new URLSearchParams()
   if (dateRange?.from) params.set('from', dateRange.from)
@@ -39,35 +118,21 @@ export default function ApplicationsView({ token, t, dateRange }) {
     mutate()
   }
 
-  async function saveNote(id) {
-    await fetch('/api/admin/applications', {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-      body: JSON.stringify({ id, admin_note: editingNote[id] || '' }),
-    })
-    setEditingNote(prev => { const n = { ...prev }; delete n[id]; return n })
-    mutate()
-  }
-
-  // Applicants with resume but no role parsed yet
-  const unparsed = apps ? apps.filter(a => a.resume_url && !a.applicant_role && !parsedData[a.id]) : []
-
   function downloadCsv() {
     if (!apps || apps.length === 0) return
-    const headers = ['Name', 'Email', 'Source', 'Job', 'Company', 'Position', 'YoE', 'Skills', 'Headline', 'Status', 'Resume URL', 'Note', 'Applied']
+    const headers = ['Name', 'Email', 'Source', 'Job', 'Company', 'Position', 'YoE', 'Skills', 'Headline', 'Status', 'Resume URL', 'Applied']
     const rows = visible.map(a => [
       a.user_name || a.applicant_name || '',
       a.user_email || a.applicant_email || '',
       a.platform || '',
       a.job_title || a.jobs?.title || '',
       a.job_company || a.jobs?.company || '',
-      a.applicant_role || parsedData[a.id]?.position || '',
-      a.applicant_experience || parsedData[a.id]?.yoe || '',
-      a.parsed_skills || parsedData[a.id]?.skills || '',
-      a.parsed_headline || parsedData[a.id]?.headline || '',
+      a.applicant_role || '',
+      a.applicant_experience || '',
+      a.parsed_skills || '',
+      a.parsed_headline || '',
       a.status || '',
       a.resume_url || '',
-      a.admin_note || '',
       a.created_at ? new Date(a.created_at).toLocaleString('ko-KR') : '',
     ])
     const csv = [headers, ...rows].map(r => r.map(c => `"${String(c).replace(/"/g, '""')}"`).join(',')).join('\n')
@@ -80,42 +145,6 @@ export default function ApplicationsView({ token, t, dateRange }) {
     URL.revokeObjectURL(url)
   }
 
-  async function runAiParse() {
-    if (parsing || unparsed.length === 0) return
-    setParsing(true)
-    setParseResults(null)
-    const results = { success: 0, fail: 0, errors: [] }
-
-    for (let i = 0; i < unparsed.length; i++) {
-      const app = unparsed[i]
-      setParseProgress({ current: i + 1, total: unparsed.length, name: app.user_name || app.applicant_email || 'Unknown' })
-      try {
-        const res = await fetch('/api/admin/parse-application', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-          body: JSON.stringify({ applicationId: app.id }),
-        })
-        if (res.ok) {
-          const data = await res.json()
-          setParsedData(prev => ({ ...prev, [app.id]: data }))
-          // Update local apps cache (no revalidation)
-          mutate(prev => (prev || []).map(a => a.id === app.id ? { ...a, applicant_role: data.position, applicant_experience: data.yoe } : a), false)
-          results.success++
-        } else {
-          const err = await res.json()
-          results.fail++
-          results.errors.push(`${app.user_name || app.applicant_email}: ${err.error}`)
-        }
-      } catch (e) {
-        results.fail++
-        results.errors.push(`${app.user_name || app.applicant_email}: ${e.message}`)
-      }
-    }
-
-    setParseResults(results)
-    setParsing(false)
-  }
-
   if (loading) return <div style={{ textAlign: 'center', padding: 40, color: '#666' }}>{t.appsLoading}</div>
   if (!apps || apps.length === 0) return <div style={{ textAlign: 'center', padding: 40, color: '#999' }}>{t.appsEmpty}</div>
 
@@ -123,196 +152,83 @@ export default function ApplicationsView({ token, t, dateRange }) {
   const appCount = apps.filter(a => a.platform === 'app').length
   const webCount = apps.filter(a => a.platform === 'web').length
 
+  const pillStyle = (on) => ({
+    fontSize: 12.5, fontWeight: 600, cursor: 'pointer', borderRadius: 999, padding: '6px 12px',
+    border: '1px solid', borderColor: on ? '#ff4400' : '#E5E8EB',
+    background: on ? '#FFF1EC' : '#fff', color: on ? '#ff4400' : '#4E5968', whiteSpace: 'nowrap',
+  })
+  const th = { padding: '11px 12px', textAlign: 'left', fontWeight: 700, color: '#8B95A1', fontSize: 11.5, whiteSpace: 'nowrap' }
+  const td = { padding: '11px 12px', verticalAlign: 'middle' }
+
   return (
     <>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, flexWrap: 'wrap', gap: 12 }}>
-        <div style={{ display: 'flex', alignItems: 'baseline', gap: 12 }}>
-          <h3 style={{ fontSize: 16, fontWeight: 600, margin: 0 }}>{t.appsTitle}</h3>
-          <span style={{ fontSize: 14, color: '#6B7280' }}>
-            {t.appsTotal}: <strong style={{ color: '#4F46E5' }}>{visible.length}</strong>
-            <span style={{ margin: '0 6px', color: '#ddd' }}>|</span>
-            앱 <strong style={{ color: '#4F46E5' }}>{appCount}</strong>
-            <span style={{ margin: '0 4px', color: '#ddd' }}>·</span>
-            웹 <strong style={{ color: '#15803D' }}>{webCount}</strong>
+        <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, flexWrap: 'wrap' }}>
+          <h3 style={{ fontSize: 16, fontWeight: 700, margin: 0, color: '#191F28' }}>{t.appsTitle}</h3>
+          <span style={{ fontSize: 13, color: '#6B7280' }}>
+            {t.appsTotal} <strong style={{ color: '#191F28' }}>{visible.length}</strong>
+            <span style={{ margin: '0 6px', color: '#DDE1E6' }}>·</span>
+            {lang === 'ko' ? '앱' : 'App'} <strong style={{ color: '#191F28' }}>{appCount}</strong>
+            <span style={{ margin: '0 4px', color: '#DDE1E6' }}>·</span>
+            {lang === 'ko' ? '웹' : 'Web'} <strong style={{ color: '#191F28' }}>{webCount}</strong>
           </span>
         </div>
-        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-          <div style={{ display: 'flex', gap: 0, background: '#f3f4f6', borderRadius: 8, padding: 2 }}>
-            {[
-              { key: 'all', label: '전체' },
-              { key: 'app', label: '앱' },
-              { key: 'web', label: '웹' },
-            ].map(f => (
-              <button key={f.key} onClick={() => setPlatformFilter(f.key)}
-                style={{
-                  padding: '5px 12px', borderRadius: 6, fontSize: 12, fontWeight: 600,
-                  border: 'none', cursor: 'pointer', transition: 'all 0.15s',
-                  background: platformFilter === f.key ? '#fff' : 'transparent',
-                  color: platformFilter === f.key ? '#111' : '#999',
-                  boxShadow: platformFilter === f.key ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
-                }}>
-                {f.label}
-              </button>
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', gap: 6 }}>
+            {[{ key: 'all', label: lang === 'ko' ? '전체' : 'All' }, { key: 'app', label: lang === 'ko' ? '앱' : 'App' }, { key: 'web', label: lang === 'ko' ? '웹' : 'Web' }].map(f => (
+              <button key={f.key} onClick={() => setPlatformFilter(f.key)} style={pillStyle(platformFilter === f.key)}>{f.label}</button>
             ))}
           </div>
-          <button onClick={runAiParse} disabled={parsing || unparsed.length === 0}
-            style={{
-              padding: '8px 16px', border: 'none', borderRadius: 8, fontSize: 13,
-              background: parsing ? '#9CA3AF' : '#4F46E5', color: '#fff',
-              cursor: parsing ? 'not-allowed' : 'pointer', fontWeight: 600,
-            }}>
-            {parsing ? `AI 분석 중... (${parseProgress.current}/${parseProgress.total})` : `AI 분석 돌리기 (${unparsed.length}명)`}
-          </button>
           <button onClick={downloadCsv}
-            style={{
-              padding: '8px 16px', border: 'none', borderRadius: 8, fontSize: 13,
-              background: '#10B981', color: '#fff', cursor: 'pointer', fontWeight: 600,
-            }}>
-            CSV 다운로드
+            style={{ padding: '8px 13px', border: '1px solid #E5E8EB', borderRadius: 8, fontSize: 13, fontWeight: 600, background: '#fff', color: '#4E5968', cursor: 'pointer' }}>
+            CSV
           </button>
         </div>
       </div>
 
-      {/* AI Parse Progress */}
-      {parsing && (
-        <div style={{ marginBottom: 16, padding: 16, background: '#EEF2FF', borderRadius: 12, border: '1px solid #C7D2FE' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-            <span style={{ fontSize: 13, fontWeight: 600, color: '#4F46E5' }}>
-              {parseProgress.name} 분석 중...
-            </span>
-            <span style={{ fontSize: 12, color: '#6B7280' }}>
-              {parseProgress.current} / {parseProgress.total}
-            </span>
-          </div>
-          <div style={{ height: 6, background: '#C7D2FE', borderRadius: 3, overflow: 'hidden' }}>
-            <div style={{
-              height: '100%', background: '#4F46E5', borderRadius: 3, transition: 'width 0.3s',
-              width: `${(parseProgress.current / parseProgress.total) * 100}%`,
-            }} />
-          </div>
-        </div>
-      )}
-
-      {/* AI Parse Results */}
-      {parseResults && (
-        <div style={{
-          marginBottom: 16, padding: 16, borderRadius: 12,
-          background: parseResults.fail > 0 ? '#FEF3C7' : '#D1FAE5',
-          border: `1px solid ${parseResults.fail > 0 ? '#FDE68A' : '#A7F3D0'}`,
-        }}>
-          <div style={{ fontSize: 13, fontWeight: 600, marginBottom: parseResults.errors.length > 0 ? 8 : 0 }}>
-            AI 분석 완료: {parseResults.success}명 성공{parseResults.fail > 0 ? `, ${parseResults.fail}명 실패` : ''}
-          </div>
-          {parseResults.errors.length > 0 && (
-            <div style={{ fontSize: 12, color: '#92400E' }}>
-              {parseResults.errors.map((e, i) => <div key={i}>{e}</div>)}
-            </div>
-          )}
-        </div>
-      )}
-
-      <div style={{ background: '#fff', border: '1px solid #e5e7eb', borderRadius: 12, overflow: 'hidden' }}>
+      <div style={{ background: '#fff', border: '1px solid #EEF0F2', borderRadius: 14, overflow: 'hidden' }}>
         <div style={{ overflowX: 'auto' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
             <thead>
-              <tr style={{ borderBottom: '2px solid #e5e7eb', background: '#fafafa' }}>
-                <th style={{ padding: '10px 12px', textAlign: 'left', fontWeight: 600, color: '#374151' }}>#</th>
-                <th style={{ padding: '10px 12px', textAlign: 'left', fontWeight: 600, color: '#374151' }}>{t.appsJob}</th>
-                <th style={{ padding: '10px 12px', textAlign: 'left', fontWeight: 600, color: '#374151' }}>{t.appsCompany}</th>
-                <th style={{ padding: '10px 12px', textAlign: 'left', fontWeight: 600, color: '#374151' }}>{t.appsApplicant}</th>
-                <th style={{ padding: '10px 12px', textAlign: 'left', fontWeight: 600, color: '#374151' }}>{t.appsEmail}</th>
-                <th style={{ padding: '10px 12px', textAlign: 'left', fontWeight: 600, color: '#374151' }}>유입</th>
-                <th style={{ padding: '10px 12px', textAlign: 'left', fontWeight: 600, color: '#374151' }}>Position</th>
-                <th style={{ padding: '10px 12px', textAlign: 'left', fontWeight: 600, color: '#374151' }}>YoE</th>
-                <th style={{ padding: '10px 12px', textAlign: 'left', fontWeight: 600, color: '#374151' }}>Skills</th>
-                <th style={{ padding: '10px 12px', textAlign: 'left', fontWeight: 600, color: '#374151' }}>{t.appsStatus}</th>
-                <th style={{ padding: '10px 12px', textAlign: 'left', fontWeight: 600, color: '#374151' }}>{t.appsDate}</th>
-                <th style={{ padding: '10px 12px', textAlign: 'left', fontWeight: 600, color: '#374151' }}>{t.appsResume}</th>
-                <th style={{ padding: '10px 12px', textAlign: 'left', fontWeight: 600, color: '#374151' }}>{t.appsNote}</th>
+              <tr style={{ borderBottom: '1px solid #EEF0F2', background: '#FAFBFC' }}>
+                <th style={th}>{t.appsApplicant}</th>
+                <th style={th}>{t.appsJob}</th>
+                <th style={th}>유입</th>
+                <th style={th}>직무</th>
+                <th style={th}>경력</th>
+                <th style={th}>{t.appsStatus}</th>
+                <th style={th}>{t.appsDate}</th>
+                <th style={th}>{t.appsResume}</th>
               </tr>
             </thead>
             <tbody>
-              {visible.map((a, i) => {
-                const sc = STATUS_COLORS[a.status] || STATUS_COLORS.applied
-                const isEditingNote = editingNote.hasOwnProperty(a.id)
+              {visible.map((a) => {
+                const pos = a.applicant_role
                 return (
-                  <tr key={a.id} style={{ borderBottom: '1px solid #f3f4f6', background: i % 2 === 0 ? '#fff' : '#fafafa' }}>
-                    <td style={{ padding: '8px 12px', color: '#999' }}>{i + 1}</td>
-                    <td style={{ padding: '8px 12px', fontWeight: 500 }}>{a.job_title || a.jobs?.title || '-'}</td>
-                    <td style={{ padding: '8px 12px', color: '#666' }}>{a.job_company || a.jobs?.company || '-'}</td>
-                    <td style={{ padding: '8px 12px', fontWeight: 500 }}>{a.user_name || '-'}</td>
-                    <td style={{ padding: '8px 12px', color: '#666', fontSize: 12 }}>{a.user_email || '-'}</td>
-                    <td style={{ padding: '8px 12px' }}><PlatformBadge platform={a.platform} /></td>
-                    <td style={{ padding: '8px 12px' }}>
-                      {(a.applicant_role || parsedData[a.id]?.position) ? (
-                        <span style={{ padding: '2px 8px', borderRadius: 12, fontSize: 11, fontWeight: 600, background: '#EEF2FF', color: '#4F46E5' }}>
-                          {a.applicant_role || parsedData[a.id]?.position}
-                        </span>
-                      ) : '-'}
+                  <tr key={a.id} style={{ borderBottom: '1px solid #F2F4F6' }}>
+                    <td style={td}>
+                      <div style={{ fontWeight: 600, color: '#191F28' }}>{a.user_name || '-'}</div>
+                      {a.user_email && <div style={{ fontSize: 11, color: '#ADB5BD', marginTop: 1 }}>{a.user_email}</div>}
                     </td>
-                    <td style={{ padding: '8px 12px', color: '#666', fontSize: 12 }}>
-                      {a.applicant_experience || parsedData[a.id]?.yoe || '-'}
+                    <td style={td}>
+                      <div style={{ fontWeight: 500, color: '#191F28' }}>{a.job_title || a.jobs?.title || '-'}</div>
+                      <div style={{ fontSize: 11.5, color: '#8B95A1', marginTop: 1 }}>{a.job_company || a.jobs?.company || '-'}</div>
                     </td>
-                    <td style={{ padding: '8px 12px', maxWidth: 180 }}>
-                      {(() => {
-                        const skills = (a.parsed_skills || parsedData[a.id]?.skills || '').split(', ').filter(Boolean)
-                        return skills.length > 0 ? (
-                          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 3 }}>
-                            {skills.slice(0, 4).map((s, j) => (
-                              <span key={j} style={{ padding: '1px 6px', borderRadius: 8, fontSize: 10, background: '#F3F4F6', color: '#374151' }}>{s}</span>
-                            ))}
-                            {skills.length > 4 && (
-                              <span style={{ fontSize: 10, color: '#999' }}>+{skills.length - 4}</span>
-                            )}
-                          </div>
-                        ) : '-'
-                      })()}
+                    <td style={{ ...td, whiteSpace: 'nowrap' }}><PlatformBadge platform={a.platform} lang={lang} /></td>
+                    <td style={{ ...td, whiteSpace: 'nowrap' }}>
+                      {pos ? <span style={{ display: 'inline-block', padding: '2px 9px', borderRadius: 999, fontSize: 11, fontWeight: 600, background: '#F2F4F6', color: '#4E5968', whiteSpace: 'nowrap' }}>{pos}</span> : <span style={{ color: '#C7CDD4' }}>-</span>}
                     </td>
-                    <td style={{ padding: '8px 12px' }}>
-                      <select
-                        value={a.status || 'pending'}
-                        onChange={e => updateStatus(a.id, e.target.value)}
-                        style={{
-                          padding: '3px 8px', borderRadius: 8, fontSize: 11, fontWeight: 600,
-                          border: 'none', cursor: 'pointer',
-                          background: sc.bg, color: sc.color,
-                        }}>
-                        {STATUS_OPTIONS.map(s => (
-                          <option key={s} value={s}>{s}</option>
-                        ))}
-                      </select>
+                    <td style={{ ...td, color: '#4E5968', whiteSpace: 'nowrap' }}>{a.applicant_experience || '-'}</td>
+                    <td style={td}>
+                      <StatusDropdown value={a.status} onChange={(s) => updateStatus(a.id, s)} lang={lang} />
                     </td>
-                    <td style={{ padding: '8px 12px', color: '#666', fontSize: 12, whiteSpace: 'nowrap' }}>
-                      {a.created_at ? new Date(a.created_at).toLocaleString('ko-KR') : '-'}
+                    <td style={{ ...td, color: '#868E96', fontSize: 12.5, whiteSpace: 'nowrap' }}>
+                      {a.created_at ? new Date(a.created_at).toLocaleDateString('ko-KR') : '-'}
                     </td>
-                    <td style={{ padding: '8px 12px' }}>
+                    <td style={td}>
                       {a.resume_url ? (
-                        <a href={a.resume_url} target="_blank" rel="noopener noreferrer"
-                          style={{ color: '#4F46E5', fontSize: 12, fontWeight: 600 }}>
-                          {t.appsResume}
-                        </a>
-                      ) : '-'}
-                    </td>
-                    <td style={{ padding: '8px 12px', minWidth: 160 }}>
-                      {isEditingNote ? (
-                        <div style={{ display: 'flex', gap: 4 }}>
-                          <input
-                            value={editingNote[a.id]}
-                            onChange={e => setEditingNote(prev => ({ ...prev, [a.id]: e.target.value }))}
-                            style={{ flex: 1, padding: '3px 6px', border: '1px solid #d1d5db', borderRadius: 4, fontSize: 12 }}
-                          />
-                          <button onClick={() => saveNote(a.id)}
-                            style={{ padding: '3px 8px', border: 'none', borderRadius: 4, fontSize: 11, background: '#111', color: '#fff', cursor: 'pointer' }}>
-                            {t.appsSave}
-                          </button>
-                        </div>
-                      ) : (
-                        <span
-                          onClick={() => setEditingNote(prev => ({ ...prev, [a.id]: a.admin_note || '' }))}
-                          style={{ cursor: 'pointer', color: a.admin_note ? '#333' : '#ccc', fontSize: 12 }}>
-                          {a.admin_note || '+ memo'}
-                        </span>
-                      )}
+                        <a href={a.resume_url} target="_blank" rel="noopener noreferrer" style={{ color: '#ff4400', fontSize: 12.5, fontWeight: 600, textDecoration: 'none' }}>PDF</a>
+                      ) : <span style={{ color: '#C7CDD4' }}>-</span>}
                     </td>
                   </tr>
                 )

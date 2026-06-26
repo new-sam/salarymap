@@ -1,5 +1,5 @@
 import { createClient } from '@supabase/supabase-js'
-import { verifyAdmin } from './check'
+import { verifyAdminOrDevStub } from './check'
 
 // 앱(모바일) 행동지표 — events 테이블에서 meta.platform='app' 만 집계.
 //  · 수집 명세: salary-fyi 모바일 src/lib/track.ts + docs/community-tracking.md
@@ -19,7 +19,7 @@ const DAY = 86400000
 const toVN = (iso) => new Date(new Date(iso).getTime() + 7 * 3600000).toISOString().slice(0, 10)
 
 export default async function handler(req, res) {
-  const admin = await verifyAdmin(req)
+  const admin = await verifyAdminOrDevStub(req)
   if (!admin) return res.status(401).json({ error: 'Unauthorized' })
 
   const { from, to } = req.query

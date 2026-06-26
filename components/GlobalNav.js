@@ -290,7 +290,7 @@ export default function GlobalNav({ activePage, onLogin, onJobsClick, mobileSear
                       {savedCount > 0 && <span className="gnav-saved-badge">{savedCount}</span>}
                     </a>
                   {isAdmin && (
-                    <a href="/admin/jobs" className="gnav-menu-item gnav-menu-admin">Admin Dashboard</a>
+                    <a href="/admin/dashboard" className="gnav-menu-item gnav-menu-admin">Admin Dashboard</a>
                   )}
                   <button className="gnav-menu-item" onClick={async () => {
                     await supabase.auth.signOut()

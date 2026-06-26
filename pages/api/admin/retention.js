@@ -1,5 +1,5 @@
 import { createClient } from '@supabase/supabase-js'
-import { verifyAdmin } from './check'
+import { verifyAdminOrDevStub } from './check'
 import { isExcludedSignup } from '../../../lib/admin-metrics'
 
 const supabase = createClient(
@@ -8,7 +8,7 @@ const supabase = createClient(
 )
 
 export default async function handler(req, res) {
-  const admin = await verifyAdmin(req)
+  const admin = await verifyAdminOrDevStub(req)
   if (!admin) return res.status(401).json({ error: 'Unauthorized' })
 
   try {

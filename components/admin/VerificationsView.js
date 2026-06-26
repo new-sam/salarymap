@@ -1,11 +1,12 @@
 import { useState } from 'react'
+import UserAssetCards from './UserAssetCards'
 import { useAdmin } from '../../lib/adminSwr'
 import { getSalaryTier, normalizeTrieu } from '../../lib/salaryTiers'
 
-const STATUS_COLORS = {
-  pending: { bg: 'rgba(245,158,11,0.1)', color: '#d97706' },
-  approved: { bg: 'rgba(34,197,94,0.1)', color: '#16a34a' },
-  rejected: { bg: 'rgba(239,68,68,0.1)', color: '#dc2626' },
+const STATUS = {
+  pending:  { label: '검토 대기', bg: '#D97706' },
+  approved: { label: '승인됨',   bg: '#059669' },
+  rejected: { label: '반려됨',   bg: '#DC2626' },
 }
 
 const DOC_LABELS = {
@@ -18,7 +19,6 @@ const DOC_LABELS = {
 export default function VerificationsView({ token }) {
   const [filter, setFilter] = useState('pending')
   const [actionLoading, setActionLoading] = useState(null)
-  const [noteInput, setNoteInput] = useState({})
   const [salaryInput, setSalaryInput] = useState({}) // per-id, monthly in 백만 VND (triệu)
 
   const { data, isLoading: loading, mutate } = useAdmin(
@@ -59,7 +59,7 @@ export default function VerificationsView({ token }) {
       const res = await fetch('/api/salary-verification/admin', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ id, status, admin_note: noteInput[id] || '', salary_amount: salaryTrieu }),
+        body: JSON.stringify({ id, status, admin_note: '', salary_amount: salaryTrieu }),
       })
       if (res.ok) {
         mutate(prev => ({ ...prev, verifications: (prev?.verifications || []).filter(v => v.id !== id) }), false)
@@ -70,87 +70,65 @@ export default function VerificationsView({ token }) {
     setActionLoading(null)
   }
 
+  const pill = (on) => ({ fontSize: 12.5, fontWeight: 600, cursor: 'pointer', borderRadius: 999, padding: '6px 14px', border: '1px solid', borderColor: on ? '#ff4400' : '#E5E8EB', background: on ? '#FFF1EC' : '#fff', color: on ? '#ff4400' : '#4E5968' })
+  const inp = { width: '100%', padding: '7px 11px', border: '1px solid #E5E8EB', borderRadius: 8, fontSize: 13, fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box' }
+  const FILTERS = [['pending', '검토 대기'], ['approved', '승인됨'], ['rejected', '반려됨'], ['all', '전체']]
+
   return (
     <div>
-      {/* Filter Tabs */}
-      <div style={{ display: 'flex', gap: 8, marginBottom: 20 }}>
-        {['pending', 'approved', 'rejected', 'all'].map(s => (
-          <button key={s} onClick={() => setFilter(s)}
-            style={{
-              padding: '6px 16px', borderRadius: 20, border: '1px solid',
-              borderColor: filter === s ? '#ff6000' : 'rgba(0,0,0,0.1)',
-              background: filter === s ? 'rgba(255,96,0,0.08)' : '#fff',
-              color: filter === s ? '#ff6000' : '#888',
-              fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit',
-            }}>
-            {s === 'pending' ? '검토 대기' : s === 'approved' ? '승인됨' : s === 'rejected' ? '반려됨' : '전체'}
-          </button>
+      <UserAssetCards token={token} keys={['verifiedWorkers', 'approvedVerifications']} />
+
+      <div style={{ display: 'flex', gap: 6, marginBottom: 18, flexWrap: 'wrap' }}>
+        {FILTERS.map(([k, label]) => (
+          <button key={k} onClick={() => setFilter(k)} style={pill(filter === k)}>{label}</button>
         ))}
       </div>
 
       {loading ? (
-        <div style={{ textAlign: 'center', padding: 40, color: '#999' }}>Loading...</div>
+        <div style={{ textAlign: 'center', padding: 40, color: '#ADB5BD' }}>불러오는 중…</div>
       ) : verifications.length === 0 ? (
-        <div style={{ textAlign: 'center', padding: 40, color: '#999', fontSize: 14 }}>
-          요청이 없습니다
-        </div>
+        <div style={{ textAlign: 'center', padding: 48, color: '#ADB5BD', fontSize: 14 }}>요청이 없습니다</div>
       ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-          {verifications.map(v => (
-            <div key={v.id} style={{
-              background: '#fff', border: '1px solid rgba(0,0,0,0.08)', borderRadius: 12, padding: 20,
-              boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
-            }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 12, alignItems: 'start' }}>
+          {verifications.map(v => {
+            const st = STATUS[v.status] || STATUS.pending
+            return (
+            <div key={v.id} style={{ background: '#fff', border: '1px solid #EEF0F2', borderRadius: 12, padding: '13px 15px' }}>
               {/* Header */}
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: 12 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, marginBottom: 12 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 9, minWidth: 0 }}>
                   {v.profile?.photo_url ? (
-                    <img src={v.profile.photo_url} style={{ width: 36, height: 36, borderRadius: '50%', objectFit: 'cover' }} alt="" />
+                    <img src={v.profile.photo_url} style={{ width: 30, height: 30, borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }} alt="" />
                   ) : (
-                    <div style={{ width: 36, height: 36, borderRadius: '50%', background: 'rgba(0,0,0,0.06)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(0,0,0,0.3)" strokeWidth="2"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                    <div style={{ width: 30, height: 30, borderRadius: '50%', background: '#F2F4F6', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#ADB5BD" strokeWidth="2"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
                     </div>
                   )}
-                  <div>
-                    <div style={{ fontSize: 14, fontWeight: 700, color: '#111' }}>
-                      {v.profile?.full_name || 'Unknown'}
-                    </div>
-                    <div style={{ fontSize: 11, color: 'rgba(0,0,0,0.4)' }}>
-                      {v.profile?.verified_company_name || '-'}
-                    </div>
+                  <div style={{ minWidth: 0 }}>
+                    <div style={{ fontSize: 13.5, fontWeight: 700, color: '#191F28' }}>{v.profile?.full_name || 'Unknown'}</div>
+                    <div style={{ fontSize: 11.5, color: '#8B95A1', marginTop: 1 }}>{v.profile?.verified_company_name || '-'}</div>
                   </div>
                 </div>
-                <span style={{
-                  fontSize: 11, fontWeight: 700, padding: '4px 10px', borderRadius: 20,
-                  background: STATUS_COLORS[v.status]?.bg, color: STATUS_COLORS[v.status]?.color,
-                }}>
-                  {v.status === 'pending' ? '검토 대기' : v.status === 'approved' ? '승인됨' : '반려됨'}
-                </span>
+                <span style={{ flexShrink: 0, fontSize: 11, fontWeight: 700, padding: '3px 10px', borderRadius: 999, background: st.bg, color: '#fff' }}>{st.label}</span>
               </div>
 
               {/* Details */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12, marginBottom: 12, fontSize: 12 }}>
-                <div>
-                  <div style={{ color: 'rgba(0,0,0,0.4)', marginBottom: 2 }}>서류 종류</div>
-                  <div style={{ fontWeight: 600, color: '#111' }}>{DOC_LABELS[v.document_type] || v.document_type}</div>
-                </div>
-                <div>
-                  <div style={{ color: 'rgba(0,0,0,0.4)', marginBottom: 2 }}>월급</div>
-                  <div style={{ fontWeight: 600, color: '#111' }}>{v.salary_amount ? `${normalizeTrieu(v.salary_amount).toLocaleString()}M VND` : '-'}</div>
-                </div>
-                <div>
-                  <div style={{ color: 'rgba(0,0,0,0.4)', marginBottom: 2 }}>요청일</div>
-                  <div style={{ fontWeight: 600, color: '#111' }}>{new Date(v.created_at).toLocaleDateString()}</div>
-                </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 5, marginBottom: 12 }}>
+                {[
+                  ['서류 종류', DOC_LABELS[v.document_type] || v.document_type],
+                  ['월급', v.salary_amount ? `${normalizeTrieu(v.salary_amount).toLocaleString()}M VND` : '-'],
+                  ['요청일', new Date(v.created_at).toLocaleDateString('ko-KR')],
+                ].map(([label, val]) => (
+                  <div key={label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 8, fontSize: 12.5 }}>
+                    <span style={{ color: '#8B95A1' }}>{label}</span>
+                    <span style={{ color: '#191F28', fontWeight: 600, textAlign: 'right' }}>{val}</span>
+                  </div>
+                ))}
               </div>
 
               {/* Document Link */}
               <a href={v.document_url} target="_blank" rel="noopener noreferrer"
-                style={{
-                  display: 'inline-flex', alignItems: 'center', gap: 6, padding: '8px 14px',
-                  borderRadius: 8, background: 'rgba(0,0,0,0.04)', color: '#333', fontSize: 12,
-                  fontWeight: 600, textDecoration: 'none', marginBottom: 12,
-                }}>
+                style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '6px 11px', borderRadius: 8, border: '1px solid #E5E8EB', background: '#fff', color: '#4E5968', fontSize: 12, fontWeight: 600, textDecoration: 'none', marginBottom: v.status === 'pending' ? 12 : 0 }}>
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
                 증빙 서류 보기
               </a>
@@ -160,54 +138,36 @@ export default function VerificationsView({ token }) {
                 const trieu = normalizeTrieu(parseInt(salaryInput[v.id], 10))
                 const tier = trieu > 0 ? getSalaryTier(trieu * 1000000) : null
                 return (
-                <div style={{ borderTop: '1px solid rgba(0,0,0,0.06)', paddingTop: 12, marginTop: 4 }}>
-                  {/* Verified salary amount → determines the badge tier */}
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-                    <div style={{ position: 'relative', flex: 1 }}>
-                      <input
-                        type="number"
-                        value={salaryInput[v.id] || ''}
-                        onChange={e => setSalaryInput(prev => ({ ...prev, [v.id]: e.target.value }))}
-                        placeholder="인증 월급 (백만 VND)"
-                        style={{ width: '100%', padding: '8px 64px 8px 12px', border: '1px solid rgba(255,96,0,0.3)', borderRadius: 8, fontSize: 13, fontWeight: 600, fontFamily: 'inherit', outline: 'none' }}
-                      />
-                      <span style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', fontSize: 12, color: 'rgba(0,0,0,0.4)' }}>백만 VND</span>
+                <div style={{ borderTop: '1px solid #F2F4F6', paddingTop: 12 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8, flexWrap: 'wrap' }}>
+                    <div style={{ position: 'relative', flex: 1, minWidth: 120 }}>
+                      <input type="number" value={salaryInput[v.id] || ''} onChange={e => setSalaryInput(prev => ({ ...prev, [v.id]: e.target.value }))} placeholder="인증 월급"
+                        style={{ ...inp, padding: '7px 70px 7px 11px', fontWeight: 600 }} />
+                      <span style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', fontSize: 12, color: '#ADB5BD' }}>백만 VND</span>
                     </div>
                     {tier && (
-                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, padding: '6px 12px', borderRadius: 8, background: tier.grad, color: '#fff', fontSize: 12, fontWeight: 800, whiteSpace: 'nowrap' }}>
-                        → {tier.defaultLabel}
-                      </span>
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, padding: '7px 11px', borderRadius: 8, background: tier.grad, color: '#fff', fontSize: 12, fontWeight: 800, whiteSpace: 'nowrap' }}>→ {tier.defaultLabel}</span>
                     )}
                   </div>
-                  <input
-                    value={noteInput[v.id] || ''}
-                    onChange={e => setNoteInput(prev => ({ ...prev, [v.id]: e.target.value }))}
-                    placeholder="관리자 메모 (선택사항)"
-                    style={{ width: '100%', padding: '8px 12px', border: '1px solid rgba(0,0,0,0.1)', borderRadius: 8, fontSize: 12, fontFamily: 'inherit', marginBottom: 8, outline: 'none' }}
-                  />
                   <div style={{ display: 'flex', gap: 8 }}>
                     <button onClick={() => handleAction(v.id, 'approved')} disabled={actionLoading === v.id}
-                      style={{ flex: 1, padding: 10, borderRadius: 8, border: 'none', background: '#16a34a', color: '#fff', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', opacity: actionLoading === v.id ? 0.5 : 1 }}>
-                      승인
-                    </button>
+                      style={{ flex: 1, padding: '7px 0', borderRadius: 8, border: 'none', background: '#059669', color: '#fff', fontSize: 12.5, fontWeight: 700, cursor: 'pointer', opacity: actionLoading === v.id ? 0.5 : 1 }}>승인</button>
                     <button onClick={() => handleAction(v.id, 'rejected')} disabled={actionLoading === v.id}
-                      style={{ flex: 1, padding: 10, borderRadius: 8, border: 'none', background: '#dc2626', color: '#fff', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', opacity: actionLoading === v.id ? 0.5 : 1 }}>
-                      반려
-                    </button>
+                      style={{ flex: 1, padding: '7px 0', borderRadius: 8, border: '1px solid #E5E8EB', background: '#fff', color: '#DC2626', fontSize: 12.5, fontWeight: 700, cursor: 'pointer', opacity: actionLoading === v.id ? 0.5 : 1 }}>반려</button>
                   </div>
                 </div>
                 )
               })()}
 
-              {/* Show reviewer info for non-pending */}
+              {/* Reviewer info */}
               {v.status !== 'pending' && v.reviewed_by && (
-                <div style={{ fontSize: 11, color: 'rgba(0,0,0,0.35)', marginTop: 4 }}>
-                  {v.reviewed_by} | {v.reviewed_at ? new Date(v.reviewed_at).toLocaleString() : ''}
-                  {v.admin_note && ` | ${v.admin_note}`}
+                <div style={{ fontSize: 11.5, color: '#ADB5BD', marginTop: 12, paddingTop: 12, borderTop: '1px solid #F2F4F6' }}>
+                  {v.reviewed_by} · {v.reviewed_at ? new Date(v.reviewed_at).toLocaleString('ko-KR') : ''}{v.admin_note && ` · ${v.admin_note}`}
                 </div>
               )}
             </div>
-          ))}
+            )
+          })}
         </div>
       )}
     </div>

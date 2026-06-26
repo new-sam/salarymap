@@ -4,7 +4,6 @@
   "private": true,
   "scripts": {
     "dev": "next dev --webpack",
-    "prebuild": "node scripts/changelog-ingest.js || true",
     "build": "next build",
     "start": "next start"
   },

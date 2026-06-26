@@ -1,5 +1,5 @@
 import { createClient } from '@supabase/supabase-js'
-import { verifyAdmin } from './check'
+import { verifyAdminOrDevStub } from './check'
 import { EXCLUDED_EMAIL_DOMAINS } from '../../../lib/admin-metrics'
 
 const supabase = createClient(
@@ -8,7 +8,7 @@ const supabase = createClient(
 )
 
 export default async function handler(req, res) {
-  const user = await verifyAdmin(req)
+  const user = await verifyAdminOrDevStub(req)
   if (!user) return res.status(401).json({ error: 'Unauthorized' })
 
   const { from, to } = req.query

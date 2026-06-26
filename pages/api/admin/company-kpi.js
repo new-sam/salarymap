@@ -1,5 +1,5 @@
 import { createClient } from '@supabase/supabase-js'
-import { verifyAdmin } from './check'
+import { verifyAdminOrDevStub } from './check'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
@@ -15,7 +15,7 @@ const evCount = (event, sinceIso) => {
 
 // 어드민 기업/채용 KPI 요약 (기업·공고·지원·for-companies 퍼널)
 export default async function handler(req, res) {
-  const admin = await verifyAdmin(req)
+  const admin = await verifyAdminOrDevStub(req)
   if (!admin) return res.status(401).json({ error: 'Unauthorized' })
   if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' })
 

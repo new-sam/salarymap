@@ -1,4 +1,4 @@
-import { verifyAdmin } from './check'
+import { verifyAdminOrDevStub } from './check'
 
 export const config = { runtime: 'nodejs' }
 
@@ -85,7 +85,7 @@ async function runReport({ startDate, endDate, dimensions = [], metrics = [], or
 }
 
 export default async function handler(req, res) {
-  const user = await verifyAdmin(req)
+  const user = await verifyAdminOrDevStub(req)
   if (!user) return res.status(401).json({ error: 'Unauthorized' })
 
   const { from, to } = req.query

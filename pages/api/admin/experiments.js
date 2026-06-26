@@ -1,5 +1,5 @@
 import { createClient } from '@supabase/supabase-js'
-import { verifyAdmin } from './check'
+import { verifyAdminOrDevStub } from './check'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
@@ -7,7 +7,7 @@ const supabase = createClient(
 )
 
 export default async function handler(req, res) {
-  const user = await verifyAdmin(req)
+  const user = await verifyAdminOrDevStub(req)
   if (!user) return res.status(401).json({ error: 'Unauthorized' })
 
   if (req.method === 'GET') {
