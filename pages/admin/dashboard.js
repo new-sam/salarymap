@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, Fragment } from 'react'
 import Head from 'next/head'
 import dynamic from 'next/dynamic'
 import { supabase } from '../../lib/supabaseClient'
@@ -499,7 +499,8 @@ export default function AdminDashboard() {
                 <div style={{ fontSize: 11, fontWeight: 700, color: '#8B95A1', margin: '0 0 7px', letterSpacing: '0.02em' }}>{TIER_LABELS[tier][lang]}</div>
               )
               return (
-                <div key={sec} style={{ marginBottom: 28 }}>
+                <Fragment key={sec}>
+                <div style={{ marginBottom: 28 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14, paddingBottom: 9, borderBottom: '1px solid #EEF1F3' }}>
                     <span style={{ width: 4, height: 17, borderRadius: 2, background: accent }} />
                     <span style={{ fontSize: 16, fontWeight: 800, color: '#191F28', letterSpacing: '-0.01em' }}>{SECTION_LABELS[sec][lang]}</span>
@@ -523,70 +524,71 @@ export default function AdminDashboard() {
                     </div>
                   )}
                 </div>
-              )
-            })}
 
-            {/* Chart */}
-            {selectedMetrics.length > 0 && (
-              <div style={sectionStyle}>
-                <div className="adm-chart-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, flexWrap: 'wrap', gap: 8 }}>
-                  <h3 style={{ ...sectionTitle, margin: 0 }}>{selectedMetrics.map(m => m.label).join(' + ')} {t.trend}</h3>
-                  <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                    {selectedMetrics.length === 2 && (
-                      <button onClick={() => setDualAxis(v => !v)}
-                        style={{
-                          padding: '5px 10px', borderRadius: 6, fontSize: 11, fontWeight: 600,
-                          border: '1px solid #d1d5db', cursor: 'pointer', transition: 'all 0.15s',
-                          background: dualAxis ? '#EEF2FF' : '#fff',
-                          color: dualAxis ? '#4F46E5' : '#999',
-                        }}>
-                        {lang === 'ko' ? (dualAxis ? 'Y축 분리' : 'Y축 공유') : (dualAxis ? 'Dual Y' : 'Shared Y')}
-                      </button>
-                    )}
-                    <div style={{ display: 'flex', gap: 0, background: '#f3f4f6', borderRadius: 8, padding: 2 }}>
-                      {[
-                        { key: '1d', label: t.chart1d },
-                        { key: '3d', label: t.chart3d },
-                        { key: 'weekly', label: t.chartWeekly },
-                        { key: 'monthly', label: t.chartMonthly },
-                      ].map(m => (
-                        <button key={m.key} onClick={() => setChartMode(m.key)}
-                          style={{
-                            padding: '5px 12px', borderRadius: 6, fontSize: 12, fontWeight: 600,
-                            border: 'none', cursor: 'pointer', transition: 'all 0.15s',
-                            background: chartMode === m.key ? '#fff' : 'transparent',
-                            color: chartMode === m.key ? '#111' : '#999',
-                            boxShadow: chartMode === m.key ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
-                          }}>
-                          {m.label}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-                <MetricChart daily={chartData} metrics={selectedMetrics} experiments={chartMode === '1d' ? visibleExperiments : []} avgLabel={t.avg} lang={lang} dualAxis={dualAxis} />
-
-                {visibleExperiments.length > 0 && (
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 12, paddingTop: 12, borderTop: '1px solid #f3f4f6' }}>
-                    {visibleExperiments.map((exp, i) => (
-                      <div key={exp.id} style={{
-                        display: 'inline-flex', alignItems: 'center', gap: 6,
-                        padding: '4px 10px', borderRadius: 20, fontSize: 12, fontWeight: 500,
-                        background: exp.color + '18', border: `1px solid ${exp.color}40`, color: '#333',
-                      }}>
-                        <span style={{
-                          width: 16, height: 16, borderRadius: '50%', background: exp.color, flexShrink: 0,
-                          display: 'flex', alignItems: 'center', justifyContent: 'center',
-                          color: '#fff', fontSize: 10, fontWeight: 700, lineHeight: 1,
-                        }}>{i + 1}</span>
-                        <span style={{ color: '#888', fontSize: 11 }}>{exp.date.slice(5)}</span>
-                        {exp.title}
+                {/* Chart — 인재 지표 바로 아래 */}
+                {sec === 'talent' && selectedMetrics.length > 0 && (
+                  <div style={sectionStyle}>
+                    <div className="adm-chart-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, flexWrap: 'wrap', gap: 8 }}>
+                      <h3 style={{ ...sectionTitle, margin: 0 }}>{selectedMetrics.map(m => m.label).join(' + ')} {t.trend}</h3>
+                      <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                        {selectedMetrics.length === 2 && (
+                          <button onClick={() => setDualAxis(v => !v)}
+                            style={{
+                              padding: '5px 10px', borderRadius: 6, fontSize: 11, fontWeight: 600,
+                              border: '1px solid #d1d5db', cursor: 'pointer', transition: 'all 0.15s',
+                              background: dualAxis ? '#EEF2FF' : '#fff',
+                              color: dualAxis ? '#4F46E5' : '#999',
+                            }}>
+                            {lang === 'ko' ? (dualAxis ? 'Y축 분리' : 'Y축 공유') : (dualAxis ? 'Dual Y' : 'Shared Y')}
+                          </button>
+                        )}
+                        <div style={{ display: 'flex', gap: 0, background: '#f3f4f6', borderRadius: 8, padding: 2 }}>
+                          {[
+                            { key: '1d', label: t.chart1d },
+                            { key: '3d', label: t.chart3d },
+                            { key: 'weekly', label: t.chartWeekly },
+                            { key: 'monthly', label: t.chartMonthly },
+                          ].map(m => (
+                            <button key={m.key} onClick={() => setChartMode(m.key)}
+                              style={{
+                                padding: '5px 12px', borderRadius: 6, fontSize: 12, fontWeight: 600,
+                                border: 'none', cursor: 'pointer', transition: 'all 0.15s',
+                                background: chartMode === m.key ? '#fff' : 'transparent',
+                                color: chartMode === m.key ? '#111' : '#999',
+                                boxShadow: chartMode === m.key ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
+                              }}>
+                              {m.label}
+                            </button>
+                          ))}
+                        </div>
                       </div>
-                    ))}
+                    </div>
+                    <MetricChart daily={chartData} metrics={selectedMetrics} experiments={chartMode === '1d' ? visibleExperiments : []} avgLabel={t.avg} lang={lang} dualAxis={dualAxis} />
+
+                    {visibleExperiments.length > 0 && (
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 12, paddingTop: 12, borderTop: '1px solid #f3f4f6' }}>
+                        {visibleExperiments.map((exp, i) => (
+                          <div key={exp.id} style={{
+                            display: 'inline-flex', alignItems: 'center', gap: 6,
+                            padding: '4px 10px', borderRadius: 20, fontSize: 12, fontWeight: 500,
+                            background: exp.color + '18', border: `1px solid ${exp.color}40`, color: '#333',
+                          }}>
+                            <span style={{
+                              width: 16, height: 16, borderRadius: '50%', background: exp.color, flexShrink: 0,
+                              display: 'flex', alignItems: 'center', justifyContent: 'center',
+                              color: '#fff', fontSize: 10, fontWeight: 700, lineHeight: 1,
+                            }}>{i + 1}</span>
+                            <span style={{ color: '#888', fontSize: 11 }}>{exp.date.slice(5)}</span>
+                            {exp.title}
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 )}
-              </div>
-            )}
+                </Fragment>
+              )
+            })}
 
             {/* Experiments */}
             <div style={sectionStyle}>
