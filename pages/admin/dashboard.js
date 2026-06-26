@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import Head from 'next/head'
 import dynamic from 'next/dynamic'
 import { supabase } from '../../lib/supabaseClient'
-import { useAdmin } from '../../lib/adminSwr'
+import { useAdmin, prefetchAdmin } from '../../lib/adminSwr'
 import { useT } from '../../lib/i18n'
 import { useRouter } from 'next/router'
 import AdminLayout from '../../components/admin/AdminLayout'
@@ -87,6 +87,31 @@ export default function AdminDashboard() {
 
   // 마지막 갱신 시각 표시용 — 데이터/실시간 갱신 때마다 기록
   useEffect(() => { if (data || realtime) setLastUpdated(new Date()) }, [data, realtime])
+
+  // 다른 탭 데이터 백그라운드 프리페치 — 인증되면 자주 쓰는 탭의 엔드포인트를 미리
+  // 캐시에 채워, 첫 진입 지연(콜드스타트+실데이터 쿼리)을 사용자가 체감하지 않게 한다.
+  // 키는 각 View 의 useAdmin URL 과 글자까지 동일해야 적중한다.
+  useEffect(() => {
+    if (!token) return
+    const appParams = new URLSearchParams()
+    if (dateRange.from) appParams.set('from', dateRange.from)
+    if (dateRange.to) appParams.set('to', dateRange.to)
+    const today = (() => {
+      const d = new Date()
+      return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+    })()
+    const effectiveTo = dateRange.to >= yesterday ? today : dateRange.to
+    const urls = [
+      '/api/admin/resumes',                                            // resumes + talent (공유)
+      `/api/admin/applications?${appParams}`,                          // applications
+      `/api/admin/community?from=${dateRange.from}&to=${dateRange.to}`, // community
+      `/api/admin/app-metrics?from=${dateRange.from}&to=${effectiveTo}`, // appMetrics
+      '/api/salary-verification/admin?status=pending',                 // verifications(기본 필터)
+    ]
+    // 활성 탭(추이)의 메인 요청이 먼저 나가도록 살짝 늦춰 경쟁을 피한다.
+    const id = setTimeout(() => urls.forEach(u => prefetchAdmin(u, token)), 800)
+    return () => clearTimeout(id)
+  }, [token, dateRange.from, dateRange.to])
 
   // 일별 뷰 진입/섹션 변경/데이터 로드 시 최신(맨 아래)로 스크롤
   useEffect(() => {
