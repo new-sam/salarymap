@@ -516,12 +516,12 @@ export default function AppMetricsView({ token, dateRange, lang }) {
       {sub === 'retention' && (
         <>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 12, marginBottom: 24 }}>
-            <Card label={t.dau} value={retention.dau} color="#374151" />
-            <Card label={t.wau} value={retention.wau} color="#2563EB" />
-            <Card label={t.mau} value={retention.mau} color="#10B981" />
-            <Card label="D1" value={`${retention.d1.rate}%`} sub={`${retention.d1.retained}/${retention.d1.eligible}`} color="#F59E0B" />
-            <Card label="D7" value={`${retention.d7.rate}%`} sub={`${retention.d7.retained}/${retention.d7.eligible}`} color="#8B5CF6" />
-            <Card label="D30" value={`${retention.d30.rate}%`} sub={`${retention.d30.retained}/${retention.d30.eligible}`} color="#EF4444" />
+            <Card label={t.dau} value={retention.dau} />
+            <Card label={t.wau} value={retention.wau} />
+            <Card label={t.mau} value={retention.mau} />
+            <Card label="D1" value={`${retention.d1.rate}%`} sub={`${retention.d1.retained}/${retention.d1.eligible}`} color={rateColor(retention.d1.rate)} />
+            <Card label="D7" value={`${retention.d7.rate}%`} sub={`${retention.d7.retained}/${retention.d7.eligible}`} color={rateColor(retention.d7.rate)} />
+            <Card label="D30" value={`${retention.d30.rate}%`} sub={`${retention.d30.retained}/${retention.d30.eligible}`} color={rateColor(retention.d30.rate)} />
           </div>
 
           {retention.dauSeries.length > 0 && (
