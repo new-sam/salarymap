@@ -166,9 +166,13 @@ export default function TalentPoolView({ token, t }) {
     mid: { bg: '#FFD9BF', color: '#9A3412' },
     senior: { bg: '#ff6000', color: '#fff' },
   }
-  const levelChip = (lvl) => {
+  const levelChip = (lvl, months) => {
     const s = (lvl && LEVEL_CHIP[lvl.key]) || { bg: '#F1F5F9', color: '#94A3B8' }
-    return <span style={{ flexShrink: 0, padding: '1px 8px', borderRadius: 999, fontSize: 10.5, fontWeight: 700, background: s.bg, color: s.color }}>{lvl ? lvl.label : '경력?'}</span>
+    const label = lvl ? lvl.label : '경력?'
+    const yoe = formatYoe(months)
+    // 신입은 라벨=연차라 중복 생략, 연차 미상이면 라벨만.
+    const text = (lvl && lvl.key === 'newgrad') || yoe === '경력 미상' ? label : `${label} · ${yoe}`
+    return <span style={{ flexShrink: 0, padding: '1px 8px', borderRadius: 999, fontSize: 10.5, fontWeight: 700, background: s.bg, color: s.color, whiteSpace: 'nowrap' }}>{text}</span>
   }
   // 라벨:값 한 줄 — 카드 본문을 스펙시트처럼 정렬해 깔끔하게.
   const specRow = (label, value, muted) => (
@@ -253,7 +257,6 @@ export default function TalentPoolView({ token, t }) {
           const eduText = r.university
             ? [r.university, r.major, r.graduation_year].filter(Boolean).join(' · ')
             : null
-          const wishText = [r.location, salary].filter(Boolean).join('  ·  ')
           return (
             <div key={r.id} className="tp-card" style={{ background: '#fff', border: '1px solid #E5E8EB', borderRadius: 12, padding: '15px 16px', display: 'flex', flexDirection: 'column' }}>
               {/* 헤더: 사진 · 이름 · 뱃지 / 직무·급 */}
@@ -268,12 +271,12 @@ export default function TalentPoolView({ token, t }) {
                 <div style={{ minWidth: 0, flex: 1 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
                     <span style={{ fontWeight: 700, fontSize: 14.5, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{r.full_name || '이름 없음'}</span>
-                    {levelChip(level)}
+                    {levelChip(level, r.yoe_months)}
                     {isTopTier(r.university) && tierBadge('명문대', true)}
                     {os && tierBadge(os.label)}
                   </div>
                   <div style={{ fontSize: 12, color: '#6B7280', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                    {title || '직무 미상'}<span style={{ color: '#CBD5E1' }}>  ·  </span>{formatYoe(r.yoe_months)}
+                    {title || '직무 미상'}
                   </div>
                 </div>
               </div>
@@ -288,7 +291,8 @@ export default function TalentPoolView({ token, t }) {
                   : '미상', companies.length === 0)}
                 {langText && specRow('어학', langText)}
                 {skills.length > 0 && specRow('스킬', skills.slice(0, 6).join(' · ') + (skills.length > 6 ? ` +${skills.length - 6}` : ''))}
-                {wishText && specRow('희망', wishText)}
+                {r.location && specRow('지역', r.location)}
+                {salary && specRow('연봉', salary)}
               </div>
 
               {/* 푸터: 이메일 · AI 분석 · PDF — marginTop auto로 카드 바닥에 고정(행 내 정렬) */}
