@@ -82,7 +82,7 @@ export default function CommunityView({ token, lang = 'ko', dateRange }) {
 
   return (
     <>
-      <UserAssetCards token={token} keys={['userFollows', 'subscriptions']} />
+      <UserAssetCards token={token} keys={['userFollows', 'subscriptions']} lang={lang} />
       {/* 핵심 활동 */}
       <div style={{ marginBottom: 18 }}>
         <div style={{ fontSize: 11.5, fontWeight: 700, color: '#8B95A1', letterSpacing: '0.02em', marginBottom: 10 }}>{lang === 'ko' ? '핵심 활동' : 'Core activity'}</div>

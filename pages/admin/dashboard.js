@@ -922,12 +922,12 @@ export default function AdminDashboard() {
 
         {/* Talent Pool Tab — 공개 이력서 인재풀 */}
         {tab === 'talent' && (
-          <TalentPoolView token={token} t={t} />
+          <TalentPoolView token={token} lang={lang} />
         )}
 
         {/* Verifications Tab */}
         {tab === 'verifications' && (
-          <VerificationsView token={token} />
+          <VerificationsView token={token} lang={lang} />
         )}
 
         {/* Community Tab */}

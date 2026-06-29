@@ -156,7 +156,7 @@ export default function ResumesView({ token, t, lang = 'ko' }) {
 
   return (
     <>
-      <UserAssetCards token={token} keys={['resumeHolders', 'resumePublic']} />
+      <UserAssetCards token={token} keys={['resumeHolders', 'resumePublic']} lang={lang} />
 
       {/* Row 1: 제목 · 카운트 | 검색 · 액션 */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12, marginBottom: 14 }}>
