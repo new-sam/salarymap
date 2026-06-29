@@ -1,6 +1,15 @@
 import { useState } from 'react'
 import { useAdmin } from '../../lib/adminSwr'
-import { isTopTier, isOverseas, overseasOf } from '../../lib/topUniversities'
+import { isTopTier, overseasOf } from '../../lib/topUniversities'
+
+// 인재의 학벌 신호 = 도메인 인증 학교(authoritative) ∪ 이력서 자유입력 university.
+// 인증 학교는 verified_school_tier(='top')로 바로 명문대 집계되고, 그 외엔 자유입력
+// 이름을 topUniversities로 분류한다. 둘 중 하나라도 걸리면 해당 버킷으로 센다.
+const topTierOf = r => r.verified_school_tier === 'top' || isTopTier(r.university) || isTopTier(r.verified_school_name)
+const overseasOfR = r => overseasOf(r.university) || overseasOf(r.verified_school_name)
+const isOverseasR = r => overseasOfR(r) !== null
+// 카드/CSV에 보여줄 학교명 — 자유입력 우선, 없으면 인증된 학교명.
+const uniOf = r => r.university || r.verified_school_name || ''
 
 // 공개 이력서(is_resume_public)만 모아 스태핑(인재 배치) 관점으로 보는 화면.
 // 한국 기업이 지원자의 "급"을 판단할 때 보는 신호 — 학벌 / 전 회사 네임밸류 /
@@ -129,12 +138,12 @@ export default function TalentPoolView({ token, lang }) {
     if (levelFilter !== 'all' && levelOf(r.yoe_months) !== levelFilter) return false
     if (workFilter !== 'all' && (r.work_type || '') !== workFilter) return false
     if (koreanOnly && !(r.korean_cert || '').trim()) return false
-    if (topOnly && !isTopTier(r.university)) return false
-    if (overseasOnly && !isOverseas(r.university)) return false
+    if (topOnly && !topTierOf(r)) return false
+    if (overseasOnly && !isOverseasR(r)) return false
     if (search) {
       const q = search.toLowerCase()
       const companies = asExperiences(r.experiences).map(e => e.company)
-      const hay = [r.full_name, r.email, r.position, r.headline, r.university, r.major, ...companies, ...asSkills(r.skills)]
+      const hay = [r.full_name, r.email, r.position, r.headline, r.university, r.verified_school_name, r.major, ...companies, ...asSkills(r.skills)]
         .filter(Boolean).join(' ').toLowerCase()
       if (!hay.includes(q)) return false
     }
@@ -143,9 +152,9 @@ export default function TalentPoolView({ token, lang }) {
 
   const workTypes = [...new Set(pool.map(r => r.work_type).filter(Boolean))]
   const koreanCount = pool.filter(r => (r.korean_cert || '').trim()).length
-  const topTierCount = pool.filter(r => isTopTier(r.university)).length
+  const topTierCount = pool.filter(topTierOf).length
   const topTierPct = pool.length ? Math.round((topTierCount / pool.length) * 100) : 0
-  const overseasCount = pool.filter(r => isOverseas(r.university)).length
+  const overseasCount = pool.filter(isOverseasR).length
   const overseasPct = pool.length ? Math.round((overseasCount / pool.length) * 100) : 0
 
   function downloadCsv() {
@@ -154,7 +163,7 @@ export default function TalentPoolView({ token, lang }) {
       const exps = asExperiences(r.experiences)
       return [
         r.full_name, r.email, r.position || '', (LEVELS.find(l => l.key === levelOf(r.yoe_months)) || {})[ko ? 'label' : 'en'] || '',
-        r.yoe_months ?? '', r.university || '', isTopTier(r.university) ? 'Y' : '', overseasOf(r.university)?.country || '', r.major || '', r.graduation_year || '',
+        r.yoe_months ?? '', uniOf(r), topTierOf(r) ? 'Y' : '', overseasOfR(r)?.country || '', r.major || '', r.graduation_year || '',
         exps.map(e => `${e.company}${e.title ? ` (${e.title})` : ''}`).join(' / '),
         r.korean_cert || '', r.english_cert || '', asSkills(r.skills).join(', '),
         r.location || '', r.work_type || '', r.salary_min ?? '', r.salary_max ?? '', r.salary_currency || '',
@@ -274,11 +283,12 @@ export default function TalentPoolView({ token, lang }) {
           const salary = formatSalary(r)
           const title = topTitle(r, exps) || r.headline || r.position || ''
           const level = LEVELS.find(l => l.key === levelOf(r.yoe_months))
-          const os = overseasOf(r.university)
+          const os = overseasOfR(r)
           const isParsing = parsingId === r.id
           const langText = [r.korean_cert && `KOR ${r.korean_cert}`, r.english_cert && `ENG ${r.english_cert}`].filter(Boolean).join(' · ')
-          const eduText = r.university
-            ? [r.university, r.major, r.graduation_year].filter(Boolean).join(' · ')
+          const uni = uniOf(r)
+          const eduText = uni
+            ? [uni, r.major, r.graduation_year].filter(Boolean).join(' · ')
             : null
           return (
             <div key={r.id} className="tp-card" style={{ background: '#fff', border: '1px solid #E5E8EB', borderRadius: 12, padding: '15px 16px', display: 'flex', flexDirection: 'column' }}>
@@ -295,7 +305,7 @@ export default function TalentPoolView({ token, lang }) {
                   <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
                     <span style={{ fontWeight: 700, fontSize: 14.5, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{r.full_name || (ko ? '이름 없음' : 'No name')}</span>
                     {levelChip(level, r.yoe_months)}
-                    {isTopTier(r.university) && tierBadge(L.topBadge, true)}
+                    {topTierOf(r) && tierBadge(L.topBadge, true)}
                     {os && tierBadge(ko ? os.label : os.country)}
                   </div>
                   <div style={{ fontSize: 12, color: '#6B7280', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>

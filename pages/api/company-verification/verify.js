@@ -1,6 +1,6 @@
 import { createClient } from '@supabase/supabase-js'
 import { hashCode } from '../../../lib/companyVerifyCode'
-import { isSchoolDomain } from '../../../lib/schoolEmailDomains'
+import { isSchoolDomain, domainSuffixes } from '../../../lib/schoolEmailDomains'
 
 const supabase = createClient(
   (process.env.NEXT_PUBLIC_SUPABASE_URL || '').trim(),
@@ -22,18 +22,37 @@ function guessSchoolName(domain) {
   return root.charAt(0).toUpperCase() + root.slice(1)
 }
 
+// Resolve a verified email domain to a curated school via *longest suffix* match,
+// so student/faculty subdomains (sis.hust.edu.vn, gm.uit.edu.vn) resolve to the
+// seeded parent (hust.edu.vn / uit.edu.vn) and shared roots (vnu.edu.vn) yield to
+// their more-specific members (uet.vnu.edu.vn). Returns the canonical name + tier,
+// or null when nothing is seeded.
+async function resolveSchool(domain) {
+  const suffixes = domainSuffixes(domain)
+  if (!suffixes.length) return null
+  const { data } = await supabase
+    .from('school_domains')
+    .select('domain, school_name, tier')
+    .in('domain', suffixes)
+  if (!data || !data.length) return null
+  // Most specific wins = the longest matching seeded domain.
+  data.sort((a, b) => b.domain.length - a.domain.length)
+  return { school_name: data[0].school_name, tier: data[0].tier || null }
+}
+
 // Resolve + cache a verified SCHOOL on the profile and grant the verified_school
 // badge — the student-side mirror of the company path below.
 async function grantSchoolVerification(userId, email, domain) {
-  const { data: mapped } = await supabase
-    .from('school_domains')
-    .select('school_name')
-    .eq('domain', domain)
-    .maybeSingle()
+  const resolved = await resolveSchool(domain)
 
-  let schoolName = mapped?.school_name
-  if (!schoolName) {
+  let schoolName, tier
+  if (resolved) {
+    schoolName = resolved.school_name
+    tier = resolved.tier
+  } else {
+    // Unseeded school — best-effort name, no tier. Remember it so admin can curate.
     schoolName = guessSchoolName(domain)
+    tier = null
     await supabase.from('school_domains').insert({ domain, school_name: schoolName })
   }
 
@@ -49,6 +68,7 @@ async function grantSchoolVerification(userId, email, domain) {
     email,
     verified_school_name: schoolName,
     verified_school_domain: domain,
+    verified_school_tier: tier,
     school_verified_at: new Date().toISOString(),
   }
   if (cur?.user_type !== 'worker') update.user_type = 'student'
@@ -66,7 +86,7 @@ async function grantSchoolVerification(userId, email, domain) {
       granted_at: new Date().toISOString(),
     }, { onConflict: 'user_id,badge_type' })
 
-  return schoolName
+  return { schoolName, tier }
 }
 
 export default async function handler(req, res) {
@@ -119,8 +139,8 @@ export default async function handler(req, res) {
   // A school email proves *student* status, not employment — branch on the domain
   // so academic emails grant the school badge instead of a (wrong) company badge.
   if (isSchoolDomain(row.domain)) {
-    const schoolName = await grantSchoolVerification(user.id, user.email, row.domain)
-    return res.json({ ok: true, type: 'school', school_name: schoolName })
+    const { schoolName, tier } = await grantSchoolVerification(user.id, user.email, row.domain)
+    return res.json({ ok: true, type: 'school', school_name: schoolName, tier })
   }
 
   // Resolve company name (curated mapping, else auto-create a guess).
