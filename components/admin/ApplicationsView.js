@@ -110,6 +110,8 @@ export default function ApplicationsView({ token, t, dateRange, lang = 'ko' }) {
   const { data: apps, isLoading: loading, mutate } = useAdmin(`/api/admin/applications?${params}`, token)
 
   async function updateStatus(id, status) {
+    // 즉시 로컬 반영(재조회 없이) — 체감 지연 제거. 서버 반영은 뒤에서 재검증.
+    mutate(prev => prev?.map(a => (a.id === id ? { ...a, status } : a)), false)
     await fetch('/api/admin/applications', {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },

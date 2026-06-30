@@ -59,12 +59,22 @@ export default async function handler(req, res) {
 
   if (req.method === 'GET') {
     const { from, to } = req.query
-    let query = supabase
-      .from('job_applications')
-      .select('*, jobs(title, company)')
-    if (from) query = query.gte('created_at', `${from}T00:00:00`)
-    if (to) query = query.lte('created_at', `${to}T23:59:59`)
-    const { data } = await query.order('created_at', { ascending: false })
+    // PostgREST는 한 번에 최대 1000행만 반환하므로 range로 끝까지 페이지네이션.
+    const PAGE = 1000
+    let data = []
+    for (let offset = 0; ; offset += PAGE) {
+      let query = supabase
+        .from('job_applications')
+        .select('*, jobs(title, company)')
+      if (from) query = query.gte('created_at', `${from}T00:00:00`)
+      if (to) query = query.lte('created_at', `${to}T23:59:59`)
+      const { data: page } = await query
+        .order('created_at', { ascending: false })
+        .range(offset, offset + PAGE - 1)
+      if (!page?.length) break
+      data = data.concat(page)
+      if (page.length < PAGE) break
+    }
 
     const userIds = [...new Set((data || []).map(a => a.user_id).filter(Boolean))]
     let profileMap = {}
