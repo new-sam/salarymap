@@ -11,12 +11,20 @@ export default async function handler(req, res) {
   if (!admin) return res.status(401).json({ error: 'Unauthorized' })
 
   if (req.method === 'GET') {
-    const { data, error } = await supabase
-      .from('cold_outreach')
-      .select('*')
-      .order('created_at', { ascending: false })
-    if (error) return res.status(500).json({ error: error.message })
-    return res.status(200).json(data || [])
+    // PostgREST 는 요청당 1000행으로 캡되므로 끝까지 페이지네이션해서 전부 가져온다.
+    const PAGE = 1000
+    const all = []
+    for (let from = 0; ; from += PAGE) {
+      const { data, error } = await supabase
+        .from('cold_outreach')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .range(from, from + PAGE - 1)
+      if (error) return res.status(500).json({ error: error.message })
+      all.push(...(data || []))
+      if (!data || data.length < PAGE) break
+    }
+    return res.status(200).json(all)
   }
 
   if (req.method === 'POST') {
