@@ -129,6 +129,11 @@ a {
   body[data-job-detail-mobile="1"] {
     padding-bottom: 0 !important;
   }
+  /* 공개 명함(/c/[token])은 공유용 풀블리드 독립 페이지 — 상/하단 예약 모두 제거. */
+  body[data-card-mobile="1"] {
+    padding-top: 0 !important;
+    padding-bottom: 0 !important;
+  }
   .mtab {
     display: flex !important;
     position: fixed !important;

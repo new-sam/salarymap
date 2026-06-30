@@ -111,11 +111,12 @@ export default function PublicCardPage({ data, design }) {
       <Head>
         <title>{title}</title>
         <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+        {/* 링크 미리보기: 프로필 사진을 크게 띄우면 부담스러우므로 og:image를 쓰지 않고
+            이름·직책·회사만 깔끔한 텍스트 카드로 보여준다(작은 summary 카드). */}
         <meta property="og:title" content={d.name || '디지털 명함'} />
-        {desc ? <meta property="og:description" content={desc} /> : null}
-        {d.photoUrl ? <meta property="og:image" content={d.photoUrl} /> : null}
+        <meta property="og:description" content={desc || '디지털 명함'} />
         <meta property="og:type" content="profile" />
-        <meta name="twitter:card" content={d.photoUrl ? 'summary_large_image' : 'summary'} />
+        <meta name="twitter:card" content="summary" />
       </Head>
 
       <main style={S.page}>

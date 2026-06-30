@@ -86,6 +86,8 @@ export default function App({ Component, pageProps }) {
   // Job detail renders its own bottom Apply/Save CTA, so it hides the global
   // MobileTabBar (which would otherwise cover the CTA at bottom:0).
   const isJobDetail = router.pathname === '/jobs/[id]';
+  // 공개 디지털 명함(/c/[token])은 공유 링크용 독립 페이지 — 앱 소개 모달/탭바/푸터 없이 깔끔하게.
+  const isCard = router.pathname === '/c/[token]';
   // /for-companies 는 공개 랜딩이라 하단 글로벌 언어 스위처를 메인 랜딩과 동일하게 노출한다.
   const isForCompaniesLanding = router.pathname === '/for-companies';
   // Ad-landing routes get a static nav. /promo 는 푸터까지 차단(exit leak),
@@ -104,7 +106,9 @@ export default function App({ Component, pageProps }) {
     // Ad-landing routes (/cv, /promo/*) get a static nav (not sticky)
     if (isAdLanding) document.body.dataset.adLanding = '1';
     else delete document.body.dataset.adLanding;
-  }, [isCompany, isJobDetail, isAdLanding]);
+    if (isCard) document.body.dataset.cardMobile = '1';
+    else delete document.body.dataset.cardMobile;
+  }, [isCompany, isJobDetail, isAdLanding, isCard]);
   const activePage = activePageFor(router.pathname);
   return (
     <I18nProvider>
@@ -124,12 +128,12 @@ export default function App({ Component, pageProps }) {
         />
       )}
       <Component {...pageProps} />
-      {(!isCompany || isForCompaniesLanding) && !isAdmin && !isPromoLanding && (
+      {(!isCompany || isForCompaniesLanding) && !isAdmin && !isPromoLanding && !isCard && (
         <GlobalFooter />
       )}
-      {!isCompany && !isJobDetail && <MobileTabBar />}
+      {!isCompany && !isJobDetail && !isCard && <MobileTabBar />}
       <GlobalLoginModal />
-      {!isAdmin && !isAdLanding && <AppDownloadModal />}
+      {!isAdmin && !isAdLanding && !isCard && <AppDownloadModal />}
       <Toaster
         position="bottom-right"
         richColors
