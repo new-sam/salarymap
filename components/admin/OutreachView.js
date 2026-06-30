@@ -15,6 +15,28 @@ const STATUS_ORDER = ['todo', 'sent', 'replied', 'meeting', 'won', 'lost']
 
 const EMPTY = { company_name: '', contact_name: '', email: '', industry: '', campaign: '', status: 'todo', sent_at: '', memo: '' }
 
+// 코참 포맷 "ENGLISH ( 한글 )" → { en, ko }. 끝 괄호가 중첩될 수 있어 균형괄호로 매칭.
+function splitName(s) {
+  s = (s || '').trim()
+  if (!s) return { en: '', ko: '' }
+  if (s.endsWith(')')) {
+    let depth = 0
+    for (let i = s.length - 1; i >= 0; i--) {
+      if (s[i] === ')') depth++
+      else if (s[i] === '(') {
+        depth--
+        if (depth === 0) {
+          const before = s.slice(0, i).trim()
+          const inner = s.slice(i + 1, -1).trim()
+          if (/[가-힣]/.test(inner)) return { en: before, ko: inner }
+          return { en: before || inner, ko: '' }
+        }
+      }
+    }
+  }
+  return /[가-힣]/.test(s) ? { en: '', ko: s } : { en: s, ko: '' }
+}
+
 export default function OutreachView({ token, lang }) {
   const ko = lang !== 'en'
   const L = ko ? {
@@ -129,6 +151,19 @@ export default function OutreachView({ token, lang }) {
   const th = { padding: '8px 10px', textAlign: 'left', fontWeight: 600, color: '#8B95A1', fontSize: 11.5, whiteSpace: 'nowrap', borderBottom: '1px solid #EEF0F2' }
   const td = { padding: '8px 10px', fontSize: 12.5, color: '#191F28', borderBottom: '1px solid #F2F4F6', verticalAlign: 'top' }
 
+  // 회사/담당자: EN 위 · KO 아래로 한 셀에 표시 (가로 폭 절약)
+  const nameCell = (raw, bold) => {
+    const n = splitName(raw)
+    const main = n.en || n.ko || '-'
+    const sub = n.en ? n.ko : ''
+    return (
+      <td style={{ ...td, fontWeight: bold ? 600 : 400 }}>
+        <div style={{ wordBreak: 'keep-all' }}>{main}</div>
+        {sub && <div style={{ fontWeight: 400, color: '#8B95A1', fontSize: 11, marginTop: 2, wordBreak: 'keep-all' }}>{sub}</div>}
+      </td>
+    )
+  }
+
   return (
     <div style={{ maxWidth: 1200, margin: '0 auto', padding: '0 16px' }}>
       <datalist id="outreach-campaigns">{campaigns.map(c => <option key={c} value={c} />)}</datalist>
@@ -180,14 +215,23 @@ export default function OutreachView({ token, lang }) {
         <div style={{ textAlign: 'center', padding: 48, color: '#ADB5BD', fontSize: 14 }}>{L.empty}</div>
       ) : (
         <div style={{ overflowX: 'auto', border: '1px solid #EEF0F2', borderRadius: 12 }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', background: '#fff' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', background: '#fff', tableLayout: 'fixed' }}>
+            <colgroup>
+              <col style={{ width: '19%' }} />
+              <col style={{ width: '13%' }} />
+              <col style={{ width: '18%' }} />
+              <col style={{ width: '16%' }} />
+              <col style={{ width: '8%' }} />
+              <col style={{ width: '8%' }} />
+              <col style={{ width: '8%' }} />
+              <col style={{ width: '10%' }} />
+            </colgroup>
             <thead>
               <tr>
                 <th style={th}>{L.company}</th>
                 <th style={th}>{L.contact}</th>
                 <th style={th}>{L.email}</th>
                 <th style={th}>{L.industry}</th>
-                <th style={th}>{L.campaign}</th>
                 <th style={th}>{L.status}</th>
                 <th style={th}>{L.sentAt}</th>
                 <th style={th}>{L.memo}</th>
@@ -197,7 +241,7 @@ export default function OutreachView({ token, lang }) {
             <tbody>
               {filtered.map(r => editingId === r.id ? (
                 <tr key={r.id}>
-                  <td style={{ ...td, padding: 10 }} colSpan={9}>
+                  <td style={{ ...td, padding: 10 }} colSpan={8}>
                     {formFields(editForm, setEditForm)}
                     <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 10 }}>
                       <button onClick={() => setEditingId(null)} style={{ padding: '7px 14px', borderRadius: 8, border: '1px solid #E5E8EB', background: '#fff', color: '#4E5968', fontSize: 12.5, fontWeight: 600, cursor: 'pointer' }}>{L.cancel}</button>
@@ -207,11 +251,10 @@ export default function OutreachView({ token, lang }) {
                 </tr>
               ) : (
                 <tr key={r.id}>
-                  <td style={{ ...td, fontWeight: 600 }}>{r.company_name}</td>
-                  <td style={td}>{r.contact_name || '-'}</td>
-                  <td style={td}>{r.email ? <a href={`mailto:${r.email}`} style={{ color: '#2563EB', textDecoration: 'none' }}>{r.email}</a> : '-'}</td>
-                  <td style={td}>{r.industry || '-'}</td>
-                  <td style={td}>{r.campaign || '-'}</td>
+                  {nameCell(r.company_name, true)}
+                  {nameCell(r.contact_name, false)}
+                  <td style={{ ...td, wordBreak: 'break-all' }}>{r.email ? <a href={`mailto:${r.email}`} style={{ color: '#2563EB', textDecoration: 'none' }}>{r.email}</a> : '-'}</td>
+                  <td style={{ ...td, whiteSpace: 'normal', wordBreak: 'keep-all' }}>{r.industry || '-'}</td>
                   <td style={td}>
                     <select value={r.status} onChange={e => quickStatus(r, e.target.value)}
                       style={{ border: 'none', cursor: 'pointer', borderRadius: 999, padding: '3px 8px', fontSize: 11, fontWeight: 700, color: '#fff', background: (STATUS[r.status] || STATUS.todo).bg, appearance: 'none', WebkitAppearance: 'none', textAlign: 'center' }}>
@@ -219,8 +262,8 @@ export default function OutreachView({ token, lang }) {
                     </select>
                   </td>
                   <td style={{ ...td, whiteSpace: 'nowrap' }}>{r.sent_at || '-'}</td>
-                  <td style={{ ...td, maxWidth: 220, whiteSpace: 'pre-wrap', color: '#4E5968' }}>{r.memo || '-'}</td>
-                  <td style={{ ...td, textAlign: 'right', whiteSpace: 'nowrap' }}>
+                  <td style={{ ...td, whiteSpace: 'pre-wrap', wordBreak: 'break-word', color: '#8B95A1', fontSize: 11 }}>{r.memo || '-'}</td>
+                  <td style={{ ...td, textAlign: 'right' }}>
                     <button onClick={() => { setEditingId(r.id); setEditForm({ ...EMPTY, ...r, sent_at: r.sent_at || '' }) }}
                       style={{ padding: '4px 10px', borderRadius: 6, border: '1px solid #E5E8EB', background: '#fff', color: '#4E5968', fontSize: 11.5, fontWeight: 600, cursor: 'pointer', marginRight: 6 }}>{L.edit}</button>
                     <button onClick={() => removeLead(r.id)}
