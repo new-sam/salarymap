@@ -66,20 +66,41 @@ export default async function handler(req, res) {
     if (!card || typeof card !== 'object' || !card.data) {
       return res.status(400).json({ error: 'card.data required' })
     }
+    const imageB64 = typeof req.body?.image === 'string' ? req.body.image : null
 
-    // 기존 토큰 유지(링크 불변), 없으면 새로 발급.
+    // 기존 토큰/이미지 유지(링크 불변), 없으면 새로 발급.
     const { data: existing } = await supabase
       .from('business_cards')
-      .select('share_token')
+      .select('share_token, card_image_url')
       .eq('user_id', me.id)
       .maybeSingle()
     const token = existing?.share_token || newToken()
+
+    // 명함 캡처 PNG가 오면 공개 스토리지에 업로드(같은 경로 덮어쓰기) → og:image URL.
+    let cardImageUrl = existing?.card_image_url ?? null
+    if (imageB64) {
+      try {
+        const buffer = Buffer.from(imageB64, 'base64')
+        const path = `cards/${token}.png`
+        const { error: upErr } = await supabase.storage
+          .from('card-images')
+          .upload(path, buffer, { contentType: 'image/png', upsert: true })
+        if (!upErr) {
+          // 캐시 무력화용 버전 쿼리(수정 후 미리보기 갱신).
+          const base = supabase.storage.from('card-images').getPublicUrl(path).data.publicUrl
+          cardImageUrl = `${base}?v=${Date.now()}`
+        }
+      } catch {
+        // 업로드 실패해도 발행 자체는 진행(이미지 없이).
+      }
+    }
 
     const { error } = await supabase.from('business_cards').upsert(
       {
         user_id: me.id,
         share_token: token,
         card_data: card,
+        card_image_url: cardImageUrl,
         is_published: true,
         updated_at: new Date().toISOString(),
       },
@@ -92,3 +113,6 @@ export default async function handler(req, res) {
   res.setHeader('Allow', 'GET, POST')
   return res.status(405).json({ error: 'Method not allowed' })
 }
+
+// 명함 캡처 PNG(base64)를 받으므로 본문 크기 제한을 넉넉히.
+export const config = { api: { bodyParser: { sizeLimit: '6mb' } } }

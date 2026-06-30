@@ -11,7 +11,7 @@ export async function getServerSideProps({ params, req, res }) {
   )
   const { data: row } = await supabase
     .from('business_cards')
-    .select('id, card_data, is_published')
+    .select('id, card_data, card_image_url, is_published')
     .eq('share_token', params.token)
     .eq('is_published', true)
     .maybeSingle()
@@ -33,7 +33,7 @@ export async function getServerSideProps({ params, req, res }) {
   }
 
   const card = row.card_data || {}
-  return { props: { data: card.data || {}, design: card.design || {} } }
+  return { props: { data: card.data || {}, design: card.design || {}, image: row.card_image_url || null } }
 }
 
 // ---- 디자인 토큰 헬퍼(앱의 business-card-face와 동일 규칙) ----
@@ -74,7 +74,7 @@ function buildVCard(d) {
   return lines.join('\r\n')
 }
 
-export default function PublicCardPage({ data, design }) {
+export default function PublicCardPage({ data, design, image }) {
   const d = data || {}
   const ds = design || {}
   const accent = ds.accent || '#D4AF6A'
@@ -111,12 +111,14 @@ export default function PublicCardPage({ data, design }) {
       <Head>
         <title>{title}</title>
         <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-        {/* 링크 미리보기: 프로필 사진을 크게 띄우면 부담스러우므로 og:image를 쓰지 않고
-            이름·직책·회사만 깔끔한 텍스트 카드로 보여준다(작은 summary 카드). */}
+        {/* 링크 미리보기: 명함을 캡처한 이미지(card_image_url)가 있으면 그걸 큰 카드로,
+            없으면 프로필 사진 대신 이름·직책 텍스트만(작은 카드)으로. */}
         <meta property="og:title" content={d.name || '디지털 명함'} />
         <meta property="og:description" content={desc || '디지털 명함'} />
         <meta property="og:type" content="profile" />
-        <meta name="twitter:card" content="summary" />
+        {image ? <meta property="og:image" content={image} /> : null}
+        <meta name="twitter:card" content={image ? 'summary_large_image' : 'summary'} />
+        {image ? <meta name="twitter:image" content={image} /> : null}
       </Head>
 
       <main style={S.page}>
