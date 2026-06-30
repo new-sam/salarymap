@@ -32,8 +32,38 @@ export async function getServerSideProps({ params, req, res }) {
     // 열람 기록 실패는 페이지 표시에 영향 없음.
   }
 
+  // 보는 사람(주로 베트남) 언어로 CTA를 보여주려 Accept-Language로 vi/ko/en 판별.
+  const al = String(req.headers['accept-language'] || '').toLowerCase()
+  const lang = al.startsWith('vi') ? 'vi' : al.startsWith('ko') ? 'ko' : 'en'
+
   const card = row.card_data || {}
-  return { props: { data: card.data || {}, design: card.design || {}, image: row.card_image_url || null } }
+  return { props: { data: card.data || {}, design: card.design || {}, image: row.card_image_url || null, lang } }
+}
+
+// 공개 페이지 UI 문구(보는 사람 언어). 명함의 목적은 "앱 유입" — 연락처 저장은 보너스 훅,
+// 메인 CTA는 "나도 디지털 명함 만들기"(베트남: 비 오면 종이 명함 젖는다는 훅).
+const STR = {
+  vi: {
+    title: 'Danh thiếp số',
+    save: 'Lưu vào danh bạ',
+    ctaTitle: 'Tự tạo danh thiếp số của bạn 📇',
+    ctaDesc: 'Trời mưa, danh thiếp giấy ướt nhèm và nhàu nát. Danh thiếp số luôn sạch đẹp, cập nhật tức thì, chia sẻ chỉ bằng một liên kết.',
+    ctaBtn: 'Tạo miễn phí trên FYI',
+  },
+  en: {
+    title: 'Digital card',
+    save: 'Save to contacts',
+    ctaTitle: 'Make your own digital card 📇',
+    ctaDesc: 'Paper cards get soggy and torn in the rain. A digital card stays clean, updates instantly, and shares with a single link.',
+    ctaBtn: 'Create free on FYI',
+  },
+  ko: {
+    title: '디지털 명함',
+    save: '연락처 저장',
+    ctaTitle: '나도 디지털 명함 만들기 📇',
+    ctaDesc: '비 오면 종이 명함은 젖고 구겨져요. 디지털 명함은 늘 깔끔하고, 바로 수정되고, 링크 하나로 공유돼요.',
+    ctaBtn: 'FYI에서 무료로 만들기',
+  },
 }
 
 // ---- 디자인 토큰 헬퍼(앱의 business-card-face와 동일 규칙) ----
@@ -74,7 +104,8 @@ function buildVCard(d) {
   return lines.join('\r\n')
 }
 
-export default function PublicCardPage({ data, design, image }) {
+export default function PublicCardPage({ data, design, image, lang }) {
+  const tr = STR[lang] || STR.en
   const d = data || {}
   const ds = design || {}
   const accent = ds.accent || '#D4AF6A'
@@ -89,7 +120,7 @@ export default function PublicCardPage({ data, design, image }) {
   const upper = ds.template !== 'gradient'
   const showPhoto = ds.photo !== 'none'
 
-  const title = d.name ? `${d.name} 명함` : '디지털 명함'
+  const title = d.name ? `${d.name} · ${tr.title}` : tr.title
   const desc = [d.position, d.company].filter(Boolean).join(' · ')
 
   function saveContact() {
@@ -113,8 +144,8 @@ export default function PublicCardPage({ data, design, image }) {
         <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
         {/* 링크 미리보기: 명함을 캡처한 이미지(card_image_url)가 있으면 그걸 큰 카드로,
             없으면 프로필 사진 대신 이름·직책 텍스트만(작은 카드)으로. */}
-        <meta property="og:title" content={d.name || '디지털 명함'} />
-        <meta property="og:description" content={desc || '디지털 명함'} />
+        <meta property="og:title" content={d.name || tr.title} />
+        <meta property="og:description" content={desc || tr.title} />
         <meta property="og:type" content="profile" />
         {image ? <meta property="og:image" content={image} /> : null}
         <meta name="twitter:card" content={image ? 'summary_large_image' : 'summary'} />
@@ -155,8 +186,15 @@ export default function PublicCardPage({ data, design, image }) {
           </div>
         </div>
 
-        <button style={S.saveBtn} onClick={saveContact}>연락처 저장</button>
-        <a href="https://salary-fyi.com" style={S.footer}>FYI로 만든 디지털 명함</a>
+        {/* 보조: 이 명함 연락처 저장(보너스 훅) */}
+        <button style={S.saveBtn} onClick={saveContact}>{tr.save}</button>
+
+        {/* 메인 목적: 앱 유입 — 보는 사람이 본인 명함을 만들게 유도 */}
+        <div style={S.promo}>
+          <div style={S.promoTitle}>{tr.ctaTitle}</div>
+          <div style={S.promoDesc}>{tr.ctaDesc}</div>
+          <a href="/app?utm_source=card&utm_medium=share&utm_campaign=digital_card" style={S.ctaBtn}>{tr.ctaBtn}</a>
+        </div>
       </main>
     </>
   )
@@ -173,6 +211,11 @@ const S = {
   pos: { fontSize: 13.5, fontWeight: 600, marginTop: 3 },
   divider: { width: 38, height: 2, borderRadius: 1 },
   contact: { fontSize: 12.5, fontWeight: 500, letterSpacing: 0.2, lineHeight: 1.7, wordBreak: 'break-word' },
-  saveBtn: { background: '#FFFFFF', color: '#111', border: 'none', borderRadius: 26, padding: '13px 28px', fontSize: 15, fontWeight: 700, cursor: 'pointer' },
-  footer: { color: 'rgba(255,255,255,0.45)', fontSize: 12.5, textDecoration: 'none', fontWeight: 500 },
+  // 연락처 저장 = 보조(고스트) 버튼
+  saveBtn: { background: 'transparent', color: '#fff', border: '1px solid rgba(255,255,255,0.25)', borderRadius: 26, padding: '12px 26px', fontSize: 14.5, fontWeight: 700, cursor: 'pointer' },
+  // 앱 유입 CTA = 메인
+  promo: { width: '100%', maxWidth: 380, background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 18, padding: '22px 22px 24px', textAlign: 'center', boxSizing: 'border-box', marginTop: 6 },
+  promoTitle: { color: '#fff', fontSize: 17, fontWeight: 800, lineHeight: 1.35 },
+  promoDesc: { color: 'rgba(255,255,255,0.6)', fontSize: 13.5, lineHeight: 1.6, marginTop: 10 },
+  ctaBtn: { display: 'block', marginTop: 18, background: '#ff6000', color: '#fff', textDecoration: 'none', borderRadius: 12, padding: '14px', fontSize: 15.5, fontWeight: 800 },
 }
