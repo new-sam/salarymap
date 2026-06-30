@@ -4,6 +4,10 @@
 import Head from 'next/head'
 import { createClient } from '@supabase/supabase-js'
 
+// 앱 다운로드 = App Store(iOS). ct=캠페인 토큰으로 "공유 명함" 유입을 App Store Connect에서 추적.
+// (pages/app.js / AppDownloadModal.js와 동일한 앱 ID)
+const APP_STORE_URL = 'https://apps.apple.com/app/id6778311550?ct=digital_card'
+
 export async function getServerSideProps({ params, req, res }) {
   const supabase = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL,
@@ -193,7 +197,7 @@ export default function PublicCardPage({ data, design, image, lang }) {
         <div style={S.promo}>
           <div style={S.promoTitle}>{tr.ctaTitle}</div>
           <div style={S.promoDesc}>{tr.ctaDesc}</div>
-          <a href="/app?utm_source=card&utm_medium=share&utm_campaign=digital_card" style={S.ctaBtn}>{tr.ctaBtn}</a>
+          <a href={APP_STORE_URL} style={S.ctaBtn}>{tr.ctaBtn}</a>
         </div>
       </main>
     </>
