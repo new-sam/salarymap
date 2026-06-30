@@ -101,8 +101,12 @@ function StatusDropdown({ value, onChange, lang }) {
   )
 }
 
+// 상태 정규화: DB 기본값 pending·미설정은 모두 '지원 완료'(applied) 단계로 묶음.
+const normStatus = (s) => (!s || s === 'pending' ? 'applied' : s)
+
 export default function ApplicationsView({ token, t, dateRange, lang = 'ko' }) {
   const [platformFilter, setPlatformFilter] = useState('all') // all, app, web
+  const [statusFilter, setStatusFilter] = useState('all') // all | applied | viewed | reviewing | accepted | rejected
 
   const params = new URLSearchParams()
   if (dateRange?.from) params.set('from', dateRange.from)
@@ -150,9 +154,12 @@ export default function ApplicationsView({ token, t, dateRange, lang = 'ko' }) {
   if (loading) return <div style={{ textAlign: 'center', padding: 40, color: '#666' }}>{t.appsLoading}</div>
   if (!apps || apps.length === 0) return <div style={{ textAlign: 'center', padding: 40, color: '#999' }}>{t.appsEmpty}</div>
 
-  const visible = apps.filter(a => platformFilter === 'all' || (a.platform || null) === platformFilter)
+  const platformFiltered = apps.filter(a => platformFilter === 'all' || (a.platform || null) === platformFilter)
+  const visible = platformFiltered.filter(a => statusFilter === 'all' || normStatus(a.status) === statusFilter)
   const appCount = apps.filter(a => a.platform === 'app').length
   const webCount = apps.filter(a => a.platform === 'web').length
+  // 단계별 카운트는 플랫폼 필터 적용 후 기준으로 집계.
+  const statusCount = (s) => platformFiltered.filter(a => normStatus(a.status) === s).length
 
   const pillStyle = (on) => ({
     fontSize: 12.5, fontWeight: 600, cursor: 'pointer', borderRadius: 999, padding: '6px 12px',
@@ -186,6 +193,20 @@ export default function ApplicationsView({ token, t, dateRange, lang = 'ko' }) {
             CSV
           </button>
         </div>
+      </div>
+
+      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 14 }}>
+        {[{ key: 'all', label: lang === 'ko' ? '전체' : 'All' }, ...STATUS_OPTIONS.map(s => ({ key: s, label: statusLabel(s, lang) }))].map(f => {
+          const on = statusFilter === f.key
+          const c = f.key === 'all' ? null : statusStyle(f.key)
+          const n = f.key === 'all' ? platformFiltered.length : statusCount(f.key)
+          return (
+            <button key={f.key} onClick={() => setStatusFilter(f.key)} style={pillStyle(on)}>
+              {c && <span style={{ display: 'inline-block', width: 7, height: 7, borderRadius: '50%', background: c.bg, marginRight: 6, verticalAlign: 'middle' }} />}
+              {f.label} <span style={{ opacity: 0.6, fontWeight: 700 }}>{n}</span>
+            </button>
+          )
+        })}
       </div>
 
       <div style={{ background: '#fff', border: '1px solid #EEF0F2', borderRadius: 14, overflow: 'hidden' }}>
