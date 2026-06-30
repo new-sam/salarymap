@@ -15,6 +15,7 @@ import TalentPoolView from '../../components/admin/TalentPoolView'
 import VerificationsView from '../../components/admin/VerificationsView'
 import CommunityView from '../../components/admin/CommunityView'
 import AppMetricsView from '../../components/admin/AppMetricsView'
+import OutreachView from '../../components/admin/OutreachView'
 import {
   T, METRICS_BASE, EXP_COLORS, COLORS,
   inputStyle, sectionStyle, sectionTitle,
@@ -938,6 +939,11 @@ export default function AdminDashboard() {
         {/* App Metrics Tab */}
         {tab === 'appMetrics' && (
           <AppMetricsView token={token} lang={lang} dateRange={dateRange} />
+        )}
+
+        {/* Cold Outreach Tab — 콜드메일 영업 대상/진행 관리 */}
+        {tab === 'outreach' && (
+          <OutreachView token={token} lang={lang} />
         )}
 
       </div>

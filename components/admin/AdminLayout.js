@@ -31,6 +31,12 @@ function buildNav(lang) {
       ],
     },
     {
+      label: L('영업', 'Sales'),
+      items: [
+        { label: L('콜드메일', 'Cold outreach'), pathname: '/admin/dashboard', tab: 'outreach' },
+      ],
+    },
+    {
       label: L('공고 관리', 'Job ops'),
       items: [
         { label: L('공고 등록', 'New job'), pathname: '/admin/jobs', tab: 'job-new' },
