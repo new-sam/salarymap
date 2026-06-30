@@ -17,6 +17,24 @@ function siteUrl() {
   return (process.env.NEXT_PUBLIC_SITE_URL || 'https://salary-fyi.com').replace(/\/$/, '')
 }
 
+// 디자인 전체 해제에 필요한 고유 열람(친구) 수.
+const UNLOCK_TARGET = 3
+
+// 카드의 고유 열람 수 → 해제 여부. 처음 도달하면 designs_unlocked를 영구 true로 굳힌다.
+async function unlockState(card) {
+  if (!card) return { viewCount: 0, unlocked: false }
+  const { count } = await supabase
+    .from('card_views')
+    .select('id', { count: 'exact', head: true })
+    .eq('card_id', card.id)
+  const viewCount = count || 0
+  const unlocked = card.designs_unlocked || viewCount >= UNLOCK_TARGET
+  if (unlocked && !card.designs_unlocked) {
+    await supabase.from('business_cards').update({ designs_unlocked: true }).eq('id', card.id)
+  }
+  return { viewCount, unlocked }
+}
+
 // URL-safe 짧은 토큰(추측 어렵게).
 function newToken() {
   return crypto.randomBytes(12).toString('base64').replace(/[+/=]/g, '').slice(0, 14)
@@ -29,11 +47,18 @@ export default async function handler(req, res) {
   if (req.method === 'GET') {
     const { data } = await supabase
       .from('business_cards')
-      .select('share_token')
+      .select('id, share_token, designs_unlocked')
       .eq('user_id', me.id)
       .maybeSingle()
-    if (!data) return res.status(200).json({ token: null, url: null })
-    return res.status(200).json({ token: data.share_token, url: `${siteUrl()}/c/${data.share_token}` })
+    if (!data) return res.status(200).json({ token: null, url: null, viewCount: 0, unlocked: false, target: UNLOCK_TARGET })
+    const { viewCount, unlocked } = await unlockState(data)
+    return res.status(200).json({
+      token: data.share_token,
+      url: `${siteUrl()}/c/${data.share_token}`,
+      viewCount,
+      unlocked,
+      target: UNLOCK_TARGET,
+    })
   }
 
   if (req.method === 'POST') {

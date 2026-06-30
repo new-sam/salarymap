@@ -4,19 +4,34 @@
 import Head from 'next/head'
 import { createClient } from '@supabase/supabase-js'
 
-export async function getServerSideProps({ params }) {
+export async function getServerSideProps({ params, req, res }) {
   const supabase = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL,
     process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
   )
   const { data: row } = await supabase
     .from('business_cards')
-    .select('card_data, is_published')
+    .select('id, card_data, is_published')
     .eq('share_token', params.token)
     .eq('is_published', true)
     .maybeSingle()
 
   if (!row) return { notFound: true }
+
+  // 고유 열람 기록(브라우저 쿠키 단위). 명함 주인의 디자인 잠금해제 카운트에 쓰인다.
+  try {
+    let vid = req.cookies?.fyi_vid
+    if (!vid) {
+      vid = Math.random().toString(36).slice(2) + Date.now().toString(36)
+      res.setHeader('Set-Cookie', `fyi_vid=${vid}; Path=/; Max-Age=31536000; SameSite=Lax`)
+    }
+    await supabase
+      .from('card_views')
+      .upsert({ card_id: row.id, visitor: vid }, { onConflict: 'card_id,visitor', ignoreDuplicates: true })
+  } catch {
+    // 열람 기록 실패는 페이지 표시에 영향 없음.
+  }
+
   const card = row.card_data || {}
   return { props: { data: card.data || {}, design: card.design || {} } }
 }
