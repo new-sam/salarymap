@@ -70,6 +70,7 @@ export default function OutreachView({ token, lang, owner = 'wsj' }) {
   const [sendModal, setSendModal] = useState(null) // [{id,company,email,subject,body}]
   const [sending, setSending] = useState(false)
   const [generating, setGenerating] = useState(false)
+  const [selectMode, setSelectMode] = useState(false)
 
   const campaigns = useMemo(
     () => [...new Set(rows.map(r => r.campaign).filter(Boolean))].sort(),
@@ -261,11 +262,10 @@ export default function OutreachView({ token, lang, owner = 'wsj' }) {
             {campaigns.map(c => <option key={c} value={c}>{c}</option>)}
           </select>
         )}
-        {selected.size > 0 && (
-          <button onClick={openSend} style={{ padding: '8px 16px', borderRadius: 8, border: 'none', background: '#ff4400', color: '#fff', fontSize: 13, fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap' }}>
-            {ko ? `선택 ${selected.size}건 발송` : `Send ${selected.size}`}
-          </button>
-        )}
+        <button onClick={() => { if (selectMode) setSelected(new Set()); setSelectMode(v => !v) }}
+          style={{ padding: '8px 16px', borderRadius: 8, border: '1px solid', borderColor: selectMode ? '#ff4400' : '#E5E8EB', background: selectMode ? '#FFF1EC' : '#fff', color: selectMode ? '#ff4400' : '#4E5968', fontSize: 13, fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap' }}>
+          {selectMode ? (ko ? '✓ 선택 종료' : 'Done') : (ko ? '다중 선택' : 'Select')}
+        </button>
         <input style={{ ...inp, width: 200 }} placeholder={L.search} value={search} onChange={e => setSearch(e.target.value)} />
         <button onClick={() => setShowAdd(v => !v)} style={{ padding: '8px 16px', borderRadius: 8, border: 'none', background: '#ff4400', color: '#fff', fontSize: 13, fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap' }}>{L.add}</button>
       </div>
@@ -327,15 +327,17 @@ export default function OutreachView({ token, lang, owner = 'wsj' }) {
                   </td>
                 </tr>
               ) : (
-                <tr key={r.id} style={selected.has(r.id) ? { background: '#FFF1EC' } : undefined}>
+                <tr key={r.id}
+                  onClick={selectMode ? () => toggleSel(r.id) : undefined}
+                  style={{ ...(selected.has(r.id) ? { background: '#FFF1EC' } : {}), cursor: selectMode ? 'pointer' : 'default' }}>
                   <td style={{ ...td, textAlign: 'center' }}>
-                    <input type="checkbox" checked={selected.has(r.id)} onChange={() => toggleSel(r.id)} />
+                    <input type="checkbox" checked={selected.has(r.id)} onChange={() => toggleSel(r.id)} onClick={e => e.stopPropagation()} style={{ width: 17, height: 17, cursor: 'pointer' }} />
                   </td>
                   {nameCell(r.company_name, true)}
                   {nameCell(r.contact_name, false)}
                   <td style={{ ...td, wordBreak: 'break-all' }}>{r.email ? <a href={`mailto:${r.email}`} style={{ color: '#2563EB', textDecoration: 'none' }}>{r.email}</a> : '-'}</td>
                   <td style={{ ...td, whiteSpace: 'normal', wordBreak: 'keep-all' }}>{r.industry || '-'}</td>
-                  <td style={td}>
+                  <td style={td} onClick={e => e.stopPropagation()}>
                     <select value={r.status} onChange={e => quickStatus(r, e.target.value)}
                       style={{ border: 'none', cursor: 'pointer', borderRadius: 999, padding: '3px 8px', fontSize: 11, fontWeight: 700, color: '#fff', background: (STATUS[r.status] || STATUS.todo).bg, appearance: 'none', WebkitAppearance: 'none', textAlign: 'center' }}>
                       {STATUS_ORDER.map(s => <option key={s} value={s} style={{ background: '#fff', color: '#191F28' }}>{STATUS[s][ko ? 'ko' : 'en']}</option>)}
@@ -346,7 +348,7 @@ export default function OutreachView({ token, lang, owner = 'wsj' }) {
                     {r.open_count > 0 && <div style={{ fontSize: 11, color: '#2563EB', marginTop: 2 }} title={r.opened_at ? new Date(r.opened_at).toLocaleString() : ''}>👁 {r.open_count}</div>}
                   </td>
                   <td style={{ ...td, whiteSpace: 'pre-wrap', wordBreak: 'break-word', color: '#8B95A1', fontSize: 11 }}>{r.memo || '-'}</td>
-                  <td style={{ ...td, textAlign: 'right' }}>
+                  <td style={{ ...td, textAlign: 'right' }} onClick={e => e.stopPropagation()}>
                     <button onClick={() => { setEditingId(r.id); setEditForm({ ...EMPTY, ...r, sent_at: r.sent_at || '' }) }}
                       style={{ padding: '4px 10px', borderRadius: 6, border: '1px solid #E5E8EB', background: '#fff', color: '#4E5968', fontSize: 11.5, fontWeight: 600, cursor: 'pointer', marginRight: 6 }}>{L.edit}</button>
                     <button onClick={() => removeLead(r.id)}
@@ -356,6 +358,15 @@ export default function OutreachView({ token, lang, owner = 'wsj' }) {
               ))}
             </tbody>
           </table>
+        </div>
+      )}
+
+      {/* 하단 고정 선택 액션바 */}
+      {selected.size > 0 && (
+        <div style={{ position: 'fixed', left: 0, right: 0, bottom: 0, zIndex: 900, background: '#191F28', color: '#fff', padding: '12px 20px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12, boxShadow: '0 -2px 14px rgba(0,0,0,0.18)' }}>
+          <span style={{ fontSize: 14, fontWeight: 700 }}>{ko ? `${selected.size}건 선택됨` : `${selected.size} selected`}</span>
+          <button onClick={() => setSelected(new Set())} style={{ padding: '8px 14px', borderRadius: 8, border: '1px solid #4E5968', background: 'transparent', color: '#E5E8EB', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>{ko ? '선택 해제' : 'Clear'}</button>
+          <button onClick={openSend} style={{ padding: '8px 22px', borderRadius: 8, border: 'none', background: '#ff4400', color: '#fff', fontSize: 14, fontWeight: 700, cursor: 'pointer' }}>{ko ? `${selected.size}건 발송` : `Send ${selected.size}`}</button>
         </div>
       )}
 
