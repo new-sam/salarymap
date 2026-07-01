@@ -173,18 +173,20 @@ export default function OutreachView({ token, lang }) {
     <div style={{ maxWidth: 1200, margin: '0 auto', padding: '0 16px' }}>
       <datalist id="outreach-campaigns">{campaigns.map(c => <option key={c} value={c} />)}</datalist>
 
-      {/* 오픈율 · 회신율 */}
-      {sentPlus > 0 && (
-        <div style={{ margin: '16px 0 0', fontSize: 13, color: '#4E5968', display: 'flex', gap: 18, flexWrap: 'wrap', alignItems: 'baseline' }}>
-          <span>
-            {ko ? '오픈율' : 'Open rate'} <b style={{ color: '#2563EB', fontSize: 15 }}>{openRate}%</b>
-            <span style={{ color: '#8B95A1', marginLeft: 5 }}>({openedCount}/{sentPlus})</span>
-            <span style={{ color: '#C1C7CD', fontSize: 11, marginLeft: 5 }}>{ko ? '※참고용' : '※approx'}</span>
-          </span>
-          <span>
-            {ko ? '회신율' : 'Reply rate'} <b style={{ color: '#7C3AED', fontSize: 15 }}>{replyRate}%</b>
-            <span style={{ color: '#8B95A1', marginLeft: 5 }}>({repliedPlus}/{sentPlus})</span>
-          </span>
+      {/* 퍼널 지표 (발송 → 오픈 → 회신) */}
+      {rows.length > 0 && (
+        <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', margin: '18px 0 0' }}>
+          {[
+            { label: ko ? '발송' : 'Sent', big: `${sentPlus}`, sub: ko ? '총 발송' : 'emails', color: '#191F28', note: '' },
+            { label: ko ? '오픈율' : 'Open rate', big: `${openRate}%`, sub: `${openedCount}/${sentPlus}`, color: '#2563EB', note: ko ? '애플MPP로 과대·참고용' : 'approx' },
+            { label: ko ? '회신율' : 'Reply rate', big: `${replyRate}%`, sub: `${repliedPlus}/${sentPlus}`, color: '#7C3AED', note: '' },
+          ].map((m, i) => (
+            <div key={i} style={{ flex: '1 1 150px', minWidth: 140, background: '#fff', border: '1px solid #EEF0F2', borderRadius: 12, padding: '14px 16px' }}>
+              <div style={{ fontSize: 12, color: '#8B95A1', marginBottom: 6 }}>{m.label}</div>
+              <div style={{ fontSize: 28, fontWeight: 800, color: m.color, letterSpacing: '-0.02em', lineHeight: 1 }}>{m.big}</div>
+              <div style={{ fontSize: 11, color: '#ADB5BD', marginTop: 6 }}>{m.sub}{m.note ? ` · ${m.note}` : ''}</div>
+            </div>
+          ))}
         </div>
       )}
 
@@ -281,7 +283,10 @@ export default function OutreachView({ token, lang }) {
                       {STATUS_ORDER.map(s => <option key={s} value={s} style={{ background: '#fff', color: '#191F28' }}>{STATUS[s][ko ? 'ko' : 'en']}</option>)}
                     </select>
                   </td>
-                  <td style={{ ...td, whiteSpace: 'nowrap' }}>{r.sent_at || '-'}</td>
+                  <td style={{ ...td, whiteSpace: 'nowrap' }}>
+                    <div>{r.sent_at || '-'}</div>
+                    {r.open_count > 0 && <div style={{ fontSize: 11, color: '#2563EB', marginTop: 2 }} title={r.opened_at ? new Date(r.opened_at).toLocaleString() : ''}>👁 {r.open_count}</div>}
+                  </td>
                   <td style={{ ...td, whiteSpace: 'pre-wrap', wordBreak: 'break-word', color: '#8B95A1', fontSize: 11 }}>{r.memo || '-'}</td>
                   <td style={{ ...td, textAlign: 'right' }}>
                     <button onClick={() => { setEditingId(r.id); setEditForm({ ...EMPTY, ...r, sent_at: r.sent_at || '' }) }}
