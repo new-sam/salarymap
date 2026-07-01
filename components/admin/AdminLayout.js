@@ -33,7 +33,8 @@ function buildNav(lang) {
     {
       label: L('영업', 'Sales'),
       items: [
-        { label: L('콜드메일', 'Cold outreach'), pathname: '/admin/dashboard', tab: 'outreach' },
+        { label: L('콜드메일 (위승주)', 'Outreach (WSJ)'), pathname: '/admin/dashboard', tab: 'outreach' },
+        { label: L('콜드메일 (남영훈)', 'Outreach (YH)'), pathname: '/admin/dashboard', tab: 'outreach-yh' },
       ],
     },
     {

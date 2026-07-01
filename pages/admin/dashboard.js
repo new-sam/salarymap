@@ -942,8 +942,8 @@ export default function AdminDashboard() {
         )}
 
         {/* Cold Outreach Tab — 콜드메일 영업 대상/진행 관리 */}
-        {tab === 'outreach' && (
-          <OutreachView token={token} lang={lang} />
+        {(tab === 'outreach' || tab === 'outreach-yh') && (
+          <OutreachView token={token} lang={lang} owner={tab === 'outreach-yh' ? 'younghun' : 'wsj'} />
         )}
 
       </div>

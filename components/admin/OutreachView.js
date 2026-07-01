@@ -37,7 +37,7 @@ function splitName(s) {
   return /[가-힣]/.test(s) ? { en: '', ko: s } : { en: s, ko: '' }
 }
 
-export default function OutreachView({ token, lang }) {
+export default function OutreachView({ token, lang, owner = 'wsj' }) {
   const ko = lang !== 'en'
   const L = ko ? {
     loading: '불러오는 중…', empty: '등록된 대상이 없습니다', all: '전체', allCampaigns: '전체 캠페인',
@@ -56,7 +56,7 @@ export default function OutreachView({ token, lang }) {
   }
 
   const { data, isLoading: loading, mutate } = useAdmin('/api/admin/outreach', token)
-  const rows = data || []
+  const rows = (data || []).filter(r => (r.owner || 'wsj') === owner)
 
   const [statusFilter, setStatusFilter] = useState('all')
   const [campaignFilter, setCampaignFilter] = useState('')
@@ -100,7 +100,7 @@ export default function OutreachView({ token, lang }) {
     if (!addForm.company_name.trim()) { alert(L.needCompany); return }
     setBusy(true)
     try {
-      const res = await fetch('/api/admin/outreach', { method: 'POST', headers: reqHeaders, body: JSON.stringify(clean(addForm)) })
+      const res = await fetch('/api/admin/outreach', { method: 'POST', headers: reqHeaders, body: JSON.stringify({ ...clean(addForm), owner }) })
       if (res.ok) {
         const created = await res.json()
         mutate(prev => [created, ...(prev || [])], false)
