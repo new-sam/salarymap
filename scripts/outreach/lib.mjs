@@ -10,6 +10,8 @@ export const env = Object.fromEntries(
     .split('\n').filter(l => l && !l.startsWith('#') && l.includes('='))
     .map(l => { const i = l.indexOf('='); return [l.slice(0, i).trim(), l.slice(i + 1).trim().replace(/^["']|["']$/g, '')] })
 )
+// 공유 모듈(lib/outreachDraft.js 등)이 process.env 를 읽으므로 채워준다
+for (const [k, v] of Object.entries(env)) if (process.env[k] === undefined) process.env[k] = v
 
 export const SENDER = env.GMAIL_SENDER || 'wsj@likelion.net'
 export const SENDER_NAME = env.GMAIL_SENDER_NAME || 'LIKELION'

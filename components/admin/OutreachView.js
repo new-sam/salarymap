@@ -67,8 +67,9 @@ export default function OutreachView({ token, lang, owner = 'wsj' }) {
   const [editForm, setEditForm] = useState(EMPTY)
   const [busy, setBusy] = useState(false)
   const [selected, setSelected] = useState(() => new Set())
-  const [sendModal, setSendModal] = useState(null) // [{id,company,email,subject,body,hasDraft}]
+  const [sendModal, setSendModal] = useState(null) // [{id,company,email,subject,body}]
   const [sending, setSending] = useState(false)
+  const [generating, setGenerating] = useState(false)
 
   const campaigns = useMemo(
     () => [...new Set(rows.map(r => r.campaign).filter(Boolean))].sort(),
@@ -143,12 +144,22 @@ export default function OutreachView({ token, lang, owner = 'wsj' }) {
     const allSel = filtered.length > 0 && filtered.every(r => prev.has(r.id))
     return allSel ? new Set() : new Set(filtered.map(r => r.id))
   })
-  function openSend() {
+  async function openSend() {
     const items = rows.filter(r => selected.has(r.id)).map(r => {
       const c = splitName(r.company_name)
-      return { id: r.id, company: c.ko || c.en || r.company_name, email: r.email, subject: r.email_subject || '', body: r.email_body || '', hasDraft: !!r.email_body }
+      return { id: r.id, company: c.ko || c.en || r.company_name, email: r.email, subject: r.email_subject || '', body: r.email_body || '' }
     })
     setSendModal(items)
+    const missing = items.filter(x => !x.body.trim()).map(x => x.id)
+    if (!missing.length) return
+    setGenerating(true)
+    try {
+      const res = await fetch('/api/admin/outreach-generate', { method: 'POST', headers: reqHeaders, body: JSON.stringify({ ids: missing, owner }) })
+      const { drafts } = await res.json()
+      const map = Object.fromEntries((drafts || []).filter(d => d.subject).map(d => [d.id, d]))
+      setSendModal(prev => prev && prev.map(x => map[x.id] ? { ...x, subject: map[x.id].subject, body: map[x.id].body } : x))
+      mutate(prev => (prev || []).map(r => map[r.id] ? { ...r, email_subject: map[r.id].subject, email_body: map[r.id].body } : r), false)
+    } finally { setGenerating(false) }
   }
   async function doSend() {
     const items = sendModal.filter(x => x.subject.trim() && x.body.trim())
@@ -363,7 +374,7 @@ export default function OutreachView({ token, lang, owner = 'wsj' }) {
               <div key={it.id} style={{ border: '1px solid #EEF0F2', borderRadius: 12, padding: 14, marginBottom: 12 }}>
                 <div style={{ fontSize: 12.5, color: '#4E5968', marginBottom: 8, fontWeight: 600 }}>{it.company} <span style={{ color: '#8B95A1', fontWeight: 400 }}>· {it.email}</span></div>
                 {!it.subject.trim() && !it.body.trim() ? (
-                  <div style={{ fontSize: 12.5, color: '#DC2626' }}>{ko ? '초안 없음 — 발송에서 제외됩니다 (먼저 generate 필요)' : 'No draft — excluded'}</div>
+                  <div style={{ fontSize: 12.5, color: generating ? '#8B95A1' : '#DC2626' }}>{generating ? (ko ? '초안 생성 중…' : 'Generating…') : (ko ? '생성 실패 — 닫고 다시 시도' : 'Failed')}</div>
                 ) : (
                   <>
                     <input value={it.subject} onChange={e => setSendModal(m => m.map((x, j) => j === i ? { ...x, subject: e.target.value } : x))}
@@ -377,8 +388,8 @@ export default function OutreachView({ token, lang, owner = 'wsj' }) {
             ))}
             <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 4 }}>
               <button onClick={() => setSendModal(null)} disabled={sending} style={{ padding: '9px 16px', borderRadius: 8, border: '1px solid #E5E8EB', background: '#fff', color: '#4E5968', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>{L.cancel}</button>
-              <button onClick={doSend} disabled={sending} style={{ padding: '9px 20px', borderRadius: 8, border: 'none', background: '#ff4400', color: '#fff', fontSize: 13, fontWeight: 700, cursor: 'pointer', opacity: sending ? 0.5 : 1 }}>
-                {sending ? (ko ? '발송 중…' : 'Sending…') : (ko ? `${sendModal.filter(x => x.subject.trim() && x.body.trim()).length}건 발송` : 'Send')}
+              <button onClick={doSend} disabled={sending || generating} style={{ padding: '9px 20px', borderRadius: 8, border: 'none', background: '#ff4400', color: '#fff', fontSize: 13, fontWeight: 700, cursor: 'pointer', opacity: (sending || generating) ? 0.5 : 1 }}>
+                {generating ? (ko ? '초안 생성 중…' : 'Generating…') : sending ? (ko ? '발송 중…' : 'Sending…') : (ko ? `${sendModal.filter(x => x.subject.trim() && x.body.trim()).length}건 발송` : 'Send')}
               </button>
             </div>
           </div>
