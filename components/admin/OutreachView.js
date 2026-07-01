@@ -76,6 +76,9 @@ export default function OutreachView({ token, lang }) {
     for (const r of rows) c[r.status] = (c[r.status] || 0) + 1
     return c
   }, [rows])
+  const sentPlus = ['sent', 'replied', 'meeting', 'won', 'lost'].reduce((s, k) => s + (counts[k] || 0), 0)
+  const repliedPlus = ['replied', 'meeting', 'won', 'lost'].reduce((s, k) => s + (counts[k] || 0), 0)
+  const replyRate = sentPlus ? Math.round((repliedPlus / sentPlus) * 100) : 0
 
   const filtered = rows.filter(r => {
     if (statusFilter !== 'all' && r.status !== statusFilter) return false
@@ -167,6 +170,14 @@ export default function OutreachView({ token, lang }) {
   return (
     <div style={{ maxWidth: 1200, margin: '0 auto', padding: '0 16px' }}>
       <datalist id="outreach-campaigns">{campaigns.map(c => <option key={c} value={c} />)}</datalist>
+
+      {/* 회신율 */}
+      {sentPlus > 0 && (
+        <div style={{ margin: '16px 0 0', fontSize: 13, color: '#4E5968' }}>
+          {ko ? '회신율' : 'Reply rate'} <b style={{ color: '#7C3AED', fontSize: 15 }}>{replyRate}%</b>
+          <span style={{ color: '#8B95A1', marginLeft: 6 }}>({ko ? '회신' : 'replied'} {repliedPlus} / {ko ? '발송' : 'sent'} {sentPlus})</span>
+        </div>
+      )}
 
       {/* 상태별 요약 */}
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', margin: '16px 0' }}>
