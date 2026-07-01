@@ -6,7 +6,7 @@ import { useAdmin } from '../../lib/adminSwr'
 const STATUS = {
   todo:    { ko: '발송 전', en: 'To send', bg: '#6B7280' },
   sent:    { ko: '발송',    en: 'Sent',    bg: '#2563EB' },
-  replied: { ko: '회신',    en: 'Replied', bg: '#7C3AED' },
+  replied: { ko: '회신',    en: 'Replied', bg: '#ff4400' },
   meeting: { ko: '미팅',    en: 'Meeting', bg: '#D97706' },
   won:     { ko: '계약',    en: 'Won',     bg: '#059669' },
   lost:    { ko: '거절',    en: 'Lost',    bg: '#DC2626' },
@@ -66,6 +66,9 @@ export default function OutreachView({ token, lang, owner = 'wsj' }) {
   const [editingId, setEditingId] = useState(null)
   const [editForm, setEditForm] = useState(EMPTY)
   const [busy, setBusy] = useState(false)
+  const [selected, setSelected] = useState(() => new Set())
+  const [sendModal, setSendModal] = useState(null) // [{id,company,email,subject,body,hasDraft}]
+  const [sending, setSending] = useState(false)
 
   const campaigns = useMemo(
     () => [...new Set(rows.map(r => r.campaign).filter(Boolean))].sort(),
@@ -134,6 +137,38 @@ export default function OutreachView({ token, lang, owner = 'wsj' }) {
     await fetch('/api/admin/outreach', { method: 'DELETE', headers: reqHeaders, body: JSON.stringify({ id }) })
   }
 
+  // 선택 + 발송 모달
+  const toggleSel = (id) => setSelected(prev => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n })
+  const toggleAll = () => setSelected(prev => {
+    const allSel = filtered.length > 0 && filtered.every(r => prev.has(r.id))
+    return allSel ? new Set() : new Set(filtered.map(r => r.id))
+  })
+  function openSend() {
+    const items = rows.filter(r => selected.has(r.id)).map(r => {
+      const c = splitName(r.company_name)
+      return { id: r.id, company: c.ko || c.en || r.company_name, email: r.email, subject: r.email_subject || '', body: r.email_body || '', hasDraft: !!r.email_body }
+    })
+    setSendModal(items)
+  }
+  async function doSend() {
+    const items = sendModal.filter(x => x.subject.trim() && x.body.trim())
+    if (!items.length) { alert(ko ? '발송할 초안이 없습니다. (제목/본문 필요)' : 'Nothing to send.'); return }
+    setSending(true)
+    try {
+      const res = await fetch('/api/admin/outreach-send', { method: 'POST', headers: reqHeaders,
+        body: JSON.stringify({ owner, items: items.map(x => ({ id: x.id, subject: x.subject, body: x.body })) }) })
+      const { results } = await res.json()
+      const okIds = new Set((results || []).filter(r => r.ok).map(r => r.id))
+      const fails = (results || []).filter(r => !r.ok)
+      mutate(prev => (prev || []).map(r => okIds.has(r.id)
+        ? { ...r, status: 'sent', sent_at: new Date().toISOString().slice(0, 10),
+            email_subject: sendModal.find(x => x.id === r.id)?.subject, email_body: sendModal.find(x => x.id === r.id)?.body }
+        : r), false)
+      setSelected(new Set()); setSendModal(null)
+      if (fails.length) alert(`${ko ? '발송' : 'Sent'} ${okIds.size} · ${ko ? '실패' : 'failed'} ${fails.length}\n` + fails.map(f => f.error).join('\n'))
+    } finally { setSending(false) }
+  }
+
   const inp = { width: '100%', padding: '7px 10px', border: '1px solid #E5E8EB', borderRadius: 8, fontSize: 13, fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box' }
   const pill = (on) => ({ fontSize: 12.5, fontWeight: 600, cursor: 'pointer', borderRadius: 999, padding: '6px 14px', border: '1px solid', borderColor: on ? '#ff4400' : '#E5E8EB', background: on ? '#FFF1EC' : '#fff', color: on ? '#ff4400' : '#4E5968' })
 
@@ -179,7 +214,7 @@ export default function OutreachView({ token, lang, owner = 'wsj' }) {
           {[
             { label: ko ? '발송' : 'Sent', big: `${sentPlus}`, sub: ko ? '총 발송' : 'emails', color: '#191F28', note: '' },
             { label: ko ? '오픈율' : 'Open rate', big: `${openRate}%`, sub: `${openedCount}/${sentPlus}`, color: '#2563EB', note: ko ? '애플MPP로 과대·참고용' : 'approx' },
-            { label: ko ? '회신율' : 'Reply rate', big: `${replyRate}%`, sub: `${repliedPlus}/${sentPlus}`, color: '#7C3AED', note: '' },
+            { label: ko ? '회신율' : 'Reply rate', big: `${replyRate}%`, sub: `${repliedPlus}/${sentPlus}`, color: '#ff4400', note: '' },
           ].map((m, i) => (
             <div key={i} style={{ flex: '1 1 150px', minWidth: 140, background: '#fff', border: '1px solid #EEF0F2', borderRadius: 12, padding: '14px 16px' }}>
               <div style={{ fontSize: 12, color: '#8B95A1', marginBottom: 6 }}>{m.label}</div>
@@ -215,6 +250,11 @@ export default function OutreachView({ token, lang, owner = 'wsj' }) {
             {campaigns.map(c => <option key={c} value={c}>{c}</option>)}
           </select>
         )}
+        {selected.size > 0 && (
+          <button onClick={openSend} style={{ padding: '8px 16px', borderRadius: 8, border: 'none', background: '#ff4400', color: '#fff', fontSize: 13, fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap' }}>
+            {ko ? `선택 ${selected.size}건 발송` : `Send ${selected.size}`}
+          </button>
+        )}
         <input style={{ ...inp, width: 200 }} placeholder={L.search} value={search} onChange={e => setSearch(e.target.value)} />
         <button onClick={() => setShowAdd(v => !v)} style={{ padding: '8px 16px', borderRadius: 8, border: 'none', background: '#ff4400', color: '#fff', fontSize: 13, fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap' }}>{L.add}</button>
       </div>
@@ -239,7 +279,8 @@ export default function OutreachView({ token, lang, owner = 'wsj' }) {
         <div style={{ overflowX: 'auto', border: '1px solid #EEF0F2', borderRadius: 12 }}>
           <table style={{ width: '100%', borderCollapse: 'collapse', background: '#fff', tableLayout: 'fixed' }}>
             <colgroup>
-              <col style={{ width: '19%' }} />
+              <col style={{ width: '4%' }} />
+              <col style={{ width: '15%' }} />
               <col style={{ width: '13%' }} />
               <col style={{ width: '18%' }} />
               <col style={{ width: '16%' }} />
@@ -250,6 +291,9 @@ export default function OutreachView({ token, lang, owner = 'wsj' }) {
             </colgroup>
             <thead>
               <tr>
+                <th style={{ ...th, textAlign: 'center' }}>
+                  <input type="checkbox" checked={filtered.length > 0 && filtered.every(r => selected.has(r.id))} onChange={toggleAll} />
+                </th>
                 <th style={th}>{L.company}</th>
                 <th style={th}>{L.contact}</th>
                 <th style={th}>{L.email}</th>
@@ -263,7 +307,7 @@ export default function OutreachView({ token, lang, owner = 'wsj' }) {
             <tbody>
               {filtered.map(r => editingId === r.id ? (
                 <tr key={r.id}>
-                  <td style={{ ...td, padding: 10 }} colSpan={8}>
+                  <td style={{ ...td, padding: 10 }} colSpan={9}>
                     {formFields(editForm, setEditForm)}
                     <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 10 }}>
                       <button onClick={() => setEditingId(null)} style={{ padding: '7px 14px', borderRadius: 8, border: '1px solid #E5E8EB', background: '#fff', color: '#4E5968', fontSize: 12.5, fontWeight: 600, cursor: 'pointer' }}>{L.cancel}</button>
@@ -272,7 +316,10 @@ export default function OutreachView({ token, lang, owner = 'wsj' }) {
                   </td>
                 </tr>
               ) : (
-                <tr key={r.id}>
+                <tr key={r.id} style={selected.has(r.id) ? { background: '#FFF1EC' } : undefined}>
+                  <td style={{ ...td, textAlign: 'center' }}>
+                    <input type="checkbox" checked={selected.has(r.id)} onChange={() => toggleSel(r.id)} />
+                  </td>
                   {nameCell(r.company_name, true)}
                   {nameCell(r.contact_name, false)}
                   <td style={{ ...td, wordBreak: 'break-all' }}>{r.email ? <a href={`mailto:${r.email}`} style={{ color: '#2563EB', textDecoration: 'none' }}>{r.email}</a> : '-'}</td>
@@ -298,6 +345,43 @@ export default function OutreachView({ token, lang, owner = 'wsj' }) {
               ))}
             </tbody>
           </table>
+        </div>
+      )}
+
+      {/* 발송 검토 모달 */}
+      {sendModal && (
+        <div onClick={() => !sending && setSendModal(null)} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', zIndex: 1000, display: 'flex', alignItems: 'flex-start', justifyContent: 'center', overflow: 'auto', padding: '40px 16px' }}>
+          <div onClick={e => e.stopPropagation()} style={{ background: '#fff', borderRadius: 16, maxWidth: 720, width: '100%', padding: 24 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+              <h3 style={{ margin: 0, fontSize: 17, color: '#191F28' }}>{ko ? '발송 검토' : 'Review & send'} ({sendModal.length})</h3>
+              <button onClick={() => !sending && setSendModal(null)} style={{ border: 'none', background: 'none', fontSize: 22, cursor: 'pointer', color: '#8B95A1', lineHeight: 1 }}>×</button>
+            </div>
+            <div style={{ fontSize: 12.5, color: '#8B95A1', marginBottom: 16 }}>
+              {ko ? `발신: ${owner === 'younghun' ? '남영훈 <younghun@likelion.net>' : '위승주 <wsj@likelion.net>'} · 각 메일 확인·수정 후 발송` : 'Review each email, edit if needed, then send'}
+            </div>
+            {sendModal.map((it, i) => (
+              <div key={it.id} style={{ border: '1px solid #EEF0F2', borderRadius: 12, padding: 14, marginBottom: 12 }}>
+                <div style={{ fontSize: 12.5, color: '#4E5968', marginBottom: 8, fontWeight: 600 }}>{it.company} <span style={{ color: '#8B95A1', fontWeight: 400 }}>· {it.email}</span></div>
+                {!it.subject.trim() && !it.body.trim() ? (
+                  <div style={{ fontSize: 12.5, color: '#DC2626' }}>{ko ? '초안 없음 — 발송에서 제외됩니다 (먼저 generate 필요)' : 'No draft — excluded'}</div>
+                ) : (
+                  <>
+                    <input value={it.subject} onChange={e => setSendModal(m => m.map((x, j) => j === i ? { ...x, subject: e.target.value } : x))}
+                      style={{ ...inp, marginBottom: 8, fontWeight: 600 }} placeholder={ko ? '제목' : 'Subject'} />
+                    <textarea value={it.body} onChange={e => setSendModal(m => m.map((x, j) => j === i ? { ...x, body: e.target.value } : x))}
+                      rows={8} style={{ ...inp, resize: 'vertical', lineHeight: 1.6, fontFamily: 'inherit' }} placeholder={ko ? '본문' : 'Body'} />
+                    <div style={{ fontSize: 11, color: '#C1C7CD', marginTop: 4 }}>{ko ? '※ 아래에 서명·추적픽셀 자동 첨부' : ''}</div>
+                  </>
+                )}
+              </div>
+            ))}
+            <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 4 }}>
+              <button onClick={() => setSendModal(null)} disabled={sending} style={{ padding: '9px 16px', borderRadius: 8, border: '1px solid #E5E8EB', background: '#fff', color: '#4E5968', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>{L.cancel}</button>
+              <button onClick={doSend} disabled={sending} style={{ padding: '9px 20px', borderRadius: 8, border: 'none', background: '#ff4400', color: '#fff', fontSize: 13, fontWeight: 700, cursor: 'pointer', opacity: sending ? 0.5 : 1 }}>
+                {sending ? (ko ? '발송 중…' : 'Sending…') : (ko ? `${sendModal.filter(x => x.subject.trim() && x.body.trim()).length}건 발송` : 'Send')}
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>
