@@ -79,6 +79,8 @@ export default function OutreachView({ token, lang }) {
   const sentPlus = ['sent', 'replied', 'meeting', 'won', 'lost'].reduce((s, k) => s + (counts[k] || 0), 0)
   const repliedPlus = ['replied', 'meeting', 'won', 'lost'].reduce((s, k) => s + (counts[k] || 0), 0)
   const replyRate = sentPlus ? Math.round((repliedPlus / sentPlus) * 100) : 0
+  const openedCount = rows.filter(r => r.opened_at).length
+  const openRate = sentPlus ? Math.round((openedCount / sentPlus) * 100) : 0
 
   const filtered = rows.filter(r => {
     if (statusFilter !== 'all' && r.status !== statusFilter) return false
@@ -171,11 +173,18 @@ export default function OutreachView({ token, lang }) {
     <div style={{ maxWidth: 1200, margin: '0 auto', padding: '0 16px' }}>
       <datalist id="outreach-campaigns">{campaigns.map(c => <option key={c} value={c} />)}</datalist>
 
-      {/* 회신율 */}
+      {/* 오픈율 · 회신율 */}
       {sentPlus > 0 && (
-        <div style={{ margin: '16px 0 0', fontSize: 13, color: '#4E5968' }}>
-          {ko ? '회신율' : 'Reply rate'} <b style={{ color: '#7C3AED', fontSize: 15 }}>{replyRate}%</b>
-          <span style={{ color: '#8B95A1', marginLeft: 6 }}>({ko ? '회신' : 'replied'} {repliedPlus} / {ko ? '발송' : 'sent'} {sentPlus})</span>
+        <div style={{ margin: '16px 0 0', fontSize: 13, color: '#4E5968', display: 'flex', gap: 18, flexWrap: 'wrap', alignItems: 'baseline' }}>
+          <span>
+            {ko ? '오픈율' : 'Open rate'} <b style={{ color: '#2563EB', fontSize: 15 }}>{openRate}%</b>
+            <span style={{ color: '#8B95A1', marginLeft: 5 }}>({openedCount}/{sentPlus})</span>
+            <span style={{ color: '#C1C7CD', fontSize: 11, marginLeft: 5 }}>{ko ? '※참고용' : '※approx'}</span>
+          </span>
+          <span>
+            {ko ? '회신율' : 'Reply rate'} <b style={{ color: '#7C3AED', fontSize: 15 }}>{replyRate}%</b>
+            <span style={{ color: '#8B95A1', marginLeft: 5 }}>({repliedPlus}/{sentPlus})</span>
+          </span>
         </div>
       )}
 

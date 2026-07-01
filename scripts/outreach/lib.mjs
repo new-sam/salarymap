@@ -13,6 +13,8 @@ export const env = Object.fromEntries(
 
 export const SENDER = env.GMAIL_SENDER || 'wsj@likelion.net'
 export const SENDER_NAME = env.GMAIL_SENDER_NAME || 'LIKELION'
+export const TRACK_BASE = env.OUTREACH_TRACK_BASE || 'https://salary-fyi.com'
+export const pixelUrl = (id) => `${TRACK_BASE}/api/o/${id}`
 export const OAUTH_REDIRECT = 'http://localhost:3737/oauth2callback'
 export const GMAIL_SCOPE = [
   'https://www.googleapis.com/auth/gmail.send',
@@ -63,11 +65,12 @@ export async function getSignature() {
 }
 
 // 본문(플레인) + 수신거부 + 내 Gmail 서명(HTML) → 최종 HTML
-export function composeHtml(bodyText, signatureHtml) {
+export function composeHtml(bodyText, signatureHtml, pixel) {
   const body = esc(bodyText).replace(/\n/g, '<br>')
   return `<div style="font-family:'Apple SD Gothic Neo','Malgun Gothic',sans-serif;font-size:14px;line-height:1.7;color:#222">`
     + body
     + (signatureHtml ? `<br><br>${signatureHtml}` : '')
+    + (pixel ? `<img src="${pixel}" width="1" height="1" alt="" style="display:none">` : '')
     + `</div>`
 }
 

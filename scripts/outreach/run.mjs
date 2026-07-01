@@ -5,7 +5,7 @@
 //   node scripts/outreach/run.mjs preview  [N]            생성된 초안 검수(발송X)
 //   node scripts/outreach/run.mjs test [email]            리드 1건으로 나에게 테스트 발송
 //   node scripts/outreach/run.mjs send [N] --confirm      todo+초안있음 중 N건 실발송(건당 4초)
-import { sb, sendMail, getSignature, composeHtml, env, SENDER, splitName } from './lib.mjs'
+import { sb, sendMail, getSignature, composeHtml, pixelUrl, env, SENDER, splitName } from './lib.mjs'
 import { generateDraft } from './draft.mjs'
 
 const CAMPAIGN = 'kocham_2026'
@@ -71,7 +71,7 @@ else if (mode === 'test') {
     process.exit(0)
   }
   const sig = await getSignature()
-  const r = await sendMail({ to, subject: `[테스트] ${draft.subject}`, html: composeHtml(draft.body, sig) })
+  const r = await sendMail({ to, subject: `[테스트] ${draft.subject}`, html: composeHtml(draft.body, sig, pixelUrl(lead.id)) })
   console.log(`\n✅ ${to} 로 테스트 발송됨 (id: ${r.id})`)
 }
 
@@ -84,7 +84,7 @@ else if (mode === 'send') {
   let ok = 0
   for (const l of leads) {
     try {
-      const r = await sendMail({ to: l.email, subject: l.email_subject, html: composeHtml(l.email_body, sig) })
+      const r = await sendMail({ to: l.email, subject: l.email_subject, html: composeHtml(l.email_body, sig, pixelUrl(l.id)) })
       await sb.from('cold_outreach').update({ status: 'sent', sent_at: new Date().toISOString().slice(0, 10), gmail_thread_id: r.threadId || null }).eq('id', l.id)
       ok++; console.log(`  ✓ ${l.email} (${label(l)}) id:${r.id}`)
       await new Promise(s => setTimeout(s, 4000))
