@@ -33,7 +33,8 @@ const L = {
     ovTitle: '핵심 지표 요약', ovD7: 'D7 잔존', ovStick: '스티키니스(DAU/MAU)', ovWau: 'WAU', ovMau: 'MAU',
     ovNew: '신규 유저(기간)', ovAct: '액티베이션 전환', ovQr: 'Quick Ratio(최근주)', ovCpp: '글당 답글',
     ovSalary: '연봉 제출', ovApply: '지원 완료', ovResume: '이력서 제출', ovResumePublic: '이력서 공개 전환', ovCumSub: '앱 누적', ovPush: '푸시 재방문', ovPower: '파워유저(2일+)',
-    ovPostsRead: '열람자당 본 글', ovDwell: '평균 체류시간', ovDwellSub: '방문당', ovPerReaderSub: '평균 글 수',
+    ovPostsRead: '열람자당 본 글', ovDwell: '커뮤니티 체류', ovDwellSub: '방문당', ovPerReaderSub: '평균 글 수',
+    ovAppDwell: '앱 체류시간', ovAppDwellSub: '실행당(앱 전체)',
     ovCurveTitle: '리텐션 커브 (D0~D14)', ovGrowthTitle: '주간 WAU 분해',
     tsNewRet: '신규 vs 재방문 (일별)', tsConvert: '핵심 전환 추이 (일별)', tsCommunity: '커뮤니티 활동 추이 (일별)',
     tsJobs: '채용 퍼널 추이 (일별)', tsPush: '푸시 추이 (일별)',
@@ -93,7 +94,8 @@ const L = {
     ovTitle: 'Key Metrics', ovD7: 'D7 Retention', ovStick: 'Stickiness(DAU/MAU)', ovWau: 'WAU', ovMau: 'MAU',
     ovNew: 'New users (range)', ovAct: 'Activation', ovQr: 'Quick Ratio(last wk)', ovCpp: 'Replies/post',
     ovSalary: 'Salary submits', ovApply: 'Applications', ovResume: 'Resume uploads', ovResumePublic: 'Resume made public', ovCumSub: 'app · cumulative', ovPush: 'Push returns', ovPower: 'Power users(2d+)',
-    ovPostsRead: 'Posts read / reader', ovDwell: 'Avg dwell time', ovDwellSub: 'per visit', ovPerReaderSub: 'avg posts',
+    ovPostsRead: 'Posts read / reader', ovDwell: 'Community dwell', ovDwellSub: 'per visit', ovPerReaderSub: 'avg posts',
+    ovAppDwell: 'App dwell time', ovAppDwellSub: 'per launch (whole app)',
     ovCurveTitle: 'Retention Curve (D0–D14)', ovGrowthTitle: 'Weekly WAU breakdown',
     tsNewRet: 'New vs Returning (daily)', tsConvert: 'Key conversions (daily)', tsCommunity: 'Community activity (daily)',
     tsJobs: 'Jobs funnel (daily)', tsPush: 'Push (daily)',
@@ -392,7 +394,7 @@ export default function AppMetricsView({ token, dateRange, lang }) {
   if (loading) return <div style={{ textAlign: 'center', padding: 40, color: '#666' }}>{t.loading}</div>
   if (!data || !data.meta.totalAppEvents) return <div style={{ textAlign: 'center', padding: 40, color: '#999' }}>{t.empty}</div>
 
-  const { meta, topline, retention, community, conversion, push, segments, daily, webAppPromo } = data
+  const { meta, topline, retention, appDwell, community, conversion, push, segments, daily, webAppPromo } = data
   // 분석가 모듈(부분 배포 대비 기본값). 백엔드 갱신 후엔 항상 채워짐.
   const analytics = data.analytics || {
     stickiness: {}, newUsersInRange: 0, retentionCurve: [], activation: {},
@@ -471,6 +473,7 @@ export default function AppMetricsView({ token, dateRange, lang }) {
           { label: t.ovNew, value: analytics.newUsersInRange },
           { label: t.ovAct, value: analytics.activation.convertRate != null ? `${analytics.activation.convertRate}%` : '-' },
           { label: t.ovQr, value: g && g.quickRatio != null ? g.quickRatio : '-' },
+          { label: t.ovAppDwell, value: appDwell?.avgSeconds != null ? fmtSec(appDwell.avgSeconds) : '-', sub: t.ovAppDwellSub },
           { label: t.ovCpp, value: topline.commentsPerPost },
           { label: t.ovPostsRead, value: community.postsPerReader?.avg != null ? community.postsPerReader.avg : '-', sub: t.ovPerReaderSub },
           { label: t.ovDwell, value: community.dwell?.avgSeconds != null ? fmtSec(community.dwell.avgSeconds) : '-', sub: t.ovDwellSub },

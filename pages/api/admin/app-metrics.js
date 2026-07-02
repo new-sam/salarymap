@@ -69,7 +69,8 @@ export default async function handler(req, res) {
     const catView = {}, catFilter = {}     // 커뮤니티 카테고리 분포 (범위 내)
     const postsRead = {}                   // client -> Set(post_id) (범위 내) — 열람자당 본 글 수
     const dwellSecs = []                   // 화면 진입당 체류(초) 표본 (범위 내, view_community_duration)
-    const sessionDwell = {}                // session_id -> 커뮤니티 총 체류(초) — 방문당 체류시간
+    const sessionDwell = {}                // session_id -> 커뮤니티 총 체류(초) — 방문당 커뮤니티 체류
+    const appSessionDwell = {}             // session_id -> 앱 전체 총 체류(초) — 실행당 앱 체류시간
     const searchQ = {}                     // 검색어 -> count (범위 내)
     const pushCat = {}                     // 푸시 category -> { click, received } (범위 내)
     const roleDist = {}, expDist = {}      // 연봉 제출 role/experience 분포 (범위 내)
@@ -146,6 +147,12 @@ export default async function handler(req, res) {
           if (typeof m.seconds === 'number' && m.seconds >= 0) {
             dwellSecs.push(m.seconds)
             if (m.session_id) sessionDwell[m.session_id] = (sessionDwell[m.session_id] || 0) + m.seconds
+          }
+          break
+        case 'app_session_duration':
+          // 앱 전체 포그라운드 체류(초). session_id로 합산 = 실행 1회당 앱 총 체류시간.
+          if (typeof m.seconds === 'number' && m.seconds >= 0 && m.session_id) {
+            appSessionDwell[m.session_id] = (appSessionDwell[m.session_id] || 0) + m.seconds
           }
           break
         case 'like_community_post':
@@ -309,6 +316,14 @@ export default async function handler(req, res) {
       medianSeconds: median(sessionTotals),
       screenViews: dwellSecs.length,                                             // 화면 진입 건수(피드+글)
       avgPerView: dwellSecs.length ? Math.round(dwellSecs.reduce((a, b) => a + b, 0) / dwellSecs.length) : null,
+    }
+
+    // ---- 앱 전체 체류시간 (실행당, app_session_duration을 session_id로 합산) ----
+    const appDwellTotals = Object.values(appSessionDwell)
+    const appDwell = {
+      visits: appDwellTotals.length,                                             // 체류가 기록된 앱 실행 수
+      avgSeconds: appDwellTotals.length ? Math.round(appDwellTotals.reduce((a, b) => a + b, 0) / appDwellTotals.length) : null,
+      medianSeconds: median(appDwellTotals),
     }
 
     // ---- 커뮤니티 ----
@@ -522,6 +537,7 @@ export default async function handler(req, res) {
         wau: wauSet.size, mau: mauSet.size,
         d1, d7, d30, cohorts, dauSeries,
       },
+      appDwell,
       community,
       conversion,
       push,
