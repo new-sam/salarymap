@@ -12,7 +12,7 @@ export default async function handler(req, res) {
   if (!Array.isArray(items) || !items.length) return res.status(400).json({ error: 'items 필요' })
 
   const ids = items.map(i => i.id)
-  const { data: leads } = await supabaseAdmin.from('cold_outreach').select('id, email, owner').in('id', ids)
+  const { data: leads } = await supabaseAdmin.from('cold_outreach').select('id, email, owner, status, send_count').in('id', ids)
   const byId = Object.fromEntries((leads || []).map(l => [l.id, l]))
 
   const results = []
@@ -24,9 +24,11 @@ export default async function handler(req, res) {
       const r = await sendOutreach(owner || lead.owner || 'wsj', {
         to: lead.email, subject: it.subject, body: it.body, leadId: it.id,
       })
+      const nextStatus = (lead.status && lead.status !== 'todo') ? lead.status : 'sent'
       await supabaseAdmin.from('cold_outreach').update({
-        status: 'sent',
+        status: nextStatus,
         sent_at: new Date().toISOString().slice(0, 10),
+        send_count: (lead.send_count || 0) + 1,
         gmail_thread_id: r.threadId || null,
         email_subject: it.subject,
         email_body: it.body,

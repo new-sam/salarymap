@@ -344,6 +344,7 @@ export default function OutreachView({ token, lang, owner = 'wsj' }) {
                     </select>
                   </td>
                   <td style={{ ...td, whiteSpace: 'nowrap' }}>
+                    {r.send_count > 0 && <div style={{ display: 'inline-block', fontSize: 10.5, fontWeight: 700, color: '#fff', background: r.send_count >= 2 ? '#ff4400' : '#8B95A1', borderRadius: 4, padding: '1px 6px', marginBottom: 3 }}>{r.send_count}차</div>}
                     <div>{r.sent_at || '-'}</div>
                     {r.open_count > 0 && <div style={{ fontSize: 11, color: '#2563EB', marginTop: 2 }} title={r.opened_at ? new Date(r.opened_at).toLocaleString() : ''}>👁 {r.open_count}</div>}
                   </td>

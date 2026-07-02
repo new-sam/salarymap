@@ -82,7 +82,7 @@ else if (mode === 'send') {
   for (const l of leads) {
     try {
       const r = await sendMail(owner, { to: l.email, subject: l.email_subject, html: composeHtml(l.email_body, sig, pixelUrl(l.id)) })
-      await sb.from('cold_outreach').update({ status: 'sent', sent_at: new Date().toISOString().slice(0, 10), gmail_thread_id: r.threadId || null }).eq('id', l.id)
+      await sb.from('cold_outreach').update({ status: 'sent', sent_at: new Date().toISOString().slice(0, 10), send_count: 1, gmail_thread_id: r.threadId || null }).eq('id', l.id)
       ok++; console.log(`  ✓ ${l.email} (${label(l)}) id:${r.id}`)
       await new Promise(s => setTimeout(s, 4000))
     } catch (e) { console.log(`  ✗ ${l.email}: ${e.message}`) }
