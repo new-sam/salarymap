@@ -148,18 +148,26 @@ export default function OutreachView({ token, lang, owner = 'wsj' }) {
   async function openSend() {
     const items = rows.filter(r => selected.has(r.id)).map(r => {
       const c = splitName(r.company_name)
-      return { id: r.id, company: c.ko || c.en || r.company_name, email: r.email, subject: r.email_subject || '', body: r.email_body || '' }
+      const round = (r.send_count || 0) + 1
+      const useExisting = round === 1 && !!r.email_body   // 1차인데 이미 초안 있으면 재사용, 2차+는 팔로업 새로 생성
+      return { id: r.id, company: c.ko || c.en || r.company_name, email: r.email, round,
+        subject: useExisting ? (r.email_subject || '') : '', body: useExisting ? r.email_body : '' }
     })
     setSendModal(items)
-    const missing = items.filter(x => !x.body.trim()).map(x => x.id)
-    if (!missing.length) return
+    const round1 = items.filter(x => x.round === 1 && !x.body.trim()).map(x => x.id)
+    const round2 = items.filter(x => x.round >= 2).map(x => x.id)
+    if (!round1.length && !round2.length) return
     setGenerating(true)
     try {
-      const res = await fetch('/api/admin/outreach-generate', { method: 'POST', headers: reqHeaders, body: JSON.stringify({ ids: missing, owner }) })
-      const { drafts } = await res.json()
-      const map = Object.fromEntries((drafts || []).filter(d => d.subject).map(d => [d.id, d]))
-      setSendModal(prev => prev && prev.map(x => map[x.id] ? { ...x, subject: map[x.id].subject, body: map[x.id].body } : x))
-      mutate(prev => (prev || []).map(r => map[r.id] ? { ...r, email_subject: map[r.id].subject, email_body: map[r.id].body } : r), false)
+      const genFor = async (idList, round) => {
+        if (!idList.length) return
+        const res = await fetch('/api/admin/outreach-generate', { method: 'POST', headers: reqHeaders, body: JSON.stringify({ ids: idList, owner, round }) })
+        const { drafts } = await res.json()
+        const map = Object.fromEntries((drafts || []).filter(d => d.subject).map(d => [d.id, d]))
+        setSendModal(prev => prev && prev.map(x => map[x.id] ? { ...x, subject: map[x.id].subject, body: map[x.id].body } : x))
+        if (round === 1) mutate(prev => (prev || []).map(r => map[r.id] ? { ...r, email_subject: map[r.id].subject, email_body: map[r.id].body } : r), false)
+      }
+      await Promise.all([genFor(round1, 1), genFor(round2, 2)])
     } finally { setGenerating(false) }
   }
   async function doSend() {
@@ -384,7 +392,10 @@ export default function OutreachView({ token, lang, owner = 'wsj' }) {
             </div>
             {sendModal.map((it, i) => (
               <div key={it.id} style={{ border: '1px solid #EEF0F2', borderRadius: 12, padding: 14, marginBottom: 12 }}>
-                <div style={{ fontSize: 12.5, color: '#4E5968', marginBottom: 8, fontWeight: 600 }}>{it.company} <span style={{ color: '#8B95A1', fontWeight: 400 }}>· {it.email}</span></div>
+                <div style={{ fontSize: 12.5, color: '#4E5968', marginBottom: 8, fontWeight: 600 }}>
+                  {it.round >= 2 && <span style={{ fontSize: 10.5, fontWeight: 700, color: '#fff', background: '#ff4400', borderRadius: 4, padding: '1px 6px', marginRight: 6 }}>{it.round}차</span>}
+                  {it.company} <span style={{ color: '#8B95A1', fontWeight: 400 }}>· {it.email}</span>
+                </div>
                 {!it.subject.trim() && !it.body.trim() ? (
                   <div style={{ fontSize: 12.5, color: generating ? '#8B95A1' : '#DC2626' }}>{generating ? (ko ? '초안 생성 중…' : 'Generating…') : (ko ? '생성 실패 — 닫고 다시 시도' : 'Failed')}</div>
                 ) : (

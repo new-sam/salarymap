@@ -8,7 +8,7 @@ export default async function handler(req, res) {
   if (!admin) return res.status(401).json({ error: 'Unauthorized' })
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' })
 
-  const { ids, owner } = req.body || {}
+  const { ids, owner, round } = req.body || {}
   if (!Array.isArray(ids) || !ids.length) return res.status(400).json({ error: 'ids 필요' })
 
   const { data: leads } = await supabaseAdmin.from('cold_outreach')
@@ -16,7 +16,7 @@ export default async function handler(req, res) {
 
   const drafts = await Promise.all((leads || []).map(async (l) => {
     try {
-      const { subject, body } = await generateDraft(l, owner || 'wsj')
+      const { subject, body } = await generateDraft(l, owner || 'wsj', round || 1)
       await supabaseAdmin.from('cold_outreach')
         .update({ email_subject: subject, email_body: body, generated_at: new Date().toISOString() })
         .eq('id', l.id)
