@@ -525,8 +525,12 @@ export default function CvLanding() {
           <div className="cv-section-inner cv-form-wrap">
             {showSuccess ? (
               <div className="cv-card cv-success-card">
-                <div className="cv-success-medal">
-                  <IconCheck />
+                <div className="cv-success-visual" aria-label="FYI celebration">
+                  <img
+                    className="cv-success-celebration"
+                    src="/cv-fyi-celebration.png"
+                    alt=""
+                  />
                 </div>
                 <h3 className="cv-card-h cv-success-h">{t('cv.success.heading')}</h3>
                 <div className="cv-journey">
@@ -1879,26 +1883,26 @@ export default function CvLanding() {
             radial-gradient(520px circle at 50% 10%, rgba(255,96,0,0.05), transparent 58%),
             #fff;
         }
-        .cv-success-medal {
+        .cv-success-visual {
           position: relative;
           z-index: 2;
-          width: 68px;
-          height: 68px;
-          margin: 0 auto 22px;
-          border-radius: 50%;
+          width: min(310px, 62%);
+          aspect-ratio: 1821 / 864;
+          margin: -10px auto 18px;
           display: flex;
           align-items: center;
           justify-content: center;
-          color: #fff;
-          background: linear-gradient(135deg, #ff6000, #ff8a40);
-          box-shadow:
-            0 18px 38px rgba(255,96,0,0.36),
-            0 0 0 14px rgba(255,96,0,0.08);
           animation: cvLevelPop .72s cubic-bezier(.18,.89,.32,1.28) both;
         }
-        .cv-success-medal svg {
-          width: 24px;
-          height: 24px;
+        .cv-success-celebration {
+          display: block;
+          width: 100%;
+          height: 100%;
+          object-fit: contain;
+          mix-blend-mode: multiply;
+          -webkit-mask-image: radial-gradient(ellipse 72% 82% at 50% 52%, #000 54%, rgba(0,0,0,.78) 72%, transparent 92%);
+          mask-image: radial-gradient(ellipse 72% 82% at 50% 52%, #000 54%, rgba(0,0,0,.78) 72%, transparent 92%);
+          filter: drop-shadow(0 18px 34px rgba(255,96,0,0.13));
         }
         .cv-success-h,
         .cv-journey,
@@ -2757,13 +2761,9 @@ export default function CvLanding() {
             padding: 34px 18px 92px;
             margin-bottom: 28px;
           }
-          .cv-success-medal {
-            width: 56px;
-            height: 56px;
-            margin-bottom: 18px;
-            box-shadow:
-              0 14px 30px rgba(255,96,0,0.32),
-              0 0 0 10px rgba(255,96,0,0.08);
+          .cv-success-visual {
+            width: min(250px, 86%);
+            margin: -4px auto 14px;
           }
           .cv-success-h {
             font-size: 29px;
