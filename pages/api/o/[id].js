@@ -9,8 +9,10 @@ export default async function handler(req, res) {
   if (id) {
     try {
       const { data } = await supabaseAdmin
-        .from('cold_outreach').select('open_count, opened_at').eq('id', id).single()
-      if (data) {
+        .from('cold_outreach').select('open_count, opened_at, sent_ts').eq('id', id).single()
+      // 발송 직후 오픈(발신자 본인·CC·Gmail 프록시 선캐싱)은 제외 — 발송 5분 이후 오픈만 집계
+      const GRACE_MS = 5 * 60 * 1000
+      if (data && data.sent_ts && (Date.now() - new Date(data.sent_ts).getTime()) >= GRACE_MS) {
         await supabaseAdmin.from('cold_outreach').update({
           open_count: (data.open_count || 0) + 1,
           opened_at: data.opened_at || new Date().toISOString(),

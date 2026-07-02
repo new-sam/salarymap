@@ -28,6 +28,7 @@ export default async function handler(req, res) {
       await supabaseAdmin.from('cold_outreach').update({
         status: nextStatus,
         sent_at: new Date().toISOString().slice(0, 10),
+        sent_ts: new Date().toISOString(),
         send_count: (lead.send_count || 0) + 1,
         gmail_thread_id: r.threadId || null,
         email_subject: it.subject,
