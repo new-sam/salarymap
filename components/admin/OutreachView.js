@@ -392,7 +392,7 @@ export default function OutreachView({ token, lang, owner = 'wsj' }) {
                       style={{ ...inp, marginBottom: 8, fontWeight: 600 }} placeholder={ko ? '제목' : 'Subject'} />
                     <textarea value={it.body} onChange={e => setSendModal(m => m.map((x, j) => j === i ? { ...x, body: e.target.value } : x))}
                       rows={8} style={{ ...inp, resize: 'vertical', lineHeight: 1.6, fontFamily: 'inherit' }} placeholder={ko ? '본문' : 'Body'} />
-                    <div style={{ fontSize: 11, color: '#C1C7CD', marginTop: 4 }}>{ko ? '※ 아래에 서명·추적픽셀 자동 첨부' : ''}</div>
+                    <div style={{ fontSize: 11, color: '#C1C7CD', marginTop: 4 }}>{ko ? `※ 아래에 서명 자동 첨부${it.body.includes('[[IMAGE]]') ? ' · [[IMAGE]] 자리에 인건비 비주얼 삽입' : ''}` : ''}</div>
                   </>
                 )}
               </div>

@@ -38,7 +38,7 @@ if (mode === 'generate') {
   console.log(`[${owner.name}] 초안 생성 대상 ${leads.length}건${corpOnly ? ' (회사도메인만)' : ''}…`)
   for (const l of leads) {
     try {
-      const { subject, body } = await generateDraft(l, owner.name)
+      const { subject, body } = await generateDraft(l, owner.key)
       await sb.from('cold_outreach').update({ email_subject: subject, email_body: body, generated_at: new Date().toISOString() }).eq('id', l.id)
       console.log(`  ✓ ${label(l)} — ${subject}`)
     } catch (e) { console.log(`  ✗ ${label(l)}: ${e.message}`) }
@@ -64,7 +64,7 @@ else if (mode === 'test') {
   const { data } = await sb.from('cold_outreach').select(COLS).eq('campaign', CAMPAIGN).limit(1)
   if (!data?.length) { console.log(`리드가 없습니다 (campaign=${CAMPAIGN}).`); process.exit(1) }
   const lead = enrich(data[0])
-  const draft = lead.email_body ? { subject: lead.email_subject, body: lead.email_body } : await generateDraft(lead, owner.name)
+  const draft = lead.email_body ? { subject: lead.email_subject, body: lead.email_body } : await generateDraft(lead, owner.key)
   console.log(`\n[${owner.name}] 테스트 대상: ${label(lead)}`)
   console.log(`제목: ${draft.subject}\n`)
   console.log(draft.body)
