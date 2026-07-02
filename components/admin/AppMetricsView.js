@@ -61,6 +61,10 @@ const L = {
     supplyTitle: '콘텐츠 공급 & 건강도', posts: '신규 글', comments: '신규 댓글',
     anonPost: '익명 글 비율', anonComment: '익명 댓글 비율',
     roles: '작성자 / 반응자 / 열람자 (1% 법칙)', creators: '작성자', reactors: '반응자', viewers: '열람자',
+    depthTitle: '소비 깊이 (한 사람이 얼마나 보고 머무나)',
+    ppReader: '열람자당 본 글 수', ppReaderSub: '평균 · 서로 다른 글 기준',
+    dwellAvg: '평균 체류시간', dwellSub: '방문(세션)당 커뮤니티 총 응시', medianTag: '중앙값', perView: '화면당',
+    dwellEmpty: '앱 신버전 배포 후부터 수집됩니다',
     catTitle: '카테고리 · 검색 인사이트', catViewed: '소비된 카테고리(상세 조회)', searches: '인기 검색어',
     jobsTitle: '채용 지원 퍼널', jView: '채용 진입', jCard: '공고 열람', jApply: '지원 시도', jSubmit: '지원 완료',
     viewRate: '열람률', applyRate: '지원 시도율', submitRate: '지원 완료율', saveRate: '저장률',
@@ -114,6 +118,10 @@ const L = {
     supplyTitle: 'Content Supply & Health', posts: 'New posts', comments: 'New comments',
     anonPost: 'Anon post rate', anonComment: 'Anon comment rate',
     roles: 'Creators / Reactors / Viewers (1% rule)', creators: 'Creators', reactors: 'Reactors', viewers: 'Viewers',
+    depthTitle: 'Consumption Depth (how much one person reads & stays)',
+    ppReader: 'Posts read / reader', ppReaderSub: 'Average · distinct posts',
+    dwellAvg: 'Avg dwell time', dwellSub: 'Total community foreground / visit (session)', medianTag: 'Median', perView: 'per view',
+    dwellEmpty: 'Collected after the new app build ships',
     catTitle: 'Category & Search Insights', catViewed: 'Consumed categories (detail views)', searches: 'Top searches',
     jobsTitle: 'Job Application Funnel', jView: 'Jobs enter', jCard: 'Card view', jApply: 'Apply attempt', jSubmit: 'Apply complete',
     viewRate: 'View rate', applyRate: 'Apply-attempt rate', submitRate: 'Apply-complete rate', saveRate: 'Save rate',
@@ -127,6 +135,12 @@ const L = {
     osTitle: 'OS Breakdown', verTitle: 'App Version Breakdown (release cohort)',
     count: '', noData: 'No data',
   },
+}
+
+// 초 → "1m 23s" / "45s" 사람이 읽기 편한 표기.
+function fmtSec(s) {
+  if (s == null) return '-'
+  return s >= 60 ? `${Math.floor(s / 60)}m ${s % 60}s` : `${s}s`
 }
 
 function Card({ label, value, sub, big, color = '#191F28' }) {
@@ -672,6 +686,28 @@ export default function AppMetricsView({ token, dateRange, lang }) {
               <Card label={t.creators} value={community.creators} />
               <Card label={t.reactors} value={community.reactors} />
               <Card label={t.viewers} value={community.viewers} />
+            </div>
+          </div>
+
+          <div style={sectionStyle}>
+            <h3 style={sectionTitle}>{t.depthTitle}</h3>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12 }}>
+              <Card
+                big
+                label={t.ppReader}
+                value={community.postsPerReader?.avg != null ? `${community.postsPerReader.avg}` : '-'}
+                sub={community.postsPerReader?.avg != null
+                  ? `${t.ppReaderSub} · ${t.medianTag} ${community.postsPerReader.median} · ${community.postsPerReader.readers.toLocaleString()} ${t.viewers}`
+                  : t.ppReaderSub}
+              />
+              <Card
+                big
+                label={t.dwellAvg}
+                value={community.dwell?.avgSeconds != null ? fmtSec(community.dwell.avgSeconds) : '-'}
+                sub={community.dwell?.avgSeconds != null
+                  ? `${t.dwellSub} · ${t.medianTag} ${fmtSec(community.dwell.medianSeconds)} · ${t.perView} ${fmtSec(community.dwell.avgPerView)} · n=${community.dwell.visits.toLocaleString()}`
+                  : t.dwellEmpty}
+              />
             </div>
           </div>
 

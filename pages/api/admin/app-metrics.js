@@ -67,6 +67,9 @@ export default async function handler(req, res) {
     const setOf = (k) => (funnelSets[k] || (funnelSets[k] = new Set()))
     const osSet = {}, verSet = {}          // os/app_version -> Set(client_id) (범위 내)
     const catView = {}, catFilter = {}     // 커뮤니티 카테고리 분포 (범위 내)
+    const postsRead = {}                   // client -> Set(post_id) (범위 내) — 열람자당 본 글 수
+    const dwellSecs = []                   // 화면 진입당 체류(초) 표본 (범위 내, view_community_duration)
+    const sessionDwell = {}                // session_id -> 커뮤니티 총 체류(초) — 방문당 체류시간
     const searchQ = {}                     // 검색어 -> count (범위 내)
     const pushCat = {}                     // 푸시 category -> { click, received } (범위 내)
     const roleDist = {}, expDist = {}      // 연봉 제출 role/experience 분포 (범위 내)
@@ -134,6 +137,16 @@ export default async function handler(req, res) {
         case 'view_community_post':
           if (c) setOf('f_viewPost').add(c)
           if (m.category) catView[m.category] = (catView[m.category] || 0) + 1
+          // 열람자(client)당 '서로 다른 글' 수 — 한 사람이 글 몇 개 보나.
+          if (c && m.post_id) (postsRead[c] || (postsRead[c] = new Set())).add(m.post_id)
+          break
+        case 'view_community_duration':
+          // 앱이 화면 진입당 포그라운드 체류시간(초)을 보낸다(백그라운드 구간은 앱에서 이미 제외).
+          // session_id로 묶으면 한 번 실행에서 커뮤니티(피드+글)에 머문 '방문당 총 체류'가 된다.
+          if (typeof m.seconds === 'number' && m.seconds >= 0) {
+            dwellSecs.push(m.seconds)
+            if (m.session_id) sessionDwell[m.session_id] = (sessionDwell[m.session_id] || 0) + m.seconds
+          }
           break
         case 'like_community_post':
         case 'create_community_comment':
@@ -273,6 +286,31 @@ export default async function handler(req, res) {
     const appResumeSubmitted = (appResumeRows || []).length
     const appResumePublic = (appResumeRows || []).filter(p => p.is_resume_public).length
 
+    // ---- 커뮤니티 소비 깊이 (열람자당 본 글 수 · 평균 체류시간) ----
+    // 평균은 헤비유저가 끌어올리므로 median을 같이 노출.
+    const median = (arr) => {
+      if (!arr.length) return null
+      const s = [...arr].sort((a, b) => a - b)
+      const mid = Math.floor(s.length / 2)
+      return s.length % 2 ? s[mid] : (s[mid - 1] + s[mid]) / 2
+    }
+    const readerCounts = Object.values(postsRead).map((s) => s.size)
+    const postsPerReader = {
+      readers: readerCounts.length,                                              // 글을 1개라도 연 사람 수
+      avg: readerCounts.length ? +(readerCounts.reduce((a, b) => a + b, 0) / readerCounts.length).toFixed(1) : null,
+      median: median(readerCounts),
+    }
+    // 헤드라인 = '방문당 총 체류'(session_id로 합산) — "커뮤니티 평균 체류시간"의 진짜 답.
+    // 화면 진입당(avgPerView)은 참고용으로 함께 노출.
+    const sessionTotals = Object.values(sessionDwell)
+    const dwell = {
+      visits: sessionTotals.length,                                              // 커뮤니티에 머문 앱 실행(세션) 수
+      avgSeconds: sessionTotals.length ? Math.round(sessionTotals.reduce((a, b) => a + b, 0) / sessionTotals.length) : null,
+      medianSeconds: median(sessionTotals),
+      screenViews: dwellSecs.length,                                             // 화면 진입 건수(피드+글)
+      avgPerView: dwellSecs.length ? Math.round(dwellSecs.reduce((a, b) => a + b, 0) / dwellSecs.length) : null,
+    }
+
     // ---- 커뮤니티 ----
     const posts = cnt('create_community_post')
     const comments = cnt('create_community_comment')
@@ -295,6 +333,8 @@ export default async function handler(req, res) {
       anonPostRate: rate(anonPost, posts),
       anonCommentRate: rate(anonComment, comments),
       creators: sizeOf('creators'), reactors: sizeOf('reactors'), viewers: sizeOf('viewers'),
+      postsPerReader,                                                            // 열람자당 본 글 수(평균·중앙값)
+      dwell,                                                                     // 평균 체류시간(초)
       categoriesViewed: distArr(catView),
       categoriesFiltered: distArr(catFilter),
       topSearches: distArr(searchQ).slice(0, 20),
