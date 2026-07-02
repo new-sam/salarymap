@@ -16,18 +16,22 @@ const { data: leads, error } = await sb.from('cold_outreach')
 if (error) { console.log('조회 오류:', error.message); process.exit(1) }
 
 console.log(`[${owner.name}] 발송(미회신) ${leads.length}건 스레드 확인 중…`)
-let replied = 0
+let replied = 0, bounced = 0
 for (const l of leads) {
   try {
     const { data } = await gmail.users.threads.get({
       userId: 'me', id: l.gmail_thread_id, format: 'metadata', metadataHeaders: ['From'],
     })
-    // owner(발신자)가 아닌 발신자의 메시지 = 상대방 답장
-    const hasReply = (data.messages || []).some(m => {
-      const from = (m.payload?.headers || []).find(h => h.name === 'From')?.value || ''
-      return !from.toLowerCase().includes(owner.sender.toLowerCase())
-    })
-    if (hasReply) {
+    // owner(발신자)가 아닌 메시지들의 From
+    const froms = (data.messages || [])
+      .map(m => (m.payload?.headers || []).find(h => h.name === 'From')?.value || '')
+      .filter(f => !f.toLowerCase().includes(owner.sender.toLowerCase()))
+    const isBounce = froms.some(f => /mailer-daemon|postmaster|mail delivery/i.test(f))
+    if (isBounce) {
+      await sb.from('cold_outreach').update({ status: 'bounced' }).eq('id', l.id)
+      bounced++
+      console.log(`  ⚠︎ 반송 감지: ${l.email}`)
+    } else if (froms.length) {
       await sb.from('cold_outreach').update({ status: 'replied', replied_at: new Date().toISOString() }).eq('id', l.id)
       replied++
       console.log(`  ↩︎ 회신 감지: ${l.email}`)
@@ -41,5 +45,5 @@ const inState = (states) => sb.from('cold_outreach').select('*', { count: 'exact
   .eq('campaign', CAMPAIGN).in('status', states)
 const { count: sentTotal } = await inState(['sent', 'replied', 'meeting', 'won', 'lost'])
 const { count: repliedTotal } = await inState(['replied', 'meeting', 'won', 'lost'])
-console.log(`\n신규 회신 ${replied}건`)
+console.log(`\n신규 회신 ${replied}건 · 반송 ${bounced}건`)
 console.log(`회신율: ${repliedTotal}/${sentTotal} = ${sentTotal ? Math.round((repliedTotal / sentTotal) * 100) : 0}%`)

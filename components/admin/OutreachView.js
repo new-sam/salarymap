@@ -10,8 +10,9 @@ const STATUS = {
   meeting: { ko: '미팅',    en: 'Meeting', bg: '#D97706' },
   won:     { ko: '계약',    en: 'Won',     bg: '#059669' },
   lost:    { ko: '거절',    en: 'Lost',    bg: '#DC2626' },
+  bounced: { ko: '반송',    en: 'Bounced', bg: '#B45309' },
 }
-const STATUS_ORDER = ['todo', 'sent', 'replied', 'meeting', 'won', 'lost']
+const STATUS_ORDER = ['todo', 'sent', 'replied', 'meeting', 'won', 'lost', 'bounced']
 
 const EMPTY = { company_name: '', contact_name: '', email: '', industry: '', campaign: '', status: 'todo', sent_at: '', memo: '' }
 

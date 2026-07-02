@@ -85,7 +85,7 @@ else if (mode === 'send') {
       await sb.from('cold_outreach').update({ status: 'sent', sent_at: new Date().toISOString().slice(0, 10), sent_ts: new Date().toISOString(), send_count: 1, gmail_thread_id: r.threadId || null }).eq('id', l.id)
       ok++; console.log(`  ✓ ${l.email} (${label(l)}) id:${r.id}`)
       await new Promise(s => setTimeout(s, 4000))
-    } catch (e) { console.log(`  ✗ ${l.email}: ${e.message}`) }
+    } catch (e) { await sb.from('cold_outreach').update({ status: 'bounced' }).eq('id', l.id); console.log(`  ✗ ${l.email} (반송): ${e.message}`) }
   }
   console.log(`\n완료 — 발송 ${ok}/${leads.length}`)
 }

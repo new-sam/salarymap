@@ -36,6 +36,8 @@ export default async function handler(req, res) {
       }).eq('id', it.id)
       results.push({ id: it.id, ok: true })
     } catch (e) {
+      // 발송 실패(주소 오류 등) → 자동 반송 처리
+      try { await supabaseAdmin.from('cold_outreach').update({ status: 'bounced' }).eq('id', it.id) } catch {}
       results.push({ id: it.id, ok: false, error: e.message })
     }
   }
