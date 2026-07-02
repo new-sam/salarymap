@@ -84,8 +84,8 @@ export default function OutreachView({ token, lang, owner = 'wsj' }) {
   const sentPlus = ['sent', 'replied', 'meeting', 'won', 'lost'].reduce((s, k) => s + (counts[k] || 0), 0)
   const repliedPlus = ['replied', 'meeting', 'won', 'lost'].reduce((s, k) => s + (counts[k] || 0), 0)
   const replyRate = sentPlus ? Math.round((repliedPlus / sentPlus) * 100) : 0
-  const openedCount = rows.filter(r => r.opened_at).length
-  const openRate = sentPlus ? Math.round((openedCount / sentPlus) * 100) : 0
+  const openedCount = rows.filter(r => r.opened_at && r.status !== 'todo').length
+  const openRate = sentPlus ? Math.min(100, Math.round((openedCount / sentPlus) * 100)) : 0
 
   const filtered = rows.filter(r => {
     if (statusFilter !== 'all' && r.status !== statusFilter) return false
