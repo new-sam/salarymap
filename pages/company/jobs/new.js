@@ -16,10 +16,11 @@ import Brand from '../../../components/company/Brand';
 import LangToggle from '../../../components/company/LangToggle';
 import { useT } from '../../../lib/i18n';
 import { toast } from 'sonner';
+import { ROLE_OPTIONS, LOCATION_OPTIONS } from '../../../constants/jobs';
 
-const ROLES = ['Backend', 'Frontend', 'Fullstack', 'Mobile', 'Data', 'DevOps', 'PM', 'Design', 'QA'];
+const ROLES = ROLE_OPTIONS;         // 공개 게시판 필터와 단일 소스로 동기화(비IT 직무 포함)
 const TYPES = ['remote', 'onsite', 'hybrid'];
-const LOCATIONS = ['Hà Nội', 'Hồ Chí Minh', 'Đà Nẵng', 'Hải Phòng', 'Cần Thơ'];
+const LOCATIONS = LOCATION_OPTIONS; // 베트남 주요 도시/성 확장
 
 const EMPTY = {
   title: '', description: '', role: 'Backend', type: 'hybrid', country: 'vietnam',
@@ -323,6 +324,7 @@ export default function NewJobPage() {
 
               <Field label={t('company.jobsnew.tech')}>
                 <UInput value={form.tech_stack} onChange={e => setF('tech_stack', e.target.value)} placeholder="Node.js, PostgreSQL, AWS" />
+                <div className="text-xs text-gray-500 mt-1">{t('company.jobsnew.techHint')}</div>
               </Field>
 
               <Field label={t('company.jobsnew.benefits')}>
@@ -348,6 +350,10 @@ export default function NewJobPage() {
                   {t('company.jobsnew.previewFull')}
                 </UButton>
               </div>
+              <a href="/jobs" target="_blank" rel="noopener noreferrer"
+                className="flex-shrink-0 inline-flex items-center gap-1 text-[11.5px] font-semibold text-primary-600 hover:underline">
+                {t('company.jobsnew.previewBoardLink')}
+              </a>
               <JobPreview form={form} companyName={companyName} />
             </aside>
 

@@ -6,6 +6,8 @@ export const DEFAULT_IMAGES = [
 
 export const ROLE_OPTIONS = ['Backend','Frontend','Fullstack','Mobile','Data','DevOps','QA','Design','PM','HR','Marketing','Sales','Finance','Operations','Non-IT']
 export const TYPE_OPTIONS = ['remote','onsite','hybrid']
+// 근무지 — 베트남 주요 도시/성 + 원격/기타 (회사 ATS 폼·필터 공통)
+export const LOCATION_OPTIONS = ['Hồ Chí Minh','Hà Nội','Đà Nẵng','Hải Phòng','Cần Thơ','Bình Dương','Đồng Nai','Bắc Ninh','Hưng Yên','Quảng Ninh','Khánh Hòa','Thừa Thiên Huế','Bà Rịa – Vũng Tàu','Remote','Khác / Other']
 export const TECH_OPTIONS = ['Java','Python','AWS','React','Go','TypeScript','JavaScript','Node.js','Kotlin','Docker','Spring Framework','Rust','Swift','Flutter','Kubernetes']
 
 export const MARKET_SALARY = {

@@ -12,10 +12,11 @@ import { Badge as UBadge } from '../../../../components/ui/badge';
 import { PageHeader } from '../../../../components/ui/page-header';
 import { ImageIcon, MapPin, Building2, EyeOff, Eye, Trash2, ExternalLink, Briefcase, CalendarDays, Users, Maximize2, X as XIcon } from 'lucide-react';
 import JobPreview from '../../../../components/jobs/JobPreview';
+import { ROLE_OPTIONS, LOCATION_OPTIONS } from '../../../../constants/jobs';
 
-const ROLES = ['Backend', 'Frontend', 'Fullstack', 'Mobile', 'Data', 'DevOps', 'PM', 'Design', 'QA'];
+const ROLES = ROLE_OPTIONS;         // new.js와 동일 소스(비IT 직무 포함)
 const TYPES = ['remote', 'onsite', 'hybrid'];
-const LOCATIONS = ['Hà Nội', 'Hồ Chí Minh', 'Đà Nẵng', 'Hải Phòng', 'Cần Thơ'];
+const LOCATIONS = LOCATION_OPTIONS;
 
 export default function EditJobPage() {
   const router = useRouter();
@@ -314,6 +315,7 @@ export default function EditJobPage() {
 
               <Field label={t('company.jobsnew.tech')}>
                 <UInput value={form.tech_stack} onChange={e => setF('tech_stack', e.target.value)} placeholder="Node.js, PostgreSQL, AWS" />
+                <div className="text-xs text-gray-500 mt-1">{t('company.jobsnew.techHint')}</div>
               </Field>
 
               <Field label={t('company.jobsnew.benefits')}>
@@ -337,6 +339,18 @@ export default function EditJobPage() {
                 <UButton type="button" size="sm" variant="outline" onClick={() => setPreviewFull(true)} className="h-7 px-2.5 text-[11.5px]">
                   <Maximize2 className="w-3.5 h-3.5" />
                   {t('company.jobsnew.previewFull')}
+                </UButton>
+              </div>
+              <div className="flex items-center justify-between flex-shrink-0 gap-2">
+                <a href={`/jobs/${router.query.id}`} target="_blank" rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 text-[11.5px] font-semibold text-primary-600 hover:underline">
+                  {t('company.jobsnew.previewBoardLink')}
+                </a>
+                <UButton type="button" size="sm" variant="outline"
+                  onClick={() => { navigator.clipboard?.writeText(`https://salary-fyi.com/jobs/${router.query.id}`); toast.success(t('company.jobsnew.linkCopied')); }}
+                  className="h-7 px-2.5 text-[11.5px]">
+                  <ExternalLink className="w-3.5 h-3.5" />
+                  {t('company.jobsnew.copyLink')}
                 </UButton>
               </div>
               <JobPreview form={form} companyName={companyName} />
