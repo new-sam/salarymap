@@ -12,6 +12,7 @@ import FunnelView from '../../components/admin/FunnelView'
 import ApplicationsView from '../../components/admin/ApplicationsView'
 import ResumesView from '../../components/admin/ResumesView'
 import TalentPoolView from '../../components/admin/TalentPoolView'
+import TalentSupplyView from '../../components/admin/TalentSupplyView'
 import VerificationsView from '../../components/admin/VerificationsView'
 import CommunityView from '../../components/admin/CommunityView'
 import AppMetricsView from '../../components/admin/AppMetricsView'
@@ -924,6 +925,11 @@ export default function AdminDashboard() {
         {/* Talent Pool Tab — 공개 이력서 인재풀 */}
         {tab === 'talent' && (
           <TalentPoolView token={token} lang={lang} />
+        )}
+
+        {/* Talent Supply Tab — 직군별 공급 구성 스냅샷 */}
+        {tab === 'supply' && (
+          <TalentSupplyView token={token} lang={lang} />
         )}
 
         {/* Verifications Tab */}

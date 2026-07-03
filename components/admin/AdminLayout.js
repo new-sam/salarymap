@@ -20,6 +20,7 @@ function buildNav(lang) {
         { label: L('지원자', 'Applicants'), pathname: '/admin/dashboard', tab: 'applications' },
         { label: L('이력서', 'Resumes'), pathname: '/admin/dashboard', tab: 'resumes' },
         { label: L('인재풀', 'Talent'), pathname: '/admin/dashboard', tab: 'talent' },
+        { label: L('인재 공급', 'Supply'), pathname: '/admin/dashboard', tab: 'supply' },
         { label: L('연봉 인증', 'Verifications'), pathname: '/admin/dashboard', tab: 'verifications' },
         { label: L('커뮤니티', 'Community'), pathname: '/admin/dashboard', tab: 'community' },
       ],
