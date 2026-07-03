@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import Head from 'next/head'
 import { useRouter } from 'next/router'
 import AdminLayout from '../../components/admin/AdminLayout'
+import { useT } from '../../lib/i18n'
 import { supabase } from '../../lib/supabaseClient'
 import { useAdmin } from '../../lib/adminSwr'
 import Icon from '../../components/Icon'
@@ -24,6 +25,8 @@ export default function AdminJobs() {
   const [auth, setAuth] = useState('loading')
   const [token, setToken] = useState(null)
   const [currentEmail, setCurrentEmail] = useState(null)
+  const { lang: globalLang } = useT()
+  const L = (ko, en) => (globalLang === 'ko' ? ko : en) // admin은 ko/en 2개
   const router = useRouter()
   const tab = router.query.tab || 'jobs'
   const [jobFilter, setJobFilter] = useState('all')
@@ -34,6 +37,9 @@ export default function AdminJobs() {
   const [msg, setMsg] = useState(null)
   const [newAdminEmail, setNewAdminEmail] = useState('')
   const [imageUploading, setImageUploading] = useState(false)
+  const [acct, setAcct] = useState({ email: '', companyName: '', contactName: '' })
+  const [acctIssuing, setAcctIssuing] = useState(false)
+  const [acctResult, setAcctResult] = useState(null)
   const imgInputRef = useRef(null)
 
   // Auth check — DB based
@@ -105,6 +111,23 @@ export default function AdminJobs() {
   const handleToggleVerify = async (c) => {
     await fetch('/api/admin/companies', { method: 'PUT', headers: headers(), body: JSON.stringify({ id: c.id, verified: !c.verified_at }) })
     flash(c.verified_at ? '인증 해제됨' : '✅ 인증 완료'); mutateCompanies()
+  }
+
+  const handleIssueAccount = async () => {
+    if (!acct.email.includes('@') || !acct.companyName.trim()) return
+    setAcctIssuing(true); setAcctResult(null)
+    try {
+      const res = await fetch('/api/admin/companies', { method: 'POST', headers: headers(), body: JSON.stringify(acct) })
+      const data = await res.json()
+      if (!res.ok) { flash('❌ ' + (data.error || L('발급 실패', 'Failed to issue'))); return }
+      setAcctResult(data)
+      setAcct({ email: '', companyName: '', contactName: '' })
+      flash(data.reused ? L('기존 계정 비번 재설정됨', 'Existing account password reset') : L('✅ 계정 발급 완료', '✅ Account issued')); mutateCompanies()
+    } catch (e) {
+      flash('❌ ' + (e.message || L('발급 실패', 'Failed to issue')))
+    } finally {
+      setAcctIssuing(false)
+    }
   }
 
   const handleToggleFeatured = async (job) => {
@@ -500,6 +523,51 @@ export default function AdminJobs() {
           <div style={S.card}>
             <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 4 }}>가입 회사 계정</div>
             <div style={{ fontSize: 12, color: '#999', marginBottom: 16 }}>공고를 등록할 수 있는 기업 계정. 인증(verified) 상태를 관리합니다.</div>
+
+            {/* 계정 발급 — Google 안 되는 회사용 이메일/비번 로그인 계정 생성 */}
+            <div style={{ border: '1px solid #e5e7eb', borderRadius: 10, padding: 14, marginBottom: 20, background: '#fafafa' }}>
+              <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 2 }}>＋ {L('계정 발급', 'Issue account')}</div>
+              <div style={{ fontSize: 11, color: '#999', marginBottom: 12 }}>{L('이메일/비밀번호 로그인 계정을 만들어 자격증명을 고객에게 전달합니다. gmail 등 개인메일도 가능(계정별 독립 회사).', 'Create an email/password login account and hand the credentials to the customer. Personal emails like gmail are fine (each becomes its own company).')}</div>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 8 }}>
+                <input type="email" placeholder={L('로그인 이메일', 'Login email')} value={acct.email}
+                  onChange={e => setAcct({ ...acct, email: e.target.value })}
+                  style={{ ...S.inp, flex: '1 1 200px' }} />
+                <input type="text" placeholder={L('회사명(표시)', 'Company name (display)')} value={acct.companyName}
+                  onChange={e => setAcct({ ...acct, companyName: e.target.value })}
+                  style={{ ...S.inp, flex: '1 1 200px' }} />
+                <input type="text" placeholder={L('담당자명(선택)', 'Contact name (optional)')} value={acct.contactName}
+                  onChange={e => setAcct({ ...acct, contactName: e.target.value })}
+                  style={{ ...S.inp, flex: '1 1 160px' }} />
+              </div>
+              <button style={S.btnP} onClick={handleIssueAccount}
+                disabled={acctIssuing || !acct.email.includes('@') || !acct.companyName.trim()}>
+                {acctIssuing ? L('발급 중…', 'Issuing…') : L('계정 발급', 'Issue account')}
+              </button>
+
+              {acctResult && (
+                <div style={{ marginTop: 12, padding: 12, borderRadius: 8, background: '#ecfdf5', border: '1px solid #a7f3d0', fontSize: 12 }}>
+                  <div style={{ fontWeight: 700, color: '#065f46', marginBottom: 6 }}>
+                    {acctResult.reused
+                      ? L('기존 계정 비밀번호 재설정됨 — 아래를 전달하세요', 'Existing account password reset — share the details below')
+                      : L('✅ 발급 완료 — 아래를 고객에게 전달하세요', '✅ Issued — hand the details below to the customer')}
+                  </div>
+                  <div style={{ fontFamily: 'monospace', lineHeight: 1.7, userSelect: 'all' }}>
+                    <div>URL: {acctResult.url}</div>
+                    <div>{L('이메일', 'Email')}: {acctResult.email}</div>
+                    <div>{L('비밀번호', 'Password')}: <b>{acctResult.password}</b></div>
+                  </div>
+                  <div style={{ marginTop: 8, display: 'flex', gap: 8 }}>
+                    <button style={S.btnS}
+                      onClick={() => { navigator.clipboard.writeText(`URL: ${acctResult.url}\n${L('이메일', 'Email')}: ${acctResult.email}\n${L('비밀번호', 'Password')}: ${acctResult.password}`); flash(L('복사됨', 'Copied')) }}>
+                      {L('복사', 'Copy')}
+                    </button>
+                    <button style={S.btnS} onClick={() => setAcctResult(null)}>{L('닫기', 'Close')}</button>
+                  </div>
+                  <div style={{ marginTop: 8, color: '#059669', fontSize: 11 }}>{L('※ 비밀번호는 지금만 표시됩니다. 창을 닫으면 다시 볼 수 없어요.', '※ The password is shown only now. Once you close this, it cannot be viewed again.')}</div>
+                </div>
+              )}
+            </div>
+
             {companies.length === 0 && <div style={{ color: '#aaa', fontSize: 13 }}>가입 회사 없음</div>}
             {companies.map(c => (
               <div key={c.id} style={S.row}>

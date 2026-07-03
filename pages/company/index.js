@@ -187,11 +187,6 @@ export default function CompanyDashboard() {
 
       const userEmail = data.session.user.email || '';
       const emailDomain = userEmail.includes('@') ? userEmail.split('@')[1].toLowerCase() : '';
-      if (!emailDomain || FREE_MAIL_DOMAINS.has(emailDomain)) {
-        setAuthErr(t('company.err.freemail'));
-        setStatus('unauthed');
-        return;
-      }
       setUser(data.session.user);
 
       const { data: rec } = await supabase
@@ -202,7 +197,14 @@ export default function CompanyDashboard() {
       if (rec?.recruiter_companies?.name) setCompanyName(rec.recruiter_companies.name);
       if (rec?.full_name) setFullName(rec.full_name);
 
+      // 이미 회사에 연결된 계정(어드민 발급 포함)은 도메인 무관하게 통과.
+      // free-mail 차단은 도메인으로 회사를 추정하는 '자체 가입' 경로에만 적용한다.
       if (!rec?.company_id) {
+        if (!emailDomain || FREE_MAIL_DOMAINS.has(emailDomain)) {
+          setAuthErr(t('company.err.freemail'));
+          setStatus('unauthed');
+          return;
+        }
         setSetupName(rec?.full_name || '');
         setStatus('needs_company');
         return;
