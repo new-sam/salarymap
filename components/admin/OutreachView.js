@@ -149,13 +149,11 @@ export default function OutreachView({ token, lang, owner = 'wsj' }) {
   async function openSend() {
     const items = rows.filter(r => selected.has(r.id)).map(r => {
       const c = splitName(r.company_name)
-      const round = (r.send_count || 0) + 1
-      const useExisting = round === 1 && !!r.email_body   // 1차인데 이미 초안 있으면 재사용, 2차+는 팔로업 새로 생성
-      return { id: r.id, company: c.ko || c.en || r.company_name, email: r.email, round,
-        subject: useExisting ? (r.email_subject || '') : '', body: useExisting ? r.email_body : '' }
+      return { id: r.id, company: c.ko || c.en || r.company_name, email: r.email, round: (r.send_count || 0) + 1, subject: '', body: '' }
     })
     setSendModal(items)
-    const round1 = items.filter(x => x.round === 1 && !x.body.trim()).map(x => x.id)
+    // 항상 최신 프롬프트로 새로 생성 (저장된 초안 재사용 안 함 → 프롬프트 변경 즉시 반영)
+    const round1 = items.filter(x => x.round === 1).map(x => x.id)
     const round2 = items.filter(x => x.round >= 2).map(x => x.id)
     if (!round1.length && !round2.length) return
     setGenerating(true)
