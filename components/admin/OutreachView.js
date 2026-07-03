@@ -232,7 +232,7 @@ export default function OutreachView({ token, lang, owner = 'wsj' }) {
         <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', margin: '18px 0 0' }}>
           {[
             { label: ko ? '발송' : 'Sent', big: `${sentPlus}`, sub: ko ? '총 발송' : 'emails', color: '#191F28', note: '' },
-            { label: ko ? '오픈율' : 'Open rate', big: `${openRate}%`, sub: `${openedCount}/${sentPlus}`, color: '#2563EB', note: ko ? '발송 5분 이후 오픈만' : '' },
+            { label: ko ? '오픈율' : 'Open rate', big: `${openRate}%`, sub: `${openedCount}/${sentPlus}`, color: '#2563EB', note: ko ? '발신자 본인 오픈 제외 · 참고용' : 'excl. own · directional' },
             { label: ko ? '회신율' : 'Reply rate', big: `${replyRate}%`, sub: `${repliedPlus}/${sentPlus}`, color: '#ff4400', note: '' },
           ].map((m, i) => (
             <div key={i} style={{ flex: '1 1 150px', minWidth: 140, background: '#fff', border: '1px solid #EEF0F2', borderRadius: 12, padding: '14px 16px' }}>
