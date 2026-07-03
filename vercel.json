@@ -5,6 +5,7 @@
   "crons": [
     { "path": "/api/cron/daily-hot-post", "schedule": "0 1 * * *" },
     { "path": "/api/cron/refresh-company-cards", "schedule": "30 1 * * *" },
-    { "path": "/api/cron/follow-digest", "schedule": "0 12 * * *" }
+    { "path": "/api/cron/follow-digest", "schedule": "0 12 * * *" },
+    { "path": "/api/cron/scrape-pikdi", "schedule": "0 2 * * 3" }
   ]
 }
