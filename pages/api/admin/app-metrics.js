@@ -75,6 +75,7 @@ export default async function handler(req, res) {
     const pushCat = {}                     // 푸시 category -> { click, received } (범위 내)
     const roleDist = {}, expDist = {}      // 연봉 제출 role/experience 분포 (범위 내)
     let anonPost = 0, anonComment = 0      // 익명 글/댓글 수 (범위 내, 분모는 create 카운트)
+    const cardShareMethod = {}             // 명함 공유 수단 분포 (image|text|link) (범위 내)
 
     const bumpDaily = (date, key) => {
       if (!dailyMap[date]) dailyMap[date] = { date }
@@ -174,6 +175,11 @@ export default async function handler(req, res) {
           if (m.role) roleDist[m.role] = (roleDist[m.role] || 0) + 1
           if (m.experience != null) expDist[String(m.experience)] = (expDist[String(m.experience)] || 0) + 1
           break
+        case 'share_card': {
+          const k = m.method || '(none)'  // image|text|link
+          cardShareMethod[k] = (cardShareMethod[k] || 0) + 1
+          break
+        }
         case 'push_click': {
           const k = m.category || '(none)'
           ;(pushCat[k] || (pushCat[k] = { click: 0, received: 0, sent: 0 })).click++
@@ -386,6 +392,21 @@ export default async function handler(req, res) {
       },
     }
 
+    // ---- 명함 (공유·디자인 잠금해제 바이럴) ----
+    // 퍼널: 진입(view) → 꾸미기(openDesign) → 해제용 공유(shareUnlock) → 해제(unlock).
+    // share는 완성 명함 공유(수단 분해). unlockRate는 해제용 공유 대비 실제 해제 비율(근사).
+    const card = {
+      view: cnt('view_card'),
+      openDesign: cnt('open_card_design'),
+      share: cnt('share_card'),
+      shareByMethod: distArr(cardShareMethod),         // image|text|link 분포
+      shareUnlock: cnt('share_card_unlock'),           // 잠금해제용 공유(바이럴 트리거)
+      unlock: cnt('unlock_card_design'),               // 전체 디자인 해제 달성(전환)
+      save: cnt('save_card_design'),
+      designRate: rate(cnt('open_card_design'), cnt('view_card')),      // 진입→꾸미기
+      unlockRate: rate(cnt('unlock_card_design'), cnt('share_card_unlock')), // 해제용 공유→해제(근사)
+    }
+
     // ---- 푸시 (재참여 엔진) ----
     const pctOf = (num, den) => (den ? +((num / den) * 100).toFixed(1) : null)
     const push = {
@@ -540,6 +561,7 @@ export default async function handler(req, res) {
       appDwell,
       community,
       conversion,
+      card,
       push,
       segments,
       analytics,

@@ -75,6 +75,10 @@ const L = {
     byRole: '직군 분포', byExp: '연차 분포',
     resumeTitle: '이력서 등록', resumeUploads: '업로드 수', resumeUsers: '업로드 유저', uploadToApply: '업로드→지원 전환',
     resumePublic: '공개 전환', resumePublicSub: '기업 공개 · 앱 누적',
+    cardTitle: '디지털 명함 (공유·잠금해제)', cardView: '명함 조회', cardOpenDesign: '꾸미기 진입',
+    cardShare: '명함 공유', cardShareSub: '이미지·텍스트·링크 합계', cardShareUnlock: '해제용 공유', cardUnlock: '디자인 해제',
+    cardSave: '디자인 저장', cardDesignRate: '진입→꾸미기', cardUnlockRate: '해제용 공유→해제',
+    cardByMethod: '공유 수단별', cardTsTitle: '명함 활동(일별)',
     pushTitle: '푸시 (재참여 엔진)', pushSent: '발송', pushCtr: '클릭률(클릭/발송)', pushClicks: '클릭(재방문)', pushClickUsers: '클릭 유저', pushReceived: '수신(포그라운드)',
     pushByCat: '푸시 종류별 클릭', pushNote: '⚠ 클릭률 = 클릭/발송. 발송 수는 서버 발송 로그(push_sent)에서 집계되며 배포 시점부터 누적됩니다(이전 발송분은 분모에 없음). 수신은 OS 한계로 앱 실행 중(포그라운드)만 잡힙니다.',
     osTitle: 'OS 분포', verTitle: '앱 버전 분포 (릴리스 코호트)',
@@ -134,6 +138,10 @@ const L = {
     byRole: 'By role', byExp: 'By experience',
     resumeTitle: 'Resume Upload', resumeUploads: 'Uploads', resumeUsers: 'Upload users', uploadToApply: 'Upload→apply conv',
     resumePublic: 'Public conversions', resumePublicSub: 'Made public · app, cumulative',
+    cardTitle: 'Digital Business Card (share & unlock)', cardView: 'Card views', cardOpenDesign: 'Open designer',
+    cardShare: 'Card shares', cardShareSub: 'image + text + link', cardShareUnlock: 'Share to unlock', cardUnlock: 'Designs unlocked',
+    cardSave: 'Design saves', cardDesignRate: 'View→design', cardUnlockRate: 'Unlock-share→unlock',
+    cardByMethod: 'By share method', cardTsTitle: 'Card activity (daily)',
     pushTitle: 'Push (re-engagement engine)', pushSent: 'Sent', pushCtr: 'CTR (clicks/sent)', pushClicks: 'Clicks (returns)', pushClickUsers: 'Click users', pushReceived: 'Received (foreground)',
     pushByCat: 'Clicks by push type', pushNote: '⚠ CTR = clicks/sent. Sent count comes from server push logs (push_sent) and accumulates from deploy time (earlier sends are not in the denominator). Received only fires in foreground (OS limit).',
     osTitle: 'OS Breakdown', verTitle: 'App Version Breakdown (release cohort)',
@@ -395,6 +403,8 @@ export default function AppMetricsView({ token, dateRange, lang }) {
   if (!data || !data.meta.totalAppEvents) return <div style={{ textAlign: 'center', padding: 40, color: '#999' }}>{t.empty}</div>
 
   const { meta, topline, retention, appDwell, community, conversion, push, segments, daily, webAppPromo } = data
+  // 명함(신규). 백엔드 갱신 전엔 없을 수 있어 기본값으로 방어.
+  const card = data.card || { view: 0, openDesign: 0, share: 0, shareByMethod: [], shareUnlock: 0, unlock: 0, save: 0, designRate: null, unlockRate: null }
   // 분석가 모듈(부분 배포 대비 기본값). 백엔드 갱신 후엔 항상 채워짐.
   const analytics = data.analytics || {
     stickiness: {}, newUsersInRange: 0, retentionCurve: [], activation: {},
@@ -431,6 +441,7 @@ export default function AppMetricsView({ token, dateRange, lang }) {
     community: [M('view_community', t.fView, '#ff4400'), M('create_community_post', t.posts, '#3F3F46'), M('create_community_comment', t.comments, '#A1A1AA')],
     jobs: [M('view_jobs_page', t.jView, '#ff4400'), M('click_job_card', t.jCard, '#3F3F46'), M('click_apply_button', t.jApply, '#A1A1AA')],
     push: [M('push_sent', t.pushSent, '#ff4400'), M('push_click', t.pushClicks, '#3F3F46'), M('push_received', t.pushReceived, '#A1A1AA')],
+    card: [M('share_card', t.cardShare, '#ff4400'), M('share_card_unlock', t.cardShareUnlock, '#3F3F46'), M('unlock_card_design', t.cardUnlock, '#A1A1AA')],
   }
 
   // 그래프 클릭 → URL(?chart=)로 한 뎁스 더 깊은 상세 페이지. 뒤로가기로 복귀.
@@ -792,6 +803,35 @@ export default function AppMetricsView({ token, dateRange, lang }) {
               <Card label={t.resumeUsers} value={conversion.resume.uploadUsers} />
               <Card label={t.resumePublic} value={conversion.resume.appPublic} sub={t.resumePublicSub} />
               <Card label={t.uploadToApply} value={conversion.resume.uploadToApply != null ? `${conversion.resume.uploadToApply}%` : '-'} />
+            </div>
+          </div>
+
+          <div style={sectionStyle}>
+            <h3 style={sectionTitle}>{t.cardTitle}</h3>
+            {(() => {
+              const raw = [
+                { label: t.cardView, value: card.view }, { label: t.cardOpenDesign, value: card.openDesign },
+                { label: t.cardShareUnlock, value: card.shareUnlock }, { label: t.cardUnlock, value: card.unlock },
+              ]
+              const steps = raw.map((s, i) => ({ ...s, rate: i === 0 ? null : (raw[i - 1].value > 0 ? ((s.value / raw[i - 1].value) * 100).toFixed(1) : null) }))
+              return <FunnelChart steps={steps} color="#7C3AED" />
+            })()}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: 12, marginTop: 16 }}>
+              <Card label={t.cardShare} value={card.share} sub={t.cardShareSub} />
+              <Card label={t.cardSave} value={card.save} />
+              <Card label={t.cardDesignRate} value={card.designRate != null ? `${card.designRate}%` : '-'} />
+              <Card label={t.cardUnlockRate} value={card.unlockRate != null ? `${card.unlockRate}%` : '-'} />
+            </div>
+            {card.shareByMethod && card.shareByMethod.length > 0 && (
+              <div style={{ marginTop: 20 }}>
+                <h4 style={{ fontSize: 13, fontWeight: 600, color: '#374151', margin: '0 0 10px' }}>{t.cardByMethod}</h4>
+                <DistTable rows={card.shareByMethod} t={t} color="#7C3AED" />
+              </div>
+            )}
+            <div style={{ marginTop: 20 }}>
+              <h4 style={{ fontSize: 13, fontWeight: 600, color: '#374151', margin: '0 0 10px' }}>{t.cardTsTitle}</h4>
+              <MetricChart daily={aggregateBy(ts, series.card, "day")} metrics={series.card} lang={lang} lineType="linear" dots={false} />
+              <ChartLegend metrics={series.card} />
             </div>
           </div>
         </>
