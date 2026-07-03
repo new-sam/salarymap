@@ -71,6 +71,26 @@ export default function CompanyDashboard() {
   const [setupName, setSetupName] = useState('');
   const [setupCompany, setSetupCompany] = useState('');
   const [setupBusy, setSetupBusy] = useState(false);
+  // Email/password login — fallback for companies that can't use Google
+  // (Google Workspace가 아닌 회사: Alimail 등 중국 메일). 계정은 우리가 발급.
+  const [loginEmail, setLoginEmail] = useState('');
+  const [loginPassword, setLoginPassword] = useState('');
+  const [loginBusy, setLoginBusy] = useState(false);
+
+  const loginWithPassword = async (e) => {
+    e.preventDefault();
+    setAuthErr('');
+    setLoginBusy(true);
+    const { error } = await supabase.auth.signInWithPassword({
+      email: loginEmail.trim().toLowerCase(),
+      password: loginPassword,
+    });
+    setLoginBusy(false);
+    if (error) { setAuthErr(t('company.err.loginFailed')); return; }
+    // Session is now stored — reload so the guard effect routes to the dashboard
+    // (or company setup) exactly as it does after Google login.
+    window.location.reload();
+  };
 
   const loginWithGoogle = async () => {
     // 로그인 후 복귀 경로: ?next 가 있으면 거기로(랜딩 '공고 올리기' → /company/jobs/new), 없으면 대시보드
@@ -282,6 +302,38 @@ export default function CompanyDashboard() {
                   <span>{t('company.googleLogin')}</span>
                 </button>
                 <div style={localCss.note}>{t('company.googleNote')}</div>
+
+                <div style={localCss.divider}>
+                  <span style={localCss.dividerLine} />
+                  <span style={localCss.dividerText}>{t('company.pwLogin.divider')}</span>
+                  <span style={localCss.dividerLine} />
+                </div>
+
+                <form onSubmit={loginWithPassword} style={localCss.form}>
+                  <label style={localCss.label}>{t('company.pwLogin.emailLabel')}</label>
+                  <input
+                    type="email"
+                    value={loginEmail}
+                    onChange={(e) => setLoginEmail(e.target.value)}
+                    placeholder={t('company.pwLogin.emailPh')}
+                    style={localCss.input}
+                    required
+                  />
+                  <label style={{ ...localCss.label, marginTop: 4 }}>{t('company.pwLogin.pwLabel')}</label>
+                  <input
+                    type="password"
+                    value={loginPassword}
+                    onChange={(e) => setLoginPassword(e.target.value)}
+                    placeholder={t('company.pwLogin.pwPh')}
+                    style={localCss.input}
+                    required
+                  />
+                  <button type="submit" disabled={loginBusy} style={localCss.primaryBtn}>
+                    {loginBusy ? t('company.connecting') : t('company.pwLogin.btn')}
+                  </button>
+                </form>
+                <div style={localCss.note}>{t('company.pwLogin.hint')}</div>
+
                 <div style={localCss.legalNote}>{t('company.legalNote')}</div>
               </div>
             </section>
@@ -662,6 +714,9 @@ const localCss = {
   panelTitle: { margin: 0, fontSize: 23, lineHeight: 1.2, fontWeight: 900, letterSpacing: '-0.02em' },
   panelCopy: { margin: '9px 0 20px', color: '#6B7280', fontSize: 13.5, lineHeight: 1.55, fontWeight: 600 },
   form: { display: 'flex', flexDirection: 'column', gap: 9 },
+  divider: { display: 'flex', alignItems: 'center', gap: 10, margin: '18px 0 4px' },
+  dividerLine: { flex: 1, height: 1, background: '#E5E7EB' },
+  dividerText: { color: '#9CA3AF', fontSize: 11.5, fontWeight: 800 },
   label: { display: 'block', marginBottom: 6, color: '#374151', fontSize: 12, fontWeight: 800 },
   note: {
     margin: '4px 0 2px',

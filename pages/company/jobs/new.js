@@ -1,7 +1,7 @@
 import { useState, useEffect, Fragment } from 'react';
 import { color as tc, font as tf, space as ts, radius as tr, shadow as tsh, motion as tm } from '../../../lib/theme';
 import { cn } from '../../../lib/cn';
-import { Plus, Home, CalendarDays, ImageIcon, MapPin, Building2, Briefcase, Users as UsersIcon, CheckSquare, Maximize2, X as XIcon } from 'lucide-react';
+import { Plus, Home, CalendarDays, ImageIcon, MapPin, Building2, Briefcase, Users as UsersIcon, CheckSquare, Maximize2, X as XIcon, Settings } from 'lucide-react';
 import JobPreview from '../../../components/jobs/JobPreview';
 import { nextActionFor } from '../../../lib/smart-hint';
 import { loadAccessibleJobIds } from '../../../lib/company-access';
@@ -585,6 +585,18 @@ export function Sidebar({ companyName, userEmail, activePage = 'home', activeJob
               {t('company.unit.items', { n: interviewCount })}
             </span>
           )}
+        </Link>
+        <Link
+          href="/company/settings"
+          className={cn(
+            'flex items-center gap-2 px-2.5 py-1.5 rounded-md text-[13px] font-semibold transition-colors',
+            isActive('settings')
+              ? 'bg-primary-500/15 text-primary-300'
+              : 'text-gray-300 hover:bg-white/5 hover:text-white'
+          )}
+        >
+          <Settings className="h-3.5 w-3.5" />
+          {t('company.sidebar.settings')}
         </Link>
       </nav>
 
