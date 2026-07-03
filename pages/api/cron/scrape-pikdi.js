@@ -1,4 +1,7 @@
 import { createClient } from '@supabase/supabase-js'
+import { findCompanyEmail } from '../../../lib/findEmail'
+
+export const config = { maxDuration: 60 } // 신규 브랜드 이메일 웹서치(건당 수초) 여유
 
 // 픽디(경쟁사·나인하이어 ATS) 현재 공고를 매주 재크롤 → 새로 뜬 고객사 브랜드만 pikdi_targets 캠페인에 추가.
 // 이메일은 자동 확보 불가(별도) → 새 브랜드는 email=null·status=todo 로 들어감. 매주 수요일 실행(vercel.json cron).
@@ -48,19 +51,29 @@ export default async function handler(req, res) {
 
     const today = new Date().toISOString().slice(0, 10)
     const added = []
+    let searched = 0
     for (const b of byBrand.values()) {
       if (have.has(b.brand)) continue
       const roles = [...b.roles]
       const roleKo = ROLE_KO[roles[0]] || roles[0] || null
+      // 이메일 자동 후보 검색(웹서치·best-effort·미검증, 최대 8건/실행) — 발송 전 사람이 반드시 확인
+      let email = null, emailNote = ''
+      if (searched < 8) {
+        searched++
+        try {
+          const f = await findCompanyEmail(b.brand, roleKo)
+          if (f?.email) { email = f.email; emailNote = ' · [auto·미검증]' }
+        } catch { /* 검색 실패해도 브랜드는 추가 */ }
+      }
       const { error } = await supabase.from('cold_outreach').insert({
         campaign: 'pikdi_targets', owner: 'wsj',
-        company_name: b.brand, contact_name: null, email: null,
+        company_name: b.brand, contact_name: null, email,
         industry_detail: roleKo,
         business_desc: '베트남 현지에서 마케팅·영상·디자인 등 인재를 채용 중',
-        memo: `[pikdi-auto ${today}] 직무: ${roles.join(' / ')} · site:${b.siteURL}`,
+        memo: `[pikdi-auto ${today}] 직무: ${roles.join(' / ')} · site:${b.siteURL}${emailNote}`,
         status: 'todo',
       })
-      if (!error) added.push({ brand: b.brand, roles })
+      if (!error) added.push({ brand: b.brand, roles, email: email || null })
     }
 
     return res.status(200).json({
