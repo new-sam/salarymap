@@ -133,7 +133,7 @@ export default function App({ Component, pageProps }) {
       )}
       {!isCompany && !isJobDetail && !isCard && <MobileTabBar />}
       <GlobalLoginModal />
-      {!isAdmin && !isAdLanding && !isCard && <AppDownloadModal />}
+      {!isAdmin && !isAdLanding && !isCard && !isCompany && <AppDownloadModal />}
       <Toaster
         position="bottom-right"
         richColors
