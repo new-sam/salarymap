@@ -4,7 +4,7 @@ export const DEFAULT_IMAGES = [
   'https://images.unsplash.com/photo-1497215842964-222b430dc094?w=600&h=400&fit=crop',
 ]
 
-export const ROLE_OPTIONS = ['Backend','Frontend','Fullstack','Data','DevOps','Mobile','PM','Design','QA']
+export const ROLE_OPTIONS = ['Backend','Frontend','Fullstack','Mobile','Data','DevOps','QA','Design','PM','HR','Marketing','Sales','Finance','Operations','Non-IT']
 export const TYPE_OPTIONS = ['remote','onsite','hybrid']
 export const TECH_OPTIONS = ['Java','Python','AWS','React','Go','TypeScript','JavaScript','Node.js','Kotlin','Docker','Spring Framework','Rust','Swift','Flutter','Kubernetes']
 

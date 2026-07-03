@@ -15,8 +15,8 @@ export function generateCompanyDescription(job) {
   if (profile) {
     paragraphs.push(`${profile.desc} Founded in ${profile.founded}, headquartered in ${profile.hq}.`)
   } else {
-    const sizeDesc = sizeNum >= 500 ? 'large-scale enterprise' : sizeNum >= 100 ? 'mid-sized company' : sizeNum >= 10 ? 'growing startup' : 'technology company'
-    paragraphs.push(`${job.company} is a ${sizeDesc} based in ${locationDesc}, offering a ${typeDesc}. The company operates in the technology sector and is actively expanding its ${job.role} team.`)
+    const sizeDesc = sizeNum >= 500 ? 'large-scale enterprise' : sizeNum >= 100 ? 'mid-sized company' : sizeNum >= 10 ? 'growing company' : 'company'
+    paragraphs.push(`${job.company} is a ${sizeDesc} based in ${locationDesc}, offering a ${typeDesc}, and is actively expanding its team.`)
   }
 
   if (profile) {

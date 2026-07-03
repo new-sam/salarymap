@@ -5,6 +5,7 @@ import AdminLayout from '../../components/admin/AdminLayout'
 import { supabase } from '../../lib/supabaseClient'
 import { useAdmin } from '../../lib/adminSwr'
 import Icon from '../../components/Icon'
+import { ROLE_OPTIONS } from '../../constants/jobs'
 
 const EMPTY_JOB = {
   title: '', company: '', company_initials: '', location: '', type: 'remote',
@@ -15,7 +16,7 @@ const EMPTY_JOB = {
   deadline: '', headcount: '', apply_url: '', is_featured: false,
 }
 
-const ROLES = ['Backend','Frontend','Fullstack','Mobile','Data','DevOps','PM','Design','QA','Non-IT']
+const ROLES = ROLE_OPTIONS // 공개 필터(constants/jobs)와 단일 소스로 동기화
 const TYPES = ['remote','onsite','hybrid']
 const COUNTRIES = ['korea','vietnam','global']
 
