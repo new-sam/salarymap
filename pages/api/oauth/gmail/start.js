@@ -4,6 +4,7 @@ import { google } from 'googleapis'
 // 예: https://salary-fyi.com/api/oauth/gmail/start?email=younghun@likelion.net
 const SCOPES = [
   'https://www.googleapis.com/auth/gmail.send',
+  'https://www.googleapis.com/auth/gmail.compose', // 초안(draft) 생성용
   'https://www.googleapis.com/auth/gmail.settings.basic',
   'https://www.googleapis.com/auth/gmail.readonly',
 ]
