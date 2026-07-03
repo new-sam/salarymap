@@ -10,8 +10,9 @@ export default async function handler(req, res) {
     try {
       const { data } = await supabaseAdmin
         .from('cold_outreach').select('open_count, opened_at, sent_ts').eq('id', id).single()
-      // 발송 직후 오픈(발신자 본인·CC·Gmail 프록시 선캐싱)은 제외 — 발송 5분 이후 오픈만 집계
-      const GRACE_MS = 5 * 60 * 1000
+      // 발송 순간의 프리페치만 건너뛰기 위한 짧은 유예. (발신자 본인 오픈 배제는 발신자 Gmail의
+      // "외부 이미지 표시 전 확인" 설정으로 처리 — 회사계정 수신자는 5분내 여는 경우가 많아 grace를 길게 두면 진짜 오픈을 버림)
+      const GRACE_MS = 30 * 1000
       if (data && data.sent_ts && (Date.now() - new Date(data.sent_ts).getTime()) >= GRACE_MS) {
         await supabaseAdmin.from('cold_outreach').update({
           open_count: (data.open_count || 0) + 1,
