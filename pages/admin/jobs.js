@@ -89,18 +89,18 @@ export default function AdminJobs() {
     }
     if (editing) {
       await fetch('/api/admin/jobs', { method: 'PUT', headers: headers(), body: JSON.stringify({ id: editing.id, ...payload }) })
-      flash('Updated')
+      flash(L('수정됨', 'Updated'))
     } else {
       await fetch('/api/admin/jobs', { method: 'POST', headers: headers(), body: JSON.stringify(payload) })
-      flash('Created')
+      flash(L('등록됨', 'Created'))
     }
     setSaving(false); setEditing(null); setForm(EMPTY_JOB); mutateJobs(); router.push({ pathname: '/admin/jobs', query: { tab: 'jobs' } }, undefined, { shallow: true })
   }
 
   const handleDelete = async (id) => {
-    if (!confirm('Delete this job?')) return
+    if (!confirm(L('이 공고를 삭제하시겠습니까?', 'Delete this job?'))) return
     await fetch('/api/admin/jobs', { method: 'DELETE', headers: headers(), body: JSON.stringify({ id }) })
-    flash('Deleted'); mutateJobs()
+    flash(L('삭제됨', 'Deleted')); mutateJobs()
   }
 
   const handleToggle = async (job) => {
@@ -110,7 +110,7 @@ export default function AdminJobs() {
 
   const handleToggleVerify = async (c) => {
     await fetch('/api/admin/companies', { method: 'PUT', headers: headers(), body: JSON.stringify({ id: c.id, verified: !c.verified_at }) })
-    flash(c.verified_at ? '인증 해제됨' : '✅ 인증 완료'); mutateCompanies()
+    flash(c.verified_at ? L('인증 해제됨', 'Verification removed') : L('✅ 인증 완료', '✅ Verified')); mutateCompanies()
   }
 
   const handleIssueAccount = async () => {
@@ -132,7 +132,7 @@ export default function AdminJobs() {
 
   const handleToggleFeatured = async (job) => {
     await fetch('/api/admin/jobs', { method: 'PUT', headers: headers(), body: JSON.stringify({ id: job.id, is_featured: !job.is_featured }) })
-    flash(job.is_featured ? '프리미엄 해제됨' : '⭐ 프리미엄 등록됨 — 적극 채용 중 노출')
+    flash(job.is_featured ? L('프리미엄 해제됨', 'Premium removed') : L('⭐ 프리미엄 등록됨 — 적극 채용 중 노출', '⭐ Premium enabled — shown in “Actively hiring”'))
     mutateJobs()
   }
 
@@ -140,12 +140,12 @@ export default function AdminJobs() {
     await fetch('/api/admin/jobs', { method: 'PUT', headers: headers(), body: JSON.stringify({ id: job.id, status: 'live', is_active: true }) })
     // 승인 알림 (기업에게, 베스트에포트)
     try { await fetch('/api/admin/notify-job-approved', { method: 'POST', headers: headers(), body: JSON.stringify({ jobId: job.id }) }) } catch (_) {}
-    flash('✅ 승인됨 — 기업에 알림 발송'); mutateJobs()
+    flash(L('✅ 승인됨 — 기업에 알림 발송', '✅ Approved — company notified')); mutateJobs()
   }
   const handleReject = async (job) => {
-    if (!confirm('이 공고를 반려하시겠습니까?')) return
+    if (!confirm(L('이 공고를 반려하시겠습니까?', 'Reject this job posting?'))) return
     await fetch('/api/admin/jobs', { method: 'PUT', headers: headers(), body: JSON.stringify({ id: job.id, status: 'rejected', is_active: false }) })
-    flash('Rejected'); mutateJobs()
+    flash(L('반려됨', 'Rejected')); mutateJobs()
   }
 
   const handleAddAdmin = async () => {
@@ -241,75 +241,75 @@ export default function AdminJobs() {
           return (
             <div style={{ ...S.card, maxWidth: 720, padding: '24px 28px' }}>
               <div style={{ fontSize: 18, fontWeight: 800, color: '#191F28', marginBottom: 22 }}>
-                {editing ? '공고 수정' : '새 공고 등록'}
+                {editing ? L('공고 수정', 'Edit job') : L('새 공고 등록', 'New job')}
               </div>
 
               <div style={sec}>
-                <div style={secTitle}>기본 정보</div>
+                <div style={secTitle}>{L('기본 정보', 'Basics')}</div>
                 <div style={col}>
-                  <F label="직무명" value={form.title} set={v => setForm({ ...form, title: v })} />
+                  <F label={L('직무명', 'Job title')} value={form.title} set={v => setForm({ ...form, title: v })} />
                   <div style={row2}>
-                    <F label="회사명" value={form.company} set={v => setForm({ ...form, company: v })} />
-                    <F label="회사 약자" value={form.company_initials} set={v => setForm({ ...form, company_initials: v })} />
+                    <F label={L('회사명', 'Company')} value={form.company} set={v => setForm({ ...form, company: v })} />
+                    <F label={L('회사 약자', 'Company initials')} value={form.company_initials} set={v => setForm({ ...form, company_initials: v })} />
                   </div>
                   <div style={row2}>
-                    <Sel label="국가" value={form.country} opts={COUNTRIES} set={v => setForm({ ...form, country: v })} />
-                    <F label="근무지" value={form.location} set={v => setForm({ ...form, location: v })} />
+                    <Sel label={L('국가', 'Country')} value={form.country} opts={COUNTRIES} set={v => setForm({ ...form, country: v })} />
+                    <F label={L('근무지', 'Location')} value={form.location} set={v => setForm({ ...form, location: v })} />
                   </div>
                   <div style={row2}>
-                    <Sel label="고용형태" value={form.type} opts={TYPES} set={v => setForm({ ...form, type: v })} />
-                    <Sel label="직군" value={form.role} opts={ROLES} set={v => setForm({ ...form, role: v })} />
+                    <Sel label={L('고용형태', 'Employment type')} value={form.type} opts={TYPES} set={v => setForm({ ...form, type: v })} />
+                    <Sel label={L('직군', 'Role')} value={form.role} opts={ROLES} set={v => setForm({ ...form, role: v })} />
                   </div>
                 </div>
               </div>
 
               <div style={sec}>
-                <div style={secTitle}>채용 조건</div>
+                <div style={secTitle}>{L('채용 조건', 'Requirements')}</div>
                 <div style={col}>
                   <div style={row2}>
-                    <F label="경력 최소 (년)" value={form.experience_min} type="number" set={v => setForm({ ...form, experience_min: v })} />
-                    <F label="경력 최대 (년)" value={form.experience_max} type="number" set={v => setForm({ ...form, experience_max: v })} />
+                    <F label={L('경력 최소 (년)', 'Min experience (yrs)')} value={form.experience_min} type="number" set={v => setForm({ ...form, experience_min: v })} />
+                    <F label={L('경력 최대 (년)', 'Max experience (yrs)')} value={form.experience_max} type="number" set={v => setForm({ ...form, experience_max: v })} />
                   </div>
                   <div style={row2}>
-                    <F label="연봉 최소 (VND)" value={form.salary_min} type="number" set={v => setForm({ ...form, salary_min: v })} />
-                    <F label="연봉 최대 (VND)" value={form.salary_max} type="number" set={v => setForm({ ...form, salary_max: v })} />
+                    <F label={L('연봉 최소 (VND)', 'Min salary (VND)')} value={form.salary_min} type="number" set={v => setForm({ ...form, salary_min: v })} />
+                    <F label={L('연봉 최대 (VND)', 'Max salary (VND)')} value={form.salary_max} type="number" set={v => setForm({ ...form, salary_max: v })} />
                   </div>
                   <div style={row2}>
-                    <F label="모집 인원" value={form.headcount} type="number" set={v => setForm({ ...form, headcount: v })} />
-                    <F label="마감일" value={form.deadline} type="date" set={v => setForm({ ...form, deadline: v })} />
+                    <F label={L('모집 인원', 'Headcount')} value={form.headcount} type="number" set={v => setForm({ ...form, headcount: v })} />
+                    <F label={L('마감일', 'Deadline')} value={form.deadline} type="date" set={v => setForm({ ...form, deadline: v })} />
                   </div>
                 </div>
               </div>
 
               <div style={sec}>
-                <div style={secTitle}>상세 내용</div>
+                <div style={secTitle}>{L('상세 내용', 'Details')}</div>
                 <div style={col}>
                   <div>
-                    <label style={S.lbl}>상세 설명</label>
+                    <label style={S.lbl}>{L('상세 설명', 'Description')}</label>
                     <textarea value={form.description || ''} onChange={e => setForm({ ...form, description: e.target.value })}
                       style={{ ...S.inp, height: 130, resize: 'vertical' }} />
                   </div>
                   <div>
-                    <label style={S.lbl}>기술 스택 <span style={hint}>쉼표로 구분</span></label>
+                    <label style={S.lbl}>{L('기술 스택', 'Tech stack')} <span style={hint}>{L('쉼표로 구분', 'comma-separated')}</span></label>
                     <input value={(form.tech_stack || []).join(', ')} onChange={e => setForm({ ...form, tech_stack: e.target.value.split(',').map(s => s.trim()).filter(Boolean) })} style={S.inp} placeholder="React, Node.js, PostgreSQL" />
                   </div>
                   <div>
-                    <label style={S.lbl}>복지 <span style={hint}>쉼표로 구분</span></label>
-                    <input value={(form.benefits || []).join(', ')} onChange={e => setForm({ ...form, benefits: e.target.value.split(',').map(s => s.trim()).filter(Boolean) })} style={S.inp} placeholder="유연근무, 4대보험" />
+                    <label style={S.lbl}>{L('복지', 'Benefits')} <span style={hint}>{L('쉼표로 구분', 'comma-separated')}</span></label>
+                    <input value={(form.benefits || []).join(', ')} onChange={e => setForm({ ...form, benefits: e.target.value.split(',').map(s => s.trim()).filter(Boolean) })} style={S.inp} placeholder={L('유연근무, 4대보험', 'Flexible hours, insurance')} />
                   </div>
                   <div style={row2}>
-                    <F label="회사 규모" value={form.company_size} set={v => setForm({ ...form, company_size: v })} />
-                    <F label="채용 절차" value={form.hiring_process} set={v => setForm({ ...form, hiring_process: v })} />
+                    <F label={L('회사 규모', 'Company size')} value={form.company_size} set={v => setForm({ ...form, company_size: v })} />
+                    <F label={L('채용 절차', 'Hiring process')} value={form.hiring_process} set={v => setForm({ ...form, hiring_process: v })} />
                   </div>
                 </div>
               </div>
 
               <div style={sec}>
-                <div style={secTitle}>미디어</div>
+                <div style={secTitle}>{L('미디어', 'Media')}</div>
                 <div style={col}>
                   <div style={row2}>
-                    <F label="로고 URL" value={form.logo_url} set={v => setForm({ ...form, logo_url: v })} />
-                    <F label="썸네일 URL" value={form.image_url} set={v => setForm({ ...form, image_url: v })} />
+                    <F label={L('로고 URL', 'Logo URL')} value={form.logo_url} set={v => setForm({ ...form, logo_url: v })} />
+                    <F label={L('썸네일 URL', 'Thumbnail URL')} value={form.image_url} set={v => setForm({ ...form, image_url: v })} />
                   </div>
                   {(form.logo_url || form.image_url) && (
                     <div style={{ display: 'flex', gap: 10, alignItems: 'flex-end' }}>
@@ -328,7 +328,7 @@ export default function AdminJobs() {
                     </div>
                   )}
                   <div>
-                    <label style={S.lbl}>회사 사진 <span style={hint}>캐러셀</span></label>
+                    <label style={S.lbl}>{L('회사 사진', 'Company photos')} <span style={hint}>{L('캐러셀', 'carousel')}</span></label>
                     <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 10 }}>
                       {(form.images || []).map((url, i) => (
                         <div key={i} style={{ position: 'relative' }}>
@@ -345,7 +345,7 @@ export default function AdminJobs() {
                       onFocus={e => e.target.style.borderColor = '#ff4400'}
                       onBlur={e => e.target.style.borderColor = '#D7DBE0'}
                     >
-                      {imageUploading ? '업로드 중...' : '클릭해서 선택 · 또는 Ctrl+V로 붙여넣기'}
+                      {imageUploading ? L('업로드 중...', 'Uploading…') : L('클릭해서 선택 · 또는 Ctrl+V로 붙여넣기', 'Click to select · or paste with Ctrl+V')}
                     </div>
                     <input ref={imgInputRef} type="file" accept="image/*" multiple style={{ display: 'none' }} onChange={handleImageUpload} />
                   </div>
@@ -353,9 +353,9 @@ export default function AdminJobs() {
               </div>
 
               <div style={sec}>
-                <div style={secTitle}>지원 · 노출</div>
+                <div style={secTitle}>{L('지원 · 노출', 'Apply · Visibility')}</div>
                 <div style={col}>
-                  <F label="지원 URL" value={form.apply_url} set={v => setForm({ ...form, apply_url: v })} />
+                  <F label={L('지원 URL', 'Apply URL')} value={form.apply_url} set={v => setForm({ ...form, apply_url: v })} />
                   <label style={{
                     display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer',
                     padding: '14px 16px', borderRadius: 10,
@@ -364,8 +364,8 @@ export default function AdminJobs() {
                   }}>
                     <input type="checkbox" checked={form.is_featured || false} onChange={e => setForm({ ...form, is_featured: e.target.checked })} style={{ width: 18, height: 18, flexShrink: 0, accentColor: '#ff4400' }} />
                     <div>
-                      <div style={{ fontSize: 13.5, fontWeight: 700, color: form.is_featured ? '#ff4400' : '#191F28' }}>프리미엄 노출{form.is_featured && ' · 활성'}</div>
-                      <div style={{ fontSize: 11.5, color: '#868E96', marginTop: 2 }}>“적극 채용 중인 회사” 섹션 + 목록 최상단 노출</div>
+                      <div style={{ fontSize: 13.5, fontWeight: 700, color: form.is_featured ? '#ff4400' : '#191F28' }}>{L('프리미엄 노출', 'Premium placement')}{form.is_featured && L(' · 활성', ' · active')}</div>
+                      <div style={{ fontSize: 11.5, color: '#868E96', marginTop: 2 }}>{L('“적극 채용 중인 회사” 섹션 + 목록 최상단 노출', 'Shown in the “Actively hiring” section and at the top of the list')}</div>
                     </div>
                   </label>
                 </div>
@@ -373,9 +373,9 @@ export default function AdminJobs() {
 
               <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
                 <button style={S.btnP} onClick={handleSave} disabled={saving || !form.title || !form.company}>
-                  {saving ? '저장 중...' : editing ? '수정' : '등록'}
+                  {saving ? L('저장 중...', 'Saving…') : editing ? L('수정', 'Save') : L('등록', 'Create')}
                 </button>
-                {editing && <button style={S.btnG} onClick={startNew}>취소</button>}
+                {editing && <button style={S.btnG} onClick={startNew}>{L('취소', 'Cancel')}</button>}
               </div>
             </div>
           );
@@ -401,12 +401,12 @@ export default function AdminJobs() {
                 return new Date(b.created_at || 0) - new Date(a.created_at || 0);
               });
               const fmtDate = (d) => d ? new Date(d).toLocaleDateString() : '-';
-              const FILTERS = [['all', '전체', searched.length], ['company', '기업 등록', companyCount], ['pending', '승인 대기', pendingCount]];
+              const FILTERS = [['all', L('전체', 'All'), searched.length], ['company', L('기업 등록', 'Company-posted'), companyCount], ['pending', L('승인 대기', 'Pending'), pendingCount]];
               const chip = { display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 12, fontWeight: 600, color: '#4E5968', background: '#F2F4F6', borderRadius: 8, padding: '4px 9px' };
               const actBtn = { fontSize: 12, fontWeight: 600, color: '#4E5968', background: '#fff', border: '1px solid #E5E8EB', padding: '6px 12px', borderRadius: 8, cursor: 'pointer' };
               return (
                 <>
-                  <input value={jobSearch} onChange={e => setJobSearch(e.target.value)} placeholder="검색  ·  직무 · 회사 · 지역"
+                  <input value={jobSearch} onChange={e => setJobSearch(e.target.value)} placeholder={L('검색  ·  직무 · 회사 · 지역', 'Search  ·  title · company · location')}
                     style={{ width: '100%', maxWidth: 380, fontSize: 13.5, padding: '10px 13px', border: '1px solid #E5E8EB', borderRadius: 10, outline: 'none', marginBottom: 12, boxSizing: 'border-box' }} />
                   <div style={{ display: 'flex', gap: 6, marginBottom: 16, flexWrap: 'wrap' }}>
                     {FILTERS.map(([key, label, n]) => {
@@ -423,15 +423,15 @@ export default function AdminJobs() {
                       );
                     })}
                   </div>
-                  {sorted.length === 0 && <div style={{ color: '#aaa', fontSize: 13, padding: '8px 0' }}>해당 공고 없음</div>}
+                  {sorted.length === 0 && <div style={{ color: '#aaa', fontSize: 13, padding: '8px 0' }}>{L('해당 공고 없음', 'No matching jobs')}</div>}
                   {sorted.map(job => {
                     const st = job.status === 'pending_review'
-                      ? { label: '승인 대기', bg: '#FFF4E5', color: '#C2410C' }
+                      ? { label: L('승인 대기', 'Pending'), bg: '#FFF4E5', color: '#C2410C' }
                       : job.status === 'rejected'
-                      ? { label: '반려', bg: '#FEE2E2', color: '#991B1B' }
+                      ? { label: L('반려', 'Rejected'), bg: '#FEE2E2', color: '#991B1B' }
                       : job.is_active
-                      ? { label: '노출중', bg: '#E7F6EC', color: '#1B7A43' }
-                      : { label: '비노출', bg: '#F1F3F5', color: '#868E96' };
+                      ? { label: L('노출중', 'Live'), bg: '#E7F6EC', color: '#1B7A43' }
+                      : { label: L('비노출', 'Hidden'), bg: '#F1F3F5', color: '#868E96' };
                     return (
                       <div key={job.id} style={{ background: '#fff', border: '1px solid #EEF0F2', borderRadius: 14, padding: '15px 17px', marginBottom: 10 }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 }}>
@@ -445,31 +445,31 @@ export default function AdminJobs() {
                           {job.location && <span style={chip}>{job.location}</span>}
                           {job.type && <span style={chip}>{job.type}</span>}
                           <span style={{ ...chip, color: '#191F28', fontWeight: 700 }}>{Math.round(job.salary_min/1e6)}–{Math.round(job.salary_max/1e6)}M</span>
-                          {job.source === 'company_self' && <span style={{ ...chip, background: '#EAF2FE', color: '#1D4ED8' }}>기업등록</span>}
-                          {job.is_featured && <span style={{ ...chip, background: '#FEF6E0', color: '#92660E' }}>프리미엄</span>}
+                          {job.source === 'company_self' && <span style={{ ...chip, background: '#EAF2FE', color: '#1D4ED8' }}>{L('기업등록', 'Company')}</span>}
+                          {job.is_featured && <span style={{ ...chip, background: '#FEF6E0', color: '#92660E' }}>{L('프리미엄', 'Premium')}</span>}
                         </div>
                         {job.source === 'company_self' && (
                           <div style={{ fontSize: 11.5, color: '#ADB5BD', marginTop: 8 }}>
-                            {job.account_company && <>계정 {job.account_company} · </>}{job.poster_email || '등록자 미상'} · {fmtDate(job.created_at)}
+                            {job.account_company && <>{L('계정', 'Account')} {job.account_company} · </>}{job.poster_email || L('등록자 미상', 'Unknown poster')} · {fmtDate(job.created_at)}
                           </div>
                         )}
                         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 13, paddingTop: 13, borderTop: '1px solid #F2F4F6' }}>
                           {job.status === 'pending_review' && (
                             <>
-                              <button style={{ ...actBtn, border: 'none', background: '#1B7A43', color: '#fff' }} onClick={() => handleApprove(job)}>승인</button>
-                              <button style={{ ...actBtn, border: 'none', background: '#FEE2E2', color: '#C92A2A' }} onClick={() => handleReject(job)}>반려</button>
+                              <button style={{ ...actBtn, border: 'none', background: '#1B7A43', color: '#fff' }} onClick={() => handleApprove(job)}>{L('승인', 'Approve')}</button>
+                              <button style={{ ...actBtn, border: 'none', background: '#FEE2E2', color: '#C92A2A' }} onClick={() => handleReject(job)}>{L('반려', 'Reject')}</button>
                             </>
                           )}
-                          <button style={actBtn} onClick={() => startEdit(job)}>수정</button>
+                          <button style={actBtn} onClick={() => startEdit(job)}>{L('수정', 'Edit')}</button>
                           {job.status !== 'pending_review' && (
-                            <button style={job.is_featured ? { ...actBtn, borderColor: '#F3D98B', background: '#FEF6E0', color: '#92660E' } : actBtn} onClick={() => handleToggleFeatured(job)} title="적극 채용 중 섹션 노출 토글">
-                              {job.is_featured ? '프리미엄 해제' : '프리미엄'}
+                            <button style={job.is_featured ? { ...actBtn, borderColor: '#F3D98B', background: '#FEF6E0', color: '#92660E' } : actBtn} onClick={() => handleToggleFeatured(job)} title={L('적극 채용 중 섹션 노출 토글', 'Toggle “Actively hiring” placement')}>
+                              {job.is_featured ? L('프리미엄 해제', 'Remove premium') : L('프리미엄', 'Premium')}
                             </button>
                           )}
                           {job.status !== 'pending_review' && (
-                            <button style={actBtn} onClick={() => handleToggle(job)}>{job.is_active ? '비노출' : '노출'}</button>
+                            <button style={actBtn} onClick={() => handleToggle(job)}>{job.is_active ? L('비노출', 'Hide') : L('노출', 'Show')}</button>
                           )}
-                          <button style={{ ...actBtn, marginLeft: 'auto', color: '#C92A2A', borderColor: '#F5D5D5' }} onClick={() => handleDelete(job.id)}>삭제</button>
+                          <button style={{ ...actBtn, marginLeft: 'auto', color: '#C92A2A', borderColor: '#F5D5D5' }} onClick={() => handleDelete(job.id)}>{L('삭제', 'Delete')}</button>
                         </div>
                       </div>
                     );
@@ -483,8 +483,8 @@ export default function AdminJobs() {
         {/* KPI TAB (기업/채용 지표 요약) */}
         {tab === 'kpi' && (
           <div style={S.card}>
-            <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 16 }}>📊 기업·채용 지표</div>
-            {!kpi && <div style={{ color: '#aaa', fontSize: 13 }}>불러오는 중...</div>}
+            <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 16 }}>📊 {L('기업·채용 지표', 'Company & hiring metrics')}</div>
+            {!kpi && <div style={{ color: '#aaa', fontSize: 13 }}>{L('불러오는 중...', 'Loading…')}</div>}
             {kpi && (() => {
               const Stat = ({ label, value, sub }) => (
                 <div style={{ flex: '1 1 140px', minWidth: 140, background: '#fafafa', border: '1px solid #eee', borderRadius: 10, padding: '14px 16px' }}>
@@ -497,21 +497,21 @@ export default function AdminJobs() {
               return (
                 <>
                   <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginBottom: 18 }}>
-                    <Stat label="가입 회사" value={kpi.companies} sub={`멤버 ${kpi.members}명`} />
-                    <Stat label="기업 등록 공고" value={kpi.jobs.companySelf} sub={`크롤 ${kpi.jobs.crawled} · 전체 ${kpi.jobs.total}`} />
-                    <Stat label="승인 대기" value={kpi.jobs.pending} sub={`노출중 ${kpi.jobs.live}`} />
-                    <Stat label="총 지원" value={kpi.applications.total} />
+                    <Stat label={L('가입 회사', 'Companies')} value={kpi.companies} sub={L(`멤버 ${kpi.members}명`, `${kpi.members} members`)} />
+                    <Stat label={L('기업 등록 공고', 'Company-posted jobs')} value={kpi.jobs.companySelf} sub={L(`크롤 ${kpi.jobs.crawled} · 전체 ${kpi.jobs.total}`, `crawled ${kpi.jobs.crawled} · total ${kpi.jobs.total}`)} />
+                    <Stat label={L('승인 대기', 'Pending')} value={kpi.jobs.pending} sub={L(`노출중 ${kpi.jobs.live}`, `${kpi.jobs.live} live`)} />
+                    <Stat label={L('총 지원', 'Total applications')} value={kpi.applications.total} />
                   </div>
-                  <div style={{ fontSize: 13, fontWeight: 700, margin: '6px 0 8px' }}>for-companies 퍼널 <span style={{ fontWeight: 500, color: '#999', fontSize: 11 }}>(전체 · 30일 · 7일)</span></div>
+                  <div style={{ fontSize: 13, fontWeight: 700, margin: '6px 0 8px' }}>{L('for-companies 퍼널', 'for-companies funnel')} <span style={{ fontWeight: 500, color: '#999', fontSize: 11 }}>{L('(전체 · 30일 · 7일)', '(all · 30d · 7d)')}</span></div>
                   <div style={{ border: '1px solid #eee', borderRadius: 10, overflow: 'hidden' }}>
-                    {[['진입(nav 클릭)', fc.enter], ['공고 등록 클릭', fc.postJob], ['문의 클릭', fc.contact]].map(([label, m], i) => (
+                    {[[L('진입(nav 클릭)', 'Enter (nav click)'), fc.enter], [L('공고 등록 클릭', 'Post-job click'), fc.postJob], [L('문의 클릭', 'Contact click'), fc.contact]].map(([label, m], i) => (
                       <div key={label} style={{ display: 'flex', alignItems: 'center', padding: '10px 14px', borderTop: i ? '1px solid #f0f0f0' : 'none' }}>
                         <div style={{ flex: 1, fontSize: 13, fontWeight: 600 }}>{label}</div>
                         <div style={{ fontSize: 13 }}><b>{m.all}</b> <span style={{ color: '#999' }}>· {m.d30} · {m.d7}</span></div>
                       </div>
                     ))}
                   </div>
-                  <div style={{ fontSize: 11, color: '#aaa', marginTop: 10 }}>※ for-companies는 페이지뷰 이벤트 미계측 — 진입은 nav 클릭 기준. 문의 리드는 Slack으로 전송됨.</div>
+                  <div style={{ fontSize: 11, color: '#aaa', marginTop: 10 }}>{L('※ for-companies는 페이지뷰 이벤트 미계측 — 진입은 nav 클릭 기준. 문의 리드는 Slack으로 전송됨.', '※ for-companies pageviews aren’t tracked — “enter” counts nav clicks. Contact leads are sent to Slack.')}</div>
                 </>
               )
             })()}
@@ -521,8 +521,8 @@ export default function AdminJobs() {
         {/* COMPANIES TAB (가입 회사 계정 + 인증) */}
         {tab === 'companies' && (
           <div style={S.card}>
-            <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 4 }}>가입 회사 계정</div>
-            <div style={{ fontSize: 12, color: '#999', marginBottom: 16 }}>공고를 등록할 수 있는 기업 계정. 인증(verified) 상태를 관리합니다.</div>
+            <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 4 }}>{L('가입 회사 계정', 'Company accounts')}</div>
+            <div style={{ fontSize: 12, color: '#999', marginBottom: 16 }}>{L('공고를 등록할 수 있는 기업 계정. 인증(verified) 상태를 관리합니다.', 'Company accounts that can post jobs. Manage their verified status here.')}</div>
 
             {/* 계정 발급 — Google 안 되는 회사용 이메일/비번 로그인 계정 생성 */}
             <div style={{ border: '1px solid #e5e7eb', borderRadius: 10, padding: 14, marginBottom: 20, background: '#fafafa' }}>
@@ -568,25 +568,25 @@ export default function AdminJobs() {
               )}
             </div>
 
-            {companies.length === 0 && <div style={{ color: '#aaa', fontSize: 13 }}>가입 회사 없음</div>}
+            {companies.length === 0 && <div style={{ color: '#aaa', fontSize: 13 }}>{L('가입 회사 없음', 'No companies yet')}</div>}
             {companies.map(c => (
               <div key={c.id} style={S.row}>
                 <div style={{ flex: 1 }}>
                   <div style={{ fontSize: 14, fontWeight: 600 }}>
                     {c.name}
                     {c.verified_at
-                      ? <span style={{ ...S.badge, background: '#dcfce7', color: '#166534' }}>✓ 인증됨</span>
-                      : <span style={{ ...S.badge, background: '#f3f4f6', color: '#6b7280' }}>미인증</span>}
+                      ? <span style={{ ...S.badge, background: '#dcfce7', color: '#166534' }}>{L('✓ 인증됨', '✓ Verified')}</span>
+                      : <span style={{ ...S.badge, background: '#f3f4f6', color: '#6b7280' }}>{L('미인증', 'Unverified')}</span>}
                   </div>
                   <div style={{ fontSize: 12, color: '#888' }}>
-                    {c.email_domain || '도메인 없음'} · 멤버 {c.member_count}명 · 공고 {c.job_count}개(노출 {c.live_count}) · 가입 {c.created_at ? new Date(c.created_at).toLocaleDateString() : '-'}
+                    {c.email_domain || L('도메인 없음', 'no domain')} · {L(`멤버 ${c.member_count}명`, `${c.member_count} members`)} · {L(`공고 ${c.job_count}개(노출 ${c.live_count})`, `${c.job_count} jobs (${c.live_count} live)`)} · {L('가입', 'Joined')} {c.created_at ? new Date(c.created_at).toLocaleDateString() : '-'}
                   </div>
                 </div>
                 <button
                   style={{ ...S.btnS, ...(c.verified_at ? { color: '#dc2626' } : { background: '#059669', color: '#fff', fontWeight: 800 }) }}
                   onClick={() => handleToggleVerify(c)}
                 >
-                  {c.verified_at ? '인증 해제' : '인증하기'}
+                  {c.verified_at ? L('인증 해제', 'Unverify') : L('인증하기', 'Verify')}
                 </button>
               </div>
             ))}
@@ -646,6 +646,7 @@ function F({ label, value, set, type = 'text' }) {
   )
 }
 function Sel({ label, value, opts, set }) {
+  const { lang } = useT()
   const [open, setOpen] = useState(false)
   const ref = useRef(null)
   useEffect(() => {
@@ -661,7 +662,7 @@ function Sel({ label, value, opts, set }) {
       <label style={S.lbl}>{label}</label>
       <button type="button" onClick={() => setOpen(o => !o)}
         style={{ ...S.inp, cursor: 'pointer', textAlign: 'left', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, background: '#fff', borderColor: open ? '#ff4400' : '#E5E8EB' }}>
-        <span style={{ color: value ? '#191F28' : '#ADB5BD', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{value || '선택'}</span>
+        <span style={{ color: value ? '#191F28' : '#ADB5BD', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{value || (lang === 'ko' ? '선택' : 'Select')}</span>
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0, transition: 'transform .15s', transform: open ? 'rotate(180deg)' : 'none' }}>
           <path d="M6 9l6 6 6-6" stroke="#868E96" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
         </svg>
