@@ -12,7 +12,7 @@ export default async function handler(req, res) {
   if (!Array.isArray(ids) || !ids.length) return res.status(400).json({ error: 'ids 필요' })
 
   const { data: leads } = await supabaseAdmin.from('cold_outreach')
-    .select('id, company_name, contact_name, industry, industry_detail, business_desc').in('id', ids)
+    .select('id, company_name, contact_name, industry, industry_detail, business_desc, campaign').in('id', ids)
 
   const drafts = await Promise.all((leads || []).map(async (l) => {
     try {
