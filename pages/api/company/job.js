@@ -21,7 +21,7 @@ export default async function handler(req, res) {
   if (!user) return res.status(401).json({ error: '세션이 만료되었습니다.' });
 
   const admin = createClient(SUPABASE_URL, SERVICE_KEY);
-  const { data: job } = await admin.from('jobs').select('id, company_id, created_by').eq('id', jobId).maybeSingle();
+  const { data: job } = await admin.from('jobs').select('id, company_id, created_by, status').eq('id', jobId).maybeSingle();
   if (!job) return res.status(404).json({ error: '공고를 찾을 수 없습니다.' });
 
   let allowed = job.created_by === user.id;
@@ -43,6 +43,11 @@ export default async function handler(req, res) {
 
   // PUT: 활성/비활성 토글
   const activate = action === 'activate';
+  // 게시(activate)는 이전에 승인되어 live였던(=paused) 공고 재개만 허용.
+  // 승인 대기(pending_review)/초안(draft)/반려·마감 공고를 스스로 게시하는 건 차단 → 관리자 승인 필요.
+  if (activate && job.status !== 'paused') {
+    return res.status(403).json({ error: '관리자 승인 후에만 공고를 게시할 수 있습니다.' });
+  }
   const { error } = await admin.from('jobs')
     .update({ status: activate ? 'live' : 'paused', is_active: activate })
     .eq('id', jobId);

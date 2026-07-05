@@ -602,7 +602,9 @@ export default function CompanyDashboard() {
                             {t('company.editBtn')}
                           </UButton>
                         )}
-                        {isJobOwner && (
+                        {/* 게시/숨김 토글은 이미 승인된 공고(활성 또는 일시중지)만.
+                            승인 대기(pending_review) 등은 관리자 승인 전까지 스스로 게시 불가. */}
+                        {isJobOwner && (job.is_active || job.status === 'paused') && (
                           <UButton
                             variant="outline"
                             size="sm"
