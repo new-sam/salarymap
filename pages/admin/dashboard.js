@@ -15,6 +15,7 @@ import TalentPoolView from '../../components/admin/TalentPoolView'
 import TalentSupplyView from '../../components/admin/TalentSupplyView'
 import VerificationsView from '../../components/admin/VerificationsView'
 import CommunityView from '../../components/admin/CommunityView'
+import CompanyView from '../../components/admin/CompanyView'
 import AppMetricsView from '../../components/admin/AppMetricsView'
 import OutreachView from '../../components/admin/OutreachView'
 import {
@@ -940,6 +941,11 @@ export default function AdminDashboard() {
         {/* Community Tab */}
         {tab === 'community' && (
           <CommunityView token={token} lang={lang} dateRange={dateRange} />
+        )}
+
+        {/* Company Tab — 기업 가입내역 + ATS 활용/모집 내역 */}
+        {tab === 'company' && (
+          <CompanyView token={token} lang={lang} />
         )}
 
         {/* App Metrics Tab */}
