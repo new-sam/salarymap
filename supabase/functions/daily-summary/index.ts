@@ -323,15 +323,39 @@ async function getSubmissions(dateStr: string) {
 // realtime / daily / weekly 가 공통으로 쓰는 한 기간의 모든 메트릭 bundle.
 // resumes 는 events count (admin/realtime overlay 식). daily 에선 호출 후
 // admin daily row 식(user_profiles) 으로 따로 overwrite.
+// 🟠 기업 지표 — /api/admin/company-metrics 와 동일 정의로 DB 직접 집계.
+//   가입 기업 = recruiter_companies (그날 생성)
+//   올라온 공고 = jobs 중 company_id 있는 것(기업 자체등록, 그날 생성)
+//   받은 지원 = 그 기업 공고들에 들어온 job_applications (그날) — 전체 지원과 다름(부분집합)
+// company-metrics 는 제외 필터가 없으므로 여기서도 제외 없이 그대로 매칭한다.
+async function getCompanyMetricsInRange(startUtc: string, endUtc: string) {
+  const [{ count: companySignups }, { count: companyJobs }, { data: companyJobRows }] = await Promise.all([
+    supabase.from("recruiter_companies").select("*", { count: "exact", head: true })
+      .gte("created_at", startUtc).lte("created_at", endUtc),
+    supabase.from("jobs").select("*", { count: "exact", head: true })
+      .not("company_id", "is", null).gte("created_at", startUtc).lte("created_at", endUtc),
+    supabase.from("jobs").select("id").not("company_id", "is", null),
+  ]);
+  const companyJobIds = (companyJobRows || []).map((j: any) => j.id);
+  let companyApps = 0;
+  if (companyJobIds.length) {
+    const { count } = await supabase.from("job_applications").select("*", { count: "exact", head: true })
+      .in("job_id", companyJobIds).gte("created_at", startUtc).lte("created_at", endUtc);
+    companyApps = count || 0;
+  }
+  return { companySignups: companySignups || 0, companyJobs: companyJobs || 0, companyApps };
+}
+
 async function getRangeBundle(startUtc: string, endUtc: string) {
   const subs = await fetchSubmissions(startUtc, endUtc);
   const deduped = dedupeSubmissions(subs.filter((r: any) => !isExcludedSubmission(r)));
   const ad = deduped.filter((r: any) => PAID_SOURCES.has(r.source)).length;
   const signupRes = await getSignupsInRange(startUtc, endUtc);
   const signupSplit = await splitSignupPlatform(signupRes.ids);
-  const [jobAppsSplit, resumesSplit] = await Promise.all([
+  const [jobAppsSplit, resumesSplit, company] = await Promise.all([
     getJobAppsSplit(startUtc, endUtc),
     getResumeEventsSplit(startUtc, endUtc), // realtime / daily-today overlay 식
+    getCompanyMetricsInRange(startUtc, endUtc),
   ]);
   return {
     submissions: deduped.length,
@@ -346,6 +370,9 @@ async function getRangeBundle(startUtc: string, endUtc: string) {
     resumes: resumesSplit.total,
     resumeWeb: resumesSplit.web,
     resumeApp: resumesSplit.app,
+    companySignups: company.companySignups,
+    companyJobs: company.companyJobs,
+    companyApps: company.companyApps,
   };
 }
 
@@ -789,6 +816,9 @@ type StatsBundle = {
   resumes: number;
   resumeWeb: number;
   resumeApp: number;
+  companySignups: number;
+  companyJobs: number;
+  companyApps: number;
 };
 
 function dod(curr: number, prev: number): string {
@@ -819,22 +849,34 @@ function metricHeader3(prevLabel: string, currLabel: string): string {
 // realtime / daily 공통 — 전체를 fenced code block(monospace) 으로 감싸 정렬.
 // 3컬럼 포맷: 라벨(LABEL_W=32) + 어제값(VAL_W=7) + 오늘값(VAL_W=7) + DoD%(PCT_W=5) + 이모지.
 // 첫 줄은 헤더(어제 날짜 / 오늘 날짜 / DoD). prevLabel/currLabel 은 MM/DD 식.
-function metricLinesSection(s: StatsBundle, p: StatsBundle, prevLabel: string, currLabel: string): string {
+// 🟢 인재 (Talent) 블록 — 가입자 → 연봉 제출 → 이력서풀 등록 → 공고 지원.
+// 각 지표는 하위 분해(가입/이력서/공고=웹·앱, 연봉=광고·자연)까지 전부 표기.
+function talentLinesSection(s: StatsBundle, p: StatsBundle, prevLabel: string, currLabel: string): string {
   return codeBlock([
     metricHeader3(prevLabel, currLabel),
-    metricLine3("• 세션 (Sessions)", p.sessions, s.sessions),
+    metricLine3("• 가입자 (Sign-ups)", p.signups, s.signups, true),
+    metricLine3("   ↳ 웹 (Web)", p.signupWeb, s.signupWeb),
+    metricLine3("   ↳ 앱 (App)", p.signupApp, s.signupApp),
     metricLine3("• 연봉 제출 (Submissions)", p.submissions, s.submissions),
     metricLine3("   ↳ 광고 (Paid)", p.ad, s.ad),
     metricLine3("   ↳ 자연유입 (Organic)", p.organic, s.organic),
-    metricLine3("• 신규 가입 (Sign-ups)", p.signups, s.signups, true),
-    metricLine3("   ↳ 웹 (Web)", p.signupWeb, s.signupWeb),
-    metricLine3("   ↳ 앱 (App)", p.signupApp, s.signupApp),
-    metricLine3("• 이력서 등록 (Resume uploads)", p.resumes, s.resumes, true),
+    metricLine3("• 이력서풀 등록 (Resume pool)", p.resumes, s.resumes, true),
     metricLine3("   ↳ 웹 (Web)", p.resumeWeb, s.resumeWeb),
     metricLine3("   ↳ 앱 (App)", p.resumeApp, s.resumeApp),
     metricLine3("• 공고 지원 (Job apps)", p.jobApps, s.jobApps),
     metricLine3("   ↳ 웹 (Web)", p.jobAppsWeb, s.jobAppsWeb),
     metricLine3("   ↳ 앱 (App)", p.jobAppsApp, s.jobAppsApp),
+  ]);
+}
+
+// 🟠 기업 (Company) 블록 — 가입 기업 → 올라온 공고 → 받은 지원.
+// admin/company-metrics 와 동일 정의. 받은 지원은 기업 자체공고 한정(전체 지원과 다름).
+function companyLinesSection(s: StatsBundle, p: StatsBundle, prevLabel: string, currLabel: string): string {
+  return codeBlock([
+    metricHeader3(prevLabel, currLabel),
+    metricLine3("• 가입 기업 (Companies)", p.companySignups, s.companySignups, true),
+    metricLine3("• 올라온 공고 (Jobs posted)", p.companyJobs, s.companyJobs, true),
+    metricLine3("• 받은 지원 (Applications)", p.companyApps, s.companyApps),
   ]);
 }
 
@@ -856,7 +898,9 @@ function buildRealtimeMessage(
         { type: "header", text: { type: "plain_text", text: `FYI 실시간 / Live — ${today} (${dayName}) ${timeStr} UTC+7` } },
         { type: "context", elements: [{ type: "mrkdwn", text: `데이터 기간 (Data range): ${today} 00:00 ~ ${timeStr} (UTC+7) · 어제 같은 시각 대비 (DoD)` }] },
         { type: "divider" },
-        { type: "section", text: { type: "mrkdwn", text: `*주요 지표 / Key metrics*\n` + metricLinesSection(s, p, yesterday.slice(5).replace("-", "/"), today.slice(5).replace("-", "/")) }},
+        { type: "section", text: { type: "mrkdwn", text: `*🟢 인재 (Talent)*\n` + talentLinesSection(s, p, yesterday.slice(5).replace("-", "/"), today.slice(5).replace("-", "/")) }},
+        { type: "divider" },
+        { type: "section", text: { type: "mrkdwn", text: `*🟠 기업 (Company)*\n` + companyLinesSection(s, p, yesterday.slice(5).replace("-", "/"), today.slice(5).replace("-", "/")) }},
       ],
     }],
   };
@@ -885,7 +929,9 @@ function buildDailyMessage(
         { type: "header", text: { type: "plain_text", text: `FYI 일일 리포트 / Daily — ${targetDate} (${dayName})` } },
         { type: "context", elements: [{ type: "mrkdwn", text: `데이터 기간 (Data range): ${targetDate} 00:00 ~ 23:59 (UTC+7) · 전일 대비 (DoD)` }] },
         { type: "divider" },
-        { type: "section", text: { type: "mrkdwn", text: `*주요 지표 / Key metrics*\n` + metricLinesSection(s, p, dayBefore.slice(5).replace("-", "/"), targetDate.slice(5).replace("-", "/")) }},
+        { type: "section", text: { type: "mrkdwn", text: `*🟢 인재 (Talent)*\n` + talentLinesSection(s, p, dayBefore.slice(5).replace("-", "/"), targetDate.slice(5).replace("-", "/")) }},
+        { type: "divider" },
+        { type: "section", text: { type: "mrkdwn", text: `*🟠 기업 (Company)*\n` + companyLinesSection(s, p, dayBefore.slice(5).replace("-", "/"), targetDate.slice(5).replace("-", "/")) }},
         ...alertBlock,
       ],
     }],
