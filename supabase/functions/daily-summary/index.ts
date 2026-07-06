@@ -6,6 +6,10 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const SLACK_WEBHOOK_URL = Deno.env.get("SLACK_WEBHOOK_URL")!;
+// 대표(CEO) 전용 데일리 채널. ?channel=ceo 로 호출할 때만 여기로 발송한다.
+// 기존 팀 채널(SLACK_WEBHOOK_URL, 9시 cron)과는 완전히 별개 — 별도 10시 cron이
+// ?channel=ceo 로 호출. 미설정 상태에서 ?channel=ceo 호출 시 400.
+const SLACK_CEO_WEBHOOK_URL = Deno.env.get("SLACK_CEO_WEBHOOK_URL") || "";
 
 const GA4_PROPERTY_ID = Deno.env.get("GA4_PROPERTY_ID") || "533725598";
 const GA4_CLIENT_EMAIL = Deno.env.get("GA4_CLIENT_EMAIL") || "";
@@ -1051,8 +1055,8 @@ function buildHealthAlertMessage(result: { ok: boolean; status: number; latency:
 }
 
 // ─── Slack Send ───
-async function sendToSlack(payload: object) {
-  const res = await fetch(SLACK_WEBHOOK_URL, {
+async function sendToSlack(payload: object, webhookUrl: string = SLACK_WEBHOOK_URL) {
+  const res = await fetch(webhookUrl, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload),
@@ -1180,6 +1184,17 @@ Deno.serve(async (req) => {
       const yesterday = dateOverride || getVietnamDate(1);
       const dayBefore = dateOverride ? previousDay(yesterday) : getVietnamDate(2);
 
+      // 발송 대상. ?channel=ceo → 대표 전용 웹훅으로만. 기본은 기존 팀 채널.
+      // lock key 도 채널별로 분리해 팀(9시)/대표(10시) 두 cron 이 서로의
+      // 발송을 막지 않게 한다.
+      const channel = url.searchParams.get("channel");
+      const isCeo = channel === "ceo";
+      if (isCeo && !SLACK_CEO_WEBHOOK_URL) {
+        return new Response(JSON.stringify({ error: "SLACK_CEO_WEBHOOK_URL not set" }), { status: 400, headers: { "Content-Type": "application/json" } });
+      }
+      const targetWebhook = isCeo ? SLACK_CEO_WEBHOOK_URL : SLACK_WEBHOOK_URL;
+      const lockKey = isCeo ? `daily-${yesterday}-ceo` : `daily-${yesterday}`;
+
       const startY = `${yesterday}T00:00:00+07:00`;
       const endY = `${yesterday}T23:59:59+07:00`;
       const startDB = `${dayBefore}T00:00:00+07:00`;
@@ -1249,13 +1264,13 @@ Deno.serve(async (req) => {
       // 발동해도 한 번만 발송.
       const force = url.searchParams.get("force") === "1";
       if (!force) {
-        const ok = await acquireSendLock(`daily-${yesterday}`);
+        const ok = await acquireSendLock(lockKey);
         if (!ok) {
-          return new Response(JSON.stringify({ success: true, mode: "daily", date: yesterday, skipped: "duplicate" }), { headers: { "Content-Type": "application/json" } });
+          return new Response(JSON.stringify({ success: true, mode: "daily", date: yesterday, channel: channel || "team", skipped: "duplicate" }), { headers: { "Content-Type": "application/json" } });
         }
       }
-      await sendToSlack(message);
-      return new Response(JSON.stringify({ success: true, mode: "daily", date: yesterday }), { headers: { "Content-Type": "application/json" } });
+      await sendToSlack(message, targetWebhook);
+      return new Response(JSON.stringify({ success: true, mode: "daily", date: yesterday, channel: channel || "team" }), { headers: { "Content-Type": "application/json" } });
     }
 
     if (mode === "weekly") {
