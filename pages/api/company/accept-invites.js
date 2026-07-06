@@ -32,7 +32,7 @@ export default async function handler(req, res) {
   // 본인 이메일 대상 pending 초대 (소속 회사 + job_id 있는 것만)
   const { data: invites } = await admin
     .from('recruiter_invites')
-    .select('id, job_id, invited_by, company_id')
+    .select('id, job_id, invited_by, company_id, role')
     .ilike('email', user.email)
     .eq('status', 'pending')
     .in('company_id', companyIds)
@@ -40,11 +40,12 @@ export default async function handler(req, res) {
 
   if (!invites || invites.length === 0) return res.status(200).json({ accepted: 0 });
 
-  // job_team upsert (이미 있으면 skip)
+  // job_team upsert (이미 있으면 skip). recruiter_invites.role 은 legacy 로
+  // 'admin' | 'member' 를 저장하므로 job_team.role 로 매핑한다.
   const teamRows = invites.map(iv => ({
     job_id: iv.job_id,
     user_id: user.id,
-    role: 'interviewer',
+    role: iv.role === 'admin' ? 'admin' : 'interviewer',
     added_by: iv.invited_by,
   }));
   const { error: teamErr } = await admin

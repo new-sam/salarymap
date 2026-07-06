@@ -3,7 +3,7 @@ import Head from 'next/head';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { supabase } from '../../lib/supabaseClient';
-import { loadAccessibleJobIds } from '../../lib/company-access';
+import { loadAccessibleJobIds, loadJobRoles } from '../../lib/company-access';
 import { Sidebar, css } from './jobs/new';
 import MobileNav from '../../components/company/MobileNav';
 import Truncate from '../../components/ui/truncate';
@@ -67,6 +67,8 @@ export default function CompanyDashboard() {
   const [jobs, setJobs] = useState([]);
   const [appsCount, setAppsCount] = useState(0);
   const [appsByJob, setAppsByJob] = useState({});
+  // jobId → 'admin' | 'interviewer' — 카드별 편집·비활성화 버튼 노출에 쓴다.
+  const [jobRoles, setJobRoles] = useState(new Map());
   const [authErr, setAuthErr] = useState('');
   const [setupName, setSetupName] = useState('');
   const [setupCompany, setSetupCompany] = useState('');
@@ -213,6 +215,8 @@ export default function CompanyDashboard() {
       // Only surface jobs the user owns or was invited to. Same likelion.net
       // tenant ≠ shared visibility.
       const accessibleIds = await loadAccessibleJobIds(data.session.user.id, rec.company_id);
+      const rolesMap = await loadJobRoles(data.session.user.id, rec.company_id);
+      setJobRoles(rolesMap);
       let jobsData = [];
       if (accessibleIds.size > 0) {
         const { data } = await supabase
@@ -541,7 +545,12 @@ export default function CompanyDashboard() {
                 jobs.forEach(j => { grouped[groupOf(j.status)].push(j); });
                 const renderCard = (job) => {
                   const stats = appsByJob[job.id] || { total: 0, new: 0 };
-                  const isJobOwner = job.created_by && user?.id && job.created_by === user.id;
+                  // isJobOwner 는 이제 "공고 관리자(admin)" 여부로 판단한다.
+                  // 백필된 created_by 는 이미 job_team.role='admin' 이라 rolesMap 만 봐도
+                  // 충분하지만, rolesMap 이 아직 안 로드된 초기 렌더에서는
+                  // created_by fallback 으로 안정성 확보.
+                  const isJobOwner = jobRoles.get(job.id) === 'admin'
+                    || (job.created_by && user?.id && job.created_by === user.id);
                   return (
                     <div
                       key={job.id}

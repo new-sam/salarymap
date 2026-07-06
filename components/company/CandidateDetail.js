@@ -77,6 +77,9 @@ export default function CandidateDetail({
   const [err, setErr] = useState('');
 
   const [userId, setUserId] = useState(null);
+  // 이 공고에서 나의 role. 'admin' | 'interviewer' | null.
+  // admin = jobs.created_by 이거나 job_team.role='admin'.
+  const [myJobRole, setMyJobRole] = useState(null);
   const [reviewerName, setReviewerName] = useState('');
   const [mailModal, setMailModal] = useState(null); // { templateKey, withSlots }
   const [rejectModal, setRejectModal] = useState(null); // null | 'new' | 'edit' | 'unreject'
@@ -195,7 +198,7 @@ export default function CandidateDetail({
       else if (key === 'Escape') { if (onClose) { e.preventDefault(); onClose(); } }
       else if ((key === 'e' || key === 'E') && app && !app.rejected_at) {
         // Only the job owner can compose mail — same gate as the toolbar button.
-        const ownerNow = !job?.created_by || job?.created_by === userId;
+        const ownerNow = myJobRole ? myJobRole === 'admin' : (!job?.created_by || job?.created_by === userId);
         if (!ownerNow) return;
         e.preventDefault();
         const defaultTpl = app.status === 'pending' ? 'received'
@@ -204,7 +207,7 @@ export default function CandidateDetail({
         setMailModal({ templateKey: defaultTpl, withSlots: defaultTpl === 'interview' });
       }
       else if ((key === 'r' || key === 'R') && app && !app.rejected_at) {
-        const ownerNow = !job?.created_by || job?.created_by === userId;
+        const ownerNow = myJobRole ? myJobRole === 'admin' : (!job?.created_by || job?.created_by === userId);
         if (!ownerNow) return;
         e.preventDefault();
         setRejectModal('new');
@@ -259,6 +262,19 @@ export default function CandidateDetail({
       const willMarkRead = !appData.viewed_at && !appData.rejected_at;
       setApp(willMarkRead ? { ...appData, viewed_at: nowIso } : appData);
       setJob(appData.jobs);
+      // Resolve my role for this job (admin vs interviewer). created_by 는 항상
+      // admin — 백필 이전에 만들어진 공고에서도 오너가 락아웃되지 않게.
+      if (appData.jobs?.created_by === session.user.id) {
+        setMyJobRole('admin');
+      } else {
+        const { data: teamRow } = await supabase
+          .from('job_team')
+          .select('role')
+          .eq('job_id', appData.jobs?.id)
+          .eq('user_id', session.user.id)
+          .maybeSingle();
+        setMyJobRole(teamRow?.role === 'admin' ? 'admin' : 'interviewer');
+      }
       setExpandedStages(new Set([appData.status]));
       if (willMarkRead) {
         // 서비스롤 API로 viewed_at 만 기록. status 는 그대로.
@@ -459,7 +475,7 @@ export default function CandidateDetail({
     const score = (evalScore === '1' || evalScore === 1) ? 1 : 0;
     const comment = evalComment.trim();
     setSavingEval(true);
-    const isOwnerNow = !job?.created_by || job?.created_by === userId;
+    const isOwnerNow = myJobRole ? myJobRole === 'admin' : (!job?.created_by || job?.created_by === userId);
     const payload = {
       application_id: app.id,
       job_id: app.job_id,
@@ -497,7 +513,7 @@ export default function CandidateDetail({
   const nextStage = idx < STAGES.length - 1 ? STAGES[idx + 1] : null;
   const hasResume = !!app.resume_url;
   const appliedAtLabel = new Date(app.created_at).toLocaleDateString();
-  const isOwner = !job?.created_by || job?.created_by === userId;
+  const isOwner = myJobRole ? myJobRole === 'admin' : (!job?.created_by || job?.created_by === userId);
   const companyName = job?.recruiter_companies?.name || '';
 
   const avatarPalette = avatarColorFor(email || name);

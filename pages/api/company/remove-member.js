@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
+import { isJobAdmin } from '../../../lib/job-team-role';
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
@@ -31,17 +32,18 @@ export default async function handler(req, res) {
     .from('jobs').select('id, company_id, created_by').eq('id', jobId).maybeSingle();
   if (!job || job.company_id !== rec.company_id) return res.status(403).json({ error: '해당 공고 권한 없음' });
 
-  // 관리자(공고 owner)만 가능. legacy(created_by NULL)는 회사 멤버 누구나.
-  if (job.created_by && job.created_by !== user.id) {
+  // 공고 관리자(admin)만 팀원을 내보낼 수 있다. 면접관은 remove 불가.
+  const canAdmin = await isJobAdmin(admin, user.id, jobId);
+  if (!canAdmin) {
     return res.status(403).json({ error: '공고 관리자만 팀원을 내보낼 수 있어요.' });
   }
   // 본인을 내보내지 못함
   if (userId && userId === user.id) {
     return res.status(400).json({ error: '본인은 내보낼 수 없어요.' });
   }
-  // 공고 owner를 내보내지 못함
+  // 공고 작성자(created_by)는 내보낼 수 없음 — 공고 생성자는 항상 관리자로 유지.
   if (userId && job.created_by && userId === job.created_by) {
-    return res.status(400).json({ error: '공고 관리자(공고 작성자)는 내보낼 수 없어요.' });
+    return res.status(400).json({ error: '공고 작성자는 내보낼 수 없어요.' });
   }
 
   if (userId) {

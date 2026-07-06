@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
+import { isJobAdmin } from '../../../lib/job-team-role';
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
@@ -28,14 +29,15 @@ export default async function handler(req, res) {
     const admin = createClient(SUPABASE_URL, SERVICE_KEY);
     const { data: row } = await admin
       .from('application_evaluations')
-      .select('id, stage, application_id, job_applications(jobs(created_by))')
+      .select('id, stage, application_id, job_applications(job_id)')
       .eq('id', rowId)
       .maybeSingle();
     if (!row || !row.stage?.endsWith('_pass')) {
       return res.status(404).json({ error: '합격 결정 row를 찾을 수 없습니다.' });
     }
-    const isJobOwner = row.job_applications?.jobs?.created_by === user.id;
-    if (!isJobOwner) return res.status(403).json({ error: '공고 관리자만 취소할 수 있습니다.' });
+    const jobId = row.job_applications?.job_id;
+    const canAdmin = jobId && await isJobAdmin(admin, user.id, jobId);
+    if (!canAdmin) return res.status(403).json({ error: '공고 관리자만 취소할 수 있습니다.' });
 
     const { error } = await admin.from('application_evaluations').delete().eq('id', rowId);
     if (error) return res.status(500).json({ error: '삭제 실패: ' + error.message });

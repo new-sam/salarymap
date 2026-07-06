@@ -59,11 +59,12 @@ export default async function handler(req, res) {
     created_at: r.created_at,
   }));
 
-  // 공고 owner가 job_team에 없으면 합성해서 추가
+  // 공고 owner (jobs.created_by) 는 항상 admin 으로 취급. job_team 에 이미
+  // 있으면 role 을 admin 으로 승격, 없으면 합성해서 추가한다.
   if (job.created_by) {
     const existing = members.find(m => m.user_id === job.created_by);
     if (existing) {
-      existing.role = 'owner';
+      existing.role = 'admin';
     } else {
       const { data: ownerProf } = await admin
         .from('recruiter_users')
@@ -72,7 +73,7 @@ export default async function handler(req, res) {
         .maybeSingle();
       members.push({
         user_id: job.created_by,
-        role: 'owner',
+        role: 'admin',
         email: ownerProf?.email || null,
         full_name: ownerProf?.full_name || null,
         created_at: null,
@@ -99,10 +100,10 @@ export default async function handler(req, res) {
     }
   }
 
-  // 정렬: owner 먼저, 그 다음 본인(나), 그 다음 나머지 면접관
+  // 정렬: admin 먼저 (공고 관리자), 그 다음 본인(나), 그 다음 나머지 면접관
   members.sort((a, b) => {
-    if (a.role === 'owner' && b.role !== 'owner') return -1;
-    if (a.role !== 'owner' && b.role === 'owner') return 1;
+    if (a.role === 'admin' && b.role !== 'admin') return -1;
+    if (a.role !== 'admin' && b.role === 'admin') return 1;
     if (a.user_id === user.id && b.user_id !== user.id) return -1;
     if (a.user_id !== user.id && b.user_id === user.id) return 1;
     return 0;
@@ -117,11 +118,15 @@ export default async function handler(req, res) {
     .eq('status', 'pending')
     .order('created_at', { ascending: false });
 
+  // 현재 유저가 이 공고에서 admin 인지 — 초대/삭제 버튼 표시 여부에 쓴다.
+  const iAmAdmin = members.some(m => m.user_id === user.id && m.role === 'admin');
+
   return res.status(200).json({
     jobId,
     companyId: rec.company_id,
     ownerUserId: job.created_by || null,
     currentUserId: user.id,
+    currentUserIsAdmin: iAmAdmin,
     members,
     invites: invites || [],
   });

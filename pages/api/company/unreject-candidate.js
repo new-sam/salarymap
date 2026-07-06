@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
+import { isJobAdmin } from '../../../lib/job-team-role';
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
@@ -39,19 +40,9 @@ export default async function handler(req, res) {
       .maybeSingle();
     if (appErr || !app) return res.status(404).json({ error: '지원자를 찾을 수 없습니다.' });
 
-    const isJobOwner = app.jobs?.created_by === user.id;
-    let allowed = isJobOwner;
-    if (!allowed) {
-      const { data: team } = await admin
-        .from('job_team').select('user_id').eq('job_id', app.job_id).eq('user_id', user.id).maybeSingle();
-      if (team) allowed = true;
-    }
-    if (!allowed) {
-      const { data: rec } = await admin
-        .from('recruiter_users').select('company_id').eq('user_id', user.id).maybeSingle();
-      if (rec && rec.company_id === app.jobs?.company_id) allowed = true;
-    }
-    if (!allowed) return res.status(403).json({ error: '권한이 없습니다.' });
+    // 불합격 결정 되돌리기는 공고 관리자만 가능. 면접관은 결정을 뒤집을 수 없다.
+    const canAdmin = await isJobAdmin(admin, user.id, app.job_id);
+    if (!canAdmin) return res.status(403).json({ error: '불합격 결정 취소는 공고 관리자만 가능합니다.' });
     if (!app.rejected_at) return res.status(400).json({ error: '이미 진행 중인 후보입니다.' });
 
     const nowIso = new Date().toISOString();
@@ -80,7 +71,8 @@ export default async function handler(req, res) {
       stage: 'unreject',
       reviewer_user_id: user.id,
       reviewer_name: authorName,
-      reviewer_role: isJobOwner ? 'owner' : 'interviewer',
+      // gate 위에서 admin 만 통과했으므로 항상 owner
+      reviewer_role: 'owner',
       // comment column is NOT NULL — always provide a summary string.
       comment: previousStage ? `불합격 결정 취소 (이전 단계: ${previousStage})` : '불합격 결정 취소',
       score: null,

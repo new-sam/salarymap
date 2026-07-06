@@ -4,7 +4,7 @@ import { cn } from '../../../lib/cn';
 import { Plus, Home, CalendarDays, ImageIcon, MapPin, Building2, Briefcase, Users as UsersIcon, CheckSquare, Maximize2, X as XIcon, Settings } from 'lucide-react';
 import JobPreview from '../../../components/jobs/JobPreview';
 import { nextActionFor } from '../../../lib/smart-hint';
-import { loadAccessibleJobIds } from '../../../lib/company-access';
+import { loadAccessibleJobIds, loadJobRoles } from '../../../lib/company-access';
 import { Button as UButton } from '../../../components/ui/button';
 import { Input as UInput } from '../../../components/ui/input';
 import { PageHeader } from '../../../components/ui/page-header';
@@ -153,9 +153,16 @@ export default function NewJobPage() {
 
     const { data, error } = await supabase.from('jobs').insert(payload).select('id').single();
     if (error) { setErr(error.message); setStatus('ready'); return; }
-    // 작성자를 채용팀 오너로 등록 (실패해도 공고 생성 자체는 성공으로 처리)
+    // 작성자를 그 공고의 공고 관리자(admin)로 등록. 정책: "누구든 새 공고를
+    // 만들면 그 공고의 공고 관리자가 됨". 실패해도 공고 생성 자체는 성공으로
+    // 처리한다 (jobs.created_by 로 fallback 게이팅됨 — job-team-role.js 참고).
     if (data?.id && user?.id) {
-      await supabase.from('job_team').insert({ job_id: data.id, user_id: user.id, role: 'owner' });
+      await supabase
+        .from('job_team')
+        .upsert(
+          { job_id: data.id, user_id: user.id, role: 'admin', added_by: user.id },
+          { onConflict: 'job_id,user_id' }
+        );
     }
     // 기업 공고 등록 알림 (베스트에포트) — 외부=승인대기 메일+Slack, 내부=Slack
     if (data?.id) {
@@ -446,7 +453,7 @@ export function Sidebar({ companyName, userEmail, activePage = 'home', activeJob
       if (accessibleIds.size > 0) {
         const { data } = await supabase
           .from('jobs')
-          .select('id, title, status, created_by')
+          .select('id, title, status, created_by, is_active')
           .in('id', Array.from(accessibleIds))
           .order('created_at', { ascending: true });
         jobsData = data || [];
@@ -458,6 +465,13 @@ export function Sidebar({ companyName, userEmail, activePage = 'home', activeJob
       let nextInterviewCount = 0;
       try {
         const jobIds = (jobsData || []).map(j => j.id);
+        // To-do badge only counts actions on active jobs — matches /company/todo.
+        // Paused/closed jobs contribute zero actions. Interview count still spans
+        // all jobs since a scheduled interview is a real event regardless of
+        // whether the posting is currently active.
+        const activeJobIds = new Set((jobsData || []).filter(j => j.is_active).map(j => j.id));
+        // Role lookup — admin 이면 owner 흐름(advance/메일 액션 포함), 면접관이면 evaluate-only.
+        const jobRoles = await loadJobRoles(session.user.id, rec.company_id);
         if (jobIds.length > 0) {
           // Include rejected apps too — they still drive a to-do action
           // ("send the reject mail") until that mail is sent, so the sidebar
@@ -487,8 +501,8 @@ export function Sidebar({ companyName, userEmail, activePage = 'home', activeJob
             });
           }
           for (const app of (apps || [])) {
-            const job = (jobsData || []).find(j => j.id === app.job_id);
-            const isOwner = job?.created_by === session.user.id;
+            if (!activeJobIds.has(app.job_id)) continue;
+            const isOwner = jobRoles.get(app.job_id) === 'admin';
             const action = nextActionFor({
               app,
               evals: evalsByApp[app.id] || [],

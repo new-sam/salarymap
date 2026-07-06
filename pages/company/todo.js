@@ -11,7 +11,7 @@ import { Skeleton } from '../../components/ui/skeleton';
 import MobileNav from '../../components/company/MobileNav';
 import Truncate from '../../components/ui/truncate';
 import { nextActionFor } from '../../lib/smart-hint';
-import { loadAccessibleJobIds } from '../../lib/company-access';
+import { loadAccessibleJobIds, loadJobRoles } from '../../lib/company-access';
 import { CheckSquare, Star, Calendar, Mail, Check, Ban, ChevronRight } from 'lucide-react';
 
 // Map action kind → icon so the row visual matches the meaning at a glance.
@@ -84,13 +84,14 @@ export default function CompanyTodoPage() {
       // Scope to jobs the user owns or was invited to — same workspace tenancy
       // alone does not surface every job in the to-do feed.
       const accessibleIds = await loadAccessibleJobIds(session.user.id, rec.company_id);
+      const jobRoles = await loadJobRoles(session.user.id, rec.company_id);
       let jobs = [];
       if (accessibleIds.size > 0) {
         const { data } = await supabase
           .from('jobs')
           .select('id, title, status, created_by')
           .in('id', Array.from(accessibleIds))
-          .neq('status', 'closed');
+          .eq('is_active', true);
         jobs = data || [];
       }
       const jobMap = {};
@@ -142,7 +143,8 @@ export default function CompanyTodoPage() {
       for (const app of (apps || [])) {
         const job = jobMap[app.job_id];
         if (!job) continue;
-        const isOwner = job.created_by === session.user.id;
+        // 공고 관리자(admin) 이면 owner 흐름, 면접관이면 evaluate-only 흐름.
+        const isOwner = jobRoles.get(job.id) === 'admin';
         const action = nextActionFor({
           app,
           evals: evalsByApp[app.id] || [],

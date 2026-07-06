@@ -56,9 +56,19 @@ export default function EditJobPage() {
         setStatus('error');
         return;
       }
-      // Editing is restricted to the job owner; team members can view via ATS
-      // but cannot edit the posting itself.
-      if (job.created_by !== session.user.id) {
+      // Editing is restricted to job admins — creator or anyone invited with
+      // role='admin' in job_team. Interviewers can view via ATS but cannot edit.
+      let canEdit = job.created_by === session.user.id;
+      if (!canEdit) {
+        const { data: teamRow } = await supabase
+          .from('job_team')
+          .select('role')
+          .eq('job_id', id)
+          .eq('user_id', session.user.id)
+          .maybeSingle();
+        canEdit = teamRow?.role === 'admin';
+      }
+      if (!canEdit) {
         setErr('공고를 찾을 수 없거나 접근 권한이 없습니다.');
         setStatus('error');
         return;

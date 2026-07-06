@@ -1,11 +1,12 @@
 import { createClient } from '@supabase/supabase-js';
+import { isJobAdmin } from '../../../lib/job-team-role';
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 // 회사 공고 활성/비활성 토글 + 삭제. 서비스롤로 RLS 우회.
-// Auth: 공고 회사 멤버(owner / job_team / recruiter_users.company_id)만.
+// Auth: 그 공고의 공고 관리자(admin) 만 가능. 면접관은 편집·비활성화 불가.
 export default async function handler(req, res) {
   if (req.method !== 'PUT' && req.method !== 'DELETE') return res.status(405).json({ error: 'Method not allowed' });
   if (!SUPABASE_URL || !SERVICE_KEY) return res.status(503).json({ error: '서버 설정 오류' });
@@ -24,16 +25,8 @@ export default async function handler(req, res) {
   const { data: job } = await admin.from('jobs').select('id, company_id, created_by, status').eq('id', jobId).maybeSingle();
   if (!job) return res.status(404).json({ error: '공고를 찾을 수 없습니다.' });
 
-  let allowed = job.created_by === user.id;
-  if (!allowed) {
-    const { data: team } = await admin.from('job_team').select('user_id').eq('job_id', jobId).eq('user_id', user.id).maybeSingle();
-    if (team) allowed = true;
-  }
-  if (!allowed) {
-    const { data: rec } = await admin.from('recruiter_users').select('company_id').eq('user_id', user.id).maybeSingle();
-    if (rec && rec.company_id === job.company_id) allowed = true;
-  }
-  if (!allowed) return res.status(403).json({ error: '권한이 없습니다.' });
+  const canAdmin = await isJobAdmin(admin, user.id, jobId);
+  if (!canAdmin) return res.status(403).json({ error: '공고 관리자만 가능합니다.' });
 
   if (req.method === 'DELETE') {
     const { error } = await admin.from('jobs').delete().eq('id', jobId);

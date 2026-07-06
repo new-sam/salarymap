@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import { Resend } from 'resend';
+import { isJobAdmin } from '../../../lib/job-team-role';
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
@@ -37,10 +38,12 @@ export default async function handler(req, res) {
     .maybeSingle();
   if (!app) return res.status(403).json({ error: '해당 지원자에 대한 권한이 없습니다.' });
 
-  // 메일 발송은 공고 오너만 가능 (면접관 차단)
-  const jobOwnerId = app.jobs?.created_by;
-  if (jobOwnerId && jobOwnerId !== user.id) {
-    return res.status(403).json({ error: '메일 발송은 공고 오너만 가능합니다.' });
+  // 메일 발송은 공고 관리자만 가능 (면접관 차단). service-role 로 role 조회.
+  const adminClient = SERVICE_KEY ? createClient(SUPABASE_URL, SERVICE_KEY) : null;
+  if (!adminClient) return res.status(503).json({ error: '서버 설정 오류 (SERVICE_KEY 없음)' });
+  const canAdmin = await isJobAdmin(adminClient, user.id, app.job_id);
+  if (!canAdmin) {
+    return res.status(403).json({ error: '메일 발송은 공고 관리자만 가능합니다.' });
   }
 
   // 수신자는 서버에서 결정 (클라이언트가 임의 주소로 못 보내게)
@@ -62,18 +65,15 @@ export default async function handler(req, res) {
   });
 
   // 발송 이력 기록 (service role — RLS 우회)
-  if (SERVICE_KEY) {
-    const admin = createClient(SUPABASE_URL, SERVICE_KEY);
-    await admin.from('recruiter_mail_log').insert({
-      application_id: appId,
-      to_email: toEmail,
-      subject,
-      body,
-      template_key: templateKey || null,
-      sent_by: user.id,
-      status: sendErr ? 'failed' : 'sent',
-    });
-  }
+  await adminClient.from('recruiter_mail_log').insert({
+    application_id: appId,
+    to_email: toEmail,
+    subject,
+    body,
+    template_key: templateKey || null,
+    sent_by: user.id,
+    status: sendErr ? 'failed' : 'sent',
+  });
 
   if (sendErr) {
     return res.status(502).json({ error: '메일 발송 실패: ' + (sendErr.message || '알 수 없는 오류') });

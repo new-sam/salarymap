@@ -63,6 +63,9 @@ export default function CompanyATSPage() {
   const [user, setUser] = useState(null);
   const [companyName, setCompanyName] = useState('');
   const [job, setJob] = useState(null);
+  // 이 공고에서 현재 유저의 role. 'admin' | 'interviewer' | null.
+  // admin = jobs.created_by 이거나 job_team.role='admin'.
+  const [myRole, setMyRole] = useState(null);
   const [apps, setApps] = useState([]);
   const [err, setErr] = useState('');
   const [selectedAppId, setSelectedAppId] = useState(null);
@@ -197,11 +200,14 @@ export default function CompanyATSPage() {
       // Tenancy + invitation check: must own the job or be invited to it.
       // Same-company doesn't grant blanket ATS access to other people's jobs.
       const isOwnerOfJob = jobData.created_by === session.user.id;
+      let resolvedRole = isOwnerOfJob ? 'admin' : null;
       if (!isOwnerOfJob) {
         const { data: teamRow } = await supabase
-          .from('job_team').select('user_id').eq('job_id', jobId).eq('user_id', session.user.id).maybeSingle();
+          .from('job_team').select('role').eq('job_id', jobId).eq('user_id', session.user.id).maybeSingle();
         if (!teamRow) { setErr(t('company.ats.notFound')); setStatus('error'); return; }
+        resolvedRole = teamRow.role === 'admin' ? 'admin' : 'interviewer';
       }
+      setMyRole(resolvedRole);
       setJob(jobData);
       const { data: appsData, error: appsErr } = appsRes;
       if (appsErr) { console.error('[ats] apps load error:', appsErr); setErr(t('company.ats.errLoad') + appsErr.message); }
@@ -389,7 +395,9 @@ export default function CompanyATSPage() {
     toast.success(t(`company.stage.${newStatus}`) + ' → ' + name);
   };
 
-  const isOwner = !job?.created_by || job?.created_by === user?.id;
+  // 공고 관리자(admin) 인가? myRole=null 은 로딩 중이거나 초기값이라 fallback 으로
+  // created_by 매칭도 봐준다 (짧은 순간의 UI 깜빡임 방지).
+  const isOwner = myRole ? myRole === 'admin' : (!job?.created_by || job?.created_by === user?.id);
 
   // Drag-and-drop drop handler.
   //
@@ -582,16 +590,17 @@ export default function CompanyATSPage() {
 
   // CPO 추가: 채용 담당자가 화면에서 가장 알아야 하는 5개 지표
   const nowMs = Date.now();
-  // 신규 = 아직 한 번도 열람 안 한 서류 단계 지원자.
-  // status='pending' 만 보는 게 아니라 viewed_at IS NULL 도 함께 본다.
-  const newReviewCount = apps.filter(a => !a.rejected_at && a.status === 'pending' && !a.viewed_at).length;
+  // "검토 전" = 아직 결정 안 난 서류 단계 지원자 (status='pending').
+  // viewed_at 은 담당자가 상세를 한 번이라도 열었는지의 read flag 일 뿐, 검토
+  // 완료 여부와 무관하다. 한 번 열었다고 검토가 끝난 게 아니므로 카운트에서 빼지 않는다.
+  const newReviewCount = apps.filter(a => !a.rejected_at && a.status === 'pending').length;
   const upcomingInterviewCount = apps.filter(a => !a.rejected_at && a.interview_at && new Date(a.interview_at).getTime() > nowMs).length;
   const hiredCount = apps.filter(a => !a.rejected_at && a.status === 'decided').length;
   const inProgressCount = apps.filter(a => !a.rejected_at && a.status !== 'decided' && a.status !== 'pending').length;
 
   const matchesKpiFilter = (a) => {
     if (!kpiFilter) return true;
-    if (kpiFilter === 'new') return !a.rejected_at && a.status === 'pending' && !a.viewed_at;
+    if (kpiFilter === 'new') return !a.rejected_at && a.status === 'pending';
     if (kpiFilter === 'inProgress') return !a.rejected_at && a.status !== 'decided' && a.status !== 'pending';
     if (kpiFilter === 'hired') return !a.rejected_at && a.status === 'decided';
     if (kpiFilter === 'rejected') return !!a.rejected_at;
@@ -678,7 +687,7 @@ export default function CompanyATSPage() {
                   {isOwner ? t('company.ats.roleOwnerJoined') : t('company.ats.roleInterviewerJoined')}
                 </span>
                 <span className="hidden md:inline-flex">
-                  <TeamPopover jobId={job.id} canInvite={!job.created_by || job.created_by === user?.id} />
+                  <TeamPopover jobId={job.id} canInvite={isOwner} />
                 </span>
                 {/* Edit is owner-only; interviewers don't see the button at all
                     to keep their view focused on evaluation actions. */}

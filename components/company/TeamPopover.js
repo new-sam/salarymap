@@ -23,7 +23,7 @@ function relTime(iso) {
 export default function TeamPopover({ jobId, canInvite = true }) {
   const { t } = useT();
   const [open, setOpen] = useState(false);
-  const [team, setTeam] = useState({ members: [], invites: [], currentUserId: null, ownerUserId: null });
+  const [team, setTeam] = useState({ members: [], invites: [], currentUserId: null, ownerUserId: null, currentUserIsAdmin: false });
   const [loading, setLoading] = useState(false);
   const [inviteOpen, setInviteOpen] = useState(false);
   const [confirmCfg, setConfirmCfg] = useState(null);
@@ -53,7 +53,13 @@ export default function TeamPopover({ jobId, canInvite = true }) {
       const token = data?.session?.access_token;
       const res = await fetch(`/api/company/team?jobId=${jobId}`, { headers: { Authorization: `Bearer ${token}` } });
       const j = await res.json();
-      if (res.ok) setTeam({ members: j.members || [], invites: j.invites || [], currentUserId: j.currentUserId, ownerUserId: j.ownerUserId });
+      if (res.ok) setTeam({
+        members: j.members || [],
+        invites: j.invites || [],
+        currentUserId: j.currentUserId,
+        ownerUserId: j.ownerUserId,
+        currentUserIsAdmin: !!j.currentUserIsAdmin,
+      });
     } finally {
       setLoading(false);
     }
@@ -139,16 +145,16 @@ export default function TeamPopover({ jobId, canInvite = true }) {
             )}
 
             {[...team.members].sort((a, b) => {
-              // owner 먼저, 그 다음 면접관
-              if (a.role === 'owner' && b.role !== 'owner') return -1;
-              if (a.role !== 'owner' && b.role === 'owner') return 1;
+              // admin 먼저, 그 다음 면접관
+              if (a.role === 'admin' && b.role !== 'admin') return -1;
+              if (a.role !== 'admin' && b.role === 'admin') return 1;
               return 0;
             }).map(m => {
               const name = m.full_name || m.email?.split('@')[0] || '?';
               const isMe = m.user_id === team.currentUserId;
-              const isOwner = m.role === 'owner';
-              const iAmOwner = team.ownerUserId === team.currentUserId;
-              const canRemove = iAmOwner && !isOwner && !isMe;
+              const isAdmin = m.role === 'admin';
+              const isCreator = m.user_id === team.ownerUserId; // 공고 만든 사람 — 삭제 불가
+              const canRemove = team.currentUserIsAdmin && !isCreator && !isMe;
               return (
                 <div key={m.user_id} style={s.row}>
                   <div style={{ ...s.av, background: colorFor(m.email || name) }}>{initialOf(name)}</div>
@@ -156,8 +162,8 @@ export default function TeamPopover({ jobId, canInvite = true }) {
                     <div style={s.rowName}>{name}{isMe && <span style={s.meTag}> ({t('company.team.you')})</span>}</div>
                     <div style={s.rowEmail}>{m.email}</div>
                   </div>
-                  <div style={isOwner ? s.ownerTag : s.roleTag}>
-                    {t(`company.team.role.${isOwner ? 'owner' : 'interviewer'}`)}
+                  <div style={isAdmin ? s.ownerTag : s.roleTag}>
+                    {t(`company.team.role.${isAdmin ? 'admin' : 'interviewer'}`)}
                   </div>
                   {canRemove && (
                     <button onClick={() => removeMember(m)} style={s.removeBtn} title={t('company.team.removeBtn')}><XIcon className="w-3 h-3" /></button>
@@ -166,23 +172,22 @@ export default function TeamPopover({ jobId, canInvite = true }) {
               );
             })}
 
-            {team.invites.map(iv => {
-              const iAmOwner = team.ownerUserId === team.currentUserId;
-              return (
-                <div key={iv.id} style={s.row}>
-                  <div style={{ ...s.av, background: '#9ca3af' }}>{initialOf(iv.email)}</div>
-                  <div style={s.rowBody}>
-                    <div style={s.rowName}>{iv.email.split('@')[0]}</div>
-                    <div style={s.rowEmail}>{iv.email}</div>
-                    <div style={s.rowSub}>{t('company.team.invitedAt', { when: relTime(iv.created_at) })}</div>
-                  </div>
-                  <div style={s.pendTag}>{t('company.team.pending')}</div>
-                  {iAmOwner && (
-                    <button onClick={() => cancelInvite(iv)} style={s.removeBtn} title={t('company.team.removeBtn')}><XIcon className="w-3 h-3" /></button>
-                  )}
+            {team.invites.map(iv => (
+              <div key={iv.id} style={s.row}>
+                <div style={{ ...s.av, background: '#9ca3af' }}>{initialOf(iv.email)}</div>
+                <div style={s.rowBody}>
+                  <div style={s.rowName}>{iv.email.split('@')[0]}</div>
+                  <div style={s.rowEmail}>{iv.email}</div>
+                  <div style={s.rowSub}>{t('company.team.invitedAt', { when: relTime(iv.created_at) })}</div>
                 </div>
-              );
-            })}
+                <div style={iv.role === 'admin' ? s.ownerTag : s.pendTag}>
+                  {iv.role === 'admin' ? t('company.team.role.admin') : t('company.team.pending')}
+                </div>
+                {team.currentUserIsAdmin && (
+                  <button onClick={() => cancelInvite(iv)} style={s.removeBtn} title={t('company.team.removeBtn')}><XIcon className="w-3 h-3" /></button>
+                )}
+              </div>
+            ))}
           </div>
 
           {canInvite && (
@@ -209,9 +214,10 @@ export default function TeamPopover({ jobId, canInvite = true }) {
 function InviteModal({ jobId, onClose, onDone }) {
   const { t } = useT();
   const [email, setEmail] = useState('');
+  const [role, setRole] = useState('interviewer'); // 'admin' | 'interviewer'
   const [sending, setSending] = useState(false);
   const [err, setErr] = useState('');
-  const [result, setResult] = useState(null); // { addedDirectly, mailSent, inviteLink, memberName }
+  const [result, setResult] = useState(null); // { addedDirectly, mailSent, inviteLink, memberName, role }
   const [copied, setCopied] = useState(false);
 
   const submit = async () => {
@@ -223,7 +229,7 @@ function InviteModal({ jobId, onClose, onDone }) {
       const res = await fetch('/api/company/invite-member', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ email, role: 'interviewer', jobId }),
+        body: JSON.stringify({ email, role, jobId }),
       });
       const j = await res.json();
       if (!res.ok) throw new Error(j.error || 'error');
@@ -257,6 +263,25 @@ function InviteModal({ jobId, onClose, onDone }) {
               placeholder="name@company.com" autoFocus
               onKeyDown={(e) => { if (e.key === 'Enter' && !sending) submit(); }}
             />
+            <label style={s.label}>{t('company.invite.role')}</label>
+            <div style={s.roleRow}>
+              <button
+                type="button"
+                onClick={() => setRole('admin')}
+                style={{ ...s.roleBtn, ...(role === 'admin' ? s.roleBtnActive : {}) }}
+              >
+                {t('company.team.role.admin')}
+                <div style={s.roleBtnDesc}>{t('company.invite.roleDesc.admin')}</div>
+              </button>
+              <button
+                type="button"
+                onClick={() => setRole('interviewer')}
+                style={{ ...s.roleBtn, ...(role === 'interviewer' ? s.roleBtnActive : {}) }}
+              >
+                {t('company.team.role.interviewer')}
+                <div style={s.roleBtnDesc}>{t('company.invite.roleDesc.interviewer')}</div>
+              </button>
+            </div>
             {err && <div style={s.err}>{err}</div>}
             <button type="button" disabled={sending} onClick={submit} style={{ ...s.submit, opacity: sending ? 0.6 : 1 }}>
               {sending ? t('company.invite.sending') : t('company.invite.submit')}
@@ -271,7 +296,7 @@ function InviteModal({ jobId, onClose, onDone }) {
             <p style={s.modalLead}>
               {t(
                 result.mailSent ? 'company.invite.done.added.leadMailed' : 'company.invite.done.added.lead',
-                { name: result.memberName || email }
+                { name: result.memberName || email, roleLabel: t(`company.team.role.${result.role || 'interviewer'}`) }
               )}
             </p>
             <button type="button" style={s.submit} onClick={finish}>{t('company.invite.close')}</button>
@@ -282,7 +307,9 @@ function InviteModal({ jobId, onClose, onDone }) {
           <div style={{ textAlign: 'center' }}>
             <div style={s.doneIcon}><MailIcon className="w-6 h-6" /></div>
             <h3 style={s.modalTitle}>{t('company.invite.done.mailed.title')}</h3>
-            <p style={s.modalLead}>{t('company.invite.done.mailed.lead', { email })}</p>
+            <p style={s.modalLead}>
+              {t('company.invite.done.mailed.lead', { email, roleLabel: t(`company.team.role.${result.role || 'interviewer'}`) })}
+            </p>
             <button type="button" style={s.submit} onClick={finish}>{t('company.invite.close')}</button>
           </div>
         )}
@@ -353,8 +380,9 @@ const s = {
   label: { display: 'block', fontSize: 12, fontWeight: 800, color: '#374151', margin: '10px 0 6px' },
   input: { width: '100%', border: '1px solid #D4D7DD', borderRadius: 9, padding: '11px 13px', fontSize: 14, color: '#111', fontFamily: 'inherit', outline: 'none', background: '#fff' },
   roleRow: { display: 'flex', gap: 8 },
-  roleBtn: { flex: 1, padding: '10px 12px', border: '1px solid #D4D7DD', background: '#fff', borderRadius: 9, fontSize: 13, fontWeight: 800, color: '#374151', cursor: 'pointer', fontFamily: 'inherit' },
+  roleBtn: { flex: 1, padding: '10px 12px', border: '1px solid #D4D7DD', background: '#fff', borderRadius: 9, fontSize: 13, fontWeight: 800, color: '#374151', cursor: 'pointer', fontFamily: 'inherit', textAlign: 'left' },
   roleBtnActive: { background: '#fff7ed', borderColor: '#fb923c', color: '#ea580c' },
+  roleBtnDesc: { marginTop: 4, fontSize: 10.5, fontWeight: 600, color: '#6b7280', lineHeight: 1.4 },
   err: { marginTop: 12, background: '#FEF2F2', border: '1px solid #FECACA', borderRadius: 8, padding: '9px 12px', fontSize: 12.5, color: '#dc2626', fontWeight: 600 },
   submit: { width: '100%', marginTop: 16, border: 0, borderRadius: 10, padding: '13px 18px', background: '#EA580C', color: '#fff', fontSize: 14, fontWeight: 850, fontFamily: 'inherit', cursor: 'pointer' },
   doneIcon: {
