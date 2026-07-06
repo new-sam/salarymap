@@ -892,17 +892,14 @@ function buildRealtimeMessage(
 
   return {
     response_type: slashCommand ? "in_channel" : undefined,
-    attachments: [{
-      color: "#2ea44f",
-      blocks: [
-        { type: "header", text: { type: "plain_text", text: `FYI 실시간 / Live — ${today} (${dayName}) ${timeStr} UTC+7` } },
-        { type: "context", elements: [{ type: "mrkdwn", text: `데이터 기간 (Data range): ${today} 00:00 ~ ${timeStr} (UTC+7) · 어제 같은 시각 대비 (DoD)` }] },
-        { type: "divider" },
-        { type: "section", text: { type: "mrkdwn", text: `*🟢 인재 (Talent)*\n` + talentLinesSection(s, p, yesterday.slice(5).replace("-", "/"), today.slice(5).replace("-", "/")) }},
-        { type: "divider" },
-        { type: "section", text: { type: "mrkdwn", text: `*🟠 기업 (Company)*\n` + companyLinesSection(s, p, yesterday.slice(5).replace("-", "/"), today.slice(5).replace("-", "/")) }},
-      ],
-    }],
+    blocks: [
+      { type: "header", text: { type: "plain_text", text: `FYI 실시간 / Live — ${today} (${dayName}) ${timeStr} UTC+7` } },
+      { type: "context", elements: [{ type: "mrkdwn", text: `데이터 기간 (Data range): ${today} 00:00 ~ ${timeStr} (UTC+7) · 어제 같은 시각 대비 (DoD)` }] },
+      { type: "divider" },
+      { type: "section", text: { type: "mrkdwn", text: `*🟢 인재 (Talent)*\n` + talentLinesSection(s, p, yesterday.slice(5).replace("-", "/"), today.slice(5).replace("-", "/")) }},
+      { type: "divider" },
+      { type: "section", text: { type: "mrkdwn", text: `*🔵 기업 (Company)*\n` + companyLinesSection(s, p, yesterday.slice(5).replace("-", "/"), today.slice(5).replace("-", "/")) }},
+    ],
   };
 }
 
@@ -914,27 +911,26 @@ function buildDailyMessage(
   alerts: string[],
 ) {
   const dayName = getDayName(targetDate);
-  const trendColor = s.submissions > p.submissions ? "#cc0000" : s.submissions < p.submissions ? "#1D6CE0" : "#999999";
 
   const alertBlock = alerts.length > 0
     ? [{ type: "section", text: { type: "mrkdwn", text: alerts.join("\n") } }]
     : [];
 
+  // 최상위 blocks 로 발송 — attachments 는 Slack 이 길면 접어서("더 보기") 기업 블록이
+  // 숨는다(발견된 이슈). blocks 는 안 접힘. 앱카드는 handler 가 attachments 에 push.
   return {
     text: "<!here>",
-    attachments: [{
-      color: trendColor,
-      blocks: [
-        { type: "section", text: { type: "mrkdwn", text: "<!here> 오늘의 FYI 일일 리포트 / Today's FYI Daily Report" } },
-        { type: "header", text: { type: "plain_text", text: `FYI 일일 리포트 / Daily — ${targetDate} (${dayName})` } },
-        { type: "context", elements: [{ type: "mrkdwn", text: `데이터 기간 (Data range): ${targetDate} 00:00 ~ 23:59 (UTC+7) · 전일 대비 (DoD)` }] },
-        { type: "divider" },
-        { type: "section", text: { type: "mrkdwn", text: `*🟢 인재 (Talent)*\n` + talentLinesSection(s, p, dayBefore.slice(5).replace("-", "/"), targetDate.slice(5).replace("-", "/")) }},
-        { type: "divider" },
-        { type: "section", text: { type: "mrkdwn", text: `*🟠 기업 (Company)*\n` + companyLinesSection(s, p, dayBefore.slice(5).replace("-", "/"), targetDate.slice(5).replace("-", "/")) }},
-        ...alertBlock,
-      ],
-    }],
+    blocks: [
+      { type: "section", text: { type: "mrkdwn", text: "<!here> 오늘의 FYI 일일 리포트 / Today's FYI Daily Report" } },
+      { type: "header", text: { type: "plain_text", text: `FYI 일일 리포트 / Daily — ${targetDate} (${dayName})` } },
+      { type: "context", elements: [{ type: "mrkdwn", text: `데이터 기간 (Data range): ${targetDate} 00:00 ~ 23:59 (UTC+7) · 전일 대비 (DoD)` }] },
+      { type: "divider" },
+      { type: "section", text: { type: "mrkdwn", text: `*🟢 인재 (Talent)*\n` + talentLinesSection(s, p, dayBefore.slice(5).replace("-", "/"), targetDate.slice(5).replace("-", "/")) }},
+      { type: "divider" },
+      { type: "section", text: { type: "mrkdwn", text: `*🔵 기업 (Company)*\n` + companyLinesSection(s, p, dayBefore.slice(5).replace("-", "/"), targetDate.slice(5).replace("-", "/")) }},
+      ...alertBlock,
+    ],
+    attachments: [],
   };
 }
 
@@ -1300,7 +1296,7 @@ Deno.serve(async (req) => {
       // ?noHere=1 → @here 멘션 빼고 발송 (테스트용). cron 호출엔 영향 없음.
       if (url.searchParams.get("noHere") === "1") {
         delete (message as any).text;
-        const blocks = (message as any).attachments?.[0]?.blocks;
+        const blocks = (message as any).blocks;
         if (blocks?.[0]?.type === "section" && blocks[0]?.text?.text?.includes("<!here>")) {
           blocks.shift();
         }
