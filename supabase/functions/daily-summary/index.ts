@@ -6,10 +6,9 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const SLACK_WEBHOOK_URL = Deno.env.get("SLACK_WEBHOOK_URL")!;
-// 대표(CEO) 전용 데일리 채널. ?channel=ceo 로 호출할 때만 여기로 발송한다.
-// 기존 팀 채널(SLACK_WEBHOOK_URL, 9시 cron)과는 완전히 별개 — 별도 10시 cron이
-// ?channel=ceo 로 호출. 미설정 상태에서 ?channel=ceo 호출 시 400.
-const SLACK_CEO_WEBHOOK_URL = Deno.env.get("SLACK_CEO_WEBHOOK_URL") || "";
+// 채널별 전용 데일리 웹훅은 ?channel=<name> 호출 시 SLACK_<NAME>_WEBHOOK_URL
+// 시크릿에서 동적으로 읽는다 (대표=SLACK_CEO_WEBHOOK_URL, 김슬기=SLACK_KEE_WEBHOOK_URL 등).
+// 기본(채널 없음)은 팀 채널(SLACK_WEBHOOK_URL, 9시 cron).
 
 const GA4_PROPERTY_ID = Deno.env.get("GA4_PROPERTY_ID") || "533725598";
 const GA4_CLIENT_EMAIL = Deno.env.get("GA4_CLIENT_EMAIL") || "";
@@ -1226,16 +1225,25 @@ Deno.serve(async (req) => {
       const yesterday = dateOverride || getVietnamDate(1);
       const dayBefore = dateOverride ? previousDay(yesterday) : getVietnamDate(2);
 
-      // 발송 대상. ?channel=ceo → 대표 전용 웹훅으로만. 기본은 기존 팀 채널.
-      // lock key 도 채널별로 분리해 팀(9시)/대표(10시) 두 cron 이 서로의
-      // 발송을 막지 않게 한다.
+      // 발송 대상. ?channel=<name> → 시크릿 SLACK_<NAME>_WEBHOOK_URL 로만 발송
+      // (대표=ceo, 김슬기=kee 등). 기본(채널 없음)은 기존 팀 채널(SLACK_WEBHOOK_URL).
+      // lock key 도 채널별로 분리해 여러 cron(팀 9시 / 대표·김슬기 10시)이 서로의
+      // 발송을 막지 않게 한다. 수신인 추가 = 시크릿+cron 만, 코드 수정 불필요.
       const channel = url.searchParams.get("channel");
-      const isCeo = channel === "ceo";
-      if (isCeo && !SLACK_CEO_WEBHOOK_URL) {
-        return new Response(JSON.stringify({ error: "SLACK_CEO_WEBHOOK_URL not set" }), { status: 400, headers: { "Content-Type": "application/json" } });
+      let targetWebhook = SLACK_WEBHOOK_URL;
+      let lockKey = `daily-${yesterday}`;
+      if (channel) {
+        if (!/^[a-z0-9]+$/i.test(channel)) {
+          return new Response(JSON.stringify({ error: "invalid channel" }), { status: 400, headers: { "Content-Type": "application/json" } });
+        }
+        const envName = `SLACK_${channel.toUpperCase()}_WEBHOOK_URL`;
+        const hook = Deno.env.get(envName) || "";
+        if (!hook) {
+          return new Response(JSON.stringify({ error: `${envName} not set` }), { status: 400, headers: { "Content-Type": "application/json" } });
+        }
+        targetWebhook = hook;
+        lockKey = `daily-${yesterday}-${channel.toLowerCase()}`;
       }
-      const targetWebhook = isCeo ? SLACK_CEO_WEBHOOK_URL : SLACK_WEBHOOK_URL;
-      const lockKey = isCeo ? `daily-${yesterday}-ceo` : `daily-${yesterday}`;
 
       const startY = `${yesterday}T00:00:00+07:00`;
       const endY = `${yesterday}T23:59:59+07:00`;
