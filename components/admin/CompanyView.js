@@ -154,21 +154,40 @@ export default function CompanyView({ token, lang }) {
   const monthJobs = daily.reduce((s, d) => s + d.jobs, 0)
 
   // 공용 공고 한 줄 — 한국어 제목(있으면) + 원문 + 회사/직군/상태/지원
-  const jobLine = (j, { showCompany = false, showCategory = false } = {}) => (
-    <div key={j.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '6px 0', borderTop: '1px solid #F1F5F9' }}>
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ fontSize: 13, fontWeight: 600, color: '#0F172A' }}>{j.titleKo || j.title}</div>
-        {(j.titleKo || showCompany) && (
-          <div style={{ fontSize: 11, color: '#9CA3AF' }}>
-            {j.titleKo ? j.title : ''}{j.titleKo && showCompany ? ' · ' : ''}{showCompany ? j.company : ''}
+  const jobLine = (j, { showCompany = false, showCategory = false } = {}) => {
+    const stages = j.stages || {}
+    const present = stageOrder.filter(s => stages[s])
+    return (
+      <div key={j.id} style={{ padding: '8px 0', borderTop: '1px solid #F1F5F9' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: 13, fontWeight: 600, color: '#0F172A' }}>{j.titleKo || j.title}</div>
+            {(j.titleKo || showCompany) && (
+              <div style={{ fontSize: 11, color: '#9CA3AF' }}>
+                {j.titleKo ? j.title : ''}{j.titleKo && showCompany ? ' · ' : ''}{showCompany ? j.company : ''}
+              </div>
+            )}
+          </div>
+          {showCategory && <span style={{ fontSize: 11, color: '#6B7280', background: '#EEF0F2', borderRadius: 999, padding: '2px 8px', flexShrink: 0 }}>{j.categoryKo}</span>}
+          {j.pending ? badge('#FEF3C7', '#D97706', ko ? '승인대기' : 'pending') : j.live ? badge('#FFF1EC', '#ff6000', ko ? '라이브' : 'live') : badge('#F1F5F9', '#94A3B8', ko ? '내림' : 'off')}
+          <span style={{ fontSize: 12, fontWeight: 700, color: '#0F172A', width: 64, textAlign: 'right', flexShrink: 0 }}>{ko ? '지원' : 'apps'} {j.applications}</span>
+        </div>
+        {/* 칸반 단계별 인원 */}
+        {j.applications > 0 && (
+          <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap', marginTop: 5, paddingLeft: 1 }}>
+            {present.length === 0 ? (
+              <span style={{ fontSize: 11.5, color: '#CBD5E1' }}>{ko ? '단계 정보 없음' : 'no stage'}</span>
+            ) : present.map(s => (
+              <span key={s} style={{ fontSize: 11.5, color: '#475569', display: 'inline-flex', alignItems: 'center', gap: 5 }}>
+                <span style={{ width: 8, height: 8, borderRadius: 2, background: STAGE[s]?.color || '#94A3B8' }} />
+                {STAGE[s] ? (ko ? STAGE[s].ko : STAGE[s].en) : s} <b style={{ color: '#0F172A' }}>{stages[s]}</b>
+              </span>
+            ))}
           </div>
         )}
       </div>
-      {showCategory && <span style={{ fontSize: 11, color: '#6B7280', background: '#EEF0F2', borderRadius: 999, padding: '2px 8px', flexShrink: 0 }}>{j.categoryKo}</span>}
-      {j.pending ? badge('#FEF3C7', '#D97706', ko ? '승인대기' : 'pending') : j.live ? badge('#FFF1EC', '#ff6000', ko ? '라이브' : 'live') : badge('#F1F5F9', '#94A3B8', ko ? '내림' : 'off')}
-      <span style={{ fontSize: 12, color: '#6B7280', width: 64, textAlign: 'right', flexShrink: 0 }}>{ko ? '지원' : 'apps'} {j.applications}</span>
-    </div>
-  )
+    )
+  }
 
   return (
     <div style={{ paddingBottom: 40 }}>
