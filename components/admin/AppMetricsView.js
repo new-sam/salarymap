@@ -79,6 +79,9 @@ const L = {
     cardShare: '명함 공유', cardShareSub: '이미지·텍스트·링크 합계', cardShareUnlock: '해제용 공유', cardUnlock: '디자인 해제',
     cardSave: '디자인 저장', cardDesignRate: '진입→꾸미기', cardUnlockRate: '해제용 공유→해제',
     cardByMethod: '공유 수단별', cardTsTitle: '명함 활동(일별)',
+    reviewTitle: 'App Store 리뷰 요청 (별점 유도)', reviewCount: '요청 호출 수', reviewUsers: '요청 뜬 유저(고유)',
+    reviewRate: '제보 유저 대비 노출률', reviewByTrigger: '트리거별',
+    reviewNote: '⚠ SKStoreReviewController 특성상 requestReview() 호출까지만 측정됩니다. 실제 카드 노출·별점 부여 여부는 OS가 통제하며 여기선 알 수 없습니다(App Store Connect 평점·분석에서 확인). 같은 버전당 1회·60일 간격·평생 3회 게이트라 호출 자체가 드물게 발생합니다.',
     pushTitle: '푸시 (재참여 엔진)', pushSent: '발송', pushCtr: '클릭률(클릭/발송)', pushClicks: '클릭(재방문)', pushClickUsers: '클릭 유저', pushReceived: '수신(포그라운드)',
     pushByCat: '푸시 종류별 클릭', pushNote: '⚠ 클릭률 = 클릭/발송. 발송 수는 서버 발송 로그(push_sent)에서 집계되며 배포 시점부터 누적됩니다(이전 발송분은 분모에 없음). 수신은 OS 한계로 앱 실행 중(포그라운드)만 잡힙니다.',
     osTitle: 'OS 분포', verTitle: '앱 버전 분포 (릴리스 코호트)',
@@ -142,6 +145,9 @@ const L = {
     cardShare: 'Card shares', cardShareSub: 'image + text + link', cardShareUnlock: 'Share to unlock', cardUnlock: 'Designs unlocked',
     cardSave: 'Design saves', cardDesignRate: 'View→design', cardUnlockRate: 'Unlock-share→unlock',
     cardByMethod: 'By share method', cardTsTitle: 'Card activity (daily)',
+    reviewTitle: 'App Store Review Prompt', reviewCount: 'Prompt calls', reviewUsers: 'Unique users prompted',
+    reviewRate: 'Prompt rate vs submitters', reviewByTrigger: 'By trigger',
+    reviewNote: '⚠ Only the requestReview() call is measurable (SKStoreReviewController). Whether iOS shows the card or the user rates is OS-controlled and unknown here — check App Store Connect ratings/analytics. Gated to once per version, 60-day interval, 3x lifetime, so calls are intentionally rare.',
     pushTitle: 'Push (re-engagement engine)', pushSent: 'Sent', pushCtr: 'CTR (clicks/sent)', pushClicks: 'Clicks (returns)', pushClickUsers: 'Click users', pushReceived: 'Received (foreground)',
     pushByCat: 'Clicks by push type', pushNote: '⚠ CTR = clicks/sent. Sent count comes from server push logs (push_sent) and accumulates from deploy time (earlier sends are not in the denominator). Received only fires in foreground (OS limit).',
     osTitle: 'OS Breakdown', verTitle: 'App Version Breakdown (release cohort)',
@@ -405,6 +411,8 @@ export default function AppMetricsView({ token, dateRange, lang }) {
   const { meta, topline, retention, appDwell, community, conversion, push, segments, daily, webAppPromo } = data
   // 명함(신규). 백엔드 갱신 전엔 없을 수 있어 기본값으로 방어.
   const card = data.card || { view: 0, openDesign: 0, share: 0, shareByMethod: [], shareUnlock: 0, unlock: 0, save: 0, designRate: null, unlockRate: null }
+  // App Store 리뷰 요청(신규). 백엔드 갱신 전엔 없을 수 있어 기본값으로 방어.
+  const review = data.review || { count: 0, uniqueUsers: 0, byTrigger: [], promptRateAmongSubmitters: null }
   // 분석가 모듈(부분 배포 대비 기본값). 백엔드 갱신 후엔 항상 채워짐.
   const analytics = data.analytics || {
     stickiness: {}, newUsersInRange: 0, retentionCurve: [], activation: {},
@@ -493,6 +501,7 @@ export default function AppMetricsView({ token, dateRange, lang }) {
           { label: t.ovResume, value: conversion.resume.appSubmitted, sub: t.ovCumSub },
           { label: t.ovResumePublic, value: conversion.resume.appPublic, sub: t.ovCumSub },
           { label: t.ovPush, value: push.clicks },
+          { label: t.reviewCount, value: review.count, sub: t.reviewTitle },
           { label: t.ovPower, value: analytics.depth.multiDayRate != null ? `${analytics.depth.multiDayRate}%` : '-' },
         ]
         return (
@@ -833,6 +842,23 @@ export default function AppMetricsView({ token, dateRange, lang }) {
               <MetricChart daily={aggregateBy(ts, series.card, "day")} metrics={series.card} lang={lang} lineType="linear" dots={false} />
               <ChartLegend metrics={series.card} />
             </div>
+          </div>
+
+          {/* ── App Store 리뷰 요청(별점 유도) ── */}
+          <div style={sectionStyle}>
+            <h3 style={sectionTitle}>{t.reviewTitle}</h3>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 12 }}>
+              <Card label={t.reviewCount} value={review.count} />
+              <Card label={t.reviewUsers} value={review.uniqueUsers} />
+              <Card label={t.reviewRate} value={review.promptRateAmongSubmitters != null ? `${review.promptRateAmongSubmitters}%` : '-'} />
+            </div>
+            {review.byTrigger && review.byTrigger.length > 0 && (
+              <div style={{ marginTop: 20 }}>
+                <h4 style={{ fontSize: 13, fontWeight: 600, color: '#374151', margin: '0 0 10px' }}>{t.reviewByTrigger}</h4>
+                <DistTable rows={review.byTrigger} t={t} color="#F59E0B" />
+              </div>
+            )}
+            <div style={{ fontSize: 11, color: '#9CA3AF', marginTop: 14, lineHeight: 1.6 }}>{t.reviewNote}</div>
           </div>
         </>
       )}
