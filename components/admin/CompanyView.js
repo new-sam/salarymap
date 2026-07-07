@@ -154,40 +154,36 @@ export default function CompanyView({ token, lang }) {
   const monthJobs = daily.reduce((s, d) => s + d.jobs, 0)
 
   // 공용 공고 한 줄 — 한국어 제목(있으면) + 원문 + 회사/직군/상태/지원
-  const jobLine = (j, { showCompany = false, showCategory = false } = {}) => {
-    const stages = j.stages || {}
-    const present = stageOrder.filter(s => stages[s])
-    return (
-      <div key={j.id} style={{ padding: '8px 0', borderTop: '1px solid #F1F5F9' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: 13, fontWeight: 600, color: '#0F172A' }}>{j.titleKo || j.title}</div>
-            {(j.titleKo || showCompany) && (
-              <div style={{ fontSize: 11, color: '#9CA3AF' }}>
-                {j.titleKo ? j.title : ''}{j.titleKo && showCompany ? ' · ' : ''}{showCompany ? j.company : ''}
+  // 공고별 미니 테이블 (공고 | 지원 | 서류 | 1차 | 2차 | 최종 | 불합격) — 상단 표와 양식 통일
+  const jobsMiniTable = (arr, { showCompany = false } = {}) => (
+    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12.5 }}>
+      <thead>
+        <tr style={{ color: '#94A3B8', textAlign: 'left' }}>
+          <th style={{ padding: '4px 8px', fontWeight: 600 }}>{ko ? '공고' : 'Job'}</th>
+          <th style={{ padding: '4px 8px', fontWeight: 600, textAlign: 'right' }}>{ko ? '지원' : 'Apps'}</th>
+          {STAGE_COLS.map(s => <th key={s} style={{ padding: '4px 8px', fontWeight: 600, textAlign: 'right' }}>{ko ? STAGE_SHORT[s] : STAGE[s].en}</th>)}
+        </tr>
+      </thead>
+      <tbody>
+        {arr.map(j => (
+          <tr key={j.id} style={{ borderTop: '1px solid #F6E9E2' }}>
+            <td style={{ padding: '6px 8px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontWeight: 600, color: '#0F172A' }}>{j.titleKo || j.title}</div>
+                  {(j.titleKo || showCompany) && <div style={{ fontSize: 11, color: '#9CA3AF' }}>{j.titleKo ? j.title : ''}{j.titleKo && showCompany ? ' · ' : ''}{showCompany ? j.company : ''}</div>}
+                </div>
+                <span style={{ fontSize: 11, color: '#6B7280', background: '#EEF0F2', borderRadius: 999, padding: '2px 8px', flexShrink: 0 }}>{j.categoryKo}</span>
+                {j.pending ? badge('#FEF3C7', '#D97706', ko ? '승인대기' : 'pending') : j.live ? badge('#FFF1EC', '#ff6000', ko ? '라이브' : 'live') : badge('#F1F5F9', '#94A3B8', ko ? '내림' : 'off')}
               </div>
-            )}
-          </div>
-          {showCategory && <span style={{ fontSize: 11, color: '#6B7280', background: '#EEF0F2', borderRadius: 999, padding: '2px 8px', flexShrink: 0 }}>{j.categoryKo}</span>}
-          {j.pending ? badge('#FEF3C7', '#D97706', ko ? '승인대기' : 'pending') : j.live ? badge('#FFF1EC', '#ff6000', ko ? '라이브' : 'live') : badge('#F1F5F9', '#94A3B8', ko ? '내림' : 'off')}
-          <span style={{ fontSize: 12, fontWeight: 700, color: '#0F172A', width: 64, textAlign: 'right', flexShrink: 0 }}>{ko ? '지원' : 'apps'} {j.applications}</span>
-        </div>
-        {/* 칸반 단계별 인원 */}
-        {j.applications > 0 && (
-          <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap', marginTop: 5, paddingLeft: 1 }}>
-            {present.length === 0 ? (
-              <span style={{ fontSize: 11.5, color: '#CBD5E1' }}>{ko ? '단계 정보 없음' : 'no stage'}</span>
-            ) : present.map(s => (
-              <span key={s} style={{ fontSize: 11.5, color: '#475569', display: 'inline-flex', alignItems: 'center', gap: 5 }}>
-                <span style={{ width: 8, height: 8, borderRadius: 2, background: STAGE[s]?.color || '#94A3B8' }} />
-                {STAGE[s] ? (ko ? STAGE[s].ko : STAGE[s].en) : s} <b style={{ color: '#0F172A' }}>{stages[s]}</b>
-              </span>
-            ))}
-          </div>
-        )}
-      </div>
-    )
-  }
+            </td>
+            <td style={{ padding: '6px 8px', textAlign: 'right', fontWeight: 700, color: '#0F172A' }}>{j.applications}</td>
+            {STAGE_COLS.map(s => { const n = (j.stages || {})[s] || 0; return <td key={s} style={{ padding: '6px 8px', textAlign: 'right', color: n > 0 ? STAGE[s].color : '#CBD5E1', fontWeight: n > 0 ? 700 : 400 }}>{n}</td> })}
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  )
 
   return (
     <div style={{ paddingBottom: 40 }}>
@@ -324,7 +320,7 @@ export default function CompanyView({ token, lang }) {
                           <div style={{ fontSize: 11.5, color: '#9CA3AF', fontWeight: 600, margin: '4px 0 8px' }}>{ko ? `올린 포지션 ${cJobs.length}건` : `${cJobs.length} positions`}</div>
                           {cJobs.length === 0 ? (
                             <div style={{ fontSize: 12.5, color: '#9CA3AF' }}>{ko ? '공고 없음' : 'No jobs'}</div>
-                          ) : cJobs.map(j => jobLine(j, { showCategory: true }))}
+                          ) : jobsMiniTable(cJobs)}
                         </td>
                       </tr>
                     )}
@@ -382,7 +378,7 @@ export default function CompanyView({ token, lang }) {
                   {open && (
                     <tr style={{ background: '#FFF7F3' }}>
                       <td colSpan={5} style={{ padding: '4px 14px 12px 30px' }}>
-                        {cj.map(j => jobLine(j, { showCompany: true }))}
+                        {jobsMiniTable(cj, { showCompany: true })}
                       </td>
                     </tr>
                   )}
