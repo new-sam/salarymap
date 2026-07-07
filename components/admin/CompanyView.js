@@ -22,11 +22,15 @@ export default function CompanyView({ token, lang }) {
   const ko = lang !== 'en'
   const { data, isLoading } = useAdmin('/api/admin/company-metrics', token)
   const [openCard, setOpenCard] = useState(null)
+  const [openCompany, setOpenCompany] = useState(null)
+  const [showOther, setShowOther] = useState(false)
+  const [openRole, setOpenRole] = useState(null)
 
   if (isLoading || !data) return <div style={{ textAlign: 'center', padding: 40, color: '#666' }}>{ko ? '불러오는 중…' : 'Loading…'}</div>
   if (data.error) return <div style={{ textAlign: 'center', padding: 40, color: '#c00' }}>{data.error}</div>
 
-  const { overview, signups, daily, monthLabel, ats, jobsList, stageTotals, stageOrder } = data
+  const { overview, signups, daily, monthLabel, byCategory, otherTitles, jobsList, stageTotals, stageOrder } = data
+  const maxCatApps = Math.max(1, ...byCategory.map(c => c.applications))
 
   // 핵심 퍼널 3단 (누르면 상세)
   const funnel = [
@@ -145,6 +149,23 @@ export default function CompanyView({ token, lang }) {
   const monthCompanies = daily.reduce((s, d) => s + d.companies, 0)
   const monthJobs = daily.reduce((s, d) => s + d.jobs, 0)
 
+  // 공용 공고 한 줄 — 한국어 제목(있으면) + 원문 + 회사/직군/상태/지원
+  const jobLine = (j, { showCompany = false, showCategory = false } = {}) => (
+    <div key={j.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '6px 0', borderTop: '1px solid #F1F5F9' }}>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ fontSize: 13, fontWeight: 600, color: '#0F172A' }}>{j.titleKo || j.title}</div>
+        {(j.titleKo || showCompany) && (
+          <div style={{ fontSize: 11, color: '#9CA3AF' }}>
+            {j.titleKo ? j.title : ''}{j.titleKo && showCompany ? ' · ' : ''}{showCompany ? j.company : ''}
+          </div>
+        )}
+      </div>
+      {showCategory && <span style={{ fontSize: 11, color: '#6B7280', background: '#EEF0F2', borderRadius: 999, padding: '2px 8px', flexShrink: 0 }}>{j.categoryKo}</span>}
+      {j.pending ? badge('#FEF3C7', '#D97706', ko ? '승인대기' : 'pending') : j.live ? badge('#FFF1EC', '#ff6000', ko ? '라이브' : 'live') : badge('#F1F5F9', '#94A3B8', ko ? '내림' : 'off')}
+      <span style={{ fontSize: 12, color: '#6B7280', width: 64, textAlign: 'right', flexShrink: 0 }}>{ko ? '지원' : 'apps'} {j.applications}</span>
+    </div>
+  )
+
   return (
     <div style={{ paddingBottom: 40 }}>
       <div style={{ marginBottom: 16 }}>
@@ -255,27 +276,122 @@ export default function CompanyView({ token, lang }) {
               {signups.length === 0 && (
                 <tr><td style={{ ...td, textAlign: 'center', color: '#9CA3AF' }} colSpan={7}>{ko ? '가입 기업 없음' : 'No companies'}</td></tr>
               )}
-              {signups.map(c => (
-                <tr key={c.id} style={{ borderTop: '1px solid #F1F5F9' }}>
-                  <td style={{ ...td, fontWeight: 600, color: '#0F172A' }}>{c.name}</td>
-                  <td style={{ ...td, color: '#6B7280' }}>{c.email_domain}</td>
-                  <td style={td}>{c.verified ? badge('#ECFDF5', '#059669', ko ? '인증' : 'Yes') : badge('#F1F5F9', '#94A3B8', ko ? '미인증' : 'No')}</td>
-                  <td style={tdR}>{c.jobs}</td>
-                  <td style={{ ...tdR, color: c.live > 0 ? '#ff6000' : '#CBD5E1', fontWeight: 600 }}>{c.live}</td>
-                  <td style={tdR}>{c.applications}</td>
-                  <td style={{ ...tdR, color: '#9CA3AF', whiteSpace: 'nowrap' }}>{fmtDate(c.created_at)}</td>
-                </tr>
-              ))}
+              {signups.map(c => {
+                const open = openCompany === c.id
+                const cJobs = jobsList.filter(j => j.company_id === c.id)
+                const expandable = c.jobs > 0
+                return (
+                  <Fragment key={c.id}>
+                    <tr
+                      onClick={expandable ? () => setOpenCompany(open ? null : c.id) : undefined}
+                      style={{ borderTop: '1px solid #F1F5F9', cursor: expandable ? 'pointer' : 'default', background: open ? '#FFF7F3' : 'transparent' }}
+                    >
+                      <td style={{ ...td, fontWeight: 600, color: '#0F172A' }}>
+                        {expandable && <span style={{ color: open ? '#ff6000' : '#C4C9D0', fontWeight: 700, marginRight: 6 }}>{open ? '▾' : '▸'}</span>}
+                        {c.name}
+                      </td>
+                      <td style={{ ...td, color: '#6B7280' }}>{c.email_domain}</td>
+                      <td style={td}>{c.verified ? badge('#ECFDF5', '#059669', ko ? '인증' : 'Yes') : badge('#F1F5F9', '#94A3B8', ko ? '미인증' : 'No')}</td>
+                      <td style={tdR}>{c.jobs}</td>
+                      <td style={{ ...tdR, color: c.live > 0 ? '#ff6000' : '#CBD5E1', fontWeight: 600 }}>{c.live}</td>
+                      <td style={tdR}>{c.applications}</td>
+                      <td style={{ ...tdR, color: '#9CA3AF', whiteSpace: 'nowrap' }}>{fmtDate(c.created_at)}</td>
+                    </tr>
+                    {open && (
+                      <tr style={{ background: '#FFF7F3' }}>
+                        <td colSpan={7} style={{ padding: '4px 12px 12px 30px' }}>
+                          <div style={{ fontSize: 11.5, color: '#9CA3AF', fontWeight: 600, margin: '4px 0 8px' }}>{ko ? `올린 포지션 ${cJobs.length}건` : `${cJobs.length} positions`}</div>
+                          {cJobs.length === 0 ? (
+                            <div style={{ fontSize: 12.5, color: '#9CA3AF' }}>{ko ? '공고 없음' : 'No jobs'}</div>
+                          ) : cJobs.map(j => jobLine(j, { showCategory: true }))}
+                        </td>
+                      </tr>
+                    )}
+                  </Fragment>
+                )
+              })}
             </tbody>
           </table>
         </div>
       </div>
 
-      {/* ATS 모집 내역 (회사별 파이프라인) */}
-      <h4 style={{ fontSize: 15, fontWeight: 700, margin: '0 0 4px' }}>{ko ? 'ATS 모집 현황' : 'ATS recruiting'}</h4>
+      {/* 직군별 공고·지원 — 클릭 시 실제 공고 펼침 */}
+      <h4 style={{ fontSize: 15, fontWeight: 700, margin: '0 0 4px' }}>{ko ? '직군별 공고·지원' : 'Jobs & applications by role'}</h4>
       <div style={{ fontSize: 12, color: '#6B7280', marginBottom: 12 }}>
-        {ko ? '공고를 올린 기업이 지원자를 어디까지 봤는지 (단계별). 「공고당」 = 지원 ÷ 공고.' : 'How far companies processed applicants, by stage.'}
+        {ko ? '어떤 직군에 지원이 오고 안 오는지. 직군을 누르면 실제 공고가 펼쳐집니다. (제목 자동 분류·번역)' : 'Which roles attract applications. Click a role to see the actual jobs.'}
       </div>
+      <div style={{ border: '1px solid #E5E8EB', borderRadius: 12, overflow: 'hidden', marginBottom: 12 }}>
+        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+          <thead>
+            <tr style={{ background: '#F8FAFC', color: '#475569' }}>
+              <th style={th}>{ko ? '직군' : 'Role'}</th>
+              <th style={thR}>{ko ? '공고' : 'Jobs'}</th>
+              <th style={thR}>{ko ? '지원' : 'Apps'}</th>
+              <th style={thR}>{ko ? '공고당' : '/ job'}</th>
+              <th style={{ ...th, width: '30%' }}>{ko ? '지원' : 'Apps'}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {byCategory.map(c => {
+              const none = c.applications === 0
+              const open = openRole === c.key
+              const cj = jobsList.filter(j => j.category === c.key)
+              return (
+                <Fragment key={c.key}>
+                  <tr onClick={() => setOpenRole(open ? null : c.key)} style={{ borderTop: '1px solid #F1F5F9', cursor: 'pointer', background: open ? '#FFF7F3' : 'transparent' }}>
+                    <td style={{ ...td, fontWeight: 600, color: '#0F172A' }}>
+                      <span style={{ color: open ? '#ff6000' : '#C4C9D0', fontWeight: 700, marginRight: 6 }}>{open ? '▾' : '▸'}</span>{c.ko}
+                    </td>
+                    <td style={tdR}>{c.jobs}</td>
+                    <td style={{ ...tdR, fontWeight: 700, color: none ? '#DC2626' : '#0F172A' }}>{c.applications}</td>
+                    <td style={{ ...tdR, fontWeight: 600, color: c.avgApps >= 1 ? '#059669' : none ? '#DC2626' : '#9CA3AF' }}>{c.avgApps}</td>
+                    <td style={td}>
+                      {none ? (
+                        <span style={{ fontSize: 11.5, color: '#DC2626', fontWeight: 600 }}>{ko ? '지원 없음' : 'none'}</span>
+                      ) : (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                          <div style={{ flex: 1, height: 8, background: '#F1F5F9', borderRadius: 4, overflow: 'hidden' }}>
+                            <div style={{ width: `${(c.applications / maxCatApps) * 100}%`, height: '100%', background: '#ff6000', borderRadius: 4 }} />
+                          </div>
+                          <span style={{ fontSize: 11.5, color: '#6B7280', width: 24, textAlign: 'right' }}>{c.applications}</span>
+                        </div>
+                      )}
+                    </td>
+                  </tr>
+                  {open && (
+                    <tr style={{ background: '#FFF7F3' }}>
+                      <td colSpan={5} style={{ padding: '4px 14px 12px 30px' }}>
+                        {cj.map(j => jobLine(j, { showCompany: true }))}
+                      </td>
+                    </tr>
+                  )}
+                </Fragment>
+              )
+            })}
+          </tbody>
+        </table>
+      </div>
+      {otherTitles.length > 0 && (
+        <div style={{ marginBottom: 30 }}>
+          <button onClick={() => setShowOther(v => !v)} style={{ background: 'none', border: 'none', color: '#9CA3AF', fontSize: 12, fontWeight: 600, cursor: 'pointer', padding: 0 }}>
+            {showOther ? '▾' : '▸'} {ko ? `기타(미분류) ${otherTitles.length}건 원문` : `${otherTitles.length} uncategorized`}
+          </button>
+          {showOther && (
+            <div style={{ marginTop: 6, display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+              {otherTitles.map((t, i) => (
+                <span key={i} style={{ fontSize: 11.5, padding: '3px 9px', background: '#F1F5F9', borderRadius: 999, color: '#475569' }}>{t}</span>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* 공고별 지원자 단계 (칸반) — 각 공고에 어느 단계에 몇 명 */}
+      <h4 style={{ fontSize: 15, fontWeight: 700, margin: '0 0 4px' }}>{ko ? '공고별 지원자 단계 (칸반)' : 'Applicants by stage, per job'}</h4>
+      <div style={{ fontSize: 12, color: '#6B7280', marginBottom: 10 }}>
+        {ko ? '각 공고에 지원자가 어느 단계(칸반)에 몇 명 걸려 있는지. 지원이 있는 공고만.' : 'How many applicants sit at each stage, per job. Jobs with applications only.'}
+      </div>
+      {/* 단계 범례 */}
       <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginBottom: 10 }}>
         {stageOrder.map(s => (
           <span key={s} style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 11.5, color: '#6B7280' }}>
@@ -289,37 +405,40 @@ export default function CompanyView({ token, lang }) {
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
             <thead>
               <tr style={{ background: '#F8FAFC', color: '#475569' }}>
-                <th style={th}>{ko ? '회사' : 'Company'}</th>
-                <th style={thR}>{ko ? '공고' : 'Jobs'}</th>
+                <th style={th}>{ko ? '공고' : 'Job'}</th>
                 <th style={thR}>{ko ? '지원' : 'Apps'}</th>
-                <th style={thR}>{ko ? '공고당' : '/ job'}</th>
-                <th style={{ ...th, width: '38%' }}>{ko ? '지원자 단계' : 'Pipeline'}</th>
+                <th style={{ ...th, width: '48%' }}>{ko ? '단계별 인원' : 'By stage'}</th>
               </tr>
             </thead>
             <tbody>
-              {ats.length === 0 && (
-                <tr><td style={{ ...td, textAlign: 'center', color: '#9CA3AF' }} colSpan={5}>{ko ? '아직 공고 올린 기업이 없습니다.' : 'No companies with jobs yet.'}</td></tr>
+              {jobsList.filter(j => j.applications > 0).length === 0 && (
+                <tr><td style={{ ...td, textAlign: 'center', color: '#9CA3AF' }} colSpan={3}>{ko ? '아직 지원이 들어온 공고가 없습니다.' : 'No jobs with applications yet.'}</td></tr>
               )}
-              {ats.map(c => {
-                const total = c.applications || 0
+              {jobsList.filter(j => j.applications > 0).map(j => {
+                const total = j.applications
                 return (
-                  <tr key={c.company_id} style={{ borderTop: '1px solid #F1F5F9' }}>
-                    <td style={{ ...td, fontWeight: 600, color: '#0F172A' }}>{c.name}</td>
-                    <td style={tdR}>{c.jobs}</td>
+                  <tr key={j.id} style={{ borderTop: '1px solid #F1F5F9' }}>
+                    <td style={{ ...td, minWidth: 180 }}>
+                      <div style={{ fontWeight: 600, color: '#0F172A' }}>{j.titleKo || j.title}</div>
+                      <div style={{ fontSize: 11, color: '#9CA3AF' }}>{j.titleKo ? j.title + ' · ' : ''}{j.company}</div>
+                    </td>
                     <td style={{ ...tdR, fontWeight: 700, color: '#0F172A' }}>{total}</td>
-                    <td style={{ ...tdR, color: '#0F172A', fontWeight: 600 }}>{c.avgApps}</td>
                     <td style={td}>
-                      {total === 0 ? (
-                        <span style={{ color: '#CBD5E1' }}>—</span>
-                      ) : (
-                        <div style={{ display: 'flex', height: 18, borderRadius: 5, overflow: 'hidden', border: '1px solid #E5E8EB' }}>
-                          {stageOrder.map(s => {
-                            const n = c.stages[s] || 0
-                            if (!n) return null
-                            return <div key={s} title={`${STAGE[s] ? (ko ? STAGE[s].ko : STAGE[s].en) : s}: ${n}`} style={{ width: `${(n / total) * 100}%`, background: STAGE[s]?.color || '#94A3B8' }} />
-                          })}
-                        </div>
-                      )}
+                      <div style={{ display: 'flex', height: 18, borderRadius: 5, overflow: 'hidden', border: '1px solid #E5E8EB', marginBottom: 6 }}>
+                        {stageOrder.map(s => {
+                          const n = j.stages[s] || 0
+                          if (!n) return null
+                          return <div key={s} title={`${STAGE[s] ? (ko ? STAGE[s].ko : STAGE[s].en) : s}: ${n}`} style={{ width: `${(n / total) * 100}%`, background: STAGE[s]?.color || '#94A3B8' }} />
+                        })}
+                      </div>
+                      <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+                        {stageOrder.filter(s => j.stages[s]).map(s => (
+                          <span key={s} style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 12, color: '#475569' }}>
+                            <span style={{ width: 8, height: 8, borderRadius: 2, background: STAGE[s]?.color || '#94A3B8' }} />
+                            {STAGE[s] ? (ko ? STAGE[s].ko : STAGE[s].en) : s} <b style={{ color: '#0F172A' }}>{j.stages[s]}</b>
+                          </span>
+                        ))}
+                      </div>
                     </td>
                   </tr>
                 )
