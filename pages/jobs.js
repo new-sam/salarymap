@@ -34,6 +34,63 @@ function dedupeJobs(list) {
   })
 }
 
+// 핫 섹션·메인 그리드 공용 카드. 썸네일 오버레이는 좌상단 배지 1개(featured > bump > match),
+// 우상단 북마크, 우하단 배지 1개(고연봉 > 근무형태)로 제한한다.
+function JobCard({ job, idx, bump, matched, highSalaryThreshold, bookmarked, onOpen, onToggleBookmark, typeLabel, t, lang }) {
+  const router = useRouter()
+  const sal = formatSalaryCard(job)
+  const hasImg = job.image_url || job.images?.[0]
+  const src = hasImg || job.logo_url || DEFAULT_IMAGES[idx % 3]
+  const mode = !hasImg && job.logo_url ? '60%' : 'cover'
+  const days = job.deadline ? Math.ceil((new Date(job.deadline) - new Date()) / 86400000) : null
+  const highPay = sal.min >= highSalaryThreshold
+  const showType = job.type === 'remote' || job.type === 'hybrid'
+  return (
+    <div className="jc" onClick={() => onOpen(job, idx)}>
+      <div className="jc-img">
+        <div className="jc-img-in" style={{ background: `#fff url(${src}) center/${mode} no-repeat` }}>
+          {job.is_featured ? (
+            <div className="jc-feat">★ {t('jobs.featuredBadge')}</div>
+          ) : bump !== null && bump > 0 ? (
+            <div className="jc-bump" dangerouslySetInnerHTML={{ __html: t('jobs.bumpVs', { bump }) }} />
+          ) : matched ? (
+            <div className="jc-match">{t('jobs.profileBadge')}</div>
+          ) : null}
+          <button className="jc-bm" aria-label="Bookmark" onClick={e => { e.stopPropagation(); onToggleBookmark(job.id) }}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill={bookmarked ? '#ff4400' : 'none'} stroke={bookmarked ? '#ff4400' : '#999'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z" />
+            </svg>
+          </button>
+          {(highPay || showType) && (
+            <div className="jc-badges">
+              {highPay
+                ? <span className="jc-type-badge highpay">{t('jobs.highPay')}</span>
+                : <span className={`jc-type-badge ${job.type}`}>{typeLabel(job.type)}</span>}
+            </div>
+          )}
+        </div>
+      </div>
+      <div className="jc-body">
+        <div className="jc-t">{job.title}</div>
+        <div className="jc-co jc-co-link" onClick={e => { e.stopPropagation(); router.push(`/companies/${encodeURIComponent(job.company)}`) }}>{job.company}</div>
+        <div className="jc-bottom">
+          <div className="jc-m">
+            {[
+              !job.experience_min && !job.experience_max ? t('jobs.yearsAny') : job.experience_max >= 30 ? t('jobs.yearsMin', { min: job.experience_min || 0 }) : t('jobs.years', { min: job.experience_min, max: job.experience_max }),
+              job.type !== 'remote' && job.location,
+              typeLabel(job.type),
+            ].filter(Boolean).join(' · ')}
+            {days !== null && days >= 0 && (
+              <span className={`jc-dday${days <= 7 ? ' urgent' : ''}`}>{lang === 'vi' ? (days === 0 ? t('jobs.ddayToday') : t('jobs.dday', { days })) : days === 0 ? 'D-Day' : `D-${days}`}</span>
+            )}
+          </div>
+          <div className="jc-sal">{Math.round(sal.min / 1e6)}M – {Math.round(sal.max / 1e6)}M VND</div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 export default function JobsPage() {
   const router = useRouter()
   const fileRef = useRef(null)
@@ -52,7 +109,6 @@ export default function JobsPage() {
   const [isSubmitted, setIsSubmitted] = useState(false)
   const [isLoggedIn, setIsLoggedIn] = useState(false)
   const [showAuthModal, setShowAuthModal] = useState(false)
-  const [authLoading, setAuthLoading] = useState(true)
   const [session, setSession] = useState(null)
   const [user, setUser] = useState(null)
   const [userSalary, setUserSalary] = useState(null)
@@ -66,24 +122,23 @@ export default function JobsPage() {
   // Detail & Apply panel
   const [detailJob, setDetailJob] = useState(null)
   const [carouselIdx, setCarouselIdx] = useState(0)
-  const [showPanel, setShowPanel] = useState(false)
-  const [selectedJob, setSelectedJob] = useState(null)
   const [resumeFile, setResumeFile] = useState(null)
   const [applying, setApplying] = useState(false)
-  const [applied, setApplied] = useState(false)
   const [detailApplyMode, setDetailApplyMode] = useState(false)
 
   useEffect(() => {
-    if (detailJob) {
-      document.body.style.overflow = 'hidden'
-    } else {
+    if (!detailJob) {
       document.body.style.overflow = ''
+      return
     }
-    return () => { document.body.style.overflow = '' }
+    document.body.style.overflow = 'hidden'
+    const onKey = (e) => { if (e.key === 'Escape') closeDetail() }
+    document.addEventListener('keydown', onKey)
+    return () => {
+      document.body.style.overflow = ''
+      document.removeEventListener('keydown', onKey)
+    }
   }, [detailJob])
-  const [aiSummaryReady, setAiSummaryReady] = useState(false)
-  const [showUserMenu, setShowUserMenu] = useState(false)
-  const [isAdminUser, setIsAdminUser] = useState(false)
   const [bookmarks, setBookmarks] = useState([])
   const [appliedJobs, setAppliedJobs] = useState([])
   const [toast, setToast] = useState(null)
@@ -92,41 +147,19 @@ export default function JobsPage() {
   const [aiParsing, setAiParsing] = useState(0)
   const [hasProfileResume, setHasProfileResume] = useState(false)
   const [visibleCount, setVisibleCount] = useState(JOBS_PER_PAGE)
-  const barPlaceholderRef = useRef(null)
-  const stickyRef = useRef(null)
-  const [barFixed, setBarFixed] = useState(false)
-  const [barTop, setBarTop] = useState(56)
 
   const track = (event, page, meta) => {
     fetch('/api/track', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ event, page, meta, email: user?.email }) }).catch(() => {})
   }
 
-  // AI summary loading animation
+  // Meta Pixel: job detail view
   useEffect(() => {
-    if (!detailJob) { setAiSummaryReady(false); return }
-    setAiSummaryReady(false)
-    const timer = setTimeout(() => setAiSummaryReady(true), 1200 + Math.random() * 600)
+    if (!detailJob) return
     if (typeof fbq === 'function') fbq('track', 'ViewContent', { content_name: detailJob.title, content_category: detailJob.company, content_type: 'job' })
-    return () => clearTimeout(timer)
-  }, [detailJob])
-
-  // Sticky sort bar via JS
-  useEffect(() => {
-    const onScroll = () => {
-      const ph = barPlaceholderRef.current
-      const st = stickyRef.current
-      if (!ph || !st) return
-      const stickyBottom = st.getBoundingClientRect().bottom
-      const phTop = ph.getBoundingClientRect().top
-      setBarTop(stickyBottom)
-      setBarFixed(phTop <= stickyBottom)
-    }
-    window.addEventListener('scroll', onScroll, { passive: true })
-    return () => window.removeEventListener('scroll', onScroll)
-  }, [])
+  }, [detailJob?.id])
 
   // Reset visible count when filters change
-  useEffect(() => { setVisibleCount(JOBS_PER_PAGE) }, [searchQuery, roleFilter, typeFilter, techFilter, expMin, expMax])
+  useEffect(() => { setVisibleCount(JOBS_PER_PAGE) }, [searchQuery, roleFilter, typeFilter, techFilter, expMin, expMax, router.query.company])
 
   // Infinite scroll
   const loadMoreObserver = useRef(null)
@@ -213,17 +246,6 @@ export default function JobsPage() {
     supabase.auth.getSession().then(async ({ data: { session: s } }) => {
       if (s) {
         setIsLoggedIn(true); setSession(s); setUser(s.user)
-        const cached = sessionStorage.getItem('fyi_is_admin')
-        if (cached !== null) {
-          setIsAdminUser(cached === 'true')
-        } else {
-          try {
-            const res = await fetch(`/api/admin/check?email=${encodeURIComponent(s.user.email)}`)
-            const { isAdmin } = await res.json()
-            setIsAdminUser(isAdmin)
-            sessionStorage.setItem('fyi_is_admin', String(isAdmin))
-          } catch { }
-        }
         // Load bookmarks from DB + check profile resume
         try {
           const [bRes, pRes] = await Promise.all([
@@ -240,7 +262,6 @@ export default function JobsPage() {
           if (pData.resume_url) setHasProfileResume(true)
         } catch { }
       }
-      setAuthLoading(false)
     })
   }, [])
 
@@ -256,12 +277,6 @@ export default function JobsPage() {
           setTimeout(load, 1000)
         } else {
           setJobs(dedupeJobs(d)); setJobsLoaded(true)
-          // Open job detail if jobId query param exists
-          const qJobId = new URLSearchParams(window.location.search).get('jobId')
-          if (qJobId) {
-            const found = d.find(j => String(j.id) === qJobId)
-            if (found) { setCarouselIdx(0); setDetailApplyMode(false); setApplied(false); setResumeFile(null); setDetailJob(found) }
-          }
         }
       }).catch(() => {
         if (retries < 2) { retries++; setTimeout(load, 1000) }
@@ -270,6 +285,30 @@ export default function JobsPage() {
     }
     load()
   }, [])
+
+  // 상세 패널 상태를 ?jobId= 쿼리와 동기화 — 딥링크로 열리고, 브라우저 뒤로가기로 닫힌다.
+  useEffect(() => {
+    const qId = router.query.jobId
+    if (!qId) { setDetailJob(null); return }
+    if (detailJob && String(detailJob.id) === String(qId)) return
+    const found = jobs.find(j => String(j.id) === String(qId))
+    if (found) { setCarouselIdx(0); setDetailApplyMode(false); setResumeFile(null); setDetailJob(found) }
+  }, [router.query.jobId, jobs])
+
+  const openDetail = (job, idx) => {
+    setCarouselIdx(0); setDetailApplyMode(false); setResumeFile(null)
+    setDetailJob({ ...job, _imgFallback: DEFAULT_IMAGES[idx % 3] })
+    router.push({ pathname: '/jobs', query: { ...router.query, jobId: job.id } }, undefined, { shallow: true, scroll: false })
+    track('click_job_card', 'jobs', { jobId: job.id, title: job.title, company: job.company })
+  }
+
+  const closeDetail = () => {
+    setDetailJob(null)
+    if (router.query.jobId !== undefined) {
+      const { jobId, ...rest } = router.query
+      router.replace({ pathname: '/jobs', query: rest }, undefined, { shallow: true, scroll: false })
+    }
+  }
 
   // 상세 패널 열릴 때 무거운 필드(description/benefits/hiring_process)를 lazy fetch.
   // 리스트(/api/jobs)는 카드용 필드만 내려주므로 detailJob엔 이 필드들이 없다.
@@ -423,8 +462,36 @@ export default function JobsPage() {
     return pinFeatured(interleave(filtered))
   })()
 
+  const activeFilterCount = [roleFilter, typeFilter, techFilter, searchQuery, expMin !== '' || expMax !== ''].filter(Boolean).length
+
+  // 핫 섹션: 필터 없는 기본 뷰에서만. featured 우선, 부족하면 마감임박·고연봉으로 채움.
+  // 핫에 노출된 공고는 아래 메인 그리드에서 제외해 같은 공고가 두 번 보이지 않게 한다.
+  const hotJobs = (() => {
+    if (jobs.length === 0 || activeFilterCount > 0 || companyQuery || sortBy === 'saved') return []
+    const now = new Date()
+    const hotScore = (j) => {
+      let s = 0
+      if (j.deadline && new Date(j.deadline) > now && Math.ceil((new Date(j.deadline) - now) / 86400000) <= 14) s += 50
+      s += (j.salary_max || 0) / 1000
+      return s
+    }
+    const featuredJobs = jobs.filter(j => j.is_featured)
+      .sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0))
+    const fillJobs = jobs.filter(j => !j.is_featured).sort((a, b) => hotScore(b) - hotScore(a))
+    return [...featuredJobs, ...fillJobs].slice(0, 4)
+  })()
+  const hotIds = new Set(hotJobs.map(j => j.id))
+  const gridJobs = hotJobs.length ? filteredJobs.filter(j => !hotIds.has(j.id)) : filteredJobs
+
+  const resetFilters = () => { setRoleFilter(''); setTypeFilter(''); setExpMin(''); setExpMax(''); setTechFilter(''); setSearchQuery('') }
+
+  const clearCompanyQuery = () => {
+    const { company, ...rest } = router.query
+    router.replace({ pathname: '/jobs', query: rest }, undefined, { shallow: true, scroll: false })
+  }
+
   const handleApply = async (job) => {
-    const target = job || selectedJob
+    const target = job
     if (!target || !session) return
     setApplying(true)
     let resumeUrl = null
@@ -438,7 +505,7 @@ export default function JobsPage() {
       })
       if (upErr) {
         setApplying(false)
-        alert('CV 업로드에 실패했습니다: ' + upErr.message + '\n\n관리자에게 문의하거나 CV 없이 다시 시도해주세요.')
+        alert(t('jobs.cvUploadError', { error: upErr.message }))
         return
       }
       const { data } = supabase.storage.from('resumes').getPublicUrl(path)
@@ -536,20 +603,6 @@ export default function JobsPage() {
     }).catch(() => {})
   }
 
-  const openApply = (job) => {
-    if (appliedJobs.includes(job.id)) return
-    setSelectedJob(job)
-    setShowPanel(true)
-    setApplied(false)
-    setResumeFile(null)
-  }
-
-  if (authLoading) return (
-    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', background: '#f7f7f5', fontFamily: "-apple-system, 'Helvetica Neue', Arial, sans-serif" }}>
-      <div style={{ fontSize: 14, color: '#aaa' }}>{t('jobs.loading')}</div>
-    </div>
-  )
-
   return (
     <>
       <Head>
@@ -568,23 +621,6 @@ export default function JobsPage() {
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
         body { background: #f7f7f5; font-family: -apple-system, 'Helvetica Neue', Arial, sans-serif; -webkit-font-smoothing: antialiased; }
 
-        .jn { position: sticky; top: 0; z-index: 100; height: 56px; background: #fafaf8; border-bottom: 1px solid #f0f0f0; display: flex; align-items: center; justify-content: space-between; padding: 0 40px; }
-        .jn-l { display: flex; align-items: center; gap: 28px; }
-        .jn-logo { font-size: 18px; font-weight: 800; color: #ff4400; text-decoration: none; }
-        .jn-tabs { display: flex; }
-        .jn-tab { font-size: 14px; color: #999; padding: 0 16px; height: 56px; display: flex; align-items: center; border: none; background: none; cursor: pointer; border-bottom: 2px solid transparent; text-decoration: none; transition: color .15s; }
-        .jn-tab:hover { color: #555; }
-        .jn-tab.on { color: #111; font-weight: 600; border-bottom-color: #ff4400; }
-        .jn-r { display: flex; align-items: center; gap: 10px; }
-        .jn-login { font-size: 13px; font-weight: 600; color: #666; background: none; border: 1px solid #ddd; padding: 6px 16px; border-radius: 6px; cursor: pointer; }
-        .jn-submit { font-size: 13px; font-weight: 700; color: #fff; background: #ff4400; border: none; padding: 7px 16px; border-radius: 6px; cursor: pointer; }
-        .jn-avatar { width: 32px; height: 32px; border-radius: 50%; background: #ff4400; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 800; color: #fff; overflow: hidden; }
-        .jn-avatar img { width: 100%; height: 100%; object-fit: cover; }
-        .jn-menu { position: absolute; top: calc(100% + 8px); right: 0; background: #fafaf8; border: 1px solid #eee; border-radius: 12px; padding: 6px; min-width: 180px; z-index: 500; box-shadow: 0 8px 24px rgba(0,0,0,0.1); }
-        .jn-menu-email { padding: 10px 14px; font-size: 12px; color: #999; border-bottom: 1px solid #f0f0f0; margin-bottom: 4px; }
-        .jn-menu-item { display: block; width: 100%; padding: 10px 14px; border-radius: 8px; border: none; background: none; color: #333; font-size: 13px; cursor: pointer; text-align: left; text-decoration: none; transition: background .1s; font-family: inherit; }
-        .jn-menu-item:hover { background: #f5f5f5; }
-
         .jw { max-width: 1080px; margin: 0 auto; padding: 36px 40px 80px; }
         .jw-eye { font-size: 11px; font-weight: 700; color: #ff4400; letter-spacing: .08em; margin-bottom: 8px; }
         .jw-h1 { font-size: 24px; font-weight: 800; color: #111; margin-bottom: 6px; letter-spacing: -0.3px; }
@@ -598,7 +634,7 @@ export default function JobsPage() {
         .jbm-tags { display: flex; flex-wrap: wrap; gap: 6px; }
         .jbm-tag { font-size: 13px; color: #fff; background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.3); border-radius: 6px; padding: 4px 10px; font-weight: 600; white-space: nowrap; backdrop-filter: blur(4px); }
 
-        .jf-sticky { position: sticky; top: 56px; z-index: 15; background: #fafaf8; padding: 12px 0 4px; border-bottom: 1px solid #e8e8e8; }
+        .jf-head { padding: 12px 0 4px; border-bottom: 1px solid #e8e8e8; }
         .jf-search { position: relative; margin-bottom: 16px; }
         .jf-search-icon { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); pointer-events: none; }
         .jf-search-input { width: 100%; padding: 11px 36px 11px 40px; font-size: 14px; border: 1px solid #e0e0e0; border-radius: 10px; background: #fafaf8; outline: none; transition: border-color .15s; font-family: inherit; }
@@ -634,10 +670,12 @@ export default function JobsPage() {
         .jf-exp-apply { font-size: 13px; font-weight: 700; color: #fff; background: #ff4400; border: none; padding: 8px 20px; border-radius: 6px; cursor: pointer; font-family: inherit; }
         .jf-exp-apply:hover { background: #e63d00; }
 
-        .jf-bar { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
-        .jf-bar-fixed { position: fixed; left: 0; right: 0; z-index: 14; background: #fafaf8; padding: 8px 40px 4px; border-bottom: 1px solid #e8e8e8; max-width: 1080px; margin: 0 auto; }
-        @media (max-width: 768px) { .jf-bar-fixed { padding: 8px 16px 4px; } }
-        .jf-bar-l { display: flex; align-items: center; gap: 16px; }
+        .jf-bar { position: sticky; top: 56px; z-index: 15; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; background: #f7f7f5; padding: 10px 0; border-bottom: 1px solid #ececea; }
+        .jf-bar-l { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+        .jf-chip { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; color: #555; background: #fafaf8; border: 1px solid #e0e0e0; border-radius: 999px; padding: 5px 12px; cursor: pointer; font-family: inherit; white-space: nowrap; }
+        .jf-chip:hover { border-color: #999; }
+        .jf-chip-n { display: inline-flex; align-items: center; justify-content: center; min-width: 16px; height: 16px; border-radius: 50%; background: #ff4400; color: #fff; font-size: 10px; font-weight: 800; padding: 0 4px; }
+        .jf-chip-x { font-size: 14px; color: #999; line-height: 1; }
         .jf-check { display: flex; align-items: center; gap: 5px; font-size: 13px; color: #777; cursor: pointer; user-select: none; }
         .jf-check input { accent-color: #ff4400; cursor: pointer; margin: 0; }
         .jf-count { font-size: 16px; font-weight: 800; color: #111; }
@@ -671,11 +709,6 @@ export default function JobsPage() {
           0%, 100% { opacity: 0.2; transform: translateY(1px); }
           40%, 60% { opacity: 1; transform: translateY(-1px); }
         }
-        .jh-app { display: inline-flex; align-items: center; gap: 5px; font-size: 11px; color: #ff4400; font-weight: 700; margin-right: 6px; overflow: visible; }
-        .jh-pulse { width: 6px; height: 6px; border-radius: 50%; background: #ff4400; position: relative; flex-shrink: 0; margin: 4px; }
-        .jh-pulse::after { content: ''; position: absolute; inset: -3px; border-radius: 50%; background: rgba(255,68,0,0.35); animation: jh-ping 1.5s cubic-bezier(0,0,0.2,1) infinite; }
-        @keyframes jh-ping { 0% { transform: scale(1); opacity: 1; } 75%,100% { transform: scale(2.2); opacity: 0; } }
-        .jh-open { font-size: 11px; color: #38a169; font-weight: 600; display: inline-flex; align-items: center; line-height: 1; }
         .jh-divider { height: 1px; background: #eee; margin-top: 32px; }
 
         .jg { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 24px; align-items: stretch; }
@@ -690,7 +723,6 @@ export default function JobsPage() {
         .jc-bump { position: absolute; top: 10px; left: 10px; background: rgba(0,0,0,0.62); color: #fff; font-size: 11px; font-weight: 600; padding: 4px 9px; border-radius: 4px; z-index: 2; }
         .jc-bump b { color: #ff4400; font-weight: 700; }
         .jc-bm { position: absolute; top: 10px; right: 10px; width: 28px; height: 28px; border-radius: 50%; background: rgba(250,250,248,0.92); display: flex; align-items: center; justify-content: center; z-index: 2; border: none; cursor: pointer; }
-        .jc-ini { position: absolute; bottom: 10px; left: 10px; width: 34px; height: 34px; border-radius: 6px; background: #fafaf8; border: 1px solid rgba(0,0,0,0.08); display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 800; color: #333; z-index: 2; }
         .jc-body { flex: 1; display: flex; flex-direction: column; }
         .jc-t { font-size: 15px; font-weight: 600; color: #111; margin-bottom: 3px; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; }
         .jc-co { font-size: 13px; color: #777; margin-bottom: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -711,57 +743,21 @@ export default function JobsPage() {
         .jc-type-badge.highpay { color: #fff; background: #ff4400; }
         .jc-dday { display: inline-flex; align-items: center; margin-left: 6px; font-size: 11px; font-weight: 700; color: #ff4400; background: #fff7f5; border: 1px solid #ffd6c8; padding: 1px 6px; border-radius: 4px; line-height: 1; }
         .jc-dday.urgent { color: #dc2626; background: #fef2f2; border-color: #fecaca; }
-        .jc-nudge { background: #fff7f5; border: 1px solid #ffd6c8; border-radius: 8px; padding: 8px 12px; display: flex; justify-content: space-between; align-items: center; margin-top: 8px; }
-        .jc-nudge-t { font-size: 12px; color: #777; }
-        .jc-nudge-b { font-size: 12px; color: #ff4400; font-weight: 700; background: none; border: none; cursor: pointer; white-space: nowrap; }
+        /* Empty state */
+        .jg-empty { text-align: center; padding: 72px 20px; }
+        .jg-empty-i { font-size: 30px; margin-bottom: 12px; }
+        .jg-empty-t { font-size: 15px; font-weight: 600; color: #555; margin-bottom: 16px; }
+        .jg-empty-b { font-size: 13px; font-weight: 700; color: #fff; background: #ff4400; border: none; padding: 10px 22px; border-radius: 8px; cursor: pointer; font-family: inherit; }
 
-        /* Empty slot */
-        .jc-empty { border-radius: 8px; padding-top: 62%; position: relative; background: #fafafa; border: 1.5px dashed #e5e5e5; margin-bottom: 11px; }
-        .jc-empty-in { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; }
-        .jc-empty-t { font-size: 12px; color: #999; }
-        .jc-empty-b { padding: 6px 14px; background: #ff4400; border: none; border-radius: 5px; font-size: 12px; font-weight: 700; color: #fff; cursor: pointer; }
-
-        /* Gate */
-        .jgate { position: relative; min-height: 420px; }
-        .jgate-blur { filter: blur(7px); pointer-events: none; user-select: none; }
-        .jgate-box { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: #fafaf8; border: 1px solid #eee; border-radius: 16px; padding: 56px 40px; text-align: center; z-index: 2; max-width: 440px; width: 90%; box-shadow: 0 8px 40px rgba(0,0,0,0.06); }
-        .jgate-icon { font-size: 32px; margin-bottom: 16px; }
-        .jgate-h { font-size: 20px; font-weight: 800; color: #111; margin-bottom: 8px; }
-        .jgate-p { font-size: 14px; color: #777; line-height: 1.7; margin-bottom: 24px; white-space: pre-line; }
-        .jgate-btn { font-size: 14px; font-weight: 700; color: #fff; background: #ff4400; border: none; padding: 13px 28px; border-radius: 8px; cursor: pointer; transition: background .15s; }
-        .jgate-btn:hover { background: #e63d00; }
-
-        /* Apply panel */
-        .ap-bg { position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 50; }
-        .ap { position: fixed; bottom: 0; left: 50%; transform: translateX(-50%); width: 100%; max-width: 560px; background: #fafaf8; border-radius: 20px 20px 0 0; z-index: 51; padding: 24px 28px 40px; max-height: 85vh; overflow-y: auto; animation: apUp .3s ease; }
-        @keyframes apUp { from { transform: translate(-50%,100%); } to { transform: translate(-50%,0); } }
-        .ap-bar { width: 36px; height: 4px; background: #e0e0e0; border-radius: 2px; margin: 0 auto 20px; }
-        .ap-x { position: absolute; top: 16px; right: 20px; font-size: 20px; color: #999; cursor: pointer; background: none; border: none; line-height: 1; }
-        .ap-h { font-size: 17px; font-weight: 700; color: #111; margin-bottom: 4px; }
-        .ap-sub { font-size: 13px; color: #999; margin-bottom: 20px; line-height: 1.5; }
-        .ap-job { background: #f7f7f7; border-radius: 10px; padding: 12px 14px; display: flex; align-items: center; gap: 12px; margin-bottom: 20px; }
-        .ap-job-ini { width: 36px; height: 36px; border-radius: 6px; background: #eee; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 800; color: #555; flex-shrink: 0; }
-        .ap-job-t { font-size: 14px; font-weight: 600; color: #111; }
-        .ap-job-s { font-size: 12px; color: #ff4400; font-weight: 600; }
-        .ap-lbl { font-size: 10px; font-weight: 700; color: #999; letter-spacing: .06em; text-transform: uppercase; margin-bottom: 8px; }
-        .ap-tags { display: flex; gap: 8px; margin-bottom: 20px; flex-wrap: wrap; }
-        .ap-tag { background: #f0fff4; border: 1px solid #86efac; border-radius: 6px; padding: 8px 12px; font-size: 13px; color: #166534; }
+        /* CV upload box (inline apply) */
         .ap-up { border: 1.5px dashed #ddd; border-radius: 8px; padding: 20px; text-align: center; cursor: pointer; margin-bottom: 20px; transition: border-color .15s; }
         .ap-up:hover { border-color: #999; }
         .ap-up-t { font-size: 13px; color: #999; }
-        .ap-up-h { font-size: 11px; color: #aaa; margin-top: 4px; }
         .ap-up-f { font-size: 13px; color: #111; font-weight: 600; }
-        .ap-btn { width: 100%; padding: 12px; font-size: 14px; font-weight: 700; color: #fff; background: #ff4400; border: none; border-radius: 8px; cursor: pointer; margin-bottom: 8px; transition: opacity .15s; }
-        .ap-btn:disabled { opacity: 0.6; cursor: not-allowed; }
-        .ap-skip { width: 100%; padding: 8px; font-size: 13px; color: #999; background: none; border: none; cursor: pointer; }
-        .ap-ok { text-align: center; padding: 40px 0; }
-        .ap-ok-i { font-size: 40px; color: #22c55e; margin-bottom: 12px; }
-        .ap-ok-h { font-size: 18px; font-weight: 700; color: #111; margin-bottom: 6px; }
-        .ap-ok-p { font-size: 14px; color: #777; line-height: 1.5; }
 
         /* Job Detail Panel */
         .jd-bg { position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 60; }
-        .jd { position: fixed; top: 0; right: 0; width: 50%; height: 100vh; background: #fafaf8; z-index: 61; overflow-y: auto; overscroll-behavior: contain; animation: jdSlide .3s ease; box-shadow: -8px 0 40px rgba(0,0,0,0.1); }
+        .jd { position: fixed; top: 0; right: 0; width: 50%; height: 100vh; height: 100dvh; background: #fafaf8; z-index: 61; overflow-y: auto; overscroll-behavior: contain; animation: jdSlide .3s ease; box-shadow: -8px 0 40px rgba(0,0,0,0.1); }
         @keyframes jdSlide { from { transform: translateX(100%); } to { transform: translateX(0); } }
         .jd-x { position: absolute; top: 16px; right: 20px; font-size: 24px; color: #999; cursor: pointer; background: none; border: none; z-index: 2; line-height: 1; }
         .jd-back { display: none; align-items: center; gap: 8px; padding: 12px 16px; border-bottom: 1px solid #f0f0f0; background: #fafaf8; font-size: 14px; font-weight: 600; color: #333; cursor: pointer; border: none; width: 100%; flex-shrink: 0; }
@@ -788,20 +784,8 @@ export default function JobsPage() {
         @media (max-width: 560px) { .jd-comm-cta { flex-wrap: wrap; } .jd-comm-cta-btn { width: 100%; text-align: center; } }
         .jd-meta-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 24px; }
 
-        /* Work Information */
-        .jd-work-info { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 24px; }
-        .jd-work-item { display: flex; align-items: center; gap: 10px; background: #fafafa; border: 1px solid #f0f0f0; border-radius: 10px; padding: 12px 14px; }
-        .jd-work-icon { font-size: 18px; flex-shrink: 0; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; background: #fafaf8; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.06); }
-        .jd-work-label { font-size: 11px; color: #999; font-weight: 600; text-transform: uppercase; letter-spacing: .03em; }
-        .jd-work-value { font-size: 13px; color: #222; font-weight: 600; margin-top: 2px; }
-
         /* Company Overview */
         .jd-company-overview { background: linear-gradient(135deg, #f8f9ff 0%, #f0f4ff 100%); border: 1px solid #e0e7ff; border-radius: 12px; padding: 20px; margin-bottom: 24px; }
-        .jd-co-overview-header { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
-        .jd-co-overview-badge { font-size: 11px; font-weight: 700; color: #6366f1; background: #e0e7ff; padding: 3px 10px; border-radius: 20px; display: inline-flex; align-items: center; gap: 4px; }
-        .jd-co-overview-badge::before { content: '\\2726'; font-size: 10px; }
-        .jd-co-overview-badge.ai-thinking { animation: aiBadgePulse 1.2s ease-in-out infinite; }
-        @keyframes aiBadgePulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
         .jd-co-overview-text { font-size: 13.5px; color: #374151; line-height: 1.7; margin-bottom: 16px; white-space: pre-line; }
         .jd-co-overview-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 0; border-top: 1px solid #e0e7ff; padding-top: 14px; }
         .jd-co-stat { flex: 1; text-align: center; }
@@ -810,11 +794,6 @@ export default function JobsPage() {
         .jd-co-stat-num { font-size: 15px; font-weight: 800; color: #111; }
         .jd-co-stat-label { font-size: 11px; color: #777; margin-top: 2px; }
 
-        /* AI loading skeleton */
-        .ai-loading { display: flex; flex-direction: column; gap: 10px; padding: 4px 0 16px; }
-        .ai-loading-line { height: 12px; border-radius: 6px; background: linear-gradient(90deg, #e0e7ff 25%, #ede9fe 50%, #e0e7ff 75%); background-size: 200% 100%; animation: shimmer 1.5s infinite; }
-        /* AI fade-in */
-        .ai-fade-in { animation: aiFadeIn 0.6s ease-out both; }
         @keyframes aiFadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
         .jd-meta-item { background: #f9f9f8; border-radius: 8px; padding: 12px 14px; }
         .jd-meta-label { font-size: 10px; font-weight: 700; color: #999; text-transform: uppercase; letter-spacing: .04em; margin-bottom: 4px; }
@@ -825,7 +804,7 @@ export default function JobsPage() {
         .jd-apply-btn:disabled { opacity: 0.5; cursor: not-allowed; }
         .jd-save-btn { width: 48px; height: 48px; border-radius: 8px; border: 1px solid #e0e0e0; background: #fafaf8; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all .15s; flex-shrink: 0; }
         .jd-save-btn:hover { border-color: #ff4400; background: #fff5f0; }
-        .toast { position: fixed; bottom: 32px; left: 50%; transform: translateX(-50%) translateY(20px); background: #222; color: #fff; font-size: 14px; font-weight: 600; padding: 12px 24px; border-radius: 10px; z-index: 9999; opacity: 0; animation: toastIn .25s ease forwards; box-shadow: 0 6px 24px rgba(0,0,0,0.25); pointer-events: none; display: flex; align-items: center; gap: 8px; }
+        .toast { position: fixed; bottom: 32px; left: 50%; transform: translateX(-50%) translateY(20px); background: #222; color: #fff; font-size: 14px; font-weight: 600; padding: 12px 24px; border-radius: 10px; z-index: 100002; opacity: 0; animation: toastIn .25s ease forwards; box-shadow: 0 6px 24px rgba(0,0,0,0.25); pointer-events: none; display: flex; align-items: center; gap: 8px; }
         @keyframes toastIn { to { opacity: 1; transform: translateX(-50%) translateY(0); } }
         .jd-apply-inline { padding: 20px 32px 24px; border-top: 1px solid #f0f0f0; }
         .jd-apply-inline-h { font-size: 16px; font-weight: 800; color: #111; margin-bottom: 14px; }
@@ -837,9 +816,6 @@ export default function JobsPage() {
 
         @media (max-width: 900px) { .jg { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
         @media (max-width: 768px) {
-          .jn { display: none; }
-          .jn-l { gap: 16px; }
-          .jn-tab { font-size: 13px; height: 48px; padding: 0 12px; }
           .jw { padding: 28px 16px 60px; }
           .jw-h1 { font-size: 20px; }
           .jg { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; }
@@ -847,34 +823,28 @@ export default function JobsPage() {
           .jbm-icon { width: 30px; height: 30px; border-radius: 8px; }
           .jbm-icon svg { width: 15px; height: 15px; }
           .jbm-tag { font-size: 12px; padding: 3px 8px; }
-          .jf-sticky { top: 52px; }
           .jf { gap: 6px; }
           .jf-dd-btn { font-size: 12px; padding: 7px 10px; }
+          .jf-bar { top: 52px; }
           .jf-sort { flex-wrap: wrap; }
           .jf-sort-btn { font-size: 12px; padding: 6px 10px; }
-          .jgate-box { padding: 36px 24px; }
-          .ap { padding: 20px 20px 32px; }
-          .jd { width: 100%; top: 52px; height: calc(100vh - 52px); z-index: 100000; padding-bottom: 68px; }
+          .jd { width: 100%; top: 52px; height: calc(100vh - 52px); height: calc(100dvh - 52px); z-index: 100000; padding-bottom: calc(68px + env(safe-area-inset-bottom)); }
           .jd-x { display: none; }
           .jd-back { display: flex !important; position: sticky; top: 0; z-index: 3; }
-          .jd-scroll { display: contents; }
           .jd-body { padding: 20px 16px 32px; }
           .jd-img { max-height: 280px; }
           .jd-title { font-size: 18px; }
-          .jd-work-info { grid-template-columns: 1fr; }
           .jd-co-overview-stats { grid-template-columns: 1fr 1fr; }
-          .jd-apply-float { position: fixed; bottom: 0; left: 0; right: 0; padding: 12px 16px; background: #fafaf8; border-top: 1px solid #f0f0f0; z-index: 100001; }
+          .jd-apply-float { position: fixed; bottom: 0; left: 0; right: 0; padding: 12px 16px calc(12px + env(safe-area-inset-bottom)); background: #fafaf8; border-top: 1px solid #f0f0f0; z-index: 100001; }
           .jd-save-btn { width: 44px; height: 44px; }
           .jd-apply-btn { padding: 12px; font-size: 14px; }
-          .toast { font-size: 13px; padding: 10px 20px; bottom: 24px; }
+          .toast { font-size: 13px; padding: 10px 20px; bottom: calc(24px + env(safe-area-inset-bottom)); }
         }
         @media (max-width: 480px) {
           .jg { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
           .jh .jg { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; -webkit-overflow-scrolling: touch; gap: 14px; padding-bottom: 8px; grid-template-columns: none; }
           .jh .jg::-webkit-scrollbar { display: none; }
           .jh .jg > .jc { min-width: 60%; flex-shrink: 0; scroll-snap-align: start; }
-          .jn-r .jn-submit { display: none; }
-          .jn-tab { font-size: 12px; padding: 0 8px; }
         }
         .jc-skel .jc-skel-img { position: absolute; inset: 0; border-radius: 8px; background: #e9e9e9; }
         .jc-skel-line { border-radius: 4px; background: #e9e9e9; }
@@ -907,8 +877,8 @@ export default function JobsPage() {
               </div>
             )}
 
-            {/* Search + Filters (sticky) */}
-            <div className="jf-sticky" ref={stickyRef}>
+            {/* Search + Filters */}
+            <div className="jf-head">
             <div className="jf-search">
               <svg className="jf-search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#aaa" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
               <input className="jf-search-input" placeholder={t('jobs.searchPlaceholder')} value={searchQuery} onChange={e => { setSearchQuery(e.target.value) }} />
@@ -987,95 +957,26 @@ export default function JobsPage() {
               </div>
 
               {/* Reset */}
-              {(roleFilter || typeFilter || expMin !== '' || expMax !== '' || techFilter || searchQuery) && (
-                <button className="jf-reset" onClick={() => { setRoleFilter(''); setTypeFilter(''); setExpMin(''); setExpMax(''); setTechFilter(''); setSearchQuery('') }}>{t('jobs.filterReset')}</button>
+              {activeFilterCount > 0 && (
+                <button className="jf-reset" onClick={resetFilters}>{t('jobs.filterReset')}</button>
               )}
             </div>
             </div>
 
             {/* Hot jobs section */}
-            {jobs.length > 0 && !searchQuery && !roleFilter && !typeFilter && !techFilter && expMin === '' && expMax === '' && (() => {
-              const now = new Date()
-              // 프리미엄(적극 채용) 공고 우선 노출 — 부족하면 마감임박·고연봉순으로 채움
-              const hotScore = (j) => {
-                let s = 0
-                if (j.deadline && new Date(j.deadline) > now && Math.ceil((new Date(j.deadline) - now) / 86400000) <= 14) s += 50
-                s += (j.salary_max || 0) / 1000
-                return s
-              }
-              const featuredJobs = jobs.filter(j => j.is_featured)
-                .sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0))
-              const fillJobs = jobs.filter(j => !j.is_featured).sort((a, b) => hotScore(b) - hotScore(a))
-              const hotJobs = [...featuredJobs, ...fillJobs].slice(0, 4)
-              if (hotJobs.length === 0) return null
-              const fakeCount = (id) => 20 + (id.charCodeAt(0) + id.charCodeAt(id.length - 1)) % 21
-              return (
-                <div className="jh">
-                  <div className="jh-title"><span className="jh-trend"><span className="jh-trend-arrows"><svg className="jh-trend-arrow" width="12" height="6" viewBox="0 0 12 6"><polyline points="1,5 6,1 11,5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg><svg className="jh-trend-arrow" width="12" height="6" viewBox="0 0 12 6"><polyline points="1,5 6,1 11,5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg><svg className="jh-trend-arrow" width="12" height="6" viewBox="0 0 12 6"><polyline points="1,5 6,1 11,5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg></span></span>{t('jobs.hotTitle')}</div>
-                  <div className="jg">
-                    {hotJobs.map((job, idx) => {
-                      const bump = getBump(job)
-                      const matched = isProfileMatch(job)
-                      const days = job.deadline ? Math.ceil((new Date(job.deadline) - now) / 86400000) : null
-                      return (
-                        <div key={job.id} className="jc" onClick={() => { setCarouselIdx(0); setDetailApplyMode(false); setApplied(false); setResumeFile(null); setDetailJob({ ...job, _imgFallback: DEFAULT_IMAGES[idx % 3] }); track('click_job_card','jobs',{jobId:job.id,title:job.title,company:job.company}) }}>
-                          <div className="jc-img">
-                            <div className="jc-img-in" style={(() => { const hasImg = job.image_url || job.images?.[0]; const src = hasImg || job.logo_url || DEFAULT_IMAGES[idx % 3]; const mode = !hasImg && job.logo_url ? '60%' : 'cover'; return { background: `#fff url(${src}) center/${mode} no-repeat` } })()}>
-                              {job.is_featured && (
-                                <div className="jc-feat">★ {t('jobs.featuredBadge')}</div>
-                              )}
-                              {bump !== null && bump > 0 && (
-                                <div className="jc-bump" style={{ top: job.is_featured ? 40 : 10 }} dangerouslySetInnerHTML={{ __html: t('jobs.bumpVs', { bump }) }} />
-                              )}
-                              {matched && <div className="jc-match" style={{ top: (job.is_featured ? 40 : 10) + (bump > 0 ? 28 : 0) }}>{t('jobs.profileBadge')}</div>}
-                              <button className="jc-bm" aria-label="Bookmark" onClick={e => { e.stopPropagation(); toggleBookmark(job.id) }}>
-                                <svg width="14" height="14" viewBox="0 0 24 24" fill={bookmarks.includes(job.id) ? '#ff4400' : 'none'} stroke={bookmarks.includes(job.id) ? '#ff4400' : '#999'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                  <path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z" />
-                                </svg>
-                              </button>
-                              {(() => {
-                                const s = formatSalaryCard(job)
-                                const hasType = job.type === 'remote' || job.type === 'hybrid'
-                                const hasHigh = s.min >= highSalaryThreshold
-                                if (!hasType && !hasHigh) return null
-                                return (
-                                  <div className="jc-badges">
-                                    {hasHigh && <span className="jc-type-badge highpay">{t('jobs.highPay')}</span>}
-                                    {hasType && <span className={`jc-type-badge ${job.type}`}>{typeLabel(job.type)}</span>}
-                                  </div>
-                                )
-                              })()}
-                            </div>
-                          </div>
-                          <div className="jc-body">
-                            <div className="jc-t">{job.title}</div>
-                            <div className="jc-co jc-co-link" onClick={e => { e.stopPropagation(); router.push(`/companies/${encodeURIComponent(job.company)}`) }}>{job.company}</div>
-                            <div className="jc-bottom">
-                              <div className="jc-m">
-                                {[
-                                  !job.experience_min && !job.experience_max ? t('jobs.yearsAny') : job.experience_max >= 30 ? t('jobs.yearsMin', { min: job.experience_min || 0 }) : t('jobs.years', { min: job.experience_min, max: job.experience_max }),
-                                  typeLabel(job.type),
-                                  days !== null ? (days === 0 ? (lang === 'vi' ? t('jobs.ddayToday') : 'D-Day') : (lang === 'vi' ? t('jobs.dday', { days }) : `D-${days}`)) : t('jobs.hotUntilFilled'),
-                                ].filter(Boolean).join(' · ')}
-                              </div>
-                              {(() => {
-                                const sal = formatSalaryCard(job)
-                                return (
-                                  <div className="jc-sal">
-                                    {Math.round(sal.min / 1e6)}M – {Math.round(sal.max / 1e6)}M VND
-                                  </div>
-                                )
-                              })()}
-                            </div>
-                          </div>
-                        </div>
-                      )
-                    })}
-                  </div>
-                  <div className="jh-divider" />
+            {hotJobs.length > 0 && (
+              <div className="jh">
+                <div className="jh-title"><span className="jh-trend"><span className="jh-trend-arrows"><svg className="jh-trend-arrow" width="12" height="6" viewBox="0 0 12 6"><polyline points="1,5 6,1 11,5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg><svg className="jh-trend-arrow" width="12" height="6" viewBox="0 0 12 6"><polyline points="1,5 6,1 11,5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg><svg className="jh-trend-arrow" width="12" height="6" viewBox="0 0 12 6"><polyline points="1,5 6,1 11,5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg></span></span>{t('jobs.hotTitle')}</div>
+                <div className="jg">
+                  {hotJobs.map((job, idx) => (
+                    <JobCard key={job.id} job={job} idx={idx} bump={getBump(job)} matched={isProfileMatch(job)}
+                      highSalaryThreshold={highSalaryThreshold} bookmarked={bookmarks.includes(job.id)}
+                      onOpen={openDetail} onToggleBookmark={toggleBookmark} typeLabel={typeLabel} t={t} lang={lang} />
+                  ))}
                 </div>
-              )
-            })()}
+                <div className="jh-divider" />
+              </div>
+            )}
 
             {!jobsLoaded && (
               <div className="jg jg-skeleton">
@@ -1092,10 +993,15 @@ export default function JobsPage() {
               </div>
             )}
 
-            <div ref={barPlaceholderRef} style={{ height: barFixed ? 44 : 0 }} />
-            <div className={`jf-bar${barFixed ? ' jf-bar-fixed' : ''}`} style={{ visibility: jobsLoaded ? 'visible' : 'hidden', ...(barFixed ? { top: barTop } : {}) }}>
+            <div className="jf-bar" style={{ visibility: jobsLoaded ? 'visible' : 'hidden' }}>
               <div className="jf-bar-l">
                 <div className="jf-count">{t('jobs.matchCount', { count: filteredJobs.length })}</div>
+                {companyQuery && (
+                  <button className="jf-chip" onClick={clearCompanyQuery}>{String(router.query.company)} <span className="jf-chip-x">×</span></button>
+                )}
+                {activeFilterCount > 0 && (
+                  <button className="jf-chip" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>{t('jobs.filters')} <span className="jf-chip-n">{activeFilterCount}</span></button>
+                )}
                 <label className="jf-check">
                   <input type="checkbox" checked={hideExpired} onChange={e => { setHideExpired(e.target.checked) }} />
                   <span>{t('jobs.hideExpired')}</span>
@@ -1115,78 +1021,25 @@ export default function JobsPage() {
             </div>
 
             {/* Grid */}
-            {(() => {
-              const visibleJobs = filteredJobs.slice(0, visibleCount)
-              return (
-                <>
-                  <div className="jg" style={{ opacity: jobsLoaded ? 1 : 0, transition: 'opacity .3s' }}>
-                    {visibleJobs.map((job, idx) => {
-                      const bump = getBump(job)
-                      const matched = isProfileMatch(job)
-                      return (
-                        <div key={job.id} className="jc" onClick={() => { setCarouselIdx(0); setDetailApplyMode(false); setApplied(false); setResumeFile(null); setDetailJob({ ...job, _imgFallback: DEFAULT_IMAGES[idx % 3] }); track('click_job_card','jobs',{jobId:job.id,title:job.title,company:job.company}) }}>
-                          <div className="jc-img">
-                            <div className="jc-img-in" style={(() => { const hasImg = job.image_url || job.images?.[0]; const src = hasImg || job.logo_url || DEFAULT_IMAGES[idx % 3]; const mode = !hasImg && job.logo_url ? '60%' : 'cover'; return { background: `#fff url(${src}) center/${mode} no-repeat` } })()}>
-                              {job.is_featured && (
-                                <div className="jc-feat">★ {t('jobs.featuredBadge')}</div>
-                              )}
-                              {bump !== null && bump > 0 && (
-                                <div className="jc-bump" style={{ top: job.is_featured ? 40 : 10 }} dangerouslySetInnerHTML={{ __html: t('jobs.bumpVs', { bump }) }} />
-                              )}
-                              {matched && <div className="jc-match" style={{ top: (job.is_featured ? 40 : 10) + (bump > 0 ? 28 : 0) }}>{t('jobs.profileBadge')}</div>}
-                              <button className="jc-bm" aria-label="Bookmark" onClick={e => { e.stopPropagation(); toggleBookmark(job.id) }}>
-                                <svg width="14" height="14" viewBox="0 0 24 24" fill={bookmarks.includes(job.id) ? '#ff4400' : 'none'} stroke={bookmarks.includes(job.id) ? '#ff4400' : '#999'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                  <path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z" />
-                                </svg>
-                              </button>
-                              {(() => {
-                                const s = formatSalaryCard(job)
-                                const hasType = job.type === 'remote' || job.type === 'hybrid'
-                                const hasHigh = s.min >= highSalaryThreshold
-                                if (!hasType && !hasHigh) return null
-                                return (
-                                  <div className="jc-badges">
-                                    {hasHigh && <span className="jc-type-badge highpay">{t('jobs.highPay')}</span>}
-                                    {hasType && <span className={`jc-type-badge ${job.type}`}>{typeLabel(job.type)}</span>}
-                                  </div>
-                                )
-                              })()}
-                            </div>
-                          </div>
-                          <div className="jc-body">
-                            <div className="jc-t">{job.title}</div>
-                            <div className="jc-co jc-co-link" onClick={e => { e.stopPropagation(); router.push(`/companies/${encodeURIComponent(job.company)}`) }}>{job.company}</div>
-                            <div className="jc-bottom">
-                              <div className="jc-m">
-                                {[
-                                  !job.experience_min && !job.experience_max ? t('jobs.yearsAny') : job.experience_max >= 30 ? t('jobs.yearsMin', { min: job.experience_min || 0 }) : t('jobs.years', { min: job.experience_min, max: job.experience_max }),
-                                  job.type !== 'remote' && job.location,
-                                  typeLabel(job.type),
-                                ].filter(Boolean).join(' · ')}
-                                {job.deadline && (() => {
-                                  const days = Math.ceil((new Date(job.deadline) - new Date()) / 86400000)
-                                  if (days < 0) return null
-                                  return <span className={`jc-dday${days <= 7 ? ' urgent' : ''}`}>{lang === 'vi' ? (days === 0 ? t('jobs.ddayToday') : t('jobs.dday', { days })) : days === 0 ? 'D-Day' : `D-${days}`}</span>
-                                })()}
-                              </div>
-                              {(() => {
-                                const sal = formatSalaryCard(job)
-                                return (
-                                  <div className="jc-sal">
-                                    {Math.round(sal.min / 1e6)}M – {Math.round(sal.max / 1e6)}M VND
-                                  </div>
-                                )
-                              })()}
-                            </div>
-                          </div>
-                        </div>
-                      )
-                    })}
-                  </div>
-                  {visibleCount < filteredJobs.length && <div ref={loadMoreCallback} style={{ height: 1 }} />}
-                </>
-              )
-            })()}
+            <div className="jg" style={{ opacity: jobsLoaded ? 1 : 0, transition: 'opacity .3s' }}>
+              {gridJobs.slice(0, visibleCount).map((job, idx) => (
+                <JobCard key={job.id} job={job} idx={idx} bump={getBump(job)} matched={isProfileMatch(job)}
+                  highSalaryThreshold={highSalaryThreshold} bookmarked={bookmarks.includes(job.id)}
+                  onOpen={openDetail} onToggleBookmark={toggleBookmark} typeLabel={typeLabel} t={t} lang={lang} />
+              ))}
+            </div>
+            {visibleCount < gridJobs.length && <div ref={loadMoreCallback} style={{ height: 1 }} />}
+
+            {/* Empty state */}
+            {jobsLoaded && filteredJobs.length === 0 && (
+              <div className="jg-empty">
+                <div className="jg-empty-i">🔍</div>
+                <div className="jg-empty-t">{t('jobs.emptyTitle')}</div>
+                {(activeFilterCount > 0 || companyQuery) && (
+                  <button className="jg-empty-b" onClick={() => { resetFilters(); if (companyQuery) clearCompanyQuery() }}>{t('jobs.filterReset')}</button>
+                )}
+              </div>
+            )}
           </div>
         )}
       </div>
@@ -1194,10 +1047,10 @@ export default function JobsPage() {
       {/* JOB DETAIL PANEL */}
       {detailJob && (
         <>
-          <div className="jd-bg" onClick={() => setDetailJob(null)} />
+          <div className="jd-bg" onClick={closeDetail} />
           <div className="jd">
-            <button className="jd-x" onClick={() => setDetailJob(null)}>×</button>
-            <button className="jd-back" onClick={() => setDetailJob(null)}>
+            <button className="jd-x" onClick={closeDetail}>×</button>
+            <button className="jd-back" onClick={closeDetail}>
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
               {t('jobs.back') || 'Back'}
             </button>
@@ -1252,7 +1105,7 @@ export default function JobsPage() {
                   <Link href={`/companies/${encodeURIComponent(detailJob.company)}`} className="jd-co-name jd-co-link">{detailJob.company}</Link>
                   <div className="jd-co-loc">
                     {detailJob.location} · {typeLabel(detailJob.type)}
-                    {detailJob.company_url && <> · <a href={detailJob.company_url} target="_blank" rel="noopener noreferrer" style={{ color: '#ff4400', textDecoration: 'none' }}>Website</a></>}
+                    {detailJob.company_url && <> · <a href={detailJob.company_url} target="_blank" rel="noopener noreferrer" style={{ color: '#ff4400', textDecoration: 'none' }}>{t('jobs.website')}</a></>}
                   </div>
                 </div>
               </div>
@@ -1292,21 +1145,21 @@ export default function JobsPage() {
                 </div>
                 {detailJob.company_size && (
                   <div className="jd-meta-item">
-                    <div className="jd-meta-label">Company Size</div>
+                    <div className="jd-meta-label">{t('jobs.companySize')}</div>
                     <div className="jd-meta-value">{detailJob.company_size}</div>
                   </div>
                 )}
                 {detailJob.headcount && (
                   <div className="jd-meta-item">
-                    <div className="jd-meta-label">Headcount</div>
+                    <div className="jd-meta-label">{t('jobs.headcount')}</div>
                     <div className="jd-meta-value">{detailJob.headcount}</div>
                   </div>
                 )}
                 <div className="jd-meta-item">
-                  <div className="jd-meta-label">Deadline</div>
+                  <div className="jd-meta-label">{t('jobs.deadlineLabel')}</div>
                   <div className="jd-meta-value">{detailJob.deadline ? (() => {
                     const days = Math.ceil((new Date(detailJob.deadline) - new Date()) / 86400000)
-                    const ddayText = lang === 'vi' ? (days === 0 ? t('jobs.ddayToday') : days > 0 ? t('jobs.dday', { days }) : 'Đã đóng') : days >= 0 ? `D-${days}` : 'Closed'
+                    const ddayText = lang === 'vi' ? (days === 0 ? t('jobs.ddayToday') : days > 0 ? t('jobs.dday', { days }) : t('jobs.closed')) : days >= 0 ? `D-${days}` : t('jobs.closed')
                     return `${detailJob.deadline} (${ddayText})`
                   })() : t('jobs.ongoing')}</div>
                 </div>
@@ -1315,56 +1168,38 @@ export default function JobsPage() {
               <div className="jd-divider" />
 
               {/* Company Information */}
-              <div className="jd-section-title">Company Overview</div>
+              <div className="jd-section-title">{t('jobs.companyOverview')}</div>
               <div className="jd-company-overview">
-                <div className="jd-co-overview-header">
-                  <div className={`jd-co-overview-badge ${aiSummaryReady ? '' : 'ai-thinking'}`}>
-                    {aiSummaryReady ? 'AI Summary' : 'Analyzing...'}
-                  </div>
+                <div className="jd-co-overview-text">
+                  {generateCompanyDescription(detailJob)}
                 </div>
-                {!aiSummaryReady ? (
-                  <div className="ai-loading">
-                    <div className="ai-loading-line shimmer" style={{ width: '100%' }} />
-                    <div className="ai-loading-line shimmer" style={{ width: '92%' }} />
-                    <div className="ai-loading-line shimmer" style={{ width: '85%' }} />
-                    <div className="ai-loading-line shimmer" style={{ width: '96%' }} />
-                    <div className="ai-loading-line shimmer" style={{ width: '70%' }} />
-                    <div className="ai-loading-line shimmer" style={{ width: '88%' }} />
-                  </div>
-                ) : (
-                  <div className="ai-fade-in">
-                    <div className="jd-co-overview-text">
-                      {generateCompanyDescription(detailJob)}
+                {(() => {
+                  const p = COMPANY_PROFILES[detailJob.company]
+                  return (
+                    <div className="jd-co-overview-stats">
+                      <div className="jd-co-stat">
+                        <div className="jd-co-stat-num">{p?.employees?.toLocaleString() || detailJob.company_size || '–'}+</div>
+                        <div className="jd-co-stat-label">{t('jobs.statEmployees')}</div>
+                      </div>
+                      <div className="jd-co-stat">
+                        <div className="jd-co-stat-num">{p?.founded || '–'}</div>
+                        <div className="jd-co-stat-label">{t('jobs.statFounded')}</div>
+                      </div>
+                      <div className="jd-co-stat">
+                        <div className="jd-co-stat-num" style={{ fontSize: p?.revenue?.length > 10 ? 12 : 15 }}>{p?.revenue || t('jobs.statUndisclosed')}</div>
+                        <div className="jd-co-stat-label">{t('jobs.statRevenue')}</div>
+                      </div>
+                      <div className="jd-co-stat">
+                        <div className="jd-co-stat-num" style={{ fontSize: p?.funding?.length > 12 ? 11 : 15 }}>{p?.funding || t('jobs.statUndisclosed')}</div>
+                        <div className="jd-co-stat-label">{t('jobs.statFunding')}</div>
+                      </div>
                     </div>
-                    {(() => {
-                      const p = COMPANY_PROFILES[detailJob.company]
-                      return (
-                        <div className="jd-co-overview-stats">
-                          <div className="jd-co-stat">
-                            <div className="jd-co-stat-num">{p?.employees?.toLocaleString() || detailJob.company_size || '–'}+</div>
-                            <div className="jd-co-stat-label">Employees</div>
-                          </div>
-                          <div className="jd-co-stat">
-                            <div className="jd-co-stat-num">{p?.founded || '–'}</div>
-                            <div className="jd-co-stat-label">Founded</div>
-                          </div>
-                          <div className="jd-co-stat">
-                            <div className="jd-co-stat-num" style={{ fontSize: p?.revenue?.length > 10 ? 12 : 15 }}>{p?.revenue || 'Undisclosed'}</div>
-                            <div className="jd-co-stat-label">Revenue</div>
-                          </div>
-                          <div className="jd-co-stat">
-                            <div className="jd-co-stat-num" style={{ fontSize: p?.funding?.length > 12 ? 11 : 15 }}>{p?.funding || 'Undisclosed'}</div>
-                            <div className="jd-co-stat-label">Funding</div>
-                          </div>
-                        </div>
-                      )
-                    })()}
-                  </div>
-                )}
+                  )
+                })()}
               </div>
 
               {/* Community CTA */}
-              {aiSummaryReady && (
+              {(
                 <Link
                   href="/community"
                   className="jd-comm-cta"
@@ -1385,66 +1220,27 @@ export default function JobsPage() {
 
               <div className="jd-divider" />
 
-              {/* Work Information */}
-              <div className="jd-section-title">Work Information</div>
-              <div className="jd-work-info">
-                <div className="jd-work-item">
-                  <div className="jd-work-icon"><Icon name="calendar" size={18} color="#555" /></div>
-                  <div>
-                    <div className="jd-work-label">Work Days</div>
-                    <div className="jd-work-value">Monday – Friday</div>
-                  </div>
-                </div>
-                <div className="jd-work-item">
-                  <div className="jd-work-icon"><Icon name="clock" size={18} color="#555" /></div>
-                  <div>
-                    <div className="jd-work-label">Work Hours</div>
-                    <div className="jd-work-value">9:00 AM – 6:00 PM</div>
-                  </div>
-                </div>
-                <div className="jd-work-item">
-                  <div className="jd-work-icon"><Icon name="mapPin" size={18} color="#555" /></div>
-                  <div>
-                    <div className="jd-work-label">Work Type</div>
-                    <div className="jd-work-value">{detailJob.type === 'remote' ? 'Fully Remote' : detailJob.type === 'hybrid' ? 'Hybrid (Office + Remote)' : 'On-site'}</div>
-                  </div>
-                </div>
-                <div className="jd-work-item">
-                  <div className="jd-work-icon"><Icon name="palmTree" size={18} color="#555" /></div>
-                  <div>
-                    <div className="jd-work-label">Paid Leave</div>
-                    <div className="jd-work-value">12+ days / year</div>
-                  </div>
-                </div>
-                <div className="jd-work-item">
-                  <div className="jd-work-icon"><Icon name="clipboard" size={18} color="#555" /></div>
-                  <div>
-                    <div className="jd-work-label">Contract</div>
-                    <div className="jd-work-value">Full-time (Permanent)</div>
-                  </div>
-                </div>
-                <div className="jd-work-item">
-                  <div className="jd-work-icon"><Icon name="hospital" size={18} color="#555" /></div>
-                  <div>
-                    <div className="jd-work-label">Insurance</div>
-                    <div className="jd-work-value">Social & Health Insurance</div>
-                  </div>
-                </div>
-              </div>
-
-              <div className="jd-divider" />
-
-              {/* Description */}
+              {/* Description — 리스트 API엔 없는 필드라 상세 fetch 완료 전엔 스켈레톤.
+                  대체 문구를 먼저 보여주면 로드 후 내용이 통째로 바뀌어 보인다. */}
               <div className="jd-section-title">{t('jobs.about')}</div>
-              <div className="jd-desc">
-                {decodeHTML(detailJob.description) || `${detailJob.company} is looking for a ${detailJob.title} to join their team in ${detailJob.location}.\n\nThis is a ${detailJob.type} position offering ${Math.round(detailJob.salary_min / 1e6)}M–${Math.round(detailJob.salary_max / 1e6)}M VND, ideal for candidates with ${detailJob.experience_min}–${detailJob.experience_max} years of experience in ${detailJob.role}.\n\nOur headhunter team will personally introduce you and support you throughout the process.`}
-              </div>
+              {!detailJob._full && !detailJob.description ? (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 24 }}>
+                  <div className="jc-skel-line shimmer" style={{ height: 12, width: '96%' }} />
+                  <div className="jc-skel-line shimmer" style={{ height: 12, width: '88%' }} />
+                  <div className="jc-skel-line shimmer" style={{ height: 12, width: '92%' }} />
+                  <div className="jc-skel-line shimmer" style={{ height: 12, width: '60%' }} />
+                </div>
+              ) : (
+                <div className="jd-desc">
+                  {decodeHTML(detailJob.description) || `${detailJob.company} is looking for a ${detailJob.title} to join their team in ${detailJob.location}.\n\nThis is a ${detailJob.type} position offering ${Math.round(detailJob.salary_min / 1e6)}M–${Math.round(detailJob.salary_max / 1e6)}M VND, ideal for candidates with ${detailJob.experience_min}–${detailJob.experience_max} years of experience in ${detailJob.role}.\n\nOur headhunter team will personally introduce you and support you throughout the process.`}
+                </div>
+              )}
 
               {/* Benefits */}
               {detailJob.benefits?.length > 0 && (
                 <>
                   <div className="jd-divider" />
-                  <div className="jd-section-title">Benefits</div>
+                  <div className="jd-section-title">{t('jobs.benefits')}</div>
                   <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 24 }}>
                     {detailJob.benefits.map(b => (
                       <span key={b} style={{ fontSize: 13, color: '#166534', background: '#f0fff4', border: '1px solid #86efac', padding: '5px 12px', borderRadius: 6 }}>{decodeHTML(b)}</span>
@@ -1457,7 +1253,7 @@ export default function JobsPage() {
               {detailJob.hiring_process && (
                 <>
                   <div className="jd-divider" />
-                  <div className="jd-section-title">Hiring Process</div>
+                  <div className="jd-section-title">{t('jobs.hiringProcess')}</div>
                   <div style={{ fontSize: 14, color: '#444', marginBottom: 24 }}>{decodeHTML(detailJob.hiring_process)}</div>
                 </>
               )}
@@ -1476,7 +1272,7 @@ export default function JobsPage() {
                       {t('jobs.higherThanCurrent', { pct: Math.round(((detailJob.salary_min - userSalary) / userSalary) * 100) })}
                     </div>
                     <div style={{ fontSize: 12, color: '#888' }}>
-                      Your benchmark: {Math.round(userSalary / 1e6)}M VND → This role: {Math.round(detailJob.salary_min / 1e6)}M–{Math.round(detailJob.salary_max / 1e6)}M VND
+                      {t('jobs.benchmarkLine', { cur: Math.round(userSalary / 1e6), min: Math.round(detailJob.salary_min / 1e6), max: Math.round(detailJob.salary_max / 1e6) })}
                     </div>
                   </div>
                 </div>
@@ -1484,7 +1280,7 @@ export default function JobsPage() {
 
             </div>
             {/* Inline Apply Form */}
-            {detailApplyMode && !applied && !appliedJobs.includes(detailJob.id) && (
+            {detailApplyMode && !appliedJobs.includes(detailJob.id) && (
               <div className="jd-apply-inline" ref={el => { if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }) }}>
                 <div className="jd-apply-inline-h">{t('jobs.applyThis')}</div>
 
@@ -1493,7 +1289,7 @@ export default function JobsPage() {
                   <input ref={fileRef} type="file" accept=".pdf,.docx,.doc" style={{ display: 'none' }} onChange={e => {
                     const f = e.target.files?.[0]
                     if (f && f.size <= 5 * 1024 * 1024) setResumeFile(f)
-                    else if (f) alert('Max 5MB')
+                    else if (f) alert(t('jobs.maxFileSize'))
                   }} />
                   {resumeFile
                     ? <div className="ap-up-f">{resumeFile.name}</div>
@@ -1519,7 +1315,7 @@ export default function JobsPage() {
                   <button className="jd-save-btn" onClick={() => toggleBookmark(detailJob.id)} title={bookmarks.includes(detailJob.id) ? t('jobs.saved') : t('jobs.save')}>
                     <svg width="18" height="18" viewBox="0 0 24 24" fill={bookmarks.includes(detailJob.id) ? '#ff4400' : 'none'} stroke={bookmarks.includes(detailJob.id) ? '#ff4400' : '#666'} strokeWidth="2"><path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z"/></svg>
                   </button>
-                  <button className="jd-save-btn" onClick={() => { navigator.clipboard.writeText(`${window.location.origin}/jobs/${detailJob.id}`); setToast('Link copied!'); setTimeout(() => setToast(null), 2000) }} title="Share">
+                  <button className="jd-save-btn" onClick={() => { navigator.clipboard.writeText(`${window.location.origin}/jobs/${detailJob.id}`); showToast(t('jobs.linkCopied')) }} title="Share">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#666" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
                   </button>
                   {appliedJobs.includes(detailJob.id) ? (
@@ -1542,70 +1338,8 @@ export default function JobsPage() {
         </>
       )}
 
-      {/* APPLY PANEL — STATE C */}
-      {showPanel && selectedJob && (
-        <>
-          <div className="ap-bg" onClick={() => setShowPanel(false)} />
-          <div className="ap">
-            <div className="ap-bar" />
-            <button className="ap-x" onClick={() => setShowPanel(false)}>×</button>
-
-            {!applied ? (
-              <>
-                <div className="ap-h">{t('jobs.applyThis')}</div>
-                <div className="ap-sub">{t('jobs.applySub')}</div>
-
-                <div className="ap-job">
-                  <div className="ap-job-ini">{selectedJob.company_initials || selectedJob.company.slice(0, 2).toUpperCase()}</div>
-                  <div>
-                    <div className="ap-job-t">{selectedJob.title} — {selectedJob.company}</div>
-                    {selectedJob.salary_min > 0 && <div className="ap-job-s">{Math.round(selectedJob.salary_min / 1e6)}M–{Math.round(selectedJob.salary_max / 1e6)}M VND</div>}
-                  </div>
-                </div>
-
-                <div className="ap-lbl">{t('jobs.yourProfile')}</div>
-                <div className="ap-tags">
-                  {userRole && <div className="ap-tag">{userRole} · {userExperience || '—'} yrs</div>}
-                  {userCompany && <div className="ap-tag">{t('jobs.currentAt', { company: userCompany, salary: userSalary ? Math.round(userSalary / 1e6) : '—' })}</div>}
-                </div>
-
-                <div className="ap-lbl">{t('jobs.cvRequired') || 'Resume (required)'}</div>
-                <div className="ap-up" onClick={() => fileRef.current?.click()}>
-                  <input ref={fileRef} type="file" accept=".pdf,.docx,.doc" style={{ display: 'none' }} onChange={e => {
-                    const f = e.target.files?.[0]
-                    if (f && f.size <= 5 * 1024 * 1024) setResumeFile(f)
-                    else if (f) alert('Max 5MB')
-                  }} />
-                  {resumeFile
-                    ? <div className="ap-up-f">{resumeFile.name}</div>
-                    : <><div className="ap-up-t" style={{ whiteSpace: 'pre-line' }}>{t('jobs.dragCV')}</div></>
-                  }
-                </div>
-
-                <button className="ap-btn" onClick={() => {
-                  if (!isLoggedIn) { loginForJob(selectedJob.id); return; }
-                  handleApply();
-                }} disabled={applying || !resumeFile}>
-                  {!isLoggedIn ? t('jobs.loginToApply') : applying ? t('jobs.sending') : t('jobs.submitApplication')}
-                </button>
-              </>
-            ) : (
-              <div className="ap-ok">
-                <div className="ap-ok-i"><Icon name="check" size={24} color="#fff" /></div>
-                <div className="ap-ok-h">{t('jobs.applied')}</div>
-                <div className="ap-ok-p">{t('jobs.appliedSub')}</div>
-                <button className="ap-skip" style={{ marginTop: 20 }} onClick={() => setShowPanel(false)}>{t('jobs.close')}</button>
-              </div>
-            )}
-          </div>
-        </>
-      )}
-
       {toast && (
-        <div className="toast">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="#ff4400" stroke="none"><path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z"/></svg>
-          {toast}
-        </div>
+        <div className="toast">{toast}</div>
       )}
 
       {appliedInfo && (
