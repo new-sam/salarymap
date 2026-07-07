@@ -76,6 +76,7 @@ export default async function handler(req, res) {
     const roleDist = {}, expDist = {}      // 연봉 제출 role/experience 분포 (범위 내)
     let anonPost = 0, anonComment = 0      // 익명 글/댓글 수 (범위 내, 분모는 create 카운트)
     const cardShareMethod = {}             // 명함 공유 수단 분포 (image|text|link) (범위 내)
+    const reviewTrigger = {}               // App Store 리뷰 요청 trigger 분포 (범위 내)
 
     const bumpDaily = (date, key) => {
       if (!dailyMap[date]) dailyMap[date] = { date }
@@ -195,6 +196,12 @@ export default async function handler(req, res) {
           ;(pushCat[k] || (pushCat[k] = { click: 0, received: 0, sent: 0 })).sent++
           break
         }
+        case 'app_review_prompt': {
+          // requestReview() 호출 순간. 실제 노출/별점은 OS가 통제 → 우리가 아는 건 호출뿐.
+          const k = m.trigger || '(none)'
+          reviewTrigger[k] = (reviewTrigger[k] || 0) + 1
+          break
+        }
       }
 
       // 역할 집합(범위 내 고유 유저) — 작성자/반응자/열람자(1% 법칙)
@@ -208,6 +215,7 @@ export default async function handler(req, res) {
         if (ev === 'submit_salary') setOf('salaryUsers').add(c)
         if (ev === 'push_click') setOf('pushClickUsers').add(c)
         if (ev === 'push_sent') setOf('pushSentUsers').add(c)
+        if (ev === 'app_review_prompt') setOf('reviewUsers').add(c)
       }
     }
 
@@ -407,6 +415,17 @@ export default async function handler(req, res) {
       unlockRate: rate(cnt('unlock_card_design'), cnt('share_card_unlock')), // 해제용 공유→해제(근사)
     }
 
+    // ---- App Store 리뷰 요청 (별점 유도) ----
+    // 우리가 아는 건 requestReview() 호출뿐 — 실제 카드 노출/별점 부여는 OS가 통제(측정 불가).
+    // trigger=salary_submit(제보 후 백분위 확인 순간). 제보 유저 대비 노출률로 게이트 폭을 진단한다.
+    const review = {
+      count: cnt('app_review_prompt'),                                    // 요청 호출 수(범위 내)
+      uniqueUsers: sizeOf('reviewUsers'),                                 // 요청이 뜬 고유 유저
+      byTrigger: distArr(reviewTrigger),                                  // 트리거별 분포
+      // 제보 유저 중 실제로 리뷰 요청이 호출된 비율(=게이트 통과율 근사). trigger가 salary_submit이라 분모=제보 유저.
+      promptRateAmongSubmitters: rate(sizeOf('reviewUsers'), sizeOf('salaryUsers')),
+    }
+
     // ---- 푸시 (재참여 엔진) ----
     const pctOf = (num, den) => (den ? +((num / den) * 100).toFixed(1) : null)
     const push = {
@@ -562,6 +581,7 @@ export default async function handler(req, res) {
       community,
       conversion,
       card,
+      review,
       push,
       segments,
       analytics,
