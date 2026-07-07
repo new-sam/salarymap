@@ -75,13 +75,15 @@ function JobCard({ job, idx, bump, matched, highSalaryThreshold, bookmarked, onO
         <div className="jc-co jc-co-link" onClick={e => { e.stopPropagation(); router.push(`/companies/${encodeURIComponent(job.company)}`) }}>{job.company}</div>
         <div className="jc-bottom">
           <div className="jc-m">
-            {[
-              !job.experience_min && !job.experience_max ? t('jobs.yearsAny') : job.experience_max >= 30 ? t('jobs.yearsMin', { min: job.experience_min || 0 }) : t('jobs.years', { min: job.experience_min, max: job.experience_max }),
-              job.type !== 'remote' && job.location,
-              typeLabel(job.type),
-            ].filter(Boolean).join(' · ')}
+            <span className="jc-m-txt">
+              {[
+                !job.experience_min && !job.experience_max ? t('jobs.yearsAny') : job.experience_max >= 30 ? t('jobs.yearsMin', { min: job.experience_min || 0 }) : t('jobs.years', { min: job.experience_min, max: job.experience_max }),
+                job.type !== 'remote' && job.location,
+                typeLabel(job.type),
+              ].filter(Boolean).join(' · ')}
+            </span>
             {days !== null && days >= 0 && (
-              <span className={`jc-dday${days <= 7 ? ' urgent' : ''}`}>{lang === 'vi' ? (days === 0 ? t('jobs.ddayToday') : t('jobs.dday', { days })) : days === 0 ? 'D-Day' : `D-${days}`}</span>
+              <span className={`jc-dday${days <= 7 ? ' urgent' : ''}`}>{days === 0 ? t('jobs.ddayToday') : t('jobs.ddayShort', { days })}</span>
             )}
           </div>
           <div className="jc-sal">{Math.round(sal.min / 1e6)}M – {Math.round(sal.max / 1e6)}M VND</div>
@@ -381,12 +383,32 @@ export default function JobsPage() {
       }
       return true
     })
-    // featured(프리미엄) 공고는 어떤 정렬이든 최상단 핀 고정 (featured끼리는 최신순)
+    // featured(프리미엄) 공고는 최상단 벽으로 쌓지 않고 5칸 간격으로 삽입 —
+    // 노출 우선순위는 유지하되 첫 화면이 배지 도배가 되는 걸 방지 (featured끼리는 최신순)
     const pinFeatured = (list) => {
       const feat = list.filter(j => j.is_featured)
         .sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0))
       const rest = list.filter(j => !j.is_featured)
-      return [...feat, ...rest]
+      const out = []
+      let fi = 0, ri = 0
+      while (fi < feat.length || ri < rest.length) {
+        if (out.length % 5 === 0 && fi < feat.length) out.push(feat[fi++])
+        else if (ri < rest.length) out.push(rest[ri++])
+        else out.push(feat[fi++])
+      }
+      return out
+    }
+    // 같은 회사가 3칸 안에 반복되면 뒤쪽의 다른 회사 공고와 교체 (한 화면 내 중복 노출 방지)
+    const spaceCompanies = (list) => {
+      const out = [...list]
+      for (let i = 0; i < out.length; i++) {
+        const recent = out.slice(Math.max(0, i - 3), i).map(j => j.company)
+        if (recent.includes(out[i].company)) {
+          const j = out.findIndex((x, k) => k > i && !recent.includes(x.company))
+          if (j > -1) { const tmp = out[i]; out[i] = out[j]; out[j] = tmp }
+        }
+      }
+      return out
     }
     // 스크랩 필터
     if (sortBy === 'saved') {
@@ -445,7 +467,7 @@ export default function JobsPage() {
         if (oi < other.length) result.push(other[oi++])
         if (wi < wanted.length) result.push(wanted[wi++])
       }
-      return pinFeatured(result)
+      return pinFeatured(spaceCompanies(result))
     }
     // wanted/non-wanted 1:1 인터리빙
     const interleave = (list) => {
@@ -459,7 +481,7 @@ export default function JobsPage() {
       }
       return result
     }
-    return pinFeatured(interleave(filtered))
+    return pinFeatured(spaceCompanies(interleave(filtered)))
   })()
 
   const activeFilterCount = [roleFilter, typeFilter, techFilter, searchQuery, expMin !== '' || expMax !== ''].filter(Boolean).length
@@ -475,9 +497,11 @@ export default function JobsPage() {
       s += (j.salary_max || 0) / 1000
       return s
     }
-    const featuredJobs = jobs.filter(j => j.is_featured)
+    // 마감 지난 공고는 "적극 채용 중" 섹션에 부적합 — 제외
+    const live = jobs.filter(j => !j.deadline || new Date(j.deadline) >= now)
+    const featuredJobs = live.filter(j => j.is_featured)
       .sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0))
-    const fillJobs = jobs.filter(j => !j.is_featured).sort((a, b) => hotScore(b) - hotScore(a))
+    const fillJobs = live.filter(j => !j.is_featured).sort((a, b) => hotScore(b) - hotScore(a))
     return [...featuredJobs, ...fillJobs].slice(0, 4)
   })()
   const hotIds = new Set(hotJobs.map(j => j.id))
@@ -724,7 +748,7 @@ export default function JobsPage() {
         .jc-bump b { color: #ff4400; font-weight: 700; }
         .jc-bm { position: absolute; top: 10px; right: 10px; width: 28px; height: 28px; border-radius: 50%; background: rgba(250,250,248,0.92); display: flex; align-items: center; justify-content: center; z-index: 2; border: none; cursor: pointer; }
         .jc-body { flex: 1; display: flex; flex-direction: column; }
-        .jc-t { font-size: 15px; font-weight: 600; color: #111; margin-bottom: 3px; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; }
+        .jc-t { font-size: 15px; font-weight: 600; color: #111; margin-bottom: 3px; line-height: 1.35; min-height: 2.7em; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
         .jc-co { font-size: 13px; color: #777; margin-bottom: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         .jc-co-link { cursor: pointer; display: inline-block; max-width: 100%; }
         .jc-co-link:hover { color: #ff4400; text-decoration: underline; }
@@ -732,7 +756,8 @@ export default function JobsPage() {
         .jd-co-link:hover { color: #ff4400; text-decoration: underline; }
         .jc-sal { font-size: 15px; font-weight: 800; color: #ff4400; margin-top: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; letter-spacing: -0.3px; }
         .jc-bottom { margin-top: auto; }
-        .jc-m { font-size: 12px; color: #999; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: flex; align-items: center; }
+        .jc-m { font-size: 12px; color: #999; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+        .jc-m-txt { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         .jc-m b { color: #ff4400; font-weight: 700; }
         .jc-tag { font-size: 11px; font-weight: 500; color: #555; background: #f0f0f0; padding: 2px 7px; border-radius: 4px; }
         .jc-tag-more { color: #999; }
@@ -741,7 +766,7 @@ export default function JobsPage() {
         .jc-type-badge.remote { color: #fff; background: #16a34a; }
         .jc-type-badge.hybrid { color: #fff; background: #2563eb; }
         .jc-type-badge.highpay { color: #fff; background: #ff4400; }
-        .jc-dday { display: inline-flex; align-items: center; margin-left: 6px; font-size: 11px; font-weight: 700; color: #ff4400; background: #fff7f5; border: 1px solid #ffd6c8; padding: 1px 6px; border-radius: 4px; line-height: 1; }
+        .jc-dday { display: inline-flex; align-items: center; flex-shrink: 0; font-size: 11px; font-weight: 700; color: #ff4400; background: #fff7f5; border: 1px solid #ffd6c8; padding: 1px 6px; border-radius: 4px; line-height: 1.4; white-space: nowrap; }
         .jc-dday.urgent { color: #dc2626; background: #fef2f2; border-color: #fecaca; }
         /* Empty state */
         .jg-empty { text-align: center; padding: 72px 20px; }
