@@ -446,12 +446,11 @@ export default function JobsPage() {
     }
     const applyRes = await fetch('/api/job-applications', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
       body: JSON.stringify({
         jobId: target.id,
         jobTitle: target.title,
         jobCompany: target.company,
-        userId: session.user.id,
         resumeUrl,
         applicantRole: userRole,
         applicantExperience: userExperience,

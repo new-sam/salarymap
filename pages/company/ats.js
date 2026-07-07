@@ -219,7 +219,11 @@ export default function CompanyATSPage() {
       const appIds = appsList.map(a => a.id);
       const [profilesRes, passesRes] = await Promise.all([
         userIds.length > 0
-          ? supabase.from('user_profiles').select('id, email, full_name').in('id', userIds)
+          ? fetch('/api/company/applicant-profiles', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
+              body: JSON.stringify({ ids: userIds }),
+            }).then(r => r.ok ? r.json() : { profiles: [] }).then(d => ({ data: d.profiles }))
           : Promise.resolve({ data: [] }),
         appIds.length > 0
           ? supabase.from('application_evaluations').select('id, application_id, stage').in('application_id', appIds).in('stage', ['pending_pass', 'viewed_pass', 'reviewing_pass', 'decided_pass'])

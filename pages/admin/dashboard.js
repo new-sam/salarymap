@@ -16,7 +16,6 @@ import TalentSupplyView from '../../components/admin/TalentSupplyView'
 import VerificationsView from '../../components/admin/VerificationsView'
 import CommunityView from '../../components/admin/CommunityView'
 import CompanyView from '../../components/admin/CompanyView'
-import AppMetricsView from '../../components/admin/AppMetricsView'
 import OutreachView from '../../components/admin/OutreachView'
 import {
   T, METRICS_BASE, EXP_COLORS, COLORS,
@@ -25,6 +24,9 @@ import {
 import { aggregateDaily, localDate } from '../../utils/dashboard'
 
 const MetricChart = dynamic(() => import('../../components/DashboardCharts'), { ssr: false })
+// AppMetricsView pulls in recharts; load it lazily so the base admin bundle
+// doesn't carry the charting lib for tabs that don't render charts.
+const AppMetricsView = dynamic(() => import('../../components/admin/AppMetricsView'), { ssr: false })
 
 function cellPct(cur, prev) {
   if (cur === null || cur === undefined || prev === null || prev === undefined) return null

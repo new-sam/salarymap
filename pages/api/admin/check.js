@@ -5,10 +5,21 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 )
 
+// Explicit admin allowlist. Previously any @likelion.net address was auto-admin,
+// which handed full PII/salary access to every domain account (and any account
+// that could obtain such an address). Admins are now an explicit set: the
+// ADMIN_EMAILS env var (comma-separated) plus a small bootstrap list so the
+// owner can never be locked out, plus the admin_users table.
+const BOOTSTRAP_ADMINS = ['ceo_office@likelion.net']
+const ALLOWLIST = new Set(
+  [...BOOTSTRAP_ADMINS, ...(process.env.ADMIN_EMAILS || '').split(',')]
+    .map((e) => e.trim().toLowerCase())
+    .filter(Boolean)
+)
+
 export async function isAdmin(email) {
   if (!email) return false
-  // likelion.net domain = auto admin
-  if (email.endsWith('@likelion.net')) return true
+  if (ALLOWLIST.has(email.toLowerCase())) return true
   const { data } = await supabase
     .from('admin_users')
     .select('id')

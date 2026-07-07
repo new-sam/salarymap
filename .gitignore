@@ -64,3 +64,10 @@ scripts/candidate-detail-raw.png
 # 회사명 병합 백업(production 제출 데이터 덤프) — 절대 커밋 금지
 scripts/company-merge-backup-*.json
 scripts/company-casefold-backup-*.json
+
+# audit cleanup: local artifacts
+*_out.json
+clipboard_*.png
+/deployed.html
+/local.html
+.env.vercel-tmp

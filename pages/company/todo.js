@@ -130,10 +130,12 @@ export default function CompanyTodoPage() {
       // Fetch linked user_profiles for nicer applicant names.
       const userIds = [...new Set((apps || []).map(a => a.user_id).filter(Boolean))];
       if (userIds.length > 0) {
-        const { data: profiles } = await supabase
-          .from('user_profiles')
-          .select('id, email, full_name')
-          .in('id', userIds);
+        const pr = await fetch('/api/company/applicant-profiles', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
+          body: JSON.stringify({ ids: userIds }),
+        });
+        const profiles = pr.ok ? (await pr.json()).profiles : [];
         const pm = {};
         (profiles || []).forEach(p => { pm[p.id] = p; });
         setProfileMap(pm);

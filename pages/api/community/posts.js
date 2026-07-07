@@ -12,6 +12,13 @@ function hotScore(p) {
   return (p.comment_count || 0) * 4 + (p.like_count || 0) * 3 + (p.view_count || 0) * 0.3
 }
 
+// PostgREST .or() takes a comma/paren-delimited filter string, so raw user input
+// could inject extra conditions or reference other columns. Strip the grammar
+// characters (commas, parens, backslash) before interpolating into an ilike search.
+function sanitizeSearch(s) {
+  return (s || '').trim().replace(/[,()\\]/g, ' ').trim()
+}
+
 // Accept only public URLs from our own Supabase storage, capped at `max` items.
 // Guards against arbitrary/external URLs being stored and rendered as <img>.
 function sanitizeImageUrls(value, max = 4) {
@@ -355,8 +362,9 @@ export default async function handler(req, res) {
       let iq = supabase.from('community_posts').select('*', { count: 'exact' }).in('id', ids)
       if (blockedIds.length) iq = iq.not('user_id', 'in', `(${blockedIds.join(',')})`)
       if (category && category !== 'all') iq = iq.eq('category', category)
-      if (search && search.trim()) {
-        iq = iq.or(`title.ilike.%${search.trim()}%,content.ilike.%${search.trim()}%`)
+      const q = sanitizeSearch(search)
+      if (q) {
+        iq = iq.or(`title.ilike.%${q}%,content.ilike.%${q}%`)
       }
       iq = iq.order('created_at', { ascending: false }).range(offset, offset + parseInt(limit) - 1)
 
@@ -416,8 +424,9 @@ export default async function handler(req, res) {
       query = query.eq('category', category)
     }
 
-    if (search && search.trim()) {
-      query = query.or(`title.ilike.%${search.trim()}%,content.ilike.%${search.trim()}%`)
+    const q = sanitizeSearch(search)
+    if (q) {
+      query = query.or(`title.ilike.%${q}%,content.ilike.%${q}%`)
     }
 
     // 회사 페이지 "소식" 탭: 제목/내용에 회사명이 언급됐거나, 그 글의 댓글

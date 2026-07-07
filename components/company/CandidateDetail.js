@@ -288,8 +288,12 @@ export default function CandidateDetail({
       }
 
       if (appData.user_id) {
-        const { data: prof } = await supabase
-          .from('user_profiles').select('id, email, full_name').eq('id', appData.user_id).maybeSingle();
+        const pr = await fetch('/api/company/applicant-profiles', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
+          body: JSON.stringify({ ids: [appData.user_id] }),
+        });
+        const prof = pr.ok ? (await pr.json()).profiles?.[0] : null;
         if (prof) setProfile(prof);
       }
 

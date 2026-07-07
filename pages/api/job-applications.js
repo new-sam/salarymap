@@ -24,11 +24,21 @@ export default async function handler(req, res) {
   }
 
   const {
-    jobId, jobTitle, jobCompany, userId, resumeUrl,
+    jobId, jobTitle, jobCompany, resumeUrl,
     applicantRole, applicantExperience, applicantSalary,
     applicantCompany, applicantEmail, applicantName,
     utmSource, utmMedium, utmCampaign, utmContent, referrer, applicationSource,
   } = req.body
+
+  // Never trust a client-supplied user_id — it let anyone attribute a forged
+  // application to another person's account. Derive it from the bearer token
+  // instead; anonymous applications (no token) are still allowed with user_id null.
+  let userId = null
+  const token = req.headers.authorization?.replace(/^Bearer\s+/i, '')
+  if (token) {
+    const { data: { user } } = await supabase.auth.getUser(token)
+    if (user) userId = user.id
+  }
 
   // 유입 플랫폼: 앱(salary-fyi)은 모든 요청에 X-Client-Platform: app 헤더를 붙인다.
   // 헤더가 없으면 웹 직접 호출이므로 'web'. application_source(direct/salary)와는 별개 축.
@@ -95,7 +105,7 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: error.message })
   }
 
-  console.log(`[JOB APPLICATION] user=${userId} email=${applicantEmail} applied to job=${jobId}`)
+  console.log(`[JOB APPLICATION] user=${userId || 'anon'} applied to job=${jobId}`)
 
   return res.status(201).json({ success: true, data })
 }

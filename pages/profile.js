@@ -345,10 +345,12 @@ export default function ProfilePage() {
         } catch {}
       }
 
-      // Fetch profile and submissions in parallel
-      const [profileRes, subsResult] = await Promise.all([
+      // Fetch profile and submissions in parallel. Submissions go through a
+      // service-role endpoint (own rows only) since the table's PII columns are
+      // no longer readable by the client after the RLS/column lockdown.
+      const [profileRes, subsRes] = await Promise.all([
         fetch('/api/profile/talent', { headers: { Authorization: `Bearer ${session.access_token}` } }),
-        supabase.from('submissions').select('*').eq('user_id', session.user.id).order('created_at', { ascending: false }),
+        fetch('/api/my-submissions', { headers: { Authorization: `Bearer ${session.access_token}` } }),
       ])
 
       if (profileRes.ok) {
@@ -411,11 +413,7 @@ export default function ProfilePage() {
         }
       }
 
-      let subs = subsResult.data
-      if (!subs?.length && session.user.email) {
-        const { data: es } = await supabase.from('submissions').select('*').eq('email', session.user.email).order('created_at', { ascending: false })
-        if (es?.length) subs = es
-      }
+      const subs = subsRes.ok ? (await subsRes.json()).submissions : []
       if (subs?.length) {
         setSubmissions(subs)
         try {

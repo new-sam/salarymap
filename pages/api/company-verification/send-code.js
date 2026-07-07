@@ -63,12 +63,9 @@ export default async function handler(req, res) {
     await sendVerificationCode(email, code)
   } catch (e) {
     console.error('[send-code] sendVerificationCode failed:', e.message)
-    // [DEBUG] 결정적 정보(키·from)를 맨 앞으로 — UI가 뒤를 잘라도 핵심이 보이게. 원인 확인 후 원복할 것.
-    const k = (process.env.RESEND_API_KEY || 'UNSET').trim()
-    const f = (process.env.RESEND_FROM || 'UNSET').trim()
     return res.status(502).json({
       error: 'send_failed',
-      message: `key=${k.slice(0, 8)}(len${k.length}) from=[${f}] :: ${e.message}`,
+      message: '인증 메일 발송에 실패했습니다. 잠시 후 다시 시도해주세요.',
     })
   }
 
