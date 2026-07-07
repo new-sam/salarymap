@@ -28,14 +28,19 @@ export default async function handler(req, res) {
   const { company, role, experience } = req.query
   if (!company) return res.status(400).json({ error: 'company required' })
 
-  // 1. Fetch all submissions for this company
-  const rawRows = await fetchAll(
+  // 1. Fetch all submissions for this company.
+  //    Match case-insensitively (ilike) and re-filter by the same normalized
+  //    key the companies list aggregates on (trim + lowercase), so a card that
+  //    counts the "momo" bucket (DB stores "MoMo") doesn't open to an empty
+  //    panel because of an exact-case `.eq` miss.
+  const wanted = company.trim().toLowerCase()
+  const rawRows = (await fetchAll(
     supabase
       .from('submissions')
-      .select('role, experience, salary, created_at, rating_worklife, rating_salary, rating_growth')
-      .eq('company', company)
+      .select('company, role, experience, salary, created_at, rating_worklife, rating_salary, rating_growth')
+      .ilike('company', company)
       .order('created_at', { ascending: false })
-  )
+  )).filter(r => (r.company || '').trim().toLowerCase() === wanted)
 
   if (!rawRows || rawRows.length === 0) return res.status(404).json({ error: 'No data' })
 
