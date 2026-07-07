@@ -21,15 +21,13 @@ const L = {
   ko: {
     loading: '앱 지표 불러오는 중...', empty: '앱 이벤트 데이터가 아직 없습니다.',
     metaLine: (m) => `집계: ${m.from} ~ ${m.to} · 범위 내 이벤트 ${m.rangeEvents.toLocaleString()}건 (앱 누적 ${m.totalAppEvents.toLocaleString()}건, ${m.appEventStart}~)`,
-    toplineTitle: '전략 톱라인 — 한 달 뒤 볼 숫자 3개',
     webPromoTitle: '웹 → 앱 다운로드 유도 (웹 모달)',
     webPromoCtr: '다운로드 버튼 클릭률', webPromoCtrSub: '모달 본 사람 중 스토어로 이동',
     webPromoImp: '모달 노출', webPromoClick: '다운로드 클릭',
-    d7: '앱 D7 잔존율', d7sub: '다시 오는가 (최우선)',
-    cpp: '글당 답글 수', cppSub: '커뮤니티 생존 (0이면 사망)',
-    pushRe: '푸시 재방문', pushReSub: '엔진이 도는가',
+    cpp: '글당 답글 수',
     tabs: { overview: '요약', retention: '리텐션', users: '유저분석', community: '커뮤니티', conversion: '전환', push: '푸시', segments: '세그먼트', reports: '신고/피드백' },
     // 요약(Overview)
+    grpRetention: '리텐션 · 성장', grpCommunity: '커뮤니티', grpConversion: '전환',
     ovTitle: '핵심 지표 요약', ovD7: 'D7 잔존', ovStick: '스티키니스(DAU/MAU)', ovWau: 'WAU', ovMau: 'MAU',
     ovNew: '신규 유저(기간)', ovAct: '액티베이션 전환', ovQr: 'Quick Ratio(최근주)', ovCpp: '글당 답글',
     ovSalary: '연봉 제출', ovApply: '지원 완료', ovResume: '이력서 제출', ovResumePublic: '이력서 공개 전환', ovCumSub: '앱 누적', ovPush: '푸시 재방문', ovPower: '파워유저(2일+)',
@@ -90,14 +88,12 @@ const L = {
   en: {
     loading: 'Loading app metrics...', empty: 'No app events yet.',
     metaLine: (m) => `Range: ${m.from} ~ ${m.to} · ${m.rangeEvents.toLocaleString()} events in range (${m.totalAppEvents.toLocaleString()} app events total, since ${m.appEventStart})`,
-    toplineTitle: 'Strategy Topline — 3 numbers for next month',
     webPromoTitle: 'Web → App download prompt (web modal)',
     webPromoCtr: 'Download button CTR', webPromoCtrSub: 'Of those who saw the modal, went to store',
     webPromoImp: 'Modal impressions', webPromoClick: 'Download clicks',
-    d7: 'App D7 Retention', d7sub: 'Do they come back (top priority)',
-    cpp: 'Replies per Post', cppSub: 'Community survival (0 = dead)',
-    pushRe: 'Push Re-engagement', pushReSub: 'Is the engine running',
+    cpp: 'Replies per Post',
     tabs: { overview: 'Overview', retention: 'Retention', users: 'Users', community: 'Community', conversion: 'Conversion', push: 'Push', segments: 'Segments', reports: 'Reports' },
+    grpRetention: 'Retention & Growth', grpCommunity: 'Community', grpConversion: 'Conversion',
     ovTitle: 'Key Metrics', ovD7: 'D7 Retention', ovStick: 'Stickiness(DAU/MAU)', ovWau: 'WAU', ovMau: 'MAU',
     ovNew: 'New users (range)', ovAct: 'Activation', ovQr: 'Quick Ratio(last wk)', ovCpp: 'Replies/post',
     ovSalary: 'Salary submits', ovApply: 'Applications', ovResume: 'Resume uploads', ovResumePublic: 'Resume made public', ovCumSub: 'app · cumulative', ovPush: 'Push returns', ovPower: 'Power users(2d+)',
@@ -484,31 +480,42 @@ export default function AppMetricsView({ token, dateRange, lang }) {
       {/* ── 요약(Overview) — 앰플리튜드식 스코어카드 + 차트 그리드 ── */}
       {sub === 'overview' && (() => {
         const g = analytics.growth.latest
-        const cards = [
-          { label: t.ovD7, value: `${topline.d7.rate}%` },
-          { label: t.ovStick, value: analytics.stickiness.dauMau != null ? `${analytics.stickiness.dauMau}%` : '-' },
-          { label: t.ovWau, value: retention.wau },
-          { label: t.ovMau, value: retention.mau },
-          { label: t.ovNew, value: analytics.newUsersInRange },
-          { label: t.ovAct, value: analytics.activation.convertRate != null ? `${analytics.activation.convertRate}%` : '-' },
-          { label: t.ovQr, value: g && g.quickRatio != null ? g.quickRatio : '-' },
-          { label: t.ovAppDwell, value: appDwell?.avgSeconds != null ? fmtSec(appDwell.avgSeconds) : '-', sub: t.ovAppDwellSub },
-          { label: t.ovCpp, value: topline.commentsPerPost },
-          { label: t.ovPostsRead, value: community.postsPerReader?.avg != null ? community.postsPerReader.avg : '-', sub: t.ovPerReaderSub },
-          { label: t.ovDwell, value: community.dwell?.avgSeconds != null ? fmtSec(community.dwell.avgSeconds) : '-', sub: t.ovDwellSub },
-          { label: t.ovSalary, value: conversion.salary.count },
-          { label: t.ovApply, value: conversion.jobs.submit },
-          { label: t.ovResume, value: conversion.resume.appSubmitted, sub: t.ovCumSub },
-          { label: t.ovResumePublic, value: conversion.resume.appPublic, sub: t.ovCumSub },
-          { label: t.ovPush, value: push.clicks },
-          { label: t.reviewCount, value: review.count, sub: t.reviewTitle },
-          { label: t.ovPower, value: analytics.depth.multiDayRate != null ? `${analytics.depth.multiDayRate}%` : '-' },
+        const groups = [
+          { title: t.grpRetention, cards: [
+            { label: t.ovD7, value: `${topline.d7.rate}%` },
+            { label: t.ovStick, value: analytics.stickiness.dauMau != null ? `${analytics.stickiness.dauMau}%` : '-' },
+            { label: t.ovWau, value: retention.wau },
+            { label: t.ovMau, value: retention.mau },
+            { label: t.ovNew, value: analytics.newUsersInRange },
+            { label: t.ovAct, value: analytics.activation.convertRate != null ? `${analytics.activation.convertRate}%` : '-' },
+            { label: t.ovQr, value: g && g.quickRatio != null ? g.quickRatio : '-' },
+            { label: t.ovAppDwell, value: appDwell?.avgSeconds != null ? fmtSec(appDwell.avgSeconds) : '-', sub: t.ovAppDwellSub },
+            { label: t.ovPower, value: analytics.depth.multiDayRate != null ? `${analytics.depth.multiDayRate}%` : '-' },
+          ] },
+          { title: t.grpCommunity, cards: [
+            { label: t.ovCpp, value: topline.commentsPerPost },
+            { label: t.ovPostsRead, value: community.postsPerReader?.avg != null ? community.postsPerReader.avg : '-', sub: t.ovPerReaderSub },
+            { label: t.ovDwell, value: community.dwell?.avgSeconds != null ? fmtSec(community.dwell.avgSeconds) : '-', sub: t.ovDwellSub },
+          ] },
+          { title: t.grpConversion, cards: [
+            { label: t.ovSalary, value: conversion.salary.count },
+            { label: t.ovApply, value: conversion.jobs.submit },
+            { label: t.ovResume, value: conversion.resume.appSubmitted, sub: t.ovCumSub },
+            { label: t.ovResumePublic, value: conversion.resume.appPublic, sub: t.ovCumSub },
+            { label: t.ovPush, value: push.clicks },
+            { label: t.reviewCount, value: review.count, sub: t.reviewTitle },
+          ] },
         ]
         return (
           <>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 12, marginBottom: 20 }}>
-              {cards.map(c => <Card key={c.label} label={c.label} value={c.value} sub={c.sub} />)}
-            </div>
+            {groups.map(grp => (
+              <div key={grp.title} style={{ marginBottom: 20 }}>
+                <div style={{ fontSize: 13, fontWeight: 700, color: '#4E5968', margin: '0 0 10px 2px' }}>{grp.title}</div>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 12 }}>
+                  {grp.cards.map(c => <Card key={c.label} label={c.label} value={c.value} sub={c.sub} />)}
+                </div>
+              </div>
+            ))}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(440px, 1fr))', gap: 16 }}>
               <TsCard title={t.dauTitle} data={ts} metrics={series.dau} lang={lang} chartKey="dau" onOpen={goChart} />
               <TsCard title={t.tsNewRet} data={ts} metrics={series.newRet} lang={lang} chartKey="newRet" onOpen={goChart} />
@@ -523,16 +530,6 @@ export default function AppMetricsView({ token, dateRange, lang }) {
                 <h4 style={chartCardTitle}>{t.growthTitle}</h4>
                 <div style={chartCardSub}>{t.ovGrowthTitle}</div>
                 <GrowthChart weeks={analytics.growth.weeks} t={t} />
-              </div>
-            </div>
-
-            {/* 전략 톱라인 (요약 하단으로 이동) */}
-            <div style={{ ...sectionStyle, marginTop: 20 }}>
-              <h3 style={sectionTitle}>{t.toplineTitle}</h3>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12 }}>
-                <Card big label={t.d7} value={`${topline.d7.rate}%`} sub={`${t.d7sub} · ${topline.d7.retained}/${topline.d7.eligible}`} />
-                <Card big label={t.cpp} value={topline.commentsPerPost} sub={t.cppSub} />
-                <Card big label={t.pushRe} value={push.clicks.toLocaleString()} sub={`${t.pushReSub} · ${push.clickUsers} users`} />
               </div>
             </div>
 
