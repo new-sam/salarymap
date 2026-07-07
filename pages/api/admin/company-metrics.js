@@ -115,7 +115,7 @@ export default async function handler(req, res) {
   if (jobIds.length) {
     const { data: appsRaw } = await supabase
       .from('job_applications')
-      .select('job_id, status')
+      .select('job_id, status, rejected_at')
       .in('job_id', jobIds)
     apps = appsRaw || []
   }
@@ -134,7 +134,8 @@ export default async function handler(req, res) {
   const stageTotals = {}       // 전체 단계별 지원 수
   apps.forEach(ap => {
     jobAppCount[ap.job_id] = (jobAppCount[ap.job_id] || 0) + 1
-    const st = ap.status || 'applied'
+    // 실제 칸반 단계: rejected_at 있으면 '불합격', 아니면 status(pending/viewed/reviewing/decided)
+    const st = ap.rejected_at ? 'rejected' : (ap.status || 'pending')
     ;(jobStages[ap.job_id] = jobStages[ap.job_id] || {})[st] = (jobStages[ap.job_id][st] || 0) + 1
     stageTotals[st] = (stageTotals[st] || 0) + 1
     const cid = jobToCompany[ap.job_id]
@@ -155,6 +156,7 @@ export default async function handler(req, res) {
     jobs: agg[c.id]?.jobs || 0,
     live: agg[c.id]?.live || 0,
     applications: agg[c.id]?.applications || 0,
+    stages: agg[c.id]?.stages || {},
   }))
 
   // 이번 달 일별 유입 — 하루마다 신규 가입 기업 + 신규 공고 (광고 성과를 일 단위로)

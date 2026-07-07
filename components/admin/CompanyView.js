@@ -5,15 +5,19 @@ import { useAdmin } from '../../lib/adminSwr'
 // 광고로 들어오는 기업이 실제로 공고를 올리고 지원을 받는지 한눈에.
 // 데이터: /api/admin/company-metrics
 
+// 실제 기업 채용 칸반 단계 (job_applications.status + rejected_at)
 const STAGE = {
-  pending: { ko: '지원(미열람)', en: 'Applied', color: '#94A3B8' },
-  applied: { ko: '지원', en: 'Applied', color: '#64748B' },
-  viewed: { ko: '열람', en: 'Viewed', color: '#0891B2' },
-  reviewing: { ko: '검토', en: 'Reviewing', color: '#7C3AED' },
-  decided: { ko: '결정', en: 'Decided', color: '#2563EB' },
-  accepted: { ko: '합격', en: 'Accepted', color: '#059669' },
-  rejected: { ko: '반려', en: 'Rejected', color: '#DC2626' },
+  pending: { ko: '서류 평가', en: 'Resume', color: '#94A3B8' },
+  applied: { ko: '서류 평가', en: 'Resume', color: '#94A3B8' },
+  viewed: { ko: '1차 인터뷰', en: '1st interview', color: '#0891B2' },
+  reviewing: { ko: '2차 인터뷰', en: '2nd interview', color: '#7C3AED' },
+  decided: { ko: '최종 합격', en: 'Final', color: '#059669' },
+  accepted: { ko: '최종 합격', en: 'Final', color: '#059669' },
+  rejected: { ko: '불합격', en: 'Rejected', color: '#DC2626' },
 }
+// 회사별 상세 표의 단계 컬럼 (순서 + 짧은 헤더)
+const STAGE_COLS = ['pending', 'viewed', 'reviewing', 'decided', 'rejected']
+const STAGE_SHORT = { pending: '서류', viewed: '1차', reviewing: '2차', decided: '최종', rejected: '불합격' }
 
 const fmtDate = (s) => (s ? new Date(s).toLocaleDateString() : '-')
 const dayNum = (d) => String(parseInt(d.slice(8), 10)) // '2026-07-04' → '4'
@@ -46,8 +50,8 @@ export default function CompanyView({ token, lang }) {
   const badge = (bg, color, text) => <span style={{ fontSize: 11, fontWeight: 600, padding: '2px 8px', borderRadius: 999, background: bg, color }}>{text}</span>
 
   function downloadSignupsCsv() {
-    const headers = ['Company', 'Domain', 'Verified', 'Recruiters', 'Jobs', 'Live', 'Applications', 'Created']
-    const body = signups.map(c => [c.name, c.email_domain, c.verified ? 'Y' : 'N', c.members, c.jobs, c.live, c.applications, fmtDate(c.created_at)])
+    const headers = ['Company', 'Domain', 'Verified', 'Jobs', 'Live', 'Applications', '서류', '1차인터뷰', '2차인터뷰', '최종합격', '불합격', 'Created']
+    const body = signups.map(c => [c.name, c.email_domain, c.verified ? 'Y' : 'N', c.jobs, c.live, c.applications, ...STAGE_COLS.map(s => c.stages[s] || 0), fmtDate(c.created_at)])
     const csv = [headers, ...body].map(r => r.map(c => `"${String(c).replace(/"/g, '""')}"`).join(',')).join('\n')
     const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' })
     const a = document.createElement('a')
@@ -264,17 +268,16 @@ export default function CompanyView({ token, lang }) {
             <thead>
               <tr style={{ background: '#F8FAFC', color: '#475569' }}>
                 <th style={th}>{ko ? '회사' : 'Company'}</th>
-                <th style={th}>{ko ? '도메인' : 'Domain'}</th>
                 <th style={th}>{ko ? '인증' : 'Verified'}</th>
                 <th style={thR}>{ko ? '공고' : 'Jobs'}</th>
-                <th style={thR}>{ko ? '라이브' : 'Live'}</th>
                 <th style={thR}>{ko ? '지원' : 'Apps'}</th>
+                {STAGE_COLS.map(s => <th key={s} style={thR}>{ko ? STAGE_SHORT[s] : STAGE[s].en}</th>)}
                 <th style={thR}>{ko ? '가입일' : 'Joined'}</th>
               </tr>
             </thead>
             <tbody>
               {signups.length === 0 && (
-                <tr><td style={{ ...td, textAlign: 'center', color: '#9CA3AF' }} colSpan={7}>{ko ? '가입 기업 없음' : 'No companies'}</td></tr>
+                <tr><td style={{ ...td, textAlign: 'center', color: '#9CA3AF' }} colSpan={10}>{ko ? '가입 기업 없음' : 'No companies'}</td></tr>
               )}
               {signups.map(c => {
                 const open = openCompany === c.id
@@ -290,16 +293,15 @@ export default function CompanyView({ token, lang }) {
                         {expandable && <span style={{ color: open ? '#ff6000' : '#C4C9D0', fontWeight: 700, marginRight: 6 }}>{open ? '▾' : '▸'}</span>}
                         {c.name}
                       </td>
-                      <td style={{ ...td, color: '#6B7280' }}>{c.email_domain}</td>
                       <td style={td}>{c.verified ? badge('#ECFDF5', '#059669', ko ? '인증' : 'Yes') : badge('#F1F5F9', '#94A3B8', ko ? '미인증' : 'No')}</td>
                       <td style={tdR}>{c.jobs}</td>
-                      <td style={{ ...tdR, color: c.live > 0 ? '#ff6000' : '#CBD5E1', fontWeight: 600 }}>{c.live}</td>
-                      <td style={tdR}>{c.applications}</td>
+                      <td style={{ ...tdR, fontWeight: 700, color: '#0F172A' }}>{c.applications}</td>
+                      {STAGE_COLS.map(s => { const n = c.stages[s] || 0; return <td key={s} style={{ ...tdR, color: n > 0 ? STAGE[s].color : '#CBD5E1', fontWeight: n > 0 ? 700 : 400 }}>{n}</td> })}
                       <td style={{ ...tdR, color: '#9CA3AF', whiteSpace: 'nowrap' }}>{fmtDate(c.created_at)}</td>
                     </tr>
                     {open && (
                       <tr style={{ background: '#FFF7F3' }}>
-                        <td colSpan={7} style={{ padding: '4px 12px 12px 30px' }}>
+                        <td colSpan={10} style={{ padding: '4px 12px 12px 30px' }}>
                           <div style={{ fontSize: 11.5, color: '#9CA3AF', fontWeight: 600, margin: '4px 0 8px' }}>{ko ? `올린 포지션 ${cJobs.length}건` : `${cJobs.length} positions`}</div>
                           {cJobs.length === 0 ? (
                             <div style={{ fontSize: 12.5, color: '#9CA3AF' }}>{ko ? '공고 없음' : 'No jobs'}</div>
