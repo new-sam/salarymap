@@ -5,6 +5,7 @@ import { supabase } from '../lib/supabaseClient'
 import { useT } from '../lib/i18n'
 import { track } from '../lib/track'
 import { ROLE_GROUPS } from '../constants/jobs'
+import { formatSalaryCard } from '../utils/salary'
 
 // STEP1에서 고른 직무는 OAuth 리다이렉트로 페이지를 떠났다 돌아와도 유지돼야 해서
 // (파일이 IndexedDB로 유지되는 것과 동일) localStorage에 stash한다.
@@ -799,14 +800,26 @@ export default function CvLanding() {
               {modalJobs.map((j) => {
                 const isApplied = !!applied[j.id]
                 const isApplying = applyingId === j.id
+                const thumb = j.logo_url || j.image_url || j.images?.[0] || null
+                const sal = formatSalaryCard(j)
+                const salTxt = sal?.min && sal?.max ? `${Math.round(sal.min / 1e6)}–${Math.round(sal.max / 1e6)}M VND` : null
+                const expTxt = (!j.experience_min && !j.experience_max)
+                  ? L('경력무관', 'Any exp', 'KN bất kỳ')
+                  : j.experience_max >= 30
+                    ? L(`${j.experience_min || 0}년+`, `${j.experience_min || 0}y+`, `${j.experience_min || 0} năm+`)
+                    : L(`${j.experience_min}–${j.experience_max}년`, `${j.experience_min}–${j.experience_max}y`, `${j.experience_min}–${j.experience_max} năm`)
+                const typeMap = { remote: L('재택', 'Remote', 'Remote'), hybrid: L('하이브리드', 'Hybrid', 'Hybrid'), onsite: L('출근', 'On-site', 'Tại VP') }
+                const typeTxt = j.type ? (typeMap[j.type] || j.type) : null
+                const meta = [typeTxt, expTxt, salTxt].filter(Boolean).join(' · ')
                 return (
                   <div key={j.id} className="cvm-job">
+                    <div className="cvm-job-logo" style={thumb ? { backgroundImage: `url(${thumb})` } : undefined}>
+                      {!thumb && (j.company_initials || (j.company || '?').charAt(0).toUpperCase())}
+                    </div>
                     <div className="cvm-job-main">
                       <div className="cvm-job-title">{j.title}</div>
-                      <div className="cvm-job-company">
-                        {j.company}
-                        {j.source === 'company_self' && <span className="cvm-ats">{L('기업 직접채용', 'Direct hire', 'Tuyển trực tiếp')}</span>}
-                      </div>
+                      <div className="cvm-job-company">{j.company}</div>
+                      <div className="cvm-job-meta">{meta}</div>
                     </div>
                     <button
                       className={`cvm-apply${isApplied ? ' done' : ''}`}
@@ -847,11 +860,12 @@ export default function CvLanding() {
         .cvm-title { font-size: 18px; font-weight: 800; color: #1a1612; letter-spacing: -0.01em; }
         .cvm-sub { font-size: 13px; color: #8a8073; margin-top: 5px; }
         .cvm-jobs { display: flex; flex-direction: column; gap: 10px; }
-        .cvm-job { display: flex; align-items: center; gap: 12px; border: 1px solid #ece5db; border-radius: 12px; padding: 13px 14px; }
+        .cvm-job { display: flex; align-items: center; gap: 12px; border: 1px solid #ece5db; border-radius: 12px; padding: 12px 13px; }
+        .cvm-job-logo { flex-shrink: 0; width: 42px; height: 42px; border-radius: 10px; background-color: #f3eee6; background-size: cover; background-position: center; background-repeat: no-repeat; display: flex; align-items: center; justify-content: center; font-size: 16px; font-weight: 800; color: #b09a7f; }
         .cvm-job-main { flex: 1; min-width: 0; }
         .cvm-job-title { font-size: 14px; font-weight: 700; color: #1a1612; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .cvm-job-company { font-size: 12.5px; color: #8a8073; margin-top: 2px; display: flex; align-items: center; gap: 6px; }
-        .cvm-ats { font-size: 10.5px; font-weight: 700; color: #1D4ED8; background: #EAF2FE; border-radius: 5px; padding: 1px 6px; white-space: nowrap; }
+        .cvm-job-company { font-size: 12.5px; color: #8a8073; margin-top: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .cvm-job-meta { font-size: 11.5px; color: #a89f92; margin-top: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .cvm-apply { flex-shrink: 0; font-size: 13px; font-weight: 700; color: #fff; background: #ff6000; border: none; border-radius: 9px; padding: 9px 16px; cursor: pointer; font-family: inherit; transition: opacity .12s; }
         .cvm-apply:disabled { cursor: default; }
         .cvm-apply.done { background: #E7F6EC; color: #16a34a; }

@@ -68,7 +68,7 @@ export default async function handler(req, res) {
       } catch (e) { return [] }
     })(),
     // job applications
-    fetchAll(supabase.from('job_applications').select('id, created_at')
+    fetchAll(supabase.from('job_applications').select('id, created_at, application_source')
       .gte('created_at', startISO).lte('created_at', endISO)).catch(() => []),
     // 이벤트 일별 카운트 — DB 집계 RPC (실패 시 행 fetch 폴백)
     (async () => {
@@ -124,7 +124,7 @@ export default async function handler(req, res) {
 
   // --- Aggregate daily trend ---
   const dailyMap = {}
-  const newDay = () => ({ date: '', submissions: 0, ad: 0, organic: 0, signups: 0, companies: new Set(), jobApps: 0, jobClicks: 0, cardClicks: 0, jobsPageViews: 0, applyClicks: 0, saveClicks: 0, resumeUploads: 0, landings: 0, forCompaniesClicks: 0, contactClicks: 0, postJobClicks: 0, companySignups: 0 })
+  const newDay = () => ({ date: '', submissions: 0, ad: 0, organic: 0, signups: 0, companies: new Set(), jobApps: 0, cvSuccessApps: 0, jobClicks: 0, cardClicks: 0, jobsPageViews: 0, applyClicks: 0, saveClicks: 0, resumeUploads: 0, landings: 0, forCompaniesClicks: 0, contactClicks: 0, postJobClicks: 0, companySignups: 0 })
   for (const sub of submissions) {
     const date = toVN(sub.created_at)
     if (!dailyMap[date]) dailyMap[date] = { ...newDay(), date }
@@ -147,6 +147,8 @@ export default async function handler(req, res) {
     const date = toVN(ja.created_at)
     if (!dailyMap[date]) dailyMap[date] = { ...newDay(), date }
     dailyMap[date].jobApps++
+    // CV 등록 후 원탭 지원 모달에서 나온 지원 — 실험 효과 추적용 별도 라인.
+    if (ja.application_source === 'cv_success') dailyMap[date].cvSuccessApps++
   }
 
   const EVENT_FIELD = { click_jobs_cta: 'jobClicks', click_job_card: 'cardClicks', view_jobs_page: 'jobsPageViews', click_apply_button: 'applyClicks', save_job: 'saveClicks', click_for_companies: 'forCompaniesClicks', click_contact_owner: 'contactClicks', click_post_job: 'postJobClicks', landing: 'landings' }
@@ -195,6 +197,8 @@ export default async function handler(req, res) {
     .map(d => ({
       ...d,
       companies: d.companies instanceof Set ? d.companies.size : d.companies,
+      // CV 원탭 지원 모달 출시(2026-07-08) 이전은 null → 라인이 출시점부터 시작(실험 판독 깔끔).
+      cvSuccessApps: d.date < '2026-07-08' ? null : d.cvSuccessApps,
       landings: d.date < EVENT_TRACKING_START ? null : d.landings,
       jobClicks: d.date < EVENT_TRACKING_START ? null : d.jobClicks,
       cardClicks: d.date < EVENT_TRACKING_START ? null : d.cardClicks,
@@ -257,6 +261,7 @@ export default async function handler(req, res) {
     organicSubmissions: submissions.filter(s => !PAID_SOURCES.has(s.source)).length,
     totalSignups: signups.length,
     totalJobApps: jobApps.length,
+    totalCvSuccessApps: jobApps.filter(j => j.application_source === 'cv_success').length,
     totalLandings: evtSum('landing'),
     totalJobClicks: evtSum('click_jobs_cta'),
     totalCardClicks: evtSum('click_job_card'),
