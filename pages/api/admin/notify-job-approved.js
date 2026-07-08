@@ -1,11 +1,11 @@
 import { createClient } from '@supabase/supabase-js'
 import { verifyAdmin } from './check'
+import { sendJobApprovedMail } from '../../../lib/companyEmails'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
   process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 )
-const RESEND_FROM = process.env.RESEND_FROM || 'FYI <onboarding@resend.dev>'
 
 // 공고 승인 시 등록한 기업(작성자)에게 게재 완료 알림 (Email + Slack, 베스트에포트)
 export default async function handler(req, res) {
@@ -30,16 +30,10 @@ export default async function handler(req, res) {
     posterEmail = ru?.email || null
   }
 
-  const jobUrl = `https://salary-fyi.com/company/jobs`
-  const subject = `[FYI] 공고가 승인되어 게재되었습니다 — ${job.title}`
-  const text = `등록하신 공고 "${job.title}" (${job.company})가 검토를 통과해 게재되었습니다.\n확인: ${jobUrl}`
-
   // Email (작성자에게)
-  if (posterEmail && process.env.RESEND_API_KEY) {
+  if (posterEmail) {
     try {
-      const { Resend } = await import('resend')
-      const resend = new Resend(process.env.RESEND_API_KEY)
-      await resend.emails.send({ from: RESEND_FROM, to: posterEmail, subject, text })
+      await sendJobApprovedMail({ toEmail: posterEmail, jobTitle: job.title, companyName: job.company })
     } catch (_) {}
   }
 

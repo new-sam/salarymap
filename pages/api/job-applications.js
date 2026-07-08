@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js'
+import { notifyTeamNewApplication } from '../../lib/notifyTeamNewApplication'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
@@ -108,6 +109,14 @@ export default async function handler(req, res) {
   }
 
   console.log(`[JOB APPLICATION] user=${userId || 'anon'} applied to job=${jobId}`)
+
+  // 채용팀(job_team 전원 + 오너)에게 지원 접수 알림 메일 발송 — best-effort, non-blocking.
+  // 실패해도 지원 접수 자체는 성공으로 처리.
+  if (data?.id) {
+    notifyTeamNewApplication(data.id).catch(e =>
+      console.error('[JOB APPLICATION] team notify failed:', e?.message || e)
+    )
+  }
 
   return res.status(201).json({ success: true, data })
 }
