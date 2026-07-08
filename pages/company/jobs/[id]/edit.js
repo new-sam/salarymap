@@ -38,7 +38,7 @@ export default function EditJobPage() {
 
       const { data: rec } = await supabase
         .from('recruiter_users')
-        .select('company_id, recruiter_companies(name, work_days, work_hours, paid_leave, contract_type)')
+        .select('company_id, recruiter_companies(name, work_days, work_hours, paid_leave)')
         .eq('user_id', session.user.id)
         .maybeSingle();
       if (!rec?.company_id) { setStatus('unauthed'); return; }
@@ -94,7 +94,7 @@ export default function EditJobPage() {
         work_days: job.work_days || co?.work_days || '',
         work_hours: job.work_hours || co?.work_hours || '',
         paid_leave: job.paid_leave || co?.paid_leave || '',
-        contract_type: job.contract_type || co?.contract_type || '',
+        contract_type: job.contract_type || '', // 공고 단위 값만 (회사 폴백 없음)
       });
       setOrigStatus(job.status || 'live');
       setStatus('ready');

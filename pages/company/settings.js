@@ -8,7 +8,7 @@ import { useT } from '../../lib/i18n';
 import { PageHeader } from '../../components/ui/page-header';
 import { Button as UButton } from '../../components/ui/button';
 import { Settings } from 'lucide-react';
-import { DEFAULT_WORK_DAYS, DEFAULT_WORK_HOURS, DEFAULT_PAID_LEAVE, DEFAULT_CONTRACT } from '../../constants/jobs';
+import { DEFAULT_WORK_DAYS, DEFAULT_WORK_HOURS, DEFAULT_PAID_LEAVE } from '../../constants/jobs';
 
 export default function CompanySettings() {
   const router = useRouter();
@@ -28,7 +28,6 @@ export default function CompanySettings() {
   const [workDays, setWorkDays] = useState('');
   const [workHours, setWorkHours] = useState('');
   const [paidLeave, setPaidLeave] = useState('');
-  const [contractType, setContractType] = useState('');
   const [uploading, setUploading] = useState(false);
   const [pBusy, setPBusy] = useState(false);
   const [pMsg, setPMsg] = useState(null); // { type: 'ok' | 'err', text }
@@ -42,7 +41,7 @@ export default function CompanySettings() {
       setUser(data.session.user);
       const { data: rec } = await supabase
         .from('recruiter_users')
-        .select('company_id, recruiter_companies(name, logo_url, work_days, work_hours, paid_leave, contract_type)')
+        .select('company_id, recruiter_companies(name, logo_url, work_days, work_hours, paid_leave)')
         .eq('user_id', data.session.user.id)
         .maybeSingle();
       const co = rec?.recruiter_companies;
@@ -52,7 +51,6 @@ export default function CompanySettings() {
       if (co?.work_days) setWorkDays(co.work_days);
       if (co?.work_hours) setWorkHours(co.work_hours);
       if (co?.paid_leave) setPaidLeave(co.paid_leave);
-      if (co?.contract_type) setContractType(co.contract_type);
       setStatus('ready');
     })();
     return () => { mounted = false; };
@@ -88,7 +86,6 @@ export default function CompanySettings() {
         work_days: workDays.trim() || null,
         work_hours: workHours.trim() || null,
         paid_leave: paidLeave.trim() || null,
-        contract_type: contractType.trim() || null,
       })
       .eq('id', companyId);
     if (error) { setPBusy(false); setPMsg({ type: 'err', text: t('company.profile.saveFailed') }); return; }
@@ -174,10 +171,6 @@ export default function CompanySettings() {
                 <div>
                   <label style={fcss.label}>{t('company.profile.paidLeaveLabel')}</label>
                   <input value={paidLeave} onChange={(e) => setPaidLeave(e.target.value)} placeholder={DEFAULT_PAID_LEAVE} style={fcss.input} />
-                </div>
-                <div>
-                  <label style={fcss.label}>{t('company.profile.contractLabel')}</label>
-                  <input value={contractType} onChange={(e) => setContractType(e.target.value)} placeholder={DEFAULT_CONTRACT} style={fcss.input} />
                 </div>
               </div>
 

@@ -50,7 +50,7 @@ export default function NewJobPage() {
 
       const { data: rec } = await supabase
         .from('recruiter_users')
-        .select('company_id, full_name, recruiter_companies(name, logo_url, work_days, work_hours, paid_leave, contract_type)')
+        .select('company_id, full_name, recruiter_companies(name, logo_url, work_days, work_hours, paid_leave)')
         .eq('user_id', session.user.id)
         .maybeSingle();
 
@@ -70,7 +70,8 @@ export default function NewJobPage() {
         work_days: co?.work_days || prev.work_days,
         work_hours: co?.work_hours || prev.work_hours,
         paid_leave: co?.paid_leave || prev.paid_leave,
-        contract_type: co?.contract_type || prev.contract_type,
+        // contract_type 은 회사 단위 기본값을 두지 않음 — 공고마다 정규직/계약직/인턴이
+        // 다르므로 폼에서 직접 지정(미입력 시 상세페이지에서 기본값 폴백).
       }));
       setStatus('ready');
     })();
