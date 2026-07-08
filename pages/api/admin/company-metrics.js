@@ -137,15 +137,6 @@ export default async function handler(req, res) {
 
   const companyName = Object.fromEntries(companies.map(c => [c.id, c.name]))
 
-  // 드릴다운: 리크루터(채용담당자) 목록 — 최신 가입 순
-  const recruiters = members.map(m => ({
-    email: m.email,
-    name: m.full_name || null,
-    role: m.role || null,
-    company: companyName[m.company_id] || '(unknown)',
-    created_at: m.created_at,
-  }))
-
   // 드릴다운: 자체 공고 목록 — 지원 많은 순. 번역(titleKo)은 별도 엔드포인트에서 비동기로 채운다.
   const jobsList = jobs.map(j => ({
     id: j.id,
@@ -162,19 +153,7 @@ export default async function handler(req, res) {
     created_at: j.created_at,
   })).sort((x, y) => y.applications - x.applications)
 
-  // ② ATS 활용/모집 내역 — 자체 공고가 있는 회사만, 활동 많은 순
-  const ats = Object.entries(agg)
-    .filter(([, a]) => a.jobs > 0)
-    .map(([cid, a]) => ({
-      company_id: cid,
-      name: companyName[cid] || '(unknown)',
-      ...a,
-      avgApps: a.jobs > 0 ? Math.round((a.applications / a.jobs) * 10) / 10 : 0,
-    }))
-    .sort((x, y) => y.applications - x.applications || y.jobs - x.jobs)
-
   // 직군(수요)별 집계 — 공고 수 / 지원 수 / 공고당 지원. 공고 많은 순.
-  const catKo = Object.fromEntries(DEMAND_CATEGORIES.map(c => [c.key, c.ko]))
   const catAgg = Object.fromEntries(DEMAND_CATEGORIES.map(c => [c.key, { jobs: 0, applications: 0 }]))
   jobsList.forEach(j => { const a = catAgg[j.category] || catAgg.other; a.jobs += 1; a.applications += j.applications })
   const byCategory = DEMAND_CATEGORIES
@@ -200,7 +179,7 @@ export default async function handler(req, res) {
     jobsPending: jobs.filter(j => j.status === 'pending_review').length,
     jobsLive: jobs.filter(j => j.is_active && j.status !== 'pending_review').length,
     applications: apps.length,
-    activeCompanies: ats.length, // 자체 공고를 하나라도 올린 회사
+    activeCompanies: Object.values(agg).filter(a => a.jobs > 0).length, // 자체 공고를 하나라도 올린 회사
     // 공고당 평균 지원 = 지원이 1건+ 들어온 공고 기준(0 지원·미노출 공고 제외).
     // 공고 상태(라이브/paused)는 변동이 커 분모로 부적합 → 지원 유무로 고정.
     jobsWithApps: Object.keys(jobAppCount).length,
@@ -209,5 +188,5 @@ export default async function handler(req, res) {
       : 0,
   }
 
-  return res.status(200).json({ overview, signups, daily, monthLabel, byCategory, otherTitles, ats, jobsList, recruiters, stageTotals, stageOrder })
+  return res.status(200).json({ overview, signups, daily, monthLabel, byCategory, otherTitles, jobsList, stageTotals, stageOrder })
 }
