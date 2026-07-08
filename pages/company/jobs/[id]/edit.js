@@ -12,7 +12,7 @@ import { Badge as UBadge } from '../../../../components/ui/badge';
 import { PageHeader } from '../../../../components/ui/page-header';
 import { ImageIcon, MapPin, Building2, EyeOff, Eye, Trash2, ExternalLink, Briefcase, CalendarDays, Users, Maximize2, X as XIcon } from 'lucide-react';
 import JobPreview from '../../../../components/jobs/JobPreview';
-import { ROLE_GROUPS, LOCATION_OPTIONS } from '../../../../constants/jobs';
+import { ROLE_GROUPS, LOCATION_OPTIONS, DEFAULT_WORK_DAYS, DEFAULT_WORK_HOURS, DEFAULT_PAID_LEAVE, DEFAULT_CONTRACT } from '../../../../constants/jobs';
 
 const TYPES = ['remote', 'onsite', 'hybrid'];
 const LOCATIONS = LOCATION_OPTIONS;
@@ -38,11 +38,12 @@ export default function EditJobPage() {
 
       const { data: rec } = await supabase
         .from('recruiter_users')
-        .select('company_id, recruiter_companies(name)')
+        .select('company_id, recruiter_companies(name, work_days, work_hours, paid_leave, contract_type)')
         .eq('user_id', session.user.id)
         .maybeSingle();
       if (!rec?.company_id) { setStatus('unauthed'); return; }
-      setCompanyName(rec.recruiter_companies?.name || '');
+      const co = rec.recruiter_companies;
+      setCompanyName(co?.name || '');
 
       const { data: job, error: jobErr } = await supabase
         .from('jobs')
@@ -89,6 +90,11 @@ export default function EditJobPage() {
         deadline: job.deadline || '',
         image_url: job.image_url || '',
         logo_url: job.logo_url || '',
+        // 공고에 저장된 값이 없으면(구 공고) 회사 프로필 기본값으로 프리필
+        work_days: job.work_days || co?.work_days || '',
+        work_hours: job.work_hours || co?.work_hours || '',
+        paid_leave: job.paid_leave || co?.paid_leave || '',
+        contract_type: job.contract_type || co?.contract_type || '',
       });
       setOrigStatus(job.status || 'live');
       setStatus('ready');
@@ -135,6 +141,10 @@ export default function EditJobPage() {
       deadline: form.deadline || null,
       image_url: form.image_url || null,
       logo_url: form.logo_url || null,
+      work_days: form.work_days.trim() || null,
+      work_hours: form.work_hours.trim() || null,
+      paid_leave: form.paid_leave.trim() || null,
+      contract_type: form.contract_type.trim() || null,
     };
     const { error } = await supabase.from('jobs').update(payload).eq('id', id);
     if (error) { setErr(error.message); toast.error(error.message); setStatus('ready'); return; }
@@ -301,6 +311,23 @@ export default function EditJobPage() {
                   {LOCATIONS.map(l => <option key={l} value={l}>{l}</option>)}
                 </SelectInput>
               </Field>
+
+              <h2 className="text-[12px] font-extrabold text-gray-500 uppercase tracking-[0.08em] mt-5 mb-1">{t('company.jobsnew.workH')}</h2>
+              <div className="text-xs text-gray-400 font-semibold mb-3">{t('company.jobsnew.workHint')}</div>
+              <div className="grid grid-cols-2 gap-3">
+                <Field label={t('company.jobsnew.workDays')}>
+                  <UInput value={form.work_days} onChange={e => setF('work_days', e.target.value)} placeholder={DEFAULT_WORK_DAYS} />
+                </Field>
+                <Field label={t('company.jobsnew.workHours')}>
+                  <UInput value={form.work_hours} onChange={e => setF('work_hours', e.target.value)} placeholder={DEFAULT_WORK_HOURS} />
+                </Field>
+                <Field label={t('company.jobsnew.paidLeave')}>
+                  <UInput value={form.paid_leave} onChange={e => setF('paid_leave', e.target.value)} placeholder={DEFAULT_PAID_LEAVE} />
+                </Field>
+                <Field label={t('company.jobsnew.contract')}>
+                  <UInput value={form.contract_type} onChange={e => setF('contract_type', e.target.value)} placeholder={DEFAULT_CONTRACT} />
+                </Field>
+              </div>
 
               <h2 className="text-[12px] font-extrabold text-gray-500 uppercase tracking-[0.08em] mt-5 mb-3">{t('company.jobsnew.expSalH')}</h2>
 

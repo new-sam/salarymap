@@ -16,7 +16,7 @@ import Brand from '../../../components/company/Brand';
 import LangToggle from '../../../components/company/LangToggle';
 import { useT } from '../../../lib/i18n';
 import { toast } from 'sonner';
-import { ROLE_GROUPS, LOCATION_OPTIONS } from '../../../constants/jobs';
+import { ROLE_GROUPS, LOCATION_OPTIONS, DEFAULT_WORK_DAYS, DEFAULT_WORK_HOURS, DEFAULT_PAID_LEAVE, DEFAULT_CONTRACT } from '../../../constants/jobs';
 
 const TYPES = ['remote', 'onsite', 'hybrid'];
 const LOCATIONS = LOCATION_OPTIONS; // 베트남 주요 도시/성 확장
@@ -27,6 +27,7 @@ const EMPTY = {
   salary_min: 30000000, salary_max: 50000000, tech_stack: '', benefits: '',
   headcount: '', deadline: '',
   image_url: '', logo_url: '',
+  work_days: '', work_hours: '', paid_leave: '', contract_type: '',
 };
 
 export default function NewJobPage() {
@@ -49,7 +50,7 @@ export default function NewJobPage() {
 
       const { data: rec } = await supabase
         .from('recruiter_users')
-        .select('company_id, full_name, recruiter_companies(name)')
+        .select('company_id, full_name, recruiter_companies(name, logo_url, work_days, work_hours, paid_leave, contract_type)')
         .eq('user_id', session.user.id)
         .maybeSingle();
 
@@ -59,7 +60,18 @@ export default function NewJobPage() {
         return;
       }
       setCompanyId(rec.company_id);
-      setCompanyName(rec.recruiter_companies?.name || '');
+      const co = rec.recruiter_companies;
+      setCompanyName(co?.name || '');
+      // 회사 프로필에 저장된 로고·근무정보를 새 공고 폼 기본값으로 프리필 (매번 재입력 방지).
+      // 이 공고만 다르게 하려면 폼에서 수정하면 됨.
+      setForm(prev => ({
+        ...prev,
+        logo_url: co?.logo_url || prev.logo_url,
+        work_days: co?.work_days || prev.work_days,
+        work_hours: co?.work_hours || prev.work_hours,
+        paid_leave: co?.paid_leave || prev.paid_leave,
+        contract_type: co?.contract_type || prev.contract_type,
+      }));
       setStatus('ready');
     })();
   }, []);
@@ -147,6 +159,10 @@ export default function NewJobPage() {
       deadline: form.deadline || null,
       image_url: form.image_url || null,
       logo_url: form.logo_url || null,
+      work_days: form.work_days.trim() || null,
+      work_hours: form.work_hours.trim() || null,
+      paid_leave: form.paid_leave.trim() || null,
+      contract_type: form.contract_type.trim() || null,
       source: 'company_self',
     };
 
@@ -307,6 +323,23 @@ export default function NewJobPage() {
                   {LOCATIONS.map(l => <option key={l} value={l}>{l}</option>)}
                 </SelectInput>
               </Field>
+
+              <h2 className="text-[12px] font-extrabold text-gray-500 uppercase tracking-[0.08em] mt-5 mb-1">{t('company.jobsnew.workH')}</h2>
+              <div className="text-xs text-gray-400 font-semibold mb-3">{t('company.jobsnew.workHint')}</div>
+              <div className="grid grid-cols-2 gap-3">
+                <Field label={t('company.jobsnew.workDays')}>
+                  <UInput value={form.work_days} onChange={e => setF('work_days', e.target.value)} placeholder={DEFAULT_WORK_DAYS} />
+                </Field>
+                <Field label={t('company.jobsnew.workHours')}>
+                  <UInput value={form.work_hours} onChange={e => setF('work_hours', e.target.value)} placeholder={DEFAULT_WORK_HOURS} />
+                </Field>
+                <Field label={t('company.jobsnew.paidLeave')}>
+                  <UInput value={form.paid_leave} onChange={e => setF('paid_leave', e.target.value)} placeholder={DEFAULT_PAID_LEAVE} />
+                </Field>
+                <Field label={t('company.jobsnew.contract')}>
+                  <UInput value={form.contract_type} onChange={e => setF('contract_type', e.target.value)} placeholder={DEFAULT_CONTRACT} />
+                </Field>
+              </div>
 
               <h2 className="text-[12px] font-extrabold text-gray-500 uppercase tracking-[0.08em] mt-5 mb-3">{t('company.jobsnew.expSalH')}</h2>
 

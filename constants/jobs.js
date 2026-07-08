@@ -140,6 +140,13 @@ export const TYPE_OPTIONS = ['remote','onsite','hybrid']
 export const LOCATION_OPTIONS = ['Hồ Chí Minh','Hà Nội','Đà Nẵng','Hải Phòng','Cần Thơ','Bình Dương','Đồng Nai','Bắc Ninh','Hưng Yên','Quảng Ninh','Khánh Hòa','Thừa Thiên Huế','Bà Rịa – Vũng Tàu','Remote','Khác / Other']
 export const TECH_OPTIONS = ['Java','Python','AWS','React','Go','TypeScript','JavaScript','Node.js','Kotlin','Docker','Spring Framework','Rust','Swift','Flutter','Kubernetes']
 
+// 근무 요일/시간 기본값 — 회사가 프로필/공고에서 값을 지정하지 않았을 때 상세페이지에
+// 노출되는 폴백. (예전엔 이 문자열이 JobPreview.js·jobs/[id].js에 하드코딩돼 있었음)
+export const DEFAULT_WORK_DAYS = 'Monday – Friday'
+export const DEFAULT_WORK_HOURS = '9:00 AM – 6:00 PM'
+export const DEFAULT_PAID_LEAVE = '12+ days / year'
+export const DEFAULT_CONTRACT = 'Full-time (Permanent)'
+
 export const MARKET_SALARY = {
   Backend:   { 0: 17000000, 1: 35000000, 3: 41000000, 5: 57000000, 8: 68000000 },
   Frontend:  { 0: 17000000, 1: 33000000, 3: 47000000, 5: 57000000, 8: 58000000 },
