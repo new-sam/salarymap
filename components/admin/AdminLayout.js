@@ -49,6 +49,12 @@ function buildNav(lang) {
         { label: 'Admins', pathname: '/admin/jobs', tab: 'admins' },
       ],
     },
+    {
+      label: 'Personal',
+      items: [
+        { label: L('목표지표 — Sean', 'Goals — Sean'), pathname: '/admin/dashboard', tab: 'goals' },
+      ],
+    },
   ]
 }
 

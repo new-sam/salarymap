@@ -17,6 +17,7 @@ import VerificationsView from '../../components/admin/VerificationsView'
 import CommunityView from '../../components/admin/CommunityView'
 import CompanyView from '../../components/admin/CompanyView'
 import OutreachView from '../../components/admin/OutreachView'
+import GoalMetricsView from '../../components/admin/GoalMetricsView'
 import {
   T, METRICS_BASE, EXP_COLORS, COLORS,
   inputStyle, sectionStyle, sectionTitle,
@@ -961,6 +962,11 @@ export default function AdminDashboard() {
         {/* Cold Outreach Tab — 콜드메일 영업 대상/진행 관리 */}
         {(tab === 'outreach' || tab === 'outreach-yh') && (
           <OutreachView key={tab} token={token} lang={lang} owner={tab === 'outreach-yh' ? 'younghun' : 'wsj'} />
+        )}
+
+        {/* Personal · 목표지표 — Sean (개인 비밀번호 게이트) */}
+        {tab === 'goals' && (
+          <GoalMetricsView token={token} lang={lang} />
         )}
 
       </div>

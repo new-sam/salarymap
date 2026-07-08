@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
+import supabaseAdmin from '../../../../lib/supabaseAdmin';
 
 // Receives the auth code from Google, exchanges it for an ID token, then signs
 // the user into Supabase via signInWithIdToken. Redirects to /auth/callback
@@ -51,6 +52,23 @@ export default async function handler(req, res) {
   if (error || !data?.session) {
     return res.redirect(`/?login_error=${encodeURIComponent(error?.message || 'supabase_signin_failed')}`);
   }
+
+  // 신규 가입이면 sign_up 이벤트를 남긴다 — web/app split을 "첫 이벤트 platform" 역추정이
+  // 아니라 가입 시점에서 직접 측정하기 위함. 이 콜백은 웹 OAuth 전용이라 platform='web'.
+  // (앱은 자체 가입 성공 지점에서 platform:'app'으로 발화한다.) 실패해도 로그인은 막지 않는다.
+  try {
+    const u = data.user;
+    const isNew = u?.created_at && (Date.now() - new Date(u.created_at).getTime() < 60_000);
+    const isInternal = u?.email && u.email.endsWith('@likelion.net');
+    if (isNew && !isInternal) {
+      await supabaseAdmin.from('events').insert([{
+        event: 'sign_up',
+        page: '/auth/callback',
+        user_id: u.id,
+        meta: { platform: 'web', provider: 'google' },
+      }]);
+    }
+  } catch {}
 
   // Hand the session off to the existing client-side /auth/callback page via URL hash.
   const sess = data.session;
