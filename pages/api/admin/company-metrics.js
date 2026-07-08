@@ -1,28 +1,5 @@
 import { createClient } from '@supabase/supabase-js'
-import OpenAI from 'openai'
 import { verifyAdminOrDevStub } from './check'
-
-// 공고 제목(주로 베트남어) → 한국어. 짧은 제목 배치 1회(gpt-4o-mini)라 토큰 적음.
-// 키 없거나 실패하면 원문 유지(폴백) — 절대 엔드포인트를 깨지 않음.
-async function translateTitles(titles) {
-  const uniq = [...new Set(titles.filter(Boolean))]
-  if (!process.env.OPENAI_API_KEY || uniq.length === 0) return {}
-  try {
-    const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
-    const completion = await openai.chat.completions.create({
-      model: 'gpt-4o-mini',
-      temperature: 0,
-      response_format: { type: 'json_object' },
-      messages: [
-        { role: 'system', content: 'You translate job titles (mostly Vietnamese) into short natural Korean. Return JSON: {"t": {"<original>": "<korean>", ...}}. Keep each translation concise (role name only).' },
-        { role: 'user', content: JSON.stringify(uniq) },
-      ],
-    })
-    return JSON.parse(completion.choices[0].message.content || '{}').t || {}
-  } catch {
-    return {}
-  }
-}
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
@@ -84,28 +61,18 @@ export default async function handler(req, res) {
   if (!admin) return res.status(401).json({ error: 'Unauthorized' })
   if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' })
 
-  // 회사 계정 + 멤버(리크루터)
-  const { data: companiesRaw } = await supabase
-    .from('recruiter_companies')
-    .select('id, name, email_domain, verified_at, created_at')
-    .order('created_at', { ascending: false })
-  const companies = companiesRaw || []
-
-  const { data: membersRaw } = await supabase
-    .from('recruiter_users')
-    .select('company_id, email, full_name, role, created_at')
-    .order('created_at', { ascending: false })
-  const members = membersRaw || []
+  // 회사 계정 · 멤버(리크루터) · 기업 소유 공고 — 서로 독립이라 병렬 조회
+  const [companiesRes, membersRes, jobsRes] = await Promise.all([
+    supabase.from('recruiter_companies').select('id, name, email_domain, verified_at, created_at').order('created_at', { ascending: false }),
+    supabase.from('recruiter_users').select('company_id, email, full_name, role, created_at').order('created_at', { ascending: false }),
+    supabase.from('jobs').select('id, company_id, title, status, is_active, created_at').not('company_id', 'is', null).order('created_at', { ascending: false }),
+  ])
+  const companies = companiesRes.data || []
+  const members = membersRes.data || []
   const memberCount = {}
   members.forEach(m => { memberCount[m.company_id] = (memberCount[m.company_id] || 0) + 1 })
 
-  // 기업 소유 공고 (company_id 있는 = 자체 등록). 크롤/내부 공고는 제외.
-  const { data: jobsRaw } = await supabase
-    .from('jobs')
-    .select('id, company_id, title, status, is_active, created_at')
-    .not('company_id', 'is', null)
-    .order('created_at', { ascending: false })
-  const jobs = jobsRaw || []
+  const jobs = jobsRes.data || []
   const jobToCompany = {}
   jobs.forEach(j => { jobToCompany[j.id] = j.company_id })
 
@@ -184,14 +151,10 @@ export default async function handler(req, res) {
     created_at: m.created_at,
   }))
 
-  // 제목 한국어 번역 (라이브, 폴백 있음)
-  const koTitleMap = await translateTitles(jobs.map(j => j.title))
-
-  // 드릴다운: 자체 공고 목록 — 지원 많은 순
+  // 드릴다운: 자체 공고 목록 — 지원 많은 순. 번역(titleKo)은 별도 엔드포인트에서 비동기로 채운다.
   const jobsList = jobs.map(j => ({
     id: j.id,
     title: j.title || '(제목 없음)',
-    titleKo: koTitleMap[j.title] || null,
     category: classifyJobTitle(j.title),
     categoryKo: CAT_KO[classifyJobTitle(j.title)],
     company_id: j.company_id,
@@ -237,7 +200,7 @@ export default async function handler(req, res) {
   const overview = {
     companies: companies.length,
     verified: companies.filter(c => c.verified_at).length,
-    members: (membersRaw || []).length,
+    members: members.length,
     jobsCompanySelf: jobs.length,
     jobsPending: jobs.filter(j => j.status === 'pending_review').length,
     jobsLive: jobs.filter(j => j.is_active && j.status !== 'pending_review').length,

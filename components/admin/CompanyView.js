@@ -25,6 +25,7 @@ const dayNum = (d) => String(parseInt(d.slice(8), 10)) // '2026-07-04' → '4'
 export default function CompanyView({ token, lang }) {
   const ko = lang !== 'en'
   const { data, isLoading } = useAdmin('/api/admin/company-metrics', token)
+  const { data: koData } = useAdmin('/api/admin/company-title-ko', token) // 번역: 비동기(표를 막지 않음)
   const [openCard, setOpenCard] = useState(null)
   const [openCompany, setOpenCompany] = useState(null)
   const [showOther, setShowOther] = useState(false)
@@ -33,7 +34,9 @@ export default function CompanyView({ token, lang }) {
   if (isLoading || !data) return <div style={{ textAlign: 'center', padding: 40, color: '#666' }}>{ko ? '불러오는 중…' : 'Loading…'}</div>
   if (data.error) return <div style={{ textAlign: 'center', padding: 40, color: '#c00' }}>{data.error}</div>
 
-  const { overview, signups, daily, monthLabel, byCategory, otherTitles, jobsList, stageTotals, stageOrder } = data
+  const { overview, signups, daily, monthLabel, byCategory, otherTitles, jobsList: jobsRaw, stageTotals, stageOrder } = data
+  const koMap = koData?.map || {}
+  const jobsList = jobsRaw.map(j => ({ ...j, titleKo: koMap[j.title] || null }))
   const maxCatApps = Math.max(1, ...byCategory.map(c => c.applications))
 
   // 핵심 퍼널 3단 (누르면 상세)
@@ -403,67 +406,6 @@ export default function CompanyView({ token, lang }) {
         </div>
       )}
 
-      {/* 공고별 지원자 단계 (칸반) — 각 공고에 어느 단계에 몇 명 */}
-      <h4 style={{ fontSize: 15, fontWeight: 700, margin: '0 0 4px' }}>{ko ? '공고별 지원자 단계 (칸반)' : 'Applicants by stage, per job'}</h4>
-      <div style={{ fontSize: 12, color: '#6B7280', marginBottom: 10 }}>
-        {ko ? '각 공고에 지원자가 어느 단계(칸반)에 몇 명 걸려 있는지. 지원이 있는 공고만.' : 'How many applicants sit at each stage, per job. Jobs with applications only.'}
-      </div>
-      {/* 단계 범례 */}
-      <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginBottom: 10 }}>
-        {stageOrder.map(s => (
-          <span key={s} style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 11.5, color: '#6B7280' }}>
-            <span style={{ width: 9, height: 9, borderRadius: 2, background: STAGE[s]?.color || '#94A3B8' }} />
-            {STAGE[s] ? (ko ? STAGE[s].ko : STAGE[s].en) : s}
-          </span>
-        ))}
-      </div>
-      <div style={{ border: '1px solid #E5E8EB', borderRadius: 12, overflow: 'hidden' }}>
-        <div style={{ overflowX: 'auto' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
-            <thead>
-              <tr style={{ background: '#F8FAFC', color: '#475569' }}>
-                <th style={th}>{ko ? '공고' : 'Job'}</th>
-                <th style={thR}>{ko ? '지원' : 'Apps'}</th>
-                <th style={{ ...th, width: '48%' }}>{ko ? '단계별 인원' : 'By stage'}</th>
-              </tr>
-            </thead>
-            <tbody>
-              {jobsList.filter(j => j.applications > 0).length === 0 && (
-                <tr><td style={{ ...td, textAlign: 'center', color: '#9CA3AF' }} colSpan={3}>{ko ? '아직 지원이 들어온 공고가 없습니다.' : 'No jobs with applications yet.'}</td></tr>
-              )}
-              {jobsList.filter(j => j.applications > 0).map(j => {
-                const total = j.applications
-                return (
-                  <tr key={j.id} style={{ borderTop: '1px solid #F1F5F9' }}>
-                    <td style={{ ...td, minWidth: 180 }}>
-                      <div style={{ fontWeight: 600, color: '#0F172A' }}>{j.titleKo || j.title}</div>
-                      <div style={{ fontSize: 11, color: '#9CA3AF' }}>{j.titleKo ? j.title + ' · ' : ''}{j.company}</div>
-                    </td>
-                    <td style={{ ...tdR, fontWeight: 700, color: '#0F172A' }}>{total}</td>
-                    <td style={td}>
-                      <div style={{ display: 'flex', height: 18, borderRadius: 5, overflow: 'hidden', border: '1px solid #E5E8EB', marginBottom: 6 }}>
-                        {stageOrder.map(s => {
-                          const n = j.stages[s] || 0
-                          if (!n) return null
-                          return <div key={s} title={`${STAGE[s] ? (ko ? STAGE[s].ko : STAGE[s].en) : s}: ${n}`} style={{ width: `${(n / total) * 100}%`, background: STAGE[s]?.color || '#94A3B8' }} />
-                        })}
-                      </div>
-                      <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-                        {stageOrder.filter(s => j.stages[s]).map(s => (
-                          <span key={s} style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 12, color: '#475569' }}>
-                            <span style={{ width: 8, height: 8, borderRadius: 2, background: STAGE[s]?.color || '#94A3B8' }} />
-                            {STAGE[s] ? (ko ? STAGE[s].ko : STAGE[s].en) : s} <b style={{ color: '#0F172A' }}>{j.stages[s]}</b>
-                          </span>
-                        ))}
-                      </div>
-                    </td>
-                  </tr>
-                )
-              })}
-            </tbody>
-          </table>
-        </div>
-      </div>
     </div>
   )
 }
