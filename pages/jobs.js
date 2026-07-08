@@ -164,6 +164,13 @@ export default function JobsPage() {
   // Reset visible count when filters change
   useEffect(() => { setVisibleCount(JOBS_PER_PAGE) }, [searchQuery, roleFilter, typeFilter, techFilter, expMin, expMax, router.query.company])
 
+  // 직무별 광고 딥링크: /jobs?role=Backend (또는 ?role=cat:software) 로 랜딩하면 해당 직무로
+  // 바로 필터 → ATS(기업 직접등록) 공고가 최상단(companyFirst)에 떠서 우선 매칭·지원 유도.
+  useEffect(() => {
+    const r = router.query.role
+    if (typeof r === 'string' && r) setRoleFilter(r)
+  }, [router.query.role])
+
   // Infinite scroll
   const loadMoreObserver = useRef(null)
   useEffect(() => {
