@@ -70,12 +70,18 @@ export default async function handler(req, res) {
     supabase.from('jobs').select('id, company_id, title, status, is_active, created_at').not('company_id', 'is', null).order('created_at', { ascending: false }),
     supabase.from('job_applications').select('job_id, status, rejected_at, jobs!inner(company_id)').not('jobs.company_id', 'is', null),
   ])
-  const companies = companiesRes.data || []
+  // 멋사(Likelion) 등 내부/테스트 회사 제외 — 알람(daily-summary)과 동일 규칙.
+  // 자체 테스트 지원이 대부분이라 안 빼면 지원·공고당 지원이 뻥튀기됨.
+  const EXCLUDED_CO_DOMAINS = ['likelion.net', 'dummy.local', 'system.local']
+  const EXCLUDED_CO_NAMES = new Set(['likelion', 'likelion vn', 'likelion vietnam'])
+  const isExcludedCo = (c) => EXCLUDED_CO_DOMAINS.includes((c.email_domain || '').toLowerCase()) || EXCLUDED_CO_NAMES.has((c.name || '').trim().toLowerCase())
+  const excludedCoIds = new Set((companiesRes.data || []).filter(isExcludedCo).map(c => c.id))
+  const companies = (companiesRes.data || []).filter(c => !isExcludedCo(c))
   const members = membersRes.data || []
   const memberCount = {}
   members.forEach(m => { memberCount[m.company_id] = (memberCount[m.company_id] || 0) + 1 })
 
-  const jobs = jobsRes.data || []
+  const jobs = (jobsRes.data || []).filter(j => !excludedCoIds.has(j.company_id))
   const jobToCompany = {}
   jobs.forEach(j => { jobToCompany[j.id] = j.company_id })
 
@@ -186,6 +192,14 @@ export default async function handler(req, res) {
     avgAppsPerJob: Object.keys(jobAppCount).length > 0
       ? Math.round((apps.length / Object.keys(jobAppCount).length) * 10) / 10
       : 0,
+    // 공고당 지원 (중위) — 알람(daily-summary)과 동일. 지원 들어온 공고들의
+    // 공고별 지원수 중위값. 평균은 소수 폭주공고에 왜곡되므로 중위값으로 통일.
+    medianAppsPerJob: (() => {
+      const s = Object.values(jobAppCount).sort((a, b) => a - b)
+      if (!s.length) return 0
+      const m = Math.floor(s.length / 2)
+      return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2
+    })(),
   }
 
   return res.status(200).json({ overview, signups, daily, monthLabel, byCategory, otherTitles, jobsList, stageTotals, stageOrder })

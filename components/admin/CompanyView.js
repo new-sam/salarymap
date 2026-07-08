@@ -231,8 +231,8 @@ export default function CompanyView({ token, lang }) {
       {/* 파생 지표 — 쉬운 설명 */}
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, marginBottom: 26 }}>
         <div style={{ flex: '1 1 200px', background: '#FAFBFC', border: '1px solid #EEF0F2', borderRadius: 10, padding: '12px 14px' }}>
-          <div style={{ fontSize: 20, fontWeight: 800, color: '#0F172A' }}>{overview.avgAppsPerJob}<span style={{ fontSize: 12, fontWeight: 600, color: '#9CA3AF' }}> {ko ? '명' : ''}</span></div>
-          <div style={{ fontSize: 12, color: '#374151', fontWeight: 600, marginTop: 2 }}>{ko ? '공고 1개당 평균 지원' : 'Avg apps / job'}</div>
+          <div style={{ fontSize: 20, fontWeight: 800, color: '#0F172A' }}>{overview.medianAppsPerJob}<span style={{ fontSize: 12, fontWeight: 600, color: '#9CA3AF' }}> {ko ? '명' : ''}</span></div>
+          <div style={{ fontSize: 12, color: '#374151', fontWeight: 600, marginTop: 2 }}>{ko ? '공고당 지원 (중위)' : 'Median apps / job'}</div>
           <div style={{ fontSize: 11, color: '#9CA3AF', marginTop: 2 }}>{ko ? '지원이 들어온 공고 기준 (빈 공고 제외)' : 'Over jobs that got applications'}</div>
         </div>
         <div style={{ flex: '1 1 200px', background: '#FAFBFC', border: '1px solid #EEF0F2', borderRadius: 10, padding: '12px 14px' }}>
