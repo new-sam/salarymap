@@ -829,11 +829,11 @@ export default function CvLanding() {
                       <div className="cvm-job-meta">{meta}</div>
                     </div>
                     <button
-                      className={`cvm-apply${isApplied ? ' done' : ''}`}
+                      className={`cvm-apply${isApplied ? ' done' : ''}${isApplying ? ' applying' : ''}`}
                       disabled={isApplied || isApplying}
                       onClick={() => apply(j)}
                     >
-                      {isApplied ? L('지원 완료 ✓', 'Applied ✓', 'Đã ứng tuyển ✓') : isApplying ? '…' : L('바로 지원', 'Apply', 'Ứng tuyển')}
+                      {isApplied ? L('지원 완료 ✓', 'Applied ✓', 'Đã ứng tuyển ✓') : isApplying ? L('지원 중', 'Applying', 'Đang gửi') : L('바로 지원', 'Apply', 'Ứng tuyển')}
                     </button>
                   </div>
                 )
@@ -877,8 +877,9 @@ export default function CvLanding() {
         .cvm-job-title { font-size: 14px; font-weight: 700; color: #1a1612; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .cvm-job-company { font-size: 12.5px; color: #8a8073; margin-top: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .cvm-job-meta { font-size: 11.5px; color: #a89f92; margin-top: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .cvm-apply { flex-shrink: 0; font-size: 13px; font-weight: 700; color: #fff; background: #ff6000; border: none; border-radius: 9px; padding: 9px 16px; cursor: pointer; font-family: inherit; transition: opacity .12s; }
+        .cvm-apply { flex-shrink: 0; min-width: 84px; text-align: center; font-size: 13px; font-weight: 700; color: #fff; background: #ff6000; border: none; border-radius: 9px; padding: 9px 14px; cursor: pointer; font-family: inherit; transition: opacity .15s; }
         .cvm-apply:disabled { cursor: default; }
+        .cvm-apply.applying { opacity: 0.55; }
         .cvm-apply.done { background: #E7F6EC; color: #16a34a; }
         .cvm-all { display: block; text-align: center; margin-top: 16px; font-size: 13px; font-weight: 600; color: #8a8073; text-decoration: none; }
         .cvm-more { display: block; text-align: center; margin-top: 16px; padding: 13px 0; font-size: 14px; font-weight: 700; color: #ff6000; background: #fff1e8; border: 1px solid #ffd7c2; border-radius: 11px; text-decoration: none; }
