@@ -921,12 +921,14 @@ const APPS_PER_JOB_TARGET = 20;
 //   공고당 지원(중위, 지원받은 공고) / 공고 충족률(지원 받은 공고 비율).
 function matchingLinesSection(c: Density, p: Density, prevLabel: string, currLabel: string): string {
   const arrow = (pv: number, cv: number) => cv > pv ? " ▲" : cv < pv ? " ▽" : "";
-  const line = (label: string, pv: string, cv: string, tgt: string, arr: string) =>
-    padLabel(label, LABEL_W) + pv.padStart(VAL_W) + cv.padStart(VAL_W) + tgt.padStart(VAL_W) + (arr ? " " + arr.trim() : "");
+  const line = (label: string, pv: string, cv: string, ach: string, arr: string) =>
+    padLabel(label, LABEL_W) + pv.padStart(VAL_W) + cv.padStart(VAL_W) + ach.padStart(VAL_W) + (arr ? " " + arr.trim() : "");
+  // 목표비 = 오늘값 ÷ 목표. 공고당지원 목표=20, 지원받은 공고% 목표=100%.
+  const medAch = Math.round(c.median / APPS_PER_JOB_TARGET * 100);
   return codeBlock([
-    padLabel("", LABEL_W) + cjkPadStart(prevLabel, VAL_W) + cjkPadStart(currLabel, VAL_W) + cjkPadStart("목표", VAL_W),
-    line("• 공고당 지원 (중위)", String(p.median), String(c.median), String(APPS_PER_JOB_TARGET), arrow(p.median, c.median)),
-    line("• 지원받은 공고 %", p.fillRate + "%", c.fillRate + "%", "100%", arrow(p.fillRate, c.fillRate)),
+    padLabel("", LABEL_W) + cjkPadStart(prevLabel, VAL_W) + cjkPadStart(currLabel, VAL_W) + cjkPadStart("목표비", VAL_W),
+    line("• 공고당 지원 (중위)", String(p.median), String(c.median), medAch + "%", arrow(p.median, c.median)),
+    line("• 지원받은 공고 %", p.fillRate + "%", c.fillRate + "%", c.fillRate + "%", arrow(p.fillRate, c.fillRate)),
   ]);
 }
 
