@@ -43,6 +43,25 @@ async function pageEvents(cols, gteIso, eventName) {
   return out
 }
 
+// 가입 시점에 /auth/callback이 user_profiles에 저장한 utm_campaign/source (=가입 귀속).
+async function pageProfiles(gteIso) {
+  const out = []
+  let from = 0
+  while (true) {
+    const { data } = await supabase
+      .from('user_profiles')
+      .select('created_at, utm_campaign, utm_source')
+      .gte('created_at', gteIso)
+      .order('created_at', { ascending: true })
+      .range(from, from + 999)
+    if (!data?.length) break
+    out.push(...data)
+    if (data.length < 1000) break
+    from += 1000
+  }
+  return out
+}
+
 // 가입자의 첫 이벤트 meta로 platform + 유입 채널 귀속.
 function channelOf(m) {
   if (!m) return 'no_event'
@@ -125,7 +144,27 @@ export default async function handler(req, res) {
       landByDay[d] = (landByDay[d] || 0) + 1
     }
 
-    // 4) 일별 퍼널 (최근 21일)
+    // 4) 가입 캠페인 귀속 (user_profiles.utm_campaign) — landing 트래픽과 합쳐 캠페인별 가입 전환율.
+    const profiles = await pageProfiles(sinceIso)
+    let attributed = 0
+    const suByCamp = {}
+    for (const p of profiles) {
+      if (p.utm_campaign) {
+        attributed++
+        suByCamp[p.utm_campaign] = (suByCamp[p.utm_campaign] || 0) + 1
+      }
+    }
+    const campNames = new Set([...Object.keys(suByCamp), ...Object.keys(camp).filter((k) => k !== '(none)')])
+    const campaignFunnel = [...campNames]
+      .map((name) => {
+        const l = camp[name] || 0
+        const su = suByCamp[name] || 0
+        return { campaign: name, landings: l, signups: su, cvr: l ? Math.round((su / l) * 1000) / 10 : null }
+      })
+      .filter((r) => r.signups > 0 || r.landings > 0)
+      .sort((a, b) => b.signups - a.signups)
+
+    // 5) 일별 퍼널 (최근 21일)
     const days = [...new Set([...Object.keys(landByDay), ...Object.keys(suByDay)])].sort().slice(-21)
     const funnel = days.map((d) => {
       const l = landByDay[d] || 0
@@ -145,6 +184,12 @@ export default async function handler(req, res) {
         noEventPct: recent.length ? Math.round((noEvent / recent.length) * 1000) / 10 : 0,
       },
       funnel,
+      campaignFunnel,
+      signupAttribution: {
+        attributed,
+        total: profiles.length,
+        pct: profiles.length ? Math.round((attributed / profiles.length) * 1000) / 10 : 0,
+      },
       sources: topN(src, 8, land.length),
       campaigns: topN(camp, 8, land.length),
       creatives: topN(content, 10, land.length),

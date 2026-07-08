@@ -296,6 +296,45 @@ function AdTab({ data, loading, error, ko }) {
         <Stat label={ko ? '소스 미귀속' : 'Unattributed'} value={`${t.noEventPct}%`} sub={`${t.noEvent}${ko ? '명 이벤트無' : ' no-event'}`} color="#DC2626" />
       </div>
 
+      {/* 가입 캠페인별 — 실제 가입 기준 (핵심) */}
+      <div style={{ fontSize: 13, fontWeight: 700, color: '#374151', margin: '0 0 3px' }}>{ko ? '가입 캠페인별 성과 (실제 가입 기준)' : 'Sign-ups by campaign (actual)'}</div>
+      <div style={{ fontSize: 11, color: '#9CA3AF', marginBottom: 8 }}>
+        {ko
+          ? `트래픽(landing)이 아니라 가입 전환 기준 · 귀속 ${data.signupAttribution.attributed}/${data.signupAttribution.total} (${data.signupAttribution.pct}%, user_profiles.utm)`
+          : `Ranked by sign-up conversion, not traffic · attributed ${data.signupAttribution.attributed}/${data.signupAttribution.total} (${data.signupAttribution.pct}%)`}
+      </div>
+      <div style={{ overflowX: 'auto', marginBottom: 30, border: '1px solid #EEF0F2', borderRadius: 12 }}>
+        <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 460 }}>
+          <thead><tr>
+            <th style={th}>{ko ? '캠페인' : 'Campaign'}</th>
+            <th style={{ ...th, textAlign: 'right' }}>landing</th>
+            <th style={{ ...th, textAlign: 'right' }}>{ko ? '가입' : 'sign-ups'}</th>
+            <th style={{ ...th, textAlign: 'right' }}>{ko ? '가입 전환율' : 'sign-up CVR'}</th>
+            <th style={{ ...th, textAlign: 'right', width: '24%' }}>{ko ? '가입 볼륨' : 'sign-ups'}</th>
+          </tr></thead>
+          <tbody>
+            {(() => {
+              const maxS = Math.max(1, ...data.campaignFunnel.map((c) => c.signups))
+              return data.campaignFunnel.map((c) => (
+                <tr key={c.campaign}>
+                  <td style={{ ...td, fontWeight: 600, maxWidth: 200, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} title={c.campaign}>{c.campaign}</td>
+                  <td style={{ ...num, color: '#9CA3AF' }}>{c.landings.toLocaleString()}</td>
+                  <td style={{ ...num, fontWeight: 800 }}>{c.signups}</td>
+                  <td style={{ ...num, color: c.cvr == null ? '#9CA3AF' : c.cvr >= 10 ? '#059669' : c.cvr >= 2 ? '#D97706' : '#DC2626' }}>
+                    {c.cvr == null ? '—' : `${c.cvr}%`}
+                  </td>
+                  <td style={{ ...td, width: '24%' }}>
+                    <div style={{ height: 6, background: '#F1F5F9', borderRadius: 4, overflow: 'hidden' }}>
+                      <div style={{ width: `${(c.signups / maxS) * 100}%`, height: '100%', background: '#059669' }} />
+                    </div>
+                  </td>
+                </tr>
+              ))
+            })()}
+          </tbody>
+        </table>
+      </div>
+
       {/* 일별 퍼널 */}
       <div style={{ fontSize: 13, fontWeight: 700, color: '#374151', margin: '0 0 8px' }}>{ko ? '일별 유입 → 가입 퍼널' : 'Daily landing → sign-up funnel'}</div>
       <div style={{ overflowX: 'auto', marginBottom: 30, border: '1px solid #EEF0F2', borderRadius: 12 }}>
