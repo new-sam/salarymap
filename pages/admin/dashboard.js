@@ -81,14 +81,17 @@ export default function AdminDashboard() {
   const [dateRange, setDateRange] = useState({ from: '2026-04-20', to: yesterday })
 
   // SWR: 캐시로 탭 전환/페이지 재방문 시 즉시 표시 + 백그라운드 갱신. 키에 날짜/언어 포함.
+  // 무거운 데이터는 실제로 쓰는 탭에서만 로드 — data/ga4 는 추이·퍼널, realtime/experiments 는
+  // 추이 전용. 다른 탭(기업 등)이 자기 요청만 발사하도록 게이트해 초기 로딩 경쟁을 없앤다.
+  const needsCore = ['trend', 'funnel'].includes(tab)
   const { data, isLoading: loading } = useAdmin(
-    `/api/admin/dashboard?from=${dateRange.from}&to=${dateRange.to}&lang=${lang}`, token
+    needsCore ? `/api/admin/dashboard?from=${dateRange.from}&to=${dateRange.to}&lang=${lang}` : null, token
   )
-  const { data: ga4 } = useAdmin(`/api/admin/ga4?from=${dateRange.from}&to=${dateRange.to}`, token)
-  const { data: realtime } = useAdmin('/api/admin/realtime', token, {
+  const { data: ga4 } = useAdmin(needsCore ? `/api/admin/ga4?from=${dateRange.from}&to=${dateRange.to}` : null, token)
+  const { data: realtime } = useAdmin(tab === 'trend' ? '/api/admin/realtime' : null, token, {
     refreshInterval: autoRefresh ? 30000 : 0,
   })
-  const { data: experiments = [], mutate: mutateExperiments } = useAdmin('/api/admin/experiments', token)
+  const { data: experiments = [], mutate: mutateExperiments } = useAdmin(tab === 'trend' ? '/api/admin/experiments' : null, token)
 
   // 마지막 갱신 시각 표시용 — 데이터/실시간 갱신 때마다 기록
   useEffect(() => { if (data || realtime) setLastUpdated(new Date()) }, [data, realtime])
