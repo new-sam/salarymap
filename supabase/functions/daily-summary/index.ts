@@ -926,7 +926,7 @@ function matchingLinesSection(c: Density, p: Density, prevLabel: string, currLab
   return codeBlock([
     padLabel("", LABEL_W) + cjkPadStart(prevLabel, VAL_W) + cjkPadStart(currLabel, VAL_W) + cjkPadStart("목표", VAL_W),
     line("• 공고당 지원 (중위)", String(p.median), String(c.median), String(APPS_PER_JOB_TARGET), arrow(p.median, c.median)),
-    line("• 공고 충족률", p.fillRate + "%", c.fillRate + "%", "100%", arrow(p.fillRate, c.fillRate)),
+    line("• 지원받은 공고 %", p.fillRate + "%", c.fillRate + "%", "100%", arrow(p.fillRate, c.fillRate)),
   ]);
 }
 
@@ -953,7 +953,7 @@ function buildRealtimeMessage(
       { type: "divider" },
       { type: "section", text: { type: "mrkdwn", text: `*🔵 기업 (Company)*\n` + companyLinesSection(s, p, pl, cl) }},
       { type: "divider" },
-      { type: "section", text: { type: "mrkdwn", text: `*🔗 매칭 지표 (인재 ↔ 기업)*\n` + matchingLinesSection(dCurr, dPrev, pl, cl) }},
+      { type: "section", text: { type: "mrkdwn", text: `*🔗 매칭 지표 (인재 ↔ 기업) · 누적*\n` + matchingLinesSection(dCurr, dPrev, pl, cl) }},
     ],
   };
 }
@@ -987,8 +987,8 @@ function buildDailyMessage(
       { type: "divider" },
       { type: "section", text: { type: "mrkdwn", text: `*🔵 기업 (Company)*\n` + companyLinesSection(s, p, pl, cl) }},
       { type: "divider" },
-      { type: "section", text: { type: "mrkdwn", text: `*🔗 매칭 지표 (인재 ↔ 기업)*\n` + matchingLinesSection(dCurr, dPrev, pl, cl) }},
-      { type: "context", elements: [{ type: "mrkdwn", text: `공고당 지원=지원받은 공고의 중위값 · 충족률=지원받은 공고 ${dCurr.withApps}/${dCurr.total}개 · 멋사(Likelion) 제외 · 목표 공고당 ${APPS_PER_JOB_TARGET}` }] },
+      { type: "section", text: { type: "mrkdwn", text: `*🔗 매칭 지표 (인재 ↔ 기업) · 누적*\n` + matchingLinesSection(dCurr, dPrev, pl, cl) }},
+      { type: "context", elements: [{ type: "mrkdwn", text: `🔗 매칭은 전체 기간 누적(과거 지원 포함) — 위 기업 '받은 지원'(당일)과 기준 다름 · 지원받은 공고 ${dCurr.withApps}/${dCurr.total}개 · 멋사(Likelion) 제외 · 목표 공고당 ${APPS_PER_JOB_TARGET}` }] },
       ...alertBlock,
     ],
     attachments: [],
