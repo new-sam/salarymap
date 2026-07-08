@@ -110,12 +110,15 @@ export default async function handler(req, res) {
 
   console.log(`[JOB APPLICATION] user=${userId || 'anon'} applied to job=${jobId}`)
 
-  // 채용팀(job_team 전원 + 오너)에게 지원 접수 알림 메일 발송 — best-effort, non-blocking.
-  // 실패해도 지원 접수 자체는 성공으로 처리.
+  // 채용팀(job_team 전원 + 오너)에게 지원 접수 알림 메일 발송.
+  // 서버리스에서 fire-and-forget 하면 response 반환 후 프로세스가 종료돼 promise 가
+  // discard 될 수 있어 실제로 발송이 안 나가는 사례가 있었다 → await 로 반드시 완료.
+  // notifyTeamNewApplication 자체는 절대 throw 하지 않으므로 지원 접수는 안전.
   if (data?.id) {
-    notifyTeamNewApplication(data.id).catch(e =>
-      console.error('[JOB APPLICATION] team notify failed:', e?.message || e)
-    )
+    const notifyResult = await notifyTeamNewApplication(data.id)
+    if (!notifyResult?.ok) {
+      console.warn('[JOB APPLICATION] team notify not sent:', notifyResult?.reason || 'unknown')
+    }
   }
 
   return res.status(201).json({ success: true, data })
