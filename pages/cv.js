@@ -406,6 +406,13 @@ export default function CvLanding() {
     return [...atsMatch, ...featMatch, ...rest].slice(0, 3)
   }, [jobs, selectedRoles])
 
+  // "공고 더 보러가기" 링크 — 선택 직무의 대분류로 딥링크(taxonomy 안전), 없으면 전체.
+  const moreJobsHref = useMemo(() => {
+    const first = selectedRoles[0]
+    const grp = first ? ROLE_GROUPS.find((g) => g.roles.some((r) => r.value === first))?.key : null
+    return grp ? `/jobs?role=cat:${grp}` : '/jobs'
+  }, [selectedRoles])
+
   const apply = async (job) => {
     if (applied[job.id] || applyingId) return
     setApplyingId(job.id)
@@ -832,7 +839,11 @@ export default function CvLanding() {
                 )
               })}
             </div>
-            <a href="/jobs" className="cvm-all">{L('전체 공고 보기', 'Browse all jobs', 'Xem tất cả việc làm')} →</a>
+            {Object.keys(applied).length > 0 ? (
+              <a href={moreJobsHref} className="cvm-more">{L('공고 더 보러가기', 'Browse more jobs', 'Xem thêm việc làm')} →</a>
+            ) : (
+              <a href={moreJobsHref} className="cvm-all">{L('전체 공고 보기', 'Browse all jobs', 'Xem tất cả việc làm')} →</a>
+            )}
           </div>
         </div>
       )}
@@ -870,6 +881,7 @@ export default function CvLanding() {
         .cvm-apply:disabled { cursor: default; }
         .cvm-apply.done { background: #E7F6EC; color: #16a34a; }
         .cvm-all { display: block; text-align: center; margin-top: 16px; font-size: 13px; font-weight: 600; color: #8a8073; text-decoration: none; }
+        .cvm-more { display: block; text-align: center; margin-top: 16px; padding: 13px 0; font-size: 14px; font-weight: 700; color: #ff6000; background: #fff1e8; border: 1px solid #ffd7c2; border-radius: 11px; text-decoration: none; }
 
         /* ───────────────────────────────────────
            Design tokens — warm cream system
