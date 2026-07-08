@@ -327,25 +327,60 @@ async function getSubmissions(dateStr: string) {
 //   올라온 공고 = jobs 중 company_id 있는 것(기업 자체등록, 그날 생성)
 //   받은 지원 = 그 기업 공고들에 들어온 job_applications (그날) — 전체 지원과 다름(부분집합)
 // company-metrics 는 제외 필터가 없으므로 여기서도 제외 없이 그대로 매칭한다.
-async function getCompanyMetricsInRange(startUtc: string, endUtc: string) {
-  const [{ count: companySignups }, { count: companyJobs }, { data: companyJobRows }] = await Promise.all([
-    supabase.from("recruiter_companies").select("*", { count: "exact", head: true })
-      .gte("created_at", startUtc).lte("created_at", endUtc),
-    supabase.from("jobs").select("*", { count: "exact", head: true })
-      .not("company_id", "is", null).gte("created_at", startUtc).lte("created_at", endUtc),
-    supabase.from("jobs").select("id").not("company_id", "is", null),
-  ]);
-  const companyJobIds = (companyJobRows || []).map((j: any) => j.id);
-  let companyApps = 0;
-  if (companyJobIds.length) {
-    const { count } = await supabase.from("job_applications").select("*", { count: "exact", head: true })
-      .in("job_id", companyJobIds).gte("created_at", startUtc).lte("created_at", endUtc);
-    companyApps = count || 0;
+// 멋사(Likelion) 등 내부/제외 회사 id — 인재 쪽과 동일 규칙(likelion.net 도메인 / EXCLUDED_COMPANIES 회사명).
+// 기업/매칭 지표에서 제외해야 자체 테스트 지원(대부분 멋사)이 숫자를 부풀리지 않는다.
+async function getExcludedCompanyIds(): Promise<Set<string>> {
+  const { data } = await supabase.from("recruiter_companies").select("id, name, email_domain");
+  const set = new Set<string>();
+  for (const c of data || []) {
+    const dom = (c.email_domain || "").toLowerCase();
+    const nm = (c.name || "").trim().toLowerCase();
+    if (EXCLUDED_EMAIL_DOMAINS.includes(dom) || EXCLUDED_COMPANIES.has(nm)) set.add(c.id);
   }
-  return { companySignups: companySignups || 0, companyJobs: companyJobs || 0, companyApps };
+  return set;
 }
 
-async function getRangeBundle(startUtc: string, endUtc: string) {
+async function getCompanyMetricsInRange(startUtc: string, endUtc: string, excCoIds: Set<string>) {
+  const startMs = new Date(startUtc).getTime(), endMs = new Date(endUtc).getTime();
+  const inRange = (t: string) => { const ms = new Date(t).getTime(); return ms >= startMs && ms <= endMs; };
+  const [{ data: cos }, { data: jobs }] = await Promise.all([
+    supabase.from("recruiter_companies").select("id, created_at"),
+    supabase.from("jobs").select("id, company_id, created_at").not("company_id", "is", null),
+  ]);
+  const companySignups = (cos || []).filter((c: any) => !excCoIds.has(c.id) && inRange(c.created_at)).length;
+  const realJobs = (jobs || []).filter((j: any) => !excCoIds.has(j.company_id));
+  const companyJobs = realJobs.filter((j: any) => inRange(j.created_at)).length;
+  const realJobIds = realJobs.map((j: any) => j.id);
+  let companyApps = 0;
+  for (let i = 0; i < realJobIds.length; i += 300) {
+    const { count } = await supabase.from("job_applications").select("*", { count: "exact", head: true })
+      .in("job_id", realJobIds.slice(i, i + 300)).gte("created_at", startUtc).lte("created_at", endUtc);
+    companyApps += count || 0;
+  }
+  return { companySignups, companyJobs, companyApps };
+}
+
+// 🔗 매칭 지표 — 그날 종료 시점 누적(멋사 제외 기업 공고 기준).
+//   공고당 지원(중위) = 지원 들어온 공고들의 공고별 지원수 중위값 (평균은 소수 폭주공고에 왜곡).
+//   공고 충족률 = 지원 1건+ 들어온 공고 / 전체 공고.
+async function getJobDensity(endUtc: string, excCoIds: Set<string>) {
+  const endMs = new Date(endUtc).getTime();
+  const { data: jobs } = await supabase.from("jobs").select("id, company_id, created_at").not("company_id", "is", null);
+  const ids = (jobs || []).filter((j: any) => !excCoIds.has(j.company_id) && new Date(j.created_at).getTime() <= endMs).map((j: any) => j.id);
+  const cnt: Record<string, number> = {};
+  ids.forEach((id: string) => cnt[id] = 0);
+  for (let i = 0; i < ids.length; i += 300) {
+    const { data } = await supabase.from("job_applications").select("job_id")
+      .in("job_id", ids.slice(i, i + 300)).lte("created_at", endUtc);
+    for (const r of data || []) cnt[r.job_id] = (cnt[r.job_id] || 0) + 1;
+  }
+  const counts = ids.map((id: string) => cnt[id]);
+  const wa = counts.filter((n) => n > 0).sort((a, b) => a - b);
+  const median = wa.length ? (wa.length % 2 ? wa[(wa.length - 1) / 2] : (wa[wa.length / 2 - 1] + wa[wa.length / 2]) / 2) : 0;
+  return { median, total: counts.length, withApps: wa.length, fillRate: counts.length ? Math.round(wa.length / counts.length * 100) : 0 };
+}
+
+async function getRangeBundle(startUtc: string, endUtc: string, excCoIds: Set<string>) {
   const subs = await fetchSubmissions(startUtc, endUtc);
   const deduped = dedupeSubmissions(subs.filter((r: any) => !isExcludedSubmission(r)));
   const ad = deduped.filter((r: any) => PAID_SOURCES.has(r.source)).length;
@@ -354,7 +389,7 @@ async function getRangeBundle(startUtc: string, endUtc: string) {
   const [jobAppsSplit, resumesSplit, company] = await Promise.all([
     getJobAppsSplit(startUtc, endUtc),
     getResumeEventsSplit(startUtc, endUtc), // realtime / daily-today overlay 식
-    getCompanyMetricsInRange(startUtc, endUtc),
+    getCompanyMetricsInRange(startUtc, endUtc, excCoIds),
   ]);
   return {
     submissions: deduped.length,
@@ -879,15 +914,34 @@ function companyLinesSection(s: StatsBundle, p: StatsBundle, prevLabel: string, 
   ]);
 }
 
+type Density = { median: number; total: number; withApps: number; fillRate: number };
+const APPS_PER_JOB_TARGET = 20;
+
+// 🔗 매칭 지표 (인재↔기업) — 그날 종료 누적, 어제 vs 오늘 + 목표. 멋사 제외 기업 공고 기준.
+//   공고당 지원(중위, 지원받은 공고) / 공고 충족률(지원 받은 공고 비율).
+function matchingLinesSection(c: Density, p: Density, prevLabel: string, currLabel: string): string {
+  const arrow = (pv: number, cv: number) => cv > pv ? " ▲" : cv < pv ? " ▽" : "";
+  const line = (label: string, pv: string, cv: string, tgt: string, arr: string) =>
+    padLabel(label, LABEL_W) + pv.padStart(VAL_W) + cv.padStart(VAL_W) + tgt.padStart(VAL_W) + (arr ? " " + arr.trim() : "");
+  return codeBlock([
+    padLabel("", LABEL_W) + cjkPadStart(prevLabel, VAL_W) + cjkPadStart(currLabel, VAL_W) + cjkPadStart("목표", VAL_W),
+    line("• 공고당 지원 (중위)", String(p.median), String(c.median), String(APPS_PER_JOB_TARGET), arrow(p.median, c.median)),
+    line("• 공고 충족률", p.fillRate + "%", c.fillRate + "%", "100%", arrow(p.fillRate, c.fillRate)),
+  ]);
+}
+
 function buildRealtimeMessage(
   today: string,
   yesterday: string,
   timeStr: string,
   s: StatsBundle,
   p: StatsBundle,
+  dCurr: Density,
+  dPrev: Density,
   slashCommand: boolean,
 ) {
   const dayName = getDayName(today);
+  const pl = yesterday.slice(5).replace("-", "/"), cl = today.slice(5).replace("-", "/");
 
   return {
     response_type: slashCommand ? "in_channel" : undefined,
@@ -895,9 +949,11 @@ function buildRealtimeMessage(
       { type: "header", text: { type: "plain_text", text: `FYI 실시간 / Live — ${today} (${dayName}) ${timeStr} UTC+7` } },
       { type: "context", elements: [{ type: "mrkdwn", text: `데이터 기간 (Data range): ${today} 00:00 ~ ${timeStr} (UTC+7) · 어제 같은 시각 대비 (DoD)` }] },
       { type: "divider" },
-      { type: "section", text: { type: "mrkdwn", text: `*🟢 인재 (Talent)*\n` + talentLinesSection(s, p, yesterday.slice(5).replace("-", "/"), today.slice(5).replace("-", "/")) }},
+      { type: "section", text: { type: "mrkdwn", text: `*🟢 인재 (Talent)*\n` + talentLinesSection(s, p, pl, cl) }},
       { type: "divider" },
-      { type: "section", text: { type: "mrkdwn", text: `*🔵 기업 (Company)*\n` + companyLinesSection(s, p, yesterday.slice(5).replace("-", "/"), today.slice(5).replace("-", "/")) }},
+      { type: "section", text: { type: "mrkdwn", text: `*🔵 기업 (Company)*\n` + companyLinesSection(s, p, pl, cl) }},
+      { type: "divider" },
+      { type: "section", text: { type: "mrkdwn", text: `*🔗 매칭 지표 (인재 ↔ 기업)*\n` + matchingLinesSection(dCurr, dPrev, pl, cl) }},
     ],
   };
 }
@@ -907,9 +963,12 @@ function buildDailyMessage(
   dayBefore: string,
   s: StatsBundle,
   p: StatsBundle,
+  dCurr: Density,
+  dPrev: Density,
   alerts: string[],
 ) {
   const dayName = getDayName(targetDate);
+  const pl = dayBefore.slice(5).replace("-", "/"), cl = targetDate.slice(5).replace("-", "/");
 
   const alertBlock = alerts.length > 0
     ? [{ type: "section", text: { type: "mrkdwn", text: alerts.join("\n") } }]
@@ -924,9 +983,12 @@ function buildDailyMessage(
       { type: "header", text: { type: "plain_text", text: `FYI 일일 리포트 / Daily — ${targetDate} (${dayName})` } },
       { type: "context", elements: [{ type: "mrkdwn", text: `데이터 기간 (Data range): ${targetDate} 00:00 ~ 23:59 (UTC+7) · 전일 대비 (DoD)` }] },
       { type: "divider" },
-      { type: "section", text: { type: "mrkdwn", text: `*🟢 인재 (Talent)*\n` + talentLinesSection(s, p, dayBefore.slice(5).replace("-", "/"), targetDate.slice(5).replace("-", "/")) }},
+      { type: "section", text: { type: "mrkdwn", text: `*🟢 인재 (Talent)*\n` + talentLinesSection(s, p, pl, cl) }},
       { type: "divider" },
-      { type: "section", text: { type: "mrkdwn", text: `*🔵 기업 (Company)*\n` + companyLinesSection(s, p, dayBefore.slice(5).replace("-", "/"), targetDate.slice(5).replace("-", "/")) }},
+      { type: "section", text: { type: "mrkdwn", text: `*🔵 기업 (Company)*\n` + companyLinesSection(s, p, pl, cl) }},
+      { type: "divider" },
+      { type: "section", text: { type: "mrkdwn", text: `*🔗 매칭 지표 (인재 ↔ 기업)*\n` + matchingLinesSection(dCurr, dPrev, pl, cl) }},
+      { type: "context", elements: [{ type: "mrkdwn", text: `공고당 지원=지원받은 공고의 중위값 · 충족률=지원받은 공고 ${dCurr.withApps}/${dCurr.total}개 · 멋사(Likelion) 제외 · 목표 공고당 ${APPS_PER_JOB_TARGET}` }] },
       ...alertBlock,
     ],
     attachments: [],
@@ -1135,17 +1197,20 @@ async function buildRealtimePayload(slashCommand: boolean) {
   // 어제 같은 시각까지 — fair DoD 비교 base (광고 트래픽 시간대 편향 제거).
   const yestSameTime = `${yesterday}T${timeStr}:59+07:00`;
 
-  const [todaySessions, prevSessions, todayBundle, prevBundle] = await Promise.all([
+  const excCoIds = await getExcludedCompanyIds();
+  const [todaySessions, prevSessions, todayBundle, prevBundle, densNow, densPrev] = await Promise.all([
     getGA4TodaySessions(),
     getGA4SessionsUpToHour(yesterday, currentHour),
-    getRangeBundle(todayStart, todayEnd),
-    getRangeBundle(yestStart, yestSameTime),
+    getRangeBundle(todayStart, todayEnd, excCoIds),
+    getRangeBundle(yestStart, yestSameTime, excCoIds),
+    getJobDensity(todayEnd, excCoIds),
+    getJobDensity(yestSameTime, excCoIds),
   ]);
 
   const todayStats = { sessions: todaySessions, ...todayBundle };
   const prevStats = { sessions: prevSessions, ...prevBundle };
 
-  return buildRealtimeMessage(today, yesterday, timeStr, todayStats, prevStats, slashCommand);
+  return buildRealtimeMessage(today, yesterday, timeStr, todayStats, prevStats, densNow, densPrev, slashCommand);
 }
 
 Deno.serve(async (req) => {
@@ -1250,13 +1315,16 @@ Deno.serve(async (req) => {
       const startDB = `${dayBefore}T00:00:00+07:00`;
       const endDB = `${dayBefore}T23:59:59+07:00`;
 
-      const [ySessions, dbSessions, yBundle, dbBundle, yResume, dbResume] = await Promise.all([
+      const excCoIds = await getExcludedCompanyIds();
+      const [ySessions, dbSessions, yBundle, dbBundle, yResume, dbResume, densY, densDB] = await Promise.all([
         getGA4Sessions(yesterday),
         getGA4Sessions(dayBefore),
-        getRangeBundle(startY, endY),
-        getRangeBundle(startDB, endDB),
+        getRangeBundle(startY, endY, excCoIds),
+        getRangeBundle(startDB, endDB, excCoIds),
         getResumeUploadsForDateAdminUI(yesterday),
         getResumeUploadsForDateAdminUI(dayBefore),
+        getJobDensity(endY, excCoIds),
+        getJobDensity(endDB, excCoIds),
       ]);
 
       const stats: StatsBundle = {
@@ -1275,7 +1343,7 @@ Deno.serve(async (req) => {
       };
       const alerts = await detectAlerts(stats.submissions);
 
-      const message = buildDailyMessage(yesterday, dayBefore, stats, prevStats, alerts);
+      const message = buildDailyMessage(yesterday, dayBefore, stats, prevStats, densY, densDB, alerts);
 
       // 앱 리포트 카드 덧붙임 — 실패해도 웹 리포트는 그대로 발송.
       try {
