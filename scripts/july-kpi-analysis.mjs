@@ -80,8 +80,16 @@ async function kpiEnterpriseApps() {
     .eq('source', 'company_self')
     .order('created_at', { ascending: true })
 
-  const { data: apps } = await supabase.from('job_applications')
-    .select('job_id, created_at, platform')
+  // ⚠️ 페이지네이션 필수 (1000행 초과 시 최근 지원 누락 → KPI2 축소)
+  const apps = []
+  for (let from = 0; ; from += 1000) {
+    const { data } = await supabase.from('job_applications')
+      .select('job_id, created_at, platform')
+      .order('created_at', { ascending: true }).range(from, from + 999)
+    if (!data?.length) break
+    apps.push(...data)
+    if (data.length < 1000) break
+  }
 
   const byJob = {}
   for (const a of apps || []) {
