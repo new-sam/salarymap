@@ -61,11 +61,14 @@ export default async function handler(req, res) {
   if (!admin) return res.status(401).json({ error: 'Unauthorized' })
   if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' })
 
-  // 회사 계정 · 멤버(리크루터) · 기업 소유 공고 — 서로 독립이라 병렬 조회
-  const [companiesRes, membersRes, jobsRes] = await Promise.all([
+  // 회사 계정 · 멤버 · 기업 소유 공고 · 지원 — 전부 한 번에 병렬 조회.
+  // 지원은 jobs!inner 조인으로 기업 공고분만 서버에서 필터 — jobIds 를 기다리는
+  // 직렬 왕복 1회를 없애면서 1000행 캡(전체 지원 성장 시 잘림)도 피한다.
+  const [companiesRes, membersRes, jobsRes, appsRes] = await Promise.all([
     supabase.from('recruiter_companies').select('id, name, email_domain, verified_at, created_at').order('created_at', { ascending: false }),
     supabase.from('recruiter_users').select('company_id, email, full_name, role, created_at').order('created_at', { ascending: false }),
     supabase.from('jobs').select('id, company_id, title, status, is_active, created_at').not('company_id', 'is', null).order('created_at', { ascending: false }),
+    supabase.from('job_applications').select('job_id, status, rejected_at, jobs!inner(company_id)').not('jobs.company_id', 'is', null),
   ])
   const companies = companiesRes.data || []
   const members = membersRes.data || []
@@ -76,16 +79,8 @@ export default async function handler(req, res) {
   const jobToCompany = {}
   jobs.forEach(j => { jobToCompany[j.id] = j.company_id })
 
-  // 위 공고들에 대한 지원 + 단계
-  const jobIds = jobs.map(j => j.id)
-  let apps = []
-  if (jobIds.length) {
-    const { data: appsRaw } = await supabase
-      .from('job_applications')
-      .select('job_id, status, rejected_at')
-      .in('job_id', jobIds)
-    apps = appsRaw || []
-  }
+  // 기업 공고에 대한 지원만
+  const apps = (appsRes.data || []).filter(ap => jobToCompany[ap.job_id])
 
   // 회사별 집계
   const agg = {}
