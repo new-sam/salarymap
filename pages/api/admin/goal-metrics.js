@@ -109,7 +109,15 @@ async function enterpriseAppsKpi() {
   // 자사(LIKELION) 공고는 기업 "고객" 지표에서 제외 — 내부 테스트/자사 등록이라 KPI 오염.
   const customerJobs = (jobs || []).filter((j) => !(j.company || '').toLowerCase().includes('likelion'))
 
-  const { data: apps } = await supabase.from('job_applications').select('job_id, created_at')
+  // ⚠️ 페이지네이션 필수 — job_applications가 1000행을 넘으면 최근 지원이 잘려 KPI2가 축소됨.
+  const apps = []
+  for (let from = 0; ; from += 1000) {
+    const { data } = await supabase.from('job_applications').select('job_id, created_at')
+      .order('created_at', { ascending: true }).range(from, from + 999)
+    if (!data?.length) break
+    apps.push(...data)
+    if (data.length < 1000) break
+  }
 
   const byJob = {}
   for (const a of apps || []) (byJob[a.job_id] ||= []).push(a)
