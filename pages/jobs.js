@@ -415,6 +415,28 @@ export default function JobsPage() {
       }
       return out
     }
+    // 기업이 직접 등록한 공고(source='company_self')는 크롤링 물량에 밀리지 않도록 항상 최상단 —
+    // 단, 한 회사가 여러 개 올려도 뭉치지 않게 회사별 라운드로빈으로 분산(회사 내부는 최신순).
+    // 명시적 정렬(최신/마감)에는 적용하지 않는다(유저 의도 존중).
+    const companyFirst = (list) => {
+      const co = list.filter(j => j.source === 'company_self')
+      const rest = list.filter(j => j.source !== 'company_self')
+      const byCompany = {}
+      co.forEach(job => {
+        const key = job.company || ''
+        if (!byCompany[key]) byCompany[key] = []
+        byCompany[key].push(job)
+      })
+      const queues = Object.values(byCompany)
+      queues.forEach(q => q.sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0)))
+      const spread = []
+      while (queues.some(q => q.length > 0)) {
+        for (const q of queues) {
+          if (q.length > 0) spread.push(q.shift())
+        }
+      }
+      return [...spread, ...rest]
+    }
     // 스크랩 필터
     if (sortBy === 'saved') {
       return filtered.filter(job => bookmarks.includes(job.id))
@@ -472,7 +494,7 @@ export default function JobsPage() {
         if (oi < other.length) result.push(other[oi++])
         if (wi < wanted.length) result.push(wanted[wi++])
       }
-      return pinFeatured(spaceCompanies(result))
+      return companyFirst(pinFeatured(spaceCompanies(result)))
     }
     // wanted/non-wanted 1:1 인터리빙
     const interleave = (list) => {

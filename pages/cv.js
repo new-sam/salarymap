@@ -1,9 +1,14 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useMemo } from 'react'
 import Head from 'next/head'
 import { useRouter } from 'next/router'
 import { supabase } from '../lib/supabaseClient'
 import { useT } from '../lib/i18n'
 import { track } from '../lib/track'
+import { ROLE_GROUPS } from '../constants/jobs'
+
+// STEP1에서 고른 직무는 OAuth 리다이렉트로 페이지를 떠났다 돌아와도 유지돼야 해서
+// (파일이 IndexedDB로 유지되는 것과 동일) localStorage에 stash한다.
+const CV_ROLES_KEY = 'fyi_cv_roles'
 
 /* Funnel-event meta — UTM (sessionStorage) + language preference, attached to
    every /cv event so we can slice by ad campaign and locale in analytics. */
@@ -165,7 +170,7 @@ const IconLinkedIn = () => (
 )
 
 export default function CvLanding() {
-  const { t } = useT()
+  const { t, lang } = useT()
   const router = useRouter()
   const [user, setUser] = useState(null)
   const [file, setFile] = useState(null)
@@ -173,6 +178,13 @@ export default function CvLanding() {
   const [errMsg, setErrMsg] = useState('')
   const [pendingHint, setPendingHint] = useState('')
   const [jobs, setJobs] = useState([])
+  // STEP1 직무 다중선택 + 등록 완료 후 "바로 지원" 모달
+  const [selectedRoles, setSelectedRoles] = useState([])
+  const [resumeUrl, setResumeUrl] = useState(null)
+  const [showJobModal, setShowJobModal] = useState(false)
+  const [applied, setApplied] = useState({})
+  const [applyingId, setApplyingId] = useState(null)
+  const L = (ko, en, vi) => (lang === 'vi' ? vi : lang === 'en' ? en : ko)
   const fileRef = useRef(null)
   const formAnchorRef = useRef(null)
   const showSuccess = status === 'success' || (process.env.NODE_ENV !== 'production' && router.query.successPreview === '1')
@@ -338,20 +350,84 @@ export default function CvLanding() {
         const e = await r.json().catch(() => ({}))
         throw new Error(e.error || 'Upload failed')
       }
+      const up = await r.json().catch(() => ({}))
+      if (up.url) setResumeUrl(up.url)
       const uid = (await supabase.auth.getUser()).data.user?.id
       if (uid) {
-        await supabase.from('user_profiles').update({ hr_visible: true, job_signal: 'open' }).eq('id', uid)
+        // 선택한 직무를 user_profiles.desired_roles에 저장. 컬럼(desired_roles text[])이
+        // 아직 없으면 그 부분만 빼고 재시도해 등록 흐름은 막지 않는다.
+        const base = { hr_visible: true, job_signal: 'open' }
+        const withRoles = selectedRoles.length ? { ...base, desired_roles: selectedRoles } : base
+        const { error: upErr } = await supabase.from('user_profiles').update(withRoles).eq('id', uid)
+        if (upErr && /desired_roles/.test(upErr.message || '')) {
+          await supabase.from('user_profiles').update(base).eq('id', uid)
+        }
       }
       if (typeof gtag === 'function') gtag('event', 'cv_register', { source: 'ad-landing' })
       if (typeof fbq === 'function') fbq('trackCustom', 'CVRegister', { source: 'ad-landing' })
-      track('cv_register_success', { meta: { ...cvMeta(), ...fileMeta(fileToUpload) }, page: '/cv' })
+      track('cv_register_success', { meta: { ...cvMeta(), ...fileMeta(fileToUpload), roles: selectedRoles }, page: '/cv' })
       await idbClearCv()
+      try { localStorage.removeItem(CV_ROLES_KEY) } catch {}
       setStatus('success')
+      setShowJobModal(true)
     } catch (e) {
       const msg = e.message || t('cv.err.generic')
       track('cv_register_error', { meta: { ...cvMeta(), ...fileMeta(fileToUpload), error_message: msg }, page: '/cv' })
       setErrMsg(msg)
       setStatus('error')
+    }
+  }
+
+  // OAuth 리다이렉트 복귀 시 stash된 직무 선택 복원
+  useEffect(() => {
+    try {
+      const saved = JSON.parse(localStorage.getItem(CV_ROLES_KEY) || '[]')
+      if (Array.isArray(saved) && saved.length) setSelectedRoles(saved)
+    } catch {}
+  }, [])
+
+  const toggleRole = (value) => {
+    setSelectedRoles((prev) => {
+      const next = prev.includes(value) ? prev.filter((v) => v !== value) : [...prev, value]
+      try { localStorage.setItem(CV_ROLES_KEY, JSON.stringify(next)) } catch {}
+      return next
+    })
+  }
+
+  // 완료 모달에 띄울 공고 3개 — 선택 직무 매칭 ATS(기업 직접등록) 최상단 → 매칭 featured → 나머지.
+  const modalJobs = useMemo(() => {
+    const roleSet = new Set(selectedRoles)
+    const match = (j) => roleSet.size > 0 && roleSet.has(j.role)
+    const atsMatch = jobs.filter((j) => j.source === 'company_self' && match(j))
+    const featMatch = jobs.filter((j) => j.source !== 'company_self' && match(j))
+    const picked = new Set([...atsMatch, ...featMatch].map((j) => j.id))
+    const rest = jobs.filter((j) => !picked.has(j.id))
+    return [...atsMatch, ...featMatch, ...rest].slice(0, 3)
+  }, [jobs, selectedRoles])
+
+  const apply = async (job) => {
+    if (applied[job.id] || applyingId) return
+    setApplyingId(job.id)
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      const token = session?.access_token
+      let ru = resumeUrl
+      if (!ru && session?.user?.id) {
+        const { data } = await supabase.from('user_profiles').select('resume_url').eq('id', session.user.id).maybeSingle()
+        ru = data?.resume_url || null
+      }
+      const res = await fetch('/api/job-applications', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ jobId: job.id, jobTitle: job.title, jobCompany: job.company, resumeUrl: ru, applicationSource: 'cv_success' }),
+      })
+      if (!res.ok) throw new Error('apply_failed')
+      setApplied((a) => ({ ...a, [job.id]: true }))
+      track('submit_application', { meta: { ...cvMeta(), job_id: job.id, source: 'cv_success' }, page: '/cv' })
+    } catch {
+      setErrMsg(L('지원에 실패했어요. 잠시 후 다시 시도해 주세요.', 'Application failed. Please try again.', 'Ứng tuyển thất bại. Vui lòng thử lại.'))
+    } finally {
+      setApplyingId(null)
     }
   }
 
@@ -635,6 +711,30 @@ export default function CvLanding() {
                     </button>
                   )}
                   <div className="cv-hint">{t('cv.form.fileHint')}</div>
+
+                  {/* 찾는 직무 (복수 선택) — 등록 완료 후 맞는 공고 추천/지원에 사용 */}
+                  <div className="cv-roles">
+                    <div className="cv-roles-label">{L('찾는 직무 (복수 선택 가능)', 'Roles you want (select multiple)', 'Vị trí bạn tìm (chọn nhiều)')}</div>
+                    <div className="cv-roles-groups">
+                      {ROLE_GROUPS.map((g) => (
+                        <div key={g.key} className="cv-roles-group">
+                          <div className="cv-roles-gname">{g.label[lang] || g.label.en}</div>
+                          <div className="cv-roles-chips">
+                            {g.roles.map((r) => (
+                              <button
+                                type="button"
+                                key={r.value}
+                                className={`cv-role-chip${selectedRoles.includes(r.value) ? ' on' : ''}`}
+                                onClick={() => toggleRole(r.value)}
+                              >
+                                {r.label[lang] || r.label.en}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
                 </div>
 
                 {/* ─── STEP 2: 회원가입 (미인증) 또는 등록 (인증) ─── */}
@@ -686,11 +786,77 @@ export default function CvLanding() {
 
       </main>
 
+      {/* 등록 완료 → 방금 올린 이력서로 맞는 공고 바로 지원 (원탭) */}
+      {showJobModal && modalJobs.length > 0 && (
+        <div className="cvm-overlay" onClick={() => setShowJobModal(false)}>
+          <div className="cvm" onClick={(e) => e.stopPropagation()}>
+            <button className="cvm-close" onClick={() => setShowJobModal(false)} aria-label="close">×</button>
+            <div className="cvm-head">
+              <div className="cvm-title">{L('이력서 등록 완료! 바로 지원해보세요', 'Resume saved — apply in one tap', 'Đã lưu CV — ứng tuyển ngay')}</div>
+              <div className="cvm-sub">{L('방금 올린 이력서로 한 번에 지원됩니다', 'We apply with the resume you just uploaded', 'Ứng tuyển bằng CV bạn vừa tải lên')}</div>
+            </div>
+            <div className="cvm-jobs">
+              {modalJobs.map((j) => {
+                const isApplied = !!applied[j.id]
+                const isApplying = applyingId === j.id
+                return (
+                  <div key={j.id} className="cvm-job">
+                    <div className="cvm-job-main">
+                      <div className="cvm-job-title">{j.title}</div>
+                      <div className="cvm-job-company">
+                        {j.company}
+                        {j.source === 'company_self' && <span className="cvm-ats">{L('기업 직접채용', 'Direct hire', 'Tuyển trực tiếp')}</span>}
+                      </div>
+                    </div>
+                    <button
+                      className={`cvm-apply${isApplied ? ' done' : ''}`}
+                      disabled={isApplied || isApplying}
+                      onClick={() => apply(j)}
+                    >
+                      {isApplied ? L('지원 완료 ✓', 'Applied ✓', 'Đã ứng tuyển ✓') : isApplying ? '…' : L('바로 지원', 'Apply', 'Ứng tuyển')}
+                    </button>
+                  </div>
+                )
+              })}
+            </div>
+            <a href="/jobs" className="cvm-all">{L('전체 공고 보기', 'Browse all jobs', 'Xem tất cả việc làm')} →</a>
+          </div>
+        </div>
+      )}
+
       <style jsx global>{`
         .tabular-nums { font-variant-numeric: tabular-nums lining-nums; }
       `}</style>
 
       <style jsx>{`
+        /* 직무 다중선택 (STEP 1) */
+        .cv-roles { margin-top: 16px; border-top: 1px solid #efe9e0; padding-top: 14px; }
+        .cv-roles-label { font-size: 13px; font-weight: 700; color: #1a1612; margin-bottom: 10px; }
+        .cv-roles-groups { display: flex; flex-direction: column; gap: 12px; max-height: 260px; overflow-y: auto; }
+        .cv-roles-gname { font-size: 11px; font-weight: 700; color: #a89f92; text-transform: uppercase; letter-spacing: .04em; margin-bottom: 6px; }
+        .cv-roles-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+        .cv-role-chip { font-size: 12.5px; font-weight: 500; color: #4a4238; background: #fff; border: 1px solid #e3dbcf; border-radius: 999px; padding: 6px 12px; cursor: pointer; transition: all .12s; font-family: inherit; }
+        .cv-role-chip:hover { border-color: #ff6000; }
+        .cv-role-chip.on { background: #fff1e8; border-color: #ff6000; color: #ff6000; font-weight: 700; }
+
+        /* 완료 모달 — 바로 지원 */
+        .cvm-overlay { position: fixed; inset: 0; z-index: 1000; background: rgba(20,16,12,0.55); display: flex; align-items: center; justify-content: center; padding: 20px; }
+        .cvm { position: relative; width: 100%; max-width: 440px; background: #fff; border-radius: 20px; padding: 28px 24px 22px; box-shadow: 0 20px 60px rgba(0,0,0,0.3); }
+        .cvm-close { position: absolute; top: 14px; right: 16px; border: none; background: none; font-size: 26px; line-height: 1; color: #b5ab9d; cursor: pointer; }
+        .cvm-head { margin-bottom: 18px; padding-right: 20px; }
+        .cvm-title { font-size: 18px; font-weight: 800; color: #1a1612; letter-spacing: -0.01em; }
+        .cvm-sub { font-size: 13px; color: #8a8073; margin-top: 5px; }
+        .cvm-jobs { display: flex; flex-direction: column; gap: 10px; }
+        .cvm-job { display: flex; align-items: center; gap: 12px; border: 1px solid #ece5db; border-radius: 12px; padding: 13px 14px; }
+        .cvm-job-main { flex: 1; min-width: 0; }
+        .cvm-job-title { font-size: 14px; font-weight: 700; color: #1a1612; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .cvm-job-company { font-size: 12.5px; color: #8a8073; margin-top: 2px; display: flex; align-items: center; gap: 6px; }
+        .cvm-ats { font-size: 10.5px; font-weight: 700; color: #1D4ED8; background: #EAF2FE; border-radius: 5px; padding: 1px 6px; white-space: nowrap; }
+        .cvm-apply { flex-shrink: 0; font-size: 13px; font-weight: 700; color: #fff; background: #ff6000; border: none; border-radius: 9px; padding: 9px 16px; cursor: pointer; font-family: inherit; transition: opacity .12s; }
+        .cvm-apply:disabled { cursor: default; }
+        .cvm-apply.done { background: #E7F6EC; color: #16a34a; }
+        .cvm-all { display: block; text-align: center; margin-top: 16px; font-size: 13px; font-weight: 600; color: #8a8073; text-decoration: none; }
+
         /* ───────────────────────────────────────
            Design tokens — warm cream system
            Base: linen #faf6f0, Cards: white, Ink: #1a1612

@@ -14,6 +14,8 @@ const supabase = createClient(
 const SALARY_REFERRER_RE = /salary-fyi\.com/i
 function classifySource(applicationSource, referrer) {
   if (applicationSource === 'salary') return 'salary'
+  // CV 등록 완료 모달에서 원탭 지원한 경우 — 가입→지원 전환 개선 효과 측정용 마커.
+  if (applicationSource === 'cv_success') return 'cv_success'
   if (referrer && SALARY_REFERRER_RE.test(referrer)) return 'salary'
   return 'direct'
 }
