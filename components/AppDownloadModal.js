@@ -5,7 +5,7 @@ import { track } from '../lib/track';
 
 // 웹 방문자에게 "FYI를 앱으로 만나보세요" 중앙 모달을 띄운다.
 // 저장 안 함 — 하드 새로고침(마운트) 때만 한 번 뜬다. SPA 페이지 이동으로는 절대 안 뜸.
-// /app(다운로드 페이지)·/admin 에서 새로고침한 경우엔 노출 안 함.
+// 메인페이지(/)에서 새로고침한 경우에만 노출 — 다른 페이지에선 안 뜸.
 // App Store 링크. 지역/언어 강제 없이 방문자 스토어로 자동 분기되는 정규형 사용.
 const APP_STORE_URL = 'https://apps.apple.com/app/id6778311550';
 
@@ -17,7 +17,7 @@ export default function AppDownloadModal() {
   // 마운트(=하드 새로고침) 시점에 딱 한 번만 판단. 빈 deps 의도적 — 페이지 이동 시 재실행 금지.
   useEffect(() => {
     const path = router.pathname;
-    if (path.startsWith('/app') || path.startsWith('/admin')) return;
+    if (path !== '/') return;
     const id = setTimeout(() => {
       setShow(true);
       track('view_app_promo_modal', { meta: { source: 'web_modal' }, page: path });
