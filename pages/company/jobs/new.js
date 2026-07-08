@@ -16,9 +16,8 @@ import Brand from '../../../components/company/Brand';
 import LangToggle from '../../../components/company/LangToggle';
 import { useT } from '../../../lib/i18n';
 import { toast } from 'sonner';
-import { ROLE_OPTIONS, LOCATION_OPTIONS } from '../../../constants/jobs';
+import { ROLE_GROUPS, LOCATION_OPTIONS } from '../../../constants/jobs';
 
-const ROLES = ROLE_OPTIONS;         // 공개 게시판 필터와 단일 소스로 동기화(비IT 직무 포함)
 const TYPES = ['remote', 'onsite', 'hybrid'];
 const LOCATIONS = LOCATION_OPTIONS; // 베트남 주요 도시/성 확장
 
@@ -32,7 +31,7 @@ const EMPTY = {
 
 export default function NewJobPage() {
   const router = useRouter();
-  const { t } = useT();
+  const { t, lang } = useT();
   const [status, setStatus] = useState('loading');
   const [user, setUser] = useState(null);
   const [companyId, setCompanyId] = useState(null);
@@ -289,7 +288,11 @@ export default function NewJobPage() {
               <div className="grid grid-cols-2 gap-3">
                 <Field label={t('company.jobsnew.role')}>
                   <SelectInput value={form.role} onChange={e => setF('role', e.target.value)}>
-                    {ROLES.map(r => <option key={r} value={r}>{r}</option>)}
+                    {ROLE_GROUPS.map(g => (
+                      <optgroup key={g.key} label={g.label[lang] || g.label.en}>
+                        {g.roles.map(r => <option key={r.value} value={r.value}>{r.label[lang] || r.label.en}</option>)}
+                      </optgroup>
+                    ))}
                   </SelectInput>
                 </Field>
                 <Field label={t('company.jobsnew.type')}>

@@ -6,7 +6,7 @@ import { useT } from '../../lib/i18n'
 import { supabase } from '../../lib/supabaseClient'
 import { useAdmin } from '../../lib/adminSwr'
 import Icon from '../../components/Icon'
-import { ROLE_OPTIONS } from '../../constants/jobs'
+import { ROLE_GROUPS } from '../../constants/jobs'
 
 const EMPTY_JOB = {
   title: '', company: '', company_initials: '', location: '', type: 'remote',
@@ -17,7 +17,6 @@ const EMPTY_JOB = {
   deadline: '', headcount: '', apply_url: '', is_featured: false,
 }
 
-const ROLES = ROLE_OPTIONS // 공개 필터(constants/jobs)와 단일 소스로 동기화
 const TYPES = ['remote','onsite','hybrid']
 const COUNTRIES = ['korea','vietnam','global']
 
@@ -258,7 +257,7 @@ export default function AdminJobs() {
                   </div>
                   <div style={row2}>
                     <Sel label={L('고용형태', 'Employment type')} value={form.type} opts={TYPES} set={v => setForm({ ...form, type: v })} />
-                    <Sel label={L('직군', 'Role')} value={form.role} opts={ROLES} set={v => setForm({ ...form, role: v })} />
+                    <Sel label={L('직군', 'Role')} value={form.role} groups={ROLE_GROUPS} set={v => setForm({ ...form, role: v })} />
                   </div>
                 </div>
               </div>
@@ -645,10 +644,37 @@ function F({ label, value, set, type = 'text' }) {
     </div>
   )
 }
-function Sel({ label, value, opts, set }) {
+function Sel({ label, value, opts, set, groups }) {
   const { lang } = useT()
   const [open, setOpen] = useState(false)
+  const [openGroup, setOpenGroup] = useState(null) // 펼쳐진 대분류 key (아코디언)
   const ref = useRef(null)
+  // groups 가 주어지면 대분류 헤더 + 소분류(로컬라이즈 라벨)로 렌더. 저장값은 영어 canonical(r.value).
+  const labelFor = (v) => {
+    if (!groups) return v
+    for (const g of groups) for (const r of g.roles) if (r.value === v) return r.label[lang] || r.label.en
+    return v
+  }
+  // 열 때 현재 선택된 값이 속한 대분류를 자동으로 펼침
+  const toggleOpen = () => {
+    const next = !open
+    if (next && groups && value) {
+      const g = groups.find(gr => gr.roles.some(r => r.value === value))
+      setOpenGroup(g ? g.key : null)
+    }
+    setOpen(next)
+  }
+  const renderItem = (val, text) => {
+    const on = val === value
+    return (
+      <div key={val} onClick={() => { set(val); setOpen(false) }}
+        style={{ padding: '9px 11px', borderRadius: 7, fontSize: 13.5, cursor: 'pointer', color: on ? '#ff4400' : '#191F28', fontWeight: on ? 700 : 500, background: on ? '#FFF1EC' : 'transparent' }}
+        onMouseEnter={e => { if (!on) e.currentTarget.style.background = '#F8F9FA' }}
+        onMouseLeave={e => { if (!on) e.currentTarget.style.background = 'transparent' }}>
+        {text}
+      </div>
+    )
+  }
   useEffect(() => {
     if (!open) return
     const onDoc = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false) }
@@ -660,26 +686,35 @@ function Sel({ label, value, opts, set }) {
   return (
     <div ref={ref} style={{ position: 'relative' }}>
       <label style={S.lbl}>{label}</label>
-      <button type="button" onClick={() => setOpen(o => !o)}
+      <button type="button" onClick={toggleOpen}
         style={{ ...S.inp, cursor: 'pointer', textAlign: 'left', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, background: '#fff', borderColor: open ? '#ff4400' : '#E5E8EB' }}>
-        <span style={{ color: value ? '#191F28' : '#ADB5BD', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{value || (lang === 'ko' ? '선택' : 'Select')}</span>
+        <span style={{ color: value ? '#191F28' : '#ADB5BD', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{value ? labelFor(value) : (lang === 'ko' ? '선택' : 'Select')}</span>
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0, transition: 'transform .15s', transform: open ? 'rotate(180deg)' : 'none' }}>
           <path d="M6 9l6 6 6-6" stroke="#868E96" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
         </svg>
       </button>
       {open && (
-        <div style={{ position: 'absolute', top: 'calc(100% + 4px)', left: 0, right: 0, zIndex: 30, background: '#fff', border: '1px solid #E5E8EB', borderRadius: 10, boxShadow: '0 8px 24px rgba(0,0,0,0.10)', padding: 4, maxHeight: 260, overflowY: 'auto' }}>
-          {opts.map(o => {
-            const on = o === value
-            return (
-              <div key={o} onClick={() => { set(o); setOpen(false) }}
-                style={{ padding: '9px 11px', borderRadius: 7, fontSize: 13.5, cursor: 'pointer', color: on ? '#ff4400' : '#191F28', fontWeight: on ? 700 : 500, background: on ? '#FFF1EC' : 'transparent' }}
-                onMouseEnter={e => { if (!on) e.currentTarget.style.background = '#F8F9FA' }}
-                onMouseLeave={e => { if (!on) e.currentTarget.style.background = 'transparent' }}>
-                {o}
-              </div>
-            )
-          })}
+        <div style={{ position: 'absolute', top: 'calc(100% + 4px)', left: 0, right: 0, zIndex: 30, background: '#fff', border: '1px solid #E5E8EB', borderRadius: 10, boxShadow: '0 8px 24px rgba(0,0,0,0.10)', padding: 4, maxHeight: 320, overflowY: 'auto' }}>
+          {groups
+            ? groups.map(g => {
+                const gExpanded = openGroup === g.key
+                const gActive = g.roles.some(r => r.value === value)
+                return (
+                  <div key={g.key}>
+                    <div onClick={() => setOpenGroup(gExpanded ? null : g.key)}
+                      style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, padding: '9px 11px', borderRadius: 7, fontSize: 13.5, cursor: 'pointer', fontWeight: gActive ? 700 : 600, color: gActive ? '#ff4400' : '#191F28' }}
+                      onMouseEnter={e => { e.currentTarget.style.background = '#F8F9FA' }}
+                      onMouseLeave={e => { e.currentTarget.style.background = 'transparent' }}>
+                      <span>{g.label[lang] || g.label.en} <span style={{ color: '#C1C7CD', fontWeight: 500, fontSize: 12 }}>{g.roles.length}</span></span>
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0, transition: 'transform .15s', transform: gExpanded ? 'rotate(180deg)' : 'none' }}>
+                        <path d="M6 9l6 6 6-6" stroke="#BBB" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
+                      </svg>
+                    </div>
+                    {gExpanded && <div style={{ paddingLeft: 12 }}>{g.roles.map(r => renderItem(r.value, r.label[lang] || r.label.en))}</div>}
+                  </div>
+                )
+              })
+            : opts.map(o => renderItem(o, o))}
         </div>
       )}
     </div>

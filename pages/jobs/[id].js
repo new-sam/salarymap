@@ -6,7 +6,7 @@ import { createClient } from '@supabase/supabase-js'
 import { supabase } from '../../lib/supabaseClient'
 import { useT } from '../../lib/i18n'
 import Icon from '../../components/Icon'
-import { DEFAULT_IMAGES } from '../../constants/jobs'
+import { DEFAULT_IMAGES, roleLabel } from '../../constants/jobs'
 import { COMPANY_PROFILES } from '../../data/companyProfiles.js'
 import { generateCompanyDescription } from '../../utils/companyDescription'
 import { getStoredUtm } from '../../lib/utm'
@@ -211,7 +211,7 @@ export default function JobDetailPage({ job }) {
               </div>
               <div className="jd-meta-item">
                 <div className="jd-meta-label">{t('jobs.position')}</div>
-                <div className="jd-meta-value">{job.role}</div>
+                <div className="jd-meta-value">{roleLabel(job.role, lang)}</div>
               </div>
               <div className="jd-meta-item">
                 <div className="jd-meta-label">{t('jobs.type')}</div>

@@ -5,7 +5,7 @@ import { useRouter } from 'next/router'
 import { supabase } from '../lib/supabaseClient'
 import { useT } from '../lib/i18n'
 import Icon from '../components/Icon'
-import { DEFAULT_IMAGES, ROLE_OPTIONS, TYPE_OPTIONS, TECH_OPTIONS, JOBS_PER_PAGE } from '../constants/jobs'
+import { DEFAULT_IMAGES, ROLE_GROUPS, roleLabel, roleGroupKey, roleGroupLabel, TYPE_OPTIONS, TECH_OPTIONS, JOBS_PER_PAGE } from '../constants/jobs'
 import { COMPANY_PROFILES } from '../data/companyProfiles.js'
 import { formatSalaryCard, getHighSalaryThreshold } from '../utils/salary'
 import { generateCompanyDescription } from '../utils/companyDescription'
@@ -108,6 +108,7 @@ export default function JobsPage() {
   const [expMax, setExpMax] = useState('')
   const [techFilter, setTechFilter] = useState('')
   const [openDropdown, setOpenDropdown] = useState(null)
+  const [roleCatOpen, setRoleCatOpen] = useState(null) // 직군 필터: 펼쳐진 대분류 key
   const [isSubmitted, setIsSubmitted] = useState(false)
   const [isLoggedIn, setIsLoggedIn] = useState(false)
   const [showAuthModal, setShowAuthModal] = useState(false)
@@ -370,7 +371,11 @@ export default function JobsPage() {
       if (companyQuery && job.company?.toLowerCase() !== companyQuery) return false
       if (q && !job.title?.toLowerCase().includes(q) && !job.company?.toLowerCase().includes(q)) return false
       if (hideExpired && job.deadline && new Date(job.deadline) < new Date()) return false
-      if (roleFilter && job.role !== roleFilter) return false
+      if (roleFilter) {
+        if (roleFilter.startsWith('cat:')) {
+          if (roleGroupKey(job.role) !== roleFilter.slice(4)) return false
+        } else if (job.role !== roleFilter) return false
+      }
       if (typeFilter && job.type !== typeFilter) return false
       if (techFilter && !(job.tech_stack || []).some(t => t.toLowerCase().includes(techFilter.toLowerCase()))) return false
       if (expMin !== '' || expMax !== '') {
@@ -673,10 +678,19 @@ export default function JobsPage() {
         .jf-dd-btn.on { background: #111; color: #fff; border-color: #111; font-weight: 600; }
         .jf-dd-arrow { font-size: 10px; opacity: 0.5; }
         .jf-dd-menu { position: absolute; top: calc(100% + 4px); left: 0; background: #fafaf8; border: 1px solid #eee; border-radius: 10px; padding: 4px; min-width: 160px; z-index: 20; box-shadow: 0 8px 24px rgba(0,0,0,0.1); }
-        .jf-dd-menu-scroll { max-height: 240px; overflow-y: auto; }
+        .jf-dd-menu-scroll { max-height: 260px; overflow-y: auto; scrollbar-width: thin; scrollbar-color: #d5d5d5 transparent; }
+        .jf-dd-menu-scroll::-webkit-scrollbar { width: 6px; }
+        .jf-dd-menu-scroll::-webkit-scrollbar-thumb { background: #d5d5d5; border-radius: 6px; }
+        .jf-dd-menu-scroll::-webkit-scrollbar-track { background: transparent; }
         .jf-dd-item { display: block; width: 100%; padding: 9px 12px; border: none; background: none; font-size: 13px; color: #333; cursor: pointer; text-align: left; border-radius: 6px; transition: background .1s; font-family: inherit; white-space: nowrap; }
         .jf-dd-item:hover { background: #f5f5f5; }
         .jf-dd-item.on { color: #ff4400; font-weight: 600; }
+        .jf-dd-cat { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-weight: 600; color: #191F28; }
+        .jf-dd-caret { font-size: 10px; color: #bbb; transition: transform .15s; }
+        .jf-dd-cat.open .jf-dd-caret { transform: rotate(180deg); }
+        .jf-dd-branch { padding-left: 12px; }
+        .jf-dd-sub { color: #666; font-weight: 500; }
+        .jf-dd-count { color: #bbb; font-weight: 500; font-size: 12px; }
         .jf-reset { font-size: 13px; color: #999; background: none; border: none; cursor: pointer; padding: 8px 4px; font-family: inherit; text-decoration: underline; white-space: nowrap; }
         .jf-reset:hover { color: #666; }
         .jf-exp-panel { position: absolute; top: calc(100% + 4px); left: 0; background: #fafaf8; border: 1px solid #eee; border-radius: 12px; padding: 20px; min-width: 280px; z-index: 20; box-shadow: 0 8px 24px rgba(0,0,0,0.1); }
@@ -914,15 +928,33 @@ export default function JobsPage() {
             <div className="jf">
               {/* Role */}
               <div className="jf-dd">
-                <button className={`jf-dd-btn${roleFilter ? ' on' : ''}`} onClick={e => { e.stopPropagation(); setOpenDropdown(openDropdown === 'role' ? null : 'role') }}>
-                  {roleFilter || t('jobs.filterRole')} <span className="jf-dd-arrow">▾</span>
+                <button className={`jf-dd-btn${roleFilter ? ' on' : ''}`} onClick={e => { e.stopPropagation(); const willOpen = openDropdown !== 'role'; if (willOpen && roleFilter && !roleFilter.startsWith('cat:')) setRoleCatOpen(roleGroupKey(roleFilter)); setOpenDropdown(willOpen ? 'role' : null) }}>
+                  {roleFilter ? (roleFilter.startsWith('cat:') ? roleGroupLabel(roleFilter.slice(4), lang) : roleLabel(roleFilter, lang)) : t('jobs.filterRole')} <span className="jf-dd-arrow">▾</span>
                 </button>
                 {openDropdown === 'role' && (
-                  <div className="jf-dd-menu">
-                    <button className={`jf-dd-item${!roleFilter ? ' on' : ''}`} onClick={() => { setRoleFilter(''); setOpenDropdown(null) }}>{t('jobs.filterAll')}</button>
-                    {ROLE_OPTIONS.map(r => (
-                      <button key={r} className={`jf-dd-item${roleFilter === r ? ' on' : ''}`} onClick={() => { setRoleFilter(r); setOpenDropdown(null) }}>{r}</button>
-                    ))}
+                  <div className="jf-dd-menu jf-dd-menu-scroll">
+                    <button className={`jf-dd-item${!roleFilter ? ' on' : ''}`} onClick={() => { setRoleFilter(''); setRoleCatOpen(null); setOpenDropdown(null) }}>{t('jobs.filterAll')}</button>
+                    {ROLE_GROUPS.map(g => {
+                      const catToken = `cat:${g.key}`
+                      const expanded = roleCatOpen === g.key
+                      const active = roleFilter === catToken || g.roles.some(r => r.value === roleFilter)
+                      return (
+                        <div key={g.key}>
+                          <button className={`jf-dd-item jf-dd-cat${active ? ' on' : ''}${expanded ? ' open' : ''}`} onClick={e => { e.stopPropagation(); setRoleCatOpen(expanded ? null : g.key) }}>
+                            <span>{g.label[lang] || g.label.en} <span className="jf-dd-count">{g.roles.length}</span></span>
+                            <span className="jf-dd-caret">▾</span>
+                          </button>
+                          {expanded && (
+                            <div className="jf-dd-branch">
+                              <button className={`jf-dd-item jf-dd-sub${roleFilter === catToken ? ' on' : ''}`} onClick={() => { setRoleFilter(catToken); setOpenDropdown(null) }}>{t('jobs.filterAll')}</button>
+                              {g.roles.map(r => (
+                                <button key={r.value} className={`jf-dd-item jf-dd-sub${roleFilter === r.value ? ' on' : ''}`} onClick={() => { setRoleFilter(r.value); setOpenDropdown(null) }}>{r.label[lang] || r.label.en}</button>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      )
+                    })}
                   </div>
                 )}
               </div>
@@ -1158,7 +1190,7 @@ export default function JobsPage() {
                 </div>
                 <div className="jd-meta-item">
                   <div className="jd-meta-label">{t('jobs.position')}</div>
-                  <div className="jd-meta-value">{detailJob.role}</div>
+                  <div className="jd-meta-value">{roleLabel(detailJob.role, lang)}</div>
                 </div>
                 <div className="jd-meta-item">
                   <div className="jd-meta-label">{t('jobs.type')}</div>

@@ -12,15 +12,14 @@ import { Badge as UBadge } from '../../../../components/ui/badge';
 import { PageHeader } from '../../../../components/ui/page-header';
 import { ImageIcon, MapPin, Building2, EyeOff, Eye, Trash2, ExternalLink, Briefcase, CalendarDays, Users, Maximize2, X as XIcon } from 'lucide-react';
 import JobPreview from '../../../../components/jobs/JobPreview';
-import { ROLE_OPTIONS, LOCATION_OPTIONS } from '../../../../constants/jobs';
+import { ROLE_GROUPS, LOCATION_OPTIONS } from '../../../../constants/jobs';
 
-const ROLES = ROLE_OPTIONS;         // new.js와 동일 소스(비IT 직무 포함)
 const TYPES = ['remote', 'onsite', 'hybrid'];
 const LOCATIONS = LOCATION_OPTIONS;
 
 export default function EditJobPage() {
   const router = useRouter();
-  const { t } = useT();
+  const { t, lang } = useT();
   const { id } = router.query;
 
   const [status, setStatus] = useState('loading');
@@ -283,7 +282,11 @@ export default function EditJobPage() {
               <div className="grid grid-cols-2 gap-3">
                 <Field label={t('company.jobsnew.role')}>
                   <SelectInput value={form.role} onChange={e => setF('role', e.target.value)}>
-                    {ROLES.map(r => <option key={r} value={r}>{r}</option>)}
+                    {ROLE_GROUPS.map(g => (
+                      <optgroup key={g.key} label={g.label[lang] || g.label.en}>
+                        {g.roles.map(r => <option key={r.value} value={r.value}>{r.label[lang] || r.label.en}</option>)}
+                      </optgroup>
+                    ))}
                   </SelectInput>
                 </Field>
                 <Field label={t('company.jobsnew.type')}>
