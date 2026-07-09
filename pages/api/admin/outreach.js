@@ -19,6 +19,7 @@ export default async function handler(req, res) {
         .from('cold_outreach')
         .select('*')
         .order('created_at', { ascending: false })
+        .order('id', { ascending: false }) // 고유 tiebreaker — created_at 이 대량 동일(벌크 적재)이라 이거 없으면 range 페이지 경계에서 행이 중복/누락됨
         .range(from, from + PAGE - 1)
       if (error) return res.status(500).json({ error: error.message })
       all.push(...(data || []))

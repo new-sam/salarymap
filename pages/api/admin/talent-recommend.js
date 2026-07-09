@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js'
 import { verifyAdminOrDevStub } from './check'
+import { sendPush } from '../../../lib/push'
 
 // 인재풀 → 공고 추천 메일.
 // GET  : 발송 이력 + 실제 지원 여부(job_applications 조인)
@@ -196,6 +197,20 @@ export default async function handler(req, res) {
   } catch (e) {
     return res.status(500).json({ error: `발송 실패: ${e.message}` })
   }
+
+  // 앱 설치 유저에겐 푸시도 발송(토큰 없으면 조용히 skip). 회사·직무는 유저 데이터라
+  // 언어 중립 — 껍데기 문구만 언어맵으로 넘기면 sendPush가 토큰 locale에 맞춰 고른다.
+  // await 없음: 이메일 응답을 지연시키지 않는다(sendPush는 절대 throw하지 않음).
+  sendPush([userId], {
+    title: {
+      vi: `${job.company} đề xuất một công việc cho bạn`,
+      ko: `${job.company}가 회원님에게 공고를 추천했어요`,
+      en: `${job.company} recommended a job for you`,
+    },
+    body: job.title,
+    category: 'job_recommendation',
+    data: { url: `/jobs/${job.id}` },
+  })
 
   const { data: row, error: insErr } = await supabase
     .from('job_recommendations')
