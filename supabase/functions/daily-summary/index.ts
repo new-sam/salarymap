@@ -1346,26 +1346,7 @@ Deno.serve(async (req) => {
       const alerts = await detectAlerts(stats.submissions);
 
       const message = buildDailyMessage(yesterday, dayBefore, stats, prevStats, densY, densDB, alerts);
-
-      // 앱 리포트 카드 덧붙임 — 실패해도 웹 리포트는 그대로 발송.
-      try {
-        const [appStats, appPrev] = await Promise.all([
-          getAppStats(`${yesterday}T00:00:00+07:00`, `${yesterday}T23:59:59+07:00`),
-          getAppStats(`${dayBefore}T00:00:00+07:00`, `${dayBefore}T23:59:59+07:00`),
-        ]);
-        // 잔존: D1 코호트 = 그저께 신규(이미 appPrev에 계산됨), D7 코호트 = 7일 전 신규.
-        // 둘 다 "어제 활성(appStats.clients)"에 남아있는 비율로 측정.
-        const d7Date = addDays(yesterday, -7);
-        const [d7Cohort, mau] = await Promise.all([getNewClients(d7Date), getAppMau(yesterday)]);
-        const inActive = (cohort: Set<string>) => [...cohort].filter((c) => appStats.clients.has(c)).length;
-        const ret: DailyRet = {
-          d1: { size: appPrev.newClientSet.size, retained: inActive(appPrev.newClientSet), date: dayBefore },
-          d7: { size: d7Cohort.size, retained: inActive(d7Cohort), date: d7Date },
-        };
-        message.attachments.push(buildAppDailyAttachment(appStats, appPrev, ret, mau, yesterday));
-      } catch (e) {
-        console.error("App daily report error:", (e as Error).message);
-      }
+      // (앱 리포트 카드는 제거됨 — 불필요 판단)
 
       // ?dryRun=1 → 슬랙 안 쏘고 payload 만 응답. 터미널에서 메시지 미리보기 용도.
       if (url.searchParams.get("dryRun") === "1") {
