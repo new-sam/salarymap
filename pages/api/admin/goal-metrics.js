@@ -13,7 +13,7 @@ const supabase = createClient(
 
 // 이번 달 목표
 const SIGNUP_TARGET_PER_DAY = 100
-const APPS_TARGET_PER_POST = 30 // D+7 기준
+const APPS_TARGET_PER_POST = 30 // 공고당 누적 지원(실시간)
 
 // VN(UTC+7) 기준 'YYYY-MM-DD'
 const ICT_OFFSET_MS = 7 * 60 * 60 * 1000
@@ -122,36 +122,29 @@ async function enterpriseAppsKpi() {
   const byJob = {}
   for (const a of apps || []) (byJob[a.job_id] ||= []).push(a)
 
+  // 실시간: 전 고객 공고를 누적 지원 수로 그대로 본다 (D+7 성숙 게이트 없음)
   const nowMs = Date.now()
-  const matured = []
-  const young = []
-  for (const j of customerJobs) {
-    const createdMs = new Date(j.created_at).getTime()
-    const ageDays = (nowMs - createdMs) / 864e5
-    const d7End = createdMs + 7 * 864e5
-    const list = byJob[j.id] || []
-    const appsD7 = list.filter((a) => new Date(a.created_at).getTime() <= d7End).length
-    const rec = {
+  const posts = customerJobs.map((j) => {
+    const ageDays = (nowMs - new Date(j.created_at).getTime()) / 864e5
+    return {
       id: j.id,
       company: j.company || null,
       title: j.title || null,
       isActive: !!j.is_active,
       ageDays: Math.round(ageDays * 10) / 10,
-      appsD7,
-      appsTotal: list.length,
+      appsTotal: (byJob[j.id] || []).length,
     }
-    ;(ageDays >= 7 ? matured : young).push(rec)
-  }
+  })
 
-  const avgD7 = matured.length ? matured.reduce((s, r) => s + r.appsD7, 0) / matured.length : 0
+  const totalApps = posts.reduce((s, r) => s + r.appsTotal, 0)
+  const avgApps = posts.length ? totalApps / posts.length : 0
   return {
     target: APPS_TARGET_PER_POST,
-    totalPosts: customerJobs.length,
-    maturedCount: matured.length,
-    avgD7,
-    achievementPct: (avgD7 / APPS_TARGET_PER_POST) * 100,
-    matured: matured.sort((a, b) => b.appsD7 - a.appsD7),
-    young: young.sort((a, b) => b.appsTotal - a.appsTotal),
+    totalPosts: posts.length,
+    totalApps,
+    avgApps,
+    achievementPct: (avgApps / APPS_TARGET_PER_POST) * 100,
+    posts: posts.sort((a, b) => b.appsTotal - a.appsTotal || a.ageDays - b.ageDays),
   }
 }
 

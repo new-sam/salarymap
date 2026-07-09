@@ -153,8 +153,8 @@ function KpiTab({ data, ko }) {
       <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap', marginBottom: 28 }}>
         <Gauge label={ko ? 'KPI 1 · 일 평균 신규 가입자' : 'KPI 1 · Avg daily sign-ups'} value={n1(s.avgPerDay.all)} target={s.target} unit={ko ? '명' : ''} pct={s.achievementPct}
           sub={`${ko ? '누적' : 'MTD'} ${s.totals.all}${ko ? '명' : ''} · web ${s.totals.web} / app ${s.totals.app} · ${s.daysElapsed}${ko ? '일 경과' : 'd'}`} />
-        <Gauge label={ko ? 'KPI 2 · 기업공고 당 지원 (D+7)' : 'KPI 2 · Apps per enterprise post (D+7)'} value={n1(e.avgD7)} target={e.target} unit={ko ? '건' : ''} pct={e.achievementPct}
-          sub={`${ko ? '측정대상(D+7경과)' : 'Matured'} ${e.maturedCount}${ko ? '건' : ''} · ${ko ? '고객공고' : 'total'} ${e.totalPosts}`} />
+        <Gauge label={ko ? 'KPI 2 · 기업공고 당 지원 (실시간)' : 'KPI 2 · Apps per enterprise post (live)'} value={n1(e.avgApps)} target={e.target} unit={ko ? '건' : ''} pct={e.achievementPct}
+          sub={`${ko ? '누적 지원' : 'Total apps'} ${e.totalApps}${ko ? '건' : ''} · ${ko ? '고객공고' : 'posts'} ${e.totalPosts}${ko ? '건' : ''}`} />
       </div>
 
       <div style={{ fontSize: 13, fontWeight: 700, color: '#374151', margin: '0 0 8px' }}>{ko ? '일별 신규 가입' : 'Daily sign-ups'}</div>
@@ -186,57 +186,31 @@ function KpiTab({ data, ko }) {
       </div>
 
       <div style={{ fontSize: 13, fontWeight: 700, color: '#374151', margin: '0 0 8px' }}>
-        {ko ? `기업 공고 · D+7 경과 (측정 대상 ${e.maturedCount}건)` : `Enterprise posts · matured (${e.maturedCount})`}
+        {ko ? `기업 공고 실시간 지원 현황 (${e.totalPosts}건)` : `Enterprise posts · live (${e.totalPosts})`}
       </div>
       <div style={{ overflowX: 'auto', marginBottom: 20, border: '1px solid #EEF0F2', borderRadius: 12 }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 480 }}>
+        <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 520 }}>
           <thead><tr>
             <th style={th}>{ko ? '회사' : 'Company'}</th>
-            <th style={{ ...th, textAlign: 'right' }}>{ko ? 'D+7 지원' : 'Apps D+7'}</th>
-            <th style={{ ...th, textAlign: 'right' }}>{ko ? '누적' : 'Total'}</th>
+            <th style={th}>{ko ? '공고' : 'Title'}</th>
+            <th style={{ ...th, textAlign: 'right' }}>{ko ? '지원' : 'Apps'}</th>
             <th style={{ ...th, textAlign: 'right' }}>{ko ? '경과일' : 'Age'}</th>
             <th style={th}></th>
           </tr></thead>
           <tbody>
-            {e.matured.length === 0 && <tr><td style={td} colSpan={5}>{ko ? 'D+7 경과한 고객 공고가 아직 없습니다.' : 'No matured posts yet.'}</td></tr>}
-            {e.matured.map((r) => (
-              <tr key={r.id}>
-                <td style={{ ...td, maxWidth: 220, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{r.company || '—'}</td>
-                <td style={{ ...num, fontWeight: 800, color: r.appsD7 >= e.target ? '#059669' : '#0F172A' }}>{r.appsD7}</td>
-                <td style={num}>{r.appsTotal}</td>
-                <td style={num}>{Math.floor(r.ageDays)}{ko ? '일' : 'd'}</td>
+            {e.posts.length === 0 && <tr><td style={td} colSpan={5}>{ko ? '고객 공고가 아직 없습니다.' : 'No customer posts yet.'}</td></tr>}
+            {e.posts.map((r) => (
+              <tr key={r.id} style={r.appsTotal > 0 ? { background: '#ECFDF5' } : undefined}>
+                <td style={{ ...td, maxWidth: 200, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{r.company || '—'}</td>
+                <td style={{ ...td, maxWidth: 240, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', color: '#6B7280' }}>{r.title || '—'}</td>
+                <td style={{ ...num, fontWeight: 800, color: r.appsTotal > 0 ? '#059669' : '#9CA3AF' }}>{r.appsTotal}</td>
+                <td style={num}>{r.ageDays < 1 ? (ko ? '오늘' : 'today') : `${Math.floor(r.ageDays)}${ko ? '일' : 'd'}`}</td>
                 <td style={td}>{!r.isActive && <span style={{ fontSize: 11, color: '#9CA3AF' }}>{ko ? '비활성' : 'inactive'}</span>}</td>
               </tr>
             ))}
           </tbody>
         </table>
       </div>
-
-      {e.young.length > 0 && (
-        <details>
-          <summary style={{ fontSize: 12.5, color: '#6B7280', cursor: 'pointer', marginBottom: 8 }}>
-            {ko ? `아직 D+7 미도달 (진행중) ${e.young.length}건` : `In progress (pre-D+7): ${e.young.length}`}
-          </summary>
-          <div style={{ overflowX: 'auto', border: '1px solid #EEF0F2', borderRadius: 12 }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 420 }}>
-              <thead><tr>
-                <th style={th}>{ko ? '회사' : 'Company'}</th>
-                <th style={{ ...th, textAlign: 'right' }}>{ko ? '현재 지원' : 'Apps'}</th>
-                <th style={{ ...th, textAlign: 'right' }}>{ko ? '경과일' : 'Age'}</th>
-              </tr></thead>
-              <tbody>
-                {e.young.map((r) => (
-                  <tr key={r.id}>
-                    <td style={{ ...td, maxWidth: 240, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{r.company || '—'}</td>
-                    <td style={num}>{r.appsTotal}</td>
-                    <td style={num}>{n1(r.ageDays)}{ko ? '일' : 'd'}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </details>
-      )}
     </div>
   )
 }

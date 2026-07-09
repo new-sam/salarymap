@@ -41,14 +41,14 @@ function splitName(s) {
 export default function OutreachView({ token, lang, owner = 'wsj' }) {
   const ko = lang !== 'en'
   const L = ko ? {
-    loading: '불러오는 중…', empty: '등록된 대상이 없습니다', all: '전체', allCampaigns: '전체 캠페인',
+    loading: '불러오는 중…', empty: '등록된 대상이 없습니다', all: '전체', allCampaigns: '전체 캠페인', allIndustries: '전체 업종',
     add: '+ 대상 추가', save: '저장', cancel: '취소', edit: '편집', del: '삭제',
     delConfirm: '이 대상을 삭제할까요?', search: '회사·담당자·이메일 검색',
     company: '회사', contact: '담당자', email: '이메일', industry: '업종',
     campaign: '캠페인/라운드', status: '상태', sentAt: '발송일', memo: '메모', actions: '',
     needCompany: '회사명을 입력하세요.',
   } : {
-    loading: 'Loading…', empty: 'No leads yet', all: 'All', allCampaigns: 'All campaigns',
+    loading: 'Loading…', empty: 'No leads yet', all: 'All', allCampaigns: 'All campaigns', allIndustries: 'All industries',
     add: '+ Add lead', save: 'Save', cancel: 'Cancel', edit: 'Edit', del: 'Delete',
     delConfirm: 'Delete this lead?', search: 'Search company/contact/email',
     company: 'Company', contact: 'Contact', email: 'Email', industry: 'Industry',
@@ -61,6 +61,7 @@ export default function OutreachView({ token, lang, owner = 'wsj' }) {
 
   const [statusFilter, setStatusFilter] = useState('all')
   const [campaignFilter, setCampaignFilter] = useState('')
+  const [industryFilter, setIndustryFilter] = useState('')
   const [search, setSearch] = useState('')
   const [showAdd, setShowAdd] = useState(false)
   const [addForm, setAddForm] = useState(EMPTY)
@@ -77,6 +78,10 @@ export default function OutreachView({ token, lang, owner = 'wsj' }) {
     () => [...new Set(rows.map(r => r.campaign).filter(Boolean))].sort(),
     [rows]
   )
+  const industries = useMemo(
+    () => [...new Set(rows.map(r => (r.industry || '').trim()).filter(Boolean))].sort(),
+    [rows]
+  )
   const counts = useMemo(() => {
     const c = {}
     for (const r of rows) c[r.status] = (c[r.status] || 0) + 1
@@ -91,6 +96,7 @@ export default function OutreachView({ token, lang, owner = 'wsj' }) {
   const filtered = rows.filter(r => {
     if (statusFilter !== 'all' && r.status !== statusFilter) return false
     if (campaignFilter && r.campaign !== campaignFilter) return false
+    if (industryFilter && (r.industry || '').trim() !== industryFilter) return false
     if (search) {
       const q = search.toLowerCase()
       const hay = `${r.company_name} ${r.contact_name || ''} ${r.email || ''}`.toLowerCase()
@@ -267,6 +273,12 @@ export default function OutreachView({ token, lang, owner = 'wsj' }) {
           <select style={{ ...inp, width: 'auto' }} value={campaignFilter} onChange={e => setCampaignFilter(e.target.value)}>
             <option value="">{L.allCampaigns}</option>
             {campaigns.map(c => <option key={c} value={c}>{c}</option>)}
+          </select>
+        )}
+        {industries.length > 0 && (
+          <select style={{ ...inp, width: 'auto', maxWidth: 180 }} value={industryFilter} onChange={e => setIndustryFilter(e.target.value)}>
+            <option value="">{L.allIndustries}</option>
+            {industries.map(c => <option key={c} value={c}>{c}</option>)}
           </select>
         )}
         <button onClick={() => { if (selectMode) setSelected(new Set()); setSelectMode(v => !v) }}
