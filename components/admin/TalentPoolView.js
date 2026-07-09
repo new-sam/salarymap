@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
+import { createPortal } from 'react-dom'
 import { useAdmin } from '../../lib/adminSwr'
 import { isTopTier, overseasOf } from '../../lib/topUniversities'
 
@@ -230,6 +231,8 @@ export default function TalentPoolView({ token, lang }) {
       <style>{`
         .tp-card { transition: box-shadow 0.15s, border-color 0.15s; }
         .tp-card:hover { border-color: #ff6000; box-shadow: 0 2px 10px rgba(15,23,42,0.06); }
+        .jobsel-dropdown::-webkit-scrollbar { width: 6px; }
+        .jobsel-dropdown::-webkit-scrollbar-thumb { background: #E5E8EB; border-radius: 3px; }
       `}</style>
 
       {/* 헤더: 제목 + 통계 스트립 + 검색/CSV */}
@@ -394,6 +397,108 @@ export default function TalentPoolView({ token, lang }) {
   )
 }
 
+// 공고 선택 드롭다운 — native select 대신 브랜드 디자인(profile.js CustomSelect 계열).
+// 공고는 회사명·포지션 2줄 + 로고, 이미 추천 보낸 공고는 비활성(발송됨 표시).
+function JobSelect({ jobs, value, onChange, sentJobIds, placeholder, sentLabel }) {
+  const [open, setOpen] = useState(false)
+  // 드롭다운은 body로 portal + fixed 배치 — 모달의 overflow:auto 경계에 잘리지 않게.
+  const [coords, setCoords] = useState(null)
+  const triggerRef = useRef(null)
+  const menuRef = useRef(null)
+
+  const reposition = useCallback(() => {
+    const el = triggerRef.current
+    if (!el) return
+    const r = el.getBoundingClientRect()
+    const menuH = Math.min(260, jobs.length * 47 + 8)
+    const spaceBelow = window.innerHeight - r.bottom
+    const above = spaceBelow < menuH + 12 && r.top > spaceBelow
+    setCoords({
+      left: r.left,
+      width: r.width,
+      top: above ? r.top - menuH - 4 : r.bottom + 4,
+      maxHeight: above ? Math.min(260, r.top - 12) : Math.min(260, spaceBelow - 12),
+    })
+  }, [jobs.length])
+
+  useEffect(() => {
+    if (!open) return
+    reposition()
+    const onOutside = (e) => {
+      if (triggerRef.current?.contains(e.target) || menuRef.current?.contains(e.target)) return
+      setOpen(false)
+    }
+    // 모달 내부 스크롤/리사이즈 시 위치 갱신 (capture: 내부 스크롤 컨테이너까지 포착)
+    document.addEventListener('mousedown', onOutside)
+    window.addEventListener('resize', reposition)
+    window.addEventListener('scroll', reposition, true)
+    return () => {
+      document.removeEventListener('mousedown', onOutside)
+      window.removeEventListener('resize', reposition)
+      window.removeEventListener('scroll', reposition, true)
+    }
+  }, [open, reposition])
+
+  const selected = jobs.find(j => j.id === value)
+  const logoBox = (job, size) => job.logo_url
+    ? <img src={job.logo_url} alt="" style={{ width: size, height: size, borderRadius: 6, objectFit: 'contain', background: '#fff', border: '1px solid #EEF0F2', flexShrink: 0 }} />
+    : <div style={{ width: size, height: size, borderRadius: 6, background: '#FFF1E7', color: '#ea580c', fontSize: size * 0.42, fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>{(job.company || '?').trim()[0] || '?'}</div>
+
+  return (
+    <div style={{ position: 'relative' }}>
+      <button ref={triggerRef} type="button" onClick={() => setOpen(v => !v)} style={{
+        width: '100%', padding: '9px 11px', border: `1px solid ${open ? '#ff6000' : '#E5E8EB'}`,
+        borderRadius: 8, background: '#fff', cursor: 'pointer', textAlign: 'left',
+        display: 'flex', alignItems: 'center', gap: 10, transition: 'border-color .15s', outline: 'none',
+      }}>
+        {selected ? (
+          <>
+            {logoBox(selected, 28)}
+            <span style={{ minWidth: 0, flex: 1 }}>
+              <span style={{ display: 'block', fontSize: 13, fontWeight: 700, color: '#111', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{selected.title}</span>
+              <span style={{ display: 'block', fontSize: 11.5, color: '#6B7280', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{selected.company}</span>
+            </span>
+          </>
+        ) : (
+          <span style={{ flex: 1, fontSize: 13, color: '#9CA3AF' }}>{placeholder}</span>
+        )}
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" strokeWidth="2" style={{ flexShrink: 0, transform: open ? 'rotate(180deg)' : 'none', transition: 'transform .2s' }}><path d="M6 9l6 6 6-6" /></svg>
+      </button>
+      {open && coords && createPortal(
+        <div ref={menuRef} className="jobsel-dropdown" style={{
+          position: 'fixed', top: coords.top, left: coords.left, width: coords.width, zIndex: 200,
+          background: '#fff', border: '1px solid #EEF0F2', borderRadius: 10, padding: 4,
+          maxHeight: coords.maxHeight, overflowY: 'auto', boxShadow: '0 8px 32px rgba(15,23,42,0.12)',
+        }}>
+          {jobs.map(j => {
+            const sent = sentJobIds.has(j.id)
+            const active = j.id === value
+            return (
+              <button key={j.id} type="button" disabled={sent}
+                onClick={() => { if (!sent) { onChange(j.id); setOpen(false) } }}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 10, width: '100%', padding: '8px 10px',
+                  border: 'none', borderRadius: 6, background: active ? '#FFF6F0' : 'transparent',
+                  cursor: sent ? 'not-allowed' : 'pointer', textAlign: 'left', opacity: sent ? 0.5 : 1, transition: 'background .1s',
+                }}
+                onMouseEnter={e => { if (!sent && !active) e.currentTarget.style.background = '#F8FAFC' }}
+                onMouseLeave={e => { if (!active) e.currentTarget.style.background = 'transparent' }}>
+                {logoBox(j, 28)}
+                <span style={{ minWidth: 0, flex: 1 }}>
+                  <span style={{ display: 'block', fontSize: 13, fontWeight: 600, color: active ? '#ff6000' : '#111', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{j.title}</span>
+                  <span style={{ display: 'block', fontSize: 11.5, color: '#6B7280', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{j.company}</span>
+                </span>
+                {sent && <span style={{ flexShrink: 0, fontSize: 10.5, fontWeight: 700, color: '#94A3B8' }}>{sentLabel}</span>}
+              </button>
+            )
+          })}
+        </div>,
+        document.body
+      )}
+    </div>
+  )
+}
+
 // 공고 추천 메일 모달 — 기업 등록 공고(company_self) 중 하나를 골라
 // 베트남어 추천 메일(리멤버 형식)을 발송한다. 미리보기는 서버에서 실제 발송본과
 // 동일한 내용을 받아와 보여준다.
@@ -510,15 +615,14 @@ function RecommendModal({ person, jobs, history, token, ko, onClose, onSent }) {
           {jobs.length === 0 ? (
             <div style={{ fontSize: 12.5, color: '#9CA3AF' }}>{M.noJobs}</div>
           ) : (
-            <select value={jobId} onChange={e => setJobId(e.target.value)}
-              style={{ width: '100%', padding: '9px 10px', border: '1px solid #E5E8EB', borderRadius: 8, fontSize: 13, background: '#fff' }}>
-              <option value="">{M.selectPh}</option>
-              {jobs.map(j => (
-                <option key={j.id} value={j.id} disabled={sentJobIds.has(j.id)}>
-                  {j.company} — {j.title}{sentJobIds.has(j.id) ? ` ${M.alreadySent}` : ''}
-                </option>
-              ))}
-            </select>
+            <JobSelect
+              jobs={jobs}
+              value={jobId}
+              onChange={setJobId}
+              sentJobIds={sentJobIds}
+              placeholder={M.selectPh}
+              sentLabel={M.alreadySent}
+            />
           )}
         </div>
 
