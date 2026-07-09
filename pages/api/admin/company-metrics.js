@@ -68,7 +68,7 @@ export default async function handler(req, res) {
     supabase.from('recruiter_companies').select('id, name, email_domain, verified_at, created_at').order('created_at', { ascending: false }),
     supabase.from('recruiter_users').select('company_id, email, full_name, role, created_at').order('created_at', { ascending: false }),
     supabase.from('jobs').select('id, company_id, title, status, is_active, created_at').not('company_id', 'is', null).order('created_at', { ascending: false }),
-    supabase.from('job_applications').select('job_id, status, rejected_at, jobs!inner(company_id)').not('jobs.company_id', 'is', null),
+    supabase.from('job_applications').select('job_id, status, rejected_at, created_at, jobs!inner(company_id)').not('jobs.company_id', 'is', null),
   ])
   // 멋사(Likelion) 등 내부/테스트 회사 제외 — 알람(daily-summary)과 동일 규칙.
   // 자체 테스트 지원이 대부분이라 안 빼면 지원·공고당 지원이 뻥튀기됨.
@@ -135,10 +135,12 @@ export default async function handler(req, res) {
   for (let i = 1; i <= todayDom; i++) {
     const d = new Date(Date.UTC(y, mo, i)).toISOString().slice(0, 10)
     dayIdx[d] = daily.length
-    daily.push({ date: d, companies: 0, jobs: 0 })
+    daily.push({ date: d, companies: 0, jobs: 0, apps: 0 })
   }
   companies.forEach(c => { const d = (c.created_at || '').slice(0, 10); if (d in dayIdx) daily[dayIdx[d]].companies += 1 })
   jobs.forEach(j => { const d = (j.created_at || '').slice(0, 10); if (d in dayIdx) daily[dayIdx[d]].jobs += 1 })
+  // 일별 지원 — 기업 자체공고 지원만(멋사 제외 apps 기준). created_at 로 그날 집계.
+  apps.forEach(ap => { const d = (ap.created_at || '').slice(0, 10); if (d in dayIdx) daily[dayIdx[d]].apps += 1 })
   const monthLabel = `${y}-${String(mo + 1).padStart(2, '0')}`
 
   const companyName = Object.fromEntries(companies.map(c => [c.id, c.name]))

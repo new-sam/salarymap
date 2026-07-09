@@ -151,10 +151,11 @@ export default function CompanyView({ token, lang }) {
   }
 
   // 이번 달 일별 차트 스케일
-  const maxDaily = Math.max(1, ...daily.flatMap(d => [d.companies, d.jobs]))
+  const maxDaily = Math.max(1, ...daily.flatMap(d => [d.companies, d.jobs, d.apps]))
   const mNum = parseInt(monthLabel.slice(5), 10) // 7
   const monthCompanies = daily.reduce((s, d) => s + d.companies, 0)
   const monthJobs = daily.reduce((s, d) => s + d.jobs, 0)
+  const monthApps = daily.reduce((s, d) => s + (d.apps || 0), 0)
 
   // 공용 공고 한 줄 — 한국어 제목(있으면) + 원문 + 회사/직군/상태/지원
   // 공고별 미니 테이블 (공고 | 지원 | 서류 | 1차 | 2차 | 최종 | 불합격) — 상단 표와 양식 통일
@@ -245,13 +246,14 @@ export default function CompanyView({ token, lang }) {
       {/* 이번 달 일별 성과 — 하루마다 신규 기업/공고 */}
       <h4 style={{ fontSize: 15, fontWeight: 700, margin: '0 0 4px' }}>{ko ? `${monthLabel} 일별 성과` : `${monthLabel} daily`}</h4>
       <div style={{ fontSize: 12, color: '#6B7280', marginBottom: 12 }}>
-        {ko ? `하루마다 새로 들어온 기업/공고 (이번 달 기업 ${monthCompanies} · 공고 ${monthJobs}).` : `New companies/jobs per day this month.`}
+        {ko ? `하루마다 새 기업/공고 + 기업 공고에 들어온 지원 (이번 달 기업 ${monthCompanies} · 공고 ${monthJobs} · 지원 ${monthApps}, 멋사 제외).` : `New companies/jobs + applications to company jobs per day this month.`}
       </div>
       <div style={{ background: '#FAFBFC', border: '1px solid #EEF0F2', borderRadius: 12, padding: '14px 16px', marginBottom: 30 }}>
         {/* 범례 */}
         <div style={{ display: 'flex', gap: 14, marginBottom: 12 }}>
           <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 12, color: '#475569' }}><span style={{ width: 9, height: 9, borderRadius: 2, background: '#ff6000' }} />{ko ? '신규 기업' : 'Companies'}</span>
           <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 12, color: '#475569' }}><span style={{ width: 9, height: 9, borderRadius: 2, background: '#2563EB' }} />{ko ? '신규 공고' : 'Jobs'}</span>
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 12, color: '#475569' }}><span style={{ width: 9, height: 9, borderRadius: 2, background: '#059669' }} />{ko ? '지원' : 'Apps'}</span>
         </div>
         <div style={{ display: 'flex', alignItems: 'flex-end', gap: 4 }}>
           {daily.map(d => {
@@ -261,12 +263,13 @@ export default function CompanyView({ token, lang }) {
                 <div style={{ width: 9, height: `${(val / maxDaily) * 56}px`, minHeight: val > 0 ? 4 : 0, background: color, borderRadius: 2 }} />
               </div>
             )
-            const busy = d.companies > 0 || d.jobs > 0
+            const busy = d.companies > 0 || d.jobs > 0 || d.apps > 0
             return (
               <div key={d.date} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                <div title={`${d.date} · ${ko ? '기업' : 'co'} ${d.companies} · ${ko ? '공고' : 'jobs'} ${d.jobs}`} style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'center', gap: 3, width: '100%' }}>
+                <div title={`${d.date} · ${ko ? '기업' : 'co'} ${d.companies} · ${ko ? '공고' : 'jobs'} ${d.jobs} · ${ko ? '지원' : 'apps'} ${d.apps}`} style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'center', gap: 3, width: '100%' }}>
                   {bar(d.companies, '#ff6000')}
                   {bar(d.jobs, '#2563EB')}
+                  {bar(d.apps, '#059669')}
                 </div>
                 <div style={{ fontSize: 10.5, fontWeight: busy ? 700 : 500, color: busy ? '#475569' : '#B6BBC2', marginTop: 6 }}>{mNum}/{dayNum(d.date)}</div>
               </div>
