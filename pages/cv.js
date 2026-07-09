@@ -500,7 +500,7 @@ export default function CvLanding() {
               <span className="cv-h1-line cv-h1-hero"><em>2,000,000 VND</em>{t('cv.hero.line2.suffix')}</span>
             </h1>
             <div className="cv-banknote-showcase" aria-hidden>
-              <img src="/cv/banknote-prize-v1.png" alt="" className="cv-banknote-img" />
+              <img src="/cv/banknote-prize-v2.png" alt="" className="cv-banknote-img" />
             </div>
           </div>
         </section>
@@ -1047,16 +1047,7 @@ export default function CvLanding() {
           width: min(620px, 100%);
           height: auto;
           transform: translateX(-50%);
-          mix-blend-mode: lighten;
-          -webkit-mask-image: radial-gradient(ellipse 66% 58% at 50% 52%, #000 56%, rgba(0,0,0,0.58) 68%, transparent 82%);
-          mask-image: radial-gradient(ellipse 66% 58% at 50% 52%, #000 56%, rgba(0,0,0,0.58) 68%, transparent 82%);
-          filter:
-            sepia(0.06)
-            saturate(0.96)
-            contrast(1.1)
-            brightness(1.03)
-            drop-shadow(0 38px 64px rgba(0,0,0,0.52))
-            drop-shadow(0 0 28px rgba(0,0,0,0.72));
+          filter: drop-shadow(0 38px 64px rgba(0,0,0,0.45));
         }
         .cv-hero-sub {
           font-size: 17.5px;
