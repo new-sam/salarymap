@@ -1,4 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
+import { STATUS_PUSH, appPushTitle } from '../../../lib/application-push';
+import { sendPush } from '../../../lib/push';
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
@@ -28,7 +30,7 @@ export default async function handler(req, res) {
   const admin = createClient(SUPABASE_URL, SERVICE_KEY);
   const { data: app } = await admin
     .from('job_applications')
-    .select('id, status, viewed_at, rejected_at, job_id, jobs(company_id, created_by)')
+    .select('id, status, viewed_at, rejected_at, job_id, user_id, jobs(company_id, created_by, title, company)')
     .eq('id', appId).maybeSingle();
   if (!app) return res.status(404).json({ error: '지원자를 찾을 수 없습니다.' });
 
@@ -58,5 +60,18 @@ export default async function handler(req, res) {
     return res.status(200).json({ ok: true, changed: false, missingColumn: true });
   }
   if (upErr) return res.status(500).json({ error: '열람 처리 실패: ' + upErr.message });
+
+  // 첫 열람일 때만 지원자에게 "담당자가 열람했습니다" 푸시. (재열람은 위의
+  // viewed_at noop에서 이미 걸러졌다.) fire-and-forget — 응답을 지연시키지 않고,
+  // sendPush는 절대 throw하지 않는다. 비로그인 지원(user_id 없음)은 스킵.
+  if (app.user_id) {
+    sendPush([app.user_id], {
+      title: appPushTitle(app.jobs?.company, app.jobs?.title),
+      body: STATUS_PUSH.viewed,
+      category: 'application',
+      data: { url: '/jobs/applications' },
+    });
+  }
+
   return res.status(200).json({ ok: true, changed: true, viewed_at: nowIso });
 }

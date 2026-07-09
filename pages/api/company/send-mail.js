@@ -1,6 +1,8 @@
 import { createClient } from '@supabase/supabase-js';
 import { Resend } from 'resend';
+import { RECRUITER_MAIL_PUSH, appPushTitle } from '../../../lib/application-push';
 import { isJobAdmin } from '../../../lib/job-team-role';
+import { sendPush } from '../../../lib/push';
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
@@ -33,7 +35,7 @@ export default async function handler(req, res) {
 
   const { data: app } = await asUser
     .from('job_applications')
-    .select('id, applicant_email, user_id, job_id, jobs(created_by)')
+    .select('id, applicant_email, user_id, job_id, jobs(created_by, title, company)')
     .eq('id', appId)
     .maybeSingle();
   if (!app) return res.status(403).json({ error: '해당 지원자에 대한 권한이 없습니다.' });
@@ -78,5 +80,17 @@ export default async function handler(req, res) {
   if (sendErr) {
     return res.status(502).json({ error: '메일 발송 실패: ' + (sendErr.message || '알 수 없는 오류') });
   }
+
+  // 앱 설치 지원자에겐 "담당자가 메일을 보냈습니다" 푸시로 메일 확인을 유도.
+  // fire-and-forget — sendPush는 절대 throw하지 않는다. 비로그인 지원은 스킵.
+  if (app.user_id) {
+    sendPush([app.user_id], {
+      title: appPushTitle(app.jobs?.company, app.jobs?.title),
+      body: RECRUITER_MAIL_PUSH,
+      category: 'application',
+      data: { url: '/jobs/applications' },
+    });
+  }
+
   return res.status(200).json({ success: true, to: toEmail });
 }
