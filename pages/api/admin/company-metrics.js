@@ -128,8 +128,11 @@ export default async function handler(req, res) {
   }))
 
   // 이번 달 일별 유입 — 하루마다 신규 가입 기업 + 신규 공고 (광고 성과를 일 단위로)
-  const now = new Date()
-  const y = now.getUTCFullYear(), mo = now.getUTCMonth(), todayDom = now.getUTCDate()
+  // 베트남(UTC+7) 날짜 기준 — 알람(daily-summary)과 하루 경계를 맞춘다.
+  // (UTC 기준으로 하면 UTC 17시~23시 지원이 하루 앞당겨져 봇과 어긋남)
+  const vnNow = new Date(Date.now() + 7 * 3600 * 1000)
+  const y = vnNow.getUTCFullYear(), mo = vnNow.getUTCMonth(), todayDom = vnNow.getUTCDate()
+  const vnDay = (ts) => ts ? new Date(new Date(ts).getTime() + 7 * 3600 * 1000).toISOString().slice(0, 10) : ''
   const daily = []
   const dayIdx = {}
   for (let i = 1; i <= todayDom; i++) {
@@ -137,10 +140,10 @@ export default async function handler(req, res) {
     dayIdx[d] = daily.length
     daily.push({ date: d, companies: 0, jobs: 0, apps: 0 })
   }
-  companies.forEach(c => { const d = (c.created_at || '').slice(0, 10); if (d in dayIdx) daily[dayIdx[d]].companies += 1 })
-  jobs.forEach(j => { const d = (j.created_at || '').slice(0, 10); if (d in dayIdx) daily[dayIdx[d]].jobs += 1 })
-  // 일별 지원 — 기업 자체공고 지원만(멋사 제외 apps 기준). created_at 로 그날 집계.
-  apps.forEach(ap => { const d = (ap.created_at || '').slice(0, 10); if (d in dayIdx) daily[dayIdx[d]].apps += 1 })
+  companies.forEach(c => { const d = vnDay(c.created_at); if (d in dayIdx) daily[dayIdx[d]].companies += 1 })
+  jobs.forEach(j => { const d = vnDay(j.created_at); if (d in dayIdx) daily[dayIdx[d]].jobs += 1 })
+  // 일별 지원 — 기업 자체공고 지원만(멋사 제외 apps 기준). VN 날짜로 집계(봇과 일치).
+  apps.forEach(ap => { const d = vnDay(ap.created_at); if (d in dayIdx) daily[dayIdx[d]].apps += 1 })
   const monthLabel = `${y}-${String(mo + 1).padStart(2, '0')}`
 
   const companyName = Object.fromEntries(companies.map(c => [c.id, c.name]))
