@@ -96,15 +96,31 @@ export const ROLE_GROUPS = [
     ],
   },
   {
+    // 생산직 공고 대거 유입 대응 — IT 외 제조 직군 분류. 앱 job-roles.ts와 반드시 동기화.
+    key: 'manufacturing',
+    label: { ko: '생산 · 제조', en: 'Manufacturing & Production', vi: 'Sản xuất & Chế tạo' },
+    roles: [
+      { value: 'Production Worker',  label: { ko: '생산직 / 오퍼레이터', en: 'Production Worker / Operator', vi: 'Công nhân sản xuất / Vận hành máy' } },
+      { value: 'Production Manager', label: { ko: '생산 관리 / 반장', en: 'Production Manager / Supervisor', vi: 'Quản lý / Tổ trưởng sản xuất' } },
+      { value: 'Process Engineer',   label: { ko: '공정 엔지니어', en: 'Process Engineer', vi: 'Kỹ sư quy trình' } },
+      { value: 'Maintenance',        label: { ko: '설비 · 유지보수', en: 'Maintenance Technician', vi: 'Kỹ thuật viên bảo trì' } },
+      { value: 'Warehouse',          label: { ko: '창고 · 물류', en: 'Warehouse / Logistics', vi: 'Kho vận / Logistics' } },
+      { value: 'HSE',                label: { ko: '안전 관리 (HSE)', en: 'HSE / Safety', vi: 'An toàn lao động (HSE)' } },
+      { value: 'Merchandiser',       label: { ko: '머천다이저 (MD)', en: 'Merchandiser (MD)', vi: 'Merchandiser (MD)' } },
+    ],
+  },
+  {
     key: 'business',
     label: { ko: '비 IT · 비즈니스', en: 'Non-IT · Business', vi: 'Phi IT · Kinh doanh' },
     roles: [
-      { value: 'HR',         label: { ko: '인사 (HR)', en: 'HR', vi: 'Nhân sự (HR)' } },
-      { value: 'Marketing',  label: { ko: '마케팅', en: 'Marketing', vi: 'Marketing' } },
-      { value: 'Sales',      label: { ko: '영업', en: 'Sales', vi: 'Kinh doanh' } },
-      { value: 'Finance',    label: { ko: '재무 / 회계', en: 'Finance', vi: 'Tài chính' } },
-      { value: 'Operations', label: { ko: '운영', en: 'Operations', vi: 'Vận hành' } },
-      { value: 'Non-IT',     label: { ko: '기타 (Non-IT)', en: 'Other (Non-IT)', vi: 'Khác (Non-IT)' } },
+      { value: 'HR',          label: { ko: '인사 (HR)', en: 'HR', vi: 'Nhân sự (HR)' } },
+      { value: 'Marketing',   label: { ko: '마케팅', en: 'Marketing', vi: 'Marketing' } },
+      { value: 'Sales',       label: { ko: '영업', en: 'Sales', vi: 'Kinh doanh' } },
+      { value: 'Finance',     label: { ko: '재무 / 회계', en: 'Finance', vi: 'Tài chính' } },
+      { value: 'Operations',  label: { ko: '운영', en: 'Operations', vi: 'Vận hành' } },
+      { value: 'Procurement', label: { ko: '구매 · 자재', en: 'Procurement / Purchasing', vi: 'Thu mua / Vật tư' } },
+      { value: 'Interpreter', label: { ko: '통 · 번역', en: 'Interpreter / Translator', vi: 'Phiên dịch / Biên dịch' } },
+      { value: 'Non-IT',      label: { ko: '기타 (Non-IT)', en: 'Other (Non-IT)', vi: 'Khác (Non-IT)' } },
     ],
   },
 ]
@@ -162,3 +178,65 @@ export const MARKET_SALARY = {
 export const TECH_PREMIUM = { Go: 1.08, Rust: 1.10, Kotlin: 1.06, Swift: 1.06, Kubernetes: 1.07, AWS: 1.05, Terraform: 1.07, Scala: 1.08, Elixir: 1.09, 'Machine Learning': 1.10, AI: 1.10, Blockchain: 1.08, 'Spring Framework': 1.03, React: 1.02, TypeScript: 1.03 }
 
 export const JOBS_PER_PAGE = 20
+
+// 공고(수요) 직군 분류 — 베트남어 블루칼라/제조·물류 위주 데이터에 맞춘 제목 키워드 휴리스틱.
+// role 컬럼은 IT공고 위주(비IT는 대부분 'Non-IT')라 제조/물류 직군을 못 가른다 → 제목으로 분류.
+// 위에서부터 첫 매칭 승(구체적 직군을 일반보다 먼저). 매칭 안 되면 'other'.
+// 어드민 지표(company-metrics)와 공개 jobs 페이지 그룹 필터가 공유한다.
+export const DEMAND_CATEGORIES = [
+  { key: 'dev', ko: '개발·IT' },
+  { key: 'data', ko: '데이터·AI' },
+  { key: 'design', ko: '디자인' },
+  { key: 'pm', ko: '기획·PM' },
+  { key: 'sales', ko: '영업·BD' },
+  { key: 'marketing', ko: '마케팅' },
+  { key: 'hr', ko: '인사·HR' },
+  { key: 'qc', ko: '품질·QC' },
+  { key: 'engineering', ko: '기술·설비(전기·기계)' },
+  { key: 'production', ko: '생산·제조' },
+  { key: 'logistics', ko: '물류·창고' },
+  { key: 'office', ko: '사무·관리' },
+  { key: 'exec', ko: '경영·임원' },
+  { key: 'other', ko: '기타' },
+]
+const DEMAND_RULES = [
+  ['data', /\bai\b|\bdata\b|machine learning|khoa học dữ liệu|dữ liệu|phân tích/],
+  ['dev', /developer|software|lập trình|front[\s-]?end|back[\s-]?end|full[\s-]?stack|\bweb\b|\bit\b|coder|programmer|phần mềm|devops|software engineer/],
+  ['hr', /tuyển dụng|nhân sự|đào tạo|\bhr\b|recruit|human resource|training/],
+  ['qc', /\bqc\b|\bqa\b|chất lượng|kiểm tra|kiểm định|giám sát vệ sinh|vệ sinh công nghiệp|quality/],
+  ['marketing', /marketing|social media|truyền thông|content|nội dung|\bseo\b|thương hiệu/],
+  ['sales', /kinh doanh|bán hàng|\bsales?\b|business development|\bbd\b|telesales|chăm sóc khách|customer|\bcs\b/],
+  ['design', /thiết kế đồ họa|đồ họa|graphic|\bui\b|\bux\b|designer|motion/],
+  ['pm', /\bpm\b|\bpo\b|product manager|project manager|quản lý dự án|planner|kế hoạch/],
+  ['exec', /giám đốc|\bdirector\b|head of|trưởng phòng|trưởng bộ phận|\bceo\b|\bcto\b|\bcfo\b|\bcoo\b|quản lý cấp cao/],
+  ['engineering', /kỹ sư|kỹ thuật|cơ khí|cơ điện|\bđiện\b|điện tử|bảo trì|thiết bị|automation|m&e|xây dựng|công trình|thi công/],
+  ['production', /sản xuất|quản đốc|công nhân|thợ|lắp ráp|tổ sơn|đứng máy|máy chấn|máy laser|máy hàn|hàn|\bmay\b|gia công|vận hành máy|đóng gói|dán tem|đúc|ép nhựa|dệt/],
+  ['logistics', /\bkho\b|giao hàng|bốc hàng|soạn hàng|giao nhận|logistics|vận chuyển|xuất nhập|thu mua|procurement|supply chain|tài xế|lái xe|forklift/],
+  ['office', /kế toán|hành chính|thư ký|secretary|văn phòng|admin|lễ tân|trợ lý|nhân viên văn phòng|pháp lý|legal|tài chính|finance/],
+]
+export const CAT_KO = Object.fromEntries(DEMAND_CATEGORIES.map(c => [c.key, c.ko]))
+// 공고 제목 → 수요 직군 key. 빈 제목/미매칭은 'other'.
+export function classifyJobTitle(raw) {
+  const s = String(raw || '').trim().toLowerCase()
+  if (!s) return 'other'
+  for (const [key, re] of DEMAND_RULES) if (re.test(s)) return key
+  return 'other'
+}
+
+// 광고 랜딩용 직군 묶음 — /jobs?role=grp:<key> 딥링크로 랜딩하면 해당 묶음만 필터.
+// 여러 수요 직군(cats)을 한 광고 그룹으로 합친다(제목분류 기반이라 role 컬럼과 무관).
+export const JOB_CATEGORY_GROUPS = [
+  { key: 'it',         label: { ko: 'IT·개발',       en: 'IT & Development',      vi: 'IT & Phát triển' },      cats: ['dev', 'data'] },
+  { key: 'production', label: { ko: '생산·기술직',   en: 'Production & Technical', vi: 'Sản xuất & Kỹ thuật' },  cats: ['production', 'engineering', 'qc'] },
+  { key: 'office',     label: { ko: '사무·비즈니스', en: 'Office & Business',      vi: 'Văn phòng & Kinh doanh' }, cats: ['sales', 'marketing', 'hr', 'office'] },
+]
+const CATEGORY_GROUP_INDEX = Object.fromEntries(JOB_CATEGORY_GROUPS.map(g => [g.key, g]))
+// 공고가 주어진 광고 그룹에 속하는지(제목분류 → cats 포함 여부).
+export function jobInCategoryGroup(title, groupKey) {
+  const g = CATEGORY_GROUP_INDEX[groupKey]
+  return g ? g.cats.includes(classifyJobTitle(title)) : false
+}
+export function categoryGroupLabel(key, lang = 'en') {
+  const g = CATEGORY_GROUP_INDEX[key]
+  return g ? (g.label[lang] || g.label.en) : (key || '')
+}

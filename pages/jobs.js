@@ -5,7 +5,7 @@ import { useRouter } from 'next/router'
 import { supabase } from '../lib/supabaseClient'
 import { useT } from '../lib/i18n'
 import Icon from '../components/Icon'
-import { DEFAULT_IMAGES, ROLE_GROUPS, roleLabel, roleGroupKey, roleGroupLabel, TYPE_OPTIONS, TECH_OPTIONS, JOBS_PER_PAGE } from '../constants/jobs'
+import { DEFAULT_IMAGES, ROLE_GROUPS, roleLabel, roleGroupKey, roleGroupLabel, jobInCategoryGroup, categoryGroupLabel, TYPE_OPTIONS, TECH_OPTIONS, JOBS_PER_PAGE } from '../constants/jobs'
 import { COMPANY_PROFILES } from '../data/companyProfiles.js'
 import { formatSalaryCard, getHighSalaryThreshold } from '../utils/salary'
 import { generateCompanyDescription } from '../utils/companyDescription'
@@ -379,7 +379,10 @@ export default function JobsPage() {
       if (q && !job.title?.toLowerCase().includes(q) && !job.company?.toLowerCase().includes(q)) return false
       if (hideExpired && job.deadline && new Date(job.deadline) < new Date()) return false
       if (roleFilter) {
-        if (roleFilter.startsWith('cat:')) {
+        if (roleFilter.startsWith('grp:')) {
+          // 광고 랜딩용 직군 묶음 — 제목분류 기반(role 컬럼 무관, 제조/물류 포함)
+          if (!jobInCategoryGroup(job.title, roleFilter.slice(4))) return false
+        } else if (roleFilter.startsWith('cat:')) {
           if (roleGroupKey(job.role) !== roleFilter.slice(4)) return false
         } else if (job.role !== roleFilter) return false
       }
@@ -958,7 +961,7 @@ export default function JobsPage() {
               {/* Role */}
               <div className="jf-dd">
                 <button className={`jf-dd-btn${roleFilter ? ' on' : ''}`} onClick={e => { e.stopPropagation(); const willOpen = openDropdown !== 'role'; if (willOpen && roleFilter && !roleFilter.startsWith('cat:')) setRoleCatOpen(roleGroupKey(roleFilter)); setOpenDropdown(willOpen ? 'role' : null) }}>
-                  {roleFilter ? (roleFilter.startsWith('cat:') ? roleGroupLabel(roleFilter.slice(4), lang) : roleLabel(roleFilter, lang)) : t('jobs.filterRole')} <span className="jf-dd-arrow">▾</span>
+                  {roleFilter ? (roleFilter.startsWith('grp:') ? categoryGroupLabel(roleFilter.slice(4), lang) : roleFilter.startsWith('cat:') ? roleGroupLabel(roleFilter.slice(4), lang) : roleLabel(roleFilter, lang)) : t('jobs.filterRole')} <span className="jf-dd-arrow">▾</span>
                 </button>
                 {openDropdown === 'role' && (
                   <div className="jf-dd-menu jf-dd-menu-scroll">
