@@ -436,7 +436,7 @@ export default function AdminJobs() {
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 }}>
                           <div style={{ minWidth: 0 }}>
                             <div style={{ fontSize: 12.5, fontWeight: 600, color: '#8B95A1', marginBottom: 3 }}>{job.company}</div>
-                            <div style={{ fontSize: 16, fontWeight: 700, color: '#191F28', letterSpacing: '-0.01em' }}>{job.title}</div>
+                            <a href={`/jobs/${job.id}`} target="_blank" rel="noopener noreferrer" title={L('공고 보기', 'View posting')} style={{ display: 'inline-block', fontSize: 16, fontWeight: 700, color: '#191F28', letterSpacing: '-0.01em', textDecoration: 'none', cursor: 'pointer' }}>{job.title}</a>
                           </div>
                           <span style={{ flexShrink: 0, fontSize: 11.5, fontWeight: 700, padding: '4px 10px', borderRadius: 999, background: st.bg, color: st.color }}>{st.label}</span>
                         </div>
