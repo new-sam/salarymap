@@ -206,6 +206,7 @@ const DEMAND_RULES = [
   ['qc', /\bqc\b|\bqa\b|chất lượng|kiểm tra|kiểm định|giám sát vệ sinh|vệ sinh công nghiệp|quality/],
   ['marketing', /marketing|social media|truyền thông|content|nội dung|\bseo\b|thương hiệu/],
   ['sales', /kinh doanh|bán hàng|\bsales?\b|business development|\bbd\b|telesales|chăm sóc khách|customer|\bcs\b/],
+  ['dev', /business analyst|\berp\b|\bdba\b/],
   ['design', /thiết kế đồ họa|đồ họa|graphic|\bui\b|\bux\b|designer|motion/],
   ['pm', /\bpm\b|\bpo\b|product manager|project manager|quản lý dự án|planner|kế hoạch/],
   ['exec', /giám đốc|\bdirector\b|head of|trưởng phòng|trưởng bộ phận|\bceo\b|\bcto\b|\bcfo\b|\bcoo\b|quản lý cấp cao/],
@@ -231,10 +232,23 @@ export const JOB_CATEGORY_GROUPS = [
   { key: 'office',     label: { ko: '사무·비즈니스', en: 'Office & Business',      vi: 'Văn phòng & Kinh doanh' }, cats: ['sales', 'marketing', 'hr', 'office'] },
 ]
 const CATEGORY_GROUP_INDEX = Object.fromEntries(JOB_CATEGORY_GROUPS.map(g => [g.key, g]))
-// 공고가 주어진 광고 그룹에 속하는지(제목분류 → cats 포함 여부).
-export function jobInCategoryGroup(title, groupKey) {
-  const g = CATEGORY_GROUP_INDEX[groupKey]
-  return g ? g.cats.includes(classifyJobTitle(title)) : false
+// role 컬럼의 IT 대분류들 — 회사가 지정한 값이라 IT 직군은 이게 제일 정확(영어/베트남어 제목 무관).
+const IT_ROLE_GROUPS = new Set(['software', 'data', 'infra', 'qa', 'product', 'security', 'leadership', 'other_tech'])
+// 공고 → 광고 그룹 키('it'|'production'|'office'|null).
+// ① role 컬럼이 IT면 무조건 it (Odyssey 처럼 영어 직함이라 제목분류가 놓치는 IT공고 구제).
+// ② 비IT(Non-IT/null/business)만 제목분류로 생산/사무를 가른다. IT QA(role=qa)는 ①에서 걸러
+//    져 생산 그룹에 안 섞이고, 생산 QC(role=Non-IT)만 여기서 production 으로 간다.
+export function jobAdGroup(role, title) {
+  if (IT_ROLE_GROUPS.has(roleGroupKey(role))) return 'it'
+  const c = classifyJobTitle(title)
+  if (c === 'production' || c === 'engineering' || c === 'qc') return 'production'
+  if (c === 'sales' || c === 'marketing' || c === 'hr' || c === 'office') return 'office'
+  if (c === 'dev' || c === 'data') return 'it'
+  return null
+}
+// 공고가 주어진 광고 그룹에 속하는지.
+export function jobInCategoryGroup(job, groupKey) {
+  return jobAdGroup(job?.role, job?.title) === groupKey
 }
 export function categoryGroupLabel(key, lang = 'en') {
   const g = CATEGORY_GROUP_INDEX[key]

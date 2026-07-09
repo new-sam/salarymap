@@ -28,8 +28,8 @@ let _cachedProfile = null
 function matchesJobFilters(job, f) {
   if (f.roles.length > 0) {
     const hit = f.roles.some(rf => {
-      // 광고 랜딩용 직군 묶음 — 제목분류 기반(role 컬럼 무관, 제조/물류 포함)
-      if (rf.startsWith('grp:')) return jobInCategoryGroup(job.title, rf.slice(4))
+      // 광고 랜딩용 직군 묶음 — role 컬럼 우선 + 비IT는 제목분류(제조/사무 구분)
+      if (rf.startsWith('grp:')) return jobInCategoryGroup(job, rf.slice(4))
       if (rf.startsWith('cat:')) return roleGroupKey(job.role) === rf.slice(4)
       return job.role === rf
     })
