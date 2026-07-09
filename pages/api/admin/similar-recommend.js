@@ -59,7 +59,7 @@ function jobLink(id) {
   return `${SITE_URL}/jobs/${id}?utm_source=fyi&utm_medium=email&utm_campaign=similar_jobs`
 }
 
-function composeEmail({ name, appliedTitle, appliedCompany, jobs, lang }) {
+export function composeEmail({ name, appliedTitle, appliedCompany, jobs, lang }) {
   const t = EMAIL_I18N[lang] || EMAIL_I18N.vi
   const who = name || t.fallbackName
   const refText = appliedCompany ? `${appliedTitle} · ${appliedCompany}` : appliedTitle
@@ -122,7 +122,8 @@ ${t.note}
 }
 
 // 최근 지원자 → 지원 직군과 같은 company_self 공고 매칭. 이미 지원/이미 발송한 공고는 제외.
-async function computeMatches(days) {
+// cron(/api/cron/similar-recommend)도 이 함수를 그대로 사용.
+export async function computeMatches(days) {
   const cutoff = new Date(Date.now() - days * 86400000).toISOString()
 
   // 1) 최근 지원 내역 (지원 공고의 role 조인). PostgREST 1000행 제한 → 페이지네이션.
