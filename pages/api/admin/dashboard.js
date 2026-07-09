@@ -18,8 +18,11 @@ export default async function handler(req, res) {
   if (!user) return res.status(401).json({ error: 'Unauthorized' })
 
   const { from, to, lang } = req.query
-  const startDate = from || new Date(Date.now() - 30 * 86400000).toISOString().slice(0, 10)
-  const endDate = to || new Date().toISOString().slice(0, 10)
+  // 기본 범위는 베트남(UTC+7) 기준 "오늘"로 잡는다. UTC로 뽑으면 endISO(+07:00 해석)와
+  // 어긋나 매일 UTC 17:00~23:59(베트남 00:00~06:59) 유입이 상한 밖으로 밀려 사라진다.
+  const vnDay = (offsetMs = 0) => new Date(Date.now() + 7 * 3600000 + offsetMs).toISOString().slice(0, 10)
+  const startDate = from || vnDay(-30 * 86400000)
+  const endDate = to || vnDay()
 
   // VN-day (UTC+7) bounds, expressed as UTC ISO so they work for both Postgres
   // timestamptz queries and JS string compare against auth.users.created_at.
