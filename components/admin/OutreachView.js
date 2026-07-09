@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect, useRef } from 'react'
 import { useAdmin } from '../../lib/adminSwr'
 
 // 콜드메일 영업 대상/진행 관리. 발송은 외부에서 하고 여기선 대상·상태만 추적한다.
@@ -73,6 +73,10 @@ export default function OutreachView({ token, lang, owner = 'wsj' }) {
   const [sending, setSending] = useState(false)
   const [generating, setGenerating] = useState(false)
   const [selectMode, setSelectMode] = useState(false)
+  const genSeq = useRef(0) // 모달을 다시 열면 증가 — 이전 초안 생성 응답이 새 모달에 섞이는 것 방지
+
+  // 필터/검색이 바뀌면 선택 초기화 — 화면에 안 보이는 행이 발송에 섞이지 않게
+  useEffect(() => { setSelected(new Set()) }, [statusFilter, campaignFilter, industryFilter, search])
 
   const campaigns = useMemo(
     () => [...new Set(rows.map(r => r.campaign).filter(Boolean))].sort(),
@@ -134,16 +138,23 @@ export default function OutreachView({ token, lang, owner = 'wsj' }) {
     } finally { setBusy(false) }
   }
 
-  // 파이프라인에서 가장 잦은 동작 — 상태만 즉시 변경
+  // 파이프라인에서 가장 잦은 동작 — 상태만 즉시 변경. 실패하면 서버 기준으로 되돌린다.
   async function quickStatus(row, status) {
     mutate(prev => (prev || []).map(r => r.id === row.id ? { ...r, status } : r), false)
-    await fetch('/api/admin/outreach', { method: 'PUT', headers: reqHeaders, body: JSON.stringify({ id: row.id, status }) })
+    const res = await fetch('/api/admin/outreach', { method: 'PUT', headers: reqHeaders, body: JSON.stringify({ id: row.id, status }) })
+    if (res.ok) {
+      const updated = await res.json()
+      mutate(prev => (prev || []).map(r => r.id === row.id ? updated : r), false)
+    } else {
+      mutate() // 롤백: 서버 데이터로 재검증
+    }
   }
 
   async function removeLead(id) {
     if (!confirm(L.delConfirm)) return
     mutate(prev => (prev || []).filter(r => r.id !== id), false)
-    await fetch('/api/admin/outreach', { method: 'DELETE', headers: reqHeaders, body: JSON.stringify({ id }) })
+    const res = await fetch('/api/admin/outreach', { method: 'DELETE', headers: reqHeaders, body: JSON.stringify({ id }) })
+    if (!res.ok) mutate() // 롤백
   }
 
   // 선택 + 발송 모달
@@ -153,7 +164,8 @@ export default function OutreachView({ token, lang, owner = 'wsj' }) {
     return allSel ? new Set() : new Set(filtered.map(r => r.id))
   })
   async function openSend() {
-    const items = rows.filter(r => selected.has(r.id)).map(r => {
+    // filtered 기준 — 다른 필터에서 선택했다 화면에 안 보이게 된 행은 제외
+    const items = filtered.filter(r => selected.has(r.id)).map(r => {
       const c = splitName(r.company_name)
       return { id: r.id, company: c.ko || c.en || r.company_name, email: r.email, round: (r.send_count || 0) + 1, subject: '', body: '' }
     })
@@ -162,18 +174,20 @@ export default function OutreachView({ token, lang, owner = 'wsj' }) {
     const round1 = items.filter(x => x.round === 1).map(x => x.id)
     const round2 = items.filter(x => x.round >= 2).map(x => x.id)
     if (!round1.length && !round2.length) return
+    const seq = ++genSeq.current
     setGenerating(true)
     try {
       const genFor = async (idList, round) => {
         if (!idList.length) return
         const res = await fetch('/api/admin/outreach-generate', { method: 'POST', headers: reqHeaders, body: JSON.stringify({ ids: idList, owner, round }) })
         const { drafts } = await res.json()
+        if (genSeq.current !== seq) return // 그 사이 모달을 다시 열었으면 이전 응답 폐기
         const map = Object.fromEntries((drafts || []).filter(d => d.subject).map(d => [d.id, d]))
         setSendModal(prev => prev && prev.map(x => map[x.id] ? { ...x, subject: map[x.id].subject, body: map[x.id].body } : x))
         if (round === 1) mutate(prev => (prev || []).map(r => map[r.id] ? { ...r, email_subject: map[r.id].subject, email_body: map[r.id].body } : r), false)
       }
       await Promise.all([genFor(round1, 1), genFor(round2, 2)])
-    } finally { setGenerating(false) }
+    } finally { if (genSeq.current === seq) setGenerating(false) }
   }
   async function doSend() {
     const items = sendModal.filter(x => x.subject.trim() && x.body.trim())
@@ -184,11 +198,19 @@ export default function OutreachView({ token, lang, owner = 'wsj' }) {
         body: JSON.stringify({ owner, items: items.map(x => ({ id: x.id, subject: x.subject, body: x.body })) }) })
       const { results } = await res.json()
       const okIds = new Set((results || []).filter(r => r.ok).map(r => r.id))
+      const failIds = new Set((results || []).filter(r => !r.ok).map(r => r.id))
       const fails = (results || []).filter(r => !r.ok)
-      mutate(prev => (prev || []).map(r => okIds.has(r.id)
-        ? { ...r, status: 'sent', sent_at: new Date().toISOString().slice(0, 10),
-            email_subject: sendModal.find(x => x.id === r.id)?.subject, email_body: sendModal.find(x => x.id === r.id)?.body }
-        : r), false)
+      // 서버 기록과 동일하게 반영: replied/meeting 등 기존 상태 유지, send_count 증가, 실패는 bounced
+      mutate(prev => (prev || []).map(r => {
+        if (okIds.has(r.id)) return {
+          ...r, status: r.status && r.status !== 'todo' ? r.status : 'sent',
+          sent_at: new Date().toISOString().slice(0, 10), send_count: (r.send_count || 0) + 1,
+          email_subject: sendModal.find(x => x.id === r.id)?.subject, email_body: sendModal.find(x => x.id === r.id)?.body,
+        }
+        if (failIds.has(r.id)) return { ...r, status: 'bounced' }
+        return r
+      }), false)
+      mutate() // 백그라운드 재검증으로 서버와 완전 동기화 (sent_ts, gmail_thread_id 등)
       setSelected(new Set()); setSendModal(null)
       if (fails.length) alert(`${ko ? '발송' : 'Sent'} ${okIds.size} · ${ko ? '실패' : 'failed'} ${fails.length}\n` + fails.map(f => f.error).join('\n'))
     } finally { setSending(false) }
