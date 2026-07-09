@@ -542,9 +542,10 @@ function RecommendModal({ person, jobs, history, token, ko, onClose, onSent }) {
             {previewLoading ? (
               <div style={{ fontSize: 12.5, color: '#9CA3AF', padding: '12px 0' }}>{M.previewLoading}</div>
             ) : preview ? (
-              <div style={{ background: '#FAFBFC', border: '1px solid #EEF0F2', borderRadius: 8, padding: '10px 12px' }}>
-                <div style={{ fontSize: 12.5, fontWeight: 700, color: '#374151', marginBottom: 8 }}>{preview.subject}</div>
-                <div style={{ fontSize: 12, color: '#4B5563', whiteSpace: 'pre-wrap', lineHeight: 1.55 }}>{preview.text}</div>
+              <div style={{ border: '1px solid #EEF0F2', borderRadius: 8, overflow: 'hidden' }}>
+                <div style={{ fontSize: 12.5, fontWeight: 700, color: '#374151', padding: '9px 12px', borderBottom: '1px solid #EEF0F2', background: '#FAFBFC' }}>{preview.subject}</div>
+                {/* 실제 발송되는 HTML 그대로 렌더 (서버가 만든 자체 템플릿) */}
+                <div style={{ maxHeight: 380, overflowY: 'auto' }} dangerouslySetInnerHTML={{ __html: preview.html }} />
               </div>
             ) : null}
           </div>

@@ -71,18 +71,47 @@ ${t.note}
 ${link}
 
 — FYI (salary-fyi.com)`
-  const b = (s) => `<b>${s}</b>`
+
+  // HTML: 회색 배경 위 흰 카드(로고 헤더 → 인트로 → 공고 카드 → 우선검토 스트립 → CTA).
+  // 이메일 클라이언트 호환을 위해 레이아웃은 table, 스타일은 전부 인라인.
+  const b = (s) => `<b style="color:#111">${s}</b>`
+  const companyInitial = escapeHtml((job.company || '?').trim()[0] || '?')
+  const logoCell = job.logo_url
+    ? `<img src="${escapeHtml(job.logo_url)}" alt="" width="44" height="44" style="width:44px;height:44px;border-radius:10px;object-fit:contain;background:#fff;border:1px solid #eef0f3;display:block">`
+    : `<div style="width:44px;height:44px;border-radius:10px;background:#fff1e7;color:#ea580c;font-size:19px;font-weight:800;text-align:center;line-height:44px">${companyInitial}</div>`
   const html =
-`<div style="font-family:'Pretendard','Segoe UI',Arial,sans-serif;color:#111;max-width:560px;margin:0 auto;padding:8px 0">
-  <p style="margin:0 0 16px;line-height:1.6;color:#374151">${t.intro(`<b>${escapeHtml(job.company)}</b>`, `<b>${escapeHtml(applicant)}</b>`)}</p>
-  <div style="background:#f9fafb;border:1px solid #e5e7eb;border-radius:12px;padding:16px 18px;margin:0 0 16px">
-    <div style="font-size:12px;color:#6b7280;margin-bottom:4px">■ ${t.positionLabel}</div>
-    <div style="font-size:17px;font-weight:800;color:#111">${escapeHtml(job.title)}</div>
-    <div style="font-size:13px;color:#6b7280;margin-top:2px">${escapeHtml(job.company)}</div>
-  </div>
-  <p style="margin:0 0 16px;line-height:1.6;color:#374151">${t.noteHtml(b)}</p>
-  <p style="margin:24px 0"><a href="${link}" style="background:#ea580c;color:#fff;padding:12px 20px;border-radius:8px;text-decoration:none;font-weight:800;display:inline-block">${escapeHtml(t.cta)}</a></p>
-  <p style="font-size:12px;color:#9ca3af;margin-top:24px">${t.footer}</p>
+`<div style="background:#f4f5f8;padding:32px 16px;font-family:'Pretendard','Segoe UI',Helvetica,Arial,sans-serif">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr><td align="center">
+    <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="width:100%;max-width:560px">
+      <tr><td style="background:#17181c;border-radius:16px 16px 0 0;padding:18px 30px">
+        <img src="${SITE_URL}/logo.png" alt="FYI" height="28" style="height:28px;display:block">
+      </td></tr>
+      <tr><td style="background:#ffffff;border:1px solid #e9ecf0;border-top:none;border-radius:0 0 16px 16px;padding:30px 30px 34px">
+        <div style="font-size:11px;font-weight:800;letter-spacing:1.5px;color:#ea580c;text-transform:uppercase;margin-bottom:10px">Job Recommendation</div>
+        <p style="margin:0 0 22px;font-size:15px;line-height:1.65;color:#4b5563">${t.intro(`<b style="color:#111">${escapeHtml(job.company)}</b>`, `<b style="color:#111">${escapeHtml(applicant)}</b>`)}</p>
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#fafbfc;border:1px solid #edf0f3;border-radius:12px">
+          <tr>
+            <td style="padding:18px 8px 18px 18px;width:44px;vertical-align:middle">${logoCell}</td>
+            <td style="padding:18px 18px 18px 12px;vertical-align:middle">
+              <div style="font-size:11px;font-weight:700;color:#9ca3af;margin-bottom:3px">${t.positionLabel}</div>
+              <div style="font-size:17px;font-weight:800;color:#111;line-height:1.35">${escapeHtml(job.title)}</div>
+              <div style="font-size:13px;color:#6b7280;margin-top:3px">${escapeHtml(job.company)}</div>
+            </td>
+          </tr>
+        </table>
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:16px 0 0">
+          <tr><td style="background:#fff7ed;border-left:3px solid #ea580c;border-radius:0 8px 8px 0;padding:13px 16px;font-size:13.5px;line-height:1.6;color:#7c2d12">${t.noteHtml(b)}</td></tr>
+        </table>
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:26px 0 4px"><tr><td align="center">
+          <a href="${link}" style="background:#ea580c;color:#ffffff;padding:14px 34px;border-radius:10px;text-decoration:none;font-weight:800;font-size:15px;display:inline-block">${escapeHtml(t.cta)}</a>
+        </td></tr></table>
+      </td></tr>
+      <tr><td style="padding:20px 6px;text-align:center;font-size:12px;line-height:1.6;color:#9ca3af">
+        ${t.footer}<br>
+        <a href="${SITE_URL}" style="color:#9ca3af;text-decoration:underline">salary-fyi.com</a>
+      </td></tr>
+    </table>
+  </td></tr></table>
 </div>`
   return { subject, text, html }
 }
@@ -127,7 +156,7 @@ export default async function handler(req, res) {
 
   const { data: job, error: jobErr } = await supabase
     .from('jobs')
-    .select('id, title, company, is_active')
+    .select('id, title, company, logo_url, is_active')
     .eq('id', jobId)
     .single()
   if (jobErr || !job) return res.status(404).json({ error: 'Job not found' })
