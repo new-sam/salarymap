@@ -226,6 +226,7 @@ export default function AdminDashboard() {
       jobClicks: realtime.jobClicks,
       cardClicks: realtime.cardClicks,
       jobApps: realtime.jobApps,
+      cvSuccessApps: realtime.cvSuccessApps ?? 0,
       jobsPageViews: realtime.jobsPageViews ?? 0,
       applyClicks: realtime.applyClicks ?? 0,
       saveClicks: realtime.saveClicks ?? 0,
@@ -262,6 +263,7 @@ export default function AdminDashboard() {
       organicSubmissions: data.summary.organicSubmissions + diff('organic'),
       totalSignups: data.summary.totalSignups + diff('signups'),
       totalJobApps: data.summary.totalJobApps + diff('jobApps'),
+      totalCvSuccessApps: data.summary.totalCvSuccessApps + diff('cvSuccessApps'),
       totalJobClicks: data.summary.totalJobClicks + diff('jobClicks'),
       totalCardClicks: data.summary.totalCardClicks + diff('cardClicks'),
     }
