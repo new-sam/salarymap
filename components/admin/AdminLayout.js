@@ -4,7 +4,7 @@ import { useRouter } from 'next/router'
 import { useT } from '../../lib/i18n'
 
 // 관리자 영역 공유 셸 — 좌측 사이드바 네비게이션(App Store Connect 스타일).
-// dashboard(14탭)와 jobs(7탭)의 모든 화면을 URL(?tab=)로 묶어 "페이지처럼" 전환한다.
+// dashboard(15탭)와 jobs(7탭)의 모든 화면을 URL(?tab=)로 묶어 "페이지처럼" 전환한다.
 // 각 페이지 내부 컨텐츠/디자인은 건드리지 않고, 상단 탭바만 이 사이드바로 대체.
 
 const ROUTE_DEFAULT = { '/admin/dashboard': 'trend', '/admin/jobs': 'jobs' }
@@ -21,6 +21,7 @@ function buildNav(lang) {
         { label: L('이력서', 'Resumes'), pathname: '/admin/dashboard', tab: 'resumes' },
         { label: L('인재풀', 'Talent'), pathname: '/admin/dashboard', tab: 'talent' },
         { label: L('인재 공급', 'Supply'), pathname: '/admin/dashboard', tab: 'supply' },
+        { label: L('광고메일', 'Recommend'), pathname: '/admin/dashboard', tab: 'recommend' },
         { label: L('연봉 인증', 'Verifications'), pathname: '/admin/dashboard', tab: 'verifications' },
         { label: L('커뮤니티', 'Community'), pathname: '/admin/dashboard', tab: 'community' },
         { label: L('기업', 'Companies'), pathname: '/admin/dashboard', tab: 'company' },
