@@ -73,10 +73,11 @@ export default function OutreachView({ token, lang, owner = 'wsj' }) {
   const [sending, setSending] = useState(false)
   const [generating, setGenerating] = useState(false)
   const [selectMode, setSelectMode] = useState(false)
+  const [limit, setLimit] = useState(200) // 한 번에 렌더하는 행 수 상한 (todo 1800+행 통째 렌더 시 필터 전환이 얼어붙음)
   const genSeq = useRef(0) // 모달을 다시 열면 증가 — 이전 초안 생성 응답이 새 모달에 섞이는 것 방지
 
-  // 필터/검색이 바뀌면 선택 초기화 — 화면에 안 보이는 행이 발송에 섞이지 않게
-  useEffect(() => { setSelected(new Set()) }, [statusFilter, campaignFilter, industryFilter, search])
+  // 필터/검색이 바뀌면 선택 초기화 + 렌더 상한 리셋 — 화면에 안 보이는 행이 발송에 섞이지 않게
+  useEffect(() => { setSelected(new Set()); setLimit(200) }, [statusFilter, campaignFilter, industryFilter, search])
 
   const campaigns = useMemo(
     () => [...new Set(rows.map(r => r.campaign).filter(Boolean))].sort(),
@@ -108,6 +109,7 @@ export default function OutreachView({ token, lang, owner = 'wsj' }) {
     }
     return true
   })
+  const visible = filtered.slice(0, limit) // 렌더는 상한까지만 — 전체는 filtered 기준으로 계산/선택
 
   const reqHeaders = { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }
   const clean = (f) => ({ ...f, sent_at: f.sent_at || null })
@@ -357,7 +359,7 @@ export default function OutreachView({ token, lang, owner = 'wsj' }) {
               </tr>
             </thead>
             <tbody>
-              {filtered.map(r => editingId === r.id ? (
+              {visible.map(r => editingId === r.id ? (
                 <tr key={r.id}>
                   <td style={{ ...td, padding: 10 }} colSpan={9}>
                     {formFields(editForm, setEditForm)}
@@ -400,6 +402,12 @@ export default function OutreachView({ token, lang, owner = 'wsj' }) {
               ))}
             </tbody>
           </table>
+          {filtered.length > visible.length && (
+            <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 12, padding: '14px', borderTop: '1px solid #EEF0F2' }}>
+              <span style={{ fontSize: 12.5, color: '#8B95A1' }}>{ko ? `${filtered.length}개 중 ${visible.length}개 표시` : `Showing ${visible.length} of ${filtered.length}`}</span>
+              <button onClick={() => setLimit(l => l + 500)} style={{ padding: '7px 16px', borderRadius: 8, border: '1px solid #E5E8EB', background: '#fff', color: '#4E5968', fontSize: 12.5, fontWeight: 700, cursor: 'pointer' }}>{ko ? '더 보기' : 'Show more'}</button>
+            </div>
+          )}
         </div>
       )}
 
