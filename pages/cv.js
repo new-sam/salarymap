@@ -1009,44 +1009,14 @@ export default function CvLanding() {
           letter-spacing: -2.8px;
         }
         .cv-banknote-showcase {
-          position: relative;
-          width: min(820px, 100%);
-          height: 310px;
-          margin: 104px auto 0;
+          width: min(520px, 100%);
+          margin: 44px auto 0;
           pointer-events: none;
-          isolation: isolate;
-        }
-        .cv-banknote-showcase::before {
-          content: "";
-          position: absolute;
-          left: 50%;
-          bottom: 28px;
-          width: 680px;
-          height: 190px;
-          transform: translateX(-50%);
-          background: radial-gradient(ellipse at center, rgba(0,0,0,0.98), transparent 72%);
-          filter: blur(22px);
-          z-index: -2;
-        }
-        .cv-banknote-showcase::after {
-          content: "";
-          position: absolute;
-          left: 50%;
-          bottom: 32px;
-          width: 510px;
-          height: 58px;
-          transform: translateX(-50%);
-          background: radial-gradient(ellipse at center, rgba(0,0,0,0.58), transparent 70%);
-          filter: blur(14px);
-          z-index: -1;
         }
         .cv-banknote-img {
-          position: absolute;
-          left: 50%;
-          bottom: 58px;
-          width: min(620px, 100%);
+          display: block;
+          width: 100%;
           height: auto;
-          transform: translateX(-50%);
           filter: drop-shadow(0 38px 64px rgba(0,0,0,0.45));
         }
         .cv-hero-sub {
@@ -2859,11 +2829,9 @@ export default function CvLanding() {
           }
           .cv-hero-inner { grid-template-columns: 1fr; gap: 56px; }
           .cv-banknote-showcase {
-            width: min(680px, 100%);
-            height: 230px;
-            margin-top: 62px;
+            width: min(440px, 100%);
+            margin-top: 40px;
           }
-          .cv-banknote-img { width: min(560px, 100%); }
           .cv-prize { min-height: 340px; }
           .cv-flow {
             max-width: 460px;
@@ -2927,19 +2895,9 @@ export default function CvLanding() {
           .cv-h1-logo { height: 1.55em; }
           .cv-h1-hero { margin-top: 18px; }
           .cv-banknote-showcase {
-            height: 188px;
-            margin-top: 64px;
+            width: min(320px, 82%);
+            margin-top: 36px;
           }
-          .cv-banknote-showcase::before {
-            width: 340px;
-            height: 82px;
-            bottom: 18px;
-          }
-          .cv-banknote-showcase::after {
-            width: 300px;
-            bottom: 24px;
-          }
-          .cv-banknote-img { width: 360px; }
           .cv-h2 { letter-spacing: -0.8px; }
           .cv-success-card {
             padding: 34px 18px 92px;
