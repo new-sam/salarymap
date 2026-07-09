@@ -118,11 +118,18 @@ ${link}
 }
 
 async function handleGet(res) {
-  const { data: recs, error } = await supabase
+  let { data: recs, error } = await supabase
     .from('job_recommendations')
-    .select('id, user_id, to_email, job_id, job_title, job_company, sent_by, status, created_at')
+    .select('id, user_id, to_email, job_id, job_title, job_company, sent_by, status, kind, created_at')
     .order('created_at', { ascending: false })
-  // 마이그레이션(20260709) 미적용 환경에서도 인재풀 탭이 죽지 않게 빈 배열 반환
+  // kind 컬럼(20260709b) 미적용 환경 — kind 빼고 재조회 (기존 내역은 계속 보이게)
+  if (error && /\bkind\b/.test(error.message || '')) {
+    ;({ data: recs, error } = await supabase
+      .from('job_recommendations')
+      .select('id, user_id, to_email, job_id, job_title, job_company, sent_by, status, created_at')
+      .order('created_at', { ascending: false }))
+  }
+  // 테이블 자체 미적용(20260709) 환경에서도 탭이 죽지 않게 빈 배열 반환
   if (error && /job_recommendations/.test(error.message || '')) return res.status(200).json([])
   if (error) return res.status(500).json({ error: error.message })
 
