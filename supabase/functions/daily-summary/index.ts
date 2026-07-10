@@ -932,6 +932,19 @@ function matchingLinesSection(c: Density, p: Density, prevLabel: string, currLab
   ]);
 }
 
+// 📌 핵심 트렌드 요약 — 카테고리별 핵심지표를 불릿으로(전일 대비 방향).
+// 인재: 가입자·공고지원 / 기업: 올라온공고·받은지원 / 매칭: 공고당지원·지원받은공고%.
+function trendSummarySection(s: StatsBundle, p: StatsBundle, d: Density): string {
+  const t = (curr: number, prev: number) => `${curr.toLocaleString()} (${pctChange(curr, prev)}${dodEmoji(curr, prev)})`;
+  const medAch = Math.round(d.median / APPS_PER_JOB_TARGET * 100);
+  return [
+    "*📌 핵심 트렌드 (전일 대비)*",
+    `• *🟢 인재* — 가입자 ${t(s.signups, p.signups)} · 공고지원 ${t(s.jobApps, p.jobApps)}`,
+    `• *🔵 기업* — 올라온 공고 ${t(s.companyJobs, p.companyJobs)} · 받은 지원 ${t(s.companyApps, p.companyApps)}`,
+    `• *🔗 매칭* — 공고당 지원 ${d.median} (목표비 ${medAch}%) · 지원받은 공고 ${d.fillRate}%`,
+  ].join("\n");
+}
+
 function buildRealtimeMessage(
   today: string,
   yesterday: string,
@@ -956,6 +969,8 @@ function buildRealtimeMessage(
       { type: "section", text: { type: "mrkdwn", text: `*🔵 기업 (Company)*\n` + companyLinesSection(s, p, pl, cl) }},
       { type: "divider" },
       { type: "section", text: { type: "mrkdwn", text: `*🔗 매칭 지표 (인재 ↔ 기업) · 누적*\n` + matchingLinesSection(dCurr, dPrev, pl, cl) }},
+      { type: "divider" },
+      { type: "section", text: { type: "mrkdwn", text: trendSummarySection(s, p, dCurr) }},
     ],
   };
 }
@@ -967,14 +982,9 @@ function buildDailyMessage(
   p: StatsBundle,
   dCurr: Density,
   dPrev: Density,
-  alerts: string[],
 ) {
   const dayName = getDayName(targetDate);
   const pl = dayBefore.slice(5).replace("-", "/"), cl = targetDate.slice(5).replace("-", "/");
-
-  const alertBlock = alerts.length > 0
-    ? [{ type: "section", text: { type: "mrkdwn", text: alerts.join("\n") } }]
-    : [];
 
   // 최상위 blocks 로 발송 — attachments 는 Slack 이 길면 접어서("더 보기") 기업 블록이
   // 숨는다(발견된 이슈). blocks 는 안 접힘. 앱카드는 handler 가 attachments 에 push.
@@ -990,8 +1000,8 @@ function buildDailyMessage(
       { type: "section", text: { type: "mrkdwn", text: `*🔵 기업 (Company)*\n` + companyLinesSection(s, p, pl, cl) }},
       { type: "divider" },
       { type: "section", text: { type: "mrkdwn", text: `*🔗 매칭 지표 (인재 ↔ 기업) · 누적*\n` + matchingLinesSection(dCurr, dPrev, pl, cl) }},
-      { type: "context", elements: [{ type: "mrkdwn", text: `🔗 매칭은 전체 기간 누적(과거 지원 포함) — 위 기업 '받은 지원'(당일)과 기준 다름 · 지원받은 공고 ${dCurr.withApps}/${dCurr.total}개 · 멋사(Likelion) 제외 · 목표 공고당 ${APPS_PER_JOB_TARGET}` }] },
-      ...alertBlock,
+      { type: "divider" },
+      { type: "section", text: { type: "mrkdwn", text: trendSummarySection(s, p, dCurr) }},
     ],
     attachments: [],
   };
@@ -1343,9 +1353,7 @@ Deno.serve(async (req) => {
         resumeWeb: dbResume.web,
         resumeApp: dbResume.app,
       };
-      const alerts = await detectAlerts(stats.submissions);
-
-      const message = buildDailyMessage(yesterday, dayBefore, stats, prevStats, densY, densDB, alerts);
+      const message = buildDailyMessage(yesterday, dayBefore, stats, prevStats, densY, densDB);
       // (앱 리포트 카드는 제거됨 — 불필요 판단)
 
       // ?dryRun=1 → 슬랙 안 쏘고 payload 만 응답. 터미널에서 메시지 미리보기 용도.
