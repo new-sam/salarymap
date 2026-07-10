@@ -123,7 +123,8 @@ ${t.note}
 
 // 최근 지원자 → 지원 직군과 같은 company_self 공고 매칭. 이미 지원/이미 발송한 공고는 제외.
 // cron(/api/cron/similar-recommend)도 이 함수를 그대로 사용.
-export async function computeMatches(days) {
+// maxJobCreatedAt: 이 시각 이전에 등록된 공고만 포함(자동발송의 잘못 올린 공고 가드, cron 전용).
+export async function computeMatches(days, { maxJobCreatedAt } = {}) {
   const cutoff = new Date(Date.now() - days * 86400000).toISOString()
 
   // 1) 최근 지원 내역 (지원 공고의 role 조인). PostgREST 1000행 제한 → 페이지네이션.
@@ -143,11 +144,13 @@ export async function computeMatches(days) {
   }
 
   // 2) 활성 기업등록 공고
-  const { data: companyJobs, error: jobErr } = await supabase
+  let jobQuery = supabase
     .from('jobs')
     .select('id, title, company, role, logo_url')
     .eq('source', 'company_self')
     .eq('is_active', true)
+  if (maxJobCreatedAt) jobQuery = jobQuery.lt('created_at', maxJobCreatedAt)
+  const { data: companyJobs, error: jobErr } = await jobQuery
   if (jobErr) throw new Error(jobErr.message)
   const jobsByRole = {}
   for (const j of companyJobs || []) {

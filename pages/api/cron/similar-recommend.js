@@ -16,17 +16,29 @@ const supabase = createClient(
 
 const DAYS = 30                    // "최근 지원자" 범위 — 이보다 오래된 지원 이력엔 발송 안 함
 const MAX_RECIPIENTS_PER_RUN = 100 // 한 번에 너무 많이 나가지 않게(첫 실행 백로그 대비). 남은 사람은 다음 날.
+const JOB_AGE_HOURS = 48           // 등록 48시간 지난 공고만 자동발송 — 잘못 올린 공고가 수정/비활성화될 시간
 const LANG = 'vi'
+
+// 발송 요약 슬랙 알림 (실패해도 발송엔 영향 없음)
+async function notifySlack(text) {
+  const url = process.env.SLACK_CONTACT_WEBHOOK_URL || process.env.SLACK_WEBHOOK_URL
+  if (!url) return
+  try {
+    await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ text }) })
+  } catch (_) {}
+}
 
 export default async function handler(req, res) {
   if (req.headers.authorization !== `Bearer ${process.env.CRON_SECRET}`) {
     return res.status(401).json({ error: 'Unauthorized' })
   }
 
+  const maxJobCreatedAt = new Date(Date.now() - JOB_AGE_HOURS * 3600000).toISOString()
   let applicants
   try {
-    applicants = await computeMatches(DAYS)
+    applicants = await computeMatches(DAYS, { maxJobCreatedAt })
   } catch (e) {
+    await notifySlack(`:x: 유사공고 자동추천 cron 실패: ${e.message}`)
     return res.status(500).json({ error: e.message })
   }
 
@@ -45,6 +57,7 @@ export default async function handler(req, res) {
 
   let sent = 0, jobRows = 0
   const skipped = []
+  const sentApplicants = []
   for (const a of targets) {
     const email = composeEmail({
       name: a.name,
@@ -84,6 +97,17 @@ export default async function handler(req, res) {
     if (insErr) { skipped.push({ email: a.email, reason: `logged_fail: ${insErr.message}` }); continue }
     sent += 1
     jobRows += a.jobs.length
+    sentApplicants.push(a)
+  }
+
+  if (sent > 0 || skipped.length > 0) {
+    // 발송된 공고별 건수 요약 — 이상한 공고가 나갔으면 여기서 바로 보이게
+    const perJob = {}
+    for (const a of sentApplicants) for (const j of a.jobs) perJob[`${j.title} (${j.company || '-'})`] = (perJob[`${j.title} (${j.company || '-'})`] || 0) + 1
+    const jobLines = Object.entries(perJob).sort((a, b) => b[1] - a[1]).map(([t, n]) => `• ${t} → ${n}명`).join('\n')
+    await notifySlack(
+      `:incoming_envelope: *유사공고 자동추천 발송* — ${sent}명 발송${skipped.length ? `, 스킵 ${skipped.length}` : ''}${capped ? ` (100명 캡, 잔여 ${applicants.length - targets.length}명 내일)` : ''}\n${jobLines}`
+    )
   }
 
   return res.status(200).json({ days: DAYS, matched: applicants.length, sent, jobs: jobRows, capped, skipped })
