@@ -29,6 +29,13 @@ export default function RecommendView({ token, lang }) {
     return { sent: s, applied: a, rate: s > 0 ? Math.round((a / s) * 100) : 0 }
   }, [rows])
 
+  // 지원 여부 필터 (all=전체 / applied=지원함 / not=미지원)
+  const [appliedFilter, setAppliedFilter] = useState('all')
+  const viewRows = useMemo(
+    () => appliedFilter === 'all' ? rows : rows.filter(r => appliedFilter === 'applied' ? r.applied_at : !r.applied_at),
+    [rows, appliedFilter]
+  )
+
   // ── 유사공고 발송 캠페인 ──
   const [days, setDays] = useState(90)
   const [loadMatches, setLoadMatches] = useState(false)
@@ -77,8 +84,8 @@ export default function RecommendView({ token, lang }) {
       {sub && <div style={{ fontSize: 11.5, color: '#9CA3AF', marginTop: 4 }}>{sub}</div>}
     </div>
   )
-  const th = { textAlign: 'left', fontSize: 11.5, fontWeight: 700, color: '#9AA0A6', textTransform: 'uppercase', letterSpacing: '0.04em', padding: '0 12px 8px', whiteSpace: 'nowrap' }
-  const td = { fontSize: 13, color: '#1d1d1f', padding: '11px 12px', borderTop: '1px solid #F0F1F3', verticalAlign: 'middle' }
+  const th = { textAlign: 'left', fontSize: 11.5, fontWeight: 700, color: '#9AA0A6', textTransform: 'uppercase', letterSpacing: '0.04em', padding: '14px 12px', whiteSpace: 'nowrap', background: '#FAFAFB', borderBottom: '1px solid #F0F1F3' }
+  const td = { fontSize: 13, color: '#1d1d1f', padding: '13px 12px', borderTop: '1px solid #F0F1F3', verticalAlign: 'middle' }
   const totalJobs = applicants.reduce((n, a) => n + a.jobs.length, 0)
 
   return (
@@ -204,23 +211,33 @@ export default function RecommendView({ token, lang }) {
           {ko ? '아직 발송된 추천 메일이 없습니다.' : 'No recommendation emails sent yet.'}
         </div>
       ) : (
+        <>
+        <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
+          {[['all', ko ? '전체' : 'All', sent], ['applied', ko ? '지원함' : 'Applied', applied], ['not', ko ? '미지원' : 'Not yet', sent - applied]].map(([v, label, n]) => (
+            <button key={v} onClick={() => setAppliedFilter(v)} style={{
+              padding: '6px 12px', borderRadius: 8, fontSize: 12.5, fontWeight: 600, cursor: 'pointer',
+              border: '1px solid ' + (appliedFilter === v ? '#ff6000' : '#D9DCE1'),
+              background: appliedFilter === v ? '#FFF1EC' : '#fff', color: appliedFilter === v ? '#ff6000' : '#4E5968',
+            }}>{label} {n}</button>
+          ))}
+        </div>
         <div style={{ overflowX: 'auto', border: '1px solid #E8E8EA', borderRadius: 12, background: '#fff' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 760 }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 880, tableLayout: 'fixed' }}>
             <thead>
               <tr>
-                <th style={th}>{ko ? '수신자' : 'Recipient'}</th>
+                <th style={{ ...th, width: '30%' }}>{ko ? '수신자' : 'Recipient'}</th>
                 <th style={th}>{ko ? '공고' : 'Job'}</th>
-                <th style={th}>{ko ? '종류' : 'Type'}</th>
-                <th style={th}>{ko ? '발송일' : 'Sent'}</th>
-                <th style={{ ...th, textAlign: 'center' }}>{ko ? '지원 여부' : 'Applied'}</th>
+                <th style={{ ...th, width: 110 }}>{ko ? '종류' : 'Type'}</th>
+                <th style={{ ...th, width: 92 }}>{ko ? '발송일' : 'Sent'}</th>
+                <th style={{ ...th, width: 170, textAlign: 'center' }}>{ko ? '지원 여부' : 'Applied'}</th>
               </tr>
             </thead>
             <tbody>
-              {rows.map(r => {
+              {viewRows.map(r => {
                 const kb = KIND_BADGE[r.kind] || KIND_BADGE.recruiter
                 return (
                   <tr key={r.id}>
-                    <td style={td}>{r.to_email}</td>
+                    <td style={{ ...td, wordBreak: 'break-all' }}>{r.to_email}</td>
                     <td style={td}>
                       <a href={`/jobs/${r.job_id}`} target="_blank" rel="noreferrer" style={{ color: '#1d1d1f', textDecoration: 'none', fontWeight: 600 }}>{r.job_title}</a>
                       <div style={{ fontSize: 11.5, color: '#9AA0A6', marginTop: 2 }}>{r.job_company}</div>
@@ -246,6 +263,7 @@ export default function RecommendView({ token, lang }) {
             </tbody>
           </table>
         </div>
+        </>
       )}
 
       {/* 미리보기 모달 */}
