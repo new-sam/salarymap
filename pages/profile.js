@@ -8,8 +8,18 @@ import { getSalaryTier, isRawVndMistake } from '../lib/salaryTiers'
 import { BADGE_BY_KEY, TIER_LADDER, ENGAGEMENT_GROUPS, engagementBadgesByGroup, isEquippable, badgeVisual } from '../lib/badgeVisuals'
 import { useT } from '../lib/i18n'
 import Icon from '../components/Icon'
+import { ROLE_GROUPS } from '../constants/jobs'
 
-const POSITIONS = ['Backend','Frontend','Fullstack','Mobile','AI/Data','DevOps','QA','Design','PM','Other']
+// 프로필 직군 선택 — 공고/ATS와 동일한 ROLE_GROUPS(대분류/소분류, 비개발 포함) 사용.
+const positionGroups = (lang) => ROLE_GROUPS.map(g => ({
+  name: g.label[lang] || g.label.en,
+  options: g.roles.map(r => ({ value: r.value, label: r.label[lang] || r.label.en })),
+}))
+// 저장값(canonical)에 해당하는 표시 라벨. 구버전 자유입력 값은 원문 그대로 표시.
+const positionLabel = (value, lang) => {
+  for (const g of ROLE_GROUPS) { const r = g.roles.find(r => r.value === value); if (r) return r.label[lang] || r.label.en }
+  return value
+}
 const YOE_OPTIONS = [
   { value: '0', label: 'New grad / Intern' },
   { value: '6', label: '< 1 year' },
@@ -23,7 +33,7 @@ const YOE_OPTIONS = [
   { value: '120', label: '10+ years' },
 ]
 
-function CustomSelect({ value, options, placeholder, onChange }) {
+function CustomSelect({ value, options, groups, placeholder, onChange, displayValue }) {
   const [open, setOpen] = useState(false)
   const ref = useRef(null)
   useEffect(() => {
@@ -41,7 +51,7 @@ function CustomSelect({ value, options, placeholder, onChange }) {
         transition: 'border-color .15s', outline: 'none',
         ...(open ? { borderColor: '#ff6000' } : {}),
       }}>
-        <span>{value || placeholder}</span>
+        <span>{displayValue || value || placeholder}</span>
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="rgba(0,0,0,0.3)" strokeWidth="2" style={{ transform: open ? 'rotate(180deg)' : 'none', transition: 'transform .2s' }}><path d="M6 9l6 6 6-6"/></svg>
       </button>
       {open && (
@@ -50,19 +60,38 @@ function CustomSelect({ value, options, placeholder, onChange }) {
           background: '#fff', border: '1px solid rgba(0,0,0,0.1)', borderRadius: 10,
           padding: 4, maxHeight: 220, overflowY: 'auto', boxShadow: '0 8px 32px rgba(0,0,0,0.12)', scrollbarWidth: 'none',
         }} className="pselect-dropdown">
-          {options.map(opt => (
-            <button key={opt} type="button" onClick={() => { onChange(opt); setOpen(false) }} style={{
-              display: 'block', width: '100%', padding: '9px 12px', border: 'none', borderRadius: 6,
-              background: value === opt ? 'rgba(255,96,0,0.08)' : 'transparent',
-              color: value === opt ? '#ff6000' : 'rgba(0,0,0,0.6)',
-              fontSize: 13, fontWeight: value === opt ? 600 : 400, cursor: 'pointer', textAlign: 'left',
-              fontFamily: 'inherit', transition: 'background .1s',
-            }}
-              onMouseEnter={e => { if (value !== opt) e.currentTarget.style.background = 'rgba(0,0,0,0.03)' }}
-              onMouseLeave={e => { if (value !== opt) e.currentTarget.style.background = 'transparent' }}>
-              {opt}
-            </button>
-          ))}
+          {groups
+            ? groups.map(grp => (
+              <div key={grp.name}>
+                <div style={{ padding: '8px 12px 3px', fontSize: 10.5, fontWeight: 700, color: 'rgba(0,0,0,0.32)', letterSpacing: 0.3 }}>{grp.name}</div>
+                {grp.options.map(o => (
+                  <button key={o.value} type="button" onClick={() => { onChange(o.value); setOpen(false) }} style={{
+                    display: 'block', width: '100%', padding: '9px 12px', border: 'none', borderRadius: 6,
+                    background: value === o.value ? 'rgba(255,96,0,0.08)' : 'transparent',
+                    color: value === o.value ? '#ff6000' : 'rgba(0,0,0,0.6)',
+                    fontSize: 13, fontWeight: value === o.value ? 600 : 400, cursor: 'pointer', textAlign: 'left',
+                    fontFamily: 'inherit', transition: 'background .1s',
+                  }}
+                    onMouseEnter={e => { if (value !== o.value) e.currentTarget.style.background = 'rgba(0,0,0,0.03)' }}
+                    onMouseLeave={e => { if (value !== o.value) e.currentTarget.style.background = 'transparent' }}>
+                    {o.label}
+                  </button>
+                ))}
+              </div>
+            ))
+            : options.map(opt => (
+              <button key={opt} type="button" onClick={() => { onChange(opt); setOpen(false) }} style={{
+                display: 'block', width: '100%', padding: '9px 12px', border: 'none', borderRadius: 6,
+                background: value === opt ? 'rgba(255,96,0,0.08)' : 'transparent',
+                color: value === opt ? '#ff6000' : 'rgba(0,0,0,0.6)',
+                fontSize: 13, fontWeight: value === opt ? 600 : 400, cursor: 'pointer', textAlign: 'left',
+                fontFamily: 'inherit', transition: 'background .1s',
+              }}
+                onMouseEnter={e => { if (value !== opt) e.currentTarget.style.background = 'rgba(0,0,0,0.03)' }}
+                onMouseLeave={e => { if (value !== opt) e.currentTarget.style.background = 'transparent' }}>
+                {opt}
+              </button>
+            ))}
         </div>
       )}
     </div>
@@ -241,7 +270,7 @@ function completionScore(p) {
 
 export default function ProfilePage() {
   const router = useRouter()
-  const { t } = useT()
+  const { t, lang } = useT()
   const [loading, setLoading] = useState(true)
   const [user, setUser] = useState(null)
   const [token, setToken] = useState(null)
@@ -897,7 +926,7 @@ export default function ProfilePage() {
                 <div className="pinline">
                   <div className="pfield">
                     <div className="pfield-label">{t('profile.position')}</div>
-                    <CustomSelect value={form.position} options={POSITIONS} placeholder={t('profile.position.ph')} onChange={v => set('position', v)} />
+                    <CustomSelect value={form.position} groups={positionGroups(lang)} displayValue={positionLabel(form.position, lang)} placeholder={t('profile.position.ph')} onChange={v => set('position', v)} />
                   </div>
                   <div className="pfield">
                     <div className="pfield-label">{t('profile.yoe')}</div>
