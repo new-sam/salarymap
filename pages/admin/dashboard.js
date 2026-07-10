@@ -156,6 +156,13 @@ export default function AdminDashboard() {
         setAuth('denied')
       }
     })
+    // 토큰은 만료(기본 1시간)되므로 한 번 잡아둔 값은 곧 죽는다. supabase가
+    // 백그라운드에서 갱신할 때(TOKEN_REFRESHED) state도 최신 토큰으로 교체해,
+    // 모든 어드민 API 호출이 만료 토큰으로 401 나는 걸 막는다.
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session?.access_token) setToken(session.access_token)
+    })
+    return () => subscription?.unsubscribe()
   }, [])
 
 
