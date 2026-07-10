@@ -935,14 +935,19 @@ function matchingLinesSection(c: Density, p: Density, prevLabel: string, currLab
 // 📌 핵심 트렌드 요약 — 카테고리별 핵심지표를 불릿으로(전일 대비 방향).
 // 인재: 가입자·공고지원 / 기업: 올라온공고·받은지원 / 매칭: 공고당지원·지원받은공고%.
 function trendSummarySection(s: StatsBundle, p: StatsBundle, d: Density): string {
-  const t = (curr: number, prev: number) => `${curr.toLocaleString()} (${pctChange(curr, prev)}${dodEmoji(curr, prev)})`;
   const medAch = Math.round(d.median / APPS_PER_JOB_TARGET * 100);
-  return [
-    "*📌 핵심 트렌드 (전일 대비)*",
-    `• *🟢 인재* — 가입자 ${t(s.signups, p.signups)} · 공고지원 ${t(s.jobApps, p.jobApps)}`,
-    `• *🔵 기업* — 올라온 공고 ${t(s.companyJobs, p.companyJobs)} · 받은 지원 ${t(s.companyApps, p.companyApps)}`,
-    `• *🔗 매칭* — 공고당 지원 ${d.median} (목표비 ${medAch}%) · 지원받은 공고 ${d.fillRate}%`,
-  ].join("\n");
+  const dir = (label: string, c: number, pr: number) => `${label} ${c.toLocaleString()} (${pctChange(c, pr)}${dodEmoji(c, pr)})`;
+  const lines = ["*📌 트렌드 분석*"];
+  // 핵심 KPI — 공고당 지원(중위) vs 목표
+  if (d.median === 0) lines.push("• 공고당 지원 *0* — 기업 공고에 붙는 지원이 사실상 없음. 지원 유입이 최우선 과제.");
+  else if (medAch < 30) lines.push(`• 공고당 지원 *${d.median}* (목표 ${APPS_PER_JOB_TARGET}의 ${medAch}%) — 한참 부족. 지원 유입을 끌어올려야.`);
+  else if (medAch < 60) lines.push(`• 공고당 지원 *${d.median}* (목표의 ${medAch}%) — 절반 이하. 더 올려야.`);
+  else lines.push(`• 공고당 지원 *${d.median}* (목표의 ${medAch}%) — 목표 근접, 유지.`);
+  // 커버리지 — 지원받은 공고 %
+  if (d.fillRate < 40) lines.push(`• 공고 *${100 - d.fillRate}%가 지원 0* (지원받은 공고 ${d.fillRate}%) — 공고는 쌓이는데 지원이 안 붙음.`);
+  // 유입 방향 — 인재 공고지원 · 기업 받은지원
+  lines.push(`• ${dir("인재 공고지원", s.jobApps, p.jobApps)} · ${dir("기업 받은지원", s.companyApps, p.companyApps)}`);
+  return lines.join("\n");
 }
 
 function buildRealtimeMessage(
