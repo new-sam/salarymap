@@ -10,14 +10,19 @@ import { useT } from '../lib/i18n'
 import Icon from '../components/Icon'
 import { ROLE_GROUPS } from '../constants/jobs'
 
-// 프로필 직군 선택 — 공고/ATS와 동일한 ROLE_GROUPS(대분류/소분류, 비개발 포함) 사용.
-const positionGroups = (lang) => ROLE_GROUPS.map(g => ({
-  name: g.label[lang] || g.label.en,
-  options: g.roles.map(r => ({ value: r.value, label: r.label[lang] || r.label.en })),
-}))
-// 저장값(canonical)에 해당하는 표시 라벨. 구버전 자유입력 값은 원문 그대로 표시.
+// 프로필 직군 선택 — 공고/ATS와 동일한 ROLE_GROUPS. 대분류→소분류 2단계로 고른다.
+// 저장값은 소분류 canonical(r.value) 하나만 form.position에 유지.
+const lbl = (o, lang) => o.label[lang] || o.label.en
+const groupItems = (lang) => ROLE_GROUPS.map(g => ({ value: g.key, label: lbl(g, lang) }))
+const roleItems = (groupKey, lang) => {
+  const g = ROLE_GROUPS.find(g => g.key === groupKey)
+  return g ? g.roles.map(r => ({ value: r.value, label: lbl(r, lang) })) : []
+}
+const groupOfRole = (value) => ROLE_GROUPS.find(g => g.roles.some(r => r.value === value))?.key || ''
+const groupLabel = (groupKey, lang) => { const g = ROLE_GROUPS.find(g => g.key === groupKey); return g ? lbl(g, lang) : '' }
+// 저장값(소분류)의 표시 라벨. 구버전 자유입력 값은 원문 그대로.
 const positionLabel = (value, lang) => {
-  for (const g of ROLE_GROUPS) { const r = g.roles.find(r => r.value === value); if (r) return r.label[lang] || r.label.en }
+  for (const g of ROLE_GROUPS) { const r = g.roles.find(r => r.value === value); if (r) return lbl(r, lang) }
   return value
 }
 const YOE_OPTIONS = [
@@ -33,7 +38,7 @@ const YOE_OPTIONS = [
   { value: '120', label: '10+ years' },
 ]
 
-function CustomSelect({ value, options, groups, placeholder, onChange, displayValue }) {
+function CustomSelect({ value, options, items, placeholder, onChange, displayValue, disabled }) {
   const [open, setOpen] = useState(false)
   const ref = useRef(null)
   useEffect(() => {
@@ -44,11 +49,11 @@ function CustomSelect({ value, options, groups, placeholder, onChange, displayVa
   }, [open])
   return (
     <div ref={ref} style={{ position: 'relative' }}>
-      <button type="button" onClick={() => setOpen(v => !v)} style={{
+      <button type="button" disabled={disabled} onClick={() => setOpen(v => !v)} style={{
         width: '100%', fontSize: 14, padding: '10px 12px', border: '1px solid rgba(0,0,0,0.12)',
-        borderRadius: 8, background: '#fff', color: value ? '#111' : 'rgba(0,0,0,0.3)',
-        fontFamily: 'inherit', cursor: 'pointer', textAlign: 'left', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        transition: 'border-color .15s', outline: 'none',
+        borderRadius: 8, background: disabled ? '#f5f5f5' : '#fff', color: value ? '#111' : 'rgba(0,0,0,0.3)',
+        fontFamily: 'inherit', cursor: disabled ? 'not-allowed' : 'pointer', textAlign: 'left', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        transition: 'border-color .15s', outline: 'none', opacity: disabled ? 0.6 : 1,
         ...(open ? { borderColor: '#ff6000' } : {}),
       }}>
         <span>{displayValue || value || placeholder}</span>
@@ -60,24 +65,19 @@ function CustomSelect({ value, options, groups, placeholder, onChange, displayVa
           background: '#fff', border: '1px solid rgba(0,0,0,0.1)', borderRadius: 10,
           padding: 4, maxHeight: 220, overflowY: 'auto', boxShadow: '0 8px 32px rgba(0,0,0,0.12)', scrollbarWidth: 'none',
         }} className="pselect-dropdown">
-          {groups
-            ? groups.map(grp => (
-              <div key={grp.name}>
-                <div style={{ padding: '8px 12px 3px', fontSize: 10.5, fontWeight: 700, color: 'rgba(0,0,0,0.32)', letterSpacing: 0.3 }}>{grp.name}</div>
-                {grp.options.map(o => (
-                  <button key={o.value} type="button" onClick={() => { onChange(o.value); setOpen(false) }} style={{
-                    display: 'block', width: '100%', padding: '9px 12px', border: 'none', borderRadius: 6,
-                    background: value === o.value ? 'rgba(255,96,0,0.08)' : 'transparent',
-                    color: value === o.value ? '#ff6000' : 'rgba(0,0,0,0.6)',
-                    fontSize: 13, fontWeight: value === o.value ? 600 : 400, cursor: 'pointer', textAlign: 'left',
-                    fontFamily: 'inherit', transition: 'background .1s',
-                  }}
-                    onMouseEnter={e => { if (value !== o.value) e.currentTarget.style.background = 'rgba(0,0,0,0.03)' }}
-                    onMouseLeave={e => { if (value !== o.value) e.currentTarget.style.background = 'transparent' }}>
-                    {o.label}
-                  </button>
-                ))}
-              </div>
+          {items
+            ? items.map(o => (
+              <button key={o.value} type="button" onClick={() => { onChange(o.value); setOpen(false) }} style={{
+                display: 'block', width: '100%', padding: '9px 12px', border: 'none', borderRadius: 6,
+                background: value === o.value ? 'rgba(255,96,0,0.08)' : 'transparent',
+                color: value === o.value ? '#ff6000' : 'rgba(0,0,0,0.6)',
+                fontSize: 13, fontWeight: value === o.value ? 600 : 400, cursor: 'pointer', textAlign: 'left',
+                fontFamily: 'inherit', transition: 'background .1s',
+              }}
+                onMouseEnter={e => { if (value !== o.value) e.currentTarget.style.background = 'rgba(0,0,0,0.03)' }}
+                onMouseLeave={e => { if (value !== o.value) e.currentTarget.style.background = 'transparent' }}>
+                {o.label}
+              </button>
             ))
             : options.map(opt => (
               <button key={opt} type="button" onClick={() => { onChange(opt); setOpen(false) }} style={{
@@ -271,6 +271,7 @@ function completionScore(p) {
 export default function ProfilePage() {
   const router = useRouter()
   const { t, lang } = useT()
+  const [posGroup, setPosGroup] = useState('') // 직군 대분류 선택(소분류 저장은 form.position)
   const [loading, setLoading] = useState(true)
   const [user, setUser] = useState(null)
   const [token, setToken] = useState(null)
@@ -926,7 +927,16 @@ export default function ProfilePage() {
                 <div className="pinline">
                   <div className="pfield">
                     <div className="pfield-label">{t('profile.position')}</div>
-                    <CustomSelect value={form.position} groups={positionGroups(lang)} displayValue={positionLabel(form.position, lang)} placeholder={t('profile.position.ph')} onChange={v => set('position', v)} />
+                    {(() => {
+                      const effGroup = posGroup || groupOfRole(form.position)
+                      const gPh = lang === 'ko' ? '대분류' : lang === 'vi' ? 'Nhóm ngành' : 'Category'
+                      return (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                          <CustomSelect value={effGroup} items={groupItems(lang)} displayValue={groupLabel(effGroup, lang)} placeholder={gPh} onChange={g => { setPosGroup(g); set('position', '') }} />
+                          <CustomSelect value={form.position} items={roleItems(effGroup, lang)} displayValue={positionLabel(form.position, lang)} placeholder={t('profile.position.ph')} disabled={!effGroup} onChange={v => set('position', v)} />
+                        </div>
+                      )
+                    })()}
                   </div>
                   <div className="pfield">
                     <div className="pfield-label">{t('profile.yoe')}</div>
