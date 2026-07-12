@@ -39,7 +39,7 @@ export default function CandidatePage() {
       <div style={css.fullCenter}>
         <div style={css.lightCard}>
           <h1 style={css.cardH}>{t('company.loginRequired')}</h1>
-          <Link href="/company/signup" style={css.btnPrimary}>{t('company.loginOrSignup')}</Link>
+          <Link href="/company" style={css.btnPrimary}>{t('company.loginOrSignup')}</Link>
         </div>
       </div>
     );
@@ -47,7 +47,7 @@ export default function CandidatePage() {
 
   return (
     <>
-      <Head><title>지원자 · FYI</title></Head>
+      <Head><title>{t('company.head.candidate')}</title></Head>
       <div style={css.app}>
         <Sidebar companyName={companyName} userEmail={user?.email} activePage="jobs" />
         <main style={{minWidth:0, flex:1}}>

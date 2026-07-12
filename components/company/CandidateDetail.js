@@ -1270,8 +1270,7 @@ export default function CandidateDetail({
                   ) : (
                     <div className="space-y-1.5">
                       {mailLog.map(m => {
-                        const legacyTpl = m.template_key && ['received', 'interview', 'offer', 'reject'].includes(m.template_key);
-                        const tplLabel = legacyTpl ? t(`company.tpl.${m.template_key}.label`) : (m.template_key || '—');
+                        const tplLabel = mailTemplateLabel(m.template_key, t);
                         const when = formatLocalShort(m.created_at);
                         return (
                           <div key={m.id} className="rounded-lg border border-border px-2.5 py-2 space-y-0.5">
@@ -1843,10 +1842,36 @@ export function defaultComposeTemplate(status, rejected) {
   return 'final_offer';                              // decided
 }
 
+// Human label for a sent-mail's template_key in the mail log / timeline.
+// Current preset keys map to their preset labels; legacy keys (interview/offer)
+// fall back to the tpl labels; custom templates show their saved name. Without
+// this, current keys like 'doc_pass'/'final_offer' rendered as raw strings.
+const PRESET_LABEL_KEY = {
+  received: 'company.mail.preset.received',
+  doc_pass: 'company.mail.preset.docPass',
+  interview1_pass: 'company.mail.preset.interview1Pass',
+  final_offer: 'company.mail.preset.interview2Pass',
+  reject: 'company.mail.preset.reject',
+};
+function mailTemplateLabel(key, t) {
+  if (!key) return t('company.activity.mailFallback');
+  if (PRESET_LABEL_KEY[key]) return t(PRESET_LABEL_KEY[key]);
+  if (key === 'interview' || key === 'offer') return t(`company.tpl.${key}.label`);
+  if (key.startsWith('custom:')) return key.slice(7) || t('company.activity.mailFallback');
+  return key;
+}
+
 function fillVars(text, vars) {
-  const round = vars.stage === 'viewed' ? (vars.lang === 'vi' ? 'Phỏng vấn vòng 1' : '1차 인터뷰')
-              : vars.stage === 'reviewing' ? (vars.lang === 'vi' ? 'Phỏng vấn vòng 2' : '2차 인터뷰')
-              : (vars.lang === 'vi' ? 'Phỏng vấn' : '인터뷰');
+  // {차수인터뷰} label — resolve in the template's own language. EN previously
+  // fell through to Korean (no en branch), inserting Hangul into English mails.
+  const ROUND = {
+    viewed:    { vi: 'Phỏng vấn vòng 1', en: 'the 1st interview', ko: '1차 인터뷰' },
+    reviewing: { vi: 'Phỏng vấn vòng 2', en: 'the 2nd interview', ko: '2차 인터뷰' },
+    other:     { vi: 'Phỏng vấn',        en: 'the interview',     ko: '인터뷰' },
+  };
+  const lang = ROUND.viewed[vars.lang] ? vars.lang : 'vi';
+  const roundGroup = ROUND[vars.stage] || ROUND.other;
+  const round = roundGroup[lang];
   return (text || '')
     .split('{후보이름}').join(vars.name)
     .split('{공고명}').join(vars.jobTitle)
@@ -1991,6 +2016,7 @@ function NoteSection({ app, evals, setEvals, userId, reviewerName, expanded, onT
 //   action  = what they did (verb phrase, neutral tone)
 //   detail  = optional metadata (score, reason, schedule, subject)
 function ActivityTimeline({ t, app, evals, mailLog }) {
+  const { lang } = useT();
   const candidateName = app.applicant_name || `${t('company.candidatePrefix')}${app.id.slice(-6).toUpperCase()}`;
   const events = [];
 
@@ -2070,8 +2096,7 @@ function ActivityTimeline({ t, app, evals, mailLog }) {
 
   // ④ Mails — actor unknown, shown as "관리자"
   (mailLog || []).forEach(m => {
-    const legacyTpl = m.template_key && ['received', 'interview', 'offer', 'reject'].includes(m.template_key);
-    const tplLabel = legacyTpl ? t(`company.tpl.${m.template_key}.label`) : (m.template_key || t('company.activity.mailFallback'));
+    const tplLabel = mailTemplateLabel(m.template_key, t);
     events.push({
       when: m.created_at,
       icon: Send,
@@ -2153,7 +2178,7 @@ function ActivityTimeline({ t, app, evals, mailLog }) {
                     {e.actorRole && (
                       <span className="ml-1 text-[11.5px] font-bold text-gray-500">({e.actorRole})</span>
                     )}
-                    <span className="text-gray-700 font-medium">{ka(e.actor)} {e.action}.</span>
+                    <span className="text-gray-700 font-medium">{lang === 'ko' ? ka(e.actor) : ''} {e.action}.</span>
                   </div>
                   <span className="text-[11.5px] font-semibold text-gray-500 flex-shrink-0 tabular-nums">{fmt(e.when)}</span>
                 </div>

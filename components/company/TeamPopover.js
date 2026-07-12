@@ -11,13 +11,13 @@ function colorFor(seed = '') {
   return AVATAR_COLORS[h % AVATAR_COLORS.length];
 }
 const initialOf = (s = '') => (s.trim()[0] || '?').toUpperCase();
-function relTime(iso) {
+function relTime(iso, t) {
   if (!iso) return '';
   const diff = Math.floor((Date.now() - new Date(iso).getTime()) / 1000);
-  if (diff < 60) return '방금';
-  if (diff < 3600) return `${Math.floor(diff/60)}분 전`;
-  if (diff < 86400) return `${Math.floor(diff/3600)}시간 전`;
-  return `${Math.floor(diff/86400)}일 전`;
+  if (diff < 60) return t('company.time.justNow');
+  if (diff < 3600) return t('company.time.minsAgo', { n: Math.floor(diff/60) });
+  if (diff < 86400) return t('company.time.hoursAgo', { n: Math.floor(diff/3600) });
+  return t('company.time.daysAgo', { n: Math.floor(diff/86400) });
 }
 
 export default function TeamPopover({ jobId, canInvite = true }) {
@@ -178,7 +178,7 @@ export default function TeamPopover({ jobId, canInvite = true }) {
                 <div style={s.rowBody}>
                   <div style={s.rowName}>{iv.email.split('@')[0]}</div>
                   <div style={s.rowEmail}>{iv.email}</div>
-                  <div style={s.rowSub}>{t('company.team.invitedAt', { when: relTime(iv.created_at) })}</div>
+                  <div style={s.rowSub}>{t('company.team.invitedAt', { when: relTime(iv.created_at, t) })}</div>
                 </div>
                 <div style={iv.role === 'admin' ? s.ownerTag : s.pendTag}>
                   {iv.role === 'admin' ? t('company.team.role.admin') : t('company.team.pending')}

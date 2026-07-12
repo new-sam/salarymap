@@ -52,7 +52,7 @@ export default function EditJobPage() {
         .eq('company_id', rec.company_id)
         .maybeSingle();
       if (jobErr || !job) {
-        setErr('공고를 찾을 수 없거나 접근 권한이 없습니다.');
+        setErr(t('company.ats.notFound'));
         setStatus('error');
         return;
       }
@@ -69,7 +69,7 @@ export default function EditJobPage() {
         canEdit = teamRow?.role === 'admin';
       }
       if (!canEdit) {
-        setErr('공고를 찾을 수 없거나 접근 권한이 없습니다.');
+        setErr(t('company.ats.notFound'));
         setStatus('error');
         return;
       }
@@ -112,7 +112,7 @@ export default function EditJobPage() {
       const ext = file.name.split('.').pop();
       const path = `company/${user.id}/${Date.now()}.${ext}`;
       const { error } = await supabase.storage.from('job-images').upload(path, file);
-      if (error) { setErr('이미지 업로드 실패: ' + error.message); return; }
+      if (error) { setErr(t('company.err.imgUpload') + error.message); return; }
       const { data } = supabase.storage.from('job-images').getPublicUrl(path);
       setForm(prev => ({ ...prev, [field]: data.publicUrl }));
     } finally {
@@ -123,9 +123,9 @@ export default function EditJobPage() {
   const onSubmit = async (e) => {
     e.preventDefault();
     setErr('');
-    if (!form.title.trim()) { setErr('포지션명을 입력해 주세요'); return; }
-    if (!form.description.trim()) { setErr('업무 설명을 입력해 주세요'); return; }
-    if (Number(form.salary_min) >= Number(form.salary_max)) { setErr('연봉 최소가 최대보다 작아야 합니다'); return; }
+    if (!form.title.trim()) { setErr(t('company.err.titleRequired')); return; }
+    if (!form.description.trim()) { setErr(t('company.err.descRequired')); return; }
+    if (Number(form.salary_min) >= Number(form.salary_max)) { setErr(t('company.err.salaryRange')); return; }
     setStatus('saving');
 
     const techArr = form.tech_stack.split(',').map(s => s.trim()).filter(Boolean);
@@ -148,7 +148,7 @@ export default function EditJobPage() {
     };
     const { error } = await supabase.from('jobs').update(payload).eq('id', id);
     if (error) { setErr(error.message); toast.error(error.message); setStatus('ready'); return; }
-    toast.success('변경사항 저장됨');
+    toast.success(t('company.editJob.saved'));
     router.replace('/company/jobs');
   };
 
@@ -158,29 +158,29 @@ export default function EditJobPage() {
   };
 
   const onDelete = async () => {
-    if (!confirm('이 공고를 삭제하시겠어요? 되돌릴 수 없습니다.')) return;
+    if (!confirm(t('company.editJob.deleteConfirm'))) return;
     setStatus('saving');
     const res = await fetch('/api/company/job', { method: 'DELETE', headers: await jobApiHeaders(), body: JSON.stringify({ jobId: id }) });
-    if (!res.ok) { const j = await res.json().catch(() => ({})); setErr(j.error || 'error'); toast.error(j.error || '삭제 실패'); setStatus('ready'); return; }
-    toast.success('공고가 삭제되었습니다');
+    if (!res.ok) { const j = await res.json().catch(() => ({})); setErr(j.error || 'error'); toast.error(j.error || t('company.editJob.deleteFailed')); setStatus('ready'); return; }
+    toast.success(t('company.editJob.deleted'));
     router.replace('/company/jobs');
   };
 
   const toggleActive = async () => {
     const newStatus = origStatus === 'live' ? 'paused' : 'live';
     const res = await fetch('/api/company/job', { method: 'PUT', headers: await jobApiHeaders(), body: JSON.stringify({ jobId: id, action: newStatus === 'live' ? 'activate' : 'deactivate' }) });
-    if (!res.ok) { const j = await res.json().catch(() => ({})); setErr(j.error || 'error'); toast.error(j.error || '변경 실패'); return; }
+    if (!res.ok) { const j = await res.json().catch(() => ({})); setErr(j.error || 'error'); toast.error(j.error || t('company.editJob.toggleFailed')); return; }
     setOrigStatus(newStatus);
-    toast.success(newStatus === 'live' ? '공고가 활성화 되었습니다' : '공고가 비활성화 되었습니다');
+    toast.success(newStatus === 'live' ? t('company.editJob.activated') : t('company.editJob.deactivated'));
   };
 
-  if (status === 'loading') return <div style={css.loading}>Loading…</div>;
+  if (status === 'loading') return <div style={css.loading}>{t('company.loading')}</div>;
   if (status === 'unauthed') {
     return (
       <div style={css.fullCenter}>
         <div style={css.lightCard}>
-          <h1 style={css.cardH}>로그인 필요</h1>
-          <Link href="/company/signup" style={css.btnPrimary}>로그인 / 가입</Link>
+          <h1 style={css.cardH}>{t('company.loginRequired')}</h1>
+          <Link href="/company" style={css.btnPrimary}>{t('company.loginOrSignup')}</Link>
         </div>
       </div>
     );
@@ -189,9 +189,9 @@ export default function EditJobPage() {
     return (
       <div style={css.fullCenter}>
         <div style={css.lightCard}>
-          <h1 style={css.cardH}>접근 불가</h1>
+          <h1 style={css.cardH}>{t('company.noAccess')}</h1>
           <p style={css.cardP}>{err}</p>
-          <Link href="/company/jobs" style={css.btnPrimary}>공고 목록으로</Link>
+          <Link href="/company/jobs" style={css.btnPrimary}>{t('company.toDashboard')}</Link>
         </div>
       </div>
     );
@@ -199,7 +199,7 @@ export default function EditJobPage() {
 
   return (
     <>
-      <Head><title>공고 수정 · FYI</title></Head>
+      <Head><title>{t('company.head.editJob')}</title></Head>
       <div style={css.app}>
         <Sidebar companyName={companyName} userEmail={user?.email} activePage="jobs" activeJobId={id} />
 
