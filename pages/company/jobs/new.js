@@ -21,6 +21,14 @@ import { ROLE_GROUPS, LOCATION_OPTIONS, DEFAULT_WORK_DAYS, DEFAULT_WORK_HOURS, D
 const TYPES = ['remote', 'onsite', 'hybrid'];
 const LOCATIONS = LOCATION_OPTIONS; // 베트남 주요 도시/성 확장
 
+// 자체 온보딩은 이메일 도메인으로 회사를 추정/매칭하므로 free-mail 은 차단.
+// (어드민 발급 계정은 recruiter_users 가 이미 연결돼 있어 이 경로를 타지 않음.)
+// pages/company/index.js 의 completeCompanySetup 과 동일한 정책.
+const FREE_MAIL_DOMAINS = new Set([
+  'gmail.com', 'naver.com', 'yahoo.com', 'hotmail.com', 'outlook.com',
+  'icloud.com', 'daum.net', 'kakao.com', 'protonmail.com',
+]);
+
 const EMPTY = {
   title: '', description: '', role: 'Backend', type: 'hybrid', country: 'vietnam',
   location: 'Hồ Chí Minh', experience_min: 1, experience_max: 5,
@@ -102,7 +110,7 @@ export default function NewJobPage() {
     if (!tmpCompanyName.trim()) { setErr(t('company.err.companyRequired')); return; }
     if (!tmpFullName.trim()) { setErr(t('company.err.contactRequired')); return; }
     const emailDomain = (user.email || '').split('@')[1]?.toLowerCase();
-    if (!emailDomain) { setErr(t('company.err.notVerified')); return; }
+    if (!emailDomain || FREE_MAIL_DOMAINS.has(emailDomain)) { setErr(t('company.err.notVerified')); return; }
     setStatus('saving');
 
     let cid = null;
