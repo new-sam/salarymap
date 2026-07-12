@@ -4,6 +4,6 @@
 --    중복발송 방지는 (user_id, job_id) unique + 코드단 email 조인으로 처리.
 alter table public.job_recommendations
   add column if not exists kind text not null default 'recruiter';
-
+생
 alter table public.job_recommendations
   alter column user_id drop not null;
