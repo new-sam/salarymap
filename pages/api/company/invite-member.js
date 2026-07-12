@@ -32,37 +32,37 @@ function buildAtsLink(req, jobId) {
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
-  if (!SERVICE_KEY) return res.status(503).json({ error: '서버 설정 누락' });
+  if (!SERVICE_KEY) return res.status(503).json({ error: '서버 설정 누락', code: 'serverConfig' });
 
   const token = (req.headers.authorization || '').replace(/^Bearer\s+/i, '');
-  if (!token) return res.status(401).json({ error: '로그인이 필요합니다.' });
+  if (!token) return res.status(401).json({ error: '로그인이 필요합니다.', code: 'authRequired' });
 
   const asUser = createClient(SUPABASE_URL, ANON_KEY, {
     global: { headers: { Authorization: `Bearer ${token}` } },
   });
   const { data: { user } } = await asUser.auth.getUser();
-  if (!user) return res.status(401).json({ error: '세션이 만료되었습니다.' });
+  if (!user) return res.status(401).json({ error: '세션이 만료되었습니다.', code: 'sessionExpired' });
 
   const { email, role, jobId } = req.body || {};
   const cleanEmail = (email || '').trim().toLowerCase();
-  if (!EMAIL_RE.test(cleanEmail)) return res.status(400).json({ error: '올바른 이메일을 입력해 주세요.' });
-  if (!jobId) return res.status(400).json({ error: 'jobId 필요' });
+  if (!EMAIL_RE.test(cleanEmail)) return res.status(400).json({ error: '올바른 이메일을 입력해 주세요.', code: 'invalidEmail' });
+  if (!jobId) return res.status(400).json({ error: 'jobId 필요', code: 'badRequest' });
   const cleanRole = normalizeJobRole(role);
 
   const admin = createClient(SUPABASE_URL, SERVICE_KEY);
 
   const { data: rec } = await admin
     .from('recruiter_users').select('company_id, recruiter_companies(name)').eq('user_id', user.id).maybeSingle();
-  if (!rec?.company_id) return res.status(403).json({ error: '회사 정보가 없습니다.' });
+  if (!rec?.company_id) return res.status(403).json({ error: '회사 정보가 없습니다.', code: 'forbidden' });
   const companyName = rec.recruiter_companies?.name || '귀사';
 
   const { data: job } = await admin
     .from('jobs').select('id, title, created_by, company_id').eq('id', jobId).maybeSingle();
-  if (!job || job.company_id !== rec.company_id) return res.status(403).json({ error: '해당 공고 권한 없음' });
+  if (!job || job.company_id !== rec.company_id) return res.status(403).json({ error: '해당 공고 권한 없음', code: 'forbidden' });
 
   // 팀원 초대는 공고 관리자만 가능. 오너이거나 job_team.role='admin' 여야 한다.
   const canInvite = await isJobAdmin(admin, user.id, jobId);
-  if (!canInvite) return res.status(403).json({ error: '공고 관리자만 팀원을 초대할 수 있습니다.' });
+  if (!canInvite) return res.status(403).json({ error: '공고 관리자만 팀원을 초대할 수 있습니다.', code: 'forbidden' });
 
   // 이미 회사 멤버?
   const { data: existing } = await admin

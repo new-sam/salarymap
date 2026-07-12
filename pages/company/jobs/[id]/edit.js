@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { supabase } from '../../../../lib/supabaseClient';
 import { Field, SelectInput, Sidebar, css } from '../new';
 import { useT } from '../../../../lib/i18n';
+import { apiErrorMessage } from '../../../../lib/apiErrorMessage';
 import { toast } from 'sonner';
 import { Button as UButton } from '../../../../components/ui/button';
 import { Input as UInput } from '../../../../components/ui/input';
@@ -161,7 +162,7 @@ export default function EditJobPage() {
     if (!confirm(t('company.editJob.deleteConfirm'))) return;
     setStatus('saving');
     const res = await fetch('/api/company/job', { method: 'DELETE', headers: await jobApiHeaders(), body: JSON.stringify({ jobId: id }) });
-    if (!res.ok) { const j = await res.json().catch(() => ({})); setErr(j.error || 'error'); toast.error(j.error || t('company.editJob.deleteFailed')); setStatus('ready'); return; }
+    if (!res.ok) { const j = await res.json().catch(() => ({})); const msg = apiErrorMessage(j, t, 'company.editJob.deleteFailed'); setErr(msg); toast.error(msg); setStatus('ready'); return; }
     toast.success(t('company.editJob.deleted'));
     router.replace('/company/jobs');
   };
@@ -169,7 +170,7 @@ export default function EditJobPage() {
   const toggleActive = async () => {
     const newStatus = origStatus === 'live' ? 'paused' : 'live';
     const res = await fetch('/api/company/job', { method: 'PUT', headers: await jobApiHeaders(), body: JSON.stringify({ jobId: id, action: newStatus === 'live' ? 'activate' : 'deactivate' }) });
-    if (!res.ok) { const j = await res.json().catch(() => ({})); setErr(j.error || 'error'); toast.error(j.error || t('company.editJob.toggleFailed')); return; }
+    if (!res.ok) { const j = await res.json().catch(() => ({})); const msg = apiErrorMessage(j, t, 'company.editJob.toggleFailed'); setErr(msg); toast.error(msg); return; }
     setOrigStatus(newStatus);
     toast.success(newStatus === 'live' ? t('company.editJob.activated') : t('company.editJob.deactivated'));
   };

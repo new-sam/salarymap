@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { supabase } from '../../lib/supabaseClient';
 import { useT } from '../../lib/i18n';
+import { apiErrorMessage } from '../../lib/apiErrorMessage';
 import { ConfirmModal } from './CandidateDetail';
 import { X as XIcon, Check, Mail as MailIcon, Users as UsersIcon } from 'lucide-react';
 
@@ -79,7 +80,7 @@ export default function TeamPopover({ jobId, canInvite = true }) {
     if (!res.ok) {
       await showAlert({
         title: t('company.team.removeBtn'),
-        message: t('company.team.removeErr') + (j.error || ''),
+        message: t('company.team.removeErr') + apiErrorMessage(j, t),
         tone: 'danger',
       });
       return;
@@ -232,7 +233,7 @@ function InviteModal({ jobId, onClose, onDone }) {
         body: JSON.stringify({ email, role, jobId }),
       });
       const j = await res.json();
-      if (!res.ok) throw new Error(j.error || 'error');
+      if (!res.ok) throw new Error(apiErrorMessage(j, t, 'company.invite.errGeneric'));
       setResult(j);
     } catch (e) {
       setErr(e.message || t('company.invite.errGeneric'));

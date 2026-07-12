@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
 import { supabase } from '../../lib/supabaseClient';
 import { useT } from '../../lib/i18n';
+import { apiErrorMessage } from '../../lib/apiErrorMessage';
 import { Check } from 'lucide-react';
 
 export default function ContactModal({ open, onClose }) {
@@ -43,7 +44,7 @@ export default function ContactModal({ open, onClose }) {
         body: JSON.stringify(form),
       });
       const j = await res.json();
-      if (!res.ok) throw new Error(j.error || 'error');
+      if (!res.ok) throw new Error(apiErrorMessage(j, t, 'company.landing.contact.errGeneric'));
       setPhase('done');
     } catch (e) {
       setErr(e.message || t('company.landing.contact.errGeneric'));

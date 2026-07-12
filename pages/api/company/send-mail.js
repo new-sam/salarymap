@@ -15,15 +15,15 @@ export default async function handler(req, res) {
   }
 
   if (!process.env.RESEND_API_KEY) {
-    return res.status(503).json({ error: '메일 서비스가 아직 설정되지 않았습니다. (RESEND_API_KEY 누락)' });
+    return res.status(503).json({ error: '메일 서비스가 아직 설정되지 않았습니다. (RESEND_API_KEY 누락)', code: 'serverConfig' });
   }
 
   const token = (req.headers.authorization || '').replace(/^Bearer\s+/i, '');
-  if (!token) return res.status(401).json({ error: '로그인이 필요합니다.' });
+  if (!token) return res.status(401).json({ error: '로그인이 필요합니다.', code: 'authRequired' });
 
   const { appId, subject, body, templateKey } = req.body || {};
   if (!appId || !subject || !body) {
-    return res.status(400).json({ error: 'appId, subject, body가 필요합니다.' });
+    return res.status(400).json({ error: 'appId, subject, body가 필요합니다.', code: 'badRequest' });
   }
 
   // 호출자 인증 + 지원자 소유권 확인 (RLS가 본인 회사 공고 지원자만 노출)
@@ -31,21 +31,21 @@ export default async function handler(req, res) {
     global: { headers: { Authorization: `Bearer ${token}` } },
   });
   const { data: { user } } = await asUser.auth.getUser();
-  if (!user) return res.status(401).json({ error: '세션이 만료되었습니다.' });
+  if (!user) return res.status(401).json({ error: '세션이 만료되었습니다.', code: 'sessionExpired' });
 
   const { data: app } = await asUser
     .from('job_applications')
     .select('id, applicant_email, user_id, job_id, jobs(created_by, title, company)')
     .eq('id', appId)
     .maybeSingle();
-  if (!app) return res.status(403).json({ error: '해당 지원자에 대한 권한이 없습니다.' });
+  if (!app) return res.status(403).json({ error: '해당 지원자에 대한 권한이 없습니다.', code: 'forbidden' });
 
   // 메일 발송은 공고 관리자만 가능 (면접관 차단). service-role 로 role 조회.
   const adminClient = SERVICE_KEY ? createClient(SUPABASE_URL, SERVICE_KEY) : null;
-  if (!adminClient) return res.status(503).json({ error: '서버 설정 오류 (SERVICE_KEY 없음)' });
+  if (!adminClient) return res.status(503).json({ error: '서버 설정 오류 (SERVICE_KEY 없음)', code: 'serverConfig' });
   const canAdmin = await isJobAdmin(adminClient, user.id, app.job_id);
   if (!canAdmin) {
-    return res.status(403).json({ error: '메일 발송은 공고 관리자만 가능합니다.' });
+    return res.status(403).json({ error: '메일 발송은 공고 관리자만 가능합니다.', code: 'forbidden' });
   }
 
   // 수신자는 서버에서 결정 (클라이언트가 임의 주소로 못 보내게)
@@ -55,7 +55,7 @@ export default async function handler(req, res) {
       .from('user_profiles').select('email').eq('id', app.user_id).maybeSingle();
     toEmail = prof?.email || null;
   }
-  if (!toEmail) return res.status(400).json({ error: '후보 이메일이 없어 발송할 수 없습니다.' });
+  if (!toEmail) return res.status(400).json({ error: '후보 이메일이 없어 발송할 수 없습니다.', code: 'noCandidateEmail' });
 
   // 발송
   const resend = new Resend(process.env.RESEND_API_KEY);

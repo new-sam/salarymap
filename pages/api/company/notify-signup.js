@@ -10,11 +10,11 @@ export default async function handler(req, res) {
   if (!SERVICE_KEY) return res.status(200).json({ ok: false, reason: 'no_service_key' });
 
   const token = (req.headers.authorization || '').replace(/^Bearer\s+/i, '');
-  if (!token) return res.status(401).json({ error: '인증 필요' });
+  if (!token) return res.status(401).json({ error: '인증 필요', code: 'authRequired' });
 
   const asUser = createClient(SUPABASE_URL, ANON_KEY, { global: { headers: { Authorization: `Bearer ${token}` } } });
   const { data: { user } } = await asUser.auth.getUser();
-  if (!user) return res.status(401).json({ error: '세션 만료' });
+  if (!user) return res.status(401).json({ error: '세션 만료', code: 'sessionExpired' });
 
   const { companyId } = req.body || {};
   if (!companyId) return res.status(400).json({ error: 'companyId 필요' });

@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, Fragment } from 'react';
 import Link from 'next/link';
 import { supabase } from '../../lib/supabaseClient';
 import { useT } from '../../lib/i18n';
+import { apiErrorMessage } from '../../lib/apiErrorMessage';
 import { toast } from 'sonner';
 import { formatICT, formatInterviewShort, formatLocalShort, ictInputToUtc, utcToIctInput, ICT_LABEL } from '../../lib/timezone';
 import { cn } from '../../lib/cn';
@@ -81,7 +82,7 @@ export default function CandidateDetail({
   // admin = jobs.created_by 이거나 job_team.role='admin'.
   const [myJobRole, setMyJobRole] = useState(null);
   const [reviewerName, setReviewerName] = useState('');
-  const [mailModal, setMailModal] = useState(null); // { templateKey, withSlots }
+  const [mailModal, setMailModal] = useState(null); // { templateKey }
   const [rejectModal, setRejectModal] = useState(null); // null | 'new' | 'edit' | 'unreject'
   const [interviewModal, setInterviewModal] = useState(false);
   const [mailLog, setMailLog] = useState([]);
@@ -127,7 +128,7 @@ export default function CandidateDetail({
       });
       const json = await res.json().catch(() => ({}));
       if (!res.ok) {
-        toast.error(json.error || t('company.toast.noteSaveFailed'));
+        toast.error(apiErrorMessage(json, t, 'company.toast.noteSaveFailed'));
         return;
       }
       setApp(prev => ({ ...prev, admin_note: noteDraft, admin_note_updated_at: json.updatedAt }));
@@ -323,7 +324,7 @@ export default function CandidateDetail({
         body: JSON.stringify({ appId: app.id }),
       });
       const json = await res.json().catch(() => ({}));
-      if (!res.ok) { toast.error(json.error || t('company.toast.passFailed')); return; }
+      if (!res.ok) { toast.error(apiErrorMessage(json, t, 'company.toast.passFailed')); return; }
       if (json.row) setEvals(prev => [...prev, json.row]);
       toast.success(t('company.toast.passDecided', { stage: t(`company.stageLabel.short.${app.status}`) || app.status }));
       promptDecisionMail({ decision: 'pass', stage: app.status });
@@ -392,7 +393,7 @@ export default function CandidateDetail({
         body: JSON.stringify({ rowId: passedAtCurrentStage.id }),
       });
       const json = await res.json().catch(() => ({}));
-      if (!res.ok) { toast.error(json.error || t('company.toast.passCancelFailed')); return; }
+      if (!res.ok) { toast.error(apiErrorMessage(json, t, 'company.toast.passCancelFailed')); return; }
       setEvals(prev => prev.filter(e => e.id !== passedAtCurrentStage.id));
       toast.success(t('company.toast.passCanceled'));
     } catch (e) {
@@ -1899,7 +1900,7 @@ function NoteSection({ app, evals, setEvals, userId, reviewerName, expanded, onT
         body: JSON.stringify({ appId: app.id, content }),
       });
       const json = await res.json().catch(() => ({}));
-      if (!res.ok) { toast.error(json.error || t('company.toast.noteSaveFailed')); return; }
+      if (!res.ok) { toast.error(apiErrorMessage(json, t, 'company.toast.noteSaveFailed')); return; }
       setEvals(prev => [...prev, json.note]);
       setDraft('');
       toast.success(t('company.toast.noteCreated'));
@@ -1921,7 +1922,7 @@ function NoteSection({ app, evals, setEvals, userId, reviewerName, expanded, onT
           body: JSON.stringify({ noteId }),
         });
         const json = await res.json().catch(() => ({}));
-        if (!res.ok) { toast.error(json.error || t('company.toast.noteDeleteFailed')); return; }
+        if (!res.ok) { toast.error(apiErrorMessage(json, t, 'company.toast.noteDeleteFailed')); return; }
         setEvals(prev => prev.filter(e => e.id !== noteId));
         toast.success(t('company.toast.noteDeleted'));
       },
@@ -2358,7 +2359,7 @@ export function MailComposer({
         body: JSON.stringify({ appId: applicationId, subject, body, templateKey: tplKey }),
       });
       const json = await res.json().catch(() => ({}));
-      if (!res.ok) { setErr(json.error || t('company.err.mailFail')); setSending(false); return; }
+      if (!res.ok) { setErr(apiErrorMessage(json, t, 'company.err.mailFail')); setSending(false); return; }
 
       // NOTE: 제안한 면접 슬롯은 발송된 메일(recruiter_mail_log)에 그대로 남는다.
       // 여기서 interview_at 을 첫 슬롯으로 확정 저장하지 않는다 — 후보가 아직
@@ -2785,7 +2786,7 @@ export function RejectionModal({ app, stageKey, candidateName, mode = 'new', ini
           // 401 from this endpoint means the refresh above also failed —
           // surface a clearer "please log in again" copy.
           if (r.status === 401) setErr(t('company.reject.errSessionRelogin'));
-          else setErr(t('company.reject.errSave') + (j?.error || ''));
+          else setErr(t('company.reject.errSave') + apiErrorMessage(j, t));
           return;
         }
         setSaving(false);

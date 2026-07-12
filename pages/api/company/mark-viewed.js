@@ -15,24 +15,24 @@ const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 // Auth: 해당 공고의 회사 멤버(owner / job_team / recruiter_users.company_id)만.
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
-  if (!SUPABASE_URL || !SERVICE_KEY) return res.status(503).json({ error: '서버 설정 오류' });
+  if (!SUPABASE_URL || !SERVICE_KEY) return res.status(503).json({ error: '서버 설정 오류', code: 'serverConfig' });
 
   const token = (req.headers.authorization || '').replace(/^Bearer\s+/i, '');
-  if (!token) return res.status(401).json({ error: '로그인이 필요합니다.' });
+  if (!token) return res.status(401).json({ error: '로그인이 필요합니다.', code: 'authRequired' });
   const { appId } = req.body || {};
-  if (!appId) return res.status(400).json({ error: 'appId가 필요합니다.' });
+  if (!appId) return res.status(400).json({ error: 'appId가 필요합니다.', code: 'badRequest' });
 
   const asUser = createClient(SUPABASE_URL, ANON_KEY, { global: { headers: { Authorization: `Bearer ${token}` } } });
   const { data: ud } = await asUser.auth.getUser();
   const user = ud?.user;
-  if (!user) return res.status(401).json({ error: '세션이 만료되었습니다.' });
+  if (!user) return res.status(401).json({ error: '세션이 만료되었습니다.', code: 'sessionExpired' });
 
   const admin = createClient(SUPABASE_URL, SERVICE_KEY);
   const { data: app } = await admin
     .from('job_applications')
     .select('id, status, viewed_at, rejected_at, job_id, user_id, jobs(company_id, created_by, title, company)')
     .eq('id', appId).maybeSingle();
-  if (!app) return res.status(404).json({ error: '지원자를 찾을 수 없습니다.' });
+  if (!app) return res.status(404).json({ error: '지원자를 찾을 수 없습니다.', code: 'candidateNotFound' });
 
   let allowed = app.jobs?.created_by === user.id;
   if (!allowed) {
@@ -43,7 +43,7 @@ export default async function handler(req, res) {
     const { data: rec } = await admin.from('recruiter_users').select('company_id').eq('user_id', user.id).maybeSingle();
     if (rec && rec.company_id === app.jobs?.company_id) allowed = true;
   }
-  if (!allowed) return res.status(403).json({ error: '권한이 없습니다.' });
+  if (!allowed) return res.status(403).json({ error: '권한이 없습니다.', code: 'forbidden' });
 
   // 이미 한 번 본 지원자거나 반려된 경우 noop.
   if (app.viewed_at || app.rejected_at) {

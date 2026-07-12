@@ -9,6 +9,7 @@ import { formatICT, formatInterviewShort, formatLocalShortDate, ICT_LABEL } from
 import { color, font, space, radius, shadow, motion } from '../../lib/theme';
 import TeamPopover from '../../components/company/TeamPopover';
 import { useT } from '../../lib/i18n';
+import { apiErrorMessage } from '../../lib/apiErrorMessage';
 import { toast } from 'sonner';
 import { cn } from '../../lib/cn';
 import { Button } from '../../components/ui/button';
@@ -461,7 +462,7 @@ export default function CompanyATSPage() {
           });
           if (!res.ok) {
             const json = await res.json().catch(() => ({}));
-            toast.error(json.error || t('company.toast.passCancelFailed'));
+            toast.error(apiErrorMessage(json, t, 'company.toast.passCancelFailed'));
             return;
           }
         } catch {
@@ -530,7 +531,7 @@ export default function CompanyATSPage() {
         body: JSON.stringify({ appId: app.id, stage: sourceStage }),
       });
       const json = await res.json().catch(() => ({}));
-      if (!res.ok) { toast.error(json.error || t('company.ats.errStagePass')); return; }
+      if (!res.ok) { toast.error(apiErrorMessage(json, t, 'company.ats.errStagePass')); return; }
       toast.success(t('company.ats.stagePassedShort', { stage: t(`company.stage.${sourceStage}`) }));
       await loadStagePasses(apps.map(a => a.id));
     } catch {
@@ -566,7 +567,7 @@ export default function CompanyATSPage() {
         body: JSON.stringify({ appId, stage }),
       });
       const json = await res.json().catch(() => ({}));
-      if (!res.ok) { toast.error(json.error || t('company.ats.errStagePass')); return; }
+      if (!res.ok) { toast.error(apiErrorMessage(json, t, 'company.ats.errStagePass')); return; }
       toast.success(t('company.ats.stagePassedShort', { stage: t(`company.stage.${stage}`) }));
       await loadStagePasses(apps.map(a => a.id));
       const app = apps.find(a => a.id === appId);

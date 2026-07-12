@@ -17,16 +17,16 @@ export default async function handler(req, res) {
   try {
     console.log('[save-note] start', { hasUrl: !!SUPABASE_URL, hasKey: !!SERVICE_KEY });
     if (!SUPABASE_URL || !SERVICE_KEY) {
-      return res.status(503).json({ error: '서버 설정 오류 (SUPABASE 환경변수)' });
+      return res.status(503).json({ error: '서버 설정 오류 (SUPABASE 환경변수)', code: 'serverConfig' });
     }
 
     const token = (req.headers.authorization || '').replace(/^Bearer\s+/i, '');
-    if (!token) return res.status(401).json({ error: '로그인이 필요합니다.' });
+    if (!token) return res.status(401).json({ error: '로그인이 필요합니다.', code: 'authRequired' });
 
     const { appId, note } = req.body || {};
     console.log('[save-note] body', { appId, noteLen: typeof note === 'string' ? note.length : 'not-string' });
-    if (!appId) return res.status(400).json({ error: 'appId가 필요합니다.' });
-    if (typeof note !== 'string') return res.status(400).json({ error: 'note는 문자열이어야 합니다.' });
+    if (!appId) return res.status(400).json({ error: 'appId가 필요합니다.', code: 'badRequest' });
+    if (typeof note !== 'string') return res.status(400).json({ error: 'note는 문자열이어야 합니다.', code: 'badRequest' });
 
     const asUser = createClient(SUPABASE_URL, ANON_KEY, {
       global: { headers: { Authorization: `Bearer ${token}` } },
@@ -34,7 +34,7 @@ export default async function handler(req, res) {
     const { data: userData, error: userErr } = await asUser.auth.getUser();
     const user = userData?.user;
     console.log('[save-note] auth', { userId: user?.id, userErr: userErr?.message });
-    if (userErr || !user) return res.status(401).json({ error: '세션이 만료되었습니다.' });
+    if (userErr || !user) return res.status(401).json({ error: '세션이 만료되었습니다.', code: 'sessionExpired' });
 
     // Read with service role so we don't get blocked by RLS at the verify step
     const admin = createClient(SUPABASE_URL, SERVICE_KEY);
@@ -45,7 +45,7 @@ export default async function handler(req, res) {
       .maybeSingle();
     console.log('[save-note] app', { found: !!app, appErr: appErr?.message, companyId: app?.jobs?.company_id, owner: app?.jobs?.created_by });
     if (appErr || !app) {
-      return res.status(404).json({ error: '지원자를 찾을 수 없습니다.' });
+      return res.status(404).json({ error: '지원자를 찾을 수 없습니다.', code: 'candidateNotFound' });
     }
 
     // Verify caller is part of this company / job team
@@ -72,7 +72,7 @@ export default async function handler(req, res) {
     }
     console.log('[save-note] auth check', { isJobOwner, allowed });
     if (!allowed) {
-      return res.status(403).json({ error: '메모 저장 권한이 없습니다.' });
+      return res.status(403).json({ error: '메모 저장 권한이 없습니다.', code: 'forbidden' });
     }
 
     // Update only the columns we know exist.
