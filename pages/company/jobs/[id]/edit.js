@@ -3,7 +3,7 @@ import Head from 'next/head';
 import { useRouter } from 'next/router';
 import Link from 'next/link';
 import { supabase } from '../../../../lib/supabaseClient';
-import { Field, SelectInput, Sidebar, css } from '../new';
+import { Field, SelectInput, UploadInput, Sidebar, css } from '../new';
 import { useT } from '../../../../lib/i18n';
 import { apiErrorMessage } from '../../../../lib/apiErrorMessage';
 import { toast } from 'sonner';
@@ -256,9 +256,7 @@ export default function EditJobPage() {
                       <UButton type="button" variant="outline" size="sm" onClick={() => setF('image_url', '')} className="ml-auto h-7 px-2 text-xs text-red-600 border-red-200 hover:bg-red-50">{t('company.remove')}</UButton>
                     </div>
                   ) : (
-                    <input type="file" accept="image/*" disabled={uploading}
-                      onChange={(e) => e.target.files?.[0] && uploadImage(e.target.files[0], 'image_url')}
-                      className="text-xs text-gray-700 border border-dashed border-gray-300 rounded-lg p-2 bg-gray-50 cursor-pointer w-full" />
+                    <UploadInput label={t('company.jobsnew.uploadBtn')} disabled={uploading} onFile={(f) => uploadImage(f, 'image_url')} />
                   )}
                 </Field>
                 <Field label={t('company.jobsnew.logoLabel')}>
@@ -268,9 +266,7 @@ export default function EditJobPage() {
                       <UButton type="button" variant="outline" size="sm" onClick={() => setF('logo_url', '')} className="ml-auto h-7 px-2 text-xs text-red-600 border-red-200 hover:bg-red-50">{t('company.remove')}</UButton>
                     </div>
                   ) : (
-                    <input type="file" accept="image/*" disabled={uploading}
-                      onChange={(e) => e.target.files?.[0] && uploadImage(e.target.files[0], 'logo_url')}
-                      className="text-xs text-gray-700 border border-dashed border-gray-300 rounded-lg p-2 bg-gray-50 cursor-pointer w-full" />
+                    <UploadInput label={t('company.jobsnew.uploadBtn')} disabled={uploading} onFile={(f) => uploadImage(f, 'logo_url')} />
                   )}
                 </Field>
               </div>

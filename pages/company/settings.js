@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import Head from 'next/head';
 import { useRouter } from 'next/router';
 import { supabase } from '../../lib/supabaseClient';
-import { Sidebar, css } from './jobs/new';
+import { Sidebar, css, UploadInput } from './jobs/new';
 import MobileNav from '../../components/company/MobileNav';
 import { useT } from '../../lib/i18n';
 import { PageHeader } from '../../components/ui/page-header';
@@ -153,9 +153,7 @@ export default function CompanySettings() {
                     <UButton type="button" variant="outline" size="sm" onClick={() => setLogoUrl('')} className="ml-auto h-7 px-2 text-xs text-red-600 border-red-200 hover:bg-red-50">{t('company.remove')}</UButton>
                   </div>
                 ) : (
-                  <input type="file" accept="image/*" disabled={uploading}
-                    onChange={(e) => e.target.files?.[0] && uploadLogo(e.target.files[0])}
-                    className="text-xs text-gray-700 border border-dashed border-gray-300 rounded-lg p-2 bg-gray-50 cursor-pointer w-full" />
+                  <UploadInput label={t('company.jobsnew.uploadBtn')} disabled={uploading} onFile={(f) => uploadLogo(f)} />
                 )}
               </div>
 
@@ -212,10 +210,10 @@ export default function CompanySettings() {
 }
 
 const fcss = {
-  label: { display: 'block', marginBottom: 6, color: '#374151', fontSize: 12, fontWeight: 800 },
+  label: { display: 'block', marginBottom: 6, color: '#4E5968', fontSize: 12, fontWeight: 800 },
   input: {
-    width: '100%', border: '1px solid #D1D5DB', borderRadius: 10,
-    padding: '12px 14px', color: '#111', background: '#fff', fontSize: 14,
+    width: '100%', border: '1px solid #D1D6DB', borderRadius: 10,
+    padding: '12px 14px', color: '#191F28', background: '#fff', fontSize: 14,
     fontFamily: 'inherit', outline: 'none',
   },
   okBox: { padding: '10px 12px', borderRadius: 9, background: '#F0FDF4', color: '#16A34A', fontSize: 12.5, fontWeight: 700 },
