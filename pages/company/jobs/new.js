@@ -200,7 +200,8 @@ export default function NewJobPage() {
       } catch (_) {}
     }
     toast.success(isInternal ? t('company.jobsnew.publish') : t('company.jobsnew.pendingReview'));
-    router.replace('/company/jobs');
+    // /company/jobs 는 /company 로 넘기는 껍데기 — 직접 보내 이중 리다이렉트 제거
+    router.replace('/company');
   };
 
   if (status === 'loading') return <div style={css.loading}>{t('company.loading')}</div>;
@@ -296,7 +297,12 @@ export default function NewJobPage() {
               </div>
               {uploading
                 ? <div className="text-xs text-primary-600 font-semibold mb-3">{t('company.uploading')}</div>
-                : <div className="text-xs text-gray-400 font-semibold mb-5">{t('company.jobsnew.photoHint')}</div>}
+                : (
+                  <div className="text-xs text-gray-400 font-semibold mb-5">
+                    {t('company.jobsnew.photoHint')}{' '}
+                    <Link href="/company/settings" className="text-primary-600 hover:underline">{t('company.jobsnew.profileHint')}</Link>
+                  </div>
+                )}
 
               <h2 className="text-[12px] font-extrabold text-gray-500 uppercase tracking-[0.08em] mt-3 mb-3">{t('company.jobsnew.basicH')}</h2>
 

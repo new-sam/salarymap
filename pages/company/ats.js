@@ -861,6 +861,14 @@ export default function CompanyATSPage() {
             })}
           </div>
 
+          {/* First-run notice — a fresh board full of "비어 있음" columns reads
+              as broken to a new company; say what will happen here instead. */}
+          {apps.length === 0 && (
+            <div className="text-[12.5px] font-semibold text-primary-700 bg-primary-50 border border-primary-200 rounded-lg px-3 py-2 mb-3 flex-shrink-0">
+              {job?.status === 'pending_review' ? t('company.ats.noAppsPending') : t('company.ats.noApps')}
+            </div>
+          )}
+
           {/* Kanban — fills remaining viewport, columns scroll internally */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 items-stretch flex-1 min-h-0">
             {grouped.map((col) => {

@@ -150,7 +150,7 @@ export default function EditJobPage() {
     const { error } = await supabase.from('jobs').update(payload).eq('id', id);
     if (error) { setErr(error.message); toast.error(error.message); setStatus('ready'); return; }
     toast.success(t('company.editJob.saved'));
-    router.replace('/company/jobs');
+    router.replace('/company');
   };
 
   const jobApiHeaders = async () => {
@@ -164,7 +164,7 @@ export default function EditJobPage() {
     const res = await fetch('/api/company/job', { method: 'DELETE', headers: await jobApiHeaders(), body: JSON.stringify({ jobId: id }) });
     if (!res.ok) { const j = await res.json().catch(() => ({})); const msg = apiErrorMessage(j, t, 'company.editJob.deleteFailed'); setErr(msg); toast.error(msg); setStatus('ready'); return; }
     toast.success(t('company.editJob.deleted'));
-    router.replace('/company/jobs');
+    router.replace('/company');
   };
 
   const toggleActive = async () => {
