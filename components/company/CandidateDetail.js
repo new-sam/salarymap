@@ -201,10 +201,7 @@ export default function CandidateDetail({
         const ownerNow = myJobRole ? myJobRole === 'admin' : (!job?.created_by || job?.created_by === userId);
         if (!ownerNow) return;
         e.preventDefault();
-        const defaultTpl = app.status === 'pending' ? 'received'
-          : (app.status === 'viewed' || app.status === 'reviewing') ? 'interview'
-          : 'offer';
-        setMailModal({ templateKey: defaultTpl, withSlots: defaultTpl === 'interview' });
+        setMailModal({ templateKey: defaultComposeTemplate(app.status, app.rejected_at) });
       }
       else if ((key === 'r' || key === 'R') && app && !app.rejected_at) {
         const ownerNow = myJobRole ? myJobRole === 'admin' : (!job?.created_by || job?.created_by === userId);
@@ -535,11 +532,8 @@ export default function CandidateDetail({
     : null;
   const canRunQuick = isOwner;
   const showInterviewStage = app.status === 'viewed' || app.status === 'reviewing';
-  const defaultMailTpl = app.rejected_at ? 'reject'
-    : app.status === 'pending' ? 'received'
-    : (app.status === 'viewed' || app.status === 'reviewing') ? 'interview'
-    : 'offer';
-  const openMailCompose = () => setMailModal({ templateKey: defaultMailTpl, withSlots: defaultMailTpl === 'interview' });
+  const defaultMailTpl = defaultComposeTemplate(app.status, app.rejected_at);
+  const openMailCompose = () => setMailModal({ templateKey: defaultMailTpl });
 
   // ─── Smart Hint flowchart (action-granular) ─────────────────────
   // Always returns { tone, eyebrow, title } — strictly the single next action.
@@ -1835,6 +1829,20 @@ export function templateKeyForDecision({ decision, stage }) {
   return null;
 }
 
+// Default preset for the generic "메일 작성" compose button (kebab / toolbar /
+// keyboard shortcut) — must return a key that exists in MAIL_PRESETS, else the
+// composer opens blank. Unlike templateKeyForDecision (which announces the
+// *result* of a decision), this picks the mail most likely wanted for a
+// candidate currently sitting in the given stage: an invite to that stage's
+// interview, an acknowledgement, or the offer.
+export function defaultComposeTemplate(status, rejected) {
+  if (rejected) return 'reject';
+  if (status === 'pending') return 'received';
+  if (status === 'viewed') return 'doc_pass';        // 1차 인터뷰 초대 (슬롯)
+  if (status === 'reviewing') return 'interview1_pass'; // 2차 인터뷰 초대 (슬롯)
+  return 'final_offer';                              // decided
+}
+
 function fillVars(text, vars) {
   const round = vars.stage === 'viewed' ? (vars.lang === 'vi' ? 'Phỏng vấn vòng 1' : '1차 인터뷰')
               : vars.stage === 'reviewing' ? (vars.lang === 'vi' ? 'Phỏng vấn vòng 2' : '2차 인터뷰')
@@ -2327,18 +2335,11 @@ export function MailComposer({
       const json = await res.json().catch(() => ({}));
       if (!res.ok) { setErr(json.error || t('company.err.mailFail')); setSending(false); return; }
 
-      if (showSlots) {
-        const valid = slots.filter(s => s?.date);
-        if (valid.length > 0) {
-          const first = valid[0];
-          const slotLines = valid.map((s, i) => `${i + 1}) ${s.date} ${s.time || '00:00'} ${ICT_LABEL}`).join('\n');
-          const noteSummary = `[Interview]\n📅 ${t('company.interview.slotsTitle')}:\n${slotLines}`;
-          await supabase.from('job_applications').update({
-            interview_at: ictInputToUtc(first.date, first.time || '00:00'),
-            admin_note: noteSummary,
-          }).eq('id', applicationId);
-        }
-      }
+      // NOTE: 제안한 면접 슬롯은 발송된 메일(recruiter_mail_log)에 그대로 남는다.
+      // 여기서 interview_at 을 첫 슬롯으로 확정 저장하지 않는다 — 후보가 아직
+      // 고르지 않은 '제안'을 '확정'으로 기록하면 카드/캘린더/스마트힌트가 면접이
+      // 잡힌 것처럼 오작동한다. 실제 확정은 후보 회신 후 InterviewConfirmModal 에서.
+      // (admin_note 를 통째로 덮어쓰던 기존 동작도 함께 제거 — 메모 유실 버그)
 
       onSent?.();
       onClose();

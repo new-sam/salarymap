@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { supabase } from '../../lib/supabaseClient';
 import { Sidebar, css } from './jobs/new';
-import CandidateDetail, { MailComposer, RejectionModal, InterviewConfirmModal, ConfirmModal, templateKeyForDecision, nextStageAfter } from '../../components/company/CandidateDetail';
+import CandidateDetail, { MailComposer, RejectionModal, InterviewConfirmModal, ConfirmModal, templateKeyForDecision, nextStageAfter, defaultComposeTemplate } from '../../components/company/CandidateDetail';
 import { formatICT, formatInterviewShort, formatLocalShortDate, ICT_LABEL } from '../../lib/timezone';
 import { color, font, space, radius, shadow, motion } from '../../lib/theme';
 import TeamPopover from '../../components/company/TeamPopover';
@@ -192,7 +192,7 @@ export default function CompanyATSPage() {
           .eq('id', jobId).eq('company_id', rec.company_id).maybeSingle(),
         supabase
           .from('job_applications')
-          .select('id, status, viewed_at, applicant_name, applicant_email, applicant_salary, applicant_role, applicant_experience, applicant_company, resume_url, user_id, created_at, admin_note, interview_at, rejected_at, rejected_at_stage, rejection_reason')
+          .select('id, job_id, status, viewed_at, applicant_name, applicant_email, applicant_salary, applicant_role, applicant_experience, applicant_company, resume_url, user_id, created_at, admin_note, interview_at, interview_location, interview_interviewer, rejected_at, rejected_at_stage, rejection_reason')
           .eq('job_id', jobId).order('created_at', { ascending: true }),
       ]);
       const { data: jobData, error: jobErr } = jobRes;
@@ -1126,9 +1126,7 @@ const KanbanCard = memo(function KanbanCard({
     : t('company.ats.appliedDaysAgo', { date: dateText, n: daysAgo });
   const urgencyClass = 'bg-amber-50 text-amber-700 border-amber-200';
   const email = app.applicant_email || profile?.email || '';
-  const defaultTpl = app.status === 'pending' ? 'received'
-    : (app.status === 'viewed' || app.status === 'reviewing') ? 'interview'
-    : 'offer';
+  const defaultTpl = defaultComposeTemplate(app.status, app.rejected_at);
   const hasStagePassed = stagePassSet?.has(`${app.status}_pass`);
   const canDragCard = isOwner && !isRejected;
 

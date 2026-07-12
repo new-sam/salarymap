@@ -28,7 +28,8 @@ export default async function handler(req, res) {
     // origin stage (1차 → 2차 drag means 1차 합격, not 2차 합격).
     const { appId, stage } = req.body || {};
     if (!appId) return res.status(400).json({ error: 'appId가 필요합니다.' });
-    const VALID_STAGES = ['pending', 'viewed', 'reviewing'];
+    // 'decided' 는 최종 합격 컬럼 드롭 시 자동 decided_pass 마킹에 쓰인다.
+    const VALID_STAGES = ['pending', 'viewed', 'reviewing', 'decided'];
     if (stage && !VALID_STAGES.includes(stage)) {
       return res.status(400).json({ error: '유효하지 않은 단계입니다.' });
     }
@@ -59,7 +60,7 @@ export default async function handler(req, res) {
 
     const targetStageKey = stage || app.status;
     const stagePassKey = `${targetStageKey}_pass`;
-    const STAGE_LABEL = { pending: '서류', viewed: '1차 인터뷰', reviewing: '2차 인터뷰' };
+    const STAGE_LABEL = { pending: '서류', viewed: '1차 인터뷰', reviewing: '2차 인터뷰', decided: '최종 합격' };
     const stageLabel = STAGE_LABEL[targetStageKey] || targetStageKey;
     const { data: row, error: insErr } = await admin
       .from('application_evaluations')
