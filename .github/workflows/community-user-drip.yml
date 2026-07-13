@@ -1,0 +1,42 @@
+name: Community user-post drip
+
+on:
+  schedule:
+    # Every 5 min during ICT 07:00–23:00 (ICT = UTC+7 → UTC 00:00–16:00).
+    # GitHub scheduled runs are best-effort and can lag several minutes.
+    # The script also gates active hours + spacing internally.
+    - cron: '*/5 0-16 * * *'
+  workflow_dispatch:
+    inputs:
+      force:
+        description: 'Ignore active-hour gate'
+        type: boolean
+        default: false
+      dry:
+        description: 'Dry run (generate, insert nothing)'
+        type: boolean
+        default: false
+
+concurrency:
+  group: community-user-drip
+  cancel-in-progress: false
+
+jobs:
+  drip:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - name: Run user-post drip
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        run: |
+          node scripts/community-daily.js --user-drip \
+            ${{ github.event.inputs.force == 'true' && '--force' || '' }} \
+            ${{ github.event.inputs.dry == 'true' && '--dry' || '' }}
