@@ -52,6 +52,11 @@ function matchesJobFilters(job, f) {
   return true
 }
 
+// 스토리지 URL에서 원본 이력서 파일명 복원 (업로드 시 `${timestamp}_${safeName}`로 저장됨)
+function resumeNameFromUrl(url) {
+  try { return decodeURIComponent(url.split('/').pop().split('?')[0]).replace(/^\d+_/, '') } catch { return 'resume' }
+}
+
 // 같은 회사·제목 공고 중복 제거 — 크롤러 중복 삽입 + 대소문자/공백 변형 방어.
 // /api/jobs가 created_at desc 정렬이라 첫 항목(최신)이 유지된다.
 function dedupeJobs(list) {
@@ -301,8 +306,10 @@ export default function JobsPage() {
             setBookmarks(ids)
             localStorage.setItem('fyi_bookmarks', JSON.stringify(ids))
           }
+          // /api/profile/talent은 { profile: {...} }로 감싸서 반환한다.
           const pData = await pRes.json()
-          if (pData.resume_url) { setHasProfileResume(true); setProfileResumeUrl(pData.resume_url) }
+          const pResume = pData.profile?.resume_url
+          if (pResume) { setHasProfileResume(true); setProfileResumeUrl(pResume) }
         } catch { }
       }
     })
@@ -924,6 +931,27 @@ export default function JobsPage() {
         /* CV upload box (inline apply) */
         .ap-up { border: 1.5px dashed #ddd; border-radius: 8px; padding: 20px; text-align: center; cursor: pointer; margin-bottom: 20px; transition: border-color .15s; }
         .ap-up:hover { border-color: #999; }
+        .ap-file { display: flex; align-items: center; gap: 10px; border: 1px solid #eee; background: #fafafa; border-radius: 8px; padding: 12px 14px; text-align: left; }
+        .ap-file-name { font-size: 13px; font-weight: 600; color: #111; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .ap-file-sub { font-size: 11.5px; color: #999; margin-top: 2px; }
+        .ap-file-swap { display: block; width: 100%; margin: 8px 0 20px; padding: 10px; background: #fff; border: 1px solid #ddd; border-radius: 8px; font-size: 13px; font-weight: 600; color: #555; cursor: pointer; font-family: inherit; transition: border-color .15s; }
+        .ap-file-swap:hover { border-color: #999; }
+        /* 지원 완료 모달 유사 공고 — CV 완료 모달(.cvm-*)과 같은 패턴, 액센트만 jobs 브랜드(#ff4400) */
+        .sim-job { display: flex; align-items: center; gap: 12px; border: 1px solid #ece5db; border-radius: 12px; padding: 12px 13px; }
+        .sim-job-logo { flex-shrink: 0; width: 42px; height: 42px; border-radius: 10px; background-color: #f3eee6; background-size: cover; background-position: center; background-repeat: no-repeat; display: flex; align-items: center; justify-content: center; font-size: 16px; font-weight: 800; color: #b09a7f; }
+        .sim-job-title { font-size: 14px; font-weight: 700; color: #1a1612; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .sim-job-company { font-size: 12.5px; color: #8a8073; margin-top: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .sim-apply { flex-shrink: 0; min-width: 84px; text-align: center; font-size: 13px; font-weight: 700; color: #fff; background: #ff4400; border: none; border-radius: 9px; padding: 9px 14px; cursor: pointer; font-family: inherit; transition: opacity .15s; }
+        .sim-apply:disabled { cursor: default; }
+        .sim-apply.applying { opacity: 0.55; }
+        /* 오터치 방지 2탭: 첫 탭에서 확인 상태로 전환 */
+        .sim-apply.arm { background: #fff1e8; color: #ff4400; box-shadow: inset 0 0 0 1.5px #ff4400; }
+        .sim-apply.done { background: #E7F6EC; color: #16a34a; }
+        /* 지원 완료 모달 체크 모션: 원이 팝(overshoot)으로 뜨고 이어서 체크가 그려진다 */
+        .applied-check { width: 56px; height: 56px; border-radius: 50%; background: #ff4400; display: flex; align-items: center; justify-content: center; margin: 0 auto 16px; animation: appliedPop .45s cubic-bezier(.34,1.56,.64,1) both; }
+        .applied-check-path { stroke-dasharray: 24; stroke-dashoffset: 24; animation: appliedDraw .3s ease-out .3s forwards; }
+        @keyframes appliedPop { from { transform: scale(0); } to { transform: scale(1); } }
+        @keyframes appliedDraw { to { stroke-dashoffset: 0; } }
         .ap-up-t { font-size: 13px; color: #999; }
         .ap-up-f { font-size: 13px; color: #111; font-weight: 600; }
 
@@ -1412,19 +1440,27 @@ export default function JobsPage() {
                 <div className="jd-apply-inline-h">{t('jobs.applyThis')}</div>
 
                 <div style={{ fontSize: 13, fontWeight: 600, color: '#555', marginBottom: 6 }}>{t('jobs.cvRequired') || 'Resume (required)'}</div>
-                <div className="ap-up" onClick={() => fileRef.current?.click()}>
-                  <input ref={fileRef} type="file" accept=".pdf,.docx,.doc" style={{ display: 'none' }} onChange={e => {
-                    const f = e.target.files?.[0]
-                    if (f && f.size <= 5 * 1024 * 1024) setResumeFile(f)
-                    else if (f) alert(t('jobs.maxFileSize'))
-                  }} />
-                  {resumeFile
-                    ? <div className="ap-up-f">{resumeFile.name}</div>
-                    : profileResumeUrl
-                      ? <div className="ap-up-f">{t('jobs.useProfileResume')}<div style={{ fontSize: 12, fontWeight: 400, color: '#999', marginTop: 4 }}>{t('jobs.useProfileResumeSwap')}</div></div>
-                      : <div className="ap-up-t" style={{ whiteSpace: 'pre-line' }}>{t('jobs.dragCV')}</div>
-                  }
-                </div>
+                <input ref={fileRef} type="file" accept=".pdf,.docx,.doc" style={{ display: 'none' }} onChange={e => {
+                  const f = e.target.files?.[0]
+                  if (f && f.size <= 5 * 1024 * 1024) setResumeFile(f)
+                  else if (f) alert(t('jobs.maxFileSize'))
+                }} />
+                {(resumeFile || profileResumeUrl) ? (
+                  <>
+                    <div className="ap-file">
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#ff4400" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div className="ap-file-name">{resumeFile ? resumeFile.name : resumeNameFromUrl(profileResumeUrl)}</div>
+                        {!resumeFile && <div className="ap-file-sub">{t('jobs.registeredResume')}</div>}
+                      </div>
+                    </div>
+                    <button type="button" className="ap-file-swap" onClick={() => fileRef.current?.click()}>{t('jobs.uploadOtherResume')}</button>
+                  </>
+                ) : (
+                  <div className="ap-up" onClick={() => fileRef.current?.click()}>
+                    <div className="ap-up-t" style={{ whiteSpace: 'pre-line' }}>{t('jobs.dragCV')}</div>
+                  </div>
+                )}
 
                 <button className="jd-apply-btn" style={{ width: '100%', marginTop: 12 }} onClick={() => {
                   if (!isLoggedIn) { loginForJob(detailJob.id); return; }
@@ -1475,8 +1511,10 @@ export default function JobsPage() {
         <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.6)',zIndex:1100,display:'flex',alignItems:'center',justifyContent:'center',padding:'20px'}}
           onClick={e => { if(e.target===e.currentTarget) { if(appliedInfo.resumeUrl && !hasProfileResume){setShowAiProfilePrompt({resumeUrl:appliedInfo.resumeUrl})} setAppliedInfo(null); window.history.replaceState(null, '', '/jobs'); } }}>
           <div style={{background:'#fff',borderRadius:'20px',padding:'40px 36px',maxWidth:'420px',width:'100%',fontFamily:"'Barlow',sans-serif",textAlign:'center'}}>
-            <div style={{width:'56px',height:'56px',borderRadius:'50%',background:'#ff4400',display:'flex',alignItems:'center',justifyContent:'center',margin:'0 auto 16px'}}>
-              <span style={{color:'#fff',fontSize:'28px',lineHeight:1}}>&#10003;</span>
+            <div className="applied-check">
+              <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                <path className="applied-check-path" d="M4 12.5l5.5 5.5L20 7" />
+              </svg>
             </div>
             <div style={{fontSize:'22px',fontWeight:900,color:'#111',letterSpacing:'-0.5px',marginBottom:'8px'}}>{t('jobs.appliedModalTitle')}</div>
             <div style={{fontSize:'14px',color:'#666',lineHeight:1.6,marginBottom:'24px'}}>
@@ -1486,26 +1524,25 @@ export default function JobsPage() {
               <div style={{textAlign:'left',marginBottom:'20px'}}>
                 <div style={{fontSize:'15px',fontWeight:800,color:'#111',marginBottom:'4px'}}>{t('jobs.similarTitle')}</div>
                 <div style={{fontSize:'12.5px',color:'#888',marginBottom:'12px'}}>{t('jobs.similarDesc')}</div>
-                <div style={{display:'flex',flexDirection:'column',gap:'8px'}}>
+                <div style={{display:'flex',flexDirection:'column',gap:'10px'}}>
                   {appliedInfo.similar.map(j => {
                     const isApplied = appliedJobs.includes(j.id)
                     const isApplying = similarApplying === j.id
                     const isArmed = similarArmed === j.id
                     const thumb = j.logo_url || j.image_url || j.images?.[0] || null
                     return (
-                      <div key={j.id} style={{display:'flex',alignItems:'center',gap:'10px',border:'1px solid #eee',borderRadius:'12px',padding:'10px 12px'}}>
-                        <div style={{width:'38px',height:'38px',borderRadius:'8px',flexShrink:0,background:thumb?`url(${thumb}) center/cover`:'#f4f0ea',display:'flex',alignItems:'center',justifyContent:'center',fontSize:'13px',fontWeight:800,color:'#a89f92'}}>
+                      <div key={j.id} className="sim-job">
+                        <div className="sim-job-logo" style={thumb ? { backgroundImage: `url(${thumb})` } : undefined}>
                           {!thumb && (j.company_initials || (j.company || '?').charAt(0).toUpperCase())}
                         </div>
                         <div style={{flex:1,minWidth:0}}>
-                          <div style={{fontSize:'13.5px',fontWeight:700,color:'#111',whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{j.title}</div>
-                          <div style={{fontSize:'12px',color:'#888',whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{j.company}</div>
+                          <div className="sim-job-title">{j.title}</div>
+                          <div className="sim-job-company">{j.company}</div>
                         </div>
                         <button
+                          className={`sim-apply${isApplied ? ' done' : ''}${isApplying ? ' applying' : ''}${isArmed ? ' arm' : ''}`}
                           disabled={isApplied || isApplying}
-                          onClick={() => { if (isArmed) { setSimilarArmed(null); applySimilar(j) } else setSimilarArmed(j.id) }}
-                          style={{flexShrink:0,fontSize:'12px',fontWeight:700,padding:'8px 12px',borderRadius:'8px',border:'none',cursor:isApplied?'default':'pointer',fontFamily:"'Barlow',sans-serif",
-                            background:isApplied?'#f0f0f0':isArmed?'#d63a00':'#ff4400',color:isApplied?'#999':'#fff'}}>
+                          onClick={() => { if (isArmed) { setSimilarArmed(null); applySimilar(j) } else setSimilarArmed(j.id) }}>
                           {isApplied ? t('jobs.similarApplied')
                             : isApplying ? t('jobs.similarApplying')
                             : isArmed ? t('jobs.similarConfirmTap')

@@ -11,6 +11,11 @@ import { COMPANY_PROFILES } from '../../data/companyProfiles.js'
 import { generateCompanyDescription } from '../../utils/companyDescription'
 import { getStoredUtm } from '../../lib/utm'
 
+// 스토리지 URL에서 원본 이력서 파일명 복원 (업로드 시 `${timestamp}_${safeName}`로 저장됨)
+function resumeNameFromUrl(url) {
+  try { return decodeURIComponent(url.split('/').pop().split('?')[0]).replace(/^\d+_/, '') } catch { return 'resume' }
+}
+
 function decodeHTML(str) {
   if (!str || typeof str !== 'string') return str
   const el = typeof document !== 'undefined' && document.createElement('textarea')
@@ -72,7 +77,7 @@ export default function JobDetailPage({ job }) {
         // 프로필에 등록된 이력서가 있으면 파일 업로드 없이 그걸로 지원할 수 있게 한다.
         fetch('/api/profile/talent', { headers: { Authorization: `Bearer ${s.access_token}` } })
           .then(r => r.ok ? r.json() : null)
-          .then(p => { if (p?.resume_url) setProfileResumeUrl(p.resume_url) })
+          .then(p => { if (p?.profile?.resume_url) setProfileResumeUrl(p.profile.resume_url) })
           .catch(() => {})
       }
     })
@@ -412,19 +417,27 @@ export default function JobDetailPage({ job }) {
               <div style={{ marginBottom: 24 }}>
                 <div style={{ fontSize: 16, fontWeight: 800, color: '#111', marginBottom: 14 }}>{t('jobs.applyThis')}</div>
                 <div style={{ fontSize: 13, fontWeight: 600, color: '#555', marginBottom: 6 }}>{t('jobs.cvRequired') || 'Resume (required)'}</div>
-                <div className="ap-up" onClick={() => fileRef.current?.click()}>
-                  <input ref={fileRef} type="file" accept=".pdf,.docx,.doc" style={{ display: 'none' }} onChange={e => {
-                    const f = e.target.files?.[0]
-                    if (f && f.size <= 5 * 1024 * 1024) setResumeFile(f)
-                    else if (f) alert('Max 5MB')
-                  }} />
-                  {resumeFile
-                    ? <div className="ap-up-f">{resumeFile.name}</div>
-                    : profileResumeUrl
-                      ? <div className="ap-up-f">{t('jobs.useProfileResume')}<div style={{ fontSize: 12, fontWeight: 400, color: '#999', marginTop: 4 }}>{t('jobs.useProfileResumeSwap')}</div></div>
-                      : <div className="ap-up-t" style={{ whiteSpace: 'pre-line' }}>{t('jobs.dragCV')}</div>
-                  }
-                </div>
+                <input ref={fileRef} type="file" accept=".pdf,.docx,.doc" style={{ display: 'none' }} onChange={e => {
+                  const f = e.target.files?.[0]
+                  if (f && f.size <= 5 * 1024 * 1024) setResumeFile(f)
+                  else if (f) alert('Max 5MB')
+                }} />
+                {(resumeFile || profileResumeUrl) ? (
+                  <>
+                    <div className="ap-file">
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#ff4400" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div className="ap-file-name">{resumeFile ? resumeFile.name : resumeNameFromUrl(profileResumeUrl)}</div>
+                        {!resumeFile && <div className="ap-file-sub">{t('jobs.registeredResume')}</div>}
+                      </div>
+                    </div>
+                    <button type="button" className="ap-file-swap" onClick={() => fileRef.current?.click()}>{t('jobs.uploadOtherResume')}</button>
+                  </>
+                ) : (
+                  <div className="ap-up" onClick={() => fileRef.current?.click()}>
+                    <div className="ap-up-t" style={{ whiteSpace: 'pre-line' }}>{t('jobs.dragCV')}</div>
+                  </div>
+                )}
                 <button className="jd-apply-btn" style={{ width: '100%', marginTop: 12 }} onClick={() => {
                   if (!isLoggedIn) { localStorage.setItem('fyi_login_return', `/jobs/${job.id}`); supabase.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: window.location.origin + '/auth/callback' } }); return; }
                   handleApply()
@@ -526,6 +539,11 @@ export default function JobDetailPage({ job }) {
 
         .ap-up { border: 1.5px dashed #ddd; border-radius: 8px; padding: 20px; text-align: center; cursor: pointer; margin-bottom: 20px; transition: border-color .15s; }
         .ap-up:hover { border-color: #999; }
+        .ap-file { display: flex; align-items: center; gap: 10px; border: 1px solid #eee; background: #fafafa; border-radius: 8px; padding: 12px 14px; text-align: left; }
+        .ap-file-name { font-size: 13px; font-weight: 600; color: #111; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .ap-file-sub { font-size: 11.5px; color: #999; margin-top: 2px; }
+        .ap-file-swap { display: block; width: 100%; margin: 8px 0 20px; padding: 10px; background: #fff; border: 1px solid #ddd; border-radius: 8px; font-size: 13px; font-weight: 600; color: #555; cursor: pointer; font-family: inherit; transition: border-color .15s; }
+        .ap-file-swap:hover { border-color: #999; }
         .ap-up-t { font-size: 13px; color: #999; }
         .ap-up-f { font-size: 13px; color: #111; font-weight: 600; }
 
