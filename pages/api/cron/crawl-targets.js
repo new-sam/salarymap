@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js'
+import { guessRole } from '../../../lib/roleGuess'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
@@ -333,20 +334,6 @@ function simplifyLocation(location) {
   if (loc.includes('hanoi')) return 'Hanoi'
   // Return first part for global locations
   return location.split(',')[0].trim()
-}
-
-function guessRole(title, techStack) {
-  const t = (title || '').toLowerCase()
-  if (t.includes('frontend') || t.includes('front-end') || t.includes('front end')) return 'Frontend'
-  if (t.includes('backend') || t.includes('back-end') || t.includes('back end') || t.includes('server')) return 'Backend'
-  if (t.includes('fullstack') || t.includes('full-stack') || t.includes('full stack')) return 'Fullstack'
-  if (t.includes('mobile') || t.includes('ios') || t.includes('android')) return 'Mobile'
-  if (t.includes('data') || t.includes('machine learning') || t.includes('ml') || t.includes('ai ')) return 'Data'
-  if (t.includes('devops') || t.includes('sre') || t.includes('infrastructure') || t.includes('platform')) return 'DevOps'
-  if (t.includes('product manager') || t.includes('program manager')) return 'PM'
-  if (t.includes('design') || t.includes('ux') || t.includes('ui')) return 'Design'
-  if (t.includes('qa') || t.includes('quality') || t.includes('test')) return 'QA'
-  return 'Backend'
 }
 
 async function deactivateExpired() {

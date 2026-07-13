@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js'
+import { guessRole } from '../../../lib/roleGuess'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
@@ -235,21 +236,6 @@ function extractTechFromText(text) {
   return TECH_KEYWORDS.filter(tech =>
     text.toLowerCase().includes(tech.toLowerCase())
   )
-}
-
-function guessRole(title, techStack) {
-  const t = (title || '').toLowerCase()
-  const stack = techStack.join(' ').toLowerCase()
-  if (t.includes('frontend') || t.includes('프론트') || stack.includes('react') && !stack.includes('node')) return 'Frontend'
-  if (t.includes('backend') || t.includes('백엔드') || t.includes('서버')) return 'Backend'
-  if (t.includes('fullstack') || t.includes('풀스택')) return 'Fullstack'
-  if (t.includes('mobile') || t.includes('ios') || t.includes('android') || t.includes('앱')) return 'Mobile'
-  if (t.includes('data') || t.includes('데이터') || t.includes('ml') || t.includes('ai')) return 'Data'
-  if (t.includes('devops') || t.includes('sre') || t.includes('인프라') || t.includes('클라우드')) return 'DevOps'
-  if (t.includes('pm') || t.includes('기획') || t.includes('product')) return 'PM'
-  if (t.includes('design') || t.includes('디자인') || t.includes('ux')) return 'Design'
-  if (t.includes('qa') || t.includes('테스트') || t.includes('test')) return 'QA'
-  return 'Backend'
 }
 
 async function deactivateExpired() {
