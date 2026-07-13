@@ -45,6 +45,7 @@ export default function JobDetailPage({ job }) {
   const [session, setSession] = useState(null)
   const [user, setUser] = useState(null)
   const [resumeFile, setResumeFile] = useState(null)
+  const [profileResumeUrl, setProfileResumeUrl] = useState(null)
   const [applying, setApplying] = useState(false)
   const [applied, setApplied] = useState(false)
   const [showApplyForm, setShowApplyForm] = useState(false)
@@ -66,7 +67,14 @@ export default function JobDetailPage({ job }) {
       setAppliedAlready(aj.includes(job.id))
     } catch {}
     supabase.auth.getSession().then(({ data: { session: s } }) => {
-      if (s) { setIsLoggedIn(true); setSession(s); setUser(s.user) }
+      if (s) {
+        setIsLoggedIn(true); setSession(s); setUser(s.user)
+        // 프로필에 등록된 이력서가 있으면 파일 업로드 없이 그걸로 지원할 수 있게 한다.
+        fetch('/api/profile/talent', { headers: { Authorization: `Bearer ${s.access_token}` } })
+          .then(r => r.ok ? r.json() : null)
+          .then(p => { if (p?.resume_url) setProfileResumeUrl(p.resume_url) })
+          .catch(() => {})
+      }
     })
   }, [job.id])
 
@@ -83,19 +91,43 @@ export default function JobDetailPage({ job }) {
     } catch {}
   }
 
+  // 이력서 파일은 jobs.js와 같은 방식으로 클라이언트에서 스토리지에 올리고 URL만 JSON으로
+  // 보낸다. (기존 multipart FormData는 /api/job-applications가 JSON 파서만 써서 400으로
+  // 전부 유실됐고, 응답 체크도 없어 유저에겐 지원 완료로 보였음)
   const handleApply = async () => {
-    if (!resumeFile || applying) return
+    if ((!resumeFile && !profileResumeUrl) || applying) return
     setApplying(true)
     try {
-      const token = (await supabase.auth.getSession()).data.session?.access_token
-      const fd = new FormData()
-      fd.append('resume', resumeFile)
-      fd.append('jobId', job.id)
-      fd.append('jobTitle', job.title)
-      fd.append('company', job.company)
+      const s = (await supabase.auth.getSession()).data.session
+      const token = s?.access_token
+      let resumeUrl = profileResumeUrl
+      if (resumeFile && s) {
+        const safeName = resumeFile.name.replace(/[^a-zA-Z0-9._-]/g, '_')
+        const path = `${s.user.id}/${Date.now()}_${safeName}`
+        const { error: upErr } = await supabase.storage.from('resumes').upload(path, resumeFile, {
+          cacheControl: '3600',
+          upsert: false,
+          contentType: resumeFile.type || 'application/octet-stream',
+        })
+        if (upErr) {
+          alert(t('jobs.cvUploadError', { error: upErr.message }))
+          setApplying(false)
+          return
+        }
+        resumeUrl = supabase.storage.from('resumes').getPublicUrl(path).data.publicUrl
+      }
       // Attribution captured on landing (router.query is empty by apply time).
-      Object.entries(getStoredUtm()).forEach(([k, v]) => { if (v) fd.append(k, v) })
-      await fetch('/api/job-applications', { method: 'POST', headers: token ? { Authorization: `Bearer ${token}` } : {}, body: fd })
+      const res = await fetch('/api/job-applications', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+        body: JSON.stringify({ jobId: job.id, jobTitle: job.title, jobCompany: job.company, resumeUrl, ...getStoredUtm() }),
+      })
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}))
+        alert(t('jobs.applyError', { error: err.error || 'unknown error' }))
+        setApplying(false)
+        return
+      }
       setApplied(true)
       const aj = JSON.parse(localStorage.getItem('fyi_applied_jobs') || '[]')
       if (!aj.includes(job.id)) localStorage.setItem('fyi_applied_jobs', JSON.stringify([...aj, job.id]))
@@ -388,13 +420,15 @@ export default function JobDetailPage({ job }) {
                   }} />
                   {resumeFile
                     ? <div className="ap-up-f">{resumeFile.name}</div>
-                    : <div className="ap-up-t" style={{ whiteSpace: 'pre-line' }}>{t('jobs.dragCV')}</div>
+                    : profileResumeUrl
+                      ? <div className="ap-up-f">{t('jobs.useProfileResume')}<div style={{ fontSize: 12, fontWeight: 400, color: '#999', marginTop: 4 }}>{t('jobs.useProfileResumeSwap')}</div></div>
+                      : <div className="ap-up-t" style={{ whiteSpace: 'pre-line' }}>{t('jobs.dragCV')}</div>
                   }
                 </div>
                 <button className="jd-apply-btn" style={{ width: '100%', marginTop: 12 }} onClick={() => {
                   if (!isLoggedIn) { localStorage.setItem('fyi_login_return', `/jobs/${job.id}`); supabase.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: window.location.origin + '/auth/callback' } }); return; }
                   handleApply()
-                }} disabled={applying || !resumeFile}>
+                }} disabled={applying || (!resumeFile && !profileResumeUrl)}>
                   {!isLoggedIn ? t('jobs.loginToApply') : applying ? t('jobs.sending') : t('jobs.submitApplication')}
                 </button>
               </div>

@@ -179,6 +179,7 @@ export default function JobsPage() {
   const [showAiProfilePrompt, setShowAiProfilePrompt] = useState(null)
   const [aiParsing, setAiParsing] = useState(0)
   const [hasProfileResume, setHasProfileResume] = useState(false)
+  const [profileResumeUrl, setProfileResumeUrl] = useState(null)
   const [similarApplying, setSimilarApplying] = useState(null)
   const [similarArmed, setSimilarArmed] = useState(null)
   const [visibleCount, setVisibleCount] = useState(JOBS_PER_PAGE)
@@ -301,7 +302,7 @@ export default function JobsPage() {
             localStorage.setItem('fyi_bookmarks', JSON.stringify(ids))
           }
           const pData = await pRes.json()
-          if (pData.resume_url) setHasProfileResume(true)
+          if (pData.resume_url) { setHasProfileResume(true); setProfileResumeUrl(pData.resume_url) }
         } catch { }
       }
     })
@@ -565,16 +566,19 @@ export default function JobsPage() {
     router.replace({ pathname: '/jobs', query: rest }, undefined, { shallow: true, scroll: false })
   }
 
-  // 지원 완료 모달에 띄울 유사 공고 3개 — CV 완료 모달과 같은 규칙(정확 직무 일치 → 같은 대분류,
-  // 각 단계에서 기업 직접등록 우선, 회사 중복 제거, 무관 공고는 채우지 않음). 'Non-IT'는 잡동사니
-  // 직군이라 대분류 완화 매칭에서 제외. 모달 오픈 시점에 목록을 고정해 모달 안에서 지원해도
-  // 재배치되지 않게 appliedInfo에 담아둔다. jobs가 created_at desc라 같은 단계 안에선 최신순.
+  // 지원 완료 모달에 띄울 유사 공고 3개 — 목적은 기업 직접등록(company_self) 공고로 지원을
+  // 몰아주는 것. 유사한 기업 등록 공고(정확 직무 일치 → 같은 대분류)를 전부 크롤 공고보다
+  // 위에 놓고, 남는 슬롯만 비슷한 직무의 크롤 공고로 채운다. 무관 공고는 채우지 않고 회사
+  // 중복은 제거. 'Non-IT'는 잡동사니 직군이라 대분류 완화 매칭에서 제외. 모달 오픈 시점에
+  // 목록을 고정해 모달 안에서 지원해도 재배치되지 않게 appliedInfo에 담아둔다.
   const similarJobsFor = (target) => {
     const group = target.role && target.role !== 'Non-IT' ? roleGroupKey(target.role) : null
     const tier = (j) => {
-      if (target.role && j.role === target.role) return j.source === 'company_self' ? 0 : 1
-      if (group && j.role !== 'Non-IT' && roleGroupKey(j.role) === group) return j.source === 'company_self' ? 2 : 3
-      return -1
+      const exact = target.role && j.role === target.role
+      const related = group && j.role !== 'Non-IT' && roleGroupKey(j.role) === group
+      if (!exact && !related) return -1
+      if (j.source === 'company_self') return exact ? 0 : 1
+      return exact ? 2 : 3
     }
     const seenCompany = new Set()
     return jobs
@@ -656,6 +660,9 @@ export default function JobsPage() {
       }
       const { data } = supabase.storage.from('resumes').getPublicUrl(path)
       resumeUrl = data.publicUrl
+    } else if (profileResumeUrl) {
+      // 새 파일을 안 올렸으면 프로필에 등록된 이력서로 지원한다.
+      resumeUrl = profileResumeUrl
     }
     const applyRes = await fetch('/api/job-applications', {
       method: 'POST',
@@ -1413,14 +1420,16 @@ export default function JobsPage() {
                   }} />
                   {resumeFile
                     ? <div className="ap-up-f">{resumeFile.name}</div>
-                    : <div className="ap-up-t" style={{ whiteSpace: 'pre-line' }}>{t('jobs.dragCV')}</div>
+                    : profileResumeUrl
+                      ? <div className="ap-up-f">{t('jobs.useProfileResume')}<div style={{ fontSize: 12, fontWeight: 400, color: '#999', marginTop: 4 }}>{t('jobs.useProfileResumeSwap')}</div></div>
+                      : <div className="ap-up-t" style={{ whiteSpace: 'pre-line' }}>{t('jobs.dragCV')}</div>
                   }
                 </div>
 
                 <button className="jd-apply-btn" style={{ width: '100%', marginTop: 12 }} onClick={() => {
                   if (!isLoggedIn) { loginForJob(detailJob.id); return; }
                   handleApply(detailJob);
-                }} disabled={applying || !resumeFile}>
+                }} disabled={applying || (!resumeFile && !profileResumeUrl)}>
                   {!isLoggedIn ? t('jobs.loginToApply') : applying ? t('jobs.sending') : t('jobs.submitApplication')}
                 </button>
               </div>
