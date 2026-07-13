@@ -281,6 +281,8 @@ export default function ProfilePage() {
   const [tab, setTab] = useState('profile') // profile | posts | employment | badges | applications
   const [isAdmin, setIsAdmin] = useState(false)
   const [showOnboard, setShowOnboard] = useState(false)
+  // 이력서는 이미 있는데(예: /cv·앱에서 등록) 프로필이 빈 유저 — AI 자동 채움 제안
+  const [showAiFill, setShowAiFill] = useState(false)
   const [showAlert, setShowAlert] = useState(null)
   const [submissions, setSubmissions] = useState([])
   const [percentile, setPercentile] = useState(null)
@@ -434,7 +436,9 @@ export default function ProfilePage() {
             })
           }
           if (!p.headline && !p.position) {
-            setShowOnboard(true)
+            // 이력서가 이미 등록돼 있으면 일반 온보딩 대신 "이력서로 채워줄까요?" 제안
+            if (p.resume_url) setShowAiFill(true)
+            else setShowOnboard(true)
           }
           if (router.query.from === 'ai-resume' && !p.hr_visible && completionScore(formData) >= 60) {
             setShowPublishPrompt(true)
@@ -730,6 +734,7 @@ export default function ProfilePage() {
     setTimeout(() => {
       setAiParsing(false)
       setAiProgress({ percent: 0, message: '' })
+      setShowAiFill(false) // AI 자동 채움 제안 모달에서 시작한 경우 — 완료 후 닫기
     }, 1500)
   }
 
@@ -1586,6 +1591,41 @@ export default function ProfilePage() {
 
       {/* Onboarding Modal — Step-by-step */}
       {showOnboard && <OnboardModal t={t} onClose={() => setShowOnboard(false)} />}
+
+      {/* AI 자동 채움 제안 — 이력서는 있는데 프로필이 빈 유저 */}
+      {showAiFill && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
+          <div style={{ background: '#fff', border: '1px solid rgba(0,0,0,0.06)', borderRadius: 20, maxWidth: 400, width: '100%', padding: '30px 24px 22px', fontFamily: "'Barlow', system-ui", boxShadow: '0 20px 60px rgba(0,0,0,0.15)', textAlign: 'center' }}>
+            <div style={{ fontSize: 38, marginBottom: 10 }} aria-hidden>📄</div>
+            <h3 style={{ margin: '0 0 8px', fontSize: 19, fontWeight: 800, color: '#1a1612' }}>{t('profile.aifill.title')}</h3>
+            {aiParsing ? (
+              /* 진행 상황을 모달 안에서 보여준다 — 닫아버리면 어디서 진행되는지 알 수 없다 */
+              <>
+                <div style={{ height: 8, background: 'rgba(0,0,0,0.06)', borderRadius: 999, overflow: 'hidden', margin: '20px 0 12px' }}>
+                  <div style={{ height: '100%', width: `${aiProgress.percent}%`, background: '#ff6000', borderRadius: 999, transition: 'width .6s ease' }} />
+                </div>
+                <p style={{ margin: 0, fontSize: 13.5, fontWeight: 600, color: 'rgba(26,22,18,0.55)', minHeight: 20 }}>{aiProgress.message}</p>
+              </>
+            ) : (
+              <>
+                <p style={{ margin: '0 0 20px', fontSize: 14, color: 'rgba(26,22,18,0.6)', lineHeight: 1.55 }}>{t('profile.aifill.desc')}</p>
+                <button
+                  onClick={() => runAiParse()}
+                  style={{ display: 'block', width: '100%', background: '#ff6000', color: '#fff', border: 'none', borderRadius: 12, padding: '13px 0', fontSize: 15, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}
+                >
+                  {t('profile.aifill.confirm')}
+                </button>
+                <button
+                  onClick={() => setShowAiFill(false)}
+                  style={{ display: 'block', width: '100%', marginTop: 10, background: 'none', border: 'none', color: 'rgba(26,22,18,0.45)', fontSize: 13.5, fontWeight: 600, textDecoration: 'underline', textUnderlineOffset: 3, cursor: 'pointer', fontFamily: 'inherit' }}
+                >
+                  {t('profile.aifill.decline')}
+                </button>
+              </>
+            )}
+          </div>
+        </div>
+      )}
 
       {showAlert && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.3)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}
