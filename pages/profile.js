@@ -655,7 +655,11 @@ export default function ProfilePage() {
     if (res.ok) {
       const { url } = await res.json()
       set(type === 'photo' ? 'photo_url' : 'resume_url', url)
-      setProfile(prev => ({ ...prev, [type === 'photo' ? 'photo_url' : 'resume_url']: url }))
+      setProfile(prev => {
+        const next = { ...prev, [type === 'photo' ? 'photo_url' : 'resume_url']: url }
+        window.dispatchEvent(new CustomEvent('profile-updated', { detail: next }))
+        return next
+      })
       if (type === 'resume') {
         fetch('/api/track', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ event: 'resume_upload', page: '/profile' }) }).catch(() => {})
         runAiParse()
@@ -1087,7 +1091,7 @@ export default function ProfilePage() {
                 {form.photo_url ? (
                   <div style={{ position: 'relative' }}>
                     <img src={form.photo_url} className="pphoto" />
-                    <button onClick={() => { set('photo_url', ''); setProfile(prev => ({ ...prev, photo_url: '' })); fetch('/api/profile/talent', { method: 'PUT', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify({ photo_url: '' }) }) }}
+                    <button onClick={() => { set('photo_url', ''); setProfile(prev => { const next = { ...prev, photo_url: '' }; window.dispatchEvent(new CustomEvent('profile-updated', { detail: next })); return next }); fetch('/api/profile/talent', { method: 'PUT', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify({ photo_url: '' }) }) }}
                       style={{ position: 'absolute', top: -4, right: -4, width: 20, height: 20, borderRadius: '50%', border: 'none', background: 'rgba(0,0,0,0.5)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0 }}>
                       <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="#fff" strokeWidth="1.5" strokeLinecap="round"><path d="M2 2l6 6M8 2l-6 6"/></svg>
                     </button>
