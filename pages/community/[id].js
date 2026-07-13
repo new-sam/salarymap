@@ -7,6 +7,7 @@ import { supabase } from '../../lib/supabaseClient'
 import { EXCLUDED_EMAIL_DOMAINS } from '../../lib/admin-metrics'
 import { track } from '../../lib/track'
 import Badge from '../../components/Badge'
+import TranslatableText from '../../components/TranslatableText'
 import { useT } from '../../lib/i18n'
 import { uploadCommunityImage } from '../../lib/communityImages'
 
@@ -81,7 +82,7 @@ export async function getServerSideProps({ params }) {
 export default function CommunityPostPage({ initialPost = null, indexable = false }) {
   const router = useRouter()
   const { id } = router.query
-  const { t } = useT()
+  const { t, lang } = useT()
   const [session, setSession] = useState(null)
   const [post, setPost] = useState(initialPost)
   const [loading, setLoading] = useState(!initialPost)
@@ -94,6 +95,11 @@ export default function CommunityPostPage({ initialPost = null, indexable = fals
   const [commentUploading, setCommentUploading] = useState(false)
   const [lightbox, setLightbox] = useState(null)
   const [showPostMenu, setShowPostMenu] = useState(false)
+  // Post title + body translate together under one toggle (see togglePostTranslate)
+  const [postTrans, setPostTrans] = useState(null) // { title, content }
+  const [showPostTrans, setShowPostTrans] = useState(false)
+  const [postTransLoading, setPostTransLoading] = useState(false)
+  const [postTransError, setPostTransError] = useState(false)
   const postMenuRef = React.useRef(null)
   const commentFileRef = React.useRef(null)
 
@@ -216,6 +222,32 @@ export default function CommunityPostPage({ initialPost = null, indexable = fals
         like_count: liked ? (prev.like_count || 0) + 1 : Math.max(0, (prev.like_count || 0) - 1)
       }))
     } catch (e) { console.error(e) }
+  }
+
+  const togglePostTranslate = async () => {
+    if (showPostTrans) { setShowPostTrans(false); return }
+    if (postTrans) { setShowPostTrans(true); return }
+    if (!post) return
+    setPostTransLoading(true)
+    setPostTransError(false)
+    try {
+      const res = await fetch('/api/community/translate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ texts: [post.title, post.content], targetLang: lang })
+      })
+      const data = await res.json()
+      if (res.ok && data.translated?.length === 2) {
+        setPostTrans({ title: data.translated[0], content: data.translated[1] })
+        setShowPostTrans(true)
+      } else {
+        setPostTransError(true)
+      }
+    } catch {
+      setPostTransError(true)
+    } finally {
+      setPostTransLoading(false)
+    }
   }
 
   const toggleCommentLike = async (commentId) => {
@@ -378,6 +410,11 @@ export default function CommunityPostPage({ initialPost = null, indexable = fals
         .cp-op-badge { font-size: 10px; font-weight: 700; color: #ff6000; background: #fff1e8; border: 1px solid #ffd4b8; border-radius: 4px; padding: 1px 5px; margin-left: 2px; line-height: 1.4; }
         .cp-comment-time { font-size: 11px; color: #bbb; }
         .cp-comment-body { font-size: 14px; color: #444; line-height: 1.6; white-space: pre-wrap; word-break: break-word; }
+        .cp-translate-btn { background: none; border: none; padding: 0; margin-top: 6px; font-size: 12px; color: #888; cursor: pointer; text-decoration: underline; text-underline-offset: 2px; }
+        .cp-translate-btn:hover:not(:disabled) { color: #555; }
+        .cp-translate-btn:disabled { cursor: default; opacity: 0.7; }
+        .cp-content:has(+ .cp-translate-post) { margin-bottom: 6px; }
+        .cp-translate-post { margin-bottom: 28px; }
         .cp-comment.best { background: #fff8f3; border: 1px solid #ffe0cc; border-radius: 10px; padding: 14px; }
         .cp-best-badge { font-size: 10px; font-weight: 800; color: #fff; background: #ff6000; border-radius: 4px; padding: 2px 6px; letter-spacing: 0.5px; line-height: 1.4; flex-shrink: 0; }
         .cp-comment-actions { margin-top: 8px; }
@@ -429,7 +466,7 @@ export default function CommunityPostPage({ initialPost = null, indexable = fals
                 </div>
 
                 <div className="cp-title-row">
-                  <h1 className="cp-title" style={{ margin: 0 }}>{post.title}</h1>
+                  <h1 className="cp-title" style={{ margin: 0 }}>{showPostTrans && postTrans ? postTrans.title : post.title}</h1>
                   {session?.user?.id === post.user_id && (
                     <div className="cp-more-wrap" ref={postMenuRef}>
                       <button className="cp-more-btn" onClick={() => setShowPostMenu(v => !v)}>
@@ -464,7 +501,13 @@ export default function CommunityPostPage({ initialPost = null, indexable = fals
                   <span className="cp-dot">·</span>
                   <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3 }}><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg> {post.comment_count || 0}</span>
                 </div>
-                <div className="cp-content">{post.content}</div>
+                <div className="cp-content">{showPostTrans && postTrans ? postTrans.content : post.content}</div>
+                <button className="cp-translate-btn cp-translate-post" onClick={togglePostTranslate} disabled={postTransLoading}>
+                  {postTransLoading ? t('comm.translating')
+                    : postTransError ? t('comm.translateError')
+                    : showPostTrans ? t('comm.viewOriginal')
+                    : t('comm.viewTranslation')}
+                </button>
 
                 {post.poll && (() => {
                   const { option_a, option_b, votes_a, votes_b, my_vote, ends_at } = post.poll
@@ -585,7 +628,7 @@ export default function CommunityPostPage({ initialPost = null, indexable = fals
                           <button className="cp-comment-delete" onClick={() => deleteComment(comment.id)}>{t('comm.delete')}</button>
                         )}
                       </div>
-                      {comment.content && <div className="cp-comment-body">{comment.content}</div>}
+                      {comment.content && <TranslatableText text={comment.content} className="cp-comment-body" />}
                       {comment.image_url && (
                         <div className="cp-comment-image">
                           <img src={comment.image_url} alt="" onClick={() => setLightbox(comment.image_url)} />
