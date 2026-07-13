@@ -15,7 +15,7 @@ const supabase = createClient(
 )
 
 const DAYS = 30                    // "최근 지원자" 범위 — 이보다 오래된 지원 이력엔 발송 안 함
-const MAX_RECIPIENTS_PER_RUN = 100 // 한 번에 너무 많이 나가지 않게(첫 실행 백로그 대비). 남은 사람은 다음 날.
+const MAX_RECIPIENTS_PER_RUN = 80  // Resend 무료 플랜 하루 100건 하드캡 대비 — 인증코드 등 필수 transactional 메일 몫 20건 남겨둠. 남은 사람은 다음 날.
 const JOB_AGE_HOURS = 48           // 등록 48시간 지난 공고만 자동발송 — 잘못 올린 공고가 수정/비활성화될 시간
 const LANG = 'vi'
 
