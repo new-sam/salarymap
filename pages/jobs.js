@@ -179,6 +179,8 @@ export default function JobsPage() {
   const [showAiProfilePrompt, setShowAiProfilePrompt] = useState(null)
   const [aiParsing, setAiParsing] = useState(0)
   const [hasProfileResume, setHasProfileResume] = useState(false)
+  const [similarApplying, setSimilarApplying] = useState(null)
+  const [similarArmed, setSimilarArmed] = useState(null)
   const [visibleCount, setVisibleCount] = useState(JOBS_PER_PAGE)
 
   const track = (event, page, meta) => {
@@ -563,6 +565,77 @@ export default function JobsPage() {
     router.replace({ pathname: '/jobs', query: rest }, undefined, { shallow: true, scroll: false })
   }
 
+  // 지원 완료 모달에 띄울 유사 공고 3개 — CV 완료 모달과 같은 규칙(정확 직무 일치 → 같은 대분류,
+  // 각 단계에서 기업 직접등록 우선, 회사 중복 제거, 무관 공고는 채우지 않음). 'Non-IT'는 잡동사니
+  // 직군이라 대분류 완화 매칭에서 제외. 모달 오픈 시점에 목록을 고정해 모달 안에서 지원해도
+  // 재배치되지 않게 appliedInfo에 담아둔다. jobs가 created_at desc라 같은 단계 안에선 최신순.
+  const similarJobsFor = (target) => {
+    const group = target.role && target.role !== 'Non-IT' ? roleGroupKey(target.role) : null
+    const tier = (j) => {
+      if (target.role && j.role === target.role) return j.source === 'company_self' ? 0 : 1
+      if (group && j.role !== 'Non-IT' && roleGroupKey(j.role) === group) return j.source === 'company_self' ? 2 : 3
+      return -1
+    }
+    const seenCompany = new Set()
+    return jobs
+      .filter(j => j.id !== target.id && !appliedJobs.includes(j.id))
+      .map(j => ({ j, t: tier(j) }))
+      .filter(x => x.t >= 0)
+      .sort((a, b) => a.t - b.t)
+      .filter(({ j }) => { if (seenCompany.has(j.company)) return false; seenCompany.add(j.company); return true })
+      .map(x => x.j)
+      .slice(0, 3)
+  }
+
+  // 지원 완료 모달의 유사 공고 원탭 지원 — 방금 지원에 쓴 이력서를 그대로 재사용한다.
+  const applySimilar = async (job) => {
+    if (!session || similarApplying || appliedJobs.includes(job.id)) return
+    setSimilarApplying(job.id)
+    const res = await fetch('/api/job-applications', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
+      body: JSON.stringify({
+        jobId: job.id,
+        jobTitle: job.title,
+        jobCompany: job.company,
+        resumeUrl: appliedInfo?.resumeUrl || null,
+        applicantRole: userRole,
+        applicantExperience: userExperience,
+        applicantSalary: userSalary,
+        applicantCompany: userCompany,
+        applicantEmail: session.user.email,
+        applicantName: session.user.user_metadata?.full_name || '',
+        ...getStoredUtm(),
+        applicationSource: 'similar_after_apply',
+      }),
+    })
+    setSimilarApplying(null)
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}))
+      alert(t('jobs.applyError', { error: err.error || 'unknown error' }))
+      return
+    }
+    setAppliedJobs(prev => {
+      const next = [...prev, job.id]
+      localStorage.setItem('fyi_applied_jobs', JSON.stringify(next))
+      return next
+    })
+    try {
+      const cached = JSON.parse(localStorage.getItem('fyi_my_applications') || '[]')
+      cached.unshift({
+        id: Date.now(),
+        job_id: job.id,
+        job_title: job.title,
+        job_company: job.company,
+        status: 'applied',
+        created_at: new Date().toISOString(),
+      })
+      localStorage.setItem('fyi_my_applications', JSON.stringify(cached))
+    } catch {}
+    track('apply_similar_job', '/jobs', { jobId: job.id, title: job.title, company: job.company })
+    if (typeof fbq === 'function') fbq('track', 'Lead', { content_name: 'job_apply_confirmed', content_category: job.title })
+  }
+
   const handleApply = async (job) => {
     const target = job
     if (!target || !session) return
@@ -630,7 +703,10 @@ export default function JobsPage() {
       localStorage.setItem('fyi_my_applications', JSON.stringify(cached))
     } catch {}
     // Show success modal + push URL for Meta Pixel conversion tracking
-    setAppliedInfo({ title: target.title, company: target.company, resumeUrl })
+    const similar = similarJobsFor(target)
+    if (similar.length) track('view_similar_jobs_modal', '/jobs', { jobId: target.id, count: similar.length })
+    setSimilarArmed(null)
+    setAppliedInfo({ title: target.title, company: target.company, resumeUrl, similar })
     setDetailJob(null)
     window.history.pushState(null, '', `/jobs/applied?title=${encodeURIComponent(target.title)}&company=${encodeURIComponent(target.company)}`)
     if (typeof fbq === 'function') fbq('track', 'Lead', { content_name: 'job_apply_confirmed', content_category: target.title })
@@ -1397,6 +1473,41 @@ export default function JobsPage() {
             <div style={{fontSize:'14px',color:'#666',lineHeight:1.6,marginBottom:'24px'}}>
               {t('jobs.appliedModalDesc', { company: appliedInfo.company, title: appliedInfo.title })}
             </div>
+            {appliedInfo.similar?.length > 0 && (
+              <div style={{textAlign:'left',marginBottom:'20px'}}>
+                <div style={{fontSize:'15px',fontWeight:800,color:'#111',marginBottom:'4px'}}>{t('jobs.similarTitle')}</div>
+                <div style={{fontSize:'12.5px',color:'#888',marginBottom:'12px'}}>{t('jobs.similarDesc')}</div>
+                <div style={{display:'flex',flexDirection:'column',gap:'8px'}}>
+                  {appliedInfo.similar.map(j => {
+                    const isApplied = appliedJobs.includes(j.id)
+                    const isApplying = similarApplying === j.id
+                    const isArmed = similarArmed === j.id
+                    const thumb = j.logo_url || j.image_url || j.images?.[0] || null
+                    return (
+                      <div key={j.id} style={{display:'flex',alignItems:'center',gap:'10px',border:'1px solid #eee',borderRadius:'12px',padding:'10px 12px'}}>
+                        <div style={{width:'38px',height:'38px',borderRadius:'8px',flexShrink:0,background:thumb?`url(${thumb}) center/cover`:'#f4f0ea',display:'flex',alignItems:'center',justifyContent:'center',fontSize:'13px',fontWeight:800,color:'#a89f92'}}>
+                          {!thumb && (j.company_initials || (j.company || '?').charAt(0).toUpperCase())}
+                        </div>
+                        <div style={{flex:1,minWidth:0}}>
+                          <div style={{fontSize:'13.5px',fontWeight:700,color:'#111',whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{j.title}</div>
+                          <div style={{fontSize:'12px',color:'#888',whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{j.company}</div>
+                        </div>
+                        <button
+                          disabled={isApplied || isApplying}
+                          onClick={() => { if (isArmed) { setSimilarArmed(null); applySimilar(j) } else setSimilarArmed(j.id) }}
+                          style={{flexShrink:0,fontSize:'12px',fontWeight:700,padding:'8px 12px',borderRadius:'8px',border:'none',cursor:isApplied?'default':'pointer',fontFamily:"'Barlow',sans-serif",
+                            background:isApplied?'#f0f0f0':isArmed?'#d63a00':'#ff4400',color:isApplied?'#999':'#fff'}}>
+                          {isApplied ? t('jobs.similarApplied')
+                            : isApplying ? t('jobs.similarApplying')
+                            : isArmed ? t('jobs.similarConfirmTap')
+                            : t('jobs.similarApply')}
+                        </button>
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+            )}
             <button onClick={() => { if(appliedInfo.resumeUrl && !hasProfileResume){setShowAiProfilePrompt({resumeUrl:appliedInfo.resumeUrl})} setAppliedInfo(null); window.history.replaceState(null, '', '/jobs'); }}
               style={{background:'#ff4400',color:'#fff',fontSize:'14px',fontWeight:700,padding:'14px 32px',borderRadius:'10px',border:'none',cursor:'pointer',fontFamily:"'Barlow',sans-serif"}}>
               {t('jobs.confirm')}
