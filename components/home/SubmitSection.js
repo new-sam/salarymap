@@ -13,6 +13,7 @@ function SubmitSection({
   isLoggedIn,
   onSubmit,
   submissionId,
+  freshSubmit,
 }) {
   const { t } = useT();
   const [submitting, setSubmitting] = useState(false);
@@ -63,6 +64,18 @@ function SubmitSection({
     } catch (e) {}
     setRatingSubmitting(false);
   };
+
+  // 결과 화면 전환 시 그래프가 화면 상단에 오도록 앵커 — 위쪽 회사 그리드가
+  // role 필터 재렌더로 높이가 바뀌며 스크롤이 밀리는 것 방지.
+  // freshSubmit: 방금 제출한 경우에만 — 새로고침 복원 시 자동 스크롤 금지
+  useEffect(() => {
+    if (wizardStep > 5 && freshSubmit) {
+      const tid = setTimeout(() => {
+        document.getElementById('submit')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 250);
+      return () => clearTimeout(tid);
+    }
+  }, [wizardStep > 5, freshSubmit]);
 
   // Auto-advance when all 3 ratings are filled
   useEffect(() => {
@@ -424,7 +437,7 @@ function SubmitSection({
       ) : (
         /* Result + rate nudge */
         <div style={{ maxWidth: '900px', margin: '0 auto' }}>
-          <ResultSection salary={sal} role={wRole} experience={wExp} company={wCompany} isLoggedIn={isLoggedIn} />
+          <ResultSection salary={sal} role={wRole} experience={wExp} company={wCompany} isLoggedIn={isLoggedIn} anchor={freshSubmit} />
         </div>
       )}
     </section>

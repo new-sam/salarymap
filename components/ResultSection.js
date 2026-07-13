@@ -1,8 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/router'
-import CommunityAskTeaser from './CommunityAskTeaser'
+import { track } from '../lib/track'
 import { useT } from '../lib/i18n'
-import { supabase } from '../lib/supabaseClient'
 import { formatSalaryCard } from '../utils/salary'
 
 // submission role (vd 'Data · AI') → job role (vd 'Data'). Phần tử [0] là khớp chính xác,
@@ -56,7 +55,17 @@ function buildJobSuggestions(allJobs, salaryVnd, role, experience) {
     bumpReason(j) +
     (j.is_featured ? 0.3 : 0) +
     (j.created_at && (now - new Date(j.created_at)) < 14 * 864e5 ? 0.2 : 0)
-  const rank = (pool) => [...pool].sort((a, b) => score(b) - score(a))
+  // Cùng công ty không chiếm nhiều slot hiển thị — công ty mới lên trước, giữ thứ tự điểm.
+  const diversify = (sorted) => {
+    const seen = new Set(), first = [], rest = []
+    for (const j of sorted) {
+      const key = (j.company || '').trim().toLowerCase()
+      if (key && seen.has(key)) rest.push(j)
+      else { seen.add(key); first.push(j) }
+    }
+    return [...first, ...rest]
+  }
+  const rank = (pool) => diversify([...pool].sort((a, b) => score(b) - score(a)))
 
   // T1 — đúng vai trò + trả cao hơn lương hiện tại
   let pool = active.filter(j => roleScore(role, j.role) > 0 && salMin(j) > salaryVnd)
@@ -74,7 +83,7 @@ function buildJobSuggestions(allJobs, salaryVnd, role, experience) {
   return { tier: 'empty', jobs: [], total: 0 }
 }
 
-export default function ResultSection({ salary, role, experience, company, isLoggedIn }) {
+export default function ResultSection({ salary, role, experience, company, isLoggedIn, anchor }) {
   const { t } = useT()
   const [result, setResult] = useState(null)
   const [jobData, setJobData] = useState(null)
@@ -98,6 +107,14 @@ export default function ResultSection({ salary, role, experience, company, isLog
     }
     if (salary) { fetchResult(); fetchJobs(); }
   }, [salary, role, experience, company])
+
+  // 그래프 로드 완료 시 한 번 더 앵커 — 로딩 사이 위쪽 레이아웃이 움직였어도 그래프 상단으로 교정.
+  // anchor(방금 제출)일 때만 — 새로고침 복원 시 자동 스크롤 금지
+  useEffect(() => {
+    if (result && anchor) {
+      document.getElementById('submit')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    }
+  }, [result, anchor])
 
   if (!result) return (
     <div style={{ padding:'clamp(20px,4vw,32px)', textAlign:'center' }}>
@@ -138,8 +155,10 @@ export default function ResultSection({ salary, role, experience, company, isLog
     if (isLoggedIn) {
       router.push('/jobs?from=salary')
     } else {
+      // 바로 OAuth로 리다이렉트하지 않고 공용 로그인 모달(링크드인/구글)을 띄움 —
+      // 결과 화면을 벗어나지 않아 뒤로가기로 제출 상태를 잃는 문제 방지
       localStorage.setItem('fyi_login_return', '/jobs?from=salary')
-      supabase.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: window.location.origin + '/auth/callback' } })
+      if (typeof window !== 'undefined' && window.openAuthModal) window.openAuthModal('jobs')
     }
   }
 
@@ -228,6 +247,58 @@ export default function ResultSection({ salary, role, experience, company, isLog
         </div>
       </div>
 
+      {/* 나보다 더 주는 회사 — /api/result topCompanies. 클릭 → 회사 상세 패널(가입 게이트 연동) */}
+      {result.topCompanies?.length > 0 && (
+        <div style={{ marginTop:'24px', background:'rgba(255,255,255,0.03)', border:'1px solid rgba(255,255,255,0.08)', borderRadius:'18px', padding:'18px 16px' }}>
+          <div style={{ fontSize:'21px', fontWeight:900, color:'#fff', lineHeight:1.2, letterSpacing:'-.01em', marginBottom:'8px' }}>
+            {t('result.topCoHead')}
+          </div>
+          <div style={{ fontSize:'13px', color:'rgba(255,255,255,0.55)', marginBottom:'16px' }}>
+            {t('result.topCoSub', { role })}
+          </div>
+          <div style={{ display:'flex', flexDirection:'column', gap:'8px' }}>
+            {result.topCompanies.map((co, i) => (
+              <div key={co.name + i} className="rs-co-row" role="button" tabIndex={0}
+                onClick={() => {
+                  track('result_company_card_click', { meta: { company: co.name } })
+                  if (typeof window !== 'undefined' && window.openCompanyPanel) window.openCompanyPanel(co.name)
+                }}
+                style={{ cursor:'pointer', transition:'border-color .12s' }}
+                onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(255,68,0,0.4)' }}
+                onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)' }}>
+                <div style={{ width:38, height:38, borderRadius:'9px', background:'rgba(255,255,255,0.06)',
+                  border:'1px solid rgba(255,255,255,0.1)', display:'flex', alignItems:'center', justifyContent:'center',
+                  fontSize:'12px', fontWeight:800, color:'rgba(255,255,255,0.45)', flexShrink:0, overflow:'hidden' }}>
+                  {co.domain
+                    ? <img src={`https://www.google.com/s2/favicons?domain=${co.domain}&sz=128`} alt=""
+                        style={{ width:'100%', height:'100%', objectFit:'contain', background:'#fafaf8' }}
+                        onError={e => { e.target.style.display = 'none' }} />
+                    : co.name.slice(0, 2).toUpperCase()}
+                </div>
+                <div style={{ flex:1, minWidth:0 }}>
+                  <div style={{ fontSize:'14px', fontWeight:700, color:'#fff', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{co.name}</div>
+                  <div style={{ fontSize:'11px', color:'rgba(255,255,255,0.4)', marginTop:'2px' }}>{role} · {t('result.median')}</div>
+                </div>
+                <div style={{ textAlign:'right', flexShrink:0 }}>
+                  <div style={{ fontSize:'14px', fontWeight:700, color:'#fff', whiteSpace:'nowrap' }}>{co.median}M</div>
+                  <div style={{ fontSize:'11px', fontWeight:700, color:'#4ade80', marginTop:'2px' }}>+{co.premiumPct}%</div>
+                </div>
+              </div>
+            ))}
+          </div>
+          <button onClick={() => {
+              track('result_company_card_click', { meta: { company: '_view_all' } })
+              const grid = document.querySelector('.cards-section') || document.getElementById('company-grid-root')
+              grid?.scrollIntoView({ behavior:'smooth' })
+            }}
+            style={{ width:'100%', marginTop:'14px', background:'rgba(255,255,255,0.05)', color:'#fff',
+              border:'1px solid rgba(255,255,255,0.12)', borderRadius:'12px', padding:'13px', fontSize:'13px', fontWeight:700,
+              cursor:'pointer', fontFamily:"'Be Vietnam Pro',sans-serif" }}>
+            {t('result.topCoAll')}
+          </button>
+        </div>
+      )}
+
       {/* Job suggestions */}
       {jobData && jobData.tier !== 'empty' && (() => {
         const { tier, jobs: jobList, total } = jobData
@@ -313,8 +384,6 @@ export default function ResultSection({ salary, role, experience, company, isLog
           </button>
         </div>
       )}
-
-      {result && <CommunityAskTeaser t={t} />}
     </div>
   )
 }
