@@ -84,6 +84,8 @@ export default function CommunityPostPage({ initialPost = null, indexable = fals
   const { id } = router.query
   const { t, lang } = useT()
   const [session, setSession] = useState(null)
+  // 세션 확인 완료 여부. 확인 전엔 fetch를 미뤄 비로그인→로그인 이중 로드를 막는다.
+  const [authReady, setAuthReady] = useState(false)
   const [post, setPost] = useState(initialPost)
   const [loading, setLoading] = useState(!initialPost)
   const [comments, setComments] = useState([])
@@ -106,6 +108,7 @@ export default function CommunityPostPage({ initialPost = null, indexable = fals
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session: s } }) => {
       setSession(s)
+      setAuthReady(true)
     })
   }, [])
 
@@ -118,7 +121,7 @@ export default function CommunityPostPage({ initialPost = null, indexable = fals
   const viewCounted = React.useRef(false)
 
   useEffect(() => {
-    if (!id) return
+    if (!id || !authReady) return
     const firstView = !viewCounted.current
     fetchPost(firstView)
     viewCounted.current = true
@@ -132,7 +135,7 @@ export default function CommunityPostPage({ initialPost = null, indexable = fals
         localStorage.setItem('comm_read_posts', JSON.stringify([...read]))
       }
     } catch {}
-  }, [id, session])
+  }, [id, session, authReady])
 
   const fetchPost = async (countView = false) => {
     setLoading(true)

@@ -52,19 +52,8 @@ export default async function handler(req, res) {
     // Unlike
     await supabase.from('community_likes').delete().eq('id', existing.id)
 
-    // Decrement like count
-    const { data: target } = await supabase
-      .from(targetTable)
-      .select('like_count')
-      .eq('id', matchValue)
-      .single()
-
-    if (target) {
-      await supabase
-        .from(targetTable)
-        .update({ like_count: Math.max(0, (target.like_count || 0) - 1) })
-        .eq('id', matchValue)
-    }
+    // Decrement like count (원자적 — 동시성 드리프트 방지, 20260713 마이그레이션 함수)
+    await supabase.rpc('community_bump_like_count', { p_table: targetTable, p_id: matchValue, p_delta: -1 })
 
     return res.status(200).json({ liked: false })
   } else {
@@ -76,8 +65,11 @@ export default async function handler(req, res) {
     const { error } = await supabase.from('community_likes').insert(insertData)
     if (error) return res.status(500).json({ error: error.message })
 
-    // Increment like count (also fetch owner + deep-link fields for the notification)
-    const selectCols = post_id ? 'like_count, user_id, title' : 'like_count, user_id, post_id'
+    // Increment like count (원자적 — 동시성 드리프트 방지, 20260713 마이그레이션 함수)
+    await supabase.rpc('community_bump_like_count', { p_table: targetTable, p_id: matchValue, p_delta: 1 })
+
+    // 알림용으로 작성자 + 딥링크 필드만 조회(카운트는 위에서 이미 증가).
+    const selectCols = post_id ? 'user_id, title' : 'user_id, post_id'
     const { data: target } = await supabase
       .from(targetTable)
       .select(selectCols)
@@ -85,11 +77,6 @@ export default async function handler(req, res) {
       .single()
 
     if (target) {
-      await supabase
-        .from(targetTable)
-        .update({ like_count: (target.like_count || 0) + 1 })
-        .eq('id', matchValue)
-
       // 좋아요 알림 — 본인 콘텐츠가 아니면 작성자에게 푸시(카테고리 'like').
       if (target.user_id && target.user_id !== user.id) {
         const deepPostId = post_id || target.post_id
