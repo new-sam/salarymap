@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, Fragment } from 'react'
 
 // 개인용 "목표지표 - Sean" — 어드민 인증 위에 개인 비밀번호를 한 겹 더(서버 검증).
 // 상단 탭: [목표 KPI] 이번 달 2 KPI  ·  [광고 성과] 유입/광고 실시간 추적.
@@ -118,6 +118,7 @@ export default function GoalMetricsView({ token, lang }) {
 
 // ============ 목표 KPI 탭 ============
 function KpiTab({ data, ko }) {
+  const [open, setOpen] = useState({}) // 지원자 명단 펼침 상태 (공고 id별)
   if (!data) return <div style={{ textAlign: 'center', padding: 40, color: '#666' }}>{ko ? '불러오는 중…' : 'Loading…'}</div>
   if (data.error) return <div style={{ textAlign: 'center', padding: 40, color: '#c00' }}>{data.error}</div>
 
@@ -191,6 +192,7 @@ function KpiTab({ data, ko }) {
       <div style={{ overflowX: 'auto', marginBottom: 20, border: '1px solid #EEF0F2', borderRadius: 12 }}>
         <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 520 }}>
           <thead><tr>
+            <th style={{ ...th, width: 22 }}></th>
             <th style={th}>{ko ? '회사' : 'Company'}</th>
             <th style={th}>{ko ? '공고' : 'Title'}</th>
             <th style={{ ...th, textAlign: 'right' }}>{ko ? '지원' : 'Apps'}</th>
@@ -198,16 +200,50 @@ function KpiTab({ data, ko }) {
             <th style={th}></th>
           </tr></thead>
           <tbody>
-            {e.posts.length === 0 && <tr><td style={td} colSpan={5}>{ko ? '고객 공고가 아직 없습니다.' : 'No customer posts yet.'}</td></tr>}
-            {e.posts.map((r) => (
-              <tr key={r.id} style={r.appsTotal > 0 ? { background: '#ECFDF5' } : undefined}>
-                <td style={{ ...td, maxWidth: 200, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{r.company || '—'}</td>
-                <td style={{ ...td, maxWidth: 240, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', color: '#6B7280' }}>{r.title || '—'}</td>
-                <td style={{ ...num, fontWeight: 800, color: r.appsTotal > 0 ? '#059669' : '#9CA3AF' }}>{r.appsTotal}</td>
-                <td style={num}>{r.ageDays < 1 ? (ko ? '오늘' : 'today') : `${Math.floor(r.ageDays)}${ko ? '일' : 'd'}`}</td>
-                <td style={td}>{!r.isActive && <span style={{ fontSize: 11, color: '#9CA3AF' }}>{ko ? '비활성' : 'inactive'}</span>}</td>
-              </tr>
-            ))}
+            {e.posts.length === 0 && <tr><td style={td} colSpan={6}>{ko ? '고객 공고가 아직 없습니다.' : 'No customer posts yet.'}</td></tr>}
+            {e.posts.map((r) => {
+              const canOpen = r.appsTotal > 0
+              const isOpen = !!open[r.id]
+              return (
+                <Fragment key={r.id}>
+                  <tr
+                    onClick={canOpen ? () => setOpen((o) => ({ ...o, [r.id]: !o[r.id] })) : undefined}
+                    style={{ background: r.appsTotal > 0 ? '#ECFDF5' : undefined, cursor: canOpen ? 'pointer' : 'default' }}
+                  >
+                    <td style={{ ...td, textAlign: 'center', color: '#9CA3AF', fontSize: 11 }}>{canOpen ? (isOpen ? '▾' : '▸') : ''}</td>
+                    <td style={{ ...td, maxWidth: 200, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{r.company || '—'}</td>
+                    <td style={{ ...td, maxWidth: 240, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', color: '#6B7280' }}>{r.title || '—'}</td>
+                    <td style={{ ...num, fontWeight: 800, color: r.appsTotal > 0 ? '#059669' : '#9CA3AF' }}>{r.appsTotal}</td>
+                    <td style={num}>{r.ageDays < 1 ? (ko ? '오늘' : 'today') : `${Math.floor(r.ageDays)}${ko ? '일' : 'd'}`}</td>
+                    <td style={td}>{!r.isActive && <span style={{ fontSize: 11, color: '#9CA3AF' }}>{ko ? '비활성' : 'inactive'}</span>}</td>
+                  </tr>
+                  {isOpen && (
+                    <tr>
+                      <td colSpan={6} style={{ padding: 0, background: '#F9FBFA', borderBottom: '1px solid #F5F6F7' }}>
+                        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                          <thead><tr>
+                            <th style={{ ...th, width: 22, borderBottom: 'none' }}></th>
+                            <th style={{ ...th, borderBottom: 'none' }}>{ko ? '이름' : 'Name'}</th>
+                            <th style={{ ...th, borderBottom: 'none' }}>{ko ? '이메일' : 'Email'}</th>
+                            <th style={{ ...th, textAlign: 'right', borderBottom: 'none' }}>{ko ? '지원 시각' : 'Applied at'}</th>
+                          </tr></thead>
+                          <tbody>
+                            {r.applicants.map((a, i) => (
+                              <tr key={i}>
+                                <td style={{ ...td, borderBottom: 'none' }}></td>
+                                <td style={{ ...td, borderBottom: 'none' }}>{a.name || <span style={{ color: '#C0C4CC' }}>—</span>}</td>
+                                <td style={{ ...td, borderBottom: 'none', color: '#4B5563' }}>{a.email || <span style={{ color: '#C0C4CC' }}>—</span>}</td>
+                                <td style={{ ...num, borderBottom: 'none', fontWeight: 500, color: '#6B7280' }}>{new Date(a.at).toLocaleString(ko ? 'ko-KR' : 'en-US')}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </td>
+                    </tr>
+                  )}
+                </Fragment>
+              )
+            })}
           </tbody>
         </table>
       </div>

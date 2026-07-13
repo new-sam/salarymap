@@ -112,7 +112,8 @@ async function enterpriseAppsKpi() {
   // ⚠️ 페이지네이션 필수 — job_applications가 1000행을 넘으면 최근 지원이 잘려 KPI2가 축소됨.
   const apps = []
   for (let from = 0; ; from += 1000) {
-    const { data } = await supabase.from('job_applications').select('job_id, created_at')
+    const { data } = await supabase.from('job_applications')
+      .select('job_id, created_at, applicant_name, applicant_email')
       .order('created_at', { ascending: true }).range(from, from + 999)
     if (!data?.length) break
     apps.push(...data)
@@ -126,13 +127,22 @@ async function enterpriseAppsKpi() {
   const nowMs = Date.now()
   const posts = customerJobs.map((j) => {
     const ageDays = (nowMs - new Date(j.created_at).getTime()) / 864e5
+    const list = byJob[j.id] || []
     return {
       id: j.id,
       company: j.company || null,
       title: j.title || null,
       isActive: !!j.is_active,
       ageDays: Math.round(ageDays * 10) / 10,
-      appsTotal: (byJob[j.id] || []).length,
+      appsTotal: list.length,
+      // 클릭 시 펼치는 지원자 명단 (최신순)
+      applicants: [...list]
+        .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+        .map((a) => ({
+          name: a.applicant_name || null,
+          email: a.applicant_email || null,
+          at: a.created_at,
+        })),
     }
   })
 
