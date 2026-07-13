@@ -4,7 +4,7 @@ import { useRouter } from 'next/router'
 import { supabase } from '../lib/supabaseClient'
 import { useT } from '../lib/i18n'
 import { track } from '../lib/track'
-import { ROLE_GROUPS } from '../constants/jobs'
+import { ROLE_GROUPS, roleGroupKey } from '../constants/jobs'
 import { formatSalaryCard } from '../utils/salary'
 
 // STEP1에서 고른 직무는 OAuth 리다이렉트로 페이지를 떠났다 돌아와도 유지돼야 해서
@@ -277,15 +277,13 @@ export default function CvLanding() {
   }, [user, router.query])
 
   useEffect(() => {
-    fetch('/api/jobs')
+    fetch('/api/jobs?counts=1')
       .then(r => r.json())
       .then(arr => {
         const list = Array.isArray(arr) ? arr : (arr.jobs || [])
-        const seen = new Set()
         const sorted = list
           .filter(j => j.is_active !== false)
           .sort((a, b) => (b.is_featured ? 1 : 0) - (a.is_featured ? 1 : 0))
-          .filter(j => { if (seen.has(j.company)) return false; seen.add(j.company); return true })
         setJobs(sorted)
       })
       .catch(() => {})
@@ -395,15 +393,27 @@ export default function CvLanding() {
     })
   }
 
-  // 완료 모달에 띄울 공고 3개 — 선택 직무 매칭 ATS(기업 직접등록) 최상단 → 매칭 featured → 나머지.
+  // 완료 모달에 띄울 공고 3개 — 정확 직무 일치 → 같은 대분류 일치 순, 각 단계에서 ATS(기업 직접등록) 우선.
+  // 같은 단계 안에서는 누적 지원 수 많은 순(지원 전환 잘 되는 공고). 무관한 공고는 채우지 않는다
+  // (매칭 0건이면 모달 미노출). 회사 중복 제거는 매칭 후에 해서 매칭 공고가 밀려 빠지지 않게 한다.
+  // 'Non-IT'는 잡동사니 직군이라 대분류 완화 매칭에서 제외(명시 선택 시 정확 일치로만 노출).
   const modalJobs = useMemo(() => {
+    if (selectedRoles.length === 0) return []
     const roleSet = new Set(selectedRoles)
-    const match = (j) => roleSet.size > 0 && roleSet.has(j.role)
-    const atsMatch = jobs.filter((j) => j.source === 'company_self' && match(j))
-    const featMatch = jobs.filter((j) => j.source !== 'company_self' && match(j))
-    const picked = new Set([...atsMatch, ...featMatch].map((j) => j.id))
-    const rest = jobs.filter((j) => !picked.has(j.id))
-    return [...atsMatch, ...featMatch, ...rest].slice(0, 3)
+    const groupSet = new Set(selectedRoles.map(roleGroupKey).filter(Boolean))
+    const tier = (j) => {
+      if (roleSet.has(j.role)) return j.source === 'company_self' ? 0 : 1
+      if (j.role !== 'Non-IT' && groupSet.has(roleGroupKey(j.role))) return j.source === 'company_self' ? 2 : 3
+      return -1
+    }
+    const seenCompany = new Set()
+    return jobs
+      .map((j) => ({ j, t: tier(j) }))
+      .filter((x) => x.t >= 0)
+      .sort((a, b) => a.t - b.t || (b.j.application_count || 0) - (a.j.application_count || 0))
+      .filter(({ j }) => { if (seenCompany.has(j.company)) return false; seenCompany.add(j.company); return true })
+      .map((x) => x.j)
+      .slice(0, 3)
   }, [jobs, selectedRoles])
 
   // "공고 더 보러가기" 링크 — 선택 직무의 대분류로 딥링크(taxonomy 안전), 없으면 전체.
