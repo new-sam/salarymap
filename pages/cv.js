@@ -182,9 +182,15 @@ export default function CvLanding() {
   // STEP1 직무 다중선택 + 등록 완료 후 "바로 지원" 모달
   const [selectedRoles, setSelectedRoles] = useState([])
   const [resumeUrl, setResumeUrl] = useState(null)
+  // 기존 등록자: user_profiles.resume_url이 이미 있으면 업로드 퍼널 대신 등록됨 화면을 보여준다.
+  const [existingResume, setExistingResume] = useState(null)
+  const [replacing, setReplacing] = useState(false)
+  const replacePick = useRef(false)
   const [showJobModal, setShowJobModal] = useState(false)
   const [applied, setApplied] = useState({})
   const [applyingId, setApplyingId] = useState(null)
+  // 오터치 방지: 첫 탭은 확인 상태(arm), 같은 버튼 한 번 더 탭해야 지원. 다른 카드 탭하면 그쪽으로 이동.
+  const [armedId, setArmedId] = useState(null)
   const L = (ko, en, vi) => (lang === 'vi' ? vi : lang === 'en' ? en : ko)
   const fileRef = useRef(null)
   const formAnchorRef = useRef(null)
@@ -246,6 +252,14 @@ export default function CvLanding() {
     return () => sub.subscription.unsubscribe()
   }, [])
 
+  useEffect(() => {
+    if (!user) { setExistingResume(null); return }
+    let cancelled = false
+    supabase.from('user_profiles').select('resume_url').eq('id', user.id).maybeSingle()
+      .then(({ data }) => { if (!cancelled && data?.resume_url) setExistingResume(data.resume_url) })
+    return () => { cancelled = true }
+  }, [user])
+
   // Resume after OAuth: retrieve blob from IndexedDB and auto-upload.
   useEffect(() => {
     if (!user) return
@@ -302,6 +316,13 @@ export default function CvLanding() {
     idbPutCv(f).catch(() => {
       try { sessionStorage.setItem('cv_pending_filename', f.name) } catch {}
     })
+    // 등록됨 화면에서 "교체"로 파일을 고른 경우 — 이미 로그인 상태이므로 바로 업로드
+    if (replacePick.current && user) {
+      replacePick.current = false
+      setReplacing(true)
+      doUpload(f)
+      return
+    }
     // If the file picker was opened via a sign-in CTA, auto-progress to OAuth
     const pending = oauthAfterPick.current
     if (pending && !user) {
@@ -451,8 +472,8 @@ export default function CvLanding() {
 
   const onSubmit = async () => {
     if (!file) {
-      // remember CTA intent so handleFile auto-progresses to OAuth after pick
-      oauthAfterPick.current = 'google'
+      // remember CTA intent so handleFile auto-progresses to OAuth after pick (미로그인일 때만)
+      if (!user) oauthAfterPick.current = 'google'
       track('cv_click_cta', { meta: { ...cvMeta(), provider: 'google', has_file: false }, page: '/cv' })
       fileRef.current?.click()
       return
@@ -617,6 +638,8 @@ export default function CvLanding() {
         {/* ───── FORM ───── */}
         <section className="cv-form-section" id="cv-form" ref={formAnchorRef}>
           <div className="cv-section-inner cv-form-wrap">
+            {/* 파일 input은 분기 밖에 — 등록됨 화면의 "교체" 버튼에서도 쓴다 */}
+            <input ref={fileRef} type="file" accept=".pdf,.doc,.docx,application/pdf" hidden onChange={(e) => handleFile(e.target.files?.[0])} />
             {showSuccess ? (
               <div className="cv-card cv-success-card">
                 <div className="cv-success-visual" aria-label="FYI celebration">
@@ -658,7 +681,21 @@ export default function CvLanding() {
                 </div>
                 <a href="/jobs" className="cv-btn cv-success-cta">{t('cv.success.cta')} <IconArrowRight /></a>
               </div>
-            ) : status === 'uploading' && router.query.continue === '1' ? (
+            ) : existingResume && status === 'idle' && router.query.continue !== '1' ? (
+              <div className="cv-card cv-success-card">
+                <h3 className="cv-card-h cv-success-h">{L('이미 이력서가 등록되어 있어요', 'Your resume is already registered', 'CV của bạn đã được đăng ký')}</h3>
+                <p className="cv-card-sub">{L('등록된 이력서로 바로 지원할 수 있어요. 최신 버전이 아니라면 새 파일로 교체하세요.', 'You can apply to jobs with the resume on file. Replace it if you have a newer version.', 'Bạn có thể ứng tuyển ngay với CV đã đăng ký. Thay file mới nếu bạn có bản mới hơn.')}</p>
+                {errMsg && <div className="cv-err">{errMsg}</div>}
+                <a href="/jobs" className="cv-btn cv-success-cta">{t('cv.success.cta')} <IconArrowRight /></a>
+                <button
+                  type="button"
+                  className="cv-registered-replace"
+                  onClick={() => { replacePick.current = true; fileRef.current?.click() }}
+                >
+                  {L('다른 파일로 교체하기', 'Replace with a new file', 'Thay bằng file khác')}
+                </button>
+              </div>
+            ) : status === 'uploading' && (router.query.continue === '1' || replacing) ? (
               <div className="cv-card cv-interstitial">
                 <div className="cv-spinner" />
                 <div className="cv-card-step-pill">{t('cv.interstitial.pill')}</div>
@@ -689,8 +726,6 @@ export default function CvLanding() {
                     </div>
                   </div>
                 )}
-
-                <input ref={fileRef} type="file" accept=".pdf,.doc,.docx,application/pdf" hidden onChange={(e) => handleFile(e.target.files?.[0])} />
 
                 {/* ─── STEP 1: 이력서 첨부 ─── */}
                 <div className={`cv-stepblock ${file ? 'done' : ''}`}>
@@ -766,7 +801,7 @@ export default function CvLanding() {
 
                   <button className="cv-btn" onClick={onSubmit} disabled={status === 'uploading'}>
                     {status === 'uploading' ? t('cv.form.uploading') :
-                      user && file ? <>{t('cv.form.cta.register')} <IconArrowRight /></> :
+                      user ? <>{t('cv.form.cta.register')} <IconArrowRight /></> :
                       <><IconGoogle />{t('cv.form.cta.google')} <IconArrowRight /></>}
                   </button>
 
@@ -839,11 +874,14 @@ export default function CvLanding() {
                       <div className="cvm-job-meta">{meta}</div>
                     </div>
                     <button
-                      className={`cvm-apply${isApplied ? ' done' : ''}${isApplying ? ' applying' : ''}`}
+                      className={`cvm-apply${isApplied ? ' done' : ''}${isApplying ? ' applying' : ''}${armedId === j.id ? ' arm' : ''}`}
                       disabled={isApplied || isApplying}
-                      onClick={() => apply(j)}
+                      onClick={() => { if (armedId === j.id) { setArmedId(null); apply(j) } else setArmedId(j.id) }}
                     >
-                      {isApplied ? L('지원 완료 ✓', 'Applied ✓', 'Đã ứng tuyển ✓') : isApplying ? L('지원 중', 'Applying', 'Đang gửi') : L('바로 지원', 'Apply', 'Ứng tuyển')}
+                      {isApplied ? L('지원 완료 ✓', 'Applied ✓', 'Đã ứng tuyển ✓')
+                        : isApplying ? L('지원 중', 'Applying', 'Đang gửi')
+                        : armedId === j.id ? L('한 번 더 누르면 지원돼요', 'Tap again to apply', 'Nhấn lần nữa để nộp')
+                        : L('바로 지원', 'Apply', 'Ứng tuyển')}
                     </button>
                   </div>
                 )
@@ -890,6 +928,8 @@ export default function CvLanding() {
         .cvm-apply { flex-shrink: 0; min-width: 84px; text-align: center; font-size: 13px; font-weight: 700; color: #fff; background: #ff6000; border: none; border-radius: 9px; padding: 9px 14px; cursor: pointer; font-family: inherit; transition: opacity .15s; }
         .cvm-apply:disabled { cursor: default; }
         .cvm-apply.applying { opacity: 0.55; }
+        /* 오터치 방지 2탭: 첫 탭에서 확인 상태로 전환 */
+        .cvm-apply.arm { background: #fff1e8; color: #ff6000; box-shadow: inset 0 0 0 1.5px #ff6000; }
         .cvm-apply.done { background: #E7F6EC; color: #16a34a; }
         .cvm-all { display: block; text-align: center; margin-top: 16px; font-size: 13px; font-weight: 600; color: #8a8073; text-decoration: none; }
         .cvm-more { display: block; text-align: center; margin-top: 16px; padding: 13px 0; font-size: 14px; font-weight: 700; color: #ff6000; background: #fff1e8; border: 1px solid #ffd7c2; border-radius: 11px; text-decoration: none; }
@@ -2079,6 +2119,21 @@ export default function CvLanding() {
           margin-top: 0;
           text-align: center;
         }
+        /* 등록됨 화면의 파일 교체 — CTA 아래 보조 액션(텍스트 버튼) */
+        .cv-registered-replace {
+          display: block;
+          margin: 14px auto 0;
+          background: none;
+          border: none;
+          font-family: inherit;
+          font-size: 13.5px;
+          font-weight: 600;
+          color: #a89f92;
+          text-decoration: underline;
+          text-underline-offset: 3px;
+          cursor: pointer;
+        }
+        .cv-registered-replace:hover { color: #ff6000; }
         /* Journey card — kept near-white so the gold goal dot and the
            orange "completed" dot read as distinct accents instead of
            getting absorbed into an all-orange wash. Subtle warm tint only. */
