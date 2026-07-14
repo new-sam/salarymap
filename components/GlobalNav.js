@@ -21,6 +21,7 @@ export default function GlobalNav({ activePage, onLogin, onJobsClick, mobileSear
   const [savedCount, setSavedCount] = useState(0)
   const [profileScore, setProfileScore] = useState(null)
   const [hasResume, setHasResume] = useState(true)
+  const [photoUrl, setPhotoUrl] = useState(null)
   const [showLang, setShowLang] = useState(false)
   const menuRef = useRef(null)
   const langRef = useRef(null)
@@ -43,6 +44,7 @@ export default function GlobalNav({ activePage, onLogin, onJobsClick, mobileSear
       const p = e.detail
       const checks = [p.photo_url, p.full_name, p.headline, p.location, p.resume_url, p.skills?.length > 0, p.university, p.experiences?.length > 0]
       setProfileScore(Math.round(checks.filter(Boolean).length / checks.length * 100))
+      setPhotoUrl(p.photo_url || null)
     }
     window.addEventListener('profile-updated', onProfileUpdate)
     return () => window.removeEventListener('profile-updated', onProfileUpdate)
@@ -77,6 +79,7 @@ export default function GlobalNav({ activePage, onLogin, onJobsClick, mobileSear
               const checks = [p.photo_url, p.full_name, p.headline, p.location, p.resume_url, p.skills?.length > 0, p.university, p.experiences?.length > 0]
               setProfileScore(Math.round(checks.filter(Boolean).length / checks.length * 100))
               setHasResume(!!p.resume_url)
+              setPhotoUrl(p.photo_url || null)
             }
           }
         } catch {}
@@ -260,8 +263,8 @@ export default function GlobalNav({ activePage, onLogin, onJobsClick, mobileSear
           ) : (
             <div style={{ position: 'relative' }}>
             <div className="gnav-user" ref={menuRef} onClick={() => setShowMenu(v => !v)}>
-              {user?.user_metadata?.avatar_url ? (
-                <img src={user.user_metadata.avatar_url} className="gnav-avatar" alt="" />
+              {photoUrl ? (
+                <img src={photoUrl} className="gnav-avatar" alt="" />
               ) : (
                 <div className="gnav-avatar-ini">
                   {(user?.user_metadata?.full_name || user?.user_metadata?.name || user?.email || 'U')[0].toUpperCase()}

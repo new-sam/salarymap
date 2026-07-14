@@ -30,8 +30,9 @@ export default async function handler(req, res) {
       .gte('created_at', startISO).lte('created_at', endISO)
       .limit(10000),
     supabase.from('job_applications')
-      .select('id', { count: 'exact', head: true })
-      .gte('created_at', startISO).lte('created_at', endISO),
+      .select('id, application_source, jobs(source)')
+      .gte('created_at', startISO).lte('created_at', endISO)
+      .limit(10000),
     supabase.from('events')
       .select('id, event')
       .in('event', ['click_jobs_cta', 'click_job_card', 'view_jobs_page', 'click_apply_button', 'save_job', 'click_for_companies', 'click_contact_owner', 'click_post_job'])
@@ -71,6 +72,7 @@ export default async function handler(req, res) {
     }
   } catch (e) {}
 
+  const jobApps = jaRes.data || []
   const ad = submissions.filter(s => PAID_SOURCES.has(s.source)).length
   const companies = new Set(submissions.map(s => s.company?.trim().toLowerCase()).filter(Boolean)).size
   const evCount = (name) => events.filter(e => e.event === name).length
@@ -82,7 +84,9 @@ export default async function handler(req, res) {
     organic: submissions.length - ad,
     companies,
     signups: todaySignups,
-    jobApps: jaRes.count || 0,
+    jobApps: jobApps.length,
+    jobAppsCompany: jobApps.filter(j => j.jobs?.source === 'company_self').length,
+    cvSuccessApps: jobApps.filter(j => j.application_source === 'cv_success').length,
     jobClicks: evCount('click_jobs_cta'),
     cardClicks: evCount('click_job_card'),
     jobsPageViews: evCount('view_jobs_page'),

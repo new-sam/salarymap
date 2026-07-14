@@ -16,11 +16,18 @@ import Brand from '../../../components/company/Brand';
 import LangToggle from '../../../components/company/LangToggle';
 import { useT } from '../../../lib/i18n';
 import { toast } from 'sonner';
-import { ROLE_OPTIONS, LOCATION_OPTIONS } from '../../../constants/jobs';
+import { ROLE_GROUPS, LOCATION_OPTIONS, DEFAULT_WORK_DAYS, DEFAULT_WORK_HOURS, DEFAULT_PAID_LEAVE, DEFAULT_CONTRACT } from '../../../constants/jobs';
 
-const ROLES = ROLE_OPTIONS;         // 공개 게시판 필터와 단일 소스로 동기화(비IT 직무 포함)
 const TYPES = ['remote', 'onsite', 'hybrid'];
 const LOCATIONS = LOCATION_OPTIONS; // 베트남 주요 도시/성 확장
+
+// 자체 온보딩은 이메일 도메인으로 회사를 추정/매칭하므로 free-mail 은 차단.
+// (어드민 발급 계정은 recruiter_users 가 이미 연결돼 있어 이 경로를 타지 않음.)
+// pages/company/index.js 의 completeCompanySetup 과 동일한 정책.
+const FREE_MAIL_DOMAINS = new Set([
+  'gmail.com', 'naver.com', 'yahoo.com', 'hotmail.com', 'outlook.com',
+  'icloud.com', 'daum.net', 'kakao.com', 'protonmail.com',
+]);
 
 const EMPTY = {
   title: '', description: '', role: 'Backend', type: 'hybrid', country: 'vietnam',
@@ -28,11 +35,12 @@ const EMPTY = {
   salary_min: 30000000, salary_max: 50000000, tech_stack: '', benefits: '',
   headcount: '', deadline: '',
   image_url: '', logo_url: '',
+  work_days: '', work_hours: '', paid_leave: '', contract_type: '',
 };
 
 export default function NewJobPage() {
   const router = useRouter();
-  const { t } = useT();
+  const { t, lang } = useT();
   const [status, setStatus] = useState('loading');
   const [user, setUser] = useState(null);
   const [companyId, setCompanyId] = useState(null);
@@ -50,7 +58,7 @@ export default function NewJobPage() {
 
       const { data: rec } = await supabase
         .from('recruiter_users')
-        .select('company_id, full_name, recruiter_companies(name)')
+        .select('company_id, full_name, recruiter_companies(name, logo_url, work_days, work_hours, paid_leave)')
         .eq('user_id', session.user.id)
         .maybeSingle();
 
@@ -60,7 +68,19 @@ export default function NewJobPage() {
         return;
       }
       setCompanyId(rec.company_id);
-      setCompanyName(rec.recruiter_companies?.name || '');
+      const co = rec.recruiter_companies;
+      setCompanyName(co?.name || '');
+      // 회사 프로필에 저장된 로고·근무정보를 새 공고 폼 기본값으로 프리필 (매번 재입력 방지).
+      // 이 공고만 다르게 하려면 폼에서 수정하면 됨.
+      setForm(prev => ({
+        ...prev,
+        logo_url: co?.logo_url || prev.logo_url,
+        work_days: co?.work_days || prev.work_days,
+        work_hours: co?.work_hours || prev.work_hours,
+        paid_leave: co?.paid_leave || prev.paid_leave,
+        // contract_type 은 회사 단위 기본값을 두지 않음 — 공고마다 정규직/계약직/인턴이
+        // 다르므로 폼에서 직접 지정(미입력 시 상세페이지에서 기본값 폴백).
+      }));
       setStatus('ready');
     })();
   }, []);
@@ -90,7 +110,7 @@ export default function NewJobPage() {
     if (!tmpCompanyName.trim()) { setErr(t('company.err.companyRequired')); return; }
     if (!tmpFullName.trim()) { setErr(t('company.err.contactRequired')); return; }
     const emailDomain = (user.email || '').split('@')[1]?.toLowerCase();
-    if (!emailDomain) { setErr(t('company.err.notVerified')); return; }
+    if (!emailDomain || FREE_MAIL_DOMAINS.has(emailDomain)) { setErr(t('company.err.notVerified')); return; }
     setStatus('saving');
 
     let cid = null;
@@ -148,6 +168,10 @@ export default function NewJobPage() {
       deadline: form.deadline || null,
       image_url: form.image_url || null,
       logo_url: form.logo_url || null,
+      work_days: form.work_days.trim() || null,
+      work_hours: form.work_hours.trim() || null,
+      paid_leave: form.paid_leave.trim() || null,
+      contract_type: form.contract_type.trim() || null,
       source: 'company_self',
     };
 
@@ -176,7 +200,8 @@ export default function NewJobPage() {
       } catch (_) {}
     }
     toast.success(isInternal ? t('company.jobsnew.publish') : t('company.jobsnew.pendingReview'));
-    router.replace('/company/jobs');
+    // /company/jobs 는 /company 로 넘기는 껍데기 — 직접 보내 이중 리다이렉트 제거
+    router.replace('/company');
   };
 
   if (status === 'loading') return <div style={css.loading}>{t('company.loading')}</div>;
@@ -241,7 +266,11 @@ export default function NewJobPage() {
           {/* Form is a flex row so each column gets the form's full visible
               height. `min-h-0` on every child lets overflow-y-auto engage. */}
           <form id="job-new-form" onSubmit={onSubmit} className="flex-1 min-h-0 flex flex-col lg:flex-row gap-6 overflow-hidden">
-            <div className="flex-[1.4] flex flex-col overflow-y-auto min-h-0 px-1 pb-10">
+            {/* [scrollbar-gutter:stable] + pr-3 keep the scrollbar out of the
+                content; the white card gives fields a surface instead of
+                sitting bare on the gray page background. */}
+            <div className="flex-[1.4] overflow-y-auto min-h-0 pr-3 pb-10 [scrollbar-gutter:stable]">
+            <div className="bg-white border border-border rounded-xl shadow-soft-xs p-5 flex flex-col">
               <h2 className="text-[12px] font-extrabold text-gray-500 uppercase tracking-[0.08em] mb-3">{t('company.jobsnew.photoH')}</h2>
 
               <div className="grid grid-cols-2 gap-3 mb-3">
@@ -252,9 +281,7 @@ export default function NewJobPage() {
                       <UButton type="button" variant="outline" size="sm" onClick={() => setF('image_url', '')} className="ml-auto h-7 px-2 text-xs text-red-600 border-red-200 hover:bg-red-50">{t('company.remove')}</UButton>
                     </div>
                   ) : (
-                    <input type="file" accept="image/*" disabled={uploading}
-                      onChange={(e) => e.target.files?.[0] && uploadImage(e.target.files[0], 'image_url')}
-                      className="text-xs text-gray-700 border border-dashed border-gray-300 rounded-lg p-2 bg-gray-50 cursor-pointer w-full" />
+                    <UploadInput label={t('company.jobsnew.uploadBtn')} disabled={uploading} onFile={(f) => uploadImage(f, 'image_url')} />
                   )}
                 </Field>
                 <Field label={t('company.jobsnew.logoLabel')}>
@@ -264,15 +291,18 @@ export default function NewJobPage() {
                       <UButton type="button" variant="outline" size="sm" onClick={() => setF('logo_url', '')} className="ml-auto h-7 px-2 text-xs text-red-600 border-red-200 hover:bg-red-50">{t('company.remove')}</UButton>
                     </div>
                   ) : (
-                    <input type="file" accept="image/*" disabled={uploading}
-                      onChange={(e) => e.target.files?.[0] && uploadImage(e.target.files[0], 'logo_url')}
-                      className="text-xs text-gray-700 border border-dashed border-gray-300 rounded-lg p-2 bg-gray-50 cursor-pointer w-full" />
+                    <UploadInput label={t('company.jobsnew.uploadBtn')} disabled={uploading} onFile={(f) => uploadImage(f, 'logo_url')} />
                   )}
                 </Field>
               </div>
               {uploading
                 ? <div className="text-xs text-primary-600 font-semibold mb-3">{t('company.uploading')}</div>
-                : <div className="text-xs text-gray-400 font-semibold mb-5">{t('company.jobsnew.photoHint')}</div>}
+                : (
+                  <div className="text-xs text-gray-400 font-semibold mb-5">
+                    {t('company.jobsnew.photoHint')}{' '}
+                    <Link href="/company/settings" className="text-primary-600 hover:underline">{t('company.jobsnew.profileHint')}</Link>
+                  </div>
+                )}
 
               <h2 className="text-[12px] font-extrabold text-gray-500 uppercase tracking-[0.08em] mt-3 mb-3">{t('company.jobsnew.basicH')}</h2>
 
@@ -289,7 +319,11 @@ export default function NewJobPage() {
               <div className="grid grid-cols-2 gap-3">
                 <Field label={t('company.jobsnew.role')}>
                   <SelectInput value={form.role} onChange={e => setF('role', e.target.value)}>
-                    {ROLES.map(r => <option key={r} value={r}>{r}</option>)}
+                    {ROLE_GROUPS.map(g => (
+                      <optgroup key={g.key} label={g.label[lang] || g.label.en}>
+                        {g.roles.map(r => <option key={r.value} value={r.value}>{r.label[lang] || r.label.en}</option>)}
+                      </optgroup>
+                    ))}
                   </SelectInput>
                 </Field>
                 <Field label={t('company.jobsnew.type')}>
@@ -304,6 +338,23 @@ export default function NewJobPage() {
                   {LOCATIONS.map(l => <option key={l} value={l}>{l}</option>)}
                 </SelectInput>
               </Field>
+
+              <h2 className="text-[12px] font-extrabold text-gray-500 uppercase tracking-[0.08em] mt-5 mb-1">{t('company.jobsnew.workH')}</h2>
+              <div className="text-xs text-gray-400 font-semibold mb-3">{t('company.jobsnew.workHint')}</div>
+              <div className="grid grid-cols-2 gap-3">
+                <Field label={t('company.jobsnew.workDays')}>
+                  <UInput value={form.work_days} onChange={e => setF('work_days', e.target.value)} placeholder={DEFAULT_WORK_DAYS} />
+                </Field>
+                <Field label={t('company.jobsnew.workHours')}>
+                  <UInput value={form.work_hours} onChange={e => setF('work_hours', e.target.value)} placeholder={DEFAULT_WORK_HOURS} />
+                </Field>
+                <Field label={t('company.jobsnew.paidLeave')}>
+                  <UInput value={form.paid_leave} onChange={e => setF('paid_leave', e.target.value)} placeholder={DEFAULT_PAID_LEAVE} />
+                </Field>
+                <Field label={t('company.jobsnew.contract')}>
+                  <UInput value={form.contract_type} onChange={e => setF('contract_type', e.target.value)} placeholder={DEFAULT_CONTRACT} />
+                </Field>
+              </div>
 
               <h2 className="text-[12px] font-extrabold text-gray-500 uppercase tracking-[0.08em] mt-5 mb-3">{t('company.jobsnew.expSalH')}</h2>
 
@@ -347,9 +398,10 @@ export default function NewJobPage() {
                 </Field>
               </div>
             </div>
+            </div>
 
             {/* Preview column — JobPreview faithfully mirrors /jobs/[id] layout. */}
-            <aside className="flex-1 overflow-y-auto min-h-0 pl-2 pr-1 pb-10 flex flex-col gap-3">
+            <aside className="flex-1 overflow-y-auto min-h-0 pl-2 pr-3 pb-10 flex flex-col gap-3 [scrollbar-gutter:stable]">
               <div className="flex items-center justify-between flex-shrink-0">
                 <div className="text-[10.5px] font-extrabold uppercase tracking-[0.08em] text-gray-500">{t('company.jobsnew.previewLabel')}</div>
                 <UButton type="button" size="sm" variant="outline" onClick={() => setPreviewFull(true)} className="h-7 px-2.5 text-[11.5px]">
@@ -404,6 +456,24 @@ export function Field({ label, children }) {
   );
 }
 
+// Styled replacement for a bare <input type="file"> — the native control
+// renders the OS-default "파일 선택" button, which no CSS can restyle.
+export function UploadInput({ label, disabled, onFile }) {
+  return (
+    <label className={cn(
+      'flex h-[58px] w-full items-center justify-center gap-2 rounded-lg border border-dashed border-gray-300 bg-gray-50 text-[12.5px] font-bold text-gray-600 transition-colors',
+      disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:border-primary-400 hover:bg-primary-50/50 hover:text-primary-600'
+    )}>
+      <ImageIcon className="w-4 h-4" />
+      {label}
+      <input
+        type="file" accept="image/*" className="hidden" disabled={disabled}
+        onChange={(e) => { const f = e.target.files?.[0]; if (f) onFile(f); e.target.value = ''; }}
+      />
+    </label>
+  );
+}
+
 export function SelectInput({ value, onChange, children }) {
   return (
     <select
@@ -416,7 +486,7 @@ export function SelectInput({ value, onChange, children }) {
   );
 }
 
-const DOT_COLOR = { live: '#10b981', paused: '#f59e0b', closed: '#94a3b8', draft: '#cbd5e1', pending_review: '#f97316' };
+const DOT_COLOR = { live: '#10b981', paused: '#f59e0b', closed: '#8B95A1', draft: '#D1D6DB', pending_review: '#f97316' };
 
 export function Sidebar({ companyName, userEmail, activePage = 'home', activeJobId = null }) {
   const router = useRouter();
@@ -684,32 +754,32 @@ export function Sidebar({ companyName, userEmail, activePage = 'home', activeJob
 }
 
 export const css = {
-  loading: { display: 'grid', placeItems: 'center', height: '100vh', background: '#FAFAFA', color: '#525252', fontFamily: "'Pretendard', sans-serif" },
+  loading: { display: 'grid', placeItems: 'center', height: '100vh', background: '#F9FAFB', color: '#4E5968', fontFamily: "'Pretendard Variable', 'Pretendard', sans-serif" },
 
-  fullCenter: { minHeight: '100vh', background: '#FAFAFA', display: 'grid', placeItems: 'center', padding: 20, fontFamily: "'Pretendard', sans-serif" },
-  lightCard: { maxWidth: 420, width: '100%', padding: '40px 32px', textAlign: 'center', background: '#fff', border: '1px solid #E5E7EB', borderRadius: 14, boxShadow: '0 8px 24px rgba(0,0,0,0.05)' },
-  cardH: { fontSize: 20, fontWeight: 800, color: '#1A1A1A', marginBottom: 8 },
-  cardP: { fontSize: 13.5, color: '#525252', marginBottom: 22, lineHeight: 1.65 },
+  fullCenter: { minHeight: '100vh', background: '#F9FAFB', display: 'grid', placeItems: 'center', padding: 20, fontFamily: "'Pretendard Variable', 'Pretendard', sans-serif" },
+  lightCard: { maxWidth: 420, width: '100%', padding: '40px 32px', textAlign: 'center', background: '#fff', border: '1px solid #E5E8EB', borderRadius: 14, boxShadow: '0 8px 24px rgba(0,0,0,0.05)' },
+  cardH: { fontSize: 20, fontWeight: 800, color: '#191F28', marginBottom: 8 },
+  cardP: { fontSize: 13.5, color: '#4E5968', marginBottom: 22, lineHeight: 1.65 },
 
-  app: { display: 'flex', minHeight: '100vh', background: '#FAFAFA', color: '#1A1A1A', fontFamily: "'Pretendard', sans-serif" },
+  app: { display: 'flex', minHeight: '100vh', background: '#F9FAFB', color: '#191F28', fontFamily: "'Pretendard Variable', 'Pretendard', sans-serif" },
 
   // Sidebar (light)
-  sidebar: { background: '#fff', borderRight: '1px solid #E5E7EB', padding: '16px 12px', display: 'flex', flexDirection: 'column', gap: 4 },
-  sideHead: { padding: '8px 10px 14px', borderBottom: '1px solid #E5E7EB', marginBottom: 10 },
-  sideCompany: { fontSize: 14, fontWeight: 800, color: '#1A1A1A' },
-  sideUser: { fontSize: 11, color: '#737373', marginTop: 3 },
+  sidebar: { background: '#fff', borderRight: '1px solid #E5E8EB', padding: '16px 12px', display: 'flex', flexDirection: 'column', gap: 4 },
+  sideHead: { padding: '8px 10px 14px', borderBottom: '1px solid #E5E8EB', marginBottom: 10 },
+  sideCompany: { fontSize: 14, fontWeight: 800, color: '#191F28' },
+  sideUser: { fontSize: 11, color: '#6B7684', marginTop: 3 },
   sideNav: { display: 'flex', flexDirection: 'column', gap: 2 },
-  navItem: { display: 'flex', alignItems: 'center', gap: 9, padding: '9px 10px', borderRadius: 7, fontSize: 13, color: '#525252', fontWeight: 600, textDecoration: 'none' },
+  navItem: { display: 'flex', alignItems: 'center', gap: 9, padding: '9px 10px', borderRadius: 7, fontSize: 13, color: '#4E5968', fontWeight: 600, textDecoration: 'none' },
   navItemActive: { background: '#FFF7ED', color: '#EA580C', fontWeight: 800 },
   navIco: { width: 14, textAlign: 'center', fontSize: 13 },
   sideBottom: { marginTop: 'auto', padding: 10 },
-  signoutLink: { fontSize: 11.5, color: '#737373', cursor: 'pointer', textDecoration: 'underline' },
+  signoutLink: { fontSize: 11.5, color: '#6B7684', cursor: 'pointer', textDecoration: 'underline' },
 
-  sideDivider: { height: 1, background: '#E5E7EB', margin: '12px 8px' },
-  sideSectionTitle: { fontSize: 10.5, color: '#94A3B8', fontWeight: 800, letterSpacing: '0.06em', textTransform: 'uppercase', padding: '4px 10px 6px' },
-  sideSubGroupTitle: { fontSize: 11, color: '#525252', fontWeight: 700, padding: '8px 10px 4px' },
+  sideDivider: { height: 1, background: '#E5E8EB', margin: '12px 8px' },
+  sideSectionTitle: { fontSize: 10.5, color: '#8B95A1', fontWeight: 800, letterSpacing: '0.06em', textTransform: 'uppercase', padding: '4px 10px 6px' },
+  sideSubGroupTitle: { fontSize: 11, color: '#4E5968', fontWeight: 700, padding: '8px 10px 4px' },
   sideJobList: { display: 'flex', flexDirection: 'column', gap: 1, maxHeight: 360, overflowY: 'auto' },
-  sideJobItem: { display: 'flex', alignItems: 'center', gap: 8, padding: '7px 10px', borderRadius: 6, fontSize: 12.5, color: '#525252', fontWeight: 600, textDecoration: 'none' },
+  sideJobItem: { display: 'flex', alignItems: 'center', gap: 8, padding: '7px 10px', borderRadius: 6, fontSize: 12.5, color: '#4E5968', fontWeight: 600, textDecoration: 'none' },
   sideJobItemActive: { background: '#FFF7ED', color: '#EA580C', fontWeight: 800 },
   sideJobDot: { width: 7, height: 7, borderRadius: '50%', flexShrink: 0 },
   sideJobTitle: { whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' },
@@ -717,57 +787,59 @@ export const css = {
   // Main — flex-1 min-w-0 so it lives nicely in flex shell. Top padding kept thin since PageHeader is sticky.
   main: { flex: 1, minWidth: 0, paddingLeft: 'clamp(16px, 3vw, 28px)', paddingRight: 'clamp(16px, 3vw, 28px)', paddingTop: 0, paddingBottom: 40, display: 'flex', flexDirection: 'column', gap: 14 },
   mainHead: { display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' },
-  mainH: { fontSize: 26, fontWeight: 800, color: '#1A1A1A', letterSpacing: '-0.01em' },
-  mainP: { fontSize: 13.5, color: '#525252', marginTop: 4 },
+  mainH: { fontSize: 26, fontWeight: 800, color: '#191F28', letterSpacing: '-0.01em' },
+  mainP: { fontSize: 13.5, color: '#4E5968', marginTop: 4 },
 
   formShell: { display: 'grid', gridTemplateColumns: '1.4fr 1fr', gap: 24, alignItems: 'flex-start' },
   formCol: { display: 'flex', flexDirection: 'column' },
-  sectionTitle: { fontSize: 12, fontWeight: 800, color: '#737373', letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: 14 },
+  sectionTitle: { fontSize: 12, fontWeight: 800, color: '#6B7684', letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: 14 },
 
   field: { display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 14 },
-  fieldLabel: { fontSize: 12, color: '#525252', fontWeight: 700 },
-  inp: { background: '#fff', border: '1px solid #D1D5DB', borderRadius: 8, padding: '10px 12px', fontSize: 14, color: '#1A1A1A', fontFamily: 'inherit' },
-  hint: { fontSize: 11, color: '#737373' },
+  fieldLabel: { fontSize: 12, color: '#4E5968', fontWeight: 700 },
+  inp: { background: '#fff', border: '1px solid #D1D6DB', borderRadius: 8, padding: '10px 12px', fontSize: 14, color: '#191F28', fontFamily: 'inherit' },
+  hint: { fontSize: 11, color: '#6B7684' },
   row2: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 },
 
-  previewCol: { background: '#fff', border: '1px solid #E5E7EB', borderRadius: 12, padding: 18, display: 'flex', flexDirection: 'column', gap: 10, position: 'sticky', top: 20 },
-  previewLabel: { fontSize: 10.5, color: '#737373', fontWeight: 700, letterSpacing: '0.05em', textTransform: 'uppercase' },
-  previewCard: { background: '#FAFAFA', border: '1px solid #E5E7EB', borderRadius: 8, padding: 14 },
-  pTitle: { fontSize: 14, fontWeight: 800, color: '#1A1A1A', marginBottom: 5 },
-  pMeta: { fontSize: 11.5, color: '#525252', marginTop: 2 },
+  previewCol: { background: '#fff', border: '1px solid #E5E8EB', borderRadius: 12, padding: 18, display: 'flex', flexDirection: 'column', gap: 10, position: 'sticky', top: 20 },
+  previewLabel: { fontSize: 10.5, color: '#6B7684', fontWeight: 700, letterSpacing: '0.05em', textTransform: 'uppercase' },
+  previewCard: { background: '#F9FAFB', border: '1px solid #E5E8EB', borderRadius: 8, padding: 14 },
+  pTitle: { fontSize: 14, fontWeight: 800, color: '#191F28', marginBottom: 5 },
+  pMeta: { fontSize: 11.5, color: '#4E5968', marginTop: 2 },
   pLoc: { fontSize: 11.5, color: '#6B7684', marginTop: 6 },
 
   err: { gridColumn: '1 / -1', background: '#FEF2F2', border: '1px solid #FECACA', borderRadius: 6, padding: '10px 12px', fontSize: 12.5, color: '#B91C1C' },
 
-  formFoot: { gridColumn: '1 / -1', display: 'flex', justifyContent: 'flex-end', gap: 8, paddingTop: 16, borderTop: '1px solid #E5E7EB', marginTop: 8 },
+  formFoot: { gridColumn: '1 / -1', display: 'flex', justifyContent: 'flex-end', gap: 8, paddingTop: 16, borderTop: '1px solid #E5E8EB', marginTop: 8 },
 
-  btnPrimary: { padding: '12px 24px', borderRadius: 8, border: 'none', background: '#EA580C', color: '#fff', fontSize: 14, fontWeight: 800, cursor: 'pointer', fontFamily: 'inherit', textDecoration: 'none', display: 'inline-block', boxShadow: '0 4px 12px rgba(234,88,12,0.18)' },
-  btnGhost: { padding: '12px 24px', borderRadius: 8, border: '1px solid #D1D5DB', background: '#fff', color: '#1A1A1A', fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', textDecoration: 'none', display: 'inline-block' },
-  btnDisabled: { padding: '12px 24px', borderRadius: 8, border: 'none', background: '#E5E7EB', color: '#94A3B8', fontSize: 14, fontWeight: 800, cursor: 'not-allowed', fontFamily: 'inherit' },
+  // Matches the shadcn Button default/outline variants (ui/button.js) so
+  // inline-styled pages read as the same system.
+  btnPrimary: { padding: '12px 24px', borderRadius: 8, border: 'none', background: 'linear-gradient(135deg, #FB923C, #EA580C)', color: '#fff', fontSize: 14, fontWeight: 800, cursor: 'pointer', fontFamily: 'inherit', textDecoration: 'none', display: 'inline-block', boxShadow: '0 6px 16px rgba(234,88,12,0.25)' },
+  btnGhost: { padding: '12px 24px', borderRadius: 8, border: '1px solid #E5E8EB', background: '#fff', color: '#191F28', fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', textDecoration: 'none', display: 'inline-block', boxShadow: '0 1px 2px rgba(17,24,39,0.04)' },
+  btnDisabled: { padding: '12px 24px', borderRadius: 8, border: 'none', background: '#E5E8EB', color: '#8B95A1', fontSize: 14, fontWeight: 800, cursor: 'not-allowed', fontFamily: 'inherit' },
   btnDanger: { padding: '12px 22px', borderRadius: 8, border: '1px solid #FECACA', background: '#FEF2F2', color: '#B91C1C', fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' },
 };
 
 const localCss = {
-  fileInp: { padding: '8px 10px', fontSize: 12.5, color: '#525252', border: '1px dashed #D1D5DB', borderRadius: 7, background: '#FAFAFA', cursor: 'pointer', fontFamily: 'inherit' },
-  imgRow: { display: 'flex', alignItems: 'center', gap: 10, padding: 10, border: '1px solid #E5E7EB', borderRadius: 7, background: '#fff' },
-  logoPreview: { height: 40, width: 40, borderRadius: 6, objectFit: 'contain', background: '#F8F8F8' },
+  fileInp: { padding: '8px 10px', fontSize: 12.5, color: '#4E5968', border: '1px dashed #D1D6DB', borderRadius: 7, background: '#F9FAFB', cursor: 'pointer', fontFamily: 'inherit' },
+  imgRow: { display: 'flex', alignItems: 'center', gap: 10, padding: 10, border: '1px solid #E5E8EB', borderRadius: 7, background: '#fff' },
+  logoPreview: { height: 40, width: 40, borderRadius: 6, objectFit: 'contain', background: '#F9FAFB' },
   imgPreview: { height: 60, width: 100, borderRadius: 6, objectFit: 'cover' },
   imgRemove: { marginLeft: 'auto', padding: '5px 10px', fontSize: 11, color: '#B91C1C', background: '#FEF2F2', border: '1px solid #FECACA', borderRadius: 5, cursor: 'pointer', fontFamily: 'inherit', fontWeight: 700 },
   uploadHint: { fontSize: 12, color: '#EA580C', fontWeight: 600, marginTop: -8, marginBottom: 14 },
-  photoHint: { fontSize: 11.5, color: '#94A3B8', marginTop: -8, marginBottom: 14, fontWeight: 600 },
+  photoHint: { fontSize: 11.5, color: '#8B95A1', marginTop: -8, marginBottom: 14, fontWeight: 600 },
 
   // 미리보기 — 실제 /jobs 피드 카드 형태
-  pvCard: { background: '#fff', border: '1px solid #E5E7EB', borderRadius: 10, overflow: 'hidden' },
+  pvCard: { background: '#fff', border: '1px solid #E5E8EB', borderRadius: 10, overflow: 'hidden' },
   pvImg: { width: '100%', height: 140, objectFit: 'cover', display: 'block' },
-  pvImgEmpty: { width: '100%', height: 140, background: '#F1F5F9', display: 'grid', placeItems: 'center', color: '#94A3B8', fontSize: 12.5, fontWeight: 700 },
+  pvImgEmpty: { width: '100%', height: 140, background: '#F2F4F6', display: 'grid', placeItems: 'center', color: '#8B95A1', fontSize: 12.5, fontWeight: 700 },
   pvBody: { padding: 14 },
   pvCompanyRow: { display: 'flex', alignItems: 'center', gap: 6, marginBottom: 7 },
-  pvLogo: { width: 20, height: 20, borderRadius: 5, objectFit: 'contain', background: '#F4F4F5' },
-  pvLogoEmpty: { width: 20, height: 20, borderRadius: 5, background: '#E5E7EB' },
-  pvCompany: { fontSize: 11.5, color: '#737373', fontWeight: 700 },
-  pvTitle: { fontSize: 15, fontWeight: 800, color: '#1A1A1A', marginBottom: 6, lineHeight: 1.3 },
+  pvLogo: { width: 20, height: 20, borderRadius: 5, objectFit: 'contain', background: '#F2F4F6' },
+  pvLogoEmpty: { width: 20, height: 20, borderRadius: 5, background: '#E5E8EB' },
+  pvCompany: { fontSize: 11.5, color: '#6B7684', fontWeight: 700 },
+  pvTitle: { fontSize: 15, fontWeight: 800, color: '#191F28', marginBottom: 6, lineHeight: 1.3 },
   pvSalary: { fontSize: 13, color: '#EA580C', fontWeight: 800, marginBottom: 7 },
   pvTags: { display: 'flex', flexWrap: 'wrap', gap: 5, marginBottom: 8 },
-  pvTag: { fontSize: 10.5, fontWeight: 700, color: '#525252', background: '#F1F5F9', padding: '3px 8px', borderRadius: 999 },
-  pvLoc: { fontSize: 11.5, color: '#737373' },
+  pvTag: { fontSize: 10.5, fontWeight: 700, color: '#4E5968', background: '#F2F4F6', padding: '3px 8px', borderRadius: 999 },
+  pvLoc: { fontSize: 11.5, color: '#6B7684' },
 };

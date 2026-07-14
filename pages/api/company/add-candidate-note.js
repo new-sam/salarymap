@@ -19,22 +19,22 @@ export default async function handler(req, res) {
 
   try {
     if (!SUPABASE_URL || !SERVICE_KEY) {
-      return res.status(503).json({ error: '서버 설정 오류' });
+      return res.status(503).json({ error: '서버 설정 오류', code: 'serverConfig' });
     }
     const token = (req.headers.authorization || '').replace(/^Bearer\s+/i, '');
-    if (!token) return res.status(401).json({ error: '로그인이 필요합니다.' });
+    if (!token) return res.status(401).json({ error: '로그인이 필요합니다.', code: 'authRequired' });
 
     const { appId, content } = req.body || {};
-    if (!appId) return res.status(400).json({ error: 'appId가 필요합니다.' });
+    if (!appId) return res.status(400).json({ error: 'appId가 필요합니다.', code: 'badRequest' });
     if (typeof content !== 'string' || !content.trim()) {
-      return res.status(400).json({ error: '메모 내용을 입력해주세요.' });
+      return res.status(400).json({ error: '메모 내용을 입력해주세요.', code: 'badRequest' });
     }
 
     const asUser = createClient(SUPABASE_URL, ANON_KEY, {
       global: { headers: { Authorization: `Bearer ${token}` } },
     });
     const { data: { user }, error: userErr } = await asUser.auth.getUser();
-    if (userErr || !user) return res.status(401).json({ error: '세션이 만료되었습니다.' });
+    if (userErr || !user) return res.status(401).json({ error: '세션이 만료되었습니다.', code: 'sessionExpired' });
 
     const admin = createClient(SUPABASE_URL, SERVICE_KEY);
     const { data: app, error: appErr } = await admin
@@ -43,7 +43,7 @@ export default async function handler(req, res) {
       .eq('id', appId)
       .maybeSingle();
     if (appErr || !app) {
-      return res.status(404).json({ error: '지원자를 찾을 수 없습니다.' });
+      return res.status(404).json({ error: '지원자를 찾을 수 없습니다.', code: 'candidateNotFound' });
     }
 
     const isJobOwner = app.jobs?.created_by === user.id;
@@ -66,7 +66,7 @@ export default async function handler(req, res) {
       if (rec && rec.company_id === app.jobs?.company_id) allowed = true;
     }
     if (!allowed) {
-      return res.status(403).json({ error: '메모 작성 권한이 없습니다.' });
+      return res.status(403).json({ error: '메모 작성 권한이 없습니다.', code: 'forbidden' });
     }
 
     // Look up display name + role

@@ -4,11 +4,12 @@ import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { supabase } from '../../lib/supabaseClient';
 import { Sidebar, css } from './jobs/new';
-import CandidateDetail, { MailComposer, RejectionModal, InterviewConfirmModal, ConfirmModal, templateKeyForDecision, nextStageAfter } from '../../components/company/CandidateDetail';
+import CandidateDetail, { MailComposer, RejectionModal, InterviewConfirmModal, ConfirmModal, templateKeyForDecision, nextStageAfter, defaultComposeTemplate } from '../../components/company/CandidateDetail';
 import { formatICT, formatInterviewShort, formatLocalShortDate, ICT_LABEL } from '../../lib/timezone';
 import { color, font, space, radius, shadow, motion } from '../../lib/theme';
 import TeamPopover from '../../components/company/TeamPopover';
 import { useT } from '../../lib/i18n';
+import { apiErrorMessage } from '../../lib/apiErrorMessage';
 import { toast } from 'sonner';
 import { cn } from '../../lib/cn';
 import { Button } from '../../components/ui/button';
@@ -192,7 +193,7 @@ export default function CompanyATSPage() {
           .eq('id', jobId).eq('company_id', rec.company_id).maybeSingle(),
         supabase
           .from('job_applications')
-          .select('id, status, viewed_at, applicant_name, applicant_email, applicant_salary, applicant_role, applicant_experience, applicant_company, resume_url, user_id, created_at, admin_note, interview_at, rejected_at, rejected_at_stage, rejection_reason')
+          .select('id, job_id, status, viewed_at, applicant_name, applicant_email, applicant_salary, applicant_role, applicant_experience, applicant_company, resume_url, user_id, created_at, admin_note, interview_at, interview_location, interview_interviewer, rejected_at, rejected_at_stage, rejection_reason')
           .eq('job_id', jobId).order('created_at', { ascending: true }),
       ]);
       const { data: jobData, error: jobErr } = jobRes;
@@ -461,7 +462,7 @@ export default function CompanyATSPage() {
           });
           if (!res.ok) {
             const json = await res.json().catch(() => ({}));
-            toast.error(json.error || t('company.toast.passCancelFailed'));
+            toast.error(apiErrorMessage(json, t, 'company.toast.passCancelFailed'));
             return;
           }
         } catch {
@@ -530,7 +531,7 @@ export default function CompanyATSPage() {
         body: JSON.stringify({ appId: app.id, stage: sourceStage }),
       });
       const json = await res.json().catch(() => ({}));
-      if (!res.ok) { toast.error(json.error || t('company.ats.errStagePass')); return; }
+      if (!res.ok) { toast.error(apiErrorMessage(json, t, 'company.ats.errStagePass')); return; }
       toast.success(t('company.ats.stagePassedShort', { stage: t(`company.stage.${sourceStage}`) }));
       await loadStagePasses(apps.map(a => a.id));
     } catch {
@@ -566,7 +567,7 @@ export default function CompanyATSPage() {
         body: JSON.stringify({ appId, stage }),
       });
       const json = await res.json().catch(() => ({}));
-      if (!res.ok) { toast.error(json.error || t('company.ats.errStagePass')); return; }
+      if (!res.ok) { toast.error(apiErrorMessage(json, t, 'company.ats.errStagePass')); return; }
       toast.success(t('company.ats.stagePassedShort', { stage: t(`company.stage.${stage}`) }));
       await loadStagePasses(apps.map(a => a.id));
       const app = apps.find(a => a.id === appId);
@@ -860,6 +861,14 @@ export default function CompanyATSPage() {
             })}
           </div>
 
+          {/* First-run notice — a fresh board full of "비어 있음" columns reads
+              as broken to a new company; say what will happen here instead. */}
+          {apps.length === 0 && (
+            <div className="text-[12.5px] font-semibold text-primary-700 bg-primary-50 border border-primary-200 rounded-lg px-3 py-2 mb-3 flex-shrink-0">
+              {job?.status === 'pending_review' ? t('company.ats.noAppsPending') : t('company.ats.noApps')}
+            </div>
+          )}
+
           {/* Kanban — fills remaining viewport, columns scroll internally */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 items-stretch flex-1 min-h-0">
             {grouped.map((col) => {
@@ -873,16 +882,16 @@ export default function CompanyATSPage() {
                   onDrop={() => handleDrop(col.key)}
                   className={cn(
                     'rounded-lg border p-2.5 flex flex-col gap-2 transition-all duration-200 min-h-0',
-                    isOver ? 'bg-primary-50 border-primary-300 shadow-soft-md' : 'bg-[#F7F8FA] border-[#EEF0F3]',
+                    isOver ? 'bg-primary-50 border-primary-300 shadow-soft-md' : 'bg-[#F9FAFB] border-[#F2F4F6]',
                     hiddenOnMobile && 'hidden md:flex'
                   )}
                 >
                   {/* Column header — hidden on mobile since the stage chip above
                       already shows the same info; redundancy hurts mobile space. */}
-                  <div className="hidden md:flex items-center gap-2 px-1 pb-2 border-b border-[#E5E8EC]">
+                  <div className="hidden md:flex items-center gap-2 px-1 pb-2 border-b border-[#E5E8EB]">
                     <StageIcon className={cn('w-3.5 h-3.5', STAGE_ICON_CLASS[col.key])} />
                     <span className="text-[13px] font-extrabold text-gray-900 tracking-tight flex-1">{t(`company.stage.${col.key}`)}</span>
-                    <span className="text-[11px] font-extrabold text-gray-900 tabular-nums bg-white border border-[#E5E8EC] rounded-full min-w-[22px] text-center px-1.5 py-0.5">{col.apps.length}</span>
+                    <span className="text-[11px] font-extrabold text-gray-900 tabular-nums bg-white border border-[#E5E8EB] rounded-full min-w-[22px] text-center px-1.5 py-0.5">{col.apps.length}</span>
                   </div>
 
                   {/* Cards — scrolls internally so column header stays pinned */}
@@ -1042,8 +1051,8 @@ export default function CompanyATSPage() {
 }
 
 const localCss = {
-  crumb: { fontSize: 12, color: '#94A3B8', marginBottom: 4 },
-  crumbLink: { color: '#525252', textDecoration: 'none' },
+  crumb: { fontSize: 12, color: '#8B95A1', marginBottom: 4 },
+  crumbLink: { color: '#4E5968', textDecoration: 'none' },
 
   // ── Kanban ──
   kanban: { display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: space[5], alignItems: 'stretch', minHeight: 'calc(100vh - 240px)' },
@@ -1126,9 +1135,7 @@ const KanbanCard = memo(function KanbanCard({
     : t('company.ats.appliedDaysAgo', { date: dateText, n: daysAgo });
   const urgencyClass = 'bg-amber-50 text-amber-700 border-amber-200';
   const email = app.applicant_email || profile?.email || '';
-  const defaultTpl = app.status === 'pending' ? 'received'
-    : (app.status === 'viewed' || app.status === 'reviewing') ? 'interview'
-    : 'offer';
+  const defaultTpl = defaultComposeTemplate(app.status, app.rejected_at);
   const hasStagePassed = stagePassSet?.has(`${app.status}_pass`);
   const canDragCard = isOwner && !isRejected;
 
@@ -1140,7 +1147,7 @@ const KanbanCard = memo(function KanbanCard({
       onClick={() => onSelect(app.id)}
       className={cn(
         'relative rounded-md border p-2.5 flex flex-col gap-1 cursor-pointer transition-all duration-200 ease-spring',
-        !hasStagePassed && !isRejected && 'bg-white border-[#E5E8EC] hover:border-primary-300 hover:bg-primary-50/30 hover:shadow-soft-sm hover:-translate-y-px',
+        !hasStagePassed && !isRejected && 'bg-white border-[#E5E8EB] hover:border-primary-300 hover:bg-primary-50/30 hover:shadow-soft-sm hover:-translate-y-px',
         !isRejected && hasStagePassed && 'bg-green-50/60 border-green-300 hover:border-green-400 hover:shadow-soft-sm hover:-translate-y-px',
         isRejected && 'bg-red-50/40 border-red-200 opacity-65',
         isSelected && !hasStagePassed && !isRejected && 'bg-primary-50/70 border-primary-500 ring-2 ring-primary-200 -translate-y-0.5 shadow-soft-md',

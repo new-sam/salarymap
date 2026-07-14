@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js'
 import { verifyAdminOrDevStub } from './check'
+import { ROLE_GROUPS } from '../../../constants/jobs'
 
 // 인재 공급(Talent supply) 구성 — FYI에 등록한 인재풀을 "포지션(직군)"으로 분해해
 // 기업 고객의 수요 포지션과 공급이 맞는지 매일 확인하기 위한 스냅샷.
@@ -26,11 +27,16 @@ export const CATEGORIES = [
   { key: 'devops', ko: 'DevOps', en: 'DevOps', group: 'tech' },
   { key: 'qa', ko: 'QA', en: 'QA', group: 'tech' },
   { key: 'dev_generic', ko: '기타 개발', en: 'Other dev', group: 'tech' },
+  { key: 'security', ko: '보안', en: 'Security', group: 'tech' },
   { key: 'design', ko: '디자인', en: 'Design', group: 'product' },
   { key: 'pm', ko: '기획·PM', en: 'PM/PO', group: 'product' },
   { key: 'marketing', ko: '마케팅', en: 'Marketing', group: 'nontech' },
   { key: 'sales_bd', ko: '영업·BD', en: 'Sales/BD', group: 'nontech' },
+  { key: 'finance', ko: '재무·회계', en: 'Finance', group: 'nontech' },
   { key: 'hr', ko: '인사·HR', en: 'HR', group: 'nontech' },
+  { key: 'procurement', ko: '구매·자재', en: 'Procurement', group: 'nontech' },
+  { key: 'interpreter', ko: '통·번역', en: 'Interpreter', group: 'nontech' },
+  { key: 'manufacturing', ko: '생산·제조', en: 'Manufacturing', group: 'nontech' },
   { key: 'operations', ko: '운영·기타직무', en: 'Ops/Other roles', group: 'nontech' },
   { key: 'other', ko: '미분류', en: 'Uncategorized', group: 'other' },
 ]
@@ -44,18 +50,48 @@ const RULES = [
   ['data_ai', /\bdata\b|\bai\b|machine learning|\bml\b|analyst|scientist|데이터|인공지능/],
   ['devops', /devops|\binfra\b|\bsre\b|\bcloud\b|데브옵스/],
   ['qa', /\bqa\b|quality assurance|\btester\b|테스터|품질/],
+  ['security', /security|보안|penetration|infosec|bảo mật/],
   ['design', /design|\bux\b|\bui\b|motion|디자인|그래픽/],
   ['pm', /\bpm\b|\bpo\b|product manager|product owner|project manager|delivery manager|기획|프로덕트/],
   ['marketing', /marketing|마케팅|growth|콘텐츠|content/],
   ['sales_bd', /\bsales?\b|business dev|\bbd\b|account exec|영업|세일즈/],
+  ['finance', /finance|재무|회계|accountant|accounting|kế toán|tài chính/],
   ['hr', /\bhr\b|human resource|recruit|people ops|talent acquisition|인사|채용담당|리크루/],
-  ['operations', /operation|운영|logistics|supply chain|procurement|purchas|thu mua|store manager|retail|커머스|\bcs\b|고객|nhân viên|công nhân/],
+  ['procurement', /procurement|purchas|구매|자재|thu mua|vật tư/],
+  ['interpreter', /interpret|translat|통역|번역|phiên dịch|biên dịch/],
+  ['manufacturing', /production|factory|manufactur|생산|공장|warehouse|창고|물류|maintenance|설비|\bhse\b|merchandis|nhà máy|sản xuất/],
+  ['operations', /operation|운영|logistics|supply chain|store manager|retail|커머스|\bcs\b|고객|nhân viên|công nhân/],
   ['dev_generic', /develop|devlop|devop|engineer|software|\bit\b|\bdev\b|개발|프로그램|kỹ sư|coder|programmer|\bcio\b|\bcto\b|technical|엔지니어/],
 ]
+
+// 공고 taxonomy(ROLE_GROUPS)의 canonical role.value → 대시보드 카테고리 키.
+// 프로필 폼이 이제 ROLE_GROUPS 값을 그대로 저장하므로 정확 매칭이 우선(휴리스틱 RULES보다 앞).
+const ROLE_TO_CAT = {
+  Backend: 'backend', Frontend: 'frontend', Fullstack: 'fullstack', Mobile: 'mobile',
+  Web: 'dev_generic', Embedded: 'dev_generic', Game: 'dev_generic',
+  PM: 'pm', PO: 'pm', Design: 'design', 'UX Researcher': 'design',
+  HR: 'hr', Marketing: 'marketing', Sales: 'sales_bd', Finance: 'finance',
+  Operations: 'operations', Procurement: 'procurement', Interpreter: 'interpreter', 'Non-IT': 'operations',
+}
+// 세분 role을 개별 지정하지 않은 그룹은 대분류(영문 라벨) 단위 기본값으로.
+const GROUP_EN_TO_CAT = {
+  'Data': 'data_ai',
+  'Infrastructure & Ops': 'devops',
+  'Quality & Test': 'qa',
+  'Security': 'security',
+  'Architecture & Leadership': 'dev_generic',
+  'Other Tech': 'dev_generic',
+  'Manufacturing & Production': 'manufacturing',
+}
+const CANON = {}
+for (const g of ROLE_GROUPS) for (const r of g.roles) {
+  CANON[r.value.toLowerCase()] = ROLE_TO_CAT[r.value] || GROUP_EN_TO_CAT[g.label.en] || 'other'
+}
 
 export function normalizePosition(raw) {
   const s = String(raw || '').trim().toLowerCase()
   if (!s) return null // 미입력 — 카테고리와 별도로 '(unknown)'로 집계
+  if (CANON[s]) return CANON[s] // 신 taxonomy 정확 매칭 우선
   for (const [key, re] of RULES) if (re.test(s)) return key
   return 'other'
 }
@@ -83,7 +119,7 @@ export default async function handler(req, res) {
     const weekAgoISO = new Date(nowMs - 7 * DAY).toISOString()
 
     const [profiles, idEvents, apps] = await Promise.all([
-      fetchAll('user_profiles', 'id, position, resume_url, is_resume_public'),
+      fetchAll('user_profiles', 'id, position, desired_roles, resume_url, is_resume_public'),
       // 로그인 식별 이벤트만(웹은 대부분 익명 client_id라 활성 판정은 로그인 유저 기준).
       fetchAll('events', 'user_id, created_at', q => q.not('user_id', 'is', null)),
       fetchAll('job_applications', 'user_id', q => q.not('user_id', 'is', null)),
@@ -122,10 +158,15 @@ export default async function handler(req, res) {
       const act = isActive(p.id)
       if (act) totals.activeAll++
 
-      const key = normalizePosition(p.position)
+      let key = normalizePosition(p.position)
+      // position 미입력이면 CV모달에서 고른 desired_roles(신 taxonomy)로 보완.
+      let srcVal = p.position
+      if (!key && Array.isArray(p.desired_roles) && p.desired_roles.length) {
+        srcVal = p.desired_roles.find(v => String(v || '').trim()) || ''
+        key = normalizePosition(srcVal)
+      }
       const bucket = key ? cat[key] : unknown
       if (key) totals.withPosition++
-      else if (hasResume) {} // 미입력이어도 이력서 카운트는 unknown 버킷에 들어감
 
       bucket.all++
       if (hasResume) { bucket.resume++; totals.resumeHolders++ }
@@ -133,8 +174,8 @@ export default async function handler(req, res) {
       if (hasResume && act) { bucket.active++; totals.activeResume++ }
 
       if (key === 'other') {
-        const v = String(p.position).trim()
-        uncat[v] = (uncat[v] || 0) + 1
+        const v = String(srcVal).trim()
+        if (v) uncat[v] = (uncat[v] || 0) + 1
       }
     }
 

@@ -273,7 +273,7 @@ export default function CompanyTodoPage() {
                       {jobItems.map(({ candidate, action, isOwner }) => {
                         const Icon = KIND_ICON[action.kind] || Star;
                         const profile = candidate.user_id ? profileMap[candidate.user_id] : null;
-                        const name = candidate.applicant_name || profile?.full_name || `지원자 ${candidate.id.slice(-6).toUpperCase()}`;
+                        const name = candidate.applicant_name || profile?.full_name || `${t('company.candidatePrefix')}${candidate.id.slice(-6).toUpperCase()}`;
                         // Use t() directly so the chip respects the language
                         // setting — STAGE_LABEL_KO was hardcoded Korean and
                         // shadowed the en/vi translations.

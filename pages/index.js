@@ -572,11 +572,30 @@ export default function Home({ initialCompanies = [] }) {
   const [detailOpen, setDetailOpen] = useState(false);
   const [detailCardIndex, setDetailCardIndex] = useState(0);
   const [showAuthModal, setShowAuthModal] = useState(false);
+  const [authCtx, setAuthCtx] = useState(null); // 'gate' = 가입 게이트, 'jobs' = 결과 화면 채용 더보기
+  const [freshSubmit, setFreshSubmit] = useState(false); // 이번 세션에서 방금 제출 — 결과 앵커 스크롤 트리거
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [user, setUser] = useState(null);
 
-  // Derived: card/panel unlock state — only unlocked after submitting salary info
-  const isUnlocked = isSubmitted;
+  // Derived: card/panel unlock state — submitted AND logged in (가입 게이트 실험 2026-07-13)
+  const isUnlocked = isSubmitted && isLoggedIn;
+  // Submitted anonymously — company data stays locked until sign-in
+  const needsLogin = isSubmitted && !isLoggedIn;
+
+  // 가입 게이트 진입: 클릭 계측 + 로그인 성공 귀속 마커 + 인증 모달
+  const openLoginGate = (source) => {
+    try {
+      sessionStorage.setItem('fyi_gate_pending', '1');
+      localStorage.removeItem('fyi_login_return'); // 이전 채용 CTA가 남긴 리턴 경로가 게이트 로그인을 가로채지 않게
+    } catch {}
+    fetch('/api/track', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ event: 'company_gate_click', page: '/', meta: { source } }),
+    }).catch(() => {});
+    setAuthCtx('gate');
+    setShowAuthModal(true);
+  };
 
   // Stable refs for PRE/POST dangerouslySetInnerHTML
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -657,7 +676,7 @@ export default function Home({ initialCompanies = [] }) {
 
   // Expose openAuthModal bridge (used by legacy HTML onclick handlers)
   useEffect(() => {
-    window.openAuthModal = () => setShowAuthModal(true);
+    window.openAuthModal = (ctx) => { setAuthCtx(ctx || null); setShowAuthModal(true); };
     return () => { delete window.openAuthModal; };
   }, [setShowAuthModal]);
 
@@ -741,22 +760,24 @@ export default function Home({ initialCompanies = [] }) {
 
     // isLoggedIn: always read from Supabase session on mount
     supabaseClient.auth.getSession().then(({ data: { session } }) => {
+      // 제출 상태는 로그인 여부와 무관하게 복원 — 새로고침/뒤로가기 시 결과 화면 유지, 재제출 중복 방지.
+      // 회사 데이터 언락은 isUnlocked(제출+로그인)가 따로 게이트하므로 익명 복원해도 안 샘.
+      const submitted = localStorage.getItem('fyi_submitted') === 'true';
+      if (submitted) {
+        setIsSubmitted(true);
+        const sr = localStorage.getItem('fyi_role');
+        const se = localStorage.getItem('fyi_exp');
+        const ss = localStorage.getItem('fyi_salary');
+        const sc = localStorage.getItem('fyi_company');
+        if (sr) setWRole(sr);
+        if (se) setWExp(se);
+        if (ss) setWSalary(Number(ss));
+        if (sc) setWCompany(sc);
+        if (sr && se && ss) setWizardStep(6); // 위저드 대신 결과 화면으로 복원
+      }
       if (session) {
         setIsLoggedIn(true);
         setUser(session.user);
-        // Only restore submission state for logged-in users
-        const submitted = localStorage.getItem('fyi_submitted') === 'true';
-        if (submitted) {
-          setIsSubmitted(true);
-          const sr = localStorage.getItem('fyi_role');
-          const se = localStorage.getItem('fyi_exp');
-          const ss = localStorage.getItem('fyi_salary');
-          const sc = localStorage.getItem('fyi_company');
-          if (sr) setWRole(sr);
-          if (se) setWExp(se);
-          if (ss) setWSalary(Number(ss));
-          if (sc) setWCompany(sc);
-        }
 
         // Handle ?login=success redirect from OAuth
         if (isLoginSuccess) {
@@ -771,6 +792,17 @@ export default function Home({ initialCompanies = [] }) {
             }).catch(() => {});
             localStorage.removeItem('fyi_submission_id');
           }
+          // 가입 게이트에서 시작된 로그인이면 전환 이벤트 기록
+          try {
+            if (sessionStorage.getItem('fyi_gate_pending')) {
+              sessionStorage.removeItem('fyi_gate_pending');
+              fetch('/api/track', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ event: 'company_gate_login_success', page: '/', userId: session.user.id }),
+              }).catch(() => {});
+            }
+          } catch {}
           window.history.replaceState({}, '', '/');
         }
       } else {
@@ -949,7 +981,9 @@ export default function Home({ initialCompanies = [] }) {
         setShowSocialPrompt={setShowSocialPrompt}
         isLoggedIn={isLoggedIn}
         submissionId={submissionId}
+        freshSubmit={freshSubmit}
         onSubmit={async () => {
+          setFreshSubmit(true);
           try {
             const { data: { session } } = await supabaseClient.auth.getSession();
             const submitRes = await fetch('/api/submit', {
@@ -1147,8 +1181,13 @@ export default function Home({ initialCompanies = [] }) {
                       company={c}
                       index={c._origIndex}
                       isUnlocked={isUnlocked}
+                      needsLogin={needsLogin}
                       onClick={(co) => { setDetailCompany(co.name); setDetailCardIndex(c._origIndex); setDetailOpen(true); }}
-                      onLockedClick={() => { if(typeof gtag==='function') gtag('event','locked_card_click'); document.getElementById('submit')?.scrollIntoView({ behavior: 'smooth' }); }}
+                      onLockedClick={() => {
+                        if (needsLogin) { openLoginGate('card'); return; }
+                        if(typeof gtag==='function') gtag('event','locked_card_click');
+                        document.getElementById('submit')?.scrollIntoView({ behavior: 'smooth' });
+                      }}
                     />
                   ))}
                   {visibleCount < filtered.length && (
@@ -1186,26 +1225,28 @@ export default function Home({ initialCompanies = [] }) {
         userSalary={wSalary || null}
         userCompany={wCompany || null}
         isSubmitted={isUnlocked}
+        needsLogin={needsLogin}
+        onLoginGate={() => openLoginGate('panel')}
         cardIndex={detailCardIndex}
       />
 
       {/* Auth Modal */}
       {showAuthModal && (
         <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.75)',zIndex:1000,display:'flex',alignItems:'center',justifyContent:'center',padding:'20px'}}
-          onClick={e => { if(e.target===e.currentTarget) setShowAuthModal(false); }}>
+          onClick={e => { if(e.target===e.currentTarget) { setShowAuthModal(false); setAuthCtx(null); } }}>
           <div style={{background:'#1a1a18',border:'1px solid rgba(255,255,255,0.1)',borderRadius:'20px',padding:'40px 36px',maxWidth:'420px',width:'100%',fontFamily:"'Barlow',sans-serif"}}>
-            <div style={{fontSize:'24px',fontWeight:900,color:'#fff',letterSpacing:'-0.5px',marginBottom:'8px'}}>{t('auth.title')}</div>
-            <div style={{fontSize:'13px',color:'rgba(255,255,255,0.4)',marginBottom:'28px',lineHeight:1.6}}>{t('auth.sub')}</div>
+            <div style={{fontSize:'24px',fontWeight:900,color:'#fff',letterSpacing:'-0.5px',marginBottom:'8px'}}>{t(authCtx === 'gate' ? 'auth.gateTitle' : 'auth.title')}</div>
+            <div style={{fontSize:'13px',color:'rgba(255,255,255,0.4)',marginBottom:'28px',lineHeight:1.6}}>{t(authCtx === 'gate' ? 'auth.gateSub' : 'auth.sub')}</div>
             <div style={{display:'flex',flexDirection:'column',gap:'10px'}}>
               <button onClick={async () => { setShowAuthModal(false); try { await supabaseClient.auth.signInWithOAuth({ provider:'linkedin_oidc', options:{ redirectTo: window.location.origin+'/auth/callback', scopes:'openid profile email' } }); } catch(e) { console.error(e); } }}
                 style={{width:'100%',background:'#0A66C2',color:'#fff',fontSize:'14px',fontWeight:700,padding:'14px',borderRadius:'10px',border:'none',cursor:'pointer',fontFamily:"'Barlow',sans-serif",display:'flex',alignItems:'center',justifyContent:'center',gap:'10px'}}>
                 <span style={{fontWeight:900,fontSize:'16px'}}>in</span> {t('auth.linkedin')}
               </button>
-              <button onClick={() => { setShowAuthModal(false); window.location.href = '/api/auth/google?return=' + encodeURIComponent(window.location.pathname); }}
+              <button onClick={() => { setShowAuthModal(false); window.location.href = '/api/auth/google?return=' + encodeURIComponent(authCtx === 'jobs' ? '/jobs?from=salary' : window.location.pathname); }}
                 style={{width:'100%',background:'#fafaf8',color:'#111',fontSize:'14px',fontWeight:700,padding:'14px',borderRadius:'10px',border:'none',cursor:'pointer',fontFamily:"'Barlow',sans-serif",display:'flex',alignItems:'center',justifyContent:'center',gap:'10px'}}>
                 <span style={{fontWeight:900,fontSize:'16px'}}>G</span> {t('auth.google')}
               </button>
-              <button onClick={() => setShowAuthModal(false)}
+              <button onClick={() => { setShowAuthModal(false); setAuthCtx(null); }}
                 style={{background:'none',border:'none',color:'rgba(255,255,255,0.3)',fontSize:'12px',cursor:'pointer',fontFamily:"'Barlow',sans-serif",marginTop:'4px',width:'100%',textAlign:'center'}}>
                 {t('auth.later')}
               </button>

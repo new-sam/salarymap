@@ -17,6 +17,7 @@ import VerificationsView from '../../components/admin/VerificationsView'
 import CommunityView from '../../components/admin/CommunityView'
 import CompanyView from '../../components/admin/CompanyView'
 import OutreachView from '../../components/admin/OutreachView'
+import RecommendView from '../../components/admin/RecommendView'
 import GoalMetricsView from '../../components/admin/GoalMetricsView'
 import {
   T, METRICS_BASE, EXP_COLORS, COLORS,
@@ -155,6 +156,13 @@ export default function AdminDashboard() {
         setAuth('denied')
       }
     })
+    // 토큰은 만료(기본 1시간)되므로 한 번 잡아둔 값은 곧 죽는다. supabase가
+    // 백그라운드에서 갱신할 때(TOKEN_REFRESHED) state도 최신 토큰으로 교체해,
+    // 모든 어드민 API 호출이 만료 토큰으로 401 나는 걸 막는다.
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session?.access_token) setToken(session.access_token)
+    })
+    return () => subscription?.unsubscribe()
   }, [])
 
 
@@ -226,6 +234,8 @@ export default function AdminDashboard() {
       jobClicks: realtime.jobClicks,
       cardClicks: realtime.cardClicks,
       jobApps: realtime.jobApps,
+      jobAppsCompany: realtime.jobAppsCompany ?? 0,
+      cvSuccessApps: realtime.cvSuccessApps ?? 0,
       jobsPageViews: realtime.jobsPageViews ?? 0,
       applyClicks: realtime.applyClicks ?? 0,
       saveClicks: realtime.saveClicks ?? 0,
@@ -262,6 +272,8 @@ export default function AdminDashboard() {
       organicSubmissions: data.summary.organicSubmissions + diff('organic'),
       totalSignups: data.summary.totalSignups + diff('signups'),
       totalJobApps: data.summary.totalJobApps + diff('jobApps'),
+      totalJobAppsCompany: data.summary.totalJobAppsCompany + diff('jobAppsCompany'),
+      totalCvSuccessApps: data.summary.totalCvSuccessApps + diff('cvSuccessApps'),
       totalJobClicks: data.summary.totalJobClicks + diff('jobClicks'),
       totalCardClicks: data.summary.totalCardClicks + diff('cardClicks'),
     }
@@ -962,6 +974,11 @@ export default function AdminDashboard() {
         {/* Cold Outreach Tab — 콜드메일 영업 대상/진행 관리 */}
         {(tab === 'outreach' || tab === 'outreach-yh') && (
           <OutreachView key={tab} token={token} lang={lang} owner={tab === 'outreach-yh' ? 'younghun' : 'wsj'} />
+        )}
+
+        {/* 광고메일 — 공고 추천 메일 발송/전환 현황 */}
+        {tab === 'recommend' && (
+          <RecommendView token={token} lang={lang} />
         )}
 
         {/* Personal · 목표지표 — Sean (개인 비밀번호 게이트) */}

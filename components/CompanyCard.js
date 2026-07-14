@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useT } from '../lib/i18n';
 import Icon from './Icon';
 
-export default function CompanyCard({ company, index, isUnlocked, onClick, onLockedClick }) {
+export default function CompanyCard({ company, index, isUnlocked, needsLogin, onClick, onLockedClick }) {
   const { t } = useT();
   const [logoError, setLogoError] = useState(false);
 
@@ -39,7 +39,7 @@ export default function CompanyCard({ company, index, isUnlocked, onClick, onLoc
               marginTop: '8px', background: '#ff6000', color: 'black',
               fontSize: '12px', fontWeight: 800, padding: '9px 20px', borderRadius: '100px',
             }}
-          >{t('companies.shareSalary')}</span>
+          >{t(needsLogin ? 'companies.loginToView' : 'companies.shareSalary')}</span>
         </div>
       </div>
     );

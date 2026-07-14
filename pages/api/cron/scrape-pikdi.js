@@ -25,13 +25,21 @@ const ROLE_KO = {
   'Project Manager': '프로젝트 매니저',
 }
 
+// 실행 흔적을 events 테이블에 남긴다(신규 0건이어도 매주 돌았는지 확인용).
+async function logRun(meta) {
+  await supabase.from('events').insert({ event: 'cron_pikdi', page: '/api/cron/scrape-pikdi', meta }).then(() => {}, () => {})
+}
+
 export default async function handler(req, res) {
   if (req.headers.authorization !== `Bearer ${process.env.CRON_SECRET}`) {
     return res.status(401).json({ error: 'Unauthorized' })
   }
   try {
     const resp = await fetch(API, { headers: { 'User-Agent': 'Mozilla/5.0', Origin: 'https://pickdi.ninehire.site' } })
-    if (!resp.ok) return res.status(502).json({ error: `ninehire ${resp.status}` })
+    if (!resp.ok) {
+      await logRun({ ok: false, error: `ninehire ${resp.status}` })
+      return res.status(502).json({ error: `ninehire ${resp.status}` })
+    }
     const { results = [] } = await resp.json()
 
     // 브랜드별 직무 집계 (픽디 자체·브랜드 없는 워크플로우 공고 제외)
@@ -76,11 +84,13 @@ export default async function handler(req, res) {
       if (!error) added.push({ brand: b.brand, roles, email: email || null })
     }
 
+    await logRun({ ok: true, scanned: byBrand.size, existing: have.size, added: added.length, newBrands: added.map(b => b.brand) })
     return res.status(200).json({
       scanned: byBrand.size, existing: have.size, added: added.length, newBrands: added,
     })
   } catch (err) {
     console.error('scrape-pikdi error:', err)
+    await logRun({ ok: false, error: err.message })
     return res.status(500).json({ error: err.message })
   }
 }

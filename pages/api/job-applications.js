@@ -1,4 +1,6 @@
 import { createClient } from '@supabase/supabase-js'
+import { notifyTeamNewApplication } from '../../lib/notifyTeamNewApplication'
+import { notifyApplicantReceipt } from '../../lib/notifyApplicantReceipt'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
@@ -14,6 +16,10 @@ const supabase = createClient(
 const SALARY_REFERRER_RE = /salary-fyi\.com/i
 function classifySource(applicationSource, referrer) {
   if (applicationSource === 'salary') return 'salary'
+  // CV 등록 완료 모달에서 원탭 지원한 경우 — 가입→지원 전환 개선 효과 측정용 마커.
+  if (applicationSource === 'cv_success') return 'cv_success'
+  // 지원 완료 모달의 유사 공고 원탭 지원 — 유사 공고 유도 효과 측정용 마커.
+  if (applicationSource === 'similar_after_apply') return 'similar_after_apply'
   if (referrer && SALARY_REFERRER_RE.test(referrer)) return 'salary'
   return 'direct'
 }
@@ -106,6 +112,20 @@ export default async function handler(req, res) {
   }
 
   console.log(`[JOB APPLICATION] user=${userId || 'anon'} applied to job=${jobId}`)
+
+  // 지원자 & 채용팀 두 축에 알림 메일 발송.
+  // 서버리스에서 fire-and-forget 하면 response 반환 후 프로세스가 종료돼 promise 가
+  // discard 될 수 있어 실제로 발송이 안 나가는 사례가 있었다 → await 로 반드시 완료.
+  // 두 helper 모두 절대 throw 하지 않으므로 지원 접수 자체는 안전.
+  // 병렬로 돌리되 각자 안에서 순차 처리 (Resend 2 req/sec 제한은 각 함수가 알아서 회피).
+  if (data?.id) {
+    const [applicantResult, teamResult] = await Promise.all([
+      notifyApplicantReceipt(data.id),
+      notifyTeamNewApplication(data.id),
+    ])
+    if (!applicantResult?.ok) console.warn('[JOB APPLICATION] applicant receipt not sent:', applicantResult?.reason)
+    if (!teamResult?.ok) console.warn('[JOB APPLICATION] team notify not sent:', teamResult?.reason)
+  }
 
   return res.status(201).json({ success: true, data })
 }

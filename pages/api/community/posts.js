@@ -534,6 +534,9 @@ export default async function handler(req, res) {
 
     // 익명(비로그인) 목록은 모두에게 동일 → 짧게 CDN 캐시(홈 인기글 콜드 ~3초 → 캐시 즉시 응답).
     // 토큰이 있으면 is_liked/팔로우 등 개인화가 섞이므로 캐시하지 않는다.
+    // Vary: Authorization이 없으면 CDN이 URL만으로 캐시를 판단해, 비로그인 응답(is_liked=false)을
+    // 로그인 요청에도 그대로 돌려준다(→ 좋아요 수는 늘었는데 하트가 비는 증상). 반드시 함께 못박는다.
+    res.setHeader('Vary', 'Authorization')
     res.setHeader(
       'Cache-Control',
       req.headers.authorization ? 'no-store' : 'public, s-maxage=60, stale-while-revalidate=300',

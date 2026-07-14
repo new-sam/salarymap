@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js'
 import { verifyAdminOrDevStub } from './check'
+import { DEMAND_CATEGORIES, CAT_KO, classifyJobTitle } from '../../../constants/jobs'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
@@ -15,47 +16,6 @@ const supabase = createClient(
 // 정렬하고, 목록 밖 값은 뒤에 덧붙인다.
 const STAGE_CANON = ['pending', 'applied', 'viewed', 'reviewing', 'decided', 'accepted', 'rejected']
 
-// 공고(수요) 직군 분류 — 베트남어 블루칼라/제조·물류 위주 데이터에 맞춘 키워드 휴리스틱.
-// 위에서부터 첫 매칭 승(구체적 직군을 일반보다 먼저). 매칭 안 되면 'other'.
-export const DEMAND_CATEGORIES = [
-  { key: 'dev', ko: '개발·IT' },
-  { key: 'data', ko: '데이터·AI' },
-  { key: 'design', ko: '디자인' },
-  { key: 'pm', ko: '기획·PM' },
-  { key: 'sales', ko: '영업·BD' },
-  { key: 'marketing', ko: '마케팅' },
-  { key: 'hr', ko: '인사·HR' },
-  { key: 'qc', ko: '품질·QC' },
-  { key: 'engineering', ko: '기술·설비(전기·기계)' },
-  { key: 'production', ko: '생산·제조' },
-  { key: 'logistics', ko: '물류·창고' },
-  { key: 'office', ko: '사무·관리' },
-  { key: 'exec', ko: '경영·임원' },
-  { key: 'other', ko: '기타' },
-]
-const DEMAND_RULES = [
-  ['data', /\bai\b|\bdata\b|machine learning|khoa học dữ liệu|dữ liệu|phân tích/],
-  ['dev', /developer|software|lập trình|front[\s-]?end|back[\s-]?end|full[\s-]?stack|\bweb\b|\bit\b|coder|programmer|phần mềm|devops|software engineer/],
-  ['hr', /tuyển dụng|nhân sự|đào tạo|\bhr\b|recruit|human resource|training/],
-  ['qc', /\bqc\b|\bqa\b|chất lượng|kiểm tra|kiểm định|giám sát vệ sinh|vệ sinh công nghiệp|quality/],
-  ['marketing', /marketing|social media|truyền thông|content|nội dung|\bseo\b|thương hiệu/],
-  ['sales', /kinh doanh|bán hàng|\bsales?\b|business development|\bbd\b|telesales|chăm sóc khách|customer|\bcs\b/],
-  ['design', /thiết kế đồ họa|đồ họa|graphic|\bui\b|\bux\b|designer|motion/],
-  ['pm', /\bpm\b|\bpo\b|product manager|project manager|quản lý dự án|planner|kế hoạch/],
-  ['exec', /giám đốc|\bdirector\b|head of|trưởng phòng|trưởng bộ phận|\bceo\b|\bcto\b|\bcfo\b|\bcoo\b|quản lý cấp cao/],
-  ['engineering', /kỹ sư|kỹ thuật|cơ khí|cơ điện|\bđiện\b|điện tử|bảo trì|thiết bị|automation|m&e|xây dựng|công trình|thi công/],
-  ['production', /sản xuất|quản đốc|công nhân|thợ|lắp ráp|tổ sơn|đứng máy|máy chấn|máy laser|máy hàn|hàn|\bmay\b|gia công|vận hành máy|đóng gói|dán tem|đúc|ép nhựa|dệt/],
-  ['logistics', /\bkho\b|giao hàng|bốc hàng|soạn hàng|giao nhận|logistics|vận chuyển|xuất nhập|thu mua|procurement|supply chain|tài xế|lái xe|forklift/],
-  ['office', /kế toán|hành chính|thư ký|secretary|văn phòng|admin|lễ tân|trợ lý|nhân viên văn phòng|pháp lý|legal|tài chính|finance/],
-]
-const CAT_KO = Object.fromEntries(DEMAND_CATEGORIES.map(c => [c.key, c.ko]))
-export function classifyJobTitle(raw) {
-  const s = String(raw || '').trim().toLowerCase()
-  if (!s) return 'other'
-  for (const [key, re] of DEMAND_RULES) if (re.test(s)) return key
-  return 'other'
-}
-
 export default async function handler(req, res) {
   const admin = await verifyAdminOrDevStub(req)
   if (!admin) return res.status(401).json({ error: 'Unauthorized' })
@@ -68,14 +28,20 @@ export default async function handler(req, res) {
     supabase.from('recruiter_companies').select('id, name, email_domain, verified_at, created_at').order('created_at', { ascending: false }),
     supabase.from('recruiter_users').select('company_id, email, full_name, role, created_at').order('created_at', { ascending: false }),
     supabase.from('jobs').select('id, company_id, title, status, is_active, created_at').not('company_id', 'is', null).order('created_at', { ascending: false }),
-    supabase.from('job_applications').select('job_id, status, rejected_at, jobs!inner(company_id)').not('jobs.company_id', 'is', null),
+    supabase.from('job_applications').select('job_id, status, rejected_at, created_at, jobs!inner(company_id)').not('jobs.company_id', 'is', null),
   ])
-  const companies = companiesRes.data || []
+  // 멋사(Likelion) 등 내부/테스트 회사 제외 — 알람(daily-summary)과 동일 규칙.
+  // 자체 테스트 지원이 대부분이라 안 빼면 지원·공고당 지원이 뻥튀기됨.
+  const EXCLUDED_CO_DOMAINS = ['likelion.net', 'dummy.local', 'system.local']
+  const EXCLUDED_CO_NAMES = new Set(['likelion', 'likelion vn', 'likelion vietnam'])
+  const isExcludedCo = (c) => EXCLUDED_CO_DOMAINS.includes((c.email_domain || '').toLowerCase()) || EXCLUDED_CO_NAMES.has((c.name || '').trim().toLowerCase())
+  const excludedCoIds = new Set((companiesRes.data || []).filter(isExcludedCo).map(c => c.id))
+  const companies = (companiesRes.data || []).filter(c => !isExcludedCo(c))
   const members = membersRes.data || []
   const memberCount = {}
   members.forEach(m => { memberCount[m.company_id] = (memberCount[m.company_id] || 0) + 1 })
 
-  const jobs = jobsRes.data || []
+  const jobs = (jobsRes.data || []).filter(j => !excludedCoIds.has(j.company_id))
   const jobToCompany = {}
   jobs.forEach(j => { jobToCompany[j.id] = j.company_id })
 
@@ -122,17 +88,22 @@ export default async function handler(req, res) {
   }))
 
   // 이번 달 일별 유입 — 하루마다 신규 가입 기업 + 신규 공고 (광고 성과를 일 단위로)
-  const now = new Date()
-  const y = now.getUTCFullYear(), mo = now.getUTCMonth(), todayDom = now.getUTCDate()
+  // 베트남(UTC+7) 날짜 기준 — 알람(daily-summary)과 하루 경계를 맞춘다.
+  // (UTC 기준으로 하면 UTC 17시~23시 지원이 하루 앞당겨져 봇과 어긋남)
+  const vnNow = new Date(Date.now() + 7 * 3600 * 1000)
+  const y = vnNow.getUTCFullYear(), mo = vnNow.getUTCMonth(), todayDom = vnNow.getUTCDate()
+  const vnDay = (ts) => ts ? new Date(new Date(ts).getTime() + 7 * 3600 * 1000).toISOString().slice(0, 10) : ''
   const daily = []
   const dayIdx = {}
   for (let i = 1; i <= todayDom; i++) {
     const d = new Date(Date.UTC(y, mo, i)).toISOString().slice(0, 10)
     dayIdx[d] = daily.length
-    daily.push({ date: d, companies: 0, jobs: 0 })
+    daily.push({ date: d, companies: 0, jobs: 0, apps: 0 })
   }
-  companies.forEach(c => { const d = (c.created_at || '').slice(0, 10); if (d in dayIdx) daily[dayIdx[d]].companies += 1 })
-  jobs.forEach(j => { const d = (j.created_at || '').slice(0, 10); if (d in dayIdx) daily[dayIdx[d]].jobs += 1 })
+  companies.forEach(c => { const d = vnDay(c.created_at); if (d in dayIdx) daily[dayIdx[d]].companies += 1 })
+  jobs.forEach(j => { const d = vnDay(j.created_at); if (d in dayIdx) daily[dayIdx[d]].jobs += 1 })
+  // 일별 지원 — 기업 자체공고 지원만(멋사 제외 apps 기준). VN 날짜로 집계(봇과 일치).
+  apps.forEach(ap => { const d = vnDay(ap.created_at); if (d in dayIdx) daily[dayIdx[d]].apps += 1 })
   const monthLabel = `${y}-${String(mo + 1).padStart(2, '0')}`
 
   const companyName = Object.fromEntries(companies.map(c => [c.id, c.name]))
@@ -186,6 +157,14 @@ export default async function handler(req, res) {
     avgAppsPerJob: Object.keys(jobAppCount).length > 0
       ? Math.round((apps.length / Object.keys(jobAppCount).length) * 10) / 10
       : 0,
+    // 공고당 지원 (중위) — 알람(daily-summary)과 동일. 지원 들어온 공고들의
+    // 공고별 지원수 중위값. 평균은 소수 폭주공고에 왜곡되므로 중위값으로 통일.
+    medianAppsPerJob: (() => {
+      const s = Object.values(jobAppCount).sort((a, b) => a - b)
+      if (!s.length) return 0
+      const m = Math.floor(s.length / 2)
+      return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2
+    })(),
   }
 
   return res.status(200).json({ overview, signups, daily, monthLabel, byCategory, otherTitles, jobsList, stageTotals, stageOrder })

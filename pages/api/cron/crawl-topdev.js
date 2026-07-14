@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js'
+import { guessRole } from '../../../lib/roleGuess'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
@@ -189,24 +190,6 @@ function guessCountry(addresses) {
   const regions = addresses.address_region_array || []
   if (regions.includes('Oversea')) return 'global'
   return 'vietnam'
-}
-
-function guessRole(title, techStack) {
-  const t = (title || '').toLowerCase()
-  const stack = techStack.join(' ').toLowerCase()
-  if (t.includes('frontend') || t.includes('front-end') || t.includes('front end')) return 'Frontend'
-  if (t.includes('backend') || t.includes('back-end') || t.includes('back end') || t.includes('server')) return 'Backend'
-  if (t.includes('fullstack') || t.includes('full-stack') || t.includes('full stack')) return 'Fullstack'
-  if (t.includes('mobile') || t.includes('ios') || t.includes('android')) return 'Mobile'
-  if (t.includes('data') || t.includes('machine learning') || t.includes('ml') || t.includes('ai ')) return 'Data'
-  if (t.includes('devops') || t.includes('sre') || t.includes('infrastructure') || t.includes('platform')) return 'DevOps'
-  if (t.includes('product manager') || t.includes('program manager')) return 'PM'
-  if (t.includes('design') || t.includes('ux') || t.includes('ui')) return 'Design'
-  if (t.includes('qa') || t.includes('quality') || t.includes('test') || t.includes('tester')) return 'QA'
-  if (t.includes('php') || t.includes('laravel') || t.includes('magento') || stack.includes('php')) return 'Backend'
-  if (t.includes('.net') || t.includes('c#') || stack.includes('.net')) return 'Backend'
-  if (t.includes('java') && !t.includes('javascript')) return 'Backend'
-  return 'Backend'
 }
 
 const NON_TECH_KEYWORDS = [

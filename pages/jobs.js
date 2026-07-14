@@ -5,7 +5,8 @@ import { useRouter } from 'next/router'
 import { supabase } from '../lib/supabaseClient'
 import { useT } from '../lib/i18n'
 import Icon from '../components/Icon'
-import { DEFAULT_IMAGES, ROLE_OPTIONS, TYPE_OPTIONS, TECH_OPTIONS, JOBS_PER_PAGE } from '../constants/jobs'
+import JobFilterModal from '../components/jobs/JobFilterModal'
+import { DEFAULT_IMAGES, roleLabel, roleGroupKey, roleGroupLabel, jobInCategoryGroup, categoryGroupLabel, JOBS_PER_PAGE } from '../constants/jobs'
 import { COMPANY_PROFILES } from '../data/companyProfiles.js'
 import { formatSalaryCard, getHighSalaryThreshold } from '../utils/salary'
 import { generateCompanyDescription } from '../utils/companyDescription'
@@ -22,19 +23,37 @@ function decodeHTML(str) {
 // Module-level: survives client-side navigation, resets on full page reload
 let _cachedProfile = null
 
-// 같은 회사·제목 공고 중복 제거 — 크롤러 중복 삽입 + 대소문자/공백 변형 방어.
-// /api/jobs가 created_at desc 정렬이라 첫 항목(최신)이 유지된다.
-function dedupeJobs(list) {
-  const seen = new Set()
-  return (list || []).filter(j => {
-    const key = `${(j.company || '').trim().toLowerCase().replace(/\s+/g, ' ')}::${(j.title || '').trim().toLowerCase().replace(/\s+/g, ' ')}`
-    if (seen.has(key)) return false
-    seen.add(key)
-    return true
-  })
+// 직무/근무형태/기술/경력 필터 매칭 — 본 목록과 필터 모달의 실시간 건수가 같은 로직을 공유한다.
+// f: { roles, types, techs, expMin, expMax } — 배열은 다중선택(섹션 안 OR, 섹션 간 AND).
+function matchesJobFilters(job, f) {
+  if (f.roles.length > 0) {
+    const hit = f.roles.some(rf => {
+      // 광고 랜딩용 직군 묶음 — role 컬럼 우선 + 비IT는 제목분류(제조/사무 구분)
+      // grp:ktc 는 직군이 아니라 source='ktc'(LikeLion KTC 시드) 전용 광고 랜딩.
+      if (rf.startsWith('grp:')) return rf.slice(4) === 'ktc' ? job.source === 'ktc' : jobInCategoryGroup(job, rf.slice(4))
+      if (rf.startsWith('cat:')) return roleGroupKey(job.role) === rf.slice(4)
+      return job.role === rf
+    })
+    if (!hit) return false
+  }
+  if (f.types.length > 0 && !f.types.includes(job.type)) return false
+  if (f.techs.length > 0) {
+    const stack = job.tech_stack || []
+    const hit = f.techs.some(tf => stack.some(t => t.toLowerCase().includes(tf.toLowerCase())))
+    if (!hit) return false
+  }
+  if (f.expMin !== '' || f.expMax !== '') {
+    const jobMin = job.experience_min || 0
+    const jobMax = job.experience_max || 0
+    if (!jobMin && !jobMax) return true // 경력 무관은 항상 포함
+    const eMin = f.expMin !== '' ? Number(f.expMin) : 0
+    const eMax = f.expMax !== '' ? Number(f.expMax) : 99
+    if (jobMax < eMin || jobMin > eMax) return false
+  }
+  return true
 }
 
-// KTC 광고 랜딩(/jobs?source=ktc)에서 최상단에 지정 순서대로 고정할 공고 ID.
+// KTC 광고 랜딩(/jobs?role=grp:ktc)에서 최상단에 지정 순서대로 고정할 공고 ID.
 const KTC_PRIORITY_IDS = [
   '5877ee3e-73f3-429c-84b9-6eca612a2fe1', // Lumicraft — Full-stack Developer
   '7a42601a-985a-45c3-9ab8-e1a48f1ea167', // Wellpod — TikTok Ads Marketing Manager
@@ -55,6 +74,23 @@ function pinPriority(list, ids) {
   const pinned = list.filter(j => rank.has(j.id)).sort((a, b) => rank.get(a.id) - rank.get(b.id))
   const rest = list.filter(j => !rank.has(j.id))
   return [...pinned, ...rest]
+}
+
+// 스토리지 URL에서 원본 이력서 파일명 복원 (업로드 시 `${timestamp}_${safeName}`로 저장됨)
+function resumeNameFromUrl(url) {
+  try { return decodeURIComponent(url.split('/').pop().split('?')[0]).replace(/^\d+_/, '') } catch { return 'resume' }
+}
+
+// 같은 회사·제목 공고 중복 제거 — 크롤러 중복 삽입 + 대소문자/공백 변형 방어.
+// /api/jobs가 created_at desc 정렬이라 첫 항목(최신)이 유지된다.
+function dedupeJobs(list) {
+  const seen = new Set()
+  return (list || []).filter(j => {
+    const key = `${(j.company || '').trim().toLowerCase().replace(/\s+/g, ' ')}::${(j.title || '').trim().toLowerCase().replace(/\s+/g, ' ')}`
+    if (seen.has(key)) return false
+    seen.add(key)
+    return true
+  })
 }
 
 // 핫 섹션·메인 그리드 공용 카드. 썸네일 오버레이는 좌상단 배지 1개(featured > bump > match),
@@ -125,12 +161,13 @@ export default function JobsPage() {
   const [jobsLoaded, setJobsLoaded] = useState(false)
   const highSalaryThreshold = useMemo(() => getHighSalaryThreshold(jobs), [jobs])
   const [searchQuery, setSearchQuery] = useState('')
-  const [roleFilter, setRoleFilter] = useState('')
-  const [typeFilter, setTypeFilter] = useState('')
+  // 다중선택 배열(앱 필터와 동일). roles 항목은 소분류 value | 'cat:<대분류>' | 'grp:*'(광고 랜딩) 혼용 가능.
+  const [roleFilters, setRoleFilters] = useState([])
+  const [typeFilters, setTypeFilters] = useState([])
   const [expMin, setExpMin] = useState('')
   const [expMax, setExpMax] = useState('')
-  const [techFilter, setTechFilter] = useState('')
-  const [openDropdown, setOpenDropdown] = useState(null)
+  const [techFilters, setTechFilters] = useState([])
+  const [filterOpen, setFilterOpen] = useState(false) // 통합 필터 모달
   const [isSubmitted, setIsSubmitted] = useState(false)
   const [isLoggedIn, setIsLoggedIn] = useState(false)
   const [showAuthModal, setShowAuthModal] = useState(false)
@@ -171,6 +208,9 @@ export default function JobsPage() {
   const [showAiProfilePrompt, setShowAiProfilePrompt] = useState(null)
   const [aiParsing, setAiParsing] = useState(0)
   const [hasProfileResume, setHasProfileResume] = useState(false)
+  const [profileResumeUrl, setProfileResumeUrl] = useState(null)
+  const [similarApplying, setSimilarApplying] = useState(null)
+  const [similarArmed, setSimilarArmed] = useState(null)
   const [visibleCount, setVisibleCount] = useState(JOBS_PER_PAGE)
 
   const track = (event, page, meta) => {
@@ -184,7 +224,14 @@ export default function JobsPage() {
   }, [detailJob?.id])
 
   // Reset visible count when filters change
-  useEffect(() => { setVisibleCount(JOBS_PER_PAGE) }, [searchQuery, roleFilter, typeFilter, techFilter, expMin, expMax, router.query.company, router.query.role])
+  useEffect(() => { setVisibleCount(JOBS_PER_PAGE) }, [searchQuery, roleFilters, typeFilters, techFilters, expMin, expMax, router.query.company])
+
+  // 직무별 광고 딥링크: /jobs?role=Backend (또는 ?role=cat:software) 로 랜딩하면 해당 직무로
+  // 바로 필터 → ATS(기업 직접등록) 공고가 최상단(companyFirst)에 떠서 우선 매칭·지원 유도.
+  useEffect(() => {
+    const r = router.query.role
+    if (typeof r === 'string' && r) setRoleFilters([r])
+  }, [router.query.role])
 
   // Infinite scroll
   const loadMoreObserver = useRef(null)
@@ -283,8 +330,10 @@ export default function JobsPage() {
             setBookmarks(ids)
             localStorage.setItem('fyi_bookmarks', JSON.stringify(ids))
           }
+          // /api/profile/talent은 { profile: {...} }로 감싸서 반환한다.
           const pData = await pRes.json()
-          if (pData.resume_url) setHasProfileResume(true)
+          const pResume = pData.profile?.resume_url
+          if (pResume) { setHasProfileResume(true); setProfileResumeUrl(pResume) }
         } catch { }
       }
     })
@@ -352,14 +401,6 @@ export default function JobsPage() {
     return () => { cancelled = true }
   }, [detailJob?.id])
 
-  // 드롭다운 바깥 클릭 시 닫기
-  useEffect(() => {
-    if (!openDropdown) return
-    const handle = () => setOpenDropdown(null)
-    document.addEventListener('click', handle)
-    return () => document.removeEventListener('click', handle)
-  }, [openDropdown])
-
   const typeLabel = (type) => {
     const normalized = {
       remote: 'jobs.typeRemote', onsite: 'jobs.typeOnsite', hybrid: 'jobs.typeHybrid',
@@ -386,31 +427,22 @@ export default function JobsPage() {
   }
 
   const companyQuery = router.query.company ? String(router.query.company).toLowerCase() : null
-  // 광고 랜딩 URL(/jobs?role=grp:ktc) — role 값이 grp:<source> 형태면 해당 source만 노출.
-  const groupQuery = router.query.role && String(router.query.role).toLowerCase().startsWith('grp:')
-    ? String(router.query.role).toLowerCase().slice(4)
-    : null
 
-  const filteredJobs = (() => {
+  // 검색·회사·마감 제외만 적용된 목록 — 본 목록과 필터 모달의 실시간 건수가 공유한다.
+  const baseFilteredJobs = (() => {
     const q = searchQuery.toLowerCase().trim()
-    const filtered = jobs.filter(job => {
+    return jobs.filter(job => {
       if (companyQuery && job.company?.toLowerCase() !== companyQuery) return false
-      if (groupQuery && job.source?.toLowerCase() !== groupQuery) return false
       if (q && !job.title?.toLowerCase().includes(q) && !job.company?.toLowerCase().includes(q)) return false
       if (hideExpired && job.deadline && new Date(job.deadline) < new Date()) return false
-      if (roleFilter && job.role !== roleFilter) return false
-      if (typeFilter && job.type !== typeFilter) return false
-      if (techFilter && !(job.tech_stack || []).some(t => t.toLowerCase().includes(techFilter.toLowerCase()))) return false
-      if (expMin !== '' || expMax !== '') {
-        const jobMin = job.experience_min || 0
-        const jobMax = job.experience_max || 0
-        if (!jobMin && !jobMax) return true // 경력 무관은 항상 포함
-        const eMin = expMin !== '' ? Number(expMin) : 0
-        const eMax = expMax !== '' ? Number(expMax) : 99
-        if (jobMax < eMin || jobMin > eMax) return false
-      }
       return true
     })
+  })()
+
+  const filteredJobs = (() => {
+    const filtered = baseFilteredJobs.filter(job =>
+      matchesJobFilters(job, { roles: roleFilters, types: typeFilters, techs: techFilters, expMin, expMax })
+    )
     // featured(프리미엄) 공고는 최상단 벽으로 쌓지 않고 5칸 간격으로 삽입 —
     // 노출 우선순위는 유지하되 첫 화면이 배지 도배가 되는 걸 방지 (featured끼리는 최신순)
     const pinFeatured = (list) => {
@@ -437,6 +469,28 @@ export default function JobsPage() {
         }
       }
       return out
+    }
+    // 기업이 직접 등록한 공고(source='company_self')는 크롤링 물량에 밀리지 않도록 항상 최상단 —
+    // 단, 한 회사가 여러 개 올려도 뭉치지 않게 회사별 라운드로빈으로 분산(회사 내부는 최신순).
+    // 명시적 정렬(최신/마감)에는 적용하지 않는다(유저 의도 존중).
+    const companyFirst = (list) => {
+      const co = list.filter(j => j.source === 'company_self')
+      const rest = list.filter(j => j.source !== 'company_self')
+      const byCompany = {}
+      co.forEach(job => {
+        const key = job.company || ''
+        if (!byCompany[key]) byCompany[key] = []
+        byCompany[key].push(job)
+      })
+      const queues = Object.values(byCompany)
+      queues.forEach(q => q.sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0)))
+      const spread = []
+      while (queues.some(q => q.length > 0)) {
+        for (const q of queues) {
+          if (q.length > 0) spread.push(q.shift())
+        }
+      }
+      return [...spread, ...rest]
     }
     // 스크랩 필터
     if (sortBy === 'saved') {
@@ -495,7 +549,7 @@ export default function JobsPage() {
         if (oi < other.length) result.push(other[oi++])
         if (wi < wanted.length) result.push(wanted[wi++])
       }
-      return pinFeatured(spaceCompanies(result))
+      return companyFirst(pinFeatured(spaceCompanies(result)))
     }
     // wanted/non-wanted 1:1 인터리빙
     const interleave = (list) => {
@@ -512,12 +566,13 @@ export default function JobsPage() {
     return pinFeatured(spaceCompanies(interleave(filtered)))
   })()
 
-  const activeFilterCount = [roleFilter, typeFilter, techFilter, searchQuery, expMin !== '' || expMax !== ''].filter(Boolean).length
+  const modalFilterCount = roleFilters.length + typeFilters.length + techFilters.length + (expMin !== '' || expMax !== '' ? 1 : 0)
+  const activeFilterCount = modalFilterCount + (searchQuery ? 1 : 0)
 
   // 핫 섹션: 필터 없는 기본 뷰에서만. featured 우선, 부족하면 마감임박·고연봉으로 채움.
   // 핫에 노출된 공고는 아래 메인 그리드에서 제외해 같은 공고가 두 번 보이지 않게 한다.
   const hotJobs = (() => {
-    if (jobs.length === 0 || activeFilterCount > 0 || companyQuery || groupQuery || sortBy === 'saved') return []
+    if (jobs.length === 0 || activeFilterCount > 0 || companyQuery || sortBy === 'saved') return []
     const now = new Date()
     const hotScore = (j) => {
       let s = 0
@@ -535,14 +590,88 @@ export default function JobsPage() {
   const hotIds = new Set(hotJobs.map(j => j.id))
   const gridJobs = (() => {
     const base = hotJobs.length ? filteredJobs.filter(j => !hotIds.has(j.id)) : filteredJobs
-    return groupQuery === 'ktc' ? pinPriority(base, KTC_PRIORITY_IDS) : base
+    return roleFilters.includes('grp:ktc') ? pinPriority(base, KTC_PRIORITY_IDS) : base
   })()
 
-  const resetFilters = () => { setRoleFilter(''); setTypeFilter(''); setExpMin(''); setExpMax(''); setTechFilter(''); setSearchQuery('') }
+  const resetFilters = () => { setRoleFilters([]); setTypeFilters([]); setExpMin(''); setExpMax(''); setTechFilters([]); setSearchQuery('') }
 
   const clearCompanyQuery = () => {
     const { company, ...rest } = router.query
     router.replace({ pathname: '/jobs', query: rest }, undefined, { shallow: true, scroll: false })
+  }
+
+  // 지원 완료 모달에 띄울 유사 공고 3개 — 목적은 기업 직접등록(company_self) 공고로 지원을
+  // 몰아주는 것. 유사한 기업 등록 공고(정확 직무 일치 → 같은 대분류)를 전부 크롤 공고보다
+  // 위에 놓고, 남는 슬롯만 비슷한 직무의 크롤 공고로 채운다. 무관 공고는 채우지 않고 회사
+  // 중복은 제거. 'Non-IT'는 잡동사니 직군이라 대분류 완화 매칭에서 제외. 모달 오픈 시점에
+  // 목록을 고정해 모달 안에서 지원해도 재배치되지 않게 appliedInfo에 담아둔다.
+  const similarJobsFor = (target) => {
+    const group = target.role && target.role !== 'Non-IT' ? roleGroupKey(target.role) : null
+    const tier = (j) => {
+      const exact = target.role && j.role === target.role
+      const related = group && j.role !== 'Non-IT' && roleGroupKey(j.role) === group
+      if (!exact && !related) return -1
+      if (j.source === 'company_self') return exact ? 0 : 1
+      return exact ? 2 : 3
+    }
+    const seenCompany = new Set()
+    return jobs
+      .filter(j => j.id !== target.id && !appliedJobs.includes(j.id))
+      .map(j => ({ j, t: tier(j) }))
+      .filter(x => x.t >= 0)
+      .sort((a, b) => a.t - b.t)
+      .filter(({ j }) => { if (seenCompany.has(j.company)) return false; seenCompany.add(j.company); return true })
+      .map(x => x.j)
+      .slice(0, 3)
+  }
+
+  // 지원 완료 모달의 유사 공고 원탭 지원 — 방금 지원에 쓴 이력서를 그대로 재사용한다.
+  const applySimilar = async (job) => {
+    if (!session || similarApplying || appliedJobs.includes(job.id)) return
+    setSimilarApplying(job.id)
+    const res = await fetch('/api/job-applications', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
+      body: JSON.stringify({
+        jobId: job.id,
+        jobTitle: job.title,
+        jobCompany: job.company,
+        resumeUrl: appliedInfo?.resumeUrl || null,
+        applicantRole: userRole,
+        applicantExperience: userExperience,
+        applicantSalary: userSalary,
+        applicantCompany: userCompany,
+        applicantEmail: session.user.email,
+        applicantName: session.user.user_metadata?.full_name || '',
+        ...getStoredUtm(),
+        applicationSource: 'similar_after_apply',
+      }),
+    })
+    setSimilarApplying(null)
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}))
+      alert(t('jobs.applyError', { error: err.error || 'unknown error' }))
+      return
+    }
+    setAppliedJobs(prev => {
+      const next = [...prev, job.id]
+      localStorage.setItem('fyi_applied_jobs', JSON.stringify(next))
+      return next
+    })
+    try {
+      const cached = JSON.parse(localStorage.getItem('fyi_my_applications') || '[]')
+      cached.unshift({
+        id: Date.now(),
+        job_id: job.id,
+        job_title: job.title,
+        job_company: job.company,
+        status: 'applied',
+        created_at: new Date().toISOString(),
+      })
+      localStorage.setItem('fyi_my_applications', JSON.stringify(cached))
+    } catch {}
+    track('apply_similar_job', '/jobs', { jobId: job.id, title: job.title, company: job.company })
+    if (typeof fbq === 'function') fbq('track', 'Lead', { content_name: 'job_apply_confirmed', content_category: job.title })
   }
 
   const handleApply = async (job) => {
@@ -565,6 +694,9 @@ export default function JobsPage() {
       }
       const { data } = supabase.storage.from('resumes').getPublicUrl(path)
       resumeUrl = data.publicUrl
+    } else if (profileResumeUrl) {
+      // 새 파일을 안 올렸으면 프로필에 등록된 이력서로 지원한다.
+      resumeUrl = profileResumeUrl
     }
     const applyRes = await fetch('/api/job-applications', {
       method: 'POST',
@@ -612,7 +744,10 @@ export default function JobsPage() {
       localStorage.setItem('fyi_my_applications', JSON.stringify(cached))
     } catch {}
     // Show success modal + push URL for Meta Pixel conversion tracking
-    setAppliedInfo({ title: target.title, company: target.company, resumeUrl })
+    const similar = similarJobsFor(target)
+    if (similar.length) track('view_similar_jobs_modal', '/jobs', { jobId: target.id, count: similar.length })
+    setSimilarArmed(null)
+    setAppliedInfo({ title: target.title, company: target.company, resumeUrl, similar })
     setDetailJob(null)
     window.history.pushState(null, '', `/jobs/applied?title=${encodeURIComponent(target.title)}&company=${encodeURIComponent(target.company)}`)
     if (typeof fbq === 'function') fbq('track', 'Lead', { content_name: 'job_apply_confirmed', content_category: target.title })
@@ -698,16 +833,31 @@ export default function JobsPage() {
         .jf-search-clear { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); background: none; border: none; font-size: 18px; color: #999; cursor: pointer; line-height: 1; }
 
         .jf { display: flex; gap: 8px; margin-bottom: 0; flex-wrap: wrap; align-items: center; }
+        .jf-open { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 700; color: #555; background: #fafaf8; border: 1px solid #e0e0e0; padding: 8px 14px; border-radius: 999px; cursor: pointer; font-family: inherit; white-space: nowrap; transition: all .15s; }
+        .jf-open:hover { border-color: #999; }
+        .jf-open.on { color: #ff4400; border-color: #ff4400; background: #fff2ec; }
+        .jf-open-n { display: inline-flex; align-items: center; justify-content: center; min-width: 17px; height: 17px; border-radius: 50%; background: #ff4400; color: #fff; font-size: 11px; font-weight: 800; padding: 0 4px; }
+        .jf-sum { display: inline-flex; align-items: center; gap: 5px; font-size: 12.5px; font-weight: 600; color: #ff4400; background: #fff2ec; border: 1px solid rgba(255,68,0,0.25); border-radius: 999px; padding: 7px 12px; cursor: pointer; font-family: inherit; white-space: nowrap; }
+        .jf-sum-x { font-size: 14px; line-height: 1; color: rgba(255,68,0,0.7); }
         .jf-dd { position: relative; }
         .jf-dd-btn { font-size: 13px; font-weight: 500; color: #555; background: #fafaf8; border: 1px solid #e0e0e0; padding: 8px 14px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; gap: 6px; transition: all .15s; white-space: nowrap; font-family: inherit; }
         .jf-dd-btn:hover { border-color: #999; }
         .jf-dd-btn.on { background: #111; color: #fff; border-color: #111; font-weight: 600; }
         .jf-dd-arrow { font-size: 10px; opacity: 0.5; }
         .jf-dd-menu { position: absolute; top: calc(100% + 4px); left: 0; background: #fafaf8; border: 1px solid #eee; border-radius: 10px; padding: 4px; min-width: 160px; z-index: 20; box-shadow: 0 8px 24px rgba(0,0,0,0.1); }
-        .jf-dd-menu-scroll { max-height: 240px; overflow-y: auto; }
+        .jf-dd-menu-scroll { max-height: 260px; overflow-y: auto; scrollbar-width: thin; scrollbar-color: #d5d5d5 transparent; }
+        .jf-dd-menu-scroll::-webkit-scrollbar { width: 6px; }
+        .jf-dd-menu-scroll::-webkit-scrollbar-thumb { background: #d5d5d5; border-radius: 6px; }
+        .jf-dd-menu-scroll::-webkit-scrollbar-track { background: transparent; }
         .jf-dd-item { display: block; width: 100%; padding: 9px 12px; border: none; background: none; font-size: 13px; color: #333; cursor: pointer; text-align: left; border-radius: 6px; transition: background .1s; font-family: inherit; white-space: nowrap; }
         .jf-dd-item:hover { background: #f5f5f5; }
         .jf-dd-item.on { color: #ff4400; font-weight: 600; }
+        .jf-dd-cat { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-weight: 600; color: #191F28; }
+        .jf-dd-caret { font-size: 10px; color: #bbb; transition: transform .15s; }
+        .jf-dd-cat.open .jf-dd-caret { transform: rotate(180deg); }
+        .jf-dd-branch { padding-left: 12px; }
+        .jf-dd-sub { color: #666; font-weight: 500; }
+        .jf-dd-count { color: #bbb; font-weight: 500; font-size: 12px; }
         .jf-reset { font-size: 13px; color: #999; background: none; border: none; cursor: pointer; padding: 8px 4px; font-family: inherit; text-decoration: underline; white-space: nowrap; }
         .jf-reset:hover { color: #666; }
         .jf-exp-panel { position: absolute; top: calc(100% + 4px); left: 0; background: #fafaf8; border: 1px solid #eee; border-radius: 12px; padding: 20px; min-width: 280px; z-index: 20; box-shadow: 0 8px 24px rgba(0,0,0,0.1); }
@@ -808,6 +958,27 @@ export default function JobsPage() {
         /* CV upload box (inline apply) */
         .ap-up { border: 1.5px dashed #ddd; border-radius: 8px; padding: 20px; text-align: center; cursor: pointer; margin-bottom: 20px; transition: border-color .15s; }
         .ap-up:hover { border-color: #999; }
+        .ap-file { display: flex; align-items: center; gap: 10px; border: 1px solid #eee; background: #fafafa; border-radius: 8px; padding: 12px 14px; text-align: left; }
+        .ap-file-name { font-size: 13px; font-weight: 600; color: #111; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .ap-file-sub { font-size: 11.5px; color: #999; margin-top: 2px; }
+        .ap-file-swap { display: block; width: 100%; margin: 8px 0 20px; padding: 10px; background: #fff; border: 1px solid #ddd; border-radius: 8px; font-size: 13px; font-weight: 600; color: #555; cursor: pointer; font-family: inherit; transition: border-color .15s; }
+        .ap-file-swap:hover { border-color: #999; }
+        /* 지원 완료 모달 유사 공고 — CV 완료 모달(.cvm-*)과 같은 패턴, 액센트만 jobs 브랜드(#ff4400) */
+        .sim-job { display: flex; align-items: center; gap: 12px; border: 1px solid #ece5db; border-radius: 12px; padding: 12px 13px; }
+        .sim-job-logo { flex-shrink: 0; width: 42px; height: 42px; border-radius: 10px; background-color: #f3eee6; background-size: cover; background-position: center; background-repeat: no-repeat; display: flex; align-items: center; justify-content: center; font-size: 16px; font-weight: 800; color: #b09a7f; }
+        .sim-job-title { font-size: 14px; font-weight: 700; color: #1a1612; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .sim-job-company { font-size: 12.5px; color: #8a8073; margin-top: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .sim-apply { flex-shrink: 0; min-width: 84px; text-align: center; font-size: 13px; font-weight: 700; color: #fff; background: #ff4400; border: none; border-radius: 9px; padding: 9px 14px; cursor: pointer; font-family: inherit; transition: opacity .15s; }
+        .sim-apply:disabled { cursor: default; }
+        .sim-apply.applying { opacity: 0.55; }
+        /* 오터치 방지 2탭: 첫 탭에서 확인 상태로 전환 */
+        .sim-apply.arm { background: #fff1e8; color: #ff4400; box-shadow: inset 0 0 0 1.5px #ff4400; }
+        .sim-apply.done { background: #E7F6EC; color: #16a34a; }
+        /* 지원 완료 모달 체크 모션: 원이 팝(overshoot)으로 뜨고 이어서 체크가 그려진다 */
+        .applied-check { width: 56px; height: 56px; border-radius: 50%; background: #ff4400; display: flex; align-items: center; justify-content: center; margin: 0 auto 16px; animation: appliedPop .45s cubic-bezier(.34,1.56,.64,1) both; }
+        .applied-check-path { stroke-dasharray: 24; stroke-dashoffset: 24; animation: appliedDraw .3s ease-out .3s forwards; }
+        @keyframes appliedPop { from { transform: scale(0); } to { transform: scale(1); } }
+        @keyframes appliedDraw { to { stroke-dashoffset: 0; } }
         .ap-up-t { font-size: 13px; color: #999; }
         .ap-up-f { font-size: 13px; color: #111; font-weight: 600; }
 
@@ -941,78 +1112,33 @@ export default function JobsPage() {
               {searchQuery && <button className="jf-search-clear" onClick={() => setSearchQuery('')}>×</button>}
             </div>
 
-            {/* Filter dropdowns */}
+            {/* 필터 — 드롭다운 4개 대신 버튼 하나 + 모달(탭·실시간 건수). 적용된 조건은 요약 칩으로 노출(× 탭 시 개별 해제). */}
             <div className="jf">
-              {/* Role */}
-              <div className="jf-dd">
-                <button className={`jf-dd-btn${roleFilter ? ' on' : ''}`} onClick={e => { e.stopPropagation(); setOpenDropdown(openDropdown === 'role' ? null : 'role') }}>
-                  {roleFilter || t('jobs.filterRole')} <span className="jf-dd-arrow">▾</span>
+              <button className={`jf-open${modalFilterCount > 0 ? ' on' : ''}`} onClick={() => setFilterOpen(true)}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="4" y1="7" x2="20" y2="7"/><line x1="7" y1="12" x2="17" y2="12"/><line x1="10" y1="17" x2="14" y2="17"/></svg>
+                {t('jobs.filterModalTitle')}
+                {modalFilterCount > 0 && <span className="jf-open-n">{modalFilterCount}</span>}
+              </button>
+              {roleFilters.map(rf => (
+                <button key={rf} className="jf-sum" onClick={() => setRoleFilters(prev => prev.filter(x => x !== rf))}>
+                  {rf.startsWith('grp:') ? categoryGroupLabel(rf.slice(4), lang) : rf.startsWith('cat:') ? roleGroupLabel(rf.slice(4), lang) : roleLabel(rf, lang)} <span className="jf-sum-x">×</span>
                 </button>
-                {openDropdown === 'role' && (
-                  <div className="jf-dd-menu">
-                    <button className={`jf-dd-item${!roleFilter ? ' on' : ''}`} onClick={() => { setRoleFilter(''); setOpenDropdown(null) }}>{t('jobs.filterAll')}</button>
-                    {ROLE_OPTIONS.map(r => (
-                      <button key={r} className={`jf-dd-item${roleFilter === r ? ' on' : ''}`} onClick={() => { setRoleFilter(r); setOpenDropdown(null) }}>{r}</button>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              {/* Experience */}
-              <div className="jf-dd">
-                <button className={`jf-dd-btn${expMin !== '' || expMax !== '' ? ' on' : ''}`} onClick={e => { e.stopPropagation(); setOpenDropdown(openDropdown === 'exp' ? null : 'exp') }}>
-                  {expMin !== '' || expMax !== '' ? `${expMin || 0} ~ ${expMax || 15}${t('jobs.expYears')}` : t('jobs.yearsAny')} <span className="jf-dd-arrow">▾</span>
+              ))}
+              {(expMin !== '' || expMax !== '') && (
+                <button className="jf-sum" onClick={() => { setExpMin(''); setExpMax('') }}>
+                  {`${expMin || 0} ~ ${expMax || 15}${t('jobs.expYears')}`} <span className="jf-sum-x">×</span>
                 </button>
-                {openDropdown === 'exp' && (
-                  <div className="jf-exp-panel" onClick={e => e.stopPropagation()}>
-                    <div className="jf-exp-title">{t('jobs.expSelect')}</div>
-                    <div className="jf-exp-display">{expMin === '' && expMax === '' ? t('jobs.yearsAny') : `${expMin || 0}${t('jobs.expYears')} ~ ${expMax || 15}${t('jobs.expYears')}`}</div>
-                    <div className="jf-exp-slider">
-                      <div className="jf-exp-track">
-                        <div className="jf-exp-fill" style={{ left: `${(Number(expMin || 0) / 15) * 100}%`, right: `${100 - (Number(expMax || 15) / 15) * 100}%` }} />
-                      </div>
-                      <input type="range" className="jf-exp-range" min="0" max="15" value={expMin || 0} onChange={e => { const v = e.target.value; if (Number(v) <= Number(expMax || 15)) { setExpMin(v === '0' ? '' : v) } }} />
-                      <input type="range" className="jf-exp-range" min="0" max="15" value={expMax || 15} onChange={e => { const v = e.target.value; if (Number(v) >= Number(expMin || 0)) { setExpMax(v === '15' ? '' : v) } }} />
-                    </div>
-                    <div className="jf-exp-footer">
-                      <button className="jf-exp-reset" onClick={() => { setExpMin(''); setExpMax('') }}>{t('jobs.filterReset')}</button>
-                      <button className="jf-exp-apply" onClick={() => setOpenDropdown(null)}>{t('jobs.expApply')}</button>
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* Type */}
-              <div className="jf-dd">
-                <button className={`jf-dd-btn${typeFilter ? ' on' : ''}`} onClick={e => { e.stopPropagation(); setOpenDropdown(openDropdown === 'type' ? null : 'type') }}>
-                  {typeFilter ? typeLabel(typeFilter) : t('jobs.filterType')} <span className="jf-dd-arrow">▾</span>
+              )}
+              {typeFilters.map(tf => (
+                <button key={tf} className="jf-sum" onClick={() => setTypeFilters(prev => prev.filter(x => x !== tf))}>
+                  {typeLabel(tf)} <span className="jf-sum-x">×</span>
                 </button>
-                {openDropdown === 'type' && (
-                  <div className="jf-dd-menu">
-                    <button className={`jf-dd-item${!typeFilter ? ' on' : ''}`} onClick={() => { setTypeFilter(''); setOpenDropdown(null) }}>{t('jobs.filterAll')}</button>
-                    {TYPE_OPTIONS.map(tp => (
-                      <button key={tp} className={`jf-dd-item${typeFilter === tp ? ' on' : ''}`} onClick={() => { setTypeFilter(tp); setOpenDropdown(null) }}>{typeLabel(tp)}</button>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              {/* Tech */}
-              <div className="jf-dd">
-                <button className={`jf-dd-btn${techFilter ? ' on' : ''}`} onClick={e => { e.stopPropagation(); setOpenDropdown(openDropdown === 'tech' ? null : 'tech') }}>
-                  {techFilter || t('jobs.filterTech')} <span className="jf-dd-arrow">▾</span>
+              ))}
+              {techFilters.map(tf => (
+                <button key={tf} className="jf-sum" onClick={() => setTechFilters(prev => prev.filter(x => x !== tf))}>
+                  {tf} <span className="jf-sum-x">×</span>
                 </button>
-                {openDropdown === 'tech' && (
-                  <div className="jf-dd-menu jf-dd-menu-scroll">
-                    <button className={`jf-dd-item${!techFilter ? ' on' : ''}`} onClick={() => { setTechFilter(''); setOpenDropdown(null) }}>{t('jobs.filterAll')}</button>
-                    {TECH_OPTIONS.map(tc => (
-                      <button key={tc} className={`jf-dd-item${techFilter === tc ? ' on' : ''}`} onClick={() => { setTechFilter(tc); setOpenDropdown(null) }}>{tc}</button>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              {/* Reset */}
+              ))}
               {activeFilterCount > 0 && (
                 <button className="jf-reset" onClick={resetFilters}>{t('jobs.filterReset')}</button>
               )}
@@ -1189,7 +1315,7 @@ export default function JobsPage() {
                 </div>
                 <div className="jd-meta-item">
                   <div className="jd-meta-label">{t('jobs.position')}</div>
-                  <div className="jd-meta-value">{detailJob.role}</div>
+                  <div className="jd-meta-value">{roleLabel(detailJob.role, lang)}</div>
                 </div>
                 <div className="jd-meta-item">
                   <div className="jd-meta-label">{t('jobs.type')}</div>
@@ -1341,22 +1467,32 @@ export default function JobsPage() {
                 <div className="jd-apply-inline-h">{t('jobs.applyThis')}</div>
 
                 <div style={{ fontSize: 13, fontWeight: 600, color: '#555', marginBottom: 6 }}>{t('jobs.cvRequired') || 'Resume (required)'}</div>
-                <div className="ap-up" onClick={() => fileRef.current?.click()}>
-                  <input ref={fileRef} type="file" accept=".pdf,.docx,.doc" style={{ display: 'none' }} onChange={e => {
-                    const f = e.target.files?.[0]
-                    if (f && f.size <= 5 * 1024 * 1024) setResumeFile(f)
-                    else if (f) alert(t('jobs.maxFileSize'))
-                  }} />
-                  {resumeFile
-                    ? <div className="ap-up-f">{resumeFile.name}</div>
-                    : <div className="ap-up-t" style={{ whiteSpace: 'pre-line' }}>{t('jobs.dragCV')}</div>
-                  }
-                </div>
+                <input ref={fileRef} type="file" accept=".pdf,.docx,.doc" style={{ display: 'none' }} onChange={e => {
+                  const f = e.target.files?.[0]
+                  if (f && f.size <= 5 * 1024 * 1024) setResumeFile(f)
+                  else if (f) alert(t('jobs.maxFileSize'))
+                }} />
+                {(resumeFile || profileResumeUrl) ? (
+                  <>
+                    <div className="ap-file">
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#ff4400" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div className="ap-file-name">{resumeFile ? resumeFile.name : resumeNameFromUrl(profileResumeUrl)}</div>
+                        {!resumeFile && <div className="ap-file-sub">{t('jobs.registeredResume')}</div>}
+                      </div>
+                    </div>
+                    <button type="button" className="ap-file-swap" onClick={() => fileRef.current?.click()}>{t('jobs.uploadOtherResume')}</button>
+                  </>
+                ) : (
+                  <div className="ap-up" onClick={() => fileRef.current?.click()}>
+                    <div className="ap-up-t" style={{ whiteSpace: 'pre-line' }}>{t('jobs.dragCV')}</div>
+                  </div>
+                )}
 
                 <button className="jd-apply-btn" style={{ width: '100%', marginTop: 12 }} onClick={() => {
                   if (!isLoggedIn) { loginForJob(detailJob.id); return; }
                   handleApply(detailJob);
-                }} disabled={applying || !resumeFile}>
+                }} disabled={applying || (!resumeFile && !profileResumeUrl)}>
                   {!isLoggedIn ? t('jobs.loginToApply') : applying ? t('jobs.sending') : t('jobs.submitApplication')}
                 </button>
               </div>
@@ -1402,13 +1538,49 @@ export default function JobsPage() {
         <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.6)',zIndex:1100,display:'flex',alignItems:'center',justifyContent:'center',padding:'20px'}}
           onClick={e => { if(e.target===e.currentTarget) { if(appliedInfo.resumeUrl && !hasProfileResume){setShowAiProfilePrompt({resumeUrl:appliedInfo.resumeUrl})} setAppliedInfo(null); window.history.replaceState(null, '', '/jobs'); } }}>
           <div style={{background:'#fff',borderRadius:'20px',padding:'40px 36px',maxWidth:'420px',width:'100%',fontFamily:"'Barlow',sans-serif",textAlign:'center'}}>
-            <div style={{width:'56px',height:'56px',borderRadius:'50%',background:'#ff4400',display:'flex',alignItems:'center',justifyContent:'center',margin:'0 auto 16px'}}>
-              <span style={{color:'#fff',fontSize:'28px',lineHeight:1}}>&#10003;</span>
+            <div className="applied-check">
+              <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                <path className="applied-check-path" d="M4 12.5l5.5 5.5L20 7" />
+              </svg>
             </div>
             <div style={{fontSize:'22px',fontWeight:900,color:'#111',letterSpacing:'-0.5px',marginBottom:'8px'}}>{t('jobs.appliedModalTitle')}</div>
             <div style={{fontSize:'14px',color:'#666',lineHeight:1.6,marginBottom:'24px'}}>
               {t('jobs.appliedModalDesc', { company: appliedInfo.company, title: appliedInfo.title })}
             </div>
+            {appliedInfo.similar?.length > 0 && (
+              <div style={{textAlign:'left',marginBottom:'20px'}}>
+                <div style={{fontSize:'15px',fontWeight:800,color:'#111',marginBottom:'4px'}}>{t('jobs.similarTitle')}</div>
+                <div style={{fontSize:'12.5px',color:'#888',marginBottom:'12px'}}>{t('jobs.similarDesc')}</div>
+                <div style={{display:'flex',flexDirection:'column',gap:'10px'}}>
+                  {appliedInfo.similar.map(j => {
+                    const isApplied = appliedJobs.includes(j.id)
+                    const isApplying = similarApplying === j.id
+                    const isArmed = similarArmed === j.id
+                    const thumb = j.logo_url || j.image_url || j.images?.[0] || null
+                    return (
+                      <div key={j.id} className="sim-job">
+                        <div className="sim-job-logo" style={thumb ? { backgroundImage: `url(${thumb})` } : undefined}>
+                          {!thumb && (j.company_initials || (j.company || '?').charAt(0).toUpperCase())}
+                        </div>
+                        <div style={{flex:1,minWidth:0}}>
+                          <div className="sim-job-title">{j.title}</div>
+                          <div className="sim-job-company">{j.company}</div>
+                        </div>
+                        <button
+                          className={`sim-apply${isApplied ? ' done' : ''}${isApplying ? ' applying' : ''}${isArmed ? ' arm' : ''}`}
+                          disabled={isApplied || isApplying}
+                          onClick={() => { if (isArmed) { setSimilarArmed(null); applySimilar(j) } else setSimilarArmed(j.id) }}>
+                          {isApplied ? t('jobs.similarApplied')
+                            : isApplying ? t('jobs.similarApplying')
+                            : isArmed ? t('jobs.similarConfirmTap')
+                            : t('jobs.similarApply')}
+                        </button>
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+            )}
             <button onClick={() => { if(appliedInfo.resumeUrl && !hasProfileResume){setShowAiProfilePrompt({resumeUrl:appliedInfo.resumeUrl})} setAppliedInfo(null); window.history.replaceState(null, '', '/jobs'); }}
               style={{background:'#ff4400',color:'#fff',fontSize:'14px',fontWeight:700,padding:'14px 32px',borderRadius:'10px',border:'none',cursor:'pointer',fontFamily:"'Barlow',sans-serif"}}>
               {t('jobs.confirm')}
@@ -1480,6 +1652,25 @@ export default function JobsPage() {
           </div>
         </div>
       )}
+
+      {/* 통합 필터 모달 — 적용을 눌러야 목록에 반영, 닫으면 변경 폐기. */}
+      <JobFilterModal
+        open={filterOpen}
+        initial={{ roles: roleFilters, types: typeFilters, techs: techFilters, expMin, expMax }}
+        countWith={draft => baseFilteredJobs.filter(j => matchesJobFilters(j, draft)).length}
+        onApply={d => {
+          setRoleFilters(d.roles)
+          setTypeFilters(d.types)
+          setTechFilters(d.techs)
+          setExpMin(d.expMin)
+          setExpMax(d.expMax)
+          setFilterOpen(false)
+        }}
+        onClose={() => setFilterOpen(false)}
+        typeLabel={typeLabel}
+        t={t}
+        lang={lang}
+      />
 
       {showAuthModal && (
         <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.6)',zIndex:1100,display:'flex',alignItems:'center',justifyContent:'center',padding:'20px'}}

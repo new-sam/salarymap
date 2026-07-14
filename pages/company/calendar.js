@@ -225,7 +225,7 @@ export default function CompanyCalendarPage() {
           </div>
 
           <div className="flex-1 min-h-0 hidden md:flex flex-col">
-            <div className="grid grid-cols-7 bg-[#F7F8FA] border border-[#E5E8EC] rounded-t-lg overflow-hidden flex-shrink-0">
+            <div className="grid grid-cols-7 bg-[#F9FAFB] border border-[#E5E8EB] rounded-t-lg overflow-hidden flex-shrink-0">
               {[0,1,2,3,4,5,6].map(i => (
                 <div
                   key={i}
@@ -240,7 +240,7 @@ export default function CompanyCalendarPage() {
             </div>
 
             <div
-              className="grid grid-cols-7 border-l border-r border-b border-[#E5E8EC] rounded-b-lg overflow-hidden bg-white flex-1 min-h-0"
+              className="grid grid-cols-7 border-l border-r border-b border-[#E5E8EB] rounded-b-lg overflow-hidden bg-white flex-1 min-h-0"
               style={{ gridTemplateRows: `repeat(${weekCount}, minmax(0, 1fr))` }}
             >
             {cells.map((c, i) => {
@@ -255,8 +255,8 @@ export default function CompanyCalendarPage() {
                   key={i}
                   className={cn(
                     'p-1.5 flex flex-col gap-1 min-h-0',
-                    !isFirstRow && 'border-t border-[#E5E8EC]',
-                    !isRightEdge && 'border-r border-[#E5E8EC]',
+                    !isFirstRow && 'border-t border-[#E5E8EB]',
+                    !isRightEdge && 'border-r border-[#E5E8EB]',
                     c.otherMonth && 'bg-gray-50/50',
                     isToday && 'bg-primary-50/30'
                   )}

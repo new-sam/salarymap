@@ -538,10 +538,10 @@ export default function CompanyDashboard() {
               </div>
 
               {(() => {
-                // Approval policy is dropped for this sprint — no more 'pending' group.
-                // Legacy pending_review jobs collapse into 'inactive'.
-                const groupOf = (s) => s === 'live' ? 'active' : 'inactive';
-                const grouped = { active: [], inactive: [] };
+                // 승인 대기(pending_review)는 별도 그룹 — "비활성" 밑에 섞이면
+                // 첫 공고를 올린 신규 기업이 자기 공고가 거절/비활성된 걸로 오해한다.
+                const groupOf = (s) => s === 'live' ? 'active' : s === 'pending_review' ? 'pending' : 'inactive';
+                const grouped = { active: [], pending: [], inactive: [] };
                 jobs.forEach(j => { grouped[groupOf(j.status)].push(j); });
                 const renderCard = (job) => {
                   const stats = appsByJob[job.id] || { total: 0, new: 0 };
@@ -637,26 +637,36 @@ export default function CompanyDashboard() {
                     </div>
                   );
                 };
-                return ['active', 'inactive'].map(g => (
-                  <section key={g} className={cn('mb-3 md:mb-6', g === 'inactive' && 'hidden md:block')}>
-                    <h2 className={cn(
-                      'text-[15px] font-extrabold text-gray-800 tracking-tight pl-3 mb-3 border-l-[3px] border-primary-500',
-                      // Group header is redundant on mobile when only active is shown.
-                      g === 'active' && 'hidden md:block'
-                    )}>
-                      {t(`company.jobGroup.${g}`, { n: grouped[g].length })}
-                    </h2>
-                    {grouped[g].length === 0 ? (
-                      <div className="text-[13.5px] text-gray-400 font-medium px-3 py-2">
-                        —
-                      </div>
-                    ) : (
-                      <div className="flex flex-col gap-2.5">
-                        {grouped[g].map(renderCard)}
-                      </div>
-                    )}
-                  </section>
-                ));
+                // pending 은 있을 때만 렌더하고 모바일에서도 숨기지 않는다 —
+                // 제출 직후의 공고가 폰에서 안 보이면 제출이 실패한 걸로 보인다.
+                return ['active', 'pending', 'inactive'].map(g => {
+                  if (g === 'pending' && grouped.pending.length === 0) return null;
+                  return (
+                    <section key={g} className={cn('mb-3 md:mb-6', g === 'inactive' && 'hidden md:block')}>
+                      <h2 className={cn(
+                        'text-[15px] font-extrabold text-gray-800 tracking-tight pl-3 mb-3 border-l-[3px] border-primary-500',
+                        // Group header is redundant on mobile when only active is shown.
+                        g === 'active' && 'hidden md:block'
+                      )}>
+                        {t(`company.jobGroup.${g}`, { n: grouped[g].length })}
+                      </h2>
+                      {g === 'pending' && (
+                        <div className="text-[12.5px] font-semibold text-primary-700 bg-primary-50 border border-primary-200 rounded-lg px-3 py-2 mb-3">
+                          {t('company.jobGroup.pendingHint')}
+                        </div>
+                      )}
+                      {grouped[g].length === 0 ? (
+                        <div className="text-[13.5px] text-gray-400 font-medium px-3 py-2">
+                          —
+                        </div>
+                      ) : (
+                        <div className="flex flex-col gap-2.5">
+                          {grouped[g].map(renderCard)}
+                        </div>
+                      )}
+                    </section>
+                  );
+                });
               })()}
             </>
           )}

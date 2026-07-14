@@ -53,6 +53,9 @@ export default function CommunityPage() {
   const router = useRouter()
   const { t } = useT()
   const [session, setSession] = useState(null)
+  // 세션 확인 완료 여부. 확인 전엔 fetch를 미뤄, 비로그인 상태로 먼저 부르고(→ CDN에 is_liked=false 캐시)
+  // 세션 로드 후 다시 부르는 이중 요청/캐시 오염을 막는다.
+  const [sessionReady, setSessionReady] = useState(false)
   const [posts, setPosts] = useState([])
   const [loading, setLoading] = useState(true)
   const [category, setCategory] = useState('all')
@@ -81,7 +84,7 @@ export default function CommunityPage() {
   const [hotCompanies, setHotCompanies] = useState([])
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => setSession(session))
+    supabase.auth.getSession().then(({ data: { session } }) => { setSession(session); setSessionReady(true) })
     const from = new URLSearchParams(window.location.search).get('from')
     track('view_community', { page: '/community', meta: { from } })
     // 데이터 초기라 30일(720h) 창으로 집계
@@ -91,7 +94,7 @@ export default function CommunityPage() {
       .catch(() => {})
   }, [])
 
-  useEffect(() => { fetchPosts() }, [category, sort, page, session, search])
+  useEffect(() => { if (sessionReady) fetchPosts() }, [category, sort, page, session, search, sessionReady])
 
   // 검색어를 URL(?q=)과 동기화 → 회사/글 상세 갔다가 뒤로 와도 검색결과가 복원됨
   useEffect(() => {
@@ -104,6 +107,7 @@ export default function CommunityPage() {
   // HOT 글은 현재 카테고리 안에서 가장 인기 있는 글 1개. 검색/내 글/2페이지+ 에선 숨김.
   // 인증 포함으로 좋아요/투표 상태까지 정확히 반영한다.
   useEffect(() => {
+    if (!sessionReady) return
     if (search || sort === 'mine' || page !== 1) { setHotPost(null); return }
     let cancelled = false
     const headers = {}
@@ -114,7 +118,7 @@ export default function CommunityPage() {
       .then(d => { if (!cancelled) setHotPost(d.posts?.[0] || null) })
       .catch(() => { if (!cancelled) setHotPost(null) })
     return () => { cancelled = true }
-  }, [category, sort, page, search, session])
+  }, [category, sort, page, search, session, sessionReady])
 
   useEffect(() => {
     const t0 = setTimeout(() => setShowFabTip(true), 1000)
@@ -257,10 +261,12 @@ export default function CommunityPage() {
         body: JSON.stringify({ post_id: postId })
       })
       const { liked } = await res.json()
-      setPosts(prev => prev.map(p => p.id === postId
+      // HOT 글은 hotPost로 따로 렌더(피드에선 필터로 빠짐)므로 두 state를 함께 갱신해야 반영된다.
+      const apply = (p) => p.id === postId
         ? { ...p, is_liked: liked, like_count: liked ? (p.like_count || 0) + 1 : Math.max(0, (p.like_count || 0) - 1) }
         : p
-      ))
+      setPosts(prev => prev.map(apply))
+      setHotPost(prev => (prev && prev.id === postId ? apply(prev) : prev))
     } catch (e) { console.error(e) }
   }
 
@@ -276,10 +282,11 @@ export default function CommunityPage() {
       })
       const d = await res.json()
       if (res.ok || d.error === 'already_voted') {
-        setPosts(prev => prev.map(p => p.id === post.id
+        const apply = (p) => p.id === post.id
           ? { ...p, poll: { ...p.poll, my_vote: choice, votes_a: d.votes_a ?? p.poll.votes_a, votes_b: d.votes_b ?? p.poll.votes_b } }
           : p
-        ))
+        setPosts(prev => prev.map(apply))
+        setHotPost(prev => (prev && prev.id === post.id ? apply(prev) : prev))
       }
     } catch (e) { console.error(e) }
   }

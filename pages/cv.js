@@ -1,9 +1,15 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useMemo } from 'react'
 import Head from 'next/head'
 import { useRouter } from 'next/router'
 import { supabase } from '../lib/supabaseClient'
 import { useT } from '../lib/i18n'
 import { track } from '../lib/track'
+import { ROLE_GROUPS, roleGroupKey } from '../constants/jobs'
+import { formatSalaryCard } from '../utils/salary'
+
+// STEP1에서 고른 직무는 OAuth 리다이렉트로 페이지를 떠났다 돌아와도 유지돼야 해서
+// (파일이 IndexedDB로 유지되는 것과 동일) localStorage에 stash한다.
+const CV_ROLES_KEY = 'fyi_cv_roles'
 
 /* Funnel-event meta — UTM (sessionStorage) + language preference, attached to
    every /cv event so we can slice by ad campaign and locale in analytics. */
@@ -165,7 +171,7 @@ const IconLinkedIn = () => (
 )
 
 export default function CvLanding() {
-  const { t } = useT()
+  const { t, lang } = useT()
   const router = useRouter()
   const [user, setUser] = useState(null)
   const [file, setFile] = useState(null)
@@ -173,6 +179,19 @@ export default function CvLanding() {
   const [errMsg, setErrMsg] = useState('')
   const [pendingHint, setPendingHint] = useState('')
   const [jobs, setJobs] = useState([])
+  // STEP1 직무 다중선택 + 등록 완료 후 "바로 지원" 모달
+  const [selectedRoles, setSelectedRoles] = useState([])
+  const [resumeUrl, setResumeUrl] = useState(null)
+  // 기존 등록자: user_profiles.resume_url이 이미 있으면 업로드 퍼널 대신 등록됨 화면을 보여준다.
+  const [existingResume, setExistingResume] = useState(null)
+  const [replacing, setReplacing] = useState(false)
+  const replacePick = useRef(false)
+  const [showJobModal, setShowJobModal] = useState(false)
+  const [applied, setApplied] = useState({})
+  const [applyingId, setApplyingId] = useState(null)
+  // 오터치 방지: 첫 탭은 확인 상태(arm), 같은 버튼 한 번 더 탭해야 지원. 다른 카드 탭하면 그쪽으로 이동.
+  const [armedId, setArmedId] = useState(null)
+  const L = (ko, en, vi) => (lang === 'vi' ? vi : lang === 'en' ? en : ko)
   const fileRef = useRef(null)
   const formAnchorRef = useRef(null)
   const showSuccess = status === 'success' || (process.env.NODE_ENV !== 'production' && router.query.successPreview === '1')
@@ -233,6 +252,14 @@ export default function CvLanding() {
     return () => sub.subscription.unsubscribe()
   }, [])
 
+  useEffect(() => {
+    if (!user) { setExistingResume(null); return }
+    let cancelled = false
+    supabase.from('user_profiles').select('resume_url').eq('id', user.id).maybeSingle()
+      .then(({ data }) => { if (!cancelled && data?.resume_url) setExistingResume(data.resume_url) })
+    return () => { cancelled = true }
+  }, [user])
+
   // Resume after OAuth: retrieve blob from IndexedDB and auto-upload.
   useEffect(() => {
     if (!user) return
@@ -264,15 +291,13 @@ export default function CvLanding() {
   }, [user, router.query])
 
   useEffect(() => {
-    fetch('/api/jobs')
+    fetch('/api/jobs?counts=1')
       .then(r => r.json())
       .then(arr => {
         const list = Array.isArray(arr) ? arr : (arr.jobs || [])
-        const seen = new Set()
         const sorted = list
           .filter(j => j.is_active !== false)
           .sort((a, b) => (b.is_featured ? 1 : 0) - (a.is_featured ? 1 : 0))
-          .filter(j => { if (seen.has(j.company)) return false; seen.add(j.company); return true })
         setJobs(sorted)
       })
       .catch(() => {})
@@ -291,6 +316,13 @@ export default function CvLanding() {
     idbPutCv(f).catch(() => {
       try { sessionStorage.setItem('cv_pending_filename', f.name) } catch {}
     })
+    // 등록됨 화면에서 "교체"로 파일을 고른 경우 — 이미 로그인 상태이므로 바로 업로드
+    if (replacePick.current && user) {
+      replacePick.current = false
+      setReplacing(true)
+      doUpload(f)
+      return
+    }
     // If the file picker was opened via a sign-in CTA, auto-progress to OAuth
     const pending = oauthAfterPick.current
     if (pending && !user) {
@@ -338,15 +370,26 @@ export default function CvLanding() {
         const e = await r.json().catch(() => ({}))
         throw new Error(e.error || 'Upload failed')
       }
+      const up = await r.json().catch(() => ({}))
+      if (up.url) setResumeUrl(up.url)
       const uid = (await supabase.auth.getUser()).data.user?.id
       if (uid) {
-        await supabase.from('user_profiles').update({ hr_visible: true, job_signal: 'open' }).eq('id', uid)
+        // 선택한 직무를 user_profiles.desired_roles에 저장. 컬럼(desired_roles text[])이
+        // 아직 없으면 그 부분만 빼고 재시도해 등록 흐름은 막지 않는다.
+        const base = { hr_visible: true, job_signal: 'open' }
+        const withRoles = selectedRoles.length ? { ...base, desired_roles: selectedRoles } : base
+        const { error: upErr } = await supabase.from('user_profiles').update(withRoles).eq('id', uid)
+        if (upErr && /desired_roles/.test(upErr.message || '')) {
+          await supabase.from('user_profiles').update(base).eq('id', uid)
+        }
       }
       if (typeof gtag === 'function') gtag('event', 'cv_register', { source: 'ad-landing' })
       if (typeof fbq === 'function') fbq('trackCustom', 'CVRegister', { source: 'ad-landing' })
-      track('cv_register_success', { meta: { ...cvMeta(), ...fileMeta(fileToUpload) }, page: '/cv' })
+      track('cv_register_success', { meta: { ...cvMeta(), ...fileMeta(fileToUpload), roles: selectedRoles }, page: '/cv' })
       await idbClearCv()
+      try { localStorage.removeItem(CV_ROLES_KEY) } catch {}
       setStatus('success')
+      setShowJobModal(true)
     } catch (e) {
       const msg = e.message || t('cv.err.generic')
       track('cv_register_error', { meta: { ...cvMeta(), ...fileMeta(fileToUpload), error_message: msg }, page: '/cv' })
@@ -355,10 +398,82 @@ export default function CvLanding() {
     }
   }
 
+  // OAuth 리다이렉트 복귀 시 stash된 직무 선택 복원
+  useEffect(() => {
+    try {
+      const saved = JSON.parse(localStorage.getItem(CV_ROLES_KEY) || '[]')
+      if (Array.isArray(saved) && saved.length) setSelectedRoles(saved)
+    } catch {}
+  }, [])
+
+  const toggleRole = (value) => {
+    setSelectedRoles((prev) => {
+      const next = prev.includes(value) ? prev.filter((v) => v !== value) : [...prev, value]
+      try { localStorage.setItem(CV_ROLES_KEY, JSON.stringify(next)) } catch {}
+      return next
+    })
+  }
+
+  // 완료 모달에 띄울 공고 3개 — 정확 직무 일치 → 같은 대분류 일치 순, 각 단계에서 ATS(기업 직접등록) 우선.
+  // 같은 단계 안에서는 누적 지원 수 많은 순(지원 전환 잘 되는 공고). 무관한 공고는 채우지 않는다
+  // (매칭 0건이면 모달 미노출). 회사 중복 제거는 매칭 후에 해서 매칭 공고가 밀려 빠지지 않게 한다.
+  // 'Non-IT'는 잡동사니 직군이라 대분류 완화 매칭에서 제외(명시 선택 시 정확 일치로만 노출).
+  const modalJobs = useMemo(() => {
+    if (selectedRoles.length === 0) return []
+    const roleSet = new Set(selectedRoles)
+    const groupSet = new Set(selectedRoles.map(roleGroupKey).filter(Boolean))
+    const tier = (j) => {
+      if (roleSet.has(j.role)) return j.source === 'company_self' ? 0 : 1
+      if (j.role !== 'Non-IT' && groupSet.has(roleGroupKey(j.role))) return j.source === 'company_self' ? 2 : 3
+      return -1
+    }
+    const seenCompany = new Set()
+    return jobs
+      .map((j) => ({ j, t: tier(j) }))
+      .filter((x) => x.t >= 0)
+      .sort((a, b) => a.t - b.t || (b.j.application_count || 0) - (a.j.application_count || 0))
+      .filter(({ j }) => { if (seenCompany.has(j.company)) return false; seenCompany.add(j.company); return true })
+      .map((x) => x.j)
+      .slice(0, 3)
+  }, [jobs, selectedRoles])
+
+  // "공고 더 보러가기" 링크 — 선택 직무의 대분류로 딥링크(taxonomy 안전), 없으면 전체.
+  const moreJobsHref = useMemo(() => {
+    const first = selectedRoles[0]
+    const grp = first ? ROLE_GROUPS.find((g) => g.roles.some((r) => r.value === first))?.key : null
+    return grp ? `/jobs?role=cat:${grp}` : '/jobs'
+  }, [selectedRoles])
+
+  const apply = async (job) => {
+    if (applied[job.id] || applyingId) return
+    setApplyingId(job.id)
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      const token = session?.access_token
+      let ru = resumeUrl
+      if (!ru && session?.user?.id) {
+        const { data } = await supabase.from('user_profiles').select('resume_url').eq('id', session.user.id).maybeSingle()
+        ru = data?.resume_url || null
+      }
+      const res = await fetch('/api/job-applications', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ jobId: job.id, jobTitle: job.title, jobCompany: job.company, resumeUrl: ru, applicationSource: 'cv_success' }),
+      })
+      if (!res.ok) throw new Error('apply_failed')
+      setApplied((a) => ({ ...a, [job.id]: true }))
+      track('submit_application', { meta: { ...cvMeta(), job_id: job.id, source: 'cv_success' }, page: '/cv' })
+    } catch {
+      setErrMsg(L('지원에 실패했어요. 잠시 후 다시 시도해 주세요.', 'Application failed. Please try again.', 'Ứng tuyển thất bại. Vui lòng thử lại.'))
+    } finally {
+      setApplyingId(null)
+    }
+  }
+
   const onSubmit = async () => {
     if (!file) {
-      // remember CTA intent so handleFile auto-progresses to OAuth after pick
-      oauthAfterPick.current = 'google'
+      // remember CTA intent so handleFile auto-progresses to OAuth after pick (미로그인일 때만)
+      if (!user) oauthAfterPick.current = 'google'
       track('cv_click_cta', { meta: { ...cvMeta(), provider: 'google', has_file: false }, page: '/cv' })
       fileRef.current?.click()
       return
@@ -416,7 +531,7 @@ export default function CvLanding() {
               <span className="cv-h1-line cv-h1-hero"><em>2,000,000 VND</em>{t('cv.hero.line2.suffix')}</span>
             </h1>
             <div className="cv-banknote-showcase" aria-hidden>
-              <img src="/cv/banknote-prize-v1.png" alt="" className="cv-banknote-img" />
+              <img src="/cv/banknote-prize-v2.png" alt="" className="cv-banknote-img" />
             </div>
           </div>
         </section>
@@ -523,6 +638,8 @@ export default function CvLanding() {
         {/* ───── FORM ───── */}
         <section className="cv-form-section" id="cv-form" ref={formAnchorRef}>
           <div className="cv-section-inner cv-form-wrap">
+            {/* 파일 input은 분기 밖에 — 등록됨 화면의 "교체" 버튼에서도 쓴다 */}
+            <input ref={fileRef} type="file" accept=".pdf,.doc,.docx,application/pdf" hidden onChange={(e) => handleFile(e.target.files?.[0])} />
             {showSuccess ? (
               <div className="cv-card cv-success-card">
                 <div className="cv-success-visual" aria-label="FYI celebration">
@@ -564,7 +681,21 @@ export default function CvLanding() {
                 </div>
                 <a href="/jobs" className="cv-btn cv-success-cta">{t('cv.success.cta')} <IconArrowRight /></a>
               </div>
-            ) : status === 'uploading' && router.query.continue === '1' ? (
+            ) : existingResume && status === 'idle' && router.query.continue !== '1' ? (
+              <div className="cv-card cv-success-card">
+                <h3 className="cv-card-h cv-success-h">{L('이미 이력서가 등록되어 있어요', 'Your resume is already registered', 'CV của bạn đã được đăng ký')}</h3>
+                <p className="cv-card-sub">{L('등록된 이력서로 바로 지원할 수 있어요. 최신 버전이 아니라면 새 파일로 교체하세요.', 'You can apply to jobs with the resume on file. Replace it if you have a newer version.', 'Bạn có thể ứng tuyển ngay với CV đã đăng ký. Thay file mới nếu bạn có bản mới hơn.')}</p>
+                {errMsg && <div className="cv-err">{errMsg}</div>}
+                <a href="/jobs" className="cv-btn cv-success-cta">{t('cv.success.cta')} <IconArrowRight /></a>
+                <button
+                  type="button"
+                  className="cv-registered-replace"
+                  onClick={() => { replacePick.current = true; fileRef.current?.click() }}
+                >
+                  {L('다른 파일로 교체하기', 'Replace with a new file', 'Thay bằng file khác')}
+                </button>
+              </div>
+            ) : status === 'uploading' && (router.query.continue === '1' || replacing) ? (
               <div className="cv-card cv-interstitial">
                 <div className="cv-spinner" />
                 <div className="cv-card-step-pill">{t('cv.interstitial.pill')}</div>
@@ -595,8 +726,6 @@ export default function CvLanding() {
                     </div>
                   </div>
                 )}
-
-                <input ref={fileRef} type="file" accept=".pdf,.doc,.docx,application/pdf" hidden onChange={(e) => handleFile(e.target.files?.[0])} />
 
                 {/* ─── STEP 1: 이력서 첨부 ─── */}
                 <div className={`cv-stepblock ${file ? 'done' : ''}`}>
@@ -635,6 +764,30 @@ export default function CvLanding() {
                     </button>
                   )}
                   <div className="cv-hint">{t('cv.form.fileHint')}</div>
+
+                  {/* 찾는 직무 (복수 선택) — 등록 완료 후 맞는 공고 추천/지원에 사용 */}
+                  <div className="cv-roles">
+                    <div className="cv-roles-label">{L('찾는 직무 (복수 선택 가능)', 'Roles you want (select multiple)', 'Vị trí bạn tìm (chọn nhiều)')}</div>
+                    <div className="cv-roles-groups">
+                      {ROLE_GROUPS.map((g) => (
+                        <div key={g.key} className="cv-roles-group">
+                          <div className="cv-roles-gname">{g.label[lang] || g.label.en}</div>
+                          <div className="cv-roles-chips">
+                            {g.roles.map((r) => (
+                              <button
+                                type="button"
+                                key={r.value}
+                                className={`cv-role-chip${selectedRoles.includes(r.value) ? ' on' : ''}`}
+                                onClick={() => toggleRole(r.value)}
+                              >
+                                {r.label[lang] || r.label.en}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
                 </div>
 
                 {/* ─── STEP 2: 회원가입 (미인증) 또는 등록 (인증) ─── */}
@@ -648,7 +801,7 @@ export default function CvLanding() {
 
                   <button className="cv-btn" onClick={onSubmit} disabled={status === 'uploading'}>
                     {status === 'uploading' ? t('cv.form.uploading') :
-                      user && file ? <>{t('cv.form.cta.register')} <IconArrowRight /></> :
+                      user ? <>{t('cv.form.cta.register')} <IconArrowRight /></> :
                       <><IconGoogle />{t('cv.form.cta.google')} <IconArrowRight /></>}
                   </button>
 
@@ -686,11 +839,101 @@ export default function CvLanding() {
 
       </main>
 
+      {/* 등록 완료 → 방금 올린 이력서로 맞는 공고 바로 지원 (원탭) */}
+      {showJobModal && modalJobs.length > 0 && (
+        <div className="cvm-overlay" onClick={() => setShowJobModal(false)}>
+          <div className="cvm" onClick={(e) => e.stopPropagation()}>
+            <button className="cvm-close" onClick={() => setShowJobModal(false)} aria-label="close">×</button>
+            <div className="cvm-head">
+              <div className="cvm-title">{L('이력서 등록 완료! 바로 지원해보세요', 'Resume saved — apply in one tap', 'Đã lưu CV — ứng tuyển ngay')}</div>
+              <div className="cvm-sub">{L('방금 올린 이력서로 한 번에 지원됩니다', 'We apply with the resume you just uploaded', 'Ứng tuyển bằng CV bạn vừa tải lên')}</div>
+            </div>
+            <div className="cvm-jobs">
+              {modalJobs.map((j) => {
+                const isApplied = !!applied[j.id]
+                const isApplying = applyingId === j.id
+                const thumb = j.logo_url || j.image_url || j.images?.[0] || null
+                const sal = formatSalaryCard(j)
+                const salTxt = sal?.min && sal?.max ? `${Math.round(sal.min / 1e6)}–${Math.round(sal.max / 1e6)}M VND` : null
+                const expTxt = (!j.experience_min && !j.experience_max)
+                  ? L('경력무관', 'Any exp', 'KN bất kỳ')
+                  : j.experience_max >= 30
+                    ? L(`${j.experience_min || 0}년+`, `${j.experience_min || 0}y+`, `${j.experience_min || 0} năm+`)
+                    : L(`${j.experience_min}–${j.experience_max}년`, `${j.experience_min}–${j.experience_max}y`, `${j.experience_min}–${j.experience_max} năm`)
+                const typeMap = { remote: L('재택', 'Remote', 'Remote'), hybrid: L('하이브리드', 'Hybrid', 'Hybrid'), onsite: L('출근', 'On-site', 'Tại VP') }
+                const typeTxt = j.type ? (typeMap[j.type] || j.type) : null
+                const meta = [typeTxt, expTxt, salTxt].filter(Boolean).join(' · ')
+                return (
+                  <div key={j.id} className="cvm-job">
+                    <div className="cvm-job-logo" style={thumb ? { backgroundImage: `url(${thumb})` } : undefined}>
+                      {!thumb && (j.company_initials || (j.company || '?').charAt(0).toUpperCase())}
+                    </div>
+                    <div className="cvm-job-main">
+                      <div className="cvm-job-title">{j.title}</div>
+                      <div className="cvm-job-company">{j.company}</div>
+                      <div className="cvm-job-meta">{meta}</div>
+                    </div>
+                    <button
+                      className={`cvm-apply${isApplied ? ' done' : ''}${isApplying ? ' applying' : ''}${armedId === j.id ? ' arm' : ''}`}
+                      disabled={isApplied || isApplying}
+                      onClick={() => { if (armedId === j.id) { setArmedId(null); apply(j) } else setArmedId(j.id) }}
+                    >
+                      {isApplied ? L('지원 완료 ✓', 'Applied ✓', 'Đã ứng tuyển ✓')
+                        : isApplying ? L('지원 중', 'Applying', 'Đang gửi')
+                        : armedId === j.id ? L('한 번 더 누르면 지원돼요', 'Tap again to apply', 'Nhấn lần nữa để nộp')
+                        : L('바로 지원', 'Apply', 'Ứng tuyển')}
+                    </button>
+                  </div>
+                )
+              })}
+            </div>
+            {Object.keys(applied).length > 0 ? (
+              <a href={moreJobsHref} className="cvm-more">{L('공고 더 보러가기', 'Browse more jobs', 'Xem thêm việc làm')} →</a>
+            ) : (
+              <a href={moreJobsHref} className="cvm-all">{L('전체 공고 보기', 'Browse all jobs', 'Xem tất cả việc làm')} →</a>
+            )}
+          </div>
+        </div>
+      )}
+
       <style jsx global>{`
         .tabular-nums { font-variant-numeric: tabular-nums lining-nums; }
       `}</style>
 
       <style jsx>{`
+        /* 직무 다중선택 (STEP 1) */
+        .cv-roles { margin-top: 16px; border-top: 1px solid #efe9e0; padding-top: 14px; }
+        .cv-roles-label { font-size: 13px; font-weight: 700; color: #1a1612; margin-bottom: 10px; }
+        .cv-roles-groups { display: flex; flex-direction: column; gap: 12px; max-height: 260px; overflow-y: auto; }
+        .cv-roles-gname { font-size: 11px; font-weight: 700; color: #a89f92; text-transform: uppercase; letter-spacing: .04em; margin-bottom: 6px; }
+        .cv-roles-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+        .cv-role-chip { font-size: 12.5px; font-weight: 500; color: #4a4238; background: #fff; border: 1px solid #e3dbcf; border-radius: 999px; padding: 6px 12px; cursor: pointer; transition: all .12s; font-family: inherit; }
+        .cv-role-chip:hover { border-color: #ff6000; }
+        .cv-role-chip.on { background: #fff1e8; border-color: #ff6000; color: #ff6000; font-weight: 700; }
+
+        /* 완료 모달 — 바로 지원 */
+        .cvm-overlay { position: fixed; inset: 0; z-index: 1000; background: rgba(20,16,12,0.55); display: flex; align-items: center; justify-content: center; padding: 20px; }
+        .cvm { position: relative; width: 100%; max-width: 440px; background: #fff; border-radius: 20px; padding: 28px 24px 22px; box-shadow: 0 20px 60px rgba(0,0,0,0.3); }
+        .cvm-close { position: absolute; top: 14px; right: 16px; border: none; background: none; font-size: 26px; line-height: 1; color: #b5ab9d; cursor: pointer; }
+        .cvm-head { margin-bottom: 18px; padding-right: 20px; }
+        .cvm-title { font-size: 18px; font-weight: 800; color: #1a1612; letter-spacing: -0.01em; }
+        .cvm-sub { font-size: 13px; color: #8a8073; margin-top: 5px; }
+        .cvm-jobs { display: flex; flex-direction: column; gap: 10px; }
+        .cvm-job { display: flex; align-items: center; gap: 12px; border: 1px solid #ece5db; border-radius: 12px; padding: 12px 13px; }
+        .cvm-job-logo { flex-shrink: 0; width: 42px; height: 42px; border-radius: 10px; background-color: #f3eee6; background-size: cover; background-position: center; background-repeat: no-repeat; display: flex; align-items: center; justify-content: center; font-size: 16px; font-weight: 800; color: #b09a7f; }
+        .cvm-job-main { flex: 1; min-width: 0; }
+        .cvm-job-title { font-size: 14px; font-weight: 700; color: #1a1612; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .cvm-job-company { font-size: 12.5px; color: #8a8073; margin-top: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .cvm-job-meta { font-size: 11.5px; color: #a89f92; margin-top: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .cvm-apply { flex-shrink: 0; min-width: 84px; text-align: center; font-size: 13px; font-weight: 700; color: #fff; background: #ff6000; border: none; border-radius: 9px; padding: 9px 14px; cursor: pointer; font-family: inherit; transition: opacity .15s; }
+        .cvm-apply:disabled { cursor: default; }
+        .cvm-apply.applying { opacity: 0.55; }
+        /* 오터치 방지 2탭: 첫 탭에서 확인 상태로 전환 */
+        .cvm-apply.arm { background: #fff1e8; color: #ff6000; box-shadow: inset 0 0 0 1.5px #ff6000; }
+        .cvm-apply.done { background: #E7F6EC; color: #16a34a; }
+        .cvm-all { display: block; text-align: center; margin-top: 16px; font-size: 13px; font-weight: 600; color: #8a8073; text-decoration: none; }
+        .cvm-more { display: block; text-align: center; margin-top: 16px; padding: 13px 0; font-size: 14px; font-weight: 700; color: #ff6000; background: #fff1e8; border: 1px solid #ffd7c2; border-radius: 11px; text-decoration: none; }
+
         /* ───────────────────────────────────────
            Design tokens — warm cream system
            Base: linen #faf6f0, Cards: white, Ink: #1a1612
@@ -816,54 +1059,15 @@ export default function CvLanding() {
           letter-spacing: -2.8px;
         }
         .cv-banknote-showcase {
-          position: relative;
-          width: min(820px, 100%);
-          height: 310px;
-          margin: 104px auto 0;
+          width: min(520px, 100%);
+          margin: 44px auto 0;
           pointer-events: none;
-          isolation: isolate;
-        }
-        .cv-banknote-showcase::before {
-          content: "";
-          position: absolute;
-          left: 50%;
-          bottom: 28px;
-          width: 680px;
-          height: 190px;
-          transform: translateX(-50%);
-          background: radial-gradient(ellipse at center, rgba(0,0,0,0.98), transparent 72%);
-          filter: blur(22px);
-          z-index: -2;
-        }
-        .cv-banknote-showcase::after {
-          content: "";
-          position: absolute;
-          left: 50%;
-          bottom: 32px;
-          width: 510px;
-          height: 58px;
-          transform: translateX(-50%);
-          background: radial-gradient(ellipse at center, rgba(0,0,0,0.58), transparent 70%);
-          filter: blur(14px);
-          z-index: -1;
         }
         .cv-banknote-img {
-          position: absolute;
-          left: 50%;
-          bottom: 58px;
-          width: min(620px, 100%);
+          display: block;
+          width: 100%;
           height: auto;
-          transform: translateX(-50%);
-          mix-blend-mode: lighten;
-          -webkit-mask-image: radial-gradient(ellipse 66% 58% at 50% 52%, #000 56%, rgba(0,0,0,0.58) 68%, transparent 82%);
-          mask-image: radial-gradient(ellipse 66% 58% at 50% 52%, #000 56%, rgba(0,0,0,0.58) 68%, transparent 82%);
-          filter:
-            sepia(0.06)
-            saturate(0.96)
-            contrast(1.1)
-            brightness(1.03)
-            drop-shadow(0 38px 64px rgba(0,0,0,0.52))
-            drop-shadow(0 0 28px rgba(0,0,0,0.72));
+          filter: drop-shadow(0 38px 64px rgba(0,0,0,0.45));
         }
         .cv-hero-sub {
           font-size: 17.5px;
@@ -1915,6 +2119,21 @@ export default function CvLanding() {
           margin-top: 0;
           text-align: center;
         }
+        /* 등록됨 화면의 파일 교체 — CTA 아래 보조 액션(텍스트 버튼) */
+        .cv-registered-replace {
+          display: block;
+          margin: 14px auto 0;
+          background: none;
+          border: none;
+          font-family: inherit;
+          font-size: 13.5px;
+          font-weight: 600;
+          color: #a89f92;
+          text-decoration: underline;
+          text-underline-offset: 3px;
+          cursor: pointer;
+        }
+        .cv-registered-replace:hover { color: #ff6000; }
         /* Journey card — kept near-white so the gold goal dot and the
            orange "completed" dot read as distinct accents instead of
            getting absorbed into an all-orange wash. Subtle warm tint only. */
@@ -2675,11 +2894,9 @@ export default function CvLanding() {
           }
           .cv-hero-inner { grid-template-columns: 1fr; gap: 56px; }
           .cv-banknote-showcase {
-            width: min(680px, 100%);
-            height: 230px;
-            margin-top: 62px;
+            width: min(440px, 100%);
+            margin-top: 40px;
           }
-          .cv-banknote-img { width: min(560px, 100%); }
           .cv-prize { min-height: 340px; }
           .cv-flow {
             max-width: 460px;
@@ -2743,19 +2960,9 @@ export default function CvLanding() {
           .cv-h1-logo { height: 1.55em; }
           .cv-h1-hero { margin-top: 18px; }
           .cv-banknote-showcase {
-            height: 188px;
-            margin-top: 64px;
+            width: min(320px, 82%);
+            margin-top: 36px;
           }
-          .cv-banknote-showcase::before {
-            width: 340px;
-            height: 82px;
-            bottom: 18px;
-          }
-          .cv-banknote-showcase::after {
-            width: 300px;
-            bottom: 24px;
-          }
-          .cv-banknote-img { width: 360px; }
           .cv-h2 { letter-spacing: -0.8px; }
           .cv-success-card {
             padding: 34px 18px 92px;

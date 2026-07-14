@@ -3,7 +3,7 @@
 // public page isn't touched. If /pages/jobs/[id].js layout/styles change,
 // update this file too to keep the preview faithful.
 import Icon from '../Icon';
-import { DEFAULT_IMAGES } from '../../constants/jobs';
+import { DEFAULT_IMAGES, DEFAULT_WORK_DAYS, DEFAULT_WORK_HOURS, DEFAULT_PAID_LEAVE, DEFAULT_CONTRACT } from '../../constants/jobs';
 import { COMPANY_PROFILES } from '../../data/companyProfiles.js';
 import { generateCompanyDescription } from '../../utils/companyDescription';
 
@@ -41,6 +41,10 @@ function normalize(form, companyName) {
     headcount: form.headcount || null,
     deadline: form.deadline || null,
     hiring_process: form.hiring_process || null,
+    work_days: form.work_days || '',
+    work_hours: form.work_hours || '',
+    paid_leave: form.paid_leave || '',
+    contract_type: form.contract_type || '',
   };
 }
 
@@ -165,14 +169,14 @@ export default function JobPreview({ form, companyName, fullscreen = false }) {
               <div className="jd-work-icon"><Icon name="calendar" size={18} color="#555" /></div>
               <div>
                 <div className="jd-work-label">Work Days</div>
-                <div className="jd-work-value">Monday – Friday</div>
+                <div className="jd-work-value">{job.work_days || DEFAULT_WORK_DAYS}</div>
               </div>
             </div>
             <div className="jd-work-item">
               <div className="jd-work-icon"><Icon name="clock" size={18} color="#555" /></div>
               <div>
                 <div className="jd-work-label">Work Hours</div>
-                <div className="jd-work-value">9:00 AM – 6:00 PM</div>
+                <div className="jd-work-value">{job.work_hours || DEFAULT_WORK_HOURS}</div>
               </div>
             </div>
             <div className="jd-work-item">
@@ -186,14 +190,14 @@ export default function JobPreview({ form, companyName, fullscreen = false }) {
               <div className="jd-work-icon"><Icon name="palmTree" size={18} color="#555" /></div>
               <div>
                 <div className="jd-work-label">Paid Leave</div>
-                <div className="jd-work-value">12+ days / year</div>
+                <div className="jd-work-value">{job.paid_leave || DEFAULT_PAID_LEAVE}</div>
               </div>
             </div>
             <div className="jd-work-item">
               <div className="jd-work-icon"><Icon name="clipboard" size={18} color="#555" /></div>
               <div>
                 <div className="jd-work-label">Contract</div>
-                <div className="jd-work-value">Full-time (Permanent)</div>
+                <div className="jd-work-value">{job.contract_type || DEFAULT_CONTRACT}</div>
               </div>
             </div>
             <div className="jd-work-item">

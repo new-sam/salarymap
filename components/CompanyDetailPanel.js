@@ -8,6 +8,7 @@ const LOAD_MORE_COUNT = 20
 export default function CompanyDetailPanel({
   company, isOpen, onClose,
   userRole, userExperience, userSalary, userCompany, isSubmitted,
+  needsLogin, onLoginGate,
   cardIndex = 0,
 }) {
   const { t } = useT()
@@ -562,16 +563,19 @@ export default function CompanyDetailPanel({
         {t('detail.gateLock', { company })}
       </div>
       <div style={{ fontSize: 13, color: '#888', lineHeight: 1.7, marginBottom: 20 }}>
-        {t('detail.gateDesc')}
+        {t(needsLogin ? 'detail.gateLoginDesc' : 'detail.gateDesc')}
       </div>
-      <button onClick={() => { onClose(); document.getElementById('submit')?.scrollIntoView({ behavior: 'smooth' }) }} style={{
+      <button onClick={() => {
+        if (needsLogin) { onClose(); onLoginGate?.(); return; }
+        onClose(); document.getElementById('submit')?.scrollIntoView({ behavior: 'smooth' })
+      }} style={{
         width: '100%', padding: '14px 0',
         background: '#ff6000', border: 'none', borderRadius: 12,
         fontSize: 14, fontWeight: 700, color: '#fff', cursor: 'pointer', fontFamily: 'inherit',
-      }}>{t('detail.gateBtn')}</button>
-      <div style={{ fontSize: 10, color: '#bbb', marginTop: 10 }}>
+      }}>{t(needsLogin ? 'detail.gateLoginBtn' : 'detail.gateBtn')}</button>
+      {!needsLogin && <div style={{ fontSize: 10, color: '#bbb', marginTop: 10 }}>
         {t('detail.gateAnon')}
-      </div>
+      </div>}
     </div>
   )
 
@@ -581,11 +585,14 @@ export default function CompanyDetailPanel({
       background: 'linear-gradient(transparent, #fff 30%)',
       padding: '20px 0 8px', textAlign: 'center',
     }}>
-      <button onClick={() => { onClose(); document.getElementById('submit')?.scrollIntoView({ behavior: 'smooth' }) }} style={{
+      <button onClick={() => {
+        if (needsLogin) { onClose(); onLoginGate?.(); return; }
+        onClose(); document.getElementById('submit')?.scrollIntoView({ behavior: 'smooth' })
+      }} style={{
         padding: '10px 24px',
         background: '#111', border: 'none', borderRadius: 10,
         fontSize: 12, fontWeight: 600, color: '#fff', cursor: 'pointer', fontFamily: 'inherit',
-      }}>{t('detail.submitToSee')}</button>
+      }}>{t(needsLogin ? 'detail.gateLoginBtn' : 'detail.submitToSee')}</button>
     </div>
   )
 

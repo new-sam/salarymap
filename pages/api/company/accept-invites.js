@@ -8,16 +8,16 @@ const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 // /auth/callback 에서 회사 가입 직후 호출
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
-  if (!SERVICE_KEY) return res.status(503).json({ error: '서버 설정 누락' });
+  if (!SERVICE_KEY) return res.status(503).json({ error: '서버 설정 누락', code: 'serverConfig' });
 
   const token = (req.headers.authorization || '').replace(/^Bearer\s+/i, '');
-  if (!token) return res.status(401).json({ error: '인증 필요' });
+  if (!token) return res.status(401).json({ error: '인증 필요', code: 'authRequired' });
 
   const asUser = createClient(SUPABASE_URL, ANON_KEY, {
     global: { headers: { Authorization: `Bearer ${token}` } },
   });
   const { data: { user } } = await asUser.auth.getUser();
-  if (!user?.email) return res.status(401).json({ error: '세션 만료' });
+  if (!user?.email) return res.status(401).json({ error: '세션 만료', code: 'sessionExpired' });
 
   const admin = createClient(SUPABASE_URL, SERVICE_KEY);
 

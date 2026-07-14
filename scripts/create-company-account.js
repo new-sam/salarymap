@@ -17,6 +17,15 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY
 )
 
+// Free-mail domains are shared across unrelated companies — keying
+// recruiter_companies on them would auto-merge every gmail customer into one
+// tenant. For these, key the company on the FULL email instead (matches the
+// existing gigapower/huylinh/bluestar rows).
+const FREE_MAIL_DOMAINS = new Set([
+  'gmail.com', 'naver.com', 'yahoo.com', 'hotmail.com', 'outlook.com',
+  'icloud.com', 'daum.net', 'kakao.com', 'protonmail.com',
+])
+
 async function findUserByEmail(email) {
   // No getUserByEmail in this SDK — scan the first pages of the user list.
   for (let page = 1; page <= 20; page++) {
@@ -38,6 +47,8 @@ async function main() {
   const normEmail = email.trim().toLowerCase()
   const domain = normEmail.split('@')[1]
   if (!domain) { console.error('Invalid email:', email); process.exit(1) }
+  // Company lookup key: real domain for corporate mail, full email for free mail.
+  const companyKey = FREE_MAIL_DOMAINS.has(domain) ? normEmail : domain
   const contact = (fullName || companyName).trim()
 
   // 1) Auth user — create, or reuse + reset password if it already exists.
@@ -62,12 +73,12 @@ async function main() {
   let { data: company } = await supabase
     .from('recruiter_companies')
     .select('id, name')
-    .eq('email_domain', domain)
+    .eq('email_domain', companyKey)
     .maybeSingle()
   if (!company) {
     const { data: c, error } = await supabase
       .from('recruiter_companies')
-      .insert({ name: companyName.trim(), email_domain: domain, created_by: userId })
+      .insert({ name: companyName.trim(), email_domain: companyKey, created_by: userId })
       .select('id, name')
       .single()
     if (error) throw error

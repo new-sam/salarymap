@@ -1,4 +1,5 @@
-import { useState } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
+import { createPortal } from 'react-dom'
 import { useAdmin } from '../../lib/adminSwr'
 import { isTopTier, overseasOf } from '../../lib/topUniversities'
 
@@ -75,6 +76,7 @@ export default function TalentPoolView({ token, lang }) {
     unknown: '미상', noRole: '직무 미상', levelUnknown: '경력?', aiFill: 'AI 채우기', aiFilling: '분석 중…',
     aiTitle: '경력/어학이 비어 있어요 — 눌러서 AI로 채웁니다', resume: '이력서 →',
     unclassified: '미분류', parseFail: '분석 실패',
+    recBtn: '공고 추천', recApplied: '지원',
   } : {
     loadingPool: 'Loading talent pool…', emptyPool: 'No public resumes yet.',
     noMatch: 'No matching talent.',
@@ -85,9 +87,14 @@ export default function TalentPoolView({ token, lang }) {
     unknown: 'Unknown', noRole: 'No role', levelUnknown: 'Level?', aiFill: 'AI fill', aiFilling: 'Filling…',
     aiTitle: 'Career/language empty — click to fill with AI', resume: 'Resume →',
     unclassified: 'Unclassified', parseFail: 'Parse failed',
+    recBtn: 'Recommend', recApplied: 'applied',
   }
   const levelLabel = (l) => (l ? (ko ? l.label : l.en) : L.levelUnknown)
   const { data: all, isLoading: loading, mutate } = useAdmin('/api/admin/resumes', token)
+  // 공고 추천: 발송 이력(+지원 여부) 및 기업 등록 공고 목록(모달 셀렉트용)
+  const { data: recs, mutate: mutateRecs } = useAdmin('/api/admin/talent-recommend', token)
+  const { data: allJobs } = useAdmin('/api/jobs', token)
+  const [recTarget, setRecTarget] = useState(null)
   const [search, setSearch] = useState('')
   const [posFilter, setPosFilter] = useState('all')
   const [levelFilter, setLevelFilter] = useState('all')
@@ -124,6 +131,11 @@ export default function TalentPoolView({ token, lang }) {
       setParsingId(null)
     }
   }
+
+  // 공고 추천 이력을 인재별로 묶는다 (카드 버튼 라벨 + 모달 히스토리용)
+  const recsByUser = {}
+  for (const rec of (recs || [])) (recsByUser[rec.user_id] ||= []).push(rec)
+  const companyJobs = (allJobs || []).filter(j => j.source === 'company_self')
 
   // 직무별 카운트 (필터 칩용)
   const posCounts = {}
@@ -219,6 +231,8 @@ export default function TalentPoolView({ token, lang }) {
       <style>{`
         .tp-card { transition: box-shadow 0.15s, border-color 0.15s; }
         .tp-card:hover { border-color: #ff6000; box-shadow: 0 2px 10px rgba(15,23,42,0.06); }
+        .jobsel-dropdown::-webkit-scrollbar { width: 6px; }
+        .jobsel-dropdown::-webkit-scrollbar-thumb { background: #E5E8EB; border-radius: 3px; }
       `}</style>
 
       {/* 헤더: 제목 + 통계 스트립 + 검색/CSV */}
@@ -333,6 +347,18 @@ export default function TalentPoolView({ token, lang }) {
                 <a href={r.email ? `mailto:${r.email}` : undefined} title={r.email}
                   style={{ fontSize: 11, color: '#9CA3AF', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', textDecoration: 'none' }}>{r.email || '-'}</a>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0 }}>
+                  {(() => {
+                    const userRecs = recsByUser[r.id] || []
+                    const appliedN = userRecs.filter(x => x.applied_at).length
+                    const label = userRecs.length === 0 ? L.recBtn
+                      : `${L.recBtn} ${userRecs.length}${appliedN ? ` · ${L.recApplied} ${appliedN}` : ''}`
+                    return (
+                      <button onClick={() => setRecTarget(r)}
+                        style={{ border: 'none', background: 'none', cursor: 'pointer', fontSize: 11.5, fontWeight: 600, color: userRecs.length > 0 ? '#ff6000' : '#6B7280', padding: 0 }}>
+                        {label}
+                      </button>
+                    )
+                  })()}
                   {companies.length === 0 && (
                     <button onClick={() => reparse(r.id)} disabled={isParsing}
                       title={L.aiTitle}
@@ -355,6 +381,294 @@ export default function TalentPoolView({ token, lang }) {
       {filtered.length === 0 && (
         <div style={{ textAlign: 'center', padding: 40, color: '#999' }}>{L.noMatch}</div>
       )}
+
+      {recTarget && (
+        <RecommendModal
+          person={recTarget}
+          jobs={companyJobs}
+          history={recsByUser[recTarget.id] || []}
+          token={token}
+          ko={ko}
+          onClose={() => setRecTarget(null)}
+          onSent={(row) => mutateRecs(prev => row ? [row, ...(prev || [])] : prev, !row)}
+        />
+      )}
     </>
+  )
+}
+
+// 공고 선택 드롭다운 — native select 대신 브랜드 디자인(profile.js CustomSelect 계열).
+// 공고는 회사명·포지션 2줄 + 로고, 이미 추천 보낸 공고는 비활성(발송됨 표시).
+function JobSelect({ jobs, value, onChange, sentJobIds, placeholder, sentLabel }) {
+  const [open, setOpen] = useState(false)
+  // 드롭다운은 body로 portal + fixed 배치 — 모달의 overflow:auto 경계에 잘리지 않게.
+  const [coords, setCoords] = useState(null)
+  const triggerRef = useRef(null)
+  const menuRef = useRef(null)
+
+  const reposition = useCallback(() => {
+    const el = triggerRef.current
+    if (!el) return
+    const r = el.getBoundingClientRect()
+    const menuH = Math.min(260, jobs.length * 47 + 8)
+    const spaceBelow = window.innerHeight - r.bottom
+    const above = spaceBelow < menuH + 12 && r.top > spaceBelow
+    setCoords({
+      left: r.left,
+      width: r.width,
+      top: above ? r.top - menuH - 4 : r.bottom + 4,
+      maxHeight: above ? Math.min(260, r.top - 12) : Math.min(260, spaceBelow - 12),
+    })
+  }, [jobs.length])
+
+  useEffect(() => {
+    if (!open) return
+    reposition()
+    const onOutside = (e) => {
+      if (triggerRef.current?.contains(e.target) || menuRef.current?.contains(e.target)) return
+      setOpen(false)
+    }
+    // 모달 내부 스크롤/리사이즈 시 위치 갱신 (capture: 내부 스크롤 컨테이너까지 포착)
+    document.addEventListener('mousedown', onOutside)
+    window.addEventListener('resize', reposition)
+    window.addEventListener('scroll', reposition, true)
+    return () => {
+      document.removeEventListener('mousedown', onOutside)
+      window.removeEventListener('resize', reposition)
+      window.removeEventListener('scroll', reposition, true)
+    }
+  }, [open, reposition])
+
+  const selected = jobs.find(j => j.id === value)
+  const logoBox = (job, size) => job.logo_url
+    ? <img src={job.logo_url} alt="" style={{ width: size, height: size, borderRadius: 6, objectFit: 'contain', background: '#fff', border: '1px solid #EEF0F2', flexShrink: 0 }} />
+    : <div style={{ width: size, height: size, borderRadius: 6, background: '#FFF1E7', color: '#ea580c', fontSize: size * 0.42, fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>{(job.company || '?').trim()[0] || '?'}</div>
+
+  return (
+    <div style={{ position: 'relative' }}>
+      <button ref={triggerRef} type="button" onClick={() => setOpen(v => !v)} style={{
+        width: '100%', padding: '9px 11px', border: `1px solid ${open ? '#ff6000' : '#E5E8EB'}`,
+        borderRadius: 8, background: '#fff', cursor: 'pointer', textAlign: 'left',
+        display: 'flex', alignItems: 'center', gap: 10, transition: 'border-color .15s', outline: 'none',
+      }}>
+        {selected ? (
+          <>
+            {logoBox(selected, 28)}
+            <span style={{ minWidth: 0, flex: 1 }}>
+              <span style={{ display: 'block', fontSize: 13, fontWeight: 700, color: '#111', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{selected.title}</span>
+              <span style={{ display: 'block', fontSize: 11.5, color: '#6B7280', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{selected.company}</span>
+            </span>
+          </>
+        ) : (
+          <span style={{ flex: 1, fontSize: 13, color: '#9CA3AF' }}>{placeholder}</span>
+        )}
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" strokeWidth="2" style={{ flexShrink: 0, transform: open ? 'rotate(180deg)' : 'none', transition: 'transform .2s' }}><path d="M6 9l6 6 6-6" /></svg>
+      </button>
+      {open && coords && createPortal(
+        <div ref={menuRef} className="jobsel-dropdown" style={{
+          position: 'fixed', top: coords.top, left: coords.left, width: coords.width, zIndex: 200,
+          background: '#fff', border: '1px solid #EEF0F2', borderRadius: 10, padding: 4,
+          maxHeight: coords.maxHeight, overflowY: 'auto', boxShadow: '0 8px 32px rgba(15,23,42,0.12)',
+        }}>
+          {jobs.map(j => {
+            const sent = sentJobIds.has(j.id)
+            const active = j.id === value
+            return (
+              <button key={j.id} type="button" disabled={sent}
+                onClick={() => { if (!sent) { onChange(j.id); setOpen(false) } }}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 10, width: '100%', padding: '8px 10px',
+                  border: 'none', borderRadius: 6, background: active ? '#FFF6F0' : 'transparent',
+                  cursor: sent ? 'not-allowed' : 'pointer', textAlign: 'left', opacity: sent ? 0.5 : 1, transition: 'background .1s',
+                }}
+                onMouseEnter={e => { if (!sent && !active) e.currentTarget.style.background = '#F8FAFC' }}
+                onMouseLeave={e => { if (!active) e.currentTarget.style.background = 'transparent' }}>
+                {logoBox(j, 28)}
+                <span style={{ minWidth: 0, flex: 1 }}>
+                  <span style={{ display: 'block', fontSize: 13, fontWeight: 600, color: active ? '#ff6000' : '#111', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{j.title}</span>
+                  <span style={{ display: 'block', fontSize: 11.5, color: '#6B7280', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{j.company}</span>
+                </span>
+                {sent && <span style={{ flexShrink: 0, fontSize: 10.5, fontWeight: 700, color: '#94A3B8' }}>{sentLabel}</span>}
+              </button>
+            )
+          })}
+        </div>,
+        document.body
+      )}
+    </div>
+  )
+}
+
+// 공고 추천 메일 모달 — 기업 등록 공고(company_self) 중 하나를 골라
+// 베트남어 추천 메일(리멤버 형식)을 발송한다. 미리보기는 서버에서 실제 발송본과
+// 동일한 내용을 받아와 보여준다.
+function RecommendModal({ person, jobs, history, token, ko, onClose, onSent }) {
+  const M = ko ? {
+    title: '공고 추천 메일', to: '받는 사람', selectJob: '공고 선택', selectPh: '기업 등록 공고 선택...',
+    history: '보낸 추천', applied: '지원함', sent: '발송됨', alreadySent: '✓ 발송됨',
+    lang: '메일 언어', preview: '메일 미리보기', previewLoading: '미리보기 불러오는 중...',
+    send: '보내기', sending: '발송 중...', done: '발송 완료', close: '닫기',
+    noJobs: '기업 등록 공고(company_self)가 없습니다.', noEmail: '이메일이 없는 계정입니다 — 발송 불가',
+    dup: '이미 이 공고를 추천했습니다.',
+  } : {
+    title: 'Recommend a job', to: 'To', selectJob: 'Job', selectPh: 'Select a company-posted job...',
+    history: 'Sent recommendations', applied: 'Applied', sent: 'Sent', alreadySent: '✓ Sent',
+    lang: 'Email language', preview: 'Email preview', previewLoading: 'Loading preview...',
+    send: 'Send', sending: 'Sending...', done: 'Sent', close: 'Close',
+    noJobs: 'No company-posted jobs (company_self).', noEmail: 'Account has no email — cannot send',
+    dup: 'Already recommended this job.',
+  }
+  const [jobId, setJobId] = useState('')
+  const [mailLang, setMailLang] = useState('vi')
+  const [preview, setPreview] = useState(null)
+  const [previewLoading, setPreviewLoading] = useState(false)
+  const [sending, setSending] = useState(false)
+  const [sentTo, setSentTo] = useState(null)
+  const [error, setError] = useState(null)
+
+  const sentJobIds = new Set(history.map(h => h.job_id))
+
+  useEffect(() => {
+    if (!jobId) { setPreview(null); return }
+    let alive = true
+    setPreviewLoading(true)
+    setError(null)
+    setSentTo(null)
+    fetch('/api/admin/talent-recommend', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ userId: person.id, jobId, lang: mailLang, preview: true }),
+    })
+      .then(async res => {
+        const data = await res.json().catch(() => ({}))
+        if (!alive) return
+        if (res.ok) setPreview(data)
+        else setError(data.error || `HTTP ${res.status}`)
+      })
+      .catch(e => { if (alive) setError(e.message) })
+      .finally(() => { if (alive) setPreviewLoading(false) })
+    return () => { alive = false }
+  }, [jobId, mailLang]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  async function send() {
+    if (!jobId || sending) return
+    setSending(true)
+    setError(null)
+    try {
+      const res = await fetch('/api/admin/talent-recommend', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ userId: person.id, jobId, lang: mailLang }),
+      })
+      const data = await res.json().catch(() => ({}))
+      if (res.status === 409) setError(M.dup)
+      else if (!res.ok) setError(data.error || `HTTP ${res.status}`)
+      else {
+        setSentTo(data.to)
+        onSent(data.recommendation || null)
+      }
+    } catch (e) {
+      setError(e.message)
+    } finally {
+      setSending(false)
+    }
+  }
+
+  const label = { fontSize: 11, fontWeight: 700, color: '#9CA3AF', marginBottom: 5 }
+
+  return (
+    <div onClick={onClose} style={{ position: 'fixed', inset: 0, background: 'rgba(15,23,42,0.45)', zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
+      <div onClick={e => e.stopPropagation()} style={{ background: '#fff', borderRadius: 14, width: 520, maxWidth: '100%', maxHeight: '85vh', overflowY: 'auto', padding: '20px 22px', boxShadow: '0 12px 40px rgba(15,23,42,0.2)' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 14 }}>
+          <div>
+            <div style={{ fontSize: 16, fontWeight: 800 }}>{M.title}</div>
+            <div style={{ fontSize: 12.5, color: '#6B7280', marginTop: 3 }}>
+              {M.to}: <strong style={{ color: '#374151' }}>{person.full_name || '-'}</strong> · {person.email || M.noEmail}
+            </div>
+          </div>
+          <button onClick={onClose} style={{ border: 'none', background: 'none', cursor: 'pointer', fontSize: 18, color: '#9CA3AF', padding: 0, lineHeight: 1 }}>×</button>
+        </div>
+
+        {history.length > 0 && (
+          <div style={{ marginBottom: 14 }}>
+            <div style={label}>{M.history}</div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+              {history.map(h => (
+                <div key={h.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8, fontSize: 12.5, background: '#FAFBFC', border: '1px solid #EEF0F2', borderRadius: 8, padding: '7px 10px' }}>
+                  <span style={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: '#374151' }}>
+                    <strong>{h.job_title}</strong> · {h.job_company}
+                  </span>
+                  <span style={{ flexShrink: 0, display: 'flex', gap: 6, alignItems: 'center' }}>
+                    <span style={{ fontSize: 11, color: '#9CA3AF' }}>{h.created_at ? new Date(h.created_at).toLocaleDateString('ko-KR') : ''}</span>
+                    <span style={{ fontSize: 10.5, fontWeight: 700, padding: '1px 7px', borderRadius: 999, background: h.applied_at ? '#DCFCE7' : '#EEF1F4', color: h.applied_at ? '#15803D' : '#64748B' }}>
+                      {h.applied_at ? M.applied : M.sent}
+                    </span>
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        <div style={{ marginBottom: 14 }}>
+          <div style={label}>{M.selectJob}</div>
+          {jobs.length === 0 ? (
+            <div style={{ fontSize: 12.5, color: '#9CA3AF' }}>{M.noJobs}</div>
+          ) : (
+            <JobSelect
+              jobs={jobs}
+              value={jobId}
+              onChange={setJobId}
+              sentJobIds={sentJobIds}
+              placeholder={M.selectPh}
+              sentLabel={M.alreadySent}
+            />
+          )}
+        </div>
+
+        <div style={{ marginBottom: 14 }}>
+          <div style={label}>{M.lang}</div>
+          <div style={{ display: 'flex', gap: 6 }}>
+            {[['vi', '🇻🇳 Tiếng Việt'], ['ko', '🇰🇷 한국어'], ['en', '🇺🇸 English']].map(([code, name]) => (
+              <button key={code} onClick={() => setMailLang(code)}
+                style={{ padding: '5px 12px', borderRadius: 999, fontSize: 12, fontWeight: 600, cursor: 'pointer',
+                  border: `1px solid ${mailLang === code ? '#ff6000' : '#E5E8EB'}`,
+                  background: mailLang === code ? '#ff600014' : '#fff', color: mailLang === code ? '#ff6000' : '#6B7280' }}>
+                {name}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {jobId && (
+          <div style={{ marginBottom: 14 }}>
+            <div style={label}>{M.preview}</div>
+            {previewLoading ? (
+              <div style={{ fontSize: 12.5, color: '#9CA3AF', padding: '12px 0' }}>{M.previewLoading}</div>
+            ) : preview ? (
+              <div style={{ border: '1px solid #EEF0F2', borderRadius: 8, overflow: 'hidden' }}>
+                <div style={{ fontSize: 12.5, fontWeight: 700, color: '#374151', padding: '9px 12px', borderBottom: '1px solid #EEF0F2', background: '#FAFBFC' }}>{preview.subject}</div>
+                {/* 실제 발송되는 HTML 그대로 렌더 (서버가 만든 자체 템플릿) */}
+                <div style={{ maxHeight: 380, overflowY: 'auto' }} dangerouslySetInnerHTML={{ __html: preview.html }} />
+              </div>
+            ) : null}
+          </div>
+        )}
+
+        {error && <div style={{ fontSize: 12.5, color: '#DC2626', marginBottom: 12 }}>{error}</div>}
+        {sentTo && <div style={{ fontSize: 12.5, color: '#15803D', fontWeight: 700, marginBottom: 12 }}>✓ {M.done} → {sentTo}</div>}
+
+        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
+          <button onClick={onClose}
+            style={{ padding: '8px 16px', border: '1px solid #E5E8EB', borderRadius: 8, fontSize: 13, background: '#fff', color: '#6B7280', cursor: 'pointer', fontWeight: 600 }}>
+            {M.close}
+          </button>
+          <button onClick={send} disabled={!jobId || !preview || sending || !!sentTo}
+            style={{ padding: '8px 18px', border: 'none', borderRadius: 8, fontSize: 13, background: (!jobId || !preview || sending || sentTo) ? '#FDBA8C' : '#ff6000', color: '#fff', cursor: (!jobId || !preview || sending || sentTo) ? 'default' : 'pointer', fontWeight: 700 }}>
+            {sending ? M.sending : M.send}
+          </button>
+        </div>
+      </div>
+    </div>
   )
 }

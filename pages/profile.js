@@ -8,8 +8,23 @@ import { getSalaryTier, isRawVndMistake } from '../lib/salaryTiers'
 import { BADGE_BY_KEY, TIER_LADDER, ENGAGEMENT_GROUPS, engagementBadgesByGroup, isEquippable, badgeVisual } from '../lib/badgeVisuals'
 import { useT } from '../lib/i18n'
 import Icon from '../components/Icon'
+import { ROLE_GROUPS } from '../constants/jobs'
 
-const POSITIONS = ['Backend','Frontend','Fullstack','Mobile','AI/Data','DevOps','QA','Design','PM','Other']
+// 프로필 직군 선택 — 공고/ATS와 동일한 ROLE_GROUPS. 대분류→소분류 2단계로 고른다.
+// 저장값은 소분류 canonical(r.value) 하나만 form.position에 유지.
+const lbl = (o, lang) => o.label[lang] || o.label.en
+const groupItems = (lang) => ROLE_GROUPS.map(g => ({ value: g.key, label: lbl(g, lang) }))
+const roleItems = (groupKey, lang) => {
+  const g = ROLE_GROUPS.find(g => g.key === groupKey)
+  return g ? g.roles.map(r => ({ value: r.value, label: lbl(r, lang) })) : []
+}
+const groupOfRole = (value) => ROLE_GROUPS.find(g => g.roles.some(r => r.value === value))?.key || ''
+const groupLabel = (groupKey, lang) => { const g = ROLE_GROUPS.find(g => g.key === groupKey); return g ? lbl(g, lang) : '' }
+// 저장값(소분류)의 표시 라벨. 구버전 자유입력 값은 원문 그대로.
+const positionLabel = (value, lang) => {
+  for (const g of ROLE_GROUPS) { const r = g.roles.find(r => r.value === value); if (r) return lbl(r, lang) }
+  return value
+}
 const YOE_OPTIONS = [
   { value: '0', label: 'New grad / Intern' },
   { value: '6', label: '< 1 year' },
@@ -23,7 +38,7 @@ const YOE_OPTIONS = [
   { value: '120', label: '10+ years' },
 ]
 
-function CustomSelect({ value, options, placeholder, onChange }) {
+function CustomSelect({ value, options, items, placeholder, onChange, displayValue, disabled }) {
   const [open, setOpen] = useState(false)
   const ref = useRef(null)
   useEffect(() => {
@@ -34,14 +49,14 @@ function CustomSelect({ value, options, placeholder, onChange }) {
   }, [open])
   return (
     <div ref={ref} style={{ position: 'relative' }}>
-      <button type="button" onClick={() => setOpen(v => !v)} style={{
+      <button type="button" disabled={disabled} onClick={() => setOpen(v => !v)} style={{
         width: '100%', fontSize: 14, padding: '10px 12px', border: '1px solid rgba(0,0,0,0.12)',
-        borderRadius: 8, background: '#fff', color: value ? '#111' : 'rgba(0,0,0,0.3)',
-        fontFamily: 'inherit', cursor: 'pointer', textAlign: 'left', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        transition: 'border-color .15s', outline: 'none',
+        borderRadius: 8, background: disabled ? '#f5f5f5' : '#fff', color: value ? '#111' : 'rgba(0,0,0,0.3)',
+        fontFamily: 'inherit', cursor: disabled ? 'not-allowed' : 'pointer', textAlign: 'left', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        transition: 'border-color .15s', outline: 'none', opacity: disabled ? 0.6 : 1,
         ...(open ? { borderColor: '#ff6000' } : {}),
       }}>
-        <span>{value || placeholder}</span>
+        <span>{displayValue || value || placeholder}</span>
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="rgba(0,0,0,0.3)" strokeWidth="2" style={{ transform: open ? 'rotate(180deg)' : 'none', transition: 'transform .2s' }}><path d="M6 9l6 6 6-6"/></svg>
       </button>
       {open && (
@@ -50,19 +65,33 @@ function CustomSelect({ value, options, placeholder, onChange }) {
           background: '#fff', border: '1px solid rgba(0,0,0,0.1)', borderRadius: 10,
           padding: 4, maxHeight: 220, overflowY: 'auto', boxShadow: '0 8px 32px rgba(0,0,0,0.12)', scrollbarWidth: 'none',
         }} className="pselect-dropdown">
-          {options.map(opt => (
-            <button key={opt} type="button" onClick={() => { onChange(opt); setOpen(false) }} style={{
-              display: 'block', width: '100%', padding: '9px 12px', border: 'none', borderRadius: 6,
-              background: value === opt ? 'rgba(255,96,0,0.08)' : 'transparent',
-              color: value === opt ? '#ff6000' : 'rgba(0,0,0,0.6)',
-              fontSize: 13, fontWeight: value === opt ? 600 : 400, cursor: 'pointer', textAlign: 'left',
-              fontFamily: 'inherit', transition: 'background .1s',
-            }}
-              onMouseEnter={e => { if (value !== opt) e.currentTarget.style.background = 'rgba(0,0,0,0.03)' }}
-              onMouseLeave={e => { if (value !== opt) e.currentTarget.style.background = 'transparent' }}>
-              {opt}
-            </button>
-          ))}
+          {items
+            ? items.map(o => (
+              <button key={o.value} type="button" onClick={() => { onChange(o.value); setOpen(false) }} style={{
+                display: 'block', width: '100%', padding: '9px 12px', border: 'none', borderRadius: 6,
+                background: value === o.value ? 'rgba(255,96,0,0.08)' : 'transparent',
+                color: value === o.value ? '#ff6000' : 'rgba(0,0,0,0.6)',
+                fontSize: 13, fontWeight: value === o.value ? 600 : 400, cursor: 'pointer', textAlign: 'left',
+                fontFamily: 'inherit', transition: 'background .1s',
+              }}
+                onMouseEnter={e => { if (value !== o.value) e.currentTarget.style.background = 'rgba(0,0,0,0.03)' }}
+                onMouseLeave={e => { if (value !== o.value) e.currentTarget.style.background = 'transparent' }}>
+                {o.label}
+              </button>
+            ))
+            : options.map(opt => (
+              <button key={opt} type="button" onClick={() => { onChange(opt); setOpen(false) }} style={{
+                display: 'block', width: '100%', padding: '9px 12px', border: 'none', borderRadius: 6,
+                background: value === opt ? 'rgba(255,96,0,0.08)' : 'transparent',
+                color: value === opt ? '#ff6000' : 'rgba(0,0,0,0.6)',
+                fontSize: 13, fontWeight: value === opt ? 600 : 400, cursor: 'pointer', textAlign: 'left',
+                fontFamily: 'inherit', transition: 'background .1s',
+              }}
+                onMouseEnter={e => { if (value !== opt) e.currentTarget.style.background = 'rgba(0,0,0,0.03)' }}
+                onMouseLeave={e => { if (value !== opt) e.currentTarget.style.background = 'transparent' }}>
+                {opt}
+              </button>
+            ))}
         </div>
       )}
     </div>
@@ -241,7 +270,8 @@ function completionScore(p) {
 
 export default function ProfilePage() {
   const router = useRouter()
-  const { t } = useT()
+  const { t, lang } = useT()
+  const [posGroup, setPosGroup] = useState('') // 직군 대분류 선택(소분류 저장은 form.position)
   const [loading, setLoading] = useState(true)
   const [user, setUser] = useState(null)
   const [token, setToken] = useState(null)
@@ -251,6 +281,8 @@ export default function ProfilePage() {
   const [tab, setTab] = useState('profile') // profile | posts | employment | badges | applications
   const [isAdmin, setIsAdmin] = useState(false)
   const [showOnboard, setShowOnboard] = useState(false)
+  // 이력서는 이미 있는데(예: /cv·앱에서 등록) 프로필이 빈 유저 — AI 자동 채움 제안
+  const [showAiFill, setShowAiFill] = useState(false)
   const [showAlert, setShowAlert] = useState(null)
   const [submissions, setSubmissions] = useState([])
   const [percentile, setPercentile] = useState(null)
@@ -404,7 +436,9 @@ export default function ProfilePage() {
             })
           }
           if (!p.headline && !p.position) {
-            setShowOnboard(true)
+            // 이력서가 이미 등록돼 있으면 일반 온보딩 대신 "이력서로 채워줄까요?" 제안
+            if (p.resume_url) setShowAiFill(true)
+            else setShowOnboard(true)
           }
           if (router.query.from === 'ai-resume' && !p.hr_visible && completionScore(formData) >= 60) {
             setShowPublishPrompt(true)
@@ -625,7 +659,11 @@ export default function ProfilePage() {
     if (res.ok) {
       const { url } = await res.json()
       set(type === 'photo' ? 'photo_url' : 'resume_url', url)
-      setProfile(prev => ({ ...prev, [type === 'photo' ? 'photo_url' : 'resume_url']: url }))
+      setProfile(prev => {
+        const next = { ...prev, [type === 'photo' ? 'photo_url' : 'resume_url']: url }
+        window.dispatchEvent(new CustomEvent('profile-updated', { detail: next }))
+        return next
+      })
       if (type === 'resume') {
         fetch('/api/track', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ event: 'resume_upload', page: '/profile' }) }).catch(() => {})
         runAiParse()
@@ -696,6 +734,7 @@ export default function ProfilePage() {
     setTimeout(() => {
       setAiParsing(false)
       setAiProgress({ percent: 0, message: '' })
+      setShowAiFill(false) // AI 자동 채움 제안 모달에서 시작한 경우 — 완료 후 닫기
     }, 1500)
   }
 
@@ -897,7 +936,16 @@ export default function ProfilePage() {
                 <div className="pinline">
                   <div className="pfield">
                     <div className="pfield-label">{t('profile.position')}</div>
-                    <CustomSelect value={form.position} options={POSITIONS} placeholder={t('profile.position.ph')} onChange={v => set('position', v)} />
+                    {(() => {
+                      const effGroup = posGroup || groupOfRole(form.position)
+                      const gPh = lang === 'ko' ? '대분류' : lang === 'vi' ? 'Nhóm ngành' : 'Category'
+                      return (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                          <CustomSelect value={effGroup} items={groupItems(lang)} displayValue={groupLabel(effGroup, lang)} placeholder={gPh} onChange={g => { setPosGroup(g); set('position', '') }} />
+                          <CustomSelect value={form.position} items={roleItems(effGroup, lang)} displayValue={positionLabel(form.position, lang)} placeholder={t('profile.position.ph')} disabled={!effGroup} onChange={v => set('position', v)} />
+                        </div>
+                      )
+                    })()}
                   </div>
                   <div className="pfield">
                     <div className="pfield-label">{t('profile.yoe')}</div>
@@ -1048,7 +1096,7 @@ export default function ProfilePage() {
                 {form.photo_url ? (
                   <div style={{ position: 'relative' }}>
                     <img src={form.photo_url} className="pphoto" />
-                    <button onClick={() => { set('photo_url', ''); setProfile(prev => ({ ...prev, photo_url: '' })); fetch('/api/profile/talent', { method: 'PUT', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify({ photo_url: '' }) }) }}
+                    <button onClick={() => { set('photo_url', ''); setProfile(prev => { const next = { ...prev, photo_url: '' }; window.dispatchEvent(new CustomEvent('profile-updated', { detail: next })); return next }); fetch('/api/profile/talent', { method: 'PUT', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify({ photo_url: '' }) }) }}
                       style={{ position: 'absolute', top: -4, right: -4, width: 20, height: 20, borderRadius: '50%', border: 'none', background: 'rgba(0,0,0,0.5)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0 }}>
                       <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="#fff" strokeWidth="1.5" strokeLinecap="round"><path d="M2 2l6 6M8 2l-6 6"/></svg>
                     </button>
@@ -1543,6 +1591,41 @@ export default function ProfilePage() {
 
       {/* Onboarding Modal — Step-by-step */}
       {showOnboard && <OnboardModal t={t} onClose={() => setShowOnboard(false)} />}
+
+      {/* AI 자동 채움 제안 — 이력서는 있는데 프로필이 빈 유저 */}
+      {showAiFill && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
+          <div style={{ background: '#fff', border: '1px solid rgba(0,0,0,0.06)', borderRadius: 20, maxWidth: 400, width: '100%', padding: '30px 24px 22px', fontFamily: "'Barlow', system-ui", boxShadow: '0 20px 60px rgba(0,0,0,0.15)', textAlign: 'center' }}>
+            <div style={{ fontSize: 38, marginBottom: 10 }} aria-hidden>📄</div>
+            <h3 style={{ margin: '0 0 8px', fontSize: 19, fontWeight: 800, color: '#1a1612' }}>{t('profile.aifill.title')}</h3>
+            {aiParsing ? (
+              /* 진행 상황을 모달 안에서 보여준다 — 닫아버리면 어디서 진행되는지 알 수 없다 */
+              <>
+                <div style={{ height: 8, background: 'rgba(0,0,0,0.06)', borderRadius: 999, overflow: 'hidden', margin: '20px 0 12px' }}>
+                  <div style={{ height: '100%', width: `${aiProgress.percent}%`, background: '#ff6000', borderRadius: 999, transition: 'width .6s ease' }} />
+                </div>
+                <p style={{ margin: 0, fontSize: 13.5, fontWeight: 600, color: 'rgba(26,22,18,0.55)', minHeight: 20 }}>{aiProgress.message}</p>
+              </>
+            ) : (
+              <>
+                <p style={{ margin: '0 0 20px', fontSize: 14, color: 'rgba(26,22,18,0.6)', lineHeight: 1.55 }}>{t('profile.aifill.desc')}</p>
+                <button
+                  onClick={() => runAiParse()}
+                  style={{ display: 'block', width: '100%', background: '#ff6000', color: '#fff', border: 'none', borderRadius: 12, padding: '13px 0', fontSize: 15, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}
+                >
+                  {t('profile.aifill.confirm')}
+                </button>
+                <button
+                  onClick={() => setShowAiFill(false)}
+                  style={{ display: 'block', width: '100%', marginTop: 10, background: 'none', border: 'none', color: 'rgba(26,22,18,0.45)', fontSize: 13.5, fontWeight: 600, textDecoration: 'underline', textUnderlineOffset: 3, cursor: 'pointer', fontFamily: 'inherit' }}
+                >
+                  {t('profile.aifill.decline')}
+                </button>
+              </>
+            )}
+          </div>
+        </div>
+      )}
 
       {showAlert && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.3)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}

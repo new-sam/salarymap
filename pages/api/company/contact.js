@@ -46,20 +46,20 @@ async function notify({ email, companyName, contactName, phone, message }) {
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
-  if (!SERVICE_KEY) return res.status(503).json({ error: '서버 설정이 누락되었습니다.' });
+  if (!SERVICE_KEY) return res.status(503).json({ error: '서버 설정이 누락되었습니다.', code: 'serverConfig' });
 
   const token = (req.headers.authorization || '').replace(/^Bearer\s+/i, '');
-  if (!token) return res.status(401).json({ error: '로그인이 필요합니다.' });
+  if (!token) return res.status(401).json({ error: '로그인이 필요합니다.', code: 'authRequired' });
 
   const asUser = createClient(SUPABASE_URL, ANON_KEY, {
     global: { headers: { Authorization: `Bearer ${token}` } },
   });
   const { data: { user } } = await asUser.auth.getUser();
-  if (!user) return res.status(401).json({ error: '세션이 만료되었습니다.' });
+  if (!user) return res.status(401).json({ error: '세션이 만료되었습니다.', code: 'sessionExpired' });
 
   const { companyName, contactName, phone, message } = req.body || {};
   if (!contactName || !phone) {
-    return res.status(400).json({ error: '담당자 이름과 연락처를 입력해 주세요.' });
+    return res.status(400).json({ error: '담당자 이름과 연락처를 입력해 주세요.', code: 'badRequest' });
   }
 
   const admin = createClient(SUPABASE_URL, SERVICE_KEY);

@@ -32,6 +32,22 @@ export default async function handler(req, res) {
     return res.status(500).json([])
   }
 
+  // CV 완료 모달 랭킹용 누적 지원 수 — ?counts=1일 때만 붙인다(기본 페이로드는 그대로).
+  if (req.query.counts === '1') {
+    const counts = {}
+    const PAGE = 1000
+    for (let from = 0; ; from += PAGE) {
+      const { data: apps, error: aErr } = await supabase
+        .from('job_applications')
+        .select('job_id')
+        .range(from, from + PAGE - 1)
+      if (aErr || !apps || apps.length === 0) break
+      for (const a of apps) if (a.job_id) counts[a.job_id] = (counts[a.job_id] || 0) + 1
+      if (apps.length < PAGE) break
+    }
+    for (const j of data) j.application_count = counts[j.id] || 0
+  }
+
   if (data.length === 0) {
     res.setHeader('Cache-Control', 'no-store')
   } else {

@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, Fragment } from 'react';
 import Link from 'next/link';
 import { supabase } from '../../lib/supabaseClient';
 import { useT } from '../../lib/i18n';
+import { apiErrorMessage } from '../../lib/apiErrorMessage';
 import { toast } from 'sonner';
 import { formatICT, formatInterviewShort, formatLocalShort, ictInputToUtc, utcToIctInput, ICT_LABEL } from '../../lib/timezone';
 import { cn } from '../../lib/cn';
@@ -81,7 +82,7 @@ export default function CandidateDetail({
   // admin = jobs.created_by 이거나 job_team.role='admin'.
   const [myJobRole, setMyJobRole] = useState(null);
   const [reviewerName, setReviewerName] = useState('');
-  const [mailModal, setMailModal] = useState(null); // { templateKey, withSlots }
+  const [mailModal, setMailModal] = useState(null); // { templateKey }
   const [rejectModal, setRejectModal] = useState(null); // null | 'new' | 'edit' | 'unreject'
   const [interviewModal, setInterviewModal] = useState(false);
   const [mailLog, setMailLog] = useState([]);
@@ -127,7 +128,7 @@ export default function CandidateDetail({
       });
       const json = await res.json().catch(() => ({}));
       if (!res.ok) {
-        toast.error(json.error || t('company.toast.noteSaveFailed'));
+        toast.error(apiErrorMessage(json, t, 'company.toast.noteSaveFailed'));
         return;
       }
       setApp(prev => ({ ...prev, admin_note: noteDraft, admin_note_updated_at: json.updatedAt }));
@@ -201,10 +202,7 @@ export default function CandidateDetail({
         const ownerNow = myJobRole ? myJobRole === 'admin' : (!job?.created_by || job?.created_by === userId);
         if (!ownerNow) return;
         e.preventDefault();
-        const defaultTpl = app.status === 'pending' ? 'received'
-          : (app.status === 'viewed' || app.status === 'reviewing') ? 'interview'
-          : 'offer';
-        setMailModal({ templateKey: defaultTpl, withSlots: defaultTpl === 'interview' });
+        setMailModal({ templateKey: defaultComposeTemplate(app.status, app.rejected_at) });
       }
       else if ((key === 'r' || key === 'R') && app && !app.rejected_at) {
         const ownerNow = myJobRole ? myJobRole === 'admin' : (!job?.created_by || job?.created_by === userId);
@@ -326,7 +324,7 @@ export default function CandidateDetail({
         body: JSON.stringify({ appId: app.id }),
       });
       const json = await res.json().catch(() => ({}));
-      if (!res.ok) { toast.error(json.error || t('company.toast.passFailed')); return; }
+      if (!res.ok) { toast.error(apiErrorMessage(json, t, 'company.toast.passFailed')); return; }
       if (json.row) setEvals(prev => [...prev, json.row]);
       toast.success(t('company.toast.passDecided', { stage: t(`company.stageLabel.short.${app.status}`) || app.status }));
       promptDecisionMail({ decision: 'pass', stage: app.status });
@@ -395,7 +393,7 @@ export default function CandidateDetail({
         body: JSON.stringify({ rowId: passedAtCurrentStage.id }),
       });
       const json = await res.json().catch(() => ({}));
-      if (!res.ok) { toast.error(json.error || t('company.toast.passCancelFailed')); return; }
+      if (!res.ok) { toast.error(apiErrorMessage(json, t, 'company.toast.passCancelFailed')); return; }
       setEvals(prev => prev.filter(e => e.id !== passedAtCurrentStage.id));
       toast.success(t('company.toast.passCanceled'));
     } catch (e) {
@@ -535,11 +533,8 @@ export default function CandidateDetail({
     : null;
   const canRunQuick = isOwner;
   const showInterviewStage = app.status === 'viewed' || app.status === 'reviewing';
-  const defaultMailTpl = app.rejected_at ? 'reject'
-    : app.status === 'pending' ? 'received'
-    : (app.status === 'viewed' || app.status === 'reviewing') ? 'interview'
-    : 'offer';
-  const openMailCompose = () => setMailModal({ templateKey: defaultMailTpl, withSlots: defaultMailTpl === 'interview' });
+  const defaultMailTpl = defaultComposeTemplate(app.status, app.rejected_at);
+  const openMailCompose = () => setMailModal({ templateKey: defaultMailTpl });
 
   // ─── Smart Hint flowchart (action-granular) ─────────────────────
   // Always returns { tone, eyebrow, title } — strictly the single next action.
@@ -807,7 +802,7 @@ export default function CandidateDetail({
   return (
     <div className={cn(
       mode === 'overlay'
-        ? 'flex flex-col h-full bg-[#FAFAFA]'
+        ? 'flex flex-col h-full bg-[#F9FAFB]'
         : 'min-h-screen bg-gray-50 px-4 py-4 md:px-6 md:py-6 max-w-[1400px] mx-auto'
     )}>
       {/* Mobile top bar — icon-only back + 3-tab nav. Replaces hero clutter on small screens. */}
@@ -1178,7 +1173,7 @@ export default function CandidateDetail({
             // fills the panel cleanly instead of floating with side gutters.
             <iframe
               src={`${app.resume_url}${app.resume_url.includes('#') ? '&' : '#'}view=FitH`}
-              className="flex-1 w-full border-0 min-h-[420px] md:min-h-[720px] bg-[#f3f4f6]"
+              className="flex-1 w-full border-0 min-h-[420px] md:min-h-[720px] bg-[#F2F4F6]"
               title="resume"
             />
           ) : (
@@ -1276,8 +1271,7 @@ export default function CandidateDetail({
                   ) : (
                     <div className="space-y-1.5">
                       {mailLog.map(m => {
-                        const legacyTpl = m.template_key && ['received', 'interview', 'offer', 'reject'].includes(m.template_key);
-                        const tplLabel = legacyTpl ? t(`company.tpl.${m.template_key}.label`) : (m.template_key || '—');
+                        const tplLabel = mailTemplateLabel(m.template_key, t);
                         const when = formatLocalShort(m.created_at);
                         return (
                           <div key={m.id} className="rounded-lg border border-border px-2.5 py-2 space-y-0.5">
@@ -1433,9 +1427,9 @@ export default function CandidateDetail({
 
 function Info({ label, children }) {
   return (
-    <div style={local.infoRow}>
-      <div style={local.infoLab}>{label}</div>
-      <div style={local.infoVal}>{children}</div>
+    <div className="flex items-center justify-between py-1.5 border-b border-dashed border-gray-100 last:border-b-0">
+      <div className="text-[11.5px] font-semibold text-gray-500">{label}</div>
+      <div className="text-[12.5px] font-semibold text-gray-900 text-right">{children}</div>
     </div>
   );
 }
@@ -1610,38 +1604,6 @@ function EvaluationSection({
   );
 }
 
-const ev = {
-  head: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 },
-  sub: { fontSize: 11, color: '#94A3B8', fontWeight: 600 },
-  cards: { display: 'flex', flexDirection: 'column', gap: 6 },
-  stageCard: { background: '#FAFAFA', border: '1px solid #E5E7EB', borderRadius: 8, overflow: 'hidden' },
-  stageHead: { width: '100%', display: 'flex', alignItems: 'center', gap: 8, padding: '8px 10px', background: '#FAFAFA', border: 'none', cursor: 'pointer', fontFamily: 'inherit', textAlign: 'left' },
-  stageHeadCurrent: { background: '#FFF7ED' },
-  stageEmoji: { fontSize: 14 },
-  stageLabel: { fontSize: 12, fontWeight: 800, color: '#1A1A1A', flex: 1 },
-  toggleIcon: { fontSize: 10, color: '#94A3B8' },
-  avgBadge: { fontSize: 10.5, fontWeight: 800, color: '#059669', background: '#ECFDF5', padding: '3px 7px', borderRadius: 999 },
-  notRatedBadge: { fontSize: 10.5, fontWeight: 700, color: '#94A3B8', background: '#fff', border: '1px dashed #D1D5DB', padding: '2px 7px', borderRadius: 999 },
-  stageBody: { padding: '8px 10px 10px', borderTop: '1px solid #E5E7EB', background: '#fff', display: 'flex', flexDirection: 'column', gap: 6 },
-  empty: { fontSize: 11, color: '#94A3B8', fontStyle: 'italic', padding: '6px 0' },
-  reviewer: { background: '#F8FAFC', border: '1px solid #E5E7EB', borderRadius: 6, padding: '7px 9px' },
-  reviewerHead: { display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 },
-  reviewerName: { fontSize: 11.5, fontWeight: 700, color: '#1A1A1A' },
-  reviewerTime: { marginLeft: 'auto', fontSize: 10.5, color: '#94A3B8' },
-  roleTagOwner: { fontSize: 9.5, fontWeight: 800, color: '#EA580C', background: '#FFF7ED', padding: '2px 6px', borderRadius: 4, border: '1px solid rgba(249,115,22,0.3)' },
-  roleTagInterviewer: { fontSize: 9.5, fontWeight: 800, color: '#0369A1', background: '#F0F9FF', padding: '2px 6px', borderRadius: 4, border: '1px solid rgba(14,165,233,0.3)' },
-  reviewerBody: { display: 'flex', justifyContent: 'space-between', gap: 8, alignItems: 'flex-start' },
-  comment: { fontSize: 12, color: '#374151', lineHeight: 1.5, whiteSpace: 'pre-wrap', flex: 1 },
-  scoreBadge: { fontSize: 10.5, fontWeight: 800, color: '#059669', background: '#ECFDF5', padding: '3px 7px', borderRadius: 4, flexShrink: 0 },
-  form: { marginTop: 10, padding: 10, background: '#FAFAFA', border: '1px dashed #D1D5DB', borderRadius: 8, display: 'flex', flexDirection: 'column', gap: 8 },
-  formText: { width: '100%', padding: '8px 10px', border: '1px solid #E5E7EB', borderRadius: 6, fontSize: 12, color: '#1A1A1A', fontFamily: 'inherit', resize: 'vertical', boxSizing: 'border-box', background: '#fff' },
-  formRow: { display: 'flex', gap: 8, alignItems: 'center' },
-  formScore: { width: 80, padding: '8px 10px', border: '1px solid #E5E7EB', borderRadius: 6, fontSize: 12, color: '#1A1A1A', fontFamily: 'inherit', boxSizing: 'border-box' },
-  submit: { marginLeft: 'auto', padding: '8px 16px', borderRadius: 6, border: 'none', background: '#2563EB', color: '#fff', fontSize: 12, fontWeight: 800, cursor: 'pointer', fontFamily: 'inherit' },
-  submitDisabled: { marginLeft: 'auto', padding: '8px 16px', borderRadius: 6, border: '1px solid #E5E7EB', background: '#F1F5F9', color: '#94A3B8', fontSize: 12, fontWeight: 800, cursor: 'not-allowed', fontFamily: 'inherit' },
-  evalActions: { display: 'flex', gap: 4 },
-  evalActionBtn: { padding: '2px 7px', fontSize: 10, fontWeight: 700, color: '#525252', background: '#fff', border: '1px solid #E5E7EB', borderRadius: 4, cursor: 'pointer', fontFamily: 'inherit' },
-};
 
 function InterviewModal({ app, onClose, onSaved }) {
   const { t, lang } = useT();
@@ -1680,57 +1642,53 @@ function InterviewModal({ app, onClose, onSaved }) {
   };
 
   return (
-    <div style={modal.overlay} onClick={onClose}>
-      <div style={modal.box} onClick={(e) => e.stopPropagation()}>
-        <header style={modal.head}>
-          <h2 style={modal.h}>{t('company.interview.h')}</h2>
-          <button onClick={onClose} style={modal.closeBtn}><XIcon className="w-4 h-4" /></button>
-        </header>
-        <div style={modal.body}>
-          <div style={modal.field}>
-            <label style={modal.label}>{t('company.interview.locLabel')}</label>
-            <input value={location} onChange={(e) => setLocation(e.target.value)} placeholder={t('company.interview.locPh')} style={modal.inp} />
+    <UDialog open onOpenChange={(open) => { if (!open && !saving) onClose(); }}>
+      <UDialogContent className="max-w-lg">
+        <UDialogHeader>
+          <UDialogTitle>{t('company.interview.h')}</UDialogTitle>
+        </UDialogHeader>
+
+        <div className="space-y-4">
+          <div className="space-y-1.5">
+            <label className="text-xs font-bold text-gray-700">{t('company.interview.locLabel')}</label>
+            <UInput value={location} onChange={(e) => setLocation(e.target.value)} placeholder={t('company.interview.locPh')} disabled={saving} />
           </div>
-          <div style={modal.field}>
-            <label style={modal.label}>{t('company.interview.interviewerLabel')}</label>
-            <input value={interviewer} onChange={(e) => setInterviewer(e.target.value)} placeholder={t('company.interview.interviewerPh')} style={modal.inp} />
+          <div className="space-y-1.5">
+            <label className="text-xs font-bold text-gray-700">{t('company.interview.interviewerLabel')}</label>
+            <UInput value={interviewer} onChange={(e) => setInterviewer(e.target.value)} placeholder={t('company.interview.interviewerPh')} disabled={saving} />
           </div>
-          <div style={modal.field}>
-            <label style={modal.label}>{t('company.interview.slotsLabel')}</label>
+          <div className="space-y-1.5">
+            <label className="text-xs font-bold text-gray-700">{t('company.interview.slotsLabel')}</label>
             {slots.map((s, i) => (
-              <div key={i} style={slot.row}>
-                <span style={slot.num}>{i + 1}</span>
-                <input type="date" lang={lang} value={s.date} onChange={(e) => updateSlot(i, 'date', e.target.value)} style={{ ...modal.inp, flex: 1 }} />
-                <input type="time" lang={lang} value={s.time} onChange={(e) => updateSlot(i, 'time', e.target.value)} style={{ ...modal.inp, width: 110 }} />
+              <div key={i} className="flex items-center gap-1.5">
+                <span className="w-4 text-xs font-extrabold text-gray-600">{i + 1}</span>
+                <UInput type="date" lang={lang} value={s.date} onChange={(e) => updateSlot(i, 'date', e.target.value)} className="flex-1" disabled={saving} />
+                <UInput type="time" lang={lang} value={s.time} onChange={(e) => updateSlot(i, 'time', e.target.value)} className="w-[110px]" disabled={saving} />
                 {slots.length > 1 && (
-                  <button type="button" onClick={() => removeSlot(i)} style={slot.removeBtn} title={t('company.interview.removeSlot')}><XIcon className="w-3 h-3" /></button>
+                  <UButton type="button" variant="ghost" size="sm" onClick={() => removeSlot(i)} title={t('company.interview.removeSlot')} className="h-8 px-2 text-gray-400"><XIcon className="w-3 h-3" /></UButton>
                 )}
               </div>
             ))}
             {slots.length < 3 && (
-              <button type="button" onClick={addSlot} style={slot.addBtn}>{t('company.interview.addSlot')}</button>
+              <UButton type="button" variant="outline" size="sm" onClick={addSlot} className="mt-1 border-dashed text-gray-600">{t('company.interview.addSlot')}</UButton>
             )}
           </div>
-          {err && <div style={local.errBox}>{err}</div>}
-          <p style={modal.hint}>{t('company.interview.hint')}</p>
+          {err && (
+            <div className="rounded-lg bg-red-50 border border-red-200 px-3 py-2 text-sm text-red-700 font-semibold">{err}</div>
+          )}
+          <p className="text-[11.5px] text-gray-500 leading-relaxed">{t('company.interview.hint')}</p>
         </div>
-        <footer style={modal.foot}>
-          <button onClick={onClose} style={modal.btnGhost}>{t('company.cancel')}</button>
-          <button onClick={save} disabled={saving} style={saving ? modal.btnDisabled : modal.btnPrimary}>
+
+        <UDialogFooter>
+          <UButton variant="outline" onClick={onClose} disabled={saving}>{t('company.cancel')}</UButton>
+          <UButton onClick={save} disabled={saving}>
             {saving ? t('company.savingShort') : t('company.interview.saveBtn')}
-          </button>
-        </footer>
-      </div>
-    </div>
+          </UButton>
+        </UDialogFooter>
+      </UDialogContent>
+    </UDialog>
   );
 }
-
-const slot = {
-  row: { display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 },
-  num: { width: 16, fontSize: 12, fontWeight: 800, color: '#525252' },
-  removeBtn: { padding: '6px 10px', background: 'transparent', border: '1px solid #E5E7EB', borderRadius: 6, fontSize: 12, color: '#94A3B8', cursor: 'pointer', fontFamily: 'inherit' },
-  addBtn: { marginTop: 4, padding: '8px 12px', background: '#F8FAFC', border: '1px dashed #D1D5DB', borderRadius: 6, fontSize: 12, fontWeight: 700, color: '#525252', cursor: 'pointer', fontFamily: 'inherit' },
-};
 
 function formatSlots(slots) {
   const valid = slots.filter(s => s?.date);
@@ -1835,10 +1793,50 @@ export function templateKeyForDecision({ decision, stage }) {
   return null;
 }
 
+// Default preset for the generic "메일 작성" compose button (kebab / toolbar /
+// keyboard shortcut) — must return a key that exists in MAIL_PRESETS, else the
+// composer opens blank. Unlike templateKeyForDecision (which announces the
+// *result* of a decision), this picks the mail most likely wanted for a
+// candidate currently sitting in the given stage: an invite to that stage's
+// interview, an acknowledgement, or the offer.
+export function defaultComposeTemplate(status, rejected) {
+  if (rejected) return 'reject';
+  if (status === 'pending') return 'received';
+  if (status === 'viewed') return 'doc_pass';        // 1차 인터뷰 초대 (슬롯)
+  if (status === 'reviewing') return 'interview1_pass'; // 2차 인터뷰 초대 (슬롯)
+  return 'final_offer';                              // decided
+}
+
+// Human label for a sent-mail's template_key in the mail log / timeline.
+// Current preset keys map to their preset labels; legacy keys (interview/offer)
+// fall back to the tpl labels; custom templates show their saved name. Without
+// this, current keys like 'doc_pass'/'final_offer' rendered as raw strings.
+const PRESET_LABEL_KEY = {
+  received: 'company.mail.preset.received',
+  doc_pass: 'company.mail.preset.docPass',
+  interview1_pass: 'company.mail.preset.interview1Pass',
+  final_offer: 'company.mail.preset.interview2Pass',
+  reject: 'company.mail.preset.reject',
+};
+function mailTemplateLabel(key, t) {
+  if (!key) return t('company.activity.mailFallback');
+  if (PRESET_LABEL_KEY[key]) return t(PRESET_LABEL_KEY[key]);
+  if (key === 'interview' || key === 'offer') return t(`company.tpl.${key}.label`);
+  if (key.startsWith('custom:')) return key.slice(7) || t('company.activity.mailFallback');
+  return key;
+}
+
 function fillVars(text, vars) {
-  const round = vars.stage === 'viewed' ? (vars.lang === 'vi' ? 'Phỏng vấn vòng 1' : '1차 인터뷰')
-              : vars.stage === 'reviewing' ? (vars.lang === 'vi' ? 'Phỏng vấn vòng 2' : '2차 인터뷰')
-              : (vars.lang === 'vi' ? 'Phỏng vấn' : '인터뷰');
+  // {차수인터뷰} label — resolve in the template's own language. EN previously
+  // fell through to Korean (no en branch), inserting Hangul into English mails.
+  const ROUND = {
+    viewed:    { vi: 'Phỏng vấn vòng 1', en: 'the 1st interview', ko: '1차 인터뷰' },
+    reviewing: { vi: 'Phỏng vấn vòng 2', en: 'the 2nd interview', ko: '2차 인터뷰' },
+    other:     { vi: 'Phỏng vấn',        en: 'the interview',     ko: '인터뷰' },
+  };
+  const lang = ROUND.viewed[vars.lang] ? vars.lang : 'vi';
+  const roundGroup = ROUND[vars.stage] || ROUND.other;
+  const round = roundGroup[lang];
   return (text || '')
     .split('{후보이름}').join(vars.name)
     .split('{공고명}').join(vars.jobTitle)
@@ -1866,7 +1864,7 @@ function NoteSection({ app, evals, setEvals, userId, reviewerName, expanded, onT
         body: JSON.stringify({ appId: app.id, content }),
       });
       const json = await res.json().catch(() => ({}));
-      if (!res.ok) { toast.error(json.error || t('company.toast.noteSaveFailed')); return; }
+      if (!res.ok) { toast.error(apiErrorMessage(json, t, 'company.toast.noteSaveFailed')); return; }
       setEvals(prev => [...prev, json.note]);
       setDraft('');
       toast.success(t('company.toast.noteCreated'));
@@ -1888,7 +1886,7 @@ function NoteSection({ app, evals, setEvals, userId, reviewerName, expanded, onT
           body: JSON.stringify({ noteId }),
         });
         const json = await res.json().catch(() => ({}));
-        if (!res.ok) { toast.error(json.error || t('company.toast.noteDeleteFailed')); return; }
+        if (!res.ok) { toast.error(apiErrorMessage(json, t, 'company.toast.noteDeleteFailed')); return; }
         setEvals(prev => prev.filter(e => e.id !== noteId));
         toast.success(t('company.toast.noteDeleted'));
       },
@@ -1983,6 +1981,7 @@ function NoteSection({ app, evals, setEvals, userId, reviewerName, expanded, onT
 //   action  = what they did (verb phrase, neutral tone)
 //   detail  = optional metadata (score, reason, schedule, subject)
 function ActivityTimeline({ t, app, evals, mailLog }) {
+  const { lang } = useT();
   const candidateName = app.applicant_name || `${t('company.candidatePrefix')}${app.id.slice(-6).toUpperCase()}`;
   const events = [];
 
@@ -2062,8 +2061,7 @@ function ActivityTimeline({ t, app, evals, mailLog }) {
 
   // ④ Mails — actor unknown, shown as "관리자"
   (mailLog || []).forEach(m => {
-    const legacyTpl = m.template_key && ['received', 'interview', 'offer', 'reject'].includes(m.template_key);
-    const tplLabel = legacyTpl ? t(`company.tpl.${m.template_key}.label`) : (m.template_key || t('company.activity.mailFallback'));
+    const tplLabel = mailTemplateLabel(m.template_key, t);
     events.push({
       when: m.created_at,
       icon: Send,
@@ -2145,7 +2143,7 @@ function ActivityTimeline({ t, app, evals, mailLog }) {
                     {e.actorRole && (
                       <span className="ml-1 text-[11.5px] font-bold text-gray-500">({e.actorRole})</span>
                     )}
-                    <span className="text-gray-700 font-medium">{ka(e.actor)} {e.action}.</span>
+                    <span className="text-gray-700 font-medium">{lang === 'ko' ? ka(e.actor) : ''} {e.action}.</span>
                   </div>
                   <span className="text-[11.5px] font-semibold text-gray-500 flex-shrink-0 tabular-nums">{fmt(e.when)}</span>
                 </div>
@@ -2325,20 +2323,13 @@ export function MailComposer({
         body: JSON.stringify({ appId: applicationId, subject, body, templateKey: tplKey }),
       });
       const json = await res.json().catch(() => ({}));
-      if (!res.ok) { setErr(json.error || t('company.err.mailFail')); setSending(false); return; }
+      if (!res.ok) { setErr(apiErrorMessage(json, t, 'company.err.mailFail')); setSending(false); return; }
 
-      if (showSlots) {
-        const valid = slots.filter(s => s?.date);
-        if (valid.length > 0) {
-          const first = valid[0];
-          const slotLines = valid.map((s, i) => `${i + 1}) ${s.date} ${s.time || '00:00'} ${ICT_LABEL}`).join('\n');
-          const noteSummary = `[Interview]\n📅 ${t('company.interview.slotsTitle')}:\n${slotLines}`;
-          await supabase.from('job_applications').update({
-            interview_at: ictInputToUtc(first.date, first.time || '00:00'),
-            admin_note: noteSummary,
-          }).eq('id', applicationId);
-        }
-      }
+      // NOTE: 제안한 면접 슬롯은 발송된 메일(recruiter_mail_log)에 그대로 남는다.
+      // 여기서 interview_at 을 첫 슬롯으로 확정 저장하지 않는다 — 후보가 아직
+      // 고르지 않은 '제안'을 '확정'으로 기록하면 카드/캘린더/스마트힌트가 면접이
+      // 잡힌 것처럼 오작동한다. 실제 확정은 후보 회신 후 InterviewConfirmModal 에서.
+      // (admin_note 를 통째로 덮어쓰던 기존 동작도 함께 제거 — 메모 유실 버그)
 
       onSent?.();
       onClose();
@@ -2759,7 +2750,7 @@ export function RejectionModal({ app, stageKey, candidateName, mode = 'new', ini
           // 401 from this endpoint means the refresh above also failed —
           // surface a clearer "please log in again" copy.
           if (r.status === 401) setErr(t('company.reject.errSessionRelogin'));
-          else setErr(t('company.reject.errSave') + (j?.error || ''));
+          else setErr(t('company.reject.errSave') + apiErrorMessage(j, t));
           return;
         }
         setSaving(false);
@@ -2871,135 +2862,6 @@ export function RejectionModal({ app, stageKey, candidateName, mode = 'new', ini
   );
 }
 
-const rj = {
-  subBanner: { background: '#FEF2F2', border: '1px solid #FECACA', color: '#991B1B', padding: '10px 12px', borderRadius: 8, fontSize: 12.5, fontWeight: 600, lineHeight: 1.5 },
-  radioGroup: { display: 'flex', flexDirection: 'column', gap: 8, padding: '4px 0' },
-  radioRow: { display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 13, color: '#1A1A1A' },
-  checkRow: { display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 13, color: '#1A1A1A', fontWeight: 600, padding: '10px 12px', background: '#F8FAFC', borderRadius: 8, border: '1px solid #E5E7EB' },
-};
 
-const mc = {
-  stageNote: { background: '#FFF7ED', border: '1px solid #FED7AA', color: '#9A3412', padding: '9px 12px', borderRadius: 8, fontSize: 12.5, fontWeight: 600, lineHeight: 1.5 },
-  tplPickerRow: { display: 'flex', gap: 6, alignItems: 'center' },
-  tplDeleteBtn: { padding: '8px 12px', borderRadius: 8, border: '1px solid #FECACA', background: '#fff', color: '#B91C1C', fontSize: 14, cursor: 'pointer', fontFamily: 'inherit' },
-  slotsToggle: { display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 13, color: '#1A1A1A', fontWeight: 600, padding: '10px 12px', background: '#F8FAFC', borderRadius: 8, border: '1px solid #E5E7EB' },
-  saveAsTplBtn: { alignSelf: 'flex-start', padding: '8px 14px', borderRadius: 8, border: '1px dashed #BFDBFE', background: '#fff', color: '#1D4ED8', fontSize: 12.5, fontWeight: 800, cursor: 'pointer', fontFamily: 'inherit' },
-  saveDialog: { padding: '12px 14px', background: '#F0F9FF', border: '1px solid #BAE6FD', borderRadius: 8, display: 'flex', flexDirection: 'column', gap: 8 },
-  saveDialogH: { fontSize: 12.5, fontWeight: 800, color: '#0C4A6E' },
-  saveDialogActions: { display: 'flex', justifyContent: 'flex-end', gap: 6 },
-};
 
-const local = {
-  loading: { display: 'grid', placeItems: 'center', height: '60vh', color: '#525252', fontSize: 14 },
-  errBox: { background: '#FEF2F2', border: '1px solid #FECACA', color: '#B91C1C', padding: '12px 16px', borderRadius: 8, fontSize: 13 },
 
-  pageBody: { padding: '24px 28px 60px', display: 'flex', flexDirection: 'column', gap: 18, minWidth: 0, width: '100%' },
-  overlayBody: { padding: '18px 22px 22px', display: 'flex', flexDirection: 'column', gap: 14, minWidth: 0, width: '100%', height: '100%', boxSizing: 'border-box', overflow: 'hidden' },
-
-  head: { display: 'flex', flexDirection: 'column', gap: 10, flexShrink: 0 },
-  crumb: { fontSize: 12.5, color: '#525252' },
-  crumbLink: { color: '#525252', textDecoration: 'none' },
-  headRow: { display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', gap: 16 },
-  headRight: { display: 'flex', alignItems: 'center', gap: 10 },
-  name: { fontSize: 24, fontWeight: 800, color: '#1A1A1A', letterSpacing: '-0.01em' },
-  subline: { fontSize: 13, color: '#525252', marginTop: 4 },
-  stageChip: { fontSize: 11.5, color: '#737373', fontWeight: 600, padding: '8px 14px', background: '#fff', border: '1px solid #E5E7EB', borderRadius: 999 },
-  stageStrong: { color: '#1A1A1A', fontWeight: 800, marginLeft: 6 },
-  closeBtn: { padding: '6px 10px', background: 'transparent', border: '1px solid #E5E7EB', borderRadius: 7, fontSize: 14, color: '#737373', cursor: 'pointer' },
-
-  bodyGrid: { display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) 280px', gap: 14, alignItems: 'stretch', width: '100%', flex: 1, minHeight: 0 },
-
-  resumeCol: { background: '#fff', border: '1px solid #E5E7EB', borderRadius: 12, padding: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column', minWidth: 0, height: '100%' },
-  colHead: { padding: '13px 18px', fontSize: 12.5, fontWeight: 800, color: '#1A1A1A', borderBottom: '1px solid #E5E7EB', background: '#FAFAFA', display: 'flex', justifyContent: 'space-between', alignItems: 'center' },
-  openInNew: { fontSize: 11.5, color: '#EA580C', fontWeight: 700, textDecoration: 'none' },
-  iframe: { flex: 1, width: '100%', height: '100%', border: 'none', minHeight: 0 },
-  resumeEmpty: { padding: '80px 32px', textAlign: 'center', color: '#737373', fontSize: 13 },
-  resumeEmptySub: { fontSize: 12, color: '#94A3B8', marginTop: 6 },
-
-  sideCol: { display: 'flex', flexDirection: 'column', gap: 12, height: '100%', overflowY: 'auto', paddingRight: 4 },
-  section: { background: '#fff', border: '1px solid #E5E7EB', borderRadius: 10, padding: '12px 14px' },
-  sectionH: { fontSize: 11.5, fontWeight: 800, color: '#1A1A1A', marginBottom: 10, letterSpacing: '0.02em' },
-
-  infoRow: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '6px 0', borderBottom: '1px dashed #F1F5F9' },
-  infoLab: { fontSize: 11.5, color: '#737373', fontWeight: 600 },
-  infoVal: { fontSize: 12.5, color: '#1A1A1A', fontWeight: 600, textAlign: 'right' },
-
-  textarea: { width: '100%', minHeight: 90, padding: '8px 10px', border: '1px solid #D1D5DB', borderRadius: 7, fontSize: 12, color: '#1A1A1A', fontFamily: 'inherit', resize: 'vertical', boxSizing: 'border-box' },
-  noteFoot: { display: 'flex', alignItems: 'center', gap: 10, marginTop: 10 },
-  btnSave: { padding: '8px 14px', borderRadius: 7, border: 'none', background: '#1A1A1A', color: '#fff', fontSize: 12.5, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' },
-  btnSaveDisabled: { padding: '8px 14px', borderRadius: 7, border: '1px solid #E5E7EB', background: '#F1F5F9', color: '#94A3B8', fontSize: 12.5, fontWeight: 700, cursor: 'not-allowed', fontFamily: 'inherit' },
-  savedTag: { fontSize: 11.5, color: '#059669', fontWeight: 700 },
-
-  stageBtns: { display: 'flex', flexDirection: 'column', gap: 5, marginBottom: 10 },
-  stageBtn: { padding: '7px 10px', borderRadius: 6, border: '1px solid #E5E7EB', background: '#fff', color: '#525252', fontSize: 11.5, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', textAlign: 'left' },
-  stageBtnActive: { padding: '7px 10px', borderRadius: 6, border: '1.5px solid #EA580C', background: '#FFF7ED', color: '#EA580C', fontSize: 11.5, fontWeight: 800, cursor: 'pointer', fontFamily: 'inherit', textAlign: 'left' },
-  btnNext: { width: '100%', padding: '11px 14px', borderRadius: 8, border: 'none', background: '#EA580C', color: '#fff', fontSize: 13, fontWeight: 800, cursor: 'pointer', fontFamily: 'inherit', boxShadow: '0 4px 12px rgba(234,88,12,0.22)' },
-  btnAction: { width: '100%', padding: '11px 14px', borderRadius: 8, border: '1px solid #D1D5DB', background: '#fff', color: '#1A1A1A', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' },
-  btnMail: { width: '100%', padding: '11px 14px', borderRadius: 8, border: 'none', background: '#EA580C', color: '#fff', fontSize: 13, fontWeight: 800, cursor: 'pointer', fontFamily: 'inherit', boxShadow: '0 4px 12px rgba(234,88,12,0.22)' },
-  btnMailDisabled: { width: '100%', padding: '11px 14px', borderRadius: 8, border: '1px solid #E5E7EB', background: '#F1F5F9', color: '#94A3B8', fontSize: 13, fontWeight: 800, cursor: 'not-allowed', fontFamily: 'inherit' },
-  mailHint: { fontSize: 11, color: '#94A3B8', marginTop: 6 },
-
-  interviewerHint: { padding: '10px 12px', borderRadius: 8, background: '#F0F9FF', border: '1px solid #BAE6FD', color: '#0369A1', fontSize: 12, fontWeight: 600, lineHeight: 1.5 },
-  btnLocked: { width: '100%', padding: '11px 14px', borderRadius: 8, border: '1px dashed #D1D5DB', background: '#F8FAFC', color: '#94A3B8', fontSize: 13, fontWeight: 700, cursor: 'not-allowed', fontFamily: 'inherit' },
-  btnReject: { width: '100%', padding: '11px 14px', borderRadius: 8, border: '1px solid #FECACA', background: '#fff', color: '#B91C1C', fontSize: 13, fontWeight: 800, cursor: 'pointer', fontFamily: 'inherit' },
-  decisionLabel: { fontSize: 11, fontWeight: 800, color: '#737373', textTransform: 'uppercase', letterSpacing: 0.4 },
-  stepHead: { display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 },
-  stepBadge: { width: 22, height: 22, borderRadius: '50%', color: '#fff', fontSize: 12, fontWeight: 800, display: 'grid', placeItems: 'center', fontFamily: 'inherit', flexShrink: 0 },
-  stepTitle: { fontSize: 14, fontWeight: 800, color: '#1A1A1A' },
-  decisionHead: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10, gap: 8 },
-  decisionCurrent: { fontSize: 11.5, color: '#525252', fontWeight: 600 },
-  stepper: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '4px 2px 12px', gap: 0 },
-  dot: { width: 30, height: 30, borderRadius: '50%', display: 'grid', placeItems: 'center', fontSize: 14, background: '#F1F5F9', border: '1.5px solid #E5E7EB', flexShrink: 0 },
-  dotCurrent: { background: '#FFF7ED', border: '2px solid #EA580C', boxShadow: '0 0 0 4px rgba(234,88,12,0.18)', transform: 'scale(1.05)' },
-  dotPast: { background: '#ECFDF5', border: '1.5px solid #A7F3D0', opacity: 0.95 },
-  dotFuture: { opacity: 0.5 },
-  conn: { flex: 1, height: 2, background: '#E5E7EB', margin: '0 4px' },
-  connDone: { flex: 1, height: 2, background: '#A7F3D0', margin: '0 4px' },
-  decisionRow: { display: 'flex', gap: 8 },
-  btnAdvance: { flex: 1, minWidth: 0, padding: '12px 14px', borderRadius: 8, border: 'none', background: '#EA580C', color: '#fff', fontSize: 13, fontWeight: 800, cursor: 'pointer', fontFamily: 'inherit', boxShadow: '0 4px 12px rgba(234,88,12,0.22)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' },
-  btnRejectSolid: { flex: 1, minWidth: 0, padding: '12px 14px', borderRadius: 8, border: 'none', background: '#B91C1C', color: '#fff', fontSize: 13, fontWeight: 800, cursor: 'pointer', fontFamily: 'inherit', boxShadow: '0 4px 12px rgba(185,28,28,0.22)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' },
-  btnDecisionLocked: { flex: 1, minWidth: 0, padding: '12px 14px', borderRadius: 8, border: '1px dashed #D1D5DB', background: '#F8FAFC', color: '#94A3B8', fontSize: 13, fontWeight: 700, cursor: 'not-allowed', fontFamily: 'inherit', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' },
-  finalPassCard: { padding: '16px 18px', borderRadius: 10, background: '#FFF7ED', border: '1px solid #FED7AA', display: 'flex', flexDirection: 'column', gap: 4, alignItems: 'center', textAlign: 'center' },
-  finalPassTitle: { fontSize: 15, fontWeight: 900, color: '#047857' },
-  finalPassSub: { fontSize: 11.5, fontWeight: 600, color: '#065F46' },
-  rejectedCard: { padding: '12px 14px', borderRadius: 8, background: '#FEF2F2', border: '1px solid #FECACA', display: 'flex', flexDirection: 'column', gap: 4 },
-  rejectedHead: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 },
-  rejectedTitle: { fontSize: 12.5, fontWeight: 800, color: '#991B1B' },
-  rejectedReason: { fontSize: 12, fontWeight: 600, color: '#7F1D1D' },
-  btnInterview: { width: '100%', padding: '11px 14px', borderRadius: 8, border: '1px solid #BFDBFE', background: '#EFF6FF', color: '#1D4ED8', fontSize: 13, fontWeight: 800, cursor: 'pointer', fontFamily: 'inherit' },
-  interviewCard: { padding: '12px 14px', borderRadius: 8, background: '#EFF6FF', border: '1px solid #BFDBFE', display: 'flex', flexDirection: 'column', gap: 4 },
-  interviewCardHead: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 },
-  interviewCardTitle: { fontSize: 13, fontWeight: 800, color: '#1E3A8A' },
-  interviewEditBtn: { padding: '4px 10px', borderRadius: 6, border: '1px solid #BFDBFE', background: '#fff', color: '#1D4ED8', fontSize: 11.5, fontWeight: 800, cursor: 'pointer', fontFamily: 'inherit', flexShrink: 0 },
-  interviewMeta: { fontSize: 12, color: '#1E40AF', fontWeight: 600 },
-  btnMailCompose: { width: '100%', padding: '11px 14px', borderRadius: 8, border: '1px solid #BFDBFE', background: '#EFF6FF', color: '#1D4ED8', fontSize: 13, fontWeight: 800, cursor: 'pointer', fontFamily: 'inherit', marginBottom: 10 },
-  mailLogWrap: { marginTop: 4 },
-  mailLogH: { fontSize: 11, fontWeight: 800, color: '#737373', textTransform: 'uppercase', letterSpacing: 0.4, marginBottom: 6 },
-  mailLogEmpty: { fontSize: 12, color: '#94A3B8', fontStyle: 'italic', padding: '8px 0' },
-  mailLogList: { display: 'flex', flexDirection: 'column', gap: 6 },
-  mailLogRow: { padding: '8px 10px', background: '#FAFAFA', border: '1px solid #E5E7EB', borderRadius: 6, display: 'flex', flexDirection: 'column', gap: 2 },
-  mailLogTpl: { fontSize: 12, fontWeight: 800, color: '#1A1A1A' },
-  mailLogTime: { fontSize: 10.5, color: '#737373', fontWeight: 600 },
-  mailLogSubject: { fontSize: 11.5, color: '#525252', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' },
-  rejectedActions: { display: 'flex', gap: 6, flexShrink: 0 },
-  rejectedEditBtn: { padding: '4px 10px', borderRadius: 6, border: '1px solid #FCA5A5', background: '#fff', color: '#B91C1C', fontSize: 11.5, fontWeight: 800, cursor: 'pointer', fontFamily: 'inherit', flexShrink: 0 },
-  rejectedUnrejectBtn: { padding: '4px 10px', borderRadius: 6, border: '1px solid #BFDBFE', background: '#fff', color: '#1D4ED8', fontSize: 11.5, fontWeight: 800, cursor: 'pointer', fontFamily: 'inherit', flexShrink: 0 },
-};
-
-const modal = {
-  overlay: { position: 'fixed', inset: 0, background: 'rgba(15,23,42,0.4)', zIndex: 200, display: 'grid', placeItems: 'center', padding: 20 },
-  box: { background: '#fff', borderRadius: 14, maxWidth: 480, width: '100%', maxHeight: '90vh', display: 'flex', flexDirection: 'column', boxShadow: '0 20px 50px rgba(0,0,0,0.25)' },
-  head: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '20px 24px', borderBottom: '1px solid #E5E7EB', flexShrink: 0 },
-  h: { fontSize: 17, fontWeight: 800, color: '#1A1A1A' },
-  closeBtn: { padding: 4, background: 'transparent', border: 'none', fontSize: 18, color: '#94A3B8', cursor: 'pointer' },
-  body: { padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: 14, overflowY: 'auto', flex: 1, minHeight: 0 },
-  field: { display: 'flex', flexDirection: 'column', gap: 6 },
-  label: { fontSize: 12, color: '#525252', fontWeight: 700 },
-  inp: { padding: '10px 12px', border: '1px solid #D1D5DB', borderRadius: 8, fontSize: 13, color: '#1A1A1A', fontFamily: 'inherit', boxSizing: 'border-box' },
-  hint: { fontSize: 11.5, color: '#737373', marginTop: 4, lineHeight: 1.55 },
-  foot: { display: 'flex', justifyContent: 'flex-end', gap: 8, padding: '14px 24px', borderTop: '1px solid #E5E7EB', flexShrink: 0 },
-  btnPrimary: { padding: '10px 20px', borderRadius: 8, border: 'none', background: '#EA580C', color: '#fff', fontSize: 13, fontWeight: 800, cursor: 'pointer', fontFamily: 'inherit' },
-  btnDanger: { padding: '10px 20px', borderRadius: 8, border: 'none', background: '#B91C1C', color: '#fff', fontSize: 13, fontWeight: 800, cursor: 'pointer', fontFamily: 'inherit' },
-  btnGhost: { padding: '10px 20px', borderRadius: 8, border: '1px solid #D1D5DB', background: '#fff', color: '#1A1A1A', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' },
-  btnDisabled: { padding: '10px 20px', borderRadius: 8, border: 'none', background: '#E5E7EB', color: '#94A3B8', fontSize: 13, fontWeight: 800, cursor: 'not-allowed', fontFamily: 'inherit' },
-};

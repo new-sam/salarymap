@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, Fragment } from 'react'
 
 // 개인용 "목표지표 - Sean" — 어드민 인증 위에 개인 비밀번호를 한 겹 더(서버 검증).
 // 상단 탭: [목표 KPI] 이번 달 2 KPI  ·  [광고 성과] 유입/광고 실시간 추적.
@@ -19,6 +19,10 @@ export default function GoalMetricsView({ token, lang }) {
   const [adData, setAdData] = useState(null) // 광고 성과
   const [adError, setAdError] = useState('')
   const [adLoading, setAdLoading] = useState(false)
+
+  const [expData, setExpData] = useState(null) // 실험 (가입 게이트)
+  const [expError, setExpError] = useState('')
+  const [expLoading, setExpLoading] = useState(false)
 
   const load = useCallback(async (p) => {
     if (!token || !p) return
@@ -58,6 +62,21 @@ export default function GoalMetricsView({ token, lang }) {
     }
   }, [token, ko])
 
+  const loadExp = useCallback(async (p) => {
+    if (!token || !p) return
+    setExpLoading(true)
+    setExpError('')
+    try {
+      const res = await fetch('/api/admin/experiment-metrics', { headers: { Authorization: `Bearer ${token}`, 'x-goal-pass': p } })
+      if (!res.ok) throw new Error(`(${res.status})`)
+      setExpData(await res.json())
+    } catch (e) {
+      setExpError((ko ? '불러오기 실패 ' : 'Load failed ') + e.message)
+    } finally {
+      setExpLoading(false)
+    }
+  }, [token, ko])
+
   useEffect(() => {
     let saved = ''
     try { saved = sessionStorage.getItem(PASS_KEY) || '' } catch {}
@@ -68,6 +87,11 @@ export default function GoalMetricsView({ token, lang }) {
   useEffect(() => {
     if (view === 'ad' && unlocked && pass && !adData && !adLoading) loadAd(pass)
   }, [view, unlocked, pass, adData, adLoading, loadAd])
+
+  // 실험 탭 최초 진입 시 lazy 로드
+  useEffect(() => {
+    if (view === 'exp' && unlocked && pass && !expData && !expLoading) loadExp(pass)
+  }, [view, unlocked, pass, expData, expLoading, loadExp])
 
   function submit(e) {
     e.preventDefault()
@@ -110,14 +134,18 @@ export default function GoalMetricsView({ token, lang }) {
       <div style={{ display: 'inline-flex', gap: 2, background: '#F1F1F4', borderRadius: 11, padding: 3, marginBottom: 18 }}>
         {tabBtn('kpi', ko ? '목표 KPI' : 'Goal KPI')}
         {tabBtn('ad', ko ? '광고 성과' : 'Ad performance')}
+        {tabBtn('exp', ko ? '실험' : 'Experiments')}
       </div>
-      {view === 'kpi' ? <KpiTab data={data} ko={ko} /> : <AdTab data={adData} loading={adLoading} error={adError} ko={ko} />}
+      {view === 'kpi' && <KpiTab data={data} ko={ko} />}
+      {view === 'ad' && <AdTab data={adData} loading={adLoading} error={adError} ko={ko} />}
+      {view === 'exp' && <ExperimentTab data={expData} loading={expLoading} error={expError} ko={ko} />}
     </div>
   )
 }
 
 // ============ 목표 KPI 탭 ============
 function KpiTab({ data, ko }) {
+  const [open, setOpen] = useState({}) // 지원자 명단 펼침 상태 (공고 id별)
   if (!data) return <div style={{ textAlign: 'center', padding: 40, color: '#666' }}>{ko ? '불러오는 중…' : 'Loading…'}</div>
   if (data.error) return <div style={{ textAlign: 'center', padding: 40, color: '#c00' }}>{data.error}</div>
 
@@ -153,8 +181,8 @@ function KpiTab({ data, ko }) {
       <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap', marginBottom: 28 }}>
         <Gauge label={ko ? 'KPI 1 · 일 평균 신규 가입자' : 'KPI 1 · Avg daily sign-ups'} value={n1(s.avgPerDay.all)} target={s.target} unit={ko ? '명' : ''} pct={s.achievementPct}
           sub={`${ko ? '누적' : 'MTD'} ${s.totals.all}${ko ? '명' : ''} · web ${s.totals.web} / app ${s.totals.app} · ${s.daysElapsed}${ko ? '일 경과' : 'd'}`} />
-        <Gauge label={ko ? 'KPI 2 · 기업공고 당 지원 (D+7)' : 'KPI 2 · Apps per enterprise post (D+7)'} value={n1(e.avgD7)} target={e.target} unit={ko ? '건' : ''} pct={e.achievementPct}
-          sub={`${ko ? '측정대상(D+7경과)' : 'Matured'} ${e.maturedCount}${ko ? '건' : ''} · ${ko ? '고객공고' : 'total'} ${e.totalPosts}`} />
+        <Gauge label={ko ? 'KPI 2 · 기업공고 당 지원 (실시간)' : 'KPI 2 · Apps per enterprise post (live)'} value={n1(e.avgApps)} target={e.target} unit={ko ? '건' : ''} pct={e.achievementPct}
+          sub={`${ko ? '누적 지원' : 'Total apps'} ${e.totalApps}${ko ? '건' : ''} · ${ko ? '고객공고' : 'posts'} ${e.totalPosts}${ko ? '건' : ''}`} />
       </div>
 
       <div style={{ fontSize: 13, fontWeight: 700, color: '#374151', margin: '0 0 8px' }}>{ko ? '일별 신규 가입' : 'Daily sign-ups'}</div>
@@ -186,57 +214,66 @@ function KpiTab({ data, ko }) {
       </div>
 
       <div style={{ fontSize: 13, fontWeight: 700, color: '#374151', margin: '0 0 8px' }}>
-        {ko ? `기업 공고 · D+7 경과 (측정 대상 ${e.maturedCount}건)` : `Enterprise posts · matured (${e.maturedCount})`}
+        {ko ? `기업 공고 실시간 지원 현황 (${e.totalPosts}건)` : `Enterprise posts · live (${e.totalPosts})`}
       </div>
       <div style={{ overflowX: 'auto', marginBottom: 20, border: '1px solid #EEF0F2', borderRadius: 12 }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 480 }}>
+        <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 520 }}>
           <thead><tr>
+            <th style={{ ...th, width: 22 }}></th>
             <th style={th}>{ko ? '회사' : 'Company'}</th>
-            <th style={{ ...th, textAlign: 'right' }}>{ko ? 'D+7 지원' : 'Apps D+7'}</th>
-            <th style={{ ...th, textAlign: 'right' }}>{ko ? '누적' : 'Total'}</th>
+            <th style={th}>{ko ? '공고' : 'Title'}</th>
+            <th style={{ ...th, textAlign: 'right' }}>{ko ? '지원' : 'Apps'}</th>
             <th style={{ ...th, textAlign: 'right' }}>{ko ? '경과일' : 'Age'}</th>
             <th style={th}></th>
           </tr></thead>
           <tbody>
-            {e.matured.length === 0 && <tr><td style={td} colSpan={5}>{ko ? 'D+7 경과한 고객 공고가 아직 없습니다.' : 'No matured posts yet.'}</td></tr>}
-            {e.matured.map((r) => (
-              <tr key={r.id}>
-                <td style={{ ...td, maxWidth: 220, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{r.company || '—'}</td>
-                <td style={{ ...num, fontWeight: 800, color: r.appsD7 >= e.target ? '#059669' : '#0F172A' }}>{r.appsD7}</td>
-                <td style={num}>{r.appsTotal}</td>
-                <td style={num}>{Math.floor(r.ageDays)}{ko ? '일' : 'd'}</td>
-                <td style={td}>{!r.isActive && <span style={{ fontSize: 11, color: '#9CA3AF' }}>{ko ? '비활성' : 'inactive'}</span>}</td>
-              </tr>
-            ))}
+            {e.posts.length === 0 && <tr><td style={td} colSpan={6}>{ko ? '고객 공고가 아직 없습니다.' : 'No customer posts yet.'}</td></tr>}
+            {e.posts.map((r) => {
+              const canOpen = r.appsTotal > 0
+              const isOpen = !!open[r.id]
+              return (
+                <Fragment key={r.id}>
+                  <tr
+                    onClick={canOpen ? () => setOpen((o) => ({ ...o, [r.id]: !o[r.id] })) : undefined}
+                    style={{ background: r.appsTotal > 0 ? '#ECFDF5' : undefined, cursor: canOpen ? 'pointer' : 'default' }}
+                  >
+                    <td style={{ ...td, textAlign: 'center', color: '#9CA3AF', fontSize: 11 }}>{canOpen ? (isOpen ? '▾' : '▸') : ''}</td>
+                    <td style={{ ...td, maxWidth: 200, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{r.company || '—'}</td>
+                    <td style={{ ...td, maxWidth: 240, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', color: '#6B7280' }}>{r.title || '—'}</td>
+                    <td style={{ ...num, fontWeight: 800, color: r.appsTotal > 0 ? '#059669' : '#9CA3AF' }}>{r.appsTotal}</td>
+                    <td style={num}>{r.ageDays < 1 ? (ko ? '오늘' : 'today') : `${Math.floor(r.ageDays)}${ko ? '일' : 'd'}`}</td>
+                    <td style={td}>{!r.isActive && <span style={{ fontSize: 11, color: '#9CA3AF' }}>{ko ? '비활성' : 'inactive'}</span>}</td>
+                  </tr>
+                  {isOpen && (
+                    <tr>
+                      <td colSpan={6} style={{ padding: 0, background: '#F9FBFA', borderBottom: '1px solid #F5F6F7' }}>
+                        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                          <thead><tr>
+                            <th style={{ ...th, width: 22, borderBottom: 'none' }}></th>
+                            <th style={{ ...th, borderBottom: 'none' }}>{ko ? '이름' : 'Name'}</th>
+                            <th style={{ ...th, borderBottom: 'none' }}>{ko ? '이메일' : 'Email'}</th>
+                            <th style={{ ...th, textAlign: 'right', borderBottom: 'none' }}>{ko ? '지원 시각' : 'Applied at'}</th>
+                          </tr></thead>
+                          <tbody>
+                            {r.applicants.map((a, i) => (
+                              <tr key={i}>
+                                <td style={{ ...td, borderBottom: 'none' }}></td>
+                                <td style={{ ...td, borderBottom: 'none' }}>{a.name || <span style={{ color: '#C0C4CC' }}>—</span>}</td>
+                                <td style={{ ...td, borderBottom: 'none', color: '#4B5563' }}>{a.email || <span style={{ color: '#C0C4CC' }}>—</span>}</td>
+                                <td style={{ ...num, borderBottom: 'none', fontWeight: 500, color: '#6B7280' }}>{new Date(a.at).toLocaleString(ko ? 'ko-KR' : 'en-US')}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </td>
+                    </tr>
+                  )}
+                </Fragment>
+              )
+            })}
           </tbody>
         </table>
       </div>
-
-      {e.young.length > 0 && (
-        <details>
-          <summary style={{ fontSize: 12.5, color: '#6B7280', cursor: 'pointer', marginBottom: 8 }}>
-            {ko ? `아직 D+7 미도달 (진행중) ${e.young.length}건` : `In progress (pre-D+7): ${e.young.length}`}
-          </summary>
-          <div style={{ overflowX: 'auto', border: '1px solid #EEF0F2', borderRadius: 12 }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 420 }}>
-              <thead><tr>
-                <th style={th}>{ko ? '회사' : 'Company'}</th>
-                <th style={{ ...th, textAlign: 'right' }}>{ko ? '현재 지원' : 'Apps'}</th>
-                <th style={{ ...th, textAlign: 'right' }}>{ko ? '경과일' : 'Age'}</th>
-              </tr></thead>
-              <tbody>
-                {e.young.map((r) => (
-                  <tr key={r.id}>
-                    <td style={{ ...td, maxWidth: 240, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{r.company || '—'}</td>
-                    <td style={num}>{r.appsTotal}</td>
-                    <td style={num}>{n1(r.ageDays)}{ko ? '일' : 'd'}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </details>
-      )}
     </div>
   )
 }
@@ -296,6 +333,45 @@ function AdTab({ data, loading, error, ko }) {
         <Stat label={ko ? '소스 미귀속' : 'Unattributed'} value={`${t.noEventPct}%`} sub={`${t.noEvent}${ko ? '명 이벤트無' : ' no-event'}`} color="#DC2626" />
       </div>
 
+      {/* 가입 캠페인별 — 실제 가입 기준 (핵심) */}
+      <div style={{ fontSize: 13, fontWeight: 700, color: '#374151', margin: '0 0 3px' }}>{ko ? '가입 캠페인별 성과 (실제 가입 기준)' : 'Sign-ups by campaign (actual)'}</div>
+      <div style={{ fontSize: 11, color: '#9CA3AF', marginBottom: 8 }}>
+        {ko
+          ? `트래픽(landing)이 아니라 가입 전환 기준 · 귀속 ${data.signupAttribution.attributed}/${data.signupAttribution.total} (${data.signupAttribution.pct}%, user_profiles.utm)`
+          : `Ranked by sign-up conversion, not traffic · attributed ${data.signupAttribution.attributed}/${data.signupAttribution.total} (${data.signupAttribution.pct}%)`}
+      </div>
+      <div style={{ overflowX: 'auto', marginBottom: 30, border: '1px solid #EEF0F2', borderRadius: 12 }}>
+        <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 460 }}>
+          <thead><tr>
+            <th style={th}>{ko ? '캠페인' : 'Campaign'}</th>
+            <th style={{ ...th, textAlign: 'right' }}>landing</th>
+            <th style={{ ...th, textAlign: 'right' }}>{ko ? '가입' : 'sign-ups'}</th>
+            <th style={{ ...th, textAlign: 'right' }}>{ko ? '가입 전환율' : 'sign-up CVR'}</th>
+            <th style={{ ...th, textAlign: 'right', width: '24%' }}>{ko ? '가입 볼륨' : 'sign-ups'}</th>
+          </tr></thead>
+          <tbody>
+            {(() => {
+              const maxS = Math.max(1, ...data.campaignFunnel.map((c) => c.signups))
+              return data.campaignFunnel.map((c) => (
+                <tr key={c.campaign}>
+                  <td style={{ ...td, fontWeight: 600, maxWidth: 200, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} title={c.campaign}>{c.campaign}</td>
+                  <td style={{ ...num, color: '#9CA3AF' }}>{c.landings.toLocaleString()}</td>
+                  <td style={{ ...num, fontWeight: 800 }}>{c.signups}</td>
+                  <td style={{ ...num, color: c.cvr == null ? '#9CA3AF' : c.cvr >= 10 ? '#059669' : c.cvr >= 2 ? '#D97706' : '#DC2626' }}>
+                    {c.cvr == null ? '—' : `${c.cvr}%`}
+                  </td>
+                  <td style={{ ...td, width: '24%' }}>
+                    <div style={{ height: 6, background: '#F1F5F9', borderRadius: 4, overflow: 'hidden' }}>
+                      <div style={{ width: `${(c.signups / maxS) * 100}%`, height: '100%', background: '#059669' }} />
+                    </div>
+                  </td>
+                </tr>
+              ))
+            })()}
+          </tbody>
+        </table>
+      </div>
+
       {/* 일별 퍼널 */}
       <div style={{ fontSize: 13, fontWeight: 700, color: '#374151', margin: '0 0 8px' }}>{ko ? '일별 유입 → 가입 퍼널' : 'Daily landing → sign-up funnel'}</div>
       <div style={{ overflowX: 'auto', marginBottom: 30, border: '1px solid #EEF0F2', borderRadius: 12 }}>
@@ -338,6 +414,103 @@ function AdTab({ data, loading, error, ko }) {
       <div style={{ display: 'flex', gap: 28, flexWrap: 'wrap' }}>
         <BarList title={ko ? '캠페인별 유입 (utm_campaign)' : 'By campaign'} rows={data.campaigns} />
         <BarList title={ko ? '가입자 유입 채널 (첫 이벤트)' : 'Sign-up channel (first event)'} hint={ko ? 'no_event/direct 비중이 크면 귀속 사각지대' : 'Attribution of who converted'} rows={data.signupChannels} />
+      </div>
+    </div>
+  )
+}
+
+// ============ 실험 탭 — 가입 게이트 (2026-07-13~) ============
+// 회사 데이터 언락 조건을 "제출" → "제출+로그인"으로 바꾼 실험의 일별 추적.
+// 핵심: 게이트 클릭→로그인 전환율 / 가드: 제출 수(광고 성과 훼손 여부).
+function ExperimentTab({ data, loading, error, ko }) {
+  if (loading || !data) return <div style={{ textAlign: 'center', padding: 40, color: '#666' }}>{ko ? '불러오는 중…' : 'Loading…'}</div>
+  if (error) return <div style={{ textAlign: 'center', padding: 40, color: '#c00' }}>{error}</div>
+  if (data.error) return <div style={{ textAlign: 'center', padding: 40, color: '#c00' }}>{data.error}</div>
+
+  const n1 = (v) => (Math.round(v * 10) / 10).toLocaleString()
+  const pct = (v) => `${Math.round(v * 100)}%`
+  const b = data.before
+  const a = data.after
+  const gateCvr = a.gateClicks ? a.gateLogins / a.gateClicks : 0
+
+  const Card = ({ label, value, sub, accent }) => (
+    <div style={{ background: '#fff', border: '1px solid #E5E8EB', borderRadius: 16, padding: '18px 20px', flex: '1 1 220px', minWidth: 200 }}>
+      <div style={{ fontSize: 12.5, fontWeight: 700, color: '#6B7280', marginBottom: 10 }}>{label}</div>
+      <div style={{ fontSize: 30, fontWeight: 800, color: accent || '#0F172A', lineHeight: 1, marginBottom: 6 }}>{value}</div>
+      {sub && <div style={{ fontSize: 12, color: '#9CA3AF' }}>{sub}</div>}
+    </div>
+  )
+
+  const th = { textAlign: 'left', fontSize: 11, fontWeight: 700, color: '#9CA3AF', padding: '6px 10px', borderBottom: '1px solid #EEF0F2', textTransform: 'uppercase', letterSpacing: '.04em' }
+  const td = { fontSize: 13, color: '#1F2937', padding: '7px 10px', borderBottom: '1px solid #F5F6F7' }
+  const num = { ...td, textAlign: 'right', fontVariantNumeric: 'tabular-nums', fontWeight: 600 }
+
+  return (
+    <div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6, flexWrap: 'wrap' }}>
+        <div style={{ fontSize: 15, fontWeight: 800, color: '#0F172A' }}>
+          {ko ? '가입 게이트 — 회사 데이터 열람에 로그인 요구' : 'Signup gate — login required to view company data'}
+        </div>
+        <span style={{ fontSize: 11, fontWeight: 700, color: '#7C3AED', background: '#F3EEFF', padding: '3px 9px', borderRadius: 100 }}>
+          {ko ? `실험 시작 ${data.experimentStart}` : `Started ${data.experimentStart}`}
+        </span>
+      </div>
+      <div style={{ fontSize: 12, color: '#9CA3AF', marginBottom: 16 }}>
+        {ko
+          ? `베이스라인 ${b.days}일 평균과 비교 · 기준: ${new Date(data.generatedAt).toLocaleString('ko-KR')}`
+          : `vs ${b.days}-day baseline · as of ${new Date(data.generatedAt).toLocaleString('en-US')}`}
+      </div>
+
+      <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginBottom: 28 }}>
+        <Card label={ko ? '가입 / 일 (실험 후)' : 'Signups / day (after)'}
+          value={n1(a.signupsPerDay)}
+          sub={`${ko ? '이전' : 'before'} ${n1(b.signupsPerDay)}`}
+          accent={a.signupsPerDay >= b.signupsPerDay ? '#059669' : '#DC2626'} />
+        <Card label={ko ? '제출 / 일 (가드지표)' : 'Submissions / day (guardrail)'}
+          value={n1(a.submissionsPerDay)}
+          sub={`${ko ? '이전' : 'before'} ${n1(b.submissionsPerDay)} · ${ko ? '떨어지면 광고 훼손 신호' : 'drop = ad funnel damage'}`}
+          accent={a.submissionsPerDay >= b.submissionsPerDay * 0.85 ? '#0F172A' : '#DC2626'} />
+        <Card label={ko ? '제출 로그인 연결률' : 'Submission login-link rate'}
+          value={pct(a.linkedRate)}
+          sub={`${ko ? '이전' : 'before'} ${pct(b.linkedRate)}`}
+          accent={a.linkedRate > b.linkedRate ? '#059669' : '#0F172A'} />
+        <Card label={ko ? '게이트 클릭 → 로그인' : 'Gate click → login'}
+          value={`${a.gateLogins} / ${a.gateClicks}`}
+          sub={`${ko ? '전환율' : 'CVR'} ${a.gateClicks ? pct(gateCvr) : '—'}`}
+          accent="#7C3AED" />
+      </div>
+
+      <div style={{ fontSize: 13, fontWeight: 700, color: '#374151', margin: '0 0 8px' }}>{ko ? '일별 추이' : 'Daily'}</div>
+      <div style={{ overflowX: 'auto', border: '1px solid #EEF0F2', borderRadius: 12 }}>
+        <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 560 }}>
+          <thead><tr>
+            <th style={th}>{ko ? '날짜' : 'Date'}</th>
+            <th style={{ ...th, textAlign: 'right' }}>{ko ? '가입' : 'Signups'}</th>
+            <th style={{ ...th, textAlign: 'right' }}>{ko ? '제출' : 'Subs'}</th>
+            <th style={{ ...th, textAlign: 'right' }}>{ko ? '연결률' : 'Linked'}</th>
+            <th style={{ ...th, textAlign: 'right' }}>{ko ? '게이트클릭' : 'Gate clicks'}</th>
+            <th style={{ ...th, textAlign: 'right' }}>{ko ? '게이트로그인' : 'Gate logins'}</th>
+            <th style={{ ...th, textAlign: 'right' }}>CVR</th>
+          </tr></thead>
+          <tbody>
+            {[...data.daily].reverse().map((d) => {
+              const inExp = d.day >= data.experimentStart
+              return (
+                <tr key={d.day} style={inExp ? { background: '#FBF9FF' } : undefined}>
+                  <td style={{ ...td, fontWeight: inExp ? 800 : 400 }}>
+                    {d.day.slice(5)}{inExp && <span style={{ fontSize: 10, color: '#7C3AED', marginLeft: 6 }}>EXP</span>}
+                  </td>
+                  <td style={{ ...num, fontWeight: 800 }}>{d.signups}</td>
+                  <td style={num}>{d.submissions}</td>
+                  <td style={num}>{d.submissions ? pct(d.linked / d.submissions) : '—'}</td>
+                  <td style={num}>{d.gateClicks || ''}</td>
+                  <td style={{ ...num, color: d.gateLogins ? '#059669' : undefined }}>{d.gateLogins || ''}</td>
+                  <td style={num}>{d.gateClicks ? pct(d.gateLogins / d.gateClicks) : ''}</td>
+                </tr>
+              )
+            })}
+          </tbody>
+        </table>
       </div>
     </div>
   )

@@ -3,8 +3,9 @@ import Head from 'next/head';
 import { useRouter } from 'next/router';
 import Link from 'next/link';
 import { supabase } from '../../../../lib/supabaseClient';
-import { Field, SelectInput, Sidebar, css } from '../new';
+import { Field, SelectInput, UploadInput, Sidebar, css } from '../new';
 import { useT } from '../../../../lib/i18n';
+import { apiErrorMessage } from '../../../../lib/apiErrorMessage';
 import { toast } from 'sonner';
 import { Button as UButton } from '../../../../components/ui/button';
 import { Input as UInput } from '../../../../components/ui/input';
@@ -12,15 +13,14 @@ import { Badge as UBadge } from '../../../../components/ui/badge';
 import { PageHeader } from '../../../../components/ui/page-header';
 import { ImageIcon, MapPin, Building2, EyeOff, Eye, Trash2, ExternalLink, Briefcase, CalendarDays, Users, Maximize2, X as XIcon } from 'lucide-react';
 import JobPreview from '../../../../components/jobs/JobPreview';
-import { ROLE_OPTIONS, LOCATION_OPTIONS } from '../../../../constants/jobs';
+import { ROLE_GROUPS, LOCATION_OPTIONS, DEFAULT_WORK_DAYS, DEFAULT_WORK_HOURS, DEFAULT_PAID_LEAVE, DEFAULT_CONTRACT } from '../../../../constants/jobs';
 
-const ROLES = ROLE_OPTIONS;         // new.js와 동일 소스(비IT 직무 포함)
 const TYPES = ['remote', 'onsite', 'hybrid'];
 const LOCATIONS = LOCATION_OPTIONS;
 
 export default function EditJobPage() {
   const router = useRouter();
-  const { t } = useT();
+  const { t, lang } = useT();
   const { id } = router.query;
 
   const [status, setStatus] = useState('loading');
@@ -39,11 +39,12 @@ export default function EditJobPage() {
 
       const { data: rec } = await supabase
         .from('recruiter_users')
-        .select('company_id, recruiter_companies(name)')
+        .select('company_id, recruiter_companies(name, work_days, work_hours, paid_leave)')
         .eq('user_id', session.user.id)
         .maybeSingle();
       if (!rec?.company_id) { setStatus('unauthed'); return; }
-      setCompanyName(rec.recruiter_companies?.name || '');
+      const co = rec.recruiter_companies;
+      setCompanyName(co?.name || '');
 
       const { data: job, error: jobErr } = await supabase
         .from('jobs')
@@ -52,7 +53,7 @@ export default function EditJobPage() {
         .eq('company_id', rec.company_id)
         .maybeSingle();
       if (jobErr || !job) {
-        setErr('공고를 찾을 수 없거나 접근 권한이 없습니다.');
+        setErr(t('company.ats.notFound'));
         setStatus('error');
         return;
       }
@@ -69,7 +70,7 @@ export default function EditJobPage() {
         canEdit = teamRow?.role === 'admin';
       }
       if (!canEdit) {
-        setErr('공고를 찾을 수 없거나 접근 권한이 없습니다.');
+        setErr(t('company.ats.notFound'));
         setStatus('error');
         return;
       }
@@ -90,6 +91,11 @@ export default function EditJobPage() {
         deadline: job.deadline || '',
         image_url: job.image_url || '',
         logo_url: job.logo_url || '',
+        // 공고에 저장된 값이 없으면(구 공고) 회사 프로필 기본값으로 프리필
+        work_days: job.work_days || co?.work_days || '',
+        work_hours: job.work_hours || co?.work_hours || '',
+        paid_leave: job.paid_leave || co?.paid_leave || '',
+        contract_type: job.contract_type || '', // 공고 단위 값만 (회사 폴백 없음)
       });
       setOrigStatus(job.status || 'live');
       setStatus('ready');
@@ -107,7 +113,7 @@ export default function EditJobPage() {
       const ext = file.name.split('.').pop();
       const path = `company/${user.id}/${Date.now()}.${ext}`;
       const { error } = await supabase.storage.from('job-images').upload(path, file);
-      if (error) { setErr('이미지 업로드 실패: ' + error.message); return; }
+      if (error) { setErr(t('company.err.imgUpload') + error.message); return; }
       const { data } = supabase.storage.from('job-images').getPublicUrl(path);
       setForm(prev => ({ ...prev, [field]: data.publicUrl }));
     } finally {
@@ -118,9 +124,9 @@ export default function EditJobPage() {
   const onSubmit = async (e) => {
     e.preventDefault();
     setErr('');
-    if (!form.title.trim()) { setErr('포지션명을 입력해 주세요'); return; }
-    if (!form.description.trim()) { setErr('업무 설명을 입력해 주세요'); return; }
-    if (Number(form.salary_min) >= Number(form.salary_max)) { setErr('연봉 최소가 최대보다 작아야 합니다'); return; }
+    if (!form.title.trim()) { setErr(t('company.err.titleRequired')); return; }
+    if (!form.description.trim()) { setErr(t('company.err.descRequired')); return; }
+    if (Number(form.salary_min) >= Number(form.salary_max)) { setErr(t('company.err.salaryRange')); return; }
     setStatus('saving');
 
     const techArr = form.tech_stack.split(',').map(s => s.trim()).filter(Boolean);
@@ -136,11 +142,15 @@ export default function EditJobPage() {
       deadline: form.deadline || null,
       image_url: form.image_url || null,
       logo_url: form.logo_url || null,
+      work_days: form.work_days.trim() || null,
+      work_hours: form.work_hours.trim() || null,
+      paid_leave: form.paid_leave.trim() || null,
+      contract_type: form.contract_type.trim() || null,
     };
     const { error } = await supabase.from('jobs').update(payload).eq('id', id);
     if (error) { setErr(error.message); toast.error(error.message); setStatus('ready'); return; }
-    toast.success('변경사항 저장됨');
-    router.replace('/company/jobs');
+    toast.success(t('company.editJob.saved'));
+    router.replace('/company');
   };
 
   const jobApiHeaders = async () => {
@@ -149,29 +159,29 @@ export default function EditJobPage() {
   };
 
   const onDelete = async () => {
-    if (!confirm('이 공고를 삭제하시겠어요? 되돌릴 수 없습니다.')) return;
+    if (!confirm(t('company.editJob.deleteConfirm'))) return;
     setStatus('saving');
     const res = await fetch('/api/company/job', { method: 'DELETE', headers: await jobApiHeaders(), body: JSON.stringify({ jobId: id }) });
-    if (!res.ok) { const j = await res.json().catch(() => ({})); setErr(j.error || 'error'); toast.error(j.error || '삭제 실패'); setStatus('ready'); return; }
-    toast.success('공고가 삭제되었습니다');
-    router.replace('/company/jobs');
+    if (!res.ok) { const j = await res.json().catch(() => ({})); const msg = apiErrorMessage(j, t, 'company.editJob.deleteFailed'); setErr(msg); toast.error(msg); setStatus('ready'); return; }
+    toast.success(t('company.editJob.deleted'));
+    router.replace('/company');
   };
 
   const toggleActive = async () => {
     const newStatus = origStatus === 'live' ? 'paused' : 'live';
     const res = await fetch('/api/company/job', { method: 'PUT', headers: await jobApiHeaders(), body: JSON.stringify({ jobId: id, action: newStatus === 'live' ? 'activate' : 'deactivate' }) });
-    if (!res.ok) { const j = await res.json().catch(() => ({})); setErr(j.error || 'error'); toast.error(j.error || '변경 실패'); return; }
+    if (!res.ok) { const j = await res.json().catch(() => ({})); const msg = apiErrorMessage(j, t, 'company.editJob.toggleFailed'); setErr(msg); toast.error(msg); return; }
     setOrigStatus(newStatus);
-    toast.success(newStatus === 'live' ? '공고가 활성화 되었습니다' : '공고가 비활성화 되었습니다');
+    toast.success(newStatus === 'live' ? t('company.editJob.activated') : t('company.editJob.deactivated'));
   };
 
-  if (status === 'loading') return <div style={css.loading}>Loading…</div>;
+  if (status === 'loading') return <div style={css.loading}>{t('company.loading')}</div>;
   if (status === 'unauthed') {
     return (
       <div style={css.fullCenter}>
         <div style={css.lightCard}>
-          <h1 style={css.cardH}>로그인 필요</h1>
-          <Link href="/company/signup" style={css.btnPrimary}>로그인 / 가입</Link>
+          <h1 style={css.cardH}>{t('company.loginRequired')}</h1>
+          <Link href="/company" style={css.btnPrimary}>{t('company.loginOrSignup')}</Link>
         </div>
       </div>
     );
@@ -180,9 +190,9 @@ export default function EditJobPage() {
     return (
       <div style={css.fullCenter}>
         <div style={css.lightCard}>
-          <h1 style={css.cardH}>접근 불가</h1>
+          <h1 style={css.cardH}>{t('company.noAccess')}</h1>
           <p style={css.cardP}>{err}</p>
-          <Link href="/company/jobs" style={css.btnPrimary}>공고 목록으로</Link>
+          <Link href="/company/jobs" style={css.btnPrimary}>{t('company.toDashboard')}</Link>
         </div>
       </div>
     );
@@ -190,7 +200,7 @@ export default function EditJobPage() {
 
   return (
     <>
-      <Head><title>공고 수정 · FYI</title></Head>
+      <Head><title>{t('company.head.editJob')}</title></Head>
       <div style={css.app}>
         <Sidebar companyName={companyName} userEmail={user?.email} activePage="jobs" activeJobId={id} />
 
@@ -246,9 +256,7 @@ export default function EditJobPage() {
                       <UButton type="button" variant="outline" size="sm" onClick={() => setF('image_url', '')} className="ml-auto h-7 px-2 text-xs text-red-600 border-red-200 hover:bg-red-50">{t('company.remove')}</UButton>
                     </div>
                   ) : (
-                    <input type="file" accept="image/*" disabled={uploading}
-                      onChange={(e) => e.target.files?.[0] && uploadImage(e.target.files[0], 'image_url')}
-                      className="text-xs text-gray-700 border border-dashed border-gray-300 rounded-lg p-2 bg-gray-50 cursor-pointer w-full" />
+                    <UploadInput label={t('company.jobsnew.uploadBtn')} disabled={uploading} onFile={(f) => uploadImage(f, 'image_url')} />
                   )}
                 </Field>
                 <Field label={t('company.jobsnew.logoLabel')}>
@@ -258,9 +266,7 @@ export default function EditJobPage() {
                       <UButton type="button" variant="outline" size="sm" onClick={() => setF('logo_url', '')} className="ml-auto h-7 px-2 text-xs text-red-600 border-red-200 hover:bg-red-50">{t('company.remove')}</UButton>
                     </div>
                   ) : (
-                    <input type="file" accept="image/*" disabled={uploading}
-                      onChange={(e) => e.target.files?.[0] && uploadImage(e.target.files[0], 'logo_url')}
-                      className="text-xs text-gray-700 border border-dashed border-gray-300 rounded-lg p-2 bg-gray-50 cursor-pointer w-full" />
+                    <UploadInput label={t('company.jobsnew.uploadBtn')} disabled={uploading} onFile={(f) => uploadImage(f, 'logo_url')} />
                   )}
                 </Field>
               </div>
@@ -283,7 +289,11 @@ export default function EditJobPage() {
               <div className="grid grid-cols-2 gap-3">
                 <Field label={t('company.jobsnew.role')}>
                   <SelectInput value={form.role} onChange={e => setF('role', e.target.value)}>
-                    {ROLES.map(r => <option key={r} value={r}>{r}</option>)}
+                    {ROLE_GROUPS.map(g => (
+                      <optgroup key={g.key} label={g.label[lang] || g.label.en}>
+                        {g.roles.map(r => <option key={r.value} value={r.value}>{r.label[lang] || r.label.en}</option>)}
+                      </optgroup>
+                    ))}
                   </SelectInput>
                 </Field>
                 <Field label={t('company.jobsnew.type')}>
@@ -298,6 +308,23 @@ export default function EditJobPage() {
                   {LOCATIONS.map(l => <option key={l} value={l}>{l}</option>)}
                 </SelectInput>
               </Field>
+
+              <h2 className="text-[12px] font-extrabold text-gray-500 uppercase tracking-[0.08em] mt-5 mb-1">{t('company.jobsnew.workH')}</h2>
+              <div className="text-xs text-gray-400 font-semibold mb-3">{t('company.jobsnew.workHint')}</div>
+              <div className="grid grid-cols-2 gap-3">
+                <Field label={t('company.jobsnew.workDays')}>
+                  <UInput value={form.work_days} onChange={e => setF('work_days', e.target.value)} placeholder={DEFAULT_WORK_DAYS} />
+                </Field>
+                <Field label={t('company.jobsnew.workHours')}>
+                  <UInput value={form.work_hours} onChange={e => setF('work_hours', e.target.value)} placeholder={DEFAULT_WORK_HOURS} />
+                </Field>
+                <Field label={t('company.jobsnew.paidLeave')}>
+                  <UInput value={form.paid_leave} onChange={e => setF('paid_leave', e.target.value)} placeholder={DEFAULT_PAID_LEAVE} />
+                </Field>
+                <Field label={t('company.jobsnew.contract')}>
+                  <UInput value={form.contract_type} onChange={e => setF('contract_type', e.target.value)} placeholder={DEFAULT_CONTRACT} />
+                </Field>
+              </div>
 
               <h2 className="text-[12px] font-extrabold text-gray-500 uppercase tracking-[0.08em] mt-5 mb-3">{t('company.jobsnew.expSalH')}</h2>
 
