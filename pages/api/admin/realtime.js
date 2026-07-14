@@ -30,7 +30,7 @@ export default async function handler(req, res) {
       .gte('created_at', startISO).lte('created_at', endISO)
       .limit(10000),
     supabase.from('job_applications')
-      .select('id, application_source')
+      .select('id, application_source, jobs(source)')
       .gte('created_at', startISO).lte('created_at', endISO)
       .limit(10000),
     supabase.from('events')
@@ -85,6 +85,7 @@ export default async function handler(req, res) {
     companies,
     signups: todaySignups,
     jobApps: jobApps.length,
+    jobAppsCompany: jobApps.filter(j => j.jobs?.source === 'company_self').length,
     cvSuccessApps: jobApps.filter(j => j.application_source === 'cv_success').length,
     jobClicks: evCount('click_jobs_cta'),
     cardClicks: evCount('click_job_card'),

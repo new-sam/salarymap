@@ -67,8 +67,8 @@ export default async function handler(req, res) {
         return allUsers.filter(u => u.created_at >= startISO && u.created_at <= endISO && !isExcludedSignup(u))
       } catch (e) { return [] }
     })(),
-    // job applications
-    fetchAll(supabase.from('job_applications').select('id, created_at, application_source')
+    // job applications (jobs.source 조인으로 기업 직접등록 공고 지원 분리 집계)
+    fetchAll(supabase.from('job_applications').select('id, created_at, application_source, jobs(source)')
       .gte('created_at', startISO).lte('created_at', endISO)).catch(() => []),
     // 이벤트 일별 카운트 — DB 집계 RPC (실패 시 행 fetch 폴백)
     (async () => {
@@ -124,7 +124,7 @@ export default async function handler(req, res) {
 
   // --- Aggregate daily trend ---
   const dailyMap = {}
-  const newDay = () => ({ date: '', submissions: 0, ad: 0, organic: 0, signups: 0, companies: new Set(), jobApps: 0, cvSuccessApps: 0, jobClicks: 0, cardClicks: 0, jobsPageViews: 0, applyClicks: 0, saveClicks: 0, resumeUploads: 0, landings: 0, forCompaniesClicks: 0, contactClicks: 0, postJobClicks: 0, companySignups: 0 })
+  const newDay = () => ({ date: '', submissions: 0, ad: 0, organic: 0, signups: 0, companies: new Set(), jobApps: 0, jobAppsCompany: 0, cvSuccessApps: 0, jobClicks: 0, cardClicks: 0, jobsPageViews: 0, applyClicks: 0, saveClicks: 0, resumeUploads: 0, landings: 0, forCompaniesClicks: 0, contactClicks: 0, postJobClicks: 0, companySignups: 0 })
   for (const sub of submissions) {
     const date = toVN(sub.created_at)
     if (!dailyMap[date]) dailyMap[date] = { ...newDay(), date }
@@ -147,6 +147,8 @@ export default async function handler(req, res) {
     const date = toVN(ja.created_at)
     if (!dailyMap[date]) dailyMap[date] = { ...newDay(), date }
     dailyMap[date].jobApps++
+    // 기업이 직접 등록한 공고(jobs.source='company_self')에 대한 지원 — 별도 라인.
+    if (ja.jobs?.source === 'company_self') dailyMap[date].jobAppsCompany++
     // CV 등록 후 원탭 지원 모달에서 나온 지원 — 실험 효과 추적용 별도 라인.
     if (ja.application_source === 'cv_success') dailyMap[date].cvSuccessApps++
   }
@@ -261,6 +263,7 @@ export default async function handler(req, res) {
     organicSubmissions: submissions.filter(s => !PAID_SOURCES.has(s.source)).length,
     totalSignups: signups.length,
     totalJobApps: jobApps.length,
+    totalJobAppsCompany: jobApps.filter(j => j.jobs?.source === 'company_self').length,
     totalCvSuccessApps: jobApps.filter(j => j.application_source === 'cv_success').length,
     totalLandings: evtSum('landing'),
     totalJobClicks: evtSum('click_jobs_cta'),
