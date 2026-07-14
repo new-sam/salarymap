@@ -196,6 +196,10 @@ export default function CvLanding() {
   const L = (ko, en, vi) => (lang === 'vi' ? vi : lang === 'en' ? en : ko)
   const fileRef = useRef(null)
   const formAnchorRef = useRef(null)
+  // 모바일 하단 스크롤 다운 버튼 — 긴 랜딩을 단계별로 넘겨준다
+  // (STEP 1 → 2 → 3 카드 → 등록 폼). 폼이 화면 절반 안에 들어오면
+  // 폼 자체 CTA와 겹치지 않게 숨긴다.
+  const [showScrollDown, setShowScrollDown] = useState(true)
   const showSuccess = status === 'success' || (process.env.NODE_ENV !== 'production' && router.query.successPreview === '1')
   // 4-step journey to the 2,000,000 VND bonus. The bar grows from 0 to
   // step-1 ("Resume registered") and "lands" on it — at that instant the
@@ -521,6 +525,24 @@ export default function CvLanding() {
   }
 
   const scrollToForm = () => formAnchorRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+
+  useEffect(() => {
+    const update = () => {
+      const formTop = formAnchorRef.current?.getBoundingClientRect().top ?? Infinity
+      setShowScrollDown(formTop >= window.innerHeight * 0.5)
+    }
+    update()
+    window.addEventListener('scroll', update, { passive: true })
+    return () => window.removeEventListener('scroll', update)
+  }, [])
+
+  const onStickyClick = () => {
+    // 아직 화면 절반 아래에 있는 첫 스텝 카드로 — 셋 다 지났으면 등록 폼으로
+    const nextCard = Array.from(document.querySelectorAll('.cv-flow-card'))
+      .find((el) => el.getBoundingClientRect().top > window.innerHeight * 0.5)
+    if (nextCard) nextCard.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    else formAnchorRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }
 
   return (
     <>
@@ -866,6 +888,13 @@ export default function CvLanding() {
         </section>
 
       </main>
+
+      {/* 하단 스크롤 다운 버튼 — 누를 때마다 다음 단계로 스크롤 (STEP 1→2→3 → 등록 폼) */}
+      {showScrollDown && (
+        <button type="button" className="cv-scrolldown" onClick={onStickyClick} aria-label={L('다음 단계로', 'Next section', 'Phần tiếp theo')}>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+        </button>
+      )}
 
       {/* 등록 완료 → 방금 올린 이력서로 맞는 공고 바로 지원 (원탭) */}
       {showJobModal && modalJobs.length > 0 && (
@@ -2918,6 +2947,32 @@ export default function CvLanding() {
         }
         .cv-btn-sticky { margin-top: 0; padding: 16px; box-shadow: 0 -4px 18px rgba(255,96,0,0.22); }
 
+        /* ───── 단계별 스크롤 다운 버튼 (mobile) ───── */
+        .cv-scrolldown {
+          display: none;
+          position: fixed;
+          bottom: calc(74px + env(safe-area-inset-bottom));
+          left: 50%;
+          margin-left: -22px;
+          width: 44px;
+          height: 44px;
+          padding: 0;
+          border-radius: 50%;
+          border: 1px solid rgba(26,22,18,0.08);
+          background: #fff;
+          color: #ff6000;
+          align-items: center;
+          justify-content: center;
+          cursor: pointer;
+          box-shadow: 0 6px 18px rgba(26,22,18,0.18);
+          z-index: 90;
+          animation: cvScrollBob 1.6s ease-in-out infinite;
+        }
+        @keyframes cvScrollBob {
+          0%, 100% { transform: translateY(0); }
+          50% { transform: translateY(6px); }
+        }
+
         /* ───── Responsive ───── */
         @media (max-width: 960px) {
           .cv-hero {
@@ -3070,6 +3125,7 @@ export default function CvLanding() {
           .cv-test-card { flex-basis: 290px; padding: 26px 22px 20px; }
           .cv-jobs-grid { padding: 0 20px; }
           .cv-sticky { display: block; }
+          .cv-scrolldown { display: flex; }
           .cv-btn-hero { width: 100%; }
           .cv-trust-line { gap: 18px; }
           .cv-trust-divider { display: none; }
