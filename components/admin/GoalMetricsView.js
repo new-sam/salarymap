@@ -28,6 +28,10 @@ export default function GoalMetricsView({ token, lang }) {
   const [rpError, setRpError] = useState('')
   const [rpLoading, setRpLoading] = useState(false)
 
+  const [cmData, setCmData] = useState(null) // 콜드메일 공개 전환
+  const [cmError, setCmError] = useState('')
+  const [cmLoading, setCmLoading] = useState(false)
+
   const load = useCallback(async (p) => {
     if (!token || !p) return
     setLoading(true)
@@ -96,6 +100,21 @@ export default function GoalMetricsView({ token, lang }) {
     }
   }, [token, ko])
 
+  const loadCm = useCallback(async (p) => {
+    if (!token || !p) return
+    setCmLoading(true)
+    setCmError('')
+    try {
+      const res = await fetch('/api/admin/campaign-resume-public-metrics', { headers: { Authorization: `Bearer ${token}`, 'x-goal-pass': p } })
+      if (!res.ok) throw new Error(`(${res.status})`)
+      setCmData(await res.json())
+    } catch (e) {
+      setCmError((ko ? '불러오기 실패 ' : 'Load failed ') + e.message)
+    } finally {
+      setCmLoading(false)
+    }
+  }, [token, ko])
+
   useEffect(() => {
     let saved = ''
     try { saved = sessionStorage.getItem(PASS_KEY) || '' } catch {}
@@ -116,6 +135,11 @@ export default function GoalMetricsView({ token, lang }) {
   useEffect(() => {
     if (view === 'resumePublic' && unlocked && pass && !rpData && !rpLoading) loadRp(pass)
   }, [view, unlocked, pass, rpData, rpLoading, loadRp])
+
+  // 콜드메일 공개 전환 탭 최초 진입 시 lazy 로드
+  useEffect(() => {
+    if (view === 'coldmail' && unlocked && pass && !cmData && !cmLoading) loadCm(pass)
+  }, [view, unlocked, pass, cmData, cmLoading, loadCm])
 
   function submit(e) {
     e.preventDefault()
@@ -160,11 +184,13 @@ export default function GoalMetricsView({ token, lang }) {
         {tabBtn('ad', ko ? '광고 성과' : 'Ad performance')}
         {tabBtn('exp', ko ? '실험' : 'Experiments')}
         {tabBtn('resumePublic', ko ? '이력서 공개 실험' : 'Resume-public exp')}
+        {tabBtn('coldmail', ko ? '콜드메일 공개' : 'Cold-email public')}
       </div>
       {view === 'kpi' && <KpiTab data={data} ko={ko} />}
       {view === 'ad' && <AdTab data={adData} loading={adLoading} error={adError} ko={ko} />}
       {view === 'exp' && <ExperimentTab data={expData} loading={expLoading} error={expError} ko={ko} />}
       {view === 'resumePublic' && <ResumePublicTab data={rpData} loading={rpLoading} error={rpError} ko={ko} />}
+      {view === 'coldmail' && <ColdmailPublicTab data={cmData} loading={cmLoading} error={cmError} ko={ko} />}
     </div>
   )
 }
@@ -637,6 +663,97 @@ function ResumePublicTab({ data, loading, error, ko }) {
           </tbody>
         </table>
       </div>
+    </div>
+  )
+}
+
+// ============ 콜드메일 공개 전환 탭 ============
+// 비공개 이력서 보유자에게 "공개하면 축하금 이벤트 참여 가능" 콜드메일 → 원클릭 링크로 공개 전환.
+// 퍼널: 발송 → 클릭 → 전환. 발송/전환 모두 events(coldmail_public_*)로 집계.
+function ColdmailPublicTab({ data, loading, error, ko }) {
+  if (loading || !data) return <div style={{ textAlign: 'center', padding: 40, color: '#666' }}>{ko ? '불러오는 중…' : 'Loading…'}</div>
+  if (error) return <div style={{ textAlign: 'center', padding: 40, color: '#c00' }}>{error}</div>
+  if (data.error) return <div style={{ textAlign: 'center', padding: 40, color: '#c00' }}>{data.error}</div>
+
+  const pct = (v) => `${Math.round(v * 100)}%`
+  const th = { textAlign: 'left', fontSize: 11, fontWeight: 700, color: '#9CA3AF', padding: '6px 10px', borderBottom: '1px solid #EEF0F2', textTransform: 'uppercase', letterSpacing: '.04em' }
+  const td = { fontSize: 13, color: '#1F2937', padding: '7px 10px', borderBottom: '1px solid #F5F6F7' }
+  const num = { ...td, textAlign: 'right', fontVariantNumeric: 'tabular-nums', fontWeight: 600 }
+
+  const Card = ({ label, value, sub, accent }) => (
+    <div style={{ background: '#fff', border: '1px solid #E5E8EB', borderRadius: 16, padding: '18px 20px', flex: '1 1 200px', minWidth: 180 }}>
+      <div style={{ fontSize: 12.5, fontWeight: 700, color: '#6B7280', marginBottom: 10 }}>{label}</div>
+      <div style={{ fontSize: 30, fontWeight: 800, color: accent || '#0F172A', lineHeight: 1, marginBottom: 6 }}>{value}</div>
+      {sub && <div style={{ fontSize: 12, color: '#9CA3AF' }}>{sub}</div>}
+    </div>
+  )
+
+  const notSent = data.sent === 0
+
+  return (
+    <div>
+      <div style={{ fontSize: 15, fontWeight: 800, color: '#0F172A', marginBottom: 6 }}>
+        {ko ? '콜드메일 공개 전환 — 비공개 이력서 → 공개 유도' : 'Cold-email public conversion'}
+      </div>
+      <div style={{ fontSize: 12, color: '#9CA3AF', marginBottom: 16 }}>
+        {ko
+          ? `퍼널: 발송 → 클릭 → 공개 전환 · 기준: ${new Date(data.generatedAt).toLocaleString('ko-KR')}`
+          : `Funnel: sent → click → public · as of ${new Date(data.generatedAt).toLocaleString('en-US')}`}
+      </div>
+
+      {notSent ? (
+        <div style={{ background: '#FFF9E6', border: '1px solid #FCE7A2', borderRadius: 14, padding: '18px 20px', marginBottom: 20 }}>
+          <div style={{ fontSize: 13.5, fontWeight: 700, color: '#92700E', marginBottom: 6 }}>
+            {ko ? '아직 발송 기록이 없습니다.' : 'No sends recorded yet.'}
+          </div>
+          <div style={{ fontSize: 12.5, color: '#A8842A', lineHeight: 1.5 }}>
+            {ko
+              ? `발송 대상(현재 비공개 이력서 보유자): ${data.targetRemaining}명. scripts/outreach/resume-public-coldmail.mjs --commit 로 발송 코호트를 기록하면 여기에 rate가 집계됩니다.`
+              : `Target pool (currently private): ${data.targetRemaining}. Run the coldmail script with --commit to record the send cohort.`}
+          </div>
+        </div>
+      ) : (
+        <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginBottom: 14 }}>
+          <Card label={ko ? '발송' : 'Sent'} value={data.sent}
+            sub={data.firstSentDay ? `${data.firstSentDay}${data.lastSentDay && data.lastSentDay !== data.firstSentDay ? `~${data.lastSentDay}` : ''}` : ''} />
+          <Card label={ko ? '클릭' : 'Clicked'} value={data.clicked}
+            sub={`CTR ${pct(data.clickRate)}`} accent="#2563EB" />
+          <Card label={ko ? '공개 전환' : 'Converted'} value={data.converted}
+            sub={`${ko ? '전환율' : 'rate'} ${pct(data.convertRate)}`} accent="#0D9488" />
+          <Card label={ko ? '클릭→전환' : 'Click→convert'} value={data.clicked ? pct(data.clickToConvert) : '—'}
+            sub={ko ? '클릭한 사람 중 공개' : 'of clickers'} accent="#059669" />
+        </div>
+      )}
+
+      <div style={{ fontSize: 11.5, color: '#B0B0B8', marginBottom: 24 }}>
+        {ko
+          ? `※ 현재 비공개 이력서 보유자(발송 가능 풀): ${data.targetRemaining}명. 전환율 = 공개 전환 / 발송.`
+          : `* Current private-resume pool: ${data.targetRemaining}. Rate = converted / sent.`}
+      </div>
+
+      {data.daily.length > 0 && (
+        <>
+          <div style={{ fontSize: 13, fontWeight: 700, color: '#374151', margin: '0 0 8px' }}>{ko ? '일별 (클릭·전환)' : 'Daily (clicks·converts)'}</div>
+          <div style={{ overflowX: 'auto', border: '1px solid #EEF0F2', borderRadius: 12 }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 360 }}>
+              <thead><tr>
+                <th style={th}>{ko ? '날짜' : 'Date'}</th>
+                <th style={{ ...th, textAlign: 'right' }}>{ko ? '클릭' : 'Clicks'}</th>
+                <th style={{ ...th, textAlign: 'right' }}>{ko ? '공개 전환' : 'Converts'}</th>
+              </tr></thead>
+              <tbody>
+                {[...data.daily].reverse().map((d) => (
+                  <tr key={d.day}>
+                    <td style={td}>{d.day.slice(5)}</td>
+                    <td style={num}>{d.clicks || ''}</td>
+                    <td style={{ ...num, color: d.converts ? '#0D9488' : undefined, fontWeight: 800 }}>{d.converts || ''}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </>
+      )}
     </div>
   )
 }

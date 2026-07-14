@@ -1,12 +1,10 @@
 import { createClient } from '@supabase/supabase-js'
+import { sendResumeToVtm as sendToVtm, deleteResumeFromVtm as deleteFromVtm } from '../../../lib/vtm'
 
 const supabase = createClient(
   (process.env.NEXT_PUBLIC_SUPABASE_URL || '').trim(),
   (process.env.SUPABASE_SERVICE_ROLE_KEY || '').trim(),
 )
-
-const VTM_WEBHOOK_URL = 'https://vtm-neon.vercel.app/api/webhook/portfolio'
-const VTM_API_KEY = process.env.VTM_WEBHOOK_API_KEY || ''
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'method not allowed' })
@@ -95,53 +93,5 @@ export default async function handler(req, res) {
   } catch (err) {
     console.error('Share resume error:', err)
     return res.status(500).json({ error: err.message || 'Failed to share resume' })
-  }
-}
-
-async function sendToVtm(userId, resumeUrl, fullName) {
-  const pdfRes = await fetch(resumeUrl)
-  if (!pdfRes.ok) throw new Error('Failed to download resume PDF')
-
-  const pdfBuffer = Buffer.from(await pdfRes.arrayBuffer())
-  const base64 = pdfBuffer.toString('base64')
-
-  const webhookRes = await fetch(VTM_WEBHOOK_URL, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-api-key': VTM_API_KEY,
-    },
-    body: JSON.stringify({
-      pdf_base64: base64,
-      name: fullName || '',
-      source: 'salarymap',
-      external_id: userId,
-    }),
-  })
-
-  if (!webhookRes.ok) {
-    const errText = await webhookRes.text().catch(() => 'unknown error')
-    throw new Error(`VTM webhook failed (${webhookRes.status}): ${errText}`)
-  }
-
-  return webhookRes.json()
-}
-
-async function deleteFromVtm(userId) {
-  const webhookRes = await fetch(VTM_WEBHOOK_URL, {
-    method: 'DELETE',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-api-key': VTM_API_KEY,
-    },
-    body: JSON.stringify({
-      source: 'salarymap',
-      external_id: userId,
-    }),
-  })
-
-  if (!webhookRes.ok) {
-    const errText = await webhookRes.text().catch(() => 'unknown error')
-    console.error(`VTM delete failed (${webhookRes.status}): ${errText}`)
   }
 }
