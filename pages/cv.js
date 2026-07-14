@@ -2539,10 +2539,8 @@ export default function CvLanding() {
           border-radius: 14px;
           transition: border-color .15s ease, background .15s ease, opacity .15s ease;
         }
-        .cv-stepblock.done {
-          background: rgba(34,197,94,0.04);
-          border-color: rgba(34,197,94,0.22);
-        }
+        /* 파일 첨부 시 num 배지만 체크(초록)로. 블록 전체를 초록 틴트하면 아직 안 고른
+           직무선택까지 완료된 것처럼 보여 어색해서 배경/테두리는 그대로 둔다. */
         .cv-stepblock.inactive {
           opacity: 0.65;
         }
