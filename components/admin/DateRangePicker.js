@@ -23,9 +23,8 @@ export default function DateRangePicker({ value, onChange }) {
   const [tab, setTab] = useState('preset')
   const ref = useRef(null)
   const today = new Date()
-  const yest = addDays(today, -1)
 
-  const anchor = value?.to ? parse(value.to) : yest
+  const anchor = value?.to ? parse(value.to) : today
   const [viewY, setViewY] = useState(anchor.getFullYear())
   const [viewM, setViewM] = useState(anchor.getMonth())
   const [draft, setDraft] = useState({ from: value?.from || '', to: value?.to || '' })
@@ -41,15 +40,15 @@ export default function DateRangePicker({ value, onChange }) {
   useEffect(() => {
     if (!open) return
     setDraft({ from: value?.from || '', to: value?.to || '' })
-    const a = value?.to ? parse(value.to) : yest
+    const a = value?.to ? parse(value.to) : today
     setViewY(a.getFullYear()); setViewM(a.getMonth())
     setTab('preset')
   }, [open]) // eslint-disable-line
 
   const apply = (from, to) => { onChange(from, to); setOpen(false) }
 
-  const toS = fmt(yest)
-  const lastN = (n) => [fmt(addDays(yest, -(n - 1))), toS]
+  const toS = fmt(today)
+  const lastN = (n) => [fmt(addDays(today, -(n - 1))), toS]
   const [lwS, lwE] = weekRange(addDays(today, -7))
   const presets = [
     { label: '지난 7일', range: lastN(7) },

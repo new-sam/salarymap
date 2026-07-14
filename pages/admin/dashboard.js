@@ -80,7 +80,11 @@ export default function AdminDashboard() {
     const d = new Date(Date.now() - 86400000)
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
   })()
-  const [dateRange, setDateRange] = useState({ from: '2026-04-20', to: yesterday })
+  const todayStr = (() => {
+    const d = new Date()
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+  })()
+  const [dateRange, setDateRange] = useState({ from: '2026-04-20', to: todayStr })
 
   // SWR: 캐시로 탭 전환/페이지 재방문 시 즉시 표시 + 백그라운드 갱신. 키에 날짜/언어 포함.
   // 무거운 데이터는 실제로 쓰는 탭에서만 로드 — data/ga4 는 추이·퍼널, realtime/experiments 는
