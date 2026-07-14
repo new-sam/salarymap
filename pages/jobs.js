@@ -29,7 +29,8 @@ function matchesJobFilters(job, f) {
   if (f.roles.length > 0) {
     const hit = f.roles.some(rf => {
       // 광고 랜딩용 직군 묶음 — role 컬럼 우선 + 비IT는 제목분류(제조/사무 구분)
-      if (rf.startsWith('grp:')) return jobInCategoryGroup(job, rf.slice(4))
+      // grp:ktc 는 직군이 아니라 source='ktc'(LikeLion KTC 시드) 전용 광고 랜딩.
+      if (rf.startsWith('grp:')) return rf.slice(4) === 'ktc' ? job.source === 'ktc' : jobInCategoryGroup(job, rf.slice(4))
       if (rf.startsWith('cat:')) return roleGroupKey(job.role) === rf.slice(4)
       return job.role === rf
     })
@@ -50,6 +51,29 @@ function matchesJobFilters(job, f) {
     if (jobMax < eMin || jobMin > eMax) return false
   }
   return true
+}
+
+// KTC 광고 랜딩(/jobs?role=grp:ktc)에서 최상단에 지정 순서대로 고정할 공고 ID.
+const KTC_PRIORITY_IDS = [
+  '5877ee3e-73f3-429c-84b9-6eca612a2fe1', // Lumicraft — Full-stack Developer
+  '7a42601a-985a-45c3-9ab8-e1a48f1ea167', // Wellpod — TikTok Ads Marketing Manager
+  'a7ce2e41-147b-4f36-bbef-bb3e7803485f', // Wellpod — TikTok Shop & Shopify Manager
+  '29e88671-199a-405a-a8dd-a17b1c4bfcee', // Simco — Factory Supervisor (Quản đốc Nhà máy)
+  'b52e7cb1-5c58-40d1-afa4-84f2b4cc4fd1', // Firts Marketing Company — ACCOUNT EXECUTIVE
+  '7e3fae04-faa4-4a84-b2b0-afffebf08ca7', // Designbook — Front-end Publisher
+  '3079bd21-a94a-4ee2-bbb6-315f88745ed2', // Designbook — PHP Backend Developer
+  'c2111d3b-3b71-40ec-88be-7fb5a004a989', // SoundGraph — Mobile App QA & Technical Coordinator
+  'e5fec906-df3a-4b14-aa3a-269eaf1382c5', // Camon Social — Pickleball Marketing Manager (Mid/Senior)
+  '66bf6ff0-cc45-4735-b297-f843e556b40e', // Camon Social — Community & Event Marketing Executive
+  '6a56d047-dab8-4a68-a631-31c5ba21136b', // Camon Social — Marketing Specialist (Mid/Senior)
+]
+
+// 지정 ID 목록을 순서대로 리스트 최상단으로 끌어올린다 (나머지는 기존 순서 유지).
+function pinPriority(list, ids) {
+  const rank = new Map(ids.map((id, i) => [id, i]))
+  const pinned = list.filter(j => rank.has(j.id)).sort((a, b) => rank.get(a.id) - rank.get(b.id))
+  const rest = list.filter(j => !rank.has(j.id))
+  return [...pinned, ...rest]
 }
 
 // 스토리지 URL에서 원본 이력서 파일명 복원 (업로드 시 `${timestamp}_${safeName}`로 저장됨)
@@ -567,7 +591,10 @@ export default function JobsPage() {
     return [...featuredJobs, ...fillJobs].slice(0, 4)
   })()
   const hotIds = new Set(hotJobs.map(j => j.id))
-  const gridJobs = hotJobs.length ? filteredJobs.filter(j => !hotIds.has(j.id)) : filteredJobs
+  const gridJobs = (() => {
+    const base = hotJobs.length ? filteredJobs.filter(j => !hotIds.has(j.id)) : filteredJobs
+    return roleFilters.includes('grp:ktc') ? pinPriority(base, KTC_PRIORITY_IDS) : base
+  })()
 
   const resetFilters = () => { setRoleFilters([]); setTypeFilters([]); setExpMin(''); setExpMax(''); setTechFilters([]); setSearchQuery('') }
 
