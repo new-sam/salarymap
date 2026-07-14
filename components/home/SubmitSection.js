@@ -3,6 +3,7 @@ import { useT } from '../../lib/i18n';
 import Icon from '../Icon';
 import ResultSection from '../ResultSection';
 import supabaseClient from '../../lib/supabaseClient';
+import { track } from '../../lib/track';
 
 function SubmitSection({
   wizardStep, setWizardStep,
@@ -45,6 +46,8 @@ function SubmitSection({
     if (typeof gtag === 'function') gtag('event', 'submit_salary', { event_category: 'engagement', event_label: wRole });
     // Meta Pixel event
     if (typeof fbq === 'function') fbq('track', 'Lead', { content_name: 'salary_submit', content_category: wRole });
+    // 자체 퍼널 이벤트 — step 4 완료 = 제출 (client_id 실려서 유니크 퍼널 가능)
+    track('wizard_step_4', { meta: { role: wRole }, page: '/' });
   };
 
   const handleRatingSubmit = async () => {
@@ -289,7 +292,7 @@ function SubmitSection({
               <BlurredTeaser />
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
                 {ROLES.map(r => (
-                  <button key={r} onClick={() => { setWRole(r); if(typeof gtag==='function') gtag('event','wizard_step_1',{role:r}); setTimeout(() => setWizardStep(2), 300); }}
+                  <button key={r} onClick={() => { setWRole(r); if(typeof gtag==='function') gtag('event','wizard_step_1',{role:r}); track('wizard_step_1', { meta: { role: r }, page: '/' }); setTimeout(() => setWizardStep(2), 300); }}
                     style={{ ...optBase, ...(wRole === r ? optSelected : {}) }}>
                     {r}
                   </button>
@@ -303,7 +306,7 @@ function SubmitSection({
             <div>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '8px' }}>
                 {EXPS.map(e => (
-                  <button key={e} onClick={() => { setWExp(e); if(typeof gtag==='function') gtag('event','wizard_step_2',{experience:e}); setTimeout(() => setWizardStep(3), 300); }}
+                  <button key={e} onClick={() => { setWExp(e); if(typeof gtag==='function') gtag('event','wizard_step_2',{experience:e}); track('wizard_step_2', { meta: { experience: e }, page: '/' }); setTimeout(() => setWizardStep(3), 300); }}
                     style={{ ...optBase, textAlign: 'center', ...(wExp === e ? optSelected : {}) }}>
                     {EXP_LABELS[e] || e}
                   </button>
@@ -328,7 +331,7 @@ function SubmitSection({
               <div style={{ textAlign: 'center', fontSize: '11px', color: 'rgba(255,255,255,0.18)', marginBottom: '20px' }}>
                 {salaryTouched ? t('wizard.salaryPrivacy') : t('wizard.salaryHint')}
               </div>
-              <button onClick={() => { if (!salaryTouched) return; if(typeof gtag==='function') gtag('event','wizard_step_3',{salary:wSalary}); setWizardStep(4); }}
+              <button onClick={() => { if (!salaryTouched) return; if(typeof gtag==='function') gtag('event','wizard_step_3',{salary:wSalary}); track('wizard_step_3', { meta: { salary: wSalary }, page: '/' }); setWizardStep(4); }}
                 disabled={!salaryTouched}
                 style={{ ...ctaStyle, ...(salaryTouched ? {} : { opacity: 0.4, cursor: 'not-allowed' }) }}>
                 {t('wizard.almostDone')}

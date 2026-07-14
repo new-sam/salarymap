@@ -188,7 +188,7 @@ export default function GoalMetricsView({ token, lang }) {
       </div>
       {view === 'kpi' && <KpiTab data={data} ko={ko} />}
       {view === 'ad' && <AdTab data={adData} loading={adLoading} error={adError} ko={ko} />}
-      {view === 'exp' && <ExperimentTab data={expData} loading={expLoading} error={expError} ko={ko} />}
+      {view === 'exp' && <ExperimentTab data={expData} loading={expLoading} error={expError} ko={ko} token={token} pass={pass} />}
       {view === 'resumePublic' && <ResumePublicTab data={rpData} loading={rpLoading} error={rpError} ko={ko} />}
       {view === 'coldmail' && <ColdmailPublicTab data={cmData} loading={cmLoading} error={cmError} ko={ko} />}
     </div>
@@ -474,7 +474,82 @@ function AdTab({ data, loading, error, ko }) {
 // ============ 실험 탭 — 가입 게이트 (2026-07-13~) ============
 // 회사 데이터 언락 조건을 "제출" → "제출+로그인"으로 바꾼 실험의 일별 추적.
 // 핵심: 게이트 클릭→로그인 전환율 / 가드: 제출 수(광고 성과 훼손 여부).
-function ExperimentTab({ data, loading, error, ko }) {
+// 실험 스위치 — app_flags 원클릭 롤백. 끄면 재배포 없이 즉시(최대 60초 캐시) 반영.
+function FlagSwitches({ token, pass, ko }) {
+  const [flags, setFlags] = useState(null)
+  const [busy, setBusy] = useState('')
+  const headers = { Authorization: `Bearer ${token}`, 'x-goal-pass': pass, 'Content-Type': 'application/json' }
+
+  const loadFlags = useCallback(async () => {
+    try {
+      const res = await fetch('/api/admin/flags', { headers })
+      if (res.ok) setFlags(await res.json())
+      else setFlags({ error: `(${res.status})` })
+    } catch { setFlags({ error: 'load failed' }) }
+  }, [token, pass]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => { loadFlags() }, [loadFlags])
+
+  const LABELS = {
+    hero_wizard: ko ? '히어로 직무 그리드 (P3)' : 'Hero role grid (P3)',
+    hard_gate: ko ? '결과 하드 게이트 (P2)' : 'Result hard gate (P2)',
+    one_tap: ko ? 'Google One Tap (P2)' : 'Google One Tap (P2)',
+  }
+
+  const toggle = async (key, next) => {
+    const label = LABELS[key] || key
+    const msg = next
+      ? (ko ? `"${label}" 실험을 다시 켤까요?` : `Turn "${label}" back ON?`)
+      : (ko ? `"${label}" 실험을 끕니다(롤백). 유저에게 최대 60초 내 반영됩니다. 진행할까요?` : `Roll back "${label}"? Takes effect within 60s.`)
+    if (!window.confirm(msg)) return
+    setBusy(key)
+    try {
+      const res = await fetch('/api/admin/flags', { method: 'POST', headers, body: JSON.stringify({ key, enabled: next }) })
+      if (!res.ok) {
+        const j = await res.json().catch(() => ({}))
+        alert((ko ? '실패: ' : 'Failed: ') + (j.error || res.status))
+      }
+      await loadFlags()
+    } finally { setBusy('') }
+  }
+
+  if (!flags) return null
+  if (flags.error) {
+    return (
+      <div style={{ background: '#FFF7ED', border: '1px solid #FED7AA', borderRadius: 12, padding: '10px 14px', marginBottom: 16, fontSize: 12, color: '#9A3412' }}>
+        {ko ? `실험 스위치 로드 실패 ${flags.error} — app_flags 테이블(DDL) 적용 여부 확인` : `Flag switches unavailable ${flags.error} — check app_flags DDL`}
+      </div>
+    )
+  }
+
+  return (
+    <div style={{ background: '#fff', border: '1px solid #E5E8EB', borderRadius: 16, padding: '14px 20px', marginBottom: 20 }}>
+      <div style={{ fontSize: 13, fontWeight: 800, color: '#0F172A', marginBottom: 8 }}>
+        {ko ? '실험 스위치 (원클릭 롤백)' : 'Experiment switches (one-click rollback)'}
+      </div>
+      <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+        {Object.keys(LABELS).map((key) => {
+          const on = flags[key]?.enabled !== false
+          return (
+            <button key={key} disabled={busy === key} onClick={() => toggle(key, !on)}
+              style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '9px 14px', borderRadius: 10, cursor: 'pointer',
+                border: `1.5px solid ${on ? '#A7F3D0' : '#FECACA'}`, background: on ? '#ECFDF5' : '#FEF2F2',
+                fontSize: 12.5, fontWeight: 700, color: on ? '#065F46' : '#991B1B', opacity: busy === key ? 0.5 : 1 }}>
+              <span style={{ width: 8, height: 8, borderRadius: '50%', background: on ? '#059669' : '#DC2626' }} />
+              {LABELS[key]}
+              <span style={{ fontSize: 10.5, fontWeight: 800, color: on ? '#059669' : '#DC2626' }}>{on ? 'ON' : 'OFF'}</span>
+            </button>
+          )
+        })}
+      </div>
+      <div style={{ fontSize: 11, color: '#9CA3AF', marginTop: 8 }}>
+        {ko ? '버튼을 누르면 확인 후 즉시 전환 — 재배포 불필요, 60초 캐시 내 전 유저 반영' : 'Click to toggle after confirm — no redeploy, applies to all users within 60s cache'}
+      </div>
+    </div>
+  )
+}
+
+function ExperimentTab({ data, loading, error, ko, token, pass }) {
   if (loading || !data) return <div style={{ textAlign: 'center', padding: 40, color: '#666' }}>{ko ? '불러오는 중…' : 'Loading…'}</div>
   if (error) return <div style={{ textAlign: 'center', padding: 40, color: '#c00' }}>{error}</div>
   if (data.error) return <div style={{ textAlign: 'center', padding: 40, color: '#c00' }}>{data.error}</div>
@@ -484,6 +559,12 @@ function ExperimentTab({ data, loading, error, ko }) {
   const b = data.before
   const a = data.after
   const gateCvr = a.gateClicks ? a.gateLogins / a.gateClicks : 0
+
+  // 롤백 판정 색 — ok(초록)/warn(주황)/rollback(빨강)/pending(회색)
+  const RB_COLORS = { ok: '#059669', warn: '#D97706', rollback: '#DC2626', pending: '#9CA3AF' }
+  const RB_LABELS = ko
+    ? { ok: '정상', warn: '주의', rollback: '롤백 기준 도달', pending: '수집중' }
+    : { ok: 'OK', warn: 'Warning', rollback: 'ROLLBACK', pending: 'Collecting' }
 
   const Card = ({ label, value, sub, accent }) => (
     <div style={{ background: '#fff', border: '1px solid #E5E8EB', borderRadius: 16, padding: '18px 20px', flex: '1 1 220px', minWidth: 200 }}>
@@ -513,6 +594,42 @@ function ExperimentTab({ data, loading, error, ko }) {
           : `vs ${b.days}-day baseline · as of ${new Date(data.generatedAt).toLocaleString('en-US')}`}
       </div>
 
+      <FlagSwitches token={token} pass={pass} ko={ko} />
+
+      {/* 롤백 기준 — 실험 전 7일 평균 대비 최근 3 완결일 평균. 기준 도달 시 즉시 롤백 */}
+      {data.rollback && (
+        <div style={{ background: '#fff', border: '1px solid #E5E8EB', borderRadius: 16, padding: '16px 20px', marginBottom: 20 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
+            <span style={{ fontSize: 13, fontWeight: 800, color: '#0F172A' }}>{ko ? '롤백 기준' : 'Rollback criteria'}</span>
+            <span style={{ fontSize: 11, color: '#9CA3AF' }}>
+              {ko
+                ? `실험 전 ${data.rollback.baselineDays}일 평균 대비 최근 ${data.rollback.sampleDays || 0}완결일 평균 (오늘 제외)`
+                : `vs pre-experiment ${data.rollback.baselineDays}d avg, last ${data.rollback.sampleDays || 0} complete days (excl. today)`}
+            </span>
+          </div>
+          {data.rollback.rules.map((r) => {
+            const color = RB_COLORS[r.status]
+            return (
+              <div key={r.key} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '8px 0', borderTop: '1px solid #F5F6F7', flexWrap: 'wrap' }}>
+                <span style={{ fontSize: 13, fontWeight: 700, color: '#374151', minWidth: 72 }}>{r.labelKo}</span>
+                <span style={{ fontSize: 12, color: '#6B7280', flex: '1 1 260px' }}>
+                  {ko
+                    ? `베이스라인 ${n1(r.baseline)} 대비 ${Math.round(r.rollbackBelow * 100)}% 미만이면 롤백 · ${Math.round(r.warnBelow * 100)}% 미만이면 주의`
+                    : `rollback below ${Math.round(r.rollbackBelow * 100)}% of baseline ${n1(r.baseline)} · warn below ${Math.round(r.warnBelow * 100)}%`}
+                </span>
+                <span style={{ fontSize: 18, fontWeight: 800, color, fontVariantNumeric: 'tabular-nums' }}>
+                  {r.current == null ? '—' : n1(r.current)}
+                  {r.ratio != null && <span style={{ fontSize: 12, fontWeight: 700, marginLeft: 6 }}>({pct(r.ratio)})</span>}
+                </span>
+                <span style={{ fontSize: 11, fontWeight: 800, color: '#fff', background: color, padding: '3px 10px', borderRadius: 100 }}>
+                  {RB_LABELS[r.status]}
+                </span>
+              </div>
+            )
+          })}
+        </div>
+      )}
+
       <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginBottom: 28 }}>
         <Card label={ko ? '가입 / 일 (실험 후)' : 'Signups / day (after)'}
           value={n1(a.signupsPerDay)}
@@ -530,11 +647,19 @@ function ExperimentTab({ data, loading, error, ko }) {
           value={`${a.gateLogins} / ${a.gateClicks}`}
           sub={`${ko ? '전환율' : 'CVR'} ${a.gateClicks ? pct(gateCvr) : '—'}`}
           accent="#7C3AED" />
+        <Card label={ko ? '결과게이트 노출 (P2 하드게이트)' : 'Result-gate views (P2 hard gate)'}
+          value={(a.resultGateViews || 0).toLocaleString()}
+          sub={ko ? `노출→클릭 ${a.resultGateViews ? pct(a.gateClicks / a.resultGateViews) : '—'} · ${data.phase2Start}~` : `view→click ${a.resultGateViews ? pct(a.gateClicks / a.resultGateViews) : '—'} · since ${data.phase2Start}`}
+          accent="#7C3AED" />
+        <Card label={ko ? 'One Tap 가입 (P2)' : 'One Tap signups (P2)'}
+          value={(a.oneTapSignups || 0).toLocaleString()}
+          sub={ko ? '게이트 안 거친 순증 가입' : 'incremental, bypasses funnel'}
+          accent="#059669" />
       </div>
 
       <div style={{ fontSize: 13, fontWeight: 700, color: '#374151', margin: '0 0 8px' }}>{ko ? '일별 추이' : 'Daily'}</div>
       <div style={{ overflowX: 'auto', border: '1px solid #EEF0F2', borderRadius: 12 }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 560 }}>
+        <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 720 }}>
           <thead><tr>
             <th style={th}>{ko ? '날짜' : 'Date'}</th>
             <th style={{ ...th, textAlign: 'right' }}>{ko ? '가입' : 'Signups'}</th>
@@ -543,14 +668,17 @@ function ExperimentTab({ data, loading, error, ko }) {
             <th style={{ ...th, textAlign: 'right' }}>{ko ? '게이트클릭' : 'Gate clicks'}</th>
             <th style={{ ...th, textAlign: 'right' }}>{ko ? '게이트로그인' : 'Gate logins'}</th>
             <th style={{ ...th, textAlign: 'right' }}>CVR</th>
+            <th style={{ ...th, textAlign: 'right' }}>{ko ? '결과게이트뷰' : 'Result views'}</th>
+            <th style={{ ...th, textAlign: 'right' }}>{ko ? '원탭가입' : 'One Tap'}</th>
           </tr></thead>
           <tbody>
             {[...data.daily].reverse().map((d) => {
               const inExp = d.day >= data.experimentStart
+              const inP2 = data.phase2Start && d.day >= data.phase2Start
               return (
-                <tr key={d.day} style={inExp ? { background: '#FBF9FF' } : undefined}>
+                <tr key={d.day} style={inExp ? { background: inP2 ? '#F5F0FF' : '#FBF9FF' } : undefined}>
                   <td style={{ ...td, fontWeight: inExp ? 800 : 400 }}>
-                    {d.day.slice(5)}{inExp && <span style={{ fontSize: 10, color: '#7C3AED', marginLeft: 6 }}>EXP</span>}
+                    {d.day.slice(5)}{inExp && <span style={{ fontSize: 10, color: '#7C3AED', marginLeft: 6 }}>{inP2 ? 'P2' : 'EXP'}</span>}
                   </td>
                   <td style={{ ...num, fontWeight: 800 }}>{d.signups}</td>
                   <td style={num}>{d.submissions}</td>
@@ -558,6 +686,8 @@ function ExperimentTab({ data, loading, error, ko }) {
                   <td style={num}>{d.gateClicks || ''}</td>
                   <td style={{ ...num, color: d.gateLogins ? '#059669' : undefined }}>{d.gateLogins || ''}</td>
                   <td style={num}>{d.gateClicks ? pct(d.gateLogins / d.gateClicks) : ''}</td>
+                  <td style={num}>{d.resultGateViews || ''}</td>
+                  <td style={{ ...num, color: d.oneTapSignups ? '#059669' : undefined }}>{d.oneTapSignups || ''}</td>
                 </tr>
               )
             })}

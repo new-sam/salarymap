@@ -36,6 +36,12 @@ body { background:var(--bg); color:var(--white); font-family:'Barlow',sans-serif
 .hero-sub { font-size:16px; color:var(--mid); line-height:1.8; font-weight:300; max-width:420px; margin-bottom:44px; }
 .hero-btns { display:flex; gap:12px; }
 .btn-p { font-family:'Barlow',sans-serif; font-size:14px; font-weight:700; background:var(--orange); color:#fff; border:none; padding:14px 28px; border-radius:2px; cursor:pointer; }
+/* 히어로 위저드 실험 (P3): CTA 자리를 직무 그리드로 — JS(flag/상태)가 display를 제어 */
+.hero-role-grid { display:none; }
+.hero-role-prompt { font-size:13px; font-weight:700; color:rgba(255,255,255,.6); margin-bottom:10px; letter-spacing:.02em; }
+.hero-role-btns { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:8px; max-width:560px; }
+.hero-role-btn { font-family:'Barlow',sans-serif; font-size:13px; font-weight:700; padding:12px 8px; border-radius:10px; color:rgba(255,255,255,.78); background:rgba(255,255,255,.07); border:1px solid rgba(255,255,255,.16); cursor:pointer; transition:all .15s; backdrop-filter:blur(4px); }
+.hero-role-btn:hover { border-color:var(--orange); color:#fff; background:rgba(255,68,0,.16); }
 .btn-g { font-size:14px; color:var(--mid); background:transparent; border:1px solid var(--line); padding:13px 24px; border-radius:2px; cursor:pointer; font-family:'Barlow',sans-serif; transition:all .15s; }
 .btn-g:hover { border-color:rgba(255,255,255,.22); color:var(--white); }
 .hero-live-bar {
@@ -611,6 +617,8 @@ body { background:var(--bg); color:var(--white); font-family:'Barlow',sans-serif
   .hero-sub { font-size:13px; margin-bottom:28px; }
   .hero-btns { flex-direction:column; gap:10px; }
   .btn-p, .btn-g { width:100%; text-align:center; padding:13px 20px; }
+  .hero-role-btns { grid-template-columns:repeat(2,minmax(0,1fr)); max-width:100%; }
+  .hero-role-btn { padding:12px 6px; font-size:13px; }
   .car-dots, .car-arrows { display:none; }
 
   /* TICKER */

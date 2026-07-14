@@ -1,8 +1,9 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { useRouter } from 'next/router'
 import { track } from '../lib/track'
 import { useT } from '../lib/i18n'
 import { formatSalaryCard } from '../utils/salary'
+import { useFlags } from '../lib/flags'
 
 // submission role (vd 'Data · AI') → job role (vd 'Data'). Phần tử [0] là khớp chính xác,
 // các phần tử sau là role tương tự (điểm thấp hơn).
@@ -88,6 +89,11 @@ export default function ResultSection({ salary, role, experience, company, isLog
   const [result, setResult] = useState(null)
   const [jobData, setJobData] = useState(null)
   const router = useRouter()
+  // 하드 게이트 (2026-07-14~): 로그인 전엔 결과 전체 블러 + 로그인 CTA.
+  // hard_gate 플래그로 원클릭 롤백 — 기본 잠금이라 플래그 로드 전 결과가 새지 않음.
+  const { flags } = useFlags()
+  const gateLocked = !isLoggedIn && flags.hard_gate
+  const gateViewFired = useRef(false)
 
   useEffect(() => {
     async function fetchResult() {
@@ -115,6 +121,19 @@ export default function ResultSection({ salary, role, experience, company, isLog
       document.getElementById('submit')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
     }
   }, [result, anchor])
+
+  // 게이트 노출 계측 — 결과가 준비됐는데 잠겨 있으면 세션당 1회 발화 (노출→클릭→로그인 퍼널의 분모).
+  // sessionStorage 가드: 리마운트/새로고침 중복 발화로 분모가 부풀지 않게.
+  useEffect(() => {
+    if (result && gateLocked && !gateViewFired.current) {
+      gateViewFired.current = true
+      try {
+        if (sessionStorage.getItem('fyi_rgv')) return
+        sessionStorage.setItem('fyi_rgv', '1')
+      } catch {}
+      track('result_gate_view', { page: '/' })
+    }
+  }, [result, gateLocked])
 
   if (!result) return (
     <div style={{ padding:'clamp(20px,4vw,32px)', textAlign:'center' }}>
@@ -168,7 +187,7 @@ export default function ResultSection({ salary, role, experience, company, isLog
   }
 
   return (
-    <div style={{ fontFamily: "'Be Vietnam Pro','Barlow',sans-serif", WebkitFontSmoothing: 'antialiased' }}>
+    <div style={{ fontFamily: "'Be Vietnam Pro','Barlow',sans-serif", WebkitFontSmoothing: 'antialiased', position: 'relative' }}>
       <style>{`
         @keyframes fadeSlideUp { from { opacity:0; transform:translateY(20px); } to { opacity:1; transform:translateY(0); } }
         @keyframes glowPulse { 0%,100% { box-shadow:0 0 12px rgba(255,68,0,0.4); } 50% { box-shadow:0 0 24px rgba(255,68,0,0.6); } }
@@ -176,6 +195,11 @@ export default function ResultSection({ salary, role, experience, company, isLog
         .rs-co-row { display:flex; align-items:center; gap:12px; padding:12px 14px; border:1px solid rgba(255,255,255,0.08); border-radius:12px; background:rgba(255,255,255,0.03); }
         @media(max-width:480px) { .rs-stat-grid { gap:6px !important; } .rs-big-pct { font-size:56px !important; } }
       `}</style>
+
+      {/* 하드 게이트: 로그인 전엔 결과를 블러 티저로만 노출 */}
+      <div aria-hidden={gateLocked} style={gateLocked
+        ? { filter: 'blur(14px)', pointerEvents: 'none', userSelect: 'none', maxHeight: '460px', overflow: 'hidden' }
+        : undefined}>
 
       {/* Hero */}
       <div style={{ background:'linear-gradient(180deg,#161616 0%,#0d0d0d 100%)', padding:'clamp(20px,4vw,32px) clamp(16px,4vw,24px)', borderRadius:'20px', animation:'fadeSlideUp .5s ease' }}>
@@ -382,6 +406,34 @@ export default function ResultSection({ salary, role, experience, company, isLog
             cursor:'pointer', fontFamily:"'Be Vietnam Pro',sans-serif" }}>
             {t('result.jobsEmptyCta')}
           </button>
+        </div>
+      )}
+      </div>
+
+      {/* 하드 게이트 오버레이 — CTA 클릭 계측/귀속은 openLoginGate('result')가 담당 */}
+      {gateLocked && (
+        <div style={{ position:'absolute', inset:0, zIndex:5, display:'flex', flexDirection:'column',
+          alignItems:'center', justifyContent:'center', gap:'10px', padding:'24px', textAlign:'center',
+          background:'linear-gradient(180deg, rgba(8,8,8,0.15) 0%, rgba(8,8,8,0.55) 100%)', borderRadius:'20px' }}>
+          <div style={{ width:44, height:44, borderRadius:'50%', background:'rgba(255,68,0,0.15)',
+            border:'1px solid rgba(255,68,0,0.35)', display:'flex', alignItems:'center', justifyContent:'center' }}>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ff4400" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+              <rect x="3" y="11" width="18" height="11" rx="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" /></svg>
+          </div>
+          <div style={{ fontSize:'22px', fontWeight:900, color:'#fff', letterSpacing:'-.01em' }}>{t('result.gateTitle')}</div>
+          <div style={{ fontSize:'13px', color:'rgba(255,255,255,0.6)', lineHeight:1.5, maxWidth:'320px' }}>{t('result.gateSub')}</div>
+          <button onClick={() => {
+              if (typeof window !== 'undefined') {
+                if (window.openLoginGate) window.openLoginGate('result')
+                else if (window.openAuthModal) window.openAuthModal('gate')
+              }
+            }}
+            style={{ marginTop:'6px', background:'#ff4400', color:'#fff', border:'none', borderRadius:'14px',
+              padding:'15px 28px', fontSize:'15px', fontWeight:800, cursor:'pointer',
+              fontFamily:"'Be Vietnam Pro',sans-serif", boxShadow:'0 8px 32px rgba(255,68,0,0.35)' }}>
+            {t('result.gateCta')}
+          </button>
+          <div style={{ fontSize:'11px', color:'rgba(255,255,255,0.35)' }}>{t('result.gateHint')}</div>
         </div>
       )}
     </div>

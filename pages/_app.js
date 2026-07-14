@@ -7,6 +7,7 @@ import { supabase } from '../lib/supabaseClient';
 import MobileTabBar from '../components/MobileTabBar';
 import AppDownloadModal from '../components/AppDownloadModal';
 import GlobalNav from '../components/GlobalNav';
+import GoogleOneTap from '../components/GoogleOneTap';
 
 /* pathname → GlobalNav activePage key. The set determines whether GlobalNav
    renders at all (company/admin/standalone pages have their own headers). */
@@ -133,6 +134,7 @@ export default function App({ Component, pageProps }) {
       )}
       {!isCompany && !isJobDetail && !isCard && <MobileTabBar />}
       <GlobalLoginModal />
+      <GoogleOneTap />
       {!isAdmin && !isAdLanding && !isCard && !isCompany && <AppDownloadModal />}
       <Toaster
         position="bottom-right"

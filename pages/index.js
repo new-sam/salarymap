@@ -8,8 +8,14 @@ import SubmitSection from '../components/home/SubmitSection';
 import { useT } from '../lib/i18n';
 import Icon from '../components/Icon';
 import { homeCss } from '../constants/homeStyles';
+import { track } from '../lib/track';
+import { useFlags } from '../lib/flags';
 
 const css = homeCss;
+
+// 히어로 위저드 실험 (P3, 2026-07-15~): 첫 화면 CTA를 직무 그리드로 교체해 step1을 폴드 안으로.
+// 롤백: Vercel에 NEXT_PUBLIC_HERO_WIZARD=0 설정 후 재배포 — 코드 revert 불필요.
+const HERO_WIZARD = process.env.NEXT_PUBLIC_HERO_WIZARD !== '0';
 
 
 
@@ -24,7 +30,20 @@ const bodyHTML = `<section class="hero">
     <h1 class="hero-h1">What does<br><span id="typed-company"></span><span class="typed-cursor"></span><br>actually pay?</h1>
     <p class="hero-sub">Xem bạn có bị trả thấp không — dựa trên dữ liệu lương thực từ các chuyên gia tại các công ty IT hàng đầu Việt Nam.</p>
     <div class="hero-btns">
-      <button class="btn-p" onclick="document.getElementById('submit').scrollIntoView({behavior:'smooth'})">Tôi có bị trả thấp? →</button>
+      <button class="btn-p" id="hero-cta-btn" onclick="window.__heroCta&&window.__heroCta();document.getElementById('submit').scrollIntoView({behavior:'smooth'})">Tôi có bị trả thấp? →</button>
+      <div id="hero-role-grid" class="hero-role-grid">
+        <div class="hero-role-prompt" id="hero-role-prompt">Bạn đang làm vị trí nào?</div>
+        <div class="hero-role-btns">
+          <button class="hero-role-btn" onclick="window.heroSelectRole&&window.heroSelectRole('Backend')">Backend</button>
+          <button class="hero-role-btn" onclick="window.heroSelectRole&&window.heroSelectRole('Frontend')">Frontend</button>
+          <button class="hero-role-btn" onclick="window.heroSelectRole&&window.heroSelectRole('Mobile')">Mobile</button>
+          <button class="hero-role-btn" onclick="window.heroSelectRole&&window.heroSelectRole('Data · AI')">Data · AI</button>
+          <button class="hero-role-btn" onclick="window.heroSelectRole&&window.heroSelectRole('DevOps')">DevOps</button>
+          <button class="hero-role-btn" onclick="window.heroSelectRole&&window.heroSelectRole('PM · PO')">PM · PO</button>
+          <button class="hero-role-btn" onclick="window.heroSelectRole&&window.heroSelectRole('Design')">Design</button>
+          <button class="hero-role-btn" onclick="window.heroSelectRole&&window.heroSelectRole('QA')">QA</button>
+        </div>
+      </div>
     </div>
   </div>
   <div class="hero-live-bar">
@@ -573,6 +592,7 @@ export default function Home({ initialCompanies = [] }) {
   const [detailCardIndex, setDetailCardIndex] = useState(0);
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [authCtx, setAuthCtx] = useState(null); // 'gate' = 가입 게이트, 'jobs' = 결과 화면 채용 더보기
+  const { flags, loaded: flagsLoaded } = useFlags(); // 실험 런타임 플래그 (원클릭 롤백)
   const [freshSubmit, setFreshSubmit] = useState(false); // 이번 세션에서 방금 제출 — 결과 앵커 스크롤 트리거
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [user, setUser] = useState(null);
@@ -583,9 +603,10 @@ export default function Home({ initialCompanies = [] }) {
   const needsLogin = isSubmitted && !isLoggedIn;
 
   // 가입 게이트 진입: 클릭 계측 + 로그인 성공 귀속 마커 + 인증 모달
+  // source: 'card'(회사 카드 게이트) | 'result'(결과 하드 게이트) — 마커에 실어 성공 이벤트까지 귀속
   const openLoginGate = (source) => {
     try {
-      sessionStorage.setItem('fyi_gate_pending', '1');
+      sessionStorage.setItem('fyi_gate_pending', source || '1');
       localStorage.removeItem('fyi_login_return'); // 이전 채용 CTA가 남긴 리턴 경로가 게이트 로그인을 가로채지 않게
     } catch {}
     fetch('/api/track', {
@@ -677,7 +698,8 @@ export default function Home({ initialCompanies = [] }) {
   // Expose openAuthModal bridge (used by legacy HTML onclick handlers)
   useEffect(() => {
     window.openAuthModal = (ctx) => { setAuthCtx(ctx || null); setShowAuthModal(true); };
-    return () => { delete window.openAuthModal; };
+    window.openLoginGate = openLoginGate; // ResultSection 하드 게이트 CTA에서 사용
+    return () => { delete window.openAuthModal; delete window.openLoginGate; };
   }, [setShowAuthModal]);
 
   const saveUserProfile = async (u) => {
@@ -792,14 +814,15 @@ export default function Home({ initialCompanies = [] }) {
             }).catch(() => {});
             localStorage.removeItem('fyi_submission_id');
           }
-          // 가입 게이트에서 시작된 로그인이면 전환 이벤트 기록
+          // 가입 게이트에서 시작된 로그인이면 전환 이벤트 기록 (마커 값 = 게이트 source)
           try {
-            if (sessionStorage.getItem('fyi_gate_pending')) {
+            const gateSource = sessionStorage.getItem('fyi_gate_pending');
+            if (gateSource) {
               sessionStorage.removeItem('fyi_gate_pending');
               fetch('/api/track', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ event: 'company_gate_login_success', page: '/', userId: session.user.id }),
+                body: JSON.stringify({ event: 'company_gate_login_success', page: '/', userId: session.user.id, meta: { source: gateSource } }),
               }).catch(() => {});
             }
           } catch {}
@@ -873,6 +896,35 @@ export default function Home({ initialCompanies = [] }) {
     const searchInput = document.getElementById('co-search-input');
     if (searchInput) searchInput.placeholder = t('companies.searchPlaceholder');
   }, [lang, t]);
+
+  // 히어로 위저드 (P3): 직무 클릭 → role 세팅 + step2로 점프 + 위저드로 스크롤.
+  // legacy CTA에도 클릭 계측(__heroCta) — 지금까지 클릭수 미계측이었음.
+  useEffect(() => {
+    window.heroSelectRole = (role) => {
+      setWRole(role);
+      setWizardStep(2);
+      try { if (typeof gtag === 'function') gtag('event', 'wizard_step_1', { role, source: 'hero' }); } catch {}
+      track('wizard_step_1', { meta: { role, source: 'hero' }, page: '/' });
+      document.getElementById('submit')?.scrollIntoView({ behavior: 'smooth' });
+    };
+    window.__heroCta = () => { track('hero_cta_click', { page: '/' }); };
+    return () => { delete window.heroSelectRole; delete window.__heroCta; };
+  }, []);
+
+  // 히어로 CTA 영역 표시 전환: 미제출이면 직무 그리드, 제출자면 "내 결과 보기" 버튼.
+  // (위 i18n 효과가 버튼 텍스트를 hero.cta로 덮으므로, 이 효과가 나중에 실행되며 최종 결정)
+  useEffect(() => {
+    const grid = document.getElementById('hero-role-grid');
+    const btn = document.getElementById('hero-cta-btn');
+    if (!grid || !btn) return;
+    // 플래그 로드 전엔 SSG 기본(legacy 버튼) 유지 — 롤백 상태에서 그리드가 번쩍이는 것 방지
+    const showGrid = HERO_WIZARD && flagsLoaded && flags.hero_wizard && !isSubmitted;
+    grid.style.display = showGrid ? 'block' : 'none';
+    btn.style.display = showGrid ? 'none' : '';
+    btn.textContent = isSubmitted ? t('hero.viewResult') : t('hero.cta');
+    const prompt = document.getElementById('hero-role-prompt');
+    if (prompt) prompt.textContent = t('hero.rolePrompt');
+  }, [isSubmitted, lang, t, flagsLoaded, flags.hero_wizard]);
 
   useEffect(() => {
     const messages = [
