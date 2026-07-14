@@ -24,6 +24,10 @@ export default function GoalMetricsView({ token, lang }) {
   const [expError, setExpError] = useState('')
   const [expLoading, setExpLoading] = useState(false)
 
+  const [rpData, setRpData] = useState(null) // 실험 (이력서 공개 전환)
+  const [rpError, setRpError] = useState('')
+  const [rpLoading, setRpLoading] = useState(false)
+
   const load = useCallback(async (p) => {
     if (!token || !p) return
     setLoading(true)
@@ -77,6 +81,21 @@ export default function GoalMetricsView({ token, lang }) {
     }
   }, [token, ko])
 
+  const loadRp = useCallback(async (p) => {
+    if (!token || !p) return
+    setRpLoading(true)
+    setRpError('')
+    try {
+      const res = await fetch('/api/admin/experiment-resume-public-metrics', { headers: { Authorization: `Bearer ${token}`, 'x-goal-pass': p } })
+      if (!res.ok) throw new Error(`(${res.status})`)
+      setRpData(await res.json())
+    } catch (e) {
+      setRpError((ko ? '불러오기 실패 ' : 'Load failed ') + e.message)
+    } finally {
+      setRpLoading(false)
+    }
+  }, [token, ko])
+
   useEffect(() => {
     let saved = ''
     try { saved = sessionStorage.getItem(PASS_KEY) || '' } catch {}
@@ -92,6 +111,11 @@ export default function GoalMetricsView({ token, lang }) {
   useEffect(() => {
     if (view === 'exp' && unlocked && pass && !expData && !expLoading) loadExp(pass)
   }, [view, unlocked, pass, expData, expLoading, loadExp])
+
+  // 이력서 공개 전환 실험 탭 최초 진입 시 lazy 로드
+  useEffect(() => {
+    if (view === 'resumePublic' && unlocked && pass && !rpData && !rpLoading) loadRp(pass)
+  }, [view, unlocked, pass, rpData, rpLoading, loadRp])
 
   function submit(e) {
     e.preventDefault()
@@ -135,10 +159,12 @@ export default function GoalMetricsView({ token, lang }) {
         {tabBtn('kpi', ko ? '목표 KPI' : 'Goal KPI')}
         {tabBtn('ad', ko ? '광고 성과' : 'Ad performance')}
         {tabBtn('exp', ko ? '실험' : 'Experiments')}
+        {tabBtn('resumePublic', ko ? '이력서 공개 실험' : 'Resume-public exp')}
       </div>
       {view === 'kpi' && <KpiTab data={data} ko={ko} />}
       {view === 'ad' && <AdTab data={adData} loading={adLoading} error={adError} ko={ko} />}
       {view === 'exp' && <ExperimentTab data={expData} loading={expLoading} error={expError} ko={ko} />}
+      {view === 'resumePublic' && <ResumePublicTab data={rpData} loading={rpLoading} error={rpError} ko={ko} />}
     </div>
   )
 }
@@ -506,6 +532,105 @@ function ExperimentTab({ data, loading, error, ko }) {
                   <td style={num}>{d.gateClicks || ''}</td>
                   <td style={{ ...num, color: d.gateLogins ? '#059669' : undefined }}>{d.gateLogins || ''}</td>
                   <td style={num}>{d.gateClicks ? pct(d.gateLogins / d.gateClicks) : ''}</td>
+                </tr>
+              )
+            })}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  )
+}
+
+// ============ 이력서 공개 전환 실험 탭 (2026-07-14~) ============
+// 웹 /cv 등록에 공개(오퍼 수신) 기본 ON 토글 추가 → 웹 공개 전환율 상승 여부.
+// 앱은 예전부터 공개를 기본 안내(전환율 높음) → baseline. 공개는 상태 스냅샷(updated_at 버킷팅).
+function ResumePublicTab({ data, loading, error, ko }) {
+  if (loading || !data) return <div style={{ textAlign: 'center', padding: 40, color: '#666' }}>{ko ? '불러오는 중…' : 'Loading…'}</div>
+  if (error) return <div style={{ textAlign: 'center', padding: 40, color: '#c00' }}>{error}</div>
+  if (data.error) return <div style={{ textAlign: 'center', padding: 40, color: '#c00' }}>{data.error}</div>
+
+  const pct = (v) => `${Math.round(v * 100)}%`
+  const c = data.cumulative
+  const b = data.before
+  const a = data.after
+
+  const Card = ({ label, value, sub, accent }) => (
+    <div style={{ background: '#fff', border: '1px solid #E5E8EB', borderRadius: 16, padding: '18px 20px', flex: '1 1 220px', minWidth: 200 }}>
+      <div style={{ fontSize: 12.5, fontWeight: 700, color: '#6B7280', marginBottom: 10 }}>{label}</div>
+      <div style={{ fontSize: 30, fontWeight: 800, color: accent || '#0F172A', lineHeight: 1, marginBottom: 6 }}>{value}</div>
+      {sub && <div style={{ fontSize: 12, color: '#9CA3AF' }}>{sub}</div>}
+    </div>
+  )
+
+  const th = { textAlign: 'left', fontSize: 11, fontWeight: 700, color: '#9CA3AF', padding: '6px 10px', borderBottom: '1px solid #EEF0F2', textTransform: 'uppercase', letterSpacing: '.04em' }
+  const td = { fontSize: 13, color: '#1F2937', padding: '7px 10px', borderBottom: '1px solid #F5F6F7' }
+  const num = { ...td, textAlign: 'right', fontVariantNumeric: 'tabular-nums', fontWeight: 600 }
+  const rate = (pub, reg) => (reg ? pct(pub / reg) : '—')
+
+  return (
+    <div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6, flexWrap: 'wrap' }}>
+        <div style={{ fontSize: 15, fontWeight: 800, color: '#0F172A' }}>
+          {ko ? '이력서 공개 전환 — 웹 /cv 등록 시 공개 토글 기본 ON' : 'Resume-public conversion — default-ON toggle on web /cv'}
+        </div>
+        <span style={{ fontSize: 11, fontWeight: 700, color: '#0D9488', background: '#E7F7F4', padding: '3px 9px', borderRadius: 100 }}>
+          {ko ? `실험 시작 ${data.experimentStart}` : `Started ${data.experimentStart}`}
+        </span>
+      </div>
+      <div style={{ fontSize: 12, color: '#9CA3AF', marginBottom: 16 }}>
+        {ko
+          ? `공개 = 프로필 상태 스냅샷(updated_at 기준) · 앱은 baseline · 기준: ${new Date(data.generatedAt).toLocaleString('ko-KR')}`
+          : `Public = profile state snapshot (by updated_at) · app is baseline · as of ${new Date(data.generatedAt).toLocaleString('en-US')}`}
+      </div>
+
+      {/* 누적 전환율 (전 기간 스냅샷) */}
+      <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginBottom: 14 }}>
+        <Card label={ko ? '웹 공개 전환율 (누적)' : 'Web public rate (all-time)'}
+          value={pct(c.webRate)}
+          sub={`${ko ? '공개' : 'public'} ${c.webPublic} / ${ko ? '등록' : 'reg'} ${c.webReg}`}
+          accent="#0D9488" />
+        <Card label={ko ? '앱 공개 전환율 (baseline)' : 'App public rate (baseline)'}
+          value={pct(c.appRate)}
+          sub={`${ko ? '공개' : 'public'} ${c.appPublic} / ${ko ? '등록' : 'reg'} ${c.appReg}`}
+          accent="#6B7280" />
+        <Card label={ko ? '웹 공개 전환율 (실험 후)' : 'Web public rate (after)'}
+          value={a.webReg ? pct(a.webRate) : '—'}
+          sub={`${ko ? '실험 전' : 'before'} ${b.webReg ? pct(b.webRate) : '—'} · ${a.webPublic}/${a.webReg}`}
+          accent={a.webRate >= b.webRate ? '#059669' : '#DC2626'} />
+      </div>
+      <div style={{ fontSize: 11.5, color: '#B0B0B8', marginBottom: 24 }}>
+        {ko
+          ? '※ 20260617 이전 등록분은 플랫폼 정보(null)라 앱/웹 어디에도 안 잡힘 → 앱+웹 < 전체 공개.'
+          : '* Resumes registered before 20260617 have null platform and count in neither app nor web.'}
+      </div>
+
+      <div style={{ fontSize: 13, fontWeight: 700, color: '#374151', margin: '0 0 8px' }}>{ko ? '일별 추이' : 'Daily'}</div>
+      <div style={{ overflowX: 'auto', border: '1px solid #EEF0F2', borderRadius: 12 }}>
+        <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 560 }}>
+          <thead><tr>
+            <th style={th}>{ko ? '날짜' : 'Date'}</th>
+            <th style={{ ...th, textAlign: 'right' }}>{ko ? '웹 등록' : 'Web reg'}</th>
+            <th style={{ ...th, textAlign: 'right' }}>{ko ? '웹 공개' : 'Web pub'}</th>
+            <th style={{ ...th, textAlign: 'right' }}>{ko ? '웹 전환율' : 'Web rate'}</th>
+            <th style={{ ...th, textAlign: 'right' }}>{ko ? '앱 등록' : 'App reg'}</th>
+            <th style={{ ...th, textAlign: 'right' }}>{ko ? '앱 공개' : 'App pub'}</th>
+            <th style={{ ...th, textAlign: 'right' }}>{ko ? '앱 전환율' : 'App rate'}</th>
+          </tr></thead>
+          <tbody>
+            {[...data.daily].reverse().map((d) => {
+              const inExp = d.day >= data.experimentStart
+              return (
+                <tr key={d.day} style={inExp ? { background: '#EFFBF8' } : undefined}>
+                  <td style={{ ...td, fontWeight: inExp ? 800 : 400 }}>
+                    {d.day.slice(5)}{inExp && <span style={{ fontSize: 10, color: '#0D9488', marginLeft: 6 }}>EXP</span>}
+                  </td>
+                  <td style={num}>{d.webReg || ''}</td>
+                  <td style={{ ...num, color: d.webPublic ? '#0D9488' : undefined }}>{d.webPublic || ''}</td>
+                  <td style={{ ...num, fontWeight: 800 }}>{d.webReg ? rate(d.webPublic, d.webReg) : ''}</td>
+                  <td style={num}>{d.appReg || ''}</td>
+                  <td style={num}>{d.appPublic || ''}</td>
+                  <td style={num}>{d.appReg ? rate(d.appPublic, d.appReg) : ''}</td>
                 </tr>
               )
             })}
