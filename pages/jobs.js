@@ -34,6 +34,29 @@ function dedupeJobs(list) {
   })
 }
 
+// KTC 광고 랜딩(/jobs?source=ktc)에서 최상단에 지정 순서대로 고정할 공고 ID.
+const KTC_PRIORITY_IDS = [
+  '5877ee3e-73f3-429c-84b9-6eca612a2fe1', // Lumicraft — Full-stack Developer
+  '7a42601a-985a-45c3-9ab8-e1a48f1ea167', // Wellpod — TikTok Ads Marketing Manager
+  'a7ce2e41-147b-4f36-bbef-bb3e7803485f', // Wellpod — TikTok Shop & Shopify Manager
+  '29e88671-199a-405a-a8dd-a17b1c4bfcee', // Simco — Factory Supervisor (Quản đốc Nhà máy)
+  'b52e7cb1-5c58-40d1-afa4-84f2b4cc4fd1', // Firts Marketing Company — ACCOUNT EXECUTIVE
+  '7e3fae04-faa4-4a84-b2b0-afffebf08ca7', // Designbook — Front-end Publisher
+  '3079bd21-a94a-4ee2-bbb6-315f88745ed2', // Designbook — PHP Backend Developer
+  'c2111d3b-3b71-40ec-88be-7fb5a004a989', // SoundGraph — Mobile App QA & Technical Coordinator
+  'e5fec906-df3a-4b14-aa3a-269eaf1382c5', // Camon Social — Pickleball Marketing Manager (Mid/Senior)
+  '66bf6ff0-cc45-4735-b297-f843e556b40e', // Camon Social — Community & Event Marketing Executive
+  '6a56d047-dab8-4a68-a631-31c5ba21136b', // Camon Social — Marketing Specialist (Mid/Senior)
+]
+
+// 지정 ID 목록을 순서대로 리스트 최상단으로 끌어올린다 (나머지는 기존 순서 유지).
+function pinPriority(list, ids) {
+  const rank = new Map(ids.map((id, i) => [id, i]))
+  const pinned = list.filter(j => rank.has(j.id)).sort((a, b) => rank.get(a.id) - rank.get(b.id))
+  const rest = list.filter(j => !rank.has(j.id))
+  return [...pinned, ...rest]
+}
+
 // 핫 섹션·메인 그리드 공용 카드. 썸네일 오버레이는 좌상단 배지 1개(featured > bump > match),
 // 우상단 북마크, 우하단 배지 1개(고연봉 > 근무형태)로 제한한다.
 function JobCard({ job, idx, bump, matched, highSalaryThreshold, bookmarked, onOpen, onToggleBookmark, typeLabel, t, lang }) {
@@ -161,7 +184,7 @@ export default function JobsPage() {
   }, [detailJob?.id])
 
   // Reset visible count when filters change
-  useEffect(() => { setVisibleCount(JOBS_PER_PAGE) }, [searchQuery, roleFilter, typeFilter, techFilter, expMin, expMax, router.query.company])
+  useEffect(() => { setVisibleCount(JOBS_PER_PAGE) }, [searchQuery, roleFilter, typeFilter, techFilter, expMin, expMax, router.query.company, router.query.role])
 
   // Infinite scroll
   const loadMoreObserver = useRef(null)
@@ -363,11 +386,16 @@ export default function JobsPage() {
   }
 
   const companyQuery = router.query.company ? String(router.query.company).toLowerCase() : null
+  // 광고 랜딩 URL(/jobs?role=grp:ktc) — role 값이 grp:<source> 형태면 해당 source만 노출.
+  const groupQuery = router.query.role && String(router.query.role).toLowerCase().startsWith('grp:')
+    ? String(router.query.role).toLowerCase().slice(4)
+    : null
 
   const filteredJobs = (() => {
     const q = searchQuery.toLowerCase().trim()
     const filtered = jobs.filter(job => {
       if (companyQuery && job.company?.toLowerCase() !== companyQuery) return false
+      if (groupQuery && job.source?.toLowerCase() !== groupQuery) return false
       if (q && !job.title?.toLowerCase().includes(q) && !job.company?.toLowerCase().includes(q)) return false
       if (hideExpired && job.deadline && new Date(job.deadline) < new Date()) return false
       if (roleFilter && job.role !== roleFilter) return false
@@ -489,7 +517,7 @@ export default function JobsPage() {
   // 핫 섹션: 필터 없는 기본 뷰에서만. featured 우선, 부족하면 마감임박·고연봉으로 채움.
   // 핫에 노출된 공고는 아래 메인 그리드에서 제외해 같은 공고가 두 번 보이지 않게 한다.
   const hotJobs = (() => {
-    if (jobs.length === 0 || activeFilterCount > 0 || companyQuery || sortBy === 'saved') return []
+    if (jobs.length === 0 || activeFilterCount > 0 || companyQuery || groupQuery || sortBy === 'saved') return []
     const now = new Date()
     const hotScore = (j) => {
       let s = 0
@@ -505,7 +533,10 @@ export default function JobsPage() {
     return [...featuredJobs, ...fillJobs].slice(0, 4)
   })()
   const hotIds = new Set(hotJobs.map(j => j.id))
-  const gridJobs = hotJobs.length ? filteredJobs.filter(j => !hotIds.has(j.id)) : filteredJobs
+  const gridJobs = (() => {
+    const base = hotJobs.length ? filteredJobs.filter(j => !hotIds.has(j.id)) : filteredJobs
+    return groupQuery === 'ktc' ? pinPriority(base, KTC_PRIORITY_IDS) : base
+  })()
 
   const resetFilters = () => { setRoleFilter(''); setTypeFilter(''); setExpMin(''); setExpMax(''); setTechFilter(''); setSearchQuery('') }
 
