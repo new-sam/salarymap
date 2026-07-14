@@ -190,7 +190,10 @@ export default function JobsPage() {
   const [visibleCount, setVisibleCount] = useState(JOBS_PER_PAGE)
 
   const track = (event, page, meta) => {
-    fetch('/api/track', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ event, page, meta, email: user?.email }) }).catch(() => {})
+    // userId/clientId 를 함께 보내야 유저 단위 dedup·퍼널 분석이 가능(lib/track.js 와 동일 기준).
+    let cid = null
+    try { cid = localStorage.getItem('sm_cid') } catch {}
+    fetch('/api/track', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ event, page, meta, email: user?.email, userId: user?.id || null, clientId: cid }) }).catch(() => {})
   }
 
   // Meta Pixel: job detail view
