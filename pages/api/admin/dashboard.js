@@ -102,7 +102,7 @@ export default async function handler(req, res) {
     // resume users (이력서 보유)
     (async () => {
       try {
-        const { data } = await supabase.from('user_profiles').select('id, updated_at').not('resume_url', 'is', null)
+        const { data } = await supabase.from('user_profiles').select('id, updated_at, is_resume_public, resume_platform').not('resume_url', 'is', null)
         return (data || []).filter(r => r.updated_at)
       } catch (e) { return [] }
     })(),
@@ -127,7 +127,7 @@ export default async function handler(req, res) {
 
   // --- Aggregate daily trend ---
   const dailyMap = {}
-  const newDay = () => ({ date: '', submissions: 0, ad: 0, organic: 0, signups: 0, companies: new Set(), jobApps: 0, jobAppsCompany: 0, cvSuccessApps: 0, jobClicks: 0, cardClicks: 0, jobsPageViews: 0, applyClicks: 0, saveClicks: 0, resumeUploads: 0, landings: 0, forCompaniesClicks: 0, contactClicks: 0, postJobClicks: 0, companySignups: 0 })
+  const newDay = () => ({ date: '', submissions: 0, ad: 0, organic: 0, signups: 0, companies: new Set(), jobApps: 0, jobAppsCompany: 0, cvSuccessApps: 0, jobClicks: 0, cardClicks: 0, jobsPageViews: 0, applyClicks: 0, saveClicks: 0, resumeUploads: 0, resumePublic: 0, resumePublicApp: 0, resumePublicWeb: 0, landings: 0, forCompaniesClicks: 0, contactClicks: 0, postJobClicks: 0, companySignups: 0 })
   for (const sub of submissions) {
     const date = toVN(sub.created_at)
     if (!dailyMap[date]) dailyMap[date] = { ...newDay(), date }
@@ -174,6 +174,14 @@ export default async function handler(req, res) {
     const date = toVN(ru.updated_at)
     if (!dailyMap[date]) dailyMap[date] = { ...newDay(), date }
     dailyMap[date].resumeUploads++
+    // 이력서 공개(is_resume_public) — 그중 플랫폼(resume_platform)별. 공개는 updated_at으로
+    // 버킷팅(토글 이벤트가 없어 상태 스냅샷). 20260617 마이그 이전 행은 platform이 null이라
+    // 앱/웹 어느 쪽에도 안 잡힘(그 구간은 앱+웹 < 공개총합).
+    if (ru.is_resume_public) {
+      dailyMap[date].resumePublic++
+      if (ru.resume_platform === 'app') dailyMap[date].resumePublicApp++
+      else if (ru.resume_platform === 'web') dailyMap[date].resumePublicWeb++
+    }
   }
 
   const EVENT_TRACKING_START = '2026-05-06'
@@ -211,6 +219,9 @@ export default async function handler(req, res) {
       applyClicks: d.date < EVENT_TRACKING_START ? null : d.applyClicks,
       saveClicks: d.date < '2026-05-11' ? null : d.saveClicks,
       resumeUploads: d.date < '2026-05-19' ? null : d.resumeUploads,
+      resumePublic: d.date < '2026-05-19' ? null : d.resumePublic,
+      resumePublicApp: d.date < '2026-05-19' ? null : d.resumePublicApp,
+      resumePublicWeb: d.date < '2026-05-19' ? null : d.resumePublicWeb,
       forCompaniesClicks: d.date < EVENT_TRACKING_START ? null : d.forCompaniesClicks,
       contactClicks: d.date < EVENT_TRACKING_START ? null : d.contactClicks,
       postJobClicks: d.date < EVENT_TRACKING_START ? null : d.postJobClicks,
@@ -275,6 +286,9 @@ export default async function handler(req, res) {
     totalApplyClicks: evtSum('click_apply_button'),
     totalSaveClicks: evtSum('save_job', '2026-05-11'),
     totalResumeUploads: resumeUsers.length,
+    totalResumePublic: resumeUsers.filter(r => r.is_resume_public).length,
+    totalResumePublicApp: resumeUsers.filter(r => r.is_resume_public && r.resume_platform === 'app').length,
+    totalResumePublicWeb: resumeUsers.filter(r => r.is_resume_public && r.resume_platform === 'web').length,
     totalForCompaniesClicks: evtSum('click_for_companies'),
     totalContactOwnerClicks: evtSum('click_contact_owner'),
     totalPostJobClicks: evtSum('click_post_job'),

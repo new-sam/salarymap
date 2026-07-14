@@ -227,8 +227,14 @@ export default function AdminDashboard() {
     if (!realtime) return merged
     const today = realtime.date
     if (today > dateRange.to && today !== localDate(Date.now())) return merged
+    // 이력서 공개(앱/웹)는 realtime 이벤트가 없고 DB 상태 스냅샷이라 today 행 교체 시
+    // API가 준 오늘 값을 그대로 보존한다(교체로 라인이 끊기지 않게).
+    const prevToday = merged.find(d => d.date === today)
     const todayData = {
       date: today,
+      resumePublic: prevToday?.resumePublic ?? null,
+      resumePublicApp: prevToday?.resumePublicApp ?? null,
+      resumePublicWeb: prevToday?.resumePublicWeb ?? null,
       sessions: ga4?.today?.sessions ?? 0,
       submissions: realtime.submissions,
       ad: realtime.ad,
@@ -315,6 +321,9 @@ export default function AdminDashboard() {
         applyClicks: sum('applyClicks'),
         saveClicks: sum('saveClicks'),
         resumeUploads: sum('resumeUploads'),
+        resumePublic: sum('resumePublic'),
+        resumePublicApp: sum('resumePublicApp'),
+        resumePublicWeb: sum('resumePublicWeb'),
         jobApps: sum('jobApps') ?? 0,
         forCompaniesClicks: sum('forCompaniesClicks'),
         contactClicks: sum('contactClicks'),
@@ -351,6 +360,9 @@ export default function AdminDashboard() {
         applyClicks: sum('applyClicks'),
         saveClicks: sum('saveClicks'),
         resumeUploads: sum('resumeUploads'),
+        resumePublic: sum('resumePublic'),
+        resumePublicApp: sum('resumePublicApp'),
+        resumePublicWeb: sum('resumePublicWeb'),
         jobApps: sum('jobApps') ?? 0,
         forCompaniesClicks: sum('forCompaniesClicks'),
         contactClicks: sum('contactClicks'),
