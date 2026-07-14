@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js'
 import { verifyAdminOrDevStub } from './check'
+import { isExcludedApplication } from '../../../lib/admin-metrics'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
@@ -32,7 +33,15 @@ export default async function handler(req, res) {
   const pending = jobs.filter(j => j.status === 'pending_review').length
   const live = jobs.filter(j => j.is_active && j.status !== 'pending_review').length
 
-  const totalApps = await countOf(supabase.from('job_applications').select('*', { count: 'exact', head: true }))
+  // 내부/테스트(@likelion.net 등) 지원은 KPI에서 제외 — NULL 이메일 행을 지키려 JS에서 필터.
+  const appRows = []
+  for (let from = 0; ; from += 1000) {
+    const { data } = await supabase.from('job_applications').select('applicant_email').range(from, from + 999)
+    if (!data?.length) break
+    appRows.push(...data)
+    if (data.length < 1000) break
+  }
+  const totalApps = appRows.filter(a => !isExcludedApplication(a)).length
 
   const fc = {
     enter: { all: await evCount('click_for_companies'), d30: await evCount('click_for_companies', since30), d7: await evCount('click_for_companies', since7) },

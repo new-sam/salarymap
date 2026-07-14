@@ -1,6 +1,6 @@
 import { createClient } from '@supabase/supabase-js'
 import { verifyAdminOrDevStub } from './check'
-import { isExcludedSignup } from '../../../lib/admin-metrics'
+import { isExcludedSignup, isExcludedApplication } from '../../../lib/admin-metrics'
 
 // 개인용 "목표지표 - Sean" 탭 데이터. 어드민 인증 위에 개인 비밀번호를 한 겹 더 건다.
 // 비번은 클라 번들에 안 나가도록 서버에서만 검증한다(헤더 x-goal-pass).
@@ -121,7 +121,8 @@ async function enterpriseAppsKpi() {
   }
 
   const byJob = {}
-  for (const a of apps || []) (byJob[a.job_id] ||= []).push(a)
+  // 내부/테스트(@likelion.net 등) 지원은 KPI에서 제외.
+  for (const a of apps || []) { if (isExcludedApplication(a)) continue; (byJob[a.job_id] ||= []).push(a) }
 
   // 실시간: 전 고객 공고를 누적 지원 수로 그대로 본다 (D+7 성숙 게이트 없음)
   const nowMs = Date.now()

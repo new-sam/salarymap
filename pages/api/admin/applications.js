@@ -2,6 +2,7 @@ import { createClient } from '@supabase/supabase-js'
 import { STATUS_PUSH, appPushTitle } from '../../../lib/application-push'
 import { sendPush } from '../../../lib/push'
 import { verifyAdminOrDevStub } from './check'
+import { isExcludedEmail } from '../../../lib/admin-metrics'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
@@ -46,6 +47,8 @@ export default async function handler(req, res) {
       user_email: a.applicant_email || profileMap[a.user_id]?.email || '—',
       user_name: a.applicant_name || profileMap[a.user_id]?.full_name || '—',
     }))
+      // 내부/테스트(@likelion.net 등) 지원은 모든 지표/목록에서 제외.
+      .filter(a => !isExcludedEmail(a.user_email))
 
     return res.status(200).json(enriched)
   }

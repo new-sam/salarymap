@@ -6,6 +6,7 @@ import {
   isExcludedSubmission,
   dedupeSubmissions,
   isExcludedSignup,
+  isExcludedApplication,
 } from '../../../lib/admin-metrics'
 
 const supabase = createClient(
@@ -68,7 +69,7 @@ export default async function handler(req, res) {
       } catch (e) { return [] }
     })(),
     // job applications (jobs.source 조인으로 기업 직접등록 공고 지원 분리 집계)
-    fetchAll(supabase.from('job_applications').select('id, created_at, application_source, jobs(source)')
+    fetchAll(supabase.from('job_applications').select('id, created_at, application_source, applicant_email, jobs(source)')
       .gte('created_at', startISO).lte('created_at', endISO)).catch(() => []),
     // 이벤트 일별 카운트 — DB 집계 RPC (실패 시 행 fetch 폴백)
     (async () => {
@@ -121,6 +122,8 @@ export default async function handler(req, res) {
 
   // Apply data quality filters: exclude internal/garbage entries and dedupe
   const submissions = dedupeSubmissions(submissionsRaw.filter(s => !isExcludedSubmission(s)))
+  // 내부/테스트(@likelion.net 등) 지원은 모든 지표에서 제외.
+  const realJobApps = jobApps.filter(j => !isExcludedApplication(j))
 
   // --- Aggregate daily trend ---
   const dailyMap = {}
@@ -143,7 +146,7 @@ export default async function handler(req, res) {
     dailyMap[date].signups++
   }
 
-  for (const ja of jobApps) {
+  for (const ja of realJobApps) {
     const date = toVN(ja.created_at)
     if (!dailyMap[date]) dailyMap[date] = { ...newDay(), date }
     dailyMap[date].jobApps++
@@ -262,9 +265,9 @@ export default async function handler(req, res) {
     adSubmissions: submissions.filter(s => PAID_SOURCES.has(s.source)).length,
     organicSubmissions: submissions.filter(s => !PAID_SOURCES.has(s.source)).length,
     totalSignups: signups.length,
-    totalJobApps: jobApps.length,
-    totalJobAppsCompany: jobApps.filter(j => j.jobs?.source === 'company_self').length,
-    totalCvSuccessApps: jobApps.filter(j => j.application_source === 'cv_success').length,
+    totalJobApps: realJobApps.length,
+    totalJobAppsCompany: realJobApps.filter(j => j.jobs?.source === 'company_self').length,
+    totalCvSuccessApps: realJobApps.filter(j => j.application_source === 'cv_success').length,
     totalLandings: evtSum('landing'),
     totalJobClicks: evtSum('click_jobs_cta'),
     totalCardClicks: evtSum('click_job_card'),

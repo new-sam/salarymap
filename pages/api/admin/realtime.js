@@ -6,6 +6,7 @@ import {
   isExcludedSubmission,
   dedupeSubmissions,
   isExcludedSignup,
+  isExcludedApplication,
 } from '../../../lib/admin-metrics'
 
 const supabase = createClient(
@@ -30,7 +31,7 @@ export default async function handler(req, res) {
       .gte('created_at', startISO).lte('created_at', endISO)
       .limit(10000),
     supabase.from('job_applications')
-      .select('id, application_source, jobs(source)')
+      .select('id, application_source, applicant_email, jobs(source)')
       .gte('created_at', startISO).lte('created_at', endISO)
       .limit(10000),
     supabase.from('events')
@@ -72,7 +73,8 @@ export default async function handler(req, res) {
     }
   } catch (e) {}
 
-  const jobApps = jaRes.data || []
+  // 내부/테스트(@likelion.net 등) 지원은 모든 지표에서 제외.
+  const jobApps = (jaRes.data || []).filter(j => !isExcludedApplication(j))
   const ad = submissions.filter(s => PAID_SOURCES.has(s.source)).length
   const companies = new Set(submissions.map(s => s.company?.trim().toLowerCase()).filter(Boolean)).size
   const evCount = (name) => events.filter(e => e.event === name).length

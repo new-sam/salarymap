@@ -1,6 +1,7 @@
 import { createClient } from '@supabase/supabase-js'
 import { verifyAdminOrDevStub } from './check'
 import { DEMAND_CATEGORIES, CAT_KO, classifyJobTitle } from '../../../constants/jobs'
+import { isExcludedApplication } from '../../../lib/admin-metrics'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
@@ -28,7 +29,7 @@ export default async function handler(req, res) {
     supabase.from('recruiter_companies').select('id, name, email_domain, verified_at, created_at').order('created_at', { ascending: false }),
     supabase.from('recruiter_users').select('company_id, email, full_name, role, created_at').order('created_at', { ascending: false }),
     supabase.from('jobs').select('id, company_id, title, status, is_active, created_at').not('company_id', 'is', null).order('created_at', { ascending: false }),
-    supabase.from('job_applications').select('job_id, status, rejected_at, created_at, jobs!inner(company_id)').not('jobs.company_id', 'is', null),
+    supabase.from('job_applications').select('job_id, status, rejected_at, created_at, applicant_email, jobs!inner(company_id)').not('jobs.company_id', 'is', null),
   ])
   // 멋사(Likelion) 등 내부/테스트 회사 제외 — 알람(daily-summary)과 동일 규칙.
   // 자체 테스트 지원이 대부분이라 안 빼면 지원·공고당 지원이 뻥튀기됨.
@@ -45,8 +46,8 @@ export default async function handler(req, res) {
   const jobToCompany = {}
   jobs.forEach(j => { jobToCompany[j.id] = j.company_id })
 
-  // 기업 공고에 대한 지원만
-  const apps = (appsRes.data || []).filter(ap => jobToCompany[ap.job_id])
+  // 기업 공고에 대한 지원만 — 내부/테스트(@likelion.net 등) 지원자는 제외.
+  const apps = (appsRes.data || []).filter(ap => jobToCompany[ap.job_id] && !isExcludedApplication(ap))
 
   // 회사별 집계
   const agg = {}

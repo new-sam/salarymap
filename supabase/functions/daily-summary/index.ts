@@ -36,6 +36,12 @@ function isExcludedSubmission(r: any): boolean {
   return false;
 }
 
+// 내부/테스트(@likelion.net 등) 지원자는 모든 지표에서 제외 — admin-metrics.js 와 동일 규칙(수동 동기화).
+function isExcludedApplication(a: any): boolean {
+  const email = (a.applicant_email || "").toLowerCase();
+  return !!email && EXCLUDED_EMAIL_DOMAINS.some((d) => email.endsWith("@" + d));
+}
+
 function dedupeSubmissions(rows: any[]): any[] {
   const seen = new Set<string>();
   return rows.filter((r) => {
@@ -419,13 +425,22 @@ function isExcludedSignup(user: any): boolean {
 async function getJobApps(dateStr: string): Promise<number> {
   const startUtc = `${dateStr}T00:00:00+07:00`;
   const endUtc = `${dateStr}T23:59:59+07:00`;
-  const { count, error } = await supabase
-    .from("job_applications")
-    .select("*", { count: "exact", head: true })
-    .gte("created_at", startUtc)
-    .lte("created_at", endUtc);
-  if (error) throw error;
-  return count || 0;
+  // NULL 이메일 행을 지키려 rows 를 받아 JS 에서 내부/테스트 지원자만 제외하고 센다.
+  const PAGE = 1000;
+  let from = 0, n = 0;
+  while (true) {
+    const { data, error } = await supabase
+      .from("job_applications")
+      .select("applicant_email")
+      .gte("created_at", startUtc)
+      .lte("created_at", endUtc)
+      .range(from, from + PAGE - 1);
+    if (error) throw error;
+    for (const r of data || []) if (!isExcludedApplication(r)) n++;
+    if (!data || data.length < PAGE) break;
+    from += PAGE;
+  }
+  return n;
 }
 
 // 이력서 등록 — admin 의 두 화면이 정의를 다르게 쓴다. 슬랙봇도 그에
@@ -508,12 +523,13 @@ async function getJobAppsSplit(startUtc: string, endUtc: string): Promise<Split>
   while (true) {
     const { data, error } = await supabase
       .from("job_applications")
-      .select("platform")
+      .select("platform, applicant_email")
       .gte("created_at", startUtc)
       .lte("created_at", endUtc)
       .range(from, from + PAGE - 1);
     if (error) { console.error("Job apps split error:", JSON.stringify(error)); break; }
     for (const r of data || []) {
+      if (isExcludedApplication(r)) continue; // 내부/테스트 지원자 제외
       if (r.platform === "app") app++; else web++;
     }
     if (!data || data.length < PAGE) break;
@@ -556,11 +572,19 @@ async function getCumulative(startDate: string, endDate: string) {
   const deduped = dedupeSubmissions(subs.filter((r: any) => !isExcludedSubmission(r)));
   const totalAd = deduped.filter((r: any) => PAID_SOURCES.has(r.source)).length;
   const totalSignups = (await getSignupsInRange(startUtc, endUtc)).count;
-  const { count: jobApps } = await supabase
-    .from("job_applications")
-    .select("*", { count: "exact", head: true })
-    .gte("created_at", startUtc)
-    .lte("created_at", endUtc);
+  // 내부/테스트(@likelion.net 등) 지원자 제외 — rows 를 받아 JS 에서 센다(NULL 이메일 보존).
+  let jobApps = 0;
+  for (let jaFrom = 0; ; jaFrom += 1000) {
+    const { data: jaRows } = await supabase
+      .from("job_applications")
+      .select("applicant_email")
+      .gte("created_at", startUtc)
+      .lte("created_at", endUtc)
+      .range(jaFrom, jaFrom + 999);
+    if (!jaRows?.length) break;
+    for (const r of jaRows) if (!isExcludedApplication(r)) jobApps++;
+    if (jaRows.length < 1000) break;
+  }
 
   // 2) 오늘 미포함 메트릭 (admin 이 today diff 안 더함):
   //    - sessions: GA4(4/20 ~ 어제). admin/dashboard.js:228 = ga4.totals.sessions,
