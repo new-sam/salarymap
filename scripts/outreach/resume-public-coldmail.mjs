@@ -149,7 +149,7 @@ async function resendClient() {
       fail++
       console.error(`  ✗ ${r.email}: ${e.message}`)
     }
-    await sleep(120) // Resend rate 여유
+    await sleep(600) // Resend rate limit 2req/s → 간격 ≥500ms 유지
   }
   console.log(`\n✅ 발송 완료: 성공 ${ok} / 실패 ${fail} (캠페인 ${campaign})`)
   if (max && rows.length > capped.length) console.log(`   남은 ${rows.length - capped.length}명은 다시 실행하면 이어서 발송됨(idempotent).`)
