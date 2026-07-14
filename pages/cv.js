@@ -181,6 +181,8 @@ export default function CvLanding() {
   const [jobs, setJobs] = useState([])
   // STEP1 직무 다중선택 + 등록 완료 후 "바로 지원" 모달
   const [selectedRoles, setSelectedRoles] = useState([])
+  // 직무 대분류 아코디언 — 53개 칩을 다 펼치면 모바일에서 스크롤이 끝없어져 접어둔다
+  const [openRoleGroups, setOpenRoleGroups] = useState({})
   const [resumeUrl, setResumeUrl] = useState(null)
   // 기존 등록자: user_profiles.resume_url이 이미 있으면 업로드 퍼널 대신 등록됨 화면을 보여준다.
   const [existingResume, setExistingResume] = useState(null)
@@ -250,6 +252,16 @@ export default function CvLanding() {
     supabase.auth.getSession().then(({ data }) => setUser(data.session?.user || null))
     const { data: sub } = supabase.auth.onAuthStateChange((_, s) => setUser(s?.user || null))
     return () => sub.subscription.unsubscribe()
+  }, [])
+
+  // OAuth 페이지에서 뒤로가기로 돌아오면 iOS가 bfcache로 복원한다 — 이때
+  // 자동 OAuth 트리거가 armed 상태로 남아 있으면 재첨부하자마자 다시
+  // 구글로 튕기므로 해제한다. (같은 파일 재선택 무반응은 input onClick의
+  // value 리셋이 처리)
+  useEffect(() => {
+    const onPageShow = (e) => { if (e.persisted) oauthAfterPick.current = null }
+    window.addEventListener('pageshow', onPageShow)
+    return () => window.removeEventListener('pageshow', onPageShow)
   }, [])
 
   useEffect(() => {
@@ -639,7 +651,7 @@ export default function CvLanding() {
         <section className="cv-form-section" id="cv-form" ref={formAnchorRef}>
           <div className="cv-section-inner cv-form-wrap">
             {/* 파일 input은 분기 밖에 — 등록됨 화면의 "교체" 버튼에서도 쓴다 */}
-            <input ref={fileRef} type="file" accept=".pdf,.doc,.docx,application/pdf" hidden onChange={(e) => handleFile(e.target.files?.[0])} />
+            <input ref={fileRef} type="file" accept=".pdf,.doc,.docx,application/pdf" hidden onClick={(e) => { e.currentTarget.value = '' }} onChange={(e) => handleFile(e.target.files?.[0])} />
             {showSuccess ? (
               <div className="cv-card cv-success-card">
                 <div className="cv-success-visual" aria-label="FYI celebration">
@@ -769,23 +781,39 @@ export default function CvLanding() {
                   <div className="cv-roles">
                     <div className="cv-roles-label">{L('찾는 직무 (복수 선택 가능)', 'Roles you want (select multiple)', 'Vị trí bạn tìm (chọn nhiều)')}</div>
                     <div className="cv-roles-groups">
-                      {ROLE_GROUPS.map((g) => (
-                        <div key={g.key} className="cv-roles-group">
-                          <div className="cv-roles-gname">{g.label[lang] || g.label.en}</div>
-                          <div className="cv-roles-chips">
-                            {g.roles.map((r) => (
-                              <button
-                                type="button"
-                                key={r.value}
-                                className={`cv-role-chip${selectedRoles.includes(r.value) ? ' on' : ''}`}
-                                onClick={() => toggleRole(r.value)}
-                              >
-                                {r.label[lang] || r.label.en}
-                              </button>
-                            ))}
+                      {ROLE_GROUPS.map((g) => {
+                        const isOpen = !!openRoleGroups[g.key]
+                        const count = g.roles.filter((r) => selectedRoles.includes(r.value)).length
+                        return (
+                          <div key={g.key} className="cv-roles-group">
+                            <button
+                              type="button"
+                              className={`cv-roles-gtoggle${count > 0 ? ' has' : ''}`}
+                              onClick={() => setOpenRoleGroups((p) => ({ ...p, [g.key]: !p[g.key] }))}
+                            >
+                              <span className={`cv-roles-garrow${isOpen ? ' open' : ''}`}>
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+                              </span>
+                              <span className="cv-roles-gname">{g.label[lang] || g.label.en}</span>
+                              {count > 0 && <span className="cv-roles-gcount">{count}</span>}
+                            </button>
+                            {isOpen && (
+                              <div className="cv-roles-chips">
+                                {g.roles.map((r) => (
+                                  <button
+                                    type="button"
+                                    key={r.value}
+                                    className={`cv-role-chip${selectedRoles.includes(r.value) ? ' on' : ''}`}
+                                    onClick={() => toggleRole(r.value)}
+                                  >
+                                    {r.label[lang] || r.label.en}
+                                  </button>
+                                ))}
+                              </div>
+                            )}
                           </div>
-                        </div>
-                      ))}
+                        )
+                      })}
                     </div>
                   </div>
                 </div>
@@ -904,9 +932,16 @@ export default function CvLanding() {
         /* 직무 다중선택 (STEP 1) */
         .cv-roles { margin-top: 16px; border-top: 1px solid #efe9e0; padding-top: 14px; }
         .cv-roles-label { font-size: 13px; font-weight: 700; color: #1a1612; margin-bottom: 10px; }
-        .cv-roles-groups { display: flex; flex-direction: column; gap: 12px; max-height: 260px; overflow-y: auto; }
-        .cv-roles-gname { font-size: 11px; font-weight: 700; color: #a89f92; text-transform: uppercase; letter-spacing: .04em; margin-bottom: 6px; }
-        .cv-roles-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+        .cv-roles-groups { display: flex; flex-direction: column; gap: 8px; }
+        .cv-roles-gtoggle { display: flex; align-items: center; gap: 8px; width: 100%; text-align: left; background: #fff; border: 1px solid #e3dbcf; border-radius: 10px; padding: 10px 12px; cursor: pointer; font-family: inherit; transition: border-color .12s; }
+        .cv-roles-gtoggle:hover { border-color: #ff6000; }
+        .cv-roles-gtoggle.has { border-color: rgba(255,96,0,0.45); }
+        .cv-roles-garrow { display: inline-flex; color: #a89f92; transition: transform .15s; flex-shrink: 0; }
+        .cv-roles-garrow.open { transform: rotate(90deg); }
+        .cv-roles-gname { font-size: 11px; font-weight: 700; color: #a89f92; text-transform: uppercase; letter-spacing: .04em; }
+        .cv-roles-gtoggle.has .cv-roles-gname { color: #4a4238; }
+        .cv-roles-gcount { margin-left: auto; flex-shrink: 0; background: #ff6000; color: #fff; font-size: 11px; font-weight: 700; border-radius: 999px; padding: 1px 8px; line-height: 1.5; }
+        .cv-roles-chips { display: flex; flex-wrap: wrap; gap: 6px; padding: 8px 2px 4px; }
         .cv-role-chip { font-size: 12.5px; font-weight: 500; color: #4a4238; background: #fff; border: 1px solid #e3dbcf; border-radius: 999px; padding: 6px 12px; cursor: pointer; transition: all .12s; font-family: inherit; }
         .cv-role-chip:hover { border-color: #ff6000; }
         .cv-role-chip.on { background: #fff1e8; border-color: #ff6000; color: #ff6000; font-weight: 700; }
@@ -2947,6 +2982,13 @@ export default function CvLanding() {
           .cv-hero { padding: 64px 20px 48px; }
           .cv-section-inner { padding: 0 20px; }
           .cv-how, .cv-test, .cv-jobs, .cv-form-section { padding: 80px 0 64px; }
+          /* 폼 카드 — 데스크톱 패딩(56/52px)·타이틀(42px) 그대로면 콘텐츠 폭이
+             ~250pt로 구겨져 제목이 단어 중간에서 꺾인다. 모바일은 전부 축소. */
+          .cv-form-wrap.cv-section-inner { padding: 0 12px; }
+          .cv-form-wrap .cv-card { padding: 30px 18px; }
+          .cv-form-wrap .cv-card-h { font-size: 27px; letter-spacing: -0.8px; }
+          .cv-form-wrap .cv-card-sub { font-size: 14px; margin-bottom: 24px; }
+          .cv-stepblock { padding: 16px 14px 18px; }
           .cv-final { padding: 90px 20px 120px; }
           .cv-h1 {
             letter-spacing: -1.2px;

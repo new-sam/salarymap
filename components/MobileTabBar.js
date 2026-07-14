@@ -108,6 +108,9 @@ export default function MobileTabBar() {
         .mtab-bubble { display: none; }
         @media (max-width: 768px) {
           .mtab { display: flex !important; position: fixed !important; top: auto !important; bottom: 0 !important; left: 0 !important; right: 0 !important; z-index: 99999; height: 60px; background: rgba(12,12,11,0.97); backdrop-filter: blur(14px); border-top: 1px solid rgba(255,255,255,0.08); align-items: center; justify-content: space-around; padding: 0; margin: 0; padding-bottom: env(safe-area-inset-bottom); font-family: 'Barlow', sans-serif; }
+          /* iOS 인앱브라우저(Meta 광고 유입)가 스크롤 시 하단 UI를 접으면 fixed 바가
+             떠서 밑으로 페이지 내용이 비친다 — 바 배경을 아래로 연장해 가린다. */
+          .mtab::after { content: ''; position: absolute; top: 100%; left: 0; right: 0; height: 200px; background: rgba(12,12,11,0.97); pointer-events: none; }
           .mtab-item { display: flex; flex-direction: column; align-items: center; gap: 2px; text-decoration: none; padding: 6px 0; flex: 1; position: relative; min-width: 0; }
           .mtab-item svg { color: rgba(255,255,255,0.7); }
           .mtab-label { font-size: 10px; font-weight: 600; color: rgba(255,255,255,0.7); line-height: 1.15; text-align: center; word-break: keep-all; max-width: 100%; padding: 0 2px; }
