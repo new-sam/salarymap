@@ -863,7 +863,7 @@ function ColdmailPublicTab({ data, loading, error, ko }) {
 
       {data.daily.length > 0 && (
         <>
-          <div style={{ fontSize: 13, fontWeight: 700, color: '#374151', margin: '0 0 8px' }}>{ko ? '일별 (클릭·전환)' : 'Daily (clicks·converts)'}</div>
+          <div style={{ fontSize: 13, fontWeight: 700, color: '#374151', margin: '0 0 8px' }}>{ko ? '일별 (클릭·전환 — 인원 기준, 첫 발생일)' : 'Daily (unique people, first occurrence)'}</div>
           <div style={{ overflowX: 'auto', border: '1px solid #EEF0F2', borderRadius: 12 }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 360 }}>
               <thead><tr>

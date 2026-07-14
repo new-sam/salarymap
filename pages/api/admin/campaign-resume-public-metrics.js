@@ -49,20 +49,22 @@ export default async function handler(req, res) {
 
     const usersBy = { sent: new Set(), click: new Set(), convert: new Set() }
     const firstSentByUser = {}
-    const days = {} // day -> { day, clicks, converts }
+    const days = {} // day -> { day, clicks, converts } — 유니크 인원 기준(그 날 "처음" 클릭/전환한 사람 수)
     const touch = (d) => (days[d] = days[d] || { day: d, clicks: 0, converts: 0 })
 
+    // 일별도 카드와 동일하게 인원 수로 집계 — 같은 사람의 재클릭/재전환(idempotent 재실행,
+    // 메일 스캐너 중복 포함)이 표를 부풀리지 않게, 유저별 첫 이벤트가 발생한 날에만 1로 센다.
     for (const e of evts) {
       const uid = e.user_id
       if (e.event === 'coldmail_public_sent') {
         if (uid) usersBy.sent.add(uid)
         if (uid && !firstSentByUser[uid]) firstSentByUser[uid] = e.created_at
       } else if (e.event === 'coldmail_public_click') {
+        if (!uid || !usersBy.click.has(uid)) touch(vnDay(e.created_at)).clicks++
         if (uid) usersBy.click.add(uid)
-        touch(vnDay(e.created_at)).clicks++
       } else if (e.event === 'coldmail_public_convert') {
+        if (!uid || !usersBy.convert.has(uid)) touch(vnDay(e.created_at)).converts++
         if (uid) usersBy.convert.add(uid)
-        touch(vnDay(e.created_at)).converts++
       }
     }
 
