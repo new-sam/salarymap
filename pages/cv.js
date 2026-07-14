@@ -10,6 +10,7 @@ import { formatSalaryCard } from '../utils/salary'
 // STEP1에서 고른 직무는 OAuth 리다이렉트로 페이지를 떠났다 돌아와도 유지돼야 해서
 // (파일이 IndexedDB로 유지되는 것과 동일) localStorage에 stash한다.
 const CV_ROLES_KEY = 'fyi_cv_roles'
+const CV_PUBLIC_KEY = 'fyi_cv_public'
 
 /* Funnel-event meta — UTM (sessionStorage) + language preference, attached to
    every /cv event so we can slice by ad campaign and locale in analytics. */
@@ -184,6 +185,8 @@ export default function CvLanding() {
   // 직무 대분류 아코디언 — 53개 칩을 다 펼치면 모바일에서 스크롤이 끝없어져 접어둔다
   const [openRoleGroups, setOpenRoleGroups] = useState({})
   const [resumeUrl, setResumeUrl] = useState(null)
+  // 이력서 공개(기업 오퍼 수신) — 기본 ON. 등록 CTA 시 VTM 전송까지 함께 처리
+  const [sharePublic, setSharePublic] = useState(true)
   // 기존 등록자: user_profiles.resume_url이 이미 있으면 업로드 퍼널 대신 등록됨 화면을 보여준다.
   const [existingResume, setExistingResume] = useState(null)
   const [replacing, setReplacing] = useState(false)
@@ -399,11 +402,22 @@ export default function CvLanding() {
           await supabase.from('user_profiles').update(base).eq('id', uid)
         }
       }
+      // 공개 토글이 ON이면 이력서를 기업 오퍼용으로 공개(VTM 전송). 웹훅이 느릴 수 있어
+      // 등록 완료 모달을 막지 않도록 대기하지 않고, 결과만 트래킹한다.
+      if (sharePublic && token) {
+        fetch('/api/profile/share-resume', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+          body: JSON.stringify({ action: 'set', value: true }),
+        })
+          .then((r) => track(r.ok ? 'cv_resume_public' : 'cv_resume_public_error', { meta: cvMeta(), page: '/cv' }))
+          .catch(() => track('cv_resume_public_error', { meta: cvMeta(), page: '/cv' }))
+      }
       if (typeof gtag === 'function') gtag('event', 'cv_register', { source: 'ad-landing' })
       if (typeof fbq === 'function') fbq('trackCustom', 'CVRegister', { source: 'ad-landing' })
       track('cv_register_success', { meta: { ...cvMeta(), ...fileMeta(fileToUpload), roles: selectedRoles }, page: '/cv' })
       await idbClearCv()
-      try { localStorage.removeItem(CV_ROLES_KEY) } catch {}
+      try { localStorage.removeItem(CV_ROLES_KEY); localStorage.removeItem(CV_PUBLIC_KEY) } catch {}
       setStatus('success')
       setShowJobModal(true)
     } catch (e) {
@@ -414,13 +428,24 @@ export default function CvLanding() {
     }
   }
 
-  // OAuth 리다이렉트 복귀 시 stash된 직무 선택 복원
+  // OAuth 리다이렉트 복귀 시 stash된 직무 선택 + 공개 토글 복원
   useEffect(() => {
     try {
       const saved = JSON.parse(localStorage.getItem(CV_ROLES_KEY) || '[]')
       if (Array.isArray(saved) && saved.length) setSelectedRoles(saved)
+      const pub = localStorage.getItem(CV_PUBLIC_KEY)
+      if (pub === '0') setSharePublic(false)
     } catch {}
   }, [])
+
+  // 공개 토글 — OAuth 리다이렉트를 넘어 유지되도록 선택을 저장(끔 선택이 리셋돼 강제 공개되는 것 방지)
+  const toggleSharePublic = () => {
+    setSharePublic((v) => {
+      const next = !v
+      try { localStorage.setItem(CV_PUBLIC_KEY, next ? '1' : '0') } catch {}
+      return next
+    })
+  }
 
   const toggleRole = (value) => {
     setSelectedRoles((prev) => {
@@ -799,6 +824,27 @@ export default function CvLanding() {
                   )}
                   <div className="cv-hint">{t('cv.form.fileHint')}</div>
 
+                  {/* 이력서 공개(기업 오퍼 수신) — 기본 ON. 파일 첨부 후에만 은근슬쩍 노출.
+                      너무 강조하면 취소율이 오를 수 있어 조용한 행으로 처리 */}
+                  {file && (
+                    <button
+                      type="button"
+                      className="cv-share"
+                      onClick={() => toggleSharePublic()}
+                      aria-pressed={sharePublic}
+                    >
+                      <span className={`cv-share-switch${sharePublic ? ' on' : ''}`}><span className="cv-share-knob" /></span>
+                      <span className="cv-share-text">
+                        <span className="cv-share-title">{L('이력서 공개 · 축하금 이벤트 참여', 'Make resume public · join the reward event', 'Công khai CV · tham gia sự kiện thưởng')}</span>
+                        {sharePublic ? (
+                          <span className="cv-share-sub">{L('공개해야 2,000,000 VND 축하금 이벤트에 참여할 수 있어요', 'Only public resumes qualify for the 2,000,000 VND reward event', 'Chỉ CV công khai mới đủ điều kiện nhận thưởng 2.000.000 VND')}</span>
+                        ) : (
+                          <span className="cv-share-sub warn">{L('비공개 상태면 2,000,000 VND 축하금 이벤트에 참여하기 어려워요', 'While private, you can’t join the 2,000,000 VND reward event', 'Khi để riêng tư, bạn khó tham gia sự kiện thưởng 2.000.000 VND')}</span>
+                        )}
+                      </span>
+                    </button>
+                  )}
+
                   {/* 찾는 직무 (복수 선택) — 등록 완료 후 맞는 공고 추천/지원에 사용 */}
                   <div className="cv-roles">
                     <div className="cv-roles-label">{L('찾는 직무 (복수 선택 가능)', 'Roles you want (select multiple)', 'Vị trí bạn tìm (chọn nhiều)')}</div>
@@ -974,6 +1020,17 @@ export default function CvLanding() {
         .cv-role-chip { font-size: 12.5px; font-weight: 500; color: #4a4238; background: #fff; border: 1px solid #e3dbcf; border-radius: 999px; padding: 6px 12px; cursor: pointer; transition: all .12s; font-family: inherit; }
         .cv-role-chip:hover { border-color: #ff6000; }
         .cv-role-chip.on { background: #fff1e8; border-color: #ff6000; color: #ff6000; font-weight: 700; }
+
+        /* 이력서 공개 토글 (STEP 1) — 조용한 인라인 행. 강조하면 취소율↑ 우려로 은근하게 */
+        .cv-share { display: flex; align-items: flex-start; gap: 10px; width: 100%; text-align: left; margin-top: 12px; background: none; border: none; padding: 4px 2px; cursor: pointer; font-family: inherit; }
+        .cv-share-switch { flex-shrink: 0; width: 34px; height: 20px; border-radius: 999px; background: #d8cfc2; position: relative; transition: background .15s; margin-top: 1px; }
+        .cv-share-switch.on { background: #ff6000; }
+        .cv-share-knob { position: absolute; top: 2px; left: 2px; width: 16px; height: 16px; border-radius: 50%; background: #fff; box-shadow: 0 1px 2px rgba(0,0,0,0.2); transition: transform .15s; }
+        .cv-share-switch.on .cv-share-knob { transform: translateX(14px); }
+        .cv-share-text { display: flex; flex-direction: column; gap: 1px; }
+        .cv-share-title { font-size: 12.5px; font-weight: 600; color: #4a4238; }
+        .cv-share-sub { font-size: 11.5px; color: #a89f92; line-height: 1.35; }
+        .cv-share-sub.warn { color: #d92d20; font-weight: 600; }
 
         /* 완료 모달 — 바로 지원 */
         .cvm-overlay { position: fixed; inset: 0; z-index: 1000; background: rgba(20,16,12,0.55); display: flex; align-items: center; justify-content: center; padding: 20px; }

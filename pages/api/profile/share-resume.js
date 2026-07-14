@@ -30,6 +30,26 @@ export default async function handler(req, res) {
 
     const { action } = req.body || {}
 
+    // 명시적 set (idempotent) — /cv 등록 흐름에서 공개 ON을 확정적으로 켤 때 사용.
+    // toggle과 달리 현재 상태를 뒤집지 않아 이미 공개된 이력서를 실수로 끄지 않는다.
+    if (action === 'set') {
+      const value = !!(req.body || {}).value
+      if (value && !profile.is_resume_public) {
+        const vtmResult = await sendToVtm(user.id, profile.resume_url, profile.full_name)
+        await supabase
+          .from('user_profiles')
+          .update({ is_resume_public: true, vtm_talent_id: vtmResult.talent_id || null, updated_at: new Date().toISOString() })
+          .eq('id', user.id)
+      } else if (!value && profile.is_resume_public) {
+        await deleteFromVtm(user.id)
+        await supabase
+          .from('user_profiles')
+          .update({ is_resume_public: false, vtm_talent_id: null, updated_at: new Date().toISOString() })
+          .eq('id', user.id)
+      }
+      return res.json({ is_resume_public: value })
+    }
+
     if (action === 'toggle') {
       const newValue = !profile.is_resume_public
 
