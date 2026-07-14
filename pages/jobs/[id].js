@@ -7,8 +7,6 @@ import { supabase } from '../../lib/supabaseClient'
 import { useT } from '../../lib/i18n'
 import Icon from '../../components/Icon'
 import { DEFAULT_IMAGES, roleLabel, DEFAULT_WORK_DAYS, DEFAULT_WORK_HOURS, DEFAULT_PAID_LEAVE, DEFAULT_CONTRACT } from '../../constants/jobs'
-import { COMPANY_PROFILES } from '../../data/companyProfiles.js'
-import { generateCompanyDescription } from '../../utils/companyDescription'
 import { getStoredUtm } from '../../lib/utm'
 
 // 스토리지 URL에서 원본 이력서 파일명 복원 (업로드 시 `${timestamp}_${safeName}`로 저장됨)
@@ -54,14 +52,11 @@ export default function JobDetailPage({ job }) {
   const [applying, setApplying] = useState(false)
   const [applied, setApplied] = useState(false)
   const [showApplyForm, setShowApplyForm] = useState(false)
-  const [aiSummaryReady, setAiSummaryReady] = useState(false)
   const [bookmarked, setBookmarked] = useState(false)
   const [appliedAlready, setAppliedAlready] = useState(false)
 
   useEffect(() => {
-    const timer = setTimeout(() => setAiSummaryReady(true), 1200 + Math.random() * 600)
     if (typeof fbq === 'function') fbq('track', 'ViewContent', { content_name: job.title, content_category: job.company, content_type: 'job' })
-    return () => clearTimeout(timer)
   }, [job])
 
   useEffect(() => {
@@ -282,57 +277,6 @@ export default function JobDetailPage({ job }) {
 
             <div className="jd-divider" />
 
-            {/* Company Overview */}
-            <div className="jd-section-title">Company Overview</div>
-            <div className="jd-company-overview">
-              <div className="jd-co-overview-header">
-                <div className={`jd-co-overview-badge ${aiSummaryReady ? '' : 'ai-thinking'}`}>
-                  {aiSummaryReady ? 'AI Summary' : 'Analyzing...'}
-                </div>
-              </div>
-              {!aiSummaryReady ? (
-                <div className="ai-loading">
-                  <div className="ai-loading-line shimmer" style={{ width: '100%' }} />
-                  <div className="ai-loading-line shimmer" style={{ width: '92%' }} />
-                  <div className="ai-loading-line shimmer" style={{ width: '85%' }} />
-                  <div className="ai-loading-line shimmer" style={{ width: '96%' }} />
-                  <div className="ai-loading-line shimmer" style={{ width: '70%' }} />
-                  <div className="ai-loading-line shimmer" style={{ width: '88%' }} />
-                </div>
-              ) : (
-                <div className="ai-fade-in">
-                  <div className="jd-co-overview-text">
-                    {generateCompanyDescription(job)}
-                  </div>
-                  {(() => {
-                    const p = COMPANY_PROFILES[job.company]
-                    return (
-                      <div className="jd-co-overview-stats">
-                        <div className="jd-co-stat">
-                          <div className="jd-co-stat-num">{p?.employees?.toLocaleString() || job.company_size || '–'}+</div>
-                          <div className="jd-co-stat-label">Employees</div>
-                        </div>
-                        <div className="jd-co-stat">
-                          <div className="jd-co-stat-num">{p?.founded || '–'}</div>
-                          <div className="jd-co-stat-label">Founded</div>
-                        </div>
-                        <div className="jd-co-stat">
-                          <div className="jd-co-stat-num" style={{ fontSize: p?.revenue?.length > 10 ? 12 : 15 }}>{p?.revenue || 'Undisclosed'}</div>
-                          <div className="jd-co-stat-label">Revenue</div>
-                        </div>
-                        <div className="jd-co-stat">
-                          <div className="jd-co-stat-num" style={{ fontSize: p?.funding?.length > 12 ? 11 : 15 }}>{p?.funding || 'Undisclosed'}</div>
-                          <div className="jd-co-stat-label">Funding</div>
-                        </div>
-                      </div>
-                    )
-                  })()}
-                </div>
-              )}
-            </div>
-
-            <div className="jd-divider" />
-
             {/* Work Information */}
             <div className="jd-section-title">Work Information</div>
             <div className="jd-work-info">
@@ -510,25 +454,6 @@ export default function JobDetailPage({ job }) {
         .jd-work-icon { font-size: 18px; flex-shrink: 0; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; background: #fafaf8; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.06); }
         .jd-work-label { font-size: 11px; color: #999; font-weight: 600; text-transform: uppercase; letter-spacing: .03em; }
         .jd-work-value { font-size: 13px; color: #222; font-weight: 600; margin-top: 2px; }
-
-        .jd-company-overview { background: linear-gradient(135deg, #f8f9ff 0%, #f0f4ff 100%); border: 1px solid #e0e7ff; border-radius: 12px; padding: 20px; margin-bottom: 24px; }
-        .jd-co-overview-header { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
-        .jd-co-overview-badge { font-size: 11px; font-weight: 700; color: #6366f1; background: #e0e7ff; padding: 3px 10px; border-radius: 20px; display: inline-flex; align-items: center; gap: 4px; }
-        .jd-co-overview-badge::before { content: '\\2726'; font-size: 10px; }
-        .jd-co-overview-badge.ai-thinking { animation: aiBadgePulse 1.2s ease-in-out infinite; }
-        @keyframes aiBadgePulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
-        .jd-co-overview-text { font-size: 13.5px; color: #374151; line-height: 1.7; margin-bottom: 16px; white-space: pre-line; }
-        .jd-co-overview-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 0; border-top: 1px solid #e0e7ff; padding-top: 14px; }
-        .jd-co-stat { text-align: center; padding: 8px 0; }
-        .jd-co-stat:nth-child(odd) { border-right: 1px solid #e0e7ff; }
-        .jd-co-stat-num { font-size: 15px; font-weight: 800; color: #111; }
-        .jd-co-stat-label { font-size: 11px; color: #777; margin-top: 2px; }
-
-        .ai-loading { display: flex; flex-direction: column; gap: 10px; padding: 4px 0 16px; }
-        .ai-loading-line { height: 12px; border-radius: 6px; background: linear-gradient(90deg, #e0e7ff 25%, #ede9fe 50%, #e0e7ff 75%); background-size: 200% 100%; animation: shimmer 1.5s infinite; }
-        @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
-        .ai-fade-in { animation: aiFadeIn 0.6s ease-out both; }
-        @keyframes aiFadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
 
         .jd-apply-float { position: sticky; bottom: 0; background: #fafaf8; padding: 16px 32px; border-top: 1px solid #f0f0f0; z-index: 2; }
         .jd-apply-btn { width: 100%; padding: 14px; background: #ff4400; color: #fff; border: none; border-radius: 8px; font-size: 15px; font-weight: 700; cursor: pointer; transition: background .15s; font-family: inherit; }
