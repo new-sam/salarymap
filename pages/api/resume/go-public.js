@@ -52,14 +52,14 @@ export default async function handler(req, res) {
   }
 }
 
-// 자체 완결 확인 페이지(베트남어 우선 + 한국어). CSP/외부의존 없음.
+// 자체 완결 확인 페이지(베트남어 전용 — 수신자 전원 베트남 유저). CSP/외부의존 없음.
 function page(state) {
   const M = {
-    done: { emoji: '🎉', vi: 'CV của bạn đã được công khai!', vi2: 'Giờ bạn đã đủ điều kiện tham gia sự kiện thưởng 2.000.000 VND. Các công ty phù hợp có thể liên hệ với bạn.', ko: '이력서가 공개되었습니다 — 이제 축하금 이벤트 참여 가능!' },
-    already: { emoji: '✅', vi: 'CV của bạn đã ở chế độ công khai.', vi2: 'Bạn đã đủ điều kiện tham gia sự kiện thưởng. Không cần làm gì thêm.', ko: '이미 공개 상태입니다 — 이벤트 참여 가능합니다.' },
-    noresume: { emoji: '📄', vi: 'Chưa tìm thấy CV.', vi2: 'Vui lòng đăng ký CV trước tại salary-fyi.com/cv.', ko: '등록된 이력서가 없습니다.' },
-    invalid: { emoji: '⚠️', vi: 'Liên kết không hợp lệ hoặc đã hết hạn.', vi2: 'Vui lòng dùng nút trong email mới nhất.', ko: '유효하지 않은 링크입니다.' },
-    error: { emoji: '⚠️', vi: 'Đã có lỗi xảy ra.', vi2: 'Vui lòng thử lại sau giây lát.', ko: '오류가 발생했습니다. 잠시 후 다시 시도해 주세요.' },
+    done: { emoji: '🎉', vi: 'CV của bạn đã được công khai!', vi2: 'Giờ bạn đã đủ điều kiện tham gia sự kiện thưởng 2.000.000₫. Các công ty phù hợp có thể liên hệ với bạn.' },
+    already: { emoji: '✅', vi: 'CV của bạn đã ở chế độ công khai.', vi2: 'Bạn đã đủ điều kiện tham gia sự kiện thưởng. Không cần làm gì thêm.' },
+    noresume: { emoji: '📄', vi: 'Chưa tìm thấy CV.', vi2: 'Vui lòng đăng ký CV trước tại salary-fyi.com/cv.' },
+    invalid: { emoji: '⚠️', vi: 'Liên kết không hợp lệ hoặc đã hết hạn.', vi2: 'Vui lòng dùng nút trong email mới nhất.' },
+    error: { emoji: '⚠️', vi: 'Đã có lỗi xảy ra.', vi2: 'Vui lòng thử lại sau giây lát.' },
   }
   const m = M[state] || M.error
   return `<!doctype html><html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>FYI</title></head>
@@ -67,8 +67,7 @@ function page(state) {
 <div style="max-width:440px;text-align:center;background:#fff;border:1px solid #eee5da;border-radius:20px;padding:40px 28px;box-shadow:0 8px 30px rgba(0,0,0,.06)">
 <div style="font-size:52px;line-height:1;margin-bottom:18px">${m.emoji}</div>
 <div style="font-size:19px;font-weight:800;margin-bottom:10px;letter-spacing:-.01em">${m.vi}</div>
-<div style="font-size:14px;color:#6b6357;line-height:1.5;margin-bottom:8px">${m.vi2}</div>
-<div style="font-size:12.5px;color:#a89f92;margin-bottom:24px">${m.ko}</div>
+<div style="font-size:14px;color:#6b6357;line-height:1.5;margin-bottom:24px">${m.vi2}</div>
 <a href="https://salary-fyi.com/jobs" style="display:inline-block;background:#ff6000;color:#fff;font-weight:700;font-size:14px;text-decoration:none;padding:12px 24px;border-radius:10px">Xem việc làm phù hợp →</a>
 </div></body></html>`
 }
