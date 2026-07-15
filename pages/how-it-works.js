@@ -4,22 +4,22 @@ import { useT } from '../lib/i18n';
 const css = `
 *, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
 :root {
-  --bg:#0c0c0b; --bg1:#141413; --bg2:#1c1c1a;
-  --line:rgba(255,255,255,0.07);
-  --white:#f2f0eb; --mid:rgba(242,240,235,0.42); --dim:rgba(242,240,235,0.2);
-  --orange:#ff6000;
+  --bg:var(--sm-bg); --bg1:var(--sm-surface); --bg2:var(--sm-surface-sub);
+  --line:var(--sm-line);
+  --white:var(--sm-ink); --mid:var(--sm-text-sub); --dim:var(--sm-text-mute);
+  --orange:var(--sm-accent);
 }
 html { scroll-behavior:smooth; }
 body { background:var(--bg); color:var(--white); font-family:'Geist',sans-serif; -webkit-font-smoothing:antialiased; }
-nav { position:fixed; top:0; left:0; right:0; z-index:200; padding:0 52px; height:56px; display:flex; align-items:center; justify-content:space-between; background:#0c0c0b; border-bottom:1px solid var(--line); }
-.logo { display:flex; align-items:center; gap:10px; font-family:'Barlow',sans-serif; font-size:13px; font-weight:400; color:var(--white); text-decoration:none; letter-spacing:-0.08px; }
-.logo img { width:28px; height:28px; object-fit:contain; }
+nav { position:fixed; top:0; left:0; right:0; z-index:200; padding:0 52px; height:56px; display:flex; align-items:center; justify-content:space-between; background:var(--sm-bg); border-bottom:1px solid var(--line); }
+.logo { display:flex; align-items:center; gap:10px; font-family:inherit; font-size:13px; font-weight:400; color:var(--white); text-decoration:none; letter-spacing:-0.08px; }
+.logo img { height:26px; width:auto; object-fit:contain; }
 .logo em { color:var(--orange); font-style:normal; }
 .nav-r { display:flex; align-items:center; gap:32px; }
-.nav-link { font-family:'Barlow',sans-serif; font-size:14px; color:var(--white); text-decoration:none; transition:color .15s; }
+.nav-link { font-family:inherit; font-size:14px; color:var(--white); text-decoration:none; transition:color .15s; }
 .nav-link:hover { color:var(--orange); }
 .nav-link.active { color:var(--orange); }
-.nav-btn { font-family:'Barlow',sans-serif; font-size:13px; font-weight:600; background:var(--orange); color:#fff; border:none; padding:8px 18px; border-radius:100px; cursor:pointer; }
+.nav-btn { font-family:inherit; font-size:13px; font-weight:600; background:var(--orange); color:#fff; border:none; padding:8px 18px; border-radius:100px; cursor:pointer; }
 .page { max-width:720px; margin:0 auto; padding:120px 52px 80px; }
 .kicker { font-family:'Geist Mono',monospace; font-size:11px; color:var(--orange); letter-spacing:2.5px; text-transform:uppercase; margin-bottom:24px; }
 .page-h1 { font-size:clamp(32px,4vw,52px); font-weight:800; letter-spacing:-2px; line-height:1.08; margin-bottom:16px; }
@@ -151,8 +151,7 @@ export default function HowItWorks() {
       <style dangerouslySetInnerHTML={{ __html: css }} />
       <nav>
         <a className="logo" href="/">
-          <img src="/logo.png" alt="FYI" />
-          <span dangerouslySetInnerHTML={{ __html: gt('nav.brandTagline') }} />
+          <img src="/fyi-logo-nav.png" alt="FYI" />
         </a>
         <div className="nav-r">
           <a className="nav-link" href="/">{t.navHome}</a>

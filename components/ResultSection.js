@@ -137,10 +137,10 @@ export default function ResultSection({ salary, role, experience, company, isLog
 
   if (!result) return (
     <div style={{ padding:'clamp(20px,4vw,32px)', textAlign:'center' }}>
-      <div style={{ width:60, height:60, borderRadius:'50%', border:'3px solid #ff4400', borderTopColor:'transparent',
+      <div style={{ width:60, height:60, borderRadius:'50%', border:'3px solid var(--sm-accent)', borderTopColor:'transparent',
         animation:'spin .8s linear infinite', margin:'40px auto 16px' }} />
       <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
-      <div style={{ fontSize:14, color:'rgba(255,255,255,0.4)' }}>{t('result.loading')}</div>
+      <div style={{ fontSize:14, color:'var(--sm-text-sub)' }}>{t('result.loading')}</div>
     </div>
   )
 
@@ -149,9 +149,9 @@ export default function ResultSection({ salary, role, experience, company, isLog
   const state = percentile <= 33 ? 'high' : percentile <= 66 ? 'mid' : 'low'
 
   const verdictMap = {
-    high: { bg: 'rgba(34,197,94,0.1)', border: 'rgba(34,197,94,0.25)', color: '#4ade80', icon: '✦', text: t('result.high') },
-    mid: { bg: 'rgba(250,204,21,0.1)', border: 'rgba(250,204,21,0.25)', color: '#facc15', icon: '◎', text: t('result.mid') },
-    low: { bg: 'rgba(255,68,0,0.1)', border: 'rgba(255,68,0,0.25)', color: '#ff6b35', icon: '↓', text: t('result.low') },
+    high: { bg: 'rgba(22,163,74,0.08)', border: 'rgba(22,163,74,0.25)', color: 'var(--sm-green)', icon: '✦', text: t('result.high') },
+    mid: { bg: 'rgba(217,119,6,0.08)', border: 'rgba(217,119,6,0.25)', color: 'var(--sm-amber)', icon: '◎', text: t('result.mid') },
+    low: { bg: 'var(--sm-accent-tint)', border: 'var(--sm-accent-border)', color: 'var(--sm-accent)', icon: '↓', text: t('result.low') },
   }
   const verdict = verdictMap[state]
   const pctPosition = Math.max(5, Math.min(95, 100 - percentile))
@@ -187,12 +187,12 @@ export default function ResultSection({ salary, role, experience, company, isLog
   }
 
   return (
-    <div style={{ fontFamily: "'Be Vietnam Pro','Barlow',sans-serif", WebkitFontSmoothing: 'antialiased', position: 'relative' }}>
+    <div style={{ fontFamily: "inherit", WebkitFontSmoothing: 'antialiased', position: 'relative' }}>
       <style>{`
         @keyframes fadeSlideUp { from { opacity:0; transform:translateY(20px); } to { opacity:1; transform:translateY(0); } }
         @keyframes glowPulse { 0%,100% { box-shadow:0 0 12px rgba(255,68,0,0.4); } 50% { box-shadow:0 0 24px rgba(255,68,0,0.6); } }
-        .rs-stat-box { background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); border-radius:14px; padding:16px 12px; text-align:center; }
-        .rs-co-row { display:flex; align-items:center; gap:12px; padding:12px 14px; border:1px solid rgba(255,255,255,0.08); border-radius:12px; background:rgba(255,255,255,0.03); }
+        .rs-stat-box { background:var(--sm-surface-sub); border:1px solid var(--sm-line); border-radius:14px; padding:16px 12px; text-align:center; }
+        .rs-co-row { display:flex; align-items:center; gap:12px; padding:12px 14px; border:1px solid var(--sm-line); border-radius:12px; background:var(--sm-surface); }
         @media(max-width:480px) { .rs-stat-grid { gap:6px !important; } .rs-big-pct { font-size:56px !important; } }
       `}</style>
 
@@ -202,38 +202,38 @@ export default function ResultSection({ salary, role, experience, company, isLog
         : undefined}>
 
       {/* Hero */}
-      <div style={{ background:'linear-gradient(180deg,#161616 0%,#0d0d0d 100%)', padding:'clamp(20px,4vw,32px) clamp(16px,4vw,24px)', borderRadius:'20px', animation:'fadeSlideUp .5s ease' }}>
+      <div style={{ background:'linear-gradient(180deg,var(--sm-surface) 0%,var(--sm-surface-sub) 100%)', padding:'clamp(20px,4vw,32px) clamp(16px,4vw,24px)', borderRadius:'20px', animation:'fadeSlideUp .5s ease' }}>
 
         {/* Eyebrow */}
-        <div style={{ fontSize:'10px', fontWeight:700, letterSpacing:'.1em', color:'rgba(255,255,255,0.25)', textTransform:'uppercase', textAlign:'center', marginBottom:'16px' }}>
+        <div style={{ fontSize:'10px', fontWeight:700, letterSpacing:'.1em', color:'var(--sm-text-mute)', textTransform:'uppercase', textAlign:'center', marginBottom:'16px' }}>
           {t('result.eyebrow', { role, experience })}
         </div>
 
         {/* Big percentile */}
         <div style={{ textAlign:'center', marginBottom:'8px' }}>
-          <span className="rs-big-pct" style={{ fontSize:'80px', fontWeight:900, fontStyle:'italic', color:'#ff4400', textShadow:'0 0 60px rgba(255,68,0,0.3)', lineHeight:1 }}>
+          <span className="rs-big-pct" style={{ fontSize:'80px', fontWeight:900, fontStyle:'italic', color:'var(--sm-accent)', textShadow:'0 0 60px rgba(255,68,0,0.15)', lineHeight:1 }}>
             {percentile <= 50 ? `Top ${percentile}%` : `Bottom ${100 - percentile}%`}
           </span>
         </div>
-        <div style={{ textAlign:'center', fontSize:'13px', color:'rgba(255,255,255,0.4)', marginBottom:'24px' }}>
+        <div style={{ textAlign:'center', fontSize:'13px', color:'var(--sm-text-sub)', marginBottom:'24px' }}>
           {t('result.among', { role, experience })}
         </div>
 
         {/* 3 stat boxes */}
         <div className="rs-stat-grid" style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:'8px', marginBottom:'20px' }}>
           <div className="rs-stat-box">
-            <div style={{ fontSize:'24px', fontWeight:900, color:'#fff' }}>{userSalary}M</div>
-            <div style={{ fontSize:'11px', color:'rgba(255,255,255,0.35)', marginTop:'4px' }}>{t('result.yourSalary')}</div>
+            <div style={{ fontSize:'24px', fontWeight:900, color:'var(--sm-ink)' }}>{userSalary}M</div>
+            <div style={{ fontSize:'11px', color:'var(--sm-text-mute)', marginTop:'4px' }}>{t('result.yourSalary')}</div>
           </div>
           <div className="rs-stat-box">
-            <div style={{ fontSize:'24px', fontWeight:900, color:'#fff' }}>{marketMedian}M</div>
-            <div style={{ fontSize:'11px', color:'rgba(255,255,255,0.35)', marginTop:'4px' }}>{t('result.marketMedian')}</div>
+            <div style={{ fontSize:'24px', fontWeight:900, color:'var(--sm-ink)' }}>{marketMedian}M</div>
+            <div style={{ fontSize:'11px', color:'var(--sm-text-mute)', marginTop:'4px' }}>{t('result.marketMedian')}</div>
           </div>
-          <div className="rs-stat-box" style={{ background:'rgba(255,68,0,0.08)', border:'1px solid rgba(255,68,0,0.25)' }}>
-            <div style={{ fontSize:'24px', fontWeight:900, color: isPositive ? '#4ade80' : '#ff4400' }}>
+          <div className="rs-stat-box" style={{ background:'var(--sm-accent-tint2)', border:'1px solid var(--sm-accent-border)' }}>
+            <div style={{ fontSize:'24px', fontWeight:900, color: isPositive ? 'var(--sm-green)' : 'var(--sm-accent)' }}>
               {isPositive ? '+' : ''}{diff}M
             </div>
-            <div style={{ fontSize:'11px', color:'rgba(255,255,255,0.35)', marginTop:'4px' }}>{isPositive ? t('result.aboveMedian') : t('result.belowMedian')}</div>
+            <div style={{ fontSize:'11px', color:'var(--sm-text-mute)', marginTop:'4px' }}>{isPositive ? t('result.aboveMedian') : t('result.belowMedian')}</div>
           </div>
         </div>
 
@@ -247,17 +247,17 @@ export default function ResultSection({ salary, role, experience, company, isLog
 
         {/* Percentile bar */}
         <div style={{ marginBottom:'20px' }}>
-          <div style={{ position:'relative', height:'6px', background:'rgba(255,255,255,0.07)', borderRadius:'3px' }}>
+          <div style={{ position:'relative', height:'6px', background:'var(--sm-line)', borderRadius:'3px' }}>
             <div style={{ position:'absolute', left:0, top:0, height:'100%', width:`${pctPosition}%`,
-              background:'linear-gradient(90deg,rgba(255,68,0,0.3),#ff4400)', borderRadius:'3px' }} />
+              background:'linear-gradient(90deg,rgba(255,68,0,0.3),var(--sm-accent))', borderRadius:'3px' }} />
             <div style={{ position:'absolute', left:`${pctPosition}%`, top:'50%', transform:'translate(-50%,-50%)',
-              width:'12px', height:'12px', borderRadius:'50%', background:'#ff4400',
+              width:'12px', height:'12px', borderRadius:'50%', background:'var(--sm-accent)',
               animation:'glowPulse 2s ease-in-out infinite' }} />
           </div>
           <div style={{ display:'flex', justifyContent:'space-between', marginTop:'6px' }}>
-            <span style={{ fontSize:'9px', color:'rgba(255,255,255,0.2)' }}>{t('result.lowest')}</span>
-            <span style={{ fontSize:'9px', color:'rgba(255,255,255,0.2)' }}>{t('result.median')}</span>
-            <span style={{ fontSize:'9px', color:'rgba(255,255,255,0.2)' }}>{t('result.highest')}</span>
+            <span style={{ fontSize:'9px', color:'var(--sm-text-mute)' }}>{t('result.lowest')}</span>
+            <span style={{ fontSize:'9px', color:'var(--sm-text-mute)' }}>{t('result.median')}</span>
+            <span style={{ fontSize:'9px', color:'var(--sm-text-mute)' }}>{t('result.highest')}</span>
           </div>
         </div>
 
@@ -265,7 +265,7 @@ export default function ResultSection({ salary, role, experience, company, isLog
         <div style={{ display:'flex', alignItems:'flex-end', gap:'3px', height:'60px', marginBottom:'24px' }}>
           {bars.map((b, i) => (
             <div key={i} style={{ flex:1, height:`${b.h}%`, borderRadius:'2px 2px 0 0', transition:'all .3s',
-              background: b.isUser ? '#ff4400' : b.belowUser ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.04)',
+              background: b.isUser ? 'var(--sm-accent)' : b.belowUser ? 'var(--sm-line-strong)' : 'var(--sm-line)',
               boxShadow: b.isUser ? '0 0 8px rgba(255,68,0,0.4)' : 'none' }} />
           ))}
         </div>
@@ -273,11 +273,11 @@ export default function ResultSection({ salary, role, experience, company, isLog
 
       {/* 나보다 더 주는 회사 — /api/result topCompanies. 클릭 → 회사 상세 패널(가입 게이트 연동) */}
       {result.topCompanies?.length > 0 && (
-        <div style={{ marginTop:'24px', background:'rgba(255,255,255,0.03)', border:'1px solid rgba(255,255,255,0.08)', borderRadius:'18px', padding:'18px 16px' }}>
-          <div style={{ fontSize:'21px', fontWeight:900, color:'#fff', lineHeight:1.2, letterSpacing:'-.01em', marginBottom:'8px' }}>
+        <div style={{ marginTop:'24px', background:'var(--sm-surface)', border:'1px solid var(--sm-line)', borderRadius:'18px', padding:'18px 16px' }}>
+          <div style={{ fontSize:'21px', fontWeight:900, color:'var(--sm-ink)', lineHeight:1.2, letterSpacing:'-.01em', marginBottom:'8px' }}>
             {t('result.topCoHead')}
           </div>
-          <div style={{ fontSize:'13px', color:'rgba(255,255,255,0.55)', marginBottom:'16px' }}>
+          <div style={{ fontSize:'13px', color:'var(--sm-text-sub)', marginBottom:'16px' }}>
             {t('result.topCoSub', { role })}
           </div>
           <div style={{ display:'flex', flexDirection:'column', gap:'8px' }}>
@@ -289,10 +289,10 @@ export default function ResultSection({ salary, role, experience, company, isLog
                 }}
                 style={{ cursor:'pointer', transition:'border-color .12s' }}
                 onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(255,68,0,0.4)' }}
-                onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)' }}>
-                <div style={{ width:38, height:38, borderRadius:'9px', background:'rgba(255,255,255,0.06)',
-                  border:'1px solid rgba(255,255,255,0.1)', display:'flex', alignItems:'center', justifyContent:'center',
-                  fontSize:'12px', fontWeight:800, color:'rgba(255,255,255,0.45)', flexShrink:0, overflow:'hidden' }}>
+                onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--sm-line)' }}>
+                <div style={{ width:38, height:38, borderRadius:'9px', background:'var(--sm-surface-sub)',
+                  border:'1px solid var(--sm-line)', display:'flex', alignItems:'center', justifyContent:'center',
+                  fontSize:'12px', fontWeight:800, color:'var(--sm-text-mute)', flexShrink:0, overflow:'hidden' }}>
                   {co.domain
                     ? <img src={`https://www.google.com/s2/favicons?domain=${co.domain}&sz=128`} alt=""
                         style={{ width:'100%', height:'100%', objectFit:'contain', background:'#fafaf8' }}
@@ -300,12 +300,12 @@ export default function ResultSection({ salary, role, experience, company, isLog
                     : co.name.slice(0, 2).toUpperCase()}
                 </div>
                 <div style={{ flex:1, minWidth:0 }}>
-                  <div style={{ fontSize:'14px', fontWeight:700, color:'#fff', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{co.name}</div>
-                  <div style={{ fontSize:'11px', color:'rgba(255,255,255,0.4)', marginTop:'2px' }}>{role} · {t('result.median')}</div>
+                  <div style={{ fontSize:'14px', fontWeight:700, color:'var(--sm-ink)', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{co.name}</div>
+                  <div style={{ fontSize:'11px', color:'var(--sm-text-sub)', marginTop:'2px' }}>{role} · {t('result.median')}</div>
                 </div>
                 <div style={{ textAlign:'right', flexShrink:0 }}>
-                  <div style={{ fontSize:'14px', fontWeight:700, color:'#fff', whiteSpace:'nowrap' }}>{co.median}M</div>
-                  <div style={{ fontSize:'11px', fontWeight:700, color:'#4ade80', marginTop:'2px' }}>+{co.premiumPct}%</div>
+                  <div style={{ fontSize:'14px', fontWeight:700, color:'var(--sm-ink)', whiteSpace:'nowrap' }}>{co.median}M</div>
+                  <div style={{ fontSize:'11px', fontWeight:700, color:'var(--sm-green)', marginTop:'2px' }}>+{co.premiumPct}%</div>
                 </div>
               </div>
             ))}
@@ -315,9 +315,9 @@ export default function ResultSection({ salary, role, experience, company, isLog
               const grid = document.querySelector('.cards-section') || document.getElementById('company-grid-root')
               grid?.scrollIntoView({ behavior:'smooth' })
             }}
-            style={{ width:'100%', marginTop:'14px', background:'rgba(255,255,255,0.05)', color:'#fff',
-              border:'1px solid rgba(255,255,255,0.12)', borderRadius:'12px', padding:'13px', fontSize:'13px', fontWeight:700,
-              cursor:'pointer', fontFamily:"'Be Vietnam Pro',sans-serif" }}>
+            style={{ width:'100%', marginTop:'14px', background:'var(--sm-surface-sub)', color:'var(--sm-ink)',
+              border:'1px solid var(--sm-line-strong)', borderRadius:'12px', padding:'13px', fontSize:'13px', fontWeight:700,
+              cursor:'pointer', fontFamily:"inherit" }}>
             {t('result.topCoAll')}
           </button>
         </div>
@@ -332,22 +332,22 @@ export default function ResultSection({ salary, role, experience, company, isLog
         const subKey = { higher:'result.jobsSubHigher', role:'result.jobsSubRole', related:'result.jobsSubRelated' }[tier]
         const showBump = tier === 'higher' || tier === 'related'
         return (
-          <div style={{ marginTop:'24px', background:'linear-gradient(180deg,rgba(255,68,0,0.06),rgba(255,68,0,0))',
-            border:'1px solid rgba(255,68,0,0.18)', borderRadius:'18px', padding:'18px 16px' }}>
+          <div style={{ marginTop:'24px', background:'linear-gradient(180deg,var(--sm-accent-tint2),rgba(255,68,0,0))',
+            border:'1px solid var(--sm-accent-border)', borderRadius:'18px', padding:'18px 16px' }}>
             <div style={{ display:'flex', alignItems:'center', gap:'8px', marginBottom:'10px' }}>
-              <span style={{ width:'26px', height:'26px', borderRadius:'8px', background:'rgba(255,68,0,0.15)',
+              <span style={{ width:'26px', height:'26px', borderRadius:'8px', background:'var(--sm-accent-tint)',
                 display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#ff4400" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--sm-accent)" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                   <rect x="2" y="7" width="20" height="14" rx="2" /><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2" /></svg>
               </span>
-              <span style={{ fontSize:'10px', fontWeight:800, letterSpacing:'.12em', textTransform:'uppercase', color:'#ff4400' }}>
+              <span style={{ fontSize:'10px', fontWeight:800, letterSpacing:'.12em', textTransform:'uppercase', color:'var(--sm-accent)' }}>
                 {t('result.jobsEyebrow')}
               </span>
             </div>
-            <div style={{ fontSize:'21px', fontWeight:900, color:'#fff', lineHeight:1.2, letterSpacing:'-.01em', marginBottom:'8px' }}>
+            <div style={{ fontSize:'21px', fontWeight:900, color:'var(--sm-ink)', lineHeight:1.2, letterSpacing:'-.01em', marginBottom:'8px' }}>
               {t(headKey, { role })}
             </div>
-            <div style={{ fontSize:'13px', color:'rgba(255,255,255,0.55)', marginBottom:'16px' }}>
+            <div style={{ fontSize:'13px', color:'var(--sm-text-sub)', marginBottom:'16px' }}>
               {t(subKey, { count: total, role })}
             </div>
             <div style={{ display:'flex', flexDirection:'column' }}>
@@ -358,37 +358,37 @@ export default function ResultSection({ salary, role, experience, company, isLog
                 const bump = sal.min > salaryVnd ? Math.round(((sal.min - salaryVnd) / salaryVnd) * 100) : null
                 return (
                   <div key={job.id || i} onClick={() => !locked && goToJob(job.id)} style={{ display:'flex', alignItems:'center', gap:'10px', padding:'12px 4px',
-                    borderBottom: i < shown.length - 1 ? '1px solid rgba(255,255,255,0.06)' : 'none', borderRadius:'8px',
+                    borderBottom: i < shown.length - 1 ? '1px solid var(--sm-line)' : 'none', borderRadius:'8px',
                     cursor: locked ? 'default' : 'pointer', transition:'background .12s',
                     ...(locked ? { filter:'blur(5px)', opacity:0.4, pointerEvents:'none', userSelect:'none' } : {}) }}
-                    onMouseEnter={e => { if (!locked) e.currentTarget.style.background = 'rgba(255,255,255,0.04)' }}
+                    onMouseEnter={e => { if (!locked) e.currentTarget.style.background = 'rgba(0,0,0,0.03)' }}
                     onMouseLeave={e => { e.currentTarget.style.background = 'transparent' }}>
-                    <div style={{ width:38, height:38, borderRadius:'9px', background:'rgba(255,255,255,0.06)',
-                      border:'1px solid rgba(255,255,255,0.1)', display:'flex', alignItems:'center', justifyContent:'center',
-                      fontSize:'12px', fontWeight:800, color:'rgba(255,255,255,0.45)', flexShrink:0, overflow:'hidden' }}>
+                    <div style={{ width:38, height:38, borderRadius:'9px', background:'var(--sm-surface-sub)',
+                      border:'1px solid var(--sm-line)', display:'flex', alignItems:'center', justifyContent:'center',
+                      fontSize:'12px', fontWeight:800, color:'var(--sm-text-mute)', flexShrink:0, overflow:'hidden' }}>
                       {job.logo_url
                         ? <img src={job.logo_url} alt="" style={{ width:'100%', height:'100%', objectFit:'cover' }} />
                         : (job.company_initials || job.company?.slice(0, 2) || '–').toUpperCase()}
                     </div>
                     <div style={{ flex:1, minWidth:0 }}>
-                      <div style={{ fontSize:'14px', fontWeight:700, color:'#fff', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{job.company}</div>
-                      <div style={{ fontSize:'11px', color:'rgba(255,255,255,0.4)', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', marginTop:'2px' }}>
+                      <div style={{ fontSize:'14px', fontWeight:700, color:'var(--sm-ink)', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{job.company}</div>
+                      <div style={{ fontSize:'11px', color:'var(--sm-text-sub)', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', marginTop:'2px' }}>
                         {job.title}{job.location ? ` · ${job.location}` : ''}
                       </div>
                     </div>
                     <div style={{ textAlign:'right', flexShrink:0 }}>
-                      <div style={{ fontSize:'14px', fontWeight:700, color:'#fff', whiteSpace:'nowrap' }}>{min}–{max}M</div>
+                      <div style={{ fontSize:'14px', fontWeight:700, color:'var(--sm-ink)', whiteSpace:'nowrap' }}>{min}–{max}M</div>
                       {showBump && bump > 0
-                        ? <div style={{ fontSize:'11px', fontWeight:700, color:'#ff4400', marginTop:'2px' }}>+{bump}%</div>
-                        : <div style={{ fontSize:'10px', color:'rgba(255,255,255,0.3)', marginTop:'2px' }}>{t('result.perMonth')}</div>}
+                        ? <div style={{ fontSize:'11px', fontWeight:700, color:'var(--sm-accent)', marginTop:'2px' }}>+{bump}%</div>
+                        : <div style={{ fontSize:'10px', color:'var(--sm-text-mute)', marginTop:'2px' }}>{t('result.perMonth')}</div>}
                     </div>
                   </div>
                 )
               })}
             </div>
-            <button onClick={goToJobs} style={{ width:'100%', marginTop:'14px', background:'#ff4400', color:'#fff',
+            <button onClick={goToJobs} style={{ width:'100%', marginTop:'14px', background:'var(--sm-accent)', color:'#fff',
               border:'none', borderRadius:'12px', padding:'13px', fontSize:'13px', fontWeight:700, cursor:'pointer',
-              fontFamily:"'Be Vietnam Pro',sans-serif" }}>
+              fontFamily:"inherit" }}>
               {moreCount > 0 ? t('result.seeMoreJobs', { count: moreCount }) : t('result.jobsEmptyCta')}
             </button>
           </div>
@@ -397,13 +397,13 @@ export default function ResultSection({ salary, role, experience, company, isLog
 
       {/* Job suggestions — empty state (T4) */}
       {jobData && jobData.tier === 'empty' && (
-        <div style={{ marginTop:'20px', background:'rgba(255,255,255,0.03)', border:'1px solid rgba(255,255,255,0.08)',
+        <div style={{ marginTop:'20px', background:'var(--sm-surface)', border:'1px solid var(--sm-line)',
           borderRadius:'14px', padding:'20px', textAlign:'center' }}>
-          <div style={{ fontSize:'14px', fontWeight:700, color:'#fff', marginBottom:'4px' }}>{t('result.jobsEmptyHead')}</div>
-          <div style={{ fontSize:'12px', color:'rgba(255,255,255,0.4)', marginBottom:'14px' }}>{t('result.jobsEmptySub', { role })}</div>
-          <button onClick={goToJobs} style={{ width:'100%', background:'rgba(255,68,0,0.1)', color:'#ff4400',
-            border:'1px solid rgba(255,68,0,0.25)', borderRadius:'12px', padding:'13px', fontSize:'13px', fontWeight:700,
-            cursor:'pointer', fontFamily:"'Be Vietnam Pro',sans-serif" }}>
+          <div style={{ fontSize:'14px', fontWeight:700, color:'var(--sm-ink)', marginBottom:'4px' }}>{t('result.jobsEmptyHead')}</div>
+          <div style={{ fontSize:'12px', color:'var(--sm-text-sub)', marginBottom:'14px' }}>{t('result.jobsEmptySub', { role })}</div>
+          <button onClick={goToJobs} style={{ width:'100%', background:'var(--sm-accent-tint)', color:'var(--sm-accent)',
+            border:'1px solid var(--sm-accent-border)', borderRadius:'12px', padding:'13px', fontSize:'13px', fontWeight:700,
+            cursor:'pointer', fontFamily:"inherit" }}>
             {t('result.jobsEmptyCta')}
           </button>
         </div>
@@ -417,7 +417,7 @@ export default function ResultSection({ salary, role, experience, company, isLog
           background:'linear-gradient(180deg, rgba(8,8,8,0.15) 0%, rgba(8,8,8,0.55) 100%)', borderRadius:'20px' }}>
           <div style={{ width:44, height:44, borderRadius:'50%', background:'rgba(255,68,0,0.15)',
             border:'1px solid rgba(255,68,0,0.35)', display:'flex', alignItems:'center', justifyContent:'center' }}>
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ff4400" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--sm-accent)" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
               <rect x="3" y="11" width="18" height="11" rx="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" /></svg>
           </div>
           <div style={{ fontSize:'22px', fontWeight:900, color:'#fff', letterSpacing:'-.01em' }}>{t('result.gateTitle')}</div>
@@ -428,9 +428,9 @@ export default function ResultSection({ salary, role, experience, company, isLog
                 else if (window.openAuthModal) window.openAuthModal('gate')
               }
             }}
-            style={{ marginTop:'6px', background:'#ff4400', color:'#fff', border:'none', borderRadius:'14px',
+            style={{ marginTop:'6px', background:'var(--sm-accent)', color:'#fff', border:'none', borderRadius:'14px',
               padding:'15px 28px', fontSize:'15px', fontWeight:800, cursor:'pointer',
-              fontFamily:"'Be Vietnam Pro',sans-serif", boxShadow:'0 8px 32px rgba(255,68,0,0.35)' }}>
+              fontFamily:"inherit", boxShadow:'0 8px 32px rgba(255,68,0,0.35)' }}>
             {t('result.gateCta')}
           </button>
           <div style={{ fontSize:'11px', color:'rgba(255,255,255,0.35)' }}>{t('result.gateHint')}</div>

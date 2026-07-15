@@ -605,14 +605,14 @@ export function Sidebar({ companyName, userEmail, activePage = 'home', activeJob
   const isActive = (k) => activePage === k;
 
   return (
-    <aside className="hidden md:flex bg-[#0A0A0A] border-r border-white/5 px-2 py-3 flex-col gap-0.5 w-[210px] shrink-0 h-screen sticky top-0 overflow-y-auto">
+    <aside className="hidden md:flex bg-white border-r border-gray-200 px-2 py-3 flex-col gap-0.5 w-[210px] shrink-0 h-screen sticky top-0 overflow-y-auto">
       {/* Brand + user */}
-      <div className="px-2 pb-2.5 mb-1.5 border-b border-white/8">
+      <div className="px-2 pb-2.5 mb-1.5 border-b border-gray-100">
         <div className="flex items-center justify-between gap-1.5 mb-2">
           <Brand href="/company" size="sm" />
           <LangToggle align="right" />
         </div>
-        <div className="text-[13px] font-extrabold text-white tracking-tight truncate">{companyName || t('company.sidebar.myCompany')}</div>
+        <div className="text-[13px] font-extrabold text-gray-900 tracking-tight truncate">{companyName || t('company.sidebar.myCompany')}</div>
         <div className="text-[11px] text-gray-500 mt-0.5 truncate font-medium">{userEmail}</div>
       </div>
 
@@ -623,8 +623,8 @@ export function Sidebar({ companyName, userEmail, activePage = 'home', activeJob
           className={cn(
             'flex items-center gap-2 px-2.5 py-1.5 rounded-md text-[13px] font-semibold transition-colors',
             isActive('new')
-              ? 'bg-primary-500/15 text-primary-300'
-              : 'text-gray-300 hover:bg-white/5 hover:text-white'
+              ? 'bg-primary-50 text-primary-600'
+              : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
           )}
         >
           <Plus className="h-3.5 w-3.5" />
@@ -635,8 +635,8 @@ export function Sidebar({ companyName, userEmail, activePage = 'home', activeJob
           className={cn(
             'flex items-center gap-2 px-2.5 py-1.5 rounded-md text-[13px] font-semibold transition-colors',
             isActive('home')
-              ? 'bg-primary-500/15 text-primary-300'
-              : 'text-gray-300 hover:bg-white/5 hover:text-white'
+              ? 'bg-primary-50 text-primary-600'
+              : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
           )}
         >
           <Home className="h-3.5 w-3.5" />
@@ -647,8 +647,8 @@ export function Sidebar({ companyName, userEmail, activePage = 'home', activeJob
           className={cn(
             'flex items-center gap-2 px-2.5 py-1.5 rounded-md text-[13px] font-semibold transition-colors',
             isActive('todo')
-              ? 'bg-primary-500/15 text-primary-300'
-              : 'text-gray-300 hover:bg-white/5 hover:text-white'
+              ? 'bg-primary-50 text-primary-600'
+              : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
           )}
         >
           <CheckSquare className="h-3.5 w-3.5" />
@@ -664,8 +664,8 @@ export function Sidebar({ companyName, userEmail, activePage = 'home', activeJob
           className={cn(
             'flex items-center gap-2 px-2.5 py-1.5 rounded-md text-[13px] font-semibold transition-colors',
             isActive('calendar')
-              ? 'bg-primary-500/15 text-primary-300'
-              : 'text-gray-300 hover:bg-white/5 hover:text-white'
+              ? 'bg-primary-50 text-primary-600'
+              : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
           )}
         >
           <CalendarDays className="h-3.5 w-3.5" />
@@ -681,8 +681,8 @@ export function Sidebar({ companyName, userEmail, activePage = 'home', activeJob
           className={cn(
             'flex items-center gap-2 px-2.5 py-1.5 rounded-md text-[13px] font-semibold transition-colors',
             isActive('settings')
-              ? 'bg-primary-500/15 text-primary-300'
-              : 'text-gray-300 hover:bg-white/5 hover:text-white'
+              ? 'bg-primary-50 text-primary-600'
+              : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
           )}
         >
           <Settings className="h-3.5 w-3.5" />
@@ -702,18 +702,18 @@ export function Sidebar({ companyName, userEmail, activePage = 'home', activeJob
         return (
           <>
             {/* Section divider with title — myJobs */}
-            <div className="h-px bg-white/15 my-3 mx-1" />
+            <div className="h-px bg-gray-200 my-3 mx-1" />
             <div className="px-2.5 pt-0.5 pb-1.5 text-[11.5px] font-extrabold text-gray-400 uppercase tracking-[0.08em]">
               {t('company.sidebar.myJobs', { n: jobs.length })}
             </div>
             <div className="flex flex-col gap-0.5 max-h-[400px] overflow-y-auto">
               {['active', 'inactive'].map(g => (
                 <Fragment key={g}>
-                  <div className="px-2.5 pt-1.5 pb-0.5 text-[12px] font-bold text-gray-300">
+                  <div className="px-2.5 pt-1.5 pb-0.5 text-[12px] font-bold text-gray-700">
                     {t(`company.jobGroup.${g}`, { n: grouped[g].length })}
                   </div>
                   {grouped[g].length === 0 && (
-                    <div className="px-2.5 py-1 text-[11.5px] text-gray-600 font-medium">
+                    <div className="px-2.5 py-1 text-[11.5px] text-gray-500 font-medium">
                       —
                     </div>
                   )}
@@ -727,8 +727,8 @@ export function Sidebar({ companyName, userEmail, activePage = 'home', activeJob
                         className={cn(
                           'flex items-center gap-2 px-2.5 py-1.5 rounded-md text-[12.5px] font-semibold transition-colors',
                           isCurrent
-                            ? 'bg-primary-500/15 text-primary-300'
-                            : 'text-gray-300 hover:bg-white/5 hover:text-white'
+                            ? 'bg-primary-50 text-primary-600'
+                            : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
                         )}
                         title={j.title}
                       >
@@ -745,7 +745,7 @@ export function Sidebar({ companyName, userEmail, activePage = 'home', activeJob
       })()}
 
       <div className="mt-auto pt-3 px-2.5">
-        <button onClick={signOut} className="text-[11px] text-gray-500 hover:text-gray-300 underline-offset-2 hover:underline transition-colors">
+        <button onClick={signOut} className="text-[11px] text-gray-500 hover:text-gray-700 underline-offset-2 hover:underline transition-colors">
           {t('company.sidebar.signOut')}
         </button>
       </div>

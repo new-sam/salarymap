@@ -17,7 +17,7 @@ export default function Document() {
         <link rel="preconnect" href="https://images.unsplash.com" />
         <link rel="preconnect" href="https://www.google.com" />
         {/* SEO defaults */}
-        <meta name="theme-color" content="#0c0c0b" />
+        <meta name="theme-color" content="#ffffff" />
         <meta property="og:locale" content="en_US" />
         {/* Google Analytics 4 — defer to not block render */}
         <script defer src="https://www.googletagmanager.com/gtag/js?id=G-XK0DH7FKDX" />

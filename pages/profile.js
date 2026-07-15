@@ -54,7 +54,7 @@ function CustomSelect({ value, options, items, placeholder, onChange, displayVal
         borderRadius: 8, background: disabled ? '#f5f5f5' : '#fff', color: value ? '#111' : 'rgba(0,0,0,0.3)',
         fontFamily: 'inherit', cursor: disabled ? 'not-allowed' : 'pointer', textAlign: 'left', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         transition: 'border-color .15s', outline: 'none', opacity: disabled ? 0.6 : 1,
-        ...(open ? { borderColor: '#ff6000' } : {}),
+        ...(open ? { borderColor: 'var(--sm-accent)' } : {}),
       }}>
         <span>{displayValue || value || placeholder}</span>
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="rgba(0,0,0,0.3)" strokeWidth="2" style={{ transform: open ? 'rotate(180deg)' : 'none', transition: 'transform .2s' }}><path d="M6 9l6 6 6-6"/></svg>
@@ -69,8 +69,8 @@ function CustomSelect({ value, options, items, placeholder, onChange, displayVal
             ? items.map(o => (
               <button key={o.value} type="button" onClick={() => { onChange(o.value); setOpen(false) }} style={{
                 display: 'block', width: '100%', padding: '9px 12px', border: 'none', borderRadius: 6,
-                background: value === o.value ? 'rgba(255,96,0,0.08)' : 'transparent',
-                color: value === o.value ? '#ff6000' : 'rgba(0,0,0,0.6)',
+                background: value === o.value ? 'rgba(255,68,0,0.08)' : 'transparent',
+                color: value === o.value ? 'var(--sm-accent)' : 'rgba(0,0,0,0.6)',
                 fontSize: 13, fontWeight: value === o.value ? 600 : 400, cursor: 'pointer', textAlign: 'left',
                 fontFamily: 'inherit', transition: 'background .1s',
               }}
@@ -82,8 +82,8 @@ function CustomSelect({ value, options, items, placeholder, onChange, displayVal
             : options.map(opt => (
               <button key={opt} type="button" onClick={() => { onChange(opt); setOpen(false) }} style={{
                 display: 'block', width: '100%', padding: '9px 12px', border: 'none', borderRadius: 6,
-                background: value === opt ? 'rgba(255,96,0,0.08)' : 'transparent',
-                color: value === opt ? '#ff6000' : 'rgba(0,0,0,0.6)',
+                background: value === opt ? 'rgba(255,68,0,0.08)' : 'transparent',
+                color: value === opt ? 'var(--sm-accent)' : 'rgba(0,0,0,0.6)',
                 fontSize: 13, fontWeight: value === opt ? 600 : 400, cursor: 'pointer', textAlign: 'left',
                 fontFamily: 'inherit', transition: 'background .1s',
               }}
@@ -115,9 +115,9 @@ function OnboardModal({ t, onClose }) {
           `}</style>
           <g className="ob-card">
             <rect x="30" y="30" width="140" height="100" rx="12" fill="#f5f5f5" stroke="rgba(0,0,0,0.08)" strokeWidth="1.5" />
-            <circle cx="65" cy="62" r="14" fill="rgba(255,96,0,0.12)" />
-            <circle cx="65" cy="59" r="5" fill="rgba(255,96,0,0.25)" />
-            <path d="M57 72a8 8 0 0116 0" fill="rgba(255,96,0,0.15)" />
+            <circle cx="65" cy="62" r="14" fill="rgba(255,68,0,0.12)" />
+            <circle cx="65" cy="59" r="5" fill="rgba(255,68,0,0.25)" />
+            <path d="M57 72a8 8 0 0116 0" fill="rgba(255,68,0,0.15)" />
             <rect x="90" y="52" width="60" height="6" rx="3" fill="rgba(0,0,0,0.08)">
               <animate attributeName="width" from="0" to="60" dur="1.5s" fill="freeze" />
             </rect>
@@ -132,7 +132,7 @@ function OnboardModal({ t, onClose }) {
             </rect>
           </g>
           <g className="ob-pen">
-            <path d="M120 40 l20-20 l8 8 l-20 20z" fill="#ff6000" opacity="0.8" />
+            <path d="M120 40 l20-20 l8 8 l-20 20z" fill="var(--sm-accent)" opacity="0.8" />
             <path d="M118 42 l2-2 l8 8 l-2 2z" fill="#000" opacity="0.1" />
           </g>
         </svg>
@@ -144,18 +144,18 @@ function OnboardModal({ t, onClose }) {
           <style>{`
             @keyframes obEyeBlink { 0%,40%,100% { transform: scaleY(1); } 45% { transform: scaleY(0.1); } }
             @keyframes obShield { 0%,100% { transform: scale(1); } 50% { transform: scale(1.05); } }
-            @keyframes obToggle { 0%,40% { cx: 78; fill: rgba(0,0,0,0.2); } 50%,100% { cx: 122; fill: #ff6000; } }
+            @keyframes obToggle { 0%,40% { cx: 78; fill: rgba(0,0,0,0.2); } 50%,100% { cx: 122; fill: var(--sm-accent); } }
             .ob-eye { animation: obEyeBlink 3s ease-in-out infinite; transform-origin: center 70px; }
             .ob-shield { animation: obShield 2s ease-in-out infinite; transform-origin: center; }
           `}</style>
           <rect x="65" y="110" width="70" height="28" rx="14" fill="rgba(0,0,0,0.06)" stroke="rgba(0,0,0,0.08)" strokeWidth="1" />
-          <circle r="10" cy="124" fill="#ff6000">
+          <circle r="10" cy="124" fill="var(--sm-accent)">
             <animate attributeName="cx" values="78;122;122;78" keyTimes="0;0.3;0.7;1" dur="4s" repeatCount="indefinite" />
           </circle>
           <g className="ob-eye">
             <path d="M60 70 Q100 35 140 70 Q100 105 60 70Z" fill="none" stroke="rgba(0,0,0,0.15)" strokeWidth="2" />
-            <circle cx="100" cy="70" r="16" fill="rgba(255,96,0,0.08)" stroke="rgba(255,96,0,0.3)" strokeWidth="1.5" />
-            <circle cx="100" cy="70" r="7" fill="#ff6000" opacity="0.6" />
+            <circle cx="100" cy="70" r="16" fill="rgba(255,68,0,0.08)" stroke="rgba(255,68,0,0.3)" strokeWidth="1.5" />
+            <circle cx="100" cy="70" r="7" fill="var(--sm-accent)" opacity="0.6" />
             <circle cx="103" cy="67" r="2.5" fill="#fff" opacity="0.6" />
           </g>
           <g className="ob-shield" transform="translate(148, 50)">
@@ -178,16 +178,16 @@ function OnboardModal({ t, onClose }) {
             .ob-spark-d1 { animation-delay: 0.5s; }
             .ob-spark-d2 { animation-delay: 1s; }
           `}</style>
-          <circle cx="45" cy="80" r="22" fill="rgba(255,96,0,0.08)" stroke="rgba(255,96,0,0.3)" strokeWidth="1.5" />
-          <circle cx="45" cy="74" r="7" fill="rgba(255,96,0,0.2)" />
-          <path d="M35 92a10 10 0 0120 0" fill="rgba(255,96,0,0.12)" />
-          <circle cx="100" cy="80" r="18" fill="rgba(255,96,0,0.06)" stroke="#ff6000" strokeWidth="1.5" />
-          <text x="100" y="84" textAnchor="middle" fontSize="11" fontWeight="800" fill="#ff6000">AI</text>
+          <circle cx="45" cy="80" r="22" fill="rgba(255,68,0,0.08)" stroke="rgba(255,68,0,0.3)" strokeWidth="1.5" />
+          <circle cx="45" cy="74" r="7" fill="rgba(255,68,0,0.2)" />
+          <path d="M35 92a10 10 0 0120 0" fill="rgba(255,68,0,0.12)" />
+          <circle cx="100" cy="80" r="18" fill="rgba(255,68,0,0.06)" stroke="var(--sm-accent)" strokeWidth="1.5" />
+          <text x="100" y="84" textAnchor="middle" fontSize="11" fontWeight="800" fill="var(--sm-accent)">AI</text>
           <circle cx="155" cy="50" r="16" fill="rgba(34,197,94,0.06)" stroke="rgba(34,197,94,0.3)" strokeWidth="1" />
           <rect x="148" y="44" width="14" height="12" rx="2" fill="rgba(34,197,94,0.15)" />
           <circle cx="155" cy="110" r="16" fill="rgba(59,130,246,0.06)" stroke="rgba(59,130,246,0.3)" strokeWidth="1" />
           <rect x="148" y="104" width="14" height="12" rx="2" fill="rgba(59,130,246,0.15)" />
-          <line x1="67" y1="80" x2="82" y2="80" className="ob-line" stroke="#ff6000" strokeWidth="1.5" />
+          <line x1="67" y1="80" x2="82" y2="80" className="ob-line" stroke="var(--sm-accent)" strokeWidth="1.5" />
           <line x1="118" y1="72" x2="139" y2="55" className="ob-line" stroke="#16a34a" strokeWidth="1.5" />
           <line x1="118" y1="88" x2="139" y2="105" className="ob-line" stroke="#3b82f6" strokeWidth="1.5" />
           <circle cx="155" cy="50" fill="#16a34a">
@@ -198,9 +198,9 @@ function OnboardModal({ t, onClose }) {
             <animate attributeName="r" values="4;8;4" dur="2s" begin="0.7s" repeatCount="indefinite" />
             <animate attributeName="opacity" values="0.5;0;0.5" dur="2s" begin="0.7s" repeatCount="indefinite" />
           </circle>
-          <circle cx="130" cy="65" r="2" fill="#ff6000" className="ob-spark" />
-          <circle cx="125" cy="95" r="1.5" fill="#ff6000" className="ob-spark ob-spark-d1" />
-          <circle cx="80" cy="70" r="1.5" fill="#ff6000" className="ob-spark ob-spark-d2" />
+          <circle cx="130" cy="65" r="2" fill="var(--sm-accent)" className="ob-spark" />
+          <circle cx="125" cy="95" r="1.5" fill="var(--sm-accent)" className="ob-spark ob-spark-d1" />
+          <circle cx="80" cy="70" r="1.5" fill="var(--sm-accent)" className="ob-spark ob-spark-d2" />
         </svg>
       ),
     },
@@ -213,7 +213,7 @@ function OnboardModal({ t, onClose }) {
 
   return (
     <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
-      <div style={{ background: '#fff', border: '1px solid rgba(0,0,0,0.06)', borderRadius: 20, maxWidth: 400, width: '100%', overflow: 'hidden', fontFamily: "'Barlow', system-ui", boxShadow: '0 20px 60px rgba(0,0,0,0.15)' }}>
+      <div style={{ background: '#fff', border: '1px solid rgba(0,0,0,0.06)', borderRadius: 20, maxWidth: 400, width: '100%', overflow: 'hidden', fontFamily: 'inherit', boxShadow: '0 20px 60px rgba(0,0,0,0.15)' }}>
         {/* Illustration */}
         <div style={{ display: 'flex', justifyContent: 'center', padding: '36px 0 20px', background: '#fafafa' }}>
           {steps[step].svg}
@@ -224,11 +224,11 @@ function OnboardModal({ t, onClose }) {
           {/* Step dots */}
           <div style={{ display: 'flex', justifyContent: 'center', gap: 6, marginBottom: 20, marginTop: 20 }}>
             {[0,1,2].map(i => (
-              <div key={i} style={{ width: i === step ? 20 : 6, height: 6, borderRadius: 3, background: i === step ? '#ff6000' : 'rgba(0,0,0,0.1)', transition: 'all .3s' }} />
+              <div key={i} style={{ width: i === step ? 20 : 6, height: 6, borderRadius: 3, background: i === step ? 'var(--sm-accent)' : 'rgba(0,0,0,0.1)', transition: 'all .3s' }} />
             ))}
           </div>
 
-          <div style={{ fontSize: 11, fontWeight: 700, color: '#ff6000', marginBottom: 8, letterSpacing: '0.05em' }}>
+          <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--sm-accent)', marginBottom: 8, letterSpacing: '0.05em' }}>
             STEP {step + 1} / 3
           </div>
           <h3 style={{ fontSize: 18, fontWeight: 800, color: '#111', margin: '0 0 8px' }}>
@@ -239,7 +239,7 @@ function OnboardModal({ t, onClose }) {
           </p>
 
           <button onClick={next}
-            style={{ width: '100%', padding: 12, borderRadius: 10, border: 'none', background: '#ff6000', color: '#fff', fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>
+            style={{ width: '100%', padding: 12, borderRadius: 10, border: 'none', background: 'var(--sm-accent)', color: '#fff', fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>
             {step < 2 ? 'Next' : t('profile.onboard.cta')}
           </button>
         </div>
@@ -740,7 +740,7 @@ export default function ProfilePage() {
 
   if (loading) return (
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', background: '#fafafa' }}>
-      <div style={{ width: 40, height: 40, borderRadius: '50%', border: '3px solid #ff6000', borderTopColor: 'transparent', animation: 'spin 0.8s linear infinite' }} />
+      <div style={{ width: 40, height: 40, borderRadius: '50%', border: '3px solid var(--sm-accent)', borderTopColor: 'transparent', animation: 'spin 0.8s linear infinite' }} />
       <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
     </div>
   )
@@ -752,7 +752,7 @@ export default function ProfilePage() {
       <Head><title>Profile — FYI</title></Head>
       <style>{`
         body { background: #fafafa; }
-        .pw { max-width: 580px; margin: 0 auto; padding: 32px 20px 80px; font-family: 'Barlow', system-ui, sans-serif; }
+        .pw { max-width: 580px; margin: 0 auto; padding: 32px 20px 80px; font-family: inherit; }
         .pw-header { margin-bottom: 20px; display: flex; align-items: center; justify-content: space-between; gap: 16px; }
         .pw-header-left { flex: 1; min-width: 0; }
         .pw-header-name { font-size: 22px; font-weight: 800; color: #111; margin: 0 0 4px; }
@@ -765,7 +765,7 @@ export default function ProfilePage() {
         .pw-tabs { display: flex; gap: 0; margin-bottom: 24px; border-bottom: 1px solid rgba(0,0,0,0.08); }
         .pw-tab { font-size: 13px; font-weight: 600; color: rgba(0,0,0,0.35); background: none; border: none; padding: 12px 12px; cursor: pointer; font-family: inherit; position: relative; white-space: nowrap; }
         .pw-tab.on { color: #111; }
-        .pw-tab.on::after { content: ''; position: absolute; bottom: -1px; left: 0; right: 0; height: 2px; background: #ff6000; }
+        .pw-tab.on::after { content: ''; position: absolute; bottom: -1px; left: 0; right: 0; height: 2px; background: var(--sm-accent); }
         .pw-post-item { display: block; padding: 14px 0; border-bottom: 1px solid rgba(0,0,0,0.06); text-decoration: none; }
         .pw-post-item:last-child { border-bottom: none; }
         .pw-post-title { font-size: 14px; font-weight: 600; color: #111; margin-bottom: 4px; }
@@ -797,18 +797,18 @@ export default function ProfilePage() {
         .pfield-value { font-size: 14px; color: #111; }
         .pinput { width: 100%; font-size: 14px; padding: 10px 12px; border: 1px solid rgba(0,0,0,0.12); border-radius: 8px; outline: none; font-family: inherit; background: #fff; color: #111; transition: border-color .15s; }
         .pinput.dirty { border-color: rgba(34,197,94,0.4); background: rgba(34,197,94,0.03); }
-        .pinput:focus { border-color: #ff6000; }
+        .pinput:focus { border-color: var(--sm-accent); }
         .pinput::placeholder { color: rgba(0,0,0,0.25); }
         .ptextarea { min-height: 100px; resize: vertical; }
         .psignal { display: flex; gap: 8px; flex-wrap: wrap; }
         .psignal-btn { flex: 1; min-width: 120px; padding: 10px; border-radius: 8px; border: 1px solid rgba(0,0,0,0.08); background: rgba(0,0,0,0.02); font-size: 12px; font-weight: 600; color: rgba(0,0,0,0.4); cursor: pointer; text-align: center; font-family: inherit; transition: all .15s; }
-        .psignal-btn.on { border-color: #ff6000; color: #ff6000; background: rgba(255,96,0,0.06); }
+        .psignal-btn.on { border-color: var(--sm-accent); color: var(--sm-accent); background: rgba(255,68,0,0.06); }
         .pselect-dropdown::-webkit-scrollbar { display: none; }
         .psave-wrap { position: fixed; bottom: 0; left: 0; right: 0; z-index: 100; padding: 12px 20px calc(12px + env(safe-area-inset-bottom)); background: rgba(250,250,250,0.95); backdrop-filter: blur(10px); transform: translateY(100%); transition: transform .25s ease; pointer-events: none; }
         @media (max-width: 768px) { .psave-wrap { bottom: calc(60px + env(safe-area-inset-bottom)); padding: 10px 16px; } }
         .psave-wrap.show { transform: translateY(0); pointer-events: auto; }
         .psave-inner { max-width: 580px; margin: 0 auto; }
-        .psave { width: 100%; padding: 14px; background: #ff6000; color: #fff; border: none; border-radius: 10px; font-size: 14px; font-weight: 700; cursor: pointer; font-family: inherit; box-shadow: 0 4px 12px rgba(255,96,0,0.3); }
+        .psave { width: 100%; padding: 14px; background: var(--sm-accent); color: #fff; border: none; border-radius: 10px; font-size: 14px; font-weight: 700; cursor: pointer; font-family: inherit; box-shadow: 0 4px 12px rgba(255,68,0,0.3); }
         .psave:disabled { opacity: 0.5; box-shadow: none; }
         .pmsg { background: #fff; color: #111; font-size: 13px; font-weight: 600; padding: 10px 16px; border-radius: 8px; margin-bottom: 16px; text-align: center; border: 1px solid rgba(0,0,0,0.06); box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
         .pprogress { height: 6px; background: rgba(0,0,0,0.06); border-radius: 3px; margin-bottom: 8px; overflow: hidden; }
@@ -816,31 +816,31 @@ export default function ProfilePage() {
         .pphoto-wrap { display: flex; align-items: center; gap: 16px; }
         .pphoto { width: 72px; height: 72px; border-radius: 50%; object-fit: cover; border: 2px solid rgba(0,0,0,0.08); }
         .pphoto-placeholder { width: 72px; height: 72px; border-radius: 50%; background: rgba(0,0,0,0.04); display: flex; align-items: center; justify-content: center; border: 2px dashed rgba(0,0,0,0.12); }
-        .pupload-btn { font-size: 12px; font-weight: 600; color: #ff6000; background: none; border: 1px solid rgba(255,96,0,0.3); padding: 6px 14px; border-radius: 6px; cursor: pointer; font-family: inherit; }
-        .phr-banner { background: linear-gradient(135deg, rgba(255,96,0,0.06), rgba(255,96,0,0.02)); border: 1px solid rgba(255,96,0,0.15); border-radius: 12px; padding: 20px 24px; margin-bottom: 16px; }
+        .pupload-btn { font-size: 12px; font-weight: 600; color: var(--sm-accent); background: none; border: 1px solid rgba(255,68,0,0.3); padding: 6px 14px; border-radius: 6px; cursor: pointer; font-family: inherit; }
+        .phr-banner { background: linear-gradient(135deg, rgba(255,68,0,0.06), rgba(255,68,0,0.02)); border: 1px solid rgba(255,68,0,0.15); border-radius: 12px; padding: 20px 24px; margin-bottom: 16px; }
         .ptoggle { display: flex; align-items: center; gap: 12px; }
         .ptoggle-switch { width: 44px; height: 24px; border-radius: 12px; background: rgba(0,0,0,0.12); cursor: pointer; position: relative; transition: background .2s; border: none; padding: 0; }
-        .ptoggle-switch.on { background: #ff6000; }
+        .ptoggle-switch.on { background: var(--sm-accent); }
         .ptoggle-switch::after { content: ''; width: 18px; height: 18px; border-radius: 50%; background: #fff; position: absolute; top: 3px; left: 3px; transition: transform .2s; box-shadow: 0 1px 3px rgba(0,0,0,0.15); }
         .ptoggle-switch.on::after { transform: translateX(20px); }
         .pinline { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px; }
         @media (max-width: 500px) { .pinline { grid-template-columns: 1fr; } }
         .plist-item { background: rgba(0,0,0,0.02); border: 1px solid rgba(0,0,0,0.05); border-radius: 10px; padding: 16px; margin-bottom: 12px; }
         .plist-item:last-of-type { margin-bottom: 0; }
-        .presume-upload-btn { width: 100%; padding: 16px; border-radius: 10px; border: 2px dashed rgba(255,96,0,0.3); background: rgba(255,96,0,0.04); display: flex; align-items: center; justify-content: center; gap: 10px; cursor: pointer; font-family: inherit; font-size: 14px; font-weight: 700; color: #ff6000; transition: all .15s; }
-        .presume-upload-btn:hover { border-color: #ff6000; background: rgba(255,96,0,0.08); }
-        .ai-bubble { background: #ff6000; border-radius: 12px; padding: 14px 16px; margin-bottom: 20px; position: relative; animation: aiBounce 2s ease-in-out infinite; }
+        .presume-upload-btn { width: 100%; padding: 16px; border-radius: 10px; border: 2px dashed rgba(255,68,0,0.3); background: rgba(255,68,0,0.04); display: flex; align-items: center; justify-content: center; gap: 10px; cursor: pointer; font-family: inherit; font-size: 14px; font-weight: 700; color: var(--sm-accent); transition: all .15s; }
+        .presume-upload-btn:hover { border-color: var(--sm-accent); background: rgba(255,68,0,0.08); }
+        .ai-bubble { background: var(--sm-accent); border-radius: 12px; padding: 14px 16px; margin-bottom: 20px; position: relative; animation: aiBounce 2s ease-in-out infinite; }
         .ai-bubble-inner { display: flex; align-items: center; gap: 10px; font-size: 13px; font-weight: 600; color: #fff; line-height: 1.4; }
         .ai-bubble-icon { display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 8px; background: rgba(255,255,255,0.2); font-size: 11px; font-weight: 800; flex-shrink: 0; }
-        .ai-bubble-arrow { position: absolute; bottom: -6px; left: 24px; width: 12px; height: 12px; background: #ff6000; transform: rotate(45deg); border-radius: 0 0 3px 0; }
+        .ai-bubble-arrow { position: absolute; bottom: -6px; left: 24px; width: 12px; height: 12px; background: var(--sm-accent); transform: rotate(45deg); border-radius: 0 0 3px 0; }
         @keyframes spin { to { transform: rotate(360deg); } }
         @keyframes aiBounce { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-3px); } }
         .ai-bubble:hover { filter: brightness(1.08); }
         .pw-resume-cta { display: none; }
         .pw-logout { display: none; }
         @media (max-width: 768px) {
-          .pw-resume-cta { display: flex; align-items: center; gap: 10px; padding: 14px 16px; margin-bottom: 16px; background: linear-gradient(135deg, #ff6000, #ff7a1a); border-radius: 12px; color: #fff; font-size: 13px; cursor: pointer; box-shadow: 0 2px 12px rgba(255,96,0,0.3); }
-          .pw-logout { display: block; width: 100%; padding: 14px; margin-top: 32px; margin-bottom: 20px; background: none; border: 1px solid rgba(0,0,0,0.12); border-radius: 10px; font-size: 14px; font-weight: 600; color: #999; cursor: pointer; font-family: 'Barlow', sans-serif; }
+          .pw-resume-cta { display: flex; align-items: center; gap: 10px; padding: 14px 16px; margin-bottom: 16px; background: linear-gradient(135deg, var(--sm-accent), #ff7a1a); border-radius: 12px; color: #fff; font-size: 13px; cursor: pointer; box-shadow: 0 2px 12px rgba(255,68,0,0.3); }
+          .pw-logout { display: block; width: 100%; padding: 14px; margin-top: 32px; margin-bottom: 20px; background: none; border: 1px solid rgba(0,0,0,0.12); border-radius: 10px; font-size: 14px; font-weight: 600; color: #999; cursor: pointer; font-family:inherit; }
         }
       `}</style>
 
@@ -859,7 +859,7 @@ export default function ProfilePage() {
                 </span>
               ) : (
                 <button type="button" onClick={() => handleTabChange('employment')}
-                  style={{ background: 'none', border: 'none', padding: 0, color: '#ff6000', fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', fontSize: 'inherit', textDecoration: 'underline', textUnderlineOffset: 2 }}>
+                  style={{ background: 'none', border: 'none', padding: 0, color: 'var(--sm-accent)', fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', fontSize: 'inherit', textDecoration: 'underline', textUnderlineOffset: 2 }}>
                   {t('profile.companyVerifyPrompt') || '회사 인증을 진행해주세요'}
                 </button>
               )}
@@ -919,8 +919,8 @@ export default function ProfilePage() {
                     </svg>
                   ) : (
                     <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-                      <circle cx="7" cy="7" r="5.5" stroke={isOn ? '#ff6000' : 'rgba(0,0,0,0.2)'} strokeWidth="1.5"/>
-                      <path d="M5 5l4 4M9 5l-4 4" stroke={isOn ? '#ff6000' : 'rgba(0,0,0,0.15)'} strokeWidth="1.3" strokeLinecap="round"/>
+                      <circle cx="7" cy="7" r="5.5" stroke={isOn ? 'var(--sm-accent)' : 'rgba(0,0,0,0.2)'} strokeWidth="1.5"/>
+                      <path d="M5 5l4 4M9 5l-4 4" stroke={isOn ? 'var(--sm-accent)' : 'rgba(0,0,0,0.15)'} strokeWidth="1.3" strokeLinecap="round"/>
                     </svg>
                   )
                   return (
@@ -971,8 +971,8 @@ export default function ProfilePage() {
                   const isOn = form.work_type === v
                   return (
                     <button key={v} onClick={() => set('work_type', isOn ? '' : v)} style={{
-                      padding: '8px 16px', borderRadius: 20, border: isOn ? '1.5px solid #ff6000' : '1.5px solid rgba(0,0,0,0.1)',
-                      background: isOn ? 'rgba(255,96,0,0.06)' : '#fff', color: isOn ? '#ff6000' : 'rgba(0,0,0,0.5)',
+                      padding: '8px 16px', borderRadius: 20, border: isOn ? '1.5px solid var(--sm-accent)' : '1.5px solid rgba(0,0,0,0.1)',
+                      background: isOn ? 'rgba(255,68,0,0.06)' : '#fff', color: isOn ? 'var(--sm-accent)' : 'rgba(0,0,0,0.5)',
                       fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', transition: 'all .15s',
                     }}>
                       {t(`profile.worktype.${v.toLowerCase()}`)}
@@ -992,7 +992,7 @@ export default function ProfilePage() {
             <div className="pprogress"><div className="pprogress-fill" style={{ width: `${score}%`, background: score >= 60 ? '#16a34a' : '#f59e0b' }} /></div>
             <div style={{ fontSize: 11, color: 'rgba(0,0,0,0.3)' }}>
               {score < 60 ? t('profile.completion.incomplete') : t('profile.completion.done')}
-              {score < 60 && <span style={{ color: '#ff6000', marginLeft: 4 }}>({t('profile.completion.min80')})</span>}
+              {score < 60 && <span style={{ color: 'var(--sm-accent)', marginLeft: 4 }}>({t('profile.completion.min80')})</span>}
             </div>
           </div>
 
@@ -1009,13 +1009,13 @@ export default function ProfilePage() {
               </div>
             )}
             {aiParsing && (
-              <div style={{ background: 'rgba(255,96,0,0.04)', border: '1px solid rgba(255,96,0,0.12)', borderRadius: 10, padding: '16px 18px', marginBottom: 16 }}>
+              <div style={{ background: 'rgba(255,68,0,0.04)', border: '1px solid rgba(255,68,0,0.12)', borderRadius: 10, padding: '16px 18px', marginBottom: 16 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
-                  <div style={{ width: 20, height: 20, borderRadius: '50%', border: '2.5px solid #ff6000', borderTopColor: 'transparent', animation: 'spin 0.8s linear infinite', flexShrink: 0 }} />
+                  <div style={{ width: 20, height: 20, borderRadius: '50%', border: '2.5px solid var(--sm-accent)', borderTopColor: 'transparent', animation: 'spin 0.8s linear infinite', flexShrink: 0 }} />
                   <span style={{ fontSize: 13, fontWeight: 600, color: '#111' }}>{aiProgress.message}</span>
                 </div>
                 <div style={{ height: 6, background: 'rgba(0,0,0,0.06)', borderRadius: 3, overflow: 'hidden' }}>
-                  <div style={{ height: '100%', width: `${aiProgress.percent}%`, background: '#ff6000', borderRadius: 3, transition: 'width 0.5s ease' }} />
+                  <div style={{ height: '100%', width: `${aiProgress.percent}%`, background: 'var(--sm-accent)', borderRadius: 3, transition: 'width 0.5s ease' }} />
                 </div>
                 <div style={{ fontSize: 11, color: 'rgba(0,0,0,0.35)', marginTop: 6, textAlign: 'right' }}>{aiProgress.percent}%</div>
               </div>
@@ -1039,7 +1039,7 @@ export default function ProfilePage() {
                 </div>
               ) : (
                 <button onClick={() => resumeRef.current?.click()} className="presume-upload-btn" disabled={aiParsing}>
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#ff6000" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--sm-accent)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
                   <span>{t('profile.resume.register')}</span>
                 </button>
               )}
@@ -1239,7 +1239,7 @@ export default function ProfilePage() {
           ) : myPosts.length === 0 ? (
             <div className="pcard" style={{ textAlign: 'center', padding: '40px 24px' }}>
               <div style={{ fontSize: 14, color: 'rgba(0,0,0,0.35)' }}>{t('comm.empty') || '게시물이 없습니다'}</div>
-              <a href="/community" style={{ fontSize: 13, color: '#ff6000', marginTop: 8, display: 'inline-block' }}>{t('comm.write') || '글쓰기'}</a>
+              <a href="/community" style={{ fontSize: 13, color: 'var(--sm-accent)', marginTop: 8, display: 'inline-block' }}>{t('comm.write') || '글쓰기'}</a>
             </div>
           ) : (
             <div className="pcard">
@@ -1281,7 +1281,7 @@ export default function ProfilePage() {
                     placeholder="you@company.com" style={{ flex: 1 }} />
                   <button type="button" onClick={handleSendCompanyCode}
                     disabled={cvLoading || !companyEmail.trim()}
-                    style={{ padding: '0 16px', borderRadius: 10, border: 'none', background: '#ff6000', color: '#fff', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', whiteSpace: 'nowrap', opacity: (cvLoading || !companyEmail.trim()) ? 0.5 : 1 }}>
+                    style={{ padding: '0 16px', borderRadius: 10, border: 'none', background: 'var(--sm-accent)', color: '#fff', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', whiteSpace: 'nowrap', opacity: (cvLoading || !companyEmail.trim()) ? 0.5 : 1 }}>
                     {cvStep === 'sent' ? '재전송' : '코드 받기'}
                   </button>
                 </div>
@@ -1346,7 +1346,7 @@ export default function ProfilePage() {
               <input ref={salaryDocRef} type="file" accept=".pdf,.jpg,.jpeg,.png"
                 style={{ display: 'none' }} />
               <button type="button" className="presume-upload-btn" onClick={() => salaryDocRef.current?.click()}>
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#ff6000" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--sm-accent)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
                 </svg>
                 {t('profile.employment.upload')}
@@ -1357,7 +1357,7 @@ export default function ProfilePage() {
             {verifyMsg && <div className="pmsg" style={{ background: 'rgba(34,197,94,0.08)', color: '#16a34a', border: '1px solid rgba(34,197,94,0.2)' }}>{verifyMsg}</div>}
 
             <button type="button" onClick={handleVerifyUpload} disabled={verifyUploading}
-              style={{ width: '100%', padding: 14, borderRadius: 10, border: 'none', background: '#ff6000', color: '#fff', fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', opacity: verifyUploading ? 0.5 : 1 }}>
+              style={{ width: '100%', padding: 14, borderRadius: 10, border: 'none', background: 'var(--sm-accent)', color: '#fff', fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', opacity: verifyUploading ? 0.5 : 1 }}>
               {verifyUploading ? t('profile.employment.submitting') : t('profile.employment.submit')}
             </button>
           </div>
@@ -1526,7 +1526,7 @@ export default function ProfilePage() {
               <div style={{ marginBottom: 12 }}><Icon name="clipboard" size={40} color="#ccc" /></div>
               <div style={{ fontSize: 14, fontWeight: 700, color: 'rgba(0,0,0,0.5)', marginBottom: 6 }}>{t('apps.emptyTitle')}</div>
               <div style={{ fontSize: 13, color: 'rgba(0,0,0,0.35)', marginBottom: 16 }}>{t('apps.emptyDesc')}</div>
-              <a href="/jobs" style={{ fontSize: 13, fontWeight: 700, color: '#ff6000', textDecoration: 'none' }}>{t('apps.browseJobs')}</a>
+              <a href="/jobs" style={{ fontSize: 13, fontWeight: 700, color: 'var(--sm-accent)', textDecoration: 'none' }}>{t('apps.browseJobs')}</a>
             </div>
           ) : (
             applications.map(app => {
@@ -1595,14 +1595,14 @@ export default function ProfilePage() {
       {/* AI 자동 채움 제안 — 이력서는 있는데 프로필이 빈 유저 */}
       {showAiFill && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
-          <div style={{ background: '#fff', border: '1px solid rgba(0,0,0,0.06)', borderRadius: 20, maxWidth: 400, width: '100%', padding: '30px 24px 22px', fontFamily: "'Barlow', system-ui", boxShadow: '0 20px 60px rgba(0,0,0,0.15)', textAlign: 'center' }}>
+          <div style={{ background: '#fff', border: '1px solid rgba(0,0,0,0.06)', borderRadius: 20, maxWidth: 400, width: '100%', padding: '30px 24px 22px', fontFamily: 'inherit', boxShadow: '0 20px 60px rgba(0,0,0,0.15)', textAlign: 'center' }}>
             <div style={{ fontSize: 38, marginBottom: 10 }} aria-hidden>📄</div>
             <h3 style={{ margin: '0 0 8px', fontSize: 19, fontWeight: 800, color: '#1a1612' }}>{t('profile.aifill.title')}</h3>
             {aiParsing ? (
               /* 진행 상황을 모달 안에서 보여준다 — 닫아버리면 어디서 진행되는지 알 수 없다 */
               <>
                 <div style={{ height: 8, background: 'rgba(0,0,0,0.06)', borderRadius: 999, overflow: 'hidden', margin: '20px 0 12px' }}>
-                  <div style={{ height: '100%', width: `${aiProgress.percent}%`, background: '#ff6000', borderRadius: 999, transition: 'width .6s ease' }} />
+                  <div style={{ height: '100%', width: `${aiProgress.percent}%`, background: 'var(--sm-accent)', borderRadius: 999, transition: 'width .6s ease' }} />
                 </div>
                 <p style={{ margin: 0, fontSize: 13.5, fontWeight: 600, color: 'rgba(26,22,18,0.55)', minHeight: 20 }}>{aiProgress.message}</p>
               </>
@@ -1611,7 +1611,7 @@ export default function ProfilePage() {
                 <p style={{ margin: '0 0 20px', fontSize: 14, color: 'rgba(26,22,18,0.6)', lineHeight: 1.55 }}>{t('profile.aifill.desc')}</p>
                 <button
                   onClick={() => runAiParse()}
-                  style={{ display: 'block', width: '100%', background: '#ff6000', color: '#fff', border: 'none', borderRadius: 12, padding: '13px 0', fontSize: 15, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}
+                  style={{ display: 'block', width: '100%', background: 'var(--sm-accent)', color: '#fff', border: 'none', borderRadius: 12, padding: '13px 0', fontSize: 15, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}
                 >
                   {t('profile.aifill.confirm')}
                 </button>
@@ -1630,14 +1630,14 @@ export default function ProfilePage() {
       {showAlert && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.3)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}
           onClick={() => setShowAlert(null)}>
-          <div onClick={e => e.stopPropagation()} style={{ background: '#fff', border: '1px solid rgba(0,0,0,0.08)', borderRadius: 16, maxWidth: 360, width: '100%', padding: '32px 28px', textAlign: 'center', fontFamily: "'Barlow', system-ui", boxShadow: '0 20px 60px rgba(0,0,0,0.15)' }}>
-            <div style={{ width: 48, height: 48, borderRadius: '50%', background: 'rgba(255,96,0,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#ff6000" strokeWidth="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          <div onClick={e => e.stopPropagation()} style={{ background: '#fff', border: '1px solid rgba(0,0,0,0.08)', borderRadius: 16, maxWidth: 360, width: '100%', padding: '32px 28px', textAlign: 'center', fontFamily: 'inherit', boxShadow: '0 20px 60px rgba(0,0,0,0.15)' }}>
+            <div style={{ width: 48, height: 48, borderRadius: '50%', background: 'rgba(255,68,0,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--sm-accent)" strokeWidth="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
             </div>
             <div style={{ fontSize: 15, fontWeight: 700, color: '#111', marginBottom: 8 }}>{showAlert}</div>
             <div style={{ fontSize: 12, color: 'rgba(0,0,0,0.4)', marginBottom: 20, lineHeight: 1.5 }}>{t('profile.completion.incomplete')}</div>
             <button onClick={() => setShowAlert(null)}
-              style={{ width: '100%', padding: 12, borderRadius: 10, border: 'none', background: '#ff6000', color: '#fff', fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>
+              style={{ width: '100%', padding: 12, borderRadius: 10, border: 'none', background: 'var(--sm-accent)', color: '#fff', fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>
               OK
             </button>
           </div>
@@ -1647,7 +1647,7 @@ export default function ProfilePage() {
       {showPublishPrompt && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.3)', zIndex: 1100, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}
           onClick={() => setShowPublishPrompt(false)}>
-          <div onClick={e => e.stopPropagation()} style={{ background: '#fff', borderRadius: 16, maxWidth: 380, width: '100%', padding: '32px 28px', textAlign: 'center', fontFamily: "'Barlow', system-ui", boxShadow: '0 20px 60px rgba(0,0,0,0.15)' }}>
+          <div onClick={e => e.stopPropagation()} style={{ background: '#fff', borderRadius: 16, maxWidth: 380, width: '100%', padding: '32px 28px', textAlign: 'center', fontFamily: 'inherit', boxShadow: '0 20px 60px rgba(0,0,0,0.15)' }}>
             <div style={{ width: 48, height: 48, borderRadius: '50%', background: 'rgba(255,68,0,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
               <span style={{ fontSize: 24 }}>&#128640;</span>
             </div>
@@ -1678,7 +1678,7 @@ export default function ProfilePage() {
 
       {showLeaveConfirm && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.3)', zIndex: 1100, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
-          <div style={{ background: '#fff', borderRadius: 16, maxWidth: 340, width: '100%', padding: '28px 24px', textAlign: 'center', fontFamily: "'Barlow', system-ui", boxShadow: '0 20px 60px rgba(0,0,0,0.15)' }}>
+          <div style={{ background: '#fff', borderRadius: 16, maxWidth: 340, width: '100%', padding: '28px 24px', textAlign: 'center', fontFamily: 'inherit', boxShadow: '0 20px 60px rgba(0,0,0,0.15)' }}>
             <div style={{ fontSize: 15, fontWeight: 700, color: '#111', marginBottom: 6 }}>{t('profile.leave.title')}</div>
             <div style={{ fontSize: 13, color: 'rgba(0,0,0,0.45)', marginBottom: 20, lineHeight: 1.5 }}>{t('profile.leave.desc')}</div>
             <div style={{ display: 'flex', gap: 8 }}>
@@ -1687,7 +1687,7 @@ export default function ProfilePage() {
                 {t('profile.leave.no')}
               </button>
               <button onClick={async () => { setShowLeaveConfirm(false); await handleSave(); router.push(pendingRoute.current) }}
-                style={{ flex: 1, padding: 11, borderRadius: 8, border: 'none', background: '#ff6000', color: '#fff', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>
+                style={{ flex: 1, padding: 11, borderRadius: 8, border: 'none', background: 'var(--sm-accent)', color: '#fff', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>
                 {t('profile.leave.yes')}
               </button>
             </div>
@@ -1697,7 +1697,7 @@ export default function ProfilePage() {
 
       {showTabConfirm && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.3)', zIndex: 1100, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
-          <div style={{ background: '#fff', borderRadius: 16, maxWidth: 340, width: '100%', padding: '28px 24px', textAlign: 'center', fontFamily: "'Barlow', system-ui", boxShadow: '0 20px 60px rgba(0,0,0,0.15)' }}>
+          <div style={{ background: '#fff', borderRadius: 16, maxWidth: 340, width: '100%', padding: '28px 24px', textAlign: 'center', fontFamily: 'inherit', boxShadow: '0 20px 60px rgba(0,0,0,0.15)' }}>
             <div style={{ fontSize: 15, fontWeight: 700, color: '#111', marginBottom: 6 }}>{t('profile.leave.title')}</div>
             <div style={{ fontSize: 13, color: 'rgba(0,0,0,0.45)', marginBottom: 20, lineHeight: 1.5 }}>{t('profile.leave.desc')}</div>
             <div style={{ display: 'flex', gap: 8 }}>
@@ -1706,7 +1706,7 @@ export default function ProfilePage() {
                 {t('profile.leave.no')}
               </button>
               <button onClick={async () => { setShowTabConfirm(false); await handleSave(); setTab(pendingTab.current) }}
-                style={{ flex: 1, padding: 11, borderRadius: 8, border: 'none', background: '#ff6000', color: '#fff', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>
+                style={{ flex: 1, padding: 11, borderRadius: 8, border: 'none', background: 'var(--sm-accent)', color: '#fff', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>
                 {t('profile.leave.yes')}
               </button>
             </div>

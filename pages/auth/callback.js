@@ -249,12 +249,12 @@ export default function AuthCallback() {
     <div style={{
       display:'flex', flexDirection:'column',
       alignItems:'center', justifyContent:'center',
-      height:'100vh', background:'#0a0a0a', color:'white',
+      height:'100vh', background:'var(--sm-bg)', color:'var(--sm-text)',
       gap:'16px', fontFamily:'system-ui'
     }}>
       <div style={{
         width:'40px', height:'40px', borderRadius:'50%',
-        border:'3px solid #ff6000', borderTopColor:'transparent',
+        border:'3px solid var(--sm-accent)', borderTopColor:'transparent',
         animation:'spin 0.8s linear infinite'
       }}/>
       <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>

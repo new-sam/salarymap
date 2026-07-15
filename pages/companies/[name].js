@@ -196,43 +196,43 @@ export default function CompanyPage({ companyName, domain }) {
       <Head><title>{companyName} · Salary FYI</title></Head>
       <style>{`
         .cpg-page { background: #fff; min-height: 100vh; }
-        .cpg { max-width: 760px; margin: 0 auto; padding: 0 16px 80px; color: #111; font-family: 'Barlow', sans-serif; }
+        .cpg { max-width: 760px; margin: 0 auto; padding: 0 16px 80px; color: #111; font-family:inherit; }
         .cpg-hero { display: flex; align-items: center; gap: 16px; padding: 28px 0 20px; }
-        .cpg-logo { width: 64px; height: 64px; border-radius: 16px; background: linear-gradient(135deg,#ff6000,#ff8a3d); display: flex; align-items: center; justify-content: center; font-size: 28px; font-weight: 700; color: #fff; flex-shrink: 0; overflow: hidden; }
+        .cpg-logo { width: 64px; height: 64px; border-radius: 16px; background: linear-gradient(135deg,var(--sm-accent),#ff8a3d); display: flex; align-items: center; justify-content: center; font-size: 28px; font-weight: 700; color: #fff; flex-shrink: 0; overflow: hidden; }
         .cpg-logo.has-img { background: #fff; border: 1px solid #ececec; }
         .cpg-logo.has-img img { width: 100%; height: 100%; object-fit: contain; padding: 10px; box-sizing: border-box; }
         .cpg-hmeta { flex: 1; min-width: 0; }
         .cpg-name { font-size: 24px; font-weight: 800; margin: 0 0 4px; color: #111; }
         .cpg-followers { font-size: 13px; color: #888; }
-        .cpg-follow-btn { padding: 9px 20px; border-radius: 999px; font-size: 14px; font-weight: 700; cursor: pointer; border: 1px solid #ff6000; background: #ff6000; color: #fff; transition: all .15s; white-space: nowrap; }
+        .cpg-follow-btn { padding: 9px 20px; border-radius: 999px; font-size: 14px; font-weight: 700; cursor: pointer; border: 1px solid var(--sm-accent); background: var(--sm-accent); color: #fff; transition: all .15s; white-space: nowrap; }
         .cpg-follow-btn.on { background: #fff; color: #666; border-color: #ddd; }
         .cpg-follow-btn:disabled { opacity: .6; cursor: default; }
         .cpg-tabs { display: flex; gap: 4px; border-bottom: 1px solid #ececec; margin-bottom: 20px; }
-        .cpg-tab { padding: 12px 16px; font-size: 14px; font-weight: 700; color: #999; background: none; border: none; cursor: pointer; position: relative; font-family: 'Barlow', sans-serif; }
+        .cpg-tab { padding: 12px 16px; font-size: 14px; font-weight: 700; color: #999; background: none; border: none; cursor: pointer; position: relative; font-family:inherit; }
         .cpg-tab.on { color: #111; }
-        .cpg-tab.on::after { content: ''; position: absolute; bottom: -1px; left: 0; right: 0; height: 2px; background: #ff6000; }
+        .cpg-tab.on::after { content: ''; position: absolute; bottom: -1px; left: 0; right: 0; height: 2px; background: var(--sm-accent); }
         .cpg-empty { text-align: center; color: #999; padding: 48px 0; font-size: 14px; }
         .cpg-card { display: block; padding: 16px 18px; border: 1px solid #ececec; border-radius: 14px; margin-bottom: 10px; background: #fff; text-decoration: none; color: inherit; transition: border-color .15s, box-shadow .15s; }
         .cpg-card:hover { border-color: #ddd; box-shadow: 0 2px 12px rgba(0,0,0,0.04); }
         .cpg-card-meta { font-size: 12px; color: #999; margin-bottom: 6px; }
         .cpg-card-title { font-size: 16px; font-weight: 700; color: #111; margin-bottom: 5px; line-height: 1.4; }
         .cpg-card-preview { font-size: 13px; color: #888; line-height: 1.6; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
-        .cpg-job-sal { font-size: 14px; font-weight: 800; color: #ff6000; margin-top: 4px; }
+        .cpg-job-sal { font-size: 14px; font-weight: 800; color: var(--sm-accent); margin-top: 4px; }
         .cpg-headline { text-align: center; padding: 24px 0; border: 1px solid #ececec; border-radius: 14px; margin-bottom: 16px; background: #fafafa; }
-        .cpg-headline-n { font-size: 40px; font-weight: 800; color: #ff6000; line-height: 1; }
+        .cpg-headline-n { font-size: 40px; font-weight: 800; color: var(--sm-accent); line-height: 1; }
         .cpg-headline-l { font-size: 13px; color: #888; margin-top: 8px; }
-        .cpg-back { display: inline-flex; align-items: center; gap: 5px; margin: 16px 0 0; padding: 6px 12px 6px 8px; border: 1px solid #ececec; border-radius: 999px; background: #fff; color: #666; font-size: 13px; font-weight: 600; cursor: pointer; font-family: 'Barlow', sans-serif; }
+        .cpg-back { display: inline-flex; align-items: center; gap: 5px; margin: 16px 0 0; padding: 6px 12px 6px 8px; border: 1px solid #ececec; border-radius: 999px; background: #fff; color: #666; font-size: 13px; font-weight: 600; cursor: pointer; font-family:inherit; }
         .cpg-back:hover { border-color: #ddd; color: #111; }
         .cpg-chart-cap { font-size: 13px; font-weight: 700; color: #444; margin: 4px 0 14px; }
         .cpg-rolefilter { display: flex; gap: 7px; overflow-x: auto; padding-bottom: 8px; margin-bottom: 18px; -webkit-overflow-scrolling: touch; }
         .cpg-rolefilter::-webkit-scrollbar { display: none; }
-        .cpg-chip { flex-shrink: 0; padding: 6px 14px; border-radius: 999px; border: 1px solid #ddd; background: #fff; color: #666; font-size: 13px; font-weight: 600; cursor: pointer; white-space: nowrap; font-family: 'Barlow', sans-serif; }
-        .cpg-chip.on { background: #ff6000; border-color: #ff6000; color: #fff; }
+        .cpg-chip { flex-shrink: 0; padding: 6px 14px; border-radius: 999px; border: 1px solid #ddd; background: #fff; color: #666; font-size: 13px; font-weight: 600; cursor: pointer; white-space: nowrap; font-family:inherit; }
+        .cpg-chip.on { background: var(--sm-accent); border-color: var(--sm-accent); color: #fff; }
         .cpg-chart { display: flex; align-items: flex-end; gap: 12px; padding: 8px 0 4px; }
         .cpg-col { flex: 1; display: flex; flex-direction: column; align-items: center; min-width: 0; }
-        .cpg-col-val { font-size: 13px; font-weight: 800; color: #ff6000; margin-bottom: 6px; }
+        .cpg-col-val { font-size: 13px; font-weight: 800; color: var(--sm-accent); margin-bottom: 6px; }
         .cpg-col-barwrap { width: 100%; max-width: 56px; height: 150px; display: flex; align-items: flex-end; }
-        .cpg-col-bar { width: 100%; background: linear-gradient(180deg,#ff8a3d,#ff6000); border-radius: 8px 8px 0 0; min-height: 4px; transition: height .4s ease; }
+        .cpg-col-bar { width: 100%; background: linear-gradient(180deg,#ff8a3d,var(--sm-accent)); border-radius: 8px 8px 0 0; min-height: 4px; transition: height .4s ease; }
         .cpg-col-x { font-size: 12px; font-weight: 700; color: #444; margin-top: 8px; }
         .cpg-col-n { font-size: 11px; color: #aaa; margin-top: 2px; }
         .cpg-info-row { display: flex; justify-content: space-between; padding: 14px 4px; border-bottom: 1px solid #f2f2f2; font-size: 14px; }

@@ -133,11 +133,11 @@ const IconArrowRight = () => (
 )
 const IconQuote = () => (
   <svg width="36" height="28" viewBox="0 0 32 24" fill="none">
-    <path d="M0 24V14C0 6.27 4.27 1 12 0L13 3C8.6 4.13 6 7.07 6 11h6v13H0zm18 0V14C18 6.27 22.27 1 30 0l1 3c-4.4 1.13-7 4.07-7 8h6v13H18z" fill="#ff6000" opacity="0.22"/>
+    <path d="M0 24V14C0 6.27 4.27 1 12 0L13 3C8.6 4.13 6 7.07 6 11h6v13H0zm18 0V14C18 6.27 22.27 1 30 0l1 3c-4.4 1.13-7 4.07-7 8h6v13H18z" fill="var(--sm-accent)" opacity="0.22"/>
   </svg>
 )
 const IconVerified = () => (
-  <svg width="14" height="14" viewBox="0 0 24 24" fill="#ff6000">
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="var(--sm-accent)">
     <path d="M12 1l3.09 2.36L18.9 3l1.36 3.81L24 9.18l-1.46 3.92L23.27 17l-3.81 1.18L18.18 22 14 20.45 12 23l-2-2.55L5.82 22 4.54 18.18.73 17l.73-3.9L0 9.18l3.74-2.37L5.1 3l3.81.36z"/>
     <path d="M9.5 14.5l-2-2L9 11l1.5 1.5L15 8l1.5 1.5z" fill="#fff"/>
   </svg>
@@ -155,11 +155,11 @@ const IconCoin = () => (
     {/* Drop shadow */}
     <ellipse cx="32" cy="56" rx="20" ry="3" fill="rgba(0,0,0,0.35)"/>
     {/* Coin rim */}
-    <circle cx="32" cy="30" r="22" fill="#ff8a40" stroke="#1a1612" strokeWidth="2.5"/>
+    <circle cx="32" cy="30" r="22" fill="var(--sm-accent-strong)" stroke="#1a1612" strokeWidth="2.5"/>
     {/* Coin inner ring */}
-    <circle cx="32" cy="30" r="17" fill="#ff6000" stroke="#1a1612" strokeWidth="1.5"/>
+    <circle cx="32" cy="30" r="17" fill="var(--sm-accent)" stroke="#1a1612" strokeWidth="1.5"/>
     {/* ₫ symbol (Vietnamese dong) */}
-    <text x="32" y="39" textAnchor="middle" fontSize="22" fontWeight="900" fill="#fff7ee" style={{ fontFamily: 'Barlow, sans-serif' }}>₫</text>
+    <text x="32" y="39" textAnchor="middle" fontSize="22" fontWeight="900" fill="#fff7ee" style={{ fontFamily: 'inherit' }}>₫</text>
     {/* Sparkle accents */}
     <path d="M52 14 L53 17 L56 18 L53 19 L52 22 L51 19 L48 18 L51 17 Z" fill="#ffd1a0"/>
     <path d="M10 18 L10.7 20 L13 20.5 L10.7 21 L10 23 L9.3 21 L7 20.5 L9.3 20 Z" fill="#ffd1a0"/>
@@ -228,7 +228,7 @@ export default function CvLanding() {
           spread: 60,
           startVelocity: 52,
           origin: { x, y: 0.82 },
-          colors: ['#ff6000', '#ffb36b', '#16a34a', '#fde047'],
+          colors: ['var(--sm-accent)', '#ffb36b', '#16a34a', '#fde047'],
           scalar: 0.95,
           gravity: 1.0,
           ticks: 240,
@@ -818,7 +818,7 @@ export default function CvLanding() {
                         if (f) handleFile(f)
                       }}
                     >
-                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#ff6000" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--sm-accent)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
                       <span>{t('cv.form.dropZone')}</span>
                     </button>
                   )}
@@ -1009,22 +1009,22 @@ export default function CvLanding() {
         .cv-roles-label { font-size: 13px; font-weight: 700; color: #1a1612; margin-bottom: 10px; }
         .cv-roles-groups { display: flex; flex-direction: column; gap: 8px; }
         .cv-roles-gtoggle { display: flex; align-items: center; gap: 8px; width: 100%; text-align: left; background: #fff; border: 1px solid #e3dbcf; border-radius: 10px; padding: 10px 12px; cursor: pointer; font-family: inherit; transition: border-color .12s; }
-        .cv-roles-gtoggle:hover { border-color: #ff6000; }
+        .cv-roles-gtoggle:hover { border-color: var(--sm-accent); }
         .cv-roles-gtoggle.has { border-color: rgba(255,96,0,0.45); }
         .cv-roles-garrow { display: inline-flex; color: #a89f92; transition: transform .15s; flex-shrink: 0; }
         .cv-roles-garrow.open { transform: rotate(90deg); }
         .cv-roles-gname { font-size: 11px; font-weight: 700; color: #a89f92; text-transform: uppercase; letter-spacing: .04em; }
         .cv-roles-gtoggle.has .cv-roles-gname { color: #4a4238; }
-        .cv-roles-gcount { margin-left: auto; flex-shrink: 0; background: #ff6000; color: #fff; font-size: 11px; font-weight: 700; border-radius: 999px; padding: 1px 8px; line-height: 1.5; }
+        .cv-roles-gcount { margin-left: auto; flex-shrink: 0; background: var(--sm-accent); color: #fff; font-size: 11px; font-weight: 700; border-radius: 999px; padding: 1px 8px; line-height: 1.5; }
         .cv-roles-chips { display: flex; flex-wrap: wrap; gap: 6px; padding: 8px 2px 4px; }
         .cv-role-chip { font-size: 12.5px; font-weight: 500; color: #4a4238; background: #fff; border: 1px solid #e3dbcf; border-radius: 999px; padding: 6px 12px; cursor: pointer; transition: all .12s; font-family: inherit; }
-        .cv-role-chip:hover { border-color: #ff6000; }
-        .cv-role-chip.on { background: #fff1e8; border-color: #ff6000; color: #ff6000; font-weight: 700; }
+        .cv-role-chip:hover { border-color: var(--sm-accent); }
+        .cv-role-chip.on { background: #fff1e8; border-color: var(--sm-accent); color: var(--sm-accent); font-weight: 700; }
 
         /* 이력서 공개 토글 (STEP 1) — 조용한 인라인 행. 강조하면 취소율↑ 우려로 은근하게 */
         .cv-share { display: flex; align-items: flex-start; gap: 10px; width: 100%; text-align: left; margin-top: 12px; background: none; border: none; padding: 4px 2px; cursor: pointer; font-family: inherit; }
         .cv-share-switch { flex-shrink: 0; width: 34px; height: 20px; border-radius: 999px; background: #d8cfc2; position: relative; transition: background .15s; margin-top: 1px; }
-        .cv-share-switch.on { background: #ff6000; }
+        .cv-share-switch.on { background: var(--sm-accent); }
         .cv-share-knob { position: absolute; top: 2px; left: 2px; width: 16px; height: 16px; border-radius: 50%; background: #fff; box-shadow: 0 1px 2px rgba(0,0,0,0.2); transition: transform .15s; }
         .cv-share-switch.on .cv-share-knob { transform: translateX(14px); }
         .cv-share-text { display: flex; flex-direction: column; gap: 1px; }
@@ -1046,19 +1046,19 @@ export default function CvLanding() {
         .cvm-job-title { font-size: 14px; font-weight: 700; color: #1a1612; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .cvm-job-company { font-size: 12.5px; color: #8a8073; margin-top: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .cvm-job-meta { font-size: 11.5px; color: #a89f92; margin-top: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .cvm-apply { flex-shrink: 0; min-width: 84px; text-align: center; font-size: 13px; font-weight: 700; color: #fff; background: #ff6000; border: none; border-radius: 9px; padding: 9px 14px; cursor: pointer; font-family: inherit; transition: opacity .15s; }
+        .cvm-apply { flex-shrink: 0; min-width: 84px; text-align: center; font-size: 13px; font-weight: 700; color: #fff; background: var(--sm-accent); border: none; border-radius: 9px; padding: 9px 14px; cursor: pointer; font-family: inherit; transition: opacity .15s; }
         .cvm-apply:disabled { cursor: default; }
         .cvm-apply.applying { opacity: 0.55; }
         /* 오터치 방지 2탭: 첫 탭에서 확인 상태로 전환 */
-        .cvm-apply.arm { background: #fff1e8; color: #ff6000; box-shadow: inset 0 0 0 1.5px #ff6000; }
+        .cvm-apply.arm { background: #fff1e8; color: var(--sm-accent); box-shadow: inset 0 0 0 1.5px var(--sm-accent); }
         .cvm-apply.done { background: #E7F6EC; color: #16a34a; }
         .cvm-all { display: block; text-align: center; margin-top: 16px; font-size: 13px; font-weight: 600; color: #8a8073; text-decoration: none; }
-        .cvm-more { display: block; text-align: center; margin-top: 16px; padding: 13px 0; font-size: 14px; font-weight: 700; color: #ff6000; background: #fff1e8; border: 1px solid #ffd7c2; border-radius: 11px; text-decoration: none; }
+        .cvm-more { display: block; text-align: center; margin-top: 16px; padding: 13px 0; font-size: 14px; font-weight: 700; color: var(--sm-accent); background: #fff1e8; border: 1px solid #ffd7c2; border-radius: 11px; text-decoration: none; }
 
         /* ───────────────────────────────────────
            Design tokens — warm cream system
            Base: linen #faf6f0, Cards: white, Ink: #1a1612
-           Brand: #ff6000, Accent muted: #efe7d6
+           Brand: var(--sm-accent), Accent muted: #efe7d6
            ─────────────────────────────────────── */
         .cv-page {
           background: #fff;
@@ -1066,7 +1066,7 @@ export default function CvLanding() {
         }
         .kdot {
           width: 6px; height: 6px; border-radius: 50%;
-          background: #ff6000;
+          background: var(--sm-accent);
           box-shadow: 0 0 8px rgba(255,96,0,0.5);
           animation: cvGlow 2s ease-in-out infinite;
         }
@@ -1087,7 +1087,7 @@ export default function CvLanding() {
           align-items: center;
           justify-content: center;
           background:
-            radial-gradient(780px circle at 50% 39%, rgba(255,96,0,0.14), transparent 58%),
+            radial-gradient(780px circle at 50% 39%, rgba(255,68,0,0.14), transparent 58%),
             radial-gradient(860px circle at 50% 68%, rgba(0,0,0,0.98), transparent 68%),
             #000;
         }
@@ -1118,7 +1118,7 @@ export default function CvLanding() {
         .cv-kicker {
           font-family: 'Geist Mono', monospace;
           font-size: 11px;
-          color: #ff6000;
+          color: var(--sm-accent);
           letter-spacing: 2.5px;
           text-transform: uppercase;
           margin-bottom: 26px;
@@ -1128,7 +1128,7 @@ export default function CvLanding() {
           font-weight: 700;
         }
         /* Hero kicker — orange, centered */
-        .cv-hero .cv-kicker { color: #ff8a40; justify-content: center; }
+        .cv-hero .cv-kicker { color: var(--sm-accent-strong); justify-content: center; }
         .cv-h1 {
           font-size: clamp(38px, 5vw, 78px);
           font-weight: 900;
@@ -1170,11 +1170,11 @@ export default function CvLanding() {
         }
         .cv-h1 em {
           font-style: normal;
-          color: #ff8a40;
+          color: var(--sm-accent-strong);
           font-variant-numeric: tabular-nums;
           text-shadow:
             0 0 28px rgba(255,138,64,0.5),
-            0 0 56px rgba(255,96,0,0.3);
+            0 0 56px rgba(255,68,0,0.3);
           white-space: nowrap;
           font-size: 1.08em;
           letter-spacing: -2.8px;
@@ -1220,13 +1220,13 @@ export default function CvLanding() {
           box-shadow:
             0 0 0 1px rgba(255,138,64,0.4),
             0 12px 28px rgba(255,96,0,0.45),
-            0 0 40px rgba(255,96,0,0.25);
+            0 0 40px rgba(255,68,0,0.25);
         }
         .cv-btn-hero:hover {
           box-shadow:
             0 0 0 1px rgba(255,138,64,0.55),
             0 16px 36px rgba(255,96,0,0.55),
-            0 0 60px rgba(255,96,0,0.35);
+            0 0 60px rgba(255,68,0,0.35);
         }
         .cv-trust-line {
           display: flex;
@@ -1238,7 +1238,7 @@ export default function CvLanding() {
         }
         .cv-trust-item { display: flex; flex-direction: column; gap: 3px; }
         .cv-trust-num {
-          font-family: 'Barlow', sans-serif;
+          font-family:inherit;
           font-size: 19px;
           font-weight: 800;
           color: #faf6f0;
@@ -1266,7 +1266,7 @@ export default function CvLanding() {
           object-fit: contain;
           filter:
             drop-shadow(0 30px 60px rgba(255,96,0,0.45))
-            drop-shadow(0 0 40px rgba(255,96,0,0.25));
+            drop-shadow(0 0 40px rgba(255,68,0,0.25));
           animation: cvPrizeFloat 6s ease-in-out infinite;
         }
         @keyframes cvPrizeFloat {
@@ -1283,7 +1283,7 @@ export default function CvLanding() {
         .cv-section-kicker {
           font-family: 'Geist Mono', monospace;
           font-size: 11px;
-          color: #ff6000;
+          color: var(--sm-accent);
           letter-spacing: 2.5px;
           text-transform: uppercase;
           margin-bottom: 20px;
@@ -1300,7 +1300,7 @@ export default function CvLanding() {
           color: #1a1612;
           margin-bottom: 14px;
         }
-        .cv-h2 em { font-style: normal; color: #ff6000; font-variant-numeric: tabular-nums; }
+        .cv-h2 em { font-style: normal; color: var(--sm-accent); font-variant-numeric: tabular-nums; }
         .cv-h2-sub {
           font-size: 16px;
           color: rgba(26,22,18,0.55);
@@ -1384,8 +1384,8 @@ export default function CvLanding() {
           align-items: center;
           justify-content: center;
           background: #fff;
-          border: 1px solid rgba(255,96,0,0.16);
-          color: #ff6000;
+          border: 1px solid var(--sm-accent-tint);
+          color: var(--sm-accent);
           font-size: 24px;
           font-weight: 900;
           box-shadow: 0 14px 34px -18px rgba(255,96,0,0.4);
@@ -1433,19 +1433,19 @@ export default function CvLanding() {
           position: absolute;
           inset: 0;
           background:
-            radial-gradient(260px circle at 50% 22%, rgba(255,96,0,0.08), transparent 62%),
+            radial-gradient(260px circle at 50% 22%, rgba(255,68,0,0.08), transparent 62%),
             linear-gradient(180deg, rgba(255,250,245,0.92), rgba(255,255,255,0));
           pointer-events: none;
         }
         .cv-step:hover {
           transform: translateY(-5px);
-          border-color: rgba(255,96,0,0.25);
-          box-shadow: 0 1px 2px rgba(26,22,18,0.04), 0 20px 50px -10px rgba(255,96,0,0.15);
+          border-color: var(--sm-accent-border);
+          box-shadow: 0 1px 2px rgba(26,22,18,0.04), 0 20px 50px -10px rgba(255,68,0,0.15);
         }
         .cv-step-prize {
           background: linear-gradient(160deg, #fff8f0 0%, #fff 100%);
-          border-color: rgba(255,96,0,0.28);
-          box-shadow: 0 1px 2px rgba(26,22,18,0.04), 0 20px 50px -10px rgba(255,96,0,0.18);
+          border-color: var(--sm-accent-border);
+          box-shadow: 0 1px 2px rgba(26,22,18,0.04), 0 20px 50px -10px rgba(255,68,0,0.18);
         }
         .cv-step-num {
           position: relative;
@@ -1457,11 +1457,11 @@ export default function CvLanding() {
           width: 42px;
           height: 28px;
           border-radius: 999px;
-          background: rgba(255,96,0,0.09);
+          background: var(--sm-accent-tint2);
           font-family: 'Geist Mono', monospace;
           font-size: 11px;
           font-weight: 800;
-          color: #ff6000;
+          color: var(--sm-accent);
           letter-spacing: 1.2px;
           margin: 0 0 14px;
         }
@@ -1476,7 +1476,7 @@ export default function CvLanding() {
           margin-bottom: 10px;
           line-height: 1.3;
         }
-        .cv-step-title em { font-style: normal; color: #ff6000; font-variant-numeric: tabular-nums; white-space: nowrap; }
+        .cv-step-title em { font-style: normal; color: var(--sm-accent); font-variant-numeric: tabular-nums; white-space: nowrap; }
         .cv-step-desc {
           position: relative;
           z-index: 2;
@@ -1500,9 +1500,9 @@ export default function CvLanding() {
           margin-bottom: 0;
           border-radius: 18px;
           background:
-            radial-gradient(circle at 50% 42%, rgba(255,96,0,0.14), transparent 56%),
+            radial-gradient(circle at 50% 42%, rgba(255,68,0,0.14), transparent 56%),
             linear-gradient(180deg, #fff7ee 0%, #fff 100%);
-          border: 1px solid rgba(255,96,0,0.08);
+          border: 1px solid var(--sm-accent-tint2);
           overflow: hidden;
         }
         .cv-step-art::after {
@@ -1557,7 +1557,7 @@ export default function CvLanding() {
           width: 52px;
           height: 62px;
           border-radius: 22px 22px 16px 16px;
-          background: linear-gradient(135deg, #1a1612 0%, #3b2b20 48%, #ff6000 100%);
+          background: linear-gradient(135deg, #1a1612 0%, #3b2b20 48%, var(--sm-accent) 100%);
           box-shadow: 0 18px 24px rgba(26,22,18,0.16);
         }
         .cv-person-body::after {
@@ -1568,7 +1568,7 @@ export default function CvLanding() {
           width: 24px;
           height: 18px;
           border-radius: 0 0 12px 12px;
-          background: #ff6000;
+          background: var(--sm-accent);
         }
         .cv-person-arm {
           position: absolute;
@@ -1592,7 +1592,7 @@ export default function CvLanding() {
           left: 42px;
         }
         .scene-match .cv-person-body {
-          background: linear-gradient(135deg, #14532d 0%, #0f766e 46%, #ff6000 100%);
+          background: linear-gradient(135deg, #14532d 0%, #0f766e 46%, var(--sm-accent) 100%);
         }
         .scene-prize {
           left: 28px;
@@ -1600,7 +1600,7 @@ export default function CvLanding() {
           z-index: 3;
         }
         .scene-prize .cv-person-body {
-          background: linear-gradient(135deg, #4a2512 0%, #ff6000 52%, #ff9a45 100%);
+          background: linear-gradient(135deg, #4a2512 0%, var(--sm-accent) 52%, #ff9a45 100%);
         }
         .scene-prize .arm-left {
           transform: rotate(-118deg);
@@ -1640,7 +1640,7 @@ export default function CvLanding() {
           height: 5px;
           margin-left: 15px;
           border-radius: 999px;
-          background: rgba(255,96,0,0.22);
+          background: var(--sm-accent-border);
         }
         .cv-scene-doc span:first-child { margin-top: 34px; width: 48px; }
         .cv-scene-doc span + span { margin-top: 10px; }
@@ -1651,7 +1651,7 @@ export default function CvLanding() {
           width: 90px;
           height: 14px;
           border-radius: 999px;
-          background: rgba(255,96,0,0.18);
+          background: var(--sm-accent-tint);
         }
         .cv-scene-offer {
           position: absolute;
@@ -1673,7 +1673,7 @@ export default function CvLanding() {
           border-radius: 999px;
           background: rgba(26,22,18,0.12);
         }
-        .cv-scene-offer span:first-child { margin-top: 23px; width: 76px; background: rgba(255,96,0,0.28); }
+        .cv-scene-offer span:first-child { margin-top: 23px; width: 76px; background: rgba(255,68,0,0.28); }
         .cv-scene-offer span + span { margin-top: 12px; }
         .cv-scene-offer b {
           position: absolute;
@@ -1682,7 +1682,7 @@ export default function CvLanding() {
           width: 46px;
           height: 18px;
           border-radius: 999px;
-          background: #ff6000;
+          background: var(--sm-accent);
         }
         .cv-scene-bubble {
           position: absolute;
@@ -1708,8 +1708,8 @@ export default function CvLanding() {
           height: 62px;
           z-index: 1;
           border-radius: 18px;
-          background: linear-gradient(135deg, #fff1df 0%, #ff9a45 42%, #ff6000 100%);
-          box-shadow: 0 18px 34px rgba(255,96,0,0.24);
+          background: linear-gradient(135deg, #fff1df 0%, #ff9a45 42%, var(--sm-accent) 100%);
+          box-shadow: 0 18px 34px rgba(255,68,0,0.24);
           transform: rotate(-4deg);
           animation: cvTicketFloat 4s ease-in-out infinite;
         }
@@ -1717,7 +1717,7 @@ export default function CvLanding() {
           position: absolute;
           left: 42px;
           top: 14px;
-          font-family: 'Barlow', sans-serif;
+          font-family:inherit;
           font-size: 26px;
           font-weight: 900;
           color: #fff;
@@ -1739,13 +1739,13 @@ export default function CvLanding() {
           width: 44px;
           height: 44px;
           border-radius: 50%;
-          background: linear-gradient(135deg, #ffbe7a, #ff6000);
+          background: linear-gradient(135deg, #ffbe7a, var(--sm-accent));
           color: #fff;
-          font-family: 'Barlow', sans-serif;
+          font-family:inherit;
           font-size: 22px;
           font-weight: 900;
           z-index: 4;
-          box-shadow: inset 0 0 0 4px rgba(255,255,255,0.2), 0 14px 26px rgba(255,96,0,0.22);
+          box-shadow: inset 0 0 0 4px rgba(255,255,255,0.2), 0 14px 26px rgba(255,68,0,0.22);
         }
         .cv-scene-coin.c1 { left: 86px; top: 28px; animation: cvCoinBob 3.1s ease-in-out infinite; }
         .cv-scene-coin.c2 { right: 34px; bottom: 20px; width: 34px; height: 34px; font-size: 17px; animation: cvCoinBob 3.1s .5s ease-in-out infinite; }
@@ -1797,7 +1797,7 @@ export default function CvLanding() {
           height: 5px;
           margin-left: 16px;
           border-radius: 999px;
-          background: rgba(255,96,0,0.22);
+          background: var(--sm-accent-border);
         }
         .cv-art-doc span:first-child { margin-top: 34px; width: 48px; }
         .cv-art-doc span + span { margin-top: 10px; }
@@ -1808,7 +1808,7 @@ export default function CvLanding() {
           width: 22px;
           height: 38px;
           transform: translateX(-50%);
-          color: #ff6000;
+          color: var(--sm-accent);
           animation: cvArrowLift 1.9s ease-in-out infinite;
         }
         .cv-art-upload-arrow::before {
@@ -1841,7 +1841,7 @@ export default function CvLanding() {
           height: 12px;
           transform: translateX(-50%);
           border-radius: 999px;
-          background: rgba(255,96,0,0.18);
+          background: var(--sm-accent-tint);
         }
         .cv-art-node {
           position: absolute;
@@ -1857,7 +1857,7 @@ export default function CvLanding() {
           position: absolute;
           inset: 15px;
           border-radius: 50%;
-          background: #ff6000;
+          background: var(--sm-accent);
         }
         .cv-art-node.n1 { left: 34px; top: 30px; animation: cvNodePulse 3.2s ease-in-out infinite; }
         .cv-art-node.n2 { right: 40px; top: 22px; animation: cvNodePulse 3.2s .35s ease-in-out infinite; }
@@ -1877,7 +1877,7 @@ export default function CvLanding() {
           width: 66px;
           height: 66px;
           border-radius: 50%;
-          border: 2px solid rgba(255,96,0,0.28);
+          border: 2px solid var(--sm-accent-border);
           animation: cvTargetScan 2.7s ease-in-out infinite;
         }
         .cv-art-target::before,
@@ -1890,7 +1890,7 @@ export default function CvLanding() {
         }
         .cv-art-target::after {
           inset: 28px;
-          background: #ff6000;
+          background: var(--sm-accent);
           border: 0;
         }
         .cv-art-ticket {
@@ -1901,8 +1901,8 @@ export default function CvLanding() {
           height: 70px;
           transform: translateX(-50%) rotate(-4deg);
           border-radius: 18px;
-          background: linear-gradient(135deg, #fff1df 0%, #ff9a45 42%, #ff6000 100%);
-          box-shadow: 0 18px 36px rgba(255,96,0,0.24);
+          background: linear-gradient(135deg, #fff1df 0%, #ff9a45 42%, var(--sm-accent) 100%);
+          box-shadow: 0 18px 36px rgba(255,68,0,0.24);
           animation: cvTicketFloat 4s ease-in-out infinite;
         }
         .cv-art-ticket::before,
@@ -1922,7 +1922,7 @@ export default function CvLanding() {
           position: absolute;
           left: 24px;
           top: 17px;
-          font-family: 'Barlow', sans-serif;
+          font-family:inherit;
           font-size: 34px;
           font-weight: 900;
           color: #fff;
@@ -1936,12 +1936,12 @@ export default function CvLanding() {
           width: 48px;
           height: 48px;
           border-radius: 50%;
-          background: linear-gradient(135deg, #ffbe7a, #ff6000);
+          background: linear-gradient(135deg, #ffbe7a, var(--sm-accent));
           color: #fff;
-          font-family: 'Barlow', sans-serif;
+          font-family:inherit;
           font-size: 24px;
           font-weight: 900;
-          box-shadow: inset 0 0 0 4px rgba(255,255,255,0.2), 0 14px 26px rgba(255,96,0,0.22);
+          box-shadow: inset 0 0 0 4px rgba(255,255,255,0.2), 0 14px 26px rgba(255,68,0,0.22);
         }
         .cv-art-coin.c1 { left: 42px; bottom: 28px; animation: cvCoinBob 3.1s ease-in-out infinite; }
         .cv-art-coin.c2 { right: 46px; top: 24px; width: 40px; height: 40px; font-size: 20px; animation: cvCoinBob 3.1s .5s ease-in-out infinite; }
@@ -1952,7 +1952,7 @@ export default function CvLanding() {
           width: 8px;
           height: 32px;
           border-radius: 999px;
-          background: #ff6000;
+          background: var(--sm-accent);
           box-shadow: 0 0 14px rgba(255,96,0,0.45);
           transform: rotate(42deg);
         }
@@ -1977,8 +1977,8 @@ export default function CvLanding() {
           50% { transform: scale(1.06); }
         }
         @keyframes cvTargetScan {
-          0%, 100% { box-shadow: 0 0 0 0 rgba(255,96,0,0.08); }
-          50% { box-shadow: 0 0 0 12px rgba(255,96,0,0.08); }
+          0%, 100% { box-shadow: 0 0 0 0 rgba(255,68,0,0.08); }
+          50% { box-shadow: 0 0 0 12px rgba(255,68,0,0.08); }
         }
         @keyframes cvTicketFloat {
           0%, 100% { transform: translateX(-50%) translateY(0) rotate(-4deg); }
@@ -2032,10 +2032,10 @@ export default function CvLanding() {
           width: 30px; height: 30px;
           border-radius: 9px;
           background: #fff5ec;
-          color: #ff6000;
+          color: var(--sm-accent);
           display: flex; align-items: center; justify-content: center;
           flex-shrink: 0;
-          border: 1px solid rgba(255,96,0,0.2);
+          border: 1px solid var(--sm-accent-border);
         }
         .cv-bullet-title {
           font-size: 15px;
@@ -2059,10 +2059,10 @@ export default function CvLanding() {
           padding: 36px 34px;
           box-shadow:
             0 2px 4px rgba(26,22,18,0.03),
-            0 40px 80px -20px rgba(255,96,0,0.18);
+            0 40px 80px -20px rgba(255,68,0,0.18);
         }
         .cv-drop.drag {
-          border-color: #ff6000;
+          border-color: var(--sm-accent);
           background: #fff3e7;
         }
         .cv-card-step-pill {
@@ -2072,11 +2072,11 @@ export default function CvLanding() {
           font-size: 11px;
           font-weight: 800;
           letter-spacing: 1.5px;
-          background: #ff6000;
+          background: var(--sm-accent);
           color: #fff;
           padding: 6px 12px;
           border-radius: 7px;
-          box-shadow: 0 8px 18px rgba(255,96,0,0.35);
+          box-shadow: 0 8px 18px rgba(255,68,0,0.35);
         }
         .cv-card-h {
           font-size: 32px;
@@ -2086,7 +2086,7 @@ export default function CvLanding() {
           color: #1a1612;
           margin: 10px 0 14px;
         }
-        .cv-card-h em { font-style: normal; color: #ff6000; }
+        .cv-card-h em { font-style: normal; color: var(--sm-accent); }
         .cv-card-sub {
           font-size: 14.5px;
           color: rgba(26,22,18,0.55);
@@ -2098,7 +2098,7 @@ export default function CvLanding() {
           align-items: center;
           gap: 14px;
           background: linear-gradient(135deg, #fff3e7, #fffaf5);
-          border: 1px solid rgba(255,96,0,0.22);
+          border: 1px solid var(--sm-accent-border);
           padding: 16px 18px;
           border-radius: 12px;
           margin-bottom: 24px;
@@ -2107,11 +2107,11 @@ export default function CvLanding() {
         .cv-reward-title { font-size: 14.5px; font-weight: 800; color: #1a1612; }
         .cv-reward-sub { font-size: 12px; color: rgba(26,22,18,0.55); margin-top: 3px; }
         .cv-ai-bubble {
-          background: #ff6000;
+          background: var(--sm-accent);
           border-radius: 12px;
           padding: 14px 16px;
           margin-bottom: 18px;
-          box-shadow: 0 8px 22px rgba(255,96,0,0.3);
+          box-shadow: 0 8px 22px rgba(255,68,0,0.3);
         }
         .cv-ai-bubble-inner { display: flex; align-items: center; gap: 10px; font-size: 13px; font-weight: 600; color: #fff; line-height: 1.4; }
         .cv-ai-bubble-icon { display: inline-flex; align-items: center; justify-content: center; width: 26px; height: 26px; border-radius: 8px; background: rgba(255,255,255,0.22); color: #fff; flex-shrink: 0; }
@@ -2119,7 +2119,7 @@ export default function CvLanding() {
           width: 100%;
           padding: 22px;
           border-radius: 14px;
-          border: 2px dashed rgba(255,96,0,0.32);
+          border: 2px dashed rgba(255,68,0,0.32);
           background: #fffaf5;
           display: flex;
           align-items: center;
@@ -2129,10 +2129,10 @@ export default function CvLanding() {
           font-family: inherit;
           font-size: 14.5px;
           font-weight: 700;
-          color: #ff6000;
+          color: var(--sm-accent);
           transition: all .15s;
         }
-        .cv-drop:hover { border-color: #ff6000; background: #fff3e7; }
+        .cv-drop:hover { border-color: var(--sm-accent); background: #fff3e7; }
         .cv-drop:disabled,
         .cv-drop[aria-disabled="true"] { opacity: 0.5; cursor: not-allowed; pointer-events: none; }
         /* Anything visible inside .cv-drop (icon, text) must NOT swallow clicks —
@@ -2158,9 +2158,9 @@ export default function CvLanding() {
           justify-content: center;
           font-size: 12.5px;
           font-weight: 600;
-          color: #ff6000;
+          color: var(--sm-accent);
           background: none;
-          border: 1px solid rgba(255,96,0,0.32);
+          border: 1px solid var(--sm-accent-border);
           padding: 7px 14px;
           border-radius: 7px;
           cursor: pointer;
@@ -2191,7 +2191,7 @@ export default function CvLanding() {
           width: 60px; height: 60px;
           margin: 0 auto 22px;
           border-radius: 50%;
-          background: linear-gradient(135deg, #ff6000, #ff8a40);
+          background: linear-gradient(135deg, var(--sm-accent), var(--sm-accent-strong));
           display: flex; align-items: center; justify-content: center;
           box-shadow: 0 14px 32px rgba(255,96,0,0.4);
         }
@@ -2205,7 +2205,7 @@ export default function CvLanding() {
              carry the brand color. A near-white surface lets the gold goal
              dot stand out from step #1's orange "done" dot. */
           background:
-            radial-gradient(520px circle at 50% 10%, rgba(255,96,0,0.05), transparent 58%),
+            radial-gradient(520px circle at 50% 10%, rgba(255,68,0,0.05), transparent 58%),
             #fff;
         }
         .cv-success-visual {
@@ -2227,7 +2227,7 @@ export default function CvLanding() {
           mix-blend-mode: multiply;
           -webkit-mask-image: radial-gradient(ellipse 72% 82% at 50% 52%, #000 54%, rgba(0,0,0,.78) 72%, transparent 92%);
           mask-image: radial-gradient(ellipse 72% 82% at 50% 52%, #000 54%, rgba(0,0,0,.78) 72%, transparent 92%);
-          filter: drop-shadow(0 18px 34px rgba(255,96,0,0.13));
+          filter: drop-shadow(0 18px 34px rgba(255,68,0,0.13));
         }
         .cv-success-h,
         .cv-journey,
@@ -2254,7 +2254,7 @@ export default function CvLanding() {
           text-underline-offset: 3px;
           cursor: pointer;
         }
-        .cv-registered-replace:hover { color: #ff6000; }
+        .cv-registered-replace:hover { color: var(--sm-accent); }
         /* Journey card — kept near-white so the gold goal dot and the
            orange "completed" dot read as distinct accents instead of
            getting absorbed into an all-orange wash. Subtle warm tint only. */
@@ -2296,7 +2296,7 @@ export default function CvLanding() {
           padding: 0 2px;
           /* Solid brand orange — no gradient clipping, no comma artifacts,
              cleaner read against the near-white card surface. */
-          color: #ff6000;
+          color: var(--sm-accent);
           animation:
             cvRewardPop .8s cubic-bezier(.18,.89,.32,1.28) both,
             cvRewardBreathe 2.6s 1.4s ease-in-out infinite;
@@ -2340,7 +2340,7 @@ export default function CvLanding() {
           width: 0;
           height: 100%;
           border-radius: inherit;
-          background: linear-gradient(90deg, #ff8a40 0%, #ff6000 50%, #d44a00 100%);
+          background: linear-gradient(90deg, var(--sm-accent-strong) 0%, var(--sm-accent) 50%, #d44a00 100%);
           transition: width var(--cv-stepper-fill-ms, 1100ms) cubic-bezier(.4, .0, .2, 1),
                       height var(--cv-stepper-fill-ms, 1100ms) cubic-bezier(.4, .0, .2, 1);
           box-shadow: 0 0 14px rgba(255,96,0,0.42);
@@ -2380,8 +2380,8 @@ export default function CvLanding() {
           flex-shrink: 0;
         }
         .cv-stepnode.done .cv-stepnode-dot {
-          border-color: #ff8a40;
-          background: #ff8a40;
+          border-color: var(--sm-accent-strong);
+          background: var(--sm-accent-strong);
           color: #fff;
           transform: scale(1.08);
           box-shadow: 0 8px 20px rgba(255,138,64,0.5), 0 0 0 6px rgba(255,138,64,0.16);
@@ -2407,7 +2407,7 @@ export default function CvLanding() {
           line-height: 1.3;
         }
         .cv-stepnode.done .cv-stepnode-label {
-          color: #ff8a40;
+          color: var(--sm-accent-strong);
           font-weight: 800;
         }
         .cv-stepnode.goal .cv-stepnode-label {
@@ -2437,7 +2437,7 @@ export default function CvLanding() {
             height: 50%;
           }
           .cv-stepper-fill {
-            background: linear-gradient(180deg, #ff8a40 0%, #ff6000 50%, #d44a00 100%);
+            background: linear-gradient(180deg, var(--sm-accent-strong) 0%, var(--sm-accent) 50%, #d44a00 100%);
           }
           .cv-stepper-nodes {
             display: flex;
@@ -2516,8 +2516,8 @@ export default function CvLanding() {
           50%      { box-shadow: 0 12px 32px rgba(212,74,0,0.68), 0 0 0 18px rgba(212,74,0,0.05); }
         }
         @keyframes cvDotPulse {
-          0%, 100% { box-shadow: 0 12px 28px rgba(255,96,0,0.45), 0 0 0 6px rgba(255,96,0,0.15); }
-          50%      { box-shadow: 0 12px 28px rgba(255,96,0,0.55), 0 0 0 14px rgba(255,96,0,0.05); }
+          0%, 100% { box-shadow: 0 12px 28px rgba(255,96,0,0.45), 0 0 0 6px rgba(255,68,0,0.45); }
+          50%      { box-shadow: 0 12px 28px rgba(255,96,0,0.55), 0 0 0 14px rgba(255,68,0,0.55); }
         }
         /* Interstitial (auto-upload after OAuth return) */
         .cv-interstitial { text-align: left; }
@@ -2525,8 +2525,8 @@ export default function CvLanding() {
           width: 48px; height: 48px;
           margin: 0 auto 22px;
           border-radius: 50%;
-          border: 4px solid rgba(255,96,0,0.18);
-          border-top-color: #ff6000;
+          border: 4px solid rgba(255,68,0,0.18);
+          border-top-color: var(--sm-accent);
           animation: cvSpin 0.8s linear infinite;
         }
         @keyframes cvSpin { to { transform: rotate(360deg); } }
@@ -2562,9 +2562,9 @@ export default function CvLanding() {
           justify-content: center;
           width: 22px; height: 22px;
           border-radius: 50%;
-          background: #ff6000;
+          background: var(--sm-accent);
           color: #fff;
-          font-family: 'Barlow', sans-serif;
+          font-family:inherit;
           font-size: 12px;
           font-weight: 800;
           letter-spacing: 0;
@@ -2580,8 +2580,8 @@ export default function CvLanding() {
           gap: 12px;
           margin-top: 18px;
           padding: 14px 16px;
-          background: linear-gradient(135deg, rgba(255,96,0,0.07), rgba(255,96,0,0.02));
-          border: 1px solid rgba(255,96,0,0.18);
+          background: linear-gradient(135deg, rgba(255,68,0,0.07), rgba(255,68,0,0.02));
+          border: 1px solid var(--sm-accent-tint);
           border-radius: 12px;
           font-size: 13px;
           color: rgba(26,22,18,0.7);
@@ -2594,7 +2594,7 @@ export default function CvLanding() {
           justify-content: center;
           width: 22px; height: 22px;
           border-radius: 50%;
-          background: #ff6000;
+          background: var(--sm-accent);
           color: #fff;
           flex-shrink: 0;
           margin-top: 1px;
@@ -2647,8 +2647,8 @@ export default function CvLanding() {
           gap: 8px;
           margin-top: 14px;
           padding: 12px 14px;
-          background: linear-gradient(135deg, rgba(255,96,0,0.06), rgba(255,96,0,0.02));
-          border: 1px solid rgba(255,96,0,0.16);
+          background: linear-gradient(135deg, rgba(255,68,0,0.06), rgba(255,68,0,0.02));
+          border: 1px solid var(--sm-accent-tint);
           border-radius: 10px;
           font-size: 12.5px;
           color: rgba(26,22,18,0.65);
@@ -2657,7 +2657,7 @@ export default function CvLanding() {
         .cv-reassurance b { color: #1a1612; font-weight: 700; }
         .cv-reassurance-dot {
           width: 6px; height: 6px; border-radius: 50%;
-          background: #ff6000;
+          background: var(--sm-accent);
           flex-shrink: 0;
           box-shadow: 0 0 6px rgba(255,96,0,0.5);
         }
@@ -2670,7 +2670,7 @@ export default function CvLanding() {
           width: 100%;
           margin-top: 20px;
           padding: 18px 24px;
-          background: #ff6000;
+          background: var(--sm-accent);
           color: #fff;
           border: 0;
           border-radius: 12px;
@@ -2678,13 +2678,13 @@ export default function CvLanding() {
           font-weight: 700;
           cursor: pointer;
           font-family: inherit;
-          box-shadow: 0 10px 24px rgba(255,96,0,0.32);
+          box-shadow: 0 10px 24px rgba(255,68,0,0.32);
           text-align: center;
           text-decoration: none;
           transition: background .15s, transform .08s, box-shadow .15s;
         }
         .cv-btn:hover {
-          background: #ff7218;
+          background: var(--sm-accent-strong);
           box-shadow: 0 14px 32px rgba(255,96,0,0.4);
         }
         .cv-btn:active { transform: translateY(1px); }
@@ -2728,8 +2728,8 @@ export default function CvLanding() {
         }
         .cv-test-card:hover {
           transform: translateY(-3px);
-          border-color: rgba(255,96,0,0.22);
-          box-shadow: 0 2px 4px rgba(26,22,18,0.03), 0 24px 50px -10px rgba(255,96,0,0.18);
+          border-color: var(--sm-accent-border);
+          box-shadow: 0 2px 4px rgba(26,22,18,0.03), 0 24px 50px -10px rgba(255,68,0,0.18);
         }
         .cv-test-quote-mark {
           position: absolute;
@@ -2755,7 +2755,7 @@ export default function CvLanding() {
           object-position: top center;
           flex-shrink: 0;
           background: #fbf8f3;
-          box-shadow: 0 0 0 2px rgba(255,96,0,0.18), 0 4px 12px rgba(26,22,18,0.08);
+          box-shadow: 0 0 0 2px rgba(255,68,0,0.18), 0 4px 12px rgba(26,22,18,0.08);
         }
         .cv-test-author { flex: 1; min-width: 0; }
         .cv-test-name {
@@ -2775,9 +2775,9 @@ export default function CvLanding() {
           font-size: 10.5px;
           font-weight: 700;
           letter-spacing: 0.8px;
-          color: #ff6000;
+          color: var(--sm-accent);
           background: #fff3e7;
-          border: 1px solid rgba(255,96,0,0.25);
+          border: 1px solid var(--sm-accent-border);
           padding: 6px 12px;
           border-radius: 100px;
         }
@@ -2821,7 +2821,7 @@ export default function CvLanding() {
           position: absolute;
           left: 0; top: 0; bottom: 0;
           width: 3px;
-          background: linear-gradient(180deg, #ff6000, #ff8a40);
+          background: linear-gradient(180deg, var(--sm-accent), var(--sm-accent-strong));
           transform: scaleY(0);
           transform-origin: top;
           transition: transform .25s ease;
@@ -2831,7 +2831,7 @@ export default function CvLanding() {
           border-color: rgba(255,96,0,0.42);
           box-shadow:
             0 1px 2px rgba(26,22,18,0.04),
-            0 24px 50px -10px rgba(255,96,0,0.32);
+            0 24px 50px -10px rgba(255,68,0,0.32);
         }
         .cv-job:hover .cv-job-accent { transform: scaleY(1); }
         .cv-job-logo {
@@ -2844,13 +2844,13 @@ export default function CvLanding() {
           border: 1px solid rgba(255,255,255,0.1);
         }
         .cv-job-logo-fallback {
-          background: rgba(255,96,0,0.12);
-          border-color: rgba(255,96,0,0.32);
+          background: var(--sm-accent-tint);
+          border-color: var(--sm-accent-border);
           display: flex; align-items: center; justify-content: center;
-          font-family: 'Barlow', sans-serif;
+          font-family:inherit;
           font-weight: 800;
           font-size: 15px;
-          color: #ff8a40;
+          color: var(--sm-accent-strong);
         }
         .cv-job-meta { min-width: 0; flex: 1; }
         .cv-job-co {
@@ -2882,9 +2882,9 @@ export default function CvLanding() {
           border-radius: 7px;
         }
         .cv-job-tag-sal {
-          color: #ff8a40;
-          border-color: rgba(255,96,0,0.35);
-          background: rgba(255,96,0,0.12);
+          color: var(--sm-accent-strong);
+          border-color: var(--sm-accent-border);
+          background: var(--sm-accent-tint);
         }
 
         /* ───── Final CTA (dark closer) ───── */
@@ -2893,7 +2893,7 @@ export default function CvLanding() {
           padding: 130px 40px 120px;
           overflow: hidden;
           background:
-            radial-gradient(900px circle at 50% 50%, rgba(255,96,0,0.18), transparent 65%),
+            radial-gradient(900px circle at 50% 50%, rgba(255,68,0,0.18), transparent 65%),
             #1a1612;
         }
         .cv-final-bg {
@@ -2906,7 +2906,7 @@ export default function CvLanding() {
           mask-image: radial-gradient(ellipse at center, #000 35%, transparent 80%);
           pointer-events: none;
         }
-        .cv-kicker-dark { color: #ff8a40; }
+        .cv-kicker-dark { color: var(--sm-accent-strong); }
         .cv-final-inner {
           position: relative;
           max-width: 760px;
@@ -2921,7 +2921,7 @@ export default function CvLanding() {
           margin: 8px 0 18px;
           line-height: 1.15;
         }
-        .cv-final-h em { font-style: normal; color: #ff8a40; font-variant-numeric: tabular-nums; white-space: nowrap; }
+        .cv-final-h em { font-style: normal; color: var(--sm-accent-strong); font-variant-numeric: tabular-nums; white-space: nowrap; }
         .cv-final-sub {
           font-size: 17px;
           color: rgba(250,246,240,0.55);
@@ -2973,8 +2973,8 @@ export default function CvLanding() {
           justify-content: center;
           width: 20px; height: 20px;
           border-radius: 50%;
-          background: rgba(255,96,0,0.18);
-          color: #ff8a40;
+          background: var(--sm-accent-tint);
+          color: var(--sm-accent-strong);
           flex-shrink: 0;
           margin-top: 1px;
         }
@@ -2985,7 +2985,7 @@ export default function CvLanding() {
           font-size: 12.5px;
           color: rgba(250,246,240,0.5);
         }
-        .cv-conds-link a { color: #ff8a40; text-decoration: none; font-weight: 700; }
+        .cv-conds-link a { color: var(--sm-accent-strong); text-decoration: none; font-weight: 700; }
         .cv-conds-link a:hover { text-decoration: underline; }
 
         /* ───── Sticky CTA (mobile) ───── */
@@ -3000,7 +3000,7 @@ export default function CvLanding() {
           border-top: 1px solid rgba(26,22,18,0.08);
           z-index: 90;
         }
-        .cv-btn-sticky { margin-top: 0; padding: 16px; box-shadow: 0 -4px 18px rgba(255,96,0,0.22); }
+        .cv-btn-sticky { margin-top: 0; padding: 16px; box-shadow: 0 -4px 18px rgba(255,68,0,0.22); }
 
         /* ───── 단계별 스크롤 다운 버튼 (mobile) ───── */
         .cv-scrolldown {
@@ -3015,7 +3015,7 @@ export default function CvLanding() {
           border-radius: 50%;
           border: 1px solid rgba(26,22,18,0.08);
           background: #fff;
-          color: #ff6000;
+          color: var(--sm-accent);
           align-items: center;
           justify-content: center;
           cursor: pointer;
@@ -3033,7 +3033,7 @@ export default function CvLanding() {
           .cv-hero {
             padding: 80px 28px 80px;
             background:
-              radial-gradient(700px circle at 50% 32%, rgba(255,96,0,0.13), transparent 56%),
+              radial-gradient(700px circle at 50% 32%, rgba(255,68,0,0.13), transparent 56%),
               radial-gradient(700px circle at 50% 70%, rgba(0,0,0,0.98), transparent 68%),
               linear-gradient(180deg, #1f1813 0%, #181410 100%);
           }

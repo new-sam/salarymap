@@ -23,16 +23,16 @@ module.exports = {
         primary: {
           DEFAULT: 'hsl(var(--primary))',
           foreground: 'hsl(var(--primary-foreground))',
-          50:  '#FFF7ED',
-          100: '#FFEDD5',
-          200: '#FED7AA',
-          300: '#FDBA74',
-          400: '#FB923C',
-          500: '#F97316',
-          600: '#EA580C',
-          700: '#C2410C',
-          800: '#9A3412',
-          900: '#7C2D12',
+          50:  '#FFF7F5',
+          100: '#FFF2EC',
+          200: '#FFD6C8',
+          300: '#FFAB8F',
+          400: '#FF7A4D',
+          500: '#FF4400',
+          600: '#E63D00',
+          700: '#C23400',
+          800: '#9A2900',
+          900: '#7A2100',
         },
         secondary: {
           DEFAULT: 'hsl(var(--secondary))',
@@ -57,6 +57,22 @@ module.exports = {
         card: {
           DEFAULT: 'hsl(var(--card))',
           foreground: 'hsl(var(--card-foreground))',
+        },
+        // salarymap 라이트 토큰 (globals.css --sm-* 참조) — bg-sm-accent 등
+        sm: {
+          bg: 'var(--sm-bg)',
+          'bg-warm': 'var(--sm-bg-warm)',
+          surface: 'var(--sm-surface)',
+          line: 'var(--sm-line)',
+          'line-strong': 'var(--sm-line-strong)',
+          ink: 'var(--sm-ink)',
+          text: 'var(--sm-text)',
+          'text-sub': 'var(--sm-text-sub)',
+          'text-mute': 'var(--sm-text-mute)',
+          accent: 'var(--sm-accent)',
+          'accent-strong': 'var(--sm-accent-strong)',
+          'accent-tint': 'var(--sm-accent-tint)',
+          'accent-border': 'var(--sm-accent-border)',
         },
         // 토스식 그레이
         gray: {
@@ -102,7 +118,7 @@ module.exports = {
         'soft-md': '0 4px 12px rgba(17,24,39,0.08), 0 2px 4px rgba(17,24,39,0.04)',
         'soft-lg': '0 10px 25px rgba(17,24,39,0.10), 0 4px 10px rgba(17,24,39,0.05)',
         'soft-xl': '0 20px 50px rgba(17,24,39,0.15)',
-        'brand':   '0 6px 16px rgba(234,88,12,0.25)',
+        'brand':   '0 6px 16px rgba(255,68,0,0.22)',
       },
       transitionTimingFunction: {
         spring: 'cubic-bezier(0.16, 1, 0.3, 1)',

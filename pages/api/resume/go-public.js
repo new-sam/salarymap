@@ -68,6 +68,6 @@ function page(state) {
 <div style="font-size:52px;line-height:1;margin-bottom:18px">${m.emoji}</div>
 <div style="font-size:19px;font-weight:800;margin-bottom:10px;letter-spacing:-.01em">${m.vi}</div>
 <div style="font-size:14px;color:#6b6357;line-height:1.5;margin-bottom:24px">${m.vi2}</div>
-<a href="https://salary-fyi.com/jobs" style="display:inline-block;background:#ff6000;color:#fff;font-weight:700;font-size:14px;text-decoration:none;padding:12px 24px;border-radius:10px">Xem việc làm phù hợp →</a>
+<a href="https://salary-fyi.com/jobs" style="display:inline-block;background:#ff4400;color:#fff;font-weight:700;font-size:14px;text-decoration:none;padding:12px 24px;border-radius:10px">Xem việc làm phù hợp →</a>
 </div></body></html>`
 }

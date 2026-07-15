@@ -20,7 +20,7 @@
     --card-foreground: 220 26% 14%;
     --popover: 0 0% 100%;
     --popover-foreground: 220 26% 14%;
-    --primary: 21 90% 48%;
+    --primary: 16 100% 50%; /* #ff4400 — 전역 액센트와 동일 */
     --primary-foreground: 0 0% 100%;
     --secondary: 220 14% 96%;
     --secondary-foreground: 215 19% 35%;
@@ -32,9 +32,66 @@
     --destructive-foreground: 0 0% 100%;
     --border: 220 13% 91%;
     --input: 220 13% 91%;
-    --ring: 21 90% 48%;
+    --ring: 16 100% 50%;
     --radius: 14px;
   }
+}
+
+/* ── salarymap 라이트 디자인 토큰 (단일 소스) ─────────────────────
+   모든 스타일 방식(인라인 객체·<style> 문자열·styled-jsx·원시 HTML·Tailwind)
+   에서 var(--sm-*)로 소비. shadcn HSL 변수(--background 등)와 별개 네임스페이스.
+   값은 기존 라이트 페이지(jobs/profile/community) 실사용값과 정합. */
+:root {
+  /* 배경 계층 */
+  --sm-bg: #ffffff;
+  --sm-bg-warm: #f7f7f5;
+  --sm-surface: #ffffff;
+  --sm-surface-sub: #fafaf8;
+  /* 라인 */
+  --sm-line: #eeeeee;
+  --sm-line-strong: #e0e0e0;
+  /* 텍스트 계층 */
+  --sm-ink: #111111;
+  --sm-text: #333333;
+  --sm-text-sub: #666666;
+  --sm-text-mute: #999999;
+  /* 액센트 — #ff4400 단일화 */
+  --sm-accent: #ff4400;
+  --sm-accent-strong: #e63d00;
+  --sm-accent-tint: #fff2ec;
+  --sm-accent-tint2: #fff7f5;
+  --sm-accent-border: #ffd6c8;
+  /* 시그널 */
+  --sm-green: #16a34a;
+  --sm-red: #ef4444;
+  --sm-amber: #f59e0b;
+  --sm-blue: #3b82f6;
+  /* 오버레이 */
+  --sm-overlay: rgba(17,17,17,0.45);
+}
+
+/* ── 공통 패턴 클래스 — 신규 코드는 개별 재작성 대신 이걸 사용.
+   모든 스타일 방식(원시 HTML 포함)에서 소비 가능하도록 클래스로 제공. */
+.sm-btn-cta {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  background: var(--sm-accent); color: #fff; border: none; cursor: pointer;
+  font-size: 14px; font-weight: 700; padding: 13px 24px; border-radius: 10px;
+  transition: background .15s;
+}
+.sm-btn-cta:hover { background: var(--sm-accent-strong); }
+.sm-card {
+  background: var(--sm-surface); border: 1px solid var(--sm-line);
+  border-radius: 14px; box-shadow: 0 2px 12px rgba(17,24,39,0.04);
+}
+.sm-input {
+  background: var(--sm-surface); border: 1px solid var(--sm-line-strong);
+  border-radius: 10px; padding: 12px 14px; font-size: 14px; color: var(--sm-ink);
+  outline: none; transition: border-color .15s;
+}
+.sm-input:focus { border-color: var(--sm-accent); }
+.sm-overlay {
+  position: fixed; inset: 0; z-index: 1000; background: var(--sm-overlay);
+  display: flex; align-items: center; justify-content: center; padding: 20px;
 }
 
 html {
@@ -59,17 +116,18 @@ body {
   color: #191F28;
 }
 
-/* Vietnamese visitors: route to Be Vietnam Pro so diacritic stacks
-   (ế, ậ, ữ, ằ…) get proper shaping. Falls back to Inter and the system
-   stack — Pretendard intentionally dropped so the vi diacritics don't
-   inherit its Latin metrics. Form controls reset their own font-family
-   in some browsers, so target them explicitly. */
+/* Vietnamese visitors: Inter first — full Vietnamese diacritic support
+   with a cleaner, less geometric look than Be Vietnam Pro (which reads
+   chunky at heavy weights). Be Vietnam Pro kept as fallback. Pretendard
+   intentionally dropped so the vi diacritics don't inherit its Latin
+   metrics. Form controls reset their own font-family in some browsers,
+   so target them explicitly. */
 :lang(vi) body,
 :lang(vi) button,
 :lang(vi) input,
 :lang(vi) textarea,
 :lang(vi) select {
-  font-family: 'Be Vietnam Pro', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', sans-serif;
+  font-family: 'Inter', 'Be Vietnam Pro', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', sans-serif;
 }
 
 /* Headings: tighter tracking + slightly tighter line-height for visual weight.
@@ -134,6 +192,8 @@ a {
     padding-top: 0 !important;
     padding-bottom: 0 !important;
   }
+  /* 모바일 하단 탭바 셸 — 단일 소유(컴포넌트 <style>의 셸 정의 제거됨).
+     아이템/버블 스타일은 components/MobileTabBar.js가 소유. */
   .mtab {
     display: flex !important;
     position: fixed !important;
@@ -142,13 +202,19 @@ a {
     right: 0 !important;
     z-index: 99999 !important;
     height: calc(60px + env(safe-area-inset-bottom)) !important;
-    background: rgba(12,12,11,0.97);
+    background: rgba(255,255,255,0.96);
     backdrop-filter: blur(14px);
-    border-top: 1px solid rgba(255,255,255,0.08);
+    border-top: 1px solid var(--sm-line);
     align-items: flex-start;
     justify-content: space-around;
     padding: 8px 0 0 0 !important;
     margin: 0 !important;
     font-family: 'Barlow', sans-serif;
   }
+  /* iOS 인앱브라우저(Meta 광고 유입)가 스크롤 시 하단 UI를 접으면 fixed 바가
+     떠서 밑으로 페이지 내용이 비친다 — 바 배경을 아래로 연장해 가린다. */
+  .mtab::after { content: ''; position: absolute; top: 100%; left: 0; right: 0; height: 200px; background: rgba(255,255,255,0.96); pointer-events: none; }
+}
+@media (min-width: 769px) {
+  .mtab { display: none !important; }
 }

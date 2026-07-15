@@ -36,7 +36,7 @@ export default function CompanyCard({ company, index, isUnlocked, needsLogin, on
           <span
             onClick={(e) => { e.stopPropagation(); onLockedClick(); }}
             style={{
-              marginTop: '8px', background: '#ff6000', color: 'black',
+              marginTop: '8px', background: 'var(--sm-accent)', color: '#fff',
               fontSize: '12px', fontWeight: 800, padding: '9px 20px', borderRadius: '100px',
             }}
           >{t(needsLogin ? 'companies.loginToView' : 'companies.shareSalary')}</span>

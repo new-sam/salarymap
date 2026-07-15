@@ -26,18 +26,18 @@ function GlobalFooter() {
   const { t } = useT();
   return (
     <footer style={{
-      background: '#0a0a09', borderTop: '1px solid rgba(255,255,255,0.06)',
+      background: 'var(--sm-bg-warm)', borderTop: '1px solid var(--sm-line)',
       padding: '24px 40px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 24, flexWrap: 'wrap',
     }}>
-      <div style={{ fontFamily: "'Geist Mono', monospace", fontSize: 12, color: 'rgba(242,240,235,0.42)' }}>
+      <div style={{ fontFamily: "'Geist Mono', monospace", fontSize: 12, color: 'var(--sm-text-mute)' }}>
         {t('footer.copyright')}
       </div>
       <div style={{ display: 'flex', alignItems: 'center', gap: 24, flexWrap: 'wrap' }}>
         <LanguageSwitcher />
-        <a href="/app" style={{ fontSize: 13, color: '#ff6000', textDecoration: 'none', fontWeight: 600 }}>📱 {t('footer.downloadApp')}</a>
-        <a href="/how-it-works" style={{ fontSize: 13, color: 'rgba(242,240,235,0.42)', textDecoration: 'none' }}>{t('footer.howItWorks')}</a>
-        <a href="/privacy" style={{ fontSize: 13, color: 'rgba(242,240,235,0.42)', textDecoration: 'none' }}>{t('footer.privacy')}</a>
-        <a href="/terms" style={{ fontSize: 13, color: 'rgba(242,240,235,0.42)', textDecoration: 'none' }}>{t('footer.terms')}</a>
+        <a href="/app" style={{ fontSize: 13, color: 'var(--sm-accent)', textDecoration: 'none', fontWeight: 600 }}>📱 {t('footer.downloadApp')}</a>
+        <a href="/how-it-works" style={{ fontSize: 13, color: 'var(--sm-text-mute)', textDecoration: 'none' }}>{t('footer.howItWorks')}</a>
+        <a href="/privacy" style={{ fontSize: 13, color: 'var(--sm-text-mute)', textDecoration: 'none' }}>{t('footer.privacy')}</a>
+        <a href="/terms" style={{ fontSize: 13, color: 'var(--sm-text-mute)', textDecoration: 'none' }}>{t('footer.terms')}</a>
       </div>
     </footer>
   );
@@ -55,22 +55,22 @@ function GlobalLoginModal() {
 
   if (!show) return null;
   return (
-    <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.75)',zIndex:1000,display:'flex',alignItems:'center',justifyContent:'center',padding:'20px'}}
+    <div style={{position:'fixed',inset:0,background:'var(--sm-overlay)',zIndex:1000,display:'flex',alignItems:'center',justifyContent:'center',padding:'20px'}}
       onClick={e => { if(e.target===e.currentTarget) setShow(false) }}>
-      <div style={{background:'#1a1a18',border:'1px solid rgba(255,255,255,0.1)',borderRadius:'20px',padding:'40px 36px',maxWidth:'420px',width:'100%',fontFamily:"'Barlow',sans-serif"}}>
-        <div style={{fontSize:'24px',fontWeight:900,color:'#fff',letterSpacing:'-0.5px',marginBottom:'8px'}}>{t('auth.title')}</div>
-        <div style={{fontSize:'13px',color:'rgba(255,255,255,0.4)',marginBottom:'28px',lineHeight:1.6}}>{t('auth.sub')}</div>
+      <div style={{background:'var(--sm-surface)',border:'1px solid var(--sm-line)',borderRadius:'20px',padding:'40px 36px',maxWidth:'420px',width:'100%',fontFamily:'inherit',boxShadow:'0 20px 50px rgba(17,24,39,0.15)'}}>
+        <div style={{fontSize:'24px',fontWeight:900,color:'var(--sm-ink)',letterSpacing:'-0.5px',marginBottom:'8px'}}>{t('auth.title')}</div>
+        <div style={{fontSize:'13px',color:'var(--sm-text-sub)',marginBottom:'28px',lineHeight:1.6}}>{t('auth.sub')}</div>
         <div style={{display:'flex',flexDirection:'column',gap:'10px'}}>
           <button onClick={() => { setShow(false); localStorage.setItem('fyi_login_return', window.location.pathname + window.location.search); supabase.auth.signInWithOAuth({ provider:'linkedin_oidc', options:{ redirectTo: window.location.origin+'/auth/callback', scopes:'openid profile email' } }) }}
-            style={{width:'100%',background:'#0A66C2',color:'#fff',fontSize:'14px',fontWeight:700,padding:'14px',borderRadius:'10px',border:'none',cursor:'pointer',fontFamily:"'Barlow',sans-serif",display:'flex',alignItems:'center',justifyContent:'center',gap:'10px'}}>
+            style={{width:'100%',background:'#0A66C2',color:'#fff',fontSize:'14px',fontWeight:700,padding:'14px',borderRadius:'10px',border:'none',cursor:'pointer',fontFamily:'inherit',display:'flex',alignItems:'center',justifyContent:'center',gap:'10px'}}>
             <span style={{fontWeight:900,fontSize:'16px'}}>in</span> {t('auth.linkedin')}
           </button>
           <button onClick={() => { setShow(false); window.location.href = '/api/auth/google?return=' + encodeURIComponent(window.location.pathname + window.location.search) }}
-            style={{width:'100%',background:'#fafaf8',color:'#111',fontSize:'14px',fontWeight:700,padding:'14px',borderRadius:'10px',border:'none',cursor:'pointer',fontFamily:"'Barlow',sans-serif",display:'flex',alignItems:'center',justifyContent:'center',gap:'10px'}}>
+            style={{width:'100%',background:'var(--sm-surface)',color:'var(--sm-ink)',fontSize:'14px',fontWeight:700,padding:'14px',borderRadius:'10px',border:'1px solid var(--sm-line-strong)',cursor:'pointer',fontFamily:'inherit',display:'flex',alignItems:'center',justifyContent:'center',gap:'10px'}}>
             <span style={{fontWeight:900,fontSize:'16px'}}>G</span> {t('auth.google')}
           </button>
           <button onClick={() => setShow(false)}
-            style={{background:'none',border:'none',color:'rgba(255,255,255,0.3)',fontSize:'12px',cursor:'pointer',fontFamily:"'Barlow',sans-serif",marginTop:'4px',width:'100%',textAlign:'center'}}>
+            style={{background:'none',border:'none',color:'var(--sm-text-mute)',fontSize:'12px',cursor:'pointer',fontFamily:'inherit',marginTop:'4px',width:'100%',textAlign:'center'}}>
             {t('auth.later')}
           </button>
         </div>
@@ -132,7 +132,7 @@ export default function App({ Component, pageProps }) {
       {(!isCompany || isForCompaniesLanding) && !isAdmin && !isPromoLanding && !isCard && (
         <GlobalFooter />
       )}
-      {!isCompany && !isJobDetail && !isCard && <MobileTabBar />}
+      {!isCompany && !isAdmin && !isJobDetail && !isCard && <MobileTabBar />}
       <GlobalLoginModal />
       <GoogleOneTap />
       {!isAdmin && !isAdLanding && !isCard && !isCompany && <AppDownloadModal />}

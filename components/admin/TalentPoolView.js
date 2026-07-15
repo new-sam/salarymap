@@ -194,8 +194,8 @@ export default function TalentPoolView({ token, lang }) {
 
   const chip = (active) => ({
     padding: '5px 12px', borderRadius: 999, fontSize: 12, fontWeight: 600,
-    border: `1px solid ${active ? '#ff6000' : '#E5E8EB'}`, cursor: 'pointer',
-    background: active ? '#ff600014' : '#fff', color: active ? '#ff6000' : '#6B7280',
+    border: `1px solid ${active ? 'var(--sm-accent)' : '#E5E8EB'}`, cursor: 'pointer',
+    background: active ? 'var(--sm-accent)14' : '#fff', color: active ? 'var(--sm-accent)' : '#6B7280',
     transition: 'all 0.15s',
   })
 
@@ -208,7 +208,7 @@ export default function TalentPoolView({ token, lang }) {
     newgrad: { bg: '#F1F5F9', color: '#64748B' },
     junior: { bg: '#FFEEDF', color: '#C2410C' },
     mid: { bg: '#FFD9BF', color: '#9A3412' },
-    senior: { bg: '#ff6000', color: '#fff' },
+    senior: { bg: 'var(--sm-accent)', color: '#fff' },
   }
   const levelChip = (lvl, months) => {
     const s = (lvl && LEVEL_CHIP[lvl.key]) || { bg: '#F1F5F9', color: '#94A3B8' }
@@ -230,7 +230,7 @@ export default function TalentPoolView({ token, lang }) {
     <>
       <style>{`
         .tp-card { transition: box-shadow 0.15s, border-color 0.15s; }
-        .tp-card:hover { border-color: #ff6000; box-shadow: 0 2px 10px rgba(15,23,42,0.06); }
+        .tp-card:hover { border-color: var(--sm-accent); box-shadow: 0 2px 10px rgba(15,23,42,0.06); }
         .jobsel-dropdown::-webkit-scrollbar { width: 6px; }
         .jobsel-dropdown::-webkit-scrollbar-thumb { background: #E5E8EB; border-radius: 3px; }
       `}</style>
@@ -244,7 +244,7 @@ export default function TalentPoolView({ token, lang }) {
             <span>{L.statTop} <strong style={{ color: '#0F172A' }}>{topTierCount}</strong> ({topTierPct}%)</span>
             {overseasCount > 0 && <span>{L.statOverseas} <strong style={{ color: '#0F172A' }}>{overseasCount}</strong> ({overseasPct}%)</span>}
             {koreanCount > 0 && <span>{L.statKorean} <strong style={{ color: '#0F172A' }}>{koreanCount}</strong></span>}
-            {filtered.length !== pool.length && <span style={{ color: '#ff6000', fontWeight: 600 }}>· {L.filtered} {filtered.length}{L.people}</span>}
+            {filtered.length !== pool.length && <span style={{ color: 'var(--sm-accent)', fontWeight: 600 }}>· {L.filtered} {filtered.length}{L.people}</span>}
           </div>
         </div>
         <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
@@ -256,7 +256,7 @@ export default function TalentPoolView({ token, lang }) {
             style={{ padding: '7px 11px', border: '1px solid #d1d5db', borderRadius: 8, fontSize: 13, width: 240 }}
           />
           <button onClick={downloadCsv}
-            style={{ padding: '8px 16px', border: 'none', borderRadius: 8, fontSize: 13, background: '#ff6000', color: '#fff', cursor: 'pointer', fontWeight: 600, whiteSpace: 'nowrap' }}>
+            style={{ padding: '8px 16px', border: 'none', borderRadius: 8, fontSize: 13, background: 'var(--sm-accent)', color: '#fff', cursor: 'pointer', fontWeight: 600, whiteSpace: 'nowrap' }}>
             {L.csv}
           </button>
         </div>
@@ -354,7 +354,7 @@ export default function TalentPoolView({ token, lang }) {
                       : `${L.recBtn} ${userRecs.length}${appliedN ? ` · ${L.recApplied} ${appliedN}` : ''}`
                     return (
                       <button onClick={() => setRecTarget(r)}
-                        style={{ border: 'none', background: 'none', cursor: 'pointer', fontSize: 11.5, fontWeight: 600, color: userRecs.length > 0 ? '#ff6000' : '#6B7280', padding: 0 }}>
+                        style={{ border: 'none', background: 'none', cursor: 'pointer', fontSize: 11.5, fontWeight: 600, color: userRecs.length > 0 ? 'var(--sm-accent)' : '#6B7280', padding: 0 }}>
                         {label}
                       </button>
                     )
@@ -368,7 +368,7 @@ export default function TalentPoolView({ token, lang }) {
                   )}
                   {r.resume_url && (
                     <a href={r.resume_url} target="_blank" rel="noopener noreferrer"
-                      style={{ color: '#ff6000', fontWeight: 700, textDecoration: 'none', fontSize: 12 }}>
+                      style={{ color: 'var(--sm-accent)', fontWeight: 700, textDecoration: 'none', fontSize: 12 }}>
                       {L.resume}
                     </a>
                   )}
@@ -447,7 +447,7 @@ function JobSelect({ jobs, value, onChange, sentJobIds, placeholder, sentLabel }
   return (
     <div style={{ position: 'relative' }}>
       <button ref={triggerRef} type="button" onClick={() => setOpen(v => !v)} style={{
-        width: '100%', padding: '9px 11px', border: `1px solid ${open ? '#ff6000' : '#E5E8EB'}`,
+        width: '100%', padding: '9px 11px', border: `1px solid ${open ? 'var(--sm-accent)' : '#E5E8EB'}`,
         borderRadius: 8, background: '#fff', cursor: 'pointer', textAlign: 'left',
         display: 'flex', alignItems: 'center', gap: 10, transition: 'border-color .15s', outline: 'none',
       }}>
@@ -485,7 +485,7 @@ function JobSelect({ jobs, value, onChange, sentJobIds, placeholder, sentLabel }
                 onMouseLeave={e => { if (!active) e.currentTarget.style.background = 'transparent' }}>
                 {logoBox(j, 28)}
                 <span style={{ minWidth: 0, flex: 1 }}>
-                  <span style={{ display: 'block', fontSize: 13, fontWeight: 600, color: active ? '#ff6000' : '#111', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{j.title}</span>
+                  <span style={{ display: 'block', fontSize: 13, fontWeight: 600, color: active ? 'var(--sm-accent)' : '#111', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{j.title}</span>
                   <span style={{ display: 'block', fontSize: 11.5, color: '#6B7280', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{j.company}</span>
                 </span>
                 {sent && <span style={{ flexShrink: 0, fontSize: 10.5, fontWeight: 700, color: '#94A3B8' }}>{sentLabel}</span>}
@@ -632,8 +632,8 @@ function RecommendModal({ person, jobs, history, token, ko, onClose, onSent }) {
             {[['vi', '🇻🇳 Tiếng Việt'], ['ko', '🇰🇷 한국어'], ['en', '🇺🇸 English']].map(([code, name]) => (
               <button key={code} onClick={() => setMailLang(code)}
                 style={{ padding: '5px 12px', borderRadius: 999, fontSize: 12, fontWeight: 600, cursor: 'pointer',
-                  border: `1px solid ${mailLang === code ? '#ff6000' : '#E5E8EB'}`,
-                  background: mailLang === code ? '#ff600014' : '#fff', color: mailLang === code ? '#ff6000' : '#6B7280' }}>
+                  border: `1px solid ${mailLang === code ? 'var(--sm-accent)' : '#E5E8EB'}`,
+                  background: mailLang === code ? 'var(--sm-accent)14' : '#fff', color: mailLang === code ? 'var(--sm-accent)' : '#6B7280' }}>
                 {name}
               </button>
             ))}
@@ -664,7 +664,7 @@ function RecommendModal({ person, jobs, history, token, ko, onClose, onSent }) {
             {M.close}
           </button>
           <button onClick={send} disabled={!jobId || !preview || sending || !!sentTo}
-            style={{ padding: '8px 18px', border: 'none', borderRadius: 8, fontSize: 13, background: (!jobId || !preview || sending || sentTo) ? '#FDBA8C' : '#ff6000', color: '#fff', cursor: (!jobId || !preview || sending || sentTo) ? 'default' : 'pointer', fontWeight: 700 }}>
+            style={{ padding: '8px 18px', border: 'none', borderRadius: 8, fontSize: 13, background: (!jobId || !preview || sending || sentTo) ? '#FDBA8C' : 'var(--sm-accent)', color: '#fff', cursor: (!jobId || !preview || sending || sentTo) ? 'default' : 'pointer', fontWeight: 700 }}>
             {sending ? M.sending : M.send}
           </button>
         </div>

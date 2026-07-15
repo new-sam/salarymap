@@ -106,8 +106,8 @@ export default function RecommendView({ token, lang }) {
           {[30, 60, 90, 180].map(d => (
             <button key={d} onClick={() => { setDays(d); setResult(null) }} style={{
               padding: '6px 12px', borderRadius: 8, fontSize: 12.5, fontWeight: 600, cursor: 'pointer',
-              border: '1px solid ' + (days === d ? '#ff6000' : '#D9DCE1'),
-              background: days === d ? '#FFF1EC' : '#fff', color: days === d ? '#ff6000' : '#4E5968',
+              border: '1px solid ' + (days === d ? 'var(--sm-accent)' : '#D9DCE1'),
+              background: days === d ? '#FFF1EC' : '#fff', color: days === d ? 'var(--sm-accent)' : '#4E5968',
             }}>{d}{ko ? '일' : 'd'}</button>
           ))}
           <div style={{ flex: 1 }} />
@@ -147,7 +147,7 @@ export default function RecommendView({ token, lang }) {
                 <div style={{ flex: 1 }} />
                 <button onClick={send} disabled={sending || sel.size === 0} style={{
                   padding: '8px 18px', border: 'none', borderRadius: 8, fontSize: 13, fontWeight: 700,
-                  background: sending || sel.size === 0 ? '#F0A98A' : '#ff6000', color: '#fff',
+                  background: sending || sel.size === 0 ? '#F0A98A' : 'var(--sm-accent)', color: '#fff',
                   cursor: sending || sel.size === 0 ? 'default' : 'pointer',
                 }}>{sending ? (ko ? '발송 중…' : 'Sending…') : (ko ? `선택 ${sel.size}명 발송` : `Send to ${sel.size}`)}</button>
               </div>
@@ -216,8 +216,8 @@ export default function RecommendView({ token, lang }) {
           {[['all', ko ? '전체' : 'All', sent], ['applied', ko ? '지원함' : 'Applied', applied], ['not', ko ? '미지원' : 'Not yet', sent - applied]].map(([v, label, n]) => (
             <button key={v} onClick={() => setAppliedFilter(v)} style={{
               padding: '6px 12px', borderRadius: 8, fontSize: 12.5, fontWeight: 600, cursor: 'pointer',
-              border: '1px solid ' + (appliedFilter === v ? '#ff6000' : '#D9DCE1'),
-              background: appliedFilter === v ? '#FFF1EC' : '#fff', color: appliedFilter === v ? '#ff6000' : '#4E5968',
+              border: '1px solid ' + (appliedFilter === v ? 'var(--sm-accent)' : '#D9DCE1'),
+              background: appliedFilter === v ? '#FFF1EC' : '#fff', color: appliedFilter === v ? 'var(--sm-accent)' : '#4E5968',
             }}>{label} {n}</button>
           ))}
         </div>

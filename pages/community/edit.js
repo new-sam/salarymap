@@ -111,24 +111,24 @@ export default function CommunityEditPage() {
       <style>{`
         .cw-page { background: #fff; min-height: 100vh; }
         .cw-container { max-width: 640px; margin: 0 auto; padding: 64px 24px 60px; }
-        .cw-back { display: flex; align-items: center; gap: 4px; font-size: 13px; color: #888; background: none; border: none; cursor: pointer; font-family: 'Barlow', sans-serif; padding: 0; margin-bottom: 16px; }
+        .cw-back { display: flex; align-items: center; gap: 4px; font-size: 13px; color: #888; background: none; border: none; cursor: pointer; font-family:inherit; padding: 0; margin-bottom: 16px; }
         .cw-back:hover { color: #555; }
-        .cw-title { font-size: 22px; font-weight: 800; color: #111; margin: 0 0 24px; font-family: 'Barlow', sans-serif; }
+        .cw-title { font-size: 22px; font-weight: 800; color: #111; margin: 0 0 24px; font-family:inherit; }
         .cw-cats { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 20px; }
-        .cw-cat { padding: 8px 18px; border-radius: 20px; border: 1px solid #ddd; background: transparent; color: #666; font-size: 13px; font-weight: 600; cursor: pointer; font-family: 'Barlow', sans-serif; transition: all 0.15s; }
-        .cw-cat.active { background: #ff6000; border-color: #ff6000; color: #fff; }
-        .cw-input { width: 100%; padding: 14px 16px; border-radius: 10px; border: 1px solid #ddd; background: #fff; color: #111; font-size: 15px; font-family: 'Barlow', sans-serif; margin-bottom: 12px; outline: none; box-sizing: border-box; transition: border-color 0.15s; }
-        .cw-input:focus { border-color: #ff6000; }
+        .cw-cat { padding: 8px 18px; border-radius: 20px; border: 1px solid #ddd; background: transparent; color: #666; font-size: 13px; font-weight: 600; cursor: pointer; font-family:inherit; transition: all 0.15s; }
+        .cw-cat.active { background: var(--sm-accent); border-color: var(--sm-accent); color: #fff; }
+        .cw-input { width: 100%; padding: 14px 16px; border-radius: 10px; border: 1px solid #ddd; background: #fff; color: #111; font-size: 15px; font-family:inherit; margin-bottom: 12px; outline: none; box-sizing: border-box; transition: border-color 0.15s; }
+        .cw-input:focus { border-color: var(--sm-accent); }
         .cw-textarea { min-height: 200px; resize: vertical; line-height: 1.6; }
         .cw-imgs { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 12px; }
         .cw-thumb { position: relative; width: 88px; height: 88px; border-radius: 10px; overflow: hidden; border: 1px solid #eee; }
         .cw-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
         .cw-thumb-x { position: absolute; top: 4px; right: 4px; width: 22px; height: 22px; border-radius: 50%; border: none; background: rgba(0,0,0,0.6); color: #fff; font-size: 14px; line-height: 1; cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 0; }
-        .cw-add-img { width: 88px; height: 88px; border-radius: 10px; border: 1px dashed #ccc; background: #fafafa; color: #999; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; font-size: 11px; font-family: 'Barlow', sans-serif; }
-        .cw-add-img:hover { border-color: #ff6000; color: #ff6000; }
+        .cw-add-img { width: 88px; height: 88px; border-radius: 10px; border: 1px dashed #ccc; background: #fafafa; color: #999; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; font-size: 11px; font-family:inherit; }
+        .cw-add-img:hover { border-color: var(--sm-accent); color: var(--sm-accent); }
         .cw-add-img:disabled { opacity: 0.5; cursor: default; }
         .cw-footer { display: flex; justify-content: flex-end; margin-top: 12px; }
-        .cw-submit { padding: 12px 32px; border-radius: 10px; border: none; background: #ff6000; color: #fff; font-size: 15px; font-weight: 700; cursor: pointer; font-family: 'Barlow', sans-serif; transition: all 0.15s; }
+        .cw-submit { padding: 12px 32px; border-radius: 10px; border: none; background: var(--sm-accent); color: #fff; font-size: 15px; font-weight: 700; cursor: pointer; font-family:inherit; transition: all 0.15s; }
         .cw-submit:hover { background: #ff7a1a; }
         .cw-submit:disabled { opacity: 0.4; cursor: default; }
         .cw-loading { text-align: center; padding: 80px 20px; color: #bbb; font-size: 14px; }

@@ -336,7 +336,7 @@ export default function CommunityPostPage({ initialPost = null, indexable = fals
 
       <style>{`
         .cp-page { background: #fff; min-height: 100vh; }
-        .cp-outer { max-width: 1080px; margin: 0 auto; padding: 64px 40px 60px; display: grid; grid-template-columns: 1fr 300px; gap: 32px; font-family: 'Barlow', sans-serif; }
+        .cp-outer { max-width: 1080px; margin: 0 auto; padding: 64px 40px 60px; display: grid; grid-template-columns: 1fr 300px; gap: 32px; font-family:inherit; }
         .cp-container { min-width: 0; }
         .cp-loading { text-align: center; padding: 80px 0; color: #999; font-size: 14px; }
 
@@ -347,7 +347,7 @@ export default function CommunityPostPage({ initialPost = null, indexable = fals
 
         .cp-title { font-size: 26px; font-weight: 800; color: #111; margin: 0 0 12px; line-height: 1.35; }
         .cp-author-row { display: flex; align-items: center; gap: 6px; margin-bottom: 6px; }
-        .cp-company { font-size: 14px; color: #ff6000; font-weight: 700; }
+        .cp-company { font-size: 14px; color: var(--sm-accent); font-weight: 700; }
         .cp-company-link { cursor: pointer; }
         .cp-company-link:hover { text-decoration: underline; }
         .cp-dot { color: #ccc; font-size: 12px; }
@@ -364,7 +364,7 @@ export default function CommunityPostPage({ initialPost = null, indexable = fals
         .cp-cimg-preview img { width: 100%; height: 100%; object-fit: cover; display: block; }
         .cp-cimg-x { position: absolute; top: 2px; right: 2px; width: 18px; height: 18px; border-radius: 50%; border: none; background: rgba(0,0,0,0.6); color: #fff; font-size: 12px; line-height: 1; cursor: pointer; padding: 0; }
         .cp-attach { width: 36px; height: 36px; border-radius: 8px; border: 1px solid #ddd; background: #fff; color: #888; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
-        .cp-attach:hover { border-color: #ff6000; color: #ff6000; }
+        .cp-attach:hover { border-color: var(--sm-accent); color: var(--sm-accent); }
         .cp-attach:disabled { opacity: 0.4; cursor: default; }
         .cp-lightbox { position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 1000; display: flex; align-items: center; justify-content: center; padding: 24px; cursor: zoom-out; }
         .cp-lightbox img { max-width: 95vw; max-height: 92vh; object-fit: contain; border-radius: 6px; }
@@ -373,34 +373,34 @@ export default function CommunityPostPage({ initialPost = null, indexable = fals
 
         .cp-poll { border: 1px solid #ffd9c2; background: #fff8f3; border-radius: 14px; padding: 18px; margin-bottom: 28px; }
         .cp-poll-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
-        .cp-poll-tag { display: inline-flex; align-items: center; gap: 5px; font-size: 13px; font-weight: 800; color: #ff6000; }
+        .cp-poll-tag { display: inline-flex; align-items: center; gap: 5px; font-size: 13px; font-weight: 800; color: var(--sm-accent); }
         .cp-poll-time { font-size: 12px; font-weight: 600; color: #999; }
         .cp-poll-vote { display: flex; align-items: stretch; gap: 10px; }
-        .cp-poll-btn { flex: 1; padding: 18px 14px; border-radius: 12px; border: 2px solid #ffcdb0; background: #fff; color: #333; font-size: 15px; font-weight: 700; cursor: pointer; font-family: 'Barlow', sans-serif; transition: all 0.15s; word-break: break-word; }
-        .cp-poll-btn:hover:not(:disabled) { border-color: #ff6000; background: #fff1e8; color: #ff6000; }
+        .cp-poll-btn { flex: 1; padding: 18px 14px; border-radius: 12px; border: 2px solid #ffcdb0; background: #fff; color: #333; font-size: 15px; font-weight: 700; cursor: pointer; font-family:inherit; transition: all 0.15s; word-break: break-word; }
+        .cp-poll-btn:hover:not(:disabled) { border-color: var(--sm-accent); background: #fff1e8; color: var(--sm-accent); }
         .cp-poll-btn:disabled { opacity: 0.6; cursor: default; }
-        .cp-poll-vs { display: flex; align-items: center; font-size: 13px; font-weight: 800; color: #ff6000; flex-shrink: 0; }
+        .cp-poll-vs { display: flex; align-items: center; font-size: 13px; font-weight: 800; color: var(--sm-accent); flex-shrink: 0; }
         .cp-poll-results { display: flex; flex-direction: column; gap: 10px; }
         .cp-poll-res { position: relative; border-radius: 10px; border: 1px solid #eee; background: #fff; overflow: hidden; }
-        .cp-poll-res.lead { border-color: #ff6000; }
-        .cp-poll-res.mine { box-shadow: 0 0 0 2px #ff6000 inset; }
+        .cp-poll-res.lead { border-color: var(--sm-accent); }
+        .cp-poll-res.mine { box-shadow: 0 0 0 2px var(--sm-accent) inset; }
         .cp-poll-res-fill { position: absolute; inset: 0 auto 0 0; background: #ffe2d1; transition: width 0.5s ease; }
         .cp-poll-res.lead .cp-poll-res-fill { background: #ffd0b3; }
         .cp-poll-res-row { position: relative; display: flex; align-items: center; justify-content: space-between; padding: 13px 16px; }
         .cp-poll-res-label { font-size: 14px; font-weight: 700; color: #333; word-break: break-word; }
-        .cp-poll-res-pct { font-size: 15px; font-weight: 800; color: #ff6000; flex-shrink: 0; margin-left: 10px; }
+        .cp-poll-res-pct { font-size: 15px; font-weight: 800; color: var(--sm-accent); flex-shrink: 0; margin-left: 10px; }
         .cp-poll-total { font-size: 12px; color: #999; margin-top: 12px; text-align: right; }
         .cp-actions { display: flex; gap: 12px; padding: 14px 0; border-top: 1px solid #eee; border-bottom: 1px solid #eee; margin-bottom: 32px; }
-        .cp-action { display: flex; align-items: center; gap: 6px; padding: 8px 14px; border-radius: 8px; border: none; background: transparent; color: #888; font-size: 13px; font-weight: 600; cursor: pointer; font-family: 'Barlow', sans-serif; transition: all 0.15s; }
+        .cp-action { display: flex; align-items: center; gap: 6px; padding: 8px 14px; border-radius: 8px; border: none; background: transparent; color: #888; font-size: 13px; font-weight: 600; cursor: pointer; font-family:inherit; transition: all 0.15s; }
         .cp-action:hover { background: #f5f5f5; color: #111; }
-        .cp-action.liked { color: #ff6000; }
+        .cp-action.liked { color: var(--sm-accent); }
         .cp-action svg { width: 18px; height: 18px; }
         .cp-title-row { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
         .cp-more-wrap { position: relative; flex-shrink: 0; }
         .cp-more-btn { background: none; border: none; cursor: pointer; padding: 4px; color: #999; display: flex; align-items: center; }
         .cp-more-btn:hover { color: #555; }
         .cp-more-menu { position: absolute; top: 100%; right: 0; background: #fff; border: 1px solid #eee; border-radius: 10px; padding: 4px; min-width: 120px; box-shadow: 0 4px 16px rgba(0,0,0,0.1); z-index: 10; }
-        .cp-more-item { display: block; width: 100%; padding: 10px 14px; border: none; background: none; color: #333; font-size: 13px; font-weight: 500; text-align: left; cursor: pointer; border-radius: 6px; font-family: 'Barlow', sans-serif; }
+        .cp-more-item { display: block; width: 100%; padding: 10px 14px; border: none; background: none; color: #333; font-size: 13px; font-weight: 500; text-align: left; cursor: pointer; border-radius: 6px; font-family:inherit; }
         .cp-more-item:hover { background: #f5f5f5; }
         .cp-more-item.danger { color: #ef4444; }
         .cp-more-item.danger:hover { background: #fef2f2; }
@@ -409,8 +409,8 @@ export default function CommunityPostPage({ initialPost = null, indexable = fals
         .cp-comment { padding: 14px 0; border-bottom: 1px solid #f0f0f0; }
         .cp-comment-top { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
         .cp-comment-author { font-size: 13px; font-weight: 400; color: #888; display: flex; align-items: center; gap: 5px; }
-        .cp-comment-author .cp-company { font-size: 13px; color: #ff6000; font-weight: 700; }
-        .cp-op-badge { font-size: 10px; font-weight: 700; color: #ff6000; background: #fff1e8; border: 1px solid #ffd4b8; border-radius: 4px; padding: 1px 5px; margin-left: 2px; line-height: 1.4; }
+        .cp-comment-author .cp-company { font-size: 13px; color: var(--sm-accent); font-weight: 700; }
+        .cp-op-badge { font-size: 10px; font-weight: 700; color: var(--sm-accent); background: #fff1e8; border: 1px solid #ffd4b8; border-radius: 4px; padding: 1px 5px; margin-left: 2px; line-height: 1.4; }
         .cp-comment-time { font-size: 11px; color: #bbb; }
         .cp-comment-body { font-size: 14px; color: #444; line-height: 1.6; white-space: pre-wrap; word-break: break-word; }
         .cp-translate-btn { background: none; border: none; padding: 0; margin-top: 6px; font-size: 12px; color: #888; cursor: pointer; text-decoration: underline; text-underline-offset: 2px; }
@@ -419,24 +419,24 @@ export default function CommunityPostPage({ initialPost = null, indexable = fals
         .cp-content:has(+ .cp-translate-post) { margin-bottom: 6px; }
         .cp-translate-post { margin-bottom: 28px; }
         .cp-comment.best { background: #fff8f3; border: 1px solid #ffe0cc; border-radius: 10px; padding: 14px; }
-        .cp-best-badge { font-size: 10px; font-weight: 800; color: #fff; background: #ff6000; border-radius: 4px; padding: 2px 6px; letter-spacing: 0.5px; line-height: 1.4; flex-shrink: 0; }
+        .cp-best-badge { font-size: 10px; font-weight: 800; color: #fff; background: var(--sm-accent); border-radius: 4px; padding: 2px 6px; letter-spacing: 0.5px; line-height: 1.4; flex-shrink: 0; }
         .cp-comment-actions { margin-top: 8px; }
-        .cp-clike { display: inline-flex; align-items: center; gap: 4px; padding: 4px 0; background: none; border: none; color: #aaa; font-size: 12px; font-weight: 600; cursor: pointer; font-family: 'Barlow', sans-serif; transition: color 0.15s; }
-        .cp-clike:hover { color: #ff6000; }
-        .cp-clike.liked { color: #ff6000; }
+        .cp-clike { display: inline-flex; align-items: center; gap: 4px; padding: 4px 0; background: none; border: none; color: #aaa; font-size: 12px; font-weight: 600; cursor: pointer; font-family:inherit; transition: color 0.15s; }
+        .cp-clike:hover { color: var(--sm-accent); }
+        .cp-clike.liked { color: var(--sm-accent); }
         .cp-clike:disabled { cursor: default; }
         .cp-clike svg { width: 14px; height: 14px; }
-        .cp-comment-delete { margin-left: auto; font-size: 11px; color: #bbb; background: none; border: none; cursor: pointer; font-family: 'Barlow', sans-serif; }
+        .cp-comment-delete { margin-left: auto; font-size: 11px; color: #bbb; background: none; border: none; cursor: pointer; font-family:inherit; }
         .cp-comment-delete:hover { color: #ef4444; }
         .cp-no-comments { color: #bbb; font-size: 13px; padding: 24px 0; text-align: center; }
 
         .cp-input-box { background: #fafafa; border: 1px solid #eee; border-radius: 10px; padding: 14px; margin-bottom: 20px; display: flex; flex-direction: column; gap: 10px; }
         .cp-input-row { display: flex; gap: 10px; align-items: center; }
         .cp-anon { display: flex; align-items: center; gap: 6px; font-size: 11px; color: #888; white-space: nowrap; cursor: pointer; }
-        .cp-anon input { width: 14px; height: 14px; accent-color: #ff6000; }
-        .cp-comment-input { flex: 1; padding: 10px 16px; border-radius: 8px; border: 1px solid #ddd; background: #fff; color: #111; font-size: 14px; font-family: 'Barlow', sans-serif; outline: none; }
-        .cp-comment-input:focus { border-color: #ff6000; }
-        .cp-send { width: 36px; height: 36px; border-radius: 50%; border: none; background: #ff6000; color: #fff; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+        .cp-anon input { width: 14px; height: 14px; accent-color: var(--sm-accent); }
+        .cp-comment-input { flex: 1; padding: 10px 16px; border-radius: 8px; border: 1px solid #ddd; background: #fff; color: #111; font-size: 14px; font-family:inherit; outline: none; }
+        .cp-comment-input:focus { border-color: var(--sm-accent); }
+        .cp-send { width: 36px; height: 36px; border-radius: 50%; border: none; background: var(--sm-accent); color: #fff; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
         .cp-send:disabled { opacity: 0.3; }
 
         .cp-sidebar { display: flex; flex-direction: column; gap: 20px; position: sticky; top: 80px; align-self: start; }
@@ -445,7 +445,7 @@ export default function CommunityPostPage({ initialPost = null, indexable = fals
         .cp-sb-about { font-size: 13px; color: #777; line-height: 1.6; margin-bottom: 14px; }
         .cp-sb-guide { display: flex; flex-direction: column; gap: 8px; }
         .cp-sb-guide-item { font-size: 12px; color: #666; display: flex; align-items: flex-start; gap: 6px; line-height: 1.4; }
-        .cp-sb-guide-dot { width: 4px; height: 4px; border-radius: 50%; background: #ff6000; margin-top: 5px; flex-shrink: 0; }
+        .cp-sb-guide-dot { width: 4px; height: 4px; border-radius: 50%; background: var(--sm-accent); margin-top: 5px; flex-shrink: 0; }
         @media (max-width: 768px) {
           .cp-outer { grid-template-columns: 1fr; padding: 56px 14px 90px; gap: 16px; }
           .cp-sidebar { position: static; }

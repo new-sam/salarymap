@@ -115,7 +115,7 @@ export default function CompanyView({ token, lang }) {
                 <td style={{ padding: '6px 8px', color: '#6B7280' }}>{j.company}</td>
                 <td style={{ padding: '6px 8px' }}>
                   {j.pending ? badge('#FEF3C7', '#D97706', ko ? '승인대기' : 'pending')
-                    : j.live ? badge('#FFF1EC', '#ff6000', ko ? '라이브' : 'live')
+                    : j.live ? badge('#FFF1EC', 'var(--sm-accent)', ko ? '라이브' : 'live')
                     : badge('#F1F5F9', '#94A3B8', ko ? '내림' : 'off')}
                 </td>
                 <td style={{ padding: '6px 8px', textAlign: 'right', fontWeight: 700, color: '#0F172A' }}>{j.applications}</td>
@@ -178,7 +178,7 @@ export default function CompanyView({ token, lang }) {
                   {(j.titleKo || showCompany) && <div style={{ fontSize: 11, color: '#9CA3AF' }}>{j.titleKo ? j.title : ''}{j.titleKo && showCompany ? ' · ' : ''}{showCompany ? j.company : ''}</div>}
                 </div>
                 <span style={{ fontSize: 11, color: '#6B7280', background: '#EEF0F2', borderRadius: 999, padding: '2px 8px', flexShrink: 0 }}>{j.categoryKo}</span>
-                {j.pending ? badge('#FEF3C7', '#D97706', ko ? '승인대기' : 'pending') : j.live ? badge('#FFF1EC', '#ff6000', ko ? '라이브' : 'live') : badge('#F1F5F9', '#94A3B8', ko ? '내림' : 'off')}
+                {j.pending ? badge('#FEF3C7', '#D97706', ko ? '승인대기' : 'pending') : j.live ? badge('#FFF1EC', 'var(--sm-accent)', ko ? '라이브' : 'live') : badge('#F1F5F9', '#94A3B8', ko ? '내림' : 'off')}
               </div>
             </td>
             <td style={{ padding: '6px 8px', textAlign: 'right', fontWeight: 700, color: '#0F172A' }}>{j.applications}</td>
@@ -207,13 +207,13 @@ export default function CompanyView({ token, lang }) {
               <div
                 onClick={() => setOpenCard(active ? null : c.drill)}
                 style={{
-                  flex: '1 1 190px', background: '#fff', border: `1.5px solid ${active ? '#ff6000' : '#E5E8EB'}`,
+                  flex: '1 1 190px', background: '#fff', border: `1.5px solid ${active ? 'var(--sm-accent)' : '#E5E8EB'}`,
                   borderRadius: 12, padding: '16px 18px', cursor: 'pointer', transition: 'border-color .12s',
                 }}
               >
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <span style={{ fontSize: 13, color: '#6B7280', fontWeight: 600 }}>{`${i + 1}. ${c.label}`}</span>
-                  <span style={{ fontSize: 12, color: active ? '#ff6000' : '#C4C9D0', fontWeight: 700 }}>{active ? '▾' : '▸'}</span>
+                  <span style={{ fontSize: 12, color: active ? 'var(--sm-accent)' : '#C4C9D0', fontWeight: 700 }}>{active ? '▾' : '▸'}</span>
                 </div>
                 <div style={{ fontSize: 34, fontWeight: 800, color: '#0F172A', lineHeight: 1, margin: '8px 0 5px' }}>{c.value.toLocaleString()}</div>
                 <div style={{ fontSize: 11.5, color: '#9CA3AF', lineHeight: 1.4 }}>{c.desc}</div>
@@ -251,7 +251,7 @@ export default function CompanyView({ token, lang }) {
       <div style={{ background: '#FAFBFC', border: '1px solid #EEF0F2', borderRadius: 12, padding: '14px 16px', marginBottom: 30 }}>
         {/* 범례 */}
         <div style={{ display: 'flex', gap: 14, marginBottom: 12 }}>
-          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 12, color: '#475569' }}><span style={{ width: 9, height: 9, borderRadius: 2, background: '#ff6000' }} />{ko ? '신규 기업' : 'Companies'}</span>
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 12, color: '#475569' }}><span style={{ width: 9, height: 9, borderRadius: 2, background: 'var(--sm-accent)' }} />{ko ? '신규 기업' : 'Companies'}</span>
           <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 12, color: '#475569' }}><span style={{ width: 9, height: 9, borderRadius: 2, background: '#2563EB' }} />{ko ? '신규 공고' : 'Jobs'}</span>
           <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 12, color: '#475569' }}><span style={{ width: 9, height: 9, borderRadius: 2, background: '#059669' }} />{ko ? '지원' : 'Apps'}</span>
         </div>
@@ -267,7 +267,7 @@ export default function CompanyView({ token, lang }) {
             return (
               <div key={d.date} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
                 <div title={`${d.date} · ${ko ? '기업' : 'co'} ${d.companies} · ${ko ? '공고' : 'jobs'} ${d.jobs} · ${ko ? '지원' : 'apps'} ${d.apps}`} style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'center', gap: 3, width: '100%' }}>
-                  {bar(d.companies, '#ff6000')}
+                  {bar(d.companies, 'var(--sm-accent)')}
                   {bar(d.jobs, '#2563EB')}
                   {bar(d.apps, '#059669')}
                 </div>
@@ -281,7 +281,7 @@ export default function CompanyView({ token, lang }) {
       {/* 회사 가입내역 (표) */}
       <div style={{ marginBottom: 10, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', gap: 12, flexWrap: 'wrap' }}>
         <h4 style={{ fontSize: 15, fontWeight: 700, margin: 0 }}>{ko ? '회사별 상세' : 'By company'}</h4>
-        <button onClick={downloadSignupsCsv} style={{ padding: '7px 14px', border: 'none', borderRadius: 8, fontSize: 12.5, background: '#ff6000', color: '#fff', cursor: 'pointer', fontWeight: 600, whiteSpace: 'nowrap' }}>CSV</button>
+        <button onClick={downloadSignupsCsv} style={{ padding: '7px 14px', border: 'none', borderRadius: 8, fontSize: 12.5, background: 'var(--sm-accent)', color: '#fff', cursor: 'pointer', fontWeight: 600, whiteSpace: 'nowrap' }}>CSV</button>
       </div>
       <div style={{ border: '1px solid #E5E8EB', borderRadius: 12, overflow: 'hidden', marginBottom: 30 }}>
         <div style={{ overflowX: 'auto' }}>
@@ -311,7 +311,7 @@ export default function CompanyView({ token, lang }) {
                       style={{ borderTop: '1px solid #F1F5F9', cursor: expandable ? 'pointer' : 'default', background: open ? '#FFF7F3' : 'transparent' }}
                     >
                       <td style={{ ...td, fontWeight: 600, color: '#0F172A' }}>
-                        {expandable && <span style={{ color: open ? '#ff6000' : '#C4C9D0', fontWeight: 700, marginRight: 6 }}>{open ? '▾' : '▸'}</span>}
+                        {expandable && <span style={{ color: open ? 'var(--sm-accent)' : '#C4C9D0', fontWeight: 700, marginRight: 6 }}>{open ? '▾' : '▸'}</span>}
                         {c.name}
                       </td>
                       <td style={td}>{c.verified ? badge('#ECFDF5', '#059669', ko ? '인증' : 'Yes') : badge('#F1F5F9', '#94A3B8', ko ? '미인증' : 'No')}</td>
@@ -363,7 +363,7 @@ export default function CompanyView({ token, lang }) {
                 <Fragment key={c.key}>
                   <tr onClick={() => setOpenRole(open ? null : c.key)} style={{ borderTop: '1px solid #F1F5F9', cursor: 'pointer', background: open ? '#FFF7F3' : 'transparent' }}>
                     <td style={{ ...td, fontWeight: 600, color: '#0F172A' }}>
-                      <span style={{ color: open ? '#ff6000' : '#C4C9D0', fontWeight: 700, marginRight: 6 }}>{open ? '▾' : '▸'}</span>{c.ko}
+                      <span style={{ color: open ? 'var(--sm-accent)' : '#C4C9D0', fontWeight: 700, marginRight: 6 }}>{open ? '▾' : '▸'}</span>{c.ko}
                     </td>
                     <td style={tdR}>{c.jobs}</td>
                     <td style={{ ...tdR, fontWeight: 700, color: none ? '#DC2626' : '#0F172A' }}>{c.applications}</td>
@@ -374,7 +374,7 @@ export default function CompanyView({ token, lang }) {
                       ) : (
                         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                           <div style={{ flex: 1, height: 8, background: '#F1F5F9', borderRadius: 4, overflow: 'hidden' }}>
-                            <div style={{ width: `${(c.applications / maxCatApps) * 100}%`, height: '100%', background: '#ff6000', borderRadius: 4 }} />
+                            <div style={{ width: `${(c.applications / maxCatApps) * 100}%`, height: '100%', background: 'var(--sm-accent)', borderRadius: 4 }} />
                           </div>
                           <span style={{ fontSize: 11.5, color: '#6B7280', width: 24, textAlign: 'right' }}>{c.applications}</span>
                         </div>

@@ -77,7 +77,7 @@ export default function CommunityView({ token, lang = 'ko', dateRange }) {
     { label: t.fList, value: funnel.listViews, conv: funnel.navToList, convLabel: t.fNavToList, color: '#9CA3AF' },
     { label: t.fPost, value: funnel.postClicks, conv: funnel.postRate, convLabel: t.fOfList, color: '#06b6d4' },
     { label: t.fWrite, value: funnel.writeClicks, conv: funnel.writeRate, convLabel: t.fOfList, color: '#f59e0b' },
-    { label: t.fCreate, value: funnel.created, conv: funnel.createRate, convLabel: t.fOfList, color: '#ff6000' },
+    { label: t.fCreate, value: funnel.created, conv: funnel.createRate, convLabel: t.fOfList, color: 'var(--sm-accent)' },
   ] : []
 
   return (

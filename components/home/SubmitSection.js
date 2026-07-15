@@ -92,13 +92,13 @@ function SubmitSection({
   }, [ratingWorklife, ratingSalary, ratingGrowth, wizardStep]);
 
   const StarRow = ({ label, value, onChange }) => (
-    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 0', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
-      <span style={{ fontSize: 14, color: 'rgba(255,255,255,0.7)' }}>{label}</span>
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 0', borderBottom: '1px solid var(--sm-line)' }}>
+      <span style={{ fontSize: 14, color: 'var(--sm-text)' }}>{label}</span>
       <div style={{ display: 'flex', gap: 4 }}>
         {[1, 2, 3, 4, 5].map(n => (
           <span key={n} onClick={() => onChange(n)}
             style={{ cursor: 'pointer', transition: 'color .12s' }}>
-            <Icon name="star" size={22} color={n <= value ? '#f59e0b' : 'rgba(255,255,255,0.15)'} style={{ fill: n <= value ? '#f59e0b' : 'none' }} />
+            <Icon name="star" size={22} color={n <= value ? '#f59e0b' : 'var(--sm-line-strong)'} style={{ fill: n <= value ? '#f59e0b' : 'none' }} />
           </span>
         ))}
       </div>
@@ -164,16 +164,16 @@ function SubmitSection({
   const pctLabel = percentile == null ? null
     : percentile >= 50 ? `Top ${100 - percentile}%`
     : `Bottom ${percentile}%`;
-  const pctColor = percentile == null ? '#fff'
-    : percentile >= 50 ? '#4ade80' : '#ff6000';
+  const pctColor = percentile == null ? 'var(--sm-ink)'
+    : percentile >= 50 ? 'var(--sm-green)' : 'var(--sm-accent)';
   const diff = percentileData ? sal - (percentileData.median ?? sal) : 0;
   const diffLabel = diff >= 0 ? `+${diff}M` : `-${Math.abs(diff)}M`;
   const message = isTopHalf
     ? t('wizard.aboveMedian')
     : t('wizard.belowMedian');
 
-  const card = { background:'rgba(255,255,255,0.03)', border:'1px solid rgba(255,255,255,0.08)', borderRadius:'20px', padding:'36px 32px' };
-  const btn = { fontFamily:"'Barlow',sans-serif", cursor:'pointer', border:'none' };
+  const card = { background:'var(--sm-surface)', border:'1px solid var(--sm-line)', borderRadius:'20px', padding:'36px 32px' };
+  const btn = { fontFamily:'inherit', cursor:'pointer', border:'none' };
 
   const handleOAuth = async (provider) => {
     try {
@@ -208,41 +208,41 @@ function SubmitSection({
   };
 
   const quizCard = {
-    background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)',
+    background: 'var(--sm-surface)', border: '1px solid var(--sm-line)',
     borderRadius: '20px', padding: 'clamp(24px, 5vw, 40px)',
     maxWidth: '520px', margin: '0 auto', position: 'relative',
   };
-  const quizBtn = { fontFamily: "'Be Vietnam Pro', sans-serif", cursor: 'pointer', border: 'none' };
+  const quizBtn = { fontFamily: "inherit", cursor: 'pointer', border: 'none' };
   const ctaStyle = {
-    ...quizBtn, width: '100%', background: '#ff4400', color: '#fff', fontSize: '16px',
+    ...quizBtn, width: '100%', background: 'var(--sm-accent)', color: '#fff', fontSize: '16px',
     fontWeight: 700, padding: '16px', borderRadius: '14px',
     boxShadow: '0 8px 32px rgba(255,68,0,0.3)', transition: 'all .15s',
   };
   const optBase = {
-    ...quizBtn, padding: '15px 12px', borderRadius: '14px', color: 'rgba(255,255,255,0.55)',
-    background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)',
+    ...quizBtn, padding: '15px 12px', borderRadius: '14px', color: 'var(--sm-text-sub)',
+    background: 'var(--sm-surface-sub)', border: '1px solid var(--sm-line)',
     fontSize: '14px', fontWeight: 700, textAlign: 'left', transition: 'all .15s',
     width: '100%',
   };
   const optSelected = {
-    border: '1px solid #ff4400', background: 'rgba(255,68,0,0.12)', color: '#fff',
-    boxShadow: '0 0 20px rgba(255,68,0,0.2)',
+    border: '1px solid var(--sm-accent)', background: 'var(--sm-accent-tint)', color: 'var(--sm-ink)',
+    boxShadow: '0 0 20px rgba(255,68,0,0.12)',
   };
 
   const BlurredTeaser = () => (
-    <div style={{ border: '1px solid rgba(255,68,0,0.2)', background: 'rgba(255,68,0,0.05)',
+    <div style={{ border: '1px solid var(--sm-accent-border)', background: 'var(--sm-accent-tint2)',
       borderRadius: '18px', padding: '20px', marginBottom: '24px', position: 'relative', overflow: 'hidden' }}>
       <div style={{ filter: 'blur(10px)', pointerEvents: 'none', userSelect: 'none' }}>
-        <div style={{ fontSize: '28px', fontWeight: 900, color: '#4ade80' }}>Top 18%</div>
-        <div style={{ fontSize: '13px', color: 'rgba(255,255,255,0.5)', marginTop: '4px' }}>{t('wizard.earningMore')}</div>
-        <div style={{ height: '6px', background: 'rgba(255,255,255,0.1)', borderRadius: '20px', marginTop: '12px' }}>
-          <div style={{ height: '100%', width: '82%', background: '#4ade80', borderRadius: '20px' }} />
+        <div style={{ fontSize: '28px', fontWeight: 900, color: 'var(--sm-green)' }}>Top 18%</div>
+        <div style={{ fontSize: '13px', color: 'var(--sm-text-sub)', marginTop: '4px' }}>{t('wizard.earningMore')}</div>
+        <div style={{ height: '6px', background: 'var(--sm-line)', borderRadius: '20px', marginTop: '12px' }}>
+          <div style={{ height: '100%', width: '82%', background: 'var(--sm-green)', borderRadius: '20px' }} />
         </div>
       </div>
       <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column',
         alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
-        <Icon name="lock" size={20} color="rgba(255,255,255,0.5)" />
-        <span style={{ fontSize: '12px', fontWeight: 700, color: 'rgba(255,255,255,0.5)' }}>
+        <Icon name="lock" size={20} color="var(--sm-text-sub)" />
+        <span style={{ fontSize: '12px', fontWeight: 700, color: 'var(--sm-text-sub)' }}>
           {t('wizard.selectRoleToSee')}
         </span>
       </div>
@@ -253,36 +253,30 @@ function SubmitSection({
 
   return (
     <section id="submit" style={{
-      background: '#080808', padding: 'clamp(60px, 8vw, 100px) clamp(16px, 4vw, 52px)',
-      fontFamily: "'Be Vietnam Pro', sans-serif", scrollMarginTop: '64px', position: 'relative', overflow: 'hidden',
+      background: 'var(--sm-bg-warm)', padding: 'clamp(60px, 8vw, 100px) clamp(16px, 4vw, 52px)',
+      fontFamily: "inherit", scrollMarginTop: '64px', position: 'relative', overflow: 'hidden',
     }}>
-      {/* Ambient glow */}
-      <div style={{ position: 'absolute', top: '-200px', left: '-200px', width: '600px', height: '600px',
-        background: 'radial-gradient(circle, rgba(255,68,0,0.08) 0%, transparent 70%)', pointerEvents: 'none' }} />
-      <div style={{ position: 'absolute', bottom: '-200px', right: '-200px', width: '600px', height: '600px',
-        background: 'radial-gradient(circle, rgba(255,68,0,0.06) 0%, transparent 70%)', pointerEvents: 'none' }} />
-
       {wizardStep <= 5 ? (
         <div style={quizCard}>
           {/* Progress bar */}
           <div style={{ display: 'flex', gap: '6px', marginBottom: '28px' }}>
             {[1,2,3,4].map(s => (
               <div key={s} style={{ height: '2px', flex: 1, borderRadius: '2px', transition: 'background .3s',
-                background: s < wizardStep ? '#ff4400' : s === wizardStep ? 'rgba(255,68,0,0.4)' : 'rgba(255,255,255,0.08)' }} />
+                background: s < wizardStep ? 'var(--sm-accent)' : s === wizardStep ? 'rgba(255,68,0,0.4)' : 'var(--sm-line)' }} />
             ))}
           </div>
 
           {/* Step label */}
           {heading && (
             <div style={{ marginBottom: '24px' }}>
-              <div style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '.14em', color: 'rgba(255,255,255,0.25)',
+              <div style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '.14em', color: 'var(--sm-text-mute)',
                 textTransform: 'uppercase', marginBottom: '12px' }}>
                 {t('wizard.step', { step: Math.min(wizardStep, 4) })}
               </div>
-              <h2 style={{ fontSize: 'clamp(28px, 5vw, 36px)', fontWeight: 900, color: '#fff', lineHeight: 1.15, marginBottom: '8px' }}>
-                {heading.pre}<em style={{ fontStyle: 'italic', color: '#ff4400' }}>{heading.em}</em>
+              <h2 style={{ fontSize: 'clamp(28px, 5vw, 36px)', fontWeight: 900, color: 'var(--sm-ink)', lineHeight: 1.15, marginBottom: '8px' }}>
+                {heading.pre}<em style={{ fontStyle: 'italic', color: 'var(--sm-accent)' }}>{heading.em}</em>
               </h2>
-              <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.3)' }}>{heading.sub}</p>
+              <p style={{ fontSize: '13px', color: 'var(--sm-text-mute)' }}>{heading.sub}</p>
             </div>
           )}
 
@@ -312,7 +306,7 @@ function SubmitSection({
                   </button>
                 ))}
               </div>
-              <button onClick={() => setWizardStep(1)} style={{ ...quizBtn, marginTop: '16px', background: 'none', color: 'rgba(255,255,255,0.25)', fontSize: '12px' }}>{t('wizard.back')}</button>
+              <button onClick={() => setWizardStep(1)} style={{ ...quizBtn, marginTop: '16px', background: 'none', color: 'var(--sm-text-mute)', fontSize: '12px' }}>{t('wizard.back')}</button>
             </div>
           )}
 
@@ -321,14 +315,14 @@ function SubmitSection({
             <div>
               <BlurredTeaser />
               <div style={{ textAlign: 'center', marginBottom: '24px' }}>
-                <span style={{ fontSize: '56px', fontWeight: 900, fontStyle: 'italic', color: salaryTouched ? '#fff' : 'rgba(255,255,255,0.3)', lineHeight: 1 }}>{salaryTouched ? sal : '—'}</span>
-                <span style={{ fontSize: '16px', color: 'rgba(255,255,255,0.25)', marginLeft: '8px' }}>{t('wizard.salaryUnit')}</span>
+                <span style={{ fontSize: '56px', fontWeight: 900, fontStyle: 'italic', color: salaryTouched ? 'var(--sm-ink)' : 'var(--sm-text-mute)', lineHeight: 1 }}>{salaryTouched ? sal : '—'}</span>
+                <span style={{ fontSize: '16px', color: 'var(--sm-text-mute)', marginLeft: '8px' }}>{t('wizard.salaryUnit')}</span>
               </div>
               <input type="range" min="5" max="200" value={sal}
                 onChange={e => { setWSalary(Number(e.target.value)); setSalaryTouched(true); }}
-                style={{ width: '100%', accentColor: '#ff4400', height: '4px', marginBottom: '24px' }}
+                style={{ width: '100%', accentColor: 'var(--sm-accent)', height: '4px', marginBottom: '24px' }}
               />
-              <div style={{ textAlign: 'center', fontSize: '11px', color: 'rgba(255,255,255,0.18)', marginBottom: '20px' }}>
+              <div style={{ textAlign: 'center', fontSize: '11px', color: 'var(--sm-text-mute)', marginBottom: '20px' }}>
                 {salaryTouched ? t('wizard.salaryPrivacy') : t('wizard.salaryHint')}
               </div>
               <button onClick={() => { if (!salaryTouched) return; if(typeof gtag==='function') gtag('event','wizard_step_3',{salary:wSalary}); track('wizard_step_3', { meta: { salary: wSalary }, page: '/' }); setWizardStep(4); }}
@@ -336,7 +330,7 @@ function SubmitSection({
                 style={{ ...ctaStyle, ...(salaryTouched ? {} : { opacity: 0.4, cursor: 'not-allowed' }) }}>
                 {t('wizard.almostDone')}
               </button>
-              <button onClick={() => setWizardStep(2)} style={{ ...quizBtn, marginTop: '12px', background: 'none', color: 'rgba(255,255,255,0.25)', fontSize: '12px', display: 'block', width: '100%', textAlign: 'center' }}>{t('wizard.back')}</button>
+              <button onClick={() => setWizardStep(2)} style={{ ...quizBtn, marginTop: '12px', background: 'none', color: 'var(--sm-text-mute)', fontSize: '12px', display: 'block', width: '100%', textAlign: 'center' }}>{t('wizard.back')}</button>
             </div>
           )}
 
@@ -345,23 +339,23 @@ function SubmitSection({
             <div>
               <div ref={acWrapRef} style={{ position: 'relative', marginBottom: '16px' }}>
                 {selectedItem ? (
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px', background: 'rgba(255,68,0,0.08)',
-                    border: '1px solid rgba(255,68,0,0.3)', borderRadius: '14px', padding: '14px 16px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px', background: 'var(--sm-accent-tint2)',
+                    border: '1px solid var(--sm-accent-border)', borderRadius: '14px', padding: '14px 16px' }}>
                     {selectedItem.domain ? (
                       <img src={`https://www.google.com/s2/favicons?domain=${selectedItem.domain}&sz=128`} alt=""
                         style={{ width: 28, height: 28, borderRadius: '6px', objectFit: 'contain', background: '#fafaf8' }}
                         onError={e => { e.target.style.display = 'none'; }} />
                     ) : (
-                      <div style={{ width: 28, height: 28, borderRadius: '6px', background: 'rgba(255,255,255,0.1)',
-                        display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '10px', fontWeight: 800, color: 'rgba(255,255,255,0.4)' }}>
+                      <div style={{ width: 28, height: 28, borderRadius: '6px', background: 'var(--sm-line)',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '10px', fontWeight: 800, color: 'var(--sm-text-mute)' }}>
                         {selectedItem.name.slice(0, 2).toUpperCase()}
                       </div>
                     )}
                     <div style={{ flex: 1 }}>
-                      <div style={{ fontSize: '14px', fontWeight: 700, color: '#fff' }}>{selectedItem.name}</div>
-                      {selectedItem.domain && <div style={{ fontSize: '10px', color: 'rgba(255,255,255,0.3)' }}>{selectedItem.domain}</div>}
+                      <div style={{ fontSize: '14px', fontWeight: 700, color: 'var(--sm-ink)' }}>{selectedItem.name}</div>
+                      {selectedItem.domain && <div style={{ fontSize: '10px', color: 'var(--sm-text-mute)' }}>{selectedItem.domain}</div>}
                     </div>
-                    <button onClick={clearSelectedItem} style={{ ...quizBtn, background: 'none', color: 'rgba(255,255,255,0.3)', fontSize: '18px', padding: '4px' }}>×</button>
+                    <button onClick={clearSelectedItem} style={{ ...quizBtn, background: 'none', color: 'var(--sm-text-mute)', fontSize: '18px', padding: '4px' }}>×</button>
                   </div>
                 ) : (
                   <>
@@ -375,40 +369,40 @@ function SubmitSection({
                         else if (e.key === 'Escape') setAcOpen(false);
                       }}
                       autoFocus autoComplete="off"
-                      style={{ width: '100%', background: 'rgba(255,255,255,0.05)', border: '1.5px solid rgba(255,255,255,0.1)',
-                        borderRadius: '14px', padding: '16px 18px', color: '#fff', fontSize: '15px',
-                        fontFamily: "'Be Vietnam Pro', sans-serif", outline: 'none', boxSizing: 'border-box' }}
+                      style={{ width: '100%', background: 'var(--sm-surface-sub)', border: '1.5px solid var(--sm-line-strong)',
+                        borderRadius: '14px', padding: '16px 18px', color: 'var(--sm-ink)', fontSize: '15px',
+                        fontFamily: "inherit", outline: 'none', boxSizing: 'border-box' }}
                     />
-                    {acLoading && <div style={{ position: 'absolute', right: '16px', top: '50%', transform: 'translateY(-50%)', fontSize: '11px', color: 'rgba(255,255,255,0.3)' }}>…</div>}
+                    {acLoading && <div style={{ position: 'absolute', right: '16px', top: '50%', transform: 'translateY(-50%)', fontSize: '11px', color: 'var(--sm-text-mute)' }}>…</div>}
                     {acOpen && (acResults.length > 0 || (wCompany.trim().length >= 2 && isValidCompanyName(wCompany))) && (
                       <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 50, marginTop: '4px',
-                        background: '#1a1a18', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '14px',
-                        overflow: 'hidden', boxShadow: '0 8px 32px rgba(0,0,0,0.5)', maxHeight: '280px', overflowY: 'auto' }}>
+                        background: 'var(--sm-surface)', border: '1px solid var(--sm-line-strong)', borderRadius: '14px',
+                        overflow: 'hidden', boxShadow: '0 8px 32px rgba(0,0,0,0.12)', maxHeight: '280px', overflowY: 'auto' }}>
                         {acResults.map((item, i) => (
                           <div key={item.name + i} onMouseDown={e => { e.preventDefault(); selectCompany(item); }} onMouseEnter={() => setAcHighlight(i)}
                             style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 14px', cursor: 'pointer', transition: 'background .1s',
-                              background: i === acHighlight ? 'rgba(255,255,255,0.06)' : 'transparent' }}>
+                              background: i === acHighlight ? 'var(--sm-line)' : 'transparent' }}>
                             {item.logo ? (
                               <img src={item.logo} alt="" style={{ width: 22, height: 22, borderRadius: '4px', objectFit: 'contain', background: '#fafaf8', flexShrink: 0 }}
                                 onError={e => { e.target.style.display = 'none'; }} />
                             ) : (
-                              <div style={{ width: 22, height: 22, borderRadius: '4px', background: 'rgba(255,255,255,0.08)',
-                                display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '9px', fontWeight: 800, color: 'rgba(255,255,255,0.4)', flexShrink: 0 }}>
+                              <div style={{ width: 22, height: 22, borderRadius: '4px', background: 'var(--sm-line)',
+                                display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '9px', fontWeight: 800, color: 'var(--sm-text-mute)', flexShrink: 0 }}>
                                 {item.name.slice(0, 2).toUpperCase()}
                               </div>
                             )}
                             <div style={{ flex: 1, minWidth: 0 }}>
-                              <div style={{ fontSize: '13px', fontWeight: 600, color: '#fff', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.name}</div>
-                              {item.domain && <div style={{ fontSize: '10px', color: 'rgba(255,255,255,0.3)', marginTop: '1px' }}>{item.domain}</div>}
+                              <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--sm-ink)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.name}</div>
+                              {item.domain && <div style={{ fontSize: '10px', color: 'var(--sm-text-mute)', marginTop: '1px' }}>{item.domain}</div>}
                             </div>
-                            {item.source === 'db' && <span style={{ fontSize: '9px', fontWeight: 700, color: '#ff4400', background: 'rgba(255,68,0,0.1)', padding: '2px 6px', borderRadius: '4px', flexShrink: 0 }}>FYI</span>}
+                            {item.source === 'db' && <span style={{ fontSize: '9px', fontWeight: 700, color: 'var(--sm-accent)', background: 'var(--sm-accent-tint)', padding: '2px 6px', borderRadius: '4px', flexShrink: 0 }}>FYI</span>}
                           </div>
                         ))}
                         {wCompany.trim().length >= 2 && isValidCompanyName(wCompany) && !acResults.some(r => r.name.toLowerCase() === wCompany.trim().toLowerCase()) && (
                           <div onMouseDown={e => { e.preventDefault(); setAcOpen(false); }}
-                            style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 14px', cursor: 'pointer', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
-                            <div style={{ width: 22, height: 22, borderRadius: '4px', background: 'rgba(255,68,0,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '13px', color: '#ff4400', flexShrink: 0 }}>+</div>
-                            <span style={{ fontSize: '13px', color: 'rgba(255,255,255,0.5)' }}>{t('wizard.addCompany', { company: '' })}<span style={{ color: '#fff', fontWeight: 600 }}>{wCompany.trim()}</span>"</span>
+                            style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 14px', cursor: 'pointer', borderTop: '1px solid var(--sm-line)' }}>
+                            <div style={{ width: 22, height: 22, borderRadius: '4px', background: 'var(--sm-accent-tint)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '13px', color: 'var(--sm-accent)', flexShrink: 0 }}>+</div>
+                            <span style={{ fontSize: '13px', color: 'var(--sm-text-sub)' }}>{t('wizard.addCompany', { company: '' })}<span style={{ color: 'var(--sm-ink)', fontWeight: 600 }}>{wCompany.trim()}</span>"</span>
                           </div>
                         )}
                       </div>
@@ -416,11 +410,11 @@ function SubmitSection({
                   </>
                 )}
               </div>
-              {submitting && <div style={{ textAlign: 'center', fontSize: '13px', color: 'rgba(255,255,255,0.5)', marginTop: '16px' }}>{t('wizard.submitting')}</div>}
-              <div style={{ textAlign: 'center', fontSize: '11px', color: 'rgba(255,255,255,0.18)', marginTop: '12px' }}>
+              {submitting && <div style={{ textAlign: 'center', fontSize: '13px', color: 'var(--sm-text-sub)', marginTop: '16px' }}>{t('wizard.submitting')}</div>}
+              <div style={{ textAlign: 'center', fontSize: '11px', color: 'var(--sm-text-mute)', marginTop: '12px' }}>
                 {t('wizard.anonymous')}
               </div>
-              <button onClick={() => setWizardStep(3)} style={{ ...quizBtn, marginTop: '12px', background: 'none', color: 'rgba(255,255,255,0.25)', fontSize: '12px', display: 'block', width: '100%', textAlign: 'center' }}>{t('wizard.back')}</button>
+              <button onClick={() => setWizardStep(3)} style={{ ...quizBtn, marginTop: '12px', background: 'none', color: 'var(--sm-text-mute)', fontSize: '12px', display: 'block', width: '100%', textAlign: 'center' }}>{t('wizard.back')}</button>
             </div>
           )}
 
@@ -431,7 +425,7 @@ function SubmitSection({
               <StarRow label="Salary fairness" value={ratingSalary} onChange={setRatingSalary} />
               <StarRow label="Growth opportunity" value={ratingGrowth} onChange={setRatingGrowth} />
               <button onClick={() => setWizardStep(6)}
-                style={{ ...quizBtn, marginTop: '28px', background: 'none', color: 'rgba(255,255,255,0.25)', fontSize: '12px', display: 'block', width: '100%', textAlign: 'center' }}>
+                style={{ ...quizBtn, marginTop: '28px', background: 'none', color: 'var(--sm-text-mute)', fontSize: '12px', display: 'block', width: '100%', textAlign: 'center' }}>
                 {t('wizard.skip')}
               </button>
             </div>

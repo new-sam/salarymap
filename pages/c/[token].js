@@ -205,8 +205,8 @@ export default function PublicCardPage({ data, design, image, lang }) {
 }
 
 const S = {
-  page: { minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 18, padding: 24, background: '#0E0F12', boxSizing: 'border-box' },
-  card: { width: '100%', maxWidth: 380, aspectRatio: '1.586 / 1', borderRadius: 20, padding: 24, display: 'flex', flexDirection: 'column', justifyContent: 'space-between', boxSizing: 'border-box', borderWidth: 1, borderStyle: 'solid', boxShadow: '0 18px 50px rgba(0,0,0,0.5)', overflow: 'hidden' },
+  page: { minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 18, padding: 24, background: 'var(--sm-bg-warm)', boxSizing: 'border-box' },
+  card: { width: '100%', maxWidth: 380, aspectRatio: '1.586 / 1', borderRadius: 20, padding: 24, display: 'flex', flexDirection: 'column', justifyContent: 'space-between', boxSizing: 'border-box', borderWidth: 1, borderStyle: 'solid', boxShadow: '0 18px 50px rgba(0,0,0,0.22)', overflow: 'hidden' },
   brand: { fontSize: 13, fontWeight: 800 },
   idRow: { display: 'flex', alignItems: 'center', gap: 13 },
   photo: { width: 52, height: 52, borderRadius: '50%', objectFit: 'cover', borderWidth: 1, borderStyle: 'solid', flexShrink: 0 },
@@ -216,10 +216,10 @@ const S = {
   divider: { width: 38, height: 2, borderRadius: 1 },
   contact: { fontSize: 12.5, fontWeight: 500, letterSpacing: 0.2, lineHeight: 1.7, wordBreak: 'break-word' },
   // 연락처 저장 = 보조(고스트) 버튼
-  saveBtn: { background: 'transparent', color: '#fff', border: '1px solid rgba(255,255,255,0.25)', borderRadius: 26, padding: '12px 26px', fontSize: 14.5, fontWeight: 700, cursor: 'pointer' },
+  saveBtn: { background: 'transparent', color: 'var(--sm-text)', border: '1px solid var(--sm-line-strong)', borderRadius: 26, padding: '12px 26px', fontSize: 14.5, fontWeight: 700, cursor: 'pointer' },
   // 앱 유입 CTA = 메인
-  promo: { width: '100%', maxWidth: 380, background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 18, padding: '22px 22px 24px', textAlign: 'center', boxSizing: 'border-box', marginTop: 6 },
-  promoTitle: { color: '#fff', fontSize: 17, fontWeight: 800, lineHeight: 1.35 },
-  promoDesc: { color: 'rgba(255,255,255,0.6)', fontSize: 13.5, lineHeight: 1.6, marginTop: 10 },
-  ctaBtn: { display: 'block', marginTop: 18, background: '#ff6000', color: '#fff', textDecoration: 'none', borderRadius: 12, padding: '14px', fontSize: 15.5, fontWeight: 800 },
+  promo: { width: '100%', maxWidth: 380, background: 'var(--sm-surface)', border: '1px solid var(--sm-line)', borderRadius: 18, padding: '22px 22px 24px', textAlign: 'center', boxSizing: 'border-box', marginTop: 6, boxShadow: '0 4px 16px rgba(17,24,39,0.06)' },
+  promoTitle: { color: 'var(--sm-ink)', fontSize: 17, fontWeight: 800, lineHeight: 1.35 },
+  promoDesc: { color: 'var(--sm-text-sub)', fontSize: 13.5, lineHeight: 1.6, marginTop: 10 },
+  ctaBtn: { display: 'block', marginTop: 18, background: 'var(--sm-accent)', color: '#fff', textDecoration: 'none', borderRadius: 12, padding: '14px', fontSize: 15.5, fontWeight: 800 },
 }

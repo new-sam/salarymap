@@ -1544,7 +1544,7 @@ export default function JobsPage() {
       {appliedInfo && (
         <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.6)',zIndex:1100,display:'flex',alignItems:'center',justifyContent:'center',padding:'20px'}}
           onClick={e => { if(e.target===e.currentTarget) { if(appliedInfo.resumeUrl && !hasProfileResume){setShowAiProfilePrompt({resumeUrl:appliedInfo.resumeUrl})} setAppliedInfo(null); window.history.replaceState(null, '', '/jobs'); } }}>
-          <div style={{background:'#fff',borderRadius:'20px',padding:'40px 36px',maxWidth:'420px',width:'100%',fontFamily:"'Barlow',sans-serif",textAlign:'center'}}>
+          <div style={{background:'#fff',borderRadius:'20px',padding:'40px 36px',maxWidth:'420px',width:'100%',fontFamily:'inherit',textAlign:'center'}}>
             <div className="applied-check">
               <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
                 <path className="applied-check-path" d="M4 12.5l5.5 5.5L20 7" />
@@ -1589,7 +1589,7 @@ export default function JobsPage() {
               </div>
             )}
             <button onClick={() => { if(appliedInfo.resumeUrl && !hasProfileResume){setShowAiProfilePrompt({resumeUrl:appliedInfo.resumeUrl})} setAppliedInfo(null); window.history.replaceState(null, '', '/jobs'); }}
-              style={{background:'#ff4400',color:'#fff',fontSize:'14px',fontWeight:700,padding:'14px 32px',borderRadius:'10px',border:'none',cursor:'pointer',fontFamily:"'Barlow',sans-serif"}}>
+              style={{background:'#ff4400',color:'#fff',fontSize:'14px',fontWeight:700,padding:'14px 32px',borderRadius:'10px',border:'none',cursor:'pointer',fontFamily:'inherit'}}>
               {t('jobs.confirm')}
             </button>
           </div>
@@ -1599,7 +1599,7 @@ export default function JobsPage() {
       {showAiProfilePrompt && (
         <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.6)',zIndex:1100,display:'flex',alignItems:'center',justifyContent:'center',padding:'20px'}}
           onClick={e => { if(e.target===e.currentTarget && !aiParsing) setShowAiProfilePrompt(null); }}>
-          <div style={{background:'#fff',borderRadius:'20px',padding:'40px 36px',maxWidth:'420px',width:'100%',fontFamily:"'Barlow',sans-serif",textAlign:'center'}}>
+          <div style={{background:'#fff',borderRadius:'20px',padding:'40px 36px',maxWidth:'420px',width:'100%',fontFamily:'inherit',textAlign:'center'}}>
             {aiParsing ? (
               <>
                 <div style={{fontSize:'40px',marginBottom:'16px'}}>&#10024;</div>
@@ -1617,7 +1617,7 @@ export default function JobsPage() {
                 <div style={{fontSize:'14px',color:'#666',lineHeight:1.6,marginBottom:'24px'}}>{t('jobs.aiProfileDesc')}</div>
                 <div style={{display:'flex',gap:'10px'}}>
                   <button onClick={() => setShowAiProfilePrompt(null)}
-                    style={{flex:1,background:'#f0f0f0',color:'#555',fontSize:'14px',fontWeight:700,padding:'14px',borderRadius:'10px',border:'none',cursor:'pointer',fontFamily:"'Barlow',sans-serif"}}>
+                    style={{flex:1,background:'#f0f0f0',color:'#555',fontSize:'14px',fontWeight:700,padding:'14px',borderRadius:'10px',border:'none',cursor:'pointer',fontFamily:'inherit'}}>
                     {t('jobs.aiProfileSkip')}
                   </button>
                   <button onClick={async () => {
@@ -1650,7 +1650,7 @@ export default function JobsPage() {
                       setShowAiProfilePrompt(null)
                     }
                   }}
-                    style={{flex:1,background:'#ff4400',color:'#fff',fontSize:'14px',fontWeight:700,padding:'14px',borderRadius:'10px',border:'none',cursor:'pointer',fontFamily:"'Barlow',sans-serif"}}>
+                    style={{flex:1,background:'#ff4400',color:'#fff',fontSize:'14px',fontWeight:700,padding:'14px',borderRadius:'10px',border:'none',cursor:'pointer',fontFamily:'inherit'}}>
                     {t('jobs.aiProfileConfirm')}
                   </button>
                 </div>
@@ -1682,20 +1682,20 @@ export default function JobsPage() {
       {showAuthModal && (
         <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.6)',zIndex:1100,display:'flex',alignItems:'center',justifyContent:'center',padding:'20px'}}
           onClick={e => { if(e.target===e.currentTarget) setShowAuthModal(false); }}>
-          <div style={{background:'#fff',borderRadius:'20px',padding:'40px 36px',maxWidth:'420px',width:'100%',fontFamily:"'Barlow',sans-serif"}}>
+          <div style={{background:'#fff',borderRadius:'20px',padding:'40px 36px',maxWidth:'420px',width:'100%',fontFamily:'inherit'}}>
             <div style={{fontSize:'24px',fontWeight:900,color:'#111',letterSpacing:'-0.5px',marginBottom:'8px'}}>{t('auth.title')}</div>
             <div style={{fontSize:'13px',color:'#888',marginBottom:'28px',lineHeight:1.6}}>{t('auth.sub')}</div>
             <div style={{display:'flex',flexDirection:'column',gap:'10px'}}>
               <button onClick={async () => { setShowAuthModal(false); localStorage.setItem('fyi_login_return', window.location.pathname + window.location.search); try { await supabase.auth.signInWithOAuth({ provider:'linkedin_oidc', options:{ redirectTo: window.location.origin+'/auth/callback', scopes:'openid profile email' } }); } catch(e) { console.error(e); } }}
-                style={{width:'100%',background:'#0A66C2',color:'#fff',fontSize:'14px',fontWeight:700,padding:'14px',borderRadius:'10px',border:'none',cursor:'pointer',fontFamily:"'Barlow',sans-serif",display:'flex',alignItems:'center',justifyContent:'center',gap:'10px'}}>
+                style={{width:'100%',background:'#0A66C2',color:'#fff',fontSize:'14px',fontWeight:700,padding:'14px',borderRadius:'10px',border:'none',cursor:'pointer',fontFamily:'inherit',display:'flex',alignItems:'center',justifyContent:'center',gap:'10px'}}>
                 <span style={{fontWeight:900,fontSize:'16px'}}>in</span> {t('auth.linkedin')}
               </button>
               <button onClick={() => { setShowAuthModal(false); const ret = window.location.pathname + window.location.search; localStorage.setItem('fyi_login_return', ret); window.location.href = '/api/auth/google?return=' + encodeURIComponent(ret); }}
-                style={{width:'100%',background:'#f5f5f3',color:'#111',fontSize:'14px',fontWeight:700,padding:'14px',borderRadius:'10px',border:'none',cursor:'pointer',fontFamily:"'Barlow',sans-serif",display:'flex',alignItems:'center',justifyContent:'center',gap:'10px'}}>
+                style={{width:'100%',background:'#f5f5f3',color:'#111',fontSize:'14px',fontWeight:700,padding:'14px',borderRadius:'10px',border:'none',cursor:'pointer',fontFamily:'inherit',display:'flex',alignItems:'center',justifyContent:'center',gap:'10px'}}>
                 <span style={{fontWeight:900,fontSize:'16px'}}>G</span> {t('auth.google')}
               </button>
               <button onClick={() => setShowAuthModal(false)}
-                style={{background:'none',border:'none',color:'#bbb',fontSize:'12px',cursor:'pointer',fontFamily:"'Barlow',sans-serif",marginTop:'4px',width:'100%',textAlign:'center'}}>
+                style={{background:'none',border:'none',color:'#bbb',fontSize:'12px',cursor:'pointer',fontFamily:'inherit',marginTop:'4px',width:'100%',textAlign:'center'}}>
                 {t('auth.later')}
               </button>
             </div>

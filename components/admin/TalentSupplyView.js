@@ -65,7 +65,7 @@ export default function TalentSupplyView({ token, lang }) {
               : 'Snapshot of the talent pool by role — supply vs. company demand. Refreshes daily.'}
           </div>
         </div>
-        <button onClick={downloadCsv} style={{ padding: '8px 16px', border: 'none', borderRadius: 8, fontSize: 13, background: '#ff6000', color: '#fff', cursor: 'pointer', fontWeight: 600, whiteSpace: 'nowrap' }}>
+        <button onClick={downloadCsv} style={{ padding: '8px 16px', border: 'none', borderRadius: 8, fontSize: 13, background: 'var(--sm-accent)', color: '#fff', cursor: 'pointer', fontWeight: 600, whiteSpace: 'nowrap' }}>
           {ko ? 'CSV 다운로드' : 'Download CSV'}
         </button>
       </div>
@@ -129,7 +129,7 @@ export default function TalentSupplyView({ token, lang }) {
                   </div>
                 </td>
                 <td style={{ padding: '9px 10px', textAlign: 'right', color: '#374151' }}>{r.resume}</td>
-                <td style={{ padding: '9px 14px', textAlign: 'right', color: r.active > 0 ? '#ff6000' : '#CBD5E1', fontWeight: 600 }}>{r.active}</td>
+                <td style={{ padding: '9px 14px', textAlign: 'right', color: r.active > 0 ? 'var(--sm-accent)' : '#CBD5E1', fontWeight: 600 }}>{r.active}</td>
               </tr>
             ))}
           </tbody>

@@ -92,24 +92,24 @@ export default function GlobalNav({ activePage, onLogin, onJobsClick, mobileSear
   return (
     <>
       <style>{`
-        .gnav { position: sticky; top: 0; z-index: 200; height: 56px; background: #0c0c0b; border-bottom: 1px solid rgba(255,255,255,0.07); display: flex; align-items: center; justify-content: space-between; padding: 0 52px; font-family: 'Barlow', sans-serif; }
+        .gnav { position: sticky; top: 0; z-index: 200; height: 56px; background: var(--sm-bg); border-bottom: 1px solid var(--sm-line); display: flex; align-items: center; justify-content: space-between; padding: 0 52px; font-family:inherit; }
         .gnav-l { display: flex; align-items: center; gap: 36px; }
         .gnav-l-menu { display: flex; align-items: center; gap: 22px; }
         @media (max-width: 768px) { .gnav-l-menu { display: none; } }
-        .gnav-logo { display: flex; align-items: center; gap: 10px; font-size: 13px; font-weight: 400; color: #f2f0eb; text-decoration: none; cursor: pointer; }
-        .gnav-logo img { width: 28px; height: 28px; object-fit: contain; }
-        .gnav-logo em { color: #ff6000; font-style: normal; }
+        .gnav-logo { display: flex; align-items: center; gap: 10px; font-size: 13px; font-weight: 400; color: var(--sm-ink); text-decoration: none; cursor: pointer; }
+        .gnav-logo img { height: 26px; width: auto; object-fit: contain; }
+        .gnav-logo em { color: var(--sm-accent); font-style: normal; }
         .gnav-r { display: flex; align-items: center; gap: 24px; }
-        .gnav-link { font-size: 14px; color: rgba(242,240,235,0.42); text-decoration: none; background: none; border: none; cursor: pointer; font-family: 'Barlow', sans-serif; padding: 0; transition: color .2s; position: relative; }
-        .gnav-link:hover { color: #f0ece4; }
-        .gnav-link.on { color: #f0ece4; }
-        .gnav-link-accent { color: #ff6000 !important; font-weight: 400; }
-        .gnav-link-accent:hover { color: #ff8a40 !important; }
-        .gnav-link-light { color: #f2f0eb !important; font-weight: 400; }
-        .gnav-link-light:hover { color: #f2f0eb !important; opacity: 0.85; }
+        .gnav-link { font-size: 14px; color: var(--sm-text-sub); text-decoration: none; background: none; border: none; cursor: pointer; font-family:inherit; padding: 0; transition: color .2s; position: relative; }
+        .gnav-link:hover { color: var(--sm-ink); }
+        .gnav-link.on { color: var(--sm-ink); }
+        .gnav-link-accent { color: var(--sm-accent) !important; font-weight: 400; }
+        .gnav-link-accent:hover { color: var(--sm-accent-strong) !important; }
+        .gnav-link-light { color: var(--sm-text) !important; font-weight: 500; }
+        .gnav-link-light:hover { color: var(--sm-ink) !important; }
         /* Welcome-bonus pill CTA — same shimmer as the old jobs CTA */
-        .gnav-welcome-cta { position: relative; display: inline-flex; align-items: center; background: #ff6000; padding: 7px 16px !important; border-radius: 100px; color: #fff !important; font-size: 14px; font-weight: 400; transition: background .15s; }
-        .gnav-welcome-cta:hover { background: #ff7218; }
+        .gnav-welcome-cta { position: relative; display: inline-flex; align-items: center; background: var(--sm-accent); padding: 7px 16px !important; border-radius: 100px; color: #fff !important; font-size: 14px; font-weight: 400; transition: background .15s; }
+        .gnav-welcome-cta:hover { background: var(--sm-accent-strong); }
         .gnav-welcome-cta.on::after { display: none; }
         /* Floating bubble under the pill */
         .gnav-welcome-bubble {
@@ -122,11 +122,11 @@ export default function GlobalNav({ activePage, onLogin, onJobsClick, mobileSear
           font-weight: 700;
           letter-spacing: 0.3px;
           color: #fff;
-          background: #ff6000;
+          background: var(--sm-accent);
           padding: 4px 10px;
           border-radius: 100px;
           white-space: nowrap;
-          box-shadow: 0 4px 14px rgba(255,96,0,0.5);
+          box-shadow: 0 4px 14px rgba(255,68,0,0.35);
           pointer-events: none;
           animation: gnav-bubbleFloat 2.4s ease-in-out infinite;
         }
@@ -137,76 +137,79 @@ export default function GlobalNav({ activePage, onLogin, onJobsClick, mobileSear
           left: 50%;
           transform: translateX(-50%) rotate(45deg);
           width: 6px; height: 6px;
-          background: #ff6000;
+          background: var(--sm-accent);
         }
         @keyframes gnav-bubbleFloat {
           0%, 100% { transform: translateX(-50%) translateY(0); }
           50% { transform: translateX(-50%) translateY(-3px); }
         }
-        .gnav-link.on::after { content: ''; position: absolute; bottom: -2px; left: 0; right: 0; height: 2px; background: #ff6000; }
+        .gnav-link.on::after { content: ''; position: absolute; bottom: -2px; left: 0; right: 0; height: 2px; background: var(--sm-accent); }
         /* Buttons (jobs CTA pill, login pill) — never show the active underline */
         .gnav-jobs-cta.on::after { display: none; }
         .gnav-login.on::after { display: none; }
-        .gnav-jobs-cta { display: inline-flex; align-items: center; gap: 6px; background: #ff6000; border: none; padding: 7px 16px !important; border-radius: 100px; color: #fff !important; font-weight: 400; font-size: 14px; transition: all .25s; position: relative; }
+        .gnav-jobs-cta { display: inline-flex; align-items: center; gap: 6px; background: var(--sm-accent); border: none; padding: 7px 16px !important; border-radius: 100px; color: #fff !important; font-weight: 400; font-size: 14px; transition: all .25s; position: relative; }
         .gnav-jobs-shimmer { position: absolute; inset: 0; border-radius: 100px; overflow: hidden; pointer-events: none; }
         .gnav-jobs-shimmer::before { content: ''; position: absolute; top: 0; left: -100%; width: 60%; height: 100%; background: linear-gradient(90deg, transparent, rgba(255,255,255,0.25), transparent); animation: jobsShimmer 2.5s ease-in-out infinite; }
-        .gnav-jobs-cta:hover { background: #ff7a1a; box-shadow: 0 0 20px rgba(255,96,0,0.4); transform: translateY(-1px); }
+        .gnav-jobs-cta:hover { background: var(--sm-accent-strong); box-shadow: 0 4px 14px rgba(255,68,0,0.3); transform: translateY(-1px); }
         .gnav-jobs-cta.on { color: #fff !important; }
         .gnav-jobs-cta.on::after { display: none; }
         @keyframes jobsShimmer { 0% { left: -100%; } 50% { left: 120%; } 100% { left: 120%; } }
         .gnav-jobs-icon { display: inline-flex; align-items: center; flex-shrink: 0; }
         .gnav-jobs-icon svg { width: 14px; height: 14px; }
 
-        .gnav-login { font-size: 14px; font-weight: 400; color: #f2f0eb; background: none; border: 1px solid #f2f0eb; padding: 7px 16px; border-radius: 100px; cursor: pointer; font-family: 'Barlow', sans-serif; transition: background .15s, color .15s; }
-        .gnav-login:hover { background: #f2f0eb; color: #0c0c0b; }
+        .gnav-login { font-size: 14px; font-weight: 500; color: var(--sm-ink); background: none; border: 1px solid rgba(17,17,17,0.3); padding: 7px 16px; border-radius: 100px; cursor: pointer; font-family:inherit; transition: background .15s, color .15s, border-color .15s; }
+        .gnav-login:hover { background: var(--sm-ink); border-color: var(--sm-ink); color: #fff; }
+        /* 기업 서비스 — 선이 보이는 아웃라인 필 버튼 */
+        .gnav-biz { display: inline-flex; align-items: center; font-size: 14px; font-weight: 600; color: var(--sm-ink) !important; border: 1px solid rgba(17,17,17,0.3); padding: 7px 16px; border-radius: 100px; transition: background .15s, border-color .15s; }
+        .gnav-biz:hover { background: var(--sm-surface-sub); border-color: var(--sm-ink); }
+        .gnav-biz.on::after { display: none; }
 
         .gnav-lang { position: relative; flex-shrink: 0; }
-        .gnav-lang-btn { display: inline-flex; align-items: center; gap: 6px; height: 30px; padding: 0 10px; background: none; border: 1px solid #f2f0eb; border-radius: 8px; color: #f2f0eb; cursor: pointer; font-family: 'Barlow', sans-serif; transition: background .15s, color .15s; }
-        .gnav-lang-btn:hover { background: #f2f0eb; color: #0c0c0b; }
+        .gnav-lang-btn { display: inline-flex; align-items: center; gap: 6px; height: 30px; padding: 0 10px; background: none; border: 1px solid var(--sm-line-strong); border-radius: 8px; color: var(--sm-text); cursor: pointer; font-family:inherit; transition: background .15s, color .15s; }
+        .gnav-lang-btn:hover { background: var(--sm-surface-sub); color: var(--sm-ink); }
         .gnav-lang-code { font-size: 11px; font-weight: 400; letter-spacing: 1px; }
-        .gnav-lang-menu { position: absolute; top: calc(100% + 6px); right: 0; min-width: 160px; background: #141414; border: 1px solid rgba(255,255,255,0.1); border-radius: 10px; padding: 4px; box-shadow: 0 12px 32px rgba(0,0,0,0.45); z-index: 600; }
-        .gnav-lang-item { display: flex; align-items: center; justify-content: space-between; gap: 8px; width: 100%; padding: 8px 12px; background: none; border: none; border-radius: 6px; cursor: pointer; font-family: 'Barlow', sans-serif; font-size: 13px; color: rgba(242,240,235,0.7); text-align: left; transition: background .12s, color .12s; }
-        .gnav-lang-item:hover { background: rgba(242,240,235,0.06); color: #f2f0eb; }
-        .gnav-lang-item.on { background: rgba(255,96,0,0.14); color: #ff8a40; font-weight: 400; }
-        .gnav-submit { font-size: 12px; font-weight: 600; background: #ff6000; color: #fff; border: none; padding: 8px 18px; border-radius: 2px; cursor: pointer; font-family: 'Barlow', sans-serif; }
-        .gnav-user { display: flex; align-items: center; gap: 6px; padding: 4px 10px 4px 4px; border-radius: 100px; border: 1px solid rgba(255,255,255,0.12); cursor: pointer; flex-shrink: 0; }
+        .gnav-lang-menu { position: absolute; top: calc(100% + 6px); right: 0; min-width: 160px; background: var(--sm-surface); border: 1px solid var(--sm-line); border-radius: 10px; padding: 4px; box-shadow: 0 12px 32px rgba(0,0,0,0.12); z-index: 600; }
+        .gnav-lang-item { display: flex; align-items: center; justify-content: space-between; gap: 8px; width: 100%; padding: 8px 12px; background: none; border: none; border-radius: 6px; cursor: pointer; font-family:inherit; font-size: 13px; color: var(--sm-text-sub); text-align: left; transition: background .12s, color .12s; }
+        .gnav-lang-item:hover { background: var(--sm-surface-sub); color: var(--sm-ink); }
+        .gnav-lang-item.on { background: var(--sm-accent-tint); color: var(--sm-accent); font-weight: 500; }
+        .gnav-submit { font-size: 12px; font-weight: 600; background: var(--sm-accent); color: #fff; border: none; padding: 8px 18px; border-radius: 2px; cursor: pointer; font-family:inherit; }
+        .gnav-user { display: flex; align-items: center; gap: 6px; padding: 4px 10px 4px 4px; border-radius: 100px; border: 1px solid var(--sm-line-strong); cursor: pointer; flex-shrink: 0; }
         .gnav-avatar { width: 24px; height: 24px; border-radius: 50%; object-fit: cover; }
-        .gnav-avatar-ini { width: 24px; height: 24px; border-radius: 50%; background: #ff6000; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 800; color: black; }
-        .gnav-name { font-size: 12px; font-weight: 600; color: rgba(255,255,255,0.7); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 80px; }
+        .gnav-avatar-ini { width: 24px; height: 24px; border-radius: 50%; background: var(--sm-accent); display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 800; color: #fff; }
+        .gnav-name { font-size: 12px; font-weight: 600; color: var(--sm-text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 80px; }
         .gnav-score { font-size: 10px; font-weight: 700; padding: 2px 6px; border-radius: 100px; line-height: 1; }
-        .gnav-caret { font-size: 10px; color: rgba(255,255,255,0.3); }
-        .gnav-ai-bubble { position: absolute; top: calc(100% + 10px); right: 0; background: #ff6000; padding: 6px 12px; border-radius: 8px; white-space: nowrap; font-size: 11px; font-weight: 700; color: #fff; cursor: pointer; animation: gnav-aiBounce 3s ease-in-out infinite; box-shadow: 0 2px 12px rgba(255,96,0,0.4); z-index: 201; }
-        .gnav-ai-bubble::before { content: ''; position: absolute; top: -4px; right: 16px; width: 8px; height: 8px; background: #ff6000; transform: rotate(45deg); border-radius: 1px; }
+        .gnav-caret { font-size: 10px; color: var(--sm-text-mute); }
+        .gnav-ai-bubble { position: absolute; top: calc(100% + 10px); right: 0; background: var(--sm-accent); padding: 6px 12px; border-radius: 8px; white-space: nowrap; font-size: 11px; font-weight: 700; color: #fff; cursor: pointer; animation: gnav-aiBounce 3s ease-in-out infinite; box-shadow: 0 2px 12px rgba(255,68,0,0.3); z-index: 201; }
+        .gnav-ai-bubble::before { content: ''; position: absolute; top: -4px; right: 16px; width: 8px; height: 8px; background: var(--sm-accent); transform: rotate(45deg); border-radius: 1px; }
         @keyframes gnav-aiBounce { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-3px); } }
-        .gnav-menu { position: absolute; top: calc(100% + 8px); right: 0; background: #1a1a1a; border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 6px; min-width: 160px; z-index: 500; box-shadow: 0 8px 32px rgba(0,0,0,0.4); }
-        .gnav-menu-email { padding: 10px 14px; font-size: 12px; color: rgba(255,255,255,0.35); border-bottom: 1px solid rgba(255,255,255,0.06); margin-bottom: 4px; }
-        .gnav-menu-item { display: block; width: 100%; padding: 10px 14px; border-radius: 8px; border: none; background: none; color: rgba(255,255,255,0.6); font-size: 13px; cursor: pointer; text-align: left; text-decoration: none; font-family: 'Barlow', sans-serif; transition: background .1s; }
-        .gnav-menu-item:hover { background: rgba(255,255,255,0.06); }
-        .gnav-menu-admin { color: #ff6000; }
+        .gnav-menu { position: absolute; top: calc(100% + 8px); right: 0; background: var(--sm-surface); border: 1px solid var(--sm-line); border-radius: 12px; padding: 6px; min-width: 160px; z-index: 500; box-shadow: 0 8px 32px rgba(0,0,0,0.12); }
+        .gnav-menu-email { padding: 10px 14px; font-size: 12px; color: var(--sm-text-mute); border-bottom: 1px solid var(--sm-line); margin-bottom: 4px; }
+        .gnav-menu-item { display: block; width: 100%; padding: 10px 14px; border-radius: 8px; border: none; background: none; color: var(--sm-text); font-size: 13px; cursor: pointer; text-align: left; text-decoration: none; font-family:inherit; transition: background .1s; }
+        .gnav-menu-item:hover { background: var(--sm-surface-sub); }
+        .gnav-menu-admin { color: var(--sm-accent); }
         .gnav-saved-link { display: flex; align-items: center; justify-content: space-between; }
-        .gnav-saved-badge { font-size: 10px; font-weight: 700; color: #fff; background: #ff4400; min-width: 18px; height: 18px; border-radius: 9px; display: inline-flex; align-items: center; justify-content: center; padding: 0 5px; }
-        .gnav-toggle { display: flex; align-items: center; gap: 0; background: rgba(255,255,255,0.06); border-radius: 100px; padding: 2px; border: 1px solid rgba(255,255,255,0.08); }
-        .gnav-toggle-opt { font-size: 11px; font-weight: 600; padding: 4px 12px; border-radius: 100px; cursor: pointer; border: none; background: none; color: rgba(255,255,255,0.3); font-family: 'Barlow', sans-serif; transition: all .2s; white-space: nowrap; }
-        .gnav-toggle-opt.active { background: rgba(255,96,0,0.2); color: #ff6000; }
-        .gnav-toggle-opt:hover:not(.active) { color: rgba(255,255,255,0.5); }
+        .gnav-saved-badge { font-size: 10px; font-weight: 700; color: #fff; background: var(--sm-accent); min-width: 18px; height: 18px; border-radius: 9px; display: inline-flex; align-items: center; justify-content: center; padding: 0 5px; }
+        .gnav-toggle { display: flex; align-items: center; gap: 0; background: var(--sm-surface-sub); border-radius: 100px; padding: 2px; border: 1px solid var(--sm-line); }
+        .gnav-toggle-opt { font-size: 11px; font-weight: 600; padding: 4px 12px; border-radius: 100px; cursor: pointer; border: none; background: none; color: var(--sm-text-mute); font-family:inherit; transition: all .2s; white-space: nowrap; }
+        .gnav-toggle-opt.active { background: var(--sm-accent-tint); color: var(--sm-accent); }
+        .gnav-toggle-opt:hover:not(.active) { color: var(--sm-text-sub); }
         .gnav-r-mobile { display: none; }
         @media (max-width: 768px) {
           .gnav { position: fixed; top: 0; left: 0; right: 0; padding: 0 16px; height: 52px; }
           .gnav-logo span { display: none; }
-          .gnav-logo img { width: 32px; height: 32px; }
+          .gnav-logo img { height: 24px; width: auto; }
           .gnav-r { display: none; }
           .gnav-r-mobile { display: flex; align-items: center; gap: 10px; }
         }
-        .gnav-mobile-login { font-size: 12px; font-weight: 600; color: rgba(255,255,255,0.5); background: none; border: 1px solid rgba(255,255,255,0.15); padding: 6px 14px; border-radius: 100px; cursor: pointer; font-family: 'Barlow', sans-serif; }
+        .gnav-mobile-login { font-size: 12px; font-weight: 600; color: var(--sm-text); background: none; border: 1px solid var(--sm-line-strong); padding: 6px 14px; border-radius: 100px; cursor: pointer; font-family:inherit; }
         .gnav-mobile-search-btn { display: flex; align-items: center; justify-content: center; width: 32px; height: 32px; border: none; background: none; cursor: pointer; padding: 0; }
-        .gnav-mobile-search-btn svg { width: 16px; height: 16px; color: rgba(255,255,255,0.5); }
+        .gnav-mobile-search-btn svg { width: 16px; height: 16px; color: var(--sm-text-sub); }
       `}</style>
 
       <nav className="gnav">
         <div className="gnav-l">
           <Link href="/" className="gnav-logo">
-            <img src="/logo.png" alt="FYI" />
-            <span dangerouslySetInnerHTML={{ __html: t('nav.brandTagline') }} />
+            <img src="/fyi-logo-nav.png" alt="FYI" />
           </Link>
           <div className="gnav-l-menu">
             <Link href="/" className={`gnav-link gnav-link-light${activePage === 'home' ? ' on' : ''}`}>{t('nav.salaryCompare')}</Link>
@@ -274,7 +277,7 @@ export default function GlobalNav({ activePage, onLogin, onJobsClick, mobileSear
                 {(user?.user_metadata?.full_name || user?.user_metadata?.name)?.split(' ')[0] || user?.email?.split('@')[0] || 'Account'}
               </span>
               {profileScore != null && profileScore < 100 && (
-                <span className="gnav-score" style={{ color: profileScore >= 60 ? '#4ade80' : '#fbbf24', background: profileScore >= 60 ? 'rgba(74,222,128,0.1)' : 'rgba(251,191,36,0.1)' }}>{profileScore}%</span>
+                <span className="gnav-score" style={{ color: profileScore >= 60 ? 'var(--sm-green)' : 'var(--sm-amber)', background: profileScore >= 60 ? 'rgba(22,163,74,0.1)' : 'rgba(245,158,11,0.12)' }}>{profileScore}%</span>
               )}
               <span className="gnav-caret">▾</span>
 
@@ -284,7 +287,7 @@ export default function GlobalNav({ activePage, onLogin, onJobsClick, mobileSear
                   <a href="/profile" className="gnav-menu-item" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                       <span>{t('nav.myProfile')}</span>
                       {profileScore != null && profileScore < 100 && (
-                        <span style={{ fontSize: 10, fontWeight: 700, color: profileScore >= 60 ? '#4ade80' : '#fbbf24', background: profileScore >= 60 ? 'rgba(74,222,128,0.1)' : 'rgba(251,191,36,0.1)', padding: '2px 8px', borderRadius: 100 }}>{profileScore}%</span>
+                        <span style={{ fontSize: 10, fontWeight: 700, color: profileScore >= 60 ? 'var(--sm-green)' : 'var(--sm-amber)', background: profileScore >= 60 ? 'rgba(22,163,74,0.1)' : 'rgba(245,158,11,0.12)', padding: '2px 8px', borderRadius: 100 }}>{profileScore}%</span>
                       )}
                     </a>
                     <a href="/my-applications" className="gnav-menu-item">{t('nav.myApplications')}</a>
@@ -310,7 +313,7 @@ export default function GlobalNav({ activePage, onLogin, onJobsClick, mobileSear
           </div>
           )}
 
-          <Link href="/for-companies" className={`gnav-link gnav-link-light${activePage === 'forCompanies' ? ' on' : ''}`} onClick={() => track('click_for_companies', { page: activePage || null })}>{t('nav.forCompanies')}</Link>
+          <Link href="/for-companies" className={`gnav-link gnav-biz${activePage === 'forCompanies' ? ' on' : ''}`} onClick={() => track('click_for_companies', { page: activePage || null })}>{t('nav.forCompanies')}</Link>
         </div>
       </nav>
     </>

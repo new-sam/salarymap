@@ -10,7 +10,7 @@ import Truncate from '../ui/truncate';
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator } from '../ui/dropdown-menu';
 
 // Mobile-only top header + 3-tab nav for the company-side ATS.
-// Visual matches the desktop sidebar (dark) so the recruiter knows they're in
+// Visual matches the desktop sidebar (light) so the recruiter knows they're in
 // the workspace, not the candidate-facing site. The right chip mirrors the
 // sidebar's "company + signed-in email" block; tap opens a logout menu.
 export default function MobileNav({ active, companyName, userEmail }) {
@@ -31,7 +31,7 @@ export default function MobileNav({ active, companyName, userEmail }) {
   ];
 
   return (
-    <header className="md:hidden sticky top-0 z-30 -mx-4 bg-[#0A0A0A] border-b border-white/5">
+    <header className="md:hidden sticky top-0 z-30 -mx-4 bg-white border-b border-gray-200">
       {/* Brand row — FYI logo (same /logo.png as desktop sidebar) left,
           company + email chip middle (tap → logout menu), language toggle right. */}
       <div className="flex items-center gap-2 px-4 py-2">
@@ -42,10 +42,10 @@ export default function MobileNav({ active, companyName, userEmail }) {
             <DropdownMenuTrigger asChild>
               <button
                 type="button"
-                className="inline-flex items-center gap-1.5 max-w-[55%] min-w-0 h-8 px-2.5 rounded-md border border-white/10 bg-white/5 hover:bg-white/10 transition-colors"
+                className="inline-flex items-center gap-1.5 max-w-[55%] min-w-0 h-8 px-2.5 rounded-md border border-gray-200 bg-gray-50 hover:bg-gray-100 transition-colors"
               >
                 <Truncate
-                  className="text-[12.5px] font-extrabold text-white tracking-tight"
+                  className="text-[12.5px] font-extrabold text-gray-900 tracking-tight"
                   stopPropagation={false}
                 >
                   {companyName || userEmail}
@@ -79,7 +79,7 @@ export default function MobileNav({ active, companyName, userEmail }) {
       </div>
 
       {/* Tab row */}
-      <nav className="flex border-t border-white/5">
+      <nav className="flex border-t border-gray-100">
         {tabs.map(tab => {
           const Icon = tab.icon;
           const isActive = active === tab.key;
@@ -90,8 +90,8 @@ export default function MobileNav({ active, companyName, userEmail }) {
               className={cn(
                 'flex-1 min-w-0 inline-flex items-center justify-center gap-1.5 h-11 text-[12.5px] font-extrabold transition-colors border-b-2 px-1',
                 isActive
-                  ? 'text-primary-300 bg-primary-500/15 border-primary-400'
-                  : 'text-gray-400 border-transparent hover:bg-white/5'
+                  ? 'text-primary-600 bg-primary-50 border-primary-500'
+                  : 'text-gray-500 border-transparent hover:bg-gray-50'
               )}
             >
               <Icon className="w-4 h-4 flex-shrink-0" />

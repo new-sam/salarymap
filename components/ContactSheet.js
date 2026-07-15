@@ -59,7 +59,7 @@ export default function ContactSheet({ user, onClose }) {
         animation: 'sheetSlideUp 0.5s cubic-bezier(0.22,0.9,0.36,1)',
         maxHeight: '85vh',
         overflowY: 'auto',
-        fontFamily: "'Barlow', 'Inter', sans-serif",
+        fontFamily: "'Pretendard', 'Inter', sans-serif",
       }}>
         <style>{`
           @keyframes sheetSlideUp {
@@ -115,7 +115,7 @@ export default function ContactSheet({ user, onClose }) {
                   padding: '10px 0',
                   borderBottom: '1.5px solid rgba(12,12,11,0.14)',
                   fontSize: 14, color: '#1a1a1a',
-                  fontFamily: "'Barlow', sans-serif",
+                  fontFamily:'inherit',
                 }}>
                   <span>{user.email}</span>
                   <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style={{ flexShrink: 0 }}>
@@ -150,14 +150,14 @@ export default function ContactSheet({ user, onClose }) {
                     border: 'none',
                     borderBottom: `1.5px solid ${linkedinError ? '#f87171' : 'rgba(12,12,11,0.14)'}`,
                     color: '#1a1a1a',
-                    fontFamily: "'Barlow', sans-serif",
+                    fontFamily:'inherit',
                     fontSize: 14,
                     padding: '10px 0',
                     outline: 'none',
                     transition: 'border-color 0.2s',
                   }}
                   onFocus={(e) => {
-                    if (!linkedinError) e.target.style.borderBottomColor = '#ff6000'
+                    if (!linkedinError) e.target.style.borderBottomColor = 'var(--sm-accent)'
                   }}
                   onBlurCapture={(e) => {
                     if (!linkedinError) e.target.style.borderBottomColor = 'rgba(12,12,11,0.14)'
@@ -181,7 +181,7 @@ export default function ContactSheet({ user, onClose }) {
                   checked={consentChecked}
                   onChange={(e) => setConsentChecked(e.target.checked)}
                   style={{
-                    width: 16, height: 16, accentColor: '#ff6000',
+                    width: 16, height: 16, accentColor: 'var(--sm-accent)',
                     cursor: 'pointer', flexShrink: 0, marginTop: 2,
                   }}
                 />
@@ -197,7 +197,7 @@ export default function ContactSheet({ user, onClose }) {
                 style={{
                   width: '100%', padding: '20px',
                   borderRadius: 16, border: 'none',
-                  background: '#ff6000',
+                  background: 'var(--sm-accent)',
                   cursor: consentChecked && step !== 'saving' ? 'pointer' : 'not-allowed',
                   opacity: consentChecked && step !== 'saving' ? 1 : 0.4,
                   fontSize: 18, fontWeight: 800, color: '#fff',

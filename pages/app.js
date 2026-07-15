@@ -16,10 +16,10 @@ const GRAIN = "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg
 const css = `
 *, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
 :root {
-  --bg:#0c0c0b; --bg1:#141413; --bg2:#1c1c1a;
-  --line:rgba(255,255,255,0.07);
-  --white:#f2f0eb; --mid:rgba(242,240,235,0.66); --dim:rgba(242,240,235,0.4);
-  --orange:#ff6000; --orange-lt:#ff9a4d;
+  --bg:var(--sm-bg); --bg1:var(--sm-surface); --bg2:var(--sm-surface-sub);
+  --line:var(--sm-line);
+  --white:var(--sm-ink); --mid:var(--sm-text-sub); --dim:var(--sm-text-mute);
+  --orange:var(--sm-accent); --orange-lt:var(--sm-accent-strong);
 }
 html { scroll-behavior:smooth; }
 body { background:var(--bg); color:var(--white); font-family:'Geist',sans-serif; -webkit-font-smoothing:antialiased; overflow-x:hidden; }
@@ -27,47 +27,47 @@ body { background:var(--bg); color:var(--white); font-family:'Geist',sans-serif;
 /* ---------- ambient background layers ---------- */
 .bg-layer { position:fixed; inset:0; z-index:-2; overflow:hidden; pointer-events:none; }
 .blob { position:absolute; border-radius:50%; filter:blur(100px); }
-.blob.b1 { width:560px; height:560px; top:-160px; left:-120px; background:radial-gradient(circle,rgba(255,96,0,0.42),transparent 70%); animation:drift1 19s ease-in-out infinite; }
-.blob.b2 { width:460px; height:460px; top:34%; right:-140px; background:radial-gradient(circle,rgba(255,96,0,0.26),transparent 70%); animation:drift2 23s ease-in-out infinite; }
-.blob.b3 { width:600px; height:600px; bottom:-220px; left:30%; background:radial-gradient(circle,rgba(255,120,40,0.18),transparent 70%); animation:drift3 27s ease-in-out infinite; }
+.blob.b1 { width:560px; height:560px; top:-160px; left:-120px; background:radial-gradient(circle,rgba(255,68,0,0.10),transparent 70%); animation:drift1 19s ease-in-out infinite; }
+.blob.b2 { width:460px; height:460px; top:34%; right:-140px; background:radial-gradient(circle,rgba(255,68,0,0.07),transparent 70%); animation:drift2 23s ease-in-out infinite; }
+.blob.b3 { width:600px; height:600px; bottom:-220px; left:30%; background:radial-gradient(circle,rgba(255,68,0,0.05),transparent 70%); animation:drift3 27s ease-in-out infinite; }
 @keyframes drift1 { 0%,100%{ transform:translate(0,0) scale(1);} 50%{ transform:translate(70px,50px) scale(1.08);} }
 @keyframes drift2 { 0%,100%{ transform:translate(0,0) scale(1);} 50%{ transform:translate(-60px,40px) scale(1.12);} }
 @keyframes drift3 { 0%,100%{ transform:translate(0,0) scale(1);} 50%{ transform:translate(40px,-60px) scale(1.06);} }
 .grid { position:fixed; inset:0; z-index:-2; pointer-events:none;
-  background-image:linear-gradient(rgba(255,255,255,0.022) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,0.022) 1px,transparent 1px);
+  background-image:linear-gradient(rgba(0,0,0,0.03) 1px,transparent 1px),linear-gradient(90deg,rgba(0,0,0,0.03) 1px,transparent 1px);
   background-size:62px 62px;
   -webkit-mask-image:radial-gradient(ellipse 80% 55% at 50% 0%, #000 0%, transparent 75%);
   mask-image:radial-gradient(ellipse 80% 55% at 50% 0%, #000 0%, transparent 75%); }
-.grain { position:fixed; inset:0; z-index:-1; pointer-events:none; opacity:.05; mix-blend-mode:overlay; background-image:${GRAIN}; }
+.grain { position:fixed; inset:0; z-index:-1; pointer-events:none; opacity:.02; mix-blend-mode:multiply; background-image:${GRAIN}; }
 
 /* scroll progress + cursor glow */
-.progress { position:fixed; top:0; left:0; height:2.5px; width:100%; transform-origin:0 50%; transform:scaleX(0); background:linear-gradient(90deg,var(--orange),var(--orange-lt)); z-index:300; box-shadow:0 0 12px rgba(255,96,0,0.6); }
-.cursor-glow { position:fixed; top:0; left:0; width:440px; height:440px; margin:-220px 0 0 -220px; border-radius:50%; pointer-events:none; z-index:60; mix-blend-mode:screen; background:radial-gradient(circle, rgba(255,96,0,0.10), transparent 62%); opacity:0; transition:opacity .4s; }
+.progress { position:fixed; top:0; left:0; height:2.5px; width:100%; transform-origin:0 50%; transform:scaleX(0); background:linear-gradient(90deg,var(--orange),var(--orange-lt)); z-index:300; box-shadow:0 0 12px rgba(255,68,0,0.3); }
+.cursor-glow { position:fixed; top:0; left:0; width:440px; height:440px; margin:-220px 0 0 -220px; border-radius:50%; pointer-events:none; z-index:60; background:radial-gradient(circle, rgba(255,68,0,0.06), transparent 62%); opacity:0; transition:opacity .4s; }
 
 /* ---------- nav ---------- */
-nav { position:fixed; top:0; left:0; right:0; z-index:200; padding:0 52px; height:56px; display:flex; align-items:center; justify-content:space-between; background:rgba(12,12,11,0.72); backdrop-filter:blur(16px); -webkit-backdrop-filter:blur(16px); border-bottom:1px solid var(--line); }
+nav { position:fixed; top:0; left:0; right:0; z-index:200; padding:0 52px; height:56px; display:flex; align-items:center; justify-content:space-between; background:rgba(255,255,255,0.78); backdrop-filter:blur(16px); -webkit-backdrop-filter:blur(16px); border-bottom:1px solid var(--line); }
 .logo { display:flex; align-items:center; text-decoration:none; }
-.logo img { height:24px; width:auto; display:block; filter:drop-shadow(0 2px 8px rgba(255,96,0,0.4)); transition:transform .16s; }
+.logo img { height:24px; width:auto; display:block; filter:drop-shadow(0 2px 8px rgba(255,68,0,0.25)); transition:transform .16s; }
 .logo:hover img { transform:scale(1.06); }
 .nav-r { display:flex; align-items:center; gap:32px; }
 .nav-link { font-size:13px; color:var(--mid); text-decoration:none; transition:color .15s; }
 .nav-link:hover { color:var(--white); }
 .nav-link.active { color:var(--white); }
-.nav-btn { font-family:'Geist',sans-serif; font-size:12px; font-weight:600; background:var(--orange); color:#fff; border:none; padding:8px 18px; border-radius:6px; cursor:pointer; text-decoration:none; box-shadow:0 6px 20px -6px rgba(255,96,0,0.7); transition:transform .14s, box-shadow .14s; }
-.nav-btn:hover { transform:translateY(-1px); box-shadow:0 10px 26px -6px rgba(255,96,0,0.85); }
+.nav-btn { font-family:'Geist',sans-serif; font-size:12px; font-weight:600; background:var(--orange); color:#fff; border:none; padding:8px 18px; border-radius:6px; cursor:pointer; text-decoration:none; box-shadow:0 6px 20px -6px rgba(255,68,0,0.35); transition:transform .14s, box-shadow .14s; }
+.nav-btn:hover { transform:translateY(-1px); box-shadow:0 10px 26px -6px rgba(255,68,0,0.45); }
 
 /* ---------- hero ---------- */
 .hero { position:relative; max-width:900px; margin:0 auto; padding:132px 52px 72px; text-align:center; }
-.hero::before { content:''; position:absolute; top:40px; left:50%; width:680px; height:420px; transform:translateX(-50%); background:radial-gradient(ellipse at center, rgba(255,96,0,0.16), transparent 65%); pointer-events:none; z-index:-1; }
-.kicker { position:relative; display:inline-flex; align-items:center; gap:8px; font-family:'Geist Mono',monospace; font-size:11px; font-weight:500; color:var(--white); letter-spacing:2px; text-transform:uppercase; margin-bottom:24px; padding:7px 16px; border:1px solid transparent; border-radius:100px; overflow:hidden; backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px); box-shadow:0 8px 26px -10px rgba(255,96,0,0.4), inset 0 1px 0 rgba(255,255,255,0.07);
-  background:linear-gradient(rgba(28,28,26,0.72),rgba(18,18,17,0.72)) padding-box, linear-gradient(120deg, rgba(255,96,0,0.6), rgba(255,255,255,0.14) 48%, rgba(255,96,0,0.45)) border-box; }
-.kicker svg { width:11px; height:13px; fill:var(--orange-lt); flex-shrink:0; position:relative; z-index:1; filter:drop-shadow(0 0 6px rgba(255,96,0,0.5)); }
+.hero::before { content:''; position:absolute; top:40px; left:50%; width:680px; height:420px; transform:translateX(-50%); background:radial-gradient(ellipse at center, rgba(255,68,0,0.08), transparent 65%); pointer-events:none; z-index:-1; }
+.kicker { position:relative; display:inline-flex; align-items:center; gap:8px; font-family:'Geist Mono',monospace; font-size:11px; font-weight:500; color:var(--white); letter-spacing:2px; text-transform:uppercase; margin-bottom:24px; padding:7px 16px; border:1px solid transparent; border-radius:100px; overflow:hidden; backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px); box-shadow:0 8px 26px -10px rgba(255,68,0,0.18), inset 0 1px 0 rgba(255,255,255,0.8);
+  background:linear-gradient(rgba(255,255,255,0.85),rgba(250,250,248,0.85)) padding-box, linear-gradient(120deg, rgba(255,68,0,0.55), rgba(255,214,200,0.8) 48%, rgba(255,68,0,0.4)) border-box; }
+.kicker svg { width:11px; height:13px; fill:var(--orange-lt); flex-shrink:0; position:relative; z-index:1; filter:drop-shadow(0 0 6px rgba(255,68,0,0.25)); }
 .kicker .kx { position:relative; z-index:1; }
-.kicker::after { content:''; position:absolute; top:0; left:-70%; width:45%; height:100%; background:linear-gradient(100deg,transparent,rgba(255,255,255,0.22),transparent); transform:skewX(-22deg); animation:ksweep 4.8s ease-in-out infinite; }
+.kicker::after { content:''; position:absolute; top:0; left:-70%; width:45%; height:100%; background:linear-gradient(100deg,transparent,rgba(255,255,255,0.6),transparent); transform:skewX(-22deg); animation:ksweep 4.8s ease-in-out infinite; }
 @keyframes ksweep { 0%,55%{ left:-70%;} 82%,100%{ left:170%;} }
 
 .hero-logo { width:min(360px,74vw); margin:0 auto 26px; transform:translate(calc(var(--px,0)*16px), calc(var(--py,0)*12px)); transition:transform .25s ease-out; }
-.hero-logo img { width:100%; height:auto; display:block; filter:drop-shadow(0 28px 60px rgba(255,96,0,0.4)) drop-shadow(0 4px 14px rgba(0,0,0,0.5)); animation:float 6s ease-in-out infinite; }
+.hero-logo img { width:100%; height:auto; display:block; filter:drop-shadow(0 28px 60px rgba(255,68,0,0.18)) drop-shadow(0 4px 14px rgba(0,0,0,0.12)); animation:float 6s ease-in-out infinite; }
 @keyframes float { 0%,100%{ transform:translateY(0) rotate(-.4deg);} 50%{ transform:translateY(-13px) rotate(.4deg);} }
 
 .hero-h1 { font-size:clamp(31px,4.7vw,52px); font-weight:800; letter-spacing:-1.5px; line-height:1.16; margin:0 auto 20px; max-width:620px; text-wrap:balance; word-break:keep-all; }
@@ -77,8 +77,8 @@ nav { position:fixed; top:0; left:0; right:0; z-index:200; padding:0 52px; heigh
 
 /* download buttons */
 .dl-row { display:flex; gap:14px; justify-content:center; flex-wrap:wrap; }
-.dl-btn { position:relative; overflow:hidden; display:inline-flex; align-items:center; gap:9px; background:#fff; color:#000; padding:9px 18px; border-radius:11px; text-decoration:none; transition:transform .16s, box-shadow .16s; box-shadow:0 10px 30px -10px rgba(255,255,255,0.4); }
-.dl-btn:hover { transform:translateY(-3px); box-shadow:0 16px 40px -12px rgba(255,255,255,0.55); }
+.dl-btn { position:relative; overflow:hidden; display:inline-flex; align-items:center; gap:9px; background:var(--sm-ink); color:#fff; padding:9px 18px; border-radius:11px; text-decoration:none; transition:transform .16s, box-shadow .16s; box-shadow:0 10px 30px -10px rgba(0,0,0,0.18); }
+.dl-btn:hover { transform:translateY(-3px); box-shadow:0 16px 40px -12px rgba(0,0,0,0.22); }
 .dl-btn.secondary { background:var(--bg2); color:var(--white); border:1px solid var(--line); box-shadow:none; }
 .dl-btn::after { content:''; position:absolute; top:0; left:-130%; width:55%; height:100%; background:linear-gradient(100deg,transparent,rgba(255,255,255,0.65),transparent); transform:skewX(-20deg); animation:sweep 3.6s ease-in-out infinite; }
 @keyframes sweep { 0%{ left:-130%;} 28%,100%{ left:170%;} }
@@ -86,33 +86,33 @@ nav { position:fixed; top:0; left:0; right:0; z-index:200; padding:0 52px; heigh
 .dl-btn .big { font-size:20px; font-weight:600; line-height:1.1; letter-spacing:-.5px; }
 .apple-ico { width:24px; height:24px; flex-shrink:0; position:relative; z-index:1; }
 .dl-btn.soon, .nav-btn.soon { cursor:default; }
-.dl-btn.soon:hover { transform:none; box-shadow:0 10px 30px -10px rgba(255,255,255,0.4); }
-.nav-btn.soon:hover { transform:none; box-shadow:0 6px 20px -6px rgba(255,96,0,0.7); }
+.dl-btn.soon:hover { transform:none; box-shadow:0 10px 30px -10px rgba(0,0,0,0.18); }
+.nav-btn.soon:hover { transform:none; box-shadow:0 6px 20px -6px rgba(255,68,0,0.35); }
 
 /* ---------- app mockup ---------- */
 .hero-mock { position:relative; margin:54px auto 0; width:min(500px,94vw); transform:translate(calc(var(--px,0)*-20px), calc(var(--py,0)*-12px)); transition:transform .25s ease-out; }
-.hero-mock-glow { position:absolute; inset:2% 0 6%; border-radius:50%; background:radial-gradient(ellipse at center, rgba(255,96,0,0.34), transparent 62%); filter:blur(30px); z-index:-1; }
-.hero-mock img { width:100%; height:auto; display:block; filter:drop-shadow(0 44px 72px rgba(0,0,0,0.62)); animation:float 7s ease-in-out infinite; }
+.hero-mock-glow { position:absolute; inset:2% 0 6%; border-radius:50%; background:radial-gradient(ellipse at center, rgba(255,68,0,0.14), transparent 62%); filter:blur(30px); z-index:-1; }
+.hero-mock img { width:100%; height:auto; display:block; filter:drop-shadow(0 44px 72px rgba(0,0,0,0.16)); animation:float 7s ease-in-out infinite; }
 
 /* ---------- features ---------- */
 .features { max-width:1040px; margin:0 auto; padding:50px 52px 90px; display:flex; flex-direction:column; gap:24px; }
 .feature { position:relative; display:grid; grid-template-columns:1fr 1fr; align-items:center; gap:48px; border:1px solid var(--line); border-radius:20px; padding:44px; background:var(--bg1); overflow:hidden; transition:transform .4s cubic-bezier(.2,.7,.2,1), border-color .4s, box-shadow .4s; }
-.feature::before { content:''; position:absolute; inset:0; border-radius:inherit; pointer-events:none; opacity:0; transition:opacity .35s; background:radial-gradient(420px circle at var(--mx,50%) var(--my,50%), rgba(255,96,0,0.12), transparent 60%); }
-.feature:hover { transform:translateY(-5px); border-color:rgba(255,96,0,0.3); box-shadow:0 24px 70px -28px rgba(255,96,0,0.3); }
+.feature::before { content:''; position:absolute; inset:0; border-radius:inherit; pointer-events:none; opacity:0; transition:opacity .35s; background:radial-gradient(420px circle at var(--mx,50%) var(--my,50%), rgba(255,68,0,0.05), transparent 60%); }
+.feature:hover { transform:translateY(-5px); border-color:var(--sm-accent-border); box-shadow:0 24px 70px -28px rgba(255,68,0,0.14); }
 .feature:hover::before { opacity:1; }
 .feature > * { position:relative; z-index:1; }
 .feature:nth-child(even) .feat-visual { order:-1; }
 .feat-num { font-family:'Geist Mono',monospace; font-size:12px; color:var(--orange); letter-spacing:2px; margin-bottom:16px; }
 .feat-title { font-size:25px; font-weight:700; letter-spacing:-.8px; line-height:1.25; margin-bottom:12px; }
 .feat-body { font-size:15px; color:var(--mid); line-height:1.75; font-weight:300; max-width:380px; }
-.feat-visual { aspect-ratio:16/11; border-radius:16px; background:linear-gradient(160deg,var(--bg2),#0e0e0d); border:1px solid var(--line); display:flex; align-items:center; justify-content:center; overflow:hidden; }
+.feat-visual { aspect-ratio:16/11; border-radius:16px; background:linear-gradient(160deg,var(--bg2),var(--sm-bg-warm)); border:1px solid var(--line); display:flex; align-items:center; justify-content:center; overflow:hidden; }
 .mg { width:100%; height:100%; display:block; }
 
 /* motion graphics */
 @keyframes mg-bar { 0%,100%{ transform:scaleY(.55);} 50%{ transform:scaleY(1);} }
 .mg .bar { transform-box:fill-box; transform-origin:bottom; animation:mg-bar 2.6s ease-in-out infinite; }
 .mg .bar.b2{ animation-delay:.2s;} .mg .bar.b3{ animation-delay:.4s;} .mg .bar.b4{ animation-delay:.6s;} .mg .bar.b5{ animation-delay:.8s;}
-@keyframes mg-star { 0%,8%{ fill:rgba(242,240,235,0.14);} 22%,100%{ fill:var(--orange);} }
+@keyframes mg-star { 0%,8%{ fill:rgba(17,17,17,0.14);} 22%,100%{ fill:var(--orange);} }
 .mg .star { animation:mg-star 3s ease-in-out infinite; }
 .mg .star.s2{animation-delay:.25s;} .mg .star.s3{animation-delay:.5s;} .mg .star.s4{animation-delay:.75s;} .mg .star.s5{animation-delay:1s;}
 @keyframes mg-pop { 0%,100%{ opacity:0; transform:translateY(10px) scale(.94);} 12%,80%{ opacity:1; transform:translateY(0) scale(1);} }
@@ -129,9 +129,9 @@ nav { position:fixed; top:0; left:0; right:0; z-index:200; padding:0 52px; heigh
 
 /* ---------- bottom CTA ---------- */
 .cta { position:relative; max-width:880px; margin:0 auto; padding:90px 52px; text-align:center; border-top:1px solid var(--line); }
-.cta::before { content:''; position:absolute; top:0; left:50%; width:600px; height:300px; transform:translateX(-50%); background:radial-gradient(ellipse at center, rgba(255,96,0,0.14), transparent 65%); pointer-events:none; }
+.cta::before { content:''; position:absolute; top:0; left:50%; width:600px; height:300px; transform:translateX(-50%); background:radial-gradient(ellipse at center, rgba(255,68,0,0.07), transparent 65%); pointer-events:none; }
 .cta-logo { width:170px; margin:0 auto 26px; }
-.cta-logo img { width:100%; height:auto; filter:drop-shadow(0 16px 40px rgba(255,96,0,0.4)); animation:float 6s ease-in-out infinite; }
+.cta-logo img { width:100%; height:auto; filter:drop-shadow(0 16px 40px rgba(255,68,0,0.18)); animation:float 6s ease-in-out infinite; }
 .cta-h2 { position:relative; font-size:clamp(26px,3.5vw,40px); font-weight:800; letter-spacing:-1.5px; margin-bottom:28px; }
 
 footer { position:relative; border-top:1px solid var(--line); padding:40px 52px; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:16px; }
@@ -229,12 +229,12 @@ const buildHtml = (t) => `
     </div>
     <div class="feat-visual">
       <svg class="mg" viewBox="0 0 340 210" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
-        <line x1="50" y1="166" x2="300" y2="166" stroke="rgba(242,240,235,0.12)" stroke-width="1.5"/>
-        <rect class="bar b1" x="62"  y="120" width="30" height="46"  rx="5" fill="rgba(242,240,235,0.22)"/>
-        <rect class="bar b2" x="108" y="96"  width="30" height="70"  rx="5" fill="rgba(242,240,235,0.3)"/>
+        <line x1="50" y1="166" x2="300" y2="166" stroke="rgba(17,17,17,0.12)" stroke-width="1.5"/>
+        <rect class="bar b1" x="62"  y="120" width="30" height="46"  rx="5" fill="rgba(17,17,17,0.22)"/>
+        <rect class="bar b2" x="108" y="96"  width="30" height="70"  rx="5" fill="rgba(17,17,17,0.3)"/>
         <rect class="bar b3" x="154" y="56"  width="30" height="110" rx="5" fill="var(--orange)"/>
-        <rect class="bar b4" x="200" y="86"  width="30" height="80"  rx="5" fill="rgba(242,240,235,0.3)"/>
-        <rect class="bar b5" x="246" y="112" width="30" height="54"  rx="5" fill="rgba(242,240,235,0.22)"/>
+        <rect class="bar b4" x="200" y="86"  width="30" height="80"  rx="5" fill="rgba(17,17,17,0.3)"/>
+        <rect class="bar b5" x="246" y="112" width="30" height="54"  rx="5" fill="rgba(17,17,17,0.22)"/>
         <rect x="135" y="30" width="68" height="22" rx="6" fill="var(--orange)"/>
         <text x="169" y="45" text-anchor="middle" fill="#fff" font-size="10" font-weight="700" letter-spacing="0.5" font-family="Geist,sans-serif">MEDIAN</text>
       </svg>
@@ -249,10 +249,10 @@ const buildHtml = (t) => `
     </div>
     <div class="feat-visual">
       <svg class="mg" viewBox="0 0 340 210" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
-        <rect x="60" y="46" width="220" height="118" rx="14" fill="rgba(242,240,235,0.04)" stroke="rgba(242,240,235,0.1)"/>
-        <circle cx="90" cy="80" r="14" fill="rgba(242,240,235,0.15)"/>
-        <rect x="116" y="72" width="84" height="9" rx="4.5" fill="rgba(242,240,235,0.22)"/>
-        <rect x="116" y="88" width="56" height="8" rx="4" fill="rgba(242,240,235,0.12)"/>
+        <rect x="60" y="46" width="220" height="118" rx="14" fill="rgba(17,17,17,0.04)" stroke="rgba(17,17,17,0.1)"/>
+        <circle cx="90" cy="80" r="14" fill="rgba(17,17,17,0.15)"/>
+        <rect x="116" y="72" width="84" height="9" rx="4.5" fill="rgba(17,17,17,0.22)"/>
+        <rect x="116" y="88" width="56" height="8" rx="4" fill="rgba(17,17,17,0.12)"/>
         <g transform="translate(116,110)">
           <path class="star s1" transform="translate(0,0)"   d="M11 1L13.4 7.8 20.5 7.9 14.8 12.2 16.9 19.1 11 15 5.1 19.1 7.2 12.2 1.5 7.9 8.7 7.8Z"/>
           <path class="star s2" transform="translate(28,0)"  d="M11 1L13.4 7.8 20.5 7.9 14.8 12.2 16.9 19.1 11 15 5.1 19.1 7.2 12.2 1.5 7.9 8.7 7.8Z"/>
@@ -260,7 +260,7 @@ const buildHtml = (t) => `
           <path class="star s4" transform="translate(84,0)"  d="M11 1L13.4 7.8 20.5 7.9 14.8 12.2 16.9 19.1 11 15 5.1 19.1 7.2 12.2 1.5 7.9 8.7 7.8Z"/>
           <path class="star s5" transform="translate(112,0)" d="M11 1L13.4 7.8 20.5 7.9 14.8 12.2 16.9 19.1 11 15 5.1 19.1 7.2 12.2 1.5 7.9 8.7 7.8Z"/>
         </g>
-        <rect x="116" y="144" width="148" height="8" rx="4" fill="rgba(242,240,235,0.1)"/>
+        <rect x="116" y="144" width="148" height="8" rx="4" fill="rgba(17,17,17,0.1)"/>
       </svg>
     </div>
   </div>
@@ -274,21 +274,21 @@ const buildHtml = (t) => `
     <div class="feat-visual">
       <svg class="mg" viewBox="0 0 340 210" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
         <g class="bub c1">
-          <circle cx="44" cy="64" r="12" fill="rgba(242,240,235,0.14)"/>
-          <rect x="60" y="46" width="150" height="38" rx="14" fill="rgba(242,240,235,0.06)" stroke="rgba(242,240,235,0.1)"/>
-          <rect x="74" y="58" width="104" height="7" rx="3.5" fill="rgba(242,240,235,0.26)"/>
-          <rect x="74" y="70" width="68" height="6" rx="3" fill="rgba(242,240,235,0.13)"/>
+          <circle cx="44" cy="64" r="12" fill="rgba(17,17,17,0.14)"/>
+          <rect x="60" y="46" width="150" height="38" rx="14" fill="rgba(17,17,17,0.06)" stroke="rgba(17,17,17,0.1)"/>
+          <rect x="74" y="58" width="104" height="7" rx="3.5" fill="rgba(17,17,17,0.26)"/>
+          <rect x="74" y="70" width="68" height="6" rx="3" fill="rgba(17,17,17,0.13)"/>
         </g>
         <g class="bub c2">
-          <circle cx="296" cy="118" r="12" fill="rgba(255,96,0,0.45)"/>
-          <rect x="130" y="100" width="150" height="38" rx="14" fill="rgba(255,96,0,0.15)" stroke="rgba(255,96,0,0.4)"/>
-          <rect x="144" y="112" width="92" height="7" rx="3.5" fill="rgba(255,170,120,0.75)"/>
-          <rect x="144" y="124" width="60" height="6" rx="3" fill="rgba(255,170,120,0.4)"/>
+          <circle cx="296" cy="118" r="12" fill="rgba(255,68,0,0.8)"/>
+          <rect x="130" y="100" width="150" height="38" rx="14" fill="var(--sm-accent-tint)" stroke="var(--sm-accent-border)"/>
+          <rect x="144" y="112" width="92" height="7" rx="3.5" fill="rgba(255,68,0,0.55)"/>
+          <rect x="144" y="124" width="60" height="6" rx="3" fill="rgba(255,68,0,0.3)"/>
         </g>
         <g class="bub c3">
-          <circle cx="44" cy="170" r="11" fill="rgba(242,240,235,0.14)"/>
-          <rect x="60" y="154" width="132" height="34" rx="13" fill="rgba(242,240,235,0.06)" stroke="rgba(242,240,235,0.1)"/>
-          <rect x="74" y="167" width="82" height="7" rx="3.5" fill="rgba(242,240,235,0.22)"/>
+          <circle cx="44" cy="170" r="11" fill="rgba(17,17,17,0.14)"/>
+          <rect x="60" y="154" width="132" height="34" rx="13" fill="rgba(17,17,17,0.06)" stroke="rgba(17,17,17,0.1)"/>
+          <rect x="74" y="167" width="82" height="7" rx="3.5" fill="rgba(17,17,17,0.22)"/>
         </g>
       </svg>
     </div>
@@ -303,7 +303,7 @@ const buildHtml = (t) => `
     <div class="feat-visual">
       <svg class="mg" viewBox="0 0 340 210" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
         <g transform="translate(170,105)">
-          <circle r="54" fill="none" stroke="rgba(242,240,235,0.1)" stroke-width="12"/>
+          <circle r="54" fill="none" stroke="rgba(17,17,17,0.1)" stroke-width="12"/>
           <circle class="ring-fg" r="54" fill="none" stroke="var(--orange)" stroke-width="12" stroke-linecap="round" transform="rotate(-90)"/>
           <text class="pct js-count" data-count="92" data-suffix="%" y="-5" text-anchor="middle" dominant-baseline="central" fill="var(--white)" font-size="34" font-weight="800" font-family="Geist,sans-serif">0%</text>
           <text class="pct" y="20" text-anchor="middle" fill="var(--mid)" font-size="12" letter-spacing="0.5" font-family="Geist,sans-serif">Match</text>

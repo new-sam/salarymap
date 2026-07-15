@@ -97,7 +97,7 @@ export default function BadgeDetailModal({ detail, onClose }) {
         {/* 미획득 행동 유도 CTA(있으면). */}
         {!earned && detail.ctaLabel && detail.onCta && (
           <button type="button" onClick={() => { detail.onCta?.(); onClose() }}
-            style={{ alignSelf: 'stretch', border: 'none', cursor: 'pointer', fontFamily: 'inherit', background: '#ff6000', color: '#fff', borderRadius: 16, padding: '17px 0', marginTop: 14, fontSize: 16, fontWeight: 800 }}>
+            style={{ alignSelf: 'stretch', border: 'none', cursor: 'pointer', fontFamily: 'inherit', background: 'var(--sm-accent)', color: '#fff', borderRadius: 16, padding: '17px 0', marginTop: 14, fontSize: 16, fontWeight: 800 }}>
             {detail.ctaLabel}
           </button>
         )}

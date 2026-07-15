@@ -104,22 +104,18 @@ export default function MobileTabBar() {
   return (
     <>
       <style>{`
-        .mtab { display: none; }
         .mtab-bubble { display: none; }
         @media (max-width: 768px) {
-          .mtab { display: flex !important; position: fixed !important; top: auto !important; bottom: 0 !important; left: 0 !important; right: 0 !important; z-index: 99999; height: 60px; background: rgba(12,12,11,0.97); backdrop-filter: blur(14px); border-top: 1px solid rgba(255,255,255,0.08); align-items: center; justify-content: space-around; padding: 0; margin: 0; padding-bottom: env(safe-area-inset-bottom); font-family: 'Barlow', sans-serif; }
-          /* iOS 인앱브라우저(Meta 광고 유입)가 스크롤 시 하단 UI를 접으면 fixed 바가
-             떠서 밑으로 페이지 내용이 비친다 — 바 배경을 아래로 연장해 가린다. */
-          .mtab::after { content: ''; position: absolute; top: 100%; left: 0; right: 0; height: 200px; background: rgba(12,12,11,0.97); pointer-events: none; }
+          /* 바 셸(.mtab) 스타일은 styles/globals.css가 단일 소유 — 여기는 아이템만. */
           .mtab-item { display: flex; flex-direction: column; align-items: center; gap: 2px; text-decoration: none; padding: 6px 0; flex: 1; position: relative; min-width: 0; }
-          .mtab-item svg { color: rgba(255,255,255,0.7); }
-          .mtab-label { font-size: 10px; font-weight: 600; color: rgba(255,255,255,0.7); line-height: 1.15; text-align: center; word-break: keep-all; max-width: 100%; padding: 0 2px; }
-          .mtab-item.on svg { color: #ff6000; }
-          .mtab-item.on .mtab-label { color: #ff6000; }
-          .mtab-item.admin-tab svg { color: rgba(255,96,0,0.7); }
-          .mtab-item.admin-tab .mtab-label { color: rgba(255,96,0,0.7); font-size: 9px; }
-          .mtab-item.admin-tab.on svg { color: #ff6000; }
-          .mtab-item.admin-tab.on .mtab-label { color: #ff6000; }
+          .mtab-item svg { color: var(--sm-text-mute); }
+          .mtab-label { font-size: 10px; font-weight: 600; color: var(--sm-text-mute); line-height: 1.15; text-align: center; word-break: keep-all; max-width: 100%; padding: 0 2px; }
+          .mtab-item.on svg { color: var(--sm-accent); }
+          .mtab-item.on .mtab-label { color: var(--sm-accent); }
+          .mtab-item.admin-tab svg { color: var(--sm-accent); opacity: .65; }
+          .mtab-item.admin-tab .mtab-label { color: var(--sm-accent); opacity: .65; font-size: 9px; }
+          .mtab-item.admin-tab.on svg { color: var(--sm-accent); opacity: 1; }
+          .mtab-item.admin-tab.on .mtab-label { color: var(--sm-accent); opacity: 1; }
           /* /cv tab — floating orange bubble above the icon */
           .mtab-bubble {
             display: block;
@@ -131,11 +127,11 @@ export default function MobileTabBar() {
             font-weight: 700;
             letter-spacing: 0.2px;
             color: #fff;
-            background: #ff6000;
+            background: var(--sm-accent);
             padding: 3px 8px;
             border-radius: 100px;
             white-space: nowrap;
-            box-shadow: 0 4px 12px rgba(255,96,0,0.5);
+            box-shadow: 0 4px 12px rgba(255,68,0,0.35);
             pointer-events: none;
             animation: mtab-bubbleFloat 2.4s ease-in-out infinite;
             z-index: 1;
@@ -147,7 +143,7 @@ export default function MobileTabBar() {
             left: 50%;
             transform: translateX(-50%) rotate(45deg);
             width: 6px; height: 6px;
-            background: #ff6000;
+            background: var(--sm-accent);
           }
           @keyframes mtab-bubbleFloat {
             0%, 100% { transform: translateX(-50%) translateY(0); }
