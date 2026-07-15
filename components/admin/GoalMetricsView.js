@@ -649,7 +649,7 @@ function ExperimentTab({ data, loading, error, ko, token, pass }) {
           accent="#7C3AED" />
         <Card label={ko ? '결과게이트 노출 (P2 하드게이트)' : 'Result-gate views (P2 hard gate)'}
           value={(a.resultGateViews || 0).toLocaleString()}
-          sub={ko ? `노출→클릭 ${a.resultGateViews ? pct(a.gateClicks / a.resultGateViews) : '—'} · ${data.phase2Start}~` : `view→click ${a.resultGateViews ? pct(a.gateClicks / a.resultGateViews) : '—'} · since ${data.phase2Start}`}
+          sub={ko ? `노출→클릭 ${a.resultGateViews ? pct((a.resultGateClicks || 0) / a.resultGateViews) : '—'} · ${data.phase2Start}~` : `view→click ${a.resultGateViews ? pct((a.resultGateClicks || 0) / a.resultGateViews) : '—'} · since ${data.phase2Start}`}
           accent="#7C3AED" />
         <Card label={ko ? 'One Tap 가입 (P2)' : 'One Tap signups (P2)'}
           value={(a.oneTapSignups || 0).toLocaleString()}

@@ -1682,11 +1682,11 @@ export default function JobsPage() {
             <div style={{fontSize:'24px',fontWeight:900,color:'#111',letterSpacing:'-0.5px',marginBottom:'8px'}}>{t('auth.title')}</div>
             <div style={{fontSize:'13px',color:'#888',marginBottom:'28px',lineHeight:1.6}}>{t('auth.sub')}</div>
             <div style={{display:'flex',flexDirection:'column',gap:'10px'}}>
-              <button onClick={async () => { setShowAuthModal(false); localStorage.setItem('fyi_login_return', '/jobs'); try { await supabase.auth.signInWithOAuth({ provider:'linkedin_oidc', options:{ redirectTo: window.location.origin+'/auth/callback', scopes:'openid profile email' } }); } catch(e) { console.error(e); } }}
+              <button onClick={async () => { setShowAuthModal(false); localStorage.setItem('fyi_login_return', window.location.pathname + window.location.search); try { await supabase.auth.signInWithOAuth({ provider:'linkedin_oidc', options:{ redirectTo: window.location.origin+'/auth/callback', scopes:'openid profile email' } }); } catch(e) { console.error(e); } }}
                 style={{width:'100%',background:'#0A66C2',color:'#fff',fontSize:'14px',fontWeight:700,padding:'14px',borderRadius:'10px',border:'none',cursor:'pointer',fontFamily:"'Barlow',sans-serif",display:'flex',alignItems:'center',justifyContent:'center',gap:'10px'}}>
                 <span style={{fontWeight:900,fontSize:'16px'}}>in</span> {t('auth.linkedin')}
               </button>
-              <button onClick={() => { setShowAuthModal(false); localStorage.setItem('fyi_login_return', '/jobs'); window.location.href = '/api/auth/google?return=' + encodeURIComponent('/jobs'); }}
+              <button onClick={() => { setShowAuthModal(false); const ret = window.location.pathname + window.location.search; localStorage.setItem('fyi_login_return', ret); window.location.href = '/api/auth/google?return=' + encodeURIComponent(ret); }}
                 style={{width:'100%',background:'#f5f5f3',color:'#111',fontSize:'14px',fontWeight:700,padding:'14px',borderRadius:'10px',border:'none',cursor:'pointer',fontFamily:"'Barlow',sans-serif",display:'flex',alignItems:'center',justifyContent:'center',gap:'10px'}}>
                 <span style={{fontWeight:900,fontSize:'16px'}}>G</span> {t('auth.google')}
               </button>

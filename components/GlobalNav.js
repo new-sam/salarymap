@@ -228,11 +228,11 @@ export default function GlobalNav({ activePage, onLogin, onJobsClick, mobileSear
             <button className="gnav-mobile-login" onClick={async () => {
               if (onLogin) return onLogin();
               if (typeof window === 'undefined') return;
-              localStorage.setItem('fyi_login_return', window.location.pathname);
+              localStorage.setItem('fyi_login_return', window.location.pathname + window.location.search);
               if (window.location.hostname === 'localhost') {
                 await supabase.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: window.location.origin + '/auth/callback' } });
               } else {
-                window.location.href = '/api/auth/google?return=' + encodeURIComponent(window.location.pathname);
+                window.location.href = '/api/auth/google?return=' + encodeURIComponent(window.location.pathname + window.location.search);
               }
             }}>
               {t('nav.login')}
@@ -251,11 +251,11 @@ export default function GlobalNav({ activePage, onLogin, onJobsClick, mobileSear
             <button className="gnav-login" onClick={async () => {
               if (onLogin) return onLogin();
               if (typeof window === 'undefined') return;
-              localStorage.setItem('fyi_login_return', window.location.pathname);
+              localStorage.setItem('fyi_login_return', window.location.pathname + window.location.search);
               if (window.location.hostname === 'localhost') {
                 await supabase.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: window.location.origin + '/auth/callback' } });
               } else {
-                window.location.href = '/api/auth/google?return=' + encodeURIComponent(window.location.pathname);
+                window.location.href = '/api/auth/google?return=' + encodeURIComponent(window.location.pathname + window.location.search);
               }
             }}>
               {t('nav.login')}
