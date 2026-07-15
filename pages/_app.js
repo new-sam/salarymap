@@ -113,25 +113,31 @@ export default function App({ Component, pageProps }) {
   const activePage = activePageFor(router.pathname);
   return (
     <I18nProvider>
-      {activePage && (
-        <GlobalNav
-          activePage={activePage}
-          onLogin={() => {
-            if (typeof window === 'undefined') return;
-            if (typeof window.openAuthModal === 'function') window.openAuthModal();
-            else window.dispatchEvent(new Event('fyi-show-login'));
-          }}
-          onJobsClick={() => {
-            if (router.pathname !== '/') return;
-            fetch('/api/track', { method: 'POST', headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ event: 'click_jobs_cta', page: 'home' }) }).catch(() => {});
-          }}
-        />
-      )}
-      <Component {...pageProps} />
-      {(!isCompany || isForCompaniesLanding) && !isAdmin && !isPromoLanding && !isCard && (
-        <GlobalFooter />
-      )}
+      {/* 콘텐츠가 짧은 페이지/탭에서 푸터가 위로 따라 올라오지 않도록:
+          최소 뷰포트 높이를 채우고 푸터는 항상 바닥에 붙인다. */}
+      <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
+        {activePage && (
+          <GlobalNav
+            activePage={activePage}
+            onLogin={() => {
+              if (typeof window === 'undefined') return;
+              if (typeof window.openAuthModal === 'function') window.openAuthModal();
+              else window.dispatchEvent(new Event('fyi-show-login'));
+            }}
+            onJobsClick={() => {
+              if (router.pathname !== '/') return;
+              fetch('/api/track', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ event: 'click_jobs_cta', page: 'home' }) }).catch(() => {});
+            }}
+          />
+        )}
+        <main style={{ flex: '1 0 auto' }}>
+          <Component {...pageProps} />
+        </main>
+        {(!isCompany || isForCompaniesLanding) && !isAdmin && !isPromoLanding && !isCard && (
+          <GlobalFooter />
+        )}
+      </div>
       {!isCompany && !isJobDetail && !isCard && <MobileTabBar />}
       <GlobalLoginModal />
       <GoogleOneTap />

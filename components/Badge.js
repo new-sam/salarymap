@@ -1,18 +1,10 @@
 import { badgeVisual } from '../lib/badgeVisuals'
 import { getSalaryTierByKey } from '../lib/salaryTiers'
 
-// 뱃지 아이콘 — 그룹별 SF Symbol을 인라인 SVG로 대응(모바일 badge-visuals.ts 아이콘과 매칭).
+// 마커용 인라인 SVG — 메달 아트가 본체가 되면서 크라운 마커만 남음.
 const ICON_PATHS = {
-  rosette: ['M12 15a6 6 0 100-12 6 6 0 000 12z', 'M9 13.5L7 22l5-3 5 3-2-8.5'],
   medal: ['M12 14a6 6 0 100-12 6 6 0 000 12z', 'M9 13.5L7 22l5-3 5 3-2-8.5'],
   crown: ['M5 16L3 7l5.5 4L12 4l3.5 7L21 7l-2 9z', 'M5 20h14'],
-  diamond: ['M6 3h12l4 6-10 12L2 9z', 'M6 3l3 6m9-6l-3 6M2 9h20'],
-  paperplane: ['M22 2L11 13', 'M22 2l-7 20-4-9-9-4z'],
-  pencil: ['M12 20h9', 'M16.5 3.5a2.12 2.12 0 013 3L7 19l-4 1 1-4z'],
-  bubbles: ['M21 11.5a8.38 8.38 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.38 8.38 0 01-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.38 8.38 0 013.8-.9h.5a8.48 8.48 0 018 8v.5z'],
-  heart: ['M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z'],
-  thumbsup: ['M14 9V5a3 3 0 00-3-3l-4 9v11h11.28a2 2 0 002-1.7l1.38-9a2 2 0 00-2-2.3z', 'M7 22H4a2 2 0 01-2-2v-7a2 2 0 012-2h3'],
-  flame: ['M8.5 14.5A2.5 2.5 0 0011 12c0-1.38-.5-2-1-3-1.07-2.14-.22-4.05 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 11-14 0c0-1.15.43-2.29 1-3a2.5 2.5 0 002.5 2.5z'],
 }
 
 function BadgeIcon({ name, size, color = '#fff' }) {
@@ -30,49 +22,85 @@ export function badgeLabel(key, t) {
   return getSalaryTierByKey(key) ? t(`salary.tier.${key}`) : t(`badge.name.${key}`)
 }
 
-// 뱃지(연봉 등급 + 참여형 공통) 렌더. 모바일 BadgeTile/featured/커뮤니티 칩의 웹 대응.
+// 앱과 동일한 메달 일러스트 에셋 (public/badges/*.webp, 파일명 = 뱃지 키).
+const medalSrc = (key) => `/badges/${key}.webp`
+
+// 잠금 실루엣 색 — 앱 badge-medal.tsx SILHOUETTE와 동일.
+const SILHOUETTE = '#C7CCD3'
+
+// 뱃지(연봉 등급 + 참여형 공통) 렌더. 모바일 BadgeMedal/BadgeTile의 웹 대응 — 동일 메달 아트 사용.
 //   variant="pill"  커뮤니티 글·댓글 인라인 알약(라벨 포함)
 //   variant="md"    프로필 그리드 타일 메달(72)
 //   variant="lg"    대표 영역/상세 메달(92)
-// earned=false면 잠금(회색). gold는 금테.
+// earned=false면 잠금(회색 실루엣 + 자물쇠), gold는 크라운 마커.
 export default function Badge({ keyName, t, variant = 'pill', earned = true, isRep = false }) {
   const v = badgeVisual(keyName)
   if (!v) return null
-  const grad = `linear-gradient(135deg,${v.colors[0]},${v.colors[1]})`
 
   if (variant === 'pill') {
+    // 커뮤니티 author 인라인 — 미니 메달 이미지 + 라이트 뉴트럴 알약 (앱 author-meta와 동일 무드)
     return (
       <span style={{
-        display: 'inline-flex', alignItems: 'center', gap: 3,
-        background: grad, color: '#fff',
+        display: 'inline-flex', alignItems: 'center', gap: 4,
+        background: v.gold ? '#fdf3d8' : '#f4f4f2',
+        color: v.gold ? '#a16207' : '#555',
         fontSize: 10, fontWeight: 800, lineHeight: 1.4,
-        padding: '1px 6px 1px 5px', borderRadius: 5, whiteSpace: 'nowrap',
+        padding: '1px 7px 1px 3px', borderRadius: 100, whiteSpace: 'nowrap',
         letterSpacing: '-0.2px', verticalAlign: 'middle',
-        ...(v.gold ? { border: '1px solid #fff3cf' } : {}),
       }}>
-        <BadgeIcon name={v.icon} size={9} />
+        <img src={medalSrc(keyName)} alt="" width={14} height={14}
+          style={{ width: 14, height: 14, objectFit: 'contain', display: 'block' }} />
         {badgeLabel(keyName, t)}
       </span>
     )
   }
 
   const size = variant === 'lg' ? 92 : 72
-  const radius = variant === 'lg' ? 26 : 20
-  const iconSize = variant === 'lg' ? 44 : 32
+  const src = medalSrc(keyName)
+
+  if (!earned) {
+    // 앱 스펙: 회색 실루엣(mask로 알파채널만) + 중앙 자물쇠 원형(지름 42%, 아이콘 24%).
+    const lockCircle = size * 0.42
+    const lockIcon = size * 0.24
+    return (
+      <div style={{ width: size, height: size, flexShrink: 0, position: 'relative' }}>
+        <span style={{
+          position: 'absolute', inset: 0, background: SILHOUETTE,
+          WebkitMaskImage: `url(${src})`, maskImage: `url(${src})`,
+          WebkitMaskSize: 'contain', maskSize: 'contain',
+          WebkitMaskRepeat: 'no-repeat', maskRepeat: 'no-repeat',
+          WebkitMaskPosition: 'center', maskPosition: 'center',
+        }} />
+        <span style={{
+          position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)',
+          width: lockCircle, height: lockCircle, borderRadius: '50%', background: '#fff',
+          boxShadow: '0 2px 8px rgba(0,0,0,0.14)', display: 'flex', alignItems: 'center', justifyContent: 'center',
+        }}>
+          <svg width={lockIcon} height={lockIcon} viewBox="0 0 24 24" fill="none" stroke="#9AA0A8" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+            <rect x="4" y="11" width="16" height="10" rx="2" fill="#9AA0A8" stroke="none" />
+            <path d="M8 11V7a4 4 0 018 0v4" />
+          </svg>
+        </span>
+      </div>
+    )
+  }
+
   return (
-    <div style={{
-      width: size, height: size, borderRadius: radius, flexShrink: 0, position: 'relative',
-      display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden',
-      ...(earned
-        ? { background: grad, boxShadow: `0 6px 14px ${v.colors[1]}40`, ...(v.gold ? { border: '2.5px solid #fff7e0' } : {}) }
-        : { background: v.gold ? '#fbf4df' : '#f1f3f6' }),
-    }}>
-      {earned && (
-        <span style={{ position: 'absolute', top: -size * 0.35, left: -size * 0.35, width: size, height: size, borderRadius: '50%', background: 'rgba(255,255,255,0.28)' }} />
+    <div style={{ width: size, height: size, flexShrink: 0, position: 'relative' }}>
+      <img src={src} alt={badgeLabel(keyName, t)} width={size} height={size}
+        style={{ width: size, height: size, objectFit: 'contain', display: 'block' }} />
+      {v.gold && (
+        <span style={{
+          position: 'absolute', top: 0, left: 0, width: size * 0.26, height: size * 0.26,
+          borderRadius: '50%', background: '#F59E0B', border: '1.5px solid #fff',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          boxShadow: '0 1px 4px rgba(0,0,0,0.18)',
+        }}>
+          <BadgeIcon name="crown" size={size * 0.15} color="#fff" />
+        </span>
       )}
-      <BadgeIcon name={v.icon} size={iconSize} color={earned ? '#fff' : (v.gold ? '#d6b45c' : '#c4c9d0')} />
-      {earned && isRep && (
-        <span style={{ position: 'absolute', top: 5, right: 5, background: 'rgba(0,0,0,0.4)', borderRadius: 999, padding: '2px 6px', fontSize: 9, fontWeight: 900, color: '#fff', letterSpacing: 0.2 }}>
+      {isRep && (
+        <span style={{ position: 'absolute', top: 0, right: 0, background: 'rgba(0,0,0,0.4)', borderRadius: 999, padding: '2px 6px', fontSize: 9, fontWeight: 900, color: '#fff', letterSpacing: 0.2 }}>
           {t ? t('profile.badges.representative') : '대표'}
         </span>
       )}
