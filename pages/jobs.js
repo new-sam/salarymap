@@ -105,16 +105,17 @@ function JobCard({ job, idx, bump, matched, highSalaryThreshold, bookmarked, onO
   const highPay = sal.min >= highSalaryThreshold
   const showType = job.type === 'remote' || job.type === 'hybrid'
   return (
-    <div className="jc" onClick={() => onOpen(job, idx)}>
+    <div className={`jc${job.is_featured ? ' jc-featured' : ''}`} onClick={() => onOpen(job, idx)}>
+      {job.is_featured && (
+        <div className="jc-feat"><span>{t('jobs.featuredBadge')}</span></div>
+      )}
       <div className="jc-img">
         <div className="jc-img-in" style={{ background: `#fff url(${src}) center/${mode} no-repeat` }}>
-          {job.is_featured ? (
-            <div className="jc-feat">★ {t('jobs.featuredBadge')}</div>
-          ) : bump !== null && bump > 0 ? (
+          {!job.is_featured && (bump !== null && bump > 0 ? (
             <div className="jc-bump" dangerouslySetInnerHTML={{ __html: t('jobs.bumpVs', { bump }) }} />
           ) : matched ? (
             <div className="jc-match">{t('jobs.profileBadge')}</div>
-          ) : null}
+          ) : null)}
           <button className="jc-bm" aria-label="Bookmark" onClick={e => { e.stopPropagation(); onToggleBookmark(job.id) }}>
             <svg width="14" height="14" viewBox="0 0 24 24" fill={bookmarked ? '#ff4400' : 'none'} stroke={bookmarked ? '#ff4400' : '#999'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z" />
@@ -922,10 +923,13 @@ export default function JobsPage() {
         .jg { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 24px; align-items: stretch; }
 
         /* Card */
-        .jc { cursor: pointer; display: flex; flex-direction: column; min-width: 0; }
+        .jc { cursor: pointer; display: flex; flex-direction: column; min-width: 0; position: relative; }
         .jc-match { position: absolute; top: 10px; left: 10px; background: #ff4400; color: #fff; font-size: 11px; font-weight: 700; padding: 4px 10px; border-radius: 4px; z-index: 2; }
-        .jc-feat { position: absolute; top: 10px; left: 10px; background: linear-gradient(135deg, #ff4400 0%, #ff6b35 100%); color: #fff; font-size: 11px; font-weight: 800; padding: 4px 10px; border-radius: 4px; z-index: 3; letter-spacing: 0.2px; box-shadow: 0 2px 8px rgba(255,68,0,0.32); }
+        /* 적극 채용중 — 앱과 동일하게 사진 밖, 카드 상단 선 가운데에 반쯤 걸치는 알약 */
+        .jc-feat { position: absolute; top: -9px; left: 12px; right: 0; z-index: 4; display: flex; justify-content: flex-start; pointer-events: none; }
+        .jc-feat span { max-width: 85%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; background: linear-gradient(135deg, #ff4400 0%, #ff6b35 100%); color: #fff; font-size: 11px; font-weight: 800; padding: 4px 12px; border-radius: 999px; letter-spacing: 0.2px; box-shadow: 0 2px 8px rgba(255,68,0,0.32); }
         .jc-img { border-radius: 8px; overflow: hidden; position: relative; padding-top: 62%; margin-bottom: 11px; background: #f0f0f0; flex-shrink: 0; border: 1px solid rgba(0,0,0,0.06); }
+        .jc-featured .jc-img { border-color: rgba(255,68,0,0.55); }
         .jc-img-in { position: absolute; inset: 0; transition: transform .25s ease; background-color: #f0f0f0; background-size: cover; background-position: center; background-repeat: no-repeat; }
         .jc:hover .jc-img-in { transform: scale(1.04); }
         .jc-bump { position: absolute; top: 10px; left: 10px; background: rgba(0,0,0,0.62); color: #fff; font-size: 11px; font-weight: 600; padding: 4px 9px; border-radius: 4px; z-index: 2; }
