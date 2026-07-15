@@ -126,7 +126,9 @@ export default function AuthCallback() {
           const refresh_token = hp.get('refresh_token')
           if (access_token && refresh_token) {
             await supabase.auth.setSession({ access_token, refresh_token })
-            history.replaceState(null, '', window.location.pathname)
+            // 해시(토큰)만 제거하고 ?return= 쿼리는 보존한다. pathname만 남기면
+            // 아래에서 window.location.search로 읽는 returnTo가 사라져 홈으로 튕긴다.
+            history.replaceState(null, '', window.location.pathname + window.location.search)
           }
         }
 
