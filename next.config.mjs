@@ -1,3 +1,5 @@
+import { withSentryConfig } from '@sentry/nextjs';
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   /* config options here */
@@ -17,4 +19,10 @@ const nextConfig = {
   },
 };
 
-export default nextConfig;
+export default withSentryConfig(nextConfig, {
+  org: 'likelion-ts',
+  project: 'salarymap-web',
+  silent: !process.env.CI,
+  // 소스맵 업로드는 SENTRY_AUTH_TOKEN 있을 때만 동작(없으면 스킵). Phase 2에서 추가.
+  widenClientFileUpload: true,
+});
