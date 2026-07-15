@@ -7,6 +7,7 @@ import { badgeVisual } from '../lib/badgeVisuals'
 import { useT } from '../lib/i18n'
 import Icon from '../components/Icon'
 import { ROLE_GROUPS } from '../constants/jobs'
+import { completionScore } from '../lib/profileScore'
 import ApplicationCard, { applicationCardCss } from '../components/ApplicationCard'
 import EmploymentTab from '../components/profile/EmploymentTab'
 import BadgesTab from '../components/profile/BadgesTab'
@@ -100,20 +101,6 @@ function CustomSelect({ value, options, items, placeholder, onChange, displayVal
 }
 
 // ── Onboarding Modal ──
-// 소개·경력·학력·스킬·희망연봉·이력서 6개 기준(모바일 앱과 동일).
-// 명함·수상·프로젝트·언어 등 선택 항목과 사진·이름·지역은 완성도에서 제외.
-function completionScore(p) {
-  if (!p) return 0
-  const checks = [
-    !!p.intro,
-    (p.experiences?.filter(e => e && (e.company || e.role)).length || 0) > 0,
-    !!p.university,
-    Array.isArray(p.skills) ? p.skills.length > 0 : !!p.skills,
-    !!p.salary_min || !!p.salary_max,
-    !!p.resume_url,
-  ]
-  return Math.round(checks.filter(Boolean).length / checks.length * 100)
-}
 
 export default function ProfilePage() {
   const router = useRouter()
@@ -137,7 +124,8 @@ export default function ProfilePage() {
   // 이탈 확인 — 라우트 이동/탭 전환을 pendingNav 하나로 통합
   const [pendingNav, setPendingNav] = useState(null) // { type: 'route'|'tab', target }
   const [sharingResume, setSharingResume] = useState(false)
-  const [showPublishPrompt, setShowPublishPrompt] = useState(false)
+  // AI 인식 완료 후 인재풀 공개 제안 — 파싱이 끝난 시점에 물어본다
+  const [showSharePrompt, setShowSharePrompt] = useState(false)
   const [myPosts, setMyPosts] = useState([])
   const [myPostsLoading, setMyPostsLoading] = useState(false)
   // Company email verification (work-email ownership -> verified_company badge)
@@ -162,6 +150,8 @@ export default function ProfilePage() {
   isDirtyRef.current = isDirty
   const formRef = useRef(form)
   formRef.current = form
+  const profileRefPublic = useRef(false)
+  profileRefPublic.current = !!profile?.is_resume_public
 
   const handleTabChange = (newTab) => {
     if (newTab === tab) return
@@ -240,8 +230,6 @@ export default function ProfilePage() {
             salary_min: p.salary_min ? String(p.salary_min / 1000000) : '',
             salary_max: p.salary_max ? String(p.salary_max / 1000000) : '',
             work_type: p.work_type || '',
-            job_signal: p.job_signal || 'passive',
-            hr_visible: p.hr_visible || false,
             portfolio_url: p.portfolio_url || '',
             gpa: p.gpa || '',
             experiences: p.experiences || [],
@@ -266,10 +254,6 @@ export default function ProfilePage() {
           if (!p.headline && !p.position) {
             // 이력서가 이미 등록돼 있으면 일반 온보딩 대신 "이력서로 채워줄까요?" 제안
             if (p.resume_url) setShowAiFill(true)
-          }
-          if (router.query.from === 'ai-resume' && !p.hr_visible && completionScore({ ...formData, resume_url: p.resume_url }) >= 60) {
-            setShowPublishPrompt(true)
-            router.replace('/profile', undefined, { shallow: true })
           }
         }
       }
@@ -442,6 +426,8 @@ export default function ProfilePage() {
       setAiParsing(false)
       setAiProgress({ percent: 0, message: '' })
       setShowAiFill(false) // AI 자동 채움 제안 모달에서 시작한 경우 — 완료 후 닫기
+      // 인식이 끝난 시점에 인재풀 공개 제안 — 아직 비공개인 경우만
+      if (!profileRefPublic.current) setShowSharePrompt(true)
     }, 1500)
   }
 
@@ -463,32 +449,57 @@ export default function ProfilePage() {
         .pw-hero { margin-bottom: 20px; }
         .pw-hero-top { display: flex; align-items: center; gap: 16px; }
         .pw-avatar-wrap { position: relative; flex-shrink: 0; cursor: pointer; }
-        .pw-avatar { width: 72px; height: 72px; border-radius: 50%; object-fit: cover; border: 2px solid rgba(0,0,0,0.08); display: block; }
+        .pw-avatar-ring { padding: 2.5px; border-radius: 50%; background: linear-gradient(135deg, #ff4400, #ffb088); display: inline-block; }
+        .pw-avatar { width: 68px; height: 68px; border-radius: 50%; object-fit: cover; border: 2.5px solid #fff; display: block; }
         .pw-avatar-empty { background: rgba(0,0,0,0.04); display: flex; align-items: center; justify-content: center; }
         .pw-avatar-cam { position: absolute; bottom: 0; right: 0; width: 22px; height: 22px; border-radius: 50%; background: #111; border: 2px solid #fff; display: flex; align-items: center; justify-content: center; }
         .pw-avatar-x { position: absolute; top: -2px; right: -2px; width: 20px; height: 20px; border-radius: 50%; border: none; background: rgba(0,0,0,0.5); cursor: pointer; display: none; align-items: center; justify-content: center; padding: 0; }
         .pw-avatar-wrap:hover .pw-avatar-x { display: flex; }
         .pw-hero-info { flex: 1; min-width: 0; }
         .pw-hero-name-row { display: flex; align-items: center; gap: 8px; min-width: 0; }
-        .pw-hero-name { font-size: 22px; font-weight: 800; color: #111; margin: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .pw-hero-name { font-size: 24px; font-weight: 800; letter-spacing: -0.5px; color: #111; margin: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         .pw-hero-headline { font-size: 13.5px; color: #555; margin-top: 3px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         .pw-hero-meta { display: flex; align-items: center; gap: 6px; font-size: 13px; color: #888; margin-top: 4px; flex-wrap: wrap; }
         .pw-hero-dot { color: #ccc; }
         .pw-hero-progress { margin-top: 14px; }
-        .pw-hero-bar { height: 4px; border-radius: 2px; background: rgba(0,0,0,0.06); overflow: hidden; }
+        .pw-hero-bar { height: 6px; border-radius: 3px; background: rgba(0,0,0,0.06); overflow: hidden; }
         .pw-hero-bar-fill { height: 100%; border-radius: 2px; transition: width .4s ease; }
         .pw-hero-progress-caption { display: block; font-size: 11.5px; color: rgba(0,0,0,0.45); margin-top: 6px; }
-        .pw-tabs { display: flex; gap: 0; margin-bottom: 24px; border-bottom: 1px solid rgba(0,0,0,0.08); }
-        .pw-tab { font-size: 13px; font-weight: 600; color: rgba(0,0,0,0.35); background: none; border: none; padding: 12px 12px; cursor: pointer; font-family: inherit; position: relative; white-space: nowrap; }
-        .pw-tab.on { color: #111; }
-        .pw-tab.on::after { content: ''; position: absolute; bottom: -1px; left: 0; right: 0; height: 2px; background: #ff4400; }
+        /* AI 이력서 드롭존 — 핵심 전환 기능. 라이트 페이지에서 유일한 다크 피처 패널(/cv 프로모 무드). */
+        .pai-drop { position: relative; border-radius: 16px; padding: 30px 22px 28px; text-align: center; cursor: pointer; overflow: hidden; isolation: isolate;
+          background: radial-gradient(340px circle at 15% -20%, rgba(255,68,0,0.42), transparent 60%),
+                      radial-gradient(300px circle at 90% 120%, rgba(255,122,77,0.28), transparent 55%),
+                      linear-gradient(160deg, #201612, #120d0a 65%);
+          transition: transform .15s, box-shadow .15s; box-shadow: 0 10px 30px rgba(24,14,8,0.28); }
+        .pai-drop::before { content: ''; position: absolute; inset: 0; z-index: -1; pointer-events: none;
+          background-image: linear-gradient(rgba(255,255,255,0.045) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.045) 1px, transparent 1px);
+          background-size: 26px 26px; mask-image: radial-gradient(closest-side at 50% 40%, #000, transparent); -webkit-mask-image: radial-gradient(closest-side at 50% 40%, #000, transparent); }
+        .pai-drop:hover { transform: translateY(-2px); box-shadow: 0 14px 36px rgba(24,14,8,0.36); }
+        .pai-chip { display: inline-flex; align-items: center; gap: 5px; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.14); color: rgba(255,255,255,0.72); font-size: 10px; font-weight: 800; letter-spacing: 1.2px; padding: 4px 11px; border-radius: 100px; margin-bottom: 13px; }
+        .pai-doc { position: relative; width: 52px; height: 52px; margin: 0 auto 14px; border-radius: 14px; background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.12); display: flex; align-items: center; justify-content: center; overflow: hidden; }
+        .pai-scanline { position: absolute; left: 6px; right: 6px; height: 14px; border-radius: 3px;
+          background: linear-gradient(180deg, transparent, rgba(255,122,45,0.45) 45%, rgba(255,170,90,0.9) 50%, rgba(255,122,45,0.45) 55%, transparent);
+          animation: paiScan 2.4s ease-in-out infinite; }
+        @keyframes paiScan { 0%, 12% { top: -16px; opacity: 0; } 22% { opacity: 1; } 78% { opacity: 1; } 88%, 100% { top: 54px; opacity: 0; } }
+        .pai-title { font-size: 17px; font-weight: 800; color: #fff; margin-bottom: 5px; letter-spacing: -0.3px; }
+        .pai-sub { font-size: 12.5px; color: rgba(255,255,255,0.55); margin-bottom: 18px; line-height: 1.55; }
+        .pai-btn { position: relative; overflow: hidden; display: inline-flex; align-items: center; gap: 7px; background: linear-gradient(90deg, #ff4400, #ff6a2b); color: #fff; font-size: 13.5px; font-weight: 800; padding: 12px 24px; border-radius: 100px; box-shadow: 0 8px 22px rgba(255,68,0,0.45); }
+        .pai-drop:hover .pai-btn { filter: brightness(1.06); }
+        .pai-btn-shine { position: absolute; inset: 0; border-radius: 100px; overflow: hidden; pointer-events: none; }
+        .pai-btn-shine::before { content: ''; position: absolute; top: 0; left: -100%; width: 55%; height: 100%; background: linear-gradient(90deg, transparent, rgba(255,255,255,0.35), transparent); animation: paiShine 2.8s ease-in-out infinite; }
+        @keyframes paiShine { 0% { left: -100%; } 55% { left: 130%; } 100% { left: 130%; } }
+        .pw-tabs { display: flex; gap: 2px; margin-bottom: 20px; background: #ecebe8; padding: 3px; border-radius: 12px; overflow-x: auto; scrollbar-width: none; }
+        .pw-tabs::-webkit-scrollbar { display: none; }
+        .pw-tab { flex: 1; font-size: 13px; font-weight: 700; color: #8a8a86; background: none; border: none; padding: 9px 10px; cursor: pointer; font-family: inherit; border-radius: 9px; white-space: nowrap; transition: color .15s, background .15s; }
+        .pw-tab.on { color: #111; background: #fff; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
         .pw-post-item { display: block; padding: 14px 0; border-bottom: 1px solid rgba(0,0,0,0.06); text-decoration: none; }
         .pw-post-item:last-child { border-bottom: none; }
         .pw-post-title { font-size: 14px; font-weight: 600; color: #111; margin-bottom: 4px; }
         .pw-post-meta { font-size: 12px; color: #aaa; display: flex; gap: 10px; }
         ${applicationCardCss}
-        .pcard { background: #fff; border: 1px solid rgba(0,0,0,0.06); border-radius: 12px; padding: 24px; margin-bottom: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
-        .pcard-h { font-size: 13px; font-weight: 700; color: rgba(0,0,0,0.6); letter-spacing: .02em; margin-bottom: 16px; }
+        .pcard { background: #fff; border: 1px solid #f0efec; border-radius: 16px; padding: 24px; margin-bottom: 14px; box-shadow: 0 1px 2px rgba(17,24,39,0.03); }
+        .pcard-h { font-size: 15px; font-weight: 800; color: #111; letter-spacing: -0.2px; margin-bottom: 16px; display: flex; align-items: center; gap: 9px; }
+        .pcard-ico { width: 27px; height: 27px; border-radius: 8px; display: inline-flex; align-items: center; justify-content: center; background: rgba(255,68,0,0.08); color: #ff4400; flex-shrink: 0; }
         .pfield { margin-bottom: 16px; }
         .pfield:last-child { margin-bottom: 0; }
         .pfield-label { font-size: 12px; font-weight: 700; color: rgba(0,0,0,0.5); letter-spacing: .02em; margin-bottom: 6px; }
@@ -498,7 +509,6 @@ export default function ProfilePage() {
         .pinput:focus { border-color: #ff4400; }
         .pinput::placeholder { color: rgba(0,0,0,0.25); }
         .ptextarea { min-height: 100px; resize: vertical; }
-        .psignal { display: flex; gap: 8px; flex-wrap: wrap; }
         .psignal-btn { flex: 1; min-width: 120px; padding: 10px; border-radius: 8px; border: 1px solid rgba(0,0,0,0.08); background: rgba(0,0,0,0.02); font-size: 12px; font-weight: 600; color: rgba(0,0,0,0.4); cursor: pointer; text-align: center; font-family: inherit; transition: all .15s; }
         .psignal-btn.on { border-color: #ff4400; color: #ff4400; background: rgba(255,68,0,0.06); }
         .pselect-dropdown::-webkit-scrollbar { display: none; }
@@ -542,13 +552,15 @@ export default function ProfilePage() {
         <div className="pw-hero">
           <div className="pw-hero-top">
             <div className="pw-avatar-wrap" onClick={() => photoRef.current?.click()} title={t('profile.photo.upload')}>
-              {profile?.photo_url ? (
-                <img src={profile.photo_url} className="pw-avatar" alt="" />
-              ) : (
-                <div className="pw-avatar pw-avatar-empty">
-                  <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="rgba(0,0,0,0.2)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-                </div>
-              )}
+              <span className="pw-avatar-ring">
+                {profile?.photo_url ? (
+                  <img src={profile.photo_url} className="pw-avatar" alt="" />
+                ) : (
+                  <div className="pw-avatar pw-avatar-empty">
+                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="rgba(0,0,0,0.2)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                  </div>
+                )}
+              </span>
               <span className="pw-avatar-cam">
                 <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
               </span>
@@ -563,9 +575,14 @@ export default function ProfilePage() {
               <div className="pw-hero-name-row">
                 <h1 className="pw-hero-name">{form.full_name || user?.user_metadata?.full_name || ''}</h1>
                 {badgeVisual(representativeBadge) && (
-                  <img src={`/badges/${representativeBadge}.webp`} alt={badgeLabel(representativeBadge, t)} title={badgeLabel(representativeBadge, t)}
-                    onClick={() => handleTabChange('badges')}
-                    style={{ width: 28, height: 28, objectFit: 'contain', cursor: 'pointer', flexShrink: 0 }} />
+                  <span onClick={() => handleTabChange('badges')} title={badgeLabel(representativeBadge, t)}
+                    style={{ display: 'inline-flex', alignItems: 'center', gap: 5, background: badgeVisual(representativeBadge).gold ? '#fdf3d8' : '#f4f4f2', borderRadius: 100, padding: '3px 10px 3px 4px', cursor: 'pointer', flexShrink: 0 }}>
+                    <img src={`/badges/${representativeBadge}.webp`} alt=""
+                      style={{ width: 22, height: 22, objectFit: 'contain', display: 'block' }} />
+                    <span style={{ fontSize: 11.5, fontWeight: 800, color: badgeVisual(representativeBadge).gold ? '#a16207' : '#555', whiteSpace: 'nowrap' }}>
+                      {badgeLabel(representativeBadge, t)}
+                    </span>
+                  </span>
                 )}
               </div>
               {form.headline && <div className="pw-hero-headline">{form.headline}</div>}
@@ -610,13 +627,7 @@ export default function ProfilePage() {
 
           {msg && <div className="pmsg">{msg}</div>}
           <div className="pcard" style={{ position: 'relative', overflow: 'visible' }}>
-            <div className="pcard-h">{t('profile.resume')}</div>
-            {!profile?.resume_url && !aiParsing && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12.5, color: 'rgba(0,0,0,0.45)', lineHeight: 1.5, marginBottom: 14 }}>
-                <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 22, height: 22, borderRadius: 6, background: 'rgba(255,68,0,0.08)', color: '#ff4400', fontSize: 10, fontWeight: 800, flexShrink: 0 }}>AI</span>
-                <span>{t('profile.resume.ai_hint')}</span>
-              </div>
-            )}
+            <div className="pcard-h"><span className="pcard-ico"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></span>{t('profile.resume')}</div>
             {aiParsing && (
               <div style={{ background: 'rgba(255,68,0,0.04)', border: '1px solid rgba(255,68,0,0.12)', borderRadius: 10, padding: '16px 18px', marginBottom: 16 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
@@ -631,7 +642,7 @@ export default function ProfilePage() {
             )}
             <div className="pfield">
               <input ref={resumeRef} type="file" accept=".pdf" hidden onChange={e => handleUpload('resume', e.target.files[0])} />
-              {profile?.resume_url ? (
+              {aiParsing ? null : profile?.resume_url ? (
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'rgba(34,197,94,0.06)', border: '1px solid rgba(34,197,94,0.2)', borderRadius: 10, padding: '12px 16px' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#16a34a" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
@@ -647,17 +658,29 @@ export default function ProfilePage() {
                   </div>
                 </div>
               ) : (
-                <button onClick={() => resumeRef.current?.click()} className="presume-upload-btn" disabled={aiParsing}>
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#ff4400" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-                  <span>{t('profile.resume.register')}</span>
-                </button>
+                <div className="pai-drop" onClick={() => !aiParsing && resumeRef.current?.click()}>
+                  <div className="pai-doc">
+                    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.85)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/>
+                      <line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="13" y2="17"/>
+                    </svg>
+                    <span className="pai-scanline" />
+                  </div>
+                  <div className="pai-chip">
+                    <svg width="11" height="11" viewBox="0 0 24 24" fill="#ff7a2d"><path d="M13 2L4.5 13.5H11L10 22l8.5-11.5H12z"/></svg>
+                    AI AUTO-FILL
+                  </div>
+                  <div className="pai-title">{t('profile.resume.ai_title')}</div>
+                  <div className="pai-sub">{t('profile.resume.ai_hint')}</div>
+                  <span className="pai-btn">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                    {t('profile.resume.register')}
+                    <span className="pai-btn-shine" />
+                  </span>
+                </div>
               )}
             </div>
-            <div className="pfield">
-              <div className="pfield-label">{t('profile.portfolio')}</div>
-              <input className={`pinput${df('portfolio_url')}`} value={form.portfolio_url || ''} onChange={e => set('portfolio_url', e.target.value)} placeholder="" />
-            </div>
-            {profile?.resume_url && (
+            {!aiParsing && profile?.resume_url && (
               <div className="pfield" style={{ marginTop: 16, paddingTop: 16, borderTop: '1px solid rgba(0,0,0,0.06)' }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                   <div>
@@ -695,67 +718,19 @@ export default function ProfilePage() {
                 </div>
               </div>
             )}
+            <div className="pfield">
+              <div className="pfield-label">{t('profile.portfolio')}</div>
+              <input className={`pinput${df('portfolio_url')}`} value={form.portfolio_url || ''} onChange={e => set('portfolio_url', e.target.value)} placeholder="" />
+            </div>
           </div>
 
-          {/* 구직 설정 — HR 공개 + 구직 신호 + 희망 조건 */}
+          {/* 희망 조건 — 직군·경력·희망연봉·근무형태 */}
           <div className="pcard">
-            <div style={{ display: 'flex', alignItems: 'start', justifyContent: 'space-between', gap: 12, marginBottom: 16 }}>
-              <div>
-                <div style={{ fontSize: 14, fontWeight: 700, color: '#111', marginBottom: 2 }}>{t('profile.hr.title')}</div>
-                <div style={{ fontSize: 11, color: 'rgba(0,0,0,0.4)', lineHeight: 1.4 }}>{t('profile.hr.desc')}</div>
-              </div>
-              <button className={`ptoggle-switch${form.hr_visible ? ' on' : ''}`} onClick={async () => {
-                if (score < 60 && !form.hr_visible) {
-                  setShowAlert(t('profile.hr.need80'))
-                  return
-                }
-                // 공개 토글은 즉시 저장 (is_resume_public과 동일 패턴) — 낙관적 반영 후 실패 시 롤백
-                const next = !form.hr_visible
-                set('hr_visible', next)
-                setInitialForm(prev => ({ ...prev, hr_visible: next }))
-                try {
-                  const res = await fetch('/api/profile/talent', { method: 'PUT', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify({ hr_visible: next }) })
-                  if (!res.ok) throw new Error()
-                  setMsg('Saved!')
-                  setTimeout(() => setMsg(null), 2000)
-                } catch {
-                  set('hr_visible', !next)
-                  setInitialForm(prev => ({ ...prev, hr_visible: !next }))
-                }
-              }} />
+            <div className="pcard-h">
+              <span className="pcard-ico"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1"/></svg></span>
+              {t('profile.prefs')}
             </div>
-            <div style={{ borderTop: '1px solid rgba(0,0,0,0.06)', paddingTop: 14 }}>
-              <div style={{ fontSize: 12, fontWeight: 700, color: 'rgba(0,0,0,0.4)', marginBottom: 8 }}>{t('profile.signal')}</div>
-              <div className="psignal">
-                {['active','open','passive'].map(v => {
-                  const isOn = form.job_signal === v
-                  const icon = v === 'active' ? (
-                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-                      <circle cx="7" cy="7" r="5.5" stroke={isOn ? '#16a34a' : 'rgba(0,0,0,0.2)'} strokeWidth="1.5"/>
-                      <circle cx="7" cy="7" r="3" fill={isOn ? '#16a34a' : 'rgba(0,0,0,0.1)'}/>
-                    </svg>
-                  ) : v === 'open' ? (
-                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-                      <circle cx="7" cy="7" r="5.5" stroke={isOn ? '#f59e0b' : 'rgba(0,0,0,0.2)'} strokeWidth="1.5"/>
-                      <path d="M7 4v3.5" stroke={isOn ? '#f59e0b' : 'rgba(0,0,0,0.15)'} strokeWidth="1.5" strokeLinecap="round"/>
-                      <circle cx="7" cy="10" r="0.75" fill={isOn ? '#f59e0b' : 'rgba(0,0,0,0.15)'}/>
-                    </svg>
-                  ) : (
-                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-                      <circle cx="7" cy="7" r="5.5" stroke={isOn ? '#ff4400' : 'rgba(0,0,0,0.2)'} strokeWidth="1.5"/>
-                      <path d="M5 5l4 4M9 5l-4 4" stroke={isOn ? '#ff4400' : 'rgba(0,0,0,0.15)'} strokeWidth="1.3" strokeLinecap="round"/>
-                    </svg>
-                  )
-                  return (
-                    <button key={v} className={`psignal-btn${isOn ? ' on' : ''}`} onClick={() => set('job_signal', v)}>
-                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>{icon} {t(`profile.signal.${v}`)}</span>
-                    </button>
-                  )
-                })}
-              </div>
-            </div>
-            {form.job_signal && form.job_signal !== 'passive' && (
-              <div style={{ marginTop: 14, paddingTop: 14, borderTop: '1px solid rgba(0,0,0,0.06)' }}>
+            <div>
                 <div className="pinline">
                   <div className="pfield">
                     <div className="pfield-label">{t('profile.position')}</div>
@@ -802,12 +777,11 @@ export default function ProfilePage() {
                     })}
                   </div>
                 </div>
-              </div>
-            )}
+            </div>
           </div>
 
           <div className="pcard">
-            <div className="pcard-h">{t('profile.basic')}</div>
+            <div className="pcard-h"><span className="pcard-ico"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></span>{t('profile.basic')}</div>
             <div className="pinline">
               <div className="pfield">
                 <div className="pfield-label">{t('profile.name')}</div>
@@ -837,7 +811,7 @@ export default function ProfilePage() {
           {/* Experience */}
           <div className="pcard">
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-              <div className="pcard-h" style={{ marginBottom: 0 }}>{t('profile.exp')}</div>
+              <div className="pcard-h" style={{ marginBottom: 0 }}><span className="pcard-ico"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5a2 2 0 012-2h4a2 2 0 012 2v2"/></svg></span>{t('profile.exp')}</div>
               <button type="button" className="pupload-btn" onClick={() => set('experiences', [...(form.experiences || []), { company: '', role: '', period: '', desc: '' }])}>+ {t('profile.add')}</button>
             </div>
             {(form.experiences || []).map((exp, i) => (
@@ -874,7 +848,7 @@ export default function ProfilePage() {
           {/* Projects */}
           <div className="pcard">
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-              <div className="pcard-h" style={{ marginBottom: 0 }}>{t('profile.projects')}</div>
+              <div className="pcard-h" style={{ marginBottom: 0 }}><span className="pcard-ico"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg></span>{t('profile.projects')}</div>
               <button type="button" className="pupload-btn" onClick={() => set('projects', [...(form.projects || []), { name: '', desc: '', url: '' }])}>+ {t('profile.add')}</button>
             </div>
             {(form.projects || []).map((proj, i) => (
@@ -904,7 +878,7 @@ export default function ProfilePage() {
 
           {/* Education */}
           <div className="pcard">
-            <div className="pcard-h">{t('profile.edu')}</div>
+            <div className="pcard-h"><span className="pcard-ico"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 10L12 5 2 10l10 5 10-5z"/><path d="M6 12v5c0 1.7 2.7 3 6 3s6-1.3 6-3v-5"/></svg></span>{t('profile.edu')}</div>
             <div className="pinline">
               <div className="pfield">
                 <div className="pfield-label">{t('profile.university')}</div>
@@ -1055,27 +1029,32 @@ export default function ProfilePage() {
         </div>
       )}
 
-      {showPublishPrompt && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.3)', zIndex: 1100, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}
-          onClick={() => setShowPublishPrompt(false)}>
+      {showSharePrompt && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.35)', zIndex: 1100, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}
+          onClick={() => setShowSharePrompt(false)}>
           <div onClick={e => e.stopPropagation()} style={{ background: '#fff', borderRadius: 16, maxWidth: 380, width: '100%', padding: '32px 28px', textAlign: 'center', fontFamily: "'Barlow', system-ui", boxShadow: '0 20px 60px rgba(0,0,0,0.15)' }}>
             <div style={{ width: 48, height: 48, borderRadius: '50%', background: 'rgba(255,68,0,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
-              <span style={{ fontSize: 24 }}>&#128640;</span>
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#ff4400" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><path d="M9 15l2 2 4-4"/></svg>
             </div>
-            <div style={{ fontSize: 17, fontWeight: 800, color: '#111', marginBottom: 6 }}>{t('profile.publishPrompt.title')}</div>
-            <div style={{ fontSize: 13, color: 'rgba(0,0,0,0.5)', marginBottom: 24, lineHeight: 1.6 }}>{t('profile.publishPrompt.desc')}</div>
+            <div style={{ fontSize: 17, fontWeight: 800, color: '#111', marginBottom: 6 }}>{t('profile.resume.share.title')}</div>
+            <div style={{ fontSize: 13, color: 'rgba(0,0,0,0.5)', marginBottom: 24, lineHeight: 1.6 }}>{t('profile.resume.share.desc')}</div>
             <div style={{ display: 'flex', gap: 8 }}>
-              <button onClick={() => setShowPublishPrompt(false)}
+              <button onClick={() => setShowSharePrompt(false)}
                 style={{ flex: 1, padding: 12, borderRadius: 10, border: '1px solid rgba(0,0,0,0.1)', background: '#fff', color: '#555', fontSize: 14, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>
                 {t('profile.publishPrompt.skip')}
               </button>
               <button onClick={async () => {
-                set('hr_visible', true)
-                setShowPublishPrompt(false)
-                await fetch('/api/profile/talent', { method: 'PUT', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify({ hr_visible: true }) })
-                setInitialForm(prev => ({ ...prev, hr_visible: true }))
-                setMsg('Saved!')
-                setTimeout(() => setMsg(null), 2000)
+                setShowSharePrompt(false)
+                try {
+                  const res = await fetch('/api/profile/share-resume', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify({ action: 'set', value: true }) })
+                  if (res.ok) {
+                    set('is_resume_public', true)
+                    setInitialForm(prev => ({ ...prev, is_resume_public: true }))
+                    setProfile(prev => ({ ...prev, is_resume_public: true }))
+                    setMsg(t('profile.resume.share.on'))
+                    setTimeout(() => setMsg(null), 2500)
+                  }
+                } catch {}
               }}
                 style={{ flex: 1, padding: 12, borderRadius: 10, border: 'none', background: '#ff4400', color: '#fff', fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>
                 {t('profile.publishPrompt.confirm')}
@@ -1084,6 +1063,7 @@ export default function ProfilePage() {
           </div>
         </div>
       )}
+
 
       {pendingNav && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.3)', zIndex: 1100, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>

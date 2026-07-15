@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { supabase } from '../lib/supabaseClient'
 import { useT } from '../lib/i18n'
 import { track } from '../lib/track'
+import { completionScore } from '../lib/profileScore'
 
 const LANGS = [
   { code: 'vi', label: 'Tiếng Việt' },
@@ -42,8 +43,7 @@ export default function GlobalNav({ activePage, onLogin, onJobsClick, mobileSear
   useEffect(() => {
     const onProfileUpdate = (e) => {
       const p = e.detail
-      const checks = [p.photo_url, p.full_name, p.headline, p.location, p.resume_url, p.skills?.length > 0, p.university, p.experiences?.length > 0]
-      setProfileScore(Math.round(checks.filter(Boolean).length / checks.length * 100))
+      setProfileScore(completionScore(p))
       setPhotoUrl(p.photo_url || null)
     }
     window.addEventListener('profile-updated', onProfileUpdate)
@@ -76,8 +76,7 @@ export default function GlobalNav({ activePage, onLogin, onJobsClick, mobileSear
           if (pRes.ok) {
             const { profile: p } = await pRes.json()
             if (p) {
-              const checks = [p.photo_url, p.full_name, p.headline, p.location, p.resume_url, p.skills?.length > 0, p.university, p.experiences?.length > 0]
-              setProfileScore(Math.round(checks.filter(Boolean).length / checks.length * 100))
+              setProfileScore(completionScore(p))
               setHasResume(!!p.resume_url)
               setPhotoUrl(p.photo_url || null)
             }
