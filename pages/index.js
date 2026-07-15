@@ -838,6 +838,18 @@ export default function Home({ initialCompanies = [] }) {
     const { data: { subscription } } = supabaseClient.auth.onAuthStateChange(
       async (event, session) => {
         if ((event === 'SIGNED_IN' || event === 'INITIAL_SESSION') && session) {
+          // 안전망: OAuth 제공자(Supabase 호스티드 LinkedIn 등)가 복귀경로를 잃고
+          // Site URL(홈)로 떨궈도, 로그인 시작 시 저장해둔 fyi_login_return이 남아
+          // 있으면 원래 필터 걸린 페이지로 되돌린다. /auth/callback을 정상적으로 탄
+          // 경우엔 거기서 이미 소비·삭제되므로 여기 값이 없다. 홈('/')이면 스킵.
+          if (event === 'SIGNED_IN') {
+            const ret = typeof window !== 'undefined' && localStorage.getItem('fyi_login_return');
+            if (ret && ret.split('?')[0].split('#')[0] !== '/') {
+              localStorage.removeItem('fyi_login_return');
+              window.location.href = ret;
+              return;
+            }
+          }
           setIsLoggedIn(true);
           setUser(session.user);
         }
