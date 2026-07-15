@@ -28,6 +28,31 @@
   header h1 { font-size: 30px; font-weight: 800; letter-spacing: -0.5px; }
   header p { color: var(--gray); font-size: 14px; margin-top: 4px; }
 
+  /* ===================== FUNNEL ===================== */
+  .funnel { display: flex; align-items: stretch; margin-bottom: 64px; }
+  .stage {
+    padding: 18px 26px 16px 34px;
+    clip-path: polygon(0 0, calc(100% - 20px) 0, 100% 50%, calc(100% - 20px) 100%, 0 100%, 20px 50%);
+    margin-left: -12px;
+  }
+  .stage:first-child {
+    clip-path: polygon(0 0, calc(100% - 20px) 0, 100% 50%, calc(100% - 20px) 100%, 0 100%);
+    margin-left: 0; padding-left: 26px;
+    border-radius: 10px 0 0 10px;
+  }
+  .stage:last-child { border-radius: 0 10px 10px 0; }
+  .stage.s1 { flex: 1.25; background: #f4f4f5; }
+  .stage.s2 { flex: 1.1; background: #d4d4d8; }
+  .stage.s3 { flex: 1; background: var(--ink); color: #fff; }
+  .stage .step {
+    font-size: 10.5px; font-weight: 800; letter-spacing: 1.5px;
+    color: var(--gray); text-transform: uppercase;
+  }
+  .stage.s3 .step { color: #a1a1aa; }
+  .stage .stg-name { font-size: 17px; font-weight: 800; letter-spacing: -0.3px; }
+  .stage .stg-out { font-size: 12.5px; color: var(--gray); }
+  .stage.s3 .stg-out { color: #d4d4d8; }
+
   /* ===================== ORG CHART ===================== */
   .ceo-node {
     width: 200px; margin: 0 auto;
@@ -174,6 +199,22 @@
   /* ===================== MOBILE ===================== */
   @media (max-width: 820px) {
     body { padding: 40px 16px 64px; }
+    .funnel { flex-direction: column; margin-bottom: 48px; }
+    .stage, .stage:first-child, .stage:last-child {
+      margin-left: 0; padding: 16px 20px 22px; border-radius: 0;
+    }
+    .stage:first-child {
+      border-radius: 10px 10px 0 0;
+      clip-path: polygon(0 0, 100% 0, 100% calc(100% - 14px), 50% 100%, 0 calc(100% - 14px));
+    }
+    .stage.s2 {
+      margin-top: -8px;
+      clip-path: polygon(0 0, 50% 14px, 100% 0, 100% calc(100% - 14px), 50% 100%, 0 calc(100% - 14px));
+    }
+    .stage:last-child {
+      margin-top: -8px; border-radius: 0 0 10px 10px; padding-bottom: 16px;
+      clip-path: polygon(0 0, 50% 14px, 100% 0, 100% 100%, 0 100%);
+    }
     .branches { flex-direction: column; gap: 40px; }
     .c-across, .c-drops { display: none; }
     .c-down { height: 24px; }
@@ -198,6 +239,25 @@
     <h1>조직도</h1>
     <p>퍼널: 기업 모객 → 인재 모객 → 매칭 · 2026.07</p>
   </header>
+
+  <!-- ===================== FUNNEL ===================== -->
+  <div class="funnel">
+    <div class="stage s1">
+      <div class="step">Step 1 · 유입</div>
+      <div class="stg-name">기업 모객</div>
+      <div class="stg-out">산출물 → 개설된 단톡 (JD)</div>
+    </div>
+    <div class="stage s2">
+      <div class="step">Step 2 · 인재</div>
+      <div class="stg-name">인재 모객</div>
+      <div class="stg-out">산출물 → 지원자 풀</div>
+    </div>
+    <div class="stage s3">
+      <div class="step">Step 3 · 매칭</div>
+      <div class="stg-name">매칭 · 클로징</div>
+      <div class="stg-out">산출물 → 계약 (매출)</div>
+    </div>
+  </div>
 
   <!-- ===================== ORG CHART ===================== -->
   <div class="chart">
