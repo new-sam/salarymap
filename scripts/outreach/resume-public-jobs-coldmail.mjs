@@ -35,61 +35,48 @@ const csvCell = (v) => { const s = String(v ?? ''); return /[",\n]/.test(s) ? `"
 const sleep = (ms) => new Promise(r => setTimeout(r, ms))
 const esc = (s) => String(s || '').replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]))
 
-// ── 이메일에 보여줄 상위 공고(기업 직접등록 · 활성 · 지원 많은 순) ──
-async function topJobs(n = 5) {
-  const { data: jobs, error } = await sb.from('jobs')
-    .select('id, title, company, created_at')
+// ── 메일 훅에 쓸 공고 수(랜딩과 동일 기준: 기업 직접등록 · 활성 · likelion 제외) ──
+async function activeJobCount() {
+  const { count, error } = await sb.from('jobs')
+    .select('id', { count: 'exact', head: true })
     .eq('source', 'company_self').eq('is_active', true)
     .not('company', 'ilike', '%likelion%')
   if (error) throw error
-  const { data: apps } = await sb.from('job_applications').select('job_id').in('job_id', jobs.map(j => j.id))
-  const counts = {}
-  for (const a of apps || []) counts[a.job_id] = (counts[a.job_id] || 0) + 1
-  const sorted = jobs.sort((a, b) => (counts[b.id] || 0) - (counts[a.id] || 0) || new Date(b.created_at) - new Date(a.created_at))
-  return { top: sorted.slice(0, n), total: sorted.length }
+  return count
 }
 
-// ── 베트남어 이메일 — 축하금이 아니라 "적극 채용중 기업 + 원탭 지원" 앵글 ──
-const SUBJECT = 'Các công ty này đang tuyển dụng tích cực — nhưng CV của bạn đang bị ẩn'
-function emailText(name, url, jobs, total) {
-  const list = jobs.map(j => `• ${j.title} — ${j.company}`).join('\n')
+// ── 베트남어 이메일 — 훅은 "이미 올린 CV로 원클릭 지원" 하나. 공고 나열은 랜딩이 담당,
+//    공개 전환은 버튼 동작 고지 한 줄(훅과 섞지 않음) ──
+const subject = (total) => `CV của bạn đã sẵn sàng — ứng tuyển ${total} vị trí đang tuyển gấp chỉ với 1 chạm`
+function emailText(name, url, total) {
   return `Chào ${name || 'bạn'},
 
-Bạn đã đăng ký CV trên FYI, nhưng CV đang ở chế độ RIÊNG TƯ — nhà tuyển dụng không thể tìm thấy bạn.
+Bạn đã có CV trên FYI — giờ bạn có thể dùng chính CV đó để ứng tuyển ngay, không cần điền lại bất cứ thông tin nào.
 
-Trong khi đó, ${total} vị trí từ các công ty đang tuyển dụng tích cực trên FYI ngay lúc này:
-${list}
-…và nhiều vị trí khác.
+Ngay lúc này có ${total} vị trí từ các công ty đang tuyển dụng tích cực. Nhấn nút bên dưới để xem danh sách và ứng tuyển từng vị trí chỉ với 1 nút bấm — CV của bạn được gửi tự động.
 
-Chỉ cần 1 chạm để công khai CV và ứng tuyển ngay:
+Xem việc làm & ứng tuyển ngay:
 ${url}
 
-Sau khi công khai, bạn có thể ứng tuyển từng vị trí chỉ với 1 nút bấm — CV đã đăng ký sẽ được gửi tự động, không cần điền lại thông tin.
+Lưu ý: khi nhấn nút, CV của bạn sẽ chuyển sang chế độ công khai — nhà tuyển dụng cũng có thể chủ động tìm thấy và liên hệ bạn.
 
 — Đội ngũ FYI (salary-fyi.com)
-Đây là email tự động. Nếu bạn không muốn công khai CV, chỉ cần bỏ qua email này.`
+Đây là email tự động. Nếu bạn không quan tâm, chỉ cần bỏ qua email này.`
 }
-function emailHtml(name, url, jobs, total) {
-  const rows = jobs.map(j => `<tr>
-    <td style="padding:10px 0;border-bottom:1px solid #f3ede4">
-      <div style="font-size:14px;font-weight:700;color:#1a1612;line-height:1.4">${esc(j.title)}</div>
-      <div style="font-size:12.5px;color:#8a8073;margin-top:2px">${esc(j.company)}</div>
-    </td></tr>`).join('')
+function emailHtml(name, url, total) {
   return `<!doctype html><html><body style="margin:0;background:#faf9f7;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif;color:#1a1612">
 <div style="max-width:520px;margin:0 auto;padding:32px 20px">
   <div style="font-size:20px;font-weight:800;color:#ff6000;margin-bottom:20px">FYI</div>
   <div style="background:#fff;border:1px solid #eee5da;border-radius:18px;padding:30px 26px">
     <p style="font-size:15px;margin:0 0 14px">Chào <b>${esc(name) || 'bạn'}</b>,</p>
-    <p style="font-size:14.5px;line-height:1.6;margin:0 0 16px">Bạn đã đăng ký CV trên FYI, nhưng CV đang ở chế độ <b style="color:#d92d20">RIÊNG TƯ</b> — nhà tuyển dụng <b>không thể tìm thấy bạn</b>.</p>
-    <p style="font-size:14.5px;line-height:1.6;margin:0 0 10px">Trong khi đó, <b>${total} vị trí</b> từ các công ty đang tuyển dụng tích cực trên FYI ngay lúc này:</p>
-    <table style="width:100%;border-collapse:collapse;margin:0 0 18px">${rows}</table>
-    <p style="font-size:14.5px;line-height:1.6;margin:0 0 20px">Chỉ cần <b>1 chạm</b> để công khai CV và ứng tuyển ngay:</p>
-    <div style="text-align:center;margin:0 0 22px">
-      <a href="${url}" style="display:inline-block;background:#ff6000;color:#fff;font-weight:700;font-size:15px;text-decoration:none;padding:14px 28px;border-radius:12px">Công khai CV &amp; xem việc làm →</a>
+    <p style="font-size:14.5px;line-height:1.6;margin:0 0 16px">Bạn đã có CV trên FYI — giờ bạn có thể dùng chính CV đó để <b>ứng tuyển ngay, không cần điền lại bất cứ thông tin nào</b>.</p>
+    <p style="font-size:14.5px;line-height:1.6;margin:0 0 20px">Ngay lúc này có <b>${total} vị trí</b> từ các công ty đang tuyển dụng tích cực. Nhấn nút bên dưới để xem danh sách và ứng tuyển từng vị trí <b>chỉ với 1 nút bấm</b> — CV của bạn được gửi tự động.</p>
+    <div style="text-align:center;margin:0 0 18px">
+      <a href="${url}" style="display:inline-block;background:#ff6000;color:#fff;font-weight:700;font-size:15px;text-decoration:none;padding:14px 28px;border-radius:12px">Xem việc làm &amp; ứng tuyển ngay →</a>
     </div>
-    <p style="font-size:13px;line-height:1.6;color:#8a8073;margin:0">Sau khi công khai, bạn có thể ứng tuyển từng vị trí chỉ với 1 nút bấm — CV đã đăng ký sẽ được gửi tự động, không cần điền lại thông tin.</p>
+    <p style="font-size:12.5px;line-height:1.6;color:#8a8073;margin:0">Lưu ý: khi nhấn nút, CV của bạn sẽ chuyển sang chế độ công khai — nhà tuyển dụng cũng có thể chủ động tìm thấy và liên hệ bạn.</p>
   </div>
-  <p style="font-size:11.5px;color:#a89f92;text-align:center;margin:18px 0 0;line-height:1.5">— Đội ngũ FYI · salary-fyi.com<br>Đây là email tự động. Nếu bạn không muốn công khai CV, chỉ cần bỏ qua email này.</p>
+  <p style="font-size:11.5px;color:#a89f92;text-align:center;margin:18px 0 0;line-height:1.5">— Đội ngũ FYI · salary-fyi.com<br>Đây là email tự động. Nếu bạn không quan tâm, chỉ cần bỏ qua email này.</p>
 </div></body></html>`
 }
 
@@ -110,8 +97,8 @@ async function resendClient() {
 }
 
 ;(async () => {
-  const { top, total } = await topJobs(5)
-  console.log(`이메일 공고 미리보기(${total}개 중 상위 5):`, top.map(j => `${j.title} — ${j.company}`))
+  const total = await activeJobCount()
+  console.log(`활성 기업등록 공고(메일 훅/랜딩 기준): ${total}개`)
 
   // ── 테스트 1통 ──
   if (testTo) {
@@ -119,7 +106,7 @@ async function resendClient() {
     const uid = prof?.id || '00000000-0000-0000-0000-000000000000'
     const url = link(uid)
     const resend = await resendClient()
-    const r = await resend.emails.send({ from: RESEND_FROM, to: testTo, subject: '[TEST] ' + SUBJECT, text: emailText(prof?.full_name, url, top, total), html: emailHtml(prof?.full_name, url, top, total) })
+    const r = await resend.emails.send({ from: RESEND_FROM, to: testTo, subject: '[TEST] ' + subject(total), text: emailText(prof?.full_name, url, total), html: emailHtml(prof?.full_name, url, total) })
     if (r.error) throw new Error(r.error.message || 'resend_error')
     console.log(`✅ 테스트 발송 → ${testTo} (from ${RESEND_FROM}) | 링크 유저: ${uid.slice(0, 8)}… | id=${r.data?.id}`)
     console.log(`   버튼 URL: ${url}`)
@@ -165,7 +152,7 @@ async function resendClient() {
   for (const r of capped) {
     const url = link(r.id)
     try {
-      const resp = await resend.emails.send({ from: RESEND_FROM, to: r.email, subject: SUBJECT, text: emailText(r.full_name, url, top, total), html: emailHtml(r.full_name, url, top, total) })
+      const resp = await resend.emails.send({ from: RESEND_FROM, to: r.email, subject: subject(total), text: emailText(r.full_name, url, total), html: emailHtml(r.full_name, url, total) })
       if (resp.error) throw new Error(resp.error.message || 'resend_error')
       await sb.from('events').insert([{ event: 'coldmail_public_sent', page: '/campaign/resume-public', meta: { campaign, email: r.email, source: r.resume_source || null, platform: r.resume_platform || null }, user_id: r.id }])
       ok++
