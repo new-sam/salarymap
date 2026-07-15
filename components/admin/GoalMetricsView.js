@@ -861,6 +861,44 @@ function ColdmailPublicTab({ data, loading, error, ko }) {
           : `* Current private-resume pool: ${data.targetRemaining}. Rate = converted / sent.`}
       </div>
 
+      {(data.campaigns || []).length > 0 && (
+        <>
+          <div style={{ fontSize: 13, fontWeight: 700, color: '#374151', margin: '0 0 8px' }}>
+            {ko ? '캠페인별 (coldmail1=축하금 · jobs1=공고 원탭지원)' : 'By campaign'}
+          </div>
+          <div style={{ overflowX: 'auto', border: '1px solid #EEF0F2', borderRadius: 12, marginBottom: 24 }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 560 }}>
+              <thead><tr>
+                <th style={th}>{ko ? '캠페인' : 'Campaign'}</th>
+                <th style={{ ...th, textAlign: 'right' }}>{ko ? '발송' : 'Sent'}</th>
+                <th style={{ ...th, textAlign: 'right' }}>{ko ? '클릭' : 'Clicks'}</th>
+                <th style={{ ...th, textAlign: 'right' }}>CTR</th>
+                <th style={{ ...th, textAlign: 'right' }}>{ko ? '공개 전환' : 'Converted'}</th>
+                <th style={{ ...th, textAlign: 'right' }}>{ko ? '전환율' : 'Rate'}</th>
+                <th style={{ ...th, textAlign: 'right' }}>{ko ? '원탭 지원' : 'One-tap applies'}</th>
+              </tr></thead>
+              <tbody>
+                {data.campaigns.map((c) => (
+                  <tr key={c.campaign}>
+                    <td style={{ ...td, fontWeight: 700 }}>{c.campaign}
+                      {c.firstSentDay && <span style={{ fontWeight: 400, color: '#9CA3AF', fontSize: 11.5 }}> · {c.firstSentDay.slice(5)}{c.lastSentDay && c.lastSentDay !== c.firstSentDay ? `~${c.lastSentDay.slice(5)}` : ''}</span>}
+                    </td>
+                    <td style={num}>{c.sent}</td>
+                    <td style={{ ...num, color: '#2563EB' }}>{c.clicked}</td>
+                    <td style={num}>{c.sent ? pct(c.clickRate) : '—'}</td>
+                    <td style={{ ...num, color: '#0D9488' }}>{c.converted}</td>
+                    <td style={num}>{c.sent ? pct(c.convertRate) : '—'}</td>
+                    <td style={{ ...num, color: c.applies ? '#D97706' : undefined, fontWeight: 800 }}>
+                      {c.applies ? `${c.applies}${ko ? '건' : ''} / ${c.appliers}${ko ? '명' : ''}` : '—'}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </>
+      )}
+
       {data.daily.length > 0 && (
         <>
           <div style={{ fontSize: 13, fontWeight: 700, color: '#374151', margin: '0 0 8px' }}>{ko ? '일별 (클릭·전환 — 인원 기준, 첫 발생일)' : 'Daily (unique people, first occurrence)'}</div>

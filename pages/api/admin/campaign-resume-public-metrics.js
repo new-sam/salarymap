@@ -40,7 +40,7 @@ export default async function handler(req, res) {
     const [evts, targetHead] = await Promise.all([
       fetchAll(() => supabase.from('events')
         .select('event, user_id, created_at, meta')
-        .in('event', ['coldmail_public_sent', 'coldmail_public_click', 'coldmail_public_convert'])
+        .in('event', ['coldmail_public_sent', 'coldmail_public_click', 'coldmail_public_convert', 'coldmail_job_apply'])
         .order('created_at')),
       // 아직 비공개인(= 앞으로 보낼 수 있는) 이력서 보유자 수 — 라이브 참고값
       supabase.from('user_profiles').select('id', { count: 'exact', head: true })
@@ -52,21 +52,47 @@ export default async function handler(req, res) {
     const days = {} // day -> { day, clicks, converts } — 유니크 인원 기준(그 날 "처음" 클릭/전환한 사람 수)
     const touch = (d) => (days[d] = days[d] || { day: d, clicks: 0, converts: 0 })
 
+    // 캠페인별 분리 집계 — coldmail1(축하금)·jobs1(공고 원탭지원) 등을 따로 본다.
+    // 지원(coldmail_job_apply)은 jobs* 캠페인 전용 이벤트라 캠페인별에만 존재.
+    const camps = {}
+    const camp = (name) => (camps[name] = camps[name] || {
+      campaign: name, sent: new Set(), click: new Set(), convert: new Set(),
+      applies: 0, appliers: new Set(), firstSentDay: null, lastSentDay: null,
+    })
+
     // 일별도 카드와 동일하게 인원 수로 집계 — 같은 사람의 재클릭/재전환(idempotent 재실행,
     // 메일 스캐너 중복 포함)이 표를 부풀리지 않게, 유저별 첫 이벤트가 발생한 날에만 1로 센다.
     for (const e of evts) {
       const uid = e.user_id
+      const c = camp(e.meta?.campaign || 'coldmail1')
       if (e.event === 'coldmail_public_sent') {
-        if (uid) usersBy.sent.add(uid)
+        if (uid) { usersBy.sent.add(uid); c.sent.add(uid) }
         if (uid && !firstSentByUser[uid]) firstSentByUser[uid] = e.created_at
+        const day = vnDay(e.created_at)
+        if (!c.firstSentDay || day < c.firstSentDay) c.firstSentDay = day
+        if (!c.lastSentDay || day > c.lastSentDay) c.lastSentDay = day
       } else if (e.event === 'coldmail_public_click') {
         if (!uid || !usersBy.click.has(uid)) touch(vnDay(e.created_at)).clicks++
-        if (uid) usersBy.click.add(uid)
+        if (uid) { usersBy.click.add(uid); c.click.add(uid) }
       } else if (e.event === 'coldmail_public_convert') {
         if (!uid || !usersBy.convert.has(uid)) touch(vnDay(e.created_at)).converts++
-        if (uid) usersBy.convert.add(uid)
+        if (uid) { usersBy.convert.add(uid); c.convert.add(uid) }
+      } else if (e.event === 'coldmail_job_apply') {
+        c.applies++
+        if (uid) c.appliers.add(uid)
       }
     }
+
+    const campaigns = Object.values(camps)
+      .map((c) => ({
+        campaign: c.campaign,
+        sent: c.sent.size, clicked: c.click.size, converted: c.convert.size,
+        clickRate: c.sent.size ? c.click.size / c.sent.size : 0,
+        convertRate: c.sent.size ? c.convert.size / c.sent.size : 0,
+        applies: c.applies, appliers: c.appliers.size,
+        firstSentDay: c.firstSentDay, lastSentDay: c.lastSentDay,
+      }))
+      .sort((a, b) => String(a.firstSentDay || '9999').localeCompare(String(b.firstSentDay || '9999')))
 
     const sent = usersBy.sent.size
     const clicked = usersBy.click.size
@@ -83,6 +109,7 @@ export default async function handler(req, res) {
       firstSentDay: sentDates[0] || null,
       lastSentDay: sentDates[sentDates.length - 1] || null,
       targetRemaining: targetHead.count || 0, // 아직 비공개인 이력서 보유자(발송 대상 풀)
+      campaigns,
       daily,
       generatedAt: new Date().toISOString(),
     })
