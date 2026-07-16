@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, Fragment } from 'react'
 import { useAdmin } from '../../lib/adminSwr'
 import MetricChart from '../DashboardCharts'
 
@@ -53,25 +53,48 @@ const SOURCE_LABELS = {
   coldmail_jobs: { ko: '콜드메일 캠페인', en: 'Coldmail', desc: { ko: '콜드메일 원클릭 지원 링크', en: 'From coldmail quick-apply link' } },
 }
 
+// 직접 지원 유입 채널 (드릴다운) — utm/referrer 귀속
+const CHANNEL_LABELS = {
+  meta: { ko: '메타 광고', en: 'Meta ads', color: '#2563EB', desc: { ko: '유료 리드·광고 (utm=meta·lead)', en: 'Paid Meta lead/ads' } },
+  organic: { ko: '오가닉', en: 'Organic', color: '#059669', desc: { ko: '구글·페북·직접 등 무료 유입', en: 'Google/FB/direct, unpaid' } },
+  unknown: { ko: '미상', en: 'Unknown', color: '#9CA3AF', desc: { ko: 'utm 유실 — 추적 안 됨 (오가닉 단정 불가)', en: 'No utm — untracked' } },
+}
+
 export default function RevenueView({ token, lang }) {
   const ko = lang !== 'en'
   const { data, isLoading } = useAdmin('/api/admin/revenue-metrics', token)
   const [gran, setGran] = useState('day')
+  const [view, setView] = useState('channel')
+  const [openDirect, setOpenDirect] = useState(false)
 
   if (isLoading || !data) return <div style={{ textAlign: 'center', padding: 40, color: '#666' }}>{ko ? '불러오는 중…' : 'Loading…'}</div>
   if (data.error) return <div style={{ textAlign: 'center', padding: 40, color: '#c00' }}>{data.error}</div>
 
-  const { overview, daily = [], sourceBreakdown = [], platform = {} } = data
+  const { overview, daily = [], sourceBreakdown = [], directChannels = [], platform = {} } = data
   const th = { textAlign: 'left', padding: '10px 12px', fontWeight: 600, whiteSpace: 'nowrap' }
   const thR = { ...th, textAlign: 'right' }
   const td = { padding: '9px 12px', color: '#374151' }
   const tdR = { ...td, textAlign: 'right' }
 
-  // 추이 — 기업 지원(녹) vs KTC 지원(보라). 같은 축(비중이 그대로 보이게 dualAxis 끔).
-  const metrics = [
-    { key: 'company', dataKey: 'company', label: ko ? '기업 지원' : 'Company', color: '#059669' },
-    { key: 'ktc', dataKey: 'ktc', label: ko ? 'KTC 지원' : 'KTC', color: '#7C3AED' },
-  ]
+  // 추이 보기 3종 — 창구(기업/KTC) · 경로(직접/급여/…) · 직접채널(메타/오가닉/미상).
+  // 같은 축(dualAxis 끔)이라 비중이 그대로 보인다.
+  const M = (dataKey, label, color) => ({ key: dataKey, dataKey, label, color })
+  const VIEWS = {
+    channel: { label: ko ? '창구' : 'Channel', metrics: [M('company', ko ? '기업 지원' : 'Company', '#059669'), M('ktc', ko ? 'KTC 지원' : 'KTC', '#7C3AED')] },
+    source: { label: ko ? '경로' : 'Source', metrics: [
+      M('src_direct', ko ? '직접' : 'Direct', '#7C3AED'),
+      M('src_salary', ko ? '급여 제출' : 'Salary', '#2563EB'),
+      M('src_cv_success', 'CV', '#059669'),
+      M('src_similar_after_apply', ko ? '유사공고' : 'Similar', '#F59E0B'),
+      M('src_coldmail_jobs', ko ? '콜드메일' : 'Coldmail', '#EC4899'),
+    ] },
+    directch: { label: ko ? '직접 채널' : 'Direct ch.', metrics: [
+      M('ch_meta', ko ? '메타 광고' : 'Meta', '#2563EB'),
+      M('ch_organic', ko ? '오가닉' : 'Organic', '#059669'),
+      M('ch_unknown', ko ? '미상' : 'Unknown', '#9CA3AF'),
+    ] },
+  }
+  const metrics = VIEWS[view].metrics
   const chartView = aggregateBy(daily, metrics, gran)
   const seriesTotal = (dk) => chartView.reduce((s, d) => s + (d[dk] || 0), 0)
   const grand = sourceBreakdown.reduce((s, r) => s + r.total, 0) || 1
@@ -107,14 +130,27 @@ export default function RevenueView({ token, lang }) {
       {/* 추이 — 기업 vs KTC, 일/주/월 */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, flexWrap: 'wrap', margin: '0 0 4px' }}>
         <h4 style={{ fontSize: 15, fontWeight: 700, margin: 0 }}>{ko ? '지원 추이' : 'Trend'}</h4>
-        <div style={{ display: 'flex', gap: 2, background: '#F2F4F6', borderRadius: 9, padding: 3 }}>
-          {GRANS.map(([k, ko_, en]) => (
-            <button key={k} onClick={() => setGran(k)} style={{
-              padding: '6px 14px', borderRadius: 6, fontSize: 12.5, fontWeight: 600, cursor: 'pointer', border: 'none',
-              background: gran === k ? '#fff' : 'transparent', color: gran === k ? '#7C3AED' : '#86868b',
-              boxShadow: gran === k ? '0 1px 2px rgba(0,0,0,0.08)' : 'none',
-            }}>{ko ? ko_ : en}</button>
-          ))}
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          {/* 보기 토글 — 창구 / 경로 / 직접 채널 */}
+          <div style={{ display: 'flex', gap: 2, background: '#F2F4F6', borderRadius: 9, padding: 3 }}>
+            {Object.entries(VIEWS).map(([k, v]) => (
+              <button key={k} onClick={() => setView(k)} style={{
+                padding: '6px 12px', borderRadius: 6, fontSize: 12.5, fontWeight: 600, cursor: 'pointer', border: 'none',
+                background: view === k ? '#fff' : 'transparent', color: view === k ? '#7C3AED' : '#86868b',
+                boxShadow: view === k ? '0 1px 2px rgba(0,0,0,0.08)' : 'none',
+              }}>{v.label}</button>
+            ))}
+          </div>
+          {/* 일/주/월 토글 */}
+          <div style={{ display: 'flex', gap: 2, background: '#F2F4F6', borderRadius: 9, padding: 3 }}>
+            {GRANS.map(([k, ko_, en]) => (
+              <button key={k} onClick={() => setGran(k)} style={{
+                padding: '6px 14px', borderRadius: 6, fontSize: 12.5, fontWeight: 600, cursor: 'pointer', border: 'none',
+                background: gran === k ? '#fff' : 'transparent', color: gran === k ? '#7C3AED' : '#86868b',
+                boxShadow: gran === k ? '0 1px 2px rgba(0,0,0,0.08)' : 'none',
+              }}>{ko ? ko_ : en}</button>
+            ))}
+          </div>
         </div>
       </div>
       <div style={{ fontSize: 12, color: '#6B7280', marginBottom: 12 }}>
@@ -154,24 +190,74 @@ export default function RevenueView({ token, lang }) {
             {sourceBreakdown.map(r => {
               const lbl = SOURCE_LABELS[r.key]
               const pct = Math.round((r.total / grand) * 1000) / 10
+              // '직접 지원'은 클릭 시 유입 채널(메타광고/오가닉/미상)로 펼침
+              const expandable = r.key === 'direct' && directChannels.length > 0
+              const open = expandable && openDirect
               return (
-                <tr key={r.key} style={{ borderTop: '1px solid #F1F5F9' }}>
-                  <td style={td}>
-                    <div style={{ fontWeight: 600, color: '#0F172A' }}>{lbl ? (ko ? lbl.ko : lbl.en) : r.key}</div>
-                    <div style={{ fontSize: 11, color: '#9CA3AF', marginTop: 1 }}>{lbl ? (ko ? lbl.desc.ko : lbl.desc.en) : r.key}</div>
-                  </td>
-                  <td style={tdR}>{r.company}</td>
-                  <td style={{ ...tdR, color: '#6D28D9' }}>{r.ktc}</td>
-                  <td style={{ ...tdR, fontWeight: 700, color: '#0F172A' }}>{r.total}</td>
-                  <td style={td}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                      <div style={{ flex: 1, height: 8, background: '#F1F5F9', borderRadius: 4, overflow: 'hidden' }}>
-                        <div style={{ width: `${pct}%`, height: '100%', background: '#7C3AED', borderRadius: 4 }} />
+                <Fragment key={r.key}>
+                  <tr
+                    onClick={expandable ? () => setOpenDirect(v => !v) : undefined}
+                    style={{ borderTop: '1px solid #F1F5F9', cursor: expandable ? 'pointer' : 'default', background: open ? '#F6F2FE' : 'transparent' }}
+                  >
+                    <td style={td}>
+                      <div style={{ fontWeight: 600, color: '#0F172A' }}>
+                        {expandable && <span style={{ color: open ? '#7C3AED' : '#C4C9D0', fontWeight: 700, marginRight: 6 }}>{open ? '▾' : '▸'}</span>}
+                        {lbl ? (ko ? lbl.ko : lbl.en) : r.key}
                       </div>
-                      <span style={{ fontSize: 11.5, color: '#6B7280', width: 42, textAlign: 'right' }}>{pct}%</span>
-                    </div>
-                  </td>
-                </tr>
+                      <div style={{ fontSize: 11, color: '#9CA3AF', marginTop: 1 }}>{lbl ? (ko ? lbl.desc.ko : lbl.desc.en) : r.key}{expandable ? (ko ? ' · 클릭해 유입 분해' : ' · click to split') : ''}</div>
+                    </td>
+                    <td style={tdR}>{r.company}</td>
+                    <td style={{ ...tdR, color: '#6D28D9' }}>{r.ktc}</td>
+                    <td style={{ ...tdR, fontWeight: 700, color: '#0F172A' }}>{r.total}</td>
+                    <td style={td}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <div style={{ flex: 1, height: 8, background: '#F1F5F9', borderRadius: 4, overflow: 'hidden' }}>
+                          <div style={{ width: `${pct}%`, height: '100%', background: '#7C3AED', borderRadius: 4 }} />
+                        </div>
+                        <span style={{ fontSize: 11.5, color: '#6B7280', width: 42, textAlign: 'right' }}>{pct}%</span>
+                      </div>
+                    </td>
+                  </tr>
+                  {open && (() => {
+                    const dTotal = directChannels.reduce((s, c) => s + c.total, 0) || 1
+                    return (
+                      <tr style={{ background: '#FBFAFF' }}>
+                        <td colSpan={5} style={{ padding: '6px 12px 12px 30px' }}>
+                          <div style={{ fontSize: 11.5, color: '#9CA3AF', fontWeight: 600, margin: '4px 0 8px' }}>{ko ? '직접 지원 유입 채널 (utm·referrer 귀속)' : 'Direct-apply channel (utm/referrer)'}</div>
+                          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12.5 }}>
+                            <tbody>
+                              {directChannels.map(c => {
+                                const cl = CHANNEL_LABELS[c.key]
+                                const cpct = Math.round((c.total / dTotal) * 1000) / 10
+                                return (
+                                  <tr key={c.key} style={{ borderTop: '1px solid #EFEAFB' }}>
+                                    <td style={{ padding: '7px 8px' }}>
+                                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontWeight: 600, color: '#0F172A' }}>
+                                        <span style={{ width: 9, height: 9, borderRadius: 2, background: cl.color }} />{ko ? cl.ko : cl.en}
+                                      </span>
+                                      <span style={{ fontSize: 11, color: '#9CA3AF', marginLeft: 8 }}>{ko ? cl.desc.ko : cl.desc.en}</span>
+                                    </td>
+                                    <td style={{ padding: '7px 8px', textAlign: 'right', color: '#374151', width: 70 }}>{c.company}</td>
+                                    <td style={{ padding: '7px 8px', textAlign: 'right', color: '#6D28D9', width: 70 }}>{c.ktc}</td>
+                                    <td style={{ padding: '7px 8px', textAlign: 'right', fontWeight: 700, color: '#0F172A', width: 60 }}>{c.total}</td>
+                                    <td style={{ padding: '7px 8px', width: '30%' }}>
+                                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                        <div style={{ flex: 1, height: 7, background: '#EFEAFB', borderRadius: 4, overflow: 'hidden' }}>
+                                          <div style={{ width: `${cpct}%`, height: '100%', background: cl.color, borderRadius: 4 }} />
+                                        </div>
+                                        <span style={{ fontSize: 11, color: '#6B7280', width: 42, textAlign: 'right' }}>{cpct}%</span>
+                                      </div>
+                                    </td>
+                                  </tr>
+                                )
+                              })}
+                            </tbody>
+                          </table>
+                        </td>
+                      </tr>
+                    )
+                  })()}
+                </Fragment>
               )
             })}
           </tbody>
