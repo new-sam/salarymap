@@ -208,6 +208,11 @@ async function main() {
         job_title: m.job.title, job_company: m.job.company, sent_by: 'coldmail', kind: 'recommend', status: 'sent',
       })), { onConflict: 'user_id,job_id', ignoreDuplicates: true }
     )
+    // 목표지표(콜드메일 공개 탭 캠페인 테이블) 발송 집계용 — 캠페인별 sent 로 잡힌다.
+    await sb.from('events').insert([{
+      event: 'recommend_sent', page: '/scripts/recommend-jobs-coldmail',
+      meta: { campaign, job_ids: matches.map((m) => m.job.id) }, user_id: p.id,
+    }])
     ok++
     await sleep(400)
   }

@@ -980,7 +980,7 @@ function ColdmailPublicTab({ data, loading, error, ko }) {
       {(data.campaigns || []).length > 0 && (
         <>
           <div style={{ fontSize: 13, fontWeight: 700, color: '#374151', margin: '0 0 8px' }}>
-            {ko ? '캠페인별 (coldmail1=축하금 · jobs1=공고 원탭지원)' : 'By campaign'}
+            {ko ? '캠페인별 (coldmail1=축하금 · jobs1=공고 원탭지원 · recommend1=담당자 추천)' : 'By campaign'}
           </div>
           <div style={{ overflowX: 'auto', border: '1px solid #EEF0F2', borderRadius: 12, marginBottom: 24 }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 560 }}>

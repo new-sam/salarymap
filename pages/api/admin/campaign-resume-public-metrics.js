@@ -40,7 +40,7 @@ export default async function handler(req, res) {
     const [evts, targetHead] = await Promise.all([
       fetchAll(() => supabase.from('events')
         .select('event, user_id, created_at, meta')
-        .in('event', ['coldmail_public_sent', 'coldmail_public_click', 'coldmail_public_convert', 'coldmail_job_apply'])
+        .in('event', ['coldmail_public_sent', 'coldmail_public_click', 'coldmail_public_convert', 'coldmail_job_apply', 'recommend_sent', 'recommend_click'])
         .order('created_at')),
       // 아직 비공개인(= 앞으로 보낼 수 있는) 이력서 보유자 수 — 라이브 참고값
       supabase.from('user_profiles').select('id', { count: 'exact', head: true })
@@ -80,6 +80,15 @@ export default async function handler(req, res) {
       } else if (e.event === 'coldmail_job_apply') {
         c.applies++
         if (uid) c.appliers.add(uid)
+      } else if (e.event === 'recommend_sent') {
+        // 담당자 추천 콜드메일(recommend1) — 공개전환 캠페인이 아니라서 top-line 퍼널엔 넣지
+        // 않고 캠페인별 버킷에만 발송/기간 반영(전환=지원은 coldmail_job_apply로 별도 집계).
+        if (uid) c.sent.add(uid)
+        const day = vnDay(e.created_at)
+        if (!c.firstSentDay || day < c.firstSentDay) c.firstSentDay = day
+        if (!c.lastSentDay || day > c.lastSentDay) c.lastSentDay = day
+      } else if (e.event === 'recommend_click') {
+        if (uid) c.click.add(uid)
       }
     }
 
