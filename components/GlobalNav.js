@@ -55,7 +55,11 @@ export default function GlobalNav({ activePage, onLogin, onJobsClick, mobileSear
       if (session) {
         setIsLoggedIn(true)
         setUser(session.user)
-        const cached = sessionStorage.getItem('fyi_is_admin')
+        // Cache the admin check per-email so it can't carry over to a
+        // different user who logs in later in the same tab (sessionStorage
+        // persists across the OAuth redirect and isn't cleared on logout).
+        const adminKey = `fyi_is_admin:${session.user.email}`
+        const cached = sessionStorage.getItem(adminKey)
         if (cached !== null) {
           setIsAdmin(cached === 'true')
         } else {
@@ -63,7 +67,7 @@ export default function GlobalNav({ activePage, onLogin, onJobsClick, mobileSear
             const r = await fetch(`/api/admin/check?email=${encodeURIComponent(session.user.email)}`)
             const d = await r.json()
             setIsAdmin(d.isAdmin)
-            sessionStorage.setItem('fyi_is_admin', String(d.isAdmin))
+            sessionStorage.setItem(adminKey, String(d.isAdmin))
           } catch {}
         }
         try {
@@ -296,7 +300,7 @@ export default function GlobalNav({ activePage, onLogin, onJobsClick, mobileSear
                   )}
                   <button className="gnav-menu-item" onClick={async () => {
                     await supabase.auth.signOut()
-                    setIsLoggedIn(false); setUser(null); setShowMenu(false)
+                    setIsLoggedIn(false); setUser(null); setIsAdmin(false); setShowMenu(false)
                     window.location.reload()
                   }}>{t('nav.logout')}</button>
                 </div>
