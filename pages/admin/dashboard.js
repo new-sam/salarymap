@@ -9,6 +9,7 @@ import AdminLayout from '../../components/admin/AdminLayout'
 import DateRangePicker from '../../components/admin/DateRangePicker'
 import Icon from '../../components/Icon'
 import FunnelView from '../../components/admin/FunnelView'
+import MainFunnelView from '../../components/admin/MainFunnelView'
 import ApplicationsView from '../../components/admin/ApplicationsView'
 import ResumesView from '../../components/admin/ResumesView'
 import TalentPoolView from '../../components/admin/TalentPoolView'
@@ -67,9 +68,9 @@ export default function AdminDashboard() {
   // Admin dashboard only ships ko/en; fall back to en for any other global lang (e.g. vi)
   const lang = globalLang === 'ko' ? 'ko' : 'en'
   const router = useRouter()
-  const tab = router.query.tab || 'trend'
+  const tab = router.query.tab || 'main'
   // 날짜 범위를 실제로 쓰는 탭에서만 날짜 피커 노출 (이력서/인재풀/연봉인증은 누적 목록이라 무관)
-  const showDatePicker = ['trend', 'funnel', 'applications', 'community', 'appMetrics'].includes(tab)
+  const showDatePicker = ['main', 'trend', 'funnel', 'applications', 'community', 'appMetrics'].includes(tab)
   const [funnelKeys, setFunnelKeys] = useState([])
   const [chartMode, setChartMode] = useState('1d')
   const [tableView, setTableView] = useState('daily')
@@ -941,6 +942,11 @@ export default function AdminDashboard() {
               </div>
             </div>
           </>
+        )}
+
+        {/* Main Funnel Tab — 유입→가입→지원→합격 메인 대시보드 */}
+        {tab === 'main' && (
+          <MainFunnelView token={token} lang={lang} dateRange={dateRange} />
         )}
 
         {/* Funnel Tab */}

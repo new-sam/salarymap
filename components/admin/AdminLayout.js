@@ -7,7 +7,7 @@ import { useT } from '../../lib/i18n'
 // dashboard(15탭)와 jobs(7탭)의 모든 화면을 URL(?tab=)로 묶어 "페이지처럼" 전환한다.
 // 각 페이지 내부 컨텐츠/디자인은 건드리지 않고, 상단 탭바만 이 사이드바로 대체.
 
-const ROUTE_DEFAULT = { '/admin/dashboard': 'trend', '/admin/jobs': 'jobs' }
+const ROUTE_DEFAULT = { '/admin/dashboard': 'main', '/admin/jobs': 'jobs' }
 
 function buildNav(lang) {
   const L = (ko, en) => (lang === 'ko' ? ko : en)
@@ -15,6 +15,7 @@ function buildNav(lang) {
     {
       label: 'Performance',
       items: [
+        { label: L('메인 퍼널', 'Main funnel'), pathname: '/admin/dashboard', tab: 'main' },
         { label: L('추이', 'Trend'), pathname: '/admin/dashboard', tab: 'trend' },
         { label: L('퍼널', 'Funnel'), pathname: '/admin/dashboard', tab: 'funnel' },
         { label: L('지원자', 'Applicants'), pathname: '/admin/dashboard', tab: 'applications' },
