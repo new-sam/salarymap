@@ -28,6 +28,67 @@
   header h1 { font-size: 30px; font-weight: 800; letter-spacing: -0.5px; }
   header p { color: var(--gray); font-size: 14px; margin-top: 4px; }
 
+  /* ===================== BIZ STRUCTURE ===================== */
+  .biz-label {
+    font-size: 11px; font-weight: 800; letter-spacing: 1.5px;
+    color: var(--gray); text-transform: uppercase;
+    text-align: center; margin-bottom: 14px;
+  }
+  .biz-map { display: flex; align-items: stretch; margin-bottom: 20px; }
+  .axis-talent {
+    flex: 1;
+    background: var(--ink); color: #fff;
+    border-radius: 10px;
+    padding: 22px 24px;
+    display: flex; flex-direction: column; justify-content: center;
+  }
+  .axis-talent .ax-step {
+    font-size: 10.5px; font-weight: 800; letter-spacing: 1.5px;
+    color: #a1a1aa; text-transform: uppercase;
+  }
+  .axis-talent .ax-name { font-size: 20px; font-weight: 800; letter-spacing: -0.3px; }
+  .axis-talent .ax-name small { font-size: 12px; font-weight: 600; color: #a1a1aa; margin-left: 6px; }
+  .axis-talent .ax-desc { font-size: 13px; color: #d4d4d8; margin-top: 4px; }
+  .axis-talent .ax-tag {
+    margin-top: 12px; align-self: flex-start;
+    font-size: 11px; font-weight: 800;
+    background: #fff; color: var(--ink);
+    padding: 2px 10px; border-radius: 99px;
+  }
+  .biz-arrow {
+    display: flex; align-items: center; padding: 0 14px;
+    color: var(--gray); font-size: 20px; font-weight: 700;
+  }
+  .axis-company {
+    flex: 1.35;
+    display: flex; flex-direction: column; gap: 10px;
+  }
+  .axis-company .ax-step {
+    font-size: 10.5px; font-weight: 800; letter-spacing: 1.5px;
+    color: var(--gray); text-transform: uppercase;
+    padding-left: 2px;
+  }
+  .pipe {
+    flex: 1;
+    border: 1.5px solid var(--ink); border-radius: 10px;
+    background: #fff;
+    padding: 12px 18px;
+    display: flex; align-items: center; gap: 12px;
+  }
+  .pipe .who { font-size: 13.5px; font-weight: 700; color: var(--gray); min-width: 110px; }
+  .pipe .arr { color: var(--line); font-weight: 700; }
+  .pipe .biz-name { font-size: 17px; font-weight: 800; letter-spacing: -0.3px; }
+  .pipe .rev {
+    margin-left: auto;
+    font-size: 10.5px; font-weight: 800; letter-spacing: 1px;
+    color: var(--accent); text-transform: uppercase;
+  }
+  .biz-note {
+    text-align: center; font-size: 12.5px; color: var(--gray);
+    margin-bottom: 64px;
+  }
+  .biz-note b { color: var(--ink); }
+
   /* ===================== FUNNEL ===================== */
   .funnel { display: flex; align-items: stretch; margin-bottom: 64px; }
   .stage {
@@ -199,6 +260,11 @@
   /* ===================== MOBILE ===================== */
   @media (max-width: 820px) {
     body { padding: 40px 16px 64px; }
+    .biz-map { flex-direction: column; }
+    .biz-arrow { justify-content: center; padding: 8px 0; transform: rotate(90deg); }
+    .biz-note { margin-bottom: 48px; }
+    .pipe { flex-wrap: wrap; }
+    .pipe .who { min-width: 0; }
     .funnel { flex-direction: column; margin-bottom: 48px; }
     .stage, .stage:first-child, .stage:last-child {
       margin-left: 0; padding: 16px 20px 22px; border-radius: 0;
@@ -239,6 +305,38 @@
     <h1>조직도</h1>
     <p>퍼널: 기업 모객 → 인재 모객 → 매칭 · 2026.07</p>
   </header>
+
+  <!-- ===================== BIZ STRUCTURE ===================== -->
+  <div class="biz-label">사업 구조 — 인재 · 기업 두 축</div>
+  <div class="biz-map">
+
+    <div class="axis-talent">
+      <div class="ax-step">축 1 · 인재</div>
+      <div class="ax-name">FYI <small>salary-fyi.com</small></div>
+      <div class="ax-desc">모든 인재는 FYI 한 파이프로 모은다</div>
+      <div class="ax-tag">축 완성 단계</div>
+    </div>
+
+    <div class="biz-arrow">→</div>
+
+    <div class="axis-company">
+      <div class="ax-step">축 2 · 기업 = 매출</div>
+      <div class="pipe">
+        <span class="who">국내 기업 (KR)</span>
+        <span class="arr">→</span>
+        <span class="biz-name">스태핑</span>
+        <span class="rev">매출 파이프 1</span>
+      </div>
+      <div class="pipe">
+        <span class="who">로컬 기업 (VN)</span>
+        <span class="arr">→</span>
+        <span class="biz-name">FYI</span>
+        <span class="rev">매출 파이프 2</span>
+      </div>
+    </div>
+
+  </div>
+  <div class="biz-note">인재 축이 채워질수록 두 매출 파이프가 같이 커진다 — 지금은 <b>인재 → 기업</b>으로 넘어가는 단계</div>
 
   <!-- ===================== FUNNEL ===================== -->
   <div class="funnel">
