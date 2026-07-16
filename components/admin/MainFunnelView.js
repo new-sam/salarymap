@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useAdmin } from '../../lib/adminSwr'
 import { sectionStyle } from '../../constants/dashboard'
+import BehaviorFunnel from './BehaviorFunnel'
 
 // 메인 퍼널 대시보드 — 유입(GA4) → 가입 → 지원 → 합격.
 // 단계 카드를 클릭하면 아래에 해당 단계의 세부(채널/유입경로/공고/합격 목록)가 열린다.
@@ -12,6 +13,7 @@ const STAGES = [
   { key: 'apply', ko: '지원', en: 'Applies', sub: { ko: '지원자 (유니크)', en: 'Applicants (unique)' }, color: '#0D9488' },
   { key: 'accepted', ko: '합격', en: 'Accepted', sub: { ko: '합격자', en: 'Accepted users' }, color: '#16A34A' },
 ]
+
 
 const fmt = (n) => (n === null || n === undefined ? '—' : n.toLocaleString())
 const pct = (a, b, digits = 1) => (b > 0 && a !== null && a !== undefined ? ((a / b) * 100).toFixed(digits) : null)
@@ -371,6 +373,8 @@ export default function MainFunnelView({ token, lang, dateRange }) {
         />
       )}
 
+      {/* ── 행동 퍼널 (암플리튜드식 단계 선택) ── */}
+      <BehaviorFunnel token={token} lang={lang} dateRange={dateRange} />
     </>
   )
 }

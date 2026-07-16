@@ -304,6 +304,72 @@ returns table (val text, n bigint) language sql stable as $$
   group by 1 order by 2 desc limit 100
 $$;
 
+-- [8b] 이탈 후 다음 행동 분포 (Pathfinder-lite) --------------------------------------
+-- 이탈 코호트(p_reached 도달·p_but_not 미도달)가 마지막 도달 직후 p_gap 안에
+-- "처음 한 행동"의 분포. 아무 이벤트도 없으면 '(no further events)' = 세션 종료로 집계.
+create or replace function public.funnel_next_actions(
+  p_steps   jsonb,
+  p_from    timestamptz,
+  p_to      timestamptz,
+  p_window  interval default interval '1 day',
+  p_order   text     default 'this',
+  p_segment jsonb    default '[]'::jsonb,
+  p_exclude text     default null,
+  p_reached int      default 1,
+  p_but_not int      default null,
+  p_gap     interval default interval '1 hour',
+  p_limit   int      default 20
+) returns table (event_name text, users bigint)
+language plpgsql stable as $$
+declare n int;
+begin
+  n := coalesce(jsonb_array_length(p_steps), 0);
+  if p_reached < 1 or p_reached > n then raise exception 'p_reached out of range'; end if;
+  if p_but_not is not null and (p_but_not < 1 or p_but_not > n) then raise exception 'p_but_not out of range'; end if;
+
+  return query
+  with r as (
+    select fr.user_key, fr.t, fr.tx
+      from public._funnel_rows(p_steps, p_from, p_to, p_window, p_order, p_segment, null, p_exclude) fr
+  ), r2 as (
+    select r.user_key,
+           (select array_agg(case when u.ti is null then null
+                                   when u.i > 1 and r.tx is not null and u.ti >= r.tx then null
+                                   else u.ti end order by u.i)
+              from unnest(r.t) with ordinality u(ti, i)) as t
+      from r
+  ), cohort as (
+    select r2.user_key, r2.t[p_reached] as t_last
+      from r2
+     where r2.t[p_reached] is not null
+       and (p_but_not is null or r2.t[p_but_not] is null)
+  ), nxt as (
+    select c.user_key,
+           (select e.event_name from public.ev e
+             where e.user_key = c.user_key and e.ts > c.t_last and e.ts <= c.t_last + p_gap
+             order by e.ts asc limit 1) as ev
+      from cohort c
+  )
+  select coalesce(nxt.ev, '(no further events)'), count(*)::bigint
+    from nxt
+   group by 1 order by 2 desc
+   limit greatest(1, least(coalesce(p_limit, 20), 100));
+end $$;
+
+-- [8c] 유저 타임라인 (Amplitude User Timeline) --------------------------------------
+create or replace function public.user_timeline(
+  p_user_key text,
+  p_from     timestamptz,
+  p_to       timestamptz,
+  p_limit    int default 300
+) returns table (ts timestamptz, event_name text, props jsonb)
+language sql stable as $$
+  select e.ts, e.event_name, e.props from public.ev e
+   where e.user_key = p_user_key and e.ts >= p_from and e.ts < p_to
+   order by e.ts asc
+   limit greatest(1, least(coalesce(p_limit, 300), 2000))
+$$;
+
 -- [9] 권한 -----------------------------------------------------------------------
 -- 호출 경로는 어드민 Next API(service_role, bypass)뿐 — 클라이언트 롤은 전부 차단.
 revoke all on function public._funnel_where(jsonb, text) from public, anon, authenticated;
@@ -311,6 +377,8 @@ revoke all on function public._funnel_rows(jsonb, timestamptz, timestamptz, inte
 revoke all on function public.funnel(jsonb, timestamptz, timestamptz, interval, text, jsonb, text, text, text) from public, anon, authenticated;
 revoke all on function public.funnel_users(jsonb, timestamptz, timestamptz, interval, text, jsonb, text, int, int, int) from public, anon, authenticated;
 revoke all on function public.funnel_ttc(jsonb, timestamptz, timestamptz, interval, text, jsonb, text, int, int, int) from public, anon, authenticated;
+revoke all on function public.funnel_next_actions(jsonb, timestamptz, timestamptz, interval, text, jsonb, text, int, int, interval, int) from public, anon, authenticated;
+revoke all on function public.user_timeline(text, timestamptz, timestamptz, int) from public, anon, authenticated;
 revoke all on function public.list_events(timestamptz, timestamptz) from public, anon, authenticated;
 revoke all on function public.list_props(text, timestamptz, timestamptz) from public, anon, authenticated;
 revoke all on function public.list_prop_values(text, text, timestamptz, timestamptz) from public, anon, authenticated;

@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react'
 import Head from 'next/head'
 import Link from 'next/link'
+import { getClientId } from '../lib/track'
 import { useRouter } from 'next/router'
 import { supabase } from '../lib/supabaseClient'
 import { useT } from '../lib/i18n'
@@ -216,9 +217,8 @@ export default function JobsPage() {
 
   const track = (event, page, meta) => {
     // userId/clientId 를 함께 보내야 유저 단위 dedup·퍼널 분석이 가능(lib/track.js 와 동일 기준).
-    let cid = null
-    try { cid = localStorage.getItem('sm_cid') } catch {}
-    fetch('/api/track', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ event, page, meta, email: user?.email, userId: user?.id || null, clientId: cid }) }).catch(() => {})
+    // getClientId()는 sm_cid 가 없으면 생성 — /jobs 로 직진입한 익명 방문자도 cid 를 갖게 된다.
+    fetch('/api/track', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ event, page, meta, email: user?.email, userId: user?.id || null, clientId: getClientId() }) }).catch(() => {})
   }
 
   // Meta Pixel: job detail view
