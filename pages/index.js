@@ -68,9 +68,9 @@ const bodyHTML = `<section class="hero">
     <div class="co-search-bar">
       <span class="co-search-icon"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></span>
       <input class="co-search-input" id="co-search-input" type="text" placeholder="Tìm công ty (VD: Grab, VNG, Shopee…)"
-        oninput="coSearchFilter(this.value)"
-        onkeydown="coSearchKey(event)"
-        onblur="setTimeout(coSearchClose, 180)" />
+        oninput="window.coSearchFilter&&window.coSearchFilter(this.value)"
+        onkeydown="window.coSearchKey&&window.coSearchKey(event)"
+        onblur="setTimeout(function(){window.coSearchClose&&window.coSearchClose()}, 180)" />
     </div>
     <div class="co-search-drop" id="co-search-drop"></div>
   </div>
