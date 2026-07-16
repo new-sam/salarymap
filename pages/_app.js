@@ -109,8 +109,36 @@ export default function App({ Component, pageProps }) {
     else delete document.body.dataset.adLanding;
     if (isCard) document.body.dataset.cardMobile = '1';
     else delete document.body.dataset.cardMobile;
-  }, [isCompany, isJobDetail, isAdLanding, isCard]);
+    // Admin pages render their own header and no MobileTabBar, so reset the
+    // global top/bottom mobile reservations.
+    if (isAdmin) document.body.dataset.adminMobile = '1';
+    else delete document.body.dataset.adminMobile;
+  }, [isCompany, isJobDetail, isAdLanding, isCard, isAdmin]);
   const activePage = activePageFor(router.pathname);
+
+  // 모바일: 스크롤 다운하면 헤더·하단탭바를 숨겨 가용 화면을 넓히고, 스크롤 업/최상단이면
+  // 다시 띄운다. 콘텐츠 페이지 + /cv(헤더는 static이라 스크롤로 사라지지만 하단 탭바는 남아
+  // 같이 숨겨야 함) — 명함·기업·어드민·공고상세는 제외. /promo는 activePage 없어 자동 제외.
+  const autoHideChrome = !!activePage && !isCard && !isCompany && !isAdmin && !isJobDetail;
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const body = document.body;
+    if (!autoHideChrome) { delete body.dataset.chromeHidden; return; }
+    let lastY = window.scrollY;
+    let ticking = false;
+    const THRESH = 8; // 미세 스크롤 떨림 무시
+    const update = () => {
+      ticking = false;
+      const y = window.scrollY;
+      if (y < 60) { delete body.dataset.chromeHidden; lastY = y; return; } // 최상단 근처는 항상 노출
+      const dy = y - lastY;
+      if (dy > THRESH) { body.dataset.chromeHidden = '1'; lastY = y; }
+      else if (dy < -THRESH) { delete body.dataset.chromeHidden; lastY = y; }
+    };
+    const onScroll = () => { if (!ticking) { ticking = true; requestAnimationFrame(update); } };
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => { window.removeEventListener('scroll', onScroll); delete body.dataset.chromeHidden; };
+  }, [autoHideChrome, router.pathname]);
   return (
     <I18nProvider>
       {/* 콘텐츠가 짧은 페이지/탭에서 푸터가 위로 따라 올라오지 않도록:
@@ -138,7 +166,7 @@ export default function App({ Component, pageProps }) {
           <GlobalFooter />
         )}
       </div>
-      {!isCompany && !isJobDetail && !isCard && <MobileTabBar />}
+      {!isCompany && !isJobDetail && !isCard && !isAdmin && <MobileTabBar />}
       <GlobalLoginModal />
       <GoogleOneTap />
       {!isAdmin && !isAdLanding && !isCard && !isCompany && <AppDownloadModal />}

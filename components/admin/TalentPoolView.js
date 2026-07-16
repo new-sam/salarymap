@@ -289,7 +289,7 @@ export default function TalentPoolView({ token, lang }) {
       </div>
 
       {/* 인재 카드 그리드 (3열 고정) */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 14 }}>
+      <div className="adm-m-1col" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 14 }}>
         {filtered.map(r => {
           const skills = asSkills(r.skills)
           const exps = asExperiences(r.experiences)

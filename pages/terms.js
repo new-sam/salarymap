@@ -20,7 +20,7 @@ html { scroll-behavior:smooth; }
 body { background:var(--bg); color:var(--white); font-family:'Geist',sans-serif; -webkit-font-smoothing:antialiased; }
 nav { position:fixed; top:0; left:0; right:0; z-index:200; padding:0 52px; height:56px; display:flex; align-items:center; justify-content:space-between; background:#0c0c0b; border-bottom:1px solid var(--line); }
 .logo { display:flex; align-items:center; gap:10px; font-family:'Barlow',sans-serif; font-size:13px; font-weight:400; color:var(--white); text-decoration:none; letter-spacing:-0.08px; }
-.logo img { width:28px; height:28px; object-fit:contain; }
+.logo img { height:24px; width:auto; object-fit:contain; }
 .logo em { color:var(--orange); font-style:normal; }
 .nav-r { display:flex; align-items:center; gap:32px; }
 .nav-link { font-family:'Barlow',sans-serif; font-size:14px; color:var(--white); text-decoration:none; transition:color .15s; }
@@ -347,7 +347,7 @@ export default function Terms() {
       <style dangerouslySetInnerHTML={{ __html: css }} />
       <nav>
         <a className="logo" href="/">
-          <img src="/logo.png" alt="FYI" />
+          <img src="/fyi-logo.png" alt="FYI" />
           <span dangerouslySetInnerHTML={{ __html: gt('nav.brandTagline') }} />
         </a>
         <div className="nav-r">

@@ -133,6 +133,22 @@ export default function AdminLayout({ children }) {
           }
           .al-main { width: 100%; padding-top: 52px; }
         }
+        /* ── 어드민 뷰 공용 모바일 유틸 (768px). 각 뷰가 className으로 opt-in ── */
+        @media (max-width: 768px) {
+          /* 그리드 접기 */
+          .adm-m-1col { grid-template-columns: 1fr !important; }
+          .adm-m-2col { grid-template-columns: repeat(2, 1fr) !important; }
+          /* 넓은 표/블록 가로 스크롤 (잘림 방지) */
+          .adm-m-scroll { overflow-x: auto !important; -webkit-overflow-scrolling: touch; }
+          .adm-m-scroll > table { min-width: max-content; }
+          /* 표 컬럼이 좁게 눌리지 않고 자연폭 유지 → 가로 스크롤 */
+          .adm-m-nowrap th, .adm-m-nowrap td { white-space: nowrap; }
+          /* 플렉스 줄바꿈 / 풀폭 컨트롤 */
+          .adm-m-wrap { flex-wrap: wrap !important; }
+          .adm-m-full { width: 100% !important; }
+          /* 여백 축소 */
+          .adm-m-tight { padding-left: 12px !important; padding-right: 12px !important; }
+        }
       `}</style>
 
       <aside className="al-sidebar">

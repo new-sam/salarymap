@@ -34,6 +34,7 @@ export default function FunnelView({ data, metrics, summary, funnelKeys, setFunn
             <div key={stage.key} style={{ flex: 1, textAlign: 'center', fontSize: 11, fontWeight: 600, color: '#555' }}>{stage.label}</div>
           ))}
         </div>
+        <div className="adm-m-scroll">
         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12, marginTop: 16 }}>
           <thead>
             <tr style={{ borderBottom: '2px solid #e5e7eb' }}>
@@ -59,13 +60,14 @@ export default function FunnelView({ data, metrics, summary, funnelKeys, setFunn
             })}
           </tbody>
         </table>
+        </div>
       </div>
     )
   }
 
   return (
     <>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12, marginBottom: 20 }}>
+      <div className="adm-m-1col" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12, marginBottom: 20 }}>
         {presets.map((p, pi) => {
           const sums = sumDailyFrom(data.daily, p.keys.map(k => metrics.find(x => x.key === k)?.dataKey).filter(Boolean), p.since)
           const pStages = p.keys.map(k => {

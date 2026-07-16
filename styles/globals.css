@@ -116,6 +116,7 @@ a {
   body {
     padding-top: 52px !important;
     padding-bottom: calc(60px + env(safe-area-inset-bottom)) !important;
+    transition: padding-top .25s ease, padding-bottom .25s ease;
   }
   /* Company pages render their own MobileNav (top) and have no candidate-side
      MobileTabBar, so reset the global reservations. */
@@ -138,6 +139,11 @@ a {
     padding-top: 0 !important;
     padding-bottom: 0 !important;
   }
+  /* 어드민은 자체 헤더 + 하단 탭바 없음 — 상/하단 예약 모두 제거. */
+  body[data-admin-mobile="1"] {
+    padding-top: 0 !important;
+    padding-bottom: 0 !important;
+  }
   .mtab {
     display: flex !important;
     position: fixed !important;
@@ -154,5 +160,18 @@ a {
     padding: 8px 0 0 0 !important;
     margin: 0 !important;
     font-family: 'Barlow', sans-serif;
+  }
+  /* 스크롤 다운 시 상단 헤더·하단 탭바를 화면 밖으로 슬라이드시키고 예약 패딩을
+     접어 콘텐츠 영역을 넓힌다(스크롤 업/최상단이면 복귀). _app.js가 스크롤 방향을
+     읽어 data-chrome-hidden 을 토글한다. */
+  .gnav, .mtab { transition: transform .25s ease; }
+  body[data-chrome-hidden="1"] .gnav { transform: translateY(-100%); }
+  body[data-chrome-hidden="1"] .mtab { transform: translateY(100%); }
+  /* /cv 탭 말풍선은 탭바 위로 삐져나와 있어 바를 내려도 상단이 걸린다 — 같이 숨긴다. */
+  .mtab-bubble { transition: opacity .2s ease; }
+  body[data-chrome-hidden="1"] .mtab-bubble { opacity: 0; }
+  body[data-chrome-hidden="1"] {
+    padding-top: 0 !important;
+    padding-bottom: 0 !important;
   }
 }

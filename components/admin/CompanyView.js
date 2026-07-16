@@ -68,7 +68,7 @@ export default function CompanyView({ token, lang }) {
   const drillPanel = () => {
     if (!['companies', 'jobs', 'apps'].includes(openCard)) return null
     const wrap = (title, child) => (
-      <div style={{ border: '1px solid #E5E8EB', borderRadius: 12, background: '#fff', padding: 14, marginBottom: 22, maxHeight: 340, overflowY: 'auto' }}>
+      <div className="adm-m-scroll" style={{ border: '1px solid #E5E8EB', borderRadius: 12, background: '#fff', padding: 14, marginBottom: 22, maxHeight: 340, overflowY: 'auto' }}>
         <div style={{ fontSize: 12.5, fontWeight: 700, color: '#0F172A', marginBottom: 10 }}>{title}</div>
         {child}
       </div>
@@ -343,7 +343,7 @@ export default function CompanyView({ token, lang }) {
       <div style={{ fontSize: 12, color: '#6B7280', marginBottom: 12 }}>
         {ko ? '어떤 직군에 지원이 오고 안 오는지. 직군을 누르면 실제 공고가 펼쳐집니다. (제목 자동 분류·번역)' : 'Which roles attract applications. Click a role to see the actual jobs.'}
       </div>
-      <div style={{ border: '1px solid #E5E8EB', borderRadius: 12, overflow: 'hidden', marginBottom: 12 }}>
+      <div className="adm-m-scroll" style={{ border: '1px solid #E5E8EB', borderRadius: 12, overflow: 'hidden', marginBottom: 12 }}>
         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
           <thead>
             <tr style={{ background: '#F8FAFC', color: '#475569' }}>

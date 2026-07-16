@@ -1,8 +1,22 @@
+import { useState, useEffect } from 'react'
 import {
   AreaChart, Area,
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   ReferenceLine, Legend
 } from 'recharts'
+
+// 모바일(≤768px)에서는 좁은 폭에 맞춰 우측 여백/축을 줄인다.
+function useIsMobile() {
+  const [m, setM] = useState(false)
+  useEffect(() => {
+    const mq = window.matchMedia('(max-width: 768px)')
+    const on = () => setM(mq.matches)
+    on()
+    mq.addEventListener('change', on)
+    return () => mq.removeEventListener('change', on)
+  }, [])
+  return m
+}
 
 function ExpLabel({ viewBox, index, color, title }) {
   const x = viewBox?.x ?? 0
@@ -80,12 +94,13 @@ export default function MetricChart({ daily, metrics, experiments = [], avgLabel
   const metricList = Array.isArray(metrics) ? metrics : [metrics]
   const isMulti = metricList.length > 1
   const useDualAxis = isMulti && metricList.length === 2 && dualAxis
+  const isMobile = useIsMobile()
 
   const dateSet = new Set(daily.map(d => d.date))
 
   return (
     <ResponsiveContainer width="100%" height={300}>
-      <AreaChart data={daily} margin={{ top: 25, right: 70, left: 0, bottom: 0 }}>
+      <AreaChart data={daily} margin={{ top: 25, right: isMobile ? 12 : 70, left: 0, bottom: 0 }}>
         <defs>
           {metricList.map(m => (
             <linearGradient key={m.key} id={`grad-${m.key}`} x1="0" y1="0" x2="0" y2="1">
@@ -110,7 +125,7 @@ export default function MetricChart({ daily, metrics, experiments = [], avgLabel
             : 0
           return (
             <ReferenceLine yAxisId="left" y={avg} stroke={m.color} strokeDasharray="4 4" strokeOpacity={0.5}
-              label={{ value: `${avgLabel}: ${avg}`, position: 'right', fontSize: 11, fill: '#999' }} />
+              label={{ value: `${avgLabel}: ${avg}`, position: isMobile ? 'insideTopRight' : 'right', fontSize: 11, fill: '#999' }} />
           )
         })()}
 

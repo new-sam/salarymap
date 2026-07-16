@@ -172,7 +172,7 @@ export default function RevenueView({ token, lang }) {
       <div style={{ fontSize: 12, color: '#6B7280', marginBottom: 12 }}>
         {ko ? '이익 지원(기업+KTC)이 각각 어떤 경로로 들어왔는지 — 유입 경로별 분해.' : 'How each revenue application arrived.'}
       </div>
-      <div style={{ border: '1px solid #E5E8EB', borderRadius: 12, overflow: 'hidden', marginBottom: 10 }}>
+      <div className="adm-m-scroll" style={{ border: '1px solid #E5E8EB', borderRadius: 12, overflow: 'hidden', marginBottom: 10 }}>
         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
           <thead>
             <tr style={{ background: '#F8FAFC', color: '#475569' }}>

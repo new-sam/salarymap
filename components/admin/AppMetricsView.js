@@ -516,7 +516,7 @@ export default function AppMetricsView({ token, dateRange, lang }) {
                 </div>
               </div>
             ))}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(440px, 1fr))', gap: 16 }}>
+            <div className="adm-m-1col" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(440px, 1fr))', gap: 16 }}>
               <TsCard title={t.dauTitle} data={ts} metrics={series.dau} lang={lang} chartKey="dau" onOpen={goChart} />
               <TsCard title={t.tsNewRet} data={ts} metrics={series.newRet} lang={lang} chartKey="newRet" onOpen={goChart} />
               <TsCard title={t.tsConvert} data={ts} metrics={series.convert} lang={lang} chartKey="convert" onOpen={goChart} />
@@ -737,7 +737,7 @@ export default function AppMetricsView({ token, dateRange, lang }) {
 
           <div style={sectionStyle}>
             <h3 style={sectionTitle}>{t.catTitle}</h3>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24 }}>
+            <div className="adm-m-1col" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24 }}>
               <div>
                 <h4 style={{ fontSize: 13, fontWeight: 600, color: '#374151', margin: '0 0 10px' }}>{t.catViewed}</h4>
                 <DistTable rows={community.categoriesViewed} t={t} />
@@ -790,7 +790,7 @@ export default function AppMetricsView({ token, dateRange, lang }) {
               <Card label={t.salaryCount} value={conversion.salary.count} />
               <Card label={t.salaryUsers} value={conversion.salary.uniqueUsers} />
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24 }}>
+            <div className="adm-m-1col" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24 }}>
               <div>
                 <h4 style={{ fontSize: 13, fontWeight: 600, color: '#374151', margin: '0 0 10px' }}>{t.byRole}</h4>
                 <DistTable rows={conversion.salary.byRole} t={t} />
@@ -883,7 +883,7 @@ export default function AppMetricsView({ token, dateRange, lang }) {
       {/* ── 세그먼트 ── */}
       {sub === 'segments' && (
         <div style={sectionStyle}>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24 }}>
+          <div className="adm-m-1col" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24 }}>
             <div>
               <h3 style={sectionTitle}>{t.osTitle}</h3>
               <DistTable rows={segments.os} t={t} />

@@ -8,9 +8,6 @@ import { track } from '../lib/track'
 /* Tab icons live at module scope (heavy JSX), labels are pulled from i18n
    inside the component so they react to the language switcher. */
 const TAB_ICONS = {
-  home: (
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
-  ),
   cv: (
     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
@@ -81,9 +78,8 @@ export default function MobileTabBar() {
 
   const active = getActiveKey()
   const tabs = [
-    { key: 'home', href: '/', label: t('nav.tabs.home'), icon: TAB_ICONS.home },
-    { key: 'cv', href: '/cv', label: t('nav.tabs.cv'), icon: TAB_ICONS.cv },
     { key: 'jobs', href: '/jobs', label: t('nav.tabs.jobs'), icon: TAB_ICONS.jobs },
+    { key: 'cv', href: '/cv', label: t('nav.tabs.cv'), icon: TAB_ICONS.cv },
     { key: 'community', href: '/community', label: t('nav.tabs.community'), icon: TAB_ICONS.community },
     { key: 'mypage', href: '/profile', label: t('nav.tabs.mypage'), icon: TAB_ICONS.mypage },
   ]

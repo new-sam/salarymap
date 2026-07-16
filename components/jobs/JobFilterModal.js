@@ -187,7 +187,8 @@ export default function JobFilterModal({ open, initial, countWith, onApply, onCl
       </div>
 
       <style jsx>{`
-        .fm-overlay { position: fixed; inset: 0; z-index: 200; background: rgba(0,0,0,0.45); display: flex; align-items: center; justify-content: center; padding: 20px; }
+        /* z-index는 하단 탭바(99999) 위 — 안 그러면 바텀시트 하단 적용/초기화 버튼이 탭바에 가려 안 눌린다(.jd 상세패널과 동일 패턴). 백드롭이 탭바까지 덮어 필터 중엔 탭바가 안 보인다. */
+        .fm-overlay { position: fixed; inset: 0; z-index: 100000; background: rgba(0,0,0,0.45); display: flex; align-items: center; justify-content: center; padding: 20px; }
         .fm { display: flex; flex-direction: column; width: 560px; max-width: 100%; height: 600px; max-height: calc(100vh - 40px); background: #fff; border-radius: 16px; overflow: hidden; font-family: inherit; }
         .fm-head { display: flex; align-items: center; justify-content: space-between; padding: 16px 20px 10px; }
         .fm-title { font-size: 17px; font-weight: 800; color: #111; }
@@ -226,6 +227,7 @@ export default function JobFilterModal({ open, initial, countWith, onApply, onCl
           .fm-overlay { padding: 0; align-items: flex-end; }
           .fm { width: 100%; height: 86vh; max-height: none; border-radius: 16px 16px 0 0; }
           .fm-rail { width: 132px; }
+          .fm-foot { padding-bottom: calc(12px + env(safe-area-inset-bottom)); }
         }
       `}</style>
     </div>

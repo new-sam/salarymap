@@ -1059,7 +1059,9 @@ export default function JobsPage() {
           .jbm-tag { font-size: 12px; padding: 3px 8px; }
           .jf { gap: 6px; }
           .jf-dd-btn { font-size: 12px; padding: 7px 10px; }
-          .jf-bar { top: 52px; }
+          .jf-bar { top: 52px; transition: top .25s ease; }
+          /* 헤더가 스크롤로 숨으면(_app.js) 매칭 카운트 바도 최상단에 붙인다. */
+          body[data-chrome-hidden="1"] .jf-bar { top: 0; }
           .jf-sort { flex-wrap: wrap; }
           .jf-sort-btn { font-size: 12px; padding: 6px 10px; }
           .jd { width: 100%; top: 52px; height: calc(100vh - 52px); height: calc(100dvh - 52px); z-index: 100000; padding-bottom: calc(68px + env(safe-area-inset-bottom)); }
@@ -1076,9 +1078,11 @@ export default function JobsPage() {
         }
         @media (max-width: 480px) {
           .jg { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
-          .jh .jg { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; -webkit-overflow-scrolling: touch; gap: 14px; padding-bottom: 8px; grid-template-columns: none; }
+          /* padding-top: overflow-x:auto가 overflow-y도 auto로 만들어 카드 위로 -9px 걸친 '적극채용중' 칩이 잘린다 — 위쪽 여유를 준다. */
+          .jh .jg { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; -webkit-overflow-scrolling: touch; gap: 14px; padding-top: 14px; padding-bottom: 8px; grid-template-columns: none; }
           .jh .jg::-webkit-scrollbar { display: none; }
-          .jh .jg > .jc { min-width: 60%; flex-shrink: 0; scroll-snap-align: start; }
+          /* flex-basis 고정 — min-width만 주면 nowrap 내용 길이에 따라 카드 폭이 제각각 커진다. */
+          .jh .jg > .jc { flex: 0 0 60%; scroll-snap-align: start; }
         }
         .jc-skel .jc-skel-img { position: absolute; inset: 0; border-radius: 8px; background: #e9e9e9; }
         .jc-skel-line { border-radius: 4px; background: #e9e9e9; }

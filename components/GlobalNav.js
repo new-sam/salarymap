@@ -100,7 +100,7 @@ export default function GlobalNav({ activePage, onLogin, onJobsClick, mobileSear
         .gnav-l-menu { display: flex; align-items: center; gap: 22px; }
         @media (max-width: 768px) { .gnav-l-menu { display: none; } }
         .gnav-logo { display: flex; align-items: center; gap: 10px; font-size: 13px; font-weight: 400; color: #f2f0eb; text-decoration: none; cursor: pointer; }
-        .gnav-logo img { width: 28px; height: 28px; object-fit: contain; }
+        .gnav-logo img { height: 24px; width: auto; object-fit: contain; }
         .gnav-logo em { color: #ff6000; font-style: normal; }
         .gnav-r { display: flex; align-items: center; gap: 24px; }
         .gnav-link { font-size: 14px; color: rgba(242,240,235,0.42); text-decoration: none; background: none; border: none; cursor: pointer; font-family: 'Barlow', sans-serif; padding: 0; transition: color .2s; position: relative; }
@@ -196,11 +196,11 @@ export default function GlobalNav({ activePage, onLogin, onJobsClick, mobileSear
         @media (max-width: 768px) {
           .gnav { position: fixed; top: 0; left: 0; right: 0; padding: 0 16px; height: 52px; }
           .gnav-logo span { display: none; }
-          .gnav-logo img { width: 32px; height: 32px; }
+          .gnav-logo img { height: 26px; width: auto; }
           .gnav-r { display: none; }
           .gnav-r-mobile { display: flex; align-items: center; gap: 10px; }
         }
-        .gnav-mobile-login { font-size: 12px; font-weight: 600; color: rgba(255,255,255,0.5); background: none; border: 1px solid rgba(255,255,255,0.15); padding: 6px 14px; border-radius: 100px; cursor: pointer; font-family: 'Barlow', sans-serif; }
+        .gnav-mobile-login { font-size: 12px; font-weight: 700; color: #f2f0eb; background: none; border: 1px solid rgba(242,240,235,0.6); padding: 6px 14px; border-radius: 100px; cursor: pointer; font-family: 'Barlow', sans-serif; }
         .gnav-mobile-search-btn { display: flex; align-items: center; justify-content: center; width: 32px; height: 32px; border: none; background: none; cursor: pointer; padding: 0; }
         .gnav-mobile-search-btn svg { width: 16px; height: 16px; color: rgba(255,255,255,0.5); }
       `}</style>
@@ -208,7 +208,7 @@ export default function GlobalNav({ activePage, onLogin, onJobsClick, mobileSear
       <nav className="gnav">
         <div className="gnav-l">
           <Link href="/" className="gnav-logo">
-            <img src="/logo.png" alt="FYI" />
+            <img src="/fyi-logo.png" alt="FYI" />
             <span dangerouslySetInnerHTML={{ __html: t('nav.brandTagline') }} />
           </Link>
           <div className="gnav-l-menu">

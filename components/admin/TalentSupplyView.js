@@ -98,7 +98,7 @@ export default function TalentSupplyView({ token, lang }) {
       </div>
 
       {/* 직군별 퍼널 테이블 */}
-      <div style={{ border: '1px solid #E5E8EB', borderRadius: 12, overflow: 'hidden' }}>
+      <div className="adm-m-scroll" style={{ border: '1px solid #E5E8EB', borderRadius: 12, overflow: 'hidden' }}>
         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
           <thead>
             <tr style={{ background: '#F8FAFC', color: '#475569' }}>
