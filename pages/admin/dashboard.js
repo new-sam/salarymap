@@ -16,6 +16,7 @@ import TalentSupplyView from '../../components/admin/TalentSupplyView'
 import VerificationsView from '../../components/admin/VerificationsView'
 import CommunityView from '../../components/admin/CommunityView'
 import CompanyView from '../../components/admin/CompanyView'
+import RevenueView from '../../components/admin/RevenueView'
 import OutreachView from '../../components/admin/OutreachView'
 import RecommendView from '../../components/admin/RecommendView'
 import GoalMetricsView from '../../components/admin/GoalMetricsView'
@@ -980,6 +981,11 @@ export default function AdminDashboard() {
         {/* Company Tab — 기업 가입내역 + ATS 활용/모집 내역 */}
         {tab === 'company' && (
           <CompanyView token={token} lang={lang} />
+        )}
+
+        {/* Revenue Tab — 이익 지원 (기업 등록 공고 + KTC 시드 공고) */}
+        {tab === 'revenue' && (
+          <RevenueView token={token} lang={lang} />
         )}
 
         {/* App Metrics Tab */}
