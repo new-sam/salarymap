@@ -8,7 +8,7 @@ import { useT } from '../../lib/i18n'
 import Icon from '../../components/Icon'
 import { DEFAULT_IMAGES, roleLabel, DEFAULT_WORK_DAYS, DEFAULT_WORK_HOURS, DEFAULT_PAID_LEAVE, DEFAULT_CONTRACT } from '../../constants/jobs'
 import { getStoredUtm } from '../../lib/utm'
-import { track as trackVisit, getClientId } from '../../lib/track'
+import { track as trackVisit, getClientId, mirrorClarity } from '../../lib/track'
 
 // 스토리지 URL에서 원본 이력서 파일명 복원 (업로드 시 `${timestamp}_${safeName}`로 저장됨)
 function resumeNameFromUrl(url) {
@@ -90,6 +90,7 @@ export default function JobDetailPage({ job }) {
 
   const track = (event, page, meta) => {
     // clientId/userId 포함 — 익명 방문자 단위 퍼널 dedup용 (jobs.js 목록 헬퍼와 동일 기준)
+    mirrorClarity(event)
     fetch('/api/track', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ event, page, meta, email: user?.email, userId: user?.id || null, clientId: getClientId() }) }).catch(() => {})
   }
 
