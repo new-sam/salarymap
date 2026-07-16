@@ -32,6 +32,10 @@ export default function GoalMetricsView({ token, lang }) {
   const [cmError, setCmError] = useState('')
   const [cmLoading, setCmLoading] = useState(false)
 
+  const [spData, setSpData] = useState(null) // 가입 경로 (가입자별 유입)
+  const [spError, setSpError] = useState('')
+  const [spLoading, setSpLoading] = useState(false)
+
   const load = useCallback(async (p) => {
     if (!token || !p) return
     setLoading(true)
@@ -115,6 +119,21 @@ export default function GoalMetricsView({ token, lang }) {
     }
   }, [token, ko])
 
+  const loadSp = useCallback(async (p) => {
+    if (!token || !p) return
+    setSpLoading(true)
+    setSpError('')
+    try {
+      const res = await fetch('/api/admin/signup-paths', { headers: { Authorization: `Bearer ${token}`, 'x-goal-pass': p } })
+      if (!res.ok) throw new Error(`(${res.status})`)
+      setSpData(await res.json())
+    } catch (e) {
+      setSpError((ko ? '불러오기 실패 ' : 'Load failed ') + e.message)
+    } finally {
+      setSpLoading(false)
+    }
+  }, [token, ko])
+
   useEffect(() => {
     let saved = ''
     try { saved = sessionStorage.getItem(PASS_KEY) || '' } catch {}
@@ -140,6 +159,11 @@ export default function GoalMetricsView({ token, lang }) {
   useEffect(() => {
     if (view === 'coldmail' && unlocked && pass && !cmData && !cmLoading) loadCm(pass)
   }, [view, unlocked, pass, cmData, cmLoading, loadCm])
+
+  // 가입 경로 탭 최초 진입 시 lazy 로드
+  useEffect(() => {
+    if (view === 'paths' && unlocked && pass && !spData && !spLoading) loadSp(pass)
+  }, [view, unlocked, pass, spData, spLoading, loadSp])
 
   function submit(e) {
     e.preventDefault()
@@ -181,16 +205,108 @@ export default function GoalMetricsView({ token, lang }) {
     <div style={{ maxWidth: 1200, margin: '0 auto', padding: '16px 16px 48px' }}>
       <div style={{ display: 'inline-flex', gap: 2, background: '#F1F1F4', borderRadius: 11, padding: 3, marginBottom: 18 }}>
         {tabBtn('kpi', ko ? '목표 KPI' : 'Goal KPI')}
+        {tabBtn('paths', ko ? '가입 경로' : 'Signup paths')}
         {tabBtn('ad', ko ? '광고 성과' : 'Ad performance')}
         {tabBtn('exp', ko ? '실험' : 'Experiments')}
         {tabBtn('resumePublic', ko ? '이력서 공개 실험' : 'Resume-public exp')}
         {tabBtn('coldmail', ko ? '콜드메일 공개' : 'Cold-email public')}
       </div>
       {view === 'kpi' && <KpiTab data={data} ko={ko} />}
+      {view === 'paths' && <SignupPathsTab data={spData} loading={spLoading} error={spError} ko={ko} />}
       {view === 'ad' && <AdTab data={adData} loading={adLoading} error={adError} ko={ko} />}
       {view === 'exp' && <ExperimentTab data={expData} loading={expLoading} error={expError} ko={ko} token={token} pass={pass} />}
       {view === 'resumePublic' && <ResumePublicTab data={rpData} loading={rpLoading} error={rpError} ko={ko} />}
       {view === 'coldmail' && <ColdmailPublicTab data={cmData} loading={cmLoading} error={cmError} ko={ko} />}
+    </div>
+  )
+}
+
+// ============ 가입 경로 탭 ============
+// 일별로 가입자 한 명 한 명의 유입 경로 — 가입이 튄 날 어떤 채널/캠페인이 만든 건지 확인용.
+// 귀속: user_profiles.utm(가입 시점) > 첫 이벤트 utm > referrer.
+function SignupPathsTab({ data, loading, error, ko }) {
+  const [open, setOpen] = useState({}) // 날짜별 펼침 (최신 날짜는 기본 펼침)
+  if (loading || !data) return <div style={{ textAlign: 'center', padding: 40, color: '#666' }}>{ko ? '불러오는 중… (가입자별 이벤트 조회에 몇 초 걸립니다)' : 'Loading…'}</div>
+  if (error) return <div style={{ textAlign: 'center', padding: 40, color: '#c00' }}>{error}</div>
+  if (data.error) return <div style={{ textAlign: 'center', padding: 40, color: '#c00' }}>{data.error}</div>
+
+  const th = { textAlign: 'left', fontSize: 11, fontWeight: 700, color: '#9CA3AF', padding: '6px 10px', borderBottom: '1px solid #EEF0F2', textTransform: 'uppercase', letterSpacing: '.04em' }
+  const td = { fontSize: 12.5, color: '#1F2937', padding: '6px 10px', borderBottom: '1px solid #F5F6F7', whiteSpace: 'nowrap' }
+
+  // 채널별 색 — 광고(주황), 검색/소셜(파랑), direct(회색), 미귀속(빨강)
+  const chanColor = (c) => {
+    if (c === 'meta_ad' || c === 'other_ad' || c.startsWith('utm:')) return { bg: '#FFF1EA', fg: '#C2410C' }
+    if (c === 'organic_search' || c === 'social' || c === 'threads' || c.startsWith('ref:')) return { bg: '#EFF6FF', fg: '#1D4ED8' }
+    if (c === 'no_event') return { bg: '#FEF2F2', fg: '#B91C1C' }
+    return { bg: '#F3F4F6', fg: '#4B5563' } // direct/internal 등
+  }
+  const Chip = ({ name, count }) => {
+    const { bg, fg } = chanColor(name)
+    return (
+      <span style={{ fontSize: 11, fontWeight: 700, color: fg, background: bg, padding: '2px 8px', borderRadius: 100 }}>
+        {name}{count != null && <span style={{ fontWeight: 800, marginLeft: 4 }}>{count}</span>}
+      </span>
+    )
+  }
+
+  const isOpen = (date, i) => (date in open ? open[date] : i === 0)
+
+  return (
+    <div>
+      <div style={{ fontSize: 12, color: '#9CA3AF', marginBottom: 4 }}>
+        {ko ? `최근 ${data.windowDays}일 · 기준 ` : `Last ${data.windowDays}d · as of `}{new Date(data.generatedAt).toLocaleString(ko ? 'ko-KR' : 'en-US')}
+      </div>
+      <div style={{ fontSize: 11.5, color: '#B0B0B8', marginBottom: 16 }}>
+        {ko
+          ? '※ 경로 = 가입 시점 utm > 첫 이벤트 utm > referrer 순으로 귀속. no_event는 이벤트가 하나도 없어 귀속 불가(앱 초기 유저 등).'
+          : '* Path = signup-time utm > first-event utm > referrer. no_event = no events to attribute.'}
+      </div>
+
+      {data.days.map((d, i) => (
+        <div key={d.date} style={{ marginBottom: 12, border: '1px solid #EEF0F2', borderRadius: 12, overflow: 'hidden' }}>
+          <div onClick={() => setOpen((o) => ({ ...o, [d.date]: !isOpen(d.date, i) }))}
+            style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', cursor: 'pointer', background: '#FAFAFB', flexWrap: 'wrap' }}>
+            <span style={{ fontSize: 11, color: '#9CA3AF' }}>{isOpen(d.date, i) ? '▾' : '▸'}</span>
+            <span style={{ fontSize: 13.5, fontWeight: 800, color: '#0F172A' }}>{d.date}</span>
+            <span style={{ fontSize: 12.5, fontWeight: 700, color: '#6B7280' }}>{d.total}{ko ? '명' : ''}</span>
+            <span style={{ display: 'flex', gap: 5, flexWrap: 'wrap' }}>
+              {d.channels.map((c) => <Chip key={c.name} name={c.name} count={c.count} />)}
+            </span>
+          </div>
+          {isOpen(d.date, i) && (
+            <div style={{ overflowX: 'auto' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 760 }}>
+                <thead><tr>
+                  <th style={th}>{ko ? '시각' : 'Time'}</th>
+                  <th style={th}>{ko ? '이메일' : 'Email'}</th>
+                  <th style={th}>{ko ? '플랫폼' : 'Platform'}</th>
+                  <th style={th}>{ko ? '경로' : 'Channel'}</th>
+                  <th style={th}>{ko ? '캠페인' : 'Campaign'}</th>
+                  <th style={th}>referrer</th>
+                  <th style={th}>{ko ? '첫 페이지' : 'First page'}</th>
+                </tr></thead>
+                <tbody>
+                  {d.signups.map((s, j) => (
+                    <tr key={j}>
+                      <td style={{ ...td, color: '#6B7280', fontVariantNumeric: 'tabular-nums' }}>
+                        {new Date(s.at).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Bangkok' })}
+                      </td>
+                      <td style={{ ...td, maxWidth: 220, overflow: 'hidden', textOverflow: 'ellipsis' }}>{s.email || <span style={{ color: '#C0C4CC' }}>—</span>}</td>
+                      <td style={td}>
+                        <span style={{ fontSize: 11, fontWeight: 700, padding: '2px 7px', borderRadius: 5, background: s.platform === 'app' ? '#EDE9FE' : '#E0F2FE', color: s.platform === 'app' ? '#6D28D9' : '#0369A1' }}>{s.platform}</span>
+                      </td>
+                      <td style={td}><Chip name={s.channel} /></td>
+                      <td style={{ ...td, maxWidth: 180, overflow: 'hidden', textOverflow: 'ellipsis', color: s.campaign ? '#1F2937' : '#C0C4CC' }} title={s.campaign || ''}>{s.campaign || '—'}</td>
+                      <td style={{ ...td, maxWidth: 160, overflow: 'hidden', textOverflow: 'ellipsis', color: s.referrer ? '#4B5563' : '#C0C4CC' }} title={s.referrer || ''}>{s.referrer || '—'}</td>
+                      <td style={{ ...td, maxWidth: 160, overflow: 'hidden', textOverflow: 'ellipsis', color: s.firstPage ? '#4B5563' : '#C0C4CC' }} title={s.firstPage || ''}>{s.firstPage || '—'}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      ))}
     </div>
   )
 }
