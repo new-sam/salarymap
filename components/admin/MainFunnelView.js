@@ -71,7 +71,10 @@ export default function MainFunnelView({ token, lang, dateRange }) {
   const secondary = {
     traffic: ga4 ? L(`세션 ${fmt(ga4.totals.sessions)}`, `${fmt(ga4.totals.sessions)} sessions`) : (ga4Error ? L('GA4 로드 실패', 'GA4 failed') : L('GA4 로딩…', 'GA4 loading…')),
     signup: null,
-    apply: L(`지원 ${fmt(funnel.applications.total)}건`, `${fmt(funnel.applications.total)} applications`),
+    apply: L(
+      `지원 ${fmt(funnel.applications.total)}건 · 실공고 ${fmt(funnel.applications.realFake?.real.count)}건`,
+      `${fmt(funnel.applications.total)} applies · ${fmt(funnel.applications.realFake?.real.count)} real`,
+    ),
     accepted: L(`합격 ${fmt(funnel.accepted.total)}건`, `${fmt(funnel.accepted.total)} accepted`),
   }
   const overall = pct(acceptedUsers, visitors, 2)
@@ -168,6 +171,55 @@ export default function MainFunnelView({ token, lang, dateRange }) {
 
       {stage === 'apply' && (
         <>
+          {/* real(기업등록+KTC) vs fake(크롤/수동) 공고 지원 분리 */}
+          {funnel.applications.realFake && (
+            <div className="adm-m-1col" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 16 }}>
+              {[
+                { k: 'real', label: L('실공고 지원 (기업등록 + KTC)', 'Real jobs (company + KTC)'), color: '#16A34A' },
+                { k: 'fake', label: L('크롤 공고 지원 (wanted/topdev 등)', 'Crawled jobs (wanted/topdev …)'), color: '#8B95A1' },
+              ].map(({ k, label, color }) => {
+                const v = funnel.applications.realFake[k]
+                return (
+                  <div key={k} style={{ background: '#fff', border: '1px solid #e5e7eb', borderRadius: 12, padding: '14px 16px' }}>
+                    <div style={{ fontSize: 12.5, fontWeight: 700, color }}>{label}</div>
+                    <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginTop: 6 }}>
+                      <span style={{ fontSize: 24, fontWeight: 700, color: '#191F28' }}>{fmt(v.count)}{L('건', '')}</span>
+                      <span style={{ fontSize: 12, color: '#8B95A1' }}>
+                        {v.users}{L('명', ' users')} · {pct(v.count, funnel.applications.total) ?? 0}%
+                      </span>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          )}
+          <div style={{ ...sectionStyle, marginBottom: 16 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 14 }}>
+              <span style={{ fontSize: 14, fontWeight: 700, color: '#333' }}>
+                {L('지원 횟수 분포 — n회 지원한 사람 수', 'Applies per user — distribution')}
+              </span>
+              <span style={{ fontSize: 12, color: '#8B95A1' }}>
+                {L('인당 평균', 'Avg per user')} <b style={{ color: '#191F28' }}>{applicants > 0 ? (funnel.applications.total / applicants).toFixed(1) : '—'}</b>{L('회', '')}
+              </span>
+            </div>
+            {(() => {
+              const dist = funnel.applications.applyDist || []
+              const maxUsers = Math.max(...dist.map(d => d.users), 1)
+              const BAR_H = 120
+              return (
+                <div style={{ display: 'flex', gap: 6, alignItems: 'flex-end' }}>
+                  {dist.map(d => (
+                    <div key={d.bucket} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                      <div style={{ fontSize: 12, fontWeight: 700, color: '#0D9488', marginBottom: 4 }}>{d.users}</div>
+                      <div style={{ width: '60%', height: Math.max(4, (d.users / maxUsers) * BAR_H), background: '#0D9488', borderRadius: '4px 4px 0 0' }} />
+                      <div style={{ fontSize: 11, fontWeight: 600, color: '#555', marginTop: 6 }}>{d.bucket}{L('회', 'x')}</div>
+                      <div style={{ fontSize: 10, color: '#8B95A1' }}>{pct(d.users, applicants) ?? 0}%</div>
+                    </div>
+                  ))}
+                </div>
+              )
+            })()}
+          </div>
           <div className="adm-m-1col" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
             <DetailTable
               title={L('지원 경로', 'By source')}
@@ -181,9 +233,21 @@ export default function MainFunnelView({ token, lang, dateRange }) {
             />
           </div>
           <DetailTable
+            title={L('공고 출처별 지원 (real = company_self·ktc)', 'Applies by job source (real = company_self·ktc)')}
+            columns={[L('공고 출처', 'Job source'), L('건수', 'Count'), L('비중', 'Share')]}
+            rows={(funnel.applications.byJobSource || []).map(r => [
+              ['company_self', 'ktc'].includes(r.key) ? `${r.key} ✓real` : r.key,
+              fmt(r.count), `${pct(r.count, funnel.applications.total) ?? 0}%`,
+            ])}
+          />
+          <DetailTable
             title={L('지원 많은 공고 Top 15', 'Top 15 jobs by applications')}
-            columns={[L('회사 · 공고', 'Company · Job'), L('지원', 'Applies'), L('합격', 'Accepted')]}
-            rows={funnel.applications.topJobs.map(j => [`${j.company} · ${j.title}`, fmt(j.count), fmt(j.accepted)])}
+            columns={[L('회사 · 공고', 'Company · Job'), L('구분', 'Type'), L('지원', 'Applies'), L('합격', 'Accepted')]}
+            rows={funnel.applications.topJobs.map(j => [
+              `${j.company} · ${j.title}`,
+              ['company_self', 'ktc'].includes(j.source) ? `✓ real (${j.source})` : j.source,
+              fmt(j.count), fmt(j.accepted),
+            ])}
           />
         </>
       )}
@@ -211,6 +275,7 @@ export default function MainFunnelView({ token, lang, dateRange }) {
                 <th style={thStyle}>{L('가입률', 'Signup %')}</th>
                 <th style={thStyle}>{L('지원자', 'Applicants')}</th>
                 <th style={thStyle}>{L('지원 건', 'Applies')}</th>
+                <th style={thStyle}>{L('실공고 건', 'Real jobs')}</th>
                 <th style={thStyle}>{L('지원률', 'Apply %')}</th>
                 <th style={thStyle}>{L('합격', 'Accepted')}</th>
               </tr>
@@ -219,7 +284,7 @@ export default function MainFunnelView({ token, lang, dateRange }) {
               {allDates.map(d => {
                 const u = ga4Daily[d]?.totalUsers ?? null
                 const sg = funnel.signups.daily[d] || 0
-                const ap = funnel.applications.daily[d] || { count: 0, users: 0 }
+                const ap = funnel.applications.daily[d] || { count: 0, real: 0, users: 0 }
                 const ac = funnel.accepted.daily[d] || 0
                 const signupRate = pct(sg, u)
                 const applyRate = pct(ap.users, sg)
@@ -231,6 +296,7 @@ export default function MainFunnelView({ token, lang, dateRange }) {
                     <td style={{ ...tdStyle, color: rateColor(signupRate) }}>{signupRate === null ? '—' : `${signupRate}%`}</td>
                     <td style={tdStyle}>{ap.users || '·'}</td>
                     <td style={tdStyle}>{ap.count || '·'}</td>
+                    <td style={{ ...tdStyle, color: '#16A34A', fontWeight: ap.real ? 600 : 400 }}>{ap.real || '·'}</td>
                     <td style={{ ...tdStyle, color: rateColor(applyRate) }}>{applyRate === null ? '—' : `${applyRate}%`}</td>
                     <td style={{ ...tdStyle, fontWeight: ac ? 700 : 400, color: ac ? '#16A34A' : '#191F28' }}>{ac || '·'}</td>
                   </tr>
