@@ -3,115 +3,87 @@ import { useRouter } from 'next/router';
 import { useT } from '../lib/i18n';
 import { track } from '../lib/track';
 
-// 웹 방문자에게 "FYI를 앱으로 만나보세요" 중앙 모달을 띄운다.
-// 저장 안 함 — 하드 새로고침(마운트) 때만 한 번 뜬다. SPA 페이지 이동으로는 절대 안 뜸.
-// 메인페이지(/)에서 새로고침한 경우에만 노출 — 다른 페이지에선 안 뜸.
+// 모바일 웹 방문자에게 "FYI를 앱으로" 하단 바텀시트를 밑에서 슬라이드업으로 띄운다.
+// 메인페이지(/)에서, 모바일 뷰포트에서만, 하드 새로고침 시 한 번. SPA 이동으론 안 뜸.
+// 닫으면(X/나중에) 이번 세션 동안은 다시 띄우지 않는다(sessionStorage) — 페이지마다 반복 노출 방지.
 // App Store 링크. 지역/언어 강제 없이 방문자 스토어로 자동 분기되는 정규형 사용.
 const APP_STORE_URL = 'https://apps.apple.com/app/id6778311550';
+const DISMISS_KEY = 'fyi_app_promo_dismissed';
 
 export default function AppDownloadModal() {
   const { t } = useT();
   const router = useRouter();
-  const [show, setShow] = useState(false);
+  const [show, setShow] = useState(false); // 마운트 여부
+  const [open, setOpen] = useState(false); // 슬라이드 위치(true=올라옴)
 
   // 마운트(=하드 새로고침) 시점에 딱 한 번만 판단. 빈 deps 의도적 — 페이지 이동 시 재실행 금지.
   useEffect(() => {
-    const path = router.pathname;
-    if (path !== '/') return;
+    if (router.pathname !== '/') return;
+    // 모바일 웹에서만 — 데스크톱은 iOS 앱 프로모가 의미 없어 띄우지 않는다.
+    if (typeof window === 'undefined' || !window.matchMedia('(max-width: 768px)').matches) return;
+    // 이번 세션에 이미 닫았으면 안 띄운다.
+    try { if (sessionStorage.getItem(DISMISS_KEY)) return; } catch {}
     const id = setTimeout(() => {
       setShow(true);
-      track('view_app_promo_modal', { meta: { source: 'web_modal' }, page: path });
+      track('view_app_promo_modal', { meta: { source: 'web_modal' }, page: '/' });
     }, 700);
     return () => clearTimeout(id);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // 마운트된 다음 프레임에 슬라이드업 시작.
+  useEffect(() => {
+    if (!show) return;
+    const r = requestAnimationFrame(() => setOpen(true));
+    return () => cancelAnimationFrame(r);
+  }, [show]);
+
   function dismiss() {
-    setShow(false);
+    try { sessionStorage.setItem(DISMISS_KEY, '1'); } catch {}
+    setOpen(false); // 슬라이드 다운
+    setTimeout(() => setShow(false), 260); // 애니메이션 후 언마운트
   }
 
   if (!show) return null;
 
   return (
     <div
-      style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.78)', zIndex:1100, display:'flex', alignItems:'center', justifyContent:'center', padding:'20px', fontFamily:"'Barlow',sans-serif" }}
+      onClick={e => { if (e.target === e.currentTarget) dismiss(); }}
+      style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.45)', opacity: open ? 1 : 0, transition:'opacity .28s ease', zIndex:1100, display:'flex', alignItems:'flex-end', justifyContent:'center', fontFamily:"'Barlow',sans-serif" }}
     >
-      <style>{`
-        @keyframes fyiSparkSpin { to { transform: rotate(360deg); } }
-        @keyframes fyiSparkBreathe { 0%,100% { transform: scale(.9); } 50% { transform: scale(1.1); } }
-        @keyframes fyiSparkTwinkle { 0%,100% { transform: scale(.25); opacity: .15; } 50% { transform: scale(1); opacity: 1; } }
-        @keyframes fyiAiShimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
-        .fyi-ai-spark { flex: none; filter: drop-shadow(0 0 4px rgba(255,96,0,0.45)); }
-        .fyi-ai-spark .spin { transform-box: fill-box; transform-origin: center; animation: fyiSparkSpin 7s linear infinite; }
-        .fyi-ai-spark .main { transform-box: fill-box; transform-origin: center; animation: fyiSparkBreathe 2.6s ease-in-out infinite; }
-        .fyi-ai-spark .mini { transform-box: fill-box; transform-origin: center; animation: fyiSparkTwinkle 2.6s ease-in-out infinite .35s; }
-        .fyi-ai-title {
-          background: linear-gradient(100deg, #ff9a4d 20%, #ffffff 42%, #ffd1a8 50%, #ff9a4d 70%);
-          background-size: 200% 100%;
-          -webkit-background-clip: text; background-clip: text;
-          -webkit-text-fill-color: transparent; color: transparent;
-          animation: fyiAiShimmer 3.2s linear infinite;
-        }
-        @media (prefers-reduced-motion: reduce) {
-          .fyi-ai-spark .spin, .fyi-ai-spark .main, .fyi-ai-spark .mini, .fyi-ai-title { animation: none; }
-          .fyi-ai-spark .mini { opacity: 1; transform: scale(1); }
-          .fyi-ai-title { -webkit-text-fill-color: #ff9a4d; color: #ff9a4d; }
-        }
-      `}</style>
-      <div style={{ position:'relative', background:'#1a1a18', border:'1px solid rgba(255,255,255,0.1)', borderRadius:'20px', padding:'22px 22px 18px', maxWidth:'340px', width:'100%', textAlign:'center', boxShadow:'0 24px 60px rgba(0,0,0,0.5)' }}>
+      <div style={{ position:'relative', overflow:'hidden', background:'#fff', borderRadius:'24px 24px 0 0', padding:'30px 26px calc(22px + env(safe-area-inset-bottom))', width:'100%', maxWidth:'480px', textAlign:'center', boxShadow:'0 -12px 40px rgba(0,0,0,0.22)', transform: open ? 'translateY(0)' : 'translateY(100%)', transition:'transform .32s cubic-bezier(.22,1,.36,1)' }}>
+        {/* 상단 주황 글로우 — 앱 아이콘에서 브랜드 색이 은은히 퍼지는 배경 */}
+        <div style={{ position:'absolute', top:'-90px', left:'50%', transform:'translateX(-50%)', width:'280px', height:'200px', background:'radial-gradient(ellipse at center, rgba(255,96,0,0.16), rgba(255,96,0,0) 70%)', pointerEvents:'none' }} />
+
         <button
           onClick={dismiss}
           aria-label="close"
-          style={{ position:'absolute', top:'14px', right:'16px', background:'none', border:'none', color:'rgba(255,255,255,0.35)', fontSize:'20px', lineHeight:1, cursor:'pointer' }}
+          style={{ position:'absolute', top:'15px', right:'16px', background:'none', border:'none', color:'#c4c4c4', fontSize:'22px', lineHeight:1, cursor:'pointer', zIndex:1 }}
         >×</button>
 
-        <img src="/app-mockup.png" alt="FYI app" style={{ width:'108px', height:'auto', margin:'0 auto 12px', display:'block', filter:'drop-shadow(0 12px 28px rgba(0,0,0,0.45))' }} />
+        <div style={{ position:'relative' }}>
+          <img
+            src="/apple-touch-icon.png"
+            alt="FYI"
+            style={{ width:'64px', height:'64px', borderRadius:'15px', display:'block', margin:'0 auto 18px', boxShadow:'0 8px 20px rgba(0,0,0,0.18)' }}
+          />
 
-        <div style={{ fontSize:'19px', fontWeight:900, color:'#fff', letterSpacing:'-0.5px', marginBottom:'4px' }}>{t('appPromo.title')}</div>
-        <div style={{ fontSize:'12.5px', color:'rgba(255,255,255,0.45)', marginBottom:'15px', lineHeight:1.45 }}>{t('appPromo.sub')}</div>
+          <div style={{ fontSize:'19px', fontWeight:800, color:'#111', letterSpacing:'-0.4px', lineHeight:1.35, marginBottom:'6px' }}>{t('appPromo.title')}</div>
+          <div style={{ fontSize:'14px', color:'#8a8a8a', lineHeight:1.5, marginBottom:'22px' }}>{t('appPromo.sub')}</div>
 
-        <div style={{ display:'flex', flexDirection:'column', gap:'7px', textAlign:'left', marginBottom:'11px' }}>
-          {['appPromo.benefit1','appPromo.benefit2','appPromo.benefit3'].map(k => (
-            <div key={k} style={{ fontSize:'13px', color:'rgba(255,255,255,0.82)', fontWeight:600, lineHeight:1.35 }}>{t(k)}</div>
-          ))}
+          <a
+            href={APP_STORE_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={() => { track('click_app_download', { meta: { source: 'web_modal' }, page: router.pathname }); dismiss(); }}
+            style={{ display:'flex', alignItems:'center', justifyContent:'center', width:'100%', background:'#ff6000', color:'#fff', fontSize:'15.5px', fontWeight:800, padding:'15px', borderRadius:'100px', textDecoration:'none', boxShadow:'0 8px 20px rgba(255,96,0,0.32)' }}
+          >{t('appPromo.cta')}</a>
+
+          <button
+            onClick={dismiss}
+            style={{ background:'none', border:'none', color:'#b0b0b0', fontSize:'13px', cursor:'pointer', fontFamily:"'Barlow',sans-serif", width:'100%', padding:'14px 4px 2px' }}
+          >{t('appPromo.later')}</button>
         </div>
-
-        <div style={{ textAlign:'left', background:'rgba(255,96,0,0.09)', border:'1px solid rgba(255,96,0,0.32)', borderRadius:'11px', padding:'10px 12px', marginBottom:'16px' }}>
-          <div style={{ display:'flex', alignItems:'center', gap:'7px', marginBottom:'4px' }}>
-            <span style={{ fontSize:'10px', fontWeight:900, color:'#0c0c0b', background:'#ff6000', borderRadius:'5px', padding:'2px 6px', letterSpacing:'0.5px' }}>NEW</span>
-            <svg className="fyi-ai-spark" width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-              <defs>
-                <linearGradient id="fyiSparkG" x1="3" y1="3" x2="21" y2="21">
-                  <stop offset="0" stopColor="#ffc59e" />
-                  <stop offset="0.5" stopColor="#ff6000" />
-                  <stop offset="1" stopColor="#c46bff" />
-                </linearGradient>
-              </defs>
-              <g className="spin">
-                <path className="main" d="M12 1.5c.55 5.2 4.8 9.45 10 10-5.2.55-9.45 4.8-10 10-.55-5.2-4.8-9.45-10-10 5.2-.55 9.45-4.8 10-10Z" fill="url(#fyiSparkG)" />
-              </g>
-              <g transform="translate(18.5 4.5)">
-                <path className="mini" d="M0-3c.16 1.55 1.45 2.84 3 3-1.55.16-2.84 1.45-3 3-.16-1.55-1.45-2.84-3-3 1.55-.16 2.84-1.45 3-3Z" fill="#ffd9bd" />
-              </g>
-            </svg>
-            <span className="fyi-ai-title" style={{ fontSize:'13.5px', fontWeight:800 }}>{t('appPromo.aiResumeTitle')}</span>
-            <span style={{ fontSize:'10.5px', fontWeight:700, color:'rgba(255,255,255,0.4)', border:'1px solid rgba(255,255,255,0.18)', borderRadius:'5px', padding:'2px 6px', marginLeft:'auto' }}>{t('appPromo.appOnly')}</span>
-          </div>
-          <div style={{ fontSize:'12px', color:'rgba(255,255,255,0.7)', lineHeight:1.45 }}>{t('appPromo.aiResume')}</div>
-        </div>
-
-        <a
-          href={APP_STORE_URL}
-          target="_blank"
-          rel="noopener noreferrer"
-          onClick={() => { track('click_app_download', { meta: { source: 'web_modal' }, page: router.pathname }); dismiss(); }}
-          style={{ display:'flex', alignItems:'center', justifyContent:'center', width:'100%', background:'#ff6000', color:'#fff', fontSize:'14.5px', fontWeight:800, padding:'13px', borderRadius:'11px', textDecoration:'none', marginBottom:'8px' }}
-        >{t('appPromo.cta')}</a>
-
-        <button
-          onClick={dismiss}
-          style={{ background:'none', border:'none', color:'rgba(255,255,255,0.4)', fontSize:'12.5px', cursor:'pointer', fontFamily:"'Barlow',sans-serif", width:'100%', padding:'4px' }}
-        >{t('appPromo.later')}</button>
       </div>
     </div>
   );
