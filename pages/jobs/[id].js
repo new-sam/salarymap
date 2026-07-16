@@ -8,6 +8,7 @@ import { useT } from '../../lib/i18n'
 import Icon from '../../components/Icon'
 import { DEFAULT_IMAGES, roleLabel, DEFAULT_WORK_DAYS, DEFAULT_WORK_HOURS, DEFAULT_PAID_LEAVE, DEFAULT_CONTRACT } from '../../constants/jobs'
 import { getStoredUtm } from '../../lib/utm'
+import { track as trackVisit } from '../../lib/track'
 
 // 스토리지 URL에서 원본 이력서 파일명 복원 (업로드 시 `${timestamp}_${safeName}`로 저장됨)
 function resumeNameFromUrl(url) {
@@ -75,6 +76,15 @@ export default function JobDetailPage({ job }) {
           .then(p => { if (p?.profile?.resume_url) setProfileResumeUrl(p.profile.resume_url) })
           .catch(() => {})
       }
+    })
+  }, [job.id])
+
+  // 공고 상세 진입 계측 — SEO 직유입이 많아(랜딩 최상위) 유입→가입 이탈 분석의 분모가 된다.
+  // lib/track 경유라 client_id가 붙는다 (아래 로컬 track 헬퍼는 client_id 없음).
+  useEffect(() => {
+    trackVisit('view_job_detail', {
+      page: `/jobs/${job.id}`,
+      meta: { jobId: job.id, company: job.company, referrer: document.referrer || null },
     })
   }, [job.id])
 

@@ -763,11 +763,8 @@ export default function Home({ initialCompanies = [] }) {
       utm_content: getUtm('utm_content'),
       referrer: document.referrer || null,
     };
-    fetch('/api/track', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ event: 'landing', page: window.location.pathname, meta: utmMeta }),
-    }).catch(() => {});
+    // lib/track 경유 — client_id(sm_cid)가 붙어 방문자 단위 퍼널 dedup이 가능해진다.
+    track('landing', { page: window.location.pathname, meta: utmMeta });
 
     // Track page_view with UTM params for campaign attribution (ad traffic only)
     if (utmSource) {

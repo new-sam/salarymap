@@ -57,6 +57,14 @@ export default async function handler(req, res) {
   const startISO = new Date(`${startDate}T00:00:00+07:00`).toISOString()
   const endISO = new Date(`${endDate}T23:59:59+07:00`).toISOString()
 
+  // 유입→가입 사이 이탈 지도용 여정 이벤트 (건수 기준 — landing/상세뷰 client_id 계측은 2026-07-16 배포,
+  // 위저드·게이트는 7/14 저녁부터 존재. 그 이전 기간을 포함하면 과소계상된다.)
+  const JOURNEY_EVENTS = [
+    'landing', 'wizard_step_1', 'wizard_step_4', 'result_gate_view', 'sign_up',
+    'view_jobs_page', 'view_job_detail', 'click_apply_button',
+    'cv_view', 'cv_register_success',
+  ]
+
   try {
     const [allUsers, appsRaw] = await Promise.all([
       listAllUsers(),
@@ -145,9 +153,18 @@ export default async function handler(req, res) {
       acceptedDaily[d] = (acceptedDaily[d] || 0) + 1
     }
 
+    // 여정 이벤트 카운트 — idx_events_event_created_at 인덱스를 타는 head-count 병렬 쿼리
+    const journey = Object.fromEntries(await Promise.all(JOURNEY_EVENTS.map(async ev => {
+      const { count } = await supabase.from('events')
+        .select('id', { count: 'exact', head: true })
+        .eq('event', ev).gte('created_at', startISO).lte('created_at', endISO)
+      return [ev, count || 0]
+    })))
+
     const sortDesc = (m) => Object.entries(m).map(([k, count]) => ({ key: k, count })).sort((a, b) => b.count - a.count)
 
     res.status(200).json({
+      journey,
       signups: {
         total: signupUsers.length,
         daily: signupDaily,

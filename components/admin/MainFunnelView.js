@@ -49,6 +49,39 @@ function DetailTable({ title, columns, rows }) {
   )
 }
 
+// 유입→가입 이탈 지도의 경로 한 줄 — 단계 박스 사이에 전 단계 대비 전환율 표시.
+function StepChain({ title, steps, lang }) {
+  return (
+    <div style={{ marginBottom: 16 }}>
+      <div style={{ fontSize: 12.5, fontWeight: 700, color: '#555', marginBottom: 8 }}>{title}</div>
+      <div className="adm-m-scroll" style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+        {steps.map((s, i) => {
+          const prev = i > 0 ? steps[i - 1].value : null
+          const conv = i > 0 && prev > 0 ? ((s.value / prev) * 100).toFixed(1) : null
+          return (
+            <div key={s.label} style={{ display: 'flex', alignItems: 'center', gap: 4, flex: 1, minWidth: 0 }}>
+              {i > 0 && (
+                <div style={{ textAlign: 'center', flexShrink: 0, padding: '0 2px' }}>
+                  <div style={{ fontSize: 11.5, fontWeight: 700, color: conv === null ? '#bbb' : conv >= 50 ? '#10B981' : conv >= 20 ? '#F59E0B' : '#EF4444' }}>
+                    {conv === null ? '—' : `${conv}%`}
+                  </div>
+                  <div style={{ fontSize: 11, color: '#ccc', lineHeight: 1 }}>→</div>
+                </div>
+              )}
+              <div style={{ flex: 1, minWidth: 76, background: '#F6F8FA', borderRadius: 8, padding: '8px 10px', textAlign: 'center' }}>
+                <div style={{ fontSize: 17, fontWeight: 700, color: '#191F28' }}>{s.value.toLocaleString()}</div>
+                <div style={{ fontSize: 10.5, color: '#8B95A1', marginTop: 2, whiteSpace: 'nowrap' }}>
+                  {s.label}{s.isNew ? <span style={{ color: '#ff4400', fontWeight: 700 }}> {lang === 'ko' ? '·신규계측' : '·new'}</span> : null}
+                </div>
+              </div>
+            </div>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
 export default function MainFunnelView({ token, lang, dateRange }) {
   const L = (ko, en) => (lang === 'ko' ? ko : en)
   const [stage, setStage] = useState('traffic')
@@ -90,7 +123,7 @@ export default function MainFunnelView({ token, lang, dateRange }) {
 
   const detailTitle = {
     traffic: L('유입 상세 — 채널·랜딩 페이지 (GA4)', 'Traffic detail — channels & landing pages (GA4)'),
-    signup: L('가입 상세 — 유입 경로 (가입 시점 UTM)', 'Sign-up detail — acquisition source (UTM at signup)'),
+    signup: L('가입 상세 — 이탈 지도 · 유입 경로', 'Sign-up detail — drop-off map & source'),
     apply: L('지원 상세', 'Apply detail'),
     accepted: L('합격 상세', 'Accepted detail'),
   }
@@ -137,6 +170,49 @@ export default function MainFunnelView({ token, lang, dateRange }) {
         })}
       </div>
 
+      {/* ── 일별 퍼널 (매일 보는 메인 표 — 단계 상세보다 위) ── */}
+      <div style={{ ...sectionStyle, paddingBottom: 12 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 10 }}>
+          <span style={{ fontSize: 14, fontWeight: 700, color: '#333' }}>{L('일별 퍼널 (최신순)', 'Daily funnel (latest first)')}</span>
+          <span style={{ fontSize: 11, color: '#8B95A1' }}>{L('가입률 = 가입/유입 · 지원자 단위 지표는 지원 카드에서', 'Signup% = signups/users')}</span>
+        </div>
+        <div className="adm-m-scroll" style={{ maxHeight: 420, overflowY: 'auto' }}>
+          <table className="adm-m-nowrap" style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12.5 }}>
+            <thead>
+              <tr style={{ borderBottom: '2px solid #e5e7eb', position: 'sticky', top: 0, background: '#fff' }}>
+                <th style={thLeft}>{L('날짜', 'Date')}</th>
+                <th style={thStyle}>{L('유입', 'Users')}</th>
+                <th style={thStyle}>{L('가입', 'Sign-ups')}</th>
+                <th style={thStyle}>{L('가입률', 'Signup %')}</th>
+                <th style={thStyle}>{L('지원 건', 'Applies')}</th>
+                <th style={thStyle}>{L('실공고 건', 'Real jobs')}</th>
+                <th style={thStyle}>{L('합격', 'Accepted')}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {allDates.map(d => {
+                const u = ga4Daily[d]?.totalUsers ?? null
+                const sg = funnel.signups.daily[d] || 0
+                const ap = funnel.applications.daily[d] || { count: 0, real: 0, users: 0 }
+                const ac = funnel.accepted.daily[d] || 0
+                const signupRate = pct(sg, u)
+                return (
+                  <tr key={d} style={{ borderBottom: '1px solid #f3f4f6' }}>
+                    <td style={{ ...tdLeft, fontWeight: 600 }}>{d}</td>
+                    <td style={tdStyle}>{fmt(u)}</td>
+                    <td style={tdStyle}>{sg || '·'}</td>
+                    <td style={{ ...tdStyle, color: rateColor(signupRate), fontWeight: 600 }}>{signupRate === null ? '—' : `${signupRate}%`}</td>
+                    <td style={tdStyle}>{ap.count || '·'}</td>
+                    <td style={{ ...tdStyle, color: '#16A34A', fontWeight: ap.real ? 600 : 400 }}>{ap.real || '·'}</td>
+                    <td style={{ ...tdStyle, fontWeight: ac ? 700 : 400, color: ac ? '#16A34A' : '#191F28' }}>{ac || '·'}</td>
+                  </tr>
+                )
+              })}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
       {/* ── 선택 단계 드릴다운 ── */}
       <div style={{ fontSize: 15, fontWeight: 700, color: '#333', margin: '0 0 12px' }}>{detailTitle[stage]}</div>
 
@@ -152,7 +228,7 @@ export default function MainFunnelView({ token, lang, dateRange }) {
           <DetailTable
             title={L('랜딩 페이지 Top 10', 'Top 10 landing pages')}
             columns={[L('페이지', 'Page'), L('세션', 'Sessions'), L('방문자', 'Users'), L('이탈률', 'Bounce')]}
-            rows={(ga4.landingPages || []).slice(0, 10).map(p => [
+            rows={(ga4.landingPages || []).filter(p => !String(p.page).startsWith('/admin')).slice(0, 10).map(p => [
               p.page, fmt(p.sessions), fmt(p.totalUsers), `${(p.bounceRate * 100).toFixed(0)}%`,
             ])}
           />
@@ -162,11 +238,46 @@ export default function MainFunnelView({ token, lang, dateRange }) {
       ))}
 
       {stage === 'signup' && (
-        <DetailTable
-          title={L('가입 유입 경로 (utm_source / campaign, 미기록=organic/direct)', 'Signup source (utm_source / campaign)')}
-          columns={[L('경로', 'Source'), L('가입자', 'Sign-ups'), L('비중', 'Share')]}
-          rows={funnel.signups.bySource.map(r => [r.key, fmt(r.count), `${pct(r.count, signups) ?? 0}%`])}
-        />
+        <>
+          {/* 유입→가입 사이 이탈 지도 — 진입면별 여정 이벤트 체인 (건수 기준) */}
+          {funnel.journey && (
+            <div style={{ ...sectionStyle, marginBottom: 16 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 14 }}>
+                <span style={{ fontSize: 14, fontWeight: 700, color: '#333' }}>
+                  {L('유입→가입 이탈 지도 (진입면별)', 'Traffic→signup drop-off map (by entry)')}
+                </span>
+                <span style={{ fontSize: 12, color: '#8B95A1' }}>
+                  sign_up {L('이벤트', 'events')} <b style={{ color: '#191F28' }}>{fmt(funnel.journey.sign_up)}</b>
+                </span>
+              </div>
+              <StepChain lang={lang} title={L('① 홈 → 연봉 위저드 → 가입 게이트', '① Home → wizard → signup gate')} steps={[
+                { label: L('홈 랜딩', 'Home landing'), value: funnel.journey.landing },
+                { label: L('위저드 시작', 'Wizard start'), value: funnel.journey.wizard_step_1 },
+                { label: L('위저드 완료', 'Wizard done'), value: funnel.journey.wizard_step_4 },
+                { label: L('게이트 노출', 'Gate view'), value: funnel.journey.result_gate_view },
+              ]} />
+              <StepChain lang={lang} title={L('② 공고 (SEO 직유입 다수)', '② Jobs (incl. SEO direct)')} steps={[
+                { label: L('공고 목록 뷰', 'List view'), value: funnel.journey.view_jobs_page },
+                { label: L('공고 상세 뷰', 'Detail view'), value: funnel.journey.view_job_detail, isNew: true },
+                { label: L('지원 버튼 클릭', 'Apply click'), value: funnel.journey.click_apply_button },
+                { label: L('지원 완료', 'Applied'), value: funnel.applications.total },
+              ]} />
+              <StepChain lang={lang} title={L('③ CV 등록', '③ CV registration')} steps={[
+                { label: L('CV 페이지 뷰', 'CV view'), value: funnel.journey.cv_view },
+                { label: L('CV 등록 완료', 'CV registered'), value: funnel.journey.cv_register_success },
+              ]} />
+              <div style={{ fontSize: 11, color: '#8B95A1', marginTop: 4 }}>
+                {L('⚠ 이벤트 건수 기준(방문자 dedup 아님). 위저드·게이트는 7/14 저녁, 공고 상세 뷰·sign_up 일부는 7/16 배포부터 쌓임 — 그 이전 기간 포함 시 낮게 보임.',
+                   '⚠ Event counts (not deduped visitors). Wizard/gate tracked since Jul 14 eve, job detail view since Jul 16 deploy.')}
+              </div>
+            </div>
+          )}
+          <DetailTable
+            title={L('가입 유입 경로 (utm_source / campaign, 미기록=organic/direct)', 'Signup source (utm_source / campaign)')}
+            columns={[L('경로', 'Source'), L('가입자', 'Sign-ups'), L('비중', 'Share')]}
+            rows={funnel.signups.bySource.map(r => [r.key, fmt(r.count), `${pct(r.count, signups) ?? 0}%`])}
+          />
+        </>
       )}
 
       {stage === 'apply' && (
@@ -260,52 +371,6 @@ export default function MainFunnelView({ token, lang, dateRange }) {
         />
       )}
 
-      {/* ── 일별 퍼널 테이블 ── */}
-      <div style={{ ...sectionStyle, paddingBottom: 12 }}>
-        <div style={{ fontSize: 14, fontWeight: 700, color: '#333', marginBottom: 10 }}>
-          {L('일별 퍼널 (최신순)', 'Daily funnel (latest first)')}
-        </div>
-        <div className="adm-m-scroll" style={{ maxHeight: 460, overflowY: 'auto' }}>
-          <table className="adm-m-nowrap" style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12.5 }}>
-            <thead>
-              <tr style={{ borderBottom: '2px solid #e5e7eb', position: 'sticky', top: 0, background: '#fff' }}>
-                <th style={thLeft}>{L('날짜', 'Date')}</th>
-                <th style={thStyle}>{L('유입', 'Users')}</th>
-                <th style={thStyle}>{L('가입', 'Sign-ups')}</th>
-                <th style={thStyle}>{L('가입률', 'Signup %')}</th>
-                <th style={thStyle}>{L('지원자', 'Applicants')}</th>
-                <th style={thStyle}>{L('지원 건', 'Applies')}</th>
-                <th style={thStyle}>{L('실공고 건', 'Real jobs')}</th>
-                <th style={thStyle}>{L('지원률', 'Apply %')}</th>
-                <th style={thStyle}>{L('합격', 'Accepted')}</th>
-              </tr>
-            </thead>
-            <tbody>
-              {allDates.map(d => {
-                const u = ga4Daily[d]?.totalUsers ?? null
-                const sg = funnel.signups.daily[d] || 0
-                const ap = funnel.applications.daily[d] || { count: 0, real: 0, users: 0 }
-                const ac = funnel.accepted.daily[d] || 0
-                const signupRate = pct(sg, u)
-                const applyRate = pct(ap.users, sg)
-                return (
-                  <tr key={d} style={{ borderBottom: '1px solid #f3f4f6' }}>
-                    <td style={{ ...tdLeft, fontWeight: 600 }}>{d}</td>
-                    <td style={tdStyle}>{fmt(u)}</td>
-                    <td style={tdStyle}>{sg || '·'}</td>
-                    <td style={{ ...tdStyle, color: rateColor(signupRate) }}>{signupRate === null ? '—' : `${signupRate}%`}</td>
-                    <td style={tdStyle}>{ap.users || '·'}</td>
-                    <td style={tdStyle}>{ap.count || '·'}</td>
-                    <td style={{ ...tdStyle, color: '#16A34A', fontWeight: ap.real ? 600 : 400 }}>{ap.real || '·'}</td>
-                    <td style={{ ...tdStyle, color: rateColor(applyRate) }}>{applyRate === null ? '—' : `${applyRate}%`}</td>
-                    <td style={{ ...tdStyle, fontWeight: ac ? 700 : 400, color: ac ? '#16A34A' : '#191F28' }}>{ac || '·'}</td>
-                  </tr>
-                )
-              })}
-            </tbody>
-          </table>
-        </div>
-      </div>
     </>
   )
 }
