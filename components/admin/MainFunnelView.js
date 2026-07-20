@@ -261,8 +261,8 @@ export default function MainFunnelView({ token, lang, dateRange }) {
                 <DropoffFunnel key={k} lang={lang} title={funnel.flows[k].title} steps={funnel.flows[k].steps} />
               ))}
               <div style={{ fontSize: 11, color: '#8B95A1', marginTop: 6, lineHeight: 1.7, paddingTop: 10, borderTop: '1px solid #f0f0f0' }}>
-                {L('각 단계 = 직전 단계 도달 유저 중 다음 단계까지 간 유저(순차·유저 단위·전체 기간 윈도우). 빨강 = 가장 크게 새는 지점. ',
-                   'Each step = users from the previous step reaching the next (sequential, per-user). Red = biggest leak. ')}
+                {L('각 단계 = 직전 단계 도달 유저 중 다음 단계까지 간 유저(순차·유저 단위·전체 기간 윈도우). 빨강 = 가장 크게 새는 지점. 위저드 마지막은 실제 sign_up 이벤트(=가입), CV 마지막은 이력서 등록완료(≈85% 신규가입·15% 기존유저 — CV는 클라이언트 OAuth라 sign_up 이벤트가 안 잡혀 등록완료로 대체). ',
+                   'Each step = users from the previous step reaching the next (sequential, per-user). Red = biggest leak. Wizard ends at real sign_up; CV ends at resume-registered (~85% new signups). ')}
                 <b style={{ color: '#C2452B' }}>{L('공고·앱 플로우는 제외', 'Jobs/app excluded')}</b>
                 {L(': 공고 목록·카드·지원버튼 이벤트의 ~60%, 앱 이벤트의 ~51%가 client_id 없이(익명) 찍혀 순차 스티칭이 불가 → 계측을 먼저 고쳐야 신뢰 가능. CV는 sign_up 이벤트가 웹 콜백 전용이라 등록완료(cv_register_success)를 종료 단계로 본다.',
                    ': top-of-funnel events for jobs (~60%) and app (~51%) fire without client_id, so sequential stitching is unreliable — fix instrumentation first.')}

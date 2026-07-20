@@ -18,7 +18,7 @@ const toVN = (iso) => new Date(new Date(iso).getTime() + 7 * 3600000).toISOStrin
 // 배제: 공고 브라우징(view_jobs_page/click_job_card/click_apply 60% 무id)·앱(app_open cid 0%)은
 //       상단 이벤트가 대부분 익명이라 순차 퍼널이 신뢰 불가 → coverageNote 로만 안내.
 const FLOW_FUNNELS = [
-  { key: 'wizard', title: ['홈/위저드 → 게이트 → 가입', 'Home/wizard → gate → signup'],
+  { key: 'wizard', title: ['홈/위저드 → 게이트 → 가입 (마지막=실제 sign_up)', 'Home/wizard → gate → signup (real sign_up)'],
     steps: [
       { event: 'wizard_step_1', label: ['위저드 시작', 'Wizard start'] },
       { event: 'wizard_step_2', label: ['위저드 2', 'Wizard 2'] },
@@ -27,12 +27,14 @@ const FLOW_FUNNELS = [
       { event: 'result_gate_view', label: ['게이트 노출', 'Gate view'] },
       { event: 'sign_up', label: ['가입', 'Sign-up'] },
     ] },
-  { key: 'cv', title: ['CV 등록 → 가입', 'CV register → signup'],
+  // CV 플로우는 sign_up 이벤트가 클라이언트 OAuth(서버 콜백 미경유)라 스티칭 0 → 종료를 등록완료로 본다.
+  // 등록완료 ≈ 85% 신규가입(+15% 기존유저 CV 재등록). "가입"이 아니라 "이력서 등록" 완료임에 주의.
+  { key: 'cv', title: ['CV → 이력서 등록 (등록완료 ≈ 85% 신규가입)', 'CV → resume register (~85% new signups)'],
     steps: [
       { event: 'cv_view', label: ['CV 페이지 뷰', 'CV view'] },
       { event: 'cv_attach_file', label: ['이력서 업로드', 'Resume upload'] },
       { event: 'cv_oauth_start', label: ['로그인 시작', 'Login start'] },
-      { event: 'cv_register_success', label: ['등록 완료', 'Registered'] },
+      { event: 'cv_register_success', label: ['이력서 등록완료', 'Resume registered'] },
     ] },
 ]
 
