@@ -154,8 +154,9 @@ export default function App({ Component, pageProps }) {
             activePage={activePage}
             onLogin={() => {
               if (typeof window === 'undefined') return;
-              if (typeof window.openAuthModal === 'function') window.openAuthModal();
-              else window.dispatchEvent(new Event('fyi-show-login'));
+              // 헤더 로그인 버튼은 어느 페이지에서든 전용 /login 페이지로 보낸다
+              // (홈의 연봉결과 게이트 모달은 ResultSection이 직접 openAuthModal로 띄우는 별개 흐름).
+              window.dispatchEvent(new Event('fyi-show-login'));
             }}
             onJobsClick={() => {
               if (router.pathname !== '/') return;
