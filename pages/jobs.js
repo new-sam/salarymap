@@ -96,7 +96,7 @@ function dedupeJobs(list) {
 
 // 핫 섹션·메인 그리드 공용 카드. 썸네일 오버레이는 좌상단 배지 1개(featured > bump > match),
 // 우상단 북마크, 우하단 배지는 원격/하이브리드 근무형태일 때만. 주황은 연봉에만 쓴다.
-function JobCard({ job, idx, bump, matched, bookmarked, onOpen, onToggleBookmark, typeLabel, t, lang }) {
+function JobCard({ job, idx, bump, matched, bookmarked, onOpen, onToggleBookmark, typeLabel, t, lang, compact }) {
   const router = useRouter()
   const sal = formatSalaryCard(job)
   const hasImg = job.image_url || job.images?.[0]
@@ -108,20 +108,19 @@ function JobCard({ job, idx, bump, matched, bookmarked, onOpen, onToggleBookmark
     <div className="jc" onClick={() => onOpen(job, idx)}>
       <div className="jc-img">
         <div className="jc-img-in" style={{ background: `#fff url(${src}) center/${mode} no-repeat` }}>
-          {job.is_featured && (
+          {!compact && (job.is_featured ? (
             <div className="jc-feat">{t('jobs.featuredBadge')}</div>
-          )}
-          {!job.is_featured && (bump !== null && bump > 0 ? (
+          ) : (bump !== null && bump > 0 ? (
             <div className="jc-bump" dangerouslySetInnerHTML={{ __html: t('jobs.bumpVs', { bump }) }} />
           ) : matched ? (
             <div className="jc-match">{t('jobs.profileBadge')}</div>
-          ) : null)}
+          ) : null))}
           <button className="jc-bm" aria-label="Bookmark" onClick={e => { e.stopPropagation(); onToggleBookmark(job.id) }}>
-            <svg width="14" height="14" viewBox="0 0 24 24" fill={bookmarked ? '#ff4400' : 'none'} stroke={bookmarked ? '#ff4400' : '#999'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill={bookmarked ? '#ff4400' : 'none'} stroke={bookmarked ? '#ff4400' : '#fff'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z" />
             </svg>
           </button>
-          {showType && (
+          {!compact && showType && (
             <div className="jc-badges">
               <span className={`jc-type-badge ${job.type}`}>{typeLabel(job.type)}</span>
             </div>
@@ -131,6 +130,7 @@ function JobCard({ job, idx, bump, matched, bookmarked, onOpen, onToggleBookmark
       <div className="jc-body">
         <div className="jc-t">{job.title}</div>
         <div className="jc-co jc-co-link" onClick={e => { e.stopPropagation(); router.push(`/companies/${encodeURIComponent(job.company)}`) }}>{job.company}</div>
+        {!compact && (
         <div className="jc-bottom">
           <div className="jc-m">
             <span className="jc-m-txt">
@@ -145,6 +145,7 @@ function JobCard({ job, idx, bump, matched, bookmarked, onOpen, onToggleBookmark
           </div>
           <div className="jc-sal">{Math.round(sal.min / 1e6)}M – {Math.round(sal.max / 1e6)}M VND</div>
         </div>
+        )}
       </div>
     </div>
   )
@@ -604,7 +605,7 @@ export default function JobsPage() {
   // 위에 놓고, 남는 슬롯만 비슷한 직무의 크롤 공고로 채운다. 무관 공고는 채우지 않고 회사
   // 중복은 제거. 'Non-IT'는 잡동사니 직군이라 대분류 완화 매칭에서 제외. 모달 오픈 시점에
   // 목록을 고정해 모달 안에서 지원해도 재배치되지 않게 appliedInfo에 담아둔다.
-  const similarJobsFor = (target) => {
+  const similarJobsFor = (target, limit = 3) => {
     const group = target.role && target.role !== 'Non-IT' ? roleGroupKey(target.role) : null
     const tier = (j) => {
       const exact = target.role && j.role === target.role
@@ -621,7 +622,7 @@ export default function JobsPage() {
       .sort((a, b) => a.t - b.t)
       .filter(({ j }) => { if (seenCompany.has(j.company)) return false; seenCompany.add(j.company); return true })
       .map(x => x.j)
-      .slice(0, 3)
+      .slice(0, limit)
   }
 
   // 지원 완료 모달의 유사 공고 원탭 지원 — 방금 지원에 쓴 이력서를 그대로 재사용한다.
@@ -918,10 +919,11 @@ export default function JobsPage() {
         .jc-feat { position: absolute; top: 0; left: 0; right: 0; z-index: 1; padding: 9px 44px 20px 12px; background: linear-gradient(180deg, rgba(0,0,0,0.5) 0%, rgba(0,0,0,0) 100%); color: #fff; font-size: 11px; font-weight: 700; letter-spacing: 0.2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; pointer-events: none; }
         .jc-img { border-radius: 8px; overflow: hidden; position: relative; padding-top: 56%; margin-bottom: 9px; background: #f0f0f0; flex-shrink: 0; border: 1px solid rgba(0,0,0,0.06); }
         .jc-img-in { position: absolute; inset: 0; transition: transform .25s ease; background-color: #f0f0f0; background-size: cover; background-position: center; background-repeat: no-repeat; }
+        .jc-img-in::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 44px; background: linear-gradient(180deg, rgba(0,0,0,0.2) 0%, rgba(0,0,0,0) 100%); pointer-events: none; }
         .jc:hover .jc-img-in { transform: scale(1.04); }
         .jc-bump { position: absolute; top: 10px; left: 10px; background: rgba(0,0,0,0.62); color: #fff; font-size: 11px; font-weight: 600; padding: 4px 9px; border-radius: 4px; z-index: 2; }
         .jc-bump b { color: #ff4400; font-weight: 700; }
-        .jc-bm { position: absolute; top: 10px; right: 10px; width: 28px; height: 28px; border-radius: 50%; background: rgba(250,250,248,0.92); display: flex; align-items: center; justify-content: center; z-index: 2; border: none; cursor: pointer; }
+        .jc-bm { position: absolute; top: 10px; right: 10px; width: 28px; height: 28px; padding: 0; background: none; display: flex; align-items: center; justify-content: center; z-index: 2; border: none; cursor: pointer; filter: drop-shadow(0 1px 3px rgba(0,0,0,0.5)); }
         .jc-body { flex: 1; display: flex; flex-direction: column; }
         .jc-t { font-size: 15px; font-weight: 600; color: #111; margin-bottom: 3px; line-height: 1.35; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
         .jc-co { font-size: 13px; color: #777; margin-bottom: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -1001,15 +1003,8 @@ export default function JobsPage() {
         .jd-co-head { display: flex; align-items: center; gap: 8px; }
         .jd-ai-badge { display: inline-flex; align-items: center; gap: 3px; font-size: 11px; font-weight: 700; color: #7c3aed; background: #f5f3ff; border: 1px solid #e9e5ff; padding: 2px 8px; border-radius: 999px; letter-spacing: 0; }
         .jd-desc { font-size: 14px; color: #444; line-height: 1.8; margin-bottom: 24px; white-space: pre-line; }
-        .jd-comm-cta { display: flex; align-items: center; gap: 14px; padding: 16px 18px; margin-bottom: 24px; border: 1px solid #ffd6c8; background: #fff7f5; border-radius: 12px; text-decoration: none; transition: border-color .15s, box-shadow .15s; animation: aiFadeIn 0.6s ease-out 0.2s both; }
-        .jd-comm-cta:hover { border-color: #ff8a3d; box-shadow: 0 2px 12px rgba(255,68,0,0.08); }
-        .jd-comm-cta-emoji { font-size: 26px; line-height: 1; flex-shrink: 0; }
-        .jd-comm-cta-body { flex: 1; min-width: 0; }
-        .jd-comm-cta-title { font-size: 15px; font-weight: 700; color: #111; margin-bottom: 3px; }
-        .jd-comm-cta-co { color: #ff4400; font-weight: 800; }
-        .jd-comm-cta-desc { font-size: 13px; color: #777; line-height: 1.5; }
-        .jd-comm-cta-btn { flex-shrink: 0; padding: 9px 16px; border-radius: 999px; background: #ff4400; color: #fff; font-size: 13px; font-weight: 700; white-space: nowrap; }
-        @media (max-width: 560px) { .jd-comm-cta { flex-wrap: wrap; } .jd-comm-cta-btn { width: 100%; text-align: center; } }
+        .jd-sim { margin-bottom: 24px; }
+        .jd-sim-jg { grid-template-columns: 1fr 1fr !important; gap: 18px 14px !important; }
         .jd-meta-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 24px; }
 
         /* Company Overview */
@@ -1440,23 +1435,23 @@ export default function JobsPage() {
                 </div>
               )}
 
-              {/* Community CTA — 하단 배치(커뮤니티 우선순위 낮음) */}
-              <Link
-                href="/community"
-                className="jd-comm-cta"
-                onClick={() => track('click_community_cta', '/jobs', { jobId: detailJob.id, company: detailJob.company })}
-              >
-                <div className="jd-comm-cta-emoji">💬</div>
-                <div className="jd-comm-cta-body">
-                  <div className="jd-comm-cta-title">
-                    {t('jobs.commCtaTitle', { company: '\u0000' }).split('\u0000').map((s, i, arr) => (
-                      <span key={i}>{s}{i < arr.length - 1 && <span className="jd-comm-cta-co">{detailJob.company}</span>}</span>
-                    ))}
+              {/* 비슷한 공고 추천 — 메인 그리드와 동일한 JobCard 재사용(2열) (커뮤니티 CTA 대체) */}
+              {(() => {
+                const sims = similarJobsFor(detailJob, 4)
+                if (!sims.length) return null
+                return (
+                  <div className="jd-sim">
+                    <div className="jd-section-title">{t('jobs.similarSectionTitle')}</div>
+                    <div className="jg jd-sim-jg">
+                      {sims.map((j, i) => (
+                        <JobCard key={j.id} job={j} idx={i} bump={getBump(j)} matched={isProfileMatch(j)}
+                          bookmarked={bookmarks.includes(j.id)} compact
+                          onOpen={openDetail} onToggleBookmark={toggleBookmark} typeLabel={typeLabel} t={t} lang={lang} />
+                      ))}
+                    </div>
                   </div>
-                  <div className="jd-comm-cta-desc">{t('jobs.commCtaDesc')}</div>
-                </div>
-                <span className="jd-comm-cta-btn">{t('jobs.commCtaBtn')}</span>
-              </Link>
+                )
+              })()}
 
             </div>
             {/* Inline Apply Form */}
