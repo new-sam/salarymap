@@ -1066,6 +1066,9 @@ export default function JobsPage() {
           .jf-sort { flex-wrap: wrap; }
           .jf-sort-btn { font-size: 12px; padding: 6px 10px; }
           .jd { width: 100%; top: 52px; height: calc(100vh - 52px); height: calc(100dvh - 52px); z-index: 100000; padding-bottom: calc(68px + env(safe-area-inset-bottom)); }
+          /* 헤더가 스크롤로 숨은 상태(매칭 바가 top:0으로 올라옴)에서 상세를 열면 상단 52px에
+             매칭 바가 비친다 — 상세 패널도 최상단부터 전체를 덮는다. */
+          body[data-chrome-hidden="1"] .jd { top: 0; height: 100vh; height: 100dvh; }
           .jd-x { display: none; }
           .jd-back { display: flex !important; position: sticky; top: 0; z-index: 3; }
           .jd-body { padding: 20px 16px 32px; }

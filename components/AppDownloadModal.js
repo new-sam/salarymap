@@ -4,11 +4,10 @@ import { useT } from '../lib/i18n';
 import { track } from '../lib/track';
 
 // 모바일 웹 방문자에게 "FYI를 앱으로" 하단 바텀시트를 밑에서 슬라이드업으로 띄운다.
-// 메인페이지(/)에서, 모바일 뷰포트에서만, 하드 새로고침 시 한 번. SPA 이동으론 안 뜸.
-// 닫으면(X/나중에) 이번 세션 동안은 다시 띄우지 않는다(sessionStorage) — 페이지마다 반복 노출 방지.
+// 메인페이지(/)에서, 모바일 뷰포트에서만, 하드 새로고침 시마다 한 번. SPA 이동으론 안 뜸.
+// 닫음 상태는 저장하지 않아 새로고침할 때마다 다시 뜬다.
 // App Store 링크. 지역/언어 강제 없이 방문자 스토어로 자동 분기되는 정규형 사용.
 const APP_STORE_URL = 'https://apps.apple.com/app/id6778311550';
-const DISMISS_KEY = 'fyi_app_promo_dismissed';
 
 export default function AppDownloadModal() {
   const { t } = useT();
@@ -21,8 +20,6 @@ export default function AppDownloadModal() {
     if (router.pathname !== '/') return;
     // 모바일 웹에서만 — 데스크톱은 iOS 앱 프로모가 의미 없어 띄우지 않는다.
     if (typeof window === 'undefined' || !window.matchMedia('(max-width: 768px)').matches) return;
-    // 이번 세션에 이미 닫았으면 안 띄운다.
-    try { if (sessionStorage.getItem(DISMISS_KEY)) return; } catch {}
     const id = setTimeout(() => {
       setShow(true);
       track('view_app_promo_modal', { meta: { source: 'web_modal' }, page: '/' });
@@ -39,7 +36,6 @@ export default function AppDownloadModal() {
   }, [show]);
 
   function dismiss() {
-    try { sessionStorage.setItem(DISMISS_KEY, '1'); } catch {}
     setOpen(false); // 슬라이드 다운
     setTimeout(() => setShow(false), 260); // 애니메이션 후 언마운트
   }
@@ -49,7 +45,7 @@ export default function AppDownloadModal() {
   return (
     <div
       onClick={e => { if (e.target === e.currentTarget) dismiss(); }}
-      style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.45)', opacity: open ? 1 : 0, transition:'opacity .28s ease', zIndex:1100, display:'flex', alignItems:'flex-end', justifyContent:'center', fontFamily:"'Barlow',sans-serif" }}
+      style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.45)', opacity: open ? 1 : 0, transition:'opacity .28s ease', zIndex:100000, display:'flex', alignItems:'flex-end', justifyContent:'center', fontFamily:"'Barlow',sans-serif" }}
     >
       <div style={{ position:'relative', overflow:'hidden', background:'#fff', borderRadius:'24px 24px 0 0', padding:'30px 26px calc(22px + env(safe-area-inset-bottom))', width:'100%', maxWidth:'480px', textAlign:'center', boxShadow:'0 -12px 40px rgba(0,0,0,0.22)', transform: open ? 'translateY(0)' : 'translateY(100%)', transition:'transform .32s cubic-bezier(.22,1,.36,1)' }}>
         {/* 상단 주황 글로우 — 앱 아이콘에서 브랜드 색이 은은히 퍼지는 배경 */}
