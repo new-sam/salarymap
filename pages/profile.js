@@ -188,10 +188,12 @@ export default function ProfilePage() {
       setUser(session.user)
       setToken(session.access_token)
 
-      // Admin check (cached) — community/posts gated to admins for now
+      // Admin check — trust the cache only when it says admin=true. A cached
+      // 'false' is re-checked every load so newly-granted admins see the button
+      // immediately (previously a stale 'false' hid it until the tab closed).
       const cachedAdmin = sessionStorage.getItem('fyi_is_admin')
-      if (cachedAdmin !== null) {
-        setIsAdmin(cachedAdmin === 'true')
+      if (cachedAdmin === 'true') {
+        setIsAdmin(true)
       } else {
         try {
           const r = await fetch(`/api/admin/check?email=${encodeURIComponent(session.user.email)}`)
