@@ -232,17 +232,17 @@ export default function JobsPage() {
     if (typeof r === 'string' && r) setRoleFilters([r])
   }, [router.query.role])
 
-  // Infinite scroll
+  // Infinite scroll — 센티널이 뷰포트(+여유)에 들어오면 다음 페이지를 붙인다.
+  // 관찰자를 ref 콜백에서 생성해 마운트 순서에 안 흔들리게 하고, 센티널엔 key={visibleCount}를
+  // 줘 페이지가 늘 때마다 재관찰 → 화면이 찰 때까지 연속 로드(이미지 리플로우로 인한 멈춤 방지).
   const loadMoreObserver = useRef(null)
-  useEffect(() => {
-    loadMoreObserver.current = new IntersectionObserver(([entry]) => {
-      if (entry.isIntersecting) setVisibleCount(v => v + JOBS_PER_PAGE)
-    }, { rootMargin: '200px' })
-    return () => loadMoreObserver.current?.disconnect()
-  }, [])
   const loadMoreCallback = useCallback(node => {
     loadMoreObserver.current?.disconnect()
-    if (node) loadMoreObserver.current?.observe(node)
+    if (!node) return
+    loadMoreObserver.current = new IntersectionObserver(([entry]) => {
+      if (entry.isIntersecting) setVisibleCount(v => v + JOBS_PER_PAGE)
+    }, { rootMargin: '400px' })
+    loadMoreObserver.current.observe(node)
   }, [])
 
   // UTM capture + page view tracking on jobs page
@@ -979,16 +979,21 @@ export default function JobsPage() {
         .jd-bg { position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 60; }
         .jd { position: fixed; top: 0; right: 0; width: 50%; height: 100vh; height: 100dvh; background: #fafaf8; z-index: 61; overflow-y: auto; overscroll-behavior: contain; animation: jdSlide .3s ease; box-shadow: -8px 0 40px rgba(0,0,0,0.1); }
         @keyframes jdSlide { from { transform: translateX(100%); } to { transform: translateX(0); } }
-        .jd-x { position: absolute; top: 16px; right: 20px; font-size: 24px; color: #999; cursor: pointer; background: none; border: none; z-index: 2; line-height: 1; }
-        .jd-back { display: none; align-items: center; gap: 8px; padding: 12px 16px; border-bottom: 1px solid #f0f0f0; background: #fafaf8; font-size: 14px; font-weight: 600; color: #333; cursor: pointer; border: none; width: 100%; flex-shrink: 0; }
         .jd-scroll { display: contents; }
         .jd-img { width: 100%; max-height: 400px; background: #f0f0f0; background-size: contain; background-position: center; background-repeat: no-repeat; aspect-ratio: 16/9; }
+        /* 이미지 위 상단 음영 — 플로팅 뒤로/공유 버튼 가독성 확보 */
+        .jd-img-shade { position: absolute; top: 0; left: 0; right: 0; height: 88px; background: linear-gradient(180deg, rgba(0,0,0,0.32), rgba(0,0,0,0)); pointer-events: none; z-index: 2; }
+        .jd-fab { position: absolute; top: 14px; width: 38px; height: 38px; background: none; border: none; color: #fff; display: flex; align-items: center; justify-content: center; cursor: pointer; z-index: 3; filter: drop-shadow(0 1px 4px rgba(0,0,0,0.55)); transition: opacity .15s ease; }
+        .jd-fab:hover { opacity: 0.8; }
+        .jd-fab-back { left: 10px; }
+        .jd-fab-share { right: 10px; }
         .jd-body { padding: 28px 32px 40px; }
-        .jd-company { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; }
-        .jd-co-ini { width: 44px; height: 44px; border-radius: 10px; background: #f0f0f0; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 800; color: #555; flex-shrink: 0; }
-        .jd-co-name { font-size: 15px; font-weight: 600; color: #111; }
-        .jd-co-loc { font-size: 13px; color: #777; }
-        .jd-title { font-size: 22px; font-weight: 800; color: #111; margin-bottom: 8px; letter-spacing: -0.3px; }
+        .jd-title { font-size: 22px; font-weight: 800; color: #111; margin-bottom: 10px; letter-spacing: -0.3px; line-height: 1.3; }
+        /* 제목 아래 한 줄: 회사명(클릭) · 지역 · 경력 */
+        .jd-subline { display: flex; align-items: center; flex-wrap: wrap; gap: 7px; font-size: 14px; color: #666; margin-bottom: 16px; }
+        .jd-subline .jd-co-link { color: #111; font-weight: 700; text-decoration: underline; text-underline-offset: 2px; }
+        .jd-subline-sep { color: #ccc; }
+        .jd-subline-web { color: #ff4400; text-decoration: none; }
         .jd-salary { font-size: 16px; font-weight: 700; color: #ff4400; margin-bottom: 24px; }
         .jd-divider { height: 1px; background: #f0f0f0; margin: 24px 0; }
         .jd-section-title { font-size: 11px; font-weight: 700; color: #999; text-transform: uppercase; letter-spacing: .06em; margin-bottom: 12px; }
@@ -1054,8 +1059,6 @@ export default function JobsPage() {
           /* 헤더가 스크롤로 숨은 상태(매칭 바가 top:0으로 올라옴)에서 상세를 열면 상단 52px에
              매칭 바가 비친다 — 상세 패널도 최상단부터 전체를 덮는다. */
           body[data-chrome-hidden="1"] .jd { top: 0; height: 100vh; height: 100dvh; }
-          .jd-x { display: none; }
-          .jd-back { display: flex !important; position: sticky; top: 0; z-index: 3; }
           .jd-body { padding: 20px 16px 32px; }
           .jd-img { max-height: 280px; }
           .jd-title { font-size: 18px; }
@@ -1210,7 +1213,7 @@ export default function JobsPage() {
                   onOpen={openDetail} onToggleBookmark={toggleBookmark} typeLabel={typeLabel} t={t} lang={lang} />
               ))}
             </div>
-            {visibleCount < gridJobs.length && <div ref={loadMoreCallback} style={{ height: 1 }} />}
+            {visibleCount < gridJobs.length && <div key={visibleCount} ref={loadMoreCallback} style={{ height: 1 }} />}
 
             {/* Empty state */}
             {jobsLoaded && filteredJobs.length === 0 && (
@@ -1231,12 +1234,6 @@ export default function JobsPage() {
         <>
           <div className="jd-bg" onClick={closeDetail} />
           <div className="jd">
-            <button className="jd-x" onClick={closeDetail}>×</button>
-            <button className="jd-back" onClick={closeDetail}>
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
-              {t('jobs.back') || 'Back'}
-            </button>
-
             <div className="jd-scroll">
             {/* Hero image / Carousel */}
             {(() => {
@@ -1248,6 +1245,13 @@ export default function JobsPage() {
                   <div className="jd-img" style={{
                     backgroundImage: `url(${uniqueImgs[carouselIdx % uniqueImgs.length]})`,
                   }} />
+                  <div className="jd-img-shade" />
+                  <button className="jd-fab jd-fab-back" onClick={closeDetail} aria-label="back">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+                  </button>
+                  <button className="jd-fab jd-fab-share" onClick={() => { if (!isLoggedIn) { loginForJob(detailJob.id); return; } navigator.clipboard.writeText(`${window.location.origin}/jobs/${detailJob.id}`); showToast(t('jobs.linkCopied')) }} aria-label="share">
+                    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+                  </button>
                   {uniqueImgs.length > 1 && (
                     <>
                       <button onClick={() => setCarouselIdx(i => (i - 1 + uniqueImgs.length) % uniqueImgs.length)} style={{
@@ -1280,20 +1284,20 @@ export default function JobsPage() {
             })()}
 
             <div className="jd-body">
-              {/* Company */}
-              <div className="jd-company">
-                <div className="jd-co-ini">{detailJob.company_initials || detailJob.company.slice(0, 2).toUpperCase()}</div>
-                <div>
-                  <Link href={`/companies/${encodeURIComponent(detailJob.company)}`} className="jd-co-name jd-co-link">{detailJob.company}</Link>
-                  <div className="jd-co-loc">
-                    {detailJob.location} · {typeLabel(detailJob.type)}
-                    {detailJob.company_url && <> · <a href={detailJob.company_url} target="_blank" rel="noopener noreferrer" style={{ color: '#ff4400', textDecoration: 'none' }}>{t('jobs.website')}</a></>}
-                  </div>
-                </div>
+              {/* Title */}
+              <div className="jd-title">{detailJob.title}</div>
+
+              {/* 한 줄: 회사명(클릭) · 지역 · 요구경력 */}
+              <div className="jd-subline">
+                <Link href={`/companies/${encodeURIComponent(detailJob.company)}`} className="jd-co-link">{detailJob.company}</Link>
+                {detailJob.location && <span className="jd-subline-sep">·</span>}
+                {detailJob.location && <span>{detailJob.location}</span>}
+                <span className="jd-subline-sep">·</span>
+                <span>{!detailJob.experience_min && !detailJob.experience_max ? t('jobs.yearsAny') : detailJob.experience_max >= 30 ? t('jobs.yearsMin', { min: detailJob.experience_min || 0 }) : t('jobs.years', { min: detailJob.experience_min, max: detailJob.experience_max })}</span>
+                {detailJob.company_url && <><span className="jd-subline-sep">·</span><a href={detailJob.company_url} target="_blank" rel="noopener noreferrer" className="jd-subline-web">{t('jobs.website')}</a></>}
               </div>
 
-              {/* Title & Salary */}
-              <div className="jd-title">{detailJob.title}</div>
+              {/* Salary */}
               {detailJob.salary_min > 0 && (
                 <div className="jd-salary">{Math.round(detailJob.salary_min / 1e6)}M – {Math.round(detailJob.salary_max / 1e6)}M VND</div>
               )}
@@ -1309,10 +1313,6 @@ export default function JobsPage() {
 
               {/* Meta grid */}
               <div className="jd-meta-grid">
-                <div className="jd-meta-item">
-                  <div className="jd-meta-label">{t('jobs.experience')}</div>
-                  <div className="jd-meta-value">{!detailJob.experience_min && !detailJob.experience_max ? t('jobs.yearsAny') : detailJob.experience_max >= 30 ? t('jobs.yearsMin', { min: detailJob.experience_min || 0 }) : t('jobs.years', { min: detailJob.experience_min, max: detailJob.experience_max })}</div>
-                </div>
                 <div className="jd-meta-item">
                   <div className="jd-meta-label">{t('jobs.position')}</div>
                   <div className="jd-meta-value">{roleLabel(detailJob.role, lang)}</div>
@@ -1506,9 +1506,6 @@ export default function JobsPage() {
                 <div style={{ display: 'flex', gap: 8 }}>
                   <button className="jd-save-btn" onClick={() => toggleBookmark(detailJob.id)} title={bookmarks.includes(detailJob.id) ? t('jobs.saved') : t('jobs.save')}>
                     <svg width="18" height="18" viewBox="0 0 24 24" fill={bookmarks.includes(detailJob.id) ? '#ff4400' : 'none'} stroke={bookmarks.includes(detailJob.id) ? '#ff4400' : '#666'} strokeWidth="2"><path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z"/></svg>
-                  </button>
-                  <button className="jd-save-btn" onClick={() => { navigator.clipboard.writeText(`${window.location.origin}/jobs/${detailJob.id}`); showToast(t('jobs.linkCopied')) }} title="Share">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#666" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
                   </button>
                   {appliedJobs.includes(detailJob.id) ? (
                     <button className="jd-apply-btn" disabled style={{ background: '#ccc', flex: 1 }}>
