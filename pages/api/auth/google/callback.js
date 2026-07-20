@@ -61,10 +61,13 @@ export default async function handler(req, res) {
     const isNew = u?.created_at && (Date.now() - new Date(u.created_at).getTime() < 60_000);
     const isInternal = u?.email && u.email.endsWith('@likelion.net');
     if (isNew && !isInternal) {
+      // sm_cid 쿠키(lib/track.js 가 심음) → 로그아웃 상태 단계와 가입을 잇는 client_id.
+      const cid = req.cookies?.sm_cid || null;
       await supabaseAdmin.from('events').insert([{
         event: 'sign_up',
         page: '/auth/callback',
         user_id: u.id,
+        client_id: cid,
         meta: { platform: 'web', provider: 'google' },
       }]);
     }
