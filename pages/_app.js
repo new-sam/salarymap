@@ -1,9 +1,8 @@
 import "@/styles/globals.css";
-import { useState, useEffect } from 'react';
+import { useEffect } from 'react';
 import { useRouter } from 'next/router';
 import { Toaster } from 'sonner';
 import { I18nProvider, LanguageSwitcher, useT } from '../lib/i18n';
-import { supabase } from '../lib/supabaseClient';
 import MobileTabBar from '../components/MobileTabBar';
 import AppDownloadModal from '../components/AppDownloadModal';
 import GlobalNav from '../components/GlobalNav';
@@ -44,40 +43,20 @@ function GlobalFooter() {
   );
 }
 
+// 예전 다크 로그인 모달을 대체 — fyi-show-login 이벤트가 오면 전용 /login 페이지로 보낸다.
+// 원래 경로를 ?return= 으로 넘겨 로그인 후 제자리로 복귀시킨다.
 function GlobalLoginModal() {
-  const { t } = useT();
-  const [show, setShow] = useState(false);
-
+  const router = useRouter();
   useEffect(() => {
-    const handler = () => setShow(true);
+    const handler = () => {
+      if (router.pathname === '/login') return;
+      const ret = window.location.pathname + window.location.search;
+      router.push('/login?return=' + encodeURIComponent(ret));
+    };
     window.addEventListener('fyi-show-login', handler);
     return () => window.removeEventListener('fyi-show-login', handler);
-  }, []);
-
-  if (!show) return null;
-  return (
-    <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.75)',zIndex:1000,display:'flex',alignItems:'center',justifyContent:'center',padding:'20px'}}
-      onClick={e => { if(e.target===e.currentTarget) setShow(false) }}>
-      <div style={{background:'#1a1a18',border:'1px solid rgba(255,255,255,0.1)',borderRadius:'20px',padding:'40px 36px',maxWidth:'420px',width:'100%',fontFamily:"'Barlow',sans-serif"}}>
-        <div style={{fontSize:'24px',fontWeight:900,color:'#fff',letterSpacing:'-0.5px',marginBottom:'8px'}}>{t('auth.title')}</div>
-        <div style={{fontSize:'13px',color:'rgba(255,255,255,0.4)',marginBottom:'28px',lineHeight:1.6}}>{t('auth.sub')}</div>
-        <div style={{display:'flex',flexDirection:'column',gap:'10px'}}>
-          <button onClick={() => { setShow(false); localStorage.setItem('fyi_login_return', window.location.pathname + window.location.search); supabase.auth.signInWithOAuth({ provider:'linkedin_oidc', options:{ redirectTo: window.location.origin+'/auth/callback', scopes:'openid profile email' } }) }}
-            style={{width:'100%',background:'#0A66C2',color:'#fff',fontSize:'14px',fontWeight:700,padding:'14px',borderRadius:'10px',border:'none',cursor:'pointer',fontFamily:"'Barlow',sans-serif",display:'flex',alignItems:'center',justifyContent:'center',gap:'10px'}}>
-            <span style={{fontWeight:900,fontSize:'16px'}}>in</span> {t('auth.linkedin')}
-          </button>
-          <button onClick={() => { setShow(false); window.location.href = '/api/auth/google?return=' + encodeURIComponent(window.location.pathname + window.location.search) }}
-            style={{width:'100%',background:'#fafaf8',color:'#111',fontSize:'14px',fontWeight:700,padding:'14px',borderRadius:'10px',border:'none',cursor:'pointer',fontFamily:"'Barlow',sans-serif",display:'flex',alignItems:'center',justifyContent:'center',gap:'10px'}}>
-            <span style={{fontWeight:900,fontSize:'16px'}}>G</span> {t('auth.google')}
-          </button>
-          <button onClick={() => setShow(false)}
-            style={{background:'none',border:'none',color:'rgba(255,255,255,0.3)',fontSize:'12px',cursor:'pointer',fontFamily:"'Barlow',sans-serif",marginTop:'4px',width:'100%',textAlign:'center'}}>
-            {t('auth.later')}
-          </button>
-        </div>
-      </div>
-    </div>
-  );
+  }, [router]);
+  return null;
 }
 
 export default function App({ Component, pageProps }) {
@@ -90,6 +69,8 @@ export default function App({ Component, pageProps }) {
   const isJobDetail = router.pathname === '/jobs/[id]';
   // 공개 디지털 명함(/c/[token])은 공유 링크용 독립 페이지 — 앱 소개 모달/탭바/푸터 없이 깔끔하게.
   const isCard = router.pathname === '/c/[token]';
+  // 전용 로그인 페이지는 탭바·앱모달·푸터 없이 풀스크린으로 깔끔하게.
+  const isLogin = router.pathname === '/login';
   // /for-companies 는 공개 랜딩이라 하단 글로벌 언어 스위처를 메인 랜딩과 동일하게 노출한다.
   const isForCompaniesLanding = router.pathname === '/for-companies';
   // Ad-landing routes get a static nav. /promo 는 푸터까지 차단(exit leak),
@@ -186,14 +167,14 @@ export default function App({ Component, pageProps }) {
         <main style={{ flex: '1 0 auto' }}>
           <Component {...pageProps} />
         </main>
-        {(!isCompany || isForCompaniesLanding) && !isAdmin && !isPromoLanding && !isCard && (
+        {(!isCompany || isForCompaniesLanding) && !isAdmin && !isPromoLanding && !isCard && !isLogin && (
           <GlobalFooter />
         )}
       </div>
-      {!isCompany && !isJobDetail && !isCard && !isAdmin && <MobileTabBar />}
+      {!isCompany && !isJobDetail && !isCard && !isAdmin && !isLogin && <MobileTabBar />}
       <GlobalLoginModal />
       <GoogleOneTap />
-      {!isAdmin && !isAdLanding && !isCard && !isCompany && <AppDownloadModal />}
+      {!isAdmin && !isAdLanding && !isCard && !isCompany && !isLogin && <AppDownloadModal />}
       <Toaster
         position="bottom-right"
         richColors

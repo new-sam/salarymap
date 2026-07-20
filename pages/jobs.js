@@ -9,7 +9,7 @@ import Icon from '../components/Icon'
 import JobFilterModal from '../components/jobs/JobFilterModal'
 import { DEFAULT_IMAGES, roleLabel, roleGroupKey, roleGroupLabel, jobInCategoryGroup, categoryGroupLabel, JOBS_PER_PAGE } from '../constants/jobs'
 import { COMPANY_PROFILES } from '../data/companyProfiles.js'
-import { formatSalaryCard, getHighSalaryThreshold } from '../utils/salary'
+import { formatSalaryCard } from '../utils/salary'
 import { generateCompanyDescription } from '../utils/companyDescription'
 import { getStoredUtm, getApplicationSource } from '../lib/utm'
 
@@ -95,23 +95,22 @@ function dedupeJobs(list) {
 }
 
 // 핫 섹션·메인 그리드 공용 카드. 썸네일 오버레이는 좌상단 배지 1개(featured > bump > match),
-// 우상단 북마크, 우하단 배지 1개(고연봉 > 근무형태)로 제한한다.
-function JobCard({ job, idx, bump, matched, highSalaryThreshold, bookmarked, onOpen, onToggleBookmark, typeLabel, t, lang }) {
+// 우상단 북마크, 우하단 배지는 원격/하이브리드 근무형태일 때만. 주황은 연봉에만 쓴다.
+function JobCard({ job, idx, bump, matched, bookmarked, onOpen, onToggleBookmark, typeLabel, t, lang }) {
   const router = useRouter()
   const sal = formatSalaryCard(job)
   const hasImg = job.image_url || job.images?.[0]
   const src = hasImg || job.logo_url || DEFAULT_IMAGES[idx % 3]
   const mode = !hasImg && job.logo_url ? '60%' : 'cover'
   const days = job.deadline ? Math.ceil((new Date(job.deadline) - new Date()) / 86400000) : null
-  const highPay = sal.min >= highSalaryThreshold
   const showType = job.type === 'remote' || job.type === 'hybrid'
   return (
-    <div className={`jc${job.is_featured ? ' jc-featured' : ''}`} onClick={() => onOpen(job, idx)}>
-      {job.is_featured && (
-        <div className="jc-feat"><span>{t('jobs.featuredBadge')}</span></div>
-      )}
+    <div className="jc" onClick={() => onOpen(job, idx)}>
       <div className="jc-img">
         <div className="jc-img-in" style={{ background: `#fff url(${src}) center/${mode} no-repeat` }}>
+          {job.is_featured && (
+            <div className="jc-feat">{t('jobs.featuredBadge')}</div>
+          )}
           {!job.is_featured && (bump !== null && bump > 0 ? (
             <div className="jc-bump" dangerouslySetInnerHTML={{ __html: t('jobs.bumpVs', { bump }) }} />
           ) : matched ? (
@@ -122,11 +121,9 @@ function JobCard({ job, idx, bump, matched, highSalaryThreshold, bookmarked, onO
               <path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z" />
             </svg>
           </button>
-          {(highPay || showType) && (
+          {showType && (
             <div className="jc-badges">
-              {highPay
-                ? <span className="jc-type-badge highpay">{t('jobs.highPay')}</span>
-                : <span className={`jc-type-badge ${job.type}`}>{typeLabel(job.type)}</span>}
+              <span className={`jc-type-badge ${job.type}`}>{typeLabel(job.type)}</span>
             </div>
           )}
         </div>
@@ -140,11 +137,10 @@ function JobCard({ job, idx, bump, matched, highSalaryThreshold, bookmarked, onO
               {[
                 !job.experience_min && !job.experience_max ? t('jobs.yearsAny') : job.experience_max >= 30 ? t('jobs.yearsMin', { min: job.experience_min || 0 }) : t('jobs.years', { min: job.experience_min, max: job.experience_max }),
                 job.type !== 'remote' && job.location,
-                typeLabel(job.type),
               ].filter(Boolean).join(' · ')}
             </span>
-            {days !== null && days >= 0 && (
-              <span className={`jc-dday${days <= 7 ? ' urgent' : ''}`}>{days === 0 ? t('jobs.ddayToday') : t('jobs.ddayShort', { days })}</span>
+            {days !== null && days >= 0 && days <= 7 && (
+              <span className="jc-dday urgent">{days === 0 ? t('jobs.ddayToday') : t('jobs.ddayShort', { days })}</span>
             )}
           </div>
           <div className="jc-sal">{Math.round(sal.min / 1e6)}M – {Math.round(sal.max / 1e6)}M VND</div>
@@ -161,7 +157,6 @@ export default function JobsPage() {
 
   const [jobs, setJobs] = useState([])
   const [jobsLoaded, setJobsLoaded] = useState(false)
-  const highSalaryThreshold = useMemo(() => getHighSalaryThreshold(jobs), [jobs])
   const [searchQuery, setSearchQuery] = useState('')
   // 다중선택 배열(앱 필터와 동일). roles 항목은 소분류 value | 'cat:<대분류>' | 'grp:*'(광고 랜딩) 혼용 가능.
   const [roleFilters, setRoleFilters] = useState([])
@@ -172,7 +167,6 @@ export default function JobsPage() {
   const [filterOpen, setFilterOpen] = useState(false) // 통합 필터 모달
   const [isSubmitted, setIsSubmitted] = useState(false)
   const [isLoggedIn, setIsLoggedIn] = useState(false)
-  const [showAuthModal, setShowAuthModal] = useState(false)
   const [session, setSession] = useState(null)
   const [user, setUser] = useState(null)
   const [userSalary, setUserSalary] = useState(null)
@@ -779,7 +773,7 @@ export default function JobsPage() {
 
   const toggleBookmark = (jobId) => {
     if (!isLoggedIn) {
-      setShowAuthModal(true)
+      window.dispatchEvent(new CustomEvent('fyi-show-login'))
       return
     }
     const isRemoving = bookmarks.includes(jobId)
@@ -926,25 +920,23 @@ export default function JobsPage() {
         /* Card */
         .jc { cursor: pointer; display: flex; flex-direction: column; min-width: 0; position: relative; }
         .jc-match { position: absolute; top: 10px; left: 10px; background: #ff4400; color: #fff; font-size: 11px; font-weight: 700; padding: 4px 10px; border-radius: 4px; z-index: 2; }
-        /* 적극 채용중 — 앱과 동일하게 사진 밖, 카드 상단 선 가운데에 반쯤 걸치는 알약 */
-        .jc-feat { position: absolute; top: -9px; left: 12px; right: 0; z-index: 4; display: flex; justify-content: flex-start; pointer-events: none; }
-        .jc-feat span { max-width: 85%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; background: linear-gradient(135deg, #ff4400 0%, #ff6b35 100%); color: #fff; font-size: 11px; font-weight: 800; padding: 4px 12px; border-radius: 999px; letter-spacing: 0.2px; box-shadow: 0 2px 8px rgba(255,68,0,0.32); }
-        .jc-img { border-radius: 8px; overflow: hidden; position: relative; padding-top: 62%; margin-bottom: 11px; background: #f0f0f0; flex-shrink: 0; border: 1px solid rgba(0,0,0,0.06); }
-        .jc-featured .jc-img { border-color: rgba(255,68,0,0.55); }
+        /* 적극 채용중 — 원티드식: 사진 상단을 살짝 어둡게 깔고 흰 글씨로. 공간을 안 먹는다. */
+        .jc-feat { position: absolute; top: 0; left: 0; right: 0; z-index: 1; padding: 9px 44px 20px 12px; background: linear-gradient(180deg, rgba(0,0,0,0.5) 0%, rgba(0,0,0,0) 100%); color: #fff; font-size: 11px; font-weight: 700; letter-spacing: 0.2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; pointer-events: none; }
+        .jc-img { border-radius: 8px; overflow: hidden; position: relative; padding-top: 56%; margin-bottom: 9px; background: #f0f0f0; flex-shrink: 0; border: 1px solid rgba(0,0,0,0.06); }
         .jc-img-in { position: absolute; inset: 0; transition: transform .25s ease; background-color: #f0f0f0; background-size: cover; background-position: center; background-repeat: no-repeat; }
         .jc:hover .jc-img-in { transform: scale(1.04); }
         .jc-bump { position: absolute; top: 10px; left: 10px; background: rgba(0,0,0,0.62); color: #fff; font-size: 11px; font-weight: 600; padding: 4px 9px; border-radius: 4px; z-index: 2; }
         .jc-bump b { color: #ff4400; font-weight: 700; }
         .jc-bm { position: absolute; top: 10px; right: 10px; width: 28px; height: 28px; border-radius: 50%; background: rgba(250,250,248,0.92); display: flex; align-items: center; justify-content: center; z-index: 2; border: none; cursor: pointer; }
         .jc-body { flex: 1; display: flex; flex-direction: column; }
-        .jc-t { font-size: 15px; font-weight: 600; color: #111; margin-bottom: 3px; line-height: 1.35; min-height: 2.7em; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+        .jc-t { font-size: 15px; font-weight: 600; color: #111; margin-bottom: 3px; line-height: 1.35; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
         .jc-co { font-size: 13px; color: #777; margin-bottom: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         .jc-co-link { cursor: pointer; display: inline-block; max-width: 100%; }
         .jc-co-link:hover { color: #ff4400; text-decoration: underline; }
         .jd-co-link { cursor: pointer; text-decoration: none; }
         .jd-co-link:hover { color: #ff4400; text-decoration: underline; }
-        .jc-sal { font-size: 15px; font-weight: 800; color: #ff4400; margin-top: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; letter-spacing: -0.3px; }
-        .jc-bottom { margin-top: auto; }
+        .jc-sal { font-size: 13.5px; font-weight: 800; color: #ff4400; margin-top: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; letter-spacing: -0.3px; }
+        .jc-bottom { margin-top: 5px; }
         .jc-m { font-size: 12px; color: #999; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
         .jc-m-txt { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         .jc-m b { color: #ff4400; font-weight: 700; }
@@ -954,8 +946,7 @@ export default function JobsPage() {
         .jc-type-badge { font-size: 11px; font-weight: 800; padding: 4px 9px; border-radius: 4px; letter-spacing: 0.3px; }
         .jc-type-badge.remote { color: #fff; background: #16a34a; }
         .jc-type-badge.hybrid { color: #fff; background: #2563eb; }
-        .jc-type-badge.highpay { color: #fff; background: #ff4400; }
-        .jc-dday { display: inline-flex; align-items: center; flex-shrink: 0; font-size: 11px; font-weight: 700; color: #ff4400; background: #fff7f5; border: 1px solid #ffd6c8; padding: 1px 6px; border-radius: 4px; line-height: 1.4; white-space: nowrap; }
+        .jc-dday { display: inline-flex; align-items: center; flex-shrink: 0; font-size: 11px; font-weight: 600; color: #999; background: #f2f2f0; border: 1px solid #e6e6e3; padding: 1px 6px; border-radius: 4px; line-height: 1.4; white-space: nowrap; }
         .jc-dday.urgent { color: #dc2626; background: #fef2f2; border-color: #fecaca; }
         /* Empty state */
         .jg-empty { text-align: center; padding: 72px 20px; }
@@ -1167,7 +1158,7 @@ export default function JobsPage() {
                 <div className="jg">
                   {hotJobs.map((job, idx) => (
                     <JobCard key={job.id} job={job} idx={idx} bump={getBump(job)} matched={isProfileMatch(job)}
-                      highSalaryThreshold={highSalaryThreshold} bookmarked={bookmarks.includes(job.id)}
+                      bookmarked={bookmarks.includes(job.id)}
                       onOpen={openDetail} onToggleBookmark={toggleBookmark} typeLabel={typeLabel} t={t} lang={lang} />
                   ))}
                 </div>
@@ -1221,7 +1212,7 @@ export default function JobsPage() {
             <div className="jg" style={{ opacity: jobsLoaded ? 1 : 0, transition: 'opacity .3s' }}>
               {gridJobs.slice(0, visibleCount).map((job, idx) => (
                 <JobCard key={job.id} job={job} idx={idx} bump={getBump(job)} matched={isProfileMatch(job)}
-                  highSalaryThreshold={highSalaryThreshold} bookmarked={bookmarks.includes(job.id)}
+                  bookmarked={bookmarks.includes(job.id)}
                   onOpen={openDetail} onToggleBookmark={toggleBookmark} typeLabel={typeLabel} t={t} lang={lang} />
               ))}
             </div>
@@ -1687,29 +1678,6 @@ export default function JobsPage() {
         lang={lang}
       />
 
-      {showAuthModal && (
-        <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.6)',zIndex:1100,display:'flex',alignItems:'center',justifyContent:'center',padding:'20px'}}
-          onClick={e => { if(e.target===e.currentTarget) setShowAuthModal(false); }}>
-          <div style={{background:'#fff',borderRadius:'20px',padding:'40px 36px',maxWidth:'420px',width:'100%',fontFamily:"'Barlow',sans-serif"}}>
-            <div style={{fontSize:'24px',fontWeight:900,color:'#111',letterSpacing:'-0.5px',marginBottom:'8px'}}>{t('auth.title')}</div>
-            <div style={{fontSize:'13px',color:'#888',marginBottom:'28px',lineHeight:1.6}}>{t('auth.sub')}</div>
-            <div style={{display:'flex',flexDirection:'column',gap:'10px'}}>
-              <button onClick={async () => { setShowAuthModal(false); localStorage.setItem('fyi_login_return', window.location.pathname + window.location.search); try { await supabase.auth.signInWithOAuth({ provider:'linkedin_oidc', options:{ redirectTo: window.location.origin+'/auth/callback', scopes:'openid profile email' } }); } catch(e) { console.error(e); } }}
-                style={{width:'100%',background:'#0A66C2',color:'#fff',fontSize:'14px',fontWeight:700,padding:'14px',borderRadius:'10px',border:'none',cursor:'pointer',fontFamily:"'Barlow',sans-serif",display:'flex',alignItems:'center',justifyContent:'center',gap:'10px'}}>
-                <span style={{fontWeight:900,fontSize:'16px'}}>in</span> {t('auth.linkedin')}
-              </button>
-              <button onClick={() => { setShowAuthModal(false); const ret = window.location.pathname + window.location.search; localStorage.setItem('fyi_login_return', ret); window.location.href = '/api/auth/google?return=' + encodeURIComponent(ret); }}
-                style={{width:'100%',background:'#f5f5f3',color:'#111',fontSize:'14px',fontWeight:700,padding:'14px',borderRadius:'10px',border:'none',cursor:'pointer',fontFamily:"'Barlow',sans-serif",display:'flex',alignItems:'center',justifyContent:'center',gap:'10px'}}>
-                <span style={{fontWeight:900,fontSize:'16px'}}>G</span> {t('auth.google')}
-              </button>
-              <button onClick={() => setShowAuthModal(false)}
-                style={{background:'none',border:'none',color:'#bbb',fontSize:'12px',cursor:'pointer',fontFamily:"'Barlow',sans-serif",marginTop:'4px',width:'100%',textAlign:'center'}}>
-                {t('auth.later')}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </>
   )
 }
