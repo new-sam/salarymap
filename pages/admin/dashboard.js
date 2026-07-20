@@ -87,6 +87,13 @@ export default function AdminDashboard() {
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
   })()
   const [dateRange, setDateRange] = useState({ from: '2026-04-20', to: todayStr })
+  // 탭별 기본 시작일: 메인 퍼널은 퍼널 계측 완비일(7/16)부터, 그 외는 4/20. 유저가 피커를
+  // 직접 만지면(dateTouched) 그 선택을 모든 탭에서 존중하고 자동 전환을 멈춘다.
+  const [dateTouched, setDateTouched] = useState(false)
+  useEffect(() => {
+    if (dateTouched) return
+    setDateRange(r => ({ ...r, from: tab === 'main' ? '2026-07-16' : '2026-04-20' }))
+  }, [tab, dateTouched])
 
   // SWR: 캐시로 탭 전환/페이지 재방문 시 즉시 표시 + 백그라운드 갱신. 키에 날짜/언어 포함.
   // 무거운 데이터는 실제로 쓰는 탭에서만 로드 — data/ga4 는 추이·퍼널, realtime/experiments 는
@@ -427,7 +434,7 @@ export default function AdminDashboard() {
         {showDatePicker && (
           <div className="adm-header">
             <div className="adm-header-controls">
-              <DateRangePicker value={dateRange} onChange={(from, to) => setDateRange({ from, to })} />
+              <DateRangePicker value={dateRange} onChange={(from, to) => { setDateTouched(true); setDateRange({ from, to }) }} />
               {loading && <span style={{ fontSize: 12, color: '#9AA0A6' }}>{lang === 'ko' ? '불러오는 중…' : 'Loading…'}</span>}
             </div>
           </div>

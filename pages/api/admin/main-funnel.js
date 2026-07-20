@@ -169,8 +169,27 @@ export default async function handler(req, res) {
 
     const sortDesc = (m) => Object.entries(m).map(([k, count]) => ({ key: k, count })).sort((a, b) => b.count - a.count)
 
+    // 실 공고(기업등록+KTC) 건당 지원 — 누적(기간 무관). 활성 공고 수 대비 평균 지원 건수.
+    const REAL_SOURCES = ['company_self', 'ktc']
+    const [{ count: realActive }, { count: realTotal }, realAppRows] = await Promise.all([
+      supabase.from('jobs').select('id', { count: 'exact', head: true }).in('source', REAL_SOURCES).eq('is_active', true),
+      supabase.from('jobs').select('id', { count: 'exact', head: true }).in('source', REAL_SOURCES),
+      fetchAll(supabase.from('job_applications').select('applicant_email, jobs!inner(company, title, source)').in('jobs.source', REAL_SOURCES)),
+    ])
+    const cleanReal = realAppRows.filter(a => !isExcludedEmail(a.applicant_email))
+    const realPostingSet = new Set(cleanReal.map(a => `${a.jobs.company}|${a.jobs.title}`))
+    const realJobs = {
+      activePostings: realActive || 0,
+      totalPostings: realTotal || 0,
+      totalApps: cleanReal.length,
+      postingsWithApps: realPostingSet.size,
+      avgPerActive: realActive ? cleanReal.length / realActive : null,
+      avgPerWithApps: realPostingSet.size ? cleanReal.length / realPostingSet.size : null,
+    }
+
     res.status(200).json({
       pathFunnels,
+      realJobs,
       signups: {
         total: signupUsers.length,
         daily: signupDaily,

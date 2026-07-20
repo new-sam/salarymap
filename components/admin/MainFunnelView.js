@@ -107,12 +107,7 @@ export default function MainFunnelView({ token, lang, dateRange }) {
   const L = (ko, en) => (lang === 'ko' ? ko : en)
   const [stage, setStage] = useState('traffic')
 
-  // 퍼널 계측(landing client_id·공고 상세뷰)이 완비된 배포일. 이 탭만 이 날짜로 하한을 둔다
-  // (그 이전은 진입 단계가 덜 잡혀 전환율이 왜곡됨). 다른 탭의 공유 dateRange 는 건드리지 않는다.
-  const FUNNEL_FLOOR = '2026-07-16'
-  const effFrom = dateRange.from < FUNNEL_FLOOR ? FUNNEL_FLOOR : dateRange.from
-  const clamped = dateRange.from < FUNNEL_FLOOR
-  const qs = `from=${effFrom}&to=${dateRange.to}`
+  const qs = `from=${dateRange.from}&to=${dateRange.to}`
   const { data: ga4, error: ga4Error } = useAdmin(`/api/admin/ga4?${qs}`, token)
   const { data: funnel, isLoading } = useAdmin(`/api/admin/main-funnel?${qs}`, token)
 
@@ -159,8 +154,7 @@ export default function MainFunnelView({ token, lang, dateRange }) {
       {/* ── 퍼널 스트립: 4단계 카드 + 단계간 전환율 ── */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 10 }}>
         <span style={{ fontSize: 13, color: '#666' }}>
-          {effFrom} ~ {dateRange.to} · {L('기간 내 발생 기준 (코호트 아님)', 'Period-based, not cohort')}
-          {clamped && <span style={{ color: '#ff4400', marginLeft: 6 }}>{L('· 퍼널 계측 시작 7/16로 하한', '· floored to Jul 16')}</span>}
+          {dateRange.from} ~ {dateRange.to} · {L('기간 내 발생 기준 (코호트 아님)', 'Period-based, not cohort')}
         </span>
         <span style={{ fontSize: 13, color: '#666' }}>
           {L('전체 전환', 'Overall')} {L('유입→합격', 'traffic→accepted')}:{' '}
@@ -306,6 +300,33 @@ export default function MainFunnelView({ token, lang, dateRange }) {
 
       {stage === 'apply' && (
         <>
+          {/* 실 공고(기업등록+KTC) 건당 지원 — 누적(기간 무관) */}
+          {funnel.realJobs && (
+            <div style={{ ...sectionStyle, marginBottom: 16 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 12 }}>
+                <span style={{ fontSize: 14, fontWeight: 700, color: '#333' }}>
+                  {L('실 공고 건당 지원 (기업등록 + KTC · 누적)', 'Real jobs — applications per posting (all-time)')}
+                </span>
+                <span style={{ fontSize: 11, color: '#8B95A1' }}>{L('기간 무관 · 테스트 지원 제외', 'All-time · test excluded')}</span>
+              </div>
+              <div className="adm-m-2col" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }}>
+                {[
+                  { label: L('실 공고 (활성)', 'Real postings (active)'), value: fmt(funnel.realJobs.activePostings),
+                    sub: L(`전체 ${fmt(funnel.realJobs.totalPostings)}건`, `${fmt(funnel.realJobs.totalPostings)} total`), color: '#16A34A' },
+                  { label: L('누적 실 지원', 'Total real applies'), value: fmt(funnel.realJobs.totalApps),
+                    sub: L(`지원 받은 공고 ${fmt(funnel.realJobs.postingsWithApps)}건`, `${fmt(funnel.realJobs.postingsWithApps)} with applies`), color: '#0D9488' },
+                  { label: L('공고당 평균 지원', 'Avg applies / posting'), value: funnel.realJobs.avgPerActive === null ? '—' : funnel.realJobs.avgPerActive.toFixed(1),
+                    sub: L(`지원받은 공고당 ${funnel.realJobs.avgPerWithApps === null ? '—' : funnel.realJobs.avgPerWithApps.toFixed(1)}건`, `${funnel.realJobs.avgPerWithApps === null ? '—' : funnel.realJobs.avgPerWithApps.toFixed(1)} per applied`), color: '#ff4400' },
+                ].map((c, i) => (
+                  <div key={i} style={{ background: '#fff', border: '1px solid #e5e7eb', borderRadius: 12, padding: '14px 16px' }}>
+                    <div style={{ fontSize: 12.5, fontWeight: 700, color: c.color }}>{c.label}</div>
+                    <div style={{ fontSize: 26, fontWeight: 700, color: '#191F28', marginTop: 6, lineHeight: 1.1 }}>{c.value}</div>
+                    <div style={{ fontSize: 11, color: '#8B95A1', marginTop: 4 }}>{c.sub}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
           {/* real(기업등록+KTC) vs fake(크롤/수동) 공고 지원 분리 */}
           {funnel.applications.realFake && (
             <div className="adm-m-1col" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 16 }}>
