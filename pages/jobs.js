@@ -997,7 +997,9 @@ export default function JobsPage() {
         .jd-subline-web { color: #ff4400; text-decoration: none; }
         .jd-salary { font-size: 16px; font-weight: 700; color: #ff4400; margin-bottom: 24px; }
         .jd-divider { height: 1px; background: #f0f0f0; margin: 24px 0; }
-        .jd-section-title { font-size: 11px; font-weight: 700; color: #999; text-transform: uppercase; letter-spacing: .06em; margin-bottom: 12px; }
+        .jd-section-title { font-size: 18px; font-weight: 800; color: #111; letter-spacing: -0.02em; margin-bottom: 14px; }
+        .jd-co-head { display: flex; align-items: center; gap: 8px; }
+        .jd-ai-badge { display: inline-flex; align-items: center; gap: 3px; font-size: 11px; font-weight: 700; color: #7c3aed; background: #f5f3ff; border: 1px solid #e9e5ff; padding: 2px 8px; border-radius: 999px; letter-spacing: 0; }
         .jd-desc { font-size: 14px; color: #444; line-height: 1.8; margin-bottom: 24px; white-space: pre-line; }
         .jd-comm-cta { display: flex; align-items: center; gap: 14px; padding: 16px 18px; margin-bottom: 24px; border: 1px solid #ffd6c8; background: #fff7f5; border-radius: 12px; text-decoration: none; transition: border-color .15s, box-shadow .15s; animation: aiFadeIn 0.6s ease-out 0.2s both; }
         .jd-comm-cta:hover { border-color: #ff8a3d; box-shadow: 0 2px 12px rgba(255,68,0,0.08); }
@@ -1340,7 +1342,12 @@ export default function JobsPage() {
               <div className="jd-divider" />
 
               {/* Company Information */}
-              <div className="jd-section-title">{t('jobs.companyOverview')}</div>
+              <div className="jd-section-title jd-co-head">
+                <span>{t('jobs.companyOverview')}</span>
+                {!COMPANY_PROFILES[detailJob.company] && detailJob.ai_overview && (
+                  <span className="jd-ai-badge">✨ {t('jobs.aiGenerated')}</span>
+                )}
+              </div>
               <div className="jd-company-overview">
                 <div className="jd-co-overview-text">
                   {COMPANY_PROFILES[detailJob.company]
@@ -1372,26 +1379,6 @@ export default function JobsPage() {
                   )
                 })()}
               </div>
-
-              {/* Community CTA */}
-              {(
-                <Link
-                  href="/community"
-                  className="jd-comm-cta"
-                  onClick={() => track('click_community_cta', '/jobs', { jobId: detailJob.id, company: detailJob.company })}
-                >
-                  <div className="jd-comm-cta-emoji">💬</div>
-                  <div className="jd-comm-cta-body">
-                    <div className="jd-comm-cta-title">
-                      {t('jobs.commCtaTitle', { company: '\u0000' }).split('\u0000').map((s, i, arr) => (
-                        <span key={i}>{s}{i < arr.length - 1 && <span className="jd-comm-cta-co">{detailJob.company}</span>}</span>
-                      ))}
-                    </div>
-                    <div className="jd-comm-cta-desc">{t('jobs.commCtaDesc')}</div>
-                  </div>
-                  <span className="jd-comm-cta-btn">{t('jobs.commCtaBtn')}</span>
-                </Link>
-              )}
 
               <div className="jd-divider" />
 
@@ -1452,6 +1439,24 @@ export default function JobsPage() {
                   </div>
                 </div>
               )}
+
+              {/* Community CTA — 하단 배치(커뮤니티 우선순위 낮음) */}
+              <Link
+                href="/community"
+                className="jd-comm-cta"
+                onClick={() => track('click_community_cta', '/jobs', { jobId: detailJob.id, company: detailJob.company })}
+              >
+                <div className="jd-comm-cta-emoji">💬</div>
+                <div className="jd-comm-cta-body">
+                  <div className="jd-comm-cta-title">
+                    {t('jobs.commCtaTitle', { company: '\u0000' }).split('\u0000').map((s, i, arr) => (
+                      <span key={i}>{s}{i < arr.length - 1 && <span className="jd-comm-cta-co">{detailJob.company}</span>}</span>
+                    ))}
+                  </div>
+                  <div className="jd-comm-cta-desc">{t('jobs.commCtaDesc')}</div>
+                </div>
+                <span className="jd-comm-cta-btn">{t('jobs.commCtaBtn')}</span>
+              </Link>
 
             </div>
             {/* Inline Apply Form */}
