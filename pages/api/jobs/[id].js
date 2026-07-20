@@ -20,6 +20,16 @@ export default async function handler(req, res) {
     return res.status(404).json({ error: 'Not found' })
   }
 
+  // AI 생성 회사 소개(있으면). 상세 페이지가 템플릿 대신 우선 사용한다.
+  if (data.company) {
+    const { data: ov } = await supabase
+      .from('company_overviews')
+      .select('overview')
+      .eq('company', data.company)
+      .maybeSingle()
+    if (ov?.overview) data.ai_overview = ov.overview
+  }
+
   res.setHeader('Cache-Control', 'public, max-age=300, s-maxage=600, stale-while-revalidate=1800')
   res.status(200).json(data)
 }

@@ -989,9 +989,10 @@ export default function JobsPage() {
         .jd-fab-share { right: 10px; }
         .jd-body { padding: 28px 32px 40px; }
         .jd-title { font-size: 22px; font-weight: 800; color: #111; margin-bottom: 10px; letter-spacing: -0.3px; line-height: 1.3; }
-        /* 제목 아래 한 줄: 회사명(클릭) · 지역 · 경력 */
+        /* 회사명: 단독 줄, 클릭 가능(항상 밑줄) */
+        .jd-co-line { display: inline-block; font-size: 15px; font-weight: 700; color: #111; text-decoration: underline; text-underline-offset: 2px; margin-bottom: 6px; }
+        /* 그 아래 한 줄: 지역 · 경력 · 마감 */
         .jd-subline { display: flex; align-items: center; flex-wrap: wrap; gap: 7px; font-size: 14px; color: #666; margin-bottom: 16px; }
-        .jd-subline .jd-co-link { color: #111; font-weight: 700; text-decoration: underline; text-underline-offset: 2px; }
         .jd-subline-sep { color: #ccc; }
         .jd-subline-web { color: #ff4400; text-decoration: none; }
         .jd-salary { font-size: 16px; font-weight: 700; color: #ff4400; margin-bottom: 24px; }
@@ -1287,13 +1288,20 @@ export default function JobsPage() {
               {/* Title */}
               <div className="jd-title">{detailJob.title}</div>
 
-              {/* 한 줄: 회사명(클릭) · 지역 · 요구경력 */}
+              {/* 회사명 (단독 줄, 클릭 가능) — 베트남 회사명이 길어 한 줄 차지 */}
+              <Link href={`/companies/${encodeURIComponent(detailJob.company)}`} className="jd-co-link jd-co-line">{detailJob.company}</Link>
+
+              {/* 지역 · 근무형태 · 경력 · 마감 */}
               <div className="jd-subline">
-                <Link href={`/companies/${encodeURIComponent(detailJob.company)}`} className="jd-co-link">{detailJob.company}</Link>
-                {detailJob.location && <span className="jd-subline-sep">·</span>}
-                {detailJob.location && <span>{detailJob.location}</span>}
+                {detailJob.location && <><span>{detailJob.location}</span><span className="jd-subline-sep">·</span></>}
+                <span>{typeLabel(detailJob.type)}</span>
                 <span className="jd-subline-sep">·</span>
                 <span>{!detailJob.experience_min && !detailJob.experience_max ? t('jobs.yearsAny') : detailJob.experience_max >= 30 ? t('jobs.yearsMin', { min: detailJob.experience_min || 0 }) : t('jobs.years', { min: detailJob.experience_min, max: detailJob.experience_max })}</span>
+                <span className="jd-subline-sep">·</span>
+                <span>{detailJob.deadline ? (() => {
+                  const days = Math.ceil((new Date(detailJob.deadline) - new Date()) / 86400000)
+                  return lang === 'vi' ? (days === 0 ? t('jobs.ddayToday') : days > 0 ? t('jobs.dday', { days }) : t('jobs.closed')) : days >= 0 ? `D-${days}` : t('jobs.closed')
+                })() : t('jobs.ongoing')}</span>
                 {detailJob.company_url && <><span className="jd-subline-sep">·</span><a href={detailJob.company_url} target="_blank" rel="noopener noreferrer" className="jd-subline-web">{t('jobs.website')}</a></>}
               </div>
 
@@ -1311,20 +1319,9 @@ export default function JobsPage() {
                 </div>
               )}
 
-              {/* Meta grid */}
+              {/* Meta grid — 회사규모·인원이 있을 때만 (근무형태는 위 한 줄로 이동) */}
+              {(detailJob.company_size || detailJob.headcount) && (
               <div className="jd-meta-grid">
-                <div className="jd-meta-item">
-                  <div className="jd-meta-label">{t('jobs.position')}</div>
-                  <div className="jd-meta-value">{roleLabel(detailJob.role, lang)}</div>
-                </div>
-                <div className="jd-meta-item">
-                  <div className="jd-meta-label">{t('jobs.type')}</div>
-                  <div className="jd-meta-value">{typeLabel(detailJob.type)}</div>
-                </div>
-                <div className="jd-meta-item">
-                  <div className="jd-meta-label">{t('jobs.region')}</div>
-                  <div className="jd-meta-value" style={{ textTransform: 'capitalize' }}>{detailJob.country}</div>
-                </div>
                 {detailJob.company_size && (
                   <div className="jd-meta-item">
                     <div className="jd-meta-label">{t('jobs.companySize')}</div>
@@ -1337,15 +1334,8 @@ export default function JobsPage() {
                     <div className="jd-meta-value">{detailJob.headcount}</div>
                   </div>
                 )}
-                <div className="jd-meta-item">
-                  <div className="jd-meta-label">{t('jobs.deadlineLabel')}</div>
-                  <div className="jd-meta-value">{detailJob.deadline ? (() => {
-                    const days = Math.ceil((new Date(detailJob.deadline) - new Date()) / 86400000)
-                    const ddayText = lang === 'vi' ? (days === 0 ? t('jobs.ddayToday') : days > 0 ? t('jobs.dday', { days }) : t('jobs.closed')) : days >= 0 ? `D-${days}` : t('jobs.closed')
-                    return `${detailJob.deadline} (${ddayText})`
-                  })() : t('jobs.ongoing')}</div>
-                </div>
               </div>
+              )}
 
               <div className="jd-divider" />
 
@@ -1353,10 +1343,13 @@ export default function JobsPage() {
               <div className="jd-section-title">{t('jobs.companyOverview')}</div>
               <div className="jd-company-overview">
                 <div className="jd-co-overview-text">
-                  {generateCompanyDescription(detailJob)}
+                  {COMPANY_PROFILES[detailJob.company]
+                    ? generateCompanyDescription(detailJob)
+                    : (detailJob.ai_overview || generateCompanyDescription(detailJob))}
                 </div>
                 {(() => {
                   const p = COMPANY_PROFILES[detailJob.company]
+                  if (!p) return null   // 수기 프로필 없는 회사는 '–'만 뜨는 통계 그리드 숨김
                   return (
                     <div className="jd-co-overview-stats">
                       <div className="jd-co-stat">
