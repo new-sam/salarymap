@@ -13,6 +13,29 @@ const supabase = createClient(
 
 const toVN = (iso) => new Date(new Date(iso).getTime() + 7 * 3600000).toISOString().slice(0, 10)
 
+// 단계별 이탈 플로우 — 어디서 가장 많이 새는지 보려는 상세 퍼널. 계측이 깨끗한(client_id 스티칭
+// 신뢰 가능) 플로우만. 각 단계 이벤트는 순차(funnel RPC)로 이어 전 단계 대비 전환율을 잰다.
+// 배제: 공고 브라우징(view_jobs_page/click_job_card/click_apply 60% 무id)·앱(app_open cid 0%)은
+//       상단 이벤트가 대부분 익명이라 순차 퍼널이 신뢰 불가 → coverageNote 로만 안내.
+const FLOW_FUNNELS = [
+  { key: 'wizard', title: ['홈/위저드 → 게이트 → 가입', 'Home/wizard → gate → signup'],
+    steps: [
+      { event: 'wizard_step_1', label: ['위저드 시작', 'Wizard start'] },
+      { event: 'wizard_step_2', label: ['위저드 2', 'Wizard 2'] },
+      { event: 'wizard_step_3', label: ['위저드 3', 'Wizard 3'] },
+      { event: 'wizard_step_4', label: ['위저드 완료', 'Wizard done'] },
+      { event: 'result_gate_view', label: ['게이트 노출', 'Gate view'] },
+      { event: 'sign_up', label: ['가입', 'Sign-up'] },
+    ] },
+  { key: 'cv', title: ['CV 등록 → 가입', 'CV register → signup'],
+    steps: [
+      { event: 'cv_view', label: ['CV 페이지 뷰', 'CV view'] },
+      { event: 'cv_attach_file', label: ['이력서 업로드', 'Resume upload'] },
+      { event: 'cv_oauth_start', label: ['로그인 시작', 'Login start'] },
+      { event: 'cv_register_success', label: ['등록 완료', 'Registered'] },
+    ] },
+]
+
 async function fetchAll(query) {
   let all = []
   const PAGE = 1000
@@ -56,14 +79,6 @@ export default async function handler(req, res) {
   const endDate = to || new Date().toISOString().slice(0, 10)
   const startISO = new Date(`${startDate}T00:00:00+07:00`).toISOString()
   const endISO = new Date(`${endDate}T23:59:59+07:00`).toISOString()
-
-  // 진입면별 "→ 가입" 퍼널 — 각 경로가 sign_up 에서 끝나는 per-user 퍼널(funnel RPC, dedup·순차·1일 윈도우).
-  // 건수 스케치가 아니라 실제 "이 면으로 들어와 며칠 안에 가입한 사람 수"를 잰다.
-  const PATH_FUNNELS = [
-    { key: 'wizard', steps: ['landing', 'wizard_step_1', 'wizard_step_4', 'result_gate_view', 'sign_up'] },
-    { key: 'jobs',   steps: ['view_jobs_page', 'view_job_detail', 'click_apply_button', 'sign_up'] },
-    { key: 'cv',     steps: ['cv_view', 'cv_oauth_start', 'sign_up'] },
-  ]
 
   try {
     const [allUsers, appsRaw] = await Promise.all([
@@ -153,18 +168,24 @@ export default async function handler(req, res) {
       acceptedDaily[d] = (acceptedDaily[d] || 0) + 1
     }
 
-    // 진입면별 → 가입 퍼널 (per-user, funnel RPC). RPC 미적용 시 해당 경로는 null.
-    const pathFunnels = {}
-    await Promise.all(PATH_FUNNELS.map(async pf => {
+    // 단계별 이탈 플로우 — 순차 퍼널(funnel RPC)로 각 단계 도달 유저수 + 전 단계 대비 전환율.
+    // 창은 전체 기간(단계 사이 간격이 1일 윈도우로 잘리지 않게), order='this'(직전 단계 이후 도달).
+    const rangeWindow = `${Math.max(86400, Math.round((new Date(endISO) - new Date(startISO)) / 1000))} seconds`
+    const flows = {}
+    await Promise.all(FLOW_FUNNELS.map(async ff => {
       const { data, error } = await supabase.rpc('funnel', {
-        p_steps: pf.steps.map(event => ({ event })),
+        p_steps: ff.steps.map(s => ({ event: s.event })),
         p_from: startISO,
         p_to: endISO,
-        p_window: '86400 seconds',
+        p_window: rangeWindow,
         p_order: 'this',
       })
-      pathFunnels[pf.key] = error ? null
-        : (data || []).sort((a, b) => a.step_index - b.step_index).map(r => ({ event: r.step_name, users: Number(r.users) }))
+      if (error) { flows[ff.key] = null; return }
+      const byIdx = Object.fromEntries((data || []).map(r => [r.step_index, Number(r.users)]))
+      flows[ff.key] = {
+        title: ff.title,
+        steps: ff.steps.map((s, i) => ({ label: s.label, users: byIdx[i + 1] || 0 })),
+      }
     }))
 
     const sortDesc = (m) => Object.entries(m).map(([k, count]) => ({ key: k, count })).sort((a, b) => b.count - a.count)
@@ -188,7 +209,7 @@ export default async function handler(req, res) {
     }
 
     res.status(200).json({
-      pathFunnels,
+      flows,
       realJobs,
       signups: {
         total: signupUsers.length,

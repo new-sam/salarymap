@@ -15,25 +15,6 @@ const STAGES = [
 ]
 
 
-// 진입면별 → 가입 퍼널 (main-funnel.js pathFunnels 와 키 일치)
-const EV_LABEL = {
-  landing: ['홈 랜딩', 'Home landing'],
-  wizard_step_1: ['위저드 시작', 'Wizard start'],
-  wizard_step_4: ['위저드 완료', 'Wizard done'],
-  result_gate_view: ['게이트 노출', 'Gate view'],
-  view_jobs_page: ['공고 목록 뷰', 'Jobs list'],
-  view_job_detail: ['공고 상세 뷰', 'Job detail'],
-  click_apply_button: ['지원 버튼 클릭', 'Apply click'],
-  cv_view: ['CV 페이지 뷰', 'CV view'],
-  cv_oauth_start: ['CV 로그인 시작', 'CV login start'],
-  sign_up: ['가입', 'Sign-up'],
-}
-const PATH_META = [
-  { key: 'wizard', title: ['① 홈 → 위저드 → 게이트 → 가입', '① Home → wizard → gate → signup'] },
-  { key: 'jobs', title: ['② 공고 → 상세 → 지원클릭 → 가입', '② Jobs → detail → apply → signup'] },
-  { key: 'cv', title: ['③ CV → 로그인 → 가입', '③ CV → login → signup'] },
-]
-
 const fmt = (n) => (n === null || n === undefined ? '—' : n.toLocaleString())
 const pct = (a, b, digits = 1) => (b > 0 && a !== null && a !== undefined ? ((a / b) * 100).toFixed(digits) : null)
 const rateColor = (v) => (v === null ? '#999' : '#191F28')
@@ -70,35 +51,40 @@ function DetailTable({ title, columns, rows }) {
   )
 }
 
-// 유입→가입 이탈 지도의 경로 한 줄 — 단계 박스 사이에 전 단계 대비 전환율 표시.
-function StepChain({ title, steps, lang }) {
+// 단계별 이탈 퍼널 (세로) — 각 단계 도달 유저수 + 직전 대비 전환/이탈, 가장 크게 새는 지점 빨강 강조.
+function DropoffFunnel({ title, steps, lang }) {
+  const L = (ko, en) => (lang === 'ko' ? ko : en)
+  if (!steps || !steps.length) return null
+  const first = steps[0]?.users || 0
+  const convs = steps.map((s, i) => (i === 0 || !steps[i - 1].users) ? null : s.users / steps[i - 1].users)
+  let leakIdx = -1, minConv = 2
+  convs.forEach((c, i) => { if (c !== null && c < minConv) { minConv = c; leakIdx = i } })
   return (
-    <div style={{ marginBottom: 16 }}>
-      <div style={{ fontSize: 12.5, fontWeight: 700, color: '#555', marginBottom: 8 }}>{title}</div>
-      <div className="adm-m-scroll" style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-        {steps.map((s, i) => {
-          const prev = i > 0 ? steps[i - 1].value : null
-          const conv = i > 0 && prev > 0 ? ((s.value / prev) * 100).toFixed(1) : null
-          return (
-            <div key={s.label} style={{ display: 'flex', alignItems: 'center', gap: 4, flex: 1, minWidth: 0 }}>
-              {i > 0 && (
-                <div style={{ textAlign: 'center', flexShrink: 0, padding: '0 2px' }}>
-                  <div style={{ fontSize: 11.5, fontWeight: 700, color: conv === null ? '#bbb' : conv >= 50 ? '#10B981' : conv >= 20 ? '#F59E0B' : '#EF4444' }}>
-                    {conv === null ? '—' : `${conv}%`}
-                  </div>
-                  <div style={{ fontSize: 11, color: '#ccc', lineHeight: 1 }}>→</div>
-                </div>
-              )}
-              <div style={{ flex: 1, minWidth: 76, background: '#F6F8FA', borderRadius: 8, padding: '8px 10px', textAlign: 'center' }}>
-                <div style={{ fontSize: 17, fontWeight: 700, color: '#191F28' }}>{s.value.toLocaleString()}</div>
-                <div style={{ fontSize: 10.5, color: '#8B95A1', marginTop: 2, whiteSpace: 'nowrap' }}>
-                  {s.label}{s.isNew ? <span style={{ color: '#ff4400', fontWeight: 700 }}> {lang === 'ko' ? '·신규계측' : '·new'}</span> : null}
-                </div>
+    <div style={{ marginBottom: 22 }}>
+      <div style={{ fontSize: 13, fontWeight: 700, color: '#333', marginBottom: 10 }}>{L(...title)}</div>
+      {steps.map((s, i) => {
+        const w = first > 0 ? Math.max(2, (s.users / first) * 100) : 0
+        const c = convs[i]
+        const isLeak = i === leakIdx
+        const drop = i > 0 ? steps[i - 1].users - s.users : 0
+        return (
+          <div key={i}>
+            {i > 0 && (
+              <div style={{ fontSize: 11, fontWeight: 700, margin: '3px 0 3px 6px', color: isLeak ? '#EF4444' : (c >= 0.5 ? '#10B981' : '#F59E0B') }}>
+                ↓ {c === null ? '—' : `${(c * 100).toFixed(0)}%`}{drop > 0 ? ` · -${fmt(drop)} ${L('이탈', 'lost')}` : ''}
+                {isLeak && <span style={{ marginLeft: 6, background: '#EF4444', color: '#fff', padding: '1px 7px', borderRadius: 8, fontSize: 10 }}>{L('최대 이탈', 'biggest drop')}</span>}
               </div>
+            )}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <div style={{ flex: 1, minWidth: 0, background: '#F6F8FA', borderRadius: 6, overflow: 'hidden', height: 32, position: 'relative' }}>
+                <div style={{ width: `${w}%`, height: '100%', background: isLeak ? '#FEE2E2' : '#DCE6EF' }} />
+                <div style={{ position: 'absolute', left: 10, top: 0, height: '100%', display: 'flex', alignItems: 'center', fontSize: 12.5, color: '#333', fontWeight: 600, whiteSpace: 'nowrap' }}>{L(...s.label)}</div>
+              </div>
+              <div style={{ width: 56, textAlign: 'right', fontSize: 15, fontWeight: 700, color: '#191F28' }}>{fmt(s.users)}</div>
             </div>
-          )
-        })}
-      </div>
+          </div>
+        )
+      })}
     </div>
   )
 }
@@ -260,33 +246,26 @@ export default function MainFunnelView({ token, lang, dateRange }) {
 
       {stage === 'signup' && (
         <>
-          {/* 진입면별 → 가입 퍼널 (per-user dedup·순차, sign_up 종료) */}
-          {funnel.pathFunnels && (
+          {/* 단계별 이탈 플로우 — 어디서 가장 많이 새는지 (계측 신뢰 플로우만) */}
+          {funnel.flows && (
             <div style={{ ...sectionStyle, marginBottom: 16 }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 14 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 16 }}>
                 <span style={{ fontSize: 14, fontWeight: 700, color: '#333' }}>
-                  {L('진입면별 → 가입 전환 퍼널', 'Entry surface → signup funnels')}
+                  {L('단계별 이탈 플로우 — 어디서 새는가', 'Step-by-step drop-off — where users leak')}
                 </span>
                 <span style={{ fontSize: 12, color: '#8B95A1' }}>
                   {L('총 가입', 'Sign-ups')} <b style={{ color: '#191F28' }}>{fmt(signups)}</b>
                 </span>
               </div>
-              {PATH_META.map(pm => {
-                const rows = funnel.pathFunnels[pm.key]
-                if (!rows) return (
-                  <div key={pm.key} style={{ fontSize: 12, color: '#C2452B', marginBottom: 12 }}>
-                    {L(`${L(...pm.title)} — 퍼널 RPC 미적용 (20260716 + 20260720 마이그레이션 실행 필요)`,
-                       'Funnel RPC not applied')}
-                  </div>
-                )
-                return (
-                  <StepChain key={pm.key} lang={lang} title={L(...pm.title)}
-                    steps={rows.map(r => ({ label: L(...(EV_LABEL[r.event] || [r.event, r.event])), value: r.users }))} />
-                )
-              })}
-              <div style={{ fontSize: 11, color: '#8B95A1', marginTop: 4 }}>
-                {L('유저 단위 dedup · 순차 · t0(1단계 최초 발생) 기준 1일 윈도우 · 마지막 단계=가입. 로그아웃→가입 연결은 client_id 스티칭(ev 뷰)에 의존. 위저드·게이트 계측은 7/14 저녁, 공고 상세뷰는 7/16 배포부터 — 그 이전 기간은 낮게 보임.',
-                   'Per-user, sequential, 1-day window from t0, final step = signup. Depends on client_id stitching (ev view).')}
+              {['wizard', 'cv'].map(k => funnel.flows[k] && (
+                <DropoffFunnel key={k} lang={lang} title={funnel.flows[k].title} steps={funnel.flows[k].steps} />
+              ))}
+              <div style={{ fontSize: 11, color: '#8B95A1', marginTop: 6, lineHeight: 1.7, paddingTop: 10, borderTop: '1px solid #f0f0f0' }}>
+                {L('각 단계 = 직전 단계 도달 유저 중 다음 단계까지 간 유저(순차·유저 단위·전체 기간 윈도우). 빨강 = 가장 크게 새는 지점. ',
+                   'Each step = users from the previous step reaching the next (sequential, per-user). Red = biggest leak. ')}
+                <b style={{ color: '#C2452B' }}>{L('공고·앱 플로우는 제외', 'Jobs/app excluded')}</b>
+                {L(': 공고 목록·카드·지원버튼 이벤트의 ~60%, 앱 이벤트의 ~51%가 client_id 없이(익명) 찍혀 순차 스티칭이 불가 → 계측을 먼저 고쳐야 신뢰 가능. CV는 sign_up 이벤트가 웹 콜백 전용이라 등록완료(cv_register_success)를 종료 단계로 본다.',
+                   ': top-of-funnel events for jobs (~60%) and app (~51%) fire without client_id, so sequential stitching is unreliable — fix instrumentation first.')}
               </div>
             </div>
           )}
