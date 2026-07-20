@@ -8,7 +8,7 @@ import { sectionStyle } from '../../constants/dashboard'
 // · 리본: 두께 ∝ 잔존율, 이탈은 해칭 렌즈 — 클릭하면 이탈 유저 목록(funnel-users) 모달.
 
 const KO_LABELS = {
-  landing: '홈 랜딩', hero_cta_click: '히어로 CTA', wizard_step_1: '위저드 시작', wizard_step_2: '위저드 2',
+  session_start: '웹 진입(전체)', landing: '홈 랜딩', hero_cta_click: '히어로 CTA', wizard_step_1: '위저드 시작', wizard_step_2: '위저드 2',
   wizard_step_3: '위저드 3', wizard_step_4: '위저드 완료', submit_application: '제출(연봉·지원 공용)',
   result_gate_view: '게이트 노출', result_company_card_click: '결과 회사카드 클릭', search_company: '회사 검색',
   view_jobs_page: '공고 목록 뷰', click_job_card: '공고 카드 클릭', view_job_detail: '공고 상세 뷰',

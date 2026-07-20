@@ -60,7 +60,7 @@ export default async function handler(req, res) {
   // 유입→가입 사이 이탈 지도용 여정 이벤트 (건수 기준 — landing/상세뷰 client_id 계측은 2026-07-16 배포,
   // 위저드·게이트는 7/14 저녁부터 존재. 그 이전 기간을 포함하면 과소계상된다.)
   const JOURNEY_EVENTS = [
-    'landing', 'wizard_step_1', 'wizard_step_4', 'result_gate_view', 'sign_up',
+    'session_start', 'landing', 'wizard_step_1', 'wizard_step_4', 'result_gate_view', 'sign_up',
     'view_jobs_page', 'view_job_detail', 'click_apply_button',
     'cv_view', 'cv_register_success',
   ]

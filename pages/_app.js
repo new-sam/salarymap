@@ -8,6 +8,7 @@ import MobileTabBar from '../components/MobileTabBar';
 import AppDownloadModal from '../components/AppDownloadModal';
 import GlobalNav from '../components/GlobalNav';
 import GoogleOneTap from '../components/GoogleOneTap';
+import { track } from '../lib/track';
 
 /* pathname → GlobalNav activePage key. The set determines whether GlobalNav
    renders at all (company/admin/standalone pages have their own headers). */
@@ -115,6 +116,29 @@ export default function App({ Component, pageProps }) {
     else delete document.body.dataset.adminMobile;
   }, [isCompany, isJobDetail, isAdLanding, isCard, isAdmin]);
   const activePage = activePageFor(router.pathname);
+
+  // 웹 첫 진입(세션당 1회) — landing 은 홈에서만 떠서 공고/CV/회사 링크 등 직접 유입을 놓친다.
+  // 어떤 페이지로 들어왔든 세션 진입을 잡아 '진입→가입' 퍼널의 시작점을 만든다. UTM/referrer 도 귀속.
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    if (router.pathname.startsWith('/admin')) return; // 내부 어드민 뷰 제외
+    try {
+      if (sessionStorage.getItem('sm_session_started')) return;
+      sessionStorage.setItem('sm_session_started', '1');
+    } catch { return; } // sessionStorage 불가(프라이빗 모드 등) → 라우트마다 폭증 방지 위해 스킵
+    const p = new URLSearchParams(window.location.search);
+    track('session_start', {
+      page: window.location.pathname,
+      meta: {
+        entry_path: window.location.pathname,
+        referrer: document.referrer || null,
+        utm_source: p.get('utm_source'),
+        utm_medium: p.get('utm_medium'),
+        utm_campaign: p.get('utm_campaign'),
+      },
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // 모바일: 스크롤 다운하면 헤더·하단탭바를 숨겨 가용 화면을 넓히고, 스크롤 업/최상단이면
   // 다시 띄운다. 콘텐츠 페이지 + /cv(헤더는 static이라 스크롤로 사라지지만 하단 탭바는 남아
