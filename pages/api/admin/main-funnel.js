@@ -20,6 +20,7 @@ const toVN = (iso) => new Date(new Date(iso).getTime() + 7 * 3600000).toISOStrin
 const FLOW_FUNNELS = [
   { key: 'wizard', title: ['홈/위저드 → 게이트 → 가입', 'Home/wizard → gate → signup'],
     steps: [
+      { event: 'landing', label: ['홈 진입', 'Home visit'] },   // '/' 진입(홈에서만 발화) → 위저드 시작 전 단계
       { event: 'wizard_step_1', label: ['위저드 시작', 'Wizard start'] },
       { event: 'wizard_step_2', label: ['위저드 2', 'Wizard 2'] },
       { event: 'wizard_step_3', label: ['위저드 3', 'Wizard 3'] },
