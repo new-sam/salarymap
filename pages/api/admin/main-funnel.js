@@ -57,12 +57,12 @@ export default async function handler(req, res) {
   const startISO = new Date(`${startDate}T00:00:00+07:00`).toISOString()
   const endISO = new Date(`${endDate}T23:59:59+07:00`).toISOString()
 
-  // 유입→가입 사이 이탈 지도용 여정 이벤트 (건수 기준 — landing/상세뷰 client_id 계측은 2026-07-16 배포,
-  // 위저드·게이트는 7/14 저녁부터 존재. 그 이전 기간을 포함하면 과소계상된다.)
-  const JOURNEY_EVENTS = [
-    'session_start', 'landing', 'wizard_step_1', 'wizard_step_4', 'result_gate_view', 'sign_up',
-    'view_jobs_page', 'view_job_detail', 'click_apply_button',
-    'cv_view', 'cv_register_success',
+  // 진입면별 "→ 가입" 퍼널 — 각 경로가 sign_up 에서 끝나는 per-user 퍼널(funnel RPC, dedup·순차·1일 윈도우).
+  // 건수 스케치가 아니라 실제 "이 면으로 들어와 며칠 안에 가입한 사람 수"를 잰다.
+  const PATH_FUNNELS = [
+    { key: 'wizard', steps: ['landing', 'wizard_step_1', 'wizard_step_4', 'result_gate_view', 'sign_up'] },
+    { key: 'jobs',   steps: ['view_jobs_page', 'view_job_detail', 'click_apply_button', 'sign_up'] },
+    { key: 'cv',     steps: ['cv_view', 'cv_oauth_start', 'sign_up'] },
   ]
 
   try {
@@ -153,18 +153,24 @@ export default async function handler(req, res) {
       acceptedDaily[d] = (acceptedDaily[d] || 0) + 1
     }
 
-    // 여정 이벤트 카운트 — idx_events_event_created_at 인덱스를 타는 head-count 병렬 쿼리
-    const journey = Object.fromEntries(await Promise.all(JOURNEY_EVENTS.map(async ev => {
-      const { count } = await supabase.from('events')
-        .select('id', { count: 'exact', head: true })
-        .eq('event', ev).gte('created_at', startISO).lte('created_at', endISO)
-      return [ev, count || 0]
-    })))
+    // 진입면별 → 가입 퍼널 (per-user, funnel RPC). RPC 미적용 시 해당 경로는 null.
+    const pathFunnels = {}
+    await Promise.all(PATH_FUNNELS.map(async pf => {
+      const { data, error } = await supabase.rpc('funnel', {
+        p_steps: pf.steps.map(event => ({ event })),
+        p_from: startISO,
+        p_to: endISO,
+        p_window: '86400 seconds',
+        p_order: 'this',
+      })
+      pathFunnels[pf.key] = error ? null
+        : (data || []).sort((a, b) => a.step_index - b.step_index).map(r => ({ event: r.step_name, users: Number(r.users) }))
+    }))
 
     const sortDesc = (m) => Object.entries(m).map(([k, count]) => ({ key: k, count })).sort((a, b) => b.count - a.count)
 
     res.status(200).json({
-      journey,
+      pathFunnels,
       signups: {
         total: signupUsers.length,
         daily: signupDaily,

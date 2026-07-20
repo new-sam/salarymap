@@ -15,6 +15,25 @@ const STAGES = [
 ]
 
 
+// 진입면별 → 가입 퍼널 (main-funnel.js pathFunnels 와 키 일치)
+const EV_LABEL = {
+  landing: ['홈 랜딩', 'Home landing'],
+  wizard_step_1: ['위저드 시작', 'Wizard start'],
+  wizard_step_4: ['위저드 완료', 'Wizard done'],
+  result_gate_view: ['게이트 노출', 'Gate view'],
+  view_jobs_page: ['공고 목록 뷰', 'Jobs list'],
+  view_job_detail: ['공고 상세 뷰', 'Job detail'],
+  click_apply_button: ['지원 버튼 클릭', 'Apply click'],
+  cv_view: ['CV 페이지 뷰', 'CV view'],
+  cv_oauth_start: ['CV 로그인 시작', 'CV login start'],
+  sign_up: ['가입', 'Sign-up'],
+}
+const PATH_META = [
+  { key: 'wizard', title: ['① 홈 → 위저드 → 게이트 → 가입', '① Home → wizard → gate → signup'] },
+  { key: 'jobs', title: ['② 공고 → 상세 → 지원클릭 → 가입', '② Jobs → detail → apply → signup'] },
+  { key: 'cv', title: ['③ CV → 로그인 → 가입', '③ CV → login → signup'] },
+]
+
 const fmt = (n) => (n === null || n === undefined ? '—' : n.toLocaleString())
 const pct = (a, b, digits = 1) => (b > 0 && a !== null && a !== undefined ? ((a / b) * 100).toFixed(digits) : null)
 const rateColor = (v) => (v === null ? '#999' : '#191F28')
@@ -88,7 +107,12 @@ export default function MainFunnelView({ token, lang, dateRange }) {
   const L = (ko, en) => (lang === 'ko' ? ko : en)
   const [stage, setStage] = useState('traffic')
 
-  const qs = `from=${dateRange.from}&to=${dateRange.to}`
+  // 퍼널 계측(landing client_id·공고 상세뷰)이 완비된 배포일. 이 탭만 이 날짜로 하한을 둔다
+  // (그 이전은 진입 단계가 덜 잡혀 전환율이 왜곡됨). 다른 탭의 공유 dateRange 는 건드리지 않는다.
+  const FUNNEL_FLOOR = '2026-07-16'
+  const effFrom = dateRange.from < FUNNEL_FLOOR ? FUNNEL_FLOOR : dateRange.from
+  const clamped = dateRange.from < FUNNEL_FLOOR
+  const qs = `from=${effFrom}&to=${dateRange.to}`
   const { data: ga4, error: ga4Error } = useAdmin(`/api/admin/ga4?${qs}`, token)
   const { data: funnel, isLoading } = useAdmin(`/api/admin/main-funnel?${qs}`, token)
 
@@ -135,7 +159,8 @@ export default function MainFunnelView({ token, lang, dateRange }) {
       {/* ── 퍼널 스트립: 4단계 카드 + 단계간 전환율 ── */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 10 }}>
         <span style={{ fontSize: 13, color: '#666' }}>
-          {dateRange.from} ~ {dateRange.to} · {L('기간 내 발생 기준 (코호트 아님)', 'Period-based, not cohort')}
+          {effFrom} ~ {dateRange.to} · {L('기간 내 발생 기준 (코호트 아님)', 'Period-based, not cohort')}
+          {clamped && <span style={{ color: '#ff4400', marginLeft: 6 }}>{L('· 퍼널 계측 시작 7/16로 하한', '· floored to Jul 16')}</span>}
         </span>
         <span style={{ fontSize: 13, color: '#666' }}>
           {L('전체 전환', 'Overall')} {L('유입→합격', 'traffic→accepted')}:{' '}
@@ -241,36 +266,33 @@ export default function MainFunnelView({ token, lang, dateRange }) {
 
       {stage === 'signup' && (
         <>
-          {/* 유입→가입 사이 이탈 지도 — 진입면별 여정 이벤트 체인 (건수 기준) */}
-          {funnel.journey && (
+          {/* 진입면별 → 가입 퍼널 (per-user dedup·순차, sign_up 종료) */}
+          {funnel.pathFunnels && (
             <div style={{ ...sectionStyle, marginBottom: 16 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 14 }}>
                 <span style={{ fontSize: 14, fontWeight: 700, color: '#333' }}>
-                  {L('유입→가입 이탈 지도 (진입면별)', 'Traffic→signup drop-off map (by entry)')}
+                  {L('진입면별 → 가입 전환 퍼널', 'Entry surface → signup funnels')}
                 </span>
                 <span style={{ fontSize: 12, color: '#8B95A1' }}>
-                  sign_up {L('이벤트', 'events')} <b style={{ color: '#191F28' }}>{fmt(funnel.journey.sign_up)}</b>
+                  {L('총 가입', 'Sign-ups')} <b style={{ color: '#191F28' }}>{fmt(signups)}</b>
                 </span>
               </div>
-              <StepChain lang={lang} title={L('① 홈 → 연봉 위저드 → 가입 게이트', '① Home → wizard → signup gate')} steps={[
-                { label: L('홈 랜딩', 'Home landing'), value: funnel.journey.landing },
-                { label: L('위저드 시작', 'Wizard start'), value: funnel.journey.wizard_step_1 },
-                { label: L('위저드 완료', 'Wizard done'), value: funnel.journey.wizard_step_4 },
-                { label: L('게이트 노출', 'Gate view'), value: funnel.journey.result_gate_view },
-              ]} />
-              <StepChain lang={lang} title={L('② 공고 (SEO 직유입 다수)', '② Jobs (incl. SEO direct)')} steps={[
-                { label: L('공고 목록 뷰', 'List view'), value: funnel.journey.view_jobs_page },
-                { label: L('공고 상세 뷰', 'Detail view'), value: funnel.journey.view_job_detail, isNew: true },
-                { label: L('지원 버튼 클릭', 'Apply click'), value: funnel.journey.click_apply_button },
-                { label: L('지원 완료', 'Applied'), value: funnel.applications.total },
-              ]} />
-              <StepChain lang={lang} title={L('③ CV 등록', '③ CV registration')} steps={[
-                { label: L('CV 페이지 뷰', 'CV view'), value: funnel.journey.cv_view },
-                { label: L('CV 등록 완료', 'CV registered'), value: funnel.journey.cv_register_success },
-              ]} />
+              {PATH_META.map(pm => {
+                const rows = funnel.pathFunnels[pm.key]
+                if (!rows) return (
+                  <div key={pm.key} style={{ fontSize: 12, color: '#C2452B', marginBottom: 12 }}>
+                    {L(`${L(...pm.title)} — 퍼널 RPC 미적용 (20260716 + 20260720 마이그레이션 실행 필요)`,
+                       'Funnel RPC not applied')}
+                  </div>
+                )
+                return (
+                  <StepChain key={pm.key} lang={lang} title={L(...pm.title)}
+                    steps={rows.map(r => ({ label: L(...(EV_LABEL[r.event] || [r.event, r.event])), value: r.users }))} />
+                )
+              })}
               <div style={{ fontSize: 11, color: '#8B95A1', marginTop: 4 }}>
-                {L('⚠ 이벤트 건수 기준(방문자 dedup 아님). 위저드·게이트는 7/14 저녁, 공고 상세 뷰·sign_up 일부는 7/16 배포부터 쌓임 — 그 이전 기간 포함 시 낮게 보임.',
-                   '⚠ Event counts (not deduped visitors). Wizard/gate tracked since Jul 14 eve, job detail view since Jul 16 deploy.')}
+                {L('유저 단위 dedup · 순차 · t0(1단계 최초 발생) 기준 1일 윈도우 · 마지막 단계=가입. 로그아웃→가입 연결은 client_id 스티칭(ev 뷰)에 의존. 위저드·게이트 계측은 7/14 저녁, 공고 상세뷰는 7/16 배포부터 — 그 이전 기간은 낮게 보임.',
+                   'Per-user, sequential, 1-day window from t0, final step = signup. Depends on client_id stitching (ev view).')}
               </div>
             </div>
           )}
