@@ -18,24 +18,25 @@ const toVN = (iso) => new Date(new Date(iso).getTime() + 7 * 3600000).toISOStrin
 // 배제: 공고 브라우징(view_jobs_page/click_job_card/click_apply 60% 무id)·앱(app_open cid 0%)은
 //       상단 이벤트가 대부분 익명이라 순차 퍼널이 신뢰 불가 → coverageNote 로만 안내.
 const FLOW_FUNNELS = [
-  { key: 'wizard', title: ['홈/위저드 → 게이트 → 가입 (마지막=실제 sign_up)', 'Home/wizard → gate → signup (real sign_up)'],
+  { key: 'wizard', title: ['홈/위저드 → 게이트 → 가입', 'Home/wizard → gate → signup'],
     steps: [
       { event: 'wizard_step_1', label: ['위저드 시작', 'Wizard start'] },
       { event: 'wizard_step_2', label: ['위저드 2', 'Wizard 2'] },
       { event: 'wizard_step_3', label: ['위저드 3', 'Wizard 3'] },
       { event: 'wizard_step_4', label: ['위저드 완료', 'Wizard done'] },
       { event: 'result_gate_view', label: ['게이트 노출', 'Gate view'] },
-      { event: 'sign_up', label: ['가입', 'Sign-up'] },
+      { event: 'sign_up', label: ['가입', 'Sign-up'] },   // sign_up 이벤트 = 신규 계정(콜백에서 발화) → 실제 가입
     ] },
-  // CV 플로우는 sign_up 이벤트가 클라이언트 OAuth(서버 콜백 미경유)라 스티칭 0 → 종료를 등록완료로 본다.
-  // 등록완료 ≈ 85% 신규가입(+15% 기존유저 CV 재등록). "가입"이 아니라 "이력서 등록" 완료임에 주의.
-  { key: 'cv', title: ['CV → 이력서 등록 (등록완료 ≈ 85% 신규가입)', 'CV → resume register (~85% new signups)'],
+  // CV 는 클라이언트 OAuth(서버 콜백 미경유)라 sign_up 이벤트가 스티칭 0 → 종료(가입)를 이벤트 대신
+  // "마지막 단계 도달자 중 신규 auth 계정 수"로 잰다(newSignupTerminal). 등록완료 자체엔 기존유저도 섞임.
+  { key: 'cv', title: ['CV → 가입', 'CV → signup'],
     steps: [
       { event: 'cv_view', label: ['CV 페이지 뷰', 'CV view'] },
       { event: 'cv_attach_file', label: ['이력서 업로드', 'Resume upload'] },
       { event: 'cv_oauth_start', label: ['로그인 시작', 'Login start'] },
-      { event: 'cv_register_success', label: ['이력서 등록완료', 'Resume registered'] },
-    ] },
+      { event: 'cv_register_success', label: ['이력서 등록', 'Resume registered'] },
+    ],
+    newSignupTerminal: { fromStep: 'cv_register_success', label: ['가입 (신규)', 'Sign-up (new)'] } },
 ]
 
 async function fetchAll(query) {
@@ -173,21 +174,31 @@ export default async function handler(req, res) {
     // 단계별 이탈 플로우 — 순차 퍼널(funnel RPC)로 각 단계 도달 유저수 + 전 단계 대비 전환율.
     // 창은 전체 기간(단계 사이 간격이 1일 윈도우로 잘리지 않게), order='this'(직전 단계 이후 도달).
     const rangeWindow = `${Math.max(86400, Math.round((new Date(endISO) - new Date(startISO)) / 1000))} seconds`
+    const signupIdSet = new Set(signupUsers.map(u => u.id))  // 기간 내 신규 auth 계정
     const flows = {}
     await Promise.all(FLOW_FUNNELS.map(async ff => {
-      const { data, error } = await supabase.rpc('funnel', {
-        p_steps: ff.steps.map(s => ({ event: s.event })),
-        p_from: startISO,
-        p_to: endISO,
-        p_window: rangeWindow,
-        p_order: 'this',
-      })
+      const rpcArgs = { p_steps: ff.steps.map(s => ({ event: s.event })), p_from: startISO, p_to: endISO, p_window: rangeWindow, p_order: 'this' }
+      const { data, error } = await supabase.rpc('funnel', rpcArgs)
       if (error) { flows[ff.key] = null; return }
       const byIdx = Object.fromEntries((data || []).map(r => [r.step_index, Number(r.users)]))
-      flows[ff.key] = {
-        title: ff.title,
-        steps: ff.steps.map((s, i) => ({ label: s.label, users: byIdx[i + 1] || 0 })),
+      const steps = ff.steps.map((s, i) => ({ label: s.label, users: byIdx[i + 1] || 0 }))
+
+      // 신규가입 종료단계 — sign_up 이벤트가 스티칭 안 되는 플로우(CV)용.
+      // 마지막 이벤트 단계 도달자(funnel_users) 중, fromStep 이벤트로 user_id 를 얻어 신규 auth 계정인 수.
+      if (ff.newSignupTerminal) {
+        const { data: fu } = await supabase.rpc('funnel_users', { ...rpcArgs, p_reached: ff.steps.length, p_limit: 5000 })
+        const keys = new Set((fu || []).map(r => r.user_key))
+        const mapRows = await fetchAll(
+          supabase.from('events').select('user_id, client_id')
+            .eq('event', ff.newSignupTerminal.fromStep).gte('created_at', startISO).lte('created_at', endISO)
+        )
+        const key2uid = {}
+        for (const r of mapRows) { const k = r.client_id || r.user_id; if (k && r.user_id) key2uid[k] = r.user_id }
+        let n = 0
+        for (const k of keys) { const uid = key2uid[k]; if (uid && signupIdSet.has(uid)) n++ }
+        steps.push({ label: ff.newSignupTerminal.label, users: n })
       }
+      flows[ff.key] = { title: ff.title, steps }
     }))
 
     const sortDesc = (m) => Object.entries(m).map(([k, count]) => ({ key: k, count })).sort((a, b) => b.count - a.count)

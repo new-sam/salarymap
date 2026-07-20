@@ -41,7 +41,7 @@ const vnTime = (iso) => (iso ? new Date(new Date(iso).getTime() + 7 * 36e5).toIS
 
 // 암플리튜드식 퍼널 차트 — 스텝별 세로 막대(높이 = 1단계 대비 %), 막대 위에
 // 직전 단계와의 차이만큼 빗금 이탈 블록. 이탈 블록 클릭 = 이탈 유저 목록(Microscope).
-function AmpChart({ vals, steps, onLossClick }) {
+export function AmpChart({ vals, steps, onLossClick }) {
   const n = vals.length
   const first = vals[0] || 0
   const W = 1000, H = 240, TOP = 34, BOTTOM = 40, AXIS = 40
@@ -90,10 +90,10 @@ function AmpChart({ vals, steps, onLossClick }) {
             <g key={i} className="bf-col" style={{ animationDelay: `${i * 0.1}s` }}>
               {/* 이탈 블록 (직전 단계 높이 ~ 현재 막대 높이) — 클릭 = 유저 목록 */}
               {i > 0 && lossH > 1 && (
-                <g className="bf-loss" onClick={() => onLossClick(i, i + 1)}>
+                <g className={onLossClick ? 'bf-loss' : undefined} onClick={onLossClick ? () => onLossClick(i, i + 1) : undefined}>
                   <rect x={bx} y={lossY} width={barW} height={lossH}
                     fill="url(#bf-hatch)" fillOpacity="1" stroke="#C9CFD6" strokeWidth="1" strokeDasharray="3 2" />
-                  <title>{`${label(steps[i - 1])} → ${label(steps[i])} 이탈 ${lost.toLocaleString()}명 — 클릭하면 유저 목록`}</title>
+                  <title>{`${label(steps[i - 1])} → ${label(steps[i])} 이탈 ${lost.toLocaleString()}명${onLossClick ? ' — 클릭하면 유저 목록' : ''}`}</title>
                   {lossH > 16 && (
                     <text x={cx} y={lossY + lossH / 2 + 4} textAnchor="middle" fontSize="11" fontWeight="700"
                       fill="#8B95A1" style={{ pointerEvents: 'none', fontVariantNumeric: 'tabular-nums' }}>

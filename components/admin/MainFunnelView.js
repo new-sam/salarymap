@@ -1,17 +1,18 @@
 import { useState } from 'react'
 import { useAdmin } from '../../lib/adminSwr'
 import { sectionStyle } from '../../constants/dashboard'
-import BehaviorFunnel from './BehaviorFunnel'
+import BehaviorFunnel, { AmpChart } from './BehaviorFunnel'
 
 // 메인 퍼널 대시보드 — 유입(GA4) → 가입 → 지원 → 합격.
 // 단계 카드를 클릭하면 아래에 해당 단계의 세부(채널/유입경로/공고/합격 목록)가 열린다.
 // 유입은 /api/admin/ga4, 나머지는 /api/admin/main-funnel 에서 로드 (둘 다 SWR 캐시).
 
+// 색은 절제 — 4단계 모두 중립 슬레이트, 활성/강조만 브랜드 오렌지(#ff4400).
 const STAGES = [
-  { key: 'traffic', ko: '유입', en: 'Traffic', sub: { ko: 'GA4 방문자', en: 'GA4 users' }, color: '#2563EB' },
-  { key: 'signup', ko: '가입', en: 'Sign-ups', sub: { ko: '신규 가입', en: 'New users' }, color: '#F59E0B' },
-  { key: 'apply', ko: '지원', en: 'Applies', sub: { ko: '지원자 (유니크)', en: 'Applicants (unique)' }, color: '#0D9488' },
-  { key: 'accepted', ko: '합격', en: 'Accepted', sub: { ko: '합격자', en: 'Accepted users' }, color: '#16A34A' },
+  { key: 'traffic', ko: '유입', en: 'Traffic', sub: { ko: 'GA4 방문자', en: 'GA4 users' }, color: '#475569' },
+  { key: 'signup', ko: '가입', en: 'Sign-ups', sub: { ko: '신규 가입', en: 'New users' }, color: '#475569' },
+  { key: 'apply', ko: '지원', en: 'Applies', sub: { ko: '지원자 (유니크)', en: 'Applicants (unique)' }, color: '#475569' },
+  { key: 'accepted', ko: '합격', en: 'Accepted', sub: { ko: '합격자', en: 'Accepted users' }, color: '#475569' },
 ]
 
 
@@ -47,44 +48,6 @@ function DetailTable({ title, columns, rows }) {
           </tbody>
         </table>
       </div>
-    </div>
-  )
-}
-
-// 단계별 이탈 퍼널 (세로) — 각 단계 도달 유저수 + 직전 대비 전환/이탈, 가장 크게 새는 지점 빨강 강조.
-function DropoffFunnel({ title, steps, lang }) {
-  const L = (ko, en) => (lang === 'ko' ? ko : en)
-  if (!steps || !steps.length) return null
-  const first = steps[0]?.users || 0
-  const convs = steps.map((s, i) => (i === 0 || !steps[i - 1].users) ? null : s.users / steps[i - 1].users)
-  let leakIdx = -1, minConv = 2
-  convs.forEach((c, i) => { if (c !== null && c < minConv) { minConv = c; leakIdx = i } })
-  return (
-    <div style={{ marginBottom: 22 }}>
-      <div style={{ fontSize: 13, fontWeight: 700, color: '#333', marginBottom: 10 }}>{L(...title)}</div>
-      {steps.map((s, i) => {
-        const w = first > 0 ? Math.max(2, (s.users / first) * 100) : 0
-        const c = convs[i]
-        const isLeak = i === leakIdx
-        const drop = i > 0 ? steps[i - 1].users - s.users : 0
-        return (
-          <div key={i}>
-            {i > 0 && (
-              <div style={{ fontSize: 11, fontWeight: 700, margin: '3px 0 3px 6px', color: isLeak ? '#EF4444' : (c >= 0.5 ? '#10B981' : '#F59E0B') }}>
-                ↓ {c === null ? '—' : `${(c * 100).toFixed(0)}%`}{drop > 0 ? ` · -${fmt(drop)} ${L('이탈', 'lost')}` : ''}
-                {isLeak && <span style={{ marginLeft: 6, background: '#EF4444', color: '#fff', padding: '1px 7px', borderRadius: 8, fontSize: 10 }}>{L('최대 이탈', 'biggest drop')}</span>}
-              </div>
-            )}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-              <div style={{ flex: 1, minWidth: 0, background: '#F6F8FA', borderRadius: 6, overflow: 'hidden', height: 32, position: 'relative' }}>
-                <div style={{ width: `${w}%`, height: '100%', background: isLeak ? '#FEE2E2' : '#DCE6EF' }} />
-                <div style={{ position: 'absolute', left: 10, top: 0, height: '100%', display: 'flex', alignItems: 'center', fontSize: 12.5, color: '#333', fontWeight: 600, whiteSpace: 'nowrap' }}>{L(...s.label)}</div>
-              </div>
-              <div style={{ width: 56, textAlign: 'right', fontSize: 15, fontWeight: 700, color: '#191F28' }}>{fmt(s.users)}</div>
-            </div>
-          </div>
-        )
-      })}
     </div>
   )
 }
@@ -157,7 +120,7 @@ export default function MainFunnelView({ token, lang, dateRange }) {
             <div key={s.key} onClick={() => setStage(s.key)}
               style={{
                 background: '#fff', borderRadius: 12, padding: '14px 16px', cursor: 'pointer',
-                border: active ? `2px solid ${s.color}` : '1px solid #e5e7eb',
+                border: active ? '2px solid #ff4400' : '1px solid #e5e7eb',
                 transition: 'border-color 0.15s',
               }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -258,11 +221,14 @@ export default function MainFunnelView({ token, lang, dateRange }) {
                 </span>
               </div>
               {['wizard', 'cv'].map(k => funnel.flows[k] && (
-                <DropoffFunnel key={k} lang={lang} title={funnel.flows[k].title} steps={funnel.flows[k].steps} />
+                <div key={k} style={{ marginBottom: 12 }}>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: '#333' }}>{L(...funnel.flows[k].title)}</div>
+                  <AmpChart vals={funnel.flows[k].steps.map(s => s.users)} steps={funnel.flows[k].steps.map(s => L(...s.label))} />
+                </div>
               ))}
               <div style={{ fontSize: 11, color: '#8B95A1', marginTop: 6, lineHeight: 1.7, paddingTop: 10, borderTop: '1px solid #f0f0f0' }}>
-                {L('각 단계 = 직전 단계 도달 유저 중 다음 단계까지 간 유저(순차·유저 단위·전체 기간 윈도우). 빨강 = 가장 크게 새는 지점. 위저드 마지막은 실제 sign_up 이벤트(=가입), CV 마지막은 이력서 등록완료(≈85% 신규가입·15% 기존유저 — CV는 클라이언트 OAuth라 sign_up 이벤트가 안 잡혀 등록완료로 대체). ',
-                   'Each step = users from the previous step reaching the next (sequential, per-user). Red = biggest leak. Wizard ends at real sign_up; CV ends at resume-registered (~85% new signups). ')}
+                {L('각 단계 = 직전 단계 도달 유저 중 다음 단계까지 간 유저(순차·유저 단위·전체 기간 윈도우). 빨강 = 가장 크게 새는 지점. 마지막은 실제 신규 가입 — 위저드는 sign_up 이벤트, CV는 등록완료 도달자 중 신규 auth 계정만(CV는 클라이언트 OAuth라 sign_up 이벤트가 안 잡혀 계정 생성으로 집계). ',
+                   'Each step = users from the previous reaching the next (sequential, per-user). Red = biggest leak. Final step = actual new signups (wizard: sign_up event; CV: new auth accounts among registrants). ')}
                 <b style={{ color: '#C2452B' }}>{L('공고·앱 플로우는 제외', 'Jobs/app excluded')}</b>
                 {L(': 공고 목록·카드·지원버튼 이벤트의 ~60%, 앱 이벤트의 ~51%가 client_id 없이(익명) 찍혀 순차 스티칭이 불가 → 계측을 먼저 고쳐야 신뢰 가능. CV는 sign_up 이벤트가 웹 콜백 전용이라 등록완료(cv_register_success)를 종료 단계로 본다.',
                    ': top-of-funnel events for jobs (~60%) and app (~51%) fire without client_id, so sequential stitching is unreliable — fix instrumentation first.')}
