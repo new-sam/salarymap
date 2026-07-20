@@ -752,18 +752,12 @@ export default function JobsPage() {
     if (typeof fbq === 'function') fbq('track', 'Lead', { content_name: 'job_apply_confirmed', content_category: target.title })
   }
 
-  // Kick off login for the apply flow. Return the user straight back to the open
-  // job (via ?jobId=) so the detail panel reopens and they can submit their CV in
-  // one authenticated step — instead of losing the panel + selected file and
-  // landing on a bare page.
+  // Kick off login for the apply flow via the shared /login page (LinkedIn/Google
+  // 선택 가능). Return the user straight back to the open job (via ?jobId=) so the
+  // detail panel reopens and they can submit their CV in one authenticated step.
   const loginForJob = (jobId) => {
     const dest = jobId ? `/jobs?jobId=${jobId}` : '/jobs'
-    localStorage.setItem('fyi_login_return', dest)
-    // Use our own server-side Google flow, which fully controls the return path.
-    // (Supabase's hosted signInWithOAuth falls back to the project Site URL — the
-    //  salary homepage — whenever redirectTo isn't in the allow-list, which dropped
-    //  users on the salary page instead of bringing them back to the job.)
-    window.location.href = '/api/auth/google?return=' + encodeURIComponent(dest)
+    router.push('/login?return=' + encodeURIComponent(dest))
   }
 
   const showToast = (msg) => {
