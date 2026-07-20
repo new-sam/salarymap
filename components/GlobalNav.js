@@ -240,14 +240,7 @@ export default function GlobalNav({ activePage, onLogin, onJobsClick, mobileSear
             }}>
               {t('nav.login')}
             </button>
-          ) : (
-            <div style={{ position: 'relative' }}>
-              {/* 프로필 진입은 하단 My Page 탭으로 이동. 홈에서는 AI 이력서 넛지만 유지 */}
-              {!hasResume && activePage === 'home' && (
-                <a href="/profile" className="gnav-ai-bubble" style={{ pointerEvents: 'auto', textDecoration: 'none', color: '#fff' }}>✨ {t('nav.aiResume')}</a>
-              )}
-            </div>
-          )}
+          ) : null}
         </div>
         <div className="gnav-r">
           {!ready ? null : !isLoggedIn ? (
