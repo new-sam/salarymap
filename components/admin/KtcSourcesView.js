@@ -69,7 +69,7 @@ export default function KtcSourcesView({ token, lang, dateRange }) {
     return typeof v === 'object' ? (v[lang] || v.en) : (v || key)
   }
   const qs = dateRange?.from && dateRange?.to ? `?from=${dateRange.from}&to=${dateRange.to}` : ''
-  const { data, isLoading, mutate } = useAdmin(`/api/admin/ktc-sources${qs}`, token)
+  const { data, error, isLoading, mutate } = useAdmin(`/api/admin/ktc-sources${qs}`, token)
   const [showAllJobs, setShowAllJobs] = useState(false)
   const [openJobs, setOpenJobs] = useState({}) // 공고 행 펼침 (채널×월 상세)
   const [basis, setBasis] = useState('people') // 'people' 유니크 지원자 | 'apps' 지원 건(중복 포함)
@@ -95,6 +95,7 @@ export default function KtcSourcesView({ token, lang, dateRange }) {
     }
   }
 
+  if (error) return <div style={{ textAlign: 'center', padding: 40, color: '#c00' }}>{L('불러오기 실패', 'Failed to load', 'Tải thất bại')} — {error.message}</div>
   if (isLoading || !data) return <div style={{ textAlign: 'center', padding: 40, color: '#666' }}>{L('불러오는 중…', 'Loading…', 'Đang tải…')}</div>
   if (data.error) return <div style={{ textAlign: 'center', padding: 40, color: '#c00' }}>{data.error}</div>
 

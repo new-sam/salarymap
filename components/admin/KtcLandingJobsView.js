@@ -17,7 +17,7 @@ const lbl = { fontSize: 12, fontWeight: 600, color: '#6B7280', marginBottom: 5, 
 export default function KtcLandingJobsView({ token, lang }) {
   const ko = lang === 'ko'
   const L = (k, e, v) => (lang === 'vi' ? (v ?? e) : ko ? k : e)
-  const { data, isLoading, mutate } = useAdmin('/api/admin/ktc-landing-jobs', token)
+  const { data, error, isLoading, mutate } = useAdmin('/api/admin/ktc-landing-jobs', token)
   const [filter, setFilter] = useState('all')
   const [search, setSearch] = useState('')
   const [editing, setEditing] = useState(null) // null | 'new' | job.id
@@ -78,6 +78,7 @@ export default function KtcLandingJobsView({ token, lang }) {
     }
   }
 
+  if (error) return <div style={{ textAlign: 'center', padding: 40, color: '#c00' }}>{L('불러오기 실패', 'Failed to load', 'Tải thất bại')} — {error.message}</div>
   if (isLoading || !data) return <div style={{ textAlign: 'center', padding: 40, color: '#666' }}>{L('불러오는 중…', 'Loading…', 'Đang tải…')}</div>
   if (data.error) return <div style={{ textAlign: 'center', padding: 40, color: '#c00' }}>{data.error}</div>
 

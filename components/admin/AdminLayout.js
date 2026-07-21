@@ -79,14 +79,13 @@ export default function AdminLayout({ children }) {
   return (
     <div className={`al-shell${open ? ' open' : ''}`}>
       <style>{`
-        html { scrollbar-gutter: stable; }
         .al-shell {
           display: flex; min-height: 100vh;
           font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
           background: #fff; color: #1d1d1f;
         }
         .al-sidebar {
-          width: 232px; flex-shrink: 0; background: #fbfbfd; border-right: 1px solid #e3e3e6;
+          width: 232px; flex-shrink: 0; background: #fbfbfd;
           position: sticky; top: 0; height: 100vh; overflow-y: auto;
           display: flex; flex-direction: column; padding: 18px 12px 24px;
         }
