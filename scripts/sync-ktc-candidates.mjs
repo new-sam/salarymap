@@ -12,7 +12,7 @@ for (const line of readFileSync(new URL('../.env.local', import.meta.url), 'utf8
   }
 }
 
-const { triggerSheetSync, syncKtcCandidates } = await import('../lib/ktcCandidatesSync.js');
+const { triggerSheetSync, syncKtcCandidates, syncKtcApplications } = await import('../lib/ktcCandidatesSync.js');
 
 if (process.argv.includes('--sheets')) {
   console.log('• ktc-support 시트 동기화 트리거...');
@@ -21,4 +21,11 @@ if (process.argv.includes('--sheets')) {
 }
 
 const stats = await syncKtcCandidates();
-console.log(`✓ 동기화 완료: fetched ${stats.fetched} → upsert ${stats.upserted} (스킵 ${stats.skipped}) | 날짜 파싱 ${stats.dateParsed} | 공고코드 ${stats.jobCoded}`);
+console.log(`✓ 지원자(유니크) 동기화: fetched ${stats.fetched} → upsert ${stats.upserted} (스킵 ${stats.skipped}) | 날짜 파싱 ${stats.dateParsed} | 공고코드 ${stats.jobCoded}`);
+
+if (process.env.GOOGLE_SHEET_ID && process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL) {
+  const app = await syncKtcApplications();
+  console.log(`✓ 지원 건 동기화: ${app.total}건`, JSON.stringify(app.perTab));
+} else {
+  console.log('⚠ GOOGLE_* env 없음 — 지원 건(ktc_applications) 동기화 스킵');
+}

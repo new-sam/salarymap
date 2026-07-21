@@ -40,6 +40,7 @@ function buildNav(lang) {
       items: [
         { label: L('공고 등록', 'New job', 'Đăng tin mới'), pathname: '/admin/jobs', tab: 'job-new' },
         { label: L('공고 목록', 'Jobs', 'Tin tuyển dụng'), pathname: '/admin/jobs', tab: 'jobs' },
+        { label: L('KTC 랜딩 공고', 'KTC landing jobs', 'Tin landing KTC'), pathname: '/admin/jobs', tab: 'ktc-landing' },
         { label: L('회사', 'Companies', 'Công ty'), pathname: '/admin/jobs', tab: 'companies' },
         { label: L('공고 지표', 'Job KPI', 'KPI tin đăng'), pathname: '/admin/jobs', tab: 'kpi' },
         { label: 'Admins', pathname: '/admin/jobs', tab: 'admins' },

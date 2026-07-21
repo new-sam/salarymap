@@ -66,8 +66,10 @@ export default async function handler(req, res) {
     }
     const filtering = Boolean(from || to)
 
-    const [candidates, ktcJobs] = await Promise.all([
+    const [candidates, applications, ktcJobs] = await Promise.all([
       fetchAll('ktc_candidates', 'sheet_source, applied_company, applied_job, position, job_code, applied_at, pipeline_status, synced_at'),
+      // 지원 "건" 원본 (중복 포함, 시트 직행). 테이블 미적재 시 빈 배열로 폴백.
+      fetchAll('ktc_applications', 'sheet_source, applied_at').catch(() => []),
       fetchAll('jobs', 'id, title, company, is_active', q => q.eq('source', 'ktc')),
     ])
     const jobIds = ktcJobs.map(j => j.id)
@@ -107,6 +109,24 @@ export default async function handler(req, res) {
       }
       if (DOC_PASS_STATUSES.has(c.pipeline_status)) p.docPass++
       if (c.pipeline_status === 'final_passed') p.finalPassed++
+    }
+
+    // ---- 채널별 지원 "건" (중복 포함, ktc_applications) ----
+    const appRows = applications.filter(a => !filtering || inRange(a.applied_at))
+    for (const a of appRows) {
+      const p = platforms[a.sheet_source] || (platforms[a.sheet_source] = { key: a.sheet_source, total: 0, months: {}, docPass: 0, finalPassed: 0 })
+      p.appsTotal = (p.appsTotal || 0) + 1
+      if (a.applied_at) {
+        const m = toVNMonth(a.applied_at)
+        const am = p.appsMonths || (p.appsMonths = {})
+        am[m] = (am[m] || 0) + 1
+      }
+    }
+    // FYI 지원 건 월별 (raw, 유니크 아님)
+    const fyiAppsMonths = {}
+    for (const a of fyiApps) {
+      const m = toVNMonth(a.created_at)
+      fyiAppsMonths[m] = (fyiAppsMonths[m] || 0) + 1
     }
 
     // ---- 공고(코드) × 플랫폼 크로스탭 ----
@@ -209,11 +229,16 @@ export default async function handler(req, res) {
     res.json({
       syncedAt,
       months,
-      platforms: platformList.map(({ key, total, months: m, docPass, finalPassed }) => ({ key, total, months: m, docPass, finalPassed })),
+      platforms: platformList.map(({ key, total, months: m, docPass, finalPassed, appsTotal, appsMonths }) => ({
+        key, total, months: m, docPass, finalPassed,
+        appsTotal: appsTotal || 0, appsMonths: appsMonths || {},
+      })),
+      hasApplications: applications.length > 0,
       fyi: {
         total: fyiAll.size,
         applications: fyiApps.length,
         months: Object.fromEntries(Object.entries(fyiMonths).map(([m, s]) => [m, s.size])),
+        appsMonths: fyiAppsMonths,
       },
       jobs: jobList,
       totals: {

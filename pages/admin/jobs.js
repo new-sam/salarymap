@@ -7,6 +7,7 @@ import { supabase } from '../../lib/supabaseClient'
 import { useAdmin } from '../../lib/adminSwr'
 import Icon from '../../components/Icon'
 import { ROLE_GROUPS } from '../../constants/jobs'
+import KtcLandingJobsView from '../../components/admin/KtcLandingJobsView'
 
 const EMPTY_JOB = {
   title: '', company: '', company_initials: '', location: '', type: 'remote',
@@ -477,6 +478,11 @@ export default function AdminJobs() {
               );
             })()}
           </div>
+        )}
+
+        {/* KTC 랜딩 공고 관리 (별도 Supabase 크로스 관리) */}
+        {tab === 'ktc-landing' && (
+          <KtcLandingJobsView token={token} lang={globalLang === 'ko' || globalLang === 'vi' ? globalLang : 'en'} />
         )}
 
         {/* KPI TAB (기업/채용 지표 요약) */}

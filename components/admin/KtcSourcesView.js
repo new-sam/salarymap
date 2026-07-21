@@ -72,6 +72,7 @@ export default function KtcSourcesView({ token, lang, dateRange }) {
   const { data, isLoading, mutate } = useAdmin(`/api/admin/ktc-sources${qs}`, token)
   const [showAllJobs, setShowAllJobs] = useState(false)
   const [openJobs, setOpenJobs] = useState({}) // 공고 행 펼침 (채널×월 상세)
+  const [basis, setBasis] = useState('people') // 'people' 유니크 지원자 | 'apps' 지원 건(중복 포함)
   const [syncing, setSyncing] = useState(false)
   const [syncMsg, setSyncMsg] = useState(null)
 
@@ -97,18 +98,24 @@ export default function KtcSourcesView({ token, lang, dateRange }) {
   if (isLoading || !data) return <div style={{ textAlign: 'center', padding: 40, color: '#666' }}>{L('불러오는 중…', 'Loading…', 'Đang tải…')}</div>
   if (data.error) return <div style={{ textAlign: 'center', padding: 40, color: '#c00' }}>{data.error}</div>
 
-  const { platforms, fyi, jobs, months, totals, syncedAt } = data
+  const { platforms, fyi, jobs, months, totals, syncedAt, hasApplications } = data
   const nowMonth = new Date(Date.now() + 7 * 3600000).toISOString().slice(0, 7)
   const shownMonths = months.filter(m => m >= '2026-03' && m <= nowMonth)
   const pct = (n, d) => (d > 0 ? Math.round((n / d) * 100) : 0)
 
-  // FYI를 플랫폼 목록에 합류시켜 볼륨순 정렬 (질 지표는 FYI엔 없음)
+  // 기준: people = 유니크 지원자(최초 채널 귀속) / apps = 지원 건(중복 포함, 시트 원본)
+  const useApps = basis === 'apps' && hasApplications
+  // FYI를 플랫폼 목록에 합류 — 두 기준 값을 모두 들고 현재 기준(n/nMonths)으로 정렬
   const allRows = [
-    ...platforms.map(p => ({ ...p, isFyi: false })),
-    { key: 'FYI', total: fyi.total, months: fyi.months, docPass: null, finalPassed: null, isFyi: true },
-  ].sort((a, b) => b.total - a.total)
-  const grandTotal = allRows.reduce((s, r) => s + r.total, 0)
-  const maxTotal = Math.max(1, ...allRows.map(r => r.total))
+    ...platforms.map(p => ({ ...p, isFyi: false, n: useApps ? p.appsTotal : p.total, nMonths: useApps ? p.appsMonths : p.months })),
+    {
+      key: 'FYI', isFyi: true, docPass: null, finalPassed: null,
+      total: fyi.total, months: fyi.months,
+      n: useApps ? fyi.applications : fyi.total, nMonths: useApps ? fyi.appsMonths : fyi.months,
+    },
+  ].sort((a, b) => b.n - a.n)
+  const grandTotal = allRows.reduce((s, r) => s + r.n, 0)
+  const maxTotal = Math.max(1, ...allRows.map(r => r.n))
   const totalFinal = platforms.reduce((s, p) => s + p.finalPassed, 0)
 
   const stat = (labelTxt, value, sub) => (
@@ -157,16 +164,42 @@ export default function KtcSourcesView({ token, lang, dateRange }) {
         {stat(L('KTC 공고', 'KTC jobs', 'Tin KTC'), `${totals.activeKtcJobs} / ${totals.ktcJobs}`, L('활성 / 전체', 'active / all', 'đang hoạt động / tổng'))}
       </div>
 
-      {/* 채널 비중 도넛 — 선택 기간 내 지원자 구성 */}
+      {/* 기준 토글 — 도넛·채널 표에 공통 적용 */}
+      <div style={{ display: 'flex', gap: 6, marginBottom: 12, alignItems: 'center', flexWrap: 'wrap' }}>
+        {[
+          ['people', L('지원자 수 (유니크)', 'Applicants (unique)', 'Ứng viên (unique)')],
+          ['apps', L('지원 건수 (중복 포함)', 'Applications (raw)', 'Lượt nộp (gồm trùng)')],
+        ].map(([key, labelTxt]) => {
+          const on = basis === key
+          const disabled = key === 'apps' && !hasApplications
+          return (
+            <button key={key} onClick={() => !disabled && setBasis(key)} disabled={disabled} style={{
+              fontSize: 13, fontWeight: 600, cursor: disabled ? 'default' : 'pointer', borderRadius: 999, padding: '7px 14px',
+              border: '1px solid', borderColor: on ? '#ff4400' : '#E5E8EB',
+              background: on ? '#FFF1EC' : '#fff', color: disabled ? '#C4CAD2' : on ? '#ff4400' : '#4E5968',
+            }}>
+              {labelTxt}
+            </button>
+          )
+        })}
+        {!hasApplications && (
+          <span style={{ fontSize: 11.5, color: '#9CA3AF' }}>
+            {L('지원 건 데이터 없음 — ktc_applications 마이그레이션 적용 후 동기화 필요', 'No applications data — apply the migration, then sync', 'Chưa có dữ liệu lượt nộp — chạy migration rồi đồng bộ')}
+          </span>
+        )}
+      </div>
+
+      {/* 채널 비중 도넛 — 선택 기간·기준의 채널 구성 */}
       {(() => {
         // 고정 색이 있는 채널은 개별 세그먼트, 나머지는 기타로 합산 (색은 채널 정체성에 고정)
+        const fyiRow = allRows.find(r => r.isFyi)
         const nonFyi = allRows.filter(r => !r.isFyi)
         const named = nonFyi.filter(r => CHANNEL_SOFT_COLORS[r.key])
         const donutSegs = [
-          { key: 'FYI', n: fyi.total, color: FYI_COLOR, label: 'FYI' },
-          ...named.map(r => ({ key: r.key, n: r.total, color: CHANNEL_SOFT_COLORS[r.key], label: label(r.key) })),
+          { key: 'FYI', n: fyiRow.n, color: FYI_COLOR, label: 'FYI' },
+          ...named.map(r => ({ key: r.key, n: r.n, color: CHANNEL_SOFT_COLORS[r.key], label: label(r.key) })),
         ]
-        const restN = nonFyi.filter(r => !CHANNEL_SOFT_COLORS[r.key]).reduce((s, r) => s + r.total, 0)
+        const restN = nonFyi.filter(r => !CHANNEL_SOFT_COLORS[r.key]).reduce((s, r) => s + r.n, 0)
         if (restN > 0) donutSegs.push({ key: '_rest', n: restN, color: OTHER_GRAY, label: L('기타', 'Other', 'Khác') })
         return (
           <div className="adm-m-wrap" style={{ display: 'flex', alignItems: 'center', gap: 28, border: '1px solid #E5E8EB', borderRadius: 12, padding: '18px 22px', marginBottom: 22 }}>
@@ -174,7 +207,7 @@ export default function KtcSourcesView({ token, lang, dateRange }) {
               segs={donutSegs}
               total={grandTotal}
               centerTop={grandTotal.toLocaleString()}
-              centerSub={`FYI ${pct(fyi.total, grandTotal)}%`}
+              centerSub={`FYI ${pct(fyiRow.n, grandTotal)}%`}
             />
             <div style={{ flex: 1, minWidth: 220 }}>
               <div style={{ fontSize: 13.5, fontWeight: 700, color: '#0F172A', marginBottom: 10 }}>
@@ -207,9 +240,9 @@ export default function KtcSourcesView({ token, lang, dateRange }) {
               {shownMonths.map(m => th(ko ? `${+m.slice(5)}월` : lang === 'vi' ? `T${+m.slice(5)}` : `${+m.slice(5)}/${m.slice(2, 4)}`))}
               {th(L('합계', 'Total', 'Tổng'))}
               {th(L('비중', 'Share', 'Tỷ trọng'), 'left', { width: '18%' })}
-              {th(L('서류통과', 'CV screened', 'Đạt sàng lọc CV'))}
-              {th(L('최종합격', 'Final passed', 'Trúng tuyển'))}
-              {th(L('서류통과율', 'Screen %', 'Tỷ lệ sàng lọc'), 'right', { paddingRight: 14 })}
+              {!useApps && th(L('서류통과', 'CV screened', 'Đạt sàng lọc CV'))}
+              {!useApps && th(L('최종합격', 'Final passed', 'Trúng tuyển'))}
+              {!useApps && th(L('서류통과율', 'Screen %', 'Tỷ lệ sàng lọc'), 'right', { paddingRight: 14 })}
             </tr>
           </thead>
           <tbody>
@@ -217,20 +250,20 @@ export default function KtcSourcesView({ token, lang, dateRange }) {
               <tr key={r.key} style={{ borderTop: '1px solid #F1F5F9', background: r.isFyi ? '#FFF8F5' : undefined }}>
                 <td style={{ padding: '9px 10px 9px 14px', fontWeight: r.isFyi ? 700 : 600, color: r.isFyi ? FYI_COLOR : '#0F172A' }}>{label(r.key)}</td>
                 {shownMonths.map(m => (
-                  <td key={m} style={{ padding: '9px 10px', textAlign: 'right', color: (r.months[m] || 0) > 0 ? '#374151' : '#CBD5E1' }}>{r.months[m] || 0}</td>
+                  <td key={m} style={{ padding: '9px 10px', textAlign: 'right', color: (r.nMonths?.[m] || 0) > 0 ? '#374151' : '#CBD5E1' }}>{r.nMonths?.[m] || 0}</td>
                 ))}
-                <td style={{ padding: '9px 10px', textAlign: 'right', fontWeight: 700, color: '#0F172A' }}>{r.total.toLocaleString()}</td>
+                <td style={{ padding: '9px 10px', textAlign: 'right', fontWeight: 700, color: '#0F172A' }}>{r.n.toLocaleString()}</td>
                 <td style={{ padding: '9px 10px' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                     <div style={{ flex: 1, height: 8, background: '#F1F5F9', borderRadius: 4, overflow: 'hidden', minWidth: 60 }}>
-                      <div style={{ width: `${(r.total / maxTotal) * 100}%`, height: '100%', background: r.isFyi ? FYI_COLOR : '#2563EB', borderRadius: 4 }} />
+                      <div style={{ width: `${(r.n / maxTotal) * 100}%`, height: '100%', background: r.isFyi ? FYI_COLOR : '#2563EB', borderRadius: 4 }} />
                     </div>
-                    <span style={{ fontSize: 11.5, color: '#6B7280', width: 34, textAlign: 'right' }}>{pct(r.total, grandTotal)}%</span>
+                    <span style={{ fontSize: 11.5, color: '#6B7280', width: 34, textAlign: 'right' }}>{pct(r.n, grandTotal)}%</span>
                   </div>
                 </td>
-                <td style={{ padding: '9px 10px', textAlign: 'right', color: '#374151' }}>{r.docPass ?? '—'}</td>
-                <td style={{ padding: '9px 10px', textAlign: 'right', fontWeight: 600, color: r.finalPassed > 0 ? '#0D9488' : '#CBD5E1' }}>{r.finalPassed ?? '—'}</td>
-                <td style={{ padding: '9px 14px 9px 10px', textAlign: 'right', color: '#374151' }}>{r.docPass === null ? '—' : `${pct(r.docPass, r.total)}%`}</td>
+                {!useApps && <td style={{ padding: '9px 10px', textAlign: 'right', color: '#374151' }}>{r.docPass ?? '—'}</td>}
+                {!useApps && <td style={{ padding: '9px 10px', textAlign: 'right', fontWeight: 600, color: r.finalPassed > 0 ? '#0D9488' : '#CBD5E1' }}>{r.finalPassed ?? '—'}</td>}
+                {!useApps && <td style={{ padding: '9px 14px 9px 10px', textAlign: 'right', color: '#374151' }}>{r.docPass === null ? '—' : `${pct(r.docPass, r.total)}%`}</td>}
               </tr>
             ))}
           </tbody>
@@ -238,7 +271,12 @@ export default function KtcSourcesView({ token, lang, dateRange }) {
       </div>
       {/* 질 지표 정의 — 항상 노출 (호버 툴팁은 표 컨테이너 overflow에 잘려서 미사용) */}
       <div style={{ fontSize: 11.5, color: '#6B7280', lineHeight: 1.7, margin: '-14px 2px 22px' }}>
-        {L(
+        {useApps && <>{L(
+          <><b>지원 건수</b> = 시트 원본 행 그대로(한 사람이 여러 공고 지원 시 각각 카운트). FYI는 salarymap DB의 지원 건. </>,
+          <><b>Applications</b> = raw sheet rows (one person × several jobs counts each). FYI = raw applications from salarymap DB. </>,
+          <><b>Lượt nộp</b> = số dòng thô trên sheet (một người nộp nhiều tin tính từng lượt). FYI = lượt nộp thô từ DB salarymap. </>
+        )}</>}
+        {!useApps && L(
           <><b>서류통과</b> = KTC 팀의 CV 스크리닝 합격 이상 전부(AI 인터뷰 발송·완료·합격, 최종 합격 포함) · <b>최종합격</b> = KTC 파이프라인 최종 합격(final_passed) · <b>서류통과율</b> = 서류통과 ÷ 전체 지원자(스크리닝 대기자도 분모 포함)</>,
           <><b>CV screened</b> = at or past the KTC team&apos;s CV screening (incl. AI-interview stages and final passed) · <b>Final passed</b> = last stage of the KTC pipeline · <b>Screen %</b> = screened ÷ all applicants (pending included in denominator)</>,
           <><b>Đạt sàng lọc CV</b> = từ mức đạt sàng lọc CV của team KTC trở lên (gồm các giai đoạn PV AI và trúng tuyển) · <b>Trúng tuyển</b> = giai đoạn cuối pipeline KTC · <b>Tỷ lệ sàng lọc</b> = đạt sàng lọc ÷ tổng ứng viên (gồm cả người chưa được sàng lọc)</>
@@ -340,9 +378,9 @@ export default function KtcSourcesView({ token, lang, dateRange }) {
 
       <div style={{ fontSize: 11, color: '#9CA3AF', marginTop: 14, lineHeight: 1.6 }}>
         {L(
-          '지원자 수는 채널 내 유니크 기준(같은 사람이 한 채널에서 여러 공고 지원 시 1명). FYI 지원자는 KTC 스크리닝 파이프라인에 안 태워져서 질 지표 없음. 시트의 FYI 탭은 갱신이 뒤처져 있어 사용하지 않고 salarymap DB에서 직접 집계. 크로스탭의 FYI는 회사·제목 매칭이라 일부 공고는 별도 행으로 나올 수 있음.',
-          'Counts are unique applicants per channel. FYI applicants are not run through the KTC screening pipeline, so no quality metrics. FYI numbers come live from salarymap DB (the sheet FYI tab is stale). Cross-tab FYI matches by company+title; unmatched jobs appear as separate rows.',
-          'Số ứng viên tính unique theo kênh (một người ứng tuyển nhiều tin trong cùng kênh = 1). Ứng viên FYI không qua pipeline sàng lọc KTC nên không có chỉ số chất lượng. Số FYI lấy trực tiếp từ DB salarymap (tab FYI trên sheet đã lỗi thời). Cột FYI trong bảng chéo khớp theo công ty+chức danh; tin không khớp hiển thị thành dòng riêng.'
+          '지원자 수는 유니크 "사람" 기준 — 여러 공고 지원 시 1명, 여러 채널로 온 사람은 최초 유입 채널에만 귀속(ktc-support 동기화가 이메일 기준 전역 중복 제거). 그래서 시트 탭의 행 수(지원 건)보다 작음. FYI 지원자는 KTC 스크리닝 파이프라인에 안 태워져서 질 지표 없음. 시트의 FYI 탭은 갱신이 뒤처져 있어 사용하지 않고 salarymap DB에서 직접 집계. 크로스탭의 FYI는 회사·제목 매칭이라 일부 공고는 별도 행으로 나올 수 있음.',
+          'Counts are unique people — multiple applications = 1, and a person arriving via multiple channels is attributed to their first channel only (ktc-support dedups globally by email). Hence smaller than raw sheet row counts. FYI applicants are not run through the KTC screening pipeline, so no quality metrics. FYI numbers come live from salarymap DB (the sheet FYI tab is stale). Cross-tab FYI matches by company+title; unmatched jobs appear as separate rows.',
+          'Số ứng viên tính theo "người" unique — nhiều lượt nộp = 1, người đến từ nhiều kênh chỉ tính cho kênh đầu tiên (ktc-support khử trùng lặp toàn cục theo email). Vì vậy nhỏ hơn số dòng thô trên sheet. Ứng viên FYI không qua pipeline sàng lọc KTC nên không có chỉ số chất lượng. Số FYI lấy trực tiếp từ DB salarymap (tab FYI trên sheet đã lỗi thời). Cột FYI trong bảng chéo khớp theo công ty+chức danh; tin không khớp hiển thị thành dòng riêng.'
         )}
       </div>
     </div>
