@@ -1,4 +1,4 @@
-import { Fragment, useState } from 'react'
+import { Fragment, useState, useEffect } from 'react'
 import { useAdmin } from '../../lib/adminSwr'
 
 // KTC 소싱 채널 비교 — KTC 공고에 지원자를 모아준 채널별 볼륨/추이/질.
@@ -33,23 +33,32 @@ const CHANNEL_SOFT_COLORS = {
 const OTHER_GRAY = '#D9DEE4'
 
 // 채널 비중 도넛 (SVG). segs: [{key, n, color, label}], 12시 방향 시작 시계방향, 2px 갭.
-function Donut({ segs, total, centerTop, centerSub }) {
+function Donut({ segs, total, centerTop, centerSub, reveal }) {
   const R = 70, SW = 26, C = 2 * Math.PI * R
+  const SWEEP = 1.0 // 한 바퀴 도는 총 시간(초)
   let acc = 0
   return (
     <svg viewBox="0 0 200 200" width={188} height={188} role="img" style={{ flexShrink: 0 }}>
       {segs.map(s => {
         const frac = total > 0 ? s.n / total : 0
-        const len = Math.max(0, frac * C - 2)
+        const start = acc // 이 세그먼트가 시작하는 각도 비율(12시=0)
+        const realLen = Math.max(0, frac * C - 2)
         const offset = -acc * C
         acc += frac
-        if (len <= 0) return null
+        if (realLen <= 0) return null
+        const len = reveal ? realLen : 0 // reveal=false면 즉시 0(비움), true면 시계바늘이 지날 때 채워짐
+        // 시작 위치만큼 딜레이 + 자기 비중만큼 지속 → 세그먼트들이 이어져 한 바퀴 스윕.
+        // reveal=false(비우는 프레임)엔 트랜지션 없이 즉시 0으로 → 매 토글마다 0에서 새로 스윕.
+        const transition = reveal
+          ? `stroke-dasharray ${(Math.max(frac, 0.001) * SWEEP).toFixed(3)}s linear ${(start * SWEEP).toFixed(3)}s`
+          : 'none'
         return (
           <circle
             key={s.key} cx="100" cy="100" r={R} fill="none"
             stroke={s.color} strokeWidth={SW}
             strokeDasharray={`${len} ${C - len}`} strokeDashoffset={offset}
             transform="rotate(-90 100 100)"
+            style={{ transition }}
           >
             <title>{`${s.label}: ${s.n.toLocaleString()} (${total > 0 ? Math.round((s.n / total) * 100) : 0}%)`}</title>
           </circle>
@@ -75,6 +84,20 @@ export default function KtcSourcesView({ token, lang, dateRange }) {
   const [basis, setBasis] = useState('people') // 'people' 유니크 지원자 | 'apps' 지원 건(중복 포함)
   const [syncing, setSyncing] = useState(false)
   const [syncMsg, setSyncMsg] = useState(null)
+  const [reveal, setReveal] = useState(false) // 도넛 시계방향 스윕(0→값)
+
+  // 최초 로드 + 기준 토글마다: 0으로 비우고 다시 시계방향 스윕.
+  // 더블 rAF — 리셋(len 0, transition:none) 프레임을 브라우저가 확실히 반영한 뒤 스윕 시작
+  // (단일 rAF면 0 상태가 flush 안 돼 이전 값에서 스윕이 시작돼 "남아있는" 것처럼 보임)
+  useEffect(() => {
+    if (!data || data.error) return
+    setReveal(false)
+    let raf2
+    const raf1 = requestAnimationFrame(() => {
+      raf2 = requestAnimationFrame(() => setReveal(true))
+    })
+    return () => { cancelAnimationFrame(raf1); cancelAnimationFrame(raf2) }
+  }, [data, basis])
 
   async function runSync() {
     setSyncing(true)
@@ -209,6 +232,7 @@ export default function KtcSourcesView({ token, lang, dateRange }) {
               total={grandTotal}
               centerTop={grandTotal.toLocaleString()}
               centerSub={`FYI ${pct(fyiRow.n, grandTotal)}%`}
+              reveal={reveal}
             />
             <div style={{ flex: 1, minWidth: 220 }}>
               <div style={{ fontSize: 13.5, fontWeight: 700, color: '#0F172A', marginBottom: 10 }}>
@@ -257,7 +281,7 @@ export default function KtcSourcesView({ token, lang, dateRange }) {
                 <td style={{ padding: '9px 10px' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                     <div style={{ flex: 1, height: 8, background: '#F1F5F9', borderRadius: 4, overflow: 'hidden', minWidth: 60 }}>
-                      <div style={{ width: `${(r.n / maxTotal) * 100}%`, height: '100%', background: r.isFyi ? FYI_COLOR : '#2563EB', borderRadius: 4 }} />
+                      <div style={{ width: reveal ? `${(r.n / maxTotal) * 100}%` : '0%', height: '100%', background: r.isFyi ? FYI_COLOR : '#2563EB', borderRadius: 4, transition: reveal ? 'width 0.7s cubic-bezier(0.22, 1, 0.36, 1)' : 'none' }} />
                     </div>
                     <span style={{ fontSize: 11.5, color: '#6B7280', width: 34, textAlign: 'right' }}>{pct(r.n, grandTotal)}%</span>
                   </div>
@@ -376,6 +400,66 @@ export default function KtcSourcesView({ token, lang, dateRange }) {
           {showAllJobs ? L('▾ 접기', '▾ Collapse', '▾ Thu gọn') : ko ? `▸ 전체 ${jobs.length}개 공고 보기` : `▸ ${L('', 'Show all', 'Xem tất cả')} ${jobs.length} ${L('', 'jobs', 'tin')}`}
         </button>
       )}
+
+      {/* 랜딩 유입 상세 — ktc-landing DB 라이브 (UTM 소스/캠페인/랜딩 내 위치 × 월) */}
+      {data.landing && (() => {
+        const breakdownTable = (title, rows) => {
+          const TOP = 8
+          const top = rows.slice(0, TOP)
+          const rest = rows.slice(TOP)
+          const restRow = rest.length > 0 && {
+            key: `(${L('기타', 'other', 'khác')} ${rest.length})`,
+            total: rest.reduce((s, r) => s + r.total, 0),
+            months: rest.reduce((acc, r) => { for (const [m, n] of Object.entries(r.months)) acc[m] = (acc[m] || 0) + n; return acc }, {}),
+          }
+          const shown = restRow ? [...top, restRow] : top
+          return (
+            <div style={{ flex: 1, minWidth: 300 }}>
+              <div style={{ fontSize: 12.5, fontWeight: 700, color: '#475569', marginBottom: 8 }}>{title}</div>
+              <div className="adm-m-scroll adm-m-nowrap" style={{ border: '1px solid #E5E8EB', borderRadius: 12, overflow: 'hidden' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12.5 }}>
+                  <thead>
+                    <tr style={{ background: '#F8FAFC', color: '#475569' }}>
+                      {th('', 'left', { paddingLeft: 12 })}
+                      {shownMonths.map(m => th(monthLabel(m)))}
+                      {th(L('합계', 'Total', 'Tổng'), 'right', { paddingRight: 12 })}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {shown.map(r => (
+                      <tr key={r.key} style={{ borderTop: '1px solid #F1F5F9' }}>
+                        <td style={{ padding: '7px 10px 7px 12px', fontWeight: 600, color: r.key === '(direct)' ? '#9CA3AF' : '#191F28' }}>{r.key}</td>
+                        {shownMonths.map(m => (
+                          <td key={m} style={{ padding: '7px 10px', textAlign: 'right', color: (r.months[m] || 0) > 0 ? '#374151' : '#DDE1E6', fontVariantNumeric: 'tabular-nums' }}>{r.months[m] || 0}</td>
+                        ))}
+                        <td style={{ padding: '7px 12px 7px 10px', textAlign: 'right', fontWeight: 700, color: '#0F172A', fontVariantNumeric: 'tabular-nums' }}>{r.total.toLocaleString()}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )
+        }
+        return (
+          <div style={{ marginTop: 26 }}>
+            <h4 style={{ fontSize: 14.5, fontWeight: 700, margin: '0 0 4px' }}>
+              {L('랜딩 유입 상세', 'Landing traffic detail', 'Chi tiết nguồn landing')}
+              <span style={{ fontSize: 11.5, fontWeight: 500, color: '#9CA3AF', marginLeft: 8 }}>
+                {L(`지원 ${data.landing.total.toLocaleString()}건 · ktc-landing DB 라이브`, `${data.landing.total.toLocaleString()} applications · live from ktc-landing DB`, `${data.landing.total.toLocaleString()} lượt nộp · trực tiếp từ DB`)}
+              </span>
+            </h4>
+            <div style={{ fontSize: 11.5, color: '#9CA3AF', marginBottom: 12 }}>
+              {L('(direct) = UTM 없이 들어온 지원. 마케팅 캠페인별 지원 귀속 — 광고비 붙이면 CPA 산출 가능.', '(direct) = no UTM. Marketing attribution per campaign — add spend to get CPA.', '(direct) = không có UTM. Quy nguồn theo chiến dịch marketing.')}
+            </div>
+            <div className="adm-m-wrap" style={{ display: 'flex', gap: 14, alignItems: 'flex-start', flexWrap: 'wrap' }}>
+              {breakdownTable(L('UTM 소스', 'UTM source', 'Nguồn UTM'), data.landing.utmSources)}
+              {breakdownTable(L('캠페인', 'Campaign', 'Chiến dịch'), data.landing.campaigns)}
+              {breakdownTable(L('랜딩 내 위치', 'Page source', 'Vị trí trên landing'), data.landing.pageSources)}
+            </div>
+          </div>
+        )
+      })()}
 
       <div style={{ fontSize: 11, color: '#9CA3AF', marginTop: 14, lineHeight: 1.6 }}>
         {L(

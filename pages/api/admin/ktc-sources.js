@@ -215,6 +215,42 @@ export default async function handler(req, res) {
       }
     }
 
+    // ---- 랜딩 유입 상세 (ktc-landing DB 라이브): UTM 소스/캠페인/랜딩 내 위치 × 월 ----
+    let landing = null
+    if (process.env.KTC_LANDING_SUPABASE_URL && process.env.KTC_LANDING_SUPABASE_SERVICE_ROLE_KEY) {
+      const landingDb = createClient(process.env.KTC_LANDING_SUPABASE_URL, process.env.KTC_LANDING_SUPABASE_SERVICE_ROLE_KEY, {
+        auth: { autoRefreshToken: false, persistSession: false },
+      })
+      const apps = []
+      for (let off = 0; ; off += 1000) {
+        const { data, error } = await landingDb
+          .from('applications')
+          .select('source, utm_source, utm_campaign, created_at')
+          .range(off, off + 999)
+        if (error) throw error
+        apps.push(...data)
+        if (data.length < 1000) break
+      }
+      const inScope = apps.filter(a => !filtering || inRange(a.created_at))
+      const agg = (field) => {
+        const map = {}
+        for (const a of inScope) {
+          const k = (a[field] || '').trim() || '(direct)'
+          const e = map[k] || (map[k] = { key: k, total: 0, months: {} })
+          e.total++
+          const m = toVNMonth(a.created_at)
+          e.months[m] = (e.months[m] || 0) + 1
+        }
+        return Object.values(map).sort((a, b) => b.total - a.total)
+      }
+      landing = {
+        total: inScope.length,
+        utmSources: agg('utm_source'),
+        campaigns: agg('utm_campaign'),
+        pageSources: agg('source'),
+      }
+    }
+
     const platformList = Object.values(platforms).sort((a, b) => b.total - a.total)
     const monthSet = new Set(Object.keys(fyiMonths))
     for (const p of platformList) Object.keys(p.months).forEach(m => monthSet.add(m))
@@ -234,6 +270,7 @@ export default async function handler(req, res) {
         appsTotal: appsTotal || 0, appsMonths: appsMonths || {},
       })),
       hasApplications: applications.length > 0,
+      landing,
       fyi: {
         total: fyiAll.size,
         applications: fyiApps.length,
