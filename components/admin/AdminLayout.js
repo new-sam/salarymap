@@ -27,6 +27,7 @@ function buildNav(lang) {
         { label: L('커뮤니티', 'Community'), pathname: '/admin/dashboard', tab: 'community' },
         { label: L('기업', 'Companies'), pathname: '/admin/dashboard', tab: 'company' },
         { label: L('이익 지원', 'Revenue'), pathname: '/admin/dashboard', tab: 'revenue' },
+        { label: L('KTC 소싱', 'KTC sources'), pathname: '/admin/dashboard', tab: 'ktc-sources' },
       ],
     },
     {

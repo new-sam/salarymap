@@ -14,6 +14,7 @@ import ApplicationsView from '../../components/admin/ApplicationsView'
 import ResumesView from '../../components/admin/ResumesView'
 import TalentPoolView from '../../components/admin/TalentPoolView'
 import TalentSupplyView from '../../components/admin/TalentSupplyView'
+import KtcSourcesView from '../../components/admin/KtcSourcesView'
 import VerificationsView from '../../components/admin/VerificationsView'
 import CommunityView from '../../components/admin/CommunityView'
 import CompanyView from '../../components/admin/CompanyView'
@@ -999,6 +1000,11 @@ export default function AdminDashboard() {
         {/* Revenue Tab — 이익 지원 (기업 등록 공고 + KTC 시드 공고) */}
         {tab === 'revenue' && (
           <RevenueView token={token} lang={lang} />
+        )}
+
+        {/* KTC 소싱 채널 비교 — FYI vs 타 플랫폼(ITviec/LinkedIn/…) 지원자 확보량·질 */}
+        {tab === 'ktc-sources' && (
+          <KtcSourcesView token={token} lang={lang} />
         )}
 
         {/* App Metrics Tab */}
