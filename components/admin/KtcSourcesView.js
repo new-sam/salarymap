@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { Fragment, useState } from 'react'
 import { useAdmin } from '../../lib/adminSwr'
 
 // KTC 소싱 채널 비교 — KTC 공고에 지원자를 모아준 채널별 볼륨/추이/질.
@@ -32,6 +32,7 @@ export default function KtcSourcesView({ token, lang }) {
   }
   const { data, isLoading, mutate } = useAdmin('/api/admin/ktc-sources', token)
   const [showAllJobs, setShowAllJobs] = useState(false)
+  const [openJobs, setOpenJobs] = useState({}) // 공고 행 펼침 (채널×월 상세)
   const [syncing, setSyncing] = useState(false)
   const [syncMsg, setSyncMsg] = useState(null)
 
@@ -84,6 +85,7 @@ export default function KtcSourcesView({ token, lang }) {
   )
 
   const jobRows = showAllJobs ? jobs : jobs.slice(0, 25)
+  const monthLabel = (m) => (ko ? `${+m.slice(5)}월` : lang === 'vi' ? `T${+m.slice(5)}` : `${+m.slice(5)}/${m.slice(2, 4)}`)
 
   return (
     <div style={{ paddingBottom: 40 }}>
@@ -172,22 +174,71 @@ export default function KtcSourcesView({ token, lang }) {
             {jobRows.map((j, i) => {
               const mainSum = MAIN_PLATFORMS.reduce((s, p) => s + (j.byPlatform[p] || 0), 0)
               const other = j.total - j.fyi - mainSum
+              const rowKey = j.code || `${j.company}-${j.label}`
+              const open = !!openJobs[rowKey]
+              // 펼침 상세: FYI 먼저, 나머지 채널은 볼륨순
+              const detailChans = [
+                ...(j.fyi > 0 ? [{ key: 'FYI', total: j.fyi }] : []),
+                ...Object.entries(j.byPlatform).sort((a, b) => b[1] - a[1]).map(([key, total]) => ({ key, total })),
+              ]
+              const colSpan = MAIN_PLATFORMS.length + 4
               return (
-                <tr key={i} style={{ borderTop: '1px solid #F1F5F9' }}>
-                  <td style={{ padding: '9px 10px 9px 14px', maxWidth: 340 }}>
-                    <div style={{ fontWeight: 600, color: '#0F172A', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={j.label}>
-                      {j.code && <span style={{ color: '#6B7280', fontWeight: 700, marginRight: 6 }}>{j.code}</span>}
-                      {j.label}
-                    </div>
-                    {j.company && <div style={{ fontSize: 11, color: '#9CA3AF' }}>{j.company}</div>}
-                  </td>
-                  <td style={{ padding: '9px 10px', textAlign: 'right', fontWeight: 700, color: j.fyi > 0 ? FYI_COLOR : '#E5E8EB' }}>{j.fyi || 0}</td>
-                  {MAIN_PLATFORMS.map(p => (
-                    <td key={p} style={{ padding: '9px 10px', textAlign: 'right', color: (j.byPlatform[p] || 0) > 0 ? '#374151' : '#E5E8EB' }}>{j.byPlatform[p] || 0}</td>
-                  ))}
-                  <td style={{ padding: '9px 10px', textAlign: 'right', color: other > 0 ? '#374151' : '#E5E8EB' }}>{other}</td>
-                  <td style={{ padding: '9px 14px 9px 10px', textAlign: 'right', fontWeight: 700, color: '#0F172A' }}>{j.total}</td>
-                </tr>
+                <Fragment key={rowKey}>
+                  <tr
+                    onClick={() => setOpenJobs(o => ({ ...o, [rowKey]: !o[rowKey] }))}
+                    style={{ borderTop: '1px solid #F1F5F9', cursor: 'pointer', background: open ? '#FAFBFC' : undefined }}
+                  >
+                    <td style={{ padding: '9px 10px 9px 14px', maxWidth: 340 }}>
+                      <div style={{ fontWeight: 600, color: '#0F172A', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={j.label}>
+                        <span style={{ color: '#9CA3AF', fontSize: 10, marginRight: 6 }}>{open ? '▾' : '▸'}</span>
+                        {j.label}
+                      </div>
+                      <div style={{ fontSize: 11, color: '#9CA3AF', paddingLeft: 16 }}>
+                        {[j.company, j.code].filter(Boolean).join(' · ')}
+                      </div>
+                    </td>
+                    <td style={{ padding: '9px 10px', textAlign: 'right', fontWeight: 700, color: j.fyi > 0 ? FYI_COLOR : '#E5E8EB' }}>{j.fyi || 0}</td>
+                    {MAIN_PLATFORMS.map(p => (
+                      <td key={p} style={{ padding: '9px 10px', textAlign: 'right', color: (j.byPlatform[p] || 0) > 0 ? '#374151' : '#E5E8EB' }}>{j.byPlatform[p] || 0}</td>
+                    ))}
+                    <td style={{ padding: '9px 10px', textAlign: 'right', color: other > 0 ? '#374151' : '#E5E8EB' }}>{other}</td>
+                    <td style={{ padding: '9px 14px 9px 10px', textAlign: 'right', fontWeight: 700, color: '#0F172A' }}>{j.total}</td>
+                  </tr>
+                  {open && (
+                    <tr style={{ background: '#FAFBFC' }}>
+                      <td colSpan={colSpan} style={{ padding: '0 14px 12px' }}>
+                        <table style={{ borderCollapse: 'collapse', fontSize: 12.5, marginLeft: 16 }}>
+                          <thead>
+                            <tr style={{ color: '#9CA3AF' }}>
+                              <th style={{ textAlign: 'left', padding: '6px 18px 4px 0', fontWeight: 600 }}>{L('채널', 'Channel', 'Kênh')}</th>
+                              {shownMonths.map(m => (
+                                <th key={m} style={{ textAlign: 'right', padding: '6px 0 4px 18px', fontWeight: 600 }}>{monthLabel(m)}</th>
+                              ))}
+                              <th style={{ textAlign: 'right', padding: '6px 0 4px 18px', fontWeight: 600 }}>{L('합계', 'Total', 'Tổng')}</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {detailChans.map(c => {
+                              const pm = j.platformMonths?.[c.key] || {}
+                              const isFyi = c.key === 'FYI'
+                              return (
+                                <tr key={c.key} style={{ borderTop: '1px solid #F1F5F9' }}>
+                                  <td style={{ padding: '5px 18px 5px 0', fontWeight: isFyi ? 700 : 500, color: isFyi ? FYI_COLOR : '#4E5968', whiteSpace: 'nowrap' }}>{label(c.key)}</td>
+                                  {shownMonths.map(m => (
+                                    <td key={m} style={{ padding: '5px 0 5px 18px', textAlign: 'right', color: (pm[m] || 0) > 0 ? (isFyi ? FYI_COLOR : '#374151') : '#D8DDE3', fontWeight: isFyi && pm[m] > 0 ? 600 : 400 }}>
+                                      {pm[m] || 0}
+                                    </td>
+                                  ))}
+                                  <td style={{ padding: '5px 0 5px 18px', textAlign: 'right', fontWeight: 700, color: isFyi ? FYI_COLOR : '#191F28' }}>{c.total}</td>
+                                </tr>
+                              )
+                            })}
+                          </tbody>
+                        </table>
+                      </td>
+                    </tr>
+                  )}
+                </Fragment>
               )
             })}
           </tbody>

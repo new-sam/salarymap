@@ -56,7 +56,7 @@ export default async function handler(req, res) {
 
   try {
     const [candidates, ktcJobs] = await Promise.all([
-      fetchAll('ktc_candidates', 'sheet_source, applied_company, applied_job, job_code, applied_at, pipeline_status, synced_at'),
+      fetchAll('ktc_candidates', 'sheet_source, applied_company, applied_job, position, job_code, applied_at, pipeline_status, synced_at'),
       fetchAll('jobs', 'id, title, company, is_active', q => q.eq('source', 'ktc')),
     ])
     const jobIds = ktcJobs.map(j => j.id)
@@ -70,14 +70,17 @@ export default async function handler(req, res) {
     fyiApps = fyiApps.filter(a => !isExcludedApplication(a))
 
     // ---- FYI 라이브: 공고별 유니크 지원자 (타 플랫폼과 동일 기준) ----
-    const fyiByJob = {}   // job_id → Set(지원자 키)
-    const fyiMonths = {}  // month → Set(지원자 키) — 플랫폼 표의 월별 유니크
+    const fyiByJob = {}       // job_id → Set(지원자 키)
+    const fyiMonths = {}      // month → Set(지원자 키) — 플랫폼 표의 월별 유니크
+    const fyiJobMonths = {}   // job_id → { month → Set(지원자 키) } — 공고 표의 월별
     const fyiAll = new Set()
     for (const a of fyiApps) {
       const who = (a.applicant_email || '').toLowerCase() || a.user_id || `${a.job_id}-anon`
       ;(fyiByJob[a.job_id] || (fyiByJob[a.job_id] = new Set())).add(who)
       const m = toVNMonth(a.created_at)
       ;(fyiMonths[m] || (fyiMonths[m] = new Set())).add(who)
+      const jm = fyiJobMonths[a.job_id] || (fyiJobMonths[a.job_id] = {})
+      ;(jm[m] || (jm[m] = new Set())).add(who)
       fyiAll.add(who)
     }
 
@@ -104,14 +107,24 @@ export default async function handler(req, res) {
       const key = c.job_code || (c.applied_job ? `t:${canonCompany(c.applied_company)}:${normTitle(c.applied_job)}` : null)
       if (!key) continue
       const r = jobRows[key] || (jobRows[key] = {
-        code: c.job_code, label: null, company: null, byPlatform: {}, fyi: 0, total: 0,
-        _labels: {}, _companies: {}, _normTitles: new Set(),
+        code: c.job_code, label: null, company: null, byPlatform: {}, fyi: 0, total: 0, months: {}, platformMonths: {},
+        _labels: {}, _positions: {}, _companies: {}, _normTitles: new Set(),
       })
       r.byPlatform[c.sheet_source] = (r.byPlatform[c.sheet_source] || 0) + 1
       r.total++
+      if (c.applied_at) {
+        const m = toVNMonth(c.applied_at)
+        r.months[m] = (r.months[m] || 0) + 1
+        const pm = r.platformMonths[c.sheet_source] || (r.platformMonths[c.sheet_source] = {})
+        pm[m] = (pm[m] || 0) + 1
+      }
       if (c.applied_job) {
         r._labels[c.applied_job] = (r._labels[c.applied_job] || 0) + 1
         r._normTitles.add(normTitle(c.applied_job.replace(/^[A-Z]{2,6}\d{3,4}\s*[-:._]*\s*/, '')))
+      }
+      if (c.position) {
+        r._positions[c.position] = (r._positions[c.position] || 0) + 1
+        r._normTitles.add(normTitle(c.position))
       }
       if (c.applied_company) {
         const canon = canonCompany(c.applied_company)
@@ -120,8 +133,11 @@ export default async function handler(req, res) {
       }
     }
     for (const r of Object.values(jobRows)) {
+      // 제목: applied_job 최빈값에서 코드 접두 제거 → 비면 position 최빈값 → 최후에 코드
       const top = Object.entries(r._labels).sort((a, b) => b[1] - a[1])[0]
-      r.label = top ? top[0] : r.code
+      const cleaned = top ? top[0].replace(/^[A-Z]{2,6}\d{3,4}\s*[-:._]*\s*/, '').trim() : ''
+      const topPos = Object.entries(r._positions).sort((a, b) => b[1] - a[1])[0]
+      r.label = cleaned || (topPos ? topPos[0] : r.code)
       // 지배적 회사만 채택 — 소수 오입력(다른 회사 1~2건)이 매칭을 오염시키지 않도록
       const topComp = Object.entries(r._companies).sort((a, b) => b[1].count - a[1].count)[0]
       r._canonCompany = topComp ? topComp[0] : null
@@ -136,6 +152,11 @@ export default async function handler(req, res) {
       const target = Object.values(jobRows).find(o => o.code && o._canonCompany === r._canonCompany && titlesOverlap(o, r))
       if (!target) continue
       for (const [p, n] of Object.entries(r.byPlatform)) target.byPlatform[p] = (target.byPlatform[p] || 0) + n
+      for (const [m, n] of Object.entries(r.months)) target.months[m] = (target.months[m] || 0) + n
+      for (const [p, pm] of Object.entries(r.platformMonths)) {
+        const t = target.platformMonths[p] || (target.platformMonths[p] = {})
+        for (const [m, n] of Object.entries(pm)) t[m] = (t[m] || 0) + n
+      }
       target.total += r.total
       r._normTitles.forEach(t => target._normTitles.add(t))
       delete jobRows[key]
@@ -152,11 +173,15 @@ export default async function handler(req, res) {
         r._canonCompany === jc &&
         [...r._normTitles].some(t => t && jt && (t.includes(jt) || jt.includes(t)))
       )
+      const jm = Object.fromEntries(Object.entries(fyiJobMonths[j.id] || {}).map(([m, s]) => [m, s.size]))
       if (hit) {
         hit.fyi += n
         hit.total += n
+        for (const [m, c] of Object.entries(jm)) hit.months[m] = (hit.months[m] || 0) + c
+        const pm = hit.platformMonths.FYI || (hit.platformMonths.FYI = {})
+        for (const [m, c] of Object.entries(jm)) pm[m] = (pm[m] || 0) + c
       } else {
-        unmatched.push({ code: null, label: j.title, company: j.company, byPlatform: {}, fyi: n, total: n })
+        unmatched.push({ code: null, label: j.title, company: j.company, byPlatform: {}, fyi: n, total: n, months: jm, platformMonths: { FYI: jm } })
       }
     }
 
@@ -166,7 +191,7 @@ export default async function handler(req, res) {
     const months = [...monthSet].sort()
 
     const jobList = [...Object.values(jobRows), ...unmatched]
-      .map(({ _labels, _companies, _normTitles, _canonCompany, ...r }) => r)
+      .map(({ _labels, _positions, _companies, _normTitles, _canonCompany, ...r }) => r)
       .sort((a, b) => b.total - a.total)
 
     const syncedAt = candidates.reduce((mx, c) => (c.synced_at > mx ? c.synced_at : mx), '')
