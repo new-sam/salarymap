@@ -149,6 +149,70 @@ const L = {
     osTitle: 'OS Breakdown', verTitle: 'App Version Breakdown (release cohort)',
     count: '', noData: 'No data',
   },
+  vi: {
+    loading: 'Đang tải chỉ số ứng dụng...', empty: 'Chưa có dữ liệu sự kiện ứng dụng.',
+    metaLine: (m) => `Phạm vi: ${m.from} ~ ${m.to} · ${m.rangeEvents.toLocaleString()} sự kiện trong kỳ (tổng ${m.totalAppEvents.toLocaleString()} sự kiện app, từ ${m.appEventStart})`,
+    webPromoTitle: 'Web → Gợi ý tải app (modal web)',
+    webPromoCtr: 'CTR nút tải xuống', webPromoCtrSub: 'Trong số người thấy modal, đã đi tới store',
+    webPromoImp: 'Lượt hiển thị modal', webPromoClick: 'Lượt nhấn tải xuống',
+    cpp: 'Trả lời mỗi bài',
+    tabs: { overview: 'Tổng quan', retention: 'Giữ chân', users: 'Người dùng', community: 'Cộng đồng', conversion: 'Chuyển đổi', push: 'Push', segments: 'Phân khúc', reports: 'Báo cáo/Phản hồi' },
+    grpRetention: 'Giữ chân & Tăng trưởng', grpCommunity: 'Cộng đồng', grpConversion: 'Chuyển đổi',
+    ovTitle: 'Chỉ số chính', ovD7: 'Giữ chân D7', ovStick: 'Độ gắn bó (DAU/MAU)', ovWau: 'WAU', ovMau: 'MAU',
+    ovNew: 'Người dùng mới (kỳ)', ovAct: 'Chuyển đổi kích hoạt', ovQr: 'Quick Ratio (tuần gần nhất)', ovCpp: 'Trả lời/bài',
+    ovSalary: 'Lượt gửi lương', ovApply: 'Ứng tuyển hoàn tất', ovResume: 'Lượt nộp CV', ovResumePublic: 'CV chuyển công khai', ovCumSub: 'app · lũy kế', ovPush: 'Quay lại từ Push', ovPower: 'Power user (2 ngày+)',
+    ovPostsRead: 'Bài đọc / người xem', ovDwell: 'Thời gian ở cộng đồng', ovDwellSub: 'mỗi lượt truy cập', ovPerReaderSub: 'số bài trung bình',
+    ovAppDwell: 'Thời gian dùng app', ovAppDwellSub: 'mỗi lần mở (toàn app)',
+    ovCurveTitle: 'Đường cong giữ chân (D0–D14)', ovGrowthTitle: 'Phân tích WAU theo tuần',
+    tsNewRet: 'Mới vs Quay lại (theo ngày)', tsConvert: 'Xu hướng chuyển đổi chính (theo ngày)', tsCommunity: 'Hoạt động cộng đồng (theo ngày)',
+    tsJobs: 'Phễu tuyển dụng (theo ngày)', tsPush: 'Push (theo ngày)',
+    stickTitle: 'Độ gắn bó (mật độ tương tác)', dauMau: 'DAU/MAU', wauMau: 'WAU/MAU', avgDau: 'DAU trung bình',
+    stickNote: 'DAU/MAU = người dùng hoạt động mở app bao nhiêu ngày mỗi tháng. 20%+ = đã hình thành thói quen (1.4 lần/tuần+).',
+    curveTitle: 'Đường cong giữ chân không giới hạn', curveNote: 'Tỷ lệ còn hoạt động vào ngày N sau khi cài. Điểm đường cong đi ngang = nhóm trung thành. Giảm mạnh ở D1 rồi đi ngang là bình thường.',
+    growthTitle: 'Hạch toán tăng trưởng (WAU theo tuần)',
+    gwWeek: 'Tuần', gwNew: 'Mới', gwRet: 'Duy trì', gwRes: 'Hồi sinh', gwChurn: 'Rời bỏ', gwWau: 'WAU', gwQr: 'Quick Ratio',
+    growthNote: 'WAU = mới + duy trì + hồi sinh. Quick Ratio = (mới + hồi sinh)/rời bỏ. >1 là tăng trưởng, <1 là thu hẹp. (Càng nhiều dữ liệu càng chính xác)',
+    actTitle: 'Phễu kích hoạt người dùng mới', actSub: (w, n) => `Hành động trong ${w} ngày đầu · cohort ${n} người`,
+    actSignup: 'Đăng ký mới', actView: 'Khám phá cốt lõi', actEngage: 'Khám phá tích cực', actConvert: 'Hành động chính',
+    actNote: 'Vài ngày đầu sau khi cài quyết định việc giữ chân. Tỷ lệ đạt tới hành động chính (lương/ứng tuyển/đăng bài/CV) = kích hoạt.',
+    powerTitle: 'Độ sâu tương tác (đường cong power user)', powerSub: 'Phân bố số ngày hoạt động trong kỳ', powerDays: (d) => `${d} ngày`,
+    powerNote: 'Càng nhiều ngày hoạt động càng là power user. Nếu đa số chỉ xuất hiện 1 ngày = lưu lượng ghé qua một lần.',
+    featTitle: 'Tỷ lệ sử dụng tính năng', featSub: (n) => `trên ${n} người dùng hoạt động`, featCombo: 'Phân bố số tính năng đã dùng', featComboItem: (n) => `${n} tính năng`,
+    featNote: 'Tỷ lệ người dùng hoạt động từng dùng mỗi tính năng ít nhất một lần. Người dùng nhiều tính năng giữ chân tốt hơn.',
+    dau: 'DAU (ngày gần nhất)', wau: 'WAU (7 ngày)', mau: 'MAU (30 ngày)',
+    cohortTitle: 'Giữ chân cohort theo tuần (theo client_id)', week: 'Tuần đăng ký', users: 'Người dùng',
+    cohortNote: '* Theo thiết bị ẩn danh bền vững (client_id). Cài lại app sẽ cấp ID mới (cùng người bị tính là mới). Người dùng đã đăng nhập được bổ sung bằng user_id.',
+    dauTitle: 'Người dùng hoạt động theo ngày (mới/quay lại)', newU: 'Mới', retU: 'Quay lại',
+    funnelTitle: 'Phễu tương tác cộng đồng', funnelUserNote: '(ngoặc) = số người dùng (client_id) đạt tới',
+    fView: 'Vào trang', fClick: 'Nhấn bài viết', fViewPost: 'Xem chi tiết', fEngage: 'Tương tác nhẹ', fCreate: 'Đăng bài',
+    ctr: 'CTR bài viết', engageRate: 'Tỷ lệ tương tác', writeConv: 'Tỷ lệ đăng bài',
+    supplyTitle: 'Nguồn cung nội dung & sức khỏe', posts: 'Bài viết mới', comments: 'Bình luận mới',
+    anonPost: 'Tỷ lệ bài ẩn danh', anonComment: 'Tỷ lệ bình luận ẩn danh',
+    roles: 'Người viết / Người phản hồi / Người xem (quy tắc 1%)', creators: 'Người viết', reactors: 'Người phản hồi', viewers: 'Người xem',
+    depthTitle: 'Độ sâu tiêu thụ (mỗi người đọc và ở lại bao nhiêu)',
+    ppReader: 'Bài đọc / người xem', ppReaderSub: 'Trung bình · theo bài viết khác nhau',
+    dwellAvg: 'Thời gian ở lại trung bình', dwellSub: 'Tổng thời gian ở cộng đồng mỗi lượt truy cập (phiên)', medianTag: 'Trung vị', perView: 'mỗi màn hình',
+    dwellEmpty: 'Thu thập từ khi phát hành bản app mới',
+    catTitle: 'Insight danh mục & tìm kiếm', catViewed: 'Danh mục được xem (xem chi tiết)', searches: 'Từ khóa tìm kiếm hàng đầu',
+    jobsTitle: 'Phễu ứng tuyển', jView: 'Vào mục tuyển dụng', jCard: 'Xem tin tuyển dụng', jApply: 'Thử ứng tuyển', jSubmit: 'Ứng tuyển hoàn tất',
+    viewRate: 'Tỷ lệ xem', applyRate: 'Tỷ lệ thử ứng tuyển', submitRate: 'Tỷ lệ hoàn tất', saveRate: 'Tỷ lệ lưu',
+    submitLeak: '↑ điểm rò rỉ do cổng đăng nhập/CV',
+    salaryTitle: 'Gửi lương (chuyển đổi cốt lõi của app)', salaryCount: 'Số lượt gửi', salaryUsers: 'Người gửi (duy nhất)',
+    byRole: 'Theo vị trí', byExp: 'Theo kinh nghiệm',
+    resumeTitle: 'Tải lên CV', resumeUploads: 'Lượt tải lên', resumeUsers: 'Người tải lên', uploadToApply: 'Chuyển đổi tải lên→ứng tuyển',
+    resumePublic: 'Chuyển công khai', resumePublicSub: 'Công khai cho doanh nghiệp · app, lũy kế',
+    cardTitle: 'Danh thiếp số (chia sẻ & mở khóa)', cardView: 'Lượt xem danh thiếp', cardOpenDesign: 'Vào trang thiết kế',
+    cardShare: 'Lượt chia sẻ danh thiếp', cardShareSub: 'tổng ảnh + văn bản + liên kết', cardShareUnlock: 'Chia sẻ để mở khóa', cardUnlock: 'Thiết kế đã mở khóa',
+    cardSave: 'Lượt lưu thiết kế', cardDesignRate: 'Xem→thiết kế', cardUnlockRate: 'Chia sẻ mở khóa→mở khóa',
+    cardByMethod: 'Theo cách chia sẻ', cardTsTitle: 'Hoạt động danh thiếp (theo ngày)',
+    reviewTitle: 'Yêu cầu đánh giá App Store', reviewCount: 'Số lần gọi yêu cầu', reviewUsers: 'Người dùng được hỏi (duy nhất)',
+    reviewRate: 'Tỷ lệ hiển thị so với người gửi', reviewByTrigger: 'Theo trigger',
+    reviewNote: '⚠ Do đặc thù SKStoreReviewController, chỉ đo được đến lời gọi requestReview(). Việc thẻ đánh giá có hiển thị hay người dùng có chấm sao do OS kiểm soát, không biết được ở đây (xem trong App Store Connect). Bị giới hạn 1 lần mỗi phiên bản · cách 60 ngày · tối đa 3 lần trọn đời nên lời gọi hiếm khi xảy ra.',
+    pushTitle: 'Push (động cơ tái tương tác)', pushSent: 'Đã gửi', pushCtr: 'CTR (nhấn/gửi)', pushClicks: 'Lượt nhấn (quay lại)', pushClickUsers: 'Người nhấn', pushReceived: 'Đã nhận (foreground)',
+    pushByCat: 'Lượt nhấn theo loại Push', pushNote: '⚠ CTR = nhấn/gửi. Số lượt gửi lấy từ log gửi phía server (push_sent), tích lũy từ thời điểm triển khai (các lần gửi trước không nằm trong mẫu số). "Đã nhận" chỉ ghi được khi app đang mở (giới hạn của OS).',
+    osTitle: 'Phân bố OS', verTitle: 'Phân bố phiên bản app (cohort phát hành)',
+    count: '', noData: 'Không có dữ liệu',
+  },
 }
 
 // 초 → "1m 23s" / "45s" 사람이 읽기 편한 표기.
@@ -222,7 +286,7 @@ function TsCard({ title, sub, data, metrics, lang, dualAxis = false, chartKey, o
     <div style={{ ...chartCard, cursor: onOpen ? 'pointer' : 'default' }} onClick={onOpen ? () => onOpen(chartKey) : undefined}>
       <h4 style={chartCardTitle}>{title}</h4>
       {sub && <div style={chartCardSub}>{sub}</div>}
-      <MetricChart daily={aggregateBy(data, metrics, 'day')} metrics={metrics} lang={lang} dualAxis={dualAxis} lineType="linear" dots={false} avgLabel={lang === 'en' ? 'avg' : '평균'} />
+      <MetricChart daily={aggregateBy(data, metrics, 'day')} metrics={metrics} lang={lang} dualAxis={dualAxis} lineType="linear" dots={false} avgLabel={lang === 'vi' ? 'TB' : lang === 'en' ? 'avg' : '평균'} />
       <ChartLegend metrics={metrics} />
     </div>
   )
@@ -301,7 +365,7 @@ function ChartDetail({ title, data, metrics, lang, onBack }) {
         </div>
       </div>
       <div style={{ ...chartCard, marginBottom: 16 }}>
-        <MetricChart daily={view} metrics={metrics} lang={lang} lineType="linear" dots={false} avgLabel={lang === 'en' ? 'avg' : '평균'} />
+        <MetricChart daily={view} metrics={metrics} lang={lang} lineType="linear" dots={false} avgLabel={lang === 'vi' ? 'TB' : lang === 'en' ? 'avg' : '평균'} />
         <ChartLegend metrics={metrics} />
       </div>
       <div style={{ ...chartCard, overflowX: 'auto' }}>
@@ -383,7 +447,7 @@ function clampToStart(rows, start) {
 }
 
 export default function AppMetricsView({ token, dateRange, lang }) {
-  const t = L[lang === 'en' ? 'en' : 'ko']
+  const t = L[lang] || L.ko
   // 종료일이 기본값(어제)이면 오늘까지 포함해 조회한다 → 어제까지는 완결 집계,
   // 오늘은 30초 폴링으로 갱신되는 실시간 부분일로 함께 보인다.
   // (사용자가 과거 종료일을 직접 고른 경우엔 그 선택을 존중)

@@ -15,26 +15,26 @@ const statusStyle = (s) => STATUS_STYLE[s] || STATUS_STYLE.applied
 
 // 지원 상태 라벨 (토글 언어). pending = 초기/미확인 상태.
 const STATUS_LABEL = {
-  pending:   { ko: '지원 완료',  en: 'Applied' }, // DB 초기 기본값 — applied 와 동일 취급
-  applied:   { ko: '지원 완료',  en: 'Applied' },
-  viewed:    { ko: '열람',      en: 'Viewed' },
-  reviewing: { ko: '검토중',    en: 'Reviewing' },
-  accepted:  { ko: '합격',      en: 'Accepted' },
-  rejected:  { ko: '불합격',    en: 'Rejected' },
+  pending:   { ko: '지원 완료',  en: 'Applied',   vi: 'Đã ứng tuyển' }, // DB 초기 기본값 — applied 와 동일 취급
+  applied:   { ko: '지원 완료',  en: 'Applied',   vi: 'Đã ứng tuyển' },
+  viewed:    { ko: '열람',      en: 'Viewed',    vi: 'Đã xem' },
+  reviewing: { ko: '검토중',    en: 'Reviewing', vi: 'Đang xét duyệt' },
+  accepted:  { ko: '합격',      en: 'Accepted',  vi: 'Trúng tuyển' },
+  rejected:  { ko: '불합격',    en: 'Rejected',  vi: 'Không trúng tuyển' },
 }
-const statusLabel = (s, lang) => STATUS_LABEL[s]?.[lang === 'ko' ? 'ko' : 'en'] || s
+const statusLabel = (s, lang) => STATUS_LABEL[s]?.[lang] || STATUS_LABEL[s]?.en || s
 
 // 유입 플랫폼 배지: app=앱 / web=웹 / null=미상(기록 전 행).
 function PlatformBadge({ platform, lang }) {
   const map = {
-    app: { ko: '앱', en: 'App', bg: '#1F2937', color: '#fff' },      // 다크 슬레이트
-    web: { ko: '웹', en: 'Web', bg: '#EDEFF2', color: '#4E5968' },   // 라이트 그레이
+    app: { ko: '앱', en: 'App', vi: 'App', bg: '#1F2937', color: '#fff' },      // 다크 슬레이트
+    web: { ko: '웹', en: 'Web', vi: 'Web', bg: '#EDEFF2', color: '#4E5968' },   // 라이트 그레이
   }
   const s = map[platform]
   if (!s) return <span style={{ color: '#C7CDD4', fontSize: 11 }}>{lang === 'ko' ? '미상' : 'N/A'}</span>
   return (
     <span style={{ display: 'inline-block', padding: '2px 9px', borderRadius: 999, fontSize: 11, fontWeight: 700, background: s.bg, color: s.color, whiteSpace: 'nowrap' }}>
-      {lang === 'ko' ? s.ko : s.en}
+      {s[lang] || s.en}
     </span>
   )
 }
@@ -105,6 +105,7 @@ function StatusDropdown({ value, onChange, lang }) {
 const normStatus = (s) => (!s || s === 'pending' ? 'applied' : s)
 
 export default function ApplicationsView({ token, t, dateRange, lang = 'ko' }) {
+  const L = (ko, en, vi) => (lang === 'vi' ? (vi ?? en) : lang === 'ko' ? ko : en)
   const [platformFilter, setPlatformFilter] = useState('all') // all, app, web
   const [statusFilter, setStatusFilter] = useState('all') // all | applied | viewed | reviewing | accepted | rejected
 
@@ -177,14 +178,14 @@ export default function ApplicationsView({ token, t, dateRange, lang = 'ko' }) {
           <span style={{ fontSize: 13, color: '#6B7280' }}>
             {t.appsTotal} <strong style={{ color: '#191F28' }}>{visible.length}</strong>
             <span style={{ margin: '0 6px', color: '#DDE1E6' }}>·</span>
-            {lang === 'ko' ? '앱' : 'App'} <strong style={{ color: '#191F28' }}>{appCount}</strong>
+            {L('앱', 'App')} <strong style={{ color: '#191F28' }}>{appCount}</strong>
             <span style={{ margin: '0 4px', color: '#DDE1E6' }}>·</span>
-            {lang === 'ko' ? '웹' : 'Web'} <strong style={{ color: '#191F28' }}>{webCount}</strong>
+            {L('웹', 'Web')} <strong style={{ color: '#191F28' }}>{webCount}</strong>
           </span>
         </div>
         <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
           <div style={{ display: 'flex', gap: 6 }}>
-            {[{ key: 'all', label: lang === 'ko' ? '전체' : 'All' }, { key: 'app', label: lang === 'ko' ? '앱' : 'App' }, { key: 'web', label: lang === 'ko' ? '웹' : 'Web' }].map(f => (
+            {[{ key: 'all', label: L('전체', 'All', 'Tất cả') }, { key: 'app', label: L('앱', 'App') }, { key: 'web', label: L('웹', 'Web') }].map(f => (
               <button key={f.key} onClick={() => setPlatformFilter(f.key)} style={pillStyle(platformFilter === f.key)}>{f.label}</button>
             ))}
           </div>
@@ -196,7 +197,7 @@ export default function ApplicationsView({ token, t, dateRange, lang = 'ko' }) {
       </div>
 
       <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 14 }}>
-        {[{ key: 'all', label: lang === 'ko' ? '전체' : 'All' }, ...STATUS_OPTIONS.map(s => ({ key: s, label: statusLabel(s, lang) }))].map(f => {
+        {[{ key: 'all', label: L('전체', 'All', 'Tất cả') }, ...STATUS_OPTIONS.map(s => ({ key: s, label: statusLabel(s, lang) }))].map(f => {
           const on = statusFilter === f.key
           const c = f.key === 'all' ? null : statusStyle(f.key)
           const n = f.key === 'all' ? platformFiltered.length : statusCount(f.key)
@@ -216,9 +217,9 @@ export default function ApplicationsView({ token, t, dateRange, lang = 'ko' }) {
               <tr style={{ borderBottom: '1px solid #EEF0F2', background: '#FAFBFC' }}>
                 <th style={th}>{t.appsApplicant}</th>
                 <th style={th}>{t.appsJob}</th>
-                <th style={th}>유입</th>
-                <th style={th}>직무</th>
-                <th style={th}>경력</th>
+                <th style={th}>{L('유입', 'Source', 'Nguồn')}</th>
+                <th style={th}>{L('직무', 'Role', 'Vị trí')}</th>
+                <th style={th}>{L('경력', 'YoE', 'Kinh nghiệm')}</th>
                 <th style={th}>{t.appsStatus}</th>
                 <th style={th}>{t.appsDate}</th>
                 <th style={th}>{t.appsResume}</th>

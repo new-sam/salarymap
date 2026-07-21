@@ -49,6 +49,29 @@ const L = {
     cats: { ask_company: 'Ask Company', daily: 'Daily', job_change: 'Job Change' },
     noTracking: '* View/click events are counted from when tracking started.',
   },
+  vi: {
+    loading: 'Đang tải dữ liệu cộng đồng...',
+    empty: 'Chưa có hoạt động cộng đồng.',
+    note: '* Không tính tài khoản nội bộ/seed, theo khoảng thời gian đã chọn',
+    posts: 'Bài viết', comments: 'Bình luận', likes: 'Lượt thích', authors: 'Người tham gia',
+    postViews: 'Lượt xem bài', listViews: 'Lượt xem danh sách', writeClicks: 'Nhấn viết bài',
+    navClicks: 'Nhấn tab/điều hướng', follows: 'Theo dõi công ty',
+    avgComments: 'Bình luận TB / bài',
+    followTitle: 'Top công ty được theo dõi',
+    thCompany: 'Công ty', thFollows: 'Theo dõi', thUnfollows: 'Bỏ theo dõi', thNet: 'Tăng ròng',
+    funnelTitle: 'Phễu truy cập',
+    fNav: 'Nhấn tab/điều hướng', fList: 'Xem danh sách', fPost: 'Nhấn bài viết', fWrite: 'Nhấn viết bài', fCreate: 'Đã đăng',
+    fNavToList: 'qua tab/điều hướng', fOfList: 'so với danh sách',
+    catTitle: 'Bài viết theo chuyên mục',
+    topTitle: 'Bài viết nổi bật',
+    dailyTitle: 'Chi tiết theo ngày',
+    thDate: 'Ngày', thPosts: 'Bài', thComments: 'Bình luận', thLikes: 'Thích',
+    thPostViews: 'Xem bài', thWriteClicks: 'Viết bài', thListViews: 'Xem DS', thNavClicks: 'Nhấn tab',
+    thTitle: 'Tiêu đề', thCat: 'Chuyên mục', thLike: 'Thích', thComment: 'Bình luận', thView: 'Xem',
+    anon: 'Ẩn danh',
+    cats: { ask_company: 'Hỏi về công ty', daily: 'Đời thường', job_change: 'Chuyển việc' },
+    noTracking: '* Sự kiện xem/nhấn được thống kê từ khi bắt đầu tracking.',
+  },
 }
 
 const CAT_COLORS = { ask_company: '#3b82f6', daily: '#10b981', job_change: '#8b5cf6' }
@@ -85,7 +108,7 @@ export default function CommunityView({ token, lang = 'ko', dateRange }) {
       <UserAssetCards token={token} keys={['userFollows', 'subscriptions']} lang={lang} />
       {/* 핵심 활동 */}
       <div style={{ marginBottom: 18 }}>
-        <div style={{ fontSize: 11.5, fontWeight: 700, color: '#8B95A1', letterSpacing: '0.02em', marginBottom: 10 }}>{lang === 'ko' ? '핵심 활동' : 'Core activity'}</div>
+        <div style={{ fontSize: 11.5, fontWeight: 700, color: '#8B95A1', letterSpacing: '0.02em', marginBottom: 10 }}>{lang === 'ko' ? '핵심 활동' : lang === 'vi' ? 'Hoạt động chính' : 'Core activity'}</div>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 10 }}>
           {['totalPosts', 'totalComments', 'totalLikes', 'uniqueAuthors'].map(k => (
             <div key={k} style={{ background: '#fff', border: '1px solid #EEF0F2', borderLeft: '3px solid #ff4400', borderRadius: 12, padding: '15px 17px' }}>
@@ -98,7 +121,7 @@ export default function CommunityView({ token, lang = 'ko', dateRange }) {
 
       {/* 참여 · 유입 */}
       <div style={{ marginBottom: 10 }}>
-        <div style={{ fontSize: 11.5, fontWeight: 700, color: '#8B95A1', letterSpacing: '0.02em', marginBottom: 10 }}>{lang === 'ko' ? '참여 · 유입' : 'Engagement'}</div>
+        <div style={{ fontSize: 11.5, fontWeight: 700, color: '#8B95A1', letterSpacing: '0.02em', marginBottom: 10 }}>{lang === 'ko' ? '참여 · 유입' : lang === 'vi' ? 'Tương tác · Lượt truy cập' : 'Engagement'}</div>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(116px, 1fr))', gap: 8 }}>
           {['postViews', 'writeClicks', 'navClicks', 'follows'].map(k => (
             <div key={k} style={{ background: '#F8FAFB', border: '1px solid #EEF1F3', borderRadius: 10, padding: '11px 13px' }}>
@@ -217,7 +240,7 @@ export default function CommunityView({ token, lang = 'ko', dateRange }) {
             </thead>
             <tbody>
               <tr style={{ fontWeight: 700, borderBottom: '1px solid #EEF0F2', background: '#FCFCFD' }}>
-                <td style={{ padding: '9px 12px' }}>{lang === 'ko' ? '합계' : 'Total'}</td>
+                <td style={{ padding: '9px 12px' }}>{lang === 'ko' ? '합계' : lang === 'vi' ? 'Tổng' : 'Total'}</td>
                 {['totalPosts', 'totalComments', 'totalLikes', 'navClicks', 'postViews', 'listViews', 'writeClicks', 'follows'].map(k => (
                   <td key={k} style={{ padding: '9px 12px', textAlign: 'right', color: '#191F28', fontVariantNumeric: 'tabular-nums' }}>{summary[k]}</td>
                 ))}

@@ -7,13 +7,13 @@ import { useAdmin } from '../../lib/adminSwr'
 
 // 실제 기업 채용 칸반 단계 (job_applications.status + rejected_at)
 const STAGE = {
-  pending: { ko: '서류 평가', en: 'Resume', color: '#94A3B8' },
-  applied: { ko: '서류 평가', en: 'Resume', color: '#94A3B8' },
-  viewed: { ko: '1차 인터뷰', en: '1st interview', color: '#0891B2' },
-  reviewing: { ko: '2차 인터뷰', en: '2nd interview', color: '#7C3AED' },
-  decided: { ko: '최종 합격', en: 'Final', color: '#059669' },
-  accepted: { ko: '최종 합격', en: 'Final', color: '#059669' },
-  rejected: { ko: '불합격', en: 'Rejected', color: '#DC2626' },
+  pending: { ko: '서류 평가', en: 'Resume', vi: 'Sàng lọc CV', color: '#94A3B8' },
+  applied: { ko: '서류 평가', en: 'Resume', vi: 'Sàng lọc CV', color: '#94A3B8' },
+  viewed: { ko: '1차 인터뷰', en: '1st interview', vi: 'Phỏng vấn vòng 1', color: '#0891B2' },
+  reviewing: { ko: '2차 인터뷰', en: '2nd interview', vi: 'Phỏng vấn vòng 2', color: '#7C3AED' },
+  decided: { ko: '최종 합격', en: 'Final', vi: 'Trúng tuyển', color: '#059669' },
+  accepted: { ko: '최종 합격', en: 'Final', vi: 'Trúng tuyển', color: '#059669' },
+  rejected: { ko: '불합격', en: 'Rejected', vi: 'Từ chối', color: '#DC2626' },
 }
 // 회사별 상세 표의 단계 컬럼 (순서 + 짧은 헤더)
 const STAGE_COLS = ['pending', 'viewed', 'reviewing', 'decided', 'rejected']
@@ -23,7 +23,7 @@ const fmtDate = (s) => (s ? new Date(s).toLocaleDateString() : '-')
 const dayNum = (d) => String(parseInt(d.slice(8), 10)) // '2026-07-04' → '4'
 
 export default function CompanyView({ token, lang }) {
-  const ko = lang !== 'en'
+  const L = (ko, en, vi) => (lang === 'vi' ? (vi ?? en) : lang === 'ko' ? ko : en)
   const { data, isLoading } = useAdmin('/api/admin/company-metrics', token)
   const { data: koData } = useAdmin('/api/admin/company-title-ko', token) // 번역: 비동기(표를 막지 않음)
   const [openCard, setOpenCard] = useState(null)
@@ -31,7 +31,7 @@ export default function CompanyView({ token, lang }) {
   const [showOther, setShowOther] = useState(false)
   const [openRole, setOpenRole] = useState(null)
 
-  if (isLoading || !data) return <div style={{ textAlign: 'center', padding: 40, color: '#666' }}>{ko ? '불러오는 중…' : 'Loading…'}</div>
+  if (isLoading || !data) return <div style={{ textAlign: 'center', padding: 40, color: '#666' }}>{L('불러오는 중…', 'Loading…', 'Đang tải…')}</div>
   if (data.error) return <div style={{ textAlign: 'center', padding: 40, color: '#c00' }}>{data.error}</div>
 
   const { overview, signups, daily, monthLabel, byCategory, otherTitles, jobsList: jobsRaw, stageTotals, stageOrder } = data
@@ -41,9 +41,9 @@ export default function CompanyView({ token, lang }) {
 
   // 핵심 퍼널 3단 (누르면 상세)
   const funnel = [
-    { key: 'companies', label: ko ? '가입 기업' : 'Companies', value: overview.companies, desc: ko ? 'FYI에 들어온 기업 수' : 'Companies joined', drill: 'companies' },
-    { key: 'jobs', label: ko ? '올라온 공고' : 'Jobs posted', value: overview.jobsCompanySelf, desc: ko ? '기업이 올린 채용공고 수' : 'Jobs companies posted', drill: 'jobs' },
-    { key: 'apps', label: ko ? '받은 지원' : 'Applications', value: overview.applications, desc: ko ? '공고에 들어온 지원(이력서) 수' : 'Applications received', drill: 'apps' },
+    { key: 'companies', label: L('가입 기업', 'Companies', 'Công ty đăng ký'), value: overview.companies, desc: L('FYI에 들어온 기업 수', 'Companies joined', 'Số công ty tham gia FYI'), drill: 'companies' },
+    { key: 'jobs', label: L('올라온 공고', 'Jobs posted', 'Tin tuyển dụng đã đăng'), value: overview.jobsCompanySelf, desc: L('기업이 올린 채용공고 수', 'Jobs companies posted', 'Số tin tuyển dụng công ty đã đăng'), drill: 'jobs' },
+    { key: 'apps', label: L('받은 지원', 'Applications', 'Lượt ứng tuyển'), value: overview.applications, desc: L('공고에 들어온 지원(이력서) 수', 'Applications received', 'Số lượt ứng tuyển (CV) nhận được'), drill: 'apps' },
   ]
 
   const th = { textAlign: 'left', padding: '10px 12px', fontWeight: 600, whiteSpace: 'nowrap' }
@@ -74,22 +74,22 @@ export default function CompanyView({ token, lang }) {
       </div>
     )
     if (openCard === 'companies') {
-      return wrap(ko ? `가입한 기업 ${signups.length}곳` : `${signups.length} companies`,
+      return wrap(L(`가입한 기업 ${signups.length}곳`, `${signups.length} companies`, `${signups.length} công ty đã đăng ký`),
         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12.5 }}>
           <thead><tr style={{ color: '#94A3B8', textAlign: 'left' }}>
-            <th style={{ padding: '4px 8px', fontWeight: 600 }}>{ko ? '회사' : 'Company'}</th>
-            <th style={{ padding: '4px 8px', fontWeight: 600 }}>{ko ? '도메인' : 'Domain'}</th>
-            <th style={{ padding: '4px 8px', fontWeight: 600 }}>{ko ? '인증' : 'Verified'}</th>
-            <th style={{ padding: '4px 8px', fontWeight: 600, textAlign: 'right' }}>{ko ? '공고' : 'Jobs'}</th>
-            <th style={{ padding: '4px 8px', fontWeight: 600, textAlign: 'right' }}>{ko ? '지원' : 'Apps'}</th>
-            <th style={{ padding: '4px 8px', fontWeight: 600, textAlign: 'right' }}>{ko ? '가입일' : 'Joined'}</th>
+            <th style={{ padding: '4px 8px', fontWeight: 600 }}>{L('회사', 'Company', 'Công ty')}</th>
+            <th style={{ padding: '4px 8px', fontWeight: 600 }}>{L('도메인', 'Domain', 'Tên miền')}</th>
+            <th style={{ padding: '4px 8px', fontWeight: 600 }}>{L('인증', 'Verified', 'Xác thực')}</th>
+            <th style={{ padding: '4px 8px', fontWeight: 600, textAlign: 'right' }}>{L('공고', 'Jobs', 'Tin tuyển dụng')}</th>
+            <th style={{ padding: '4px 8px', fontWeight: 600, textAlign: 'right' }}>{L('지원', 'Apps', 'Ứng tuyển')}</th>
+            <th style={{ padding: '4px 8px', fontWeight: 600, textAlign: 'right' }}>{L('가입일', 'Joined', 'Ngày đăng ký')}</th>
           </tr></thead>
           <tbody>
             {signups.map(c => (
               <tr key={c.id} style={{ borderTop: '1px solid #F1F5F9' }}>
                 <td style={{ padding: '6px 8px', color: '#0F172A', fontWeight: 600 }}>{c.name}</td>
                 <td style={{ padding: '6px 8px', color: '#6B7280' }}>{c.email_domain}</td>
-                <td style={{ padding: '6px 8px' }}>{c.verified ? badge('#ECFDF5', '#059669', ko ? '인증' : 'Yes') : badge('#F1F5F9', '#94A3B8', ko ? '미인증' : 'No')}</td>
+                <td style={{ padding: '6px 8px' }}>{c.verified ? badge('#ECFDF5', '#059669', L('인증', 'Yes', 'Đã xác thực')) : badge('#F1F5F9', '#94A3B8', L('미인증', 'No', 'Chưa xác thực'))}</td>
                 <td style={{ padding: '6px 8px', textAlign: 'right', color: '#374151' }}>{c.jobs}</td>
                 <td style={{ padding: '6px 8px', textAlign: 'right', fontWeight: 700, color: '#0F172A' }}>{c.applications}</td>
                 <td style={{ padding: '6px 8px', textAlign: 'right', color: '#9CA3AF', whiteSpace: 'nowrap' }}>{fmtDate(c.created_at)}</td>
@@ -100,13 +100,13 @@ export default function CompanyView({ token, lang }) {
       )
     }
     if (openCard === 'jobs') {
-      return wrap(ko ? `올라온 공고 ${jobsList.length}건` : `${jobsList.length} jobs`,
+      return wrap(L(`올라온 공고 ${jobsList.length}건`, `${jobsList.length} jobs`, `${jobsList.length} tin tuyển dụng`),
         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12.5 }}>
           <thead><tr style={{ color: '#94A3B8', textAlign: 'left' }}>
-            <th style={{ padding: '4px 8px', fontWeight: 600 }}>{ko ? '공고' : 'Job'}</th>
-            <th style={{ padding: '4px 8px', fontWeight: 600 }}>{ko ? '회사' : 'Company'}</th>
-            <th style={{ padding: '4px 8px', fontWeight: 600 }}>{ko ? '상태' : 'Status'}</th>
-            <th style={{ padding: '4px 8px', fontWeight: 600, textAlign: 'right' }}>{ko ? '지원' : 'Apps'}</th>
+            <th style={{ padding: '4px 8px', fontWeight: 600 }}>{L('공고', 'Job', 'Tin tuyển dụng')}</th>
+            <th style={{ padding: '4px 8px', fontWeight: 600 }}>{L('회사', 'Company', 'Công ty')}</th>
+            <th style={{ padding: '4px 8px', fontWeight: 600 }}>{L('상태', 'Status', 'Trạng thái')}</th>
+            <th style={{ padding: '4px 8px', fontWeight: 600, textAlign: 'right' }}>{L('지원', 'Apps', 'Ứng tuyển')}</th>
           </tr></thead>
           <tbody>
             {jobsList.map(j => (
@@ -114,9 +114,9 @@ export default function CompanyView({ token, lang }) {
                 <td style={{ padding: '6px 8px', color: '#0F172A', fontWeight: 600 }}>{j.title}</td>
                 <td style={{ padding: '6px 8px', color: '#6B7280' }}>{j.company}</td>
                 <td style={{ padding: '6px 8px' }}>
-                  {j.pending ? badge('#FEF3C7', '#D97706', ko ? '승인대기' : 'pending')
-                    : j.live ? badge('#FFF1EC', '#ff6000', ko ? '라이브' : 'live')
-                    : badge('#F1F5F9', '#94A3B8', ko ? '내림' : 'off')}
+                  {j.pending ? badge('#FEF3C7', '#D97706', L('승인대기', 'pending', 'Chờ duyệt'))
+                    : j.live ? badge('#FFF1EC', '#ff6000', L('라이브', 'live', 'Đang đăng'))
+                    : badge('#F1F5F9', '#94A3B8', L('내림', 'off', 'Đã gỡ'))}
                 </td>
                 <td style={{ padding: '6px 8px', textAlign: 'right', fontWeight: 700, color: '#0F172A' }}>{j.applications}</td>
               </tr>
@@ -127,20 +127,20 @@ export default function CompanyView({ token, lang }) {
     }
     if (openCard === 'apps') {
       const total = overview.applications || 1
-      return wrap(ko ? `지원 ${overview.applications}건 · 단계별` : `${overview.applications} applications by stage`,
+      return wrap(L(`지원 ${overview.applications}건 · 단계별`, `${overview.applications} applications by stage`, `${overview.applications} lượt ứng tuyển theo giai đoạn`),
         <div>
           <div style={{ display: 'flex', height: 22, borderRadius: 6, overflow: 'hidden', border: '1px solid #E5E8EB', marginBottom: 12 }}>
             {stageOrder.map(s => {
               const n = stageTotals[s] || 0
               if (!n) return null
-              return <div key={s} title={`${STAGE[s] ? (ko ? STAGE[s].ko : STAGE[s].en) : s}: ${n}`} style={{ width: `${(n / total) * 100}%`, background: STAGE[s]?.color || '#94A3B8' }} />
+              return <div key={s} title={`${STAGE[s] ? STAGE[s][lang] : s}: ${n}`} style={{ width: `${(n / total) * 100}%`, background: STAGE[s]?.color || '#94A3B8' }} />
             })}
           </div>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 14 }}>
             {stageOrder.map(s => (
               <span key={s} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 12.5, color: '#475569' }}>
                 <span style={{ width: 9, height: 9, borderRadius: 2, background: STAGE[s]?.color || '#94A3B8' }} />
-                {STAGE[s] ? (ko ? STAGE[s].ko : STAGE[s].en) : s} <b style={{ color: '#0F172A' }}>{stageTotals[s] || 0}</b>
+                {STAGE[s] ? STAGE[s][lang] : s} <b style={{ color: '#0F172A' }}>{stageTotals[s] || 0}</b>
               </span>
             ))}
           </div>
@@ -163,9 +163,9 @@ export default function CompanyView({ token, lang }) {
     <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12.5 }}>
       <thead>
         <tr style={{ color: '#94A3B8', textAlign: 'left' }}>
-          <th style={{ padding: '4px 8px', fontWeight: 600 }}>{ko ? '공고' : 'Job'}</th>
-          <th style={{ padding: '4px 8px', fontWeight: 600, textAlign: 'right' }}>{ko ? '지원' : 'Apps'}</th>
-          {STAGE_COLS.map(s => <th key={s} style={{ padding: '4px 8px', fontWeight: 600, textAlign: 'right' }}>{ko ? STAGE_SHORT[s] : STAGE[s].en}</th>)}
+          <th style={{ padding: '4px 8px', fontWeight: 600 }}>{L('공고', 'Job', 'Tin tuyển dụng')}</th>
+          <th style={{ padding: '4px 8px', fontWeight: 600, textAlign: 'right' }}>{L('지원', 'Apps', 'Ứng tuyển')}</th>
+          {STAGE_COLS.map(s => <th key={s} style={{ padding: '4px 8px', fontWeight: 600, textAlign: 'right' }}>{lang === 'ko' ? STAGE_SHORT[s] : STAGE[s][lang]}</th>)}
         </tr>
       </thead>
       <tbody>
@@ -178,7 +178,7 @@ export default function CompanyView({ token, lang }) {
                   {(j.titleKo || showCompany) && <div style={{ fontSize: 11, color: '#9CA3AF' }}>{j.titleKo ? j.title : ''}{j.titleKo && showCompany ? ' · ' : ''}{showCompany ? j.company : ''}</div>}
                 </div>
                 <span style={{ fontSize: 11, color: '#6B7280', background: '#EEF0F2', borderRadius: 999, padding: '2px 8px', flexShrink: 0 }}>{j.categoryKo}</span>
-                {j.pending ? badge('#FEF3C7', '#D97706', ko ? '승인대기' : 'pending') : j.live ? badge('#FFF1EC', '#ff6000', ko ? '라이브' : 'live') : badge('#F1F5F9', '#94A3B8', ko ? '내림' : 'off')}
+                {j.pending ? badge('#FEF3C7', '#D97706', L('승인대기', 'pending', 'Chờ duyệt')) : j.live ? badge('#FFF1EC', '#ff6000', L('라이브', 'live', 'Đang đăng')) : badge('#F1F5F9', '#94A3B8', L('내림', 'off', 'Đã gỡ'))}
               </div>
             </td>
             <td style={{ padding: '6px 8px', textAlign: 'right', fontWeight: 700, color: '#0F172A' }}>{j.applications}</td>
@@ -192,9 +192,9 @@ export default function CompanyView({ token, lang }) {
   return (
     <div style={{ paddingBottom: 40 }}>
       <div style={{ marginBottom: 16 }}>
-        <h3 style={{ fontSize: 17, fontWeight: 700, margin: '0 0 4px' }}>{ko ? '기업 지표' : 'Company metrics'}</h3>
+        <h3 style={{ fontSize: 17, fontWeight: 700, margin: '0 0 4px' }}>{L('기업 지표', 'Company metrics', 'Chỉ số công ty')}</h3>
         <div style={{ fontSize: 12.5, color: '#6B7280' }}>
-          {ko ? '광고로 들어온 기업이 공고를 올리고 지원을 받는 흐름. 카드를 누르면 바로 아래에 상세가 열립니다.' : 'Company → job → application funnel. Click a card to expand details below it.'}
+          {L('광고로 들어온 기업이 공고를 올리고 지원을 받는 흐름. 카드를 누르면 바로 아래에 상세가 열립니다.', 'Company → job → application funnel. Click a card to expand details below it.', 'Phễu công ty → tin tuyển dụng → ứng tuyển. Nhấn vào thẻ để mở chi tiết ngay bên dưới.')}
         </div>
       </div>
 
@@ -232,28 +232,28 @@ export default function CompanyView({ token, lang }) {
       {/* 파생 지표 — 쉬운 설명 */}
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, marginBottom: 26 }}>
         <div style={{ flex: '1 1 200px', background: '#FAFBFC', border: '1px solid #EEF0F2', borderRadius: 10, padding: '12px 14px' }}>
-          <div style={{ fontSize: 20, fontWeight: 800, color: '#0F172A' }}>{overview.medianAppsPerJob}<span style={{ fontSize: 12, fontWeight: 600, color: '#9CA3AF' }}> {ko ? '명' : ''}</span></div>
-          <div style={{ fontSize: 12, color: '#374151', fontWeight: 600, marginTop: 2 }}>{ko ? '공고당 지원 (중위)' : 'Median apps / job'}</div>
-          <div style={{ fontSize: 11, color: '#9CA3AF', marginTop: 2 }}>{ko ? '지원이 들어온 공고 기준 (빈 공고 제외)' : 'Over jobs that got applications'}</div>
+          <div style={{ fontSize: 20, fontWeight: 800, color: '#0F172A' }}>{overview.medianAppsPerJob}<span style={{ fontSize: 12, fontWeight: 600, color: '#9CA3AF' }}> {L('명', '')}</span></div>
+          <div style={{ fontSize: 12, color: '#374151', fontWeight: 600, marginTop: 2 }}>{L('공고당 지원 (중위)', 'Median apps / job', 'Ứng tuyển trung vị / tin')}</div>
+          <div style={{ fontSize: 11, color: '#9CA3AF', marginTop: 2 }}>{L('지원이 들어온 공고 기준 (빈 공고 제외)', 'Over jobs that got applications', 'Tính trên các tin có ứng tuyển (bỏ tin trống)')}</div>
         </div>
         <div style={{ flex: '1 1 200px', background: '#FAFBFC', border: '1px solid #EEF0F2', borderRadius: 10, padding: '12px 14px' }}>
           <div style={{ fontSize: 20, fontWeight: 800, color: '#0F172A' }}>{overview.activeCompanies}<span style={{ fontSize: 12, fontWeight: 600, color: '#9CA3AF' }}> / {overview.companies}</span></div>
-          <div style={{ fontSize: 12, color: '#374151', fontWeight: 600, marginTop: 2 }}>{ko ? '실제 공고 올린 기업' : 'Companies that posted'}</div>
-          <div style={{ fontSize: 11, color: '#9CA3AF', marginTop: 2 }}>{ko ? '가입만 하고 공고 안 올린 기업 제외 (활성화율)' : 'Excludes sign-up-only companies'}</div>
+          <div style={{ fontSize: 12, color: '#374151', fontWeight: 600, marginTop: 2 }}>{L('실제 공고 올린 기업', 'Companies that posted', 'Công ty đã đăng tin')}</div>
+          <div style={{ fontSize: 11, color: '#9CA3AF', marginTop: 2 }}>{L('가입만 하고 공고 안 올린 기업 제외 (활성화율)', 'Excludes sign-up-only companies', 'Không tính công ty chỉ đăng ký mà chưa đăng tin')}</div>
         </div>
       </div>
 
       {/* 이번 달 일별 성과 — 하루마다 신규 기업/공고 */}
-      <h4 style={{ fontSize: 15, fontWeight: 700, margin: '0 0 4px' }}>{ko ? `${monthLabel} 일별 성과` : `${monthLabel} daily`}</h4>
+      <h4 style={{ fontSize: 15, fontWeight: 700, margin: '0 0 4px' }}>{L(`${monthLabel} 일별 성과`, `${monthLabel} daily`, `${monthLabel} theo ngày`)}</h4>
       <div style={{ fontSize: 12, color: '#6B7280', marginBottom: 12 }}>
-        {ko ? `하루마다 새 기업/공고 + 기업 공고에 들어온 지원 (이번 달 기업 ${monthCompanies} · 공고 ${monthJobs} · 지원 ${monthApps}, 멋사 제외).` : `New companies/jobs + applications to company jobs per day this month.`}
+        {L(`하루마다 새 기업/공고 + 기업 공고에 들어온 지원 (이번 달 기업 ${monthCompanies} · 공고 ${monthJobs} · 지원 ${monthApps}, 멋사 제외).`, `New companies/jobs + applications to company jobs per day this month.`, `Công ty/tin tuyển dụng mới + lượt ứng tuyển vào tin của công ty theo từng ngày trong tháng này.`)}
       </div>
       <div style={{ background: '#FAFBFC', border: '1px solid #EEF0F2', borderRadius: 12, padding: '14px 16px', marginBottom: 30 }}>
         {/* 범례 */}
         <div style={{ display: 'flex', gap: 14, marginBottom: 12 }}>
-          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 12, color: '#475569' }}><span style={{ width: 9, height: 9, borderRadius: 2, background: '#ff6000' }} />{ko ? '신규 기업' : 'Companies'}</span>
-          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 12, color: '#475569' }}><span style={{ width: 9, height: 9, borderRadius: 2, background: '#2563EB' }} />{ko ? '신규 공고' : 'Jobs'}</span>
-          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 12, color: '#475569' }}><span style={{ width: 9, height: 9, borderRadius: 2, background: '#059669' }} />{ko ? '지원' : 'Apps'}</span>
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 12, color: '#475569' }}><span style={{ width: 9, height: 9, borderRadius: 2, background: '#ff6000' }} />{L('신규 기업', 'Companies', 'Công ty mới')}</span>
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 12, color: '#475569' }}><span style={{ width: 9, height: 9, borderRadius: 2, background: '#2563EB' }} />{L('신규 공고', 'Jobs', 'Tin tuyển dụng mới')}</span>
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 12, color: '#475569' }}><span style={{ width: 9, height: 9, borderRadius: 2, background: '#059669' }} />{L('지원', 'Apps', 'Ứng tuyển')}</span>
         </div>
         <div style={{ display: 'flex', alignItems: 'flex-end', gap: 4 }}>
           {daily.map(d => {
@@ -266,7 +266,7 @@ export default function CompanyView({ token, lang }) {
             const busy = d.companies > 0 || d.jobs > 0 || d.apps > 0
             return (
               <div key={d.date} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                <div title={`${d.date} · ${ko ? '기업' : 'co'} ${d.companies} · ${ko ? '공고' : 'jobs'} ${d.jobs} · ${ko ? '지원' : 'apps'} ${d.apps}`} style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'center', gap: 3, width: '100%' }}>
+                <div title={`${d.date} · ${L('기업', 'co', 'cty')} ${d.companies} · ${L('공고', 'jobs', 'tin')} ${d.jobs} · ${L('지원', 'apps', 'ứng tuyển')} ${d.apps}`} style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'center', gap: 3, width: '100%' }}>
                   {bar(d.companies, '#ff6000')}
                   {bar(d.jobs, '#2563EB')}
                   {bar(d.apps, '#059669')}
@@ -280,7 +280,7 @@ export default function CompanyView({ token, lang }) {
 
       {/* 회사 가입내역 (표) */}
       <div style={{ marginBottom: 10, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', gap: 12, flexWrap: 'wrap' }}>
-        <h4 style={{ fontSize: 15, fontWeight: 700, margin: 0 }}>{ko ? '회사별 상세' : 'By company'}</h4>
+        <h4 style={{ fontSize: 15, fontWeight: 700, margin: 0 }}>{L('회사별 상세', 'By company', 'Chi tiết theo công ty')}</h4>
         <button onClick={downloadSignupsCsv} style={{ padding: '7px 14px', border: 'none', borderRadius: 8, fontSize: 12.5, background: '#ff6000', color: '#fff', cursor: 'pointer', fontWeight: 600, whiteSpace: 'nowrap' }}>CSV</button>
       </div>
       <div style={{ border: '1px solid #E5E8EB', borderRadius: 12, overflow: 'hidden', marginBottom: 30 }}>
@@ -288,17 +288,17 @@ export default function CompanyView({ token, lang }) {
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
             <thead>
               <tr style={{ background: '#F8FAFC', color: '#475569' }}>
-                <th style={th}>{ko ? '회사' : 'Company'}</th>
-                <th style={th}>{ko ? '인증' : 'Verified'}</th>
-                <th style={thR}>{ko ? '공고' : 'Jobs'}</th>
-                <th style={thR}>{ko ? '지원' : 'Apps'}</th>
-                {STAGE_COLS.map(s => <th key={s} style={thR}>{ko ? STAGE_SHORT[s] : STAGE[s].en}</th>)}
-                <th style={thR}>{ko ? '가입일' : 'Joined'}</th>
+                <th style={th}>{L('회사', 'Company', 'Công ty')}</th>
+                <th style={th}>{L('인증', 'Verified', 'Xác thực')}</th>
+                <th style={thR}>{L('공고', 'Jobs', 'Tin tuyển dụng')}</th>
+                <th style={thR}>{L('지원', 'Apps', 'Ứng tuyển')}</th>
+                {STAGE_COLS.map(s => <th key={s} style={thR}>{lang === 'ko' ? STAGE_SHORT[s] : STAGE[s][lang]}</th>)}
+                <th style={thR}>{L('가입일', 'Joined', 'Ngày đăng ký')}</th>
               </tr>
             </thead>
             <tbody>
               {signups.length === 0 && (
-                <tr><td style={{ ...td, textAlign: 'center', color: '#9CA3AF' }} colSpan={10}>{ko ? '가입 기업 없음' : 'No companies'}</td></tr>
+                <tr><td style={{ ...td, textAlign: 'center', color: '#9CA3AF' }} colSpan={10}>{L('가입 기업 없음', 'No companies', 'Chưa có công ty')}</td></tr>
               )}
               {signups.map(c => {
                 const open = openCompany === c.id
@@ -314,7 +314,7 @@ export default function CompanyView({ token, lang }) {
                         {expandable && <span style={{ color: open ? '#ff6000' : '#C4C9D0', fontWeight: 700, marginRight: 6 }}>{open ? '▾' : '▸'}</span>}
                         {c.name}
                       </td>
-                      <td style={td}>{c.verified ? badge('#ECFDF5', '#059669', ko ? '인증' : 'Yes') : badge('#F1F5F9', '#94A3B8', ko ? '미인증' : 'No')}</td>
+                      <td style={td}>{c.verified ? badge('#ECFDF5', '#059669', L('인증', 'Yes', 'Đã xác thực')) : badge('#F1F5F9', '#94A3B8', L('미인증', 'No', 'Chưa xác thực'))}</td>
                       <td style={tdR}>{c.jobs}</td>
                       <td style={{ ...tdR, fontWeight: 700, color: '#0F172A' }}>{c.applications}</td>
                       {STAGE_COLS.map(s => { const n = c.stages[s] || 0; return <td key={s} style={{ ...tdR, color: n > 0 ? STAGE[s].color : '#CBD5E1', fontWeight: n > 0 ? 700 : 400 }}>{n}</td> })}
@@ -323,9 +323,9 @@ export default function CompanyView({ token, lang }) {
                     {open && (
                       <tr style={{ background: '#FFF7F3' }}>
                         <td colSpan={10} style={{ padding: '4px 12px 12px 30px' }}>
-                          <div style={{ fontSize: 11.5, color: '#9CA3AF', fontWeight: 600, margin: '4px 0 8px' }}>{ko ? `올린 포지션 ${cJobs.length}건` : `${cJobs.length} positions`}</div>
+                          <div style={{ fontSize: 11.5, color: '#9CA3AF', fontWeight: 600, margin: '4px 0 8px' }}>{L(`올린 포지션 ${cJobs.length}건`, `${cJobs.length} positions`, `${cJobs.length} vị trí đã đăng`)}</div>
                           {cJobs.length === 0 ? (
-                            <div style={{ fontSize: 12.5, color: '#9CA3AF' }}>{ko ? '공고 없음' : 'No jobs'}</div>
+                            <div style={{ fontSize: 12.5, color: '#9CA3AF' }}>{L('공고 없음', 'No jobs', 'Chưa có tin tuyển dụng')}</div>
                           ) : jobsMiniTable(cJobs)}
                         </td>
                       </tr>
@@ -339,19 +339,19 @@ export default function CompanyView({ token, lang }) {
       </div>
 
       {/* 직군별 공고·지원 — 클릭 시 실제 공고 펼침 */}
-      <h4 style={{ fontSize: 15, fontWeight: 700, margin: '0 0 4px' }}>{ko ? '직군별 공고·지원' : 'Jobs & applications by role'}</h4>
+      <h4 style={{ fontSize: 15, fontWeight: 700, margin: '0 0 4px' }}>{L('직군별 공고·지원', 'Jobs & applications by role', 'Tin tuyển dụng & ứng tuyển theo ngành nghề')}</h4>
       <div style={{ fontSize: 12, color: '#6B7280', marginBottom: 12 }}>
-        {ko ? '어떤 직군에 지원이 오고 안 오는지. 직군을 누르면 실제 공고가 펼쳐집니다. (제목 자동 분류·번역)' : 'Which roles attract applications. Click a role to see the actual jobs.'}
+        {L('어떤 직군에 지원이 오고 안 오는지. 직군을 누르면 실제 공고가 펼쳐집니다. (제목 자동 분류·번역)', 'Which roles attract applications. Click a role to see the actual jobs.', 'Ngành nghề nào đang thu hút ứng viên. Nhấn vào ngành nghề để xem các tin tuyển dụng thực tế.')}
       </div>
       <div className="adm-m-scroll" style={{ border: '1px solid #E5E8EB', borderRadius: 12, overflow: 'hidden', marginBottom: 12 }}>
         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
           <thead>
             <tr style={{ background: '#F8FAFC', color: '#475569' }}>
-              <th style={th}>{ko ? '직군' : 'Role'}</th>
-              <th style={thR}>{ko ? '공고' : 'Jobs'}</th>
-              <th style={thR}>{ko ? '지원' : 'Apps'}</th>
-              <th style={thR}>{ko ? '공고당' : '/ job'}</th>
-              <th style={{ ...th, width: '30%' }}>{ko ? '지원' : 'Apps'}</th>
+              <th style={th}>{L('직군', 'Role', 'Ngành nghề')}</th>
+              <th style={thR}>{L('공고', 'Jobs', 'Tin tuyển dụng')}</th>
+              <th style={thR}>{L('지원', 'Apps', 'Ứng tuyển')}</th>
+              <th style={thR}>{L('공고당', '/ job', '/ tin')}</th>
+              <th style={{ ...th, width: '30%' }}>{L('지원', 'Apps', 'Ứng tuyển')}</th>
             </tr>
           </thead>
           <tbody>
@@ -370,7 +370,7 @@ export default function CompanyView({ token, lang }) {
                     <td style={{ ...tdR, fontWeight: 600, color: c.avgApps >= 1 ? '#059669' : none ? '#DC2626' : '#9CA3AF' }}>{c.avgApps}</td>
                     <td style={td}>
                       {none ? (
-                        <span style={{ fontSize: 11.5, color: '#DC2626', fontWeight: 600 }}>{ko ? '지원 없음' : 'none'}</span>
+                        <span style={{ fontSize: 11.5, color: '#DC2626', fontWeight: 600 }}>{L('지원 없음', 'none', 'Không có ứng tuyển')}</span>
                       ) : (
                         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                           <div style={{ flex: 1, height: 8, background: '#F1F5F9', borderRadius: 4, overflow: 'hidden' }}>
@@ -397,7 +397,7 @@ export default function CompanyView({ token, lang }) {
       {otherTitles.length > 0 && (
         <div style={{ marginBottom: 30 }}>
           <button onClick={() => setShowOther(v => !v)} style={{ background: 'none', border: 'none', color: '#9CA3AF', fontSize: 12, fontWeight: 600, cursor: 'pointer', padding: 0 }}>
-            {showOther ? '▾' : '▸'} {ko ? `기타(미분류) ${otherTitles.length}건 원문` : `${otherTitles.length} uncategorized`}
+            {showOther ? '▾' : '▸'} {L(`기타(미분류) ${otherTitles.length}건 원문`, `${otherTitles.length} uncategorized`, `${otherTitles.length} tin chưa phân loại`)}
           </button>
           {showOther && (
             <div style={{ marginTop: 6, display: 'flex', flexWrap: 'wrap', gap: 6 }}>

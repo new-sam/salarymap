@@ -13,12 +13,12 @@ function fmtDate(s) {
 const keyOf = (a) => a.user_id || a.email
 
 const KIND_BADGE = {
-  recruiter: { ko: '담당자 추천', en: 'Recruiter', bg: '#EAF2FE', color: '#1D4ED8' },
-  similar:   { ko: '유사공고', en: 'Similar', bg: '#FFF1EC', color: '#EA580C' },
+  recruiter: { ko: '담당자 추천', en: 'Recruiter', vi: 'Nhà tuyển dụng gợi ý', bg: '#EAF2FE', color: '#1D4ED8' },
+  similar:   { ko: '유사공고', en: 'Similar', vi: 'Tin tương tự', bg: '#FFF1EC', color: '#EA580C' },
 }
 
 export default function RecommendView({ token, lang }) {
-  const ko = lang !== 'en'
+  const L = (ko, en, vi) => (lang === 'vi' ? (vi ?? en) : lang === 'ko' ? ko : en)
 
   // ── 발송 내역 ──
   const { data: history, mutate: mutateHistory } = useAdmin('/api/admin/talent-recommend', token)
@@ -66,7 +66,7 @@ export default function RecommendView({ token, lang }) {
   async function send() {
     const chosen = applicants.filter(a => sel.has(keyOf(a)))
     if (!chosen.length) return
-    if (!window.confirm(ko ? `${chosen.length}명에게 유사공고 추천 메일을 발송할까요?` : `Send to ${chosen.length} applicants?`)) return
+    if (!window.confirm(L(`${chosen.length}명에게 유사공고 추천 메일을 발송할까요?`, `Send to ${chosen.length} applicants?`, `Gửi email gợi ý tin tương tự cho ${chosen.length} ứng viên?`))) return
     setSending(true); setResult(null)
     const res = await fetch('/api/admin/similar-recommend', {
       method: 'POST', headers: auth,
@@ -93,22 +93,24 @@ export default function RecommendView({ token, lang }) {
       {/* ───────── 유사공고 발송 ───────── */}
       <div style={{ border: '1px solid #E8E8EA', borderRadius: 14, padding: 18, marginBottom: 28, background: '#FCFCFD' }}>
         <div style={{ marginBottom: 12 }}>
-          <h3 style={{ fontSize: 16, fontWeight: 700, margin: '0 0 4px' }}>{ko ? '유사공고 추천 발송' : 'Send similar-job recommendations'}</h3>
+          <h3 style={{ fontSize: 16, fontWeight: 700, margin: '0 0 4px' }}>{L('유사공고 추천 발송', 'Send similar-job recommendations', 'Gửi gợi ý tin tương tự')}</h3>
           <div style={{ fontSize: 12.5, color: '#6B7280' }}>
-            {ko
-              ? '최근 지원자마다 지원한 직군과 같은 기업등록 공고를 모아 "최근 지원과 비슷한 공고" 메일 1통으로 발송. 이미 지원/발송한 공고는 제외.'
-              : 'For each recent applicant, gathers company-registered jobs in the same role and sends one "similar to your recent application" email. Already-applied/sent jobs excluded.'}
+            {L(
+              '최근 지원자마다 지원한 직군과 같은 기업등록 공고를 모아 "최근 지원과 비슷한 공고" 메일 1통으로 발송. 이미 지원/발송한 공고는 제외.',
+              'For each recent applicant, gathers company-registered jobs in the same role and sends one "similar to your recent application" email. Already-applied/sent jobs excluded.',
+              'Với mỗi ứng viên gần đây, gom các tin tuyển dụng doanh nghiệp đăng cùng nhóm ngành và gửi 1 email "tin tương tự lần ứng tuyển gần đây". Loại trừ tin đã ứng tuyển/đã gửi.'
+            )}
           </div>
         </div>
 
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center', marginBottom: 14 }}>
-          <span style={{ fontSize: 12.5, color: '#6B7280', fontWeight: 600 }}>{ko ? '최근' : 'Last'}</span>
+          <span style={{ fontSize: 12.5, color: '#6B7280', fontWeight: 600 }}>{L('최근', 'Last', 'Trong')}</span>
           {[30, 60, 90, 180].map(d => (
             <button key={d} onClick={() => { setDays(d); setResult(null) }} style={{
               padding: '6px 12px', borderRadius: 8, fontSize: 12.5, fontWeight: 600, cursor: 'pointer',
               border: '1px solid ' + (days === d ? '#ff6000' : '#D9DCE1'),
               background: days === d ? '#FFF1EC' : '#fff', color: days === d ? '#ff6000' : '#4E5968',
-            }}>{d}{ko ? '일' : 'd'}</button>
+            }}>{d}{L('일', 'd', ' ngày')}</button>
           ))}
           <div style={{ flex: 1 }} />
           <div style={{ display: 'flex', gap: 2, background: '#EFEFF2', borderRadius: 8, padding: 3 }}>
@@ -123,39 +125,39 @@ export default function RecommendView({ token, lang }) {
           <button onClick={() => { setLoadMatches(true); mutateMatches() }} style={{
             padding: '7px 16px', border: 'none', borderRadius: 8, fontSize: 13, fontWeight: 700,
             background: '#17181c', color: '#fff', cursor: 'pointer',
-          }}>{ko ? '매칭 불러오기' : 'Load matches'}</button>
+          }}>{L('매칭 불러오기', 'Load matches', 'Tải kết quả ghép')}</button>
         </div>
 
-        {loadMatches && matchLoading && <div style={{ padding: 24, textAlign: 'center', color: '#9AA0A6', fontSize: 13 }}>{ko ? '매칭 계산 중…' : 'Matching…'}</div>}
+        {loadMatches && matchLoading && <div style={{ padding: 24, textAlign: 'center', color: '#9AA0A6', fontSize: 13 }}>{L('매칭 계산 중…', 'Matching…', 'Đang ghép…')}</div>}
         {match?.error && <div style={{ padding: 16, color: '#c00', fontSize: 13 }}>{match.error}</div>}
 
         {loadMatches && !matchLoading && match && !match.error && (
           applicants.length === 0 ? (
             <div style={{ padding: 24, textAlign: 'center', color: '#9AA0A6', fontSize: 13 }}>
-              {ko ? '매칭되는 지원자가 없습니다. (모두 발송했거나 최근 지원자가 없음)' : 'No matching applicants.'}
+              {L('매칭되는 지원자가 없습니다. (모두 발송했거나 최근 지원자가 없음)', 'No matching applicants.', 'Không có ứng viên phù hợp. (Đã gửi hết hoặc không có ứng viên gần đây)')}
             </div>
           ) : (
             <>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', marginBottom: 10 }}>
                 <div style={{ fontSize: 13, fontWeight: 700, color: '#0F172A' }}>
-                  {ko ? `대상 ${applicants.length}명 · 추천 공고 ${totalJobs}건` : `${applicants.length} applicants · ${totalJobs} jobs`}
+                  {L(`대상 ${applicants.length}명 · 추천 공고 ${totalJobs}건`, `${applicants.length} applicants · ${totalJobs} jobs`, `${applicants.length} ứng viên · ${totalJobs} tin tuyển dụng`)}
                 </div>
                 <button onClick={() => setSel(sel.size === applicants.length ? new Set() : new Set(applicants.map(keyOf)))}
                   style={{ padding: '4px 10px', border: '1px solid #D9DCE1', borderRadius: 7, fontSize: 12, fontWeight: 600, background: '#fff', color: '#4E5968', cursor: 'pointer' }}>
-                  {sel.size === applicants.length ? (ko ? '전체 해제' : 'Deselect all') : (ko ? '전체 선택' : 'Select all')}
+                  {sel.size === applicants.length ? L('전체 해제', 'Deselect all', 'Bỏ chọn tất cả') : L('전체 선택', 'Select all', 'Chọn tất cả')}
                 </button>
                 <div style={{ flex: 1 }} />
                 <button onClick={send} disabled={sending || sel.size === 0} style={{
                   padding: '8px 18px', border: 'none', borderRadius: 8, fontSize: 13, fontWeight: 700,
                   background: sending || sel.size === 0 ? '#F0A98A' : '#ff6000', color: '#fff',
                   cursor: sending || sel.size === 0 ? 'default' : 'pointer',
-                }}>{sending ? (ko ? '발송 중…' : 'Sending…') : (ko ? `선택 ${sel.size}명 발송` : `Send to ${sel.size}`)}</button>
+                }}>{sending ? L('발송 중…', 'Sending…', 'Đang gửi…') : L(`선택 ${sel.size}명 발송`, `Send to ${sel.size}`, `Gửi cho ${sel.size} người`)}</button>
               </div>
 
               {result && (
                 <div style={{ background: '#EFFdF4', border: '1px solid #BBF0D0', borderRadius: 8, padding: '10px 14px', fontSize: 12.5, color: '#166534', marginBottom: 12 }}>
-                  {ko ? `발송 완료: ${result.sent}명 · 공고 ${result.jobs}건` : `Sent: ${result.sent} · ${result.jobs} jobs`}
-                  {result.skipped?.length ? (ko ? ` · 스킵 ${result.skipped.length}건` : ` · skipped ${result.skipped.length}`) : ''}
+                  {L(`발송 완료: ${result.sent}명 · 공고 ${result.jobs}건`, `Sent: ${result.sent} · ${result.jobs} jobs`, `Đã gửi: ${result.sent} · ${result.jobs} tin`)}
+                  {result.skipped?.length ? L(` · 스킵 ${result.skipped.length}건`, ` · skipped ${result.skipped.length}`, ` · bỏ qua ${result.skipped.length}`) : ''}
                   {result.error ? ` · ${result.error}` : ''}
                 </div>
               )}
@@ -173,7 +175,7 @@ export default function RecommendView({ token, lang }) {
                           {a.name || a.email} <span style={{ color: '#9AA0A6', fontWeight: 400 }}>· {a.email}</span>
                         </div>
                         <div style={{ fontSize: 11.5, color: '#9AA0A6', margin: '2px 0 6px' }}>
-                          {ko ? '지원' : 'Applied'}: {a.applied.title}{a.applied.company ? ` · ${a.applied.company}` : ''}
+                          {L('지원', 'Applied', 'Đã ứng tuyển')}: {a.applied.title}{a.applied.company ? ` · ${a.applied.company}` : ''}
                         </div>
                         <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                           {a.jobs.map(j => (
@@ -184,7 +186,7 @@ export default function RecommendView({ token, lang }) {
                         </div>
                       </div>
                       <button onClick={() => preview(a)} style={{ padding: '4px 10px', border: '1px solid #D9DCE1', borderRadius: 7, fontSize: 11.5, fontWeight: 600, background: '#fff', color: '#4E5968', cursor: 'pointer', whiteSpace: 'nowrap' }}>
-                        {ko ? '미리보기' : 'Preview'}
+                        {L('미리보기', 'Preview', 'Xem trước')}
                       </button>
                     </div>
                   )
@@ -197,23 +199,23 @@ export default function RecommendView({ token, lang }) {
 
       {/* ───────── 발송 내역 ───────── */}
       <div style={{ marginBottom: 14 }}>
-        <h3 style={{ fontSize: 17, fontWeight: 700, margin: '0 0 4px' }}>{ko ? '발송 내역' : 'Sent history'}</h3>
-        <div style={{ fontSize: 12.5, color: '#6B7280' }}>{ko ? '발송한 추천 메일과 실제 지원 전환 현황.' : 'Sent recommendation emails and their application conversion.'}</div>
+        <h3 style={{ fontSize: 17, fontWeight: 700, margin: '0 0 4px' }}>{L('발송 내역', 'Sent history', 'Lịch sử gửi')}</h3>
+        <div style={{ fontSize: 12.5, color: '#6B7280' }}>{L('발송한 추천 메일과 실제 지원 전환 현황.', 'Sent recommendation emails and their application conversion.', 'Email gợi ý đã gửi và tình hình chuyển đổi sang lượt ứng tuyển.')}</div>
       </div>
       <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginBottom: 20 }}>
-        {stat(ko ? '총 발송' : 'Sent', sent)}
-        {stat(ko ? '지원 전환' : 'Applied', applied, null, '#0D9488')}
-        {stat(ko ? '전환율' : 'Conversion', `${rate}%`, ko ? '지원 / 발송' : 'applied / sent', '#EA580C')}
+        {stat(L('총 발송', 'Sent', 'Tổng đã gửi'), sent)}
+        {stat(L('지원 전환', 'Applied', 'Đã ứng tuyển'), applied, null, '#0D9488')}
+        {stat(L('전환율', 'Conversion', 'Tỷ lệ chuyển đổi'), `${rate}%`, L('지원 / 발송', 'applied / sent', 'ứng tuyển / đã gửi'), '#EA580C')}
       </div>
 
       {rows.length === 0 ? (
         <div style={{ textAlign: 'center', padding: '48px 20px', color: '#9AA0A6', fontSize: 13.5, background: '#FAFAFB', border: '1px solid #EEE', borderRadius: 12 }}>
-          {ko ? '아직 발송된 추천 메일이 없습니다.' : 'No recommendation emails sent yet.'}
+          {L('아직 발송된 추천 메일이 없습니다.', 'No recommendation emails sent yet.', 'Chưa có email gợi ý nào được gửi.')}
         </div>
       ) : (
         <>
         <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
-          {[['all', ko ? '전체' : 'All', sent], ['applied', ko ? '지원함' : 'Applied', applied], ['not', ko ? '미지원' : 'Not yet', sent - applied]].map(([v, label, n]) => (
+          {[['all', L('전체', 'All', 'Tất cả'), sent], ['applied', L('지원함', 'Applied', 'Đã ứng tuyển'), applied], ['not', L('미지원', 'Not yet', 'Chưa ứng tuyển'), sent - applied]].map(([v, label, n]) => (
             <button key={v} onClick={() => setAppliedFilter(v)} style={{
               padding: '6px 12px', borderRadius: 8, fontSize: 12.5, fontWeight: 600, cursor: 'pointer',
               border: '1px solid ' + (appliedFilter === v ? '#ff6000' : '#D9DCE1'),
@@ -225,11 +227,11 @@ export default function RecommendView({ token, lang }) {
           <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 880, tableLayout: 'fixed' }}>
             <thead>
               <tr>
-                <th style={{ ...th, width: '30%' }}>{ko ? '수신자' : 'Recipient'}</th>
-                <th style={th}>{ko ? '공고' : 'Job'}</th>
-                <th style={{ ...th, width: 110 }}>{ko ? '종류' : 'Type'}</th>
-                <th style={{ ...th, width: 92 }}>{ko ? '발송일' : 'Sent'}</th>
-                <th style={{ ...th, width: 170, textAlign: 'center' }}>{ko ? '지원 여부' : 'Applied'}</th>
+                <th style={{ ...th, width: '30%' }}>{L('수신자', 'Recipient', 'Người nhận')}</th>
+                <th style={th}>{L('공고', 'Job', 'Tin tuyển dụng')}</th>
+                <th style={{ ...th, width: 110 }}>{L('종류', 'Type', 'Loại')}</th>
+                <th style={{ ...th, width: 92 }}>{L('발송일', 'Sent', 'Ngày gửi')}</th>
+                <th style={{ ...th, width: 170, textAlign: 'center' }}>{L('지원 여부', 'Applied', 'Ứng tuyển')}</th>
               </tr>
             </thead>
             <tbody>
@@ -243,17 +245,17 @@ export default function RecommendView({ token, lang }) {
                       <div style={{ fontSize: 11.5, color: '#9AA0A6', marginTop: 2 }}>{r.job_company}</div>
                     </td>
                     <td style={td}>
-                      <span style={{ display: 'inline-block', padding: '3px 9px', borderRadius: 999, background: kb.bg, color: kb.color, fontSize: 11.5, fontWeight: 700, whiteSpace: 'nowrap' }}>{ko ? kb.ko : kb.en}</span>
+                      <span style={{ display: 'inline-block', padding: '3px 9px', borderRadius: 999, background: kb.bg, color: kb.color, fontSize: 11.5, fontWeight: 700, whiteSpace: 'nowrap' }}>{kb[lang]}</span>
                     </td>
                     <td style={{ ...td, color: '#6B7280', fontSize: 12.5, whiteSpace: 'nowrap' }}>{fmtDate(r.created_at)}</td>
                     <td style={{ ...td, textAlign: 'center' }}>
                       {r.applied_at ? (
                         <span style={{ display: 'inline-block', padding: '3px 10px', borderRadius: 999, background: '#E7F6F2', color: '#0D9488', fontSize: 12, fontWeight: 700, whiteSpace: 'nowrap' }}>
-                          {ko ? `지원함 · ${fmtDate(r.applied_at)}` : `Applied · ${fmtDate(r.applied_at)}`}
+                          {L(`지원함 · ${fmtDate(r.applied_at)}`, `Applied · ${fmtDate(r.applied_at)}`, `Đã ứng tuyển · ${fmtDate(r.applied_at)}`)}
                         </span>
                       ) : (
                         <span style={{ display: 'inline-block', padding: '3px 10px', borderRadius: 999, background: '#F2F3F5', color: '#9AA0A6', fontSize: 12, fontWeight: 600 }}>
-                          {ko ? '미지원' : 'Not yet'}
+                          {L('미지원', 'Not yet', 'Chưa ứng tuyển')}
                         </span>
                       )}
                     </td>
@@ -271,7 +273,7 @@ export default function RecommendView({ token, lang }) {
         <div onClick={() => setPreviewMail(null)} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
           <div onClick={e => e.stopPropagation()} style={{ background: '#fff', borderRadius: 14, width: '100%', maxWidth: 600, maxHeight: '90vh', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
             <div style={{ padding: '14px 18px', borderBottom: '1px solid #EEE', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <div style={{ fontSize: 13.5, fontWeight: 700 }}>{previewMail.subject || (ko ? '미리보기' : 'Preview')}</div>
+              <div style={{ fontSize: 13.5, fontWeight: 700 }}>{previewMail.subject || L('미리보기', 'Preview', 'Xem trước')}</div>
               <button onClick={() => setPreviewMail(null)} style={{ border: 'none', background: 'none', fontSize: 20, cursor: 'pointer', color: '#9AA0A6', lineHeight: 1 }}>×</button>
             </div>
             <div style={{ overflow: 'auto', flex: 1 }}>

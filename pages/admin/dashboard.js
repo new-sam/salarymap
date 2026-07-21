@@ -41,21 +41,21 @@ function cellPct(cur, prev) {
 
 // 퍼포먼스 대시보드 섹션 구분 (섹션별 강조색)
 const SECTION_LABELS = {
-  basic: { ko: '기본 정보', en: 'Basics', accent: '#2563EB' },
-  talent: { ko: '인재 채용 지표', en: 'Talent funnel', accent: '#0D9488' },
-  company: { ko: '기업 채용 지표', en: 'Company funnel', accent: '#EA580C' },
+  basic: { ko: '기본 정보', en: 'Basics', vi: 'Thông tin cơ bản', accent: '#2563EB' },
+  talent: { ko: '인재 채용 지표', en: 'Talent funnel', vi: 'Phễu ứng viên', accent: '#0D9488' },
+  company: { ko: '기업 채용 지표', en: 'Company funnel', vi: 'Phễu doanh nghiệp', accent: '#EA580C' },
 }
 const TIER_LABELS = {
-  primary: { ko: '주요 지표', en: 'Key metrics' },
-  secondary: { ko: '보조 지표', en: 'Sub metrics' },
+  primary: { ko: '주요 지표', en: 'Key metrics', vi: 'Chỉ số chính' },
+  secondary: { ko: '보조 지표', en: 'Sub metrics', vi: 'Chỉ số phụ' },
 }
 // 기업 채용 섹션 카드 (요약 숫자 — 일별 차트 미연동)
 const B2B_CARDS = [
-  { key: 'forClicks', summaryKey: 'totalForCompaniesClicks', ko: '홈→기업채용 클릭', en: 'Home→For-companies click', tier: 'primary' },
-  { key: 'contactClicks', summaryKey: 'totalContactOwnerClicks', ko: '담당자 대화 버튼 클릭', en: 'Contact button clicks', tier: 'primary' },
-  { key: 'postJobClicks', summaryKey: 'totalPostJobClicks', ko: '공고 올리기 버튼 클릭', en: 'Post-job button clicks', tier: 'primary' },
-  { key: 'companySignups', summaryKey: 'totalCompanySignups', ko: '기업 회원 가입', en: 'Company sign-ups', tier: 'primary' },
-  { key: 'pendingJobs', summaryKey: 'pendingJobs', ko: '기업 공고 승인 대기', en: 'Jobs pending approval', tier: 'primary' },
+  { key: 'forClicks', summaryKey: 'totalForCompaniesClicks', ko: '홈→기업채용 클릭', en: 'Home→For-companies click', vi: 'Click Trang chủ→Nhà tuyển dụng', tier: 'primary' },
+  { key: 'contactClicks', summaryKey: 'totalContactOwnerClicks', ko: '담당자 대화 버튼 클릭', en: 'Contact button clicks', vi: 'Click nút liên hệ', tier: 'primary' },
+  { key: 'postJobClicks', summaryKey: 'totalPostJobClicks', ko: '공고 올리기 버튼 클릭', en: 'Post-job button clicks', vi: 'Click nút đăng tin', tier: 'primary' },
+  { key: 'companySignups', summaryKey: 'totalCompanySignups', ko: '기업 회원 가입', en: 'Company sign-ups', vi: 'Doanh nghiệp đăng ký', tier: 'primary' },
+  { key: 'pendingJobs', summaryKey: 'pendingJobs', ko: '기업 공고 승인 대기', en: 'Jobs pending approval', vi: 'Tin chờ duyệt', tier: 'primary' },
 ]
 
 export default function AdminDashboard() {
@@ -66,8 +66,9 @@ export default function AdminDashboard() {
   const [expForm, setExpForm] = useState({ title: '', date: '', color: EXP_COLORS[0], metrics: [] })
   const [showExpForm, setShowExpForm] = useState(false)
   const { lang: globalLang } = useT()
-  // Admin dashboard only ships ko/en; fall back to en for any other global lang (e.g. vi)
-  const lang = globalLang === 'ko' ? 'ko' : 'en'
+  // Admin dashboard ships ko/en/vi; fall back to en for any other global lang
+  const lang = globalLang === 'ko' || globalLang === 'vi' ? globalLang : 'en'
+  const L = (ko, en, vi) => (lang === 'vi' ? (vi ?? en) : lang === 'ko' ? ko : en)
   const router = useRouter()
   const tab = router.query.tab || 'main'
   // 날짜 범위를 실제로 쓰는 탭에서만 날짜 피커 노출 (이력서/인재풀/연봉인증은 누적 목록이라 무관)
@@ -387,15 +388,15 @@ export default function AdminDashboard() {
   // 일별/주별/월별 테이블 컬럼 — 섹션 단위로 묶어서 표시 (가로 폭 폭주 방지)
   const tableColumns = tableSection === 'company'
     ? [
-        { key: 'forCompaniesClicks', label: lang === 'ko' ? '홈→기업채용 클릭' : 'Home→For-companies', summaryKey: 'totalForCompaniesClicks' },
-        { key: 'contactClicks', label: lang === 'ko' ? '담당자 대화 클릭' : 'Contact clicks', summaryKey: 'totalContactOwnerClicks' },
-        { key: 'postJobClicks', label: lang === 'ko' ? '공고 올리기 클릭' : 'Post-job clicks', summaryKey: 'totalPostJobClicks' },
-        { key: 'companySignups', label: lang === 'ko' ? '기업 회원 가입' : 'Company sign-ups', summaryKey: 'totalCompanySignups' },
+        { key: 'forCompaniesClicks', label: L('홈→기업채용 클릭', 'Home→For-companies', 'Click Trang chủ→NTD'), summaryKey: 'totalForCompaniesClicks' },
+        { key: 'contactClicks', label: L('담당자 대화 클릭', 'Contact clicks', 'Click liên hệ'), summaryKey: 'totalContactOwnerClicks' },
+        { key: 'postJobClicks', label: L('공고 올리기 클릭', 'Post-job clicks', 'Click đăng tin'), summaryKey: 'totalPostJobClicks' },
+        { key: 'companySignups', label: L('기업 회원 가입', 'Company sign-ups', 'Doanh nghiệp đăng ký'), summaryKey: 'totalCompanySignups' },
       ]
     : tableSection === 'basic'
     ? (() => {
         const byKey = (k) => METRICS.find(m => m.key === k)
-        const subLabel = { ad: lang === 'ko' ? '└ 광고' : '└ Ad', organic: lang === 'ko' ? '└ 자연' : '└ Organic', companies: lang === 'ko' ? '└ 회사수' : '└ Companies' }
+        const subLabel = { ad: L('└ 광고', '└ Ad', '└ Quảng cáo'), organic: L('└ 자연', '└ Organic', '└ Tự nhiên'), companies: L('└ 회사수', '└ Companies', '└ Số công ty') }
         // 퍼널 순서(세션→제출→가입) + 광고/자연/회사수는 '연봉 제출' 바로 옆 하위로
         return ['sessions', 'submissions', 'ad', 'organic', 'companies', 'signups'].map(k => {
           const m = byKey(k)
@@ -436,7 +437,7 @@ export default function AdminDashboard() {
           <div className="adm-header">
             <div className="adm-header-controls">
               <DateRangePicker value={dateRange} onChange={(from, to) => { setDateTouched(true); setDateRange({ from, to }) }} />
-              {loading && <span style={{ fontSize: 12, color: '#9AA0A6' }}>{lang === 'ko' ? '불러오는 중…' : 'Loading…'}</span>}
+              {loading && <span style={{ fontSize: 12, color: '#9AA0A6' }}>{L('불러오는 중…', 'Loading…', 'Đang tải…')}</span>}
             </div>
           </div>
         )}
@@ -506,7 +507,7 @@ export default function AdminDashboard() {
               <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 8 }}>
                 <button onClick={() => setSelected([])}
                   style={{ padding: '3px 10px', border: '1px solid #d1d5db', borderRadius: 6, fontSize: 11, background: '#fff', cursor: 'pointer', color: '#888' }}>
-                  {lang === 'ko' ? '선택 초기화' : 'Clear selection'} ({selected.length})
+                  {L('선택 초기화', 'Clear selection', 'Bỏ chọn')} ({selected.length})
                 </button>
               </div>
             )}
@@ -563,7 +564,7 @@ export default function AdminDashboard() {
                   {secondary.length > 0 && (
                     <div style={sec === 'basic' ? { paddingLeft: 14, borderLeft: '2px solid #EEF1F3', marginLeft: 2 } : undefined}>
                       <div style={{ fontSize: 11, fontWeight: 700, color: '#8B95A1', margin: '0 0 7px', letterSpacing: '0.02em' }}>
-                        {sec === 'basic' ? (lang === 'ko' ? '↳ 연봉 제출 구성 (광고·자연·회사수)' : '↳ Submission breakdown') : TIER_LABELS.secondary[lang]}
+                        {sec === 'basic' ? L('↳ 연봉 제출 구성 (광고·자연·회사수)', '↳ Submission breakdown', '↳ Cơ cấu lượt gửi lương') : TIER_LABELS.secondary[lang]}
                       </div>
                       <div className="adm-metric-cards" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(116px, 1fr))', gap: 8 }}>
                         {secondary.map(c => renderCard(c, false))}
@@ -586,7 +587,7 @@ export default function AdminDashboard() {
                               background: dualAxis ? '#EEF2FF' : '#fff',
                               color: dualAxis ? '#4F46E5' : '#999',
                             }}>
-                            {lang === 'ko' ? (dualAxis ? 'Y축 분리' : 'Y축 공유') : (dualAxis ? 'Dual Y' : 'Shared Y')}
+                            {lang === 'ko' ? (dualAxis ? 'Y축 분리' : 'Y축 공유') : (dualAxis ? 'Dual Y' : 'Shared Y')}{/* vi도 영문 축약 사용 */}
                           </button>
                         )}
                         <div style={{ display: 'flex', gap: 0, background: '#f3f4f6', borderRadius: 8, padding: 2 }}>
@@ -673,7 +674,7 @@ export default function AdminDashboard() {
                     {t.expSave}
                   </button>
                   <div style={{ width: '100%', marginTop: 8 }}>
-                    <div style={{ fontSize: 11, color: '#888', marginBottom: 4 }}>{lang === 'ko' ? '영향 지표' : 'Affected Metrics'}</div>
+                    <div style={{ fontSize: 11, color: '#888', marginBottom: 4 }}>{L('영향 지표', 'Affected Metrics', 'Chỉ số ảnh hưởng')}</div>
                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
                       {METRICS_BASE.map(m => {
                         const on = expForm.metrics.includes(m.key)
@@ -869,15 +870,15 @@ export default function AdminDashboard() {
                   {tableView === 'weekly' ? t.weeklyDetail : tableView === 'monthly' ? t.monthlyDetail : t.dailyDetail}
                   {tableView !== 'daily' && (
                     <span style={{ fontSize: 11, fontWeight: 500, color: '#9CA3AF', marginLeft: 8 }}>
-                      {lang === 'ko' ? '변화율' : 'Change'}: {tableView === 'weekly' ? 'WoW' : 'MoM'}
+                      {L('변화율', 'Change', 'Biến động')}: {tableView === 'weekly' ? 'WoW' : 'MoM'}
                     </span>
                   )}
                 </h3>
                 <div style={{ display: 'flex', gap: 0, background: '#f3f4f6', borderRadius: 8, padding: 2 }}>
                   {[
-                    { key: 'daily', label: lang === 'ko' ? '일별' : 'Daily' },
-                    { key: 'weekly', label: lang === 'ko' ? '주별' : 'Weekly' },
-                    { key: 'monthly', label: lang === 'ko' ? '월별' : 'Monthly' },
+                    { key: 'daily', label: L('일별', 'Daily', 'Theo ngày') },
+                    { key: 'weekly', label: L('주별', 'Weekly', 'Theo tuần') },
+                    { key: 'monthly', label: L('월별', 'Monthly', 'Theo tháng') },
                   ].map(m => (
                     <button key={m.key} onClick={() => setTableView(m.key)}
                       style={{
@@ -911,7 +912,7 @@ export default function AdminDashboard() {
                 <table className="adm-m-nowrap" style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
                   <thead>
                     <tr>
-                      <th style={{ padding: '8px 12px', textAlign: 'left', fontWeight: 600, color: '#374151', position: 'sticky', top: 0, background: '#fff', boxShadow: 'inset 0 -2px 0 #e5e7eb', zIndex: 3 }}>{tableView === 'daily' ? (lang === 'ko' ? '날짜' : 'Date') : (lang === 'ko' ? '기간' : 'Period')}</th>
+                      <th style={{ padding: '8px 12px', textAlign: 'left', fontWeight: 600, color: '#374151', position: 'sticky', top: 0, background: '#fff', boxShadow: 'inset 0 -2px 0 #e5e7eb', zIndex: 3 }}>{tableView === 'daily' ? L('날짜', 'Date', 'Ngày') : L('기간', 'Period', 'Kỳ')}</th>
                       {tableColumns.map(c => (
                         <th key={c.key} style={{ padding: '8px 12px', textAlign: 'right', fontWeight: c.sub ? 500 : 600, color: c.sub ? '#9CA3AF' : '#374151', fontSize: c.sub ? 12 : undefined, position: 'sticky', top: 0, background: c.sub ? '#F6F8FA' : '#fff', boxShadow: 'inset 0 -2px 0 #e5e7eb', zIndex: 3 }}>{c.label}</th>
                       ))}

@@ -131,7 +131,7 @@ export default function FunnelView({ data, metrics, summary, funnelKeys, setFunn
       <div style={{ ...sectionStyle, paddingBottom: 16 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
           <span style={{ fontSize: 14, fontWeight: 700, color: '#333' }}>
-            {lang === 'ko' ? '커스텀 퍼널' : 'Custom Funnel'}
+            {lang === 'ko' ? '커스텀 퍼널' : lang === 'vi' ? 'Phễu tùy chỉnh' : 'Custom Funnel'}
             <span style={{ fontWeight: 400, color: '#999', fontSize: 12, marginLeft: 8 }}>
               {funnelKeys.length === 0 ? t.funnelEmpty : `${funnelKeys.length} steps`}
             </span>

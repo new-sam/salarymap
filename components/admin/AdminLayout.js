@@ -10,46 +10,46 @@ import { useT } from '../../lib/i18n'
 const ROUTE_DEFAULT = { '/admin/dashboard': 'main', '/admin/jobs': 'jobs' }
 
 function buildNav(lang) {
-  const L = (ko, en) => (lang === 'ko' ? ko : en)
+  const L = (ko, en, vi) => (lang === 'vi' ? (vi ?? en) : lang === 'ko' ? ko : en)
   return [
     {
       label: 'Performance',
       items: [
-        { label: L('메인 퍼널', 'Main funnel'), pathname: '/admin/dashboard', tab: 'main' },
-        { label: L('추이', 'Trend'), pathname: '/admin/dashboard', tab: 'trend' },
-        { label: L('퍼널', 'Funnel'), pathname: '/admin/dashboard', tab: 'funnel' },
-        { label: L('지원자', 'Applicants'), pathname: '/admin/dashboard', tab: 'applications' },
-        { label: L('이력서', 'Resumes'), pathname: '/admin/dashboard', tab: 'resumes' },
-        { label: L('인재풀', 'Talent'), pathname: '/admin/dashboard', tab: 'talent' },
-        { label: L('인재 공급', 'Supply'), pathname: '/admin/dashboard', tab: 'supply' },
-        { label: L('광고메일', 'Recommend'), pathname: '/admin/dashboard', tab: 'recommend' },
-        { label: L('연봉 인증', 'Verifications'), pathname: '/admin/dashboard', tab: 'verifications' },
-        { label: L('커뮤니티', 'Community'), pathname: '/admin/dashboard', tab: 'community' },
-        { label: L('기업', 'Companies'), pathname: '/admin/dashboard', tab: 'company' },
-        { label: L('이익 지원', 'Revenue'), pathname: '/admin/dashboard', tab: 'revenue' },
-        { label: L('KTC 소싱', 'KTC sources'), pathname: '/admin/dashboard', tab: 'ktc-sources' },
+        { label: L('메인 퍼널', 'Main funnel', 'Phễu chính'), pathname: '/admin/dashboard', tab: 'main' },
+        { label: L('추이', 'Trend', 'Xu hướng'), pathname: '/admin/dashboard', tab: 'trend' },
+        { label: L('퍼널', 'Funnel', 'Phễu'), pathname: '/admin/dashboard', tab: 'funnel' },
+        { label: L('지원자', 'Applicants', 'Ứng viên'), pathname: '/admin/dashboard', tab: 'applications' },
+        { label: L('이력서', 'Resumes', 'CV'), pathname: '/admin/dashboard', tab: 'resumes' },
+        { label: L('인재풀', 'Talent', 'Nguồn ứng viên'), pathname: '/admin/dashboard', tab: 'talent' },
+        { label: L('인재 공급', 'Supply', 'Cung ứng viên'), pathname: '/admin/dashboard', tab: 'supply' },
+        { label: L('광고메일', 'Recommend', 'Email đề xuất'), pathname: '/admin/dashboard', tab: 'recommend' },
+        { label: L('연봉 인증', 'Verifications', 'Xác minh lương'), pathname: '/admin/dashboard', tab: 'verifications' },
+        { label: L('커뮤니티', 'Community', 'Cộng đồng'), pathname: '/admin/dashboard', tab: 'community' },
+        { label: L('기업', 'Companies', 'Công ty'), pathname: '/admin/dashboard', tab: 'company' },
+        { label: L('이익 지원', 'Revenue', 'Doanh thu'), pathname: '/admin/dashboard', tab: 'revenue' },
+        { label: L('KTC 소싱', 'KTC sources', 'Nguồn KTC'), pathname: '/admin/dashboard', tab: 'ktc-sources' },
       ],
     },
     {
-      label: L('앱 대시보드', 'App dashboard'),
+      label: L('앱 대시보드', 'App dashboard', 'Dashboard app'),
       items: [
-        { label: L('앱 대시보드', 'App dashboard'), pathname: '/admin/dashboard', tab: 'appMetrics' },
+        { label: L('앱 대시보드', 'App dashboard', 'Dashboard app'), pathname: '/admin/dashboard', tab: 'appMetrics' },
       ],
     },
     {
-      label: L('영업', 'Sales'),
+      label: L('영업', 'Sales', 'Kinh doanh'),
       items: [
         { label: L('콜드메일 (위승주)', 'Outreach (WSJ)'), pathname: '/admin/dashboard', tab: 'outreach' },
         { label: L('콜드메일 (남영훈)', 'Outreach (YH)'), pathname: '/admin/dashboard', tab: 'outreach-yh' },
       ],
     },
     {
-      label: L('공고 관리', 'Job ops'),
+      label: L('공고 관리', 'Job ops', 'Quản lý tin đăng'),
       items: [
-        { label: L('공고 등록', 'New job'), pathname: '/admin/jobs', tab: 'job-new' },
-        { label: L('공고 목록', 'Jobs'), pathname: '/admin/jobs', tab: 'jobs' },
-        { label: L('회사', 'Companies'), pathname: '/admin/jobs', tab: 'companies' },
-        { label: L('공고 지표', 'Job KPI'), pathname: '/admin/jobs', tab: 'kpi' },
+        { label: L('공고 등록', 'New job', 'Đăng tin mới'), pathname: '/admin/jobs', tab: 'job-new' },
+        { label: L('공고 목록', 'Jobs', 'Tin tuyển dụng'), pathname: '/admin/jobs', tab: 'jobs' },
+        { label: L('회사', 'Companies', 'Công ty'), pathname: '/admin/jobs', tab: 'companies' },
+        { label: L('공고 지표', 'Job KPI', 'KPI tin đăng'), pathname: '/admin/jobs', tab: 'kpi' },
         { label: 'Admins', pathname: '/admin/jobs', tab: 'admins' },
       ],
     },
@@ -65,7 +65,7 @@ function buildNav(lang) {
 export default function AdminLayout({ children }) {
   const router = useRouter()
   const { lang: globalLang, setLang } = useT()
-  const lang = globalLang === 'ko' ? 'ko' : 'en'
+  const lang = globalLang === 'ko' || globalLang === 'vi' ? globalLang : 'en'
   const [open, setOpen] = useState(false)
 
   // 라우트/탭 이동 시 모바일 드로워 닫기
@@ -173,16 +173,16 @@ export default function AdminLayout({ children }) {
         </nav>
         <div style={{ marginTop: 'auto', paddingTop: 16 }}>
           <a href="/" style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 10px', marginBottom: 8, borderRadius: 8, fontSize: 13, fontWeight: 500, color: '#86868b', textDecoration: 'none', border: '1px solid #E8E8EA' }}>
-            <span style={{ fontSize: 15, lineHeight: 1 }}>←</span>{lang === 'ko' ? '사이트로 돌아가기' : 'Back to site'}
+            <span style={{ fontSize: 15, lineHeight: 1 }}>←</span>{lang === 'ko' ? '사이트로 돌아가기' : lang === 'vi' ? 'Về trang chính' : 'Back to site'}
           </a>
           <div style={{ display: 'flex', gap: 2, background: '#EFEFF2', borderRadius: 9, padding: 3 }}>
-            {['ko', 'en'].map((l) => (
+            {['ko', 'en', 'vi'].map((l) => (
               <button key={l} onClick={() => setLang(l)} style={{
                 flex: 1, padding: '6px 0', borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: 'pointer', border: 'none',
                 background: lang === l ? '#fff' : 'transparent',
                 color: lang === l ? '#1d1d1f' : '#86868b',
                 boxShadow: lang === l ? '0 1px 2px rgba(0,0,0,0.08)' : 'none',
-              }}>{l === 'ko' ? '한국어' : 'English'}</button>
+              }}>{l === 'ko' ? '한국어' : l === 'vi' ? 'Tiếng Việt' : 'English'}</button>
             ))}
           </div>
         </div>

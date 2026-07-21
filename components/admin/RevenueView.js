@@ -42,32 +42,32 @@ function aggregateBy(rows, metrics, gran) {
 }
 
 const chartCard = { background: '#fff', border: '1px solid #EEF0F2', borderRadius: 14, padding: 16 }
-const GRANS = [['day', '일', 'Day'], ['week', '주', 'Week'], ['month', '월', 'Month']]
+const GRANS = [['day', '일', 'Day', 'Ngày'], ['week', '주', 'Week', 'Tuần'], ['month', '월', 'Month', 'Tháng']]
 
 // 지원 경로(application_source) 사람이 읽는 라벨 + 설명
 const SOURCE_LABELS = {
-  direct: { ko: '직접 지원', en: 'Direct', desc: { ko: '공고 페이지에서 바로 지원', en: 'Applied straight from the job page' } },
-  salary: { ko: '급여 제출 후', en: 'After salary', desc: { ko: '연봉 제출 흐름에서 이어서 지원', en: 'After submitting salary' } },
-  cv_success: { ko: 'CV 원탭 모달', en: 'CV one-tap', desc: { ko: 'CV 등록 후 추천 공고 원탭 지원', en: 'One-tap from CV modal' } },
-  similar_after_apply: { ko: '지원 후 유사공고', en: 'Similar-after-apply', desc: { ko: '지원 완료 화면의 유사공고에서', en: 'From similar-jobs after applying' } },
-  coldmail_jobs: { ko: '콜드메일 캠페인', en: 'Coldmail', desc: { ko: '콜드메일 원클릭 지원 링크', en: 'From coldmail quick-apply link' } },
+  direct: { ko: '직접 지원', en: 'Direct', vi: 'Ứng tuyển trực tiếp', desc: { ko: '공고 페이지에서 바로 지원', en: 'Applied straight from the job page', vi: 'Ứng tuyển ngay từ trang tin tuyển dụng' } },
+  salary: { ko: '급여 제출 후', en: 'After salary', vi: 'Sau khi nhập lương', desc: { ko: '연봉 제출 흐름에서 이어서 지원', en: 'After submitting salary', vi: 'Ứng tuyển tiếp sau khi gửi thông tin lương' } },
+  cv_success: { ko: 'CV 원탭 모달', en: 'CV one-tap', vi: 'Modal CV one-tap', desc: { ko: 'CV 등록 후 추천 공고 원탭 지원', en: 'One-tap from CV modal', vi: 'Ứng tuyển one-tap từ tin gợi ý sau khi đăng CV' } },
+  similar_after_apply: { ko: '지원 후 유사공고', en: 'Similar-after-apply', vi: 'Tin tương tự sau ứng tuyển', desc: { ko: '지원 완료 화면의 유사공고에서', en: 'From similar-jobs after applying', vi: 'Từ tin tương tự ở màn hình hoàn tất ứng tuyển' } },
+  coldmail_jobs: { ko: '콜드메일 캠페인', en: 'Coldmail', vi: 'Chiến dịch cold mail', desc: { ko: '콜드메일 원클릭 지원 링크', en: 'From coldmail quick-apply link', vi: 'Từ link ứng tuyển nhanh trong cold mail' } },
 }
 
 // 직접 지원 유입 채널 (드릴다운) — utm/referrer 귀속
 const CHANNEL_LABELS = {
-  meta: { ko: '메타 광고', en: 'Meta ads', color: '#2563EB', desc: { ko: '유료 리드·광고 (utm=meta·lead)', en: 'Paid Meta lead/ads' } },
-  organic: { ko: '오가닉', en: 'Organic', color: '#059669', desc: { ko: '구글·페북·직접 등 무료 유입', en: 'Google/FB/direct, unpaid' } },
-  unknown: { ko: '미상', en: 'Unknown', color: '#9CA3AF', desc: { ko: 'utm 유실 — 추적 안 됨 (오가닉 단정 불가)', en: 'No utm — untracked' } },
+  meta: { ko: '메타 광고', en: 'Meta ads', vi: 'Quảng cáo Meta', color: '#2563EB', desc: { ko: '유료 리드·광고 (utm=meta·lead)', en: 'Paid Meta lead/ads', vi: 'Lead/quảng cáo Meta trả phí (utm=meta·lead)' } },
+  organic: { ko: '오가닉', en: 'Organic', vi: 'Organic', color: '#059669', desc: { ko: '구글·페북·직접 등 무료 유입', en: 'Google/FB/direct, unpaid', vi: 'Google/FB/truy cập trực tiếp — miễn phí' } },
+  unknown: { ko: '미상', en: 'Unknown', vi: 'Không rõ', color: '#9CA3AF', desc: { ko: 'utm 유실 — 추적 안 됨 (오가닉 단정 불가)', en: 'No utm — untracked', vi: 'Mất utm — không theo dõi được' } },
 }
 
 export default function RevenueView({ token, lang }) {
-  const ko = lang !== 'en'
+  const L = (ko, en, vi) => (lang === 'vi' ? (vi ?? en) : lang === 'ko' ? ko : en)
   const { data, isLoading } = useAdmin('/api/admin/revenue-metrics', token)
   const [gran, setGran] = useState('day')
   const [view, setView] = useState('channel')
   const [openDirect, setOpenDirect] = useState(false)
 
-  if (isLoading || !data) return <div style={{ textAlign: 'center', padding: 40, color: '#666' }}>{ko ? '불러오는 중…' : 'Loading…'}</div>
+  if (isLoading || !data) return <div style={{ textAlign: 'center', padding: 40, color: '#666' }}>{L('불러오는 중…', 'Loading…', 'Đang tải…')}</div>
   if (data.error) return <div style={{ textAlign: 'center', padding: 40, color: '#c00' }}>{data.error}</div>
 
   const { overview, daily = [], sourceBreakdown = [], directChannels = [], platform = {} } = data
@@ -80,18 +80,18 @@ export default function RevenueView({ token, lang }) {
   // 같은 축(dualAxis 끔)이라 비중이 그대로 보인다.
   const M = (dataKey, label, color) => ({ key: dataKey, dataKey, label, color })
   const VIEWS = {
-    channel: { label: ko ? '창구' : 'Channel', metrics: [M('company', ko ? '기업 지원' : 'Company', '#059669'), M('ktc', ko ? 'KTC 지원' : 'KTC', '#7C3AED')] },
-    source: { label: ko ? '경로' : 'Source', metrics: [
-      M('src_direct', ko ? '직접' : 'Direct', '#7C3AED'),
-      M('src_salary', ko ? '급여 제출' : 'Salary', '#2563EB'),
+    channel: { label: L('창구', 'Channel', 'Kênh'), metrics: [M('company', L('기업 지원', 'Company', 'Doanh nghiệp'), '#059669'), M('ktc', L('KTC 지원', 'KTC', 'KTC'), '#7C3AED')] },
+    source: { label: L('경로', 'Source', 'Nguồn'), metrics: [
+      M('src_direct', L('직접', 'Direct', 'Trực tiếp'), '#7C3AED'),
+      M('src_salary', L('급여 제출', 'Salary', 'Nhập lương'), '#2563EB'),
       M('src_cv_success', 'CV', '#059669'),
-      M('src_similar_after_apply', ko ? '유사공고' : 'Similar', '#F59E0B'),
-      M('src_coldmail_jobs', ko ? '콜드메일' : 'Coldmail', '#EC4899'),
+      M('src_similar_after_apply', L('유사공고', 'Similar', 'Tin tương tự'), '#F59E0B'),
+      M('src_coldmail_jobs', L('콜드메일', 'Coldmail', 'Cold mail'), '#EC4899'),
     ] },
-    directch: { label: ko ? '직접 채널' : 'Direct ch.', metrics: [
-      M('ch_meta', ko ? '메타 광고' : 'Meta', '#2563EB'),
-      M('ch_organic', ko ? '오가닉' : 'Organic', '#059669'),
-      M('ch_unknown', ko ? '미상' : 'Unknown', '#9CA3AF'),
+    directch: { label: L('직접 채널', 'Direct ch.', 'Kênh trực tiếp'), metrics: [
+      M('ch_meta', L('메타 광고', 'Meta', 'QC Meta'), '#2563EB'),
+      M('ch_organic', L('오가닉', 'Organic', 'Organic'), '#059669'),
+      M('ch_unknown', L('미상', 'Unknown', 'Không rõ'), '#9CA3AF'),
     ] },
   }
   const metrics = VIEWS[view].metrics
@@ -102,9 +102,9 @@ export default function RevenueView({ token, lang }) {
   return (
     <div style={{ paddingBottom: 40 }}>
       <div style={{ marginBottom: 16 }}>
-        <h3 style={{ fontSize: 17, fontWeight: 700, margin: '0 0 4px' }}>{ko ? '이익 지원' : 'Revenue applications'}</h3>
+        <h3 style={{ fontSize: 17, fontWeight: 700, margin: '0 0 4px' }}>{L('이익 지원', 'Revenue applications', 'Lượt ứng tuyển doanh thu')}</h3>
         <div style={{ fontSize: 12.5, color: '#6B7280' }}>
-          {ko ? '우리 이익이 남는 두 창구 — 기업 등록 공고 + KTC 시드 공고 — 에 들어온 지원. 멋사(내부) 제외.' : 'Applications to our two revenue channels — company-posted jobs + KTC seed jobs.'}
+          {L('우리 이익이 남는 두 창구 — 기업 등록 공고 + KTC 시드 공고 — 에 들어온 지원. 멋사(내부) 제외.', 'Applications to our two revenue channels — company-posted jobs + KTC seed jobs.', 'Lượt ứng tuyển vào hai kênh sinh doanh thu — tin doanh nghiệp đăng + tin seed KTC.')}
         </div>
       </div>
 
@@ -112,24 +112,24 @@ export default function RevenueView({ token, lang }) {
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, marginBottom: 26 }}>
         <div style={{ flex: '1 1 200px', background: '#FAFBFC', border: '1px solid #EEF0F2', borderRadius: 10, padding: '14px 16px' }}>
           <div style={{ fontSize: 28, fontWeight: 800, color: '#0F172A', lineHeight: 1 }}>{overview.revenueApplications.toLocaleString()}</div>
-          <div style={{ fontSize: 12.5, color: '#374151', fontWeight: 600, marginTop: 4 }}>{ko ? '이익 지원 합계' : 'Total revenue apps'}</div>
-          <div style={{ fontSize: 11, color: '#9CA3AF', marginTop: 2 }}>{ko ? `기업 ${overview.applications} + KTC ${overview.ktcApplications}` : `Company ${overview.applications} + KTC ${overview.ktcApplications}`}</div>
+          <div style={{ fontSize: 12.5, color: '#374151', fontWeight: 600, marginTop: 4 }}>{L('이익 지원 합계', 'Total revenue apps', 'Tổng ứng tuyển doanh thu')}</div>
+          <div style={{ fontSize: 11, color: '#9CA3AF', marginTop: 2 }}>{L(`기업 ${overview.applications} + KTC ${overview.ktcApplications}`, `Company ${overview.applications} + KTC ${overview.ktcApplications}`, `Doanh nghiệp ${overview.applications} + KTC ${overview.ktcApplications}`)}</div>
         </div>
         <div style={{ flex: '1 1 200px', background: '#FAFBFC', border: '1px solid #EEF0F2', borderRadius: 10, padding: '14px 16px' }}>
           <div style={{ fontSize: 28, fontWeight: 800, color: '#0F172A', lineHeight: 1 }}>{overview.applications.toLocaleString()}<span style={{ fontSize: 13, fontWeight: 600, color: '#9CA3AF' }}> · {(100 - overview.ktcShare).toFixed(1)}%</span></div>
-          <div style={{ fontSize: 12.5, color: '#374151', fontWeight: 600, marginTop: 4 }}>{ko ? '기업 등록 공고 지원' : 'Company job apps'}</div>
-          <div style={{ fontSize: 11, color: '#9CA3AF', marginTop: 2 }}>{ko ? `활성 기업 공고 ${overview.companyJobsActive}건` : `${overview.companyJobsActive} live company jobs`}</div>
+          <div style={{ fontSize: 12.5, color: '#374151', fontWeight: 600, marginTop: 4 }}>{L('기업 등록 공고 지원', 'Company job apps', 'Ứng tuyển tin doanh nghiệp')}</div>
+          <div style={{ fontSize: 11, color: '#9CA3AF', marginTop: 2 }}>{L(`활성 기업 공고 ${overview.companyJobsActive}건`, `${overview.companyJobsActive} live company jobs`, `${overview.companyJobsActive} tin doanh nghiệp đang mở`)}</div>
         </div>
         <div style={{ flex: '1 1 200px', background: '#F6F2FE', border: '1px solid #E4D8FB', borderRadius: 10, padding: '14px 16px' }}>
           <div style={{ fontSize: 28, fontWeight: 800, color: '#6D28D9', lineHeight: 1 }}>{overview.ktcApplications.toLocaleString()}<span style={{ fontSize: 13, fontWeight: 600, color: '#A78BDA' }}> · {overview.ktcShare.toFixed(1)}%</span></div>
-          <div style={{ fontSize: 12.5, color: '#4C1D95', fontWeight: 600, marginTop: 4 }}>{ko ? 'KTC 공고 지원' : 'KTC job apps'}</div>
-          <div style={{ fontSize: 11, color: '#8B7BB0', marginTop: 2 }}>{ko ? `활성 KTC 공고 ${overview.ktcJobsActive}건` : `${overview.ktcJobsActive} live KTC jobs`}</div>
+          <div style={{ fontSize: 12.5, color: '#4C1D95', fontWeight: 600, marginTop: 4 }}>{L('KTC 공고 지원', 'KTC job apps', 'Ứng tuyển tin KTC')}</div>
+          <div style={{ fontSize: 11, color: '#8B7BB0', marginTop: 2 }}>{L(`활성 KTC 공고 ${overview.ktcJobsActive}건`, `${overview.ktcJobsActive} live KTC jobs`, `${overview.ktcJobsActive} tin KTC đang mở`)}</div>
         </div>
       </div>
 
       {/* 추이 — 기업 vs KTC, 일/주/월 */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, flexWrap: 'wrap', margin: '0 0 4px' }}>
-        <h4 style={{ fontSize: 15, fontWeight: 700, margin: 0 }}>{ko ? '지원 추이' : 'Trend'}</h4>
+        <h4 style={{ fontSize: 15, fontWeight: 700, margin: 0 }}>{L('지원 추이', 'Trend', 'Xu hướng ứng tuyển')}</h4>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
           {/* 보기 토글 — 창구 / 경로 / 직접 채널 */}
           <div style={{ display: 'flex', gap: 2, background: '#F2F4F6', borderRadius: 9, padding: 3 }}>
@@ -143,21 +143,25 @@ export default function RevenueView({ token, lang }) {
           </div>
           {/* 일/주/월 토글 */}
           <div style={{ display: 'flex', gap: 2, background: '#F2F4F6', borderRadius: 9, padding: 3 }}>
-            {GRANS.map(([k, ko_, en]) => (
+            {GRANS.map(([k, ko_, en, vi]) => (
               <button key={k} onClick={() => setGran(k)} style={{
                 padding: '6px 14px', borderRadius: 6, fontSize: 12.5, fontWeight: 600, cursor: 'pointer', border: 'none',
                 background: gran === k ? '#fff' : 'transparent', color: gran === k ? '#7C3AED' : '#86868b',
                 boxShadow: gran === k ? '0 1px 2px rgba(0,0,0,0.08)' : 'none',
-              }}>{ko ? ko_ : en}</button>
+              }}>{L(ko_, en, vi)}</button>
             ))}
           </div>
         </div>
       </div>
       <div style={{ fontSize: 12, color: '#6B7280', marginBottom: 12 }}>
-        {`${ko ? (gran === 'day' ? '최근 30일' : gran === 'week' ? '주별(최근 12주)' : '월별(최근 6개월)') : (gran === 'day' ? 'Last 30 days' : gran === 'week' ? 'Weekly (12w)' : 'Monthly (6mo)')} · ${metrics.map(m => `${m.label} ${seriesTotal(m.dataKey).toLocaleString()}`).join(' · ')}`}
+        {`${L(
+          gran === 'day' ? '최근 30일' : gran === 'week' ? '주별(최근 12주)' : '월별(최근 6개월)',
+          gran === 'day' ? 'Last 30 days' : gran === 'week' ? 'Weekly (12w)' : 'Monthly (6mo)',
+          gran === 'day' ? '30 ngày gần đây' : gran === 'week' ? 'Theo tuần (12 tuần)' : 'Theo tháng (6 tháng)'
+        )} · ${metrics.map(m => `${m.label} ${seriesTotal(m.dataKey).toLocaleString()}`).join(' · ')}`}
       </div>
       <div style={{ ...chartCard, marginBottom: 30 }}>
-        <MetricChart daily={chartView} metrics={metrics} lang={lang} dualAxis={false} lineType={gran === 'day' ? 'linear' : 'monotone'} dots={gran !== 'day'} avgLabel={ko ? '평균' : 'avg'} />
+        <MetricChart daily={chartView} metrics={metrics} lang={lang} dualAxis={false} lineType={gran === 'day' ? 'linear' : 'monotone'} dots={gran !== 'day'} avgLabel={L('평균', 'avg', 'TB')} />
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 14, marginTop: 8, fontSize: 12, color: '#6B7280' }}>
           {metrics.map(m => (
             <span key={m.key} style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>
@@ -168,24 +172,24 @@ export default function RevenueView({ token, lang }) {
       </div>
 
       {/* 지원 경로 — 이익 지원이 어떤 경로로 들어왔는지 */}
-      <h4 style={{ fontSize: 15, fontWeight: 700, margin: '0 0 4px' }}>{ko ? '지원 경로' : 'Application source'}</h4>
+      <h4 style={{ fontSize: 15, fontWeight: 700, margin: '0 0 4px' }}>{L('지원 경로', 'Application source', 'Nguồn ứng tuyển')}</h4>
       <div style={{ fontSize: 12, color: '#6B7280', marginBottom: 12 }}>
-        {ko ? '이익 지원(기업+KTC)이 각각 어떤 경로로 들어왔는지 — 유입 경로별 분해.' : 'How each revenue application arrived.'}
+        {L('이익 지원(기업+KTC)이 각각 어떤 경로로 들어왔는지 — 유입 경로별 분해.', 'How each revenue application arrived.', 'Mỗi lượt ứng tuyển doanh thu (doanh nghiệp + KTC) đến từ nguồn nào — phân tách theo nguồn.')}
       </div>
       <div className="adm-m-scroll" style={{ border: '1px solid #E5E8EB', borderRadius: 12, overflow: 'hidden', marginBottom: 10 }}>
         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
           <thead>
             <tr style={{ background: '#F8FAFC', color: '#475569' }}>
-              <th style={th}>{ko ? '경로' : 'Source'}</th>
-              <th style={thR}>{ko ? '기업' : 'Company'}</th>
+              <th style={th}>{L('경로', 'Source', 'Nguồn')}</th>
+              <th style={thR}>{L('기업', 'Company', 'Doanh nghiệp')}</th>
               <th style={thR}>KTC</th>
-              <th style={thR}>{ko ? '합계' : 'Total'}</th>
-              <th style={{ ...th, width: '34%' }}>{ko ? '비중' : 'Share'}</th>
+              <th style={thR}>{L('합계', 'Total', 'Tổng')}</th>
+              <th style={{ ...th, width: '34%' }}>{L('비중', 'Share', 'Tỷ trọng')}</th>
             </tr>
           </thead>
           <tbody>
             {sourceBreakdown.length === 0 && (
-              <tr><td style={{ ...td, textAlign: 'center', color: '#9CA3AF' }} colSpan={5}>{ko ? '데이터 없음' : 'No data'}</td></tr>
+              <tr><td style={{ ...td, textAlign: 'center', color: '#9CA3AF' }} colSpan={5}>{L('데이터 없음', 'No data', 'Không có dữ liệu')}</td></tr>
             )}
             {sourceBreakdown.map(r => {
               const lbl = SOURCE_LABELS[r.key]
@@ -202,9 +206,9 @@ export default function RevenueView({ token, lang }) {
                     <td style={td}>
                       <div style={{ fontWeight: 600, color: '#0F172A' }}>
                         {expandable && <span style={{ color: open ? '#7C3AED' : '#C4C9D0', fontWeight: 700, marginRight: 6 }}>{open ? '▾' : '▸'}</span>}
-                        {lbl ? (ko ? lbl.ko : lbl.en) : r.key}
+                        {lbl ? lbl[lang] : r.key}
                       </div>
-                      <div style={{ fontSize: 11, color: '#9CA3AF', marginTop: 1 }}>{lbl ? (ko ? lbl.desc.ko : lbl.desc.en) : r.key}{expandable ? (ko ? ' · 클릭해 유입 분해' : ' · click to split') : ''}</div>
+                      <div style={{ fontSize: 11, color: '#9CA3AF', marginTop: 1 }}>{lbl ? lbl.desc[lang] : r.key}{expandable ? L(' · 클릭해 유입 분해', ' · click to split', ' · bấm để xem chi tiết') : ''}</div>
                     </td>
                     <td style={tdR}>{r.company}</td>
                     <td style={{ ...tdR, color: '#6D28D9' }}>{r.ktc}</td>
@@ -223,7 +227,7 @@ export default function RevenueView({ token, lang }) {
                     return (
                       <tr style={{ background: '#FBFAFF' }}>
                         <td colSpan={5} style={{ padding: '6px 12px 12px 30px' }}>
-                          <div style={{ fontSize: 11.5, color: '#9CA3AF', fontWeight: 600, margin: '4px 0 8px' }}>{ko ? '직접 지원 유입 채널 (utm·referrer 귀속)' : 'Direct-apply channel (utm/referrer)'}</div>
+                          <div style={{ fontSize: 11.5, color: '#9CA3AF', fontWeight: 600, margin: '4px 0 8px' }}>{L('직접 지원 유입 채널 (utm·referrer 귀속)', 'Direct-apply channel (utm/referrer)', 'Kênh của ứng tuyển trực tiếp (theo utm·referrer)')}</div>
                           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12.5 }}>
                             <tbody>
                               {directChannels.map(c => {
@@ -233,9 +237,9 @@ export default function RevenueView({ token, lang }) {
                                   <tr key={c.key} style={{ borderTop: '1px solid #EFEAFB' }}>
                                     <td style={{ padding: '7px 8px' }}>
                                       <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontWeight: 600, color: '#0F172A' }}>
-                                        <span style={{ width: 9, height: 9, borderRadius: 2, background: cl.color }} />{ko ? cl.ko : cl.en}
+                                        <span style={{ width: 9, height: 9, borderRadius: 2, background: cl.color }} />{cl[lang]}
                                       </span>
-                                      <span style={{ fontSize: 11, color: '#9CA3AF', marginLeft: 8 }}>{ko ? cl.desc.ko : cl.desc.en}</span>
+                                      <span style={{ fontSize: 11, color: '#9CA3AF', marginLeft: 8 }}>{cl.desc[lang]}</span>
                                     </td>
                                     <td style={{ padding: '7px 8px', textAlign: 'right', color: '#374151', width: 70 }}>{c.company}</td>
                                     <td style={{ padding: '7px 8px', textAlign: 'right', color: '#6D28D9', width: 70 }}>{c.ktc}</td>
@@ -264,7 +268,7 @@ export default function RevenueView({ token, lang }) {
         </table>
       </div>
       <div style={{ fontSize: 12, color: '#6B7280' }}>
-        {ko ? '플랫폼' : 'Platform'}: <b style={{ color: '#374151' }}>web {platform.web || 0}</b> · <b style={{ color: '#374151' }}>app {platform.app || 0}</b> · {ko ? '미기록' : 'unknown'} {platform.unknown || 0}
+        {L('플랫폼', 'Platform', 'Nền tảng')}: <b style={{ color: '#374151' }}>web {platform.web || 0}</b> · <b style={{ color: '#374151' }}>app {platform.app || 0}</b> · {L('미기록', 'unknown', 'không ghi nhận')} {platform.unknown || 0}
       </div>
     </div>
   )

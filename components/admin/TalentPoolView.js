@@ -19,10 +19,10 @@ const uniOf = r => r.university || r.verified_school_name || ''
 
 // 경력 레벨 분류 (yoe_months 기준)
 const LEVELS = [
-  { key: 'newgrad', label: '신입',   en: 'New grad', test: m => m === 0 },
-  { key: 'junior',  label: '주니어', en: 'Junior',   test: m => m > 0 && m < 24 },
-  { key: 'mid',     label: '미들',   en: 'Mid',      test: m => m >= 24 && m < 60 },
-  { key: 'senior',  label: '시니어', en: 'Senior',   test: m => m >= 60 },
+  { key: 'newgrad', label: '신입',   en: 'New grad', vi: 'Fresher', test: m => m === 0 },
+  { key: 'junior',  label: '주니어', en: 'Junior',   vi: 'Junior',  test: m => m > 0 && m < 24 },
+  { key: 'mid',     label: '미들',   en: 'Mid',      vi: 'Middle',  test: m => m >= 24 && m < 60 },
+  { key: 'senior',  label: '시니어', en: 'Senior',   vi: 'Senior',  test: m => m >= 60 },
 ]
 
 function levelOf(months) {
@@ -30,14 +30,16 @@ function levelOf(months) {
   return LEVELS.find(l => l.test(months))?.key || null
 }
 
-function formatYoe(months, ko = true) {
-  if (months === null || months === undefined) return ko ? '경력 미상' : 'Unknown'
-  if (months === 0) return ko ? '신입' : 'New grad'
+function formatYoe(months, lang = 'ko') {
+  const vi = lang === 'vi'
+  const ko = !vi && lang !== 'en'
+  if (months === null || months === undefined) return ko ? '경력 미상' : vi ? 'Chưa rõ kinh nghiệm' : 'Unknown'
+  if (months === 0) return ko ? '신입' : vi ? 'Fresher' : 'New grad'
   const y = Math.floor(months / 12)
   const m = months % 12
-  if (y === 0) return ko ? `${m}개월` : `${m}m`
-  if (m === 0) return ko ? `${y}년` : `${y}y`
-  return ko ? `${y}년 ${m}개월` : `${y}y ${m}m`
+  if (y === 0) return ko ? `${m}개월` : vi ? `${m} tháng` : `${m}m`
+  if (m === 0) return ko ? `${y}년` : vi ? `${y} năm` : `${y}y`
+  return ko ? `${y}년 ${m}개월` : vi ? `${y} năm ${m} tháng` : `${y}y ${m}m`
 }
 
 function formatSalary(r) {
@@ -65,8 +67,21 @@ function topTitle(r, exps) {
 }
 
 export default function TalentPoolView({ token, lang }) {
-  const ko = lang !== 'en' // admin은 ko/en (vi는 en으로 폴백). undefined면 ko.
-  const L = ko ? {
+  const vi = lang === 'vi'
+  const ko = !vi && lang !== 'en' // admin은 ko/en/vi. undefined면 ko.
+  const L = vi ? {
+    loadingPool: 'Đang tải nguồn ứng viên…', emptyPool: 'Chưa có CV công khai nào.',
+    noMatch: 'Không có ứng viên phù hợp.',
+    statPublic: 'Công khai', people: '', statTop: 'Trường top', statOverseas: 'Du học', statKorean: 'Tiếng Hàn', filtered: 'Đã lọc',
+    searchPh: 'Tên, vị trí, công ty, trường, kỹ năng...', csv: 'Tải CSV',
+    all: 'Tất cả', fTop: '🎓 Trường top', fOverseas: '🌏 Du học', fKorean: '🇰🇷 Tiếng Hàn', allRoles: 'Tất cả vị trí', allWork: 'Tất cả hình thức',
+    topBadge: 'Trường top', rowSchool: 'Trường', rowCareer: 'Kinh nghiệm', rowLang: 'Ngoại ngữ', rowSkills: 'Kỹ năng', rowLocation: 'Khu vực', rowSalary: 'Lương',
+    unknown: 'Chưa rõ', noRole: 'Chưa rõ vị trí', levelUnknown: 'Cấp bậc?', aiFill: 'Điền bằng AI', aiFilling: 'Đang phân tích…',
+    aiTitle: 'Kinh nghiệm/ngoại ngữ còn trống — bấm để điền bằng AI', resume: 'CV →',
+    unclassified: 'Chưa phân loại', parseFail: 'Phân tích thất bại',
+    recBtn: 'Đề xuất việc', recApplied: 'đã ứng tuyển',
+    poolTitle: 'Nguồn ứng viên', noName: 'Không có tên',
+  } : ko ? {
     loadingPool: '인재풀 불러오는 중...', emptyPool: '공개 이력서로 설정한 인재가 아직 없습니다.',
     noMatch: '조건에 맞는 인재가 없습니다.',
     statPublic: '공개', people: '명', statTop: '명문대', statOverseas: '해외', statKorean: '한국어', filtered: '필터',
@@ -77,6 +92,7 @@ export default function TalentPoolView({ token, lang }) {
     aiTitle: '경력/어학이 비어 있어요 — 눌러서 AI로 채웁니다', resume: '이력서 →',
     unclassified: '미분류', parseFail: '분석 실패',
     recBtn: '공고 추천', recApplied: '지원',
+    poolTitle: '공개 인재풀', noName: '이름 없음',
   } : {
     loadingPool: 'Loading talent pool…', emptyPool: 'No public resumes yet.',
     noMatch: 'No matching talent.',
@@ -88,8 +104,9 @@ export default function TalentPoolView({ token, lang }) {
     aiTitle: 'Career/language empty — click to fill with AI', resume: 'Resume →',
     unclassified: 'Unclassified', parseFail: 'Parse failed',
     recBtn: 'Recommend', recApplied: 'applied',
+    poolTitle: 'Talent Pool', noName: 'No name',
   }
-  const levelLabel = (l) => (l ? (ko ? l.label : l.en) : L.levelUnknown)
+  const levelLabel = (l) => (l ? (vi ? l.vi : ko ? l.label : l.en) : L.levelUnknown)
   const { data: all, isLoading: loading, mutate } = useAdmin('/api/admin/resumes', token)
   // 공고 추천: 발송 이력(+지원 여부) 및 기업 등록 공고 목록(모달 셀렉트용)
   const { data: recs, mutate: mutateRecs } = useAdmin('/api/admin/talent-recommend', token)
@@ -174,7 +191,7 @@ export default function TalentPoolView({ token, lang }) {
     const rows = filtered.map(r => {
       const exps = asExperiences(r.experiences)
       return [
-        r.full_name, r.email, r.position || '', (LEVELS.find(l => l.key === levelOf(r.yoe_months)) || {})[ko ? 'label' : 'en'] || '',
+        r.full_name, r.email, r.position || '', (LEVELS.find(l => l.key === levelOf(r.yoe_months)) || {})[vi ? 'vi' : ko ? 'label' : 'en'] || '',
         r.yoe_months ?? '', uniOf(r), topTierOf(r) ? 'Y' : '', overseasOfR(r)?.country || '', r.major || '', r.graduation_year || '',
         exps.map(e => `${e.company}${e.title ? ` (${e.title})` : ''}`).join(' / '),
         r.korean_cert || '', r.english_cert || '', asSkills(r.skills).join(', '),
@@ -213,7 +230,7 @@ export default function TalentPoolView({ token, lang }) {
   const levelChip = (lvl, months) => {
     const s = (lvl && LEVEL_CHIP[lvl.key]) || { bg: '#F1F5F9', color: '#94A3B8' }
     const label = levelLabel(lvl)
-    const yoe = formatYoe(months, ko)
+    const yoe = formatYoe(months, lang)
     // 신입은 라벨=연차라 중복 생략, 연차 미상이면 라벨만.
     const text = (lvl && lvl.key === 'newgrad') || months == null ? label : `${label} · ${yoe}`
     return <span style={{ flexShrink: 0, padding: '1px 8px', borderRadius: 999, fontSize: 10.5, fontWeight: 700, background: s.bg, color: s.color, whiteSpace: 'nowrap' }}>{text}</span>
@@ -221,7 +238,7 @@ export default function TalentPoolView({ token, lang }) {
   // 라벨:값 한 줄 — 카드 본문을 스펙시트처럼 정렬해 깔끔하게.
   const specRow = (label, value, muted) => (
     <div style={{ display: 'flex', gap: 10, fontSize: 12.5, lineHeight: 1.45 }}>
-      <span style={{ flexShrink: 0, width: ko ? 30 : 54, color: '#9CA3AF', fontSize: 11, fontWeight: 600, paddingTop: 1 }}>{label}</span>
+      <span style={{ flexShrink: 0, width: vi ? 72 : ko ? 30 : 54, color: '#9CA3AF', fontSize: 11, fontWeight: 600, paddingTop: 1 }}>{label}</span>
       <span style={{ minWidth: 0, color: muted ? '#CBD5E1' : '#374151', overflow: 'hidden', textOverflow: 'ellipsis' }}>{value}</span>
     </div>
   )
@@ -238,7 +255,7 @@ export default function TalentPoolView({ token, lang }) {
       {/* 헤더: 제목 + 통계 스트립 + 검색/CSV */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', gap: 12, flexWrap: 'wrap', marginBottom: 14 }}>
         <div>
-          <h3 style={{ fontSize: 17, fontWeight: 700, margin: '0 0 6px' }}>{ko ? '공개 인재풀' : 'Talent Pool'}</h3>
+          <h3 style={{ fontSize: 17, fontWeight: 700, margin: '0 0 6px' }}>{L.poolTitle}</h3>
           <div style={{ display: 'flex', gap: 14, alignItems: 'baseline', fontSize: 13, color: '#6B7280', flexWrap: 'wrap' }}>
             <span>{L.statPublic} <strong style={{ color: '#0F172A' }}>{pool.length}</strong>{L.people}</span>
             <span>{L.statTop} <strong style={{ color: '#0F172A' }}>{topTierCount}</strong> ({topTierPct}%)</span>
@@ -317,7 +334,7 @@ export default function TalentPoolView({ token, lang }) {
                 )}
                 <div style={{ minWidth: 0, flex: 1 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-                    <span style={{ fontWeight: 700, fontSize: 14.5, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{r.full_name || (ko ? '이름 없음' : 'No name')}</span>
+                    <span style={{ fontWeight: 700, fontSize: 14.5, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{r.full_name || L.noName}</span>
                     {levelChip(level, r.yoe_months)}
                     {topTierOf(r) && tierBadge(L.topBadge, true)}
                     {os && tierBadge(ko ? os.label : os.country)}
@@ -388,7 +405,7 @@ export default function TalentPoolView({ token, lang }) {
           jobs={companyJobs}
           history={recsByUser[recTarget.id] || []}
           token={token}
-          ko={ko}
+          lang={lang}
           onClose={() => setRecTarget(null)}
           onSent={(row) => mutateRecs(prev => row ? [row, ...(prev || [])] : prev, !row)}
         />
@@ -502,8 +519,17 @@ function JobSelect({ jobs, value, onChange, sentJobIds, placeholder, sentLabel }
 // 공고 추천 메일 모달 — 기업 등록 공고(company_self) 중 하나를 골라
 // 베트남어 추천 메일(리멤버 형식)을 발송한다. 미리보기는 서버에서 실제 발송본과
 // 동일한 내용을 받아와 보여준다.
-function RecommendModal({ person, jobs, history, token, ko, onClose, onSent }) {
-  const M = ko ? {
+function RecommendModal({ person, jobs, history, token, lang, onClose, onSent }) {
+  const vi = lang === 'vi'
+  const ko = !vi && lang !== 'en'
+  const M = vi ? {
+    title: 'Email đề xuất việc làm', to: 'Người nhận', selectJob: 'Chọn tin tuyển dụng', selectPh: 'Chọn tin tuyển dụng do công ty đăng...',
+    history: 'Đề xuất đã gửi', applied: 'Đã ứng tuyển', sent: 'Đã gửi', alreadySent: '✓ Đã gửi',
+    lang: 'Ngôn ngữ email', preview: 'Xem trước email', previewLoading: 'Đang tải bản xem trước...',
+    send: 'Gửi', sending: 'Đang gửi...', done: 'Đã gửi', close: 'Đóng',
+    noJobs: 'Chưa có tin tuyển dụng do công ty đăng (company_self).', noEmail: 'Tài khoản không có email — không thể gửi',
+    dup: 'Đã đề xuất tin tuyển dụng này rồi.',
+  } : ko ? {
     title: '공고 추천 메일', to: '받는 사람', selectJob: '공고 선택', selectPh: '기업 등록 공고 선택...',
     history: '보낸 추천', applied: '지원함', sent: '발송됨', alreadySent: '✓ 발송됨',
     lang: '메일 언어', preview: '메일 미리보기', previewLoading: '미리보기 불러오는 중...',

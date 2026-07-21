@@ -4,21 +4,29 @@ import { useAdmin } from '../../lib/adminSwr'
 import { getSalaryTier, normalizeTrieu } from '../../lib/salaryTiers'
 
 const STATUS = {
-  pending:  { ko: '검토 대기', en: 'Pending',  bg: '#D97706' },
-  approved: { ko: '승인됨',   en: 'Approved', bg: '#059669' },
-  rejected: { ko: '반려됨',   en: 'Rejected', bg: '#DC2626' },
+  pending:  { ko: '검토 대기', en: 'Pending',  vi: 'Chờ duyệt',   bg: '#D97706' },
+  approved: { ko: '승인됨',   en: 'Approved', vi: 'Đã duyệt',    bg: '#059669' },
+  rejected: { ko: '반려됨',   en: 'Rejected', vi: 'Đã từ chối',  bg: '#DC2626' },
 }
 
 const DOC_LABELS = {
-  payslip:    { ko: '급여명세서',      en: 'Payslip' },
-  contract:   { ko: '근로계약서',      en: 'Employment contract' },
-  tax_return: { ko: '원천징수영수증',  en: 'Tax withholding receipt' },
-  other:      { ko: '기타',           en: 'Other' },
+  payslip:    { ko: '급여명세서',      en: 'Payslip',                 vi: 'Phiếu lương' },
+  contract:   { ko: '근로계약서',      en: 'Employment contract',     vi: 'Hợp đồng lao động' },
+  tax_return: { ko: '원천징수영수증',  en: 'Tax withholding receipt', vi: 'Chứng từ khấu trừ thuế' },
+  other:      { ko: '기타',           en: 'Other',                   vi: 'Khác' },
 }
 
 export default function VerificationsView({ token, lang }) {
-  const ko = lang !== 'en'
-  const L = ko ? {
+  const vi = lang === 'vi'
+  const ko = !vi && lang !== 'en'
+  const lk = vi ? 'vi' : ko ? 'ko' : 'en' // {ko,en,vi} 딕셔너리 조회 키
+  const L = vi ? {
+    needSalary: 'Cần nhập lương tháng (triệu VND) để duyệt.',
+    loading: 'Đang tải…', empty: 'Không có yêu cầu', all: 'Tất cả',
+    docType: 'Loại giấy tờ', salary: 'Lương tháng', requested: 'Ngày yêu cầu',
+    viewDoc: 'Xem giấy tờ chứng minh', salaryPh: 'Lương xác minh', unit: 'triệu VND',
+    approve: 'Duyệt', reject: 'Từ chối',
+  } : ko ? {
     needSalary: '월급(백만 VND)을 입력해야 승인할 수 있습니다.',
     loading: '불러오는 중…', empty: '요청이 없습니다', all: '전체',
     docType: '서류 종류', salary: '월급', requested: '요청일',
@@ -31,7 +39,7 @@ export default function VerificationsView({ token, lang }) {
     viewDoc: 'View document', salaryPh: 'Verified salary', unit: 'M VND',
     approve: 'Approve', reject: 'Reject',
   }
-  const locale = ko ? 'ko-KR' : 'en-US'
+  const locale = vi ? 'vi-VN' : ko ? 'ko-KR' : 'en-US'
   const [filter, setFilter] = useState('pending')
   const [actionLoading, setActionLoading] = useState(null)
   const [salaryInput, setSalaryInput] = useState({}) // per-id, monthly in 백만 VND (triệu)
@@ -87,7 +95,7 @@ export default function VerificationsView({ token, lang }) {
 
   const pill = (on) => ({ fontSize: 12.5, fontWeight: 600, cursor: 'pointer', borderRadius: 999, padding: '6px 14px', border: '1px solid', borderColor: on ? '#ff4400' : '#E5E8EB', background: on ? '#FFF1EC' : '#fff', color: on ? '#ff4400' : '#4E5968' })
   const inp = { width: '100%', padding: '7px 11px', border: '1px solid #E5E8EB', borderRadius: 8, fontSize: 13, fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box' }
-  const FILTERS = [['pending', STATUS.pending[ko ? 'ko' : 'en']], ['approved', STATUS.approved[ko ? 'ko' : 'en']], ['rejected', STATUS.rejected[ko ? 'ko' : 'en']], ['all', L.all]]
+  const FILTERS = [['pending', STATUS.pending[lk]], ['approved', STATUS.approved[lk]], ['rejected', STATUS.rejected[lk]], ['all', L.all]]
 
   return (
     <div>
@@ -124,13 +132,13 @@ export default function VerificationsView({ token, lang }) {
                     <div style={{ fontSize: 11.5, color: '#8B95A1', marginTop: 1 }}>{v.profile?.verified_company_name || '-'}</div>
                   </div>
                 </div>
-                <span style={{ flexShrink: 0, fontSize: 11, fontWeight: 700, padding: '3px 10px', borderRadius: 999, background: st.bg, color: '#fff' }}>{st[ko ? 'ko' : 'en']}</span>
+                <span style={{ flexShrink: 0, fontSize: 11, fontWeight: 700, padding: '3px 10px', borderRadius: 999, background: st.bg, color: '#fff' }}>{st[lk]}</span>
               </div>
 
               {/* Details */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: 5, marginBottom: 12 }}>
                 {[
-                  [L.docType, (DOC_LABELS[v.document_type] && DOC_LABELS[v.document_type][ko ? 'ko' : 'en']) || v.document_type],
+                  [L.docType, (DOC_LABELS[v.document_type] && DOC_LABELS[v.document_type][lk]) || v.document_type],
                   [L.salary, v.salary_amount ? `${normalizeTrieu(v.salary_amount).toLocaleString()}M VND` : '-'],
                   [L.requested, new Date(v.created_at).toLocaleDateString(locale)],
                 ].map(([label, val]) => (

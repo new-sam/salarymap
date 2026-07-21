@@ -5,8 +5,9 @@ import { useAdmin } from '../../lib/adminSwr'
 // FYI가 채용 플랫폼으로서 유료 채널(ITviec/TopDev/…) 대비 얼마나 모으는지 판단하는 탭.
 // 데이터: /api/admin/ktc-sources (타 플랫폼 = ktc_candidates 동기화본, FYI = salarymap 라이브)
 
+// 채널명 — 브랜드는 문자열, 설명형 라벨은 {ko,en,vi} (en/vi 모드에서 한국어 노출 방지)
 const PLATFORM_LABEL = {
-  'landing-page': 'KTC 랜딩',
+  'landing-page': { ko: 'KTC 랜딩', en: 'KTC landing', vi: 'Landing KTC' },
   'ITviec-api': 'ITviec',
   'top-dev': 'TopDev',
   'jobs-go': 'JobsGO',
@@ -14,21 +15,46 @@ const PLATFORM_LABEL = {
   LinkedIn: 'LinkedIn',
   glint: 'Glint',
   YBOX: 'YBOX',
-  'legacy-sheet': '레거시 시트',
-  'Form Responses 1': '구글폼',
-  'external-shu1102': '외부 스크리닝',
+  'legacy-sheet': { ko: '레거시 시트', en: 'Legacy sheet', vi: 'Sheet cũ' },
+  'Form Responses 1': { ko: '구글폼', en: 'Google Form', vi: 'Google Form' },
+  'external-shu1102': { ko: '외부 스크리닝', en: 'Ext. screening', vi: 'Sàng lọc ngoài' },
 }
-const label = (key) => PLATFORM_LABEL[key] || key
 // 크로스탭에 개별 열로 보여줄 주요 채널 (나머지는 '기타'로 합산)
 const MAIN_PLATFORMS = ['landing-page', 'ITviec-api', 'jobs-go', 'top-dev', 'LinkedIn', 'top-cv']
 const FYI_COLOR = '#ff4400'
 
 export default function KtcSourcesView({ token, lang }) {
-  const ko = lang !== 'en'
-  const { data, isLoading } = useAdmin('/api/admin/ktc-sources', token)
+  const ko = lang === 'ko'
+  const L = (k, e, v) => (lang === 'vi' ? (v ?? e) : ko ? k : e)
+  const label = (key) => {
+    const v = PLATFORM_LABEL[key]
+    return typeof v === 'object' ? (v[lang] || v.en) : (v || key)
+  }
+  const { data, isLoading, mutate } = useAdmin('/api/admin/ktc-sources', token)
   const [showAllJobs, setShowAllJobs] = useState(false)
+  const [syncing, setSyncing] = useState(false)
+  const [syncMsg, setSyncMsg] = useState(null)
 
-  if (isLoading || !data) return <div style={{ textAlign: 'center', padding: 40, color: '#666' }}>{ko ? '불러오는 중…' : 'Loading…'}</div>
+  async function runSync() {
+    setSyncing(true)
+    setSyncMsg(null)
+    try {
+      const res = await fetch('/api/admin/ktc-sources-sync', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      const r = await res.json()
+      if (!res.ok) throw new Error(r.error || `HTTP ${res.status}`)
+      setSyncMsg(ko ? `동기화 완료 — ${r.upserted}건 반영` : `${L('', 'Synced', 'Đã đồng bộ')} — ${r.upserted} ${L('', 'rows', 'dòng')}`)
+      mutate()
+    } catch (e) {
+      setSyncMsg(L('동기화 실패: ', 'Sync failed: ', 'Đồng bộ thất bại: ') + e.message)
+    } finally {
+      setSyncing(false)
+    }
+  }
+
+  if (isLoading || !data) return <div style={{ textAlign: 'center', padding: 40, color: '#666' }}>{L('불러오는 중…', 'Loading…', 'Đang tải…')}</div>
   if (data.error) return <div style={{ textAlign: 'center', padding: 40, color: '#c00' }}>{data.error}</div>
 
   const { platforms, fyi, jobs, months, totals, syncedAt } = data
@@ -61,22 +87,33 @@ export default function KtcSourcesView({ token, lang }) {
 
   return (
     <div style={{ paddingBottom: 40 }}>
-      <div style={{ marginBottom: 6 }}>
-        <h3 style={{ fontSize: 17, fontWeight: 700, margin: '0 0 4px' }}>{ko ? 'KTC 소싱 채널 비교' : 'KTC sourcing channels'}</h3>
-        <div style={{ fontSize: 12.5, color: '#6B7280' }}>
-          {ko
-            ? 'KTC 공고에 지원자를 모아준 채널별 볼륨·추이·질. FYI는 salarymap DB 라이브, 나머지는 ktc-support 동기화(1일 1회).'
-            : 'Volume, trend and quality per sourcing channel for KTC jobs. FYI is live; others sync daily from ktc-support.'}
-          {syncedAt && <span style={{ color: '#9CA3AF' }}> · {ko ? '마지막 동기화' : 'Last sync'} {new Date(syncedAt).toLocaleString('sv-SE').slice(0, 16)}</span>}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', gap: 12, flexWrap: 'wrap', marginBottom: 6 }}>
+        <div>
+          <h3 style={{ fontSize: 17, fontWeight: 700, margin: '0 0 4px' }}>{L('KTC 소싱 채널 비교', 'KTC sourcing channels', 'So sánh kênh nguồn KTC')}</h3>
+          <div style={{ fontSize: 12.5, color: '#6B7280' }}>
+            {L(
+              'KTC 공고에 지원자를 모아준 채널별 볼륨·추이·질. FYI는 salarymap DB 라이브, 나머지는 동기화 버튼으로 갱신(시트→ktc-support→FYI).',
+              'Volume, trend and quality per sourcing channel for KTC jobs. FYI is live; refresh others with the sync button.',
+              'Khối lượng, xu hướng và chất lượng ứng viên theo kênh cho tin KTC. FYI là dữ liệu trực tiếp; các kênh khác cập nhật bằng nút đồng bộ.'
+            )}
+            {syncedAt && <span style={{ color: '#9CA3AF' }}> · {L('마지막 동기화', 'Last sync', 'Đồng bộ lần cuối')} {new Date(syncedAt).toLocaleString('sv-SE').slice(0, 16)}</span>}
+          </div>
+          {syncMsg && <div style={{ fontSize: 12, color: syncMsg.includes('실패') || syncMsg.includes('failed') || syncMsg.includes('thất bại') ? '#c00' : '#0D9488', marginTop: 4, fontWeight: 600 }}>{syncMsg}</div>}
         </div>
+        <button onClick={runSync} disabled={syncing} style={{
+          padding: '8px 16px', border: 'none', borderRadius: 8, fontSize: 13, fontWeight: 600, whiteSpace: 'nowrap',
+          background: syncing ? '#E5E8EB' : '#ff6000', color: syncing ? '#9CA3AF' : '#fff', cursor: syncing ? 'default' : 'pointer',
+        }}>
+          {syncing ? L('동기화 중… (1~2분)', 'Syncing… (1–2 min)', 'Đang đồng bộ… (1–2 phút)') : L('시트 동기화', 'Sync sheets', 'Đồng bộ sheet')}
+        </button>
       </div>
 
       {/* 요약 카드 */}
       <div className="adm-m-2col" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))', gap: 10, margin: '14px 0 18px' }}>
-        {stat(ko ? '총 지원자 (전 채널)' : 'Applicants (all)', grandTotal.toLocaleString(), ko ? '채널 내 유니크 기준' : 'unique per channel')}
-        {stat('FYI', fyi.total.toLocaleString(), ko ? `지원 건수 ${fyi.applications} · 전체의 ${pct(fyi.total, grandTotal)}%` : `${fyi.applications} applications · ${pct(fyi.total, grandTotal)}% of all`)}
-        {stat(ko ? '최종합격 (타 채널)' : 'Final passed', totalFinal, ko ? 'FYI 지원자는 상태 추적 없음' : 'FYI applicants not tracked')}
-        {stat(ko ? 'KTC 공고' : 'KTC jobs', `${totals.activeKtcJobs} / ${totals.ktcJobs}`, ko ? '활성 / 전체' : 'active / all')}
+        {stat(L('총 지원자 (전 채널)', 'Applicants (all)', 'Tổng ứng viên'), grandTotal.toLocaleString(), L('채널 내 유니크 기준', 'unique per channel', 'unique theo kênh · mọi kênh'))}
+        {stat('FYI', fyi.total.toLocaleString(), ko ? `지원 건수 ${fyi.applications} · 전체의 ${pct(fyi.total, grandTotal)}%` : `${fyi.applications} ${L('', 'applications', 'lượt nộp')} · ${pct(fyi.total, grandTotal)}%`)}
+        {stat(L('최종합격 (타 채널)', 'Final passed', 'Trúng tuyển'), totalFinal, L('FYI 지원자는 상태 추적 없음', 'FYI applicants not tracked', 'Kênh khác — FYI chưa theo dõi trạng thái'))}
+        {stat(L('KTC 공고', 'KTC jobs', 'Tin KTC'), `${totals.activeKtcJobs} / ${totals.ktcJobs}`, L('활성 / 전체', 'active / all', 'đang hoạt động / tổng'))}
       </div>
 
       {/* 채널별 표 */}
@@ -84,13 +121,13 @@ export default function KtcSourcesView({ token, lang }) {
         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
           <thead>
             <tr style={{ background: '#F8FAFC', color: '#475569' }}>
-              {th(ko ? '채널' : 'Channel', 'left', { paddingLeft: 14 })}
-              {shownMonths.map(m => th(`${+m.slice(5)}${ko ? '월' : '/' + m.slice(2, 4)}`))}
-              {th(ko ? '합계' : 'Total')}
-              {th(ko ? '비중' : 'Share', 'left', { width: '18%' })}
-              {th(ko ? '통과' : 'Passed')}
-              {th(ko ? '최종합격' : 'Final')}
-              {th(ko ? '통과율' : 'Pass %', 'right', { paddingRight: 14 })}
+              {th(L('채널', 'Channel', 'Kênh'), 'left', { paddingLeft: 14 })}
+              {shownMonths.map(m => th(ko ? `${+m.slice(5)}월` : lang === 'vi' ? `T${+m.slice(5)}` : `${+m.slice(5)}/${m.slice(2, 4)}`))}
+              {th(L('합계', 'Total', 'Tổng'))}
+              {th(L('비중', 'Share', 'Tỷ trọng'), 'left', { width: '18%' })}
+              {th(L('통과', 'Passed', 'Đạt'))}
+              {th(L('최종합격', 'Final', 'Trúng tuyển'))}
+              {th(L('통과율', 'Pass %', 'Tỷ lệ đạt'), 'right', { paddingRight: 14 })}
             </tr>
           </thead>
           <tbody>
@@ -119,16 +156,16 @@ export default function KtcSourcesView({ token, lang }) {
       </div>
 
       {/* 공고 × 채널 크로스탭 */}
-      <h4 style={{ fontSize: 14.5, fontWeight: 700, margin: '0 0 8px' }}>{ko ? '공고 × 채널' : 'Job × channel'}</h4>
+      <h4 style={{ fontSize: 14.5, fontWeight: 700, margin: '0 0 8px' }}>{L('공고 × 채널', 'Job × channel', 'Tin × kênh')}</h4>
       <div className="adm-m-scroll adm-m-nowrap" style={{ border: '1px solid #E5E8EB', borderRadius: 12, overflow: 'hidden' }}>
         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
           <thead>
             <tr style={{ background: '#F8FAFC', color: '#475569' }}>
-              {th(ko ? '공고' : 'Job', 'left', { paddingLeft: 14 })}
+              {th(L('공고', 'Job', 'Tin đăng'), 'left', { paddingLeft: 14 })}
               {th('FYI', 'right', { color: FYI_COLOR })}
               {MAIN_PLATFORMS.map(p => th(label(p)))}
-              {th(ko ? '기타' : 'Other')}
-              {th(ko ? '합계' : 'Total', 'right', { paddingRight: 14 })}
+              {th(L('기타', 'Other', 'Khác'))}
+              {th(L('합계', 'Total', 'Tổng'), 'right', { paddingRight: 14 })}
             </tr>
           </thead>
           <tbody>
@@ -138,7 +175,7 @@ export default function KtcSourcesView({ token, lang }) {
               return (
                 <tr key={i} style={{ borderTop: '1px solid #F1F5F9' }}>
                   <td style={{ padding: '9px 10px 9px 14px', maxWidth: 340 }}>
-                    <div style={{ fontWeight: 600, color: '#0F172A', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    <div style={{ fontWeight: 600, color: '#0F172A', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={j.label}>
                       {j.code && <span style={{ color: '#6B7280', fontWeight: 700, marginRight: 6 }}>{j.code}</span>}
                       {j.label}
                     </div>
@@ -158,14 +195,16 @@ export default function KtcSourcesView({ token, lang }) {
       </div>
       {jobs.length > 25 && (
         <button onClick={() => setShowAllJobs(v => !v)} style={{ marginTop: 10, background: 'none', border: 'none', color: '#6B7280', fontSize: 12.5, fontWeight: 600, cursor: 'pointer', padding: 0 }}>
-          {showAllJobs ? (ko ? '▾ 접기' : '▾ Collapse') : (ko ? `▸ 전체 ${jobs.length}개 공고 보기` : `▸ Show all ${jobs.length} jobs`)}
+          {showAllJobs ? L('▾ 접기', '▾ Collapse', '▾ Thu gọn') : ko ? `▸ 전체 ${jobs.length}개 공고 보기` : `▸ ${L('', 'Show all', 'Xem tất cả')} ${jobs.length} ${L('', 'jobs', 'tin')}`}
         </button>
       )}
 
       <div style={{ fontSize: 11, color: '#9CA3AF', marginTop: 14, lineHeight: 1.6 }}>
-        {ko
-          ? '지원자 수는 채널 내 유니크 기준(같은 사람이 한 채널에서 여러 공고 지원 시 1명). 통과 = passed·ai_interview_passed·final_passed, 통과율 = 통과/전체 — 진행중(new·인터뷰 대기) 포함이라 보수적 수치. FYI는 KTC 파이프라인 상태 추적이 없어 질 지표 없음. 시트의 FYI 탭은 갱신이 뒤처져 있어 사용하지 않고 salarymap DB에서 직접 집계. 크로스탭의 FYI는 회사·제목 매칭이라 일부 공고는 별도 행으로 나올 수 있음.'
-          : 'Counts are unique applicants per channel. Passed = passed/ai_interview_passed/final_passed over all (incl. in-progress) — conservative. FYI rows have no pipeline tracking. FYI numbers come live from salarymap DB (the sheet FYI tab is stale). Cross-tab FYI matches by company+title; unmatched jobs appear as separate rows.'}
+        {L(
+          '지원자 수는 채널 내 유니크 기준(같은 사람이 한 채널에서 여러 공고 지원 시 1명). 통과 = passed·ai_interview_passed·final_passed, 통과율 = 통과/전체 — 진행중(new·인터뷰 대기) 포함이라 보수적 수치. FYI는 KTC 파이프라인 상태 추적이 없어 질 지표 없음. 시트의 FYI 탭은 갱신이 뒤처져 있어 사용하지 않고 salarymap DB에서 직접 집계. 크로스탭의 FYI는 회사·제목 매칭이라 일부 공고는 별도 행으로 나올 수 있음.',
+          'Counts are unique applicants per channel. Passed = passed/ai_interview_passed/final_passed over all (incl. in-progress) — conservative. FYI rows have no pipeline tracking. FYI numbers come live from salarymap DB (the sheet FYI tab is stale). Cross-tab FYI matches by company+title; unmatched jobs appear as separate rows.',
+          'Số ứng viên tính unique theo kênh (một người ứng tuyển nhiều tin trong cùng kênh = 1). Đạt = passed·ai_interview_passed·final_passed trên tổng (gồm cả đang xử lý) — con số thận trọng. FYI chưa theo dõi trạng thái pipeline KTC nên không có chỉ số chất lượng. Số FYI lấy trực tiếp từ DB salarymap (tab FYI trên sheet đã lỗi thời). Cột FYI trong bảng chéo khớp theo công ty+chức danh; tin không khớp hiển thị thành dòng riêng.'
+        )}
       </div>
     </div>
   )

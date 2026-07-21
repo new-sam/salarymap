@@ -7,20 +7,20 @@ import UserAssetCards from './UserAssetCards'
 // 없으면 platform 기준으로 추정해서 채운다 — 옛 행도 어디서 등록된 건지
 // 추정해서 표시한다 ("웹 (이전)" 처럼 모호한 라벨을 쓰지 않는다).
 const SOURCE_MAP = {
-  cv:      { ko: '축하금 이벤트', en: 'Event',     dot: '#ff4400' },
-  profile: { ko: '프로필',       en: 'Profile',   dot: '#64748B' },
-  jobs:    { ko: '채용 지원',     en: 'Job apply', dot: '#2563EB' },
-  app:     { ko: '앱',           en: 'App',       dot: '#0F172A' },
+  cv:      { ko: '축하금 이벤트', en: 'Event',     vi: 'Sự kiện',   dot: '#ff4400' },
+  profile: { ko: '프로필',       en: 'Profile',   vi: 'Hồ sơ',     dot: '#64748B' },
+  jobs:    { ko: '채용 지원',     en: 'Job apply', vi: 'Ứng tuyển', dot: '#2563EB' },
+  app:     { ko: '앱',           en: 'App',       vi: 'App',       dot: '#0F172A' },
 }
 
 function SourceBadge({ source, platform, lang = 'ko' }) {
   const key = resolveSource({ resume_source: source, resume_platform: platform })
   const s = SOURCE_MAP[key]
-  if (!s) return <span style={{ color: '#C7CDD4', fontSize: 11 }}>{lang === 'ko' ? '미상' : 'Unknown'}</span>
+  if (!s) return <span style={{ color: '#C7CDD4', fontSize: 11 }}>{lang === 'vi' ? 'Chưa rõ' : lang === 'ko' ? '미상' : 'Unknown'}</span>
   return (
     <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, padding: '3px 9px', borderRadius: 999, fontSize: 11, fontWeight: 600, background: '#F2F4F6', color: '#4E5968', whiteSpace: 'nowrap' }}>
       <span style={{ width: 6, height: 6, borderRadius: '50%', background: s.dot, flexShrink: 0 }} />
-      {lang === 'ko' ? s.ko : s.en}
+      {s[lang] || s.en}
     </span>
   )
 }
@@ -35,6 +35,7 @@ function resolveSource(r) {
 }
 
 export default function ResumesView({ token, t, lang = 'ko' }) {
+  const L = (ko, en, vi) => (lang === 'vi' ? (vi ?? en) : lang === 'ko' ? ko : en)
   const { data: resumes, isLoading: loading, mutate } = useAdmin('/api/admin/resumes', token)
   const [search, setSearch] = useState('')
   const [filter, setFilter] = useState('all') // all, public, private
@@ -133,18 +134,12 @@ export default function ResumesView({ token, t, lang = 'ko' }) {
 
   function formatYoe(months) {
     if (months === null || months === undefined) return '-'
-    const ko = lang === 'ko'
-    if (months === 0) return ko ? '신입' : 'New grad'
+    if (months === 0) return L('신입', 'New grad', 'Fresher')
     const y = Math.floor(months / 12)
     const m = months % 12
-    if (ko) {
-      if (y === 0) return `${m}개월`
-      if (m === 0) return `${y}년`
-      return `${y}년 ${m}개월`
-    }
-    if (y === 0) return `${m}m`
-    if (m === 0) return `${y}y`
-    return `${y}y ${m}m`
+    if (y === 0) return L(`${m}개월`, `${m}m`, `${m} tháng`)
+    if (m === 0) return L(`${y}년`, `${y}y`, `${y} năm`)
+    return L(`${y}년 ${m}개월`, `${y}y ${m}m`, `${y} năm ${m} tháng`)
   }
 
   const pillStyle = (on) => ({
@@ -173,7 +168,9 @@ export default function ResumesView({ token, t, lang = 'ko' }) {
             style={{ padding: '8px 12px', border: '1px solid #E5E8EB', borderRadius: 8, fontSize: 13, width: 200, outline: 'none', boxSizing: 'border-box' }} />
           <button onClick={runAiParse} disabled={parsing || unfilled.length === 0}
             style={{ padding: '8px 13px', border: '1px solid #E5E8EB', borderRadius: 8, fontSize: 13, fontWeight: 600, background: '#fff', color: unfilled.length === 0 ? '#ADB5BD' : '#4E5968', cursor: parsing || unfilled.length === 0 ? 'default' : 'pointer', whiteSpace: 'nowrap' }}>
-            {parsing ? `AI 분석 중 ${parseProgress.current}/${parseProgress.total}` : `AI 분석 ${unfilled.length}`}
+            {parsing
+              ? L(`AI 분석 중 ${parseProgress.current}/${parseProgress.total}`, `AI parsing ${parseProgress.current}/${parseProgress.total}`, `Đang phân tích AI ${parseProgress.current}/${parseProgress.total}`)
+              : L(`AI 분석 ${unfilled.length}`, `AI parse ${unfilled.length}`, `Phân tích AI ${unfilled.length}`)}
           </button>
           <button onClick={downloadCsv}
             style={{ padding: '8px 13px', border: '1px solid #E5E8EB', borderRadius: 8, fontSize: 13, fontWeight: 600, background: '#fff', color: '#4E5968', cursor: 'pointer' }}>
@@ -191,7 +188,7 @@ export default function ResumesView({ token, t, lang = 'ko' }) {
         </div>
         <span style={{ width: 1, height: 16, background: '#E5E8EB', flexShrink: 0 }} />
         <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
-          {[{ key: 'all', label: lang === 'ko' ? '전체' : 'All' }, { key: 'cv', label: lang === 'ko' ? '축하금 이벤트' : 'Event' }, { key: 'profile', label: lang === 'ko' ? '프로필' : 'Profile' }, { key: 'jobs', label: lang === 'ko' ? '채용 지원' : 'Job apply' }, { key: 'app', label: lang === 'ko' ? '앱' : 'App' }, { key: 'unknown', label: lang === 'ko' ? '미상' : 'Unknown' }].map(f => {
+          {[{ key: 'all', label: L('전체', 'All', 'Tất cả') }, { key: 'cv', label: L('축하금 이벤트', 'Event', 'Sự kiện') }, { key: 'profile', label: L('프로필', 'Profile', 'Hồ sơ') }, { key: 'jobs', label: L('채용 지원', 'Job apply', 'Ứng tuyển') }, { key: 'app', label: L('앱', 'App') }, { key: 'unknown', label: L('미상', 'Unknown', 'Chưa rõ') }].map(f => {
             const count = f.key === 'all' ? resumes.length : f.key === 'unknown' ? resumes.filter(r => resolveSource(r) === null).length : resumes.filter(r => resolveSource(r) === f.key).length
             const on = sourceFilter === f.key
             return <button key={f.key} onClick={() => setSourceFilter(f.key)} style={pillStyle(on)}>{f.label} <span style={{ opacity: on ? 0.7 : 0.5 }}>{count}</span></button>
@@ -204,7 +201,7 @@ export default function ResumesView({ token, t, lang = 'ko' }) {
         <div style={{ marginBottom: 16, padding: 16, background: '#EEF2FF', borderRadius: 12, border: '1px solid #C7D2FE' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
             <span style={{ fontSize: 13, fontWeight: 600, color: '#4F46E5' }}>
-              {parseProgress.name} 분석 중...
+              {L(`${parseProgress.name} 분석 중...`, `Parsing ${parseProgress.name}...`, `Đang phân tích ${parseProgress.name}...`)}
             </span>
             <span style={{ fontSize: 12, color: '#6B7280' }}>
               {parseProgress.current} / {parseProgress.total}
@@ -227,7 +224,11 @@ export default function ResumesView({ token, t, lang = 'ko' }) {
           border: `1px solid ${parseResults.fail > 0 ? '#FDE68A' : '#A7F3D0'}`,
         }}>
           <div style={{ fontSize: 13, fontWeight: 600, marginBottom: parseResults.errors.length > 0 ? 8 : 0 }}>
-            AI 분석 완료: {parseResults.success}명 성공{parseResults.fail > 0 ? `, ${parseResults.fail}명 실패` : ''}
+            {L(
+              `AI 분석 완료: ${parseResults.success}명 성공${parseResults.fail > 0 ? `, ${parseResults.fail}명 실패` : ''}`,
+              `AI parse done: ${parseResults.success} succeeded${parseResults.fail > 0 ? `, ${parseResults.fail} failed` : ''}`,
+              `Phân tích AI hoàn tất: ${parseResults.success} thành công${parseResults.fail > 0 ? `, ${parseResults.fail} thất bại` : ''}`
+            )}
           </div>
           {parseResults.errors.length > 0 && (
             <div style={{ fontSize: 12, color: '#92400E' }}>
@@ -244,7 +245,7 @@ export default function ResumesView({ token, t, lang = 'ko' }) {
               <tr style={{ borderBottom: '2px solid #e5e7eb', background: '#fafafa' }}>
                 <th style={{ padding: '10px 12px', textAlign: 'left', fontWeight: 600, color: '#374151' }}>#</th>
                 <th style={{ padding: '10px 12px', textAlign: 'left', fontWeight: 600, color: '#374151' }}>{t.resumesName}</th>
-                <th style={{ padding: '10px 12px', textAlign: 'left', fontWeight: 600, color: '#374151' }}>유입</th>
+                <th style={{ padding: '10px 12px', textAlign: 'left', fontWeight: 600, color: '#374151' }}>{L('유입', 'Source', 'Nguồn')}</th>
                 <th style={{ padding: '10px 12px', textAlign: 'left', fontWeight: 600, color: '#374151' }}>{t.resumesPosition}</th>
                 <th style={{ padding: '10px 12px', textAlign: 'left', fontWeight: 600, color: '#374151' }}>{t.resumesYoe}</th>
                 <th style={{ padding: '10px 12px', textAlign: 'left', fontWeight: 600, color: '#374151' }}>{t.resumesLocation}</th>
@@ -292,7 +293,7 @@ export default function ResumesView({ token, t, lang = 'ko' }) {
                       background: r.is_resume_public ? '#E7F6EC' : '#F1F3F5',
                       color: r.is_resume_public ? '#1B7A43' : '#868E96',
                     }}>
-                      {r.is_resume_public ? (lang === 'ko' ? '공개' : 'Public') : (lang === 'ko' ? '비공개' : 'Private')}
+                      {r.is_resume_public ? L('공개', 'Public', 'Công khai') : L('비공개', 'Private', 'Riêng tư')}
                     </span>
                   </td>
                   <td style={{ padding: '8px 12px', textAlign: 'center' }}>

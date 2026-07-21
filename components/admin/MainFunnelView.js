@@ -9,10 +9,10 @@ import BehaviorFunnel, { AmpChart } from './BehaviorFunnel'
 
 // 색은 절제 — 4단계 모두 중립 슬레이트, 활성/강조만 브랜드 오렌지(#ff4400).
 const STAGES = [
-  { key: 'traffic', ko: '유입', en: 'Traffic', sub: { ko: 'GA4 방문자', en: 'GA4 users' }, color: '#475569' },
-  { key: 'signup', ko: '가입', en: 'Sign-ups', sub: { ko: '신규 가입', en: 'New users' }, color: '#475569' },
-  { key: 'apply', ko: '지원', en: 'Applies', sub: { ko: '지원자 (유니크)', en: 'Applicants (unique)' }, color: '#475569' },
-  { key: 'accepted', ko: '합격', en: 'Accepted', sub: { ko: '합격자', en: 'Accepted users' }, color: '#475569' },
+  { key: 'traffic', ko: '유입', en: 'Traffic', vi: 'Lượt truy cập', sub: { ko: 'GA4 방문자', en: 'GA4 users', vi: 'Người dùng GA4' }, color: '#475569' },
+  { key: 'signup', ko: '가입', en: 'Sign-ups', vi: 'Đăng ký', sub: { ko: '신규 가입', en: 'New users', vi: 'Người dùng mới' }, color: '#475569' },
+  { key: 'apply', ko: '지원', en: 'Applies', vi: 'Ứng tuyển', sub: { ko: '지원자 (유니크)', en: 'Applicants (unique)', vi: 'Ứng viên (duy nhất)' }, color: '#475569' },
+  { key: 'accepted', ko: '합격', en: 'Accepted', vi: 'Trúng tuyển', sub: { ko: '합격자', en: 'Accepted users', vi: 'Người trúng tuyển' }, color: '#475569' },
 ]
 
 
@@ -53,7 +53,7 @@ function DetailTable({ title, columns, rows }) {
 }
 
 export default function MainFunnelView({ token, lang, dateRange }) {
-  const L = (ko, en) => (lang === 'ko' ? ko : en)
+  const L = (ko, en, vi) => (lang === 'vi' ? (vi ?? en) : lang === 'ko' ? ko : en)
   const [stage, setStage] = useState('traffic')
 
   const qs = `from=${dateRange.from}&to=${dateRange.to}`
@@ -61,7 +61,7 @@ export default function MainFunnelView({ token, lang, dateRange }) {
   const { data: funnel, isLoading } = useAdmin(`/api/admin/main-funnel?${qs}`, token)
 
   if (isLoading && !funnel) {
-    return <div style={{ textAlign: 'center', padding: 40, color: '#666' }}>{L('불러오는 중…', 'Loading…')}</div>
+    return <div style={{ textAlign: 'center', padding: 40, color: '#666' }}>{L('불러오는 중…', 'Loading…', 'Đang tải…')}</div>
   }
   if (!funnel) return null
 
@@ -72,13 +72,14 @@ export default function MainFunnelView({ token, lang, dateRange }) {
   const acceptedUsers = funnel.accepted.uniqueUsers
   const values = { traffic: visitors, signup: signups, apply: applicants, accepted: acceptedUsers }
   const secondary = {
-    traffic: ga4 ? L(`세션 ${fmt(ga4.totals.sessions)}`, `${fmt(ga4.totals.sessions)} sessions`) : (ga4Error ? L('GA4 로드 실패', 'GA4 failed') : L('GA4 로딩…', 'GA4 loading…')),
+    traffic: ga4 ? L(`세션 ${fmt(ga4.totals.sessions)}`, `${fmt(ga4.totals.sessions)} sessions`, `${fmt(ga4.totals.sessions)} phiên`) : (ga4Error ? L('GA4 로드 실패', 'GA4 failed', 'Lỗi tải GA4') : L('GA4 로딩…', 'GA4 loading…', 'Đang tải GA4…')),
     signup: null,
     apply: L(
       `지원 ${fmt(funnel.applications.total)}건 · 실공고 ${fmt(funnel.applications.realFake?.real.count)}건`,
       `${fmt(funnel.applications.total)} applies · ${fmt(funnel.applications.realFake?.real.count)} real`,
+      `${fmt(funnel.applications.total)} lượt ứng tuyển · ${fmt(funnel.applications.realFake?.real.count)} tin thật`,
     ),
-    accepted: L(`합격 ${fmt(funnel.accepted.total)}건`, `${fmt(funnel.accepted.total)} accepted`),
+    accepted: L(`합격 ${fmt(funnel.accepted.total)}건`, `${fmt(funnel.accepted.total)} accepted`, `${fmt(funnel.accepted.total)} trúng tuyển`),
   }
   const overall = pct(acceptedUsers, visitors, 2)
 
@@ -92,10 +93,10 @@ export default function MainFunnelView({ token, lang, dateRange }) {
   ])].sort().reverse()
 
   const detailTitle = {
-    traffic: L('유입 상세 — 채널·랜딩 페이지 (GA4)', 'Traffic detail — channels & landing pages (GA4)'),
-    signup: L('가입 상세 — 이탈 지도 · 유입 경로', 'Sign-up detail — drop-off map & source'),
-    apply: L('지원 상세', 'Apply detail'),
-    accepted: L('합격 상세', 'Accepted detail'),
+    traffic: L('유입 상세 — 채널·랜딩 페이지 (GA4)', 'Traffic detail — channels & landing pages (GA4)', 'Chi tiết truy cập — kênh & trang đích (GA4)'),
+    signup: L('가입 상세 — 이탈 지도 · 유입 경로', 'Sign-up detail — drop-off map & source', 'Chi tiết đăng ký — điểm rời bỏ & nguồn'),
+    apply: L('지원 상세', 'Apply detail', 'Chi tiết ứng tuyển'),
+    accepted: L('합격 상세', 'Accepted detail', 'Chi tiết trúng tuyển'),
   }
 
   return (
@@ -103,10 +104,10 @@ export default function MainFunnelView({ token, lang, dateRange }) {
       {/* ── 퍼널 스트립: 4단계 카드 + 단계간 전환율 ── */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 10 }}>
         <span style={{ fontSize: 13, color: '#666' }}>
-          {dateRange.from} ~ {dateRange.to} · {L('기간 내 발생 기준 (코호트 아님)', 'Period-based, not cohort')}
+          {dateRange.from} ~ {dateRange.to} · {L('기간 내 발생 기준 (코호트 아님)', 'Period-based, not cohort', 'Theo phát sinh trong kỳ (không phải cohort)')}
         </span>
         <span style={{ fontSize: 13, color: '#666' }}>
-          {L('전체 전환', 'Overall')} {L('유입→합격', 'traffic→accepted')}:{' '}
+          {L('전체 전환', 'Overall', 'Tỷ lệ chuyển đổi tổng')} {L('유입→합격', 'traffic→accepted', 'truy cập→trúng tuyển')}:{' '}
           <b style={{ fontSize: 16, color: '#191F28' }}>{overall === null ? '—' : `${overall}%`}</b>
         </span>
       </div>
@@ -124,7 +125,7 @@ export default function MainFunnelView({ token, lang, dateRange }) {
                 transition: 'border-color 0.15s',
               }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span style={{ fontSize: 13, fontWeight: 700, color: s.color }}>{i + 1}. {L(s.ko, s.en)}</span>
+                <span style={{ fontSize: 13, fontWeight: 700, color: s.color }}>{i + 1}. {L(s.ko, s.en, s.vi)}</span>
                 {i > 0 && (
                   <span style={{ fontSize: 11.5, fontWeight: 700, padding: '2px 8px', borderRadius: 10, background: '#F6F8FA', color: conv === null ? '#999' : '#444' }}>
                     ← {conv === null ? '—' : `${conv}%`}
@@ -133,7 +134,7 @@ export default function MainFunnelView({ token, lang, dateRange }) {
               </div>
               <div style={{ fontSize: 28, fontWeight: 700, color: '#191F28', marginTop: 8, lineHeight: 1.1 }}>{fmt(val)}</div>
               <div style={{ fontSize: 11, color: '#8B95A1', marginTop: 4 }}>
-                {L(s.sub.ko, s.sub.en)}{secondary[s.key] ? ` · ${secondary[s.key]}` : ''}
+                {L(s.sub.ko, s.sub.en, s.sub.vi)}{secondary[s.key] ? ` · ${secondary[s.key]}` : ''}
               </div>
             </div>
           )
@@ -143,20 +144,20 @@ export default function MainFunnelView({ token, lang, dateRange }) {
       {/* ── 일별 퍼널 (매일 보는 메인 표 — 단계 상세보다 위) ── */}
       <div style={{ ...sectionStyle, paddingBottom: 12 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 10 }}>
-          <span style={{ fontSize: 14, fontWeight: 700, color: '#333' }}>{L('일별 퍼널 (최신순)', 'Daily funnel (latest first)')}</span>
-          <span style={{ fontSize: 11, color: '#8B95A1' }}>{L('가입률 = 가입/유입 · 지원자 단위 지표는 지원 카드에서', 'Signup% = signups/users')}</span>
+          <span style={{ fontSize: 14, fontWeight: 700, color: '#333' }}>{L('일별 퍼널 (최신순)', 'Daily funnel (latest first)', 'Phễu theo ngày (mới nhất trước)')}</span>
+          <span style={{ fontSize: 11, color: '#8B95A1' }}>{L('가입률 = 가입/유입 · 지원자 단위 지표는 지원 카드에서', 'Signup% = signups/users', 'Tỷ lệ đăng ký = đăng ký/truy cập')}</span>
         </div>
         <div className="adm-m-scroll" style={{ maxHeight: 420, overflowY: 'auto' }}>
           <table className="adm-m-nowrap" style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12.5 }}>
             <thead>
               <tr style={{ borderBottom: '2px solid #e5e7eb', position: 'sticky', top: 0, background: '#fff' }}>
-                <th style={thLeft}>{L('날짜', 'Date')}</th>
-                <th style={thStyle}>{L('유입', 'Users')}</th>
-                <th style={thStyle}>{L('가입', 'Sign-ups')}</th>
-                <th style={thStyle}>{L('가입률', 'Signup %')}</th>
-                <th style={thStyle}>{L('지원 건', 'Applies')}</th>
-                <th style={thStyle}>{L('실공고 건', 'Real jobs')}</th>
-                <th style={thStyle}>{L('합격', 'Accepted')}</th>
+                <th style={thLeft}>{L('날짜', 'Date', 'Ngày')}</th>
+                <th style={thStyle}>{L('유입', 'Users', 'Truy cập')}</th>
+                <th style={thStyle}>{L('가입', 'Sign-ups', 'Đăng ký')}</th>
+                <th style={thStyle}>{L('가입률', 'Signup %', 'Tỷ lệ ĐK')}</th>
+                <th style={thStyle}>{L('지원 건', 'Applies', 'Lượt ứng tuyển')}</th>
+                <th style={thStyle}>{L('실공고 건', 'Real jobs', 'Tin thật')}</th>
+                <th style={thStyle}>{L('합격', 'Accepted', 'Trúng tuyển')}</th>
               </tr>
             </thead>
             <tbody>
@@ -189,22 +190,22 @@ export default function MainFunnelView({ token, lang, dateRange }) {
       {stage === 'traffic' && (ga4 ? (
         <>
           <DetailTable
-            title={L('채널별', 'By channel')}
-            columns={[L('채널', 'Channel'), L('세션', 'Sessions'), L('방문자', 'Users'), L('신규 방문자', 'New users'), L('참여 세션', 'Engaged'), L('이탈률', 'Bounce')]}
+            title={L('채널별', 'By channel', 'Theo kênh')}
+            columns={[L('채널', 'Channel', 'Kênh'), L('세션', 'Sessions', 'Phiên'), L('방문자', 'Users', 'Người dùng'), L('신규 방문자', 'New users', 'Người dùng mới'), L('참여 세션', 'Engaged', 'Phiên tương tác'), L('이탈률', 'Bounce', 'Tỷ lệ thoát')]}
             rows={(ga4.channels || []).map(c => [
               c.channel, fmt(c.sessions), fmt(c.totalUsers), fmt(c.newUsers), fmt(c.engagedSessions), `${(c.bounceRate * 100).toFixed(0)}%`,
             ])}
           />
           <DetailTable
-            title={L('랜딩 페이지 Top 10', 'Top 10 landing pages')}
-            columns={[L('페이지', 'Page'), L('세션', 'Sessions'), L('방문자', 'Users'), L('이탈률', 'Bounce')]}
+            title={L('랜딩 페이지 Top 10', 'Top 10 landing pages', 'Top 10 trang đích')}
+            columns={[L('페이지', 'Page', 'Trang'), L('세션', 'Sessions', 'Phiên'), L('방문자', 'Users', 'Người dùng'), L('이탈률', 'Bounce', 'Tỷ lệ thoát')]}
             rows={(ga4.landingPages || []).filter(p => !String(p.page).startsWith('/admin')).slice(0, 10).map(p => [
               p.page, fmt(p.sessions), fmt(p.totalUsers), `${(p.bounceRate * 100).toFixed(0)}%`,
             ])}
           />
         </>
       ) : (
-        <div style={{ ...sectionStyle, color: '#999', fontSize: 13 }}>{ga4Error ? L('GA4 데이터를 불러오지 못했습니다.', 'Failed to load GA4 data.') : L('GA4 로딩 중…', 'Loading GA4…')}</div>
+        <div style={{ ...sectionStyle, color: '#999', fontSize: 13 }}>{ga4Error ? L('GA4 데이터를 불러오지 못했습니다.', 'Failed to load GA4 data.', 'Không tải được dữ liệu GA4.') : L('GA4 로딩 중…', 'Loading GA4…', 'Đang tải GA4…')}</div>
       ))}
 
       {stage === 'signup' && (
@@ -214,10 +215,10 @@ export default function MainFunnelView({ token, lang, dateRange }) {
             <div style={{ ...sectionStyle, marginBottom: 16 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 16 }}>
                 <span style={{ fontSize: 14, fontWeight: 700, color: '#333' }}>
-                  {L('단계별 이탈 플로우 — 어디서 새는가', 'Step-by-step drop-off — where users leak')}
+                  {L('단계별 이탈 플로우 — 어디서 새는가', 'Step-by-step drop-off — where users leak', 'Luồng rời bỏ theo bước — rò rỉ ở đâu')}
                 </span>
                 <span style={{ fontSize: 12, color: '#8B95A1' }}>
-                  {L('총 가입', 'Sign-ups')} <b style={{ color: '#191F28' }}>{fmt(signups)}</b>
+                  {L('총 가입', 'Sign-ups', 'Tổng đăng ký')} <b style={{ color: '#191F28' }}>{fmt(signups)}</b>
                 </span>
               </div>
               {['wizard', 'cv'].map(k => funnel.flows[k] && (
@@ -228,16 +229,18 @@ export default function MainFunnelView({ token, lang, dateRange }) {
               ))}
               <div style={{ fontSize: 11, color: '#8B95A1', marginTop: 6, lineHeight: 1.7, paddingTop: 10, borderTop: '1px solid #f0f0f0' }}>
                 {L('각 단계 = 직전 단계 도달 유저 중 다음 단계까지 간 유저(순차·유저 단위·전체 기간 윈도우). 빨강 = 가장 크게 새는 지점. 마지막은 실제 신규 가입 — 위저드는 sign_up 이벤트, CV는 등록완료 도달자 중 신규 auth 계정만(CV는 클라이언트 OAuth라 sign_up 이벤트가 안 잡혀 계정 생성으로 집계). ',
-                   'Each step = users from the previous reaching the next (sequential, per-user). Red = biggest leak. Final step = actual new signups (wizard: sign_up event; CV: new auth accounts among registrants). ')}
-                <b style={{ color: '#C2452B' }}>{L('공고·앱 플로우는 제외', 'Jobs/app excluded')}</b>
+                   'Each step = users from the previous reaching the next (sequential, per-user). Red = biggest leak. Final step = actual new signups (wizard: sign_up event; CV: new auth accounts among registrants). ',
+                   'Mỗi bước = số người dùng từ bước trước đi tiếp đến bước sau (tuần tự, theo người dùng). Đỏ = điểm rò rỉ lớn nhất. Bước cuối = đăng ký mới thực tế (wizard: sự kiện sign_up; CV: tài khoản auth mới trong số người hoàn tất đăng ký). ')}
+                <b style={{ color: '#C2452B' }}>{L('공고·앱 플로우는 제외', 'Jobs/app excluded', 'Không gồm luồng tin tuyển dụng/app')}</b>
                 {L(': 공고 목록·카드·지원버튼 이벤트의 ~60%, 앱 이벤트의 ~51%가 client_id 없이(익명) 찍혀 순차 스티칭이 불가 → 계측을 먼저 고쳐야 신뢰 가능. CV는 sign_up 이벤트가 웹 콜백 전용이라 등록완료(cv_register_success)를 종료 단계로 본다.',
-                   ': top-of-funnel events for jobs (~60%) and app (~51%) fire without client_id, so sequential stitching is unreliable — fix instrumentation first.')}
+                   ': top-of-funnel events for jobs (~60%) and app (~51%) fire without client_id, so sequential stitching is unreliable — fix instrumentation first.',
+                   ': ~60% sự kiện đầu phễu của tin tuyển dụng và ~51% của app không có client_id nên không ghép tuần tự được — cần sửa đo lường trước.')}
               </div>
             </div>
           )}
           <DetailTable
-            title={L('가입 유입 경로 (utm_source / campaign, 미기록=organic/direct)', 'Signup source (utm_source / campaign)')}
-            columns={[L('경로', 'Source'), L('가입자', 'Sign-ups'), L('비중', 'Share')]}
+            title={L('가입 유입 경로 (utm_source / campaign, 미기록=organic/direct)', 'Signup source (utm_source / campaign)', 'Nguồn đăng ký (utm_source / campaign)')}
+            columns={[L('경로', 'Source', 'Nguồn'), L('가입자', 'Sign-ups', 'Đăng ký'), L('비중', 'Share', 'Tỷ trọng')]}
             rows={funnel.signups.bySource.map(r => [r.key, fmt(r.count), `${pct(r.count, signups) ?? 0}%`])}
           />
         </>
@@ -250,18 +253,18 @@ export default function MainFunnelView({ token, lang, dateRange }) {
             <div style={{ ...sectionStyle, marginBottom: 16 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 12 }}>
                 <span style={{ fontSize: 14, fontWeight: 700, color: '#333' }}>
-                  {L('실 공고 건당 지원 (기업등록 + KTC · 누적)', 'Real jobs — applications per posting (all-time)')}
+                  {L('실 공고 건당 지원 (기업등록 + KTC · 누적)', 'Real jobs — applications per posting (all-time)', 'Tin thật — lượt ứng tuyển mỗi tin (toàn thời gian)')}
                 </span>
-                <span style={{ fontSize: 11, color: '#8B95A1' }}>{L('기간 무관 · 테스트 지원 제외', 'All-time · test excluded')}</span>
+                <span style={{ fontSize: 11, color: '#8B95A1' }}>{L('기간 무관 · 테스트 지원 제외', 'All-time · test excluded', 'Toàn thời gian · loại trừ test')}</span>
               </div>
               <div className="adm-m-2col" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }}>
                 {[
-                  { label: L('실 공고 (활성)', 'Real postings (active)'), value: fmt(funnel.realJobs.activePostings),
-                    sub: L(`전체 ${fmt(funnel.realJobs.totalPostings)}건`, `${fmt(funnel.realJobs.totalPostings)} total`), color: '#16A34A' },
-                  { label: L('누적 실 지원', 'Total real applies'), value: fmt(funnel.realJobs.totalApps),
-                    sub: L(`지원 받은 공고 ${fmt(funnel.realJobs.postingsWithApps)}건`, `${fmt(funnel.realJobs.postingsWithApps)} with applies`), color: '#0D9488' },
-                  { label: L('공고당 평균 지원', 'Avg applies / posting'), value: funnel.realJobs.avgPerActive === null ? '—' : funnel.realJobs.avgPerActive.toFixed(1),
-                    sub: L(`지원받은 공고당 ${funnel.realJobs.avgPerWithApps === null ? '—' : funnel.realJobs.avgPerWithApps.toFixed(1)}건`, `${funnel.realJobs.avgPerWithApps === null ? '—' : funnel.realJobs.avgPerWithApps.toFixed(1)} per applied`), color: '#ff4400' },
+                  { label: L('실 공고 (활성)', 'Real postings (active)', 'Tin thật (đang hoạt động)'), value: fmt(funnel.realJobs.activePostings),
+                    sub: L(`전체 ${fmt(funnel.realJobs.totalPostings)}건`, `${fmt(funnel.realJobs.totalPostings)} total`, `Tổng ${fmt(funnel.realJobs.totalPostings)} tin`), color: '#16A34A' },
+                  { label: L('누적 실 지원', 'Total real applies', 'Tổng ứng tuyển thật'), value: fmt(funnel.realJobs.totalApps),
+                    sub: L(`지원 받은 공고 ${fmt(funnel.realJobs.postingsWithApps)}건`, `${fmt(funnel.realJobs.postingsWithApps)} with applies`, `${fmt(funnel.realJobs.postingsWithApps)} tin có ứng tuyển`), color: '#0D9488' },
+                  { label: L('공고당 평균 지원', 'Avg applies / posting', 'TB ứng tuyển / tin'), value: funnel.realJobs.avgPerActive === null ? '—' : funnel.realJobs.avgPerActive.toFixed(1),
+                    sub: L(`지원받은 공고당 ${funnel.realJobs.avgPerWithApps === null ? '—' : funnel.realJobs.avgPerWithApps.toFixed(1)}건`, `${funnel.realJobs.avgPerWithApps === null ? '—' : funnel.realJobs.avgPerWithApps.toFixed(1)} per applied`, `${funnel.realJobs.avgPerWithApps === null ? '—' : funnel.realJobs.avgPerWithApps.toFixed(1)} / tin có ứng tuyển`), color: '#ff4400' },
                 ].map((c, i) => (
                   <div key={i} style={{ background: '#fff', border: '1px solid #e5e7eb', borderRadius: 12, padding: '14px 16px' }}>
                     <div style={{ fontSize: 12.5, fontWeight: 700, color: c.color }}>{c.label}</div>
@@ -276,8 +279,8 @@ export default function MainFunnelView({ token, lang, dateRange }) {
           {funnel.applications.realFake && (
             <div className="adm-m-1col" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 16 }}>
               {[
-                { k: 'real', label: L('실공고 지원 (기업등록 + KTC)', 'Real jobs (company + KTC)'), color: '#16A34A' },
-                { k: 'fake', label: L('크롤 공고 지원 (wanted/topdev 등)', 'Crawled jobs (wanted/topdev …)'), color: '#8B95A1' },
+                { k: 'real', label: L('실공고 지원 (기업등록 + KTC)', 'Real jobs (company + KTC)', 'Tin thật (công ty đăng + KTC)'), color: '#16A34A' },
+                { k: 'fake', label: L('크롤 공고 지원 (wanted/topdev 등)', 'Crawled jobs (wanted/topdev …)', 'Tin crawl (wanted/topdev …)'), color: '#8B95A1' },
               ].map(({ k, label, color }) => {
                 const v = funnel.applications.realFake[k]
                 return (
@@ -286,7 +289,7 @@ export default function MainFunnelView({ token, lang, dateRange }) {
                     <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginTop: 6 }}>
                       <span style={{ fontSize: 24, fontWeight: 700, color: '#191F28' }}>{fmt(v.count)}{L('건', '')}</span>
                       <span style={{ fontSize: 12, color: '#8B95A1' }}>
-                        {v.users}{L('명', ' users')} · {pct(v.count, funnel.applications.total) ?? 0}%
+                        {v.users}{L('명', ' users', ' người')} · {pct(v.count, funnel.applications.total) ?? 0}%
                       </span>
                     </div>
                   </div>
@@ -297,10 +300,10 @@ export default function MainFunnelView({ token, lang, dateRange }) {
           <div style={{ ...sectionStyle, marginBottom: 16 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 14 }}>
               <span style={{ fontSize: 14, fontWeight: 700, color: '#333' }}>
-                {L('지원 횟수 분포 — n회 지원한 사람 수', 'Applies per user — distribution')}
+                {L('지원 횟수 분포 — n회 지원한 사람 수', 'Applies per user — distribution', 'Phân bố số lần ứng tuyển mỗi người')}
               </span>
               <span style={{ fontSize: 12, color: '#8B95A1' }}>
-                {L('인당 평균', 'Avg per user')} <b style={{ color: '#191F28' }}>{applicants > 0 ? (funnel.applications.total / applicants).toFixed(1) : '—'}</b>{L('회', '')}
+                {L('인당 평균', 'Avg per user', 'TB mỗi người')} <b style={{ color: '#191F28' }}>{applicants > 0 ? (funnel.applications.total / applicants).toFixed(1) : '—'}</b>{L('회', '')}
               </span>
             </div>
             {(() => {
@@ -323,27 +326,27 @@ export default function MainFunnelView({ token, lang, dateRange }) {
           </div>
           <div className="adm-m-1col" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
             <DetailTable
-              title={L('지원 경로', 'By source')}
-              columns={[L('경로', 'Source'), L('건수', 'Count'), L('비중', 'Share')]}
+              title={L('지원 경로', 'By source', 'Theo nguồn')}
+              columns={[L('경로', 'Source', 'Nguồn'), L('건수', 'Count', 'Số lượt'), L('비중', 'Share', 'Tỷ trọng')]}
               rows={funnel.applications.bySource.map(r => [r.key, fmt(r.count), `${pct(r.count, funnel.applications.total) ?? 0}%`])}
             />
             <DetailTable
-              title={L('지원 상태', 'By status')}
-              columns={[L('상태', 'Status'), L('건수', 'Count'), L('비중', 'Share')]}
+              title={L('지원 상태', 'By status', 'Theo trạng thái')}
+              columns={[L('상태', 'Status', 'Trạng thái'), L('건수', 'Count', 'Số lượt'), L('비중', 'Share', 'Tỷ trọng')]}
               rows={funnel.applications.byStatus.map(r => [r.key, fmt(r.count), `${pct(r.count, funnel.applications.total) ?? 0}%`])}
             />
           </div>
           <DetailTable
-            title={L('공고 출처별 지원 (real = company_self·ktc)', 'Applies by job source (real = company_self·ktc)')}
-            columns={[L('공고 출처', 'Job source'), L('건수', 'Count'), L('비중', 'Share')]}
+            title={L('공고 출처별 지원 (real = company_self·ktc)', 'Applies by job source (real = company_self·ktc)', 'Ứng tuyển theo nguồn tin (real = company_self·ktc)')}
+            columns={[L('공고 출처', 'Job source', 'Nguồn tin'), L('건수', 'Count', 'Số lượt'), L('비중', 'Share', 'Tỷ trọng')]}
             rows={(funnel.applications.byJobSource || []).map(r => [
               ['company_self', 'ktc'].includes(r.key) ? `${r.key} ✓real` : r.key,
               fmt(r.count), `${pct(r.count, funnel.applications.total) ?? 0}%`,
             ])}
           />
           <DetailTable
-            title={L('지원 많은 공고 Top 15', 'Top 15 jobs by applications')}
-            columns={[L('회사 · 공고', 'Company · Job'), L('구분', 'Type'), L('지원', 'Applies'), L('합격', 'Accepted')]}
+            title={L('지원 많은 공고 Top 15', 'Top 15 jobs by applications', 'Top 15 tin có nhiều ứng tuyển')}
+            columns={[L('회사 · 공고', 'Company · Job', 'Công ty · Tin tuyển dụng'), L('구분', 'Type', 'Loại'), L('지원', 'Applies', 'Ứng tuyển'), L('합격', 'Accepted', 'Trúng tuyển')]}
             rows={funnel.applications.topJobs.map(j => [
               `${j.company} · ${j.title}`,
               ['company_self', 'ktc'].includes(j.source) ? `✓ real (${j.source})` : j.source,
@@ -355,8 +358,8 @@ export default function MainFunnelView({ token, lang, dateRange }) {
 
       {stage === 'accepted' && (
         <DetailTable
-          title={L('합격 목록 (기간 내 지원 중 accepted)', 'Accepted list (applications in range)')}
-          columns={[L('지원일', 'Applied'), L('회사', 'Company'), L('공고', 'Job'), L('지원 경로', 'Source')]}
+          title={L('합격 목록 (기간 내 지원 중 accepted)', 'Accepted list (applications in range)', 'Danh sách trúng tuyển (ứng tuyển trong kỳ)')}
+          columns={[L('지원일', 'Applied', 'Ngày ứng tuyển'), L('회사', 'Company', 'Công ty'), L('공고', 'Job', 'Tin tuyển dụng'), L('지원 경로', 'Source', 'Nguồn')]}
           rows={funnel.accepted.items.map(a => [a.date, a.company, a.title, a.source])}
         />
       )}
