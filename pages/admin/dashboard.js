@@ -72,7 +72,7 @@ export default function AdminDashboard() {
   const router = useRouter()
   const tab = router.query.tab || 'main'
   // 날짜 범위를 실제로 쓰는 탭에서만 날짜 피커 노출 (이력서/인재풀/연봉인증은 누적 목록이라 무관)
-  const showDatePicker = ['main', 'trend', 'funnel', 'applications', 'community', 'appMetrics'].includes(tab)
+  const showDatePicker = ['main', 'trend', 'funnel', 'applications', 'community', 'appMetrics', 'ktc-sources'].includes(tab)
   const [funnelKeys, setFunnelKeys] = useState([])
   const [chartMode, setChartMode] = useState('1d')
   const [tableView, setTableView] = useState('daily')
@@ -1005,7 +1005,7 @@ export default function AdminDashboard() {
 
         {/* KTC 소싱 채널 비교 — FYI vs 타 플랫폼(ITviec/LinkedIn/…) 지원자 확보량·질 */}
         {tab === 'ktc-sources' && (
-          <KtcSourcesView token={token} lang={lang} />
+          <KtcSourcesView token={token} lang={lang} dateRange={dateRange} />
         )}
 
         {/* App Metrics Tab */}

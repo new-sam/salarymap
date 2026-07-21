@@ -22,15 +22,54 @@ const PLATFORM_LABEL = {
 // 크로스탭에 개별 열로 보여줄 주요 채널 (나머지는 '기타'로 합산)
 const MAIN_PLATFORMS = ['landing-page', 'ITviec-api', 'jobs-go', 'top-dev', 'LinkedIn', 'top-cv']
 const FYI_COLOR = '#ff4400'
+// 도넛 세그먼트 — 보기 편한 파스텔톤 (채널 정체성에 고정), FYI만 브랜드 주황. 소수 채널은 기타 회색.
+const CHANNEL_SOFT_COLORS = {
+  'landing-page': '#5B9BF8',
+  'ITviec-api': '#3EC1A8',
+  'jobs-go': '#9A8CF8',
+  'top-dev': '#F6B73C',
+  LinkedIn: '#F290A9',
+}
+const OTHER_GRAY = '#D9DEE4'
 
-export default function KtcSourcesView({ token, lang }) {
+// 채널 비중 도넛 (SVG). segs: [{key, n, color, label}], 12시 방향 시작 시계방향, 2px 갭.
+function Donut({ segs, total, centerTop, centerSub }) {
+  const R = 70, SW = 26, C = 2 * Math.PI * R
+  let acc = 0
+  return (
+    <svg viewBox="0 0 200 200" width={188} height={188} role="img" style={{ flexShrink: 0 }}>
+      {segs.map(s => {
+        const frac = total > 0 ? s.n / total : 0
+        const len = Math.max(0, frac * C - 2)
+        const offset = -acc * C
+        acc += frac
+        if (len <= 0) return null
+        return (
+          <circle
+            key={s.key} cx="100" cy="100" r={R} fill="none"
+            stroke={s.color} strokeWidth={SW}
+            strokeDasharray={`${len} ${C - len}`} strokeDashoffset={offset}
+            transform="rotate(-90 100 100)"
+          >
+            <title>{`${s.label}: ${s.n.toLocaleString()} (${total > 0 ? Math.round((s.n / total) * 100) : 0}%)`}</title>
+          </circle>
+        )
+      })}
+      <text x="100" y="96" textAnchor="middle" fontSize="26" fontWeight="800" fill="#191F28" style={{ fontVariantNumeric: 'tabular-nums' }}>{centerTop}</text>
+      <text x="100" y="116" textAnchor="middle" fontSize="11.5" fontWeight="600" fill={FYI_COLOR}>{centerSub}</text>
+    </svg>
+  )
+}
+
+export default function KtcSourcesView({ token, lang, dateRange }) {
   const ko = lang === 'ko'
   const L = (k, e, v) => (lang === 'vi' ? (v ?? e) : ko ? k : e)
   const label = (key) => {
     const v = PLATFORM_LABEL[key]
     return typeof v === 'object' ? (v[lang] || v.en) : (v || key)
   }
-  const { data, isLoading, mutate } = useAdmin('/api/admin/ktc-sources', token)
+  const qs = dateRange?.from && dateRange?.to ? `?from=${dateRange.from}&to=${dateRange.to}` : ''
+  const { data, isLoading, mutate } = useAdmin(`/api/admin/ktc-sources${qs}`, token)
   const [showAllJobs, setShowAllJobs] = useState(false)
   const [openJobs, setOpenJobs] = useState({}) // 공고 행 펼침 (채널×월 상세)
   const [syncing, setSyncing] = useState(false)
@@ -117,6 +156,47 @@ export default function KtcSourcesView({ token, lang }) {
         {stat(L('최종합격 (타 채널)', 'Final passed', 'Trúng tuyển'), totalFinal, L('FYI 지원자는 상태 추적 없음', 'FYI applicants not tracked', 'Kênh khác — FYI chưa theo dõi trạng thái'))}
         {stat(L('KTC 공고', 'KTC jobs', 'Tin KTC'), `${totals.activeKtcJobs} / ${totals.ktcJobs}`, L('활성 / 전체', 'active / all', 'đang hoạt động / tổng'))}
       </div>
+
+      {/* 채널 비중 도넛 — 선택 기간 내 지원자 구성 */}
+      {(() => {
+        // 고정 색이 있는 채널은 개별 세그먼트, 나머지는 기타로 합산 (색은 채널 정체성에 고정)
+        const nonFyi = allRows.filter(r => !r.isFyi)
+        const named = nonFyi.filter(r => CHANNEL_SOFT_COLORS[r.key])
+        const donutSegs = [
+          { key: 'FYI', n: fyi.total, color: FYI_COLOR, label: 'FYI' },
+          ...named.map(r => ({ key: r.key, n: r.total, color: CHANNEL_SOFT_COLORS[r.key], label: label(r.key) })),
+        ]
+        const restN = nonFyi.filter(r => !CHANNEL_SOFT_COLORS[r.key]).reduce((s, r) => s + r.total, 0)
+        if (restN > 0) donutSegs.push({ key: '_rest', n: restN, color: OTHER_GRAY, label: L('기타', 'Other', 'Khác') })
+        return (
+          <div className="adm-m-wrap" style={{ display: 'flex', alignItems: 'center', gap: 28, border: '1px solid #E5E8EB', borderRadius: 12, padding: '18px 22px', marginBottom: 22 }}>
+            <Donut
+              segs={donutSegs}
+              total={grandTotal}
+              centerTop={grandTotal.toLocaleString()}
+              centerSub={`FYI ${pct(fyi.total, grandTotal)}%`}
+            />
+            <div style={{ flex: 1, minWidth: 220 }}>
+              <div style={{ fontSize: 13.5, fontWeight: 700, color: '#0F172A', marginBottom: 10 }}>
+                {L('채널 비중', 'Channel share', 'Tỷ trọng kênh')}
+                <span style={{ fontSize: 11.5, fontWeight: 500, color: '#9CA3AF', marginLeft: 8 }}>
+                  {dateRange?.from && dateRange?.to ? `${dateRange.from} ~ ${dateRange.to}` : L('전체 기간', 'All time', 'Toàn thời gian')}
+                </span>
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+                {donutSegs.map(s => (
+                  <div key={s.key} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12.5 }}>
+                    <span style={{ width: 10, height: 10, borderRadius: 3, background: s.color, flexShrink: 0 }} />
+                    <span style={{ fontWeight: s.key === 'FYI' ? 700 : 500, color: s.key === 'FYI' ? FYI_COLOR : '#4E5968', minWidth: 96 }}>{s.label}</span>
+                    <span style={{ fontWeight: 700, color: '#191F28', fontVariantNumeric: 'tabular-nums' }}>{s.n.toLocaleString()}</span>
+                    <span style={{ color: '#9CA3AF', fontVariantNumeric: 'tabular-nums' }}>{pct(s.n, grandTotal)}%</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )
+      })()}
 
       {/* 채널별 표 */}
       <div className="adm-m-scroll adm-m-nowrap" style={{ border: '1px solid #E5E8EB', borderRadius: 12, overflow: 'hidden', marginBottom: 22 }}>

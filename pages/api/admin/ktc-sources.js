@@ -12,8 +12,9 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 )
 
-// VN(UTC+7) 기준 월 버킷 (예: '2026-05')
+// VN(UTC+7) 기준 월/일 버킷 (예: '2026-05', '2026-05-14')
 const toVNMonth = (iso) => new Date(new Date(iso).getTime() + 7 * 3600000).toISOString().slice(0, 7)
+const toVNDate = (iso) => new Date(new Date(iso).getTime() + 7 * 3600000).toISOString().slice(0, 10)
 
 const normCompany = (s) => String(s || '').toLowerCase().replace(/[^a-z0-9가-힣]/g, '')
 // 제목 정규화: 괄호 내용·기호 제거, 표기 흔들림 통일 → 포함관계 매칭용
@@ -56,6 +57,15 @@ export default async function handler(req, res) {
   if (!admin) return res.status(401).json({ error: 'Unauthorized' })
 
   try {
+    // 기간 필터 (지원일 기준, VN 날짜). 지정 시 날짜 파싱 안 된 소수 행은 귀속 불가라 제외.
+    const { from, to } = req.query
+    const inRange = (iso) => {
+      if (!iso) return false
+      const d = toVNDate(iso)
+      return (!from || d >= from) && (!to || d <= to)
+    }
+    const filtering = Boolean(from || to)
+
     const [candidates, ktcJobs] = await Promise.all([
       fetchAll('ktc_candidates', 'sheet_source, applied_company, applied_job, position, job_code, applied_at, pipeline_status, synced_at'),
       fetchAll('jobs', 'id, title, company, is_active', q => q.eq('source', 'ktc')),
@@ -68,7 +78,7 @@ export default async function handler(req, res) {
         q => q.in('job_id', jobIds.slice(i, i + 50))
       ))
     }
-    fyiApps = fyiApps.filter(a => !isExcludedApplication(a))
+    fyiApps = fyiApps.filter(a => !isExcludedApplication(a) && (!filtering || inRange(a.created_at)))
 
     // ---- FYI 라이브: 공고별 유니크 지원자 (타 플랫폼과 동일 기준) ----
     const fyiByJob = {}       // job_id → Set(지원자 키)
@@ -86,7 +96,7 @@ export default async function handler(req, res) {
     }
 
     // ---- 플랫폼별 집계 (시트 FYI 탭은 라이브로 대체하므로 제외) ----
-    const rows = candidates.filter(c => c.sheet_source !== 'FYI')
+    const rows = candidates.filter(c => c.sheet_source !== 'FYI' && (!filtering || inRange(c.applied_at)))
     const platforms = {}
     for (const c of rows) {
       const p = platforms[c.sheet_source] || (platforms[c.sheet_source] = { key: c.sheet_source, total: 0, months: {}, docPass: 0, finalPassed: 0 })
