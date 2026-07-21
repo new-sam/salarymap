@@ -8,7 +8,6 @@ import { useRouter } from 'next/router'
 import AdminLayout from '../../components/admin/AdminLayout'
 import DateRangePicker from '../../components/admin/DateRangePicker'
 import Icon from '../../components/Icon'
-import FunnelView from '../../components/admin/FunnelView'
 import MainFunnelView from '../../components/admin/MainFunnelView'
 import ApplicationsView from '../../components/admin/ApplicationsView'
 import ResumesView from '../../components/admin/ResumesView'
@@ -19,7 +18,6 @@ import VerificationsView from '../../components/admin/VerificationsView'
 import CommunityView from '../../components/admin/CommunityView'
 import CompanyView from '../../components/admin/CompanyView'
 import RevenueView from '../../components/admin/RevenueView'
-import OutreachView from '../../components/admin/OutreachView'
 import RecommendView from '../../components/admin/RecommendView'
 import GoalMetricsView from '../../components/admin/GoalMetricsView'
 import {
@@ -72,8 +70,7 @@ export default function AdminDashboard() {
   const router = useRouter()
   const tab = router.query.tab || 'main'
   // 날짜 범위를 실제로 쓰는 탭에서만 날짜 피커 노출 (이력서/인재풀/연봉인증은 누적 목록이라 무관)
-  const showDatePicker = ['main', 'trend', 'funnel', 'applications', 'community', 'appMetrics', 'ktc-sources'].includes(tab)
-  const [funnelKeys, setFunnelKeys] = useState([])
+  const showDatePicker = ['main', 'trend', 'applications', 'community', 'appMetrics', 'ktc-sources'].includes(tab)
   const [chartMode, setChartMode] = useState('1d')
   const [tableView, setTableView] = useState('daily')
   const [tableSection, setTableSection] = useState('basic')
@@ -100,7 +97,7 @@ export default function AdminDashboard() {
   // SWR: 캐시로 탭 전환/페이지 재방문 시 즉시 표시 + 백그라운드 갱신. 키에 날짜/언어 포함.
   // 무거운 데이터는 실제로 쓰는 탭에서만 로드 — data/ga4 는 추이·퍼널, realtime/experiments 는
   // 추이 전용. 다른 탭(기업 등)이 자기 요청만 발사하도록 게이트해 초기 로딩 경쟁을 없앤다.
-  const needsCore = ['trend', 'funnel'].includes(tab)
+  const needsCore = ['trend'].includes(tab)
   const { data, isLoading: loading } = useAdmin(
     needsCore ? `/api/admin/dashboard?from=${dateRange.from}&to=${dateRange.to}&lang=${lang}` : null, token
   )
@@ -958,10 +955,6 @@ export default function AdminDashboard() {
           <MainFunnelView token={token} lang={lang} dateRange={dateRange} />
         )}
 
-        {/* Funnel Tab */}
-        {data?.summary && !loading && tab === 'funnel' && (
-          <FunnelView data={{ ...data, daily: dailyWithToday }} metrics={METRICS} summary={summary} funnelKeys={funnelKeys} setFunnelKeys={setFunnelKeys} t={t} lang={lang} />
-        )}
 
         {/* Applications Tab */}
         {tab === 'applications' && (
@@ -1011,11 +1004,6 @@ export default function AdminDashboard() {
         {/* App Metrics Tab */}
         {tab === 'appMetrics' && (
           <AppMetricsView token={token} lang={lang} dateRange={dateRange} />
-        )}
-
-        {/* Cold Outreach Tab — 콜드메일 영업 대상/진행 관리 */}
-        {(tab === 'outreach' || tab === 'outreach-yh') && (
-          <OutreachView key={tab} token={token} lang={lang} owner={tab === 'outreach-yh' ? 'younghun' : 'wsj'} />
         )}
 
         {/* 광고메일 — 공고 추천 메일 발송/전환 현황 */}

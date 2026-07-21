@@ -17,7 +17,6 @@ function buildNav(lang) {
       items: [
         { label: L('메인 퍼널', 'Main funnel', 'Phễu chính'), pathname: '/admin/dashboard', tab: 'main' },
         { label: L('추이', 'Trend', 'Xu hướng'), pathname: '/admin/dashboard', tab: 'trend' },
-        { label: L('퍼널', 'Funnel', 'Phễu'), pathname: '/admin/dashboard', tab: 'funnel' },
         { label: L('지원자', 'Applicants', 'Ứng viên'), pathname: '/admin/dashboard', tab: 'applications' },
         { label: L('이력서', 'Resumes', 'CV'), pathname: '/admin/dashboard', tab: 'resumes' },
         { label: L('인재풀', 'Talent', 'Nguồn ứng viên'), pathname: '/admin/dashboard', tab: 'talent' },
@@ -34,13 +33,6 @@ function buildNav(lang) {
       label: L('앱 대시보드', 'App dashboard', 'Dashboard app'),
       items: [
         { label: L('앱 대시보드', 'App dashboard', 'Dashboard app'), pathname: '/admin/dashboard', tab: 'appMetrics' },
-      ],
-    },
-    {
-      label: L('영업', 'Sales', 'Kinh doanh'),
-      items: [
-        { label: L('콜드메일 (위승주)', 'Outreach (WSJ)'), pathname: '/admin/dashboard', tab: 'outreach' },
-        { label: L('콜드메일 (남영훈)', 'Outreach (YH)'), pathname: '/admin/dashboard', tab: 'outreach-yh' },
       ],
     },
     {
