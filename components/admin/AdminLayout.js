@@ -24,9 +24,6 @@ function buildNav(lang) {
         { label: L('광고메일', 'Recommend', 'Email đề xuất'), pathname: '/admin/dashboard', tab: 'recommend' },
         { label: L('연봉 인증', 'Verifications', 'Xác minh lương'), pathname: '/admin/dashboard', tab: 'verifications' },
         { label: L('커뮤니티', 'Community', 'Cộng đồng'), pathname: '/admin/dashboard', tab: 'community' },
-        { label: L('기업', 'Companies', 'Công ty'), pathname: '/admin/dashboard', tab: 'company' },
-        { label: L('이익 지원', 'Revenue', 'Doanh thu'), pathname: '/admin/dashboard', tab: 'revenue' },
-        { label: L('KTC 소싱', 'KTC sources', 'Nguồn KTC'), pathname: '/admin/dashboard', tab: 'ktc-sources' },
       ],
     },
     {
@@ -36,7 +33,15 @@ function buildNav(lang) {
       ],
     },
     {
-      label: L('공고 관리', 'Job ops', 'Quản lý tin đăng'),
+      label: L('기업', 'Companies', 'Doanh nghiệp'),
+      items: [
+        { label: L('기업', 'Companies', 'Công ty'), pathname: '/admin/dashboard', tab: 'company' },
+        { label: L('이익 지원', 'Revenue', 'Doanh thu'), pathname: '/admin/dashboard', tab: 'revenue' },
+        { label: L('KTC 소싱', 'KTC sources', 'Nguồn KTC'), pathname: '/admin/dashboard', tab: 'ktc-sources' },
+      ],
+    },
+    {
+      label: L('공고', 'Jobs', 'Tin tuyển dụng'),
       items: [
         { label: L('공고 등록', 'New job', 'Đăng tin mới'), pathname: '/admin/jobs', tab: 'job-new' },
         { label: L('공고 목록', 'Jobs', 'Tin tuyển dụng'), pathname: '/admin/jobs', tab: 'jobs' },
