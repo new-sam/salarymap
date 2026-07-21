@@ -46,9 +46,10 @@ async function fetchAll(table, select, tweak) {
   return all
 }
 
-// 파이프라인 상태 → 질 지표 버킷
-const FAIL_STATUSES = new Set(['rejected', 'screening_failed'])
-const PASS_STATUSES = new Set(['passed', 'final_passed', 'ai_interview_passed'])
+// 파이프라인(ktc-support 기준): new(스크리닝 대기) → passed(스크리닝 합격) →
+// ai_interview_sent/done/passed → final_passed(최종 합격). 탈락 = screening_failed·rejected.
+// 서류통과 = 스크리닝 합격 "이상" 전부 (AI 인터뷰 단계·최종 합격 포함 — 이미 스크리닝은 통과한 상태).
+const DOC_PASS_STATUSES = new Set(['passed', 'ai_interview_sent', 'ai_interview_done', 'ai_interview_passed', 'final_passed'])
 
 export default async function handler(req, res) {
   const admin = await verifyAdminOrDevStub(req)
@@ -88,14 +89,13 @@ export default async function handler(req, res) {
     const rows = candidates.filter(c => c.sheet_source !== 'FYI')
     const platforms = {}
     for (const c of rows) {
-      const p = platforms[c.sheet_source] || (platforms[c.sheet_source] = { key: c.sheet_source, total: 0, months: {}, fail: 0, pass: 0, finalPassed: 0 })
+      const p = platforms[c.sheet_source] || (platforms[c.sheet_source] = { key: c.sheet_source, total: 0, months: {}, docPass: 0, finalPassed: 0 })
       p.total++
       if (c.applied_at) {
         const m = toVNMonth(c.applied_at)
         p.months[m] = (p.months[m] || 0) + 1
       }
-      if (FAIL_STATUSES.has(c.pipeline_status)) p.fail++
-      if (PASS_STATUSES.has(c.pipeline_status)) p.pass++
+      if (DOC_PASS_STATUSES.has(c.pipeline_status)) p.docPass++
       if (c.pipeline_status === 'final_passed') p.finalPassed++
     }
 
@@ -199,7 +199,7 @@ export default async function handler(req, res) {
     res.json({
       syncedAt,
       months,
-      platforms: platformList.map(({ key, total, months: m, fail, pass, finalPassed }) => ({ key, total, months: m, fail, pass, finalPassed })),
+      platforms: platformList.map(({ key, total, months: m, docPass, finalPassed }) => ({ key, total, months: m, docPass, finalPassed })),
       fyi: {
         total: fyiAll.size,
         applications: fyiApps.length,

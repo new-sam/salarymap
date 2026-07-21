@@ -66,7 +66,7 @@ export default function KtcSourcesView({ token, lang }) {
   // FYI를 플랫폼 목록에 합류시켜 볼륨순 정렬 (질 지표는 FYI엔 없음)
   const allRows = [
     ...platforms.map(p => ({ ...p, isFyi: false })),
-    { key: 'FYI', total: fyi.total, months: fyi.months, fail: null, pass: null, finalPassed: null, isFyi: true },
+    { key: 'FYI', total: fyi.total, months: fyi.months, docPass: null, finalPassed: null, isFyi: true },
   ].sort((a, b) => b.total - a.total)
   const grandTotal = allRows.reduce((s, r) => s + r.total, 0)
   const maxTotal = Math.max(1, ...allRows.map(r => r.total))
@@ -127,9 +127,9 @@ export default function KtcSourcesView({ token, lang }) {
               {shownMonths.map(m => th(ko ? `${+m.slice(5)}월` : lang === 'vi' ? `T${+m.slice(5)}` : `${+m.slice(5)}/${m.slice(2, 4)}`))}
               {th(L('합계', 'Total', 'Tổng'))}
               {th(L('비중', 'Share', 'Tỷ trọng'), 'left', { width: '18%' })}
-              {th(L('통과', 'Passed', 'Đạt'))}
-              {th(L('최종합격', 'Final', 'Trúng tuyển'))}
-              {th(L('통과율', 'Pass %', 'Tỷ lệ đạt'), 'right', { paddingRight: 14 })}
+              {th(L('서류통과', 'CV screened', 'Đạt sàng lọc CV'))}
+              {th(L('최종합격', 'Final passed', 'Trúng tuyển'))}
+              {th(L('서류통과율', 'Screen %', 'Tỷ lệ sàng lọc'), 'right', { paddingRight: 14 })}
             </tr>
           </thead>
           <tbody>
@@ -148,13 +148,21 @@ export default function KtcSourcesView({ token, lang }) {
                     <span style={{ fontSize: 11.5, color: '#6B7280', width: 34, textAlign: 'right' }}>{pct(r.total, grandTotal)}%</span>
                   </div>
                 </td>
-                <td style={{ padding: '9px 10px', textAlign: 'right', color: '#374151' }}>{r.pass ?? '—'}</td>
+                <td style={{ padding: '9px 10px', textAlign: 'right', color: '#374151' }}>{r.docPass ?? '—'}</td>
                 <td style={{ padding: '9px 10px', textAlign: 'right', fontWeight: 600, color: r.finalPassed > 0 ? '#0D9488' : '#CBD5E1' }}>{r.finalPassed ?? '—'}</td>
-                <td style={{ padding: '9px 14px 9px 10px', textAlign: 'right', color: '#374151' }}>{r.pass === null ? '—' : `${pct(r.pass, r.total)}%`}</td>
+                <td style={{ padding: '9px 14px 9px 10px', textAlign: 'right', color: '#374151' }}>{r.docPass === null ? '—' : `${pct(r.docPass, r.total)}%`}</td>
               </tr>
             ))}
           </tbody>
         </table>
+      </div>
+      {/* 질 지표 정의 — 항상 노출 (호버 툴팁은 표 컨테이너 overflow에 잘려서 미사용) */}
+      <div style={{ fontSize: 11.5, color: '#6B7280', lineHeight: 1.7, margin: '-14px 2px 22px' }}>
+        {L(
+          <><b>서류통과</b> = KTC 팀의 CV 스크리닝 합격 이상 전부(AI 인터뷰 발송·완료·합격, 최종 합격 포함) · <b>최종합격</b> = KTC 파이프라인 최종 합격(final_passed) · <b>서류통과율</b> = 서류통과 ÷ 전체 지원자(스크리닝 대기자도 분모 포함)</>,
+          <><b>CV screened</b> = at or past the KTC team&apos;s CV screening (incl. AI-interview stages and final passed) · <b>Final passed</b> = last stage of the KTC pipeline · <b>Screen %</b> = screened ÷ all applicants (pending included in denominator)</>,
+          <><b>Đạt sàng lọc CV</b> = từ mức đạt sàng lọc CV của team KTC trở lên (gồm các giai đoạn PV AI và trúng tuyển) · <b>Trúng tuyển</b> = giai đoạn cuối pipeline KTC · <b>Tỷ lệ sàng lọc</b> = đạt sàng lọc ÷ tổng ứng viên (gồm cả người chưa được sàng lọc)</>
+        )}
       </div>
 
       {/* 공고 × 채널 크로스탭 */}
@@ -252,9 +260,9 @@ export default function KtcSourcesView({ token, lang }) {
 
       <div style={{ fontSize: 11, color: '#9CA3AF', marginTop: 14, lineHeight: 1.6 }}>
         {L(
-          '지원자 수는 채널 내 유니크 기준(같은 사람이 한 채널에서 여러 공고 지원 시 1명). 통과 = passed·ai_interview_passed·final_passed, 통과율 = 통과/전체 — 진행중(new·인터뷰 대기) 포함이라 보수적 수치. FYI는 KTC 파이프라인 상태 추적이 없어 질 지표 없음. 시트의 FYI 탭은 갱신이 뒤처져 있어 사용하지 않고 salarymap DB에서 직접 집계. 크로스탭의 FYI는 회사·제목 매칭이라 일부 공고는 별도 행으로 나올 수 있음.',
-          'Counts are unique applicants per channel. Passed = passed/ai_interview_passed/final_passed over all (incl. in-progress) — conservative. FYI rows have no pipeline tracking. FYI numbers come live from salarymap DB (the sheet FYI tab is stale). Cross-tab FYI matches by company+title; unmatched jobs appear as separate rows.',
-          'Số ứng viên tính unique theo kênh (một người ứng tuyển nhiều tin trong cùng kênh = 1). Đạt = passed·ai_interview_passed·final_passed trên tổng (gồm cả đang xử lý) — con số thận trọng. FYI chưa theo dõi trạng thái pipeline KTC nên không có chỉ số chất lượng. Số FYI lấy trực tiếp từ DB salarymap (tab FYI trên sheet đã lỗi thời). Cột FYI trong bảng chéo khớp theo công ty+chức danh; tin không khớp hiển thị thành dòng riêng.'
+          '지원자 수는 채널 내 유니크 기준(같은 사람이 한 채널에서 여러 공고 지원 시 1명). FYI 지원자는 KTC 스크리닝 파이프라인에 안 태워져서 질 지표 없음. 시트의 FYI 탭은 갱신이 뒤처져 있어 사용하지 않고 salarymap DB에서 직접 집계. 크로스탭의 FYI는 회사·제목 매칭이라 일부 공고는 별도 행으로 나올 수 있음.',
+          'Counts are unique applicants per channel. FYI applicants are not run through the KTC screening pipeline, so no quality metrics. FYI numbers come live from salarymap DB (the sheet FYI tab is stale). Cross-tab FYI matches by company+title; unmatched jobs appear as separate rows.',
+          'Số ứng viên tính unique theo kênh (một người ứng tuyển nhiều tin trong cùng kênh = 1). Ứng viên FYI không qua pipeline sàng lọc KTC nên không có chỉ số chất lượng. Số FYI lấy trực tiếp từ DB salarymap (tab FYI trên sheet đã lỗi thời). Cột FYI trong bảng chéo khớp theo công ty+chức danh; tin không khớp hiển thị thành dòng riêng.'
         )}
       </div>
     </div>
