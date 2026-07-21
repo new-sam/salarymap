@@ -175,11 +175,11 @@ export default function AdminLayout({ children }) {
           <div style={{ display: 'flex', gap: 2, background: '#EFEFF2', borderRadius: 9, padding: 3 }}>
             {['ko', 'en', 'vi'].map((l) => (
               <button key={l} onClick={() => setLang(l)} style={{
-                flex: 1, padding: '6px 0', borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: 'pointer', border: 'none',
+                flex: 1, padding: '6px 0', borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: 'pointer', border: 'none', whiteSpace: 'nowrap',
                 background: lang === l ? '#fff' : 'transparent',
                 color: lang === l ? '#1d1d1f' : '#86868b',
                 boxShadow: lang === l ? '0 1px 2px rgba(0,0,0,0.08)' : 'none',
-              }}>{l === 'ko' ? '한국어' : l === 'vi' ? 'Tiếng Việt' : 'English'}</button>
+              }}>{l === 'ko' ? '한국어' : l === 'vi' ? 'VI' : 'EN'}</button>
             ))}
           </div>
         </div>

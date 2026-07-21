@@ -27,7 +27,6 @@ export default function KtcLandingJobsView({ token, lang }) {
 
   const jobs = data?.jobs || []
 
-  const openNew = () => { setForm(EMPTY); setEditing('new'); setMsg(null) }
   const openEdit = (job) => {
     const f = { ...EMPTY }
     for (const k of Object.keys(EMPTY)) f[k] = job[k] ?? EMPTY[k]
@@ -174,13 +173,8 @@ export default function KtcLandingJobsView({ token, lang }) {
 
   return (
     <div style={{ minHeight: '70vh' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, flexWrap: 'wrap', marginBottom: 12 }}>
-        <input value={search} onChange={e => setSearch(e.target.value)} placeholder={L('검색  ·  제목 · 회사 · 코드', 'Search  ·  title · company · code', 'Tìm  ·  tiêu đề · công ty · mã')}
-          style={{ ...input, maxWidth: 380 }} />
-        <button onClick={openNew} style={{ padding: '9px 18px', border: 'none', borderRadius: 10, fontSize: 13.5, fontWeight: 700, background: '#ff4400', color: '#fff', cursor: 'pointer', whiteSpace: 'nowrap' }}>
-          + {L('공고 등록', 'New job', 'Đăng tin')}
-        </button>
-      </div>
+      <input value={search} onChange={e => setSearch(e.target.value)} placeholder={L('검색  ·  제목 · 회사 · 코드', 'Search  ·  title · company · code', 'Tìm  ·  tiêu đề · công ty · mã')}
+        style={{ ...input, maxWidth: 380, marginBottom: 12 }} />
       <div style={{ display: 'flex', gap: 6, marginBottom: 16, flexWrap: 'wrap' }}>
         {FILTERS.map(([key, labelTxt, n]) => {
           const on = filter === key

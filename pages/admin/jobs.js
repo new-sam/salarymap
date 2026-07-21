@@ -8,6 +8,13 @@ import { useAdmin } from '../../lib/adminSwr'
 import Icon from '../../components/Icon'
 import { ROLE_GROUPS } from '../../constants/jobs'
 import KtcLandingJobsView from '../../components/admin/KtcLandingJobsView'
+import JobPreview from '../../components/jobs/JobPreview'
+import { Chips, Dropdown, DatePickerSingle } from '../../components/admin/FormControls'
+
+// 근무지 자주 쓰는 값 (실 DB 분포 기준) — 그 외는 드롭다운의 직접 입력으로
+const LOCATION_OPTIONS = [
+  'Ho Chi Minh City', 'Hanoi', 'Da Nang', 'District 7, HCMC', 'Remote', 'Seoul', 'Overseas',
+].map(v => ({ value: v, label: v }))
 
 const EMPTY_JOB = {
   title: '', company: '', company_initials: '', location: '', type: 'remote',
@@ -18,7 +25,6 @@ const EMPTY_JOB = {
   deadline: '', headcount: '', apply_url: '', is_featured: false,
 }
 
-const TYPES = ['remote','onsite','hybrid']
 const COUNTRIES = ['korea','vietnam','global']
 
 export default function AdminJobs() {
@@ -37,6 +43,8 @@ export default function AdminJobs() {
   const [msg, setMsg] = useState(null)
   const [newAdminEmail, setNewAdminEmail] = useState('')
   const [imageUploading, setImageUploading] = useState(false)
+  const [showAdvanced, setShowAdvanced] = useState(false) // 공고 폼 '세부 정보' 접기
+  const [roleGroupKey, setRoleGroupKey] = useState(null) // 직군 대분류 선택 (null이면 현재 role의 그룹)
   const [acct, setAcct] = useState({ email: '', companyName: '', contactName: '' })
   const [acctIssuing, setAcctIssuing] = useState(false)
   const [acctResult, setAcctResult] = useState(null)
@@ -239,94 +247,18 @@ export default function AdminJobs() {
           const row2 = { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 };
           const hint = { fontWeight: 400, color: '#ADB5BD' };
           return (
-            <div style={{ ...S.card, maxWidth: 720, padding: '24px 28px' }}>
+            // 스플릿 화면: 왼쪽 폼 + 오른쪽은 실사이트 우측 상세 패널(.jd) 그대로 (50vw 고정)
+            <div>
+            <div style={{ position: 'fixed', top: 0, bottom: 0, left: 232, right: '50vw', overflowY: 'auto', background: '#fff', zIndex: 30, borderRight: '1px solid #EEF0F2' }}>
+            <div style={{ maxWidth: 680, padding: '28px 32px 80px' }}>
               <div style={{ fontSize: 18, fontWeight: 800, color: '#191F28', marginBottom: 22 }}>
                 {editing ? L('공고 수정', 'Edit job') : L('새 공고 등록', 'New job')}
               </div>
 
+              {/* 섹션 순서 = 실제 노출 화면 순서 (사진 → 제목·회사 → 근무조건 → 연봉 → 스택·회사정보 → 설명 → 복지 → 절차 → 지원) */}
               <div style={sec}>
-                <div style={secTitle}>{L('기본 정보', 'Basics')}</div>
+                <div style={secTitle}>{L('사진', 'Photos')} <span style={hint}>{L('맨 위 히어로로 노출', 'shown as the hero image')}</span></div>
                 <div style={col}>
-                  <F label={L('직무명', 'Job title')} value={form.title} set={v => setForm({ ...form, title: v })} />
-                  <div style={row2}>
-                    <F label={L('회사명', 'Company')} value={form.company} set={v => setForm({ ...form, company: v })} />
-                    <F label={L('회사 약자', 'Company initials')} value={form.company_initials} set={v => setForm({ ...form, company_initials: v })} />
-                  </div>
-                  <div style={row2}>
-                    <Sel label={L('국가', 'Country')} value={form.country} opts={COUNTRIES} set={v => setForm({ ...form, country: v })} />
-                    <F label={L('근무지', 'Location')} value={form.location} set={v => setForm({ ...form, location: v })} />
-                  </div>
-                  <div style={row2}>
-                    <Sel label={L('고용형태', 'Employment type')} value={form.type} opts={TYPES} set={v => setForm({ ...form, type: v })} />
-                    <Sel label={L('직군', 'Role')} value={form.role} groups={ROLE_GROUPS} set={v => setForm({ ...form, role: v })} />
-                  </div>
-                </div>
-              </div>
-
-              <div style={sec}>
-                <div style={secTitle}>{L('채용 조건', 'Requirements')}</div>
-                <div style={col}>
-                  <div style={row2}>
-                    <F label={L('경력 최소 (년)', 'Min experience (yrs)')} value={form.experience_min} type="number" set={v => setForm({ ...form, experience_min: v })} />
-                    <F label={L('경력 최대 (년)', 'Max experience (yrs)')} value={form.experience_max} type="number" set={v => setForm({ ...form, experience_max: v })} />
-                  </div>
-                  <div style={row2}>
-                    <F label={L('연봉 최소 (VND)', 'Min salary (VND)')} value={form.salary_min} type="number" set={v => setForm({ ...form, salary_min: v })} />
-                    <F label={L('연봉 최대 (VND)', 'Max salary (VND)')} value={form.salary_max} type="number" set={v => setForm({ ...form, salary_max: v })} />
-                  </div>
-                  <div style={row2}>
-                    <F label={L('모집 인원', 'Headcount')} value={form.headcount} type="number" set={v => setForm({ ...form, headcount: v })} />
-                    <F label={L('마감일', 'Deadline')} value={form.deadline} type="date" set={v => setForm({ ...form, deadline: v })} />
-                  </div>
-                </div>
-              </div>
-
-              <div style={sec}>
-                <div style={secTitle}>{L('상세 내용', 'Details')}</div>
-                <div style={col}>
-                  <div>
-                    <label style={S.lbl}>{L('상세 설명', 'Description')}</label>
-                    <textarea value={form.description || ''} onChange={e => setForm({ ...form, description: e.target.value })}
-                      style={{ ...S.inp, height: 130, resize: 'vertical' }} />
-                  </div>
-                  <div>
-                    <label style={S.lbl}>{L('기술 스택', 'Tech stack')} <span style={hint}>{L('쉼표로 구분', 'comma-separated')}</span></label>
-                    <input value={(form.tech_stack || []).join(', ')} onChange={e => setForm({ ...form, tech_stack: e.target.value.split(',').map(s => s.trim()).filter(Boolean) })} style={S.inp} placeholder="React, Node.js, PostgreSQL" />
-                  </div>
-                  <div>
-                    <label style={S.lbl}>{L('복지', 'Benefits')} <span style={hint}>{L('쉼표로 구분', 'comma-separated')}</span></label>
-                    <input value={(form.benefits || []).join(', ')} onChange={e => setForm({ ...form, benefits: e.target.value.split(',').map(s => s.trim()).filter(Boolean) })} style={S.inp} placeholder={L('유연근무, 4대보험', 'Flexible hours, insurance')} />
-                  </div>
-                  <div style={row2}>
-                    <F label={L('회사 규모', 'Company size')} value={form.company_size} set={v => setForm({ ...form, company_size: v })} />
-                    <F label={L('채용 절차', 'Hiring process')} value={form.hiring_process} set={v => setForm({ ...form, hiring_process: v })} />
-                  </div>
-                </div>
-              </div>
-
-              <div style={sec}>
-                <div style={secTitle}>{L('미디어', 'Media')}</div>
-                <div style={col}>
-                  <div style={row2}>
-                    <F label={L('로고 URL', 'Logo URL')} value={form.logo_url} set={v => setForm({ ...form, logo_url: v })} />
-                    <F label={L('썸네일 URL', 'Thumbnail URL')} value={form.image_url} set={v => setForm({ ...form, image_url: v })} />
-                  </div>
-                  {(form.logo_url || form.image_url) && (
-                    <div style={{ display: 'flex', gap: 10, alignItems: 'flex-end' }}>
-                      {form.logo_url && (
-                        <div style={{ position: 'relative', display: 'inline-block' }}>
-                          <img src={form.logo_url} alt="logo" style={{ height: 40, borderRadius: 6, objectFit: 'contain', border: '1px solid #EEF0F2' }} />
-                          <button onClick={() => setForm({ ...form, logo_url: '' })} style={{ position: 'absolute', top: -6, right: -6, width: 20, height: 20, borderRadius: '50%', background: '#C92A2A', color: '#fff', border: 'none', fontSize: 11, cursor: 'pointer' }}>×</button>
-                        </div>
-                      )}
-                      {form.image_url && (
-                        <div style={{ position: 'relative', display: 'inline-block' }}>
-                          <img src={form.image_url} alt="preview" style={{ height: 70, borderRadius: 6, objectFit: 'cover', border: '1px solid #EEF0F2' }} />
-                          <button onClick={() => setForm({ ...form, image_url: '' })} style={{ position: 'absolute', top: -6, right: -6, width: 20, height: 20, borderRadius: '50%', background: '#C92A2A', color: '#fff', border: 'none', fontSize: 11, cursor: 'pointer' }}>×</button>
-                        </div>
-                      )}
-                    </div>
-                  )}
                   <div>
                     <label style={S.lbl}>{L('회사 사진', 'Company photos')} <span style={hint}>{L('캐러셀', 'carousel')}</span></label>
                     <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 10 }}>
@@ -350,6 +282,147 @@ export default function AdminJobs() {
                     <input ref={imgInputRef} type="file" accept="image/*" multiple style={{ display: 'none' }} onChange={handleImageUpload} />
                   </div>
                 </div>
+              </div>
+
+              <div style={sec}>
+                <div style={secTitle}>{L('제목 · 회사', 'Title · Company')}</div>
+                <div style={col}>
+                  <F label={L('직무명', 'Job title')} value={form.title} set={v => setForm({ ...form, title: v })} />
+                  <F label={L('회사명', 'Company')} value={form.company} set={v => setForm({ ...form, company: v })} />
+                </div>
+              </div>
+
+              <div style={sec}>
+                <div style={secTitle}>{L('근무 조건', 'Work conditions')} <span style={hint}>{L('지역 · 형태 · 경력 · 마감 줄', 'the location · type · exp · deadline line')}</span></div>
+                <div style={col}>
+                  <div style={row2}>
+                    <Dropdown label={L('근무지', 'Location')} value={form.location} options={LOCATION_OPTIONS} allowCustom
+                      customLabel={L('직접 입력…', 'Type manually…')} placeholder={L('선택', 'Select')}
+                      onChange={v => setForm({ ...form, location: v })} />
+                    <DatePickerSingle label={L('마감일', 'Deadline')} value={form.deadline}
+                      emptyLabel={L('상시 채용', 'Ongoing')} onChange={v => setForm({ ...form, deadline: v })} />
+                  </div>
+                  <Chips label={L('고용형태', 'Employment type')} value={form.type} onChange={v => setForm({ ...form, type: v })}
+                    options={[{ value: 'onsite', label: 'On-site' }, { value: 'hybrid', label: 'Hybrid' }, { value: 'remote', label: 'Remote' }]} />
+                  <div style={row2}>
+                    <F label={L('경력 최소 (년)', 'Min experience (yrs)')} value={form.experience_min} type="number" set={v => setForm({ ...form, experience_min: v })} />
+                    <F label={L('경력 최대 (년)', 'Max experience (yrs)')} value={form.experience_max} type="number" set={v => setForm({ ...form, experience_max: v })} />
+                  </div>
+                  {/* 직군 — 드롭다운 대신 칩 2단 (대분류 → 소분류, 전부 노출) */}
+                  {(() => {
+                    const lk = globalLang === 'ko' ? 'ko' : 'en'
+                    const curGroup = ROLE_GROUPS.find(g => g.key === roleGroupKey)
+                      || ROLE_GROUPS.find(g => g.roles.some(r => r.value === form.role))
+                      || ROLE_GROUPS[0]
+                    const chip = (on, accent) => ({
+                      fontSize: 12.5, fontWeight: 600, cursor: 'pointer', borderRadius: 999, padding: '7px 13px',
+                      border: '1px solid', borderColor: on ? '#ff4400' : '#E5E8EB',
+                      background: on ? (accent ? '#ff4400' : '#FFF1EC') : '#fff',
+                      color: on ? (accent ? '#fff' : '#ff4400') : '#4E5968',
+                    })
+                    return (
+                      <div>
+                        <label style={S.lbl}>{L('직군 (검색 필터용)', 'Role (for search filters)')}</label>
+                        {/* 하나의 컨트롤로 묶는 박스: 상단 = 대분류 탭, 하단 = 소분류 칩 */}
+                        <div style={{ border: '1px solid #E5E8EB', borderRadius: 12, overflow: 'hidden' }}>
+                          <div style={{ display: 'flex', gap: 2, flexWrap: 'wrap', borderBottom: '1px solid #E5E8EB', background: '#F8FAFC', padding: '0 8px' }}>
+                            {ROLE_GROUPS.map(g => {
+                              const on = g.key === curGroup.key
+                              return (
+                                <button key={g.key} type="button" onClick={() => setRoleGroupKey(g.key)} style={{
+                                  padding: '9px 11px', fontSize: 12.5, fontWeight: on ? 700 : 500,
+                                  color: on ? '#191F28' : '#8B95A1', background: 'none', border: 'none',
+                                  borderBottom: on ? '2px solid #ff4400' : '2px solid transparent',
+                                  marginBottom: -1, cursor: 'pointer', whiteSpace: 'nowrap',
+                                }}>
+                                  {g.label[lk]}
+                                </button>
+                              )
+                            })}
+                          </div>
+                          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', padding: '12px 12px' }}>
+                            {curGroup.roles.map(r => (
+                              <button key={r.value} type="button" onClick={() => setForm({ ...form, role: r.value })} style={chip(form.role === r.value, true)}>
+                                {r.label[lk]}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                    )
+                  })()}
+                </div>
+              </div>
+
+              <div style={sec}>
+                <div style={secTitle}>{L('연봉', 'Salary')}</div>
+                <div style={row2}>
+                  <F label={L('연봉 최소 (VND)', 'Min salary (VND)')} value={form.salary_min} type="number" set={v => setForm({ ...form, salary_min: v })} />
+                  <F label={L('연봉 최대 (VND)', 'Max salary (VND)')} value={form.salary_max} type="number" set={v => setForm({ ...form, salary_max: v })} />
+                </div>
+              </div>
+
+              <div style={sec}>
+                <div style={secTitle}>{L('기술 스택', 'Tech stack')} <span style={hint}>{L('쉼표로 구분', 'comma-separated')}</span></div>
+                <input value={(form.tech_stack || []).join(', ')} onChange={e => setForm({ ...form, tech_stack: e.target.value.split(',').map(s => s.trim()).filter(Boolean) })} style={S.inp} placeholder="React, Node.js, PostgreSQL" />
+              </div>
+
+              <div style={sec}>
+                <div style={secTitle}>{L('상세 설명', 'About the role')}</div>
+                <textarea value={form.description || ''} onChange={e => setForm({ ...form, description: e.target.value })}
+                  style={{ ...S.inp, height: 130, resize: 'vertical' }} />
+              </div>
+
+              <div style={sec}>
+                <div style={secTitle}>{L('복지', 'Benefits')} <span style={hint}>{L('쉼표로 구분', 'comma-separated')}</span></div>
+                <input value={(form.benefits || []).join(', ')} onChange={e => setForm({ ...form, benefits: e.target.value.split(',').map(s => s.trim()).filter(Boolean) })} style={S.inp} placeholder={L('유연근무, 4대보험', 'Flexible hours, insurance')} />
+              </div>
+
+              <div style={sec}>
+                <div style={secTitle}>{L('채용 절차', 'Hiring process')}</div>
+                <input value={form.hiring_process || ''} onChange={e => setForm({ ...form, hiring_process: e.target.value })} style={S.inp} placeholder={L('예: 서류 → 1차 인터뷰 → 최종', 'e.g. CV → interview → final')} />
+              </div>
+
+              {/* 세부 정보 — 자주 안 쓰는 필드 접기 (입력 부담 축소) */}
+              <div style={sec}>
+                <button type="button" onClick={() => setShowAdvanced(v => !v)} style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', fontSize: 13, fontWeight: 700, color: '#6B7280', marginBottom: showAdvanced ? 14 : 0 }}>
+                  {showAdvanced ? '▾' : '▸'} {L('세부 정보 (선택)', 'More details (optional)')}
+                </button>
+                {showAdvanced && (
+                  <div style={col}>
+                    <div style={row2}>
+                      <F label={L('회사 약자', 'Company initials')} value={form.company_initials} set={v => setForm({ ...form, company_initials: v })} />
+                      <F label={L('회사 규모', 'Company size')} value={form.company_size} set={v => setForm({ ...form, company_size: v })} />
+                    </div>
+                    <div style={row2}>
+                      <F label={L('모집 인원', 'Headcount')} value={form.headcount} type="number" set={v => setForm({ ...form, headcount: v })} />
+                      <div>
+                        <Chips label={L('국가', 'Country')} value={form.country} onChange={v => setForm({ ...form, country: v })}
+                          options={COUNTRIES.map(c => ({ value: c, label: c === 'korea' ? 'Korea' : c === 'vietnam' ? 'Vietnam' : 'Global' }))} />
+                      </div>
+                    </div>
+                    <div style={row2}>
+                      <F label={L('썸네일 URL', 'Thumbnail URL')} value={form.image_url} set={v => setForm({ ...form, image_url: v })} />
+                      <F label={L('로고 URL', 'Logo URL')} value={form.logo_url} set={v => setForm({ ...form, logo_url: v })} />
+                    </div>
+                    {(form.logo_url || form.image_url) && (
+                      <div style={{ display: 'flex', gap: 10, alignItems: 'flex-end' }}>
+                        {form.logo_url && (
+                          <div style={{ position: 'relative', display: 'inline-block' }}>
+                            <img src={form.logo_url} alt="logo" style={{ height: 40, borderRadius: 6, objectFit: 'contain', border: '1px solid #EEF0F2' }} />
+                            <button onClick={() => setForm({ ...form, logo_url: '' })} style={{ position: 'absolute', top: -6, right: -6, width: 20, height: 20, borderRadius: '50%', background: '#C92A2A', color: '#fff', border: 'none', fontSize: 11, cursor: 'pointer' }}>×</button>
+                          </div>
+                        )}
+                        {form.image_url && (
+                          <div style={{ position: 'relative', display: 'inline-block' }}>
+                            <img src={form.image_url} alt="preview" style={{ height: 70, borderRadius: 6, objectFit: 'cover', border: '1px solid #EEF0F2' }} />
+                            <button onClick={() => setForm({ ...form, image_url: '' })} style={{ position: 'absolute', top: -6, right: -6, width: 20, height: 20, borderRadius: '50%', background: '#C92A2A', color: '#fff', border: 'none', fontSize: 11, cursor: 'pointer' }}>×</button>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
 
               <div style={sec}>
@@ -377,6 +450,13 @@ export default function AdminJobs() {
                 </button>
                 {editing && <button style={S.btnG} onClick={startNew}>{L('취소', 'Cancel')}</button>}
               </div>
+            </div>
+            </div>
+
+            {/* 오른쪽: 실사이트 우측 상세 패널 그대로 (jobs 페이지에서 공고 클릭했을 때와 동일) */}
+            <div style={{ position: 'fixed', top: 0, bottom: 0, right: 0, width: '50vw', zIndex: 31, overflowY: 'auto', overscrollBehavior: 'contain', background: '#fafaf8', boxShadow: '-8px 0 40px rgba(0,0,0,0.1)' }}>
+              <JobPreview form={form} companyName={form.company} panel />
+            </div>
             </div>
           );
         })()}
@@ -650,83 +730,6 @@ function F({ label, value, set, type = 'text' }) {
     </div>
   )
 }
-function Sel({ label, value, opts, set, groups }) {
-  const { lang } = useT()
-  const [open, setOpen] = useState(false)
-  const [openGroup, setOpenGroup] = useState(null) // 펼쳐진 대분류 key (아코디언)
-  const ref = useRef(null)
-  // groups 가 주어지면 대분류 헤더 + 소분류(로컬라이즈 라벨)로 렌더. 저장값은 영어 canonical(r.value).
-  const labelFor = (v) => {
-    if (!groups) return v
-    for (const g of groups) for (const r of g.roles) if (r.value === v) return r.label[lang] || r.label.en
-    return v
-  }
-  // 열 때 현재 선택된 값이 속한 대분류를 자동으로 펼침
-  const toggleOpen = () => {
-    const next = !open
-    if (next && groups && value) {
-      const g = groups.find(gr => gr.roles.some(r => r.value === value))
-      setOpenGroup(g ? g.key : null)
-    }
-    setOpen(next)
-  }
-  const renderItem = (val, text) => {
-    const on = val === value
-    return (
-      <div key={val} onClick={() => { set(val); setOpen(false) }}
-        style={{ padding: '9px 11px', borderRadius: 7, fontSize: 13.5, cursor: 'pointer', color: on ? '#ff4400' : '#191F28', fontWeight: on ? 700 : 500, background: on ? '#FFF1EC' : 'transparent' }}
-        onMouseEnter={e => { if (!on) e.currentTarget.style.background = '#F8F9FA' }}
-        onMouseLeave={e => { if (!on) e.currentTarget.style.background = 'transparent' }}>
-        {text}
-      </div>
-    )
-  }
-  useEffect(() => {
-    if (!open) return
-    const onDoc = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false) }
-    const onKey = (e) => { if (e.key === 'Escape') setOpen(false) }
-    document.addEventListener('mousedown', onDoc)
-    document.addEventListener('keydown', onKey)
-    return () => { document.removeEventListener('mousedown', onDoc); document.removeEventListener('keydown', onKey) }
-  }, [open])
-  return (
-    <div ref={ref} style={{ position: 'relative' }}>
-      <label style={S.lbl}>{label}</label>
-      <button type="button" onClick={toggleOpen}
-        style={{ ...S.inp, cursor: 'pointer', textAlign: 'left', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, background: '#fff', borderColor: open ? '#ff4400' : '#E5E8EB' }}>
-        <span style={{ color: value ? '#191F28' : '#ADB5BD', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{value ? labelFor(value) : (lang === 'ko' ? '선택' : 'Select')}</span>
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0, transition: 'transform .15s', transform: open ? 'rotate(180deg)' : 'none' }}>
-          <path d="M6 9l6 6 6-6" stroke="#868E96" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
-        </svg>
-      </button>
-      {open && (
-        <div style={{ position: 'absolute', top: 'calc(100% + 4px)', left: 0, right: 0, zIndex: 30, background: '#fff', border: '1px solid #E5E8EB', borderRadius: 10, boxShadow: '0 8px 24px rgba(0,0,0,0.10)', padding: 4, maxHeight: 320, overflowY: 'auto' }}>
-          {groups
-            ? groups.map(g => {
-                const gExpanded = openGroup === g.key
-                const gActive = g.roles.some(r => r.value === value)
-                return (
-                  <div key={g.key}>
-                    <div onClick={() => setOpenGroup(gExpanded ? null : g.key)}
-                      style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, padding: '9px 11px', borderRadius: 7, fontSize: 13.5, cursor: 'pointer', fontWeight: gActive ? 700 : 600, color: gActive ? '#ff4400' : '#191F28' }}
-                      onMouseEnter={e => { e.currentTarget.style.background = '#F8F9FA' }}
-                      onMouseLeave={e => { e.currentTarget.style.background = 'transparent' }}>
-                      <span>{g.label[lang] || g.label.en} <span style={{ color: '#C1C7CD', fontWeight: 500, fontSize: 12 }}>{g.roles.length}</span></span>
-                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0, transition: 'transform .15s', transform: gExpanded ? 'rotate(180deg)' : 'none' }}>
-                        <path d="M6 9l6 6 6-6" stroke="#BBB" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
-                      </svg>
-                    </div>
-                    {gExpanded && <div style={{ paddingLeft: 12 }}>{g.roles.map(r => renderItem(r.value, r.label[lang] || r.label.en))}</div>}
-                  </div>
-                )
-              })
-            : opts.map(o => renderItem(o, o))}
-        </div>
-      )}
-    </div>
-  )
-}
-
 const S = {
   center: { display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100vh', fontFamily: "-apple-system, 'Helvetica Neue', Arial, sans-serif" },
   shell: { maxWidth: 900, margin: '0 auto', padding: '24px 20px 60px' },
