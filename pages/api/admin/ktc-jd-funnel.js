@@ -108,10 +108,12 @@ export default async function handler(req, res) {
         m[field]++
       }
     }
+    const jobsByChannel = {} // 채널별 지원 발생 공고코드 (게재수 폴백)
     for (const c of candidates) {
       const e = (c.email || '').toLowerCase()
       const ch = chanOf(c.sheet_source)
       const month = c.applied_at ? toVNMonth(c.applied_at) : null
+      if (c.job_code) (jobsByChannel[ch] || (jobsByChannel[ch] = new Set())).add(c.job_code)
       bump(ch, 'people', month)
       if (DOC_PASS.has(c.pipeline_status)) bump(ch, 'docPass', month)
       if (AI_PASS.has(c.pipeline_status)) bump(ch, 'aiPass', month)
@@ -199,31 +201,82 @@ export default async function handler(req, res) {
       const cmpRows = cmpRes.data.values || []
       const hIdx = cmpRows.findIndex(r => r.some(c => (c || '').trim() === '채널') && r.some(c => (c || '').startsWith('지출')))
       const spendByChannel = {}
+      const postedByChannel = {}
       if (hIdx >= 0) {
         const H = cmpRows[hIdx]
         const chanCol = H.findIndex(c => (c || '').trim() === '채널')
         const spendCol = H.findIndex(c => (c || '').startsWith('지출'))
+        const postedCol = H.findIndex(c => (c || '').includes('공고수'))
         for (const r of cmpRows.slice(hIdx + 1)) {
           const key = COST_CHANNEL_MAP[(r[chanCol] || '').trim()]
+          if (!key) continue
           const spend = parseKrw(r[spendCol])
-          if (key && spend != null) spendByChannel[key] = spend
+          if (spend != null) spendByChannel[key] = spend
+          if (postedCol >= 0) {
+            const posted = parseInt(String(r[postedCol] || '').replace(/[^0-9]/g, ''))
+            if (Number.isFinite(posted)) postedByChannel[key] = posted
+          }
         }
       }
-      // Invoice 탭 플랫폼별 소계(≈KRW '만원' 표기) — 통합 비교표에 아직 없는 채널의 폴백 (예: LinkedIn)
+      // VND→KRW 환율: 실시간 조회 (ECB 미지원이라 er-api 사용). 실패 시 인보이스 소계 유도 → 상수 순 폴백.
+      let vndToKrw = null
+      let fxSource = null
+      try {
+        const fx = await fetch('https://open.er-api.com/v6/latest/VND', { signal: AbortSignal.timeout(4000) }).then(r => r.json())
+        if (fx?.rates?.KRW > 0) { vndToKrw = fx.rates.KRW; fxSource = 'live' }
+      } catch { /* 폴백으로 */ }
+
+      // Invoice 탭: 플랫폼별 소계는 원본 VND가 정확 — VND × 환율로 KRW 산출 ('≈만원' 손계산은 최후 폴백)
       const invRows = invRes.data.values || []
       const invH = invRows.findIndex(r => r.some(c => (c || '').startsWith('합계')))
+      const invoiceVnd = {}
       if (invH >= 0) {
         const IH = invRows[invH]
         const krwCol = IH.findIndex(c => (c || '').includes('KRW'))
+        const sumCol = IH.findIndex(c => (c || '').startsWith('합계'))
         // 소계 블록의 플랫폼 열 = 합계 열 바로 왼쪽 두 칸 (플랫폼|인보이스|합계|≈KRW)
-        const platCol = IH.findIndex(c => (c || '').startsWith('합계')) - 2
+        const platCol = sumCol - 2
         for (const r of invRows.slice(invH + 1)) {
           const key = COST_CHANNEL_MAP[(r[platCol] || '').trim()]
+          const vnd = parseKrw(r[sumCol])
           const m = (r[krwCol] || '').match(/([\d,.]+)\s*만원/)
-          if (key && m && spendByChannel[key] == null) {
-            spendByChannel[key] = parseFloat(m[1].replace(/,/g, '')) * 10000
+          if (vnd > 0 && m && vndToKrw == null) { vndToKrw = (parseFloat(m[1].replace(/,/g, '')) * 10000) / vnd; fxSource = 'invoice-derived' }
+          if (key && vnd > 0) invoiceVnd[key] = vnd
+        }
+      }
+      if (vndToKrw == null) { vndToKrw = 0.054; fxSource = 'fallback-const' }
+      // 인보이스 확정 VND가 있는 채널은 그걸 캐넌으로 (통합 비교표의 반올림 KRW보다 정확)
+      // 인보이스 소계는 VAT 포함(시트 명시) → ÷1.1로 VAT 제외 기준 통일 (LinkedIn 슬롯 상세와 동일 기준)
+      for (const [key, vnd] of Object.entries(invoiceVnd)) {
+        spendByChannel[key] = (vnd / 1.1) * vndToKrw
+      }
+
+      // LinkedIn 보정: 내부(자사) 채용 슬롯 제외 — LINKEDIN 탭에서 KTC 공고코드 있는 슬롯만 합산
+      const liTab = costTabs.find(t => t.toUpperCase().includes('LINKEDIN'))
+      if (liTab) {
+        const liRes = await sheets.spreadsheets.values.get({ spreadsheetId: COST_SHEET_ID, range: `'${liTab}'!A1:N120` })
+        const liRows = liRes.data.values || []
+        const liH = liRows.findIndex(r => r.includes('Job code') && r.includes('Cost'))
+        if (liH >= 0) {
+          const LH = liRows[liH]
+          const costCol = LH.indexOf('Cost')
+          const codeCol = LH.indexOf('Job code')
+          let ktcVnd = 0
+          const liCodes = new Set()
+          for (const r of liRows.slice(liH + 1)) {
+            const code = ((r[codeCol] || '').trim().match(/^[A-Z]{2,6}\d{3,4}/) || [])[0]
+            if (!code) continue // 코드 없음 = 자사 채용 또는 합계 행
+            const cost = parseKrw(r[costCol])
+            if (cost != null) { ktcVnd += cost; liCodes.add(code) }
+          }
+          if (ktcVnd > 0) {
+            spendByChannel.LinkedIn = ktcVnd * vndToKrw
+            if (postedByChannel.LinkedIn == null) postedByChannel.LinkedIn = liCodes.size
           }
         }
+      }
+      for (const c of Object.values(chan)) {
+        if (postedByChannel[c.key] != null) c.jobsPosted = postedByChannel[c.key]
       }
 
       // Meta 광고비 중 KTC 몫 분해: KTC* 접두 = 랜딩 광고비, FYI_*KTC* = FYI를 통한 KTC 홍보 광고비
@@ -246,10 +299,15 @@ export default async function handler(req, res) {
           c.spendKrw = (fees ?? 0) + (ads ?? 0)
         }
       }
-      costMeta = { ktcMetaKrw: ktcMeta, fyiKtcMetaKrw: fyiKtcMeta, channelsWithCost: Object.keys(spendByChannel).length }
+      costMeta = { ktcMetaKrw: ktcMeta, fyiKtcMetaKrw: fyiKtcMeta, channelsWithCost: Object.keys(spendByChannel).length, vndToKrw, fxSource }
     } catch (e) {
       console.error('cost sheet read:', e.message)
       costMeta = { error: e.message } // 뷰에서 "비용 시트 조회 실패"로 노출 (열은 유지)
+    }
+
+    // 채널별 공고 수 (지원 발생 공고코드 distinct — 게재수 없을 때 폴백)
+    for (const c of Object.values(chan)) {
+      c.jobsApplied = jobsByChannel[c.key] ? jobsByChannel[c.key].size : 0
     }
 
     // 채널 퍼널 정렬: 지원자(파이프라인 인원) 많은 순, 미귀속은 맨 뒤
