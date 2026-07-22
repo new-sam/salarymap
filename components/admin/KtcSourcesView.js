@@ -552,6 +552,8 @@ export default function KtcSourcesView({ token, lang, dateRange }) {
         )
         // 채널 퍼널: 단계 도달 수 + 지원자 대비 %
         const chanRows = funnelData.channels || []
+        const hasCost = chanRows.some(c => c.spendKrw != null)
+        const fmtKrw = (n) => (n >= 10000 ? `${Math.round(n / 10000).toLocaleString()}만원` : `${Math.round(n).toLocaleString()}원`)
         const stageCell = (n, d, isFyi) => (
           <td style={{ padding: '9px 10px', textAlign: 'right', ...num }}>
             <span style={{ fontWeight: n > 0 ? 700 : 400, color: n > 0 ? (isFyi ? FYI_COLOR : '#191F28') : '#DDE1E6' }}>{n}</span>
@@ -591,7 +593,9 @@ export default function KtcSourcesView({ token, lang, dateRange }) {
                         {th(L('AI합격', 'AI passed', 'Đạt PV AI'))}
                         {th(L('인터뷰', 'Interviews', 'Phỏng vấn'))}
                         {th(L('최종합격', 'Final', 'Đạt cuối'))}
-                        {th(L('입사', 'Hired', 'Trúng tuyển'), 'right', { paddingRight: 14 })}
+                        {th(L('입사', 'Hired', 'Trúng tuyển'))}
+                        {hasCost && th(L('지출', 'Spend', 'Chi phí'))}
+                        {hasCost && th('CPA', 'right', { paddingRight: 14 })}
                       </tr>
                     </thead>
                     <tbody>
@@ -612,10 +616,23 @@ export default function KtcSourcesView({ token, lang, dateRange }) {
                             {stageCell(c.aiPass, isUn ? 0 : denom, isFyi)}
                             {stageCell(c.interviews, isUn ? 0 : denom, isFyi)}
                             {stageCell(c.finalPass, isUn ? 0 : denom, isFyi)}
-                            <td style={{ padding: '9px 14px 9px 10px', textAlign: 'right', ...num }}>
+                            <td style={{ padding: '9px 10px', textAlign: 'right', ...num }}>
                               <span style={{ fontWeight: c.hires > 0 ? 800 : 400, color: c.hires > 0 ? (isFyi ? FYI_COLOR : '#0D9488') : '#DDE1E6' }}>{c.hires}</span>
                               {!isUn && denom > 0 && c.hires > 0 && <span style={{ color: '#9CA3AF', marginLeft: 5, fontSize: 11.5 }}>{(c.hires / denom * 100).toFixed(1)}%</span>}
                             </td>
+                            {hasCost && (
+                              <td style={{ padding: '9px 10px', textAlign: 'right', color: c.spendKrw != null ? '#374151' : '#DDE1E6', ...num }}>
+                                {c.spendKrw == null ? '—' : c.spendKrw === 0 ? (isFyi ? L('자체 채널', 'own channel', 'kênh riêng') : L('무료', 'free', 'miễn phí')) : fmtKrw(c.spendKrw)}
+                              </td>
+                            )}
+                            {hasCost && (
+                              <td style={{ padding: '9px 14px 9px 10px', textAlign: 'right', ...num }}>
+                                {c.spendKrw == null || isUn ? <span style={{ color: '#DDE1E6' }}>—</span>
+                                  : c.spendKrw === 0 ? <span style={{ fontWeight: 700, color: isFyi ? FYI_COLOR : '#0D9488' }}>₩0</span>
+                                  : denom > 0 ? <span style={{ fontWeight: 600, color: '#191F28' }}>{Math.round(c.spendKrw / denom).toLocaleString()}{L('원', ' KRW', ' KRW')}</span>
+                                  : '—'}
+                              </td>
+                            )}
                           </tr>
                         )
                       })}
@@ -624,9 +641,9 @@ export default function KtcSourcesView({ token, lang, dateRange }) {
                 </div>
                 <div style={{ fontSize: 11, color: '#9CA3AF', lineHeight: 1.6, marginBottom: 20 }}>
                   {L(
-                    '% = 그 채널 지원자 대비 단계 도달률. 서류통과·AI합격·최종합격은 KTC 스크리닝 파이프라인 상태, 인터뷰는 Master INTERVIEW 탭(인당 1회), 입사는 KTC Ops Employee — 모두 이메일로 채널 귀속. FYI 지원자는 전체 수(라이브) 기준이고 그중 일부만 파이프라인에 유입돼 서류/AI 단계 수치는 하한값. (채널 외)는 지원 기록이 없는 인터뷰·입사(오프라인 행사·직접 소개 등).',
-                    '% = stage reached / channel applicants. Screened·AI·Final from the KTC pipeline; interviews from the INTERVIEW tab (once per person); hires from KTC Ops — all attributed by email. FYI applicant count is live; only some entered the pipeline, so screened/AI figures are lower bounds. (off-channel) = interviews/hires with no application record.',
-                    '% = đạt giai đoạn / ứng viên kênh. Sàng lọc·AI·Cuối từ pipeline KTC; phỏng vấn từ tab INTERVIEW; trúng tuyển từ KTC Ops — quy nguồn theo email. Số ứng viên FYI là số trực tiếp; chỉ một phần vào pipeline nên các cột sàng lọc/AI là giá trị tối thiểu.'
+                    '% = 그 채널 지원자 대비 단계 도달률. 서류통과·AI합격·최종합격은 KTC 스크리닝 파이프라인 상태, 인터뷰는 Master INTERVIEW 탭(인당 1회), 입사는 KTC Ops Employee — 모두 이메일로 채널 귀속. FYI 지원자는 전체 수(라이브) 기준이고 그중 일부만 파이프라인에 유입돼 서류/AI 단계 수치는 하한값. (채널 외)는 지원 기록이 없는 인터뷰·입사(오프라인 행사·직접 소개 등). 지출은 비용 시트(Alice) 라이브·KRW — KTC 랜딩 지출은 Meta 캠페인 중 KTC* 접두어 캠페인 합계, CPA = 지출 ÷ 지원자.',
+                    '% = stage reached / channel applicants. Screened·AI·Final from the KTC pipeline; interviews from the INTERVIEW tab (once per person); hires from KTC Ops — all attributed by email. FYI applicant count is live; only some entered the pipeline, so screened/AI figures are lower bounds. (off-channel) = interviews/hires with no application record. Spend is live from the cost sheet (KRW); landing spend = KTC* Meta campaigns; CPA = spend ÷ applicants.',
+                    '% = đạt giai đoạn / ứng viên kênh. Sàng lọc·AI·Cuối từ pipeline KTC; phỏng vấn từ tab INTERVIEW; trúng tuyển từ KTC Ops — quy nguồn theo email. Số ứng viên FYI là số trực tiếp; chỉ một phần vào pipeline nên các cột sàng lọc/AI là giá trị tối thiểu. Chi phí lấy trực tiếp từ sheet chi phí (KRW); CPA = chi phí ÷ ứng viên.'
                   )}
                 </div>
 

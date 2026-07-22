@@ -10,6 +10,17 @@ const supabase = createClient(
 )
 
 const MASTER_SHEET_ID = '1mR1_-a3LmjxAbbox3tTKBu6WYwDbfBYKmPB6TP9EnKI'
+// 비용 시트 (Alice 정리 — 통합 비교표 + Meta 캠페인별 성과). 지출은 KRW.
+const COST_SHEET_ID = '1PEWHeAtx5nfxODQr_Db1soh-scl3Qg5Uw-fnjRziF8A'
+// 통합 비교표의 채널명 → 우리 채널 키
+const COST_CHANNEL_MAP = {
+  TopDev: 'top-dev', ITviec: 'ITviec-api', 'Ybox*': 'YBOX', Ybox: 'YBOX',
+  Glints: 'glint', LinkedIn: 'LinkedIn', JobsGO: 'jobs-go', TopCV: 'top-cv',
+}
+const parseKrw = (s) => {
+  const n = parseFloat(String(s || '').replace(/[^0-9.-]/g, ''))
+  return Number.isFinite(n) ? n : null
+}
 const CODE_RE = /[A-Z]{2,6}\d{3,4}/g
 // VN(UTC+7) 기준 월 버킷
 const toVNMonth = (iso) => new Date(new Date(iso).getTime() + 7 * 3600000).toISOString().slice(0, 7)
@@ -168,6 +179,44 @@ export default async function handler(req, res) {
     const statusCounts = {}
     for (const j of rows) statusCounts[j.status || '(없음)'] = (statusCounts[j.status || '(없음)'] || 0) + 1
 
+    // ---- 채널별 지출 (비용 시트 라이브, KRW) — 실패해도 퍼널은 정상 응답 ----
+    let costMeta = null
+    try {
+      const [cmpRes, metaRes] = await Promise.all([
+        sheets.spreadsheets.values.get({ spreadsheetId: COST_SHEET_ID, range: "'통합 비교표 템플릿'!A1:M15" }),
+        sheets.spreadsheets.values.get({ spreadsheetId: COST_SHEET_ID, range: "' 캠페인별 Meta 광고 성과'!B6:C40" }),
+      ])
+      // Alice가 컬럼을 수시로 옮기므로 헤더 텍스트('채널'/'지출')로 위치 탐지
+      const cmpRows = cmpRes.data.values || []
+      const hIdx = cmpRows.findIndex(r => r.some(c => (c || '').trim() === '채널') && r.some(c => (c || '').startsWith('지출')))
+      const spendByChannel = {}
+      if (hIdx >= 0) {
+        const H = cmpRows[hIdx]
+        const chanCol = H.findIndex(c => (c || '').trim() === '채널')
+        const spendCol = H.findIndex(c => (c || '').startsWith('지출'))
+        for (const r of cmpRows.slice(hIdx + 1)) {
+          const key = COST_CHANNEL_MAP[(r[chanCol] || '').trim()]
+          const spend = parseKrw(r[spendCol])
+          if (key && spend != null) spendByChannel[key] = spend
+        }
+      }
+      // Meta 광고비 중 KTC 몫(KTC* 접두 캠페인)만 랜딩 채널 비용으로 귀속 (FYI_/b2b는 별건)
+      let ktcMeta = 0
+      for (const r of (metaRes.data.values || [])) {
+        const name = (r[0] || '').trim()
+        const spend = parseKrw(r[1])
+        if (/^ktc/i.test(name) && spend != null) ktcMeta += spend
+      }
+      if (ktcMeta > 0) spendByChannel['landing-page'] = ktcMeta
+      spendByChannel.FYI = 0 // 자체 채널
+      for (const c of Object.values(chan)) {
+        if (c.key in spendByChannel) c.spendKrw = spendByChannel[c.key]
+      }
+      costMeta = { ktcMetaKrw: ktcMeta, channelsWithCost: Object.keys(spendByChannel).length }
+    } catch (e) {
+      console.error('cost sheet read:', e.message)
+    }
+
     // 채널 퍼널 정렬: 지원자(파이프라인 인원) 많은 순, 미귀속은 맨 뒤
     const channels = Object.values(chan).sort((a, b) => {
       if (a.key === '_unattributed') return 1
@@ -175,7 +224,7 @@ export default async function handler(req, res) {
       return (b.peopleLive || b.people) - (a.peopleLive || a.people)
     })
 
-    res.json({ jds: rows, statusCounts, channels })
+    res.json({ jds: rows, statusCounts, channels, costMeta })
   } catch (e) {
     console.error('ktc-jd-funnel:', e)
     res.status(500).json({ error: e.message })
