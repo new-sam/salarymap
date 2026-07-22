@@ -182,9 +182,10 @@ export default async function handler(req, res) {
     // ---- 채널별 지출 (비용 시트 라이브, KRW) — 실패해도 퍼널은 정상 응답 ----
     let costMeta = null
     try {
-      const [cmpRes, metaRes] = await Promise.all([
+      const [cmpRes, metaRes, invRes] = await Promise.all([
         sheets.spreadsheets.values.get({ spreadsheetId: COST_SHEET_ID, range: "'통합 비교표 템플릿'!A1:M15" }),
         sheets.spreadsheets.values.get({ spreadsheetId: COST_SHEET_ID, range: "' 캠페인별 Meta 광고 성과'!B6:C40" }),
+        sheets.spreadsheets.values.get({ spreadsheetId: COST_SHEET_ID, range: "'Invoice'!A1:M15" }),
       ])
       // Alice가 컬럼을 수시로 옮기므로 헤더 텍스트('채널'/'지출')로 위치 탐지
       const cmpRows = cmpRes.data.values || []
@@ -200,19 +201,44 @@ export default async function handler(req, res) {
           if (key && spend != null) spendByChannel[key] = spend
         }
       }
-      // Meta 광고비 중 KTC 몫(KTC* 접두 캠페인)만 랜딩 채널 비용으로 귀속 (FYI_/b2b는 별건)
+      // Invoice 탭 플랫폼별 소계(≈KRW '만원' 표기) — 통합 비교표에 아직 없는 채널의 폴백 (예: LinkedIn)
+      const invRows = invRes.data.values || []
+      const invH = invRows.findIndex(r => r.some(c => (c || '').startsWith('합계')))
+      if (invH >= 0) {
+        const IH = invRows[invH]
+        const krwCol = IH.findIndex(c => (c || '').includes('KRW'))
+        // 소계 블록의 플랫폼 열 = 합계 열 바로 왼쪽 두 칸 (플랫폼|인보이스|합계|≈KRW)
+        const platCol = IH.findIndex(c => (c || '').startsWith('합계')) - 2
+        for (const r of invRows.slice(invH + 1)) {
+          const key = COST_CHANNEL_MAP[(r[platCol] || '').trim()]
+          const m = (r[krwCol] || '').match(/([\d,.]+)\s*만원/)
+          if (key && m && spendByChannel[key] == null) {
+            spendByChannel[key] = parseFloat(m[1].replace(/,/g, '')) * 10000
+          }
+        }
+      }
+
+      // Meta 광고비 중 KTC 몫 분해: KTC* 접두 = 랜딩 광고비, FYI_*KTC* = FYI를 통한 KTC 홍보 광고비
       let ktcMeta = 0
+      let fyiKtcMeta = 0
       for (const r of (metaRes.data.values || [])) {
         const name = (r[0] || '').trim()
         const spend = parseKrw(r[1])
-        if (/^ktc/i.test(name) && spend != null) ktcMeta += spend
+        if (spend == null) continue
+        if (/^ktc/i.test(name)) ktcMeta += spend
+        else if (/^fyi/i.test(name) && /ktc/i.test(name)) fyiKtcMeta += spend
       }
-      if (ktcMeta > 0) spendByChannel['landing-page'] = ktcMeta
-      spendByChannel.FYI = 0 // 자체 채널
+      // 지출을 성격별로 분리: 잡보드 지출 = 게재비(fees), Meta = 광고비(ads)
       for (const c of Object.values(chan)) {
-        if (c.key in spendByChannel) c.spendKrw = spendByChannel[c.key]
+        const fees = spendByChannel[c.key]
+        const ads = c.key === 'landing-page' ? (ktcMeta || null) : c.key === 'FYI' ? (fyiKtcMeta || null) : null
+        if (fees != null || ads != null || c.key === 'FYI') {
+          c.spendFees = fees ?? 0
+          c.spendAds = ads ?? 0
+          c.spendKrw = (fees ?? 0) + (ads ?? 0)
+        }
       }
-      costMeta = { ktcMetaKrw: ktcMeta, channelsWithCost: Object.keys(spendByChannel).length }
+      costMeta = { ktcMetaKrw: ktcMeta, fyiKtcMetaKrw: fyiKtcMeta, channelsWithCost: Object.keys(spendByChannel).length }
     } catch (e) {
       console.error('cost sheet read:', e.message)
     }
