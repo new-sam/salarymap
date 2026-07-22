@@ -85,7 +85,7 @@ export default function KtcSourcesView({ token, lang, dateRange }) {
   const [section, setSection] = useState('funnel') // 섹션 전환 (기본 = 채널 퍼널이 판단의 메인)
   const [selChan, setSelChan] = useState('FYI') // 퍼널 그래프·월별 코호트의 채널 선택
   // 공고 퍼널은 시트 라이브 조합이라 섹션 진입 시에만 로드
-  const { data: funnelData, isLoading: funnelLoading } = useAdmin(section === 'funnel' ? '/api/admin/ktc-jd-funnel' : null, token)
+  const { data: funnelData, error: funnelError, isLoading: funnelLoading } = useAdmin(section === 'funnel' ? '/api/admin/ktc-jd-funnel' : null, token)
   const [jdStatusFilter, setJdStatusFilter] = useState('all') // 공고 퍼널 상태 필터
   const [funnelMode, setFunnelMode] = useState('channel') // 퍼널 관점: channel(채널별) | jd(공고별)
   const [openJobs, setOpenJobs] = useState({}) // 공고 행 펼침 (채널×월 상세)
@@ -527,6 +527,7 @@ export default function KtcSourcesView({ token, lang, dateRange }) {
 
       {/* 공고 퍼널 — JD EXECUTION(상태) × 지원 × 파이프라인 × 인터뷰 × 입사 */}
       {section === 'funnel' && (() => {
+        if (funnelError) return <div style={{ textAlign: 'center', padding: 40, color: '#c00' }}>{L('불러오기 실패', 'Failed to load', 'Tải thất bại')} — {funnelError.message}</div>
         if (funnelLoading || !funnelData) return <div style={{ textAlign: 'center', padding: 40, color: '#666' }}>{L('불러오는 중… (시트 라이브 조회)', 'Loading… (live sheet read)', 'Đang tải…')}</div>
         if (funnelData.error) return <div style={{ textAlign: 'center', padding: 40, color: '#c00' }}>{funnelData.error}</div>
         const STATUS_BADGE = {
@@ -792,6 +793,11 @@ export default function KtcSourcesView({ token, lang, dateRange }) {
       })()}
 
       {/* 랜딩 유입 상세 — ktc-landing DB 라이브 (UTM 소스/캠페인/랜딩 내 위치 × 월) */}
+      {section === 'landing' && !data.landing && (
+        <div style={{ textAlign: 'center', padding: 40, color: '#9CA3AF', fontSize: 13 }}>
+          {L('랜딩 데이터 연결 안 됨 — 서버에 KTC_LANDING_SUPABASE_URL/KEY 환경변수가 필요해요', 'Landing data not connected — KTC_LANDING_SUPABASE_URL/KEY env vars required on the server', 'Chưa kết nối dữ liệu landing — cần biến môi trường KTC_LANDING_*')}
+        </div>
+      )}
       {section === 'landing' && data.landing && (() => {
         const breakdownTable = (title, rows) => {
           const TOP = 8
