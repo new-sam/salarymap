@@ -80,6 +80,8 @@ export default function KtcSourcesView({ token, lang, dateRange }) {
   const qs = dateRange?.from && dateRange?.to ? `?from=${dateRange.from}&to=${dateRange.to}` : ''
   const { data, error, isLoading, mutate } = useAdmin(`/api/admin/ktc-sources${qs}`, token)
   const [showAllJobs, setShowAllJobs] = useState(false)
+  const [showHireList, setShowHireList] = useState(false) // 입사자 명단 접기
+  const [section, setSection] = useState('overview') // 섹션 전환: overview | jobs | hires | landing
   const [openJobs, setOpenJobs] = useState({}) // 공고 행 펼침 (채널×월 상세)
   const [basis, setBasis] = useState('people') // 'people' 유니크 지원자 | 'apps' 지원 건(중복 포함)
   const [syncing, setSyncing] = useState(false)
@@ -186,8 +188,32 @@ export default function KtcSourcesView({ token, lang, dateRange }) {
         {stat('FYI', fyi.total.toLocaleString(), ko ? `지원 건수 ${fyi.applications} · 전체의 ${pct(fyi.total, grandTotal)}%` : `${fyi.applications} ${L('', 'applications', 'lượt nộp')} · ${pct(fyi.total, grandTotal)}%`)}
         {stat(L('최종합격 (타 채널)', 'Final passed', 'Trúng tuyển'), totalFinal, L('FYI 지원자는 상태 추적 없음', 'FYI applicants not tracked', 'Kênh khác — FYI chưa theo dõi trạng thái'))}
         {stat(L('KTC 공고', 'KTC jobs', 'Tin KTC'), `${totals.activeKtcJobs} / ${totals.ktcJobs}`, L('활성 / 전체', 'active / all', 'đang hoạt động / tổng'))}
+        {data.hires && stat(L('입사', 'Hires', 'Trúng tuyển'), data.hires.total, L(`FYI 경유 ${data.hires.viaFyi}명`, `${data.hires.viaFyi} via FYI`, `${data.hires.viaFyi} qua FYI`))}
       </div>
 
+      {/* 섹션 네비 — 긴 세로 스크롤 대신 주제별 화면 전환 */}
+      <div style={{ display: 'flex', gap: 2, borderBottom: '1px solid #E5E8EB', marginBottom: 18 }}>
+        {[
+          ['overview', L('개요', 'Overview', 'Tổng quan')],
+          ['jobs', L('공고별', 'By job', 'Theo tin')],
+          ['hires', L('입사 · 매출', 'Hires · Revenue', 'Trúng tuyển · Doanh thu')],
+          ['landing', L('랜딩 유입', 'Landing traffic', 'Nguồn landing')],
+        ].map(([key, labelTxt]) => {
+          const on = section === key
+          return (
+            <button key={key} onClick={() => setSection(key)} style={{
+              padding: '9px 14px', fontSize: 13.5, fontWeight: on ? 700 : 500,
+              color: on ? '#191F28' : '#8B95A1', background: 'none', border: 'none',
+              borderBottom: on ? '2px solid #ff4400' : '2px solid transparent',
+              marginBottom: -1, cursor: 'pointer', whiteSpace: 'nowrap',
+            }}>
+              {labelTxt}
+            </button>
+          )
+        })}
+      </div>
+
+      {section === 'overview' && (<>
       {/* 기준 토글 — 도넛·채널 표에 공통 적용 */}
       <div style={{ display: 'flex', gap: 6, marginBottom: 12, alignItems: 'center', flexWrap: 'wrap' }}>
         {[
@@ -307,8 +333,90 @@ export default function KtcSourcesView({ token, lang, dateRange }) {
           <><b>Đạt sàng lọc CV</b> = từ mức đạt sàng lọc CV của team KTC trở lên (gồm các giai đoạn PV AI và trúng tuyển) · <b>Trúng tuyển</b> = giai đoạn cuối pipeline KTC · <b>Tỷ lệ sàng lọc</b> = đạt sàng lọc ÷ tổng ứng viên (gồm cả người chưa được sàng lọc)</>
         )}
       </div>
+      </>)}
+
+      {/* 채널별 입사 귀속 — ktc_hires × 이메일 조인 (기간 필터 무관 누적) */}
+      {section === 'hires' && data.hires && (() => {
+        const h = data.hires
+        const fmtUsd = (n) => (n > 0 ? `$${Math.round(n).toLocaleString()}` : '—')
+        const chanLabel = (k) => (k === '_unattributed' ? L('(미귀속)', '(unattributed)', '(chưa quy nguồn)') : label(k))
+        return (
+          <div style={{ margin: '26px 0 22px' }}>
+            <h4 style={{ fontSize: 14.5, fontWeight: 700, margin: '0 0 4px' }}>
+              {L('채널별 입사 귀속', 'Hires by channel', 'Trúng tuyển theo kênh')}
+              <span style={{ fontSize: 11.5, fontWeight: 500, color: '#9CA3AF', marginLeft: 8 }}>
+                {L(`KTC Ops Employee ${h.total}명 · 이메일 매칭 · 누적(기간 무관)`, `${h.total} hires from KTC Ops · matched by email · cumulative`, `${h.total} người từ KTC Ops · khớp email · lũy kế`)}
+              </span>
+            </h4>
+            <div className="adm-m-2col" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))', gap: 10, margin: '10px 0 12px' }}>
+              {stat(L('총 입사', 'Total hires', 'Tổng trúng tuyển'), h.total, L('KTC 프로젝트 온보딩 기준', 'onboarded to KTC projects', 'đã onboarding dự án KTC'))}
+              {stat(L('FYI 경유', 'Via FYI', 'Qua FYI'), h.viaFyi, L('FYI 지원 이력이 있는 입사자', 'hires who also applied via FYI', 'từng ứng tuyển qua FYI'))}
+              {stat(L('채널 귀속', 'Attributed', 'Đã quy nguồn'), `${h.attributed} / ${h.total}`, L('이메일이 지원 데이터와 매칭된 비율', 'matched to application data by email', 'khớp với dữ liệu ứng tuyển'))}
+            </div>
+            <div className="adm-m-scroll adm-m-nowrap" style={{ border: '1px solid #E5E8EB', borderRadius: 12, overflow: 'hidden' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+                <thead>
+                  <tr style={{ background: '#F8FAFC', color: '#475569' }}>
+                    {th(L('채널', 'Channel', 'Kênh'), 'left', { paddingLeft: 14 })}
+                    {th(L('입사자', 'Hires', 'Trúng tuyển'))}
+                    {th(L('월 매출 (USD)', 'Monthly revenue (USD)', 'Doanh thu tháng (USD)'))}
+                    {th(L('이익 (USD)', 'Profit (USD)', 'Lợi nhuận (USD)'), 'right', { paddingRight: 14 })}
+                  </tr>
+                </thead>
+                <tbody>
+                  {h.byChannel.map(c => {
+                    const isFyi = c.key === 'FYI'
+                    return (
+                      <tr key={c.key} style={{ borderTop: '1px solid #F1F5F9', background: isFyi ? '#FFF8F5' : undefined }}>
+                        <td style={{ padding: '9px 10px 9px 14px', fontWeight: isFyi ? 700 : 600, color: isFyi ? FYI_COLOR : c.key === '_unattributed' ? '#9CA3AF' : '#0F172A' }}>{chanLabel(c.key)}</td>
+                        <td style={{ padding: '9px 10px', textAlign: 'right', fontWeight: 700, color: '#0F172A', fontVariantNumeric: 'tabular-nums' }}>{c.hires}</td>
+                        <td style={{ padding: '9px 10px', textAlign: 'right', color: '#374151', fontVariantNumeric: 'tabular-nums' }}>{fmtUsd(c.revenue)}</td>
+                        <td style={{ padding: '9px 14px 9px 10px', textAlign: 'right', color: c.profit > 0 ? '#0D9488' : '#9CA3AF', fontVariantNumeric: 'tabular-nums' }}>{fmtUsd(c.profit)}</td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            </div>
+            <button onClick={() => setShowHireList(v => !v)} style={{ marginTop: 10, background: 'none', border: 'none', color: '#6B7280', fontSize: 12.5, fontWeight: 600, cursor: 'pointer', padding: 0 }}>
+              {showHireList ? '▾' : '▸'} {L('입사자 명단', 'Hire list', 'Danh sách trúng tuyển')} ({h.total})
+            </button>
+            {showHireList && (
+              <div className="adm-m-scroll adm-m-nowrap" style={{ border: '1px solid #E5E8EB', borderRadius: 12, overflow: 'hidden', marginTop: 8 }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12.5 }}>
+                  <thead>
+                    <tr style={{ background: '#F8FAFC', color: '#475569' }}>
+                      {th(L('이름', 'Name', 'Tên'), 'left', { paddingLeft: 14 })}
+                      {th(L('회사', 'Company', 'Công ty'), 'left')}
+                      {th(L('포지션', 'Position', 'Vị trí'), 'left')}
+                      {th(L('채널', 'Channel', 'Kênh'), 'left')}
+                      {th(L('온보딩', 'Onboarding', 'Onboarding'), 'left')}
+                      {th(L('월 매출', 'Revenue', 'Doanh thu'), 'right', { paddingRight: 14 })}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {h.rows.map((r, i) => (
+                      <tr key={i} style={{ borderTop: '1px solid #F1F5F9' }}>
+                        <td style={{ padding: '7px 10px 7px 14px', fontWeight: 600, color: '#191F28' }}>{r.name}</td>
+                        <td style={{ padding: '7px 10px', color: '#4E5968' }}>{r.company}</td>
+                        <td style={{ padding: '7px 10px', color: '#4E5968' }}>{r.position}</td>
+                        <td style={{ padding: '7px 10px', fontWeight: r.channel === 'FYI' || r.viaFyi ? 700 : 500, color: r.channel === 'FYI' || r.viaFyi ? FYI_COLOR : r.channel ? '#4E5968' : '#C4CAD2' }}>
+                          {r.channel ? chanLabel(r.channel) : '—'}{r.viaFyi && r.channel !== 'FYI' ? ' +FYI' : ''}
+                        </td>
+                        <td style={{ padding: '7px 10px', color: '#4E5968', fontVariantNumeric: 'tabular-nums' }}>{r.onboarding || '—'}{r.leftAt ? ` (${L('이탈', 'left', 'nghỉ')} ${r.leftAt})` : ''}</td>
+                        <td style={{ padding: '7px 14px 7px 10px', textAlign: 'right', color: '#374151', fontVariantNumeric: 'tabular-nums' }}>{fmtUsd(r.revenue)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        )
+      })()}
 
       {/* 공고 × 채널 크로스탭 */}
+      {section === 'jobs' && (<>
       <h4 style={{ fontSize: 14.5, fontWeight: 700, margin: '0 0 8px' }}>{L('공고 × 채널', 'Job × channel', 'Tin × kênh')}</h4>
       <div className="adm-m-scroll adm-m-nowrap" style={{ border: '1px solid #E5E8EB', borderRadius: 12, overflow: 'hidden' }}>
         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
@@ -400,9 +508,17 @@ export default function KtcSourcesView({ token, lang, dateRange }) {
           {showAllJobs ? L('▾ 접기', '▾ Collapse', '▾ Thu gọn') : ko ? `▸ 전체 ${jobs.length}개 공고 보기` : `▸ ${L('', 'Show all', 'Xem tất cả')} ${jobs.length} ${L('', 'jobs', 'tin')}`}
         </button>
       )}
+      <div style={{ fontSize: 11, color: '#9CA3AF', marginTop: 12, lineHeight: 1.6 }}>
+        {L(
+          '행 클릭 시 그 공고의 채널×월 상세. FYI 열은 회사·제목 매칭이라 일부 공고는 별도 행으로 나올 수 있음.',
+          'Click a row for its channel × month detail. FYI column matches by company+title; unmatched jobs appear as separate rows.',
+          'Bấm vào dòng để xem chi tiết kênh × tháng. Cột FYI khớp theo công ty+chức danh; tin không khớp hiển thị thành dòng riêng.'
+        )}
+      </div>
+      </>)}
 
       {/* 랜딩 유입 상세 — ktc-landing DB 라이브 (UTM 소스/캠페인/랜딩 내 위치 × 월) */}
-      {data.landing && (() => {
+      {section === 'landing' && data.landing && (() => {
         const breakdownTable = (title, rows) => {
           const TOP = 8
           const top = rows.slice(0, TOP)
@@ -414,10 +530,10 @@ export default function KtcSourcesView({ token, lang, dateRange }) {
           }
           const shown = restRow ? [...top, restRow] : top
           return (
-            <div style={{ flex: 1, minWidth: 300 }}>
+            <div style={{ minWidth: 0 }}>
               <div style={{ fontSize: 12.5, fontWeight: 700, color: '#475569', marginBottom: 8 }}>{title}</div>
-              <div className="adm-m-scroll adm-m-nowrap" style={{ border: '1px solid #E5E8EB', borderRadius: 12, overflow: 'hidden' }}>
-                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12.5 }}>
+              <div className="adm-m-nowrap" style={{ border: '1px solid #E5E8EB', borderRadius: 12, overflowX: 'auto' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12.5, whiteSpace: 'nowrap' }}>
                   <thead>
                     <tr style={{ background: '#F8FAFC', color: '#475569' }}>
                       {th('', 'left', { paddingLeft: 12 })}
@@ -428,7 +544,7 @@ export default function KtcSourcesView({ token, lang, dateRange }) {
                   <tbody>
                     {shown.map(r => (
                       <tr key={r.key} style={{ borderTop: '1px solid #F1F5F9' }}>
-                        <td style={{ padding: '7px 10px 7px 12px', fontWeight: 600, color: r.key === '(direct)' ? '#9CA3AF' : '#191F28' }}>{r.key}</td>
+                        <td title={r.key} style={{ padding: '7px 10px 7px 12px', fontWeight: 600, color: r.key === '(direct)' ? '#9CA3AF' : '#191F28', maxWidth: 170, overflow: 'hidden', textOverflow: 'ellipsis' }}>{r.key}</td>
                         {shownMonths.map(m => (
                           <td key={m} style={{ padding: '7px 10px', textAlign: 'right', color: (r.months[m] || 0) > 0 ? '#374151' : '#DDE1E6', fontVariantNumeric: 'tabular-nums' }}>{r.months[m] || 0}</td>
                         ))}
@@ -452,7 +568,7 @@ export default function KtcSourcesView({ token, lang, dateRange }) {
             <div style={{ fontSize: 11.5, color: '#9CA3AF', marginBottom: 12 }}>
               {L('(direct) = UTM 없이 들어온 지원. 마케팅 캠페인별 지원 귀속 — 광고비 붙이면 CPA 산출 가능.', '(direct) = no UTM. Marketing attribution per campaign — add spend to get CPA.', '(direct) = không có UTM. Quy nguồn theo chiến dịch marketing.')}
             </div>
-            <div className="adm-m-wrap" style={{ display: 'flex', gap: 14, alignItems: 'flex-start', flexWrap: 'wrap' }}>
+            <div className="adm-m-1col" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(480px, 1fr))', gap: 16, alignItems: 'start' }}>
               {breakdownTable(L('UTM 소스', 'UTM source', 'Nguồn UTM'), data.landing.utmSources)}
               {breakdownTable(L('캠페인', 'Campaign', 'Chiến dịch'), data.landing.campaigns)}
               {breakdownTable(L('랜딩 내 위치', 'Page source', 'Vị trí trên landing'), data.landing.pageSources)}
@@ -461,13 +577,15 @@ export default function KtcSourcesView({ token, lang, dateRange }) {
         )
       })()}
 
-      <div style={{ fontSize: 11, color: '#9CA3AF', marginTop: 14, lineHeight: 1.6 }}>
-        {L(
-          '지원자 수는 유니크 "사람" 기준 — 여러 공고 지원 시 1명, 여러 채널로 온 사람은 최초 유입 채널에만 귀속(ktc-support 동기화가 이메일 기준 전역 중복 제거). 그래서 시트 탭의 행 수(지원 건)보다 작음. FYI 지원자는 KTC 스크리닝 파이프라인에 안 태워져서 질 지표 없음. 시트의 FYI 탭은 갱신이 뒤처져 있어 사용하지 않고 salarymap DB에서 직접 집계. 크로스탭의 FYI는 회사·제목 매칭이라 일부 공고는 별도 행으로 나올 수 있음.',
-          'Counts are unique people — multiple applications = 1, and a person arriving via multiple channels is attributed to their first channel only (ktc-support dedups globally by email). Hence smaller than raw sheet row counts. FYI applicants are not run through the KTC screening pipeline, so no quality metrics. FYI numbers come live from salarymap DB (the sheet FYI tab is stale). Cross-tab FYI matches by company+title; unmatched jobs appear as separate rows.',
-          'Số ứng viên tính theo "người" unique — nhiều lượt nộp = 1, người đến từ nhiều kênh chỉ tính cho kênh đầu tiên (ktc-support khử trùng lặp toàn cục theo email). Vì vậy nhỏ hơn số dòng thô trên sheet. Ứng viên FYI không qua pipeline sàng lọc KTC nên không có chỉ số chất lượng. Số FYI lấy trực tiếp từ DB salarymap (tab FYI trên sheet đã lỗi thời). Cột FYI trong bảng chéo khớp theo công ty+chức danh; tin không khớp hiển thị thành dòng riêng.'
-        )}
-      </div>
+      {section === 'overview' && (
+        <div style={{ fontSize: 11, color: '#9CA3AF', marginTop: 14, lineHeight: 1.6 }}>
+          {L(
+            '지원자 수는 유니크 "사람" 기준 — 여러 공고 지원 시 1명, 여러 채널로 온 사람은 최초 유입 채널에만 귀속(ktc-support 동기화가 이메일 기준 전역 중복 제거). 그래서 시트 탭의 행 수(지원 건)보다 작음. FYI 지원자는 KTC 스크리닝 파이프라인에 안 태워져서 질 지표 없음. 시트의 FYI 탭은 갱신이 뒤처져 있어 사용하지 않고 salarymap DB에서 직접 집계.',
+            'Counts are unique people — multiple applications = 1, and a person arriving via multiple channels is attributed to their first channel only (ktc-support dedups globally by email). Hence smaller than raw sheet row counts. FYI applicants are not run through the KTC screening pipeline, so no quality metrics. FYI numbers come live from salarymap DB (the sheet FYI tab is stale).',
+            'Số ứng viên tính theo "người" unique — nhiều lượt nộp = 1, người đến từ nhiều kênh chỉ tính cho kênh đầu tiên (ktc-support khử trùng lặp toàn cục theo email). Vì vậy nhỏ hơn số dòng thô trên sheet. Ứng viên FYI không qua pipeline sàng lọc KTC nên không có chỉ số chất lượng. Số FYI lấy trực tiếp từ DB salarymap (tab FYI trên sheet đã lỗi thời).'
+          )}
+        </div>
+      )}
     </div>
   )
 }

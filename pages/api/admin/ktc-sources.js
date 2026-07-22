@@ -67,7 +67,7 @@ export default async function handler(req, res) {
     const filtering = Boolean(from || to)
 
     const [candidates, applications, ktcJobs] = await Promise.all([
-      fetchAll('ktc_candidates', 'sheet_source, applied_company, applied_job, position, job_code, applied_at, pipeline_status, synced_at'),
+      fetchAll('ktc_candidates', 'sheet_source, email, applied_company, applied_job, position, job_code, applied_at, pipeline_status, synced_at'),
       // 지원 "건" 원본 (중복 포함, 시트 직행). 테이블 미적재 시 빈 배열로 폴백.
       fetchAll('ktc_applications', 'sheet_source, applied_at').catch(() => []),
       fetchAll('jobs', 'id, title, company, is_active', q => q.eq('source', 'ktc')),
@@ -251,6 +251,45 @@ export default async function handler(req, res) {
       }
     }
 
+    // ---- 채널별 입사 귀속 (ktc_hires × 이메일 조인) — 기간 필터 무관 누적 ----
+    let hires = null
+    const hireRows = await fetchAll('ktc_hires', '*').catch(() => [])
+    if (hireRows.length) {
+      // 이메일 → 최초 유입 채널 (candidates는 이미 전역 유니크·최초 채널 귀속)
+      const chanByEmail = {}
+      for (const c of candidates) {
+        const e = (c.email || '').toLowerCase()
+        if (e && !chanByEmail[e]) chanByEmail[e] = c.sheet_source === 'FYI' ? 'FYI' : c.sheet_source
+      }
+      const fyiEmails = new Set(fyiApps.map(a => (a.applicant_email || '').toLowerCase()).filter(Boolean))
+      const rows = hireRows.map(h => {
+        const e = (h.email || '').toLowerCase()
+        const viaFyi = fyiEmails.has(e)
+        const channel = chanByEmail[e] || (viaFyi ? 'FYI' : null)
+        return {
+          name: h.full_name, company: h.company, position: h.position1 || h.position2,
+          status: h.status, onboarding: h.hired_at || h.onboarding_raw, leftAt: h.left_at,
+          revenue: h.revenue_usd, profit: h.profit_usd,
+          channel, viaFyi,
+        }
+      })
+      const byChannel = {}
+      for (const r of rows) {
+        const k = r.channel || '_unattributed'
+        const e = byChannel[k] || (byChannel[k] = { key: k, hires: 0, revenue: 0, profit: 0 })
+        e.hires++
+        e.revenue += r.revenue || 0
+        e.profit += r.profit || 0
+      }
+      hires = {
+        total: rows.length,
+        viaFyi: rows.filter(r => r.viaFyi).length,
+        attributed: rows.filter(r => r.channel).length,
+        byChannel: Object.values(byChannel).sort((a, b) => b.hires - a.hires),
+        rows,
+      }
+    }
+
     const platformList = Object.values(platforms).sort((a, b) => b.total - a.total)
     const monthSet = new Set(Object.keys(fyiMonths))
     for (const p of platformList) Object.keys(p.months).forEach(m => monthSet.add(m))
@@ -271,6 +310,7 @@ export default async function handler(req, res) {
       })),
       hasApplications: applications.length > 0,
       landing,
+      hires,
       fyi: {
         total: fyiAll.size,
         applications: fyiApps.length,
