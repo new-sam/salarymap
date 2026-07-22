@@ -1,5 +1,6 @@
 import { Fragment, useState, useEffect } from 'react'
 import { useAdmin } from '../../lib/adminSwr'
+import { AmpChart } from './BehaviorFunnel'
 
 // KTC 소싱 채널 비교 — KTC 공고에 지원자를 모아준 채널별 볼륨/추이/질.
 // FYI가 채용 플랫폼으로서 유료 채널(ITviec/TopDev/…) 대비 얼마나 모으는지 판단하는 탭.
@@ -79,12 +80,14 @@ export default function KtcSourcesView({ token, lang, dateRange }) {
   }
   const qs = dateRange?.from && dateRange?.to ? `?from=${dateRange.from}&to=${dateRange.to}` : ''
   const { data, error, isLoading, mutate } = useAdmin(`/api/admin/ktc-sources${qs}`, token)
-  // 공고 퍼널은 시트 라이브 조합이라 섹션 진입 시에만 로드
-  const { data: funnelData, isLoading: funnelLoading } = useAdmin(section === 'funnel' ? '/api/admin/ktc-jd-funnel' : null, token)
   const [showAllJobs, setShowAllJobs] = useState(false)
   const [showHireList, setShowHireList] = useState(false) // 입사자 명단 접기
-  const [section, setSection] = useState('overview') // 섹션 전환: overview | jobs | funnel | hires | landing
+  const [section, setSection] = useState('funnel') // 섹션 전환 (기본 = 채널 퍼널이 판단의 메인)
+  const [selChan, setSelChan] = useState('FYI') // 퍼널 그래프·월별 코호트의 채널 선택
+  // 공고 퍼널은 시트 라이브 조합이라 섹션 진입 시에만 로드
+  const { data: funnelData, isLoading: funnelLoading } = useAdmin(section === 'funnel' ? '/api/admin/ktc-jd-funnel' : null, token)
   const [jdStatusFilter, setJdStatusFilter] = useState('all') // 공고 퍼널 상태 필터
+  const [funnelMode, setFunnelMode] = useState('channel') // 퍼널 관점: channel(채널별) | jd(공고별)
   const [openJobs, setOpenJobs] = useState({}) // 공고 행 펼침 (채널×월 상세)
   const [basis, setBasis] = useState('people') // 'people' 유니크 지원자 | 'apps' 지원 건(중복 포함)
   const [syncing, setSyncing] = useState(false)
@@ -197,10 +200,11 @@ export default function KtcSourcesView({ token, lang, dateRange }) {
       {/* 섹션 네비 — 긴 세로 스크롤 대신 주제별 화면 전환 */}
       <div style={{ display: 'flex', gap: 2, borderBottom: '1px solid #E5E8EB', marginBottom: 18 }}>
         {[
+          // 순서 = FYI 가치 판단 경로: 퍼널(메인) → 개요(볼륨 상세) → 입사·매출 → 운영용
+          ['funnel', L('퍼널', 'Funnel', 'Phễu')],
           ['overview', L('개요', 'Overview', 'Tổng quan')],
-          ['jobs', L('공고별', 'By job', 'Theo tin')],
-          ['funnel', L('공고 퍼널', 'JD funnel', 'Phễu theo tin')],
           ['hires', L('입사 · 매출', 'Hires · Revenue', 'Trúng tuyển · Doanh thu')],
+          ['jobs', L('공고별', 'By job', 'Theo tin')],
           ['landing', L('랜딩 유입', 'Landing traffic', 'Nguồn landing')],
         ].map(([key, labelTxt]) => {
           const on = section === key
@@ -546,8 +550,162 @@ export default function KtcSourcesView({ token, lang, dateRange }) {
         const cell = (n, hot) => (
           <td style={{ padding: '9px 10px', textAlign: 'right', color: n > 0 ? (hot ? '#0D9488' : '#374151') : '#DDE1E6', fontWeight: n > 0 && hot ? 700 : 400, ...num }}>{n}</td>
         )
+        // 채널 퍼널: 단계 도달 수 + 지원자 대비 %
+        const chanRows = funnelData.channels || []
+        const stageCell = (n, d, isFyi) => (
+          <td style={{ padding: '9px 10px', textAlign: 'right', ...num }}>
+            <span style={{ fontWeight: n > 0 ? 700 : 400, color: n > 0 ? (isFyi ? FYI_COLOR : '#191F28') : '#DDE1E6' }}>{n}</span>
+            {d > 0 && <span style={{ color: '#9CA3AF', marginLeft: 5, fontSize: 11.5 }}>{(n / d * 100).toFixed(1)}%</span>}
+          </td>
+        )
         return (
           <div>
+            {/* 퍼널 관점 토글: 채널별(플랫폼 비교) / 공고별 */}
+            <div style={{ display: 'flex', gap: 6, marginBottom: 14, flexWrap: 'wrap' }}>
+              {[
+                ['channel', L('채널별 퍼널', 'By channel', 'Theo kênh')],
+                ['jd', L('공고별 퍼널', 'By job', 'Theo tin')],
+              ].map(([key, labelTxt]) => {
+                const on = funnelMode === key
+                return (
+                  <button key={key} onClick={() => setFunnelMode(key)} style={{
+                    fontSize: 13, fontWeight: 600, cursor: 'pointer', borderRadius: 999, padding: '7px 14px',
+                    border: '1px solid', borderColor: on ? '#ff4400' : '#E5E8EB',
+                    background: on ? '#FFF1EC' : '#fff', color: on ? '#ff4400' : '#4E5968',
+                  }}>
+                    {labelTxt}
+                  </button>
+                )
+              })}
+            </div>
+
+            {funnelMode === 'channel' && (
+              <>
+                <div className="adm-m-scroll adm-m-nowrap" style={{ border: '1px solid #E5E8EB', borderRadius: 12, overflowX: 'auto', marginBottom: 12 }}>
+                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13, whiteSpace: 'nowrap' }}>
+                    <thead>
+                      <tr style={{ background: '#F8FAFC', color: '#475569' }}>
+                        {th(L('채널', 'Channel', 'Kênh'), 'left', { paddingLeft: 14 })}
+                        {th(L('지원자', 'Applicants', 'Ứng viên'))}
+                        {th(L('서류통과', 'Screened', 'Đạt sàng lọc'))}
+                        {th(L('AI합격', 'AI passed', 'Đạt PV AI'))}
+                        {th(L('인터뷰', 'Interviews', 'Phỏng vấn'))}
+                        {th(L('최종합격', 'Final', 'Đạt cuối'))}
+                        {th(L('입사', 'Hired', 'Trúng tuyển'), 'right', { paddingRight: 14 })}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {chanRows.map(c => {
+                        const isFyi = c.key === 'FYI'
+                        const isUn = c.key === '_unattributed'
+                        const denom = c.peopleLive || c.people
+                        return (
+                          <tr key={c.key} style={{ borderTop: '1px solid #F1F5F9', background: isFyi ? '#FFF8F5' : undefined }}>
+                            <td style={{ padding: '9px 10px 9px 14px', fontWeight: isFyi ? 700 : 600, color: isFyi ? FYI_COLOR : isUn ? '#9CA3AF' : '#0F172A' }}>
+                              {isUn ? L('(채널 외 / 미귀속)', '(off-channel)', '(ngoài kênh)') : label(c.key)}
+                            </td>
+                            <td style={{ padding: '9px 10px', textAlign: 'right', fontWeight: 700, color: '#0F172A', ...num }}>
+                              {isUn ? '—' : denom.toLocaleString()}
+                              {isFyi && c.peopleLive > c.people && <span style={{ color: '#9CA3AF', marginLeft: 5, fontSize: 11, fontWeight: 500 }}>{L(`파이프라인 ${c.people}`, `${c.people} in pipeline`, `${c.people} trong pipeline`)}</span>}
+                            </td>
+                            {stageCell(c.docPass, isUn ? 0 : denom, isFyi)}
+                            {stageCell(c.aiPass, isUn ? 0 : denom, isFyi)}
+                            {stageCell(c.interviews, isUn ? 0 : denom, isFyi)}
+                            {stageCell(c.finalPass, isUn ? 0 : denom, isFyi)}
+                            <td style={{ padding: '9px 14px 9px 10px', textAlign: 'right', ...num }}>
+                              <span style={{ fontWeight: c.hires > 0 ? 800 : 400, color: c.hires > 0 ? (isFyi ? FYI_COLOR : '#0D9488') : '#DDE1E6' }}>{c.hires}</span>
+                              {!isUn && denom > 0 && c.hires > 0 && <span style={{ color: '#9CA3AF', marginLeft: 5, fontSize: 11.5 }}>{(c.hires / denom * 100).toFixed(1)}%</span>}
+                            </td>
+                          </tr>
+                        )
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+                <div style={{ fontSize: 11, color: '#9CA3AF', lineHeight: 1.6, marginBottom: 20 }}>
+                  {L(
+                    '% = 그 채널 지원자 대비 단계 도달률. 서류통과·AI합격·최종합격은 KTC 스크리닝 파이프라인 상태, 인터뷰는 Master INTERVIEW 탭(인당 1회), 입사는 KTC Ops Employee — 모두 이메일로 채널 귀속. FYI 지원자는 전체 수(라이브) 기준이고 그중 일부만 파이프라인에 유입돼 서류/AI 단계 수치는 하한값. (채널 외)는 지원 기록이 없는 인터뷰·입사(오프라인 행사·직접 소개 등).',
+                    '% = stage reached / channel applicants. Screened·AI·Final from the KTC pipeline; interviews from the INTERVIEW tab (once per person); hires from KTC Ops — all attributed by email. FYI applicant count is live; only some entered the pipeline, so screened/AI figures are lower bounds. (off-channel) = interviews/hires with no application record.',
+                    '% = đạt giai đoạn / ứng viên kênh. Sàng lọc·AI·Cuối từ pipeline KTC; phỏng vấn từ tab INTERVIEW; trúng tuyển từ KTC Ops — quy nguồn theo email. Số ứng viên FYI là số trực tiếp; chỉ một phần vào pipeline nên các cột sàng lọc/AI là giá trị tối thiểu.'
+                  )}
+                </div>
+
+                {/* 채널 드릴다운: 퍼널 그래프 + 지원월 코호트 표 */}
+                {(() => {
+                  const sel = chanRows.find(c => c.key === selChan) || chanRows.find(c => c.key !== '_unattributed')
+                  if (!sel) return null
+                  const denom = sel.peopleLive || sel.people
+                  const STEPS = [
+                    [L('지원자', 'Applicants', 'Ứng viên'), denom],
+                    [L('서류통과', 'Screened', 'Đạt sàng lọc'), sel.docPass],
+                    [L('AI합격', 'AI passed', 'Đạt PV AI'), sel.aiPass],
+                    [L('인터뷰', 'Interview', 'Phỏng vấn'), sel.interviews],
+                    [L('최종합격', 'Final', 'Đạt cuối'), sel.finalPass],
+                    [L('입사', 'Hired', 'Trúng tuyển'), sel.hires],
+                  ]
+                  const cohortMonths = Object.keys(sel.months || {}).filter(m => m >= '2026-03' && m <= nowMonth).sort()
+                  return (
+                    <div style={{ border: '1px solid #E5E8EB', borderRadius: 12, padding: '16px 18px' }}>
+                      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center', marginBottom: 4 }}>
+                        <span style={{ fontSize: 12.5, fontWeight: 700, color: '#475569', marginRight: 4 }}>{L('채널 상세', 'Channel detail', 'Chi tiết kênh')}</span>
+                        {chanRows.filter(c => c.key !== '_unattributed').map(c => {
+                          const on = c.key === sel.key
+                          return (
+                            <button key={c.key} onClick={() => setSelChan(c.key)} style={{
+                              fontSize: 12, fontWeight: 600, cursor: 'pointer', borderRadius: 999, padding: '5px 12px',
+                              border: '1px solid', borderColor: on ? '#ff4400' : '#E5E8EB',
+                              background: on ? '#FFF1EC' : '#fff', color: on ? '#ff4400' : '#4E5968',
+                            }}>
+                              {label(c.key)}
+                            </button>
+                          )
+                        })}
+                      </div>
+                      <AmpChart vals={STEPS.map(s => s[1])} steps={STEPS.map(s => s[0])} />
+                      {cohortMonths.length > 0 && (
+                        <div className="adm-m-scroll adm-m-nowrap" style={{ border: '1px solid #E5E8EB', borderRadius: 12, overflowX: 'auto', marginTop: 14 }}>
+                          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12.5, whiteSpace: 'nowrap' }}>
+                            <thead>
+                              <tr style={{ background: '#F8FAFC', color: '#475569' }}>
+                                {th(L('지원월 코호트', 'Cohort (month applied)', 'Cohort theo tháng nộp'), 'left', { paddingLeft: 12 })}
+                                {th(L('지원자', 'Applicants', 'Ứng viên'))}
+                                {th(L('서류통과', 'Screened', 'Đạt sàng lọc'))}
+                                {th(L('AI합격', 'AI passed', 'Đạt PV AI'))}
+                                {th(L('인터뷰', 'Interview', 'Phỏng vấn'))}
+                                {th(L('최종합격', 'Final', 'Đạt cuối'))}
+                                {th(L('입사', 'Hired', 'Trúng tuyển'), 'right', { paddingRight: 12 })}
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {cohortMonths.map(m => {
+                                const v = sel.months[m]
+                                const c2 = (n) => <td style={{ padding: '7px 10px', textAlign: 'right', color: n > 0 ? '#374151' : '#DDE1E6', fontWeight: n > 0 ? 600 : 400, ...num }}>{n}</td>
+                                return (
+                                  <tr key={m} style={{ borderTop: '1px solid #F1F5F9' }}>
+                                    <td style={{ padding: '7px 10px 7px 12px', fontWeight: 600, color: '#191F28' }}>{monthLabel(m)}</td>
+                                    {c2(v.people)}
+                                    {c2(v.docPass)}
+                                    {c2(v.aiPass)}
+                                    {c2(v.interviews)}
+                                    {c2(v.finalPass)}
+                                    <td style={{ padding: '7px 12px 7px 10px', textAlign: 'right', fontWeight: v.hires > 0 ? 800 : 400, color: v.hires > 0 ? FYI_COLOR : '#DDE1E6', ...num }}>{v.hires}</td>
+                                  </tr>
+                                )
+                              })}
+                            </tbody>
+                          </table>
+                        </div>
+                      )}
+                      <div style={{ fontSize: 11, color: '#9CA3AF', marginTop: 8 }}>
+                        {L('코호트 = 그 달에 지원한 사람들이 지금까지 도달한 단계 (단계 발생 시점이 아니라 지원월 기준). FYI는 파이프라인 유입분만 월 배정됨.', 'Cohort = people who applied that month, by the stage they have reached so far. FYI months cover pipeline-synced applicants only.', 'Cohort = người nộp trong tháng đó, theo giai đoạn đã đạt đến nay.')}
+                      </div>
+                    </div>
+                  )
+                })()}
+              </>
+            )}
+
+            {funnelMode === 'jd' && (<>
             <div style={{ display: 'flex', gap: 6, marginBottom: 14, flexWrap: 'wrap' }}>
               {FILTERS.map(([key, labelTxt, n]) => {
                 const on = jdStatusFilter === key
@@ -611,6 +769,7 @@ export default function KtcSourcesView({ token, lang, dateRange }) {
                 'Danh sách tin/trạng thái lấy trực tiếp từ Master sheet. Lượt nộp/ứng viên/sàng lọc/AI/cuối từ dữ liệu đã đồng bộ; phỏng vấn từ tab INTERVIEW; trúng tuyển quy nguồn qua email→mã tin.'
               )}
             </div>
+            </>)}
           </div>
         )
       })()}
