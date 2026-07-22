@@ -372,7 +372,7 @@ export default function KtcSourcesView({ token, lang, dateRange }) {
                   </tr>
                 </thead>
                 <tbody>
-                  {h.byChannel.map(c => {
+                  {h.byChannel.filter(c => c.key !== '_unattributed').map(c => {
                     const isFyi = c.key === 'FYI'
                     return (
                       <tr key={c.key} style={{ borderTop: '1px solid #F1F5F9', background: isFyi ? '#FFF8F5' : undefined }}>
@@ -551,14 +551,17 @@ export default function KtcSourcesView({ token, lang, dateRange }) {
         const cell = (n, hot) => (
           <td style={{ padding: '9px 10px', textAlign: 'right', color: n > 0 ? (hot ? '#0D9488' : '#374151') : '#DDE1E6', fontWeight: n > 0 && hot ? 700 : 400, ...num }}>{n}</td>
         )
-        // 채널 퍼널: 단계 도달 수 + 지원자 대비 %
-        const chanRows = funnelData.channels || []
-        const hasCost = chanRows.some(c => c.spendKrw != null)
+        // 채널 퍼널: 단계 도달 수 + 지원자 대비 % (채널 외/미귀속은 표에서 제외 — 채널 비교 대상 아님)
+        const chanRows = (funnelData.channels || []).filter(c => c.key !== '_unattributed')
+        // 비용 열은 항상 렌더 — 시트 조회 실패 시 값만 '—' + 실패 사유 표시 (열이 통째로 사라지는 것 방지)
+        const hasCost = true
+        const costFailed = !chanRows.some(c => c.spendKrw != null)
         const fmtKrw = (n) => (n >= 10000 ? `${Math.round(n / 10000).toLocaleString()}만원` : `${Math.round(n).toLocaleString()}원`)
+        // 숫자 위 / % 아래 두 줄 — 열 폭을 줄여 가로 스크롤 없이 한 화면에 들어가게
         const stageCell = (n, d, isFyi) => (
-          <td style={{ padding: '9px 10px', textAlign: 'right', ...num }}>
-            <span style={{ fontWeight: n > 0 ? 700 : 400, color: n > 0 ? (isFyi ? FYI_COLOR : '#191F28') : '#DDE1E6' }}>{n}</span>
-            {d > 0 && <span style={{ color: '#9CA3AF', marginLeft: 5, fontSize: 11.5 }}>{(n / d * 100).toFixed(1)}%</span>}
+          <td style={{ padding: '6px 8px', textAlign: 'right', ...num }}>
+            <div style={{ fontWeight: n > 0 ? 700 : 400, color: n > 0 ? (isFyi ? FYI_COLOR : '#191F28') : '#DDE1E6' }}>{n}</div>
+            {d > 0 && <div style={{ color: '#9CA3AF', fontSize: 10.5, marginTop: 1 }}>{(n / d * 100).toFixed(1)}%</div>}
           </td>
         )
         return (
@@ -584,6 +587,11 @@ export default function KtcSourcesView({ token, lang, dateRange }) {
 
             {funnelMode === 'channel' && (
               <>
+                {costFailed && (
+                  <div style={{ fontSize: 12, color: '#C2410C', background: '#FFF4E5', border: '1px solid #FFE0C2', borderRadius: 8, padding: '8px 12px', marginBottom: 10 }}>
+                    {L('비용 시트 조회 실패 — 광고비·게재비·CPA가 비어 있음. 잠시 후 새로고침하면 복구됨', 'Cost sheet read failed — spend/CPA columns are empty. Refresh shortly to recover', 'Đọc sheet chi phí thất bại — làm mới lại sau ít phút')}{funnelData.costMeta?.error ? ` (${funnelData.costMeta.error})` : ''}
+                  </div>
+                )}
                 <div className="adm-m-scroll adm-m-nowrap" style={{ border: '1px solid #E5E8EB', borderRadius: 12, overflowX: 'auto', marginBottom: 12 }}>
                   <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13, whiteSpace: 'nowrap' }}>
                     <thead>
@@ -610,34 +618,34 @@ export default function KtcSourcesView({ token, lang, dateRange }) {
                             <td style={{ padding: '9px 10px 9px 14px', fontWeight: isFyi ? 700 : 600, color: isFyi ? FYI_COLOR : isUn ? '#9CA3AF' : '#0F172A' }}>
                               {isUn ? L('(채널 외 / 미귀속)', '(off-channel)', '(ngoài kênh)') : label(c.key)}
                             </td>
-                            <td style={{ padding: '9px 10px', textAlign: 'right', fontWeight: 700, color: '#0F172A', ...num }}>
-                              {isUn ? '—' : denom.toLocaleString()}
-                              {isFyi && c.peopleLive > c.people && <span style={{ color: '#9CA3AF', marginLeft: 5, fontSize: 11, fontWeight: 500 }}>{L(`파이프라인 ${c.people}`, `${c.people} in pipeline`, `${c.people} trong pipeline`)}</span>}
+                            <td style={{ padding: '6px 8px', textAlign: 'right', fontWeight: 700, color: '#0F172A', ...num }}>
+                              <div>{isUn ? '—' : denom.toLocaleString()}</div>
+                              {isFyi && c.peopleLive > c.people && <div style={{ color: '#9CA3AF', fontSize: 10.5, fontWeight: 500, marginTop: 1 }}>{L(`파이프라인 ${c.people}`, `${c.people} in pipeline`, `${c.people} pipeline`)}</div>}
                             </td>
                             {stageCell(c.docPass, isUn ? 0 : denom, isFyi)}
                             {stageCell(c.aiPass, isUn ? 0 : denom, isFyi)}
                             {stageCell(c.interviews, isUn ? 0 : denom, isFyi)}
                             {stageCell(c.finalPass, isUn ? 0 : denom, isFyi)}
-                            <td style={{ padding: '9px 10px', textAlign: 'right', ...num }}>
-                              <span style={{ fontWeight: c.hires > 0 ? 800 : 400, color: c.hires > 0 ? (isFyi ? FYI_COLOR : '#0D9488') : '#DDE1E6' }}>{c.hires}</span>
-                              {!isUn && denom > 0 && c.hires > 0 && <span style={{ color: '#9CA3AF', marginLeft: 5, fontSize: 11.5 }}>{(c.hires / denom * 100).toFixed(1)}%</span>}
+                            <td style={{ padding: '6px 8px', textAlign: 'right', ...num }}>
+                              <div style={{ fontWeight: c.hires > 0 ? 800 : 400, color: c.hires > 0 ? (isFyi ? FYI_COLOR : '#0D9488') : '#DDE1E6' }}>{c.hires}</div>
+                              {!isUn && denom > 0 && c.hires > 0 && <div style={{ color: '#9CA3AF', fontSize: 10.5, marginTop: 1 }}>{(c.hires / denom * 100).toFixed(1)}%</div>}
                             </td>
                             {hasCost && (
-                              <td style={{ padding: '9px 10px', textAlign: 'right', ...num }}>
+                              <td style={{ padding: '6px 8px', textAlign: 'right', ...num }}>
                                 {c.spendKrw == null ? <span style={{ color: '#DDE1E6' }}>—</span>
                                   : c.spendAds > 0 ? <span style={{ fontWeight: 600, color: '#191F28' }}>{fmtKrw(c.spendAds)}</span>
                                   : <span style={{ color: '#DDE1E6' }}>0</span>}
                               </td>
                             )}
                             {hasCost && (
-                              <td style={{ padding: '9px 10px', textAlign: 'right', ...num }}>
+                              <td style={{ padding: '6px 8px', textAlign: 'right', ...num }}>
                                 {c.spendKrw == null ? <span style={{ color: '#DDE1E6' }}>—</span>
                                   : c.spendFees > 0 ? <span style={{ fontWeight: 600, color: '#191F28' }}>{fmtKrw(c.spendFees)}</span>
                                   : <span style={{ color: '#DDE1E6' }}>{L('무료', 'free', 'miễn phí')}</span>}
                               </td>
                             )}
                             {hasCost && (
-                              <td style={{ padding: '9px 14px 9px 10px', textAlign: 'right', ...num }}>
+                              <td style={{ padding: '6px 14px 6px 8px', textAlign: 'right', ...num }}>
                                 {c.spendKrw == null || isUn ? <span style={{ color: '#DDE1E6' }}>—</span>
                                   : c.spendKrw === 0 ? <span style={{ fontWeight: 700, color: isFyi ? FYI_COLOR : '#0D9488' }}>₩0</span>
                                   : denom > 0 ? <span style={{ fontWeight: 600, color: '#191F28' }}>{Math.round(c.spendKrw / denom).toLocaleString()}{L('원', ' KRW', ' KRW')}</span>

@@ -182,10 +182,18 @@ export default async function handler(req, res) {
     // ---- 채널별 지출 (비용 시트 라이브, KRW) — 실패해도 퍼널은 정상 응답 ----
     let costMeta = null
     try {
+      // 탭 이름이 수시로 바뀜(번호 접두 등) — 키워드로 실제 탭명을 탐지
+      const costSheetMeta = await sheets.spreadsheets.get({ spreadsheetId: COST_SHEET_ID })
+      const costTabs = (costSheetMeta.data.sheets || []).map(s => s.properties.title)
+      const findTab = (kw) => costTabs.find(t => t.toLowerCase().includes(kw.toLowerCase()))
+      const cmpTab = findTab('통합 비교표')
+      const metaTab = findTab('캠페인별')
+      const invTab = findTab('invoice')
+      if (!cmpTab || !metaTab || !invTab) throw new Error(`비용 시트 탭 탐지 실패 (비교표:${cmpTab} 캠페인:${metaTab} 인보이스:${invTab})`)
       const [cmpRes, metaRes, invRes] = await Promise.all([
-        sheets.spreadsheets.values.get({ spreadsheetId: COST_SHEET_ID, range: "'통합 비교표 템플릿'!A1:M15" }),
-        sheets.spreadsheets.values.get({ spreadsheetId: COST_SHEET_ID, range: "' 캠페인별 Meta 광고 성과'!B6:C40" }),
-        sheets.spreadsheets.values.get({ spreadsheetId: COST_SHEET_ID, range: "'Invoice'!A1:M15" }),
+        sheets.spreadsheets.values.get({ spreadsheetId: COST_SHEET_ID, range: `'${cmpTab}'!A1:M15` }),
+        sheets.spreadsheets.values.get({ spreadsheetId: COST_SHEET_ID, range: `'${metaTab}'!B6:C40` }),
+        sheets.spreadsheets.values.get({ spreadsheetId: COST_SHEET_ID, range: `'${invTab}'!A1:M15` }),
       ])
       // Alice가 컬럼을 수시로 옮기므로 헤더 텍스트('채널'/'지출')로 위치 탐지
       const cmpRows = cmpRes.data.values || []
@@ -241,6 +249,7 @@ export default async function handler(req, res) {
       costMeta = { ktcMetaKrw: ktcMeta, fyiKtcMetaKrw: fyiKtcMeta, channelsWithCost: Object.keys(spendByChannel).length }
     } catch (e) {
       console.error('cost sheet read:', e.message)
+      costMeta = { error: e.message } // 뷰에서 "비용 시트 조회 실패"로 노출 (열은 유지)
     }
 
     // 채널 퍼널 정렬: 지원자(파이프라인 인원) 많은 순, 미귀속은 맨 뒤
