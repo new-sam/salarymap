@@ -194,7 +194,7 @@ export default function KtcSourcesView({ token, lang, dateRange }) {
         {stat('FYI', fyi.total.toLocaleString(), ko ? `지원 건수 ${fyi.applications} · 전체의 ${pct(fyi.total, grandTotal)}%` : `${fyi.applications} ${L('', 'applications', 'lượt nộp')} · ${pct(fyi.total, grandTotal)}%`)}
         {stat(L('최종합격 (타 채널)', 'Final passed', 'Trúng tuyển'), totalFinal, L('FYI 지원자는 상태 추적 없음', 'FYI applicants not tracked', 'Kênh khác — FYI chưa theo dõi trạng thái'))}
         {stat(L('KTC 공고', 'KTC jobs', 'Tin KTC'), `${totals.activeKtcJobs} / ${totals.ktcJobs}`, L('활성 / 전체', 'active / all', 'đang hoạt động / tổng'))}
-        {data.hires && stat(L('입사', 'Hires', 'Trúng tuyển'), data.hires.total, L(`FYI 경유 ${data.hires.viaFyi}명`, `${data.hires.viaFyi} via FYI`, `${data.hires.viaFyi} qua FYI`))}
+        {data.hires && stat(L('입사 (채널 경유)', 'Hires (via channels)', 'Trúng tuyển (qua kênh)'), data.hires.attributed, L(`채널 외 ${data.hires.total - data.hires.attributed}명 제외 · FYI 경유 ${data.hires.viaFyi}`, `excl. ${data.hires.total - data.hires.attributed} off-channel · ${data.hires.viaFyi} via FYI`, `trừ ${data.hires.total - data.hires.attributed} ngoài kênh`))}
       </div>
 
       {/* 섹션 네비 — 긴 세로 스크롤 대신 주제별 화면 전환 */}
@@ -357,9 +357,8 @@ export default function KtcSourcesView({ token, lang, dateRange }) {
               </span>
             </h4>
             <div className="adm-m-2col" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))', gap: 10, margin: '10px 0 12px' }}>
-              {stat(L('총 입사', 'Total hires', 'Tổng trúng tuyển'), h.total, L('KTC 프로젝트 온보딩 기준', 'onboarded to KTC projects', 'đã onboarding dự án KTC'))}
+              {stat(L('입사 (채널 경유)', 'Hires (via channels)', 'Trúng tuyển (qua kênh)'), h.attributed, L(`채널 외 채용 ${h.total - h.attributed}명은 집계 제외`, `${h.total - h.attributed} off-channel hires excluded`, `trừ ${h.total - h.attributed} ngoài kênh`))}
               {stat(L('FYI 경유', 'Via FYI', 'Qua FYI'), h.viaFyi, L('FYI 지원 이력이 있는 입사자', 'hires who also applied via FYI', 'từng ứng tuyển qua FYI'))}
-              {stat(L('채널 귀속', 'Attributed', 'Đã quy nguồn'), `${h.attributed} / ${h.total}`, L('이메일이 지원 데이터와 매칭된 비율', 'matched to application data by email', 'khớp với dữ liệu ứng tuyển'))}
             </div>
             <div className="adm-m-scroll adm-m-nowrap" style={{ border: '1px solid #E5E8EB', borderRadius: 12, overflow: 'hidden' }}>
               <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
@@ -387,7 +386,7 @@ export default function KtcSourcesView({ token, lang, dateRange }) {
               </table>
             </div>
             <button onClick={() => setShowHireList(v => !v)} style={{ marginTop: 10, background: 'none', border: 'none', color: '#6B7280', fontSize: 12.5, fontWeight: 600, cursor: 'pointer', padding: 0 }}>
-              {showHireList ? '▾' : '▸'} {L('입사자 명단', 'Hire list', 'Danh sách trúng tuyển')} ({h.total})
+              {showHireList ? '▾' : '▸'} {L('입사자 명단 (채널 경유)', 'Hire list (via channels)', 'Danh sách trúng tuyển')} ({h.attributed})
             </button>
             {showHireList && (
               <div className="adm-m-scroll adm-m-nowrap" style={{ border: '1px solid #E5E8EB', borderRadius: 12, overflow: 'hidden', marginTop: 8 }}>
@@ -403,7 +402,7 @@ export default function KtcSourcesView({ token, lang, dateRange }) {
                     </tr>
                   </thead>
                   <tbody>
-                    {h.rows.map((r, i) => (
+                    {h.rows.filter(r => r.channel).map((r, i) => (
                       <tr key={i} style={{ borderTop: '1px solid #F1F5F9' }}>
                         <td style={{ padding: '7px 10px 7px 14px', fontWeight: 600, color: '#191F28' }}>{r.name}</td>
                         <td style={{ padding: '7px 10px', color: '#4E5968' }}>{r.company}</td>
