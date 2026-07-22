@@ -12,7 +12,11 @@ for (const line of readFileSync(new URL('../.env.local', import.meta.url), 'utf8
   }
 }
 
-const { triggerSheetSync, syncKtcCandidates, syncKtcApplications, syncKtcHires } = await import('../lib/ktcCandidatesSync.js');
+const { triggerSheetSync, syncKtcCandidates, syncKtcApplications, syncKtcHires, pushFyiToKtc } = await import('../lib/ktcCandidatesSync.js');
+
+// FYI 지원자를 ktc-support 파이프라인에 먼저 밀어넣고 (신규만), 그다음 당겨온다
+const push = await pushFyiToKtc();
+console.log(`✓ FYI→파이프라인: 신규 ${push.pushed}명 유입 (기존재 ${push.alreadyInPipeline}, FYI 전체 ${push.fyiPeople})`);
 
 if (process.argv.includes('--sheets')) {
   console.log('• ktc-support 시트 동기화 트리거...');
