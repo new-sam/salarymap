@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>콜드메일 — 세그먼트 × 제목 전략 아이디어</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Pretendard', -apple-system, 'Malgun Gothic', sans-serif;
+    background: #fafafa; color: #1a1a1a; line-height: 1.6;
+    padding: 40px 16px 80px;
+  }
+  .wrap { max-width: 760px; margin: 0 auto; }
+  h1 { font-size: 24px; margin-bottom: 6px; }
+  .sub { color: #666; font-size: 14px; margin-bottom: 36px; }
+
+  .seg { margin-bottom: 40px; }
+  .seg-head { border-bottom: 2px solid #1a1a1a; padding-bottom: 8px; margin-bottom: 14px; }
+  .seg-head h2 { font-size: 18px; display: inline; }
+  .seg-head span { font-size: 13px; color: #888; margin-left: 10px; }
+
+  .idea { background: #fff; border: 1px solid #e0e0e0; border-radius: 10px; margin-bottom: 10px; }
+  .idea summary {
+    padding: 13px 18px; cursor: pointer; list-style: none;
+    display: flex; align-items: baseline; gap: 10px;
+  }
+  .idea summary::-webkit-details-marker { display: none; }
+  .idea summary::after { content: "예시 ▾"; margin-left: auto; font-size: 12px; color: #aaa; white-space: nowrap; }
+  .idea[open] summary::after { content: "예시 ▴"; }
+  .idea b { font-size: 15px; white-space: nowrap; }
+  .idea .one { font-size: 13.5px; color: #666; }
+  .ex { border-top: 1px dashed #e0e0e0; padding: 12px 18px 14px; }
+  .ex li { list-style: none; font-size: 14px; padding: 4px 0; }
+  .ex li::before { content: "· "; color: #bbb; }
+  .var { color: #b45309; }
+  .ex .caveat { font-size: 12.5px; color: #999; margin-top: 6px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <h1>콜드메일 — 세그먼트 × 제목 전략 아이디어</h1>
+  <p class="sub">확정안 아님. 제목은 전부 예시 — 방향만 고르고 문구는 발전시키기.</p>
+
+  <div class="seg">
+    <div class="seg-head"><h2>① 채용 소외 기업</h2><span>장기 미충원 신호 있음</span></div>
+
+    <details class="idea">
+      <summary><b>열려 있는 공고 언급</b><span class="one">"그 공고 보고 연락드렸다"로 시작 — 우리 얘기네</span></summary>
+      <div class="ex"><ul>
+        <li><span class="var">{포지션}</span> 채용, 아직 진행 중이신가요?</li>
+        <li><span class="var">{회사명}</span> <span class="var">{포지션}</span> 공고 보고 연락드립니다</li>
+        <li><span class="var">{플랫폼}</span>에서 <span class="var">{포지션}</span> 공고 보고, 추천드릴 사람이 있어서요</li>
+      </ul><p class="caveat">"{N}개월째 열려 있어서요"처럼 기간을 박는 건 정확하면 강하지만, 못 뽑는 걸 지적당한 기분이 들 수 있음. 톤 결정 필요.</p></div>
+    </details>
+
+    <details class="idea">
+      <summary><b>후보 먼저 보여주기</b><span class="one">"맞는 사람 이미 찾아뒀다"고 선언</span></summary>
+      <div class="ex"><ul>
+        <li><span class="var">{포지션}</span>에 맞는 후보 3명 찾아뒀습니다</li>
+        <li><span class="var">{포지션}</span> 후보 프로필, 먼저 보내드려도 될까요?</li>
+      </ul><p class="caveat">제목에서 약속한 프로필이 본문에 실제로 있어야 함. 없으면 역효과.</p></div>
+    </details>
+
+    <details class="idea">
+      <summary><b>다른 고객사 성공 사례</b><span class="one">"비슷한 회사는 이미 채웠다" — 비교 심리</span></summary>
+      <div class="ex"><ul>
+        <li>6개월 못 뽑던 자리, <span class="var">{고객사}</span>는 3주 만에 채웠습니다</li>
+        <li><span class="var">{고객사}</span>가 <span class="var">{포지션}</span> 뽑은 방법</li>
+      </ul></div>
+    </details>
+  </div>
+
+  <div class="seg">
+    <div class="seg-head"><h2>② 인건비 부담 기업</h2><span>임금격차 · 저예산 · 스타트업</span></div>
+
+    <details class="idea">
+      <summary><b>반값 직접 말하기</b><span class="one">비용 편익을 숫자 하나로 — 반값, 1명 값에 2명</span></summary>
+      <div class="ex"><ul>
+        <li>개발자 1명 인건비로 2명 쓰는 방법</li>
+        <li><span class="var">{포지션}</span> 채용, 지금 시세의 절반이면 됩니다</li>
+      </ul><p class="caveat">명확하지만 광고처럼 보여 스팸 처리될 위험. 발신자명·본문 첫 줄로 보완 필요.</p></div>
+    </details>
+
+    <details class="idea">
+      <summary><b>가격 + 실제 채용 사례</b><span class="one">얼마에 어떤 사람을 뽑았는지 — "이 실력이 이 가격?"</span></summary>
+      <div class="ex"><ul>
+        <li><span class="var">{고객사}</span>가 월 149만원에 뽑은 5년차 개발자</li>
+        <li>월 149만원, <span class="var">{글로벌기업}</span> 출신입니다</li>
+      </ul></div>
+    </details>
+
+    <details class="idea">
+      <summary><b>같은 예산, 더 좋은 선택지</b><span class="one">예산을 늘리는 게 아니라 쓰는 법을 바꾸는 프레임</span></summary>
+      <div class="ex"><ul>
+        <li>주니어 예산으로 시니어를 쓰는 방법</li>
+        <li>그 연봉이면 다른 선택지가 있습니다</li>
+      </ul></div>
+    </details>
+  </div>
+
+  <div class="seg">
+    <div class="seg-head"><h2>③ 베트남 진출 희망 기업</h2><span>뷰티 · 식품 진출 검토</span></div>
+
+    <details class="idea">
+      <summary><b>현지인이 본 브랜드 코멘트</b><span class="one">현지 마케터가 그 브랜드를 실제로 보고 말해줌 — 사람의 데모</span></summary>
+      <div class="ex"><ul>
+        <li><span class="var">{회사명}</span> 인스타를 베트남 사람이 보면 이렇게 보입니다</li>
+        <li>현지에 "우리 편" 한 명 있으신가요?</li>
+      </ul><p class="caveat">발송 전 진짜로 코멘트를 써야 함. 통하면 최강, 준비 비용이 큼 → 소수 정예 리스트에만.</p></div>
+    </details>
+
+    <details class="idea">
+      <summary><b>진출 소식 언급</b><span class="one">진출 기사·수출 이력·박람회 참가를 보고 연락했다고 말하기</span></summary>
+      <div class="ex"><ul>
+        <li><span class="var">{회사명}</span> 베트남 진출 기사 보고 연락드립니다</li>
+      </ul><p class="caveat">신호가 확인된 회사에만 가능. 신호 없는 회사에 쓰면 거짓말이 됨.</p></div>
+    </details>
+
+    <details class="idea">
+      <summary><b>다른 K브랜드 진출 사례</b><span class="one">비슷한 브랜드가 베트남에서 실제로 한 일</span></summary>
+      <div class="ex"><ul>
+        <li>베트남에서 <span class="var">{K뷰티 브랜드}</span>가 첫 3개월에 한 일</li>
+        <li>K푸드가 하노이에서 팔리기까지</li>
+      </ul><p class="caveat">쓸 만한 사례가 확보된 뒤에.</p></div>
+    </details>
+
+  </div>
+
+</div>
+</body>
+</html>

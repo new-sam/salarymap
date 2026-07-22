@@ -1,0 +1,200 @@
+<meta charset="utf-8">
+<title>스태핑 데일리 대시보드</title>
+<style>
+  :root {
+    --surface: #fcfcfb; --page: #f9f9f7;
+    --ink: #0b0b0b; --ink2: #52514e; --muted: #898781;
+    --grid: #e1e0d9; --border: rgba(11,11,11,0.10);
+    --accent: #2a78d6;
+    --good: #006300; --warn: #b97700; --bad: #d03b3b;
+    --input-bg: #eef4fc; --now-bg: #f2f7fd;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --surface: #1a1a19; --page: #0d0d0d;
+      --ink: #ffffff; --ink2: #c3c2b7; --muted: #898781;
+      --grid: #2c2c2a; --border: rgba(255,255,255,0.10);
+      --accent: #3987e5;
+      --good: #0ca30c; --warn: #fab219; --bad: #e66767;
+      --input-bg: #1c2634; --now-bg: #1c2634;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 40px 20px; background: var(--page); color: var(--ink);
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+    font-size: 14px; line-height: 1.6;
+  }
+  .wrap { max-width: 880px; margin: 0 auto; }
+  h1 { font-size: 22px; margin: 0 0 4px; }
+  h2 { font-size: 16px; margin: 36px 0 4px; }
+  .sub { color: var(--ink2); margin: 0 0 12px; }
+  .tag { display: inline-block; font-size: 11px; font-weight: 600; padding: 1px 8px;
+         border-radius: 10px; border: 1px solid var(--border); color: var(--ink2);
+         vertical-align: 2px; margin-left: 6px; }
+  table { border-collapse: collapse; width: 100%; background: var(--surface); }
+  .scroll { overflow-x: auto; border: 1px solid var(--border); border-radius: 10px; margin: 12px 0; }
+  th, td { padding: 8px 10px; border-bottom: 1px solid var(--grid); text-align: right;
+           white-space: nowrap; font-variant-numeric: tabular-nums; }
+  th { font-weight: 600; color: var(--ink2); font-size: 12.5px; }
+  th:first-child, td:first-child { text-align: left; }
+  tr:last-child td { border-bottom: none; }
+  td.l, th.l { text-align: left; }
+  .total td { font-weight: 700; border-top: 2px solid var(--grid); }
+  .goal td { color: var(--muted); }
+  .now td { background: var(--now-bg); font-weight: 700; }
+  .good { color: var(--good); font-weight: 600; }
+  .warn { color: var(--warn); font-weight: 600; }
+  .bad  { color: var(--bad);  font-weight: 600; }
+  .col-input { background: var(--input-bg); }
+  .note { color: var(--muted); font-size: 12.5px; margin: 4px 0 0; }
+  .kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+          gap: 12px; margin: 12px 0; }
+  .kpi { background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
+         padding: 14px 16px; }
+  .kpi .label { font-size: 12.5px; color: var(--ink2); }
+  .kpi .value { font-size: 30px; font-weight: 600; line-height: 1.25; }
+  .kpi .value small { font-size: 15px; font-weight: 500; color: var(--ink2); }
+  .kpi .delta { font-size: 12.5px; }
+</style>
+
+<div class="wrap">
+
+<h1>스태핑 데일리 대시보드</h1>
+<p class="sub">시트 1개 · 탭 3개. 대시보드는 표 2개가 전부. 숫자는 예시.</p>
+
+<h2>탭① 대시보드 <span class="tag">자동 · 입력 없음</span></h2>
+
+<div class="kpis">
+  <div class="kpi">
+    <div class="label">활성 기업</div>
+    <div class="value">8<small>개사</small></div>
+    <div class="delta good">▲ +2 이번 달</div>
+  </div>
+  <div class="kpi">
+    <div class="label">활성 인원</div>
+    <div class="value">22<small>명</small></div>
+    <div class="delta good">▲ +2 이번 달</div>
+  </div>
+  <div class="kpi">
+    <div class="label">7월 매출</div>
+    <div class="value">33.0<small>백만원</small></div>
+    <div class="delta"><span class="good">100%</span> <span class="note">/ 목표 33.0</span></div>
+  </div>
+  <div class="kpi">
+    <div class="label">7월 이익</div>
+    <div class="value">4.5<small>백만원</small></div>
+    <div class="delta"><span class="note">월말 확정</span></div>
+  </div>
+</div>
+
+<p class="sub" style="margin-top:20px"><b>월별 추이</b></p>
+<div class="scroll"><table>
+  <tr>
+    <th class="l">월</th>
+    <th>신규 기업</th>
+    <th>이탈 기업</th>
+    <th>활성 기업</th>
+    <th>활성 인원</th>
+    <th>매출 (백만원)</th>
+    <th>목표比</th>
+    <th>이익 (백만원)</th>
+  </tr>
+  <tr><td class="l">6월</td><td>1</td><td>0</td><td>6</td><td>15</td><td>25.0</td><td class="good">100%</td><td>—</td></tr>
+  <tr class="now"><td class="l">7월 ← 이번 달</td><td>2</td><td>0</td><td>8</td><td>22</td><td>33.0</td><td class="good">100%</td><td>4.5</td></tr>
+  <tr class="goal"><td class="l">8월 목표</td><td>3</td><td>0</td><td>11</td><td>25</td><td>36.8</td><td></td><td>11.4</td></tr>
+  <tr class="goal"><td class="l">9월 목표</td><td>3</td><td>0</td><td>14</td><td>26</td><td>39.6</td><td></td><td>33.4</td></tr>
+</table></div>
+
+<p class="sub" style="margin-top:20px"><b>이번 달 파이프라인</b> · 채널별로 리드가 얼마나 들어와서 어디까지 갔는가</p>
+<div class="scroll"><table>
+  <tr>
+    <th class="l">채널</th>
+    <th>리드</th>
+    <th>미팅</th>
+    <th>계약</th>
+    <th>매칭 인원</th>
+    <th>리드→계약</th>
+    <th>평균 소요일</th>
+  </tr>
+  <tr><td class="l">콜드메일</td><td>9</td><td>3</td><td>1</td><td>2</td><td>11%</td><td>28일</td></tr>
+  <tr><td class="l">마케팅 (광고·콘텐츠)</td><td>4</td><td>1</td><td>0</td><td>0</td><td>0%</td><td>—</td></tr>
+  <tr><td class="l">파트너·소개</td><td>2</td><td>2</td><td>1</td><td>3</td><td>50%</td><td>15일</td></tr>
+  <tr class="total"><td class="l">합계</td><td>15</td><td>6</td><td>2</td><td>5</td><td>13%</td><td>24일</td></tr>
+</table></div>
+
+<h2>탭② 콜드 리스트 <span class="tag">입력 · 리스트업 → 소팅 → 발송 → 회신</span></h2>
+<p class="sub">타깃 기업을 쌓고, <b>우선순위 = 적합도 × 시급성</b>(상3·중2·하1의 곱, 자동)으로 정렬해 위에서부터 보낸다.
+회신 오면 기업 로그로 한 줄 승격, 14일 무응답은 자동으로 접힌다.</p>
+
+<div class="scroll"><table>
+  <tr>
+    <th class="l col-input">회사명</th>
+    <th class="col-input">출처</th>
+    <th class="col-input">세그먼트</th>
+    <th class="col-input">적합도</th>
+    <th class="col-input">시급성</th>
+    <th>우선순위<br>(자동)</th>
+    <th class="col-input">메시지</th>
+    <th class="col-input">발송일</th>
+    <th class="col-input">회신일</th>
+    <th>상태 (자동)</th>
+  </tr>
+  <tr><td class="l">E사</td><td>잡코리아</td><td>개발자 구인 중</td><td>상</td><td>상</td><td>9</td><td>베트남 시장</td><td>7/8</td><td></td><td>회신 대기 1일</td></tr>
+  <tr><td class="l">F사</td><td>그룹바이</td><td>스타트업</td><td>상</td><td>중</td><td>6</td><td>가격</td><td>7/7</td><td>7/8</td><td class="good">✅ 리드 → 기업 로그</td></tr>
+  <tr><td class="l">G사</td><td>잡코리아</td><td>개발자 구인 중</td><td>상</td><td>상</td><td>9</td><td></td><td></td><td></td><td>발송 대기</td></tr>
+  <tr><td class="l">H사</td><td>멋사 보유</td><td>스타트업</td><td>중</td><td>하</td><td>2</td><td>가격</td><td>7/1</td><td></td><td class="bad">무응답 7일</td></tr>
+</table></div>
+
+<p class="sub" style="margin-top:20px">같은 탭 오른쪽에 자동 집계 표 두 개 — 콜드메일 담당자가 다음 발송을 정할 때만 본다.</p>
+
+<div class="scroll"><table>
+  <tr>
+    <th class="l">메시지 실험 (자동)</th>
+    <th>발송</th>
+    <th>회신율</th>
+    <th>미팅</th>
+    <th>판정</th>
+  </tr>
+  <tr><td class="l">베트남 시장</td><td>19</td><td>16%</td><td>2</td><td class="good">🔥 유효</td></tr>
+  <tr><td class="l">가격 — 인건비 1/3</td><td>69</td><td>9%</td><td>3</td><td class="good">🔥 유효</td></tr>
+  <tr><td class="l">무료 컨설팅 CTA</td><td>29</td><td>3%</td><td>1</td><td class="warn">실험 중</td></tr>
+  <tr><td class="l">가격+인재 — 월 99만원</td><td>50</td><td>0%</td><td>0</td><td class="bad">🗑 폐기</td></tr>
+</table></div>
+
+<div class="scroll"><table>
+  <tr>
+    <th class="l">타깃 실험 (자동)</th>
+    <th>발송</th>
+    <th>회신율</th>
+    <th>판정</th>
+  </tr>
+  <tr><td class="l">개발자 구인 중 · 잡코리아</td><td>39</td><td>10%</td><td class="good">🔥 유효</td></tr>
+  <tr><td class="l">스타트업 · 그룹바이</td><td>39</td><td>10%</td><td class="good">🔥 유효</td></tr>
+  <tr><td class="l">스타트업 · 멋사 보유</td><td>89</td><td>2%</td><td class="bad">🗑 폐기</td></tr>
+</table></div>
+
+<h2>탭③ 기업 로그 <span class="tag">입력 · 리드가 된 회사만 · 회사 1개 = 1줄</span></h2>
+<p class="sub">채널이 무엇이든 리드가 되면 여기 한 줄. 일이 진행되면 날짜만 채운다.</p>
+
+<div class="scroll"><table>
+  <tr>
+    <th class="l col-input">회사명</th>
+    <th class="col-input">채널</th>
+    <th class="col-input">리드일</th>
+    <th class="col-input">미팅일</th>
+    <th class="col-input">계약일</th>
+    <th class="col-input">입사일</th>
+    <th class="col-input">인원</th>
+    <th class="col-input">월 청구<br>(백만원)</th>
+    <th class="col-input">이탈일</th>
+    <th>상태 (자동)</th>
+  </tr>
+  <tr><td class="l">B사</td><td>콜드메일</td><td>6/5</td><td>6/16</td><td>7/3</td><td>7/4</td><td>2</td><td>5.5</td><td></td><td>🟢 활성</td></tr>
+  <tr><td class="l">C사</td><td>파트너·소개</td><td>6/24</td><td>7/1</td><td>7/8</td><td></td><td>3</td><td>8.2</td><td></td><td>입사 대기</td></tr>
+  <tr><td class="l">F사</td><td>콜드메일</td><td>7/8</td><td></td><td></td><td></td><td></td><td></td><td></td><td>미팅 대기</td></tr>
+  <tr><td class="l">A사</td><td>콜드메일</td><td>6/26</td><td>7/2</td><td></td><td></td><td></td><td></td><td></td><td class="bad">멈춤 6일</td></tr>
+</table></div>
+<p class="note">상태는 마지막으로 채워진 날짜가 정한다. 오래 멈춘 리드는 "멈춤 n일"로 떠서 놓친 딜을 알려준다.</p>
+
+</div>

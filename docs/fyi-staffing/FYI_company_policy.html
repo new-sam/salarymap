@@ -1,0 +1,204 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>FYI 기업 상품 정책</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Pretendard','Apple SD Gothic Neo',-apple-system,'Segoe UI',sans-serif;
+       background:#0f1115;color:#eef0f3;padding:40px 20px 90px;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:940px;margin:0 auto}
+  .top{display:flex;align-items:baseline;gap:12px;margin-bottom:20px}
+  .top h1{font-size:26px;font-weight:900;letter-spacing:-.02em}
+  .top .tag{font-size:12px;font-weight:800;color:#0f1115;background:#fb923c;padding:3px 9px;border-radius:999px}
+  .top .vn{font-size:12px;color:#8b93a1;margin-left:auto}
+
+  .card{background:#171a20;border:1px solid #262b34;border-radius:18px;padding:22px;margin-bottom:16px}
+  .ct{display:flex;align-items:center;gap:9px;font-size:16px;font-weight:900;margin-bottom:3px}
+  .ct .no{width:23px;height:23px;border-radius:7px;background:#fb923c;color:#0f1115;display:grid;place-items:center;font-size:12px;font-weight:900}
+  .cs{font-size:12.5px;color:#8b93a1;margin-bottom:16px}
+  .lbl{font-size:11px;color:#8b93a1;font-weight:800;letter-spacing:.06em;margin:16px 0 8px}
+
+  /* commitment ladder */
+  .ladder{display:flex;gap:5px;flex-wrap:wrap;align-items:stretch}
+  .st{flex:1;min-width:84px;border:1px solid #262b34;border-radius:10px;padding:9px 7px;text-align:center;background:#0f1115}
+  .st .s{font-size:10px;color:#8b93a1;font-weight:800}
+  .st .t{font-size:12px;font-weight:800;margin-top:3px;line-height:1.25}
+  .st.gate{border-color:#fb923c;background:#2a1c10;box-shadow:0 0 0 2px rgba(251,146,60,.25)}
+  .st.gate .t{color:#fdba74}
+  .st.gate .s{color:#fb923c}
+  .st.money{border-color:#2f6b45;background:#122a1b}.st.money .t{color:#4ade80}
+
+  .two{display:grid;grid-template-columns:1.05fr .95fr;gap:20px;align-items:center;margin-top:8px}
+
+  /* quadrant */
+  .quad{position:relative;height:220px;margin:6px 6px 22px 46px;border-left:2px solid #39404c;border-bottom:2px solid #39404c}
+  .quad .yl{position:absolute;left:-42px;top:42%;transform:rotate(-90deg);transform-origin:left;font-size:10px;color:#8b93a1;white-space:nowrap;font-weight:700}
+  .quad .xl{position:absolute;bottom:-20px;right:0;font-size:10px;color:#8b93a1;font-weight:700}
+  .dot{position:absolute;transform:translate(-50%,50%)}
+  .dot .b{width:13px;height:13px;border-radius:50%;margin:0 auto;background:#5b6472}
+  .dot .l{font-size:10.5px;margin-top:3px;color:#c3c9d3;font-weight:700;white-space:nowrap}
+  .dot.bad .b{background:#f0623e;box-shadow:0 0 0 4px rgba(240,98,62,.15)}
+  .dot.pick .b{width:21px;height:21px;background:#22c55e;box-shadow:0 0 0 6px rgba(34,197,94,.2)}
+  .dot.pick .l{color:#4ade80;font-weight:900}
+  .dot.pick .l::after{content:' ✓ 채택'}
+
+  .exp{list-style:none;display:flex;flex-direction:column;gap:10px}
+  .exp li{font-size:13px;color:#d3d8df;line-height:1.5;padding-left:14px;position:relative}
+  .exp li::before{content:'';position:absolute;left:0;top:8px;width:6px;height:6px;border-radius:50%;background:#fb923c}
+  .exp b{color:#fff;font-weight:800}
+
+  .chips{display:flex;flex-wrap:wrap;gap:8px}
+  .chip{background:#0f1115;border:1px solid #2b313b;border-radius:10px;padding:8px 11px;font-size:12.5px;font-weight:700;display:flex;align-items:center;gap:6px}
+  .chip .i{font-size:15px}
+
+  /* pricing */
+  .price{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .pk{border:1px solid #2b313b;border-radius:14px;padding:16px;background:#0f1115}
+  .pk.pro{border-color:#fb923c}
+  .pk .n{font-size:13px;font-weight:800;color:#8b93a1}
+  .pk .p{font-size:34px;font-weight:900;line-height:1;margin:4px 0 8px}
+  .pk.pro .p{color:#fb923c}
+  .pk .d{font-size:12.5px;color:#c3c9d3;line-height:1.5}
+
+  .specs{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+  .spec{background:#0f1115;border:1px solid #2b313b;border-radius:10px;padding:7px 11px;font-size:12px}
+  .spec b{color:#fff}
+
+  /* guarantee flow */
+  .gflow{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:8px}
+  .gnode{background:#0f1115;border:1px solid #2b313b;border-radius:10px;padding:9px 12px;font-size:12.5px;font-weight:700}
+  .gnode.warn{border-color:#7a4a2a;color:#fdba74}
+  .gnode.ok{border-color:#2f6b45;color:#4ade80}
+  .ga{color:#5b6472;font-weight:900}
+
+  /* funnel */
+  .funnel{display:flex;flex-direction:column;align-items:center;gap:5px;margin:6px 0 4px}
+  .fb{height:32px;display:flex;align-items:center;justify-content:center;border-radius:8px;font-size:12.5px;font-weight:800;color:#0f1115}
+  .fb.f1{width:100%;background:#93a4bd}
+  .fb.f2{width:78%;background:#7fb0e6}
+  .fb.leak{width:36%;background:#f0623e;color:#fff;position:relative}
+  .fb.leak::after{content:'← 여기서 막힘';position:absolute;left:calc(100% + 8px);color:#f0623e;font-size:11px;white-space:nowrap;font-weight:700}
+  .fb.f4{width:28%;background:#22c55e}
+
+  /* checklist */
+  .check{display:grid;grid-template-columns:1fr 1fr;gap:8px 18px}
+  .ck{display:flex;align-items:flex-start;gap:9px;font-size:13px}
+  .ck .box{width:16px;height:16px;border:2px solid #4a515d;border-radius:4px;flex-shrink:0;margin-top:2px}
+  .ck b{color:#fff;font-weight:800}
+  .ck .m{color:#8b93a1;font-size:11.5px}
+  .base{margin-top:12px;font-size:12px;color:#8b93a1;border-top:1px solid #262b34;padding-top:10px}
+  .base b{color:#c3c9d3}
+
+  @media(max-width:720px){.two{grid-template-columns:1fr}.price,.check{grid-template-columns:1fr}.fb.leak::after{position:static;display:block;margin-top:2px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="top">
+    <h1>FYI 기업 상품 정책</h1>
+    <span class="tag">수금이 핵심</span>
+    <span class="vn">무대 · 베트남</span>
+  </div>
+
+  <!-- 1. 계약 -->
+  <div class="card">
+    <div class="ct"><span class="no">1</span> 계약 · 수금</div>
+    <div class="cs">기업이 후보 다 보고 돈을 안 낸다 → 후보를 보기 전에 묶는다</div>
+
+    <div class="lbl">언제 체결하나 — 후보 열람 직전</div>
+    <div class="ladder">
+      <div class="st"><div class="s">1</div><div class="t">가입<br>무료</div></div>
+      <div class="st gate"><div class="s">2 · 게이트</div><div class="t">공고 게재<br>✍️ 동의</div></div>
+      <div class="st"><div class="s">3</div><div class="t">후보 열람</div></div>
+      <div class="st"><div class="s">4</div><div class="t">인터뷰</div></div>
+      <div class="st"><div class="s">5</div><div class="t">오퍼<br>큰 건 서명</div></div>
+      <div class="st money"><div class="s">6</div><div class="t">입사<br>청구</div></div>
+    </div>
+
+    <div class="two">
+      <div class="quad">
+        <span class="yl">못 받을 위험 ↑</span>
+        <span class="xl">기업 마찰 →</span>
+        <div class="dot bad" style="left:8%;top:8%"><div class="b"></div><div class="l">약관 동의만 (지금)</div></div>
+        <div class="dot pick" style="left:33%;top:56%"><div class="b"></div><div class="l">클릭 동의</div></div>
+        <div class="dot" style="left:60%;top:74%"><div class="b"></div><div class="l">전자서명</div></div>
+        <div class="dot" style="left:88%;top:90%"><div class="b"></div><div class="l">선불</div></div>
+      </div>
+      <ul class="exp">
+        <li><b>어떤 방식:</b> 수수료 조항을 화면에 띄우고 <b>클릭 동의</b> — 신원·시각·IP를 기록. 도장·펜 없이 베트남에서 계약 성립.</li>
+        <li><b>동의하면:</b> 그 대가로 <b>후보가 열린다.</b> 동의 안 하면 후보를 못 보니 떼먹을 것도 없음.</li>
+        <li><b>큰 건:</b> 오퍼 단계에서 <b>전자서명(DocuSign)</b> 한 번 더 — 위험 클수록 세게.</li>
+        <li><b>왜 이 점:</b> 마찰 낮고 위험도 낮은 균형점.</li>
+      </ul>
+    </div>
+
+    <div class="lbl">떼먹기 방지</div>
+    <div class="chips">
+      <div class="chip"><span class="i">👁️</span> 후보 열람 기록 = 소개 증거</div>
+      <div class="chip"><span class="i">📄</span> 입사 시 근로계약서 사본</div>
+      <div class="chip"><span class="i">✅</span> 후보에게 입사 확인</div>
+      <div class="chip"><span class="i">💸</span> 지연이자·세금계산서</div>
+    </div>
+  </div>
+
+  <!-- 2. 상품 -->
+  <div class="card">
+    <div class="ct"><span class="no">2</span> 상품 구성</div>
+    <div class="cs">착수금 없이 성공해야 결제 (risk-free)</div>
+    <div class="price">
+      <div class="pk"><div class="n">베이직</div><div class="p">5%</div><div class="d">공고 게재 + ATS<br>알아서 들어온 지원자만</div></div>
+      <div class="pk pro"><div class="n">프리미엄</div><div class="p">7%</div><div class="d">+ 우리가 직접 인재 서칭<br>2주 내 적합 후보 3명</div></div>
+    </div>
+    <ul class="exp" style="margin-top:14px">
+      <li><b>프리미엄 실패 시:</b> 2주 안에 3명 못 주면 자동 <b>5%로 내림</b>(2%p 안 받음).</li>
+      <li><b>수수료 기준:</b> 계약연봉 · <b>입사일에 청구</b>. 저연봉이어도 <b>최소 ₫8M</b>(원가 방어).</li>
+    </ul>
+    <div class="lbl">보증 · 입사 후 60일</div>
+    <div class="gflow">
+      <span class="gnode warn">60일 내 퇴사</span><span class="ga">→</span>
+      <span class="gnode">무료로 다시 채용</span><span class="ga">→</span>
+      <span class="gnode ok">안 되면 전액 환불</span>
+    </div>
+  </div>
+
+  <!-- 3. 리드 -->
+  <div class="card">
+    <div class="ct"><span class="no">3</span> 리드 → 공고 (병목)</div>
+    <div class="cs">리드 ₩7천은 싼 게 아니라 쉬운 것 — 메타 폼이 전화번호를 자동으로 채워 아무나 낸다</div>
+    <div class="funnel">
+      <div class="fb f1">광고 노출</div>
+      <div class="fb f2">리드 (많음)</div>
+      <div class="fb leak">공고</div>
+      <div class="fb f4">매출</div>
+    </div>
+    <ul class="exp" style="margin-top:10px">
+      <li>핵심 처방 = <b>AM이 공고를 대신 써주고</b>, 기업은 "이대로 올리기" <b>원클릭</b>. 공고 작성 마찰을 없애는 게 전환을 살린다.</li>
+    </ul>
+    <div class="lbl">처방</div>
+    <div class="chips">
+      <div class="chip"><span class="i">❓</span> 폼에 질문 2개 (직무·시급성)</div>
+      <div class="chip"><span class="i">📅</span> 전화 대신 상담 예약</div>
+      <div class="chip"><span class="i">✍️</span> AM 공고 대필 → 원클릭</div>
+      <div class="chip"><span class="i">🎯</span> 폼 직후 핏 후보 3명</div>
+    </div>
+  </div>
+
+  <!-- 4. 법무 체크리스트 -->
+  <div class="card">
+    <div class="ct"><span class="no">4</span> 법무 체크리스트</div>
+    <div class="cs">시행 전 한 번에 처리</div>
+    <div class="check">
+      <div class="ck"><span class="box"></span><div><b>인력중개 라이선스</b><div class="m">베트남 채용중개 사업 허가</div></div></div>
+      <div class="ck"><span class="box"></span><div><b>세금 VAT·FCT</b><div class="m">성공보수 매출·크로스보더</div></div></div>
+      <div class="ck"><span class="box"></span><div><b>개인정보 PDPD</b><div class="m">후보 이력서 동의·처리방침</div></div></div>
+      <div class="ck"><span class="box"></span><div><b>약관 개정</b><div class="m">5·7% / 60일 / 클릭 동의</div></div></div>
+    </div>
+    <div class="base">준거법 <b>베트남</b> · 시행 전 <b>변호사 1회 감수</b></div>
+  </div>
+
+</div>
+</body>
+</html>

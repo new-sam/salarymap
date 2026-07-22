@@ -1,0 +1,290 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>FYI 기업 상품 · 정책</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Pretendard','Apple SD Gothic Neo',-apple-system,'Segoe UI',sans-serif;
+       background:#f4f5f7;color:#1d2027;line-height:1.72;padding:40px 18px 90px;-webkit-font-smoothing:antialiased;font-size:15px}
+  .wrap{max-width:820px;margin:0 auto}
+
+  .hero{background:#111418;color:#fff;border-radius:20px;padding:24px 28px;margin-bottom:16px}
+  .hero .t{font-size:22px;font-weight:900;letter-spacing:-.02em}
+  .hero .p{font-size:14.5px;color:#c7ccd6;margin-top:7px;line-height:1.6}
+  .hero .p b{color:#fdba74}
+
+  /* decision box */
+  .decide{background:#fff;border:1px solid #fbd5cd;border-left:5px solid #ef4444;border-radius:14px;padding:20px 24px;margin-bottom:20px;
+          box-shadow:0 10px 26px rgba(20,22,28,.06)}
+  .decide h3{font-size:16px;font-weight:900;color:#b91c1c;margin-bottom:12px;display:flex;align-items:center;gap:8px}
+  .drow{display:flex;gap:12px;padding:11px 0;border-top:1px solid #f2f3f5}
+  .drow:first-of-type{border-top:none}
+  .drow .n{color:#9ca3af;font-weight:900;width:16px;flex-shrink:0;font-size:14.5px}
+  .drow .q{font-size:14.5px;font-weight:800;color:#111}
+  .drow .opt{font-size:13px;color:#6b7280;margin-top:2px}
+  .drow .opt b{color:#c2410c;font-weight:800}
+  .drow .opt .vs{color:#c4530e;font-weight:900;padding:0 7px}
+
+  .card{background:#fff;border:1px solid #e9eaee;border-radius:18px;padding:24px 26px;margin-bottom:16px;
+        box-shadow:0 1px 2px rgba(0,0,0,.03),0 10px 26px rgba(20,22,28,.05)}
+  .ch{display:flex;align-items:center;gap:11px;margin-bottom:14px}
+  .ch .no{width:30px;height:30px;border-radius:9px;background:#f97316;color:#fff;display:grid;place-items:center;font-size:15px;font-weight:900;flex-shrink:0}
+  .ch h2{font-size:19px;font-weight:900;letter-spacing:-.01em}
+  .goal{background:#fff7ed;border:1px solid #fde3c4;border-radius:12px;padding:11px 14px;margin-bottom:16px;font-size:14px;color:#9a3412;font-weight:700}
+
+  ul.b{list-style:none;display:flex;flex-direction:column;gap:11px}
+  ul.b>li{position:relative;padding-left:20px;font-size:14.5px;color:#2b2f38}
+  ul.b>li::before{content:'';position:absolute;left:2px;top:9px;width:8px;height:8px;border-radius:50%;background:#f97316}
+  ul.b>li b{color:#111;font-weight:800}
+  .why{display:block;margin-top:3px;font-size:13px;color:#7a8090;font-weight:600}
+  .why::before{content:'↳ 왜 — ';color:#f97316;font-weight:800}
+
+  .price{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:4px 0 14px}
+  .pk{border:1.5px solid #e9eaee;border-radius:14px;padding:16px;background:#fbfbfc}
+  .pk.pro{border-color:#f97316;background:#fff8f1}
+  .pk .n{font-size:12.5px;font-weight:800;color:#8b93a1}
+  .pk .p{font-size:38px;font-weight:950;line-height:1;margin:3px 0 8px;color:#111}.pk.pro .p{color:#f97316}
+  .pk .d{font-size:12.5px;color:#4b5563;line-height:1.5}.pk .d b{color:#111}
+
+  .cmp{margin:2px 0 16px}
+  .cbar{display:flex;align-items:center;gap:11px;margin:7px 0}
+  .cbar .nm{width:110px;font-size:12.5px;font-weight:800;color:#4b5563;flex-shrink:0}
+  .cbar .track{flex:1;height:24px;border-radius:6px;background:#eef0f3;overflow:hidden}
+  .cbar .fill{height:100%;display:flex;align-items:center;padding-left:10px;font-size:11.5px;font-weight:900}
+  .cbar .fill.mkt{width:80%;background:#c9ced6;color:#3a3f49}
+  .cbar .fill.fyi{width:26%;background:#f97316;color:#fff}
+  .cmp .note{font-size:12.5px;color:#c2410c;font-weight:800;margin-top:3px}
+
+  .tl{position:relative;height:58px;margin:6px 4px 2px}
+  .tl .lab{position:absolute;top:-2px;font-size:11px;color:#8b93a1;font-weight:800}
+  .tl .line{position:absolute;top:22px;left:0;right:0;height:6px;border-radius:3px;background:linear-gradient(90deg,#fed7aa 0%,#fed7aa 60%,#bbf7d0 60%,#bbf7d0 100%)}
+  .tl .m{position:absolute;top:15px;width:2px;height:20px;background:#9aa0a8}
+  .tl .cap{position:absolute;top:33px;font-size:11.5px;font-weight:800}
+  .tl .warn{color:#c2410c}.tl .ok{color:#15803d}
+
+  .valid{background:#eefdf3;border:1px solid #bbf0cd;border-radius:12px;padding:14px 16px;margin-top:6px}
+  .valid .q{font-size:13.5px;font-weight:900;color:#065f46;margin-bottom:6px}
+  .valid .a{font-size:13.5px;color:#166534;line-height:1.6}.valid .a b{font-weight:800}
+
+  .att{background:#fff4f2;border:1px solid #fecdc7;border-radius:12px;padding:13px 15px;margin:14px 0;font-size:13.5px;color:#9a2c1c;line-height:1.6}
+  .att b{color:#7a1d10;font-weight:900}
+
+  .screens{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:6px 0 8px}
+  .win{border:1px solid #d9dbe0;border-radius:12px;overflow:hidden;background:#fafafa}
+  .win .bar{background:#e9eaed;padding:6px 9px;display:flex;gap:5px;align-items:center}
+  .win .bar i{width:8px;height:8px;border-radius:50%;background:#c3c6cc}
+  .win .bar u{margin-left:6px;font-size:9.5px;color:#7b8089;background:#fff;border-radius:4px;padding:1px 7px;flex:1;text-decoration:none}
+  .win .body{display:flex;min-height:150px}
+  .win .side{width:34px;background:#111418;flex-shrink:0}
+  .win .main{flex:1;padding:10px;position:relative}
+  .pub{position:absolute;top:9px;right:9px;background:#f97316;color:#fff;font-size:9.5px;font-weight:800;padding:4px 8px;border-radius:6px}
+  .rowm{height:7px;border-radius:4px;background:#e3e5e9;margin:6px 0}.rowm.s{width:50%}.rowm.m{width:75%}
+  .ccard{display:inline-block;width:30%;background:#fff;border:1px solid #e5e7eb;border-radius:6px;height:52px;margin-right:4px;filter:blur(1.5px);vertical-align:top}
+  .dim{position:absolute;inset:0;background:rgba(15,17,21,.55);display:grid;place-items:center}
+  .pop{width:82%;background:#fff;border-radius:8px;box-shadow:0 10px 24px rgba(0,0,0,.3);overflow:hidden}
+  .pop .pb{height:3px;background:#f97316}.pop .pi{padding:8px 10px}
+  .pop .pt{font-size:9.5px;font-weight:900;line-height:1.3}
+  .pop .pf{display:flex;gap:4px;margin:5px 0}
+  .pop .pf span{flex:1;border:1px solid #eceef1;border-radius:5px;padding:3px;text-align:center;font-size:8px;font-weight:800}
+  .pop .pf span.pro{border-color:#f7c197;color:#f97316}
+  .pop .pbtn{background:#f97316;color:#fff;text-align:center;font-size:8.5px;font-weight:800;padding:4px;border-radius:5px}
+  .cap2{font-size:12px;color:#6b7280;text-align:center;margin-top:4px;font-weight:700}
+  .cap2 b{color:#c2410c}
+
+  .consent{border:1px solid #e9eaee;border-radius:14px;overflow:hidden;max-width:400px;margin:8px auto 4px;box-shadow:0 12px 34px rgba(20,22,28,.12)}
+  .consent .cbar2{height:5px;background:#f97316}
+  .consent .ci{padding:16px 18px}
+  .consent .ct{font-size:14.5px;font-weight:900;line-height:1.35}
+  .consent .cw{font-size:11.5px;color:#6b7280;margin:3px 0 12px}
+  .consent .cg{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:11px}
+  .consent .cf{border:1px solid #eceef1;border-radius:9px;padding:9px 11px}
+  .consent .cf.pro{border-color:#f7c197;background:#fff8f1}
+  .consent .cf .n{font-size:10.5px;color:#8b93a1;font-weight:800}.consent .cf .p{font-size:20px;font-weight:900}.consent .cf.pro .p{color:#f97316}
+  .terms-lines{list-style:none;display:flex;flex-direction:column;gap:7px;margin:2px 0 12px}
+  .terms-lines li{position:relative;padding-left:16px;font-size:12px;color:#3a3f49;line-height:1.45}
+  .terms-lines li::before{content:'•';position:absolute;left:2px;color:#f97316;font-weight:900}
+  .terms-lines li b{color:#111}
+  .cchk{display:flex;align-items:center;gap:7px;margin:4px 0 10px;font-size:12.5px;font-weight:700}
+  .cchk .cb{width:16px;height:16px;border:2px solid #f97316;border-radius:4px;color:#f97316;display:grid;place-items:center;font-size:11px;font-weight:900}
+  .cbtn{background:#f97316;color:#fff;text-align:center;padding:11px;border-radius:9px;font-weight:800;font-size:13px}
+  .cfoot{padding:8px 18px 15px;font-size:10.5px;color:#9aa0a8;line-height:1.5;border-top:1px solid #f1f2f4}
+
+  details.toggle{border:1px solid #e9eaee;border-radius:12px;background:#fbfbfc;margin-top:14px;overflow:hidden}
+  details.toggle>summary{cursor:pointer;padding:13px 16px;font-size:13.5px;font-weight:800;color:#111;list-style:none;display:flex;align-items:center;gap:8px}
+  details.toggle>summary::-webkit-details-marker{display:none}
+  details.toggle>summary::before{content:'▸';color:#f97316;font-weight:900}
+  details.toggle[open]>summary::before{content:'▾'}
+  .terms-full{padding:2px 18px 18px;border-top:1px solid #eceef1}
+  .terms-full h4{font-size:13px;font-weight:900;color:#111;margin:14px 0 4px}
+  .terms-full p{font-size:12.5px;color:#3a3f49;line-height:1.65;margin:2px 0}
+  .terms-full p b{color:#111}
+  .terms-full .hi{background:#fff4f2;border-left:3px solid #f97316;padding:8px 11px;border-radius:0 8px 8px 0;margin:6px 0}
+
+  @media(max-width:640px){.price,.screens{grid-template-columns:1fr}.cbar .nm{width:88px}.drow{flex-wrap:wrap}.drow .k{width:auto}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div style="font-size:22px;font-weight:900;letter-spacing:-.02em;margin-bottom:14px">FYI 기업 상품 · 정책</div>
+
+  <!-- 결정 필요 (방향) -->
+  <div class="decide">
+    <h3>🚩 의사결정 필요 영역</h3>
+    <div class="drow"><span class="n">1</span><div>
+      <div class="q">상품을 5% / 7% 두 갈래로 나눌까?</div>
+      <div class="opt"><b>인바운드 5% · 헤드헌팅 7%</b> <span class="vs">vs</span> 단일 요율 하나로</div></div></div>
+    <div class="drow"><span class="n">2</span><div>
+      <div class="q">동의(계약)를 언제 묶을까?</div>
+      <div class="opt"><b>공고 게재 시</b> <span class="vs">vs</span> 후보 열람 시 <span style="color:#9ca3af">(마찰 ↔ 안전)</span></div></div></div>
+    <div class="drow"><span class="n">3</span><div>
+      <div class="q">60일 보증을 어떻게?</div>
+      <div class="opt"><b>무료 대체 우선 → 환불</b> <span class="vs">vs</span> 즉시 환불 <span style="color:#9ca3af">(매출 방어 ↔ 단순)</span></div></div></div>
+  </div>
+
+  <!-- 1 -->
+  <div class="card">
+    <div class="ch"><span class="no">1</span><h2>상품 — 뭘, 얼마에 파나</h2></div>
+    <div class="goal">🎯 목적: 기업이 부담 없이 시작하고, 채용에 성공했을 때만 돈을 내게 한다.</div>
+
+    <div class="price">
+      <div class="pk"><div class="n">베이직</div><div class="p">5%</div><div class="d">공고 올려주고 ATS 제공.<br><b>지원자는 알아서 들어옴</b></div></div>
+      <div class="pk pro"><div class="n">프리미엄</div><div class="p">7%</div><div class="d">여기에 더해 <b>우리가 직접 인재를 찾아 추천</b></div></div>
+    </div>
+
+    <ul class="b">
+      <li><b>착수금 0원.</b> 미리 낼 돈 없이, 채용에 성공해야 낸다.
+        <span class="why">돈을 먼저 달라 하면 기업이 겁먹고 시작을 안 한다.</span></li>
+      <li><b>수수료 = 뽑은 사람 연봉의 5~7%</b>, 그 사람이 <b>입사한 날</b>에 청구. 연봉이 너무 낮으면 <b>최소 ₫8M</b>.</li>
+      <li><b>프리미엄 약속:</b> 2주 안에 맞는 후보 3명 추천, 못 주면 자동 5%로 깎임.</li>
+      <li><b>60일 보증:</b> 뽑은 사람이 2달 안에 나가면 공짜로 다시 뽑아주고, 그것도 안 되면 전액 환불.
+        <span class="why">기업이 "잘못 뽑으면 어쩌지" 걱정 없이 맡기게 하려고.</span></li>
+    </ul>
+
+    <div class="cmp" style="margin-top:8px">
+      <div class="cbar"><span class="nm">시장 헤드헌팅</span><div class="track"><div class="fill mkt">15 – 25%</div></div></div>
+      <div class="cbar"><span class="nm">FYI</span><div class="track"><div class="fill fyi">5 – 7%</div></div></div>
+      <div class="note">시장의 약 1/3 가격 + 착수금까지 0원</div>
+    </div>
+
+    <div class="tl">
+      <span class="lab" style="left:0">입사</span><span class="lab" style="left:60%">60일</span>
+      <div class="line"></div><div class="m" style="left:0"></div><div class="m" style="left:60%"></div>
+      <span class="cap warn" style="left:0">퇴사 시 → 무료 대체 → 환불</span>
+      <span class="cap ok" style="left:60%">확정</span>
+    </div>
+  </div>
+
+  <!-- 2 -->
+  <div class="card">
+    <div class="ch"><span class="no">2</span><h2>계약 — 언제, 왜 동의를 받나</h2></div>
+    <div class="goal">🎯 목적: 후보를 다 보여줬는데 돈을 안 내는 상황을 막는다.</div>
+
+    <ul class="b">
+      <li><b>지금 문제:</b> 기업이 후보를 다 본 다음 그냥 안 낼 수가 있다.</li>
+      <li><b>그래서:</b> 후보를 보여주기 <b>전에</b> 먼저 약속을 받는다 — "성사되면 수수료 낼게요".</li>
+      <li><b>방식:</b> 어려운 서명이 아니라 화면에서 조건 보고 <b>체크하고 버튼 한 번</b>. 동의 안 하면 후보를 아예 못 본다.</li>
+    </ul>
+
+    <div class="valid">
+      <div class="q">Q. 계약서 안 쓰고 "동의"만 받아도 법적 효력이 있나?</div>
+      <div class="a"><b>있다.</b> ① 약관 전문을 화면에 명확히 보여주고 ② 체크·버튼으로 명시적으로 동의를 받고 ③ 동의한 사람·시각·IP를 기록하면, 종이 계약서·도장 없이도 <b>전자적 동의만으로 유효한 계약</b>이 된다. 단 핵심은 "동의만"이 아니라 <b>"구체적 약관에 동의"</b>여야 한다는 것.</div>
+    </div>
+  </div>
+
+  <!-- 3 -->
+  <div class="card">
+    <div class="ch"><span class="no">3</span><h2>화면 — 어디서 동의가 뜨나 + 동의서</h2></div>
+    <div class="goal">🎯 목적: 실제 FYI 화면에서 동의 팝업을 언제 띄울지 정하고, 동의서 내용을 확정한다.</div>
+
+    <div class="screens">
+      <div>
+        <div class="win">
+          <div class="bar"><i></i><i></i><i></i><u>fyi · 새 공고</u></div>
+          <div class="body"><div class="side"></div><div class="main">
+            <div class="pub">게시하기</div>
+            <div class="rowm s"></div><div class="rowm m"></div><div class="rowm"></div><div class="rowm m"></div>
+            <div class="dim"><div class="pop"><div class="pb"></div><div class="pi">
+              <div class="pt">수수료 약정에 동의해 주세요</div>
+              <div class="pf"><span>5%</span><span class="pro">7%</span></div>
+              <div class="pbtn">동의하고 게재</div></div></div></div>
+          </div></div>
+        </div>
+        <div class="cap2">상황 A · 기업이 <b>"게시하기"</b> 누를 때</div>
+      </div>
+      <div>
+        <div class="win">
+          <div class="bar"><i></i><i></i><i></i><u>fyi · 후보 (우리가 대리 게재)</u></div>
+          <div class="body"><div class="side"></div><div class="main">
+            <div class="ccard"></div><div class="ccard"></div><div class="ccard"></div>
+            <div class="dim"><div class="pop"><div class="pb"></div><div class="pi">
+              <div class="pt">수수료 약정에 동의해 주세요</div>
+              <div class="pf"><span>5%</span><span class="pro">7%</span></div>
+              <div class="pbtn">동의하고 후보 보기</div></div></div></div>
+          </div></div>
+        </div>
+        <div class="cap2">상황 B · 기업이 <b>후보 처음 볼 때</b></div>
+      </div>
+    </div>
+
+    <div class="att">🔑 <b>"우리가 소개한 후보"의 정의</b> — 기업이 FYI에서 <b>프로필을 열람하거나, 우리가 추천·소개하거나, 접촉한</b> 후보는 그 <b>열람일로부터 6개월간</b> "FYI가 소개한 후보"로 본다. 이 6개월 안에는 기업이 <b>다른 경로로 몰래 뽑아도 수수료가 발생</b>한다.</div>
+
+    <div style="font-size:12px;color:#8b93a1;font-weight:800;margin:14px 0 6px">↓ 동의서(팝업) 상세 — 실제로 이 내용에 동의</div>
+    <div class="consent">
+      <div class="cbar2"></div>
+      <div class="ci">
+        <div class="ct">FYI 성공보수 약정 동의</div>
+        <div class="cw">삼성물산 · 담당자 김채용 · 2026-07-09</div>
+        <div class="cg">
+          <div class="cf"><div class="n">베이직 (인바운드)</div><div class="p">5%</div></div>
+          <div class="cf pro"><div class="n">프리미엄 (헤드헌팅)</div><div class="p">7%</div></div>
+        </div>
+        <ul class="terms-lines">
+          <li><b>수수료</b> = 계약연봉(기본급+고정수당)의 5% 또는 7%, <b>최소 ₫8,000,000</b></li>
+          <li><b>발생·청구</b> = 후보 입사일에 발생, 인보이스 후 14일 내 지급</li>
+          <li><b>소개 후보 귀속</b> = 열람·소개·접촉일로부터 <b>6개월</b> (그 기간 내 외부 채용도 수수료 발생)</li>
+          <li><b>프리미엄 SLA</b> = 2주 내 적합 후보 3명 미추천 시 요율 5%</li>
+          <li><b>60일 보증</b> = 입사 60일 내 퇴사 시 무료 대체 → 불가 시 전액 환불</li>
+          <li><b>증빙</b> = 입사 시 근로계약서 사본 제출, 후보 입사 사실 교차확인 동의</li>
+        </ul>
+        <div class="cchk"><span class="cb">✓</span> 위 약관 전문을 확인하고 동의합니다</div>
+        <div class="cbtn">동의하고 진행</div>
+      </div>
+      <div class="cfoot">동의 시각·계정·IP가 기록되어 계약 성립의 증거가 됩니다. 이미 동의한 기업에는 팝업이 다시 뜨지 않습니다.</div>
+    </div>
+
+    <details class="toggle">
+      <summary>약관 전문 보기 (FYI 성공보수 약정)</summary>
+      <div class="terms-full">
+        <h4>제1조 (목적)</h4>
+        <p>본 약정은 FYI(이하 "회사")와 기업회원(이하 "회원") 간에 회원이 서비스를 통해 알게 된 후보자를 채용함에 따른 성공보수의 조건·지급·보증에 관한 사항을 정한다.</p>
+        <h4>제2조 (정의)</h4>
+        <p><b>성공보수</b> — 회원이 서비스를 통해 알게 된 후보자를 채용함에 따라 회사에 지급하는 대가. <b>베이직 5%</b>(공고에 지원한 인바운드 후보), <b>프리미엄 7%</b>(회사가 능동적으로 발굴·추천한 후보 포함).</p>
+        <p><b>계약연봉</b> — 근로계약상 연간 급여 총액. 기본급 및 고정 수당을 포함하고 성과급·실비변상 금품은 제외한다.</p>
+        <div class="hi"><p><b>소개한 후보자(귀속)</b> — 회원이 서비스를 통해 프로필을 열람하거나, 회사가 추천·소개하거나, 회원이 접촉한 후보자를 말하며, 그 <b>열람일로부터 6개월(귀속기간)</b> 동안 "회사가 소개한 후보자"로 본다.</p></div>
+        <p><b>보장기간</b> — 후보자의 입사일로부터 60일.</p>
+        <h4>제3조 (성공보수의 발생 및 지급)</h4>
+        <p>성공보수는 채용(입사 확정) 시 발생하며 입사일을 기준으로 한다. 금액은 계약연봉 × 요율(5% 또는 7%)로 하되 <b>최소 ₫8,000,000</b>으로 한다. 회사는 입사 후 세금계산서와 함께 청구하고, 회원은 청구일로부터 14일 내 지급한다. 미지급 시 지연이자를 가산할 수 있다.</p>
+        <h4>제4조 (후보자 귀속 및 우회 금지)</h4>
+        <p>귀속기간(6개월) 내에는 회원이 서비스 외의 경로로 동일 후보자를 채용하는 경우에도 제3조의 성공보수가 발생한다. 회원은 성공보수를 회피할 목적으로 후보자를 직접 또는 제3자를 통해 채용하지 아니한다.</p>
+        <h4>제5조 (프리미엄 SLA)</h4>
+        <p>프리미엄은 약정일로부터 2주 내에 서류 통과 가능한 적합 후보 3명을 추천함을 목표로 한다. 회사가 이를 이행하지 못한 경우 해당 채용의 요율은 5%로 조정되며 초과분(2%p)은 청구하지 아니한다.</p>
+        <h4>제6조 (60일 보증 및 환불)</h4>
+        <p>보장기간(입사 60일) 내 후보자 퇴사 시, ① 회사는 무상으로 1회 대체 후보를 추천한다. ② 대체 채용이 성사되지 아니하면 성공보수 전액을 환불한다. 보장기간을 초과하여 재직한 경우 성공보수는 전액 확정된다.</p>
+        <h4>제7조 (동의의 방식 및 효력)</h4>
+        <p>본 약정은 서비스 화면에서 약관 전문을 제시하고 회원 담당자가 동의 의사표시(확인 체크 및 버튼 선택)를 함으로써 성립한다. 회사는 동의 일시·계정·접속기록(IP)을 보관하며, 본 약정은 <b>별도 서면 없이 전자적 동의만으로 유효</b>하다.</p>
+        <h4>제8조 (증빙 및 채용사실 확인)</h4>
+        <p>회원은 입사 확정 시 근로계약서 사본 등 계약연봉 확인 자료를 제출하고, 회사가 후보자로부터 입사 기업·입사일을 수집·대조하는 것에 동의한다.</p>
+        <h4>제9조 (개인정보)</h4>
+        <p>회원은 서비스를 통해 취득한 후보자의 개인정보를 채용 목적 내에서만 이용하며, 목적 외 이용·제3자 제공·유출의 책임은 회원에게 있다.</p>
+        <h4>제10조 (준거법 및 분쟁)</h4>
+        <p>본 약정은 베트남 사회주의공화국 법을 준거법으로 하며, 분쟁은 협의를 우선하되 협의가 되지 않으면 회사 소재지 관할 법원을 제1심 관할로 한다.</p>
+      </div>
+    </details>
+  </div>
+
+</div>
+</body>
+</html>

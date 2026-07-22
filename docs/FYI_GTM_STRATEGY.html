@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>FYI — 지금 풀어야 할 것</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{font-family:'Pretendard','Apple SD Gothic Neo',-apple-system,'Segoe UI',sans-serif;-webkit-font-smoothing:antialiased;background:#0b0b0c;color:#f4f4f5}
+  body{max-width:1060px;margin:0 auto;padding:52px 36px 72px}
+  .eyebrow{color:#fb923c;font-size:11px;font-weight:900;letter-spacing:.2em;margin-bottom:12px}
+  h1{font-size:clamp(32px,4.6vw,46px);font-weight:950;letter-spacing:-.035em;line-height:1.08}
+  h1 .dim{color:rgba(255,255,255,.34)}
+
+  .block{margin-top:46px}
+  .tag{display:inline-flex;align-items:center;gap:8px;font-size:12px;font-weight:900;letter-spacing:.14em;color:rgba(255,255,255,.45);margin-bottom:16px}
+  .tag b{width:22px;height:22px;border-radius:6px;display:grid;place-items:center;background:#fb923c;color:#0b0b0c;font-size:12px}
+
+  /* 상황 — marketplace */
+  .market{display:grid;grid-template-columns:1fr 120px 1fr;align-items:stretch;gap:0}
+  .side{border-radius:16px;padding:26px 26px 24px;border:1px solid}
+  .side.full{background:linear-gradient(180deg,rgba(16,185,129,.1),rgba(16,185,129,.03));border-color:rgba(16,185,129,.35)}
+  .side.empty{background:linear-gradient(180deg,rgba(239,68,68,.09),rgba(239,68,68,.03));border-color:rgba(239,68,68,.32)}
+  .side .who{font-size:20px;font-weight:950;letter-spacing:-.02em;display:flex;align-items:center;gap:9px}
+  .side .state{margin-top:4px;font-size:13px;font-weight:800}
+  .side.full .state{color:#34d399}
+  .side.empty .state{color:#f87171}
+  .side ul{list-style:none;margin-top:16px;display:flex;flex-direction:column;gap:8px}
+  .side li{font-size:13.5px;color:rgba(255,255,255,.74);font-weight:650;padding-left:16px;position:relative}
+  .side li::before{content:'';position:absolute;left:0;top:7px;width:6px;height:6px;border-radius:50%}
+  .side.full li::before{background:#34d399}
+  .side.empty li::before{background:#f87171}
+  .side li b{color:#fff;font-weight:900}
+
+  .link{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;position:relative}
+  .link .cut{font-size:30px;line-height:1}
+  .link .lbl{font-size:11px;font-weight:900;letter-spacing:.1em;color:rgba(255,255,255,.4)}
+  .link .lbl.bad{color:#f87171}
+
+  /* 문제 */
+  .problem{background:#141416;border:1px solid rgba(239,68,68,.22);border-radius:16px;padding:28px 30px}
+  .problem .lead{font-size:20px;font-weight:900;letter-spacing:-.01em;line-height:1.4}
+  .problem .lead .hl{color:#f87171}
+  .chain{display:flex;align-items:center;gap:12px;margin-top:20px;flex-wrap:wrap}
+  .chain .node{padding:10px 16px;border-radius:9px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);font-size:13px;font-weight:800;color:rgba(255,255,255,.8)}
+  .chain .node.zero{background:rgba(239,68,68,.14);border-color:rgba(239,68,68,.35);color:#fca5a5}
+  .chain .ar{color:rgba(255,255,255,.3);font-weight:900}
+  .problem .foot{margin-top:18px;font-size:13px;color:rgba(255,255,255,.5);font-weight:650}
+
+  /* 목표 */
+  .goal{background:linear-gradient(135deg,#ef4444,#f97316);border-radius:16px;padding:30px 32px;color:#0b0b0c}
+  .goal .big{font-size:23px;font-weight:950;letter-spacing:-.02em;line-height:1.35}
+  .goal .def{margin-top:14px;font-size:14px;font-weight:800;background:rgba(0,0,0,.14);display:inline-block;padding:8px 14px;border-radius:8px}
+  .goal .def .loop{font-weight:950}
+  .miles{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:22px}
+  .mile{background:rgba(0,0,0,.16);border-radius:11px;padding:16px 18px}
+  .mile .k{font-size:11px;font-weight:900;letter-spacing:.08em;color:rgba(0,0,0,.55)}
+  .mile .v{margin-top:5px;font-size:16px;font-weight:950;line-height:1.25}
+
+  @media (max-width:720px){
+    body{padding:34px 18px 56px}
+    .market{grid-template-columns:1fr}
+    .link{flex-direction:row;padding:14px 0}
+    .link .cut{transform:rotate(90deg)}
+    .miles{grid-template-columns:1fr}
+  }
+</style>
+</head>
+<body>
+
+<div class="eyebrow">FYI · 2026-05-22</div>
+<h1>지금 풀어야 할 건 하나다.<br><span class="dim">기업 쪽이 비어 있다.</span></h1>
+
+<!-- 상황 -->
+<div class="block">
+  <div class="tag"><b>1</b>상황</div>
+  <div class="market">
+    <div class="side full">
+      <div class="who">🙋 인재</div>
+      <div class="state">✅ 작동 중</div>
+      <ul>
+        <li><b>15,723건</b> 연봉 데이터 확보</li>
+        <li>하루 <b>70+</b> 랜딩 유입</li>
+        <li>지표·DB상 지속 성장</li>
+      </ul>
+    </div>
+    <div class="link">
+      <div class="cut">⚡</div>
+      <div class="lbl bad">매칭 끊김</div>
+    </div>
+    <div class="side empty">
+      <div class="who">🏢 기업</div>
+      <div class="state">❌ 거의 없음</div>
+      <ul>
+        <li>가입 회사 <b>≈ 0</b></li>
+        <li>등록 공고 <b>≈ 0</b></li>
+        <li>영업 시작 전</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- 문제 -->
+<div class="block">
+  <div class="tag"><b>2</b>문제</div>
+  <div class="problem">
+    <div class="lead">양면 마켓에서 <span class="hl">한쪽만 차 있으면 작동하지 않는다.</span><br>모아둔 인재가 갈 곳이 없다.</div>
+    <div class="chain">
+      <span class="node">기업 없음</span>
+      <span class="ar">→</span>
+      <span class="node zero">매칭 0</span>
+      <span class="ar">→</span>
+      <span class="node zero">채용 0</span>
+      <span class="ar">→</span>
+      <span class="node zero">매출 0</span>
+    </div>
+    <div class="foot">방치하면 — 어렵게 모은 인재도 "되는 게 없네" 하고 빠져나간다. 시간이 적이다.</div>
+  </div>
+</div>
+
+<!-- 목표 -->
+<div class="block">
+  <div class="tag"><b>3</b>목표</div>
+  <div class="goal">
+    <div class="big">기업 쪽을 채워서 매칭 루프를 닫는다.</div>
+    <div class="def">성공의 정의 = <span class="loop">가입 → 공고 → 면접 → 채용</span> 이 끝까지 연결된 케이스 1건</div>
+    <div class="miles">
+      <div class="mile"><div class="k">90일 · ①</div><div class="v">기업 5사 확보</div></div>
+      <div class="mile"><div class="k">90일 · ②</div><div class="v">첫 채용 1건+ 성사</div></div>
+      <div class="mile"><div class="k">90일 · ③</div><div class="v">케이스 스터디 →<br>다음 영업 자산</div></div>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

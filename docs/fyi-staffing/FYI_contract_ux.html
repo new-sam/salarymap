@@ -1,0 +1,168 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>계약 동의 UX — 언제·어떤 팝업</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Pretendard','Apple SD Gothic Neo',-apple-system,'Segoe UI',sans-serif;
+       background:#0f1115;color:#eef0f3;padding:38px 20px 90px;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:960px;margin:0 auto}
+  h1{font-size:24px;font-weight:900;letter-spacing:-.02em}
+  .sub{font-size:13px;color:#8b93a1;margin:6px 0 22px}
+
+  /* flow strip */
+  .flow{display:flex;align-items:stretch;gap:6px;flex-wrap:wrap;margin-bottom:26px}
+  .fs{flex:1;min-width:96px;background:#171a20;border:1px solid #262b34;border-radius:11px;padding:11px 9px;text-align:center}
+  .fs .s{font-size:10px;color:#8b93a1;font-weight:800}
+  .fs .t{font-size:12.5px;font-weight:800;margin-top:3px;line-height:1.3}
+  .fs.gate{border-color:#fb923c;background:#2a1c10}.fs.gate .t{color:#fdba74}.fs.gate .s{color:#fb923c}
+  .fa{align-self:center;color:#4a515d;font-weight:900}
+
+  .lbl{font-size:11px;color:#8b93a1;font-weight:800;letter-spacing:.06em;margin:6px 0 10px}
+  .two{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:26px}
+
+  /* browser mock */
+  .win{background:#fafafa;border:1px solid #2b313b;border-radius:12px;overflow:hidden;position:relative}
+  .bar{background:#e9eaed;padding:7px 10px;display:flex;gap:5px;align-items:center}
+  .bar i{width:9px;height:9px;border-radius:50%;background:#c3c6cc;display:block}
+  .bar .u{margin-left:8px;font-size:10.5px;color:#7b8089;background:#fff;border-radius:5px;padding:2px 8px;flex:1}
+  .screen{padding:14px;min-height:210px;color:#1a1a1a;position:relative}
+
+  .mockrow{height:9px;border-radius:5px;background:#e3e5e9;margin:7px 0}
+  .mockrow.s{width:55%}.mockrow.m{width:80%}
+  .mocklabel{font-size:10px;color:#9aa0a8;font-weight:800;text-transform:uppercase;letter-spacing:.05em;margin:2px 0 6px}
+  .pubbtn{position:absolute;top:12px;right:12px;background:#EA580C;color:#fff;font-size:11.5px;font-weight:800;padding:7px 12px;border-radius:8px;box-shadow:0 4px 12px rgba(234,88,12,.3)}
+  .cursor{position:absolute;top:30px;right:22px;font-size:18px;filter:drop-shadow(0 1px 1px rgba(0,0,0,.3))}
+
+  /* candidate blurred cards */
+  .cc{display:flex;gap:8px;margin-top:6px}
+  .ccard{flex:1;background:#fff;border:1px solid #e5e7eb;border-radius:8px;padding:10px;filter:blur(2.5px);opacity:.7}
+  .ccard .a{width:26px;height:26px;border-radius:50%;background:#dfe2e7;margin-bottom:6px}
+  .ccard .b{height:7px;background:#e3e5e9;border-radius:4px;margin:4px 0;width:70%}
+  .lockbtn{position:absolute;left:50%;top:56%;transform:translate(-50%,-50%);background:#111;color:#fff;font-size:11.5px;font-weight:800;padding:8px 14px;border-radius:9px;display:flex;gap:6px;align-items:center}
+
+  .anno{font-size:12px;color:#c3c9d3;margin-top:8px;line-height:1.5}
+  .anno b{color:#fdba74}
+
+  /* modal spotlight */
+  .modalwrap{background:#171a20;border:1px solid #262b34;border-radius:16px;padding:22px;display:grid;grid-template-columns:1fr 300px;gap:22px;align-items:start}
+  .modal{background:#fff;color:#1a1a1a;border-radius:14px;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.5)}
+  .mhead{padding:16px 18px 4px}
+  .mhead .t{font-size:15px;font-weight:900}
+  .mhead .who{font-size:11.5px;color:#6b7280;margin-top:3px}
+  .mbody{padding:12px 18px}
+  .feegrid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px}
+  .fee{border:1px solid #eceef1;border-radius:10px;padding:10px}
+  .fee.pro{border-color:#f7c197;background:#fff8f1}
+  .fee .n{font-size:11px;color:#8b93a1;font-weight:800}
+  .fee .p{font-size:22px;font-weight:900;line-height:1.1}
+  .fee.pro .p{color:#EA580C}
+  .fee .d{font-size:10.5px;color:#6b7280;margin-top:2px}
+  .terms{background:#f6f7f9;border-radius:9px;padding:9px 11px;font-size:11.5px;color:#4b5563;line-height:1.6}
+  .terms b{color:#111}
+  .tlink{font-size:11px;color:#EA580C;font-weight:800;text-decoration:underline;display:inline-block;margin-top:6px}
+  .agree{display:flex;align-items:center;gap:8px;margin:12px 0 10px;font-size:12.5px;font-weight:700}
+  .agree .cb{width:17px;height:17px;border:2px solid #EA580C;border-radius:4px;display:grid;place-items:center;color:#EA580C;font-size:12px;font-weight:900}
+  .mbtn{background:#EA580C;color:#fff;text-align:center;padding:12px;border-radius:9px;font-size:13.5px;font-weight:800}
+  .mfoot{padding:8px 18px 16px;font-size:10.5px;color:#9aa0a8;line-height:1.5}
+
+  .callouts{display:flex;flex-direction:column;gap:14px}
+  .co .k{font-size:11px;font-weight:900;color:#fb923c;letter-spacing:.05em;margin-bottom:3px}
+  .co .v{font-size:12.5px;color:#d3d8df;line-height:1.5}
+  .co .v b{color:#fff}
+
+  @media(max-width:760px){.two{grid-template-columns:1fr}.modalwrap{grid-template-columns:1fr}.flow{flex-direction:column}.fs{min-width:0}.fa{transform:rotate(90deg)}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <h1>계약 동의 — 언제, 어떤 팝업으로</h1>
+  <div class="sub">원칙: 후보를 보기 전에 묶는다 → 게이트는 "후보 열람 직전" 두 지점</div>
+
+  <!-- flow -->
+  <div class="flow">
+    <div class="fs"><div class="s">1</div><div class="t">가입<br>구글 로그인</div></div>
+    <div class="fa">→</div>
+    <div class="fs"><div class="s">2</div><div class="t">공고 작성</div></div>
+    <div class="fa">→</div>
+    <div class="fs gate"><div class="s">🔒 게이트 A</div><div class="t">게시하기 클릭<br>= 약정 팝업</div></div>
+    <div class="fa">→</div>
+    <div class="fs"><div class="s">3</div><div class="t">공고 게재</div></div>
+    <div class="fa">→</div>
+    <div class="fs gate"><div class="s">🔒 게이트 B</div><div class="t">첫 후보 열람<br>= 약정 팝업</div></div>
+    <div class="fa">→</div>
+    <div class="fs"><div class="s">4</div><div class="t">ATS 채용</div></div>
+  </div>
+
+  <!-- two trigger screens -->
+  <div class="lbl">팝업이 뜨는 두 순간</div>
+  <div class="two">
+    <div>
+      <div class="win">
+        <div class="bar"><i></i><i></i><i></i><span class="u">fyi · 새 공고</span></div>
+        <div class="screen">
+          <div class="pubbtn">게시하기</div>
+          <span class="cursor">👆</span>
+          <div class="mocklabel">공고 제목</div><div class="mockrow m"></div>
+          <div class="mocklabel">직무 · 연봉</div><div class="mockrow s"></div><div class="mockrow s"></div>
+          <div class="mocklabel">상세</div><div class="mockrow"></div><div class="mockrow m"></div>
+        </div>
+      </div>
+      <div class="anno"><b>게이트 A — 직접 올릴 때.</b> "게시하기" 누르면 게재 직전 약정 팝업 → 동의해야 게재됨.</div>
+    </div>
+    <div>
+      <div class="win">
+        <div class="bar"><i></i><i></i><i></i><span class="u">fyi · 후보 (AM 대리 게재)</span></div>
+        <div class="screen">
+          <div class="mocklabel">지원 후보 3명</div>
+          <div class="cc">
+            <div class="ccard"><div class="a"></div><div class="b"></div><div class="b"></div></div>
+            <div class="ccard"><div class="a"></div><div class="b"></div><div class="b"></div></div>
+            <div class="ccard"><div class="a"></div><div class="b"></div><div class="b"></div></div>
+          </div>
+          <div class="lockbtn">🔒 후보 보기</div>
+        </div>
+      </div>
+      <div class="anno"><b>게이트 B — 우리가 대신 올렸을 때.</b> 기업이 게재 버튼을 안 눌렀으니, <b>첫 후보 열람 시</b> 팝업 → 동의해야 후보 열림.</div>
+    </div>
+  </div>
+
+  <!-- modal detail -->
+  <div class="lbl">팝업 형태</div>
+  <div class="modalwrap">
+    <div class="modal">
+      <div class="mhead">
+        <div class="t">공고를 게재하려면 성공보수 약정에 동의해 주세요</div>
+        <div class="who">삼성물산 · 담당자 김채용</div>
+      </div>
+      <div class="mbody">
+        <div class="feegrid">
+          <div class="fee"><div class="n">베이직</div><div class="p">5%</div><div class="d">자연 지원자</div></div>
+          <div class="fee pro"><div class="n">프리미엄</div><div class="p">7%</div><div class="d">+ 헤드헌팅</div></div>
+        </div>
+        <div class="terms">
+          <b>착수금 없음</b> · 채용 성사(입사일)에만 청구 · 계약연봉 기준(최소 ₫8M)<br>
+          <b>60일 보증</b> — 60일 내 퇴사 시 무료 대체, 안 되면 전액 환불<br>
+          후보 <b>6개월 귀속</b> · 우회 채용 금지
+          <a class="tlink">약관 전문 보기 →</a>
+        </div>
+        <div class="agree"><span class="cb">✓</span> 위 성공보수 약정에 동의합니다</div>
+        <div class="mbtn">동의하고 공고 게재</div>
+      </div>
+      <div class="mfoot">동의 시각 · 계정 · IP가 기록됩니다. (계약 성립의 증거)</div>
+    </div>
+
+    <div class="callouts">
+      <div class="co"><div class="k">언제</div><div class="v">후보를 보기 직전. <b>게재 클릭(A)</b> 또는 <b>첫 후보 열람(B)</b>. 안 뜨면 이미 동의한 것.</div></div>
+      <div class="co"><div class="k">어떤 형태</div><div class="v"><b>전면 모달</b>(닫기 전 진행 불가). 수수료 5/7% + 핵심 조항 요약 + 전문 링크 + 동의 체크 + 버튼 하나.</div></div>
+      <div class="co"><div class="k">어떻게 묶나</div><div class="v">체크 후 버튼 = <b>클릭 동의</b>. 도장·펜 없이 성립. 동의 로그(시각·계정·IP) 저장.</div></div>
+      <div class="co"><div class="k">큰 건</div><div class="v">오퍼 단계에서 <b>전자서명(DocuSign)</b> 한 번 더 — 화면은 오퍼 발송 버튼에 붙임.</div></div>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>
