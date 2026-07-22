@@ -79,9 +79,12 @@ export default function KtcSourcesView({ token, lang, dateRange }) {
   }
   const qs = dateRange?.from && dateRange?.to ? `?from=${dateRange.from}&to=${dateRange.to}` : ''
   const { data, error, isLoading, mutate } = useAdmin(`/api/admin/ktc-sources${qs}`, token)
+  // 공고 퍼널은 시트 라이브 조합이라 섹션 진입 시에만 로드
+  const { data: funnelData, isLoading: funnelLoading } = useAdmin(section === 'funnel' ? '/api/admin/ktc-jd-funnel' : null, token)
   const [showAllJobs, setShowAllJobs] = useState(false)
   const [showHireList, setShowHireList] = useState(false) // 입사자 명단 접기
-  const [section, setSection] = useState('overview') // 섹션 전환: overview | jobs | hires | landing
+  const [section, setSection] = useState('overview') // 섹션 전환: overview | jobs | funnel | hires | landing
+  const [jdStatusFilter, setJdStatusFilter] = useState('all') // 공고 퍼널 상태 필터
   const [openJobs, setOpenJobs] = useState({}) // 공고 행 펼침 (채널×월 상세)
   const [basis, setBasis] = useState('people') // 'people' 유니크 지원자 | 'apps' 지원 건(중복 포함)
   const [syncing, setSyncing] = useState(false)
@@ -196,6 +199,7 @@ export default function KtcSourcesView({ token, lang, dateRange }) {
         {[
           ['overview', L('개요', 'Overview', 'Tổng quan')],
           ['jobs', L('공고별', 'By job', 'Theo tin')],
+          ['funnel', L('공고 퍼널', 'JD funnel', 'Phễu theo tin')],
           ['hires', L('입사 · 매출', 'Hires · Revenue', 'Trúng tuyển · Doanh thu')],
           ['landing', L('랜딩 유입', 'Landing traffic', 'Nguồn landing')],
         ].map(([key, labelTxt]) => {
@@ -516,6 +520,100 @@ export default function KtcSourcesView({ token, lang, dateRange }) {
         )}
       </div>
       </>)}
+
+      {/* 공고 퍼널 — JD EXECUTION(상태) × 지원 × 파이프라인 × 인터뷰 × 입사 */}
+      {section === 'funnel' && (() => {
+        if (funnelLoading || !funnelData) return <div style={{ textAlign: 'center', padding: 40, color: '#666' }}>{L('불러오는 중… (시트 라이브 조회)', 'Loading… (live sheet read)', 'Đang tải…')}</div>
+        if (funnelData.error) return <div style={{ textAlign: 'center', padding: 40, color: '#c00' }}>{funnelData.error}</div>
+        const STATUS_BADGE = {
+          'In Progress': { bg: '#E7F6EC', color: '#1B7A43', ko: '진행중', vi: 'Đang tuyển' },
+          'Closed - Filled': { bg: '#E0EAFF', color: '#1D4ED8', ko: '충원 마감', vi: 'Đã tuyển đủ' },
+          'Closed - Cancelled': { bg: '#F1F3F5', color: '#868E96', ko: '취소', vi: 'Đã hủy' },
+          'On Hold': { bg: '#FFF4E5', color: '#C2410C', ko: '보류', vi: 'Tạm dừng' },
+        }
+        const stLabel = (s) => {
+          const b = STATUS_BADGE[s]
+          return b ? (ko ? b.ko : lang === 'vi' ? b.vi : s) : (s || '—')
+        }
+        const filtered = funnelData.jds.filter(j => jdStatusFilter === 'all' || j.status === jdStatusFilter)
+        const ORDER = { 'In Progress': 0, 'On Hold': 1, 'Closed - Filled': 2, 'Closed - Cancelled': 3 }
+        const sorted = [...filtered].sort((a, b) => (ORDER[a.status] ?? 9) - (ORDER[b.status] ?? 9) || b.apps - a.apps)
+        const FILTERS = [
+          ['all', L('전체', 'All', 'Tất cả'), funnelData.jds.length],
+          ...Object.entries(funnelData.statusCounts).sort((a, b) => (ORDER[a[0]] ?? 9) - (ORDER[b[0]] ?? 9)).map(([s, n]) => [s, stLabel(s), n]),
+        ]
+        const num = { fontVariantNumeric: 'tabular-nums' }
+        const cell = (n, hot) => (
+          <td style={{ padding: '9px 10px', textAlign: 'right', color: n > 0 ? (hot ? '#0D9488' : '#374151') : '#DDE1E6', fontWeight: n > 0 && hot ? 700 : 400, ...num }}>{n}</td>
+        )
+        return (
+          <div>
+            <div style={{ display: 'flex', gap: 6, marginBottom: 14, flexWrap: 'wrap' }}>
+              {FILTERS.map(([key, labelTxt, n]) => {
+                const on = jdStatusFilter === key
+                return (
+                  <button key={key} onClick={() => setJdStatusFilter(key)} style={{
+                    fontSize: 13, fontWeight: 600, cursor: 'pointer', borderRadius: 999, padding: '7px 14px',
+                    border: '1px solid', borderColor: on ? '#ff4400' : '#E5E8EB',
+                    background: on ? '#FFF1EC' : '#fff', color: on ? '#ff4400' : '#4E5968',
+                  }}>
+                    {labelTxt} <span style={{ opacity: on ? 0.7 : 0.5 }}>{n}</span>
+                  </button>
+                )
+              })}
+            </div>
+            <div className="adm-m-scroll adm-m-nowrap" style={{ border: '1px solid #E5E8EB', borderRadius: 12, overflowX: 'auto' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13, whiteSpace: 'nowrap' }}>
+                <thead>
+                  <tr style={{ background: '#F8FAFC', color: '#475569' }}>
+                    {th(L('공고', 'Job', 'Tin đăng'), 'left', { paddingLeft: 14 })}
+                    {th(L('상태', 'Status', 'Trạng thái'), 'left')}
+                    {th('TO')}
+                    {th(L('지원 건', 'Apps', 'Lượt nộp'))}
+                    {th(L('지원자', 'People', 'Ứng viên'))}
+                    {th(L('서류통과', 'Screened', 'Đạt sàng lọc'))}
+                    {th(L('AI합격', 'AI passed', 'Đạt PV AI'))}
+                    {th(L('인터뷰', 'Interviews', 'Phỏng vấn'))}
+                    {th(L('최종합격', 'Final', 'Đạt cuối'))}
+                    {th(L('입사', 'Hired', 'Trúng tuyển'), 'right', { paddingRight: 14 })}
+                  </tr>
+                </thead>
+                <tbody>
+                  {sorted.map(j => {
+                    const b = STATUS_BADGE[j.status] || { bg: '#F1F3F5', color: '#868E96' }
+                    return (
+                      <tr key={j.code} style={{ borderTop: '1px solid #F1F5F9' }}>
+                        <td style={{ padding: '9px 10px 9px 14px', maxWidth: 300 }}>
+                          <div style={{ fontWeight: 600, color: '#0F172A', overflow: 'hidden', textOverflow: 'ellipsis' }} title={j.title}>{j.title}</div>
+                          <div style={{ fontSize: 11, color: '#9CA3AF' }}>{[j.company, j.code, j.yoe && `${j.yoe}`].filter(Boolean).join(' · ')}</div>
+                        </td>
+                        <td style={{ padding: '9px 10px' }}>
+                          <span style={{ fontSize: 11.5, fontWeight: 700, padding: '3px 9px', borderRadius: 999, background: b.bg, color: b.color }}>{stLabel(j.status)}</span>
+                        </td>
+                        <td style={{ padding: '9px 10px', textAlign: 'right', color: '#374151', ...num }}>{j.headcount ?? '—'}</td>
+                        {cell(j.apps)}
+                        {cell(j.people)}
+                        {cell(j.docPass)}
+                        {cell(j.aiPass)}
+                        {cell(j.interviews)}
+                        {cell(j.finalPass, true)}
+                        <td style={{ padding: '9px 14px 9px 10px', textAlign: 'right', fontWeight: j.hires > 0 ? 800 : 400, color: j.hires > 0 ? FYI_COLOR : '#DDE1E6', ...num }}>{j.hires}</td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            </div>
+            <div style={{ fontSize: 11, color: '#9CA3AF', marginTop: 12, lineHeight: 1.6 }}>
+              {L(
+                '공고 원장·상태는 Master 시트 JD EXECUTION 라이브. 지원 건/지원자/서류통과/AI합격/최종합격은 동기화된 지원 데이터, 인터뷰는 Master INTERVIEW 탭(공고코드 추출·인당 1회), 입사는 KTC Ops Employee를 이메일→공고코드로 귀속(채널 외 채용은 미포함). 시트에 코드가 없는 지원은 집계에서 빠질 수 있음.',
+                'JD ledger/status live from the Master sheet. Apps/people/screened/AI/final from synced data; interviews from the INTERVIEW tab (code extracted, once per person); hires attributed via email→job code (off-channel hires excluded). Applications without a job code may be missing.',
+                'Danh sách tin/trạng thái lấy trực tiếp từ Master sheet. Lượt nộp/ứng viên/sàng lọc/AI/cuối từ dữ liệu đã đồng bộ; phỏng vấn từ tab INTERVIEW; trúng tuyển quy nguồn qua email→mã tin.'
+              )}
+            </div>
+          </div>
+        )
+      })()}
 
       {/* 랜딩 유입 상세 — ktc-landing DB 라이브 (UTM 소스/캠페인/랜딩 내 위치 × 월) */}
       {section === 'landing' && data.landing && (() => {
