@@ -1,5 +1,22 @@
 # CLAUDE.md
 
+## 주요 문서 위치 (어느 컴퓨터에서든 "열어줘" 하면 여기서 찾아 열 것)
+
+브랜치 `feat/daily-summary-ceo-channel` 기준. 요청받으면 pull 후 기본 브라우저로 바로 열기 (경로만 알려주지 말 것).
+
+| 호출어 | 파일 |
+|---|---|
+| 스태핑 링크드인 광고 설명서 | `docs/STAFFING_LINKEDIN_DM_GUIDE.html` (예시 이미지 `docs/shots/`) |
+| 스태핑 FYI 조직도 | `docs/ORG_STRUCTURE.html` |
+| FYI 스태핑 현황정리 | `docs/fyi-staffing/FYI_현황정리.md` |
+| FYI 기업정책 | `docs/fyi-staffing/FYI_기업정책.md` |
+| GTM 전략 | `docs/FYI_GTM_STRATEGY.html` |
+| 스태핑 데일리 대시보드 | `docs/STAFFING_DAILY_DASHBOARD.html` |
+
+링크드인 광고 확정값: 계정 SUPERCHIPS · 발신 KEE Kim · 대화 광고 · 리드 양식 개인정보처리방침 URL = https://ggmg.ai.kr/privacy (공고마감 서비스로 리드 수집).
+
+---
+
 Behavioral guidelines to reduce common LLM coding mistakes. Merge with project-specific instructions as needed.
 
 **Tradeoff:** These guidelines bias toward caution over speed. For trivial tasks, use judgment.
