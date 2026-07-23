@@ -194,7 +194,7 @@ export default async function handler(req, res) {
       if (!cmpTab || !metaTab || !invTab) throw new Error(`비용 시트 탭 탐지 실패 (비교표:${cmpTab} 캠페인:${metaTab} 인보이스:${invTab})`)
       const [cmpRes, metaRes, invRes] = await Promise.all([
         sheets.spreadsheets.values.get({ spreadsheetId: COST_SHEET_ID, range: `'${cmpTab}'!A1:M15` }),
-        sheets.spreadsheets.values.get({ spreadsheetId: COST_SHEET_ID, range: `'${metaTab}'!B6:C40` }),
+        sheets.spreadsheets.values.get({ spreadsheetId: COST_SHEET_ID, range: `'${metaTab}'!A1:H60` }),
         sheets.spreadsheets.values.get({ spreadsheetId: COST_SHEET_ID, range: `'${invTab}'!A1:M15` }),
       ])
       // Alice가 컬럼을 수시로 옮기므로 헤더 텍스트('채널'/'지출')로 위치 탐지
@@ -280,11 +280,18 @@ export default async function handler(req, res) {
       }
 
       // Meta 광고비 중 KTC 몫 분해: KTC* 접두 = 랜딩 광고비, FYI_*KTC* = FYI를 통한 KTC 홍보 광고비
+      // 열 위치가 수시로 바뀜(tag 열 추가 등) — 헤더 텍스트('Campaign'/'Spend')로 위치 탐지
       let ktcMeta = 0
       let fyiKtcMeta = 0
-      for (const r of (metaRes.data.values || [])) {
-        const name = (r[0] || '').trim()
-        const spend = parseKrw(r[1])
+      const metaRows = metaRes.data.values || []
+      const mIdx = metaRows.findIndex(r => r.some(c => (c || '').trim() === 'Campaign') && r.some(c => (c || '').startsWith('Spend')))
+      if (mIdx < 0) throw new Error('캠페인 탭 헤더(Campaign/Spend) 탐지 실패')
+      const MH = metaRows[mIdx]
+      const mNameCol = MH.findIndex(c => (c || '').trim() === 'Campaign')
+      const mSpendCol = MH.findIndex(c => (c || '').startsWith('Spend'))
+      for (const r of metaRows.slice(mIdx + 1)) {
+        const name = (r[mNameCol] || '').trim()
+        const spend = parseKrw(r[mSpendCol])
         if (spend == null) continue
         if (/^ktc/i.test(name)) ktcMeta += spend
         else if (/^fyi/i.test(name) && /ktc/i.test(name)) fyiKtcMeta += spend
