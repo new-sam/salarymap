@@ -22,6 +22,13 @@ const PLATFORM_LABEL = {
 }
 // 크로스탭에 개별 열로 보여줄 주요 채널 (나머지는 '기타'로 합산)
 const MAIN_PLATFORMS = ['landing-page', 'ITviec-api', 'jobs-go', 'top-dev', 'LinkedIn', 'top-cv']
+// 무료/유료 구분 — 비용 시트(Alice) 통합 비교표 기준: 지출 있는 채널만 유료
+// (Meta 광고=랜딩, TopDev·ITviec=패키지형, LinkedIn=종량형 / Ybox·Vieclam24h·Glints=무료, JobsGO·TopCV=지출 기록 없음)
+const PLATFORM_PRICING = {
+  'landing-page': 'paid', 'ITviec-api': 'paid', 'it-viec-manual': 'paid', 'top-dev': 'paid', LinkedIn: 'paid',
+  'jobs-go': 'free', 'top-cv': 'free', glint: 'free', YBOX: 'free', Vieclam24h: 'free',
+  FYI: 'own',
+}
 const FYI_COLOR = '#ff4400'
 // 도넛 세그먼트 — 보기 편한 파스텔톤 (채널 정체성에 고정), FYI만 브랜드 주황. 소수 채널은 기타 회색.
 const CHANNEL_SOFT_COLORS = {
@@ -141,14 +148,15 @@ export default function KtcSourcesView({ token, lang, dateRange }) {
   const allRows = [
     ...platforms.map(p => ({ ...p, isFyi: false, n: useApps ? p.appsTotal : p.total, nMonths: useApps ? p.appsMonths : p.months })),
     {
-      key: 'FYI', isFyi: true, docPass: null, finalPassed: null,
+      key: 'FYI', isFyi: true, docPass: null,
       total: fyi.total, months: fyi.months,
       n: useApps ? fyi.applications : fyi.total, nMonths: useApps ? fyi.appsMonths : fyi.months,
     },
   ].sort((a, b) => b.n - a.n)
   const grandTotal = allRows.reduce((s, r) => s + r.n, 0)
   const maxTotal = Math.max(1, ...allRows.map(r => r.n))
-  const totalFinal = platforms.reduce((s, p) => s + p.finalPassed, 0)
+  // 채널별 실제 입사 수 (ktc_hires 이메일 귀속, 기간 필터 무관 누적)
+  const hiresByChan = Object.fromEntries((data.hires?.byChannel || []).map(c => [c.key, c.hires]))
 
   const stat = (labelTxt, value, sub) => (
     <div style={{ background: '#fff', border: '1px solid #E5E8EB', borderRadius: 12, padding: '14px 16px', minWidth: 130 }}>
@@ -162,6 +170,19 @@ export default function KtcSourcesView({ token, lang, dateRange }) {
     <th style={{ textAlign: align, padding: '10px 10px', fontWeight: 600, whiteSpace: 'nowrap', ...extra }}>{txt}</th>
   )
 
+  // 채널명 앞 무료/유료 뱃지 (자사=FYI). 구분 모르는 채널(레거시 시트 등)은 뱃지 없음.
+  const priceBadge = (key) => {
+    const t = PLATFORM_PRICING[key]
+    if (!t) return null
+    const txt = t === 'paid' ? L('유료', 'Paid', 'Trả phí') : t === 'own' ? L('자사', 'Own', 'Của FYI') : L('무료', 'Free', 'Miễn phí')
+    const c = t === 'paid' ? { bg: '#FFF1F0', color: '#D6453D' } : t === 'own' ? { bg: '#FFF1EC', color: FYI_COLOR } : { bg: '#EBFBF3', color: '#0D9488' }
+    return (
+      <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 7px', borderRadius: 999, background: c.bg, color: c.color, marginRight: 6, verticalAlign: 1 }}>
+        {txt}
+      </span>
+    )
+  }
+
   const jobRows = showAllJobs ? jobs : jobs.slice(0, 25)
   const monthLabel = (m) => (ko ? `${+m.slice(5)}월` : lang === 'vi' ? `T${+m.slice(5)}` : `${+m.slice(5)}/${m.slice(2, 4)}`)
 
@@ -169,7 +190,7 @@ export default function KtcSourcesView({ token, lang, dateRange }) {
     <div style={{ paddingBottom: 40 }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', gap: 12, flexWrap: 'wrap', marginBottom: 6 }}>
         <div>
-          <h3 style={{ fontSize: 17, fontWeight: 700, margin: '0 0 4px' }}>{L('KTC 소싱 채널 비교', 'KTC sourcing channels', 'So sánh kênh nguồn KTC')}</h3>
+          <h3 style={{ fontSize: 17, fontWeight: 700, margin: '0 0 4px' }}>{L('인재 소싱 채널 비교', 'Talent sourcing channels', 'So sánh kênh nguồn nhân tài')}</h3>
           <div style={{ fontSize: 12.5, color: '#6B7280' }}>
             {L(
               'KTC 공고에 지원자를 모아준 채널별 볼륨·추이·질. FYI는 salarymap DB 라이브, 나머지는 동기화 버튼으로 갱신(시트→ktc-support→FYI).',
@@ -192,7 +213,6 @@ export default function KtcSourcesView({ token, lang, dateRange }) {
       <div className="adm-m-2col" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))', gap: 10, margin: '14px 0 18px' }}>
         {stat(L('총 지원자 (전 채널)', 'Applicants (all)', 'Tổng ứng viên'), grandTotal.toLocaleString(), L('채널 내 유니크 기준', 'unique per channel', 'unique theo kênh · mọi kênh'))}
         {stat('FYI', fyi.total.toLocaleString(), ko ? `지원 건수 ${fyi.applications} · 전체의 ${pct(fyi.total, grandTotal)}%` : `${fyi.applications} ${L('', 'applications', 'lượt nộp')} · ${pct(fyi.total, grandTotal)}%`)}
-        {stat(L('최종합격 (타 채널)', 'Final passed', 'Trúng tuyển'), totalFinal, L('FYI 지원자는 상태 추적 없음', 'FYI applicants not tracked', 'Kênh khác — FYI chưa theo dõi trạng thái'))}
         {stat(L('KTC 공고', 'KTC jobs', 'Tin KTC'), `${totals.activeKtcJobs} / ${totals.ktcJobs}`, L('활성 / 전체', 'active / all', 'đang hoạt động / tổng'))}
         {data.hires && stat(L('입사 (채널 경유)', 'Hires (via channels)', 'Trúng tuyển (qua kênh)'), data.hires.attributed, L(`채널 외 ${data.hires.total - data.hires.attributed}명 제외 · FYI 경유 ${data.hires.viaFyi}`, `excl. ${data.hires.total - data.hires.attributed} off-channel · ${data.hires.viaFyi} via FYI`, `trừ ${data.hires.total - data.hires.attributed} ngoài kênh`))}
       </div>
@@ -300,14 +320,14 @@ export default function KtcSourcesView({ token, lang, dateRange }) {
               {th(L('합계', 'Total', 'Tổng'))}
               {th(L('비중', 'Share', 'Tỷ trọng'), 'left', { width: '18%' })}
               {!useApps && th(L('서류통과', 'CV screened', 'Đạt sàng lọc CV'))}
-              {!useApps && th(L('최종합격', 'Final passed', 'Trúng tuyển'))}
+              {!useApps && th(L('입사', 'Hired', 'Trúng tuyển'))}
               {!useApps && th(L('서류통과율', 'Screen %', 'Tỷ lệ sàng lọc'), 'right', { paddingRight: 14 })}
             </tr>
           </thead>
           <tbody>
             {allRows.map(r => (
               <tr key={r.key} style={{ borderTop: '1px solid #F1F5F9', background: r.isFyi ? '#FFF8F5' : undefined }}>
-                <td style={{ padding: '9px 10px 9px 14px', fontWeight: r.isFyi ? 700 : 600, color: r.isFyi ? FYI_COLOR : '#0F172A' }}>{label(r.key)}</td>
+                <td style={{ padding: '9px 10px 9px 14px', fontWeight: r.isFyi ? 700 : 600, color: r.isFyi ? FYI_COLOR : '#0F172A' }}>{priceBadge(r.key)}{label(r.key)}</td>
                 {shownMonths.map(m => (
                   <td key={m} style={{ padding: '9px 10px', textAlign: 'right', color: (r.nMonths?.[m] || 0) > 0 ? '#374151' : '#CBD5E1' }}>{r.nMonths?.[m] || 0}</td>
                 ))}
@@ -321,7 +341,7 @@ export default function KtcSourcesView({ token, lang, dateRange }) {
                   </div>
                 </td>
                 {!useApps && <td style={{ padding: '9px 10px', textAlign: 'right', color: '#374151' }}>{r.docPass ?? '—'}</td>}
-                {!useApps && <td style={{ padding: '9px 10px', textAlign: 'right', fontWeight: 600, color: r.finalPassed > 0 ? '#0D9488' : '#CBD5E1' }}>{r.finalPassed ?? '—'}</td>}
+                {!useApps && <td style={{ padding: '9px 10px', textAlign: 'right', fontWeight: 600, color: (hiresByChan[r.key] || 0) > 0 ? '#0D9488' : '#CBD5E1' }}>{data.hires ? (hiresByChan[r.key] || 0) : '—'}</td>}
                 {!useApps && <td style={{ padding: '9px 14px 9px 10px', textAlign: 'right', color: '#374151' }}>{r.docPass === null ? '—' : `${pct(r.docPass, r.total)}%`}</td>}
               </tr>
             ))}
@@ -336,9 +356,9 @@ export default function KtcSourcesView({ token, lang, dateRange }) {
           <><b>Lượt nộp</b> = số dòng thô trên sheet (một người nộp nhiều tin tính từng lượt). FYI = lượt nộp thô từ DB salarymap. </>
         )}</>}
         {!useApps && L(
-          <><b>서류통과</b> = KTC 팀의 CV 스크리닝 합격 이상 전부(AI 인터뷰 발송·완료·합격, 최종 합격 포함) · <b>최종합격</b> = KTC 파이프라인 최종 합격(final_passed) · <b>서류통과율</b> = 서류통과 ÷ 전체 지원자(스크리닝 대기자도 분모 포함)</>,
-          <><b>CV screened</b> = at or past the KTC team&apos;s CV screening (incl. AI-interview stages and final passed) · <b>Final passed</b> = last stage of the KTC pipeline · <b>Screen %</b> = screened ÷ all applicants (pending included in denominator)</>,
-          <><b>Đạt sàng lọc CV</b> = từ mức đạt sàng lọc CV của team KTC trở lên (gồm các giai đoạn PV AI và trúng tuyển) · <b>Trúng tuyển</b> = giai đoạn cuối pipeline KTC · <b>Tỷ lệ sàng lọc</b> = đạt sàng lọc ÷ tổng ứng viên (gồm cả người chưa được sàng lọc)</>
+          <><b>서류통과</b> = KTC 팀의 CV 스크리닝 합격 이상 전부(AI 인터뷰 단계 포함) · <b>입사</b> = KTC Ops Employee 시트의 실제 입사자(이메일로 최초 유입 채널 귀속 · 기간 필터 무관 누적) · <b>서류통과율</b> = 서류통과 ÷ 전체 지원자(스크리닝 대기자도 분모 포함)</>,
+          <><b>CV screened</b> = at or past the KTC team&apos;s CV screening (incl. AI-interview stages) · <b>Hired</b> = actual hires from KTC Ops Employee, attributed to first channel by email (cumulative, ignores date filter) · <b>Screen %</b> = screened ÷ all applicants (pending included in denominator)</>,
+          <><b>Đạt sàng lọc CV</b> = từ mức đạt sàng lọc CV của team KTC trở lên (gồm các giai đoạn PV AI) · <b>Trúng tuyển</b> = người nhận việc thực tế từ KTC Ops Employee, quy nguồn theo email (lũy kế, không theo bộ lọc ngày) · <b>Tỷ lệ sàng lọc</b> = đạt sàng lọc ÷ tổng ứng viên (gồm cả người chưa được sàng lọc)</>
         )}
       </div>
       </>)}
@@ -607,7 +627,7 @@ export default function KtcSourcesView({ token, lang, dateRange }) {
                         {th(L('서류통과', 'Screened', 'Đạt sàng lọc'))}
                         {th(L('AI합격', 'AI passed', 'Đạt PV AI'))}
                         {th(L('인터뷰', 'Interviews', 'Phỏng vấn'))}
-                        {th(L('최종합격', 'Final', 'Đạt cuối'))}
+                        {th(L('최종통과', 'Screen final', 'Đạt SL cuối'))}
                         {th(L('입사', 'Hired', 'Trúng tuyển'))}
                         {hasCost && th(L('광고비', 'Ad spend', 'Phí QC'))}
                         {hasCost && th(L('게재비', 'Listing fees', 'Phí đăng'))}
@@ -622,7 +642,7 @@ export default function KtcSourcesView({ token, lang, dateRange }) {
                         return (
                           <tr key={c.key} style={{ borderTop: '1px solid #F1F5F9', background: isFyi ? '#FFF8F5' : undefined }}>
                             <td style={{ padding: '9px 10px 9px 14px', fontWeight: isFyi ? 700 : 600, color: isFyi ? FYI_COLOR : isUn ? '#9CA3AF' : '#0F172A' }}>
-                              {isUn ? L('(채널 외 / 미귀속)', '(off-channel)', '(ngoài kênh)') : label(c.key)}
+                              {isUn ? L('(채널 외 / 미귀속)', '(off-channel)', '(ngoài kênh)') : <>{priceBadge(c.key)}{label(c.key)}</>}
                             </td>
                             <td style={{ padding: '6px 8px', textAlign: 'right', color: '#374151', ...num }}>
                               {c.jobsPosted ?? c.jobsApplied ?? '—'}
@@ -669,7 +689,7 @@ export default function KtcSourcesView({ token, lang, dateRange }) {
                 </div>
                 <div style={{ fontSize: 11, color: '#9CA3AF', lineHeight: 1.6, marginBottom: 20 }}>
                   {L(
-                    '% = 그 채널 지원자 대비 단계 도달률. 서류통과·AI합격·최종합격은 KTC 스크리닝 파이프라인 상태, 인터뷰는 Master INTERVIEW 탭(인당 1회), 입사는 KTC Ops Employee — 모두 이메일로 채널 귀속. FYI 지원자는 전체 수(라이브) 기준이고 그중 일부만 파이프라인에 유입돼 서류/AI 단계 수치는 하한값. (채널 외)는 지원 기록이 없는 인터뷰·입사(오프라인 행사·직접 소개 등). 지출은 비용 시트(Alice) 라이브 — 랜딩 광고비 = KTC* 캠페인(KRW 원본), FYI 광고비 = FYI_*KTC* 캠페인, 게재비(ITviec·TopDev·LinkedIn)는 인보이스 VND 원본 × 실시간 환율, VAT 10% 제외 기준(매입세액 공제분), LinkedIn은 자사 채용 슬롯 제외. CPA = 지출 ÷ 지원자. FYI 일반 성장 광고(Job-page 등)는 KTC 공고 몫만 분리할 수 없어 미포함(과소계상 가능).',
+                    '% = 그 채널 지원자 대비 단계 도달률. 서류통과·AI합격·최종통과는 KTC 스크리닝 파이프라인 상태(최종통과=스크리닝 완주, 입사 아님), 인터뷰는 Master INTERVIEW 탭(인당 1회), 입사는 KTC Ops Employee — 모두 이메일로 채널 귀속. FYI 지원자는 전체 수(라이브) 기준이고 그중 일부만 파이프라인에 유입돼 서류/AI 단계 수치는 하한값. (채널 외)는 지원 기록이 없는 인터뷰·입사(오프라인 행사·직접 소개 등). 지출은 비용 시트(Alice) 라이브 — 랜딩 광고비 = KTC* 캠페인(KRW 원본), FYI 광고비 = FYI_*KTC* 캠페인, 게재비(ITviec·TopDev·LinkedIn)는 인보이스 VND 원본 × 실시간 환율, VAT 10% 제외 기준(매입세액 공제분), LinkedIn은 자사 채용 슬롯 제외. CPA = 지출 ÷ 지원자. FYI 일반 성장 광고(Job-page 등)는 KTC 공고 몫만 분리할 수 없어 미포함(과소계상 가능).',
                     '% = stage reached / channel applicants. Screened·AI·Final from the KTC pipeline; interviews from the INTERVIEW tab (once per person); hires from KTC Ops — all attributed by email. FYI applicant count is live; only some entered the pipeline, so screened/AI figures are lower bounds. (off-channel) = interviews/hires with no application record. Spend is live from the cost sheet (KRW); landing spend = KTC* Meta campaigns; CPA = spend ÷ applicants.',
                     '% = đạt giai đoạn / ứng viên kênh. Sàng lọc·AI·Cuối từ pipeline KTC; phỏng vấn từ tab INTERVIEW; trúng tuyển từ KTC Ops — quy nguồn theo email. Số ứng viên FYI là số trực tiếp; chỉ một phần vào pipeline nên các cột sàng lọc/AI là giá trị tối thiểu. Chi phí lấy trực tiếp từ sheet chi phí (KRW); CPA = chi phí ÷ ứng viên.'
                   )}
@@ -685,7 +705,7 @@ export default function KtcSourcesView({ token, lang, dateRange }) {
                     [L('서류통과', 'Screened', 'Đạt sàng lọc'), sel.docPass],
                     [L('AI합격', 'AI passed', 'Đạt PV AI'), sel.aiPass],
                     [L('인터뷰', 'Interview', 'Phỏng vấn'), sel.interviews],
-                    [L('최종합격', 'Final', 'Đạt cuối'), sel.finalPass],
+                    [L('최종통과', 'Screen final', 'Đạt SL cuối'), sel.finalPass],
                     [L('입사', 'Hired', 'Trúng tuyển'), sel.hires],
                   ]
                   const cohortMonths = Object.keys(sel.months || {}).filter(m => m >= '2026-03' && m <= nowMonth).sort()
@@ -717,7 +737,7 @@ export default function KtcSourcesView({ token, lang, dateRange }) {
                                 {th(L('서류통과', 'Screened', 'Đạt sàng lọc'))}
                                 {th(L('AI합격', 'AI passed', 'Đạt PV AI'))}
                                 {th(L('인터뷰', 'Interview', 'Phỏng vấn'))}
-                                {th(L('최종합격', 'Final', 'Đạt cuối'))}
+                                {th(L('최종통과', 'Screen final', 'Đạt SL cuối'))}
                                 {th(L('입사', 'Hired', 'Trúng tuyển'), 'right', { paddingRight: 12 })}
                               </tr>
                             </thead>
@@ -777,7 +797,7 @@ export default function KtcSourcesView({ token, lang, dateRange }) {
                     {th(L('서류통과', 'Screened', 'Đạt sàng lọc'))}
                     {th(L('AI합격', 'AI passed', 'Đạt PV AI'))}
                     {th(L('인터뷰', 'Interviews', 'Phỏng vấn'))}
-                    {th(L('최종합격', 'Final', 'Đạt cuối'))}
+                    {th(L('최종통과', 'Screen final', 'Đạt SL cuối'))}
                     {th(L('입사', 'Hired', 'Trúng tuyển'), 'right', { paddingRight: 14 })}
                   </tr>
                 </thead>
@@ -809,7 +829,7 @@ export default function KtcSourcesView({ token, lang, dateRange }) {
             </div>
             <div style={{ fontSize: 11, color: '#9CA3AF', marginTop: 12, lineHeight: 1.6 }}>
               {L(
-                '공고 원장·상태는 Master 시트 JD EXECUTION 라이브. 지원 건/지원자/서류통과/AI합격/최종합격은 동기화된 지원 데이터, 인터뷰는 Master INTERVIEW 탭(공고코드 추출·인당 1회), 입사는 KTC Ops Employee를 이메일→공고코드로 귀속(채널 외 채용은 미포함). 시트에 코드가 없는 지원은 집계에서 빠질 수 있음.',
+                '공고 원장·상태는 Master 시트 JD EXECUTION 라이브. 지원 건/지원자/서류통과/AI합격/최종통과는 동기화된 지원 데이터, 인터뷰는 Master INTERVIEW 탭(공고코드 추출·인당 1회), 입사는 KTC Ops Employee를 이메일→공고코드로 귀속(채널 외 채용은 미포함). 시트에 코드가 없는 지원은 집계에서 빠질 수 있음.',
                 'JD ledger/status live from the Master sheet. Apps/people/screened/AI/final from synced data; interviews from the INTERVIEW tab (code extracted, once per person); hires attributed via email→job code (off-channel hires excluded). Applications without a job code may be missing.',
                 'Danh sách tin/trạng thái lấy trực tiếp từ Master sheet. Lượt nộp/ứng viên/sàng lọc/AI/cuối từ dữ liệu đã đồng bộ; phỏng vấn từ tab INTERVIEW; trúng tuyển quy nguồn qua email→mã tin.'
               )}

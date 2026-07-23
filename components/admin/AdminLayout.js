@@ -37,7 +37,7 @@ function buildNav(lang) {
       items: [
         { label: L('기업', 'Companies', 'Công ty'), pathname: '/admin/dashboard', tab: 'company' },
         { label: L('이익 지원', 'Revenue', 'Doanh thu'), pathname: '/admin/dashboard', tab: 'revenue' },
-        { label: L('KTC 소싱', 'KTC sources', 'Nguồn KTC'), pathname: '/admin/dashboard', tab: 'ktc-sources' },
+        { label: L('인재 소싱', 'Talent sources', 'Nguồn nhân tài'), pathname: '/admin/dashboard', tab: 'ktc-sources' },
       ],
     },
     {
