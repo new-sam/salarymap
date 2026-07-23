@@ -631,7 +631,8 @@ export default function KtcSourcesView({ token, lang, dateRange }) {
                         {th(L('입사', 'Hired', 'Trúng tuyển'))}
                         {hasCost && th(L('광고비', 'Ad spend', 'Phí QC'))}
                         {hasCost && th(L('게재비', 'Listing fees', 'Phí đăng'))}
-                        {hasCost && th('CPA', 'right', { paddingRight: 14 })}
+                        {hasCost && th('CPA')}
+                        {hasCost && th(L('입사단가', 'Cost/hire', 'Chi phí/tuyển'), 'right', { paddingRight: 14 })}
                       </tr>
                     </thead>
                     <tbody>
@@ -674,11 +675,18 @@ export default function KtcSourcesView({ token, lang, dateRange }) {
                               </td>
                             )}
                             {hasCost && (
-                              <td style={{ padding: '6px 14px 6px 8px', textAlign: 'right', ...num }}>
+                              <td style={{ padding: '6px 8px', textAlign: 'right', ...num }}>
                                 {c.spendKrw == null || isUn ? <span style={{ color: '#DDE1E6' }}>—</span>
                                   : c.spendKrw === 0 ? <span style={{ fontWeight: 700, color: isFyi ? FYI_COLOR : '#0D9488' }}>₩0</span>
                                   : denom > 0 ? <span style={{ fontWeight: 600, color: '#191F28' }}>{Math.round(c.spendKrw / denom).toLocaleString()}{L('원', ' KRW', ' KRW')}</span>
                                   : '—'}
+                              </td>
+                            )}
+                            {hasCost && (
+                              <td style={{ padding: '6px 14px 6px 8px', textAlign: 'right', ...num }}>
+                                {c.spendKrw == null || isUn || !(c.hires > 0) ? <span style={{ color: '#DDE1E6' }}>—</span>
+                                  : c.spendKrw === 0 ? <span style={{ fontWeight: 700, color: isFyi ? FYI_COLOR : '#0D9488' }}>₩0</span>
+                                  : <span style={{ fontWeight: 600, color: '#191F28' }}>{fmtKrw(c.spendKrw / c.hires)}</span>}
                               </td>
                             )}
                           </tr>
@@ -689,9 +697,9 @@ export default function KtcSourcesView({ token, lang, dateRange }) {
                 </div>
                 <div style={{ fontSize: 11, color: '#9CA3AF', lineHeight: 1.6, marginBottom: 20 }}>
                   {L(
-                    '% = 그 채널 지원자 대비 단계 도달률. 서류통과·AI합격·최종통과는 KTC 스크리닝 파이프라인 상태(최종통과=스크리닝 완주, 입사 아님), 인터뷰는 Master INTERVIEW 탭(인당 1회), 입사는 KTC Ops Employee — 모두 이메일로 채널 귀속. FYI 지원자는 전체 수(라이브) 기준이고 그중 일부만 파이프라인에 유입돼 서류/AI 단계 수치는 하한값. (채널 외)는 지원 기록이 없는 인터뷰·입사(오프라인 행사·직접 소개 등). 지출은 비용 시트(Alice) 라이브 — 랜딩 광고비 = KTC* 캠페인(KRW 원본), FYI 광고비 = FYI_*KTC* 캠페인, 게재비(ITviec·TopDev·LinkedIn)는 인보이스 VND 원본 × 실시간 환율, VAT(채용보드 8%·LinkedIn 10%) 제외 기준(매입세액 공제분), LinkedIn은 자사 채용 슬롯 제외. CPA = 지출 ÷ 지원자. FYI 일반 성장 광고(Job-page 등)는 KTC 공고 몫만 분리할 수 없어 미포함(과소계상 가능).',
-                    '% = stage reached / channel applicants. Screened·AI·Final from the KTC pipeline; interviews from the INTERVIEW tab (once per person); hires from KTC Ops — all attributed by email. FYI applicant count is live; only some entered the pipeline, so screened/AI figures are lower bounds. (off-channel) = interviews/hires with no application record. Spend is live from the cost sheet (KRW); landing spend = KTC* Meta campaigns; CPA = spend ÷ applicants.',
-                    '% = đạt giai đoạn / ứng viên kênh. Sàng lọc·AI·Cuối từ pipeline KTC; phỏng vấn từ tab INTERVIEW; trúng tuyển từ KTC Ops — quy nguồn theo email. Số ứng viên FYI là số trực tiếp; chỉ một phần vào pipeline nên các cột sàng lọc/AI là giá trị tối thiểu. Chi phí lấy trực tiếp từ sheet chi phí (KRW); CPA = chi phí ÷ ứng viên.'
+                    '% = 그 채널 지원자 대비 단계 도달률. 서류통과·AI합격·최종통과는 KTC 스크리닝 파이프라인 상태(최종통과=스크리닝 완주, 입사 아님), 인터뷰는 Master INTERVIEW 탭(인당 1회), 입사는 KTC Ops Employee — 모두 이메일로 채널 귀속. FYI 지원자는 전체 수(라이브) 기준이고 그중 일부만 파이프라인에 유입돼 서류/AI 단계 수치는 하한값. (채널 외)는 지원 기록이 없는 인터뷰·입사(오프라인 행사·직접 소개 등). 지출은 비용 시트(Alice) 라이브 — 랜딩 광고비 = KTC* 캠페인(KRW 원본), FYI 광고비 = FYI_*KTC* 캠페인, 게재비(ITviec·TopDev·LinkedIn)는 인보이스 VND 원본 × 실시간 환율, VAT(채용보드 8%·LinkedIn 10%) 제외 기준(매입세액 공제분), LinkedIn은 자사 채용 슬롯 제외. CPA = 지출 ÷ 지원자, 입사단가 = 지출 ÷ 입사(입사 0이면 —). FYI 일반 성장 광고(Job-page 등)는 KTC 공고 몫만 분리할 수 없어 미포함(과소계상 가능).',
+                    '% = stage reached / channel applicants. Screened·AI·Final from the KTC pipeline; interviews from the INTERVIEW tab (once per person); hires from KTC Ops — all attributed by email. FYI applicant count is live; only some entered the pipeline, so screened/AI figures are lower bounds. (off-channel) = interviews/hires with no application record. Spend is live from the cost sheet (KRW); landing spend = KTC* Meta campaigns; CPA = spend ÷ applicants; cost/hire = spend ÷ hires.',
+                    '% = đạt giai đoạn / ứng viên kênh. Sàng lọc·AI·Cuối từ pipeline KTC; phỏng vấn từ tab INTERVIEW; trúng tuyển từ KTC Ops — quy nguồn theo email. Số ứng viên FYI là số trực tiếp; chỉ một phần vào pipeline nên các cột sàng lọc/AI là giá trị tối thiểu. Chi phí lấy trực tiếp từ sheet chi phí (KRW); CPA = chi phí ÷ ứng viên; chi phí/tuyển = chi phí ÷ trúng tuyển.'
                   )}
                 </div>
 
