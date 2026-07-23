@@ -12,11 +12,12 @@ const supabase = createClient(
 const MASTER_SHEET_ID = '1mR1_-a3LmjxAbbox3tTKBu6WYwDbfBYKmPB6TP9EnKI'
 // 비용 시트 (Alice 정리 — 통합 비교표 + Meta 캠페인별 성과). 지출은 KRW.
 const COST_SHEET_ID = '1PEWHeAtx5nfxODQr_Db1soh-scl3Qg5Uw-fnjRziF8A'
-// 통합 비교표의 채널명 → 우리 채널 키
+// 통합 비교표의 채널명 → 우리 채널 키 (시트 표기가 흔들려서 소문자·기호 제거 후 매칭)
 const COST_CHANNEL_MAP = {
-  TopDev: 'top-dev', ITviec: 'ITviec-api', 'Ybox*': 'YBOX', Ybox: 'YBOX',
-  Glints: 'glint', LinkedIn: 'LinkedIn', JobsGO: 'jobs-go', TopCV: 'top-cv',
+  topdev: 'top-dev', itviec: 'ITviec-api', ybox: 'YBOX',
+  glints: 'glint', linkedin: 'LinkedIn', jobsgo: 'jobs-go', topcv: 'top-cv',
 }
+const costChannelKey = (s) => COST_CHANNEL_MAP[String(s || '').toLowerCase().replace(/[^a-z0-9]/g, '')]
 const parseKrw = (s) => {
   const n = parseFloat(String(s || '').replace(/[^0-9.-]/g, ''))
   return Number.isFinite(n) ? n : null
@@ -195,7 +196,7 @@ export default async function handler(req, res) {
       const [cmpRes, metaRes, invRes] = await Promise.all([
         sheets.spreadsheets.values.get({ spreadsheetId: COST_SHEET_ID, range: `'${cmpTab}'!A1:M15` }),
         sheets.spreadsheets.values.get({ spreadsheetId: COST_SHEET_ID, range: `'${metaTab}'!A1:H60` }),
-        sheets.spreadsheets.values.get({ spreadsheetId: COST_SHEET_ID, range: `'${invTab}'!A1:M15` }),
+        sheets.spreadsheets.values.get({ spreadsheetId: COST_SHEET_ID, range: `'${invTab}'!A1:S30` }),
       ])
       // Alice가 컬럼을 수시로 옮기므로 헤더 텍스트('채널'/'지출')로 위치 탐지
       const cmpRows = cmpRes.data.values || []
@@ -205,10 +206,13 @@ export default async function handler(req, res) {
       if (hIdx >= 0) {
         const H = cmpRows[hIdx]
         const chanCol = H.findIndex(c => (c || '').trim() === '채널')
-        const spendCol = H.findIndex(c => (c || '').startsWith('지출'))
+        let spendCol = H.findIndex(c => (c || '').startsWith('지출'))
+        // '지출'이 분류/비용(원) 2단 헤더로 쪼개진 레이아웃 → 하위 헤더의 '비용' 열이 실제 금액
+        const subCostCol = (cmpRows[hIdx + 1] || []).findIndex(c => (c || '').includes('비용'))
+        if (subCostCol >= 0) spendCol = subCostCol
         const postedCol = H.findIndex(c => (c || '').includes('공고수'))
         for (const r of cmpRows.slice(hIdx + 1)) {
-          const key = COST_CHANNEL_MAP[(r[chanCol] || '').trim()]
+          const key = costChannelKey(r[chanCol])
           if (!key) continue
           const spend = parseKrw(r[spendCol])
           if (spend != null) spendByChannel[key] = spend
@@ -237,7 +241,8 @@ export default async function handler(req, res) {
         // 소계 블록의 플랫폼 열 = 합계 열 바로 왼쪽 두 칸 (플랫폼|인보이스|합계|≈KRW)
         const platCol = sumCol - 2
         for (const r of invRows.slice(invH + 1)) {
-          const key = COST_CHANNEL_MAP[(r[platCol] || '').trim()]
+          if (!(r[platCol] || '').trim()) break // 소계 블록은 연속 — 빈 행 이후는 무관한 표(정책 안내 등)
+          const key = costChannelKey(r[platCol])
           const vnd = parseKrw(r[sumCol])
           const m = (r[krwCol] || '').match(/([\d,.]+)\s*만원/)
           if (vnd > 0 && m && vndToKrw == null) { vndToKrw = (parseFloat(m[1].replace(/,/g, '')) * 10000) / vnd; fxSource = 'invoice-derived' }
@@ -246,9 +251,10 @@ export default async function handler(req, res) {
       }
       if (vndToKrw == null) { vndToKrw = 0.054; fxSource = 'fallback-const' }
       // 인보이스 확정 VND가 있는 채널은 그걸 캐넌으로 (통합 비교표의 반올림 KRW보다 정확)
-      // 인보이스 소계는 VAT 포함(시트 명시) → ÷1.1로 VAT 제외 기준 통일 (LinkedIn 슬롯 상세와 동일 기준)
+      // 인보이스 소계는 VAT 포함(시트 명시) → VAT 제외 기준 통일. 채용보드 8%·LinkedIn 10% (시트 분류 명시)
+      const INVOICE_VAT = { 'ITviec-api': 1.08, 'top-dev': 1.08, LinkedIn: 1.1 }
       for (const [key, vnd] of Object.entries(invoiceVnd)) {
-        spendByChannel[key] = (vnd / 1.1) * vndToKrw
+        spendByChannel[key] = (vnd / (INVOICE_VAT[key] || 1.1)) * vndToKrw
       }
 
       // LinkedIn 보정: 내부(자사) 채용 슬롯 제외 — LINKEDIN 탭에서 KTC 공고코드 있는 슬롯만 합산
@@ -256,10 +262,11 @@ export default async function handler(req, res) {
       if (liTab) {
         const liRes = await sheets.spreadsheets.values.get({ spreadsheetId: COST_SHEET_ID, range: `'${liTab}'!A1:N120` })
         const liRows = liRes.data.values || []
-        const liH = liRows.findIndex(r => r.includes('Job code') && r.includes('Cost'))
+        // Cost 헤더가 'Cost (VAT 불포함)' 식으로 주석이 붙기도 함 → 접두 매칭
+        const liH = liRows.findIndex(r => r.includes('Job code') && r.some(c => (c || '').startsWith('Cost')))
         if (liH >= 0) {
           const LH = liRows[liH]
-          const costCol = LH.indexOf('Cost')
+          const costCol = LH.findIndex(c => (c || '').startsWith('Cost'))
           const codeCol = LH.indexOf('Job code')
           let ktcVnd = 0
           const liCodes = new Set()
