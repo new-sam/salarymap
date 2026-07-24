@@ -11,6 +11,7 @@
     { "path": "/api/cron/similar-recommend", "schedule": "0 3 * * *" },
     { "path": "/api/cron/parse-public-resumes", "schedule": "0 5 * * *" },
     { "path": "/api/cron/experiment-alert", "schedule": "0 0 * * *" },
-    { "path": "/api/cron/experiment-pulse", "schedule": "*/15 * * * *" }
+    { "path": "/api/cron/experiment-pulse", "schedule": "*/15 * * * *" },
+    { "path": "/api/cron/ktc-sync", "schedule": "30 22 * * *" }
   ]
 }
