@@ -44,9 +44,19 @@
   .mini { border: 1px solid #d6d3d1; border-radius: 6px; padding: 10px 12px; background: #fafaf9; }
   .mini .mt { font-size: 13px; font-weight: 800; }
   .mini .md { font-size: 12px; color: #57534e; margin-top: 2px; }
-  .own { font-size: 10.5px; font-weight: 800; border-radius: 99px; padding: 1px 8px; margin-left: 6px; vertical-align: 2px; }
-  .own.me { background: #e7e5e4; color: #1c1917; }
-  .own.cf { background: #fef3c7; color: #92400e; }
+
+  /* ---- 넛지 카드 ---- */
+  .nudges { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .ncard { background: #fff; border: 1.5px solid #44403c; border-radius: 8px; padding: 13px 15px; }
+  .ncard .nt { font-size: 14px; font-weight: 800; }
+  .ncard .nt em { font-style: normal; color: #b45309; }
+  .ncard .nd { font-size: 12.5px; color: #57534e; margin-top: 4px; }
+  .ncard .nd b { color: #1c1917; }
+  .ncard .nw {
+    display: inline-block; margin-top: 8px; font-size: 11px; font-weight: 800;
+    background: #f5f5f4; border-radius: 5px; padding: 2px 8px; color: #44403c;
+  }
+  .ncard .nw::before { content: "📍 "; }
   .hookline {
     background: #fffbeb; border: 1.5px solid #fbbf24; border-radius: 8px;
     padding: 10px 14px; margin-top: 10px; font-size: 14px; font-weight: 700;
@@ -151,6 +161,41 @@
   <h1>안녕 <span style="font-size:14px; color:#78716c; font-weight:600;">가칭 · 베트남 화상 한국어 과외</span></h1>
   <div class="q">한 줄: 베트남 학습자가 <b>한국인 튜터</b>를 골라 <b>1시간 단위</b>로 결제하는 화상 과외. 지금 할 일 = <b>₫90,000 체험 구매전환 검증</b></div>
 
+  <!-- ======== 구매 넛지 ======== -->
+  <h2 style="margin-top:0;">구매를 만드는 넛지 <small>무엇이 "결제하기"를 누르게 하나 — 전부 랜딩에 심는다</small></h2>
+  <div class="nudges">
+    <div class="ncard">
+      <div class="nt">① <em>"드라마 속 그 사람이 내 선생님"</em></div>
+      <div class="nd">상품의 본체. 사진과 10초 인사 영상이 설명보다 먼저 온다 — <b>얼굴을 보고 결제를 결심</b>하게 만든다.</div>
+      <span class="nw">메인 히어로 + 튜터 카드 (사진이 화면의 절반)</span>
+    </div>
+    <div class="ncard">
+      <div class="nt">② <em>커피 두 잔 값</em></div>
+      <div class="nd">₫90k는 "교육 투자"가 아니라 <b>충동구매 가능한 돈</b>으로 보이게. 학원 한 달 ₫1.5M+와 비교 프레임.</div>
+      <span class="nw">CTA 버튼에 가격 직접 표기 "체험 ₫90.000"</span>
+    </div>
+    <div class="ncard">
+      <div class="nt">③ <em>별로면 100% 환불</em></div>
+      <div class="nd">처음 사는 사람의 유일한 브레이크 = "돈 날리면 어쩌지". <b>실패 비용을 0으로</b> 만들어 브레이크를 뗀다.</div>
+      <span class="nw">가격 바로 옆 한 줄 (분리하면 못 본다)</span>
+    </div>
+    <div class="ncard">
+      <div class="nt">④ <em>마감된 시간표</em></div>
+      <div class="nd">슬롯 일부가 이미 마감 → <b>인기 있어 보이고, 미루면 놓친다.</b> 되는 서비스처럼 보이는 효과까지 겸용.</div>
+      <span class="nw">튜터 상세 시간 슬롯 (마감 취소선)</span>
+    </div>
+    <div class="ncard">
+      <div class="nt">⑤ <em>덕질이 공부가 된다</em></div>
+      <div class="nd">좋아하는 드라마·아이돌로 배우니 <b>지출의 명분이 "취미"에서 "자기계발"로</b> 바뀐다. 결제 죄책감 제거.</div>
+      <span class="nw">튜터 태그 — "드라마 한국어" "K-pop 회화"</span>
+    </div>
+    <div class="ncard">
+      <div class="nt">⑥ <em>이번 주에 바로 시작</em></div>
+      <div class="nd">결심과 첫 수업 사이가 짧을수록 결제한다. 시간표가 <b>"이번 주"</b>라서 지금 고르면 며칠 안에 수업.</div>
+      <span class="nw">시간표 제목 "Lịch tuần này" + 완료 화면 48시간 연락</span>
+    </div>
+  </div>
+
   <!-- ======== 전략 (토글) ======== -->
   <div class="toggles">
 
@@ -179,13 +224,13 @@
     </details>
 
     <details class="tg">
-      <summary>4P 믹스 <small>Price·경쟁사 = 코파운더</small></summary>
+      <summary>4P 믹스</summary>
       <div class="tg-body">
         <ul>
-          <li><b>Product</b><span class="own me">대표</span> — 1시간 단위 화상 과외. 상품의 얼굴 = 튜터 프로필(사진·소개·인사 영상). 회화 중심, K-콘텐츠 소재</li>
-          <li><b>Price</b><span class="own cf">코파운더</span> — 체험 ₫90k는 검증용, 본가격·튜터 정산율은 경쟁사 조사와 묶어 확정 (Preply·italki·Cambly·로컬 학원·한국계 강의)</li>
-          <li><b>Place</b><span class="own me">대표</span> — 판매 = 웹 랜딩, 수업 = Zoom/Meet. 확장 시 국가별 인프라 없음</li>
-          <li><b>Promotion</b><span class="own me">대표</span> — 비주얼 튜터 자체가 광고 소재. K-콘텐츠 팬 모인 곳 공략</li>
+          <li><b>Product</b> — 1시간 단위 화상 과외. 상품의 얼굴 = 튜터 프로필(사진·소개·인사 영상). 회화 중심, K-콘텐츠 소재</li>
+          <li><b>Price</b> — 체험 ₫90k는 검증용. 본가격·튜터 정산율은 경쟁사 조사와 묶어 확정 (향후 준비 참고)</li>
+          <li><b>Place</b> — 판매 = 웹 랜딩, 수업 = Zoom/Meet. 확장 시 국가별 인프라 없음</li>
+          <li><b>Promotion</b> — 비주얼 튜터 자체가 광고 소재. K-콘텐츠 팬 모인 곳 공략</li>
         </ul>
       </div>
     </details>
@@ -203,11 +248,14 @@
     </details>
 
     <details class="tg">
-      <summary>역할 분담</summary>
+      <summary>향후 준비 <small>검증과 병행하거나 검증 후에 할 것</small></summary>
       <div class="tg-body">
         <ul>
-          <li><b>대표</b> — 전체 구조 · 거시/미시 · GTM · Product/Place/Promotion · 튜터 소싱 기준 · 가설검증 실행</li>
-          <li><b>코파운더</b> — Pricing(본가격·정산 구조) · 경쟁사 조사</li>
+          <li><b>Pricing 확정</b> — 본가격 · 다회권 · 튜터 정산율. 경쟁사 조사와 묶어서 (Preply·italki·Cambly·베트남 로컬 학원·한국계 강의)</li>
+          <li><b>실물 소재</b> — 튜터 4~6명 섭외 · 사진 · 초상권 동의 · 10초 인사 영상</li>
+          <li><b>베트남어 카피 감수</b> — 현지인 검수 없이는 발송 금지</li>
+          <li><b>측정 인프라</b> — GA4 연결(track 스텁 교체) + 리드 저장(시트/서버) + Vercel 배포</li>
+          <li><b>재구매 설계</b> — 체험 → 다회권 전환 흐름. 첫 수업 끝에 다음 시간 바로 잡아주기</li>
         </ul>
       </div>
     </details>
