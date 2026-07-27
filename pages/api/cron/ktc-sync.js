@@ -3,7 +3,7 @@
 // 수동 실행 없이도 최신으로 유지되게 한다 (스태핑 마스터 대시보드가 이 산출물을 읽음).
 // Vercel cron이 Authorization: Bearer ${CRON_SECRET} 헤더로 호출 (daily-hot-post.js와 동일).
 // vercel.json crons: { "path": "/api/cron/ktc-sync", "schedule": "30 22 * * *" }  (22:30 UTC = 07:30 KST)
-import { triggerSheetSync, syncKtcCandidates, syncKtcApplications, syncKtcHires, pushFyiToKtc } from '../../../lib/ktcCandidatesSync'
+import { triggerSheetSync, syncKtcCandidates, syncKtcApplications, syncKtcHires, pushFyiToKtc, syncKtcJobCodes } from '../../../lib/ktcCandidatesSync'
 
 export const config = { maxDuration: 300 }
 
@@ -27,7 +27,16 @@ export default async function handler(req, res) {
       // 입사자(ktc_hires)는 실패해도 나머지는 유지
       try { hires = await syncKtcHires() } catch (e) { console.error('syncKtcHires:', e.message) }
     }
-    res.json({ ok: true, ...stats, applications: apps ? apps.total : null, hires: hires ? hires.total : null, fyiPushed: push.pushed })
+    // FYI 의 KTC 공고에 원장 공고코드(jobs.source_id) 백필 — 새 공고가 게재되면 다음 날 자동 매칭
+    let jobCodes = null
+    try { jobCodes = await syncKtcJobCodes() } catch (e) { console.error('syncKtcJobCodes:', e.message) }
+    res.json({
+      ok: true, ...stats,
+      applications: apps ? apps.total : null,
+      hires: hires ? hires.total : null,
+      fyiPushed: push.pushed,
+      jobCodes: jobCodes ? { set: jobCodes.set, ambiguous: jobCodes.ambiguous.length, conflicts: jobCodes.conflicts.length } : null,
+    })
   } catch (e) {
     console.error('cron ktc-sync:', e)
     res.status(500).json({ error: e.message })
