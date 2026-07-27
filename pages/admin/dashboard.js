@@ -18,6 +18,7 @@ import VerificationsView from '../../components/admin/VerificationsView'
 import CommunityView from '../../components/admin/CommunityView'
 import CompanyView from '../../components/admin/CompanyView'
 import RevenueView from '../../components/admin/RevenueView'
+import PikdiView from '../../components/admin/PikdiView'
 import RecommendView from '../../components/admin/RecommendView'
 import GoalMetricsView from '../../components/admin/GoalMetricsView'
 import {
@@ -1004,6 +1005,11 @@ export default function AdminDashboard() {
         {/* App Metrics Tab */}
         {tab === 'appMetrics' && (
           <AppMetricsView token={token} lang={lang} dateRange={dateRange} />
+        )}
+
+        {/* 픽디 크롤링 — 경쟁사 공고 벤치마킹 열람 전용 (콜드메일 발송/추적 없음) */}
+        {tab === 'pikdi' && (
+          <PikdiView token={token} lang={lang} />
         )}
 
         {/* 광고메일 — 공고 추천 메일 발송/전환 현황 */}

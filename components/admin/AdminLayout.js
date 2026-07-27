@@ -33,6 +33,12 @@ function buildNav(lang) {
       ],
     },
     {
+      label: L('픽디 크롤링', 'Pikdi crawl', 'Crawl Pikdi'),
+      items: [
+        { label: L('픽디 크롤링', 'Pikdi crawl', 'Crawl Pikdi'), pathname: '/admin/dashboard', tab: 'pikdi' },
+      ],
+    },
+    {
       label: L('기업', 'Companies', 'Doanh nghiệp'),
       items: [
         { label: L('기업', 'Companies', 'Công ty'), pathname: '/admin/dashboard', tab: 'company' },

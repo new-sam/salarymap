@@ -1,5 +1,5 @@
 import { createClient } from '@supabase/supabase-js'
-import { findCompanyEmail } from '../../../lib/findEmail'
+import { findCompanyContact } from '../../../lib/findEmail'
 
 export const config = { maxDuration: 60 } // 신규 브랜드 이메일 웹서치(건당 수초) 여유
 
@@ -64,18 +64,22 @@ export default async function handler(req, res) {
       if (have.has(b.brand)) continue
       const roles = [...b.roles]
       const roleKo = ROLE_KO[roles[0]] || roles[0] || null
-      // 이메일 자동 후보 검색(웹서치·best-effort·미검증, 최대 8건/실행) — 발송 전 사람이 반드시 확인
-      let email = null, emailNote = ''
+      // 담당자 이름·이메일 자동 후보 검색(웹서치·best-effort·미검증, 최대 8건/실행) — 사람이 반드시 확인
+      let email = null, contactName = null, emailNote = ''
       if (searched < 8) {
         searched++
         try {
-          const f = await findCompanyEmail(b.brand, roleKo)
-          if (f?.email) { email = f.email; emailNote = ' · [auto·미검증]' }
+          const f = await findCompanyContact(b.brand, roleKo)
+          if (f?.email || f?.contact_name) {
+            email = f.email || null
+            contactName = f.contact_name || null
+            emailNote = ` · [auto·미검증${f.source ? ` src:${f.source}` : ''}]`
+          }
         } catch { /* 검색 실패해도 브랜드는 추가 */ }
       }
       const { error } = await supabase.from('cold_outreach').insert({
         campaign: 'pikdi_targets', owner: 'wsj',
-        company_name: b.brand, contact_name: null, email,
+        company_name: b.brand, contact_name: contactName, email,
         industry_detail: roleKo,
         business_desc: '베트남 현지에서 마케팅·영상·디자인 등 인재를 채용 중',
         memo: `[pikdi-auto ${today}] 직무: ${roles.join(' / ')} · site:${b.siteURL}${emailNote}`,
