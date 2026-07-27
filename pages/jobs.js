@@ -9,7 +9,7 @@ import Icon from '../components/Icon'
 import JobFilterModal from '../components/jobs/JobFilterModal'
 import { DEFAULT_IMAGES, roleLabel, roleGroupKey, roleGroupLabel, jobInCategoryGroup, categoryGroupLabel, JOBS_PER_PAGE } from '../constants/jobs'
 import { COMPANY_PROFILES } from '../data/companyProfiles.js'
-import { formatSalaryCard } from '../utils/salary'
+import { formatSalaryCard, isSalaryNegotiable } from '../utils/salary'
 import { generateCompanyDescription } from '../utils/companyDescription'
 import { getStoredUtm, getApplicationSource } from '../lib/utm'
 
@@ -143,7 +143,7 @@ function JobCard({ job, idx, bump, matched, bookmarked, onOpen, onToggleBookmark
               <span className="jc-dday urgent">{days === 0 ? t('jobs.ddayToday') : t('jobs.ddayShort', { days })}</span>
             )}
           </div>
-          <div className="jc-sal">{Math.round(sal.min / 1e6)}M – {Math.round(sal.max / 1e6)}M VND</div>
+          <div className="jc-sal">{sal.negotiable ? t('jobs.salaryNegotiable') : `${Math.round(sal.min / 1e6)}M – ${Math.round(sal.max / 1e6)}M VND`}</div>
         </div>
         )}
       </div>
@@ -1303,9 +1303,11 @@ export default function JobsPage() {
               </div>
 
               {/* Salary */}
-              {detailJob.salary_min > 0 && (
+              {detailJob.salary_min > 0 ? (
                 <div className="jd-salary">{Math.round(detailJob.salary_min / 1e6)}M – {Math.round(detailJob.salary_max / 1e6)}M VND</div>
-              )}
+              ) : isSalaryNegotiable(detailJob) ? (
+                <div className="jd-salary">{t('jobs.salaryNegotiable')}</div>
+              ) : null}
 
               {/* Tech Stack */}
               {detailJob.tech_stack?.length > 0 && (

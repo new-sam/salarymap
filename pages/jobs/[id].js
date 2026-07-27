@@ -8,6 +8,7 @@ import { useT } from '../../lib/i18n'
 import Icon from '../../components/Icon'
 import { DEFAULT_IMAGES, roleLabel, DEFAULT_WORK_DAYS, DEFAULT_WORK_HOURS, DEFAULT_PAID_LEAVE, DEFAULT_CONTRACT } from '../../constants/jobs'
 import { getStoredUtm } from '../../lib/utm'
+import { isSalaryNegotiable } from '../../utils/salary'
 import { track as trackVisit, getClientId, mirrorClarity } from '../../lib/track'
 
 // 스토리지 URL에서 원본 이력서 파일명 복원 (업로드 시 `${timestamp}_${safeName}`로 저장됨)
@@ -234,9 +235,11 @@ export default function JobDetailPage({ job }) {
 
             {/* Title & Salary */}
             <div className="jd-title">{job.title}</div>
-            {job.salary_min > 0 && (
+            {job.salary_min > 0 ? (
               <div className="jd-salary">{Math.round(job.salary_min / 1e6)}M – {Math.round(job.salary_max / 1e6)}M VND</div>
-            )}
+            ) : isSalaryNegotiable(job) ? (
+              <div className="jd-salary">{t('jobs.salaryNegotiable')}</div>
+            ) : null}
 
             {/* Tech Stack */}
             {job.tech_stack?.length > 0 && (

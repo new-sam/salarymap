@@ -678,7 +678,7 @@ export default function CompanyATSPage() {
             )}
             subtitle={(
               <span className="hidden md:inline">
-                {job.location} · {job.type} · ₫{Math.round(job.salary_min/1e6)}M–{Math.round(job.salary_max/1e6)}M
+                {job.location} · {job.type} · {job.salary_min > 0 ? `₫${Math.round(job.salary_min/1e6)}M–${Math.round(job.salary_max/1e6)}M` : t('jobs.salaryNegotiable')}
               </span>
             )}
             right={(

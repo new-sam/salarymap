@@ -3,6 +3,7 @@ import Head from 'next/head'
 import { useRouter } from 'next/router'
 import { supabase } from '../lib/supabaseClient'
 import { useT } from '../lib/i18n'
+import { isSalaryNegotiable } from '../utils/salary'
 
 export default function SavedJobs() {
   const router = useRouter()
@@ -104,9 +105,9 @@ export default function SavedJobs() {
           savedJobs.map(b => {
             const job = b.jobs
             if (!job) return null
-            const salary = job.salary_min && job.salary_max
+            const salary = job.salary_min > 0 && job.salary_max > 0
               ? `${Math.round(job.salary_min / 1e6)}M–${Math.round(job.salary_max / 1e6)}M VND`
-              : null
+              : isSalaryNegotiable(job) ? t('jobs.salaryNegotiable') : null
             return (
               <div key={b.job_id} className="sv-card">
                 <div className="sv-logo">
