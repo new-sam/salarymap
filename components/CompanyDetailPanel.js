@@ -32,17 +32,14 @@ export default function CompanyDetailPanel({
     if (!isOpen || !company) return
     setDetail(null)
     setVisibleCount(DEFAULT_VISIBLE)
-    setActiveRole(isSubmitted && userRole ? userRole : 'All')
+    // 'All'로 시작 — 카드가 보여주는 회사 전체 범위와 같은 표본이어야 최저/최고가 일치한다.
+    // 내 직무로 열면 카드(전체)와 헤더 건수(전체)만 맞고 최저/최고는 또 달라진다.
+    setActiveRole('All')
     setLoading(true)
     fetch(`/api/company-detail?company=${encodeURIComponent(company)}`)
       .then(r => r.json())
       .then(d => {
         setDetail(d)
-        // If default role has no data, fallback to 'All'
-        if (isSubmitted && userRole && d?.feed) {
-          const hasRoleData = d.feed.some(r => r.role === userRole)
-          if (!hasRoleData) setActiveRole('All')
-        }
         setLoading(false)
       })
       .catch(() => setLoading(false))

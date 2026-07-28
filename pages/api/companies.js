@@ -49,11 +49,11 @@ const BG_POOL = [
 ];
 
 // Map wizard role names to DB role names
+// Design/QA는 submissions에 실제 값으로 존재한다(각 60건/27건). Frontend·Backend로
+// 치환하면 남의 직무 연봉이 카드에 뜨므로 매핑하지 않는다.
 const ROLE_MAP = {
   'Data · AI': 'Data Engineer',
   'PM · PO': 'PM',
-  'Design': 'Frontend',
-  'QA': 'Backend',
 };
 
 function resolveRole(role) {
