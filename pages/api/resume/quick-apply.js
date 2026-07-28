@@ -1,7 +1,6 @@
 import supabase from '../../../lib/supabaseAdmin'
 import { verifyToken } from '../../../lib/campaignToken'
 import { notifyTeamNewApplication } from '../../../lib/notifyTeamNewApplication'
-import { notifyApplicantReceipt } from '../../../lib/notifyApplicantReceipt'
 
 // 콜드메일 공고 랜딩(go-public jobs 캠페인)의 원탭 지원 — 로그인 없이 캠페인 토큰으로
 // 본인 확인 후 프로필의 이력서/정보로 job_applications에 지원을 넣는다.
@@ -60,9 +59,9 @@ export default async function handler(req, res) {
       meta: { campaign, job_id: job.id, job_company: job.company }, user_id: userId,
     }])
 
-    // 지원자 접수확인 + 채용팀 알림 — 일반 지원 플로우와 동일하게 완료까지 await.
+    // 채용팀 알림 — 일반 지원 플로우와 동일하게 완료까지 await. (지원자 접수확인 메일은 폐지)
     if (data?.id) {
-      await Promise.all([notifyApplicantReceipt(data.id), notifyTeamNewApplication(data.id)])
+      await notifyTeamNewApplication(data.id)
     }
 
     return res.status(201).json({ ok: true })
