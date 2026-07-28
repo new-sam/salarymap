@@ -1,5 +1,6 @@
 import supabase from '../../lib/supabaseAdmin'
-import { SALARY_MIN, SALARY_MAX, cleanBounds } from '../../lib/salaryStats'
+import { inSalaryRange, cleanBounds } from '../../lib/salaryStats'
+import { excludeSuspicious } from '../../lib/salaryQuality'
 
 async function fetchAll(query) {
   const PAGE = 1000;
@@ -39,8 +40,8 @@ export default async function handler(req, res) {
 
   if (!rawRows || rawRows.length === 0) return res.status(404).json({ error: 'No data' })
 
-  // 1b. Filter: hard range + IQR outlier removal — 카드(/api/companies RPC)와 동일 정제
-  const hardFiltered = rawRows.filter(r => r.salary >= SALARY_MIN && r.salary <= SALARY_MAX)
+  // 1b. Filter: 슬라이더 기본값(62) 제외 → 하드범위 → IQR — 카드(/api/companies RPC)와 동일 정제
+  const hardFiltered = excludeSuspicious(rawRows).filter(r => inSalaryRange(r.salary))
   const { lower, upper } = cleanBounds(hardFiltered.map(r => r.salary))
   const rows = hardFiltered.filter(r => r.salary >= lower && r.salary <= upper)
 

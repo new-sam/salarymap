@@ -1,6 +1,7 @@
 import supabase from '../../lib/supabaseAdmin';
 import { domainFor } from '../../lib/companyDomains';
 import { cleanSalaries, percentile } from '../../lib/salaryStats';
+import { excludeSuspicious } from '../../lib/salaryQuality';
 
 // Curated background images per company
 const px = id => `https://images.pexels.com/photos/${id}/pexels-photo-${id}.jpeg?auto=compress&cs=tinysrgb&w=800&h=500&fit=crop`;
@@ -134,10 +135,10 @@ async function fetchSalaryStats(role, experience) {
   // Fallback: client-side aggregation (RPC not deployed) — discard any partial RPC data
   for (const k in map) delete map[k];
   const raw = {};
-  let q = supabase.from('submissions').select('company, salary, role, experience');
+  let q = supabase.from('submissions').select('company, salary, role, experience, created_at');
   if (role) q = q.eq('role', role);
   if (experience) q = q.eq('experience', experience);
-  const rows = await fetchAll(q);
+  const rows = excludeSuspicious(await fetchAll(q), experience);
   (rows || []).forEach(s => {
     if (!s.company) return;
     const key = s.company.trim().toLowerCase();
