@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import supabaseAdmin from '../../../../lib/supabaseAdmin';
+import { leadId } from '../../../../lib/ktcMailToken';
 
 // Receives the auth code from Google, exchanges it for an ID token, then signs
 // the user into Supabase via signInWithIdToken. Redirects to /auth/callback
@@ -70,6 +71,24 @@ export default async function handler(req, res) {
         client_id: cid,
         meta: { platform: 'web', provider: 'google' },
       }]);
+
+      // 콜드메일(KTC 지원자) 수신자가 가입하면 전환으로 잇는다. 수신자는 계정이 없어 발송 시점에
+      // user_id 가 없으므로 가입 이메일의 해시(leadId)로 발송 이벤트를 되찾는다 — 쿠키가 아니라
+      // 이메일 기준이라 다른 기기/브라우저에서 가입해도 잡힌다.
+      // user_id 는 비워둔다: 이 캠페인은 회원 대상 top-line 퍼널이 아니라 캠페인별 표에만 집계된다
+      // (집계가 meta.lead 로 사람을 세므로, 조인용 계정 id 는 meta.converted_user 에 남긴다).
+      const lead = u.email ? leadId(u.email) : null;
+      if (lead) {
+        const { data: sentEv } = await supabaseAdmin.from('events')
+          .select('meta').eq('event', 'coldmail_public_sent').eq('meta->>lead', lead).limit(1);
+        if (sentEv?.length) {
+          await supabaseAdmin.from('events').insert([{
+            event: 'coldmail_public_convert',
+            page: '/auth/callback',
+            meta: { campaign: sentEv[0].meta?.campaign || 'coldmail-ktc', lead, converted_user: u.id },
+          }]);
+        }
+      }
     }
   } catch {}
 
