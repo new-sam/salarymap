@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useT } from '../lib/i18n'
+import { percentile } from '../lib/salaryStats'
 import Icon from './Icon'
 
 const DEFAULT_VISIBLE = 5
@@ -89,10 +90,11 @@ export default function CompanyDetailPanel({
     const base = activeRole === 'All' ? detail.feed : detail.feed.filter(r => r.role === activeRole)
     const salaries = base.map(r => r.salary).sort((a, b) => a - b)
     if (!salaries.length) return null
+    // 카드(RPC percentile_cont)와 동일한 보간 백분위 — 카드/패널 중앙값 일치
     return {
-      p25: salaries[Math.floor(salaries.length * 0.25)],
-      median: salaries[Math.floor(salaries.length * 0.5)],
-      p75: salaries[Math.floor(salaries.length * 0.75)],
+      p25: percentile(salaries, 0.25),
+      median: percentile(salaries, 0.5),
+      p75: percentile(salaries, 0.75),
       count: salaries.length,
       min: salaries[0],
       max: salaries[salaries.length - 1],

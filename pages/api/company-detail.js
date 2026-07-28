@@ -1,4 +1,5 @@
 import supabase from '../../lib/supabaseAdmin'
+import { SALARY_MIN, SALARY_MAX, cleanBounds } from '../../lib/salaryStats'
 
 async function fetchAll(query) {
   const PAGE = 1000;
@@ -14,39 +15,33 @@ async function fetchAll(query) {
   return all;
 }
 
-// IQR-based outlier bounds
-function getCleanBounds(salaries) {
-  if (salaries.length < 4) return { lower: -Infinity, upper: Infinity }
-  const sorted = [...salaries].sort((a, b) => a - b)
-  const q1 = sorted[Math.floor(sorted.length * 0.25)]
-  const q3 = sorted[Math.floor(sorted.length * 0.75)]
-  const iqr = q3 - q1
-  return { lower: q1 - 1.5 * iqr, upper: q3 + 1.5 * iqr }
-}
-
 export default async function handler(req, res) {
   const { company, role, experience } = req.query
   if (!company) return res.status(400).json({ error: 'company required' })
 
+  try {
   // 1. Fetch all submissions for this company.
   //    Match case-insensitively (ilike) and re-filter by the same normalized
   //    key the companies list aggregates on (trim + lowercase), so a card that
   //    counts the "momo" bucket (DB stores "MoMo") doesn't open to an empty
   //    panel because of an exact-case `.eq` miss.
+  //    LIKE 메타문자(\ % _)가 회사명에 있으면 패턴이 깨져 500이 나거나
+  //    와일드카드로 다른 회사와 섞이므로 이스케이프.
   const wanted = company.trim().toLowerCase()
+  const pattern = company.replace(/[\\%_]/g, '\\$&')
   const rawRows = (await fetchAll(
     supabase
       .from('submissions')
       .select('company, role, experience, salary, created_at, rating_worklife, rating_salary, rating_growth')
-      .ilike('company', company)
+      .ilike('company', pattern)
       .order('created_at', { ascending: false })
   )).filter(r => (r.company || '').trim().toLowerCase() === wanted)
 
   if (!rawRows || rawRows.length === 0) return res.status(404).json({ error: 'No data' })
 
-  // 1b. Filter: hard range + IQR outlier removal
-  const hardFiltered = rawRows.filter(r => r.salary >= 3 && r.salary <= 300)
-  const { lower, upper } = getCleanBounds(hardFiltered.map(r => r.salary))
+  // 1b. Filter: hard range + IQR outlier removal — 카드(/api/companies RPC)와 동일 정제
+  const hardFiltered = rawRows.filter(r => r.salary >= SALARY_MIN && r.salary <= SALARY_MAX)
+  const { lower, upper } = cleanBounds(hardFiltered.map(r => r.salary))
   const rows = hardFiltered.filter(r => r.salary >= lower && r.salary <= upper)
 
   // 2. Compute summary (only if role + experience provided)
@@ -106,4 +101,8 @@ export default async function handler(req, res) {
     rating,
     totalCount: rows.length
   })
+  } catch (err) {
+    console.error('company-detail API error:', err)
+    return res.status(500).json({ error: err.message })
+  }
 }
