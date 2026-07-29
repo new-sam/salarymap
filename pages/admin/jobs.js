@@ -23,8 +23,12 @@ const EMPTY_JOB = {
   salary_min: 50000000, salary_max: 80000000, description: '', is_active: true,
   image_url: '', logo_url: '', images: [],
   tech_stack: [], benefits: [], company_size: '', hiring_process: '',
-  deadline: '', headcount: '', apply_url: '', is_featured: false,
+  deadline: '', headcount: '', apply_url: '', is_featured: false, source: 'manual',
 }
+
+// 어드민에서 고를 수 있는 공고 구분(jobs.source). ktc는 /ktc 랜딩·KTC 지표의 기준값이고,
+// company_self·크롤 소스(wanted/topdev…)는 여기서 만드는 값이 아니라 선택지에 없다.
+const ADMIN_SOURCES = ['manual', 'ktc']
 
 const COUNTRIES = ['korea','vietnam','global']
 
@@ -273,6 +277,23 @@ export default function AdminJobs() {
                 {editing ? L('공고 수정', 'Edit job') : L('새 공고 등록', 'New job')}
               </div>
 
+              {/* 공고 구분(source) — KTC로 저장하면 /ktc 랜딩과 KTC 지표에 함께 잡힌다 */}
+              <div style={sec}>
+                <div style={secTitle}>{L('공고 구분', 'Job source')}</div>
+                <Chips value={form.source || 'manual'} onChange={v => setForm({ ...form, source: v })}
+                  options={[
+                    { value: 'manual', label: L('FYI 직접등록', 'FYI direct') },
+                    { value: 'ktc', label: 'KTC' },
+                    // 기업 등록·크롤 공고를 수정할 땐 원래 구분을 그대로 보여준다(실수로 바뀌지 않게)
+                    ...(form.source && !ADMIN_SOURCES.includes(form.source) ? [{ value: form.source, label: form.source }] : []),
+                  ]} />
+                {form.source === 'ktc' && (
+                  <div style={{ fontSize: 11.5, color: '#868E96', marginTop: 8 }}>
+                    {L('/jobs 와 /ktc 페이지에 함께 노출됩니다.', 'Shown on both /jobs and the /ktc page.')}
+                  </div>
+                )}
+              </div>
+
               {/* 섹션 순서 = 실제 노출 화면 순서 (사진 → 제목·회사 → 근무조건 → 연봉 → 스택·회사정보 → 설명 → 복지 → 절차 → 지원) */}
               <div style={sec}>
                 <div style={secTitle}>{L('사진', 'Photos')} <span style={hint}>{L('맨 위 히어로로 노출', 'shown as the hero image')}</span></div>
@@ -503,8 +524,10 @@ export default function AdminJobs() {
               const searched = q ? jobs.filter(j => [j.title, j.company, j.location, j.role].some(v => (v || '').toLowerCase().includes(q))) : jobs;
               const pendingCount = searched.filter(j => j.status === 'pending_review').length;
               const companyCount = searched.filter(j => j.source === 'company_self').length;
+              const ktcCount = searched.filter(j => j.source === 'ktc').length;
               const filtered = searched.filter(j => {
                 if (jobFilter === 'company') return j.source === 'company_self';
+                if (jobFilter === 'ktc') return j.source === 'ktc';
                 if (jobFilter === 'pending') return j.status === 'pending_review';
                 return true;
               });
@@ -515,7 +538,7 @@ export default function AdminJobs() {
                 return new Date(b.created_at || 0) - new Date(a.created_at || 0);
               });
               const fmtDate = (d) => d ? new Date(d).toLocaleDateString() : '-';
-              const FILTERS = [['all', L('전체', 'All'), searched.length], ['company', L('기업 등록', 'Company-posted'), companyCount], ['pending', L('승인 대기', 'Pending'), pendingCount]];
+              const FILTERS = [['all', L('전체', 'All'), searched.length], ['company', L('기업 등록', 'Company-posted'), companyCount], ['ktc', 'KTC', ktcCount], ['pending', L('승인 대기', 'Pending'), pendingCount]];
               const chip = { display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 12, fontWeight: 600, color: '#4E5968', background: '#F2F4F6', borderRadius: 8, padding: '4px 9px' };
               const actBtn = { fontSize: 12, fontWeight: 600, color: '#4E5968', background: '#fff', border: '1px solid #E5E8EB', padding: '6px 12px', borderRadius: 8, cursor: 'pointer' };
               return (
@@ -560,6 +583,7 @@ export default function AdminJobs() {
                           {job.type && <span style={chip}>{job.type}</span>}
                           <span style={{ ...chip, color: '#191F28', fontWeight: 700 }}>{isSalaryNegotiable(job) ? L('협의 가능', 'Negotiable') : `${Math.round(job.salary_min/1e6)}–${Math.round(job.salary_max/1e6)}M`}</span>
                           {job.source === 'company_self' && <span style={{ ...chip, background: '#EAF2FE', color: '#1D4ED8' }}>{L('기업등록', 'Company')}</span>}
+                          {job.source === 'ktc' && <span style={{ ...chip, background: '#F3F0FF', color: '#5F3DC4' }}>KTC</span>}
                           {job.is_featured && <span style={{ ...chip, background: '#FEF6E0', color: '#92660E' }}>{L('프리미엄', 'Premium')}</span>}
                         </div>
                         {job.source === 'company_self' && (
