@@ -165,8 +165,10 @@ export default function KtcJobDetail({ job }) {
           backdrop-filter: blur(12px);
           border-top: 1px solid ${c.line};
         }
-        /* 본문 ↔ 푸터 여백은 GlobalFooter 의 marginTop(56) 이 전역으로 준다 — 여기선 보강만. */
-        .ktc-jd-pad { padding-bottom: 32px; }
+        /* 본문 ↔ 푸터 여백. GlobalFooter 의 marginTop 은 투명이라 body 흰색이 드러나는데
+           이 페이지 배경은 #f9f9f9 라 흰 띠가 낀다 → 마진을 끄고 배경 안쪽 padding 으로 준다. */
+        .gfooter { margin-top: 0 !important; }
+        .ktc-jd-pad { padding-bottom: 64px; }
 
         /* 하단 고정 바는 뷰포트 바닥에 떠 있어서 스크롤 끝에서 푸터를 덮는다.
            본문 쪽 padding 으로는 못 막는다(푸터가 본문 뒤에 오므로) → 푸터 자체를 띄운다.
@@ -180,7 +182,7 @@ export default function KtcJobDetail({ job }) {
           /* 헤더(56) + 여유. 본문이 길어도 지원 버튼이 따라온다. */
           .ktc-jd-side { display: block; position: sticky; top: 80px; }
           .ktc-jd-bar { display: none; }
-          .ktc-jd-pad { padding-bottom: clamp(32px, 5vw, 64px); }
+          .ktc-jd-pad { padding-bottom: clamp(64px, 8vw, 104px); }
           /* 사이드 패널에 같은 링크가 있어 본문 인라인 링크는 감춘다 */
           .ktc-jd-site-inline { display: none !important; }
         }

@@ -112,6 +112,10 @@ export default function KtcLanding() {
         .ktc-org-title { margin-top: 14px; font-size: 12.5px; word-break: keep-all; }
         .ktc-org-desc { display: none; }
 
+        /* 맨 아래 Zalo 섹션이 자체 아래 패딩(80px)을 갖고 있어 GlobalFooter 의 marginTop 은 끈다
+           — 안 그러면 120:136 이 돼서 맞춰둔 위:아래 비율이 무너진다. */
+        .gfooter { margin-top: 0 !important; }
+
         /* Zalo 그룹 — 카드 없이 QR + 텍스트만. 좁은 화면에서는 QR 을 위로 올린다.
            fit-content + auto 마진 — 텍스트는 왼쪽 정렬로 두되 QR+텍스트 덩어리 자체는
            가운데. (그냥 두면 1180 컨테이너 왼쪽 끝에 붙어 오른쪽이 텅 빈다.) */

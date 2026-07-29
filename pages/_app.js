@@ -28,7 +28,7 @@ function GlobalFooter() {
   return (
     /* marginTop — 본문과 푸터 사이 여백은 각 페이지가 아니라 여기서 한 번에 준다.
        (푸터가 어두운 배경이라 안쪽 padding 을 키우면 검은 띠만 두꺼워지고 간격은 안 생긴다) */
-    <footer style={{
+    <footer className="gfooter" style={{
       background: '#0a0a09', borderTop: '1px solid rgba(255,255,255,0.06)', marginTop: 56,
       padding: '24px 40px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 24, flexWrap: 'wrap',
     }}>
