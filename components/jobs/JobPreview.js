@@ -28,8 +28,9 @@ function normalize(form, companyName) {
     type: form.type || '',
     location: form.location || '',
     country: form.country || 'vietnam',
-    salary_min: Number(form.salary_min) || 0,
-    salary_max: Number(form.salary_max) || 0,
+    salary_min: form.salary_negotiable ? 0 : Number(form.salary_min) || 0,
+    salary_max: form.salary_negotiable ? 0 : Number(form.salary_max) || 0,
+    salary_negotiable: !!form.salary_negotiable,
     experience_min: Number(form.experience_min) || 0,
     experience_max: Number(form.experience_max) || 0,
     tech_stack: techArr,
@@ -87,9 +88,11 @@ export default function JobPreview({ form, companyName, fullscreen = false, pane
             {job.company_url && <><span className="jd-subline-sep">·</span><span className="jd-subline-web">Website</span></>}
           </div>
 
-          {job.salary_min > 0 && (
+          {job.salary_min > 0 ? (
             <div className="jd-salary">{Math.round(job.salary_min / 1e6)}M – {Math.round(job.salary_max / 1e6)}M VND</div>
-          )}
+          ) : job.salary_negotiable ? (
+            <div className="jd-salary">Negotiable</div>
+          ) : null}
 
           {job.tech_stack.length > 0 && (
             <div className="jd-tech">

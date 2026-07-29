@@ -7,7 +7,7 @@ import { supabase } from '../../lib/supabaseClient'
 import { useAdmin } from '../../lib/adminSwr'
 import Icon from '../../components/Icon'
 import { ROLE_GROUPS } from '../../constants/jobs'
-import { isSalaryNegotiable } from '../../utils/salary'
+import { isSalaryNegotiable, NEGOTIABLE_SOURCES } from '../../utils/salary'
 import KtcLandingJobsView from '../../components/admin/KtcLandingJobsView'
 import JobPreview from '../../components/jobs/JobPreview'
 import { Chips, Dropdown, DatePickerSingle } from '../../components/admin/FormControls'
@@ -79,10 +79,14 @@ export default function AdminJobs() {
 
   const handleSave = async () => {
     setSaving(true)
+    // poster_email/account_company는 목록 API가 붙여준 표시용 필드, salary_negotiable은 폼 전용 —
+    // jobs 테이블에 없는 컬럼이라 그대로 보내면 저장이 통째로 거절된다.
+    const { poster_email, account_company, salary_negotiable, ...jobFields } = form
     const payload = {
-      ...form,
-      salary_min: Number(form.salary_min),
-      salary_max: Number(form.salary_max),
+      ...jobFields,
+      // 협의 가능: 0-0 저장 → 지면에서는 '협의 가능'으로 표시 (utils/salary.js isSalaryNegotiable)
+      salary_min: salary_negotiable ? 0 : Number(form.salary_min),
+      salary_max: salary_negotiable ? 0 : Number(form.salary_max),
       experience_min: Number(form.experience_min),
       experience_max: Number(form.experience_max),
       image_url: form.image_url || null,
@@ -96,13 +100,14 @@ export default function AdminJobs() {
       headcount: form.headcount ? Number(form.headcount) : null,
       apply_url: form.apply_url || null,
     }
-    if (editing) {
-      await fetch('/api/admin/jobs', { method: 'PUT', headers: headers(), body: JSON.stringify({ id: editing.id, ...payload }) })
-      flash(L('수정됨', 'Updated'))
-    } else {
-      await fetch('/api/admin/jobs', { method: 'POST', headers: headers(), body: JSON.stringify(payload) })
-      flash(L('등록됨', 'Created'))
+    const res = editing
+      ? await fetch('/api/admin/jobs', { method: 'PUT', headers: headers(), body: JSON.stringify({ id: editing.id, ...payload }) })
+      : await fetch('/api/admin/jobs', { method: 'POST', headers: headers(), body: JSON.stringify(payload) })
+    if (!res.ok) {
+      const { error } = await res.json().catch(() => ({}))
+      setSaving(false); flash(L('저장 실패: ', 'Save failed: ') + (error || res.status)); return
     }
+    flash(editing ? L('수정됨', 'Updated') : L('등록됨', 'Created'))
     setSaving(false); setEditing(null); setForm(EMPTY_JOB); mutateJobs(); router.push({ pathname: '/admin/jobs', query: { tab: 'jobs' } }, undefined, { shallow: true })
   }
 
@@ -213,7 +218,19 @@ export default function AdminJobs() {
   }
 
   const goTab = (t) => router.push({ pathname: '/admin/jobs', query: { tab: t } }, undefined, { shallow: true })
-  const startEdit = (job) => { setEditing(job); setForm({ ...job, images: job.images || [] }); goTab('job-new') }
+  const startEdit = (job) => {
+    setEditing(job)
+    const negotiable = isSalaryNegotiable(job)
+    setForm({
+      ...job,
+      images: job.images || [],
+      // 협의 가능(0-0) 공고는 체크박스만 켜고 입력칸엔 기본값 노출 (체크 해제 시 바로 쓸 수 있게)
+      salary_min: negotiable ? EMPTY_JOB.salary_min : job.salary_min,
+      salary_max: negotiable ? EMPTY_JOB.salary_max : job.salary_max,
+      salary_negotiable: negotiable,
+    })
+    goTab('job-new')
+  }
   const startNew = () => { setEditing(null); setForm(EMPTY_JOB); goTab('jobs') }
 
   if (auth === 'loading') return <div style={S.center}>Loading...</div>
@@ -358,9 +375,25 @@ export default function AdminJobs() {
               <div style={sec}>
                 <div style={secTitle}>{L('연봉', 'Salary')}</div>
                 <div style={row2}>
-                  <F label={L('연봉 최소 (VND)', 'Min salary (VND)')} value={form.salary_min} type="number" set={v => setForm({ ...form, salary_min: v })} />
-                  <F label={L('연봉 최대 (VND)', 'Max salary (VND)')} value={form.salary_max} type="number" set={v => setForm({ ...form, salary_max: v })} />
+                  <F label={L('연봉 최소 (VND)', 'Min salary (VND)')} value={form.salary_min} type="number" disabled={!!form.salary_negotiable} set={v => setForm({ ...form, salary_min: v })} />
+                  <F label={L('연봉 최대 (VND)', 'Max salary (VND)')} value={form.salary_max} type="number" disabled={!!form.salary_negotiable} set={v => setForm({ ...form, salary_max: v })} />
                 </div>
+                <label style={{ display: 'flex', alignItems: 'center', gap: 9, cursor: 'pointer', marginTop: 12 }}>
+                  <input type="checkbox" checked={!!form.salary_negotiable} onChange={e => setForm({ ...form, salary_negotiable: e.target.checked })} style={{ width: 16, height: 16, flexShrink: 0, accentColor: '#ff4400' }} />
+                  <span style={{ fontSize: 13, fontWeight: 600, color: '#4E5968' }}>{L('급여 협의 가능 (금액 비공개)', 'Salary negotiable (amount hidden)')}</span>
+                </label>
+                {form.salary_negotiable && (
+                  form.source && !NEGOTIABLE_SOURCES.includes(form.source) ? (
+                    <div style={{ fontSize: 11.5, color: '#C92A2A', marginTop: 6 }}>
+                      {L(`크롤 수집 공고(${form.source})는 '협의 가능' 대신 추정 연봉이 노출됩니다 — 실제 금액을 입력하세요.`,
+                         `Crawled job (${form.source}) — an estimated range is shown instead of “Negotiable”. Enter the real amount.`)}
+                    </div>
+                  ) : (
+                    <div style={{ fontSize: 11.5, color: '#868E96', marginTop: 6 }}>
+                      {L("금액 대신 '협의 가능'으로 노출됩니다.", 'Shown as “Negotiable” instead of an amount.')}
+                    </div>
+                  )
+                )}
               </div>
 
               <div style={sec}>
@@ -723,11 +756,12 @@ export default function AdminJobs() {
   )
 }
 
-function F({ label, value, set, type = 'text' }) {
+function F({ label, value, set, type = 'text', disabled = false }) {
   return (
     <div>
       <label style={S.lbl}>{label}</label>
-      <input type={type} value={value || ''} onChange={e => set(e.target.value)} style={S.inp} />
+      <input type={type} value={value || ''} onChange={e => set(e.target.value)} disabled={disabled}
+        style={{ ...S.inp, ...(disabled ? { background: '#F2F4F6', color: '#ADB5BD' } : null) }} />
     </div>
   )
 }
