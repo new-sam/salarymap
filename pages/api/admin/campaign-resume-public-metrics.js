@@ -1,11 +1,10 @@
 import { createClient } from '@supabase/supabase-js'
 import { verifyAdminOrDevStub } from './check'
 
-// "목표지표 - Sean" 콜드메일 공개 전환 탭 데이터.
+// "승주 작업실" 콜드메일 공개 전환 탭 데이터.
 // 비공개 이력서 보유자에게 "공개하면 축하금 이벤트 참여 가능" 콜드메일 발송 → 원클릭 링크로 공개 전환.
 // 퍼널: 발송(coldmail_public_sent) → 클릭(coldmail_public_click) → 전환(coldmail_public_convert).
 // 발송 코호트/전환 모두 events 테이블에 기록(별도 테이블/마이그레이션 불필요).
-const GOAL_PASSWORD = process.env.GOAL_METRICS_PASSWORD || 'wsj11029'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
@@ -32,9 +31,6 @@ async function fetchAll(build) {
 export default async function handler(req, res) {
   const admin = await verifyAdminOrDevStub(req)
   if (!admin) return res.status(401).json({ error: 'Unauthorized' })
-  if ((req.headers['x-goal-pass'] || '') !== GOAL_PASSWORD) {
-    return res.status(403).json({ error: 'bad_pass' })
-  }
 
   try {
     const [evts, targetHead] = await Promise.all([

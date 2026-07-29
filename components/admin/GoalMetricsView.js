@@ -1,20 +1,14 @@
 import { useState, useEffect, useCallback, Fragment } from 'react'
 
-// 개인용 "목표지표 - Sean" — 어드민 인증 위에 개인 비밀번호를 한 겹 더(서버 검증).
+// "승주 작업실" — 어드민 인증으로만 접근(개인 비밀번호 게이트 제거).
 // 상단 탭: [목표 KPI] 이번 달 2 KPI  ·  [광고 성과] 유입/광고 실시간 추적.
-
-const PASS_KEY = 'goalPass'
 
 export default function GoalMetricsView({ token, lang }) {
   const ko = lang !== 'en'
-  const [pass, setPass] = useState('')
-  const [unlocked, setUnlocked] = useState(false)
-  const [input, setInput] = useState('')
   const [view, setView] = useState('kpi')
 
   const [data, setData] = useState(null) // 목표 KPI
   const [error, setError] = useState('')
-  const [loading, setLoading] = useState(false)
 
   const [adData, setAdData] = useState(null) // 광고 성과
   const [adError, setAdError] = useState('')
@@ -36,35 +30,24 @@ export default function GoalMetricsView({ token, lang }) {
   const [spError, setSpError] = useState('')
   const [spLoading, setSpLoading] = useState(false)
 
-  const load = useCallback(async (p) => {
-    if (!token || !p) return
-    setLoading(true)
+  const load = useCallback(async () => {
+    if (!token) return
     setError('')
     try {
-      const res = await fetch('/api/admin/goal-metrics', { headers: { Authorization: `Bearer ${token}`, 'x-goal-pass': p } })
-      if (res.status === 403) {
-        try { sessionStorage.removeItem(PASS_KEY) } catch {}
-        setUnlocked(false)
-        setPass('')
-        setError(ko ? '비밀번호가 틀렸습니다.' : 'Wrong password.')
-        return
-      }
+      const res = await fetch('/api/admin/goal-metrics', { headers: { Authorization: `Bearer ${token}` } })
       if (!res.ok) throw new Error(`(${res.status})`)
       setData(await res.json())
-      setUnlocked(true)
     } catch (e) {
       setError((ko ? '불러오기 실패 ' : 'Load failed ') + e.message)
-    } finally {
-      setLoading(false)
     }
   }, [token, ko])
 
-  const loadAd = useCallback(async (p) => {
-    if (!token || !p) return
+  const loadAd = useCallback(async () => {
+    if (!token) return
     setAdLoading(true)
     setAdError('')
     try {
-      const res = await fetch('/api/admin/ad-metrics', { headers: { Authorization: `Bearer ${token}`, 'x-goal-pass': p } })
+      const res = await fetch('/api/admin/ad-metrics', { headers: { Authorization: `Bearer ${token}` } })
       if (!res.ok) throw new Error(`(${res.status})`)
       setAdData(await res.json())
     } catch (e) {
@@ -74,12 +57,12 @@ export default function GoalMetricsView({ token, lang }) {
     }
   }, [token, ko])
 
-  const loadExp = useCallback(async (p) => {
-    if (!token || !p) return
+  const loadExp = useCallback(async () => {
+    if (!token) return
     setExpLoading(true)
     setExpError('')
     try {
-      const res = await fetch('/api/admin/experiment-metrics', { headers: { Authorization: `Bearer ${token}`, 'x-goal-pass': p } })
+      const res = await fetch('/api/admin/experiment-metrics', { headers: { Authorization: `Bearer ${token}` } })
       if (!res.ok) throw new Error(`(${res.status})`)
       setExpData(await res.json())
     } catch (e) {
@@ -89,12 +72,12 @@ export default function GoalMetricsView({ token, lang }) {
     }
   }, [token, ko])
 
-  const loadRp = useCallback(async (p) => {
-    if (!token || !p) return
+  const loadRp = useCallback(async () => {
+    if (!token) return
     setRpLoading(true)
     setRpError('')
     try {
-      const res = await fetch('/api/admin/experiment-resume-public-metrics', { headers: { Authorization: `Bearer ${token}`, 'x-goal-pass': p } })
+      const res = await fetch('/api/admin/experiment-resume-public-metrics', { headers: { Authorization: `Bearer ${token}` } })
       if (!res.ok) throw new Error(`(${res.status})`)
       setRpData(await res.json())
     } catch (e) {
@@ -104,12 +87,12 @@ export default function GoalMetricsView({ token, lang }) {
     }
   }, [token, ko])
 
-  const loadCm = useCallback(async (p) => {
-    if (!token || !p) return
+  const loadCm = useCallback(async () => {
+    if (!token) return
     setCmLoading(true)
     setCmError('')
     try {
-      const res = await fetch('/api/admin/campaign-resume-public-metrics', { headers: { Authorization: `Bearer ${token}`, 'x-goal-pass': p } })
+      const res = await fetch('/api/admin/campaign-resume-public-metrics', { headers: { Authorization: `Bearer ${token}` } })
       if (!res.ok) throw new Error(`(${res.status})`)
       setCmData(await res.json())
     } catch (e) {
@@ -119,12 +102,12 @@ export default function GoalMetricsView({ token, lang }) {
     }
   }, [token, ko])
 
-  const loadSp = useCallback(async (p) => {
-    if (!token || !p) return
+  const loadSp = useCallback(async () => {
+    if (!token) return
     setSpLoading(true)
     setSpError('')
     try {
-      const res = await fetch('/api/admin/signup-paths', { headers: { Authorization: `Bearer ${token}`, 'x-goal-pass': p } })
+      const res = await fetch('/api/admin/signup-paths', { headers: { Authorization: `Bearer ${token}` } })
       if (!res.ok) throw new Error(`(${res.status})`)
       setSpData(await res.json())
     } catch (e) {
@@ -134,65 +117,32 @@ export default function GoalMetricsView({ token, lang }) {
     }
   }, [token, ko])
 
-  useEffect(() => {
-    let saved = ''
-    try { saved = sessionStorage.getItem(PASS_KEY) || '' } catch {}
-    if (saved) { setPass(saved); load(saved) }
-  }, [load])
+  useEffect(() => { load() }, [load])
 
   // 광고 탭 최초 진입 시 lazy 로드
   useEffect(() => {
-    if (view === 'ad' && unlocked && pass && !adData && !adLoading) loadAd(pass)
-  }, [view, unlocked, pass, adData, adLoading, loadAd])
+    if (view === 'ad' && !adData && !adLoading) loadAd()
+  }, [view, adData, adLoading, loadAd])
 
   // 실험 탭 최초 진입 시 lazy 로드
   useEffect(() => {
-    if (view === 'exp' && unlocked && pass && !expData && !expLoading) loadExp(pass)
-  }, [view, unlocked, pass, expData, expLoading, loadExp])
+    if (view === 'exp' && !expData && !expLoading) loadExp()
+  }, [view, expData, expLoading, loadExp])
 
   // 이력서 공개 전환 실험 탭 최초 진입 시 lazy 로드
   useEffect(() => {
-    if (view === 'resumePublic' && unlocked && pass && !rpData && !rpLoading) loadRp(pass)
-  }, [view, unlocked, pass, rpData, rpLoading, loadRp])
+    if (view === 'resumePublic' && !rpData && !rpLoading) loadRp()
+  }, [view, rpData, rpLoading, loadRp])
 
   // 콜드메일 공개 전환 탭 최초 진입 시 lazy 로드
   useEffect(() => {
-    if (view === 'coldmail' && unlocked && pass && !cmData && !cmLoading) loadCm(pass)
-  }, [view, unlocked, pass, cmData, cmLoading, loadCm])
+    if (view === 'coldmail' && !cmData && !cmLoading) loadCm()
+  }, [view, cmData, cmLoading, loadCm])
 
   // 가입 경로 탭 최초 진입 시 lazy 로드
   useEffect(() => {
-    if (view === 'paths' && unlocked && pass && !spData && !spLoading) loadSp(pass)
-  }, [view, unlocked, pass, spData, spLoading, loadSp])
-
-  function submit(e) {
-    e.preventDefault()
-    const p = input.trim()
-    if (!p) return
-    try { sessionStorage.setItem(PASS_KEY, p) } catch {}
-    setPass(p)
-    setInput('')
-    load(p)
-  }
-
-  // ---- 잠금 화면 ----
-  if (!unlocked) {
-    return (
-      <div style={{ maxWidth: 1200, margin: '0 auto', padding: '48px 16px' }}>
-        <form onSubmit={submit} style={{ maxWidth: 320, margin: '40px auto', textAlign: 'center' }}>
-          <div style={{ fontSize: 40, marginBottom: 12 }}>🔒</div>
-          <div style={{ fontSize: 15, fontWeight: 700, color: '#1d1d1f', marginBottom: 4 }}>{ko ? '목표지표 — Sean' : 'Goal metrics — Sean'}</div>
-          <div style={{ fontSize: 12.5, color: '#86868b', marginBottom: 18 }}>{ko ? '개인 비밀번호를 입력하세요.' : 'Enter your personal password.'}</div>
-          <input type="password" value={input} onChange={(e) => setInput(e.target.value)} autoFocus placeholder={ko ? '비밀번호' : 'Password'}
-            style={{ width: '100%', padding: '11px 14px', fontSize: 14, border: '1px solid #d2d2d7', borderRadius: 10, outline: 'none', marginBottom: 10, boxSizing: 'border-box' }} />
-          <button type="submit" disabled={loading} style={{ width: '100%', padding: '11px 0', fontSize: 14, fontWeight: 700, color: '#fff', background: '#ff4400', border: 'none', borderRadius: 10, cursor: 'pointer', opacity: loading ? 0.6 : 1 }}>
-            {loading ? '…' : ko ? '열기' : 'Unlock'}
-          </button>
-          {error && <div style={{ fontSize: 12.5, color: '#c00', marginTop: 12 }}>{error}</div>}
-        </form>
-      </div>
-    )
-  }
+    if (view === 'paths' && !spData && !spLoading) loadSp()
+  }, [view, spData, spLoading, loadSp])
 
   const tabBtn = (key, label) => (
     <button onClick={() => setView(key)} style={{
@@ -211,10 +161,12 @@ export default function GoalMetricsView({ token, lang }) {
         {tabBtn('resumePublic', ko ? '이력서 공개 실험' : 'Resume-public exp')}
         {tabBtn('coldmail', ko ? '콜드메일 공개' : 'Cold-email public')}
       </div>
-      {view === 'kpi' && <KpiTab data={data} ko={ko} />}
+      {view === 'kpi' && (error
+        ? <div style={{ textAlign: 'center', padding: 40, color: '#c00' }}>{error}</div>
+        : <KpiTab data={data} ko={ko} />)}
       {view === 'paths' && <SignupPathsTab data={spData} loading={spLoading} error={spError} ko={ko} />}
       {view === 'ad' && <AdTab data={adData} loading={adLoading} error={adError} ko={ko} />}
-      {view === 'exp' && <ExperimentTab data={expData} loading={expLoading} error={expError} ko={ko} token={token} pass={pass} />}
+      {view === 'exp' && <ExperimentTab data={expData} loading={expLoading} error={expError} ko={ko} token={token} />}
       {view === 'resumePublic' && <ResumePublicTab data={rpData} loading={rpLoading} error={rpError} ko={ko} />}
       {view === 'coldmail' && <ColdmailPublicTab data={cmData} loading={cmLoading} error={cmError} ko={ko} />}
     </div>
@@ -591,10 +543,10 @@ function AdTab({ data, loading, error, ko }) {
 // 회사 데이터 언락 조건을 "제출" → "제출+로그인"으로 바꾼 실험의 일별 추적.
 // 핵심: 게이트 클릭→로그인 전환율 / 가드: 제출 수(광고 성과 훼손 여부).
 // 실험 스위치 — app_flags 원클릭 롤백. 끄면 재배포 없이 즉시(최대 60초 캐시) 반영.
-function FlagSwitches({ token, pass, ko }) {
+function FlagSwitches({ token, ko }) {
   const [flags, setFlags] = useState(null)
   const [busy, setBusy] = useState('')
-  const headers = { Authorization: `Bearer ${token}`, 'x-goal-pass': pass, 'Content-Type': 'application/json' }
+  const headers = { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }
 
   const loadFlags = useCallback(async () => {
     try {
@@ -602,7 +554,7 @@ function FlagSwitches({ token, pass, ko }) {
       if (res.ok) setFlags(await res.json())
       else setFlags({ error: `(${res.status})` })
     } catch { setFlags({ error: 'load failed' }) }
-  }, [token, pass]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [token]) // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => { loadFlags() }, [loadFlags])
 
@@ -665,7 +617,7 @@ function FlagSwitches({ token, pass, ko }) {
   )
 }
 
-function ExperimentTab({ data, loading, error, ko, token, pass }) {
+function ExperimentTab({ data, loading, error, ko, token }) {
   if (loading || !data) return <div style={{ textAlign: 'center', padding: 40, color: '#666' }}>{ko ? '불러오는 중…' : 'Loading…'}</div>
   if (error) return <div style={{ textAlign: 'center', padding: 40, color: '#c00' }}>{error}</div>
   if (data.error) return <div style={{ textAlign: 'center', padding: 40, color: '#c00' }}>{data.error}</div>
@@ -710,7 +662,7 @@ function ExperimentTab({ data, loading, error, ko, token, pass }) {
           : `vs ${b.days}-day baseline · as of ${new Date(data.generatedAt).toLocaleString('en-US')}`}
       </div>
 
-      <FlagSwitches token={token} pass={pass} ko={ko} />
+      <FlagSwitches token={token} ko={ko} />
 
       {/* 롤백 기준 — 실험 전 7일 평균 대비 최근 3 완결일 평균. 기준 도달 시 즉시 롤백 */}
       {data.rollback && (

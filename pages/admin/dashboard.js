@@ -1017,7 +1017,7 @@ export default function AdminDashboard() {
           <RecommendView token={token} lang={lang} />
         )}
 
-        {/* Personal · 목표지표 — Sean (개인 비밀번호 게이트) */}
+        {/* Personal · 승주 작업실 */}
         {tab === 'goals' && (
           <GoalMetricsView token={token} lang={lang} />
         )}

@@ -2,9 +2,7 @@ import { createClient } from '@supabase/supabase-js'
 import { verifyAdminOrDevStub } from './check'
 import { isExcludedSignup, isExcludedApplication } from '../../../lib/admin-metrics'
 
-// 개인용 "목표지표 - Sean" 탭 데이터. 어드민 인증 위에 개인 비밀번호를 한 겹 더 건다.
-// 비번은 클라 번들에 안 나가도록 서버에서만 검증한다(헤더 x-goal-pass).
-const GOAL_PASSWORD = process.env.GOAL_METRICS_PASSWORD || 'wsj11029'
+// "승주 작업실" 탭 데이터. 어드민 인증으로만 접근한다.
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
@@ -162,9 +160,6 @@ async function enterpriseAppsKpi() {
 export default async function handler(req, res) {
   const admin = await verifyAdminOrDevStub(req)
   if (!admin) return res.status(401).json({ error: 'Unauthorized' })
-  if ((req.headers['x-goal-pass'] || '') !== GOAL_PASSWORD) {
-    return res.status(403).json({ error: 'bad_pass' })
-  }
 
   try {
     const [signups, enterpriseApps] = await Promise.all([signupKpi(), enterpriseAppsKpi()])

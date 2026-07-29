@@ -2,9 +2,7 @@ import { createClient } from '@supabase/supabase-js'
 import { verifyAdminOrDevStub } from './check'
 import { isExcludedSignup } from '../../../lib/admin-metrics'
 
-// "목표지표 — Sean" 페이지의 [광고 성과] 탭 데이터 — 유입/광고 실시간 추적.
-// goal-metrics와 동일한 개인 비밀번호 게이트(x-goal-pass, 서버 검증).
-const GOAL_PASSWORD = process.env.GOAL_METRICS_PASSWORD || 'wsj11029'
+// "승주 작업실" 페이지의 [광고 성과] 탭 데이터 — 유입/광고 실시간 추적.
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
@@ -92,7 +90,6 @@ const topN = (obj, n, total) =>
 export default async function handler(req, res) {
   const admin = await verifyAdminOrDevStub(req)
   if (!admin) return res.status(401).json({ error: 'Unauthorized' })
-  if ((req.headers['x-goal-pass'] || '') !== GOAL_PASSWORD) return res.status(403).json({ error: 'bad_pass' })
 
   try {
     const sinceIso = new Date(Date.now() - WINDOW_DAYS * 864e5).toISOString()
