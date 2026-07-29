@@ -1,0 +1,86 @@
+<!--
+  [확정안 · OneClick] KTC 리드 → FYI 유입 콜드메일 (한글 확인용)
+  포지셔닝: FYI = KTC가 만든 채용 플랫폼 / 목표 = FYI 가입
+  훅: "이력서 등록, 지원 전부 클릭 한 번에" + 낮은 경쟁률(구직자당 오퍼 3.7개)
+  개인화 변수: {{name}} = 호칭(tên), {{position}} = 최신 지원포지션
+  {{ctaUrl}} = 공고 목록(/jobs)로 연결, {{unsubscribeUrl}} = 수신거부
+  샘플값: name="Tây", position="Full-stack Developer"
+  ※ '983'은 공고+기업 합산 표기값(실데이터 513+250=763) — 집계 기준 확인 필요
+-->
+<!doctype html>
+<html lang="ko">
+<head><meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" /><title>FYI 콜드메일 (한글 확정안)</title></head>
+<body style="margin:0;padding:24px 0;background:#f2f4f6;">
+
+<!-- [본문 시작] -->
+<div style="font-family:'Pretendard','Segoe UI',Roboto,'Apple SD Gothic Neo',Arial,sans-serif;color:#191F28;max-width:560px;margin:0 auto;background:#ffffff;border-radius:16px;overflow:hidden;border:1px solid #E5E8EB;">
+
+  <div style="padding:22px 32px;border-bottom:1px solid #F2F4F6;">
+    <span style="font-size:22px;font-weight:900;letter-spacing:-0.5px;color:#ff6000;">FYI</span>
+    <span style="font-size:11px;font-weight:700;color:#8B95A1;letter-spacing:0.5px;margin-left:8px;">베트남 IT 채용 플랫폼</span>
+  </div>
+
+  <div style="padding:32px;">
+
+    <h1 style="margin:0 0 18px;font-size:27px;line-height:1.35;font-weight:800;color:#191F28;letter-spacing:-0.7px;">
+      이력서 등록, 지원 전부<br />
+      <span style="color:#ff6000;">클릭 한 번</span>에
+    </h1>
+
+    <p style="margin:0 0 16px;font-size:15px;line-height:1.7;color:#4E5968;">
+      안녕하세요 <b style="color:#191F28;">{{name}}</b>님,<br />
+      얼마 전 <b>K-Tech College</b>를 통해 <b>{{position}}</b> 포지션에 지원해 주셨죠.
+      공고마다 이력서를 새로 넣고 양식을 다시 채우는 것 &mdash; <b style="color:#191F28;">번거롭지 않으셨나요?</b>
+    </p>
+
+    <p style="margin:0 0 16px;font-size:15px;line-height:1.7;color:#4E5968;">
+      <b>FYI</b>는 KTC가 만든 <b>채용 플랫폼</b>입니다.
+      프로필을 한 번 올려두면 여러 공고에 <b style="color:#191F28;">원클릭으로 지원</b>할 수 있고,
+      채용 담당자들이 당신의 프로필을 보고 <b style="color:#191F28;">직접 오퍼를 보낼 수도</b> 있어요.
+    </p>
+
+    <!-- 소셜 프루프 -->
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:separate;border-spacing:8px;margin:0 -8px 8px;">
+      <tr>
+        <td width="50%" style="background:#F9F9F9;border:1px solid #F2F4F6;border-radius:12px;padding:16px 12px;text-align:center;">
+          <div style="font-size:23px;font-weight:900;color:#ff6000;letter-spacing:-0.5px;">3.7<span style="font-size:13px;font-weight:800;">개</span></div>
+          <div style="font-size:12px;color:#8B95A1;margin-top:5px;">구직자 1인당 기회</div>
+        </td>
+        <td width="50%" style="background:#F9F9F9;border:1px solid #F2F4F6;border-radius:12px;padding:16px 12px;text-align:center;">
+          <div style="font-size:23px;font-weight:900;color:#ff6000;letter-spacing:-0.5px;">983</div>
+          <div style="font-size:12px;color:#8B95A1;margin-top:5px;">누적 공고 · 기업</div>
+        </td>
+      </tr>
+    </table>
+
+    <div style="text-align:center;margin:28px 0;">
+      <a href="{{ctaUrl}}"
+         style="display:inline-block;background:#ff6000;color:#ffffff;font-size:16px;font-weight:800;text-decoration:none;padding:15px 32px;border-radius:12px;letter-spacing:-0.3px;">
+        FYI에서 원클릭 지원 시작 →
+      </a>
+    </div>
+
+    <div style="background:#F9F9F9;border:1px solid #F2F4F6;border-radius:12px;padding:18px 20px;margin:24px 0 8px;">
+      <p style="margin:0 0 10px;font-size:13px;font-weight:800;color:#191F28;">FYI에서 할 수 있는 것</p>
+      <p style="margin:0 0 7px;font-size:13px;line-height:1.6;color:#4E5968;">⚡ &nbsp;프로필 하나로 여러 공고에 원클릭 지원</p>
+      <p style="margin:0 0 7px;font-size:13px;line-height:1.6;color:#4E5968;">👀 &nbsp;채용 담당자가 내 프로필을 확인하고 직접 오퍼</p>
+      <p style="margin:0;font-size:13px;line-height:1.6;color:#4E5968;">💼 &nbsp;KTC 공고부터 다양한 기업까지 한 곳에서</p>
+    </div>
+
+  </div>
+
+  <div style="padding:20px 32px 28px;border-top:1px solid #F2F4F6;">
+    <p style="margin:0 0 6px;font-size:12px;line-height:1.6;color:#8B95A1;">
+      본 메일은 K-Tech College에 지원하신 분께 FYI 서비스를 안내드리기 위해 발송되었습니다.
+    </p>
+    <p style="margin:0;font-size:12px;line-height:1.6;color:#8B95A1;">
+      더 이상 받고 싶지 않으시면 <a href="{{unsubscribeUrl}}" style="color:#8B95A1;text-decoration:underline;">수신 거부</a>를 눌러주세요.
+      &nbsp;·&nbsp; FYI · salary-fyi.com
+    </p>
+  </div>
+
+</div>
+<!-- [본문 끝] -->
+
+</body>
+</html>

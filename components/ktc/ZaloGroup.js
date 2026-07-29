@@ -26,7 +26,7 @@ export default function ZaloGroup() {
   return (
     /* 위쪽 패딩 0 — 바로 위 FAQ 도 같은 흰 배경(sectionAlt)이라 그쪽 아래 패딩(120px)이
        그대로 간격이 된다. 여기에 또 120 을 주면 240px 짜리 빈 공백이 생긴다. */
-    <section style={{ ...s.sectionAlt, padding: '0 0 clamp(28px, 4.5vw, 56px)' }}>
+    <section style={{ ...s.sectionAlt, padding: '0 0 clamp(44px, 6vw, 80px)' }}>
       <div style={s.container}>
         <Reveal>
           <div className="ktc-zalo">

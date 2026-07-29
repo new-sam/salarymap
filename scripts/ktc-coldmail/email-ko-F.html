@@ -1,0 +1,73 @@
+<!--
+  [F안] KTC 리드 → FYI 유입 콜드메일 (한글 확인용)
+  훅: 다음 단계 연결 — "KTC 지원, 그 다음은요? 내 연봉부터 확인하세요"
+  개인화 변수: {{name}} = 호칭(tên), {{position}} = 최신 지원포지션
+  샘플값: name="Tây", position="Full-stack Developer"
+  * 결과를 기다리는 지금이 몸값 점검의 적기 → 자연스럽게 FYI로 연결.
+-->
+<!doctype html>
+<html lang="ko">
+<head><meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" /><title>FYI 콜드메일 F안 (한글)</title></head>
+<body style="margin:0;padding:24px 0;background:#f2f4f6;">
+
+<!-- [본문 시작] -->
+<div style="font-family:'Pretendard','Segoe UI',Roboto,'Apple SD Gothic Neo',Arial,sans-serif;color:#191F28;max-width:560px;margin:0 auto;background:#ffffff;border-radius:16px;overflow:hidden;border:1px solid #E5E8EB;">
+
+  <div style="padding:22px 32px;border-bottom:1px solid #F2F4F6;">
+    <span style="font-size:22px;font-weight:900;letter-spacing:-0.5px;color:#ff6000;">FYI</span>
+    <span style="font-size:11px;font-weight:700;color:#8B95A1;letter-spacing:0.5px;margin-left:8px;">FOR YOUR ‘SALARY’ INFORMATION</span>
+  </div>
+
+  <div style="padding:32px;">
+
+    <p style="margin:0 0 20px;font-size:15px;line-height:1.65;color:#4E5968;">
+      안녕하세요 <b style="color:#191F28;">{{name}}</b>님,
+    </p>
+
+    <h1 style="margin:0 0 16px;font-size:22px;line-height:1.4;font-weight:800;color:#191F28;letter-spacing:-0.5px;">
+      KTC 지원, 그 다음은요?<br />
+      <span style="color:#ff6000;">내 연봉</span>부터 확인하세요
+    </h1>
+
+    <p style="margin:0 0 16px;font-size:15px;line-height:1.7;color:#4E5968;">
+      얼마 전 <b>K-Tech College</b>를 통해 <b>{{position}}</b> 포지션에 지원해 주셨죠.
+      결과를 기다리는 지금이, <b style="color:#191F28;">내 몸값을 점검하기 딱 좋은 때</b>예요.
+      다음 오퍼가 왔을 때 흔들리지 않으려면, 기준선이 필요하니까요.
+    </p>
+
+    <p style="margin:0 0 24px;font-size:15px;line-height:1.7;color:#4E5968;">
+      <b>FYI</b>는 베트남 IT 현직자들의 <b>실제 연봉 데이터</b>를 모았습니다.
+      내 직무·경력을 넣으면 <b>내가 시장 대비 적게 받고 있는지 30초 만에</b> 확인할 수 있어요.
+    </p>
+
+    <div style="text-align:center;margin:28px 0;">
+      <a href="{{ctaUrl}}"
+         style="display:inline-block;background:#ff6000;color:#ffffff;font-size:16px;font-weight:800;text-decoration:none;padding:15px 32px;border-radius:12px;letter-spacing:-0.3px;">
+        내 연봉, 시장가와 비교하기 →
+      </a>
+    </div>
+
+    <div style="background:#F9F9F9;border:1px solid #F2F4F6;border-radius:12px;padding:18px 20px;margin:24px 0 8px;">
+      <p style="margin:0 0 10px;font-size:13px;font-weight:800;color:#191F28;">FYI에서 할 수 있는 것</p>
+      <p style="margin:0 0 7px;font-size:13px;line-height:1.6;color:#4E5968;">📊 &nbsp;직무·경력별 실제 연봉 분포 확인</p>
+      <p style="margin:0 0 7px;font-size:13px;line-height:1.6;color:#4E5968;">💼 &nbsp;KTC 외에도 계속 올라오는 새 채용 공고</p>
+      <p style="margin:0;font-size:13px;line-height:1.6;color:#4E5968;">🔔 &nbsp;내 직무 맞춤 공고 알림</p>
+    </div>
+
+  </div>
+
+  <div style="padding:20px 32px 28px;border-top:1px solid #F2F4F6;">
+    <p style="margin:0 0 6px;font-size:12px;line-height:1.6;color:#8B95A1;">
+      본 메일은 K-Tech College에 지원하신 분께 FYI 서비스를 안내드리기 위해 발송되었습니다.
+    </p>
+    <p style="margin:0;font-size:12px;line-height:1.6;color:#8B95A1;">
+      더 이상 받고 싶지 않으시면 <a href="{{unsubscribeUrl}}" style="color:#8B95A1;text-decoration:underline;">수신 거부</a>를 눌러주세요.
+      &nbsp;·&nbsp; FYI · salary-fyi.com
+    </p>
+  </div>
+
+</div>
+<!-- [본문 끝] -->
+
+</body>
+</html>
