@@ -112,10 +112,14 @@ export default function KtcLanding() {
         .ktc-org-title { margin-top: 14px; font-size: 12.5px; word-break: keep-all; }
         .ktc-org-desc { display: none; }
 
-        /* Zalo 그룹 — 카드 없이 QR + 텍스트만. 좁은 화면에서는 QR 을 위로 올린다. */
+        /* Zalo 그룹 — 카드 없이 QR + 텍스트만. 좁은 화면에서는 QR 을 위로 올린다.
+           fit-content + auto 마진 — 텍스트는 왼쪽 정렬로 두되 QR+텍스트 덩어리 자체는
+           가운데. (그냥 두면 1180 컨테이너 왼쪽 끝에 붙어 오른쪽이 텅 빈다.) */
         .ktc-zalo {
           display: flex; flex-direction: column; align-items: flex-start;
           gap: 24px;
+          width: fit-content; max-width: 100%;
+          margin-left: auto; margin-right: auto;
         }
         .ktc-zalo-qr { width: 140px; height: 140px; }
         .ktc-zalo-title { font-size: 21px; }
