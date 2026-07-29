@@ -40,7 +40,10 @@ export default function KtcJobDetail({ job }) {
       </Head>
 
       <div className="ktc-page" style={{ background: c.bg, color: c.text, minHeight: '100vh' }}>
-        <div className="ktc-jd-pad" style={{ ...s.container, paddingTop: 28 }}>
+        {/* padding 을 인라인에서 한 번에 조립한다 — s.container 가 padding shorthand 를
+            인라인으로 박아서, CSS 클래스의 padding-bottom 은 인라인에 밀려 먹지 않는다.
+            아래 여백만 --ktc-jd-pb 로 빼서 미디어쿼리로 바꾼다. */}
+        <div className="ktc-jd-pad" style={{ ...s.container, padding: '28px clamp(18px, 4vw, 40px) var(--ktc-jd-pb)' }}>
           <Link
             href="/ktc#jobs"
             style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 13.5, fontWeight: 700, color: c.textDim }}
@@ -154,8 +157,8 @@ export default function KtcJobDetail({ job }) {
       <style>{`
         /* 모바일: 사이드 패널을 감추고 하단 고정 바로 대체 — 상단을 차지하지 않는다.
            바 높이만큼 본문 아래 여백을 줘서 마지막 내용이 가리지 않게 한다. */
-        /* 바 높이 = 위아래 padding 10 + 버튼 48. 푸터 여백 계산과 한 값을 공유한다. */
-        :root { --ktc-jd-bar: 68px; }
+        /* 바 실측 높이(위아래 padding 10 + 버튼). 푸터 아래 여백 계산과 한 값을 공유한다. */
+        :root { --ktc-jd-bar: 72px; }
         .ktc-jd { display: grid; grid-template-columns: 1fr; gap: 28px; }
         .ktc-jd-side { display: none; }
         .ktc-jd-bar {
@@ -168,7 +171,7 @@ export default function KtcJobDetail({ job }) {
         /* 본문 ↔ 푸터 여백. GlobalFooter 의 marginTop 은 투명이라 body 흰색이 드러나는데
            이 페이지 배경은 #f9f9f9 라 흰 띠가 낀다 → 마진을 끄고 배경 안쪽 padding 으로 준다. */
         .gfooter { margin-top: 0 !important; }
-        .ktc-jd-pad { padding-bottom: 64px; }
+        .ktc-jd-pad { --ktc-jd-pb: 64px; }
 
         /* 하단 고정 바는 뷰포트 바닥에 떠 있어서 스크롤 끝에서 푸터를 덮는다.
            본문 쪽 padding 으로는 못 막는다(푸터가 본문 뒤에 오므로) → 푸터 자체를 띄운다.
@@ -182,7 +185,7 @@ export default function KtcJobDetail({ job }) {
           /* 헤더(56) + 여유. 본문이 길어도 지원 버튼이 따라온다. */
           .ktc-jd-side { display: block; position: sticky; top: 80px; }
           .ktc-jd-bar { display: none; }
-          .ktc-jd-pad { padding-bottom: clamp(64px, 8vw, 104px); }
+          .ktc-jd-pad { --ktc-jd-pb: clamp(64px, 8vw, 104px); }
           /* 사이드 패널에 같은 링크가 있어 본문 인라인 링크는 감춘다 */
           .ktc-jd-site-inline { display: none !important; }
         }
