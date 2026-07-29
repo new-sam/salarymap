@@ -9,6 +9,8 @@ import { ANCHOR, BRAND, c, s } from './ktcStyles';
    상세는 인라인 패널이 아니라 /ktc/jobs/[id] 페이지 전환으로 연다. */
 
 const WORK_TYPE_ORDER = ['Onsite', 'Hybrid', 'Remote'];
+// 넓은 화면 직무 칩 순서 — 목록에 없는 값은 뒤에 알파벳순으로 붙는다
+const CATEGORY_ORDER = ['IT', 'Designer', 'UI/UX', 'Marketing', 'HR', 'Business'];
 /* 한 페이지 개수는 그리드 열 수에 맞춘다 — 데스크톱 3열이면 3x3=9.
    모바일은 1열로 쌓이므로 스크롤이 길어지지 않게 4개만. */
 const WIDE_QUERY = '(min-width: 768px)';
@@ -340,6 +342,17 @@ export default function JobBoard() {
     return () => { alive = false; };
   }, []);
 
+  /* 직무 필터는 화면에 따라 다르다.
+     - 넓은 화면: 실제 데이터의 category 를 그대로 노출(IT·Designer·UI/UX·Marketing·HR·Business)
+     - 좁은 화면: 칩이 넘쳐서 IT / Non-IT 두 갈래로만 접는다
+     둘 다 데이터에 있는 값만 보여준다 — 결과가 0건인 필터를 만들지 않는다. */
+  const categories = useMemo(() => {
+    const present = new Set((jobs || []).map((j) => j.category).filter(Boolean));
+    return CATEGORY_ORDER.filter((x) => present.has(x)).concat(
+      [...present].filter((x) => !CATEGORY_ORDER.includes(x)).sort()
+    );
+  }, [jobs]);
+
   // 근무 형태 옵션은 실제 데이터에 있는 값만 — 비어 있는 필터를 노출하지 않는다
   const workTypes = useMemo(() => {
     const present = new Set((jobs || []).map((j) => j.workType).filter(Boolean));
@@ -348,12 +361,13 @@ export default function JobBoard() {
 
   const filtered = useMemo(
     () =>
-      (jobs || []).filter(
-        (j) =>
-          (category === 'all' || j.group === (category === 'it' ? 'IT' : 'Non-IT')) &&
-          (workType === 'all' || j.workType === workType)
-      ),
-    [jobs, category, workType]
+      (jobs || []).filter((j) => {
+        const okCat =
+          category === 'all' ||
+          (wide ? j.category === category : j.group === (category === 'it' ? 'IT' : 'Non-IT'));
+        return okCat && (workType === 'all' || j.workType === workType);
+      }),
+    [jobs, category, workType, wide]
   );
 
   const pageSize = wide ? PAGE_SIZE_WIDE : PAGE_SIZE_NARROW;
@@ -362,6 +376,8 @@ export default function JobBoard() {
 
   // 필터가 바뀌거나 화면 폭이 바뀌어 페이지 수가 줄면 첫 페이지로
   useEffect(() => { setPage(1); }, [category, workType, wide]);
+  // wide 여부에 따라 category 값의 의미가 달라진다('IT' vs 'it') — 전환 시 전체로 되돌린다
+  useEffect(() => { setCategory('all'); }, [wide]);
   useEffect(() => { setPage((p) => (p > totalPages ? 1 : p)); }, [totalPages]);
 
   const loading = jobs === null && !failed;
@@ -383,11 +399,14 @@ export default function JobBoard() {
         {/* 필터 바 */}
         <div style={{ marginTop: 30, display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
           <div style={{ display: 'flex', gap: 4, padding: 4, borderRadius: 10, background: c.surfaceHi, border: `1px solid ${c.line}` }}>
-            {[
-              { key: 'all', label: t('ktc.jobs.filter.all') },
-              { key: 'it', label: t('ktc.jobs.filter.it') },
-              { key: 'nonit', label: t('ktc.jobs.filter.nonit') },
-            ].map((f) => (
+            {(wide
+              ? [{ key: 'all', label: t('ktc.jobs.filter.all') }, ...categories.map((x) => ({ key: x, label: x }))]
+              : [
+                  { key: 'all', label: t('ktc.jobs.filter.all') },
+                  { key: 'it', label: t('ktc.jobs.filter.it') },
+                  { key: 'nonit', label: t('ktc.jobs.filter.nonit') },
+                ]
+            ).map((f) => (
               <button
                 key={f.key}
                 onClick={() => setCategory(f.key)}
@@ -399,6 +418,7 @@ export default function JobBoard() {
                   fontSize: 13,
                   fontWeight: 750,
                   fontFamily: 'inherit',
+                  whiteSpace: 'nowrap',
                   background: category === f.key ? BRAND : 'transparent',
                   color: category === f.key ? '#fff' : c.textDim,
                 }}

@@ -113,11 +113,14 @@ export default function Hero() {
             </h1>
 
             {/* 번역문에 <br />이 들어 있어 줄바꿈 위치를 언어별로 고정한다
-                (ko: '…선발·교육해' 뒤 / vi: '…của Việt Nam,' 뒤). */}
+                (ko: '…선발·교육해' 뒤 / vi: '…của Việt Nam,' 뒤).
+                width:fit-content — 고정 max-width 를 쓰면 폰트만 vw 로 커지고 상자는 그대로라
+                넓은 화면에서 오히려 줄이 하나 더 생긴다. 상자를 가장 긴 줄에 맞춘다. */}
             <p
               style={{
                 margin: '22px auto 0',
-                maxWidth: 640,
+                width: 'fit-content',
+                maxWidth: '100%',
                 fontSize: 'clamp(14px, 1.7vw, 18px)',
                 lineHeight: 1.65,
                 color: c.textDim,

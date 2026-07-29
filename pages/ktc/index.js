@@ -11,6 +11,7 @@ import KtcNav from '../../components/ktc/KtcNav';
 import Organization from '../../components/ktc/Organization';
 import Participants from '../../components/ktc/Participants';
 import Process from '../../components/ktc/Process';
+import ZaloGroup from '../../components/ktc/ZaloGroup';
 import { c } from '../../components/ktc/ktcStyles';
 
 /* K-Tech College 2026 랜딩.
@@ -39,6 +40,7 @@ export default function KtcLanding() {
         <Process />
         <ImageGallery />
         <Faq />
+        <ZaloGroup />
       </div>
 
       <ComingSoonModal />
@@ -69,7 +71,7 @@ export default function KtcLanding() {
         /* 모바일: 한 줄 롤링 — 2열 2줄이면 세로를 너무 먹는다. 목록을 두 번 이어
            붙였으므로 -50% 이동이 한 바퀴(.ktc-marquee 키프레임 재사용). */
         .ktc-hero-logostrip {
-          order: 2;           /* 모바일: CTA 아래 */
+          order: 2;           /* CTA 아래 */
           margin-top: 34px;
           overflow: hidden;
           mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent);
@@ -110,13 +112,36 @@ export default function KtcLanding() {
         .ktc-org-title { margin-top: 14px; font-size: 12.5px; word-break: keep-all; }
         .ktc-org-desc { display: none; }
 
+        /* Zalo 그룹 — 카드 없이 QR + 텍스트만. 좁은 화면에서는 QR 을 위로 올린다. */
+        .ktc-zalo {
+          display: flex; flex-direction: column; align-items: flex-start;
+          gap: 24px;
+        }
+        .ktc-zalo-qr { width: 140px; height: 140px; }
+        .ktc-zalo-title { font-size: 21px; }
+        .ktc-zalo-desc { font-size: 14px; }
+        @media (min-width: 600px) {
+          .ktc-zalo { flex-direction: row; align-items: center; gap: 36px; }
+          .ktc-zalo-qr { width: 176px; height: 176px; }
+          .ktc-zalo-title { font-size: 24px; }
+          .ktc-zalo-desc { font-size: 15px; max-width: 420px; }
+        }
+
         /* 참가 혜택 — 1행 3열 세로 카드. 이미지는 카드 상단 배너처럼 고정 높이로 자른다. */
         .ktc-benefit-img { height: clamp(150px, 26vw, 200px); }
 
-        /* 차별점 — 원본처럼 여유 있는 가운데 정렬 카드. */
-        .ktc-adv-card { padding: clamp(28px, 4vw, 40px) clamp(20px, 3vw, 30px); }
-        .ktc-adv-title { font-size: 17.5px; }
-        .ktc-adv-desc { margin-top: 14px; font-size: 14px; }
+        /* 차별점 — 원본처럼 좌측 정렬 카드 + 작은 사각 아이콘 박스.
+           1180 컨테이너를 꽉 채우면 카드가 가로로 늘어져 제목이 한 줄로 붙으므로 900 으로 좁힌다. */
+        .ktc-adv-grid { max-width: 900px; margin-left: auto; margin-right: auto; }
+        .ktc-adv-card { padding: clamp(26px, 3.4vw, 34px) clamp(22px, 3vw, 30px); }
+        .ktc-adv-icon {
+          width: 46px; height: 46px; margin-bottom: 24px;
+          display: grid; place-items: center;
+          border-radius: 12px; background: rgba(255,96,0,0.10); color: #ff6000;
+        }
+        .ktc-adv-icon svg { width: 21px; height: 21px; }
+        .ktc-adv-title { font-size: 17px; }
+        .ktc-adv-desc { margin-top: 10px; font-size: 14px; }
 
         /* 여정 — 데스크톱은 번호 위 / 텍스트 아래, 가운데 정렬. */
         .ktc-proc-card { text-align: center; }
@@ -148,9 +173,11 @@ export default function KtcLanding() {
 
           /* 차별점 — 카드 4장이 세로로 쌓이므로 여백·글자를 한 단계 줄인다. */
           .ktc-adv-grid { gap: 12px !important; }
-          .ktc-adv-card { padding: 22px 18px; }
+          .ktc-adv-card { padding: 20px 18px; }
+          .ktc-adv-icon { width: 38px; height: 38px; margin-bottom: 14px; border-radius: 10px; }
+          .ktc-adv-icon svg { width: 18px; height: 18px; }
           .ktc-adv-title { font-size: 15px !important; }
-          .ktc-adv-desc { margin-top: 9px; font-size: 13px !important; }
+          .ktc-adv-desc { margin-top: 8px; font-size: 13px !important; }
 
           /* 여정 — 번호를 왼쪽으로 눕혀 단계 목록처럼. 카드 높이가 절반 이하로 준다. */
           .ktc-proc-grid { gap: 10px !important; }
@@ -167,8 +194,8 @@ export default function KtcLanding() {
           .ktc-job-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
 
           /* 히어로 로고 — 넓어지면 롤링을 멈추고 4열 한 줄 grid 로 고정 */
-          /* 넓은 화면: 맨 위로 */
-          .ktc-hero-logostrip { order: -1; margin-top: 0; margin-bottom: clamp(30px, 4vw, 48px); overflow: visible; mask-image: none; -webkit-mask-image: none; }
+          /* 넓은 화면에서도 CTA 아래에 둔다 — 롤링만 멈추고 4열 grid 로 고정 */
+          .ktc-hero-logostrip { margin-top: clamp(40px, 6vw, 64px); overflow: visible; mask-image: none; -webkit-mask-image: none; }
           .ktc-hero-logos {
             display: grid;
             grid-template-columns: repeat(4, minmax(0, 1fr));
