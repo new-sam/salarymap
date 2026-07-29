@@ -157,7 +157,7 @@ async function main() {
     if (!p.resume_url || !p.email || /likelion/i.test(p.email)) continue
     if (sentUser.has(p.id) || sentEmail.has(p.email.toLowerCase()) || appliedUser.has(p.id)) continue
     const score = scoreProfile(p)
-    if (score == null) continue
+    if (score == null || score < 5) continue // 5 미만은 개발자/세일즈 등 오탐 대역
     cohort.push({ p, score, frame: p.is_resume_public ? 'public' : 'private' })
   }
   cohort.sort((a, b) => b.score - a.score)
