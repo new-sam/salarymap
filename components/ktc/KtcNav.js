@@ -17,19 +17,9 @@ const SECTIONS = [
 
 export default function KtcNav() {
   const { t } = useT();
-  const [heroCtaVisible, setHeroCtaVisible] = useState(true);
   const [activeSection, setActiveSection] = useState(null);
   const tabsRef = useRef(null);
   const barRef = useRef(null);
-
-  useEffect(() => {
-    const el = document.getElementById('ktc-hero-cta');
-    // 히어로가 없는 경우(구조 변경 등)엔 탭바를 항상 보여주는 쪽으로 안전하게.
-    if (!el) { setHeroCtaVisible(false); return; }
-    const io = new IntersectionObserver(([e]) => setHeroCtaVisible(e.isIntersecting), { threshold: 0 });
-    io.observe(el);
-    return () => io.disconnect();
-  }, []);
 
   /* 스크롤스파이 — "기준선을 이미 지나온 섹션 중 마지막"을 활성으로 본다.
      IntersectionObserver 는 상태가 바뀐 섹션만 콜백에 담아주기 때문에, 탭에 없는
@@ -67,14 +57,13 @@ export default function KtcNav() {
     btn?.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
   }, [activeSection]);
 
-  if (heroCtaVisible) return null;
-
   return (
     <div
       ref={barRef}
       className="ktc-sectiontabs"
       style={{
-        background: 'rgba(249,249,249,0.92)',
+        // 아래 섹션(AboutUs = sectionAlt 흰색)과 같은 배경 — 히어로(#f9f9f9)와는 구분된다
+        background: 'rgba(255,255,255,0.92)',
         backdropFilter: 'blur(12px)',
         borderBottom: `1px solid ${c.line}`,
       }}

@@ -29,8 +29,8 @@ export default function KtcLanding() {
       </Head>
 
       <div className="ktc-page" style={{ background: c.bg, color: c.text, minHeight: '100vh' }}>
-        <KtcNav />
         <Hero />
+        <KtcNav />
         <AboutUs />
         <Organization />
         <Advantage />
@@ -46,12 +46,13 @@ export default function KtcLanding() {
       <ComingSoonModal />
 
       <style>{`
-        /* 섹션 탭바 — FYI GlobalNav(데스크톱 sticky 56px / 모바일 fixed 52px) 바로 아래.
-           fixed 로 띄워야 탭바가 나타날 때 본문이 밀려 내려가는 점프가 없다.
+        /* 섹션 탭바 — 히어로 바로 아래에 놓이고, 스크롤로 지나가면 GlobalNav 밑에 붙는다.
+           sticky 라 자리를 직접 차지하므로 나타날 때 본문이 밀리는 점프가 없다.
            .ktc-anchor 오프셋은 항상 헤더 + 탭바 높이와 같아야 앵커 점프 시 제목이 안 가린다.
            (모바일 상단 여백은 globals.css 의 body padding-top:52px 이 담당) */
-        .ktc-sectiontabs { position: fixed; top: 56px; left: 0; right: 0; z-index: 190; }
-        .ktc-tabs-row { height: 46px; }
+        .ktc-sectiontabs { position: sticky; top: 56px; z-index: 190; }
+        /* 가운데 정렬. 모바일은 가로 스크롤이라 center 로 두면 앞쪽 탭이 잘려 못 누른다 → 아래 768 블록에서 해제 */
+        .ktc-tabs-row { height: 46px; justify-content: center; }
         .ktc-anchor { scroll-margin-top: 102px; }   /* 56 + 46 */
 
         /* 히어로 배경 사진은 쓰지 않는다 — 잘려서 맥락 없이 보이고 글자 대비만 떨어진다.
@@ -166,7 +167,7 @@ export default function KtcLanding() {
         /* 모바일 GlobalNav 는 52px fixed — 탭바를 그 아래로 내린다. */
         @media (max-width: 768px) {
           .ktc-sectiontabs { top: 52px; }
-          .ktc-tabs-row { height: 40px; }
+          .ktc-tabs-row { height: 40px; justify-content: flex-start; }
           .ktc-anchor { scroll-margin-top: 92px; }  /* 52 + 40 */
         }
 
@@ -243,7 +244,6 @@ export default function KtcLanding() {
         }
 
         /* 섹션 탭바 — 히어로 CTA가 화면 밖으로 나갈 때 나타난다. */
-        .ktc-sectiontabs { animation: ktc-fade-in .25s cubic-bezier(0.16,1,0.3,1) both; }
         /* 모바일에서 탭이 넘칠 때 가로 스크롤은 되지만 스크롤바는 감춘다. */
         .ktc-sectiontabs > div { scrollbar-width: none; -ms-overflow-style: none; }
         .ktc-sectiontabs > div::-webkit-scrollbar { display: none; }

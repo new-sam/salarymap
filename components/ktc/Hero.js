@@ -138,9 +138,7 @@ export default function Hero() {
                 flexWrap: 'wrap',
               }}
             >
-              {/* id 는 KtcNav 가 관찰한다 — 이 CTA 가 화면에 보이는 동안은
-                  헤더의 지원하기 버튼을 숨겨 중복을 없앤다. */}
-              <button id="ktc-hero-cta" className="ktc-hero-btn" style={s.btnPrimary} onClick={openApplySoon}>
+              <button className="ktc-hero-btn" style={s.btnPrimary} onClick={openApplySoon}>
                 {t('ktc.hero.cta')} →
               </button>
               <button className="ktc-hero-btn" style={s.btnGhost} onClick={() => scrollTo(ANCHOR.jobs)}>
