@@ -131,14 +131,20 @@ async function computeMatches() {
     ;(jobsByRole[j.role] = jobsByRole[j.role] || []).push(j)
   }
 
-  const { data: sent, error: sentErr } = await supabase
-    .from('job_recommendations')
-    .select('user_id, to_email, job_id')
-  if (sentErr) throw new Error(sentErr.message)
+  // PostgREST 1000행 제한 → 페이지네이션 필수. 잘리면 이미 보낸 사람에게 중복 발송된다.
   const sentKeys = new Set()
-  for (const r of sent || []) {
-    if (r.user_id) sentKeys.add(`u:${r.user_id}|${r.job_id}`)
-    if (r.to_email) sentKeys.add(`e:${r.to_email.toLowerCase()}|${r.job_id}`)
+  for (let offset = 0; ; offset += 1000) {
+    const { data: sent, error: sentErr } = await supabase
+      .from('job_recommendations')
+      .select('user_id, to_email, job_id')
+      .range(offset, offset + 999)
+    if (sentErr) throw new Error(sentErr.message)
+    if (!sent?.length) break
+    for (const r of sent) {
+      if (r.user_id) sentKeys.add(`u:${r.user_id}|${r.job_id}`)
+      if (r.to_email) sentKeys.add(`e:${r.to_email.toLowerCase()}|${r.job_id}`)
+    }
+    if (sent.length < 1000) break
   }
 
   const byApplicant = new Map()

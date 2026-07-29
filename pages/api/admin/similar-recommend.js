@@ -121,6 +121,28 @@ ${t.note}
   return { subject, text, html }
 }
 
+// 이미 발송한 (사람, 공고) 키 — `u:user_id|job_id` / `e:email|job_id`.
+// PostgREST가 요청당 1000행에서 잘리므로 반드시 페이지네이션해야 한다. 잘리면 이미 보낸 사람이
+// 매칭에 다시 걸려 중복 메일이 나가고, 그 뒤 unique(user_id, job_id) 위반으로 기록만 실패한다.
+async function fetchSentKeys() {
+  const PAGE = 1000
+  const keys = new Set()
+  for (let offset = 0; ; offset += PAGE) {
+    const { data, error } = await supabase
+      .from('job_recommendations')
+      .select('user_id, to_email, job_id')
+      .range(offset, offset + PAGE - 1)
+    if (error) throw new Error(error.message)
+    if (!data?.length) break
+    for (const r of data) {
+      if (r.user_id) keys.add(`u:${r.user_id}|${r.job_id}`)
+      if (r.to_email) keys.add(`e:${r.to_email.toLowerCase()}|${r.job_id}`)
+    }
+    if (data.length < PAGE) break
+  }
+  return keys
+}
+
 // 최근 지원자 → 지원 직군과 같은 company_self 공고 매칭. 이미 지원/이미 발송한 공고는 제외.
 // cron(/api/cron/similar-recommend)도 이 함수를 그대로 사용.
 // maxJobCreatedAt: 이 시각 이전에 등록된 공고만 포함(자동발송의 잘못 올린 공고 가드, cron 전용).
@@ -159,14 +181,7 @@ export async function computeMatches(days, { maxJobCreatedAt } = {}) {
   }
 
   // 3) 이미 발송한 (사람, 공고) — 중복 제외용
-  const { data: sent } = await supabase
-    .from('job_recommendations')
-    .select('user_id, to_email, job_id')
-  const sentKeys = new Set()
-  for (const r of sent || []) {
-    if (r.user_id) sentKeys.add(`u:${r.user_id}|${r.job_id}`)
-    if (r.to_email) sentKeys.add(`e:${r.to_email.toLowerCase()}|${r.job_id}`)
-  }
+  const sentKeys = await fetchSentKeys()
 
   // 4) 지원자별 집계 (key = user_id || email)
   const byApplicant = new Map()
@@ -268,14 +283,12 @@ export default async function handler(req, res) {
   const resend = new Resend(process.env.RESEND_API_KEY)
 
   // 중복 재확인용 발송이력 (프리뷰~발송 사이 상태 변화 대비) — 루프 밖에서 1회 조회.
-  const { data: existing } = await supabase
-    .from('job_recommendations')
-    .select('job_id, user_id, to_email')
+  const sentKeys = await fetchSentKeys()
   const sentByUser = new Set()   // `${user_id}|${job_id}`
   const sentByEmail = new Set()  // `${email}|${job_id}`
-  for (const r of existing || []) {
-    if (r.user_id) sentByUser.add(`${r.user_id}|${r.job_id}`)
-    if (r.to_email) sentByEmail.add(`${r.to_email.toLowerCase()}|${r.job_id}`)
+  for (const k of sentKeys) {
+    if (k.startsWith('u:')) sentByUser.add(k.slice(2))
+    else sentByEmail.add(k.slice(2))
   }
 
   let sentCount = 0, jobRows = 0

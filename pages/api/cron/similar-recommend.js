@@ -14,10 +14,12 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY
 )
 
-const DAYS = 30                    // "최근 지원자" 범위 — 이보다 오래된 지원 이력엔 발송 안 함
-const MAX_RECIPIENTS_PER_RUN = 80  // Resend 무료 플랜 하루 100건 하드캡 대비 — 인증코드 등 필수 transactional 메일 몫 20건 남겨둠. 남은 사람은 다음 날.
-const JOB_AGE_HOURS = 48           // 등록 48시간 지난 공고만 자동발송 — 잘못 올린 공고가 수정/비활성화될 시간
+const DAYS = 30                     // "최근 지원자" 범위 — 이보다 오래된 지원 이력엔 발송 안 함
+const MAX_RECIPIENTS_PER_RUN = 300  // Resend 유료 전환(2026-07) 후 하루 100건 하드캡 해제 — 런어웨이 방지용 상한만 유지. 남은 사람은 다음 날.
+const JOB_AGE_HOURS = 48            // 등록 48시간 지난 공고만 자동발송 — 잘못 올린 공고가 수정/비활성화될 시간
 const LANG = 'vi'
+
+export const config = { maxDuration: 300 } // 건당 ~0.4s 순차 발송 — 상한(300명)까지 돌 시간 확보
 
 // 발송 요약 슬랙 알림 (실패해도 발송엔 영향 없음)
 async function notifySlack(text) {
@@ -56,7 +58,8 @@ export default async function handler(req, res) {
   const resend = new Resend(process.env.RESEND_API_KEY)
 
   let sent = 0, jobRows = 0
-  const skipped = []
+  const skipped = []    // 메일 자체가 안 나간 사람
+  const logFailed = []  // 메일은 나갔는데 기록 실패 — 방치하면 내일 또 중복 발송된다
   const sentApplicants = []
   for (const a of targets) {
     const email = composeEmail({
@@ -93,22 +96,26 @@ export default async function handler(req, res) {
       status: 'sent',
       kind: 'similar',
     }))
-    const { error: insErr } = await supabase.from('job_recommendations').insert(rows)
-    if (insErr) { skipped.push({ email: a.email, reason: `logged_fail: ${insErr.message}` }); continue }
+    // 메일은 이미 나갔으므로 기록 실패해도 발송 집계에는 포함한다(스킵으로 세면 사고가 가려진다).
     sent += 1
     jobRows += a.jobs.length
     sentApplicants.push(a)
+    const { error: insErr } = await supabase.from('job_recommendations').insert(rows)
+    if (insErr) logFailed.push({ email: a.email, reason: insErr.message })
   }
 
-  if (sent > 0 || skipped.length > 0) {
+  if (sent > 0 || skipped.length > 0 || logFailed.length > 0) {
     // 발송된 공고별 건수 요약 — 이상한 공고가 나갔으면 여기서 바로 보이게
     const perJob = {}
     for (const a of sentApplicants) for (const j of a.jobs) perJob[`${j.title} (${j.company || '-'})`] = (perJob[`${j.title} (${j.company || '-'})`] || 0) + 1
     const jobLines = Object.entries(perJob).sort((a, b) => b[1] - a[1]).map(([t, n]) => `• ${t} → ${n}명`).join('\n')
     await notifySlack(
-      `:incoming_envelope: *유사공고 자동추천 발송* — ${sent}명 발송${skipped.length ? `, 스킵 ${skipped.length}` : ''}${capped ? ` (100명 캡, 잔여 ${applicants.length - targets.length}명 내일)` : ''}\n${jobLines}`
+      `:incoming_envelope: *유사공고 자동추천 발송* — ${sent}명 발송` +
+      `${skipped.length ? `, 발송실패 ${skipped.length}` : ''}` +
+      `${logFailed.length ? `, :warning: 기록실패 ${logFailed.length}명 (중복발송 위험 — ${logFailed[0].reason})` : ''}` +
+      `${capped ? ` (${MAX_RECIPIENTS_PER_RUN}명 캡, 잔여 ${applicants.length - targets.length}명 내일)` : ''}\n${jobLines}`
     )
   }
 
-  return res.status(200).json({ days: DAYS, matched: applicants.length, sent, jobs: jobRows, capped, skipped })
+  return res.status(200).json({ days: DAYS, matched: applicants.length, sent, jobs: jobRows, capped, skipped, logFailed })
 }

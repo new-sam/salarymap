@@ -141,9 +141,14 @@ Xem & ứng tuyển: ${url}
 async function main() {
   const jobs = await loadJobs()
 
-  // 기발송 (email,job_id) 쌍
-  const { data: recs } = await sb.from('job_recommendations').select('to_email,job_id')
-  const sentPair = new Set((recs || []).map((r) => `${(r.to_email || '').toLowerCase()}|${r.job_id}`))
+  // 기발송 (email,job_id) 쌍 — PostgREST 1000행 제한 → 페이지네이션(잘리면 중복 발송)
+  const sentPair = new Set()
+  for (let offset = 0; ; offset += 1000) {
+    const { data: recs } = await sb.from('job_recommendations').select('to_email,job_id').range(offset, offset + 999)
+    if (!recs?.length) break
+    for (const r of recs) sentPair.add(`${(r.to_email || '').toLowerCase()}|${r.job_id}`)
+    if (recs.length < 1000) break
+  }
 
   const resend = new Resend(env.RESEND_API_KEY)
 
