@@ -60,7 +60,7 @@ function buildNav(lang) {
     {
       label: 'Personal',
       items: [
-        { label: L('목표지표 — Sean', 'Goals — Sean'), pathname: '/admin/dashboard', tab: 'goals' },
+        { label: L('승주 작업실', "Seungju's Lab"), pathname: '/admin/dashboard', tab: 'goals' },
       ],
     },
   ]

@@ -1,17 +1,13 @@
 import supabase from '../../../lib/supabaseAdmin'
 import { verifyAdminOrDevStub } from './check'
 
-// 실험 플래그 어드민 토글 — 목표지표 실험탭의 원클릭 롤백.
-// GET: 현재 상태 / POST { key, enabled }: 스위치. experiment-metrics와 동일 인증(x-goal-pass).
-const GOAL_PASSWORD = process.env.GOAL_METRICS_PASSWORD || 'wsj11029'
+// 실험 플래그 어드민 토글 — 승주 작업실 실험탭의 원클릭 롤백.
+// GET: 현재 상태 / POST { key, enabled }: 스위치.
 const KNOWN_FLAGS = ['hero_wizard', 'hard_gate', 'one_tap']
 
 export default async function handler(req, res) {
   const admin = await verifyAdminOrDevStub(req)
   if (!admin) return res.status(401).json({ error: 'Unauthorized' })
-  if ((req.headers['x-goal-pass'] || '') !== GOAL_PASSWORD) {
-    return res.status(403).json({ error: 'bad_pass' })
-  }
 
   if (req.method === 'GET') {
     const { data, error } = await supabase.from('app_flags').select('key, enabled, updated_at')

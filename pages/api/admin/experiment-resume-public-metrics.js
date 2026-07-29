@@ -2,12 +2,11 @@ import { createClient } from '@supabase/supabase-js'
 import { verifyAdminOrDevStub } from './check'
 import { isExcludedSignup } from '../../../lib/admin-metrics'
 
-// "목표지표 - Sean" 이력서 공개 전환 실험 탭 데이터.
+// "승주 작업실" 이력서 공개 전환 실험 탭 데이터.
 // 실험: 웹 /cv 등록 흐름에 이력서 공개(오퍼 수신) 기본 ON 토글 추가 → 웹 공개 전환율 상승 여부.
 // 앱은 예전부터 등록 시 공개를 기본 안내해 전환율이 높음 → 앱을 baseline으로 웹과 비교한다.
 // 공개는 토글 이벤트가 없어 프로필 상태(is_resume_public) 스냅샷을 updated_at으로 버킷팅한다
 // (추이 그래프와 동일 방식). resume_platform은 20260617 마이그 이후 행만 채워짐(이전=null 제외).
-const GOAL_PASSWORD = process.env.GOAL_METRICS_PASSWORD || 'wsj11029'
 
 // 웹 공개 토글 배포일(ICT). 이 날짜 이전이 베이스라인, 이후가 실험 구간. ⚠️실제 배포 시 갱신.
 const EXPERIMENT_START = '2026-07-14'
@@ -39,9 +38,6 @@ async function fetchAll(build) {
 export default async function handler(req, res) {
   const admin = await verifyAdminOrDevStub(req)
   if (!admin) return res.status(401).json({ error: 'Unauthorized' })
-  if ((req.headers['x-goal-pass'] || '') !== GOAL_PASSWORD) {
-    return res.status(403).json({ error: 'bad_pass' })
-  }
 
   try {
     const rows = (await fetchAll(() => supabase.from('user_profiles')
