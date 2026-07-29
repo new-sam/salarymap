@@ -154,6 +154,8 @@ export default function KtcJobDetail({ job }) {
       <style>{`
         /* 모바일: 사이드 패널을 감추고 하단 고정 바로 대체 — 상단을 차지하지 않는다.
            바 높이만큼 본문 아래 여백을 줘서 마지막 내용이 가리지 않게 한다. */
+        /* 바 높이 = 위아래 padding 10 + 버튼 48. 푸터 여백 계산과 한 값을 공유한다. */
+        :root { --ktc-jd-bar: 68px; }
         .ktc-jd { display: grid; grid-template-columns: 1fr; gap: 28px; }
         .ktc-jd-side { display: none; }
         .ktc-jd-bar {
@@ -163,14 +165,22 @@ export default function KtcJobDetail({ job }) {
           backdrop-filter: blur(12px);
           border-top: 1px solid ${c.line};
         }
-        .ktc-jd-pad { padding-bottom: 88px; }
+        /* 본문 ↔ 푸터 여백은 GlobalFooter 의 marginTop(56) 이 전역으로 준다 — 여기선 보강만. */
+        .ktc-jd-pad { padding-bottom: 32px; }
+
+        /* 하단 고정 바는 뷰포트 바닥에 떠 있어서 스크롤 끝에서 푸터를 덮는다.
+           본문 쪽 padding 으로는 못 막는다(푸터가 본문 뒤에 오므로) → 푸터 자체를 띄운다.
+           푸터는 _app.js 에서 인라인 padding 으로 그려져 !important 없이는 이기지 못한다. */
+        @media (max-width: 899px) {
+          footer { padding-bottom: calc(24px + var(--ktc-jd-bar) + env(safe-area-inset-bottom)) !important; }
+        }
 
         @media (min-width: 900px) {
           .ktc-jd { grid-template-columns: minmax(0, 1fr) 320px; gap: 40px; align-items: start; }
           /* 헤더(56) + 여유. 본문이 길어도 지원 버튼이 따라온다. */
           .ktc-jd-side { display: block; position: sticky; top: 80px; }
           .ktc-jd-bar { display: none; }
-          .ktc-jd-pad { padding-bottom: clamp(48px, 8vw, 88px); }
+          .ktc-jd-pad { padding-bottom: clamp(32px, 5vw, 64px); }
           /* 사이드 패널에 같은 링크가 있어 본문 인라인 링크는 감춘다 */
           .ktc-jd-site-inline { display: none !important; }
         }
