@@ -5,7 +5,9 @@ import { ANCHOR, BRAND, c, s } from './ktcStyles';
 const ITEMS = [
   { n: 1, img: '/ktc/benefit-2.png' },
   { n: 2, img: '/ktc/benefit-4.png' },
-  { n: 3, img: '/ktc/event.jpg', events: true, cta: '/ktc#faq' },
+  // 안내할 예정 이벤트가 아직 없어 '가까운 이벤트 보러가기' CTA 는 뺐다.
+  // 되살릴 때는 cta 경로만 다시 넣으면 된다(문구는 ktc.benefit.3.cta 에 그대로 있음).
+  { n: 3, img: '/ktc/event.jpg', events: true },
 ];
 
 /* 1행 3열 — 이미지 위 / 텍스트 아래인 세로 카드 세 개를 가로로 나란히.
@@ -53,12 +55,6 @@ export default function Benefits() {
                     <p style={{ marginTop: 12, fontSize: 14.5, lineHeight: 1.72, color: c.textDim }}>
                       {t(`ktc.benefit.${item.n}.desc`)}
                     </p>
-                  )}
-
-                  {item.cta && (
-                    <a href={item.cta} style={{ ...s.btnGhost, marginTop: 18, padding: '11px 20px', fontSize: 13.5 }}>
-                      {t(`ktc.benefit.${item.n}.cta`)}
-                    </a>
                   )}
                 </div>
               </div>
