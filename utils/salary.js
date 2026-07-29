@@ -49,9 +49,13 @@ export function getEstimatedSalary(job) {
   return { min, max, estimated: true }
 }
 
-// 기업 직접등록 공고가 급여 미기입(0)으로 게시된 경우 — 추정치 대신 '협의 가능'으로 표시
+// 급여 미기입(0)을 '협의 가능'으로 읽는 소스 — 사람이 직접 등록/관리하는 공고만.
+// 크롤 공고의 0은 '미기재'라서 그대로 추정치를 보여준다.
+export const NEGOTIABLE_SOURCES = ['company_self', 'manual', 'ktc']
+
+// 직접등록/어드민 공고가 급여 미기입(0)으로 게시된 경우 — 추정치 대신 '협의 가능'으로 표시
 export function isSalaryNegotiable(job) {
-  return job.source === 'company_self' && !(job.salary_min > 0 && job.salary_max > 0)
+  return NEGOTIABLE_SOURCES.includes(job.source) && !(job.salary_min > 0 && job.salary_max > 0)
 }
 
 export function formatSalaryCard(job) {
