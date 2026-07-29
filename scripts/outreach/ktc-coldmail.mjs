@@ -2,9 +2,13 @@
 // 대상은 정제된 리스트(data/ktc-leads-not-in-fyi.csv, 2,032명 · 발송배치 1~6)를 그대로 쓴다.
 //
 //   node scripts/outreach/ktc-coldmail.mjs                          # dry-run: 대상 수/샘플/링크
-//   node scripts/outreach/ktc-coldmail.mjs --test wsj@likelion.net  # 테스트 1통(스탬프 안 함)
+//   node scripts/outreach/ktc-coldmail.mjs --test a@x.com,b@y.com   # 테스트(쉼표로 여러 명, 스탬프 안 함)
+//   node scripts/outreach/ktc-coldmail.mjs --test a@x.com --lang ko # 한국어판으로 테스트
 //   node scripts/outreach/ktc-coldmail.mjs --batch 1 --max 80 --send
+//   node scripts/outreach/ktc-coldmail.mjs --with-company --max 100 --send   # 기업명 있는 리드만
 //   옵션: --batch N(발송배치) · --max N(이번에 보낼 인원) · --utm(배포 전 모드) · --campaign coldmail-ktc
+//        --with-company(기업명 확보된 리드만 — 제목 "{기업} - {직무}" 개인화가 항상 적용됨)
+//        --lang ko|vi (기본 vi) — 템플릿·제목·텍스트본문을 함께 전환. ko 는 문구 검토용.
 //
 // 수신자는 FYI 계정이 없다 → events 는 user_id 없이 meta.lead(이메일 해시)로 사람을 구분한다.
 // 어드민 goals 탭 캠페인별 표가 meta.lead 를 읽도록 campaign-resume-public-metrics.js 가 수정돼 있어야 한다.
@@ -17,12 +21,16 @@ import { makeToken, leadId } from '../../lib/ktcMailToken.js'
 const SITE = (env.NEXT_PUBLIC_SITE_URL || 'https://salary-fyi.com').replace(/\/$/, '')
 const RESEND_FROM = env.RESEND_FROM || 'FYI <hello@salary-fyi.com>'
 const LEADS = new URL('../../data/ktc-leads-not-in-fyi.csv', import.meta.url)
-const TEMPLATE = new URL('../ktc-coldmail-vi.html', import.meta.url)
 
 const args = process.argv.slice(2)
 const flag = (k, d) => { const i = args.indexOf('--' + k); return i >= 0 ? (args[i + 1] && !args[i + 1].startsWith('--') ? args[i + 1] : true) : d }
 const doSend = args.includes('--send')
 const utmMode = args.includes('--utm')
+// 소량 발송이면 폴백(직무만) 없이 기업명이 확실한 리드만 골라 보낸다 — 제목 개인화가 이번 실험의 변수라서.
+const withCompanyOnly = args.includes('--with-company')
+// 실발송은 vi. ko 는 문구 검토용(팀 내부 테스트 수신)이라 같은 스크립트로 보낼 수 있게 해 둔다.
+const lang = flag('lang', 'vi') === 'ko' ? 'ko' : 'vi'
+const TEMPLATE = new URL(`../ktc-coldmail-${lang}.html`, import.meta.url)
 const testTo = flag('test', null)
 const campaign = flag('campaign', 'coldmail-ktc')
 const batch = flag('batch', null)
@@ -34,6 +42,7 @@ const csvCell = (v) => { const s = String(v ?? ''); return /[",\n]/.test(s) ? `"
 
 // ── CSV(따옴표 포함) 파싱 ──
 function parseCsv(text) {
+  if (text.charCodeAt(0) === 0xFEFF) text = text.slice(1) // BOM — 안 떼면 첫 컬럼('이메일') 키가 어긋난다
   const rows = []; let row = [], cur = '', q = false
   for (let i = 0; i < text.length; i++) {
     const c = text[i]
@@ -49,16 +58,29 @@ function parseCsv(text) {
 }
 
 // ── 메일 ──
+// 지원자가 기억하는 건 'KTC'가 아니라 자기가 지원한 그 회사·그 공고다 → 제목·첫 문장에 기업명을 앞세운다.
+// 기업명이 없는 리드(약 23%)는 직무만 쓰는 폴백.
 const template = readFileSync(TEMPLATE, 'utf8')
-const subject = (position) => `KTC - ${position} — bạn đã ứng tuyển vị trí này`
+const subjectTail = { vi: 'bạn đã ứng tuyển vị trí này', ko: '이 포지션에 지원하셨죠' }[lang]
+const subject = (lead) => lead.company
+  ? `${lead.company} - ${lead.job} — ${subjectTail}`
+  : `KTC - ${lead.job} — ${subjectTail}`
+// 베트남어는 "vị trí {직무} tại {기업}" 어순 → 기업명을 별도 조각({{atCompany}})으로 끼워 넣는다.
+// 한국어는 "{기업} - {직무}" 어순 → 합쳐진 한 덩어리({{companyJob}})를 쓴다. 템플릿이 쓰는 것만 치환된다.
+const atCompanyHtml = (lead) => lead.company ? ` tại <b>${esc(lead.company)}</b>` : ''
+const companyJobHtml = (lead) => lead.company
+  ? `<b>${esc(lead.company)} - ${esc(lead.job)}</b>`
+  : `<b>${esc(lead.job)}</b>`
 const render = (lead, ctaUrl, unsubUrl) => template
   .replace(/\{\{name\}\}/g, esc(lead.ten))
-  .replace(/\{\{position\}\}/g, esc(lead.position))
+  .replace(/\{\{atCompany\}\}/g, atCompanyHtml(lead))
+  .replace(/\{\{companyJob\}\}/g, companyJobHtml(lead))
+  .replace(/\{\{position\}\}/g, esc(lead.job))
   .replace(/\{\{ctaUrl\}\}/g, ctaUrl)
   .replace(/\{\{unsubscribeUrl\}\}/g, unsubUrl)
-const emailText = (lead, ctaUrl, unsubUrl) => `Chào ${lead.ten},
+const emailTextVi = (lead, ctaUrl, unsubUrl) => `Chào ${lead.ten},
 
-Vừa qua bạn đã ứng tuyển vị trí ${lead.position} thông qua K-Tech College.
+Vừa qua bạn đã ứng tuyển vị trí ${lead.job}${lead.company ? ` tại ${lead.company}` : ''} thông qua K-Tech College.
 Mỗi lần ứng tuyển lại phải tải CV lên và điền lại thông tin — bạn có thấy bất tiện không?
 
 FYI là nền tảng tuyển dụng do KTC xây dựng. Chỉ cần tạo hồ sơ một lần, bạn có thể
@@ -70,6 +92,22 @@ ${ctaUrl}
 
 — Đội ngũ FYI · salary-fyi.com
 Hủy đăng ký: ${unsubUrl}`
+
+const emailTextKo = (lead, ctaUrl, unsubUrl) => `안녕하세요 ${lead.ten}님,
+
+얼마 전 K-Tech College를 통해 ${lead.company ? `${lead.company} - ${lead.job}` : lead.job}에 지원해 주셨죠.
+공고마다 이력서를 새로 넣고 양식을 다시 채우는 것 — 번거롭지 않으셨나요?
+
+FYI는 KTC가 만든 채용 플랫폼입니다. 프로필을 한 번 올려두면 여러 공고에 원클릭으로
+지원할 수 있고, 채용 담당자들이 프로필을 보고 직접 오퍼를 보낼 수도 있어요.
+
+FYI에서 원클릭 지원 시작:
+${ctaUrl}
+
+— FYI 팀 · salary-fyi.com
+수신 거부: ${unsubUrl}`
+
+const emailText = lang === 'ko' ? emailTextKo : emailTextVi
 
 // 배포 전(--utm)엔 추적 리다이렉트가 prod 에 없다 → CTA 를 prod /jobs 로 직결하고 utm 으로만 측정.
 const ctaFor = (lead) => utmMode
@@ -106,17 +144,20 @@ async function mxOk(domains) {
 ;(async () => {
   // ── 테스트 1통 ──
   if (testTo) {
-    const lead = { email: testTo, ten: 'Tây', position: 'Full-stack Developer', lead: leadId(testTo) }
-    const cta = ctaFor(lead), unsub = unsubFor(lead)
     const resend = await resendClient()
-    const r = await resend.emails.send({
-      from: RESEND_FROM, to: testTo, subject: '[TEST] ' + subject(lead.position),
-      text: emailText(lead, cta, unsub), html: render(lead, cta, unsub),
-    })
-    if (r.error) throw new Error(r.error.message || 'resend_error')
-    console.log(`✅ 테스트 발송 → ${testTo} | id=${r.data?.id}`)
-    console.log(`   CTA: ${cta}`)
-    console.log(`   수신거부: ${unsub}`)
+    // 쉼표로 여러 주소 — 팀 검토용으로 한 번에 돌린다.
+    for (const to of String(testTo).split(',').map(s => s.trim()).filter(Boolean)) {
+      const lead = { email: to, ten: 'Tây', job: 'Full-stack Developer', company: 'NALDA', lead: leadId(to) }
+      const cta = ctaFor(lead), unsub = unsubFor(lead)
+      const r = await resend.emails.send({
+        from: RESEND_FROM, to, subject: `[TEST/${lang}] ` + subject(lead),
+        text: emailText(lead, cta, unsub), html: render(lead, cta, unsub),
+      })
+      if (r.error) throw new Error(`${to}: ${r.error.message || 'resend_error'}`)
+      console.log(`✅ 테스트 발송(${lang}) → ${to} | id=${r.data?.id}`)
+      console.log(`   제목: ${subject(lead)}`)
+      await sleep(600) // Resend rate limit 2req/s
+    }
     return
   }
 
@@ -125,7 +166,9 @@ async function mxOk(domains) {
     email: r['이메일'].toLowerCase(),
     name: r['이름'],
     ten: r['호칭(tên)'] || r['이름'].split(/\s+/).pop() || 'bạn',
-    position: r['최신 지원포지션'],
+    // 지원기업/지원공고는 ktc-enrich-company.mjs 가 KTC applications 에서 채운다(기업명 커버리지 77%).
+    company: r['지원기업'] || '',
+    job: r['지원공고'] || r['최신 지원포지션'],
     batch: r['발송배치'],
   })).filter(r => /^[^@\s]+@[^@\s.]+\.[^@\s]+$/.test(r.email))
   for (const l of leads) l.lead = leadId(l.email)
@@ -144,8 +187,11 @@ async function mxOk(domains) {
   const isMember = leads.filter(l => members.has(l.email)).length
   leads = leads.filter(l => !members.has(l.email) && !sentLeads.has(l.lead) && !unsubLeads.has(l.lead))
 
+  const noCompany = leads.filter(l => !l.company).length
+  if (withCompanyOnly) leads = leads.filter(l => l.company)
+
   console.log(`캠페인: ${campaign} | 모드: ${utmMode ? 'utm(배포 전)' : 'redirect(추적)'}`)
-  console.log(`리스트 ${total}명${batch && batch !== true ? ` → 배치 ${batch} ${before}명` : ''} | 제외: FYI가입 ${isMember} · 발송済 ${sentLeads.size} · 수신거부 ${unsubLeads.size} → 남은 대상 ${leads.length}명`)
+  console.log(`리스트 ${total}명${batch && batch !== true ? ` → 배치 ${batch} ${before}명` : ''} | 제외: FYI가입 ${isMember} · 발송済 ${sentLeads.size} · 수신거부 ${unsubLeads.size}${withCompanyOnly ? ` · 기업명없음 ${noCompany}` : ''} → 남은 대상 ${leads.length}명`)
 
   const capped = max ? leads.slice(0, max) : leads
   if (!capped.length) { console.log('보낼 대상 없음.'); return }
@@ -157,8 +203,10 @@ async function mxOk(domains) {
   if (bad.length) console.log(`MX 없음 제외 ${bad.length}건: ${bad.slice(0, 5).map(l => l.email).join(', ')}`)
 
   const s = queue[0]
-  console.log(`\n이번 발송 ${queue.length}명 (샘플: ${s.email} / ${s.ten} / ${s.position})`)
-  console.log(`제목: ${subject(s.position)}`)
+  const withCo = queue.filter(l => l.company).length
+  console.log(`\n이번 발송 ${queue.length}명 (샘플: ${s.email} / ${s.ten} / ${s.company || '(기업명 없음)'} - ${s.job})`)
+  console.log(`기업명 개인화 ${withCo}명 / 폴백(직무만) ${queue.length - withCo}명`)
+  console.log(`제목: ${subject(s)}`)
   console.log(`CTA: ${ctaFor(s)}`)
 
   if (!doSend) {
@@ -168,13 +216,13 @@ async function mxOk(domains) {
 
   // ── 실발송 + 발송 기록 ──
   const resend = await resendClient()
-  const log = [['email', 'ten', 'position', 'batch', 'lead', 'resend_id', 'error'].join(',')]
+  const log = [['email', 'ten', 'company', 'job', 'batch', 'lead', 'resend_id', 'error'].join(',')]
   let ok = 0, fail = 0
   for (const l of queue) {
     const cta = ctaFor(l), unsub = unsubFor(l)
     try {
       const resp = await resend.emails.send({
-        from: RESEND_FROM, to: l.email, subject: subject(l.position),
+        from: RESEND_FROM, to: l.email, subject: subject(l),
         text: emailText(l, cta, unsub), html: render(l, cta, unsub),
         headers: utmMode ? undefined : { 'List-Unsubscribe': `<${unsub}>`, 'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click' },
       })
@@ -182,13 +230,13 @@ async function mxOk(domains) {
       // PII 는 events 에 남기지 않는다 — 사람 식별은 lead 해시, 이메일은 아래 로컬 CSV 로그에만.
       await sb.from('events').insert([{
         event: 'coldmail_public_sent', page: '/campaign/ktc',
-        meta: { campaign, lead: l.lead, lang: 'vi', mode: utmMode ? 'utm' : 'redirect', resend_id: resp.data?.id || null },
+        meta: { campaign, lead: l.lead, lang, mode: utmMode ? 'utm' : 'redirect', resend_id: resp.data?.id || null },
       }])
-      log.push([l.email, l.ten, l.position, l.batch, l.lead, resp.data?.id || '', ''].map(csvCell).join(','))
+      log.push([l.email, l.ten, l.company, l.job, l.batch, l.lead, resp.data?.id || '', ''].map(csvCell).join(','))
       ok++
     } catch (e) {
       fail++
-      log.push([l.email, l.ten, l.position, l.batch, l.lead, '', e.message].map(csvCell).join(','))
+      log.push([l.email, l.ten, l.company, l.job, l.batch, l.lead, '', e.message].map(csvCell).join(','))
       console.error(`  ✗ ${l.email}: ${e.message}`)
     }
     await sleep(600) // Resend rate limit 2req/s

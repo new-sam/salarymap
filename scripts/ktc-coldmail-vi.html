@@ -2,10 +2,12 @@
   [확정안 · OneClick] KTC 리드 → FYI 유입 콜드메일 — 베트남어판 (coldmain.html 의 번역본)
   포지셔닝: FYI = KTC가 만든 채용 플랫폼 / 목표 = FYI 가입
   훅: "이력서 등록, 지원 전부 클릭 한 번에" + 유저 1인당 월평균 받은 오퍼 3.7번
-  제목: KTC - {{position}} — bạn đã ứng tuyển vị trí này
-  개인화 변수: {{name}} = 호칭(tên), {{position}} = 최신 지원포지션
+  제목: {기업} - {직무} — bạn đã ứng tuyển vị trí này  (기업명 없으면 "KTC - {직무}")
+  개인화 변수: {{name}} = 호칭(tên), {{position}} = 지원공고, {{atCompany}} = " tại <b>기업명</b>"(없으면 빈 값)
   {{ctaUrl}} = 공고 목록(/jobs)로 연결, {{unsubscribeUrl}} = 수신거부
-  샘플값: name="Tây", position="Full-stack Developer"
+  샘플값: name="Tây", position="Full-stack Developer", company="NALDA"
+  ※ 지원자가 기억하는 앵커는 'KTC'가 아니라 지원한 기업·공고 → 제목/첫 문장에 기업명을 앞세운다.
+     기업명 커버리지 77%(KTC applications.applied_company) · 나머지는 직무만 쓰는 폴백.
   ※ '983'은 공고+기업 합산 표기값(실데이터 513+250=763) — 집계 기준 확인 필요
   ※ 폰트: Pretendard 는 베트남어 성조 부호 배치가 어색해 제외 (globals.css 의 :lang(vi) 정책과 동일).
      메일 클라이언트는 웹폰트를 대부분 막으므로 시스템 폰트만 사용.
@@ -32,7 +34,7 @@
 
     <p style="margin:0 0 16px;font-size:15px;line-height:1.75;color:#4E5968;">
       Chào <b style="color:#191F28;">{{name}}</b>,<br />
-      Vừa qua bạn đã ứng tuyển vị trí <b>{{position}}</b> thông qua <b>K-Tech College</b>.
+      Vừa qua bạn đã ứng tuyển vị trí <b>{{position}}</b>{{atCompany}} thông qua <b>K-Tech College</b>.
       Mỗi lần ứng tuyển lại phải tải CV lên và điền lại thông tin &mdash; <b style="color:#191F28;">bạn có thấy bất tiện không?</b>
     </p>
 
