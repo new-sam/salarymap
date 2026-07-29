@@ -24,8 +24,9 @@ export default function ZaloGroup() {
   const { t } = useT();
 
   return (
-    /* 위:아래 = 약 2:1. 바로 아래가 푸터라 위아래를 1:1 로 두면 아랫동이 뜬다(원본도 동일). */
-    <section style={{ ...s.sectionAlt, padding: 'clamp(56px, 9vw, 120px) 0 clamp(28px, 4.5vw, 56px)' }}>
+    /* 위쪽 패딩 0 — 바로 위 FAQ 도 같은 흰 배경(sectionAlt)이라 그쪽 아래 패딩(120px)이
+       그대로 간격이 된다. 여기에 또 120 을 주면 240px 짜리 빈 공백이 생긴다. */
+    <section style={{ ...s.sectionAlt, padding: '0 0 clamp(28px, 4.5vw, 56px)' }}>
       <div style={s.container}>
         <Reveal>
           <div className="ktc-zalo">
