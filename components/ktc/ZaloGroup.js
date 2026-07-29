@@ -24,7 +24,8 @@ export default function ZaloGroup() {
   const { t } = useT();
 
   return (
-    <section style={s.sectionAlt}>
+    /* 위:아래 = 약 2:1. 바로 아래가 푸터라 위아래를 1:1 로 두면 아랫동이 뜬다(원본도 동일). */
+    <section style={{ ...s.sectionAlt, padding: 'clamp(56px, 9vw, 120px) 0 clamp(28px, 4.5vw, 56px)' }}>
       <div style={s.container}>
         <Reveal>
           <div className="ktc-zalo">
