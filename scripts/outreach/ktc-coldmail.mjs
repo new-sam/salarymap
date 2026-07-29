@@ -180,7 +180,9 @@ async function mxOk(domains) {
   const members = new Set(profs.map(p => p.email.trim().toLowerCase()))
   // 이미 보낸 사람 / 수신거부한 사람 제외 — events 가 발송 원장(재실행 idempotent).
   const evts = await fetchAll(() => sb.from('events').select('event, meta').in('event', ['coldmail_public_sent', 'coldmail_unsub']))
-  const sentLeads = new Set(evts.filter(e => e.event === 'coldmail_public_sent' && e.meta?.campaign === campaign && e.meta?.lead).map(e => e.meta.lead))
+  // 발송이력은 캠페인 키가 아니라 KTC 계열 전체(coldmail-ktc*)로 본다 —
+  // 템플릿 변형마다 키를 나눠도(1탄 → 2탄) 같은 사람에게 두 번 가지 않아야 하므로.
+  const sentLeads = new Set(evts.filter(e => e.event === 'coldmail_public_sent' && /^coldmail-ktc/.test(e.meta?.campaign || '') && e.meta?.lead).map(e => e.meta.lead))
   const unsubLeads = new Set(evts.filter(e => e.event === 'coldmail_unsub' && e.meta?.lead).map(e => e.meta.lead))
 
   const before = leads.length
