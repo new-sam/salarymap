@@ -34,7 +34,7 @@ export default async function handler(req, res) {
   const adminUrl = `https://salary-fyi.com/admin/jobs`;
   const lines = [
     `*${job.title}* (${job.company})`,
-    `위치: ${job.location || '-'} · ₫${Math.round((job.salary_min||0)/1e6)}M–${Math.round((job.salary_max||0)/1e6)}M`,
+    `위치: ${job.location || '-'} · ${job.salary_min > 0 ? `₫${Math.round(job.salary_min/1e6)}M–${Math.round((job.salary_max||0)/1e6)}M` : '급여 협의'}`,
     `작성자: ${user.email}`,
     `승인: ${adminUrl}`,
   ];

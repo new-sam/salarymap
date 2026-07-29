@@ -49,15 +49,22 @@ export function getEstimatedSalary(job) {
   return { min, max, estimated: true }
 }
 
+// 기업 직접등록 공고가 급여 미기입(0)으로 게시된 경우 — 추정치 대신 '협의 가능'으로 표시
+export function isSalaryNegotiable(job) {
+  return job.source === 'company_self' && !(job.salary_min > 0 && job.salary_max > 0)
+}
+
 export function formatSalaryCard(job) {
   if (job.salary_min > 0 && job.salary_max > 0) {
     return { min: job.salary_min, max: job.salary_max, estimated: false }
   }
+  if (isSalaryNegotiable(job)) return { min: 0, max: 0, estimated: false, negotiable: true }
   return getEstimatedSalary(job)
 }
 
 export function getHighSalaryThreshold(jobs) {
   if (!jobs.length) return Infinity
-  const mins = jobs.map(j => formatSalaryCard(j).min).sort((a, b) => b - a)
+  const mins = jobs.map(j => formatSalaryCard(j).min).filter(m => m > 0).sort((a, b) => b - a)
+  if (!mins.length) return Infinity
   return mins[Math.floor(mins.length * 0.30)] || mins[mins.length - 1]
 }

@@ -1,5 +1,7 @@
 import supabase from '../../lib/supabaseAdmin';
 import { domainFor } from '../../lib/companyDomains';
+import { cleanSalaries, percentile } from '../../lib/salaryStats';
+import { excludeSuspicious } from '../../lib/salaryQuality';
 
 // Curated background images per company
 const px = id => `https://images.pexels.com/photos/${id}/pexels-photo-${id}.jpeg?auto=compress&cs=tinysrgb&w=800&h=500&fit=crop`;
@@ -48,11 +50,11 @@ const BG_POOL = [
 ];
 
 // Map wizard role names to DB role names
+// Design/QA는 submissions에 실제 값으로 존재한다(각 60건/27건). Frontend·Backend로
+// 치환하면 남의 직무 연봉이 카드에 뜨므로 매핑하지 않는다.
 const ROLE_MAP = {
   'Data · AI': 'Data Engineer',
   'PM · PO': 'PM',
-  'Design': 'Frontend',
-  'QA': 'Backend',
 };
 
 function resolveRole(role) {
@@ -133,28 +135,25 @@ async function fetchSalaryStats(role, experience) {
   // Fallback: client-side aggregation (RPC not deployed) — discard any partial RPC data
   for (const k in map) delete map[k];
   const raw = {};
-  let q = supabase.from('submissions').select('company, salary, role, experience');
+  let q = supabase.from('submissions').select('company, salary, role, experience, created_at');
   if (role) q = q.eq('role', role);
   if (experience) q = q.eq('experience', experience);
-  const rows = await fetchAll(q);
+  const rows = excludeSuspicious(await fetchAll(q), experience);
   (rows || []).forEach(s => {
     if (!s.company) return;
     const key = s.company.trim().toLowerCase();
     if (!raw[key]) raw[key] = { salaries: [], roles: {} };
-    if (s.salary && s.salary >= 5 && s.salary <= 200) raw[key].salaries.push(s.salary);
+    if (s.salary != null) raw[key].salaries.push(s.salary);
     if (s.role) raw[key].roles[s.role] = (raw[key].roles[s.role] || 0) + 1;
   });
   Object.entries(raw).forEach(([key, v]) => {
-    const sorted = [...v.salaries].sort((a, b) => a - b);
-    const mid = Math.floor(sorted.length / 2);
-    const median = sorted.length === 0 ? 0
-      : sorted.length % 2 === 0 ? Math.round((sorted[mid - 1] + sorted[mid]) / 2)
-      : sorted[mid];
+    // RPC·company-detail과 동일 정제(하드범위 3–300 + IQR)로 카드/상세 수치 일치
+    const clean = cleanSalaries(v.salaries);
     map[key] = {
-      count: sorted.length,
-      median,
-      min: sorted[0] || 0,
-      max: sorted[sorted.length - 1] || 0,
+      count: clean.length,
+      median: clean.length ? Math.round(percentile(clean, 0.5)) : 0,
+      min: clean[0] || 0,
+      max: clean[clean.length - 1] || 0,
       topRole: Object.entries(v.roles).sort((a, b) => b[1] - a[1])[0]?.[0] || null,
     };
   });

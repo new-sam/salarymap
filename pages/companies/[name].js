@@ -6,6 +6,7 @@ import { createClient } from '@supabase/supabase-js'
 import { supabase } from '../../lib/supabaseClient'
 import { useT } from '../../lib/i18n'
 import { domainFor, logoUrlFor } from '../../lib/companyDomains'
+import { isSalaryNegotiable } from '../../utils/salary'
 import { track } from '../../lib/track'
 
 export async function getServerSideProps({ params }) {
@@ -301,9 +302,11 @@ export default function CompanyPage({ companyName, domain }) {
               <Link key={j.id} href={`/jobs?jobId=${j.id}`} className="cpg-card">
                 <div className="cpg-card-meta">{[j.location, j.type].filter(Boolean).join(' · ')}</div>
                 <div className="cpg-card-title">{j.title}</div>
-                {j.salary_min > 0 && (
+                {j.salary_min > 0 ? (
                   <div className="cpg-job-sal">{Math.round(j.salary_min / 1e6)}M – {Math.round(j.salary_max / 1e6)}M VND</div>
-                )}
+                ) : isSalaryNegotiable(j) ? (
+                  <div className="cpg-job-sal">{t('jobs.salaryNegotiable')}</div>
+                ) : null}
               </Link>
             ))
           )

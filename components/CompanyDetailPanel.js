@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useT } from '../lib/i18n'
+import { percentile } from '../lib/salaryStats'
 import Icon from './Icon'
 
 const DEFAULT_VISIBLE = 5
@@ -31,17 +32,14 @@ export default function CompanyDetailPanel({
     if (!isOpen || !company) return
     setDetail(null)
     setVisibleCount(DEFAULT_VISIBLE)
-    setActiveRole(isSubmitted && userRole ? userRole : 'All')
+    // 'All'로 시작 — 카드가 보여주는 회사 전체 범위와 같은 표본이어야 최저/최고가 일치한다.
+    // 내 직무로 열면 카드(전체)와 헤더 건수(전체)만 맞고 최저/최고는 또 달라진다.
+    setActiveRole('All')
     setLoading(true)
     fetch(`/api/company-detail?company=${encodeURIComponent(company)}`)
       .then(r => r.json())
       .then(d => {
         setDetail(d)
-        // If default role has no data, fallback to 'All'
-        if (isSubmitted && userRole && d?.feed) {
-          const hasRoleData = d.feed.some(r => r.role === userRole)
-          if (!hasRoleData) setActiveRole('All')
-        }
         setLoading(false)
       })
       .catch(() => setLoading(false))
@@ -89,10 +87,11 @@ export default function CompanyDetailPanel({
     const base = activeRole === 'All' ? detail.feed : detail.feed.filter(r => r.role === activeRole)
     const salaries = base.map(r => r.salary).sort((a, b) => a - b)
     if (!salaries.length) return null
+    // 카드(RPC percentile_cont)와 동일한 보간 백분위 — 카드/패널 중앙값 일치
     return {
-      p25: salaries[Math.floor(salaries.length * 0.25)],
-      median: salaries[Math.floor(salaries.length * 0.5)],
-      p75: salaries[Math.floor(salaries.length * 0.75)],
+      p25: percentile(salaries, 0.25),
+      median: percentile(salaries, 0.5),
+      p75: percentile(salaries, 0.75),
       count: salaries.length,
       min: salaries[0],
       max: salaries[salaries.length - 1],

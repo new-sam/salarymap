@@ -377,10 +377,10 @@ export default function ResultSection({ salary, role, experience, company, isLog
                       </div>
                     </div>
                     <div style={{ textAlign:'right', flexShrink:0 }}>
-                      <div style={{ fontSize:'14px', fontWeight:700, color:'#fff', whiteSpace:'nowrap' }}>{min}–{max}M</div>
+                      <div style={{ fontSize:'14px', fontWeight:700, color:'#fff', whiteSpace:'nowrap' }}>{sal.negotiable ? t('jobs.salaryNegotiable') : `${min}–${max}M`}</div>
                       {showBump && bump > 0
                         ? <div style={{ fontSize:'11px', fontWeight:700, color:'#ff4400', marginTop:'2px' }}>+{bump}%</div>
-                        : <div style={{ fontSize:'10px', color:'rgba(255,255,255,0.3)', marginTop:'2px' }}>{t('result.perMonth')}</div>}
+                        : !sal.negotiable && <div style={{ fontSize:'10px', color:'rgba(255,255,255,0.3)', marginTop:'2px' }}>{t('result.perMonth')}</div>}
                     </div>
                   </div>
                 )

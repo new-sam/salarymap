@@ -13,23 +13,24 @@ export default async function handler(req, res) {
   if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' })
 
   try {
-    const COLUMNS_FULL = 'id, full_name, headline, position, yoe_months, location, resume_url, photo_url, is_resume_public, skills, university, major, graduation_year, experiences, english_cert, korean_cert, work_type, salary_min, salary_max, salary_currency, resume_platform, resume_source, verified_school_name, verified_school_tier, updated_at, created_at'
-    const COLUMNS_FALLBACK = 'id, full_name, headline, position, yoe_months, location, resume_url, photo_url, is_resume_public, skills, university, major, graduation_year, experiences, english_cert, korean_cert, work_type, salary_min, salary_max, salary_currency, resume_platform, verified_school_name, verified_school_tier, updated_at, created_at'
+    const COLUMNS_FULL = 'id, full_name, headline, position, yoe_months, location, resume_url, photo_url, is_resume_public, skills, university, major, graduation_year, experiences, english_cert, korean_cert, work_type, salary_min, salary_max, salary_currency, resume_platform, resume_source, resume_summary, verified_school_name, verified_school_tier, updated_at, created_at'
+    // resume_summary는 20260727, resume_source는 20260621 migration — 아직 안 깔린
+    // 환경에서는 해당 컬럼만 빼고 재시도해 어드민 뷰가 계속 뜨게 한다.
+    const COLUMNS_NO_SUMMARY = COLUMNS_FULL.replace(', resume_summary', '')
+    const COLUMNS_FALLBACK = COLUMNS_NO_SUMMARY.replace(', resume_source', '')
 
-    let { data, error } = await supabase
+    const fetchWith = (columns) => supabase
       .from('user_profiles')
-      .select(COLUMNS_FULL)
+      .select(columns)
       .not('resume_url', 'is', null)
       .order('updated_at', { ascending: false })
 
-    // resume_source column is added by 20260621 migration; until it lands in
-    // a given env, retry without it so the admin view still works.
+    let { data, error } = await fetchWith(COLUMNS_FULL)
+    if (error && /resume_summary/.test(error.message || '')) {
+      ;({ data, error } = await fetchWith(COLUMNS_NO_SUMMARY))
+    }
     if (error && /resume_source/.test(error.message || '')) {
-      ;({ data, error } = await supabase
-        .from('user_profiles')
-        .select(COLUMNS_FALLBACK)
-        .not('resume_url', 'is', null)
-        .order('updated_at', { ascending: false }))
+      ;({ data, error } = await fetchWith(COLUMNS_FALLBACK))
     }
 
     if (error) return res.status(500).json({ error: error.message })

@@ -32,7 +32,7 @@ const FREE_MAIL_DOMAINS = new Set([
 const EMPTY = {
   title: '', description: '', role: 'Backend', type: 'hybrid', country: 'vietnam',
   location: 'Hồ Chí Minh', experience_min: 1, experience_max: 5,
-  salary_min: 30000000, salary_max: 50000000, tech_stack: '', benefits: '',
+  salary_min: 30000000, salary_max: 50000000, salary_negotiable: false, tech_stack: '', benefits: '',
   headcount: '', deadline: '',
   image_url: '', logo_url: '',
   work_days: '', work_hours: '', paid_leave: '', contract_type: '',
@@ -142,7 +142,7 @@ export default function NewJobPage() {
     setErr('');
     if (!form.title.trim()) { setErr(t('company.err.titleRequired')); return; }
     if (!form.description.trim()) { setErr(t('company.err.descRequired')); return; }
-    if (Number(form.salary_min) >= Number(form.salary_max)) { setErr(t('company.err.salaryRange')); return; }
+    if (!form.salary_negotiable && Number(form.salary_min) >= Number(form.salary_max)) { setErr(t('company.err.salaryRange')); return; }
     setStatus('saving');
 
     const techArr = form.tech_stack.split(',').map(s => s.trim()).filter(Boolean);
@@ -162,7 +162,9 @@ export default function NewJobPage() {
       description: form.description.trim(),
       role: form.role, type: form.type, country: form.country, location: form.location,
       experience_min: Number(form.experience_min), experience_max: Number(form.experience_max),
-      salary_min: Number(form.salary_min), salary_max: Number(form.salary_max),
+      // 급여 협의: 0-0 저장 → 지면에서는 '협의 가능'으로 표시 (utils/salary.js isSalaryNegotiable)
+      salary_min: form.salary_negotiable ? 0 : Number(form.salary_min),
+      salary_max: form.salary_negotiable ? 0 : Number(form.salary_max),
       tech_stack: techArr, benefits: benefitsArr,
       headcount: form.headcount ? Number(form.headcount) : null,
       deadline: form.deadline || null,
@@ -369,14 +371,22 @@ export default function NewJobPage() {
 
               <div className="grid grid-cols-2 gap-3">
                 <Field label={t('company.jobsnew.salaryMin')}>
-                  <UInput type="number" value={form.salary_min} onChange={e => setF('salary_min', e.target.value)} />
+                  <UInput type="number" value={form.salary_min} onChange={e => setF('salary_min', e.target.value)} disabled={form.salary_negotiable} />
                   <div className="text-xs text-gray-500 mt-1">{t('company.jobsnew.vndHint', { n: Math.round(form.salary_min / 1e6) })}</div>
                 </Field>
                 <Field label={t('company.jobsnew.salaryMax')}>
-                  <UInput type="number" value={form.salary_max} onChange={e => setF('salary_max', e.target.value)} />
+                  <UInput type="number" value={form.salary_max} onChange={e => setF('salary_max', e.target.value)} disabled={form.salary_negotiable} />
                   <div className="text-xs text-gray-500 mt-1">{t('company.jobsnew.vndHint', { n: Math.round(form.salary_max / 1e6) })}</div>
                 </Field>
               </div>
+
+              <label className="flex items-center gap-2 mt-2 cursor-pointer select-none">
+                <input type="checkbox" checked={form.salary_negotiable} onChange={e => setF('salary_negotiable', e.target.checked)} className="accent-[#ff4400]" />
+                <span className="text-sm text-gray-700">{t('company.jobsnew.negotiable')}</span>
+              </label>
+              {form.salary_negotiable && (
+                <div className="text-xs text-gray-500 mt-1">{t('company.jobsnew.negotiableHint')}</div>
+              )}
 
               <h2 className="text-[12px] font-extrabold text-gray-500 uppercase tracking-[0.08em] mt-5 mb-3">{t('company.jobsnew.skillH')}</h2>
 

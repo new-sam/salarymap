@@ -640,21 +640,17 @@ export default function Home({ initialCompanies = [] }) {
     return () => { delete window.scrollToSubmit; };
   }, []);
 
-  // Fetch companies — only re-fetch after submission with role/experience filter
+  // Fetch companies — 항상 회사 전체 기준(필터 없음).
+  // 제출 후 role/experience로 재조회하면 카드는 "내 직무+연차" 표본(2~3건)이 되는데
+  // 상세 패널은 회사 전체를 보여줘서 같은 회사가 3건/301건으로 어긋났다. 개인화된
+  // 비교는 결과 섹션(percentile)이 담당하고, 카드는 회사 전체 범위만 보여준다.
   useEffect(() => {
-    if (wizardStep > 5 && wRole && wExp) {
-      const url = `/api/companies?role=${encodeURIComponent(wRole)}&experience=${encodeURIComponent(wExp)}`;
-      fetch(url)
-        .then(r => { if (!r.ok) throw new Error(); return r.json(); })
-        .then(data => { if (Array.isArray(data)) setApiCompanies(data); })
-        .catch(() => {});
-    } else if (!apiCompanies.length) {
-      fetch('/api/companies')
-        .then(r => { if (!r.ok) throw new Error(); return r.json(); })
-        .then(data => { if (Array.isArray(data)) setApiCompanies(data); })
-        .catch(() => {});
-    }
-  }, [wizardStep > 5]);
+    if (apiCompanies.length) return;
+    fetch('/api/companies')
+      .then(r => { if (!r.ok) throw new Error(); return r.json(); })
+      .then(data => { if (Array.isArray(data)) setApiCompanies(data); })
+      .catch(() => {});
+  }, []);
 
   // Mark grid root as ready for portal rendering
   useEffect(() => {

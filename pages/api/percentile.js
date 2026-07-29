@@ -1,5 +1,6 @@
 import supabase from '../../lib/supabaseAdmin';
 import { excludeSuspicious } from '../../lib/salaryQuality';
+import { inSalaryRange } from '../../lib/salaryStats';
 
 function median(arr) {
   const s = [...arr].sort((a, b) => a - b);
@@ -127,8 +128,8 @@ export default async function handler(req, res) {
   // Fetch all submissions for this role + experience (including company)
   // 슬라이더 기본값(62) 미입력 통과 의심값은 공개 통계에서 제외
   const data = excludeSuspicious(await fetchAll(
-    supabase.from('submissions').select('salary, company').eq('role', role).eq('experience', experience)
-  ), experience);
+    supabase.from('submissions').select('salary, company, created_at').eq('role', role).eq('experience', experience)
+  ), experience).filter(r => inSalaryRange(r.salary));
 
   if (!data || data.length < 5) {
     const topCompanies = seedTopCompanies(role, experience, sal, company || '');
@@ -166,13 +167,13 @@ export default async function handler(req, res) {
 
   // Build companiesPayingMore: all companies for this role with median > user salary
   const allRoleSubs = excludeSuspicious(await fetchAll(
-    supabase.from('submissions').select('company, salary, experience').eq('role', role)
+    supabase.from('submissions').select('company, salary, experience, created_at').eq('role', role)
   ));
 
   const byCoAll = {};
   (allRoleSubs || []).forEach(row => {
     const co = (row.company || '').trim();
-    if (!co || row.salary < 5 || row.salary > 200) return;
+    if (!co || !inSalaryRange(row.salary)) return;
     if (!byCoAll[co]) byCoAll[co] = [];
     byCoAll[co].push(row.salary);
   });

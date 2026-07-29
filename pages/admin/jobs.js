@@ -7,6 +7,7 @@ import { supabase } from '../../lib/supabaseClient'
 import { useAdmin } from '../../lib/adminSwr'
 import Icon from '../../components/Icon'
 import { ROLE_GROUPS } from '../../constants/jobs'
+import { isSalaryNegotiable } from '../../utils/salary'
 import KtcLandingJobsView from '../../components/admin/KtcLandingJobsView'
 import JobPreview from '../../components/jobs/JobPreview'
 import { Chips, Dropdown, DatePickerSingle } from '../../components/admin/FormControls'
@@ -524,7 +525,7 @@ export default function AdminJobs() {
                         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 10 }}>
                           {job.location && <span style={chip}>{job.location}</span>}
                           {job.type && <span style={chip}>{job.type}</span>}
-                          <span style={{ ...chip, color: '#191F28', fontWeight: 700 }}>{Math.round(job.salary_min/1e6)}–{Math.round(job.salary_max/1e6)}M</span>
+                          <span style={{ ...chip, color: '#191F28', fontWeight: 700 }}>{isSalaryNegotiable(job) ? L('협의 가능', 'Negotiable') : `${Math.round(job.salary_min/1e6)}–${Math.round(job.salary_max/1e6)}M`}</span>
                           {job.source === 'company_self' && <span style={{ ...chip, background: '#EAF2FE', color: '#1D4ED8' }}>{L('기업등록', 'Company')}</span>}
                           {job.is_featured && <span style={{ ...chip, background: '#FEF6E0', color: '#92660E' }}>{L('프리미엄', 'Premium')}</span>}
                         </div>
