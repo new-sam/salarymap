@@ -12,7 +12,9 @@ export default async function handler(req, res) {
       await supabase.from('events').insert([{
         event: 'coldmail_unsub',
         page: '/api/ktc/unsub',
-        meta: { campaign: parsed.campaign, lead: leadId(parsed.email) },
+        // via: 'link' = 본문 하단 링크(메일을 열어야 누를 수 있음) / 'oneclick' = Gmail 등의
+        // List-Unsubscribe 버튼(열지 않고도 누름). 열어보고 거부한 건지 구분하는 유일한 단서다.
+        meta: { campaign: parsed.campaign, lead: leadId(parsed.email), via: req.method === 'POST' ? 'oneclick' : 'link' },
       }])
     } catch (e) {
       console.error('ktc/unsub log failed:', e.message)

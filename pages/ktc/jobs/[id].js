@@ -67,7 +67,25 @@ export default function KtcJobDetail({ job }) {
                 )}
                 <div style={{ minWidth: 0 }}>
                   <p style={{ fontSize: 14, fontWeight: 750, color: BRAND }}>{job.company}</p>
-                  {job.jobId && <p style={{ marginTop: 2, fontSize: 12, color: c.textFaint }}>Job ID: {job.jobId}</p>}
+                  {/* Job ID 와 회사 홈페이지를 한 줄에 — 홈페이지는 지원 흐름과 무관한 참고 링크라
+                      사이드 패널의 CTA 자리를 차지할 필요가 없다. */}
+                  <div style={{ marginTop: 3, display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', fontSize: 12, color: c.textFaint }}>
+                    {job.jobId && <span>Job ID: {job.jobId}</span>}
+                    {job.jobId && job.companyWebsite && <span aria-hidden="true">·</span>}
+                    {job.companyWebsite && (
+                      <a
+                        href={job.companyWebsite}
+                        target="_blank"
+                        rel="noreferrer noopener"
+                        style={{ display: 'inline-flex', alignItems: 'center', gap: 3, color: c.textDim, fontWeight: 600 }}
+                      >
+                        {t('ktc.jobs.companySite')}
+                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M7 17L17 7M8 7h9v9" />
+                        </svg>
+                      </a>
+                    )}
+                  </div>
                 </div>
               </div>
 
@@ -94,20 +112,6 @@ export default function KtcJobDetail({ job }) {
                 {job.headcount ? <Meta>{`×${job.headcount}`}</Meta> : null}
               </div>
 
-              {job.companyWebsite && (
-                <a
-                  className="ktc-jd-site-inline"
-                  href={job.companyWebsite}
-                  target="_blank"
-                  rel="noreferrer noopener"
-                  style={{ marginTop: 14, display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 13.5, fontWeight: 700, color: BRAND }}
-                >
-                  {t('ktc.jobs.companySite')}
-                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M7 17L17 7M8 7h9v9" />
-                  </svg>
-                </a>
-              )}
 
               <div style={{ marginTop: 34, display: 'grid', gap: 26 }}>
                 {blocks.map((b) => (
@@ -129,16 +133,6 @@ export default function KtcJobDetail({ job }) {
                 <div style={{ marginTop: 16 }}>
                   <KtcApply job={job} />
                 </div>
-                {job.companyWebsite && (
-                  <a
-                    href={job.companyWebsite}
-                    target="_blank"
-                    rel="noreferrer noopener"
-                    style={{ ...s.btnGhost, width: '100%', marginTop: 8, padding: '12px 20px', fontSize: 13.5 }}
-                  >
-                    {t('ktc.jobs.companySite')}
-                  </a>
-                )}
               </div>
             </aside>
           </div>
@@ -182,8 +176,6 @@ export default function KtcJobDetail({ job }) {
           .ktc-jd-side { display: block; position: sticky; top: 80px; }
           .ktc-jd-bar { display: none; }
           .ktc-jd-pad { --ktc-jd-pb: clamp(64px, 8vw, 104px); }
-          /* 사이드 패널에 같은 링크가 있어 본문 인라인 링크는 감춘다 */
-          .ktc-jd-site-inline { display: none !important; }
         }
       `}</style>
     </>

@@ -852,7 +852,10 @@ export default function JobsPage() {
         .jw { max-width: 1080px; margin: 0 auto; padding: 36px 40px 80px; }
         .jw-eye { font-size: 11px; font-weight: 700; color: #ff4400; letter-spacing: .08em; margin-bottom: 8px; }
         .jw-h1 { font-size: 24px; font-weight: 800; color: #111; margin-bottom: 6px; letter-spacing: -0.3px; }
-        .jw-sub { font-size: 14px; color: #999; margin-bottom: 20px; }
+        .jw-sub { font-size: 14px; color: #999; }
+        /* 제목(좌) / 검색(우) — 검색은 제목 옆이라 목록 폭을 먹지 않게 고정폭으로 작게. */
+        .jw-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 24px; margin-bottom: 22px; }
+        .jw-head-l { min-width: 0; }
 
         .jbm { display: flex; align-items: center; gap: 14px; background: linear-gradient(135deg, #ff4400 0%, #ff6b35 100%); border-radius: 14px; padding: 16px 20px; margin-bottom: 24px; box-shadow: 0 4px 16px rgba(255,68,0,0.18); }
         .jbm-icon { width: 36px; height: 36px; border-radius: 10px; background: rgba(255,255,255,0.22); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
@@ -862,10 +865,9 @@ export default function JobsPage() {
         .jbm-tags { display: flex; flex-wrap: wrap; gap: 6px; }
         .jbm-tag { font-size: 13px; color: #fff; background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.3); border-radius: 6px; padding: 4px 10px; font-weight: 600; white-space: nowrap; backdrop-filter: blur(4px); }
 
-        .jf-head { padding: 12px 0 4px; border-bottom: 1px solid #e8e8e8; }
-        .jf-search { position: relative; margin-bottom: 16px; }
-        .jf-search-icon { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); pointer-events: none; }
-        .jf-search-input { width: 100%; padding: 11px 36px 11px 40px; font-size: 14px; border: 1px solid #e0e0e0; border-radius: 10px; background: #fafaf8; outline: none; transition: border-color .15s; font-family: inherit; }
+        .jf-search { position: relative; width: 280px; flex-shrink: 0; }
+        .jf-search-icon { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); pointer-events: none; }
+        .jf-search-input { width: 100%; padding: 9px 32px 9px 36px; font-size: 13px; border: 1px solid #e0e0e0; border-radius: 10px; background: #fafaf8; outline: none; transition: border-color .15s; font-family: inherit; }
         .jf-search-input:focus { border-color: #ff4400; }
         .jf-search-input::placeholder { color: #999; }
         .jf-search-clear { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); background: none; border: none; font-size: 18px; color: #999; cursor: pointer; line-height: 1; }
@@ -953,7 +955,9 @@ export default function JobsPage() {
         .jf-sort-saved.on { color: #ff4400; }
 
         /* Hot jobs */
-        .jh { margin-top: 20px; margin-bottom: 32px; }
+        /* 헤더(제목+검색)와 가르는 구분선 — 아래 칩 줄의 구분선과 같은 색으로 맞춘다.
+           padding-top 45 + border 1 = 46px — 아래 '채용공고 매칭' 텍스트 위 여백과 같은 값. */
+        .jh { margin-top: 4px; margin-bottom: 32px; padding-top: 45px; border-top: 1px solid #ececea; }
         .jh-title {
           font-size: 16px; font-weight: 800; color: #111; margin-bottom: 14px;
           display: flex; align-items: center; gap: 7px;
@@ -1108,6 +1112,9 @@ export default function JobsPage() {
         @media (max-width: 900px) { .jg { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
         @media (max-width: 768px) {
           .jw { padding: 28px 16px 60px; }
+          /* 좁은 화면에선 옆에 둘 자리가 없다 — 제목 아래 전체 폭으로 */
+          .jw-head { flex-direction: column; align-items: stretch; gap: 14px; }
+          .jf-search { width: 100%; }
           .jw-h1 { font-size: 20px; }
           .jg { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; }
           .jbm { padding: 12px 14px; gap: 10px; }
@@ -1150,10 +1157,19 @@ export default function JobsPage() {
       `}</style>
 
       <div className="jw">
-        {/* HEADER */}
-        <div className="jw-eye">{t('jobs.eyebrow')}</div>
-        <div className="jw-h1">{t('jobs.h1')}</div>
-        <div className="jw-sub">{t('jobs.sub')}</div>
+        {/* HEADER — 제목 왼쪽, 검색 오른쪽. 제목 오른쪽이 비어 있어 검색을 그 자리로 올린다. */}
+        <div className="jw-head">
+          <div className="jw-head-l">
+            <div className="jw-eye">{t('jobs.eyebrow')}</div>
+            <div className="jw-h1">{t('jobs.h1')}</div>
+            <div className="jw-sub">{t('jobs.sub')}</div>
+          </div>
+          <div className="jf-search">
+            <svg className="jf-search-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#aaa" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <input className="jf-search-input" placeholder={t('jobs.searchPlaceholder')} value={searchQuery} onChange={e => { setSearchQuery(e.target.value) }} />
+            {searchQuery && <button className="jf-search-clear" onClick={() => setSearchQuery('')}>×</button>}
+          </div>
+        </div>
 
         {(
           <div className="jw-content">
@@ -1172,16 +1188,6 @@ export default function JobsPage() {
                 </div>
               </div>
             )}
-
-            {/* Search + Filters */}
-            <div className="jf-head">
-            <div className="jf-search">
-              <svg className="jf-search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#aaa" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-              <input className="jf-search-input" placeholder={t('jobs.searchPlaceholder')} value={searchQuery} onChange={e => { setSearchQuery(e.target.value) }} />
-              {searchQuery && <button className="jf-search-clear" onClick={() => setSearchQuery('')}>×</button>}
-            </div>
-
-            </div>
 
             {/* Hot jobs section */}
             {hotJobs.length > 0 && (
