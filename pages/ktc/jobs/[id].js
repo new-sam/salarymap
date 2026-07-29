@@ -1,10 +1,10 @@
 import Head from 'next/head';
 import Link from 'next/link';
-import ComingSoonModal from '../../../components/ktc/ComingSoonModal';
 import { Meta, formatSalary } from '../../../components/ktc/JobBoard';
-import { BRAND, c, openApplySoon, s } from '../../../components/ktc/ktcStyles';
+import { BRAND, c, s } from '../../../components/ktc/ktcStyles';
 import { useT } from '../../../lib/i18n';
 import { fetchKtcJob } from '../../../lib/ktcJobs';
+import KtcApply from '../../../components/ktc/KtcApply';
 
 /* 공고 상세 — 랜딩 안의 인라인 패널이 아니라 독립 페이지.
    서버에서 읽어 넣으므로 공고 본문이 초기 HTML 에 들어간다(공유·검색 대응). */
@@ -126,9 +126,9 @@ export default function KtcJobDetail({ job }) {
             <aside className="ktc-jd-side">
               <div style={{ ...s.card, padding: 22 }}>
                 <p style={{ fontSize: 13.5, lineHeight: 1.7, color: c.textDim }}>{t('ktc.jobs.sub')}</p>
-                <button style={{ ...s.btnPrimary, width: '100%', marginTop: 16 }} onClick={openApplySoon}>
-                  {t('ktc.jobs.apply')} →
-                </button>
+                <div style={{ marginTop: 16 }}>
+                  <KtcApply job={job} />
+                </div>
                 {job.companyWebsite && (
                   <a
                     href={job.companyWebsite}
@@ -147,12 +147,8 @@ export default function KtcJobDetail({ job }) {
 
       {/* 모바일 — 상단 패널 대신 하단 고정 바. 본문 공간을 뺏지 않으면서 항상 손에 닿는다. */}
       <div className="ktc-jd-bar">
-        <button style={{ ...s.btnPrimary, width: '100%' }} onClick={openApplySoon}>
-          {t('ktc.jobs.apply')} →
-        </button>
+        <KtcApply job={job} variant="bar" />
       </div>
-
-      <ComingSoonModal />
 
       <style>{`
         /* 모바일: 사이드 패널을 감추고 하단 고정 바로 대체 — 상단을 차지하지 않는다.
