@@ -144,6 +144,11 @@ a {
     padding-top: 0 !important;
     padding-bottom: 0 !important;
   }
+  /* 캠페인 랜딩(/ktc)은 FYI 헤더를 쓰므로 상단 52px 예약은 그대로 두고,
+     하단 탭바가 없으므로 아래쪽 예약만 제거. */
+  body[data-standalone-landing="1"] {
+    padding-bottom: 0 !important;
+  }
   .mtab {
     display: flex !important;
     position: fixed !important;

@@ -19,6 +19,7 @@ function activePageFor(pathname) {
   if (pathname === '/my-applications') return 'my-applications';
   if (pathname === '/saved-jobs') return 'saved-jobs';
   if (pathname === '/profile') return 'profile';
+  if (pathname.startsWith('/ktc')) return 'ktc';
   return null;
 }
 
@@ -77,6 +78,9 @@ export default function App({ Component, pageProps }) {
   // /cv 는 푸터에 언어 스위처가 필요해 노출한다.
   const isAdLanding = router.pathname === '/cv' || router.pathname.startsWith('/promo');
   const isPromoLanding = router.pathname.startsWith('/promo');
+  // /ktc 는 FYI 헤더(GlobalNav)·푸터(GlobalFooter)를 그대로 쓰는 캠페인 랜딩.
+  // 자체로 갖는 건 섹션 탭바뿐이고, 하단 탭바·앱 설치 모달만 전환 동선을 끊어서 제외한다.
+  const isStandaloneLanding = router.pathname.startsWith('/ktc');
 
   // Flag the body so the mobile-only top/bottom reservations (52/60px in
   // globals.css) collapse for company pages — they render their own header.
@@ -95,7 +99,9 @@ export default function App({ Component, pageProps }) {
     // global top/bottom mobile reservations.
     if (isAdmin) document.body.dataset.adminMobile = '1';
     else delete document.body.dataset.adminMobile;
-  }, [isCompany, isJobDetail, isAdLanding, isCard, isAdmin]);
+    if (isStandaloneLanding) document.body.dataset.standaloneLanding = '1';
+    else delete document.body.dataset.standaloneLanding;
+  }, [isCompany, isJobDetail, isAdLanding, isCard, isAdmin, isStandaloneLanding]);
   const activePage = activePageFor(router.pathname);
 
   // 웹 첫 진입(세션당 1회) — landing 은 홈에서만 떠서 공고/CV/회사 링크 등 직접 유입을 놓친다.
@@ -124,7 +130,8 @@ export default function App({ Component, pageProps }) {
   // 모바일: 스크롤 다운하면 헤더·하단탭바를 숨겨 가용 화면을 넓히고, 스크롤 업/최상단이면
   // 다시 띄운다. 콘텐츠 페이지 + /cv(헤더는 static이라 스크롤로 사라지지만 하단 탭바는 남아
   // 같이 숨겨야 함) — 명함·기업·어드민·공고상세는 제외. /promo는 activePage 없어 자동 제외.
-  const autoHideChrome = !!activePage && !isCard && !isCompany && !isAdmin && !isJobDetail;
+  // /ktc 는 섹션 탭바가 헤더 바로 아래 sticky 로 붙어서, 헤더만 사라지면 탭바가 허공에 뜬다.
+  const autoHideChrome = !!activePage && !isCard && !isCompany && !isAdmin && !isJobDetail && !isStandaloneLanding;
   useEffect(() => {
     if (typeof window === 'undefined') return;
     const body = document.body;
@@ -172,10 +179,10 @@ export default function App({ Component, pageProps }) {
           <GlobalFooter />
         )}
       </div>
-      {!isCompany && !isJobDetail && !isCard && !isAdmin && !isLogin && <MobileTabBar />}
+      {!isCompany && !isJobDetail && !isCard && !isAdmin && !isLogin && !isStandaloneLanding && <MobileTabBar />}
       <GlobalLoginModal />
       <GoogleOneTap />
-      {!isAdmin && !isAdLanding && !isCard && !isCompany && !isLogin && <AppDownloadModal />}
+      {!isAdmin && !isAdLanding && !isCard && !isCompany && !isLogin && !isStandaloneLanding && <AppDownloadModal />}
       <Toaster
         position="bottom-right"
         richColors

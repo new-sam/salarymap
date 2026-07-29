@@ -110,6 +110,25 @@ export default function GlobalNav({ activePage, onLogin, onJobsClick, mobileSear
         .gnav-link-accent:hover { color: #ff8a40 !important; }
         .gnav-link-light { color: #f2f0eb !important; font-weight: 400; }
         .gnav-link-light:hover { color: #f2f0eb !important; opacity: 0.85; }
+        /* '관' 성격의 별도 존 링크(K-Tech College 등) — 평문 메뉴와 구분되도록
+           아웃라인 칩으로 처리한다. 주황 솔리드 CTA와는 채도로 층을 나눔. */
+        .gnav-zone {
+          display: inline-flex; align-items: center;
+          padding: 5px 13px !important;
+          border-radius: 100px;
+          border: 1px solid rgba(255,96,0,0.45);
+          background: rgba(255,96,0,0.10);
+          color: #ff8f4d !important;
+          font-size: 13px; font-weight: 600; letter-spacing: 0.1px;
+          transition: background .15s, border-color .15s, color .15s;
+        }
+        .gnav-zone:hover { background: rgba(255,96,0,0.19); border-color: rgba(255,96,0,0.75); color: #ffa76e !important; opacity: 1; }
+        /* 칩은 배경이 채워져 현재 위치가 드러나므로, gnav-link.on 의 주황 밑줄은 끈다(이중 강조). */
+        .gnav-zone.on { background: #ff6000; border-color: #ff6000; color: #fff !important; }
+        .gnav-zone.on::after { display: none; }
+        /* 모바일/웹앱뷰 전용 K-Tech 칩 — gnav-l-menu 가 768px 이하에서 숨겨져
+           데스크톱 칩이 사라지므로, 상단바 로고 옆에 축약형으로 하나 더 둔다. */
+        .gnav-zone-m { display: none; }
         /* Welcome-bonus pill CTA — same shimmer as the old jobs CTA */
         .gnav-welcome-cta { position: relative; display: inline-flex; align-items: center; background: #ff6000; padding: 7px 16px !important; border-radius: 100px; color: #fff !important; font-size: 14px; font-weight: 400; transition: background .15s; }
         .gnav-welcome-cta:hover { background: #ff7218; }
@@ -199,6 +218,9 @@ export default function GlobalNav({ activePage, onLogin, onJobsClick, mobileSear
           .gnav-logo img { height: 26px; width: auto; }
           .gnav-r { display: none; }
           .gnav-r-mobile { display: flex; align-items: center; gap: 10px; }
+          /* 로고 옆 K-Tech 칩이 붙도록 데스크톱 36px 간격을 좁힌다. */
+          .gnav-l { gap: 12px; }
+          .gnav-zone-m { display: inline-flex; font-size: 11.5px; padding: 4px 11px !important; }
         }
         .gnav-mobile-login { font-size: 12px; font-weight: 700; color: #f2f0eb; background: none; border: 1px solid rgba(242,240,235,0.6); padding: 6px 14px; border-radius: 100px; cursor: pointer; font-family: 'Barlow', sans-serif; }
         .gnav-mobile-search-btn { display: flex; align-items: center; justify-content: center; width: 32px; height: 32px; border: none; background: none; cursor: pointer; padding: 0; }
@@ -211,6 +233,7 @@ export default function GlobalNav({ activePage, onLogin, onJobsClick, mobileSear
             <img src="/fyi-logo.png" alt="FYI" />
             <span dangerouslySetInnerHTML={{ __html: t('nav.brandTagline') }} />
           </Link>
+          <Link href="/ktc" className={`gnav-link gnav-zone gnav-zone-m${activePage === 'ktc' ? ' on' : ''}`} onClick={() => track('click_ktc_nav', { meta: { source: 'mobile' }, page: activePage || null })}>K-company</Link>
           <div className="gnav-l-menu">
             <Link href="/" className={`gnav-link gnav-link-light${activePage === 'home' ? ' on' : ''}`}>{t('nav.salaryCompare')}</Link>
             <Link href="/cv" className={`gnav-link gnav-link-light${activePage === 'cv' ? ' on' : ''}`} onClick={() => track('click_welcome_bonus_nav', { meta: { source: 'web' }, page: activePage || null })}>
@@ -219,6 +242,8 @@ export default function GlobalNav({ activePage, onLogin, onJobsClick, mobileSear
             </Link>
             <Link href="/jobs" className={`gnav-link gnav-link-light${activePage === 'jobs' ? ' on' : ''}`} onClick={() => onJobsClick?.()}>{t('nav.jobs')}</Link>
             <Link href="/community" className={`gnav-link gnav-link-light${activePage === 'community' ? ' on' : ''}`} onClick={() => track('click_community_nav', { meta: { source: 'web' }, page: activePage || null })}>{t('nav.community')}</Link>
+            {/* K-Tech College 랜딩(/ktc)은 자체 내비를 쓰므로 activePage 가 없다 — on 상태 없이 링크만. */}
+            <Link href="/ktc" className={`gnav-link gnav-zone${activePage === 'ktc' ? ' on' : ''}`} onClick={() => track('click_ktc_nav', { meta: { source: 'web' }, page: activePage || null })}>K-company</Link>
           </div>
         </div>
         <div className="gnav-r-mobile">
