@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useMemo, useCallback } from 'react'
+import { useState, useEffect, useRef, useMemo } from 'react'
 import Head from 'next/head'
 import Link from 'next/link'
 import { getClientId, mirrorClarity } from '../lib/track'
@@ -7,7 +7,8 @@ import { supabase } from '../lib/supabaseClient'
 import { useT } from '../lib/i18n'
 import Icon from '../components/Icon'
 import JobFilterModal from '../components/jobs/JobFilterModal'
-import { DEFAULT_IMAGES, roleLabel, roleGroupKey, roleGroupLabel, jobInCategoryGroup, categoryGroupLabel, JOBS_PER_PAGE } from '../constants/jobs'
+import FilterDropdown, { FilterOption } from '../components/jobs/FilterDropdown'
+import { DEFAULT_IMAGES, roleLabel, roleGroupKey, roleGroupLabel, jobInCategoryGroup, categoryGroupLabel, JOBS_PER_PAGE, ROLE_GROUPS, TYPE_OPTIONS } from '../constants/jobs'
 import { COMPANY_PROFILES } from '../data/companyProfiles.js'
 import { formatSalaryCard, isSalaryNegotiable } from '../utils/salary'
 import { generateCompanyDescription } from '../utils/companyDescription'
@@ -165,6 +166,8 @@ export default function JobsPage() {
   const [expMin, setExpMin] = useState('')
   const [expMax, setExpMax] = useState('')
   const [techFilters, setTechFilters] = useState([])
+  // 공고 출처 탭 — 'all' | 'ktc'(K-company 전용관, jobs.source='ktc')
+  const [sourceTab, setSourceTab] = useState('all')
   const [filterOpen, setFilterOpen] = useState(false) // 통합 필터 모달
   const [isSubmitted, setIsSubmitted] = useState(false)
   const [isLoggedIn, setIsLoggedIn] = useState(false)
@@ -208,7 +211,7 @@ export default function JobsPage() {
   const [profileResumeUrl, setProfileResumeUrl] = useState(null)
   const [similarApplying, setSimilarApplying] = useState(null)
   const [similarArmed, setSimilarArmed] = useState(null)
-  const [visibleCount, setVisibleCount] = useState(JOBS_PER_PAGE)
+  const [page, setPage] = useState(1)
 
   const track = (event, page, meta) => {
     // userId/clientId 를 함께 보내야 유저 단위 dedup·퍼널 분석이 가능(lib/track.js 와 동일 기준).
@@ -224,7 +227,7 @@ export default function JobsPage() {
   }, [detailJob?.id])
 
   // Reset visible count when filters change
-  useEffect(() => { setVisibleCount(JOBS_PER_PAGE) }, [searchQuery, roleFilters, typeFilters, techFilters, expMin, expMax, router.query.company])
+  useEffect(() => { setPage(1) }, [searchQuery, roleFilters, typeFilters, techFilters, expMin, expMax, sourceTab, sortBy, router.query.company])
 
   // 직무별 광고 딥링크: /jobs?role=Backend (또는 ?role=cat:software) 로 랜딩하면 해당 직무로
   // 바로 필터 → ATS(기업 직접등록) 공고가 최상단(companyFirst)에 떠서 우선 매칭·지원 유도.
@@ -233,18 +236,6 @@ export default function JobsPage() {
     if (typeof r === 'string' && r) setRoleFilters([r])
   }, [router.query.role])
 
-  // Infinite scroll — 센티널이 뷰포트(+여유)에 들어오면 다음 페이지를 붙인다.
-  // 관찰자를 ref 콜백에서 생성해 마운트 순서에 안 흔들리게 하고, 센티널엔 key={visibleCount}를
-  // 줘 페이지가 늘 때마다 재관찰 → 화면이 찰 때까지 연속 로드(이미지 리플로우로 인한 멈춤 방지).
-  const loadMoreObserver = useRef(null)
-  const loadMoreCallback = useCallback(node => {
-    loadMoreObserver.current?.disconnect()
-    if (!node) return
-    loadMoreObserver.current = new IntersectionObserver(([entry]) => {
-      if (entry.isIntersecting) setVisibleCount(v => v + JOBS_PER_PAGE)
-    }, { rootMargin: '400px' })
-    loadMoreObserver.current.observe(node)
-  }, [])
 
   // UTM capture + page view tracking on jobs page
   useEffect(() => {
@@ -432,6 +423,8 @@ export default function JobsPage() {
   const baseFilteredJobs = (() => {
     const q = searchQuery.toLowerCase().trim()
     return jobs.filter(job => {
+      // 출처 탭 — 본 목록과 필터 모달의 실시간 건수가 같이 줄어들도록 여기서 건다
+      if (sourceTab === 'ktc' && job.source !== 'ktc') return false
       if (companyQuery && job.company?.toLowerCase() !== companyQuery) return false
       if (q && !job.title?.toLowerCase().includes(q) && !job.company?.toLowerCase().includes(q)) return false
       if (hideExpired && job.deadline && new Date(job.deadline) < new Date()) return false
@@ -569,6 +562,37 @@ export default function JobsPage() {
   const modalFilterCount = roleFilters.length + typeFilters.length + techFilters.length + (expMin !== '' || expMax !== '' ? 1 : 0)
   const activeFilterCount = modalFilterCount + (searchQuery ? 1 : 0)
 
+  /* ── 인라인 드롭다운(직무·경력·근무형태) 표시용 ──
+     roleFilters 는 'cat:<대분류>' | 소분류값 | 'grp:*'(광고 랜딩) 이 섞인다.
+     드롭다운은 대분류만 다루고, 나머지는 기존처럼 요약 칩으로 남긴다. */
+  const catTokens = roleFilters.filter(r => r.startsWith('cat:'))
+  const otherRoleTokens = roleFilters.filter(r => !r.startsWith('cat:'))
+  const more = (n) => (n > 1 ? ` +${n - 1}` : '')
+  const roleSummary = catTokens.length ? roleGroupLabel(catTokens[0].slice(4), lang) + more(catTokens.length) : null
+  const typeSummary = typeFilters.length ? typeLabel(typeFilters[0]) + more(typeFilters.length) : null
+
+  // 경력은 범위 두 칸을 매번 채우게 하는 대신 흔한 구간을 미리 묶어 한 번에 고르게 한다.
+  const EXP_PRESETS = [
+    { key: '', min: '', max: '' },
+    { key: '0-1', min: 0, max: 1 },
+    { key: '1-3', min: 1, max: 3 },
+    { key: '3-5', min: 3, max: 5 },
+    { key: '5-10', min: 5, max: 10 },
+    { key: '10+', min: 10, max: '' },
+  ]
+  // 한국어는 '3년'처럼 붙이고 vi/en 은 'năm'/'yrs' 앞에 공백이 필요하다
+  const yrs = (n) => `${n}${lang === 'ko' ? '' : ' '}${t('jobs.expYears')}`
+  const expPresetLabel = (p) => {
+    if (!p.key) return t('jobs.filterAll')
+    if (p.max === '') return `${yrs(p.min)}+`
+    return yrs(`${p.min}~${p.max}`)
+  }
+  const expSummary = (() => {
+    if (expMin === '' && expMax === '') return null
+    const hit = EXP_PRESETS.find(p => p.key && String(p.min) === String(expMin) && String(p.max) === String(expMax))
+    return hit ? expPresetLabel(hit) : `${expMin || 0}~${expMax || 15}${t('jobs.expYears')}`
+  })()
+
   // 핫 섹션: 필터 없는 기본 뷰에서만. featured 우선, 부족하면 마감임박·고연봉으로 채움.
   // 핫에 노출된 공고는 아래 메인 그리드에서 제외해 같은 공고가 두 번 보이지 않게 한다.
   const hotJobs = (() => {
@@ -591,6 +615,26 @@ export default function JobsPage() {
   const gridJobs = (() => {
     const base = hotJobs.length ? filteredJobs.filter(j => !hotIds.has(j.id)) : filteredJobs
     return roleFilters.includes('grp:ktc') ? pinPriority(base, KTC_PRIORITY_IDS) : base
+  })()
+
+  /* 페이지네이션 — 20개씩 끊어 보여준다(무한 스크롤에서 전환).
+     목록이 길어 스크롤로만 훑으면 "몇 개 중 어디"인지 감이 없고 뒤로 돌아오기도 어렵다. */
+  const totalPages = Math.max(1, Math.ceil(gridJobs.length / JOBS_PER_PAGE))
+  const curPage = Math.min(page, totalPages)
+  const pageJobs = gridJobs.slice((curPage - 1) * JOBS_PER_PAGE, curPage * JOBS_PER_PAGE)
+  // 페이지를 바꾸면 목록 맨 위로 — 스크롤이 중간에 남아 있으면 다음 페이지 중간부터 보인다.
+  const goPage = (n) => {
+    setPage(n)
+    document.querySelector('.jf-bar')?.scrollIntoView({ block: 'start', behavior: 'smooth' })
+  }
+  /* 페이지 번호 — 1 … 4 5 [6] 7 8 … 20 형태로 앞뒤 2개씩만. */
+  const pageNums = (() => {
+    const out = [], push = (v) => { if (out[out.length - 1] !== v) out.push(v) }
+    for (let i = 1; i <= totalPages; i++) {
+      if (i === 1 || i === totalPages || Math.abs(i - curPage) <= 2) push(i)
+      else push('…')
+    }
+    return out
   })()
 
   const resetFilters = () => { setRoleFilters([]); setTypeFilters([]); setExpMin(''); setExpMax(''); setTechFilters([]); setSearchQuery('') }
@@ -826,7 +870,15 @@ export default function JobsPage() {
         .jf-search-input::placeholder { color: #999; }
         .jf-search-clear { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); background: none; border: none; font-size: 18px; color: #999; cursor: pointer; line-height: 1; }
 
-        .jf { display: flex; gap: 8px; margin-bottom: 0; flex-wrap: wrap; align-items: center; }
+        /* 칩 한 줄 — 출처(전체/K-company) · 직무 · 경력 · 근무형태 · 상세필터 순으로 왼쪽 정렬,
+           '마감된 공고 제외'만 오른쪽 끝. 아래 .jf-bar 는 건수(좌) / 정렬(우) 두 덩어리. */
+        .jf { display: flex; gap: 8px; margin-bottom: 16px; padding-bottom: 10px; border-bottom: 1px solid #ececea; flex-wrap: wrap; align-items: center; }
+        /* 칩 높이 통일 32px — 출처칩·드롭다운·상세필터가 각자 다른 padding 이라 한 줄에
+           놓으면 들쭉날쭉했다. 드롭다운(.fd-btn)은 styled-jsx 로 스코프돼 있어 여기서 못 건드리므로
+           FilterDropdown 안에서 같은 32px 로 맞춰 둔다. */
+        .jf > .jf-chip, .jf > .jf-open {
+          height: 32px; padding: 0 13px; font-size: 12.5px; border-radius: 999px;
+        }
         .jf-open { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 700; color: #555; background: #fafaf8; border: 1px solid #e0e0e0; padding: 8px 14px; border-radius: 999px; cursor: pointer; font-family: inherit; white-space: nowrap; transition: all .15s; }
         .jf-open:hover { border-color: #999; }
         .jf-open.on { color: #ff4400; border-color: #ff4400; background: #fff2ec; }
@@ -869,10 +921,26 @@ export default function JobsPage() {
         .jf-exp-apply { font-size: 13px; font-weight: 700; color: #fff; background: #ff4400; border: none; padding: 8px 20px; border-radius: 6px; cursor: pointer; font-family: inherit; }
         .jf-exp-apply:hover { background: #e63d00; }
 
-        .jf-bar { position: sticky; top: 56px; z-index: 15; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; background: #f7f7f5; padding: 10px 0; border-bottom: 1px solid #ececea; }
+        /* 건수/정렬이 위, 칩 줄이 아래. 구분선은 두 줄을 묶어 목록과 가르도록 아래쪽(.jf)에 둔다. */
+        .jf-bar { position: sticky; top: 56px; z-index: 15; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; margin-bottom: 0; background: #f7f7f5; padding: 10px 0 6px; }
         .jf-bar-l { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
         .jf-chip { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; color: #555; background: #fafaf8; border: 1px solid #e0e0e0; border-radius: 999px; padding: 5px 12px; cursor: pointer; font-family: inherit; white-space: nowrap; }
         .jf-chip:hover { border-color: #999; }
+        /* 페이지네이션 */
+        .jp { display: flex; align-items: center; justify-content: center; gap: 4px; margin: 28px 0 8px; flex-wrap: wrap; }
+        .jp-n, .jp-nav {
+          min-width: 34px; height: 34px; padding: 0 8px;
+          font-family: inherit; font-size: 13px; font-weight: 600; color: #444;
+          background: #fff; border: 1px solid #e0e0de; border-radius: 8px; cursor: pointer;
+        }
+        .jp-n:hover, .jp-nav:not(:disabled):hover { border-color: #999; }
+        .jp-n.on { background: #ff4400; border-color: #ff4400; color: #fff; font-weight: 800; }
+        .jp-nav { font-size: 16px; line-height: 1; color: #666; }
+        .jp-nav:disabled { opacity: .35; cursor: default; }
+        .jp-gap { min-width: 20px; text-align: center; color: #aaa; font-size: 13px; }
+        /* 출처 탭 — 선택된 쪽만 브랜드 오렌지로 채운다(GlobalNav 의 K-company 칩과 같은 톤) */
+        .jf-src-btn.on { background: #ff4400; border-color: #ff4400; color: #fff; }
+        .jf-src-btn.on:hover { border-color: #ff4400; }
         .jf-chip-n { display: inline-flex; align-items: center; justify-content: center; min-width: 16px; height: 16px; border-radius: 50%; background: #ff4400; color: #fff; font-size: 10px; font-weight: 800; padding: 0 4px; }
         .jf-chip-x { font-size: 14px; color: #999; line-height: 1; }
         .jf-check { display: flex; align-items: center; gap: 5px; font-size: 13px; color: #777; cursor: pointer; user-select: none; }
@@ -1113,37 +1181,6 @@ export default function JobsPage() {
               {searchQuery && <button className="jf-search-clear" onClick={() => setSearchQuery('')}>×</button>}
             </div>
 
-            {/* 필터 — 드롭다운 4개 대신 버튼 하나 + 모달(탭·실시간 건수). 적용된 조건은 요약 칩으로 노출(× 탭 시 개별 해제). */}
-            <div className="jf">
-              <button className={`jf-open${modalFilterCount > 0 ? ' on' : ''}`} onClick={() => setFilterOpen(true)}>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="4" y1="7" x2="20" y2="7"/><line x1="7" y1="12" x2="17" y2="12"/><line x1="10" y1="17" x2="14" y2="17"/></svg>
-                {t('jobs.filterModalTitle')}
-                {modalFilterCount > 0 && <span className="jf-open-n">{modalFilterCount}</span>}
-              </button>
-              {roleFilters.map(rf => (
-                <button key={rf} className="jf-sum" onClick={() => setRoleFilters(prev => prev.filter(x => x !== rf))}>
-                  {rf.startsWith('grp:') ? categoryGroupLabel(rf.slice(4), lang) : rf.startsWith('cat:') ? roleGroupLabel(rf.slice(4), lang) : roleLabel(rf, lang)} <span className="jf-sum-x">×</span>
-                </button>
-              ))}
-              {(expMin !== '' || expMax !== '') && (
-                <button className="jf-sum" onClick={() => { setExpMin(''); setExpMax('') }}>
-                  {`${expMin || 0} ~ ${expMax || 15}${t('jobs.expYears')}`} <span className="jf-sum-x">×</span>
-                </button>
-              )}
-              {typeFilters.map(tf => (
-                <button key={tf} className="jf-sum" onClick={() => setTypeFilters(prev => prev.filter(x => x !== tf))}>
-                  {typeLabel(tf)} <span className="jf-sum-x">×</span>
-                </button>
-              ))}
-              {techFilters.map(tf => (
-                <button key={tf} className="jf-sum" onClick={() => setTechFilters(prev => prev.filter(x => x !== tf))}>
-                  {tf} <span className="jf-sum-x">×</span>
-                </button>
-              ))}
-              {activeFilterCount > 0 && (
-                <button className="jf-reset" onClick={resetFilters}>{t('jobs.filterReset')}</button>
-              )}
-            </div>
             </div>
 
             {/* Hot jobs section */}
@@ -1179,16 +1216,6 @@ export default function JobsPage() {
             <div className="jf-bar" style={{ visibility: jobsLoaded ? 'visible' : 'hidden' }}>
               <div className="jf-bar-l">
                 <div className="jf-count">{t('jobs.matchCount', { count: filteredJobs.length })}</div>
-                {companyQuery && (
-                  <button className="jf-chip" onClick={clearCompanyQuery}>{String(router.query.company)} <span className="jf-chip-x">×</span></button>
-                )}
-                {activeFilterCount > 0 && (
-                  <button className="jf-chip" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>{t('jobs.filters')} <span className="jf-chip-n">{activeFilterCount}</span></button>
-                )}
-                <label className="jf-check">
-                  <input type="checkbox" checked={hideExpired} onChange={e => { setHideExpired(e.target.checked) }} />
-                  <span>{t('jobs.hideExpired')}</span>
-                </label>
               </div>
               <div className="jf-sort">
                 {['spread','latest','deadline'].map(key => (
@@ -1203,15 +1230,111 @@ export default function JobsPage() {
               </div>
             </div>
 
+            {/* 필터 — 자주 쓰는 3개(직무 대분류·경력·근무형태)는 인라인 드롭다운으로 앞에 빼고,
+                나머지 상세 조건은 우측 드로어 모달로 보낸다. 드롭다운은 고르는 즉시 목록에 반영.
+                대분류로 안 잡히는 role 토큰(광고 랜딩 grp:*, 소분류)만 요약 칩으로 남긴다. */}
+            <div className="jf">
+              {/* 출처 탭 — K-company(전용관) 공고만 따로 보기. jobs.source='ktc' */}
+              {[['all', t('jobs.source.all')], ['ktc', t('jobs.source.ktc')]].map(([key, label]) => (
+                <button
+                  key={key}
+                  className={`jf-chip jf-src-btn${sourceTab === key ? ' on' : ''}`}
+                  onClick={() => setSourceTab(key)}
+                >
+                  {label}
+                </button>
+              ))}
+
+              <FilterDropdown label={t('jobs.filterRole')} summary={roleSummary} active={catTokens.length > 0}>
+                {ROLE_GROUPS.map(g => {
+                  const token = `cat:${g.key}`
+                  return (
+                    <FilterOption
+                      key={g.key}
+                      checked={roleFilters.includes(token)}
+                      onClick={() => setRoleFilters(prev => prev.includes(token) ? prev.filter(x => x !== token) : [...prev, token])}
+                    >
+                      {g.label[lang] || g.label.en}
+                    </FilterOption>
+                  )
+                })}
+              </FilterDropdown>
+
+              <FilterDropdown label={t('jobs.filterExp')} summary={expSummary} active={expMin !== '' || expMax !== ''}>
+                {EXP_PRESETS.map(p => (
+                  <FilterOption
+                    key={p.key || 'all'}
+                    multi={false}
+                    checked={String(expMin) === String(p.min) && String(expMax) === String(p.max)}
+                    onClick={() => { setExpMin(p.min); setExpMax(p.max) }}
+                  >
+                    {expPresetLabel(p)}
+                  </FilterOption>
+                ))}
+              </FilterDropdown>
+
+              <FilterDropdown label={t('jobs.filterType')} summary={typeSummary} active={typeFilters.length > 0}>
+                {TYPE_OPTIONS.map(tp => (
+                  <FilterOption
+                    key={tp}
+                    checked={typeFilters.includes(tp)}
+                    onClick={() => setTypeFilters(prev => prev.includes(tp) ? prev.filter(x => x !== tp) : [...prev, tp])}
+                  >
+                    {typeLabel(tp)}
+                  </FilterOption>
+                ))}
+              </FilterDropdown>
+
+              <button className={`jf-open${modalFilterCount > 0 ? ' on' : ''}`} onClick={() => setFilterOpen(true)}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="4" y1="7" x2="20" y2="7"/><line x1="7" y1="12" x2="17" y2="12"/><line x1="10" y1="17" x2="14" y2="17"/></svg>
+                {t('jobs.filterDetail')}
+                {modalFilterCount > 0 && <span className="jf-open-n">{modalFilterCount}</span>}
+              </button>
+
+              {otherRoleTokens.map(rf => (
+                <button key={rf} className="jf-sum" onClick={() => setRoleFilters(prev => prev.filter(x => x !== rf))}>
+                  {rf.startsWith('grp:') ? categoryGroupLabel(rf.slice(4), lang) : roleLabel(rf, lang)} <span className="jf-sum-x">×</span>
+                </button>
+              ))}
+              {techFilters.map(tf => (
+                <button key={tf} className="jf-sum" onClick={() => setTechFilters(prev => prev.filter(x => x !== tf))}>
+                  {tf} <span className="jf-sum-x">×</span>
+                </button>
+              ))}
+              {companyQuery && (
+                <button className="jf-chip" onClick={clearCompanyQuery}>{String(router.query.company)} <span className="jf-chip-x">×</span></button>
+              )}
+              {activeFilterCount > 0 && (
+                <button className="jf-reset" onClick={resetFilters}>{t('jobs.filterReset')}</button>
+              )}
+              {/* 마감 제외는 조건이라 칩 줄 오른쪽 끝에 붙인다 */}
+              <label className="jf-check">
+                <input type="checkbox" checked={hideExpired} onChange={e => { setHideExpired(e.target.checked) }} />
+                <span>{t('jobs.hideExpired')}</span>
+              </label>
+            </div>
+
             {/* Grid */}
             <div className="jg" style={{ opacity: jobsLoaded ? 1 : 0, transition: 'opacity .3s' }}>
-              {gridJobs.slice(0, visibleCount).map((job, idx) => (
+              {pageJobs.map((job, idx) => (
                 <JobCard key={job.id} job={job} idx={idx} bump={getBump(job)} matched={isProfileMatch(job)}
                   bookmarked={bookmarks.includes(job.id)}
                   onOpen={openDetail} onToggleBookmark={toggleBookmark} typeLabel={typeLabel} t={t} lang={lang} />
               ))}
             </div>
-            {visibleCount < gridJobs.length && <div key={visibleCount} ref={loadMoreCallback} style={{ height: 1 }} />}
+
+            {/* 페이지네이션 — 20개씩. 한 페이지뿐이면 감춘다. */}
+            {jobsLoaded && totalPages > 1 && (
+              <nav className="jp" aria-label="pagination">
+                <button className="jp-nav" disabled={curPage === 1} onClick={() => goPage(curPage - 1)} aria-label="previous">‹</button>
+                {pageNums.map((n, i) => (
+                  n === '…'
+                    ? <span key={`e${i}`} className="jp-gap">…</span>
+                    : <button key={n} className={`jp-n${n === curPage ? ' on' : ''}`} onClick={() => goPage(n)}>{n}</button>
+                ))}
+                <button className="jp-nav" disabled={curPage === totalPages} onClick={() => goPage(curPage + 1)} aria-label="next">›</button>
+              </nav>
+            )}
 
             {/* Empty state */}
             {jobsLoaded && filteredJobs.length === 0 && (
