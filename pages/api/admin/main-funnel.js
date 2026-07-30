@@ -79,8 +79,8 @@ export default async function handler(req, res) {
   if (!user) return res.status(401).json({ error: 'Unauthorized' })
 
   const { from, to } = req.query
-  const startDate = from || new Date(Date.now() - 30 * 86400000).toISOString().slice(0, 10)
-  const endDate = to || new Date().toISOString().slice(0, 10)
+  const startDate = from || toVN(Date.now() - 30 * 86400000)
+  const endDate = to || toVN(Date.now())
   const startISO = new Date(`${startDate}T00:00:00+07:00`).toISOString()
   const endISO = new Date(`${endDate}T23:59:59+07:00`).toISOString()
 

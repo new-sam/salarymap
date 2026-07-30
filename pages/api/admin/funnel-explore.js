@@ -15,6 +15,7 @@ const supabase = createClient(
 
 const STEP_RE = /^[a-zA-Z0-9_.:-]{2,64}$/
 const MISSING_RPC = (e) => e && (e.code === 'PGRST202' || /function .* does not exist|schema cache/i.test(e.message || ''))
+const vnToday = () => new Date(Date.now() + 7 * 3600000).toISOString().slice(0, 10)
 
 export default async function handler(req, res) {
   const user = await verifyAdminOrDevStub(req)
@@ -23,7 +24,7 @@ export default async function handler(req, res) {
   const { from, to } = req.query
   const startISO = new Date(`${from || '2026-04-20'}T00:00:00+07:00`).toISOString()
   // to 는 "그 날 포함" 의미라 반열린 [from, to+1day) 로 변환
-  const endISO = new Date(new Date(`${to || new Date().toISOString().slice(0, 10)}T00:00:00+07:00`).getTime() + 86400000).toISOString()
+  const endISO = new Date(new Date(`${to || vnToday()}T00:00:00+07:00`).getTime() + 86400000).toISOString()
 
   try {
     if (req.query.catalog) {

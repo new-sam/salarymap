@@ -7,13 +7,15 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 )
 
+const toVN = (iso) => new Date(new Date(iso).getTime() + 7 * 3600000).toISOString().slice(0, 10)
+
 export default async function handler(req, res) {
   const user = await verifyAdminOrDevStub(req)
   if (!user) return res.status(401).json({ error: 'Unauthorized' })
 
   const { from, to } = req.query
-  const startDate = from || new Date(Date.now() - 30 * 86400000).toISOString().slice(0, 10)
-  const endDate = to || new Date().toISOString().slice(0, 10)
+  const startDate = from || toVN(Date.now() - 30 * 86400000)
+  const endDate = to || toVN(Date.now())
   // VN-day (UTC+7) bounds — matches toVN bucketing below + dashboard.js convention.
   const startISO = new Date(`${startDate}T00:00:00+07:00`).toISOString()
   const endISO = new Date(`${endDate}T23:59:59+07:00`).toISOString()
@@ -91,7 +93,6 @@ export default async function handler(req, res) {
   }
 
   // --- Daily aggregation (VN timezone, matching the rest of the dashboard) ---
-  const toVN = (iso) => new Date(new Date(iso).getTime() + 7 * 3600000).toISOString().slice(0, 10)
   const dailyMap = {}
   const newDay = (date) => ({ date, posts: 0, comments: 0, likes: 0, listViews: 0, postViews: 0, writeClicks: 0, navClicks: 0, follows: 0 })
   const bump = (iso, key) => {

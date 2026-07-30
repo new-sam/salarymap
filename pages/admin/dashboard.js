@@ -25,7 +25,7 @@ import {
   T, METRICS_BASE, EXP_COLORS, COLORS,
   inputStyle, sectionStyle, sectionTitle,
 } from '../../constants/dashboard'
-import { aggregateDaily, localDate } from '../../utils/dashboard'
+import { aggregateDaily, vnDate } from '../../utils/dashboard'
 
 const MetricChart = dynamic(() => import('../../components/DashboardCharts'), { ssr: false })
 // AppMetricsView pulls in recharts; load it lazily so the base admin bundle
@@ -78,14 +78,8 @@ export default function AdminDashboard() {
   const tableScrollRef = useRef(null)
   const [dualAxis, setDualAxis] = useState(true)
   const [autoRefresh, setAutoRefresh] = useState(true)
-  const yesterday = (() => {
-    const d = new Date(Date.now() - 86400000)
-    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
-  })()
-  const todayStr = (() => {
-    const d = new Date()
-    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
-  })()
+  const yesterday = vnDate(Date.now() - 86400000)
+  const todayStr = vnDate(Date.now())
   const [dateRange, setDateRange] = useState({ from: '2026-04-20', to: todayStr })
   // 탭별 기본 시작일: 메인 퍼널은 퍼널 계측 완비일(7/16)부터, 그 외는 4/20. 유저가 피커를
   // 직접 만지면(dateTouched) 그 선택을 모든 탭에서 존중하고 자동 전환을 멈춘다.
@@ -119,11 +113,7 @@ export default function AdminDashboard() {
     const appParams = new URLSearchParams()
     if (dateRange.from) appParams.set('from', dateRange.from)
     if (dateRange.to) appParams.set('to', dateRange.to)
-    const today = (() => {
-      const d = new Date()
-      return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
-    })()
-    const effectiveTo = dateRange.to >= yesterday ? today : dateRange.to
+    const effectiveTo = dateRange.to >= yesterday ? todayStr : dateRange.to
     const urls = [
       '/api/admin/resumes',                                            // resumes + talent (공유)
       `/api/admin/applications?${appParams}`,                          // applications
@@ -235,7 +225,7 @@ export default function AdminDashboard() {
 
     if (!realtime) return merged
     const today = realtime.date
-    if (today > dateRange.to && today !== localDate(Date.now())) return merged
+    if (today > dateRange.to && today !== vnDate(Date.now())) return merged
     // 이력서 공개(앱/웹)는 realtime 이벤트가 없고 DB 상태 스냅샷이라 today 행 교체 시
     // API가 준 오늘 값을 그대로 보존한다(교체로 라인이 끊기지 않게).
     const prevToday = merged.find(d => d.date === today)

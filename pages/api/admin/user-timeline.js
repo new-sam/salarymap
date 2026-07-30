@@ -8,6 +8,8 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 )
 
+const vnToday = () => new Date(Date.now() + 7 * 3600000).toISOString().slice(0, 10)
+
 export default async function handler(req, res) {
   const user = await verifyAdminOrDevStub(req)
   if (!user) return res.status(401).json({ error: 'Unauthorized' })
@@ -16,7 +18,7 @@ export default async function handler(req, res) {
   if (!key || key.length > 80) return res.status(400).json({ error: 'key required' })
   const { from, to } = req.query
   const startISO = new Date(`${from || '2026-04-20'}T00:00:00+07:00`).toISOString()
-  const endISO = new Date(new Date(`${to || new Date().toISOString().slice(0, 10)}T00:00:00+07:00`).getTime() + 86400000).toISOString()
+  const endISO = new Date(new Date(`${to || vnToday()}T00:00:00+07:00`).getTime() + 86400000).toISOString()
 
   try {
     const { data, error } = await supabase.rpc('user_timeline', {

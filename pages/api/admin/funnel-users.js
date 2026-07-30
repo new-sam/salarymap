@@ -11,6 +11,7 @@ const supabase = createClient(
 
 const STEP_RE = /^[a-zA-Z0-9_.:-]{2,64}$/
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+const vnToday = () => new Date(Date.now() + 7 * 3600000).toISOString().slice(0, 10)
 
 export default async function handler(req, res) {
   const user = await verifyAdminOrDevStub(req)
@@ -26,7 +27,7 @@ export default async function handler(req, res) {
   const windowSec = Math.max(1, Math.min(parseInt(req.query.window, 10) || 86400, 366 * 86400))
   const order = ['this', 'any', 'exact'].includes(req.query.order) ? req.query.order : 'this'
   const startISO = new Date(`${from || '2026-04-20'}T00:00:00+07:00`).toISOString()
-  const endISO = new Date(new Date(`${to || new Date().toISOString().slice(0, 10)}T00:00:00+07:00`).getTime() + 86400000).toISOString()
+  const endISO = new Date(new Date(`${to || vnToday()}T00:00:00+07:00`).getTime() + 86400000).toISOString()
 
   try {
     const rpcParams = {

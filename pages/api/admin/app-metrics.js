@@ -23,8 +23,8 @@ export default async function handler(req, res) {
   if (!admin) return res.status(401).json({ error: 'Unauthorized' })
 
   const { from, to } = req.query
-  const endDate = to || new Date().toISOString().slice(0, 10)
-  const startDate = from || new Date(Date.now() - 30 * DAY).toISOString().slice(0, 10)
+  const endDate = to || toVN(Date.now())
+  const startDate = from || toVN(Date.now() - 30 * DAY)
   // VN-day (UTC+7) bounds — matches toVN bucketing + retention day arithmetic below.
   const endISO = new Date(`${endDate}T23:59:59+07:00`).toISOString()
   const appStartISO = new Date(`${APP_EVENT_START}T00:00:00+07:00`).toISOString()

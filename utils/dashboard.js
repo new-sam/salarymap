@@ -39,9 +39,10 @@ export function aggregateDaily(daily, mode) {
   return Object.values(buckets).sort((a, b) => a.date.localeCompare(b.date))
 }
 
-export function localDate(ms) {
-  const d = new Date(ms)
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+// 대시보드의 "오늘"은 보는 사람 위치와 무관하게 항상 VN(UTC+7) 기준 — 집계(toVN)와
+// 같은 선에서 하루를 잘라야 마지막 날이 비거나 하루 밀리지 않는다.
+export function vnDate(ms) {
+  return new Date(ms + 7 * 3600000).toISOString().slice(0, 10)
 }
 
 export function sumDailyFrom(daily, keys, since) {

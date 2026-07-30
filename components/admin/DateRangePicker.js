@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
+import { vnDate } from '../../utils/dashboard'
 
 // App Store Connect 스타일 날짜 범위 피커 (알약 버튼 + 팝오버: 사전설정/일/주/월/기간)
 // 활성색은 어드민 브랜드 주황(#ff4400)으로 통일. value={from,to}(YYYY-MM-DD), onChange(from,to).
@@ -22,7 +23,9 @@ export default function DateRangePicker({ value, onChange }) {
   const [open, setOpen] = useState(false)
   const [tab, setTab] = useState('preset')
   const ref = useRef(null)
-  const today = new Date()
+  // 사전설정/오늘 표시는 브라우저 로컬이 아니라 VN(UTC+7) 날짜 기준. parse 로 그 날짜의
+  // 로컬 자정을 만들어, 아래 날짜 산술(addDays/getDay/fmt)이 그대로 맞아떨어지게 한다.
+  const today = parse(vnDate(Date.now()))
 
   const anchor = value?.to ? parse(value.to) : today
   const [viewY, setViewY] = useState(anchor.getFullYear())

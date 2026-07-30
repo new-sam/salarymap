@@ -14,13 +14,15 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 )
 
+const toVN = (iso) => new Date(new Date(iso).getTime() + 7 * 3600000).toISOString().slice(0, 10)
+
 export default async function handler(req, res) {
   const user = await verifyAdminOrDevStub(req)
   if (!user) return res.status(401).json({ error: 'Unauthorized' })
 
   const { from, to, lang } = req.query
-  const startDate = from || new Date(Date.now() - 30 * 86400000).toISOString().slice(0, 10)
-  const endDate = to || new Date().toISOString().slice(0, 10)
+  const startDate = from || toVN(Date.now() - 30 * 86400000)
+  const endDate = to || toVN(Date.now())
 
   // VN-day (UTC+7) bounds, expressed as UTC ISO so they work for both Postgres
   // timestamptz queries and JS string compare against auth.users.created_at.
@@ -41,7 +43,6 @@ export default async function handler(req, res) {
     return all
   }
 
-  const toVN = (iso) => new Date(new Date(iso).getTime() + 7 * 3600000).toISOString().slice(0, 10)
   const EVENT_NAMES = ['click_jobs_cta', 'click_job_card', 'view_jobs_page', 'click_apply_button', 'save_job', 'click_for_companies', 'click_contact_owner', 'click_post_job', 'landing']
 
   // 모든 쿼리 병렬 실행. 이벤트는 DB에서 집계(RPC)해 수만 행 전송을 없앰. (직렬 await → Promise.all)
