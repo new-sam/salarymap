@@ -61,10 +61,11 @@ function parseCsv(text) {
 // 지원자가 기억하는 건 'KTC'가 아니라 자기가 지원한 그 회사·그 공고다 → 제목·첫 문장에 기업명을 앞세운다.
 // 기업명이 없는 리드(약 23%)는 직무만 쓰는 폴백.
 const template = readFileSync(TEMPLATE, 'utf8')
-const subjectTail = { vi: 'bạn đã ứng tuyển vị trí này', ko: '이 포지션에 지원하셨죠' }[lang]
-const subject = (lead) => lead.company
-  ? `${lead.company} - ${lead.job} — ${subjectTail}`
-  : `KTC - ${lead.job} — ${subjectTail}`
+// 2차(제목을 지원기업명으로 바꾼 판)는 오픈 38.6% vs 클릭 1.0% 으로 무너졌다 — 열어보니 그 회사가
+// 보낸 메일이 아니라서 생긴 미끼-전환이다. 발신자(KTC가 만든 FYI)와 제목을 다시 일치시키고,
+// 본문이 실제로 주는 것(내 지원이 어느 단계인지)을 제목에서 그대로 약속한다.
+const subjectTail = { vi: 'hồ sơ của bạn đang ở bước nào?', ko: '지원 결과 확인하세요' }[lang]
+const subject = (lead) => `K-Tech College - ${lead.job} — ${subjectTail}`
 // 베트남어는 "vị trí {직무} tại {기업}" 어순 → 기업명을 별도 조각({{atCompany}})으로 끼워 넣는다.
 // 한국어는 "{기업} - {직무}" 어순 → 합쳐진 한 덩어리({{companyJob}})를 쓴다. 템플릿이 쓰는 것만 치환된다.
 const atCompanyHtml = (lead) => lead.company ? ` tại <b>${esc(lead.company)}</b>` : ''
@@ -81,13 +82,14 @@ const render = (lead, ctaUrl, unsubUrl) => template
 const emailTextVi = (lead, ctaUrl, unsubUrl) => `Chào ${lead.ten},
 
 Vừa qua bạn đã ứng tuyển vị trí ${lead.job}${lead.company ? ` tại ${lead.company}` : ''} thông qua K-Tech College.
-Mỗi lần ứng tuyển lại phải tải CV lên và điền lại thông tin — bạn có thấy bất tiện không?
+Sau đó bạn có nhận được phản hồi nào không?
 
-FYI là nền tảng tuyển dụng do KTC xây dựng. Chỉ cần tạo hồ sơ một lần, bạn có thể
-ứng tuyển nhiều vị trí chỉ với một cú nhấp, và nhà tuyển dụng cũng có thể xem hồ sơ
-rồi gửi lời mời trực tiếp cho bạn.
+Thành thật mà nói: trước đây chúng tôi chỉ liên hệ với ứng viên trúng tuyển vòng cuối.
+Nghĩa là phần lớn ứng viên không bao giờ biết hồ sơ của mình đã đi tới đâu.
 
-Ứng tuyển 1-click trên FYI:
+Từ nay thì khác. Chúng tôi đã xây dựng FYI để bạn không còn phải chờ đợi trong im lặng nữa.
+
+Xem cách theo dõi hồ sơ:
 ${ctaUrl}
 
 — Đội ngũ FYI · salary-fyi.com
@@ -96,12 +98,14 @@ Hủy đăng ký: ${unsubUrl}`
 const emailTextKo = (lead, ctaUrl, unsubUrl) => `안녕하세요 ${lead.ten}님,
 
 얼마 전 K-Tech College를 통해 ${lead.company ? `${lead.company} - ${lead.job}` : lead.job}에 지원해 주셨죠.
-공고마다 이력서를 새로 넣고 양식을 다시 채우는 것 — 번거롭지 않으셨나요?
+그 뒤로 결과를 전달받으신 적 있으신가요?
 
-FYI는 KTC가 만든 채용 플랫폼입니다. 프로필을 한 번 올려두면 여러 공고에 원클릭으로
-지원할 수 있고, 채용 담당자들이 프로필을 보고 직접 오퍼를 보낼 수도 있어요.
+솔직히 말씀드리면, 지금까지는 최종 합격하신 분께만 연락을 드렸습니다.
+그래서 대부분의 지원자분들은 자기 서류가 어디까지 갔는지 알 수 없으셨습니다.
 
-FYI에서 원클릭 지원 시작:
+앞으로는 다릅니다. 더 이상 조용히 기다리지 않으셔도 되도록 KTC가 FYI를 만들었습니다.
+
+어떻게 달라지는지 보기:
 ${ctaUrl}
 
 — FYI 팀 · salary-fyi.com
@@ -112,7 +116,7 @@ const emailText = lang === 'ko' ? emailTextKo : emailTextVi
 // 배포 전(--utm)엔 추적 리다이렉트가 prod 에 없다 → CTA 를 prod /jobs 로 직결하고 utm 으로만 측정.
 const ctaFor = (lead) => utmMode
   ? `${SITE}/jobs?utm_source=coldmail&utm_medium=email&utm_campaign=${campaign}&utm_content=${lead.lead}`
-  : `${SITE}/api/ktc/r?t=${encodeURIComponent(makeToken(lead.email, campaign))}&to=%2Fjobs`
+  : `${SITE}/api/ktc/r?t=${encodeURIComponent(makeToken(lead.email, campaign))}&to=%2Fktc%2Fstatus`
 const unsubFor = (lead) => utmMode
   ? `mailto:hello@salary-fyi.com?subject=${encodeURIComponent('Unsubscribe: ' + lead.email)}`
   : `${SITE}/api/ktc/unsub?t=${encodeURIComponent(makeToken(lead.email, campaign))}`
