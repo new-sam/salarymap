@@ -96,7 +96,7 @@ export function normalizePosition(raw) {
   return 'other'
 }
 
-async function fetchAll(table, select, tweak) {
+export async function fetchAll(table, select, tweak) {
   let all = [], offset = 0
   for (;;) {
     let q = supabase.from(table).select(select).range(offset, offset + 999)

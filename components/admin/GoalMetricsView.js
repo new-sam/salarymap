@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, Fragment } from 'react'
+import MetricChart from '../DashboardCharts'
 
 // "승주 작업실" — 어드민 인증으로만 접근(개인 비밀번호 게이트 제거).
 // 상단 탭: [목표 KPI] 이번 달 2 KPI  ·  [광고 성과] 유입/광고 실시간 추적.
@@ -29,6 +30,10 @@ export default function GoalMetricsView({ token, lang }) {
   const [spData, setSpData] = useState(null) // 가입 경로 (가입자별 유입)
   const [spError, setSpError] = useState('')
   const [spLoading, setSpLoading] = useState(false)
+
+  const [ntData, setNtData] = useState(null) // 비개발 인재풀
+  const [ntError, setNtError] = useState('')
+  const [ntLoading, setNtLoading] = useState(false)
 
   const load = useCallback(async () => {
     if (!token) return
@@ -117,6 +122,21 @@ export default function GoalMetricsView({ token, lang }) {
     }
   }, [token, ko])
 
+  const loadNt = useCallback(async () => {
+    if (!token) return
+    setNtLoading(true)
+    setNtError('')
+    try {
+      const res = await fetch('/api/admin/nontech-pool', { headers: { Authorization: `Bearer ${token}` } })
+      if (!res.ok) throw new Error(`(${res.status})`)
+      setNtData(await res.json())
+    } catch (e) {
+      setNtError((ko ? '불러오기 실패 ' : 'Load failed ') + e.message)
+    } finally {
+      setNtLoading(false)
+    }
+  }, [token, ko])
+
   useEffect(() => { load() }, [load])
 
   // 광고 탭 최초 진입 시 lazy 로드
@@ -144,6 +164,11 @@ export default function GoalMetricsView({ token, lang }) {
     if (view === 'paths' && !spData && !spLoading) loadSp()
   }, [view, spData, spLoading, loadSp])
 
+  // 비개발 인재풀 탭 최초 진입 시 lazy 로드
+  useEffect(() => {
+    if (view === 'nontech' && !ntData && !ntLoading) loadNt()
+  }, [view, ntData, ntLoading, loadNt])
+
   const tabBtn = (key, label) => (
     <button onClick={() => setView(key)} style={{
       padding: '8px 16px', fontSize: 13.5, fontWeight: 700, cursor: 'pointer', border: 'none', borderRadius: 9,
@@ -155,6 +180,7 @@ export default function GoalMetricsView({ token, lang }) {
     <div style={{ maxWidth: 1200, margin: '0 auto', padding: '16px 16px 48px' }}>
       <div style={{ display: 'inline-flex', gap: 2, background: '#F1F1F4', borderRadius: 11, padding: 3, marginBottom: 18 }}>
         {tabBtn('kpi', ko ? '목표 KPI' : 'Goal KPI')}
+        {tabBtn('nontech', ko ? '비개발 인재풀' : 'Non-tech pool')}
         {tabBtn('paths', ko ? '가입 경로' : 'Signup paths')}
         {tabBtn('ad', ko ? '광고 성과' : 'Ad performance')}
         {tabBtn('exp', ko ? '실험' : 'Experiments')}
@@ -164,11 +190,109 @@ export default function GoalMetricsView({ token, lang }) {
       {view === 'kpi' && (error
         ? <div style={{ textAlign: 'center', padding: 40, color: '#c00' }}>{error}</div>
         : <KpiTab data={data} ko={ko} />)}
+      {view === 'nontech' && <NontechPoolTab data={ntData} loading={ntLoading} error={ntError} ko={ko} lang={lang} />}
       {view === 'paths' && <SignupPathsTab data={spData} loading={spLoading} error={spError} ko={ko} />}
       {view === 'ad' && <AdTab data={adData} loading={adLoading} error={adError} ko={ko} />}
       {view === 'exp' && <ExperimentTab data={expData} loading={expLoading} error={expError} ko={ko} token={token} />}
       {view === 'resumePublic' && <ResumePublicTab data={rpData} loading={rpLoading} error={rpError} ko={ko} />}
       {view === 'coldmail' && <ColdmailPublicTab data={cmData} loading={cmLoading} error={cmError} ko={ko} />}
+    </div>
+  )
+}
+
+// ============ 비개발 인재풀 탭 ============
+// 인재풀이 개발 직군에 극편중돼 있어(비개발이 직군 기입자의 한 자릿수 %) 비개발 공고를 늘리는 중.
+// 그 액션이 실제로 풀을 늘렸는지 가입일 기준 누적 곡선으로 본다(세로선 = 액션 시점).
+function NontechPoolTab({ data, loading, error, ko, lang }) {
+  if (loading || !data) return <div style={{ textAlign: 'center', padding: 40, color: '#666' }}>{ko ? '불러오는 중…' : 'Loading…'}</div>
+  if (error) return <div style={{ textAlign: 'center', padding: 40, color: '#c00' }}>{error}</div>
+  if (data.error) return <div style={{ textAlign: 'center', padding: 40, color: '#c00' }}>{data.error}</div>
+
+  const { totals, series, categories, actions, jobs, recent } = data
+  const classified = totals.nontech + totals.tech
+  const th = { textAlign: 'left', fontSize: 11, fontWeight: 700, color: '#9CA3AF', padding: '6px 10px', borderBottom: '1px solid #EEF0F2', textTransform: 'uppercase', letterSpacing: '.04em' }
+  const td = { fontSize: 13, color: '#1F2937', padding: '7px 10px', borderBottom: '1px solid #F5F6F7' }
+  const num = { ...td, textAlign: 'right', fontVariantNumeric: 'tabular-nums', fontWeight: 600 }
+
+  const Card = ({ label, value, sub, accent }) => (
+    <div style={{ flex: '1 1 180px', background: '#fff', border: '1px solid #E5E8EB', borderRadius: 16, padding: '18px 20px' }}>
+      <div style={{ fontSize: 12, fontWeight: 700, color: '#6B7280', marginBottom: 8 }}>{label}</div>
+      <div style={{ fontSize: 30, fontWeight: 800, color: accent || '#0F172A', lineHeight: 1, marginBottom: 6 }}>{value}</div>
+      {sub && <div style={{ fontSize: 12, color: '#9CA3AF' }}>{sub}</div>}
+    </div>
+  )
+
+  return (
+    <div>
+      <div style={{ fontSize: 15, fontWeight: 800, color: '#0F172A', marginBottom: 6 }}>
+        {ko ? '비개발 인재풀' : 'Non-tech talent pool'}
+      </div>
+      <div style={{ fontSize: 12, color: '#9CA3AF', marginBottom: 16 }}>
+        {ko
+          ? `마케팅·영업·HR·재무·구매·통번역·생산·운영 합계 · 기준 ${new Date(data.generatedAt).toLocaleString('ko-KR')}`
+          : `Marketing, Sales, HR, Finance, Procurement, Interpreter, Manufacturing, Ops · as of ${new Date(data.generatedAt).toLocaleString('en-US')}`}
+      </div>
+
+      <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginBottom: 20 }}>
+        <Card label={ko ? '비개발 인재' : 'Non-tech talent'} value={totals.nontech.toLocaleString()}
+          sub={ko ? `직군 기입자 ${classified.toLocaleString()}명 중 ${classified ? Math.round((totals.nontech / classified) * 100) : 0}%` : `${classified ? Math.round((totals.nontech / classified) * 100) : 0}% of ${classified.toLocaleString()} with a role`}
+          accent="#0D9488" />
+        <Card label={ko ? '이력서 보유' : 'With resume'} value={totals.nontechResume.toLocaleString()}
+          sub={ko ? `비개발의 ${totals.nontech ? Math.round((totals.nontechResume / totals.nontech) * 100) : 0}%` : `${totals.nontech ? Math.round((totals.nontechResume / totals.nontech) * 100) : 0}% of non-tech`} />
+        <Card label={ko ? '최근 7일 신규' : 'New in 7 days'} value={`+${recent.d7}`}
+          sub={ko ? `30일 +${recent.d30}` : `30d +${recent.d30}`} accent={recent.d7 > 0 ? '#059669' : '#0F172A'} />
+        <Card label={ko ? '비개발 활성 공고' : 'Active non-tech jobs'} value={jobs.nontech.toLocaleString()}
+          sub={ko ? `전체 활성 ${jobs.active}건 중` : `of ${jobs.active} active`} accent="#7C3AED" />
+      </div>
+
+      <div style={{ background: '#fff', border: '1px solid #EEF0F2', borderRadius: 14, padding: 16, marginBottom: 12 }}>
+        <h4 style={{ fontSize: 14, fontWeight: 700, margin: '0 0 2px 0', color: '#191F28' }}>{ko ? '누적 추이' : 'Cumulative'}</h4>
+        <div style={{ fontSize: 11, color: '#9CA3AF', marginBottom: 8 }}>
+          {ko ? '가입일 기준 누적 · 세로선 = 액션 시점' : 'Cumulative by signup date · vertical line = action'}
+        </div>
+        <MetricChart
+          daily={series}
+          metrics={[
+            { key: 'nt-total', dataKey: 'total', label: ko ? '비개발 인재' : 'Non-tech', color: '#0D9488' },
+            { key: 'nt-resume', dataKey: 'resume', label: ko ? '이력서 보유' : 'With resume', color: '#94A3B8' },
+          ]}
+          experiments={actions}
+          lang={lang}
+          dualAxis={false}
+          lineType="linear"
+          dots={false}
+        />
+      </div>
+
+      <div style={{ fontSize: 11.5, color: '#9CA3AF', marginBottom: 24, lineHeight: 1.6 }}>
+        {ko
+          ? `⚠️ 포지션 미입력 ${totals.noPosition.toLocaleString()}명(전체 ${totals.profiles.toLocaleString()}명의 ${Math.round((totals.noPosition / totals.profiles) * 100)}%)은 직군을 알 수 없어 빠져 있다 — 이 숫자는 하한이다. 직군/이력서는 현재값이라 가입일에 얹은 근사치.`
+          : `⚠️ ${totals.noPosition.toLocaleString()} profiles (${Math.round((totals.noPosition / totals.profiles) * 100)}%) have no position and are excluded — treat this as a lower bound. Role/resume are current values mapped onto signup date.`}
+      </div>
+
+      <div style={{ fontSize: 13, fontWeight: 700, color: '#374151', margin: '0 0 8px' }}>{ko ? '직군별' : 'By role'}</div>
+      <div style={{ overflowX: 'auto', border: '1px solid #EEF0F2', borderRadius: 12 }}>
+        <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 420 }}>
+          <thead><tr>
+            <th style={th}>{ko ? '직군' : 'Role'}</th>
+            <th style={{ ...th, textAlign: 'right' }}>{ko ? '인원' : 'Talent'}</th>
+            <th style={{ ...th, textAlign: 'right' }}>{ko ? '이력서' : 'Resume'}</th>
+            <th style={{ ...th, textAlign: 'right' }}>{ko ? '7일' : '7d'}</th>
+            <th style={{ ...th, textAlign: 'right' }}>{ko ? '30일' : '30d'}</th>
+          </tr></thead>
+          <tbody>
+            {categories.map((c) => (
+              <tr key={c.key}>
+                <td style={td}>{lang === 'vi' ? (c.vi || c.en) : ko ? c.ko : c.en}</td>
+                <td style={{ ...num, fontWeight: 800 }}>{c.all}</td>
+                <td style={num}>{c.resume}</td>
+                <td style={{ ...num, color: c.d7 ? '#059669' : '#9CA3AF' }}>{c.d7 || ''}</td>
+                <td style={num}>{c.d30 || ''}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   )
 }
