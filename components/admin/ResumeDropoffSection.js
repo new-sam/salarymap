@@ -16,15 +16,10 @@ const FUNNELS = [
   {
     key: 'cv',
     title: ['/cv 광고 랜딩 등록', '/cv ad-landing registration'],
-    note: ['로그인 시작 → 복귀 구간이 OAuth 로 이탈한 사람이다.',
-           'The start → return gap is people lost inside the OAuth redirect.',
-           'Khoảng bắt đầu → quay lại là người rời bỏ trong OAuth.'],
     steps: [
       { event: 'cv_view', label: ['CV 페이지 뷰', 'CV view', 'Xem trang CV'] },
       { event: 'cv_attach_file', label: ['파일 첨부', 'File attached', 'Đính kèm'] },
       { event: 'cv_oauth_start', label: ['로그인 시작', 'Login start', 'Bắt đầu login'] },
-      { event: 'cv_oauth_return', label: ['로그인 복귀', 'Login return', 'Quay lại'] },
-      { event: 'cv_register_success', label: ['이력서 등록', 'Registered', 'Đã đăng ký'] },
     ],
   },
   {
@@ -141,7 +136,7 @@ function FunnelCard({ f, res, L }) {
       ) : (
         <AmpChart vals={vals} steps={f.steps.map(s => L(...s.label))} />
       )}
-      <div style={{ fontSize: 11, color: '#8B95A1', lineHeight: 1.7 }}>{L(...f.note)}</div>
+      {f.note && <div style={{ fontSize: 11, color: '#8B95A1', lineHeight: 1.7 }}>{L(...f.note)}</div>}
     </div>
   )
 }
@@ -225,8 +220,8 @@ export default function ResumeDropoffSection({ token, lang, dateRange }) {
 
       <div style={{ fontSize: 11, color: '#8B95A1', lineHeight: 1.8, marginBottom: 24 }}>
         <b style={{ color: '#C2452B' }}>{L('계측 시작일 주의', 'New instrumentation', 'Lưu ý ngày bắt đầu')}</b>
-        {L(' — /profile 이벤트(profile_*)는 이번 배포부터 쌓인다. 배포 이전 기간을 조회하면 0으로 보이는 게 정상이니 날짜를 배포일 이후로 맞출 것. resume_upload 는 이전에도 있었지만 client_id 가 없어 순차 퍼널에 붙지 않는다(이번 배포부터 붙음). /cv 이벤트 중 cv_oauth_return 도 이번 배포부터다. 직무 선택(cv_select_role)은 파일 첨부 전에도 가능해 순차 퍼널에서 뺐다 — 메인 퍼널 탭의 행동 퍼널에서 순서 "any" 로 보면 된다.',
-           ' — /profile events start with this deploy; earlier ranges legitimately read 0. resume_upload existed before but had no client_id, so it only stitches from this deploy. cv_oauth_return is also new. cv_select_role is excluded from sequential funnels (it can precede file attach) — use order "any" in the behavior funnel.',
+        {L(' — /profile 이벤트(profile_*)는 이번 배포부터 쌓인다. 배포 이전 기간을 조회하면 0으로 보이는 게 정상이니 날짜를 배포일 이후로 맞출 것. resume_upload 는 이전에도 있었지만 client_id 가 없어 순차 퍼널에 붙지 않는다(이번 배포부터 붙음). 직무 선택(cv_select_role)은 파일 첨부 전에도 가능해 순차 퍼널에서 뺐다 — 메인 퍼널 탭의 행동 퍼널에서 순서 "any" 로 보면 된다.',
+           ' — /profile events start with this deploy; earlier ranges legitimately read 0. resume_upload existed before but had no client_id, so it only stitches from this deploy. cv_select_role is excluded from sequential funnels (it can precede file attach) — use order "any" in the behavior funnel.',
            ' — Sự kiện /profile bắt đầu từ lần triển khai này; khoảng thời gian trước đó hiển thị 0 là đúng. cv_select_role bị loại khỏi phễu tuần tự — dùng thứ tự "any" ở phễu hành vi.')}
       </div>
     </>
