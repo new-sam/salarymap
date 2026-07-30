@@ -10,6 +10,7 @@ import { DEFAULT_IMAGES, roleLabel, DEFAULT_WORK_DAYS, DEFAULT_WORK_HOURS, DEFAU
 import { getStoredUtm } from '../../lib/utm'
 import { isSalaryNegotiable } from '../../utils/salary'
 import { track as trackVisit, getClientId, mirrorClarity } from '../../lib/track'
+import { confirmAppliedInline } from '../../lib/applyConversion'
 
 // 스토리지 URL에서 원본 이력서 파일명 복원 (업로드 시 `${timestamp}_${safeName}`로 저장됨)
 function resumeNameFromUrl(url) {
@@ -146,6 +147,7 @@ export default function JobDetailPage({ job }) {
       if (!aj.includes(job.id)) localStorage.setItem('fyi_applied_jobs', JSON.stringify([...aj, job.id]))
       setAppliedAlready(true)
       track('submit_application', `/jobs/${job.id}`, { jobId: job.id, title: job.title, company: job.company })
+      confirmAppliedInline({ title: job.title, company: job.company, source: 'job_detail' })
     } catch {}
     setApplying(false)
   }

@@ -1,7 +1,8 @@
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 import { useRouter } from 'next/router'
 import Head from 'next/head'
 import { useT } from '../../lib/i18n'
+import { fireApplyConversion } from '../../lib/applyConversion'
 
 function Illustration() {
   return (
@@ -45,12 +46,16 @@ function Illustration() {
 export default function JobApplied() {
   const router = useRouter()
   const { t } = useT()
-  const { title, company } = router.query
+  const { title, company, source } = router.query
 
+  /* 전환은 한 번만 쏜다 — router.query 는 첫 렌더에 비어 있다가 채워지므로
+     [title, company] 의존성만으로는 effect 가 두 번 돌아 전환이 중복 집계된다. */
+  const fired = useRef(false)
   useEffect(() => {
-    if (typeof fbq === 'function') fbq('track', 'Lead', { content_name: 'job_apply_confirmed', content_category: title || 'unknown' })
-    if (typeof gtag === 'function') gtag('event', 'job_apply_confirmed', { event_category: 'conversion', event_label: title || 'unknown', company: company || 'unknown' })
-  }, [title, company])
+    if (!router.isReady || fired.current) return
+    fired.current = true
+    fireApplyConversion({ title, company, source })
+  }, [router.isReady, title, company, source])
 
   return (
     <>

@@ -7,6 +7,7 @@ import { track } from '../lib/track'
 import { ROLE_GROUPS, roleGroupKey } from '../constants/jobs'
 import { formatSalaryCard } from '../utils/salary'
 import { toast } from 'sonner'
+import { confirmAppliedInline } from '../lib/applyConversion'
 
 // STEP1에서 고른 직무는 OAuth 리다이렉트로 페이지를 떠났다 돌아와도 유지돼야 해서
 // (파일이 IndexedDB로 유지되는 것과 동일) localStorage에 stash한다.
@@ -504,6 +505,7 @@ export default function CvLanding() {
       if (!res.ok) throw new Error('apply_failed')
       setApplied((a) => ({ ...a, [job.id]: true }))
       track('submit_application', { meta: { ...cvMeta(), job_id: job.id, source: 'cv_success' }, page: '/cv' })
+      confirmAppliedInline({ title: job.title, company: job.company, source: 'cv_success' })
     } catch {
       setErrMsg(L('지원에 실패했어요. 잠시 후 다시 시도해 주세요.', 'Application failed. Please try again.', 'Ứng tuyển thất bại. Vui lòng thử lại.'))
     } finally {

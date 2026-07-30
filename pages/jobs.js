@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useMemo } from 'react'
 import Head from 'next/head'
 import Link from 'next/link'
 import { getClientId, mirrorClarity } from '../lib/track'
+import { confirmAppliedInline } from '../lib/applyConversion'
 import { useRouter } from 'next/router'
 import { supabase } from '../lib/supabaseClient'
 import { useT } from '../lib/i18n'
@@ -715,7 +716,8 @@ export default function JobsPage() {
       localStorage.setItem('fyi_my_applications', JSON.stringify(cached))
     } catch {}
     track('apply_similar_job', '/jobs', { jobId: job.id, title: job.title, company: job.company })
-    if (typeof fbq === 'function') fbq('track', 'Lead', { content_name: 'job_apply_confirmed', content_category: job.title })
+    track('submit_application', '/jobs', { jobId: job.id, title: job.title, company: job.company })
+    confirmAppliedInline({ title: job.title, company: job.company, source: 'similar_after_apply' })
   }
 
   const handleApply = async (job) => {
@@ -793,8 +795,8 @@ export default function JobsPage() {
     setSimilarArmed(null)
     setAppliedInfo({ title: target.title, company: target.company, resumeUrl, similar })
     setDetailJob(null)
-    window.history.pushState(null, '', `/jobs/applied?title=${encodeURIComponent(target.title)}&company=${encodeURIComponent(target.company)}`)
-    if (typeof fbq === 'function') fbq('track', 'Lead', { content_name: 'job_apply_confirmed', content_category: target.title })
+    track('submit_application', '/jobs', { jobId: target.id, title: target.title, company: target.company })
+    confirmAppliedInline({ title: target.title, company: target.company, source: getApplicationSource() })
   }
 
   // Kick off login for the apply flow via the shared /login page (LinkedIn/Google
