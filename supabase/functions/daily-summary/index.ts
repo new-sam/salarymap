@@ -26,20 +26,27 @@ const EXCLUDED_COMPANIES = new Set([
   "anonymous", "hide", "m*",
 ]);
 const EXCLUDED_EMAIL_DOMAINS = ["likelion.net", "dummy.local", "system.local"];
+// 개별 QA/테스트 계정 (공용 도메인이라 도메인으로 못 거름) — admin-metrics.js 와 수동 동기화.
+const EXCLUDED_EMAILS = new Set(["snfjddl03@gmail.com"]);
 const PAID_SOURCES = new Set(["meta", "MT"]);
 const EXCLUDED_SOURCES = new Set(["qa-local", "", null]);
 
 function isExcludedSubmission(r: any): boolean {
   if (r.company && EXCLUDED_COMPANIES.has(r.company.trim().toLowerCase())) return true;
-  if (r.email && EXCLUDED_EMAIL_DOMAINS.some((d) => r.email.endsWith("@" + d))) return true;
+  if (isExcludedEmail(r.email)) return true;
   if (EXCLUDED_SOURCES.has(r.source)) return true;
   return false;
 }
 
 // 내부/테스트(@likelion.net 등) 지원자는 모든 지표에서 제외 — admin-metrics.js 와 동일 규칙(수동 동기화).
+function isExcludedEmail(email: any): boolean {
+  if (!email) return false;
+  const e = String(email).toLowerCase();
+  return EXCLUDED_EMAILS.has(e) || EXCLUDED_EMAIL_DOMAINS.some((d) => e.endsWith("@" + d));
+}
+
 function isExcludedApplication(a: any): boolean {
-  const email = (a.applicant_email || "").toLowerCase();
-  return !!email && EXCLUDED_EMAIL_DOMAINS.some((d) => email.endsWith("@" + d));
+  return isExcludedEmail(a.applicant_email);
 }
 
 function dedupeSubmissions(rows: any[]): any[] {
@@ -416,8 +423,7 @@ async function getSignups(dateStr: string): Promise<number> {
 }
 
 function isExcludedSignup(user: any): boolean {
-  const email = (user.email || "").toLowerCase();
-  if (email && EXCLUDED_EMAIL_DOMAINS.some((d) => email.endsWith("@" + d))) return true;
+  if (isExcludedEmail(user.email)) return true;
   if (user.banned_until && new Date(user.banned_until) > new Date()) return true;
   return false;
 }

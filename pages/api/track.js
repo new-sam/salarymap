@@ -1,4 +1,5 @@
 import supabase from '../../lib/supabaseAdmin'
+import { EXCLUDED_EMAILS } from '../../lib/admin-metrics'
 
 const EXCLUDED_DOMAINS = ['likelion.net']
 
@@ -24,7 +25,7 @@ export default async function handler(req, res) {
       .upsert({ user_id: activeUserId, day: vnDay() }, { onConflict: 'user_id,day', ignoreDuplicates: true })
   }
 
-  if (email && EXCLUDED_DOMAINS.some(d => email.endsWith('@' + d))) {
+  if (email && (EXCLUDED_DOMAINS.some(d => email.endsWith('@' + d)) || EXCLUDED_EMAILS.has(email.toLowerCase()))) {
     return res.json({ ok: true, skipped: true })
   }
 
