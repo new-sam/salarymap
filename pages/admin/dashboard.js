@@ -21,7 +21,7 @@ import RevenueView from '../../components/admin/RevenueView'
 import PikdiView from '../../components/admin/PikdiView'
 import RecommendView from '../../components/admin/RecommendView'
 import GoalMetricsView from '../../components/admin/GoalMetricsView'
-import YujinLabView from '../../components/admin/YujinLabView'
+import YujinLabView, { YujinLabTabs } from '../../components/admin/YujinLabView'
 import {
   T, METRICS_BASE, EXP_COLORS, COLORS,
   inputStyle, sectionStyle, sectionTitle,
@@ -72,10 +72,12 @@ export default function AdminDashboard() {
   const router = useRouter()
   const tab = router.query.tab || 'main'
   // 날짜 범위를 실제로 쓰는 탭에서만 날짜 피커 노출 (이력서/인재풀/연봉인증은 누적 목록이라 무관)
-  const showDatePicker = ['main', 'trend', 'applications', 'community', 'appMetrics', 'ktc-sources', 'yujin'].includes(tab)
+  const showDatePicker = ['main', 'trend', 'applications', 'community', 'appMetrics', 'ktc-sources'].includes(tab)
   const [chartMode, setChartMode] = useState('1d')
   const [tableView, setTableView] = useState('daily')
   const [tableSection, setTableSection] = useState('basic')
+  // 유진 작업실의 페이지 전환 — 알약은 AdminLayout 타이틀 옆, 본문은 아래라 상태를 여기서 든다.
+  const [labTab, setLabTab] = useState('inflow')
   const tableScrollRef = useRef(null)
   const [dualAxis, setDualAxis] = useState(true)
   const [autoRefresh, setAutoRefresh] = useState(true)
@@ -419,7 +421,7 @@ export default function AdminDashboard() {
           .adm-realtime-grid .adm-rt-value { font-size: 18px !important; }
         }
       `}</style>
-      <AdminLayout>
+      <AdminLayout titleRight={tab === 'yujin' ? <YujinLabTabs value={labTab} onChange={setLabTab} lang={lang} /> : null}>
       <div className="adm-dash">
         {/* Header — 날짜 피커는 날짜 쓰는 탭에서만 */}
         {showDatePicker && (
@@ -1015,7 +1017,10 @@ export default function AdminDashboard() {
 
         {/* Personal · 유진 작업실 */}
         {tab === 'yujin' && (
-          <YujinLabView token={token} lang={lang} dateRange={dateRange} />
+          <YujinLabView
+            token={token} lang={lang} dateRange={dateRange} labTab={labTab}
+            onDateChange={(from, to) => { setDateTouched(true); setDateRange({ from, to }) }}
+          />
         )}
 
       </div>

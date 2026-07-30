@@ -67,7 +67,8 @@ function buildNav(lang) {
   ]
 }
 
-export default function AdminLayout({ children }) {
+// titleRight — 페이지 타이틀 오른쪽에 붙는 선택 슬롯 (예: 유진 작업실의 페이지 전환 알약).
+export default function AdminLayout({ children, titleRight = null }) {
   const router = useRouter()
   const { lang: globalLang, setLang } = useT()
   const lang = globalLang === 'ko' || globalLang === 'vi' ? globalLang : 'en'
@@ -117,6 +118,7 @@ export default function AdminLayout({ children }) {
         .al-main { flex: 1; min-width: 0; }
         .al-pagehead { padding: 40px 0 0; }
         .al-pagehead h1 { margin: 0; font-size: 22px; font-weight: 700; letter-spacing: -0.02em; color: #1d1d1f; }
+        .al-titlerow { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
         .al-burger {
           display: none; position: fixed; top: 12px; left: 12px; z-index: 50;
           width: 40px; height: 40px; border-radius: 10px; border: 1px solid #e3e3e6;
@@ -201,7 +203,10 @@ export default function AdminLayout({ children }) {
         {activeItem && (
           <div className="al-pagehead">
             <div style={{ maxWidth: contentMax, margin: '0 auto', padding: `0 ${contentPad}px` }}>
-              <h1>{activeItem.label}</h1>
+              <div className="al-titlerow">
+                <h1>{activeItem.label}</h1>
+                {titleRight}
+              </div>
             </div>
           </div>
         )}

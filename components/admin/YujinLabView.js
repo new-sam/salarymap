@@ -1,39 +1,47 @@
-import { useState } from 'react'
 import { useAdmin } from '../../lib/adminSwr'
 import { sectionStyle } from '../../constants/dashboard'
+import DateRangePicker from './DateRangePicker'
 import ResumeDropoffSection from './ResumeDropoffSection'
 
 // "유진 작업실" — 작업 중인 분석을 탭으로 나눠 붙인다. 분석마다 컴포넌트를 분리해
 // 로딩/에러를 각자 처리하므로, 한쪽 API 가 실패해도 다른 탭은 그대로 동작한다.
 // 탭 전환 시 언마운트되지만 SWR 이 [url, token] 으로 캐싱해 되돌아오면 즉시 그려진다.
 const LAB_TABS = [
-  { key: 'resume', ko: '이력서 작성 도중 이탈률 분석', en: 'Resume drop-off analysis', vi: 'Phân tích rời bỏ khi tạo CV' },
   { key: 'inflow', ko: 'KTC 유입 비중', en: 'KTC share of traffic', vi: 'Tỷ trọng truy cập KTC' },
+  { key: 'resume', ko: '이력서 이탈', en: 'Resume drop-off', vi: 'Rời bỏ CV' },
 ]
 
-export default function YujinLabView({ token, lang, dateRange }) {
+// 페이지 전환 알약 — AdminLayout 의 titleRight 슬롯("유진 작업실" 타이틀 우측)에 꽂아 쓴다.
+// 그래서 상태(labTab)는 dashboard.js 가 들고, 알약과 본문이 같은 값을 공유한다.
+export function YujinLabTabs({ value, onChange, lang }) {
   const L = (ko, en, vi) => (lang === 'vi' ? (vi ?? en) : lang === 'ko' ? ko : en)
-  const [labTab, setLabTab] = useState('resume')
+  return (
+    <div style={{ display: 'inline-flex', gap: 0, background: '#f3f4f6', borderRadius: 8, padding: 2 }}>
+      {LAB_TABS.map(t => (
+        <button key={t.key} onClick={() => onChange(t.key)}
+          style={{
+            padding: '6px 14px', borderRadius: 6, fontSize: 12.5, fontWeight: 600,
+            border: 'none', cursor: 'pointer', transition: 'all 0.15s',
+            background: value === t.key ? '#fff' : 'transparent',
+            color: value === t.key ? '#111' : '#999',
+            boxShadow: value === t.key ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
+          }}>
+          {L(t.ko, t.en, t.vi)}
+        </button>
+      ))}
+    </div>
+  )
+}
 
+export default function YujinLabView({ token, lang, dateRange, onDateChange, labTab }) {
   return (
     <>
-      <div style={{ display: 'inline-flex', gap: 0, background: '#f3f4f6', borderRadius: 8, padding: 2, marginBottom: 16 }}>
-        {LAB_TABS.map(t => (
-          <button key={t.key} onClick={() => setLabTab(t.key)}
-            style={{
-              padding: '6px 14px', borderRadius: 6, fontSize: 12.5, fontWeight: 600,
-              border: 'none', cursor: 'pointer', transition: 'all 0.15s',
-              background: labTab === t.key ? '#fff' : 'transparent',
-              color: labTab === t.key ? '#111' : '#999',
-              boxShadow: labTab === t.key ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
-            }}>
-            {L(t.ko, t.en, t.vi)}
-          </button>
-        ))}
+      <div style={{ marginBottom: 16 }}>
+        <DateRangePicker value={dateRange} onChange={onDateChange} />
       </div>
 
-      {labTab === 'resume' && <ResumeDropoffSection token={token} lang={lang} dateRange={dateRange} />}
       {labTab === 'inflow' && <KtcInflowSection token={token} lang={lang} dateRange={dateRange} />}
+      {labTab === 'resume' && <ResumeDropoffSection token={token} lang={lang} dateRange={dateRange} />}
     </>
   )
 }
@@ -100,26 +108,26 @@ function KtcInflowSection({ token, lang, dateRange }) {
         })}
       </div>
 
-      {/* ── 일별 표 ── */}
-      <div style={{ ...sectionStyle, paddingBottom: 12 }}>
+      {/* ── 일별 표 + 리퍼러 (둘 다 좁아서 한 줄에, 모바일은 1열) ── */}
+      <div className="adm-m-1col" style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 12, alignItems: 'start', marginBottom: 24 }}>
+      <div style={{ ...sectionStyle, marginBottom: 0, paddingBottom: 12 }}>
         <div style={{ fontSize: 14, fontWeight: 700, color: '#333', marginBottom: 10 }}>
           {L('일별 유입 (최신순)', 'Daily traffic (latest first)', 'Truy cập theo ngày (mới nhất trước)')}
         </div>
-        <div className="adm-m-scroll" style={{ maxHeight: 480, overflowY: 'auto' }}>
+        {/* 6행 + 헤더까지만 보이고 나머지는 내부 스크롤 — 표가 길어져도 아래 섹션이 밀리지 않게 */}
+        <div className="adm-m-scroll" style={{ maxHeight: 220, overflowY: 'auto' }}>
           <table className="adm-m-nowrap" style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12.5 }}>
             <thead>
               <tr style={{ borderBottom: '2px solid #e5e7eb', position: 'sticky', top: 0, background: '#fff' }}>
                 <th style={thLeft}>{L('날짜', 'Date', 'Ngày')}</th>
                 <th style={thStyle}>{L('전체 유입', 'All', 'Tổng')}</th>
                 <th style={thStyle}>{L('KTC 페이지', 'KTC page', 'Trang KTC')}</th>
-                <th style={thStyle}>{L('KTC 비중', 'KTC %', '% KTC')}</th>
                 <th style={thStyle}>{L('구 랜딩 경유', 'Old landing', 'Landing cũ')}</th>
-                <th style={thStyle}>{L('KTC 중 비중', '% of KTC', '% trong KTC')}</th>
               </tr>
             </thead>
             <tbody>
               {days.length === 0 && (
-                <tr><td colSpan={6} style={{ ...tdLeft, color: '#999', padding: 16 }}>—</td></tr>
+                <tr><td colSpan={4} style={{ ...tdLeft, color: '#999', padding: 16 }}>—</td></tr>
               )}
               {days.map(d => {
                 const ktcRate = pct(d.ktc, d.total)
@@ -128,10 +136,20 @@ function KtcInflowSection({ token, lang, dateRange }) {
                   <tr key={d.date} style={{ borderBottom: '1px solid #f3f4f6' }}>
                     <td style={{ ...tdLeft, fontWeight: 600 }}>{d.date}</td>
                     <td style={tdStyle}>{fmt(d.total)}</td>
-                    <td style={tdStyle}>{d.ktc || '·'}</td>
-                    <td style={{ ...tdStyle, color: '#666' }}>{ktcRate === null ? '—' : `${ktcRate}%`}</td>
-                    <td style={tdStyle}>{d.oldLanding || '·'}</td>
-                    <td style={{ ...tdStyle, color: '#666' }}>{oldRate === null ? '—' : `${oldRate}%`}</td>
+                    {/* 괄호 안은 각각의 분모 대비 비중 — KTC 페이지는 그날 전체 유입 중, */}
+                    <td style={tdStyle}>
+                      {d.ktc || '·'}
+                      {d.ktc > 0 && ktcRate !== null && (
+                        <span style={{ color: '#8B95A1', marginLeft: 5 }}>({ktcRate}%)</span>
+                      )}
+                    </td>
+                    {/* 구 랜딩 경유는 그날 KTC 페이지 유입 중 비중 */}
+                    <td style={tdStyle}>
+                      {d.oldLanding || '·'}
+                      {d.oldLanding > 0 && oldRate !== null && (
+                        <span style={{ color: '#8B95A1', marginLeft: 5 }}>({oldRate}%)</span>
+                      )}
+                    </td>
                   </tr>
                 )
               })}
@@ -141,7 +159,7 @@ function KtcInflowSection({ token, lang, dateRange }) {
       </div>
 
       {/* ── KTC 진입 리퍼러 (구 랜딩으로 세는 항목에 표시) ── */}
-      <div style={sectionStyle}>
+      <div style={{ ...sectionStyle, marginBottom: 0 }}>
         <div style={{ fontSize: 14, fontWeight: 700, color: '#333', marginBottom: 4 }}>
           {L('KTC 진입 리퍼러', 'KTC entry referrers', 'Referrer vào KTC')}
         </div>
@@ -176,6 +194,7 @@ function KtcInflowSection({ token, lang, dateRange }) {
             </tbody>
           </table>
         </div>
+      </div>
       </div>
     </>
   )
