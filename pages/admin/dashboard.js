@@ -21,6 +21,7 @@ import RevenueView from '../../components/admin/RevenueView'
 import PikdiView from '../../components/admin/PikdiView'
 import RecommendView from '../../components/admin/RecommendView'
 import GoalMetricsView from '../../components/admin/GoalMetricsView'
+import YujinLabView from '../../components/admin/YujinLabView'
 import {
   T, METRICS_BASE, EXP_COLORS, COLORS,
   inputStyle, sectionStyle, sectionTitle,
@@ -71,7 +72,7 @@ export default function AdminDashboard() {
   const router = useRouter()
   const tab = router.query.tab || 'main'
   // 날짜 범위를 실제로 쓰는 탭에서만 날짜 피커 노출 (이력서/인재풀/연봉인증은 누적 목록이라 무관)
-  const showDatePicker = ['main', 'trend', 'applications', 'community', 'appMetrics', 'ktc-sources'].includes(tab)
+  const showDatePicker = ['main', 'trend', 'applications', 'community', 'appMetrics', 'ktc-sources', 'yujin'].includes(tab)
   const [chartMode, setChartMode] = useState('1d')
   const [tableView, setTableView] = useState('daily')
   const [tableSection, setTableSection] = useState('basic')
@@ -1010,6 +1011,11 @@ export default function AdminDashboard() {
         {/* Personal · 승주 작업실 */}
         {tab === 'goals' && (
           <GoalMetricsView token={token} lang={lang} />
+        )}
+
+        {/* Personal · 유진 작업실 */}
+        {tab === 'yujin' && (
+          <YujinLabView token={token} lang={lang} dateRange={dateRange} />
         )}
 
       </div>
