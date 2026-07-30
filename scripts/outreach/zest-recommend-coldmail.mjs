@@ -16,7 +16,7 @@ import { sb, env, fetchAll } from './lib.mjs'
 import { makeToken } from '../../lib/campaignToken.js'
 
 const JOB_ID = '0d79d519-3e58-4970-9843-641d2de9119f' // Zest — FULL-STACK DEVELOPER (source_id 없음)
-const PRIVATE_MAX = 40
+const PRIVATE_MAX = null // 상한 없음(Resend 유료). 매칭된 비공개 전원 발송.
 
 const args = process.argv.slice(2)
 const flag = (k, d) => { const i = args.indexOf('--' + k); return i >= 0 ? (args[i + 1] && !args[i + 1].startsWith('--') ? args[i + 1] : true) : d }
@@ -179,13 +179,14 @@ async function main() {
     matched.push({ p, score, frame: p.is_resume_public ? 'public' : 'private' })
   }
   matched.sort((a, b) => b.score - a.score)
+  const priv = matched.filter((c) => c.frame === 'private')
   const cohort = [
     ...matched.filter((c) => c.frame === 'public'),
-    ...matched.filter((c) => c.frame === 'private').slice(0, PRIVATE_MAX),
+    ...(PRIVATE_MAX ? priv.slice(0, PRIVATE_MAX) : priv),
   ]
 
   const nPub = cohort.filter((c) => c.frame === 'public').length
-  console.log(`대상: ${cohort.length}명 (공개 ${nPub} / 비공개 ${cohort.length - nPub} — 비공개는 상위 ${PRIVATE_MAX} 컷)`)
+  console.log(`대상: ${cohort.length}명 (공개 ${nPub} / 비공개 ${cohort.length - nPub}${PRIVATE_MAX ? ` — 비공개는 상위 ${PRIVATE_MAX} 컷` : ''})`)
   for (const { p, score, frame } of cohort) {
     const y = p.yoe_months
     console.log(`  [${score}·${frame === 'public' ? '공개' : '비공개'}] ${p.full_name} <${p.email}> — ${p.position || '?'} · ${y == null ? '경력?' : Math.round(y / 12 * 10) / 10 + 'y'}`)
