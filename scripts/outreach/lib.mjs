@@ -27,6 +27,21 @@ export const GMAIL_SCOPE = [
 export const sb = createClient(env.NEXT_PUBLIC_SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY)
 export const openai = new OpenAI({ apiKey: env.OPENAI_API_KEY })
 
+// PostgREST 는 한 번에 최대 1000행만 준다 — 인재풀(1,700+)처럼 1000행을 넘는 테이블을
+// 그냥 select 하면 뒷부분이 조용히 잘린다. 대상 산정은 반드시 이걸로 전부 읽을 것.
+export async function fetchAll(build) {
+  const PAGE = 1000
+  let all = [], from = 0
+  while (true) {
+    const { data, error } = await build().range(from, from + PAGE - 1)
+    if (error) throw error
+    all = all.concat(data || [])
+    if (!data || data.length < PAGE) break
+    from += PAGE
+  }
+  return all
+}
+
 export function oauthClient() {
   const c = new google.auth.OAuth2(env.GMAIL_CLIENT_ID, env.GMAIL_CLIENT_SECRET, OAUTH_REDIRECT)
   if (env.GMAIL_REFRESH_TOKEN) c.setCredentials({ refresh_token: env.GMAIL_REFRESH_TOKEN })

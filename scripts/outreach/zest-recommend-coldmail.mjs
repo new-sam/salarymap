@@ -12,7 +12,7 @@
 //   node scripts/outreach/zest-recommend-coldmail.mjs --send [--max N]         # 실발송 + 로깅
 //   옵션: --site http://localhost:3000
 import { Resend } from 'resend'
-import { sb, env } from './lib.mjs'
+import { sb, env, fetchAll } from './lib.mjs'
 import { makeToken } from '../../lib/campaignToken.js'
 
 const JOB_ID = '0d79d519-3e58-4970-9843-641d2de9119f' // Zest — FULL-STACK DEVELOPER (source_id 없음)
@@ -158,19 +158,20 @@ async function main() {
   }
 
   // ── 제외 셋: 이 공고 기발송(추천/유사 불문)·기지원자 ──
-  const [{ data: recs }, { data: apps }] = await Promise.all([
-    sb.from('job_recommendations').select('user_id,to_email').eq('job_id', job.id),
-    sb.from('job_applications').select('user_id').eq('job_id', job.id),
+  const [recs, apps] = await Promise.all([
+    fetchAll(() => sb.from('job_recommendations').select('user_id,to_email').eq('job_id', job.id)),
+    fetchAll(() => sb.from('job_applications').select('user_id').eq('job_id', job.id)),
   ])
-  const sentUser = new Set((recs || []).map((r) => r.user_id).filter(Boolean))
-  const sentEmail = new Set((recs || []).map((r) => (r.to_email || '').toLowerCase()).filter(Boolean))
-  const appliedUser = new Set((apps || []).map((a) => a.user_id).filter(Boolean))
+  const sentUser = new Set(recs.map((r) => r.user_id).filter(Boolean))
+  const sentEmail = new Set(recs.map((r) => (r.to_email || '').toLowerCase()).filter(Boolean))
+  const appliedUser = new Set(apps.map((a) => a.user_id).filter(Boolean))
 
   // ── 이력서 보유 전체에서 매칭(공개=전원 · 비공개=상위 PRIVATE_MAX명) ──
-  const { data: pool } = await sb.from('user_profiles')
+  const pool = await fetchAll(() => sb.from('user_profiles')
     .select('id,email,full_name,position,headline,skills,yoe_months,experiences,resume_summary,resume_url,is_resume_public')
+    .not('resume_url', 'is', null))
   const matched = []
-  for (const p of (pool || [])) {
+  for (const p of pool) {
     if (!p.resume_url || !p.email || /likelion/i.test(p.email)) continue
     if (sentUser.has(p.id) || sentEmail.has(p.email.toLowerCase()) || appliedUser.has(p.id)) continue
     const score = scoreProfile(p)
