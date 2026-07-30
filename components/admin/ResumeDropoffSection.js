@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { useAdmin } from '../../lib/adminSwr'
 import { sectionStyle } from '../../constants/dashboard'
 import { AmpChart } from './BehaviorFunnel'
@@ -12,6 +13,20 @@ import { AmpChart } from './BehaviorFunnel'
 const WINDOW_SEC = 86400 // 이력서 등록은 한자리에서 끝나는 흐름 — 1일이면 넉넉하다
 
 const FUNNELS = [
+  {
+    key: 'cv',
+    title: ['/cv 광고 랜딩 등록', '/cv ad-landing registration'],
+    note: ['로그인 시작 → 복귀 구간이 OAuth 로 이탈한 사람이다.',
+           'The start → return gap is people lost inside the OAuth redirect.',
+           'Khoảng bắt đầu → quay lại là người rời bỏ trong OAuth.'],
+    steps: [
+      { event: 'cv_view', label: ['CV 페이지 뷰', 'CV view', 'Xem trang CV'] },
+      { event: 'cv_attach_file', label: ['파일 첨부', 'File attached', 'Đính kèm'] },
+      { event: 'cv_oauth_start', label: ['로그인 시작', 'Login start', 'Bắt đầu login'] },
+      { event: 'cv_oauth_return', label: ['로그인 복귀', 'Login return', 'Quay lại'] },
+      { event: 'cv_register_success', label: ['이력서 등록', 'Registered', 'Đã đăng ký'] },
+    ],
+  },
   {
     key: 'resume',
     title: ['이력서 업로드 → AI 인식', 'Resume upload → AI parse'],
@@ -37,20 +52,6 @@ const FUNNELS = [
       { event: 'profile_view', label: ['프로필 진입', 'Profile view', 'Vào hồ sơ'] },
       { event: 'profile_edit_start', label: ['작성 시작', 'Edit start', 'Bắt đầu viết'] },
       { event: 'profile_save_success', label: ['저장 완료', 'Saved', 'Đã lưu'] },
-    ],
-  },
-  {
-    key: 'cv',
-    title: ['/cv 광고 랜딩 등록', '/cv ad-landing registration'],
-    note: ['로그인 시작 → 복귀 구간이 OAuth 로 이탈한 사람이다.',
-           'The start → return gap is people lost inside the OAuth redirect.',
-           'Khoảng bắt đầu → quay lại là người rời bỏ trong OAuth.'],
-    steps: [
-      { event: 'cv_view', label: ['CV 페이지 뷰', 'CV view', 'Xem trang CV'] },
-      { event: 'cv_attach_file', label: ['파일 첨부', 'File attached', 'Đính kèm'] },
-      { event: 'cv_oauth_start', label: ['로그인 시작', 'Login start', 'Bắt đầu login'] },
-      { event: 'cv_oauth_return', label: ['로그인 복귀', 'Login return', 'Quay lại'] },
-      { event: 'cv_register_success', label: ['이력서 등록', 'Registered', 'Đã đăng ký'] },
     ],
   },
 ]
@@ -94,16 +95,88 @@ const pct = (a, b, digits = 1) => (b > 0 ? ((a / b) * 100).toFixed(digits) : nul
 
 const TONE = { bad: '#C2452B', warn: '#B45309' }
 
+// 퍼널 카드 한 장 — 이탈률(큰 숫자) + 최대 이탈 구간 + 단계 차트.
+function FunnelCard({ f, res, L }) {
+  const { data, error, isLoading } = res
+  const vals = f.steps.map(s => data?.steps?.find(r => r.event === s.event)?.users ?? 0)
+  const entered = vals[0]
+  const done = vals[vals.length - 1]
+  // 이 탭의 주인공 = 이탈률과 "어디서" 빠지는가. 가장 많이 잃은 구간을 헤더에 박아둔다.
+  const dropRate = entered > 0 ? pct(entered - done, entered) : null
+  const worst = vals.slice(0, -1)
+    .map((v, k) => ({ k, loss: v - vals[k + 1], from: v }))
+    .sort((a, b) => b.loss - a.loss)[0]
+
+  return (
+    <div style={{ ...sectionStyle, marginBottom: 12 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12, marginBottom: 4 }}>
+        <div>
+          <div style={{ fontSize: 13.5, fontWeight: 700, color: '#333' }}>{L(...f.title)}</div>
+          {data && (
+            <div style={{ fontSize: 11.5, color: '#8B95A1', marginTop: 3 }}>
+              {L('진입', 'Entered', 'Vào')} <b style={{ color: '#191F28' }}>{fmt(entered)}</b>
+              {' → '}{L('완주', 'completed', 'hoàn tất')} <b style={{ color: '#191F28' }}>{fmt(done)}</b>
+              {worst && worst.loss > 0 && (
+                <> · {L('최대 이탈', 'Biggest drop', 'Rơi nhiều nhất')}{' '}
+                  <b style={{ color: TONE.bad }}>
+                    {L(...f.steps[worst.k].label)} → {L(...f.steps[worst.k + 1].label)} −{fmt(worst.loss)}
+                    {worst.from > 0 && ` (${pct(worst.loss, worst.from)}%)`}
+                  </b>
+                </>
+              )}
+            </div>
+          )}
+        </div>
+        {data && dropRate !== null && (
+          <div style={{ textAlign: 'right', flexShrink: 0 }}>
+            <div style={{ fontSize: 26, fontWeight: 800, color: TONE.bad, lineHeight: 1 }}>{dropRate}%</div>
+            <div style={{ fontSize: 10.5, fontWeight: 700, color: '#8B95A1', marginTop: 3 }}>{L('이탈률', 'Drop-off', 'Tỷ lệ rời')}</div>
+          </div>
+        )}
+      </div>
+      {error ? (
+        <div style={{ padding: '18px 0', color: '#c00', fontSize: 12.5 }}>{error.message}</div>
+      ) : isLoading && !data ? (
+        <div style={{ padding: '18px 0', color: '#999', fontSize: 12.5 }}>{L('불러오는 중…', 'Loading…', 'Đang tải…')}</div>
+      ) : (
+        <AmpChart vals={vals} steps={f.steps.map(s => L(...s.label))} />
+      )}
+      <div style={{ fontSize: 11, color: '#8B95A1', lineHeight: 1.7 }}>{L(...f.note)}</div>
+    </div>
+  )
+}
+
+// 접이식 퍼널 헤더 — 닫혀 있으면 해당 퍼널은 요청조차 보내지 않는다.
+function ToggleBar({ open, onClick, title, L }) {
+  return (
+    <button type="button" onClick={onClick}
+      style={{
+        display: 'flex', alignItems: 'center', gap: 6, width: '100%', marginBottom: 12,
+        background: '#fff', border: '1px solid #e5e7eb', borderRadius: 12, padding: '12px 20px',
+        fontSize: 13, fontWeight: 600, color: '#475569', cursor: 'pointer', textAlign: 'left',
+      }}>
+      <span style={{ fontSize: 10, color: '#8B95A1' }}>{open ? '▼' : '▶'}</span>
+      {title}
+      <span style={{ fontSize: 11, fontWeight: 500, color: '#8B95A1' }}>
+        {open ? L('접기', 'hide', 'ẩn') : L('펼치기', 'show', 'hiện')}
+      </span>
+    </button>
+  )
+}
+
 export default function ResumeDropoffSection({ token, lang, dateRange }) {
   const L = (ko, en, vi) => (lang === 'vi' ? (vi ?? en) : lang === 'ko' ? ko : en)
   const range = `from=${dateRange.from}&to=${dateRange.to}`
+  // /profile 쪽 퍼널 2종은 하단 토글 — 열기 전엔 요청도 보내지 않는다.
+  const [showParse, setShowParse] = useState(false)
+  const [showSave, setShowSave] = useState(false)
 
+  const funnelUrl = (f) => `/api/admin/funnel-explore?steps=${f.steps.map(s => s.event).join(',')}&${range}&window=${WINDOW_SEC}&order=this`
   // 퍼널 3종 + 이탈/실패 건수 1종. 훅은 조건 없이 항상 같은 개수로 호출한다.
-  const f0 = useAdmin(`/api/admin/funnel-explore?steps=${FUNNELS[0].steps.map(s => s.event).join(',')}&${range}&window=${WINDOW_SEC}&order=this`, token)
-  const f1 = useAdmin(`/api/admin/funnel-explore?steps=${FUNNELS[1].steps.map(s => s.event).join(',')}&${range}&window=${WINDOW_SEC}&order=this`, token)
-  const f2 = useAdmin(`/api/admin/funnel-explore?steps=${FUNNELS[2].steps.map(s => s.event).join(',')}&${range}&window=${WINDOW_SEC}&order=this`, token)
+  const f0 = useAdmin(funnelUrl(FUNNELS[0]), token)
+  const f1 = useAdmin(showParse ? funnelUrl(FUNNELS[1]) : null, token)
+  const f2 = useAdmin(showSave ? funnelUrl(FUNNELS[2]) : null, token)
   const sig = useAdmin(`/api/admin/funnel-explore?steps=${SIGNALS.map(s => s.event).join(',')}&${range}&mode=count`, token)
-  const results = [f0, f1, f2]
 
   const sigCount = Object.fromEntries((sig.data?.steps || []).map(s => [s.event, s.count]))
 
@@ -114,32 +187,7 @@ export default function ResumeDropoffSection({ token, lang, dateRange }) {
         {dateRange.from} ~ {dateRange.to} · {L('유저 단위 순차 퍼널 · 전환 윈도우 1일', 'Per-user sequential funnel · 1-day window', 'Phễu tuần tự theo người dùng · cửa sổ 1 ngày')}
       </div>
 
-      {FUNNELS.map((f, i) => {
-        const { data, error, isLoading } = results[i]
-        const vals = f.steps.map(s => data?.steps?.find(r => r.event === s.event)?.users ?? 0)
-        const done = vals[vals.length - 1]
-        return (
-          <div key={f.key} style={{ ...sectionStyle, marginBottom: 12 }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 12 }}>
-              <span style={{ fontSize: 13.5, fontWeight: 700, color: '#333' }}>{L(...f.title)}</span>
-              {data && (
-                <span style={{ fontSize: 11.5, color: '#8B95A1' }}>
-                  {L('완주', 'Completed', 'Hoàn tất')} <b style={{ color: '#191F28' }}>{fmt(done)}</b>
-                  {vals[0] > 0 && <> · {pct(done, vals[0])}%</>}
-                </span>
-              )}
-            </div>
-            {error ? (
-              <div style={{ padding: '18px 0', color: '#c00', fontSize: 12.5 }}>{error.message}</div>
-            ) : isLoading && !data ? (
-              <div style={{ padding: '18px 0', color: '#999', fontSize: 12.5 }}>{L('불러오는 중…', 'Loading…', 'Đang tải…')}</div>
-            ) : (
-              <AmpChart vals={vals} steps={f.steps.map(s => L(...s.label))} />
-            )}
-            <div style={{ fontSize: 11, color: '#8B95A1', lineHeight: 1.7 }}>{L(...f.note)}</div>
-          </div>
-        )
-      })}
+      <FunnelCard f={FUNNELS[0]} res={f0} L={L} />
 
       {/* 이탈·실패 신호 — 퍼널 단계가 아니라 건수 */}
       <div style={{ ...sectionStyle, marginBottom: 12 }}>
@@ -167,6 +215,13 @@ export default function ResumeDropoffSection({ token, lang, dateRange }) {
           </div>
         )}
       </div>
+
+      {/* /profile 퍼널 2종 — 자주 보는 값이 아니라 토글로 접어둔다 */}
+      <ToggleBar open={showParse} onClick={() => setShowParse(v => !v)} title={L(...FUNNELS[1].title)} L={L} />
+      {showParse && <FunnelCard f={FUNNELS[1]} res={f1} L={L} />}
+
+      <ToggleBar open={showSave} onClick={() => setShowSave(v => !v)} title={L(...FUNNELS[2].title)} L={L} />
+      {showSave && <FunnelCard f={FUNNELS[2]} res={f2} L={L} />}
 
       <div style={{ fontSize: 11, color: '#8B95A1', lineHeight: 1.8, marginBottom: 24 }}>
         <b style={{ color: '#C2452B' }}>{L('계측 시작일 주의', 'New instrumentation', 'Lưu ý ngày bắt đầu')}</b>
