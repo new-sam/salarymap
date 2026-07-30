@@ -3,7 +3,7 @@ import { useRouter } from 'next/router';
 import { supabase } from '../../lib/supabaseClient';
 import { getStoredUtm, getApplicationSource } from '../../lib/utm';
 import { track } from '../../lib/track';
-import { appliedUrl } from '../../lib/applyConversion';
+import { ktcAppliedUrl } from '../../lib/applyConversion';
 import { useT } from '../../lib/i18n';
 import { BRAND, c, s } from './ktcStyles';
 
@@ -90,9 +90,9 @@ export default function KtcApply({ job, variant = 'panel' }) {
         if (!aj.includes(job.id)) localStorage.setItem('fyi_applied_jobs', JSON.stringify([...aj, job.id]));
       } catch {}
       track('submit_application', { meta: { job_id: job.id, title: job.title, company: job.company, source: 'ktc' }, page: `/ktc/jobs/${job.id}` });
-      /* 확인 페이지로 실제 이동 — 접수 성공을 눈으로 확인시키고, 그 페이지가 마운트될 때
-         전환 이벤트를 쏜다. 여기서 또 쏘면 전환이 두 번 잡히므로 이동만 한다. */
-      router.push(appliedUrl({ title: job.title, company: job.company, source: 'ktc' }));
+      /* KTC 전용 확인 페이지로 실제 이동 — 접수 성공을 눈으로 확인시키고, 그 페이지가
+         마운트될 때 전환 이벤트를 쏜다. 여기서 또 쏘면 전환이 두 번 잡히므로 이동만 한다. */
+      router.push(ktcAppliedUrl({ jobId: job.id, title: job.title, company: job.company }));
     } catch (e) {
       alert(t('jobs.applyError', { error: e?.message || 'unknown error' }));
     }
