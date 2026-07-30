@@ -70,9 +70,18 @@ export default function AdminJobs() {
         setAuth('denied')
       }
     })
+    // 자동 갱신된 토큰을 상태에 반영 — 탭을 1시간 이상 열어두면 마운트 시점 토큰이 만료된다
+    const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session?.access_token) setToken(session.access_token)
+    })
+    return () => sub.subscription.unsubscribe()
   }, [])
 
-  const headers = () => ({ 'Content-Type': 'application/json', Authorization: `Bearer ${token}` })
+  // 쓰기 요청은 매번 fresh 토큰으로 — 만료 토큰이면 저장/삭제가 조용히 401로 실패한다
+  const headers = async () => {
+    const { data: { session } } = await supabase.auth.getSession()
+    return { 'Content-Type': 'application/json', Authorization: `Bearer ${session?.access_token || token}` }
+  }
 
   // SWR: 캐시로 페이지 재방문 즉시 표시. 액션 후엔 해당 목록만 mutate()로 갱신.
   const { data: jobs = [], mutate: mutateJobs } = useAdmin('/api/admin/jobs', token)
@@ -105,8 +114,8 @@ export default function AdminJobs() {
       apply_url: form.apply_url || null,
     }
     const res = editing
-      ? await fetch('/api/admin/jobs', { method: 'PUT', headers: headers(), body: JSON.stringify({ id: editing.id, ...payload }) })
-      : await fetch('/api/admin/jobs', { method: 'POST', headers: headers(), body: JSON.stringify(payload) })
+      ? await fetch('/api/admin/jobs', { method: 'PUT', headers: await headers(), body: JSON.stringify({ id: editing.id, ...payload }) })
+      : await fetch('/api/admin/jobs', { method: 'POST', headers: await headers(), body: JSON.stringify(payload) })
     if (!res.ok) {
       const { error } = await res.json().catch(() => ({}))
       setSaving(false); flash(L('저장 실패: ', 'Save failed: ') + (error || res.status)); return
@@ -117,17 +126,17 @@ export default function AdminJobs() {
 
   const handleDelete = async (id) => {
     if (!confirm(L('이 공고를 삭제하시겠습니까?', 'Delete this job?'))) return
-    await fetch('/api/admin/jobs', { method: 'DELETE', headers: headers(), body: JSON.stringify({ id }) })
+    await fetch('/api/admin/jobs', { method: 'DELETE', headers: await headers(), body: JSON.stringify({ id }) })
     flash(L('삭제됨', 'Deleted')); mutateJobs()
   }
 
   const handleToggle = async (job) => {
-    await fetch('/api/admin/jobs', { method: 'PUT', headers: headers(), body: JSON.stringify({ id: job.id, is_active: !job.is_active }) })
+    await fetch('/api/admin/jobs', { method: 'PUT', headers: await headers(), body: JSON.stringify({ id: job.id, is_active: !job.is_active }) })
     mutateJobs()
   }
 
   const handleToggleVerify = async (c) => {
-    await fetch('/api/admin/companies', { method: 'PUT', headers: headers(), body: JSON.stringify({ id: c.id, verified: !c.verified_at }) })
+    await fetch('/api/admin/companies', { method: 'PUT', headers: await headers(), body: JSON.stringify({ id: c.id, verified: !c.verified_at }) })
     flash(c.verified_at ? L('인증 해제됨', 'Verification removed') : L('✅ 인증 완료', '✅ Verified')); mutateCompanies()
   }
 
@@ -135,7 +144,7 @@ export default function AdminJobs() {
     if (!acct.email.includes('@') || !acct.companyName.trim()) return
     setAcctIssuing(true); setAcctResult(null)
     try {
-      const res = await fetch('/api/admin/companies', { method: 'POST', headers: headers(), body: JSON.stringify(acct) })
+      const res = await fetch('/api/admin/companies', { method: 'POST', headers: await headers(), body: JSON.stringify(acct) })
       const data = await res.json()
       if (!res.ok) { flash('❌ ' + (data.error || L('발급 실패', 'Failed to issue'))); return }
       setAcctResult(data)
@@ -149,33 +158,33 @@ export default function AdminJobs() {
   }
 
   const handleToggleFeatured = async (job) => {
-    await fetch('/api/admin/jobs', { method: 'PUT', headers: headers(), body: JSON.stringify({ id: job.id, is_featured: !job.is_featured }) })
+    await fetch('/api/admin/jobs', { method: 'PUT', headers: await headers(), body: JSON.stringify({ id: job.id, is_featured: !job.is_featured }) })
     flash(job.is_featured ? L('프리미엄 해제됨', 'Premium removed') : L('⭐ 프리미엄 등록됨 — 적극 채용 중 노출', '⭐ Premium enabled — shown in “Actively hiring”'))
     mutateJobs()
   }
 
   const handleApprove = async (job) => {
-    await fetch('/api/admin/jobs', { method: 'PUT', headers: headers(), body: JSON.stringify({ id: job.id, status: 'live', is_active: true }) })
+    await fetch('/api/admin/jobs', { method: 'PUT', headers: await headers(), body: JSON.stringify({ id: job.id, status: 'live', is_active: true }) })
     // 승인 알림 (기업에게, 베스트에포트)
-    try { await fetch('/api/admin/notify-job-approved', { method: 'POST', headers: headers(), body: JSON.stringify({ jobId: job.id }) }) } catch (_) {}
+    try { await fetch('/api/admin/notify-job-approved', { method: 'POST', headers: await headers(), body: JSON.stringify({ jobId: job.id }) }) } catch (_) {}
     flash(L('✅ 승인됨 — 기업에 알림 발송', '✅ Approved — company notified')); mutateJobs()
   }
   const handleReject = async (job) => {
     if (!confirm(L('이 공고를 반려하시겠습니까?', 'Reject this job posting?'))) return
-    await fetch('/api/admin/jobs', { method: 'PUT', headers: headers(), body: JSON.stringify({ id: job.id, status: 'rejected', is_active: false }) })
+    await fetch('/api/admin/jobs', { method: 'PUT', headers: await headers(), body: JSON.stringify({ id: job.id, status: 'rejected', is_active: false }) })
     flash(L('반려됨', 'Rejected')); mutateJobs()
   }
 
   const handleAddAdmin = async () => {
     if (!newAdminEmail.includes('@')) return
-    const res = await fetch('/api/admin/users', { method: 'POST', headers: headers(), body: JSON.stringify({ email: newAdminEmail.trim() }) })
+    const res = await fetch('/api/admin/users', { method: 'POST', headers: await headers(), body: JSON.stringify({ email: newAdminEmail.trim() }) })
     if (res.ok) { flash('Admin added'); setNewAdminEmail(''); mutateAdmins() }
     else { const d = await res.json(); flash(d.error || 'Failed') }
   }
 
   const handleRemoveAdmin = async (email) => {
     if (!confirm(`Remove ${email} from admin?`)) return
-    const res = await fetch('/api/admin/users', { method: 'DELETE', headers: headers(), body: JSON.stringify({ email }) })
+    const res = await fetch('/api/admin/users', { method: 'DELETE', headers: await headers(), body: JSON.stringify({ email }) })
     if (res.ok) { flash('Removed'); mutateAdmins() }
     else { const d = await res.json(); flash(d.error || 'Failed') }
   }
@@ -500,11 +509,18 @@ export default function AdminJobs() {
               </div>
 
               <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
-                <button style={S.btnP} onClick={handleSave} disabled={saving || !form.title || !form.company}>
+                <button
+                  style={{ ...S.btnP, ...((saving || !form.title || !form.company) ? { opacity: 0.4, cursor: 'default' } : null) }}
+                  onClick={handleSave} disabled={saving || !form.title || !form.company}>
                   {saving ? L('저장 중...', 'Saving…') : editing ? L('수정', 'Save') : L('등록', 'Create')}
                 </button>
                 {editing && <button style={S.btnG} onClick={startNew}>{L('취소', 'Cancel')}</button>}
               </div>
+              {(!form.title || !form.company) && (
+                <div style={{ fontSize: 12, color: '#C92A2A', marginTop: 8 }}>
+                  {L('직무명과 회사명을 입력해야 등록할 수 있어요.', 'Job title and company are required to save.')}
+                </div>
+              )}
             </div>
             </div>
 
@@ -804,5 +820,6 @@ const S = {
   btnG: { fontSize: 13, fontWeight: 600, color: '#888', background: 'none', border: '1px solid #ddd', padding: '10px 24px', borderRadius: 8, cursor: 'pointer' },
   btnS: { fontSize: 11, fontWeight: 600, color: '#555', background: '#f5f5f5', border: 'none', padding: '5px 10px', borderRadius: 6, cursor: 'pointer' },
   sel: { fontSize: 12, padding: '6px 10px', border: '1px solid #e0e0e0', borderRadius: 6, outline: 'none', fontFamily: 'inherit', flexShrink: 0 },
-  flash: { background: '#dcfce7', color: '#166534', fontSize: 13, fontWeight: 600, padding: '8px 16px', borderRadius: 8, marginBottom: 12 },
+  // 새 공고 탭은 fixed 패널(zIndex 30/31)이 화면을 덮으므로 플래시도 fixed 토스트로 띄운다
+  flash: { position: 'fixed', top: 14, left: '50%', transform: 'translateX(-50%)', zIndex: 200, maxWidth: '80vw', background: '#dcfce7', color: '#166534', fontSize: 13, fontWeight: 600, padding: '10px 18px', borderRadius: 10, boxShadow: '0 4px 16px rgba(0,0,0,0.12)' },
 }
