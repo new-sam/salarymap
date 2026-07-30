@@ -279,10 +279,18 @@ export default function CvLanding() {
     return () => { cancelled = true }
   }, [user])
 
+  // OAuth 복귀 계측 — cv_oauth_start 대비 "실제로 돌아온 사람"을 재서 로그인 구간 이탈을 잡는다.
+  // 이 이펙트는 user/router.query 변화로 여러 번 돌 수 있어 1회만 기록.
+  const oauthReturnTracked = useRef(false)
+
   // Resume after OAuth: retrieve blob from IndexedDB and auto-upload.
   useEffect(() => {
     if (!user) return
     if (router.query.continue !== '1') return
+    if (!oauthReturnTracked.current) {
+      oauthReturnTracked.current = true
+      track('cv_oauth_return', { meta: cvMeta(), page: '/cv' })
+    }
     let cancelled = false
     ;(async () => {
       const stored = await idbGetCv()
@@ -448,6 +456,8 @@ export default function CvLanding() {
   }
 
   const toggleRole = (value) => {
+    // 직무 선택은 파일 첨부 없이도 만질 수 있어 고정 퍼널(순차)엔 넣지 않는다 — 순서 무관 탐색용.
+    track('cv_select_role', { meta: { ...cvMeta(), role: value, on: !selectedRoles.includes(value) }, page: '/cv' })
     setSelectedRoles((prev) => {
       const next = prev.includes(value) ? prev.filter((v) => v !== value) : [...prev, value]
       try { localStorage.setItem(CV_ROLES_KEY, JSON.stringify(next)) } catch {}

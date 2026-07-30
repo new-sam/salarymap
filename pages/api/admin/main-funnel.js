@@ -35,6 +35,7 @@ const FLOW_FUNNELS = [
       { event: 'cv_view', label: ['CV 페이지 뷰', 'CV view'] },
       { event: 'cv_attach_file', label: ['이력서 업로드', 'Resume upload'] },
       { event: 'cv_oauth_start', label: ['로그인 시작', 'Login start'] },
+      { event: 'cv_oauth_return', label: ['로그인 복귀', 'Login return'] },
       { event: 'cv_register_success', label: ['이력서 등록', 'Resume registered'] },
     ],
     newSignupTerminal: { fromStep: 'cv_register_success', label: ['가입 (신규)', 'Sign-up (new)'] } },

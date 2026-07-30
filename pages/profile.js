@@ -5,6 +5,7 @@ import { supabase } from '../lib/supabaseClient'
 import Badge, { badgeLabel } from '../components/Badge'
 import { badgeVisual } from '../lib/badgeVisuals'
 import { useT } from '../lib/i18n'
+import { track, getClientId } from '../lib/track'
 import Icon from '../components/Icon'
 import { ROLE_GROUPS } from '../constants/jobs'
 import { completionScore } from '../lib/profileScore'
@@ -156,6 +157,7 @@ export default function ProfilePage() {
   const handleTabChange = (newTab) => {
     if (newTab === tab) return
     if (isDirty && tab === 'profile') {
+      track('profile_abandon_dirty', { meta: { type: 'tab', target: newTab }, page: '/profile' })
       setPendingNav({ type: 'tab', target: newTab })
     } else {
       setTab(newTab)
@@ -164,15 +166,31 @@ export default function ProfilePage() {
 
   // Browser tab close / refresh guard
   useEffect(() => {
-    const handler = (e) => { if (isDirtyRef.current) { e.preventDefault(); e.returnValue = '' } }
+    const handler = (e) => {
+      if (!isDirtyRef.current) return
+      e.preventDefault(); e.returnValue = ''
+      // 탭 닫기/새로고침은 fetch가 완주하지 못해 sendBeacon으로 보낸다. /api/track 이 내부 계정을
+      // 걸러낼 수 있도록 email/userId 도 실어준다(track() 이 세션에서 붙여주는 값과 동일).
+      try {
+        navigator.sendBeacon('/api/track', new Blob([JSON.stringify({
+          event: 'profile_abandon_dirty',
+          page: '/profile',
+          meta: { type: 'unload' },
+          email: user?.email || null,
+          userId: user?.id || null,
+          clientId: getClientId(),
+        })], { type: 'application/json' }))
+      } catch {}
+    }
     window.addEventListener('beforeunload', handler)
     return () => window.removeEventListener('beforeunload', handler)
-  }, [])
+  }, [user])
 
   // Next.js route change guard
   useEffect(() => {
     const handler = (url) => {
       if (!isDirtyRef.current) return
+      track('profile_abandon_dirty', { meta: { type: 'route', target: url }, page: '/profile' })
       pendingRoute.current = url
       setPendingNav({ type: 'route', target: url })
       router.events.emit('routeChangeError')
@@ -187,6 +205,7 @@ export default function ProfilePage() {
       if (!session) { router.replace('/'); return }
       setUser(session.user)
       setToken(session.access_token)
+      track('profile_view', { page: '/profile' })
 
       // Admin check — trust the cache only when it says admin=true. A cached
       // 'false' is re-checked every load so newly-granted admins see the button
@@ -302,6 +321,15 @@ export default function ProfilePage() {
       .finally(() => setApplicationsLoading(false))
   }, [tab, user])
 
+  // 작성 시작 — dirty 최초 전환 = 실제로 폼에 손을 댄 순간. 로딩 중(form/initialForm 동시 세팅)과
+  // AI 파싱(initialForm 까지 동기화)은 dirty 가 아니라서 잡히지 않는다.
+  const editStartedRef = useRef(false)
+  useEffect(() => {
+    if (loading || !isDirty || editStartedRef.current) return
+    editStartedRef.current = true
+    track('profile_edit_start', { page: '/profile' })
+  }, [loading, isDirty])
+
   const handleSave = async () => {
     setSaving(true)
     const payload = {
@@ -311,11 +339,12 @@ export default function ProfilePage() {
       salary_min: form.salary_min ? parseInt(form.salary_min) * 1000000 : null,
       salary_max: form.salary_max ? parseInt(form.salary_max) * 1000000 : null,
     }
-    await fetch('/api/profile/talent', {
+    const saveRes = await fetch('/api/profile/talent', {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
       body: JSON.stringify(payload),
     })
+    track(saveRes.ok ? 'profile_save_success' : 'profile_save_error', { page: '/profile' })
     // Refresh profile for completion score
     const res = await fetch('/api/profile/talent', { headers: { Authorization: `Bearer ${token}` } })
     if (res.ok) {
@@ -347,7 +376,8 @@ export default function ProfilePage() {
         return next
       })
       if (type === 'resume') {
-        fetch('/api/track', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ event: 'resume_upload', page: '/profile' }) }).catch(() => {})
+        // track() 경유 — client_id 가 붙어야 퍼널 스티칭이 되고, 내부/HR 계정도 걸러진다.
+        track('resume_upload', { page: '/profile' })
         runAiParse()
       }
     }
@@ -355,6 +385,7 @@ export default function ProfilePage() {
 
   const runAiParse = async () => {
     setAiParsing(true)
+    track('profile_ai_parse_start', { page: '/profile' })
     const steps = [
       { percent: 15, message: t('profile.ai.download') },
       { percent: 35, message: t('profile.ai.extract') },
@@ -378,6 +409,7 @@ export default function ProfilePage() {
 
       if (!response.ok) {
         const err = await response.json()
+        track('profile_ai_parse_error', { meta: { error_message: err.error || null }, page: '/profile' })
         setShowAlert(err.error || 'AI parsing failed')
         setAiParsing(false)
         setAiProgress({ percent: 0, message: '' })
@@ -414,6 +446,8 @@ export default function ProfilePage() {
       }
       await fetch('/api/profile/talent', { method: 'PUT', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify(payload) })
       setInitialForm(merged)
+      // 여기서 이미 서버 저장까지 끝난다 — 이력서 등록의 실질적 완료 지점(별도 '저장' 불필요).
+      track('profile_ai_parse_done', { page: '/profile' })
 
       setAiProgress({ percent: 100, message: t('profile.ai.done') })
       setMsg(t('profile.ai.verify'))
@@ -422,6 +456,7 @@ export default function ProfilePage() {
       if (profileRes.ok) { const { profile: p } = await profileRes.json(); setProfile(p); window.dispatchEvent(new CustomEvent('profile-updated', { detail: p })) }
     } catch (err) {
       clearInterval(timer)
+      track('profile_ai_parse_error', { meta: { error_message: err.message || null }, page: '/profile' })
       setShowAlert('AI parsing failed: ' + err.message)
     }
     setTimeout(() => {
@@ -1073,7 +1108,7 @@ export default function ProfilePage() {
             <div style={{ fontSize: 15, fontWeight: 700, color: '#111', marginBottom: 6 }}>{t('profile.leave.title')}</div>
             <div style={{ fontSize: 13, color: 'rgba(0,0,0,0.45)', marginBottom: 20, lineHeight: 1.5 }}>{t('profile.leave.desc')}</div>
             <div style={{ display: 'flex', gap: 8 }}>
-              <button onClick={() => { const nav = pendingNav; setPendingNav(null); setForm({ ...initialForm }); if (nav.type === 'route') router.push(nav.target); else setTab(nav.target) }}
+              <button onClick={() => { const nav = pendingNav; track('profile_abandon_discard', { meta: { type: nav.type, target: nav.target }, page: '/profile' }); setPendingNav(null); setForm({ ...initialForm }); if (nav.type === 'route') router.push(nav.target); else setTab(nav.target) }}
                 style={{ flex: 1, padding: 11, borderRadius: 8, border: '1px solid rgba(0,0,0,0.1)', background: '#fff', color: '#111', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>
                 {t('profile.leave.no')}
               </button>
