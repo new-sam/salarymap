@@ -68,16 +68,44 @@ export default async function handler(req, res) {
     }
   }
 
+  // 지원자 프로필 4필드는 로그인 사용자면 user_profiles 를 단일 출처로 삼는다.
+  // 지원 호출부가 5곳(/jobs 목록·유사공고, /jobs/[id], /cv, /ktc)인데 이 값을 실어
+  // 보내는 건 /jobs 두 곳뿐이라, 같은 지원이 경로에 따라 다르게 기록됐다.
+  // 클라이언트가 보낸 값은 프로필 행이 없을 때(비로그인 등)만 쓴다.
+  //   · role 은 user_profiles.role 이 계정 유형('seeker')이므로 position 을 쓴다
+  //   · 경력은 개월(yoe_months)로 통일한다 — 예전엔 연 단위 문자열이 섞여 들어왔다
+  //   · 연봉은 월 100만~10억 VND 밖이면 버린다(프로필에 1e13, 20 같은 오염값이 있다)
+  let profileFields = null
+  if (userId) {
+    const { data: p } = await supabase
+      .from('user_profiles')
+      .select('position, yoe_months, salary_min, verified_company_name')
+      .eq('id', userId)
+      .maybeSingle()
+    if (p) {
+      const salary = Number(p.salary_min)
+      const salaryOk = Number.isFinite(salary) && salary >= 1_000_000 && salary <= 1_000_000_000
+      profileFields = {
+        applicant_role: p.position || null,
+        applicant_experience: p.yoe_months != null ? String(p.yoe_months) : null,
+        applicant_salary: salaryOk ? salary : null,
+        applicant_company: p.verified_company_name || null,
+      }
+    }
+  }
+
   const baseRow = {
     job_id: jobId,
     job_title: resolvedTitle,
     job_company: resolvedCompany,
     user_id: userId || null,
     resume_url: resumeUrl || null,
-    applicant_role: applicantRole || null,
-    applicant_experience: applicantExperience || null,
-    applicant_salary: applicantSalary || null,
-    applicant_company: applicantCompany || null,
+    ...(profileFields || {
+      applicant_role: applicantRole || null,
+      applicant_experience: applicantExperience || null,
+      applicant_salary: applicantSalary || null,
+      applicant_company: applicantCompany || null,
+    }),
     applicant_email: applicantEmail || null,
     applicant_name: applicantName || null,
   }
