@@ -592,6 +592,8 @@ export default function CvLanding() {
             <div className="cv-banknote-showcase" aria-hidden>
               <img src="/cv/banknote-prize-v2.png" alt="" className="cv-banknote-img" />
             </div>
+            {/* 축하금 지급 조건 — 금액 바로 아래가 조건이 붙을 자리 */}
+            <p className="cv-hero-note">{t('cv.how.notice')}</p>
           </div>
         </section>
 
@@ -632,7 +634,6 @@ export default function CvLanding() {
                 <div className="cv-flow-copy">
                   <h3>{t('cv.how.step3.title')}</h3>
                   <p>{t('cv.how.step3.desc')}</p>
-                  <p className="cv-flow-disclaimer">{t('cv.how.step3.disclaimer')}</p>
                 </div>
               </article>
             </div>
@@ -1337,14 +1338,6 @@ export default function CvLanding() {
           color: rgba(26,22,18,0.58);
           word-break: keep-all;
         }
-        .cv-flow-copy .cv-flow-disclaimer {
-          margin-top: 6px;
-          font-size: 12px;
-          line-height: 1.5;
-          color: rgba(26,22,18,0.42);
-          /* 문구 안의 \n 을 살려 조건 두 개를 줄로 나눈다 */
-          white-space: pre-line;
-        }
         .cv-flow-arrow {
           width: 44px;
           height: 44px;
@@ -1360,14 +1353,17 @@ export default function CvLanding() {
           font-weight: 900;
           box-shadow: 0 14px 34px -18px rgba(255,96,0,0.4);
         }
-        .cv-flow-note {
+        /* 축하금 조건 — 지폐 에셋 바로 아래. 히어로는 검정 배경이라 글자색은 흰색 계열.
+           문구 안의 \n 을 살려(pre-line) 조건 두 개를 줄로 나눈다. */
+        .cv-hero-note {
           max-width: 560px;
-          margin: 34px auto 0;
+          margin: 22px auto 0;
           text-align: center;
-          font-size: 15px;
+          font-size: 12px;
           line-height: 1.7;
-          color: rgba(26,22,18,0.56);
+          color: rgba(255,255,255,0.5);
           word-break: keep-all;
+          white-space: pre-line;
         }
         .cv-steps {
           position: relative;
@@ -3140,12 +3136,8 @@ export default function CvLanding() {
           .cv-flow-copy h3 {
             font-size: 19px;
           }
-          .cv-flow-copy p,
-          .cv-flow-note {
+          .cv-flow-copy p {
             font-size: 13.5px;
-          }
-          .cv-flow-note {
-            margin-top: 28px;
           }
           .cv-test-card { flex-basis: 290px; padding: 26px 22px 20px; }
           .cv-jobs-grid { padding: 0 20px; }
