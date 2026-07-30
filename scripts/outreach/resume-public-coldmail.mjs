@@ -32,11 +32,11 @@ const sleep = (ms) => new Promise(r => setTimeout(r, ms))
 const esc = (s) => String(s || '').replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]))
 
 // ── 베트남어 이메일 ──
-const SUBJECT = 'CV của bạn đang ẩn — công khai để nhận thưởng 2.000.000₫ 🎁'
+const SUBJECT = 'CV của bạn đang ẩn — công khai để nhận thưởng 1.000.000₫ 🎁'
 function emailText(name, url) {
   return `Chào ${name || 'bạn'},
 
-Cảm ơn bạn đã đăng ký CV trên FYI để tham gia sự kiện thưởng 2.000.000₫! 🎉
+Cảm ơn bạn đã đăng ký CV trên FYI để tham gia sự kiện thưởng 1.000.000₫! 🎉
 
 Nhưng CV của bạn đang ở chế độ RIÊNG TƯ. Khi còn riêng tư:
 • Các công ty không thể xem hồ sơ của bạn
@@ -45,7 +45,7 @@ Nhưng CV của bạn đang ở chế độ RIÊNG TƯ. Khi còn riêng tư:
 Chỉ cần 1 chạm để công khai CV và tham gia ngay:
 ${url}
 
-Sau khi công khai, các công ty phù hợp sẽ chủ động liên hệ, và bạn đủ điều kiện nhận thưởng 2.000.000₫ khi được tuyển qua FYI.
+Sau khi công khai, các công ty phù hợp sẽ chủ động liên hệ, và bạn đủ điều kiện nhận thưởng 1.000.000₫ khi được tuyển qua FYI.
 
 — Đội ngũ FYI (salary-fyi.com)
 Đây là email tự động. Nếu bạn không muốn công khai, chỉ cần bỏ qua email này.`
@@ -56,7 +56,7 @@ function emailHtml(name, url) {
   <div style="font-size:20px;font-weight:800;color:#ff6000;margin-bottom:20px">FYI</div>
   <div style="background:#fff;border:1px solid #eee5da;border-radius:18px;padding:30px 26px">
     <p style="font-size:15px;margin:0 0 14px">Chào <b>${esc(name) || 'bạn'}</b>,</p>
-    <p style="font-size:14.5px;line-height:1.6;margin:0 0 16px">Cảm ơn bạn đã đăng ký CV trên FYI để tham gia <b>sự kiện thưởng 2.000.000₫</b>! 🎉</p>
+    <p style="font-size:14.5px;line-height:1.6;margin:0 0 16px">Cảm ơn bạn đã đăng ký CV trên FYI để tham gia <b>sự kiện thưởng 1.000.000₫</b>! 🎉</p>
     <p style="font-size:14.5px;line-height:1.6;margin:0 0 8px">Nhưng CV của bạn đang ở chế độ <b style="color:#d92d20">RIÊNG TƯ</b>. Khi còn riêng tư:</p>
     <ul style="font-size:14px;line-height:1.7;margin:0 0 18px;padding-left:20px;color:#4a4238">
       <li>Các công ty <b>không thể xem</b> hồ sơ của bạn</li>
@@ -66,7 +66,7 @@ function emailHtml(name, url) {
     <div style="text-align:center;margin:0 0 22px">
       <a href="${url}" style="display:inline-block;background:#ff6000;color:#fff;font-weight:700;font-size:15px;text-decoration:none;padding:14px 28px;border-radius:12px">Công khai CV &amp; tham gia sự kiện →</a>
     </div>
-    <p style="font-size:13px;line-height:1.6;color:#8a8073;margin:0">Sau khi công khai, các công ty phù hợp sẽ chủ động liên hệ, và bạn đủ điều kiện nhận thưởng 2.000.000₫ khi được tuyển qua FYI.</p>
+    <p style="font-size:13px;line-height:1.6;color:#8a8073;margin:0">Sau khi công khai, các công ty phù hợp sẽ chủ động liên hệ, và bạn đủ điều kiện nhận thưởng 1.000.000₫ khi được tuyển qua FYI.</p>
   </div>
   <p style="font-size:11.5px;color:#a89f92;text-align:center;margin:18px 0 0;line-height:1.5">— Đội ngũ FYI · salary-fyi.com<br>Đây là email tự động. Nếu bạn không muốn công khai, chỉ cần bỏ qua email này.</p>
 </div></body></html>`

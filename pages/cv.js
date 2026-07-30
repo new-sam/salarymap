@@ -204,7 +204,7 @@ export default function CvLanding() {
   // 폼 자체 CTA와 겹치지 않게 숨긴다.
   const [showScrollDown, setShowScrollDown] = useState(true)
   const showSuccess = status === 'success' || (process.env.NODE_ENV !== 'production' && router.query.successPreview === '1')
-  // 4-step journey to the 2,000,000 VND bonus. The bar grows from 0 to
+  // 4-step journey to the 1,000,000 VND bonus. The bar grows from 0 to
   // step-1 ("Resume registered") and "lands" on it — at that instant the
   // step label flips to "등록 완료" and a single viewport-wide confetti
   // burst fires. Everything else stays still to keep the hero on the bar.
@@ -587,7 +587,7 @@ export default function CvLanding() {
                 <img src="/fyi-logo.png" alt="FYI" className="cv-h1-logo" />
                 <span>{t('cv.hero.line1Post')}</span>
               </span>
-              <span className="cv-h1-line cv-h1-hero"><em>2,000,000 VND</em>{t('cv.hero.line2.suffix')}</span>
+              <span className="cv-h1-line cv-h1-hero"><em>1,000,000 VND</em>{t('cv.hero.line2.suffix')}</span>
             </h1>
             <div className="cv-banknote-showcase" aria-hidden>
               <img src="/cv/banknote-prize-v2.png" alt="" className="cv-banknote-img" />
@@ -837,9 +837,9 @@ export default function CvLanding() {
                       <span className="cv-share-text">
                         <span className="cv-share-title">{L('이력서 공개 · 축하금 이벤트 참여', 'Make resume public · join the reward event', 'Công khai CV · tham gia sự kiện thưởng')}</span>
                         {sharePublic ? (
-                          <span className="cv-share-sub">{L('공개해야 2,000,000 VND 축하금 이벤트에 참여할 수 있어요', 'Only public resumes qualify for the 2,000,000 VND reward event', 'Chỉ CV công khai mới đủ điều kiện nhận thưởng 2.000.000 VND')}</span>
+                          <span className="cv-share-sub">{L('공개해야 1,000,000 VND 축하금 이벤트에 참여할 수 있어요', 'Only public resumes qualify for the 1,000,000 VND reward event', 'Chỉ CV công khai mới đủ điều kiện nhận thưởng 1.000.000 VND')}</span>
                         ) : (
-                          <span className="cv-share-sub warn">{L('비공개 상태면 2,000,000 VND 축하금 이벤트에 참여하기 어려워요', 'While private, you can’t join the 2,000,000 VND reward event', 'Khi để riêng tư, bạn khó tham gia sự kiện thưởng 2.000.000 VND')}</span>
+                          <span className="cv-share-sub warn">{L('비공개 상태면 1,000,000 VND 축하금 이벤트에 참여하기 어려워요', 'While private, you can’t join the 1,000,000 VND reward event', 'Khi để riêng tư, bạn khó tham gia sự kiện thưởng 1.000.000 VND')}</span>
                         )}
                       </span>
                     </button>
