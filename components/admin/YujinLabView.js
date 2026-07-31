@@ -2,6 +2,7 @@ import { useAdmin } from '../../lib/adminSwr'
 import { sectionStyle } from '../../constants/dashboard'
 import DateRangePicker from './DateRangePicker'
 import ResumeDropoffSection from './ResumeDropoffSection'
+import ChangeTestView from './ChangeTestView'
 
 // "유진 작업실" — 작업 중인 분석을 탭으로 나눠 붙인다. 분석마다 컴포넌트를 분리해
 // 로딩/에러를 각자 처리하므로, 한쪽 API 가 실패해도 다른 탭은 그대로 동작한다.
@@ -9,6 +10,7 @@ import ResumeDropoffSection from './ResumeDropoffSection'
 const LAB_TABS = [
   { key: 'inflow', ko: 'KTC 유입 비중', en: 'KTC share of traffic', vi: 'Tỷ trọng truy cập KTC' },
   { key: 'resume', ko: '이력서 이탈', en: 'Resume drop-off', vi: 'Rời bỏ CV' },
+  { key: 'test', ko: '변경 테스트', en: 'Change tests', vi: 'Test thay đổi' },
 ]
 
 // 페이지 전환 알약 — AdminLayout 의 titleRight 슬롯("유진 작업실" 타이틀 우측)에 꽂아 쓴다.
@@ -42,6 +44,7 @@ export default function YujinLabView({ token, lang, dateRange, onDateChange, lab
 
       {labTab === 'inflow' && <KtcInflowSection token={token} lang={lang} dateRange={dateRange} />}
       {labTab === 'resume' && <ResumeDropoffSection token={token} lang={lang} dateRange={dateRange} />}
+      {labTab === 'test' && <ChangeTestView token={token} lang={lang} dateRange={dateRange} />}
     </>
   )
 }
