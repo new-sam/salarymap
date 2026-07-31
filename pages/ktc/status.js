@@ -22,7 +22,8 @@ export default function KtcStatus({ email, name, tokenValid }) {
     if (busy) return
     setBusy(true)
     track('ktc_status_login_click', { page: '/ktc/status', meta: { lead: leadId(email) } })
-    try { localStorage.setItem('fyi_login_return', '/my-applications') } catch {}
+    // 갓 만든 계정이라 지원 현황은 비어 있다 → 바로 지원할 게 있는 공고 목록으로 보낸다.
+    try { localStorage.setItem('fyi_login_return', '/jobs') } catch {}
     await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
