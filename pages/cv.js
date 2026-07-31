@@ -4,7 +4,7 @@ import { useRouter } from 'next/router'
 import { supabase } from '../lib/supabaseClient'
 import { useT } from '../lib/i18n'
 import { track } from '../lib/track'
-import { ROLE_GROUPS, roleGroupKey } from '../constants/jobs'
+import { ROLE_GROUPS, ROLE_OPTIONS, roleGroupKey } from '../constants/jobs'
 import { formatSalaryCard } from '../utils/salary'
 import { toast } from 'sonner'
 import { confirmAppliedInline } from '../lib/applyConversion'
@@ -12,6 +12,18 @@ import { confirmAppliedInline } from '../lib/applyConversion'
 // STEP1에서 고른 직무는 OAuth 리다이렉트로 페이지를 떠났다 돌아와도 유지돼야 해서
 // (파일이 IndexedDB로 유지되는 것과 동일) localStorage에 stash한다.
 const CV_ROLES_KEY = 'fyi_cv_roles'
+
+/* 대분류 10 / 소분류 53 을 다 펼치면 로그인 CTA 가 화면 밖으로 밀린다. 실제 등록자가
+   고른 직무 분포(7/1~, cv_register_success.meta.roles) 상위 10개를 먼저 깔고 나머지는
+   접어둔다 — 선택의 대부분이 이 안에서 끝난다. 분포가 바뀌면 이 목록도 갱신할 것.
+   순서는 빈도순이 아니라 직군 묶음순(개발 → 마케팅·데이터 → 그 외)이다. 빈도로 섞으면
+   개발 직군이 영업·인사 사이에 흩어져 훑기가 어렵다. 묶음 안에서만 빈도순. */
+const POPULAR_ROLES = [
+  'Backend', 'Frontend', 'Web', 'Fullstack',
+  'Marketing', 'Data Analyst',
+  'Sales', 'HR', 'Finance', 'PM',
+]
+const ROLE_BY_VALUE = Object.fromEntries(ROLE_GROUPS.flatMap(g => g.roles.map(r => [r.value, r])))
 
 /* Funnel-event meta — UTM (sessionStorage) + language preference, attached to
    every /cv event so we can slice by ad campaign and locale in analytics. */
@@ -184,7 +196,8 @@ export default function CvLanding() {
   // STEP1 직무 다중선택 + 등록 완료 후 "바로 지원" 모달
   const [selectedRoles, setSelectedRoles] = useState([])
   // 직무 대분류 아코디언 — 53개 칩을 다 펼치면 모바일에서 스크롤이 끝없어져 접어둔다
-  const [openRoleGroups, setOpenRoleGroups] = useState({})
+  const [showAllRoles, setShowAllRoles] = useState(false)
+  const [openGroup, setOpenGroup] = useState(null)
   const [resumeUrl, setResumeUrl] = useState(null)
   // 기존 등록자: user_profiles.resume_url이 이미 있으면 업로드 퍼널 대신 등록됨 화면을 보여준다.
   const [existingResume, setExistingResume] = useState(null)
@@ -198,6 +211,9 @@ export default function CvLanding() {
   const L = (ko, en, vi) => (lang === 'vi' ? vi : lang === 'en' ? en : ko)
   const fileRef = useRef(null)
   const formAnchorRef = useRef(null)
+  // 스크롤 목적지는 섹션(formAnchorRef)이 아니라 카드다 — 섹션은 padding-top 만
+  // 90px(모바일 80px)이라 섹션 맨 위로 보내면 카드가 화면 한참 아래에서 시작한다.
+  const formCardRef = useRef(null)
   // 모바일 하단 스크롤 다운 버튼 — 긴 랜딩을 단계별로 넘겨준다
   // (STEP 1 → 2 → 3 카드 → 등록 폼). 폼이 화면 절반 안에 들어오면
   // 폼 자체 CTA와 겹치지 않게 숨긴다.
@@ -551,7 +567,7 @@ export default function CvLanding() {
     })
   }
 
-  const scrollToForm = () => formAnchorRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  const scrollToForm = () => (formCardRef.current || formAnchorRef.current)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
 
   useEffect(() => {
     const update = () => {
@@ -568,7 +584,7 @@ export default function CvLanding() {
     const nextCard = Array.from(document.querySelectorAll('.cv-flow-card'))
       .find((el) => el.getBoundingClientRect().top > window.innerHeight * 0.5)
     if (nextCard) nextCard.scrollIntoView({ behavior: 'smooth', block: 'center' })
-    else formAnchorRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    else scrollToForm()
   }
 
   return (
@@ -589,11 +605,26 @@ export default function CvLanding() {
                 <img src="/fyi-logo.png" alt="FYI" className="cv-h1-logo" />
                 <span>{t('cv.hero.line1Post')}</span>
               </span>
-              <span className="cv-h1-line cv-h1-hero"><em>1,000,000 VND</em>{t('cv.hero.line2.suffix')}</span>
+              {/* data-text 는 ::after 가 같은 글자를 겹쳐 그려 광택 밴드를 입히는 데 쓴다 */}
+              <span className="cv-h1-line cv-h1-hero"><em data-text="1,000,000 VND">1,000,000 VND</em>{t('cv.hero.line2.suffix')}</span>
             </h1>
             <div className="cv-banknote-showcase" aria-hidden>
               <img src="/cv/banknote-prize-v2.png" alt="" className="cv-banknote-img" />
             </div>
+            {/* 히어로 CTA — 스크롤 없이 첫 화면에서 바로 등록 폼으로 */}
+            <div className="cv-hero-cta">
+              <button
+                type="button"
+                className="cv-btn cv-btn-hero"
+                onClick={() => {
+                  track('cv_click_hero_cta', { meta: cvMeta(), page: '/cv' })
+                  scrollToForm()
+                }}
+              >
+                {t('cv.sticky.cta')} <IconArrowRight />
+              </button>
+            </div>
+
             {/* 축하금 지급 조건 — 금액 바로 아래가 조건이 붙을 자리 */}
             <p className="cv-hero-note">{t('cv.how.notice')}</p>
           </div>
@@ -699,7 +730,7 @@ export default function CvLanding() {
 
         {/* ───── FORM ───── */}
         <section className="cv-form-section" id="cv-form" ref={formAnchorRef}>
-          <div className="cv-section-inner cv-form-wrap">
+          <div className="cv-section-inner cv-form-wrap" ref={formCardRef}>
             {/* 파일 input은 분기 밖에 — 등록됨 화면의 "교체" 버튼에서도 쓴다 */}
             <input ref={fileRef} type="file" accept=".pdf,.doc,.docx,application/pdf" hidden onClick={(e) => { e.currentTarget.value = '' }} onChange={(e) => handleFile(e.target.files?.[0])} />
             {showSuccess ? (
@@ -830,41 +861,68 @@ export default function CvLanding() {
                   {/* 찾는 직무 (복수 선택) — 등록 완료 후 맞는 공고 추천/지원에 사용 */}
                   <div className="cv-roles">
                     <div className="cv-roles-label">{L('찾는 직무 (복수 선택 가능)', 'Roles you want (select multiple)', 'Vị trí bạn tìm (chọn nhiều)')}</div>
-                    <div className="cv-roles-groups">
-                      {ROLE_GROUPS.map((g) => {
-                        const isOpen = !!openRoleGroups[g.key]
-                        const count = g.roles.filter((r) => selectedRoles.includes(r.value)).length
+                    {/* 자주 고르는 직무를 먼저 깔아 대부분 1탭에 끝내고, 나머지 43개는
+                        접어둔다. 접힌 상태에서도 이미 고른 직무는 항상 보여야 해서
+                        (전체에서 고르고 접으면 사라진 것처럼 보임) 인기 목록에 없는
+                        선택분을 뒤에 이어 붙인다. */}
+                    <div className="cv-roles-chips cv-roles-top">
+                      {[...POPULAR_ROLES, ...selectedRoles.filter((v) => !POPULAR_ROLES.includes(v))].map((value) => {
+                        const r = ROLE_BY_VALUE[value]
+                        if (!r) return null
                         return (
-                          <div key={g.key} className="cv-roles-group">
-                            <button
-                              type="button"
-                              className={`cv-roles-gtoggle${count > 0 ? ' has' : ''}`}
-                              onClick={() => setOpenRoleGroups((p) => ({ ...p, [g.key]: !p[g.key] }))}
-                            >
-                              <span className={`cv-roles-garrow${isOpen ? ' open' : ''}`}>
-                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
-                              </span>
-                              <span className="cv-roles-gname">{g.label[lang] || g.label.en}</span>
-                              {count > 0 && <span className="cv-roles-gcount">{count}</span>}
-                            </button>
-                            {isOpen && (
-                              <div className="cv-roles-chips">
-                                {g.roles.map((r) => (
-                                  <button
-                                    type="button"
-                                    key={r.value}
-                                    className={`cv-role-chip${selectedRoles.includes(r.value) ? ' on' : ''}`}
-                                    onClick={() => toggleRole(r.value)}
-                                  >
-                                    {r.label[lang] || r.label.en}
-                                  </button>
-                                ))}
-                              </div>
-                            )}
-                          </div>
+                          <button
+                            type="button"
+                            key={value}
+                            className={`cv-role-chip${selectedRoles.includes(value) ? ' on' : ''}`}
+                            onClick={() => toggleRole(value)}
+                          >
+                            {r.label[lang] || r.label.en}
+                          </button>
                         )
                       })}
                     </div>
+
+                    <button type="button" className="cv-roles-more" onClick={() => setShowAllRoles((v) => !v)}>
+                      <span className={`cv-roles-garrow${showAllRoles ? ' open' : ''}`}>
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+                      </span>
+                      {L(`전체 직무 보기 (${ROLE_OPTIONS.length}개)`, `All roles (${ROLE_OPTIONS.length})`, `Tất cả vị trí (${ROLE_OPTIONS.length})`)}
+                    </button>
+
+                    {showAllRoles && (
+                      <div className="cv-roles-all">
+                        <div className="cv-roles-chips">
+                          {ROLE_GROUPS.map((g) => {
+                            const count = g.roles.filter((r) => selectedRoles.includes(r.value)).length
+                            return (
+                              <button
+                                type="button"
+                                key={g.key}
+                                className={`cv-role-chip cv-role-gchip${openGroup === g.key ? ' open' : ''}${count > 0 ? ' has' : ''}`}
+                                onClick={() => setOpenGroup((k) => (k === g.key ? null : g.key))}
+                              >
+                                {g.label[lang] || g.label.en}
+                                {count > 0 && <span className="cv-roles-gcount">{count}</span>}
+                              </button>
+                            )
+                          })}
+                        </div>
+                        {openGroup && (
+                          <div className="cv-roles-chips cv-roles-sub">
+                            {ROLE_GROUPS.find((g) => g.key === openGroup).roles.map((r) => (
+                              <button
+                                type="button"
+                                key={r.value}
+                                className={`cv-role-chip${selectedRoles.includes(r.value) ? ' on' : ''}`}
+                                onClick={() => toggleRole(r.value)}
+                              >
+                                {r.label[lang] || r.label.en}
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
                 </div>
 
@@ -989,16 +1047,19 @@ export default function CvLanding() {
         /* 직무 다중선택 (STEP 1) */
         .cv-roles { margin-top: 16px; border-top: 1px solid #efe9e0; padding-top: 14px; }
         .cv-roles-label { font-size: 13px; font-weight: 700; color: #1a1612; margin-bottom: 10px; }
-        .cv-roles-groups { display: flex; flex-direction: column; gap: 8px; }
-        .cv-roles-gtoggle { display: flex; align-items: center; gap: 8px; width: 100%; text-align: left; background: #fff; border: 1px solid #e3dbcf; border-radius: 10px; padding: 10px 12px; cursor: pointer; font-family: inherit; transition: border-color .12s; }
-        .cv-roles-gtoggle:hover { border-color: #ff6000; }
-        .cv-roles-gtoggle.has { border-color: rgba(255,96,0,0.45); }
         .cv-roles-garrow { display: inline-flex; color: #a89f92; transition: transform .15s; flex-shrink: 0; }
         .cv-roles-garrow.open { transform: rotate(90deg); }
-        .cv-roles-gname { font-size: 11px; font-weight: 700; color: #a89f92; text-transform: uppercase; letter-spacing: .04em; }
-        .cv-roles-gtoggle.has .cv-roles-gname { color: #4a4238; }
-        .cv-roles-gcount { margin-left: auto; flex-shrink: 0; background: #ff6000; color: #fff; font-size: 11px; font-weight: 700; border-radius: 999px; padding: 1px 8px; line-height: 1.5; }
+        .cv-roles-gcount { flex-shrink: 0; background: #ff6000; color: #fff; font-size: 11px; font-weight: 700; border-radius: 999px; padding: 1px 7px; line-height: 1.5; margin-left: 6px; }
         .cv-roles-chips { display: flex; flex-wrap: wrap; gap: 6px; padding: 8px 2px 4px; }
+        .cv-roles-top { padding-top: 0; }
+        .cv-roles-more { display: flex; align-items: center; gap: 6px; margin-top: 4px; padding: 6px 2px; background: none; border: 0; cursor: pointer; font-family: inherit; font-size: 12.5px; font-weight: 600; color: #8a8175; }
+        .cv-roles-more:hover { color: #ff6000; }
+        .cv-roles-all { margin-top: 6px; border-top: 1px dashed #e3dbcf; padding-top: 4px; }
+        /* 대분류 칩 — 소분류 칩과 같은 알약이라 선택 상태(주황)와 구분되게 회색 채움 */
+        .cv-role-gchip { background: #f6f2ec; border-color: #e3dbcf; font-weight: 600; }
+        .cv-role-gchip.has { border-color: rgba(255,96,0,0.45); color: #4a4238; }
+        .cv-role-gchip.open { background: #1a1612; border-color: #1a1612; color: #fff; }
+        .cv-roles-sub { border-left: 2px solid #f0e9df; margin-left: 2px; padding-left: 10px; }
         .cv-role-chip { font-size: 12.5px; font-weight: 500; color: #4a4238; background: #fff; border: 1px solid #e3dbcf; border-radius: 999px; padding: 6px 12px; cursor: pointer; transition: all .12s; font-family: inherit; }
         .cv-role-chip:hover { border-color: #ff6000; }
         .cv-role-chip.on { background: #fff1e8; border-color: #ff6000; color: #ff6000; font-weight: 700; }
@@ -1051,7 +1112,9 @@ export default function CvLanding() {
            Page rhythm: Hero (dark) → How (cream) → ... → Final (dark) closer. */
         .cv-hero {
           position: relative;
-          padding: 96px 40px 72px;
+          /* 히어로 안에 CTA 까지 한 화면에 들어와야 해서 세로 여백은 화면 높이를 따라간다 —
+             노트북·웹뷰처럼 세로가 짧은 환경에서 먼저 줄어든다. */
+          padding: clamp(48px, 8vh, 96px) 40px clamp(40px, 6vh, 72px);
           overflow: hidden;
           min-height: 78vh;
           display: flex;
@@ -1101,7 +1164,8 @@ export default function CvLanding() {
         /* Hero kicker — orange, centered */
         .cv-hero .cv-kicker { color: #ff8a40; justify-content: center; }
         .cv-h1 {
-          font-size: clamp(38px, 5vw, 78px);
+          /* 폭뿐 아니라 높이도 본다 — 와이드하지만 세로가 짧은 노트북에서 78px 은 너무 크다 */
+          font-size: clamp(38px, min(5vw, 9vh), 78px);
           font-weight: 900;
           line-height: 1.12;
           letter-spacing: -2.4px;
@@ -1149,10 +1213,45 @@ export default function CvLanding() {
           white-space: nowrap;
           font-size: 1.08em;
           letter-spacing: -2.8px;
+          position: relative;
+          display: inline-block;
+        }
+        /* 광택 밴드 — 같은 글자를 ::after 로 한 겹 더 깔고, 글자 모양으로 잘라낸
+           밝은 그라디언트를 왼쪽에서 오른쪽으로 흘려보낸다.
+           em 본체에 background-clip 을 쓰지 않는 이유: 배경은 text-shadow 보다
+           아래 레이어라, 글로우에 덮여 광택이 뿌옇게 죽는다. */
+        .cv-h1 em::after {
+          content: attr(data-text);
+          position: absolute;
+          left: 0;
+          top: 0;
+          white-space: nowrap;
+          pointer-events: none;
+          background-image: linear-gradient(
+            100deg,
+            rgba(255,255,255,0) 44%,
+            rgba(255,245,230,0.92) 50%,
+            rgba(255,255,255,0) 56%
+          );
+          background-size: 250% 100%;
+          background-repeat: no-repeat;
+          -webkit-background-clip: text;
+          background-clip: text;
+          color: transparent;
+          -webkit-text-fill-color: transparent;
+          animation: cvHeroShine 4.5s ease-in-out infinite;
+        }
+        /* background-position 이 커질수록 그라디언트는 왼쪽으로 간다 —
+           왼→오른쪽으로 지나가게 하려면 값을 줄여야 한다.
+           훑고 지나간 뒤엔 화면 밖(-20%)에서 쉬었다가 다음 주기에 다시 들어온다. */
+        @keyframes cvHeroShine {
+          0% { background-position: 120% 0; }
+          45%, 100% { background-position: -20% 0; }
         }
         .cv-banknote-showcase {
-          width: min(520px, 100%);
-          margin: 44px auto 0;
+          /* 이미지 비율이 806:648 이라 폭을 50vh 로 묶으면 높이는 약 40vh 를 넘지 않는다 */
+          width: min(460px, 100%, 50vh);
+          margin: 28px auto 0;
           pointer-events: none;
         }
         .cv-banknote-img {
@@ -1160,6 +1259,24 @@ export default function CvLanding() {
           width: 100%;
           height: auto;
           filter: drop-shadow(0 38px 64px rgba(0,0,0,0.45));
+          /* 글로우(3.6s)와 주기를 어긋나게 둬서 둘이 같이 뛰는 느낌이 안 나게 */
+          animation: cvBanknoteFloat 7s ease-in-out infinite;
+        }
+        @keyframes cvBanknoteFloat {
+          0%, 100% {
+            transform: translateY(0);
+            filter: drop-shadow(0 38px 64px rgba(0,0,0,0.45));
+          }
+          50% {
+            transform: translateY(-12px);
+            /* 떠오르면 그림자는 더 멀고 흐리게 — 안 그러면 그림 자체가 커 보인다 */
+            filter: drop-shadow(0 50px 72px rgba(0,0,0,0.38));
+          }
+        }
+        /* 애니메이션 최소화 설정을 켠 사용자에겐 정지 상태로 */
+        @media (prefers-reduced-motion: reduce) {
+          .cv-h1 em::after { animation: none; opacity: 0; }
+          .cv-banknote-img { animation: none; }
         }
         .cv-hero-sub {
           font-size: 17.5px;
@@ -1179,6 +1296,13 @@ export default function CvLanding() {
           font-size: 12.5px;
           color: rgba(250,246,240,0.42);
           line-height: 1.5;
+        }
+        /* 지폐 에셋과 조건 문구 사이 — 폭은 버튼 자체가 auto 라 이 래퍼로 여백만 준다 */
+        .cv-hero-cta {
+          margin-top: clamp(18px, 3vh, 30px);
+          width: 100%;
+          display: flex;
+          justify-content: center;
         }
         .cv-btn-hero {
           display: inline-flex;
@@ -1359,7 +1483,7 @@ export default function CvLanding() {
            문구 안의 \n 을 살려(pre-line) 조건 두 개를 줄로 나눈다. */
         .cv-hero-note {
           max-width: 560px;
-          margin: 22px auto 0;
+          margin: clamp(12px, 2vh, 20px) auto 0;
           text-align: center;
           font-size: 12px;
           line-height: 1.7;
@@ -1966,6 +2090,9 @@ export default function CvLanding() {
         .cv-form-wrap {
           display: flex;
           justify-content: center;
+          /* 카드가 화면 꼭대기에 딱 붙지 않을 만큼의 여백. /cv 는 광고 랜딩이라
+             nav 가 static 이므로 헤더를 피할 오프셋은 필요 없다. */
+          scroll-margin-top: 64px;
         }
         .cv-form-wrap .cv-card {
           width: 100%;
@@ -2999,17 +3126,22 @@ export default function CvLanding() {
         /* ───── Responsive ───── */
         @media (max-width: 960px) {
           .cv-hero {
-            padding: 80px 28px 80px;
+            padding: clamp(44px, 7vh, 72px) 28px clamp(36px, 5vh, 60px);
             background:
               radial-gradient(700px circle at 50% 32%, rgba(255,96,0,0.13), transparent 56%),
               radial-gradient(700px circle at 50% 70%, rgba(0,0,0,0.98), transparent 68%),
               linear-gradient(180deg, #1f1813 0%, #181410 100%);
           }
-          .cv-hero-inner { grid-template-columns: 1fr; gap: 56px; }
+          /* gap 은 자식이 제목·지폐 둘뿐이던 시절 값이다. CTA·조건 문구가 붙으면서
+             56px 이 세 군데로 늘어나 히어로가 168px 길어졌다 — 간격은 각 요소의
+             margin 으로만 잡는다. */
+          .cv-hero-inner { gap: 0; }
           .cv-banknote-showcase {
-            width: min(440px, 100%);
-            margin-top: 40px;
+            width: min(400px, 100%, 44vh);
+            margin-top: clamp(18px, 3vh, 30px);
+            margin-bottom: -2%;
           }
+          .cv-hero-cta { margin-top: clamp(10px, 1.6vh, 20px); }
           .cv-prize { min-height: 340px; }
           .cv-flow {
             max-width: 460px;
@@ -3057,7 +3189,7 @@ export default function CvLanding() {
           .cv-jobs-grid { grid-template-columns: 1fr; }
         }
         @media (max-width: 600px) {
-          .cv-hero { padding: 64px 20px 48px; }
+          .cv-hero { padding: clamp(36px, 6vh, 56px) 20px clamp(28px, 4vh, 44px); }
           .cv-section-inner { padding: 0 20px; }
           .cv-how, .cv-test, .cv-jobs, .cv-form-section { padding: 80px 0 64px; }
           /* 폼 카드 — 데스크톱 패딩(56/52px)·타이틀(42px) 그대로면 콘텐츠 폭이
@@ -3078,11 +3210,17 @@ export default function CvLanding() {
             gap: 5px;
           }
           .cv-h1-logo { height: 1.55em; }
-          .cv-h1-hero { margin-top: 18px; }
+          .cv-h1-hero { margin-top: 12px; }
           .cv-banknote-showcase {
-            width: min(320px, 82%);
-            margin-top: 36px;
+            width: min(300px, 78%, 34vh);
+            margin-top: clamp(14px, 2.5vh, 26px);
+            /* 지폐 PNG 아래쪽에 투명 여백이 있어 실제보다 훨씬 떠 보인다 —
+               그만큼 끌어올려 CTA 를 이미지에 붙인다. */
+            margin-bottom: -2%;
           }
+          /* 앱 웹뷰는 하단 탭바(60px)에 가려 실제 가용 높이가 짧다 — 간격 최소로 */
+          .cv-hero-cta { margin-top: 10px; }
+          .cv-hero-note { margin-top: 12px; font-size: 11.5px; }
           .cv-h2 { letter-spacing: -0.8px; }
           .cv-success-card {
             padding: 34px 18px 92px;
@@ -3145,7 +3283,9 @@ export default function CvLanding() {
           .cv-jobs-grid { padding: 0 20px; }
           .cv-sticky { display: block; }
           .cv-scrolldown { display: flex; }
-          .cv-btn-hero { width: 100%; }
+          /* 히어로 CTA 는 모바일에서도 화면 폭을 다 먹지 않고 글자 폭에 맞춘다 —
+             풀폭이면 하단 스티키 바와 구분이 안 되고 가로로 늘어져 보인다. */
+          .cv-btn-hero { width: auto; max-width: 86%; padding: 16px 28px; font-size: 15px; }
           .cv-trust-line { gap: 18px; }
           .cv-trust-divider { display: none; }
           .cv-conds { padding: 24px; }
