@@ -1,4 +1,5 @@
-import { useAdmin } from '../../lib/adminSwr'
+import { useState } from 'react'
+import { useAdmin, useRefreshAdmin } from '../../lib/adminSwr'
 import { sectionStyle } from '../../constants/dashboard'
 import DateRangePicker from './DateRangePicker'
 import ResumeDropoffSection from './ResumeDropoffSection'
@@ -35,11 +36,47 @@ export function YujinLabTabs({ value, onChange, lang }) {
   )
 }
 
+// 기간 줄 우측 새로고침 — 브라우저 새로고침은 보고 있던 탭까지 첫 탭으로 되돌려서,
+// 화면은 그대로 두고 데이터만 다시 받는 버튼을 따로 둔다.
+function RefreshButton({ lang }) {
+  const L = (ko, en, vi) => (lang === 'vi' ? (vi ?? en) : lang === 'ko' ? ko : en)
+  const refresh = useRefreshAdmin()
+  const [busy, setBusy] = useState(false)
+
+  const onClick = async () => {
+    if (busy) return
+    setBusy(true)
+    try { await refresh() } finally { setBusy(false) }
+  }
+
+  return (
+    <button type="button" onClick={onClick} disabled={busy}
+      title={L('데이터만 다시 불러온다 (탭은 그대로)', 'Reload data only (keeps the tab)', 'Chỉ tải lại dữ liệu')}
+      style={{
+        display: 'inline-flex', alignItems: 'center', gap: 6,
+        background: '#fff', border: '1px solid #e5e7eb', borderRadius: 8,
+        padding: '7px 12px', fontSize: 12.5, fontWeight: 600,
+        color: busy ? '#b0b8c1' : '#475569', cursor: busy ? 'default' : 'pointer',
+        fontFamily: 'inherit',
+      }}>
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+        strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"
+        style={busy ? { animation: 'ylab-spin .8s linear infinite' } : undefined}>
+        <path d="M21 12a9 9 0 1 1-2.64-6.36" />
+        <polyline points="21 3 21 9 15 9" />
+      </svg>
+      {busy ? L('불러오는 중…', 'Loading…', 'Đang tải…') : L('새로고침', 'Refresh', 'Làm mới')}
+      <style jsx>{`@keyframes ylab-spin { to { transform: rotate(360deg); } }`}</style>
+    </button>
+  )
+}
+
 export default function YujinLabView({ token, lang, dateRange, onDateChange, labTab }) {
   return (
     <>
-      <div style={{ marginBottom: 16 }}>
+      <div style={{ marginBottom: 16, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
         <DateRangePicker value={dateRange} onChange={onDateChange} />
+        <RefreshButton lang={lang} />
       </div>
 
       {labTab === 'inflow' && <KtcInflowSection token={token} lang={lang} dateRange={dateRange} />}
