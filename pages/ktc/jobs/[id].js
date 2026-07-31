@@ -20,8 +20,39 @@ export async function getServerSideProps({ params, res }) {
   }
 }
 
+/* 근무형태 칩 — 나머지 메타 칩과 같은 크기·모양을 쓰되 색으로만 구분해
+   회색 줄의 맨 앞에서 먼저 읽히게 한다. 값은 normalizeWorkType 이
+   'Remote' | 'Hybrid' | 'Onsite' 셋으로 정규화해 넘어온다. */
+// 주황은 급여 전용 — 근무형태에 쓰면 바로 위 급여와 경쟁해 둘 다 죽는다.
+const WORK_TYPE_TONE = {
+  Remote: { bg: '#E7F7EF', border: '#A3E0C4', text: '#0B7A4B' },
+  Hybrid: { bg: '#F1ECFE', border: '#CDBDF7', text: '#6429CE' },
+  Onsite: { bg: '#EAF2FE', border: '#B7D3FB', text: '#1B64DA' },
+};
+
+function WorkType({ value }) {
+  if (!value) return null;
+  const tone = WORK_TYPE_TONE[value] || WORK_TYPE_TONE.Onsite;
+  return (
+    <span
+      style={{
+        padding: '4px 9px',
+        borderRadius: 6,
+        background: tone.bg,
+        border: `1px solid ${tone.border}`,
+        fontSize: 11.5,
+        fontWeight: 700,
+        color: tone.text,
+      }}
+    >
+      {value}
+    </span>
+  );
+}
+
 export default function KtcJobDetail({ job }) {
   const { t, lang } = useT();
+  const salaryText = formatSalary(job.salaryMin, job.salaryMax, lang);
 
   const blocks = [
     { key: 'description', title: t('ktc.jobs.jd.about'), body: job.description },
@@ -103,12 +134,19 @@ export default function KtcJobDetail({ job }) {
                 {job.title}
               </h1>
 
-              <div style={{ marginTop: 16, display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-                <Meta>{job.workType}</Meta>
+              {/* 급여는 구직자가 가장 먼저 찾는 값이라 회색 칩 줄에서 빼서 색으로 구분한다.
+                  근무형태는 칩 줄 맨 앞에 두되 색만 달리해 먼저 읽히게 한다. */}
+              {salaryText && (
+                <div style={{ marginTop: 14, fontSize: 'clamp(15px, 1.5vw, 17px)', fontWeight: 800, letterSpacing: '-0.015em', color: BRAND }}>
+                  {salaryText}
+                </div>
+              )}
+
+              <div style={{ marginTop: 12, display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                <WorkType value={job.workType} />
                 <Meta>{job.location}</Meta>
                 <Meta>{job.category}</Meta>
                 <Meta>{job.experience}</Meta>
-                <Meta>{formatSalary(job.salaryMin, job.salaryMax, lang)}</Meta>
                 {job.headcount ? <Meta>{`×${job.headcount}`}</Meta> : null}
               </div>
 
