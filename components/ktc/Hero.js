@@ -1,6 +1,6 @@
 import { useT } from '../../lib/i18n';
 import Reveal from './Reveal';
-import { ANCHOR, BRAND, c, openApplySoon, s, scrollTo } from './ktcStyles';
+import { ANCHOR, BRAND, c, s, scrollTo } from './ktcStyles';
 
 const LOGOS = [
   { src: '/ktc/mss.svg', alt: 'MSS', h: 34, hm: 20 },
@@ -138,11 +138,8 @@ export default function Hero() {
                 flexWrap: 'wrap',
               }}
             >
-              <button className="ktc-hero-btn" style={s.btnPrimary} onClick={openApplySoon}>
+              <button className="ktc-hero-btn" style={s.btnPrimary} onClick={() => scrollTo(ANCHOR.jobs)}>
                 {t('ktc.hero.cta')} →
-              </button>
-              <button className="ktc-hero-btn" style={s.btnGhost} onClick={() => scrollTo(ANCHOR.jobs)}>
-                {t('ktc.hero.ctaSecondary')}
               </button>
             </div>
 
