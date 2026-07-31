@@ -26,7 +26,11 @@ export default async function handler(req, res) {
   if (!file || !type) return res.status(400).json({ error: 'file and type required' })
 
   const bucket = type === 'photo' ? 'profiles' : 'resumes'
-  const ext = type === 'photo' ? 'jpg' : 'pdf'
+  // /cv 는 .doc/.docx 업로드도 받는다(cv.js accept). 예전엔 확장자를 무조건 'pdf'로 박아서
+  // 워드 파일이 <id>.pdf 로 저장됐고, 이력서 파서가 PDF로 열다 깨져 내용을 영영 못 읽었다(17건).
+  const RESUME_EXTS = new Set(['pdf', 'doc', 'docx'])
+  const rawExt = (file.originalFilename || '').split('.').pop()?.toLowerCase()
+  const ext = type === 'photo' ? 'jpg' : RESUME_EXTS.has(rawExt) ? rawExt : 'pdf'
   const path = `${user.id}.${ext}`
 
   const fileBuffer = fs.readFileSync(file.filepath)
