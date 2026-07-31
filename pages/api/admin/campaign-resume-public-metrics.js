@@ -17,13 +17,15 @@ const vnDay = (iso) => new Date(new Date(iso).getTime() + ICT_OFFSET_MS).toISOSt
 // 캠페인 성격별 분류. 한 표에 섞으면 '전환' 컬럼의 의미가 캠페인마다 달라 읽을 수가 없다
 // (KTC=가입 / coldmail1·jobs1=이력서 공개 / recommend=지원). 그룹별로 전환 정의가 하나로 통일된다.
 //   signup    — FYI 미가입 KTC 지원자 → 회원 가입
+//   register  — 기가입 회원 중 이력서 미보유 → 이력서 등록(업로드)
 //   resume    — 기가입 회원 → 이력서 공개
 //   recommend — 기가입 회원 → 특정 공고 지원
-const GROUP_ORDER = ['signup', 'resume', 'recommend']
+const GROUP_ORDER = ['signup', 'register', 'resume', 'recommend']
 const groupOf = (name) =>
   /^coldmail-ktc/.test(name) ? 'signup'
-    : /recommend/.test(name) ? 'recommend'
-      : 'resume'
+    : /^resume-register/.test(name) ? 'register'
+      : /recommend/.test(name) ? 'recommend'
+        : 'resume'
 
 async function fetchAll(build) {
   const PAGE = 1000
@@ -47,7 +49,7 @@ export default async function handler(req, res) {
     const [evts, targetHead] = await Promise.all([
       fetchAll(() => supabase.from('events')
         .select('event, user_id, created_at, meta')
-        .in('event', ['coldmail_public_sent', 'coldmail_public_click', 'coldmail_public_convert', 'coldmail_job_apply', 'recommend_sent', 'recommend_click'])
+        .in('event', ['coldmail_public_sent', 'coldmail_public_click', 'coldmail_public_convert', 'coldmail_job_apply', 'recommend_sent', 'recommend_click', 'coldmail_resume_sent', 'coldmail_resume_click', 'coldmail_resume_upload'])
         .order('created_at')),
       // 아직 비공개인(= 앞으로 보낼 수 있는) 이력서 보유자 수 — 라이브 참고값
       supabase.from('user_profiles').select('id', { count: 'exact', head: true })
@@ -104,6 +106,17 @@ export default async function handler(req, res) {
         if (!c.lastSentDay || day > c.lastSentDay) c.lastSentDay = day
       } else if (e.event === 'recommend_click') {
         if (uid) c.click.add(uid)
+      } else if (e.event === 'coldmail_resume_sent') {
+        // 이력서 등록 유도 콜드메일 — 전환 정의가 '공개'가 아니라 '등록'이라 top-line 퍼널엔
+        // 넣지 않고(섞이면 공개 전환율이 왜곡된다) 캠페인별 버킷에만 반영한다.
+        if (uid) c.sent.add(uid)
+        const day = vnDay(e.created_at)
+        if (!c.firstSentDay || day < c.firstSentDay) c.firstSentDay = day
+        if (!c.lastSentDay || day > c.lastSentDay) c.lastSentDay = day
+      } else if (e.event === 'coldmail_resume_click') {
+        if (uid) c.click.add(uid)
+      } else if (e.event === 'coldmail_resume_upload') {
+        if (uid) c.convert.add(uid)
       }
     }
 

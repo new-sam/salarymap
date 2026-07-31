@@ -776,13 +776,19 @@ const CAMPAIGN_GROUPS = [
     convKo: '가입', convEn: 'Signups',
   },
   {
-    key: 'resume', ko: '② 이력서 공개 전환', en: '(2) Resume public',
+    key: 'register', ko: '② 이력서 등록 유도', en: '(2) Resume upload',
+    koDesc: '가입했지만 이력서가 없는 회원 대상 · 전환 = 이력서 등록(파일 업로드)',
+    enDesc: 'Members with an account but no resume · convert = uploaded a file',
+    convKo: '등록', convEn: 'Uploaded',
+  },
+  {
+    key: 'resume', ko: '③ 이력서 공개 전환', en: '(3) Resume public',
     koDesc: '이미 가입한 회원 중 이력서 비공개자 대상 · 전환 = 이력서 공개',
     enDesc: 'Existing members with a private resume · convert = made public',
     convKo: '공개 전환', convEn: 'Converted',
   },
   {
-    key: 'recommend', ko: '③ 공고 추천 → 지원', en: '(3) Job recommend',
+    key: 'recommend', ko: '④ 공고 추천 → 지원', en: '(4) Job recommend',
     koDesc: '이력서 공개 회원에게 맞는 공고 추천 · 전환 = 해당 공고 지원',
     enDesc: 'Matched job recommendations to public-resume members · convert = applied',
     convKo: '지원자', convEn: 'Applicants',
