@@ -8,7 +8,7 @@
 //   node scripts/outreach/resume-register-coldmail.mjs --test wsj@likelion.net   # 한국어 테스트 1통
 //   node scripts/outreach/resume-register-coldmail.mjs                           # dry-run: 대상 목록
 //   node scripts/outreach/resume-register-coldmail.mjs --send [--max N]          # 실발송(베트남어)
-//   옵션: --segment apply|jobcard|rest · --campaign resume-register1 · --site http://localhost:3000
+//   옵션: --segment all|apply|jobcard|rest · --campaign resume-register1 · --site http://localhost:3000
 import { Resend } from 'resend'
 import { sb, env } from './lib.mjs'
 import { makeToken } from '../../lib/campaignToken.js'
@@ -146,9 +146,10 @@ async function pickTargets() {
   const cardClickers = new Set(ev.filter((e) => e.event === 'click_job_card').map((e) => e.user_id))
 
   const inSegment = (p) => (
-    segment === 'apply' ? applyClickers.has(p.id)
-      : segment === 'jobcard' ? cardClickers.has(p.id) && !applyClickers.has(p.id)
-        : !cardClickers.has(p.id) && !applyClickers.has(p.id)
+    segment === 'all' ? true
+      : segment === 'apply' ? applyClickers.has(p.id)
+        : segment === 'jobcard' ? cardClickers.has(p.id) && !applyClickers.has(p.id)
+          : !cardClickers.has(p.id) && !applyClickers.has(p.id)
   )
   return pool.filter((p) => inSegment(p) && !sent.has(p.id))
 }
