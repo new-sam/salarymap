@@ -347,10 +347,11 @@ export default function CvLanding() {
     const pending = oauthAfterPick.current
     if (pending && !user) {
       oauthAfterPick.current = null
-      setTimeout(() => {
+      setTimeout(async () => {
         localStorage.setItem('fyi_login_return', '/cv?continue=1')
         localStorage.setItem('fyi_intent', 'cv_signup')
-        track('cv_oauth_start', { meta: { ...cvMeta(), provider: pending, has_file: true, auto: true }, page: '/cv' })
+        // 리다이렉트가 전송 중인 요청을 죽인다 — 보내고 나서 넘어간다.
+        await track('cv_oauth_start', { meta: { ...cvMeta(), provider: pending, has_file: true, auto: true }, page: '/cv' })
         if (pending === 'linkedin') {
           // Intent/return are also stored in localStorage, but pass them
           // via the callback URL so the destination survives even if the
@@ -477,7 +478,7 @@ export default function CvLanding() {
     if (!user) {
       localStorage.setItem('fyi_login_return', '/cv?continue=1')
       localStorage.setItem('fyi_intent', 'cv_signup')
-      track('cv_oauth_start', { meta: { ...cvMeta(), provider: 'google', has_file: true, auto: false }, page: '/cv' })
+      await track('cv_oauth_start', { meta: { ...cvMeta(), provider: 'google', has_file: true, auto: false }, page: '/cv' })
       window.location.href = '/api/auth/google?return=' + encodeURIComponent('/cv?continue=1')
       return
     }
@@ -494,7 +495,7 @@ export default function CvLanding() {
     if (user) { await doUpload(file); return }
     localStorage.setItem('fyi_login_return', '/cv?continue=1')
     localStorage.setItem('fyi_intent', 'cv_signup')
-    track('cv_oauth_start', { meta: { ...cvMeta(), provider: 'linkedin', has_file: true, auto: false }, page: '/cv' })
+    await track('cv_oauth_start', { meta: { ...cvMeta(), provider: 'linkedin', has_file: true, auto: false }, page: '/cv' })
     await supabase.auth.signInWithOAuth({
       provider: 'linkedin_oidc',
       options: {
@@ -514,6 +515,7 @@ export default function CvLanding() {
   //   scroll     = 아무것도 안 누르고 직접 스크롤
   const arrivedVia = useRef('scroll')
   const formViewTracked = useRef(false)
+  const cvViewAt = useRef(typeof performance !== 'undefined' ? performance.now() : 0)
 
   useEffect(() => {
     const update = () => {
@@ -526,15 +528,36 @@ export default function CvLanding() {
   }, [])
 
   // 등록 폼이 화면에 들어온 순간 1회. 완료·기등록 화면은 등록 폼이 아니라서 제외한다.
+  //
+  // isIntersecting 은 1px 만 겹쳐도 true 고 threshold 와 무관하다 — threshold 는 콜백을
+  // 언제 부를지만 정하고, observe 직후 초기 콜백은 무조건 한 번 온다. 폼은 히어로(78vh)와
+  // cv-how 아래라 최상단에서는 절대 안 보이는데, 이미지가 자리를 잡기 전 레이아웃에서는
+  // 위로 올라와 있어 그 초기 콜백이 그대로 통과했다(관측된 cv_view→cv_form_view 최단 24ms).
+  // 그래서 ① 스크롤이 일어났는지 ② 폼 윗면이 화면 안으로 들어왔는지 둘 다 본다.
   useEffect(() => {
     const el = formCardRef.current
     if (!el || showSuccess || existingResume || typeof IntersectionObserver === 'undefined') return
     const io = new IntersectionObserver((entries) => {
-      if (!entries.some((e) => e.isIntersecting) || formViewTracked.current) return
+      if (formViewTracked.current) return
+      // 도달은 언제나 스크롤을 동반한다 — 최상단에서 들어온 신호는 레이아웃 오발이다.
+      if (window.scrollY < window.innerHeight * 0.5) return
+      // ratio 로 재면 폼이 뷰포트보다 훨씬 길 때 기준을 영영 못 넘는다. 높이와 무관하게
+      // "폼 윗면이 화면 안으로 들어왔는가"로 본다.
+      if (!entries.some((e) => e.isIntersecting && e.boundingClientRect.top < window.innerHeight * 0.75)) return
       formViewTracked.current = true
-      track('cv_form_view', { meta: { ...cvMeta(), via: arrivedVia.current }, page: '/cv' })
+      // 판정을 나중에 다시 검산할 수 있게 근거를 같이 남긴다 — via 만 있으면 이번처럼
+      // 오발이 섞였을 때 걸러낼 방법이 없다.
+      track('cv_form_view', {
+        meta: {
+          ...cvMeta(),
+          via: arrivedVia.current,
+          ms: Math.round((typeof performance !== 'undefined' ? performance.now() : 0) - cvViewAt.current),
+          depth: Math.round(window.scrollY),
+        },
+        page: '/cv',
+      })
       io.disconnect()
-    }, { threshold: 0.25 })
+    }, { threshold: 0 })
     io.observe(el)
     return () => io.disconnect()
   }, [showSuccess, existingResume])
