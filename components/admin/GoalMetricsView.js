@@ -515,6 +515,8 @@ function ResumePublicTab({ data, loading, error, ko }) {
 
   return (
     <div>
+      {data.goal && <AugustGoalPanel g={data.goal} ko={ko} />}
+
       <div style={{ fontSize: 15, fontWeight: 800, color: '#0F172A', marginBottom: 6 }}>
         {ko ? '이력서 공개 전환' : 'Resume-public conversion'}
       </div>
@@ -632,6 +634,125 @@ function ResumePublicTab({ data, loading, error, ko }) {
                 <td style={num}>{d.web || ''}</td>
                 <td style={num}>{d.app || ''}</td>
                 <td style={{ ...num, color: d.coldmail ? '#2563EB' : undefined }}>{d.coldmail || ''}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  )
+}
+
+// ============ 8월 목표 (마감 8/10) ============
+// "등록 인재풀" = 이력서를 올린 회원, "등록 비율" = 가입자 중 그 비율(유저 확정 정의).
+// 개발:비개발은 비개발 비중을 목표(40%)에 대고 재고, 기획·디자인은 비개발에 넣는다.
+// 어학은 목표선 없이 현황만 — 수준을 나눌 기준이 없어 '이력서에 기재됨'으로만 센다.
+function AugustGoalPanel({ g, ko }) {
+  const pct = (v) => `${Math.round(v * 1000) / 10}%`
+  const mr = g.mix.registered
+  const lr = g.lang.registered
+  const lp = g.lang.public
+  const nontechShare = mr.classified ? mr.nontech / mr.classified : 0
+  const nontechTarget = 1 - g.mix.targetTech
+
+  const rows = [
+    {
+      key: 'pool',
+      label: ko ? '등록 인재풀' : 'Registered talent pool',
+      now: `${g.pool.current.toLocaleString()}${ko ? '명' : ''}`,
+      target: `${g.pool.target.toLocaleString()}${ko ? '명' : ''}`,
+      ratio: g.pool.current / g.pool.target,
+      note: ko
+        ? `최근 7일 +${g.pool.d7}명(하루 ${g.pool.actualPerDay}명) · 목표까지 ${(g.pool.target - g.pool.current).toLocaleString()}명, 남은 ${g.daysLeft}일간 하루 ${g.pool.needPerDay}명 필요`
+        : `+${g.pool.d7} in 7d (${g.pool.actualPerDay}/day) · needs ${g.pool.needPerDay}/day for ${g.daysLeft} days`,
+    },
+    {
+      key: 'rate',
+      label: ko ? '등록 비율' : 'Registration rate',
+      now: pct(g.rate.current),
+      target: pct(g.rate.target),
+      ratio: g.rate.current / g.rate.target,
+      note: ko
+        ? `가입 ${g.rate.signups.toLocaleString()}명 중 ${g.pool.current.toLocaleString()}명이 이력서 등록`
+        : `${g.pool.current.toLocaleString()} of ${g.rate.signups.toLocaleString()} sign-ups uploaded a resume`,
+    },
+    {
+      key: 'mix',
+      label: ko ? '개발 : 비개발' : 'Tech : non-tech',
+      now: `${Math.round(mr.techShare * 100)} : ${Math.round(nontechShare * 100)}`,
+      target: `${Math.round(g.mix.targetTech * 100)} : ${Math.round(nontechTarget * 100)}`,
+      ratio: nontechShare / nontechTarget,
+      note: ko
+        ? `직군이 분류된 ${mr.classified.toLocaleString()}명 기준(개발 ${mr.tech} · 비개발 ${mr.nontech}) — 미분류 ${mr.unknown.toLocaleString()}명은 빠져 있어 하한. 기획·디자인은 비개발에 포함.`
+        : `Of ${mr.classified.toLocaleString()} classified (tech ${mr.tech}, non-tech ${mr.nontech}) — ${mr.unknown.toLocaleString()} unclassified excluded.`,
+    },
+    {
+      key: 'lang',
+      label: ko ? '한국어 · 영어 가능 인재' : 'Korean / English speakers',
+      now: ko ? `영어 ${lr.en} · 한국어 ${lr.ko}` : `EN ${lr.en} · KO ${lr.ko}`,
+      target: ko ? '추이만' : 'tracking only',
+      ratio: null,
+      note: ko
+        ? `등록 ${lr.total.toLocaleString()}명 중 영어 ${pct(lr.total ? lr.en / lr.total : 0)} · 한국어 ${pct(lr.total ? lr.ko / lr.total : 0)} · 둘 다 ${lr.both}명. 이력서에 어학을 적은 경우만 잡혀 실제보다 낮게 나온다(수준 무관·초급 포함).`
+        : `Of ${lr.total.toLocaleString()} registered · both ${lr.both}. Counted only when the resume states a language — a lower bound.`,
+    },
+  ]
+
+  const th = { textAlign: 'left', fontSize: 11, fontWeight: 700, color: '#9CA3AF', padding: '6px 10px', borderBottom: '1px solid #EEF0F2', textTransform: 'uppercase', letterSpacing: '.04em' }
+  const td = { fontSize: 13, color: '#1F2937', padding: '7px 10px', borderBottom: '1px solid #F5F6F7' }
+  const num = { ...td, textAlign: 'right', fontVariantNumeric: 'tabular-nums', fontWeight: 600 }
+  const share = (n, d) => (d ? ` (${Math.round((n / d) * 100)}%)` : '')
+
+  return (
+    <div style={{ background: '#fff', border: '1px solid #E5E8EB', borderRadius: 16, padding: '16px 18px 6px', marginBottom: 20 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 10, marginBottom: 4 }}>
+        <div style={{ fontSize: 14, fontWeight: 800, color: '#0F172A' }}>{ko ? '8월 목표' : 'August goals'}</div>
+        <div style={{ fontSize: 12, fontWeight: 700, color: g.daysLeft <= 3 ? '#DC2626' : '#6B7280' }}>
+          {ko ? `D-${g.daysLeft} · ${g.deadline.slice(5)} 마감` : `D-${g.daysLeft} · due ${g.deadline.slice(5)}`}
+        </div>
+      </div>
+
+      {rows.map((r, i) => (
+        <div key={r.key} style={{ padding: '12px 0', borderTop: i ? '1px solid #F5F6F7' : '1px solid #EEF0F2' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 12, marginBottom: 7 }}>
+            <div style={{ fontSize: 13, fontWeight: 700, color: '#374151' }}>{r.label}</div>
+            <div style={{ fontSize: 12.5, color: '#9CA3AF', fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap' }}>
+              <b style={{ fontSize: 16, fontWeight: 800, color: '#0F172A' }}>{r.now}</b>
+              {' / '}{r.target}
+            </div>
+          </div>
+          {r.ratio != null && (
+            <div style={{ height: 6, background: '#F1F5F9', borderRadius: 4, overflow: 'hidden' }}>
+              <div style={{ width: `${Math.min(100, Math.max(0, r.ratio * 100))}%`, height: '100%', background: r.ratio >= 1 ? '#059669' : '#0D9488' }} />
+            </div>
+          )}
+          <div style={{ fontSize: 11.5, color: '#9CA3AF', marginTop: 6, lineHeight: 1.55 }}>{r.note}</div>
+        </div>
+      ))}
+
+      <div className="adm-m-scroll" style={{ overflowX: 'auto', margin: '4px -4px 14px' }}>
+        <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 340 }}>
+          <thead><tr>
+            <th style={th}>{ko ? '인재풀 구성' : 'Pool composition'}</th>
+            <th style={{ ...th, textAlign: 'right' }}>{ko ? '등록' : 'Registered'}</th>
+            <th style={{ ...th, textAlign: 'right' }}>{ko ? '공개' : 'Public'}</th>
+          </tr></thead>
+          <tbody>
+            {[
+              { label: ko ? '개발' : 'Tech', r: g.mix.registered.tech, p: g.mix.public.tech },
+              { label: ko ? '비개발(기획·디자인 포함)' : 'Non-tech (incl. design/PM)', r: g.mix.registered.nontech, p: g.mix.public.nontech },
+              { label: ko ? '직군 미분류' : 'Unclassified', r: g.mix.registered.unknown, p: g.mix.public.unknown, muted: true },
+              { label: ko ? '영어 기재' : 'States English', r: lr.en, p: lp.en, gap: true },
+              { label: ko ? '한국어 기재' : 'States Korean', r: lr.ko, p: lp.ko },
+            ].map((row) => (
+              <tr key={row.label}>
+                <td style={{ ...td, color: row.muted ? '#9CA3AF' : '#1F2937', borderTop: row.gap ? '1px solid #EEF0F2' : undefined }}>{row.label}</td>
+                <td style={{ ...num, color: row.muted ? '#9CA3AF' : '#1F2937', borderTop: row.gap ? '1px solid #EEF0F2' : undefined }}>
+                  {row.r.toLocaleString()}<span style={{ color: '#C0C4CC', fontWeight: 500 }}>{share(row.r, lr.total)}</span>
+                </td>
+                <td style={{ ...num, color: row.muted ? '#9CA3AF' : '#1F2937', borderTop: row.gap ? '1px solid #EEF0F2' : undefined }}>
+                  {row.p.toLocaleString()}<span style={{ color: '#C0C4CC', fontWeight: 500 }}>{share(row.p, lp.total)}</span>
+                </td>
               </tr>
             ))}
           </tbody>

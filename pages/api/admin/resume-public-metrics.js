@@ -1,6 +1,7 @@
 import { createClient } from '@supabase/supabase-js'
 import { verifyAdminOrDevStub } from './check'
 import { isExcludedSignup } from '../../../lib/admin-metrics'
+import { CATEGORIES, normalizePosition } from './talent-supply'
 
 // 목표지표 대시보드 — 이력서 공개 전환.
 // 공개 = 우리 공개 인재풀 노출(is_resume_public). 외부 인재마켓(VTM) 전송은 폐지됐다.
@@ -28,6 +29,30 @@ const vnWeek = (iso) => {
 const WEEKS = 10
 const DAILY_DAYS = 21
 
+// 8월 목표(승주, 마감 8/10). "등록 인재풀" = 이력서를 올린 회원, "등록 비율" = 가입자 중 그 비율.
+// 개발:비개발은 직군 분류(talent-supply와 동일 normalizePosition) 기준이고,
+// 기획·디자인(product)은 비개발에 포함한다. 한국어/영어는 목표선 없이 현황만 본다.
+const GOAL = { deadline: '2026-08-10', pool: 1500, rate: 0.5, techShare: 0.6 }
+
+const GROUP_OF = Object.fromEntries(CATEGORIES.map((c) => [c.key, c.group]))
+// position이 비면 desired_roles로 폴백 — 인재 공급/비개발 풀 탭과 같은 규칙.
+const roleGroup = (p) => {
+  let key = normalizePosition(p.position)
+  if (!key && Array.isArray(p.desired_roles) && p.desired_roles.length) {
+    key = normalizePosition(p.desired_roles.find((v) => String(v || '').trim()) || '')
+  }
+  if (!key) return 'unknown'
+  const g = GROUP_OF[key]
+  return g === 'tech' ? 'tech' : g === 'other' ? 'unknown' : 'nontech' // product(기획·디자인)는 비개발
+}
+
+// 어학은 이력서 파싱이 채우는 자유 텍스트('Intermediate','IELTS 6.0','Sơ cấp'…).
+// 수준을 나누는 기준이 없어 "기재 있음"으로만 세고, 명시적 없음만 걸러낸다.
+const hasCert = (v) => {
+  const s = String(v || '').trim()
+  return !!s && !/^(none|n\/a|na|no|없음|không|-)$/i.test(s)
+}
+
 async function fetchAll(build) {
   const PAGE = 1000
   let all = []
@@ -49,9 +74,9 @@ export default async function handler(req, res) {
 
   try {
     const [rows, coldmailConverts, coldmailSends, publicEvents] = await Promise.all([
+      // 목표의 분모가 '전체 가입자'라 이력서 없는 프로필까지 다 받고 여기서 가른다.
       fetchAll(() => supabase.from('user_profiles')
-        .select('id, email, created_at, is_resume_public, resume_platform')
-        .not('resume_url', 'is', null)),
+        .select('id, email, created_at, is_resume_public, resume_platform, resume_url, position, desired_roles, korean_cert, english_cert')),
       fetchAll(() => supabase.from('events')
         .select('user_id, created_at').eq('event', 'coldmail_public_convert')),
       fetchAll(() => supabase.from('events')
@@ -62,7 +87,8 @@ export default async function handler(req, res) {
         .order('created_at', { ascending: true })),
     ])
 
-    const profiles = rows.filter((r) => !isExcludedSignup(r))
+    const signups = rows.filter((r) => !isExcludedSignup(r))
+    const profiles = signups.filter((r) => r.resume_url)
     const cmUsers = new Set(coldmailConverts.map((e) => e.user_id))
     // 콜드메일 전환은 go-public 이 공개 처리 직후 같은 초에 이벤트를 남긴다 → 유저+날짜로 붙인다.
     const cmDayKeys = new Set(coldmailConverts.map((e) => `${e.user_id}|${vnDay(e.created_at)}`))
@@ -140,6 +166,51 @@ export default async function handler(req, res) {
       byPlatform: privateRows.reduce((a, r) => ({ ...a, [platKey(r)]: (a[platKey(r)] || 0) + 1 }), {}),
     }
 
+    // ---- 8월 목표 진행 ----
+    // ⚠️ 이력서를 '언제' 올렸는지 컬럼이 없어 신규 등록 속도는 가입일로 근사한다.
+    //    /cv 유입은 가입과 업로드가 같은 세션이라 최근 구간은 거의 맞고, 옛 유저일수록 어긋난다.
+    const newResumes = (n) => profiles.filter((r) => ageDays(r.created_at) <= n).length
+    const mixOf = (list) => {
+      const m = { tech: 0, nontech: 0, unknown: 0 }
+      for (const r of list) m[roleGroup(r)]++
+      m.classified = m.tech + m.nontech
+      m.techShare = m.classified ? m.tech / m.classified : 0
+      return m
+    }
+    const langOf = (list) => {
+      const l = { en: 0, ko: 0, both: 0, total: list.length }
+      for (const r of list) {
+        const en = hasCert(r.english_cert)
+        const kr = hasCert(r.korean_cert)
+        if (en) l.en++
+        if (kr) l.ko++
+        if (en && kr) l.both++
+      }
+      l.either = l.en + l.ko - l.both
+      return l
+    }
+    const daysLeft = Math.max(0, Math.ceil((new Date(`${GOAL.deadline}T23:59:59+07:00`).getTime() - Date.now()) / 86400000))
+    const goal = {
+      deadline: GOAL.deadline,
+      daysLeft,
+      pool: {
+        current: profiles.length,
+        target: GOAL.pool,
+        d7: newResumes(7),
+        d30: newResumes(30),
+        // 남은 기간 동안 하루에 몇 명을 더 받아야 하는지 vs 최근 7일 실제 속도
+        needPerDay: daysLeft ? Math.ceil(Math.max(0, GOAL.pool - profiles.length) / daysLeft) : null,
+        actualPerDay: Math.round((newResumes(7) / 7) * 10) / 10,
+      },
+      rate: {
+        current: signups.length ? profiles.length / signups.length : 0,
+        target: GOAL.rate,
+        signups: signups.length,
+      },
+      mix: { registered: mixOf(profiles), public: mixOf(publicRows), targetTech: GOAL.techShare },
+      lang: { registered: langOf(profiles), public: langOf(publicRows) },
+    }
+
     // ---- 일별 실제 전환 (트리거 이벤트) ----
     const days = {}
     for (let i = DAILY_DAYS - 1; i >= 0; i--) {
@@ -161,6 +232,7 @@ export default async function handler(req, res) {
 
     res.setHeader('Cache-Control', 'no-store')
     return res.status(200).json({
+      goal,
       totals,
       platforms: platformList,
       weekly,
