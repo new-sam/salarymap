@@ -49,10 +49,18 @@ export function Meta({ children }) {
   );
 }
 
-/* 카드 태그 칩 — 원본 ktc-landing 과 같은 알약 형태. 직무 분류만 파랑, 나머지는 회색. */
+/* 카드 태그 칩 — 원본 ktc-landing 과 같은 알약 형태. 직무 분류는 파랑, 근무형태는
+   초록, 나머지는 회색. 근무형태는 값(Remote/Hybrid/Onsite)별로 색을 나누지 않는다 —
+   카드가 한 화면에 9장씩 깔려서 값마다 색이 다르면 목록이 알록달록해진다.
+   값 구분은 공고 상세에서만 한다. */
+const CHIP_TONE = {
+  blue: { bg: '#EFF6FF', color: '#2563EB' },
+  green: { bg: '#EDF8F2', color: '#0B7A4B' },
+};
+
 function Chip({ children, tone }) {
   if (!children) return null;
-  const blue = tone === 'blue';
+  const t = CHIP_TONE[tone];
   return (
     <span
       style={{
@@ -61,8 +69,8 @@ function Chip({ children, tone }) {
         fontSize: 11.5,
         fontWeight: 700,
         whiteSpace: 'nowrap',
-        background: blue ? '#EFF6FF' : c.surfaceHi,
-        color: blue ? '#2563EB' : c.textDim,
+        background: t ? t.bg : c.surfaceHi,
+        color: t ? t.color : c.textDim,
       }}
     >
       {children}
@@ -139,7 +147,7 @@ function JobCard({ job, lang }) {
 
       <div style={{ marginTop: 'auto', paddingTop: 12, display: 'flex', gap: 6, flexWrap: 'wrap' }}>
         <Chip tone="blue">{job.category}</Chip>
-        <Chip>{job.workType}</Chip>
+        <Chip tone="green">{job.workType}</Chip>
         <Chip>{job.experience}</Chip>
       </div>
     </Link>
