@@ -14,6 +14,17 @@ const supabase = createClient(
 const ICT_OFFSET_MS = 7 * 60 * 60 * 1000
 const vnDay = (iso) => new Date(new Date(iso).getTime() + ICT_OFFSET_MS).toISOString().slice(0, 10)
 
+// 캠페인 성격별 분류. 한 표에 섞으면 '전환' 컬럼의 의미가 캠페인마다 달라 읽을 수가 없다
+// (KTC=가입 / coldmail1·jobs1=이력서 공개 / recommend=지원). 그룹별로 전환 정의가 하나로 통일된다.
+//   signup    — FYI 미가입 KTC 지원자 → 회원 가입
+//   resume    — 기가입 회원 → 이력서 공개
+//   recommend — 기가입 회원 → 특정 공고 지원
+const GROUP_ORDER = ['signup', 'resume', 'recommend']
+const groupOf = (name) =>
+  /^coldmail-ktc/.test(name) ? 'signup'
+    : /recommend/.test(name) ? 'recommend'
+      : 'resume'
+
 async function fetchAll(build) {
   const PAGE = 1000
   let all = [], from = 0
@@ -99,13 +110,16 @@ export default async function handler(req, res) {
     const campaigns = Object.values(camps)
       .map((c) => ({
         campaign: c.campaign,
+        group: groupOf(c.campaign),
         sent: c.sent.size, clicked: c.click.size, converted: c.convert.size,
         clickRate: c.sent.size ? c.click.size / c.sent.size : 0,
         convertRate: c.sent.size ? c.convert.size / c.sent.size : 0,
         applies: c.applies, appliers: c.appliers.size,
         firstSentDay: c.firstSentDay, lastSentDay: c.lastSentDay,
       }))
-      .sort((a, b) => String(a.firstSentDay || '9999').localeCompare(String(b.firstSentDay || '9999')))
+      .sort((a, b) =>
+        GROUP_ORDER.indexOf(a.group) - GROUP_ORDER.indexOf(b.group)
+        || String(a.firstSentDay || '9999').localeCompare(String(b.firstSentDay || '9999')))
 
     const sent = usersBy.sent.size
     const clicked = usersBy.click.size

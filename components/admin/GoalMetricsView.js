@@ -992,6 +992,36 @@ function ResumePublicTab({ data, loading, error, ko }) {
 // ============ 콜드메일 공개 전환 탭 ============
 // 비공개 이력서 보유자에게 "공개하면 축하금 이벤트 참여 가능" 콜드메일 → 원클릭 링크로 공개 전환.
 // 퍼널: 발송 → 클릭 → 전환. 발송/전환 모두 events(coldmail_public_*)로 집계.
+
+// 캠페인은 성격별로 나눠 본다 — 한 표에 섞으면 '전환'이 그룹마다 다른 걸 뜻해서(가입/공개/지원)
+// 숫자를 세로로 비교할 수 없다. 그룹 판정은 API(groupOf)가 하고 여기선 라벨만 붙인다.
+const CAMPAIGN_GROUPS = [
+  {
+    key: 'signup', ko: '① 회원 가입 유도', en: '(1) Signup',
+    koDesc: 'FYI 계정이 없는 KTC 지원자 대상 · 전환 = FYI 가입',
+    enDesc: 'KTC applicants without an FYI account · convert = signup',
+    convKo: '가입', convEn: 'Signups',
+  },
+  {
+    key: 'resume', ko: '② 이력서 공개 전환', en: '(2) Resume public',
+    koDesc: '이미 가입한 회원 중 이력서 비공개자 대상 · 전환 = 이력서 공개',
+    enDesc: 'Existing members with a private resume · convert = made public',
+    convKo: '공개 전환', convEn: 'Converted',
+  },
+  {
+    key: 'recommend', ko: '③ 공고 추천 → 지원', en: '(3) Job recommend',
+    koDesc: '이력서 공개 회원에게 맞는 공고 추천 · 전환 = 해당 공고 지원',
+    enDesc: 'Matched job recommendations to public-resume members · convert = applied',
+    convKo: '지원자', convEn: 'Applicants',
+    // 이 그룹의 전환은 coldmail_public_convert 가 아니라 지원(coldmail_job_apply)이다.
+    // 같은 컬럼에 convert 를 넣으면 전부 0으로 보인다.
+    convertFrom: 'apply',
+  },
+]
+
+// 그룹이 정한 소스에서 전환 인원을 꺼낸다(공개전환 = converted / 추천 = 지원자 수).
+const convertedOf = (c, g) => (g.convertFrom === 'apply' ? c.appliers : c.converted)
+
 function ColdmailPublicTab({ data, loading, error, ko }) {
   if (loading || !data) return <div style={{ textAlign: 'center', padding: 40, color: '#666' }}>{ko ? '불러오는 중…' : 'Loading…'}</div>
   if (error) return <div style={{ textAlign: 'center', padding: 40, color: '#c00' }}>{error}</div>
@@ -1053,43 +1083,72 @@ function ColdmailPublicTab({ data, loading, error, ko }) {
           : `* Current private-resume pool: ${data.targetRemaining}. Rate = converted / sent.`}
       </div>
 
-      {(data.campaigns || []).length > 0 && (
-        <>
-          <div style={{ fontSize: 13, fontWeight: 700, color: '#374151', margin: '0 0 8px' }}>
-            {ko ? '캠페인별 (coldmail1=축하금 · jobs1=공고 원탭지원 · recommend1=담당자 추천 · coldmail-ktc=KTC 지원자→FYI 유입)' : 'By campaign'}
+      {(data.campaigns || []).length > 0 && CAMPAIGN_GROUPS.map((g) => {
+        const rows = data.campaigns.filter((c) => (c.group || 'resume') === g.key)
+        if (!rows.length) return null
+        // 소계는 캠페인별 비율의 평균이 아니라 합계끼리 나눈다 — 발송량이 다른 캠페인을 섞어야 해서.
+        const sum = rows.reduce((a, c) => ({
+          sent: a.sent + c.sent, clicked: a.clicked + c.clicked,
+          converted: a.converted + convertedOf(c, g), applies: a.applies + c.applies,
+          appliers: a.appliers + c.appliers,
+        }), { sent: 0, clicked: 0, converted: 0, applies: 0, appliers: 0 })
+        return (
+          <div key={g.key} style={{ marginBottom: 24 }}>
+            <div style={{ fontSize: 13, fontWeight: 700, color: '#374151', margin: '0 0 2px' }}>
+              {ko ? g.ko : g.en}
+            </div>
+            <div style={{ fontSize: 11.5, color: '#9CA3AF', margin: '0 0 8px' }}>
+              {ko ? g.koDesc : g.enDesc}
+            </div>
+            <div className="adm-m-scroll" style={{ overflowX: 'auto', border: '1px solid #EEF0F2', borderRadius: 12 }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 560 }}>
+                <thead><tr>
+                  <th style={th}>{ko ? '캠페인' : 'Campaign'}</th>
+                  <th style={{ ...th, textAlign: 'right' }}>{ko ? '발송' : 'Sent'}</th>
+                  <th style={{ ...th, textAlign: 'right' }}>{ko ? '클릭' : 'Clicks'}</th>
+                  <th style={{ ...th, textAlign: 'right' }}>CTR</th>
+                  <th style={{ ...th, textAlign: 'right' }}>{ko ? g.convKo : g.convEn}</th>
+                  <th style={{ ...th, textAlign: 'right' }}>{ko ? '전환율' : 'Rate'}</th>
+                  <th style={{ ...th, textAlign: 'right' }}>{ko ? '지원 건수' : 'Applies'}</th>
+                </tr></thead>
+                <tbody>
+                  {rows.map((c) => {
+                    const conv = convertedOf(c, g)
+                    return (
+                    <tr key={c.campaign}>
+                      <td style={{ ...td, fontWeight: 700 }}>{c.campaign}
+                        {c.firstSentDay && <span style={{ fontWeight: 400, color: '#9CA3AF', fontSize: 11.5 }}> · {c.firstSentDay.slice(5)}{c.lastSentDay && c.lastSentDay !== c.firstSentDay ? `~${c.lastSentDay.slice(5)}` : ''}</span>}
+                      </td>
+                      <td style={num}>{c.sent}</td>
+                      <td style={{ ...num, color: '#2563EB' }}>{c.clicked}</td>
+                      <td style={num}>{c.sent ? pct(c.clickRate) : '—'}</td>
+                      <td style={{ ...num, color: '#0D9488' }}>{conv}</td>
+                      <td style={num}>{c.sent ? pct(conv / c.sent) : '—'}</td>
+                      <td style={{ ...num, color: c.applies ? '#D97706' : undefined, fontWeight: 800 }}>
+                        {c.applies ? `${c.applies}${ko ? '건' : ''}` : '—'}
+                      </td>
+                    </tr>
+                    )
+                  })}
+                  {rows.length > 1 && (
+                    <tr style={{ background: '#FAFBFC' }}>
+                      <td style={{ ...td, fontWeight: 800, color: '#6B7280' }}>{ko ? '소계' : 'Subtotal'}</td>
+                      <td style={{ ...num, fontWeight: 800 }}>{sum.sent}</td>
+                      <td style={{ ...num, fontWeight: 800, color: '#2563EB' }}>{sum.clicked}</td>
+                      <td style={{ ...num, fontWeight: 800 }}>{sum.sent ? pct(sum.clicked / sum.sent) : '—'}</td>
+                      <td style={{ ...num, fontWeight: 800, color: '#0D9488' }}>{sum.converted}</td>
+                      <td style={{ ...num, fontWeight: 800 }}>{sum.sent ? pct(sum.converted / sum.sent) : '—'}</td>
+                      <td style={{ ...num, fontWeight: 800, color: sum.applies ? '#D97706' : undefined }}>
+                        {sum.applies ? `${sum.applies}${ko ? '건' : ''}` : '—'}
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
           </div>
-          <div style={{ overflowX: 'auto', border: '1px solid #EEF0F2', borderRadius: 12, marginBottom: 24 }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 560 }}>
-              <thead><tr>
-                <th style={th}>{ko ? '캠페인' : 'Campaign'}</th>
-                <th style={{ ...th, textAlign: 'right' }}>{ko ? '발송' : 'Sent'}</th>
-                <th style={{ ...th, textAlign: 'right' }}>{ko ? '클릭' : 'Clicks'}</th>
-                <th style={{ ...th, textAlign: 'right' }}>CTR</th>
-                <th style={{ ...th, textAlign: 'right' }}>{ko ? '공개 전환' : 'Converted'}</th>
-                <th style={{ ...th, textAlign: 'right' }}>{ko ? '전환율' : 'Rate'}</th>
-                <th style={{ ...th, textAlign: 'right' }}>{ko ? '원탭 지원' : 'One-tap applies'}</th>
-              </tr></thead>
-              <tbody>
-                {data.campaigns.map((c) => (
-                  <tr key={c.campaign}>
-                    <td style={{ ...td, fontWeight: 700 }}>{c.campaign}
-                      {c.firstSentDay && <span style={{ fontWeight: 400, color: '#9CA3AF', fontSize: 11.5 }}> · {c.firstSentDay.slice(5)}{c.lastSentDay && c.lastSentDay !== c.firstSentDay ? `~${c.lastSentDay.slice(5)}` : ''}</span>}
-                    </td>
-                    <td style={num}>{c.sent}</td>
-                    <td style={{ ...num, color: '#2563EB' }}>{c.clicked}</td>
-                    <td style={num}>{c.sent ? pct(c.clickRate) : '—'}</td>
-                    <td style={{ ...num, color: '#0D9488' }}>{c.converted}</td>
-                    <td style={num}>{c.sent ? pct(c.convertRate) : '—'}</td>
-                    <td style={{ ...num, color: c.applies ? '#D97706' : undefined, fontWeight: 800 }}>
-                      {c.applies ? `${c.applies}${ko ? '건' : ''} / ${c.appliers}${ko ? '명' : ''}` : '—'}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </>
-      )}
+        )
+      })}
 
       {data.daily.length > 0 && (
         <>
