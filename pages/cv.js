@@ -4,26 +4,9 @@ import { useRouter } from 'next/router'
 import { supabase } from '../lib/supabaseClient'
 import { useT } from '../lib/i18n'
 import { track } from '../lib/track'
-import { ROLE_GROUPS, ROLE_OPTIONS, roleGroupKey } from '../constants/jobs'
 import { formatSalaryCard } from '../utils/salary'
 import { toast } from 'sonner'
 import { confirmAppliedInline } from '../lib/applyConversion'
-
-// STEP1에서 고른 직무는 OAuth 리다이렉트로 페이지를 떠났다 돌아와도 유지돼야 해서
-// (파일이 IndexedDB로 유지되는 것과 동일) localStorage에 stash한다.
-const CV_ROLES_KEY = 'fyi_cv_roles'
-
-/* 대분류 10 / 소분류 53 을 다 펼치면 로그인 CTA 가 화면 밖으로 밀린다. 실제 등록자가
-   고른 직무 분포(7/1~, cv_register_success.meta.roles) 상위 10개를 먼저 깔고 나머지는
-   접어둔다 — 선택의 대부분이 이 안에서 끝난다. 분포가 바뀌면 이 목록도 갱신할 것.
-   순서는 빈도순이 아니라 직군 묶음순(개발 → 마케팅·데이터 → 그 외)이다. 빈도로 섞으면
-   개발 직군이 영업·인사 사이에 흩어져 훑기가 어렵다. 묶음 안에서만 빈도순. */
-const POPULAR_ROLES = [
-  'Backend', 'Frontend', 'Web', 'Fullstack',
-  'Marketing', 'Data Analyst',
-  'Sales', 'HR', 'Finance', 'PM',
-]
-const ROLE_BY_VALUE = Object.fromEntries(ROLE_GROUPS.flatMap(g => g.roles.map(r => [r.value, r])))
 
 /* Funnel-event meta — UTM (sessionStorage) + language preference, attached to
    every /cv event so we can slice by ad campaign and locale in analytics. */
@@ -193,11 +176,6 @@ export default function CvLanding() {
   const [errMsg, setErrMsg] = useState('')
   const [pendingHint, setPendingHint] = useState('')
   const [jobs, setJobs] = useState([])
-  // STEP1 직무 다중선택 + 등록 완료 후 "바로 지원" 모달
-  const [selectedRoles, setSelectedRoles] = useState([])
-  // 직무 대분류 아코디언 — 53개 칩을 다 펼치면 모바일에서 스크롤이 끝없어져 접어둔다
-  const [showAllRoles, setShowAllRoles] = useState(false)
-  const [openGroup, setOpenGroup] = useState(null)
   const [resumeUrl, setResumeUrl] = useState(null)
   // 기존 등록자: user_profiles.resume_url이 이미 있으면 업로드 퍼널 대신 등록됨 화면을 보여준다.
   const [existingResume, setExistingResume] = useState(null)
@@ -416,14 +394,7 @@ export default function CvLanding() {
       if (up.url) setResumeUrl(up.url)
       const uid = (await supabase.auth.getUser()).data.user?.id
       if (uid) {
-        // 선택한 직무를 user_profiles.desired_roles에 저장. 컬럼(desired_roles text[])이
-        // 아직 없으면 그 부분만 빼고 재시도해 등록 흐름은 막지 않는다.
-        const base = { hr_visible: true, job_signal: 'open' }
-        const withRoles = selectedRoles.length ? { ...base, desired_roles: selectedRoles } : base
-        const { error: upErr } = await supabase.from('user_profiles').update(withRoles).eq('id', uid)
-        if (upErr && /desired_roles/.test(upErr.message || '')) {
-          await supabase.from('user_profiles').update(base).eq('id', uid)
-        }
+        await supabase.from('user_profiles').update({ hr_visible: true, job_signal: 'open' }).eq('id', uid)
       }
       // /cv 등록 이력서는 무조건 기업 오퍼용으로 공개(VTM 전송). 웹훅이 느릴 수 있어
       // 등록 완료 모달을 막지 않도록 대기하지 않고, 공개가 확정된 뒤 토스트로 알린다.
@@ -441,9 +412,8 @@ export default function CvLanding() {
       }
       if (typeof gtag === 'function') gtag('event', 'cv_register', { source: 'ad-landing' })
       if (typeof fbq === 'function') fbq('trackCustom', 'CVRegister', { source: 'ad-landing' })
-      track('cv_register_success', { meta: { ...cvMeta(), ...fileMeta(fileToUpload), roles: selectedRoles }, page: '/cv' })
+      track('cv_register_success', { meta: { ...cvMeta(), ...fileMeta(fileToUpload) }, page: '/cv' })
       await idbClearCv()
-      try { localStorage.removeItem(CV_ROLES_KEY) } catch {}
       setStatus('success')
       setShowJobModal(true)
     } catch (e) {
@@ -454,53 +424,20 @@ export default function CvLanding() {
     }
   }
 
-  // OAuth 리다이렉트 복귀 시 stash된 직무 선택 복원
-  useEffect(() => {
-    try {
-      const saved = JSON.parse(localStorage.getItem(CV_ROLES_KEY) || '[]')
-      if (Array.isArray(saved) && saved.length) setSelectedRoles(saved)
-    } catch {}
-  }, [])
-
-  const toggleRole = (value) => {
-    // 직무 선택은 파일 첨부 없이도 만질 수 있어 고정 퍼널(순차)엔 넣지 않는다 — 순서 무관 탐색용.
-    track('cv_select_role', { meta: { ...cvMeta(), role: value, on: !selectedRoles.includes(value) }, page: '/cv' })
-    setSelectedRoles((prev) => {
-      const next = prev.includes(value) ? prev.filter((v) => v !== value) : [...prev, value]
-      try { localStorage.setItem(CV_ROLES_KEY, JSON.stringify(next)) } catch {}
-      return next
-    })
-  }
-
-  // 완료 모달에 띄울 공고 3개 — 정확 직무 일치 → 같은 대분류 일치 순, 각 단계에서 ATS(기업 직접등록) 우선.
-  // 같은 단계 안에서는 누적 지원 수 많은 순(지원 전환 잘 되는 공고). 무관한 공고는 채우지 않는다
-  // (매칭 0건이면 모달 미노출). 회사 중복 제거는 매칭 후에 해서 매칭 공고가 밀려 빠지지 않게 한다.
-  // 'Non-IT'는 잡동사니 직군이라 대분류 완화 매칭에서 제외(명시 선택 시 정확 일치로만 노출).
+  // 완료 모달에 띄울 공고 3개. 직무 선택을 없앴으므로 개인화 대신 ATS(기업 직접등록)
+  // 우선 → 누적 지원 수 많은 순(지원 전환이 잘 되는 공고)으로 고른다. 같은 회사가
+  // 목록을 차지하지 않게 회사당 1개.
   const modalJobs = useMemo(() => {
-    if (selectedRoles.length === 0) return []
-    const roleSet = new Set(selectedRoles)
-    const groupSet = new Set(selectedRoles.map(roleGroupKey).filter(Boolean))
-    const tier = (j) => {
-      if (roleSet.has(j.role)) return j.source === 'company_self' ? 0 : 1
-      if (j.role !== 'Non-IT' && groupSet.has(roleGroupKey(j.role))) return j.source === 'company_self' ? 2 : 3
-      return -1
-    }
     const seenCompany = new Set()
     return jobs
-      .map((j) => ({ j, t: tier(j) }))
-      .filter((x) => x.t >= 0)
-      .sort((a, b) => a.t - b.t || (b.j.application_count || 0) - (a.j.application_count || 0))
-      .filter(({ j }) => { if (seenCompany.has(j.company)) return false; seenCompany.add(j.company); return true })
-      .map((x) => x.j)
+      .slice()
+      .sort((a, b) => (a.source === 'company_self' ? 0 : 1) - (b.source === 'company_self' ? 0 : 1)
+        || (b.application_count || 0) - (a.application_count || 0))
+      .filter((j) => { if (seenCompany.has(j.company)) return false; seenCompany.add(j.company); return true })
       .slice(0, 3)
-  }, [jobs, selectedRoles])
+  }, [jobs])
 
-  // "공고 더 보러가기" 링크 — 선택 직무의 대분류로 딥링크(taxonomy 안전), 없으면 전체.
-  const moreJobsHref = useMemo(() => {
-    const first = selectedRoles[0]
-    const grp = first ? ROLE_GROUPS.find((g) => g.roles.some((r) => r.value === first))?.key : null
-    return grp ? `/jobs?role=cat:${grp}` : '/jobs'
-  }, [selectedRoles])
+  const moreJobsHref = '/jobs'
 
   const apply = async (job) => {
     if (applied[job.id] || applyingId) return
@@ -858,72 +795,6 @@ export default function CvLanding() {
                   )}
                   <div className="cv-hint">{t('cv.form.fileHint')}</div>
 
-                  {/* 찾는 직무 (복수 선택) — 등록 완료 후 맞는 공고 추천/지원에 사용 */}
-                  <div className="cv-roles">
-                    <div className="cv-roles-label">{L('찾는 직무 (복수 선택 가능)', 'Roles you want (select multiple)', 'Vị trí bạn tìm (chọn nhiều)')}</div>
-                    {/* 자주 고르는 직무를 먼저 깔아 대부분 1탭에 끝내고, 나머지 43개는
-                        접어둔다. 접힌 상태에서도 이미 고른 직무는 항상 보여야 해서
-                        (전체에서 고르고 접으면 사라진 것처럼 보임) 인기 목록에 없는
-                        선택분을 뒤에 이어 붙인다. */}
-                    <div className="cv-roles-chips cv-roles-top">
-                      {[...POPULAR_ROLES, ...selectedRoles.filter((v) => !POPULAR_ROLES.includes(v))].map((value) => {
-                        const r = ROLE_BY_VALUE[value]
-                        if (!r) return null
-                        return (
-                          <button
-                            type="button"
-                            key={value}
-                            className={`cv-role-chip${selectedRoles.includes(value) ? ' on' : ''}`}
-                            onClick={() => toggleRole(value)}
-                          >
-                            {r.label[lang] || r.label.en}
-                          </button>
-                        )
-                      })}
-                    </div>
-
-                    <button type="button" className="cv-roles-more" onClick={() => setShowAllRoles((v) => !v)}>
-                      <span className={`cv-roles-garrow${showAllRoles ? ' open' : ''}`}>
-                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
-                      </span>
-                      {L(`전체 직무 보기 (${ROLE_OPTIONS.length}개)`, `All roles (${ROLE_OPTIONS.length})`, `Tất cả vị trí (${ROLE_OPTIONS.length})`)}
-                    </button>
-
-                    {showAllRoles && (
-                      <div className="cv-roles-all">
-                        <div className="cv-roles-chips">
-                          {ROLE_GROUPS.map((g) => {
-                            const count = g.roles.filter((r) => selectedRoles.includes(r.value)).length
-                            return (
-                              <button
-                                type="button"
-                                key={g.key}
-                                className={`cv-role-chip cv-role-gchip${openGroup === g.key ? ' open' : ''}${count > 0 ? ' has' : ''}`}
-                                onClick={() => setOpenGroup((k) => (k === g.key ? null : g.key))}
-                              >
-                                {g.label[lang] || g.label.en}
-                                {count > 0 && <span className="cv-roles-gcount">{count}</span>}
-                              </button>
-                            )
-                          })}
-                        </div>
-                        {openGroup && (
-                          <div className="cv-roles-chips cv-roles-sub">
-                            {ROLE_GROUPS.find((g) => g.key === openGroup).roles.map((r) => (
-                              <button
-                                type="button"
-                                key={r.value}
-                                className={`cv-role-chip${selectedRoles.includes(r.value) ? ' on' : ''}`}
-                                onClick={() => toggleRole(r.value)}
-                              >
-                                {r.label[lang] || r.label.en}
-                              </button>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    )}
-                  </div>
                 </div>
 
                 {/* ─── STEP 2: 회원가입 (미인증) 또는 등록 (인증) ─── */}
@@ -1044,26 +915,6 @@ export default function CvLanding() {
       `}</style>
 
       <style jsx>{`
-        /* 직무 다중선택 (STEP 1) */
-        .cv-roles { margin-top: 16px; border-top: 1px solid #efe9e0; padding-top: 14px; }
-        .cv-roles-label { font-size: 13px; font-weight: 700; color: #1a1612; margin-bottom: 10px; }
-        .cv-roles-garrow { display: inline-flex; color: #a89f92; transition: transform .15s; flex-shrink: 0; }
-        .cv-roles-garrow.open { transform: rotate(90deg); }
-        .cv-roles-gcount { flex-shrink: 0; background: #ff6000; color: #fff; font-size: 11px; font-weight: 700; border-radius: 999px; padding: 1px 7px; line-height: 1.5; margin-left: 6px; }
-        .cv-roles-chips { display: flex; flex-wrap: wrap; gap: 6px; padding: 8px 2px 4px; }
-        .cv-roles-top { padding-top: 0; }
-        .cv-roles-more { display: flex; align-items: center; gap: 6px; margin-top: 4px; padding: 6px 2px; background: none; border: 0; cursor: pointer; font-family: inherit; font-size: 12.5px; font-weight: 600; color: #8a8175; }
-        .cv-roles-more:hover { color: #ff6000; }
-        .cv-roles-all { margin-top: 6px; border-top: 1px dashed #e3dbcf; padding-top: 4px; }
-        /* 대분류 칩 — 소분류 칩과 같은 알약이라 선택 상태(주황)와 구분되게 회색 채움 */
-        .cv-role-gchip { background: #f6f2ec; border-color: #e3dbcf; font-weight: 600; }
-        .cv-role-gchip.has { border-color: rgba(255,96,0,0.45); color: #4a4238; }
-        .cv-role-gchip.open { background: #1a1612; border-color: #1a1612; color: #fff; }
-        .cv-roles-sub { border-left: 2px solid #f0e9df; margin-left: 2px; padding-left: 10px; }
-        .cv-role-chip { font-size: 12.5px; font-weight: 500; color: #4a4238; background: #fff; border: 1px solid #e3dbcf; border-radius: 999px; padding: 6px 12px; cursor: pointer; transition: all .12s; font-family: inherit; }
-        .cv-role-chip:hover { border-color: #ff6000; }
-        .cv-role-chip.on { background: #fff1e8; border-color: #ff6000; color: #ff6000; font-weight: 700; }
-
         /* 완료 모달 — 바로 지원 */
         .cvm-overlay { position: fixed; inset: 0; z-index: 1000; background: rgba(20,16,12,0.55); display: flex; align-items: center; justify-content: center; padding: 20px; }
         .cvm { position: relative; width: 100%; max-width: 440px; background: #fff; border-radius: 20px; padding: 28px 24px 22px; box-shadow: 0 20px 60px rgba(0,0,0,0.3); }
@@ -1304,20 +1155,23 @@ export default function CvLanding() {
           display: flex;
           justify-content: center;
         }
-        .cv-btn-hero {
+        /* .cv-btn(width:100%) 이 이 파일 뒤쪽에 선언돼 있어 같은 특이도로는 밀린다 —
+           클래스 두 개를 겹쳐 특이도를 올려야 width:auto 가 먹는다. */
+        .cv-btn.cv-btn-hero {
           display: inline-flex;
           align-items: center;
           width: auto;
           margin-top: 0;
-          padding: 19px 34px;
-          font-size: 15.5px;
+          padding: 16px 52px;
+          font-size: 15px;
+          gap: 6px;
           /* Stronger glow on dark bg */
           box-shadow:
             0 0 0 1px rgba(255,138,64,0.4),
             0 12px 28px rgba(255,96,0,0.45),
             0 0 40px rgba(255,96,0,0.25);
         }
-        .cv-btn-hero:hover {
+        .cv-btn.cv-btn-hero:hover {
           box-shadow:
             0 0 0 1px rgba(255,138,64,0.55),
             0 16px 36px rgba(255,96,0,0.55),
@@ -3285,7 +3139,7 @@ export default function CvLanding() {
           .cv-scrolldown { display: flex; }
           /* 히어로 CTA 는 모바일에서도 화면 폭을 다 먹지 않고 글자 폭에 맞춘다 —
              풀폭이면 하단 스티키 바와 구분이 안 되고 가로로 늘어져 보인다. */
-          .cv-btn-hero { width: auto; max-width: 86%; padding: 16px 28px; font-size: 15px; }
+          .cv-btn.cv-btn-hero { width: auto; max-width: 86%; padding: 16px 44px; font-size: 15px; }
           .cv-trust-line { gap: 18px; }
           .cv-trust-divider { display: none; }
           .cv-conds { padding: 24px; }
