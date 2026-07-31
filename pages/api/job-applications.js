@@ -140,6 +140,25 @@ export default async function handler(req, res) {
 
   console.log(`[JOB APPLICATION] user=${userId || 'anon'} applied to job=${jobId}`)
 
+  // 첨부한 이력서를 프로필에도 저장 — 예전엔 job_applications 에만 남아서 이력서를 낸 사람이
+  // "이력서 미보유"로 집계되고 인재↔공고 매칭에서도 빠졌다(2026-07-31에 325명 백필).
+  // 최신 이력서가 이기게 둔다(다음 지원 때 다시 안 올려도 됨).
+  //  · is_resume_public 은 건드리지 않는다 — 우리가 보유하는 것과 인재풀 공개는 별개 동의다.
+  //  · 프로필 행이 없는 유저(앱 OAuth 가입)가 있어 update 가 아니라 upsert 다.
+  //  · 실패해도 지원 접수는 성공시킨다.
+  if (userId && resumeUrl) {
+    const profileRow = {
+      id: userId,
+      resume_url: resumeUrl,
+      resume_source: 'application',
+      resume_platform: platform,
+      updated_at: new Date().toISOString(),
+    }
+    if (applicantEmail) profileRow.email = applicantEmail
+    const { error: syncErr } = await supabase.from('user_profiles').upsert(profileRow, { onConflict: 'id' })
+    if (syncErr) console.warn('[JOB APPLICATION] profile resume sync failed:', syncErr.message)
+  }
+
   // 채용팀 알림 메일 발송. (지원자 접수확인 메일은 Resend 하루 100통 한도 소진 문제로 폐지)
   // 서버리스에서 fire-and-forget 하면 response 반환 후 프로세스가 종료돼 promise 가
   // discard 될 수 있어 실제로 발송이 안 나가는 사례가 있었다 → await 로 반드시 완료.
