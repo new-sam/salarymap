@@ -2544,6 +2544,11 @@ export default function CvLanding() {
           font-weight: 800;
           letter-spacing: 0;
           flex-shrink: 0;
+          /* 숫자가 원 안에서 위로 떠 보이던 문제. 상속 line-height(1.55)로 line box 가
+             글자보다 커진 데다, 숫자는 디센더가 없어 남는 아래 여백만큼 시각 중심이
+             올라간다. line box 를 글자 크기에 맞추고 1px 내려 광학 중심을 맞춘다. */
+          line-height: 1;
+          padding-top: 1px;
         }
         .cv-stepblock.done .cv-stepblock-num {
           background: #16a34a;
