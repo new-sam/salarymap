@@ -1,9 +1,8 @@
 import supabase from '../../../lib/supabaseAdmin'
 import { verifyToken } from '../../../lib/campaignToken'
-import { sendResumeToVtm } from '../../../lib/vtm'
 
 // 콜드메일 원클릭 공개 전환 — 이메일 버튼(개인 토큰 링크)을 누르면 로그인 없이
-// 이력서를 기업 공개(is_resume_public=true, VTM 전송)로 바꾸고 클릭/전환을 events에 로깅한다.
+// 이력서를 기업 공개(is_resume_public=true)로 바꾸고 클릭/전환을 events에 로깅한다.
 // 측정: coldmail_public_click(클릭) / coldmail_public_convert(실제 비공개→공개 전환).
 export default async function handler(req, res) {
   const token = req.query.t
@@ -14,7 +13,7 @@ export default async function handler(req, res) {
   try {
     const { data: p } = await supabase
       .from('user_profiles')
-      .select('resume_url, full_name, is_resume_public, vtm_talent_id')
+      .select('resume_url, is_resume_public')
       .eq('id', userId)
       .single()
 
@@ -27,16 +26,8 @@ export default async function handler(req, res) {
     }])
 
     if (!alreadyPublic) {
-      // 실제 공개 전환 — VTM 전송 실패해도 유저에겐 성공 안내(재전송은 마이페이지에서 가능).
-      let vtmTalentId = p.vtm_talent_id || null
-      try {
-        const r = await sendResumeToVtm(userId, p.resume_url, p.full_name)
-        vtmTalentId = r?.talent_id || vtmTalentId
-      } catch (e) {
-        console.error('go-public VTM send failed:', e.message)
-      }
       await supabase.from('user_profiles')
-        .update({ is_resume_public: true, vtm_talent_id: vtmTalentId, updated_at: new Date().toISOString() })
+        .update({ is_resume_public: true, updated_at: new Date().toISOString() })
         .eq('id', userId)
       await supabase.from('events').insert([{
         event: 'coldmail_public_convert', page: '/api/resume/go-public',

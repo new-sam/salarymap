@@ -19,7 +19,7 @@ export default function GoalMetricsView({ token, lang }) {
   const [expError, setExpError] = useState('')
   const [expLoading, setExpLoading] = useState(false)
 
-  const [rpData, setRpData] = useState(null) // 실험 (이력서 공개 전환)
+  const [rpData, setRpData] = useState(null) // 이력서 공개 전환 (목표지표)
   const [rpError, setRpError] = useState('')
   const [rpLoading, setRpLoading] = useState(false)
 
@@ -82,7 +82,7 @@ export default function GoalMetricsView({ token, lang }) {
     setRpLoading(true)
     setRpError('')
     try {
-      const res = await fetch('/api/admin/experiment-resume-public-metrics', { headers: { Authorization: `Bearer ${token}` } })
+      const res = await fetch('/api/admin/resume-public-metrics', { headers: { Authorization: `Bearer ${token}` } })
       if (!res.ok) throw new Error(`(${res.status})`)
       setRpData(await res.json())
     } catch (e) {
@@ -149,7 +149,7 @@ export default function GoalMetricsView({ token, lang }) {
     if (view === 'exp' && !expData && !expLoading) loadExp()
   }, [view, expData, expLoading, loadExp])
 
-  // 이력서 공개 전환 실험 탭 최초 진입 시 lazy 로드
+  // 이력서 공개 전환 탭 최초 진입 시 lazy 로드
   useEffect(() => {
     if (view === 'resumePublic' && !rpData && !rpLoading) loadRp()
   }, [view, rpData, rpLoading, loadRp])
@@ -184,7 +184,7 @@ export default function GoalMetricsView({ token, lang }) {
         {tabBtn('paths', ko ? '가입 경로' : 'Signup paths')}
         {tabBtn('ad', ko ? '광고 성과' : 'Ad performance')}
         {tabBtn('exp', ko ? '실험' : 'Experiments')}
-        {tabBtn('resumePublic', ko ? '이력서 공개 실험' : 'Resume-public exp')}
+        {tabBtn('resumePublic', ko ? '이력서 공개' : 'Resume public')}
         {tabBtn('coldmail', ko ? '콜드메일 공개' : 'Cold-email public')}
       </div>
       {view === 'kpi' && (error
@@ -890,18 +890,24 @@ function ExperimentTab({ data, loading, error, ko, token }) {
   )
 }
 
-// ============ 이력서 공개 전환 실험 탭 (2026-07-14~) ============
-// 웹 /cv 등록에 공개(오퍼 수신) 기본 ON 토글 추가 → 웹 공개 전환율 상승 여부.
-// 앱은 예전부터 공개를 기본 안내(전환율 높음) → baseline. 공개는 상태 스냅샷(updated_at 버킷팅).
+// ============ 이력서 공개 전환 (목표지표) ============
+// 공개 = 우리 공개 인재풀 노출(is_resume_public). 외부 인재마켓(VTM) 전송은 폐지됐다.
+// 일별 전환은 DB 트리거가 심는 resume_public_on/off 이벤트로만 센다 — 프로필 updated_at 버킷은
+// '오늘 공개함'이 아니라 '오늘 프로필 수정함'이라 지표를 부풀린다(7/14 착시의 원인).
+// 콜드메일 전환을 따로 떼는 이유: 웹 공개의 대부분이 콜드메일 1회성이라, 섞어 보면
+// 제품 자체의 전환율(유기적)이 실제보다 몇 배 높아 보인다.
 function ResumePublicTab({ data, loading, error, ko }) {
   if (loading || !data) return <div style={{ textAlign: 'center', padding: 40, color: '#666' }}>{ko ? '불러오는 중…' : 'Loading…'}</div>
   if (error) return <div style={{ textAlign: 'center', padding: 40, color: '#c00' }}>{error}</div>
   if (data.error) return <div style={{ textAlign: 'center', padding: 40, color: '#c00' }}>{data.error}</div>
 
-  const pct = (v) => `${Math.round(v * 100)}%`
-  const c = data.cumulative
-  const b = data.before
-  const a = data.after
+  const pct = (v) => `${Math.round(v * 1000) / 10}%`
+  const t = data.totals
+  const pp = data.privatePool
+  const web = data.platforms.find((p) => p.key === 'web') || { reg: 0, pub: 0, organic: 0, organicRate: 0 }
+  const last7 = data.daily.slice(-7)
+  const on7 = last7.reduce((a, d) => a + d.on, 0)
+  const off7 = last7.reduce((a, d) => a + d.off, 0)
 
   const Card = ({ label, value, sub, accent }) => (
     <div style={{ background: '#fff', border: '1px solid #E5E8EB', borderRadius: 16, padding: '18px 20px', flex: '1 1 220px', minWidth: 200 }}>
@@ -914,74 +920,129 @@ function ResumePublicTab({ data, loading, error, ko }) {
   const th = { textAlign: 'left', fontSize: 11, fontWeight: 700, color: '#9CA3AF', padding: '6px 10px', borderBottom: '1px solid #EEF0F2', textTransform: 'uppercase', letterSpacing: '.04em' }
   const td = { fontSize: 13, color: '#1F2937', padding: '7px 10px', borderBottom: '1px solid #F5F6F7' }
   const num = { ...td, textAlign: 'right', fontVariantNumeric: 'tabular-nums', fontWeight: 600 }
-  const rate = (pub, reg) => (reg ? pct(pub / reg) : '—')
+  const PLAT_LABEL = { app: ko ? '앱' : 'App', web: ko ? '웹' : 'Web', unknown: ko ? '구데이터' : 'Legacy' }
 
   return (
     <div>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6, flexWrap: 'wrap' }}>
-        <div style={{ fontSize: 15, fontWeight: 800, color: '#0F172A' }}>
-          {ko ? '이력서 공개 전환 — 웹 /cv 등록 시 공개 토글 기본 ON' : 'Resume-public conversion — default-ON toggle on web /cv'}
-        </div>
-        <span style={{ fontSize: 11, fontWeight: 700, color: '#0D9488', background: '#E7F7F4', padding: '3px 9px', borderRadius: 100 }}>
-          {ko ? `실험 시작 ${data.experimentStart}` : `Started ${data.experimentStart}`}
-        </span>
+      <div style={{ fontSize: 15, fontWeight: 800, color: '#0F172A', marginBottom: 6 }}>
+        {ko ? '이력서 공개 전환' : 'Resume-public conversion'}
       </div>
       <div style={{ fontSize: 12, color: '#9CA3AF', marginBottom: 16 }}>
         {ko
-          ? `공개 = 프로필 상태 스냅샷(updated_at 기준) · 앱은 baseline · 기준: ${new Date(data.generatedAt).toLocaleString('ko-KR')}`
-          : `Public = profile state snapshot (by updated_at) · app is baseline · as of ${new Date(data.generatedAt).toLocaleString('en-US')}`}
+          ? `공개 = 공개 인재풀 노출(is_resume_public) · 기준 ${new Date(data.generatedAt).toLocaleString('ko-KR')}`
+          : `Public = listed in the public talent pool · as of ${new Date(data.generatedAt).toLocaleString('en-US')}`}
       </div>
 
-      {/* 누적 전환율 (전 기간 스냅샷) */}
-      <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginBottom: 14 }}>
-        <Card label={ko ? '웹 공개 전환율 (누적)' : 'Web public rate (all-time)'}
-          value={pct(c.webRate)}
-          sub={`${ko ? '공개' : 'public'} ${c.webPublic} / ${ko ? '등록' : 'reg'} ${c.webReg}`}
+      <div className="adm-m-1col" style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginBottom: 14 }}>
+        <Card label={ko ? '공개 이력서' : 'Public resumes'} value={t.public.toLocaleString()}
+          sub={ko ? `이력서 ${t.resumes.toLocaleString()}건 중 ${pct(t.rate)}` : `${pct(t.rate)} of ${t.resumes.toLocaleString()} resumes`}
           accent="#0D9488" />
-        <Card label={ko ? '앱 공개 전환율 (baseline)' : 'App public rate (baseline)'}
-          value={pct(c.appRate)}
-          sub={`${ko ? '공개' : 'public'} ${c.appPublic} / ${ko ? '등록' : 'reg'} ${c.appReg}`}
-          accent="#6B7280" />
-        <Card label={ko ? '웹 공개 전환율 (실험 후)' : 'Web public rate (after)'}
-          value={a.webReg ? pct(a.webRate) : '—'}
-          sub={`${ko ? '실험 전' : 'before'} ${b.webReg ? pct(b.webRate) : '—'} · ${a.webPublic}/${a.webReg}`}
-          accent={a.webRate >= b.webRate ? '#059669' : '#DC2626'} />
-      </div>
-      <div style={{ fontSize: 11.5, color: '#B0B0B8', marginBottom: 24 }}>
-        {ko
-          ? '※ 20260617 이전 등록분은 플랫폼 정보(null)라 앱/웹 어디에도 안 잡힘 → 앱+웹 < 전체 공개.'
-          : '* Resumes registered before 20260617 have null platform and count in neither app nor web.'}
+        <Card label={ko ? '최근 7일 신규 공개' : 'New public (7d)'} value={`+${on7}`}
+          sub={ko ? `해제 ${off7}건 · 순증 ${on7 - off7}` : `${off7} turned off · net ${on7 - off7}`}
+          accent={on7 ? '#059669' : '#9CA3AF'} />
+        <Card label={ko ? '웹 전환율' : 'Web rate'} value={pct(web.rate)}
+          sub={ko ? `공개 ${web.pub}건 중 콜드메일 ${web.coldmail}건 · 그 외 ${web.organic}건` : `${web.coldmail} of ${web.pub} from cold-email`}
+          accent={web.organicRate < 0.05 ? '#DC2626' : '#0F172A'} />
+        <Card label={ko ? '비공개 풀 (전환 재고)' : 'Private pool'} value={pp.total.toLocaleString()}
+          sub={ko
+            ? `콜드메일 미발송 ${pp.unsent}명 · 발송했던 ${pp.coldmailed}명 · 30일 내 가입 ${pp.d30}명`
+            : `${pp.unsent} never cold-emailed · ${pp.coldmailed} already · ${pp.d30} joined in 30d`}
+          accent="#D97706" />
       </div>
 
-      <div style={{ fontSize: 13, fontWeight: 700, color: '#374151', margin: '0 0 8px' }}>{ko ? '일별 추이' : 'Daily'}</div>
-      <div style={{ overflowX: 'auto', border: '1px solid #EEF0F2', borderRadius: 12 }}>
+      <div style={{ fontSize: 13, fontWeight: 700, color: '#374151', margin: '0 0 2px' }}>{ko ? '플랫폼별 전환율' : 'By platform'}</div>
+      <div style={{ fontSize: 11.5, color: '#9CA3AF', marginBottom: 8 }}>
+        {ko
+          ? '콜드메일 열 = 그 공개가 메일 원클릭으로 켜진 건수 — 나머지가 제품 안에서 켜진 것'
+          : 'Cold-email column = conversions from the one-click email link'}
+      </div>
+      <div className="adm-m-scroll" style={{ overflowX: 'auto', border: '1px solid #EEF0F2', borderRadius: 12, marginBottom: 24 }}>
+        <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 420 }}>
+          <thead><tr>
+            <th style={th}>{ko ? '플랫폼' : 'Platform'}</th>
+            <th style={{ ...th, textAlign: 'right' }}>{ko ? '이력서' : 'Resumes'}</th>
+            <th style={{ ...th, textAlign: 'right' }}>{ko ? '공개' : 'Public'}</th>
+            <th style={{ ...th, textAlign: 'right' }}>{ko ? '전환율' : 'Rate'}</th>
+            <th style={{ ...th, textAlign: 'right' }}>{ko ? '콜드메일' : 'Cold-email'}</th>
+          </tr></thead>
+          <tbody>
+            {data.platforms.map((p) => (
+              <tr key={p.key}>
+                <td style={{ ...td, fontWeight: 700 }}>{PLAT_LABEL[p.key]}</td>
+                <td style={num}>{p.reg.toLocaleString()}</td>
+                <td style={{ ...num, color: '#0D9488' }}>{p.pub.toLocaleString()}</td>
+                <td style={{ ...num, fontWeight: 800 }}>{p.reg ? pct(p.rate) : '—'}</td>
+                <td style={{ ...num, color: p.coldmail ? '#2563EB' : '#C0C4CC' }}>{p.coldmail || '—'}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      <div style={{ fontSize: 13, fontWeight: 700, color: '#374151', margin: '0 0 2px' }}>{ko ? '가입 주차별 코호트' : 'Weekly cohorts'}</div>
+      <div style={{ fontSize: 11.5, color: '#9CA3AF', marginBottom: 8 }}>
+        {ko
+          ? '그 주에 가입해 이력서를 올린 사람 중 지금 공개 상태인 비율 — 최근 주차가 떨어지면 신규 유입이 안 켜지고 있다는 뜻'
+          : 'Of those who joined that week and uploaded a resume, share now public'}
+      </div>
+      <div className="adm-m-scroll" style={{ overflowX: 'auto', border: '1px solid #EEF0F2', borderRadius: 12, marginBottom: 24 }}>
         <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 560 }}>
           <thead><tr>
-            <th style={th}>{ko ? '날짜' : 'Date'}</th>
+            <th style={th}>{ko ? '주차' : 'Week'}</th>
             <th style={{ ...th, textAlign: 'right' }}>{ko ? '웹 등록' : 'Web reg'}</th>
             <th style={{ ...th, textAlign: 'right' }}>{ko ? '웹 공개' : 'Web pub'}</th>
-            <th style={{ ...th, textAlign: 'right' }}>{ko ? '웹 전환율' : 'Web rate'}</th>
+            <th style={{ ...th, textAlign: 'right' }}>{ko ? '웹 유기적' : 'Web organic'}</th>
+            <th style={{ ...th, textAlign: 'right' }}>{ko ? '웹 유기적률' : 'Web org. rate'}</th>
             <th style={{ ...th, textAlign: 'right' }}>{ko ? '앱 등록' : 'App reg'}</th>
             <th style={{ ...th, textAlign: 'right' }}>{ko ? '앱 공개' : 'App pub'}</th>
             <th style={{ ...th, textAlign: 'right' }}>{ko ? '앱 전환율' : 'App rate'}</th>
           </tr></thead>
           <tbody>
-            {[...data.daily].reverse().map((d) => {
-              const inExp = d.day >= data.experimentStart
-              return (
-                <tr key={d.day} style={inExp ? { background: '#EFFBF8' } : undefined}>
-                  <td style={{ ...td, fontWeight: inExp ? 800 : 400 }}>
-                    {d.day.slice(5)}{inExp && <span style={{ fontSize: 10, color: '#0D9488', marginLeft: 6 }}>EXP</span>}
-                  </td>
-                  <td style={num}>{d.webReg || ''}</td>
-                  <td style={{ ...num, color: d.webPublic ? '#0D9488' : undefined }}>{d.webPublic || ''}</td>
-                  <td style={{ ...num, fontWeight: 800 }}>{d.webReg ? rate(d.webPublic, d.webReg) : ''}</td>
-                  <td style={num}>{d.appReg || ''}</td>
-                  <td style={num}>{d.appPublic || ''}</td>
-                  <td style={num}>{d.appReg ? rate(d.appPublic, d.appReg) : ''}</td>
-                </tr>
-              )
-            })}
+            {[...data.weekly].reverse().map((w) => (
+              <tr key={w.week}>
+                <td style={td}>{w.week.slice(5)}</td>
+                <td style={num}>{w.web.reg || ''}</td>
+                <td style={{ ...num, color: w.web.pub ? '#0D9488' : undefined }}>{w.web.pub || ''}</td>
+                <td style={num}>{w.web.organic || ''}</td>
+                <td style={{ ...num, fontWeight: 800, color: w.web.reg && w.web.organic / w.web.reg < 0.05 ? '#DC2626' : undefined }}>
+                  {w.web.reg ? pct(w.web.organic / w.web.reg) : ''}
+                </td>
+                <td style={num}>{w.app.reg || ''}</td>
+                <td style={num}>{w.app.pub || ''}</td>
+                <td style={{ ...num, fontWeight: 800 }}>{w.app.reg ? pct(w.app.pub / w.app.reg) : ''}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      <div style={{ fontSize: 13, fontWeight: 700, color: '#374151', margin: '0 0 2px' }}>{ko ? '일별 공개 전환' : 'Daily conversions'}</div>
+      <div style={{ fontSize: 11.5, color: '#9CA3AF', marginBottom: 8 }}>
+        {ko ? '실제 공개 ON/OFF 이벤트' : 'Actual ON/OFF events'}
+      </div>
+      <div className="adm-m-scroll" style={{ overflowX: 'auto', border: '1px solid #EEF0F2', borderRadius: 12 }}>
+        <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 460 }}>
+          <thead><tr>
+            <th style={th}>{ko ? '날짜' : 'Date'}</th>
+            <th style={{ ...th, textAlign: 'right' }}>{ko ? '공개' : 'ON'}</th>
+            <th style={{ ...th, textAlign: 'right' }}>{ko ? '해제' : 'OFF'}</th>
+            <th style={{ ...th, textAlign: 'right' }}>{ko ? '순증' : 'Net'}</th>
+            <th style={{ ...th, textAlign: 'right' }}>{ko ? '웹' : 'Web'}</th>
+            <th style={{ ...th, textAlign: 'right' }}>{ko ? '앱' : 'App'}</th>
+            <th style={{ ...th, textAlign: 'right' }}>{ko ? '콜드메일' : 'Cold-email'}</th>
+          </tr></thead>
+          <tbody>
+            {[...data.daily].reverse().map((d) => (
+              <tr key={d.day}>
+                <td style={td}>{d.day.slice(5)}</td>
+                <td style={{ ...num, fontWeight: 800, color: d.on ? '#0D9488' : undefined }}>{d.on || ''}</td>
+                <td style={{ ...num, color: d.off ? '#DC2626' : undefined }}>{d.off || ''}</td>
+                <td style={num}>{d.on || d.off ? d.net : ''}</td>
+                <td style={num}>{d.web || ''}</td>
+                <td style={num}>{d.app || ''}</td>
+                <td style={{ ...num, color: d.coldmail ? '#2563EB' : undefined }}>{d.coldmail || ''}</td>
+              </tr>
+            ))}
           </tbody>
         </table>
       </div>
