@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useT } from '../../lib/i18n';
 import { ANCHOR, BRAND, c, s, scrollTo } from './ktcStyles';
+import { setVia } from './ktcTrack';
 
 /* 섹션 탭바 — FYI GlobalNav 바로 아래에 붙는 섹션 이동 전용 바(로고·로그인 등 헤더
    역할은 GlobalNav 가 담당). 히어로 CTA 가 화면을 벗어나면 등장해서, 페이지가 길어져
@@ -86,7 +87,7 @@ export default function KtcNav() {
             <button
               key={x.anchor}
               data-section={x.anchor}
-              onClick={() => scrollTo(x.anchor)}
+              onClick={() => { if (x.anchor === ANCHOR.jobs) setVia('nav'); scrollTo(x.anchor); }}
               aria-current={on ? 'true' : undefined}
               style={{
                 flexShrink: 0,

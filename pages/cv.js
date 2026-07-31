@@ -506,6 +506,15 @@ export default function CvLanding() {
 
   const scrollToForm = () => (formCardRef.current || formAnchorRef.current)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
 
+  // 히어로 CTA가 실제로 일을 하는지 재려면 "버튼을 눌렀다"만으로는 부족하다 —
+  // 버튼 없이도 폼까지 내려오는 사람이 얼마인지가 비교군이다. 그래서 도달 자체를
+  // cv_form_view 로 한 번 찍고, 어떻게 왔는지를 via 로 구분한다.
+  //   hero       = 히어로 '바로 등록하기'
+  //   scrolldown = 하단 스크롤다운 버튼
+  //   scroll     = 아무것도 안 누르고 직접 스크롤
+  const arrivedVia = useRef('scroll')
+  const formViewTracked = useRef(false)
+
   useEffect(() => {
     const update = () => {
       const formTop = formAnchorRef.current?.getBoundingClientRect().top ?? Infinity
@@ -516,7 +525,23 @@ export default function CvLanding() {
     return () => window.removeEventListener('scroll', update)
   }, [])
 
+  // 등록 폼이 화면에 들어온 순간 1회. 완료·기등록 화면은 등록 폼이 아니라서 제외한다.
+  useEffect(() => {
+    const el = formCardRef.current
+    if (!el || showSuccess || existingResume || typeof IntersectionObserver === 'undefined') return
+    const io = new IntersectionObserver((entries) => {
+      if (!entries.some((e) => e.isIntersecting) || formViewTracked.current) return
+      formViewTracked.current = true
+      track('cv_form_view', { meta: { ...cvMeta(), via: arrivedVia.current }, page: '/cv' })
+      io.disconnect()
+    }, { threshold: 0.25 })
+    io.observe(el)
+    return () => io.disconnect()
+  }, [showSuccess, existingResume])
+
   const onStickyClick = () => {
+    track('cv_scrolldown_click', { meta: cvMeta(), page: '/cv' })
+    arrivedVia.current = 'scrolldown'
     // 아직 화면 절반 아래에 있는 첫 스텝 카드로 — 셋 다 지났으면 등록 폼으로
     const nextCard = Array.from(document.querySelectorAll('.cv-flow-card'))
       .find((el) => el.getBoundingClientRect().top > window.innerHeight * 0.5)
@@ -555,6 +580,7 @@ export default function CvLanding() {
                 className="cv-btn cv-btn-hero"
                 onClick={() => {
                   track('cv_click_hero_cta', { meta: cvMeta(), page: '/cv' })
+                  arrivedVia.current = 'hero'
                   scrollToForm()
                 }}
               >

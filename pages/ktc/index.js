@@ -1,4 +1,5 @@
 import Head from 'next/head';
+import { useEffect } from 'react';
 import AboutUs from '../../components/ktc/AboutUs';
 import Advantage from '../../components/ktc/Advantage';
 import Benefits from '../../components/ktc/Benefits';
@@ -13,11 +14,19 @@ import Participants from '../../components/ktc/Participants';
 import Process from '../../components/ktc/Process';
 import ZaloGroup from '../../components/ktc/ZaloGroup';
 import { c } from '../../components/ktc/ktcStyles';
+import { resetVia, trackKtc } from '../../components/ktc/ktcTrack';
 
 /* K-Tech College 2026 랜딩.
    섹션 순서는 원본 ktc-landing(src/app/page.tsx)과 동일하게 유지하고,
    비주얼만 FYI 다크 컨셉으로 옮겼다. */
 export default function KtcLanding() {
+  // session_start 는 세션당 1회라 같은 세션에서 다시 들어온 경우를 못 잡는다.
+  // 도달 경로(via)는 페이지에 새로 들어올 때마다 초기화한다.
+  useEffect(() => {
+    resetVia();
+    trackKtc('ktc_view');
+  }, []);
+
   return (
     <>
       <Head>

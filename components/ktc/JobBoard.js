@@ -3,6 +3,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useT } from '../../lib/i18n';
 import Reveal from './Reveal';
 import { ANCHOR, BRAND, c, s } from './ktcStyles';
+import { getVia, trackKtc } from './ktcTrack';
 
 /* 실데이터: /api/ktc/jobs (원본 ktc-landing 과 같은 Supabase 의 jobs, is_active=true).
    정규화는 lib/ktcJobs.js 에서 끝내고 여기서는 표시만 한다.
@@ -84,6 +85,7 @@ function JobCard({ job, lang }) {
   return (
     <Link
       href={`/ktc/jobs/${job.id}`}
+      onClick={() => trackKtc('ktc_job_click', { job_id: job.id, via: getVia() })}
       className="ktc-job-card"
       style={{
         display: 'flex',
@@ -326,6 +328,24 @@ function Pagination({ page, totalPages, onChange }) {
 
 export default function JobBoard() {
   const { t, lang } = useT();
+  const sectionRef = useRef(null);
+  const viewTracked = useRef(false);
+
+  // 공고 섹션 도달 1회 + 어떻게 왔는지. /cv 의 cv_form_view 와 같은 역할로,
+  // 히어로 CTA 를 안 눌러도 여기까지 오는 사람이 얼마인지가 버튼 존치의 비교군이다.
+  useEffect(() => {
+    const el = sectionRef.current;
+    if (!el || typeof IntersectionObserver === 'undefined') return;
+    const io = new IntersectionObserver((entries) => {
+      if (!entries.some((e) => e.isIntersecting) || viewTracked.current) return;
+      viewTracked.current = true;
+      trackKtc('ktc_jobs_view', { via: getVia() });
+      io.disconnect();
+    }, { threshold: 0.2 });
+    io.observe(el);
+    return () => io.disconnect();
+  }, []);
+
   const [jobs, setJobs] = useState(null); // null = 로딩 중
   const [failed, setFailed] = useState(false);
   const [category, setCategory] = useState('all');
@@ -397,7 +417,7 @@ export default function JobBoard() {
   };
 
   return (
-    <section id={ANCHOR.jobs} className="ktc-anchor" style={s.sectionAlt}>
+    <section id={ANCHOR.jobs} ref={sectionRef} className="ktc-anchor" style={s.sectionAlt}>
       <div style={s.container}>
         <Reveal>
           <h2 style={s.h2}>{t('ktc.jobs.title')}</h2>
