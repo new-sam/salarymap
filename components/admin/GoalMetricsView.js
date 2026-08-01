@@ -147,7 +147,7 @@ export default function GoalMetricsView({ token, lang }) {
       {view === 'nontech' && <NontechPoolTab data={ntData} loading={ntLoading} error={ntError} ko={ko} lang={lang} />}
       {view === 'paths' && <SignupPathsTab data={spData} loading={spLoading} error={spError} ko={ko} />}
       {view === 'ad' && <AdTab data={adData} loading={adLoading} error={adError} ko={ko} />}
-      {view === 'resumePublic' && <ResumePublicTab data={rpData} loading={rpLoading} error={rpError} ko={ko} />}
+      {view === 'resumePublic' && <ResumePublicTab data={rpData} loading={rpLoading} error={rpError} ko={ko} onRefresh={loadRp} />}
       {view === 'coldmail' && <ColdmailPublicTab data={cmData} loading={cmLoading} error={cmError} ko={ko} />}
     </div>
   )
@@ -487,7 +487,7 @@ function AdTab({ data, loading, error, ko }) {
 // '오늘 공개함'이 아니라 '오늘 프로필 수정함'이라 지표를 부풀린다(7/14 착시의 원인).
 // 콜드메일 전환을 따로 떼는 이유: 웹 공개의 대부분이 콜드메일 1회성이라, 섞어 보면
 // 제품 자체의 전환율(유기적)이 실제보다 몇 배 높아 보인다.
-function ResumePublicTab({ data, loading, error, ko }) {
+function ResumePublicTab({ data, loading, error, ko, onRefresh }) {
   if (loading || !data) return <div style={{ textAlign: 'center', padding: 40, color: '#666' }}>{ko ? '불러오는 중…' : 'Loading…'}</div>
   if (error) return <div style={{ textAlign: 'center', padding: 40, color: '#c00' }}>{error}</div>
   if (data.error) return <div style={{ textAlign: 'center', padding: 40, color: '#c00' }}>{data.error}</div>
@@ -515,7 +515,7 @@ function ResumePublicTab({ data, loading, error, ko }) {
 
   return (
     <div>
-      {data.goal && <AugustGoalPanel g={data.goal} ko={ko} />}
+      {data.goal && <AugustGoalPanel g={data.goal} ko={ko} onRefresh={onRefresh} generatedAt={data.generatedAt} />}
 
       <div style={{ fontSize: 15, fontWeight: 800, color: '#0F172A', marginBottom: 6 }}>
         {ko ? '이력서 공개 전환' : 'Resume-public conversion'}
@@ -647,7 +647,7 @@ function ResumePublicTab({ data, loading, error, ko }) {
 // "등록 인재풀" = 이력서를 올린 회원, "등록 비율" = 가입자 중 그 비율(유저 확정 정의).
 // 개발:비개발은 비개발 비중을 목표(40%)에 대고 재고, 기획·디자인은 비개발에 넣는다.
 // 어학은 목표선 없이 현황만 — 수준을 나눌 기준이 없어 '이력서에 기재됨'으로만 센다.
-function AugustGoalPanel({ g, ko }) {
+function AugustGoalPanel({ g, ko, onRefresh, generatedAt }) {
   const pct = (v) => `${Math.round(v * 1000) / 10}%`
   const mr = g.mix.registered
   const lr = g.lang.registered
@@ -707,8 +707,22 @@ function AugustGoalPanel({ g, ko }) {
     <div style={{ background: '#fff', border: '1px solid #E5E8EB', borderRadius: 16, padding: '16px 18px 6px', marginBottom: 20 }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 10, marginBottom: 4 }}>
         <div style={{ fontSize: 14, fontWeight: 800, color: '#0F172A' }}>{ko ? '8월 목표' : 'August goals'}</div>
-        <div style={{ fontSize: 12, fontWeight: 700, color: g.daysLeft <= 3 ? '#DC2626' : '#6B7280' }}>
-          {ko ? `D-${g.daysLeft} · ${g.deadline.slice(5)} 마감` : `D-${g.daysLeft} · due ${g.deadline.slice(5)}`}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          {/* 수치는 열 때 한 번만 불러온다 — 열어둔 채로는 안 오르므로 기준 시각과 갱신 버튼을 같이 둔다 */}
+          {generatedAt && (
+            <span style={{ fontSize: 11, color: '#B0B6BE', fontVariantNumeric: 'tabular-nums' }}>
+              {new Date(generatedAt).toLocaleTimeString(ko ? 'ko-KR' : 'en-US', { hour: '2-digit', minute: '2-digit' })} {ko ? '기준' : ''}
+            </span>
+          )}
+          {onRefresh && (
+            <button onClick={onRefresh} style={{
+              border: '1px solid #E5E8EB', background: '#fff', borderRadius: 8, padding: '4px 10px',
+              fontSize: 11.5, fontWeight: 700, color: '#4E5968', cursor: 'pointer',
+            }}>{ko ? '갱신' : 'Refresh'}</button>
+          )}
+          <div style={{ fontSize: 12, fontWeight: 700, color: g.daysLeft <= 3 ? '#DC2626' : '#6B7280' }}>
+            {ko ? `D-${g.daysLeft} · ${g.deadline.slice(5)} 마감` : `D-${g.daysLeft} · due ${g.deadline.slice(5)}`}
+          </div>
         </div>
       </div>
 
