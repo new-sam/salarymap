@@ -50,7 +50,8 @@ export default async function handler(req, res) {
     supabase.from('events')
       .select('id', { count: 'exact', head: true })
       // /cv 이력서 등록 완료(cv_register_success) + 레거시 프로필 업로드(resume_upload)
-      .in('event', ['cv_register_success', 'resume_upload'])
+      // + KTC 클레임 가입 CV 임포트(ktc_cv_import) — 빠지면 콜드메일 유입이 오늘 행에서 통째로 누락
+      .in('event', ['cv_register_success', 'resume_upload', 'ktc_cv_import'])
       .gte('created_at', startISO).lte('created_at', endISO),
     supabase.from('recruiter_users')
       .select('email')
