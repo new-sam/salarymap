@@ -54,9 +54,15 @@ function isBonusEligible(j) {
 }
 
 /* 공고 카드 한 줄 메타 — 폼 위 인기 공고와 등록 완료 모달이 같은 형식을 쓴다 */
-function jobMetaLine(j, L) {
+function jobSalaryText(j) {
   const sal = formatSalaryCard(j)
-  const salTxt = sal?.min && sal?.max ? `${Math.round(sal.min / 1e6)}–${Math.round(sal.max / 1e6)}M VND` : null
+  return sal?.min && sal?.max ? `${Math.round(sal.min / 1e6)}–${Math.round(sal.max / 1e6)}M VND` : null
+}
+
+/* includeSalary=false 는 급여를 따로 강조해 그리는 쪽(폼 위 인기 공고)에서 쓴다 —
+   회색 메타 줄에 같이 넣으면 급여가 근무형태·경력에 묻힌다. */
+function jobMetaLine(j, L, includeSalary = true) {
+  const salTxt = includeSalary ? jobSalaryText(j) : null
   const expTxt = (!j.experience_min && !j.experience_max)
     ? L('경력무관', 'Any exp', 'KN bất kỳ')
     : (!j.experience_max || j.experience_max >= 30)
@@ -758,7 +764,11 @@ export default function CvLanding() {
                         <div className="cv-hot-main">
                           <div className="cv-hot-title">{j.title}</div>
                           <div className="cv-hot-co">{j.company}</div>
-                          <div className="cv-hot-meta">{jobMetaLine(j, L)}</div>
+                          {/* 급여는 이 목록에서 지원 여부를 가르는 값이라 회색 메타 줄에서 빼서 따로 세운다 */}
+                          <div className="cv-hot-line">
+                            {jobSalaryText(j) && <span className="cv-hot-sal">{jobSalaryText(j)}</span>}
+                            <span className="cv-hot-meta">{jobMetaLine(j, L, false)}</span>
+                          </div>
                         </div>
                       </a>
                       <button
@@ -2105,7 +2115,13 @@ export default function CvLanding() {
         .cv-hot-main { flex: 1; min-width: 0; }
         .cv-hot-title { font-size: 15px; font-weight: 800; color: #1a1612; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .cv-hot-co { font-size: 13px; color: #8a8073; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .cv-hot-meta { font-size: 12px; color: #a89f92; margin-top: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .cv-hot-line { display: flex; align-items: baseline; gap: 8px; margin-top: 5px; min-width: 0; }
+        .cv-hot-sal {
+          flex-shrink: 0;
+          font-size: 15px; font-weight: 900; letter-spacing: -0.01em;
+          color: #ff6000; font-variant-numeric: tabular-nums;
+        }
+        .cv-hot-meta { font-size: 12px; color: #a89f92; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .cv-hot-btn {
           flex-shrink: 0;
           min-width: 92px;
