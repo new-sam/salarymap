@@ -12,6 +12,8 @@ import { completionScore } from '../lib/profileScore'
 import ApplicationCard, { applicationCardCss } from '../components/ApplicationCard'
 import EmploymentTab from '../components/profile/EmploymentTab'
 import BadgesTab from '../components/profile/BadgesTab'
+import LanguageCard from '../components/profile/LanguageCard'
+import CustomSelect from '../components/profile/CustomSelect'
 
 // 프로필 직군 선택 — 공고/ATS와 동일한 ROLE_GROUPS. 대분류→소분류 2단계로 고른다.
 // 저장값은 소분류 canonical(r.value) 하나만 form.position에 유지.
@@ -41,65 +43,6 @@ const YOE_OPTIONS = [
   { value: '120', label: '10+ years' },
 ]
 
-function CustomSelect({ value, options, items, placeholder, onChange, displayValue, disabled }) {
-  const [open, setOpen] = useState(false)
-  const ref = useRef(null)
-  useEffect(() => {
-    if (!open) return
-    const h = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false) }
-    document.addEventListener('mousedown', h)
-    return () => document.removeEventListener('mousedown', h)
-  }, [open])
-  return (
-    <div ref={ref} style={{ position: 'relative' }}>
-      <button type="button" disabled={disabled} onClick={() => setOpen(v => !v)} style={{
-        width: '100%', fontSize: 14, padding: '10px 12px', border: '1px solid rgba(0,0,0,0.12)',
-        borderRadius: 8, background: disabled ? '#f5f5f5' : '#fff', color: value ? '#111' : 'rgba(0,0,0,0.3)',
-        fontFamily: 'inherit', cursor: disabled ? 'not-allowed' : 'pointer', textAlign: 'left', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        transition: 'border-color .15s', outline: 'none', opacity: disabled ? 0.6 : 1,
-        ...(open ? { borderColor: '#ff4400' } : {}),
-      }}>
-        <span>{displayValue || value || placeholder}</span>
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="rgba(0,0,0,0.3)" strokeWidth="2" style={{ transform: open ? 'rotate(180deg)' : 'none', transition: 'transform .2s' }}><path d="M6 9l6 6 6-6"/></svg>
-      </button>
-      {open && (
-        <div style={{
-          position: 'absolute', top: 'calc(100% + 4px)', left: 0, right: 0, zIndex: 50,
-          background: '#fff', border: '1px solid rgba(0,0,0,0.1)', borderRadius: 10,
-          padding: 4, maxHeight: 220, overflowY: 'auto', boxShadow: '0 8px 32px rgba(0,0,0,0.12)', scrollbarWidth: 'none',
-        }} className="pselect-dropdown">
-          {items
-            ? items.map(o => (
-              <button key={o.value} type="button" onClick={() => { onChange(o.value); setOpen(false) }} style={{
-                display: 'block', width: '100%', padding: '9px 12px', border: 'none', borderRadius: 6,
-                background: value === o.value ? 'rgba(255,68,0,0.08)' : 'transparent',
-                color: value === o.value ? '#ff4400' : 'rgba(0,0,0,0.6)',
-                fontSize: 13, fontWeight: value === o.value ? 600 : 400, cursor: 'pointer', textAlign: 'left',
-                fontFamily: 'inherit', transition: 'background .1s',
-              }}
-                onMouseEnter={e => { if (value !== o.value) e.currentTarget.style.background = 'rgba(0,0,0,0.03)' }}
-                onMouseLeave={e => { if (value !== o.value) e.currentTarget.style.background = 'transparent' }}>
-                {o.label}
-              </button>
-            ))
-            : options.map(opt => (
-              <button key={opt} type="button" onClick={() => { onChange(opt); setOpen(false) }} style={{
-                display: 'block', width: '100%', padding: '9px 12px', border: 'none', borderRadius: 6,
-                background: value === opt ? 'rgba(255,68,0,0.08)' : 'transparent',
-                color: value === opt ? '#ff4400' : 'rgba(0,0,0,0.6)',
-                fontSize: 13, fontWeight: value === opt ? 600 : 400, cursor: 'pointer', textAlign: 'left',
-                fontFamily: 'inherit', transition: 'background .1s',
-              }}
-                onMouseEnter={e => { if (value !== opt) e.currentTarget.style.background = 'rgba(0,0,0,0.03)' }}
-                onMouseLeave={e => { if (value !== opt) e.currentTarget.style.background = 'transparent' }}>
-                {opt}
-              </button>
-            ))}
-        </div>
-      )}
-    </div>
-  )
-}
 
 // ── Onboarding Modal ──
 
@@ -243,6 +186,7 @@ export default function ProfilePage() {
             skills: p.skills?.join(', ') || '',
             english_cert: p.english_cert || '',
             korean_cert: p.korean_cert || '',
+            languages: Array.isArray(p.languages) ? p.languages : [],
             location: p.location || '',
             birthdate: p.birthdate || '',
             university: p.university || '',
@@ -761,6 +705,59 @@ export default function ProfilePage() {
             </div>
           </div>
 
+          <div className="pcard">
+            <div className="pcard-h"><span className="pcard-ico"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></span>{t('profile.basic')}</div>
+            <div className="pinline">
+              <div className="pfield">
+                <div className="pfield-label">{t('profile.name')}</div>
+                <input className={`pinput${df('full_name')}`} value={form.full_name || ''} onChange={e => set('full_name', e.target.value)} placeholder="" />
+              </div>
+              <div className="pfield">
+                <div className="pfield-label">{t('profile.location')}</div>
+                <input className={`pinput${df('location')}`} value={form.location || ''} onChange={e => set('location', e.target.value)} placeholder="" />
+              </div>
+            </div>
+            <div className="pfield">
+              <div className="pfield-label">{t('profile.headline')}</div>
+              <input className={`pinput${df('headline')}`} value={form.headline || ''} onChange={e => set('headline', e.target.value)} placeholder="" />
+            </div>
+            <div className="pfield">
+              <div className="pfield-label">{t('profile.intro')}</div>
+              <textarea className={`pinput ptextarea${df('intro')}`} value={form.intro || ''} onChange={e => set('intro', e.target.value)} placeholder={t('profile.intro.ph')} style={{ minHeight: 80 }} />
+            </div>
+            <div className="pfield">
+              <div className="pfield-label">{t('profile.skills')}</div>
+              <input className={`pinput${df('skills')}`} value={form.skills || ''} onChange={e => set('skills', e.target.value)} placeholder={t('profile.skills.ph')} />
+              <div style={{ fontSize: 10, color: 'rgba(0,0,0,0.3)', marginTop: 4 }}>{t('profile.skills.hint')}</div>
+            </div>
+          </div>
+
+          {/* Education */}
+          <div className="pcard">
+            <div className="pcard-h"><span className="pcard-ico"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 10L12 5 2 10l10 5 10-5z"/><path d="M6 12v5c0 1.7 2.7 3 6 3s6-1.3 6-3v-5"/></svg></span>{t('profile.edu')}</div>
+            <div className="pinline">
+              <div className="pfield">
+                <div className="pfield-label">{t('profile.university')}</div>
+                <input className={`pinput${df('university')}`} value={form.university || ''} onChange={e => set('university', e.target.value)} placeholder="" />
+              </div>
+              <div className="pfield">
+                <div className="pfield-label">{t('profile.major')}</div>
+                <input className={`pinput${df('major')}`} value={form.major || ''} onChange={e => set('major', e.target.value)} placeholder="" />
+              </div>
+            </div>
+            <div className="pinline">
+              <div className="pfield">
+                <div className="pfield-label">{t('profile.gradyear')}</div>
+                <input className={`pinput${df('graduation_year')}`} value={form.graduation_year || ''} onChange={e => set('graduation_year', e.target.value)} placeholder="" />
+              </div>
+              <div className="pfield">
+                <div className="pfield-label">{t('profile.gpa')}</div>
+                <input className={`pinput${df('gpa')}`} value={form.gpa || ''} onChange={e => set('gpa', e.target.value)} placeholder="e.g. 3.8 / 4.0" />
+              </div>
+            </div>
+            <LanguageCard form={form} set={set} lang={lang} />
+          </div>
+
           {/* 희망 조건 — 직군·경력·희망연봉·근무형태 */}
           <div className="pcard">
             <div className="pcard-h">
@@ -816,34 +813,6 @@ export default function ProfilePage() {
                 </div>
             </div>
           </div>
-
-          <div className="pcard">
-            <div className="pcard-h"><span className="pcard-ico"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></span>{t('profile.basic')}</div>
-            <div className="pinline">
-              <div className="pfield">
-                <div className="pfield-label">{t('profile.name')}</div>
-                <input className={`pinput${df('full_name')}`} value={form.full_name || ''} onChange={e => set('full_name', e.target.value)} placeholder="" />
-              </div>
-              <div className="pfield">
-                <div className="pfield-label">{t('profile.location')}</div>
-                <input className={`pinput${df('location')}`} value={form.location || ''} onChange={e => set('location', e.target.value)} placeholder="" />
-              </div>
-            </div>
-            <div className="pfield">
-              <div className="pfield-label">{t('profile.headline')}</div>
-              <input className={`pinput${df('headline')}`} value={form.headline || ''} onChange={e => set('headline', e.target.value)} placeholder="" />
-            </div>
-            <div className="pfield">
-              <div className="pfield-label">{t('profile.intro')}</div>
-              <textarea className={`pinput ptextarea${df('intro')}`} value={form.intro || ''} onChange={e => set('intro', e.target.value)} placeholder={t('profile.intro.ph')} style={{ minHeight: 80 }} />
-            </div>
-            <div className="pfield">
-              <div className="pfield-label">{t('profile.skills')}</div>
-              <input className={`pinput${df('skills')}`} value={form.skills || ''} onChange={e => set('skills', e.target.value)} placeholder={t('profile.skills.ph')} />
-              <div style={{ fontSize: 10, color: 'rgba(0,0,0,0.3)', marginTop: 4 }}>{t('profile.skills.hint')}</div>
-            </div>
-          </div>
-
 
           {/* Experience */}
           <div className="pcard">
@@ -911,31 +880,6 @@ export default function ProfilePage() {
             {(!form.projects || form.projects.length === 0) && (
               <div style={{ textAlign: 'center', padding: '16px 0', color: 'rgba(0,0,0,0.25)', fontSize: 13 }}>{t('profile.projects.empty')}</div>
             )}
-          </div>
-
-          {/* Education */}
-          <div className="pcard">
-            <div className="pcard-h"><span className="pcard-ico"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 10L12 5 2 10l10 5 10-5z"/><path d="M6 12v5c0 1.7 2.7 3 6 3s6-1.3 6-3v-5"/></svg></span>{t('profile.edu')}</div>
-            <div className="pinline">
-              <div className="pfield">
-                <div className="pfield-label">{t('profile.university')}</div>
-                <input className={`pinput${df('university')}`} value={form.university || ''} onChange={e => set('university', e.target.value)} placeholder="" />
-              </div>
-              <div className="pfield">
-                <div className="pfield-label">{t('profile.major')}</div>
-                <input className={`pinput${df('major')}`} value={form.major || ''} onChange={e => set('major', e.target.value)} placeholder="" />
-              </div>
-            </div>
-            <div className="pinline">
-              <div className="pfield">
-                <div className="pfield-label">{t('profile.gradyear')}</div>
-                <input className={`pinput${df('graduation_year')}`} value={form.graduation_year || ''} onChange={e => set('graduation_year', e.target.value)} placeholder="" />
-              </div>
-              <div className="pfield">
-                <div className="pfield-label">{t('profile.gpa')}</div>
-                <input className={`pinput${df('gpa')}`} value={form.gpa || ''} onChange={e => set('gpa', e.target.value)} placeholder="e.g. 3.8 / 4.0" />
-              </div>
-            </div>
           </div>
 
           {msg && <div className="pmsg">{msg}</div>}
