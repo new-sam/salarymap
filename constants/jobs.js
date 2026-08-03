@@ -230,6 +230,8 @@ export const JOB_CATEGORY_GROUPS = [
   { key: 'it',         label: { ko: 'IT·개발',       en: 'IT & Development',      vi: 'IT & Phát triển' },      cats: ['dev', 'data'] },
   { key: 'production', label: { ko: '생산·기술직',   en: 'Production & Technical', vi: 'Sản xuất & Kỹ thuật' },  cats: ['production', 'engineering', 'qc'] },
   { key: 'office',     label: { ko: '사무·비즈니스', en: 'Office & Business',      vi: 'Văn phòng & Kinh doanh' }, cats: ['sales', 'marketing', 'hr', 'office'] },
+  // nonit 은 합성 그룹: IT('it')로 분류되지 않는 모든 공고. 비개발 광고 랜딩(/jobs?role=grp:nonit) 전용.
+  { key: 'nonit',      label: { ko: '비개발 전체',   en: 'Non-IT',                 vi: 'Non-IT' },               cats: [] },
 ]
 const CATEGORY_GROUP_INDEX = Object.fromEntries(JOB_CATEGORY_GROUPS.map(g => [g.key, g]))
 // role 컬럼의 IT 대분류들 — 회사가 지정한 값이라 IT 직군은 이게 제일 정확(영어/베트남어 제목 무관).
@@ -246,9 +248,12 @@ export function jobAdGroup(role, title) {
   if (c === 'dev' || c === 'data') return 'it'
   return null
 }
-// 공고가 주어진 광고 그룹에 속하는지.
+// 공고가 주어진 광고 그룹에 속하는지. nonit 은 개발·엔지니어 아닌 전부(미분류 포함) —
+// product(PM·디자인)는 it 광고그룹으로 묶이지만 "비개발직군" 의미상 nonit 에도 들어간다.
 export function jobInCategoryGroup(job, groupKey) {
-  return jobAdGroup(job?.role, job?.title) === groupKey
+  const g = jobAdGroup(job?.role, job?.title)
+  if (groupKey === 'nonit') return g !== 'it' || roleGroupKey(job?.role) === 'product'
+  return g === groupKey
 }
 export function categoryGroupLabel(key, lang = 'en') {
   const g = CATEGORY_GROUP_INDEX[key]
