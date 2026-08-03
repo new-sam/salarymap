@@ -44,6 +44,29 @@ function fmtSal(min, max) {
   return `${f(min)}–${f(max)} VND`
 }
 
+/* /cv 는 축하금 1,000,000 VND 약속 위에서 도는 랜딩이다 — 이 페이지에 뜨는 공고는
+   전부 축하금 대상이어야 한다. 조건은 히어로 하단 고지(cv.how.notice)와 같다:
+     · 베트남 현지 기업 공고만              → country = vietnam
+     · KTC(한국 취업) 공고 제외             → source = 'ktc'
+   country 가 비어 있으면 대상에서 뺀다 — 못 줄 축하금을 약속하는 쪽이 더 큰 손해다. */
+function isBonusEligible(j) {
+  return j.source !== 'ktc' && String(j.country || '').toLowerCase() === 'vietnam'
+}
+
+/* 공고 카드 한 줄 메타 — 폼 위 인기 공고와 등록 완료 모달이 같은 형식을 쓴다 */
+function jobMetaLine(j, L) {
+  const sal = formatSalaryCard(j)
+  const salTxt = sal?.min && sal?.max ? `${Math.round(sal.min / 1e6)}–${Math.round(sal.max / 1e6)}M VND` : null
+  const expTxt = (!j.experience_min && !j.experience_max)
+    ? L('경력무관', 'Any exp', 'KN bất kỳ')
+    : (!j.experience_max || j.experience_max >= 30)
+      ? L(`${j.experience_min || 0}년+`, `${j.experience_min || 0}y+`, `${j.experience_min || 0} năm+`)
+      : L(`${j.experience_min}–${j.experience_max}년`, `${j.experience_min}–${j.experience_max}y`, `${j.experience_min}–${j.experience_max} năm`)
+  const typeMap = { remote: L('재택', 'Remote', 'Remote'), hybrid: L('하이브리드', 'Hybrid', 'Hybrid'), onsite: L('출근', 'On-site', 'Tại VP') }
+  const typeTxt = j.type ? (typeMap[j.type] || j.type) : null
+  return [typeTxt, expTxt, salTxt].filter(Boolean).join(' · ')
+}
+
 const IconResume = () => (
   <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
     <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
@@ -137,6 +160,9 @@ export default function CvLanding() {
   const [applyingId, setApplyingId] = useState(null)
   // 오터치 방지: 첫 탭은 확인 상태(arm), 같은 버튼 한 번 더 탭해야 지원. 다른 카드 탭하면 그쪽으로 이동.
   const [armedId, setArmedId] = useState(null)
+  // 폼 위 인기 공고에서 "지원하기"를 눌렀지만 아직 이력서가 없어 폼으로 내려보낸 공고.
+  // OAuth 왕복(구글/링크드인)을 건너뛰어야 하므로 sessionStorage에 id로 남긴다.
+  const [pendingJobId, setPendingJobId] = useState(null)
   const L = (ko, en, vi) => (lang === 'vi' ? vi : lang === 'en' ? en : ko)
   const fileRef = useRef(null)
   const formAnchorRef = useRef(null)
@@ -196,6 +222,8 @@ export default function CvLanding() {
       const v = p.get(k)
       if (v) sessionStorage.setItem(k, v)
     })
+    // OAuth 왕복 전에 고른 공고 복원 (완료 모달 최상단 고정용)
+    try { setPendingJobId(sessionStorage.getItem('cv_pending_job') || null) } catch {}
     track('cv_view', { meta: cvMeta(), page: '/cv' })
   }, [])
 
@@ -267,7 +295,7 @@ export default function CvLanding() {
       .then(arr => {
         const list = Array.isArray(arr) ? arr : (arr.jobs || [])
         const sorted = list
-          .filter(j => j.is_active !== false)
+          .filter(j => j.is_active !== false && isBonusEligible(j))
           .sort((a, b) => (b.is_featured ? 1 : 0) - (a.is_featured ? 1 : 0))
         setJobs(sorted)
       })
@@ -376,22 +404,32 @@ export default function CvLanding() {
     }
   }
 
-  // 완료 모달에 띄울 공고 3개. 직무 선택을 없앴으므로 개인화 대신 ATS(기업 직접등록)
-  // 우선 → 누적 지원 수 많은 순(지원 전환이 잘 되는 공고)으로 고른다. 같은 회사가
-  // 목록을 차지하지 않게 회사당 1개.
-  const modalJobs = useMemo(() => {
+  // 공고 랭킹. 직무 선택을 없앴으므로 개인화 대신 ATS(기업 직접등록) 우선 → 누적 지원 수
+  // 많은 순(지원 전환이 잘 되는 공고)으로 고른다. 같은 회사가 목록을 차지하지 않게 회사당 1개.
+  const rankedJobs = useMemo(() => {
     const seenCompany = new Set()
     return jobs
       .slice()
       .sort((a, b) => (a.source === 'company_self' ? 0 : 1) - (b.source === 'company_self' ? 0 : 1)
         || (b.application_count || 0) - (a.application_count || 0))
       .filter((j) => { if (seenCompany.has(j.company)) return false; seenCompany.add(j.company); return true })
-      .slice(0, 3)
   }, [jobs])
+
+  // 등록 폼 바로 위에 띄울 인기 공고 4개
+  const hotJobs = useMemo(() => rankedJobs.slice(0, 4), [rankedJobs])
+
+  // 완료 모달 3개 — 폼 위 공고에서 눌러 들어왔다면 그 공고를 맨 앞에 고정한다.
+  // (회사당 1개 필터에 걸려 랭킹에서 빠질 수 있으므로 원본 jobs에서 찾는다)
+  const modalJobs = useMemo(() => {
+    const top = rankedJobs.slice(0, 3)
+    const pinned = pendingJobId ? jobs.find((j) => String(j.id) === pendingJobId) : null
+    if (!pinned) return top
+    return [pinned, ...top.filter((j) => j.id !== pinned.id)].slice(0, 3)
+  }, [rankedJobs, jobs, pendingJobId])
 
   const moreJobsHref = '/jobs'
 
-  const apply = async (job) => {
+  const apply = async (job, source = 'cv_success') => {
     if (applied[job.id] || applyingId) return
     setApplyingId(job.id)
     try {
@@ -405,12 +443,12 @@ export default function CvLanding() {
       const res = await fetch('/api/job-applications', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ jobId: job.id, jobTitle: job.title, jobCompany: job.company, resumeUrl: ru, applicationSource: 'cv_success' }),
+        body: JSON.stringify({ jobId: job.id, jobTitle: job.title, jobCompany: job.company, resumeUrl: ru, applicationSource: source }),
       })
       if (!res.ok) throw new Error('apply_failed')
       setApplied((a) => ({ ...a, [job.id]: true }))
-      track('submit_application', { meta: { ...cvMeta(), job_id: job.id, source: 'cv_success' }, page: '/cv' })
-      confirmAppliedInline({ title: job.title, company: job.company, source: 'cv_success' })
+      track('submit_application', { meta: { ...cvMeta(), job_id: job.id, source }, page: '/cv' })
+      confirmAppliedInline({ title: job.title, company: job.company, source })
     } catch {
       setErrMsg(L('지원에 실패했어요. 잠시 후 다시 시도해 주세요.', 'Application failed. Please try again.', 'Ứng tuyển thất bại. Vui lòng thử lại.'))
     } finally {
@@ -521,6 +559,30 @@ export default function CvLanding() {
       .find((el) => el.getBoundingClientRect().top > window.innerHeight * 0.5)
     if (nextCard) nextCard.scrollIntoView({ behavior: 'smooth', block: 'center' })
     else scrollToForm()
+  }
+
+  // 폼 위 인기 공고의 "지원하기".
+  //   이력서 있음 → 완료 모달과 같은 오터치 방지 2탭으로 바로 지원
+  //   이력서 없음 → 이 공고를 기억해 두고 등록 폼으로 내려보낸다(등록 후 완료 모달 최상단에 뜬다)
+  const onHotApply = (job) => {
+    if (applied[job.id] || applyingId) return
+    const hasResume = !!(resumeUrl || existingResume)
+    if (!user || !hasResume) {
+      try { sessionStorage.setItem('cv_pending_job', String(job.id)) } catch {}
+      setPendingJobId(String(job.id))
+      setArmedId(null)
+      track('cv_hot_apply_click', { meta: { ...cvMeta(), job_id: job.id, has_resume: false }, page: '/cv' })
+      arrivedVia.current = 'hotjob'
+      scrollToForm()
+      return
+    }
+    if (armedId !== job.id) {
+      setArmedId(job.id)
+      track('cv_hot_apply_click', { meta: { ...cvMeta(), job_id: job.id, has_resume: true }, page: '/cv' })
+      return
+    }
+    setArmedId(null)
+    apply(job, 'cv_hot')
   }
 
   return (
@@ -664,6 +726,66 @@ export default function CvLanding() {
             </div>
           </div>
         </section>
+
+        {/* ───── 인기 공고 — 등록 폼 바로 위. "이 공고에 지원하려면 이력서" 라는
+             동기로 폼까지 데려오는 게 목적이라 폼 앞에 붙는다. ───── */}
+        {hotJobs.length > 0 && (
+          <section className="cv-hot">
+            <div className="cv-section-inner">
+              <div className="cv-hot-head">
+                <h2 className="cv-h2">{L('지금 지원할 수 있는 인기 공고', 'Popular jobs open right now', 'Việc làm hot đang tuyển')}</h2>
+                <p className="cv-h2-sub">{L('이력서를 등록하면 아래 공고에 한 번에 지원할 수 있어요.', 'Register your resume and apply to these in one tap.', 'Đăng ký CV và ứng tuyển chỉ với một chạm.')}</p>
+              </div>
+              <div className="cv-hot-list">
+                {hotJobs.map((j) => {
+                  const isApplied = !!applied[j.id]
+                  const isApplying = applyingId === j.id
+                  const thumb = j.logo_url || j.image_url || j.images?.[0] || null
+                  return (
+                    <div key={j.id} className="cv-hot-job">
+                      {/* 공고를 안 보고 지원할 수는 없다 — 카드 본문은 상세로 간다.
+                          단 새 탭으로 연다: 여기서 이탈시키면 등록 폼까지 온 사람을 잃는다. */}
+                      <a
+                        className="cv-hot-open"
+                        href={`/jobs/${j.id}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        onClick={() => track('cv_hot_job_click', { meta: { ...cvMeta(), job_id: j.id }, page: '/cv' })}
+                      >
+                        <div className="cv-hot-logo" style={thumb ? { backgroundImage: `url(${thumb})` } : undefined}>
+                          {!thumb && (j.company_initials || (j.company || '?').charAt(0).toUpperCase())}
+                        </div>
+                        <div className="cv-hot-main">
+                          <div className="cv-hot-title">{j.title}</div>
+                          <div className="cv-hot-co">{j.company}</div>
+                          <div className="cv-hot-meta">{jobMetaLine(j, L)}</div>
+                        </div>
+                      </a>
+                      <button
+                        type="button"
+                        className={`cv-hot-btn${isApplied ? ' done' : ''}${isApplying ? ' applying' : ''}${armedId === j.id ? ' arm' : ''}`}
+                        disabled={isApplied || isApplying}
+                        onClick={() => onHotApply(j)}
+                      >
+                        {isApplied ? L('지원 완료 ✓', 'Applied ✓', 'Đã ứng tuyển ✓')
+                          : isApplying ? L('지원 중', 'Applying', 'Đang gửi')
+                          : armedId === j.id ? L('한 번 더', 'Tap again', 'Nhấn lần nữa')
+                          : L('지원하기', 'Apply', 'Ứng tuyển')}
+                      </button>
+                    </div>
+                  )
+                })}
+              </div>
+              <a
+                href={moreJobsHref}
+                className="cv-hot-all"
+                onClick={() => track('cv_hot_browse_all', { meta: cvMeta(), page: '/cv' })}
+              >
+                {L('전체 공고 보기', 'Browse all jobs', 'Xem tất cả việc làm')} →
+              </a>
+            </div>
+          </section>
+        )}
 
         {/* ───── FORM ───── */}
         <section className="cv-form-section" id="cv-form" ref={formAnchorRef}>
@@ -867,16 +989,7 @@ export default function CvLanding() {
                 const isApplied = !!applied[j.id]
                 const isApplying = applyingId === j.id
                 const thumb = j.logo_url || j.image_url || j.images?.[0] || null
-                const sal = formatSalaryCard(j)
-                const salTxt = sal?.min && sal?.max ? `${Math.round(sal.min / 1e6)}–${Math.round(sal.max / 1e6)}M VND` : null
-                const expTxt = (!j.experience_min && !j.experience_max)
-                  ? L('경력무관', 'Any exp', 'KN bất kỳ')
-                  : (!j.experience_max || j.experience_max >= 30)
-                    ? L(`${j.experience_min || 0}년+`, `${j.experience_min || 0}y+`, `${j.experience_min || 0} năm+`)
-                    : L(`${j.experience_min}–${j.experience_max}년`, `${j.experience_min}–${j.experience_max}y`, `${j.experience_min}–${j.experience_max} năm`)
-                const typeMap = { remote: L('재택', 'Remote', 'Remote'), hybrid: L('하이브리드', 'Hybrid', 'Hybrid'), onsite: L('출근', 'On-site', 'Tại VP') }
-                const typeTxt = j.type ? (typeMap[j.type] || j.type) : null
-                const meta = [typeTxt, expTxt, salTxt].filter(Boolean).join(' · ')
+                const meta = jobMetaLine(j, L)
                 return (
                   <div key={j.id} className="cvm-job">
                     <div className="cvm-job-logo" style={thumb ? { backgroundImage: `url(${thumb})` } : undefined}>
@@ -1933,6 +2046,91 @@ export default function CvLanding() {
         @keyframes cvCoinBob {
           0%, 100% { transform: translateY(0); }
           50% { transform: translateY(-7px); }
+        }
+
+        /* ───── 인기 공고 (폼 바로 위) ─────
+           폼 카드와 같은 720px 폭으로 맞춰 세로선이 이어지게 한다. 아래 폼 섹션이
+           padding-top 90px 을 갖고 있으므로 여기 bottom 패딩은 최소로. */
+        .cv-hot {
+          padding: 100px 0 0;
+          background: #fff;
+        }
+        .cv-hot-head {
+          max-width: 720px;
+          margin: 0 auto;
+          text-align: center;
+        }
+        .cv-hot-head .cv-h2-sub { margin-bottom: 36px; }
+        .cv-hot-list {
+          max-width: 720px;
+          margin: 0 auto;
+          display: flex;
+          flex-direction: column;
+          gap: 12px;
+        }
+        .cv-hot-job {
+          display: flex;
+          align-items: center;
+          gap: 14px;
+          padding: 16px 18px;
+          border: 1px solid #ece5db;
+          border-radius: 14px;
+          background: #fff;
+          transition: border-color .18s ease;
+        }
+        /* 호버는 테두리 한 단계만 — 카드가 뜨거나 그림자가 번지면 4장이 동시에 들썩인다 */
+        .cv-hot-job:hover { border-color: #d9cfc2; }
+        .cv-hot-logo {
+          flex-shrink: 0;
+          width: 48px; height: 48px;
+          border-radius: 11px;
+          background-color: #f3eee6;
+          background-size: cover;
+          background-position: center;
+          background-repeat: no-repeat;
+          display: flex; align-items: center; justify-content: center;
+          font-size: 17px; font-weight: 800; color: #b09a7f;
+        }
+        /* 카드 본문 = 상세 링크. 지원 버튼과 히트영역이 겹치지 않게 a 가 남는 폭을 다 먹는다. */
+        .cv-hot-open {
+          flex: 1;
+          min-width: 0;
+          display: flex;
+          align-items: center;
+          gap: 14px;
+          text-decoration: none;
+          color: inherit;
+        }
+        .cv-hot-open:hover .cv-hot-title { color: #ff6000; }
+        .cv-hot-main { flex: 1; min-width: 0; }
+        .cv-hot-title { font-size: 15px; font-weight: 800; color: #1a1612; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .cv-hot-co { font-size: 13px; color: #8a8073; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .cv-hot-meta { font-size: 12px; color: #a89f92; margin-top: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .cv-hot-btn {
+          flex-shrink: 0;
+          min-width: 92px;
+          text-align: center;
+          font-size: 13.5px; font-weight: 700;
+          color: #fff; background: #ff6000;
+          border: none; border-radius: 10px;
+          padding: 11px 16px;
+          cursor: pointer;
+          font-family: inherit;
+          transition: opacity .15s;
+        }
+        .cv-hot-btn:disabled { cursor: default; }
+        .cv-hot-btn.applying { opacity: 0.55; }
+        /* 오터치 방지 2탭 — 완료 모달과 같은 규칙 */
+        .cv-hot-btn.arm { background: #fff1e8; color: #ff6000; box-shadow: inset 0 0 0 1.5px #ff6000; }
+        .cv-hot-btn.done { background: #E7F6EC; color: #16a34a; }
+        .cv-hot-all {
+          display: block;
+          max-width: 720px;
+          margin: 18px auto 0;
+          text-align: center;
+          font-size: 13.5px; font-weight: 600;
+          color: #8a8073;
+          text-decoration: none;
         }
 
         /* ───── Form section ───── */
@@ -3051,6 +3249,13 @@ export default function CvLanding() {
           .cv-hero { padding: clamp(36px, 6vh, 56px) 20px clamp(28px, 4vh, 44px); }
           .cv-section-inner { padding: 0 20px; }
           .cv-how, .cv-test, .cv-jobs, .cv-form-section { padding: 80px 0 64px; }
+          /* 폼 섹션 padding-top 이 간격을 만드므로 bottom 은 계속 0 */
+          .cv-hot { padding: 80px 0 0; }
+          .cv-hot-job { padding: 14px; gap: 11px; }
+          .cv-hot-open { gap: 11px; }
+          .cv-hot-logo { width: 42px; height: 42px; border-radius: 10px; }
+          .cv-hot-title { font-size: 14px; }
+          .cv-hot-btn { min-width: 74px; padding: 10px 12px; font-size: 12.5px; }
           /* 폼 카드 — 데스크톱 패딩(56/52px)·타이틀(42px) 그대로면 콘텐츠 폭이
              ~250pt로 구겨져 제목이 단어 중간에서 꺾인다. 모바일은 전부 축소. */
           .cv-form-wrap.cv-section-inner { padding: 0 12px; }

@@ -17,6 +17,8 @@ function classifySource(applicationSource, referrer) {
   if (applicationSource === 'salary') return 'salary'
   // CV 등록 완료 모달에서 원탭 지원한 경우 — 가입→지원 전환 개선 효과 측정용 마커.
   if (applicationSource === 'cv_success') return 'cv_success'
+  // /cv 등록 폼 위 인기 공고에서 바로 지원한 경우 — 공고를 먼저 보여주는 배치의 효과 측정용.
+  if (applicationSource === 'cv_hot') return 'cv_hot'
   // 지원 완료 모달의 유사 공고 원탭 지원 — 유사 공고 유도 효과 측정용 마커.
   if (applicationSource === 'similar_after_apply') return 'similar_after_apply'
   if (referrer && SALARY_REFERRER_RE.test(referrer)) return 'salary'
