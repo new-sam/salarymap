@@ -7,13 +7,10 @@ import { track } from '../lib/track'
 import { idbPutCv, idbGetCv, idbClearCv } from '../lib/pendingCv'
 import GlobalNav from '../components/GlobalNav'
 
-/* /korean-cv — CV 업로드 → AI가 한국식 이력서로 변환해주는 무료 툴.
-   변환 미리보기까지는 익명, PDF 다운로드에 가입 게이트(다운로드 = 인재풀 등록).
-   플로우: 업로드 → /api/korean-cv/parse(익명) → A4 템플릿 미리보기(하단 블러)
-   → Google 가입(파일은 IndexedDB, 파싱 결과는 sessionStorage 스태시)
-   → 복귀(?continue=1) → /api/profile/upload + 이력서 공개 → 언락 + 인쇄(PDF 저장). */
-
-const DOC_W = 794 // A4 @96dpi
+/* /korean-cv — "담당자가 직접 만들어주는 한국식 이력서" 서비스 랜딩.
+   즉석 AI 변환이 아니라 컨시어지: CV 업로드+가입 → 요청 접수(events.kcv_request)
+   → 어드민(/admin/korean-cv)에서 AI 초안 + 사람이 첨삭 → 이메일로 전달.
+   업로드는 /cv 와 같은 인재풀 등록(공개 ON)이라 요청 자체가 인재풀 유입이 된다. */
 
 function kcvMeta() {
   if (typeof window === 'undefined') return {}
@@ -36,24 +33,6 @@ function fmtSal(min, max) {
   return `${f(min)}–${f(max)} VND`
 }
 
-const DEGREE_KO = { Associate: '전문학사', Bachelor: '학사', Master: '석사', PhD: '박사' }
-
-function fmtYm(months) {
-  const m = Number(months)
-  if (!m || m <= 0) return ''
-  const y = Math.floor(m / 12)
-  const r = m % 12
-  if (!y) return `${r}개월`
-  return r ? `${y}년 ${r}개월` : `${y}년`
-}
-
-/* 미리보기에서 바로 고칠 수 있는 셀 — 파싱 결과가 state 로 한 번만 렌더되므로
-   React 가 이후 DOM 텍스트를 건드리지 않아 사용자의 수정이 보존된다.
-   빈 값은 CSS(:empty::before)로 회색 placeholder 를 보여주고 인쇄 시엔 숨긴다. */
-const Ed = ({ v, ph }) => (
-  <span className="kcv-ed" contentEditable suppressContentEditableWarning data-ph={ph || ''}>{v || ''}</span>
-)
-
 export default function KoreanCvPage() {
   const { lang } = useT()
   const router = useRouter()
@@ -61,23 +40,16 @@ export default function KoreanCvPage() {
 
   const [user, setUser] = useState(null)
   const [file, setFile] = useState(null)
-  const [phase, setPhase] = useState('idle') // idle | parsing | preview
+  const [status, setStatus] = useState('idle') // idle | submitting | done
+  const [reqPending, setReqPending] = useState(false) // 재방문 시 이미 접수된 요청
   const [errMsg, setErrMsg] = useState('')
-  const [profile, setProfile] = useState(null)
-  const [photo, setPhoto] = useState(null)
-  const [regState, setRegState] = useState('idle') // idle | saving | done | error
-  const [loadStep, setLoadStep] = useState(0)
   const [jobs, setJobs] = useState([])
-  const [scale, setScale] = useState(1)
-  const [docH, setDocH] = useState(1123)
+  const [trustIdx, setTrustIdx] = useState(0) // 모바일 캐러셀 도트 인디케이터
   const fileRef = useRef(null)
-  const photoRef = useRef(null)
-  const docWrapRef = useRef(null)
-  const docRef = useRef(null)
-  const registeredOnce = useRef(false)
-
-  // 가입만 마치면 언락 — 등록 저장 실패로 다운로드를 인질 잡지 않는다(에러 배너로 재시도 안내).
-  const unlocked = !!user && regState !== 'idle'
+  const uploadRef = useRef(null)
+  const stepsRef = useRef(null)
+  const trustRef = useRef(null)
+  const submittedOnce = useRef(false)
 
   useEffect(() => {
     if (typeof window === 'undefined') return
@@ -95,41 +67,58 @@ export default function KoreanCvPage() {
     return () => sub.subscription.unsubscribe()
   }, [])
 
-  // 파싱 대기 중 단계 문구 로테이션
+  // 재방문: 아직 발송 안 된 요청이 있으면 접수됨 화면을 바로 보여준다
   useEffect(() => {
-    if (phase !== 'parsing') { setLoadStep(0); return }
-    const iv = setInterval(() => setLoadStep(s => Math.min(s + 1, 2)), 3500)
-    return () => clearInterval(iv)
-  }, [phase])
-
-  // OAuth 복귀: 스태시(파싱 결과 + 파일) 복원 → 자동 등록
-  useEffect(() => {
-    if (!user || router.query.continue !== '1' || registeredOnce.current) return
-    registeredOnce.current = true
+    if (!user) { setReqPending(false); return }
+    let cancelled = false
     ;(async () => {
-      let stashedProfile = null
-      try { stashedProfile = JSON.parse(sessionStorage.getItem('kcv_profile') || 'null') } catch {}
-      if (!stashedProfile) return
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session) return
+      try {
+        const r = await fetch('/api/korean-cv/request', { headers: { Authorization: `Bearer ${session.access_token}` } })
+        const j = await r.json()
+        if (!cancelled && j.requested && !j.sent) { setReqPending(true); setStatus('done') }
+      } catch {}
+    })()
+    return () => { cancelled = true }
+  }, [user])
+
+  // OAuth 복귀: 스태시된 파일 복원 → 자동 제출
+  useEffect(() => {
+    if (!user || router.query.continue !== '1' || submittedOnce.current) return
+    submittedOnce.current = true
+    ;(async () => {
       track('kcv_oauth_return', { meta: kcvMeta(), page: '/korean-cv' })
-      setProfile(stashedProfile)
-      setPhoto(sessionStorage.getItem('kcv_photo') || null)
-      setPhase('preview')
       const stored = await idbGetCv()
       if (stored?.blob) {
         const f = new File([stored.blob], stored.name, { type: stored.type })
         setFile(f)
-        doRegister(f)
+        uploadRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+        setTimeout(() => submitRequest(f), 400)
       } else {
-        // 파일 스태시 유실 — 가입은 마쳤으니 다운로드는 열어주고 유실만 기록
         track('kcv_stash_lost', { meta: kcvMeta(), page: '/korean-cv' })
-        setRegState('done')
+        uploadRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })
       }
     })()
   }, [user, router.query])
 
-  // 언락 후 지원 유도용 공고 (기업 직접등록 우선 → 지원 많은 순, 회사당 1개)
+  // 1 page 1 info — 아래 섹션들은 스크롤로 진입할 때 순차적으로 드러난다.
+  // 뷰포트에 이미 들어와 있는 요소는 observe 즉시 콜백이 와서 바로 보인다.
   useEffect(() => {
-    if (!unlocked) return
+    if (status === 'done' || typeof window === 'undefined') return
+    // .kcv-steps 는 컨테이너에 .in 이 붙으면 자식 카드들이 1→2→3 시퀀스로 켜진다
+    const els = document.querySelectorAll('.kcv-reveal, .kcv-steps')
+    if (!('IntersectionObserver' in window)) { els.forEach(el => el.classList.add('in')); return }
+    const io = new IntersectionObserver((entries) => {
+      entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target) } })
+    }, { threshold: 0.12, rootMargin: '0px 0px -8% 0px' })
+    els.forEach(el => io.observe(el))
+    return () => io.disconnect()
+  }, [status])
+
+  // 접수 후 대기시간 이탈 방지용 공고 (기업 직접등록 우선 → 지원 많은 순, 회사당 1개)
+  useEffect(() => {
+    if (status !== 'done') return
     fetch('/api/jobs?counts=1')
       .then(r => r.json())
       .then(arr => {
@@ -137,7 +126,7 @@ export default function KoreanCvPage() {
         setJobs(list.filter(j => j.is_active !== false))
       })
       .catch(() => {})
-  }, [unlocked])
+  }, [status])
 
   const topJobs = useMemo(() => {
     const seen = new Set()
@@ -149,20 +138,7 @@ export default function KoreanCvPage() {
       .slice(0, 3)
   }, [jobs])
 
-  // A4 폭을 화면에 맞춰 축소 (모바일)
-  useEffect(() => {
-    if (phase !== 'preview') return
-    const calc = () => {
-      const w = docWrapRef.current?.clientWidth || DOC_W
-      setScale(Math.min(1, w / DOC_W))
-      if (docRef.current) setDocH(docRef.current.offsetHeight)
-    }
-    calc()
-    window.addEventListener('resize', calc)
-    return () => window.removeEventListener('resize', calc)
-  }, [phase, profile])
-
-  const handleFile = async (f) => {
+  const handleFile = (f) => {
     if (!f) return
     const ext = (f.name.split('.').pop() || '').toLowerCase()
     if (!['pdf', 'doc', 'docx'].includes(ext)) {
@@ -177,46 +153,18 @@ export default function KoreanCvPage() {
     }
     setErrMsg('')
     setFile(f)
-    setPhase('parsing')
-    track('kcv_attach_file', { meta: { ...kcvMeta(), ...fileMeta(f) }, page: '/korean-cv' })
     idbPutCv(f).catch(() => {})
-    try {
-      const fd = new FormData()
-      fd.append('file', f)
-      const r = await fetch('/api/korean-cv/parse', { method: 'POST', body: fd })
-      const j = await r.json().catch(() => ({}))
-      if (!r.ok) {
-        throw new Error(j.error === 'unreadable'
-          ? L('파일에서 텍스트를 읽지 못했어요. 스캔 이미지가 아닌 텍스트 PDF/Word 파일을 올려주세요.',
-              "Couldn't read text from this file. Please upload a text-based PDF/Word file, not a scanned image.",
-              'Không đọc được nội dung file. Vui lòng tải lên file PDF/Word dạng văn bản, không phải ảnh scan.')
-          : L('변환에 실패했어요. 잠시 후 다시 시도해주세요.', 'Conversion failed. Please try again.', 'Chuyển đổi thất bại. Vui lòng thử lại sau.'))
-      }
-      setProfile(j.profile)
-      setPhoto(j.photo || null)
-      try {
-        sessionStorage.setItem('kcv_profile', JSON.stringify(j.profile))
-        if (j.photo) sessionStorage.setItem('kcv_photo', j.photo)
-      } catch {}
-      setPhase('preview')
-      track('kcv_parse_success', { meta: { ...kcvMeta(), ...fileMeta(f) }, page: '/korean-cv' })
-      // 이미 로그인 상태면 게이트 없이 바로 인재풀 등록
-      if (user) doRegister(f)
-    } catch (e) {
-      setErrMsg(e.message)
-      setPhase('idle')
-      track('kcv_parse_error', { meta: { ...kcvMeta(), ...fileMeta(f), error_message: e.message }, page: '/korean-cv' })
-    }
+    track('kcv_attach_file', { meta: { ...kcvMeta(), ...fileMeta(f) }, page: '/korean-cv' })
   }
 
-  // 가입 후: 이력서를 프로필에 저장 + 공개(오퍼 수신) — /cv 등록 플로우와 동일한 동작
-  const doRegister = async (fileToUpload) => {
-    if (!fileToUpload) return
-    setRegState('saving')
+  const submitRequest = async (fileToUpload) => {
+    if (!fileToUpload || status === 'submitting') return
+    setStatus('submitting')
+    setErrMsg('')
     try {
       const { data: { session } } = await supabase.auth.getSession()
       const token = session?.access_token
-      if (!token) throw new Error('not logged in')
+      if (!token) throw new Error(L('로그인이 필요해요.', 'Please sign in.', 'Vui lòng đăng nhập.'))
       const fd = new FormData()
       fd.append('type', 'resume')
       fd.append('file', fileToUpload)
@@ -227,7 +175,7 @@ export default function KoreanCvPage() {
       })
       if (!r.ok) {
         const e = await r.json().catch(() => ({}))
-        throw new Error(e.error || 'upload failed')
+        throw new Error(e.error || 'Upload failed')
       }
       const uid = session.user?.id
       if (uid) await supabase.from('user_profiles').update({ hr_visible: true, job_signal: 'open' }).eq('id', uid)
@@ -236,150 +184,214 @@ export default function KoreanCvPage() {
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({ action: 'set', value: true }),
       }).catch(() => {})
-      if (typeof gtag === 'function') gtag('event', 'korean_cv_register', { source: 'korean-cv' })
-      if (typeof fbq === 'function') fbq('trackCustom', 'KoreanCVRegister', { source: 'korean-cv' })
-      track('kcv_register_success', { meta: { ...kcvMeta(), ...fileMeta(fileToUpload) }, page: '/korean-cv' })
+      const reqRes = await fetch('/api/korean-cv/request', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ meta: kcvMeta() }),
+      })
+      if (!reqRes.ok) throw new Error('request failed')
+      if (typeof gtag === 'function') gtag('event', 'korean_cv_request', { source: 'korean-cv' })
+      if (typeof fbq === 'function') fbq('trackCustom', 'KoreanCVRequest', { source: 'korean-cv' })
+      track('kcv_request_success', { meta: { ...kcvMeta(), ...fileMeta(fileToUpload) }, page: '/korean-cv' })
       await idbClearCv()
-      setRegState('done')
+      setStatus('done')
     } catch (e) {
-      track('kcv_register_error', { meta: { ...kcvMeta(), error_message: e.message }, page: '/korean-cv' })
-      setRegState('error')
+      track('kcv_request_error', { meta: { ...kcvMeta(), error_message: e.message }, page: '/korean-cv' })
+      setErrMsg(e.message || L('요청에 실패했어요. 다시 시도해주세요.', 'Request failed. Please try again.', 'Yêu cầu thất bại. Vui lòng thử lại.'))
+      setStatus('idle')
     }
   }
 
-  const startOauth = async () => {
-    localStorage.setItem('fyi_login_return', '/korean-cv?continue=1')
-    localStorage.setItem('fyi_intent', 'kcv_signup')
-    await track('kcv_oauth_start', { meta: { ...kcvMeta(), provider: 'google' }, page: '/korean-cv' })
-    if (window.location.hostname === 'localhost') {
-      await supabase.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: window.location.origin + '/auth/callback' } })
-    } else {
-      window.location.href = '/api/auth/google?return=' + encodeURIComponent('/korean-cv?continue=1')
+  const onCta = async () => {
+    if (!file) { fileRef.current?.click(); return }
+    if (!user) {
+      localStorage.setItem('fyi_login_return', '/korean-cv?continue=1')
+      localStorage.setItem('fyi_intent', 'kcv_signup')
+      await track('kcv_oauth_start', { meta: { ...kcvMeta(), provider: 'google' }, page: '/korean-cv' })
+      if (window.location.hostname === 'localhost') {
+        await supabase.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: window.location.origin + '/auth/callback' } })
+      } else {
+        window.location.href = '/api/auth/google?return=' + encodeURIComponent('/korean-cv?continue=1')
+      }
+      return
     }
+    await submitRequest(file)
   }
 
-  const download = () => {
-    track('kcv_download', { meta: kcvMeta(), page: '/korean-cv' })
-    const name = profile?.full_name || 'FYI'
-    const prev = document.title
-    document.title = `이력서_${name}`
-    window.onafterprint = () => { document.title = prev; window.onafterprint = null }
-    window.print()
-    setTimeout(() => { if (document.title !== prev) document.title = prev }, 3000)
-  }
+  const scrollToUpload = () => uploadRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })
 
-  const reset = () => {
-    setPhase('idle'); setProfile(null); setPhoto(null); setFile(null)
-    setRegState(user && regState !== 'idle' ? regState : 'idle')
-    setErrMsg('')
-    try { sessionStorage.removeItem('kcv_profile'); sessionStorage.removeItem('kcv_photo') } catch {}
-  }
+  const steps = [
+    {
+      n: '1',
+      t: L('CV 업로드 & 로그인', 'Upload your CV & sign in', 'Tải CV lên & đăng nhập'),
+      s: L('1분이면 끝나요. 지금 쓰는 CV 그대로, PDF나 Word 아무거나 괜찮아요.',
+        'Takes 1 minute. Your current CV as-is — PDF or Word, either works.',
+        'Chỉ mất 1 phút. Dùng CV hiện tại của bạn — PDF hay Word đều được.'),
+    },
+    {
+      n: '2',
+      t: L('담당자가 번역하고 다듬어요', 'A recruiter translates & polishes it', 'Chuyên viên dịch & chỉnh sửa'),
+      s: L('한국 기업에 인재를 매칭하는 담당자가 직접 한국식 이력서로 번역하고, 서류 통과에 도움되게 첨삭해요.',
+        'A recruiter who matches candidates with Korean companies translates it into the Korean resume format and edits it to pass screening.',
+        'Chuyên viên trực tiếp kết nối ứng viên với công ty Hàn sẽ dịch CV sang mẫu 이력서 chuẩn Hàn và chỉnh sửa để hồ sơ dễ đậu vòng sơ tuyển hơn.'),
+    },
+    {
+      n: '3',
+      t: L('이메일로 받아요 + 피드백', 'Receive it by email + feedback', 'Nhận qua email + nhận xét'),
+      s: L('1~2 영업일 안에 완성된 한국식 이력서(PDF)와 함께 이력서 개선 피드백을 보내드려요.',
+        'Within 1–2 business days you get the finished Korean resume (PDF) plus feedback on how to improve it.',
+        'Trong 1–2 ngày làm việc, bạn nhận 이력서 hoàn chỉnh (PDF) kèm nhận xét giúp cải thiện hồ sơ.'),
+    },
+  ]
 
-  const onPickPhoto = (f) => {
-    if (!f || !f.type.startsWith('image/')) return
-    const reader = new FileReader()
-    reader.onload = () => {
-      setPhoto(reader.result)
-      try { sessionStorage.setItem('kcv_photo', reader.result) } catch {}
-    }
-    reader.readAsDataURL(f)
-  }
-
-  const p = profile || {}
-  const rs = p.resume_summary || {}
-  const nameLine = rs.name_ko ? `${rs.name_ko} (${p.full_name || ''})` : (p.full_name || '')
-  const experiences = Array.isArray(p.experiences) && p.experiences.length
-    ? p.experiences
-    : [{ company: '', title: '', start: '', end: '', months: 0 }]
-  const today = typeof window === 'undefined' ? null : new Date()
-  const dateLine = today ? `${today.getFullYear()}년 ${today.getMonth() + 1}월 ${today.getDate()}일` : ''
-
-  const loadMsgs = [
-    L('CV를 읽고 있어요...', 'Reading your CV...', 'Đang đọc CV của bạn...'),
-    L('한국식 이력서 양식으로 옮기는 중...', 'Converting to Korean resume format...', 'Đang chuyển sang mẫu hồ sơ chuẩn Hàn Quốc...'),
-    L('한국어 요약을 작성하는 중...', 'Writing your Korean summary...', 'Đang viết phần tóm tắt bằng tiếng Hàn...'),
+  const trust = [
+    {
+      t: L('한국 기업 채용 플랫폼이 직접 해요', 'Run by a Korean-hiring platform', 'Nền tảng tuyển dụng doanh nghiệp Hàn'),
+      s: L('FYI는 베트남 인재와 한국 기업을 연결하는 채용 플랫폼이에요. 어떤 이력서가 서류를 통과하는지 매일 보는 팀이 만들어요.',
+        'FYI is a hiring platform connecting Vietnamese talent with Korean companies. The team that sees which resumes pass screening every day makes yours.',
+        'FYI là nền tảng tuyển dụng kết nối ứng viên Việt với doanh nghiệp Hàn Quốc. Đội ngũ nhìn thấy mỗi ngày hồ sơ nào được chọn sẽ trực tiếp làm hồ sơ cho bạn.'),
+    },
+    {
+      t: L('LIKELION이 운영해요', 'Operated by LIKELION', 'Vận hành bởi LIKELION'),
+      s: L('한국 정부 지원으로 베트남 IT 인재를 선발·교육해 한국 기업과 연결하는 K-Tech College를 운영하는 LIKELION 팀이 운영해요.',
+        'Run by LIKELION — the team behind K-Tech College, a Korean-government-backed program that selects and trains Vietnamese IT talent for Korean companies.',
+        'Được vận hành bởi LIKELION — đội ngũ điều hành K-Tech College, chương trình được chính phủ Hàn Quốc hỗ trợ, tuyển chọn và đào tạo nhân tài IT Việt Nam để kết nối với doanh nghiệp Hàn Quốc.'),
+    },
+    {
+      t: L('이력서가 매칭으로 이어져요', 'Your resume leads to matching', 'Hồ sơ dẫn đến cơ hội thật'),
+      s: L('완성된 이력서는 채용 중인 한국 기업 매칭에 그대로 활용돼요. 조건이 맞으면 기업이 먼저 연락해요.',
+        'Your finished resume is used to match you with Korean companies hiring now — when there is a fit, they contact you first.',
+        'Hồ sơ hoàn chỉnh cũng được dùng để kết nối bạn với các công ty Hàn đang tuyển — khi phù hợp, nhà tuyển dụng sẽ chủ động liên hệ với bạn.'),
+    },
   ]
 
   return (
     <>
       <Head>
-        <title>{L('한국식 이력서 무료 변환 | FYI', 'Free Korean-style Resume Converter | FYI', 'Chuyển CV sang mẫu Hàn Quốc miễn phí | FYI')}</title>
+        <title>{L('한국식 이력서 무료 첨삭 | FYI', 'Free Korean Resume Service | FYI', 'Làm hồ sơ 이력서 chuẩn Hàn miễn phí | FYI')}</title>
         <meta name="description" content={L(
-          'CV를 올리면 AI가 한국 기업이 익숙한 이력서 양식으로 무료 변환해드려요. 한국어 요약 포함.',
-          'Upload your CV and AI converts it into the resume format Korean companies expect. Korean summary included. Free.',
-          'Tải CV lên, AI sẽ chuyển thành mẫu hồ sơ mà công ty Hàn Quốc quen thuộc — kèm tóm tắt tiếng Hàn. Hoàn toàn miễn phí.',
+          '한국 기업 매칭 담당자가 CV를 한국식 이력서로 번역·첨삭해서 이메일로 보내드려요. 무료.',
+          'A recruiter who matches talent with Korean companies translates and polishes your CV into a Korean resume — free, by email.',
+          'Chuyên viên tuyển dụng sẽ dịch và chỉnh sửa CV của bạn thành hồ sơ 이력서 chuẩn Hàn Quốc, gửi qua email — hoàn toàn miễn phí.',
         )} />
       </Head>
       <GlobalNav activePage="koreanCv" />
 
       <style>{`
+        /* 광고 랜딩 — 모바일 헤더의 K-company 칩은 이 페이지에서 숨긴다(이탈 경로 최소화). */
+        .gnav-zone-m { display: none !important; }
         .kcv-page { min-height: 100vh; background: #f4f2ee; color: #1a1612; font-family: 'Barlow', -apple-system, sans-serif; padding-bottom: 90px; }
-        .kcv-wrap { max-width: 900px; margin: 0 auto; padding: 0 16px; }
-        .kcv-hero { text-align: center; padding: 64px 0 36px; }
-        .kcv-badge { display: inline-block; font-size: 12px; font-weight: 700; letter-spacing: 1.5px; color: #e05400; border: 1px solid rgba(255,96,0,0.4); background: rgba(255,96,0,0.08); border-radius: 100px; padding: 5px 14px; margin-bottom: 18px; }
-        .kcv-h1 { font-size: 40px; font-weight: 800; line-height: 1.25; letter-spacing: -0.01em; margin: 0 0 14px; }
+        .kcv-wrap { max-width: 760px; margin: 0 auto; padding: 0 16px; }
+        .kcv-hero { text-align: center; padding: 64px 0 24px; position: relative; }
+        /* 배경 글로우 — 밋밋한 단색 위에 브랜드 오렌지 온기를 깐다 */
+        .kcv-hero::before { content: ''; position: absolute; inset: -60px -40px auto; height: 420px; background: radial-gradient(420px 300px at 50% 20%, rgba(255,96,0,0.13), transparent 70%); pointer-events: none; }
+        .kcv-hero > * { position: relative; }
+        /* CV → 이력서 변환 비주얼 (순수 CSS 목업) */
+        .kcv-hero-art { display: flex; align-items: center; justify-content: center; gap: 16px; margin: 32px auto 4px; }
+        .kcv-art-card { width: 132px; background: #fff; border: 1px solid #eee6dc; border-radius: 12px; padding: 12px 12px 14px; text-align: left; }
+        .kcv-art-cv { transform: rotate(-5deg); box-shadow: 0 12px 28px rgba(26,22,18,0.1); animation: kcvFloatA 3.6s ease-in-out infinite; }
+        .kcv-art-ko { transform: rotate(4deg); box-shadow: 0 16px 38px rgba(255,96,0,0.18); border-color: rgba(255,96,0,0.35); animation: kcvFloatB 3.6s ease-in-out 0.5s infinite; }
+        @keyframes kcvFloatA { 0%, 100% { transform: rotate(-5deg) translateY(0); } 50% { transform: rotate(-5deg) translateY(-6px); } }
+        @keyframes kcvFloatB { 0%, 100% { transform: rotate(4deg) translateY(0); } 50% { transform: rotate(4deg) translateY(-8px); } }
+        .kcv-art-label { font-size: 10px; font-weight: 800; letter-spacing: 0.5px; margin-bottom: 8px; }
+        .kcv-art-label.cv { color: #3b5bd6; }
+        .kcv-art-label.ko { color: #ff6000; }
+        .kcv-art-head { display: flex; gap: 8px; align-items: center; margin-bottom: 4px; }
+        .kcv-art-ava { width: 26px; height: 26px; border-radius: 50%; background: #dbe3f7; flex-shrink: 0; }
+        .kcv-art-photo { width: 24px; height: 32px; border-radius: 3px; background: rgba(255,96,0,0.14); border: 1px solid rgba(255,96,0,0.35); flex-shrink: 0; }
+        .kcv-art-line { height: 5px; border-radius: 3px; background: #ece6dd; margin-top: 6px; }
+        .kcv-art-cell { height: 7px; border-radius: 2px; background: #f6efe6; border: 1px solid #eadfcf; margin-top: 5px; }
+        .kcv-art-arrow { color: #ff6000; flex-shrink: 0; animation: kcvNudge 1.6s ease-in-out infinite; }
+        @keyframes kcvNudge { 0%, 100% { transform: translateX(0); opacity: 0.75; } 50% { transform: translateX(5px); opacity: 1; } }
+        .kcv-art-spark { position: absolute; color: #ffb36b; font-size: 13px; animation: kcvTwinkle 2.2s ease-in-out infinite; pointer-events: none; }
+        .kcv-art-spark.s1 { top: -8px; left: calc(50% - 130px); }
+        .kcv-art-spark.s2 { bottom: -2px; right: calc(50% - 138px); font-size: 10px; animation-delay: 1.1s; }
+        @keyframes kcvTwinkle { 0%, 100% { opacity: 0.25; transform: scale(0.85); } 50% { opacity: 1; transform: scale(1.1); } }
+        .kcv-badge { display: inline-flex; align-items: center; gap: 7px; font-size: 12.5px; font-weight: 600; color: #57504a; background: #fff; border: 1px solid #eee6dc; box-shadow: 0 4px 14px rgba(26,22,18,0.06); border-radius: 100px; padding: 7px 15px; margin-bottom: 18px; }
+        .kcv-badge::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: #ff6000; }
+        .kcv-h1 { font-size: 38px; font-weight: 800; line-height: 1.28; letter-spacing: -0.01em; margin: 0 0 16px; }
         .kcv-h1 em { font-style: normal; color: #ff6000; }
-        .kcv-sub { font-size: 16px; color: #57504a; line-height: 1.65; max-width: 560px; margin: 0 auto 8px; }
-        .kcv-benefits { display: flex; justify-content: center; gap: 22px; flex-wrap: wrap; margin: 26px 0 0; font-size: 13.5px; color: #57504a; }
-        .kcv-benefits span::before { content: '✓ '; color: #e05400; font-weight: 800; }
-        .kcv-drop { max-width: 560px; margin: 34px auto 0; border: 1.5px dashed rgba(255,96,0,0.5); background: #fff; border-radius: 18px; padding: 42px 24px; text-align: center; cursor: pointer; transition: background .15s, border-color .15s; box-shadow: 0 4px 18px rgba(26,22,18,0.05); }
-        .kcv-drop:hover, .kcv-drop.over { background: #fff7f2; border-color: #ff6000; }
-        .kcv-drop-ico { font-size: 34px; margin-bottom: 12px; }
-        .kcv-drop-t { font-size: 17px; font-weight: 700; margin-bottom: 6px; }
-        .kcv-drop-s { font-size: 13px; color: #9a9186; }
-        .kcv-err { max-width: 560px; margin: 14px auto 0; background: rgba(239,68,68,0.07); border: 1px solid rgba(239,68,68,0.3); color: #b91c1c; font-size: 13.5px; border-radius: 10px; padding: 11px 16px; text-align: center; }
-        .kcv-loading { max-width: 560px; margin: 60px auto; text-align: center; padding: 48px 24px; background: #fff; border: 1px solid #e8e2da; border-radius: 18px; }
-        .kcv-spinner { width: 34px; height: 34px; border: 3px solid rgba(255,96,0,0.18); border-top-color: #ff6000; border-radius: 50%; margin: 0 auto 20px; animation: kcvSpin 0.9s linear infinite; }
-        @keyframes kcvSpin { to { transform: rotate(360deg); } }
-        .kcv-loading-t { font-size: 16px; font-weight: 700; margin-bottom: 8px; }
-        .kcv-loading-s { font-size: 13px; color: #9a9186; }
+        .kcv-sub { font-size: 16px; color: #57504a; line-height: 1.7; max-width: 600px; margin: 0 auto; }
+        .kcv-hero-cta { display: inline-block; margin-top: 28px; background: #ff6000; color: #fff; border: none; border-radius: 100px; padding: 15px 34px; font-size: 16px; font-weight: 700; cursor: pointer; font-family: inherit; transition: background .15s, transform .12s; }
+        .kcv-hero-cta:hover { background: #ff7a1a; transform: translateY(-1px); }
+        .kcv-hero-note { margin-top: 12px; font-size: 12.5px; color: #9a9186; }
+        /* 첫 화면 진입 모션 — 히어로 요소가 순서대로 떠오른다 */
+        @keyframes kcvRise { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: none; } }
+        .kcv-hero > * { animation: kcvRise .65s cubic-bezier(.22,.7,.3,1) both; }
+        .kcv-hero > *:nth-child(2) { animation-delay: .08s; }
+        .kcv-hero > *:nth-child(3) { animation-delay: .16s; }
+        .kcv-hero > *:nth-child(4) { animation-delay: .24s; }
+        .kcv-hero > *:nth-child(5) { animation-delay: .32s; }
+        .kcv-hero > *:nth-child(6) { animation-delay: .45s; }
+        .kcv-scroll-hint { display: none; }
+        /* 1 page 1 info — 스크롤 진입 시 섹션이 순차적으로 드러난다 */
+        .kcv-reveal { opacity: 0; transform: translateY(26px); transition: opacity .65s cubic-bezier(.22,.7,.3,1), transform .65s cubic-bezier(.22,.7,.3,1); }
+        .kcv-reveal.in { opacity: 1; transform: none; }
+        .kcv-reveal-d1 { transition-delay: .05s; }
+        .kcv-reveal-d2 { transition-delay: .15s; }
+        .kcv-reveal-d3 { transition-delay: .25s; }
+        @media (prefers-reduced-motion: reduce) {
+          .kcv-hero > * { animation: none; }
+          .kcv-art-cv, .kcv-art-ko, .kcv-art-arrow, .kcv-art-spark { animation: none; }
+          .kcv-reveal { opacity: 1; transform: none; transition: none; }
+          .kcv-steps .kcv-step { opacity: 1; transform: none; transition: none; }
+          .kcv-steps.in .kcv-step-n { animation: none; }
+        }
 
-        .kcv-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin: 34px 0 16px; }
-        .kcv-toolbar-hint { font-size: 13px; color: #57504a; }
-        .kcv-toolbar-hint b { color: #e05400; font-weight: 700; }
-        .kcv-btns { display: flex; gap: 10px; }
-        .kcv-btn { border: none; border-radius: 100px; padding: 11px 22px; font-size: 14px; font-weight: 700; cursor: pointer; font-family: inherit; transition: all .15s; }
-        .kcv-btn-primary { background: #ff6000; color: #fff; }
-        .kcv-btn-primary:hover { background: #ff7a1a; }
-        .kcv-btn-ghost { background: #fff; color: #57504a; border: 1px solid #d8d0c6; }
-        .kcv-btn-ghost:hover { color: #1a1612; border-color: #b6ac9f; }
-        .kcv-reg-err { margin: 0 0 14px; background: #fff7e6; border: 1px solid #ecd9ab; color: #8a6a15; font-size: 13px; border-radius: 10px; padding: 10px 16px; display: flex; align-items: center; justify-content: space-between; gap: 10px; }
-        .kcv-reg-err button { background: none; border: 1px solid #d4b978; color: #8a6a15; border-radius: 100px; padding: 5px 14px; font-size: 12px; font-weight: 700; cursor: pointer; }
+        /* scroll-margin — 고정/스티키 헤더 밑에 제목이 깔리지 않게 앵커 스크롤 위치 보정 */
+        .kcv-sec { margin-top: 56px; scroll-margin-top: 76px; }
+        .kcv-sec-h { font-size: 22px; font-weight: 800; margin: 0 0 18px; text-align: center; }
+        .kcv-steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+        .kcv-step { background: #fff; border: 1px solid #e8e2da; border-radius: 16px; padding: 22px 18px; }
+        .kcv-step-n { width: 28px; height: 28px; border-radius: 50%; background: rgba(255,96,0,0.1); color: #e05400; font-size: 14px; font-weight: 800; display: flex; align-items: center; justify-content: center; margin-bottom: 12px; }
+        /* 1→2→3 시퀀스 — 섹션 진입 시 카드가 차례로 슬라이드인, 번호가 팝 하며 점등 */
+        .kcv-steps .kcv-step { opacity: 0; transform: translateX(-18px); transition: opacity .5s cubic-bezier(.22,.7,.3,1), transform .5s cubic-bezier(.22,.7,.3,1); }
+        .kcv-steps.in .kcv-step { opacity: 1; transform: none; }
+        .kcv-steps.in .kcv-step:nth-child(1) { transition-delay: .1s; }
+        .kcv-steps.in .kcv-step:nth-child(2) { transition-delay: .6s; }
+        .kcv-steps.in .kcv-step:nth-child(3) { transition-delay: 1.1s; }
+        .kcv-steps.in .kcv-step:nth-child(1) .kcv-step-n { animation: kcvPop .5s .25s both; }
+        .kcv-steps.in .kcv-step:nth-child(2) .kcv-step-n { animation: kcvPop .5s .75s both; }
+        .kcv-steps.in .kcv-step:nth-child(3) .kcv-step-n { animation: kcvPop .5s 1.25s both; }
+        @keyframes kcvPop {
+          0% { transform: scale(.3); }
+          55% { transform: scale(1.25); }
+          100% { transform: scale(1); background: #ff6000; color: #fff; }
+        }
+        .kcv-step-t { font-size: 15px; font-weight: 700; margin-bottom: 7px; line-height: 1.4; }
+        .kcv-step-s { font-size: 13px; color: #57504a; line-height: 1.65; }
 
-        .kcv-doc-outer { position: relative; }
-        .kcv-doc { width: ${DOC_W}px; min-height: 1123px; background: #fff; color: #1c1712; padding: 52px 58px; box-shadow: 0 18px 60px rgba(26,22,18,0.16); border: 1px solid #e8e2da; border-radius: 3px; font-family: 'Apple SD Gothic Neo', 'Malgun Gothic', 'Noto Sans KR', 'Segoe UI', sans-serif; }
-        .kcv-doc-title { font-size: 30px; font-weight: 800; letter-spacing: 20px; text-indent: 20px; text-align: center; margin: 0 0 30px; }
-        .kcv-h { display: flex; align-items: baseline; gap: 8px; font-size: 14.5px; font-weight: 800; margin: 26px 0 8px; }
-        .kcv-h small { font-size: 11px; font-weight: 600; color: #9a8f83; }
-        .kcv-tb { width: 100%; border-collapse: collapse; font-size: 12.5px; table-layout: fixed; }
-        .kcv-tb th, .kcv-tb td { border: 1px solid #8f877d; padding: 8px 10px; text-align: left; vertical-align: middle; word-break: break-word; }
-        .kcv-tb th { background: #f4f0ea; font-weight: 700; width: 92px; }
-        .kcv-tb thead th { width: auto; text-align: center; }
-        .kcv-photo-cell { width: 116px !important; text-align: center !important; padding: 6px !important; }
-        .kcv-photo { width: 96px; height: 128px; object-fit: cover; display: block; margin: 0 auto; cursor: pointer; }
-        .kcv-photo-ph { width: 96px; height: 128px; margin: 0 auto; border: 1px dashed #b6ac9f; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; font-size: 11px; color: #a79b8d; cursor: pointer; }
-        .kcv-photo-hint { font-size: 10px; color: #b0a496; margin-top: 4px; }
-        .kcv-skills { border: 1px solid #8f877d; padding: 10px 12px; font-size: 12.5px; line-height: 1.7; }
-        .kcv-bullets { margin: 0; padding: 0 0 0 4px; list-style: none; }
-        .kcv-bullets li { font-size: 12.5px; line-height: 1.7; padding: 3px 0 3px 16px; position: relative; }
-        .kcv-bullets li::before { content: '•'; position: absolute; left: 2px; color: #1c1712; }
-        .kcv-foot { margin-top: 44px; text-align: center; font-size: 12.5px; line-height: 2; }
-        .kcv-foot .kcv-sign { margin-top: 8px; }
-        .kcv-ed { display: block; width: 100%; min-height: 1em; outline: none; border-radius: 2px; }
-        .kcv-ed:hover { background: rgba(255,96,0,0.06); }
-        .kcv-ed:focus { background: rgba(255,96,0,0.09); box-shadow: inset 0 0 0 1px rgba(255,96,0,0.4); }
-        .kcv-ed:empty::before { content: attr(data-ph); color: #b9ae9f; }
+        .kcv-trust { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+        .kcv-trust-card { background: #fff; border: 1px solid #e8e2da; border-radius: 18px; padding: 22px 18px 24px; display: flex; flex-direction: column; }
+        .kcv-trust-img { height: 220px; display: flex; align-items: flex-end; justify-content: center; margin-bottom: 16px; }
+        .kcv-trust-img img { max-height: 100%; max-width: 100%; object-fit: contain; }
+        .kcv-trust-t { font-size: 14.5px; font-weight: 800; margin-bottom: 7px; text-align: center; }
+        .kcv-trust-s { font-size: 12.5px; color: #57504a; line-height: 1.65; }
+        .kcv-trust-dots { display: none; }
 
-        .kcv-gate { position: absolute; left: 0; right: 0; bottom: 0; top: 38%; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(7px); -webkit-backdrop-filter: blur(7px); background: linear-gradient(180deg, rgba(244,242,238,0) 0%, rgba(244,242,238,0.85) 26%, rgba(244,242,238,0.97) 100%); border-radius: 3px; }
-        .kcv-gate-card { text-align: center; max-width: 400px; padding: 0 20px; }
-        .kcv-gate-t { font-size: 21px; font-weight: 800; line-height: 1.4; margin-bottom: 10px; color: #1a1612; }
-        .kcv-gate-s { font-size: 13.5px; color: #57504a; line-height: 1.65; margin-bottom: 22px; }
-        .kcv-gate-btn { display: inline-flex; align-items: center; gap: 10px; background: #fff; color: #1c1712; border: 1px solid #d8d0c6; border-radius: 100px; padding: 14px 26px; font-size: 15px; font-weight: 700; cursor: pointer; font-family: inherit; box-shadow: 0 4px 16px rgba(26,22,18,0.1); transition: transform .12s, box-shadow .12s; }
-        .kcv-gate-btn:hover { transform: translateY(-1px); box-shadow: 0 8px 28px rgba(26,22,18,0.16); }
+        .kcv-upload { background: #fff; border: 1px solid #e8e2da; border-radius: 18px; padding: 30px 24px; text-align: center; }
+        .kcv-drop { border: 1.5px dashed rgba(255,96,0,0.5); background: #fffaf6; border-radius: 14px; padding: 34px 20px; cursor: pointer; transition: background .15s, border-color .15s; }
+        .kcv-drop:hover, .kcv-drop.over { background: #fff3ea; border-color: #ff6000; }
+        .kcv-drop-ico { height: 108px; display: block; margin: 0 auto 12px; }
+        .kcv-drop-t { font-size: 16px; font-weight: 700; margin-bottom: 5px; }
+        .kcv-drop-s { font-size: 12.5px; color: #9a9186; }
+        .kcv-file { display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 14px; font-weight: 600; color: #1a1612; background: #f4f2ee; border-radius: 10px; padding: 12px 16px; margin-top: 14px; }
+        .kcv-file button { background: none; border: none; color: #9a9186; font-size: 12px; cursor: pointer; text-decoration: underline; font-family: inherit; }
+        .kcv-cta { display: block; width: 100%; margin-top: 16px; background: #ff6000; color: #fff; border: none; border-radius: 12px; padding: 16px; font-size: 16px; font-weight: 700; cursor: pointer; font-family: inherit; transition: background .15s; }
+        .kcv-cta:hover { background: #ff7a1a; }
+        .kcv-cta:disabled { opacity: 0.6; cursor: default; }
+        .kcv-cta-note { margin-top: 12px; font-size: 12px; color: #9a9186; line-height: 1.6; }
+        .kcv-err { margin-top: 14px; background: rgba(239,68,68,0.07); border: 1px solid rgba(239,68,68,0.3); color: #b91c1c; font-size: 13.5px; border-radius: 10px; padding: 11px 16px; }
 
-        .kcv-jobs { margin-top: 52px; }
-        .kcv-jobs-h { font-size: 20px; font-weight: 800; margin-bottom: 4px; }
-        .kcv-jobs-s { font-size: 13.5px; color: #8a8177; margin-bottom: 18px; }
+        .kcv-done { background: #fff; border: 1px solid #e8e2da; border-radius: 18px; padding: 44px 28px; text-align: center; margin-top: 48px; }
+        .kcv-done-ico { font-size: 40px; margin-bottom: 14px; }
+        .kcv-done-t { font-size: 22px; font-weight: 800; margin-bottom: 10px; }
+        .kcv-done-s { font-size: 14.5px; color: #57504a; line-height: 1.7; max-width: 440px; margin: 0 auto; }
+        .kcv-done-s b { color: #e05400; }
+
+        .kcv-jobs { margin-top: 44px; }
+        .kcv-jobs-h { font-size: 19px; font-weight: 800; margin-bottom: 4px; }
+        .kcv-jobs-s { font-size: 13.5px; color: #8a8177; margin-bottom: 16px; }
         .kcv-job-card { display: flex; align-items: center; justify-content: space-between; gap: 14px; background: #fff; border: 1px solid #e8e2da; border-radius: 14px; padding: 16px 18px; margin-bottom: 10px; text-decoration: none; color: inherit; transition: border-color .15s, box-shadow .15s; }
         .kcv-job-card:hover { border-color: rgba(255,96,0,0.5); box-shadow: 0 4px 16px rgba(26,22,18,0.07); }
         .kcv-job-t { font-size: 15px; font-weight: 700; margin-bottom: 3px; }
@@ -389,239 +401,88 @@ export default function KoreanCvPage() {
 
         @media (max-width: 768px) {
           .kcv-page { padding-top: 52px; }
-          .kcv-hero { padding: 40px 0 26px; }
-          .kcv-h1 { font-size: 28px; }
+          /* 히어로 = 첫 화면 한 장. 아래 내용은 스크롤해야 드러난다. */
+          .kcv-hero {
+            min-height: calc(100vh - 52px); min-height: calc(100dvh - 52px);
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            padding: 0 0 20px;
+          }
+          .kcv-h1 { font-size: 27px; }
           .kcv-sub { font-size: 14.5px; }
-          .kcv-toolbar { flex-direction: column; align-items: stretch; }
-          .kcv-btns { justify-content: stretch; }
-          .kcv-btn { flex: 1; }
+          /* 화살표는 절대위치가 아니라 각 섹션의 마지막 요소로 흐름에 둔다 —
+             콘텐츠가 화면보다 길어져도 항상 그 섹션 끝에 자연스럽게 붙는다. */
+          .kcv-scroll-hint {
+            display: flex; align-items: center; justify-content: center;
+            align-self: center; margin: 14px auto 0; flex-shrink: 0;
+            width: 44px; height: 44px; border: none; background: none; color: #b0a496; cursor: pointer;
+            animation: kcvBob 1.8s ease-in-out infinite;
+          }
+          @keyframes kcvBob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(6px); } }
+          /* 첫 요소와 화살표에 auto 마진 → 남는 공간을 위/아래로 똑같이 나눠
+             콘텐츠는 중앙, 화살표는 화면 하단. 콘텐츠가 길면 자동으로 0이 된다. */
+          .kcv-hero > :first-child, .kcv-sec-steps > :first-child, .kcv-sec-trust > :first-child { margin-top: auto; }
+          .kcv-hero .kcv-scroll-hint, .kcv-sec-steps .kcv-scroll-hint, .kcv-sec-trust .kcv-scroll-hint { margin-top: auto; padding-top: 12px; }
+          .kcv-sec { margin-top: 40px; scroll-margin-top: 64px; }
+          /* 진행 3단계 = 두 번째 화면 한 장 (모바일은 번호+텍스트 가로 배치로 압축) */
+          .kcv-sec-steps {
+            min-height: calc(100vh - 52px); min-height: calc(100dvh - 52px);
+            display: flex; flex-direction: column; justify-content: center; margin-top: 0; padding: 16px 0 20px;
+            scroll-margin-top: 52px;
+          }
+          .kcv-steps { grid-template-columns: 1fr; }
+          .kcv-step { display: flex; gap: 14px; align-items: flex-start; padding: 18px 16px; }
+          .kcv-step-n { margin-bottom: 0; flex-shrink: 0; }
+          /* 신뢰 카드 = 좌우 스와이프 캐러셀 (다음 카드가 살짝 보여 스와이프를 유도) */
+          .kcv-trust {
+            display: flex; overflow-x: auto; scroll-snap-type: x mandatory;
+            gap: 12px; margin: 0 -16px; padding: 4px 16px 8px;
+            scrollbar-width: none; -webkit-overflow-scrolling: touch;
+          }
+          .kcv-trust::-webkit-scrollbar { display: none; }
+          .kcv-trust-card { flex: 0 0 82%; scroll-snap-align: center; }
+          /* 가로 스크롤 캐러셀에선 스크롤 리빌을 끈다(스와이프 중 페이드는 어색) */
+          .kcv-trust .kcv-reveal { opacity: 1; transform: none; transition: none; }
+          .kcv-trust-img { height: 190px; }
+          .kcv-trust-dots { display: flex; justify-content: center; gap: 6px; margin-top: 14px; }
+          .kcv-trust-dots span { width: 6px; height: 6px; border-radius: 100px; background: #d8d0c6; transition: all .25s; }
+          .kcv-trust-dots span.on { width: 18px; background: #ff6000; }
+          /* 신뢰 섹션도 한 화면 한 장 + 하단 화살표 */
+          .kcv-sec-trust {
+            min-height: calc(100vh - 52px); min-height: calc(100dvh - 52px);
+            display: flex; flex-direction: column; justify-content: center; margin-top: 0; padding: 16px 0 20px;
+            scroll-margin-top: 52px;
+          }
+          /* 업로드 = 마지막 화면 한 장 */
+          .kcv-sec-upload {
+            min-height: calc(100vh - 52px); min-height: calc(100dvh - 52px);
+            display: flex; flex-direction: column; justify-content: center; margin-top: 0;
+            scroll-margin-top: 52px;
+          }
         }
-
-        @media print {
-          body * { visibility: hidden !important; }
-          .kcv-doc, .kcv-doc * { visibility: visible !important; }
-          /* outer 를 static 으로 풀어야 doc 의 absolute 기준이 페이지가 되어
-             위쪽 내비/툴바 공간 없이 1페이지 맨 위부터 찍힌다. */
-          .kcv-doc-outer { position: static !important; height: auto !important; }
-          .kcv-doc { position: absolute; left: 0; top: 0; width: 100%; min-height: 0; margin: 0; padding: 0; box-shadow: none; border-radius: 0; transform: none !important; }
-          .kcv-gate, .kcv-photo-hint { display: none !important; }
-          .kcv-ed:empty::before { content: '' !important; }
-          .kcv-ed:hover, .kcv-ed:focus { background: none !important; box-shadow: none !important; }
-        }
-        @page { size: A4; margin: 12mm; }
       `}</style>
 
       <div className="kcv-page">
         <div className="kcv-wrap">
 
-          {phase === 'idle' && (
-            <div className="kcv-hero">
-              <div className="kcv-badge">{L('100% 무료', '100% FREE', 'MIỄN PHÍ 100%')}</div>
-              <h1 className="kcv-h1">
-                {L(<>내 CV를 <em>한국식 이력서</em>로</>, <>Turn your CV into a <em>Korean-style resume</em></>, <>Biến CV của bạn thành <em>hồ sơ chuẩn Hàn Quốc</em></>)}
-              </h1>
-              <p className="kcv-sub">
-                {L('AI가 CV를 한국식 이력서로 바꿔주는 건 시작일 뿐이에요. 완성된 프로필은 FYI에서 채용 중인 한국 기업들에 전달되고, 기업이 먼저 연락해요.',
-                  'AI converting your CV is just the start. Your finished profile reaches Korean companies hiring on FYI — and they contact you first.',
-                  'AI chuyển CV của bạn sang mẫu Hàn Quốc chỉ là bước đầu. Hồ sơ hoàn chỉnh sẽ được gửi đến các công ty Hàn Quốc đang tuyển trên FYI — và nhà tuyển dụng sẽ chủ động liên hệ với bạn.')}
-              </p>
-              <div className="kcv-benefits">
-                <span>{L('한국 표준 양식 + 한국어 요약', 'Korean format + Korean summary', 'Mẫu chuẩn Hàn + tóm tắt tiếng Hàn')}</span>
-                <span>{L('채용 중인 한국 기업에 프로필 전달', 'Sent to Korean companies hiring now', 'Gửi đến công ty Hàn đang tuyển')}</span>
-                <span>{L('PDF 다운로드 무료', 'Free PDF download', 'Tải PDF miễn phí')}</span>
-              </div>
-
-              <div
-                className="kcv-drop"
-                onClick={() => fileRef.current?.click()}
-                onDragOver={e => { e.preventDefault(); e.currentTarget.classList.add('over') }}
-                onDragLeave={e => e.currentTarget.classList.remove('over')}
-                onDrop={e => { e.preventDefault(); e.currentTarget.classList.remove('over'); handleFile(e.dataTransfer.files?.[0]) }}
-              >
-                <div className="kcv-drop-ico">📄</div>
-                <div className="kcv-drop-t">{L('CV 파일 올리기', 'Upload your CV', 'Tải file CV lên')}</div>
-                <div className="kcv-drop-s">{L('클릭 또는 드래그 · PDF, DOC, DOCX · 최대 10MB', 'Click or drag & drop · PDF, DOC, DOCX · max 10MB', 'Nhấp hoặc kéo thả · PDF, DOC, DOCX · tối đa 10MB')}</div>
-              </div>
-              {errMsg && <div className="kcv-err">{errMsg}</div>}
-              <input ref={fileRef} type="file" accept=".pdf,.doc,.docx" style={{ display: 'none' }}
-                onClick={e => { e.currentTarget.value = '' }}
-                onChange={e => handleFile(e.target.files?.[0])} />
-            </div>
-          )}
-
-          {phase === 'parsing' && (
-            <div className="kcv-loading">
-              <div className="kcv-spinner" />
-              <div className="kcv-loading-t">{loadMsgs[loadStep]}</div>
-              <div className="kcv-loading-s">{L('10~20초 정도 걸려요', 'Takes about 10–20 seconds', 'Mất khoảng 10–20 giây')}</div>
-            </div>
-          )}
-
-          {phase === 'preview' && profile && (
+          {status === 'done' ? (
             <>
-              <div className="kcv-toolbar">
-                <div className="kcv-toolbar-hint">
-                  {unlocked
-                    ? L(<><b>완성!</b> 이력서의 아무 칸이나 눌러 바로 수정할 수 있어요.</>,
-                        <><b>Done!</b> Click any field on the resume to edit it before downloading.</>,
-                        <><b>Xong!</b> Nhấp vào bất kỳ ô nào trên hồ sơ để chỉnh sửa trước khi tải.</>)
-                    : L('변환이 끝났어요 — 아래에서 미리보기를 확인하세요.',
-                        'Conversion complete — preview your resume below.',
-                        'Chuyển đổi hoàn tất — xem trước hồ sơ của bạn bên dưới.')}
+              <div className="kcv-done">
+                <div className="kcv-done-ico">✅</div>
+                <div className="kcv-done-t">
+                  {reqPending
+                    ? L('이력서 작업이 진행 중이에요', 'Your resume is being worked on', 'Hồ sơ của bạn đang được xử lý')
+                    : L('접수 완료!', 'Request received!', 'Đã tiếp nhận yêu cầu!')}
                 </div>
-                <div className="kcv-btns">
-                  <button className="kcv-btn kcv-btn-ghost" onClick={reset}>{L('다른 파일로 다시', 'Start over', 'Làm lại với file khác')}</button>
-                  {unlocked && (
-                    <button className="kcv-btn kcv-btn-primary" onClick={download}>
-                      {regState === 'saving' ? L('저장 중...', 'Saving...', 'Đang lưu...') : L('PDF 다운로드', 'Download PDF', 'Tải PDF')}
-                    </button>
-                  )}
+                <div className="kcv-done-s">
+                  {L(<>담당자가 CV를 한국식 이력서로 번역·첨삭해서 <b>{user?.email}</b>로 보내드려요. 보통 1~2 영업일이 걸려요.</>,
+                    <>A recruiter is translating and polishing your CV into a Korean resume. We'll email it to <b>{user?.email}</b> — usually within 1–2 business days.</>,
+                    <>Chuyên viên sẽ dịch và chỉnh sửa CV của bạn thành 이력서 chuẩn Hàn, rồi gửi đến <b>{user?.email}</b> — thường trong 1–2 ngày làm việc.</>)}
                 </div>
               </div>
 
-              {regState === 'error' && (
-                <div className="kcv-reg-err">
-                  <span>{L('이력서를 프로필에 저장하지 못했어요.', "Couldn't save the resume to your profile.", 'Chưa lưu được CV vào hồ sơ của bạn.')}</span>
-                  <button onClick={() => doRegister(file)}>{L('다시 시도', 'Retry', 'Thử lại')}</button>
-                </div>
-              )}
-
-              <div ref={docWrapRef}>
-                <div className="kcv-doc-outer" style={{ height: docH * scale }}>
-                  <div ref={docRef} className="kcv-doc" style={{ transform: `scale(${scale})`, transformOrigin: 'top left' }}>
-                    <h2 className="kcv-doc-title">이력서</h2>
-
-                    <table className="kcv-tb">
-                      <tbody>
-                        <tr>
-                          <td className="kcv-photo-cell" rowSpan={4}>
-                            {photo ? (
-                              <img src={photo} className="kcv-photo" alt="" onClick={() => photoRef.current?.click()} />
-                            ) : (
-                              <div className="kcv-photo-ph" onClick={() => photoRef.current?.click()}>
-                                <span style={{ fontSize: 20 }}>+</span>
-                                <span>{L('사진 추가', 'Add photo', 'Thêm ảnh')}</span>
-                              </div>
-                            )}
-                            <div className="kcv-photo-hint">{L('클릭해서 교체', 'Click to change', 'Nhấp để đổi ảnh')}</div>
-                          </td>
-                          <th>성명</th>
-                          <td><Ed v={nameLine} ph={L('이름', 'Name', 'Họ tên')} /></td>
-                          <th>생년월일</th>
-                          <td><Ed v="" ph="YYYY.MM.DD" /></td>
-                        </tr>
-                        <tr>
-                          <th>연락처</th>
-                          <td><Ed v="" ph="+84 " /></td>
-                          <th>이메일</th>
-                          <td><Ed v={user?.email || ''} ph="email" /></td>
-                        </tr>
-                        <tr>
-                          <th>거주지</th>
-                          <td><Ed v={p.location} ph={L('도시, 국가', 'City, Country', 'Thành phố, Quốc gia')} /></td>
-                          <th>총 경력</th>
-                          <td><Ed v={fmtYm(p.yoe_months)} ph={L('신입', 'Entry level', 'Chưa có kinh nghiệm')} /></td>
-                        </tr>
-                        <tr>
-                          <th>희망 직무</th>
-                          <td colSpan={3}><Ed v={p.headline || p.position} ph={L('직무', 'Role', 'Vị trí mong muốn')} /></td>
-                        </tr>
-                      </tbody>
-                    </table>
-
-                    <div className="kcv-h">학력사항 <small>Học vấn</small></div>
-                    <table className="kcv-tb">
-                      <thead>
-                        <tr><th>졸업연도</th><th>학교명</th><th>전공</th><th>학위</th></tr>
-                      </thead>
-                      <tbody>
-                        <tr>
-                          <td style={{ textAlign: 'center' }}><Ed v={p.graduation_year} ph="YYYY" /></td>
-                          <td><Ed v={p.university} ph={L('학교명', 'School', 'Tên trường')} /></td>
-                          <td><Ed v={p.major} ph={L('전공', 'Major', 'Chuyên ngành')} /></td>
-                          <td style={{ textAlign: 'center' }}><Ed v={DEGREE_KO[rs.degree] || rs.degree} ph="학사" /></td>
-                        </tr>
-                      </tbody>
-                    </table>
-
-                    <div className="kcv-h">경력사항 <small>Kinh nghiệm làm việc</small></div>
-                    <table className="kcv-tb">
-                      <thead>
-                        <tr><th style={{ width: 150 }}>기간</th><th>회사명</th><th>직위</th><th style={{ width: 100 }}>근무기간</th></tr>
-                      </thead>
-                      <tbody>
-                        {experiences.map((e, i) => (
-                          <tr key={i}>
-                            <td><Ed v={[e.start, e.end === 'Present' ? '재직중' : e.end].filter(Boolean).join(' ~ ')} ph="YYYY.MM ~" /></td>
-                            <td><Ed v={e.company} ph={L('회사명', 'Company', 'Công ty')} /></td>
-                            <td><Ed v={e.title} ph={L('직위', 'Title', 'Chức vụ')} /></td>
-                            <td style={{ textAlign: 'center' }}><Ed v={fmtYm(e.months)} ph="-" /></td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-
-                    <div className="kcv-h">어학 및 자격 <small>Ngoại ngữ & Chứng chỉ</small></div>
-                    <table className="kcv-tb">
-                      <tbody>
-                        <tr>
-                          <th>한국어</th>
-                          <td><Ed v={p.korean_cert} ph={L('예: TOPIK 5급', 'e.g. TOPIK Level 5', 'VD: TOPIK cấp 5')} /></td>
-                          <th>영어</th>
-                          <td><Ed v={p.english_cert} ph={L('예: TOEIC 900', 'e.g. TOEIC 900', 'VD: TOEIC 900')} /></td>
-                        </tr>
-                      </tbody>
-                    </table>
-
-                    <div className="kcv-h">보유 기술 <small>Kỹ năng</small></div>
-                    <div className="kcv-skills">
-                      <Ed v={(p.skills || []).join(', ')} ph={L('기술을 입력하세요', 'List your skills', 'Nhập kỹ năng của bạn')} />
-                    </div>
-
-                    {Array.isArray(rs.bullets) && rs.bullets.length > 0 && (
-                      <>
-                        <div className="kcv-h">핵심 역량 <small>Điểm mạnh nổi bật</small></div>
-                        <ul className="kcv-bullets">
-                          {rs.bullets.map((b, i) => <li key={i}><Ed v={b} /></li>)}
-                        </ul>
-                      </>
-                    )}
-
-                    <div className="kcv-foot">
-                      <div>위 기재 내용은 사실과 다름이 없습니다.</div>
-                      <div>{dateLine}</div>
-                      <div className="kcv-sign">작성자: {p.full_name || ''} (인)</div>
-                    </div>
-                  </div>
-
-                  {!unlocked && (
-                    <div className="kcv-gate">
-                      <div className="kcv-gate-card">
-                        <div className="kcv-gate-t">
-                          {L('이력서가 완성됐어요!', 'Your Korean resume is ready!', 'Hồ sơ chuẩn Hàn của bạn đã sẵn sàng!')}
-                        </div>
-                        <div className="kcv-gate-s">
-                          {L('무료 로그인하면 PDF 다운로드는 물론, 이 프로필이 채용 중인 한국 기업들에 전달돼 면접 제안을 받을 수 있어요.',
-                            'Sign in free to download the PDF — and your profile reaches Korean companies hiring now, so interview offers come to you.',
-                            'Đăng nhập miễn phí để tải PDF — hồ sơ của bạn cũng sẽ đến tay các công ty Hàn Quốc đang tuyển, và lời mời phỏng vấn sẽ tự tìm đến bạn.')}
-                        </div>
-                        <button className="kcv-gate-btn" onClick={startOauth}>
-                          <svg width="18" height="18" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.1c-.22-.66-.35-1.36-.35-2.1s.13-1.44.35-2.1V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l3.66-2.84z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/></svg>
-                          {L('Google로 무료 다운로드', 'Free download with Google', 'Tải miễn phí với Google')}
-                        </button>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              <input ref={photoRef} type="file" accept="image/*" style={{ display: 'none' }}
-                onClick={e => { e.currentTarget.value = '' }}
-                onChange={e => onPickPhoto(e.target.files?.[0])} />
-
-              {unlocked && topJobs.length > 0 && (
+              {topJobs.length > 0 && (
                 <div className="kcv-jobs">
-                  <div className="kcv-jobs-h">{L('이 이력서로 바로 지원해보세요', 'Apply now with your new resume', 'Ứng tuyển ngay với hồ sơ mới của bạn')}</div>
+                  <div className="kcv-jobs-h">{L('기다리는 동안 둘러보세요', 'While you wait', 'Trong lúc chờ đợi')}</div>
                   <div className="kcv-jobs-s">{L('지금 채용 중인 한국계 기업 공고예요.', 'Korean companies hiring right now.', 'Các công ty Hàn Quốc đang tuyển dụng.')}</div>
                   {topJobs.map(j => (
                     <a key={j.id} href={`/jobs/${j.id}?from=korean-cv`} className="kcv-job-card"
@@ -636,6 +497,146 @@ export default function KoreanCvPage() {
                   <a href="/jobs" className="kcv-jobs-all">{L('전체 공고 보기 →', 'See all jobs →', 'Xem tất cả việc làm →')}</a>
                 </div>
               )}
+            </>
+          ) : (
+            <>
+              <div className="kcv-hero">
+                <div className="kcv-badge">{L('무료 서비스', 'Free service', 'Dịch vụ miễn phí')}</div>
+                <h1 className="kcv-h1">
+                  {L(<>담당자가 직접 만들어주는<br /><em>한국식 이력서</em></>,
+                    <>A <em>Korean-style resume</em>,<br />made for you by a real recruiter</>,
+                    <>Hồ sơ <em>이력서 chuẩn Hàn Quốc</em>,<br />do chuyên viên làm cho bạn</>)}
+                </h1>
+                <p className="kcv-sub">
+                  {L(<>자동 번역기가 아니에요.<br />한국 기업 매칭 담당자가 직접 번역·첨삭해서 보내드려요.</>,
+                    <>Not machine translation.<br />A real recruiter translates and polishes it for you.</>,
+                    <>Không phải máy dịch tự động.<br />Chuyên viên tuyển dụng trực tiếp dịch, chỉnh sửa và gửi cho bạn.</>)}
+                </p>
+                <div className="kcv-hero-art" aria-hidden="true">
+                  <span className="kcv-art-spark s1">✦</span>
+                  <span className="kcv-art-spark s2">✦</span>
+                  <div className="kcv-art-card kcv-art-cv">
+                    <div className="kcv-art-label cv">CV</div>
+                    <div className="kcv-art-head">
+                      <div className="kcv-art-ava" />
+                      <div style={{ flex: 1 }}>
+                        <div className="kcv-art-line" style={{ width: '85%' }} />
+                        <div className="kcv-art-line" style={{ width: '60%' }} />
+                      </div>
+                    </div>
+                    <div className="kcv-art-line" style={{ width: '100%' }} />
+                    <div className="kcv-art-line" style={{ width: '92%' }} />
+                    <div className="kcv-art-line" style={{ width: '70%' }} />
+                  </div>
+                  <svg className="kcv-art-arrow" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M13 6l6 6-6 6" /></svg>
+                  <div className="kcv-art-card kcv-art-ko">
+                    <div className="kcv-art-label ko">이력서</div>
+                    <div className="kcv-art-head">
+                      <div className="kcv-art-photo" />
+                      <div style={{ flex: 1 }}>
+                        <div className="kcv-art-cell" style={{ width: '90%' }} />
+                        <div className="kcv-art-cell" style={{ width: '90%' }} />
+                      </div>
+                    </div>
+                    <div className="kcv-art-cell" style={{ width: '100%' }} />
+                    <div className="kcv-art-cell" style={{ width: '100%' }} />
+                    <div className="kcv-art-cell" style={{ width: '78%' }} />
+                  </div>
+                </div>
+                <button className="kcv-hero-cta" onClick={scrollToUpload}>
+                  {L('무료로 요청하기', 'Request for free', 'Yêu cầu miễn phí')}
+                </button>
+                <div className="kcv-hero-note">{L('CV 업로드 + 로그인, 1분이면 접수 끝', 'Upload + sign in — done in 1 minute', 'Tải CV + đăng nhập — chỉ 1 phút')}</div>
+                <button className="kcv-scroll-hint" aria-label="scroll down"
+                  onClick={() => stepsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })}>
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M6 9l6 6 6-6" /></svg>
+                </button>
+              </div>
+
+              <div className="kcv-sec kcv-sec-steps" ref={stepsRef}>
+                <h2 className="kcv-sec-h kcv-reveal">{L('이렇게 진행돼요', 'How it works', 'Cách thức hoạt động')}</h2>
+                <div className="kcv-steps">
+                  {steps.map((s) => (
+                    <div key={s.n} className="kcv-step">
+                      <div className="kcv-step-n">{s.n}</div>
+                      <div className="kcv-step-body">
+                        <div className="kcv-step-t">{s.t}</div>
+                        <div className="kcv-step-s">{s.s}</div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <button className="kcv-scroll-hint" aria-label="scroll down"
+                  onClick={() => trustRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })}>
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M6 9l6 6 6-6" /></svg>
+                </button>
+              </div>
+
+              <div className="kcv-sec kcv-sec-trust" ref={trustRef}>
+                <h2 className="kcv-sec-h kcv-reveal">{L('왜 FYI가 해주나요?', 'Why is FYI doing this?', 'Vì sao FYI làm việc này?')}</h2>
+                <div className="kcv-trust" onScroll={(e) => {
+                  const el = e.currentTarget
+                  const step = (el.children[0]?.offsetWidth || 1) + 12
+                  const idx = Math.min(2, Math.max(0, Math.round(el.scrollLeft / step)))
+                  if (idx !== trustIdx) setTrustIdx(idx)
+                }}>
+                  {trust.map((item, i) => (
+                    <div key={i} className={`kcv-trust-card kcv-reveal kcv-reveal-d${i + 1}`}>
+                      <div className="kcv-trust-img"><img src={`/korean-cv/trust-${i + 1}.png`} alt="" loading="lazy" /></div>
+                      <div className="kcv-trust-t">{item.t}</div>
+                      <div className="kcv-trust-s">{item.s}</div>
+                    </div>
+                  ))}
+                </div>
+                <div className="kcv-trust-dots" aria-hidden="true">
+                  {trust.map((_, i) => <span key={i} className={i === trustIdx ? 'on' : ''} />)}
+                </div>
+                <button className="kcv-scroll-hint" aria-label="scroll down"
+                  onClick={scrollToUpload}>
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M6 9l6 6 6-6" /></svg>
+                </button>
+              </div>
+
+              <div className="kcv-sec kcv-sec-upload" ref={uploadRef}>
+                <h2 className="kcv-sec-h kcv-reveal">{L('지금 CV를 올려두세요', 'Upload your CV now', 'Tải CV của bạn lên ngay')}</h2>
+                <div className="kcv-upload kcv-reveal kcv-reveal-d1">
+                  <div
+                    className="kcv-drop"
+                    onClick={() => fileRef.current?.click()}
+                    onDragOver={e => { e.preventDefault(); e.currentTarget.classList.add('over') }}
+                    onDragLeave={e => e.currentTarget.classList.remove('over')}
+                    onDrop={e => { e.preventDefault(); e.currentTarget.classList.remove('over'); handleFile(e.dataTransfer.files?.[0]) }}
+                  >
+                    <img src="/korean-cv/upload.png" className="kcv-drop-ico" alt="" />
+                    <div className="kcv-drop-t">{L('CV 파일 올리기', 'Upload your CV', 'Tải file CV lên')}</div>
+                    <div className="kcv-drop-s">{L('클릭 또는 드래그 · PDF, DOC, DOCX · 최대 10MB', 'Click or drag & drop · PDF, DOC, DOCX · max 10MB', 'Nhấp hoặc kéo thả · PDF, DOC, DOCX · tối đa 10MB')}</div>
+                  </div>
+                  {file && (
+                    <div className="kcv-file">
+                      <span>📎 {file.name}</span>
+                      <button onClick={() => { setFile(null); idbClearCv().catch(() => {}) }}>{L('삭제', 'remove', 'xóa')}</button>
+                    </div>
+                  )}
+                  <button className="kcv-cta" onClick={onCta} disabled={status === 'submitting'}>
+                    {status === 'submitting'
+                      ? L('접수 중...', 'Submitting...', 'Đang gửi...')
+                      : !file
+                        ? L('CV 선택하기', 'Choose your CV', 'Chọn file CV')
+                        : !user
+                          ? L('Google 로그인하고 요청하기', 'Sign in with Google & request', 'Đăng nhập Google & gửi yêu cầu')
+                          : L('무료로 요청하기', 'Request for free', 'Gửi yêu cầu miễn phí')}
+                  </button>
+                  <div className="kcv-cta-note">
+                    {L('무료예요. 완성된 이력서는 이메일로 보내드리고, 채용 중인 한국 기업 매칭에도 활용돼요.',
+                      "It's free. The finished resume is emailed to you and also used to match you with Korean companies hiring now.",
+                      'Hoàn toàn miễn phí. Hồ sơ hoàn chỉnh sẽ được gửi qua email và dùng để kết nối bạn với các công ty Hàn đang tuyển.')}
+                  </div>
+                  {errMsg && <div className="kcv-err">{errMsg}</div>}
+                  <input ref={fileRef} type="file" accept=".pdf,.doc,.docx" style={{ display: 'none' }}
+                    onClick={e => { e.currentTarget.value = '' }}
+                    onChange={e => handleFile(e.target.files?.[0])} />
+                </div>
+              </div>
             </>
           )}
         </div>

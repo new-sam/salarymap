@@ -83,6 +83,8 @@ export default function App({ Component, pageProps }) {
   // /ktc 는 FYI 헤더(GlobalNav)·푸터(GlobalFooter)를 그대로 쓰는 캠페인 랜딩.
   // 자체로 갖는 건 섹션 탭바뿐이고, 하단 탭바·앱 설치 모달만 전환 동선을 끊어서 제외한다.
   const isStandaloneLanding = router.pathname.startsWith('/ktc');
+  // /korean-cv 광고 랜딩(모바일 메인) — 하단 탭바·앱 유도 모달 없이 전환에만 집중.
+  const isKcvLanding = router.pathname === '/korean-cv';
 
   // Flag the body so the mobile-only top/bottom reservations (52/60px in
   // globals.css) collapse for company pages — they render their own header.
@@ -181,10 +183,10 @@ export default function App({ Component, pageProps }) {
           <GlobalFooter />
         )}
       </div>
-      {!isCompany && !isJobDetail && !isCard && !isAdmin && !isLogin && !isStandaloneLanding && <MobileTabBar />}
+      {!isCompany && !isJobDetail && !isCard && !isAdmin && !isLogin && !isStandaloneLanding && !isKcvLanding && <MobileTabBar />}
       <GlobalLoginModal />
       <GoogleOneTap />
-      {!isAdmin && !isAdLanding && !isCard && !isCompany && !isLogin && !isStandaloneLanding && <AppDownloadModal />}
+      {!isAdmin && !isAdLanding && !isCard && !isCompany && !isLogin && !isStandaloneLanding && !isKcvLanding && <AppDownloadModal />}
       <Toaster
         position="bottom-right"
         richColors
