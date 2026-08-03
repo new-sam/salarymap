@@ -4,15 +4,11 @@
 // Vercel cron이 Authorization: Bearer ${CRON_SECRET} 로 호출.
 // vercel.json crons: { "path": "/api/cron/parse-public-resumes", "schedule": "0 5 * * *" }  (05:00 UTC = 12:00 ICT)
 // 수동 점검: GET ?dry=1 — 파싱 대상 수만 반환(파싱 안 함).
+// 슬랙 알림은 폐지(8/3): 실패분이 매일 같은 6명(빈 resume_url 1 + 스캔 이미지 PDF 5)이라
+// 영구 재시도 → 매일 같은 에러가 뜨는 노이즈였다. 결과는 응답 JSON/Vercel 로그로 확인.
 import { parseResumeForUser, findPublicUnparsed } from '../../../lib/parseResume'
 
 const MAX_PER_RUN = 20 // OpenAI 비용/Vercel 타임아웃 여유. 밀리면 다음 날 이어서 처리.
-
-async function notifySlack(text) {
-  const url = process.env.SLACK_CONTACT_WEBHOOK_URL || process.env.SLACK_WEBHOOK_URL
-  if (!url) return
-  try { await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ text }) }) } catch (_) {}
-}
 
 export default async function handler(req, res) {
   const dry = req.query.dry === '1'
@@ -30,7 +26,6 @@ export default async function handler(req, res) {
       try { await parseResumeForUser(id); ok++ }
       catch (e) { fail++; errors.push(`${id.slice(0, 8)}: ${e.message}`) }
     }
-    if (ok || fail) await notifySlack(`🧩 공개 이력서 파싱 cron: 성공 ${ok} / 실패 ${fail}${fail ? ` (${errors.slice(0, 3).join(', ')})` : ''}`)
     return res.json({ processed: ids.length, ok, fail, errors })
   } catch (e) {
     return res.status(500).json({ error: e.message })

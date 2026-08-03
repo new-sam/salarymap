@@ -32,7 +32,7 @@ const DAILY_DAYS = 21
 // 8월 목표(승주, 마감 8/10). "등록 인재풀" = 이력서를 올린 회원, "등록 비율" = 가입자 중 그 비율.
 // 개발:비개발은 직군 분류(talent-supply와 동일 normalizePosition) 기준이고,
 // 기획·디자인(product)은 비개발에 포함한다. 한국어/영어는 목표선 없이 현황만 본다.
-const GOAL = { deadline: '2026-08-10', pool: 1500, rate: 0.5, techShare: 0.6 }
+const GOAL = { deadline: '2026-08-10', pool: 2000, rate: 0.5, techShare: 0.6 }
 
 const GROUP_OF = Object.fromEntries(CATEGORIES.map((c) => [c.key, c.group]))
 // position이 비면 desired_roles로 폴백 — 인재 공급/비개발 풀 탭과 같은 규칙.
