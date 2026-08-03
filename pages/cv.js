@@ -2116,10 +2116,12 @@ export default function CvLanding() {
         .cv-hot-title { font-size: 15px; font-weight: 800; color: #1a1612; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .cv-hot-co { font-size: 13px; color: #8a8073; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .cv-hot-line { display: flex; align-items: baseline; gap: 8px; margin-top: 5px; min-width: 0; }
+        /* 급여는 크기·굵기로만 세운다 — 주황은 이 사이트에서 '누르는 것'의 색이라
+           여기 쓰면 클릭 가능해 보이고, 같은 카드의 지원 버튼과도 힘이 갈린다. */
         .cv-hot-sal {
           flex-shrink: 0;
-          font-size: 15px; font-weight: 900; letter-spacing: -0.01em;
-          color: #ff6000; font-variant-numeric: tabular-nums;
+          font-size: 16px; font-weight: 900; letter-spacing: -0.02em;
+          color: #1a1612; font-variant-numeric: tabular-nums;
         }
         .cv-hot-meta { font-size: 12px; color: #a89f92; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .cv-hot-btn {
