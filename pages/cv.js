@@ -2111,7 +2111,9 @@ export default function CvLanding() {
           text-decoration: none;
           color: inherit;
         }
-        .cv-hot-open:hover .cv-hot-title { color: #ff6000; }
+        /* 호버 반응은 급여가 받는다 — 이 목록에서 눈이 가야 할 값이 급여라
+           마우스를 올렸을 때 살아나는 것도 급여여야 한다. */
+        .cv-hot-open:hover .cv-hot-sal { color: #ff6000; }
         .cv-hot-main { flex: 1; min-width: 0; }
         .cv-hot-title { font-size: 15px; font-weight: 800; color: #1a1612; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .cv-hot-co { font-size: 13px; color: #8a8073; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -2122,6 +2124,7 @@ export default function CvLanding() {
           flex-shrink: 0;
           font-size: 16px; font-weight: 900; letter-spacing: -0.02em;
           color: #1a1612; font-variant-numeric: tabular-nums;
+          transition: color .15s ease;
         }
         .cv-hot-meta { font-size: 12px; color: #a89f92; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .cv-hot-btn {
