@@ -757,20 +757,6 @@ export default function CvLanding() {
                   </div>
                 )}
 
-                {/* 등록의 효용을 업로드 직전에 붙인다 — 이탈이 히어로가 아니라 파일 고르는 순간에 난다.
-                    수치는 승주가 대시보드에서 종합한 값(등록자 전체 평균). */}
-                {!file && (
-                  <div className="cv-proof">
-                    <div className="cv-proof-row">
-                      <b>7</b><span>{t('cv.proof.offers')}</span>
-                    </div>
-                    <div className="cv-proof-row">
-                      <b>85%</b><span>{t('cv.proof.passRate')}</span>
-                    </div>
-                    <div className="cv-proof-note">{t('cv.proof.note')}</div>
-                  </div>
-                )}
-
                 {/* ─── STEP 1: 이력서 첨부 ─── */}
                 <div className={`cv-stepblock ${file ? 'done' : ''}`}>
                   <div className="cv-stepblock-label">
@@ -2493,43 +2479,6 @@ export default function CvLanding() {
           animation: cvSpin 0.8s linear infinite;
         }
         @keyframes cvSpin { to { transform: rotate(360deg); } }
-        /* 등록 효용(오퍼 수·서류 합격률) — 업로드 직전 이탈 지점에 붙는 블록 */
-        .cv-proof {
-          margin-top: 18px;
-          padding: 14px 16px;
-          background: #fff6ef;
-          border: 1px solid rgba(255, 96, 0, 0.16);
-          border-radius: 14px;
-        }
-        .cv-proof-row {
-          display: flex;
-          align-items: center;
-          gap: 12px;
-          padding: 5px 0;
-        }
-        .cv-proof-row b {
-          flex: 0 0 58px;
-          font-size: 26px;
-          font-weight: 800;
-          color: #ff6000;
-          line-height: 1.15;
-          letter-spacing: -0.02em;
-        }
-        /* keep-all: 한국어가 단어 중간에서 잘려 좁은 화면에서 지저분해지는 걸 막는다 */
-        .cv-proof-row span {
-          font-size: 13.5px;
-          font-weight: 600;
-          line-height: 1.4;
-          color: #1a1612;
-          word-break: keep-all;
-        }
-        .cv-proof-note {
-          margin-top: 6px;
-          font-size: 11.5px;
-          line-height: 1.5;
-          color: #9a9186;
-          word-break: keep-all;
-        }
         /* Step block — visual chunking inside form card */
         .cv-stepblock {
           margin-top: 18px;
