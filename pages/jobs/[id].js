@@ -11,6 +11,7 @@ import { getStoredUtm } from '../../lib/utm'
 import { isSalaryNegotiable } from '../../utils/salary'
 import { track as trackVisit, getClientId, mirrorClarity } from '../../lib/track'
 import { confirmAppliedInline } from '../../lib/applyConversion'
+import { idbPutCv, idbGetCv, idbClearCv } from '../../lib/pendingCv'
 
 // 스토리지 URL에서 원본 이력서 파일명 복원 (업로드 시 `${timestamp}_${safeName}`로 저장됨)
 function resumeNameFromUrl(url) {
@@ -90,6 +91,26 @@ export default function JobDetailPage({ job }) {
     })
   }, [job.id])
 
+  // OAuth 복귀(?continue=1): 로그인 전에 첨부한 CV 를 IndexedDB 에서 복원해 이어서 제출한다.
+  const oauthResumeHandled = useRef(false)
+  useEffect(() => {
+    if (!isLoggedIn || router.query.continue !== '1') return
+    if (oauthResumeHandled.current) return
+    oauthResumeHandled.current = true
+    ;(async () => {
+      const stored = await idbGetCv()
+      if (!stored?.blob) return
+      idbClearCv()
+      if (appliedAlready) return
+      const f = new File([stored.blob], stored.name, { type: stored.type })
+      setResumeFile(f)
+      setShowApplyForm(true)
+      // 유저가 로그인 직전에 이미 제출을 눌렀던 흐름이라 복원한 파일로 자동 제출한다.
+      // (짧은 지연은 복원된 폼을 잠깐 보여주기 위함 — /cv 의 auto-upload 와 동일)
+      setTimeout(() => handleApply(f), 400)
+    })()
+  }, [isLoggedIn, router.query])
+
   const track = (event, page, meta) => {
     // clientId/userId 포함 — 익명 방문자 단위 퍼널 dedup용 (jobs.js 목록 헬퍼와 동일 기준)
     mirrorClarity(event)
@@ -108,20 +129,22 @@ export default function JobDetailPage({ job }) {
   // 이력서 파일은 jobs.js와 같은 방식으로 클라이언트에서 스토리지에 올리고 URL만 JSON으로
   // 보낸다. (기존 multipart FormData는 /api/job-applications가 JSON 파서만 써서 400으로
   // 전부 유실됐고, 응답 체크도 없어 유저에겐 지원 완료로 보였음)
-  const handleApply = async () => {
-    if ((!resumeFile && !profileResumeUrl) || applying) return
+  // fileOverride: OAuth 복귀 직후 state 반영을 기다리지 않고 복원한 파일로 바로 제출할 때 사용
+  const handleApply = async (fileOverride) => {
+    const file = fileOverride || resumeFile
+    if ((!file && !profileResumeUrl) || applying) return
     setApplying(true)
     try {
       const s = (await supabase.auth.getSession()).data.session
       const token = s?.access_token
       let resumeUrl = profileResumeUrl
-      if (resumeFile && s) {
-        const safeName = resumeFile.name.replace(/[^a-zA-Z0-9._-]/g, '_')
+      if (file && s) {
+        const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_')
         const path = `${s.user.id}/${Date.now()}_${safeName}`
-        const { error: upErr } = await supabase.storage.from('resumes').upload(path, resumeFile, {
+        const { error: upErr } = await supabase.storage.from('resumes').upload(path, file, {
           cacheControl: '3600',
           upsert: false,
-          contentType: resumeFile.type || 'application/octet-stream',
+          contentType: file.type || 'application/octet-stream',
         })
         if (upErr) {
           alert(t('jobs.cvUploadError', { error: upErr.message }))
@@ -399,8 +422,16 @@ export default function JobDetailPage({ job }) {
                     <div className="ap-up-t" style={{ whiteSpace: 'pre-line' }}>{t('jobs.dragCV')}</div>
                   </div>
                 )}
-                <button className="jd-apply-btn" style={{ width: '100%', marginTop: 12 }} onClick={() => {
-                  if (!isLoggedIn) { localStorage.setItem('fyi_login_return', `/jobs/${job.id}`); supabase.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: window.location.origin + '/auth/callback' } }); return; }
+                <button className="jd-apply-btn" style={{ width: '100%', marginTop: 12 }} onClick={async () => {
+                  if (!isLoggedIn) {
+                    // 첨부 파일은 OAuth 리다이렉트에서 state 가 날아가므로 IndexedDB 에
+                    // 보관했다가 복귀(?continue=1) 후 복원해 이어서 제출한다. (/cv 와 같은 패턴)
+                    if (resumeFile) await idbPutCv(resumeFile).catch(() => {})
+                    const dest = `/jobs/${job.id}?continue=1`
+                    localStorage.setItem('fyi_login_return', dest)
+                    window.location.href = '/api/auth/google?return=' + encodeURIComponent(dest)
+                    return
+                  }
                   handleApply()
                 }} disabled={applying || (!resumeFile && !profileResumeUrl)}>
                   {!isLoggedIn ? t('jobs.loginToApply') : applying ? t('jobs.sending') : t('jobs.submitApplication')}
