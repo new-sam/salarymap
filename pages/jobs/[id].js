@@ -7,6 +7,8 @@ import { supabase } from '../../lib/supabaseClient'
 import { useT } from '../../lib/i18n'
 import Icon from '../../components/Icon'
 import { DEFAULT_IMAGES, roleLabel, DEFAULT_WORK_DAYS, DEFAULT_WORK_HOURS, DEFAULT_PAID_LEAVE, DEFAULT_CONTRACT } from '../../constants/jobs'
+import { Meta } from '../../components/ktc/JobBoard'
+import { BRAND, c, s } from '../../components/ktc/ktcStyles'
 import { getStoredUtm } from '../../lib/utm'
 import { isSalaryNegotiable } from '../../utils/salary'
 import { track as trackVisit, getClientId, mirrorClarity } from '../../lib/track'
@@ -24,6 +26,27 @@ function decodeHTML(str) {
   if (!el) return str
   el.innerHTML = str
   return el.value
+}
+
+/* 근무형태 칩 — /ktc 상세와 같은 규칙. 나머지 메타 칩과 크기·모양은 같고 색으로만
+   구분해 회색 줄 맨 앞에서 먼저 읽히게 한다. 주황은 급여 전용이라 여기 쓰지 않는다. */
+const WORK_TYPE_TONE = {
+  Remote: { bg: '#E7F7EF', border: '#A3E0C4', text: '#0B7A4B' },
+  Hybrid: { bg: '#F1ECFE', border: '#CDBDF7', text: '#6429CE' },
+  'On-site': { bg: '#EAF2FE', border: '#B7D3FB', text: '#1B64DA' },
+}
+
+function WorkType({ value }) {
+  if (!value) return null
+  const tone = WORK_TYPE_TONE[value] || WORK_TYPE_TONE['On-site']
+  return (
+    <span style={{
+      padding: '4px 9px', borderRadius: 6, background: tone.bg,
+      border: `1px solid ${tone.border}`, fontSize: 11.5, fontWeight: 700, color: tone.text,
+    }}>
+      {value}
+    </span>
+  )
 }
 
 export async function getServerSideProps({ params }) {
@@ -47,7 +70,6 @@ export default function JobDetailPage({ job }) {
   const fileRef = useRef(null)
   const { t, lang } = useT()
 
-  const [carouselIdx, setCarouselIdx] = useState(0)
   const [isLoggedIn, setIsLoggedIn] = useState(false)
   const [session, setSession] = useState(null)
   const [user, setUser] = useState(null)
@@ -177,14 +199,54 @@ export default function JobDetailPage({ job }) {
 
   const typeLabel = (t) => t === 'remote' ? 'Remote' : t === 'hybrid' ? 'Hybrid' : t === 'onsite' ? 'On-site' : t || ''
 
-  const uploaded = job.images?.length ? job.images : []
-  const fallback = job.image_url || DEFAULT_IMAGES[0]
-  const heroImages = uploaded.length ? uploaded : [fallback]
   const ogImage = job.image_url || job.images?.[0] || job.logo_url || DEFAULT_IMAGES[0]
   const ogTitle = `${job.title} at ${job.company}`
   const ogDesc = job.salary_min > 0
     ? `${Math.round(job.salary_min / 1e6)}M–${Math.round(job.salary_max / 1e6)}M VND · ${typeLabel(job.type)} · ${job.location || 'Vietnam'}`
     : `${typeLabel(job.type)} · ${job.location || 'Vietnam'}`
+
+  // ── 상세 표시값 (/ktc 상세와 같은 순서: 급여 → 칩 줄 → 본문 블록) ──
+  const salaryText = job.salary_min > 0
+    ? `${Math.round(job.salary_min / 1e6)}M – ${Math.round(job.salary_max / 1e6)}M VND`
+    : isSalaryNegotiable(job) ? t('jobs.salaryNegotiable') : ''
+
+  const expText = !job.experience_min && !job.experience_max
+    ? t('jobs.yearsAny')
+    : job.experience_max >= 30
+      ? t('jobs.yearsMin', { min: job.experience_min || 0 })
+      : t('jobs.years', { min: job.experience_min, max: job.experience_max })
+
+  const deadlineText = job.deadline
+    ? (() => {
+        const days = Math.ceil((new Date(job.deadline) - new Date()) / 86400000)
+        return lang === 'vi'
+          ? (days === 0 ? t('jobs.ddayToday') : days > 0 ? t('jobs.dday', { days }) : 'Đã đóng')
+          : days >= 0 ? `D-${days}` : 'Closed'
+      })()
+    : t('jobs.ongoing')
+
+  const descText = decodeHTML(job.description)
+    || `${job.company} is looking for a ${job.title} to join their team in ${job.location}.`
+
+  // 업로드된 실제 사진만 쓴다 — DEFAULT_IMAGES 스톡 사진은 정보가 없는데 첫 화면을
+  // 통째로 먹어서 공고 본문을 접히게 만들던 원인이다. 사진은 본문 아래 갤러리로 내린다.
+  const gallery = job.images?.length ? job.images : (job.image_url ? [job.image_url] : [])
+
+  const workItems = [
+    { icon: 'calendar', label: 'Work Days', value: job.work_days || DEFAULT_WORK_DAYS },
+    { icon: 'clock', label: 'Work Hours', value: job.work_hours || DEFAULT_WORK_HOURS },
+    { icon: 'mapPin', label: 'Work Type', value: job.type === 'remote' ? 'Fully Remote' : job.type === 'hybrid' ? 'Hybrid (Office + Remote)' : 'On-site' },
+    { icon: 'palmTree', label: 'Paid Leave', value: job.paid_leave || DEFAULT_PAID_LEAVE },
+    { icon: 'clipboard', label: 'Contract', value: job.contract_type || DEFAULT_CONTRACT },
+    { icon: 'hospital', label: 'Insurance', value: 'Social & Health Insurance' },
+  ]
+
+  const openApply = () => {
+    setShowApplyForm(true)
+    track('click_apply_button', `/jobs/${job.id}`, { jobId: job.id, title: job.title, company: job.company })
+    // 모바일에선 지원 패널이 본문 아래에 있다 — 바 버튼을 눌렀을 때 거기로 데려간다.
+    setTimeout(() => document.getElementById('jd-apply')?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 60)
+  }
 
   return (
     <>
@@ -203,333 +265,278 @@ export default function JobDetailPage({ job }) {
       </Head>
 
 
-      <div className="jd-page">
-        <div className="jd-page-inner">
-          {/* Back link */}
-          <Link href="/jobs" className="jd-page-back">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+      <div className="jd-page" style={{ background: c.bg, color: c.text, minHeight: '100vh' }}>
+        <div className="jd-pad" style={{ ...s.container, padding: '28px clamp(18px, 4vw, 40px) var(--jd-pb)' }}>
+          <Link href="/jobs" className="jd-back">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 6l-6 6 6 6"/></svg>
             {t('jobs.back') || 'Back to Jobs'}
           </Link>
 
-          {/* Hero image / Carousel */}
-          <div style={{ position: 'relative' }}>
-            <div className="jd-img" style={{
-              backgroundImage: `url(${heroImages[carouselIdx % heroImages.length]})`,
-            }} />
-            {heroImages.length > 1 && (
-              <>
-                <button onClick={() => setCarouselIdx(i => (i - 1 + heroImages.length) % heroImages.length)} style={{
-                  position: 'absolute', top: '50%', left: 10, transform: 'translateY(-50%)',
-                  width: 32, height: 32, borderRadius: '50%', background: 'rgba(0,0,0,0.5)',
-                  color: '#fff', border: 'none', fontSize: 16, cursor: 'pointer', display: 'flex',
-                  alignItems: 'center', justifyContent: 'center',
-                }}>‹</button>
-                <button onClick={() => setCarouselIdx(i => (i + 1) % heroImages.length)} style={{
-                  position: 'absolute', top: '50%', right: 10, transform: 'translateY(-50%)',
-                  width: 32, height: 32, borderRadius: '50%', background: 'rgba(0,0,0,0.5)',
-                  color: '#fff', border: 'none', fontSize: 16, cursor: 'pointer', display: 'flex',
-                  alignItems: 'center', justifyContent: 'center',
-                }}>›</button>
-                <div style={{
-                  position: 'absolute', bottom: 10, left: '50%', transform: 'translateX(-50%)',
-                  display: 'flex', gap: 6,
-                }}>
-                  {heroImages.map((_, i) => (
-                    <div key={i} onClick={() => setCarouselIdx(i)} style={{
-                      width: 7, height: 7, borderRadius: '50%', cursor: 'pointer',
-                      background: i === carouselIdx % heroImages.length ? '#fff' : 'rgba(255,255,255,0.4)',
-                    }} />
-                  ))}
-                </div>
-              </>
-            )}
-          </div>
-
-          <div className="jd-body">
-            {/* Company */}
-            <div className="jd-company">
-              <div className="jd-co-ini">{job.company_initials || job.company.slice(0, 2).toUpperCase()}</div>
-              <div>
-                <div className="jd-co-name">{job.company}</div>
-                <div className="jd-co-loc">
-                  {job.location} · {typeLabel(job.type)}
-                  {job.company_url && <> · <a href={job.company_url} target="_blank" rel="noopener noreferrer" style={{ color: '#ff4400', textDecoration: 'none' }}>Website</a></>}
-                </div>
-              </div>
-            </div>
-
-            {/* Title & Salary */}
-            <div className="jd-title">{job.title}</div>
-            {job.salary_min > 0 ? (
-              <div className="jd-salary">{Math.round(job.salary_min / 1e6)}M – {Math.round(job.salary_max / 1e6)}M VND</div>
-            ) : isSalaryNegotiable(job) ? (
-              <div className="jd-salary">{t('jobs.salaryNegotiable')}</div>
-            ) : null}
-
-            {/* Tech Stack */}
-            {job.tech_stack?.length > 0 && (
-              <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 16 }}>
-                {job.tech_stack.map(t => (
-                  <span key={t} style={{ fontSize: 12, fontWeight: 600, color: '#333', background: '#f0f0f0', padding: '4px 10px', borderRadius: 5 }}>{t}</span>
-                ))}
-              </div>
-            )}
-
-            {/* Meta grid */}
-            <div className="jd-meta-grid">
-              <div className="jd-meta-item">
-                <div className="jd-meta-label">{t('jobs.experience')}</div>
-                <div className="jd-meta-value">{!job.experience_min && !job.experience_max ? t('jobs.yearsAny') : (!job.experience_max || job.experience_max >= 30) ? t('jobs.yearsMin', { min: job.experience_min || 0 }) : t('jobs.years', { min: job.experience_min, max: job.experience_max })}</div>
-              </div>
-              <div className="jd-meta-item">
-                <div className="jd-meta-label">{t('jobs.position')}</div>
-                <div className="jd-meta-value">{roleLabel(job.role, lang)}</div>
-              </div>
-              <div className="jd-meta-item">
-                <div className="jd-meta-label">{t('jobs.type')}</div>
-                <div className="jd-meta-value">{typeLabel(job.type)}</div>
-              </div>
-              <div className="jd-meta-item">
-                <div className="jd-meta-label">{t('jobs.region')}</div>
-                <div className="jd-meta-value" style={{ textTransform: 'capitalize' }}>{job.country}</div>
-              </div>
-              {job.company_size && (
-                <div className="jd-meta-item">
-                  <div className="jd-meta-label">Company Size</div>
-                  <div className="jd-meta-value">{job.company_size}</div>
-                </div>
-              )}
-              {job.headcount && (
-                <div className="jd-meta-item">
-                  <div className="jd-meta-label">Headcount</div>
-                  <div className="jd-meta-value">{job.headcount}</div>
-                </div>
-              )}
-              <div className="jd-meta-item">
-                <div className="jd-meta-label">Deadline</div>
-                <div className="jd-meta-value">{job.deadline ? (() => {
-                  const days = Math.ceil((new Date(job.deadline) - new Date()) / 86400000)
-                  const ddayText = lang === 'vi' ? (days === 0 ? t('jobs.ddayToday') : days > 0 ? t('jobs.dday', { days }) : 'Đã đóng') : days >= 0 ? `D-${days}` : 'Closed'
-                  return `${job.deadline} (${ddayText})`
-                })() : t('jobs.ongoing')}</div>
-              </div>
-            </div>
-
-            <div className="jd-divider" />
-
-            {/* Work Information */}
-            <div className="jd-section-title">Work Information</div>
-            <div className="jd-work-info">
-              <div className="jd-work-item">
-                <div className="jd-work-icon"><Icon name="calendar" size={18} color="#555" /></div>
-                <div>
-                  <div className="jd-work-label">Work Days</div>
-                  <div className="jd-work-value">{job.work_days || DEFAULT_WORK_DAYS}</div>
-                </div>
-              </div>
-              <div className="jd-work-item">
-                <div className="jd-work-icon"><Icon name="clock" size={18} color="#555" /></div>
-                <div>
-                  <div className="jd-work-label">Work Hours</div>
-                  <div className="jd-work-value">{job.work_hours || DEFAULT_WORK_HOURS}</div>
-                </div>
-              </div>
-              <div className="jd-work-item">
-                <div className="jd-work-icon"><Icon name="mapPin" size={18} color="#555" /></div>
-                <div>
-                  <div className="jd-work-label">Work Type</div>
-                  <div className="jd-work-value">{job.type === 'remote' ? 'Fully Remote' : job.type === 'hybrid' ? 'Hybrid (Office + Remote)' : 'On-site'}</div>
-                </div>
-              </div>
-              <div className="jd-work-item">
-                <div className="jd-work-icon"><Icon name="palmTree" size={18} color="#555" /></div>
-                <div>
-                  <div className="jd-work-label">Paid Leave</div>
-                  <div className="jd-work-value">{job.paid_leave || DEFAULT_PAID_LEAVE}</div>
-                </div>
-              </div>
-              <div className="jd-work-item">
-                <div className="jd-work-icon"><Icon name="clipboard" size={18} color="#555" /></div>
-                <div>
-                  <div className="jd-work-label">Contract</div>
-                  <div className="jd-work-value">{job.contract_type || DEFAULT_CONTRACT}</div>
-                </div>
-              </div>
-              <div className="jd-work-item">
-                <div className="jd-work-icon"><Icon name="hospital" size={18} color="#555" /></div>
-                <div>
-                  <div className="jd-work-label">Insurance</div>
-                  <div className="jd-work-value">Social & Health Insurance</div>
-                </div>
-              </div>
-            </div>
-
-            <div className="jd-divider" />
-
-            {/* Description */}
-            <div className="jd-section-title">{t('jobs.about')}</div>
-            <div className="jd-desc">
-              {decodeHTML(job.description) || `${job.company} is looking for a ${job.title} to join their team in ${job.location}.\n\nThis is a ${job.type} position offering ${Math.round(job.salary_min / 1e6)}M–${Math.round(job.salary_max / 1e6)}M VND, ideal for candidates with ${job.experience_min}–${job.experience_max} years of experience in ${job.role}.\n\nOur headhunter team will personally introduce you and support you throughout the process.`}
-            </div>
-
-            {/* Benefits */}
-            {job.benefits?.length > 0 && (
-              <>
-                <div className="jd-divider" />
-                <div className="jd-section-title">Benefits</div>
-                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 24 }}>
-                  {job.benefits.map(b => (
-                    <span key={b} style={{ fontSize: 13, color: '#166534', background: '#f0fff4', border: '1px solid #86efac', padding: '5px 12px', borderRadius: 6 }}>{decodeHTML(b)}</span>
-                  ))}
-                </div>
-              </>
-            )}
-
-            {/* Hiring Process */}
-            {job.hiring_process && (
-              <>
-                <div className="jd-divider" />
-                <div className="jd-section-title">Hiring Process</div>
-                <div style={{ fontSize: 14, color: '#444', marginBottom: 24 }}>{decodeHTML(job.hiring_process)}</div>
-              </>
-            )}
-
-            <div className="jd-divider" />
-
-            {/* Apply Form */}
-            {showApplyForm && !applied && !appliedAlready && (
-              <div style={{ marginBottom: 24 }}>
-                <div style={{ fontSize: 16, fontWeight: 800, color: '#111', marginBottom: 14 }}>{t('jobs.applyThis')}</div>
-                <div style={{ fontSize: 13, fontWeight: 600, color: '#555', marginBottom: 6 }}>{t('jobs.cvRequired') || 'Resume (required)'}</div>
-                <input ref={fileRef} type="file" accept=".pdf,.docx,.doc" style={{ display: 'none' }} onChange={e => {
-                  const f = e.target.files?.[0]
-                  if (f && f.size <= 5 * 1024 * 1024) setResumeFile(f)
-                  else if (f) alert('Max 5MB')
-                }} />
-                {(resumeFile || profileResumeUrl) ? (
-                  <>
-                    <div className="ap-file">
-                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#ff4400" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <div className="ap-file-name">{resumeFile ? resumeFile.name : resumeNameFromUrl(profileResumeUrl)}</div>
-                        {!resumeFile && <div className="ap-file-sub">{t('jobs.registeredResume')}</div>}
-                      </div>
-                    </div>
-                    <button type="button" className="ap-file-swap" onClick={() => fileRef.current?.click()}>{t('jobs.uploadOtherResume')}</button>
-                  </>
+          <div className="jd-grid">
+            {/* 본문 */}
+            <div style={{ minWidth: 0 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                {job.logo_url ? (
+                  <img src={job.logo_url} alt={job.company} style={{ width: 46, height: 46, borderRadius: 10, objectFit: 'contain', border: `1px solid ${c.line}`, background: '#fff', flexShrink: 0 }} />
                 ) : (
-                  <div className="ap-up" onClick={() => fileRef.current?.click()}>
-                    <div className="ap-up-t" style={{ whiteSpace: 'pre-line' }}>{t('jobs.dragCV')}</div>
+                  <div style={{ width: 46, height: 46, borderRadius: 10, border: `1px solid ${c.line}`, background: c.surfaceHi, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 800, color: c.textFaint, flexShrink: 0 }}>
+                    {job.company_initials || job.company.slice(0, 2).toUpperCase()}
                   </div>
                 )}
-                <button className="jd-apply-btn" style={{ width: '100%', marginTop: 12 }} onClick={async () => {
-                  if (!isLoggedIn) {
-                    // 첨부 파일은 OAuth 리다이렉트에서 state 가 날아가므로 IndexedDB 에
-                    // 보관했다가 복귀(?continue=1) 후 복원해 이어서 제출한다. (/cv 와 같은 패턴)
-                    if (resumeFile) await idbPutCv(resumeFile).catch(() => {})
-                    const dest = `/jobs/${job.id}?continue=1`
-                    localStorage.setItem('fyi_login_return', dest)
-                    window.location.href = '/api/auth/google?return=' + encodeURIComponent(dest)
-                    return
-                  }
-                  handleApply()
-                }} disabled={applying || (!resumeFile && !profileResumeUrl)}>
-                  {!isLoggedIn ? t('jobs.loginToApply') : applying ? t('jobs.sending') : t('jobs.submitApplication')}
-                </button>
-              </div>
-            )}
-
-            {applied && (
-              <div style={{ textAlign: 'center', padding: '32px 0' }}>
-                <div style={{ width: 56, height: 56, borderRadius: '50%', background: '#ff4400', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
-                  <Icon name="check" size={24} color="#fff" />
+                <div style={{ minWidth: 0 }}>
+                  <p style={{ fontSize: 14, fontWeight: 750, color: BRAND }}>{job.company}</p>
+                  <div style={{ marginTop: 3, display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', fontSize: 12, color: c.textFaint }}>
+                    {job.location && <span>{job.location}</span>}
+                    {job.location && job.company_url && <span aria-hidden="true">·</span>}
+                    {job.company_url && (
+                      <a href={job.company_url} target="_blank" rel="noreferrer noopener" style={{ display: 'inline-flex', alignItems: 'center', gap: 3, color: c.textDim, fontWeight: 600 }}>
+                        Website
+                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M7 17L17 7M8 7h9v9"/></svg>
+                      </a>
+                    )}
+                  </div>
                 </div>
-                <div style={{ fontSize: 18, fontWeight: 700, color: '#111', marginBottom: 6 }}>{t('jobs.applied')}</div>
-                <div style={{ fontSize: 14, color: '#777', lineHeight: 1.5 }}>{t('jobs.appliedSub')}</div>
               </div>
-            )}
-          </div>
 
-          {/* Floating Apply CTA */}
-          {!showApplyForm && (
-            <div className="jd-apply-float">
-              <div style={{ display: 'flex', gap: 8 }}>
-                <button className="jd-save-btn" onClick={toggleBookmark} title={bookmarked ? t('jobs.saved') : t('jobs.save')}>
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill={bookmarked ? '#ff4400' : 'none'} stroke={bookmarked ? '#ff4400' : '#666'} strokeWidth="2"><path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z"/></svg>
-                </button>
-                {appliedAlready ? (
-                  <button className="jd-apply-btn" disabled style={{ background: '#ccc', flex: 1 }}>
-                    {t('jobs.applied')}
-                  </button>
-                ) : (
-                  <button className="jd-apply-btn" style={{ flex: 1 }} onClick={() => { setShowApplyForm(true); track('click_apply_button', `/jobs/${job.id}`, { jobId: job.id, title: job.title, company: job.company }) }}>
-                    {t('jobs.apply')}
-                  </button>
+              <h1 className="jd-h1">{job.title}</h1>
+
+              {/* 급여 — 구직자가 가장 먼저 찾는 값. 색만으로는 칩 줄에 묻혀서
+                  브랜드 톤 배경 + 좌측 액센트 바로 한 덩어리로 떼어 놓는다. */}
+              {salaryText && (
+                <div className="jd-salary">
+                  <span className="jd-salary-k">{t('jobs.salary') || 'Salary'}</span>
+                  <strong className="jd-salary-v">{salaryText}</strong>
+                </div>
+              )}
+
+              <div className="jd-chips">
+                <WorkType value={typeLabel(job.type)} />
+                <Meta>{roleLabel(job.role, lang)}</Meta>
+                <Meta>{expText}</Meta>
+                {job.headcount ? <Meta>{`×${job.headcount}`}</Meta> : null}
+                <Meta>{deadlineText}</Meta>
+              </div>
+
+              {job.tech_stack?.length > 0 && (
+                <div className="jd-chips">
+                  {job.tech_stack.map(x => <Meta key={x}>{x}</Meta>)}
+                </div>
+              )}
+
+              <div className="jd-blocks">
+                <section>
+                  <h2 className="jd-h2">{t('jobs.about')}</h2>
+                  <p className="jd-text">{descText}</p>
+                </section>
+
+                {job.benefits?.length > 0 && (
+                  <section>
+                    <h2 className="jd-h2">Benefits</h2>
+                    <div className="jd-chips" style={{ marginTop: 10 }}>
+                      {job.benefits.map(b => <Meta key={b}>{decodeHTML(b)}</Meta>)}
+                    </div>
+                  </section>
+                )}
+
+                {job.hiring_process && (
+                  <section>
+                    <h2 className="jd-h2">Hiring Process</h2>
+                    <p className="jd-text">{decodeHTML(job.hiring_process)}</p>
+                  </section>
+                )}
+
+                <section>
+                  <h2 className="jd-h2">Work Information</h2>
+                  <div className="jd-work">
+                    {workItems.map(w => (
+                      <div key={w.label} className="jd-work-item">
+                        <div className="jd-work-icon"><Icon name={w.icon} size={16} color={c.textDim} /></div>
+                        <div style={{ minWidth: 0 }}>
+                          <div className="jd-work-label">{w.label}</div>
+                          <div className="jd-work-value">{w.value}</div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </section>
+
+                {gallery.length > 0 && (
+                  <section>
+                    <h2 className="jd-h2">Photos</h2>
+                    <div className="jd-gallery">
+                      {gallery.map((src, i) => (
+                        <img key={i} src={src} alt="" loading="lazy" />
+                      ))}
+                    </div>
+                  </section>
                 )}
               </div>
             </div>
-          )}
+
+            {/* 지원 패널 — 넓은 화면에서는 오른쪽에 붙어 따라오고, 모바일에서는 본문 아래로 내려온다 */}
+            <aside className="jd-side" id="jd-apply">
+              <div style={{ ...s.card, padding: 22 }}>
+                {applied ? (
+                  <div style={{ textAlign: 'center' }}>
+                    <div style={{ width: 48, height: 48, borderRadius: '50%', background: BRAND, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 12px' }}>
+                      <Icon name="check" size={22} color="#fff" />
+                    </div>
+                    <div style={{ fontSize: 16, fontWeight: 800, color: c.text }}>{t('jobs.applied')}</div>
+                    <div style={{ marginTop: 6, fontSize: 13, color: c.textDim, lineHeight: 1.6 }}>{t('jobs.appliedSub')}</div>
+                  </div>
+                ) : appliedAlready ? (
+                  <>
+                    <p style={{ fontSize: 13.5, lineHeight: 1.7, color: c.textDim }}>{t('jobs.appliedSub')}</p>
+                    <button className="jd-btn" disabled style={{ marginTop: 16, background: c.lineStrong, cursor: 'default' }}>{t('jobs.applied')}</button>
+                  </>
+                ) : showApplyForm ? (
+                  <>
+                    <div style={{ fontSize: 15, fontWeight: 800, color: c.text }}>{t('jobs.applyThis')}</div>
+                    <div style={{ marginTop: 12, fontSize: 12.5, fontWeight: 700, color: c.textDim }}>{t('jobs.cvRequired') || 'Resume (required)'}</div>
+                    <input ref={fileRef} type="file" accept=".pdf,.docx,.doc" style={{ display: 'none' }} onChange={e => {
+                      const f = e.target.files?.[0]
+                      if (f && f.size <= 5 * 1024 * 1024) setResumeFile(f)
+                      else if (f) alert('Max 5MB')
+                    }} />
+                    {(resumeFile || profileResumeUrl) ? (
+                      <>
+                        <div className="jd-file">
+                          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={BRAND} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <div className="jd-file-name">{resumeFile ? resumeFile.name : resumeNameFromUrl(profileResumeUrl)}</div>
+                            {!resumeFile && <div className="jd-file-sub">{t('jobs.registeredResume')}</div>}
+                          </div>
+                        </div>
+                        <button type="button" className="jd-file-swap" onClick={() => fileRef.current?.click()}>{t('jobs.uploadOtherResume')}</button>
+                      </>
+                    ) : (
+                      <div className="jd-up" onClick={() => fileRef.current?.click()}>
+                        <div style={{ fontSize: 12.5, color: c.textFaint, whiteSpace: 'pre-line' }}>{t('jobs.dragCV')}</div>
+                      </div>
+                    )}
+                    <button className="jd-btn" onClick={async () => {
+                      if (!isLoggedIn) {
+                        // 첨부 파일은 OAuth 리다이렉트에서 state 가 날아가므로 IndexedDB 에
+                        // 보관했다가 복귀(?continue=1) 후 복원해 이어서 제출한다. (/cv 와 같은 패턴)
+                        if (resumeFile) await idbPutCv(resumeFile).catch(() => {})
+                        const dest = `/jobs/${job.id}?continue=1`
+                        localStorage.setItem('fyi_login_return', dest)
+                        window.location.href = '/api/auth/google?return=' + encodeURIComponent(dest)
+                        return
+                      }
+                      handleApply()
+                    }} disabled={applying || (!resumeFile && !profileResumeUrl)}>
+                      {!isLoggedIn ? t('jobs.loginToApply') : applying ? t('jobs.sending') : t('jobs.submitApplication')}
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <p style={{ fontSize: 13.5, lineHeight: 1.7, color: c.textDim }}>{t('jobs.applyThis')}</p>
+                    <button className="jd-btn" style={{ marginTop: 16 }} onClick={openApply}>{t('jobs.apply')}</button>
+                    <button className="jd-save" onClick={toggleBookmark}>
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill={bookmarked ? BRAND : 'none'} stroke={bookmarked ? BRAND : c.textFaint} strokeWidth="2"><path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z"/></svg>
+                      {bookmarked ? t('jobs.saved') : t('jobs.save')}
+                    </button>
+                  </>
+                )}
+              </div>
+            </aside>
+          </div>
         </div>
       </div>
 
+      {/* 모바일 — 사이드 패널 대신 하단 고정 바. 본문 공간을 뺏지 않으면서 항상 손에 닿는다. */}
+      {!applied && !appliedAlready && !showApplyForm && (
+        <div className="jd-bar">
+          <button className="jd-save jd-save-bar" onClick={toggleBookmark} aria-label={bookmarked ? t('jobs.saved') : t('jobs.save')}>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill={bookmarked ? BRAND : 'none'} stroke={bookmarked ? BRAND : c.textFaint} strokeWidth="2"><path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z"/></svg>
+          </button>
+          <button className="jd-btn" style={{ flex: 1, marginTop: 0 }} onClick={openApply}>{t('jobs.apply')}</button>
+        </div>
+      )}
+
       <style>{`
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-        body { background: #f7f7f5; font-family: -apple-system, 'Helvetica Neue', Arial, sans-serif; -webkit-font-smoothing: antialiased; }
+        body { background: ${c.bg}; font-family: -apple-system, 'Helvetica Neue', Arial, sans-serif; -webkit-font-smoothing: antialiased; }
 
-        .jd-page { max-width: 720px; margin: 0 auto; padding: 24px 20px 100px; }
-        .jd-page-inner { background: #fafaf8; border-radius: 16px; overflow: hidden; box-shadow: 0 1px 8px rgba(0,0,0,0.06); }
-        .jd-page-back { display: flex; align-items: center; gap: 8px; padding: 14px 20px; font-size: 14px; font-weight: 600; color: #333; text-decoration: none; border-bottom: 1px solid #f0f0f0; }
-        .jd-page-back:hover { background: #f5f5f5; }
+        .jd-back { display: inline-flex; align-items: center; gap: 6; font-size: 13.5px; font-weight: 700; color: ${c.textDim}; text-decoration: none; }
+        .jd-back:hover { color: ${c.text}; }
 
-        .jd-img { width: 100%; max-height: 400px; background: #f0f0f0; background-size: contain; background-position: center; background-repeat: no-repeat; aspect-ratio: 16/9; }
-        .jd-body { padding: 28px 32px 40px; }
-        .jd-company { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; }
-        .jd-co-ini { width: 44px; height: 44px; border-radius: 10px; background: #f0f0f0; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 800; color: #555; flex-shrink: 0; }
-        .jd-co-name { font-size: 15px; font-weight: 600; color: #111; }
-        .jd-co-loc { font-size: 13px; color: #777; }
-        .jd-title { font-size: 22px; font-weight: 800; color: #111; margin-bottom: 8px; letter-spacing: -0.3px; }
-        .jd-salary { font-size: 16px; font-weight: 700; color: #ff4400; margin-bottom: 24px; }
-        .jd-divider { height: 1px; background: #f0f0f0; margin: 24px 0; }
-        .jd-section-title { font-size: 11px; font-weight: 700; color: #999; text-transform: uppercase; letter-spacing: .06em; margin-bottom: 12px; }
-        .jd-desc { font-size: 14px; color: #444; line-height: 1.8; margin-bottom: 24px; white-space: pre-line; }
-        .jd-meta-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 24px; }
-        .jd-meta-item { background: #f9f9f8; border-radius: 8px; padding: 12px 14px; }
-        .jd-meta-label { font-size: 10px; font-weight: 700; color: #999; text-transform: uppercase; letter-spacing: .04em; margin-bottom: 4px; }
-        .jd-meta-value { font-size: 14px; font-weight: 600; color: #111; }
+        .jd-h1 { margin-top: 16px; font-size: clamp(22px, 3.2vw, 32px); font-weight: 800; letter-spacing: -0.025em; line-height: 1.3; color: ${c.text}; word-break: keep-all; }
 
-        .jd-work-info { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 24px; }
-        .jd-work-item { display: flex; align-items: center; gap: 10px; background: #fafafa; border: 1px solid #f0f0f0; border-radius: 10px; padding: 12px 14px; }
-        .jd-work-icon { font-size: 18px; flex-shrink: 0; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; background: #fafaf8; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.06); }
-        .jd-work-label { font-size: 11px; color: #999; font-weight: 600; text-transform: uppercase; letter-spacing: .03em; }
-        .jd-work-value { font-size: 13px; color: #222; font-weight: 600; margin-top: 2px; }
+        /* 급여 — 페이지에서 가장 강한 단일 정보. 좌측 액센트 바 + 브랜드 틴트 배경 */
+        .jd-salary {
+          margin-top: 16px; display: inline-flex; align-items: baseline; gap: 10px;
+          padding: 12px 18px 12px 16px; border-radius: 12px;
+          background: rgba(255,96,0,0.07); border: 1px solid rgba(255,96,0,0.22);
+          border-left: 4px solid ${BRAND};
+        }
+        .jd-salary-k { font-size: 11px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: rgba(255,96,0,0.75); }
+        .jd-salary-v { font-size: clamp(20px, 2.4vw, 26px); font-weight: 900; letter-spacing: -0.02em; color: ${BRAND}; font-variant-numeric: tabular-nums; }
 
-        .jd-apply-float { position: sticky; bottom: 0; background: #fafaf8; padding: 16px 32px; border-top: 1px solid #f0f0f0; z-index: 2; }
-        .jd-apply-btn { width: 100%; padding: 14px; background: #ff4400; color: #fff; border: none; border-radius: 8px; font-size: 15px; font-weight: 700; cursor: pointer; transition: background .15s; font-family: inherit; }
-        .jd-apply-btn:hover { background: #e63d00; }
-        .jd-apply-btn:disabled { opacity: 0.5; cursor: not-allowed; }
-        .jd-save-btn { width: 48px; height: 48px; border-radius: 8px; border: 1px solid #e0e0e0; background: #fafaf8; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all .15s; flex-shrink: 0; }
-        .jd-save-btn:hover { border-color: #ff4400; background: #fff5f0; }
+        .jd-chips { margin-top: 12px; display: flex; gap: 6px; flex-wrap: wrap; }
 
-        .ap-up { border: 1.5px dashed #ddd; border-radius: 8px; padding: 20px; text-align: center; cursor: pointer; margin-bottom: 20px; transition: border-color .15s; }
-        .ap-up:hover { border-color: #999; }
-        .ap-file { display: flex; align-items: center; gap: 10px; border: 1px solid #eee; background: #fafafa; border-radius: 8px; padding: 12px 14px; text-align: left; }
-        .ap-file-name { font-size: 13px; font-weight: 600; color: #111; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-        .ap-file-sub { font-size: 11.5px; color: #999; margin-top: 2px; }
-        .ap-file-swap { display: block; width: 100%; margin: 8px 0 20px; padding: 10px; background: #fff; border: 1px solid #ddd; border-radius: 8px; font-size: 13px; font-weight: 600; color: #555; cursor: pointer; font-family: inherit; transition: border-color .15s; }
-        .ap-file-swap:hover { border-color: #999; }
-        .ap-up-t { font-size: 13px; color: #999; }
-        .ap-up-f { font-size: 13px; color: #111; font-weight: 600; }
+        .jd-blocks { margin-top: 34px; display: grid; gap: 26px; }
+        .jd-h2 { font-size: 15.5px; font-weight: 800; color: ${c.text}; }
+        .jd-text { margin-top: 10px; font-size: 14.5px; line-height: 1.8; color: ${c.textDim}; white-space: pre-line; }
 
-        @media (max-width: 768px) {
-          .jd-page { padding: 0 0 80px; }
-          .jd-page-inner { border-radius: 0; }
-          .jd-body { padding: 20px 16px 32px; }
-          .jd-img { max-height: 280px; }
-          .jd-title { font-size: 18px; }
-          .jd-work-info { grid-template-columns: 1fr; }
-          .jd-apply-float { position: fixed; bottom: 0; left: 0; right: 0; padding: 12px 16px; background: #fafaf8; border-top: 1px solid #f0f0f0; z-index: 100; }
-          .jd-save-btn { width: 44px; height: 44px; }
-          .jd-apply-btn { padding: 12px; font-size: 14px; }
+        .jd-work { margin-top: 12px; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .jd-work-item { display: flex; align-items: center; gap: 10px; background: ${c.surface}; border: 1px solid ${c.line}; border-radius: 10px; padding: 12px 14px; }
+        .jd-work-icon { flex-shrink: 0; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; background: ${c.surfaceHi}; border-radius: 8px; }
+        .jd-work-label { font-size: 10.5px; font-weight: 700; color: ${c.textFaint}; text-transform: uppercase; letter-spacing: .04em; }
+        .jd-work-value { font-size: 13px; font-weight: 600; color: ${c.text}; margin-top: 2px; }
+
+        .jd-gallery { margin-top: 12px; display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 10px; }
+        .jd-gallery img { width: 100%; aspect-ratio: 16/10; object-fit: cover; border-radius: 10px; border: 1px solid ${c.line}; background: ${c.surfaceHi}; }
+
+        .jd-btn {
+          display: block; width: 100%; padding: 14px; border: none; border-radius: 10px;
+          background: ${BRAND}; color: #fff; font-size: 15px; font-weight: 750;
+          cursor: pointer; font-family: inherit; margin-top: 12px;
+        }
+        .jd-btn:hover:not(:disabled) { background: #e65600; }
+        .jd-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        .jd-save {
+          display: flex; align-items: center; justify-content: center; gap: 6px;
+          width: 100%; margin-top: 8px; padding: 11px; border-radius: 10px;
+          border: 1px solid ${c.lineStrong}; background: transparent;
+          font-size: 13.5px; font-weight: 700; color: ${c.textDim}; cursor: pointer; font-family: inherit;
+        }
+        .jd-save:hover { border-color: ${c.textFaint}; }
+
+        .jd-up { margin-top: 8px; border: 1.5px dashed ${c.lineStrong}; border-radius: 10px; padding: 20px; text-align: center; cursor: pointer; }
+        .jd-up:hover { border-color: ${c.textFaint}; }
+        .jd-file { margin-top: 8px; display: flex; align-items: center; gap: 10px; border: 1px solid ${c.line}; background: ${c.surfaceHi}; border-radius: 10px; padding: 12px 14px; }
+        .jd-file-name { font-size: 13px; font-weight: 600; color: ${c.text}; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .jd-file-sub { font-size: 11.5px; color: ${c.textFaint}; margin-top: 2px; }
+        .jd-file-swap { display: block; width: 100%; margin-top: 8px; padding: 10px; background: ${c.surface}; border: 1px solid ${c.line}; border-radius: 10px; font-size: 13px; font-weight: 600; color: ${c.textDim}; cursor: pointer; font-family: inherit; }
+        .jd-file-swap:hover { border-color: ${c.textFaint}; }
+
+        /* 모바일 기본: 1단 + 하단 고정 바. 바 높이만큼 본문 아래 여백을 준다. */
+        :root { --jd-bar: 72px; }
+        .jd-grid { display: grid; grid-template-columns: 1fr; gap: 28px; margin-top: 20px; }
+        .jd-pad { --jd-pb: calc(40px + var(--jd-bar)); }
+        .jd-bar {
+          position: fixed; left: 0; right: 0; bottom: 0; z-index: 300;
+          display: flex; align-items: center; gap: 10px;
+          padding: 10px clamp(16px, 4vw, 24px) calc(10px + env(safe-area-inset-bottom));
+          background: rgba(255,255,255,0.94); backdrop-filter: blur(12px);
+          border-top: 1px solid ${c.line};
+        }
+        .jd-save-bar { width: 46px; margin-top: 0; flex-shrink: 0; }
+        .gfooter { margin-top: 0 !important; }
+
+        @media (max-width: 899px) {
+          .jd-work { grid-template-columns: 1fr; }
+          footer { padding-bottom: calc(24px + var(--jd-bar) + env(safe-area-inset-bottom)) !important; }
+        }
+
+        @media (min-width: 900px) {
+          .jd-grid { grid-template-columns: minmax(0, 1fr) 320px; gap: 40px; align-items: start; }
+          /* 헤더(56) + 여유 — 본문이 길어도 지원 버튼이 따라온다 */
+          .jd-side { position: sticky; top: 80px; }
+          .jd-bar { display: none; }
+          .jd-pad { --jd-pb: clamp(64px, 8vw, 104px); }
         }
       `}</style>
     </>
