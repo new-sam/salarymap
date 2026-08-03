@@ -6,10 +6,8 @@ import Badge, { badgeLabel } from '../components/Badge'
 import { badgeVisual } from '../lib/badgeVisuals'
 import { useT } from '../lib/i18n'
 import { track, getClientId } from '../lib/track'
-import Icon from '../components/Icon'
 import { ROLE_GROUPS } from '../constants/jobs'
 import { completionScore } from '../lib/profileScore'
-import ApplicationCard, { applicationCardCss } from '../components/ApplicationCard'
 import EmploymentTab from '../components/profile/EmploymentTab'
 import BadgesTab from '../components/profile/BadgesTab'
 import LanguageCard from '../components/profile/LanguageCard'
@@ -56,7 +54,7 @@ export default function ProfilePage() {
   const [profile, setProfile] = useState(null)
   const [saving, setSaving] = useState(false)
   const [msg, setMsg] = useState(null)
-  const [tab, setTab] = useState('profile') // profile | posts | employment | badges | applications
+  const [tab, setTab] = useState('profile') // profile | posts | employment | badges
   const [isAdmin, setIsAdmin] = useState(false)
   // 이력서는 이미 있는데(예: /cv·앱에서 등록) 프로필이 빈 유저 — AI 자동 채움 제안
   const [showAiFill, setShowAiFill] = useState(false)
@@ -78,8 +76,6 @@ export default function ProfilePage() {
   const [cvCompany, setCvCompany] = useState(null)
   // 대표 뱃지 — 히어로 헤더 노출용으로 부모 소유, 상세 로직은 BadgesTab.
   const [representativeBadge, setRepresentativeBadge] = useState(null)
-  const [applications, setApplications] = useState([])
-  const [applicationsLoading, setApplicationsLoading] = useState(false)
   const pendingRoute = useRef(null)
   const photoRef = useRef(null)
   const resumeRef = useRef(null)
@@ -254,16 +250,6 @@ export default function ProfilePage() {
       .then(d => setRepresentativeBadge(d.representative_badge ?? null))
       .catch(() => {})
   }, [token])
-
-  useEffect(() => {
-    if (tab !== 'applications' || !user?.id || applications.length > 0) return
-    setApplicationsLoading(true)
-    fetch('/api/my-applications', { headers: { Authorization: `Bearer ${token}` } })
-      .then(r => r.json())
-      .then(d => setApplications(d.data || []))
-      .catch(() => {})
-      .finally(() => setApplicationsLoading(false))
-  }, [tab, user])
 
   // 작성 시작 — dirty 최초 전환 = 실제로 폼에 손을 댄 순간. 로딩 중(form/initialForm 동시 세팅)과
   // AI 파싱(initialForm 까지 동기화)은 dirty 가 아니라서 잡히지 않는다.
@@ -477,7 +463,6 @@ export default function ProfilePage() {
         .pw-post-item:last-child { border-bottom: none; }
         .pw-post-title { font-size: 14px; font-weight: 600; color: #111; margin-bottom: 4px; }
         .pw-post-meta { font-size: 12px; color: #aaa; display: flex; gap: 10px; }
-        ${applicationCardCss}
         .pcard { background: #fff; border: 1px solid #f0efec; border-radius: 16px; padding: 24px; margin-bottom: 14px; box-shadow: 0 1px 2px rgba(17,24,39,0.03); }
         .pcard-h { font-size: 15px; font-weight: 800; color: #111; letter-spacing: -0.2px; margin-bottom: 16px; display: flex; align-items: center; gap: 9px; }
         .pcard-ico { width: 27px; height: 27px; border-radius: 8px; display: inline-flex; align-items: center; justify-content: center; background: rgba(255,68,0,0.08); color: #ff4400; flex-shrink: 0; }
@@ -601,7 +586,6 @@ export default function ProfilePage() {
           )}
           <button className={`pw-tab${tab === 'employment' ? ' on' : ''}`} onClick={() => handleTabChange('employment')}>{t('profile.tab.employment') || '재직정보'}</button>
           <button className={`pw-tab${tab === 'badges' ? ' on' : ''}`} onClick={() => handleTabChange('badges')}>{t('profile.tab.badges') || '뱃지'}</button>
-          <button className={`pw-tab${tab === 'applications' ? ' on' : ''}`} onClick={() => handleTabChange('applications')}>{t('profile.tab.applications') || '지원 현황'}</button>
         </div>
 
         {tab === 'profile' && (<>
@@ -919,23 +903,6 @@ export default function ProfilePage() {
             representativeBadge={representativeBadge} setRepresentativeBadge={setRepresentativeBadge}
             onGoEmployment={() => setTab('employment')} />
         )}
-
-        {tab === 'applications' && (<>
-          {applicationsLoading && applications.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: '40px 20px', color: '#bbb', fontSize: 14 }}>Loading...</div>
-          ) : applications.length === 0 ? (
-            <div className="pcard" style={{ textAlign: 'center', padding: '40px 24px' }}>
-              <div style={{ marginBottom: 12 }}><Icon name="clipboard" size={40} color="#ccc" /></div>
-              <div style={{ fontSize: 14, fontWeight: 700, color: 'rgba(0,0,0,0.5)', marginBottom: 6 }}>{t('apps.emptyTitle')}</div>
-              <div style={{ fontSize: 13, color: 'rgba(0,0,0,0.35)', marginBottom: 16 }}>{t('apps.emptyDesc')}</div>
-              <a href="/jobs" style={{ fontSize: 13, fontWeight: 700, color: '#ff4400', textDecoration: 'none' }}>{t('apps.browseJobs')}</a>
-            </div>
-          ) : (
-            applications.map(app => (
-              <ApplicationCard key={app.id} app={app} t={t} onClick={() => router.push(`/jobs?jobId=${app.job_id}`)} />
-            ))
-          )}
-        </>)}
 
 
         {/* Logout — mobile only */}
