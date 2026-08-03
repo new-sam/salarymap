@@ -1,6 +1,10 @@
 import { createClient } from '@supabase/supabase-js'
 import { guessRole } from '../../../lib/roleGuess'
 import { LOCATION_OPTIONS } from '../../../constants/jobs'
+import { fetchVwFullTexts, buildDescription } from '../../../lib/vietnamworksDetail'
+
+// 적재 건당 상세 페이지 1회 fetch(전문 추출)가 붙어 기본 15초로는 모자란다.
+export const config = { maxDuration: 300 }
 
 // VietnamWorks 비개발 공고 수집.
 // 인재풀이 개발 직군에 극편중(포지션 기입 778명 중 비개발 41명)이라, 비개발 지원자를 끌어올
@@ -98,6 +102,16 @@ async function crawlVietnamWorks(perTarget, dryRun) {
     for (const job of picked.values()) {
       const record = mapToRecord(job, target)
       if (dryRun) { inserted++; continue }
+      // 검색 API 는 상세를 요약본("..." 끝)으로만 주므로 공고 페이지에서 전문을 가져와
+      // 교체한다. 실패하면 요약본이라도 유지.
+      const full = await fetchVwFullTexts(job.jobUrl)
+      if (full) {
+        record.description = buildDescription(
+          full.description || job.jobDescription,
+          full.requirement || job.jobRequirement
+        )
+      }
+      await sleep(300)
       const { error } = await supabase.from('jobs').insert(record)
       if (error) console.error(`Failed VW job ${job.jobId}:`, error.message)
       else { inserted++; existingIds.add(String(job.jobId)) }
@@ -148,7 +162,7 @@ function mapToRecord(job, target) {
     experience_max: 0,
     salary_min: salaryMin,
     salary_max: salaryMax,
-    description: buildDescription(job),
+    description: buildDescription(job.jobDescription, job.jobRequirement),
     is_active: true,
     tech_stack: skills,
     benefits,
@@ -168,35 +182,10 @@ function pickRole(title, target) {
   return target.role
 }
 
-function buildDescription(job) {
-  const parts = []
-  if (job.jobDescription) parts.push(stripHtml(job.jobDescription))
-  if (job.jobRequirement) parts.push(`[Requirements]\n${stripHtml(job.jobRequirement)}`)
-  return parts.join('\n\n')
-}
-
 function simplifyLocation(loc) {
   const vi = loc.cityNameVI || loc.cityName || ''
   const hit = LOCATION_OPTIONS.find(o => o === vi)
   return hit || vi
-}
-
-function stripHtml(html) {
-  if (!html) return ''
-  return html
-    .replace(/<br\s*\/?>/gi, '\n')
-    .replace(/<\/p>/gi, '\n')
-    .replace(/<\/li>/gi, '\n')
-    .replace(/<\/h[1-6]>/gi, '\n\n')
-    .replace(/<[^>]+>/g, '')
-    .replace(/&amp;/g, '&')
-    .replace(/&lt;/g, '<')
-    .replace(/&gt;/g, '>')
-    .replace(/&quot;/g, '"')
-    .replace(/&#39;/g, "'")
-    .replace(/&nbsp;/g, ' ')
-    .replace(/\n{3,}/g, '\n\n')
-    .trim()
 }
 
 async function deactivateExpired() {
