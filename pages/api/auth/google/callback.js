@@ -30,7 +30,17 @@ async function importKtcCv(u, meta, lead) {
   if (upErr) return;
   // 경로가 user id 고정이라 URL이 매번 같다 → 버전 쿼리로 CDN 캐시 우회(resume/upload 와 동일).
   const publicUrl = `${supabaseAdmin.storage.from('resumes').getPublicUrl(path).data.publicUrl}?v=${Date.now()}`;
+  // 사전 파싱(ktc_claim_profiles)이 있으면 구조화 필드까지 통째로 복사 — 가입 순간 프로필이
+  // 완전체가 된다(랜딩이 보여준 카드 그대로). shape 은 parseResumeBuffer 의 update 와 동일해
+  // user_profiles 컬럼에 그대로 얹힌다. 없으면(파싱 실패 리드) 매일 파싱 크론이 이어받는다.
+  let parsedFields = {};
+  try {
+    const { data: claimProf } = await supabaseAdmin.from('ktc_claim_profiles')
+      .select('summary').eq('email', (u.email || '').toLowerCase()).maybeSingle();
+    if (claimProf?.summary) parsedFields = claimProf.summary;
+  } catch {}
   const { error: profErr } = await supabaseAdmin.from('user_profiles').upsert({
+    ...parsedFields,
     id: u.id,
     email: u.email,
     resume_url: publicUrl,

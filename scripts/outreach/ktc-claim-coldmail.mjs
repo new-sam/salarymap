@@ -77,6 +77,8 @@ const atCompanyHtml = (lead) => lead.company
   ? (lang === 'ko' ? ` <b>${esc(lead.company)}</b>` : ` tại <b>${esc(lead.company)}</b>`)
   : ''
 // 카드 상세행 — 대학(93%)·연차(1년 이상만: 0년 표기는 역효과)는 있을 때만 붙는다.
+// 사전 파싱(ktc_claim_profiles)이 있으면 스킬 한 줄을 더 얹는다 — "CV 를 진짜 읽고 정리했다"는
+// 증거는 메일에선 이 정도로 가볍게, 풀 프로필(경력 타임라인 포함)은 랜딩이 보여준다.
 const cardRowStyle = 'font-size:14px;color:#4E5968;line-height:1.7;'
 const cardRowsHtml = (lead) => {
   const rows = []
@@ -86,6 +88,7 @@ const cardRowsHtml = (lead) => {
     ? (lang === 'ko' ? ` · 경력 ${yoe}년` : ` · ${yoe} năm kinh nghiệm`)
     : ''
   rows.push(`<div style="${cardRowStyle}">💼 ${esc(lead.position)}${yoeTail}</div>`)
+  if (lead.skills?.length) rows.push(`<div style="${cardRowStyle}">🛠 ${esc(lead.skills.slice(0, 5).join(' · '))}</div>`)
   return rows.join('\n          ')
 }
 const render = (lead, ctaUrl, unsubUrl) => template
@@ -169,6 +172,7 @@ async function mxOk(domains) {
         email: to, ten: 'Tây', name: 'TRƯƠNG ĐỨC NHẬT TÂY', job: 'Full-stack Developer',
         company: 'NALDA', position: 'Full-stack Developer', university: 'Đại học Bách Khoa Hà Nội',
         yoe: '2', appliedMonth: 6, lead: leadId(to),
+        skills: ['React', 'Node.js', 'TypeScript', 'PostgreSQL', 'Docker'],
       }
       const cta = ctaFor(lead), unsub = unsubFor(lead)
       const r = await resend.emails.send({
@@ -229,12 +233,18 @@ async function mxOk(domains) {
     if (e && u && !cvBy.has(e)) cvBy.set(e, u)
   }
 
+  // 사전 파싱된 프로필(ktc-claim-parse.mjs 적재) — 메일 카드 스킬 줄 + 대학 폴백 소스
+  const claims = await fetchAll(sb, () => sb.from('ktc_claim_profiles').select('email, summary'))
+  const claimBy = new Map(claims.map(c => [c.email, c.summary]))
+
   const now = new Date().toISOString().slice(0, 7)
   for (const l of leads) {
     const c = candBy.get(l.email)
-    l.university = (c?.university || '').trim()
+    const p = claimBy.get(l.email)
+    l.university = (c?.university || '').trim() || (p?.university || '').trim()
     l.position = (c?.position || '').trim() || l.job
     l.yoe = (c?.yoe || '').trim()
+    l.skills = Array.isArray(p?.skills) ? p.skills : []
     l.company = l.company || (c?.applied_company || '').trim()
     l.job = l.job || (c?.applied_job || '').trim() || l.position
     // 미래 날짜(시트 오입력)는 시점 언급을 아예 뺀다

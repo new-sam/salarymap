@@ -19,7 +19,7 @@ import { track } from '../../lib/track'
 //
 // ?done=1 — 가입 콜백이 임포트를 마친 뒤 돌아오는 완료 화면. 등록된 프로필 확인 +
 // 맞는 공고 3개 원탭 지원(/cv 완료 모달과 같은 선정 규칙)으로 가입을 지원까지 잇는다.
-export default function KtcClaim({ email, name, ten, university, position, yoe, tokenValid, token }) {
+export default function KtcClaim({ email, name, ten, university, position, yoe, parsed, tokenValid, token }) {
   const router = useRouter()
   const done = router.query.done === '1'
 
@@ -64,15 +64,63 @@ export default function KtcClaim({ email, name, ten, university, position, yoe, 
             Với CV bạn đã nộp qua <b>K-Tech College</b>, chúng tôi đã chuẩn bị sẵn hồ sơ FYI cho bạn.
           </p>
 
-          <div className="kc-profile">
-            <div className="kc-profile-tag">HỒ SƠ FYI CỦA BẠN</div>
-            <div className="kc-profile-name">{name || ten}</div>
-            {university ? <div className="kc-profile-row">🎓 {university}</div> : null}
-            <div className="kc-profile-row">
-              💼 {position}{Number.isFinite(yoeNum) && yoeNum >= 1 ? ` · ${yoeNum} năm kinh nghiệm` : ''}
+          {parsed ? (
+            // 사전 파싱된 리치 카드 — "CV가 이렇게 정리돼 있구나"가 이 페이지의 와우 포인트.
+            // 학력·경력·스킬은 CV 원문 표기 그대로(영/베트남어)라 번역 없이 노출한다.
+            <div className="kc-profile">
+              <div className="kc-profile-tag">HỒ SƠ FYI CỦA BẠN</div>
+              <div className="kc-profile-name">{parsed.full_name || name || ten}</div>
+              {parsed.headline ? <div className="kc-profile-headline">{parsed.headline}</div> : null}
+              {(parsed.university || university) ? (
+                <div className="kc-profile-sec">
+                  <div className="kc-profile-sec-label">Học vấn</div>
+                  <div className="kc-profile-row">
+                    🎓 {parsed.university || university}
+                    {parsed.major ? ` — ${parsed.major}` : ''}
+                    {parsed.graduation_year ? ` (${parsed.graduation_year})` : ''}
+                  </div>
+                </div>
+              ) : null}
+              {(parsed.experiences || []).length > 0 && (
+                <div className="kc-profile-sec">
+                  <div className="kc-profile-sec-label">Kinh nghiệm</div>
+                  {/* 파서가 최신순을 항상 지키진 않는다 — 진행중(Present) 우선, 종료일 내림차순으로 재정렬 */}
+                  {[...(parsed.experiences || [])].sort((a, b) => {
+                    const key = (e) => /present/i.test(e.end || '') ? '9999' : (e.end || e.start || '')
+                    return key(b).localeCompare(key(a))
+                  }).slice(0, 3).map((ex, idx) => (
+                    <div className="kc-profile-row" key={idx}>
+                      💼 {ex.title}{ex.company ? ` @ ${ex.company}` : ''}
+                      {ex.start ? <span className="kc-profile-dim"> · {ex.start}–{ex.end || ''}</span> : null}
+                    </div>
+                  ))}
+                </div>
+              )}
+              {(parsed.skills || []).length > 0 && (
+                <div className="kc-profile-sec">
+                  <div className="kc-profile-sec-label">Kỹ năng</div>
+                  <div className="kc-chips">
+                    {(parsed.skills || []).slice(0, 8).map(s => <span className="kc-chip" key={s}>{s}</span>)}
+                  </div>
+                </div>
+              )}
+              <div className="kc-profile-note">
+                ✓ Được tạo từ CV bạn đã nộp qua K-Tech College<br />
+                ✓ <b>Sẵn sàng ứng tuyển chỉ với một chạm</b> — không cần đăng ký lại
+              </div>
             </div>
-            <div className="kc-profile-note">✓ Được tạo từ CV bạn đã nộp qua K-Tech College</div>
-          </div>
+          ) : (
+            // 파싱 실패(스캔 PDF 등) 리드 폴백 — 시트 데이터 기본 카드
+            <div className="kc-profile">
+              <div className="kc-profile-tag">HỒ SƠ FYI CỦA BẠN</div>
+              <div className="kc-profile-name">{name || ten}</div>
+              {university ? <div className="kc-profile-row">🎓 {university}</div> : null}
+              <div className="kc-profile-row">
+                💼 {position}{Number.isFinite(yoeNum) && yoeNum >= 1 ? ` · ${yoeNum} năm kinh nghiệm` : ''}
+              </div>
+              <div className="kc-profile-note">✓ Được tạo từ CV bạn đã nộp qua K-Tech College</div>
+            </div>
+          )}
 
           <ul className="kc-points">
             <li>Đăng nhập <b>một lần</b> — CV được đăng ký tự động, không cần viết lại</li>
@@ -230,6 +278,12 @@ const css = `
   .kc-profile { border: 1px solid #FFD9C7; background: #FFF7F3; border-radius: 12px; padding: 18px 20px; margin-bottom: 22px; }
   .kc-profile-tag { font-size: 11px; font-weight: 800; color: #ff4400; letter-spacing: .6px; margin-bottom: 8px; }
   .kc-profile-name { font-size: 18px; font-weight: 800; letter-spacing: -.2px; margin-bottom: 8px; }
+  .kc-profile-headline { font-size: 13px; font-weight: 700; color: #ff4400; margin: -4px 0 8px; }
+  .kc-profile-sec { margin-top: 12px; }
+  .kc-profile-sec-label { font-size: 11px; font-weight: 800; color: #8B95A1; letter-spacing: .4px; text-transform: uppercase; margin-bottom: 4px; }
+  .kc-profile-dim { color: #8B95A1; font-size: 12px; }
+  .kc-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+  .kc-chip { font-size: 12px; font-weight: 700; color: #4E5968; background: #fff; border: 1px solid #FFD9C7; border-radius: 999px; padding: 4px 10px; }
   .kc-profile-row { font-size: 14px; color: #4E5968; line-height: 1.7; }
   .kc-profile-note { font-size: 12px; color: #8B95A1; border-top: 1px solid #FFE4D6; margin-top: 12px; padding-top: 10px; line-height: 1.5; }
   .kc-points { margin: 0 0 24px; padding: 0 0 0 18px; }
@@ -260,28 +314,38 @@ function tenOf(fullName) {
 }
 
 export async function getServerSideProps({ query }) {
-  const parsed = verifyToken(query.t)
-  if (!parsed) return { props: { tokenValid: false, email: '', name: '', ten: '', university: '', position: '', yoe: '', token: '' } }
+  const tok = verifyToken(query.t)
+  if (!tok) return { props: { tokenValid: false, email: '', name: '', ten: '', university: '', position: '', yoe: '', parsed: null, token: '' } }
 
-  // 한 사람이 여러 건 지원했을 수 있어 최신 지원 행 기준(발송 스크립트와 동일 규칙).
-  const { data } = await supabaseAdmin
-    .from('ktc_candidates')
-    .select('full_name, university, position, yoe')
-    .eq('email', parsed.email)
-    .order('applied_at', { ascending: false })
-    .limit(1)
+  // 카드 소스 둘: 사전 파싱된 리치 프로필(ktc_claim_profiles, 발송 전 배치 파싱) 우선,
+  // 없으면(스캔 PDF 등 파싱 실패 ~5%) 시트 미러(ktc_candidates) 기본 카드로 폴백.
+  // 한 사람이 여러 건 지원했을 수 있어 미러는 최신 지원 행 기준(발송 스크립트와 동일 규칙).
+  const [{ data }, { data: claim }] = await Promise.all([
+    supabaseAdmin
+      .from('ktc_candidates')
+      .select('full_name, university, position, yoe')
+      .eq('email', tok.email)
+      .order('applied_at', { ascending: false })
+      .limit(1),
+    supabaseAdmin
+      .from('ktc_claim_profiles')
+      .select('summary')
+      .eq('email', tok.email)
+      .maybeSingle(),
+  ])
   const c = data?.[0] || {}
 
   return {
     props: {
       tokenValid: true,
       token: query.t,
-      email: parsed.email,
+      email: tok.email,
       name: c.full_name || '',
       ten: tenOf(c.full_name),
       university: c.university || '',
       position: c.position || '',
       yoe: c.yoe || '',
+      parsed: claim?.summary || null,
     },
   }
 }
