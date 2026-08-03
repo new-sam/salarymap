@@ -49,7 +49,7 @@ export default function JobPreview({ form, companyName, fullscreen = false, pane
 
   const expText = !job.experience_min && !job.experience_max
     ? 'Any level'
-    : job.experience_max >= 30
+    : (!job.experience_max || job.experience_max >= 30)
       ? `${job.experience_min || 0}+ yrs`
       : `${job.experience_min}–${job.experience_max} yrs`;
   const deadlineText = job.deadline

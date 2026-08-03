@@ -7,7 +7,7 @@ export function generateCompanyDescription(job) {
   const locationDesc = job.location || 'Vietnam'
   const typeDesc = job.type === 'remote' ? 'remote-first culture with distributed teams' : job.type === 'hybrid' ? 'flexible hybrid work model' : 'collaborative on-site environment'
   const expDesc = job.experience_min != null && job.experience_max != null
-    ? (job.experience_max >= 30 ? `${job.experience_min}+ years` : `${job.experience_min}\u2013${job.experience_max} years`)
+    ? ((!job.experience_max || job.experience_max >= 30) ? `${job.experience_min}+ years` : `${job.experience_min}\u2013${job.experience_max} years`)
     : null
 
   const paragraphs = []

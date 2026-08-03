@@ -48,7 +48,8 @@ function buildJobSuggestions(allJobs, salaryVnd, role, experience) {
   }
   const expScore = (j) => {
     if (j.experience_min == null || j.experience_max == null) return 0.5
-    return years >= j.experience_min && years <= j.experience_max ? 1 : 0.2
+    const max = j.experience_max || (j.experience_min ? 99 : 0) // max 0 = 상한 없음("N년 이상")
+    return years >= j.experience_min && years <= max ? 1 : 0.2
   }
   const score = (j) =>
     roleScore(role, j.role) * 3 +

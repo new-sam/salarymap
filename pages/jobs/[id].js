@@ -256,7 +256,7 @@ export default function JobDetailPage({ job }) {
             <div className="jd-meta-grid">
               <div className="jd-meta-item">
                 <div className="jd-meta-label">{t('jobs.experience')}</div>
-                <div className="jd-meta-value">{!job.experience_min && !job.experience_max ? t('jobs.yearsAny') : job.experience_max >= 30 ? t('jobs.yearsMin', { min: job.experience_min || 0 }) : t('jobs.years', { min: job.experience_min, max: job.experience_max })}</div>
+                <div className="jd-meta-value">{!job.experience_min && !job.experience_max ? t('jobs.yearsAny') : (!job.experience_max || job.experience_max >= 30) ? t('jobs.yearsMin', { min: job.experience_min || 0 }) : t('jobs.years', { min: job.experience_min, max: job.experience_max })}</div>
               </div>
               <div className="jd-meta-item">
                 <div className="jd-meta-label">{t('jobs.position')}</div>

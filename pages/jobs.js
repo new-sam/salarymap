@@ -47,8 +47,8 @@ function matchesJobFilters(job, f) {
   }
   if (f.expMin !== '' || f.expMax !== '') {
     const jobMin = job.experience_min || 0
-    const jobMax = job.experience_max || 0
-    if (!jobMin && !jobMax) return true // 경력 무관은 항상 포함
+    if (!jobMin && !job.experience_max) return true // 경력 무관은 항상 포함
+    const jobMax = job.experience_max || 99 // max 0 = 상한 없음("N년 이상")
     const eMin = f.expMin !== '' ? Number(f.expMin) : 0
     const eMax = f.expMax !== '' ? Number(f.expMax) : 99
     if (jobMax < eMin || jobMin > eMax) return false
@@ -137,7 +137,7 @@ function JobCard({ job, idx, bump, matched, bookmarked, onOpen, onToggleBookmark
           <div className="jc-m">
             <span className="jc-m-txt">
               {[
-                !job.experience_min && !job.experience_max ? t('jobs.yearsAny') : job.experience_max >= 30 ? t('jobs.yearsMin', { min: job.experience_min || 0 }) : t('jobs.years', { min: job.experience_min, max: job.experience_max }),
+                !job.experience_min && !job.experience_max ? t('jobs.yearsAny') : (!job.experience_max || job.experience_max >= 30) ? t('jobs.yearsMin', { min: job.experience_min || 0 }) : t('jobs.years', { min: job.experience_min, max: job.experience_max }),
                 job.type !== 'remote' && job.location,
               ].filter(Boolean).join(' · ')}
             </span>
@@ -414,7 +414,7 @@ export default function JobsPage() {
     const salaryMatch = job.salary_min && job.salary_min > userSalary
     const expMatch = userExperience && job.experience_min != null && job.experience_max != null &&
       Number(String(userExperience).replace(/[^0-9]/g, '') || 0) >= job.experience_min &&
-      Number(String(userExperience).replace(/[^0-9]/g, '') || 0) <= job.experience_max
+      Number(String(userExperience).replace(/[^0-9]/g, '') || 0) <= (job.experience_max || (job.experience_min ? 99 : 0))
     return roleMatch || salaryMatch || expMatch
   }
 
@@ -1424,7 +1424,7 @@ export default function JobsPage() {
                 {detailJob.location && <><span>{detailJob.location}</span><span className="jd-subline-sep">·</span></>}
                 <span>{typeLabel(detailJob.type)}</span>
                 <span className="jd-subline-sep">·</span>
-                <span>{!detailJob.experience_min && !detailJob.experience_max ? t('jobs.yearsAny') : detailJob.experience_max >= 30 ? t('jobs.yearsMin', { min: detailJob.experience_min || 0 }) : t('jobs.years', { min: detailJob.experience_min, max: detailJob.experience_max })}</span>
+                <span>{!detailJob.experience_min && !detailJob.experience_max ? t('jobs.yearsAny') : (!detailJob.experience_max || detailJob.experience_max >= 30) ? t('jobs.yearsMin', { min: detailJob.experience_min || 0 }) : t('jobs.years', { min: detailJob.experience_min, max: detailJob.experience_max })}</span>
                 <span className="jd-subline-sep">·</span>
                 <span>{detailJob.deadline ? (() => {
                   const days = Math.ceil((new Date(detailJob.deadline) - new Date()) / 86400000)

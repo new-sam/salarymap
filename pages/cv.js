@@ -934,7 +934,7 @@ export default function CvLanding() {
                 const salTxt = sal?.min && sal?.max ? `${Math.round(sal.min / 1e6)}–${Math.round(sal.max / 1e6)}M VND` : null
                 const expTxt = (!j.experience_min && !j.experience_max)
                   ? L('경력무관', 'Any exp', 'KN bất kỳ')
-                  : j.experience_max >= 30
+                  : (!j.experience_max || j.experience_max >= 30)
                     ? L(`${j.experience_min || 0}년+`, `${j.experience_min || 0}y+`, `${j.experience_min || 0} năm+`)
                     : L(`${j.experience_min}–${j.experience_max}년`, `${j.experience_min}–${j.experience_max}y`, `${j.experience_min}–${j.experience_max} năm`)
                 const typeMap = { remote: L('재택', 'Remote', 'Remote'), hybrid: L('하이브리드', 'Hybrid', 'Hybrid'), onsite: L('출근', 'On-site', 'Tại VP') }
