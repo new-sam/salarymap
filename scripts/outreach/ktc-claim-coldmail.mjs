@@ -9,6 +9,7 @@
 //   node scripts/outreach/ktc-claim-coldmail.mjs --test a@x.com --lang ko # 한국어판 문구 검토
 //   node scripts/outreach/ktc-claim-coldmail.mjs --max 200 --send
 //   옵션: --max N(이번에 보낼 인원) · --campaign coldmail-ktc-cv · --lang ko|vi(기본 vi)
+//        --parsed-only(사전 파싱 성공자만 — 리치 카드 랜딩이 보장되는 리드로 한정)
 //
 // ⚠️ /ktc/claim 랜딩 + 콜백 임포트가 prod 에 배포된 뒤에만 실발송할 것 — CTA가 404거나
 //    가입해도 CV가 안 옮겨지면 "준비돼 있다"가 거짓말이 된다(3차의 사망 원인과 동일 구조).
@@ -33,6 +34,7 @@ const lang = flag('lang', 'vi') === 'ko' ? 'ko' : 'vi'
 const TEMPLATE = new URL(`../ktc-claim-coldmail-${lang}.html`, import.meta.url)
 const testTo = flag('test', null)
 const campaign = flag('campaign', 'coldmail-ktc-cv')
+const parsedOnly = args.includes('--parsed-only')
 const max = parseInt(flag('max', doSend ? '200' : '0')) || 0
 
 const sleep = (ms) => new Promise(r => setTimeout(r, ms))
@@ -254,9 +256,14 @@ async function mxOk(domains) {
   }
   const noCv = leads.filter(l => !IMPORTABLE.test(l.cvUrl)).length
   leads = leads.filter(l => IMPORTABLE.test(l.cvUrl))
+  let noParse = 0
+  if (parsedOnly) {
+    noParse = leads.filter(l => !claimBy.has(l.email)).length
+    leads = leads.filter(l => claimBy.has(l.email))
+  }
 
   console.log(`캠페인: ${campaign} | 랜딩: /ktc/claim (배포 필수)`)
-  console.log(`리스트 ${total}명 | 제외: FYI가입 ${isMember} · 발송済 ${sentLeads.size} · 수신거부 ${unsubLeads.size} → ${afterDedup}명 | CV직링크 없음 ${noCv} 제외 → 대상 ${leads.length}명`)
+  console.log(`리스트 ${total}명 | 제외: FYI가입 ${isMember} · 발송済 ${sentLeads.size} · 수신거부 ${unsubLeads.size} → ${afterDedup}명 | CV직링크 없음 ${noCv} 제외${parsedOnly ? ` | 미파싱 ${noParse} 제외` : ''} → 대상 ${leads.length}명`)
 
   const capped = max ? leads.slice(0, max) : leads
   if (!capped.length) { console.log('보낼 대상 없음.'); return }
