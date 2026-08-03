@@ -101,10 +101,15 @@ export default async function handler(req, res) {
       }
     })(),
     // resume users (이력서 보유)
+    //  · fetchAll 필수 — 보유자가 1000명을 넘어(2026-08 기준 1,139) 그냥 select 하면 조용히 잘린다.
+    //    잘리는 쪽이 하필 최근 갱신 행이라 최근일 이력서 등록이 실제의 1/4로 찍히고 있었다.
+    //  · 페이지네이션 중에도 updated_at 은 계속 바뀌므로 정렬 키는 불변인 id 로 고정한다.
     (async () => {
       try {
-        const { data } = await supabase.from('user_profiles').select('id, updated_at, is_resume_public, resume_platform').not('resume_url', 'is', null)
-        return (data || []).filter(r => r.updated_at)
+        const rows = await fetchAll(supabase.from('user_profiles')
+          .select('id, updated_at, is_resume_public, resume_platform')
+          .not('resume_url', 'is', null).order('id'))
+        return rows.filter(r => r.updated_at)
       } catch (e) { return [] }
     })(),
     // company (recruiter) signups — 기업 가입자 (likelion/내부 도메인 제외)
