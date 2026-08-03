@@ -7,6 +7,49 @@ import { leadId } from '../../../../lib/ktcMailToken';
 // with the session tokens in the URL hash, where the existing client-side
 // handler picks them up and stores the session.
 
+// KTC CV 클레임 임포트 — 발송 스크립트가 sent 이벤트 meta 에 실어둔 cv_url(KTC 공개 스토리지,
+// 해시 파일명이라 PII 아님)을 다운로드해 우리 'resumes' 버킷에 넣고 프로필에 건다.
+// 공개 ON(is_resume_public)이 기본: 랜딩 버튼 문구가 "담당자에게 공개" 동의를 명시하고 있고,
+// /cv 등록 흐름(hr_visible + share-resume set true)과 같은 상태로 맞춘다.
+// 구조화 파싱(resume_summary)은 매일 도는 자동 파싱 크론이 이어받는다 — 콜백에서 LLM 호출은 과체중.
+const KTC_CV_HOST = /^https:\/\/[a-z0-9]+\.supabase\.co\/storage\/v1\/object\/public\//;
+const CV_EXT = { pdf: 'application/pdf', doc: 'application/msword', docx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' };
+async function importKtcCv(u, meta, lead) {
+  const cvUrl = String(meta.cv_url || '');
+  if (!KTC_CV_HOST.test(cvUrl)) return;
+  const r = await fetch(cvUrl);
+  if (!r.ok) return;
+  const buf = Buffer.from(await r.arrayBuffer());
+  if (!buf.length || buf.length > 15 * 1024 * 1024) return;
+  // 확장자는 URL 경로 기준, 이상하면 pdf — 파서가 시그니처로 재판별하므로(워드 .pdf 버그 대응 로직) 안전.
+  const urlExt = (new URL(cvUrl).pathname.split('.').pop() || '').toLowerCase();
+  const ext = CV_EXT[urlExt] ? urlExt : 'pdf';
+  const path = `${u.id}.${ext}`;
+  const { error: upErr } = await supabaseAdmin.storage.from('resumes')
+    .upload(path, buf, { contentType: CV_EXT[ext], upsert: true });
+  if (upErr) return;
+  // 경로가 user id 고정이라 URL이 매번 같다 → 버전 쿼리로 CDN 캐시 우회(resume/upload 와 동일).
+  const publicUrl = `${supabaseAdmin.storage.from('resumes').getPublicUrl(path).data.publicUrl}?v=${Date.now()}`;
+  const { error: profErr } = await supabaseAdmin.from('user_profiles').upsert({
+    id: u.id,
+    email: u.email,
+    resume_url: publicUrl,
+    resume_source: 'ktc_claim',
+    resume_platform: 'web',
+    is_resume_public: true,
+    hr_visible: true,
+    job_signal: 'open',
+    updated_at: new Date().toISOString(),
+  }, { onConflict: 'id' });
+  if (profErr) return;
+  await supabaseAdmin.from('events').insert([{
+    event: 'ktc_cv_import',
+    page: '/auth/callback',
+    user_id: u.id,
+    meta: { campaign: meta.campaign, lead },
+  }]);
+}
+
 export default async function handler(req, res) {
   const proto = req.headers['x-forwarded-proto'] || 'https';
   const host = req.headers.host;
@@ -80,13 +123,19 @@ export default async function handler(req, res) {
       const lead = u.email ? leadId(u.email) : null;
       if (lead) {
         const { data: sentEv } = await supabaseAdmin.from('events')
-          .select('meta').eq('event', 'coldmail_public_sent').eq('meta->>lead', lead).limit(1);
+          .select('meta').eq('event', 'coldmail_public_sent').eq('meta->>lead', lead).limit(5);
         if (sentEv?.length) {
           await supabaseAdmin.from('events').insert([{
             event: 'coldmail_public_convert',
             page: '/auth/callback',
             meta: { campaign: sentEv[0].meta?.campaign || 'coldmail-ktc', lead, converted_user: u.id },
           }]);
+          // CV 클레임 캠페인(coldmail-ktc-cv*): 발송 meta 에 실어둔 KTC 공개 스토리지 CV 를
+          // 우리 스토리지로 옮겨 프로필에 등록한다 — 메일이 약속한 "프로필이 준비돼 있다"의 이행.
+          // 실패해도 로그인은 막지 않는다(바깥 try). 프로필 행은 클라이언트(/auth/callback의
+          // saveProfile)가 나중에 upsert 하므로 여기서도 upsert 로 선점한다(컬럼이 안 겹쳐 안전).
+          const claim = sentEv.find(ev => /^coldmail-ktc-cv/.test(ev.meta?.campaign || '') && ev.meta?.cv_url);
+          if (claim) await importKtcCv(u, claim.meta, lead);
         }
       }
     }

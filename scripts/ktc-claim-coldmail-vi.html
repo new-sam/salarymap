@@ -1,0 +1,94 @@
+<!--
+  [4차 · CV 클레임] KTC 리드 → FYI 가입 + 이력서 자동 등록 콜드메일 — 베트남어판
+  훅: "네 프로필이 이미 만들어져 있다 — 로그인 한 번이면 가져간다" (소유 프레임)
+  제목: {{name}} ơi, hồ sơ {{position}} của bạn đã sẵn sàng trên FYI
+  개인화 변수:
+    {{name}} = 호칭(tên) · {{month}} = "Hồi tháng 6, " 류 선행구(폴백 "Trước đây, ")
+    {{jobTitle}} = 지원공고 · {{atCompany}} = " tại <b>기업명</b>"(없으면 빈 값)
+    {{position}} = 직무(제목·카드용) · {{fullName}} = 실명 · {{cardRows}} = 카드 상세행(대학/직무·연차, 스크립트가 렌더)
+    {{ctaUrl}} = /ktc/claim(가입+임포트) · {{unsubscribeUrl}} = 수신거부
+  ※ 3차 교훈 그대로: 제목이 약속한 것(프로필 준비됨)을 랜딩(본인 카드 미리보기)과
+     가입 직후(CV 자동 임포트)가 문자 그대로 이행한다 — 미끼-전환 없음.
+  ※ 카드에 본인 실데이터(이름·대학·직무)를 박는 이유: "진짜 내 거네"가 되는 순간 스팸 필터가 꺼진다.
+     2차에서 죽은 건 개인화가 아니라 발신자 위장처럼 보인 것 — 이번엔 KTC 명의로 KTC 데이터를 보여주므로 정합.
+  ※ "얼마 전" 금지 — 대상 84%가 6월(2개월 전) 지원이라 월을 명시하는 게 정직하고 증거 효과도 크다.
+  ※ 폰트: 시스템 폰트만(3차와 동일 — 베트남어 성조 + 메일 클라이언트 웹폰트 차단).
+-->
+<!doctype html>
+<html lang="vi">
+<head><meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" /><title>FYI — Hồ sơ của bạn</title></head>
+<body style="margin:0;padding:24px 0;background:#f2f4f6;">
+
+<!-- [본문 시작] -->
+<div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;color:#191F28;max-width:560px;margin:0 auto;background:#ffffff;border-radius:16px;overflow:hidden;border:1px solid #E5E8EB;">
+
+  <div style="padding:22px 32px;border-bottom:1px solid #F2F4F6;">
+    <span style="font-size:22px;font-weight:900;letter-spacing:-0.5px;color:#ff6000;">FYI</span>
+    <span style="font-size:11px;font-weight:700;color:#8B95A1;letter-spacing:0.5px;margin-left:8px;">Nền tảng tuyển dụng do K-Tech College xây dựng</span>
+  </div>
+
+  <div style="padding:32px;">
+
+    <h1 style="margin:0 0 18px;font-size:26px;line-height:1.4;font-weight:800;color:#191F28;letter-spacing:-0.4px;">
+      Hồ sơ của bạn<br />
+      <span style="color:#ff6000;">đã sẵn sàng</span> trên FYI
+    </h1>
+
+    <p style="margin:0 0 16px;font-size:15px;line-height:1.75;color:#4E5968;">
+      Chào <b style="color:#191F28;">{{name}}</b>,<br />
+      {{month}}bạn đã ứng tuyển vị trí <b>{{jobTitle}}</b>{{atCompany}} qua <b>K-Tech College</b>.
+    </p>
+
+    <p style="margin:0 0 20px;font-size:15px;line-height:1.75;color:#4E5968;">
+      Với CV bạn đã nộp khi đó, chúng tôi đã <b style="color:#191F28;">chuẩn bị sẵn hồ sơ của bạn</b> trên
+      <b>FYI</b> — nền tảng tuyển dụng do K-Tech College xây dựng.
+    </p>
+
+    <!-- 본인 프로필 카드 — 실데이터가 곧 증거 -->
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 20px;">
+      <tr>
+        <td style="background:#FFF7F3;border:1px solid #FFD9C7;border-radius:12px;padding:20px 22px;">
+          <div style="font-size:11px;font-weight:800;color:#ff6000;letter-spacing:0.6px;margin-bottom:8px;">HỒ SƠ FYI CỦA BẠN</div>
+          <div style="font-size:18px;font-weight:800;color:#191F28;letter-spacing:-0.2px;margin-bottom:10px;">{{fullName}}</div>
+          {{cardRows}}
+          <div style="font-size:12px;color:#8B95A1;border-top:1px solid #FFE4D6;margin-top:12px;padding-top:10px;line-height:1.5;">
+            ✓ Được tạo từ CV bạn đã nộp qua K-Tech College
+          </div>
+        </td>
+      </tr>
+    </table>
+
+    <p style="margin:0 0 16px;font-size:15px;line-height:1.75;color:#4E5968;">
+      Bạn <b style="color:#191F28;">không cần viết lại CV</b>. Chỉ cần đăng nhập Google một lần,
+      hồ sơ sẽ được đăng ký ngay và bạn có thể ứng tuyển các vị trí mới <b style="color:#191F28;">chỉ với một chạm</b>.
+    </p>
+
+    <p style="margin:0 0 16px;font-size:15px;line-height:1.75;color:#4E5968;">
+      Khi có vị trí phù hợp, chúng tôi sẽ gửi hồ sơ của bạn <b style="color:#191F28;">trực tiếp đến nhà tuyển dụng</b>
+      — và bạn sẽ nhận được liên hệ qua email.
+    </p>
+
+    <div style="text-align:center;margin:28px 0;">
+      <a href="{{ctaUrl}}"
+         style="display:inline-block;background:#ff6000;color:#ffffff;font-size:16px;font-weight:800;text-decoration:none;padding:15px 30px;border-radius:12px;letter-spacing:-0.2px;">
+        Nhận hồ sơ của tôi →
+      </a>
+    </div>
+
+  </div>
+
+  <div style="padding:20px 32px 28px;border-top:1px solid #F2F4F6;">
+    <p style="margin:0 0 6px;font-size:12px;line-height:1.65;color:#8B95A1;">
+      Email này được gửi đến bạn vì bạn đã ứng tuyển K-Tech College, nhằm giới thiệu dịch vụ FYI.
+    </p>
+    <p style="margin:0;font-size:12px;line-height:1.65;color:#8B95A1;">
+      Nếu không muốn nhận email này nữa, vui lòng nhấn <a href="{{unsubscribeUrl}}" style="color:#8B95A1;text-decoration:underline;">Hủy đăng ký</a>.
+      &nbsp;·&nbsp; FYI · salary-fyi.com
+    </p>
+  </div>
+
+</div>
+<!-- [본문 끝] -->
+
+</body>
+</html>

@@ -1,0 +1,81 @@
+<!--
+  [4차 · CV 클레임] 한국어판 — 팀 내부 문구 검토용(실발송은 vi). 구조는 vi판과 1:1 대응.
+-->
+<!doctype html>
+<html lang="ko">
+<head><meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" /><title>FYI — 회원님의 프로필</title></head>
+<body style="margin:0;padding:24px 0;background:#f2f4f6;">
+
+<!-- [본문 시작] -->
+<div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;color:#191F28;max-width:560px;margin:0 auto;background:#ffffff;border-radius:16px;overflow:hidden;border:1px solid #E5E8EB;">
+
+  <div style="padding:22px 32px;border-bottom:1px solid #F2F4F6;">
+    <span style="font-size:22px;font-weight:900;letter-spacing:-0.5px;color:#ff6000;">FYI</span>
+    <span style="font-size:11px;font-weight:700;color:#8B95A1;letter-spacing:0.5px;margin-left:8px;">K-Tech College가 만든 채용 플랫폼</span>
+  </div>
+
+  <div style="padding:32px;">
+
+    <h1 style="margin:0 0 18px;font-size:26px;line-height:1.4;font-weight:800;color:#191F28;letter-spacing:-0.4px;">
+      회원님의 프로필이<br />
+      FYI에 <span style="color:#ff6000;">준비되어 있습니다</span>
+    </h1>
+
+    <p style="margin:0 0 16px;font-size:15px;line-height:1.75;color:#4E5968;">
+      안녕하세요 <b style="color:#191F28;">{{name}}</b>님,<br />
+      {{month}}K-Tech College를 통해 <b>{{jobTitle}}</b>{{atCompany}} 포지션에 지원해 주셨죠.
+    </p>
+
+    <p style="margin:0 0 20px;font-size:15px;line-height:1.75;color:#4E5968;">
+      그때 제출하신 이력서로, <b>K-Tech College가 만든 채용 플랫폼 FYI</b>에
+      <b style="color:#191F28;">회원님의 프로필을 미리 만들어 두었습니다</b>.
+    </p>
+
+    <!-- 본인 프로필 카드 — 실데이터가 곧 증거 -->
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 20px;">
+      <tr>
+        <td style="background:#FFF7F3;border:1px solid #FFD9C7;border-radius:12px;padding:20px 22px;">
+          <div style="font-size:11px;font-weight:800;color:#ff6000;letter-spacing:0.6px;margin-bottom:8px;">회원님의 FYI 프로필</div>
+          <div style="font-size:18px;font-weight:800;color:#191F28;letter-spacing:-0.2px;margin-bottom:10px;">{{fullName}}</div>
+          {{cardRows}}
+          <div style="font-size:12px;color:#8B95A1;border-top:1px solid #FFE4D6;margin-top:12px;padding-top:10px;line-height:1.5;">
+            ✓ K-Tech College에 제출하신 CV로 만들어졌습니다
+          </div>
+        </td>
+      </tr>
+    </table>
+
+    <p style="margin:0 0 16px;font-size:15px;line-height:1.75;color:#4E5968;">
+      이력서를 <b style="color:#191F28;">다시 작성하실 필요 없습니다</b>. 구글 로그인 한 번이면 프로필이 바로 등록되고,
+      새로운 공고에 <b style="color:#191F28;">원클릭으로 지원</b>할 수 있습니다.
+    </p>
+
+    <p style="margin:0 0 16px;font-size:15px;line-height:1.75;color:#4E5968;">
+      그리고 회원님께 맞는 포지션이 열리면, 저희가 <b style="color:#191F28;">기업 채용 담당자에게 프로필을 바로 전달</b>해
+      드립니다 — 담당자의 연락은 이메일로 받아보실 수 있습니다.
+    </p>
+
+    <div style="text-align:center;margin:28px 0;">
+      <a href="{{ctaUrl}}"
+         style="display:inline-block;background:#ff6000;color:#ffffff;font-size:16px;font-weight:800;text-decoration:none;padding:15px 30px;border-radius:12px;letter-spacing:-0.2px;">
+        내 프로필 확인하기 →
+      </a>
+    </div>
+
+  </div>
+
+  <div style="padding:20px 32px 28px;border-top:1px solid #F2F4F6;">
+    <p style="margin:0 0 6px;font-size:12px;line-height:1.65;color:#8B95A1;">
+      이 메일은 K-Tech College에 지원하신 분께 FYI 서비스를 안내하기 위해 발송되었습니다.
+    </p>
+    <p style="margin:0;font-size:12px;line-height:1.65;color:#8B95A1;">
+      더 이상 수신을 원하지 않으시면 <a href="{{unsubscribeUrl}}" style="color:#8B95A1;text-decoration:underline;">수신 거부</a>를 눌러주세요.
+      &nbsp;·&nbsp; FYI · salary-fyi.com
+    </p>
+  </div>
+
+</div>
+<!-- [본문 끝] -->
+
+</body>
+</html>

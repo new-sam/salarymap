@@ -22,10 +22,10 @@ export default async function handler(req, res) {
     }
   }
 
-  // 상태 확인 랜딩은 본인이 누구인지 알아야 지원 이력을 띄운다 → 토큰을 목적지까지 넘긴다.
-  // 넘기는 건 이 경로 하나뿐(토큰이 임의 경로로 새지 않게). 기존 발송분(to=/jobs)은 그대로 동작.
-  const finalDest = parsed && dest === '/ktc/status'
-    ? `/ktc/status?t=${encodeURIComponent(t)}`
+  // 상태/클레임 랜딩은 본인이 누구인지 알아야 카드를 띄운다 → 토큰을 목적지까지 넘긴다.
+  // 넘기는 건 이 두 경로뿐(토큰이 임의 경로로 새지 않게). 기존 발송분(to=/jobs)은 그대로 동작.
+  const finalDest = parsed && (dest === '/ktc/status' || dest === '/ktc/claim')
+    ? `${dest}?t=${encodeURIComponent(t)}`
     : dest
 
   res.redirect(302, finalDest)

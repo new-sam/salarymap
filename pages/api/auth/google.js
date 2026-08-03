@@ -40,5 +40,13 @@ export default function handler(req, res) {
     state,
   });
 
+  // 콜드메일 랜딩(/ktc/claim 등)은 수신자 이메일을 안다 → 구글 계정 선택 화면을 건너뛴다.
+  // login_hint 가 있으면 select_account 를 빼야 실제로 건너뛰어진다(가입 마찰 한 단계 제거).
+  const loginHint = typeof req.query.login_hint === 'string' ? req.query.login_hint : '';
+  if (loginHint) {
+    params.set('login_hint', loginHint);
+    params.delete('prompt');
+  }
+
   res.redirect(`https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`);
 }
