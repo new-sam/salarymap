@@ -164,11 +164,19 @@ export default async function handler(req, res) {
     // 어긋날 수 있다 — 같은 판정을 두 곳에 두지 않는다.
     const RANK = { score: 3, other: 2, level: 1, none: 0 }
     const kinds = { score: 0, other: 0, level: 0, none: 0 }
+    // arm 별로도 나눈다 — "제목이 주제를 밝히면(B) 실제로 어학이 되는 사람만 들어온다"는
+    // 가설은 전환율이 아니라 들어온 값의 종류로만 확인된다. B 는 클릭이 적어도 점수 비율이
+    // 높아야 가설이 맞는 것이므로, 두 수를 같은 카드에서 나란히 봐야 한다.
+    const kindsByArm = {}
     for (const f of fills) {
       const ks = [f.englishKind, f.koreanKind].filter(Boolean)
       f.kind = ks.length ? ks.slice().sort((a, b) => RANK[b] - RANK[a])[0] : null
-      if (f.kind) kinds[f.kind]++
+      if (!f.kind) continue
+      kinds[f.kind]++
+      const k = (kindsByArm[f.campaign] = kindsByArm[f.campaign] || { score: 0, other: 0, level: 0, none: 0 })
+      k[f.kind]++
     }
+    for (const r of rows) r.kinds = kindsByArm[r.campaign] || { score: 0, other: 0, level: 0, none: 0 }
 
     res.setHeader('Cache-Control', 'no-store')
     return res.status(200).json({

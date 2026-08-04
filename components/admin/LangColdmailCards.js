@@ -26,6 +26,9 @@ export default function LangColdmailCards({ token, lang }) {
   const { data, error, isLoading } = useAdmin('/api/admin/lang-coldmail', token)
   // 값 종류 필터. null = 전체. 아래 early return 들보다 먼저 선언해야 훅 순서가 안 깨진다.
   const [kindFilter, setKindFilter] = useState(null)
+  // 목록은 기본으로 접어둔다 — 이름·값이 한 줄씩 쌓여 카드보다 커지고, arm/종류 요약은
+  // 위 카드에 이미 있어 접혀 있어도 읽을 게 없어지지 않는다.
+  const [showFills, setShowFills] = useState(false)
 
   if (isLoading && !data) return null
   if (error) return null
@@ -94,6 +97,20 @@ export default function LangColdmailCards({ token, lang }) {
                 <div style={{ marginTop: 3 }}>
                   {L('둘 다 못함', 'Neither', 'Không biết cả hai')} {r.cta.none || 0}
                 </div>
+                {/* 들어온 값의 종류 — "주제를 밝힌 제목(B)이 실제로 어학 되는 사람만
+                    데려온다"는 가설은 전환 수가 아니라 이 줄로만 확인된다. B 는 입력이
+                    적어도 점수 비율이 높아야 가설이 맞는다. */}
+                <div style={{ marginTop: 5, paddingTop: 5, borderTop: '1px dashed #F2F4F6' }}>
+                  <span style={{ color: KIND_COLOR.score, fontWeight: 700 }}>
+                    {L('점수', 'Score', 'Điểm')} {r.kinds?.score ?? 0}
+                  </span>
+                  {' · '}
+                  <span style={{ color: KIND_COLOR.level }}>
+                    {L('자기서술', 'Self-desc', 'Tự mô tả')} {r.kinds?.level ?? 0}
+                  </span>
+                  {' · '}
+                  {L('못함', 'Neither', 'Không biết')} {r.kinds?.none ?? 0}
+                </div>
               </div>
             </div>
           )
@@ -105,10 +122,21 @@ export default function LangColdmailCards({ token, lang }) {
           지금과 같은 데이터가 늘어난 것뿐이다. 그래서 종류를 같이 센다. */}
       {!!data?.fills?.length && (
         <div style={{ marginTop: 14, borderTop: '1px solid #F2F4F6', paddingTop: 10 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap', marginBottom: 8 }}>
-            <span style={{ fontSize: 12, fontWeight: 700, marginRight: 2 }}>
-              {L('들어온 값', 'What came in', 'Dữ liệu đã nhận')}
-            </span>
+          <button
+            type="button"
+            onClick={() => setShowFills((v) => !v)}
+            style={{
+              display: 'flex', alignItems: 'center', gap: 5, padding: 0, border: 'none',
+              background: 'none', cursor: 'pointer', fontFamily: 'inherit',
+              fontSize: 12, fontWeight: 700, color: '#191F28',
+            }}
+          >
+            <span style={{ color: '#8B95A1', fontSize: 10 }}>{showFills ? '▾' : '▸'}</span>
+            {L('들어온 값', 'What came in', 'Dữ liệu đã nhận')} {data.fills.length}
+          </button>
+
+          {showFills && (<>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap', margin: '8px 0' }}>
             <Chip on={!kindFilter} onClick={() => setKindFilter(null)}
               label={L('전체', 'All', 'Tất cả')} n={data.fills.length} />
             <Chip on={kindFilter === 'score'} onClick={() => setKindFilter(kindFilter === 'score' ? null : 'score')}
@@ -125,19 +153,19 @@ export default function LangColdmailCards({ token, lang }) {
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 11.5 }}>
               <thead>
                 <tr style={{ position: 'sticky', top: 0, background: '#FAFBFC' }}>
+                  <th style={{ ...fillTh, width: 26 }}>arm</th>
                   <th style={fillTh}>{L('이름', 'Name', 'Tên')}</th>
                   <th style={fillTh}>{L('영어', 'English', 'Tiếng Anh')}</th>
                   <th style={fillTh}>{L('한국어', 'Korean', 'Tiếng Hàn')}</th>
-                  <th style={{ ...fillTh, width: 34 }}>arm</th>
                 </tr>
               </thead>
               <tbody>
                 {data.fills.filter((f) => !kindFilter || f.kind === kindFilter).map((f, i) => (
                   <tr key={i} style={{ borderTop: '1px solid #F2F4F6' }}>
+                    <td style={fillTd}><ArmTag campaign={f.campaign} /></td>
                     <td style={{ ...fillTd, fontWeight: 600 }}>{f.name}</td>
                     <td style={fillTd}><CertCell value={f.english_cert} kind={f.englishKind} L={L} /></td>
                     <td style={fillTd}><CertCell value={f.korean_cert} kind={f.koreanKind} L={L} /></td>
-                    <td style={{ ...fillTd, color: '#8B95A1' }}>{ARM_META[f.campaign]?.tag || '?'}</td>
                   </tr>
                 ))}
                 {kindFilter && !data.fills.some((f) => f.kind === kindFilter) && (
@@ -148,6 +176,7 @@ export default function LangColdmailCards({ token, lang }) {
               </tbody>
             </table>
           </div>
+          </>)}
         </div>
       )}
 
@@ -172,6 +201,21 @@ const fillTd = { padding: '6px 8px', textAlign: 'left', verticalAlign: 'top' }
 
 // 값 자체를 그대로 보여주되 종류를 색으로 구분한다. '점수'만 이 캠페인이 원한 결과다.
 const KIND_COLOR = { score: '#16a34a', other: '#4E5968', level: '#B45309', none: '#B0B8C1' }
+
+// 어느 arm 에서 온 사람인지 — 목록의 첫 칸. 위 카드의 배지와 달리 채우지 않고 외곽선만
+// 쓴다. 스무 줄이 넘는 목록에서 solid 배지가 줄마다 들어가면 정작 읽어야 할 값(점수·수준)
+// 보다 arm 이 먼저 눈에 들어온다.
+function ArmTag({ campaign }) {
+  const m = ARM_META[campaign]
+  if (!m) return <span style={{ color: '#D1D6DB' }}>?</span>
+  return (
+    <span style={{
+      display: 'inline-block', minWidth: 14, textAlign: 'center',
+      fontSize: 10, fontWeight: 700, color: m.color, background: 'none',
+      border: `1px solid ${m.color}55`, borderRadius: 4, padding: '0 4px', lineHeight: 1.6,
+    }}>{m.tag}</span>
+  )
+}
 
 // 값 종류 필터 칩. 숫자는 API 가 준 kinds 를 그대로 쓴다 — 화면에서 다시 세면
 // 칩의 숫자와 필터 결과가 어긋날 수 있다.
