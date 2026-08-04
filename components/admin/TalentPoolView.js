@@ -118,13 +118,28 @@ function eliteSchoolScore(r) {
   if (c?.tier === 'strong') return 15
   return 0
 }
-function eliteRank(r) {
+function eliteRank(r, cat) {
   const school = eliteSchoolScore(r)
   const koS = eliteKoScore(r.korean_cert)
   const enS = eliteEnScore(r.english_cert)
-  const total = school + koS + enS + Math.min((r.yoe_months || 0) / 12, 7) * 2.5
-  return { total, qualified: !!(r.full_name || '').trim() && school >= 15 && (koS > 0 || enS >= 14) }
+  const links = Array.isArray(r.resume_summary?.links) ? r.resume_summary.links : []
+  const langOk = koS > 0 || enS >= 14
+  // 디자인 계열은 어학 기재율이 낮아(15~25%) 학교 AND 언어를 요구하면 구조적으로 걸러진다
+  // → 학교 OR 언어로 완화. 포폴 링크는 가산점(디자이너 1급 신호).
+  const isDesign = cat === 'uiux' || cat === 'branding'
+  const qualified = !!(r.full_name || '').trim() && (isDesign ? (school >= 15 || langOk) : (school >= 15 && langOk))
+  const total = school + koS + enS + Math.min((r.yoe_months || 0) / 12, 7) * 2.5 + (links.length ? 10 : 0)
+  return { total, qualified }
 }
+
+// 포폴 링크 도메인 → 카드 표시 라벨
+const LINK_LABELS = [
+  ['behance.net', 'Behance'], ['dribbble.com', 'Dribbble'], ['artstation.com', 'ArtStation'],
+  ['github.com', 'GitHub'], ['gitlab.com', 'GitLab'], ['figma.com', 'Figma'],
+  ['notion.', 'Notion'], ['drive.google.com', 'Drive'], ['youtube.com', 'YouTube'],
+  ['youtu.be', 'YouTube'], ['vimeo.com', 'Vimeo'],
+]
+const linkLabel = (u) => LINK_LABELS.find(([d]) => u.includes(d))?.[1] || 'Portfolio'
 
 export default function TalentPoolView({ token, lang }) {
   const vi = lang === 'vi'
@@ -137,7 +152,7 @@ export default function TalentPoolView({ token, lang }) {
     all: 'Tất cả', fPublic: '🔓 Công khai', fTop: '🎓 Trường top', fOverseas: '🌏 Du học', fKorean: '🇰🇷 Tiếng Hàn', allWork: 'Tất cả hình thức',
     badgePublic: 'Công khai', lblGroup: 'Nhóm ngành', lblRole: 'Vị trí', lblCond: 'Điều kiện',
     eliteBtn: 'Ứng viên xuất sắc',
-    rowSchool: 'Học vấn', rowCareer: 'Kinh nghiệm', rowHighlights: 'Nổi bật', rowLang: 'Ngoại ngữ', rowSkills: 'Kỹ năng',
+    rowSchool: 'Học vấn', rowCareer: 'Kinh nghiệm', rowHighlights: 'Nổi bật', rowLang: 'Ngoại ngữ', rowSkills: 'Kỹ năng', rowLinks: 'Portfolio',
     topNote: 'Trường top VN', langEn: 'T.Anh', langKo: 'T.Hàn', noInfo: 'Chưa rõ', newGrad: 'Fresher',
     unknown: 'Chưa rõ', noRole: 'Chưa rõ vị trí', levelUnknown: 'Cấp bậc?', aiFill: 'Điền bằng AI', aiFilling: 'Đang phân tích…',
     aiTitle: 'Kinh nghiệm/ngoại ngữ còn trống — bấm để điền bằng AI', resume: 'CV →',
@@ -152,7 +167,7 @@ export default function TalentPoolView({ token, lang }) {
     all: '전체', fPublic: '🔓 공개', fTop: '🎓 명문대', fOverseas: '🌏 해외대', fKorean: '🇰🇷 한국어', allWork: '근무형태 전체',
     badgePublic: '공개', lblGroup: '직군', lblRole: '세부 직무', lblCond: '조건',
     eliteBtn: '최우수 인재',
-    rowSchool: '학력', rowCareer: '경력', rowHighlights: '주요이력', rowLang: '외국어', rowSkills: '기술',
+    rowSchool: '학력', rowCareer: '경력', rowHighlights: '주요이력', rowLang: '외국어', rowSkills: '기술', rowLinks: '포폴',
     topNote: '베트남 상위권 대학 (한국 인서울급)', langEn: '영어', langKo: '한국어', noInfo: '정보 없음', newGrad: '신입',
     unknown: '미상', noRole: '직무 미상', levelUnknown: '경력?', aiFill: 'AI 채우기', aiFilling: '분석 중…',
     aiTitle: '경력/어학이 비어 있어요 — 눌러서 AI로 채웁니다', resume: '이력서 보기',
@@ -167,7 +182,7 @@ export default function TalentPoolView({ token, lang }) {
     all: 'All', fPublic: '🔓 Public', fTop: '🎓 Top-tier', fOverseas: '🌏 Overseas', fKorean: '🇰🇷 Korean', allWork: 'All work types',
     badgePublic: 'Public', lblGroup: 'Group', lblRole: 'Role', lblCond: 'Filters',
     eliteBtn: 'Top talent',
-    rowSchool: 'Education', rowCareer: 'Career', rowHighlights: 'Highlights', rowLang: 'Languages', rowSkills: 'Skills',
+    rowSchool: 'Education', rowCareer: 'Career', rowHighlights: 'Highlights', rowLang: 'Languages', rowSkills: 'Skills', rowLinks: 'Portfolio',
     topNote: 'Top-tier VN univ.', langEn: 'EN', langKo: 'KO', noInfo: 'N/A', newGrad: 'New grad',
     unknown: 'Unknown', noRole: 'No role', levelUnknown: 'Level?', aiFill: 'AI fill', aiFilling: 'Filling…',
     aiTitle: 'Career/language empty — click to fill with AI', resume: 'Resume →',
@@ -513,6 +528,17 @@ function TalentCard({ r, L, vi, ko, userRecs = [], onRecommend, onReparse, parsi
       {skills.length > 8 && <span style={{ padding: '3px 4px', fontSize: 11.5, color: '#9CA3AF' }}>+{skills.length - 8}</span>}
     </span>
   ) : null
+  const links = Array.isArray(summary.links) ? summary.links : []
+  const linkNode = links.length > 0 ? (
+    <span style={{ display: 'flex', flexWrap: 'wrap', gap: 5 }}>
+      {links.map(u => (
+        <a key={u} href={u} target="_blank" rel="noopener noreferrer" title={u}
+          style={{ padding: '3px 9px', borderRadius: 6, fontSize: 11.5, background: '#fff', border: '1px solid #E5E8EB', color: '#1A73E8', textDecoration: 'none', fontWeight: 600, whiteSpace: 'nowrap' }}>
+          {linkLabel(u)} ↗
+        </a>
+      ))}
+    </span>
+  ) : null
   return (
     <div className="tp-card" style={{ background: '#fff', border: '1px solid #E5E8EB', borderRadius: 14, padding: '20px 14px 12px', display: 'flex', flexDirection: 'column' }}>
       {/* 헤더: 중앙 사진 · 이름(호칭) · 직무 */}
@@ -543,6 +569,7 @@ function TalentCard({ r, L, vi, ko, userRecs = [], onRecommend, onReparse, parsi
           </span>
         ))}
         {panelRow(L.rowLang, langNode || L.noInfo, !langNode)}
+        {linkNode && panelRow(L.rowLinks, linkNode)}
         {skillNode && panelRow(L.rowSkills, skillNode)}
       </div>
 
@@ -592,13 +619,13 @@ function EliteView({ pool, lang, L, vi, ko }) {
   const langKey = vi ? 'vi' : ko ? 'ko' : 'en'
   const [catSel, setCatSel] = useState(null) // null이면 후보 있는 첫 카테고리 자동 선택
   const M = vi ? {
-    desc: 'Trường top/du học + tiếng Anh (B2↑) hoặc tiếng Hàn · chưa gồm portfolio (thu thập riêng)',
+    desc: 'Trường top/du học + tiếng Anh (B2↑) hoặc tiếng Hàn (Thiết kế: trường HOẶC ngoại ngữ) · có portfolio được cộng điểm',
     empty: 'Chưa có ứng viên đạt tiêu chí', total: 'tổng',
   } : ko ? {
-    desc: '기준: 명문·해외대 + 영어(비즈니스급↑) 또는 한국어 · 포폴은 별도 수집 필요',
+    desc: '기준: 명문·해외대 + 영어(비즈니스급↑) 또는 한국어 (디자인은 학교/언어 중 하나) · 포폴 보유 가산',
     empty: '기준 충족 인재가 아직 없습니다', total: '총',
   } : {
-    desc: 'Top/overseas school + English (B2+) or Korean · portfolio collected separately',
+    desc: 'Top/overseas school + English (B2+) or Korean (Design: school OR language) · portfolio adds score',
     empty: 'No qualifying talent yet', total: 'total',
   }
 
@@ -607,7 +634,7 @@ function EliteView({ pool, lang, L, vi, ko }) {
   for (const r of pool) {
     const cat = eliteCategory(r)
     if (!cat) continue
-    const s = eliteRank(r)
+    const s = eliteRank(r, cat)
     if (!s.qualified) continue
     ;(byCat[cat] ||= []).push({ r, total: s.total })
   }
