@@ -83,14 +83,16 @@ export default function AdminDashboard() {
   const [autoRefresh, setAutoRefresh] = useState(true)
   const yesterday = vnDate(Date.now() - 86400000)
   const todayStr = vnDate(Date.now())
-  const [dateRange, setDateRange] = useState({ from: '2026-04-20', to: todayStr })
-  // 탭별 기본 시작일: 메인 퍼널은 퍼널 계측 완비일(7/16)부터, 그 외는 4/20. 유저가 피커를
+  // 기본 기간 = 최근 30일(당일 포함). 누적이 길어져 전 기간 기본은 폐기.
+  const from30 = vnDate(Date.now() - 29 * 86400000)
+  const [dateRange, setDateRange] = useState({ from: from30, to: todayStr })
+  // 메인 퍼널만 계측 완비일(7/16) 이전으로 내려가지 않게 클램프. 유저가 피커를
   // 직접 만지면(dateTouched) 그 선택을 모든 탭에서 존중하고 자동 전환을 멈춘다.
   const [dateTouched, setDateTouched] = useState(false)
   useEffect(() => {
     if (dateTouched) return
-    setDateRange(r => ({ ...r, from: tab === 'main' ? '2026-07-16' : '2026-04-20' }))
-  }, [tab, dateTouched])
+    setDateRange(r => ({ ...r, from: tab === 'main' && from30 < '2026-07-16' ? '2026-07-16' : from30 }))
+  }, [tab, dateTouched]) // eslint-disable-line
 
   // SWR: 캐시로 탭 전환/페이지 재방문 시 즉시 표시 + 백그라운드 갱신. 키에 날짜/언어 포함.
   // 무거운 데이터는 실제로 쓰는 탭에서만 로드 — data/ga4 는 추이·퍼널, realtime/experiments 는

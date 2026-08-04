@@ -42,6 +42,8 @@ export default async function handler(req, res) {
     for (const key of allowed) {
       if (key in fields) update[key] = fields[key]
     }
+    // 이력서 삭제는 null로 통일 — ''는 IS NOT NULL 집계에 잡히는 유령 행을 만든다.
+    if (update.resume_url === '') update.resume_url = null
 
     // If this PUT is the moment a resume_url first lands on the profile
     // (most commonly the jobs-apply → AI prompt path), tag where it came

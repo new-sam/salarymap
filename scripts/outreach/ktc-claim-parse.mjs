@@ -18,6 +18,7 @@ const LEADS = new URL('../../data/ktc-leads-not-in-fyi.csv', import.meta.url)
 const args = process.argv.slice(2)
 const flag = (k, d) => { const i = args.indexOf('--' + k); return i >= 0 ? (args[i + 1] && !args[i + 1].startsWith('--') ? args[i + 1] : true) : d }
 const doRun = args.includes('--run')
+const revive = args.includes('--revive') // 구 앵글(coldmail-ktc/-2/-3) 수신 무반응자 재발송 준비 — CV 캠페인 수신자만 제외
 const max = parseInt(flag('max', '0')) || 0
 const CONCURRENCY = 5
 
@@ -64,7 +65,8 @@ async function fetchAll(build) {
   const profs = await fetchAll(() => sb.from('user_profiles').select('email').not('email', 'is', null))
   const members = new Set(profs.map(p => p.email.trim().toLowerCase()))
   const evts = await fetchAll(() => sb.from('events').select('event, meta').in('event', ['coldmail_public_sent', 'coldmail_unsub']))
-  const sentLeads = new Set(evts.filter(e => e.event === 'coldmail_public_sent' && /^coldmail-ktc/.test(e.meta?.campaign || '') && e.meta?.lead).map(e => e.meta.lead))
+  const sentRe = revive ? /^coldmail-ktc-cv/ : /^coldmail-ktc/
+  const sentLeads = new Set(evts.filter(e => e.event === 'coldmail_public_sent' && sentRe.test(e.meta?.campaign || '') && e.meta?.lead).map(e => e.meta.lead))
   const unsubLeads = new Set(evts.filter(e => e.event === 'coldmail_unsub' && e.meta?.lead).map(e => e.meta.lead))
   leads = leads.filter(l => !members.has(l.email) && !sentLeads.has(l.lead) && !unsubLeads.has(l.lead))
 

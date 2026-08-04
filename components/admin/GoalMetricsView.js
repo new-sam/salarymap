@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import MetricChart from '../DashboardCharts'
+import { templateFor, localizeTemplate } from './coldmailTemplates'
 
 // "승주 작업실" — 어드민 인증으로만 접근(개인 비밀번호 게이트 제거).
 // 기본 탭은 목표지표인 [이력서 공개].
@@ -148,7 +149,7 @@ export default function GoalMetricsView({ token, lang }) {
       {view === 'paths' && <SignupPathsTab data={spData} loading={spLoading} error={spError} ko={ko} />}
       {view === 'ad' && <AdTab data={adData} loading={adLoading} error={adError} ko={ko} />}
       {view === 'resumePublic' && <ResumePublicTab data={rpData} loading={rpLoading} error={rpError} ko={ko} onRefresh={loadRp} />}
-      {view === 'coldmail' && <ColdmailPublicTab data={cmData} loading={cmLoading} error={cmError} ko={ko} />}
+      {view === 'coldmail' && <ColdmailPublicTab data={cmData} loading={cmLoading} error={cmError} ko={ko} lang={lang} />}
     </div>
   )
 }
@@ -815,7 +816,10 @@ const CAMPAIGN_GROUPS = [
 // 그룹이 정한 소스에서 전환 인원을 꺼낸다(공개전환 = converted / 추천 = 지원자 수).
 const convertedOf = (c, g) => (g.convertFrom === 'apply' ? c.appliers : c.converted)
 
-function ColdmailPublicTab({ data, loading, error, ko }) {
+function ColdmailPublicTab({ data, loading, error, ko, lang }) {
+  const [mailPreview, setMailPreview] = useState(null) // { campaign, tpl } — 캠페인명 클릭 시 발송 메일 양식 모달
+  // 토글 언어로 subject/html 해석 — vi=발송 원문, ko/en=열람용 번역본.
+  const mailTpl = mailPreview ? localizeTemplate(mailPreview.tpl, lang) : null
   if (loading || !data) return <div style={{ textAlign: 'center', padding: 40, color: '#666' }}>{ko ? '불러오는 중…' : 'Loading…'}</div>
   if (error) return <div style={{ textAlign: 'center', padding: 40, color: '#c00' }}>{error}</div>
   if (data.error) return <div style={{ textAlign: 'center', padding: 40, color: '#c00' }}>{data.error}</div>
@@ -907,9 +911,14 @@ function ColdmailPublicTab({ data, loading, error, ko }) {
                 <tbody>
                   {rows.map((c) => {
                     const conv = convertedOf(c, g)
+                    const tpl = templateFor(c.campaign)
                     return (
                     <tr key={c.campaign}>
-                      <td style={{ ...td, fontWeight: 700 }}>{c.campaign}
+                      <td style={{ ...td, fontWeight: 700 }}>
+                        {tpl ? (
+                          <span onClick={() => setMailPreview({ campaign: c.campaign, tpl })} title={ko ? '발송된 메일 양식 보기' : 'View sent email'}
+                            style={{ cursor: 'pointer', borderBottom: '1px dashed #C4C9CF' }}>{c.campaign}</span>
+                        ) : c.campaign}
                         {c.firstSentDay && <span style={{ fontWeight: 400, color: '#9CA3AF', fontSize: 11.5 }}> · {c.firstSentDay.slice(5)}{c.lastSentDay && c.lastSentDay !== c.firstSentDay ? `~${c.lastSentDay.slice(5)}` : ''}</span>}
                       </td>
                       <td style={num}>{c.sent}</td>
@@ -942,6 +951,38 @@ function ColdmailPublicTab({ data, loading, error, ko }) {
           </div>
         )
       })}
+
+      {mailPreview && (
+        <div onClick={() => setMailPreview(null)}
+          style={{ position: 'fixed', inset: 0, background: 'rgba(15,23,42,0.45)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
+          <div onClick={(e) => e.stopPropagation()}
+            style={{ background: '#fff', borderRadius: 16, width: '100%', maxWidth: 640, maxHeight: '90vh', display: 'flex', flexDirection: 'column', overflow: 'hidden', boxShadow: '0 20px 60px rgba(0,0,0,0.25)' }}>
+            <div style={{ padding: '16px 20px', borderBottom: '1px solid #EEF0F2', display: 'flex', alignItems: 'flex-start', gap: 12 }}>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: 14, fontWeight: 800, color: '#0F172A', marginBottom: 4 }}>{mailPreview.campaign}</div>
+                <div style={{ fontSize: 12.5, fontWeight: 600, color: '#374151', marginBottom: 6 }}>✉️ {mailTpl.subject}</div>
+                <div style={{ fontSize: 12, color: '#6B7280', lineHeight: 1.55 }}>{mailTpl.desc}</div>
+                <div style={{ fontSize: 11, color: '#B0B0B8', marginTop: 6 }}>{mailTpl.source}</div>
+                {lang !== 'vi' && mailTpl.html && (
+                  <div style={{ fontSize: 11, color: '#B45309', marginTop: 6 }}>
+                    {ko ? '열람용 번역본입니다 — 실제 발송 원문은 베트남어(VI 토글로 확인)' : 'Translated for viewing — the actual mail was sent in Vietnamese (see VI toggle)'}
+                  </div>
+                )}
+              </div>
+              <button onClick={() => setMailPreview(null)}
+                style={{ border: 'none', background: '#F2F4F6', borderRadius: 8, width: 28, height: 28, fontSize: 14, cursor: 'pointer', color: '#4E5968', flexShrink: 0 }}>✕</button>
+            </div>
+            {mailTpl.html ? (
+              <iframe title="mail-preview" sandbox="" srcDoc={mailTpl.html}
+                style={{ border: 'none', width: '100%', flex: 1, minHeight: 420, background: '#f2f4f6' }} />
+            ) : (
+              <div style={{ padding: '28px 20px', fontSize: 13, color: '#9CA3AF', textAlign: 'center' }}>
+                {ko ? '본문 원문이 보존돼 있지 않은 캠페인입니다 (git 히스토리 참조).' : 'Original body not preserved (see git history).'}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {data.daily.length > 0 && (
         <>

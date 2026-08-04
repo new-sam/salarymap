@@ -19,11 +19,23 @@ export default async function handler(req, res) {
     const COLUMNS_NO_SUMMARY = COLUMNS_FULL.replace(', resume_summary', '')
     const COLUMNS_FALLBACK = COLUMNS_NO_SUMMARY.replace(', resume_source', '')
 
-    const fetchWith = (columns) => supabase
-      .from('user_profiles')
-      .select(columns)
-      .not('resume_url', 'is', null)
-      .order('updated_at', { ascending: false })
+    // Supabase select는 기본 1000행에서 조용히 잘린다 — range로 전량 페이지네이션.
+    const fetchWith = async (columns) => {
+      const all = []
+      for (let offset = 0; ; offset += 1000) {
+        const { data, error } = await supabase
+          .from('user_profiles')
+          .select(columns)
+          .not('resume_url', 'is', null)
+          .neq('resume_url', '') // 과거 삭제 버그가 남긴 빈 문자열 방어 — 파일 없는 행은 목록에서 제외
+          .order('updated_at', { ascending: false })
+          .range(offset, offset + 999)
+        if (error) return { data: null, error }
+        all.push(...data)
+        if (data.length < 1000) break
+      }
+      return { data: all, error: null }
+    }
 
     let { data, error } = await fetchWith(COLUMNS_FULL)
     if (error && /resume_summary/.test(error.message || '')) {
@@ -36,9 +48,9 @@ export default async function handler(req, res) {
     if (error) return res.status(500).json({ error: error.message })
 
     // Fetch emails from auth
-    const userIds = data.map(d => d.id)
+    const userIds = new Set(data.map(d => d.id))
     const emails = {}
-    if (userIds.length > 0) {
+    if (userIds.size > 0) {
       let page = 1
       while (true) {
         const { data: { users }, error: authErr } = await supabase.auth.admin.listUsers({
@@ -47,7 +59,7 @@ export default async function handler(req, res) {
         })
         if (authErr || !users || users.length === 0) break
         for (const u of users) {
-          if (userIds.includes(u.id)) emails[u.id] = u.email
+          if (userIds.has(u.id)) emails[u.id] = u.email
         }
         if (users.length < 1000) break
         page++

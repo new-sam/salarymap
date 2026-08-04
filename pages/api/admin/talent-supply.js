@@ -96,6 +96,24 @@ export function normalizePosition(raw) {
   return 'other'
 }
 
+// 언어 능력 급간 — korean_cert/english_cert(이력서 AI 스캔 + 프로필 수기입력)의
+// 자유표기("TOPIK 3"·"IELTS 6.5"·"Fluent"·"Cơ bản"…)를 상급/중급/기초로 버킷.
+// 점수 우선, 다음 레벨 단어. 언급은 있는데 급간 판별불가면 'unknown'. 미언급 = null.
+export function langTier(raw) {
+  const s = String(raw || '').trim().toLowerCase()
+  if (!s) return null
+  const topik = s.match(/topik(?:\s*ii?)?[^0-9]*([1-6])/)
+  if (topik) return +topik[1] >= 5 ? 'high' : +topik[1] >= 3 ? 'mid' : 'basic'
+  const ielts = s.match(/ielts[^0-9]*(\d(?:\.\d)?)/)
+  if (ielts) return +ielts[1] >= 6.5 ? 'high' : +ielts[1] >= 5 ? 'mid' : 'basic'
+  const toeic = s.match(/toeic[^0-9]*(\d{3})/)
+  if (toeic) return +toeic[1] >= 800 ? 'high' : +toeic[1] >= 550 ? 'mid' : 'basic'
+  if (/\bc[12]\b|native|fluent|advanced|\bproficient\b|full professional|business|thành thạo|cao cấp|모국어|유창/.test(s)) return 'high'
+  if (/basic|beginner|elementary|novice|cơ bản|sơ cấp|\ba[12]\b|limited|기초|초급/.test(s)) return 'basic'
+  if (/\bb[12]\b|intermediate|professional|working|conversational|communicat|good|giao tiếp|khá|중급/.test(s)) return 'mid'
+  return 'unknown'
+}
+
 export async function fetchAll(table, select, tweak) {
   let all = [], offset = 0
   for (;;) {
@@ -119,7 +137,7 @@ export default async function handler(req, res) {
     const weekAgoISO = new Date(nowMs - 7 * DAY).toISOString()
 
     const [profiles, idEvents, apps] = await Promise.all([
-      fetchAll('user_profiles', 'id, position, desired_roles, resume_url, is_resume_public'),
+      fetchAll('user_profiles', 'id, position, desired_roles, resume_url, is_resume_public, korean_cert, english_cert'),
       // 로그인 식별 이벤트만(웹은 대부분 익명 client_id라 활성 판정은 로그인 유저 기준).
       fetchAll('events', 'user_id, created_at', q => q.not('user_id', 'is', null)),
       fetchAll('job_applications', 'user_id', q => q.not('user_id', 'is', null)),
@@ -138,7 +156,7 @@ export default async function handler(req, res) {
       recent7d.has(id) || applied.has(id) || (daysByUser[id] && daysByUser[id].size >= 2)
 
     // ---- 카테고리별 3단계 누적 ----
-    const blank = () => ({ all: 0, resume: 0, resumePublic: 0, active: 0 })
+    const blank = () => ({ all: 0, resume: 0, resumePublic: 0, active: 0, korean: 0, english: 0 })
     const cat = Object.fromEntries(CATEGORIES.map(c => [c.key, blank()]))
     const unknown = blank() // position 미입력
     const uncat = {}        // 'other'로 떨어진 원본 문자열 분포(검수용)
@@ -151,6 +169,11 @@ export default async function handler(req, res) {
       activeAll: 0,
       activeResume: 0,
     }
+
+    // 언어 능력(한국어/영어) — 이력서 AI 스캔(공개+비공개 전부) + 프로필 수기입력 기준.
+    // scanned = 이력서 보유 중 언어까지 스캔된 수(korean_cert가 null 아님 — 미스캔 잔여 파악용).
+    const langBlank = () => ({ able: 0, high: 0, mid: 0, basic: 0, unknown: 0 })
+    const language = { scanned: 0, ko: langBlank(), en: langBlank() }
 
     for (const p of profiles) {
       const hasResume = !!p.resume_url
@@ -172,6 +195,12 @@ export default async function handler(req, res) {
       if (hasResume) { bucket.resume++; totals.resumeHolders++ }
       if (isPub) { bucket.resumePublic++; totals.resumePublic++ }
       if (hasResume && act) { bucket.active++; totals.activeResume++ }
+
+      if (hasResume && p.korean_cert !== null) language.scanned++
+      const koT = langTier(p.korean_cert)
+      const enT = langTier(p.english_cert)
+      if (koT) { language.ko.able++; language.ko[koT]++; bucket.korean++ }
+      if (enT) { language.en.able++; language.en[enT]++; bucket.english++ }
 
       if (key === 'other') {
         const v = String(srcVal).trim()
@@ -199,6 +228,7 @@ export default async function handler(req, res) {
       categories,
       unknown,
       split,
+      language,
       uncategorized: Object.entries(uncat).map(([value, count]) => ({ value, count })).sort((a, b) => b.count - a.count),
       activeDef: { windowDays: 7, note: 'recent 7d visit OR applied OR repeat visitor (2+ days). Login-identified events only.' },
     })

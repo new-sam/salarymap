@@ -132,8 +132,11 @@ export default async function handler(req, res) {
       // (집계가 meta.lead 로 사람을 세므로, 조인용 계정 id 는 meta.converted_user 에 남긴다).
       const lead = u.email ? leadId(u.email) : null;
       if (lead) {
+        // 최신 발송 우선(last-touch) — 재발송(revive) 수신자는 옛 발송 이벤트도 갖고 있어서,
+        // 정렬 없이 [0]을 쓰면 가입이 옛 캠페인에 귀속된다.
         const { data: sentEv } = await supabaseAdmin.from('events')
-          .select('meta').eq('event', 'coldmail_public_sent').eq('meta->>lead', lead).limit(5);
+          .select('meta').eq('event', 'coldmail_public_sent').eq('meta->>lead', lead)
+          .order('created_at', { ascending: false }).limit(5);
         if (sentEv?.length) {
           await supabaseAdmin.from('events').insert([{
             event: 'coldmail_public_convert',

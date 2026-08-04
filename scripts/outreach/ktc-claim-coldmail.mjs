@@ -33,7 +33,8 @@ const doSend = args.includes('--send')
 const lang = flag('lang', 'vi') === 'ko' ? 'ko' : 'vi'
 const TEMPLATE = new URL(`../ktc-claim-coldmail-${lang}.html`, import.meta.url)
 const testTo = flag('test', null)
-const campaign = flag('campaign', 'coldmail-ktc-cv')
+const revive = args.includes('--revive') // 구 앵글(coldmail-ktc/-2/-3) 무반응자 재발송 — CV 캠페인 수신자만 제외. 캠페인명은 --campaign 으로 분리할 것
+const campaign = flag('campaign', revive ? 'coldmail-ktc-cv-revive' : 'coldmail-ktc-cv')
 const parsedOnly = args.includes('--parsed-only')
 const max = parseInt(flag('max', doSend ? '200' : '0')) || 0
 
@@ -206,7 +207,8 @@ async function mxOk(domains) {
   const members = new Set(profs.map(p => p.email.trim().toLowerCase()))
   // 이미 보낸 사람(coldmail-ktc* 계열 전체) / 수신거부 제외 — events 가 발송 원장(재실행 idempotent).
   const evts = await fetchAll(sb, () => sb.from('events').select('event, meta').in('event', ['coldmail_public_sent', 'coldmail_unsub']))
-  const sentLeads = new Set(evts.filter(e => e.event === 'coldmail_public_sent' && /^coldmail-ktc/.test(e.meta?.campaign || '') && e.meta?.lead).map(e => e.meta.lead))
+  const sentRe = revive ? /^coldmail-ktc-cv/ : /^coldmail-ktc/
+  const sentLeads = new Set(evts.filter(e => e.event === 'coldmail_public_sent' && sentRe.test(e.meta?.campaign || '') && e.meta?.lead).map(e => e.meta.lead))
   const unsubLeads = new Set(evts.filter(e => e.event === 'coldmail_unsub' && e.meta?.lead).map(e => e.meta.lead))
 
   const isMember = leads.filter(l => members.has(l.email)).length

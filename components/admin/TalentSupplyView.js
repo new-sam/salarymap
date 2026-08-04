@@ -25,11 +25,19 @@ export default function TalentSupplyView({ token, lang }) {
   if (isLoading || !data) return <div style={{ textAlign: 'center', padding: 40, color: '#666' }}>{L('불러오는 중…', 'Loading…', 'Đang tải…')}</div>
   if (data.error) return <div style={{ textAlign: 'center', padding: 40, color: '#c00' }}>{data.error}</div>
 
-  const { totals, categories, unknown, split, uncategorized } = data
+  const { totals, categories, unknown, split, uncategorized, language } = data
   const rows = [...categories]
   if (unknown.all > 0) rows.push({ key: '_unknown', ko: '포지션 미입력', en: 'No position', vi: 'Chưa nhập vị trí', group: 'other', ...unknown })
   const maxAll = Math.max(1, ...rows.map(r => r.all))
   const pct = (n, d) => (d > 0 ? Math.round((n / d) * 100) : 0)
+
+  // 언어 급간(상급/중급/기초) 분포를 카드 서브라인으로 — '?'=언급은 있으나 급간 판별불가
+  const tierSub = (t) => [
+    t.high ? `${L('상급', 'adv', 'cao')} ${t.high}` : null,
+    t.mid ? `${L('중급', 'mid', 'TB')} ${t.mid}` : null,
+    t.basic ? `${L('기초', 'basic', 'cơ bản')} ${t.basic}` : null,
+    t.unknown ? `? ${t.unknown}` : null,
+  ].filter(Boolean).join(' · ')
 
   const stat = (label, value, sub) => (
     <div style={{ background: '#fff', border: '1px solid #E5E8EB', borderRadius: 12, padding: '14px 16px', minWidth: 130 }}>
@@ -40,8 +48,8 @@ export default function TalentSupplyView({ token, lang }) {
   )
 
   function downloadCsv() {
-    const headers = ['Category', 'Group', 'All', 'Resume', 'Resume public', 'Active(resume)']
-    const body = rows.map(r => [catName(r), GROUP_LABEL[r.group][lang], r.all, r.resume, r.resumePublic ?? '', r.active])
+    const headers = ['Category', 'Group', 'All', 'Resume', 'Resume public', 'Korean', 'English', 'Active(resume)']
+    const body = rows.map(r => [catName(r), GROUP_LABEL[r.group][lang], r.all, r.resume, r.resumePublic ?? '', r.korean ?? '', r.english ?? '', r.active])
     const csv = [headers, ...body].map(r => r.map(c => `"${String(c).replace(/"/g, '""')}"`).join(',')).join('\n')
     const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' })
     const a = document.createElement('a')
@@ -81,6 +89,8 @@ export default function TalentSupplyView({ token, lang }) {
         {stat(L('이력서 등록', 'Resume', 'Có CV'), totals.resumeHolders, `${pct(totals.resumeHolders, totals.profiles)}% · ${L('공개', 'public', 'công khai')} ${totals.resumePublic}`)}
         {stat(L('활성 (전체)', 'Active (all)', 'Hoạt động (tất cả)'), totals.activeAll, L('7일 방문·지원·반복', '7d visit / applied / repeat', 'Truy cập 7 ngày · ứng tuyển · quay lại'))}
         {stat(L('활성 이력서', 'Active w/ resume', 'CV hoạt động'), totals.activeResume, `${pct(totals.activeResume, totals.resumeHolders)}% ${L('이력서 중', 'of resumes', 'trong số CV')}`)}
+        {language && stat(L('한국어 가능', 'Korean', 'Tiếng Hàn'), language.ko.able, tierSub(language.ko))}
+        {language && stat(L('영어 가능', 'English', 'Tiếng Anh'), language.en.able, tierSub(language.en))}
       </div>
 
       {/* 개발 vs 비개발 공급 비중 — 수요·공급 갭 핵심 신호 */}
@@ -113,6 +123,8 @@ export default function TalentSupplyView({ token, lang }) {
               <th style={{ textAlign: 'right', padding: '10px 10px', fontWeight: 600 }}>{L('전체', 'All', 'Tổng')}</th>
               <th style={{ textAlign: 'left', padding: '10px 10px', fontWeight: 600, width: '32%' }}>{L('비중', 'Share', 'Tỷ trọng')}</th>
               <th style={{ textAlign: 'right', padding: '10px 10px', fontWeight: 600 }}>{L('이력서', 'Resume', 'CV')}</th>
+              <th style={{ textAlign: 'right', padding: '10px 10px', fontWeight: 600 }}>{L('한국어', 'KO', 'T.Hàn')}</th>
+              <th style={{ textAlign: 'right', padding: '10px 10px', fontWeight: 600 }}>{L('영어', 'EN', 'T.Anh')}</th>
               <th style={{ textAlign: 'right', padding: '10px 14px', fontWeight: 600 }}>{L('활성', 'Active', 'Hoạt động')}</th>
             </tr>
           </thead>
@@ -136,6 +148,8 @@ export default function TalentSupplyView({ token, lang }) {
                   </div>
                 </td>
                 <td style={{ padding: '9px 10px', textAlign: 'right', color: '#374151' }}>{r.resume}</td>
+                <td style={{ padding: '9px 10px', textAlign: 'right', color: (r.korean || 0) > 0 ? '#0F172A' : '#CBD5E1', fontWeight: (r.korean || 0) > 0 ? 600 : 400 }}>{r.korean || 0}</td>
+                <td style={{ padding: '9px 10px', textAlign: 'right', color: (r.english || 0) > 0 ? '#374151' : '#CBD5E1' }}>{r.english || 0}</td>
                 <td style={{ padding: '9px 14px', textAlign: 'right', color: r.active > 0 ? '#ff6000' : '#CBD5E1', fontWeight: 600 }}>{r.active}</td>
               </tr>
             ))}
@@ -167,6 +181,11 @@ export default function TalentSupplyView({ token, lang }) {
           'Active = 7-day visit, job application, or repeat visit (2+ days), based on login-identified events. Position values are heuristically mapped to standard roles.',
           'Hoạt động = truy cập 7 ngày gần nhất · ứng tuyển · quay lại (2+ ngày), theo sự kiện đăng nhập. Giá trị vị trí được ánh xạ heuristic về nhóm ngành chuẩn.'
         )}
+        {language && <> {L(
+          `한국어/영어 = 이력서 AI 스캔(비공개 포함)·프로필 입력에서 해당 언어가 언급된 인원. 이력서에 안 쓴 능력은 못 잡습니다. 언어 스캔 완료 ${language.scanned}/${totals.resumeHolders} — 잔여는 대부분 이미지 PDF.`,
+          `Korean/English = candidates whose resume scan (incl. private) or profile mentions the language; unstated skills are not captured. Scanned ${language.scanned}/${totals.resumeHolders} resumes — the rest are mostly image PDFs.`,
+          `Tiếng Hàn/Anh = ứng viên có đề cập ngôn ngữ trong CV (kể cả CV riêng tư) hoặc hồ sơ; kỹ năng không ghi sẽ không được tính. Đã quét ${language.scanned}/${totals.resumeHolders} CV — phần còn lại chủ yếu là PDF dạng ảnh.`
+        )}</>}
       </div>
     </div>
   )
