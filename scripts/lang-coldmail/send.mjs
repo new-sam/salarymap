@@ -34,7 +34,16 @@ const doSend = has('--send')
 // 모든 링크(CTA 4개·수신거부·픽셀)가 DNS_PROBE_FINISHED_NXDOMAIN 으로 죽었다.
 const SITE = (process.env.NEXT_PUBLIC_SITE_URL || 'https://salary-fyi.com').replace(/\/$/, '')
 const RESEND_FROM = process.env.RESEND_FROM || 'FYI <hello@salary-fyi.com>'
-const CSV = 'data/lang-coldmail-audience.csv'
+const CSV = arg('--csv', 'data/lang-coldmail-audience.csv')
+
+/* wave — 같은 캠페인 ID(coldmail-language-1/2)를 계속 쓰되 코호트를 구분하는 값.
+   ID 를 새로 만들면 대시보드 카드에 안 잡히고 A/B 표본도 안 합쳐진다. 반대로 아무 표시도
+   안 남기면 성격이 다른 집단이 한 숫자로 뭉친다:
+     wave 1 = 콜드메일을 한 번도 안 받은 사람 200명
+     wave 2 = 이미 다른 콜드메일을 받은 적 있는 사람
+   제목 A/B 는 wave 안에서 교대 배정하므로 두 arm 이 같은 모집단을 보고, 비교는 유지된다.
+   전환율을 통째로 읽을 때만 wave 를 갈라 봐야 한다. */
+const wave = Number(arg('--wave', '1'))
 
 const CAMPAIGN = { a: 'coldmail-language-1', b: 'coldmail-language-2' }
 if (!CAMPAIGN[arm]) { console.error(`--arm 은 a 또는 b (받은 값: ${arm})`); process.exit(1) }
@@ -159,7 +168,7 @@ const resendClient = async () => new (await import('resend')).Resend(process.env
       await sb.from('events').insert({
         event: 'coldmail_lang_sent',
         user_id: row.user_id || null,
-        meta: { campaign: row.campaign, lang, lead: leadId(row.email), resend_id: resp.data?.id || null },
+        meta: { campaign: row.campaign, lang, wave, lead: leadId(row.email), resend_id: resp.data?.id || null },
       })
       ok++
     } catch (e) {

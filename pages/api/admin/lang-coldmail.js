@@ -85,10 +85,22 @@ export default async function handler(req, res) {
       .in('event', EVENTS)
       .order('created_at'))
 
+    /* wave — 같은 캠페인 ID 를 쓰되 모집단이 다른 코호트.
+         wave 1 = 콜드메일을 한 번도 안 받은 사람 200명
+         wave 2 = 이미 다른 콜드메일을 받은 적 있는 사람 260명
+       두 코호트를 한 숫자로 뭉치면 전환율이 무엇을 뜻하는지 알 수 없게 된다. 제목 A/B 는
+       wave 안에서 교대 배정하므로 wave 별로 봐도 비교는 그대로 성립한다.
+       wave 는 발송 이벤트에만 있다 — 클릭·저장은 랜딩에서 찍히는데 거기선 wave 를 모른다.
+       그래서 발송 기록으로 user_id → wave 를 만들어 클릭·저장에 되붙인다. */
+    const waveOf = {}
+    for (const e of evts) {
+      if (e.event === 'coldmail_lang_sent' && e.user_id) waveOf[e.user_id] = Number(e.meta?.wave) || 1
+    }
+
     const arms = {}
     // 사람 단위로 센다 — 같은 사람의 재클릭(메일 스캐너 중복 포함)이 비율을 부풀리지 않게.
-    const arm = (name) => (arms[name] = arms[name] || {
-      campaign: name,
+    const arm = (name, wave) => (arms[`${name}::${wave}`] = arms[`${name}::${wave}`] || {
+      campaign: name, wave,
       sent: new Set(), click: new Set(), fill: new Set(),
       cta: { score: new Set(), daily: new Set(), basic: new Set(), none: new Set() },
       firstSentAt: null, lastSentAt: null,
@@ -98,7 +110,7 @@ export default async function handler(req, res) {
       // 수신자는 전원 회원(이력서 보유자)이라 user_id 가 있다. 없으면 발송 스크립트가
       // 잘못 심은 것 — 사람을 못 세므로 조용히 버리지 않고 unattributed 로 센다.
       const pid = e.user_id || e.meta?.lead || null
-      const a = arm(e.meta?.campaign || '(campaign 누락)')
+      const a = arm(e.meta?.campaign || '(campaign 누락)', waveOf[e.user_id] || 1)
       if (e.event === 'coldmail_lang_sent') {
         if (pid) a.sent.add(pid)
         if (!a.firstSentAt || e.created_at < a.firstSentAt) a.firstSentAt = e.created_at
@@ -115,6 +127,7 @@ export default async function handler(req, res) {
     const rows = Object.values(arms)
       .map((a) => ({
         campaign: a.campaign,
+        wave: a.wave,
         sent: a.sent.size,
         clicked: a.click.size,
         filled: a.fill.size,
@@ -161,66 +174,71 @@ export default async function handler(req, res) {
           keptPreset: !!PRESET[ctaOf[p.id]] &&
             [p.english_cert, p.korean_cert].filter(Boolean).every((v) => v === PRESET[ctaOf[p.id]]),
           campaign: firstFill[p.id]?.campaign || null,
+          wave: waveOf[p.id] || 1,
           at: firstFill[p.id]?.at || null,
         }))
         .sort((a, b) => String(b.at || '').localeCompare(String(a.at || '')))
     }
-
-    // A/B 판정은 두 arm 이 다 있을 때만. 세 개 이상이면 이름순 앞의 둘을 쓴다.
-    const A = rows.find((r) => r.campaign === 'coldmail-language-1')
-    const B = rows.find((r) => r.campaign === 'coldmail-language-2')
-    const ab = (A && B) ? {
-      a: A.campaign, b: B.campaign,
-      click: zTest(A.clicked, A.sent, B.clicked, B.sent),
-      fill: zTest(A.filled, A.sent, B.filled, B.sent),
-    } : null
 
     // 사람 단위 종류 — 한 사람이 영어·한국어 둘 다 넣었으면 더 구체적인 쪽으로 센다
     // (score > other > level > none). "점수를 받아냈나"가 질문이라 그쪽이 답에 가깝다.
     // 행마다 kind 를 같이 내려보낸다. 화면에서 다시 계산하면 칩의 숫자와 필터 결과가
     // 어긋날 수 있다 — 같은 판정을 두 곳에 두지 않는다.
     const RANK = { score: 3, other: 2, level: 1, none: 0 }
-    const kinds = { score: 0, other: 0, level: 0, none: 0 }
-    // arm 별로도 나눈다 — "제목이 주제를 밝히면(B) 실제로 어학이 되는 사람만 들어온다"는
-    // 가설은 전환율이 아니라 들어온 값의 종류로만 확인된다. B 는 클릭이 적어도 점수 비율이
-    // 높아야 가설이 맞는 것이므로, 두 수를 같은 카드에서 나란히 봐야 한다.
-    const kindsByArm = {}
     for (const f of fills) {
       const ks = [f.englishKind, f.koreanKind].filter(Boolean)
       f.kind = ks.length ? ks.slice().sort((a, b) => RANK[b] - RANK[a])[0] : null
-      if (!f.kind) continue
-      kinds[f.kind]++
-      const k = (kindsByArm[f.campaign] = kindsByArm[f.campaign] || { score: 0, other: 0, level: 0, none: 0 })
-      k[f.kind]++
     }
 
-    /* 버튼 → 저장값 매핑. "Intermediate 7건"이 자기서술로 읽히면 안 되므로, 버튼별로
-       프리셀렉트를 그대로 둔 사람과 직접 고친 사람을 나눠 센다. kept 가 크면 그 버튼이
-       받아온 정보는 '클릭했다' 이상이 아니다. */
-    const mapping = ['score', 'daily', 'basic', 'none'].map((c) => {
-      const rows_ = fills.filter((f) => f.cta === c)
+    /* wave 단위로 같은 묶음을 만든다. 두 코호트를 한 카드에 합치면 전환율이 무엇을 뜻하는지
+       알 수 없다 — wave 1 은 콜드메일을 처음 받는 사람, wave 2 는 최근에 다른 메일을 받은
+       사람이라 반응이 같을 이유가 없다. 나중에 합칠 땐 이 그룹핑만 걷어내면 된다. */
+    const tally = (fs) => {
+      const k = { score: 0, other: 0, level: 0, none: 0 }
+      for (const f of fs) if (f.kind) k[f.kind]++
+      return k
+    }
+    const waves = [...new Set(rows.map((r) => r.wave))].sort((a, b) => a - b).map((w) => {
+      const wRows = rows.filter((r) => r.wave === w)
+      const wFills = fills.filter((f) => f.wave === w)
+      // arm 별 값 종류 — "제목이 주제를 밝히면(B) 어학 되는 사람만 온다"는 가설은
+      // 전환 수가 아니라 이 분포로만 확인된다.
+      for (const r of wRows) r.kinds = tally(wFills.filter((f) => f.campaign === r.campaign))
+      const A = wRows.find((r) => r.campaign === 'coldmail-language-1')
+      const B = wRows.find((r) => r.campaign === 'coldmail-language-2')
       return {
-        cta: c,
-        preset: PRESET[c] || null,
-        n: rows_.length,
-        kept: rows_.filter((f) => f.keptPreset).length,
-        changed: rows_.filter((f) => !f.keptPreset).length,
+        wave: w,
+        rows: wRows,
+        fills: wFills,
+        kinds: tally(wFills),
+        /* 버튼 → 저장값 매핑. "Intermediate 7건"이 자기서술로 읽히면 안 되므로, 버튼별로
+           프리셀렉트를 그대로 둔 사람과 직접 고친 사람을 나눠 센다. */
+        mapping: ['score', 'daily', 'basic', 'none'].map((c) => {
+          const g = wFills.filter((f) => f.cta === c)
+          return {
+            cta: c,
+            preset: PRESET[c] || null,
+            n: g.length,
+            kept: g.filter((f) => f.keptPreset).length,
+            changed: g.filter((f) => !f.keptPreset).length,
+          }
+        }).filter((m) => m.n > 0),
+        ab: (A && B) ? {
+          a: A.campaign, b: B.campaign,
+          click: zTest(A.clicked, A.sent, B.clicked, B.sent),
+          fill: zTest(A.filled, A.sent, B.filled, B.sent),
+        } : null,
+        totals: {
+          sent: wRows.reduce((s, r) => s + r.sent, 0),
+          clicked: wRows.reduce((s, r) => s + r.clicked, 0),
+          filled: wRows.reduce((s, r) => s + r.filled, 0),
+        },
       }
-    }).filter((m) => m.n > 0)
-    for (const r of rows) r.kinds = kindsByArm[r.campaign] || { score: 0, other: 0, level: 0, none: 0 }
+    })
 
     res.setHeader('Cache-Control', 'no-store')
     return res.status(200).json({
-      rows,
-      ab,
-      fills,
-      kinds,
-      mapping,
-      totals: {
-        sent: rows.reduce((s, r) => s + r.sent, 0),
-        clicked: rows.reduce((s, r) => s + r.clicked, 0),
-        filled: rows.reduce((s, r) => s + r.filled, 0),
-      },
+      waves,
       generatedAt: new Date().toISOString(),
     })
   } catch (e) {

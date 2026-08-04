@@ -27,26 +27,34 @@ const CTA_LABEL = (L) => ({
   none: L('둘 다 못합니다', 'Neither', 'Không biết cả hai'),
 })
 
+/* wave 별로 카드를 하나씩 그린다. 합치지 않는 이유 — 모집단이 다르다:
+     wave 1 = 콜드메일을 한 번도 안 받은 사람 200명
+     wave 2 = 이미 다른 콜드메일을 받은 적 있는 사람 260명
+   한 카드에 합치면 전환율이 무엇의 전환율인지 알 수 없게 된다. 나중에 합칠 땐 API 의
+   wave 그룹핑만 걷어내면 화면은 그대로 하나로 돌아온다. */
+const WAVE_TITLE = (w, L) => (w === 1
+  ? L('어학 콜드메일 (제목 A/B)', 'Language cold-email (subject A/B)', 'Cold-email ngoại ngữ (A/B tiêu đề)')
+  : L(`어학 콜드메일${w}`, `Language cold-email ${w}`, `Cold-email ngoại ngữ ${w}`))
+
+const WAVE_NOTE = (w, L) => (w === 1
+  ? L('콜드메일을 한 번도 받지 않은 회원', 'Never received a cold-email before', 'Chưa từng nhận cold-email')
+  : L('이미 다른 콜드메일을 받은 적 있는 회원', 'Previously received other cold-emails', 'Đã từng nhận cold-email khác'))
+
 export default function LangColdmailCards({ token, lang }) {
   const L = (ko, en, vi) => (lang === 'vi' ? (vi ?? en) : lang === 'ko' ? ko : en)
   // dateRange 를 안 붙인다 — A/B 는 캠페인 전 기간을 한 번에 봐야 하고, 날짜로 자르면
   // arm 별 발송일이 하루라도 어긋났을 때 분모가 달라져 비교가 깨진다.
   const { data, error, isLoading } = useAdmin('/api/admin/lang-coldmail', token)
-  // 값 종류 필터. null = 전체. 아래 early return 들보다 먼저 선언해야 훅 순서가 안 깨진다.
-  const [kindFilter, setKindFilter] = useState(null)
-  // 목록은 기본으로 접어둔다 — 이름·값이 한 줄씩 쌓여 카드보다 커지고, arm/종류 요약은
-  // 위 카드에 이미 있어 접혀 있어도 읽을 게 없어지지 않는다.
-  const [showFills, setShowFills] = useState(false)
 
   if (isLoading && !data) return null
   if (error) return null
 
-  const rows = (data?.rows || []).filter((r) => ARM_META[r.campaign])
-  if (!rows.length) {
+  const waves = (data?.waves || []).filter((w) => w.rows.some((r) => ARM_META[r.campaign]))
+  if (!waves.length) {
     return (
       <div style={{ ...sectionStyle, marginBottom: 16 }}>
         <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 6 }}>
-          {L('어학 콜드메일 (제목 A/B)', 'Language cold-email (subject A/B)', 'Cold-email ngoại ngữ (A/B tiêu đề)')}
+          {WAVE_TITLE(1, L)}
         </div>
         <div style={{ fontSize: 12, color: '#8B95A1' }}>
           {L('아직 발송 이벤트가 없습니다 — coldmail_lang_sent 가 쌓이면 여기에 뜹니다.',
@@ -57,10 +65,25 @@ export default function LangColdmailCards({ token, lang }) {
     )
   }
 
+  return <>{waves.map((w) => <WaveCard key={w.wave} data={w} L={L} />)}</>
+}
+
+function WaveCard({ data, L }) {
+  // 값 종류 필터. null = 전체. 아래 early return 들보다 먼저 선언해야 훅 순서가 안 깨진다.
+  const [kindFilter, setKindFilter] = useState(null)
+  // 목록은 기본으로 접어둔다 — 이름·값이 한 줄씩 쌓여 카드보다 커지고, arm/종류 요약은
+  // 위 카드에 이미 있어 접혀 있어도 읽을 게 없어지지 않는다.
+  const [showFills, setShowFills] = useState(false)
+
+  const rows = data.rows.filter((r) => ARM_META[r.campaign])
+
   return (
     <div style={{ ...sectionStyle, marginBottom: 16 }}>
       <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 3 }}>
-        {L('어학 콜드메일 (제목 A/B)', 'Language cold-email (subject A/B)', 'Cold-email ngoại ngữ (A/B tiêu đề)')}
+        {WAVE_TITLE(data.wave, L)}
+        <span style={{ fontSize: 11, fontWeight: 500, color: '#8B95A1', marginLeft: 7 }}>
+          {WAVE_NOTE(data.wave, L)}
+        </span>
       </div>
       {/* 부제는 A/B 합계 실적. 제목 옆에서 "그래서 이 캠페인이 얼마나 먹혔나"가 한 줄로
           읽혀야 한다 — 두 arm 을 각각 보기 전에 알아야 할 수가 그것이다. */}
