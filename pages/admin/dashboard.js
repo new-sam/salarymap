@@ -962,7 +962,7 @@ export default function AdminDashboard() {
           <ResumesView token={token} t={t} lang={lang} />
         )}
 
-        {/* Talent Pool Tab — 공개 이력서 인재풀 */}
+        {/* Talent Pool Tab — 이력서 보유 인재 전체 (공개 여부는 뷰 내 필터/뱃지) */}
         {tab === 'talent' && (
           <TalentPoolView token={token} lang={lang} />
         )}
