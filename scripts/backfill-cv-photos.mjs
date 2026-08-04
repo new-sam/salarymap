@@ -21,7 +21,7 @@ async function processOne(r) {
     const res = await fetch(r.resume_url)
     if (!res.ok) throw new Error(`download ${res.status}`)
     const buf = Buffer.from(await res.arrayBuffer())
-    if (buf.subarray(0, 5).toString('latin1') !== '%PDF-') { notPdf++; return }
+    if (buf.subarray(0, 1024).indexOf('%PDF-') === -1) { notPdf++; return }
     const jpeg = extractPhotoJpegFromPdf(buf)
     if (!jpeg) { noPhoto++; return }
     const path = `${r.id}/photo_cv.jpg`

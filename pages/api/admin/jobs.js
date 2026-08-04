@@ -56,21 +56,29 @@ export default async function handler(req, res) {
   if (req.method === 'PUT') {
     const { id, ...updates } = req.body
     if (!id) return res.status(400).json({ error: 'id required' })
-    // KTC 공고의 JD 를 수정하면 /ktc 가 우선 렌더하는 raw_payload.ktc 4블록 스냅샷을 걷어내
-    // 양쪽 탭(/jobs, /ktc)이 수정된 description 을 보게 한다 (lib/ktcJobs.js shape 폴백)
-    if (typeof updates.description === 'string') {
+    // KTC 공고의 JD·고용형태를 수정하면 /ktc 가 우선 렌더하는 raw_payload.ktc 스냅샷의
+    // 해당 값을 걷어내, 양쪽 탭(/jobs, /ktc)이 수정된 값을 보게 한다 (lib/ktcJobs.js shape 폴백)
+    if (typeof updates.description === 'string' || typeof updates.type === 'string') {
       const { data: cur } = await supabase
         .from('jobs')
-        .select('source, description, raw_payload')
+        .select('source, description, type, raw_payload')
         .eq('id', id)
         .maybeSingle()
-      if (cur?.source === 'ktc' && cur.description !== updates.description && cur.raw_payload?.ktc) {
+      if (cur?.source === 'ktc' && cur.raw_payload?.ktc) {
         const ktc = { ...cur.raw_payload.ktc }
-        delete ktc.description
-        delete ktc.responsibilities
-        delete ktc.requirements
-        delete ktc.benefits
-        updates.raw_payload = { ...cur.raw_payload, ktc }
+        let stripped = false
+        if (typeof updates.description === 'string' && updates.description !== cur.description) {
+          delete ktc.description
+          delete ktc.responsibilities
+          delete ktc.requirements
+          delete ktc.benefits
+          stripped = true
+        }
+        if (typeof updates.type === 'string' && updates.type !== cur.type && 'work_type' in ktc) {
+          delete ktc.work_type
+          stripped = true
+        }
+        if (stripped) updates.raw_payload = { ...cur.raw_payload, ktc }
       }
     }
     const { data, error } = await supabase
