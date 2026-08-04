@@ -235,12 +235,20 @@ export default function GlobalNav({ activePage, onLogin, onJobsClick, mobileSear
           </Link>
           <Link href="/ktc" className={`gnav-link gnav-zone gnav-zone-m${activePage === 'ktc' ? ' on' : ''}`} onClick={() => track('click_ktc_nav', { meta: { source: 'mobile' }, page: activePage || null })}>K-company</Link>
           <div className="gnav-l-menu">
-            <Link href="/" className={`gnav-link gnav-link-light${activePage === 'home' ? ' on' : ''}`}>{t('nav.salaryCompare')}</Link>
+            {/* 이력서 등록 — 내 프로필의 '내 이력서' 카드로 직행(#resume).
+                이 메뉴 줄(.gnav-l-menu)은 768px 이하에서 숨으므로 웹 전용이다. */}
+            <Link
+              href="/profile#resume"
+              className={`gnav-link gnav-link-light${activePage === 'profile' ? ' on' : ''}`}
+              onClick={() => track('click_my_resume_nav', { meta: { source: 'web' }, page: activePage || null })}
+            >
+              {t('nav.myResume')}
+            </Link>
+            <Link href="/jobs" className={`gnav-link gnav-link-light${activePage === 'jobs' ? ' on' : ''}`} onClick={() => onJobsClick?.()}>{t('nav.jobs')}</Link>
             <Link href="/cv" className={`gnav-link gnav-link-light${activePage === 'cv' ? ' on' : ''}`} onClick={() => track('click_welcome_bonus_nav', { meta: { source: 'web' }, page: activePage || null })}>
               {t('nav.welcomeBonus')}
               <span className="gnav-welcome-bubble">{t('nav.welcomeBonusBubble')}</span>
             </Link>
-            <Link href="/jobs" className={`gnav-link gnav-link-light${activePage === 'jobs' ? ' on' : ''}`} onClick={() => onJobsClick?.()}>{t('nav.jobs')}</Link>
             <Link href="/community" className={`gnav-link gnav-link-light${activePage === 'community' ? ' on' : ''}`} onClick={() => track('click_community_nav', { meta: { source: 'web' }, page: activePage || null })}>{t('nav.community')}</Link>
             {/* K-Tech College 랜딩(/ktc)은 자체 내비를 쓰므로 activePage 가 없다 — on 상태 없이 링크만. */}
             <Link href="/ktc" className={`gnav-link gnav-zone${activePage === 'ktc' ? ' on' : ''}`} onClick={() => track('click_ktc_nav', { meta: { source: 'web' }, page: activePage || null })}>K-company</Link>

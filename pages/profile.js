@@ -141,7 +141,17 @@ export default function ProfilePage() {
 
   useEffect(() => {
     supabase.auth.getSession().then(async ({ data: { session } }) => {
-      if (!session) { router.replace('/'); return }
+      // 비로그인 진입 — 조용히 홈으로 보내면 밖에서 들어온 링크(콜드메일 CTA, 나브
+      // '이력서 등록')가 그냥 죽는다. "눌렀는데 홈이네"가 되고 이유도 안 남는다.
+      // 로그인을 태우고 원래 목적지(#language 같은 해시 포함)로 되돌린다.
+      // /auth/callback 이 router.replace(returnTo) 로 해시까지 살려서 보내준다.
+      if (!session) {
+        const dest = window.location.pathname + window.location.search + window.location.hash
+        try { localStorage.setItem('fyi_login_return', dest) } catch {}
+        track('profile_login_redirect', { page: '/profile', meta: { dest } })
+        window.location.href = '/api/auth/google?return=' + encodeURIComponent(dest)
+        return
+      }
       setUser(session.user)
       setToken(session.access_token)
       track('profile_view', { page: '/profile' })
@@ -591,7 +601,8 @@ export default function ProfilePage() {
         {tab === 'profile' && (<>
 
           {msg && <div className="pmsg">{msg}</div>}
-          <div className="pcard" style={{ position: 'relative', overflow: 'visible' }}>
+          {/* id="resume" — 나브의 '이력서 등록'이 이 카드로 바로 온다(/profile#resume) */}
+          <div className="pcard" id="resume" style={{ position: 'relative', overflow: 'visible', scrollMarginTop: 80 }}>
             <div className="pcard-h"><span className="pcard-ico"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></span>{t('profile.resume')}</div>
             {aiParsing && (
               <div style={{ background: 'rgba(255,68,0,0.04)', border: '1px solid rgba(255,68,0,0.12)', borderRadius: 10, padding: '16px 18px', marginBottom: 16 }}>
@@ -739,7 +750,11 @@ export default function ProfilePage() {
                 <input className={`pinput${df('gpa')}`} value={form.gpa || ''} onChange={e => set('gpa', e.target.value)} placeholder="e.g. 3.8 / 4.0" />
               </div>
             </div>
-            <LanguageCard form={form} set={set} lang={lang} />
+            {/* id="language" — 어학 콜드메일 CTA 가 /profile#language 로 여기에 바로 착지한다.
+                scroll-margin-top 은 sticky 헤더(56px)에 제목이 가리지 않을 만큼. */}
+            <div id="language" style={{ scrollMarginTop: 80 }}>
+              <LanguageCard form={form} set={set} lang={lang} />
+            </div>
           </div>
 
           {/* 희망 조건 — 직군·경력·희망연봉·근무형태 */}
