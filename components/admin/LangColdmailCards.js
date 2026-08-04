@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { useAdmin } from '../../lib/adminSwr'
 import { sectionStyle } from '../../constants/dashboard'
 
@@ -23,6 +24,8 @@ export default function LangColdmailCards({ token, lang }) {
   // dateRange 를 안 붙인다 — A/B 는 캠페인 전 기간을 한 번에 봐야 하고, 날짜로 자르면
   // arm 별 발송일이 하루라도 어긋났을 때 분모가 달라져 비교가 깨진다.
   const { data, error, isLoading } = useAdmin('/api/admin/lang-coldmail', token)
+  // 값 종류 필터. null = 전체. 아래 early return 들보다 먼저 선언해야 훅 순서가 안 깨진다.
+  const [kindFilter, setKindFilter] = useState(null)
 
   if (isLoading && !data) return null
   if (error) return null
@@ -102,16 +105,20 @@ export default function LangColdmailCards({ token, lang }) {
           지금과 같은 데이터가 늘어난 것뿐이다. 그래서 종류를 같이 센다. */}
       {!!data?.fills?.length && (
         <div style={{ marginTop: 14, borderTop: '1px solid #F2F4F6', paddingTop: 10 }}>
-          <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, flexWrap: 'wrap', marginBottom: 8 }}>
-            <span style={{ fontSize: 12, fontWeight: 700 }}>
-              {L('들어온 값', 'What came in', 'Dữ liệu đã nhận')} {data.fills.length}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap', marginBottom: 8 }}>
+            <span style={{ fontSize: 12, fontWeight: 700, marginRight: 2 }}>
+              {L('들어온 값', 'What came in', 'Dữ liệu đã nhận')}
             </span>
-            <span style={{ fontSize: 11, color: '#8B95A1' }}>
-              {L('점수', 'Score', 'Điểm')} {data.kinds?.score ?? 0} ·{' '}
-              {L('수준(자기서술)', 'Self-described', 'Tự mô tả')} {data.kinds?.level ?? 0} ·{' '}
-              {L('기타', 'Other', 'Khác')} {data.kinds?.other ?? 0} ·{' '}
-              {L('못함', 'Neither', 'Không biết')} {data.kinds?.none ?? 0}
-            </span>
+            <Chip on={!kindFilter} onClick={() => setKindFilter(null)}
+              label={L('전체', 'All', 'Tất cả')} n={data.fills.length} />
+            <Chip on={kindFilter === 'score'} onClick={() => setKindFilter(kindFilter === 'score' ? null : 'score')}
+              label={L('점수', 'Score', 'Điểm')} n={data.kinds?.score ?? 0} color={KIND_COLOR.score} />
+            <Chip on={kindFilter === 'level'} onClick={() => setKindFilter(kindFilter === 'level' ? null : 'level')}
+              label={L('수준(자기서술)', 'Self-described', 'Tự mô tả')} n={data.kinds?.level ?? 0} color={KIND_COLOR.level} />
+            <Chip on={kindFilter === 'other'} onClick={() => setKindFilter(kindFilter === 'other' ? null : 'other')}
+              label={L('기타', 'Other', 'Khác')} n={data.kinds?.other ?? 0} color={KIND_COLOR.other} />
+            <Chip on={kindFilter === 'none'} onClick={() => setKindFilter(kindFilter === 'none' ? null : 'none')}
+              label={L('못함', 'Neither', 'Không biết')} n={data.kinds?.none ?? 0} color={KIND_COLOR.none} />
           </div>
 
           <div style={{ maxHeight: 240, overflowY: 'auto', border: '1px solid #F2F4F6', borderRadius: 8 }}>
@@ -125,7 +132,7 @@ export default function LangColdmailCards({ token, lang }) {
                 </tr>
               </thead>
               <tbody>
-                {data.fills.map((f, i) => (
+                {data.fills.filter((f) => !kindFilter || f.kind === kindFilter).map((f, i) => (
                   <tr key={i} style={{ borderTop: '1px solid #F2F4F6' }}>
                     <td style={{ ...fillTd, fontWeight: 600 }}>{f.name}</td>
                     <td style={fillTd}><CertCell value={f.english_cert} kind={f.englishKind} L={L} /></td>
@@ -133,6 +140,11 @@ export default function LangColdmailCards({ token, lang }) {
                     <td style={{ ...fillTd, color: '#8B95A1' }}>{ARM_META[f.campaign]?.tag || '?'}</td>
                   </tr>
                 ))}
+                {kindFilter && !data.fills.some((f) => f.kind === kindFilter) && (
+                  <tr><td colSpan={4} style={{ ...fillTd, color: '#B0B8C1', textAlign: 'center', padding: '14px 8px' }}>
+                    {L('해당하는 값이 없습니다', 'Nothing in this bucket', 'Không có dữ liệu')}
+                  </td></tr>
+                )}
               </tbody>
             </table>
           </div>
@@ -160,6 +172,26 @@ const fillTd = { padding: '6px 8px', textAlign: 'left', verticalAlign: 'top' }
 
 // 값 자체를 그대로 보여주되 종류를 색으로 구분한다. '점수'만 이 캠페인이 원한 결과다.
 const KIND_COLOR = { score: '#16a34a', other: '#4E5968', level: '#B45309', none: '#B0B8C1' }
+
+// 값 종류 필터 칩. 숫자는 API 가 준 kinds 를 그대로 쓴다 — 화면에서 다시 세면
+// 칩의 숫자와 필터 결과가 어긋날 수 있다.
+function Chip({ label, n, on, onClick, color }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      style={{
+        fontSize: 11, fontWeight: 600, padding: '3px 9px', borderRadius: 100, cursor: 'pointer',
+        fontFamily: 'inherit', lineHeight: 1.6,
+        border: `1px solid ${on ? (color || '#191F28') : '#E5E8EB'}`,
+        background: on ? (color || '#191F28') : '#fff',
+        color: on ? '#fff' : (color || '#4E5968'),
+      }}
+    >
+      {label} {n}
+    </button>
+  )
+}
 
 function CertCell({ value, kind, L }) {
   if (!value) return <span style={{ color: '#D1D6DB' }}>—</span>

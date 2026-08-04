@@ -158,14 +158,16 @@ export default async function handler(req, res) {
       fill: zTest(A.filled, A.sent, B.filled, B.sent),
     } : null
 
-    // 사람 단위 집계 — 한 사람이 영어·한국어 둘 다 넣었으면 더 구체적인 쪽으로 센다
-    // (score > level > none). "점수를 받아냈나"가 질문이라 그쪽이 답에 가깝다.
+    // 사람 단위 종류 — 한 사람이 영어·한국어 둘 다 넣었으면 더 구체적인 쪽으로 센다
+    // (score > other > level > none). "점수를 받아냈나"가 질문이라 그쪽이 답에 가깝다.
+    // 행마다 kind 를 같이 내려보낸다. 화면에서 다시 계산하면 칩의 숫자와 필터 결과가
+    // 어긋날 수 있다 — 같은 판정을 두 곳에 두지 않는다.
     const RANK = { score: 3, other: 2, level: 1, none: 0 }
     const kinds = { score: 0, other: 0, level: 0, none: 0 }
     for (const f of fills) {
       const ks = [f.englishKind, f.koreanKind].filter(Boolean)
-      if (!ks.length) continue
-      kinds[ks.sort((a, b) => RANK[b] - RANK[a])[0]]++
+      f.kind = ks.length ? ks.slice().sort((a, b) => RANK[b] - RANK[a])[0] : null
+      if (f.kind) kinds[f.kind]++
     }
 
     res.setHeader('Cache-Control', 'no-store')
