@@ -15,21 +15,32 @@ const LIST_FIELDS = [
   'apply_url', 'source', 'source_id', 'is_active', 'is_featured', 'created_at',
 ].join(', ')
 
+// 한국어 역량 요구 공고만 골라내는 필터 (?korean=1) — 메타 광고 착지 딥링크용.
+// 요구사항이 본문 텍스트에만 있어서(전용 컬럼 없음) description까지 읽어 거른 뒤
+// 응답에서는 다시 뺀다 — 목록 페이로드는 평소와 동일하게 유지.
+const KOREAN_RE = /한국어|topik|tiếng\s*hàn|tieng\s*han|hàn\s*ngữ|korean[\s-]*(language|speaking|proficiency|communication|fluent|skill|level)|fluent\s+(in\s+)?korean|speak\s+korean|korean\s+required/i
+
 export default async function handler(req, res) {
+  const koreanOnly = req.query.korean === '1'
   let query = supabase
     .from('jobs')
-    .select(LIST_FIELDS)
+    .select(koreanOnly ? `${LIST_FIELDS}, description` : LIST_FIELDS)
     .eq('is_active', true)
     .order('created_at', { ascending: false })
 
   // 회사 페이지에서 특정 회사의 공고만 요청할 때 사용 (?company=)
   if (req.query.company) query = query.ilike('company', String(req.query.company))
 
-  const { data, error } = await query
+  let { data, error } = await query
 
   if (error || !data) {
     res.setHeader('Cache-Control', 'no-store')
     return res.status(500).json([])
+  }
+
+  if (koreanOnly) {
+    data = data.filter(j => KOREAN_RE.test(`${j.title || ''}\n${j.description || ''}`))
+    for (const j of data) delete j.description
   }
 
   // CV 완료 모달 랭킹용 누적 지원 수 — ?counts=1일 때만 붙인다(기본 페이로드는 그대로).

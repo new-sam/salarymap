@@ -333,8 +333,11 @@ export default function JobsPage() {
 
   useEffect(() => {
     let retries = 0
+    // 광고 착지 딥링크 /jobs?korean=1 — 한국어 역량 요구 공고만 서버에서 걸러 받는다.
+    // router.query는 마운트 시점에 아직 비어 있을 수 있어 location.search를 직접 읽는다.
+    const koreanOnly = new URLSearchParams(window.location.search).get('korean') === '1'
     const load = () => {
-      fetch('/api/jobs').then(r => {
+      fetch(koreanOnly ? '/api/jobs?korean=1' : '/api/jobs').then(r => {
         if (!r.ok) throw new Error(r.status)
         return r.json()
       }).then(d => {
