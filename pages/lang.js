@@ -46,6 +46,7 @@ export async function getServerSideProps({ query }) {
       valid: true,
       token: query.t,
       cta: query.cta || null,
+      uiLang: normLang(query.lang),
       name: prof.full_name || '',
       initial: {
         english_cert: prof.english_cert || '',
@@ -55,11 +56,102 @@ export async function getServerSideProps({ query }) {
   }
 }
 
+// 화면 언어는 URL 이 정한다 — 메일을 어느 언어로 보냈는지는 send.mjs 의 --lang 이
+// 이미 알고 있고, 그 값을 링크에 실어 보낸다. 브라우저 Accept-Language 나 localStorage
+// 로 추측하면 안 된다: 수신자는 베트남에서 한국어 브라우저를 쓰기도 하고, 무엇보다
+// 로그아웃 상태로 메일에서 처음 들어오므로 저장된 선호가 없다.
+// 기본값이 vi 인 이유 — 실발송 200통이 전부 베트남어다. ko 는 검수용이다.
+const LANGS = ['vi', 'ko', 'en']
+const normLang = (v) => (LANGS.includes(String(v || '')) ? String(v) : 'vi')
+
 // 메일의 수준 버튼 → 프로필 수준 값. '일상 회화'를 Fluent 로 올려 잡으면 실제보다
 // 높게 기록되므로 Intermediate 로 둔다. 어차피 랜딩에서 본인이 조정할 수 있다.
 const LEVEL_OF = { daily: 'Intermediate', basic: 'Basic' }
 
-export default function LangLanding({ valid, token, cta, name, initial }) {
+// 문구는 lib/translations 를 쓰지 않고 여기 둔다 — 이 페이지 전용이고 캠페인이 끝나면
+// 같이 사라지는 문구라, 전역 사전에 넣으면 다음 사람이 지울 수 없는 키가 된다.
+// vi 문구는 email-vi.html 과 같은 표현을 쓴다. 메일에서 누른 버튼과 착지 화면의 말이
+// 다르면 같은 흐름으로 안 읽힌다.
+const T = {
+  vi: {
+    title: 'Nhập thông tin ngoại ngữ | FYI',
+    badHead: 'Liên kết đã hết hạn hoặc không hợp lệ',
+    badSub: 'Vui lòng bấm lại nút trong email. Nếu vẫn không được, hãy trả lời email này để chúng tôi hỗ trợ.',
+    toJobs: 'Xem tin tuyển dụng',
+    doneHead: (n) => (n ? `Đã lưu, ${n} ơi` : 'Đã lưu'),
+    doneSub: 'Từ giờ chúng tôi sẽ ưu tiên gợi ý những vị trí có yêu cầu ngoại ngữ.',
+    doneCta: 'Xem vị trí có thể ứng tuyển ngay',
+    toProfile: 'Chỉnh sửa thêm trong hồ sơ',
+    pickHead: (n) => (n ? `${n} ơi, đó là ngôn ngữ nào?` : 'Đó là ngôn ngữ nào?'),
+    pickSub: (choice) => `Bạn đã chọn “${choice}”. Chỉ cần cho biết đó là ngôn ngữ nào.`,
+    choiceDaily: 'Giao tiếp hằng ngày được',
+    choiceBasic: 'Chỉ biết chào hỏi cơ bản',
+    en: 'Tiếng Anh',
+    ko: 'Tiếng Hàn',
+    selfInput: 'Tôi sẽ tự nhập',
+    formHead: (n) => (n ? `${n} ơi, chỉ cần điền một ô ngoại ngữ` : 'Chỉ cần điền một ô ngoại ngữ'),
+    formSub: 'Không cần đăng nhập · 30 giây · Chỉ tiếng Anh cũng đủ.',
+    formSubNone: 'Đã điền sẵn “không biết cả tiếng Anh lẫn tiếng Hàn”. Nếu đúng, bạn chỉ cần bấm Lưu.',
+    save: 'Lưu',
+    saving: 'Đang lưu…',
+    fine: 'Thông tin này được lưu vào mục ngoại ngữ trong hồ sơ của bạn.',
+    errNotFound: 'Không tìm thấy tài khoản.',
+    errSave: 'Lưu không thành công. Vui lòng thử lại sau.',
+  },
+  ko: {
+    title: '어학 정보 입력 | FYI',
+    badHead: '링크가 만료되었거나 올바르지 않아요',
+    badSub: '메일의 버튼을 다시 눌러주세요. 계속 안 되면 답장 주시면 도와드릴게요.',
+    toJobs: '채용 공고 보러가기',
+    doneHead: (n) => (n ? `저장했습니다, ${n}님` : '저장했습니다'),
+    doneSub: '이제 어학을 보는 공고에 우선 추천해 드릴게요.',
+    doneCta: '지금 지원할 수 있는 공고 보기',
+    toProfile: '내 프로필에서 더 수정하기',
+    pickHead: (n) => (n ? `${n}님, 어느 언어인가요?` : '어느 언어인가요?'),
+    pickSub: (choice) => `‘${choice}’를 선택하셨어요. 어느 언어인지만 알려주시면 됩니다.`,
+    choiceDaily: '일상 회화는 됩니다',
+    choiceBasic: '인사말 정도만 압니다',
+    en: '영어',
+    ko: '한국어',
+    selfInput: '직접 입력할게요',
+    formHead: (n) => (n ? `${n}님, 어학 한 칸만 채워주세요` : '어학 한 칸만 채워주세요'),
+    formSub: '로그인 없이 30초 · 영어만 채우셔도 충분합니다.',
+    formSubNone: '‘영어·한국어 모두 못합니다’로 채워뒀습니다. 맞으면 저장만 눌러주세요.',
+    save: '저장하기',
+    saving: '저장 중…',
+    fine: '입력한 값은 내 프로필의 어학 항목에 저장됩니다.',
+    errNotFound: '계정을 찾을 수 없어요.',
+    errSave: '저장에 실패했어요. 잠시 후 다시 시도해 주세요.',
+  },
+  en: {
+    title: 'Add your language info | FYI',
+    badHead: 'This link has expired or is invalid',
+    badSub: 'Please tap the button in the email again. If it still fails, just reply and we will help.',
+    toJobs: 'Browse job posts',
+    doneHead: (n) => (n ? `Saved, ${n}` : 'Saved'),
+    doneSub: 'We will now prioritise roles that look at language ability.',
+    doneCta: 'See jobs you can apply to now',
+    toProfile: 'Edit more in my profile',
+    pickHead: (n) => (n ? `${n}, which language?` : 'Which language?'),
+    pickSub: (choice) => `You chose “${choice}”. Just tell us which language it was.`,
+    choiceDaily: 'I can hold everyday conversations',
+    choiceBasic: 'I only know basic greetings',
+    en: 'English',
+    ko: 'Korean',
+    selfInput: 'I will type it myself',
+    formHead: (n) => (n ? `${n}, just one language field` : 'Just one language field'),
+    formSub: 'No login · 30 seconds · English alone is enough.',
+    formSubNone: 'We pre-filled “I speak neither English nor Korean”. If that is right, just hit Save.',
+    save: 'Save',
+    saving: 'Saving…',
+    fine: 'This is saved to the language section of your profile.',
+    errNotFound: 'Account not found.',
+    errSave: 'Could not save. Please try again in a moment.',
+  },
+}
+
+export default function LangLanding({ valid, token, cta, uiLang, name, initial }) {
+  const t = T[uiLang] || T.vi
   // cta=none('영어·한국어 모두 못합니다')만 예외적으로 값을 미리 채운다. 'None' 은 거친
   // 값이 아니라 그 자체로 확정된 답이고, 폼을 그대로 보여주므로 잘못 눌렀으면 저장 전에
   // 고칠 수 있다. 빈칸("아직 안 물어봤다")과 뜻이 달라 다시 묻지 않아도 된다.
@@ -98,29 +190,29 @@ export default function LangLanding({ valid, token, cta, name, initial }) {
       if (!r.ok) throw new Error((await r.json().catch(() => ({}))).error || 'failed')
       setDone(true)
     } catch (e) {
-      setErr(e.message === 'profile_not_found' ? '계정을 찾을 수 없어요.' : '저장에 실패했어요. 잠시 후 다시 시도해 주세요.')
+      setErr(e.message === 'profile_not_found' ? t.errNotFound : t.errSave)
     }
     setSaving(false)
   }
 
   if (!valid) {
     return (
-      <Shell>
-        <h1 className="lg-h">링크가 만료되었거나 올바르지 않아요</h1>
-        <p className="lg-sub">메일의 버튼을 다시 눌러주세요. 계속 안 되면 답장 주시면 도와드릴게요.</p>
-        <a className="lg-btn lg-btn-ghost" href="/jobs">채용 공고 보러가기</a>
+      <Shell t={t} uiLang={uiLang}>
+        <h1 className="lg-h">{t.badHead}</h1>
+        <p className="lg-sub">{t.badSub}</p>
+        <a className="lg-btn lg-btn-ghost" href="/jobs">{t.toJobs}</a>
       </Shell>
     )
   }
 
   if (done) {
     return (
-      <Shell>
+      <Shell t={t} uiLang={uiLang}>
         <div className="lg-check">✓</div>
-        <h1 className="lg-h">저장했습니다{name ? `, ${name}님` : ''}</h1>
-        <p className="lg-sub">이제 어학을 보는 공고에 우선 추천해 드릴게요.</p>
-        <a className="lg-btn" href="/jobs">지금 지원할 수 있는 공고 보기</a>
-        <a className="lg-link" href="/profile#language">내 프로필에서 더 수정하기</a>
+        <h1 className="lg-h">{t.doneHead(name)}</h1>
+        <p className="lg-sub">{t.doneSub}</p>
+        <a className="lg-btn" href="/jobs">{t.doneCta}</a>
+        <a className="lg-link" href="/profile#language">{t.toProfile}</a>
       </Shell>
     )
   }
@@ -128,51 +220,45 @@ export default function LangLanding({ valid, token, cta, name, initial }) {
   // 수준 버튼으로 들어온 사람에게만 뜨는 한 단계 — 어느 언어였는지만 고른다.
   if (!langPicked) {
     return (
-      <Shell>
-        <h1 className="lg-h">{name ? `${name}님, ` : ''}어느 언어인가요?</h1>
-        <p className="lg-sub">
-          {cta === 'basic' ? '‘인사말 정도만 압니다’' : '‘일상 회화는 됩니다’'}를 선택하셨어요.
-          어느 언어인지만 알려주시면 됩니다.
-        </p>
-        <button className="lg-btn lg-btn-ghost lg-pick" onClick={() => pickLang('en')}>영어</button>
-        <button className="lg-btn lg-btn-ghost lg-pick" onClick={() => pickLang('ko')}>한국어</button>
-        <button className="lg-link lg-linkbtn" onClick={() => setLangPicked(true)}>직접 입력할게요</button>
+      <Shell t={t} uiLang={uiLang}>
+        <h1 className="lg-h">{t.pickHead(name)}</h1>
+        <p className="lg-sub">{t.pickSub(cta === 'basic' ? t.choiceBasic : t.choiceDaily)}</p>
+        <button className="lg-btn lg-btn-ghost lg-pick" onClick={() => pickLang('en')}>{t.en}</button>
+        <button className="lg-btn lg-btn-ghost lg-pick" onClick={() => pickLang('ko')}>{t.ko}</button>
+        <button className="lg-link lg-linkbtn" onClick={() => setLangPicked(true)}>{t.selfInput}</button>
       </Shell>
     )
   }
 
   return (
-    <Shell>
-      <h1 className="lg-h">{name ? `${name}님, ` : ''}어학 한 칸만 채워주세요</h1>
-      <p className="lg-sub">
-        {cta === 'none'
-          ? '‘영어·한국어 모두 못합니다’로 채워뒀습니다. 맞으면 저장만 눌러주세요.'
-          : '로그인 없이 30초 · 영어만 채우셔도 충분합니다.'}
-      </p>
+    <Shell t={t} uiLang={uiLang}>
+      <h1 className="lg-h">{t.formHead(name)}</h1>
+      <p className="lg-sub">{cta === 'none' ? t.formSubNone : t.formSub}</p>
 
       {/* '점수 있어요'로 들어온 사람에게는 '자격증 없음(수준만)'을 안 보여준다 — 방금
           점수가 있다고 답한 사람에게 자기서술 선택지를 내미는 건 모순이고, 이 캠페인이
           고치려는 자기서술 52% 를 그 경로에서 다시 쌓게 된다. */}
       <div className="lg-card">
-        <LanguageCard form={form} set={set} lang="ko" allowLevelOnly={cta !== 'score'} />
+        <LanguageCard form={form} set={set} lang={uiLang} allowLevelOnly={cta !== 'score'} />
       </div>
 
       {err && <p className="lg-err">{err}</p>}
 
       <button className="lg-btn" onClick={save} disabled={!filled || saving}>
-        {saving ? '저장 중…' : '저장하기'}
+        {saving ? t.saving : t.save}
       </button>
-      <p className="lg-fine">입력한 값은 내 프로필의 어학 항목에 저장됩니다.</p>
+      <p className="lg-fine">{t.fine}</p>
     </Shell>
   )
 }
 
-function Shell({ children }) {
+function Shell({ children, t, uiLang }) {
   return (
     <>
       <Head>
-        <title>어학 정보 입력 | FYI</title>
+        <title>{t?.title || T.vi.title}</title>
         <meta name="robots" content="noindex" />
+        <html lang={uiLang || 'vi'} />
       </Head>
       <div className="lg-page"><div className="lg-inner">{children}</div></div>
       <style jsx global>{`

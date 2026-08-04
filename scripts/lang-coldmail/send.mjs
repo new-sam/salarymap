@@ -56,8 +56,13 @@ const TEMPLATE = { ko: 'scripts/lang-coldmail/email-ko.html', vi: 'scripts/lang-
 
 // 네 버튼 모두 같은 착지 페이지로 간다. cta 는 어느 버튼이 눌렸는지 남기고 화면을
 // 미리 맞추는 용도 — 값 자체는 랜딩에서 받는다.
+//
+// lang 을 같이 실어 보내는 이유: 랜딩은 수신자가 어느 언어로 메일을 받았는지 알 방법이
+// 없다. 전원 로그아웃 상태로 들어오므로 저장된 언어 선호가 없고, 브라우저 언어로
+// 추측하면 베트남 사용자가 한국어 화면을 보게 된다. 어느 템플릿을 보냈는지는 여기서만
+// 확실히 안다(--lang). 실발송 200통은 전부 vi 다.
 const ctaUrl = (email, campaign, kind) =>
-  `${SITE}/lang?t=${encodeURIComponent(makeToken(email, campaign))}&cta=${kind}`
+  `${SITE}/lang?t=${encodeURIComponent(makeToken(email, campaign))}&cta=${kind}&lang=${lang}`
 
 function render(tpl, p) {
   return tpl

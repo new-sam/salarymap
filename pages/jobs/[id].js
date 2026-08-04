@@ -195,7 +195,7 @@ export default function JobDetailPage({ job }) {
         <meta property="og:description" content={ogDesc} />
         <meta property="og:image" content={ogImage} />
         <meta property="og:type" content="website" />
-        <meta property="og:url" content={`https://fyivietnam.com/jobs/${job.id}`} />
+        <meta property="og:url" content={`https://salary-fyi.com/jobs/${job.id}`} />
         <meta name="twitter:card" content="summary_large_image" />
         <meta name="twitter:title" content={ogTitle} />
         <meta name="twitter:description" content={ogDesc} />
