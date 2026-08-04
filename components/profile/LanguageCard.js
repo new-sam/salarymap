@@ -73,13 +73,20 @@ function joinCert({ cert, etc, score }) {
 const isEnKo = (n) => /(anh|english|영어|korean|한국|hàn|hàn quốc)/i.test(String(n || ''))
 
 // 자격증 드롭다운 + 점수 한 줄. 영어·한국어가 같은 모양을 쓴다.
-function CertRow({ label, value, known, onChange, L }) {
+function CertRow({ label, value, known, onChange, L, allowLevelOnly = true }) {
   const cur = splitCert(value, known)
   const emit = (next) => onChange(joinCert({ ...cur, ...next }))
 
   const certItems = [
     ...known.map((c) => ({ value: c, label: c })),
-    { value: CERT_NONE, label: L('자격증 없음 (수준만)', 'No test (level only)', 'Không có chứng chỉ') },
+    // '자격증 없음'은 "점수가 있다"고 답하고 들어온 경로(/lang?cta=score)에서만 뺀다.
+    // 그 사람에게 자기서술 선택지를 바로 옆에 놓으면 이 캠페인이 고치려는 52%(자격증이
+    // 아니라 "Fluent"·"B1" 같은 자기서술)가 또 쌓인다. 잘못 누른 사람은 '기타'로 적거나
+    // 메일의 다른 버튼으로 돌아가면 된다.
+    // 단 이미 그 값이 들어 있으면 남긴다 — 빼버리면 기존 값의 라벨만 빈칸으로 보인다.
+    ...(allowLevelOnly || cur.cert === CERT_NONE
+      ? [{ value: CERT_NONE, label: L('자격증 없음 (수준만)', 'No test (level only)', 'Không có chứng chỉ') }]
+      : []),
     { value: CERT_ETC, label: L('기타', 'Other', 'Khác') },
   ]
   const certLabel = certItems.find((i) => i.value === cur.cert)?.label || ''
@@ -134,7 +141,9 @@ function CertRow({ label, value, known, onChange, L }) {
   )
 }
 
-export default function LanguageCard({ form, set, lang }) {
+// allowLevelOnly=false 는 어학 콜드메일의 '점수 있어요' 경로 전용이다. 프로필은 기본값
+// (true)을 그대로 쓴다 — 거기선 자기서술이 유일한 답인 사람이 절반이라 빼면 안 된다.
+export default function LanguageCard({ form, set, lang, allowLevelOnly = true }) {
   const L = (ko, en, vi) => (lang === 'ko' ? ko : lang === 'vi' ? vi : en)
 
   const allLangs = Array.isArray(form.languages) ? form.languages : []
@@ -150,6 +159,7 @@ export default function LanguageCard({ form, set, lang }) {
         known={CERTS.english_cert}
         onChange={(v) => set('english_cert', v)}
         L={L}
+        allowLevelOnly={allowLevelOnly}
       />
 
       <CertRow
@@ -158,6 +168,7 @@ export default function LanguageCard({ form, set, lang }) {
         known={CERTS.korean_cert}
         onChange={(v) => set('korean_cert', v)}
         L={L}
+        allowLevelOnly={allowLevelOnly}
       />
 
       <div className="pfield">

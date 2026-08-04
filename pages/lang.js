@@ -150,8 +150,11 @@ export default function LangLanding({ valid, token, cta, name, initial }) {
           : '로그인 없이 30초 · 영어만 채우셔도 충분합니다.'}
       </p>
 
+      {/* '점수 있어요'로 들어온 사람에게는 '자격증 없음(수준만)'을 안 보여준다 — 방금
+          점수가 있다고 답한 사람에게 자기서술 선택지를 내미는 건 모순이고, 이 캠페인이
+          고치려는 자기서술 52% 를 그 경로에서 다시 쌓게 된다. */}
       <div className="lg-card">
-        <LanguageCard form={form} set={set} lang="ko" />
+        <LanguageCard form={form} set={set} lang="ko" allowLevelOnly={cta !== 'score'} />
       </div>
 
       {err && <p className="lg-err">{err}</p>}
