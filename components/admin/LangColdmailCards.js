@@ -124,30 +124,21 @@ function WaveCard({ data, L }) {
                 </div>
               </div>
 
-              {/* 어느 버튼이 눌렸는지 — 제목만큼이나 이 캠페인의 두 번째 질문이다.
-                  '둘 다 못함'은 카드 밖 회색 링크라 나머지 셋과 성격이 달라 줄을 나눈다.
-                  이 수가 셋의 합에 근접하면 링크가 버튼을 잠식한 것이다. */}
+              {/* 들어온 값의 종류 — "주제를 밝힌 제목(B)이 실제로 어학 되는 사람만
+                  데려온다"는 가설은 전환 수가 아니라 이 줄로만 확인된다. B 는 입력이
+                  적어도 점수 비율이 높아야 가설이 맞는다.
+                  어느 버튼을 눌렀는지(cta 분포)는 여기서 뺐다 — 아래 '버튼 → 저장된 값'
+                  표가 같은 걸 저장 결과까지 붙여서 보여주므로 두 번 읽을 이유가 없다. */}
               <div style={{ fontSize: 11, color: '#8B95A1', borderTop: '1px solid #F2F4F6', paddingTop: 8 }}>
-                {L('점수 있음', 'Has score', 'Có điểm')} {r.cta.score} ·{' '}
-                {L('일상 회화', 'Daily', 'Hằng ngày')} {r.cta.daily} ·{' '}
-                {L('인사말', 'Basic', 'Cơ bản')} {r.cta.basic}
-                <div style={{ marginTop: 3 }}>
-                  {L('둘 다 못함', 'Neither', 'Không biết cả hai')} {r.cta.none || 0}
-                </div>
-                {/* 들어온 값의 종류 — "주제를 밝힌 제목(B)이 실제로 어학 되는 사람만
-                    데려온다"는 가설은 전환 수가 아니라 이 줄로만 확인된다. B 는 입력이
-                    적어도 점수 비율이 높아야 가설이 맞는다. */}
-                <div style={{ marginTop: 5, paddingTop: 5, borderTop: '1px dashed #F2F4F6' }}>
-                  <span style={{ color: KIND_COLOR.score, fontWeight: 700 }}>
-                    {L('점수', 'Score', 'Điểm')} {r.kinds?.score ?? 0}
-                  </span>
-                  {' · '}
-                  <span style={{ color: KIND_COLOR.level }}>
-                    {L('자기서술', 'Self-desc', 'Tự mô tả')} {r.kinds?.level ?? 0}
-                  </span>
-                  {' · '}
-                  {L('못함', 'Neither', 'Không biết')} {r.kinds?.none ?? 0}
-                </div>
+                <span style={{ color: KIND_COLOR.score, fontWeight: 700 }}>
+                  {L('점수', 'Score', 'Điểm')} {r.kinds?.score ?? 0}
+                </span>
+                {' · '}
+                <span style={{ color: KIND_COLOR.level }}>
+                  {L('자기서술', 'Self-desc', 'Tự mô tả')} {r.kinds?.level ?? 0}
+                </span>
+                {' · '}
+                {L('못함', 'Neither', 'Không biết')} {r.kinds?.none ?? 0}
               </div>
             </div>
           )
