@@ -62,10 +62,18 @@ export default function LangColdmailCards({ token, lang }) {
       <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 3 }}>
         {L('어학 콜드메일 (제목 A/B)', 'Language cold-email (subject A/B)', 'Cold-email ngoại ngữ (A/B tiêu đề)')}
       </div>
+      {/* 부제는 A/B 합계 실적. 제목 옆에서 "그래서 이 캠페인이 얼마나 먹혔나"가 한 줄로
+          읽혀야 한다 — 두 arm 을 각각 보기 전에 알아야 할 수가 그것이다. */}
       <div style={{ fontSize: 11.5, color: '#8B95A1', marginBottom: 12 }}>
-        {L('제목만 다르고 본문·버튼은 동일 · 전환 = 어학 입력 완료',
-           'Subject differs only; body and buttons identical · convert = language filled',
-           'Chỉ khác tiêu đề · chuyển đổi = đã điền ngoại ngữ')}
+        {L('발송', 'Sent', 'Đã gửi')} {data?.totals?.sent ?? 0}
+        {' · '}
+        {L('클릭', 'Click', 'Click')} {data?.totals?.clicked ?? 0}
+        {data?.totals?.sent ? ` (${pct(data.totals.clicked / data.totals.sent)})` : ''}
+        {' · '}
+        <span style={{ color: '#4E5968', fontWeight: 600 }}>
+          {L('어학 입력', 'Filled', 'Đã điền')} {data?.totals?.filled ?? 0}
+          {data?.totals?.sent ? ` (${pct(data.totals.filled / data.totals.sent)})` : ''}
+        </span>
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 10 }}>

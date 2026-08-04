@@ -13,7 +13,10 @@ import ChangeTestView from './ChangeTestView'
 const LAB_TABS = [
   { key: 'inflow', ko: 'KTC 유입 비중', en: 'KTC share of traffic', vi: 'Tỷ trọng truy cập KTC' },
   { key: 'resume', ko: '이력서 이탈', en: 'Resume drop-off', vi: 'Rời bỏ CV' },
-  { key: 'profile', ko: '마이페이지 수정', en: 'Profile edits', vi: 'Sửa hồ sơ' },
+  // key 는 'profile' 그대로 둔다 — 라벨만 바뀐 것이고, 키를 바꾸면 dashboard.js 가 들고
+  // 있는 labTab 값과 어긋나 탭이 빈 화면이 된다. 이 탭의 본문은 어학 콜드메일 A/B +
+  // 그 유입이 만드는 프로필 수정 퍼널이라 '어학'이 실제 주제에 맞다.
+  { key: 'profile', ko: '어학 정보 수집', en: 'Language capture', vi: 'Thu thập ngoại ngữ' },
   { key: 'test', ko: '변경 테스트', en: 'Change tests', vi: 'Test thay đổi' },
 ]
 
