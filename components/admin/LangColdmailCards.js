@@ -104,18 +104,24 @@ function WaveCard({ data, L }) {
           const m = ARM_META[r.campaign]
           return (
             <div key={r.campaign} style={{ border: '1px solid #E5E8EB', borderRadius: 10, padding: 14 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 10 }}>
-                <span style={{
-                  fontSize: 11, fontWeight: 800, color: '#fff', background: m.color,
-                  borderRadius: 5, padding: '2px 7px',
-                }}>{m.tag}</span>
-                <span style={{ fontSize: 12.5, fontWeight: 700 }}>{L(m.ko, m.en, m.vi)}</span>
-              </div>
-
-              <div style={{ display: 'flex', gap: 14, marginBottom: 10 }}>
-                <Stat label={L('발송', 'Sent', 'Đã gửi')} value={r.sent} />
-                <Stat label={L('클릭', 'Click', 'Click')} value={r.clicked} sub={r.sent ? pct(r.clickRate) : null} />
-                <Stat label={L('어학 입력', 'Filled', 'Đã điền')} value={r.filled} sub={r.sent ? pct(r.fillRate) : null} accent={m.color} />
+              {/* 제목 줄 오른쪽이 비어 있어서 수치를 그리로 올렸다 — 아래로 한 줄 더
+                  쌓으면 카드가 그만큼 길어지는데, 그 줄에 넣을 자리가 이미 있다. */}
+              <div style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                gap: 10, flexWrap: 'wrap', marginBottom: 8,
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
+                  <span style={{
+                    fontSize: 11, fontWeight: 800, color: '#fff', background: m.color,
+                    borderRadius: 5, padding: '2px 7px',
+                  }}>{m.tag}</span>
+                  <span style={{ fontSize: 12.5, fontWeight: 700 }}>{L(m.ko, m.en, m.vi)}</span>
+                </div>
+                <div style={{ display: 'flex', gap: 12 }}>
+                  <Stat label={L('발송', 'Sent', 'Đã gửi')} value={r.sent} />
+                  <Stat label={L('클릭', 'Click', 'Click')} value={r.clicked} sub={r.sent ? pct(r.clickRate) : null} />
+                  <Stat label={L('입력', 'Filled', 'Đã điền')} value={r.filled} sub={r.sent ? pct(r.fillRate) : null} accent={m.color} />
+                </div>
               </div>
 
               {/* 어느 버튼이 눌렸는지 — 제목만큼이나 이 캠페인의 두 번째 질문이다.
@@ -304,12 +310,16 @@ function CertCell({ value, kind, L }) {
   )
 }
 
+// 제목 줄 오른쪽에 들어가므로 두 줄을 넘기지 않는다 — 값과 비율을 한 줄에 붙여
+// 라벨/값 2단으로만 쌓는다. 예전처럼 3단으로 쌓으면 제목 줄이 그만큼 두꺼워진다.
 function Stat({ label, value, sub, accent }) {
   return (
-    <div>
-      <div style={{ fontSize: 10.5, color: '#8B95A1', fontWeight: 600 }}>{label}</div>
-      <div style={{ fontSize: 19, fontWeight: 800, color: accent || '#191F28', lineHeight: 1.2 }}>{value}</div>
-      {sub && <div style={{ fontSize: 10.5, color: '#8B95A1' }}>{sub}</div>}
+    <div style={{ textAlign: 'right', minWidth: 42 }}>
+      <div style={{ fontSize: 10, color: '#8B95A1', fontWeight: 600, lineHeight: 1.4 }}>{label}</div>
+      <div style={{ lineHeight: 1.25, whiteSpace: 'nowrap' }}>
+        <span style={{ fontSize: 16, fontWeight: 800, color: accent || '#191F28' }}>{value}</span>
+        {sub && <span style={{ fontSize: 10, color: '#8B95A1', marginLeft: 3 }}>{sub}</span>}
+      </div>
     </div>
   )
 }
