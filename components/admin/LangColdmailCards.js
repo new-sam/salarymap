@@ -15,6 +15,9 @@ import { sectionStyle } from '../../constants/dashboard'
 const ARM_META = {
   'coldmail-language-1': { tag: 'A', ko: '주제 감춤', en: 'Topic hidden', vi: 'Ẩn chủ đề', color: '#ff6000' },
   'coldmail-language-2': { tag: 'B', ko: '그대로 물음', en: 'Asks directly', vi: 'Hỏi trực tiếp', color: '#4F46E5' },
+  // KTC 유입자 캠페인은 제목 A/B 가 없다 — 123명으로는 61명/arm 이라 어떤 차이도
+  // 판정되지 않는다. 그래서 arm 이 아니라 캠페인 자체를 한 칸으로 그린다.
+  'coldmail-ktc-lang-1': { tag: 'K', ko: 'KTC 유입', en: 'From KTC', vi: 'Từ KTC', color: '#0F766E' },
 }
 
 const pct = (v) => `${(v * 100).toFixed(1)}%`
@@ -27,18 +30,25 @@ const CTA_LABEL = (L) => ({
   none: L('둘 다 못합니다', 'Neither', 'Không biết cả hai'),
 })
 
-/* wave 별로 카드를 하나씩 그린다. 합치지 않는 이유 — 모집단이 다르다:
-     wave 1 = 콜드메일을 한 번도 안 받은 사람 200명
-     wave 2 = 이미 다른 콜드메일을 받은 적 있는 사람 260명
-   한 카드에 합치면 전환율이 무엇의 전환율인지 알 수 없게 된다. 나중에 합칠 땐 API 의
-   wave 그룹핑만 걷어내면 화면은 그대로 하나로 돌아온다. */
-const WAVE_TITLE = (w, L) => (w === 1
-  ? L('어학 콜드메일 (제목 A/B)', 'Language cold-email (subject A/B)', 'Cold-email ngoại ngữ (A/B tiêu đề)')
-  : L(`어학 콜드메일${w}`, `Language cold-email ${w}`, `Cold-email ngoại ngữ ${w}`))
+/* 묶음마다 카드를 하나씩 그린다. 합치지 않는 이유 — 모집단이 다르다:
+     language wave 1 = 콜드메일을 한 번도 안 받은 회원 200명
+     language wave 2 = 이미 다른 콜드메일을 받은 적 있는 회원 260명
+     ktc             = K-Tech College 로 들어온 회원 123명 (제목 A/B 없음)
+   한 카드에 합치면 전환율이 무엇의 전환율인지 알 수 없게 된다. 합칠 땐 API 의
+   keyOf 에서 wave 만 빼면 화면은 그대로 하나로 돌아온다. */
+const GROUP_TITLE = (g, L) => {
+  if (g.family === 'ktc') return L('어학 콜드메일 · KTC 유입', 'Language cold-email · from KTC', 'Cold-email ngoại ngữ · từ KTC')
+  return g.wave === 1
+    ? L('어학 콜드메일 (제목 A/B)', 'Language cold-email (subject A/B)', 'Cold-email ngoại ngữ (A/B tiêu đề)')
+    : L(`어학 콜드메일${g.wave}`, `Language cold-email ${g.wave}`, `Cold-email ngoại ngữ ${g.wave}`)
+}
 
-const WAVE_NOTE = (w, L) => (w === 1
-  ? L('콜드메일을 한 번도 받지 않은 회원', 'Never received a cold-email before', 'Chưa từng nhận cold-email')
-  : L('이미 다른 콜드메일을 받은 적 있는 회원', 'Previously received other cold-emails', 'Đã từng nhận cold-email khác'))
+const GROUP_NOTE = (g, L) => {
+  if (g.family === 'ktc') return L('K-Tech College 로 들어와 계정을 만든 회원 · 단일 버전', 'Signed up via K-Tech College · single version', 'Đăng ký qua K-Tech College')
+  return g.wave === 1
+    ? L('콜드메일을 한 번도 받지 않은 회원', 'Never received a cold-email before', 'Chưa từng nhận cold-email')
+    : L('이미 다른 콜드메일을 받은 적 있는 회원', 'Previously received other cold-emails', 'Đã từng nhận cold-email khác')
+}
 
 export default function LangColdmailCards({ token, lang }) {
   const L = (ko, en, vi) => (lang === 'vi' ? (vi ?? en) : lang === 'ko' ? ko : en)
@@ -49,12 +59,12 @@ export default function LangColdmailCards({ token, lang }) {
   if (isLoading && !data) return null
   if (error) return null
 
-  const waves = (data?.waves || []).filter((w) => w.rows.some((r) => ARM_META[r.campaign]))
-  if (!waves.length) {
+  const groups = (data?.groups || []).filter((g) => g.rows.some((r) => ARM_META[r.campaign]))
+  if (!groups.length) {
     return (
       <div style={{ ...sectionStyle, marginBottom: 16 }}>
         <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 6 }}>
-          {WAVE_TITLE(1, L)}
+          {GROUP_TITLE({ family: 'language', wave: 1 }, L)}
         </div>
         <div style={{ fontSize: 12, color: '#8B95A1' }}>
           {L('아직 발송 이벤트가 없습니다 — coldmail_lang_sent 가 쌓이면 여기에 뜹니다.',
@@ -65,10 +75,10 @@ export default function LangColdmailCards({ token, lang }) {
     )
   }
 
-  return <>{waves.map((w) => <WaveCard key={w.wave} data={w} L={L} />)}</>
+  return <>{groups.map((g) => <GroupCard key={g.key} data={g} L={L} />)}</>
 }
 
-function WaveCard({ data, L }) {
+function GroupCard({ data, L }) {
   // 값 종류 필터. null = 전체. 아래 early return 들보다 먼저 선언해야 훅 순서가 안 깨진다.
   const [kindFilter, setKindFilter] = useState(null)
   // 목록은 기본으로 접어둔다 — 이름·값이 한 줄씩 쌓여 카드보다 커지고, arm/종류 요약은
@@ -80,9 +90,9 @@ function WaveCard({ data, L }) {
   return (
     <div style={{ ...sectionStyle, marginBottom: 16 }}>
       <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 3 }}>
-        {WAVE_TITLE(data.wave, L)}
+        {GROUP_TITLE(data, L)}
         <span style={{ fontSize: 11, fontWeight: 500, color: '#8B95A1', marginLeft: 7 }}>
-          {WAVE_NOTE(data.wave, L)}
+          {GROUP_NOTE(data, L)}
         </span>
       </div>
       {/* 부제는 A/B 합계 실적. 제목 옆에서 "그래서 이 캠페인이 얼마나 먹혔나"가 한 줄로

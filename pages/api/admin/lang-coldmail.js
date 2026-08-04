@@ -22,6 +22,17 @@ const supabase = createClient(
 
 const EVENTS = ['coldmail_lang_sent', 'coldmail_lang_click', 'coldmail_lang_fill']
 
+/* 같은 이벤트 이름을 쓰는 캠페인이 둘이다 — 전환 정의가 '어학 입력'으로 같아서다.
+   그러나 모집단이 달라 한 표에 합치면 전환율이 무엇의 전환율인지 알 수 없다.
+     language = 제목 A/B (coldmail-language-1/2), wave 로 코호트가 또 갈린다
+     ktc      = KTC 유입자 단일 버전 (coldmail-ktc-lang-1)
+   ktc 는 wave 를 안 쓴다 — meta.wave 가 없어 1 로 떨어지는데, 계열로 먼저 가르지 않으면
+   그대로 어학 wave 1 숫자에 섞인다. */
+const familyOf = (campaign) =>
+  /^coldmail-ktc-lang/.test(campaign) ? 'ktc'
+    : /^coldmail-language/.test(campaign) ? 'language'
+      : 'other'
+
 /* 들어온 값이 어떤 종류인지 — 이 캠페인의 원래 목적이 "자기서술 52% 를 자격증·점수로
    바꾸기"라, 전환율만큼이나 값의 생김새가 결론을 좌우한다. 전환 10% 를 넘겨도 전부
    자기서술이면 지금과 같은 데이터가 늘어난 것뿐이다.
@@ -190,24 +201,34 @@ export default async function handler(req, res) {
       f.kind = ks.length ? ks.slice().sort((a, b) => RANK[b] - RANK[a])[0] : null
     }
 
-    /* wave 단위로 같은 묶음을 만든다. 두 코호트를 한 카드에 합치면 전환율이 무엇을 뜻하는지
-       알 수 없다 — wave 1 은 콜드메일을 처음 받는 사람, wave 2 는 최근에 다른 메일을 받은
-       사람이라 반응이 같을 이유가 없다. 나중에 합칠 땐 이 그룹핑만 걷어내면 된다. */
+    /* 카드 하나가 될 묶음을 만든다. 합치면 전환율이 무엇의 전환율인지 알 수 없다:
+         language wave 1 = 콜드메일을 처음 받는 사람 200명
+         language wave 2 = 최근에 다른 메일을 받은 적 있는 사람 260명
+         ktc             = K-Tech College 로 들어온 사람 123명 (제목 A/B 없음)
+       계열로 먼저 가르는 게 핵심이다 — ktc 는 meta.wave 를 안 남겨 1 로 떨어지므로,
+       wave 로만 나누면 어학 wave 1 숫자에 그대로 섞인다.
+       language 를 합칠 땐 keyOf 에서 wave 만 빼면 된다. */
+    const keyOf = (campaign, wave) =>
+      (familyOf(campaign) === 'language' ? `language::${wave}` : familyOf(campaign))
+
     const tally = (fs) => {
       const k = { score: 0, other: 0, level: 0, none: 0 }
       for (const f of fs) if (f.kind) k[f.kind]++
       return k
     }
-    const waves = [...new Set(rows.map((r) => r.wave))].sort((a, b) => a - b).map((w) => {
-      const wRows = rows.filter((r) => r.wave === w)
-      const wFills = fills.filter((f) => f.wave === w)
+    const keys = [...new Set(rows.map((r) => keyOf(r.campaign, r.wave)))].sort()
+    const groups = keys.map((key) => {
+      const wRows = rows.filter((r) => keyOf(r.campaign, r.wave) === key)
+      const wFills = fills.filter((f) => keyOf(f.campaign, f.wave) === key)
       // arm 별 값 종류 — "제목이 주제를 밝히면(B) 어학 되는 사람만 온다"는 가설은
       // 전환 수가 아니라 이 분포로만 확인된다.
       for (const r of wRows) r.kinds = tally(wFills.filter((f) => f.campaign === r.campaign))
       const A = wRows.find((r) => r.campaign === 'coldmail-language-1')
       const B = wRows.find((r) => r.campaign === 'coldmail-language-2')
       return {
-        wave: w,
+        key,
+        family: familyOf(wRows[0].campaign),
+        wave: wRows[0].wave,
         rows: wRows,
         fills: wFills,
         kinds: tally(wFills),
@@ -238,7 +259,7 @@ export default async function handler(req, res) {
 
     res.setHeader('Cache-Control', 'no-store')
     return res.status(200).json({
-      waves,
+      groups,
       generatedAt: new Date().toISOString(),
     })
   } catch (e) {
