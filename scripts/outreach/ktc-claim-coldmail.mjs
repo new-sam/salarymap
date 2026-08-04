@@ -8,8 +8,11 @@
 //   node scripts/outreach/ktc-claim-coldmail.mjs --test a@x.com,b@y.com   # 테스트(스탬프 안 함)
 //   node scripts/outreach/ktc-claim-coldmail.mjs --test a@x.com --lang ko # 한국어판 문구 검토
 //   node scripts/outreach/ktc-claim-coldmail.mjs --max 200 --send
+//   node scripts/outreach/ktc-claim-coldmail.mjs --remind --send        # 24h+ 미클릭 리마인드
 //   옵션: --max N(이번에 보낼 인원) · --campaign coldmail-ktc-cv · --lang ko|vi(기본 vi)
 //        --parsed-only(사전 파싱 성공자만 — 리치 카드 랜딩이 보장되는 리드로 한정)
+//        --remind(coldmail-ktc-cv 수신 24h+ & 미클릭 & 미가입에게 "받아간 사람들은 평균 오퍼 2.1건" 훅 재발송,
+//                 캠페인 coldmail-ktc-cv-remind1 로 분리. 리마인드済 리드는 제외라 날 바꿔 재실행해도 안전)
 //
 // ⚠️ /ktc/claim 랜딩 + 콜백 임포트가 prod 에 배포된 뒤에만 실발송할 것 — CTA가 404거나
 //    가입해도 CV가 안 옮겨지면 "준비돼 있다"가 거짓말이 된다(3차의 사망 원인과 동일 구조).
@@ -34,7 +37,8 @@ const lang = flag('lang', 'vi') === 'ko' ? 'ko' : 'vi'
 const TEMPLATE = new URL(`../ktc-claim-coldmail-${lang}.html`, import.meta.url)
 const testTo = flag('test', null)
 const revive = args.includes('--revive') // 구 앵글(coldmail-ktc/-2/-3) 무반응자 재발송 — CV 캠페인 수신자만 제외. 캠페인명은 --campaign 으로 분리할 것
-const campaign = flag('campaign', revive ? 'coldmail-ktc-cv-revive' : 'coldmail-ktc-cv')
+const remind = args.includes('--remind') // coldmail-ktc-cv 수신 24h+ 미클릭 리마인드 — 클릭은 24h 내 100% 들어오는 실측이라 24h 지나면 리스트가 확정된다
+const campaign = flag('campaign', remind ? 'coldmail-ktc-cv-remind1' : revive ? 'coldmail-ktc-cv-revive' : 'coldmail-ktc-cv')
 const parsedOnly = args.includes('--parsed-only')
 const max = parseInt(flag('max', doSend ? '200' : '0')) || 0
 
@@ -64,10 +68,39 @@ function parseCsv(text) {
 }
 
 // ── 메일 ──
-const template = readFileSync(TEMPLATE, 'utf8')
-const subject = (lead) => lang === 'ko'
-  ? `${lead.ten}님, 회원님의 ${lead.position} 프로필이 FYI에 준비되어 있습니다`
-  : `${lead.ten} ơi, hồ sơ ${lead.position} của bạn đã sẵn sàng trên FYI`
+// 리마인드는 별도 템플릿 파일 대신 원본에서 제목·헤드라인·앞 두 문단만 갈아끼운다(카드·CTA·푸터 동일).
+// 훅 = "그 사이 받아간 사람들은 평균 오퍼 2.1건"(실측) — 소유 프레임에 사회적 증거를 얹는다.
+// 치환 실패는 곧 옛 카피가 그대로 나가는 사고라, 원문이 안 보이면 throw 로 발송을 막는다.
+const swap = (tpl, pairs) => pairs.reduce((t, [a, b]) => {
+  if (!t.includes(a)) throw new Error(`remind 템플릿 치환 실패(원문 변경됨?): ${a.slice(0, 40)}…`)
+  return t.replace(a, b)
+}, tpl)
+const remindifyVi = (tpl) => swap(tpl, [
+  ['Hồ sơ của bạn<br />\n      <span style="color:#ff6000;">đã sẵn sàng</span> trên FYI',
+   'Hồ sơ của bạn<br />\n      <span style="color:#ff6000;">vẫn đang chờ</span> bạn nhận'],
+  ['{{month}}bạn đã ứng tuyển vị trí <b>{{jobTitle}}</b>{{atCompany}} qua <b>K-Tech College</b>.',
+   'Chúng tôi đã gửi bạn hồ sơ <b>{{position}}</b> được tạo sẵn từ CV bạn nộp qua <b>K-Tech College</b> — nhưng bạn chưa nhận hồ sơ này.'],
+  ['Với CV bạn đã nộp khi đó, chúng tôi đã <b style="color:#191F28;">chuẩn bị sẵn hồ sơ của bạn</b> trên\n      <b>FYI</b> — nền tảng tuyển dụng do K-Tech College xây dựng.',
+   'Trong lúc đó, những người đã nhận hồ sơ qua email này <b style="color:#191F28;">đã nhận được trung bình 2,1 lời mời việc làm</b> từ nhà tuyển dụng. Hồ sơ của bạn cũng đã sẵn sàng như vậy.'],
+])
+const remindifyKo = (tpl) => swap(tpl, [
+  ['회원님의 프로필이<br />\n      FYI에 <span style="color:#ff6000;">준비되어 있습니다</span>',
+   '회원님의 프로필이<br />\n      아직 <span style="color:#ff6000;">주인을 기다리고 있습니다</span>'],
+  ['{{month}}K-Tech College를 통해 <b>{{jobTitle}}</b>{{atCompany}} 포지션에 지원해 주셨죠.',
+   'K-Tech College에 제출하신 CV로 만든 <b>{{position}}</b> 프로필을 보내드렸는데, 아직 받아가지 않으셨더라고요.'],
+  ['그때 제출하신 이력서로, <b>K-Tech College가 만든 채용 플랫폼 FYI</b>에\n      <b style="color:#191F28;">회원님의 프로필을 미리 만들어 두었습니다</b>.',
+   '그 사이, 이 메일로 프로필을 받아간 분들은 기업으로부터 <b style="color:#191F28;">평균 2.1건의 오퍼</b>를 받았습니다. 회원님의 프로필도 똑같이 준비되어 있습니다.'],
+])
+let template = readFileSync(TEMPLATE, 'utf8')
+if (remind) template = lang === 'ko' ? remindifyKo(template) : remindifyVi(template)
+const subject = (lead) => {
+  if (remind) return lang === 'ko'
+    ? `${lead.ten}님, 프로필을 받아간 분들은 평균 2.1건의 오퍼를 받았습니다`
+    : `${lead.ten} ơi, những người đã nhận hồ sơ đang có trung bình 2,1 lời mời việc làm`
+  return lang === 'ko'
+    ? `${lead.ten}님, 회원님의 ${lead.position} 프로필이 FYI에 준비되어 있습니다`
+    : `${lead.ten} ơi, hồ sơ ${lead.position} của bạn đã sẵn sàng trên FYI`
+}
 
 // "얼마 전" 금지 — 대상 84%가 6월(2개월 전) 지원. 월 명시가 정직하고, 구체적 사실이 증거 효과도 낸다.
 // applied_at 이 없거나 미래(시트 오입력)면 시점 언급 없이 시작.
@@ -105,7 +138,19 @@ const render = (lead, ctaUrl, unsubUrl) => template
   .replace(/\{\{ctaUrl\}\}/g, ctaUrl)
   .replace(/\{\{unsubscribeUrl\}\}/g, unsubUrl)
 
-const emailTextVi = (lead, ctaUrl, unsubUrl) => `Chào ${lead.ten},
+const emailTextVi = (lead, ctaUrl, unsubUrl) => remind ? `Chào ${lead.ten},
+
+Chúng tôi đã gửi bạn hồ sơ ${lead.position} được tạo sẵn từ CV bạn nộp qua K-Tech College — nhưng bạn chưa nhận hồ sơ này.
+
+Trong lúc đó, những người đã nhận hồ sơ qua email này đã nhận được trung bình 2,1 lời mời việc làm từ nhà tuyển dụng. Hồ sơ của bạn cũng đã sẵn sàng như vậy.
+
+Bạn không cần viết lại CV. Chỉ cần đăng nhập Google một lần, hồ sơ sẽ được đăng ký ngay và bạn có thể ứng tuyển chỉ với một chạm.
+
+Nhận hồ sơ của tôi:
+${ctaUrl}
+
+— Đội ngũ FYI · salary-fyi.com
+Hủy đăng ký: ${unsubUrl}` : `Chào ${lead.ten},
 
 ${monthFrag(lead)}bạn đã ứng tuyển vị trí ${lead.job}${lead.company ? ` tại ${lead.company}` : ''} qua K-Tech College.
 
@@ -121,7 +166,19 @@ ${ctaUrl}
 — Đội ngũ FYI · salary-fyi.com
 Hủy đăng ký: ${unsubUrl}`
 
-const emailTextKo = (lead, ctaUrl, unsubUrl) => `안녕하세요 ${lead.ten}님,
+const emailTextKo = (lead, ctaUrl, unsubUrl) => remind ? `안녕하세요 ${lead.ten}님,
+
+K-Tech College에 제출하신 CV로 만든 ${lead.position} 프로필을 보내드렸는데, 아직 받아가지 않으셨더라고요.
+
+그 사이, 이 메일로 프로필을 받아간 분들은 기업으로부터 평균 2.1건의 오퍼를 받았습니다. 회원님의 프로필도 똑같이 준비되어 있습니다.
+
+이력서를 다시 작성하실 필요 없습니다. 구글 로그인 한 번이면 프로필이 바로 등록되고, 원클릭으로 지원할 수 있습니다.
+
+내 프로필 확인하기:
+${ctaUrl}
+
+— FYI 팀 · salary-fyi.com
+수신 거부: ${unsubUrl}` : `안녕하세요 ${lead.ten}님,
 
 ${monthFrag(lead)}K-Tech College를 통해 ${lead.company ? `${lead.company}의 ` : ''}${lead.job} 포지션에 지원해 주셨죠.
 
@@ -206,14 +263,31 @@ async function mxOk(domains) {
   const profs = await fetchAll(sb, () => sb.from('user_profiles').select('email').not('email', 'is', null))
   const members = new Set(profs.map(p => p.email.trim().toLowerCase()))
   // 이미 보낸 사람(coldmail-ktc* 계열 전체) / 수신거부 제외 — events 가 발송 원장(재실행 idempotent).
-  const evts = await fetchAll(sb, () => sb.from('events').select('event, meta').in('event', ['coldmail_public_sent', 'coldmail_unsub']))
+  const evts = await fetchAll(sb, () => sb.from('events').select('event, meta, created_at').in('event', ['coldmail_public_sent', 'coldmail_unsub', 'coldmail_public_click']))
   const sentRe = revive ? /^coldmail-ktc-cv/ : /^coldmail-ktc/
   const sentLeads = new Set(evts.filter(e => e.event === 'coldmail_public_sent' && sentRe.test(e.meta?.campaign || '') && e.meta?.lead).map(e => e.meta.lead))
   const unsubLeads = new Set(evts.filter(e => e.event === 'coldmail_unsub' && e.meta?.lead).map(e => e.meta.lead))
 
   const isMember = leads.filter(l => members.has(l.email)).length
-  leads = leads.filter(l => !members.has(l.email) && !sentLeads.has(l.lead) && !unsubLeads.has(l.lead))
-  const afterDedup = leads.length
+  let afterDedup
+  if (remind) {
+    // 대상 = 원본(coldmail-ktc-cv, revive 아님) 수신 24h+ ∧ CV 캠페인 계열 미클릭 ∧ 미가입 ∧ 수신거부 아님 ∧ 리마인드 안 받음.
+    // 24h 컷은 "클릭할 사람은 24h 내 100% 클릭" 실측에 기댄 것 — 어제 배치만 잡히고 오늘 발송분은 다음 실행으로 밀린다.
+    const dayAgo = Date.now() - 24 * 3600 * 1000
+    const pool = new Set(evts.filter(e => e.event === 'coldmail_public_sent'
+      && (e.meta?.campaign || '') === 'coldmail-ktc-cv' && e.meta?.lead
+      && new Date(e.created_at).getTime() < dayAgo).map(e => e.meta.lead))
+    const clicked = new Set(evts.filter(e => e.event === 'coldmail_public_click'
+      && /^coldmail-ktc-cv/.test(e.meta?.campaign || '') && e.meta?.lead).map(e => e.meta.lead))
+    const reminded = new Set(evts.filter(e => e.event === 'coldmail_public_sent'
+      && /^coldmail-ktc-cv-remind/.test(e.meta?.campaign || '') && e.meta?.lead).map(e => e.meta.lead))
+    leads = leads.filter(l => pool.has(l.lead) && !clicked.has(l.lead) && !reminded.has(l.lead)
+      && !members.has(l.email) && !unsubLeads.has(l.lead))
+    console.log(`[remind] 원본 수신 24h+ ${pool.size}명 | 클릭済 ${clicked.size} · 리마인드済 ${reminded.size} 제외`)
+  } else {
+    leads = leads.filter(l => !members.has(l.email) && !sentLeads.has(l.lead) && !unsubLeads.has(l.lead))
+  }
+  afterDedup = leads.length
 
   // ── 개인화 소스 조인 ──
   // 카드(실명·대학·직무·연차)와 지원 월은 우리 미러(ktc_candidates), CV 링크는 원본(ktc-support DB).
