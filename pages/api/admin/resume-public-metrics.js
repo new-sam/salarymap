@@ -28,6 +28,8 @@ const vnWeek = (iso) => {
 
 const WEEKS = 10
 const DAILY_DAYS = 21
+// 추이 그래프 시작일(승주 지정). 이 앞 구간은 가입일 재구성이라 볼 게 없다.
+const TREND_START = '2026-07-28'
 
 // 8월 목표(승주, 마감 8/10). "등록 인재풀" = 이력서를 올린 회원, "등록 비율" = 가입자 중 그 비율.
 // 개발:비개발은 직군 분류(talent-supply와 동일 normalizePosition) 기준이고,
@@ -190,6 +192,52 @@ export default async function handler(req, res) {
       return l
     }
     const daysLeft = Math.max(0, Math.ceil((new Date(`${GOAL.deadline}T23:59:59+07:00`).getTime() - Date.now()) / 86400000))
+
+    // ---- 등록 인재풀 추이 ----
+    // 비율만으로는 개발/비개발이 각각 늘고 있는지 안 보여서 절대 수 곡선을 같이 준다.
+    // ⚠️ 이력서 업로드 시각 컬럼이 없어 가입일에 얹는다(위 needPerDay와 같은 근사치).
+    //    직군도 현재값이라, 나중에 직군을 바꾼 사람은 과거 날짜에도 지금 직군으로 잡힌다.
+    //    누적 곡선의 끝값은 위 목표 카드 숫자와 일치한다 — 과거 구간만 재구성이다.
+    const byDay = {}
+    for (const r of signups) {
+      const day = vnDay(r.created_at)
+      const b = (byDay[day] ||= { pool: 0, tech: 0, nontech: 0, signups: 0 })
+      b.signups++
+      if (!r.resume_url) continue
+      b.pool++
+      const grp = roleGroup(r)
+      if (grp !== 'unknown') b[grp]++
+    }
+    const trendDays = Object.keys(byDay).sort()
+    const todayVN = vnDay(new Date().toISOString())
+    const cum = { pool: 0, tech: 0, nontech: 0, signups: 0 }
+    const full = []
+    for (let ms = new Date(`${trendDays[0] || todayVN}T00:00:00Z`).getTime(); ; ms += 86400000) {
+      const date = new Date(ms).toISOString().slice(0, 10)
+      const b = byDay[date] || { pool: 0, tech: 0, nontech: 0, signups: 0 }
+      for (const k of Object.keys(cum)) cum[k] += b[k]
+      full.push({
+        date,
+        pool: cum.pool, tech: cum.tech, nontech: cum.nontech,
+        rate: cum.signups ? Math.round((cum.pool / cum.signups) * 1000) / 10 : 0,
+        newPool: b.pool, newTech: b.tech, newNontech: b.nontech, newSignups: b.signups,
+      })
+      if (date >= todayVN) break
+    }
+    // 일별 신규는 튀어서 추세가 안 보인다 → 7일 이동합계로 속도를 본다(주 단위 버킷은 이번 주가 잘려 착시).
+    const roll = (i, key) => {
+      let s = 0
+      for (let j = Math.max(0, i - 6); j <= i; j++) s += full[j][key]
+      return s
+    }
+    const trend = full.map((d, i) => ({
+      ...d,
+      w7Pool: roll(i, 'newPool'),
+      w7Tech: roll(i, 'newTech'),
+      w7Nontech: roll(i, 'newNontech'),
+      w7Rate: roll(i, 'newSignups') ? Math.round((roll(i, 'newPool') / roll(i, 'newSignups')) * 1000) / 10 : null,
+    })).filter((d) => d.date >= TREND_START) // 이동합계는 시작일 이전 데이터까지 써서 계산한 뒤 자른다
+
     const goal = {
       deadline: GOAL.deadline,
       daysLeft,
@@ -209,6 +257,7 @@ export default async function handler(req, res) {
       },
       mix: { registered: mixOf(profiles), public: mixOf(publicRows), targetTech: GOAL.techShare },
       lang: { registered: langOf(profiles), public: langOf(publicRows) },
+      trend,
     }
 
     // ---- 일별 실제 전환 (트리거 이벤트) ----

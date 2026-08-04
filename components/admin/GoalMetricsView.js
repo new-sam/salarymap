@@ -148,7 +148,7 @@ export default function GoalMetricsView({ token, lang }) {
       {view === 'nontech' && <NontechPoolTab data={ntData} loading={ntLoading} error={ntError} ko={ko} lang={lang} />}
       {view === 'paths' && <SignupPathsTab data={spData} loading={spLoading} error={spError} ko={ko} />}
       {view === 'ad' && <AdTab data={adData} loading={adLoading} error={adError} ko={ko} />}
-      {view === 'resumePublic' && <ResumePublicTab data={rpData} loading={rpLoading} error={rpError} ko={ko} onRefresh={loadRp} />}
+      {view === 'resumePublic' && <ResumePublicTab data={rpData} loading={rpLoading} error={rpError} ko={ko} lang={lang} onRefresh={loadRp} />}
       {view === 'coldmail' && <ColdmailPublicTab data={cmData} loading={cmLoading} error={cmError} ko={ko} lang={lang} />}
     </div>
   )
@@ -488,7 +488,7 @@ function AdTab({ data, loading, error, ko }) {
 // '오늘 공개함'이 아니라 '오늘 프로필 수정함'이라 지표를 부풀린다(7/14 착시의 원인).
 // 콜드메일 전환을 따로 떼는 이유: 웹 공개의 대부분이 콜드메일 1회성이라, 섞어 보면
 // 제품 자체의 전환율(유기적)이 실제보다 몇 배 높아 보인다.
-function ResumePublicTab({ data, loading, error, ko, onRefresh }) {
+function ResumePublicTab({ data, loading, error, ko, lang, onRefresh }) {
   if (loading || !data) return <div style={{ textAlign: 'center', padding: 40, color: '#666' }}>{ko ? '불러오는 중…' : 'Loading…'}</div>
   if (error) return <div style={{ textAlign: 'center', padding: 40, color: '#c00' }}>{error}</div>
   if (data.error) return <div style={{ textAlign: 'center', padding: 40, color: '#c00' }}>{data.error}</div>
@@ -516,7 +516,7 @@ function ResumePublicTab({ data, loading, error, ko, onRefresh }) {
 
   return (
     <div>
-      {data.goal && <AugustGoalPanel g={data.goal} ko={ko} onRefresh={onRefresh} generatedAt={data.generatedAt} />}
+      {data.goal && <AugustGoalPanel g={data.goal} ko={ko} lang={lang} onRefresh={onRefresh} generatedAt={data.generatedAt} />}
 
       <div style={{ fontSize: 15, fontWeight: 800, color: '#0F172A', marginBottom: 6 }}>
         {ko ? '이력서 공개 전환' : 'Resume-public conversion'}
@@ -648,7 +648,9 @@ function ResumePublicTab({ data, loading, error, ko, onRefresh }) {
 // "등록 인재풀" = 이력서를 올린 회원, "등록 비율" = 가입자 중 그 비율(유저 확정 정의).
 // 개발:비개발은 비개발 비중을 목표(40%)에 대고 재고, 기획·디자인은 비개발에 넣는다.
 // 어학은 목표선 없이 현황만 — 수준을 나눌 기준이 없어 '이력서에 기재됨'으로만 센다.
-function AugustGoalPanel({ g, ko, onRefresh, generatedAt }) {
+function AugustGoalPanel({ g, ko, onRefresh, generatedAt, lang }) {
+  const [trendOpen, setTrendOpen] = useState(true)
+  const [trendMode, setTrendMode] = useState('cum')
   const pct = (v) => `${Math.round(v * 1000) / 10}%`
   const mr = g.mix.registered
   const lr = g.lang.registered
@@ -744,6 +746,71 @@ function AugustGoalPanel({ g, ko, onRefresh, generatedAt }) {
           <div style={{ fontSize: 11.5, color: '#9CA3AF', marginTop: 6, lineHeight: 1.55 }}>{r.note}</div>
         </div>
       ))}
+
+      {Array.isArray(g.trend) && g.trend.length > 1 && (
+        <div style={{ borderTop: '1px solid #F5F6F7', paddingTop: 14, marginBottom: 6 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 10, flexWrap: 'wrap', marginBottom: trendOpen ? 8 : 0 }}>
+            <button onClick={() => setTrendOpen((v) => !v)} style={{
+              border: 'none', background: 'none', padding: 0, textAlign: 'left', cursor: 'pointer',
+              display: 'flex', alignItems: 'baseline', gap: 6,
+            }}>
+              <span style={{ fontSize: 10, color: '#9CA3AF' }}>{trendOpen ? '▼' : '▶'}</span>
+              <span>
+                <span style={{ fontSize: 13, fontWeight: 700, color: '#374151' }}>
+                  {ko ? `추이 (${g.trend[0].date.slice(5).replace('-', '/')}~)` : `Trend (since ${g.trend[0].date.slice(5)})`}
+                </span>
+                <span style={{ display: 'block', fontSize: 11.5, color: '#9CA3AF', marginTop: 2 }}>
+                  {!trendOpen
+                    ? (ko ? '눌러서 펼치기' : 'Click to expand')
+                    : trendMode === 'cum'
+                      ? (ko ? '누적 — 개발·비개발이 각각 얼마나 쌓였나' : 'Cumulative')
+                      : trendMode === 'w7'
+                        ? (ko ? '7일 이동합계 — 각각 지금 얼마나 빨리 늘고 있나' : '7-day rolling sum')
+                        : (ko ? '가입자 중 이력서 등록 비율' : 'Share of sign-ups with a resume')}
+                </span>
+              </span>
+            </button>
+            {trendOpen && (
+              <div style={{ display: 'inline-flex', gap: 2, background: '#F1F1F4', borderRadius: 9, padding: 3 }}>
+                {[
+                  ['cum', ko ? '누적' : 'Cumulative'],
+                  ['w7', ko ? '신규 속도' : 'Velocity'],
+                  ['rate', ko ? '등록 비율' : 'Rate'],
+                ].map(([key, label]) => (
+                  <button key={key} onClick={() => setTrendMode(key)} style={{
+                    padding: '5px 11px', fontSize: 12, fontWeight: 700, cursor: 'pointer', border: 'none', borderRadius: 7,
+                    background: trendMode === key ? '#1d1d1f' : 'transparent', color: trendMode === key ? '#fff' : '#6B7280',
+                  }}>{label}</button>
+                ))}
+              </div>
+            )}
+          </div>
+          {trendOpen && <>
+          <MetricChart
+            daily={g.trend}
+            metrics={trendMode === 'rate'
+              ? [
+                { key: 'g-rate', dataKey: 'rate', label: ko ? '누적 등록 비율(%)' : 'Cumulative rate (%)', color: '#0F172A' },
+                { key: 'g-rate7', dataKey: 'w7Rate', label: ko ? '최근 7일(%)' : 'Last 7 days (%)', color: '#D97706' },
+              ]
+              : [
+                { key: 'g-pool', dataKey: trendMode === 'cum' ? 'pool' : 'w7Pool', label: ko ? '등록 인재풀' : 'Registered', color: '#94A3B8' },
+                { key: 'g-tech', dataKey: trendMode === 'cum' ? 'tech' : 'w7Tech', label: ko ? '개발' : 'Tech', color: '#2563EB' },
+                { key: 'g-nontech', dataKey: trendMode === 'cum' ? 'nontech' : 'w7Nontech', label: ko ? '비개발' : 'Non-tech', color: '#0D9488' },
+              ]}
+            lang={lang}
+            dualAxis={false}
+            lineType="linear"
+            dots={false}
+          />
+          <div style={{ fontSize: 11.5, color: '#9CA3AF', marginTop: 6, lineHeight: 1.55 }}>
+            {ko
+              ? '⚠️ 이력서를 언제 올렸는지 컬럼이 없어 가입일에 얹은 재구성이다(직군도 현재값). 끝값은 위 카드 숫자와 같고, 과거 구간은 근사치라 추세로만 본다.'
+              : '⚠️ Reconstructed from signup date (no resume-upload timestamp; role is the current value). The endpoint matches the cards above; earlier points are approximate.'}
+          </div>
+          </>}
+        </div>
+      )}
 
       <div className="adm-m-scroll" style={{ overflowX: 'auto', margin: '4px -4px 14px' }}>
         <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 340 }}>
