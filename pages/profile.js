@@ -601,7 +601,8 @@ export default function ProfilePage() {
         {tab === 'profile' && (<>
 
           {msg && <div className="pmsg">{msg}</div>}
-          <div className="pcard" style={{ position: 'relative', overflow: 'visible' }}>
+          {/* id="resume" — 나브의 '이력서 등록'이 이 카드로 바로 온다(/profile#resume) */}
+          <div className="pcard" id="resume" style={{ position: 'relative', overflow: 'visible', scrollMarginTop: 80 }}>
             <div className="pcard-h"><span className="pcard-ico"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></span>{t('profile.resume')}</div>
             {aiParsing && (
               <div style={{ background: 'rgba(255,68,0,0.04)', border: '1px solid rgba(255,68,0,0.12)', borderRadius: 10, padding: '16px 18px', marginBottom: 16 }}>
