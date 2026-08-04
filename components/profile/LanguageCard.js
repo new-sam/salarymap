@@ -27,7 +27,10 @@ const CERTS = {
 
 // 자기서술 수준 — DB 상위 표현을 그대로 채택(Intermediate 40 · Fluent 22 · Basic 12 …).
 // CEFR(B1 17 · B2 12)도 31명이 쓰고 있어 같이 넣는다.
-const LEVELS = ['Native', 'Fluent', 'Business', 'Intermediate', 'Basic', 'C2', 'C1', 'B2', 'B1', 'A2', 'A1']
+// 'None' 은 '못한다'를 명시적으로 남기는 값이다. 빈칸과 뜻이 다르다 — 빈칸은
+// "아직 안 물어봤다", None 은 "물어봤고 못한다"라서 다시 묻지 않아도 된다.
+// 어학 콜드메일의 '둘 다 못합니다'(/lang?cta=none)가 이 값을 채운다.
+const LEVELS = ['Native', 'Fluent', 'Business', 'Intermediate', 'Basic', 'C2', 'C1', 'B2', 'B1', 'A2', 'A1', 'None']
 
 const SCORE_PH = {
   TOEIC: '900', IELTS: '6.5', TOEFL: '100', VSTEP: 'B2', APTIS: 'B2', TOPIK: '5',

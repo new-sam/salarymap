@@ -23,7 +23,7 @@ export async function getServerSideProps({ query }) {
 
   const { data: prof } = await supabaseAdmin
     .from('user_profiles')
-    .select('full_name, english_cert, korean_cert')
+    .select('id, full_name, english_cert, korean_cert')
     .ilike('email', claim.email)
     .maybeSingle()
 
@@ -32,8 +32,11 @@ export async function getServerSideProps({ query }) {
   // 도달 자체를 클릭으로 센다 — 메일 클라이언트가 링크를 프리페치해도 사람이 온 것과
   // 구분이 안 되지만, 그건 기존 콜드메일 지표와 같은 조건이라 비교 가능성이 유지된다.
   try {
+    // user_id 를 같이 남긴다 — sent/fill 은 user_id 로 세는데 click 만 lead 해시로 세면
+    // 세 지표가 서로 다른 식별자 공간이 되어 "클릭했는데 저장 안 한 사람"을 못 짚는다.
     await supabaseAdmin.from('events').insert({
       event: 'coldmail_lang_click',
+      user_id: prof.id,
       meta: { campaign: claim.campaign, cta: query.cta || null, lead: leadId(claim.email) },
     })
   } catch {}
@@ -52,18 +55,33 @@ export async function getServerSideProps({ query }) {
   }
 }
 
+// 메일의 수준 버튼 → 프로필 수준 값. '일상 회화'를 Fluent 로 올려 잡으면 실제보다
+// 높게 기록되므로 Intermediate 로 둔다. 어차피 랜딩에서 본인이 조정할 수 있다.
+const LEVEL_OF = { daily: 'Intermediate', basic: 'Basic' }
+
 export default function LangLanding({ valid, token, cta, name, initial }) {
-  // cta 로 화면만 미리 맞춘다(저장 아님). '수준만 안다'로 들어온 사람에게 자격증
-  // 드롭다운부터 보여주면 "나는 해당 없음"으로 읽고 닫는다.
-  const preset = cta === 'daily' ? 'Fluent' : cta === 'basic' ? 'Basic' : ''
+  // cta=none('영어·한국어 모두 못합니다')만 예외적으로 값을 미리 채운다. 'None' 은 거친
+  // 값이 아니라 그 자체로 확정된 답이고, 폼을 그대로 보여주므로 잘못 눌렀으면 저장 전에
+  // 고칠 수 있다. 빈칸("아직 안 물어봤다")과 뜻이 달라 다시 묻지 않아도 된다.
   const [form, setForm] = useState({
-    english_cert: initial?.english_cert || preset,
-    korean_cert: initial?.korean_cert || '',
+    english_cert: initial?.english_cert || (cta === 'none' ? 'None' : ''),
+    korean_cert: initial?.korean_cert || (cta === 'none' ? 'None' : ''),
     languages: [],
   })
+  // '일상 회화'·'인사말'은 어느 언어인지 메일에서 알 수 없다 — 메일 버튼이 언어를
+  // 구분하지 않기 때문이다(구분하려면 버튼이 4~6개가 되어 클릭 장벽이 도로 올라간다).
+  // 그래서 랜딩에서 한 번만 묻는다. 임의로 영어라고 가정하면 한국어를 뜻한 사람의
+  // 프로필에 틀린 값이 박힌다.
+  const needLangPick = !!LEVEL_OF[cta] && !initial?.english_cert && !initial?.korean_cert
+  const [langPicked, setLangPicked] = useState(!needLangPick)
   const [saving, setSaving] = useState(false)
   const [done, setDone] = useState(false)
   const [err, setErr] = useState('')
+
+  const pickLang = (which) => {
+    setForm((f) => ({ ...f, [which === 'ko' ? 'korean_cert' : 'english_cert']: LEVEL_OF[cta] }))
+    setLangPicked(true)
+  }
 
   const set = (k, v) => setForm((f) => ({ ...f, [k]: v }))
   const filled = String(form.english_cert || '').trim() || String(form.korean_cert || '').trim()
@@ -107,10 +125,30 @@ export default function LangLanding({ valid, token, cta, name, initial }) {
     )
   }
 
+  // 수준 버튼으로 들어온 사람에게만 뜨는 한 단계 — 어느 언어였는지만 고른다.
+  if (!langPicked) {
+    return (
+      <Shell>
+        <h1 className="lg-h">{name ? `${name}님, ` : ''}어느 언어인가요?</h1>
+        <p className="lg-sub">
+          {cta === 'basic' ? '‘인사말 정도만 압니다’' : '‘일상 회화는 됩니다’'}를 선택하셨어요.
+          어느 언어인지만 알려주시면 됩니다.
+        </p>
+        <button className="lg-btn lg-btn-ghost lg-pick" onClick={() => pickLang('en')}>영어</button>
+        <button className="lg-btn lg-btn-ghost lg-pick" onClick={() => pickLang('ko')}>한국어</button>
+        <button className="lg-link lg-linkbtn" onClick={() => setLangPicked(true)}>직접 입력할게요</button>
+      </Shell>
+    )
+  }
+
   return (
     <Shell>
       <h1 className="lg-h">{name ? `${name}님, ` : ''}어학 한 칸만 채워주세요</h1>
-      <p className="lg-sub">로그인 없이 30초 · 영어만 채우셔도 충분합니다.</p>
+      <p className="lg-sub">
+        {cta === 'none'
+          ? '‘영어·한국어 모두 못합니다’로 채워뒀습니다. 맞으면 저장만 눌러주세요.'
+          : '로그인 없이 30초 · 영어만 채우셔도 충분합니다.'}
+      </p>
 
       <div className="lg-card">
         <LanguageCard form={form} set={set} lang="ko" />
@@ -144,6 +182,9 @@ function Shell({ children }) {
         .lg-btn { display: block; width: 100%; padding: 15px; border: none; border-radius: 10px; background: #ff6000; color: #fff; font-size: 15px; font-weight: 700; cursor: pointer; font-family: inherit; text-align: center; text-decoration: none; }
         .lg-btn:disabled { opacity: 0.45; cursor: not-allowed; }
         .lg-btn-ghost { background: #fff; color: #4E5968; border: 1px solid #D1D6DB; }
+        .lg-pick { margin-bottom: 10px; font-size: 16px; padding: 17px; }
+        .lg-pick:hover { border-color: #ff6000; color: #ff6000; }
+        .lg-linkbtn { background: none; border: none; width: 100%; cursor: pointer; font-family: inherit; }
         .lg-link { display: block; text-align: center; margin-top: 14px; font-size: 13.5px; font-weight: 600; color: #8B95A1; text-decoration: none; }
         .lg-fine { font-size: 12px; color: #B0B8C1; text-align: center; margin: 12px 0 0; }
         .lg-err { font-size: 13px; color: #E5484D; margin: 0 0 12px; }

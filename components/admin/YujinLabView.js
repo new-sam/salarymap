@@ -3,6 +3,8 @@ import { useAdmin, useRefreshAdmin } from '../../lib/adminSwr'
 import { sectionStyle } from '../../constants/dashboard'
 import DateRangePicker from './DateRangePicker'
 import ResumeDropoffSection from './ResumeDropoffSection'
+import ProfileEditSection from './ProfileEditSection'
+import LangColdmailCards from './LangColdmailCards'
 import ChangeTestView from './ChangeTestView'
 
 // "유진 작업실" — 작업 중인 분석을 탭으로 나눠 붙인다. 분석마다 컴포넌트를 분리해
@@ -11,6 +13,7 @@ import ChangeTestView from './ChangeTestView'
 const LAB_TABS = [
   { key: 'inflow', ko: 'KTC 유입 비중', en: 'KTC share of traffic', vi: 'Tỷ trọng truy cập KTC' },
   { key: 'resume', ko: '이력서 이탈', en: 'Resume drop-off', vi: 'Rời bỏ CV' },
+  { key: 'profile', ko: '마이페이지 수정', en: 'Profile edits', vi: 'Sửa hồ sơ' },
   { key: 'test', ko: '변경 테스트', en: 'Change tests', vi: 'Test thay đổi' },
 ]
 
@@ -81,6 +84,9 @@ export default function YujinLabView({ token, lang, dateRange, onDateChange, lab
 
       {labTab === 'inflow' && <KtcInflowSection token={token} lang={lang} dateRange={dateRange} />}
       {labTab === 'resume' && <ResumeDropoffSection token={token} lang={lang} dateRange={dateRange} />}
+      {/* 어학 콜드메일은 이 탭 퍼널(진입→수정→저장)을 만드는 유입이라 위에 둔다 */}
+      {labTab === 'profile' && <LangColdmailCards token={token} lang={lang} />}
+      {labTab === 'profile' && <ProfileEditSection token={token} lang={lang} dateRange={dateRange} />}
       {labTab === 'test' && <ChangeTestView token={token} lang={lang} dateRange={dateRange} />}
     </>
   )
@@ -205,6 +211,10 @@ function KtcInflowSection({ token, lang, dateRange }) {
         </div>
         <div style={{ fontSize: 11.5, color: '#8B95A1', marginBottom: 10 }}>
           {L('3번(구 랜딩 경유)으로 세는 리퍼러에 배지 표시', 'Referrers counted as #3 (old landing) are badged', 'Referrer được tính vào #3 có nhãn')}
+          <br />
+          {L('광고·메일·메신저는 리퍼러가 비어 예전엔 전부 (direct) 였다 — UTM 배지가 붙은 줄은 리퍼러가 아니라 utm_source 로 갈라낸 것.',
+             'Ads/mail/messengers send no referrer — rows badged UTM were split by utm_source, not by referrer.',
+             'Quảng cáo/mail không gửi referrer — dòng có nhãn UTM được tách theo utm_source.')}
         </div>
         <div className="adm-m-scroll">
           <table className="adm-m-nowrap" style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12.5 }}>
@@ -222,6 +232,12 @@ function KtcInflowSection({ token, lang, dateRange }) {
                 <tr key={r.host} style={{ borderBottom: '1px solid #f3f4f6' }}>
                   <td style={tdLeft}>
                     {r.host}
+                    {r.viaUtm && (
+                      <span title={L('리퍼러가 없어 utm_source 로 갈라낸 유입', 'split by utm_source (no referrer)', 'tách theo utm_source')}
+                        style={{ marginLeft: 6, fontSize: 10.5, fontWeight: 700, padding: '1px 6px', borderRadius: 8, background: '#EEF2FF', color: '#4F46E5' }}>
+                        UTM
+                      </span>
+                    )}
                     {r.oldLanding && (
                       <span style={{ marginLeft: 6, fontSize: 10.5, fontWeight: 700, padding: '1px 6px', borderRadius: 8, background: '#FFF1EC', color: '#ff4400' }}>
                         {L('구 랜딩', 'old landing', 'landing cũ')}
