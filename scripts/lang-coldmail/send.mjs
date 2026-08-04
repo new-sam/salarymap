@@ -29,7 +29,10 @@ const arm = (arg('--arm', 'a') || 'a').toLowerCase()
 const lang = (arg('--lang', 'vi') || 'vi').toLowerCase()   // 실발송 기본은 베트남어
 const doSend = has('--send')
 
-const SITE = process.env.SITE_URL || 'https://fyivietnam.com'
+// 다른 콜드메일 스크립트(outreach/*.mjs)와 같은 규칙을 쓴다. 여기만 SITE_URL 이라는
+// 안 쓰는 변수명에 fyivietnam.com 이라는 없는 도메인을 폴백으로 두고 있어서, 메일의
+// 모든 링크(CTA 4개·수신거부·픽셀)가 DNS_PROBE_FINISHED_NXDOMAIN 으로 죽었다.
+const SITE = (process.env.NEXT_PUBLIC_SITE_URL || 'https://salary-fyi.com').replace(/\/$/, '')
 const RESEND_FROM = process.env.RESEND_FROM || 'FYI <hello@salary-fyi.com>'
 const CSV = 'data/lang-coldmail-audience.csv'
 
