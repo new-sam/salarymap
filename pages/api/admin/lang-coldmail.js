@@ -22,6 +22,21 @@ const supabase = createClient(
 
 const EVENTS = ['coldmail_lang_sent', 'coldmail_lang_click', 'coldmail_lang_fill']
 
+/* 들어온 값이 어떤 종류인지 — 이 캠페인의 원래 목적이 "자기서술 52% 를 자격증·점수로
+   바꾸기"라, 전환율만큼이나 값의 생김새가 결론을 좌우한다. 전환 10% 를 넘겨도 전부
+   자기서술이면 지금과 같은 데이터가 늘어난 것뿐이다.
+   판정 기준은 LanguageCard 의 splitCert 와 같아야 한다 — 다르면 화면과 표가 어긋난다. */
+const CERTS = ['TOEIC', 'IELTS', 'TOEFL', 'VSTEP', 'APTIS', 'TOPIK']
+const LEVELS = ['Native', 'Fluent', 'Business', 'Intermediate', 'Basic', 'C2', 'C1', 'B2', 'B1', 'A2', 'A1']
+function kindOf(raw) {
+  const s = String(raw || '').trim()
+  if (!s) return null
+  if (s.toLowerCase() === 'none') return 'none'                               // 못한다고 명시
+  if (CERTS.some((c) => new RegExp(`^${c}\\b`, 'i').test(s))) return 'score'  // "TOEIC 900"
+  if (/^[A-C][12]$/i.test(s) || LEVELS.some((l) => l.toLowerCase() === s.toLowerCase())) return 'level'
+  return 'other'                                                              // 미지의 자격증·자유서술
+}
+
 async function fetchAll(build) {
   const PAGE = 1000
   let all = [], from = 0
@@ -106,6 +121,34 @@ export default async function handler(req, res) {
       }))
       .sort((x, y) => x.campaign.localeCompare(y.campaign))
 
+    /* 실제로 들어온 값 목록. 비율만 보면 "무엇이 들어왔는지"를 못 본다 — 이 캠페인의
+       원래 목적이 자기서술 52% 를 자격증·점수로 바꾸는 거라, 들어온 값의 생김새가
+       전환율만큼 중요하다. 프로필의 현재 값을 읽는다(이벤트에는 값을 안 남긴다).
+       같은 사람이 두 번 저장하면 첫 저장 시각으로 한 줄만 남긴다 — 전환을 세는 방식과 같다. */
+    const firstFill = {}
+    for (const e of evts) {
+      if (e.event !== 'coldmail_lang_fill' || !e.user_id) continue
+      if (!firstFill[e.user_id]) firstFill[e.user_id] = { at: e.created_at, campaign: e.meta?.campaign || null }
+    }
+    const fillIds = Object.keys(firstFill)
+    let fills = []
+    if (fillIds.length) {
+      // 200명 캠페인이라 한 번에 들어간다. 캠페인이 커지면 여기서 쪼개야 한다.
+      const { data: profs } = await supabase
+        .from('user_profiles').select('id, full_name, english_cert, korean_cert').in('id', fillIds)
+      fills = (profs || [])
+        .map((p) => ({
+          name: p.full_name || '(이름 없음)',
+          english_cert: p.english_cert || '',
+          korean_cert: p.korean_cert || '',
+          englishKind: kindOf(p.english_cert),
+          koreanKind: kindOf(p.korean_cert),
+          campaign: firstFill[p.id]?.campaign || null,
+          at: firstFill[p.id]?.at || null,
+        }))
+        .sort((a, b) => String(b.at || '').localeCompare(String(a.at || '')))
+    }
+
     // A/B 판정은 두 arm 이 다 있을 때만. 세 개 이상이면 이름순 앞의 둘을 쓴다.
     const A = rows.find((r) => r.campaign === 'coldmail-language-1')
     const B = rows.find((r) => r.campaign === 'coldmail-language-2')
@@ -115,10 +158,22 @@ export default async function handler(req, res) {
       fill: zTest(A.filled, A.sent, B.filled, B.sent),
     } : null
 
+    // 사람 단위 집계 — 한 사람이 영어·한국어 둘 다 넣었으면 더 구체적인 쪽으로 센다
+    // (score > level > none). "점수를 받아냈나"가 질문이라 그쪽이 답에 가깝다.
+    const RANK = { score: 3, other: 2, level: 1, none: 0 }
+    const kinds = { score: 0, other: 0, level: 0, none: 0 }
+    for (const f of fills) {
+      const ks = [f.englishKind, f.koreanKind].filter(Boolean)
+      if (!ks.length) continue
+      kinds[ks.sort((a, b) => RANK[b] - RANK[a])[0]]++
+    }
+
     res.setHeader('Cache-Control', 'no-store')
     return res.status(200).json({
       rows,
       ab,
+      fills,
+      kinds,
       totals: {
         sent: rows.reduce((s, r) => s + r.sent, 0),
         clicked: rows.reduce((s, r) => s + r.clicked, 0),

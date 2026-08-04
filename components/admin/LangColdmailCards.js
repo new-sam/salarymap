@@ -97,6 +97,48 @@ export default function LangColdmailCards({ token, lang }) {
         })}
       </div>
 
+      {/* 실제로 들어온 값 — 비율만 보면 "무엇이 들어왔는지"를 못 본다. 이 캠페인의 목적이
+          자기서술 52% 를 자격증·점수로 바꾸는 거라, 전환 10% 를 넘겨도 전부 자기서술이면
+          지금과 같은 데이터가 늘어난 것뿐이다. 그래서 종류를 같이 센다. */}
+      {!!data?.fills?.length && (
+        <div style={{ marginTop: 14, borderTop: '1px solid #F2F4F6', paddingTop: 10 }}>
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, flexWrap: 'wrap', marginBottom: 8 }}>
+            <span style={{ fontSize: 12, fontWeight: 700 }}>
+              {L('들어온 값', 'What came in', 'Dữ liệu đã nhận')} {data.fills.length}
+            </span>
+            <span style={{ fontSize: 11, color: '#8B95A1' }}>
+              {L('점수', 'Score', 'Điểm')} {data.kinds?.score ?? 0} ·{' '}
+              {L('수준(자기서술)', 'Self-described', 'Tự mô tả')} {data.kinds?.level ?? 0} ·{' '}
+              {L('기타', 'Other', 'Khác')} {data.kinds?.other ?? 0} ·{' '}
+              {L('못함', 'Neither', 'Không biết')} {data.kinds?.none ?? 0}
+            </span>
+          </div>
+
+          <div style={{ maxHeight: 240, overflowY: 'auto', border: '1px solid #F2F4F6', borderRadius: 8 }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 11.5 }}>
+              <thead>
+                <tr style={{ position: 'sticky', top: 0, background: '#FAFBFC' }}>
+                  <th style={fillTh}>{L('이름', 'Name', 'Tên')}</th>
+                  <th style={fillTh}>{L('영어', 'English', 'Tiếng Anh')}</th>
+                  <th style={fillTh}>{L('한국어', 'Korean', 'Tiếng Hàn')}</th>
+                  <th style={{ ...fillTh, width: 34 }}>arm</th>
+                </tr>
+              </thead>
+              <tbody>
+                {data.fills.map((f, i) => (
+                  <tr key={i} style={{ borderTop: '1px solid #F2F4F6' }}>
+                    <td style={{ ...fillTd, fontWeight: 600 }}>{f.name}</td>
+                    <td style={fillTd}><CertCell value={f.english_cert} kind={f.englishKind} L={L} /></td>
+                    <td style={fillTd}><CertCell value={f.korean_cert} kind={f.koreanKind} L={L} /></td>
+                    <td style={{ ...fillTd, color: '#8B95A1' }}>{ARM_META[f.campaign]?.tag || '?'}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
       {ab && (
         <div style={{ marginTop: 10, fontSize: 11.5, color: '#4E5968', lineHeight: 1.7 }}>
           {verdict(ab.click, L('클릭률', 'Click rate', 'Tỷ lệ click'))}
@@ -110,6 +152,21 @@ export default function LangColdmailCards({ token, lang }) {
         </div>
       )}
     </div>
+  )
+}
+
+const fillTh = { padding: '6px 8px', textAlign: 'left', fontWeight: 600, color: '#8B95A1', whiteSpace: 'nowrap' }
+const fillTd = { padding: '6px 8px', textAlign: 'left', verticalAlign: 'top' }
+
+// 값 자체를 그대로 보여주되 종류를 색으로 구분한다. '점수'만 이 캠페인이 원한 결과다.
+const KIND_COLOR = { score: '#16a34a', other: '#4E5968', level: '#B45309', none: '#B0B8C1' }
+
+function CertCell({ value, kind, L }) {
+  if (!value) return <span style={{ color: '#D1D6DB' }}>—</span>
+  return (
+    <span style={{ color: KIND_COLOR[kind] || '#4E5968' }}>
+      {kind === 'none' ? L('못함', 'Neither', 'Không biết') : value}
+    </span>
   )
 }
 

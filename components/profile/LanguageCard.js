@@ -101,7 +101,15 @@ function CertRow({ label, value, known, onChange, L, allowLevelOnly = true }) {
             items={certItems}
             displayValue={certLabel}
             placeholder={L('자격증 선택', 'Select test', 'Chọn chứng chỉ')}
-            onChange={(v) => emit({ cert: v, etc: v === CERT_ETC ? cur.etc : '' })}
+            // 자격증 ↔ 수준을 오갈 때는 점수 칸을 비운다. 안 비우면 수준 텍스트가 그대로
+            // 남아 "TOEIC Basic" 같은 값이 저장된다(실제로 콜드메일 유입에서 나왔다).
+            // '인사말 정도만 압니다'로 들어와 Basic 이 채워진 상태에서 TOEIC 을 고르는 경로다.
+            // 자격증끼리 바꾸는 건 시험명 정정이므로 점수를 남긴다.
+            onChange={(v) => emit({
+              cert: v,
+              etc: v === CERT_ETC ? cur.etc : '',
+              score: (cur.cert === CERT_NONE) === (v === CERT_NONE) ? cur.score : '',
+            })}
           />
         </div>
         <div style={{ flex: '1 1 58%', minWidth: 0 }}>
