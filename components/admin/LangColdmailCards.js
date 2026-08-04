@@ -19,6 +19,14 @@ const ARM_META = {
 
 const pct = (v) => `${(v * 100).toFixed(1)}%`
 
+// 메일 버튼 문구. cta 코드만 띄우면 어느 버튼인지 매번 템플릿을 열어봐야 한다.
+const CTA_LABEL = (L) => ({
+  score: L('어학 점수가 있어요', 'Has a score', 'Có điểm'),
+  daily: L('일상 회화는 됩니다', 'Daily conversation', 'Giao tiếp hằng ngày'),
+  basic: L('인사말 정도만 압니다', 'Basic greetings', 'Chào hỏi cơ bản'),
+  none: L('둘 다 못합니다', 'Neither', 'Không biết cả hai'),
+})
+
 export default function LangColdmailCards({ token, lang }) {
   const L = (ko, en, vi) => (lang === 'vi' ? (vi ?? en) : lang === 'ko' ? ko : en)
   // dateRange 를 안 붙인다 — A/B 는 캠페인 전 기간을 한 번에 봐야 하고, 날짜로 자르면
@@ -47,14 +55,6 @@ export default function LangColdmailCards({ token, lang }) {
         </div>
       </div>
     )
-  }
-
-  const ab = data?.ab
-  const verdict = (t, label) => {
-    if (!t) return L(`${label}: 표본이 작아 판정 불가`, `${label}: sample too small`, `${label}: mẫu quá nhỏ`)
-    return t.p < 0.05
-      ? L(`${label}: 차이 있음 (p=${t.p.toFixed(3)})`, `${label}: significant (p=${t.p.toFixed(3)})`, `${label}: có khác biệt (p=${t.p.toFixed(3)})`)
-      : L(`${label}: 차이 없음이 아니라 '모름' (p=${t.p.toFixed(3)})`, `${label}: inconclusive (p=${t.p.toFixed(3)})`, `${label}: chưa kết luận (p=${t.p.toFixed(3)})`)
   }
 
   return (
@@ -176,20 +176,47 @@ export default function LangColdmailCards({ token, lang }) {
               </tbody>
             </table>
           </div>
-          </>)}
-        </div>
-      )}
 
-      {ab && (
-        <div style={{ marginTop: 10, fontSize: 11.5, color: '#4E5968', lineHeight: 1.7 }}>
-          {verdict(ab.click, L('클릭률', 'Click rate', 'Tỷ lệ click'))}
-          <br />
-          {verdict(ab.fill, L('어학 입력률', 'Fill rate', 'Tỷ lệ điền'))}
-          <div style={{ color: '#8B95A1', marginTop: 4 }}>
-            {L("p ≥ 0.05 는 '차이가 없다'가 아니라 '이 표본으로는 모른다'는 뜻이다. 100명/arm 기준 오픈은 40%→60%, 전환은 10%→25% 라야 잡힌다.",
-               "p ≥ 0.05 means 'unknown at this sample', not 'no difference'. At 100/arm this detects 40%→60% on opens, 10%→25% on conversion.",
-               "p ≥ 0.05 nghĩa là 'chưa biết', không phải 'không khác biệt'.")}
+          {/* 버튼 → 저장값 매핑. 같은 토글 안, 목록 바로 아래에 둔다 — 위 목록의 값이 왜
+              그렇게 생겼는지를 설명하는 표라 떨어뜨려 놓으면 따로 읽히고 오해가 남는다.
+              'Intermediate 7건'은 7명이 자기 수준을 서술한 게 아니라 랜딩이 미리 채워준
+              값을 그대로 저장한 것이다 — 정보량이 "그 버튼을 눌렀다"와 정확히 같다.
+              '그대로'가 크면 그 버튼은 수준을 측정하지 못하고 있다는 뜻이다. */}
+          {!!data?.mapping?.length && (<>
+          <div style={{ fontSize: 12, fontWeight: 700, margin: '14px 0 0' }}>
+            {L('버튼 → 저장된 값', 'Button → stored value', 'Nút → giá trị đã lưu')}
           </div>
+          <div style={{ fontSize: 11, color: '#8B95A1', margin: '4px 0 8px' }}>
+            {L("‘그대로’는 우리가 미리 채운 값을 손대지 않고 저장한 사람이다. 그 값은 자기서술이 아니라 '그 버튼을 눌렀다'와 같은 뜻이다.",
+               "‘Kept’ = saved our pre-filled value untouched. That is not self-description — it carries no more than the click itself.",
+               "‘Giữ nguyên’ = lưu giá trị điền sẵn của chúng tôi.")}
+          </div>
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 11.5 }}>
+            <thead>
+              <tr>
+                <th style={fillTh}>{L('버튼', 'Button', 'Nút')}</th>
+                <th style={fillTh}>{L('미리 채운 값', 'Pre-filled', 'Điền sẵn')}</th>
+                <th style={{ ...fillTh, textAlign: 'right' }}>{L('저장', 'Saved', 'Đã lưu')}</th>
+                <th style={{ ...fillTh, textAlign: 'right' }}>{L('그대로', 'Kept', 'Giữ')}</th>
+                <th style={{ ...fillTh, textAlign: 'right' }}>{L('고침', 'Changed', 'Sửa')}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {data.mapping.map((m) => (
+                <tr key={m.cta} style={{ borderTop: '1px solid #F2F4F6' }}>
+                  <td style={fillTd}>{CTA_LABEL(L)[m.cta] || m.cta}</td>
+                  <td style={{ ...fillTd, color: m.preset ? KIND_COLOR.level : '#B0B8C1' }}>
+                    {m.preset || L('없음 (직접 입력)', 'none (typed)', 'không có')}
+                  </td>
+                  <td style={{ ...fillTd, textAlign: 'right', fontWeight: 600 }}>{m.n}</td>
+                  <td style={{ ...fillTd, textAlign: 'right', color: m.kept ? KIND_COLOR.level : '#B0B8C1', fontWeight: m.kept ? 700 : 400 }}>{m.kept}</td>
+                  <td style={{ ...fillTd, textAlign: 'right', color: m.changed ? KIND_COLOR.score : '#B0B8C1' }}>{m.changed}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          </>)}
+          </>)}
         </div>
       )}
     </div>

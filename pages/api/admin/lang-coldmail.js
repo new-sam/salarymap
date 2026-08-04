@@ -28,6 +28,12 @@ const EVENTS = ['coldmail_lang_sent', 'coldmail_lang_click', 'coldmail_lang_fill
    판정 기준은 LanguageCard 의 splitCert 와 같아야 한다 — 다르면 화면과 표가 어긋난다. */
 const CERTS = ['TOEIC', 'IELTS', 'TOEFL', 'VSTEP', 'APTIS', 'TOPIK']
 const LEVELS = ['Native', 'Fluent', 'Business', 'Intermediate', 'Basic', 'C2', 'C1', 'B2', 'B1', 'A2', 'A1']
+/* 메일 버튼 → 랜딩이 미리 채워 넣는 값. pages/lang.js 의 LEVEL_OF + cta=none 처리와
+   같아야 한다. 이 값이 그대로 저장됐다면 그 사람이 "수준을 서술한" 게 아니라 버튼을
+   누르고 저장만 누른 것이다 — 정보량이 클릭한 버튼과 같다는 뜻이라, 'Intermediate 7건'
+   을 자기서술 데이터로 읽으면 안 된다. */
+const PRESET = { daily: 'Intermediate', basic: 'Basic', none: 'None' }
+
 function kindOf(raw) {
   const s = String(raw || '').trim()
   if (!s) return null
@@ -130,6 +136,12 @@ export default async function handler(req, res) {
       if (e.event !== 'coldmail_lang_fill' || !e.user_id) continue
       if (!firstFill[e.user_id]) firstFill[e.user_id] = { at: e.created_at, campaign: e.meta?.campaign || null }
     }
+    // 저장 직전에 누른 버튼 — 저장된 값이 본인 답인지 우리가 넣어준 값인지 가르는 기준이다.
+    const ctaOf = {}
+    for (const e of evts) {
+      if (e.event !== 'coldmail_lang_click' || !e.user_id) continue
+      if (firstFill[e.user_id] && e.created_at <= firstFill[e.user_id].at) ctaOf[e.user_id] = e.meta?.cta || null
+    }
     const fillIds = Object.keys(firstFill)
     let fills = []
     if (fillIds.length) {
@@ -143,6 +155,11 @@ export default async function handler(req, res) {
           korean_cert: p.korean_cert || '',
           englishKind: kindOf(p.english_cert),
           koreanKind: kindOf(p.korean_cert),
+          cta: ctaOf[p.id] ?? null,
+          // 프리셀렉트 값을 손대지 않고 저장했는가. true 면 그 값은 '자기서술'이 아니라
+          // '버튼 그대로'다.
+          keptPreset: !!PRESET[ctaOf[p.id]] &&
+            [p.english_cert, p.korean_cert].filter(Boolean).every((v) => v === PRESET[ctaOf[p.id]]),
           campaign: firstFill[p.id]?.campaign || null,
           at: firstFill[p.id]?.at || null,
         }))
@@ -176,6 +193,20 @@ export default async function handler(req, res) {
       const k = (kindsByArm[f.campaign] = kindsByArm[f.campaign] || { score: 0, other: 0, level: 0, none: 0 })
       k[f.kind]++
     }
+
+    /* 버튼 → 저장값 매핑. "Intermediate 7건"이 자기서술로 읽히면 안 되므로, 버튼별로
+       프리셀렉트를 그대로 둔 사람과 직접 고친 사람을 나눠 센다. kept 가 크면 그 버튼이
+       받아온 정보는 '클릭했다' 이상이 아니다. */
+    const mapping = ['score', 'daily', 'basic', 'none'].map((c) => {
+      const rows_ = fills.filter((f) => f.cta === c)
+      return {
+        cta: c,
+        preset: PRESET[c] || null,
+        n: rows_.length,
+        kept: rows_.filter((f) => f.keptPreset).length,
+        changed: rows_.filter((f) => !f.keptPreset).length,
+      }
+    }).filter((m) => m.n > 0)
     for (const r of rows) r.kinds = kindsByArm[r.campaign] || { score: 0, other: 0, level: 0, none: 0 }
 
     res.setHeader('Cache-Control', 'no-store')
@@ -184,6 +215,7 @@ export default async function handler(req, res) {
       ab,
       fills,
       kinds,
+      mapping,
       totals: {
         sent: rows.reduce((s, r) => s + r.sent, 0),
         clicked: rows.reduce((s, r) => s + r.clicked, 0),
