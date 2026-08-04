@@ -27,6 +27,17 @@ const isOldLanding = (meta) => {
   return OLD_LANDING_HOSTS.some(h => host === h || host.endsWith(`.${h}`) || src.includes(h))
 }
 
+// 리퍼러가 비는 진입(광고 인앱 브라우저·메일·메신저)은 전부 '(direct)' 한 줄로 뭉친다.
+// 그 안의 최대 덩어리가 Meta 광고라, 뭉쳐두면 "출처 불명"으로 오독된다.
+// → 리퍼러가 없고 utm_source 가 있으면 그 출처로 갈라내고, 리퍼러가 아니라 UTM 으로
+//   판정했다는 걸 viaUtm 배지로 구분한다. 둘 다 없는 것만 진짜 '(direct)'.
+const entrySource = (meta) => {
+  const host = refHost(meta?.referrer)
+  if (host !== '(direct)') return { key: host, viaUtm: false }
+  const src = String(meta?.utm_source || '').trim()
+  return src ? { key: src, viaUtm: true } : { key: '(direct)', viaUtm: false }
+}
+
 async function fetchAll(build) {
   const out = []
   for (let from = 0; ; from += 1000) {
@@ -73,8 +84,8 @@ export default async function handler(req, res) {
       d.ktc++
       const old = isOldLanding(e.meta)
       if (old) d.oldLanding++
-      const host = refHost(e.meta?.referrer)
-      const r = referrers[host] || (referrers[host] = { host, sessions: 0, oldLanding: old })
+      const { key, viaUtm } = entrySource(e.meta)
+      const r = referrers[key] || (referrers[key] = { host: key, sessions: 0, oldLanding: old, viaUtm })
       r.sessions++
     }
 
