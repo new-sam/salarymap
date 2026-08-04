@@ -141,7 +141,17 @@ export default function ProfilePage() {
 
   useEffect(() => {
     supabase.auth.getSession().then(async ({ data: { session } }) => {
-      if (!session) { router.replace('/'); return }
+      // 비로그인 진입 — 조용히 홈으로 보내면 밖에서 들어온 링크(콜드메일 CTA, 나브
+      // '이력서 등록')가 그냥 죽는다. "눌렀는데 홈이네"가 되고 이유도 안 남는다.
+      // 로그인을 태우고 원래 목적지(#language 같은 해시 포함)로 되돌린다.
+      // /auth/callback 이 router.replace(returnTo) 로 해시까지 살려서 보내준다.
+      if (!session) {
+        const dest = window.location.pathname + window.location.search + window.location.hash
+        try { localStorage.setItem('fyi_login_return', dest) } catch {}
+        track('profile_login_redirect', { page: '/profile', meta: { dest } })
+        window.location.href = '/api/auth/google?return=' + encodeURIComponent(dest)
+        return
+      }
       setUser(session.user)
       setToken(session.access_token)
       track('profile_view', { page: '/profile' })
@@ -739,7 +749,11 @@ export default function ProfilePage() {
                 <input className={`pinput${df('gpa')}`} value={form.gpa || ''} onChange={e => set('gpa', e.target.value)} placeholder="e.g. 3.8 / 4.0" />
               </div>
             </div>
-            <LanguageCard form={form} set={set} lang={lang} />
+            {/* id="language" — 어학 콜드메일 CTA 가 /profile#language 로 여기에 바로 착지한다.
+                scroll-margin-top 은 sticky 헤더(56px)에 제목이 가리지 않을 만큼. */}
+            <div id="language" style={{ scrollMarginTop: 80 }}>
+              <LanguageCard form={form} set={set} lang={lang} />
+            </div>
           </div>
 
           {/* 희망 조건 — 직군·경력·희망연봉·근무형태 */}
