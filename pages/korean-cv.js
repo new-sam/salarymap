@@ -224,56 +224,69 @@ export default function KoreanCvPage() {
     {
       n: '1',
       t: L('CV 업로드 & 로그인', 'Upload your CV & sign in', 'Tải CV lên & đăng nhập'),
-      s: L('1분이면 끝나요. 지금 쓰는 CV 그대로, PDF나 Word 아무거나 괜찮아요.',
-        'Takes 1 minute. Your current CV as-is — PDF or Word, either works.',
-        'Chỉ mất 1 phút. Dùng CV hiện tại của bạn — PDF hay Word đều được.'),
+      s: L('1분이면 끝나요. 지금 쓰는 CV 그대로 — 베트남어나 영어여도 괜찮아요. PDF, Word 다 돼요.',
+        'Takes 1 minute. Your current CV as-is — Vietnamese or English is fine. PDF or Word.',
+        'Chỉ mất 1 phút. Dùng CV hiện tại của bạn — tiếng Việt hay tiếng Anh đều được. PDF hay Word đều OK.'),
     },
     {
       n: '2',
-      t: L('담당자가 번역하고 다듬어요', 'A recruiter translates & polishes it', 'Chuyên viên dịch & chỉnh sửa'),
-      s: L('한국 기업에 인재를 매칭하는 담당자가 직접 한국식 이력서로 번역하고, 서류 통과에 도움되게 첨삭해요.',
-        'A recruiter who matches candidates with Korean companies translates it into the Korean resume format and edits it to pass screening.',
-        'Chuyên viên trực tiếp kết nối ứng viên với công ty Hàn sẽ dịch CV sang mẫu 이력서 chuẩn Hàn và chỉnh sửa để hồ sơ dễ đậu vòng sơ tuyển hơn.'),
+      t: L('시니어 HR이 번역하고 다듬어요', 'A senior HR pro translates & polishes it', 'HR cấp cao dịch & chỉnh sửa'),
+      s: L('한국 기업에 인재를 매칭하는 시니어 HR이 직접 한국식 이력서로 번역하고, 한국어 실력과 경력이 돋보이게 첨삭해요.',
+        'A senior HR professional who matches candidates with Korean companies translates it into the Korean resume format and edits it so your Korean skills and experience stand out.',
+        'Chuyên viên HR cấp cao trực tiếp kết nối ứng viên với công ty Hàn sẽ dịch CV sang mẫu 이력서 chuẩn Hàn và chỉnh sửa để năng lực tiếng Hàn cùng kinh nghiệm của bạn nổi bật hơn.'),
     },
     {
       n: '3',
-      t: L('이메일로 받아요 + 피드백', 'Receive it by email + feedback', 'Nhận qua email + nhận xét'),
-      s: L('1~2 영업일 안에 완성된 한국식 이력서(PDF)와 함께 이력서 개선 피드백을 보내드려요.',
-        'Within 1–2 business days you get the finished Korean resume (PDF) plus feedback on how to improve it.',
-        'Trong 1–2 ngày làm việc, bạn nhận 이력서 hoàn chỉnh (PDF) kèm nhận xét giúp cải thiện hồ sơ.'),
+      t: L('이메일로 받아요 + 커리어 피드백', 'Receive it by email + career feedback', 'Nhận qua email + nhận xét nghề nghiệp'),
+      s: L('1~2 영업일 안에 완성된 한국식 이력서(PDF)와 함께 커리어 피드백을 보내드려요.',
+        'Within 1–2 business days you get the finished Korean resume (PDF) plus career feedback.',
+        'Trong 1–2 ngày làm việc, bạn nhận 이력서 hoàn chỉnh (PDF) kèm nhận xét định hướng nghề nghiệp.'),
     },
   ]
 
   const trust = [
     {
-      t: L('한국 기업 채용 플랫폼이 직접 해요', 'Run by a Korean-hiring platform', 'Nền tảng tuyển dụng doanh nghiệp Hàn'),
-      s: L('FYI는 베트남 인재와 한국 기업을 연결하는 채용 플랫폼이에요. 어떤 이력서가 서류를 통과하는지 매일 보는 팀이 만들어요.',
-        'FYI is a hiring platform connecting Vietnamese talent with Korean companies. The team that sees which resumes pass screening every day makes yours.',
-        'FYI là nền tảng tuyển dụng kết nối ứng viên Việt với doanh nghiệp Hàn Quốc. Đội ngũ nhìn thấy mỗi ngày hồ sơ nào được chọn sẽ trực tiếp làm hồ sơ cho bạn.'),
+      img: '/korean-cv/trust-2.png',
+      t: L('저희는 LIKELION이에요', 'We are LIKELION', 'Chúng tôi là LIKELION'),
+      s: L('LIKELION은 베트남과 미국에 법인을 둔 한국 기업이에요. 한국 정부 지원으로 베트남 인재를 선발·교육해 한국 기업과 연결하는 K-Tech College도 운영하고 있어요.',
+        'LIKELION is a Korean company with entities in Vietnam and the US. We also run K-Tech College, a Korean-government-backed program that selects and trains Vietnamese talent for Korean companies.',
+        'LIKELION là công ty Hàn Quốc có pháp nhân tại Việt Nam và Mỹ. Chúng tôi cũng vận hành K-Tech College — chương trình được chính phủ Hàn Quốc hỗ trợ, tuyển chọn và đào tạo nhân tài Việt để kết nối với doanh nghiệp Hàn.'),
     },
     {
-      t: L('LIKELION이 운영해요', 'Operated by LIKELION', 'Vận hành bởi LIKELION'),
-      s: L('한국 정부 지원으로 베트남 IT 인재를 선발·교육해 한국 기업과 연결하는 K-Tech College를 운영하는 LIKELION 팀이 운영해요.',
-        'Run by LIKELION — the team behind K-Tech College, a Korean-government-backed program that selects and trains Vietnamese IT talent for Korean companies.',
-        'Được vận hành bởi LIKELION — đội ngũ điều hành K-Tech College, chương trình được chính phủ Hàn Quốc hỗ trợ, tuyển chọn và đào tạo nhân tài IT Việt Nam để kết nối với doanh nghiệp Hàn Quốc.'),
+      img: '/korean-cv/trust-1.png',
+      t: L('아까운 탈락을 너무 많이 봤어요', 'We saw too many good candidates rejected', 'Quá nhiều ứng viên giỏi bị loại đáng tiếc'),
+      s: L('FYI는 LIKELION이 운영하는 채용 플랫폼이에요. 실력과 스펙은 충분한데 이력서가 한국식이 아니라서 서류에서 탈락하는 경우를 너무 많이 봤어요. 그래서 이 서비스를 시작했어요.',
+        'FYI is the hiring platform LIKELION runs. We kept seeing candidates with great skills fail screening simply because their resume wasn\'t written the Korean way — so we started this service.',
+        'FYI là nền tảng tuyển dụng do LIKELION vận hành. Chúng tôi thấy quá nhiều ứng viên đủ năng lực nhưng bị loại từ vòng hồ sơ chỉ vì CV không viết theo chuẩn Hàn — vì vậy chúng tôi bắt đầu dịch vụ này.'),
     },
     {
-      t: L('이력서가 매칭으로 이어져요', 'Your resume leads to matching', 'Hồ sơ dẫn đến cơ hội thật'),
-      s: L('완성된 이력서는 채용 중인 한국 기업 매칭에 그대로 활용돼요. 조건이 맞으면 기업이 먼저 연락해요.',
-        'Your finished resume is used to match you with Korean companies hiring now — when there is a fit, they contact you first.',
-        'Hồ sơ hoàn chỉnh cũng được dùng để kết nối bạn với các công ty Hàn đang tuyển — khi phù hợp, nhà tuyển dụng sẽ chủ động liên hệ với bạn.'),
+      img: '/korean-cv/trust-3.png',
+      t: L('AI가 아니라 시니어 HR이 직접 봐요', 'A senior HR pro — not AI', 'HR cấp cao trực tiếp làm — không phải AI'),
+      s: L('시간이 더 걸리더라도 시니어 HR 담당자가 한 부씩 직접 검토·첨삭해요. 완성된 이력서와 함께 커리어 피드백까지 보내드려요.',
+        'Even if it takes longer, a senior HR professional personally reviews and edits every resume — and sends it back with career feedback.',
+        'Dù mất nhiều thời gian hơn, chuyên viên HR cấp cao sẽ trực tiếp xem và chỉnh sửa từng bản — gửi lại cho bạn kèm nhận xét định hướng nghề nghiệp.'),
     },
   ]
+
+  const pageTitle = L(
+    'TOPIK 다음의 차별점, 한국식 이력서 무료 제작 | FYI',
+    'The edge after TOPIK — free Korean resume service | FYI',
+    'Lợi thế sau TOPIK — làm 이력서 chuẩn Hàn miễn phí | FYI',
+  )
+  const pageDesc = L(
+    'TOPIK 급수는 이력서의 한 줄, 제대로 쓴 한국식 이력서는 그 자체가 실력 증명. AI가 아니라 시니어 HR이 무료로 번역·첨삭해서 커리어 피드백과 함께 보내드려요.',
+    'TOPIK is one line on a resume — a properly written Korean resume is proof of your Korean itself. A senior HR professional (not AI) makes yours for free, with career feedback, by email.',
+    'Điểm TOPIK chỉ là một dòng trong hồ sơ — bản 이력서 viết đúng chuẩn Hàn mới là bằng chứng thật cho năng lực của bạn. Chuyên viên HR cấp cao (không phải AI) làm miễn phí, kèm nhận xét nghề nghiệp, gửi qua email.',
+  )
 
   return (
     <>
       <Head>
-        <title>{L('한국식 이력서 무료 첨삭 | FYI', 'Free Korean Resume Service | FYI', 'Làm hồ sơ 이력서 chuẩn Hàn miễn phí | FYI')}</title>
-        <meta name="description" content={L(
-          '한국 기업 매칭 담당자가 CV를 한국식 이력서로 번역·첨삭해서 이메일로 보내드려요. 무료.',
-          'A recruiter who matches talent with Korean companies translates and polishes your CV into a Korean resume — free, by email.',
-          'Chuyên viên tuyển dụng sẽ dịch và chỉnh sửa CV của bạn thành hồ sơ 이력서 chuẩn Hàn Quốc, gửi qua email — hoàn toàn miễn phí.',
-        )} />
+        <title>{pageTitle}</title>
+        <meta name="description" content={pageDesc} />
+        {/* 커뮤니티(페북 등) 공유 링크 프리뷰용 */}
+        <meta property="og:title" content={pageTitle} />
+        <meta property="og:description" content={pageDesc} />
       </Head>
       <GlobalNav activePage="koreanCv" />
 
@@ -474,9 +487,9 @@ export default function KoreanCvPage() {
                     : L('접수 완료!', 'Request received!', 'Đã tiếp nhận yêu cầu!')}
                 </div>
                 <div className="kcv-done-s">
-                  {L(<>담당자가 CV를 한국식 이력서로 번역·첨삭해서 <b>{user?.email}</b>로 보내드려요. 보통 1~2 영업일이 걸려요.</>,
-                    <>A recruiter is translating and polishing your CV into a Korean resume. We'll email it to <b>{user?.email}</b> — usually within 1–2 business days.</>,
-                    <>Chuyên viên sẽ dịch và chỉnh sửa CV của bạn thành 이력서 chuẩn Hàn, rồi gửi đến <b>{user?.email}</b> — thường trong 1–2 ngày làm việc.</>)}
+                  {L(<>시니어 HR이 CV를 한국식 이력서로 번역·첨삭해서 <b>{user?.email}</b>로 보내드려요. 보통 1~2 영업일이 걸려요.</>,
+                    <>A senior HR professional is translating and polishing your CV into a Korean resume. We'll email it to <b>{user?.email}</b> — usually within 1–2 business days.</>,
+                    <>Chuyên viên HR cấp cao sẽ dịch và chỉnh sửa CV của bạn thành 이력서 chuẩn Hàn, rồi gửi đến <b>{user?.email}</b> — thường trong 1–2 ngày làm việc.</>)}
                 </div>
               </div>
 
@@ -503,14 +516,14 @@ export default function KoreanCvPage() {
               <div className="kcv-hero">
                 <div className="kcv-badge">{L('무료 서비스', 'Free service', 'Dịch vụ miễn phí')}</div>
                 <h1 className="kcv-h1">
-                  {L(<>담당자가 직접 만들어주는<br /><em>한국식 이력서</em></>,
-                    <>A <em>Korean-style resume</em>,<br />made for you by a real recruiter</>,
-                    <>Hồ sơ <em>이력서 chuẩn Hàn Quốc</em>,<br />do chuyên viên làm cho bạn</>)}
+                  {L(<>TOPIK 다음의 차별점,<br /><em>한국식 이력서</em></>,
+                    <>The edge after TOPIK —<br />a <em>Korean-style resume</em></>,
+                    <>Lợi thế sau TOPIK —<br /><em>이력서 chuẩn Hàn Quốc</em></>)}
                 </h1>
                 <p className="kcv-sub">
-                  {L(<>자동 번역기가 아니에요.<br />한국 기업 매칭 담당자가 직접 번역·첨삭해서 보내드려요.</>,
-                    <>Not machine translation.<br />A real recruiter translates and polishes it for you.</>,
-                    <>Không phải máy dịch tự động.<br />Chuyên viên tuyển dụng trực tiếp dịch, chỉnh sửa và gửi cho bạn.</>)}
+                  {L(<>TOPIK 급수는 이력서의 한 줄일 뿐이에요.<br />제대로 쓴 한국식 이력서는 그 자체가 한국어 실력 증명 — AI가 아니라 시니어 HR이 직접 만들어드려요.</>,
+                    <>Your TOPIK level is just one line on a resume.<br />A properly written Korean resume is proof of your Korean itself — made for you by a senior HR professional, not AI.</>,
+                    <>Điểm TOPIK chỉ là một dòng trong hồ sơ.<br />Một bản 이력서 viết đúng chuẩn Hàn mới là bằng chứng thật cho tiếng Hàn của bạn — do chuyên viên HR cấp cao trực tiếp làm, không phải AI.</>)}
                 </p>
                 <div className="kcv-hero-art" aria-hidden="true">
                   <span className="kcv-art-spark s1">✦</span>
@@ -573,7 +586,7 @@ export default function KoreanCvPage() {
               </div>
 
               <div className="kcv-sec kcv-sec-trust" ref={trustRef}>
-                <h2 className="kcv-sec-h kcv-reveal">{L('왜 FYI가 해주나요?', 'Why is FYI doing this?', 'Vì sao FYI làm việc này?')}</h2>
+                <h2 className="kcv-sec-h kcv-reveal">{L('왜 무료로 해주나요?', 'Why is it free?', 'Sao lại miễn phí?')}</h2>
                 <div className="kcv-trust" onScroll={(e) => {
                   const el = e.currentTarget
                   const step = (el.children[0]?.offsetWidth || 1) + 12
@@ -582,7 +595,7 @@ export default function KoreanCvPage() {
                 }}>
                   {trust.map((item, i) => (
                     <div key={i} className={`kcv-trust-card kcv-reveal kcv-reveal-d${i + 1}`}>
-                      <div className="kcv-trust-img"><img src={`/korean-cv/trust-${i + 1}.png`} alt="" loading="lazy" /></div>
+                      <div className="kcv-trust-img"><img src={item.img} alt="" loading="lazy" /></div>
                       <div className="kcv-trust-t">{item.t}</div>
                       <div className="kcv-trust-s">{item.s}</div>
                     </div>
