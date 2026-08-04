@@ -339,7 +339,9 @@ async function mxOk(domains) {
   }
 
   console.log(`캠페인: ${campaign} | 랜딩: /ktc/claim (배포 필수)`)
-  console.log(`리스트 ${total}명 | 제외: FYI가입 ${isMember} · 발송済 ${sentLeads.size} · 수신거부 ${unsubLeads.size} → ${afterDedup}명 | CV직링크 없음 ${noCv} 제외${parsedOnly ? ` | 미파싱 ${noParse} 제외` : ''} → 대상 ${leads.length}명`)
+  console.log(remind
+    ? `리스트 ${total}명 → 리마인드 대상 ${afterDedup}명 | CV직링크 없음 ${noCv} 제외${parsedOnly ? ` | 미파싱 ${noParse} 제외` : ''} → 대상 ${leads.length}명`
+    : `리스트 ${total}명 | 제외: FYI가입 ${isMember} · 발송済 ${sentLeads.size} · 수신거부 ${unsubLeads.size} → ${afterDedup}명 | CV직링크 없음 ${noCv} 제외${parsedOnly ? ` | 미파싱 ${noParse} 제외` : ''} → 대상 ${leads.length}명`)
 
   const capped = max ? leads.slice(0, max) : leads
   if (!capped.length) { console.log('보낼 대상 없음.'); return }
