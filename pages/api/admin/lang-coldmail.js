@@ -225,7 +225,15 @@ export default async function handler(req, res) {
       for (const f of fs) if (f.kind) k[f.kind]++
       return k
     }
-    const keys = [...new Set(rows.map((r) => keyOf(r.campaign)))].sort()
+    /* 카드 순서는 보낸 순서다. 키 알파벳순으로 두면 ghost → ktc → language → resume 이
+       되어 실제 발송 순서(language → ktc → resume → ghost)와 어긋난다. 캠페인을 시간순으로
+       읽어야 "앞 캠페인 결과를 보고 다음을 정했다"는 흐름이 그대로 보인다. */
+    const firstSentOf = (key) => rows
+      .filter((r) => keyOf(r.campaign) === key)
+      .map((r) => r.firstSentAt).filter(Boolean)
+      .sort()[0] || '9999'
+    const keys = [...new Set(rows.map((r) => keyOf(r.campaign)))]
+      .sort((a, b) => String(firstSentOf(a)).localeCompare(String(firstSentOf(b))))
     const groups = keys.map((key) => {
       const wRows = rows.filter((r) => keyOf(r.campaign) === key)
       const wFills = fills.filter((f) => keyOf(f.campaign) === key)
