@@ -18,6 +18,9 @@ const ARM_META = {
   // KTC 유입자 캠페인은 제목 A/B 가 없다 — 123명으로는 61명/arm 이라 어떤 차이도
   // 판정되지 않는다. 그래서 arm 이 아니라 캠페인 자체를 한 칸으로 그린다.
   'coldmail-ktc-lang-1': { tag: 'K', ko: 'KTC 유입', en: 'From KTC', vi: 'Từ KTC', color: '#0F766E' },
+  // 3차 — 지원 경험이 없는 층. 이력서 유무로 갈랐고 둘 다 제목 A/B 가 없다.
+  'coldmail-lang-resume-1': { tag: 'R', ko: '이력서 있음', en: 'Has resume', vi: 'Có CV', color: '#B45309' },
+  'coldmail-lang-ghost-1': { tag: 'G', ko: '이력서 없음', en: 'No resume', vi: 'Chưa có CV', color: '#7C3AED' },
 }
 
 const pct = (v) => `${(v * 100).toFixed(1)}%`
@@ -38,6 +41,8 @@ const CTA_LABEL = (L) => ({
    keyOf 에서 wave 만 빼면 화면은 그대로 하나로 돌아온다. */
 const GROUP_TITLE = (g, L) => {
   if (g.family === 'ktc') return L('어학 콜드메일 · KTC 유입', 'Language cold-email · from KTC', 'Cold-email ngoại ngữ · từ KTC')
+  if (g.family === 'resume') return L('어학 콜드메일 · 이력서 O / 지원 0', 'Language cold-email · resume, never applied', 'Cold-email ngoại ngữ · có CV')
+  if (g.family === 'ghost') return L('어학 콜드메일 · 이력서 X / 지원 0', 'Language cold-email · no resume', 'Cold-email ngoại ngữ · chưa có CV')
   return g.wave === 1
     ? L('어학 콜드메일 (제목 A/B)', 'Language cold-email (subject A/B)', 'Cold-email ngoại ngữ (A/B tiêu đề)')
     : L(`어학 콜드메일${g.wave}`, `Language cold-email ${g.wave}`, `Cold-email ngoại ngữ ${g.wave}`)
@@ -45,6 +50,9 @@ const GROUP_TITLE = (g, L) => {
 
 const GROUP_NOTE = (g, L) => {
   if (g.family === 'ktc') return L('K-Tech College 로 들어와 계정을 만든 회원 · 단일 버전', 'Signed up via K-Tech College · single version', 'Đăng ký qua K-Tech College')
+  // 3차 두 계열의 질문: 이력서가 없어도 어학만으로 추천 대상이 되는가.
+  if (g.family === 'resume') return L('이력서는 있으나 FYI 에서 지원한 적 없는 회원', 'Has a resume but never applied on FYI', 'Có CV nhưng chưa ứng tuyển')
+  if (g.family === 'ghost') return L('가입만 하고 이력서도 지원도 없는 회원 · 이력서 등록 버튼 포함', 'Signed up only — no resume, no application', 'Chỉ đăng ký, chưa có CV')
   return g.wave === 1
     ? L('콜드메일을 한 번도 받지 않은 회원', 'Never received a cold-email before', 'Chưa từng nhận cold-email')
     : L('이미 다른 콜드메일을 받은 적 있는 회원', 'Previously received other cold-emails', 'Đã từng nhận cold-email khác')

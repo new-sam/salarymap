@@ -22,16 +22,20 @@ const supabase = createClient(
 
 const EVENTS = ['coldmail_lang_sent', 'coldmail_lang_click', 'coldmail_lang_fill']
 
-/* 같은 이벤트 이름을 쓰는 캠페인이 둘이다 — 전환 정의가 '어학 입력'으로 같아서다.
+/* 같은 이벤트 이름을 쓰는 캠페인이 여럿이다 — 전환 정의가 '어학 입력'으로 같아서다.
    그러나 모집단이 달라 한 표에 합치면 전환율이 무엇의 전환율인지 알 수 없다.
      language = 제목 A/B (coldmail-language-1/2), wave 로 코호트가 또 갈린다
-     ktc      = KTC 유입자 단일 버전 (coldmail-ktc-lang-1)
-   ktc 는 wave 를 안 쓴다 — meta.wave 가 없어 1 로 떨어지는데, 계열로 먼저 가르지 않으면
-   그대로 어학 wave 1 숫자에 섞인다. */
+     ktc      = KTC 유입자 (coldmail-ktc-lang-1)
+     resume   = 이력서 O · FYI 지원 0 (coldmail-lang-resume-1)
+     ghost    = 이력서 X · FYI 지원 0 (coldmail-lang-ghost-1)
+   language 외에는 wave 를 안 쓴다 — meta.wave 가 없어 1 로 떨어지는데, 계열로 먼저
+   가르지 않으면 그대로 어학 wave 1 숫자에 섞인다. */
 const familyOf = (campaign) =>
   /^coldmail-ktc-lang/.test(campaign) ? 'ktc'
-    : /^coldmail-language/.test(campaign) ? 'language'
-      : 'other'
+    : /^coldmail-lang-resume/.test(campaign) ? 'resume'
+      : /^coldmail-lang-ghost/.test(campaign) ? 'ghost'
+        : /^coldmail-language/.test(campaign) ? 'language'
+          : 'other'
 
 /* 들어온 값이 어떤 종류인지 — 이 캠페인의 원래 목적이 "자기서술 52% 를 자격증·점수로
    바꾸기"라, 전환율만큼이나 값의 생김새가 결론을 좌우한다. 전환 10% 를 넘겨도 전부

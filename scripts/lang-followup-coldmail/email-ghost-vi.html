@@ -1,38 +1,15 @@
 <!--
-  [실발송 · 베트남어] 유령 회원 되살리기 콜드메일
-  ────────────────────────────────────────────────────────────
-  타겟   : 가입은 했는데 이력서도 없고 지원도 한 번 안 한 회원 886명
-           (user_profiles 기준. KTC 랜딩의 별도 DB 리드는 프로필이 없어 제외)
+  [실발송 · 베트남어] 어학 수집 3차 · ghost 세그먼트
+  검수용 한글본은 email-ghost-ko.html — 문장이 1:1 대응한다. 고칠 땐 양쪽 같이.
 
-  왜 또 보내나 — 이 중 775명이 4일 전 resume-register-all1 을 받았다
-    그 메일은 "이력서 파일을 올려라"였고 전환 3.0%(24/807)에 그쳤다. 수신거부는 0.
-    이 메일은 요청 자체를 바꾼다: "이력서 없어도 된다. 영어·한국어만 알려달라."
-    같은 날 어학 콜드메일이 13~16% 로 전환된 근거가 있다 — 파일 업로드는 무겁고
-    버튼 한 번은 가볍다. 같은 요청을 두 번 하는 게 아니라, 문턱을 낮춘 것이다.
-    ※ 그래도 4일 만의 재발송이다. 수신거부율을 반드시 같이 볼 것.
+  타겟   : 이력서 X · FYI 지원 0 · 어학 3칸 빔 — 838명 (가입만 하고 비워둔 층)
+  캠페인 : coldmail-lang-ghost-1
 
-  훅    : "가입만 해두고 비워두셨다" — 사실이고, 본인도 안다.
-          비난이 아니라 "그래도 괜찮다, 어학만 알려줘도 추천할 수 있다"로 받는다.
-          ※ 이력서 내용은 일절 주장하지 않는다. 이 사람들은 이력서가 없다.
-
-  버튼 두 개 — 순서가 곧 우선순위다
-    1) 어학 알려주기 (주 버튼)  → /lang?t=&cta=&lang=vi   로그인 없이 30초
-    2) 이력서 등록 (보조)       → /api/resume/upload?t=   로그인 없이 파일만 선택
-    어학을 앞에 두는 이유: 이 사람들은 나흘 전에 이력서 요청을 이미 거절했다.
-    같은 걸 다시 첫 버튼으로 내밀면 같은 메일로 읽히고 그대로 닫힌다.
-
-  캠페인 ID : coldmail-ghost-1
-    ※ 어학 A/B(coldmail-language-1/2)와 섞이면 안 된다. 모집단도 문구도 다르다.
-      유진 작업실 어학 카드는 ARM_META 로 필터하므로 이 캠페인은 거기 안 뜬다.
-
-  개인화 변수
-    {{name}}          호칭 (없으면 'bạn')
-    {{ctaLang}}       어학 입력 랜딩 (ktcMailToken 서명)
-    {{ctaResume}}     이력서 등록 랜딩 (campaignToken 서명, user_id 기반)
-    {{unsubscribeUrl}} {{pixelUrl}}
-
-  실데이터 (2026-08-04) — 발송 직전 재확인할 것
-    · 활성 공고 677건 · 그중 제목에 한국어 요구 27건 · 그중 25건이 지원자 0명
+  버튼   : '둘 다 못합니다' 이탈구를 빼고 그 자리를 이력서 등록으로 바꿨다.
+           이력서가 없는 사람에게 "둘 다 못한다"를 받으면 매칭에 쓸 수 없다.
+  ※ 838명 중 753명이 4일 전 이력서 등록 요청을 이미 거절했다(전환 3.0%). 그래서
+    이력서는 주 버튼이 아니라 맨 아래 점선 보조 버튼에 둔다.
+  ※ 이력서 내용도, 지원 이력도 일절 주장하지 않는다 — 둘 다 없는 사람들이다.
 -->
 <!doctype html>
 <html lang="vi">
@@ -70,18 +47,17 @@
     <p style="margin:0 0 16px;font-size:15px;line-height:1.7;color:#4E5968;">
       Nhưng có một việc <b style="color:#191F28;">chỉ mất 30 giây</b>: cho chúng tôi biết
       bạn nói được <b style="color:#191F28;">tiếng Anh hay tiếng Hàn</b> ở mức nào.
-      Chỉ với thông tin đó, chúng tôi đã có thể giới thiệu việc cho bạn.
+      Chỉ với thông tin đó, chúng tôi đã có thể chọn việc phù hợp gửi cho bạn.
     </p>
 
-    <!-- 훅: 실제 수치 -->
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:separate;border-spacing:8px;margin:20px -8px;">
       <tr>
         <td width="50%" style="background:#FFF6F2;border:1px solid #FFD9CC;border-radius:12px;padding:18px 12px;text-align:center;">
-          <div style="font-size:30px;font-weight:800;color:#ff6000;line-height:1;">27</div>
+          <div style="font-size:30px;font-weight:800;color:#ff6000;line-height:1;">26</div>
           <div style="font-size:12px;color:#8B7A6F;margin-top:7px;line-height:1.4;">Vị trí cần<br />tiếng Hàn</div>
         </td>
         <td width="50%" style="background:#FFF6F2;border:1px solid #FFD9CC;border-radius:12px;padding:18px 12px;text-align:center;">
-          <div style="font-size:30px;font-weight:800;color:#ff6000;line-height:1;">25</div>
+          <div style="font-size:30px;font-weight:800;color:#ff6000;line-height:1;">24</div>
           <div style="font-size:12px;color:#8B7A6F;margin-top:7px;line-height:1.4;">Trong đó chưa<br />ai ứng tuyển</div>
         </td>
       </tr>
@@ -101,21 +77,41 @@
       <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:separate;border-spacing:0 8px;">
         <tr>
           <td>
-            <a href="{{ctaLang}}" style="display:block;background:#ff6000;color:#ffffff;text-decoration:none;border-radius:10px;padding:15px 18px;font-size:15px;font-weight:700;text-align:center;line-height:1.4;">
-              Cho biết trình độ ngoại ngữ
-              <span style="display:block;font-size:12px;font-weight:500;opacity:0.85;margin-top:3px;">TOEIC &middot; IELTS &middot; VSTEP &middot; TOPIK, hoặc chỉ mức độ</span>
+            <a href="{{ctaScore}}" style="display:block;background:#ff6000;color:#ffffff;text-decoration:none;border-radius:10px;padding:15px 18px;font-size:15px;font-weight:700;text-align:center;line-height:1.4;">
+              Tôi có chứng chỉ ngoại ngữ
+              <span style="display:block;font-size:12px;font-weight:500;opacity:0.85;margin-top:3px;">TOEIC &middot; IELTS &middot; TOPIK &middot; VSTEP</span>
             </a>
           </td>
         </tr>
         <tr>
           <td style="padding:4px 0 2px;font-size:12px;color:#8B95A1;text-align:center;">
+            Không có chứng chỉ
+          </td>
+        </tr>
+        <tr>
+          <td>
+            <a href="{{ctaDaily}}" style="display:block;background:#ffffff;color:#191F28;text-decoration:none;border:1px solid #D1D6DB;border-radius:10px;padding:15px 18px;font-size:15px;font-weight:600;text-align:center;line-height:1.4;">
+              Giao tiếp hằng ngày được
+            </a>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            <a href="{{ctaBasic}}" style="display:block;background:#ffffff;color:#191F28;text-decoration:none;border:1px solid #D1D6DB;border-radius:10px;padding:15px 18px;font-size:15px;font-weight:600;text-align:center;line-height:1.4;">
+              Chỉ biết chào hỏi cơ bản
+            </a>
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:6px 0 2px;font-size:12px;color:#8B95A1;text-align:center;">
             Nếu bạn đã có sẵn CV
           </td>
         </tr>
         <tr>
           <td>
-            <a href="{{ctaResume}}" style="display:block;background:#ffffff;color:#191F28;text-decoration:none;border:1px solid #D1D6DB;border-radius:10px;padding:15px 18px;font-size:15px;font-weight:600;text-align:center;line-height:1.4;">
-              Tải CV lên (chỉ chọn file)
+            <a href="{{ctaResume}}" style="display:block;background:#ffffff;color:#4E5968;text-decoration:none;border:1px dashed #D1D6DB;border-radius:10px;padding:14px 18px;font-size:14px;font-weight:600;text-align:center;line-height:1.4;">
+              Tải CV lên luôn
+              <span style="display:block;font-size:11.5px;font-weight:500;color:#8B95A1;margin-top:3px;">Không cần đăng nhập, chỉ chọn file</span>
             </a>
           </td>
         </tr>
