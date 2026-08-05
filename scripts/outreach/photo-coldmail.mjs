@@ -32,18 +32,20 @@ const sleep = (ms) => new Promise(r => setTimeout(r, ms))
 const esc = (s) => String(s || '').replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]))
 
 // ── 베트남어 이메일 ──
-const SUBJECT = 'Hồ sơ có ảnh nhận offer nhiều hơn 60% — thêm ảnh trong 1 phút 📸'
+// 프레임(유저 확정): 담당자가 오퍼 1차 대기 리스트에 올렸다가 "프로필 사진 없음" 사유로 제외 —
+// 실제 추천 명단 운영에서 사진 없는 프로필이 제외되는 프로세스를 반영한 카피(캠페인 표면 전용).
+const SUBJECT = 'Bạn đã vào danh sách chờ nhận offer — nhưng chưa được chọn (lý do: thiếu ảnh hồ sơ)'
 function emailText(name, url, unsub) {
   return `Chào ${name || 'bạn'},
 
-Hồ sơ của bạn trên FYI đang được giới thiệu tới các nhà tuyển dụng Hàn Quốc — nhưng hiện chưa có ảnh đại diện.
+Gần đây, một nhà tuyển dụng đã đưa hồ sơ của bạn vào danh sách chờ (vòng 1) để gửi offer. Nhưng rất tiếc, bạn đã không được chọn vào danh sách cuối cùng.
 
-Hồ sơ có ảnh được nhà tuyển dụng mở xem và gửi offer nhiều hơn tới 60%.
+Lý do: hồ sơ của bạn chưa có ảnh đại diện.
 
-Chỉ mất 1 phút, không cần đăng nhập:
+Các nhà tuyển dụng thường loại những hồ sơ không có ảnh khỏi danh sách đề cử. Để không bỏ lỡ cơ hội tiếp theo, hãy thêm ảnh hồ sơ ngay — chưa đến 1 phút, không cần đăng nhập. Hồ sơ có ảnh có khả năng nhận offer cao hơn 62%:
 ${url}
 
-Chọn 1 ảnh chân dung rõ mặt — ảnh sẽ được cập nhật ngay vào hồ sơ của bạn.
+Chọn 1 ảnh chân dung rõ mặt — ảnh sẽ được cập nhật ngay và áp dụng từ danh sách đề cử tiếp theo.
 
 — Đội ngũ FYI (salary-fyi.com)
 Hủy nhận email: ${unsub}`
@@ -54,12 +56,13 @@ function emailHtml(name, url, unsub) {
   <div style="font-size:20px;font-weight:800;color:#ff6000;margin-bottom:20px">FYI</div>
   <div style="background:#fff;border:1px solid #eee5da;border-radius:18px;padding:30px 26px">
     <p style="font-size:15px;margin:0 0 14px">Chào <b>${esc(name) || 'bạn'}</b>,</p>
-    <p style="font-size:14.5px;line-height:1.6;margin:0 0 14px">Hồ sơ của bạn trên FYI đang được giới thiệu tới các nhà tuyển dụng Hàn Quốc — nhưng hiện <b style="color:#d92d20">chưa có ảnh đại diện</b>.</p>
-    <p style="font-size:14.5px;line-height:1.6;margin:0 0 20px">Hồ sơ có ảnh được nhà tuyển dụng mở xem và gửi offer nhiều hơn tới <b>60%</b>.</p>
+    <p style="font-size:14.5px;line-height:1.6;margin:0 0 14px">Gần đây, một nhà tuyển dụng đã đưa hồ sơ của bạn vào <b>danh sách chờ (vòng 1)</b> để gửi offer. Nhưng rất tiếc, bạn đã <b style="color:#d92d20">không được chọn</b> vào danh sách cuối cùng.</p>
+    <p style="font-size:14.5px;line-height:1.6;margin:0 0 14px">Lý do: hồ sơ của bạn <b>chưa có ảnh đại diện</b>.</p>
+    <p style="font-size:14.5px;line-height:1.6;margin:0 0 20px">Các nhà tuyển dụng thường loại những hồ sơ không có ảnh khỏi danh sách đề cử. Để không bỏ lỡ cơ hội tiếp theo, hãy thêm ảnh hồ sơ ngay — <b>chưa đến 1 phút</b>, không cần đăng nhập. Hồ sơ có ảnh có khả năng nhận offer cao hơn <b>62%</b>.</p>
     <div style="text-align:center;margin:0 0 20px">
       <a href="${url}" style="display:inline-block;background:#ff6000;color:#fff;font-weight:700;font-size:15px;text-decoration:none;padding:14px 28px;border-radius:12px">Thêm ảnh trong 1 phút →</a>
     </div>
-    <p style="font-size:13px;line-height:1.6;color:#8a8073;margin:0">Không cần đăng nhập. Chọn 1 ảnh chân dung rõ mặt — ảnh sẽ được cập nhật ngay vào hồ sơ của bạn.</p>
+    <p style="font-size:13px;line-height:1.6;color:#8a8073;margin:0">Chọn 1 ảnh chân dung rõ mặt — ảnh sẽ được cập nhật ngay và áp dụng từ danh sách đề cử tiếp theo.</p>
   </div>
   <p style="font-size:11.5px;color:#a89f92;text-align:center;margin:18px 0 0;line-height:1.5">— Đội ngũ FYI · salary-fyi.com<br><a href="${unsub}" style="color:#a89f92">Hủy nhận email</a></p>
 </div></body></html>`

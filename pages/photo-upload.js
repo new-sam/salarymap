@@ -97,7 +97,7 @@ export default function PhotoUpload() {
             <div style={{ fontSize: 20, fontWeight: 800, color: '#ff6000', marginBottom: 18 }}>FYI</div>
             <div style={{ fontSize: 19, fontWeight: 800, lineHeight: 1.35, marginBottom: 10 }}>Thêm ảnh hồ sơ trong 1 phút</div>
             <div style={{ fontSize: 14, color: '#6b6357', lineHeight: 1.6, marginBottom: 22 }}>
-              Hồ sơ có ảnh được nhà tuyển dụng mở xem và gửi offer nhiều hơn tới <b style={{ color: '#1a1612' }}>60%</b>.
+              Nhà tuyển dụng thường loại hồ sơ chưa có ảnh khỏi danh sách đề cử.<br />Hồ sơ có ảnh có khả năng nhận offer cao hơn <b style={{ color: '#1a1612' }}>62%</b>.
             </div>
 
             <input ref={inputRef} type="file" accept="image/jpeg,image/png,image/webp" onChange={onPick} style={{ display: 'none' }} />
