@@ -185,7 +185,9 @@ export default function LangLanding({ valid, token, cta, uiLang, name, initial }
       const r = await fetch('/api/lang/save', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ token, english_cert: form.english_cert, korean_cert: form.korean_cert }),
+        // cta 를 같이 보낸다 — 응답 원본 기록(coldmail_lang_responses)에 "어느 버튼으로
+        // 들어와 저장했는지"를 남겨야 프리셀렉트 값인지 직접 고친 값인지 나중에 가른다.
+        body: JSON.stringify({ token, cta, english_cert: form.english_cert, korean_cert: form.korean_cert }),
       })
       if (!r.ok) throw new Error((await r.json().catch(() => ({}))).error || 'failed')
       setDone(true)
