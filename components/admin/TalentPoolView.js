@@ -243,13 +243,13 @@ export default function TalentPoolView({ token, lang }) {
     }
   }
 
-  // AI 전체 채우기 — 미파싱(경력/요약 빈) 인재를 동시 3개씩 순회 파싱.
+  // AI 전체 채우기 — 미파싱 인재를 동시 3개씩 순회 파싱.
   // 서버 배치 대신 클라이언트 순회인 이유: 파싱 1건당 5~15초라 서버리스 타임아웃에 걸린다.
   // 실패자는 API가 resume_summary.parse_failed 로 마킹 → 다음 배치/카드 버튼에서 제외.
+  // 판정은 요약 불릿 유무만 — 경력회사 유무를 섞으면 신입(무경력) CV가 영원히 재파싱 대상이 된다.
   const needsParse = (r) => {
-    const hasCompany = asExperiences(r.experiences).some(e => e?.company)
     const bullets = r.resume_summary?.bullets
-    return !hasCompany || !Array.isArray(bullets) || bullets.length === 0
+    return !Array.isArray(bullets) || bullets.length === 0
   }
   const parseTargets = pool.filter(r => needsParse(r) && !r.resume_summary?.parse_failed)
 
@@ -594,7 +594,6 @@ function TalentCard({ r, L, vi, ko, userRecs = [], onRecommend, onReparse, parsi
   )
   const skills = asSkills(r.skills)
   const exps = asExperiences(r.experiences)
-  const companies = exps.map(e => e.company).filter(Boolean)
   const title = topTitle(r, exps) || r.headline || r.position || ''
   // AI 요약(resume_summary): 한국어 호칭·학위·학력주석·주요이력 3줄 — 20260727 양식
   const summary = r.resume_summary || {}
@@ -716,7 +715,7 @@ function TalentCard({ r, L, vi, ko, userRecs = [], onRecommend, onReparse, parsi
                 style={{ border: 'none', background: 'none', cursor: parsing ? 'wait' : 'pointer', fontSize: 11.5, fontWeight: 600, color: parsing ? '#9CA3AF' : '#DC2626', padding: 0 }}>
                 {parsing ? L.aiFilling : `${L.parseFail} · ${L.retry}`}
               </button>
-            ) : (companies.length === 0 || bullets.length === 0) && (
+            ) : bullets.length === 0 && ( // 요약 유무만 본다 — 경력회사 조건은 신입 CV를 영원히 재파싱 대상으로 만든다
               <button onClick={onReparse} disabled={parsing}
                 title={L.aiTitle}
                 style={{ border: 'none', background: 'none', cursor: parsing ? 'wait' : 'pointer', fontSize: 11.5, fontWeight: 600, color: parsing ? '#9CA3AF' : '#6B7280', padding: 0 }}>
