@@ -674,7 +674,7 @@ function InquiryModal({ sid, picks, first, co, ev, onClose }) {
   const [busy, setBusy] = useState(false)
   const [done, setDone] = useState(false)
   const [more, setMore] = useState(false)       // '함께 문의할 인재 추가하기' 목록을 펴 뒀나
-  const [preview, setPreview] = useState(false) // 접수는 안 됐고 화면만 넘어간 상태(개발 중)
+  const [preview, setPreview] = useState('') // 접수 실패 사유(개발 중에만). 빈 문자열이면 정상 접수
   const [err, setErr] = useState('')
   const openedAt = useRef(Date.now())
 
@@ -722,7 +722,7 @@ function InquiryModal({ sid, picks, first, co, ev, onClose }) {
          넘어간다 — 그러지 않으면 마지막 화면을 만드는 동안 마지막 화면을 볼 수가 없다.
          프로덕션에서는 절대 안 넘긴다. 접수가 안 됐는데 "접수되었습니다"를 보여주면
          고객사는 연락을 기다리고 우리는 문의가 온 줄도 모른다 — 링크를 보낸 의미가 사라진다. */
-      if (process.env.NODE_ENV === 'development') { setPreview(true); setDone(true) }
+      if (process.env.NODE_ENV === 'development') { setPreview(e.message); setDone(true) }
       else {
         setErr(e.message)
         // 여기서 죽으면 고객사는 미팅을 신청했다고 믿는데 우리에게는 아무것도 안 온다.
@@ -763,7 +763,9 @@ function InquiryModal({ sid, picks, first, co, ev, onClose }) {
                 fontSize: 11.5, color: '#B45309', background: '#FFFBEB', border: '1px solid #FDE68A',
                 borderRadius: 8, padding: '7px 10px', marginTop: 10, lineHeight: 1.6,
               }}>
-                미리보기 — 실제로 접수되지 않았습니다 (showcase_searches 표가 아직 없습니다)
+                {/* 원인을 단정하지 않는다. 표가 없어서일 수도, 검색 기록이 없어서일 수도,
+                    그냥 네트워크일 수도 있는데 하나를 박아 두면 엉뚱한 데를 보게 된다. */}
+                미리보기 — 실제로 접수되지 않았습니다: {preview}
               </div>
             )}
             <div style={{ fontSize: 13.5, color: T.mute, marginTop: 10, lineHeight: 1.7 }}>
