@@ -340,13 +340,9 @@ const Clip = () => (
 
    붙는 숫자는 전부 진짜다. 요건 개수는 조건이 오면 알고, 모수는 조건 단계가 같이 세어
    온다(jd-criteria.poolCount) — 그래야 훑는 20초 동안 "1,497건"을 말할 수 있다. */
-const stepLine = { fontSize: 13.5, lineHeight: 1.5, fontWeight: 700, color: T.ink }
-// 빠지는 줄만 자리에서 들어낸다 — 지금 줄은 흐름에 두어야 좁은 화면에서 두 줄로
-// 접혔을 때 아래 조건 상자를 밀어내지, 파고들지 않는다.
-const stepLineOut = { ...stepLine, position: 'absolute', top: 0, left: 0, right: 0 }
-// marginTop 2 는 첫 줄의 광학 중심 — 글이 두 줄로 접혀도 스피너는 첫 줄 옆에 남는다
+// 제목 옆에 붙는 스피너. 제목이 두 줄로 접혀도 첫 줄 옆에 남게 위쪽 정렬한다.
 const stepSpin = {
-  width: 16, height: 16, borderRadius: '50%', flexShrink: 0, marginTop: 2,
+  width: 18, height: 18, borderRadius: '50%', flexShrink: 0, marginTop: 7,
   border: `2px solid ${T.line}`, borderTopColor: T.brand,
 }
 
@@ -359,56 +355,29 @@ function Loading({ step, criteria, pool }) {
     return () => clearTimeout(t)
   }, [step])
 
-  const steps = [
-    'JD를 분석하고 있습니다',
-    '적어주신 것 외에 필요한 조건을 찾고 있습니다',
-    pool ? `이력서 ${pool.toLocaleString()}건을 한 장씩 조건에 대보고 있습니다` : '이력서를 한 장씩 조건에 대보고 있습니다',
-    '가장 잘 맞는 5분으로 좁히고 있습니다',
+  /* 제목도 단계마다 바뀐다. 아래 줄만 넘어가고 제목이 20초 내내 그대로면 화면이
+     한 곳에 멈춰 있는 것처럼 보인다 — 진행 중이라는 걸 실제로 말하는 건 큰 글씨 쪽이다.
+     제목은 짧게 '무엇을', 아래 줄은 길게 '어떻게'. 둘이 같은 말을 하면 한 줄은 없는 셈이다. */
+  const heads = [
+    'JD를 읽고 있어요',
+    '빠진 조건을 채우고 있어요',
+    '이력서를 한 장씩 보고 있어요',
+    '가장 잘 맞는 분들을 고르고 있어요',
   ]
+
   const at = (step === 'criteria' ? 0 : 2) + sub
-
-  /* 하던 줄이 위로 빠지고 다음 줄이 아래에서 올라온다. 그게 전부다 — 끝났다는 표시는
-     안 찍는다. 20초 안에 네 번 초록 체크가 박히면 하는 일보다 도장이 눈에 남는다.
-
-     빠지는 줄과 올라오는 줄을 한 번의 setState 로 같이 바꾸는 건 이유가 있다. 나눠
-     놓으면 다음 줄이 이미 올라오기 시작한 뒤에 나가는 줄이 불투명한 채로 그 위에
-     한 프레임 나타났다 사라진다 — 넘어가는 게 아니라 튀는 것으로 보인다. */
-  const [ph, setPh] = useState({ shown: at, out: null })
-  useEffect(() => {
-    if (ph.shown === at) return
-    setPh({ shown: at, out: ph.shown })
-  }, [at, ph.shown])
-  useEffect(() => {
-    if (ph.out == null) return
-    // 나가는 줄의 애니메이션(0.22s)이 끝나는 시점 — 한쪽만 고치면 다 사라지기 전에
-    // DOM 에서 빠지거나, 이미 안 보이는 줄이 자리를 붙들고 있는다.
-    const t = setTimeout(() => setPh((s) => ({ ...s, out: null })), 240)
-    return () => clearTimeout(t)
-  }, [ph.out])
 
   return (
     <>
       <div style={eyebrow}>인재 추천</div>
-      <div style={{ marginTop: 8 }}>
-        <H>{step === 'criteria' ? 'JD를 읽고 있어요' : '조건에 맞는 분을 찾고 있어요'}</H>
+      {/* 스피너를 제목 옆에 붙인다. 아래에 따로 돌던 과정 줄은 지웠다 — 제목이 이미
+          네 번 바뀌면서 진행을 말하고 있어서, 같은 말을 하는 줄이 하나 더 있었다. */}
+      <div style={{ marginTop: 8, display: 'flex', alignItems: 'flex-start', gap: 12 }}>
+        <H>{heads[at]}</H>
+        <span className="spin" style={stepSpin} />
       </div>
       <div style={{ fontSize: 13.5, color: T.mute, marginTop: 10, lineHeight: 1.7 }}>
         이력서를 한 장씩 요건에 대보는 중이라 20초쯤 걸립니다.
-      </div>
-
-      {/* 한 번에 한 줄만 둔다. 넷을 다 펼쳐 놓으면 아직 안 한 일 셋이 내내 눈에 있는데,
-          그건 진행이 아니라 '남은 것'으로 읽힌다. 지금 무슨 일을 하는지 한 줄이면 된다.
-
-          스피너는 줄과 같이 안 움직인다 — 붙박아 두고 글자만 그 옆을 지나가야
-          '한 자리에서 착착 갈린다'가 되지, 둘 다 날면 화면이 통째로 흔들린다. */}
-      <div style={{ marginTop: 26, display: 'flex', alignItems: 'flex-start', gap: 10 }}>
-        <span className="spin" style={stepSpin} />
-        <div style={{ position: 'relative', flex: 1, minWidth: 0, minHeight: 20 }}>
-          {ph.out != null && (
-            <div key={`out-${ph.out}`} className="pass out" style={stepLineOut}>{steps[ph.out]}</div>
-          )}
-          <div key={`now-${ph.shown}`} className="pass in" style={stepLine}>{steps[ph.shown]}</div>
-        </div>
       </div>
 
       {/* 조건이 나오면 바로 띄운다 — 틀렸으면 결과를 기다릴 필요가 없다 */}
@@ -417,17 +386,6 @@ function Loading({ step, criteria, pool }) {
       <style jsx>{`
         .spin { animation: spin 0.8s linear infinite; }
         @keyframes spin { to { transform: rotate(360deg); } }
-        /* 나가는 줄은 가속해서 빠지고(ease-in), 들어오는 줄은 감속해서 선다(ease-out).
-           둘 다 대칭으로 두면 스르르 지나가는데, 이렇게 걸면 한 번에 착 갈린다.
-           70ms 만 어긋나게 둔다 — 정확히 겹치면 두 문장이 뭉개지고, 더 벌리면 빈 줄이 뜬다. */
-        .pass.in { animation: pass-in 0.26s cubic-bezier(0, 0.55, 0.45, 1) 0.07s both; }
-        .pass.out { animation: pass-out 0.22s cubic-bezier(0.55, 0, 1, 0.45) both; }
-        @keyframes pass-in { from { opacity: 0; transform: translateY(12px); } }
-        @keyframes pass-out { to { opacity: 0; transform: translateY(-14px); } }
-        @media (prefers-reduced-motion: reduce) {
-          .pass.in, .pass.out { animation: none; }
-          .pass.out { opacity: 0; }
-        }
       `}</style>
     </>
   )
@@ -505,7 +463,9 @@ function Keywords({ c }) {
 
   return (
     <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center', marginTop: 14 }}>
-      <span style={{ ...eyebrow, fontSize: 9.5, marginRight: 2 }}>기준</span>
+      {/* '기준' 만 두면 무엇의 기준인지가 안 붙는다 — 아래 카드가 이 값으로 골라졌다는
+          말이라 '선택 기준' 이 맞다. */}
+      <span style={{ ...eyebrow, fontSize: 9.5, marginRight: 2 }}>선택 기준</span>
       {items.map((k, i) => (
         <span key={i} style={{
           fontSize: 11.5, fontWeight: 600, color: T.body, background: '#fff',
@@ -550,26 +510,31 @@ function Result({ data, criteria, co, onBack, ev }) {
 
   return (
     <div style={{
-      minHeight: '100vh', padding: '40px 20px 90px',
+      minHeight: '100vh', padding: '40px 12px 90px', // 양쪽 여백을 줄여 카드에 넘긴다
       background: `radial-gradient(900px 420px at 50% -60px, #FFF8F3 0%, rgba(255,248,243,0) 60%), ${T.paper}`,
     }}>
-      {/* 2·4·4 배치의 폭. 가운데 단이 네 칸이라 1200 이면 한 칸이 288px 로 내려가
-          주요이력이 다시 잘린다. 1320 이면 318px — 이 카드가 견디는 하한이다. */}
-      <div style={{ maxWidth: 1320, margin: '0 auto' }}>
+      {/* 2·4·4 배치의 폭. 가운데·아래 단이 네 칸이라 폭이 곧 카드 폭이다 —
+          1320 이면 한 칸이 318px 였고, 1560 이면 378px 로 올라간다. 추천 이유와
+          관련 경험이 들어가면서 318px 로는 줄마다 말줄임이 생겼다.
+          화면이 더 좁으면 컨테이너가 알아서 줄어든다(maxWidth 라서). */}
+      <div style={{ maxWidth: 1560, margin: '0 auto' }}>
         <Mark />
 
         {/* 머리 — 보고서의 표지에 해당한다. 눈썹 라벨 · 제목 · 한 줄 요약 · 가로선.
             선 하나가 '여기까지가 표지, 아래가 본문'을 말해서 카드가 갑자기 시작되지 않는다. */}
-        <div style={eyebrow}>{co ? `${co} 인재 추천` : '인재 추천'}</div>
+        <div style={eyebrow}>{co ? `${co} 인재 추천 결과` : '인재 추천 결과'}</div>
         <div style={{ display: 'flex', alignItems: 'flex-end', gap: 12, flexWrap: 'wrap', marginTop: 8 }}>
-          {/* 제목에 자리 이름을 넣는다. "5분을 골랐습니다"는 우리가 한 일이고,
-              "웹앱 개발자, 이 다섯 분입니다"는 상대가 물어본 것에 대한 답이다 —
-              고객사가 이 화면을 열면서 머릿속에 들고 있던 문장이 그쪽이다. */}
+          {/* 제목은 우리가 한 일이 아니라 상대가 얻는 것으로 쓴다. "10분을 골랐습니다"는
+              우리 작업 보고이고, "찾으시는 웹앱 개발자, 이 10분 안에 있습니다"는 고객사가
+              이 화면을 열면서 머릿속에 들고 있던 물음에 대한 답이다.
+              단정해서 말한다 — "있을 겁니다"로 흐리면 우리가 고른 열 명을 우리가 못 믿는
+              것으로 읽힌다. */}
           <H>
             {picks.length
-              ? (criteria?.title
-                ? <>{criteria.title}, <span style={{ color: T.brand }}>이 {picks.length}분</span>입니다</>
-                : `이 ${picks.length}분입니다`)
+              ? (<>
+                찾으시는 {criteria?.title || '인재'},{' '}
+                <span style={{ color: T.brand }}>이 {picks.length}분 안에 있습니다</span>
+              </>)
               : '조건에 맞는 분을 찾지 못했습니다'}
           </H>
           <button type="button" onClick={onBack} style={{
@@ -578,15 +543,6 @@ function Result({ data, criteria, co, onBack, ev }) {
             borderRadius: 100, padding: '7px 14px', cursor: 'pointer', boxShadow: T.sm,
           }}>다른 JD로 다시</button>
         </div>
-        {/* 둘째 줄도 우리가 한 일이 아니라 상대가 얻는 것으로 쓴다. "이력서 1,528건에서
-            통과한 상위 10명"은 우리 작업 로그다 — 고객사가 이 화면에서 알고 싶은 건
-            모수가 아니라 "여기서 뽑으면 되는가"다. 그 답을 단정해서 말한다. */}
-        {!!picks.length && (
-          <div style={{ fontSize: 15, color: T.body, fontWeight: 600, marginTop: 10, lineHeight: 1.6 }}>
-            찾으시는 {criteria?.title || '인재'}에 적합한 인재, 이 {picks.length}명 중에 있을 겁니다
-          </div>
-        )}
-
         {/* 무엇을 보고 골랐는지 — 조건 상자를 결과 화면에서 뺀 자리를 이 한 줄이 메운다.
             문장이 아니라 배지인 이유는, 여기서 필요한 건 다시 읽는 게 아니라 "아 그 조건"
             하고 알아보는 것뿐이라서다. 매칭에 실제로 쓴 값만 올린다(추정 요건은 안 올린다). */}
@@ -649,7 +605,7 @@ function Result({ data, criteria, co, onBack, ev }) {
           .psc-g { display: grid; gap: 16px; margin-top: 18px; }
           /* 1·2등은 가운데로 몰아 조금 좁힌다. 1200 을 둘로 나누면 한 칸이 592px 라
              카드 안이 휑해진다. */
-          .psc-g1 { grid-template-columns: repeat(2, minmax(0, 1fr)); max-width: 920px; margin-left: auto; margin-right: auto; }
+          .psc-g1 { grid-template-columns: repeat(2, minmax(0, 1fr)); max-width: 1060px; margin-left: auto; margin-right: auto; }
           .psc-g2 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
           .psc-g3 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 
@@ -689,15 +645,30 @@ function Result({ data, criteria, co, onBack, ev }) {
 
    칸은 다섯 개뿐이다. 여기서 받을 것은 채용의뢰서가 아니라 '연락할 방법'이고, 나머지는
    미팅에서 물으면 된다 — 칸이 하나 늘 때마다 여기서 사람이 빠져나간다. */
-const WHENS = ['이번 주', '다음 주', '오전', '오후']
+/* 상담 시간대 — 30분 단위로 근무시간만. 새벽 두 시를 고를 수 있게 두면 고르는 사람도
+   받는 사람도 곤란해진다. */
+const TIMES = ['10:00', '10:30', '11:00', '11:30', '13:00', '13:30', '14:00', '14:30',
+  '15:00', '15:30', '16:00', '16:30', '17:00', '17:30']
+// 오늘 이전은 못 고르게. 모달은 눌러야 뜨므로 서버에서 그릴 일이 없어 여기서 바로 만든다.
+const todayStr = () => {
+  const d = new Date()
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+}
 
 function InquiryModal({ sid, picks, first, co, ev, onClose }) {
   const [picked, setPicked] = useState([first])
   const [name, setName] = useState('')
   const [company, setCompany] = useState(co || '')
-  const [email, setEmail] = useState('')
-  const [phone, setPhone] = useState('')
-  const [when, setWhen] = useState('')
+  /* 이메일과 전화번호를 한 칸으로 합쳤다. 칸이 하나 늘 때마다 여기서 사람이 빠져나가는데,
+     정작 우리가 필요한 건 '연락할 방법 하나'다. 둘 다 받아 봐야 한쪽만 쓴다.
+     보낼 때 @ 가 있으면 이메일, 아니면 연락처로 갈라 준다 — 서버는 그대로 두고. */
+  const [contact, setContact] = useState('')
+  /* 시간대를 여러 개 받는다. 하나만 받으면 그 시간이 우리 쪽에서 안 될 때 다시 메일을
+     주고받아야 하는데, 두세 개를 미리 받아 두면 그 왕복이 통째로 없어진다.
+     셋에서 막는다 — 더 받아 봐야 우리가 다 확인하지 않는다. */
+  const [slots, setSlots] = useState([{ date: '', time: '' }])
+  const [today] = useState(todayStr)
+  const setSlot = (i, patch) => setSlots((a) => a.map((x, j) => (j === i ? { ...x, ...patch } : x)))
   const [memo, setMemo] = useState('')
   const [hp, setHp] = useState('') // 함정칸 — 사람 눈에는 안 보인다
   const [busy, setBusy] = useState(false)
@@ -720,7 +691,7 @@ function InquiryModal({ sid, picks, first, co, ev, onClose }) {
     prev.includes(i) ? prev.filter((x) => x !== i) : [...prev, i].sort((a, b) => a - b)
   ))
 
-  const ok = name.trim() && company.trim() && (email.trim() || phone.trim()) && picked.length
+  const ok = name.trim() && company.trim() && contact.trim() && picked.length
 
   const send = async () => {
     if (!ok || busy) return
@@ -730,7 +701,11 @@ function InquiryModal({ sid, picks, first, co, ev, onClose }) {
       const r = await fetch('/api/private/inquiry', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          sid, picked, name, company, email, phone, when, memo, hp, t: openedAt.current,
+          sid, picked, name, company, memo, hp, t: openedAt.current,
+          // 채운 줄만 보낸다. "2026-08-07 14:00, 2026-08-08 10:30" 꼴이다.
+          when: slots.map((x) => [x.date, x.time].filter(Boolean).join(' ')).filter(Boolean).join(', '),
+          email: contact.includes('@') ? contact.trim() : '',
+          phone: contact.includes('@') ? '' : contact.trim(),
         }),
       })
       const j = await r.json()
@@ -792,7 +767,7 @@ function InquiryModal({ sid, picks, first, co, ev, onClose }) {
               </div>
             )}
             <div style={{ fontSize: 13.5, color: T.mute, marginTop: 10, lineHeight: 1.7 }}>
-              영업일 기준 1일 안에 {email.trim() ? '메일로 ' : ''}연락드리겠습니다.<br />
+              영업일 기준 1일 안에 {contact.includes('@') ? '메일로 ' : ''}연락드리겠습니다.<br />
               고르신 {picked.length}분의 이력서를 정리해서 함께 보내드립니다.
             </div>
             <button type="button" onClick={onClose} style={{ ...primaryBtn, marginTop: 24, background: T.ink }}>
@@ -835,12 +810,14 @@ function InquiryModal({ sid, picks, first, co, ev, onClose }) {
                     fontFamily: 'inherit', fontSize: 11.5, color: T.mute, background: 'none',
                     border: 0, padding: '2px 0 7px', cursor: 'pointer', textAlign: 'left',
                   }}>
+                  {/* 화살표가 앞이다. 뒤에 있으면 줄 끝까지 눈이 갔다 와야 접힌 줄인 줄
+                      아는데, 앞에 있으면 읽기 전에 안다. */}
+                  <span style={{ color: T.faint, fontSize: 9 }}>{more ? '▲' : '▼'}</span>
                   <span>함께 문의할 인재 추가하기</span>
                   <span style={{ color: T.faint }}>{picks.length - 1}</span>
                   {picked.length > 1 && (
                     <span style={{ color: '#ff6000', fontWeight: 700 }}>+{picked.length - 1} 선택</span>
                   )}
-                  <span style={{ marginLeft: 'auto', color: T.faint }}>{more ? '▲' : '▼'}</span>
                 </button>
                 <div style={{ display: more ? 'flex' : 'none', flexDirection: 'column', gap: 5 }}>
                   {picks.map((p, i) => i === first ? null : (
@@ -867,29 +844,46 @@ function InquiryModal({ sid, picks, first, co, ev, onClose }) {
                 placeholder="담당자 성함" style={inputStyle} />
               <input value={company} onChange={(e) => setCompany(e.target.value)}
                 placeholder="회사명" style={inputStyle} />
-              <input value={email} onChange={(e) => setEmail(e.target.value)}
-                type="email" inputMode="email" placeholder="이메일" style={inputStyle} />
-              <input value={phone} onChange={(e) => setPhone(e.target.value)}
-                placeholder="전화번호 또는 카카오톡 ID" style={inputStyle} />
-              {/* 둘 중 하나만 있으면 된다 — 둘 다 필수로 두면 한쪽을 안 쓰는 사람이 막힌다 */}
-              <div style={{ fontSize: 11, color: T.faint, marginTop: -3 }}>
-                이메일 또는 연락처 중 하나만 적으셔도 됩니다
-              </div>
+              <input value={contact} onChange={(e) => setContact(e.target.value)}
+                placeholder="이메일 또는 전화번호" style={inputStyle} />
             </div>
 
+            {/* 날짜는 달력에서, 시간은 목록에서 고른다. "이번 주 / 오후" 같은 칩으로 받으면
+                결국 우리가 다시 전화해서 날을 잡아야 한다 — 여기서 하루라도 좁혀 두면
+                첫 연락이 "언제 괜찮으세요"가 아니라 "그때로 잡았습니다"가 된다.
+                브라우저 기본 달력을 쓴다. 직접 그리면 이 화면 하나 때문에 달력 부품을
+                들이게 되는데, 여기서 필요한 건 날짜 한 개뿐이다. */}
             <div style={{ marginTop: 14 }}>
-              <div style={{ fontSize: 11.5, color: T.mute, marginBottom: 7 }}>편하신 시간 (선택)</div>
-              <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-                {WHENS.map((w) => (
-                  <button key={w} type="button" onClick={() => setWhen(when === w ? '' : w)}
-                    style={{
-                      fontFamily: 'inherit', fontSize: 12, fontWeight: 600, padding: '5px 12px',
-                      borderRadius: 100, cursor: 'pointer',
-                      border: `1px solid ${when === w ? T.ink : T.line}`,
-                      background: when === w ? T.ink : '#fff',
-                      color: when === w ? '#fff' : T.body,
-                    }}>{w}</button>
+              <div style={{ fontSize: 11.5, color: T.mute, marginBottom: 7 }}>편하신 상담 일시 (선택)</div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
+                {slots.map((sl, i) => (
+                  <div key={i} style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                    <input type="date" value={sl.date} min={today}
+                      onChange={(e) => setSlot(i, { date: e.target.value })}
+                      style={{ ...inputStyle, flex: 1, minWidth: 0, colorScheme: 'light' }} />
+                    <select value={sl.time} onChange={(e) => setSlot(i, { time: e.target.value })}
+                      style={{ ...inputStyle, width: 108, flexShrink: 0, cursor: 'pointer' }}>
+                      <option value="">시간</option>
+                      {TIMES.map((t) => <option key={t} value={t}>{t}</option>)}
+                    </select>
+                    {/* 첫 줄에는 지우기를 안 단다 — 다 지우면 칸이 사라져서 다시 못 연다 */}
+                    {slots.length > 1 && (
+                      <button type="button" onClick={() => setSlots((a) => a.filter((_, j) => j !== i))}
+                        aria-label="이 시간 지우기"
+                        style={{
+                          fontFamily: 'inherit', fontSize: 15, lineHeight: 1, color: T.faint,
+                          background: 'none', border: 0, padding: '0 2px', cursor: 'pointer', flexShrink: 0,
+                        }}>×</button>
+                    )}
+                  </div>
                 ))}
+                {slots.length < 3 && (
+                  <button type="button" onClick={() => setSlots((a) => [...a, { date: '', time: '' }])}
+                    style={{
+                      alignSelf: 'flex-start', fontFamily: 'inherit', fontSize: 12, fontWeight: 600,
+                      color: T.body, background: 'none', border: 0, padding: '2px 0', cursor: 'pointer',
+                    }}>+ 다른 시간도 추가</button>
+                )}
               </div>
             </div>
 
@@ -968,12 +962,45 @@ const chipRow = {
    위치는 이름 오른쪽. 그래서 경력·어학은 아래 한 줄로 내렸다(Card 참고) — 그 자리에
    두면 스티커와 부딪힌다. */
 
+/* 예상 월 비용 — 연차 구간으로 정해진 표다. 사람마다 다른 값이 아니라 구간 값이라
+   카드에 바로 띄울 수 있다.
+
+   5년차 이상을 숫자로 안 적는 이유: 그 위로는 사람마다 폭이 커서 하나로 못 묶는다.
+   억지로 한 숫자를 적으면 실제 협의에서 그 숫자가 먼저 기준이 되어 버린다.
+   연차 미상도 같은 칸으로 보낸다 — 모르는 것을 '신입 99만원'으로 내려 잡으면
+   싸 보이게 만들어 놓고 나중에 말을 바꾸는 셈이다. */
+const COST = [
+  { under: 1, label: '신입', won: 99 },
+  { under: 3, label: '1~3년차', won: 149 },
+  { under: 5, label: '3~5년차', won: 199 },
+]
+const costOf = (yoe) => (yoe == null ? null : COST.find((x) => yoe < x.under) || null)
+// 평소엔 "예상 단가 149만원/월", 올리면 "149만원 상담 문의하기 →".
+// 값을 버튼에서 지우지 않는 건, 누르기 직전에 확인할 것이 그 숫자이기 때문이다.
+const priceText = (yoe) => {
+  const c = costOf(yoe)
+  return c ? `예상 단가 ${c.won}만원/월` : '예상 단가 별도 협의'
+}
+const askText = (yoe) => {
+  const c = costOf(yoe)
+  return c ? `${c.won}만원 상담 문의하기 →` : '상담 문의하기 →'
+}
+
 function Card({ p, no, onAsk }) {
   const [hover, setHover] = useState(false)
   const on = !!onAsk && hover
   /* 1·2등은 왼쪽에 시상대를 붙인다. 열 장이 똑같이 서 있으면 순서가 안 읽히고, 그러면
      우리가 매긴 순위가 아무 말도 못 한다. 카드 안쪽 구성은 나머지 여덟 장과 똑같이
      둔다 — 앞의 둘만 다른 걸 보여주면 비교가 안 된다. */
+  /* 직무명이 두 줄로 접힐 만큼 길면 경력·어학을 한 줄에 붙인다. 그래야 카드 높이가
+     제목 길이를 따라 들쭉날쭉해지지 않는다 — 열 장을 나란히 비교하는 화면이라 높이가
+     맞아야 한다.
+     너비를 재지 않고 글자 수로 어림하는 건, 재려면 ref 와 관찰자가 필요한데 그 값이
+     카드 폭마다(378/452px) 다시 달라져서다. 한글은 라틴 글자의 두 배 폭으로 세고,
+     30 은 378px 카드의 한 줄에 들어가는 양이다. */
+  const titleW = [...(p.title || '')].reduce((n, ch) => n + (/[가-힣ㄱ-ㅎㅏ-ㅣ]/.test(ch) ? 2 : 1), 0)
+  const tightMeta = titleW > 30
+
   const top = no <= 2
   const medal = no === 1
     ? { line: '#FFD9A8', from: '#FFF6E8', to: '#FFE9C9' }
@@ -1021,7 +1048,7 @@ function Card({ p, no, onAsk }) {
         </div>
       )}
 
-      <div style={{ padding: '18px 18px 14px', minWidth: 0, flex: 1, display: 'flex', flexDirection: 'column' }}>
+      <div style={{ padding: '22px 22px 18px', minWidth: 0, flex: 1, display: 'flex', flexDirection: 'column' }}>
         {/* 머리줄 — 왼쪽 순위, 오른쪽 우대·적합점수. 카드에서 숫자만 있는 유일한 줄이다. */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
           {/* 순위 — 이 화면에서 이 사람을 부를 수 있는 유일한 이름이다. 문의·메일·미팅이
@@ -1057,52 +1084,58 @@ function Card({ p, no, onAsk }) {
           </span>
         </div>
 
-        {/* 직무 — 사진 위 한 줄을 통째로 쓴다. 사진 옆에 두면 폭이 반으로 줄어
-            "Senior Frontend Engineer" 가 두 줄로 접히거나 잘린다. 여기서는 안 잘린다.
-            이름을 감춘 화면이라 이 줄이 사실상 이 사람의 이름이다. */}
-        <div title={p.title} style={{
-          fontSize: 21, fontWeight: 600, color: '#64748B', letterSpacing: '-0.03em',
-          lineHeight: 1.3, marginBottom: 16,
-          display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden',
-        }}>{p.title || '직무 미상'}</div>
-
-        {/* 사진 왼쪽 · 오른쪽에 경력·어학·단가. 사진을 키운 만큼 오른쪽에 세 덩어리가
-            들어간다 — 세로로 쌓으면 카드가 그만큼 길어진다. */}
-        <div style={{ display: 'flex', gap: 16, alignItems: 'flex-start', marginBottom: 14 }}>
+        {/* 사진 왼쪽 · 오른쪽에 직무·경력·어학 세 줄. 직무를 사진 위 한 줄로 빼 봤는데,
+            사진 오른쪽이 통째로 비어서 카드가 그만큼 길어졌다. 세 줄을 옆에 세우면
+            같은 정보에 세로가 60px 넘게 덜 든다 — 열 장이라 그 차이가 크다. */}
+        <div style={{ display: 'flex', gap: 14, alignItems: 'flex-start', marginBottom: 16 }}>
           {p.photo
             ? <img src={p.photo} alt="" referrerPolicy="no-referrer" style={{
-                width: '27%', minWidth: 74, maxWidth: 118, aspectRatio: '1',
-                borderRadius: '50%', objectFit: 'cover', flexShrink: 0,
+                width: 72, height: 72, borderRadius: '50%', objectFit: 'cover', flexShrink: 0,
                 boxShadow: `0 0 0 3px #fff, 0 0 0 4px ${top ? medal.line : T.line}, 0 6px 16px rgba(16,24,40,.12)`,
               }} />
             : <div style={{
-                width: '27%', minWidth: 74, maxWidth: 118, aspectRatio: '1',
-                borderRadius: '50%', flexShrink: 0,
+                width: 72, height: 72, borderRadius: '50%', flexShrink: 0,
                 background: 'linear-gradient(180deg,#F7F8FA 0%,#EFF2F5 100%)',
-                display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 34, color: '#C6CCD3',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 26, color: '#C6CCD3',
                 boxShadow: `0 0 0 3px #fff, 0 0 0 4px ${top ? medal.line : T.line}`,
               }}>👤</div>}
 
-          <div style={{ minWidth: 0, flex: 1, display: 'flex', flexDirection: 'column', gap: 8 }}>
-            <div style={{ fontSize: 13.5, color: '#64748B' }}>
-              경력: <span style={{ fontWeight: 700, color: '#334155' }}>
-                {p.yoe == null ? '미상' : p.yoe === 0 ? '신입' : `${p.yoe}년`}
+          <div style={{ minWidth: 0, flex: 1, paddingTop: 2 }}>
+            {/* 이름을 감춘 화면이라 이 줄이 사실상 이 사람의 이름이다. 두 줄까지 접는다 —
+                한 줄로 자르면 "Senior Frontend Engineer" 가 통째로 말줄임이 된다. */}
+            <div title={p.title} style={{
+              fontSize: 15.5, fontWeight: 700, color: T.ink, letterSpacing: '-0.02em',
+              lineHeight: 1.35,
+              display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden',
+            }}>{p.title || '직무 미상'}</div>
+
+            <div style={{
+              display: 'flex', marginTop: 6, minWidth: 0,
+              ...(tightMeta
+                ? { flexDirection: 'row', alignItems: 'baseline', gap: 10 }
+                : { flexDirection: 'column', gap: 3 }),
+            }}>
+              <span style={{ fontSize: 13, color: '#64748B', flexShrink: 0 }}>
+                경력 <span style={{ fontWeight: 700, color: '#334155' }}>
+                  {p.yoe == null ? '미상' : p.yoe === 0 ? '신입' : `${p.yoe}년`}
+                </span>
               </span>
-            </div>
-            <div style={{ fontSize: 13.5, color: '#64748B', ...oneLine }}
-              title={[p.english, p.korean].filter(Boolean).join(' / ')}>
-              어학: <span style={{ fontWeight: 700, color: '#334155' }}>
-                {p.english || p.korean
-                  ? [p.english && `영어 ${p.english}`, p.korean && `한국어 ${p.korean}`].filter(Boolean).join(' · ')
-                  : '기재 없음'}
+              <span style={{ fontSize: 12.5, color: '#64748B', minWidth: 0, ...oneLine }}
+                title={[p.english, p.korean].filter(Boolean).join(' / ')}>
+                {p.english || p.korean ? (<>
+                  {p.english && <><span style={{ color: T.brand, fontWeight: 700, marginRight: 5 }}>영어</span>{p.english}</>}
+                  {p.english && p.korean && <span style={{ color: '#D6DBE1' }}> · </span>}
+                  {p.korean && <><span style={{ color: T.brand, fontWeight: 700, marginRight: 5 }}>한국어</span>{p.korean}</>}
+                </>) : <span style={{ color: T.faint }}>어학 기재 없음</span>}
               </span>
             </div>
 
             {/* 5명을 채우려고 기준 아래에서 데려온 사람만 표시한다 — 같은 무게로 읽히면 안 된다. */}
             {p.rank === '탈락' && (
               <div title={`요건 ${p.met}/${p.total} 충족`} style={{
-                alignSelf: 'flex-start', fontSize: 10.5, fontWeight: 700, color: '#B42318',
-                background: '#FEF3F2', border: '1px solid #FEE4E2', borderRadius: 6, padding: '2px 8px',
+                display: 'inline-block', fontSize: 10.5, fontWeight: 700, color: '#B42318',
+                background: '#FEF3F2', border: '1px solid #FEE4E2', borderRadius: 6,
+                padding: '2px 8px', marginTop: 6,
               }}>조건 일부 미달</div>
             )}
           </div>
@@ -1113,10 +1146,31 @@ function Card({ p, no, onAsk }) {
             본문처럼 놓이는 게 맞다. */}
         {!!p.why && (
           <div style={{
-            fontSize: 14, color: '#475569', lineHeight: 1.65, marginBottom: 14,
+            fontSize: 13, color: T.body, lineHeight: 1.65, marginBottom: 14,
+            background: T.brandSoft, borderLeft: `2px solid ${T.brandLine}`,
+            borderRadius: '0 10px 10px 0', padding: '11px 13px',
             display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden',
-            minHeight: 'calc(1.65em * 3)',
           }}>{p.why}</div>
+        )}
+
+        {/* 관련 경험 — 파서가 이력서에서 뽑아 둔 세 줄. 추천 이유가 '이 자리와 어디가
+            맞나'라면 이쪽은 '이력서에 실제로 뭐가 적혀 있나'다. 우리가 쓴 문장 하나만
+            두면 결국 우리 말만 믿으라는 화면이 된다. */}
+        {!!p.bullets?.length && (
+          <div style={{ marginBottom: 14 }}>
+            <div style={{ ...eyebrow, fontSize: 9.5, marginBottom: 6 }}>관련 경험</div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+              {p.bullets.map((b, i) => (
+                <div key={i} title={b} style={{ display: 'flex', gap: 7, fontSize: 12.5, lineHeight: 1.5, color: '#475569' }}>
+                  <span style={{
+                    flexShrink: 0, width: 3, height: 3, borderRadius: '50%',
+                    background: T.brandLine, marginTop: 8,
+                  }} />
+                  <span style={{ minWidth: 0, ...oneLine }}>{b}</span>
+                </div>
+              ))}
+            </div>
+          </div>
         )}
 
         {/* 기술 — 라벨을 뗐다. 칩 모양 자체가 기술이라고 말한다.
@@ -1145,6 +1199,13 @@ function Card({ p, no, onAsk }) {
         {/* 이 카드가 눌린다는 표시. 없으면 아무도 안 누른다 — 지금까지 이 화면에서 누를 수
             있었던 건 아무것도 없었고, 카드가 갑자기 버튼이 됐다는 걸 알 방법이 없다. */}
         {!!onAsk && (
+          /* 평소엔 예상 단가, 올리면 문의 버튼.
+
+             단가를 어디에 둘지 네 번 옮겼는데(사진 옆·제 줄·스티커) 카드 폭이
+             378~452px 로 변해서 어느 자리에 둬도 이름이나 어학과 부딪혔다.
+             여기는 폭과 무관하게 늘 한 줄이 비어 있는 자리이고, 마우스를 올리기 전까지는
+             버튼이 할 일도 없다 — 값을 확인하고 누르는 것과 누른 뒤에 아는 것은 다른 일이라
+             순서도 맞는다. */
           <div style={{
             marginTop: 'auto', textAlign: 'center',
             fontSize: 13.5, fontWeight: 700, letterSpacing: '-0.02em',
@@ -1154,7 +1215,7 @@ function Card({ p, no, onAsk }) {
             border: `1px solid ${on ? 'transparent' : T.line}`,
             transition: 'background .16s ease, color .16s ease',
           }}>
-            이 분으로 상담 문의하기 →
+            {on ? askText(p.yoe) : priceText(p.yoe)}
           </div>
         )}
       </div>
