@@ -43,9 +43,7 @@ const GROUP_TITLE = (g, L) => {
   if (g.family === 'ktc') return L('어학 콜드메일 · KTC 유입', 'Language cold-email · from KTC', 'Cold-email ngoại ngữ · từ KTC')
   if (g.family === 'resume') return L('어학 콜드메일 · 이력서 O / 지원 0', 'Language cold-email · resume, never applied', 'Cold-email ngoại ngữ · có CV')
   if (g.family === 'ghost') return L('어학 콜드메일 · 이력서 X / 지원 0', 'Language cold-email · no resume', 'Cold-email ngoại ngữ · chưa có CV')
-  return g.wave === 1
-    ? L('어학 콜드메일 (제목 A/B)', 'Language cold-email (subject A/B)', 'Cold-email ngoại ngữ (A/B tiêu đề)')
-    : L(`어학 콜드메일${g.wave}`, `Language cold-email ${g.wave}`, `Cold-email ngoại ngữ ${g.wave}`)
+  return L('어학 콜드메일 (제목 A/B)', 'Language cold-email (subject A/B)', 'Cold-email ngoại ngữ (A/B tiêu đề)')
 }
 
 const GROUP_NOTE = (g, L) => {
@@ -53,9 +51,10 @@ const GROUP_NOTE = (g, L) => {
   // 3차 두 계열의 질문: 이력서가 없어도 어학만으로 추천 대상이 되는가.
   if (g.family === 'resume') return L('이력서는 있으나 FYI 에서 지원한 적 없는 회원', 'Has a resume but never applied on FYI', 'Có CV nhưng chưa ứng tuyển')
   if (g.family === 'ghost') return L('가입만 하고 이력서도 지원도 없는 회원 · 이력서 등록 버튼 포함', 'Signed up only — no resume, no application', 'Chỉ đăng ký, chưa có CV')
-  return g.wave === 1
-    ? L('콜드메일을 한 번도 받지 않은 회원', 'Never received a cold-email before', 'Chưa từng nhận cold-email')
-    : L('이미 다른 콜드메일을 받은 적 있는 회원', 'Previously received other cold-emails', 'Đã từng nhận cold-email khác')
+  // wave 1(콜드메일 미수신 200) + wave 2(기수신 260)를 합쳐 230/230 으로 본다.
+  // 두 코호트의 입력률이 21.0% vs 24.6% 로 크게 벌어지지 않아, 제목 A/B 판정에는
+  // 한 덩어리로 보는 편이 검정력이 높다.
+  return L('이력서 O · FYI 지원 1회 이상 · 230/230', 'Has resume, applied before · 230/230', 'Có CV, đã ứng tuyển · 230/230')
 }
 
 export default function LangColdmailCards({ token, lang }) {

@@ -114,8 +114,11 @@ export default async function handler(req, res) {
 
     const arms = {}
     // 사람 단위로 센다 — 같은 사람의 재클릭(메일 스캐너 중복 포함)이 비율을 부풀리지 않게.
-    const arm = (name, wave) => (arms[`${name}::${wave}`] = arms[`${name}::${wave}`] || {
-      campaign: name, wave,
+    // 캠페인 하나가 한 줄이다. wave 로 쪼개던 것을 합쳤으므로 language 는 A/B 두 줄
+    // (230/230)이 된다. 다시 쪼개려면 키에 wave 를 되붙이면 된다 — waveOf 는 남아 있고
+    // fills 에도 wave 가 그대로 실린다.
+    const arm = (name) => (arms[name] = arms[name] || {
+      campaign: name,
       sent: new Set(), click: new Set(), fill: new Set(),
       cta: { score: new Set(), daily: new Set(), basic: new Set(), none: new Set() },
       firstSentAt: null, lastSentAt: null,
@@ -125,7 +128,7 @@ export default async function handler(req, res) {
       // 수신자는 전원 회원(이력서 보유자)이라 user_id 가 있다. 없으면 발송 스크립트가
       // 잘못 심은 것 — 사람을 못 세므로 조용히 버리지 않고 unattributed 로 센다.
       const pid = e.user_id || e.meta?.lead || null
-      const a = arm(e.meta?.campaign || '(campaign 누락)', waveOf[e.user_id] || 1)
+      const a = arm(e.meta?.campaign || '(campaign 누락)')
       if (e.event === 'coldmail_lang_sent') {
         if (pid) a.sent.add(pid)
         if (!a.firstSentAt || e.created_at < a.firstSentAt) a.firstSentAt = e.created_at
@@ -142,7 +145,6 @@ export default async function handler(req, res) {
     const rows = Object.values(arms)
       .map((a) => ({
         campaign: a.campaign,
-        wave: a.wave,
         sent: a.sent.size,
         clicked: a.click.size,
         filled: a.fill.size,
@@ -212,18 +214,21 @@ export default async function handler(req, res) {
        계열로 먼저 가르는 게 핵심이다 — ktc 는 meta.wave 를 안 남겨 1 로 떨어지므로,
        wave 로만 나누면 어학 wave 1 숫자에 그대로 섞인다.
        language 를 합칠 땐 keyOf 에서 wave 만 빼면 된다. */
-    const keyOf = (campaign, wave) =>
-      (familyOf(campaign) === 'language' ? `language::${wave}` : familyOf(campaign))
+    // language 는 wave 1(미수신자 200) / wave 2(기수신자 260)로 나눠 보다가 합쳤다.
+    // 두 코호트의 입력률이 21.0% vs 24.6% 로 크게 벌어지지 않았고, 제목 A/B 판정에는
+    // 230/230 한 덩어리로 보는 편이 검정력이 높다. 다시 가르려면 아래를
+    // `language::${wave}` 로 되돌리면 된다 — rows/fills 에 wave 는 그대로 남아 있다.
+    const keyOf = (campaign) => familyOf(campaign)
 
     const tally = (fs) => {
       const k = { score: 0, other: 0, level: 0, none: 0 }
       for (const f of fs) if (f.kind) k[f.kind]++
       return k
     }
-    const keys = [...new Set(rows.map((r) => keyOf(r.campaign, r.wave)))].sort()
+    const keys = [...new Set(rows.map((r) => keyOf(r.campaign)))].sort()
     const groups = keys.map((key) => {
-      const wRows = rows.filter((r) => keyOf(r.campaign, r.wave) === key)
-      const wFills = fills.filter((f) => keyOf(f.campaign, f.wave) === key)
+      const wRows = rows.filter((r) => keyOf(r.campaign) === key)
+      const wFills = fills.filter((f) => keyOf(f.campaign) === key)
       // arm 별 값 종류 — "제목이 주제를 밝히면(B) 어학 되는 사람만 온다"는 가설은
       // 전환 수가 아니라 이 분포로만 확인된다.
       for (const r of wRows) r.kinds = tally(wFills.filter((f) => f.campaign === r.campaign))
@@ -232,7 +237,6 @@ export default async function handler(req, res) {
       return {
         key,
         family: familyOf(wRows[0].campaign),
-        wave: wRows[0].wave,
         rows: wRows,
         fills: wFills,
         kinds: tally(wFills),
