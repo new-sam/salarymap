@@ -71,3 +71,4 @@ clipboard_*.png
 /deployed.html
 /local.html
 .env.vercel-tmp
+photo-coldmail-*.csv

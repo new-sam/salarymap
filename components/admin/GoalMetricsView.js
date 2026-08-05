@@ -904,6 +904,12 @@ const CAMPAIGN_GROUPS = [
     // 같은 컬럼에 convert 를 넣으면 전부 0으로 보인다.
     convertFrom: 'apply',
   },
+  {
+    key: 'photo', ko: '⑤ 프로필 사진 등록', en: '(5) Profile photo',
+    koDesc: '이력서 보유·사진 없는 회원 대상 · 클릭 = 랜딩 조회 · 전환 = 사진 업로드(원클릭 랜딩)',
+    enDesc: 'Members with a resume but no photo · click = landing view · convert = photo uploaded',
+    convKo: '사진 등록', convEn: 'Uploaded',
+  },
 ]
 
 // 그룹이 정한 소스에서 전환 인원을 꺼낸다(공개전환 = converted / 추천 = 지원자 수).

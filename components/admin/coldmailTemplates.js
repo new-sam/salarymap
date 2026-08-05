@@ -484,7 +484,67 @@ const invitedSubject = (company) => ({
 })
 
 // 순서대로 첫 매치 사용 — 접두어가 겹치는 항목(coldmail-ktc*)은 구체적인 것을 앞에 둘 것.
+// ── 프로필 사진 등록(photo1): 대기 리스트 미선정(사유: 사진 없음) 프레임 ──
+const PHOTO_I18N = {
+  vi: {
+    greeting: 'Chào <b>{{name}}</b>,',
+    p1: 'Gần đây, một nhà tuyển dụng đã đưa hồ sơ của bạn vào <b>danh sách chờ (vòng 1)</b> để gửi offer. Nhưng rất tiếc, bạn đã <b style="color:#d92d20">không được chọn</b> vào danh sách cuối cùng.',
+    p2: 'Lý do: hồ sơ của bạn <b>chưa có ảnh đại diện</b>.',
+    p3: 'Các nhà tuyển dụng thường loại những hồ sơ không có ảnh khỏi danh sách đề cử. Để không bỏ lỡ cơ hội tiếp theo, hãy thêm ảnh hồ sơ ngay — <b>chưa đến 1 phút</b>, không cần đăng nhập. Hồ sơ có ảnh có khả năng nhận offer cao hơn <b>62%</b>.',
+    cta: 'Thêm ảnh trong 1 phút →',
+    tail: 'Chọn 1 ảnh chân dung rõ mặt — ảnh sẽ được cập nhật ngay và áp dụng từ danh sách đề cử tiếp theo.',
+    footer: '— Đội ngũ FYI · salary-fyi.com · <u>Hủy nhận email</u>',
+  },
+  ko: {
+    greeting: '안녕하세요 <b>{{name}}</b>님,',
+    p1: '최근 기업 담당자님이 오퍼 발송을 위해 회원님 프로필을 <b>1차 대기 리스트</b>에 올렸습니다. 그런데 아쉽게 최종 명단에는 <b style="color:#d92d20">선정되지 않았습니다</b>.',
+    p2: '사유: 프로필에 <b>사진이 없어서</b>입니다.',
+    p3: '기업 담당자들은 사진이 없는 프로필을 추천 명단에서 제외하는 경우가 많습니다. 다음 기회를 놓치지 않게 지금 프로필 사진을 등록해 주세요 — <b>1분도 걸리지 않습니다</b>. 사진이 있는 프로필은 오퍼 확률이 <b>62%</b> 더 높습니다.',
+    cta: '1분 만에 사진 추가하기 →',
+    tail: '얼굴이 잘 나온 사진 한 장을 고르면 프로필에 바로 반영되고, 다음 추천 명단부터 적용됩니다.',
+    footer: '— FYI 팀 · salary-fyi.com · <u>수신거부</u>',
+  },
+  en: {
+    greeting: 'Hi <b>{{name}}</b>,',
+    p1: 'Recently, a recruiter put your profile on the <b>round-1 shortlist</b> for an offer. Unfortunately, you were <b style="color:#d92d20">not selected</b> for the final list.',
+    p2: 'Reason: your profile has <b>no photo</b>.',
+    p3: 'Recruiters often drop photo-less profiles from nominee lists. Don\'t miss the next chance — add a photo now, it takes <b>under a minute</b>, no login needed. Profiles with a photo are <b>62%</b> more likely to receive an offer.',
+    cta: 'Add a photo in 1 minute →',
+    tail: 'Pick one clear headshot — it updates instantly and applies from the next nominee list.',
+    footer: '— The FYI team · salary-fyi.com · <u>Unsubscribe</u>',
+  },
+}
+const photoColdmailHtml = (lang) => {
+  const s = pickLang(PHOTO_I18N, lang)
+  return `<!doctype html><html><body style="margin:0;background:#faf9f7;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif;color:#1a1612">
+<div style="max-width:520px;margin:0 auto;padding:32px 20px">
+  <div style="font-size:20px;font-weight:800;color:#ff6000;margin-bottom:20px">FYI</div>
+  <div style="background:#fff;border:1px solid #eee5da;border-radius:18px;padding:30px 26px">
+    <p style="font-size:15px;margin:0 0 14px">${s.greeting}</p>
+    <p style="font-size:14.5px;line-height:1.6;margin:0 0 14px">${s.p1}</p>
+    <p style="font-size:14.5px;line-height:1.6;margin:0 0 14px">${s.p2}</p>
+    <p style="font-size:14.5px;line-height:1.6;margin:0 0 20px">${s.p3}</p>
+    <div style="text-align:center;margin:0 0 20px">
+      <span style="display:inline-block;background:#ff6000;color:#fff;font-weight:700;font-size:15px;padding:14px 28px;border-radius:12px">${s.cta}</span>
+    </div>
+    <p style="font-size:13px;line-height:1.6;color:#8a8073;margin:0">${s.tail}</p>
+  </div>
+  <p style="font-size:11.5px;color:#a89f92;text-align:center;margin:18px 0 0;line-height:1.5">${s.footer}</p>
+</div></body></html>`
+}
+
 export const COLDMAIL_TEMPLATES = [
+  {
+    match: /^photo/,
+    subject: {
+      vi: 'Bạn đã vào danh sách chờ nhận offer — nhưng chưa được chọn (lý do: thiếu ảnh hồ sơ)',
+      ko: '오퍼 대기 리스트에 올랐지만 아쉽게 선정되지 않았습니다 (사유: 프로필 사진 없음)',
+      en: 'You were on an offer shortlist — but not selected (reason: no profile photo)',
+    },
+    desc: '프로필 사진 등록 유도 photo1 (8/5): "담당자가 오퍼 1차 대기 리스트에 올렸으나 사진 없음 사유로 미선정" 프레임 + 사진 있는 프로필 오퍼 확률 62%↑(유저 확정 카피). 원클릭 토큰 랜딩(/photo-upload)에서 로그인 없이 업로드 → vision 인물사진 검증 후 즉시 반영.',
+    source: 'scripts/outreach/photo-coldmail.mjs',
+    html: photoColdmailHtml,
+  },
   {
     match: /^coldmail-ktc-cv-remind1-0805/,
     subject: {
