@@ -18,12 +18,12 @@ const li = args.indexOf('--limit')
 const limit = li >= 0 ? parseInt(args[li + 1]) : 500
 
 const { createClient } = await import('@supabase/supabase-js')
-const { parseResumeBuffer } = await import('../lib/parseResume.js')
+const { parseResumeBuffer, preserveUserLanguage } = await import('../lib/parseResume.js')
 const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY)
 
 const { data: targets, error } = await supabase
   .from('user_profiles')
-  .select('id, full_name, resume_url, yoe_months, university')
+  .select('id, full_name, resume_url, yoe_months, university, english_cert, korean_cert')
   .not('resume_url', 'is', null)
   .neq('resume_url', '') // 빈 문자열 url 은 not.is.null 을 통과해버림
   .is('korean_cert', null)
@@ -46,7 +46,10 @@ async function processOne(p) {
     const update = alreadyParsed(p)
       ? { english_cert: parsed.english_cert, korean_cert: parsed.korean_cert }
       : parsed
-    const { error: upErr } = await supabase.from('user_profiles').update(update).eq('id', p.id)
+    // 대상이 korean_cert IS NULL 이라 '한국어만 빈' 사람도 걸린다. 그 사람의 english_cert 가
+    // 사람이 넣은 값(어학 콜드메일 응답 다수가 영어만 채운다)이면 여기서 지워진다.
+    const { error: upErr } = await supabase.from('user_profiles')
+      .update(preserveUserLanguage(update, p)).eq('id', p.id)
     if (upErr) throw new Error(`db: ${upErr.message}`)
     ok++
     if (parsed.korean_cert || parsed.english_cert) console.log(`  ✓ ${p.id.slice(0, 8)} ko="${parsed.korean_cert}" en="${parsed.english_cert}"`)
