@@ -20,8 +20,9 @@ function buildNav(lang) {
         { label: L('지원자', 'Applicants', 'Ứng viên'), pathname: '/admin/dashboard', tab: 'applications' },
         { label: L('이력서', 'Resumes', 'CV'), pathname: '/admin/dashboard', tab: 'resumes' },
         { label: L('인재풀', 'Talent', 'Nguồn ứng viên'), pathname: '/admin/dashboard', tab: 'talent' },
-        // 자체 페이지라 tab 이 없다 — curTab 도 undefined 라 isActive 가 그대로 맞는다.
-        { label: L('어학 점수', 'Language scores'), pathname: '/admin/lang-scores' },
+        // '어학 점수'는 유진 작업실 > 어학 정보 수집 안으로 옮겼다 — 캠페인 카드 바로
+        // 아래에서 "그래서 무슨 점수가 들어왔나"를 이어서 보는 흐름이라 여기 두면 끊긴다.
+        // /admin/lang-scores URL 은 살아 있다(명단이 길어 전체 화면으로 볼 때).
         { label: L('인재 공급', 'Supply', 'Cung ứng viên'), pathname: '/admin/dashboard', tab: 'supply' },
         { label: L('광고메일', 'Recommend', 'Email đề xuất'), pathname: '/admin/dashboard', tab: 'recommend' },
         { label: L('연봉 인증', 'Verifications', 'Xác minh lương'), pathname: '/admin/dashboard', tab: 'verifications' },
@@ -38,6 +39,14 @@ function buildNav(lang) {
       label: L('픽디 크롤링', 'Pikdi crawl', 'Crawl Pikdi'),
       items: [
         { label: L('픽디 크롤링', 'Pikdi crawl', 'Crawl Pikdi'), pathname: '/admin/dashboard', tab: 'pikdi' },
+      ],
+    },
+    {
+      label: L('매칭 쇼케이싱', 'Matching showcase'),
+      items: [
+        // 자체 페이지라 tab 이 없다 — '어학 점수'와 같다.
+        { label: L('상담 문의', 'Inquiries'), pathname: '/admin/showcasing-inquiries' },
+        { label: L('이벤트 로그 보기', 'Event log'), pathname: '/admin/showcasing-events' },
       ],
     },
     {

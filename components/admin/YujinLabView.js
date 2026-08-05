@@ -5,6 +5,7 @@ import DateRangePicker from './DateRangePicker'
 import ResumeDropoffSection from './ResumeDropoffSection'
 import ProfileEditSection from './ProfileEditSection'
 import LangColdmailCards from './LangColdmailCards'
+import LangScoresSection from './LangScoresSection'
 import ChangeTestView from './ChangeTestView'
 
 // "유진 작업실" — 작업 중인 분석을 탭으로 나눠 붙인다. 분석마다 컴포넌트를 분리해
@@ -89,6 +90,14 @@ export default function YujinLabView({ token, lang, dateRange, onDateChange, lab
       {labTab === 'resume' && <ResumeDropoffSection token={token} lang={lang} dateRange={dateRange} />}
       {/* 어학 콜드메일은 이 탭 퍼널(진입→수정→저장)을 만드는 유입이라 위에 둔다 */}
       {labTab === 'profile' && <LangColdmailCards token={token} lang={lang} />}
+      {/* 어학 점수 목록 — 원래 좌측 내비 Performance 아래 별도 페이지였는데, 캠페인
+          카드 바로 아래에서 "그래서 무슨 점수가 들어왔나"를 이어서 보는 게 맞아 옮겼다.
+          /admin/lang-scores URL 은 그대로 살아 있다(전체 화면으로 볼 때). */}
+      {labTab === 'profile' && (
+        <div style={{ ...sectionStyle, marginBottom: 16 }}>
+          <LangScoresSection token={token} />
+        </div>
+      )}
       {labTab === 'profile' && <ProfileEditSection token={token} lang={lang} dateRange={dateRange} />}
       {labTab === 'test' && <ChangeTestView token={token} lang={lang} dateRange={dateRange} />}
     </>
