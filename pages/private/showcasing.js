@@ -525,7 +525,7 @@ function Result({ data, criteria, co, onBack, ev }) {
         <div style={eyebrow}>{co ? `${co} 인재 추천 결과` : '인재 추천 결과'}</div>
         <div style={{ display: 'flex', alignItems: 'flex-end', gap: 12, flexWrap: 'wrap', marginTop: 8 }}>
           {/* 제목은 우리가 한 일이 아니라 상대가 얻는 것으로 쓴다. "10분을 골랐습니다"는
-              우리 작업 보고이고, "찾으시는 웹앱 개발자, 이 10분 안에 있습니다"는 고객사가
+              우리 작업 보고이고, "찾으시는 웹앱 개발자, 이 10명 안에 있습니다"는 고객사가
               이 화면을 열면서 머릿속에 들고 있던 물음에 대한 답이다.
               단정해서 말한다 — "있을 겁니다"로 흐리면 우리가 고른 열 명을 우리가 못 믿는
               것으로 읽힌다. */}
@@ -533,7 +533,7 @@ function Result({ data, criteria, co, onBack, ev }) {
             {picks.length
               ? (<>
                 찾으시는 {criteria?.title || '인재'},{' '}
-                <span style={{ color: T.brand }}>이 {picks.length}분 안에 있습니다</span>
+                <span style={{ color: T.brand }}>이 {picks.length}명 안에 있습니다</span>
               </>)
               : '조건에 맞는 분을 찾지 못했습니다'}
           </H>
