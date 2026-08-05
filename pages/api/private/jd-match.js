@@ -224,10 +224,40 @@ async function rank(c, finalists) {
 
 /* 카드에 그리는 것만. 인재풀 카드(components/admin/TalentPoolView)와 같은 행 구성이되
    이름 자리에 직무가 온다. */
-function card(p, v) {
+/* 스킬 이름 맞추기 — "React.js" 와 "React", "Node.js" 와 "NodeJS" 를 같은 것으로 본다.
+   짧은 토큰(Go·C·R)은 포함 검사를 안 한다. "Go" 로 "Google Analytics" 가 걸린다.
+   걸린 요건 이름을 돌려주는 이유는 아래 중복 제거 때문이다. */
+const normSkill = (s) => String(s || '').toLowerCase().replace(/[^a-z0-9+#]/g, '')
+function matchedReq(skill, wanted) {
+  const a = normSkill(skill)
+  if (!a) return null
+  // 정확히 같은 것부터 찾는다 — "Git" 을 놓고 "GitHub" 이 먼저 걸리면 안 된다
+  const exact = wanted.find((w) => normSkill(w) === a)
+  if (exact) return exact
+  return wanted.find((w) => {
+    const b = normSkill(w)
+    return b && a.length >= 3 && b.length >= 3 && (a.includes(b) || b.includes(a))
+  }) || null
+}
+
+function card(p, v, c) {
   const s = p.resume_summary || {}
-  const skills = asSkills(p.skills)
   const exps = asExperiences(p.experiences)
+
+  /* 기준에 든 기술을 앞으로 당긴다. 카드에는 세 개만 보이는데, 정렬을 안 하면 이력서에
+     적힌 순서대로 잘려서 정작 고객사가 적은 스택(React·TypeScript)이 "+17" 안에 숨는다.
+     걸린 이름은 따로 실어 보낸다 — 화면에서 그것만 표시를 다르게 한다. */
+  /* 요건 하나당 하나만 세운다. 안 그러면 "Git" 요건 하나에 Git·GitHub·GitLab 이 다
+     걸려서, 카드에 보이는 칩 다섯 중 셋이 같은 말을 하고 정작 다른 기술이 밀려난다. */
+  const wanted = [...(c.must_skills || []), ...(c.nice_skills || [])]
+  const all = asSkills(p.skills)
+  const taken = new Set()
+  const hits = []
+  for (const x of all) {
+    const req = matchedReq(x, wanted)
+    if (req && !taken.has(normSkill(req))) { taken.add(normSkill(req)); hits.push(x) }
+  }
+  const skills = [...hits, ...all.filter((x) => !hits.includes(x))]
   return {
     fit: v.fit,
     rank: v.rank,
@@ -249,8 +279,10 @@ function card(p, v) {
     bullets: Array.isArray(s.bullets) ? s.bullets.slice(0, 3) : [],
     english: p.english_cert || '',
     korean: p.korean_cert || '',
-    skills: skills.slice(0, 3),
-    skillsMore: Math.max(0, skills.length - 3),
+    // 기준에 걸린 기술이 셋을 넘으면 그만큼 더 보여준다 — 걸린 걸 잘라 내면 표시할 이유가 없다
+    skills: skills.slice(0, Math.max(3, Math.min(hits.length, 5))),
+    skillsMore: Math.max(0, skills.length - Math.max(3, Math.min(hits.length, 5))),
+    hits, // 이 중 어느 것이 기준에 걸렸는지 — 화면에서 표시를 다르게 한다
   }
 }
 
@@ -385,7 +417,7 @@ export default async function handler(req, res) {
       screened: judged.length,
       passed: passed.length,
       yoeWindow: yoeWindow(c.yoe_min, c.yoe_max),
-      picks: picks.map(({ p, v }) => card(p, v)),
+      picks: picks.map(({ p, v }) => card(p, v, c)),
     })
   } catch (e) {
     return res.status(500).json({ error: e.message || '후보를 찾지 못했습니다' })
