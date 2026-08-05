@@ -2,6 +2,8 @@ import { createClient } from '@supabase/supabase-js'
 import OpenAI from 'openai'
 import { asSkills, asExperiences } from '../../../lib/talentCategory'
 import { prefilterScore, judge, yoeWindow, RANKS } from '../../../lib/jdMatch'
+import { isTopTier } from '../../../lib/topUniversities'
+import { verifyToken } from '../../../lib/showcaseToken'
 
 /* 조건(jd-criteria 결과) → 인재 5명.
 
@@ -205,6 +207,14 @@ async function rank(c, finalists) {
   }
 }
 
+/* 전공만 — 파서의 edu_ko 는 "<학교>, <전공> 전공" 꼴이라 쉼표 뒤가 전공이다.
+   쉼표가 없으면(학교만 적힌 경우) 한글 학력은 통째로 버리고 원문 major 를 쓴다. */
+function majorOf(s, p) {
+  const ko = String(s.edu_ko || '')
+  const i = ko.indexOf(',')
+  return (i >= 0 ? ko.slice(i + 1).trim() : '') || p.major || ''
+}
+
 /* 카드에 그리는 것만. 인재풀 카드(components/admin/TalentPoolView)와 같은 행 구성이되
    이름 자리에 직무가 온다. */
 function card(p, v) {
@@ -225,14 +235,60 @@ function card(p, v) {
     title: exps[0]?.title || p.headline || p.position || '',
     position: p.position || '',
     yoe: p.yoe_months == null ? null : Math.round((p.yoe_months / 12) * 10) / 10,
-    uni: p.university || p.verified_school_name || '',
-    edu: [s.degree, s.edu_ko || p.major].filter(Boolean).join(' · '),
+    /* 학교 이름은 안 내보낸다. 한국 기업이 "Van Lang University"·"하노이대"를 봐도
+       그게 어느 정도인지 알 수 없어서, 이름이 판단을 돕지 않고 오히려 흐린다.
+       대신 우리가 보증할 수 있는 것만 남긴다 — 베트남 상위권인지(우리 DB 가 판정한다)와
+       학위·전공. 이름을 지우는 김에 edu_ko("반랑대학, 환경공학 전공")도 쉼표 뒤만 쓴다.
+       안 그러면 한글 학력 줄로 학교 이름이 그대로 새어 나간다. */
+    topSchool: isTopTier(p.university || p.verified_school_name || ''),
+    edu: [s.degree, majorOf(s, p)].filter(Boolean).join(' · '),
     bullets: Array.isArray(s.bullets) ? s.bullets.slice(0, 3) : [],
     english: p.english_cert || '',
     korean: p.korean_cert || '',
     links: Array.isArray(s.links) ? s.links.slice(0, 3) : [],
     skills: skills.slice(0, 3),
     skillsMore: Math.max(0, skills.length - 3),
+  }
+}
+
+/* 이 검색을 한 줄로 남긴다 — 상담 문의가 여기에 걸린다.
+
+   남기는 이유는 기록이 아니라 지목이다. 화면의 카드에는 후보 id 가 없고(위 card 참조)
+   앞으로도 없을 것이라, 고객사가 "이 사람으로 상담하고 싶다"고 눌렀을 때 그게 누구인지
+   알아낼 방법이 이 표뿐이다. picks 의 순서가 곧 카드 번호라, 문의는 인덱스만 올린다.
+
+   저장하는 건 criteria 와 후보 id 다. JD 원문은 여기서도 안 남긴다 — 그건 고객사가
+   아직 안 낸 자리의 문서이고, 우리가 필요한 건 '무슨 조건으로 누굴 보여줬나'뿐이다.
+
+   기업명은 클라이언트가 보낸 문자열이 아니라 토큰 서명을 확인해서 얻는다. 로그인이
+   없는 경로라 문자열을 그냥 믿으면 아무 회사 이름이나 적힌 검색 기록이 쌓인다.
+   날린 링크(showcase_links 에서 지운 것)는 화면이 c 를 아예 안 보내므로 여기서
+   기업이 안 붙는다 — 이벤트 쪽 규칙과 같다.
+
+   실패해도 던지지 않는다. 검색 결과를 못 돌려주는 것과 기록을 못 남기는 것은 무게가
+   다르다. 대신 sid 가 null 로 나가고, 화면은 그때 문의 버튼을 감춘다 — 누른 뒤에
+   실패하는 것보다 처음부터 없는 편이 낫다. */
+async function saveSearch({ token, criteria, picks, pool, screened, passed }) {
+  try {
+    const v = token ? verifyToken(token) : null
+    const { data, error } = await supabase.from('showcase_searches').insert({
+      token: v ? token : null,
+      company: v ? v.company : null,
+      criteria,
+      picks: picks.map(({ p }) => String(p.id)),
+      pool,
+      screened,
+      passed,
+    }).select('id').single()
+    if (error) throw error
+
+    // 문의로 안 이어진 30일 지난 검색 치우기. 크론을 새로 만들지 않고 여기서 부른다 —
+    // 쌓이는 자리가 곧 치울 자리다. 실패는 삼킨다(다음 검색이 다시 한다).
+    supabase.rpc('purge_showcase_searches').then(() => {}, () => {})
+
+    return data?.id || null
+  } catch {
+    return null
   }
 }
 
@@ -309,8 +365,19 @@ export default async function handler(req, res) {
     // 점수를 안 따라가면 그 숫자를 못 믿게 된다.
     const picks = (ranked?.length === PICK_N ? [...ranked].sort(byFit) : ordered.slice(0, PICK_N))
 
+    // 카드를 그리기 전에 남긴다 — 화면이 문의 버튼을 띄우려면 sid 가 같은 응답에 있어야 한다.
+    const sid = await saveSearch({
+      token: typeof req.body?.c === 'string' ? req.body.c : null,
+      criteria: c,
+      picks,
+      pool: pool.length,
+      screened: judged.length,
+      passed: passed.length,
+    })
+
     res.setHeader('Cache-Control', 'no-store')
     return res.status(200).json({
+      sid,
       pool: pool.length,
       screened: judged.length,
       passed: passed.length,
