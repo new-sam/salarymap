@@ -85,6 +85,9 @@ export default function App({ Component, pageProps }) {
   const isStandaloneLanding = router.pathname.startsWith('/ktc');
   // /korean-cv 광고 랜딩(모바일 메인) — 하단 탭바·앱 유도 모달 없이 전환에만 집중.
   const isKcvLanding = router.pathname === '/korean-cv';
+  // /private/* — 고객사에게만 링크로 여는 비공개 화면. 푸터·탭바·앱 모달이 붙으면
+  // 거기 링크를 타고 FYI 본 사이트로 새어 나가고, 화면도 우리 서비스 소개처럼 보인다.
+  const isPrivate = router.pathname.startsWith('/private');
 
   // Flag the body so the mobile-only top/bottom reservations (52/60px in
   // globals.css) collapse for company pages — they render their own header.
@@ -179,14 +182,14 @@ export default function App({ Component, pageProps }) {
         <main style={{ flex: '1 0 auto' }}>
           <Component {...pageProps} />
         </main>
-        {(!isCompany || isForCompaniesLanding) && !isAdmin && !isPromoLanding && !isCard && !isLogin && (
+        {(!isCompany || isForCompaniesLanding) && !isAdmin && !isPromoLanding && !isCard && !isLogin && !isPrivate && (
           <GlobalFooter />
         )}
       </div>
-      {!isCompany && !isJobDetail && !isCard && !isAdmin && !isLogin && !isStandaloneLanding && !isKcvLanding && <MobileTabBar />}
+      {!isCompany && !isJobDetail && !isCard && !isAdmin && !isLogin && !isStandaloneLanding && !isKcvLanding && !isPrivate && <MobileTabBar />}
       <GlobalLoginModal />
       <GoogleOneTap />
-      {!isAdmin && !isAdLanding && !isCard && !isCompany && !isLogin && !isStandaloneLanding && !isKcvLanding && <AppDownloadModal />}
+      {!isAdmin && !isAdLanding && !isCard && !isCompany && !isLogin && !isStandaloneLanding && !isKcvLanding && !isPrivate && <AppDownloadModal />}
       <Toaster
         position="bottom-right"
         richColors
