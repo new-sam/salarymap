@@ -2,7 +2,6 @@ import { createClient } from '@supabase/supabase-js'
 import OpenAI from 'openai'
 import { asSkills, asExperiences } from '../../../lib/talentCategory'
 import { prefilterScore, judge, yoeWindow, RANKS } from '../../../lib/jdMatch'
-import { isTopTier } from '../../../lib/topUniversities'
 import { verifyToken } from '../../../lib/showcaseToken'
 
 /* 조건(jd-criteria 결과) → 인재 5명.
@@ -207,14 +206,6 @@ async function rank(c, finalists) {
   }
 }
 
-/* 전공만 — 파서의 edu_ko 는 "<학교>, <전공> 전공" 꼴이라 쉼표 뒤가 전공이다.
-   쉼표가 없으면(학교만 적힌 경우) 한글 학력은 통째로 버리고 원문 major 를 쓴다. */
-function majorOf(s, p) {
-  const ko = String(s.edu_ko || '')
-  const i = ko.indexOf(',')
-  return (i >= 0 ? ko.slice(i + 1).trim() : '') || p.major || ''
-}
-
 /* 카드에 그리는 것만. 인재풀 카드(components/admin/TalentPoolView)와 같은 행 구성이되
    이름 자리에 직무가 온다. */
 function card(p, v) {
@@ -235,17 +226,13 @@ function card(p, v) {
     title: exps[0]?.title || p.headline || p.position || '',
     position: p.position || '',
     yoe: p.yoe_months == null ? null : Math.round((p.yoe_months / 12) * 10) / 10,
-    /* 학교 이름은 안 내보낸다. 한국 기업이 "Van Lang University"·"하노이대"를 봐도
-       그게 어느 정도인지 알 수 없어서, 이름이 판단을 돕지 않고 오히려 흐린다.
-       대신 우리가 보증할 수 있는 것만 남긴다 — 베트남 상위권인지(우리 DB 가 판정한다)와
-       학위·전공. 이름을 지우는 김에 edu_ko("반랑대학, 환경공학 전공")도 쉼표 뒤만 쓴다.
-       안 그러면 한글 학력 줄로 학교 이름이 그대로 새어 나간다. */
-    topSchool: isTopTier(p.university || p.verified_school_name || ''),
-    edu: [s.degree, majorOf(s, p)].filter(Boolean).join(' · '),
+    /* 학력·포폴은 안 내보낸다. 학교 이름은 한국 기업이 읽어도 어느 정도인지 알 수 없어
+       판단을 흐리고, 포폴은 이력서에 링크를 남긴 사람이 드물어 대부분 '-' 한 칸으로만
+       남는다 — 다섯 장이 나란히 비어 있으면 그 줄은 정보가 아니라 여백이다.
+       카드는 경력·주요이력·외국어·기술 넷이다. */
     bullets: Array.isArray(s.bullets) ? s.bullets.slice(0, 3) : [],
     english: p.english_cert || '',
     korean: p.korean_cert || '',
-    links: Array.isArray(s.links) ? s.links.slice(0, 3) : [],
     skills: skills.slice(0, 3),
     skillsMore: Math.max(0, skills.length - 3),
   }
