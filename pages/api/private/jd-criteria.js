@@ -1,4 +1,5 @@
 import OpenAI from 'openai'
+import { createClient } from '@supabase/supabase-js'
 
 /* JD 원문 → 조건. /private/showcasing 의 첫 단계다.
 
@@ -18,6 +19,26 @@ import OpenAI from 'openai'
    저장하지 않는다(jd-extract 와 같은 이유). */
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
+
+const supabase = createClient(
+  (process.env.NEXT_PUBLIC_SUPABASE_URL || '').trim(),
+  (process.env.SUPABASE_SERVICE_ROLE_KEY || '').trim(),
+)
+
+/* 훑을 이력서가 몇 건인지. 다음 단계(jd-match)가 끝나야 알 수 있는 값인데, 로딩 화면은
+   그 20초 동안 "이력서 1,497건을 조건에 대보고 있습니다"라고 말해야 한다 — 숫자 없이
+   "훑는 중"만 돌면 뭘 하고 있는지 알 수 없다. 그래서 여기서 미리 세어 보낸다.
+   head 로 개수만 받으므로 수 ms 다. 실패하면 null 이고 화면은 숫자 없이 돈다. */
+async function poolCount() {
+  try {
+    const { count } = await supabase.from('user_profiles')
+      .select('id', { count: 'exact', head: true })
+      .not('resume_url', 'is', null).neq('role', 'hr')
+    return count ?? null
+  } catch {
+    return null
+  }
+}
 
 // user_profiles.position 의 실제 분포에서 뽑은 값들(이력서 보유 1,000건 표본).
 // 파서가 시기별로 다른 enum 을 써서 'AI/Data'(구) 와 'AI Engineer'(신) 가 섞여 있다 —
@@ -84,6 +105,8 @@ export default async function handler(req, res) {
   if (jd.length < 30) return res.status(400).json({ error: 'JD 내용이 너무 짧습니다' })
 
   try {
+    // 모수 세기는 모델 호출과 같이 띄운다 — 순서대로 하면 로딩이 그만큼 길어진다
+    const counting = poolCount()
     const completion = await openai.chat.completions.create({
       model: 'gpt-4o-mini',
       response_format: { type: 'json_object' },
@@ -136,6 +159,7 @@ export default async function handler(req, res) {
     }
 
     return res.status(200).json({
+      pool: await counting,
       criteria: {
         title: String(raw.title || '').slice(0, 60),
         positions: list(raw.positions, 3).filter((p) => POSITIONS.includes(p)),
