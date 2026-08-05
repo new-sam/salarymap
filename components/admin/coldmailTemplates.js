@@ -411,6 +411,67 @@ const registerHtml = (lang) => {
 </table></td></tr></table></body></html>`
 }
 
+// v2(8/5): 조작 수치(월7건·85%) 폐기 → 실측 "주 평균 오퍼 3.2건" 단일 스탯 + 연봉협상 앵글 + 수신거부 푸터.
+const REGISTER2_I18N = {
+  vi: {
+    greeting: 'Chào {{name}},',
+    headline: 'Đăng ký CV, nhà tuyển dụng sẽ tìm đến bạn.',
+    stat1n: '3,2', stat1: 'lời mời mỗi tuần',
+    statNote: 'Số liệu thực tế trung bình của người đã đăng ký CV trên FYI.',
+    body: 'Bạn không cần tìm việc nữa. Khi có vị trí phù hợp, chúng tôi gửi hồ sơ của bạn trực tiếp đến nhà tuyển dụng.',
+    body2: 'Chưa có ý định chuyển việc? Không sao — lời mời bạn nhận được chính là lợi thế chắc chắn nhất khi đàm phán tăng lương ở công ty hiện tại.',
+    cta: 'Đăng ký CV',
+    ctaNote: 'Không cần đăng nhập · khoảng 30 giây',
+    footer: 'Bạn nhận email này vì đã đăng ký tài khoản FYI.<br>salary-fyi.com · Hủy đăng ký',
+  },
+  ko: {
+    greeting: '{{name}}님, 안녕하세요.',
+    headline: '이력서를 등록해두면 담당자가 먼저 찾아옵니다.',
+    stat1n: '3.2', stat1: '1주일 평균 받는 오퍼',
+    statNote: '이력서를 등록한 분들이 실제로 받은 평균입니다.',
+    body: '공고를 찾아다니지 않으셔도 됩니다. 맞는 자리가 열리면 회원님의 이력서를 기업 담당자에게 바로 전달합니다.',
+    body2: '당장 이직 생각이 없으셔도 괜찮습니다. 받아둔 오퍼는 지금 회사와의 연봉 협상에서 가장 확실한 카드가 됩니다.',
+    cta: '이력서 등록하기',
+    ctaNote: '로그인 없이 파일만 · 30초',
+    footer: 'FYI에 가입하셔서 이 메일을 받으셨습니다.<br>salary-fyi.com · 수신 거부',
+  },
+  en: {
+    greeting: 'Hi {{name}},',
+    headline: 'Register your CV — recruiters will come to you.',
+    stat1n: '3.2', stat1: 'offers per week on average',
+    statNote: 'Actual average for users who registered a CV on FYI.',
+    body: 'You don\'t need to job-hunt anymore. When a matching position opens, we send your CV directly to the recruiter.',
+    body2: 'Not planning to switch jobs right now? That\'s fine — an offer in hand is your strongest card when negotiating a raise at your current company.',
+    cta: 'Register CV',
+    ctaNote: 'No login needed · about 30 seconds',
+    footer: 'You received this email because you have an FYI account.<br>salary-fyi.com · Unsubscribe',
+  },
+}
+const registerHtml2 = (lang) => {
+  const s = pickLang(REGISTER2_I18N, lang)
+  return `<!doctype html><html><head><meta charset="utf-8"></head>
+<body style="margin:0;background:#f4f2ee;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;color:#1a1612">
+<table width="100%" cellpadding="0" cellspacing="0" style="background:#f4f2ee"><tr><td align="center" style="padding:32px 16px 40px">
+<table width="100%" cellpadding="0" cellspacing="0" style="max-width:480px">
+  <tr><td style="font-size:17px;font-weight:800;color:#ff6000;letter-spacing:-0.01em;padding-bottom:14px">FYI</td></tr>
+  <tr><td style="background:#ffffff;border-radius:18px;padding:32px 28px 28px">
+    <table width="100%" cellpadding="0" cellspacing="0">
+      <tr><td style="font-size:13.5px;color:#8a8177;padding-bottom:12px">${s.greeting}</td></tr>
+      <tr><td style="font-size:20px;font-weight:800;line-height:1.45;padding-bottom:22px">${s.headline}</td></tr>
+      <tr><td style="padding-bottom:8px"><table width="100%" cellpadding="0" cellspacing="0">
+        <tr><td width="72" style="font-size:30px;font-weight:800;color:#ff6000;line-height:1.15;vertical-align:middle;padding:9px 0">${s.stat1n}</td><td style="font-size:14px;font-weight:600;color:#1a1612;vertical-align:middle;padding:9px 0">${s.stat1}</td></tr>
+      </table></td></tr>
+      <tr><td style="font-size:12px;color:#9a9186;line-height:1.5;padding-bottom:20px">${s.statNote}</td></tr>
+      <tr><td style="border-top:1px solid #eeeae4;padding-top:20px;font-size:14px;line-height:1.7;color:#57504a">${s.body}</td></tr>
+      <tr><td style="padding-top:12px;font-size:14px;line-height:1.7;color:#57504a">${s.body2}</td></tr>
+      <tr><td style="padding-top:22px"><a style="display:block;background:#ff6000;color:#fff;font-weight:700;font-size:15px;text-decoration:none;padding:16px;border-radius:12px;text-align:center">${s.cta}</a></td></tr>
+      <tr><td style="font-size:12.5px;color:#9a9186;text-align:center;padding-top:12px">${s.ctaNote}</td></tr>
+    </table>
+  </td></tr>
+  <tr><td style="font-size:11.5px;color:#a8a096;text-align:center;line-height:1.6;padding-top:20px">${s.footer}</td></tr>
+</table></td></tr></table></body></html>`
+}
+
 const KTC_CLAIM_SUBJECT = {
   vi: '{{name}} ơi, hồ sơ {{position}} của bạn đã sẵn sàng trên FYI',
   ko: '{{name}}님, {{position}} 프로필이 FYI에 준비돼 있어요',
@@ -646,13 +707,24 @@ export const COLDMAIL_TEMPLATES = [
     }),
   },
   {
+    match: /^resume-register-(apply2|jobcard|rest)/,
+    subject: {
+      vi: '{{name}} ơi, người đăng ký CV nhận trung bình 3,2 lời mời mỗi tuần',
+      ko: '{{name}}님, 이력서 등록자는 1주일 평균 3.2건의 오퍼를 받습니다',
+      en: '{{name}}, CV registrants get 3.2 offers a week on average',
+    },
+    desc: '이력서 등록 유도 v2 (8/5): 1차의 조작 수치(월7건·85%) 폐기 → 실측 "1주일 평균 오퍼 3.2건" 단일 스탯 + 이름 개인화 제목 + 연봉협상 앵글(당장 이직 안 해도 오퍼=협상 카드) + 수신거부 신설(/api/coldmail/unsub). apply2=지원버튼 이탈층(apply1 미등록 재접촉 포함) / jobcard1=공고카드 클릭층 / rest1=그 외.',
+    source: 'scripts/outreach/resume-register-coldmail.mjs',
+    html: registerHtml2,
+  },
+  {
     match: /^resume-register/,
     subject: {
       vi: '[FYI] Đăng ký CV — trung bình 7 lời mời mỗi tháng',
       ko: '[FYI] CV 등록 — 월 평균 제안 7건',
       en: '[FYI] Register your CV — 7 invitations a month on average',
     },
-    desc: '이력서 등록 유도: 가입했지만 이력서가 없는 회원 대상. all1=전체 / apply1=지원 버튼까지 눌렀다 이탈한 회원. ※본문 수치(월 7건·85%)는 이후 근거 문제로 퍼블릭 /cv에서 제거된 카피.',
+    desc: '이력서 등록 유도 1차(7/31, all1·apply1 스냅샷): 가입했지만 이력서가 없는 회원 대상. all1=전체 / apply1=지원 버튼까지 눌렀다 이탈한 회원. ※본문 수치(월 7건·85%)는 이후 근거 문제로 퍼블릭 /cv에서 제거된 카피 — 8/5 v2부터 실측 수치로 교체.',
     source: 'scripts/outreach/resume-register-coldmail.mjs',
     html: registerHtml,
   },

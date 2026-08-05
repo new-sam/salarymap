@@ -2,7 +2,7 @@
 // 휴리스틱은 profile/parse-resume·lib/parseResume(extractPhotoJpegFromPdf)와 동일 — JPEG 스캔 10KB~2MB.
 // 멱등: 경로가 <userId>/photo_cv.jpg 고정 + upsert, photo_url 있는 행은 건너뜀. node scripts/backfill-cv-photos.mjs
 import { sb, fetchAll } from './outreach/lib.mjs'
-import { extractPhotoJpegFromPdf } from '../lib/parseResume.js'
+import { extractVerifiedPhotoFromPdf } from '../lib/parseResume.js'
 
 const rows = await fetchAll(() => sb
   .from('user_profiles')
@@ -22,7 +22,7 @@ async function processOne(r) {
     if (!res.ok) throw new Error(`download ${res.status}`)
     const buf = Buffer.from(await res.arrayBuffer())
     if (buf.subarray(0, 1024).indexOf('%PDF-') === -1) { notPdf++; return }
-    const jpeg = extractPhotoJpegFromPdf(buf)
+    const jpeg = await extractVerifiedPhotoFromPdf(buf) // vision 검증 통과분만
     if (!jpeg) { noPhoto++; return }
     const path = `${r.id}/photo_cv.jpg`
     const { error: upErr } = await sb.storage.from('profiles').upload(path, jpeg, { contentType: 'image/jpeg', upsert: true })

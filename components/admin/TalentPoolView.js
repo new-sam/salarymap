@@ -156,7 +156,7 @@ export default function TalentPoolView({ token, lang }) {
     topNote: 'Trường top VN', langEn: 'T.Anh', langKo: 'T.Hàn', noInfo: 'Chưa rõ', newGrad: 'Fresher',
     unknown: 'Chưa rõ', noRole: 'Chưa rõ vị trí', levelUnknown: 'Cấp bậc?', aiFill: 'Điền bằng AI', aiFilling: 'Đang phân tích…',
     aiTitle: 'Kinh nghiệm/ngoại ngữ còn trống — bấm để điền bằng AI', resume: 'CV →',
-    unclassified: 'Chưa phân loại', parseFail: 'Phân tích thất bại',
+    unclassified: 'Chưa phân loại', parseFail: 'Phân tích thất bại', retry: 'Thử lại',
     recBtn: 'Đề xuất việc', recApplied: 'đã ứng tuyển',
     poolTitle: 'Nguồn ứng viên', noName: 'Không có tên',
   } : ko ? {
@@ -171,7 +171,7 @@ export default function TalentPoolView({ token, lang }) {
     topNote: '베트남 상위권 대학 (한국 인서울급)', langEn: '영어', langKo: '한국어', noInfo: '정보 없음', newGrad: '신입',
     unknown: '미상', noRole: '직무 미상', levelUnknown: '경력?', aiFill: 'AI 채우기', aiFilling: '분석 중…',
     aiTitle: '경력/어학이 비어 있어요 — 눌러서 AI로 채웁니다', resume: '이력서 보기',
-    unclassified: '미분류', parseFail: '분석 실패',
+    unclassified: '미분류', parseFail: '분석 실패', retry: '재시도',
     recBtn: '공고 추천', recApplied: '지원',
     poolTitle: '공개 인재풀', noName: '이름 없음',
   } : {
@@ -186,7 +186,7 @@ export default function TalentPoolView({ token, lang }) {
     topNote: 'Top-tier VN univ.', langEn: 'EN', langKo: 'KO', noInfo: 'N/A', newGrad: 'New grad',
     unknown: 'Unknown', noRole: 'No role', levelUnknown: 'Level?', aiFill: 'AI fill', aiFilling: 'Filling…',
     aiTitle: 'Career/language empty — click to fill with AI', resume: 'Resume →',
-    unclassified: 'Unclassified', parseFail: 'Parse failed',
+    unclassified: 'Unclassified', parseFail: 'Parse failed', retry: 'Retry',
     recBtn: 'Recommend', recApplied: 'applied',
     poolTitle: 'Talent Pool', noName: 'No name',
   }
@@ -553,49 +553,67 @@ function TalentCard({ r, L, vi, ko, userRecs = [], onRecommend, onReparse, parsi
   const summary = r.resume_summary || {}
   const nick = summary.name_ko || ''
   const bullets = Array.isArray(summary.bullets) ? summary.bullets : []
+  // 카드 간 정렬 통일: 모든 행을 상시 렌더 + 줄 수 고정(1줄 ellipsis/고정 높이)해서
+  // 어떤 카드든 행 구성·위치가 동일하게 만든다. 넘치는 내용은 title 툴팁으로.
+  const oneLine = { display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }
   const yoeText = r.yoe_months == null ? null
     : r.yoe_months === 0 ? L.newGrad
     : String(Math.round((r.yoe_months / 12) * 10) / 10)
   const uni = uniOf(r)
-  const eduNode = uni ? (
-    <span style={{ display: 'flex', flexDirection: 'column', gap: 4, alignItems: 'flex-start' }}>
-      <span style={{ fontWeight: 700, color: '#111' }}>{uni}</span>
-      {topTierOf(r) && (
-        <span style={{ padding: '2px 8px', borderRadius: 6, fontSize: 11, fontWeight: 700, background: '#E8F0FE', color: '#1A73E8' }}>{L.topNote}</span>
-      )}
-      {summary.degree && <span>{summary.degree}</span>}
-      {(summary.edu_ko || r.major) && <span style={{ color: '#9CA3AF' }}>{summary.edu_ko || r.major}</span>}
+  // 학력 2줄 고정: 대학명(+명문 🎓) / 학위 · 전공
+  const eduNode = (
+    <span style={{ display: 'block' }}>
+      <span style={{ ...oneLine, fontWeight: 700, color: uni ? '#111' : '#B6BDC6' }} title={uni}>
+        {uni || '-'}{topTierOf(r) && <span title={L.topNote}> 🎓</span>}
+      </span>
+      <span style={{ ...oneLine, color: '#9CA3AF' }}>{[summary.degree, summary.edu_ko || r.major].filter(Boolean).join(' · ') || '-'}</span>
     </span>
-  ) : null
-  const langNode = (r.english_cert || r.korean_cert) ? (
-    <span>
-      {r.english_cert && <><span style={{ color: '#ff6000', fontWeight: 600 }}>{L.langEn}</span> {r.english_cert}</>}
-      {r.english_cert && r.korean_cert && <span style={{ color: '#CBD5E1' }}> · </span>}
-      {r.korean_cert && <><span style={{ color: '#ff6000', fontWeight: 600 }}>{L.langKo}</span> {r.korean_cert}</>}
+  )
+  const hasLang = !!(r.english_cert || r.korean_cert)
+  const langNode = (
+    <span style={oneLine} title={[r.english_cert, r.korean_cert].filter(Boolean).join(' / ')}>
+      {hasLang ? (<>
+        {r.english_cert && <><span style={{ color: '#ff6000', fontWeight: 600 }}>{L.langEn}</span> {r.english_cert}</>}
+        {r.english_cert && r.korean_cert && <span style={{ color: '#CBD5E1' }}> · </span>}
+        {r.korean_cert && <><span style={{ color: '#ff6000', fontWeight: 600 }}>{L.langKo}</span> {r.korean_cert}</>}
+      </>) : '-'}
     </span>
-  ) : null
-  const skillNode = skills.length > 0 ? (
-    <span style={{ display: 'flex', flexWrap: 'wrap', gap: 5 }}>
-      {skills.slice(0, 8).map(s => (
-        <span key={s} style={{ padding: '3px 9px', borderRadius: 6, fontSize: 11.5, background: '#fff', border: '1px solid #E5E8EB', color: '#374151', whiteSpace: 'nowrap' }}>{s}</span>
-      ))}
-      {skills.length > 8 && <span style={{ padding: '3px 4px', fontSize: 11.5, color: '#9CA3AF' }}>+{skills.length - 8}</span>}
+  )
+  // 주요이력 3줄 고정 높이 — 불릿 수가 달라도 아래 행 위치가 안 흔들린다
+  const bulletsNode = (
+    <span style={{ display: 'block', height: 'calc(1.55em * 3)', overflow: 'hidden' }} title={bullets.join('\n')}>
+      {bullets.length > 0 ? bullets.slice(0, 3).map((b, i) => <span key={i} style={oneLine}>· {b}</span>) : '-'}
     </span>
-  ) : null
+  )
+  // 칩 행(포폴/기술) 1줄 고정 높이
+  const chipRowStyle = { display: 'flex', gap: 5, height: 24, alignItems: 'center', overflow: 'hidden', flexWrap: 'nowrap' }
+  const chipStyle = { padding: '3px 9px', borderRadius: 6, fontSize: 11.5, background: '#fff', border: '1px solid #E5E8EB', whiteSpace: 'nowrap', flexShrink: 0 }
   const links = Array.isArray(summary.links) ? summary.links : []
-  const linkNode = links.length > 0 ? (
-    <span style={{ display: 'flex', flexWrap: 'wrap', gap: 5 }}>
-      {links.map(u => (
+  const linkNode = (
+    <span style={chipRowStyle}>
+      {links.length > 0 ? links.slice(0, 3).map(u => (
         <a key={u} href={u} target="_blank" rel="noopener noreferrer" title={u}
-          style={{ padding: '3px 9px', borderRadius: 6, fontSize: 11.5, background: '#fff', border: '1px solid #E5E8EB', color: '#1A73E8', textDecoration: 'none', fontWeight: 600, whiteSpace: 'nowrap' }}>
+          style={{ ...chipStyle, color: '#1A73E8', textDecoration: 'none', fontWeight: 600 }}>
           {linkLabel(u)} ↗
         </a>
-      ))}
+      )) : '-'}
     </span>
-  ) : null
+  )
+  const skillNode = (
+    <span style={chipRowStyle} title={skills.join(', ')}>
+      {skills.length > 0 ? (<>
+        {skills.slice(0, 3).map(s => <span key={s} style={{ ...chipStyle, color: '#374151' }}>{s}</span>)}
+        {skills.length > 3 && <span style={{ fontSize: 11.5, color: '#9CA3AF', flexShrink: 0 }}>+{skills.length - 3}</span>}
+      </>) : '-'}
+    </span>
+  )
   return (
-    <div className="tp-card" style={{ background: '#fff', border: '1px solid #E5E8EB', borderRadius: 14, padding: '20px 14px 12px', display: 'flex', flexDirection: 'column' }}>
-      {/* 헤더: 중앙 사진 · 이름(호칭) · 직무 */}
+    <div className="tp-card" style={{ position: 'relative', background: '#fff', border: '1px solid #E5E8EB', borderRadius: 14, padding: '20px 14px 12px', display: 'flex', flexDirection: 'column' }}>
+      {/* 공개 뱃지 — 우상단 고정(카드 레이아웃에 영향 없게 absolute) */}
+      {r.is_resume_public && (
+        <span style={{ position: 'absolute', top: 12, right: 12, padding: '2px 8px', borderRadius: 6, fontSize: 10.5, fontWeight: 700, background: '#DCFCE7', color: '#15803D' }}>{L.badgePublic}</span>
+      )}
+      {/* 헤더: 중앙 사진 · 이름(호칭) · 직무 — 각 1줄 고정 */}
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', marginBottom: 14 }}>
         {r.photo_url ? (
           <img src={r.photo_url} alt="" referrerPolicy="no-referrer" style={{ width: 72, height: 72, borderRadius: '50%', objectFit: 'cover' }} />
@@ -604,33 +622,26 @@ function TalentCard({ r, L, vi, ko, userRecs = [], onRecommend, onReparse, parsi
             {(r.full_name || '?')[0]}
           </div>
         )}
-        <div style={{ marginTop: 10, fontWeight: 700, fontSize: 15.5, lineHeight: 1.3 }}>
+        <div title={r.full_name} style={{ marginTop: 10, fontWeight: 700, fontSize: 15.5, lineHeight: 1.3, maxWidth: '100%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
           {r.full_name || L.noName}{nick && <span style={{ color: '#9CA3AF', fontWeight: 600 }}> ({nick})</span>}
         </div>
-        <div style={{ fontSize: 12.5, color: '#6B7280', marginTop: 3 }}>{title || L.noRole}</div>
-        {r.is_resume_public && (
-          <span style={{ marginTop: 6, padding: '2px 8px', borderRadius: 6, fontSize: 10.5, fontWeight: 700, background: '#DCFCE7', color: '#15803D' }}>{L.badgePublic}</span>
-        )}
+        <div title={title} style={{ fontSize: 12.5, color: '#6B7280', marginTop: 3, maxWidth: '100%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{title || L.noRole}</div>
       </div>
 
-      {/* 스펙 패널: 경력 · 학력 · 주요이력 · 외국어 · 기술 */}
-      <div style={{ background: '#F8F9FA', borderRadius: 10 }}>
+      {/* 스펙 패널: 행 구성·순서·높이 고정 — 카드끼리 같은 위치에 같은 정보. flex:1로 하단 버튼 라인 통일 */}
+      <div style={{ background: '#F8F9FA', borderRadius: 10, flex: 1 }}>
         {panelRow(L.rowCareer, yoeText || L.unknown, !yoeText, true)}
-        {panelRow(L.rowSchool, eduNode || L.unknown, !eduNode)}
-        {bullets.length > 0 && panelRow(L.rowHighlights, (
-          <span style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-            {bullets.map((b, i) => <span key={i}>· {b}</span>)}
-          </span>
-        ))}
-        {panelRow(L.rowLang, langNode || L.noInfo, !langNode)}
-        {linkNode && panelRow(L.rowLinks, linkNode)}
-        {skillNode && panelRow(L.rowSkills, skillNode)}
+        {panelRow(L.rowSchool, eduNode, !uni)}
+        {panelRow(L.rowHighlights, bulletsNode, bullets.length === 0)}
+        {panelRow(L.rowLang, langNode, !hasLang)}
+        {panelRow(L.rowLinks, linkNode, links.length === 0)}
+        {panelRow(L.rowSkills, skillNode, skills.length === 0)}
       </div>
 
-      {/* 이력서 보기 — 하단 전체폭 버튼 (원본 PDF). 푸터가 없으면 카드 바닥에 붙인다 */}
+      {/* 이력서 보기 — 하단 전체폭 버튼 (원본 PDF). 패널이 flex:1이라 항상 같은 라인에 붙는다 */}
       {r.resume_url && (
         <a href={r.resume_url} target="_blank" rel="noopener noreferrer"
-          style={{ display: 'block', textAlign: 'center', marginTop: onRecommend ? 12 : 'auto', padding: '10px 0', border: '1px solid #E5E8EB', borderRadius: 10, fontSize: 13, fontWeight: 700, color: '#111', textDecoration: 'none', background: '#fff' }}>
+          style={{ display: 'block', textAlign: 'center', marginTop: 12, padding: '10px 0', border: '1px solid #E5E8EB', borderRadius: 10, fontSize: 13, fontWeight: 700, color: '#111', textDecoration: 'none', background: '#fff' }}>
           {L.resume}
         </a>
       )}
@@ -653,7 +664,11 @@ function TalentCard({ r, L, vi, ko, userRecs = [], onRecommend, onReparse, parsi
               )
             })()}
             {summary.parse_failed ? (
-              <span style={{ fontSize: 11.5, fontWeight: 600, color: '#DC2626' }}>{L.parseFail}</span>
+              <button onClick={onReparse} disabled={parsing}
+                title={L.aiTitle}
+                style={{ border: 'none', background: 'none', cursor: parsing ? 'wait' : 'pointer', fontSize: 11.5, fontWeight: 600, color: parsing ? '#9CA3AF' : '#DC2626', padding: 0 }}>
+                {parsing ? L.aiFilling : `${L.parseFail} · ${L.retry}`}
+              </button>
             ) : (companies.length === 0 || bullets.length === 0) && (
               <button onClick={onReparse} disabled={parsing}
                 title={L.aiTitle}

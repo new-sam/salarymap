@@ -47,10 +47,10 @@ export default async function handler(req, res) {
 
     if (error) return res.status(500).json({ error: error.message })
 
-    // Fetch emails + social avatars from auth
+    // Fetch emails from auth
+    // 사진은 photo_url(이력서 추출/직접 업로드)만 쓴다 — 구글 아바타 폴백은 유저 지시로 제거(8/5).
     const userIds = new Set(data.map(d => d.id))
     const emails = {}
-    const avatars = {} // photo_url 미등록자(대다수)용 폴백 — 구글/링크드인 OAuth 아바타
     if (userIds.size > 0) {
       let page = 1
       while (true) {
@@ -60,10 +60,7 @@ export default async function handler(req, res) {
         })
         if (authErr || !users || users.length === 0) break
         for (const u of users) {
-          if (userIds.has(u.id)) {
-            emails[u.id] = u.email
-            avatars[u.id] = u.user_metadata?.avatar_url || u.user_metadata?.picture || ''
-          }
+          if (userIds.has(u.id)) emails[u.id] = u.email
         }
         if (users.length < 1000) break
         page++
@@ -73,7 +70,6 @@ export default async function handler(req, res) {
     const result = data.map(p => ({
       ...p,
       email: emails[p.id] || '',
-      photo_url: p.photo_url || avatars[p.id] || null,
     }))
 
     return res.status(200).json(result)
