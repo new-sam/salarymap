@@ -33,6 +33,10 @@ export default function GoalMetricsView({ token, lang }) {
   const [phError, setPhError] = useState('')
   const [phLoading, setPhLoading] = useState(false)
 
+  const [reData, setReData] = useState(null) // 전직군 개편
+  const [reError, setReError] = useState('')
+  const [reLoading, setReLoading] = useState(false)
+
   const loadAd = useCallback(async () => {
     if (!token) return
     setAdLoading(true)
@@ -123,6 +127,26 @@ export default function GoalMetricsView({ token, lang }) {
     }
   }, [token, ko])
 
+  const loadRe = useCallback(async () => {
+    if (!token) return
+    setReLoading(true)
+    setReError('')
+    try {
+      const res = await fetch('/api/admin/role-expansion', { headers: { Authorization: `Bearer ${token}` } })
+      if (!res.ok) throw new Error(`(${res.status})`)
+      setReData(await res.json())
+    } catch (e) {
+      setReError((ko ? '불러오기 실패 ' : 'Load failed ') + e.message)
+    } finally {
+      setReLoading(false)
+    }
+  }, [token, ko])
+
+  // 전직군 개편 탭 최초 진입 시 lazy 로드
+  useEffect(() => {
+    if (view === 'roleExpansion' && !reData && !reLoading) loadRe()
+  }, [view, reData, reLoading, loadRe])
+
   // 광고 탭 최초 진입 시 lazy 로드
   useEffect(() => {
     if (view === 'ad' && !adData && !adLoading) loadAd()
@@ -164,18 +188,171 @@ export default function GoalMetricsView({ token, lang }) {
     <div style={{ maxWidth: 1200, margin: '0 auto', padding: '16px 16px 48px' }}>
       <div style={{ display: 'inline-flex', gap: 2, background: '#F1F1F4', borderRadius: 11, padding: 3, marginBottom: 18 }}>
         {tabBtn('resumePublic', ko ? '이력서 공개' : 'Resume public')}
+        {tabBtn('roleExpansion', ko ? '전직군 개편' : 'Role expansion')}
         {tabBtn('coldmail', ko ? '콜드메일 공개' : 'Cold-email public')}
         {tabBtn('nontech', ko ? '비개발 인재풀' : 'Non-tech pool')}
         {tabBtn('photos', ko ? '프로필 사진' : 'Profile photos')}
         {tabBtn('paths', ko ? '가입 경로' : 'Signup paths')}
         {tabBtn('ad', ko ? '광고 성과' : 'Ad performance')}
       </div>
+      {view === 'roleExpansion' && <RoleExpansionTab data={reData} loading={reLoading} error={reError} ko={ko} lang={lang} />}
       {view === 'nontech' && <NontechPoolTab data={ntData} loading={ntLoading} error={ntError} ko={ko} lang={lang} />}
       {view === 'photos' && <PhotoStatsTab data={phData} loading={phLoading} error={phError} ko={ko} />}
       {view === 'paths' && <SignupPathsTab data={spData} loading={spLoading} error={spError} ko={ko} />}
       {view === 'ad' && <AdTab data={adData} loading={adLoading} error={adError} ko={ko} />}
       {view === 'resumePublic' && <ResumePublicTab data={rpData} loading={rpLoading} error={rpError} ko={ko} lang={lang} onRefresh={loadRp} />}
       {view === 'coldmail' && <ColdmailPublicTab data={cmData} loading={cmLoading} error={cmError} ko={ko} lang={lang} />}
+    </div>
+  )
+}
+
+// ============ 전직군 개편 탭 ============
+// 직군 선택을 2단계(대분류 12 → 소분류 48)로 바꾸고 비개발까지 넓힌 개편이 먹히는지.
+// 판단 기준: (1) 신규 직군(영업·마케팅·생산·재무 등) 제출 비중이 개편 전보다 올랐나
+//           (2) 대분류를 눌러놓고 소분류에서 이탈하는 구간이 큰가
+function RoleExpansionTab({ data, loading, error, ko, lang }) {
+  if (loading || !data) return <div style={{ textAlign: 'center', padding: 40, color: '#666' }}>{ko ? '불러오는 중…' : 'Loading…'}</div>
+  if (error) return <div style={{ textAlign: 'center', padding: 40, color: '#c00' }}>{error}</div>
+  if (data.error) return <div style={{ textAlign: 'center', padding: 40, color: '#c00' }}>{data.error}</div>
+
+  const { deployed, rolloutDate, compareDays, totals, mix, cats, subRoles, daily } = data
+  const th = { textAlign: 'left', fontSize: 11, fontWeight: 700, color: '#9CA3AF', padding: '6px 10px', borderBottom: '1px solid #EEF0F2', textTransform: 'uppercase', letterSpacing: '.04em' }
+  const td = { fontSize: 13, color: '#1F2937', padding: '7px 10px', borderBottom: '1px solid #F5F6F7' }
+  const num = { ...td, textAlign: 'right', fontVariantNumeric: 'tabular-nums', fontWeight: 600 }
+  const L = (o) => (ko ? o.ko : o.en)
+  const rate = (a, b) => (b ? `${Math.round((a / b) * 100)}%` : '—')
+
+  const beforeAll = mix.before.dev + mix.before.expand
+  const afterAll = mix.after.dev + mix.after.expand
+  const beforePct = beforeAll ? Math.round((mix.before.expand / beforeAll) * 100) : 0
+  const afterPct = afterAll ? Math.round((mix.after.expand / afterAll) * 100) : 0
+  const maxSub = Math.max(1, ...cats.map(c => c.subs))
+  const maxSubRole = Math.max(1, ...subRoles.map(s => s.n))
+
+  const Card = ({ label, value, sub, accent }) => (
+    <div style={{ flex: '1 1 180px', background: '#fff', border: '1px solid #E5E8EB', borderRadius: 16, padding: '18px 20px' }}>
+      <div style={{ fontSize: 12, fontWeight: 700, color: '#6B7280', marginBottom: 8 }}>{label}</div>
+      <div style={{ fontSize: 30, fontWeight: 800, color: accent || '#0F172A', lineHeight: 1, marginBottom: 6 }}>{value}</div>
+      {sub && <div style={{ fontSize: 12, color: '#9CA3AF' }}>{sub}</div>}
+    </div>
+  )
+  const Bar = ({ n, max, color }) => (
+    <div style={{ height: 6, background: '#F1F2F4', borderRadius: 3, overflow: 'hidden', marginTop: 4 }}>
+      <div style={{ width: `${Math.round((n / max) * 100)}%`, height: '100%', background: color, borderRadius: 3 }} />
+    </div>
+  )
+
+  return (
+    <div>
+      <div style={{ fontSize: 15, fontWeight: 800, color: '#0F172A', marginBottom: 6 }}>
+        {ko ? '전직군 개편' : 'Role expansion'}
+      </div>
+      <div style={{ fontSize: 12, color: '#9CA3AF', marginBottom: 16 }}>
+        {ko
+          ? `대분류 12 → 소분류 48 2단계 선택 · 시드 제출 제외 · 기준 ${new Date(data.generatedAt).toLocaleString('ko-KR')}`
+          : `12 categories → 48 sub-roles · seed submissions excluded · as of ${new Date(data.generatedAt).toLocaleString('en-US')}`}
+      </div>
+
+      {!deployed && (
+        <div style={{ background: '#FFF7ED', border: '1px solid #FED7AA', borderRadius: 12, padding: '12px 14px', marginBottom: 16, fontSize: 12.5, color: '#9A3412' }}>
+          {ko
+            ? '아직 배포 전 — 클릭·단계 지표는 배포 후부터 쌓인다. 아래 제출 구성은 최근 30일 현재 값(개편 전 기준선).'
+            : 'Not deployed yet — click/step metrics start after deploy. Submission mix below is the last 30 days (pre-change baseline).'}
+        </div>
+      )}
+
+      <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginBottom: 20 }}>
+        <Card label={ko ? '신규 직군 제출 비중' : 'New-role share'} value={`${afterPct}%`}
+          sub={ko ? `개편 전 ${compareDays}일 ${beforePct}% → 개편 후 ${afterPct}%` : `${beforePct}% before → ${afterPct}% after`}
+          accent={afterPct >= beforePct ? '#059669' : '#DC2626'} />
+        <Card label={ko ? '신규 직군 제출' : 'New-role submissions'} value={mix.after.expand.toLocaleString()}
+          sub={ko ? `개편 후 전체 ${afterAll.toLocaleString()}건 중` : `of ${afterAll.toLocaleString()} after rollout`} accent="#0D9488" />
+        <Card label={ko ? '대분류 클릭' : 'Category clicks'} value={totals.clicks.toLocaleString()}
+          sub={ko ? `신규 직군 ${totals.expandClicks.toLocaleString()} (${rate(totals.expandClicks, totals.clicks)})` : `new roles ${totals.expandClicks.toLocaleString()} (${rate(totals.expandClicks, totals.clicks)})`}
+          accent="#7C3AED" />
+        <Card label={ko ? '클릭 → 제출 완주율' : 'Click → submit'} value={rate(totals.submits, totals.clicks)}
+          sub={ko ? `소분류 선택 ${rate(totals.starts, totals.clicks)} · 제출 ${totals.submits.toLocaleString()}건` : `sub-role ${rate(totals.starts, totals.clicks)} · ${totals.submits.toLocaleString()} submits`} />
+      </div>
+
+      <div style={{ fontSize: 13, fontWeight: 700, color: '#374151', margin: '0 0 2px' }}>{ko ? '대분류별 퍼널' : 'Funnel by category'}</div>
+      <div style={{ fontSize: 11.5, color: '#9CA3AF', marginBottom: 8 }}>
+        {ko
+          ? '클릭 = 대분류 버튼 · 소분류 = 세부 직무 확정(위저드 시작) · 제출 = 위저드 완료. 클릭 대비 소분류가 크게 빠지면 소분류 명칭이 안 맞는 것'
+          : 'Click = category button · Sub-role = wizard start · Submit = wizard done'}
+      </div>
+      <div className="adm-m-scroll" style={{ overflowX: 'auto', border: '1px solid #EEF0F2', borderRadius: 12, marginBottom: 24 }}>
+        <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 560 }}>
+          <thead><tr>
+            <th style={th}>{ko ? '대분류' : 'Category'}</th>
+            <th style={{ ...th, textAlign: 'right' }}>{ko ? '클릭' : 'Clicks'}</th>
+            <th style={{ ...th, textAlign: 'right' }}>{ko ? '소분류 선택' : 'Sub-role'}</th>
+            <th style={{ ...th, textAlign: 'right' }}>{ko ? '제출 완료' : 'Submit'}</th>
+            <th style={{ ...th, textAlign: 'right' }}>{ko ? '완주율' : 'Rate'}</th>
+            <th style={{ ...th, textAlign: 'right' }}>{ko ? '실제 제출(건)' : 'Submissions'}</th>
+          </tr></thead>
+          <tbody>
+            {cats.map(c => (
+              <tr key={c.key}>
+                <td style={{ ...td, fontWeight: 700 }}>
+                  {L(c.label)}
+                  {!c.dev && <span style={{ marginLeft: 6, fontSize: 10, fontWeight: 700, color: '#0D9488', background: '#ECFDF5', borderRadius: 5, padding: '2px 5px' }}>{ko ? '신규' : 'NEW'}</span>}
+                </td>
+                <td style={num}>{c.clicks.toLocaleString()}</td>
+                <td style={num}>{c.starts.toLocaleString()}</td>
+                <td style={num}>{c.submits.toLocaleString()}</td>
+                <td style={{ ...num, fontWeight: 800 }}>{rate(c.submits, c.clicks)}</td>
+                <td style={num}>
+                  {c.subs.toLocaleString()}
+                  <Bar n={c.subs} max={maxSub} color={c.dev ? '#94A3B8' : '#0D9488'} />
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      <div style={{ fontSize: 13, fontWeight: 700, color: '#374151', margin: '0 0 2px' }}>{ko ? '신규 직군 소분류 제출' : 'New-role submissions by sub-role'}</div>
+      <div style={{ fontSize: 11.5, color: '#9CA3AF', marginBottom: 8 }}>
+        {ko ? '시드 제외 실제 제출 · 상위 20개 — 0건이 오래가는 소분류는 명칭을 의심' : 'Real submissions (seed excluded) · top 20'}
+      </div>
+      <div className="adm-m-scroll" style={{ overflowX: 'auto', border: '1px solid #EEF0F2', borderRadius: 12, marginBottom: 24 }}>
+        <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 360 }}>
+          <thead><tr>
+            <th style={th}>{ko ? '소분류' : 'Sub-role'}</th>
+            <th style={{ ...th, textAlign: 'right' }}>{ko ? '제출' : 'Submissions'}</th>
+          </tr></thead>
+          <tbody>
+            {subRoles.length === 0 && (
+              <tr><td style={{ ...td, color: '#9CA3AF' }} colSpan={2}>{ko ? '아직 없음' : 'None yet'}</td></tr>
+            )}
+            {subRoles.map(s => (
+              <tr key={s.role}>
+                <td style={td}>{L(s.label)}</td>
+                <td style={num}>
+                  {s.n.toLocaleString()}
+                  <Bar n={s.n} max={maxSubRole} color="#0D9488" />
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      <div style={{ background: '#fff', border: '1px solid #EEF0F2', borderRadius: 14, padding: 16 }}>
+        <h4 style={{ fontSize: 14, fontWeight: 700, margin: '0 0 2px 0', color: '#191F28' }}>{ko ? '일별 제출 구성' : 'Daily submissions'}</h4>
+        <div style={{ fontSize: 11, color: '#9CA3AF', marginBottom: 8 }}>
+          {ko ? '시드 제외 · 세로선 = 개편 배포' : 'Seed excluded · vertical line = rollout'}
+        </div>
+        <MetricChart
+          daily={daily}
+          metrics={[
+            { key: 're-expand', dataKey: 'expand', label: ko ? '신규 직군' : 'New roles', color: '#0D9488' },
+            { key: 're-dev', dataKey: 'dev', label: ko ? '기존 직군' : 'Existing roles', color: '#94A3B8' },
+          ]}
+          experiments={rolloutDate ? [{ id: 'rollout', date: rolloutDate, title: ko ? '전직군 개편' : 'Role expansion', color: '#7C3AED' }] : []}
+          lang={lang}
+        />
+      </div>
     </div>
   )
 }

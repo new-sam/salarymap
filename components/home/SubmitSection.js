@@ -42,6 +42,12 @@ function SubmitSection({
     if (heroCat) setSubCat(SUBMIT_CATEGORIES.find(c => c.key === heroCat.key) || null);
   }, [heroCat]);
 
+  // 대분류 클릭 계측 — 소분류 확정(wizard_step_1) 전 이탈을 보려면 이 단계가 필요
+  const pickCat = (c) => {
+    if (typeof gtag === 'function') gtag('event', 'wizard_cat_click', { cat: c.key });
+    track('wizard_cat_click', { meta: { cat: c.key, source: 'wizard' }, page: '/' });
+  };
+
   const pickRole = (r) => {
     setWRole(r);
     if (typeof gtag === 'function') gtag('event', 'wizard_step_1', { role: r });
@@ -308,7 +314,7 @@ function SubmitSection({
               {!subCat ? (
                 <div className="wiz-role-grid">
                   {SUBMIT_CATEGORIES.map(c => (
-                    <button key={c.key} onClick={() => c.roles ? setSubCat(c) : pickRole(c.value)}
+                    <button key={c.key} onClick={() => { pickCat(c); c.roles ? setSubCat(c) : pickRole(c.value) }}
                       style={{ ...optBase, padding: '13px 6px', fontSize: '13px', textAlign: 'center', ...(wRole && wRole === c.value ? optSelected : {}) }}>
                       {submitCatGridLabel(c, lang)}
                     </button>

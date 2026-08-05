@@ -33,7 +33,7 @@ body { background:var(--bg); color:var(--white); font-family:'Barlow',sans-serif
 @keyframes pulse { 0%,100%{opacity:0.6} 50%{opacity:0.3} }
 .hero-h1 { font-size:clamp(36px,4.5vw,64px); font-weight:800; line-height:1.1; letter-spacing:-2px; margin-bottom:24px; color:var(--white); }
 .hero-h1 em { font-style:normal; color:var(--orange); }
-.hero-sub { font-size:16px; color:rgba(242,240,235,0.78); line-height:1.7; font-weight:400; max-width:420px; margin-bottom:44px; }
+.hero-sub { font-size:16px; color:rgba(242,240,235,0.78); line-height:1.7; font-weight:400; max-width:500px; margin-bottom:44px; }
 .hero-sub b { color:var(--orange); font-weight:800; }
 .hero-btns { display:flex; gap:12px; }
 .btn-p { font-family:'Barlow',sans-serif; font-size:14px; font-weight:700; background:var(--orange); color:#fff; border:none; padding:14px 28px; border-radius:2px; cursor:pointer; }

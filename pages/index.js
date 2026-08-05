@@ -29,7 +29,7 @@ const bodyHTML = `<section class="hero">
   <div class="hero-copy">
     <div class="hero-kicker"><span class="kdot"></span>Thông tin lương Việt Nam</div>
     <h1 class="hero-h1">What does<br><span id="typed-company"></span><span class="typed-cursor"></span><br>actually pay?</h1>
-    <p class="hero-sub">Dựa trên <b>38.000+</b> dữ liệu lương thực tế từ <b>3.000+</b> công ty tại Việt Nam,<br>xem bạn có đang bị trả thấp không.</p>
+    <p class="hero-sub">Dựa trên <b>38.000+</b> dữ liệu lương từ <b>3.000+</b> công ty.<br>Bạn có đang bị trả thấp?</p>
     <div class="hero-btns">
       <button class="btn-p" id="hero-cta-btn" onclick="window.__heroCta&&window.__heroCta();document.getElementById('submit').scrollIntoView({behavior:'smooth'})">Tôi có bị trả thấp? →</button>
       <div id="hero-role-grid" class="hero-role-grid">
@@ -927,11 +927,15 @@ export default function Home({ initialCompanies = [] }) {
   useEffect(() => {
     window.heroSelectRole = (role) => {
       if (role.startsWith('cat:')) {
-        setHeroCat({ key: role.slice(4) });
+        const key = role.slice(4);
+        // 대분류 클릭 자체를 계측 — 소분류 확정(wizard_step_1) 전 이탈이 보이게
+        track('wizard_cat_click', { meta: { cat: key, source: 'hero' }, page: '/' });
+        setHeroCat({ key });
         setWizardStep(1);
         document.getElementById('submit')?.scrollIntoView({ behavior: 'smooth' });
         return;
       }
+      track('wizard_cat_click', { meta: { cat: 'other', source: 'hero' }, page: '/' });
       setWRole(role);
       setWizardStep(2);
       try { if (typeof gtag === 'function') gtag('event', 'wizard_step_1', { role, source: 'hero' }); } catch {}
