@@ -29,8 +29,8 @@ const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
 const COLUMNS = 'id, headline, position, yoe_months, university, verified_school_name, major, ' +
   'photo_url, skills, experiences, english_cert, korean_cert, resume_summary, role'
 
-const SCREEN_N = 20 // 모델이 실제로 읽는 인원
-const PICK_N = 5
+const SCREEN_N = 24 // 모델이 실제로 읽는 인원 — 10명을 고르려면 통과자가 그만큼 있어야 한다
+const PICK_N = 10
 
 async function fetchPool() {
   const all = []
@@ -152,7 +152,7 @@ async function screen(c, p) {
 
    코드가 정한 것은 여기서 안 바뀐다 — 누가 기준을 넘었는지는 이미 정해졌고, 모델은
    그 안에서 순서와 점수·이유만 답한다. 실패하면 코드 순서를 그대로 쓴다. */
-const RANK_N = 8 // 비교 대상. 5명을 고르는 데 8명이면 충분하고, 더 넣으면 프롬프트만 길어진다
+const RANK_N = 14 // 비교 대상. 10명을 고르는 데 14명이면 충분하고, 더 넣으면 프롬프트만 길어진다
 
 /* 연차를 요구한 JD 와 안 한 JD 는 순위 기준이 다르다. 요구했으면 "그 범위 안에서는
    다 같다"이고, 안 했으면 "연차는 이 자리와 아무 상관이 없다"다. 뒤쪽에서는 후보
@@ -174,7 +174,7 @@ ${c.preferred.length ? `## 우대사항\n${c.preferred.map((r) => `- ${r}`).join
 ## 후보
 ${rows.map((r) => `[${r.i}] 자격요건 ${r.met}/${r.total} 충족${c.preferred.length ? ` · 우대사항 ${r.pref}/${c.preferred.length} 충족` : ''}\n${r.text}`).join('\n\n')}
 
-이 자리에 지금 데려왔을 때 가장 잘할 사람 순으로 5명을 고르세요.
+이 자리에 지금 데려왔을 때 가장 잘할 사람 순으로 ${PICK_N}명을 고르세요.
 ${c.preferred.length
   ? `순서의 첫 기준은 우대사항입니다. 자격요건은 다들 이미 넘었으므로 더 가릴 것이 없고,
 기업이 "그다음은 이걸로 봐 달라"고 적어 둔 칸이 우대사항입니다.
@@ -192,7 +192,7 @@ why 는 한 문장입니다. 카드에 기술 칩과 경력사항이 이미 붙�
 문장으로 옮겨 적으면 같은 자리에 같은 말이 두 번 실립니다. 칩이 말하지 못하는 것 —
 이 자리와 어디가 맞는지 — 만 쓰세요.
 
-fit 은 서로 달라야 합니다 — 다섯이 같은 점수면 순서를 매긴 뜻이 없습니다.
+fit 은 서로 달라야 합니다 — 여럿이 같은 점수면 순서를 매긴 뜻이 없습니다.
 
 ${WHY_RULE}`
 
@@ -291,14 +291,6 @@ function card(p, v, c) {
     /* 5줄까지 받는다. 지금 파서는 정확히 3줄만 쓰지만(이력서 1,463건 전부 3줄),
        상한을 3에 박아 두면 나중에 파서를 고쳐도 카드가 안 늘어난다. */
     bullets: Array.isArray(s.bullets) ? s.bullets.slice(0, 5) : [],
-    /* 경력사항 — 파서가 3줄로 요약하면서 버린 것 중 카드에 쓸 만한 유일한 값이다.
-       '무슨 일을 했나'(주요이력)와 '어디서 했나'(회사·직함)는 다른 정보고, 한국 기업은
-       회사 이름을 실제로 본다. 세로를 줄여 생긴 자리를 여기로 채운다. */
-    exps: exps.slice(0, 2).map((e) => ({
-      title: e?.title || '',
-      company: e?.company || '',
-      months: e?.months ?? null,
-    })).filter((e) => e.title || e.company),
     english: p.english_cert || '',
     korean: p.korean_cert || '',
     /* 칩은 여덟 개까지. 셋만 보내면 "+31" 이 붙는데, 그 31 개 중에 고객사가 찾던 게
