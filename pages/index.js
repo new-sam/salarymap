@@ -10,6 +10,7 @@ import Icon from '../components/Icon';
 import { homeCss } from '../constants/homeStyles';
 import { track } from '../lib/track';
 import { useFlags } from '../lib/flags';
+import { SUBMIT_CATEGORIES, submitCatGridLabel } from '../constants/jobs';
 
 const css = homeCss;
 
@@ -26,22 +27,26 @@ const bodyHTML = `<section class="hero">
   </video>
 
   <div class="hero-copy">
-    <div class="hero-kicker"><span class="kdot"></span>Thông tin lương IT Việt Nam</div>
+    <div class="hero-kicker"><span class="kdot"></span>Thông tin lương Việt Nam</div>
     <h1 class="hero-h1">What does<br><span id="typed-company"></span><span class="typed-cursor"></span><br>actually pay?</h1>
-    <p class="hero-sub">Xem bạn có bị trả thấp không — dựa trên dữ liệu lương thực từ các chuyên gia tại các công ty IT hàng đầu Việt Nam.</p>
+    <p class="hero-sub">Dựa trên <b>38.000+</b> dữ liệu lương thực tế từ <b>3.000+</b> công ty tại Việt Nam,<br>xem bạn có đang bị trả thấp không.</p>
     <div class="hero-btns">
       <button class="btn-p" id="hero-cta-btn" onclick="window.__heroCta&&window.__heroCta();document.getElementById('submit').scrollIntoView({behavior:'smooth'})">Tôi có bị trả thấp? →</button>
       <div id="hero-role-grid" class="hero-role-grid">
         <div class="hero-role-prompt" id="hero-role-prompt">Bạn đang làm vị trí nào?</div>
         <div class="hero-role-btns">
-          <button class="hero-role-btn" onclick="window.heroSelectRole&&window.heroSelectRole('Backend')">Backend</button>
-          <button class="hero-role-btn" onclick="window.heroSelectRole&&window.heroSelectRole('Frontend')">Frontend</button>
-          <button class="hero-role-btn" onclick="window.heroSelectRole&&window.heroSelectRole('Mobile')">Mobile</button>
-          <button class="hero-role-btn" onclick="window.heroSelectRole&&window.heroSelectRole('Data · AI')">Data · AI</button>
-          <button class="hero-role-btn" onclick="window.heroSelectRole&&window.heroSelectRole('DevOps')">DevOps</button>
-          <button class="hero-role-btn" onclick="window.heroSelectRole&&window.heroSelectRole('PM · PO')">PM · PO</button>
-          <button class="hero-role-btn" onclick="window.heroSelectRole&&window.heroSelectRole('Design')">Design</button>
-          <button class="hero-role-btn" onclick="window.heroSelectRole&&window.heroSelectRole('QA')">QA</button>
+          <button class="hero-role-btn" onclick="window.heroSelectRole&&window.heroSelectRole('cat:it')">IT · Phần mềm</button>
+          <button class="hero-role-btn" onclick="window.heroSelectRole&&window.heroSelectRole('cat:data')">Data · AI</button>
+          <button class="hero-role-btn" onclick="window.heroSelectRole&&window.heroSelectRole('cat:pm')">PM · PO</button>
+          <button class="hero-role-btn" onclick="window.heroSelectRole&&window.heroSelectRole('cat:design')">Thiết kế</button>
+          <button class="hero-role-btn" onclick="window.heroSelectRole&&window.heroSelectRole('cat:marketing')">Marketing</button>
+          <button class="hero-role-btn" onclick="window.heroSelectRole&&window.heroSelectRole('cat:sales')">Kinh doanh</button>
+          <button class="hero-role-btn" onclick="window.heroSelectRole&&window.heroSelectRole('cat:hr')">Nhân sự</button>
+          <button class="hero-role-btn" onclick="window.heroSelectRole&&window.heroSelectRole('cat:finance')">Kế toán</button>
+          <button class="hero-role-btn" onclick="window.heroSelectRole&&window.heroSelectRole('cat:manufacturing')">Sản xuất</button>
+          <button class="hero-role-btn" onclick="window.heroSelectRole&&window.heroSelectRole('cat:logistics')">Kho vận</button>
+          <button class="hero-role-btn" onclick="window.heroSelectRole&&window.heroSelectRole('cat:office')">Văn phòng</button>
+          <button class="hero-role-btn" onclick="window.heroSelectRole&&window.heroSelectRole('Other')">Khác</button>
         </div>
       </div>
     </div>
@@ -581,6 +586,8 @@ export default function Home({ initialCompanies = [] }) {
   // Wizard state
   const [wizardStep, setWizardStep] = useState(1);
   const [wRole, setWRole] = useState('');
+  const [heroCat, setHeroCat] = useState(null); // 히어로에서 누른 드릴다운 대분류(개발·IT) — 매 클릭 새 객체로 재트리거
+  const [heroStats, setHeroStats] = useState(null); // 히어로 서브카피 "N개 회사 · M건" — /api/stats 공개 카운트
   const [wExp, setWExp] = useState('');
   const [wSalary, setWSalary] = useState(62);
   const [wCompany, setWCompany] = useState('');
@@ -884,13 +891,24 @@ export default function Home({ initialCompanies = [] }) {
     return () => { alive = false; };
   }, []);
 
+  // 히어로 서브카피 카운트 — 인라인 loadStats와 같은 /api/stats(60s 캐시)라 추가 비용 미미
+  useEffect(() => {
+    fetch('/api/stats').then(r => r.json())
+      .then(d => { if (d?.submissionCount && d?.companyCount) setHeroStats({ subs: d.submissionCount, cos: d.companyCount }); })
+      .catch(() => {});
+  }, []);
+
   // DOM-based i18n for bodyHTML template sections
   useEffect(() => {
     // Hero section
     const kicker = document.querySelector('.hero-kicker');
     if (kicker) { const kdot = kicker.querySelector('.kdot'); kicker.textContent = ''; if (kdot) kicker.appendChild(kdot); kicker.appendChild(document.createTextNode(t('hero.kicker'))); }
     const heroSub = document.querySelector('.hero-sub');
-    if (heroSub) heroSub.textContent = t('hero.sub');
+    // 카운트 로드 전엔 SSG 기본문구 유지 — 번역키에 <b>/<br> 마크업 포함이라 innerHTML
+    if (heroSub && heroStats) {
+      const loc = lang === 'vi' ? 'vi-VN' : 'en-US';
+      heroSub.innerHTML = t('hero.sub', { count: heroStats.subs.toLocaleString(loc), companies: heroStats.cos.toLocaleString(loc) });
+    }
     const heroBtn = document.querySelector('.btn-p');
     if (heroBtn) heroBtn.textContent = t('hero.cta');
     // Company section
@@ -900,12 +918,20 @@ export default function Home({ initialCompanies = [] }) {
     if (sectionSub) sectionSub.textContent = t('companies.sub');
     const searchInput = document.getElementById('co-search-input');
     if (searchInput) searchInput.placeholder = t('companies.searchPlaceholder');
-  }, [lang, t]);
+  }, [lang, t, heroStats]);
 
   // 히어로 위저드 (P3): 직무 클릭 → role 세팅 + step2로 점프 + 위저드로 스크롤.
+  // 'cat:' 접두 = 드릴다운 대분류(개발·IT) — role 확정 없이 위저드 소분류 패널만 연다
+  // (wizard_step_1은 소분류 확정 시 SubmitSection에서 발화).
   // legacy CTA에도 클릭 계측(__heroCta) — 지금까지 클릭수 미계측이었음.
   useEffect(() => {
     window.heroSelectRole = (role) => {
+      if (role.startsWith('cat:')) {
+        setHeroCat({ key: role.slice(4) });
+        setWizardStep(1);
+        document.getElementById('submit')?.scrollIntoView({ behavior: 'smooth' });
+        return;
+      }
       setWRole(role);
       setWizardStep(2);
       try { if (typeof gtag === 'function') gtag('event', 'wizard_step_1', { role, source: 'hero' }); } catch {}
@@ -915,6 +941,16 @@ export default function Home({ initialCompanies = [] }) {
     window.__heroCta = () => { track('hero_cta_click', { page: '/' }); };
     return () => { delete window.heroSelectRole; delete window.__heroCta; };
   }, []);
+
+  // 히어로 직무 그리드 라벨 언어 연동 — SSG 기본은 vi, 언어 전환 시 재렌더
+  useEffect(() => {
+    const wrap = document.querySelector('.hero-role-btns');
+    if (!wrap) return;
+    wrap.innerHTML = SUBMIT_CATEGORIES.map(c => {
+      const arg = c.roles ? `cat:${c.key}` : c.value;
+      return `<button class="hero-role-btn" onclick="window.heroSelectRole&&window.heroSelectRole('${arg}')">${submitCatGridLabel(c, lang)}</button>`;
+    }).join('');
+  }, [lang]);
 
   // 히어로 CTA 영역 표시 전환: 미제출이면 직무 그리드, 제출자면 "내 결과 보기" 버튼.
   // (위 i18n 효과가 버튼 텍스트를 hero.cta로 덮으므로, 이 효과가 나중에 실행되며 최종 결정)
@@ -1000,20 +1036,20 @@ export default function Home({ initialCompanies = [] }) {
   return (
     <div suppressHydrationWarning>
       <Head>
-        <title>FYI — Vietnam IT Salary Intelligence | Check If You're Underpaid</title>
+        <title>FYI — Vietnam Salary Intelligence | Check If You're Underpaid</title>
         <meta name="description" content="Compare your salary with real data from 4,600+ real salary entries across Vietnam. Anonymous, instant results. Find out if you're underpaid and discover higher-paying roles." />
-        <meta name="keywords" content="Vietnam IT salary, salary comparison, tech salary Vietnam, developer salary, software engineer salary, IT jobs Vietnam" />
+        <meta name="keywords" content="Vietnam salary, salary comparison, IT salary Vietnam, developer salary, manufacturing salary Vietnam, office salary Vietnam, jobs Vietnam" />
         <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
         {/* Open Graph */}
         <meta property="og:type" content="website" />
         <meta property="og:url" content="https://salary-fyi.com" />
-        <meta property="og:title" content="FYI — Vietnam IT Salary Intelligence" />
+        <meta property="og:title" content="FYI — Vietnam Salary Intelligence" />
         <meta property="og:description" content="Compare your salary with real data from 4,600+ real salary entries across Vietnam. Anonymous, instant results." />
         <meta property="og:image" content="https://salary-fyi.com/og-image.png" />
         <meta property="og:site_name" content="FYI Salary" />
         {/* Twitter Card */}
         <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:title" content="FYI — Vietnam IT Salary Intelligence" />
+        <meta name="twitter:title" content="FYI — Vietnam Salary Intelligence" />
         <meta name="twitter:description" content="Compare your salary with real data from 4,600+ real salary entries across Vietnam." />
         <meta name="twitter:image" content="https://salary-fyi.com/og-image.png" />
         {/* Canonical */}
@@ -1039,6 +1075,7 @@ export default function Home({ initialCompanies = [] }) {
         isLoggedIn={isLoggedIn}
         submissionId={submissionId}
         freshSubmit={freshSubmit}
+        heroCat={heroCat}
         onSubmit={async () => {
           setFreshSubmit(true);
           try {

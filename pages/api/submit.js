@@ -1,5 +1,6 @@
 import supabase from '../../lib/supabaseAdmin';
 import { canonicalCompanyName } from '../../lib/canonicalCompany';
+import { SUBMIT_ROLE_VALUES } from '../../constants/jobs';
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -13,7 +14,7 @@ export default async function handler(req, res) {
   }
 
   // ── Input validation ──
-  const VALID_ROLES = ['Backend','Frontend','Mobile','Data · AI','DevOps','PM · PO','Design','QA'];
+  const VALID_ROLES = SUBMIT_ROLE_VALUES;
   const VALID_EXPS  = ['Under 1yr','1–2 yrs','3–4 yrs','5–7 yrs','8+ yrs'];
   const MIN_SALARY = 3;
   const MAX_SALARY = 300;

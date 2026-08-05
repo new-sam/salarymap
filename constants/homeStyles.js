@@ -33,13 +33,16 @@ body { background:var(--bg); color:var(--white); font-family:'Barlow',sans-serif
 @keyframes pulse { 0%,100%{opacity:0.6} 50%{opacity:0.3} }
 .hero-h1 { font-size:clamp(36px,4.5vw,64px); font-weight:800; line-height:1.1; letter-spacing:-2px; margin-bottom:24px; color:var(--white); }
 .hero-h1 em { font-style:normal; color:var(--orange); }
-.hero-sub { font-size:16px; color:var(--mid); line-height:1.8; font-weight:300; max-width:420px; margin-bottom:44px; }
+.hero-sub { font-size:16px; color:rgba(242,240,235,0.78); line-height:1.7; font-weight:400; max-width:420px; margin-bottom:44px; }
+.hero-sub b { color:var(--orange); font-weight:800; }
 .hero-btns { display:flex; gap:12px; }
 .btn-p { font-family:'Barlow',sans-serif; font-size:14px; font-weight:700; background:var(--orange); color:#fff; border:none; padding:14px 28px; border-radius:2px; cursor:pointer; }
 /* 히어로 위저드 실험 (P3): CTA 자리를 직무 그리드로 — JS(flag/상태)가 display를 제어 */
 .hero-role-grid { display:none; }
 .hero-role-prompt { font-size:13px; font-weight:700; color:rgba(255,255,255,.6); margin-bottom:10px; letter-spacing:.02em; }
 .hero-role-btns { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:8px; max-width:560px; }
+/* 위저드 STEP1 직군 그리드 — 12개 대분류가 3열 4줄로 한 화면에 들어가게 */
+.wiz-role-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:8px; }
 .hero-role-btn { font-family:'Barlow',sans-serif; font-size:13px; font-weight:700; padding:12px 8px; border-radius:10px; color:rgba(255,255,255,.78); background:rgba(255,255,255,.07); border:1px solid rgba(255,255,255,.16); cursor:pointer; transition:all .15s; backdrop-filter:blur(4px); }
 .hero-role-btn:hover { border-color:var(--orange); color:#fff; background:rgba(255,68,0,.16); }
 .btn-g { font-size:14px; color:var(--mid); background:transparent; border:1px solid var(--line); padding:13px 24px; border-radius:2px; cursor:pointer; font-family:'Barlow',sans-serif; transition:all .15s; }
@@ -612,13 +615,15 @@ body { background:var(--bg); color:var(--white); font-family:'Barlow',sans-serif
 
 
   /* HERO */
-  .hero-copy { padding:0 20px; max-width:100%; }
+  /* 하단 여백 84px — 라이브바(52px)+브라우저/탭바에 직군 그리드 마지막 줄이 깔리지 않게 */
+  .hero-copy { padding:0 20px 84px; max-width:100%; }
   .hero-h1 { font-size:clamp(28px,8vw,44px); letter-spacing:-1.5px; }
-  .hero-sub { font-size:13px; margin-bottom:28px; }
+  .hero-sub { font-size:15px; margin-bottom:28px; }
   .hero-btns { flex-direction:column; gap:10px; }
   .btn-p, .btn-g { width:100%; text-align:center; padding:13px 20px; }
-  .hero-role-btns { grid-template-columns:repeat(2,minmax(0,1fr)); max-width:100%; }
-  .hero-role-btn { padding:12px 6px; font-size:13px; }
+  /* 대분류 12개 = 3열 4줄 (2열 6줄이면 작은 폰에서 100vh 히어로 밖으로 잘림) */
+  .hero-role-btns { grid-template-columns:repeat(3,minmax(0,1fr)); max-width:100%; gap:6px; }
+  .hero-role-btn { padding:11px 4px; font-size:12px; }
   .car-dots, .car-arrows { display:none; }
 
   /* TICKER */

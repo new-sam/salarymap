@@ -151,6 +151,115 @@ export function roleGroupLabel(key, lang = 'en') {
   const g = ROLE_GROUPS.find(g => g.key === key)
   return g ? (g.label[lang] || g.label.en) : (key || '')
 }
+// 연봉 제출 위저드(랜딩) 직군 분류 — submissions.role 저장값의 유일한 소스.
+// 전 직군 2단계(대분류 → 소분류): 저장은 소분류 값, 연봉 비교 통계는 대분류 풀 합산
+// (submitRolePool). 소분류 표본이 쌓이면 API 캐스케이드가 자동으로 소분류끼리 비교.
+// 기존 IT 소분류 값(Backend…QA)은 그대로 유지해 11,450건 기존 데이터와 연속성 보장.
+// legacy = 과거 저장값(더는 제출 안 받지만 같은 대분류 풀로 집계).
+export const SUBMIT_CATEGORIES = [
+  { key: 'it', label: { ko: '개발·IT', en: 'Software · IT', vi: 'Lập trình · IT' }, short: { en: 'IT', vi: 'IT · Phần mềm' },
+    roles: [
+      { value: 'Backend' }, { value: 'Frontend' }, { value: 'Fullstack' },
+      { value: 'Mobile' }, { value: 'DevOps' }, { value: 'QA' },
+    ] },
+  { key: 'data', label: { ko: '데이터·AI', en: 'Data · AI', vi: 'Data · AI' },
+    roles: [
+      { value: 'Data Analyst' }, { value: 'Data Engineer' }, { value: 'Data Scientist' }, { value: 'AI Engineer' },
+    ], legacy: ['Data · AI', 'Data'] },
+  { key: 'pm', label: { ko: '기획·PM', en: 'PM · PO', vi: 'PM · PO' },
+    roles: [
+      { value: 'PM' }, { value: 'PO' },
+      { value: 'Project Manager', label: { ko: '프로젝트 매니저', en: 'Project Manager', vi: 'Quản lý dự án' } },
+      { value: 'Business Analyst', label: { ko: 'BA', en: 'BA', vi: 'BA' } },
+    ], legacy: ['PM · PO'] },
+  { key: 'design', label: { ko: '디자인', en: 'Design', vi: 'Thiết kế' },
+    roles: [
+      { value: 'UI/UX Designer', label: { ko: 'UI/UX', en: 'UI/UX', vi: 'UI/UX' } },
+      { value: 'Graphic Designer', label: { ko: '그래픽', en: 'Graphic', vi: 'Đồ họa' } },
+      { value: 'Motion / Video', label: { ko: '모션·영상', en: 'Motion / Video', vi: 'Motion / Video' } },
+    ], legacy: ['Design'] },
+  { key: 'marketing', label: { ko: '마케팅', en: 'Marketing', vi: 'Marketing' },
+    roles: [
+      { value: 'Digital Marketing', label: { ko: '디지털', en: 'Digital', vi: 'Digital' } },
+      { value: 'Content Marketing', label: { ko: '콘텐츠', en: 'Content', vi: 'Content' } },
+      { value: 'Performance / Ads', label: { ko: '퍼포먼스·광고', en: 'Performance / Ads', vi: 'Ads' } },
+      { value: 'Brand Marketing', label: { ko: '브랜드', en: 'Brand', vi: 'Brand' } },
+    ] },
+  { key: 'sales', label: { ko: '영업·CS', en: 'Sales · CS', vi: 'Kinh doanh · CSKH' }, short: { en: 'Sales', vi: 'Kinh doanh' },
+    roles: [
+      { value: 'Sales (B2B)', label: { ko: 'B2B 영업', en: 'B2B', vi: 'Sales B2B' } },
+      { value: 'Sales (B2C / Retail)', label: { ko: 'B2C·리테일', en: 'B2C / Retail', vi: 'B2C / Bán lẻ' } },
+      { value: 'Telesales' },
+      { value: 'Customer Service', label: { ko: '고객서비스(CS)', en: 'Customer Service', vi: 'CSKH' } },
+      { value: 'Business Development', label: { ko: '사업개발(BD)', en: 'BD', vi: 'BD' } },
+    ] },
+  { key: 'hr', label: { ko: '인사·총무', en: 'HR · Admin', vi: 'Nhân sự · Hành chính' }, short: { en: 'HR', vi: 'Nhân sự' },
+    roles: [
+      { value: 'Recruiter', label: { ko: '채용', en: 'Recruiter', vi: 'Tuyển dụng' } },
+      { value: 'HR Generalist', label: { ko: 'HR 제너럴', en: 'Generalist', vi: 'HR tổng hợp' } },
+      { value: 'C&B' },
+      { value: 'Admin / GA', label: { ko: '총무·행정', en: 'Admin / GA', vi: 'Hành chính' } },
+    ] },
+  { key: 'finance', label: { ko: '재무·회계', en: 'Finance · Accounting', vi: 'Kế toán · Tài chính' }, short: { en: 'Finance', vi: 'Kế toán' },
+    roles: [
+      { value: 'Accountant', label: { ko: '회계', en: 'Accountant', vi: 'Kế toán' } },
+      { value: 'Financial Analyst', label: { ko: '재무분석', en: 'Finance', vi: 'Tài chính' } },
+      { value: 'Audit / Tax', label: { ko: '감사·세무', en: 'Audit / Tax', vi: 'Kiểm toán / Thuế' } },
+      { value: 'Banking', label: { ko: '은행·금융', en: 'Banking', vi: 'Ngân hàng' } },
+    ] },
+  { key: 'manufacturing', label: { ko: '생산·제조', en: 'Manufacturing', vi: 'Sản xuất' }, short: { en: 'Production' },
+    roles: [
+      { value: 'Production Worker', label: { ko: '생산직', en: 'Operator', vi: 'Công nhân SX' } },
+      { value: 'Production Manager', label: { ko: '생산관리', en: 'Supervisor', vi: 'Quản lý SX' } },
+      { value: 'Process Engineer', label: { ko: '공정 엔지니어', en: 'Process Eng.', vi: 'Kỹ sư quy trình' } },
+      { value: 'Maintenance', label: { ko: '설비·보전', en: 'Maintenance', vi: 'Bảo trì' } },
+      { value: 'QC' },
+      { value: 'HSE' },
+    ] },
+  { key: 'logistics', label: { ko: '물류·구매', en: 'Logistics', vi: 'Kho vận · Thu mua' }, short: { vi: 'Kho vận' },
+    roles: [
+      { value: 'Warehouse', label: { ko: '창고', en: 'Warehouse', vi: 'Kho' } },
+      { value: 'Procurement', label: { ko: '구매', en: 'Procurement', vi: 'Thu mua' } },
+      { value: 'Import / Export', label: { ko: '수출입', en: 'Import / Export', vi: 'Xuất nhập khẩu' } },
+      { value: 'Supply Chain', label: { ko: 'SCM', en: 'Supply Chain', vi: 'Supply Chain' } },
+    ] },
+  { key: 'office', label: { ko: '사무·운영', en: 'Office · Ops', vi: 'Văn phòng · Vận hành' }, short: { en: 'Office', vi: 'Văn phòng' },
+    roles: [
+      { value: 'Secretary / Assistant', label: { ko: '비서·어시스턴트', en: 'Secretary', vi: 'Thư ký / Trợ lý' } },
+      { value: 'Operations', label: { ko: '운영', en: 'Operations', vi: 'Vận hành' } },
+      { value: 'Legal', label: { ko: '법무', en: 'Legal', vi: 'Pháp lý' } },
+      { value: 'Interpreter / Translator', label: { ko: '통·번역', en: 'Interpreter', vi: 'Phiên dịch' } },
+    ] },
+  { key: 'other', value: 'Other', label: { ko: '기타', en: 'Other', vi: 'Khác' } },
+]
+const catValues = (c) => (c.roles ? c.roles.map(r => r.value) : [c.value])
+// 제출 가능한 role 값 전체 — /api/submit 검증용 (legacy 제외).
+export const SUBMIT_ROLE_VALUES = SUBMIT_CATEGORIES.flatMap(catValues)
+// 집계용 role 값 전체 — legacy 포함. /api/stats 등 기존 데이터 카운트에 사용.
+export const ALL_SUBMIT_ROLE_VALUES = SUBMIT_CATEGORIES.flatMap(c => [...catValues(c), ...(c.legacy || [])])
+// 그리드 버튼용 짧은 라벨 — 3열 그리드에 맞게 short 우선, 없으면 정식 라벨.
+export function submitCatGridLabel(cat, lang = 'vi') {
+  return (cat.short && cat.short[lang]) || cat.label[lang] || cat.label.en
+}
+// role 값(legacy 포함) → 소속 대분류 항목. 없으면 null.
+export function submitRoleCategory(value) {
+  return SUBMIT_CATEGORIES.find(c => catValues(c).includes(value) || (c.legacy || []).includes(value)) || null
+}
+// role 값 → 같은 대분류로 합산되는 값 전체(legacy 포함) — 연봉 비교 코호트 풀.
+export function submitRolePool(value) {
+  const c = submitRoleCategory(value)
+  return c ? [...catValues(c), ...(c.legacy || [])] : [value]
+}
+// 제출 role 값 → 화면 라벨. 소분류 label 우선, legacy/대분류 값은 대분류 라벨.
+export function submitRoleLabel(value, lang = 'vi') {
+  for (const c of SUBMIT_CATEGORIES) {
+    const r = c.roles && c.roles.find(r => r.value === value)
+    if (r) return (r.label && (r.label[lang] || r.label.en)) || r.value
+    if (c.value === value || (c.legacy || []).includes(value)) return c.label[lang] || c.label.en
+  }
+  return value || ''
+}
+
 export const TYPE_OPTIONS = ['remote','onsite','hybrid']
 // 근무지 — 베트남 주요 도시/성 + 원격/기타 (회사 ATS 폼·필터 공통)
 export const LOCATION_OPTIONS = ['Hồ Chí Minh','Hà Nội','Đà Nẵng','Hải Phòng','Cần Thơ','Bình Dương','Đồng Nai','Bắc Ninh','Hưng Yên','Quảng Ninh','Khánh Hòa','Thừa Thiên Huế','Bà Rịa – Vũng Tàu','Remote','Khác / Other']

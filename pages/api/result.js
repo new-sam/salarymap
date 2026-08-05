@@ -1,4 +1,7 @@
 import supabase from '../../lib/supabaseAdmin';
+import { submitRolePool } from '../../constants/jobs';
+import { seedTopCompanies } from '../../lib/seedCompanies';
+import { roleMedian } from '../../constants/salaryMedians';
 
 function median(arr) {
   const s = [...arr].sort((a, b) => a - b);
@@ -65,17 +68,6 @@ const DOMAIN_MAP = {
   'trusting social': 'trustingsocial.com',
 };
 
-// Map wizard role names to DB role names
-const ROLE_MAP = {
-  'Data · AI': 'Data Engineer',
-  'PM · PO': 'PM',
-  'Design': 'Frontend',  // fallback: no Design data, use Frontend
-  'QA': 'Backend',        // fallback: no QA data, use Backend
-};
-
-function resolveRole(role) {
-  return ROLE_MAP[role] || role;
-}
 
 // Paginate through all rows (Supabase caps at 1000 per request)
 async function fetchAll(query) {
@@ -93,31 +85,38 @@ async function fetchAll(query) {
 }
 
 export default async function handler(req, res) {
-  const { salary, role: rawRole, experience, company } = req.query;
+  const { salary, role, experience, company } = req.query;
   const userSalary = parseInt(salary);
-  const role = resolveRole(rawRole);
 
-  if (!userSalary || !rawRole || !experience) {
+  if (!userSalary || !role || !experience) {
     return res.status(400).json({ error: 'salary, role, experience required' });
   }
 
-  // Single query: get all submissions for this role (salary + company)
-  const allRoleData = await fetchAll(
-    supabase.from('submissions').select('salary, company, experience').eq('role', role)
+  // 같은 대분류로 합산되는 role 값 전체(legacy 포함) — 한 번에 조회
+  const pool = submitRolePool(role);
+  const poolData = await fetchAll(
+    supabase.from('submissions').select('role, salary, company, experience').in('role', pool)
   );
 
-  // Filter peers: try exact experience match first, fallback to all
-  let peers = (allRoleData || []).filter(p => p.experience === experience);
-  if (peers.length < 3) peers = allRoleData || [];
+  // 캐스케이드: 소분류+연차 → 소분류 전체 → 대분류풀+연차 → 대분류풀 전체.
+  // IT처럼 소분류 표본이 충분하면 그대로 소분류 비교, 신규 비개발 소분류는 대분류로 합산.
+  const exact = (poolData || []).filter(p => p.role === role);
+  let peers = exact.filter(p => p.experience === experience);
+  if (peers.length < 3) peers = exact;
+  if (peers.length < 3) peers = (poolData || []).filter(p => p.experience === experience);
+  if (peers.length < 3) peers = poolData || [];
 
   if (peers.length < 3) {
+    // 표본 부족 — 직군 기준 중위값으로 비교하고 회사 비교는 기준 회사로 채운다
+    const seedMedian = roleMedian(role, experience);
+    const seedDiff = userSalary - seedMedian;
     return res.status(200).json({
-      percentile: 50,
+      percentile: Math.max(1, Math.min(99, Math.round(50 - (seedDiff / seedMedian) * 50))),
       userSalary,
-      marketMedian: userSalary,
-      diff: 0,
-      diffPct: 0,
-      topCompanies: [],
+      marketMedian: seedMedian,
+      diff: seedDiff,
+      diffPct: Math.round((seedDiff / seedMedian) * 100),
+      topCompanies: seedTopCompanies(role, experience, userSalary, company, 4),
     });
   }
 
@@ -130,8 +129,8 @@ export default async function handler(req, res) {
   const diff = userSalary - marketMedian;
   const diffPct = marketMedian > 0 ? Math.round((diff / marketMedian) * 100) : 0;
 
-  // Reuse allRoleData for company analysis (no extra query)
-  const companyData = allRoleData;
+  // 회사 비교도 같은 코호트 기준 — 소분류 표본이 있으면 소분류, 없으면 대분류 풀
+  const companyData = exact.length >= 3 ? exact : poolData;
 
   const companyMap = {};
   (companyData || []).forEach(row => {
@@ -141,7 +140,7 @@ export default async function handler(req, res) {
     companyMap[co].push(row.salary);
   });
 
-  const topCompanies = Object.entries(companyMap)
+  const realTopCompanies = Object.entries(companyMap)
     .filter(([name, sals]) => sals.length >= 2 && name.toLowerCase() !== (company || '').toLowerCase())
     .map(([name, sals]) => {
       const cleanSals = removeOutliers(sals);
@@ -153,6 +152,11 @@ export default async function handler(req, res) {
     .filter(co => co.premiumPct > 0)
     .sort((a, b) => b.premiumPct - a.premiumPct)
     .slice(0, 4);
+
+  // 회사명이 붙은 실제 제출이 부족한 직군(시드로 채운 비개발 등)은 기준 회사로 대체
+  const topCompanies = realTopCompanies.length >= 2
+    ? realTopCompanies
+    : seedTopCompanies(role, experience, userSalary, company, 4);
 
   res.setHeader('Cache-Control', 'public, max-age=30, s-maxage=60, stale-while-revalidate=300');
   res.status(200).json({

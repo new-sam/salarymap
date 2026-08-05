@@ -1,10 +1,14 @@
 import supabase from '../../lib/supabaseAdmin';
 import { excludeSuspicious, DEFAULT_SLIDER_VALUE, SLIDER_GUARD_DEPLOYED_AT } from '../../lib/salaryQuality';
 import { SALARY_MIN, SALARY_MAX } from '../../lib/salaryStats';
+import { ALL_SUBMIT_ROLE_VALUES } from '../../constants/jobs';
 
-// 실제 제출 폼 taxonomy(submit.js)와 일치 — 기존엔 라벨 불일치로 과소 집계됐음
-const VALID_ROLES = ['Backend','Frontend','Mobile','Data · AI','DevOps','PM · PO','Design','QA'];
+// 제출 폼 taxonomy(constants SUBMIT_CATEGORIES) + legacy 값 — 기존 데이터도 계속 집계
+const VALID_ROLES = ALL_SUBMIT_ROLE_VALUES;
 const VALID_EXP   = ['Under 1yr','1–2 yrs','3–4 yrs','5–7 yrs','8+ yrs'];
+
+// 사이트 밖에 보유한 연봉 데이터(로그인 유저에게 메일로 전달) — 홈 카운트는 라이브 + 외부 합산.
+const EXTERNAL_RECORDS = 32000;
 
 export default async function handler(req, res) {
   // 유효 실유입(seed·이상치 제외) 기준 카운트.
@@ -25,11 +29,12 @@ export default async function handler(req, res) {
       .order('created_at', { ascending: false }).limit(30),
   ]);
 
-  const submissionCount = Math.max(0, (totalResult.count || 0) - (suspiciousResult.count || 0));
+  const liveSubmissionCount = Math.max(0, (totalResult.count || 0) - (suspiciousResult.count || 0));
 
   res.setHeader('Cache-Control', 'public, max-age=60, s-maxage=300, stale-while-revalidate=600');
   res.json({
-    submissionCount,
+    submissionCount: liveSubmissionCount + EXTERNAL_RECORDS,
+    liveSubmissionCount,
     companyCount: coResult.count || 0,
     recent: excludeSuspicious(recentResult.data || []),
   });

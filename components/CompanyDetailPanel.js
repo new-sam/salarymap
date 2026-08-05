@@ -36,13 +36,22 @@ export default function CompanyDetailPanel({
     // 내 직무로 열면 카드(전체)와 헤더 건수(전체)만 맞고 최저/최고는 또 달라진다.
     setActiveRole('All')
     setLoading(true)
+    // 응답이 슬라이드 애니메이션(0.3s) 도중 도착하면 콘텐츠 교체 리렌더가 프레임을 끊는다
+    // → 애니메이션이 끝난 뒤(350ms)로 반영을 미룬다.
+    const openedAt = Date.now()
+    let cancelled = false
     fetch(`/api/company-detail?company=${encodeURIComponent(company)}`)
       .then(r => r.json())
       .then(d => {
-        setDetail(d)
-        setLoading(false)
+        const wait = Math.max(0, 350 - (Date.now() - openedAt))
+        setTimeout(() => {
+          if (cancelled) return
+          setDetail(d)
+          setLoading(false)
+        }, wait)
       })
-      .catch(() => setLoading(false))
+      .catch(() => { if (!cancelled) setLoading(false) })
+    return () => { cancelled = true }
   }, [isOpen, company])
 
   // ESC close
@@ -132,11 +141,14 @@ export default function CompanyDetailPanel({
   // ── Panel style ──
   const panelStyle = isMobile ? {
     position: 'fixed', bottom: 0, left: 0, right: 0,
-    maxHeight: '85vh', background: '#fff', zIndex: 100000,
+    // 높이 고정 — maxHeight면 로딩(~250px)→데이터 도착 시 시트가 확 커지며 모션이 끊겨 보이고,
+    // translateY(100%)의 % 기준도 흔들린다. 고정 높이라야 상승-확장 없이 한 번에 올라온다.
+    height: '85vh', background: '#fff', zIndex: 100000,
     borderRadius: '16px 16px 0 0', overflowY: 'auto',
     overscrollBehavior: 'contain',
     transform: isOpen ? 'translateY(0)' : 'translateY(100%)',
     transition: 'transform 0.3s ease',
+    willChange: 'transform',
     boxShadow: '0 -4px 30px rgba(0,0,0,0.2)',
     fontFamily: "'Inter', sans-serif",
   } : {
@@ -145,6 +157,7 @@ export default function CompanyDetailPanel({
     overflowY: 'auto',
     transform: isOpen ? 'translateX(0)' : 'translateX(100%)',
     transition: 'transform 0.3s ease',
+    willChange: 'transform',
     boxShadow: '-4px 0 30px rgba(0,0,0,0.12)',
     fontFamily: "'Inter', sans-serif",
   }
@@ -159,9 +172,17 @@ export default function CompanyDetailPanel({
 
   const renderHeader = () => (
     <div style={{
-      background: '#111', padding: '18px 20px 14px',
+      background: '#111', padding: isMobile ? '8px 20px 14px' : '18px 20px 14px',
       position: 'sticky', top: 0, zIndex: 10,
+      ...(isMobile ? { borderRadius: '16px 16px 0 0' } : {}),
     }}>
+      {/* 모바일 드래그 핸들 — 별도 div로 두면 sticky 헤더와의 경계에 서브픽셀 틈이 생겨
+          흰 배경이 가로선처럼 비치므로 헤더 안에 포함 */}
+      {isMobile && (
+        <div style={{ display: 'flex', justifyContent: 'center', paddingBottom: 10 }}>
+          <div style={{ width: 36, height: 4, borderRadius: 2, background: 'rgba(255,255,255,0.3)' }} />
+        </div>
+      )}
       {/* Top row */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
         <div style={{
@@ -588,9 +609,10 @@ export default function CompanyDetailPanel({
         if (needsLogin) { onClose(); onLoginGate?.(); return; }
         onClose(); document.getElementById('submit')?.scrollIntoView({ behavior: 'smooth' })
       }} style={{
-        padding: '10px 24px',
-        background: '#111', border: 'none', borderRadius: 10,
-        fontSize: 12, fontWeight: 600, color: '#fff', cursor: 'pointer', fontFamily: 'inherit',
+        width: '100%', padding: '14px 0',
+        background: '#ff6000', border: 'none', borderRadius: 12,
+        fontSize: 14, fontWeight: 700, color: '#fff', cursor: 'pointer', fontFamily: 'inherit',
+        boxShadow: '0 6px 20px rgba(255,96,0,0.25)',
       }}>{t(needsLogin ? 'detail.gateLoginBtn' : 'detail.submitToSee')}</button>
     </div>
   )
@@ -609,13 +631,6 @@ export default function CompanyDetailPanel({
       <div style={panelStyle}>
         {company && (
           <>
-            {/* Mobile handle */}
-            {isMobile && (
-              <div style={{ display: 'flex', justifyContent: 'center', padding: '8px 0 0', background: '#111', borderRadius: '16px 16px 0 0' }}>
-                <div style={{ width: 36, height: 4, borderRadius: 2, background: 'rgba(255,255,255,0.3)' }} />
-              </div>
-            )}
-
             {renderHeader()}
 
             <div style={{ padding: '0 20px 40px', ...(isMobile ? { fontSize: 14 } : {}) }}>

@@ -4,6 +4,7 @@ import Icon from '../Icon';
 import ResultSection from '../ResultSection';
 import supabaseClient from '../../lib/supabaseClient';
 import { track } from '../../lib/track';
+import { SUBMIT_CATEGORIES, submitCatGridLabel } from '../../constants/jobs';
 
 function SubmitSection({
   wizardStep, setWizardStep,
@@ -15,8 +16,9 @@ function SubmitSection({
   onSubmit,
   submissionId,
   freshSubmit,
+  heroCat,
 }) {
-  const { t } = useT();
+  const { t, lang } = useT();
   const [submitting, setSubmitting] = useState(false);
   const [ratingWorklife, setRatingWorklife] = useState(0);
   const [ratingSalary, setRatingSalary] = useState(0);
@@ -31,8 +33,21 @@ function SubmitSection({
   const [selectedItem, setSelectedItem] = useState(null);
   const acTimerRef = useRef(null);
   const acWrapRef = useRef(null);
-  const ROLES = ['Backend','Frontend','Mobile','Data · AI','DevOps','PM · PO','Design','QA'];
+  // STEP1 소분류 드릴다운 상태 — 대분류(roles 있는 항목) 선택 시 세팅, 나머지는 원탭 저장
+  const [subCat, setSubCat] = useState(null);
   const EXPS  = ['Under 1yr','1–2 yrs','3–4 yrs','5–7 yrs','8+ yrs'];
+
+  // 히어로 그리드에서 드릴다운 대분류(개발·IT)를 눌렀을 때 소분류 패널을 바로 연다
+  useEffect(() => {
+    if (heroCat) setSubCat(SUBMIT_CATEGORIES.find(c => c.key === heroCat.key) || null);
+  }, [heroCat]);
+
+  const pickRole = (r) => {
+    setWRole(r);
+    if (typeof gtag === 'function') gtag('event', 'wizard_step_1', { role: r });
+    track('wizard_step_1', { meta: { role: r }, page: '/' });
+    setTimeout(() => setWizardStep(2), 300);
+  };
   const sal = Number(wSalary);
   const salPct = Math.round(((sal - 5) / (200 - 5)) * 100);
 
@@ -286,18 +301,35 @@ function SubmitSection({
             </div>
           )}
 
-          {/* Step 1 — Role */}
+          {/* Step 1 — Role: 대분류 3열 그리드 → 개발·IT만 소분류 드릴다운 */}
           {wizardStep === 1 && (
             <div>
               <BlurredTeaser />
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
-                {ROLES.map(r => (
-                  <button key={r} onClick={() => { setWRole(r); if(typeof gtag==='function') gtag('event','wizard_step_1',{role:r}); track('wizard_step_1', { meta: { role: r }, page: '/' }); setTimeout(() => setWizardStep(2), 300); }}
-                    style={{ ...optBase, ...(wRole === r ? optSelected : {}) }}>
-                    {r}
-                  </button>
-                ))}
-              </div>
+              {!subCat ? (
+                <div className="wiz-role-grid">
+                  {SUBMIT_CATEGORIES.map(c => (
+                    <button key={c.key} onClick={() => c.roles ? setSubCat(c) : pickRole(c.value)}
+                      style={{ ...optBase, padding: '13px 6px', fontSize: '13px', textAlign: 'center', ...(wRole && wRole === c.value ? optSelected : {}) }}>
+                      {submitCatGridLabel(c, lang)}
+                    </button>
+                  ))}
+                </div>
+              ) : (
+                <div>
+                  <div style={{ fontSize: '13px', fontWeight: 700, color: 'rgba(255,255,255,0.55)', marginBottom: '10px' }}>
+                    {submitCatGridLabel(subCat, lang)}
+                  </div>
+                  <div className="wiz-role-grid">
+                    {subCat.roles.map(r => (
+                      <button key={r.value} onClick={() => pickRole(r.value)}
+                        style={{ ...optBase, padding: '13px 6px', fontSize: '13px', textAlign: 'center', ...(wRole === r.value ? optSelected : {}) }}>
+                        {(r.label && (r.label[lang] || r.label.en)) || r.value}
+                      </button>
+                    ))}
+                  </div>
+                  <button onClick={() => setSubCat(null)} style={{ ...quizBtn, marginTop: '16px', background: 'none', color: 'rgba(255,255,255,0.25)', fontSize: '12px' }}>{t('wizard.back')}</button>
+                </div>
+              )}
             </div>
           )}
 

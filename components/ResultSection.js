@@ -4,26 +4,59 @@ import { track } from '../lib/track'
 import { useT } from '../lib/i18n'
 import { formatSalaryCard } from '../utils/salary'
 import { useFlags } from '../lib/flags'
+import { classifyJobTitle, jobAdGroup, submitRoleLabel, submitRoleCategory } from '../constants/jobs'
 
-// submission role (vd 'Data · AI') → job role (vd 'Data'). Phần tử [0] là khớp chính xác,
-// các phần tử sau là role tương tự (điểm thấp hơn).
-const ROLE_MAP = {
-  'Backend': ['Backend', 'Fullstack'],
-  'Frontend': ['Frontend', 'Fullstack'],
+// 제출 소분류 → job role 정밀 매핑(개발·데이터·기획·디자인). 첫 항목 = 정확 매칭(1점), 이후 = 유사(0.6점).
+// 여기 없는 값(비개발 소분류·legacy)은 대분류 단위 CAT_JOB_ROLES로 매칭 — 비개발 공고 role이 굵어서 충분.
+const ROLE_JOB_MAP = {
+  'Backend': ['Backend', 'Fullstack', 'Web'],
+  'Frontend': ['Frontend', 'Fullstack', 'Web'],
+  'Fullstack': ['Fullstack', 'Backend', 'Frontend', 'Web'],
   'Mobile': ['Mobile'],
-  'Data · AI': ['Data'],
-  'DevOps': ['DevOps'],
-  'PM · PO': ['PM'],
-  'Design': ['Design'],
-  'QA': ['QA'],
+  'DevOps': ['DevOps', 'SRE', 'Cloud', 'SysAdmin'],
+  'QA': ['QA', 'QA Automation', 'QC'],
+  'Data Analyst': ['Data Analyst', 'BI', 'Data'],
+  'Data Engineer': ['Data Engineer', 'Data'],
+  'Data Scientist': ['Data Scientist', 'ML Engineer', 'Data'],
+  'AI Engineer': ['AI Engineer', 'ML Engineer'],
+  'PM': ['PM'], 'PO': ['PO', 'PM'], 'Project Manager': ['PM'], 'Business Analyst': ['Business Analyst'],
+  'UI/UX Designer': ['Design', 'UX Researcher'], 'Graphic Designer': ['Design'], 'Motion / Video': ['Design'],
+}
+// 대분류 key → job role 리스트 (소분류 정밀 매핑이 없을 때의 코호트)
+const CAT_JOB_ROLES = {
+  data: ['Data', 'Data Analyst', 'Data Engineer', 'Data Scientist', 'BI', 'ML Engineer', 'AI Engineer'],
+  pm: ['PM', 'PO', 'Business Analyst'],
+  design: ['Design', 'UX Researcher'],
+  marketing: ['Marketing'],
+  sales: ['Sales'],
+  hr: ['HR'],
+  finance: ['Finance'],
+  manufacturing: ['Production Worker', 'Production Manager', 'Process Engineer', 'Maintenance', 'HSE', 'Merchandiser'],
+  logistics: ['Warehouse', 'Procurement'],
+  office: ['Operations', 'Interpreter'],
+  other: [],
+}
+// 크롤 공고는 비개발 role이 대부분 'Non-IT'라 role 매칭이 안 됨 → 제목 분류(classifyJobTitle)로 보조 매칭
+const TITLE_CATS = {
+  marketing: ['marketing'],
+  sales: ['sales'],
+  hr: ['hr'],
+  finance: ['office'],
+  manufacturing: ['production', 'engineering', 'qc'],
+  logistics: ['logistics'],
+  office: ['office'],
 }
 
-function roleScore(userRole, jobRole) {
-  if (!userRole || !jobRole) return 0
-  const list = ROLE_MAP[userRole] || [userRole]
-  const idx = list.indexOf(jobRole)
+function roleScore(userRole, job) {
+  if (!userRole || !job) return 0
+  const cat = submitRoleCategory(userRole)
+  const list = ROLE_JOB_MAP[userRole] || (cat && CAT_JOB_ROLES[cat.key]) || [userRole]
+  const idx = list.indexOf(job.role)
   if (idx === 0) return 1      // khớp chính xác
   if (idx > 0) return 0.6      // role tương tự
+  // 제목 기반 보조 매칭 — IT role이 달린 공고는 제외(IT QA가 생산 QC로 새는 것 방지)
+  const cats = cat && TITLE_CATS[cat.key]
+  if (cats && jobAdGroup(job.role, job.title) !== 'it' && cats.includes(classifyJobTitle(job.title))) return 0.8
   return 0
 }
 
@@ -52,7 +85,7 @@ function buildJobSuggestions(allJobs, salaryVnd, role, experience) {
     return years >= j.experience_min && years <= max ? 1 : 0.2
   }
   const score = (j) =>
-    roleScore(role, j.role) * 3 +
+    roleScore(role, j) * 3 +
     expScore(j) * 1.5 +
     bumpReason(j) +
     (j.is_featured ? 0.3 : 0) +
@@ -70,11 +103,11 @@ function buildJobSuggestions(allJobs, salaryVnd, role, experience) {
   const rank = (pool) => diversify([...pool].sort((a, b) => score(b) - score(a)))
 
   // T1 — đúng vai trò + trả cao hơn lương hiện tại
-  let pool = active.filter(j => roleScore(role, j.role) > 0 && salMin(j) > salaryVnd)
+  let pool = active.filter(j => roleScore(role, j) > 0 && salMin(j) > salaryVnd)
   if (pool.length) return { tier: 'higher', jobs: rank(pool), total: pool.length }
 
   // T2 — đúng vai trò (mọi mức lương)
-  pool = active.filter(j => roleScore(role, j.role) > 0)
+  pool = active.filter(j => roleScore(role, j) > 0)
   if (pool.length) return { tier: 'role', jobs: rank(pool), total: pool.length }
 
   // T3 — trả cao hơn nhưng vai trò khác
@@ -86,7 +119,7 @@ function buildJobSuggestions(allJobs, salaryVnd, role, experience) {
 }
 
 export default function ResultSection({ salary, role, experience, company, isLoggedIn, anchor }) {
-  const { t } = useT()
+  const { t, lang } = useT()
   const [result, setResult] = useState(null)
   const [jobData, setJobData] = useState(null)
   const router = useRouter()
@@ -146,6 +179,8 @@ export default function ResultSection({ salary, role, experience, company, isLog
   )
 
   const { percentile, userSalary, marketMedian, diff } = result
+  // 표시용 직군 라벨 — 비개발 대분류는 언어별 라벨, 매칭/저장은 raw 값 그대로
+  const roleText = submitRoleLabel(role, lang)
   const isPositive = diff >= 0
   const state = percentile <= 33 ? 'high' : percentile <= 66 ? 'mid' : 'low'
 
@@ -207,7 +242,7 @@ export default function ResultSection({ salary, role, experience, company, isLog
 
         {/* Eyebrow */}
         <div style={{ fontSize:'10px', fontWeight:700, letterSpacing:'.1em', color:'rgba(255,255,255,0.25)', textTransform:'uppercase', textAlign:'center', marginBottom:'16px' }}>
-          {t('result.eyebrow', { role, experience })}
+          {t('result.eyebrow', { role: roleText, experience })}
         </div>
 
         {/* Big percentile */}
@@ -217,7 +252,7 @@ export default function ResultSection({ salary, role, experience, company, isLog
           </span>
         </div>
         <div style={{ textAlign:'center', fontSize:'13px', color:'rgba(255,255,255,0.4)', marginBottom:'24px' }}>
-          {t('result.among', { role, experience })}
+          {t('result.among', { role: roleText, experience })}
         </div>
 
         {/* 3 stat boxes */}
@@ -279,7 +314,7 @@ export default function ResultSection({ salary, role, experience, company, isLog
             {t('result.topCoHead')}
           </div>
           <div style={{ fontSize:'13px', color:'rgba(255,255,255,0.55)', marginBottom:'16px' }}>
-            {t('result.topCoSub', { role })}
+            {t('result.topCoSub', { role: roleText })}
           </div>
           <div style={{ display:'flex', flexDirection:'column', gap:'8px' }}>
             {result.topCompanies.map((co, i) => (
@@ -302,7 +337,7 @@ export default function ResultSection({ salary, role, experience, company, isLog
                 </div>
                 <div style={{ flex:1, minWidth:0 }}>
                   <div style={{ fontSize:'14px', fontWeight:700, color:'#fff', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{co.name}</div>
-                  <div style={{ fontSize:'11px', color:'rgba(255,255,255,0.4)', marginTop:'2px' }}>{role} · {t('result.median')}</div>
+                  <div style={{ fontSize:'11px', color:'rgba(255,255,255,0.4)', marginTop:'2px' }}>{roleText} · {t('result.median')}</div>
                 </div>
                 <div style={{ textAlign:'right', flexShrink:0 }}>
                   <div style={{ fontSize:'14px', fontWeight:700, color:'#fff', whiteSpace:'nowrap' }}>{co.median}M</div>
@@ -346,10 +381,10 @@ export default function ResultSection({ salary, role, experience, company, isLog
               </span>
             </div>
             <div style={{ fontSize:'21px', fontWeight:900, color:'#fff', lineHeight:1.2, letterSpacing:'-.01em', marginBottom:'8px' }}>
-              {t(headKey, { role })}
+              {t(headKey, { role: roleText })}
             </div>
             <div style={{ fontSize:'13px', color:'rgba(255,255,255,0.55)', marginBottom:'16px' }}>
-              {t(subKey, { count: total, role })}
+              {t(subKey, { count: total, role: roleText })}
             </div>
             <div style={{ display:'flex', flexDirection:'column' }}>
               {shown.map((job, i) => {
@@ -401,7 +436,7 @@ export default function ResultSection({ salary, role, experience, company, isLog
         <div style={{ marginTop:'20px', background:'rgba(255,255,255,0.03)', border:'1px solid rgba(255,255,255,0.08)',
           borderRadius:'14px', padding:'20px', textAlign:'center' }}>
           <div style={{ fontSize:'14px', fontWeight:700, color:'#fff', marginBottom:'4px' }}>{t('result.jobsEmptyHead')}</div>
-          <div style={{ fontSize:'12px', color:'rgba(255,255,255,0.4)', marginBottom:'14px' }}>{t('result.jobsEmptySub', { role })}</div>
+          <div style={{ fontSize:'12px', color:'rgba(255,255,255,0.4)', marginBottom:'14px' }}>{t('result.jobsEmptySub', { role: roleText })}</div>
           <button onClick={goToJobs} style={{ width:'100%', background:'rgba(255,68,0,0.1)', color:'#ff4400',
             border:'1px solid rgba(255,68,0,0.25)', borderRadius:'12px', padding:'13px', fontSize:'13px', fontWeight:700,
             cursor:'pointer', fontFamily:"'Be Vietnam Pro',sans-serif" }}>

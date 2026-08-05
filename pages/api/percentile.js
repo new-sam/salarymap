@@ -1,6 +1,8 @@
 import supabase from '../../lib/supabaseAdmin';
 import { excludeSuspicious } from '../../lib/salaryQuality';
 import { inSalaryRange } from '../../lib/salaryStats';
+import { submitRolePool } from '../../constants/jobs';
+import { seedTopCompanies } from '../../lib/seedCompanies';
 
 function median(arr) {
   const s = [...arr].sort((a, b) => a - b);
@@ -18,27 +20,6 @@ function removeOutliers(salaries) {
   const upper = q3 + 1.5 * iqr;
   return sorted.filter(s => s >= lower && s <= upper);
 }
-
-// Base medians (triệu VND/mo) per role × experience index [<1yr, 1-2, 3-4, 5-7, 8+]
-const BASE_MEDIANS = {
-  'Backend':   [25, 40, 75, 110, 140],
-  'Frontend':  [22, 36, 68, 100, 130],
-  'Mobile':    [24, 38, 72, 105, 135],
-  'Data · AI': [28, 45, 80, 115, 145],
-  'DevOps':    [26, 42, 78, 112, 138],
-  'PM · PO':   [22, 35, 65,  95, 125],
-  'Design':    [20, 32, 60,  88, 115],
-  'QA':        [18, 28, 50,  72,  95],
-};
-const EXP_IDX = ['Under 1yr', '1–2 yrs', '3–4 yrs', '5–7 yrs', '8+ yrs'];
-const SEED_COMPANIES = [
-  { name: 'Grab Vietnam',    domain: 'grab.com',            mult: 1.28 },
-  { name: 'Sky Mavis',       domain: 'skymavis.com',        mult: 1.35 },
-  { name: 'VNG Corporation', domain: 'vng.com.vn',          mult: 1.18 },
-  { name: 'Shopee Vietnam',  domain: 'shopee.vn',           mult: 1.12 },
-  { name: 'Momo',            domain: 'momo.vn',             mult: 1.10 },
-  { name: 'KMS Technology',  domain: 'kms-technology.com',  mult: 1.06 },
-];
 
 const DOMAIN_MAP = {
   'grab vietnam': 'grab.com',
@@ -77,31 +58,6 @@ function buildTopCompanies(realCompanies, userSalary, userCompany) {
   return candidates;
 }
 
-function seedTopCompanies(role, experience, userSalary, userCompany) {
-  const baseArr = BASE_MEDIANS[role] || BASE_MEDIANS['Backend'];
-  const expI = EXP_IDX.indexOf(experience);
-  const base = baseArr[expI >= 0 ? expI : 2];
-  const real = SEED_COMPANIES.map(c => ({
-    name: c.name,
-    domain: c.domain,
-    median: Math.round(base * c.mult),
-  }));
-  const top = buildTopCompanies(real, userSalary, userCompany);
-  // Guarantee 2-3 items: if user's company knocked out too many, add back some
-  if (top.length < 2) {
-    const extras = real
-      .filter(c => !top.find(t => t.name === c.name))
-      .sort((a, b) => b.median - a.median)
-      .slice(0, 3 - top.length)
-      .map(c => ({
-        ...c,
-        premiumPct: Math.max(1, Math.round((c.median - userSalary) / userSalary * 100)),
-      }));
-    top.push(...extras);
-  }
-  return top.slice(0, 3);
-}
-
 // Paginate through all rows (Supabase caps at 1000 per request)
 async function fetchAll(query) {
   const PAGE = 1000;
@@ -125,11 +81,15 @@ export default async function handler(req, res) {
 
   const sal = parseInt(salary);
 
-  // Fetch all submissions for this role + experience (including company)
+  // Fetch submissions for this role + experience — 대분류 풀(legacy 포함)을 한 번에 조회,
+  // 소분류 표본이 5건 이상이면 소분류끼리, 아니면 대분류 합산으로 비교.
   // 슬라이더 기본값(62) 미입력 통과 의심값은 공개 통계에서 제외
-  const data = excludeSuspicious(await fetchAll(
-    supabase.from('submissions').select('salary, company, created_at').eq('role', role).eq('experience', experience)
+  const pool = submitRolePool(role);
+  const poolRows = excludeSuspicious(await fetchAll(
+    supabase.from('submissions').select('role, salary, company, created_at').in('role', pool).eq('experience', experience)
   ), experience).filter(r => inSalaryRange(r.salary));
+  const exactRows = poolRows.filter(r => r.role === role);
+  const data = exactRows.length >= 5 ? exactRows : poolRows;
 
   if (!data || data.length < 5) {
     const topCompanies = seedTopCompanies(role, experience, sal, company || '');
@@ -166,8 +126,9 @@ export default async function handler(req, res) {
   }
 
   // Build companiesPayingMore: all companies for this role with median > user salary
+  // (연차 무관 — 회사 단위 비교라 대분류 풀 기준)
   const allRoleSubs = excludeSuspicious(await fetchAll(
-    supabase.from('submissions').select('company, salary, experience, created_at').eq('role', role)
+    supabase.from('submissions').select('company, salary, experience, created_at').in('role', pool)
   ));
 
   const byCoAll = {};
