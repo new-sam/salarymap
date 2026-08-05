@@ -486,13 +486,24 @@ const invitedSubject = (company) => ({
 // 순서대로 첫 매치 사용 — 접두어가 겹치는 항목(coldmail-ktc*)은 구체적인 것을 앞에 둘 것.
 export const COLDMAIL_TEMPLATES = [
   {
+    match: /^coldmail-ktc-cv-remind1-0805/,
+    subject: {
+      vi: '{{name}} ơi, những người nhận hồ sơ trước bạn đã có trung bình 2,1 lời mời việc làm',
+      ko: '{{name}}님, 프로필을 먼저 받아간 분들은 이미 평균 2.1건의 오퍼를 받았습니다',
+      en: '{{name}}, people who claimed before you already have 2.1 job offers on average',
+    },
+    desc: 'CV 클레임 리마인드 8/5분(8/4 신규 719 코호트 미클릭 607): 제목만 "먼저/이미 받았다" FOMO 강조로 변형 — 8/4 remind1 제목과 코호트별 A/B. 본문은 remind1과 동일.',
+    source: 'scripts/outreach/ktc-claim-coldmail.mjs --remind --campaign coldmail-ktc-cv-remind1-0805',
+    html: ktcClaimHtml,
+  },
+  {
     match: /^coldmail-ktc-cv-remind/,
     subject: {
       vi: '{{name}} ơi, những người đã nhận hồ sơ đang có trung bình 2,1 lời mời việc làm',
       ko: '{{name}}님, 프로필을 받아간 분들은 평균 2.1건의 오퍼를 받았습니다',
       en: '{{name}}, people who claimed their profile got 2.1 offers on average',
     },
-    desc: 'KTC 4차(CV 클레임) 리마인드 (8/4~): 원본 수신 24h+ 미클릭·미가입 리드에게 "받아간 사람들은 평균 오퍼 2.1건"(실측) 사회적 증거 훅. 본문은 클레임 양식에서 헤드라인·앞 두 문단만 교체 — 미리보기는 원양식 기준.',
+    desc: 'KTC 4차(CV 클레임) 리마인드 8/4분(8/3 코호트 미클릭 380): 원본 수신 24h+ 미클릭·미가입 리드에게 "받아간 사람들은 평균 오퍼 2.1건"(실측) 사회적 증거 훅. 본문은 클레임 양식에서 헤드라인·앞 두 문단만 교체 — 미리보기는 원양식 기준.',
     source: 'scripts/outreach/ktc-claim-coldmail.mjs --remind',
     html: ktcClaimHtml,
   },

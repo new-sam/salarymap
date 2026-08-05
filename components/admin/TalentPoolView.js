@@ -152,6 +152,7 @@ export default function TalentPoolView({ token, lang }) {
     all: 'Tất cả', fPublic: '🔓 Công khai', fTop: '🎓 Trường top', fOverseas: '🌏 Du học', fKorean: '🇰🇷 Tiếng Hàn', allWork: 'Tất cả hình thức',
     badgePublic: 'Công khai', lblGroup: 'Nhóm ngành', lblRole: 'Vị trí', lblCond: 'Điều kiện',
     eliteBtn: 'Ứng viên xuất sắc', aiFillAll: 'Điền AI tất cả', batchStop: 'Dừng', batchDone: 'Hoàn tất',
+    filterBtn: 'Bộ lọc', reset: 'Đặt lại', done: 'Xong', lblLevel: 'Kinh nghiệm', lblWork: 'Hình thức',
     rowSchool: 'Học vấn', rowCareer: 'Kinh nghiệm', rowHighlights: 'Nổi bật', rowLang: 'Ngoại ngữ', rowSkills: 'Kỹ năng', rowLinks: 'Portfolio',
     topNote: 'Trường top VN', langEn: 'T.Anh', langKo: 'T.Hàn', noInfo: 'Chưa rõ', newGrad: 'Fresher',
     unknown: 'Chưa rõ', noRole: 'Chưa rõ vị trí', levelUnknown: 'Cấp bậc?', aiFill: 'Điền bằng AI', aiFilling: 'Đang phân tích…',
@@ -167,6 +168,7 @@ export default function TalentPoolView({ token, lang }) {
     all: '전체', fPublic: '🔓 공개', fTop: '🎓 명문대', fOverseas: '🌏 해외대', fKorean: '🇰🇷 한국어', allWork: '근무형태 전체',
     badgePublic: '공개', lblGroup: '직군', lblRole: '세부 직무', lblCond: '조건',
     eliteBtn: '최우수 인재', aiFillAll: 'AI 전체 채우기', batchStop: '중단', batchDone: '완료',
+    filterBtn: '필터', reset: '초기화', done: '완료', lblLevel: '경력', lblWork: '근무형태',
     rowSchool: '학력', rowCareer: '경력', rowHighlights: '주요이력', rowLang: '외국어', rowSkills: '기술', rowLinks: '포폴',
     topNote: '베트남 상위권 대학 (한국 인서울급)', langEn: '영어', langKo: '한국어', noInfo: '정보 없음', newGrad: '신입',
     unknown: '미상', noRole: '직무 미상', levelUnknown: '경력?', aiFill: 'AI 채우기', aiFilling: '분석 중…',
@@ -182,6 +184,7 @@ export default function TalentPoolView({ token, lang }) {
     all: 'All', fPublic: '🔓 Public', fTop: '🎓 Top-tier', fOverseas: '🌏 Overseas', fKorean: '🇰🇷 Korean', allWork: 'All work types',
     badgePublic: 'Public', lblGroup: 'Group', lblRole: 'Role', lblCond: 'Filters',
     eliteBtn: 'Top talent', aiFillAll: 'AI fill all', batchStop: 'Stop', batchDone: 'Done',
+    filterBtn: 'Filters', reset: 'Reset', done: 'Done', lblLevel: 'Level', lblWork: 'Work type',
     rowSchool: 'Education', rowCareer: 'Career', rowHighlights: 'Highlights', rowLang: 'Languages', rowSkills: 'Skills', rowLinks: 'Portfolio',
     topNote: 'Top-tier VN univ.', langEn: 'EN', langKo: 'KO', noInfo: 'N/A', newGrad: 'New grad',
     unknown: 'Unknown', noRole: 'No role', levelUnknown: 'Level?', aiFill: 'AI fill', aiFilling: 'Filling…',
@@ -209,6 +212,7 @@ export default function TalentPoolView({ token, lang }) {
   const [mode, setMode] = useState('pool') // 'pool' 전체 인재풀 | 'elite' 최우수 인재
   const [batch, setBatch] = useState(null) // AI 전체 채우기 진행상태 { total, done, fail } | null
   const batchCancel = useRef(false)
+  const [filterOpen, setFilterOpen] = useState(false) // 필터 모달
 
   if (loading) return <div style={{ textAlign: 'center', padding: 40, color: '#666' }}>{L.loadingPool}</div>
 
@@ -340,6 +344,27 @@ export default function TalentPoolView({ token, lang }) {
   const overseasCount = pool.filter(isOverseasR).length
   const overseasPct = pool.length ? Math.round((overseasCount / pool.length) * 100) : 0
 
+  // 필터 모달 — 활성 필터 요약(바 표시)·초기화·섹션 헬퍼
+  const activeFilters = []
+  if (groupFilter !== 'all') activeFilters.push(groupFilter === 'etc' ? L.unclassified : (ROLE_GROUPS.find(g => g.key === groupFilter)?.label[langKey] || groupFilter))
+  if (posFilter !== 'all') activeFilters.push(subRoles.find(sr => sr.value === posFilter)?.label || posFilter || L.unclassified)
+  if (levelFilter !== 'all') activeFilters.push(levelLabel(LEVELS.find(l => l.key === levelFilter)))
+  if (publicOnly) activeFilters.push(L.fPublic)
+  if (topOnly) activeFilters.push(L.fTop)
+  if (overseasOnly) activeFilters.push(L.fOverseas)
+  if (koreanOnly) activeFilters.push(L.fKorean)
+  if (workFilter !== 'all') activeFilters.push(workFilter)
+  function resetFilters() {
+    setGroupFilter('all'); setPosFilter('all'); setLevelFilter('all'); setWorkFilter('all')
+    setPublicOnly(false); setTopOnly(false); setOverseasOnly(false); setKoreanOnly(false)
+  }
+  const fSection = (label, node) => (
+    <div style={{ marginBottom: 18 }}>
+      <div style={{ fontSize: 11, fontWeight: 800, color: '#9CA3AF', marginBottom: 8, letterSpacing: 0.2 }}>{label}</div>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 7 }}>{node}</div>
+    </div>
+  )
+
   function downloadCsv() {
     const headers = ['Name', 'Email', 'Public', 'Position', 'Level', 'YoE (months)', 'University', 'Top-tier', 'Overseas', 'Major', 'Grad Year', 'Companies', 'Korean', 'English', 'Skills', 'Location', 'Work Type', 'Salary Min', 'Salary Max', 'Currency', 'Resume URL', 'Updated']
     const rows = filtered.map(r => {
@@ -370,9 +395,6 @@ export default function TalentPoolView({ token, lang }) {
     transition: 'all 0.15s',
   })
   const cntStyle = { color: '#9CA3AF', fontWeight: 500 }
-
-  const selectStyle = { padding: '6px 10px', border: '1px solid #E5E8EB', borderRadius: 8, fontSize: 12.5, color: '#374151', background: '#fff', cursor: 'pointer', fontWeight: 600 }
-  const divider = <span style={{ width: 1, height: 18, background: '#E5E8EB', margin: '0 2px' }} />
 
   return (
     <>
@@ -438,12 +460,32 @@ export default function TalentPoolView({ token, lang }) {
         </div>
       </div>
 
-      {/* 필터 패널: 직군(대분류 → 세부 드릴다운) · 조건(경력/스펙/근무형태) — 행 라벨로 위계 표시 */}
-      <div style={{ marginBottom: 14, padding: '2px 14px', background: '#FAFBFC', border: '1px solid #EEF0F2', borderRadius: 10 }}>
-        {[
-          {
-            key: 'group', label: L.lblGroup,
-            node: (
+      {/* 필터 바: 모달 트리거 + 활성 필터 요약 — 인라인 3단 칩이 산만하다는 피드백(8/5)으로 모달化 */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14, minWidth: 0 }}>
+        <button onClick={() => setFilterOpen(true)}
+          style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '7px 14px', border: `1px solid ${activeFilters.length ? '#ff6000' : '#E5E8EB'}`, borderRadius: 8, fontSize: 13, fontWeight: 700, background: '#fff', color: activeFilters.length ? '#ff6000' : '#374151', cursor: 'pointer', flexShrink: 0 }}>
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2"><path d="M22 3H2l8 9.46V19l4 2v-8.54L22 3z" /></svg>
+          {L.filterBtn}
+          {activeFilters.length > 0 && <span style={{ background: '#ff6000', color: '#fff', borderRadius: 999, fontSize: 10.5, fontWeight: 800, padding: '1px 7px' }}>{activeFilters.length}</span>}
+        </button>
+        {activeFilters.length > 0 && (
+          <>
+            <span style={{ fontSize: 12.5, color: '#6B7280', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: 0 }}>{activeFilters.join(' · ')}</span>
+            <button onClick={resetFilters} style={{ border: 'none', background: 'none', cursor: 'pointer', fontSize: 12, fontWeight: 600, color: '#9CA3AF', padding: 0, flexShrink: 0 }}>{L.reset}</button>
+          </>
+        )}
+      </div>
+
+      {/* 필터 모달: 직군 → 세부 직무 → 경력 → 스펙 → 근무형태 (클릭 즉시 반영) */}
+      {filterOpen && (
+        <div onClick={() => setFilterOpen(false)} style={{ position: 'fixed', inset: 0, background: 'rgba(15,23,42,0.45)', zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
+          <div onClick={e => e.stopPropagation()} style={{ background: '#fff', borderRadius: 14, width: 600, maxWidth: '100%', maxHeight: '85vh', overflowY: 'auto', padding: '20px 22px', boxShadow: '0 12px 40px rgba(15,23,42,0.2)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 18 }}>
+              <div style={{ fontSize: 16, fontWeight: 800 }}>{L.filterBtn} <span style={{ fontSize: 12.5, fontWeight: 600, color: '#9CA3AF' }}>· {filtered.length}{L.people}</span></div>
+              <button onClick={() => setFilterOpen(false)} style={{ border: 'none', background: 'none', cursor: 'pointer', fontSize: 18, color: '#9CA3AF', padding: 0, lineHeight: 1 }}>×</button>
+            </div>
+
+            {fSection(L.lblGroup, (
               <>
                 <button onClick={() => { setGroupFilter('all'); setPosFilter('all') }} style={chip(groupFilter === 'all')}>{L.all} <span style={cntStyle}>{pool.length}</span></button>
                 {ROLE_GROUPS.filter(g => groupCounts[g.key]).map(g => (
@@ -457,11 +499,9 @@ export default function TalentPoolView({ token, lang }) {
                   </button>
                 )}
               </>
-            ),
-          },
-          subRoles.length > 1 && {
-            key: 'role', label: L.lblRole,
-            node: (
+            ))}
+
+            {subRoles.length > 1 && fSection(L.lblRole, (
               <>
                 <button onClick={() => setPosFilter('all')} style={chip(posFilter === 'all')}>{L.all}</button>
                 {subRoles.map(sr => (
@@ -470,11 +510,9 @@ export default function TalentPoolView({ token, lang }) {
                   </button>
                 ))}
               </>
-            ),
-          },
-          {
-            key: 'cond', label: L.lblCond,
-            node: (
+            ))}
+
+            {fSection(L.lblLevel, (
               <>
                 <button onClick={() => setLevelFilter('all')} style={chip(levelFilter === 'all')}>{L.all}</button>
                 {LEVELS.map(l => {
@@ -482,27 +520,36 @@ export default function TalentPoolView({ token, lang }) {
                   if (count === 0) return null
                   return <button key={l.key} onClick={() => setLevelFilter(l.key)} style={chip(levelFilter === l.key)}>{levelLabel(l)} <span style={cntStyle}>{count}</span></button>
                 })}
-                {divider}
+              </>
+            ))}
+
+            {fSection(L.lblCond, (
+              <>
                 <button onClick={() => setPublicOnly(v => !v)} style={chip(publicOnly)}>{L.fPublic} <span style={cntStyle}>{publicCount}</span></button>
                 {topTierCount > 0 && <button onClick={() => setTopOnly(v => !v)} style={chip(topOnly)}>{L.fTop} <span style={cntStyle}>{topTierCount}</span></button>}
                 {overseasCount > 0 && <button onClick={() => setOverseasOnly(v => !v)} style={chip(overseasOnly)}>{L.fOverseas} <span style={cntStyle}>{overseasCount}</span></button>}
                 {koreanCount > 0 && <button onClick={() => setKoreanOnly(v => !v)} style={chip(koreanOnly)}>{L.fKorean} <span style={cntStyle}>{koreanCount}</span></button>}
-                {workTypes.length > 0 && (
-                  <select value={workFilter} onChange={e => setWorkFilter(e.target.value)} style={{ ...selectStyle, marginLeft: 'auto' }}>
-                    <option value="all">{L.allWork}</option>
-                    {workTypes.map(w => <option key={w} value={w}>{w} ({pool.filter(r => r.work_type === w).length})</option>)}
-                  </select>
-                )}
               </>
-            ),
-          },
-        ].filter(Boolean).map((row, i) => (
-          <div key={row.key} style={{ display: 'flex', alignItems: 'center', gap: 7, flexWrap: 'wrap', padding: '10px 0', borderTop: i > 0 ? '1px solid #F0F2F4' : 'none' }}>
-            <span style={{ flexShrink: 0, minWidth: vi ? 74 : 52, fontSize: 11, fontWeight: 800, color: '#9CA3AF', letterSpacing: 0.2 }}>{row.label}</span>
-            {row.node}
+            ))}
+
+            {workTypes.length > 0 && fSection(L.lblWork, (
+              <>
+                <button onClick={() => setWorkFilter('all')} style={chip(workFilter === 'all')}>{L.all}</button>
+                {workTypes.map(w => (
+                  <button key={w} onClick={() => setWorkFilter(w)} style={chip(workFilter === w)}>
+                    {w} <span style={cntStyle}>{pool.filter(r => r.work_type === w).length}</span>
+                  </button>
+                ))}
+              </>
+            ))}
+
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 2 }}>
+              <button onClick={resetFilters} style={{ padding: '8px 16px', border: '1px solid #E5E8EB', borderRadius: 8, fontSize: 13, background: '#fff', color: '#6B7280', cursor: 'pointer', fontWeight: 600 }}>{L.reset}</button>
+              <button onClick={() => setFilterOpen(false)} style={{ padding: '8px 18px', border: 'none', borderRadius: 8, fontSize: 13, background: '#ff6000', color: '#fff', cursor: 'pointer', fontWeight: 700 }}>{L.done} ({filtered.length})</button>
+            </div>
           </div>
-        ))}
-      </div>
+        </div>
+      )}
 
       {/* 인재 카드 그리드 (3열 고정) */}
       <div className="adm-m-1col" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 14 }}>

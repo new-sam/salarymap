@@ -94,9 +94,10 @@ const remindifyKo = (tpl) => swap(tpl, [
 let template = readFileSync(TEMPLATE, 'utf8')
 if (remind) template = lang === 'ko' ? remindifyKo(template) : remindifyVi(template)
 const subject = (lead) => {
+  // 8/5 제목 변형: "이미/먼저 받았다" 강조(유저 지시) — 8/4 remind1 제목과 A/B 비교는 캠페인명 날짜분리로.
   if (remind) return lang === 'ko'
-    ? `${lead.ten}님, 프로필을 받아간 분들은 평균 2.1건의 오퍼를 받았습니다`
-    : `${lead.ten} ơi, những người đã nhận hồ sơ đang có trung bình 2,1 lời mời việc làm`
+    ? `${lead.ten}님, 프로필을 먼저 받아간 분들은 이미 평균 2.1건의 오퍼를 받았습니다`
+    : `${lead.ten} ơi, những người nhận hồ sơ trước bạn đã có trung bình 2,1 lời mời việc làm`
   return lang === 'ko'
     ? `${lead.ten}님, 회원님의 ${lead.position} 프로필이 FYI에 준비되어 있습니다`
     : `${lead.ten} ơi, hồ sơ ${lead.position} của bạn đã sẵn sàng trên FYI`
