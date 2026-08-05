@@ -151,7 +151,7 @@ export default function TalentPoolView({ token, lang }) {
     searchPh: 'Tên, vị trí, công ty, trường, kỹ năng...', csv: 'Tải CSV',
     all: 'Tất cả', fPublic: '🔓 Công khai', fTop: '🎓 Trường top', fOverseas: '🌏 Du học', fKorean: '🇰🇷 Tiếng Hàn', allWork: 'Tất cả hình thức',
     badgePublic: 'Công khai', lblGroup: 'Nhóm ngành', lblRole: 'Vị trí', lblCond: 'Điều kiện',
-    eliteBtn: 'Ứng viên xuất sắc',
+    eliteBtn: 'Ứng viên xuất sắc', aiFillAll: 'Điền AI tất cả', batchStop: 'Dừng', batchDone: 'Hoàn tất',
     rowSchool: 'Học vấn', rowCareer: 'Kinh nghiệm', rowHighlights: 'Nổi bật', rowLang: 'Ngoại ngữ', rowSkills: 'Kỹ năng', rowLinks: 'Portfolio',
     topNote: 'Trường top VN', langEn: 'T.Anh', langKo: 'T.Hàn', noInfo: 'Chưa rõ', newGrad: 'Fresher',
     unknown: 'Chưa rõ', noRole: 'Chưa rõ vị trí', levelUnknown: 'Cấp bậc?', aiFill: 'Điền bằng AI', aiFilling: 'Đang phân tích…',
@@ -166,7 +166,7 @@ export default function TalentPoolView({ token, lang }) {
     searchPh: '이름, 직무, 회사, 학교, 스킬...', csv: 'CSV 다운로드',
     all: '전체', fPublic: '🔓 공개', fTop: '🎓 명문대', fOverseas: '🌏 해외대', fKorean: '🇰🇷 한국어', allWork: '근무형태 전체',
     badgePublic: '공개', lblGroup: '직군', lblRole: '세부 직무', lblCond: '조건',
-    eliteBtn: '최우수 인재',
+    eliteBtn: '최우수 인재', aiFillAll: 'AI 전체 채우기', batchStop: '중단', batchDone: '완료',
     rowSchool: '학력', rowCareer: '경력', rowHighlights: '주요이력', rowLang: '외국어', rowSkills: '기술', rowLinks: '포폴',
     topNote: '베트남 상위권 대학 (한국 인서울급)', langEn: '영어', langKo: '한국어', noInfo: '정보 없음', newGrad: '신입',
     unknown: '미상', noRole: '직무 미상', levelUnknown: '경력?', aiFill: 'AI 채우기', aiFilling: '분석 중…',
@@ -181,7 +181,7 @@ export default function TalentPoolView({ token, lang }) {
     searchPh: 'Name, role, company, school, skills...', csv: 'Download CSV',
     all: 'All', fPublic: '🔓 Public', fTop: '🎓 Top-tier', fOverseas: '🌏 Overseas', fKorean: '🇰🇷 Korean', allWork: 'All work types',
     badgePublic: 'Public', lblGroup: 'Group', lblRole: 'Role', lblCond: 'Filters',
-    eliteBtn: 'Top talent',
+    eliteBtn: 'Top talent', aiFillAll: 'AI fill all', batchStop: 'Stop', batchDone: 'Done',
     rowSchool: 'Education', rowCareer: 'Career', rowHighlights: 'Highlights', rowLang: 'Languages', rowSkills: 'Skills', rowLinks: 'Portfolio',
     topNote: 'Top-tier VN univ.', langEn: 'EN', langKo: 'KO', noInfo: 'N/A', newGrad: 'New grad',
     unknown: 'Unknown', noRole: 'No role', levelUnknown: 'Level?', aiFill: 'AI fill', aiFilling: 'Filling…',
@@ -207,6 +207,8 @@ export default function TalentPoolView({ token, lang }) {
   const [publicOnly, setPublicOnly] = useState(false)
   const [parsingId, setParsingId] = useState(null)
   const [mode, setMode] = useState('pool') // 'pool' 전체 인재풀 | 'elite' 최우수 인재
+  const [batch, setBatch] = useState(null) // AI 전체 채우기 진행상태 { total, done, fail } | null
+  const batchCancel = useRef(false)
 
   if (loading) return <div style={{ textAlign: 'center', padding: 40, color: '#666' }}>{L.loadingPool}</div>
 
@@ -235,6 +237,50 @@ export default function TalentPoolView({ token, lang }) {
     } finally {
       setParsingId(null)
     }
+  }
+
+  // AI 전체 채우기 — 미파싱(경력/요약 빈) 인재를 동시 3개씩 순회 파싱.
+  // 서버 배치 대신 클라이언트 순회인 이유: 파싱 1건당 5~15초라 서버리스 타임아웃에 걸린다.
+  // 실패자는 API가 resume_summary.parse_failed 로 마킹 → 다음 배치/카드 버튼에서 제외.
+  const needsParse = (r) => {
+    const hasCompany = asExperiences(r.experiences).some(e => e?.company)
+    const bullets = r.resume_summary?.bullets
+    return !hasCompany || !Array.isArray(bullets) || bullets.length === 0
+  }
+  const parseTargets = pool.filter(r => needsParse(r) && !r.resume_summary?.parse_failed)
+
+  async function runBatchParse() {
+    if (batch) { batchCancel.current = true; return } // 실행 중 재클릭 = 중단
+    batchCancel.current = false
+    const targets = parseTargets.map(r => r.id)
+    const st = { total: targets.length, done: 0, fail: 0 }
+    setBatch({ ...st })
+    let idx = 0
+    async function worker() {
+      while (idx < targets.length && !batchCancel.current) {
+        const userId = targets[idx++]
+        try {
+          const res = await fetch('/api/admin/parse-resumes', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+            body: JSON.stringify({ userId, batch: true }),
+          })
+          if (res.ok) {
+            const parsed = await res.json()
+            mutate(prev => prev.map(r => r.id === userId ? { ...r, ...parsed, skills: parsed.skills } : r), false)
+          } else {
+            st.fail++
+            mutate(prev => prev.map(r => r.id === userId ? { ...r, resume_summary: { ...(r.resume_summary || {}), parse_failed: true } } : r), false)
+          }
+        } catch {
+          st.fail++
+        }
+        st.done++
+        setBatch({ ...st })
+      }
+    }
+    await Promise.all(Array.from({ length: Math.min(3, targets.length) }, worker))
+    setBatch(null)
   }
 
   // 공고 추천 이력을 인재별로 묶는다 (카드 버튼 라벨 + 모달 히스토리용)
@@ -377,6 +423,14 @@ export default function TalentPoolView({ token, lang }) {
             placeholder={L.searchPh}
             style={{ padding: '7px 11px', border: '1px solid #d1d5db', borderRadius: 8, fontSize: 13, width: 240 }}
           />
+          {(parseTargets.length > 0 || batch) && (
+            <button onClick={runBatchParse}
+              style={{ padding: '8px 14px', border: '1px solid #ff6000', borderRadius: 8, fontSize: 13, background: batch ? '#FFF6F0' : '#fff', color: '#ff6000', cursor: 'pointer', fontWeight: 700, whiteSpace: 'nowrap' }}>
+              {batch
+                ? `${batch.done}/${batch.total}${batch.fail ? ` · ${L.parseFail} ${batch.fail}` : ''} — ${L.batchStop}`
+                : `${L.aiFillAll} (${parseTargets.length})`}
+            </button>
+          )}
           <button onClick={downloadCsv}
             style={{ padding: '8px 16px', border: 'none', borderRadius: 8, fontSize: 13, background: '#ff6000', color: '#fff', cursor: 'pointer', fontWeight: 600, whiteSpace: 'nowrap' }}>
             {L.csv}
@@ -598,7 +652,9 @@ function TalentCard({ r, L, vi, ko, userRecs = [], onRecommend, onReparse, parsi
                 </button>
               )
             })()}
-            {(companies.length === 0 || bullets.length === 0) && (
+            {summary.parse_failed ? (
+              <span style={{ fontSize: 11.5, fontWeight: 600, color: '#DC2626' }}>{L.parseFail}</span>
+            ) : (companies.length === 0 || bullets.length === 0) && (
               <button onClick={onReparse} disabled={parsing}
                 title={L.aiTitle}
                 style={{ border: 'none', background: 'none', cursor: parsing ? 'wait' : 'pointer', fontSize: 11.5, fontWeight: 600, color: parsing ? '#9CA3AF' : '#6B7280', padding: 0 }}>
