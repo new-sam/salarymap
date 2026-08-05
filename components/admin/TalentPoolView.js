@@ -50,9 +50,16 @@ function topTitle(r, exps) {
 
 // position(소분류 canonical 값) → 대분류 그룹 키. 검색필터/공고폼과 같은 ROLE_GROUPS 체계.
 // 파서가 남긴 레거시 값('AI/Data' 등)과 빈값은 매핑에 없어 'etc'(미분류)로 떨어진다.
+// 어드민 인재풀 전용 대분류 — ROLE_GROUPS 기반이되 '비 IT · 비즈니스'는 한 칩에 마케팅~통번역이
+// 다 뭉쳐 있어 역할별로 쪼갠다(8/5 유저 요청). constants 는 검색필터/공고폼과 공유라 안 건드린다.
+const ADMIN_GROUPS = ROLE_GROUPS.flatMap(g => g.key === 'business'
+  ? g.roles.map(r => ({ key: `biz:${r.value}`, label: r.label, roles: [r.value] }))
+  : [{ key: g.key, label: g.label, roles: g.roles.map(r => r.value) }])
 const ROLE_TO_GROUP = {}
-for (const g of ROLE_GROUPS) for (const r of g.roles) ROLE_TO_GROUP[r.value] = g.key
+for (const g of ADMIN_GROUPS) for (const v of g.roles) ROLE_TO_GROUP[v] = g.key
 ROLE_TO_GROUP['AI/Data'] = 'data' // 구 파서 enum — 데이터 그룹으로 흡수
+const ROLE_LABELS = {}
+for (const g of ROLE_GROUPS) for (const r of g.roles) ROLE_LABELS[r.value] = r.label
 const groupOfPosition = p => ROLE_TO_GROUP[p] || 'etc'
 
 // ── 최우수 인재풀 (모달) ──────────────────────────────────────────────
@@ -200,7 +207,7 @@ export default function TalentPoolView({ token, lang }) {
   const { data: allJobs } = useAdmin('/api/jobs', token)
   const [recTarget, setRecTarget] = useState(null)
   const [search, setSearch] = useState('')
-  const [groupFilter, setGroupFilter] = useState('all') // 대분류(ROLE_GROUPS key | 'etc')
+  const [groupSel, setGroupSel] = useState([]) // 대분류 다중선택(ADMIN_GROUPS key | 'etc'), []=전체
   const [posFilter, setPosFilter] = useState('all')     // 세부 직무(position 값, ''=빈값)
   const [levelFilter, setLevelFilter] = useState('all')
   const [workFilter, setWorkFilter] = useState('all')
@@ -299,26 +306,30 @@ export default function TalentPoolView({ token, lang }) {
     const g = groupOfPosition(r.position)
     groupCounts[g] = (groupCounts[g] || 0) + 1
   }
-  const roleCounts = {} // 선택된 대분류 안의 position별 카운트
-  if (groupFilter !== 'all') {
+  const roleCounts = {} // 선택된 대분류들 안의 position별 카운트
+  if (groupSel.length > 0) {
     for (const r of pool) {
-      if (groupOfPosition(r.position) !== groupFilter) continue
+      if (!groupSel.includes(groupOfPosition(r.position))) continue
       const p = r.position || ''
       roleCounts[p] = (roleCounts[p] || 0) + 1
     }
   }
-  // 세부 직무 칩: 그룹 정의 순서 우선, 정의에 없는 값(레거시/빈값)은 건수순으로 뒤에
-  const groupDef = ROLE_GROUPS.find(g => g.key === groupFilter)
-  const subRoles = groupFilter === 'all' ? [] : [
-    ...(groupDef?.roles || []).filter(r => roleCounts[r.value]).map(r => ({ value: r.value, label: r.label[langKey] })),
+  // 세부 직무 칩: 선택된 그룹들의 정의 순서 우선, 정의에 없는 값(레거시/빈값)은 건수순으로 뒤에
+  const selRoleValues = ADMIN_GROUPS.filter(g => groupSel.includes(g.key)).flatMap(g => g.roles)
+  const subRoles = groupSel.length === 0 ? [] : [
+    ...selRoleValues.filter(v => roleCounts[v]).map(v => ({ value: v, label: ROLE_LABELS[v]?.[langKey] || v })),
     ...Object.keys(roleCounts)
-      .filter(p => !(groupDef?.roles || []).some(r => r.value === p))
+      .filter(p => !selRoleValues.includes(p))
       .sort((a, b) => roleCounts[b] - roleCounts[a])
       .map(p => ({ value: p, label: p || L.unclassified })),
   ]
+  function toggleGroup(k) {
+    setPosFilter('all') // 그룹 선택이 바뀌면 세부 직무 선택은 무효
+    setGroupSel(s => s.includes(k) ? s.filter(x => x !== k) : [...s, k])
+  }
 
   const filtered = pool.filter(r => {
-    if (groupFilter !== 'all' && groupOfPosition(r.position) !== groupFilter) return false
+    if (groupSel.length > 0 && !groupSel.includes(groupOfPosition(r.position))) return false
     if (posFilter !== 'all' && (r.position || '') !== posFilter) return false
     if (levelFilter !== 'all' && levelOf(r.yoe_months) !== levelFilter) return false
     if (workFilter !== 'all' && (r.work_type || '') !== workFilter) return false
@@ -346,7 +357,7 @@ export default function TalentPoolView({ token, lang }) {
 
   // 필터 모달 — 활성 필터 요약(바 표시)·초기화·섹션 헬퍼
   const activeFilters = []
-  if (groupFilter !== 'all') activeFilters.push(groupFilter === 'etc' ? L.unclassified : (ROLE_GROUPS.find(g => g.key === groupFilter)?.label[langKey] || groupFilter))
+  for (const k of groupSel) activeFilters.push(k === 'etc' ? L.unclassified : (ADMIN_GROUPS.find(g => g.key === k)?.label[langKey] || k))
   if (posFilter !== 'all') activeFilters.push(subRoles.find(sr => sr.value === posFilter)?.label || posFilter || L.unclassified)
   if (levelFilter !== 'all') activeFilters.push(levelLabel(LEVELS.find(l => l.key === levelFilter)))
   if (publicOnly) activeFilters.push(L.fPublic)
@@ -355,7 +366,7 @@ export default function TalentPoolView({ token, lang }) {
   if (koreanOnly) activeFilters.push(L.fKorean)
   if (workFilter !== 'all') activeFilters.push(workFilter)
   function resetFilters() {
-    setGroupFilter('all'); setPosFilter('all'); setLevelFilter('all'); setWorkFilter('all')
+    setGroupSel([]); setPosFilter('all'); setLevelFilter('all'); setWorkFilter('all')
     setPublicOnly(false); setTopOnly(false); setOverseasOnly(false); setKoreanOnly(false)
   }
   const fSection = (label, node) => (
@@ -487,14 +498,14 @@ export default function TalentPoolView({ token, lang }) {
 
             {fSection(L.lblGroup, (
               <>
-                <button onClick={() => { setGroupFilter('all'); setPosFilter('all') }} style={chip(groupFilter === 'all')}>{L.all} <span style={cntStyle}>{pool.length}</span></button>
-                {ROLE_GROUPS.filter(g => groupCounts[g.key]).map(g => (
-                  <button key={g.key} onClick={() => { setGroupFilter(g.key); setPosFilter('all') }} style={chip(groupFilter === g.key)}>
+                <button onClick={() => { setGroupSel([]); setPosFilter('all') }} style={chip(groupSel.length === 0)}>{L.all} <span style={cntStyle}>{pool.length}</span></button>
+                {ADMIN_GROUPS.filter(g => groupCounts[g.key]).map(g => (
+                  <button key={g.key} onClick={() => toggleGroup(g.key)} style={chip(groupSel.includes(g.key))}>
                     {g.label[langKey]} <span style={cntStyle}>{groupCounts[g.key]}</span>
                   </button>
                 ))}
                 {groupCounts.etc > 0 && (
-                  <button onClick={() => { setGroupFilter('etc'); setPosFilter('all') }} style={chip(groupFilter === 'etc')}>
+                  <button onClick={() => toggleGroup('etc')} style={chip(groupSel.includes('etc'))}>
                     {L.unclassified} <span style={cntStyle}>{groupCounts.etc}</span>
                   </button>
                 )}
