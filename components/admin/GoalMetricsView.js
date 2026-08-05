@@ -29,6 +29,10 @@ export default function GoalMetricsView({ token, lang }) {
   const [ntError, setNtError] = useState('')
   const [ntLoading, setNtLoading] = useState(false)
 
+  const [phData, setPhData] = useState(null) // 프로필 사진 현황
+  const [phError, setPhError] = useState('')
+  const [phLoading, setPhLoading] = useState(false)
+
   const loadAd = useCallback(async () => {
     if (!token) return
     setAdLoading(true)
@@ -104,10 +108,30 @@ export default function GoalMetricsView({ token, lang }) {
     }
   }, [token, ko])
 
+  const loadPh = useCallback(async () => {
+    if (!token) return
+    setPhLoading(true)
+    setPhError('')
+    try {
+      const res = await fetch('/api/admin/photo-stats', { headers: { Authorization: `Bearer ${token}` } })
+      if (!res.ok) throw new Error(`(${res.status})`)
+      setPhData(await res.json())
+    } catch (e) {
+      setPhError((ko ? '불러오기 실패 ' : 'Load failed ') + e.message)
+    } finally {
+      setPhLoading(false)
+    }
+  }, [token, ko])
+
   // 광고 탭 최초 진입 시 lazy 로드
   useEffect(() => {
     if (view === 'ad' && !adData && !adLoading) loadAd()
   }, [view, adData, adLoading, loadAd])
+
+  // 프로필 사진 탭 최초 진입 시 lazy 로드
+  useEffect(() => {
+    if (view === 'photos' && !phData && !phLoading) loadPh()
+  }, [view, phData, phLoading, loadPh])
 
   // 이력서 공개 전환 탭 최초 진입 시 lazy 로드
   useEffect(() => {
@@ -142,10 +166,12 @@ export default function GoalMetricsView({ token, lang }) {
         {tabBtn('resumePublic', ko ? '이력서 공개' : 'Resume public')}
         {tabBtn('coldmail', ko ? '콜드메일 공개' : 'Cold-email public')}
         {tabBtn('nontech', ko ? '비개발 인재풀' : 'Non-tech pool')}
+        {tabBtn('photos', ko ? '프로필 사진' : 'Profile photos')}
         {tabBtn('paths', ko ? '가입 경로' : 'Signup paths')}
         {tabBtn('ad', ko ? '광고 성과' : 'Ad performance')}
       </div>
       {view === 'nontech' && <NontechPoolTab data={ntData} loading={ntLoading} error={ntError} ko={ko} lang={lang} />}
+      {view === 'photos' && <PhotoStatsTab data={phData} loading={phLoading} error={phError} ko={ko} />}
       {view === 'paths' && <SignupPathsTab data={spData} loading={spLoading} error={spError} ko={ko} />}
       {view === 'ad' && <AdTab data={adData} loading={adLoading} error={adError} ko={ko} />}
       {view === 'resumePublic' && <ResumePublicTab data={rpData} loading={rpLoading} error={rpError} ko={ko} lang={lang} onRefresh={loadRp} />}
@@ -1074,6 +1100,120 @@ function ColdmailPublicTab({ data, loading, error, ko, lang }) {
           </div>
         </>
       )}
+    </div>
+  )
+}
+
+// ============ 프로필 사진 탭 ============
+// 인재풀 사진 보유 현황 — 기업 쇼케이스 카드 품질 지표이자 사진 등록 유도 콜드메일의 베이스라인.
+// 사진은 전부 검증된 것(직접 업로드 / CV 추출·소셜 아바타는 vision 인물사진 검증 통과분).
+function PhotoStatsTab({ data, loading, error, ko }) {
+  if (loading) return <div style={{ textAlign: 'center', padding: 40, color: '#666' }}>{ko ? '불러오는 중…' : 'Loading…'}</div>
+  if (error) return <div style={{ textAlign: 'center', padding: 40, color: '#DC2626' }}>{error}</div>
+  if (!data) return null
+  const { total, withPhoto, sources, segments } = data
+  const noPhoto = total - withPhoto
+  const pct = total ? Math.round((withPhoto / total) * 100) : 0
+
+  const SOURCES = [
+    ['upload', ko ? '직접 업로드' : 'User upload'],
+    ['cv', ko ? 'CV 추출 (검증)' : 'CV extracted (verified)'],
+    ['webParse', ko ? '웹 /cv 파싱' : 'Web /cv parse'],
+    ['social', ko ? '소셜 아바타 (검증)' : 'Social avatar (verified)'],
+  ]
+  const SEGS = [
+    ['dev', ko ? '개발' : 'Tech'],
+    ['nondev', ko ? '비개발' : 'Non-tech'],
+    ['unclassified', ko ? '직군 미분류' : 'Unclassified'],
+    ['public', ko ? '공개 이력서' : 'Public resume'],
+    ['private', ko ? '비공개' : 'Private'],
+  ]
+  const maxSrc = Math.max(...SOURCES.map(([k]) => sources[k] || 0), 1)
+
+  const th = { padding: '8px 12px', textAlign: 'right', fontWeight: 600, color: '#374151', borderBottom: '2px solid #e5e7eb', fontSize: 12.5 }
+  const td = { padding: '7px 12px', textAlign: 'right', borderBottom: '1px solid #f3f4f6', fontSize: 13 }
+  const section = { background: '#fff', border: '1px solid #E5E8EB', borderRadius: 12, padding: '16px 18px' }
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+      {/* 목표 프로그레스: 전체 인재 사진 보유를 목표로 채워가는 바 */}
+      <div style={{ background: '#fff', border: '1px solid #E5E8EB', borderRadius: 12, padding: '18px 20px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 10, flexWrap: 'wrap', gap: 8 }}>
+          <div style={{ fontSize: 14, fontWeight: 800 }}>
+            {ko ? '사진 보유' : 'Photo coverage'}
+            <span style={{ fontSize: 12, fontWeight: 600, color: '#9CA3AF', marginLeft: 8 }}>{ko ? '목표: 전체 인재풀' : 'Goal: entire pool'}</span>
+          </div>
+          <div style={{ fontSize: 13, color: '#6B7280' }}>
+            <strong style={{ fontSize: 22, fontWeight: 800, color: '#15803D' }}>{pct}%</strong>
+            <span style={{ marginLeft: 10 }}><strong style={{ color: '#0F172A' }}>{withPhoto}</strong> / {total}{ko ? '명' : ''}</span>
+          </div>
+        </div>
+        <div style={{ position: 'relative', height: 22, background: '#F1F5F9', borderRadius: 999, overflow: 'hidden' }}>
+          <div style={{ width: `${Math.max(1, pct)}%`, height: '100%', background: '#15803D', borderRadius: 999, transition: 'width 0.6s ease' }} />
+          {pct >= 12 && (
+            <span style={{ position: 'absolute', top: 0, left: 10, lineHeight: '22px', fontSize: 11.5, fontWeight: 800, color: '#fff' }}>{withPhoto}</span>
+          )}
+        </div>
+        <div style={{ marginTop: 8, fontSize: 12, color: '#9CA3AF' }}>
+          {ko ? `목표까지 ${noPhoto}명 남음` : `${noPhoto} to go`}
+        </div>
+      </div>
+
+      <div style={section}>
+        <div style={{ fontSize: 14, fontWeight: 800, marginBottom: 10 }}>{ko ? '사진 출처 구성' : 'Photo sources'}</div>
+        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+          <thead>
+            <tr>
+              <th style={{ ...th, textAlign: 'left' }}>{ko ? '출처' : 'Source'}</th>
+              <th style={th}>{ko ? '인원' : 'Count'}</th>
+              <th style={{ ...th, width: '45%' }} />
+            </tr>
+          </thead>
+          <tbody>
+            {SOURCES.map(([k, label]) => (
+              <tr key={k}>
+                <td style={{ ...td, textAlign: 'left', color: '#374151' }}>{label}</td>
+                <td style={{ ...td, fontWeight: 700 }}>{sources[k] || 0}</td>
+                <td style={td}>
+                  <div style={{ width: `${Math.max(2, ((sources[k] || 0) / maxSrc) * 100)}%`, height: 14, background: '#0F172A', opacity: 0.75, borderRadius: 3, marginLeft: 'auto' }} />
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      <div style={section}>
+        <div style={{ fontSize: 14, fontWeight: 800, marginBottom: 10 }}>{ko ? '세그먼트별 보유율' : 'Coverage by segment'}</div>
+        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+          <thead>
+            <tr>
+              <th style={{ ...th, textAlign: 'left' }}>{ko ? '세그먼트' : 'Segment'}</th>
+              <th style={th}>{ko ? '사진 있음' : 'With photo'}</th>
+              <th style={th}>{ko ? '전체' : 'Total'}</th>
+              <th style={th}>{ko ? '보유율' : 'Rate'}</th>
+              <th style={{ ...th, width: '38%' }} />
+            </tr>
+          </thead>
+          <tbody>
+            {SEGS.map(([k, label]) => {
+              const s = segments[k] || { total: 0, withPhoto: 0 }
+              const rate = s.total ? Math.round((s.withPhoto / s.total) * 100) : 0
+              return (
+                <tr key={k}>
+                  <td style={{ ...td, textAlign: 'left', color: '#374151' }}>{label}</td>
+                  <td style={{ ...td, fontWeight: 700 }}>{s.withPhoto}</td>
+                  <td style={{ ...td, color: '#8B95A1' }}>{s.total}</td>
+                  <td style={{ ...td, fontWeight: 700 }}>{rate}%</td>
+                  <td style={td}>
+                    <div style={{ width: `${Math.max(2, rate)}%`, height: 14, background: '#0D9488', opacity: 0.75, borderRadius: 3, marginLeft: 'auto' }} />
+                  </td>
+                </tr>
+              )
+            })}
+          </tbody>
+        </table>
+      </div>
     </div>
   )
 }
