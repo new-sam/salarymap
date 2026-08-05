@@ -147,11 +147,16 @@ ${c.title ? `채용하는 자리: ${c.title}\n` : ''}
 ## 요건
 ${c.requirements.map((r, i) => `${i + 1}. ${r}`).join('\n')}
 
+${c.preferred.length ? `## 우대사항\n${c.preferred.map((r) => `- ${r}`).join('\n')}\n` : ''}
 ## 후보
-${rows.map((r) => `[${r.i}] 요건 ${r.met}/${r.total} 충족\n${r.text}`).join('\n\n')}
+${rows.map((r) => `[${r.i}] 자격요건 ${r.met}/${r.total} 충족${c.preferred.length ? ` · 우대사항 ${r.pref}/${c.preferred.length} 충족` : ''}\n${r.text}`).join('\n\n')}
 
 이 자리에 지금 데려왔을 때 가장 잘할 사람 순으로 5명을 고르세요.
-요건은 다들 채웠으므로, 갈리는 건 직무 근접도·최근에 하던 일·쓰던 기술의 겹침입니다.
+${c.preferred.length
+  ? `자격요건은 다들 채웠습니다. 그러니 먼저 보는 건 우대사항입니다 — 기업이 "있으면 좋겠다"고
+적어 둔 건 바로 이럴 때 쓰라고 적은 것입니다. 우대사항을 더 채운 사람을 위에 두고,
+우대사항 충족이 같을 때 직무 근접도·최근에 하던 일·쓰던 기술의 겹침으로 가르세요.`
+  : '요건은 다들 채웠으므로, 갈리는 건 직무 근접도·최근에 하던 일·쓰던 기술의 겹침입니다.'}
 
 ${yoeRule(c)}
 기업이 원한 건 맞는 사람이지 가장 오래 한 사람이 아닙니다.
@@ -165,7 +170,11 @@ async function rank(c, finalists) {
   try {
     const hideYoe = c.yoe_min == null && c.yoe_max == null
     const rows = finalists.map((x, i) => ({
-      i, met: x.v.met.length, total: x.v.met.length + x.v.missing.length, text: profileText(x.p, hideYoe),
+      i,
+      met: x.v.met.length,
+      total: x.v.met.length + x.v.missing.length,
+      pref: x.v.preferredMet,
+      text: profileText(x.p, hideYoe),
     }))
     const r = await openai.chat.completions.create({
       model: 'gpt-4o-mini',
@@ -208,6 +217,8 @@ function card(p, v) {
     strengths: (v.strengths || []).slice(0, 3),
     met: v.met.length,
     total: v.met.length + v.missing.length,
+    pref: v.preferredMet,
+    prefTotal: v.preferredTotal,
     missing: v.missing.slice(0, 3),
     photo: p.photo_url || '',
     title: exps[0]?.title || p.headline || p.position || '',
@@ -276,7 +287,13 @@ export default async function handler(req, res) {
        후보'가 아니라 다른 자리 사람이다 — 점수가 높다는 이유로 앞에 오면 안 된다.
        빼지는 않는다. 범위 안에서 5명이 안 나오면 그때는 보여줘야 한다. */
     const inRange = (x) => x.v.within !== false
-    const byFit = (a, b2) => b2.v.fit - a.v.fit || b2.v.ratio - a.v.ratio || b2.pre - a.pre
+    /* 순서: 자격요건 충족률 → 우대사항 충족 수 → 점수 → 1차 점수.
+       우대사항을 점수 위에 두는 건 기업이 그렇게 쓰기 때문이다 — 자격요건은 '되냐 안 되냐'라
+       통과자끼리는 다 같고, 그 다음 누구를 먼저 보겠냐를 정해 둔 칸이 우대사항이다.
+       다만 자격요건보다 위로는 안 올린다. 우대만 채우고 자격이 모자란 사람이 1등이 되면
+       그건 다른 자리 사람이다. */
+    const byFit = (a, b2) => b2.v.ratio - a.v.ratio || b2.v.preferredMet - a.v.preferredMet
+      || b2.v.fit - a.v.fit || b2.pre - a.pre
     const byRangeThenFit = (a, b2) => (inRange(b2) ? 1 : 0) - (inRange(a) ? 1 : 0) || byFit(a, b2)
     const passed = judged.filter((x) => x.v.rank !== RANKS.OUT).sort(byRangeThenFit)
     const rest = judged.filter((x) => x.v.rank === RANKS.OUT).sort(byRangeThenFit)
