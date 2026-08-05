@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js'
 import { verifyAdminOrDevStub } from './check'
+import { CHIP_CERTS, ALL_CERTS, GRADES, TIER_OF, TIER_RANK, certOf, gradeOf } from '../../../lib/langTier'
 
 // "어학 점수" 페이지(/admin/lang-scores)의 데이터 — 어학 콜드메일로 실제로 받아낸
 // 자격증·점수만 모은다.
@@ -19,17 +20,7 @@ const supabase = createClient(
 
 // 칩이 될 시험. 나머지 자격증(TOEFL·APTIS…)은 ETC 로 떨어진다 — 칩을 늘리기보다
 // 한 칸에 모아 두는 편이 "우리가 안 세던 시험이 들어왔다"를 놓치지 않는다.
-const CHIP_CERTS = ['TOEIC', 'IELTS', 'VSTEP', 'TOPIK']
-const OTHER_CERTS = ['TOEFL', 'APTIS']
-const ALL_CERTS = [...CHIP_CERTS, ...OTHER_CERTS]
-
-// 자격증명으로 시작하면 점수. lang-coldmail.js 의 kindOf 와 같은 기준이어야 두 화면의
-// '점수 47' 이 같은 47 을 가리킨다.
-const certOf = (raw) => {
-  const s = String(raw || '').trim()
-  if (!s) return null
-  return ALL_CERTS.find((c) => new RegExp(`^${c}\\b`, 'i').test(s)) || null
-}
+// 판정 규칙(certOf·gradeOf·급)은 전시장 API 와 공유한다 — lib/langTier.js 참고.
 
 // 정렬용 숫자. 시험마다 척도가 달라(990 vs 7.5 vs 6급) 같은 시험 안에서만 쓴다.
 // "TOEIC 935/990" → 935, "VSTEP B2" → B2 를 등급 순위로. 숫자가 없는 값
@@ -40,37 +31,6 @@ function scoreOf(value) {
   if (cefr) return CEFR[cefr[1].toUpperCase()]
   const num = value.match(/(\d+(?:\.\d+)?)/)
   return num ? Number(num[1]) : null
-}
-
-// 시험별 등급. 척도가 제각각이라(990점 / 9.0밴드 / 6급 / CEFR) 한 줄로 세울 수 없고,
-// 같은 시험 안에서만 나눈다. 값이 자격증명뿐이거나("TOEIC", "TOPIK I") 숫자가 없으면
-// null → '미상'. 등급을 못 매긴 값도 세어야 "점수 몇 명"과 등급 합이 어긋나지 않는다.
-const GRADES = {
-  TOEIC: ['900+', '800–899', '700–799', '600–699', '~599'],
-  TOEFL: ['100+', '90–99', '80–89', '~79'],
-  IELTS: ['7.0+', '6.0–6.5', '5.0–5.5', '~4.5'],
-  TOPIK: ['6급', '5급', '4급', '3급', '1–2급'],
-  // VSTEP·APTIS 는 CEFR 등급으로 발급된다. "Vstep 6.0"·"Level 4" 처럼 원점수/레벨로
-  // 적은 값은 두 척도가 섞여 있어(0–10점 vs 1–6레벨) 임의로 환산하지 않고 미상에 둔다.
-  VSTEP: ['C1+', 'B2', 'B1', 'A1–A2'],
-  APTIS: ['C1+', 'B2', 'B1', 'A1–A2'],
-}
-
-function gradeOf(cert, raw) {
-  if (cert === 'VSTEP' || cert === 'APTIS') {
-    const m = raw.match(/\b([ABC][12])\b/i)
-    if (!m) return null
-    const lv = m[1].toUpperCase()
-    return lv[0] === 'C' ? 'C1+' : lv === 'B2' ? 'B2' : lv === 'B1' ? 'B1' : 'A1–A2'
-  }
-  const m = raw.match(/(\d+(?:\.\d+)?)/)
-  if (!m) return null
-  const n = Number(m[1])
-  if (cert === 'TOEIC') return n >= 900 ? '900+' : n >= 800 ? '800–899' : n >= 700 ? '700–799' : n >= 600 ? '600–699' : '~599'
-  if (cert === 'TOEFL') return n >= 100 ? '100+' : n >= 90 ? '90–99' : n >= 80 ? '80–89' : '~79'
-  if (cert === 'IELTS') return n >= 7 ? '7.0+' : n >= 6 ? '6.0–6.5' : n >= 5 ? '5.0–5.5' : '~4.5'
-  if (cert === 'TOPIK') return n >= 6 ? '6급' : n >= 5 ? '5급' : n >= 4 ? '4급' : n >= 3 ? '3급' : '1–2급'
-  return null
 }
 
 const hasText = (v) => !!String(v || '').trim()
@@ -178,8 +138,12 @@ export default async function handler(req, res) {
        같은 시험 안에서는 영어·한국어 칸이 겹쳐도 한 번만 센다 — 시험별 합이 곧
        '그 시험 가진 사람 수'여야 등급 비율을 읽을 수 있다. */
     const tally = {}
+    // 사람 단위 급 — 두 시험을 가졌으면 높은 쪽으로 센다. 후보를 추릴 때 필요한 건
+    // '이 사람이 A급이냐'지 '몇 개의 A급 점수가 있느냐'가 아니다.
+    const tiers = { A: 0, B: 0, C: 0, 미상: 0 }
     for (const p of seekers) {
       const done = new Set()
+      let best = null
       for (const v of [p.english_cert, p.korean_cert]) {
         const cert = certOf(v)
         if (!cert || done.has(cert)) continue
@@ -187,20 +151,22 @@ export default async function handler(req, res) {
         const g = gradeOf(cert, String(v).trim()) || '미상'
         tally[cert] = tally[cert] || {}
         tally[cert][g] = (tally[cert][g] || 0) + 1
+        const tier = TIER_OF[cert][g] || '미상'
+        if (best === null || TIER_RANK[tier] < TIER_RANK[best]) best = tier
       }
+      if (best) tiers[best] += 1
     }
     const certGrades = ALL_CERTS
       .filter((c) => tally[c])
       .map((c) => {
         // i·scale 은 색을 칠할 때 쓴다 — 아무도 없는 등급은 화면에서 빠지므로(B2·B1만
         // 남은 VSTEP 처럼) 남은 것끼리 다시 세면 중간 등급이 최상위 색을 쓰게 된다.
-        const bands = [...GRADES[c], '미상']
-          .map((label, i) => ({ label, i, n: tally[c][label] || 0 }))
+        const bands = [...GRADES[c], ['미상', '미상']]
+          .map(([label, tier], i) => ({ label, tier, i, n: tally[c][label] || 0 }))
           .filter((b) => b.n > 0)
         return {
           cert: c,
           chip: CHIP_CERTS.includes(c) ? c : 'ETC',
-          scale: GRADES[c].length,
           total: bands.reduce((s, b) => s + b.n, 0),
           bands,
         }
@@ -219,6 +185,7 @@ export default async function handler(req, res) {
       counts,
       base,
       certGrades,
+      tiers,
       people: new Set(rows.map((r) => r.email || r.name)).size,
       filled: ids.length, // 어학 칸을 저장한 사람 전체 — 그중 몇 명이 점수였나의 분모
       generatedAt: new Date().toISOString(),

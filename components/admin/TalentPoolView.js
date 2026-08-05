@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom'
 import { useAdmin } from '../../lib/adminSwr'
 import { isTopTier, overseasOf, classifyUniversity } from '../../lib/topUniversities'
 import { ROLE_GROUPS } from '../../constants/jobs'
+import { ELITE_CATS, asSkills, asExperiences, eliteCategory } from '../../lib/talentCategory'
 
 // 인재의 학벌 신호 = 도메인 인증 학교(authoritative) ∪ 이력서 자유입력 university.
 // 인증 학교는 verified_school_tier(='top')로 바로 명문대 집계되고, 그 외엔 자유입력
@@ -32,17 +33,6 @@ function levelOf(months) {
   return LEVELS.find(l => l.test(months))?.key || null
 }
 
-function asSkills(skills) {
-  if (!skills) return []
-  return (Array.isArray(skills) ? skills : String(skills).split(',')).map(s => s.trim()).filter(Boolean)
-}
-
-function asExperiences(exp) {
-  if (!exp) return []
-  if (Array.isArray(exp)) return exp
-  try { const p = JSON.parse(exp); return Array.isArray(p) ? p : [] } catch { return [] }
-}
-
 // 가장 최근(혹은 대표) 직급 텍스트 — 카드 상단 "직급" 표시용
 function topTitle(r, exps) {
   return exps[0]?.title || ''
@@ -65,38 +55,6 @@ const groupOfPosition = p => ROLE_TO_GROUP[p] || 'etc'
 // ── 최우수 인재풀 (모달) ──────────────────────────────────────────────
 // 인재 스쿼드 기준: 좋은 학교(명문/해외) + 언어(영어 B2급↑ 또는 한국어). 포폴은 DB에 없어 제외.
 // 소셜/퍼포먼스/브랜딩은 position enum에 없는 세분류라 headline/스킬 정규식으로 가른다.
-const ELITE_CATS = [
-  { key: 'dev', label: { ko: '개발', en: 'Development', vi: 'Phát triển' }, cats: [
-    { key: 'frontend', label: { ko: '프론트엔드', en: 'Frontend', vi: 'Frontend' } },
-    { key: 'backend', label: { ko: '백엔드', en: 'Backend', vi: 'Backend' } },
-  ] },
-  { key: 'design', label: { ko: '디자인', en: 'Design', vi: 'Thiết kế' }, cats: [
-    { key: 'uiux', label: { ko: 'UI/UX', en: 'UI/UX', vi: 'UI/UX' } },
-    { key: 'branding', label: { ko: '브랜딩 · 에셋', en: 'Branding & Assets', vi: 'Branding & Assets' } },
-  ] },
-  { key: 'marketing', label: { ko: '마케터', en: 'Marketing', vi: 'Marketing' }, cats: [
-    { key: 'social', label: { ko: '소셜 마케터', en: 'Social', vi: 'Social' } },
-    { key: 'performance', label: { ko: '퍼포먼스 마케터', en: 'Performance', vi: 'Performance' } },
-  ] },
-]
-
-function eliteCategory(r) {
-  const h = (r.headline || '').toLowerCase()
-  const t = [r.headline, ...asSkills(r.skills), r.major, ...asExperiences(r.experiences).map(e => e?.title)]
-    .filter(Boolean).join(' ').toLowerCase()
-  if (r.position === 'Backend') return 'backend'
-  if (['Frontend', 'Web'].includes(r.position)) return 'frontend'
-  if (r.position === 'Fullstack') return /back|node|java|spring|php|laravel|\.net|golang/.test(t) ? 'backend' : 'frontend'
-  if (['Design', 'UX Researcher'].includes(r.position)) {
-    return (/graphic|brand|illustrator|motion|art director|visual/.test(h) && !/ui|ux/.test(h)) ? 'branding' : 'uiux'
-  }
-  if (/graphic|motion|illustrator|art director|visual design|multimedia design/.test(h)) return 'branding'
-  if (r.position === 'Marketing') {
-    return /performance|growth|google ads|meta ads|facebook ads|media buy|ppc|paid|digital marketing manager/.test(h) ? 'performance' : 'social'
-  }
-  return null
-}
-
 // 어학 자유입력(시험점수/자가평가 혼재) → 점수. 표기 편차 방어: "IELTS Academic 6.0", "TOEIC 895/990" 등.
 function eliteKoScore(s) {
   if (!s) return 0
