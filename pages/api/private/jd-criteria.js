@@ -67,8 +67,14 @@ positions 목록: ${POSITIONS.join(', ')}
 - 글에 없는 조건을 지어내지 마세요. 연차가 안 적혀 있으면 yoe_min/yoe_max 는 null 입니다.
   단, requirements 는 3개 미만이면 후보를 가릴 수 없으므로 업무·직무에서 유추해 (추정) 으로 채웁니다.
 - 요건을 잘게 쪼개 부풀리지 마세요. 항목이 늘수록 통과선이 실제보다 높아집니다.
+- (추정) 요건은 일반화해서 쓰세요. 그 회사에서만 참인 말 — 회사명·서비스명·조직명 —
+  을 넣으면 아무도 충족할 수 없습니다. "사내 채용 플랫폼 API 개발 및 운영" 이 아니라
+  "API 개발 및 운영 경험" 입니다. 남의 이력서에 적힐 수 있는 말로만 쓰세요.
 - 스킬은 이력서에 적히는 표기 그대로 쓰세요("리액트" 말고 "React", "자바" 말고 "Java").
-- 한국 기업의 베트남 채용입니다. 한국어·영어 요구를 놓치지 마세요. 명시가 없으면 "none" 입니다.
+- 한국 기업의 베트남 채용입니다. 한국어·영어 요구를 놓치지 마세요. 다만 강도를 올리지 마세요:
+  "필수"·"반드시"로 적혔을 때만 "required" 이고, 우대사항에 있거나 "가능자 우대"·"우대"·"있으면 좋음"
+  이면 "plus" 입니다. 아무 말도 없으면 "none" 입니다. 우대를 필수로 읽으면 그 언어가 없는 사람이
+  전부 후보에서 밀려납니다.
 - JSON 만 출력하세요.`
 
 export default async function handler(req, res) {
@@ -97,6 +103,19 @@ export default async function handler(req, res) {
     const lvl = (v) => (['required', 'plus', 'none'].includes(v) ? v : 'none')
 
     const requirements = list(raw.requirements, 8, 160)
+    const preferred = list(raw.preferred, 5, 160)
+
+    /* 어학 강도 되돌리기 — 모델이 "한국 기업의 베트남 채용이니 한국어는 당연히 필수"로
+       넘겨짚는다(우대사항에 적힌 "한국어 가능자 우대"를 required 로 올린다). 프롬프트로는
+       안 잡혀서 코드에서 되돌린다: 요건 문장에는 없고 우대사항에만 있으면 우대다.
+       이 한 글자가 1차 필터에서 −15점이라, 그 언어가 없는 사람이 통째로 밀려난다. */
+    const demote = (level, re) => {
+      if (level !== 'required') return level
+      if (requirements.some((s) => re.test(s))) return 'required'
+      return preferred.some((s) => re.test(s)) ? 'plus' : 'none'
+    }
+    const korean = demote(lvl(raw.korean), /한국어|korean|tiếng hàn|topik/i)
+    const english = demote(lvl(raw.english), /영어|english|tiếng anh|toeic|ielts|toefl/i)
     if (requirements.length < 2) {
       // 요건이 한 줄뿐이면 충족률이 0% 아니면 100% 로만 나온다 — 순위가 안 생긴다.
       return res.status(400).json({ error: '조건을 읽어내지 못했습니다 — 어떤 일을 맡길 자리인지 한두 줄만 더 적어 주세요' })
@@ -107,14 +126,14 @@ export default async function handler(req, res) {
         title: String(raw.title || '').slice(0, 60),
         positions: list(raw.positions, 3).filter((p) => POSITIONS.includes(p)),
         requirements,
-        preferred: list(raw.preferred, 5, 160),
+        preferred,
         must_skills: list(raw.must_skills, 8, 40),
         nice_skills: list(raw.nice_skills, 8, 40),
         keywords: list(raw.keywords, 8, 40),
         yoe_min: num(raw.yoe_min),
         yoe_max: num(raw.yoe_max),
-        korean: lvl(raw.korean),
-        english: lvl(raw.english),
+        korean,
+        english,
         note: String(raw.note || '').slice(0, 120),
         // 추정으로 채운 요건 수 — 화면에서 "JD가 짧아 넓게 잡았습니다"를 말하는 근거
         inferred: requirements.filter((r) => r.includes('추정')).length,
