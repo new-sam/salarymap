@@ -20,6 +20,8 @@ function buildNav(lang) {
         { label: L('지원자', 'Applicants', 'Ứng viên'), pathname: '/admin/dashboard', tab: 'applications' },
         { label: L('이력서', 'Resumes', 'CV'), pathname: '/admin/dashboard', tab: 'resumes' },
         { label: L('인재풀', 'Talent', 'Nguồn ứng viên'), pathname: '/admin/dashboard', tab: 'talent' },
+        // 자체 페이지라 tab 이 없다 — curTab 도 undefined 라 isActive 가 그대로 맞는다.
+        { label: L('어학 점수', 'Language scores'), pathname: '/admin/lang-scores' },
         { label: L('인재 공급', 'Supply', 'Cung ứng viên'), pathname: '/admin/dashboard', tab: 'supply' },
         { label: L('광고메일', 'Recommend', 'Email đề xuất'), pathname: '/admin/dashboard', tab: 'recommend' },
         { label: L('연봉 인증', 'Verifications', 'Xác minh lương'), pathname: '/admin/dashboard', tab: 'verifications' },
