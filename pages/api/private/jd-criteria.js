@@ -102,8 +102,22 @@ export default async function handler(req, res) {
     const num = (v) => (typeof v === 'number' && v >= 0 && v <= 40 ? Math.round(v * 10) / 10 : null)
     const lvl = (v) => (['required', 'plus', 'none'].includes(v) ? v : 'none')
 
-    const requirements = list(raw.requirements, 8, 160)
-    const preferred = list(raw.preferred, 5, 160)
+    let requirements = list(raw.requirements, 8, 160)
+    let preferred = list(raw.preferred, 5, 160)
+
+    /* "우대"가 붙은 항목은 자격이 아니라 우대다.
+       한국 JD 는 우대사항 섹션을 따로 두기도 하지만, 자격요건 목록 안에 "한국어 가능자
+       우대" 한 줄을 섞어 쓰는 경우가 더 흔하다. 모델은 그걸 섹션 위치대로 자격요건에
+       넣는데, 그러면 통과선이 되어 한국어가 없는 사람이 전부 미달로 떨어진다.
+       — 우대는 떨어뜨리는 조건이 아니라 순서를 정하는 조건이다.
+       옮기고 나서 자격요건이 2개 미만이 되면 옮기지 않는다. 통과선이 한 줄뿐이면
+       충족률이 0% 아니면 100% 로만 나와서 순위가 안 생긴다. */
+    const PREF_WORD = /우대|ưu tiên|preferred|nice to have|a plus|is a plus/i
+    const moved = requirements.filter((r) => PREF_WORD.test(r))
+    if (moved.length && requirements.length - moved.length >= 2) {
+      requirements = requirements.filter((r) => !PREF_WORD.test(r))
+      preferred = [...preferred, ...moved.filter((m) => !preferred.some((p) => p === m))].slice(0, 8)
+    }
 
     /* 어학 강도 되돌리기 — 모델이 "한국 기업의 베트남 채용이니 한국어는 당연히 필수"로
        넘겨짚는다(우대사항에 적힌 "한국어 가능자 우대"를 required 로 올린다). 프롬프트로는
