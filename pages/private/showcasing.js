@@ -136,6 +136,7 @@ export default function PrivateShowcasing({ co, campaign, off, c }) {
       setPool(j1.pool ?? null)
       setStep('match')
       stage = 'match'
+      const matchStartedAt = Date.now() // 조건 상자가 뜬 시점 — 최소 체류 계산용
       /* 조건이 나온 시점. JD 를 넣은 사람(psc_submit)과 결과를 본 사람(psc_result) 사이가
          비어 있으면, 중간에 사라진 사람이 기다리다 나간 건지 매칭이 죽은 건지 안 갈린다.
          inferred 는 JD 에 안 적혀 있어서 우리가 추측한 조건이 있다는 뜻 — 결과가 엉뚱할 때
@@ -155,6 +156,11 @@ export default function PrivateShowcasing({ co, campaign, off, c }) {
       })
       const j2 = await r2.json()
       if (!r2.ok) throw new Error(j2.error || '후보를 찾지 못했습니다')
+      /* 결과가 너무 빨리 오면(캐시) 조건 상자가 뜨자마자 화면이 바뀐다 — "이렇게
+         이해했습니다"를 읽을 시간이 없으면 그 상자는 없는 셈이다. 조건이 뜬 뒤로
+         최소 3초는 머문다. 진짜 매칭(15초대)에서는 이 대기가 0이다. */
+      const waitMs = Math.max(0, 3000 - (Date.now() - matchStartedAt))
+      if (waitMs) await new Promise((r) => setTimeout(r, waitMs))
       setResult(j2)
       // 바로 done 으로 안 간다 — 로딩 퍼센트가 어중간한 숫자에서 화면이 바뀌면
       // 그 숫자가 전부 연출이었다고 실토하는 셈이다. 100을 빠르게 마저 채우고 넘어간다.
