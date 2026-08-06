@@ -149,7 +149,9 @@ export default function RetentionView({ token, lang }) {
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead><tr>
               <th style={thStyle}>{L('기능', 'Feature', 'Tính năng')}</th>
-              <th style={{ ...thStyle, width: '40%' }}>{L('사용 유저 (MAU 대비)', 'Users (vs MAU)', 'Người dùng (so với MAU)')}</th>
+              <th style={{ ...thStyle, width: '32%' }}>{L('사용 유저 (MAU 대비)', 'Users (vs MAU)', 'Người dùng (so với MAU)')}</th>
+              <th style={{ ...thStyle, textAlign: 'center' }}>{L('재사용률', 'Repeat use', 'Dùng lại')}</th>
+              <th style={{ ...thStyle, textAlign: 'center' }}>{L('D7 사용/미사용', 'D7 used/not', 'D7 dùng/không')}</th>
               <th style={{ ...thStyle, textAlign: 'right' }}>{L('이벤트', 'Events', 'Sự kiện')}</th>
               <th style={thStyle}>{L('주요 이벤트', 'Top events', 'Sự kiện chính')}</th>
             </tr></thead>
@@ -167,6 +169,12 @@ export default function RetentionView({ token, lang }) {
                         <span style={{ fontSize: 12.5, fontWeight: 700, color: '#0F172A', minWidth: 90, textAlign: 'right', whiteSpace: 'nowrap' }}>{f.users.toLocaleString()} · {share}%</span>
                       </div>
                     </td>
+                    <td style={{ ...tdStyle, textAlign: 'center', fontWeight: 600, color: rateColor(f.repeatRate), whiteSpace: 'nowrap' }}>{f.repeatRate != null ? `${f.repeatRate}%` : '-'}</td>
+                    <td style={{ ...tdStyle, textAlign: 'center', whiteSpace: 'nowrap' }}>
+                      <span style={{ fontWeight: 700, color: f.d7Used != null && f.d7NonUsed != null && f.d7Used > f.d7NonUsed ? '#065F46' : '#0F172A' }}>{f.d7Used != null ? `${f.d7Used}%` : '-'}</span>
+                      <span style={{ color: '#9CA3AF' }}> / {f.d7NonUsed != null ? `${f.d7NonUsed}%` : '-'}</span>
+                      <div style={{ fontSize: 10, fontWeight: 400, color: '#9CA3AF' }}>n={f.d7UsedN}</div>
+                    </td>
                     <td style={{ ...tdStyle, textAlign: 'right', color: '#6B7280', fontSize: 12, whiteSpace: 'nowrap' }}>{f.events.toLocaleString()}</td>
                     <td style={{ ...tdStyle, fontSize: 11.5, color: '#9CA3AF' }}>
                       {f.top.map(t => `${t.event} ${t.users}`).join(' · ')}
@@ -179,9 +187,9 @@ export default function RetentionView({ token, lang }) {
         </div>
         <div style={{ fontSize: 11, color: '#9CA3AF', marginTop: 10 }}>
           {L(
-            '가입 유저(user_id) 이벤트만 집계 — 비로그인 사용은 미포함. 발송 마커·크론 제외. 주요 이벤트 숫자 = 해당 이벤트 사용 유저 수.',
-            'Signed-in (user_id) events only — anonymous usage not counted. Send markers & crons excluded. Top-event numbers = unique users per event.',
-            'Chỉ tính sự kiện của người dùng đã đăng nhập (user_id). Số ở sự kiện chính = số người dùng.'
+            '가입 유저(user_id) 이벤트만 집계 — 비로그인 사용은 미포함. 발송 마커·크론 제외. 재사용률 = 30일 내 2일 이상 사용한 유저 비율. D7 사용/미사용 = 가입 첫 7일 내 그 기능을 쓴 유저 vs 안 쓴 유저의 D7 유지율(가입 7일 경과 코호트, n=사용측 표본) — 상관이지 인과 아님. 주요 이벤트 숫자 = 사용 유저 수.',
+            'Signed-in (user_id) events only — anonymous usage not counted. Send markers & crons excluded. Repeat use = % using on 2+ days within 30d. D7 used/not = D7 retention of users who used the feature in their first 7 days vs those who did not (cohort aged 7+ days, n = used-side sample) — correlation, not causation. Top-event numbers = unique users.',
+            'Chỉ tính sự kiện user_id (không gồm khách ẩn danh). Dùng lại = % dùng từ 2 ngày trở lên trong 30 ngày. D7 dùng/không = tỷ lệ giữ chân D7 của người dùng tính năng trong 7 ngày đầu so với người không dùng — tương quan, không phải nhân quả.'
           )}
         </div>
       </div>

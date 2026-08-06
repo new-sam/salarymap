@@ -155,33 +155,61 @@ export default async function handler(req, res) {
     })
     const curveAt = (n) => curve.find(c => c.day === n)
 
-    // ---- 기능별 사용(최근 30일) — 어떤 기능이 잘 쓰이는지, 사용 유저/이벤트 수 ----
+    // ---- 기능별 사용(최근 30일) + 재사용률 + 가입 첫주 사용→D7 상관 ----
     const featSince = addDays(todayVN, -(FEATURE_WINDOW - 1))
-    const featAgg = new Map() // key -> { users:Set, events:n, byEvent:Map(event -> Set(uid)) }
+    const featAgg = new Map()  // key -> { userDays:Map(uid->Set(day)), events:n, byEvent:Map(event->Set(uid)) }
+    // 가입 첫 7일 내 사용자(코호트, 전 기간) — D7 상관은 초기 사용으로 조건화해
+    // "오래 남은 유저는 뭐든 쓸 기회가 많다"는 생존 편향을 줄인다. 상관이지 인과는 아님.
+    const earlyUse = new Map() // key -> Set(uid)
     for (const r of events) {
       if (NON_FEATURE(r.event)) continue
-      if (!userDay.has(r.user_id)) continue
+      const uid = r.user_id
+      if (!userDay.has(uid)) continue
       const isApp = (r.meta && r.meta.platform) === 'app'
       if (platform === 'app' && !isApp) continue
       if (platform === 'web' && isApp) continue
-      if (toVN(r.created_at) < featSince) continue
       const key = (FEATURE_RULES.find(([, re]) => re.test(r.event)) || ['other'])[0]
-      if (!featAgg.has(key)) featAgg.set(key, { users: new Set(), events: 0, byEvent: new Map() })
+      const d = toVN(r.created_at)
+      const signup = userDay.get(uid)
+      if (signup >= dataStart) {
+        const off = dayDiff(signup, d)
+        if (off >= 0 && off <= 6) {
+          if (!earlyUse.has(key)) earlyUse.set(key, new Set())
+          earlyUse.get(key).add(uid)
+        }
+      }
+      if (d < featSince) continue
+      if (!featAgg.has(key)) featAgg.set(key, { userDays: new Map(), events: 0, byEvent: new Map() })
       const f = featAgg.get(key)
-      f.users.add(r.user_id)
       f.events++
+      if (!f.userDays.has(uid)) f.userDays.set(uid, new Set())
+      f.userDays.get(uid).add(d)
       if (!f.byEvent.has(r.event)) f.byEvent.set(r.event, new Set())
-      f.byEvent.get(r.event).add(r.user_id)
+      f.byEvent.get(r.event).add(uid)
     }
+    // D7 비교 분모: 가입 7일 경과 코호트, 유지 = maxOffset>=7 (커브와 동일 정의)
+    const elig7 = cohortUsers.filter(u => dayDiff(u.day, todayVN) >= 7)
     const features = [...featAgg.entries()]
-      .map(([key, f]) => ({
-        key,
-        users: f.users.size,
-        events: f.events,
-        top: [...f.byEvent.entries()]
-          .map(([event, s]) => ({ event, users: s.size }))
-          .sort((a, b) => b.users - a.users).slice(0, 3),
-      }))
+      .map(([key, f]) => {
+        const users = f.userDays.size
+        let repeat = 0
+        for (const days of f.userDays.values()) if (days.size >= 2) repeat++
+        const used = earlyUse.get(key) || new Set()
+        let uN = 0, uRet = 0, nN = 0, nRet = 0
+        for (const u of elig7) {
+          const ret = (maxOffset.get(u.id) ?? -1) >= 7
+          if (used.has(u.id)) { uN++; if (ret) uRet++ }
+          else { nN++; if (ret) nRet++ }
+        }
+        return {
+          key, users, events: f.events,
+          repeatRate: rate(repeat, users),
+          d7Used: rate(uRet, uN), d7UsedN: uN, d7NonUsed: rate(nRet, nN),
+          top: [...f.byEvent.entries()]
+            .map(([event, s]) => ({ event, users: s.size }))
+            .sort((a, b) => b.users - a.users).slice(0, 3),
+        }
+      })
       .sort((a, b) => b.users - a.users)
 
     // ---- 주간 코호트 삼각표(가입주 × W+0..W+8, 캘린더 주 기준) ----
