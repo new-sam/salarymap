@@ -158,6 +158,9 @@ export default async function handler(req, res) {
       if (inRange(i)) { signups[i]++; cohortSet[i].add(u.id) }
     }
     for (const r of events) {
+      // 발송 마커(push_sent·coldmail_*_sent 등)는 서버가 기록 — 유저 활동이 아니므로
+      // 활성/리텐션 축에서 제외(리텐션 탭·앱 대시보드와 동일 원칙).
+      if (/_sent$/.test(r.event)) continue
       const uid = r.user_id
       if (!keep(uid)) continue
       const i = idxOf(toVN(r.created_at))

@@ -17,6 +17,7 @@ function buildNav(lang) {
       items: [
         { label: L('메인 퍼널', 'Main funnel', 'Phễu chính'), pathname: '/admin/dashboard', tab: 'main' },
         { label: L('추이', 'Trend', 'Xu hướng'), pathname: '/admin/dashboard', tab: 'trend' },
+        { label: L('리텐션', 'Retention', 'Giữ chân'), pathname: '/admin/dashboard', tab: 'retention' },
         { label: L('지원자', 'Applicants', 'Ứng viên'), pathname: '/admin/dashboard', tab: 'applications' },
         { label: L('이력서', 'Resumes', 'CV'), pathname: '/admin/dashboard', tab: 'resumes' },
         { label: L('인재풀', 'Talent', 'Nguồn ứng viên'), pathname: '/admin/dashboard', tab: 'talent' },

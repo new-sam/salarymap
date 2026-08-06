@@ -9,6 +9,7 @@ import AdminLayout from '../../components/admin/AdminLayout'
 import DateRangePicker from '../../components/admin/DateRangePicker'
 import Icon from '../../components/Icon'
 import MainFunnelView from '../../components/admin/MainFunnelView'
+import RetentionView from '../../components/admin/RetentionView'
 import ApplicationsView from '../../components/admin/ApplicationsView'
 import ResumesView from '../../components/admin/ResumesView'
 import TalentPoolView from '../../components/admin/TalentPoolView'
@@ -951,6 +952,11 @@ export default function AdminDashboard() {
           <MainFunnelView token={token} lang={lang} dateRange={dateRange} />
         )}
 
+
+        {/* Retention Tab — 전체(웹+앱) 가입 유저 리텐션 전용 */}
+        {tab === 'retention' && (
+          <RetentionView token={token} lang={lang} />
+        )}
 
         {/* Applications Tab */}
         {tab === 'applications' && (
