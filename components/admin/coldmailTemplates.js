@@ -725,6 +725,56 @@ export const COLDMAIL_TEMPLATES = [
     }),
   },
   {
+    match: /^wellpod-recommend1/,
+    subject: {
+      vi: '[FYI] Chúng tôi thấy "{{스펙 — 예: TOPIK 6 · 3 năm biên-phiên dịch}}" trong hồ sơ của bạn — có vị trí đang tìm đúng hồ sơ này',
+      ko: '[FYI] 이력서의 "{{스펙 — 예: TOPIK 6급 · 통번역 3년}}"를 보고 연락드립니다 — 이 스펙을 찾는 자리가 났습니다',
+      en: '[FYI] We saw "{{spec}}" in your CV — a role is looking for exactly this profile',
+    },
+    desc: 'Wellpod TikTok Shop & Shopify Executive 추천 (8/6): 한국어 가능 8명 전원 개인화 — 제목·본문에 본인 스펙(TOPIK·경력) 삽입, "스펙이 희소한데 그걸 찾는 자리가 났다·FYI가 CV 직접 전달·합격 가능성 매우 높음" 1:1 스카우트 톤, CTA는 전달 승낙("네, 전달해 주세요"). 명단/선정 언급 없음.',
+    source: 'scripts/outreach/wellpod-recommend-coldmail.mjs',
+    html: (lang) => {
+      const s = pickLang({
+        vi: {
+          hi: 'Chào {{tên}}, đây là đội ngũ FYI.',
+          intro: 'Chúng tôi liên hệ trực tiếp vì thấy điểm nổi bật trong hồ sơ của bạn — <b>{{개인화 — chuyên ngành tiếng Hàn, TOPIK 6 và 3 năm kinh nghiệm biên-phiên dịch}}</b>. Nhân sự có thể làm việc bằng tiếng Hàn rất hiếm trên thị trường tuyển dụng Việt Nam, và vị trí yêu cầu đúng hồ sơ này còn hiếm hơn. Vị trí đó vừa mở.',
+          tail: 'Wellpod — công ty thương mại điện tử Hàn Quốc phân phối K-pop album toàn cầu và phát triển thương mại TikTok Shop — đang tìm người kết nối trụ sở Hàn Quốc và đội ngũ Việt Nam bằng <b>tiếng Hàn hoặc tiếng Trung</b>. Vì yêu cầu này rất hiếm, gần như không có nhiều ứng viên có thể ứng tuyển. Vì vậy FYI muốn gửi CV của bạn <b>trực tiếp cho nhà tuyển dụng Wellpod</b> — <b>khả năng trúng tuyển rất cao</b>.<br><br>Nếu bạn đồng ý, chỉ cần một nút — CV đã đăng ký sẽ được gửi kèm lời giới thiệu từ FYI.',
+          meta: '15–20 triệu · HCM / Đà Nẵng / Hà Nội · Chào đón fresher', cta: 'Vâng, hãy gửi hồ sơ của tôi →',
+        },
+        ko: {
+          hi: '안녕하세요 {{이름}}님, FYI 팀입니다.',
+          intro: '이력서에서 눈에 띄는 게 있어 직접 연락드립니다 — <b>{{개인화 — 예: 한국어 전공에 TOPIK 6급, 통번역 3년 경력}}</b>. 한국어로 업무할 수 있는 인재는 베트남 채용 시장에서 매우 드물고, 이 스펙을 정확히 요구하는 자리는 더 드뭅니다. 마침 그 자리가 열렸습니다.',
+          tail: 'K-pop 앨범 글로벌 유통과 TikTok Shop 커머스를 하는 한국 이커머스 기업 <b>Wellpod</b>가 <b>한국어 또는 중국어</b>로 한국 본사와 베트남 팀을 잇는 담당자를 찾습니다. 요구 스펙이 희소해서 지원할 수 있는 사람 자체가 거의 없는 자리입니다. 그래서 FYI가 회원님의 CV를 <b>Wellpod 담당자에게 직접 전달</b>하려고 합니다 — <b>합격 가능성이 매우 높습니다</b>.<br><br>의향이 있으시면 버튼 하나면 됩니다. 등록하신 CV가 FYI의 추천과 함께 바로 전달됩니다.',
+          meta: '15–20 triệu · 호치민/다낭/하노이 · 신입 가능', cta: '네, 전달해 주세요 →',
+        },
+        en: {
+          hi: 'Hi {{name}}, this is the FYI team.',
+          intro: 'We\'re reaching out because something stood out in your CV — <b>{{personalized line}}</b>. People who can work in Korean are very rare in the Vietnamese job market, and roles requiring exactly this profile are rarer. One just opened.',
+          tail: '<b>Wellpod</b> — a Korean e-commerce company distributing K-pop albums globally and building TikTok Shop commerce — is looking for someone to bridge the Korean HQ and the Vietnam team in <b>Korean or Chinese</b>. Because the requirement is so rare, very few candidates can apply at all. So FYI wants to send your CV <b>directly to the Wellpod recruiter</b> — <b>your chances are very high</b>.<br><br>If you\'re in, one tap is all it takes — your registered CV goes out with FYI\'s recommendation.',
+          meta: '15–20M VND · HCMC / Da Nang / Hanoi · Freshers welcome', cta: 'Yes, send my CV →',
+        },
+      }, lang)
+      return `<!doctype html><html><body style="margin:0;background:#faf9f7;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;color:#1a1612">
+<div style="max-width:520px;margin:0 auto;padding:28px 16px">
+  <div style="font-size:20px;font-weight:800;color:#ff6000;padding-bottom:18px">FYI</div>
+  <p style="font-size:15px;line-height:1.6;margin:0 0 6px">${s.hi}</p>
+  <p style="font-size:14px;line-height:1.65;color:#4a443c;margin:0 0 18px">${s.intro}</p>
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#fff;border:1px solid #eee5da;border-radius:14px;margin-bottom:14px"><tr>
+    <td width="44" style="padding:14px 0 14px 14px;vertical-align:middle"><div style="width:44px;height:44px;border-radius:10px;background:#fff0e6;color:#ff6000;font-weight:800;font-size:16px;text-align:center;line-height:44px">W</div></td>
+    <td style="padding:14px 14px 14px 12px;vertical-align:middle">
+      <div style="font-size:12px;color:#8a8073;margin-bottom:3px">Wellpod</div>
+      <div style="font-size:14.5px;font-weight:700;color:#1a1612;line-height:1.35">TikTok Shop &amp; Shopify Management Executive</div>
+      <div style="font-size:12px;color:#b0691a;margin-top:3px">${s.meta}</div>
+    </td>
+  </tr></table>
+  <p style="font-size:14px;line-height:1.65;color:#4a443c;margin:0 0 6px">${s.tail}</p>
+  <div style="text-align:center;padding:16px 0 6px">
+    <span style="display:inline-block;background:#ff6000;color:#fff;font-weight:700;font-size:15px;padding:14px 30px;border-radius:12px">${s.cta}</span>
+  </div>
+</div></body></html>`
+    },
+  },
+  {
     match: /^mnf-recommend1-public/,
     subject: invitedSubject('MNF Solution'),
     desc: 'MNF Solution AI Engineer (LLM) 추천 · 공개 프레임 (8/6): 호치민 개발/AI 풀(키워드 매칭+gpt-4o-mini 오탐 필터) 대상, "담당자가 봤다 · 우선검토".',
@@ -847,6 +897,7 @@ export const COLDMAIL_TEMPLATES = [
 // 발송 전 초안 캠페인 — 이벤트가 없어도 콜드메일 탭 표에 '미발송' 행으로 띄워 양식을 검수한다.
 // 발송이 시작되면(같은 이름의 이벤트가 쌓이면) 실측 행이 이 자리를 대체하므로 발송 후 지워도 된다.
 export const DRAFT_CAMPAIGNS = [
+  { campaign: 'wellpod-recommend1', group: 'recommend' },
   { campaign: 'mnf-recommend1-public', group: 'recommend' },
   { campaign: 'mnf-recommend1-private', group: 'recommend' },
 ]

@@ -114,6 +114,7 @@ JSON 만 출력하세요:
   "met": ["충족한 요건 문장 그대로"],
   "missing": ["미달이거나 요약에 근거가 없는 요건"],
   "preferred_met": ["충족한 우대사항. 없으면 빈 배열"],
+  "title_ko": "이 후보의 직무를 한국어로 짧게. 이력서에 근거가 있으면 전문 분야가 드러나게 씁니다 (예: 결제 시스템 백엔드 개발자, 이커머스 프론트엔드 개발자, 뱅킹 앱 개발자). 분야 근거가 없으면 직무만 씁니다 — 지어내지 마세요. 회사명·사람 이름·연차는 넣지 마세요.",
   "score_breakdown": {
     "requirements_match": 0-40,
     "experience_relevance": 0-30,
@@ -262,6 +263,27 @@ function matchedReq(skill, wanted) {
   }) || null
 }
 
+/* 어학 레벨 한국어화 — 이력서가 영어·베트남어라 "intermediate"·"cơ bản" 이 그대로 실려
+   왔다. 흔한 레벨 표현만 우리말로 바꾸고, 점수·급수(TOEIC 800, TOPIK 4급)는 그대로 둔다 —
+   숫자는 만국공통이고, 억지로 다 바꾸려 들면 처음 보는 표기에서 틀린 말을 지어낸다.
+   베트남어는 성조 부호를 뗀 꼴로 맞춘다("cơ bản"도 "co ban"도 온다). */
+const LEVEL_KO = [
+  [/native|ban ngu|원어민/i, '원어민'],
+  [/fluent|luu loat|thanh thao|유창/i, '유창'],
+  [/advanced|upper|cao cap|고급/i, '고급'],
+  [/business|비즈니스/i, '비즈니스 회화'],
+  [/intermediate|trung cap|중급/i, '중급'],
+  [/conversational|giao tiep|daily|회화/i, '일상 회화'],
+  [/basic|beginner|elementary|co ban|so cap|초급|기초/i, '초급'],
+]
+function langKo(s) {
+  const raw = String(s || '').trim()
+  if (!raw) return ''
+  const plain = raw.normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/đ/gi, 'd').toLowerCase()
+  for (const [re, ko] of LEVEL_KO) if (re.test(plain)) return ko
+  return raw
+}
+
 function card(p, v, c) {
   const s = p.resume_summary || {}
   const exps = asExperiences(p.experiences)
@@ -291,9 +313,12 @@ function card(p, v, c) {
     prefTotal: v.preferredTotal,
     missing: v.missing.slice(0, 3),
     photo: p.photo_url || '',
-    title: exps[0]?.title || p.headline || p.position || '',
+    // 직무는 모델이 프로필을 읽고 한국어로 새로 쓴 것을 앞세운다 — 이력서 원문 직함은
+    // 영어·베트남어가 그대로라 화면의 다른 한국어와 섞이면 카드가 번역기 화면처럼 보인다.
+    title: String(v.titleKo || '').trim() || exps[0]?.title || p.headline || p.position || '',
     position: p.position || '',
     yoe: p.yoe_months == null ? null : Math.round((p.yoe_months / 12) * 10) / 10,
+    yoeM: p.yoe_months ?? null, // 화면은 "n년 n개월"로 적는다 — 소수점 년수는 사람 말이 아니다
     /* 학력·포폴은 안 내보낸다. 학교 이름은 한국 기업이 읽어도 어느 정도인지 알 수 없어
        판단을 흐리고, 포폴은 이력서에 링크를 남긴 사람이 드물어 대부분 '-' 한 칸으로만
        남는다 — 다섯 장이 나란히 비어 있으면 그 줄은 정보가 아니라 여백이다.
@@ -301,8 +326,8 @@ function card(p, v, c) {
     /* 5줄까지 받는다. 지금 파서는 정확히 3줄만 쓰지만(이력서 1,463건 전부 3줄),
        상한을 3에 박아 두면 나중에 파서를 고쳐도 카드가 안 늘어난다. */
     bullets: Array.isArray(s.bullets) ? s.bullets.slice(0, 5) : [],
-    english: p.english_cert || '',
-    korean: p.korean_cert || '',
+    english: langKo(p.english_cert),
+    korean: langKo(p.korean_cert),
     /* 칩은 여덟 개까지. 셋만 보내면 "+31" 이 붙는데, 그 31 개 중에 고객사가 찾던 게
        들어 있어도 알 길이 없다. 카드가 두 줄을 감당하므로 여기서 아끼지 않는다.
        걸린 것이 앞에 오도록 이미 정렬해 두었으니, 잘리는 건 언제나 덜 중요한 쪽이다. */
@@ -380,7 +405,10 @@ export default async function handler(req, res) {
      24시간인 이유: 인재풀이 매일 자란다 — 영영 고정하면 새 이력서가 영영 안 보인다.
      sid 는 캐시된 행 것을 쓴다. 문의가 원래 검색에 붙는 게 맞다.
      컬럼(jd_hash·result)이 아직 없으면 조용히 그냥 지나간다 — 캐시는 없어도 되는 층이다. */
-  const h = typeof req.body?.h === 'string' && /^[a-f0-9]{64}$/.test(req.body.h) ? req.body.h : null
+  // #4 는 카드 형식 버전 — 형식이나 카드에 실리는 값의 규칙을 바꾸면 여기를 올린다.
+  // 안 올리면 24시간 동안 옛 형식으로 저장된 결과가 새 화면에 계속 나온다.
+  const raw = typeof req.body?.h === 'string' && /^[a-f0-9]{64}$/.test(req.body.h) ? req.body.h : null
+  const h = raw ? `${raw}#4` : null
   if (h) {
     try {
       const { data: hits } = await supabase.from('showcase_searches')
@@ -415,7 +443,7 @@ export default async function handler(req, res) {
       const { p } = short[i]
       const years = p.yoe_months == null ? null : p.yoe_months / 12
       const v = judge(raws[i], c, years)
-      judged.push({ p, v: { ...v, strengths: raws[i].strengths }, pre: short[i].s })
+      judged.push({ p, v: { ...v, strengths: raws[i].strengths, titleKo: raws[i].title_ko }, pre: short[i].s })
     }
 
     /* 항상 5명이다. 기준을 넘은 사람을 점수순으로 먼저 채우고, 모자라면 그 아래에서

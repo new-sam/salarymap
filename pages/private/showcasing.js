@@ -232,8 +232,10 @@ export default function PrivateShowcasing({ co, campaign, off, c }) {
             {/* 첫 화면만 가운데에 크게. 여기는 화면에 이것과 입력칸뿐이라 로고가
                 작으면 빈 화면처럼 보인다. 로딩은 단계 목록이 왼쪽으로 흐르는 화면이라 왼쪽에 작게.
                 넓게 보기에서는 로고·제목을 치운다 — 입력칸이 위아래로 자라 그 자리까지 쓴다. */}
+            {/* 워드마크가 옆으로 긴(4.8:1) 로고라 88px 높이면 화면을 가로로 다 먹는다 — 56이면
+                폭 ~270px 로 입력칸(640px) 위에 알맞다. */}
             {!(step === 'input' && wide) && (
-              <Mark center={step === 'input'} size={step === 'input' ? 88 : 24} />
+              <Mark center={step === 'input'} size={step === 'input' ? 56 : 24} />
             )}
 
             {step === 'input' ? (
@@ -363,11 +365,11 @@ export default function PrivateShowcasing({ co, campaign, off, c }) {
   )
 }
 
-/* 사이트에서 쓰는 워드마크 그대로(/fyi-logo.png — GlobalNav·기업 화면과 같은 파일).
-   여기서만 다른 마크를 그리면 고객사에겐 다른 회사로 보인다.
+/* 이 화면은 FYI 가 아니라 '공고마감' 브랜드로 나간다(별도 서비스로 보이게 — 유저 결정).
+   워드마크는 talent-showcasing 프로토타입에서 가져온 것(761×160, 흰 바탕용).
    링크는 안 건다 — 비공개 화면이라 눌러서 본 사이트로 나가면 안 된다. */
 const Mark = ({ center, size = 24 }) => (
-  <img src="/fyi-logo.png" alt="FYI" style={{
+  <img src="/showcasing-wordmark.png" alt="공고마감" style={{
     height: size, width: 'auto', objectFit: 'contain', display: 'block', marginBottom: center ? 26 : 20,
     ...(center ? { marginLeft: 'auto', marginRight: 'auto' } : null),
   }} />
@@ -593,9 +595,8 @@ function Result({ data, criteria, co, onBack, ev }) {
 
   return (
     <div style={{
-      // 양쪽 여백을 줄여 카드에 넘긴다. 아래는 고정 CTA 바가 깔리는 만큼 비워 둔다 —
-      // 안 그러면 바가 푸터(회사 정보)를 영영 가린다.
-      minHeight: '100vh', padding: picks.length ? '40px 12px 96px' : '40px 12px 28px',
+      // 양쪽 여백을 줄여 카드에 넘긴다. 아래는 떠 있는 CTA 버튼이 깔리는 만큼 비워 둔다.
+      minHeight: '100vh', padding: picks.length ? '40px 12px 130px' : '40px 12px 28px',
       background: `radial-gradient(900px 420px at 50% -60px, #FFF8F3 0%, rgba(255,248,243,0) 60%), ${T.paper}`,
     }}>
       {/* 2·4·4 배치의 폭. 가운데·아래 단이 네 칸이라 폭이 곧 카드 폭이다 —
@@ -658,15 +659,6 @@ function Result({ data, criteria, co, onBack, ev }) {
             10등 다음은 1등이다 — 되감아 돌아가게 하면 9장을 거꾸로 지나쳐야 1등이 나온다. */}
         <Carousel picks={picks} />
 
-        <style jsx>{`
-          /* 하단 고정 CTA 의 모바일 처리만 여기서. 나머지 스타일은 인라인이다 —
-             이 블록에 \${} 값을 섞으면 styled-jsx 가 블록 전체를 동적 모드로 바꿔서
-             다른 규칙까지 통째로 안 먹는다. 변수 없는 규칙만 둘 것. */
-          @media (max-width: 640px) {
-            .psc-bar-msg { display: none; }
-            .psc-bar-btn { width: 100%; }
-          }
-        `}</style>
       </div>
 
       {asking != null && (
@@ -680,33 +672,60 @@ function Result({ data, criteria, co, onBack, ev }) {
         />
       )}
 
-      <CorpFooter style={{ marginTop: 56 }} />
-
       {/* 하단 고정 CTA — 카드는 요약이라, 잘 읽힐수록 다음 욕구는 '원문'이 된다.
           그 순간에 "누구로 문의할지"부터 고르게 하지 않으려고 페이지 전체에 하나를 둔다.
           카드별 버튼은 보조 경로로 남긴다 — '이 사람'이 꽂힌 쪽에는 그게 최단이다. */}
+      {/* 얇은 바에 작은 버튼으로 뒀더니 안 보인다는 지적 — 바를 버리고 버튼 하나를
+          크게 띄운다. 이 화면에서 가장 큰 주황이 이 버튼이어야 한다. 문의가 이 화면의
+          존재 이유라서다. */}
       {!!picks.length && (
         <div style={{
-          position: 'fixed', left: 0, right: 0, bottom: 0, zIndex: 40,
-          background: 'rgba(255,255,255,.92)', backdropFilter: 'blur(8px)',
-          borderTop: `1px solid ${T.line}`,
+          position: 'fixed', left: 0, right: 0, bottom: 26, zIndex: 40,
+          display: 'flex', justifyContent: 'center', padding: '0 16px', pointerEvents: 'none',
         }}>
-          <div style={{
-            maxWidth: 1560, margin: '0 auto', padding: '11px 16px',
-            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 18,
-          }}>
-            <span className="psc-bar-msg" style={{ fontSize: 13.5, color: T.body, letterSpacing: '-0.01em' }}>
-              카드는 요약입니다 — 이력서 원문까지 확인해 보세요
-            </span>
-            <button type="button" className="psc-bar-btn" onClick={openAll}
-              style={{
-                fontFamily: 'inherit', fontSize: 14, fontWeight: 700, color: '#fff',
-                background: T.brand, border: 0, borderRadius: 100, padding: '11px 22px',
-                cursor: 'pointer', boxShadow: '0 2px 8px rgba(255,96,0,.18)',
-              }}>
-              {picks.length}분의 이력서 받아보기
-            </button>
-          </div>
+          <button type="button" className="psc-bar-btn" onClick={openAll}
+            style={{
+              pointerEvents: 'auto', fontFamily: 'inherit', fontSize: 16.5, fontWeight: 800,
+              letterSpacing: '-0.02em', color: '#fff',
+              background: T.brand, border: 0, borderRadius: 100, padding: '17px 38px',
+              cursor: 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 9,
+              boxShadow: '0 10px 28px rgba(255,96,0,.38), 0 2px 6px rgba(16,24,40,.12)',
+            }}>
+            {picks.length}명 이력서 받아보기
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+              strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <line x1="5" y1="12" x2="19" y2="12" /><polyline points="12 5 19 12 12 19" />
+            </svg>
+          </button>
+
+          {/* 이 블록은 반드시 버튼과 같은 서브트리에 있어야 한다 — 다른 형제 밑에 두면
+              styled-jsx 가 버튼에 스코프 클래스를 안 붙여서 여기 규칙 전부가 안 먹는다
+              (실제로 그랬다). \${} 값 금지도 여전하다(동적 모드가 되면 또 통째로 죽는다). */}
+          <style jsx>{`
+            .psc-bar-btn {
+              transition: transform .15s ease, box-shadow .15s ease;
+              animation: psc-nudge 3.6s ease-in-out 2s infinite;
+            }
+            /* 몇 초에 한 번 두 번 콩콩 — 주기의 대부분(20%~)은 가만히 있는다.
+               내내 움직이면 유도가 아니라 소음이다. 올리는 순간 멈춘다(이미 유도됐다). */
+            @keyframes psc-nudge {
+              0%, 20%, 100% { transform: translateY(0); }
+              6% { transform: translateY(-6px); }
+              12% { transform: translateY(0); }
+              16% { transform: translateY(-3px); }
+            }
+            .psc-bar-btn:hover {
+              animation: none;
+              transform: translateY(-2px);
+              box-shadow: 0 14px 34px rgba(255,96,0,.46), 0 2px 6px rgba(16,24,40,.12);
+            }
+            @media (prefers-reduced-motion: reduce) {
+              .psc-bar-btn { animation: none; }
+            }
+            @media (max-width: 640px) {
+              .psc-bar-btn { width: 100%; }
+            }
+          `}</style>
         </div>
       )}
     </div>
@@ -1246,64 +1265,58 @@ const priceText = (yoe) => {
   return c ? `예상 단가 ${c.won}만원/월` : '예상 단가 별도 협의'
 }
 
+/* 1~3등 표기 — 트로피(낡음)도, 옅은 메탈 톤(안 보임)도 거쳐서 온 자리다.
+   그라데이션 없이 플랫 단색 고대비로 간다: 1위만 브랜드 오렌지, 2위는 잉크, 3위는
+   슬레이트. 색은 "N위" 알약과 1위 카드 테두리에만 쓴다 — 그래야 강조가 강조로 남는다. */
+const RANK_BADGE = {
+  1: { background: T.brand, boxShadow: '0 2px 8px rgba(255,96,0,.3)' },
+  2: { background: T.ink },
+  3: { background: '#5B6B7C' },
+}
+
+/* 경력 — "1.7년"이 아니라 "1년 8개월". 소수점 년수는 계산기 말이지 사람 말이 아니다.
+   yoeM(개월)이 정답이고, 캐시된 옛 응답에는 그 필드가 없어서 년수에서 되짚는다. */
+const yoeText = (p) => {
+  const m = p.yoeM ?? (p.yoe != null ? Math.round(p.yoe * 12) : null)
+  if (m == null) return null
+  if (m === 0) return '신입'
+  const y = Math.floor(m / 12)
+  const r = m % 12
+  return y === 0 ? `${r}개월` : r === 0 ? `${y}년` : `${y}년 ${r}개월`
+}
+
 function Card({ p, no }) {
-  /* 1·2등은 왼쪽에 시상대를 붙인다. 열 장이 똑같이 서 있으면 순서가 안 읽히고, 그러면
-     우리가 매긴 순위가 아무 말도 못 한다. 카드 안쪽 구성은 나머지 여덟 장과 똑같이
-     둔다 — 앞의 둘만 다른 걸 보여주면 비교가 안 된다. */
-  const top = no <= 2
-  const medal = no === 1
-    ? { line: '#FFD9A8', from: '#FFF6E8', to: '#FFE9C9' }
-    : { line: '#DFE3E8', from: '#F7F8FA', to: '#EBEEF2' }
+  const rb = RANK_BADGE[no]
   return (
     <div
       style={{
         position: 'relative', display: 'flex', flexDirection: 'row',
         background: '#fff', borderRadius: 18,
-        border: `1px solid ${top ? medal.line : T.line}`,
-        boxShadow: top ? T.md : T.sm,
+        border: `1px solid ${no === 1 ? T.brandLine : T.line}`,
+        boxShadow: rb ? T.md : T.sm,
       }}
     >
-      {/* 시상대 — 폭을 비율로 잡는다. 카드가 452px 일 때도 318px 일 때도 같은 인상이어야
-          하는데, 고정폭으로 두면 좁은 칸에서 트로피가 카드를 반쯤 먹는다. */}
-      {top && (
-        <div style={{
-          width: '19%', minWidth: 70, maxWidth: 104, flexShrink: 0,
-          background: `linear-gradient(160deg, ${medal.from} 0%, ${medal.to} 100%)`,
-          borderRight: `1px solid ${medal.line}`,
-          borderRadius: '17px 0 0 17px',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-        }}>
-          {/* trophy.png 는 금·은이 한 장에 나란히 들어 있는 1536×1024 이다. 두 장으로
-              나누지 않고 배경으로 깔아 반쪽씩 쓴다 — 파일이 하나면 요청도 하나다.
-              배경 크기를 200%×100% 로 두면 칸 너비의 두 배가 깔리므로 왼쪽 절반이 금,
-              오른쪽 절반이 은이 된다. 칸의 가로세로비를 반쪽 비율(0.742)에 맞춰 놨으니
-              늘어나지 않는다.
-              multiply: 원본 배경이 흰색이라 그대로 얹으면 패널 위에 흰 사각형이 뜬다.
-              곱하기로 깔면 흰색이 아래 색을 그대로 통과시켜 오려낸 것처럼 보인다. */}
-          <div aria-hidden="true" style={{
-            width: '86%', aspectRatio: '0.742',
-            backgroundImage: 'url(/trophy.png)',
-            backgroundSize: '200% 100%',
-            backgroundPosition: no === 1 ? '0% 50%' : '100% 50%',
-            backgroundRepeat: 'no-repeat',
-            mixBlendMode: 'multiply',
-          }} />
-        </div>
-      )}
-
       <div style={{ padding: '22px 22px 18px', minWidth: 0, flex: 1, display: 'flex', flexDirection: 'column' }}>
         {/* 머리줄 — 왼쪽 순위, 오른쪽 적합점수. 카드에서 숫자만 있는 유일한 줄이다. */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
           {/* 순위 — 이 화면에서 이 사람을 부를 수 있는 유일한 이름이다. 문의·메일·미팅이
-              전부 이 번호를 쓴다(이름은 미팅에서야 건넨다). */}
-          <span style={{
-            display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-            width: 30, height: 30, borderRadius: '50%',
-            fontSize: 13, fontWeight: 700, letterSpacing: '-0.02em',
-            ...(top
-              ? { background: T.brand, color: '#fff', boxShadow: '0 1px 4px rgba(255,96,0,.22)' }
-              : { background: '#F1F5F9', color: '#64748B' }),
-          }}>{no}</span>
+              전부 이 번호를 쓴다(이름은 미팅에서야 건넨다). 1~3등은 "N위" 알약이라
+              번호만 있는 회색 원(4등부터)과 모양부터 다르다. */}
+          {rb ? (
+            <span style={{
+              display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+              padding: '5px 12px', borderRadius: 100,
+              fontSize: 13, fontWeight: 800, letterSpacing: '-0.02em', color: '#fff',
+              ...rb,
+            }}>{no}위</span>
+          ) : (
+            <span style={{
+              display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+              width: 30, height: 30, borderRadius: '50%',
+              fontSize: 13, fontWeight: 700, letterSpacing: '-0.02em',
+              background: '#F1F5F9', color: '#64748B',
+            }}>{no}</span>
+          )}
 
           {/* 적합점수 — 요건 충족률과 이력서 자체를 합쳐 코드가 낸 값(0~100) */}
           <span title={`자격요건 ${p.met}/${p.total} 충족 · ${p.rank}급`}
@@ -1323,13 +1336,13 @@ function Card({ p, no }) {
           {p.photo
             ? <img src={p.photo} alt="" referrerPolicy="no-referrer" style={{
                 width: 72, height: 72, borderRadius: '50%', objectFit: 'cover', flexShrink: 0,
-                boxShadow: `0 0 0 3px #fff, 0 0 0 4px ${top ? medal.line : T.line}, 0 6px 16px rgba(16,24,40,.12)`,
+                boxShadow: `0 0 0 3px #fff, 0 0 0 4px ${no === 1 ? T.brandLine : T.line}, 0 6px 16px rgba(16,24,40,.12)`,
               }} />
             : <div style={{
                 width: 72, height: 72, borderRadius: '50%', flexShrink: 0,
                 background: 'linear-gradient(180deg,#F7F8FA 0%,#EFF2F5 100%)',
                 display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 26, color: '#C6CCD3',
-                boxShadow: `0 0 0 3px #fff, 0 0 0 4px ${top ? medal.line : T.line}`,
+                boxShadow: `0 0 0 3px #fff, 0 0 0 4px ${no === 1 ? T.brandLine : T.line}`,
               }}>👤</div>}
 
           <div style={{ minWidth: 0, flex: 1, paddingTop: 2 }}>
@@ -1349,11 +1362,9 @@ function Card({ p, no }) {
               display: 'flex', marginTop: 6, minWidth: 0,
               flexDirection: 'row', alignItems: 'baseline', gap: 10,
             }}>
-              {p.yoe != null && (
+              {yoeText(p) && (
                 <span style={{ fontSize: 13, color: '#64748B', flexShrink: 0 }}>
-                  경력 <span style={{ fontWeight: 700, color: '#334155' }}>
-                    {p.yoe === 0 ? '신입' : `${p.yoe}년`}
-                  </span>
+                  경력 <span style={{ fontWeight: 700, color: '#334155' }}>{yoeText(p)}</span>
                 </span>
               )}
               {!!(p.english || p.korean) && (
