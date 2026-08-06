@@ -1,7 +1,7 @@
 import { createClient } from '@supabase/supabase-js'
 import OpenAI from 'openai'
 import { asSkills, asExperiences } from '../../../lib/talentCategory'
-import { prefilterScore, judge, yoeWindow, RANKS } from '../../../lib/jdMatch'
+import { prefilterScore, judge, yoeWindow, RANKS, normSkill } from '../../../lib/jdMatch'
 import { verifyToken } from '../../../lib/showcaseToken'
 
 /* 조건(jd-criteria 결과) → 인재 5명.
@@ -29,8 +29,15 @@ const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
 const COLUMNS = 'id, headline, position, yoe_months, university, verified_school_name, major, ' +
   'photo_url, skills, experiences, english_cert, korean_cert, resume_summary, role'
 
-const SCREEN_N = 24 // 모델이 실제로 읽는 인원 — 10명을 고르려면 통과자가 그만큼 있어야 한다
+/* 모델이 실제로 읽는 인원. 24 였다가 48 로 올렸다 — 1차는 키워드 매칭이라 표기가 다른
+   사람을 놓치는데, 여기서 잘리면 모델이 볼 기회 자체가 없다. 병렬이라 시간은 그대로고
+   비용은 mini 라 검색당 몇십 원 차이다. */
+const SCREEN_N = 48
 const PICK_N = 10
+
+/* 같은 입력이면 같은 답 — OpenAI 의 seed 는 보장이 아니라 최선(best-effort)이지만,
+   온도 0 과 같이 쓰면 흔들림이 대부분 사라진다. 완전한 고정은 결과 캐시(아래)가 한다. */
+const SEED = 7
 
 async function fetchPool() {
   const all = []
@@ -134,7 +141,8 @@ async function screen(c, p) {
     const r = await openai.chat.completions.create({
       model: 'gpt-4o-mini',
       response_format: { type: 'json_object' },
-      temperature: 0.1,
+      temperature: 0,
+      seed: SEED,
       messages: [{ role: 'user', content: screenPrompt(c, profileText(p)) }],
     })
     return JSON.parse(r.choices[0].message.content)
@@ -206,10 +214,14 @@ async function rank(c, finalists) {
       pref: x.v.preferredMet,
       text: profileText(x.p, hideYoe),
     }))
+    /* 순위만 gpt-4o 다. 스크리닝은 48명을 병렬로 돌려서 mini 가 아니면 비용이 15배로
+       뛰지만, 순위는 검색당 한 번이고 여기서 뒤집히면 화면의 1등이 바뀐다 —
+       mini 는 경계선 비교에서 판단이 잘 흔들렸다. */
     const r = await openai.chat.completions.create({
-      model: 'gpt-4o-mini',
+      model: 'gpt-4o',
       response_format: { type: 'json_object' },
-      temperature: 0.2,
+      temperature: 0,
+      seed: SEED,
       messages: [{ role: 'user', content: rankPrompt(c, rows) }],
     })
     const out = JSON.parse(r.choices[0].message.content)
@@ -236,10 +248,8 @@ async function rank(c, finalists) {
 
 /* 카드에 그리는 것만. 인재풀 카드(components/admin/TalentPoolView)와 같은 행 구성이되
    이름 자리에 직무가 온다. */
-/* 스킬 이름 맞추기 — "React.js" 와 "React", "Node.js" 와 "NodeJS" 를 같은 것으로 본다.
-   짧은 토큰(Go·C·R)은 포함 검사를 안 한다. "Go" 로 "Google Analytics" 가 걸린다.
+/* 스킬 이름 맞추기 — normSkill 은 lib/jdMatch 에서 온다(1차 거름망과 같은 규칙).
    걸린 요건 이름을 돌려주는 이유는 아래 중복 제거 때문이다. */
-const normSkill = (s) => String(s || '').toLowerCase().replace(/[^a-z0-9+#]/g, '')
 function matchedReq(skill, wanted) {
   const a = normSkill(skill)
   if (!a) return null
@@ -364,6 +374,29 @@ export default async function handler(req, res) {
   }
   if (c.requirements.length < 2) return res.status(400).json({ error: '조건이 비어 있습니다' })
 
+  /* 같은 JD 는 같은 결과 — jd-criteria 가 JD 원문의 해시를 주고, 24시간 안에 같은 해시로
+     저장된 검색이 있으면 그 결과를 그대로 돌려준다. 온도 0 은 '거의' 고정이고, 고객사가
+     같은 링크에서 두 번 돌렸는데 10명이 바뀌는 것을 막는 건 이 캐시다.
+     24시간인 이유: 인재풀이 매일 자란다 — 영영 고정하면 새 이력서가 영영 안 보인다.
+     sid 는 캐시된 행 것을 쓴다. 문의가 원래 검색에 붙는 게 맞다.
+     컬럼(jd_hash·result)이 아직 없으면 조용히 그냥 지나간다 — 캐시는 없어도 되는 층이다. */
+  const h = typeof req.body?.h === 'string' && /^[a-f0-9]{64}$/.test(req.body.h) ? req.body.h : null
+  if (h) {
+    try {
+      const { data: hits } = await supabase.from('showcase_searches')
+        .select('id, result')
+        .eq('jd_hash', h)
+        .not('result', 'is', null)
+        .gte('created_at', new Date(Date.now() - 24 * 3600 * 1000).toISOString())
+        .order('created_at', { ascending: false })
+        .limit(1)
+      if (hits?.[0]?.result) {
+        res.setHeader('Cache-Control', 'no-store')
+        return res.status(200).json({ ...hits[0].result, sid: hits[0].id })
+      }
+    } catch { /* 캐시 실패는 검색 실패가 아니다 */ }
+  }
+
   try {
     const pool = await fetchPool()
 
@@ -426,15 +459,22 @@ export default async function handler(req, res) {
       passed: passed.length,
     })
 
-    res.setHeader('Cache-Control', 'no-store')
-    return res.status(200).json({
-      sid,
+    const payload = {
       pool: pool.length,
       screened: judged.length,
       passed: passed.length,
       yoeWindow: yoeWindow(c.yoe_min, c.yoe_max),
       picks: picks.map(({ p, v }) => card(p, v, c)),
-    })
+    }
+
+    // 캐시 적재 — 응답을 막지 않는다. 컬럼이 없으면 실패하고, 그러면 캐시 없이 살 뿐이다.
+    if (sid && h) {
+      supabase.from('showcase_searches').update({ jd_hash: h, result: payload }).eq('id', sid)
+        .then(() => {}, () => {})
+    }
+
+    res.setHeader('Cache-Control', 'no-store')
+    return res.status(200).json({ sid, ...payload })
   } catch (e) {
     return res.status(500).json({ error: e.message || '후보를 찾지 못했습니다' })
   }

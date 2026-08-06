@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import Head from 'next/head'
 import { track } from '../../lib/track'
 import { verifyToken } from '../../lib/showcaseToken'
@@ -148,9 +148,10 @@ export default function PrivateShowcasing({ co, campaign, off, c }) {
 
       // 토큰을 같이 보낸다 — 서버가 서명을 다시 확인해서 이 검색에 기업 이름을 붙인다.
       // 기업명을 문자열로 보내지 않는 이유: 로그인이 없는 경로라 그대로 믿을 수가 없다.
+      // h 는 JD 원문의 해시 — 같은 JD 를 다시 돌리면 서버가 저장된 같은 결과를 돌려준다.
       const r2 = await fetch('/api/private/jd-match', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ criteria: j1.criteria, c: c || null }),
+        body: JSON.stringify({ criteria: j1.criteria, c: c || null, h: j1.h || null }),
       })
       const j2 = await r2.json()
       if (!r2.ok) throw new Error(j2.error || '후보를 찾지 못했습니다')
@@ -581,10 +582,6 @@ const Bullets = ({ items, color }) => (
    이 화면의 '5명'이 무슨 뜻인지 사라진다. */
 function Result({ data, criteria, co, onBack, ev }) {
   const picks = data?.picks || []
-  // 위계 세 단 — 1·2등 / 3~6등 / 7~10등(2·4·4). 순위가 카드 크기로도 읽히게 나눈다.
-  const tier1 = picks.slice(0, 2)
-  const tier2 = picks.slice(2, 6)
-  const tier3 = picks.slice(6)
   // 문의 모달을 연 카드 번호(0-base). null 이면 닫힌 상태.
   const [asking, setAsking] = useState(null)
 
@@ -656,76 +653,15 @@ function Result({ data, criteria, co, onBack, ev }) {
 
         <div style={{ height: 1, background: T.line, marginTop: 22 }} />
 
-        {/* 세 단 — 1·2등 / 3~6등 / 7~10등. 열 수가 커질수록 칸이 좁아지므로 카드도 같이
-            줄인다(size). 열 개를 같은 크기로 두 줄에 깔면 순위가 아무 말도 안 하고,
-            반대로 열 개를 다 크게 그리면 한 화면에 안 들어와서 비교가 안 된다.
-
-            6등부터가 작아지는 건 자리가 없어서만은 아니다. 다섯 칸이면 한 칸이 227px 라
-            지금 카드를 그대로 넣으면 주요이력·기술이 죄다 잘리는데, 잘린 카드는 보여 준
-            게 아니다. 그래서 그 단은 내용부터 줄인다 — 사진·직무·경력·어학·기술 한 줄.
-            더 볼 것은 눌러서 본다. */}
-        {!!tier1.length && (
-          <div className="psc-g psc-g1">
-            {tier1.map((p, i) => (
-              /* 카드를 여는 것과 문의를 접수하는 것은 다른 일이다. 모달은 언제나 열린다 —
-                 저장소가 준비됐는지로 화면을 잠그면, 화면을 만드는 동안 화면을 볼 수가 없다.
-                 접수가 되느냐는 보낼 때 판가름난다(InquiryModal.send). */
-              <Card key={i} p={p} no={i + 1} />
-            ))}
-          </div>
-        )}
-        {!!tier2.length && (
-          <div className="psc-g psc-g2">
-            {tier2.map((p, i) => (
-              <Card key={i} p={p} no={i + 3} />
-            ))}
-          </div>
-        )}
-        {!!tier3.length && (
-          <div className="psc-g psc-g3">
-            {tier3.map((p, i) => (
-              <Card key={i} p={p} no={i + 7} />
-            ))}
-          </div>
-        )}
+        {/* 카로셀 — 세 단 그리드(2·4·4)였다가 바꿨다. 세로로 깔면 7~10등은 스크롤 밑이라
+            사실상 안 읽혔다. 1등이 가운데 크게 서고 몇 초마다 다음으로 스스로 넘어간다.
+            10등 다음은 1등이다 — 되감아 돌아가게 하면 9장을 거꾸로 지나쳐야 1등이 나온다. */}
+        <Carousel picks={picks} />
 
         <style jsx>{`
-          .psc-g { display: grid; gap: 16px; margin-top: 18px; }
-          /* 1·2등은 가운데로 몰아 조금 좁힌다. 1200 을 둘로 나누면 한 칸이 592px 라
-             카드 안이 휑해진다. */
-          .psc-g1 { grid-template-columns: repeat(2, minmax(0, 1fr)); max-width: 1060px; margin-left: auto; margin-right: auto; }
-          .psc-g2 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
-          .psc-g3 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
-
-          /* 좁아지면 단을 푼다. 5열을 붙들고 있으면 한 칸이 150px 밑으로 내려간다. */
-          @media (max-width: 1180px) {
-            .psc-g1 { max-width: none; }
-            .psc-g2, .psc-g3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-          }
-          @media (max-width: 860px) {
-            .psc-g2, .psc-g3 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-          }
-          @media (max-width: 580px) {
-            .psc-g1, .psc-g2, .psc-g3 { grid-template-columns: 1fr; }
-          }
-
-          /* 하단 고정 CTA — 스타일이 여기 있는 건 styled-jsx 가 한 컴포넌트에 블록 두 개를
-             중첩으로 보고 거부해서다. 클래스 스코프는 컴포넌트 단위라 위치는 상관없다. */
-          .psc-bar {
-            position: fixed; left: 0; right: 0; bottom: 0; z-index: 40;
-            background: rgba(255,255,255,.92); backdrop-filter: blur(8px);
-            border-top: 1px solid ${T.line};
-          }
-          .psc-bar-in {
-            max-width: 1560px; margin: 0 auto; padding: 11px 16px;
-            display: flex; align-items: center; justify-content: center; gap: 18px;
-          }
-          .psc-bar-msg { font-size: 13.5px; color: ${T.body}; letter-spacing: -0.01em; }
-          .psc-bar-btn {
-            font-family: inherit; font-size: 14px; font-weight: 700; color: #fff;
-            background: ${T.brand}; border: 0; border-radius: 100px; padding: 11px 22px;
-            cursor: pointer; box-shadow: 0 2px 8px rgba(255,96,0,.18);
-          }
+          /* 하단 고정 CTA 의 모바일 처리만 여기서. 나머지 스타일은 인라인이다 —
+             이 블록에 \${} 값을 섞으면 styled-jsx 가 블록 전체를 동적 모드로 바꿔서
+             다른 규칙까지 통째로 안 먹는다. 변수 없는 규칙만 둘 것. */
           @media (max-width: 640px) {
             .psc-bar-msg { display: none; }
             .psc-bar-btn { width: 100%; }
@@ -750,10 +686,24 @@ function Result({ data, criteria, co, onBack, ev }) {
           그 순간에 "누구로 문의할지"부터 고르게 하지 않으려고 페이지 전체에 하나를 둔다.
           카드별 버튼은 보조 경로로 남긴다 — '이 사람'이 꽂힌 쪽에는 그게 최단이다. */}
       {!!picks.length && (
-        <div className="psc-bar">
-          <div className="psc-bar-in">
-            <span className="psc-bar-msg">카드는 요약입니다 — 이력서 원문까지 확인해 보세요</span>
-            <button type="button" className="psc-bar-btn" onClick={openAll}>
+        <div style={{
+          position: 'fixed', left: 0, right: 0, bottom: 0, zIndex: 40,
+          background: 'rgba(255,255,255,.92)', backdropFilter: 'blur(8px)',
+          borderTop: `1px solid ${T.line}`,
+        }}>
+          <div style={{
+            maxWidth: 1560, margin: '0 auto', padding: '11px 16px',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 18,
+          }}>
+            <span className="psc-bar-msg" style={{ fontSize: 13.5, color: T.body, letterSpacing: '-0.01em' }}>
+              카드는 요약입니다 — 이력서 원문까지 확인해 보세요
+            </span>
+            <button type="button" className="psc-bar-btn" onClick={openAll}
+              style={{
+                fontFamily: 'inherit', fontSize: 14, fontWeight: 700, color: '#fff',
+                background: T.brand, border: 0, borderRadius: 100, padding: '11px 22px',
+                cursor: 'pointer', boxShadow: '0 2px 8px rgba(255,96,0,.18)',
+              }}>
               {picks.length}분의 이력서 받아보기
             </button>
           </div>
@@ -1086,6 +1036,166 @@ const primaryBtn = {
   border: 0, borderRadius: 12, padding: '13px 0', cursor: 'pointer',
 }
 
+/* 카로셀 — 열 장을 한 줄에 세우고 옆으로 넘긴다.
+
+   무한 루프다: 마지막 장에서 다음을 누르면 1등으로 이어진다. 구현은 앞쪽 몇 장을 꼬리에
+   복제해 두고, 복제 구간으로 미끄러져 들어간 순간 전환 없이 진짜 자리로 순간이동하는
+   고전적인 방식이다 — 보는 사람 눈에는 이음매가 없다. 뒤로 넘길 때도 같은 트릭을
+   거꾸로 쓴다(0에서 복제 구간으로 순간이동한 뒤 한 칸 애니메이션).
+
+   라이브러리를 안 쓰는 건 이 화면 하나 때문에 부품을 들이지 않기 위해서다. 필요한 건
+   transform 하나와 복제 몇 장뿐이다. */
+function Carousel({ picks }) {
+  const GAP = 20
+  const K = 2 // 양쪽 복제 수 — 가운데 카드 양옆으로 보이는 만큼만 있으면 된다
+  const n = picks.length
+  const vpRef = useRef(null)
+  const [vw, setVw] = useState(0)
+  const [pos, setPos] = useState(K)   // 트랙 위치. K 가 1등이다
+  const [anim, setAnim] = useState(true)
+  const [paused, setPaused] = useState(false)
+
+  // 그리기 전에 재야 한다(useLayoutEffect) — 아니면 어긋난 트랙이 한 프레임 보인다
+  useLayoutEffect(() => {
+    const measure = () => setVw(vpRef.current?.clientWidth || 0)
+    measure()
+    window.addEventListener('resize', measure)
+    return () => window.removeEventListener('resize', measure)
+  }, [])
+
+  const slideW = vw < 640 ? Math.round(vw * 0.84) : vw < 1100 ? 500 : 560
+
+  /* 몇 초에 한 번 스스로 넘어간다. 타이머가 pos 에 걸려 있어 점을 눌러 건너뛰어도
+     그 시점부터 다시 센다 — 읽기 시작하자마자 넘어가 버리는 일이 없다.
+     탭이 백그라운드였다가 돌아오면 transitionend 를 놓쳐 pos 가 복제 구간에 걸려 있을 수
+     있는데, 그때는 소리 없이 진짜 자리로 되돌리고 다음 틱에 다시 간다. */
+  useEffect(() => {
+    if (paused || n < 2) return
+    const t = setTimeout(() => {
+      if (pos >= K + n) { setAnim(false); setPos(pos - n) }
+      else { setAnim(true); setPos(pos + 1) }
+    }, 3500)
+    return () => clearTimeout(t)
+  }, [paused, pos, n])
+
+  // 복제 구간(같은 그림)에 도착하면 진짜 자리로 되돌린다 — 전환이 꺼져 있어 안 보인다.
+  // 카드의 확대/축소 전환도 여기로 버블링되므로 트랙 자신의 것만 받는다.
+  const onEnd = (e) => {
+    if (e.target !== e.currentTarget) return
+    if (pos >= K + n) { setAnim(false); setPos(pos - n) }
+    else if (pos < K) { setAnim(false); setPos(pos + n) }
+  }
+
+  /* 드래그 — 마우스·터치 공용(pointer 이벤트). 잡는 동안 트랙이 손을 따라오고,
+     놓으면 끌린 거리만큼 가까운 카드에 스냅한다. 5px 이상 움직였으면 드래그지
+     클릭이 아니다 — 놓는 순간 카드 클릭이 같이 터지는 것을 막는다. */
+  const drag = useRef(null)
+  const clickBlock = useRef(false)
+  const [dragX, setDragX] = useState(0)
+
+  const settle = (target, fromDx) => {
+    if (target < K) {
+      // 목표가 머리쪽 복제 구간 — 같은 그림인 진짜 자리로 소리 없이 옮긴 뒤 애니메이션.
+      // rAF 두 번은 순간이동이 화면에 먼저 칠해지게 하는 최소한의 기다림이다.
+      setAnim(false); setPos(pos + n); setDragX(fromDx)
+      requestAnimationFrame(() => requestAnimationFrame(() => {
+        setAnim(true); setPos(target + n); setDragX(0)
+      }))
+    } else {
+      setAnim(true); setPos(Math.min(target, K + n)); setDragX(0)
+    }
+  }
+
+  /* setPointerCapture 를 안 쓴다 — 캡처하면 그 뒤의 click 이 카드가 아니라 캡처한
+     요소(뷰포트)로 가서, 옆 카드를 눌러 가운데로 부르는 동작이 죽는다. 대신 끌기 동안만
+     window 에 리스너를 달아서 화면 밖으로 나가도 놓침 없이 따라간다. */
+  const onPointerDown = (e) => {
+    if (e.pointerType === 'mouse' && e.button !== 0) return
+    if (e.pointerType === 'mouse') e.preventDefault() // 글자 선택으로 새는 것 방지 — click 은 산다
+    drag.current = { x: e.clientX, moved: false }
+    setPaused(true); setAnim(false)
+    const move = (ev) => {
+      if (!drag.current) return
+      const dx = ev.clientX - drag.current.x
+      if (Math.abs(dx) > 5) drag.current.moved = true
+      setDragX(dx)
+    }
+    const up = (ev) => {
+      window.removeEventListener('pointermove', move)
+      window.removeEventListener('pointerup', up)
+      window.removeEventListener('pointercancel', up)
+      if (!drag.current) return
+      const dx = ev.clientX - drag.current.x
+      clickBlock.current = drag.current.moved
+      drag.current = null
+      // 터치는 손을 뗐으니 다시 돈다. 마우스는 아직 카드 위라 hover 규칙에 맡긴다.
+      if (ev.pointerType !== 'mouse') setPaused(false)
+      const step = Math.max(-2, Math.min(2, Math.round(-dx / ((slideW + GAP) * 0.55))))
+      if (!step) { setAnim(true); setDragX(0); return } // 짧게 끌었다 — 제자리로 스냅백
+      settle(pos + step, dx)
+    }
+    window.addEventListener('pointermove', move)
+    window.addEventListener('pointerup', up)
+    window.addEventListener('pointercancel', up)
+  }
+
+  // 앞뒤 K 장씩 복제 — 1등 왼쪽에 10등이, 10등 오른쪽에 1등이 보여야 고리가 된다
+  const items = [...picks.slice(n - K), ...picks, ...picks.slice(0, K)]
+  const active = ((pos - K) % n + n) % n
+
+  return (
+    <div style={{ marginTop: 18 }}>
+      <div ref={vpRef}
+        onMouseEnter={() => setPaused(true)} onMouseLeave={() => setPaused(false)}
+        onPointerDown={onPointerDown}
+        style={{
+          overflow: 'hidden', touchAction: 'pan-y',
+          cursor: drag.current ? 'grabbing' : 'grab',
+          userSelect: dragX ? 'none' : 'auto',
+        }}>
+        <div onTransitionEnd={onEnd} style={{
+          display: 'flex', gap: GAP,
+          transform: `translateX(${(vw - slideW) / 2 - pos * (slideW + GAP) + dragX}px)`,
+          transition: anim ? 'transform .55s ease' : 'none',
+        }}>
+          {items.map((p, i) => (
+            /* 가운데만 제 크기, 나머지는 줄이고 흐린다 — 지금 읽을 카드가 어느 것인지를
+               크기가 말하게 한다. scale 은 자리를 차지하지 않아서 트랙 계산이 안 흔들린다.
+               옆 카드는 눌러서 가운데로 부른다 — 드래그 끝의 클릭은 clickBlock 이 막는다. */
+            <div key={i}
+              onClick={() => {
+                if (clickBlock.current) { clickBlock.current = false; return }
+                if (i !== pos) { setAnim(true); setPos(i) }
+              }}
+              style={{
+                width: slideW, flexShrink: 0,
+                transform: i === pos ? 'scale(1)' : 'scale(0.88)',
+                opacity: i === pos ? 1 : 0.5,
+                transition: anim ? 'transform .55s ease, opacity .55s ease' : 'none',
+                cursor: i === pos ? 'default' : 'pointer',
+              }}>
+              <Card p={p} no={((i - K) % n + n) % n + 1} />
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* 지금 몇 등을 보고 있나 — 열 개 점. 누르면 그 자리로 간다. */}
+      <div style={{ display: 'flex', justifyContent: 'center', gap: 7, marginTop: 16 }}>
+        {picks.map((_, i) => (
+          <button key={i} type="button" aria-label={`${i + 1}등으로`}
+            onClick={() => { setAnim(true); setPos(K + i) }}
+            style={{
+              width: active === i ? 18 : 7, height: 7, borderRadius: 100, border: 0, padding: 0,
+              cursor: 'pointer', transition: 'width .2s ease, background .2s ease',
+              background: active === i ? T.brand : '#D9DEE4',
+            }} />
+        ))}
+      </div>
+    </div>
+  )
+}
+
 /* 인재 카드 — 어드민 인재풀 카드와 같은 행 구성(경력·학력·주요이력·외국어·포폴·기술)이되
    이름 자리에 직무가 온다. 행을 항상 렌더하고 높이를 고정하는 것도 같은 이유다:
    카드마다 행이 들쭉날쭉하면 다섯 명을 나란히 비교할 수가 없다. */
@@ -1140,15 +1250,6 @@ function Card({ p, no }) {
   /* 1·2등은 왼쪽에 시상대를 붙인다. 열 장이 똑같이 서 있으면 순서가 안 읽히고, 그러면
      우리가 매긴 순위가 아무 말도 못 한다. 카드 안쪽 구성은 나머지 여덟 장과 똑같이
      둔다 — 앞의 둘만 다른 걸 보여주면 비교가 안 된다. */
-  /* 직무명이 두 줄로 접힐 만큼 길면 경력·어학을 한 줄에 붙인다. 그래야 카드 높이가
-     제목 길이를 따라 들쭉날쭉해지지 않는다 — 열 장을 나란히 비교하는 화면이라 높이가
-     맞아야 한다.
-     너비를 재지 않고 글자 수로 어림하는 건, 재려면 ref 와 관찰자가 필요한데 그 값이
-     카드 폭마다(378/452px) 다시 달라져서다. 한글은 라틴 글자의 두 배 폭으로 세고,
-     30 은 378px 카드의 한 줄에 들어가는 양이다. */
-  const titleW = [...(p.title || '')].reduce((n, ch) => n + (/[가-힣ㄱ-ㅎㅏ-ㅣ]/.test(ch) ? 2 : 1), 0)
-  const tightMeta = titleW > 30
-
   const top = no <= 2
   const medal = no === 1
     ? { line: '#FFD9A8', from: '#FFF6E8', to: '#FFE9C9' }
@@ -1191,7 +1292,7 @@ function Card({ p, no }) {
       )}
 
       <div style={{ padding: '22px 22px 18px', minWidth: 0, flex: 1, display: 'flex', flexDirection: 'column' }}>
-        {/* 머리줄 — 왼쪽 순위, 오른쪽 우대·적합점수. 카드에서 숫자만 있는 유일한 줄이다. */}
+        {/* 머리줄 — 왼쪽 순위, 오른쪽 적합점수. 카드에서 숫자만 있는 유일한 줄이다. */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
           {/* 순위 — 이 화면에서 이 사람을 부를 수 있는 유일한 이름이다. 문의·메일·미팅이
               전부 이 번호를 쓴다(이름은 미팅에서야 건넨다). */}
@@ -1203,17 +1304,6 @@ function Card({ p, no }) {
               ? { background: T.brand, color: '#fff', boxShadow: '0 1px 4px rgba(255,96,0,.22)' }
               : { background: '#F1F5F9', color: '#64748B' }),
           }}>{no}</span>
-
-          {/* 우대 충족 — 카드 순서를 정하는 값이라 점수와 나란히 세운다. 점수에 섞지 않은
-              이유는 lib/jdMatch 에 있다(섞으면 낮은 점수가 위에 서는 일이 생긴다).
-              하나도 못 채웠으면 아예 안 단다 — "우대 0/2" 는 우리가 골라 보내 드린 사람
-              위에 0 을 붙여 놓는 꼴이다. */}
-          {!!p.pref && (
-            <span title="기업이 적은 우대사항 중 충족한 개수 — 이 순서를 정하는 값입니다" style={{
-              fontSize: 10.5, fontWeight: 700, padding: '3px 8px', borderRadius: 6,
-              color: '#0B7A6E', background: '#EEFAF7', border: '1px solid #CDEDE6',
-            }}>우대 {p.pref}/{p.prefTotal}</span>
-          )}
 
           {/* 적합점수 — 요건 충족률과 이력서 자체를 합쳐 코드가 낸 값(0~100) */}
           <span title={`자격요건 ${p.met}/${p.total} 충족 · ${p.rank}급`}
@@ -1251,25 +1341,29 @@ function Card({ p, no }) {
               display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden',
             }}>{p.title || '직무 미상'}</div>
 
+            {/* 경력·어학은 언제나 한 줄이다. 직무명 길이에 따라 줄 수를 바꿨더니(tightMeta)
+                카드마다 모양이 달라 보인다는 지적을 받았다 — 카로셀 폭(500px+)이면 한 줄로 족하다.
+                없는 값은 그 칸을 통째로 비운다 — "기재 없음"·"미상"은 정보가 아니라 감점 표시라,
+                우리가 골라 보내는 카드에 우리 손으로 마이너스를 적는 셈이다. */}
             <div style={{
               display: 'flex', marginTop: 6, minWidth: 0,
-              ...(tightMeta
-                ? { flexDirection: 'row', alignItems: 'baseline', gap: 10 }
-                : { flexDirection: 'column', gap: 3 }),
+              flexDirection: 'row', alignItems: 'baseline', gap: 10,
             }}>
-              <span style={{ fontSize: 13, color: '#64748B', flexShrink: 0 }}>
-                경력 <span style={{ fontWeight: 700, color: '#334155' }}>
-                  {p.yoe == null ? '미상' : p.yoe === 0 ? '신입' : `${p.yoe}년`}
+              {p.yoe != null && (
+                <span style={{ fontSize: 13, color: '#64748B', flexShrink: 0 }}>
+                  경력 <span style={{ fontWeight: 700, color: '#334155' }}>
+                    {p.yoe === 0 ? '신입' : `${p.yoe}년`}
+                  </span>
                 </span>
-              </span>
-              <span style={{ fontSize: 12.5, color: '#64748B', minWidth: 0, ...oneLine }}
-                title={[p.english, p.korean].filter(Boolean).join(' / ')}>
-                {p.english || p.korean ? (<>
+              )}
+              {!!(p.english || p.korean) && (
+                <span style={{ fontSize: 12.5, color: '#64748B', minWidth: 0, ...oneLine }}
+                  title={[p.english, p.korean].filter(Boolean).join(' / ')}>
                   {p.english && <><span style={{ color: T.brand, fontWeight: 700, marginRight: 5 }}>영어</span>{p.english}</>}
                   {p.english && p.korean && <span style={{ color: '#D6DBE1' }}> · </span>}
                   {p.korean && <><span style={{ color: T.brand, fontWeight: 700, marginRight: 5 }}>한국어</span>{p.korean}</>}
-                </>) : <span style={{ color: T.faint }}>어학 기재 없음</span>}
-              </span>
+                </span>
+              )}
             </div>
 
             {/* 5명을 채우려고 기준 아래에서 데려온 사람만 표시한다 — 같은 무게로 읽히면 안 된다. */}

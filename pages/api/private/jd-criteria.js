@@ -1,3 +1,4 @@
+import crypto from 'crypto'
 import OpenAI from 'openai'
 import { createClient } from '@supabase/supabase-js'
 
@@ -107,10 +108,14 @@ export default async function handler(req, res) {
   try {
     // 모수 세기는 모델 호출과 같이 띄운다 — 순서대로 하면 로딩이 그만큼 길어진다
     const counting = poolCount()
+    /* gpt-4o 다(mini 아님). 여기서 뽑은 조건이 1차 거름망의 잣대가 되어 1,400명을 48명으로
+       자른다 — 조건이 흔들리면 아래 전부가 흔들린다. 검색당 한 번이라 비용도 감당된다.
+       온도 0 + seed 는 같은 JD 에 같은 조건을 주기 위해서다(최종 고정은 jd-match 의 캐시). */
     const completion = await openai.chat.completions.create({
-      model: 'gpt-4o-mini',
+      model: 'gpt-4o',
       response_format: { type: 'json_object' },
-      temperature: 0.1,
+      temperature: 0,
+      seed: 7,
       messages: [
         { role: 'system', content: SYSTEM },
         { role: 'user', content: jd.slice(0, 12000) },
@@ -160,6 +165,10 @@ export default async function handler(req, res) {
 
     return res.status(200).json({
       pool: await counting,
+      /* JD 원문의 지문 — jd-match 가 "같은 JD 였나"를 알아보는 열쇠다. 공백·대소문자만
+         고르고 해시한다: 같은 공고를 다시 붙여넣을 때 줄바꿈이 조금 달라도 같은 검색이다.
+         원문 자체는 여전히 저장하지 않는다. 해시는 되돌릴 수 없다. */
+      h: crypto.createHash('sha256').update(jd.toLowerCase().replace(/\s+/g, ' ').trim()).digest('hex'),
       criteria: {
         title: String(raw.title || '').slice(0, 60),
         positions: list(raw.positions, 3).filter((p) => POSITIONS.includes(p)),
