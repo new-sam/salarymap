@@ -25,8 +25,9 @@ export default async function handler(req, res) {
     if (!job || !job.is_active) return res.status(400).json({ error: 'job_closed' })
 
     // 중복 지원 방지(버튼 재클릭/재방문) — 이미 지원했으면 성공처럼 응답만.
+    // 취소(canceled)된 지원은 재지원 허용 — /api/job-applications 의 dedup 과 같은 기준.
     const { data: dup } = await supabase.from('job_applications')
-      .select('id').eq('job_id', jobId).eq('user_id', userId).limit(1)
+      .select('id').eq('job_id', jobId).eq('user_id', userId).neq('status', 'canceled').limit(1)
     if (dup?.length) return res.status(200).json({ ok: true, already: true })
 
     const baseRow = {

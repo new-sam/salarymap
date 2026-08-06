@@ -10,6 +10,7 @@ const STATUS_STYLE = {
   reviewing: { bg: '#2563EB', color: '#fff' },
   accepted:  { bg: '#059669', color: '#fff' },
   rejected:  { bg: '#DC2626', color: '#fff' },
+  canceled:  { bg: '#E5E7EB', color: '#6B7280' }, // 지원자 본인 취소 — 어드민이 바꾸는 상태 아님
 }
 const statusStyle = (s) => STATUS_STYLE[s] || STATUS_STYLE.applied
 
@@ -21,6 +22,7 @@ const STATUS_LABEL = {
   reviewing: { ko: '검토중',    en: 'Reviewing', vi: 'Đang xét duyệt' },
   accepted:  { ko: '합격',      en: 'Accepted',  vi: 'Trúng tuyển' },
   rejected:  { ko: '불합격',    en: 'Rejected',  vi: 'Không trúng tuyển' },
+  canceled:  { ko: '지원자 취소', en: 'Canceled', vi: 'Ứng viên đã hủy' },
 }
 const statusLabel = (s, lang) => STATUS_LABEL[s]?.[lang] || STATUS_LABEL[s]?.en || s
 

@@ -194,7 +194,8 @@ export default function CompanyATSPage() {
         supabase
           .from('job_applications')
           .select('id, job_id, status, viewed_at, applicant_name, applicant_email, applicant_salary, applicant_role, applicant_experience, applicant_company, resume_url, user_id, created_at, admin_note, interview_at, interview_location, interview_interviewer, rejected_at, rejected_at_stage, rejection_reason')
-          .eq('job_id', jobId).order('created_at', { ascending: true }),
+          // 지원자가 취소한 지원은 기업에 안 보여준다 — 재지원하면 새 행으로 다시 뜬다.
+          .eq('job_id', jobId).neq('status', 'canceled').order('created_at', { ascending: true }),
       ]);
       const { data: jobData, error: jobErr } = jobRes;
       if (jobErr || !jobData) { setErr(t('company.ats.notFound')); setStatus('error'); return; }

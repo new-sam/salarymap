@@ -407,6 +407,8 @@ export default function CvLanding() {
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({ jobId: job.id, jobTitle: job.title, jobCompany: job.company, resumeUrl: ru, applicationSource: 'cv_success' }),
       })
+      // 409 = 이미 지원한 공고(서버 dedup) — 실패가 아니라 지원됨 상태로 맞춘다.
+      if (res.status === 409) { setApplied((a) => ({ ...a, [job.id]: true })); return }
       if (!res.ok) throw new Error('apply_failed')
       setApplied((a) => ({ ...a, [job.id]: true }))
       track('submit_application', { meta: { ...cvMeta(), job_id: job.id, source: 'cv_success' }, page: '/cv' })

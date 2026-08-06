@@ -156,7 +156,9 @@ export default function PrivateShowcasing({ co, campaign, off, c }) {
       const j2 = await r2.json()
       if (!r2.ok) throw new Error(j2.error || '후보를 찾지 못했습니다')
       setResult(j2)
-      setStep('done')
+      // 바로 done 으로 안 간다 — 로딩 퍼센트가 어중간한 숫자에서 화면이 바뀌면
+      // 그 숫자가 전부 연출이었다고 실토하는 셈이다. 100을 빠르게 마저 채우고 넘어간다.
+      setStep('finish')
       ev('psc_result', { picks: j2.picks?.length || 0, screened: j2.screened ?? null })
     } catch (e) {
       setErr(e.message)
@@ -169,9 +171,13 @@ export default function PrivateShowcasing({ co, campaign, off, c }) {
 
   // 다시 하기도 남긴다 — 결과를 보고 되돌아간 건 "이 조건이 아닌데요"라는 뜻이라,
   // 문의로 안 간 사람 중에 조용히 나간 사람과 구분된다.
+  // 입력값도 다 비운다 — "다른 JD로 검색"이라 해놓고 이전 JD 가 채워져 있으면
+  // 지우는 일부터 시키는 셈이다.
   const restart = () => {
     ev('psc_restart', { picks: result?.picks?.length || 0 })
     setStep('input'); setResult(null); setCriteria(null)
+    setJd(''); setFile(''); setErr(''); setPool(null)
+    setWide(false); setLong(false)
   }
 
   return (
@@ -220,6 +226,17 @@ export default function PrivateShowcasing({ co, campaign, off, c }) {
               WebkitMaskImage: 'linear-gradient(to top left, #000 0%, rgba(0,0,0,.55) 24%, transparent 56%)',
               maskImage: 'linear-gradient(to top left, #000 0%, rgba(0,0,0,.55) 24%, transparent 56%)',
             }} />
+          )}
+
+          {/* 로딩 중에만 — 옅은 오렌지 글로우가 아래에서 위로 떠오르며 돈다. 기다리는
+              화면이 정지해 보이지 않게 하는 층이고, 음수 delay 로 처음부터 하늘에 떠 있다.
+              wrapper 가 overflow hidden 이라 화면 밖으로 나간 것은 알아서 잘린다. */}
+          {step !== 'input' && (
+            <div aria-hidden style={{ position: 'absolute', inset: 0, pointerEvents: 'none', overflow: 'hidden' }}>
+              <span className="psc-blob psc-blob-a" />
+              <span className="psc-blob psc-blob-b" />
+              <span className="psc-blob psc-blob-c" />
+            </div>
           )}
 
           {/* 배치된 도트 층 위로 올라와야 한다 — 흐름 안의 요소는 절대 배치된 형제보다 아래에 깔린다.
@@ -329,7 +346,7 @@ export default function PrivateShowcasing({ co, campaign, off, c }) {
                 </div>
               </>
             ) : (
-              <Loading step={step} criteria={criteria} pool={pool} />
+              <Loading step={step} criteria={criteria} pool={pool} onFull={() => setStep('done')} />
             )}
           </div>
 
@@ -358,6 +375,30 @@ export default function PrivateShowcasing({ co, campaign, off, c }) {
               transition: color .15s ease, border-color .15s ease;
             }
             .psc-zoom:hover { color: ${T.ink}; border-color: ${T.line}; }
+
+            /* 로딩 배경 글로우 — 아래에서 위로 떠올라 화면을 통과하고, 음수 delay 로
+               처음부터 곳곳에 떠 있다. 키프레임과 클래스가 같은 블록에 있어야 한다:
+               styled-jsx 가 둘의 이름을 같이 바꿔서 만나게 해 준다(인라인 animation 은 못 만난다). */
+            .psc-blob { position: absolute; top: 108%; border-radius: 50%; }
+            .psc-blob-a {
+              left: 4%; width: 540px; height: 540px;
+              background: radial-gradient(circle, rgba(255,96,0,.10) 0%, rgba(255,96,0,0) 68%);
+              animation: pscRise 12s linear 0s infinite;
+            }
+            .psc-blob-b {
+              left: 42%; width: 430px; height: 430px;
+              background: radial-gradient(circle, rgba(255,96,0,.07) 0%, rgba(255,96,0,0) 68%);
+              animation: pscRise 15s linear -7s infinite;
+            }
+            .psc-blob-c {
+              left: 72%; width: 580px; height: 580px;
+              background: radial-gradient(circle, rgba(255,96,0,.09) 0%, rgba(255,96,0,0) 68%);
+              animation: pscRise 13s linear -3.5s infinite;
+            }
+            @keyframes pscRise {
+              from { transform: translateY(0); }
+              to { transform: translateY(-260vh); }
+            }
           `}</style>
         </div>
       )}
@@ -422,74 +463,118 @@ const CorpFooter = ({ style }) => (
 
 /* 로딩 — 기다리는 20초 동안 우리가 뭘 하고 있는지 보여준다.
 
-   네 단계로 쪼갠 이유: "찾는 중"만 돌면 기다리는 사람 입장에서는 우리가 뭘 하는지도,
-   얼마나 하는지도 모른다. 그런데 이 화면이 파는 건 결국 '꼼꼼히 봤다'는 것이다 —
-   이력서 1,497건을 한 장씩 요건에 대본다는 사실이 결과보다 먼저 설득한다.
+   화면은 셋으로 말한다: 큰 퍼센트(얼마나 왔나) · 그 아래 롤링 문구(지금 뭘 하나) ·
+   조건 상자(뭘 읽어냈나 — 빈 칸이 먼저 서고 한 줄씩 채워진다).
 
-   서버 호출은 둘인데 단계는 넷이다. 앞의 둘은 조건 뽑기 안에서, 뒤의 둘은 이력서
-   훑기 안에서 실제로 순서대로 일어나는 일이라(요건 읽기 → 빠진 조건 추론 /
-   전건 대조 → 다섯으로 좁히기), 그 안에서 시간으로 넘긴다. 없는 일을 지어내지는 않는다.
-
-   붙는 숫자는 전부 진짜다. 요건 개수는 조건이 오면 알고, 모수는 조건 단계가 같이 세어
-   온다(jd-criteria.poolCount) — 그래야 훑는 20초 동안 "1,497건"을 말할 수 있다. */
-// 제목 옆에 붙는 스피너. 제목이 두 줄로 접혀도 첫 줄 옆에 남게 위쪽 정렬한다.
-const stepSpin = {
-  width: 18, height: 18, borderRadius: '50%', flexShrink: 0, marginTop: 7,
-  border: `2px solid ${T.line}`, borderTopColor: T.brand,
-}
-
-function Loading({ step, criteria, pool }) {
+   퍼센트는 연출이다 — 서버 호출은 두 방이라 진짜 진행률이 없다. 다만 거짓말은 경계에서
+   안 하게 한다: 조건 단계는 32에서, 매칭 단계는 96에서 멈춰 서서 결과를 기다린다.
+   1씩 오르는 이유 — 뭉텅뭉텅 뛰면 연출인 게 티가 난다. */
+function Loading({ step, criteria, pool, onFull }) {
   const [sub, setSub] = useState(0)
   useEffect(() => {
+    if (step === 'finish') return
     setSub(0)
-    // 조건 뽑기는 5초 안팎, 이력서 훑기는 15초 안팎이다. 그 안에서 한 번씩 넘긴다.
+    // 조건 뽑기는 5초 안팎, 이력서 훑기는 15초 안팎이다. 그 안에서 문구를 한 번씩 넘긴다.
     const t = setTimeout(() => setSub(1), step === 'criteria' ? 2200 : 7000)
     return () => clearTimeout(t)
   }, [step])
 
-  /* 제목도 단계마다 바뀐다. 아래 줄만 넘어가고 제목이 20초 내내 그대로면 화면이
-     한 곳에 멈춰 있는 것처럼 보인다 — 진행 중이라는 걸 실제로 말하는 건 큰 글씨 쪽이다.
-     제목은 짧게 '무엇을', 아래 줄은 길게 '어떻게'. 둘이 같은 말을 하면 한 줄은 없는 셈이다. */
+  const [pct, setPct] = useState(0)
+  const pctRef = useRef(0)
+  useEffect(() => {
+    /* 속도 구간: 조건(~5초)에 0→30, 매칭(~15초)에 →94 를 목표로 달리고, 목표를 넘으면
+       멈추는 게 아니라 기어간다(crawl, 1~2.5초에 1씩) — 완전히 서 있으면 죽은 것처럼
+       보인다. 단계가 실제보다 오래 걸려도 hard 까지는 계속 오른다.
+       간격은 일부러 불규칙하다 — 같은 박자로 또박또박 오르면 시계지 진행률이 아니다.
+       finish 만 규칙적으로 최고 속도다(14ms) — 마무리는 멈칫거릴 이유가 없다. */
+    const soft = step === 'criteria' ? 30 : step === 'match' ? 94 : 100
+    const hard = step === 'criteria' ? 55 : step === 'match' ? 99 : 100
+    const fast = () => (step === 'criteria' ? 60 + Math.random() * 100
+      : step === 'match' ? 90 + Math.random() * 160 : 14)
+    const stall = () => (step === 'criteria' ? 300 + Math.random() * 300 : 500 + Math.random() * 800)
+    const crawl = () => 1000 + Math.random() * 1500
+    let alive = true
+    let t
+    const tick = () => {
+      if (!alive) return
+      const next = Math.min(pctRef.current + 1, hard)
+      pctRef.current = next
+      setPct(next)
+      const delay = step === 'finish' ? fast()
+        : next >= soft ? crawl()
+        : Math.random() < 0.15 ? stall() : fast()
+      t = setTimeout(tick, delay)
+    }
+    t = setTimeout(tick, step === 'finish' ? 0 : 250)
+    return () => { alive = false; clearTimeout(t) }
+  }, [step])
+
+  // 100에 닿으면 살짝 멈췄다가 결과로 — 100을 볼 새도 없이 바뀌면 채운 의미가 없다
+  useEffect(() => {
+    if (step !== 'finish' || pct < 100) return
+    const t = setTimeout(() => onFull?.(), 350)
+    return () => clearTimeout(t)
+  }, [step, pct]) // eslint-disable-line react-hooks/exhaustive-deps
+
   const heads = [
     'JD를 읽고 있어요',
-    '빠진 조건을 채우고 있어요',
-    '이력서를 한 장씩 보고 있어요',
+    '채용 조건을 정리하고 있어요',
+    pool ? `이력서 ${pool.toLocaleString()}장을 대조하고 있어요` : '이력서를 한 장씩 대조하고 있어요',
     '가장 잘 맞는 분들을 고르고 있어요',
   ]
-
-  const at = (step === 'criteria' ? 0 : 2) + sub
+  const at = step === 'criteria' ? sub : step === 'match' ? 2 + sub : 3
 
   return (
     <>
       <div style={eyebrow}>인재 추천</div>
-      {/* 스피너를 제목 옆에 붙인다. 아래에 따로 돌던 과정 줄은 지웠다 — 제목이 이미
-          네 번 바뀌면서 진행을 말하고 있어서, 같은 말을 하는 줄이 하나 더 있었다. */}
-      <div style={{ marginTop: 8, display: 'flex', alignItems: 'flex-start', gap: 12 }}>
-        <H>{heads[at]}</H>
-        <span className="spin" style={stepSpin} />
-      </div>
-      {/* 조건이 나오면 바로 띄운다 — 틀렸으면 결과를 기다릴 필요가 없다 */}
-      {criteria && <CriteriaBox c={criteria} />}
 
-      <style jsx>{`
-        .spin { animation: spin 0.8s linear infinite; }
-        @keyframes spin { to { transform: rotate(360deg); } }
-      `}</style>
+      {/* 숫자가 주인공 — 한 줄을 통째로 쓴다. 문구와 같은 줄에 두면 서로 기준선을
+          다투는데, 줄을 나누면 눈이 숫자→문구 순서로 자연스럽게 내려온다. */}
+      <div style={{
+        marginTop: 10, fontSize: 46, fontWeight: 800, color: T.ink,
+        letterSpacing: '-0.04em', lineHeight: 1, fontVariantNumeric: 'tabular-nums',
+      }}>
+        {pct}<span style={{ fontSize: 24, fontWeight: 700, color: T.mute, marginLeft: 2 }}>%</span>
+      </div>
+
+      {/* 문구 롤링 — 네 줄을 세로로 쌓고 한 줄 높이의 창만 남긴 채 밀어 올린다.
+          뚝 바뀌는 게 아니라 이전 문구가 올라가며 다음 문구가 딸려 온다. */}
+      <div style={{ height: 27, overflow: 'hidden', marginTop: 12 }}>
+        <div style={{
+          transform: `translateY(${-at * 27}px)`,
+          transition: 'transform .5s cubic-bezier(.25,.7,.3,1)',
+        }}>
+          {heads.map((h) => (
+            <div key={h} style={{ height: 27, fontSize: 15.5, fontWeight: 600, color: T.body }}>{h}</div>
+          ))}
+        </div>
+      </div>
+
+      {/* 조건이 오기 전에도 상자는 서 있다 — 빈 칸이 먼저 보이고 한 줄씩 채워진다 */}
+      <CriteriaBox c={criteria} />
     </>
   )
 }
 
-// 뽑아낸 조건 — 로딩 화면과 결과 화면이 같은 걸 쓴다
+/* 한 줄씩 차오르는 등장 — 키프레임은 global 로 둔다. styled-jsx 스코프 키프레임은
+   이름이 해시로 바뀌어서 인라인 style 의 animation 이름과 안 만난다(버튼에서 겪었다). */
+const rise = (i) => ({
+  opacity: 0,
+  animation: 'cbIn .45s ease forwards',
+  animationDelay: `${0.1 + i * 0.22}s`,
+})
+
+// 뽑아낸 조건 — 로딩 화면에서 쓴다. c 가 없으면 빈 칸(스켈레톤)으로 먼저 선다.
 function CriteriaBox({ c }) {
-  const shown = (c.requirements || []).filter((r) => !r.includes('추정'))
-  const yoe = c.yoe_min == null && c.yoe_max == null ? null
+  const shown = c ? (c.requirements || []).filter((r) => !r.includes('추정')) : []
+  const yoe = !c || (c.yoe_min == null && c.yoe_max == null) ? null
     : `${c.yoe_min ?? 0}${c.yoe_max != null ? `~${c.yoe_max}` : '+'}년`
-  const lang = [
+  const lang = c ? [
     c.korean !== 'none' && `한국어 ${c.korean === 'required' ? '필수' : '우대'}`,
     c.english !== 'none' && `영어 ${c.english === 'required' ? '필수' : '우대'}`,
-  ].filter(Boolean).join(' · ')
+  ].filter(Boolean).join(' · ') : ''
 
-  const meta = [c.positions.join(' · '), yoe, lang, c.note].filter(Boolean).join(' · ')
+  const meta = c ? [c.positions.join(' · '), yoe, lang, c.note].filter(Boolean).join(' · ') : ''
 
   /* 카드가 아니라 '표지가 붙은 문서'로 보이게 머리글 줄을 따로 뒀다. 조건이 뒤늦게
      뜨는 화면이라, 상자가 그냥 나타나면 어디서 온 건지 모른다. */
@@ -506,25 +591,44 @@ function CriteriaBox({ c }) {
       </div>
 
       <div style={{ padding: '14px 16px 16px' }}>
-        <div style={{ fontSize: 14, fontWeight: 700, color: T.ink, letterSpacing: '-0.02em' }}>
-          {c.title || '요청하신 자리'}
-        </div>
-        {!!meta && <div style={{ fontSize: 12, color: T.mute, marginTop: 4 }}>{meta}</div>}
+        {!c ? (
+          /* 조건이 오기 전 — 채워질 자리를 회색 막대로 미리 세워 둔다. 상자가 나중에
+             통째로 나타나면 '뚝' 하고 붙는데, 자리가 먼저 서 있으면 채워지는 것으로 보인다. */
+          [88, 58, 96, 82, 70].map((w, i) => (
+            <div key={i} style={{
+              height: 11, width: `${w}%`, borderRadius: 6, background: '#EEF1F4',
+              marginTop: i ? 13 : 4,
+              animation: 'cbPulse 1.4s ease-in-out infinite', animationDelay: `${i * 0.15}s`,
+            }} />
+          ))
+        ) : (
+          <>
+            <div style={{ fontSize: 14, fontWeight: 700, color: T.ink, letterSpacing: '-0.02em', ...rise(0) }}>
+              {c.title || '요청하신 자리'}
+            </div>
+            {!!meta && <div style={{ fontSize: 12, color: T.mute, marginTop: 4, ...rise(1) }}>{meta}</div>}
 
-        {/* 화면에는 JD 에 적힌 조건만 올린다. 업무 설명에서 유추한 (추정) 요건은 매칭에는
-            쓰되 보여주지 않는다 — 고객사 입장에서는 자기가 쓰지도 않은 조건이 자기 조건인 양
-            걸려 있는 것이고, "웹 서비스 개발 경험이 있어야 합니다 (추정)" 같은 문장은
-            우리가 뭘 넣었는지 설명하느라 화면만 잡아먹는다. */}
-        {!!shown.length && <Bullets items={shown} color={T.body} />}
+            {/* 화면에는 JD 에 적힌 조건만 올린다. 업무 설명에서 유추한 (추정) 요건은 매칭에는
+                쓰되 보여주지 않는다 — 고객사 입장에서는 자기가 쓰지도 않은 조건이 자기 조건인 양
+                걸려 있는 것이고, "웹 서비스 개발 경험이 있어야 합니다 (추정)" 같은 문장은
+                우리가 뭘 넣었는지 설명하느라 화면만 잡아먹는다. */}
+            {!!shown.length && <Bullets items={shown} color={T.body} riseFrom={2} />}
 
-        {!!c.preferred?.length && (
-          // 우대사항은 순위를 가르는 칸이라(자격요건은 통과선이라 통과자끼리는 다 같다) 같이 보인다
-          <div style={{ marginTop: 14, paddingTop: 12, borderTop: `1px solid ${T.hair}` }}>
-            <div style={{ ...eyebrow, fontSize: 10 }}>우대</div>
-            <Bullets items={c.preferred} color={T.mute} />
-          </div>
+            {!!c.preferred?.length && (
+              // 우대사항은 순위를 가르는 칸이라(자격요건은 통과선이라 통과자끼리는 다 같다) 같이 보인다
+              <div style={{ marginTop: 14, paddingTop: 12, borderTop: `1px solid ${T.hair}`, ...rise(2 + shown.length) }}>
+                <div style={{ ...eyebrow, fontSize: 10 }}>우대</div>
+                <Bullets items={c.preferred} color={T.mute} riseFrom={3 + shown.length} />
+              </div>
+            )}
+          </>
         )}
       </div>
+
+      <style jsx global>{`
+        @keyframes cbIn { from { opacity: 0; transform: translateY(7px); } to { opacity: 1; transform: none; } }
+        @keyframes cbPulse { 0%, 100% { opacity: 1; } 50% { opacity: .45; } }
+      `}</style>
     </div>
   )
 }
@@ -566,10 +670,14 @@ function Keywords({ c }) {
 }
 
 // 점 대신 작은 원. 가운뎃점(·)은 글자라 줄마다 높이가 흔들리는데, 원은 자리에 고정된다.
-const Bullets = ({ items, color }) => (
+// riseFrom 이 있으면 그 순번부터 한 줄씩 차오르는 등장(rise)을 탄다 — 로딩 조건 상자용.
+const Bullets = ({ items, color, riseFrom }) => (
   <div style={{ marginTop: 10, display: 'flex', flexDirection: 'column', gap: 5 }}>
     {items.map((r, i) => (
-      <div key={i} style={{ display: 'flex', gap: 8, fontSize: 12.5, lineHeight: 1.6, color }}>
+      <div key={i} style={{
+        display: 'flex', gap: 8, fontSize: 12.5, lineHeight: 1.6, color,
+        ...(riseFrom == null ? {} : rise(riseFrom + i)),
+      }}>
         <span style={{
           flexShrink: 0, width: 4, height: 4, borderRadius: '50%',
           background: T.brandLine, marginTop: 7,
@@ -617,7 +725,7 @@ function Result({ data, criteria, co, onBack, ev }) {
           <H>
             {picks.length
               ? (<>
-                올려주신 {criteria?.title ? `${criteria.title} ` : ''}공고에 가장 부합하는{' '}
+                올려주신 공고에 가장 부합하는{' '}
                 <span style={{ color: T.brand }}>{picks.length}명</span>을 보여드립니다
               </>)
               : '조건에 맞는 분을 찾지 못했습니다'}
@@ -749,6 +857,122 @@ const todayStr = () => {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
 }
 
+const DOW = ['일', '월', '화', '수', '목', '금', '토']
+// 칩에 적는 꼴 — "8/12(수) 14:00". 연도는 안 적는다: 고를 수 있는 날이 어차피 몇 주 안이다.
+const slotLabel = (s) => {
+  const [y, m, d] = s.date.split('-').map(Number)
+  return `${m}/${d}(${DOW[new Date(y, m - 1, d).getDay()]}) ${s.time}`
+}
+
+/* 자체 달력 — 브라우저 기본 달력을 쓰다가 바꿨다. 기본 달력은 OS 마다 생김새가 달라
+   이 화면의 톤에서 혼자 튀고, 날짜 따로 시간 따로 고르게 해서 손이 두 배로 갔다.
+   여기서는 날짜를 누르면 그 자리가 바로 시간 판으로 바뀐다 — 두 번의 클릭, 화면 하나. */
+function SlotPicker({ pick, setPick, today, onDone }) {
+  const { y, m, date } = pick
+  // 한 날짜에서 시간 여러 개를 고르고 확인으로 한 번에 담는다
+  const [times, setTimes] = useState([])
+  useEffect(() => { setTimes([]) }, [date])
+  const toggle = (t) => setTimes((a) => (a.includes(t) ? a.filter((x) => x !== t) : [...a, t]))
+  const days = new Date(y, m + 1, 0).getDate()
+  const startDow = new Date(y, m, 1).getDay()
+  const cells = [...Array(startDow).fill(0), ...Array.from({ length: days }, (_, i) => i + 1)]
+  const fmt = (d) => `${y}-${String(m + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`
+  const now = new Date()
+  const atCur = y === now.getFullYear() && m === now.getMonth() // 지난달로는 못 간다
+
+  const navBtn = (dis) => ({
+    width: 26, height: 26, border: 0, background: 'none', borderRadius: 8,
+    fontSize: 15, lineHeight: 1, color: dis ? '#D6DBE1' : T.body,
+    cursor: dis ? 'default' : 'pointer', padding: 0,
+  })
+
+  return (
+    <div style={{
+      marginTop: 4, border: `1px solid ${T.line}`, borderRadius: 14,
+      padding: 12, background: '#fff', boxShadow: T.sm,
+      // 고정 높이 — 달력(최대 6주)과 시간 판이 같은 키로 서서, 넘어갈 때 모달이 안 출렁인다
+      height: 286, boxSizing: 'border-box', display: 'flex', flexDirection: 'column',
+    }}>
+      {!date ? (
+        <>
+          <div style={{ display: 'flex', alignItems: 'center', marginBottom: 8 }}>
+            <button type="button" disabled={atCur} onClick={() => setPick({ ...pick, m: m ? m - 1 : 11, y: m ? y : y - 1 })}
+              style={navBtn(atCur)} aria-label="이전 달">‹</button>
+            <div style={{ flex: 1, textAlign: 'center', fontSize: 13, fontWeight: 700, color: T.ink }}>
+              {y}년 {m + 1}월
+            </div>
+            <button type="button" onClick={() => setPick({ ...pick, m: m === 11 ? 0 : m + 1, y: m === 11 ? y + 1 : y })}
+              style={navBtn(false)} aria-label="다음 달">›</button>
+            <button type="button" onClick={() => setPick(null)} aria-label="닫기"
+              style={{ ...navBtn(false), marginLeft: 2, color: T.faint }}>×</button>
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 2 }}>
+            {DOW.map((d) => (
+              <div key={d} style={{ textAlign: 'center', fontSize: 10.5, fontWeight: 700, color: T.faint, padding: '2px 0 6px' }}>{d}</div>
+            ))}
+            {cells.map((d, i) => {
+              if (!d) return <span key={i} />
+              const past = fmt(d) < today
+              return (
+                <button key={i} type="button" disabled={past} className="psc-day"
+                  onClick={() => setPick({ ...pick, date: fmt(d) })}
+                  style={{
+                    height: 32, border: 0, borderRadius: 9, padding: 0,
+                    fontFamily: 'inherit', fontSize: 12.5, fontWeight: fmt(d) === today ? 800 : 500,
+                    color: past ? '#D6DBE1' : fmt(d) === today ? T.brand : T.ink,
+                    background: 'none', cursor: past ? 'default' : 'pointer',
+                  }}>{d}</button>
+              )
+            })}
+          </div>
+        </>
+      ) : (
+        <>
+          <div style={{ display: 'flex', alignItems: 'center', marginBottom: 9 }}>
+            <button type="button" onClick={() => setPick({ ...pick, date: null })}
+              style={{ ...navBtn(false), width: 'auto', fontSize: 12, fontWeight: 600, color: T.mute }}>‹ 날짜 다시</button>
+            <div style={{ flex: 1, textAlign: 'center', fontSize: 13, fontWeight: 700, color: T.ink }}>
+              {slotLabel({ date, time: '' }).trim()}
+            </div>
+            <button type="button" onClick={() => setPick(null)} aria-label="닫기"
+              style={{ ...navBtn(false), color: T.faint }}>×</button>
+          </div>
+          {/* 시간 판은 달력보다 짧다 — 고정 높이 안에서 세로 가운데로 세워 빈 바닥이 안 보이게.
+              시간은 여러 개를 켜고 끄는 토글이고, 확인이 한 번에 담는다. */}
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 6 }}>
+              {TIMES.map((t) => {
+                const on = times.includes(t)
+                return (
+                  <button key={t} type="button" className={on ? '' : 'psc-time'} onClick={() => toggle(t)}
+                    style={{
+                      fontFamily: 'inherit', fontSize: 12.5, fontWeight: on ? 700 : 600,
+                      color: on ? '#fff' : T.body,
+                      background: on ? T.brand : '#fff',
+                      border: `1px solid ${on ? T.brand : T.line}`, borderRadius: 9,
+                      padding: '8px 0', cursor: 'pointer',
+                      transition: 'background .12s ease, color .12s ease, border-color .12s ease',
+                    }}>{t}</button>
+                )
+              })}
+            </div>
+            <button type="button" disabled={!times.length}
+              onClick={() => onDone(times.map((t) => ({ date, time: t })))}
+              style={{
+                marginTop: 10, fontFamily: 'inherit', fontSize: 13, fontWeight: 700, color: '#fff',
+                background: times.length ? T.brand : '#D6DBE1', border: 0, borderRadius: 10,
+                padding: '10px 0', cursor: times.length ? 'pointer' : 'default',
+                transition: 'background .12s ease',
+              }}>
+              {times.length ? `${times.length}개 시간 추가하기` : '시간을 선택해주세요'}
+            </button>
+          </div>
+        </>
+      )}
+    </div>
+  )
+}
+
 function InquiryModal({ sid, picks, first, co, ev, onClose }) {
   /* first 가 없으면(하단 고정 CTA) '이력서 원문' 문의다 — 특정 후보를 고르게 하지 않고,
      안 고르면 전원으로 접수한다. 원문은 개인정보라 미팅에서 보여준다는 것이 이 흐름의 약속. */
@@ -761,16 +985,24 @@ function InquiryModal({ sid, picks, first, co, ev, onClose }) {
      보낼 때 @ 가 있으면 이메일, 아니면 연락처로 갈라 준다 — 서버는 그대로 두고. */
   const [contact, setContact] = useState('')
   /* 시간대를 여러 개 받는다. 하나만 받으면 그 시간이 우리 쪽에서 안 될 때 다시 메일을
-     주고받아야 하는데, 두세 개를 미리 받아 두면 그 왕복이 통째로 없어진다.
-     셋에서 막는다 — 더 받아 봐야 우리가 다 확인하지 않는다. */
-  const [slots, setSlots] = useState([{ date: '', time: '' }])
+     주고받아야 하는데, 몇 개를 미리 받아 두면 그 왕복이 통째로 없어진다. 개수는 안 막는다 —
+     많이 줄수록 우리가 고를 폭이 넓어질 뿐이다.
+     완성된 (날짜, 시간) 쌍만 담긴다 — 고르다 만 줄이 없으니 보낼 때 거를 것도 없다. */
+  const [slots, setSlots] = useState([])
+  // 달력 픽커. null 이면 닫힘, { y, m(0-11), date } 로 보는 달과 고른 날짜를 든다.
+  const [pick, setPick] = useState(null)
+  // 그리기용 거울 — 닫힘 애니메이션(높이 296→0)이 끝날 때까지 판을 들고 있는다
+  const [pickShown, setPickShown] = useState(null)
+  useEffect(() => {
+    if (pick) { setPickShown(pick); return }
+    const t = setTimeout(() => setPickShown(null), 300)
+    return () => clearTimeout(t)
+  }, [pick])
   const [today] = useState(todayStr)
-  const setSlot = (i, patch) => setSlots((a) => a.map((x, j) => (j === i ? { ...x, ...patch } : x)))
   const [memo, setMemo] = useState('')
   const [hp, setHp] = useState('') // 함정칸 — 사람 눈에는 안 보인다
   const [busy, setBusy] = useState(false)
   const [done, setDone] = useState(false)
-  const [more, setMore] = useState(false)       // '함께 문의할 인재 추가하기' 목록을 펴 뒀나
   const [preview, setPreview] = useState('') // 접수 실패 사유(개발 중에만). 빈 문자열이면 정상 접수
   const [err, setErr] = useState('')
   const openedAt = useRef(Date.now())
@@ -837,6 +1069,7 @@ function InquiryModal({ sid, picks, first, co, ev, onClose }) {
 
   return (
     <div
+      className="psc-ov"
       onClick={onClose}
       style={{
         position: 'fixed', inset: 0, background: 'rgba(12,16,22,0.5)', zIndex: 50,
@@ -844,11 +1077,41 @@ function InquiryModal({ sid, picks, first, co, ev, onClose }) {
         backdropFilter: 'blur(2px)',
       }}
     >
+      {/* 등장 모션 — global 인 이유: 이 컴포넌트의 유일한 스타일 블록이라 중첩 걱정이
+          없고, global 이면 스코프 클래스가 어디에 붙는지를 따질 필요가 없다(그걸 따지다
+          두 번 데였다). 이름만 안 겹치게 psc- 를 단다. */}
+      <style jsx global>{`
+        .psc-ov { animation: pscOvIn .22s ease both; }
+        .psc-mo { animation: pscMoIn .34s cubic-bezier(.2,.9,.3,1) both; }
+        @keyframes pscOvIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes pscMoIn {
+          from { opacity: 0; transform: translateY(18px) scale(.96); }
+          to { opacity: 1; transform: none; }
+        }
+        @media (prefers-reduced-motion: reduce) {
+          .psc-ov, .psc-mo { animation: none; }
+        }
+
+        /* 모달 스크롤 — 막대는 아예 안 보인다. 스크롤 자체는 되고, 보내기 버튼이 바닥에
+           붙어 있어서 "더 있다"는 표시가 없어도 길을 잃지 않는다. */
+        .psc-mo { scrollbar-width: none; }
+        .psc-mo::-webkit-scrollbar { display: none; }
+
+        /* 달력·시간 버튼 — 눌리는 티. 호버에 옅은 브랜드 바탕, 누르는 순간 살짝 움츠러든다. */
+        .psc-day, .psc-time { transition: background .12s ease, border-color .12s ease, color .12s ease, transform .08s ease; }
+        .psc-day:not(:disabled):hover { background: #FFF3EC; color: #D94E00; }
+        .psc-day:not(:disabled):active { transform: scale(.88); }
+        .psc-time:hover { background: #FFF6F0; border-color: #FFDFCB; color: #D94E00; }
+        .psc-time:active { transform: scale(.94); }
+      `}</style>
       <div
+        className="psc-mo"
         onClick={(e) => e.stopPropagation()}
         style={{
           width: '100%', maxWidth: 470, maxHeight: '90vh', overflowY: 'auto',
-          background: '#fff', borderRadius: 20, padding: '28px 26px 24px', boxShadow: T.lg,
+          background: '#fff', borderRadius: 20, boxShadow: T.lg,
+          // 폼일 때 아래 패딩이 없는 건 sticky 버튼 영역이 제 패딩을 들고 바닥에 붙기 때문
+          padding: done ? '28px 26px 24px' : '28px 26px 0',
         }}
       >
         {done ? (
@@ -895,7 +1158,7 @@ function InquiryModal({ sid, picks, first, co, ev, onClose }) {
                 미팅을 잡자고 하는 셈이라, 낚인 기분이 든다. */}
             {all && (
               <div style={{ fontSize: 13, color: T.body, marginTop: 10, lineHeight: 1.7 }}>
-                이력서 원문은 개인정보 보호를 위해 대면 미팅으로만 공유하고 있습니다.
+                이력서 원문은 개인정보 보호를 위해 대면 미팅으로만 공유하고 있습니다.<br />
                 연락처를 남겨주시면 영업일 1일 안에 일정을 잡아드립니다.
               </div>
             )}
@@ -916,47 +1179,30 @@ function InquiryModal({ sid, picks, first, co, ev, onClose }) {
               </div>
             )}
 
-            {/* 나머지 — 한 번에 담을 수 있게. 다만 접어 둔다: 후보가 10명이면 이 목록이
-                아홉 줄이라, 펴 두면 정작 채워야 할 연락처 칸이 화면 밖으로 밀린다.
-                고른 수는 접힌 채로도 보여야 한다 — 접힌 곳에 든 것을 모르면 접은 게 아니라
-                숨긴 것이 된다.
-                원문 문의에서는 고르는 것 자체가 선택이다 — 문턱은 낮추되, 골랐다면 그게
-                "어느 카드가 팔리나"의 신호라 그대로 접수에 싣는다. */}
+            {/* 관심 인재 고르기 — 선택사항. 골랐다면 그게 "어느 카드가 팔리나"의 신호다. */}
             {picks.length > 1 && (
-              <div style={{ marginTop: 12 }}>
-                <button type="button" onClick={() => setMore((v) => !v)}
-                  style={{
-                    width: '100%', display: 'flex', alignItems: 'center', gap: 6,
-                    fontFamily: 'inherit', fontSize: 11.5, color: T.mute, background: 'none',
-                    border: 0, padding: '2px 0 7px', cursor: 'pointer', textAlign: 'left',
-                  }}>
-                  {/* 화살표가 앞이다. 뒤에 있으면 줄 끝까지 눈이 갔다 와야 접힌 줄인 줄
-                      아는데, 앞에 있으면 읽기 전에 안다. */}
-                  <span style={{ color: T.faint, fontSize: 9 }}>{more ? '▲' : '▼'}</span>
-                  <span>{all ? '특히 관심 있는 인재 고르기 (선택)' : '함께 문의할 인재 추가하기'}</span>
-                  <span style={{ color: T.faint }}>{all ? picks.length : picks.length - 1}</span>
+              <div style={{ marginTop: 14 }}>
+                <div style={{ fontSize: 11.5, color: T.mute, marginBottom: 8 }}>
+                  {all ? '특히 관심 있는 인재 (선택)' : '함께 문의할 인재 추가하기'}
                   {picked.length > (all ? 0 : 1) && (
-                    <span style={{ color: '#ff6000', fontWeight: 700 }}>
-                      {all ? `${picked.length} 선택` : `+${picked.length - 1} 선택`}
+                    <span style={{ color: T.brand, fontWeight: 700, marginLeft: 6 }}>
+                      {all ? picked.length : picked.length - 1}명 선택
                     </span>
                   )}
-                </button>
-                <div style={{ display: more ? 'flex' : 'none', flexDirection: 'column', gap: 5 }}>
-                  {picks.map((p, i) => (!all && i === first) ? null : (
-                    <label key={i} style={{
-                      display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer',
-                      border: `1px solid ${picked.includes(i) ? T.ink : T.line}`,
-                      borderRadius: 9, padding: '7px 10px',
-                    }}>
-                      <input type="checkbox" checked={picked.includes(i)} onChange={() => toggle(i)}
-                        style={{ accentColor: '#ff6000', width: 14, height: 14, flexShrink: 0 }} />
-                      <span style={{ fontSize: 11.5, fontWeight: 700, color: T.faint, flexShrink: 0 }}>#{i + 1}</span>
-                      <span style={{ fontSize: 12.5, color: T.body, minWidth: 0, ...oneLine }}>
-                        {p.title || '직무 미상'}
-                      </span>
-                      <span style={{ marginLeft: 'auto', fontSize: 11, color: '#C6CCD3', flexShrink: 0 }}>{p.fit}</span>
-                    </label>
-                  ))}
+                </div>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                  {picks.map((p, i) => ((!all && i === first) ? null : (
+                    <button key={i} type="button" onClick={() => toggle(i)}
+                      title={`${p.title || '직무 미상'} · 적합 ${p.fit}`}
+                      style={{
+                        fontFamily: 'inherit', fontSize: 12.5, fontWeight: 700,
+                        padding: '7px 13px', borderRadius: 100, cursor: 'pointer',
+                        color: picked.includes(i) ? '#fff' : T.body,
+                        background: picked.includes(i) ? T.brand : '#fff',
+                        border: `1px solid ${picked.includes(i) ? T.brand : T.line}`,
+                        transition: 'background .12s ease, color .12s ease, border-color .12s ease',
+                      }}>{i + 1}위</button>
+                  )))}
                 </div>
               </div>
             )}
@@ -970,46 +1216,73 @@ function InquiryModal({ sid, picks, first, co, ev, onClose }) {
                 placeholder="이메일 또는 전화번호" style={inputStyle} />
             </div>
 
-            {/* 날짜는 달력에서, 시간은 목록에서 고른다. "이번 주 / 오후" 같은 칩으로 받으면
-                결국 우리가 다시 전화해서 날을 잡아야 한다 — 여기서 하루라도 좁혀 두면
-                첫 연락이 "언제 괜찮으세요"가 아니라 "그때로 잡았습니다"가 된다.
-                브라우저 기본 달력을 쓴다. 직접 그리면 이 화면 하나 때문에 달력 부품을
-                들이게 되는데, 여기서 필요한 건 날짜 한 개뿐이다. */}
+            {/* 날짜·시간을 폼 줄로 늘어놓지 않는다 — 연도/월/일/시간 입력이 나란히 서 있으면
+                선택 아닌 서류 작성으로 읽힌다. '추가하기' 하나만 두고, 누르면 우리 달력이
+                열려 날짜 → 시간 두 번 누르면 칩으로 쌓인다. 고른 결과만 남고 과정은 접힌다. */}
             <div style={{ marginTop: 14 }}>
-              <div style={{ fontSize: 11.5, color: T.mute, marginBottom: 7 }}>편하신 상담 일시 (선택)</div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
-                {slots.map((sl, i) => (
-                  <div key={i} style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                    <input type="date" value={sl.date} min={today}
-                      onChange={(e) => setSlot(i, { date: e.target.value })}
-                      style={{ ...inputStyle, flex: 1, minWidth: 0, colorScheme: 'light' }} />
-                    <select value={sl.time} onChange={(e) => setSlot(i, { time: e.target.value })}
-                      style={{ ...inputStyle, width: 108, flexShrink: 0, cursor: 'pointer' }}>
-                      <option value="">시간</option>
-                      {TIMES.map((t) => <option key={t} value={t}>{t}</option>)}
-                    </select>
-                    {/* 첫 줄에는 지우기를 안 단다 — 다 지우면 칸이 사라져서 다시 못 연다 */}
-                    {slots.length > 1 && (
-                      <button type="button" onClick={() => setSlots((a) => a.filter((_, j) => j !== i))}
-                        aria-label="이 시간 지우기"
+              <div style={{ fontSize: 11.5, color: T.mute, marginBottom: 7 }}>미팅 가능하신 시간 (선택)</div>
+
+              {!!slots.length && (
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 8 }}>
+                  {slots.map((s, i) => (
+                    <span key={i} style={{
+                      display: 'inline-flex', alignItems: 'center', gap: 6,
+                      fontSize: 12, fontWeight: 600, color: T.brandInk,
+                      background: T.brandSoft, border: `1px solid ${T.brandLine}`,
+                      borderRadius: 100, padding: '5px 9px 5px 12px',
+                    }}>
+                      {slotLabel(s)}
+                      <button type="button" aria-label="이 시간 지우기"
+                        onClick={() => setSlots((a) => a.filter((_, j) => j !== i))}
                         style={{
-                          fontFamily: 'inherit', fontSize: 15, lineHeight: 1, color: T.faint,
-                          background: 'none', border: 0, padding: '0 2px', cursor: 'pointer', flexShrink: 0,
+                          border: 0, background: 'none', color: T.brandInk, opacity: .55,
+                          cursor: 'pointer', padding: 0, fontSize: 14, lineHeight: 1,
                         }}>×</button>
-                    )}
-                  </div>
-                ))}
-                {slots.length < 3 && (
-                  <button type="button" onClick={() => setSlots((a) => [...a, { date: '', time: '' }])}
-                    style={{
-                      alignSelf: 'flex-start', fontFamily: 'inherit', fontSize: 12, fontWeight: 600,
-                      color: T.body, background: 'none', border: 0, padding: '2px 0', cursor: 'pointer',
-                    }}>+ 다른 시간도 추가</button>
+                    </span>
+                  ))}
+                </div>
+              )}
+
+              {!pick && (
+                <button type="button"
+                  onClick={() => { const n = new Date(); setPick({ y: n.getFullYear(), m: n.getMonth(), date: null }) }}
+                  style={{
+                    display: 'inline-flex', alignItems: 'center', gap: 5,
+                    fontFamily: 'inherit', fontSize: 12.5, fontWeight: 600, color: T.body,
+                    background: '#fff', border: `1px dashed #C6CCD3`, borderRadius: 100,
+                    padding: '7px 15px', cursor: 'pointer',
+                  }}>+ 추가하기</button>
+              )}
+
+              {/* 판의 등장·퇴장을 높이 전환으로 — 내용이 불쑥 생기고 사라지면 모달 크기가
+                  널뛴다. 닫힐 때는 pickShown 이 300ms 판을 들고 있어서 줄어드는 동안에도
+                  내용이 보인다. 판 자체는 고정 높이(SlotPicker)라 날짜↔시간 전환에도 안 흔들린다. */}
+              <div style={{ height: pick ? 296 : 0, overflow: 'hidden', transition: 'height .28s ease' }}>
+                {pickShown && (
+                  <SlotPicker pick={pickShown} setPick={setPick} today={today}
+                    onDone={(list) => {
+                      setSlots((a) => {
+                        const merged = [...a]
+                        for (const s of list) {
+                          if (!merged.some((x) => x.date === s.date && x.time === s.time)) merged.push(s)
+                        }
+                        return merged
+                      })
+                      setPick(null)
+                    }} />
                 )}
               </div>
             </div>
 
-            <textarea value={memo} onChange={(e) => setMemo(e.target.value)} rows={2}
+            {/* 쓰는 만큼 자란다 — 두 줄 고정 칸에서 스크롤로 읽게 하면 자기가 쓴 글을
+                구멍으로 들여다보는 셈이다. 260px 에서 멈추는 건 모달을 통째로 먹지 않게. */}
+            <textarea value={memo} rows={2}
+              onChange={(e) => {
+                setMemo(e.target.value)
+                const el = e.target
+                el.style.height = 'auto'
+                el.style.height = `${Math.min(el.scrollHeight, 260)}px`
+              }}
               placeholder="남기실 말씀 (선택)"
               style={{ ...inputStyle, marginTop: 12, resize: 'none', lineHeight: 1.6 }} />
 
@@ -1019,23 +1292,30 @@ function InquiryModal({ sid, picks, first, co, ev, onClose }) {
 
             {!!err && <div style={{ fontSize: 12.5, color: '#DC2626', marginTop: 10 }}>{err}</div>}
 
-            <button type="button" onClick={send} disabled={!ok || busy}
-              style={{
-                ...primaryBtn, marginTop: 18,
-                background: ok && !busy ? T.brand : '#D6DBE1',
-                boxShadow: ok && !busy ? '0 2px 8px rgba(255,96,0,.18)' : 'none',
-              }}>
-              {busy ? '보내는 중…'
-                : all && !picked.length ? '미팅 요청하기'
-                : `${picked.length}분으로 상담 요청하기`}
-            </button>
-            <button type="button" onClick={onClose}
-              style={{
-                width: '100%', fontFamily: 'inherit', fontSize: 12.5, fontWeight: 600, color: T.mute,
-                background: 'none', border: 0, padding: '10px 0 0', cursor: 'pointer',
-              }}>
-              다시 보기
-            </button>
+            {/* 보내기는 모달 바닥에 붙어 따라온다 — 달력을 펴고 말씀까지 적으면 내용이
+                90vh 를 넘는데, 그때 버튼이 접힌 아래로 사라지면 다 채우고도 못 보낸다. */}
+            <div style={{
+              position: 'sticky', bottom: 0, background: '#fff', marginTop: 18,
+              paddingBottom: 18, boxShadow: '0 -12px 14px -12px rgba(16,24,40,.12)',
+            }}>
+              <button type="button" onClick={send} disabled={!ok || busy}
+                style={{
+                  ...primaryBtn,
+                  background: ok && !busy ? T.brand : '#D6DBE1',
+                  boxShadow: ok && !busy ? '0 2px 8px rgba(255,96,0,.18)' : 'none',
+                }}>
+                {busy ? '보내는 중…'
+                  : all && !picked.length ? '미팅 요청하기'
+                  : `${picked.length}분으로 상담 요청하기`}
+              </button>
+              <button type="button" onClick={onClose}
+                style={{
+                  width: '100%', fontFamily: 'inherit', fontSize: 12.5, fontWeight: 600, color: T.mute,
+                  background: 'none', border: 0, padding: '10px 0 0', cursor: 'pointer',
+                }}>
+                다시 보기
+              </button>
+            </div>
           </>
         )}
       </div>

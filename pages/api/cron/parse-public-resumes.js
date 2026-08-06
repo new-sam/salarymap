@@ -1,6 +1,7 @@
-// 공개 인재풀 이력서 자동 파싱 cron — 공개(is_resume_public)인데 구조화 필드(연차/학교)가
-// 비어 인재풀 카드에 "미상"으로 뜨는 이력서를 매일 파싱해 채운다. /cv는 PDF만 저장하고
-// 구조화 필드를 안 만들어서, 콜드메일/토글로 공개 전환되면 미상 카드가 쌓이는 걸 자가 치유.
+// 인재풀 이력서 자동 파싱 cron — 구조화 필드(연차/학교)가 비어 인재풀 카드에
+// "미상"으로 뜨는 이력서를 매일 파싱해 채운다. /cv는 PDF만 저장하고
+// 구조화 필드를 안 만들어서 미상 카드가 쌓이는 걸 자가 치유.
+// 8/6부터 비공개 이력서도 포함 — 어드민 인재풀이 비공개까지 다 보여주므로.
 // Vercel cron이 Authorization: Bearer ${CRON_SECRET} 로 호출.
 // vercel.json crons: { "path": "/api/cron/parse-public-resumes", "schedule": "0 5 * * *" }  (05:00 UTC = 12:00 ICT)
 // 수동 점검: GET ?dry=1 — 파싱 대상 수만 반환(파싱 안 함).
@@ -17,7 +18,7 @@ export default async function handler(req, res) {
   }
 
   try {
-    const ids = await findPublicUnparsed(MAX_PER_RUN)
+    const ids = await findPublicUnparsed(MAX_PER_RUN, false, { includePrivate: true })
     if (dry) return res.json({ dry: true, pending: ids.length, ids })
 
     let ok = 0, fail = 0

@@ -24,6 +24,7 @@ function classifySource(applicationSource, referrer) {
 }
 
 export default async function handler(req, res) {
+  if (req.method === 'DELETE') return handleCancel(req, res)
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' })
   }
@@ -51,6 +52,21 @@ export default async function handler(req, res) {
 
   if (!jobId) {
     return res.status(400).json({ error: 'jobId required' })
+  }
+
+  // 중복 지원 차단 — 원래는 localStorage(fyi_applied_jobs)로만 막아서 기기가 바뀌면 뚫렸다.
+  // 취소(status='canceled')된 지원은 재지원을 허용한다(잘못된 이력서로 낸 지원을 스스로
+  // 취소하고 다시 내는 흐름). 비로그인 지원은 신원이 없어 서버 dedup 불가 — 종전과 동일.
+  if (userId) {
+    const { data: dup } = await supabase
+      .from('job_applications')
+      .select('id')
+      .eq('job_id', jobId)
+      .eq('user_id', userId)
+      .neq('status', 'canceled')
+      .limit(1)
+      .maybeSingle()
+    if (dup) return res.status(409).json({ error: 'already_applied' })
   }
 
   // Look up job title/company server-side as a fallback (in case client didn't pass them)
@@ -169,4 +185,29 @@ export default async function handler(req, res) {
   }
 
   return res.status(201).json({ success: true, data })
+}
+
+// 지원 취소 — 행을 지우지 않고 status='canceled' 로 마킹한다(어드민에서 취소 이력이 보이게).
+// 취소하면 위 dedup 이 풀려 같은 공고에 새 이력서로 재지원할 수 있다.
+// 본인 확인은 bearer 토큰으로만 — 비로그인 지원(user_id null)은 신원 증명이 없어 취소 불가.
+async function handleCancel(req, res) {
+  const token = req.headers.authorization?.replace(/^Bearer\s+/i, '')
+  if (!token) return res.status(401).json({ error: 'Unauthorized' })
+  const { data: { user } } = await supabase.auth.getUser(token)
+  if (!user) return res.status(401).json({ error: 'Unauthorized' })
+
+  const jobId = req.query.jobId || req.body?.jobId
+  if (!jobId) return res.status(400).json({ error: 'jobId required' })
+
+  const { data, error } = await supabase
+    .from('job_applications')
+    .update({ status: 'canceled', updated_at: new Date().toISOString() })
+    .eq('job_id', jobId)
+    .eq('user_id', user.id)
+    .neq('status', 'canceled')
+    .select('id')
+
+  if (error) return res.status(500).json({ error: error.message })
+  console.log(`[JOB APPLICATION] user=${user.id} canceled job=${jobId} (${data?.length || 0} rows)`)
+  return res.status(200).json({ success: true, canceled: data?.length || 0 })
 }

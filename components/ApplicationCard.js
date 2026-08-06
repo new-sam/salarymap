@@ -4,7 +4,7 @@ import Icon from './Icon'
 // 스타일(.ma-*)도 여기서 export해 양쪽 <style>에 주입 (중복 정의 해소).
 
 export const STEPS = ['applied', 'viewed', 'reviewing', 'decided']
-export const STATUS_TO_STEP = { pending: 'applied', applied: 'applied', viewed: 'viewed', reviewing: 'reviewing', decided: 'decided', accepted: 'decided', rejected: 'decided' }
+export const STATUS_TO_STEP = { pending: 'applied', applied: 'applied', viewed: 'viewed', reviewing: 'reviewing', decided: 'decided', accepted: 'decided', rejected: 'decided', canceled: 'applied' }
 
 export const applicationCardCss = `
   .ma-card { background: #fff; border: 1px solid #eee; border-radius: 12px; padding: 20px 24px; margin-bottom: 12px; cursor: pointer; transition: border-color .15s, box-shadow .15s; }
@@ -49,6 +49,7 @@ export default function ApplicationCard({ app, t, onClick }) {
     reviewing: t('apps.msgReviewing'),
     accepted: t('apps.msgAccepted'),
     rejected: t('apps.msgRejected'),
+    canceled: t('apps.msgCanceled'),
   }[status] || '')
 
   return (

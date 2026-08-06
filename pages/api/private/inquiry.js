@@ -71,7 +71,9 @@ export default async function handler(req, res) {
       company,
       email: email || null,
       phone: phone || null,
-      when_pref: cap(b.when, 40) || null,
+      // 40이었는데 슬롯 두 개면 이미 36자다 — 화면이 개수 제한을 풀면서 같이 늘렸다.
+      // "2026-08-07 14:00" 꼴이 슬롯당 ±18자라 240이면 열두어 개까지 안 잘리고 담긴다.
+      when_pref: cap(b.when, 240) || null,
       memo: cap(b.memo, 500) || null,
     }).select('id').single()
     if (error) throw error

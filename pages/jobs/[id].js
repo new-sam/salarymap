@@ -160,6 +160,15 @@ export default function JobDetailPage({ job }) {
         body: JSON.stringify({ jobId: job.id, jobTitle: job.title, jobCompany: job.company, resumeUrl, ...getStoredUtm() }),
       })
       if (!res.ok) {
+        // 409 = 다른 기기에서 이미 지원(서버 dedup) — 로컬 상태를 서버에 맞춘다.
+        if (res.status === 409) {
+          const aj = JSON.parse(localStorage.getItem('fyi_applied_jobs') || '[]')
+          if (!aj.includes(job.id)) localStorage.setItem('fyi_applied_jobs', JSON.stringify([...aj, job.id]))
+          setAppliedAlready(true)
+          alert(t('jobs.alreadyApplied'))
+          setApplying(false)
+          return
+        }
         const err = await res.json().catch(() => ({}))
         alert(t('jobs.applyError', { error: err.error || 'unknown error' }))
         setApplying(false)
@@ -173,6 +182,31 @@ export default function JobDetailPage({ job }) {
       confirmAppliedInline({ title: job.title, company: job.company, source: 'job_detail' })
     } catch {}
     setApplying(false)
+  }
+
+  // 지원 취소 — 서버에서 status='canceled' 마킹. 취소하면 새 이력서로 재지원할 수 있다.
+  const [canceling, setCanceling] = useState(false)
+  const cancelApply = async () => {
+    if (!session || canceling) return
+    if (!window.confirm(t('jobs.cancelConfirm'))) return
+    setCanceling(true)
+    const res = await fetch(`/api/job-applications?jobId=${job.id}`, {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${session.access_token}` },
+    })
+    setCanceling(false)
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}))
+      alert(t('jobs.applyError', { error: err.error || 'unknown error' }))
+      return
+    }
+    track('cancel_application', `/jobs/${job.id}`, { jobId: job.id, title: job.title, company: job.company })
+    try {
+      const aj = JSON.parse(localStorage.getItem('fyi_applied_jobs') || '[]')
+      localStorage.setItem('fyi_applied_jobs', JSON.stringify(aj.filter(id => id !== job.id)))
+    } catch {}
+    setAppliedAlready(false)
+    setApplied(false)
   }
 
   const typeLabel = (t) => t === 'remote' ? 'Remote' : t === 'hybrid' ? 'Hybrid' : t === 'onsite' ? 'On-site' : t || ''
@@ -458,9 +492,17 @@ export default function JobDetailPage({ job }) {
                   <svg width="18" height="18" viewBox="0 0 24 24" fill={bookmarked ? '#ff4400' : 'none'} stroke={bookmarked ? '#ff4400' : '#666'} strokeWidth="2"><path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z"/></svg>
                 </button>
                 {appliedAlready ? (
-                  <button className="jd-apply-btn" disabled style={{ background: '#ccc', flex: 1 }}>
-                    {t('jobs.applied')}
-                  </button>
+                  <>
+                    <button className="jd-apply-btn" disabled style={{ background: '#ccc', flex: 1 }}>
+                      {t('jobs.applied')}
+                    </button>
+                    {isLoggedIn && (
+                      <button onClick={cancelApply} disabled={canceling}
+                        style={{ padding: '0 16px', background: '#fff', border: '1px solid #ddd', borderRadius: 8, fontSize: 13, fontWeight: 600, color: '#888', cursor: 'pointer', fontFamily: 'inherit' }}>
+                        {t('jobs.cancelApply')}
+                      </button>
+                    )}
+                  </>
                 ) : (
                   <button className="jd-apply-btn" style={{ flex: 1 }} onClick={() => { setShowApplyForm(true); track('click_apply_button', `/jobs/${job.id}`, { jobId: job.id, title: job.title, company: job.company }) }}>
                     {t('jobs.apply')}

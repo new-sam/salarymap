@@ -212,6 +212,7 @@ export default function JobsPage() {
   const [profileResumeUrl, setProfileResumeUrl] = useState(null)
   const [similarApplying, setSimilarApplying] = useState(null)
   const [similarArmed, setSimilarArmed] = useState(null)
+  const [canceling, setCanceling] = useState(false)
   const [page, setPage] = useState(1)
 
   const track = (event, page, meta) => {
@@ -697,6 +698,15 @@ export default function JobsPage() {
     })
     setSimilarApplying(null)
     if (!res.ok) {
+      if (res.status === 409) {
+        setAppliedJobs(prev => {
+          const next = prev.includes(job.id) ? prev : [...prev, job.id]
+          localStorage.setItem('fyi_applied_jobs', JSON.stringify(next))
+          return next
+        })
+        alert(t('jobs.alreadyApplied'))
+        return
+      }
       const err = await res.json().catch(() => ({}))
       alert(t('jobs.applyError', { error: err.error || 'unknown error' }))
       return
@@ -768,6 +778,16 @@ export default function JobsPage() {
     })
     if (!applyRes.ok) {
       setApplying(false)
+      // 409 = 다른 기기에서 이미 지원(서버 dedup) — 로컬 상태를 서버에 맞춘다.
+      if (applyRes.status === 409) {
+        setAppliedJobs(prev => {
+          const next = prev.includes(target.id) ? prev : [...prev, target.id]
+          localStorage.setItem('fyi_applied_jobs', JSON.stringify(next))
+          return next
+        })
+        alert(t('jobs.alreadyApplied'))
+        return
+      }
       const err = await applyRes.json().catch(() => ({}))
       alert(t('jobs.applyError', { error: err.error || 'unknown error' }))
       return
@@ -800,6 +820,30 @@ export default function JobsPage() {
     setDetailJob(null)
     track('submit_application', '/jobs', { jobId: target.id, title: target.title, company: target.company })
     confirmAppliedInline({ title: target.title, company: target.company, source: getApplicationSource() })
+  }
+
+  // 지원 취소 — 서버에서 status='canceled' 마킹(잘못된 이력서로 낸 지원을 스스로 물리는 용도).
+  // 취소하면 서버 dedup(409)이 풀려 같은 공고에 새 이력서로 재지원할 수 있다.
+  const cancelApply = async (job) => {
+    if (!session || canceling) return
+    if (!window.confirm(t('jobs.cancelConfirm'))) return
+    setCanceling(true)
+    const res = await fetch(`/api/job-applications?jobId=${job.id}`, {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${session.access_token}` },
+    })
+    setCanceling(false)
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}))
+      alert(t('jobs.applyError', { error: err.error || 'unknown error' }))
+      return
+    }
+    track('cancel_application', '/jobs', { jobId: job.id, title: job.title, company: job.company })
+    setAppliedJobs(prev => {
+      const next = prev.filter(id => id !== job.id)
+      localStorage.setItem('fyi_applied_jobs', JSON.stringify(next))
+      return next
+    })
   }
 
   // Kick off login for the apply flow via the shared /login page (LinkedIn/Google
@@ -1637,9 +1681,17 @@ export default function JobsPage() {
                     <svg width="18" height="18" viewBox="0 0 24 24" fill={bookmarks.includes(detailJob.id) ? '#ff4400' : 'none'} stroke={bookmarks.includes(detailJob.id) ? '#ff4400' : '#666'} strokeWidth="2"><path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z"/></svg>
                   </button>
                   {appliedJobs.includes(detailJob.id) ? (
-                    <button className="jd-apply-btn" disabled style={{ background: '#ccc', flex: 1 }}>
-                      {t('jobs.applied')}
-                    </button>
+                    <>
+                      <button className="jd-apply-btn" disabled style={{ background: '#ccc', flex: 1 }}>
+                        {t('jobs.applied')}
+                      </button>
+                      {isLoggedIn && (
+                        <button onClick={() => cancelApply(detailJob)} disabled={canceling}
+                          style={{ padding: '0 16px', background: '#fff', border: '1px solid #ddd', borderRadius: 8, fontSize: 13, fontWeight: 600, color: '#888', cursor: 'pointer', fontFamily: 'inherit' }}>
+                          {t('jobs.cancelApply')}
+                        </button>
+                      )}
+                    </>
                   ) : (
                     <button className="jd-apply-btn" style={{ flex: 1 }} onClick={() => {
                       track('click_apply_button','/jobs',{jobId:detailJob.id,title:detailJob.title,company:detailJob.company});

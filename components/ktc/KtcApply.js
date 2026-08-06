@@ -78,6 +78,17 @@ export default function KtcApply({ job, variant = 'panel' }) {
         }),
       });
       if (!res.ok) {
+        // 409 = 다른 기기에서 이미 지원(서버 dedup) — 로컬 상태를 서버에 맞춘다.
+        if (res.status === 409) {
+          setApplied(true);
+          try {
+            const aj = JSON.parse(localStorage.getItem('fyi_applied_jobs') || '[]');
+            if (!aj.includes(job.id)) localStorage.setItem('fyi_applied_jobs', JSON.stringify([...aj, job.id]));
+          } catch {}
+          alert(t('jobs.alreadyApplied'));
+          setApplying(false);
+          return;
+        }
         const err = await res.json().catch(() => ({}));
         alert(t('jobs.applyError', { error: err.error || 'unknown error' }));
         setApplying(false);
@@ -97,6 +108,31 @@ export default function KtcApply({ job, variant = 'panel' }) {
       alert(t('jobs.applyError', { error: e?.message || 'unknown error' }));
     }
     setApplying(false);
+  };
+
+  // 지원 취소 — 서버에서 status='canceled' 마킹. 취소하면 새 CV로 재지원할 수 있다.
+  const [canceling, setCanceling] = useState(false);
+  const cancelApply = async () => {
+    if (!session || canceling) return;
+    if (!window.confirm(t('jobs.cancelConfirm'))) return;
+    setCanceling(true);
+    const res = await fetch(`/api/job-applications?jobId=${job.id}`, {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${session.access_token}` },
+    });
+    setCanceling(false);
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      alert(t('jobs.applyError', { error: err.error || 'unknown error' }));
+      return;
+    }
+    track('cancel_application', { meta: { job_id: job.id, title: job.title, company: job.company, source: 'ktc' }, page: `/ktc/jobs/${job.id}` });
+    try {
+      const aj = JSON.parse(localStorage.getItem('fyi_applied_jobs') || '[]');
+      localStorage.setItem('fyi_applied_jobs', JSON.stringify(aj.filter(id => id !== job.id)));
+    } catch {}
+    setApplied(false);
+    setResumeFile(null);
   };
 
   const label = applied
@@ -139,6 +175,19 @@ export default function KtcApply({ job, variant = 'panel' }) {
     </p>
   );
 
+  // 취소 링크 — 잘못된 CV로 지원한 경우 스스로 물리고 재지원할 수 있게 한다(로그인 지원만).
+  const cancelNote = applied && session && (
+    <p style={{ marginTop: 8, fontSize: 12, textAlign: 'center' }}>
+      <button
+        onClick={cancelApply}
+        disabled={canceling}
+        style={{ background: 'none', border: 'none', padding: 0, color: c.textFaint, fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', textDecoration: 'underline' }}
+      >
+        {t('jobs.cancelApply')}
+      </button>
+    </p>
+  );
+
   return (
     <>
       <input
@@ -150,6 +199,7 @@ export default function KtcApply({ job, variant = 'panel' }) {
       />
       {btn}
       {variant === 'panel' && cvNote}
+      {variant === 'panel' && cancelNote}
     </>
   );
 }
