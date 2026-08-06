@@ -984,6 +984,7 @@ function InquiryModal({ sid, picks, first, co, ev, onClose }) {
      정작 우리가 필요한 건 '연락할 방법 하나'다. 둘 다 받아 봐야 한쪽만 쓴다.
      보낼 때 @ 가 있으면 이메일, 아니면 연락처로 갈라 준다 — 서버는 그대로 두고. */
   const [contact, setContact] = useState('')
+  const [more, setMore] = useState(false)   // 관심 인재 목록을 펴 뒀나
   /* 시간대를 여러 개 받는다. 하나만 받으면 그 시간이 우리 쪽에서 안 될 때 다시 메일을
      주고받아야 하는데, 몇 개를 미리 받아 두면 그 왕복이 통째로 없어진다. 개수는 안 막는다 —
      많이 줄수록 우리가 고를 폭이 넓어질 뿐이다.
@@ -1097,6 +1098,10 @@ function InquiryModal({ sid, picks, first, co, ev, onClose }) {
         .psc-mo { scrollbar-width: none; }
         .psc-mo::-webkit-scrollbar { display: none; }
 
+        /* 관심 인재 접이식 — 헤더는 호버에서 옅게, 행은 안 고른 것만 호버 반응 */
+        .psc-fold:hover { background: #FAFBFC; }
+        .psc-row.off:hover { background: #F7F8FA; }
+
         /* 달력·시간 버튼 — 눌리는 티. 호버에 옅은 브랜드 바탕, 누르는 순간 살짝 움츠러든다. */
         .psc-day, .psc-time { transition: background .12s ease, border-color .12s ease, color .12s ease, transform .08s ease; }
         .psc-day:not(:disabled):hover { background: #FFF3EC; color: #D94E00; }
@@ -1179,30 +1184,90 @@ function InquiryModal({ sid, picks, first, co, ev, onClose }) {
               </div>
             )}
 
-            {/* 관심 인재 고르기 — 선택사항. 골랐다면 그게 "어느 카드가 팔리나"의 신호다. */}
+            {/* 관심 인재 고르기 — 접이식 토글. 접혀 있어도 안에 뭐가 있고 몇을 골랐는지는
+                헤더가 말한다. 골랐다면 그게 "어느 카드가 팔리나"의 신호다. */}
             {picks.length > 1 && (
-              <div style={{ marginTop: 14 }}>
-                <div style={{ fontSize: 11.5, color: T.mute, marginBottom: 8 }}>
-                  {all ? '특히 관심 있는 인재 (선택)' : '함께 문의할 인재 추가하기'}
+              <div style={{
+                marginTop: 14, border: `1px solid ${T.line}`, borderRadius: 12,
+                background: '#fff', overflow: 'hidden',
+              }}>
+                <button type="button" onClick={() => setMore((v) => !v)}
+                  className="psc-fold"
+                  style={{
+                    width: '100%', display: 'flex', alignItems: 'center', gap: 7,
+                    fontFamily: 'inherit', fontSize: 13, fontWeight: 600, color: T.ink,
+                    letterSpacing: '-0.01em', background: 'none', border: 0,
+                    padding: '12px 13px', cursor: 'pointer', textAlign: 'left',
+                  }}>
+                  {all ? '특히 관심 있는 인재 고르기' : '함께 문의할 인재 추가하기'}
+                  <span style={{ fontSize: 11.5, fontWeight: 500, color: T.faint }}>선택</span>
                   {picked.length > (all ? 0 : 1) && (
-                    <span style={{ color: T.brand, fontWeight: 700, marginLeft: 6 }}>
-                      {all ? picked.length : picked.length - 1}명 선택
+                    <span style={{ fontSize: 12, fontWeight: 700, color: T.brand }}>
+                      {all ? picked.length : picked.length - 1}명
                     </span>
                   )}
-                </div>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-                  {picks.map((p, i) => ((!all && i === first) ? null : (
-                    <button key={i} type="button" onClick={() => toggle(i)}
-                      title={`${p.title || '직무 미상'} · 적합 ${p.fit}`}
-                      style={{
-                        fontFamily: 'inherit', fontSize: 12.5, fontWeight: 700,
-                        padding: '7px 13px', borderRadius: 100, cursor: 'pointer',
-                        color: picked.includes(i) ? '#fff' : T.body,
-                        background: picked.includes(i) ? T.brand : '#fff',
-                        border: `1px solid ${picked.includes(i) ? T.brand : T.line}`,
-                        transition: 'background .12s ease, color .12s ease, border-color .12s ease',
-                      }}>{i + 1}위</button>
-                  )))}
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                    strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"
+                    style={{
+                      marginLeft: 'auto', color: T.faint, flexShrink: 0,
+                      transform: more ? 'rotate(180deg)' : 'none', transition: 'transform .2s ease',
+                    }}>
+                    <polyline points="6 9 12 15 18 9" />
+                  </svg>
+                </button>
+
+                {/* 펼침은 높이 전환 — 뚝 나타나면 모달이 널뛴다(달력 판과 같은 규칙) */}
+                <div style={{
+                  display: 'grid', gridTemplateRows: more ? '1fr' : '0fr',
+                  transition: 'grid-template-rows .25s ease',
+                }}>
+                  <div style={{ overflow: 'hidden' }}>
+                    {picks.map((p, i) => {
+                      if (!all && i === first) return null
+                      const on = picked.includes(i)
+                      return (
+                        <button key={i} type="button" onClick={() => toggle(i)}
+                          className={`psc-row${on ? '' : ' off'}`}
+                          style={{
+                            width: '100%', display: 'flex', alignItems: 'center', gap: 9,
+                            fontFamily: 'inherit', textAlign: 'left', cursor: 'pointer',
+                            padding: '9px 13px', border: 0, borderTop: `1px solid ${T.hair}`,
+                            background: on ? T.brandSoft : '#fff',
+                            transition: 'background .12s ease',
+                          }}>
+                          <span style={{
+                            width: 21, height: 21, borderRadius: '50%', flexShrink: 0,
+                            display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                            fontSize: 10.5, fontWeight: 800, fontVariantNumeric: 'tabular-nums',
+                            background: on ? T.brand : '#F1F5F9', color: on ? '#fff' : '#64748B',
+                            transition: 'background .12s ease, color .12s ease',
+                          }}>{i + 1}</span>
+                          <span style={{
+                            fontSize: 12.5, fontWeight: on ? 600 : 500, color: T.body,
+                            minWidth: 0, flex: 1, ...oneLine,
+                          }}>{p.title || '직무 미상'}</span>
+                          <span style={{ fontSize: 11.5, color: T.faint, flexShrink: 0, fontVariantNumeric: 'tabular-nums' }}>
+                            적합 {p.fit}
+                          </span>
+                          {/* 체크 — 기본 체크박스 대신 원. 켜지면 주황으로 차고 흰 체크가 선다 */}
+                          <span style={{
+                            width: 18, height: 18, borderRadius: '50%', flexShrink: 0,
+                            display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                            border: `1.5px solid ${on ? T.brand : '#D6DBE1'}`,
+                            background: on ? T.brand : '#fff',
+                            transition: 'background .12s ease, border-color .12s ease',
+                          }}>
+                            {on && (
+                              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#fff"
+                                strokeWidth="3.4" strokeLinecap="round" strokeLinejoin="round">
+                                <polyline points="20 6 9 17 4 12" />
+                              </svg>
+                            )}
+                          </span>
+                        </button>
+                      )
+                    })}
+                  </div>
                 </div>
               </div>
             )}
