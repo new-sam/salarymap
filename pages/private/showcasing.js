@@ -1278,13 +1278,15 @@ function InquiryModal({ sid, picks, first, co, ev, onClose }) {
               </div>
             )}
 
+            {/* 필수 세 칸 — 비어 있으면 오른쪽에 빨간 점(채워야 한다는 표시), 채우면
+                연두 테두리 + 체크. 제출을 눌러 보기 전에 뭐가 남았는지 칸이 스스로 말한다. */}
             <div style={{ marginTop: 16, display: 'flex', flexDirection: 'column', gap: 8 }}>
-              <input value={name} onChange={(e) => setName(e.target.value)}
-                placeholder="담당자 성함" style={inputStyle} />
-              <input value={company} onChange={(e) => setCompany(e.target.value)}
-                placeholder="회사명" style={inputStyle} />
-              <input value={contact} onChange={(e) => setContact(e.target.value)}
-                placeholder="이메일 또는 전화번호" style={inputStyle} />
+              <ReqInput value={name} onChange={(e) => setName(e.target.value)}
+                placeholder="담당자 성함" valid={!!name.trim()} />
+              <ReqInput value={company} onChange={(e) => setCompany(e.target.value)}
+                placeholder="회사명" valid={!!company.trim()} />
+              <ReqInput value={contact} onChange={(e) => setContact(e.target.value)}
+                placeholder="이메일 또는 전화번호" valid={!!contact.trim()} />
             </div>
 
             {/* 날짜·시간을 폼 줄로 늘어놓지 않는다 — 연도/월/일/시간 입력이 나란히 서 있으면
@@ -1399,6 +1401,37 @@ const inputStyle = {
   padding: '11px 13px', borderRadius: 10, border: `1px solid ${T.line}`,
   outline: 'none', background: '#fff',
 }
+
+/* 필수 입력칸 — 빈 칸은 오른쪽에 빨간 점, 채우면 연두 테두리와 체크.
+   점이 빨간 건 '필수'라는 표시지 에러가 아니다 — 그래서 테두리까지 빨갛게 하지는 않는다. */
+const ReqInput = ({ value, onChange, placeholder, valid }) => (
+  <div style={{ position: 'relative' }}>
+    <input value={value} onChange={onChange} placeholder={placeholder}
+      style={{
+        ...inputStyle, paddingRight: 36,
+        border: `1px solid ${valid ? '#8BDCAC' : T.line}`,
+        transition: 'border-color .15s ease',
+      }} />
+    <span style={{
+      position: 'absolute', right: 13, top: '50%', transform: 'translateY(-50%)',
+      display: 'flex', alignItems: 'center', pointerEvents: 'none',
+    }}>
+      {valid ? (
+        <span style={{
+          width: 16, height: 16, borderRadius: '50%', background: '#12B76A',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+        }}>
+          <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="#fff"
+            strokeWidth="3.6" strokeLinecap="round" strokeLinejoin="round">
+            <polyline points="20 6 9 17 4 12" />
+          </svg>
+        </span>
+      ) : (
+        <span style={{ width: 5, height: 5, borderRadius: '50%', background: '#F04438', display: 'block' }} />
+      )}
+    </span>
+  </div>
+)
 
 const primaryBtn = {
   width: '100%', fontFamily: 'inherit', fontSize: 14, fontWeight: 700, color: '#fff',
