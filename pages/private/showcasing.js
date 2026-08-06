@@ -610,16 +610,15 @@ function Result({ data, criteria, co, onBack, ev }) {
             선 하나가 '여기까지가 표지, 아래가 본문'을 말해서 카드가 갑자기 시작되지 않는다. */}
         <div style={eyebrow}>{co ? `${co} 인재 추천 결과` : '인재 추천 결과'}</div>
         <div style={{ display: 'flex', alignItems: 'flex-end', gap: 12, flexWrap: 'wrap', marginTop: 8 }}>
-          {/* 제목은 우리가 한 일이 아니라 상대가 얻는 것으로 쓴다. "10분을 골랐습니다"는
-              우리 작업 보고이고, "찾으시는 웹앱 개발자, 이 10명 안에 있습니다"는 고객사가
-              이 화면을 열면서 머릿속에 들고 있던 물음에 대한 답이다.
+          {/* "찾으시는 ○○, 이 10명 안에 있습니다"였다가 어색하다는 지적으로 고쳤다 —
+              받은 것(공고)을 주어로, 준 것(10명)을 결론으로 놓는 평서문이 자연스럽다.
               단정해서 말한다 — "있을 겁니다"로 흐리면 우리가 고른 열 명을 우리가 못 믿는
               것으로 읽힌다. */}
           <H>
             {picks.length
               ? (<>
-                찾으시는 {criteria?.title || '인재'},{' '}
-                <span style={{ color: T.brand }}>이 {picks.length}명 안에 있습니다</span>
+                올려주신 {criteria?.title ? `${criteria.title} ` : ''}공고에 가장 부합하는{' '}
+                <span style={{ color: T.brand }}>{picks.length}명</span>을 보여드립니다
               </>)
               : '조건에 맞는 분을 찾지 못했습니다'}
           </H>
@@ -627,7 +626,7 @@ function Result({ data, criteria, co, onBack, ev }) {
             marginLeft: 'auto', fontFamily: 'inherit', fontSize: 12.5, fontWeight: 600,
             color: T.body, background: '#fff', border: `1px solid ${T.line}`,
             borderRadius: 100, padding: '7px 14px', cursor: 'pointer', boxShadow: T.sm,
-          }}>다른 JD로 다시</button>
+          }}>다른 JD로 검색</button>
         </div>
         {/* 무엇을 보고 골랐는지 — 조건 상자를 결과 화면에서 뺀 자리를 이 한 줄이 메운다.
             문장이 아니라 배지인 이유는, 여기서 필요한 건 다시 읽는 게 아니라 "아 그 조건"
@@ -732,7 +731,7 @@ function Result({ data, criteria, co, onBack, ev }) {
   )
 }
 
-/* 상담 문의 — 이 화면이 존재하는 이유. 여기까지 와서 할 수 있는 게 "다른 JD로 다시"뿐이면
+/* 상담 문의 — 이 화면이 존재하는 이유. 여기까지 와서 할 수 있는 게 "다른 JD로 검색"뿐이면
    다섯 장을 아무리 잘 골라도 대화가 시작되지 않는다.
 
    누른 한 명으로 열리되 나머지 넷을 체크로 같이 담을 수 있게 둔 건, 셋이 마음에 들었을 때
@@ -1274,6 +1273,13 @@ const RANK_BADGE = {
   3: { background: '#5B6B7C' },
 }
 
+/* 1~3등은 카드 바탕부터 다르다 — "N위" 알약만으로는 눈에 안 들어온다는 지적.
+   금·은·동으로 갈랐다가 셋 다 금색으로 통일 — 은·동은 격하로 읽힌다.
+   배경은 옅은 워시, 테두리는 흰 카드와 확실히 갈리는 진하기로.
+   알약이 채도를 맡고 바탕은 온도만 맡는다 — 둘 다 진하면 시끄럽다. */
+const GOLD_CARD = { background: '#FFF8EF', border: '#EFCF9F' }
+const RANK_CARD = { 1: GOLD_CARD, 2: GOLD_CARD, 3: GOLD_CARD }
+
 /* 경력 — "1.7년"이 아니라 "1년 8개월". 소수점 년수는 계산기 말이지 사람 말이 아니다.
    yoeM(개월)이 정답이고, 캐시된 옛 응답에는 그 필드가 없어서 년수에서 되짚는다. */
 const yoeText = (p) => {
@@ -1287,13 +1293,14 @@ const yoeText = (p) => {
 
 function Card({ p, no }) {
   const rb = RANK_BADGE[no]
+  const rc = RANK_CARD[no]
   return (
     <div
       style={{
         position: 'relative', display: 'flex', flexDirection: 'row',
-        background: '#fff', borderRadius: 18,
-        border: `1px solid ${no === 1 ? T.brandLine : T.line}`,
-        boxShadow: rb ? T.md : T.sm,
+        background: rc?.background || '#fff', borderRadius: 18,
+        border: `1px solid ${rc?.border || T.line}`,
+        boxShadow: rc ? T.md : T.sm,
       }}
     >
       <div style={{ padding: '22px 22px 18px', minWidth: 0, flex: 1, display: 'flex', flexDirection: 'column' }}>
@@ -1321,7 +1328,11 @@ function Card({ p, no }) {
           {/* 적합점수 — 요건 충족률과 이력서 자체를 합쳐 코드가 낸 값(0~100) */}
           <span title={`자격요건 ${p.met}/${p.total} 충족 · ${p.rank}급`}
             style={{ marginLeft: 'auto', display: 'flex', alignItems: 'baseline', gap: 5 }}>
-            <span style={{ fontSize: 12, fontWeight: 700, color: T.brand }}>적합</span>
+            {/* 라벨은 점수대를 따라간다 — 98도 74도 똑같이 "적합"이면 라벨이 아무 말도
+                안 하는 셈이다. 낮은 쪽도 깎는 말은 안 쓴다(근접이지 미달이 아니다). */}
+            <span style={{ fontSize: 12, fontWeight: 700, color: T.brand }}>
+              {p.fit >= 90 ? '매우 적합' : p.fit >= 80 ? '적합' : '조건 근접'}
+            </span>
             <span style={{
               fontSize: 24, fontWeight: 800, color: T.brand, letterSpacing: '-0.04em',
               fontVariantNumeric: 'tabular-nums', lineHeight: 1,
@@ -1336,14 +1347,20 @@ function Card({ p, no }) {
           {p.photo
             ? <img src={p.photo} alt="" referrerPolicy="no-referrer" style={{
                 width: 72, height: 72, borderRadius: '50%', objectFit: 'cover', flexShrink: 0,
-                boxShadow: `0 0 0 3px #fff, 0 0 0 4px ${no === 1 ? T.brandLine : T.line}, 0 6px 16px rgba(16,24,40,.12)`,
+                boxShadow: `0 0 0 3px #fff, 0 0 0 4px ${rc?.border || T.line}, 0 6px 16px rgba(16,24,40,.12)`,
               }} />
             : <div style={{
-                width: 72, height: 72, borderRadius: '50%', flexShrink: 0,
-                background: 'linear-gradient(180deg,#F7F8FA 0%,#EFF2F5 100%)',
-                display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 26, color: '#C6CCD3',
-                boxShadow: `0 0 0 3px #fff, 0 0 0 4px ${no === 1 ? T.brandLine : T.line}`,
-              }}>👤</div>}
+                width: 72, height: 72, borderRadius: '50%', flexShrink: 0, overflow: 'hidden',
+                background: 'linear-gradient(180deg,#EDF0F3 0%,#E2E7EC 100%)',
+                boxShadow: `0 0 0 3px #fff, 0 0 0 4px ${rc?.border || T.line}`,
+              }}>
+                {/* 사진 없음 — 이모지 대신 기본 프로필 실루엣. 이모지는 OS 마다 생김새가 다르다. */}
+                <svg viewBox="0 0 72 72" width="72" height="72" aria-hidden="true" style={{ display: 'block' }}>
+                  <circle cx="36" cy="28" r="13" fill="#C3CBD4" />
+                  {/* 어깨는 원 밖(y=76)까지 내려 클리핑으로 자른다 — 원 바닥까지 꽉 차야 끊겨 보이지 않는다 */}
+                  <path d="M36 44c-16 0-26 10-28 32h56c-2-22-12-32-28-32z" fill="#C3CBD4" />
+                </svg>
+              </div>}
 
           <div style={{ minWidth: 0, flex: 1, paddingTop: 2 }}>
             {/* 이름을 감춘 화면이라 이 줄이 사실상 이 사람의 이름이다. 두 줄까지 접는다 —
@@ -1390,11 +1407,12 @@ function Card({ p, no }) {
 
         {/* 왜 이 사람인지 — 다섯 장을 훑을 때 실제로 읽는 문장이다. 상자에 넣지 않는다:
             카드 안에 카드가 겹치는 모양이 되고, 이 화면에서 유일하게 '읽는' 글이라
-            본문처럼 놓이는 게 맞다. */}
+            본문처럼 놓이는 게 맞다.
+            금색 카드(1~3위)에서는 주황 워시가 바탕과 같은 색이 돼 사라진다 — 흰색으로 반전. */}
         {!!p.why && (
           <div style={{
             fontSize: 13, color: T.body, lineHeight: 1.65, marginBottom: 14,
-            background: T.brandSoft, borderLeft: `2px solid ${T.brandLine}`,
+            background: rc ? '#fff' : T.brandSoft, borderLeft: `2px solid ${rc ? rc.border : T.brandLine}`,
             borderRadius: '0 10px 10px 0', padding: '11px 13px',
             display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden',
           }}>{p.why}</div>
