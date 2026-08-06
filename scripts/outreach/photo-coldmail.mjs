@@ -113,7 +113,8 @@ async function resendClient() {
 
   // 이 캠페인 기발송 제외(재실행 idempotent)
   const sentEvts = await fetchAll(() => sb.from('events').select('user_id, meta').eq('event', 'coldmail_photo_sent'))
-  const alreadySent = new Set(sentEvts.filter(e => (e.meta?.campaign || 'photo1') === campaign).map(e => e.user_id))
+  // 캠페인 무관 전체 제외 — 8/6 코호트를 photo2로 분리한 뒤라, 캠페인별로 거르면 photo1 재실행 시 재발송된다.
+  const alreadySent = new Set(sentEvts.map(e => e.user_id))
   rows = rows.filter(r => !alreadySent.has(r.id))
 
   // 오늘(ICT) 다른 콜드메일 수신자 제외 — 하루 1통 원칙(--include-today 로 해제)

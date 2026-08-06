@@ -483,6 +483,16 @@ const invitedSubject = (company) => ({
   en: `[FYI] ${company} viewed your profile and invited you to apply`,
 })
 
+// ── MNF Solution AI Engineer (LLM) 추천 (mnf-recommend-coldmail.mjs) — JD 요약 문단은 두 프레임 공통 ──
+const MNF_LINE = {
+  vi: 'Phát triển AI Agent, chatbot tư vấn du lịch, tính năng dịch đa ngôn ngữ và Voice AI với <b>Python · FastAPI · OpenAI API · Claude API · LangChain</b>. <b>Không yêu cầu kinh nghiệm</b> — chỉ cần nền tảng Python và tinh thần học hỏi; kinh nghiệm AI/LLM là điểm cộng. Làm việc on-site tại <b>Quận 7, TP.HCM</b>, lương thỏa thuận.',
+  ko: 'AI Agent·여행 상담 챗봇·다국어 번역·Voice AI를 <b>Python · FastAPI · OpenAI API · Claude API · LangChain</b>으로 개발합니다. <b>경력 무관</b> — Python 기초와 배우려는 자세면 충분하고, AI/LLM 경험은 우대입니다. <b>호치민 7군(Q7) 온사이트</b>, 급여 협의.',
+  en: 'Build AI Agents, a travel-guide chatbot, multilingual translation and Voice AI with <b>Python · FastAPI · OpenAI API · Claude API · LangChain</b>. <b>No experience required</b> — Python basics and willingness to learn are enough; AI/LLM experience is a plus. On-site in <b>District 7, HCMC</b>, negotiable salary.',
+}
+const mnfTail = (benefit) => ({
+  vi: `${MNF_LINE.vi} ${benefit.vi}`, ko: `${MNF_LINE.ko} ${benefit.ko}`, en: `${MNF_LINE.en} ${benefit.en}`,
+})
+
 // 순서대로 첫 매치 사용 — 접두어가 겹치는 항목(coldmail-ktc*)은 구체적인 것을 앞에 둘 것.
 // ── 프로필 사진 등록(photo1): 대기 리스트 미선정(사유: 사진 없음) 프레임 ──
 const PHOTO_I18N = {
@@ -541,7 +551,7 @@ export const COLDMAIL_TEMPLATES = [
       ko: '오퍼 대기 리스트에 올랐지만 아쉽게 선정되지 않았습니다 (사유: 프로필 사진 없음)',
       en: 'You were on an offer shortlist — but not selected (reason: no profile photo)',
     },
-    desc: '프로필 사진 등록 유도 photo1 (8/5): "담당자가 오퍼 1차 대기 리스트에 올렸으나 사진 없음 사유로 미선정" 프레임 + 사진 있는 프로필 오퍼 확률 62%↑(유저 확정 카피). 원클릭 토큰 랜딩(/photo-upload)에서 로그인 없이 업로드 → vision 인물사진 검증 후 즉시 반영.',
+    desc: '프로필 사진 등록 유도 photo1(8/5 769명)·photo2(8/6 잔여 269명, 동일 양식·발송일만 분리): "담당자가 오퍼 1차 대기 리스트에 올렸으나 사진 없음 사유로 미선정" 프레임 + 사진 있는 프로필 오퍼 확률 62%↑(유저 확정 카피). 원클릭 토큰 랜딩(/photo-upload)에서 로그인 없이 업로드 → vision 인물사진 검증 후 즉시 반영.',
     source: 'scripts/outreach/photo-coldmail.mjs',
     html: photoColdmailHtml,
   },
@@ -714,6 +724,38 @@ export const COLDMAIL_TEMPLATES = [
     }),
   },
   {
+    match: /^mnf-recommend1-public/,
+    subject: invitedSubject('MNF Solution'),
+    desc: 'MNF Solution AI Engineer (LLM) 추천 · 공개 프레임 (8/6): 호치민 개발/AI 풀(키워드 매칭+gpt-4o-mini 오탐 필터) 대상, "담당자가 봤다 · 우선검토".',
+    source: 'scripts/outreach/mnf-recommend-coldmail.mjs',
+    html: (lang) => recommendShell(lang, {
+      intro: {
+        vi: 'Nhà tuyển dụng của <b>MNF Solution</b> — công ty Hàn Quốc xây dựng hệ sinh thái mobility trên nền tảng số, cung cấp giải pháp quản lý cho các công ty cho thuê xe — đã xem hồ sơ của bạn trên FYI và <b>gửi cho bạn vị trí này</b> vì nền tảng lập trình của bạn phù hợp với yêu cầu.',
+        ko: '렌터카 관리 솔루션으로 모빌리티 생태계를 만드는 한국 기업 <b>MNF Solution</b>의 채용 담당자가 FYI에서 회원님의 프로필을 확인하고, 개발 역량이 요구사항과 맞아 <b>이 포지션을 직접 보냈습니다</b>.',
+        en: 'A recruiter at <b>MNF Solution</b> — a Korean company building a mobility ecosystem on a digital platform, with management solutions for car-rental companies — viewed your profile on FYI and <b>sent you this position</b> because your engineering background fits the requirements.',
+      },
+      initial: 'M', company: 'MNF Solution', title: 'AI Engineer (LLM)', meta: 'On-site Quận 7 · TP.HCM · Lương thỏa thuận', tail: mnfTail(BENEFIT_PUBLIC),
+    }),
+  },
+  {
+    match: /^mnf-recommend1-private/,
+    subject: {
+      vi: '[FYI] Bạn được chọn vào danh sách đề cử cho vị trí AI Engineer (LLM) tại MNF Solution',
+      ko: '[FYI] MNF Solution AI Engineer (LLM) 추천 명단에 선정되셨습니다',
+      en: '[FYI] You\'ve been selected for the MNF Solution AI Engineer (LLM) nominee list',
+    },
+    desc: 'MNF Solution AI Engineer (LLM) 추천 · 비공개 프레임 (8/6): "FYI가 전체 이력서 검토 후 추천 명단에 선정 · 이번 주 담당자 전달 · 우선검토". ⚠️발송 후 실제 명단 공유 의무.',
+    source: 'scripts/outreach/mnf-recommend-coldmail.mjs',
+    html: (lang) => recommendShell(lang, {
+      intro: {
+        vi: '<b>MNF Solution</b> — công ty Hàn Quốc xây dựng hệ sinh thái mobility trên nền tảng số, cung cấp giải pháp quản lý cho các công ty cho thuê xe — đang tuyển AI Engineer (LLM) qua FYI. Đội ngũ FYI đã xem xét toàn bộ hồ sơ đã đăng ký và <b>chọn bạn vào danh sách đề cử</b> gửi cho nhà tuyển dụng.',
+        ko: '렌터카 관리 솔루션으로 모빌리티 생태계를 만드는 한국 기업 <b>MNF Solution</b>이 FYI를 통해 AI Engineer (LLM)를 채용 중입니다. FYI 팀이 등록된 이력서 전체를 검토해 회원님을 <b>기업에 전달할 추천 명단에 선정</b>했습니다.',
+        en: '<b>MNF Solution</b> — a Korean company building a mobility ecosystem on a digital platform — is hiring an AI Engineer (LLM) through FYI. The FYI team reviewed every registered CV and <b>selected you for the nominee list</b> sent to the recruiter.',
+      },
+      initial: 'M', company: 'MNF Solution', title: 'AI Engineer (LLM)', meta: 'On-site Quận 7 · TP.HCM · Lương thỏa thuận', tail: mnfTail(BENEFIT_PRIVATE),
+    }),
+  },
+  {
     match: /^creatus-recommend1-public/,
     subject: invitedSubject('CREATUS'),
     desc: 'CREATUS Global Content Marketer 추천 · 공개 프레임 (7/30): 전략·어학형(마케팅/브랜드/PR) 풀 배정.',
@@ -799,6 +841,13 @@ export const COLDMAIL_TEMPLATES = [
     source: 'scripts/outreach/resume-register-coldmail.mjs',
     html: registerHtml,
   },
+]
+
+// 발송 전 초안 캠페인 — 이벤트가 없어도 콜드메일 탭 표에 '미발송' 행으로 띄워 양식을 검수한다.
+// 발송이 시작되면(같은 이름의 이벤트가 쌓이면) 실측 행이 이 자리를 대체하므로 발송 후 지워도 된다.
+export const DRAFT_CAMPAIGNS = [
+  { campaign: 'mnf-recommend1-public', group: 'recommend' },
+  { campaign: 'mnf-recommend1-private', group: 'recommend' },
 ]
 
 export const templateFor = (name) => COLDMAIL_TEMPLATES.find((t) => t.match.test(name || '')) || null

@@ -58,6 +58,8 @@ export default function PrivateShowcasing({ co, campaign, off, c }) {
   const [file, setFile] = useState('')     // 첨부해서 채운 경우 파일명 — 출처를 밝혀 둔다
   const [reading, setReading] = useState(false)
   const [focus, setFocus] = useState(false) // 입력칸 포커스 — 링을 씌우는 용도
+  const [wide, setWide] = useState(false)   // 넓게 보기 — 긴 JD 를 확인할 때 칸을 키운다
+  const [long, setLong] = useState(false)   // 내용이 기본 높이를 넘겼는지 — 확대 버튼을 이때만 보인다
   const [criteria, setCriteria] = useState(null)
   // 훑을 이력서 건수 — 조건 단계가 같이 세어 온다. 로딩 화면이 그 숫자를 말한다.
   const [pool, setPool] = useState(null)
@@ -80,8 +82,16 @@ export default function PrivateShowcasing({ co, campaign, off, c }) {
   const grow = (el) => {
     if (!el) return
     el.style.height = 'auto'
-    el.style.height = `${Math.min(el.scrollHeight, 340)}px`
+    // 넓게 보기에서는 화면 높이만큼 열어 준다 — 로고·제목을 치운 자리까지 위아래로 쓴다.
+    // 200 은 입력칸 테두리·버튼 줄·안내 줄·상하 여백의 몫 — 다 합쳐 한 화면에 들어와야
+    // 확장했는데 페이지가 스크롤되는 일이 없다.
+    const cap = wide ? window.innerHeight - 200 : 340
+    el.style.height = `${Math.min(el.scrollHeight, cap)}px`
+    setLong(el.scrollHeight > 340)
   }
+
+  // 토글 직후 새 높이로 다시 잰다 — grow 는 이벤트에서만 불려서 상태 변화를 스스로 못 본다
+  useEffect(() => { grow(boxRef.current) }, [wide]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const onPick = async (f) => {
     if (!f) return
@@ -181,20 +191,22 @@ export default function PrivateShowcasing({ co, campaign, off, c }) {
         <div style={{
           minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center',
           position: 'relative', overflow: 'hidden',
-          // 위쪽에 아주 옅은 온기를 한 겹 깐다. 순백 배경이면 흰 입력칸이 테두리 선으로만
-          // 존재하는데, 종이 톤 위에 올리면 선 없이도 떠 있는 것으로 읽힌다.
-          // 입력 화면에만 오른쪽 아래에 같은 온기를 한 겹 더 깔아 대각으로 짝을 짓는다 —
-          // 이 화면은 로고와 입력칸뿐이라 아래 절반이 통째로 비어 있다.
+          // 위쪽에 복숭아빛 온기를 깔고, 입력 화면은 오른쪽 아래 브랜드 글로우와
+          // 왼쪽 아래 옅은 메아리로 대각 구도를 만든다 — 이 화면은 로고와 입력칸뿐이라
+          // 배경이 받쳐 주지 않으면 통째로 빈 종이로 보인다. 색은 브랜드 오렌지 한 계열만.
           background: [
-            'radial-gradient(1100px 520px at 50% -10%, #FFF8F3 0%, rgba(255,248,243,0) 62%)',
+            'radial-gradient(1200px 620px at 50% -12%, #FFE9DB 0%, rgba(255,233,219,0) 64%)',
             ...(step === 'input'
-              ? ['radial-gradient(1280px 900px at 100% 100%, rgba(255,96,0,.085) 0%, rgba(255,96,0,.035) 38%, rgba(255,96,0,0) 74%)']
+              ? [
+                  'radial-gradient(1400px 980px at 102% 104%, rgba(255,96,0,.16) 0%, rgba(255,96,0,.06) 42%, rgba(255,96,0,0) 74%)',
+                  'radial-gradient(820px 640px at -8% 78%, rgba(255,96,0,.09) 0%, rgba(255,96,0,0) 62%)',
+                ]
               : []),
-            T.paper,
+            `linear-gradient(180deg, #FFF7F1 0%, ${T.paper} 46%)`,
           ].join(', '),
           ...(step === 'input'
-            ? { justifyContent: 'center', padding: '48px 20px' }
-            : { justifyContent: 'flex-start', padding: '116px 20px 60px' }),
+            ? { padding: '48px 20px 0' }
+            : { padding: '116px 20px 0' }),
         }}>
           {/* 도트는 오른쪽 아래 모서리에서만 보이고 안쪽으로 오면서 사라진다.
               마스크가 없으면 화면 전체가 격자가 되어 종이가 아니라 방안지가 된다.
@@ -209,19 +221,29 @@ export default function PrivateShowcasing({ co, campaign, off, c }) {
             }} />
           )}
 
-          {/* 배치된 도트 층 위로 올라와야 한다 — 흐름 안의 요소는 절대 배치된 형제보다 아래에 깔린다 */}
-          <div style={{ width: '100%', maxWidth: 640, position: 'relative' }}>
+          {/* 배치된 도트 층 위로 올라와야 한다 — 흐름 안의 요소는 절대 배치된 형제보다 아래에 깔린다.
+              입력 화면의 세로 가운데는 wrapper 의 justify-content 가 아니라 여기 auto 마진으로
+              잡는다 — justify-content 로 가운데를 잡으면 아래 푸터까지 같이 가운데로 끌려온다. */}
+          <div style={{
+            width: '100%', maxWidth: 640, position: 'relative',
+            ...(step === 'input' ? { margin: 'auto 0' } : {}),
+          }}>
             {/* 첫 화면만 가운데에 크게. 여기는 화면에 이것과 입력칸뿐이라 로고가
-                작으면 빈 화면처럼 보인다. 로딩은 단계 목록이 왼쪽으로 흐르는 화면이라 왼쪽에 작게. */}
-            <Mark center={step === 'input'} size={step === 'input' ? 88 : 24} />
+                작으면 빈 화면처럼 보인다. 로딩은 단계 목록이 왼쪽으로 흐르는 화면이라 왼쪽에 작게.
+                넓게 보기에서는 로고·제목을 치운다 — 입력칸이 위아래로 자라 그 자리까지 쓴다. */}
+            {!(step === 'input' && wide) && (
+              <Mark center={step === 'input'} size={step === 'input' ? 88 : 24} />
+            )}
 
             {step === 'input' ? (
               <>
                 {/* 첫 화면은 한 줄과 입력칸뿐이다. 인사말·예시·안내를 얹으면 읽을 것이
                     늘어나는데, 여기서 할 일은 하나(JD 를 넣는다)라 읽을 게 없어야 빠르다. */}
-                <div style={{ textAlign: 'center' }}>
-                  <H>채용하고자 하는 포지션의 JD를 올려주세요</H>
-                </div>
+                {!wide && (
+                  <div style={{ textAlign: 'center' }}>
+                    <H>채용하고자 하는 포지션의 JD를 올려주세요</H>
+                  </div>
+                )}
 
                 {/* 입력칸 — 글이든 파일이든 여기 한 곳으로 모인다.
                     처음엔 한 줄이고 쓰는 만큼만 자란다(grow). 빈 화면에 큰 상자를 띄우면
@@ -233,9 +255,19 @@ export default function PrivateShowcasing({ co, campaign, off, c }) {
                   border: `1px solid ${focus ? T.brandLine : T.line}`,
                   boxShadow: focus ? `${T.md}, 0 0 0 4px rgba(255,96,0,.08)` : T.sm,
                   transition: 'box-shadow .16s ease, border-color .16s ease',
+                  position: 'relative',
                 }}>
+                  {/* 넓게 보기 — 내용이 기본 높이를 넘겼을 때만 나타난다(제미나이 방식).
+                      짧은 JD 에는 키울 이유가 없어서 버튼부터가 소음이다. */}
+                  {(long || wide) && (
+                    <button type="button" className="psc-zoom" onClick={() => setWide((w) => !w)}
+                      title={wide ? '좁게 보기' : '넓게 보기'}>
+                      {wide ? <Shrink /> : <Grow />}
+                    </button>
+                  )}
                   <textarea
                     ref={boxRef}
+                    className="psc-jd"
                     value={jd}
                     onChange={(e) => { setJd(e.target.value); grow(e.target) }}
                     onFocus={() => setFocus(true)}
@@ -277,9 +309,8 @@ export default function PrivateShowcasing({ co, campaign, off, c }) {
                       style={{
                         marginLeft: 'auto', fontFamily: 'inherit', fontSize: 13, fontWeight: 700,
                         color: '#fff', border: 0, borderRadius: 100, padding: '8px 18px',
-                        background: jd.trim() && !reading
-                          ? `linear-gradient(180deg, ${T.brand} 0%, ${T.brandInk} 100%)` : '#D6DBE1',
-                        boxShadow: jd.trim() && !reading ? '0 4px 12px rgba(255,96,0,.28)' : 'none',
+                        background: jd.trim() && !reading ? T.brand : '#D6DBE1',
+                        boxShadow: jd.trim() && !reading ? '0 2px 6px rgba(255,96,0,.18)' : 'none',
                         cursor: jd.trim() && !reading ? 'pointer' : 'default',
                         transition: 'box-shadow .16s ease, background .16s ease',
                       }}>
@@ -298,6 +329,33 @@ export default function PrivateShowcasing({ co, campaign, off, c }) {
               <Loading step={step} criteria={criteria} pool={pool} />
             )}
           </div>
+
+          {/* 넓게 보기에서는 푸터도 치운다 — 확장의 약속은 '한 화면'인데 푸터 높이만큼
+              페이지가 스크롤되면 그 약속이 깨진다 */}
+          {!(step === 'input' && wide) && (
+            <CorpFooter style={step === 'input' ? null : { marginTop: 'auto' }} />
+          )}
+
+          {/* 긴 JD 를 붙여넣으면 높이 상한에서 스크롤이 생긴다. 막대를 아예 감추면
+              더 있다는 표시가 없어서, 트랙 없이 얇은 썸만 남긴다(제미나이 방식). */}
+          <style jsx>{`
+            .psc-jd { scrollbar-width: thin; scrollbar-color: #D9DEE4 transparent; }
+            .psc-jd::-webkit-scrollbar { width: 5px; }
+            .psc-jd::-webkit-scrollbar-track { background: transparent; }
+            .psc-jd::-webkit-scrollbar-thumb { background: #D9DEE4; border-radius: 100px; }
+            .psc-jd::-webkit-scrollbar-thumb:hover { background: #C3CAD2; }
+
+            /* 확대 토글 — 평소엔 아이콘만, 호버에서 원형 테두리가 떠서 누를 수 있는 것임을
+               알린다. 테두리는 투명으로 늘 깔려 있어 나타날 때 1px 도 안 밀린다. */
+            .psc-zoom {
+              position: absolute; top: 10px; right: 10px; width: 28px; height: 28px;
+              display: flex; align-items: center; justify-content: center;
+              background: rgba(255,255,255,.88); border: 1px solid transparent; border-radius: 50%;
+              padding: 0; color: ${T.mute}; cursor: pointer;
+              transition: color .15s ease, border-color .15s ease;
+            }
+            .psc-zoom:hover { color: ${T.ink}; border-color: ${T.line}; }
+          `}</style>
         </div>
       )}
     </>
@@ -326,6 +384,37 @@ const Clip = () => (
     strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: .5 }}>
     <path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48" />
   </svg>
+)
+
+// 넓게/좁게 보기 — 대각 화살표 한 쌍(피처 maximize-2/minimize-2 형)
+const Grow = () => (
+  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+    strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+    <polyline points="15 3 21 3 21 9" /><polyline points="9 21 3 21 3 15" />
+    <line x1="21" y1="3" x2="14" y2="10" /><line x1="3" y1="21" x2="10" y2="14" />
+  </svg>
+)
+const Shrink = () => (
+  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+    strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+    <polyline points="4 14 10 14 10 20" /><polyline points="20 10 14 10 14 4" />
+    <line x1="14" y1="10" x2="21" y2="3" /><line x1="3" y1="21" x2="10" y2="14" />
+  </svg>
+)
+
+/* 회사 정보 푸터 — 이 링크는 한국 기업에게 나가는 것이라 본 사이트(베트남 대상)가 아니라
+   한국 법인(멋쟁이사자처럼) 표기를 단다. 값은 공식 표기 그대로. */
+const CorpFooter = ({ style }) => (
+  <footer style={{
+    width: '100%', textAlign: 'center', padding: '30px 0 32px',
+    fontSize: 11, lineHeight: 1.9, color: T.faint, ...style,
+  }}>
+    <div style={{ height: 1, background: T.line, maxWidth: 640, margin: '0 auto 18px' }} />
+    <div>상호명: 멋쟁이사자처럼 · 대표: 나성영 · 사업자 번호: 264-88-01106</div>
+    <div>통신판매업 신고번호: 2022-서울종로-1534 · 전화번호: 02-6203-3222 · contact@likelion.net</div>
+    <div>주소: 서울 종로구 종로3길17, 광화문D타워 D1동 16층, 17층</div>
+    <div style={{ marginTop: 6 }}>Copyright © 2022 멋쟁이사자처럼 All rights reserved.</div>
+  </footer>
 )
 
 /* 로딩 — 기다리는 20초 동안 우리가 뭘 하고 있는지 보여준다.
@@ -376,10 +465,6 @@ function Loading({ step, criteria, pool }) {
         <H>{heads[at]}</H>
         <span className="spin" style={stepSpin} />
       </div>
-      <div style={{ fontSize: 13.5, color: T.mute, marginTop: 10, lineHeight: 1.7 }}>
-        이력서를 한 장씩 요건에 대보는 중이라 20초쯤 걸립니다.
-      </div>
-
       {/* 조건이 나오면 바로 띄운다 — 틀렸으면 결과를 기다릴 필요가 없다 */}
       {criteria && <CriteriaBox c={criteria} />}
 
@@ -503,14 +588,17 @@ function Result({ data, criteria, co, onBack, ev }) {
   // 문의 모달을 연 카드 번호(0-base). null 이면 닫힌 상태.
   const [asking, setAsking] = useState(null)
 
-  const open = (i) => {
-    setAsking(i)
-    ev?.('psc_inquiry_open', { i })
+  // 하단 고정 CTA — 문의 입구는 이거 하나다. 카드는 읽는 물건이고, 들어오는 문은 아래에 있다.
+  const openAll = () => {
+    setAsking('all')
+    ev?.('psc_inquiry_open', { all: true })
   }
 
   return (
     <div style={{
-      minHeight: '100vh', padding: '40px 12px 90px', // 양쪽 여백을 줄여 카드에 넘긴다
+      // 양쪽 여백을 줄여 카드에 넘긴다. 아래는 고정 CTA 바가 깔리는 만큼 비워 둔다 —
+      // 안 그러면 바가 푸터(회사 정보)를 영영 가린다.
+      minHeight: '100vh', padding: picks.length ? '40px 12px 96px' : '40px 12px 28px',
       background: `radial-gradient(900px 420px at 50% -60px, #FFF8F3 0%, rgba(255,248,243,0) 60%), ${T.paper}`,
     }}>
       {/* 2·4·4 배치의 폭. 가운데·아래 단이 네 칸이라 폭이 곧 카드 폭이다 —
@@ -582,21 +670,21 @@ function Result({ data, criteria, co, onBack, ev }) {
               /* 카드를 여는 것과 문의를 접수하는 것은 다른 일이다. 모달은 언제나 열린다 —
                  저장소가 준비됐는지로 화면을 잠그면, 화면을 만드는 동안 화면을 볼 수가 없다.
                  접수가 되느냐는 보낼 때 판가름난다(InquiryModal.send). */
-              <Card key={i} p={p} no={i + 1} onAsk={() => open(i)} />
+              <Card key={i} p={p} no={i + 1} />
             ))}
           </div>
         )}
         {!!tier2.length && (
           <div className="psc-g psc-g2">
             {tier2.map((p, i) => (
-              <Card key={i} p={p} no={i + 3} onAsk={() => open(i + 2)} />
+              <Card key={i} p={p} no={i + 3} />
             ))}
           </div>
         )}
         {!!tier3.length && (
           <div className="psc-g psc-g3">
             {tier3.map((p, i) => (
-              <Card key={i} p={p} no={i + 7} onAsk={() => open(i + 6)} />
+              <Card key={i} p={p} no={i + 7} />
             ))}
           </div>
         )}
@@ -620,6 +708,28 @@ function Result({ data, criteria, co, onBack, ev }) {
           @media (max-width: 580px) {
             .psc-g1, .psc-g2, .psc-g3 { grid-template-columns: 1fr; }
           }
+
+          /* 하단 고정 CTA — 스타일이 여기 있는 건 styled-jsx 가 한 컴포넌트에 블록 두 개를
+             중첩으로 보고 거부해서다. 클래스 스코프는 컴포넌트 단위라 위치는 상관없다. */
+          .psc-bar {
+            position: fixed; left: 0; right: 0; bottom: 0; z-index: 40;
+            background: rgba(255,255,255,.92); backdrop-filter: blur(8px);
+            border-top: 1px solid ${T.line};
+          }
+          .psc-bar-in {
+            max-width: 1560px; margin: 0 auto; padding: 11px 16px;
+            display: flex; align-items: center; justify-content: center; gap: 18px;
+          }
+          .psc-bar-msg { font-size: 13.5px; color: ${T.body}; letter-spacing: -0.01em; }
+          .psc-bar-btn {
+            font-family: inherit; font-size: 14px; font-weight: 700; color: #fff;
+            background: ${T.brand}; border: 0; border-radius: 100px; padding: 11px 22px;
+            cursor: pointer; box-shadow: 0 2px 8px rgba(255,96,0,.18);
+          }
+          @media (max-width: 640px) {
+            .psc-bar-msg { display: none; }
+            .psc-bar-btn { width: 100%; }
+          }
         `}</style>
       </div>
 
@@ -627,11 +737,27 @@ function Result({ data, criteria, co, onBack, ev }) {
         <InquiryModal
           sid={data.sid}
           picks={picks}
-          first={asking}
+          first={asking === 'all' ? null : asking}
           co={co}
           ev={ev}
           onClose={() => setAsking(null)}
         />
+      )}
+
+      <CorpFooter style={{ marginTop: 56 }} />
+
+      {/* 하단 고정 CTA — 카드는 요약이라, 잘 읽힐수록 다음 욕구는 '원문'이 된다.
+          그 순간에 "누구로 문의할지"부터 고르게 하지 않으려고 페이지 전체에 하나를 둔다.
+          카드별 버튼은 보조 경로로 남긴다 — '이 사람'이 꽂힌 쪽에는 그게 최단이다. */}
+      {!!picks.length && (
+        <div className="psc-bar">
+          <div className="psc-bar-in">
+            <span className="psc-bar-msg">카드는 요약입니다 — 이력서 원문까지 확인해 보세요</span>
+            <button type="button" className="psc-bar-btn" onClick={openAll}>
+              {picks.length}분의 이력서 받아보기
+            </button>
+          </div>
+        </div>
       )}
     </div>
   )
@@ -656,7 +782,10 @@ const todayStr = () => {
 }
 
 function InquiryModal({ sid, picks, first, co, ev, onClose }) {
-  const [picked, setPicked] = useState([first])
+  /* first 가 없으면(하단 고정 CTA) '이력서 원문' 문의다 — 특정 후보를 고르게 하지 않고,
+     안 고르면 전원으로 접수한다. 원문은 개인정보라 미팅에서 보여준다는 것이 이 흐름의 약속. */
+  const all = first == null
+  const [picked, setPicked] = useState(all ? [] : [first])
   const [name, setName] = useState('')
   const [company, setCompany] = useState(co || '')
   /* 이메일과 전화번호를 한 칸으로 합쳤다. 칸이 하나 늘 때마다 여기서 사람이 빠져나가는데,
@@ -691,19 +820,23 @@ function InquiryModal({ sid, picks, first, co, ev, onClose }) {
     prev.includes(i) ? prev.filter((x) => x !== i) : [...prev, i].sort((a, b) => a - b)
   ))
 
-  const ok = name.trim() && company.trim() && contact.trim() && picked.length
+  const ok = name.trim() && company.trim() && contact.trim() && (all || picked.length)
 
   const send = async () => {
     if (!ok || busy) return
     setBusy(true); setErr('')
+    // '이력서 원문' 문의에서 아무도 안 골랐으면 전원이다 — 서버는 빈 목록을 안 받고,
+    // 안 골랐다는 건 "이 10명"이라는 뜻이지 "아무도"가 아니다.
+    const chosen = all && !picked.length ? picks.map((_, i) => i) : picked
+    // 채운 줄만 보낸다. "2026-08-07 14:00, 2026-08-08 10:30" 꼴이다.
+    const when = slots.map((x) => [x.date, x.time].filter(Boolean).join(' ')).filter(Boolean).join(', ')
     try {
       if (!sid) throw new Error('검색 정보가 없습니다')
       const r = await fetch('/api/private/inquiry', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          sid, picked, name, company, memo, hp, t: openedAt.current,
-          // 채운 줄만 보낸다. "2026-08-07 14:00, 2026-08-08 10:30" 꼴이다.
-          when: slots.map((x) => [x.date, x.time].filter(Boolean).join(' ')).filter(Boolean).join(', '),
+          sid, picked: chosen, name, company, memo, hp, t: openedAt.current,
+          when,
           email: contact.includes('@') ? contact.trim() : '',
           phone: contact.includes('@') ? '' : contact.trim(),
         }),
@@ -715,8 +848,8 @@ function InquiryModal({ sid, picks, first, co, ev, onClose }) {
          자체에 이미 담겨 우리에게 오고, events 는 클라이언트도 쓰는 테이블이다.
          카드 번호는 남긴다. 몇 명이 아니라 '몇 번 카드가 골라지나'가 다음 화면을
          고칠 근거다(1·2번만 골린다면 아래 세 장은 안 읽히고 있는 것이다).
-         when 은 우리가 준 보기 넷 중 하나라 자유 입력이 아니다. */
-      ev?.('psc_meeting', { n: picked.length, picks: picked, when: when || null, memo: !!memo.trim() })
+         all 은 하단 CTA 로 들어온 문의인지 — 두 흐름이 같은 이벤트를 쓰게 됐다. */
+      ev?.('psc_meeting', { n: chosen.length, picks: chosen, when: when || null, memo: !!memo.trim(), all })
     } catch (e) {
       /* 화면을 먼저 만들고 접수를 나중에 붙이는 중이라, 개발 중에는 실패해도 완료 화면까지
          넘어간다 — 그러지 않으면 마지막 화면을 만드는 동안 마지막 화면을 볼 수가 없다.
@@ -727,7 +860,7 @@ function InquiryModal({ sid, picks, first, co, ev, onClose }) {
         setErr(e.message)
         // 여기서 죽으면 고객사는 미팅을 신청했다고 믿는데 우리에게는 아무것도 안 온다.
         // 그 상태를 우리가 모르는 게 최악이라, 실패만큼은 반드시 남긴다.
-        ev?.('psc_meeting_fail', { n: picked.length, message: String(e.message || '').slice(0, 120) })
+        ev?.('psc_meeting_fail', { n: chosen.length, message: String(e.message || '').slice(0, 120) })
       }
     } finally {
       setBusy(false)
@@ -768,9 +901,11 @@ function InquiryModal({ sid, picks, first, co, ev, onClose }) {
                 미리보기 — 실제로 접수되지 않았습니다: {preview}
               </div>
             )}
+            {/* 원문은 미팅에서 — 접수 화면이 "이력서를 보내드립니다"라고 하면
+                방금 모달이 한 약속(개인정보라 미팅에서만)을 스스로 뒤집는다. */}
             <div style={{ fontSize: 13.5, color: T.mute, marginTop: 10, lineHeight: 1.7 }}>
-              영업일 기준 1일 안에 {contact.includes('@') ? '메일로 ' : ''}연락드리겠습니다.<br />
-              고르신 {picked.length}분의 이력서를 정리해서 함께 보내드립니다.
+              영업일 기준 1일 안에 {contact.includes('@') ? '메일로 ' : ''}연락드려 미팅 일정을 잡아드리겠습니다.<br />
+              이력서 원문은 미팅에서 직접 보여드립니다.
             </div>
             <button type="button" onClick={onClose} style={{ ...primaryBtn, marginTop: 24, background: T.ink }}>
               닫기
@@ -783,27 +918,42 @@ function InquiryModal({ sid, picks, first, co, ev, onClose }) {
               fontSize: 20, fontWeight: 700, color: T.ink, letterSpacing: '-0.03em',
               lineHeight: 1.45, marginTop: 8,
             }}>
-              이 인재로 채용 상담을<br />문의하시겠습니까?
+              {all
+                ? (<>이력서 원문은 미팅에서<br />직접 보여드립니다</>)
+                : (<>이 인재로 채용 상담을<br />문의하시겠습니까?</>)}
             </div>
 
+            {/* 원문을 메일로 안 보내는 이유를 먼저 말한다 — 안 밝히면 '받아보기'를 눌렀는데
+                미팅을 잡자고 하는 셈이라, 낚인 기분이 든다. */}
+            {all && (
+              <div style={{ fontSize: 13, color: T.body, marginTop: 10, lineHeight: 1.7 }}>
+                이력서 원문은 개인정보 보호를 위해 대면 미팅으로만 공유하고 있습니다.
+                연락처를 남겨주시면 영업일 1일 안에 일정을 잡아드립니다.
+              </div>
+            )}
+
             {/* 누른 한 명 */}
-            <div style={{
-              marginTop: 18, border: `1px solid ${T.brandLine}`, background: T.brandSoft,
-              borderRadius: 12, padding: '11px 13px', display: 'flex', alignItems: 'center', gap: 9,
-            }}>
-              <span style={{ fontSize: 12, fontWeight: 800, color: T.brand }}>#{first + 1}</span>
-              <span style={{ fontSize: 13, fontWeight: 600, color: T.ink, ...oneLine }}>
-                {picks[first]?.title || '직무 미상'}
-              </span>
-              <span style={{ marginLeft: 'auto', fontSize: 11.5, color: T.faint, flexShrink: 0 }}>
-                적합 {picks[first]?.fit}
-              </span>
-            </div>
+            {!all && (
+              <div style={{
+                marginTop: 18, border: `1px solid ${T.brandLine}`, background: T.brandSoft,
+                borderRadius: 12, padding: '11px 13px', display: 'flex', alignItems: 'center', gap: 9,
+              }}>
+                <span style={{ fontSize: 12, fontWeight: 800, color: T.brand }}>#{first + 1}</span>
+                <span style={{ fontSize: 13, fontWeight: 600, color: T.ink, ...oneLine }}>
+                  {picks[first]?.title || '직무 미상'}
+                </span>
+                <span style={{ marginLeft: 'auto', fontSize: 11.5, color: T.faint, flexShrink: 0 }}>
+                  적합 {picks[first]?.fit}
+                </span>
+              </div>
+            )}
 
             {/* 나머지 — 한 번에 담을 수 있게. 다만 접어 둔다: 후보가 10명이면 이 목록이
                 아홉 줄이라, 펴 두면 정작 채워야 할 연락처 칸이 화면 밖으로 밀린다.
                 고른 수는 접힌 채로도 보여야 한다 — 접힌 곳에 든 것을 모르면 접은 게 아니라
-                숨긴 것이 된다. */}
+                숨긴 것이 된다.
+                원문 문의에서는 고르는 것 자체가 선택이다 — 문턱은 낮추되, 골랐다면 그게
+                "어느 카드가 팔리나"의 신호라 그대로 접수에 싣는다. */}
             {picks.length > 1 && (
               <div style={{ marginTop: 12 }}>
                 <button type="button" onClick={() => setMore((v) => !v)}
@@ -815,14 +965,16 @@ function InquiryModal({ sid, picks, first, co, ev, onClose }) {
                   {/* 화살표가 앞이다. 뒤에 있으면 줄 끝까지 눈이 갔다 와야 접힌 줄인 줄
                       아는데, 앞에 있으면 읽기 전에 안다. */}
                   <span style={{ color: T.faint, fontSize: 9 }}>{more ? '▲' : '▼'}</span>
-                  <span>함께 문의할 인재 추가하기</span>
-                  <span style={{ color: T.faint }}>{picks.length - 1}</span>
-                  {picked.length > 1 && (
-                    <span style={{ color: '#ff6000', fontWeight: 700 }}>+{picked.length - 1} 선택</span>
+                  <span>{all ? '특히 관심 있는 인재 고르기 (선택)' : '함께 문의할 인재 추가하기'}</span>
+                  <span style={{ color: T.faint }}>{all ? picks.length : picks.length - 1}</span>
+                  {picked.length > (all ? 0 : 1) && (
+                    <span style={{ color: '#ff6000', fontWeight: 700 }}>
+                      {all ? `${picked.length} 선택` : `+${picked.length - 1} 선택`}
+                    </span>
                   )}
                 </button>
                 <div style={{ display: more ? 'flex' : 'none', flexDirection: 'column', gap: 5 }}>
-                  {picks.map((p, i) => i === first ? null : (
+                  {picks.map((p, i) => (!all && i === first) ? null : (
                     <label key={i} style={{
                       display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer',
                       border: `1px solid ${picked.includes(i) ? T.ink : T.line}`,
@@ -902,10 +1054,12 @@ function InquiryModal({ sid, picks, first, co, ev, onClose }) {
             <button type="button" onClick={send} disabled={!ok || busy}
               style={{
                 ...primaryBtn, marginTop: 18,
-                background: ok && !busy ? `linear-gradient(180deg, ${T.brand} 0%, ${T.brandInk} 100%)` : '#D6DBE1',
-                boxShadow: ok && !busy ? '0 6px 18px rgba(255,96,0,.28)' : 'none',
+                background: ok && !busy ? T.brand : '#D6DBE1',
+                boxShadow: ok && !busy ? '0 2px 8px rgba(255,96,0,.18)' : 'none',
               }}>
-              {busy ? '보내는 중…' : `${picked.length}분으로 상담 요청하기`}
+              {busy ? '보내는 중…'
+                : all && !picked.length ? '미팅 요청하기'
+                : `${picked.length}분으로 상담 요청하기`}
             </button>
             <button type="button" onClick={onClose}
               style={{
@@ -977,20 +1131,12 @@ const COST = [
   { under: 5, label: '3~5년차', won: 199 },
 ]
 const costOf = (yoe) => (yoe == null ? null : COST.find((x) => yoe < x.under) || null)
-// 평소엔 "예상 단가 149만원/월", 올리면 "149만원 상담 문의하기 →".
-// 값을 버튼에서 지우지 않는 건, 누르기 직전에 확인할 것이 그 숫자이기 때문이다.
 const priceText = (yoe) => {
   const c = costOf(yoe)
   return c ? `예상 단가 ${c.won}만원/월` : '예상 단가 별도 협의'
 }
-const askText = (yoe) => {
-  const c = costOf(yoe)
-  return c ? `${c.won}만원 상담 문의하기 →` : '상담 문의하기 →'
-}
 
-function Card({ p, no, onAsk }) {
-  const [hover, setHover] = useState(false)
-  const on = !!onAsk && hover
+function Card({ p, no }) {
   /* 1·2등은 왼쪽에 시상대를 붙인다. 열 장이 똑같이 서 있으면 순서가 안 읽히고, 그러면
      우리가 매긴 순위가 아무 말도 못 한다. 카드 안쪽 구성은 나머지 여덟 장과 똑같이
      둔다 — 앞의 둘만 다른 걸 보여주면 비교가 안 된다. */
@@ -1009,17 +1155,11 @@ function Card({ p, no, onAsk }) {
     : { line: '#DFE3E8', from: '#F7F8FA', to: '#EBEEF2' }
   return (
     <div
-      onClick={onAsk || undefined}
-      onMouseEnter={() => setHover(true)}
-      onMouseLeave={() => setHover(false)}
       style={{
         position: 'relative', display: 'flex', flexDirection: 'row',
         background: '#fff', borderRadius: 18,
-        border: `1px solid ${on ? T.brandLine : top ? medal.line : T.line}`,
-        boxShadow: on || top ? T.md : T.sm,
-        transform: on ? 'translateY(-1px)' : 'none',
-        transition: 'transform .16s ease, box-shadow .16s ease, border-color .16s ease',
-        cursor: onAsk ? 'pointer' : 'default',
+        border: `1px solid ${top ? medal.line : T.line}`,
+        boxShadow: top ? T.md : T.sm,
       }}
     >
       {/* 시상대 — 폭을 비율로 잡는다. 카드가 452px 일 때도 318px 일 때도 같은 인상이어야
@@ -1060,7 +1200,7 @@ function Card({ p, no, onAsk }) {
             width: 30, height: 30, borderRadius: '50%',
             fontSize: 13, fontWeight: 700, letterSpacing: '-0.02em',
             ...(top
-              ? { background: T.brand, color: '#fff', boxShadow: '0 2px 8px rgba(255,96,0,.35)' }
+              ? { background: T.brand, color: '#fff', boxShadow: '0 1px 4px rgba(255,96,0,.22)' }
               : { background: '#F1F5F9', color: '#64748B' }),
           }}>{no}</span>
 
@@ -1198,28 +1338,20 @@ function Card({ p, no, onAsk }) {
           </div>
         )}
 
-        {/* 이 카드가 눌린다는 표시. 없으면 아무도 안 누른다 — 지금까지 이 화면에서 누를 수
-            있었던 건 아무것도 없었고, 카드가 갑자기 버튼이 됐다는 걸 알 방법이 없다. */}
-        {!!onAsk && (
-          /* 평소엔 예상 단가, 올리면 문의 버튼.
+        {/* 예상 단가 — 문의 입구는 하단 고정 CTA 하나로 모았지만, 값은 여기서 확인하고
+            내려가는 것이라 자리는 그대로 둔다.
 
-             단가를 어디에 둘지 네 번 옮겼는데(사진 옆·제 줄·스티커) 카드 폭이
-             378~452px 로 변해서 어느 자리에 둬도 이름이나 어학과 부딪혔다.
-             여기는 폭과 무관하게 늘 한 줄이 비어 있는 자리이고, 마우스를 올리기 전까지는
-             버튼이 할 일도 없다 — 값을 확인하고 누르는 것과 누른 뒤에 아는 것은 다른 일이라
-             순서도 맞는다. */
-          <div style={{
-            marginTop: 'auto', textAlign: 'center',
-            fontSize: 13.5, fontWeight: 700, letterSpacing: '-0.02em',
-            padding: '11px 0', borderRadius: 10,
-            color: on ? '#fff' : T.body,
-            background: on ? `linear-gradient(180deg, ${T.brand} 0%, ${T.brandInk} 100%)` : '#F7F8FA',
-            border: `1px solid ${on ? 'transparent' : T.line}`,
-            transition: 'background .16s ease, color .16s ease',
-          }}>
-            {on ? askText(p.yoe) : priceText(p.yoe)}
-          </div>
-        )}
+            단가를 어디에 둘지 네 번 옮겼는데(사진 옆·제 줄·스티커) 카드 폭이
+            378~452px 로 변해서 어느 자리에 둬도 이름이나 어학과 부딪혔다.
+            여기는 폭과 무관하게 늘 한 줄이 비어 있는 자리다. */}
+        <div style={{
+          marginTop: 'auto', textAlign: 'center',
+          fontSize: 13.5, fontWeight: 700, letterSpacing: '-0.02em',
+          padding: '11px 0', borderRadius: 10,
+          color: T.body, background: '#F7F8FA', border: `1px solid ${T.line}`,
+        }}>
+          {priceText(p.yoe)}
+        </div>
       </div>
     </div>
   )

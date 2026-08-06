@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import MetricChart from '../DashboardCharts'
-import { templateFor, localizeTemplate } from './coldmailTemplates'
+import { templateFor, localizeTemplate, DRAFT_CAMPAIGNS } from './coldmailTemplates'
 
 // "승주 작업실" — 어드민 인증으로만 접근(개인 비밀번호 게이트 제거).
 // 기본 탭은 목표지표인 [이력서 공개].
@@ -189,7 +189,7 @@ export default function GoalMetricsView({ token, lang }) {
       <div style={{ display: 'inline-flex', gap: 2, background: '#F1F1F4', borderRadius: 11, padding: 3, marginBottom: 18 }}>
         {tabBtn('resumePublic', ko ? '이력서 공개' : 'Resume public')}
         {tabBtn('roleExpansion', ko ? '전직군 개편' : 'Role expansion')}
-        {tabBtn('coldmail', ko ? '콜드메일 공개' : 'Cold-email public')}
+        {tabBtn('coldmail', ko ? '콜드메일' : 'Cold email')}
         {tabBtn('nontech', ko ? '비개발 인재풀' : 'Non-tech pool')}
         {tabBtn('photos', ko ? '프로필 사진' : 'Profile photos')}
         {tabBtn('paths', ko ? '가입 경로' : 'Signup paths')}
@@ -1105,60 +1105,15 @@ function ColdmailPublicTab({ data, loading, error, ko, lang }) {
   const td = { fontSize: 13, color: '#1F2937', padding: '7px 10px', borderBottom: '1px solid #F5F6F7' }
   const num = { ...td, textAlign: 'right', fontVariantNumeric: 'tabular-nums', fontWeight: 600 }
 
-  const Card = ({ label, value, sub, accent }) => (
-    <div style={{ background: '#fff', border: '1px solid #E5E8EB', borderRadius: 16, padding: '18px 20px', flex: '1 1 200px', minWidth: 180 }}>
-      <div style={{ fontSize: 12.5, fontWeight: 700, color: '#6B7280', marginBottom: 10 }}>{label}</div>
-      <div style={{ fontSize: 30, fontWeight: 800, color: accent || '#0F172A', lineHeight: 1, marginBottom: 6 }}>{value}</div>
-      {sub && <div style={{ fontSize: 12, color: '#9CA3AF' }}>{sub}</div>}
-    </div>
-  )
-
-  const notSent = data.sent === 0
-
   return (
     <div>
-      <div style={{ fontSize: 15, fontWeight: 800, color: '#0F172A', marginBottom: 6 }}>
-        {ko ? '콜드메일 공개 전환 — 비공개 이력서 → 공개 유도' : 'Cold-email public conversion'}
-      </div>
-      <div style={{ fontSize: 12, color: '#9CA3AF', marginBottom: 16 }}>
-        {ko
-          ? `퍼널: 발송 → 클릭 → 공개 전환 · 기준: ${new Date(data.generatedAt).toLocaleString('ko-KR')}`
-          : `Funnel: sent → click → public · as of ${new Date(data.generatedAt).toLocaleString('en-US')}`}
-      </div>
-
-      {notSent ? (
-        <div style={{ background: '#FFF9E6', border: '1px solid #FCE7A2', borderRadius: 14, padding: '18px 20px', marginBottom: 20 }}>
-          <div style={{ fontSize: 13.5, fontWeight: 700, color: '#92700E', marginBottom: 6 }}>
-            {ko ? '아직 발송 기록이 없습니다.' : 'No sends recorded yet.'}
-          </div>
-          <div style={{ fontSize: 12.5, color: '#A8842A', lineHeight: 1.5 }}>
-            {ko
-              ? `발송 대상(현재 비공개 이력서 보유자): ${data.targetRemaining}명. scripts/outreach/resume-public-coldmail.mjs --commit 로 발송 코호트를 기록하면 여기에 rate가 집계됩니다.`
-              : `Target pool (currently private): ${data.targetRemaining}. Run the coldmail script with --commit to record the send cohort.`}
-          </div>
-        </div>
-      ) : (
-        <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginBottom: 14 }}>
-          <Card label={ko ? '발송' : 'Sent'} value={data.sent}
-            sub={data.firstSentDay ? `${data.firstSentDay}${data.lastSentDay && data.lastSentDay !== data.firstSentDay ? `~${data.lastSentDay}` : ''}` : ''} />
-          <Card label={ko ? '클릭' : 'Clicked'} value={data.clicked}
-            sub={`CTR ${pct(data.clickRate)}`} accent="#2563EB" />
-          <Card label={ko ? '공개 전환' : 'Converted'} value={data.converted}
-            sub={`${ko ? '전환율' : 'rate'} ${pct(data.convertRate)}`} accent="#0D9488" />
-          <Card label={ko ? '클릭→전환' : 'Click→convert'} value={data.clicked ? pct(data.clickToConvert) : '—'}
-            sub={ko ? '클릭한 사람 중 공개' : 'of clickers'} accent="#059669" />
-        </div>
-      )}
-
-      <div style={{ fontSize: 11.5, color: '#B0B0B8', marginBottom: 24 }}>
-        {ko
-          ? `※ 현재 비공개 이력서 보유자(발송 가능 풀): ${data.targetRemaining}명. 전환율 = 공개 전환 / 발송.`
-          : `* Current private-resume pool: ${data.targetRemaining}. Rate = converted / sent.`}
-      </div>
-
       {(data.campaigns || []).length > 0 && CAMPAIGN_GROUPS.map((g) => {
         const rows = data.campaigns.filter((c) => (c.group || 'resume') === g.key)
-        if (!rows.length) return null
+        // 발송 전 초안 캠페인도 행으로 띄운다(양식 검수용) — 발송이 시작되면 실측 행이 대체.
+        const drafts = DRAFT_CAMPAIGNS
+          .filter((d) => d.group === g.key && !data.campaigns.some((c) => c.campaign === d.campaign))
+          .map((d) => ({ campaign: d.campaign, group: d.group, sent: 0, clicked: 0, converted: 0, clickRate: 0, convertRate: 0, applies: 0, appliers: 0, firstSentDay: null, lastSentDay: null, draft: true }))
+        if (!rows.length && !drafts.length) return null
         // 소계는 캠페인별 비율의 평균이 아니라 합계끼리 나눈다 — 발송량이 다른 캠페인을 섞어야 해서.
         const sum = rows.reduce((a, c) => ({
           sent: a.sent + c.sent, clicked: a.clicked + c.clicked,
@@ -1185,17 +1140,18 @@ function ColdmailPublicTab({ data, loading, error, ko, lang }) {
                   <th style={{ ...th, textAlign: 'right' }}>{ko ? '지원 건수' : 'Applies'}</th>
                 </tr></thead>
                 <tbody>
-                  {rows.map((c) => {
+                  {[...rows, ...drafts].map((c) => {
                     const conv = convertedOf(c, g)
                     const tpl = templateFor(c.campaign)
                     return (
                     <tr key={c.campaign}>
                       <td style={{ ...td, fontWeight: 700 }}>
                         {tpl ? (
-                          <span onClick={() => setMailPreview({ campaign: c.campaign, tpl })} title={ko ? '발송된 메일 양식 보기' : 'View sent email'}
+                          <span onClick={() => setMailPreview({ campaign: c.campaign, tpl })} title={ko ? '발송 메일 양식 보기' : 'View email template'}
                             style={{ cursor: 'pointer', borderBottom: '1px dashed #C4C9CF' }}>{c.campaign}</span>
                         ) : c.campaign}
                         {c.firstSentDay && <span style={{ fontWeight: 400, color: '#9CA3AF', fontSize: 11.5 }}> · {c.firstSentDay.slice(5)}{c.lastSentDay && c.lastSentDay !== c.firstSentDay ? `~${c.lastSentDay.slice(5)}` : ''}</span>}
+                        {c.draft && <span style={{ fontWeight: 600, color: '#D97706', fontSize: 11 }}> · {ko ? '미발송' : 'draft'}</span>}
                       </td>
                       <td style={num}>{c.sent}</td>
                       <td style={{ ...num, color: '#2563EB' }}>{c.clicked}</td>

@@ -71,6 +71,9 @@ export default async function handler(req, res) {
       campaign: name, sent: new Set(), click: new Set(), convert: new Set(),
       applies: 0, appliers: new Set(), firstSentDay: null, lastSentDay: null,
     })
+    // 사진 클레임 view/done 은 토큰에 발송 당시 캠페인이 박혀 온다(photo2 코호트가 photo1 토큰으로
+    // 클릭해도 photo1 로 찍힘) — 본인이 받은 sent 캠페인(last-touch)으로 귀속한다.
+    const photoCampByUser = {}
 
     // 일별도 카드와 동일하게 인원 수로 집계 — 같은 사람의 재클릭/재전환(idempotent 재실행,
     // 메일 스캐너 중복 포함)이 표를 부풀리지 않게, 유저별 첫 이벤트가 발생한 날에만 1로 센다.
@@ -80,7 +83,8 @@ export default async function handler(req, res) {
       // 사람을 구분한다. 단 top-line 퍼널/일별은 "회원의 이력서 공개 전환" 지표라, recommend1 과
       // 같은 이유로 회원(user_id) 만 세고 리드는 캠페인별 표에만 반영한다.
       const pid = uid || e.meta?.lead || null
-      const c = camp(e.meta?.campaign || 'coldmail1')
+      const isPhotoClaim = e.event === 'photo_claim_view' || e.event === 'photo_claim_done'
+      const c = camp((isPhotoClaim && photoCampByUser[uid]) || e.meta?.campaign || 'coldmail1')
       if (e.event === 'coldmail_public_sent') {
         if (uid) usersBy.sent.add(uid)
         if (pid) c.sent.add(pid)
@@ -120,8 +124,8 @@ export default async function handler(req, res) {
       } else if (e.event === 'coldmail_resume_upload') {
         if (uid) c.convert.add(uid)
       } else if (e.event === 'coldmail_photo_sent') {
-        // 사진 등록 유도(photo1) — 전환 정의가 '사진 업로드'라 top-line 퍼널엔 안 넣고 캠페인별만.
-        if (uid) c.sent.add(uid)
+        // 사진 등록 유도(photo1·photo2) — 전환 정의가 '사진 업로드'라 top-line 퍼널엔 안 넣고 캠페인별만.
+        if (uid) { c.sent.add(uid); photoCampByUser[uid] = e.meta?.campaign || 'photo1' }
         const day = vnDay(e.created_at)
         if (!c.firstSentDay || day < c.firstSentDay) c.firstSentDay = day
         if (!c.lastSentDay || day > c.lastSentDay) c.lastSentDay = day
