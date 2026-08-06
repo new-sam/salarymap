@@ -47,6 +47,8 @@ const FEATURE_RULES = [
 ]
 // 기능 집계에서 아예 빼는 이벤트 — 발송 마커(활동 아님)·크론·어드민.
 const NON_FEATURE = (ev) => /_sent$/.test(ev) || /^cron_/.test(ev) || ev === 'admin_action' || ev === 'changelog'
+// 기능 표에서 숨기는 그룹 — 방문·가입 그 자체는 "기능"이 아님. 활성/리텐션 축에는 그대로 포함.
+const HIDDEN_FEATURES = new Set(['general', 'onboarding'])
 const FEATURE_WINDOW = 30 // 일 — MAU와 같은 창
 // 주간 코호트 삼각표 최대 오프셋(W+0 ~ W+8) / 표시할 코호트 주 수(롤링).
 const WEEK_OFFSETS = 8
@@ -190,6 +192,7 @@ export default async function handler(req, res) {
     // D7 비교 분모: 가입 7일 경과 코호트, 유지 = maxOffset>=7 (커브와 동일 정의)
     const elig7 = cohortUsers.filter(u => dayDiff(u.day, todayVN) >= 7)
     const features = [...featAgg.entries()]
+      .filter(([key]) => !HIDDEN_FEATURES.has(key))
       .map(([key, f]) => {
         const users = f.userDays.size
         let repeat = 0

@@ -33,7 +33,6 @@ export default function RetentionView({ token, lang }) {
 
   // API FEATURE_RULES 의 key 와 1:1 — 새 그룹을 API에 추가하면 여기 라벨도 추가.
   const FEATURE_LABELS = {
-    general: ['일반 방문(세션·랜딩)', 'General visits (session·landing)', 'Truy cập chung (phiên·landing)'],
     jobs: ['공고 탐색·지원', 'Jobs browse & apply', 'Xem & ứng tuyển việc làm'],
     salary: ['연봉 위저드·조회', 'Salary wizard & lookup', 'Tra cứu lương'],
     cv: ['CV·이력서', 'CV & resume', 'CV & hồ sơ'],
@@ -45,7 +44,6 @@ export default function RetentionView({ token, lang }) {
     card: ['디지털 명함', 'Digital card', 'Danh thiếp số'],
     coldmail: ['콜드메일 랜딩 반응', 'Coldmail landing actions', 'Tương tác landing coldmail'],
     push: ['알림·푸시', 'Notifications & push', 'Thông báo & push'],
-    onboarding: ['가입·로그인', 'Signup & login', 'Đăng ký & đăng nhập'],
     other: ['기타(미분류)', 'Other (unmapped)', 'Khác (chưa phân loại)'],
   }
   const featName = (key) => {
