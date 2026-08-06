@@ -38,7 +38,8 @@ const TEMPLATE = new URL(`../ktc-claim-coldmail-${lang}.html`, import.meta.url)
 const testTo = flag('test', null)
 const revive = args.includes('--revive') // 구 앵글(coldmail-ktc/-2/-3) 무반응자 재발송 — CV 캠페인 수신자만 제외. 캠페인명은 --campaign 으로 분리할 것
 const remind = args.includes('--remind') // coldmail-ktc-cv 수신 24h+ 미클릭 리마인드 — 클릭은 24h 내 100% 들어오는 실측이라 24h 지나면 리스트가 확정된다
-const campaign = flag('campaign', remind ? 'coldmail-ktc-cv-remind1' : revive ? 'coldmail-ktc-cv-revive' : 'coldmail-ktc-cv')
+const clicked1 = args.includes('--clicked') // 클릭했는데 미가입 후속 — 랜딩까지 왔다 로그인 직전에 멈춘 사람. remind 는 클릭자를 제외해 이 층은 후속을 못 받았다
+const campaign = flag('campaign', clicked1 ? 'coldmail-ktc-cv-clicked1' : remind ? 'coldmail-ktc-cv-remind1' : revive ? 'coldmail-ktc-cv-revive' : 'coldmail-ktc-cv')
 const parsedOnly = args.includes('--parsed-only')
 const max = parseInt(flag('max', doSend ? '200' : '0')) || 0
 
@@ -91,9 +92,31 @@ const remindifyKo = (tpl) => swap(tpl, [
   ['그때 제출하신 이력서로, <b>K-Tech College가 만든 채용 플랫폼 FYI</b>에\n      <b style="color:#191F28;">회원님의 프로필을 미리 만들어 두었습니다</b>.',
    '그 사이, 이 메일로 프로필을 받아간 분들은 기업으로부터 <b style="color:#191F28;">평균 2.1건의 오퍼</b>를 받았습니다. 회원님의 프로필도 똑같이 준비되어 있습니다.'],
 ])
+/* clicked 후속 — 랜딩에서 본인 카드까지 봤던 사람이라 "준비돼 있다" 설명은 생략하고,
+   '멈춘 지점(로그인) 하나만 남았다'로 곧장 간다. 2.1건 수치는 remind 와 같은 실측. */
+const clickedifyVi = (tpl) => swap(tpl, [
+  ['Hồ sơ của bạn<br />\n      <span style="color:#ff6000;">đã sẵn sàng</span> trên FYI',
+   'Hồ sơ của bạn<br />\n      chỉ còn <span style="color:#ff6000;">một bước đăng nhập</span>'],
+  ['{{month}}bạn đã ứng tuyển vị trí <b>{{jobTitle}}</b>{{atCompany}} qua <b>K-Tech College</b>.',
+   'Bạn đã vào xem hồ sơ <b>{{position}}</b> chúng tôi chuẩn bị sẵn — nhưng dừng lại ngay trước bước đăng nhập cuối cùng.'],
+  ['Với CV bạn đã nộp khi đó, chúng tôi đã <b style="color:#191F28;">chuẩn bị sẵn hồ sơ của bạn</b> trên\n      <b>FYI</b> — nền tảng tuyển dụng do K-Tech College xây dựng.',
+   'Những người đã hoàn tất bước này <b style="color:#191F28;">đã nhận được trung bình 2,1 lời mời việc làm</b> từ nhà tuyển dụng. Hồ sơ của bạn vẫn được giữ nguyên, chỉ chờ bạn đăng nhập.'],
+])
+const clickedifyKo = (tpl) => swap(tpl, [
+  ['회원님의 프로필이<br />\n      FYI에 <span style="color:#ff6000;">준비되어 있습니다</span>',
+   '회원님의 프로필,<br />\n      <span style="color:#ff6000;">로그인 한 번</span>만 남았습니다'],
+  ['{{month}}K-Tech College를 통해 <b>{{jobTitle}}</b>{{atCompany}} 포지션에 지원해 주셨죠.',
+   '준비해 둔 <b>{{position}}</b> 프로필을 확인하러 와주셨죠 — 마지막 로그인 직전에 멈추셨더라고요.'],
+  ['그때 제출하신 이력서로, <b>K-Tech College가 만든 채용 플랫폼 FYI</b>에\n      <b style="color:#191F28;">회원님의 프로필을 미리 만들어 두었습니다</b>.',
+   '이 단계를 마친 분들은 기업으로부터 <b style="color:#191F28;">평균 2.1건의 오퍼</b>를 받았습니다. 회원님의 프로필은 그대로 보관돼 있고, 로그인만 기다리고 있습니다.'],
+])
 let template = readFileSync(TEMPLATE, 'utf8')
 if (remind) template = lang === 'ko' ? remindifyKo(template) : remindifyVi(template)
+if (clicked1) template = lang === 'ko' ? clickedifyKo(template) : clickedifyVi(template)
 const subject = (lead) => {
+  if (clicked1) return lang === 'ko'
+    ? `${lead.ten}님, 프로필 등록까지 로그인 한 번만 남았습니다`
+    : `${lead.ten} ơi, hồ sơ của bạn chỉ còn thiếu một lần đăng nhập`
   // 8/5 제목 변형: "이미/먼저 받았다" 강조(유저 지시) — 8/4 remind1 제목과 A/B 비교는 캠페인명 날짜분리로.
   if (remind) return lang === 'ko'
     ? `${lead.ten}님, 프로필을 먼저 받아간 분들은 이미 평균 2.1건의 오퍼를 받았습니다`
@@ -139,7 +162,19 @@ const render = (lead, ctaUrl, unsubUrl) => template
   .replace(/\{\{ctaUrl\}\}/g, ctaUrl)
   .replace(/\{\{unsubscribeUrl\}\}/g, unsubUrl)
 
-const emailTextVi = (lead, ctaUrl, unsubUrl) => remind ? `Chào ${lead.ten},
+const emailTextVi = (lead, ctaUrl, unsubUrl) => clicked1 ? `Chào ${lead.ten},
+
+Bạn đã vào xem hồ sơ ${lead.position} chúng tôi chuẩn bị sẵn — nhưng dừng lại ngay trước bước đăng nhập cuối cùng.
+
+Những người đã hoàn tất bước này đã nhận được trung bình 2,1 lời mời việc làm từ nhà tuyển dụng. Hồ sơ của bạn vẫn được giữ nguyên, chỉ chờ bạn đăng nhập.
+
+Chỉ cần đăng nhập Google một lần, hồ sơ sẽ được đăng ký ngay và bạn có thể ứng tuyển chỉ với một chạm.
+
+Nhận hồ sơ của tôi:
+${ctaUrl}
+
+— Đội ngũ FYI · salary-fyi.com
+Hủy đăng ký: ${unsubUrl}` : remind ? `Chào ${lead.ten},
 
 Chúng tôi đã gửi bạn hồ sơ ${lead.position} được tạo sẵn từ CV bạn nộp qua K-Tech College — nhưng bạn chưa nhận hồ sơ này.
 
@@ -167,7 +202,19 @@ ${ctaUrl}
 — Đội ngũ FYI · salary-fyi.com
 Hủy đăng ký: ${unsubUrl}`
 
-const emailTextKo = (lead, ctaUrl, unsubUrl) => remind ? `안녕하세요 ${lead.ten}님,
+const emailTextKo = (lead, ctaUrl, unsubUrl) => clicked1 ? `안녕하세요 ${lead.ten}님,
+
+준비해 둔 ${lead.position} 프로필을 확인하러 와주셨죠 — 마지막 로그인 직전에 멈추셨더라고요.
+
+이 단계를 마친 분들은 기업으로부터 평균 2.1건의 오퍼를 받았습니다. 회원님의 프로필은 그대로 보관돼 있고, 로그인만 기다리고 있습니다.
+
+구글 로그인 한 번이면 프로필이 바로 등록되고, 원클릭으로 지원할 수 있습니다.
+
+내 프로필 확인하기:
+${ctaUrl}
+
+— FYI 팀 · salary-fyi.com
+수신 거부: ${unsubUrl}` : remind ? `안녕하세요 ${lead.ten}님,
 
 K-Tech College에 제출하신 CV로 만든 ${lead.position} 프로필을 보내드렸는데, 아직 받아가지 않으셨더라고요.
 
@@ -285,6 +332,18 @@ async function mxOk(domains) {
     leads = leads.filter(l => pool.has(l.lead) && !clicked.has(l.lead) && !reminded.has(l.lead)
       && !members.has(l.email) && !unsubLeads.has(l.lead))
     console.log(`[remind] 원본 수신 24h+ ${pool.size}명 | 클릭済 ${clicked.size} · 리마인드済 ${reminded.size} 제외`)
+  } else if (clicked1) {
+    // 대상 = CV 캠페인 계열 클릭(24h+ 전) ∧ 미가입 ∧ 수신거부 아님 ∧ clicked 후속 미수신.
+    // 24h 컷 — 방금 클릭한 사람을 곧바로 다시 찌르지 않기 위함. 오늘 클릭분은 다음 실행이 잡는다.
+    const dayAgo = Date.now() - 24 * 3600 * 1000
+    const clickedOld = new Set(evts.filter(e => e.event === 'coldmail_public_click'
+      && /^coldmail-ktc-cv/.test(e.meta?.campaign || '') && e.meta?.lead
+      && new Date(e.created_at).getTime() < dayAgo).map(e => e.meta.lead))
+    const already = new Set(evts.filter(e => e.event === 'coldmail_public_sent'
+      && /^coldmail-ktc-cv-clicked/.test(e.meta?.campaign || '') && e.meta?.lead).map(e => e.meta.lead))
+    leads = leads.filter(l => clickedOld.has(l.lead) && !already.has(l.lead)
+      && !members.has(l.email) && !unsubLeads.has(l.lead))
+    console.log(`[clicked] 클릭(24h+) ${clickedOld.size}명 | 후속済 ${already.size} 제외`)
   } else {
     leads = leads.filter(l => !members.has(l.email) && !sentLeads.has(l.lead) && !unsubLeads.has(l.lead))
   }
@@ -340,8 +399,8 @@ async function mxOk(domains) {
   }
 
   console.log(`캠페인: ${campaign} | 랜딩: /ktc/claim (배포 필수)`)
-  console.log(remind
-    ? `리스트 ${total}명 → 리마인드 대상 ${afterDedup}명 | CV직링크 없음 ${noCv} 제외${parsedOnly ? ` | 미파싱 ${noParse} 제외` : ''} → 대상 ${leads.length}명`
+  console.log(remind || clicked1
+    ? `리스트 ${total}명 → ${clicked1 ? '클릭 후속' : '리마인드'} 대상 ${afterDedup}명 | CV직링크 없음 ${noCv} 제외${parsedOnly ? ` | 미파싱 ${noParse} 제외` : ''} → 대상 ${leads.length}명`
     : `리스트 ${total}명 | 제외: FYI가입 ${isMember} · 발송済 ${sentLeads.size} · 수신거부 ${unsubLeads.size} → ${afterDedup}명 | CV직링크 없음 ${noCv} 제외${parsedOnly ? ` | 미파싱 ${noParse} 제외` : ''} → 대상 ${leads.length}명`)
 
   const capped = max ? leads.slice(0, max) : leads

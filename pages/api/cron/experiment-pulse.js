@@ -1,8 +1,8 @@
 import supabase from '../../../lib/supabaseAdmin';
 import { computeIntradayPulse } from '../../../lib/experimentMetrics';
-import { sendAlert, ADMIN_URL } from '../../../lib/experimentAlerts';
+import { sendTelegram, ADMIN_URL } from '../../../lib/experimentAlerts';
 
-// 인트라데이 펄스 (15분 크론) — 지표 급락/급등을 즉시 감지해서 텔레그램+메일.
+// 인트라데이 펄스 (15분 크론) — 지표 급락/급등을 즉시 감지해서 텔레그램 알림(메일은 시끄러워서 제거).
 // 데일리 판정(experiment-alert, 00:30 ICT)과 별개의 조기경보. vercel.json: */15.
 // 판정: 지난 7일 같은 시간대 평균 대비 — 비율 가드(50% 이하/2배 이상) + 포아송 유의성(p<0.005) 둘 다 통과해야 알림.
 // 비율만 쓰면 저볼륨 구간에서 매일 울림(백테스트 3.6건/일) → 포아송 결합으로 0.6건/일까지 감소.
@@ -70,16 +70,8 @@ export default async function handler(req, res) {
 
     const lines = fresh.length ? fresh.map((a) => a.line) : ['✅ 테스트 발송 — 이상 없음'];
     const text = [`[FYI 펄스] 실험 지표 이상 감지`, '', ...lines, '', `롤백 스위치: ${ADMIN_URL}`].join('\n');
-    const html = `
-      <div style="font-family:sans-serif;max-width:560px">
-        <h2 style="margin:0 0 12px">[FYI 펄스] 실험 지표 이상 감지</h2>
-        ${lines.map((l) => `<p style="margin:6px 0;font-size:14px">${l}</p>`).join('')}
-        <p style="margin:20px 0">
-          <a href="${ADMIN_URL}" style="background:#DC2626;color:#fff;padding:12px 20px;border-radius:10px;text-decoration:none;font-weight:700">실험탭 열기 → 원클릭 롤백</a>
-        </p>
-      </div>`;
 
-    const results = await sendAlert({ subject: `[FYI 펄스] ${lines[0]}`, text, html });
+    const results = { telegram: await sendTelegram(text) };
 
     // 발송 기록 (dedup용)
     if (fresh.length) {
