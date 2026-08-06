@@ -483,14 +483,15 @@ const invitedSubject = (company) => ({
   en: `[FYI] ${company} viewed your profile and invited you to apply`,
 })
 
-// ── MNF Solution AI Engineer (LLM) 추천 (mnf-recommend-coldmail.mjs) — JD 요약 문단은 두 프레임 공통 ──
+// ── MNF Solution AI Engineer (LLM) 추천 (mnf-recommend-coldmail.mjs) — JD 요약 문단은 두 프레임 공통.
+//    하단부는 세 문단(하는 일 / 요건·근무조건 / 우선검토·원탭)으로 끊는다 — 한 문단이면 안 읽힘. ──
 const MNF_LINE = {
-  vi: 'Phát triển AI Agent, chatbot tư vấn du lịch, tính năng dịch đa ngôn ngữ và Voice AI với <b>Python · FastAPI · OpenAI API · Claude API · LangChain</b>. <b>Không yêu cầu kinh nghiệm</b> — chỉ cần nền tảng Python và tinh thần học hỏi; kinh nghiệm AI/LLM là điểm cộng. Làm việc on-site tại <b>Quận 7, TP.HCM</b>, lương thỏa thuận.',
-  ko: 'AI Agent·여행 상담 챗봇·다국어 번역·Voice AI를 <b>Python · FastAPI · OpenAI API · Claude API · LangChain</b>으로 개발합니다. <b>경력 무관</b> — Python 기초와 배우려는 자세면 충분하고, AI/LLM 경험은 우대입니다. <b>호치민 7군(Q7) 온사이트</b>, 급여 협의.',
-  en: 'Build AI Agents, a travel-guide chatbot, multilingual translation and Voice AI with <b>Python · FastAPI · OpenAI API · Claude API · LangChain</b>. <b>No experience required</b> — Python basics and willingness to learn are enough; AI/LLM experience is a plus. On-site in <b>District 7, HCMC</b>, negotiable salary.',
+  vi: 'Phát triển AI Agent, chatbot tư vấn du lịch, tính năng dịch đa ngôn ngữ và Voice AI với <b>Python · FastAPI · OpenAI API · Claude API · LangChain</b>.<br><br><b>Không yêu cầu kinh nghiệm</b> — chỉ cần nền tảng Python và tinh thần học hỏi; kinh nghiệm AI/LLM là điểm cộng. Làm việc on-site tại <b>Quận 7, TP.HCM</b>, lương thỏa thuận.',
+  ko: 'AI Agent·여행 상담 챗봇·다국어 번역·Voice AI를 <b>Python · FastAPI · OpenAI API · Claude API · LangChain</b>으로 개발합니다.<br><br><b>경력 무관</b> — Python 기초와 배우려는 자세면 충분하고, AI/LLM 경험은 우대입니다. <b>호치민 7군(Q7) 온사이트</b>, 급여 협의.',
+  en: 'Build AI Agents, a travel-guide chatbot, multilingual translation and Voice AI with <b>Python · FastAPI · OpenAI API · Claude API · LangChain</b>.<br><br><b>No experience required</b> — Python basics and willingness to learn are enough; AI/LLM experience is a plus. On-site in <b>District 7, HCMC</b>, negotiable salary.',
 }
 const mnfTail = (benefit) => ({
-  vi: `${MNF_LINE.vi} ${benefit.vi}`, ko: `${MNF_LINE.ko} ${benefit.ko}`, en: `${MNF_LINE.en} ${benefit.en}`,
+  vi: `${MNF_LINE.vi}<br><br>${benefit.vi}`, ko: `${MNF_LINE.ko}<br><br>${benefit.ko}`, en: `${MNF_LINE.en}<br><br>${benefit.en}`,
 })
 
 // 순서대로 첫 매치 사용 — 접두어가 겹치는 항목(coldmail-ktc*)은 구체적인 것을 앞에 둘 것.

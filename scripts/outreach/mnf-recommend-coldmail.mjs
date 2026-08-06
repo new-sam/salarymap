@@ -49,18 +49,23 @@ const COPY = {
       ko: '렌터카 관리 솔루션으로 모빌리티 생태계를 만드는 한국 기업 <b>MNF Solution</b>이 FYI를 통해 AI Engineer (LLM)를 채용 중입니다. FYI 팀이 등록된 이력서 전체를 검토해 회원님을 <b>기업에 전달할 추천 명단에 선정</b>했습니다.',
     },
   },
-  line: {
-    vi: 'Phát triển AI Agent, chatbot tư vấn du lịch, tính năng dịch đa ngôn ngữ và Voice AI với <b>Python · FastAPI · OpenAI API · Claude API · LangChain</b>. <b>Không yêu cầu kinh nghiệm</b> — chỉ cần nền tảng Python và tinh thần học hỏi; kinh nghiệm AI/LLM là điểm cộng. Làm việc on-site tại <b>Quận 7, TP.HCM</b>, lương thỏa thuận.',
-    ko: 'AI Agent·여행 상담 챗봇·다국어 번역·Voice AI를 <b>Python · FastAPI · OpenAI API · Claude API · LangChain</b>으로 개발합니다. <b>경력 무관</b> — Python 기초와 배우려는 자세면 충분하고, AI/LLM 경험은 우대입니다. <b>호치민 7군(Q7) 온사이트</b>, 급여 협의.',
+  // 하단부는 세 문단으로 끊는다(하는 일 / 요건·근무조건 / 우선검토·원탭) — 한 문단에 다 넣으면 안 읽힘.
+  line1: {
+    vi: 'Phát triển AI Agent, chatbot tư vấn du lịch, tính năng dịch đa ngôn ngữ và Voice AI với <b>Python · FastAPI · OpenAI API · Claude API · LangChain</b>.',
+    ko: 'AI Agent·여행 상담 챗봇·다국어 번역·Voice AI를 <b>Python · FastAPI · OpenAI API · Claude API · LangChain</b>으로 개발합니다.',
+  },
+  line2: {
+    vi: '<b>Không yêu cầu kinh nghiệm</b> — chỉ cần nền tảng Python và tinh thần học hỏi; kinh nghiệm AI/LLM là điểm cộng. Làm việc on-site tại <b>Quận 7, TP.HCM</b>, lương thỏa thuận.',
+    ko: '<b>경력 무관</b> — Python 기초와 배우려는 자세면 충분하고, AI/LLM 경험은 우대입니다. <b>호치민 7군(Q7) 온사이트</b>, 급여 협의.',
   },
   benefit: {
     public: {
-      vi: ' Vì đây là lời mời trực tiếp từ nhà tuyển dụng, hồ sơ của bạn sẽ được <b>ưu tiên xem xét</b> khi ứng tuyển.',
-      ko: ' 기업 담당자가 직접 보낸 제안이라, 지원 시 <b>우선 검토</b> 대상이 됩니다.',
+      vi: 'Vì đây là lời mời trực tiếp từ nhà tuyển dụng, hồ sơ của bạn sẽ được <b>ưu tiên xem xét</b> khi ứng tuyển.',
+      ko: '기업 담당자가 직접 보낸 제안이라, 지원 시 <b>우선 검토</b> 대상이 됩니다.',
     },
     private: {
-      vi: ' <b>Trong tuần này</b>, FYI sẽ gửi danh sách đề cử trực tiếp cho nhà tuyển dụng. Nếu bạn ứng tuyển ngay, CV của bạn sẽ được gửi kèm lời giới thiệu từ FYI và được <b>ưu tiên xem xét</b> so với ứng viên thông thường.',
-      ko: ' <b>이번 주 안에</b> FYI가 추천 명단을 기업 담당자에게 직접 전달합니다. 지금 지원하시면 FYI의 추천과 함께 CV가 전달되어 일반 지원자보다 <b>우선 검토</b>됩니다.',
+      vi: '<b>Trong tuần này</b>, FYI sẽ gửi danh sách đề cử trực tiếp cho nhà tuyển dụng. Nếu bạn ứng tuyển ngay, CV của bạn sẽ được gửi kèm lời giới thiệu từ FYI và được <b>ưu tiên xem xét</b> so với ứng viên thông thường.',
+      ko: '<b>이번 주 안에</b> FYI가 추천 명단을 기업 담당자에게 직접 전달합니다. 지금 지원하시면 FYI의 추천과 함께 CV가 전달되어 일반 지원자보다 <b>우선 검토</b>됩니다.',
     },
   },
   meta: { vi: 'On-site Quận 7 · TP.HCM · Lương thỏa thuận', ko: '온사이트 Q7 · 호치민 · 급여 협의' },
@@ -100,7 +105,7 @@ function emailHtml(name, url, unsubUrl, job, frame, lang) {
     </tr></table>
   </td></tr>
   <tr><td style="font-size:14px;line-height:1.65;color:#4a443c;padding-bottom:6px">
-    ${L(COPY.line)}${L(COPY.benefit[frame])} ${L(COPY.onetap)}
+    ${L(COPY.line1)}<br><br>${L(COPY.line2)}<br><br>${L(COPY.benefit[frame])} ${L(COPY.onetap)}
   </td></tr>
   <tr><td align="center" style="padding:16px 0 6px">
     <a href="${url}" style="display:inline-block;background:#ff6000;color:#fff;font-weight:700;font-size:15px;text-decoration:none;padding:14px 30px;border-radius:12px">${L(COPY.cta)}</a>
@@ -121,7 +126,11 @@ ${strip(L(COPY.intro[frame]))}
 
 ${job.title} — ${job.company} (${strip(L(COPY.meta))})
 
-${strip(L(COPY.line))}${strip(L(COPY.benefit[frame]))} ${strip(L(COPY.onetap))}
+${strip(L(COPY.line1))}
+
+${strip(L(COPY.line2))}
+
+${strip(L(COPY.benefit[frame]))} ${strip(L(COPY.onetap))}
 
 ${url}
 
