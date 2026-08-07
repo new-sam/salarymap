@@ -1237,7 +1237,7 @@ function InquiryModal({ sid, picks, first, co, ev, onClose }) {
               lineHeight: 1.45, marginTop: 8,
             }}>
               {all
-                ? (<>이력서 원문은 미팅에서<br />직접 보여드립니다</>)
+                ? (<>영업일 1일 안에<br />연락드리겠습니다</>)
                 : (<>이 인재로 채용 상담을<br />문의하시겠습니까?</>)}
             </div>
 
@@ -1245,8 +1245,8 @@ function InquiryModal({ sid, picks, first, co, ev, onClose }) {
                 미팅을 잡자고 하는 셈이라, 낚인 기분이 든다. */}
             {all && (
               <div style={{ fontSize: 13, color: T.body, marginTop: 10, lineHeight: 1.7 }}>
-                이력서 원문은 개인정보 보호를 위해 대면 미팅으로만 공유하고 있습니다.<br />
-                연락처를 남겨주시면 영업일 1일 안에 일정을 잡아드립니다.
+                연락처를 남겨주시면 담당자가 미팅 일정을 잡아 연락드립니다.<br />
+                이력서 원문은 개인정보 보호를 위해 대면 미팅에서 보여드립니다.
               </div>
             )}
 
@@ -1717,44 +1717,27 @@ const COST = [
 ]
 const costOf = (yoe) => (yoe == null ? null : COST.find((x) => yoe < x.under) || null)
 
-/* 카드 껍데기는 세 단계다. 1등 / 2·3등 / 4~10등.
+/* 카드 디자인은 한 벌이다. 열 장이 같은 옷을 입는다.
+
+   전에는 껍데기를 세 단계로 갈랐다(1등 크림 / 2·3등 금색 / 4~10등 흰색). 그런데 등수
+   알약을 뺀 뒤로 그 층이 아무 말도 못 하게 됐다 — 알약이 없으니 금색 카드를 봐도 그게
+   2등이라는 걸 알 방법이 없고, 흰 카드는 순위가 아니라 덜 공들인 카드로 읽힌다.
+   순서는 카로셀의 점과 게이지가 이미 말하고 있으니, 껍데기까지 등수를 나눌 이유가 없다.
 
    테두리는 안 쓴다. 카드 안에 이미 '추천 이유' 상자가 테두리를 두르고 있어서, 바깥에도
    선을 그으면 상자 안에 상자가 되고 그때부터 두 선이 서로 뭘 묶는지가 안 읽힌다.
-   선은 안쪽 하나만 남기고, 바깥은 바탕색과 그림자로만 갈랐다 — 그림자는 묶는 표시가
-   아니라 띄우는 표시라 겹쳐도 뜻이 부딪히지 않는다.
-
-   예전엔 1~3등을 다 같은 금색으로 뒀다 — 은·동으로 나누면 격하로 읽힌다는 이유였다.
-   그런데 그러면 1등이 2등과 구분되지 않는다. 이 화면의 결론은 '이 열 명'이 아니라
-   '이 한 명부터 보세요'라서, 1등은 나머지 아홉과 다른 물건으로 보여야 한다.
-
-   그래서 격하가 아니라 승격으로 푼다: 1등만 시안의 크림 바탕에 주황 테두리를 두르고,
-   2·3등은 원래의 금색을 그대로 지키고, 4등부터가 흰 카드다. 아무도 내려가지 않았고
-   1등만 올라갔다. */
-const RANK_CARD = {
-  1: { background: '#FFF7F1', shadow: '0 20px 48px rgba(255,107,0,.18), 0 4px 12px rgba(16,24,40,.08)' },
-  2: { background: '#FFF8EF', shadow: '0 12px 30px rgba(16,24,40,.10), 0 2px 8px rgba(16,24,40,.05)' },
-  3: { background: '#FFF8EF', shadow: '0 12px 30px rgba(16,24,40,.10), 0 2px 8px rgba(16,24,40,.05)' },
+   선은 안쪽 하나만 남기고, 바깥은 바탕색과 그림자로만 세운다. */
+const CARD_SHELL = {
+  background: '#FFF7F1',
+  shadow: '0 20px 48px rgba(255,107,0,.18), 0 4px 12px rgba(16,24,40,.08)',
 }
-const RANK_CARD_REST = { background: '#FFFFFF', shadow: T.md }
-
-// 사진을 두르는 두꺼운 링. 카드 테두리와 같은 계열이되 한참 옅다 — 링이 사진보다
-// 먼저 보이면 이 자리의 주인공이 바뀐다.
-const RANK_RING = { 1: '#FFD9BE', 2: '#F1DFC0', 3: '#F1DFC0' }
-const RANK_RING_REST = '#EDF0F4'
-
-/* '추천 이유' 칸의 색도 등급을 따라간다 — 테두리·제목·키워드 칩.
-
-   칩만은 등급이 내려가도 '채운 칩'으로 남긴다. 이 칩은 장식이 아니라 "선택 기준에 걸린
-   스택"이라는 뜻이고, 바로 아래 회색 칩(안 걸린 나머지)과의 대비가 그 뜻을 만든다.
-   4등부터 옅게 깔면 두 줄이 같은 칩으로 보여서 무엇이 걸린 건지 알 수 없다.
-   그래서 색만 등급을 따라가고, 대비는 열 장이 똑같이 유지한다. */
-const RANK_ACCENT = {
-  1: { line: '#FF6B00', ink: '#FF6B00', chip: '#FF6B00', chipInk: '#FFEFE3' },
-  2: { line: '#E3BE7E', ink: '#B07D22', chip: '#C8912E', chipInk: '#FFF8EC' },
-  3: { line: '#E3BE7E', ink: '#B07D22', chip: '#C8912E', chipInk: '#FFF8EC' },
-}
-const RANK_ACCENT_REST = { line: '#DDE3EA', ink: '#64748B', chip: '#64748B', chipInk: '#F8FAFC' }
+// 사진을 두르는 링. 바탕과 같은 계열이되 한참 옅다 — 링이 사진보다 먼저 보이면
+// 이 자리의 주인공이 바뀐다.
+const CARD_RING = '#FFD9BE'
+/* '추천 이유' 칸의 색 — 테두리·제목·키워드 칩. 칩은 '채운 칩'이어야 한다. 이 칩은
+   장식이 아니라 "선택 기준에 걸린 스택"이라는 뜻이고, 바로 아래 회색 칩(안 걸린 나머지)과의
+   대비가 그 뜻을 만든다. 둘 다 옅게 깔면 무엇이 걸린 건지 알 수 없다. */
+const CARD_ACCENT = { line: '#FF6B00', ink: '#FF6B00', chip: '#FF6B00', chipInk: '#FFEFE3' }
 
 /* 경력 — "1.7년"이 아니라 "1년 8개월". 소수점 년수는 계산기 말이지 사람 말이 아니다.
    yoeM(개월)이 정답이고, 캐시된 옛 응답에는 그 필드가 없어서 년수에서 되짚는다. */
@@ -1796,8 +1779,8 @@ const gaugeOf = (fit, top, lo) => {
 
 /* 추천 이유 앞의 체크. 시안은 ✅ 이모지였는데 그건 OS 가 그리는 그림이라 안드로이드·윈도우
    ·맥에서 모양도 초록도 다 다르다 — 이 화면의 사진 실루엣을 이모지로 안 둔 것과 같은 이유다.
-   색은 초록 대신 카드 등급 색을 쓴다. 초록은 이 화면 어디에도 없는 색이라 네 줄이 통째로
-   외부에서 붙여온 것처럼 뜬다. 등급 색이면 카드 안에서 같은 편으로 읽힌다. */
+   색은 초록 대신 카드의 브랜드 색을 쓴다. 초록은 이 화면 어디에도 없는 색이라 네 줄이
+   통째로 외부에서 붙여온 것처럼 뜬다. 같은 색이면 카드 안에서 같은 편으로 읽힌다. */
 const Check = ({ size, color }) => (
   <svg width={size} height={size} viewBox="0 0 20 20" aria-hidden="true"
     style={{ display: 'block', flexShrink: 0, marginTop: size * 0.22 }}>
@@ -1837,10 +1820,10 @@ function Card({ p, no, top, lo, w = 560 }) {
      안쪽 '추천 이유' 칸의 주황은 등수와 무관하게 그대로 둔다 — 그건 등수 표시가 아니라
      이 칸이 무엇인지를 말하는 색이라, 등수를 따라 흐려지면 4등부터는 뭘 읽는 칸인지가
      같이 흐려진다. 위계는 껍데기가 지고, 내용은 열 장이 같은 규칙으로 읽힌다. */
-  const shell = RANK_CARD[no] || RANK_CARD_REST
+  const shell = CARD_SHELL
   // 사진 링 — 테두리 색을 그대로 쓰면 너무 진해서 사진보다 링이 먼저 보인다. 옅게 깐다.
-  const ring = RANK_RING[no] || RANK_RING_REST
-  const accent = RANK_ACCENT[no] || RANK_ACCENT_REST
+  const ring = CARD_RING
+  const accent = CARD_ACCENT
 
   const seg = no === 1 ? GAUGE_N : gaugeOf(p.fit, top, lo)
   const cost = costOf(p.yoe)
@@ -1858,7 +1841,7 @@ function Card({ p, no, top, lo, w = 560 }) {
     <div style={{
       position: 'relative', overflow: 'hidden',
       background: shell.background, boxShadow: shell.shadow,
-      borderRadius: px(40), padding: `${px(69)}px ${px(75)}px ${px(80)}px`,
+      borderRadius: px(40), padding: `${px(44)}px ${px(75)}px ${px(60)}px`,
     }}>
       {/* 머리줄 — 적합도 하나만. 등수 알약은 뺐다.
 
@@ -1880,9 +1863,9 @@ function Card({ p, no, top, lo, w = 560 }) {
       {/* 사진 + 직무·경력.
 
           사진은 두꺼운 링 하나를 두른다. 시안의 검은 실선 두 겹은 피그마에서 자리를 잡느라
-          그린 선이라 그대로 옮기면 도면처럼 보인다 — 링은 카드 등급 색을 옅게 깐 것이라
-          사진을 띄우면서 이 카드가 몇 등인지도 같이 말한다. */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: px(37), marginTop: px(57) }}>
+          그린 선이라 그대로 옮기면 도면처럼 보인다 — 링은 카드 바탕색을 옅게 깐 것이라
+          사진이 카드 위에 얹힌 것으로 보인다. */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: px(37), marginTop: px(20) }}>
         <div style={{
           width: px(273), height: px(273), borderRadius: '50%', flexShrink: 0,
           border: `${px(8)}px solid ${ring}`, boxSizing: 'border-box',
@@ -1963,14 +1946,7 @@ function Card({ p, no, top, lo, w = 560 }) {
         {/* 조건에 걸린 기술만 채운 칩. 아래 회색 칩과 색으로 갈려서 라벨이 필요 없다. */}
         {!!hits.length && (
           <>
-            {/* 폭을 도장 왼쪽 끝(시안 x=866)에서 끊는다. 칩은 개수가 사람마다 달라서
-                가로로 끝까지 흐르면 여섯 개쯤부터 도장 밑으로 들어가 읽을 수가 없다.
-                도장을 위로 올리는 것만으로는 안 풀린다 — 칩 줄이 카드 폭을 다 쓰기 때문에
-                도장이 어디에 있든 오른쪽 끝에서 만난다. 줄을 먼저 끊고 아래로 흘린다. */}
-            <div style={{
-              display: 'flex', flexWrap: 'wrap', gap: `${px(12)}px ${px(11.8)}px`,
-              marginTop: px(14), maxWidth: px(700),
-            }}>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: `${px(12)}px ${px(11.8)}px`, marginTop: px(14) }}>
               {hits.slice(0, 6).map((k) => (
                 <span key={k} style={{
                   background: accent.chip, color: accent.chipInk, borderRadius: px(11.8),
@@ -1989,7 +1965,7 @@ function Card({ p, no, top, lo, w = 560 }) {
       {/* 체크 목록 — 상자 밖. 카드에서 유일하게 '읽는' 글이라 본문처럼 놓인다. */}
       {!!reasons.length && (
         <div style={{
-          marginTop: px(34), fontSize: f(30, 11.5), fontWeight: 500, color: '#111',
+          marginTop: px(52), fontSize: f(30, 11.5), fontWeight: 500, color: '#111',
           lineHeight: 50 / 30,
           display: 'flex', flexDirection: 'column', gap: px(10),
         }}>
@@ -2006,7 +1982,7 @@ function Card({ p, no, top, lo, w = 560 }) {
       {!!rest.length && (
         <div style={{
           display: 'flex', flexWrap: 'wrap', alignContent: 'flex-start',
-          gap: `${px(12)}px ${px(11.8)}px`, marginTop: px(28),
+          gap: `${px(12)}px ${px(11.8)}px`, marginTop: px(46),
           maxHeight: px(53.7 * 2 + 12), overflow: 'hidden',
         }}>
           {rest.map((k) => (
@@ -2022,12 +1998,19 @@ function Card({ p, no, top, lo, w = 560 }) {
         </div>
       )}
 
-      {/* 예상 급여 도장. 카드 위에 얹힌 종이처럼 보여야 해서 추천 이유 칸을 덮는다 —
-          고객사가 카드에서 두 번째로 묻는 값이라 먼저 눈에 걸려야 한다.
-          글자는 도장의 띠 위에 얹는다. 띠가 18도 기울어 있어 같이 돌린다. */}
+      {/* 예상 급여 도장. 고객사가 카드에서 두 번째로 묻는 값이라 먼저 눈에 걸려야 한다.
+          글자는 도장의 띠 위에 얹는다. 띠가 18도 기울어 있어 같이 돌린다.
+
+          자리와 크기는 키워드 칩 줄이 정한다. 칩은 사람마다 개수가 달라 여섯 개쯤이면
+          카드 폭을 다 쓰는데, 그 줄과 겹치면 정작 '기준에 걸린 스택'이 안 읽힌다.
+          칩을 두 줄로 내려 피하는 방법도 있었지만 그건 칩이 많은 사람만 카드가 길어진다 —
+          지름과 세로 위치는 한 쌍이다 — 작을수록 아래로 내려도 칩 줄에 안 닿는다.
+          시안 크기(487)로는 칩을 피하려면 머리줄까지 올라가야 해서 지름을 380 으로 줄였다.
+          도장 아래 끝이 칩 줄 바로 위에서 멈춘다 — 카드 위쪽 여백을 조일 때는 이 값도 같은
+          만큼 올려야 한다. 도장만 흐름 밖(absolute)이라 저 혼자 제자리에 남는다. */}
       <div aria-hidden style={{
-        position: 'absolute', top: px(150), right: px(83),
-        width: px(487), height: px(487), pointerEvents: 'none', zIndex: 2,
+        position: 'absolute', top: px(148), right: px(130),
+        width: px(380), height: px(380), pointerEvents: 'none', zIndex: 2,
         // 도장만 반시계로 4도. 안쪽 띠·글자의 18도는 이 위에 얹히므로 함께 돌아간다.
         transform: 'rotate(-4deg)',
       }}>
