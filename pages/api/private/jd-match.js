@@ -122,8 +122,18 @@ JSON 만 출력하세요:
     "career_trajectory": 0-10
   },
   "why": "이 분을 왜 추천하는지 한국어 한 문장 (아래 쓰기 규칙을 지킬 것).",
+  "experiences": ["이 자리와 가장 관련된 경험 2개 (아래 규칙)"],
   "strengths": ["강점 한국어 2~3개 (아래 규칙)"]
 }
+
+experiences 규칙 — 이 값이 카드의 '추천 이유' 칸 가운데 줄로 들어갑니다:
+- 정확히 2개. 한 줄에 한 문장, 40~70자, '~합니다' 체.
+- 이 자리와 가장 관련이 깊은 것부터. 관련 없는 경력은 채우려고 넣지 마세요.
+- 두 줄이 서로 다른 경험이어야 합니다. 같은 일을 표현만 바꿔 쓰지 마세요.
+- 기술 이름만 늘어놓지 말고 그 기술로 무엇을 했는지를 쓰세요 — 스킬 목록은 카드에 칩으로
+  따로 붙고, 이 칸의 첫 줄도 스킬 이야기라 여기서 또 나열하면 세 번 같은 말이 실립니다.
+- 이력서 요약에 근거가 있는 것만. 없는 경력을 지어내지 마세요.
+- 연차와 어학은 쓰지 마세요. 둘 다 카드의 다른 자리에 이미 있습니다.
 
 strengths 규칙 — 이 값은 카드에 짧은 칩으로 붙습니다:
 - 스킬 이름을 되풀이하지 마세요. "React 숙련", "TypeScript 경험" 은 카드에 기술 칩으로
@@ -284,6 +294,67 @@ function langKo(s) {
   return raw
 }
 
+/* 어학 한 줄 — 추천 이유의 마지막 자리.
+
+   성적을 그대로 적지 않고 "어느 정도가 되는 사람인가"로 풀어 쓴 뒤 성적을 괄호에 넣는다.
+   읽는 사람은 한국 기업 담당자라 IELTS 6.5 가 실무에서 어느 정도인지 바로 안 떠오른다 —
+   숫자만 적으면 각자 알아서 해석하라는 말이 된다.
+
+   등급 기준은 인재풀의 실제 분포에서 잡았다(english_cert 보유 1,789명 · 서로 다른 값 396종).
+   IELTS(5.0~7.5)·CEFR(A2~C1)·TOEIC(600~820)이 대부분이고 레벨 단어가 섞여 있다.
+   경계는 보수적으로 뒀다 — 이 문장은 고객사가 미팅 전에 읽는 값이라, 부풀리면 만나서
+   드러난다. 애매하면 한 칸 낮게 적는 쪽이 낫다.
+
+   기초이거나 알 수 없으면 아예 안 쓴다. 이 칸은 '왜 이 사람인가'를 적는 자리라
+   "영어는 초급입니다"는 우리가 우리 손으로 적는 감점이다 — 그럴 바엔 그 자리를
+   경험 한 줄에 내준다(그래서 experiences 를 두 줄 받는다). */
+const EN_SENTENCE = [
+  '', // 0 — 기초. 쓰지 않는다
+  '영어로 일상 대화가 가능한 수준입니다',
+  '영어로 업무 의사소통이 가능한 수준입니다',
+  '영어로 원어민에 가까운 의사소통이 가능합니다',
+]
+
+// 점수 체계별 경계. [이름 패턴, [3단 하한, 2단 하한, 1단 하한]]
+const EN_SCALES = [
+  [/ielts/i, [7.5, 6.0, 5.0]],
+  [/toefl/i, [100, 80, 60]],
+  [/toeic/i, [900, 750, 600]],
+]
+const EN_WORDS = [
+  [/native|bilingual|ban ngu|원어민/i, 3],
+  [/fluent|luu loat|thanh thao|유창|advanced|proficien|professional|business|cao cap|고급|비즈니스/i, 2],
+  [/intermediate|conversational|daily|giao tiep|trung cap|중급|회화/i, 1],
+  [/basic|beginner|elementary|co ban|so cap|초급|기초/i, 0],
+]
+// CEFR 은 자격 이름 없이 "B2" 한 글자로만 오는 경우가 많다(VSTEP B2·APTIS B2 포함).
+const CEFR = { c2: 3, c1: 2, b2: 2, b1: 1, a2: 0, a1: 0 }
+
+function englishTier(raw) {
+  const v = String(raw || '').trim()
+  if (!v) return -1
+  const plain = v.normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/đ/gi, 'd').toLowerCase()
+
+  for (const [re, [hi, mid, low]] of EN_SCALES) {
+    if (!re.test(plain)) continue
+    const n = parseFloat((plain.match(/\d+(\.\d+)?/) || [])[0])
+    if (!Number.isFinite(n)) break // "TOEIC" 처럼 점수 없이 이름만 적힌 경우
+    return n >= hi ? 3 : n >= mid ? 2 : n >= low ? 1 : 0
+  }
+  const cefr = plain.match(/\b([abc][12])\b/)
+  if (cefr) return CEFR[cefr[1]]
+  for (const [re, tier] of EN_WORDS) if (re.test(plain)) return tier
+  return -1 // 처음 보는 표기 — 지어내지 않는다
+}
+
+function englishLine(raw) {
+  const tier = englishTier(raw)
+  if (tier < 1) return '' // 기초(0)·알 수 없음(-1)
+  const v = String(raw).trim()
+  // 괄호는 숫자가 든 표기에만 — "Fluent (Fluent)" 가 되면 안 된다
+  return `${EN_SENTENCE[tier]}${/\d/.test(v) ? ` (${v})` : ''}.`
+}
+
 function card(p, v, c) {
   const s = p.resume_summary || {}
   const exps = asExperiences(p.experiences)
@@ -306,6 +377,26 @@ function card(p, v, c) {
     fit: v.fit,
     rank: v.rank,
     why: v.why,
+    /* 카드의 '추천 이유' 칸. 자리가 정해진 세 줄이다.
+
+         1) 조건에 걸린 스택   — hits 를 그대로 잇는다
+         2) 가장 관련된 경험   — 모델이 쓴다(2줄)
+         3) 어학               — 쓸 만할 때만
+
+       1·3 을 모델에 안 맡기는 이유: 둘 다 이미 우리가 쥔 값이라 모델이 하는 일이
+       '가진 것을 다시 적기'뿐인데, 그러면서 빠뜨리거나 없는 걸 붙인다. 실제로 스킬을
+       나열하지 말라고 시켜도 계속 나열했다. 데이터로 지을 수 있는 문장은 데이터로 짓고,
+       모델에게는 판단이 필요한 줄(어느 경험이 이 자리와 가장 가까운가)만 남긴다.
+
+       어학이 빠지면 두 줄이 되므로 경험을 두 줄 받아 둔다 — 세 줄짜리 칸이 두 줄로
+       쪼그라들면 카드마다 높이가 달라 보인다.
+       캐시(#5)로 저장된 옛 응답에는 이 값이 없다 — 화면이 한 문장짜리 why 로 떨어진다. */
+    reasons: [
+      hits.length ? `${hits.slice(0, 5).join(', ')} 의 경험이 있습니다.` : '',
+      ...(Array.isArray(v.experiences) ? v.experiences : [])
+        .map((x) => String(x).trim()).filter(Boolean).slice(0, 2),
+      englishLine(p.english_cert),
+    ].filter(Boolean),
     strengths: (v.strengths || []).slice(0, 3),
     met: v.met.length,
     total: v.met.length + v.missing.length,
@@ -405,11 +496,21 @@ export default async function handler(req, res) {
      24시간인 이유: 인재풀이 매일 자란다 — 영영 고정하면 새 이력서가 영영 안 보인다.
      sid 는 캐시된 행 것을 쓴다. 문의가 원래 검색에 붙는 게 맞다.
      컬럼(jd_hash·result)이 아직 없으면 조용히 그냥 지나간다 — 캐시는 없어도 되는 층이다. */
-  // #5 는 카드 형식 버전 — 형식이나 카드에 실리는 값의 규칙을 바꾸면 여기를 올린다.
-  // 안 올리면 24시간 동안 옛 형식으로 저장된 결과가 새 화면에 계속 나온다.
+  /* #7 은 카드 형식 버전 — 카드에 실리는 값이든 카드를 세우는 순서든, 응답에 담기는
+     것이 달라지면 여기를 올린다. 안 올리면 24시간 동안 옛 결과가 새 화면에 계속 나온다.
+
+     순서도 '형식'에 든다는 걸 한 번 놓쳐서 겪었다: byScore 를 넣기 전에 #6 으로 저장된
+     결과가 그대로 재사용돼, 고쳐 놓고도 화면에서는 6·7등이 5등보다 높은 게이지를 달고
+     있었다(73 71 69 67 66 83 81 …).
+
+     캐시를 읽을 때 다시 정렬하는 식으로 때우면 안 된다. 카드 번호는 showcase_searches.picks
+     의 인덱스이고 상담 문의가 그 번호로 사람을 지목하는데, 화면만 다시 세우면 3번 카드가
+     가리키는 사람과 문의가 가리키는 사람이 어긋난다. 순서를 바꿨으면 새로 뽑아야 한다. */
   // (#5: title_ko를 한국 실사용 직함 표기로 — 제품관리자 → 프로덕트 매니저)
+  // (#6: 추천 이유가 한 문장 why 에서 세 줄 reasons 로 — 스택·경험·어학)
+  // (#7: 카드 순서를 뽑는 순서(byFit)가 아니라 점수 내림차순(byScore)으로)
   const raw = typeof req.body?.h === 'string' && /^[a-f0-9]{64}$/.test(req.body.h) ? req.body.h : null
-  const h = raw ? `${raw}#5` : null
+  const h = raw ? `${raw}#7` : null
   if (h) {
     try {
       const { data: hits } = await supabase.from('showcase_searches')
@@ -444,7 +545,11 @@ export default async function handler(req, res) {
       const { p } = short[i]
       const years = p.yoe_months == null ? null : p.yoe_months / 12
       const v = judge(raws[i], c, years)
-      judged.push({ p, v: { ...v, strengths: raws[i].strengths, titleKo: raws[i].title_ko }, pre: short[i].s })
+      judged.push({
+        p,
+        v: { ...v, strengths: raws[i].strengths, titleKo: raws[i].title_ko, experiences: raws[i].experiences },
+        pre: short[i].s,
+      })
     }
 
     /* 항상 5명이다. 기준을 넘은 사람을 점수순으로 먼저 채우고, 모자라면 그 아래에서
@@ -474,9 +579,21 @@ export default async function handler(req, res) {
        "경력이 더 풍부하다"는 이유로 그를 1등에 올린다(실제로 그랬다). */
     const finalists = passed.filter(inRange).slice(0, RANK_N)
     const ranked = finalists.length > PICK_N ? await rank(c, finalists) : null
-    // 모델이 고른 다섯을 다시 점수순으로 세운다 — 카드가 점수를 달고 있는데 순서가
-    // 점수를 안 따라가면 그 숫자를 못 믿게 된다.
-    const picks = (ranked?.length === PICK_N ? [...ranked].sort(byFit) : ordered.slice(0, PICK_N))
+
+    /* 뽑는 순서(byFit)와 세우는 순서(byScore)는 다르다.
+
+       byFit 은 '누가 열 명 안에 드느냐'를 정하는 자다 — 우대 충족이 맨 앞이다.
+       그런데 그 순서로 카드를 세우면 등수가 점수를 안 따라간다. 실제로 4등이 92점,
+       3등이 89점으로 나왔고, 카드의 게이지(1등 대비 상대 위치)가 등수를 내려가며
+       오르락내리락했다 — 등수와 게이지가 서로 다른 말을 하면 둘 다 못 믿게 된다.
+
+       그래서 누구를 고를지는 byFit 이 정하고, 고르고 난 뒤 화면에 세우는 순서는
+       점수 내림차순으로 다시 잡는다. 이제 1등이 언제나 최고점이고 게이지는 등수를
+       따라 단조롭게 내려간다. */
+    const byScore = (a, b2) => b2.v.fit - a.v.fit || b2.v.preferredMet - a.v.preferredMet
+      || b2.v.ratio - a.v.ratio || b2.pre - a.pre
+    const chosen = ranked?.length === PICK_N ? ranked : ordered.slice(0, PICK_N)
+    const picks = [...chosen].sort(byScore)
 
     // 카드를 그리기 전에 남긴다 — 화면이 문의 버튼을 띄우려면 sid 가 같은 응답에 있어야 한다.
     const sid = await saveSearch({

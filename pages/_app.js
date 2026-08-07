@@ -108,7 +108,10 @@ export default function App({ Component, pageProps }) {
     else delete document.body.dataset.adminMobile;
     if (isStandaloneLanding) document.body.dataset.standaloneLanding = '1';
     else delete document.body.dataset.standaloneLanding;
-  }, [isCompany, isJobDetail, isAdLanding, isCard, isAdmin, isStandaloneLanding]);
+    // /private/* 는 헤더·탭바를 안 그리므로 그 자리 예약도 같이 걷어낸다.
+    if (isPrivate) document.body.dataset.privateMobile = '1';
+    else delete document.body.dataset.privateMobile;
+  }, [isCompany, isJobDetail, isAdLanding, isCard, isAdmin, isStandaloneLanding, isPrivate]);
   const activePage = activePageFor(router.pathname);
 
   // 웹 첫 진입(세션당 1회) — landing 은 홈에서만 떠서 공고/CV/회사 링크 등 직접 유입을 놓친다.

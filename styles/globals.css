@@ -144,6 +144,12 @@ a {
     padding-top: 0 !important;
     padding-bottom: 0 !important;
   }
+  /* /private/* 는 헤더·탭바 없는 비공개 독립 화면 — 상/하단 예약 모두 제거.
+     (남겨두면 페이지 배경 위아래로 body 흰색 띠가 드러난다) */
+  body[data-private-mobile="1"] {
+    padding-top: 0 !important;
+    padding-bottom: 0 !important;
+  }
   /* 캠페인 랜딩(/ktc)은 FYI 헤더를 쓰므로 상단 52px 예약은 그대로 두고,
      하단 탭바가 없으므로 아래쪽 예약만 제거. */
   body[data-standalone-landing="1"] {
