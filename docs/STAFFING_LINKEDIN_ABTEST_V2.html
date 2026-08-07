@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>링크드인 리드젠 v2 — 세팅 시트</title>
+<style>
+  :root {
+    --ink: #18181b; --gray: #71717a; --line: #d4d4d8; --border: #e4e4e7;
+    --bg: #fafafa; --li-blue: #0a66c2; --fill-bg: #eaf3fb;
+    --warn: #b3261e; --warn-bg: #fdf0ef;
+    --a: #0a66c2; --b: #b0578a; --c: #2e7d4f;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Malgun Gothic', sans-serif;
+    background: #fff; color: var(--ink); padding: 56px 20px 96px; line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 900px; margin: 0 auto; }
+  header h1 { font-size: 26px; font-weight: 800; letter-spacing: -0.5px; }
+  header p { color: var(--gray); font-size: 13.5px; margin-top: 2px; }
+
+  .step-title {
+    display: flex; align-items: baseline; gap: 10px;
+    margin: 48px 0 12px; border-bottom: 2px solid var(--ink); padding-bottom: 8px;
+  }
+  .step-title .no {
+    font-size: 13px; font-weight: 800; color: #fff;
+    background: var(--ink); border-radius: 6px; padding: 1px 9px; flex-shrink: 0;
+  }
+  .step-title.ca { border-color: var(--a); } .step-title.ca .no { background: var(--a); }
+  .step-title.cb { border-color: var(--b); } .step-title.cb .no { background: var(--b); }
+  .step-title.cc { border-color: var(--c); } .step-title.cc .no { background: var(--c); }
+  .step-title h2 { font-size: 18px; font-weight: 800; }
+  .one { font-size: 13.5px; color: var(--gray); margin-bottom: 12px; }
+  .one b { color: var(--ink); }
+
+  .kv { width: 100%; border-collapse: collapse; font-size: 13.5px; margin: 8px 0; }
+  .kv td { border-bottom: 1px solid var(--border); padding: 7px 10px; vertical-align: top; }
+  .kv td:first-child { font-weight: 700; white-space: nowrap; color: var(--gray); width: 160px; }
+  .val { color: var(--li-blue); font-weight: 700; background: var(--fill-bg); border-radius: 4px; padding: 0 6px; }
+  .ex { color: var(--warn); background: var(--warn-bg); border-radius: 4px; padding: 0 6px; font-weight: 700; text-decoration: line-through; }
+
+  /* 비교표 */
+  .cmp-scroll { overflow-x: auto; margin: 10px 0; }
+  .cmp { width: 100%; border-collapse: collapse; font-size: 13px; min-width: 760px; }
+  .cmp th, .cmp td { border: 1px solid var(--border); padding: 9px 11px; vertical-align: top; text-align: left; line-height: 1.55; }
+  .cmp thead th { font-size: 13.5px; }
+  .cmp thead th:first-child { background: var(--bg); width: 92px; }
+  .cmp th.ha { background: var(--a); color: #fff; }
+  .cmp th.hb { background: var(--b); color: #fff; }
+  .cmp th.hc { background: var(--c); color: #fff; }
+  .cmp tbody td:first-child { font-weight: 700; color: var(--gray); background: var(--bg); white-space: nowrap; }
+  .cmp b { color: var(--ink); }
+
+  .macro { font-weight: 800; color: var(--li-blue); }
+
+  .alert {
+    border-left: 3px solid var(--warn); background: var(--warn-bg);
+    border-radius: 0 8px 8px 0; padding: 8px 14px; font-size: 13.5px; margin: 8px 0;
+  }
+  .alert b { color: var(--warn); }
+  .tip { font-size: 12.5px; color: var(--gray); margin: 6px 0; }
+  .tip b { color: var(--li-blue); }
+
+  footer { margin-top: 56px; font-size: 12px; color: var(--gray); text-align: center; }
+
+  @media (max-width: 640px) {
+    body { padding: 36px 14px 64px; }
+    .kv td:first-child { width: auto; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <h1>링크드인 리드젠 v2 — 세팅 시트</h1>
+    <p>요약 테이블로 전체를 보고, 광고별 시트를 위에서 아래로 그대로 입력하면 세팅 끝. 분석·근거·제목 후보는 맨 아래 부록.</p>
+  </header>
+
+  <!-- 요약 -->
+  <div class="step-title"><span class="no">요약</span><h2>3개 광고 한눈에</h2></div>
+  <div class="cmp-scroll">
+  <table class="cmp">
+    <thead>
+      <tr>
+        <th></th>
+        <th class="ha">A · 가격 훅</th>
+        <th class="hb">B · K-소비재 동남아</th>
+        <th class="hc">C · 업무 대행</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>광고 세트 이름</td>
+        <td>KR_스태핑_리드젠_v2_A_가격훅</td>
+        <td>KR_스태핑_리드젠_v2_B_K소비재</td>
+        <td>KR_스태핑_리드젠_v2_C_업무대행</td>
+      </tr>
+      <tr>
+        <td>광고 이름</td>
+        <td>A_가격훅_사회적증거_v2</td>
+        <td>B_현지전문가_사회적증거_v2</td>
+        <td>C_업무대행_사회적증거_v2</td>
+      </tr>
+      <tr>
+        <td>발신자</td>
+        <td>KEE Kim</td>
+        <td>KEE Kim (부진 시 현지 법인 인물)</td>
+        <td>KEE Kim</td>
+      </tr>
+      <tr>
+        <td>타겟 요약</td>
+        <td>규모 2–50 · Owner/CXO/VP/Director</td>
+        <td>뷰티·건기식·식품 업종 · 규모 11–200 · Owner/CXO/VP/Director · 마케팅/BD/영업</td>
+        <td>규모 2–10 · Owner/Partner/CXO</td>
+      </tr>
+      <tr>
+        <td>제목(첫 줄)</td>
+        <td><b>채용이 고민이지 않으신가요?</b> (둘째 줄: 월 100만원대 8년차 개발자 사회적 증거)</td>
+        <td><b>동남아 매출 확장, 현지 법인 없이 하는 팀들이 있어요</b> (둘째 줄: 진출했든 준비 중이든, 현지 전문가가 붙으면 매출이 달라진다)</td>
+        <td><b>사람 안 뽑고 월 100만원대로 밀린 일을 다 처리하는 팀들이 있어요</b></td>
+      </tr>
+      <tr>
+        <td>버튼 구성</td>
+        <td>①인재 둘러보기(랜딩) ②2주 무료 체험(리드폼) ③탈출구</td>
+        <td>①전문가 둘러보기(랜딩) ②프로필·진출사례 받기(리드폼) ③탈출구</td>
+        <td>①되는 일 둘러보기(랜딩) ②리스트 보내고 견적(리드폼) ③탈출구</td>
+      </tr>
+      <tr>
+        <td>리드폼 문턱</td>
+        <td>전화번호 + JD 주관식 + 시기 선택</td>
+        <td>전화번호 + 시장·제품 주관식 + 단계 선택</td>
+        <td>전화번호 + 맡길 업무 주관식</td>
+      </tr>
+      <tr>
+        <td>예산</td>
+        <td colspan="3">캠페인당 일일 US$10 · CPS US$0.70부터 · 2주 후 <b>유효리드당 비용</b>으로 승자 판정 → 증액</td>
+      </tr>
+    </tbody>
+  </table>
+  </div>
+  <div class="alert"><b>⚠ 세팅 공통 주의 3개.</b> ① <b>"오디언스 확장하기" 체크 해제</b> — 켜두면 조건 밖 유사 타겟에게 발송돼 v1 재현. ② 제외에 <span class="ex">Staffing &amp; Recruiting 업종</span> 추가. ③ 버튼 1이 가는 ggmg.ai.kr 랜딩에 인재 프리뷰 + 상담 CTA가 있는지, LinkedIn Insight Tag가 심겨 있는지 확인(방문자 = 2차 리타겟 자산).</div>
+  <p class="tip"><b>유효리드 기준</b> — 리드폼 주관식에 실제 답이 있고 1차 연락(전화)에 응답한 리드만 센다. 오해·오클릭은 무효 처리, 캠페인별 따로 집계.</p>
+
+  <!-- A -->
+  <div class="step-title ca"><span class="no">A</span><h2>A 세팅 — 가격 훅 · 소규모 기업</h2></div>
+  <table class="kv">
+    <tr><td>광고 세트 이름</td><td><span class="val">KR_스태핑_리드젠_v2_A_가격훅</span></td></tr>
+    <tr><td>목표</td><td><span class="val">리드 유치</span></td></tr>
+    <tr><td>위치 / 언어</td><td><span class="val">대한민국(거주)</span> / <span class="val">한국어</span></td></tr>
+    <tr><td>회사 규모</td><td><span class="val">2–10</span> <span class="val">11–50</span> (1인 기업·51명+ 넣지 않기)</td></tr>
+    <tr><td>직급</td><td><span class="val">이사</span> <span class="val">상무급</span> <span class="val">최고임원</span> <span class="val">소유자</span> <span class="val">파트너</span> — 관리직(Manager)은 빼기</td></tr>
+    <tr><td>직무</td><td>제한 없음 — 예상치 30만 넘으면 <span class="val">Human Resources</span> <span class="val">Operations</span> <span class="val">Engineering</span>으로 조이기</td></tr>
+    <tr><td>제외</td><td><span class="ex">Staffing &amp; Recruiting 업종</span></td></tr>
+    <tr><td>오디언스 확장</td><td><b>체크 해제</b></td></tr>
+    <tr><td>검산</td><td>예상치 3만~30만이면 통과 · 300명 미만이면 발송 불가</td></tr>
+    <tr><td>광고 형식</td><td><span class="val">대화 광고</span></td></tr>
+    <tr><td>일일 예산 / 입찰</td><td><span class="val">US$10</span> / CPS <span class="val">US$0.70</span>부터</td></tr>
+    <tr><td>리드 양식 이름</td><td><span class="val">v2_A_가격훅</span> — 자산(Assets) → 리드 양식에서 먼저 생성</td></tr>
+    <tr><td>· 헤드라인</td><td><span class="val">8년차 개발자, 월 100만원대에 구독하세요</span></td></tr>
+    <tr><td>· 세부 정보</td><td><span class="val">포지션만 알려주시면 맞는 인재 이력서와 견적을 보내드립니다. 월 100만원대 구독형, 2주 무료 체험 후 결정하셔도 됩니다.</span></td></tr>
+    <tr><td>· 개인정보처리방침</td><td><span class="val">https://ggmg.ai.kr/privacy</span></td></tr>
+    <tr><td>· 리드 상세</td><td><span class="val">이름</span> <span class="val">성</span> <span class="val">이메일 주소</span> <span class="val">회사 이름</span> <span class="val">전화번호</span></td></tr>
+    <tr><td>· 질문 1 (주관식)</td><td><span class="val">채용 중인 포지션의 JD를 붙여넣거나, 어떤 사람이 필요한지 한두 줄로 적어주세요</span></td></tr>
+    <tr><td>· 질문 2 (선택형)</td><td><span class="val">언제부터 필요하세요? — 바로 / 1개월 내 / 3개월 내 / 아직 알아보는 중</span></td></tr>
+    <tr><td>· 감사 메시지</td><td><span class="val">접수됐어요. 담당 매니저가 1영업일 안에 적어주신 번호로 전화드려 포지션을 확인하고, 맞는 인재 이력서와 견적을 보내드릴게요.</span></td></tr>
+    <tr><td>· 랜딩 URL</td><td><span class="val">https://ggmg.ai.kr/</span></td></tr>
+    <tr><td>광고 이름</td><td><span class="val">A_가격훅_사회적증거_v2</span></td></tr>
+    <tr><td>보내는 사람</td><td><span class="val">KEE Kim</span> · 템플릿 화면이 뜨면 <span class="val">Blank</span> 선택</td></tr>
+    <tr><td>소개 메시지<br>(첫 줄 = 제목)</td><td style="white-space:pre-line;background:var(--fill-bg)"><span class="macro">%FIRSTNAME%</span>님, 채용이 고민이지 않으신가요?
+
+월 100만원대로 8년차 개발자를 풀타임으로 쓰는 팀들이 있어요 🙂
+저희 파트너 60여 개 기업은 이미 아래와 같이 활용하고 있습니다.
+
+- 개발: AI, 로봇, QA, 웹 유지보수
+- 디자인: 브랜딩, 상세페이지, 브랜드덱
+- 마케팅: 퍼포먼스 마케팅, 인스타 운영
+
+멋쟁이사자처럼이 해외에서 실제 채용 플랫폼을 운영하며 검증한 미국·인도·호주·베트남 명문대 상위 3% 인재로만 제안드려요. 현업에 즉시 투입될 수 있게 온보딩까지 지원하고, 구독형이라 언제든 해지할 수 있습니다.
+
+2주 무료로 체험해보고 싶으시면, 포지션만 알려주세요. 바로 연락드릴게요.</td></tr>
+    <tr><td>버튼 1 → 웹사이트</td><td style="white-space:pre-line;background:var(--fill-bg)">인재들 둘러보기
+---
+액션: 웹사이트로 보내기 → <b>https://ggmg.ai.kr/</b></td></tr>
+    <tr><td>버튼 2 → 리드 양식</td><td style="white-space:pre-line;background:var(--fill-bg)">2주 무료 체험 신청할게요
+---
+좋아요. 포지션과 시작 시기만 알려주시면, 담당 매니저가 맞는 인재 이력서와 체험 일정을 정리해 연락드릴게요.</td></tr>
+    <tr><td>버튼 3 (탈출구)</td><td style="white-space:pre-line;background:var(--fill-bg)">지금은 괜찮아요
+---
+알겠습니다. 나중에 사람이 필요하실 때 편하게 찾아주세요. 좋은 하루 되세요!</td></tr>
+    <tr><td>양식 연결</td><td><span class="val">v2_A_가격훅</span> 선택 → 빨간 필수 에러 해제 · 배너·바닥글 비움</td></tr>
+  </table>
+
+  <!-- B -->
+  <div class="step-title cb"><span class="no">B</span><h2>B 세팅 — 현지 전문가 · K-소비재(뷰티·건기식·식품) 동남아</h2></div>
+  <table class="kv">
+    <tr><td>광고 세트 이름</td><td><span class="val">KR_스태핑_리드젠_v2_B_K소비재</span></td></tr>
+    <tr><td>목표</td><td><span class="val">리드 유치</span></td></tr>
+    <tr><td>위치 / 언어</td><td><span class="val">대한민국(거주)</span> / <span class="val">한국어</span></td></tr>
+    <tr><td>업종</td><td><span class="val">Personal Care Product Manufacturing</span>(화장품 제조) <span class="val">Retail Health and Personal Care Products</span>(뷰티·헬스 유통) <span class="val">Food and Beverage Manufacturing</span>(식품·음료 제조 — 건기식 포함) <span class="val">Wholesale Food and Beverage</span>(식품 도매·수출) — 검색은 영문, 화면엔 한글로 떠도 동일 항목</td></tr>
+    <tr><td>회사 규모</td><td><span class="val">11–50</span> <span class="val">51–200</span> (해외 진출 여력 구간)</td></tr>
+    <tr><td>직급</td><td><span class="val">이사</span> <span class="val">상무급</span> <span class="val">최고임원</span> <span class="val">소유자</span></td></tr>
+    <tr><td>직무</td><td><span class="val">Marketing</span> <span class="val">Business Development</span> <span class="val">Sales</span> — 해외사업·수출 담당이 걸리는 직무 3개</td></tr>
+    <tr><td>제외</td><td><span class="ex">Staffing &amp; Recruiting 업종</span></td></tr>
+    <tr><td>오디언스 확장</td><td><b>체크 해제</b></td></tr>
+    <tr><td>검산</td><td>소비재×한국 링크드인이라 모수 수천 대(예: 4,000)로 나오는 게 정상 — 최소 300의 10배 이상이고 일 $10 예산 대비 몇 달치라 그대로 돌려도 됨. 넓히려면 효과 큰 순: ①<b>언어에 영어 추가</b>(영어 프로필 한국인이 다수 — 지역이 대한민국 거주라 안전) ②직무 필터 해제(직급만으로 이미 조여짐) ③업종 추가(<span class="val">Wellness and Fitness Services</span> 등). 그래도 부족하면 회사 리스트 업로드(Matched Audience)</td></tr>
+    <tr><td>광고 형식</td><td><span class="val">대화 광고</span></td></tr>
+    <tr><td>일일 예산 / 입찰</td><td><span class="val">US$10</span> / CPS <span class="val">US$0.70</span>부터</td></tr>
+    <tr><td>리드 양식 이름</td><td><span class="val">v2_B_K소비재</span> — 자산(Assets) → 리드 양식에서 먼저 생성</td></tr>
+    <tr><td>· 헤드라인</td><td><span class="val">동남아 매출, 현지 전문가 프로필부터 확인해보세요</span></td></tr>
+    <tr><td>· 세부 정보</td><td><span class="val">진출 단계와 시장·제품만 알려주시면, 맞는 현지 전문가 프로필과 사례를 보내드립니다. 월 100만원대 구독형입니다.</span></td></tr>
+    <tr><td>· 개인정보처리방침</td><td><span class="val">https://ggmg.ai.kr/privacy</span></td></tr>
+    <tr><td>· 리드 상세</td><td><span class="val">이름</span> <span class="val">성</span> <span class="val">이메일 주소</span> <span class="val">회사 이름</span> <span class="val">전화번호</span></td></tr>
+    <tr><td>· 질문 1 (선택형)</td><td><span class="val">동남아 진출 단계는? — 이미 진출 / 6개월 내 예정 / 검토 중</span></td></tr>
+    <tr><td>· 질문 2 (주관식)</td><td><span class="val">타겟 시장·제품을 한 줄로 적어주세요 (예: 베트남, 스킨케어)</span></td></tr>
+    <tr><td>· 감사 메시지</td><td><span class="val">접수됐어요. 담당 매니저가 1영업일 안에 적어주신 번호로 전화드려 진출 계획을 확인하고, 맞는 현지 전문가 프로필과 사례를 보내드릴게요.</span></td></tr>
+    <tr><td>· 랜딩 URL</td><td><span class="val">https://ggmg.ai.kr/</span></td></tr>
+    <tr><td>광고 이름</td><td><span class="val">B_현지전문가_사회적증거_v2</span></td></tr>
+    <tr><td>보내는 사람</td><td><span class="val">KEE Kim</span> · 템플릿 화면이 뜨면 <span class="val">Blank</span> 선택 (부진 시 베트남 현지 법인 인물로 교체 테스트)</td></tr>
+    <tr><td>소개 메시지<br>(첫 줄 = 제목)</td><td style="white-space:pre-line;background:var(--fill-bg)"><span class="macro">%FIRSTNAME%</span>님, 동남아 매출 확장, 현지 법인 없이 하는 팀들이 있어요
+
+이미 진출하셨든 준비 중이시든, 현지 전문가가 붙으면 매출이 달라집니다 🙂 채널·가격·마케팅이 현지 기준으로 잡히거든요.
+
+맡길 수 있는 영역은 이렇습니다.
+- 진출 준비: 시장 조사, 채널·가격 전략 설계
+- 매출 확장: 현지 SNS·인플루언서 마케팅, 유통 채널·파트너 발굴
+
+멋쟁이사자처럼이 베트남에서 실제 사업을 운영하며 검증한 현지 마케터·영업 전문가로만 제안드려요. 월 100만원대 구독형이라 언제든 해지할 수 있습니다.
+
+진출 단계와 시장·제품만 알려주시면, 맞는 전문가 프로필과 사례부터 보내드릴게요.</td></tr>
+    <tr><td>버튼 1 → 웹사이트</td><td style="white-space:pre-line;background:var(--fill-bg)">현지 전문가 둘러보기
+---
+액션: 웹사이트로 보내기 → <b>https://ggmg.ai.kr/</b></td></tr>
+    <tr><td>버튼 2 → 리드 양식</td><td style="white-space:pre-line;background:var(--fill-bg)">전문가 프로필·사례 받아볼게요
+---
+좋아요. 진출 단계와 시장·제품만 알려주시면, 맞는 현지 전문가 프로필과 사례를 정리해 연락드릴게요.</td></tr>
+    <tr><td>버튼 3 (탈출구)</td><td style="white-space:pre-line;background:var(--fill-bg)">지금은 괜찮아요
+---
+알겠습니다. 해외 진출 준비하실 때 편하게 찾아주세요. 좋은 하루 되세요!</td></tr>
+    <tr><td>양식 연결</td><td><span class="val">v2_B_K소비재</span> 선택 → 빨간 필수 에러 해제 · 배너·바닥글 비움</td></tr>
+  </table>
+
+  <!-- C -->
+  <div class="step-title cc"><span class="no">C</span><h2>C 세팅 — 업무 대행 · 초소형 조직</h2></div>
+  <table class="kv">
+    <tr><td>광고 세트 이름</td><td><span class="val">KR_스태핑_리드젠_v2_C_업무대행</span></td></tr>
+    <tr><td>목표</td><td><span class="val">리드 유치</span></td></tr>
+    <tr><td>위치 / 언어</td><td><span class="val">대한민국(거주)</span> / <span class="val">한국어</span></td></tr>
+    <tr><td>회사 규모</td><td><span class="val">2–10</span> (대표가 실무까지 지는 구간만)</td></tr>
+    <tr><td>직급</td><td><span class="val">최고임원</span> <span class="val">소유자</span> <span class="val">파트너</span></td></tr>
+    <tr><td>직무</td><td>제한 없음</td></tr>
+    <tr><td>제외</td><td><span class="ex">Staffing &amp; Recruiting 업종</span></td></tr>
+    <tr><td>오디언스 확장</td><td><b>체크 해제</b></td></tr>
+    <tr><td>검산</td><td>규모 2–10 + Owner급이라 모수 작을 수 있음. 300명 미만이면 회사 규모 11–50 추가</td></tr>
+    <tr><td>광고 형식</td><td><span class="val">대화 광고</span></td></tr>
+    <tr><td>일일 예산 / 입찰</td><td><span class="val">US$10</span> / CPS <span class="val">US$0.70</span>부터</td></tr>
+    <tr><td>리드 양식 이름</td><td><span class="val">v2_C_업무대행</span> — 자산(Assets) → 리드 양식에서 먼저 생성</td></tr>
+    <tr><td>· 헤드라인</td><td><span class="val">쌓여 있는 업무, 월 100만원대부터 대신 처리해드려요</span></td></tr>
+    <tr><td>· 세부 정보</td><td><span class="val">맡기실 업무를 적어주시면 처리 방식과 견적을 1영업일 안에 보내드립니다. 풀타임 한 명 몫도 월 100만원대 — 국내 외주의 절반 수준입니다.</span></td></tr>
+    <tr><td>· 개인정보처리방침</td><td><span class="val">https://ggmg.ai.kr/privacy</span></td></tr>
+    <tr><td>· 리드 상세</td><td><span class="val">이름</span> <span class="val">성</span> <span class="val">이메일 주소</span> <span class="val">회사 이름</span> <span class="val">전화번호</span></td></tr>
+    <tr><td>· 질문 1 (주관식)</td><td><span class="val">맡기고 싶은 업무를 한 줄로 적어주세요 (예: 경쟁사 가격 조사, 상세페이지 제작)</span></td></tr>
+    <tr><td>· 감사 메시지</td><td><span class="val">접수됐어요. 적어주신 업무를 확인하고 담당 매니저가 1영업일 안에 적어주신 번호로 전화드려 처리 방식과 견적을 안내드릴게요.</span></td></tr>
+    <tr><td>· 랜딩 URL</td><td><span class="val">https://ggmg.ai.kr/</span></td></tr>
+    <tr><td>광고 이름</td><td><span class="val">C_업무대행_사회적증거_v2</span></td></tr>
+    <tr><td>보내는 사람</td><td><span class="val">KEE Kim</span> · 템플릿 화면이 뜨면 <span class="val">Blank</span> 선택</td></tr>
+    <tr><td>소개 메시지<br>(첫 줄 = 제목)</td><td style="white-space:pre-line;background:var(--fill-bg)"><span class="macro">%FIRSTNAME%</span>님, 사람 안 뽑고 월 100만원대로 밀린 일을 다 처리하는 팀들이 있어요 🙂
+
+리서치, 콘텐츠, 데이터 정리, CS — 멋쟁이사자처럼이 검증한 해외 인력이 처리해서 결과물로 드립니다. 국내 외주의 절반이에요.
+
+맡길 업무 리스트만 보내주시면, 1영업일 안에 견적 드릴게요.</td></tr>
+    <tr><td>버튼 1 → 웹사이트</td><td style="white-space:pre-line;background:var(--fill-bg)">어떤 일까지 되는지 둘러보기
+---
+액션: 웹사이트로 보내기 → <b>https://ggmg.ai.kr/</b></td></tr>
+    <tr><td>버튼 2 → 리드 양식</td><td style="white-space:pre-line;background:var(--fill-bg)">업무 리스트 보내고 견적 받아볼게요
+---
+좋아요. 맡기고 싶은 일을 간단히 적어주시면, 어떻게 처리할지와 견적을 1영업일 안에 정리해 연락드릴게요.</td></tr>
+    <tr><td>버튼 3 (탈출구)</td><td style="white-space:pre-line;background:var(--fill-bg)">지금은 괜찮아요
+---
+알겠습니다. 일이 쌓이면 그때 편하게 찾아주세요. 좋은 하루 되세요!</td></tr>
+    <tr><td>양식 연결</td><td><span class="val">v2_C_업무대행</span> 선택 → 빨간 필수 에러 해제 · 배너·바닥글 비움</td></tr>
+  </table>
+
+  <!-- 부록 -->
+  <div class="step-title"><span class="no">부록</span><h2>근거·분석 (세팅에는 불필요)</h2></div>
+
+  <h2 style="font-size:15px;margin:20px 0 6px;">1차 광고 성과 (v1)</h2>
+  <table class="kv">
+    <tr><td>지출</td><td>₩220,000</td></tr>
+    <tr><td>열람률</td><td>약 35~46% — 대화 광고 통상 범위 30~50%, 잘 만든 캠페인 50%+. 하단~중단</td></tr>
+    <tr><td>버튼 클릭률</td><td>미확인 — Campaign Manager → Export CSV → "Conversation ads CTA performance" (정상선 8~15%)</td></tr>
+    <tr><td>리드</td><td>11개 · 리드당 약 ₩20,000 (≈$14) — 겉보기엔 기준($25 이하) 통과</td></tr>
+    <tr><td>유효 리드</td><td><b>0개.</b> 전부 오해 아니면 오클릭 — 캠페인 전체가 0점</td></tr>
+  </table>
+  <p class="one"><b>판정</b> — "부담 없이 구경만 하세요"가 문턱을 없애 아무나 눌렀다. v2는 열람률(첫 줄)과 유효율(리드폼 문턱: 전화번호+주관식)을 고친다.</p>
+
+  <h2 style="font-size:15px;margin:20px 0 6px;">지표마다 담당하는 문안</h2>
+  <table class="kv">
+    <tr><td>열람률 → 50%</td><td><b>첫 줄(제목)·발신자 담당.</b> 받은메시지함엔 발신자 + 첫 줄만 보인다. 목적은 클릭이 아니라 열게 만드는 것 하나</td></tr>
+    <tr><td>버튼 클릭률 8~15%</td><td><b>본문·버튼 담당.</b> 가격(월 100만원대) 명시로 무료 오해 차단</td></tr>
+    <tr><td>유효리드 0% → 50%+</td><td><b>리드폼·타겟팅 담당.</b> 전화번호(직접 입력) + 주관식 질문으로 오클릭 이탈</td></tr>
+  </table>
+  <p class="one" style="background:var(--fill-bg);border-radius:8px;padding:11px 14px;"><b>대화 광고 BP (해외 사례 공통점)</b><br>① 잘 되는 광고는 "동료가 보낸 추천 쪽지"처럼 읽힌다. ② 구체 숫자("주당 몇 시간 절약")가 뜬구름 주장을 이긴다. ③ 본문 500자 미만이 CTR +46%. ④ 버튼 2~4개, 수신자에게 선택권을 주는 구조가 응답률 높음. ⑤ 발신자가 열람률을 좌우 — 부진하면 제목보다 발신자부터 교체. ⑥ 리드폼 자격 질문을 넣어도 폼 완성률 84% 사례 — 문턱이 제출률을 죽이지 않는다.</p>
+
+  <h2 style="font-size:15px;margin:20px 0 6px;">제목(첫 줄) 후보 — 캠페인당 6안</h2>
+  <p class="one">③(사회적 증거)이 세팅 채택안. 비교 광고 추천: A=⑤ · B=④ · C=②. 캠페인당 제목만 다른 광고 2개, 나머지 변수 고정.</p>
+  <div class="cmp-scroll">
+  <table class="cmp">
+    <thead>
+      <tr>
+        <th>성격</th>
+        <th class="ha">A · 가격 훅</th>
+        <th class="hb">B · K-소비재 동남아</th>
+        <th class="hc">C · 업무 대행</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>① 문제 직격<br>+ 강점</td>
+        <td>5년차 개발자, 월 100만원대에 쓰실 수 있어요</td>
+        <td>동남아 진출 시행착오, 베트남에서 사업하는 저희가 줄여드려요</td>
+        <td>밀린 일, 사람 뽑지 말고 저희한테 던지세요. 반값이에요</td>
+      </tr>
+      <tr>
+        <td>② 증거·결과<br>선행</td>
+        <td>반년 비던 자리, 월 100만원대 인재로 3주 만에 채웠어요</td>
+        <td>베트남에서 K-뷰티가 왜 안 팔리는지, 현지에서 보면 보여요</td>
+        <td>월요일에 던진 일이 금요일에 결과물로 돌아옵니다</td>
+      </tr>
+      <tr>
+        <td>③ 사회적 증거<br><b>(세팅 채택안)</b></td>
+        <td><b>월 100만원대로 8년차 개발자를 풀타임으로 쓰는 팀들이 있어요</b></td>
+        <td><b>동남아 매출 확장, 현지 법인 없이 하는 팀들이 있어요</b></td>
+        <td><b>사람 안 뽑고 월 100만원대로 밀린 일을 다 처리하는 팀들이 있어요</b></td>
+      </tr>
+      <tr>
+        <td>④ 개인화·<br>직문 (매크로)</td>
+        <td><span class="macro">%COMPANYNAME%</span>의 비어 있는 그 자리, 월 100만원대에 채워드릴게요</td>
+        <td><span class="macro">%COMPANYNAME%</span>의 동남아 1호 시장, 어디로 정하셨어요?</td>
+        <td><span class="macro">%COMPANYNAME%</span>에서 제일 오래 미뤄진 일, 뭐예요?</td>
+      </tr>
+      <tr>
+        <td>⑤ 숫자 대비</td>
+        <td>연봉 4천 대신 월 100만원대 — 같은 자리를 채우는 다른 방법</td>
+        <td>현지 법인 없이, 월 100만원대로 동남아 진출팀을 꾸릴 수 있어요</td>
+        <td>직원 한 명 몫 업무가 월 100만원대 — 뽑는 것보다 싸요</td>
+      </tr>
+      <tr>
+        <td>⑥ 동료 쪽지<br>(광고 티 제로)</td>
+        <td>소규모 팀 대표님들께만 먼저 연락드리고 있어요</td>
+        <td>K-뷰티 해외 진출 준비하시는 대표님들께 먼저 연락드리고 있어요</td>
+        <td>작은 팀 대표님들께 먼저 연락드려요 — 손 없는 일 대신 해드리려고요</td>
+      </tr>
+    </tbody>
+  </table>
+  </div>
+  <p class="tip"><b>주의</b> — ③④⑥처럼 광고 티가 없을수록 열람률은 오르지만 무자격 열람도 늘어난다. 최종 판정은 <b>유효리드당 비용</b>.</p>
+
+  <h2 style="font-size:15px;margin:20px 0 6px;">열람률 46% → 그 위로 올리는 레버 (효과 큰 순서)</h2>
+  <table class="kv">
+    <tr><td>1. 발신자</td><td>제목보다 큰 레버. 사진·헤드라인 정리, 부진 시 발신자 교체 테스트. B는 베트남 현지 법인 인물 후보</td></tr>
+    <tr><td>2. 개인화 매크로</td><td>첫 줄에 %COMPANYNAME% 삽입 시 열람률 +8% 사례 (④안)</td></tr>
+    <tr><td>3. 호기심 갭</td><td>서비스 설명을 지우면 열람률 최대, 대신 뒤 단계에서 걸러지는 비율도 최대 — 리드폼 문턱 있는 구조에서만</td></tr>
+    <tr><td>4. 타겟 좁히기</td><td>제목이 "정확히 내 얘기"일수록 연다. 모수 벌리기보다 좁힌 타겟 + 맞는 제목</td></tr>
+  </table>
+
+  <h2 style="font-size:15px;margin:20px 0 6px;">"지금 채용 중"인 회사만 핀셋 타겟 (오디언스 크라이테리어엔 없음)</h2>
+  <table class="kv">
+    <tr><td>방법 1 · 공고마감 데이터<br>(추천 · 무료)</td><td>공고마감(ggmg)이 수집한 "현재 공고 올린 회사" 리스트를 CSV로 → Campaign Manager <span class="val">Matched Audience → 회사 리스트 업로드</span> → 직급 필터 겹치기. 채용 중 + 결정권자 이중 핀셋 (A 캠페인과 궁합 최고 — JD 질문과 맞물림)</td></tr>
+    <tr><td>방법 2 · Sales Navigator</td><td>기업 검색 <span class="val">"Hiring on LinkedIn"</span> 필터로 추출 → 업로드. 구독 필요(월 $100 안팎)</td></tr>
+    <tr><td>방법 3 · 채용 담당자 직타겟</td><td>직함 <span class="val">Talent Acquisition</span> <span class="val">Recruiter</span> 타겟 — 크라이테리어로 가능하나 "채용 중" 상태가 아니라 "채용이 직업"인 사람. 별도 광고로만 테스트</td></tr>
+    <tr><td>업로드 요건</td><td>최소 300개 매칭(1,000개+ 권장) · 매칭 완료까지 최대 48시간 — 세팅 이틀 전 업로드 · 리스트 2~4주마다 갱신</td></tr>
+  </table>
+
+  <footer>통당 과금 · 같은 사람에게 단기 재발송 안 됨 · 심사 보통 24시간 내 · 세팅 절차 화면은 STAFFING_LINKEDIN_DM_GUIDE.html 참고</footer>
+
+</div>
+</body>
+</html>
