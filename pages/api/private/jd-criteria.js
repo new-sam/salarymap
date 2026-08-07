@@ -128,7 +128,7 @@ export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'method not allowed' })
 
   const jd = String(req.body?.jd || '').trim()
-  if (jd.length < 30) return res.status(400).json({ error: 'JD 내용이 너무 짧습니다' })
+  if (jd.length < 30) return res.status(400).json({ error: '채용 공고의 전문을 붙여넣어주세요' })
   const yoe = yoeFromChips(req.body?.yoe)
 
   try {

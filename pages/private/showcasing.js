@@ -21,6 +21,11 @@ import supabaseAdmin from '../../lib/supabaseAdmin'
 
 const ACCEPT = '.pdf,.docx,.txt,.md'
 
+/* 파일 첨부 — 당분간 감춘다(유저 결정). 첨부 칩과 함께 파일 얘기를 하는 문구도
+   같이 내린다: 올릴 곳이 없는데 "PDF·DOCX까지 됩니다"가 남아 있으면 찾게 된다.
+   읽는 쪽(onPick·extract)은 그대로 두고 이 한 줄만 true 로 되돌리면 다시 나온다. */
+const FILE_UPLOAD = false
+
 /* 경력 칩 — JD 만으로는 연차가 안 잡히는 경우가 많다. 실제 검색 기록을 보면 조건에서
    yoe_min·yoe_max 가 둘 다 null 로 나오는 JD 가 흔한데, 그러면 1차 거름망의 연차 항목이
    통째로 놀고(prefilterScore) 순위 단계도 "이 자리는 연차를 요구하지 않았다"로 돌아간다.
@@ -292,10 +297,10 @@ export default function PrivateShowcasing({ co, campaign, off, c }) {
                     늘어나는데, 여기서 할 일은 하나(JD 를 넣는다)라 읽을 게 없어야 빠르다. */}
                 {!wide && (
                   <div style={{ textAlign: 'center' }}>
-                    {/* 모바일에서만 '포지션의' 앞에서 끊는다 — 자동 줄바꿈에 맡기면
-                        '올려/주세요'가 한 낱말 가운데서 갈라진다. 데스크톱은 한 줄에
-                        들어가므로 br 을 숨겨 둔다. */}
-                    <H>채용하고자 하는 <br className="psc-hbr" />포지션의 JD를 올려주세요</H>
+                    {/* 데스크톱은 한 줄. 모바일에서만 '붙여넣기' 앞에서 끊는다
+                        (psc-hbr, 768px 이하에서만 산다) — 자동 줄바꿈에 맡기면 낱말
+                        가운데서 갈라진다. */}
+                    <H>채용공고를 복사 <br className="psc-hbr" />붙여넣기 해주세요</H>
                   </div>
                 )}
 
@@ -324,7 +329,7 @@ export default function PrivateShowcasing({ co, campaign, off, c }) {
                       양식 작성으로 읽힌다. 아래에는 파일 첨부·보내기가 이미 있어서, 거기 한 줄을 더
                       붙이면 손이 가는 것이 전부 바닥에 몰린다.
                       여러 개를 고를 수 있고, 안 골라도 된다. */}
-                  <div style={{
+                  <div className="psc-yoe-row" style={{
                     display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap',
                     marginBottom: 12, paddingBottom: 12, paddingRight: 30,
                     borderBottom: `1px solid ${T.hair}`,
@@ -347,9 +352,11 @@ export default function PrivateShowcasing({ co, campaign, off, c }) {
                           }}>{x.label}</button>
                       )
                     })}
-                    {/* 안 고르면 어떻게 되는지 — 안 적으면 빈 채로 두는 게 잘못인 줄 안다 */}
+                    {/* 안 고르면 어떻게 되는지 — 안 적으면 빈 채로 두는 게 잘못인 줄 안다.
+                        좁은 화면에서는 감춘다(psc-yoe-hint): 이 한 줄 때문에 칩이 둘째 줄로
+                        넘어가는데, 안 고르는 게 기본값이라 안내가 없다고 못 넘어가지 않는다. */}
                     {!yoe.length && (
-                      <span style={{ fontSize: 11, color: T.faint }}>선택 안 하면 JD에서 읽어요</span>
+                      <span className="psc-yoe-hint" style={{ fontSize: 11, color: T.faint }}>선택 안 하면 JD에서 읽어요</span>
                     )}
                   </div>
 
@@ -363,7 +370,7 @@ export default function PrivateShowcasing({ co, campaign, off, c }) {
                     onKeyDown={(e) => {
                       if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) { e.preventDefault(); submit() }
                     }}
-                    placeholder="JD를 붙여넣거나 파일로 올려주세요"
+                    placeholder={FILE_UPLOAD ? 'JD를 붙여넣거나 파일로 올려주세요' : '채용공고를 붙여넣어주세요'}
                     rows={1}
                     style={{
                       width: '100%', border: 0, outline: 'none', resize: 'none', padding: 0,
@@ -373,24 +380,28 @@ export default function PrivateShowcasing({ co, campaign, off, c }) {
                   />
 
                   <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 10 }}>
-                    <input ref={fileRef} type="file" accept={ACCEPT} style={{ display: 'none' }}
-                      onChange={(e) => onPick(e.target.files?.[0])} />
-                    <button type="button" onClick={() => fileRef.current?.click()} disabled={reading}
-                      style={{
-                        display: 'inline-flex', alignItems: 'center', gap: 6,
-                        fontFamily: 'inherit', fontSize: 12.5, fontWeight: 600, color: T.body,
-                        background: '#fff', border: `1px solid ${T.line}`, borderRadius: 100,
-                        padding: '6px 13px', cursor: reading ? 'default' : 'pointer', boxShadow: T.sm,
-                      }}>
-                      <Clip />{reading ? '읽는 중…' : '파일 첨부'}
-                    </button>
+                    {FILE_UPLOAD && (
+                      <>
+                        <input ref={fileRef} type="file" accept={ACCEPT} style={{ display: 'none' }}
+                          onChange={(e) => onPick(e.target.files?.[0])} />
+                        <button type="button" onClick={() => fileRef.current?.click()} disabled={reading}
+                          style={{
+                            display: 'inline-flex', alignItems: 'center', gap: 6,
+                            fontFamily: 'inherit', fontSize: 12.5, fontWeight: 600, color: T.body,
+                            background: '#fff', border: `1px solid ${T.line}`, borderRadius: 100,
+                            padding: '6px 13px', cursor: reading ? 'default' : 'pointer', boxShadow: T.sm,
+                          }}>
+                          <Clip />{reading ? '읽는 중…' : '파일 첨부'}
+                        </button>
 
-                    {/* 입력칸의 글이 사람이 쓴 건지 파서가 뽑은 건지 */}
-                    {!!file && !reading && (
-                      <span style={{
-                        fontSize: 11.5, color: T.mute, minWidth: 0, overflow: 'hidden',
-                        textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-                      }}>{file} 읽음</span>
+                        {/* 입력칸의 글이 사람이 쓴 건지 파서가 뽑은 건지 */}
+                        {!!file && !reading && (
+                          <span style={{
+                            fontSize: 11.5, color: T.mute, minWidth: 0, overflow: 'hidden',
+                            textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                          }}>{file} 읽음</span>
+                        )}
+                      </>
                     )}
 
                     <button type="button" onClick={submit} disabled={!jd.trim() || reading}
@@ -409,9 +420,11 @@ export default function PrivateShowcasing({ co, campaign, off, c }) {
 
                 {!!err && <div style={{ fontSize: 12.5, color: '#DC2626', marginTop: 10 }}>{err}</div>}
 
-                <div style={{ fontSize: 11.5, color: T.faint, marginTop: 12, textAlign: 'center' }}>
-                  PDF · DOCX · TXT · 5MB까지
-                </div>
+                {FILE_UPLOAD && (
+                  <div style={{ fontSize: 11.5, color: T.faint, marginTop: 12, textAlign: 'center' }}>
+                    PDF · DOCX · TXT · 5MB까지
+                  </div>
+                )}
               </>
             ) : (
               <Loading step={step} criteria={criteria} pool={pool} onFull={() => setStep('done')} />
@@ -446,6 +459,14 @@ export default function PrivateShowcasing({ co, campaign, off, c }) {
 
             /* 경력 칩 — 누를 수 있는 것임이 손이 닿기 전에 보이게 */
             .psc-yoe { transition: background .12s ease, border-color .12s ease, color .12s ease; }
+            /* 좁은 화면: 안내문을 빼고 칩·간격을 조여 네 개가 한 줄에 들어가게 한다.
+               오른쪽 여백 30 은 확대 버튼 자리인데, 그 버튼은 긴 글을 넣었을 때만 나오고
+               그때는 칩 줄이 이미 위로 밀려 있어 겹치지 않는다 — 좁은 화면에서는 뺀다. */
+            @media (max-width: 480px) {
+              .psc-yoe-hint { display: none; }
+              .psc-yoe { padding: 4px 8px !important; font-size: 11px !important; }
+              .psc-yoe-row { gap: 4px !important; padding-right: 0 !important; }
+            }
             .psc-yoe[aria-pressed="false"]:hover { background: #FFF6F0; border-color: ${T.brandLine}; color: ${T.brandInk}; }
 
             /* 로딩 배경 글로우 — 아래에서 위로 떠올라 화면을 통과하고, 음수 delay 로
