@@ -1219,11 +1219,11 @@ function InquiryModal({ sid, picks, first, co, ev, onClose }) {
                 미리보기 — 실제로 접수되지 않았습니다: {preview}
               </div>
             )}
-            {/* 원문은 미팅에서 — 접수 화면이 "이력서를 보내드립니다"라고 하면
-                방금 모달이 한 약속(개인정보라 미팅에서만)을 스스로 뒤집는다. */}
+            {/* 접수 후에는 다음에 무슨 일이 일어나는지만 말한다. 원문을 어떻게 보여주는지는
+                연락해서 사람이 설명할 일이지, 방금 연락처를 준 사람에게 화면이 못 박을 일이
+                아니다 — 여기서 조건을 하나 더 읽히면 접수하고도 찜찜하게 닫는다. */}
             <div style={{ fontSize: 13.5, color: T.mute, marginTop: 10, lineHeight: 1.7 }}>
-              영업일 기준 1일 안에 {contact.includes('@') ? '메일로 ' : ''}연락드려 미팅 일정을 잡아드리겠습니다.<br />
-              이력서 원문은 미팅에서 직접 보여드립니다.
+              영업일 기준 1일 안에 {contact.includes('@') ? '메일로 ' : ''}연락드려 미팅 일정을 잡아드리겠습니다.
             </div>
             <button type="button" onClick={onClose} style={{ ...primaryBtn, marginTop: 24, background: T.ink }}>
               닫기
@@ -1241,12 +1241,11 @@ function InquiryModal({ sid, picks, first, co, ev, onClose }) {
                 : (<>이 인재로 채용 상담을<br />문의하시겠습니까?</>)}
             </div>
 
-            {/* 원문을 메일로 안 보내는 이유를 먼저 말한다 — 안 밝히면 '받아보기'를 눌렀는데
-                미팅을 잡자고 하는 셈이라, 낚인 기분이 든다. */}
+            {/* 여기서 할 말은 "연락처를 남기면 연락이 간다" 하나다. 원문을 왜 메일로
+                안 보내는지까지 여기서 설명하면, 폼을 열자마자 안 되는 것부터 읽게 된다. */}
             {all && (
               <div style={{ fontSize: 13, color: T.body, marginTop: 10, lineHeight: 1.7 }}>
-                연락처를 남겨주시면 담당자가 미팅 일정을 잡아 연락드립니다.<br />
-                이력서 원문은 개인정보 보호를 위해 대면 미팅에서 보여드립니다.
+                연락처를 남겨주시면 담당자가 미팅 일정을 잡아 연락드립니다.
               </div>
             )}
 
