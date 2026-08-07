@@ -544,6 +544,93 @@ const photoColdmailHtml = (lang) => {
 </div></body></html>`
 }
 
+/* ── PRESTO SOLUTION 로봇/모션제어 SW (presto-recommend-coldmail.mjs) ──
+   추천 계열이지만 recommendShell 을 못 쓴다. 셋이 다르다:
+   (1) intro 다음에 개인화 후크 문단이 하나 더 붙는다 — 수신자의 이력서가 이 자리와 어디서
+       만나는지 지목하는 줄로, 세그먼트(제어/비전/임베디드/GUI/전공/일반) 여섯 벌 중 하나가 나간다.
+   (2) 카드 아래에 자격요건·복리후생 줄이 따로 있다(요건이 좁아 본문에서 걸러 주려고).
+   (3) 푸터에 수신거부가 있다 — 이 캠페인부터 넣기 시작했다. 기존 recommendShell 을 고치면
+       수신거부 없이 나갔던 이전 캠페인의 스냅샷까지 바뀌므로 셸을 따로 둔다. */
+const PRESTO_I18N = {
+  vi: {
+    greeting: 'Chào {{name}},',
+    hook: '{{후크 — 세그먼트별 1줄. 예(vision): Vị trí này phát triển phần mềm điều khiển dựa trên hệ thống <b>Laser &amp; Vision</b>, nên kinh nghiệm <b>xử lý ảnh / Computer Vision</b> của bạn dùng được ngay.}}',
+    position: 'Thiết kế phần mềm điều khiển robot công nghiệp bằng Motion Controller, phát triển ứng dụng cho thiết bị và module phân tích dữ liệu điều khiển (ứng dụng AI).',
+    req: 'Yêu cầu: hiểu biết <b>C/C++ hoặc C# (WinForm, WPF)</b> · tốt nghiệp Khoa học máy tính / Điện tử / Điều khiển · có thể đi công tác nước ngoài và lái xe. <b>Kinh nghiệm 1–5 năm.</b>',
+    benefit: 'Lương thỏa thuận theo năng lực · hỗ trợ chi phí visa đi Hàn Quốc · thưởng theo kết quả kinh doanh.',
+    onetap: 'Chỉ cần <b>1 chạm</b> — CV đã đăng ký của bạn sẽ được gửi tự động.',
+    cta: 'Ứng tuyển 1 chạm →',
+    jd: 'Xem mô tả công việc đầy đủ →',
+    footer: 'Bạn nhận được email này vì đã đăng ký hồ sơ trên FYI.<br>— Đội ngũ FYI · salary-fyi.com/jobs · <u>Hủy đăng ký</u>',
+  },
+  ko: {
+    greeting: '{{name}}님, 안녕하세요.',
+    hook: '{{후크 — 세그먼트별 1줄. 예(비전): 이 포지션은 <b>레이저 및 비전 시스템</b> 기반 제어 소프트웨어를 개발합니다. 회원님의 <b>영상처리 · 컴퓨터 비전</b> 경험을 바로 쓸 수 있습니다.}}',
+    position: 'Motion Controller를 활용한 산업용 로봇 제어 소프트웨어 설계, 장비 응용 SW 및 제어 데이터 분석 모듈(AI 응용) 개발.',
+    req: '자격요건: <b>C/C++ 또는 C# (WinForm, WPF)</b>에 대한 이해 · 컴퓨터공학 / 전자 / 제어 전공 · 해외 출장 및 운전 가능. <b>경력 1~5년.</b>',
+    benefit: '연봉 회사 내규(경력별 상이) · 한국 비자 발급비 지원 · 경영성과급.',
+    onetap: '<b>한 번의 클릭</b>이면 등록된 CV가 자동으로 전달됩니다.',
+    cta: '원클릭 지원하기 →',
+    jd: '채용공고 전문 보기 →',
+    footer: 'FYI에 이력서를 등록하셔서 이 메일을 받으셨습니다.<br>— FYI 팀 · salary-fyi.com/jobs · <u>수신 거부</u>',
+  },
+  en: {
+    greeting: 'Hi {{name}},',
+    hook: '{{hook — one line per segment. e.g. (vision): This role builds control software on top of <b>Laser &amp; Vision</b> systems, so your <b>image processing / computer vision</b> experience applies directly.}}',
+    position: 'Design industrial robot control software using a Motion Controller, build equipment applications and control-data analysis modules (AI applications).',
+    req: 'Requirements: understanding of <b>C/C++ or C# (WinForm, WPF)</b> · degree in Computer Science / Electronics / Control · able to travel abroad and drive. <b>1–5 years of experience.</b>',
+    benefit: 'Negotiable salary · Korea visa cost support · performance bonus.',
+    onetap: 'Just <b>1 tap</b> — your registered CV is sent automatically.',
+    cta: '1-tap apply →',
+    jd: 'See the full job description →',
+    footer: 'You received this email because you registered a profile on FYI.<br>— The FYI team · salary-fyi.com/jobs · <u>Unsubscribe</u>',
+  },
+}
+
+const prestoShell = (lang, { intro, tail }) => {
+  const s = pickLang(PRESTO_I18N, lang)
+  return `<!doctype html><html lang="vi"><head><meta charset="utf-8"></head>
+<body style="margin:0;background:#faf9f7;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;color:#1a1612">
+<table width="100%" cellpadding="0" cellspacing="0" style="background:#faf9f7"><tr><td align="center" style="padding:28px 16px">
+<table width="100%" cellpadding="0" cellspacing="0" style="max-width:520px">
+  <tr><td style="font-size:20px;font-weight:800;color:#ff6000;padding-bottom:18px">FYI</td></tr>
+  <tr><td style="font-size:15px;line-height:1.6;color:#1a1612;padding-bottom:6px">${s.greeting}</td></tr>
+  <tr><td style="font-size:14px;line-height:1.65;color:#4a443c;padding-bottom:14px">${pickLang(intro, lang)}</td></tr>
+  <tr><td style="font-size:14px;line-height:1.65;color:#4a443c;padding-bottom:18px">${s.hook}</td></tr>
+  <tr><td style="padding-bottom:14px">
+    <table width="100%" cellpadding="0" cellspacing="0" style="background:#fff;border:1px solid #eee5da;border-radius:14px"><tr>
+      <td width="44" style="padding:14px 0 14px 14px;vertical-align:middle"><div style="width:44px;height:44px;border-radius:10px;background:#fff0e6;color:#ff6000;font-weight:800;font-size:16px;text-align:center;line-height:44px">P</div></td>
+      <td style="padding:14px 14px 14px 12px;vertical-align:middle">
+        <div style="font-size:12px;color:#8a8073;margin-bottom:3px">PRESTO SOLUTION</div>
+        <div style="font-size:14.5px;font-weight:700;color:#1a1612;line-height:1.35">Software Engineer — Robot &amp; Motion Control</div>
+        <div style="font-size:12px;color:#b0691a;margin-top:3px">HCM · Đà Nẵng · Hà Nội · Onsite</div>
+      </td>
+    </tr></table>
+  </td></tr>
+  <tr><td style="font-size:14px;line-height:1.65;color:#4a443c;padding-bottom:8px">${s.position}</td></tr>
+  <tr><td style="font-size:13.5px;line-height:1.6;color:#6b6357;padding-bottom:6px">${s.req}<br>${s.benefit}</td></tr>
+  <tr><td style="font-size:14px;line-height:1.65;color:#4a443c;padding-top:10px">${pickLang(tail, lang)} ${s.onetap}</td></tr>
+  <tr><td align="center" style="padding:16px 0 6px">
+    <a style="display:inline-block;background:#ff6000;color:#fff;font-weight:700;font-size:15px;text-decoration:none;padding:14px 30px;border-radius:12px">${s.cta}</a>
+  </td></tr>
+  <tr><td align="center" style="font-size:12.5px;padding-bottom:4px"><a style="color:#8a8073">${s.jd}</a></td></tr>
+  <tr><td style="font-size:11.5px;color:#a89f92;text-align:center;line-height:1.5;padding-top:20px">${s.footer}</td></tr>
+</table></td></tr></table></body></html>`
+}
+
+const PRESTO_INTRO = {
+  public: {
+    vi: 'Nhà tuyển dụng của <b>PRESTO SOLUTION</b> — công ty Hàn Quốc chuyên giải pháp Motion Control &amp; tự động hóa cho ngành bán dẫn, màn hình và robot công nghiệp — đã xem hồ sơ của bạn trên FYI và <b>gửi cho bạn vị trí này</b>.',
+    ko: '반도체·디스플레이·산업용 로봇 분야의 Motion Control 및 자동화 솔루션 기업 <b>PRESTO SOLUTION</b>의 채용 담당자가 FYI에서 회원님의 이력서를 보고 <b>이 포지션을 보내드렸습니다</b>.',
+    en: 'A recruiter at <b>PRESTO SOLUTION</b> — a Korean company providing Motion Control and automation solutions for semiconductor, display and industrial robot lines — viewed your CV on FYI and <b>sent you this position</b>.',
+  },
+  private: {
+    vi: '<b>PRESTO SOLUTION</b> — công ty Hàn Quốc chuyên giải pháp Motion Control &amp; tự động hóa cho ngành bán dẫn, màn hình và robot công nghiệp — đang tuyển Software Engineer qua FYI. Đội ngũ FYI đã xem xét toàn bộ hồ sơ đã đăng ký và <b>chọn bạn vào danh sách đề cử</b> gửi cho nhà tuyển dụng.',
+    ko: '반도체·디스플레이·산업용 로봇 분야의 Motion Control 및 자동화 솔루션 기업 <b>PRESTO SOLUTION</b>이 FYI를 통해 Software Engineer를 채용합니다. FYI 팀이 등록된 이력서 전체를 검토해 회원님을 <b>추천 후보 명단에 선정</b>했습니다.',
+    en: '<b>PRESTO SOLUTION</b> — a Korean company providing Motion Control and automation solutions for semiconductor, display and industrial robot lines — is hiring a Software Engineer through FYI. The FYI team reviewed every registered CV and <b>selected you for the nominee list</b> sent to the recruiter.',
+  },
+}
+
 export const COLDMAIL_TEMPLATES = [
   {
     match: /^photo/,
@@ -691,6 +778,24 @@ export const COLDMAIL_TEMPLATES = [
       },
       initial: 'M', company: 'Man Man Market', title: '{{공고 제목}}', meta: '{{직군 · 지역}}', tail: BENEFIT_PUBLIC,
     }),
+  },
+  {
+    match: /^presto-recommend1-public/,
+    subject: invitedSubject('PRESTO SOLUTION'),
+    desc: 'PRESTO SOLUTION 로봇·모션제어 SW 추천 · 공개 프레임 (8/7): "담당자가 당신 이력서를 보고 보냈다 · 우선검토". 대상은 C++/C# 보유 + 경력 7년 이하, 이력서에 제어/비전/임베디드/GUI 단서가 있는 순으로 정렬. 본문 둘째 문단이 세그먼트별 후크 6종으로 갈린다(개인화이지 캠페인 분리가 아니다 — 수신자가 적어 더 쪼개면 못 센다). 이 캠페인부터 푸터 수신거부(/api/coldmail/unsub) + List-Unsubscribe 원클릭 헤더.',
+    source: 'scripts/outreach/presto-recommend-coldmail.mjs',
+    html: (lang) => prestoShell(lang, { intro: PRESTO_INTRO.public, tail: BENEFIT_PUBLIC }),
+  },
+  {
+    match: /^presto-recommend1-private/,
+    subject: {
+      vi: '[FYI] Bạn được chọn vào danh sách đề cử — Software Engineer (Robot & Motion Control)',
+      ko: '[FYI] 추천 후보 명단에 선정되셨습니다 — Software Engineer (Robot & Motion Control)',
+      en: '[FYI] You\'ve been selected for the nominee list — Software Engineer (Robot & Motion Control)',
+    },
+    desc: 'PRESTO SOLUTION 로봇·모션제어 SW 추천 · 비공개 프레임 (8/7): "FYI가 전체 이력서 검토 후 추천 명단에 선정 · 이번 주 담당자 전달 · 우선검토". ⚠️발송 후 실제 명단 공유 의무. 공개 프레임과 대상 선정·후크는 동일하고 인트로/혜택 문장만 다르다.',
+    source: 'scripts/outreach/presto-recommend-coldmail.mjs',
+    html: (lang) => prestoShell(lang, { intro: PRESTO_INTRO.private, tail: BENEFIT_PRIVATE }),
   },
   {
     match: /^zest-recommend1-public/,
