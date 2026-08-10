@@ -19,6 +19,29 @@ export default async function handler(req, res) {
   const { data: { user }, error: authErr } = await supabase.auth.getUser(token)
   if (authErr || !user) return res.status(401).json({ error: 'unauthorized' })
 
+  // 2차 호출: 어학성적 입력. 급수를 고르면 마커 대신 정식 "TOPIK n" 포맷으로 저장한다
+  // (LanguageCard·langTier 가 읽는 캐넌 포맷). 'none' 은 프로필 변경 없이 응답만 남긴다.
+  const { topik } = req.body || {}
+  if (topik !== undefined) {
+    const isNone = topik === 'none'
+    const n = Number(topik)
+    if (!isNone && !(n >= 1 && n <= 6)) return res.status(400).json({ error: 'bad_topik' })
+    if (!isNone) {
+      const { error: upErr } = await supabase.from('user_profiles').upsert({
+        id: user.id,
+        email: user.email,
+        korean_cert: `TOPIK ${n}`,
+        updated_at: new Date().toISOString(),
+      }, { onConflict: 'id' })
+      if (upErr) return res.status(500).json({ error: upErr.message })
+    }
+    await supabase.from('events').insert([{
+      event: 'hongik_topik', page: '/hongik', user_id: user.id,
+      meta: { ...(req.body?.meta || {}), email: user.email, topik: isNone ? 'none' : n },
+    }])
+    return res.json({ ok: true })
+  }
+
   const { data: prof, error: findErr } = await supabase
     .from('user_profiles')
     .select('korean_cert, resume_url')

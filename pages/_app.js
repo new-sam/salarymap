@@ -83,8 +83,8 @@ export default function App({ Component, pageProps }) {
   // /ktc 는 FYI 헤더(GlobalNav)·푸터(GlobalFooter)를 그대로 쓰는 캠페인 랜딩.
   // 자체로 갖는 건 섹션 탭바뿐이고, 하단 탭바·앱 설치 모달만 전환 동선을 끊어서 제외한다.
   const isStandaloneLanding = router.pathname.startsWith('/ktc');
-  // /korean-cv 광고 랜딩(모바일 메인) — 하단 탭바·앱 유도 모달 없이 전환에만 집중.
-  const isKcvLanding = router.pathname === '/korean-cv';
+  // /korean-cv 광고 랜딩(모바일 메인)·/hongik 현장 QR 랜딩 — 하단 탭바·앱 유도 모달 없이 전환에만 집중.
+  const isKcvLanding = router.pathname === '/korean-cv' || router.pathname === '/hongik';
   // /private/* — 고객사에게만 링크로 여는 비공개 화면. 푸터·탭바·앱 모달이 붙으면
   // 거기 링크를 타고 FYI 본 사이트로 새어 나가고, 화면도 우리 서비스 소개처럼 보인다.
   const isPrivate = router.pathname.startsWith('/private');
