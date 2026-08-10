@@ -3,7 +3,7 @@
 // 수동 실행 없이도 최신으로 유지되게 한다 (스태핑 마스터 대시보드가 이 산출물을 읽음).
 // Vercel cron이 Authorization: Bearer ${CRON_SECRET} 헤더로 호출 (daily-hot-post.js와 동일).
 // vercel.json crons: { "path": "/api/cron/ktc-sync", "schedule": "30 22 * * *" }  (22:30 UTC = 07:30 KST)
-import { triggerSheetSync, syncKtcCandidates, syncKtcApplications, syncKtcHires, pushFyiToKtc, syncKtcJobCodes } from '../../../lib/ktcCandidatesSync'
+import { triggerSheetSync, syncKtcCandidates, syncKtcApplications, syncKtcHires, pushFyiToKtc, appendFyiToSheet, syncKtcJobCodes } from '../../../lib/ktcCandidatesSync'
 
 export const config = { maxDuration: 300 }
 
@@ -13,8 +13,13 @@ export default async function handler(req, res) {
   }
 
   try {
-    // FYI 지원자를 ktc-support 파이프라인에 먼저 유입시킨 뒤 (신규만) 나머지를 당겨온다
+    // FYI 지원 건을 ktc-support 파이프라인에 직접 유입 + Candidate Data 시트 FYI 탭 보충
+    // (시트 append 는 기록 보존용 보강 레이어 — 실패해도 파이프라인은 계속)
     const push = await pushFyiToKtc()
+    let fyiSheet = null
+    if (process.env.GOOGLE_SHEET_ID && process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL) {
+      try { fyiSheet = await appendFyiToSheet() } catch (e) { console.error('appendFyiToSheet:', e.message) }
+    }
     const sheet = await triggerSheetSync()
     if (sheet?.type === 'error') {
       return res.status(502).json({ error: `시트 동기화 실패: ${sheet.message || 'unknown'}` })
@@ -35,6 +40,7 @@ export default async function handler(req, res) {
       applications: apps ? apps.total : null,
       hires: hires ? hires.total : null,
       fyiPushed: push.pushed,
+      fyiSheetAppended: fyiSheet ? fyiSheet.appended : null,
       jobCodes: jobCodes ? { set: jobCodes.set, ambiguous: jobCodes.ambiguous.length, conflicts: jobCodes.conflicts.length } : null,
     })
   } catch (e) {
