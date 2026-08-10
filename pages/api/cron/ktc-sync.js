@@ -2,7 +2,7 @@
 // 파이프라인을 Vercel cron이 매일 실행해, 지원 건(ktc_applications)·입사(ktc_hires) 데이터가
 // 수동 실행 없이도 최신으로 유지되게 한다 (스태핑 마스터 대시보드가 이 산출물을 읽음).
 // Vercel cron이 Authorization: Bearer ${CRON_SECRET} 헤더로 호출 (daily-hot-post.js와 동일).
-// vercel.json crons: { "path": "/api/cron/ktc-sync", "schedule": "30 22 * * *" }  (22:30 UTC = 07:30 KST)
+// vercel.json crons: 하루 2회 — "30 22 * * *"(07:30 KST) + "0 6 * * *"(15:00 KST, 베트남팀 요청 2026-08-10)
 import { triggerSheetSync, syncKtcCandidates, syncKtcApplications, syncKtcHires, pushFyiToKtc, appendFyiToSheet, syncKtcJobCodes } from '../../../lib/ktcCandidatesSync'
 
 export const config = { maxDuration: 300 }

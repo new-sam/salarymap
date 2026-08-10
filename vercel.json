@@ -12,6 +12,7 @@
     { "path": "/api/cron/experiment-alert", "schedule": "0 0 * * *" },
     { "path": "/api/cron/experiment-pulse", "schedule": "*/15 * * * *" },
     { "path": "/api/cron/ktc-sync", "schedule": "30 22 * * *" },
+    { "path": "/api/cron/ktc-sync", "schedule": "0 6 * * *" },
     { "path": "/api/cron/crawl-vietnamworks", "schedule": "0 3 * * *" }
   ]
 }
