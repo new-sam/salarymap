@@ -235,21 +235,18 @@ export default function GlobalNav({ activePage, onLogin, onJobsClick, mobileSear
           </Link>
           <Link href="/ktc" className={`gnav-link gnav-zone gnav-zone-m${activePage === 'ktc' ? ' on' : ''}`} onClick={() => track('click_ktc_nav', { meta: { source: 'mobile' }, page: activePage || null })}>K-company</Link>
           <div className="gnav-l-menu">
-            {/* 이력서 등록(/profile#resume) 은 잠시 내려 둔다.
-
-               바로 옆 /cv 도 이력서를 등록하는 자리라, 웹 내비에 이력서로 가는 문이 둘이
-               나란히 서 있었다. /cv 쪽은 축하금을 걸고 있어 들어오는 이유가 분명한데
-               이쪽은 이름만 같아서, 두 문 중 어디로 가야 하는지가 이름으로는 안 갈렸다.
-               모바일 하단 탭의 '이력서 등록'(nav.tabs.cv)은 그대로다 — 거기는 /cv 하나뿐이라
-               고를 일이 없다.
+            {/* 이력서 등록 문을 다시 연다. 전에 내려 둔 이유는 이 자리가 /profile#resume 을
+               가리켜서, 바로 옆 /cv 와 이름만 같고 들어올 이유가 안 갈렸기 때문이었다.
+               이제 /resume 이 자기 훅("지금보다 높은 연봉 · 열려 있는 공고 N개")을 갖고
+               /cv 는 축하금으로 남아, 두 문이 이름이 아니라 이유로 갈린다.
+               /profile 은 로그인 필수라 비회원을 못 받는데, /resume 은 /cv 처럼 받는다. */}
             <Link
-              href="/profile#resume"
-              className={`gnav-link gnav-link-light${activePage === 'profile' ? ' on' : ''}`}
+              href="/resume"
+              className={`gnav-link gnav-link-light${activePage === 'resume' ? ' on' : ''}`}
               onClick={() => track('click_my_resume_nav', { meta: { source: 'web' }, page: activePage || null })}
             >
               {t('nav.myResume')}
             </Link>
-            */}
             <Link href="/jobs" className={`gnav-link gnav-link-light${activePage === 'jobs' ? ' on' : ''}`} onClick={() => onJobsClick?.()}>{t('nav.jobs')}</Link>
             <Link href="/cv" className={`gnav-link gnav-link-light${activePage === 'cv' ? ' on' : ''}`} onClick={() => track('click_welcome_bonus_nav', { meta: { source: 'web' }, page: activePage || null })}>
               {t('nav.welcomeBonus')}

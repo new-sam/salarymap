@@ -14,6 +14,7 @@ import { track } from '../lib/track';
 function activePageFor(pathname) {
   if (pathname === '/') return 'home';
   if (pathname === '/cv') return 'cv';
+  if (pathname === '/resume') return 'resume';
   if (pathname === '/jobs' || pathname === '/jobs/[id]') return 'jobs';
   if (pathname.startsWith('/community') || pathname.startsWith('/companies/')) return 'community';
   if (pathname === '/my-applications') return 'my-applications';
