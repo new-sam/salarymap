@@ -504,9 +504,9 @@ export default function HongikPage() {
                   {L('정부지원사업 K-Tech College를 3년 연속 운영해요', "We've run K-Tech College for 3 straight years", 'Vận hành K-Tech College 3 năm liên tiếp')}
                 </div>
                 <div className="hk-trust-s">
-                  {L('FYI는 LIKELION이 운영하는 채용 플랫폼이에요. 한국 정부 지원으로 베트남 인재를 선발·교육해 한국 기업과 연결해왔어요.',
-                    'FYI is the hiring platform run by LIKELION. With Korean-government backing, we select and train Vietnamese talent and connect them with Korean companies.',
-                    'FYI là nền tảng tuyển dụng do LIKELION vận hành. Với sự hỗ trợ của chính phủ Hàn Quốc, chúng tôi tuyển chọn, đào tạo và kết nối nhân tài Việt với doanh nghiệp Hàn.')}
+                  {L('FYI는 LIKELION이 운영하는 채용 플랫폼이에요. LIKELION은 한국·베트남·미국에 법인을 둔 기업으로, 한국 정부 지원으로 베트남 인재를 선발·교육해 한국 기업과 연결해왔어요.',
+                    'FYI is the hiring platform run by LIKELION — a company with entities in Korea, Vietnam, and the US. With Korean-government backing, we select and train Vietnamese talent and connect them with Korean companies.',
+                    'FYI là nền tảng tuyển dụng do LIKELION vận hành — công ty có pháp nhân tại Hàn Quốc, Việt Nam và Mỹ. Với sự hỗ trợ của chính phủ Hàn Quốc, chúng tôi tuyển chọn, đào tạo và kết nối nhân tài Việt với doanh nghiệp Hàn.')}
                 </div>
                 <div className="hk-logos">
                   {TRUST_LOGOS.map(l => <img key={l.src} src={l.src} alt={l.alt} style={{ height: l.h }} />)}

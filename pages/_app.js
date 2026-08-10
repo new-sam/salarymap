@@ -108,10 +108,13 @@ export default function App({ Component, pageProps }) {
     else delete document.body.dataset.adminMobile;
     if (isStandaloneLanding) document.body.dataset.standaloneLanding = '1';
     else delete document.body.dataset.standaloneLanding;
+    // /korean-cv·/hongik — 탭바가 없으므로 하단 60px 예약이 푸터 밑 흰 띠로 남는 것 방지.
+    if (isKcvLanding) document.body.dataset.kcvLanding = '1';
+    else delete document.body.dataset.kcvLanding;
     // /private/* 는 헤더·탭바를 안 그리므로 그 자리 예약도 같이 걷어낸다.
     if (isPrivate) document.body.dataset.privateMobile = '1';
     else delete document.body.dataset.privateMobile;
-  }, [isCompany, isJobDetail, isAdLanding, isCard, isAdmin, isStandaloneLanding, isPrivate]);
+  }, [isCompany, isJobDetail, isAdLanding, isCard, isAdmin, isStandaloneLanding, isKcvLanding, isPrivate]);
   const activePage = activePageFor(router.pathname);
 
   // 웹 첫 진입(세션당 1회) — landing 은 홈에서만 떠서 공고/CV/회사 링크 등 직접 유입을 놓친다.
