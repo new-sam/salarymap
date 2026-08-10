@@ -39,7 +39,8 @@ const testTo = flag('test', null)
 const revive = args.includes('--revive') // 구 앵글(coldmail-ktc/-2/-3) 무반응자 재발송 — CV 캠페인 수신자만 제외. 캠페인명은 --campaign 으로 분리할 것
 const remind = args.includes('--remind') // coldmail-ktc-cv 수신 24h+ 미클릭 리마인드 — 클릭은 24h 내 100% 들어오는 실측이라 24h 지나면 리스트가 확정된다
 const clicked1 = args.includes('--clicked') // 클릭했는데 미가입 후속 — 랜딩까지 왔다 로그인 직전에 멈춘 사람. remind 는 클릭자를 제외해 이 층은 후속을 못 받았다
-const campaign = flag('campaign', clicked1 ? 'coldmail-ktc-cv-clicked1' : remind ? 'coldmail-ktc-cv-remind1' : revive ? 'coldmail-ktc-cv-revive' : 'coldmail-ktc-cv')
+const remind2 = args.includes('--remind2') // CV 계열 수신자 전체 무반응(미가입) 재발송 — 8/10 인재풀 2,000 D-day 마지막 푸시. 클릭 여부 안 가르고, 계열 3회+ 접촉자만 피로 제외
+const campaign = flag('campaign', clicked1 ? 'coldmail-ktc-cv-clicked1' : remind2 ? 'coldmail-ktc-cv-remind2-0810' : remind ? 'coldmail-ktc-cv-remind1' : revive ? 'coldmail-ktc-cv-revive' : 'coldmail-ktc-cv')
 const parsedOnly = args.includes('--parsed-only')
 const max = parseInt(flag('max', doSend ? '200' : '0')) || 0
 
@@ -111,12 +112,16 @@ const clickedifyKo = (tpl) => swap(tpl, [
    '이 단계를 마친 분들은 기업으로부터 <b style="color:#191F28;">평균 2.1건의 오퍼</b>를 받았습니다. 회원님의 프로필은 그대로 보관돼 있고, 로그인만 기다리고 있습니다.'],
 ])
 let template = readFileSync(TEMPLATE, 'utf8')
-if (remind) template = lang === 'ko' ? remindifyKo(template) : remindifyVi(template)
+if (remind || remind2) template = lang === 'ko' ? remindifyKo(template) : remindifyVi(template)
 if (clicked1) template = lang === 'ko' ? clickedifyKo(template) : clickedifyVi(template)
 const subject = (lead) => {
   if (clicked1) return lang === 'ko'
     ? `${lead.ten}님, 프로필 등록까지 로그인 한 번만 남았습니다`
     : `${lead.ten} ơi, hồ sơ của bạn chỉ còn thiếu một lần đăng nhập`
+  // remind2(8/10): 앞선 remind1 계열과 제목이 겹치지 않게 본문 헤드라인("아직 기다린다")을 그대로 쓴다 — 새 주장 없음.
+  if (remind2) return lang === 'ko'
+    ? `${lead.ten}님, 회원님의 ${lead.position} 프로필이 아직 주인을 기다리고 있습니다`
+    : `${lead.ten} ơi, hồ sơ ${lead.position} của bạn vẫn đang chờ bạn nhận`
   // 8/5 제목 변형: "이미/먼저 받았다" 강조(유저 지시) — 8/4 remind1 제목과 A/B 비교는 캠페인명 날짜분리로.
   if (remind) return lang === 'ko'
     ? `${lead.ten}님, 프로필을 먼저 받아간 분들은 이미 평균 2.1건의 오퍼를 받았습니다`
@@ -174,7 +179,7 @@ Nhận hồ sơ của tôi:
 ${ctaUrl}
 
 — Đội ngũ FYI · salary-fyi.com
-Hủy đăng ký: ${unsubUrl}` : remind ? `Chào ${lead.ten},
+Hủy đăng ký: ${unsubUrl}` : (remind || remind2) ? `Chào ${lead.ten},
 
 Chúng tôi đã gửi bạn hồ sơ ${lead.position} được tạo sẵn từ CV bạn nộp qua K-Tech College — nhưng bạn chưa nhận hồ sơ này.
 
@@ -214,7 +219,7 @@ const emailTextKo = (lead, ctaUrl, unsubUrl) => clicked1 ? `안녕하세요 ${le
 ${ctaUrl}
 
 — FYI 팀 · salary-fyi.com
-수신 거부: ${unsubUrl}` : remind ? `안녕하세요 ${lead.ten}님,
+수신 거부: ${unsubUrl}` : (remind || remind2) ? `안녕하세요 ${lead.ten}님,
 
 K-Tech College에 제출하신 CV로 만든 ${lead.position} 프로필을 보내드렸는데, 아직 받아가지 않으셨더라고요.
 
@@ -332,6 +337,22 @@ async function mxOk(domains) {
     leads = leads.filter(l => pool.has(l.lead) && !clicked.has(l.lead) && !reminded.has(l.lead)
       && !members.has(l.email) && !unsubLeads.has(l.lead))
     console.log(`[remind] 원본 수신 24h+ ${pool.size}명 | 클릭済 ${clicked.size} · 리마인드済 ${reminded.size} 제외`)
+  } else if (remind2) {
+    // 대상 = CV 캠페인 계열 수신자 전체 중 미가입 ∧ 수신거부 아님 ∧ 계열 3회+ 접촉 제외(피로) ∧ 24h 내 발송 없음.
+    // remind1 과 달리 클릭 여부를 안 가른다 — D-day 마지막 푸시라 무반응·클릭중단 모두 포함.
+    // 발송하면 접촉 횟수가 3이 되고 24h 컷에도 걸리므로 같은 날 재실행해도 중복 발송 없음.
+    const dayAgo = Date.now() - 24 * 3600 * 1000
+    const touches = new Map()
+    const recent = new Set()
+    for (const e of evts) {
+      if (e.event !== 'coldmail_public_sent' || !/^coldmail-ktc-cv/.test(e.meta?.campaign || '') || !e.meta?.lead) continue
+      touches.set(e.meta.lead, (touches.get(e.meta.lead) || 0) + 1)
+      if (new Date(e.created_at).getTime() >= dayAgo) recent.add(e.meta.lead)
+    }
+    const tired = [...touches.values()].filter(n => n >= 3).length
+    leads = leads.filter(l => touches.has(l.lead) && touches.get(l.lead) <= 2 && !recent.has(l.lead)
+      && !members.has(l.email) && !unsubLeads.has(l.lead))
+    console.log(`[remind2] CV계열 수신 ${touches.size}명 | 3회+ 접촉 ${tired} 제외 · 미가입·미수신거부·24h내 발송 없음만`)
   } else if (clicked1) {
     // 대상 = CV 캠페인 계열 클릭(24h+ 전) ∧ 미가입 ∧ 수신거부 아님 ∧ clicked 후속 미수신.
     // 24h 컷 — 방금 클릭한 사람을 곧바로 다시 찌르지 않기 위함. 오늘 클릭분은 다음 실행이 잡는다.
@@ -399,7 +420,7 @@ async function mxOk(domains) {
   }
 
   console.log(`캠페인: ${campaign} | 랜딩: /ktc/claim (배포 필수)`)
-  console.log(remind || clicked1
+  console.log(remind || remind2 || clicked1
     ? `리스트 ${total}명 → ${clicked1 ? '클릭 후속' : '리마인드'} 대상 ${afterDedup}명 | CV직링크 없음 ${noCv} 제외${parsedOnly ? ` | 미파싱 ${noParse} 제외` : ''} → 대상 ${leads.length}명`
     : `리스트 ${total}명 | 제외: FYI가입 ${isMember} · 발송済 ${sentLeads.size} · 수신거부 ${unsubLeads.size} → ${afterDedup}명 | CV직링크 없음 ${noCv} 제외${parsedOnly ? ` | 미파싱 ${noParse} 제외` : ''} → 대상 ${leads.length}명`)
 
