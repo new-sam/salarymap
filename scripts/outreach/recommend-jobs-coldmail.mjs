@@ -12,8 +12,8 @@
 import { Resend } from 'resend'
 import { sb, env } from './lib.mjs'
 import { makeToken } from '../../lib/campaignToken.js'
-import { guessRole } from '../../lib/roleGuess.js'
-import { roleGroupKey } from '../../constants/jobs.js'
+// 매칭 로직은 lib/matchJobs.js 하나만 쓴다 — /resume 완료 화면이 같은 목록을 그린다.
+import { matchJobs, decorateJob } from '../../lib/matchJobs.js'
 
 const args = process.argv.slice(2)
 const flag = (k, d) => { const i = args.indexOf('--' + k); return i >= 0 ? (args[i + 1] && !args[i + 1].startsWith('--') ? args[i + 1] : true) : d }
@@ -27,57 +27,11 @@ const TOP = 3
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
 const esc = (s) => String(s || '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]))
 
-function cityOf(loc) {
-  const s = (loc || '').toLowerCase()
-  if (/hcm|ho chi minh|hồ chí minh|tp\.? ?hcm|thu duc|thủ đức|district|quận/.test(s)) return 'hcmc'
-  if (/ha noi|hà nội|hanoi/.test(s)) return 'hanoi'
-  if (/da nang|đà nẵng/.test(s)) return 'danang'
-  if (/hai phong|hải phòng/.test(s)) return 'haiphong'
-  if (/remote/.test(s)) return 'remote'
-  return s ? 'other' : null
-}
-
 async function loadJobs() {
   const { data } = await sb.from('jobs')
     .select('id,title,company,role,location,experience_min,experience_max,description,tech_stack,logo_url,created_at')
     .eq('is_active', true).in('source', ['ktc', 'company_self'])
-  return (data || []).filter((j) => !/likelion/i.test(j.company || '')).map((j) => ({
-    ...j,
-    grp: j.role ? roleGroupKey(j.role) : null,
-    jdText: `${j.title} ${j.description || ''} ${(j.tech_stack || []).join(' ')}`.toLowerCase(),
-    city: cityOf(j.location),
-  }))
-}
-
-// 후보 프로필 → 상위 매칭 공고(정렬). 기발송 job_id 는 exclude 로 제외.
-function matchJobs(p, jobs, exclude) {
-  const roles = new Set()
-  for (const t of [p.position, p.headline, ...(p.desired_roles || [])]) { const r = guessRole(t || '', p.skills || []); if (r) roles.add(r) }
-  for (const d of (p.desired_roles || [])) roles.add(d)
-  const grps = new Set([...roles].map((r) => roleGroupKey(r)).filter(Boolean))
-  const yoe = p.yoe_months ? p.yoe_months / 12 : null
-  const skills = (p.skills || []).map((s) => String(s).toLowerCase()).filter((s) => s.length >= 3)
-  const pcity = cityOf(p.location)
-  const rank = { roleExact: 3, roleGroup: 2, skillOnly: 1 }
-  const out = []
-  for (const j of jobs) {
-    if (exclude.has(j.id)) continue
-    let yoeOk = true
-    if (yoe != null && j.experience_min != null) {
-      const lo = Math.max(0, (j.experience_min ?? 0) - 1), hi = (j.experience_max ?? j.experience_min + 5) + 3
-      yoeOk = yoe >= lo && yoe <= hi
-    }
-    if (!yoeOk) continue
-    const skillHits = skills.filter((s) => j.jdText.includes(s)).length
-    let tier = null
-    if (j.role && roles.has(j.role)) tier = 'roleExact'
-    else if (j.grp && grps.has(j.grp)) tier = 'roleGroup'
-    else if (skillHits >= 2) tier = 'skillOnly'
-    if (!tier) continue
-    const sameCity = pcity && j.city && pcity === j.city
-    out.push({ job: j, tier, skillHits, sameCity, score: rank[tier] * 100 + skillHits * 5 + (sameCity ? 3 : 0) })
-  }
-  return out.sort((a, b) => b.score - a.score || new Date(b.job.created_at) - new Date(a.job.created_at))
+  return (data || []).filter((j) => !/likelion/i.test(j.company || '')).map(decorateJob)
 }
 
 const firstName = (n) => String(n || '').trim().split(/\s+/).slice(-1)[0] || 'bạn'

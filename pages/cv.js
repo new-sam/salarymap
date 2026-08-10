@@ -4,10 +4,9 @@ import { useRouter } from 'next/router'
 import { supabase } from '../lib/supabaseClient'
 import { useT } from '../lib/i18n'
 import { track } from '../lib/track'
-import { formatSalaryCard } from '../utils/salary'
 import { toast } from 'sonner'
-import { confirmAppliedInline } from '../lib/applyConversion'
 import { idbPutCv, idbGetCv, idbClearCv } from '../lib/pendingCv'
+import QuickApplyJobList from '../components/jobs/QuickApplyJobList'
 
 /* Funnel-event meta — UTM (sessionStorage) + language preference, attached to
    every /cv event so we can slice by ad campaign and locale in analytics. */
@@ -133,10 +132,6 @@ export default function CvLanding() {
   const [replacing, setReplacing] = useState(false)
   const replacePick = useRef(false)
   const [showJobModal, setShowJobModal] = useState(false)
-  const [applied, setApplied] = useState({})
-  const [applyingId, setApplyingId] = useState(null)
-  // 오터치 방지: 첫 탭은 확인 상태(arm), 같은 버튼 한 번 더 탭해야 지원. 다른 카드 탭하면 그쪽으로 이동.
-  const [armedId, setArmedId] = useState(null)
   const L = (ko, en, vi) => (lang === 'vi' ? vi : lang === 'en' ? en : ko)
   const fileRef = useRef(null)
   const formAnchorRef = useRef(null)
@@ -390,35 +385,6 @@ export default function CvLanding() {
   }, [jobs])
 
   const moreJobsHref = '/jobs'
-
-  const apply = async (job) => {
-    if (applied[job.id] || applyingId) return
-    setApplyingId(job.id)
-    try {
-      const { data: { session } } = await supabase.auth.getSession()
-      const token = session?.access_token
-      let ru = resumeUrl
-      if (!ru && session?.user?.id) {
-        const { data } = await supabase.from('user_profiles').select('resume_url').eq('id', session.user.id).maybeSingle()
-        ru = data?.resume_url || null
-      }
-      const res = await fetch('/api/job-applications', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ jobId: job.id, jobTitle: job.title, jobCompany: job.company, resumeUrl: ru, applicationSource: 'cv_success' }),
-      })
-      // 409 = 이미 지원한 공고(서버 dedup) — 실패가 아니라 지원됨 상태로 맞춘다.
-      if (res.status === 409) { setApplied((a) => ({ ...a, [job.id]: true })); return }
-      if (!res.ok) throw new Error('apply_failed')
-      setApplied((a) => ({ ...a, [job.id]: true }))
-      track('submit_application', { meta: { ...cvMeta(), job_id: job.id, source: 'cv_success' }, page: '/cv' })
-      confirmAppliedInline({ title: job.title, company: job.company, source: 'cv_success' })
-    } catch {
-      setErrMsg(L('지원에 실패했어요. 잠시 후 다시 시도해 주세요.', 'Application failed. Please try again.', 'Ứng tuyển thất bại. Vui lòng thử lại.'))
-    } finally {
-      setApplyingId(null)
-    }
-  }
 
   const onSubmit = async () => {
     if (!file) {
@@ -864,50 +830,13 @@ export default function CvLanding() {
               <div className="cvm-title">{L('이력서 등록 완료! 바로 지원해보세요', 'Resume saved — apply in one tap', 'Đã lưu CV — ứng tuyển ngay')}</div>
               <div className="cvm-sub">{L('방금 올린 이력서로 한 번에 지원됩니다', 'We apply with the resume you just uploaded', 'Ứng tuyển bằng CV bạn vừa tải lên')}</div>
             </div>
-            <div className="cvm-jobs">
-              {modalJobs.map((j) => {
-                const isApplied = !!applied[j.id]
-                const isApplying = applyingId === j.id
-                const thumb = j.logo_url || j.image_url || j.images?.[0] || null
-                const sal = formatSalaryCard(j)
-                const salTxt = sal?.min && sal?.max ? `${Math.round(sal.min / 1e6)}–${Math.round(sal.max / 1e6)}M VND` : null
-                const expTxt = (!j.experience_min && !j.experience_max)
-                  ? L('경력무관', 'Any exp', 'KN bất kỳ')
-                  : (!j.experience_max || j.experience_max >= 30)
-                    ? L(`${j.experience_min || 0}년+`, `${j.experience_min || 0}y+`, `${j.experience_min || 0} năm+`)
-                    : L(`${j.experience_min}–${j.experience_max}년`, `${j.experience_min}–${j.experience_max}y`, `${j.experience_min}–${j.experience_max} năm`)
-                const typeMap = { remote: L('재택', 'Remote', 'Remote'), hybrid: L('하이브리드', 'Hybrid', 'Hybrid'), onsite: L('출근', 'On-site', 'Tại VP') }
-                const typeTxt = j.type ? (typeMap[j.type] || j.type) : null
-                const meta = [typeTxt, expTxt, salTxt].filter(Boolean).join(' · ')
-                return (
-                  <div key={j.id} className="cvm-job">
-                    <div className="cvm-job-logo" style={thumb ? { backgroundImage: `url(${thumb})` } : undefined}>
-                      {!thumb && (j.company_initials || (j.company || '?').charAt(0).toUpperCase())}
-                    </div>
-                    <div className="cvm-job-main">
-                      <div className="cvm-job-title">{j.title}</div>
-                      <div className="cvm-job-company">{j.company}</div>
-                      <div className="cvm-job-meta">{meta}</div>
-                    </div>
-                    <button
-                      className={`cvm-apply${isApplied ? ' done' : ''}${isApplying ? ' applying' : ''}${armedId === j.id ? ' arm' : ''}`}
-                      disabled={isApplied || isApplying}
-                      onClick={() => { if (armedId === j.id) { setArmedId(null); apply(j) } else setArmedId(j.id) }}
-                    >
-                      {isApplied ? L('지원 완료 ✓', 'Applied ✓', 'Đã ứng tuyển ✓')
-                        : isApplying ? L('지원 중', 'Applying', 'Đang gửi')
-                        : armedId === j.id ? L('한 번 더 누르면 지원돼요', 'Tap again to apply', 'Nhấn lần nữa để nộp')
-                        : L('바로 지원', 'Apply', 'Ứng tuyển')}
-                    </button>
-                  </div>
-                )
-              })}
-            </div>
-            {Object.keys(applied).length > 0 ? (
-              <a href={moreJobsHref} className="cvm-more">{L('공고 더 보러가기', 'Browse more jobs', 'Xem thêm việc làm')} →</a>
-            ) : (
-              <a href={moreJobsHref} className="cvm-all">{L('전체 공고 보기', 'Browse all jobs', 'Xem tất cả việc làm')} →</a>
-            )}
+            <QuickApplyJobList
+              jobs={modalJobs}
+              page="/cv"
+              source="cv_success"
+              resumeUrl={resumeUrl}
+              moreHref={moreJobsHref}
+            />
           </div>
         </div>
       )}
@@ -924,21 +853,7 @@ export default function CvLanding() {
         .cvm-head { margin-bottom: 18px; padding-right: 20px; }
         .cvm-title { font-size: 18px; font-weight: 800; color: #1a1612; letter-spacing: -0.01em; }
         .cvm-sub { font-size: 13px; color: #8a8073; margin-top: 5px; }
-        .cvm-jobs { display: flex; flex-direction: column; gap: 10px; }
-        .cvm-job { display: flex; align-items: center; gap: 12px; border: 1px solid #ece5db; border-radius: 12px; padding: 12px 13px; }
-        .cvm-job-logo { flex-shrink: 0; width: 42px; height: 42px; border-radius: 10px; background-color: #f3eee6; background-size: cover; background-position: center; background-repeat: no-repeat; display: flex; align-items: center; justify-content: center; font-size: 16px; font-weight: 800; color: #b09a7f; }
-        .cvm-job-main { flex: 1; min-width: 0; }
-        .cvm-job-title { font-size: 14px; font-weight: 700; color: #1a1612; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .cvm-job-company { font-size: 12.5px; color: #8a8073; margin-top: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .cvm-job-meta { font-size: 11.5px; color: #a89f92; margin-top: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .cvm-apply { flex-shrink: 0; min-width: 84px; text-align: center; font-size: 13px; font-weight: 700; color: #fff; background: #ff6000; border: none; border-radius: 9px; padding: 9px 14px; cursor: pointer; font-family: inherit; transition: opacity .15s; }
-        .cvm-apply:disabled { cursor: default; }
-        .cvm-apply.applying { opacity: 0.55; }
-        /* 오터치 방지 2탭: 첫 탭에서 확인 상태로 전환 */
-        .cvm-apply.arm { background: #fff1e8; color: #ff6000; box-shadow: inset 0 0 0 1.5px #ff6000; }
-        .cvm-apply.done { background: #E7F6EC; color: #16a34a; }
-        .cvm-all { display: block; text-align: center; margin-top: 16px; font-size: 13px; font-weight: 600; color: #8a8073; text-decoration: none; }
-        .cvm-more { display: block; text-align: center; margin-top: 16px; padding: 13px 0; font-size: 14px; font-weight: 700; color: #ff6000; background: #fff1e8; border: 1px solid #ffd7c2; border-radius: 11px; text-decoration: none; }
+        /* 공고 행·지원 버튼·하단 링크 스타일은 QuickApplyJobList 안으로 옮겼다. */
 
         /* ───────────────────────────────────────
            Design tokens — warm cream system
