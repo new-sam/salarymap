@@ -223,7 +223,7 @@ export default function PrivateShowcasing({ co, campaign, off, c }) {
       </Head>
 
       {step === 'done' ? (
-        <Result data={result} criteria={criteria} co={co} onBack={restart} ev={ev} />
+        <Result data={result} criteria={criteria} onBack={restart} ev={ev} />
       ) : (
         /* 첫 화면은 세로 가운데. 로딩은 위에 고정한다 — 여기는 기다리는 동안 조건 상자가
            뒤늦게 붙어서 내용이 자라는데, 가운데 정렬이면 그때마다 제목과 로고가 위로
@@ -782,7 +782,7 @@ const Bullets = ({ items, color, riseFrom }) => (
 
 /* 결과 — 5명. 못 채우면 못 채운 채로 보여준다. 숫자를 맞추려고 기준 미달을 끼워 넣으면
    이 화면의 '5명'이 무슨 뜻인지 사라진다. */
-function Result({ data, criteria, co, onBack, ev }) {
+function Result({ data, criteria, onBack, ev }) {
   const picks = data?.picks || []
   // 문의 모달을 연 카드 번호(0-base). null 이면 닫힌 상태.
   const [asking, setAsking] = useState(null)
@@ -876,7 +876,6 @@ function Result({ data, criteria, co, onBack, ev }) {
           sid={data.sid}
           picks={picks}
           first={asking === 'all' ? null : asking}
-          co={co}
           ev={ev}
           onClose={() => setAsking(null)}
         />
@@ -1076,13 +1075,15 @@ function SlotPicker({ pick, setPick, today, onDone }) {
   )
 }
 
-function InquiryModal({ sid, picks, first, co, ev, onClose }) {
+function InquiryModal({ sid, picks, first, ev, onClose }) {
   /* first 가 없으면(하단 고정 CTA) '이력서 원문' 문의다 — 특정 후보를 고르게 하지 않고,
      안 고르면 전원으로 접수한다. 원문은 개인정보라 미팅에서 보여준다는 것이 이 흐름의 약속. */
   const all = first == null
   const [picked, setPicked] = useState(all ? [] : [first])
   const [name, setName] = useState('')
-  const [company, setCompany] = useState(co || '')
+  /* 회사명은 프리필하지 않는다 — 토큰의 기업명은 추적용이고, 단체 발송 링크는 기업명 자리에
+     캠페인 라벨이 들어가서 그대로 폼에 새면 안 된다. */
+  const [company, setCompany] = useState('')
   /* 이메일과 전화번호를 한 칸으로 합쳤다. 칸이 하나 늘 때마다 여기서 사람이 빠져나가는데,
      정작 우리가 필요한 건 '연락할 방법 하나'다. 둘 다 받아 봐야 한쪽만 쓴다.
      보낼 때 @ 가 있으면 이메일, 아니면 연락처로 갈라 준다 — 서버는 그대로 두고. */

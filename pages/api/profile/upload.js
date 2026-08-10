@@ -64,7 +64,7 @@ export default async function handler(req, res) {
     const isApp = req.headers['x-client-platform'] === 'app'
     profileRow.resume_platform = isApp ? 'app' : 'web'
     const rawSource = (req.headers['x-resume-source'] || '').toString().trim().toLowerCase()
-    const validSources = new Set(['cv', 'profile', 'jobs', 'korean-cv'])
+    const validSources = new Set(['cv', 'profile', 'jobs', 'korean-cv', 'hongik'])
     if (isApp) profileRow.resume_source = 'app'
     else if (validSources.has(rawSource)) profileRow.resume_source = rawSource
   }
