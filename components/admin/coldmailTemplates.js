@@ -631,6 +631,39 @@ const PRESTO_INTRO = {
   },
 }
 
+// ── D+3 지원미달 3공고 추천 (d3-recommend-coldmail.mjs) — JD 요약 두 문단은 프레임 공통.
+const d3Tail = (line1, line2) => (benefit) => ({
+  vi: `${line1.vi}<br><br>${line2.vi}<br><br>${benefit.vi}`,
+  ko: `${line1.ko}<br><br>${line2.ko}<br><br>${benefit.ko}`,
+  en: `${line1.en}<br><br>${line2.en}<br><br>${benefit.en}`,
+})
+const PRESTO_MOTION_TAIL = d3Tail({
+  vi: 'Phát triển và triển khai ứng dụng <b>Laser & Motion Control</b> — lập trình hệ thống điều khiển chuyển động (Servo, EtherCAT, Multi-axis) cho thiết bị tự động hóa.',
+  ko: '<b>Laser & Motion Control</b> 애플리케이션 개발 — 자동화 장비의 모션 제어 시스템(Servo·EtherCAT·다축 보간)을 프로그래밍합니다.',
+  en: 'Develop and deploy <b>Laser & Motion Control</b> applications — programming motion-control systems (Servo, EtherCAT, multi-axis) for automation equipment.',
+}, {
+  vi: '<b>Không yêu cầu kinh nghiệm</b> — công ty đào tạo chuyên sâu về Motion Control từ đầu; chỉ cần nền tảng kỹ thuật (tự động hóa, điện – điện tử, cơ điện tử, CNTT) và khả năng đọc tài liệu tiếng Anh. Làm việc <b>onsite tại Hàn Quốc</b>, lương thỏa thuận theo năng lực, hỗ trợ 300.000 điểm PAYCO/tháng.',
+  ko: '<b>경력 무관</b> — 모션컨트롤은 입사 후 처음부터 교육하며, 공학 기초(자동화·전기전자·메카트로닉스·CS)와 영어 문서 독해면 충분합니다. <b>한국 온사이트</b>, 급여 협의, 월 PAYCO 30만 포인트 지원.',
+  en: '<b>No experience required</b> — the company trains you in Motion Control from scratch; an engineering foundation (automation, electrical/electronics, mechatronics, CS) and reading English documentation are enough. <b>Onsite in Korea</b>, negotiable salary, 300,000 PAYCO points/month.',
+})
+const PRESTO_SALES_TAIL = d3Tail({
+  vi: 'Phụ trách kinh doanh bộ điều khiển chuyển động <b>ACS</b> và các sản phẩm tự động hóa (Servo, I/O) cho khách hàng trong ngành <b>bán dẫn, màn hình (LCD/OLED), pin và robot</b>.',
+  ko: '<b>ACS</b> 모션컨트롤러와 자동화 제품(Servo·I/O)을 <b>반도체·디스플레이(LCD/OLED)·배터리·로봇</b> 고객사에 영업합니다.',
+  en: 'Sell <b>ACS</b> motion controllers and automation products (Servo, I/O) to customers in <b>semiconductors, displays (LCD/OLED), batteries and robotics</b>.',
+}, {
+  vi: 'Ưu tiên ứng viên có nền tảng kỹ thuật điện / điện tử / điều khiển / cơ khí hoặc kinh nghiệm bán hàng B2B công nghiệp. Làm việc tại <b>HCM · Đà Nẵng · Hà Nội</b>, lương thỏa thuận theo năng lực, có cơ hội công tác nước ngoài (công ty hỗ trợ chi phí visa đi Hàn Quốc).',
+  ko: '전기·전자·제어·기계 배경 또는 산업재 B2B 영업 경험 우대. <b>호치민 · 다낭 · 하노이</b> 근무, 급여 협의, 해외 출장 기회(한국행 비자 비용 지원).',
+  en: 'Preference for an electrical / electronics / control / mechanical background or industrial B2B sales experience. Based in <b>HCM · Da Nang · Hanoi</b>, negotiable salary, overseas business trips (Korea visa costs covered).',
+})
+const LIONROCKET_TAIL = d3Tail({
+  vi: 'Sáng tạo nội dung quảng cáo — <b>short-form video, hình ảnh, UGC</b> — cho các kênh <b>Meta · TikTok · Instagram</b>, tìm insight và thử nghiệm nhiều format (Before/After, UGC, reaction).',
+  ko: '<b>Meta · TikTok · Instagram</b> 광고 콘텐츠(<b>숏폼 영상·이미지·UGC</b>)를 제작하고, 인사이트 발굴과 포맷 실험(Before/After·UGC·리액션)을 진행합니다.',
+  en: 'Create ad content — <b>short-form video, images, UGC</b> — for <b>Meta · TikTok · Instagram</b>, finding insights and testing formats (Before/After, UGC, reaction).',
+}, {
+  vi: 'Theo dõi CPA/ROAS của chính nội dung mình làm và cải thiện dựa trên dữ liệu. Làm việc tại <b>HCM · Đà Nẵng · Hà Nội</b>, lương <b>20–25 triệu</b>.',
+  ko: '본인이 만든 콘텐츠의 CPA/ROAS를 직접 보며 데이터 기반으로 개선합니다. <b>호치민 · 다낭 · 하노이</b> 근무, 급여 <b>20–25 triệu</b>.',
+  en: 'Track the CPA/ROAS of your own content and iterate on real data. Based in <b>HCM · Da Nang · Hanoi</b>, salary <b>20–25M VND</b>.',
+})
 export const COLDMAIL_TEMPLATES = [
   {
     match: /^photo/,
@@ -973,6 +1006,106 @@ export const COLDMAIL_TEMPLATES = [
         en: '<b>Electerior</b> — a Korean interior &amp; spatial-solutions company building AI-powered marketing and content automation — is hiring an AI-based Social Media Content Specialist through FYI. The FYI team reviewed every registered CV and <b>selected you for the nominee list</b> sent to the recruiter.',
       },
       initial: 'E', company: 'Electerior', title: 'AI-based Social Media Content Specialist', meta: 'Hà Nội · HCM · 20–25 triệu', tail: BENEFIT_PRIVATE,
+    }),
+  },
+  {
+    match: /^presto-motion-recommend1-public/,
+    subject: {
+      vi: '[FYI] PRESTO SOLUTION đã xem hồ sơ của bạn — cơ hội làm việc tại Hàn Quốc',
+      ko: '[FYI] PRESTO SOLUTION이 회원님의 프로필을 확인했습니다 — 한국 근무 기회',
+      en: '[FYI] PRESTO SOLUTION viewed your profile — a chance to work in Korea',
+    },
+    desc: 'PRESTO Motion Control SW Engineer(한국 온사이트·경력무관) 추천 · 공개 프레임 (8/10): D+3 지원미달 대응. 임베디드/제어/자동화 A티어 + 공학전공 주니어 gpt-4o-mini 3점↑.',
+    source: 'scripts/outreach/d3-recommend-coldmail.mjs',
+    html: (lang) => recommendShell(lang, {
+      intro: {
+        vi: 'Nhà tuyển dụng của <b>PRESTO SOLUTION</b> — công ty Hàn Quốc chuyên về giải pháp Motion Control và tự động hóa cho ngành bán dẫn, màn hình và robot — đã xem hồ sơ của bạn trên FYI và <b>gửi cho bạn vị trí này</b> vì nền tảng kỹ thuật của bạn phù hợp với yêu cầu.',
+        ko: '반도체·디스플레이·로봇용 모션컨트롤/자동화 솔루션 한국 기업 <b>PRESTO SOLUTION</b>의 채용 담당자가 FYI에서 회원님의 프로필을 확인하고, 기술 배경이 요구사항과 맞아 <b>이 포지션을 직접 보냈습니다</b>.',
+        en: 'A recruiter at <b>PRESTO SOLUTION</b> — a Korean company specializing in Motion Control and automation solutions for semiconductors, displays and robotics — viewed your profile on FYI and <b>sent you this position</b> because your technical background fits the requirements.',
+      },
+      initial: 'P', company: 'PRESTO SOLUTION', title: 'Motion Control Software Engineer', meta: 'Onsite tại Hàn Quốc · Không yêu cầu kinh nghiệm', tail: PRESTO_MOTION_TAIL(BENEFIT_PUBLIC),
+    }),
+  },
+  {
+    match: /^presto-motion-recommend1-private/,
+    subject: {
+      vi: '[FYI] Bạn được chọn vào danh sách đề cử — Motion Control Engineer tại Hàn Quốc',
+      ko: '[FYI] Motion Control Engineer(한국 근무) 추천 명단에 선정되셨습니다',
+      en: '[FYI] You\'ve been selected for the nominee list — Motion Control Engineer in Korea',
+    },
+    desc: 'PRESTO Motion Control 추천 · 비공개 프레임 (8/10): "명단 선정 + 이번 주 담당자 전달 + 우선검토" 훅. ⚠️발송 후 실제 명단 공유 의무.',
+    source: 'scripts/outreach/d3-recommend-coldmail.mjs',
+    html: (lang) => recommendShell(lang, {
+      intro: {
+        vi: '<b>PRESTO SOLUTION</b> — công ty Hàn Quốc chuyên về giải pháp Motion Control và tự động hóa cho ngành bán dẫn, màn hình và robot — đang tuyển Motion Control Software Engineer làm việc tại Hàn Quốc qua FYI. Đội ngũ FYI đã xem xét toàn bộ hồ sơ đã đăng ký và <b>chọn bạn vào danh sách đề cử</b> gửi cho nhà tuyển dụng.',
+        ko: '반도체·디스플레이·로봇용 모션컨트롤/자동화 솔루션 한국 기업 <b>PRESTO SOLUTION</b>이 FYI를 통해 한국 근무 Motion Control Software Engineer를 채용 중입니다. FYI 팀이 등록된 이력서 전체를 검토해 회원님을 <b>기업에 전달할 추천 명단에 선정</b>했습니다.',
+        en: '<b>PRESTO SOLUTION</b> — a Korean company specializing in Motion Control and automation solutions for semiconductors, displays and robotics — is hiring a Korea-based Motion Control Software Engineer through FYI. The FYI team reviewed every registered CV and <b>selected you for the nominee list</b> sent to the recruiter.',
+      },
+      initial: 'P', company: 'PRESTO SOLUTION', title: 'Motion Control Software Engineer', meta: 'Onsite tại Hàn Quốc · Không yêu cầu kinh nghiệm', tail: PRESTO_MOTION_TAIL(BENEFIT_PRIVATE),
+    }),
+  },
+  {
+    match: /^presto-sales-recommend1-public/,
+    subject: invitedSubject('PRESTO SOLUTION'),
+    desc: 'PRESTO Sales Assistant Manager(기술영업) 추천 · 공개 프레임 (8/10): D+3 지원미달 대응. 영업 헤드라인 풀 전원.',
+    source: 'scripts/outreach/d3-recommend-coldmail.mjs',
+    html: (lang) => recommendShell(lang, {
+      intro: {
+        vi: 'Nhà tuyển dụng của <b>PRESTO SOLUTION</b> — công ty Hàn Quốc chuyên về giải pháp Motion Control và tự động hóa cho ngành bán dẫn, màn hình và robot — đã xem hồ sơ của bạn trên FYI và <b>gửi cho bạn vị trí này</b> vì kinh nghiệm kinh doanh của bạn phù hợp với yêu cầu.',
+        ko: '반도체·디스플레이·로봇용 모션컨트롤/자동화 솔루션 한국 기업 <b>PRESTO SOLUTION</b>의 채용 담당자가 FYI에서 회원님의 프로필을 확인하고, 영업 경력이 요구사항과 맞아 <b>이 포지션을 직접 보냈습니다</b>.',
+        en: 'A recruiter at <b>PRESTO SOLUTION</b> — a Korean company specializing in Motion Control and automation solutions for semiconductors, displays and robotics — viewed your profile on FYI and <b>sent you this position</b> because your sales experience fits the requirements.',
+      },
+      initial: 'P', company: 'PRESTO SOLUTION', title: 'Sales Assistant Manager', meta: 'HCM · Đà Nẵng · Hà Nội · Lương thỏa thuận', tail: PRESTO_SALES_TAIL(BENEFIT_PUBLIC),
+    }),
+  },
+  {
+    match: /^presto-sales-recommend1-private/,
+    subject: {
+      vi: '[FYI] Bạn được chọn vào danh sách đề cử cho vị trí Sales Assistant Manager tại PRESTO SOLUTION',
+      ko: '[FYI] PRESTO SOLUTION Sales Assistant Manager 추천 명단에 선정되셨습니다',
+      en: '[FYI] You\'ve been selected for the PRESTO SOLUTION Sales Assistant Manager nominee list',
+    },
+    desc: 'PRESTO Sales 추천 · 비공개 프레임 (8/10): "명단 선정 + 이번 주 담당자 전달 + 우선검토" 훅. ⚠️발송 후 실제 명단 공유 의무.',
+    source: 'scripts/outreach/d3-recommend-coldmail.mjs',
+    html: (lang) => recommendShell(lang, {
+      intro: {
+        vi: '<b>PRESTO SOLUTION</b> — công ty Hàn Quốc chuyên về giải pháp Motion Control và tự động hóa cho ngành bán dẫn, màn hình và robot — đang tuyển Sales Assistant Manager qua FYI. Đội ngũ FYI đã xem xét toàn bộ hồ sơ đã đăng ký và <b>chọn bạn vào danh sách đề cử</b> gửi cho nhà tuyển dụng.',
+        ko: '반도체·디스플레이·로봇용 모션컨트롤/자동화 솔루션 한국 기업 <b>PRESTO SOLUTION</b>이 FYI를 통해 Sales Assistant Manager를 채용 중입니다. FYI 팀이 등록된 이력서 전체를 검토해 회원님을 <b>기업에 전달할 추천 명단에 선정</b>했습니다.',
+        en: '<b>PRESTO SOLUTION</b> — a Korean company specializing in Motion Control and automation solutions for semiconductors, displays and robotics — is hiring a Sales Assistant Manager through FYI. The FYI team reviewed every registered CV and <b>selected you for the nominee list</b> sent to the recruiter.',
+      },
+      initial: 'P', company: 'PRESTO SOLUTION', title: 'Sales Assistant Manager', meta: 'HCM · Đà Nẵng · Hà Nội · Lương thỏa thuận', tail: PRESTO_SALES_TAIL(BENEFIT_PRIVATE),
+    }),
+  },
+  {
+    match: /^lionrocket-recommend1-public/,
+    subject: invitedSubject('LION ROCKET'),
+    desc: 'LION ROCKET(Tynt) Content Marketer 추천 · 공개 프레임 (8/10): D+3 지원미달 대응. 숏폼 A티어 + gpt-4o-mini 4점 + (3점·1.5y↑).',
+    source: 'scripts/outreach/d3-recommend-coldmail.mjs',
+    html: (lang) => recommendShell(lang, {
+      intro: {
+        vi: 'Nhà tuyển dụng của <b>LION ROCKET</b> — công ty Hàn Quốc vận hành <b>Tynt</b>, dịch vụ AI trong lĩnh vực Beauty & Wellness với hơn 50.000 người dùng — đã xem hồ sơ của bạn trên FYI và <b>gửi cho bạn vị trí này</b> vì kinh nghiệm content của bạn phù hợp với yêu cầu.',
+        ko: '5만+ 유저 AI 뷰티·웰니스 서비스 <b>Tynt</b>를 운영하는 한국 기업 <b>LION ROCKET</b>의 채용 담당자가 FYI에서 회원님의 프로필을 확인하고, 콘텐츠 경력이 요구사항과 맞아 <b>이 포지션을 직접 보냈습니다</b>.',
+        en: 'A recruiter at <b>LION ROCKET</b> — the Korean company behind <b>Tynt</b>, an AI Beauty & Wellness service with 50,000+ users — viewed your profile on FYI and <b>sent you this position</b> because your content experience matches the requirements.',
+      },
+      initial: 'L', company: 'LION ROCKET', title: 'Content Marketer', meta: 'HCM · Đà Nẵng · Hà Nội · 20–25 triệu', tail: LIONROCKET_TAIL(BENEFIT_PUBLIC),
+    }),
+  },
+  {
+    match: /^lionrocket-recommend1-private/,
+    subject: {
+      vi: '[FYI] Bạn được chọn vào danh sách đề cử cho vị trí Content Marketer tại LION ROCKET',
+      ko: '[FYI] LION ROCKET Content Marketer 추천 명단에 선정되셨습니다',
+      en: '[FYI] You\'ve been selected for the LION ROCKET Content Marketer nominee list',
+    },
+    desc: 'LION ROCKET(Tynt) Content Marketer 추천 · 비공개 프레임 (8/10): "명단 선정 + 이번 주 담당자 전달 + 우선검토" 훅. ⚠️발송 후 실제 명단 공유 의무.',
+    source: 'scripts/outreach/d3-recommend-coldmail.mjs',
+    html: (lang) => recommendShell(lang, {
+      intro: {
+        vi: '<b>LION ROCKET</b> — công ty Hàn Quốc vận hành <b>Tynt</b>, dịch vụ AI trong lĩnh vực Beauty & Wellness với hơn 50.000 người dùng — đang tuyển Content Marketer qua FYI. Đội ngũ FYI đã xem xét toàn bộ hồ sơ đã đăng ký và <b>chọn bạn vào danh sách đề cử</b> gửi cho nhà tuyển dụng.',
+        ko: '5만+ 유저 AI 뷰티·웰니스 서비스 <b>Tynt</b>를 운영하는 한국 기업 <b>LION ROCKET</b>이 FYI를 통해 Content Marketer를 채용 중입니다. FYI 팀이 등록된 이력서 전체를 검토해 회원님을 <b>기업에 전달할 추천 명단에 선정</b>했습니다.',
+        en: '<b>LION ROCKET</b> — the Korean company behind <b>Tynt</b>, an AI Beauty & Wellness service with 50,000+ users — is hiring a Content Marketer through FYI. The FYI team reviewed every registered CV and <b>selected you for the nominee list</b> sent to the recruiter.',
+      },
+      initial: 'L', company: 'LION ROCKET', title: 'Content Marketer', meta: 'HCM · Đà Nẵng · Hà Nội · 20–25 triệu', tail: LIONROCKET_TAIL(BENEFIT_PRIVATE),
     }),
   },
   {
