@@ -235,8 +235,13 @@ export default function GlobalNav({ activePage, onLogin, onJobsClick, mobileSear
           </Link>
           <Link href="/ktc" className={`gnav-link gnav-zone gnav-zone-m${activePage === 'ktc' ? ' on' : ''}`} onClick={() => track('click_ktc_nav', { meta: { source: 'mobile' }, page: activePage || null })}>K-company</Link>
           <div className="gnav-l-menu">
-            {/* 이력서 등록 — 내 프로필의 '내 이력서' 카드로 직행(#resume).
-                이 메뉴 줄(.gnav-l-menu)은 768px 이하에서 숨으므로 웹 전용이다. */}
+            {/* 이력서 등록(/profile#resume) 은 잠시 내려 둔다.
+
+               바로 옆 /cv 도 이력서를 등록하는 자리라, 웹 내비에 이력서로 가는 문이 둘이
+               나란히 서 있었다. /cv 쪽은 축하금을 걸고 있어 들어오는 이유가 분명한데
+               이쪽은 이름만 같아서, 두 문 중 어디로 가야 하는지가 이름으로는 안 갈렸다.
+               모바일 하단 탭의 '이력서 등록'(nav.tabs.cv)은 그대로다 — 거기는 /cv 하나뿐이라
+               고를 일이 없다.
             <Link
               href="/profile#resume"
               className={`gnav-link gnav-link-light${activePage === 'profile' ? ' on' : ''}`}
@@ -244,6 +249,7 @@ export default function GlobalNav({ activePage, onLogin, onJobsClick, mobileSear
             >
               {t('nav.myResume')}
             </Link>
+            */}
             <Link href="/jobs" className={`gnav-link gnav-link-light${activePage === 'jobs' ? ' on' : ''}`} onClick={() => onJobsClick?.()}>{t('nav.jobs')}</Link>
             <Link href="/cv" className={`gnav-link gnav-link-light${activePage === 'cv' ? ' on' : ''}`} onClick={() => track('click_welcome_bonus_nav', { meta: { source: 'web' }, page: activePage || null })}>
               {t('nav.welcomeBonus')}
