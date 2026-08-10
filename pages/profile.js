@@ -58,7 +58,11 @@ export default function ProfilePage() {
   const [isAdmin, setIsAdmin] = useState(false)
   // 이력서는 이미 있는데(예: /cv·앱에서 등록) 프로필이 빈 유저 — AI 자동 채움 제안
   const [showAiFill, setShowAiFill] = useState(false)
-  const [showAlert, setShowAlert] = useState(null)
+  const [showAlert, setShowAlert] = useState(null) // { text, desc? }
+  // 이력서 업로드는 파싱(aiParsing) 전에 파일 전송 구간이 따로 있다 — 그 사이 화면이
+  // 그대로면 "눌렀는데 아무 일도 안 일어난다"가 된다. 드롭존을 진행 상태로 바꾼다.
+  const [uploadingResume, setUploadingResume] = useState(false)
+  const [dragOver, setDragOver] = useState(false)
   const [submissions, setSubmissions] = useState([])
   const [percentile, setPercentile] = useState(null)
   const [aiParsing, setAiParsing] = useState(false)
@@ -300,15 +304,29 @@ export default function ProfilePage() {
 
   const handleUpload = async (type, file) => {
     if (!file) return
+    // 서버(formidable)가 10MB에서 자른다 — 다 올린 뒤에 실패하는 대신 고르는 즉시 돌려준다.
+    if (file.size > 10 * 1024 * 1024) {
+      setShowAlert({ text: t('cv.err.fileTooBig') })
+      return
+    }
+    // 프로필 이력서는 AI 파서(pdf-parse)를 태우므로 PDF만 받는다. accept 로 걸러지지만
+    // 드래그&드롭과 모바일 파일앱은 accept 를 무시하고 넣을 수 있다.
+    if (type === 'resume' && !/\.pdf$/i.test(file.name)) {
+      setShowAlert({ text: t('profile.resume.pdfOnly') })
+      return
+    }
     const fd = new FormData()
     fd.append('file', file)
     fd.append('type', type)
-    const res = await fetch('/api/profile/upload', {
-      method: 'POST',
-      headers: { Authorization: `Bearer ${token}`, 'X-Resume-Source': 'profile' },
-      body: fd,
-    })
-    if (res.ok) {
+    if (type === 'resume') setUploadingResume(true)
+    try {
+      const res = await fetch('/api/profile/upload', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}`, 'X-Resume-Source': 'profile' },
+        body: fd,
+      })
+      // 실패해도 화면이 그대로여서 아무 일도 안 일어난 것처럼 보이던 자리.
+      if (!res.ok) return setShowAlert({ text: t('profile.upload.failed') })
       const { url } = await res.json()
       setProfile(prev => {
         const next = { ...prev, [type === 'photo' ? 'photo_url' : 'resume_url']: url }
@@ -318,8 +336,13 @@ export default function ProfilePage() {
       if (type === 'resume') {
         // track() 경유 — client_id 가 붙어야 퍼널 스티칭이 되고, 내부/HR 계정도 걸러진다.
         track('resume_upload', { page: '/profile' })
+        // await 하지 않는다 — runAiParse 가 동기적으로 aiParsing 을 켜서 화면을 이어받는다.
         runAiParse()
       }
+    } catch {
+      setShowAlert({ text: t('profile.upload.failed') })
+    } finally {
+      setUploadingResume(false)
     }
   }
 
@@ -350,7 +373,7 @@ export default function ProfilePage() {
       if (!response.ok) {
         const err = await response.json()
         track('profile_ai_parse_error', { meta: { error_message: err.error || null }, page: '/profile' })
-        setShowAlert(err.error || 'AI parsing failed')
+        setShowAlert({ text: err.error || 'AI parsing failed', desc: t('profile.completion.incomplete') })
         setAiParsing(false)
         setAiProgress({ percent: 0, message: '' })
         return
@@ -397,7 +420,7 @@ export default function ProfilePage() {
     } catch (err) {
       clearInterval(timer)
       track('profile_ai_parse_error', { meta: { error_message: err.message || null }, page: '/profile' })
-      setShowAlert('AI parsing failed: ' + err.message)
+      setShowAlert({ text: 'AI parsing failed: ' + err.message, desc: t('profile.completion.incomplete') })
     }
     setTimeout(() => {
       setAiParsing(false)
@@ -452,6 +475,14 @@ export default function ProfilePage() {
           background-image: linear-gradient(rgba(255,255,255,0.045) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.045) 1px, transparent 1px);
           background-size: 26px 26px; mask-image: radial-gradient(closest-side at 50% 40%, #000, transparent); -webkit-mask-image: radial-gradient(closest-side at 50% 40%, #000, transparent); }
         .pai-drop:hover { transform: translateY(-2px); box-shadow: 0 14px 36px rgba(24,14,8,0.36); }
+        /* 파일을 끌고 들어온 순간 — 여기다 놓으면 된다는 걸 테두리로 알려준다. */
+        .pai-drop.drag { box-shadow: 0 0 0 2px #ff7a2d, 0 14px 36px rgba(24,14,8,0.36); transform: translateY(-2px); }
+        .pai-drop.drag * { pointer-events: none; }
+        .pai-drop.busy { cursor: default; }
+        .pai-drop.busy:hover { transform: none; box-shadow: 0 10px 30px rgba(24,14,8,0.28); }
+        .pai-spin { width: 14px; height: 14px; border-radius: 50%; border: 2px solid rgba(255,255,255,0.4); border-top-color: #fff; animation: spin 0.8s linear infinite; }
+        .pai-hint { font-size: 11px; color: rgba(255,255,255,0.4); margin-top: 12px; }
+        @media (max-width: 768px) { .pai-hint-drag { display: none; } }
         .pai-chip { display: inline-flex; align-items: center; gap: 5px; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.14); color: rgba(255,255,255,0.72); font-size: 10px; font-weight: 800; letter-spacing: 1.2px; padding: 4px 11px; border-radius: 100px; margin-bottom: 13px; }
         .pai-doc { position: relative; width: 52px; height: 52px; margin: 0 auto 14px; border-radius: 14px; background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.12); display: flex; align-items: center; justify-content: center; overflow: hidden; }
         .pai-scanline { position: absolute; left: 6px; right: 6px; height: 14px; border-radius: 3px;
@@ -617,7 +648,9 @@ export default function ProfilePage() {
               </div>
             )}
             <div className="pfield">
-              <input ref={resumeRef} type="file" accept=".pdf" hidden onChange={e => handleUpload('resume', e.target.files[0])} />
+              {/* onClick 으로 value 를 비운다 — 안 그러면 실패 후 같은 파일을 다시 골랐을 때
+                  onChange 가 안 떠서 재시도가 먹히지 않는다(/cv 와 동일). */}
+              <input ref={resumeRef} type="file" accept=".pdf" hidden onClick={e => { e.currentTarget.value = '' }} onChange={e => handleUpload('resume', e.target.files[0])} />
               {aiParsing ? null : profile?.resume_url ? (
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'rgba(34,197,94,0.06)', border: '1px solid rgba(34,197,94,0.2)', borderRadius: 10, padding: '12px 16px' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
@@ -627,14 +660,26 @@ export default function ProfilePage() {
                     </a>
                   </div>
                   <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexShrink: 0 }}>
-                    <button className="pupload-btn" onClick={() => resumeRef.current?.click()} disabled={aiParsing}>{t('profile.resume.change')}</button>
+                    <button className="pupload-btn" onClick={() => resumeRef.current?.click()} disabled={aiParsing || uploadingResume}>{uploadingResume ? t('cv.form.uploading') : t('profile.resume.change')}</button>
                     <button onClick={() => { setProfile(prev => ({ ...prev, resume_url: null })); fetch('/api/profile/talent', { method: 'PUT', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify({ resume_url: null }) }) }} style={{ width: 28, height: 28, borderRadius: 6, border: '1px solid rgba(0,0,0,0.08)', background: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                       <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="rgba(0,0,0,0.3)" strokeWidth="1.5" strokeLinecap="round"><path d="M2 2l8 8M10 2l-8 8"/></svg>
                     </button>
                   </div>
                 </div>
               ) : (
-                <div className="pai-drop" onClick={() => !aiParsing && resumeRef.current?.click()}>
+                <div
+                  className={`pai-drop${dragOver ? ' drag' : ''}${uploadingResume ? ' busy' : ''}`}
+                  onClick={() => !aiParsing && !uploadingResume && resumeRef.current?.click()}
+                  onDragOver={e => { e.preventDefault(); if (!uploadingResume) setDragOver(true) }}
+                  onDragLeave={() => setDragOver(false)}
+                  onDrop={e => {
+                    e.preventDefault()
+                    setDragOver(false)
+                    if (uploadingResume) return
+                    const f = e.dataTransfer.files?.[0]
+                    if (f) handleUpload('resume', f)
+                  }}
+                >
                   <div className="pai-doc">
                     <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.85)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
                       <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/>
@@ -648,11 +693,23 @@ export default function ProfilePage() {
                   </div>
                   <div className="pai-title">{t('profile.resume.ai_title')}</div>
                   <div className="pai-sub">{t('profile.resume.ai_hint')}</div>
-                  <span className="pai-btn">
-                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-                    {t('profile.resume.register')}
-                    <span className="pai-btn-shine" />
-                  </span>
+                  {uploadingResume ? (
+                    <span className="pai-btn">
+                      <span className="pai-spin" />
+                      {t('cv.form.uploading')}
+                    </span>
+                  ) : (
+                    <span className="pai-btn">
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                      {t('profile.resume.register')}
+                      <span className="pai-btn-shine" />
+                    </span>
+                  )}
+                  {/* 끌어다 놓기는 데스크탑에서만 되는 얘기 — 모바일에선 감춘다. */}
+                  <div className="pai-hint">
+                    {t('profile.resume.fileHint')}
+                    <span className="pai-hint-drag"> · {t('profile.resume.dropHint')}</span>
+                  </div>
                 </div>
               )}
             </div>
@@ -661,7 +718,12 @@ export default function ProfilePage() {
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                   <div>
                     <div style={{ fontSize: 13, fontWeight: 700, color: '#111', marginBottom: 2 }}>{t('profile.resume.share.title')}</div>
-                    <div style={{ fontSize: 11, color: 'rgba(0,0,0,0.4)', lineHeight: 1.4 }}>{t('profile.resume.share.desc')}</div>
+                    {/* 스위치만 있으면 켠 상태가 무슨 뜻인지 안 읽힌다 — 현재 상태를 글로 붙인다.
+                        끈 상태에 "오퍼를 못 받는다"는 식의 문구는 쓰지 않는다 — 공개 여부와 무관하게
+                        이력서 기반 JD 추천 메일은 나가므로 사실이 아니다. 토글이 가르는 건 인재풀 노출뿐. */}
+                    <div style={{ fontSize: 11, color: form.is_resume_public ? '#16a34a' : 'rgba(0,0,0,0.4)', lineHeight: 1.4 }}>
+                      {form.is_resume_public ? t('profile.resume.shareOnHint') : t('profile.resume.share.desc')}
+                    </div>
                   </div>
                   <button
                     className={`ptoggle-switch${form.is_resume_public ? ' on' : ''}`}
@@ -683,10 +745,10 @@ export default function ProfilePage() {
                           setTimeout(() => setMsg(null), 2000)
                         } else {
                           const err = await res.json()
-                          setShowAlert(err.error || 'Failed to share resume')
+                          setShowAlert({ text: err.error || 'Failed to share resume' })
                         }
                       } catch (err) {
-                        setShowAlert('Failed to share resume')
+                        setShowAlert({ text: 'Failed to share resume' })
                       }
                       setSharingResume(false)
                     }}
@@ -982,8 +1044,8 @@ export default function ProfilePage() {
             <div style={{ width: 48, height: 48, borderRadius: '50%', background: 'rgba(255,68,0,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#ff4400" strokeWidth="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
             </div>
-            <div style={{ fontSize: 15, fontWeight: 700, color: '#111', marginBottom: 8 }}>{showAlert}</div>
-            <div style={{ fontSize: 12, color: 'rgba(0,0,0,0.4)', marginBottom: 20, lineHeight: 1.5 }}>{t('profile.completion.incomplete')}</div>
+            <div style={{ fontSize: 15, fontWeight: 700, color: '#111', marginBottom: showAlert.desc ? 8 : 20 }}>{showAlert.text}</div>
+            {showAlert.desc && <div style={{ fontSize: 12, color: 'rgba(0,0,0,0.4)', marginBottom: 20, lineHeight: 1.5 }}>{showAlert.desc}</div>}
             <button onClick={() => setShowAlert(null)}
               style={{ width: '100%', padding: 12, borderRadius: 10, border: 'none', background: '#ff4400', color: '#fff', fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>
               OK
