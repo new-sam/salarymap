@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js'
+import { ROLE_OPTIONS } from '../../../constants/jobs'
 
 // 홍익대 국제언어교육원 QR 랜딩(/hongik)의 한국어 현장 인증.
 // 가입(로그인)만 하면 korean_cert 가 비어 있을 때에 한해 현장 인증 마커를 넣는다 —
@@ -18,6 +19,30 @@ export default async function handler(req, res) {
   if (!token) return res.status(401).json({ error: 'unauthorized' })
   const { data: { user }, error: authErr } = await supabase.auth.getUser(token)
   if (authErr || !user) return res.status(401).json({ error: 'unauthorized' })
+
+  // 3차 호출: 희망 직무 저장. 값은 ROLE_OPTIONS(신 taxonomy 소분류)만 통과시킨다 —
+  // 어드민 talent-supply 가 desired_roles 를 normalizePosition 으로 읽는 형식.
+  // 'skip' 은 프로필 변경 없이 응답만 남긴다(안 고른 것도 데이터다).
+  const { roles } = req.body || {}
+  if (roles !== undefined) {
+    const isSkip = roles === 'skip'
+    const valid = isSkip ? [] : (Array.isArray(roles) ? roles.filter(r => ROLE_OPTIONS.includes(r)).slice(0, 3) : [])
+    if (!isSkip && !valid.length) return res.status(400).json({ error: 'bad_roles' })
+    if (!isSkip) {
+      const { error: upErr } = await supabase.from('user_profiles').upsert({
+        id: user.id,
+        email: user.email,
+        desired_roles: valid,
+        updated_at: new Date().toISOString(),
+      }, { onConflict: 'id' })
+      if (upErr) return res.status(500).json({ error: upErr.message })
+    }
+    await supabase.from('events').insert([{
+      event: 'hongik_roles', page: '/hongik', user_id: user.id,
+      meta: { ...(req.body?.meta || {}), email: user.email, roles: isSkip ? 'skip' : valid },
+    }])
+    return res.json({ ok: true })
+  }
 
   // 2차 호출: 어학성적 입력. 급수를 고르면 마커 대신 정식 "TOPIK n" 포맷으로 저장한다
   // (LanguageCard·langTier 가 읽는 캐넌 포맷). 'none' 은 프로필 변경 없이 응답만 남긴다.
@@ -44,7 +69,7 @@ export default async function handler(req, res) {
 
   const { data: prof, error: findErr } = await supabase
     .from('user_profiles')
-    .select('korean_cert, resume_url')
+    .select('korean_cert, resume_url, desired_roles')
     .eq('id', user.id)
     .maybeSingle()
   if (findErr) return res.status(500).json({ error: findErr.message })
@@ -69,5 +94,10 @@ export default async function handler(req, res) {
     meta: { ...meta, email: user.email, set: didSet, existing_cert: existing || null },
   }])
 
-  return res.json({ ok: true, koreanCert: existing || CERT_MARK, hasResume: !!prof?.resume_url })
+  return res.json({
+    ok: true,
+    koreanCert: existing || CERT_MARK,
+    hasResume: !!prof?.resume_url,
+    hasRoles: Array.isArray(prof?.desired_roles) && prof.desired_roles.length > 0,
+  })
 }

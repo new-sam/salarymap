@@ -4,6 +4,7 @@ import { useRouter } from 'next/router'
 import { supabase } from '../lib/supabaseClient'
 import { useT } from '../lib/i18n'
 import { track } from '../lib/track'
+import { ROLE_GROUPS } from '../constants/jobs'
 import GlobalNav from '../components/GlobalNav'
 
 /* /hongik — 홍익대학교 국제언어교육원 현장 QR 랜딩.
@@ -65,6 +66,10 @@ export default function HongikPage() {
   const [verified, setVerified] = useState(null) // /api/hongik/verify 응답
   const [topikDone, setTopikDone] = useState(false)
   const [topikSaving, setTopikSaving] = useState(null) // 저장 중인 선택값
+  const [rolesDone, setRolesDone] = useState(false)
+  const [rolesSaving, setRolesSaving] = useState(false)
+  const [selRoles, setSelRoles] = useState([]) // 선택한 소분류 값(최대 3)
+  const [openGroup, setOpenGroup] = useState(null) // 펼친 대분류 key
   const [cvDone, setCvDone] = useState(false)
   const [file, setFile] = useState(null)
   const [status, setStatus] = useState('idle') // idle | submitting (CV 업로드)
@@ -114,6 +119,7 @@ export default function HongikPage() {
           if (j.hasResume) setCvDone(true)
           // 이미 정식 TOPIK 값이 있는 사람(재방문 포함)에게 급수를 또 묻지 않는다
           if (/^topik/i.test(j.koreanCert || '')) setTopikDone(true)
+          if (j.hasRoles) setRolesDone(true)
           track('hongik_verified', { meta: { ...hkMeta(), set: j.koreanCert }, page: '/hongik' })
         } else {
           setVerified({ ok: false })
@@ -145,7 +151,7 @@ export default function HongikPage() {
 
   // 완료 화면 이탈 방지용 공고 (기업 직접등록 우선 → 지원 많은 순, 회사당 1개)
   useEffect(() => {
-    if (!topikDone) return
+    if (!topikDone || !rolesDone) return
     fetch('/api/jobs?counts=1')
       .then(r => r.json())
       .then(arr => {
@@ -191,6 +197,27 @@ export default function HongikPage() {
     } catch {}
     setTopikSaving(null)
     setTopikDone(true)
+  }
+
+  const toggleRole = (v) => {
+    setSelRoles(prev => prev.includes(v) ? prev.filter(x => x !== v) : (prev.length >= 3 ? prev : [...prev, v]))
+  }
+
+  // 희망 직무 저장 — TOPIK 과 같은 원칙: 서버가 events(hongik_roles)에 남기고,
+  // 실패해도 학생을 현장에서 세워두지 않는다.
+  const saveRoles = async (val) => {
+    if (rolesSaving) return
+    setRolesSaving(true)
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      await fetch('/api/hongik/verify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
+        body: JSON.stringify({ roles: val, meta: hkMeta() }),
+      })
+    } catch {}
+    setRolesSaving(false)
+    setRolesDone(true)
   }
 
   const handleFile = (f) => {
@@ -259,11 +286,11 @@ export default function HongikPage() {
     },
     {
       n: '2',
-      t: L('TOPIK 급수 선택', 'Pick your TOPIK level', 'Chọn cấp TOPIK'),
-      time: L('10초', '10s', '10 giây'),
-      s: L('급수가 있으면 탭 한 번으로 프로필에 반영돼요. 아직 없어도 괜찮아요 — 인증은 그대로예요.',
-        "If you have a TOPIK level, one tap adds it to your profile. Don't have one yet? No problem — you stay verified.",
-        'Nếu có TOPIK, chỉ một chạm là được lưu vào hồ sơ. Chưa có cũng không sao — bạn vẫn được xác nhận.'),
+      t: L('TOPIK·희망 직무 선택', 'Pick TOPIK level & desired role', 'Chọn TOPIK & công việc mong muốn'),
+      time: L('30초', '30s', '30 giây'),
+      s: L('TOPIK 급수와 찾는 직무를 탭 몇 번으로 알려주세요. TOPIK이 아직 없어도 괜찮아요 — 인증은 그대로예요.',
+        "Tell us your TOPIK level and the roles you want — just a few taps. No TOPIK yet? No problem — you stay verified.",
+        'Cho chúng tôi biết cấp TOPIK và công việc bạn muốn — chỉ vài chạm. Chưa có TOPIK cũng không sao — bạn vẫn được xác nhận.'),
     },
     {
       n: '3',
@@ -405,6 +432,19 @@ export default function HongikPage() {
         .hk-topik-none { grid-column: 1 / -1; font-weight: 600; color: #57504a; }
         .hk-topik-note { margin-top: 12px; font-size: 12px; color: #9a9186; }
 
+        /* 희망 직무 아코디언 — 대분류 행을 탭하면 소분류 칩이 펼쳐진다 */
+        .hk-rg { border: 1px solid #e8e2da; border-radius: 14px; overflow: hidden; text-align: left; }
+        .hk-rg-row + .hk-rg-row { border-top: 1px solid #f0ebe3; }
+        .hk-rg-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; width: 100%; padding: 13px 14px; background: #fff; border: none; font-family: inherit; font-size: 14px; font-weight: 700; color: #1a1612; cursor: pointer; text-align: left; }
+        .hk-rg-head .arr { color: #b0a496; flex-shrink: 0; transition: transform .2s; }
+        .hk-rg-row.open .hk-rg-head { background: #fffaf6; }
+        .hk-rg-row.open .arr { transform: rotate(180deg); }
+        .hk-rg-cnt { display: inline-flex; align-items: center; justify-content: center; min-width: 19px; height: 19px; border-radius: 100px; background: #ff6000; color: #fff; font-size: 11.5px; font-weight: 800; margin-left: 8px; padding: 0 5px; }
+        .hk-rg-chips { display: flex; flex-wrap: wrap; gap: 8px; padding: 2px 14px 14px; background: #fffaf6; }
+        .hk-rchip { border: 1.5px solid #e8e2da; background: #fff; border-radius: 100px; padding: 8px 13px; font-size: 13px; font-weight: 600; color: #3d3831; cursor: pointer; font-family: inherit; transition: border-color .12s, background .12s, color .12s; }
+        .hk-rchip.on { border-color: #ff6000; background: rgba(255,96,0,0.08); color: #e05400; font-weight: 800; }
+        .hk-skip-btn { background: none; border: none; color: #9a9186; font-size: 13px; text-decoration: underline; cursor: pointer; font-family: inherit; margin-top: 13px; }
+
         /* CV 업로드(선택) */
         .hk-drop { border: 1.5px dashed rgba(255,96,0,0.5); background: #fffaf6; border-radius: 14px; padding: 26px 18px; cursor: pointer; transition: background .15s, border-color .15s; }
         .hk-drop:hover, .hk-drop.over { background: #fff3ea; border-color: #ff6000; }
@@ -541,6 +581,49 @@ export default function HongikPage() {
               <div className="hk-topik-note">
                 {L('없어도 인증은 그대로 유지돼요.', "No TOPIK? You stay verified either way.", 'Chưa có TOPIK? Bạn vẫn được xác nhận.')}
               </div>
+            </div>
+          ) : !rolesDone ? (
+            <div className="hk-card">
+              <div className="hk-card-t">{L('어떤 일을 찾으세요?', 'What role are you looking for?', 'Bạn đang tìm công việc gì?')}</div>
+              <div className="hk-card-s">
+                {L('최대 3개까지 고를 수 있어요 — 맞는 포지션이 열리면 가장 먼저 추천해드려요.',
+                  'Pick up to 3 — when a matching position opens, you get recommended first.',
+                  'Chọn tối đa 3 — khi có vị trí phù hợp, bạn sẽ được giới thiệu đầu tiên.')}
+              </div>
+              <div className="hk-rg">
+                {ROLE_GROUPS.map((g, gi) => {
+                  const inGroup = g.roles.filter(r => selRoles.includes(r.value)).length
+                  const open = openGroup === g.key
+                  return (
+                    <div key={g.key} className={`hk-rg-row${open ? ' open' : ''}`}>
+                      <button className="hk-rg-head" onClick={() => setOpenGroup(open ? null : g.key)}>
+                        <span>{g.label[lang] || g.label.ko}{inGroup > 0 && <span className="hk-rg-cnt">{inGroup}</span>}</span>
+                        <svg className="arr" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M6 9l6 6 6-6" /></svg>
+                      </button>
+                      {open && (
+                        <div className="hk-rg-chips">
+                          {g.roles.map(r => (
+                            <button key={r.value} className={`hk-rchip${selRoles.includes(r.value) ? ' on' : ''}`}
+                              onClick={() => toggleRole(r.value)}>
+                              {r.label[lang] || r.label.ko}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )
+                })}
+              </div>
+              <button className="hk-cta" disabled={!selRoles.length || rolesSaving} onClick={() => saveRoles(selRoles)}>
+                {rolesSaving
+                  ? L('저장 중...', 'Saving...', 'Đang lưu...')
+                  : selRoles.length
+                    ? L(`계속 (${selRoles.length}개 선택)`, `Continue (${selRoles.length} selected)`, `Tiếp tục (đã chọn ${selRoles.length})`)
+                    : L('직무를 선택해주세요', 'Pick a role to continue', 'Chọn công việc để tiếp tục')}
+              </button>
+              <button className="hk-skip-btn" disabled={rolesSaving} onClick={() => saveRoles('skip')}>
+                {L('아직 모르겠어요 — 건너뛰기', "Not sure yet — skip", 'Chưa chắc — bỏ qua')}
+              </button>
             </div>
           ) : (
             <>
