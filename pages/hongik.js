@@ -631,9 +631,9 @@ export default function HongikPage() {
                 <div className="hk-ok">{okChip}</div>
                 <div className="hk-card-t">{L('등록 완료!', 'All done!', 'Hoàn tất đăng ký!')}</div>
                 <div className="hk-card-s">
-                  {L(<>한국어 가능 인재풀에 들어왔어요. 한국어가 필요한 포지션이 열리면 <b>{user?.email}</b>로 가장 먼저 추천해드릴게요.</>,
-                    <>You're now in our Korean-speaker talent pool. When a position needs Korean, we'll recommend you first at <b>{user?.email}</b>.</>,
-                    <>Bạn đã vào nhóm ứng viên biết tiếng Hàn. Khi có vị trí cần tiếng Hàn, chúng tôi sẽ giới thiệu bạn đầu tiên qua <b>{user?.email}</b>.</>)}
+                  {L(<>한국어가 필요한 포지션이 열리면 <b>{user?.email}</b>로 가장 먼저 추천해드릴게요.</>,
+                    <>When a position needs Korean, we'll recommend you first at <b>{user?.email}</b>.</>,
+                    <>Khi có vị trí cần tiếng Hàn, chúng tôi sẽ giới thiệu bạn đầu tiên qua <b>{user?.email}</b>.</>)}
                 </div>
               </div>
 

@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import MetricChart from '../DashboardCharts'
 import { templateFor, localizeTemplate, DRAFT_CAMPAIGNS } from './coldmailTemplates'
+import { ROLE_GROUPS } from '../../constants/jobs'
 
 // "승주 작업실" — 어드민 인증으로만 접근(개인 비밀번호 게이트 제거).
 // 기본 탭은 목표지표인 [이력서 공개].
@@ -36,6 +37,10 @@ export default function GoalMetricsView({ token, lang }) {
   const [reData, setReData] = useState(null) // 전직군 개편
   const [reError, setReError] = useState('')
   const [reLoading, setReLoading] = useState(false)
+
+  const [hkData, setHkData] = useState(null) // 홍익 QR 캠페인
+  const [hkError, setHkError] = useState('')
+  const [hkLoading, setHkLoading] = useState(false)
 
   const loadAd = useCallback(async () => {
     if (!token) return
@@ -142,10 +147,30 @@ export default function GoalMetricsView({ token, lang }) {
     }
   }, [token, ko])
 
+  const loadHk = useCallback(async () => {
+    if (!token) return
+    setHkLoading(true)
+    setHkError('')
+    try {
+      const res = await fetch('/api/admin/hongik-metrics', { headers: { Authorization: `Bearer ${token}` } })
+      if (!res.ok) throw new Error(`(${res.status})`)
+      setHkData(await res.json())
+    } catch (e) {
+      setHkError((ko ? '불러오기 실패 ' : 'Load failed ') + e.message)
+    } finally {
+      setHkLoading(false)
+    }
+  }, [token, ko])
+
   // 전직군 개편 탭 최초 진입 시 lazy 로드
   useEffect(() => {
     if (view === 'roleExpansion' && !reData && !reLoading) loadRe()
   }, [view, reData, reLoading, loadRe])
+
+  // 홍익 QR 탭 최초 진입 시 lazy 로드
+  useEffect(() => {
+    if (view === 'hongik' && !hkData && !hkLoading) loadHk()
+  }, [view, hkData, hkLoading, loadHk])
 
   // 광고 탭 최초 진입 시 lazy 로드
   useEffect(() => {
@@ -194,6 +219,7 @@ export default function GoalMetricsView({ token, lang }) {
         {tabBtn('photos', ko ? '프로필 사진' : 'Profile photos')}
         {tabBtn('paths', ko ? '가입 경로' : 'Signup paths')}
         {tabBtn('ad', ko ? '광고 성과' : 'Ad performance')}
+        {tabBtn('hongik', ko ? '홍익 QR' : 'Hongik QR')}
       </div>
       {view === 'roleExpansion' && <RoleExpansionTab data={reData} loading={reLoading} error={reError} ko={ko} lang={lang} />}
       {view === 'nontech' && <NontechPoolTab data={ntData} loading={ntLoading} error={ntError} ko={ko} lang={lang} />}
@@ -202,6 +228,7 @@ export default function GoalMetricsView({ token, lang }) {
       {view === 'ad' && <AdTab data={adData} loading={adLoading} error={adError} ko={ko} />}
       {view === 'resumePublic' && <ResumePublicTab data={rpData} loading={rpLoading} error={rpError} ko={ko} lang={lang} onRefresh={loadRp} />}
       {view === 'coldmail' && <ColdmailPublicTab data={cmData} loading={cmLoading} error={cmError} ko={ko} lang={lang} />}
+      {view === 'hongik' && <HongikTab data={hkData} loading={hkLoading} error={hkError} ko={ko} onRefresh={loadHk} />}
     </div>
   )
 }
@@ -1350,6 +1377,125 @@ function PhotoStatsTab({ data, loading, error, ko }) {
                 </tr>
               )
             })}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  )
+}
+
+// ─────────────────────────────────────────────────────────────
+// 홍익 QR — /hongik 현장 캠페인 트래킹 (유입 → 가입·인증 → TOPIK/직무 → CV + 명단)
+const HK_ROLE_LABEL = {}
+ROLE_GROUPS.forEach(g => g.roles.forEach(r => { HK_ROLE_LABEL[r.value] = r.label.ko }))
+
+function HongikTab({ data, loading, error, ko, onRefresh }) {
+  if (loading || !data) return <div style={{ textAlign: 'center', padding: 40, color: '#666' }}>{ko ? '불러오는 중…' : 'Loading…'}</div>
+  if (error) return <div style={{ textAlign: 'center', padding: 40, color: '#c00' }}>{error}</div>
+  if (data.error) return <div style={{ textAlign: 'center', padding: 40, color: '#c00' }}>{data.error}</div>
+
+  const th = { textAlign: 'left', fontSize: 11, fontWeight: 700, color: '#9CA3AF', padding: '6px 10px', borderBottom: '1px solid #EEF0F2', textTransform: 'uppercase', letterSpacing: '.04em' }
+  const td = { fontSize: 12.5, color: '#1F2937', padding: '6px 10px', borderBottom: '1px solid #F5F6F7', whiteSpace: 'nowrap' }
+  const card = { border: '1px solid #EEF0F2', borderRadius: 12, padding: '14px 16px', background: '#fff' }
+  const num = { fontSize: 24, fontWeight: 800, color: '#1d1d1f', lineHeight: 1.2 }
+  const cap = { fontSize: 11.5, fontWeight: 700, color: '#9CA3AF', marginBottom: 4 }
+  const sub = { fontSize: 11.5, color: '#9CA3AF', marginTop: 3 }
+  const secH = { fontSize: 13.5, fontWeight: 800, color: '#1d1d1f', margin: '22px 0 8px' }
+
+  const ictTime = (iso) => new Date(new Date(iso).getTime() + 7 * 3600 * 1000).toISOString().slice(5, 16).replace('T', ' ')
+  const roleLabel = (v) => HK_ROLE_LABEL[v] || v
+  const topikDist = data.topik?.dist || {}
+  const roleRows = Object.entries(data.roles?.freq || {}).sort((a, b) => b[1] - a[1])
+
+  return (
+    <div>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+        <div style={{ fontSize: 12.5, color: '#6B7280' }}>
+          {ko ? '/hongik 현장 QR — 팀 계정은 카운트 제외, 명단엔 회색 표시. 비로그인 유입 수는 참고치.' : '/hongik QR campaign.'}
+        </div>
+        <button onClick={onRefresh} style={{ fontSize: 12, fontWeight: 700, padding: '6px 12px', borderRadius: 8, border: '1px solid #E5E7EB', background: '#fff', cursor: 'pointer', color: '#374151' }}>
+          {ko ? '새로고침' : 'Refresh'}
+        </button>
+      </div>
+
+      <div className="adm-m-2col" style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: 10 }}>
+        <div style={card}><div style={cap}>{ko ? 'QR 유입' : 'Views'}</div><div style={num}>{data.views.uniq}</div><div style={sub}>{ko ? `총 ${data.views.total}뷰` : `${data.views.total} views`}</div></div>
+        <div style={card}><div style={cap}>{ko ? '로그인 시작' : 'Login starts'}</div><div style={num}>{data.starts}</div></div>
+        <div style={{ ...card, borderColor: 'rgba(255,96,0,0.45)' }}><div style={{ ...cap, color: '#e05400' }}>{ko ? '가입·인증' : 'Verified'}</div><div style={{ ...num, color: '#e05400' }}>{data.verified}</div><div style={sub}>{ko ? '한국어 인증 완료' : 'Korean verified'}</div></div>
+        <div style={card}><div style={cap}>TOPIK</div><div style={num}>{data.topik.answered - data.topik.none}</div><div style={sub}>{ko ? `없음 ${data.topik.none}` : `none ${data.topik.none}`}</div></div>
+        <div style={card}><div style={cap}>{ko ? '직무 선택' : 'Roles'}</div><div style={num}>{data.roles.chosen}</div><div style={sub}>{ko ? `건너뜀 ${data.roles.skipped}` : `skipped ${data.roles.skipped}`}</div></div>
+        <div style={card}><div style={cap}>CV</div><div style={num}>{data.cv}</div><div style={sub}>{ko ? '이력서 등록' : 'resumes'}</div></div>
+      </div>
+
+      <div className="adm-m-1col" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 16 }}>
+        <div>
+          <div style={secH}>{ko ? 'TOPIK 분포' : 'TOPIK levels'}</div>
+          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+            <thead><tr><th style={th}>{ko ? '급수' : 'Level'}</th><th style={{ ...th, textAlign: 'right' }}>{ko ? '명' : '#'}</th></tr></thead>
+            <tbody>
+              {[6, 5, 4, 3, 2, 1].map(n => (
+                <tr key={n}><td style={td}>{n}{ko ? '급' : ''}</td><td style={{ ...td, textAlign: 'right', fontWeight: 700 }}>{topikDist[n] || 0}</td></tr>
+              ))}
+              <tr><td style={{ ...td, color: '#9CA3AF' }}>{ko ? '아직 없음' : 'None yet'}</td><td style={{ ...td, textAlign: 'right', color: '#9CA3AF' }}>{data.topik.none}</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div>
+          <div style={secH}>{ko ? '희망 직무' : 'Desired roles'}</div>
+          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+            <thead><tr><th style={th}>{ko ? '직무' : 'Role'}</th><th style={{ ...th, textAlign: 'right' }}>{ko ? '명' : '#'}</th></tr></thead>
+            <tbody>
+              {roleRows.length === 0 && <tr><td style={{ ...td, color: '#9CA3AF' }} colSpan={2}>{ko ? '아직 없음' : 'No data'}</td></tr>}
+              {roleRows.slice(0, 10).map(([r, c]) => (
+                <tr key={r}><td style={td}>{roleLabel(r)}</td><td style={{ ...td, textAlign: 'right', fontWeight: 700 }}>{c}</td></tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <div>
+          <div style={secH}>{ko ? '일별' : 'Daily'}</div>
+          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+            <thead><tr><th style={th}>{ko ? '날짜' : 'Day'}</th><th style={{ ...th, textAlign: 'right' }}>{ko ? '유입' : 'Views'}</th><th style={{ ...th, textAlign: 'right' }}>{ko ? '가입' : 'Verified'}</th></tr></thead>
+            <tbody>
+              {data.daily.length === 0 && <tr><td style={{ ...td, color: '#9CA3AF' }} colSpan={3}>{ko ? '아직 없음' : 'No data'}</td></tr>}
+              {data.daily.map(d => (
+                <tr key={d.day}><td style={td}>{d.day.slice(5)}</td><td style={{ ...td, textAlign: 'right' }}>{d.views}</td><td style={{ ...td, textAlign: 'right', fontWeight: 700 }}>{d.verified}</td></tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div style={secH}>{ko ? `명단 (${data.people.length})` : `People (${data.people.length})`}</div>
+      <div className="adm-m-scroll" style={{ overflowX: 'auto' }}>
+        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+          <thead>
+            <tr>
+              <th style={th}>{ko ? '인증 시각(ICT)' : 'Verified at'}</th>
+              <th style={th}>{ko ? '이름' : 'Name'}</th>
+              <th style={th}>{ko ? '이메일' : 'Email'}</th>
+              <th style={th}>TOPIK</th>
+              <th style={th}>{ko ? '희망 직무' : 'Roles'}</th>
+              <th style={th}>CV</th>
+            </tr>
+          </thead>
+          <tbody>
+            {data.people.length === 0 && <tr><td style={{ ...td, color: '#9CA3AF' }} colSpan={6}>{ko ? '아직 아무도 없어요 — QR이 찍히면 여기 실시간으로 쌓입니다.' : 'Nobody yet.'}</td></tr>}
+            {data.people.map(p => (
+              <tr key={p.userId} style={p.excluded ? { opacity: 0.45 } : undefined}>
+                <td style={td}>{ictTime(p.verifiedAt)}</td>
+                <td style={td}>
+                  {p.name || '—'}
+                  {p.excluded && <span style={{ fontSize: 10.5, fontWeight: 800, color: '#6B7280', background: '#F3F4F6', borderRadius: 100, padding: '1px 7px', marginLeft: 6 }}>{ko ? '팀' : 'team'}</span>}
+                </td>
+                <td style={td}>{p.email || '—'}</td>
+                <td style={td}>{p.topik === 'none' ? (ko ? '없음' : 'none') : p.topik != null ? `${p.topik}${ko ? '급' : ''}` : (p.koreanCert || '—')}</td>
+                <td style={{ ...td, whiteSpace: 'normal', maxWidth: 260 }}>
+                  {p.roles === 'skip' ? (ko ? '건너뜀' : 'skipped') : Array.isArray(p.roles) ? p.roles.map(roleLabel).join(', ') : '—'}
+                </td>
+                <td style={{ ...td, fontWeight: 700, color: p.hasCv ? '#15803d' : '#9CA3AF' }}>{p.hasCv ? '✓' : '—'}</td>
+              </tr>
+            ))}
           </tbody>
         </table>
       </div>
