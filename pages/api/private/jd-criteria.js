@@ -1,6 +1,7 @@
 import crypto from 'crypto'
 import OpenAI from 'openai'
 import { createClient } from '@supabase/supabase-js'
+import { YOE_MAX, yoeClamp } from '../../../lib/showcaseChips'
 
 /* JD 원문 → 조건. /private/showcasing 의 첫 단계다.
 
@@ -99,29 +100,19 @@ positions 목록: ${POSITIONS.join(', ')}
   전부 후보에서 밀려납니다.
 - JSON 만 출력하세요.`
 
-/* 화면의 경력 칩 → 연차 범위. 숫자를 서버가 쥐고 있는 이유는 로그인이 없는 경로라서다 —
-   클라이언트가 보낸 min/max 를 그대로 쓰면 아무 범위나 밀어 넣을 수 있다.
+/* 화면의 경력 막대 → 연차 범위. 화면이 [min, max] 를 보내지만 그대로 쓰지는 않는다 —
+   로그인이 없는 경로라 아무 범위나 밀어 넣을 수 있다. yoeClamp 가 0~YOE_MAX 로 조이고
+   뒤집힌 구간을 바로 세운다. 화면과 같은 함수를 쓴다 — 조이는 규칙이 두 벌이면
+   언젠가 어긋나고, 그때 화면에 뜬 구간과 실제로 찾은 구간이 달라진다.
 
-   여러 개를 고르면 합집합이다. "신입도 좋고 3~5년차도 좋다"는 실제로 흔한 요구인데,
-   구간 사이가 빈 형태(0~1 과 3~5)는 지금 조건 객체가 표현하지 못하므로 0~5 로 넓힌다.
-   좁게 잡아 사람을 놓치는 것보다 넓게 잡고 순위로 거르는 쪽이 이 화면의 실패비용에 맞다.
-   5년차+ 가 끼면 위쪽은 열어 둔다(max = null). */
-const YOE_RANGE = {
-  junior: [0, 1],
-  '1-3': [1, 3],
-  '3-5': [3, 5],
-  '5+': [5, null],
-}
-
-function yoeFromChips(v) {
-  const keys = [...new Set((Array.isArray(v) ? v : []).map(String))].filter((k) => YOE_RANGE[k])
-  if (!keys.length) return null
-  const picked = keys.map((k) => YOE_RANGE[k])
-  return {
-    keys: keys.sort(), // 캐시 키에 들어가므로 순서를 고정한다
-    min: Math.min(...picked.map(([lo]) => lo)),
-    max: picked.some(([, hi]) => hi == null) ? null : Math.max(...picked.map(([, hi]) => hi)),
-  }
+   위 끝에 닿으면 열어 둔다(max = null). 그 위로는 사람마다 폭이 커서 한 숫자로 못 묶는다.
+   전체(0~YOE_MAX)는 null 이다 — 연차를 안 따진다는 뜻이라, 그때만 JD 글에서 뽑은
+   연차(raw.yoe_min/max)가 자리를 채운다. */
+function yoeFromRange(v) {
+  if (!Array.isArray(v) || v.length !== 2) return null
+  const [lo, hi] = yoeClamp(v[0], v[1])
+  if (lo === 0 && hi >= YOE_MAX) return null
+  return { min: lo, max: hi >= YOE_MAX ? null : hi }
 }
 
 export default async function handler(req, res) {
@@ -129,7 +120,7 @@ export default async function handler(req, res) {
 
   const jd = String(req.body?.jd || '').trim()
   if (jd.length < 30) return res.status(400).json({ error: '채용 공고의 전문을 붙여넣어주세요' })
-  const yoe = yoeFromChips(req.body?.yoe)
+  const yoe = yoeFromRange(req.body?.yoe)
 
   try {
     // 모수 세기는 모델 호출과 같이 띄운다 — 순서대로 하면 로딩이 그만큼 길어진다
@@ -198,7 +189,7 @@ export default async function handler(req, res) {
          고른 경력 구간도 같이 넣는다. 안 넣으면 같은 JD 를 구간만 바꿔 다시 돌렸을 때
          24시간 동안 앞의 결과가 그대로 나온다 — 방금 바꾼 조건이 화면에 반영이 안 된다. */
       h: crypto.createHash('sha256')
-        .update(`${yoe ? yoe.keys.join(',') : ''}|${jd.toLowerCase().replace(/\s+/g, ' ').trim()}`)
+        .update(`${yoe ? `${yoe.min}~${yoe.max ?? ''}` : ''}|${jd.toLowerCase().replace(/\s+/g, ' ').trim()}`)
         .digest('hex'),
       criteria: {
         title: String(raw.title || '').slice(0, 60),
@@ -208,9 +199,9 @@ export default async function handler(req, res) {
         must_skills: list(raw.must_skills, 8, 40),
         nice_skills: list(raw.nice_skills, 8, 40),
         keywords: list(raw.keywords, 8, 40),
-        /* 화면에서 고른 구간이 있으면 그게 이긴다. 담당자가 직접 누른 값이고, 모델이
+        /* 화면에서 그은 구간이 있으면 그게 이긴다. 담당자가 직접 끌어 맞춘 값이고, 모델이
            JD 에서 읽어낸 것은 글에 적혀 있던 것뿐이다 — 안 적었지만 원하는 구간이 있어서
-           칩을 만든 것이라, 여기서 모델 값을 앞세우면 칩이 아무 일도 안 한다. */
+           막대를 둔 것이라, 여기서 모델 값을 앞세우면 막대가 아무 일도 안 한다. */
         yoe_min: yoe ? yoe.min : num(raw.yoe_min),
         yoe_max: yoe ? yoe.max : num(raw.yoe_max),
         korean,

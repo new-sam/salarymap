@@ -1,8 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import Head from 'next/head'
-import { track } from '../../lib/track'
-import { verifyToken } from '../../lib/showcaseToken'
-import supabaseAdmin from '../../lib/supabaseAdmin'
+import { GROUPS, YOE_MAX, PREF_CHIPS, groupOf, stacksFor, chipsToJd, yoeLabel } from '../../lib/showcaseChips'
 
 /* /private/showcasing — 고객사에 보여줄 인재 전시장(비공개).
 
@@ -15,35 +13,20 @@ import supabaseAdmin from '../../lib/supabaseAdmin'
       이 화면에 올리지 않는다 — 어드민(/admin/lang-scores)의 전시장과 다른 점이 그거다.
       API 가 그 칼럼을 아예 SELECT 하지 않으므로 화면 코드가 실수해도 샐 것이 없다.
 
-   화면은 셋이다. JD 를 받고(입력) → 조건을 뽑아 이력서를 훑고(로딩) → 5명을 보여준다(결과).
+   화면은 셋이다. 조건을 받고(입력) → 조건을 뽑아 이력서를 훑고(로딩) → 10명을 보여준다(결과).
    로딩이 따로 있는 건 시간이 걸려서만은 아니다. 조건을 먼저 띄워 주면 후보를 다 보기 전에
-   "이렇게 이해한 게 맞나"를 확인할 수 있다. */
+   "이렇게 이해한 게 맞나"를 확인할 수 있다.
 
-const ACCEPT = '.pdf,.docx,.txt,.md'
+   첫 화면은 칩 선택뿐이다(사용자 테스트에서 반응이 더 좋았다). 선택지는
+   lib/showcaseChips.js 에 있고, 고른 칩은 chipsToJd 가 글로 펴서 기존 파이프라인
+   (조건 뽑기 → 판정 → 순위)에 그대로 넣는다.
 
-/* 파일 첨부 — 당분간 감춘다(유저 결정). 첨부 칩과 함께 파일 얘기를 하는 문구도
-   같이 내린다: 올릴 곳이 없는데 "PDF·DOCX까지 됩니다"가 남아 있으면 찾게 된다.
-   읽는 쪽(onPick·extract)은 그대로 두고 이 한 줄만 true 로 되돌리면 다시 나온다. */
-const FILE_UPLOAD = false
-
-/* 경력 칩 — JD 만으로는 연차가 안 잡히는 경우가 많다. 실제 검색 기록을 보면 조건에서
-   yoe_min·yoe_max 가 둘 다 null 로 나오는 JD 가 흔한데, 그러면 1차 거름망의 연차 항목이
-   통째로 놀고(prefilterScore) 순위 단계도 "이 자리는 연차를 요구하지 않았다"로 돌아간다.
-   담당자 머릿속에는 구간이 있는데 글에만 안 적힌 것뿐이라, 여기서 한 번 눌러 받는다.
-
-   고르는 건 선택이다. 안 고르면 지금까지처럼 JD 에서 읽어낸 값을 쓴다 — 필수로 만들면
-   "JD 붙여넣고 보내기" 한 동작이 두 동작이 된다.
-
-   숫자는 여기 없다. 키만 서버로 보내고 연차 범위는 jd-criteria 가 정한다 — 로그인이 없는
-   경로라 클라이언트가 보낸 숫자를 그대로 믿으면 아무 범위나 밀어 넣을 수 있다.
-   라벨은 카드의 예상 단가 표(COST)와 같은 표기를 쓴다. 같은 구간을 두 이름으로 부르면
-   고객사가 화면 안에서 그 둘을 잇지 못한다. */
-const YOE_CHIPS = [
-  { key: 'junior', label: '신입' },
-  { key: '1-3', label: '1~3년차' },
-  { key: '3-5', label: '3~5년차' },
-  { key: '5+', label: '5년차+' },
-]
+   자유 입력은 전부 걷어냈다 — '조건 직접 적기'(JD 붙여넣기)도, 그 칸을 채우던 파일
+   첨부도 없다. 고르는 화면과 적는 화면이 한 상자에 같이 있으면 "골라만 주세요"가
+   약속이 아니라 권유가 되고, 결국 둘 다 채워야 하는 서류로 읽힌다. 대신 칩에 없는
+   조건은 들어갈 길이 아예 없어졌다 — 새 조건은 칩으로 세워야 한다.
+   파일 파싱 API(/api/private/jd-extract)는 지우지 않았다. 되살릴 일이 생기면 화면만
+   다시 붙이면 된다(git 이력에 있다). */
 
 /* 세 화면이 같은 언어를 쓰게 하는 최소한의 토큰.
 
@@ -76,83 +59,164 @@ const eyebrow = {
   letterSpacing: '0.13em', textTransform: 'uppercase',
 }
 
-export default function PrivateShowcasing({ co, campaign, off, c }) {
+/* 첫 화면의 칩 하나. 켜짐/꺼짐만 다르고 생김새는 전부 같다 — 직군과 경력이 다르게
+   생기면 같은 한 번의 선택인데 다른 종류의 조작으로 보인다. */
+function Chip({ on, onClick, children }) {
+  return (
+    <button type="button" className="psc-chip" aria-pressed={on} onClick={onClick} style={{
+      fontFamily: 'inherit', fontSize: 12, fontWeight: on ? 700 : 600,
+      color: on ? '#fff' : T.body,
+      background: on ? T.brand : '#fff',
+      border: `1px solid ${on ? T.brand : T.line}`,
+      borderRadius: 100, padding: '5px 12px', cursor: 'pointer',
+    }}>{children}</button>
+  )
+}
+
+/* 칩 한 줄 — 왼쪽에 폭이 고정된 라벨, 오른쪽에 칩들이 접혀 흐른다.
+   라벨 폭을 고정하는 이유는 줄이 다섯이라서다. 폭이 제각각이면 칩의 시작점이 줄마다
+   달라져서, 고를 것이 어디부터인지를 매 줄 다시 찾게 된다.
+
+   칩을 따로 감싸는 이유가 핵심이다. 라벨과 칩을 한 flex 에 두고 wrap 시키면 둘째 줄이
+   컨테이너 왼쪽 끝 — 즉 라벨 아래 — 에서 시작해서, 기술처럼 여러 줄이 되는 칸은
+   칩의 왼쪽 경계가 줄마다 어긋난다. 안쪽 상자를 하나 두면 접히는 자리가 첫 칩에 맞는다.
+
+       직군  [개발] [마케팅·광고] [디자인]
+             [경영·비즈니스] [영업]        ← 라벨 아래가 아니라 여기서 시작 */
+/* 경력 구간 막대. 손잡이 둘이 한 줄 위에서 아래·위 끝을 잡는다.
+
+   네이티브 input[type=range] 두 개를 겹쳐 쓴다. div 로 직접 그리면 마우스는 되지만
+   키보드와 스크린리더가 통째로 빠지는데, 여기는 조건을 정하는 자리라 그걸 버릴 수 없다.
+   겹치는 값은 input 자체를 클릭에 투명하게 두고 손잡이만 살려서 푼다.
+
+   손잡이가 둘 다 오른쪽 끝에 모이면 위에 깔린 쪽만 잡힌다 — 아래 손잡이가 위 끝에
+   가까워지면 그때만 위로 올린다. 아래를 늘 위에 두면 반대쪽에서 같은 일이 생긴다.
+
+   막대만 있으면 지금 몇 년인지를 손잡이 위치로 눈대중해야 한다. 오른쪽 글자가 그 답이고,
+   구간을 좁힌 순간 색이 들어온다 — 안 만진 '전체'와 직접 그은 구간이 한눈에 갈린다. */
+function YoeRange({ value, onChange }) {
+  const [lo, hi] = value
+  const pct = (v) => (v / YOE_MAX) * 100
+  const set = (i) => (e) => {
+    const v = Number(e.target.value)
+    // 손잡이끼리 서로를 밀지 않는다 — 밀어 버리면 한쪽을 끌다가 반대쪽 값이 조용히 바뀐다.
+    onChange(i === 0 ? [Math.min(v, hi), hi] : [lo, Math.max(v, lo)])
+  }
+
+  return (
+    <>
+      {/* 양 끝에 걸친 기본값도 주황으로 채운다.
+
+          처음엔 회색으로 뒀다 — 아무것도 안 골랐는데 고른 것처럼 보이면 안 된다는 이유였다.
+          그런데 회색 막대는 '안 고름'이 아니라 '못 쓰는 칸'으로 읽혔다. 다른 줄은 전부
+          누르면 주황이 되는 칩인데 이 줄만 회색이면, 여기서 뭘 해야 하는지가 안 보인다.
+          채워 두면 "지금 0~10년+ 로 잡혀 있고 손잡이로 좁힐 수 있다"가 한눈에 들어온다. */}
+      <div className="psc-yoe">
+        <div className="psc-yoe-track">
+          <div className="psc-yoe-fill" style={{ left: `${pct(lo)}%`, right: `${100 - pct(hi)}%` }} />
+        </div>
+        {/* 라벨은 '최소/최대 경력'이라고 읽어 준다 — 화면에는 숫자만 있어서, 소리로 들으면
+            어느 쪽 손잡이를 잡았는지 알 방법이 없다. */}
+        <input type="range" className="psc-yoe-in" min={0} max={YOE_MAX} step={1} value={lo}
+          onChange={set(0)} aria-label="최소 경력"
+          aria-valuetext={lo === 0 ? '신입' : `${lo}년`}
+          style={{ zIndex: lo > YOE_MAX - 2 ? 4 : 2 }} />
+        <input type="range" className="psc-yoe-in" min={0} max={YOE_MAX} step={1} value={hi}
+          onChange={set(1)} aria-label="최대 경력"
+          aria-valuetext={hi >= YOE_MAX ? `${YOE_MAX}년 이상` : `${hi}년`}
+          style={{ zIndex: 3 }} />
+      </div>
+      <span className="psc-yoe-val" style={{
+        fontSize: 12, fontWeight: 700, color: T.brandInk,
+        minWidth: 72, textAlign: 'right', flexShrink: 0,
+        fontVariantNumeric: 'tabular-nums',
+      }}>{yoeLabel(lo, hi)}</span>
+    </>
+  )
+}
+
+function Field({ label, hint, last, children }) {
+  return (
+    <div className="psc-field" style={{
+      display: 'flex', alignItems: 'flex-start',
+      padding: '11px 0', borderBottom: last ? 0 : `1px solid ${T.hair}`,
+    }}>
+      {/* 칩이 5px 패딩만큼 아래로 앉아 있어서, 라벨도 그만큼 내려야 첫 줄과 눈이 맞는다 */}
+      <span className="psc-flabel" style={{
+        fontSize: 11.5, color: T.faint, width: 46, flexShrink: 0, paddingTop: 6,
+      }}>{label}</span>
+      <div className="psc-fchips" style={{
+        display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center',
+        flex: 1, minWidth: 0,
+      }}>
+        {children}
+        {!!hint && <span className="psc-fhint" style={{ fontSize: 11, color: T.faint }}>{hint}</span>}
+      </div>
+    </div>
+  )
+}
+
+export default function PrivateShowcasing() {
   const [step, setStep] = useState('input') // input | criteria | match | done
-  const [jd, setJd] = useState('')
-  const [file, setFile] = useState('')     // 첨부해서 채운 경우 파일명 — 출처를 밝혀 둔다
-  const [reading, setReading] = useState(false)
-  const [focus, setFocus] = useState(false) // 입력칸 포커스 — 링을 씌우는 용도
-  const [wide, setWide] = useState(false)   // 넓게 보기 — 긴 JD 를 확인할 때 칸을 키운다
-  const [long, setLong] = useState(false)   // 내용이 기본 높이를 넘겼는지 — 확대 버튼을 이때만 보인다
-  /* 고른 경력 구간(복수). 여러 개를 고르면 서버가 합집합으로 잡는다 — "신입도 좋고
-     3~5년차도 좋다"는 실제로 흔한 요구다. 빈 배열이면 JD 에서 읽어낸 값을 쓴다. */
-  const [yoe, setYoe] = useState([])
+  /* 고른 칩들. group 만 하나고 나머지는 복수 선택이다 — 한 번에 한 자리를 채우는
+     화면이라 직군이 둘이면 어느 쪽 기준으로 순위를 매겼는지 말할 수가 없다. */
+  const [group, setGroup] = useState('')
+  const [roles, setRoles] = useState([])
+  const [stacks, setStacks] = useState([])
+  const [prefs, setPrefs] = useState([])
+  // 기술 칩은 개발+머신러닝이면 서른 개가 넘는다 — 처음엔 앞 여덟 개만 편다.
+  const [moreStacks, setMoreStacks] = useState(false)
+  // 그은 경력 구간 [최소, 최대]. 위 끝은 열린 구간이고, 양 끝에 걸쳐 있으면 연차를 안 따진다.
+  const [yoe, setYoe] = useState([0, YOE_MAX])
   const [criteria, setCriteria] = useState(null)
   // 훑을 이력서 건수 — 조건 단계가 같이 세어 온다. 로딩 화면이 그 숫자를 말한다.
   const [pool, setPool] = useState(null)
   const [result, setResult] = useState(null)
   const [err, setErr] = useState('')
-  const fileRef = useRef(null)
-  const boxRef = useRef(null)
 
-  /* 이벤트에는 기업 이름만 싣는다 — JD 원문은 남기지 않는다. 고객사가 아직 안 낸 자리를
-     통째로 저장하는 셈이라, 로그를 보려고 남의 채용 계획을 우리 DB 에 쌓게 된다.
-     길이만 남겨도 "빈 칸으로 눌렀나 / 진짜 JD 를 넣었나"는 구분된다.
-     로그: /admin/showcasing-events */
-  const ev = (name, meta) => {
-    if (off) return // 어드민에서 추적을 끊은 링크 — 이 방문은 없던 것처럼 둔다
-    track(name, { page: '/private/showcasing', meta: { co: co || null, campaign: campaign || null, ...meta } })
+  /* 화면에 낼 스택 칩. 고른 직무가 얹는 것까지 합친다 — 개발 기본 목록은 웹 쪽으로
+     기울어 있어서, 머신러닝을 고른 사람에게는 정작 쓰는 도구가 목록에 없다. */
+  const stackList = stacksFor(group, roles)
+  /* 접었을 때 보이는 것 — 앞 열 개에 '이미 고른 것'을 더한다. 고른 칩이 접힘 뒤로
+     숨으면, 화면에 안 보이는 조건이 결과를 바꾸는 꼴이 된다(직무를 끌 때와 같은 이유).
+
+     여덟이 아니라 열인 이유: 목록이 보유자 많은 순인데 개발에서 8·9·10번이
+     MongoDB(401)·Python(396)·Java(361) 로 붙어 있다. 여덟에서 자르면 5명 차이로
+     Python 과 Java 가 접힘 뒤에 숨는데, 둘 다 여기서 제일 자주 찾는 이름이다. */
+  const SHOWN_STACKS = 10
+  const visibleStacks = moreStacks
+    ? stackList
+    : stackList.filter((s, i) => i < SHOWN_STACKS || stacks.includes(s))
+  const hiddenStacks = stackList.length - visibleStacks.length
+  /* 직무를 하나는 골라야 보낸다. 대분류만 보내면 조건 단계가 요건을 두 줄도 못 뽑아
+     400 으로 돌아온다(jd-criteria 는 요건 2개 미만이면 순위가 안 생긴다며 거절한다). */
+  const canSend = !!group && roles.length > 0
+
+  const toggle = (setter) => (key) => setter((a) => (a.includes(key) ? a.filter((k) => k !== key) : [...a, key]))
+  const toggleStack = toggle(setStacks)
+  const togglePref = toggle(setPrefs)
+
+  /* 직무를 끄면 그 직무가 데려온 스택도 같이 내린다 — 화면에서 사라진 칩이 조건에는
+     남아 있으면, 안 보이는 조건 때문에 결과가 달라진다. */
+  const toggleRole = (key) => {
+    const next = roles.includes(key) ? roles.filter((k) => k !== key) : [...roles, key]
+    setRoles(next)
+    const allowed = stacksFor(group, next)
+    setStacks((s) => s.filter((x) => allowed.includes(x)))
   }
 
-  useEffect(() => { ev('psc_open') }, []) // eslint-disable-line react-hooks/exhaustive-deps
-
-  const grow = (el) => {
-    if (!el) return
-    el.style.height = 'auto'
-    // 넓게 보기에서는 화면 높이만큼 열어 준다 — 로고·제목을 치운 자리까지 위아래로 쓴다.
-    // 200 은 입력칸 테두리·버튼 줄·안내 줄·상하 여백의 몫 — 다 합쳐 한 화면에 들어와야
-    // 확장했는데 페이지가 스크롤되는 일이 없다.
-    const cap = wide ? window.innerHeight - 200 : 340
-    el.style.height = `${Math.min(el.scrollHeight, cap)}px`
-    setLong(el.scrollHeight > 340)
-  }
-
-  // 토글 직후 새 높이로 다시 잰다 — grow 는 이벤트에서만 불려서 상태 변화를 스스로 못 본다
-  useEffect(() => { grow(boxRef.current) }, [wide]) // eslint-disable-line react-hooks/exhaustive-deps
-
-  const onPick = async (f) => {
-    if (!f) return
-    setErr(''); setReading(true)
-    try {
-      const body = new FormData()
-      body.append('file', f)
-      const r = await fetch('/api/private/jd-extract', { method: 'POST', body })
-      const j = await r.json()
-      if (!r.ok) throw new Error(j.error || '파일을 읽지 못했습니다')
-      // 읽은 글로 입력칸을 덮지 않고 이어 붙인다 — 먼저 적어 둔 조건이 사라지면
-      // 파일을 붙였다는 이유로 사람이 쓴 문장을 날리는 셈이다.
-      // 첨부는 이 화면의 유일한 갈림길이다 — 붙여넣기로 끝내는 사람과 파일을 여는 사람은
-      // 다음에 우리가 뭘 준비해야 하는지가 다르다(파서를 더 볼 건지, 입력칸을 더 볼 건지).
-      ev('psc_file', { chars: String(j.text || '').length })
-      setJd((prev) => (prev.trim() ? `${prev.trim()}\n\n${j.text}` : j.text))
-      setFile(j.name)
-      requestAnimationFrame(() => grow(boxRef.current))
-    } catch (e) {
-      setErr(e.message)
-    } finally {
-      setReading(false)
-      if (fileRef.current) fileRef.current.value = '' // 같은 파일을 다시 고를 수 있게
-    }
+  // 대분류를 바꾸면 아래는 전부 비운다 — 개발에서 고른 React 가 마케팅 조건에 남으면 안 된다.
+  const pickGroup = (key) => {
+    setGroup((g) => (g === key ? '' : key))
+    setRoles([]); setStacks([]); setMoreStacks(false)
   }
 
   const submit = async () => {
-    if (!jd.trim() || reading) return
-    // 고른 경력 구간도 남긴다 — 결과가 엉뚱할 때 JD 탓인지 구간 탓인지 갈린다.
-    ev('psc_submit', { chars: jd.trim().length, file: !!file, yoe: yoe.length ? yoe : null })
+    if (!canSend) return
+    /* 고른 칩을 글로 편다. 뒤쪽(조건 뽑기 → 판정 → 순위)이 전부 "글에서 요건을 뽑는다"를
+       전제로 서 있어서, 그 셋을 한꺼번에 고쳐 쓰는 대신 입구에서 글로 만들어 넣는다. */
+    const jd = chipsToJd({ group, roles, stacks, yoe, prefs })
     setErr(''); setCriteria(null); setResult(null); setStep('criteria')
-    // 실패했을 때 어디서 멈췄는지. 로딩 화면은 두 번의 대기(조건 뽑기 → 이력서 훑기)를
-    // 한 화면에서 보여줘서, 단계를 안 남기면 둘 중 어느 쪽이 문제인지 영영 모른다.
-    let stage = 'criteria'
     try {
       const r1 = await fetch('/api/private/jd-criteria', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -163,24 +227,12 @@ export default function PrivateShowcasing({ co, campaign, off, c }) {
       setCriteria(j1.criteria)
       setPool(j1.pool ?? null)
       setStep('match')
-      stage = 'match'
       const matchStartedAt = Date.now() // 조건 상자가 뜬 시점 — 최소 체류 계산용
-      /* 조건이 나온 시점. JD 를 넣은 사람(psc_submit)과 결과를 본 사람(psc_result) 사이가
-         비어 있으면, 중간에 사라진 사람이 기다리다 나간 건지 매칭이 죽은 건지 안 갈린다.
-         inferred 는 JD 에 안 적혀 있어서 우리가 추측한 조건이 있다는 뜻 — 결과가 엉뚱할 때
-         제일 먼저 의심할 값이라 건수를 세어 둔다. */
-      ev('psc_criteria', {
-        inferred: !!j1.criteria?.inferred,
-        yoe_min: j1.criteria?.yoe_min ?? null,
-        positions: j1.criteria?.positions?.length || 0,
-      })
 
-      // 토큰을 같이 보낸다 — 서버가 서명을 다시 확인해서 이 검색에 기업 이름을 붙인다.
-      // 기업명을 문자열로 보내지 않는 이유: 로그인이 없는 경로라 그대로 믿을 수가 없다.
       // h 는 JD 원문의 해시 — 같은 JD 를 다시 돌리면 서버가 저장된 같은 결과를 돌려준다.
       const r2 = await fetch('/api/private/jd-match', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ criteria: j1.criteria, c: c || null, h: j1.h || null }),
+        body: JSON.stringify({ criteria: j1.criteria, h: j1.h || null }),
       })
       const j2 = await r2.json()
       if (!r2.ok) throw new Error(j2.error || '후보를 찾지 못했습니다')
@@ -193,25 +245,18 @@ export default function PrivateShowcasing({ co, campaign, off, c }) {
       // 바로 done 으로 안 간다 — 로딩 퍼센트가 어중간한 숫자에서 화면이 바뀌면
       // 그 숫자가 전부 연출이었다고 실토하는 셈이다. 100을 빠르게 마저 채우고 넘어간다.
       setStep('finish')
-      ev('psc_result', { picks: j2.picks?.length || 0, screened: j2.screened ?? null })
     } catch (e) {
       setErr(e.message)
       setStep('input')
-      // 실패도 남긴다 — 결과가 안 나온 게 우리 잘못인지 조건이 빡센 건지는
-      // 실패 건수를 봐야 갈린다. 메시지는 우리가 띄운 문구라 PII 가 아니다.
-      ev('psc_fail', { stage, message: String(e.message || '').slice(0, 120) })
     }
   }
 
-  // 다시 하기도 남긴다 — 결과를 보고 되돌아간 건 "이 조건이 아닌데요"라는 뜻이라,
-  // 문의로 안 간 사람 중에 조용히 나간 사람과 구분된다.
-  // 입력값도 다 비운다 — "다른 JD로 검색"이라 해놓고 이전 JD 가 채워져 있으면
-  // 지우는 일부터 시키는 셈이다.
+  // 고른 칩도 다 비운다 — "다른 조건으로 검색"이라 해놓고 이전 선택이 켜져 있으면
+  // 끄는 일부터 시키는 셈이다.
   const restart = () => {
-    ev('psc_restart', { picks: result?.picks?.length || 0 })
     setStep('input'); setResult(null); setCriteria(null)
-    setJd(''); setFile(''); setErr(''); setPool(null); setYoe([])
-    setWide(false); setLong(false)
+    setGroup(''); setRoles([]); setStacks([]); setPrefs([]); setYoe([0, YOE_MAX]); setMoreStacks(false)
+    setErr(''); setPool(null)
   }
 
   return (
@@ -223,7 +268,7 @@ export default function PrivateShowcasing({ co, campaign, off, c }) {
       </Head>
 
       {step === 'done' ? (
-        <Result data={result} criteria={criteria} onBack={restart} ev={ev} />
+        <Result data={result} criteria={criteria} onBack={restart} />
       ) : (
         /* 첫 화면은 세로 가운데. 로딩은 위에 고정한다 — 여기는 기다리는 동안 조건 상자가
            뒤늦게 붙어서 내용이 자라는데, 가운데 정렬이면 그때마다 제목과 로고가 위로
@@ -282,135 +327,91 @@ export default function PrivateShowcasing({ co, campaign, off, c }) {
             width: '100%', maxWidth: 640, position: 'relative',
             ...(step === 'input' ? { margin: 'auto 0' } : {}),
           }}>
-            {/* 첫 화면만 가운데에 크게. 여기는 화면에 이것과 입력칸뿐이라 로고가
-                작으면 빈 화면처럼 보인다. 로딩은 단계 목록이 왼쪽으로 흐르는 화면이라 왼쪽에 작게.
-                넓게 보기에서는 로고·제목을 치운다 — 입력칸이 위아래로 자라 그 자리까지 쓴다. */}
+            {/* 첫 화면만 가운데에 크게. 여기는 화면에 이것과 고르는 칸뿐이라 로고가
+                작으면 빈 화면처럼 보인다. 로딩은 단계 목록이 왼쪽으로 흐르는 화면이라 왼쪽에 작게. */}
             {/* 워드마크가 옆으로 긴(4.8:1) 로고라 88px 높이면 화면을 가로로 다 먹는다 — 56이면
-                폭 ~270px 로 입력칸(640px) 위에 알맞다. */}
-            {!(step === 'input' && wide) && (
-              <Mark center={step === 'input'} size={step === 'input' ? 56 : 24} />
-            )}
+                폭 ~270px 로 고르는 칸(640px) 위에 알맞다. */}
+            <Mark center={step === 'input'} size={step === 'input' ? 56 : 24} />
 
             {step === 'input' ? (
               <>
-                {/* 첫 화면은 한 줄과 입력칸뿐이다. 인사말·예시·안내를 얹으면 읽을 것이
-                    늘어나는데, 여기서 할 일은 하나(JD 를 넣는다)라 읽을 게 없어야 빠르다. */}
-                {!wide && (
-                  <div style={{ textAlign: 'center' }}>
-                    {/* 데스크톱은 한 줄. 모바일에서만 '붙여넣기' 앞에서 끊는다
-                        (psc-hbr, 768px 이하에서만 산다) — 자동 줄바꿈에 맡기면 낱말
-                        가운데서 갈라진다. */}
-                    <H>채용공고를 복사 <br className="psc-hbr" />붙여넣기 해주세요</H>
-                  </div>
-                )}
+                {/* 첫 화면은 한 줄과 고르는 칸뿐이다. 인사말·예시·안내를 얹으면 읽을 것이
+                    늘어나는데, 여기서 할 일은 하나(찾는 사람을 고른다)라 읽을 게 없어야 빠르다. */}
+                <div style={{ textAlign: 'center' }}>
+                  {/* 데스크톱은 한 줄. 모바일에서만 앞에서 끊는다
+                      (psc-hbr, 768px 이하에서만 산다) — 자동 줄바꿈에 맡기면 낱말
+                      가운데서 갈라진다. */}
+                  <H>어떤 분을 찾으시나요? <br className="psc-hbr" />골라만 주세요</H>
+                </div>
 
-                {/* 입력칸 — 글이든 파일이든 여기 한 곳으로 모인다.
-                    처음엔 한 줄이고 쓰는 만큼만 자란다(grow). 빈 화면에 큰 상자를 띄우면
-                    "이만큼 써야 하나" 싶어지는데, 실제로 붙여넣는 JD 는 길다.
-                    포커스에서 테두리 두께를 바꾸는 대신 링을 덧씌운다 — 두께가 변하면
-                    상자가 1px 움찔하고, 그 떨림이 타이핑 내내 보인다. */}
+                {/* 고르는 칸 — 위에서 아래로 직군 → 직무 → 기술 → 경력 → 우대 순으로 좁혀 간다.
+                    한 상자 안에 다 넣는 이유는 이게 '양식 작성'이 아니라 한 번의 조작으로
+                    보여야 해서다. 줄을 상자 밖으로 빼면 채워야 할 칸이 여럿인 서류가 된다.
+                    포커스 링은 없다 — 안에 글을 넣는 칸이 없어서 상자가 포커스를 받을 일이
+                    아예 없다(칩은 저마다 눌리는 것이지 상자가 눌리는 게 아니다). */}
                 <div style={{
-                  marginTop: 26, background: '#fff', borderRadius: 18, padding: '16px 16px 12px',
-                  border: `1px solid ${focus ? T.brandLine : T.line}`,
-                  boxShadow: focus ? `${T.md}, 0 0 0 4px rgba(255,96,0,.08)` : T.sm,
-                  transition: 'box-shadow .16s ease, border-color .16s ease',
+                  marginTop: 26, background: '#fff', borderRadius: 18, padding: '4px 16px 12px',
+                  border: `1px solid ${T.line}`, boxShadow: T.sm,
                   position: 'relative',
                 }}>
-                  {/* 넓게 보기 — 내용이 기본 높이를 넘겼을 때만 나타난다(제미나이 방식).
-                      짧은 JD 에는 키울 이유가 없어서 버튼부터가 소음이다. */}
-                  {(long || wide) && (
-                    <button type="button" className="psc-zoom" onClick={() => setWide((w) => !w)}
-                      title={wide ? '좁게 보기' : '넓게 보기'}>
-                      {wide ? <Shrink /> : <Grow />}
-                    </button>
+                  <Field label="직군">
+                    {GROUPS.map((g) => (
+                      <Chip key={g.key} on={group === g.key} onClick={() => pickGroup(g.key)}>{g.label}</Chip>
+                    ))}
+                  </Field>
+
+                  {/* 직무·기술은 직군을 고른 다음에야 나온다. 처음부터 다 펼치면
+                      고를 것이 백 개가 넘어서, 고르는 화면이 읽는 화면이 된다. */}
+                  {!!group && (
+                    <Field label="직무" hint={roles.length ? null : '하나 이상'}>
+                      {groupOf(group).roles.map((r) => (
+                        <Chip key={r.key} on={roles.includes(r.key)} onClick={() => toggleRole(r.key)}>{r.label}</Chip>
+                      ))}
+                    </Field>
                   )}
-                  {/* 경력 구간 — 입력칸 맨 위에 둔다. 상자 밖으로 빼면 "JD 를 넣는 곳"과
-                      "조건을 고르는 곳"이 둘로 보여서, 한 칸에 붙여넣고 보내면 되는 화면이
-                      양식 작성으로 읽힌다. 아래에는 파일 첨부·보내기가 이미 있어서, 거기 한 줄을 더
-                      붙이면 손이 가는 것이 전부 바닥에 몰린다.
-                      여러 개를 고를 수 있고, 안 골라도 된다. */}
-                  <div className="psc-yoe-row" style={{
-                    display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap',
-                    marginBottom: 12, paddingBottom: 12, paddingRight: 30,
-                    borderBottom: `1px solid ${T.hair}`,
-                  }}>
-                    <span style={{ fontSize: 11.5, color: T.faint, marginRight: 2 }}>경력</span>
-                    {YOE_CHIPS.map((x) => {
-                      const on = yoe.includes(x.key)
-                      return (
-                        <button key={x.key} type="button" className="psc-yoe"
-                          aria-pressed={on}
-                          onClick={() => setYoe((a) => (a.includes(x.key)
-                            ? a.filter((k) => k !== x.key)
-                            : [...a, x.key]))}
-                          style={{
-                            fontFamily: 'inherit', fontSize: 12, fontWeight: on ? 700 : 600,
-                            color: on ? '#fff' : T.body,
-                            background: on ? T.brand : '#fff',
-                            border: `1px solid ${on ? T.brand : T.line}`,
-                            borderRadius: 100, padding: '5px 12px', cursor: 'pointer',
-                          }}>{x.label}</button>
-                      )
-                    })}
-                    {/* 안 고르면 어떻게 되는지 — 안 적으면 빈 채로 두는 게 잘못인 줄 안다.
-                        좁은 화면에서는 감춘다(psc-yoe-hint): 이 한 줄 때문에 칩이 둘째 줄로
-                        넘어가는데, 안 고르는 게 기본값이라 안내가 없다고 못 넘어가지 않는다. */}
-                    {!yoe.length && (
-                      <span className="psc-yoe-hint" style={{ fontSize: 11, color: T.faint }}>선택 안 하면 JD에서 읽어요</span>
-                    )}
-                  </div>
 
-                  <textarea
-                    ref={boxRef}
-                    className="psc-jd"
-                    value={jd}
-                    onChange={(e) => { setJd(e.target.value); grow(e.target) }}
-                    onFocus={() => setFocus(true)}
-                    onBlur={() => setFocus(false)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) { e.preventDefault(); submit() }
-                    }}
-                    placeholder={FILE_UPLOAD ? 'JD를 붙여넣거나 파일로 올려주세요' : '채용공고를 붙여넣어주세요'}
-                    rows={1}
-                    style={{
-                      width: '100%', border: 0, outline: 'none', resize: 'none', padding: 0,
-                      fontFamily: 'inherit', fontSize: 14.5, lineHeight: 1.7, color: T.ink,
-                      background: 'transparent', minHeight: 25,
-                    }}
-                  />
-
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 10 }}>
-                    {FILE_UPLOAD && (
-                      <>
-                        <input ref={fileRef} type="file" accept={ACCEPT} style={{ display: 'none' }}
-                          onChange={(e) => onPick(e.target.files?.[0])} />
-                        <button type="button" onClick={() => fileRef.current?.click()} disabled={reading}
-                          style={{
-                            display: 'inline-flex', alignItems: 'center', gap: 6,
-                            fontFamily: 'inherit', fontSize: 12.5, fontWeight: 600, color: T.body,
-                            background: '#fff', border: `1px solid ${T.line}`, borderRadius: 100,
-                            padding: '6px 13px', cursor: reading ? 'default' : 'pointer', boxShadow: T.sm,
-                          }}>
-                          <Clip />{reading ? '읽는 중…' : '파일 첨부'}
+                  {!!stackList.length && (
+                    <Field label="기술" hint={stacks.length || hiddenStacks ? null : '선택'}>
+                      {visibleStacks.map((s) => (
+                        <Chip key={s} on={stacks.includes(s)} onClick={() => toggleStack(s)}>{s}</Chip>
+                      ))}
+                      {/* 칩이 아니라 글자 버튼이다 — 칩 모양이면 고르는 것들 사이에
+                          고르는 게 아닌 것이 섞여, 눌러 보고서야 아닌 걸 안다. */}
+                      {(hiddenStacks > 0 || moreStacks) && (
+                        <button type="button" onClick={() => setMoreStacks((v) => !v)} style={{
+                          padding: '5px 4px', border: 0, background: 'none', fontFamily: 'inherit',
+                          fontSize: 11.5, fontWeight: 600, color: T.mute, cursor: 'pointer',
+                        }}>
+                          {moreStacks ? '접기' : `+${hiddenStacks}개 더보기`}
                         </button>
+                      )}
+                    </Field>
+                  )}
 
-                        {/* 입력칸의 글이 사람이 쓴 건지 파서가 뽑은 건지 */}
-                        {!!file && !reading && (
-                          <span style={{
-                            fontSize: 11.5, color: T.mute, minWidth: 0, overflow: 'hidden',
-                            textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-                          }}>{file} 읽음</span>
-                        )}
-                      </>
-                    )}
+                  <Field label="경력">
+                    <YoeRange value={yoe} onChange={setYoe} />
+                  </Field>
 
-                    <button type="button" onClick={submit} disabled={!jd.trim() || reading}
+                  {/* 우대는 떨어뜨리는 조건이 아니라 순서를 정하는 조건이다 —
+                      골라도 후보가 줄지 않는다는 걸 힌트로 말해 둔다. 안 그러면
+                      "까다롭게 굴면 사람이 없어지겠지" 싶어 아무것도 안 고른다.
+
+                      마지막 줄이라 구분선을 뗀다 — 아래에 보내기 버튼밖에 없는데 선이
+                      남으면 안 쓴 칸이 하나 더 있는 것처럼 보인다. */}
+                  <Field label="우대" hint={prefs.length ? null : '순위에만 반영'} last>
+                    {PREF_CHIPS.map((p) => (
+                      <Chip key={p.key} on={prefs.includes(p.key)} onClick={() => togglePref(p.key)}>{p.label}</Chip>
+                    ))}
+                  </Field>
+
+                  <div style={{ display: 'flex', alignItems: 'center', marginTop: 12 }}>
+                    <button type="button" onClick={submit} disabled={!canSend}
                       style={{
                         marginLeft: 'auto', fontFamily: 'inherit', fontSize: 13, fontWeight: 700,
                         color: '#fff', border: 0, borderRadius: 100, padding: '8px 18px',
-                        background: jd.trim() && !reading ? T.brand : '#D6DBE1',
-                        boxShadow: jd.trim() && !reading ? '0 2px 6px rgba(255,96,0,.18)' : 'none',
-                        cursor: jd.trim() && !reading ? 'pointer' : 'default',
+                        background: canSend ? T.brand : '#D6DBE1',
+                        boxShadow: canSend ? '0 2px 6px rgba(255,96,0,.18)' : 'none',
+                        cursor: canSend ? 'pointer' : 'default',
                         transition: 'box-shadow .16s ease, background .16s ease',
                       }}>
                       보내기
@@ -419,56 +420,15 @@ export default function PrivateShowcasing({ co, campaign, off, c }) {
                 </div>
 
                 {!!err && <div style={{ fontSize: 12.5, color: '#DC2626', marginTop: 10 }}>{err}</div>}
-
-                {FILE_UPLOAD && (
-                  <div style={{ fontSize: 11.5, color: T.faint, marginTop: 12, textAlign: 'center' }}>
-                    PDF · DOCX · TXT · 5MB까지
-                  </div>
-                )}
               </>
             ) : (
               <Loading step={step} criteria={criteria} pool={pool} onFull={() => setStep('done')} />
             )}
           </div>
 
-          {/* 넓게 보기에서는 푸터도 치운다 — 확장의 약속은 '한 화면'인데 푸터 높이만큼
-              페이지가 스크롤되면 그 약속이 깨진다 */}
-          {!(step === 'input' && wide) && (
-            <CorpFooter style={step === 'input' ? null : { marginTop: 'auto' }} />
-          )}
+          <CorpFooter style={step === 'input' ? null : { marginTop: 'auto' }} />
 
-          {/* 긴 JD 를 붙여넣으면 높이 상한에서 스크롤이 생긴다. 막대를 아예 감추면
-              더 있다는 표시가 없어서, 트랙 없이 얇은 썸만 남긴다(제미나이 방식). */}
           <style jsx>{`
-            .psc-jd { scrollbar-width: thin; scrollbar-color: #D9DEE4 transparent; }
-            .psc-jd::-webkit-scrollbar { width: 5px; }
-            .psc-jd::-webkit-scrollbar-track { background: transparent; }
-            .psc-jd::-webkit-scrollbar-thumb { background: #D9DEE4; border-radius: 100px; }
-            .psc-jd::-webkit-scrollbar-thumb:hover { background: #C3CAD2; }
-
-            /* 확대 토글 — 평소엔 아이콘만, 호버에서 원형 테두리가 떠서 누를 수 있는 것임을
-               알린다. 테두리는 투명으로 늘 깔려 있어 나타날 때 1px 도 안 밀린다. */
-            .psc-zoom {
-              position: absolute; top: 10px; right: 10px; width: 28px; height: 28px;
-              display: flex; align-items: center; justify-content: center;
-              background: rgba(255,255,255,.88); border: 1px solid transparent; border-radius: 50%;
-              padding: 0; color: ${T.mute}; cursor: pointer;
-              transition: color .15s ease, border-color .15s ease;
-            }
-            .psc-zoom:hover { color: ${T.ink}; border-color: ${T.line}; }
-
-            /* 경력 칩 — 누를 수 있는 것임이 손이 닿기 전에 보이게 */
-            .psc-yoe { transition: background .12s ease, border-color .12s ease, color .12s ease; }
-            /* 좁은 화면: 안내문을 빼고 칩·간격을 조여 네 개가 한 줄에 들어가게 한다.
-               오른쪽 여백 30 은 확대 버튼 자리인데, 그 버튼은 긴 글을 넣었을 때만 나오고
-               그때는 칩 줄이 이미 위로 밀려 있어 겹치지 않는다 — 좁은 화면에서는 뺀다. */
-            @media (max-width: 480px) {
-              .psc-yoe-hint { display: none; }
-              .psc-yoe { padding: 4px 8px !important; font-size: 11px !important; }
-              .psc-yoe-row { gap: 4px !important; padding-right: 0 !important; }
-            }
-            .psc-yoe[aria-pressed="false"]:hover { background: #FFF6F0; border-color: ${T.brandLine}; color: ${T.brandInk}; }
-
             /* 로딩 배경 글로우 — 아래에서 위로 떠올라 화면을 통과하고, 음수 delay 로
                처음부터 곳곳에 떠 있다. 키프레임과 클래스가 같은 블록에 있어야 한다:
                styled-jsx 가 둘의 이름을 같이 바꿔서 만나게 해 준다(인라인 animation 은 못 만난다). */
@@ -500,12 +460,66 @@ export default function PrivateShowcasing({ co, campaign, off, c }) {
           <style jsx global>{`
             .psc-hbr { display: none; }
             .psc-screen { --psc-glow-a: 1400px 980px; --psc-glow-b: 820px 640px; }
+
+            /* 칩·줄도 Chip/Field 라는 별개 컴포넌트라 scoped 블록이 안 닿는다 — Mark 와 같은 사정.
+               누를 수 있는 것임이 손이 닿기 전에 보이게. */
+            .psc-chip { transition: background .12s ease, border-color .12s ease, color .12s ease; }
+            .psc-chip[aria-pressed="false"]:hover { background: ${T.brandSoft}; border-color: ${T.brandLine}; color: ${T.brandInk}; }
+            /* 마지막 줄의 밑줄은 지운다 — 아래가 '조건 직접 적기'라 선이 둘로 겹쳐 보인다. */
+            .psc-field:last-of-type { border-bottom: 0 !important; }
+
+            /* 경력 막대. 칩 줄들과 높이를 맞춘다(칩 한 줄 = 5px 패딩 + 12px 글 ≈ 26px).
+               track 을 손잡이 반지름(9px)만큼 안으로 들여야 채운 구간의 양 끝이 손잡이
+               한가운데에 선다 — 네이티브 range 의 손잡이가 딱 그만큼 안에서만 움직인다. */
+            .psc-yoe { position: relative; flex: 1 1 170px; min-width: 120px; height: 26px; }
+            .psc-yoe-track {
+              position: absolute; left: 9px; right: 9px; top: 50%; transform: translateY(-50%);
+              height: 4px; border-radius: 100px; background: ${T.line};
+            }
+            .psc-yoe-fill { position: absolute; top: 0; bottom: 0; border-radius: 100px; background: ${T.brand}; }
+            /* input 은 통째로 클릭에 투명하다 — 둘이 겹쳐 있어서 안 그러면 위엣것이
+               아래 손잡이를 덮어 버린다. 손잡이에서만 pointer-events 를 되살린다. */
+            .psc-yoe-in {
+              position: absolute; left: 0; top: 0; width: 100%; height: 100%;
+              margin: 0; padding: 0; background: none; pointer-events: none;
+              -webkit-appearance: none; appearance: none;
+            }
+            .psc-yoe-in:focus { outline: none; }
+            .psc-yoe-in::-webkit-slider-thumb {
+              -webkit-appearance: none; pointer-events: auto;
+              width: 18px; height: 18px; border-radius: 50%;
+              background: #fff; border: 2px solid ${T.brand}; box-shadow: ${T.sm};
+              cursor: grab; transition: box-shadow .12s ease;
+            }
+            .psc-yoe-in::-moz-range-thumb {
+              pointer-events: auto; width: 14px; height: 14px; border-radius: 50%;
+              background: #fff; border: 2px solid ${T.brand}; box-shadow: ${T.sm};
+              cursor: grab; transition: box-shadow .12s ease;
+            }
+            .psc-yoe-in::-webkit-slider-thumb:active { cursor: grabbing; }
+            .psc-yoe-in::-moz-range-thumb:active { cursor: grabbing; }
+            /* 키보드로 왔을 때만 고리를 씌운다 — 마우스로 끄는 동안 계속 떠 있으면 시끄럽다. */
+            .psc-yoe-in:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 4px ${T.brandLine}; }
+            .psc-yoe-in:focus-visible::-moz-range-thumb { box-shadow: 0 0 0 4px ${T.brandLine}; }
+            /* 파이어폭스는 트랙도 제 것을 그린다 — 우리가 깐 것 위에 겹치니 지운다. */
+            .psc-yoe-in::-moz-range-track { background: none; border: 0; }
+
             @media (max-width: 768px) {
               /* 56px 는 폭 ~270px 라 좁은 화면을 가로로 거의 다 먹는다 */
               .psc-mark-hero { height: 44px !important; }
               .psc-hbr { display: inline; }
               /* 데스크톱 크기 그대로면 390px 화면에서 폭의 3.6배짜리 원이라 배경 전체가 주황이 된다 */
               .psc-screen { --psc-glow-a: 700px 500px; --psc-glow-b: 420px 340px; }
+            }
+            /* 좁은 화면: 안내문을 빼고 칩을 조인다. 라벨은 그대로 왼쪽에 둔다 —
+               폭을 40 으로 줄이면 375px 에서도 칩 자리가 ~280px 남아서, 제일 긴
+               'DevOps / 시스템 관리자'(11px 기준 ~150px)가 한 줄에 들어간다.
+               라벨을 위로 올리면 칩이 라벨 아래로 붙어 왼쪽 정렬이 다시 어긋난다. */
+            @media (max-width: 480px) {
+              .psc-fhint { display: none; }
+              .psc-chip { padding: 4px 9px !important; font-size: 11px !important; }
+              .psc-fchips { gap: 4px !important; }
+              .psc-flabel { width: 40px !important; font-size: 11px !important; }
             }
           `}</style>
         </div>
@@ -529,29 +543,6 @@ const H = ({ children }) => (
     fontSize: 25, fontWeight: 700, color: T.ink, letterSpacing: '-0.035em',
     lineHeight: 1.35, marginTop: 2,
   }}>{children}</div>
-)
-
-const Clip = () => (
-  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-    strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: .5 }}>
-    <path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48" />
-  </svg>
-)
-
-// 넓게/좁게 보기 — 대각 화살표 한 쌍(피처 maximize-2/minimize-2 형)
-const Grow = () => (
-  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-    strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-    <polyline points="15 3 21 3 21 9" /><polyline points="9 21 3 21 3 15" />
-    <line x1="21" y1="3" x2="14" y2="10" /><line x1="3" y1="21" x2="10" y2="14" />
-  </svg>
-)
-const Shrink = () => (
-  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-    strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-    <polyline points="4 14 10 14 10 20" /><polyline points="20 10 14 10 14 4" />
-    <line x1="14" y1="10" x2="21" y2="3" /><line x1="3" y1="21" x2="10" y2="14" />
-  </svg>
 )
 
 /* 회사 정보 푸터 — 이 링크는 한국 기업에게 나가는 것이라 본 사이트(베트남 대상)가 아니라
@@ -780,18 +771,51 @@ const Bullets = ({ items, color, riseFrom }) => (
   </div>
 )
 
+/* 결과 머리에 거는 조건 줄.
+
+   조건 문장을 한 줄에 하나씩 세우면 스택 하나가 한 줄을 먹는다 — 칩을 다섯 개 고른
+   순간 "Docker 사용 경험 / MySQL 사용 경험 / …"으로 다섯 줄이 되어, 정작 읽어야 할
+   제목("10명을 보여드립니다")보다 조건 목록이 길어진다. 같은 종류끼리 묶어 세 줄로 낸다.
+
+   묶는 재료는 모델이 쓴 문장이 아니라 조건 객체다(must_skills·yoe·preferred) — 문장에서
+   기술 이름을 도로 긁어내는 것보다 우리가 쥔 값으로 짓는 편이 안 깨진다. 다만 그 셋에
+   안 담긴 요건이 있으면(모델이 직무 요건을 한 줄 더 쓸 때가 있다) 그것만 제 줄로 남긴다 —
+   화면에서 조용히 사라지는 조건이 있으면 안 된다.
+
+   (추정) 요건은 뺀다. 업무 설명에서 우리가 유추한 것이라 매칭에는 쓰되, 고객사가 쓰지도
+   않은 조건이 자기 조건인 양 걸려 있으면 안 된다. */
+function conditionLines(c) {
+  if (!c) return []
+  const lines = []
+
+  const skills = [...new Set(c.must_skills || [])]
+  if (skills.length) lines.push(`${skills.join(', ')} 사용 경험`)
+
+  const { yoe_min: lo, yoe_max: hi } = c
+  if (lo != null && hi != null) lines.push(`${lo}년 이상 ${hi}년 이하의 경력`)
+  else if (lo != null && lo > 0) lines.push(`${lo}년 이상의 경력`)
+  else if (hi != null) lines.push(`${hi}년 이하의 경력`)
+
+  // 위 세 줄에 안 담긴 요건만 따로. 기술 이름이 든 문장과 경력 문장은 이미 묶였다.
+  const rest = (c.requirements || [])
+    .filter((r) => !r.includes('추정'))
+    .filter((r) => !skills.some((s) => r.includes(s)))
+    .filter((r) => !/경력|연차|년\s*차/.test(r))
+  lines.push(...rest)
+
+  if (c.preferred?.length) lines.push(`우대조건 : ${c.preferred.join(', ')}`)
+  return lines
+}
+
 /* 결과 — 5명. 못 채우면 못 채운 채로 보여준다. 숫자를 맞추려고 기준 미달을 끼워 넣으면
    이 화면의 '5명'이 무슨 뜻인지 사라진다. */
-function Result({ data, criteria, onBack, ev }) {
+function Result({ data, criteria, onBack }) {
   const picks = data?.picks || []
   // 문의 모달을 연 카드 번호(0-base). null 이면 닫힌 상태.
   const [asking, setAsking] = useState(null)
 
   // 하단 고정 CTA — 문의 입구는 이거 하나다. 카드는 읽는 물건이고, 들어오는 문은 아래에 있다.
-  const openAll = () => {
-    setAsking('all')
-    ev?.('psc_inquiry_open', { all: true })
-  }
+  const openAll = () => setAsking('all')
 
   return (
     <div style={{
@@ -821,18 +845,22 @@ function Result({ data, criteria, onBack, ev }) {
               {picks.length
                 ? (<>
                   아래 조건에 가장 부합하는{' '}
+                  {/* 좁은 화면에서만 끊는다. 안 끊으면 '10명'이 줄 끝에 혼자 남거나
+                      '보여드립니다'와 갈라져서, 문장에서 제일 중요한 숫자가 흘러간다.
+                      입력 화면 제목과 같은 방식(.psc-hbr)이다. */}
+                  <br className="psc-rbr" />
                   <span style={{ color: T.brand }}>{picks.length}명</span>을 보여드립니다
                 </>)
                 : '조건에 맞는 분을 찾지 못했습니다'}
             </H>
 
-            {/* JD 에 적힌 문장을 그대로 올린다. (추정) 요건은 뺀다 — 고객사가 쓰지도 않은
-                조건이 자기 조건인 양 걸려 있는 것이다. */}
-            {!!picks.length && (
-              <Bullets items={(criteria?.requirements || []).filter((r) => !r.includes('추정'))} color={T.body} />
-            )}
+            {!!picks.length && <Bullets items={conditionLines(criteria)} color={T.body} />}
           </div>
-          <button type="button" onClick={onBack} style={{
+          {/* 좁은 화면에서는 뺀다 — 제목과 조건 줄이 폭을 다 쓰는데 버튼이 오른쪽에 서면
+              제목이 그만큼 더 접힌다.
+              주의: 지금 이 화면에서 조건 화면으로 돌아가는 길은 이 버튼 하나뿐이다.
+              좁은 화면에서는 새로고침 말고는 다시 검색할 방법이 없다. */}
+          <button type="button" onClick={onBack} className="psc-again" style={{
             marginLeft: 'auto', fontFamily: 'inherit', fontSize: 12.5, fontWeight: 600,
             color: T.body, background: '#fff', border: `1px solid ${T.line}`,
             borderRadius: 100, padding: '7px 14px', cursor: 'pointer', boxShadow: T.sm,
@@ -876,7 +904,6 @@ function Result({ data, criteria, onBack, ev }) {
           sid={data.sid}
           picks={picks}
           first={asking === 'all' ? null : asking}
-          ev={ev}
           onClose={() => setAsking(null)}
         />
       )}
@@ -937,6 +964,22 @@ function Result({ data, criteria, onBack, ev }) {
           `}</style>
         </div>
       )}
+
+      {/* 좁은 화면에서만 달라지는 두 가지. 카드는 화면 폭을 재서(narrow) 가르지만 여기 둘은
+          잰 값이 필요 없는 순수 표시라 CSS 로 둔다 — 경계(640)는 카로셀이 카드 폭을 정할 때
+          쓰는 값과 같다.
+
+          styled-jsx 가 아니라 맨 style 태그다. 이 컴포넌트에는 아래 CTA 버튼용 <style jsx>
+          가 이미 있는데, 같은 컴포넌트에 태그를 하나 더 두면 컴파일이 "Detected nested
+          styled-jsx tag" 로 막힌다. 저쪽 블록에 합칠 수도 없다 — 그건 결과가 있을 때만
+          그려지는 자리라 '결과 없음' 화면에서는 규칙이 통째로 사라진다. */}
+      <style dangerouslySetInnerHTML={{ __html: `
+        .psc-rbr { display: none; }
+        @media (max-width: 640px) {
+          .psc-rbr { display: inline; }
+          .psc-again { display: none !important; }
+        }
+      ` }} />
     </div>
   )
 }
@@ -1075,7 +1118,7 @@ function SlotPicker({ pick, setPick, today, onDone }) {
   )
 }
 
-function InquiryModal({ sid, picks, first, ev, onClose }) {
+function InquiryModal({ sid, picks, first, onClose }) {
   /* first 가 없으면(하단 고정 CTA) '이력서 원문' 문의다 — 특정 후보를 고르게 하지 않고,
      안 고르면 전원으로 접수한다. 원문은 개인정보라 미팅에서 보여준다는 것이 이 흐름의 약속. */
   const all = first == null
@@ -1118,9 +1161,6 @@ function InquiryModal({ sid, picks, first, ev, onClose }) {
     return () => window.removeEventListener('keydown', onKey)
   }, [onClose])
 
-  /* 담고 빼는 것 자체는 안 남긴다 — 마음을 바꾼 횟수는 로그를 채우기만 하고, 정작
-     알고 싶은 '결국 누구를 골랐나'는 보낼 때(psc_meeting.picks) 한 번에 남는다.
-     열어만 보고 안 보낸 사람도 psc_inquiry_open 과의 차이로 그대로 세어진다. */
   const toggle = (i) => setPicked((prev) => (
     prev.includes(i) ? prev.filter((x) => x !== i) : [...prev, i].sort((a, b) => a - b)
   ))
@@ -1149,24 +1189,13 @@ function InquiryModal({ sid, picks, first, ev, onClose }) {
       const j = await r.json()
       if (!r.ok) throw new Error(j.error || '문의를 접수하지 못했습니다')
       setDone(true)
-      /* 이 화면 전체의 결론. 연락처·이름·회사·남긴 말은 절대 안 싣는다 — 그건 문의
-         자체에 이미 담겨 우리에게 오고, events 는 클라이언트도 쓰는 테이블이다.
-         카드 번호는 남긴다. 몇 명이 아니라 '몇 번 카드가 골라지나'가 다음 화면을
-         고칠 근거다(1·2번만 골린다면 아래 세 장은 안 읽히고 있는 것이다).
-         all 은 하단 CTA 로 들어온 문의인지 — 두 흐름이 같은 이벤트를 쓰게 됐다. */
-      ev?.('psc_meeting', { n: chosen.length, picks: chosen, when: when || null, memo: !!memo.trim(), all })
     } catch (e) {
       /* 화면을 먼저 만들고 접수를 나중에 붙이는 중이라, 개발 중에는 실패해도 완료 화면까지
          넘어간다 — 그러지 않으면 마지막 화면을 만드는 동안 마지막 화면을 볼 수가 없다.
          프로덕션에서는 절대 안 넘긴다. 접수가 안 됐는데 "접수되었습니다"를 보여주면
          고객사는 연락을 기다리고 우리는 문의가 온 줄도 모른다 — 링크를 보낸 의미가 사라진다. */
       if (process.env.NODE_ENV === 'development') { setPreview(e.message); setDone(true) }
-      else {
-        setErr(e.message)
-        // 여기서 죽으면 고객사는 미팅을 신청했다고 믿는데 우리에게는 아무것도 안 온다.
-        // 그 상태를 우리가 모르는 게 최악이라, 실패만큼은 반드시 남긴다.
-        ev?.('psc_meeting_fail', { n: chosen.length, message: String(e.message || '').slice(0, 120) })
-      }
+      else setErr(e.message)
     } finally {
       setBusy(false)
     }
@@ -1647,13 +1676,27 @@ function Carousel({ picks }) {
   const top = picks[0]?.fit ?? 0
   const lo = Math.min(...picks.map((x) => x.fit))
 
+  /* 카드 그림자가 숨 쉴 자리. 껍데기 그림자가 '0 20px 48px' 이라 카드 아래로 68px,
+     위로 28px 번지는데, 자르는 칸이 카드 높이에 딱 맞아 있으면 그 번짐이 직선으로
+     끊긴다 — 카드가 잘린 것처럼 보이는 게 실은 이것이다(카드 몸통은 안 잘린다).
+
+     여백을 주고 같은 값의 음수 마진으로 되돌린다. 자르는 자리는 padding box 라
+     여백만큼 넓어지지만, 자리 차지는 그대로라 카드도 아래 점들도 있던 곳에 있는다.
+     가로는 그대로 자른다 — 양옆 카드가 화면 끝에서 잘리는 건 의도한 것이다. */
+  const GLOW_T = 32
+  const GLOW_B = 68
+
   return (
-    <div style={{ marginTop: 18 }}>
+    /* 위 여백을 margin 이 아니라 padding 으로 준다. margin 이면 아래 칸의 음수 마진과
+       상쇄돼(margin collapsing) 카로셀 전체가 위로 딸려 올라간다. */
+    <div style={{ paddingTop: 18 }}>
       <div ref={vpRef}
         onMouseEnter={() => setPaused(true)} onMouseLeave={() => setPaused(false)}
         onPointerDown={onPointerDown}
         style={{
           overflow: 'hidden', touchAction: 'pan-y',
+          paddingTop: GLOW_T, marginTop: -GLOW_T,
+          paddingBottom: GLOW_B, marginBottom: -GLOW_B,
           cursor: drag.current ? 'grabbing' : 'grab',
           userSelect: dragX ? 'none' : 'auto',
         }}>
@@ -1678,7 +1721,10 @@ function Carousel({ picks }) {
                 transition: anim ? 'transform .55s ease, opacity .55s ease' : 'none',
                 cursor: i === pos ? 'default' : 'pointer',
               }}>
-              <Card p={p} no={((i - K) % n + n) % n + 1} top={top} lo={lo} w={slideW} />
+              {/* narrow — 카드 폭이 아니라 화면 폭으로 가른다. 폭만 보면 태블릿의 고정
+                  500px 과 좁은 화면의 84%(최대 537px)가 겹쳐서 같은 카드가 화면에 따라
+                  다르게 그려진다. slideW 를 정한 것과 같은 경계(640)를 쓴다. */}
+              <Card p={p} no={((i - K) % n + n) % n + 1} top={top} lo={lo} w={slideW} narrow={vw < 640} />
             </div>
           ))}
         </div>
@@ -1755,10 +1801,23 @@ const CARD_SHELL = {
 // 사진을 두르는 링. 바탕과 같은 계열이되 한참 옅다 — 링이 사진보다 먼저 보이면
 // 이 자리의 주인공이 바뀐다.
 const CARD_RING = '#FFD9BE'
-/* '추천 이유' 칸의 색 — 테두리·제목·키워드 칩. 칩은 '채운 칩'이어야 한다. 이 칩은
-   장식이 아니라 "선택 기준에 걸린 스택"이라는 뜻이고, 바로 아래 회색 칩(안 걸린 나머지)과의
-   대비가 그 뜻을 만든다. 둘 다 옅게 깔면 무엇이 걸린 건지 알 수 없다. */
-const CARD_ACCENT = { line: '#FF6B00', ink: '#FF6B00', chip: '#FF6B00', chipInk: '#FFEFE3' }
+/* '추천 이유' 칸의 색 — 테두리·제목·키워드 칩·체크.
+
+   칩은 '채운 칩'이어야 한다. 이 칩은 장식이 아니라 "선택 기준에 걸린 스택"이라는 뜻이고,
+   바로 아래 회색 칩(안 걸린 나머지)과의 대비가 그 뜻을 만든다. 둘 다 옅게 깔면 무엇이
+   걸린 건지 알 수 없다.
+
+   나머지는 한 톤 죽였다. 전에는 넷이 전부 같은 #FF6B00 이었는데, 상자가 읽는 문장까지
+   품으면서 커지자 카드의 절반을 두른 순색 테두리 + 체크 세 개가 칩보다 먼저 보였다.
+   테두리는 옅게, 제목은 한 단 깊게(순색보다 차분하다), 체크는 칩과 같은 색이되 조금
+   물러선 값으로 둔다 — 이 칸에서 제일 진한 것은 칩 하나로 남긴다. */
+const CARD_ACCENT = {
+  line: '#FFCFB0',    // 테두리
+  ink: '#E15E05',     // 제목
+  chip: '#FF6B00',    // 걸린 키워드 칩 — 여기만 순색
+  chipInk: '#FFEFE3',
+  check: '#FF9A57',   // 체크 — 셋이 세로로 서서 진하면 칸이 통째로 주황이 된다
+}
 
 /* 경력 — "1.7년"이 아니라 "1년 8개월". 소수점 년수는 계산기 말이지 사람 말이 아니다.
    yoeM(개월)이 정답이고, 캐시된 옛 응답에는 그 필드가 없어서 년수에서 되짚는다. */
@@ -1778,12 +1837,14 @@ const yoeText = (p) => {
    고객사는 "73점"이 잘한 건지 못한 건지 알 방법이 없다. 여기서 알고 싶은 건 절대 점수가
    아니라 '1등과 얼마나 차이 나나'이고, 그건 숫자보다 칸으로 보는 게 빠르다.
 
-   채우는 법: 여섯 칸짜리다. 1등은 여섯 칸을 다 채우고, 꼴찌도 두 칸에서 멈춘다.
+   채우는 법: 여섯 칸짜리다. 1등은 여섯 칸을 다 채우고, 꼴찌도 세 칸에서 멈춘다.
    나머지는 1등과의 격차를 이번 검색의 전체 격차(1등−꼴찌)로 나눠 그 사이에 놓는다.
 
-   바닥을 한 칸이 아니라 두 칸으로 둔 이유: 우리가 골라서 보내는 열 명이다. 그중 하나가
-   거의 빈 게이지를 달고 있으면 그건 우리가 우리 추천에 적어 넣는 마이너스다. 꼴찌라는
-   사실은 등수가 이미 말하고 있으니, 게이지까지 바닥을 보여줄 이유가 없다.
+   바닥을 세 칸(=절반)으로 둔 이유: 우리가 골라서 보내는 열 명이다. 그중 하나가 거의 빈
+   게이지를 달고 있으면 그건 우리가 우리 추천에 적어 넣는 마이너스다. 꼴찌라는 사실은
+   등수가 이미 말하고 있으니, 게이지까지 바닥을 보여줄 이유가 없다.
+   칸이 넷이던 때는 바닥이 두 칸이라 그것도 절반이었는데, 여섯으로 늘리면서 두 칸이
+   1/3 로 내려앉아 열 장 중 아래쪽이 실제보다 모자라 보였다.
 
    1등 대비 단순 비율(fit/top×6)로 하면 안 된다 — 실제 결과를 보면 점수가 좁게 몰려서
    (폭 18~40) 열 장이 전부 5칸 아니면 6칸으로만 나온다.
@@ -1791,7 +1852,7 @@ const yoeText = (p) => {
    카드 순서가 점수 내림차순이라(jd-match 의 byScore) 칸도 등수를 따라 단조롭게 내려간다.
    예전엔 뽑는 순서를 그대로 세워서 4등이 3등보다 높은 칸을 다는 일이 있었다. */
 const GAUGE_N = 6
-const GAUGE_MIN = 2
+const GAUGE_MIN = 3
 const gaugeOf = (fit, top, lo) => {
   if (!(top > lo)) return GAUGE_N // 열 명이 같은 점수 — 가를 것이 없다
   const g = GAUGE_N - Math.round((GAUGE_N - GAUGE_MIN) * ((top - fit) / (top - lo)))
@@ -1832,10 +1893,29 @@ const Gauge = ({ n }) => (
    아트보드처럼 높이를 박아 두면 긴 사람의 글이 상자 밖으로 샌다. */
 const CARD_W = 1436 // 시안 아트보드 폭 — 모든 치수의 기준
 
-function Card({ p, no, top, lo, w = 560 }) {
+function Card({ p, no, top, lo, w = 560, narrow = false }) {
   const s = w / CARD_W
   const px = (n) => n * s
+
+  /* 도장만 다른 배율을 쓴다.
+
+     안의 글자는 f(n, min) 으로 하한이 걸려 있어 어느 화면에서든 그 아래로 안 줄어드는데,
+     도장 그림은 카드 배율만 따라간다. 그래서 좁아질수록 글자가 띠보다 커진다 — 390px
+     화면에서 띠 안높이 19.1px 에 글자 블록 22.8px 이라 위아래로 삐져나왔다.
+
+     도장에도 바닥을 준다. 데스크톱 배율(0.39)보다 낮은 값이라 넓은 화면은 지금 그대로고,
+     좁아질 때만 도장이 글자를 따라 덜 줄어든다.
+
+     자리는 오른쪽 아래를 붙박는다(top 을 크기에서 되뺀다) — 커지는 만큼 위·왼쪽으로
+     자란다. 아래로 자라면 추천 이유 상자를 덮는데, 그 칸이 카드에서 제일 많이 읽는 글이다. */
+  const ss = Math.max(s, 0.27)
+  const spx = (n) => n * ss
+
   const f = (n, min) => Math.max(min, n * s)
+
+  // 칩 한 줄의 실제 높이 — 글자(하한 있음) + 위아래 패딩(비율). 아래 기술 칩을 두 줄에서
+  // 자를 때 쓴다. 아트보드 값으로 자르면 좁은 화면에서 둘째 줄이 반만 남는다.
+  const chipH = Math.max(px(53.7), f(29.4, 11) * 1.25 + px(17.6))
 
   /* 카드 껍데기와 등수 알약만 세 단계로 갈린다(1등 / 2·3등 / 4~10등).
      안쪽 '추천 이유' 칸의 주황은 등수와 무관하게 그대로 둔다 — 그건 등수 표시가 아니라
@@ -1849,6 +1929,7 @@ function Card({ p, no, top, lo, w = 560 }) {
   const seg = no === 1 ? GAUGE_N : gaugeOf(p.fit, top, lo)
   const cost = costOf(p.yoe)
   const hits = p.hits || []
+  const prefMet = p.prefMet || []
   const rest = (p.skills || []).filter((x) => !hits.includes(x))
   /* 추천 이유 — 시안의 ✅ 목록 자리. jd-match 가 후보마다 3~4줄로 준다.
      bullets(이력서 파서가 뽑은 관련 경험)는 여기 안 섞는다 — 그건 '무엇을 했나'이지
@@ -1873,10 +1954,15 @@ function Card({ p, no, top, lo, w = 560 }) {
       <div style={{ display: 'flex', alignItems: 'center', gap: px(20) }}>
         <span title={`자격요건 ${p.met}/${p.total} 충족 · ${p.rank}급`}
           style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: px(20) }}>
-          {/* 게이지는 이 열 명 사이의 상대 위치, 이 라벨은 인재풀 전체를 놓고 본 절대 평가다 */}
-          <span style={{ fontSize: f(24, 10.5), fontWeight: 700, color: T.brand }}>
-            {p.fit >= 90 ? '매우 적합' : p.fit >= 80 ? '적합' : '조건 근접'}
-          </span>
+          {/* 게이지는 이 열 명 사이의 상대 위치, 이 라벨은 인재풀 전체를 놓고 본 절대 평가다.
+              좁은 화면에서는 라벨을 뺀다 — 게이지 칸(13px 여섯 개)이 카드 폭에 안 따라
+              줄어서, 라벨까지 서면 오른쪽 위가 카드 폭의 절반을 먹는다. 칸만으로도
+              '얼마나 맞는지'는 보이고, 정확한 값은 title 로 남는다. */}
+          {!narrow && (
+            <span style={{ fontSize: f(24, 10.5), fontWeight: 700, color: T.brand }}>
+              {p.fit >= 90 ? '매우 적합' : p.fit >= 80 ? '적합' : '조건 근접'}
+            </span>
+          )}
           <Gauge n={seg} />
         </span>
       </div>
@@ -1925,11 +2011,17 @@ function Card({ p, no, top, lo, w = 560 }) {
             <div style={{
               marginTop: px(12), fontSize: f(30, 11.5), fontWeight: 500, color: '#111',
               lineHeight: 1.45, minWidth: 0,
-              display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden',
+              // 값 하나가 한 줄을 쓰는 좁은 화면에서는 셋(경력·영어·한국어)까지 받는다
+              display: '-webkit-box', WebkitLineClamp: narrow ? 3 : 2, WebkitBoxOrient: 'vertical', overflow: 'hidden',
             }} title={meta.join(' | ')}>
+              {/* 좁은 화면에서는 한 줄에 하나씩. 사진이 폭을 먹고 남는 자리에 "경력 5년 4개월 |
+                  영어 TOEIC 765"를 다 넣으려니 두 줄로 접히는데, 접히는 자리가 값 한가운데라
+                  ("영어 TOEIC" / "765") 읽다가 끊긴다. 값 단위로 끊으면 그 일이 없다. */}
               {meta.map((m, i) => (
                 <span key={i}>
-                  {i > 0 && <span style={{ color: '#C9CFD6', margin: `0 ${px(12)}px` }}>|</span>}
+                  {i > 0 && (narrow
+                    ? <br />
+                    : <span style={{ color: '#C9CFD6', margin: `0 ${px(12)}px` }}>|</span>)}
                   {m}
                 </span>
               ))}
@@ -1948,15 +2040,21 @@ function Card({ p, no, top, lo, w = 560 }) {
         </div>
       </div>
 
-      {/* 추천 이유 — 테두리 안에는 제목과 걸린 키워드까지만 둔다.
+      {/* 추천 이유 — 이 사람만의 강점 칩 + 읽는 문장 + 요건 확인 각주. 한 상자다.
 
-          체크 목록을 상자 안에 같이 넣었더니 상자가 카드 절반을 먹었다. 테두리는 무언가를
-          묶는 표시인데, 묶인 것이 많아지면 묶은 뜻이 사라진다. 상자는 '이 사람이 가진,
-          기준에 걸린 스택' 하나만 묶고, 읽는 문장은 밖에서 본문으로 흐르게 한다. */}
-      {/* 위로 올리는 건 relative 로만 — marginTop 을 줄이면 아래 체크 목록·기술 칩이
-          통째로 딸려 올라온다. 자리는 흐름에 그대로 두고 그린 것만 살짝 올린다.
-          도장은 이보다 더 올라가 있다(상자와 30 을 맞추던 관계는 깼다) — 칩이 늘면
-          도장 밑으로 들어가서, 둘을 같은 값으로 묶어 두면 칩을 늘릴 때마다 겹친다. */}
+          전에는 상자 안에 '기준에 걸린 스택' 칩만 두고 읽는 문장을 밖으로 뺐다. 상자가
+          카드 절반을 먹는 걸 막으려던 것인데, 화면이 JD 붙여넣기에서 칩 고르기로 바뀌면서
+          그 구성이 무너졌다 — 요건이 두세 개짜리 고정 목록이 되니 열 명이 그걸 다 통과해
+          올라오고, 상자 안 칩이 열 장 모두 "MySQL · Docker" 로 같아졌다. 카드를 넘길 때
+          제일 먼저 보는 자리가 열 장 내내 같은 그림이면 넘길 이유가 없다.
+
+          그래서 자리를 바꿨다. 칩에는 이 사람만 가진 것(strengths — 도메인·역할·규모)을
+          올리고, 요건 충족은 맨 아래 회색 한 줄로 내린다. 열 명이 다 채운 사실은 확인할
+          값이지 앞세울 값이 아니다. 읽는 문장도 안으로 들여 한 덩어리로 묶는다.
+
+          위로 올리는 건 relative 로만 — marginTop 을 줄이면 아래 기술 칩이 통째로 딸려
+          올라온다. 자리는 흐름에 두고 그린 것만 올린다. 도장은 이보다 더 올라가 있다
+          (상자와 30 을 맞추던 관계는 깼다) — 칩이 늘면 도장 밑으로 들어가서다. */}
       <div style={{
         position: 'relative', top: px(-30),
         marginTop: px(82), border: `1px solid ${accent.line}`, borderRadius: px(30),
@@ -1964,8 +2062,22 @@ function Card({ p, no, top, lo, w = 560 }) {
       }}>
         <div style={{ fontSize: f(30, 12), fontWeight: 700, color: accent.ink }}>추천 이유✨</div>
 
-        {/* 조건에 걸린 기술만 채운 칩. 아래 회색 칩과 색으로 갈려서 라벨이 필요 없다. */}
-        {!!hits.length && (
+        {/* 조건에 걸린 기술. 아래 회색 칩과 색으로 갈려서 라벨이 필요 없다.
+
+            열 장이 같은 칩을 단다 — 요건이 두세 개면 통과한 열 명이 다 채웠으니 당연하다.
+            한동안 이 자리에 이 사람만의 강점(strengths — 도메인·역할)을 올려 봤는데,
+            그러면 바로 아래 문장과 같은 말이 두 번 실렸다("백엔드 팀 리드" 칩 + "…에서
+            백엔드 팀 리드를 맡아…"). 열 명을 가르는 일은 아래 문장이 하고, 이 칩은
+            "적어 주신 조건은 채웠습니다"를 한눈에 보여주는 제 일로 돌아간다. */}
+        {/* 요건 칩과 우대 배지가 한 줄에 이어 흐른다.
+
+            줄을 갈라 '우대'라는 라벨을 세워 봤는데, 칸 안에 작은 칸이 하나 더 생기면서
+            상자가 세 층(제목/요건/우대)이 됐다 — 그 아래 읽는 문장까지 네 층이다.
+            둘은 같은 질문("내가 적은 것을 채웠나")에 대한 답이라 한 줄로 붙인다.
+
+            대신 생김새로 가른다. 요건은 열 명이 다 채운 통과선이라 채운 칩, 우대는 그 위에서
+            사람을 가르는 값이라 테두리 칩이다. 라벨이 없어도 두 종류인 건 보인다. */}
+        {(!!hits.length || !!prefMet.length) && (
           <>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: `${px(12)}px ${px(11.8)}px`, marginTop: px(14) }}>
               {hits.slice(0, 6).map((k) => (
@@ -1975,36 +2087,55 @@ function Card({ p, no, top, lo, w = 560 }) {
                   fontSize: f(29.4, 11), fontWeight: 600, whiteSpace: 'nowrap',
                 }}>{k}</span>
               ))}
+              {prefMet.map((k) => (
+                <span key={k} style={{
+                  background: 'transparent', color: accent.ink,
+                  border: `1px solid ${accent.line}`, borderRadius: px(11.8),
+                  padding: `${px(7.8)}px ${px(22.6)}px`,
+                  fontSize: f(29.4, 11), fontWeight: 600, whiteSpace: 'nowrap',
+                }}>{k}</span>
+              ))}
             </div>
-            <div style={{ marginTop: px(16), fontSize: f(15, 9), fontWeight: 500, color: '#AEAEAE' }}>
-              이 핵심 키워드를 모두 보유하고 있어요!
-            </div>
+            {!!hits.length && (
+              <div style={{ marginTop: px(16), fontSize: f(15, 9), fontWeight: 500, color: '#AEAEAE' }}>
+                이 핵심 키워드를 모두 보유하고 있어요!
+              </div>
+            )}
           </>
+        )}
+
+        {/* 카드에서 유일하게 '읽는' 글 — 열 명이 갈리는 자리다. */}
+        {!!reasons.length && (
+          <div style={{
+            marginTop: hits.length || prefMet.length ? px(30) : px(20),
+            fontSize: f(30, 11.5), fontWeight: 500, color: '#111', lineHeight: 50 / 30,
+            display: 'flex', flexDirection: 'column', gap: px(10),
+          }}>
+            {reasons.map((r, i) => (
+              <div key={i} style={{ display: 'flex', gap: px(14) }}>
+                <Check size={Math.max(13, px(34))} color={accent.check} />
+                <span style={{ minWidth: 0 }}>{r}</span>
+              </div>
+            ))}
+          </div>
         )}
       </div>
 
-      {/* 체크 목록 — 상자 밖. 카드에서 유일하게 '읽는' 글이라 본문처럼 놓인다. */}
-      {!!reasons.length && (
-        <div style={{
-          marginTop: px(52), fontSize: f(30, 11.5), fontWeight: 500, color: '#111',
-          lineHeight: 50 / 30,
-          display: 'flex', flexDirection: 'column', gap: px(10),
-        }}>
-          {reasons.map((r, i) => (
-            <div key={i} style={{ display: 'flex', gap: px(14) }}>
-              <Check size={Math.max(13, px(34))} color={accent.chip} />
-              <span style={{ minWidth: 0 }}>{r}</span>
-            </div>
-          ))}
-        </div>
-      )}
+      {/* 나머지 기술 — 조건에 안 걸린 것들. 두 줄에서 자른다(사람마다 개수가 달라서).
 
-      {/* 나머지 기술 — 조건에 안 걸린 것들. 두 줄에서 자른다(사람마다 개수가 달라서). */}
+          간격이 코드값보다 커 보이는 자리다: 위 상자가 relative 로 11.7px 떠 있어서
+          46(=17.9px)이 눈에는 29.6px 로 온다. 상자에 테두리가 있어 흰 여백으로 또 가를
+          이유가 없으므로 24(=9.4px, 눈으로 21px)로 당긴다. */}
       {!!rest.length && (
         <div style={{
           display: 'flex', flexWrap: 'wrap', alignContent: 'flex-start',
-          gap: `${px(12)}px ${px(11.8)}px`, marginTop: px(46),
-          maxHeight: px(53.7 * 2 + 12), overflow: 'hidden',
+          gap: `${px(12)}px ${px(11.8)}px`, marginTop: px(24),
+          /* 두 줄에서 자르는 높이는 아트보드 값(53.7)이 아니라 실제로 그려지는 칩 높이로
+             잰다. 칩 글자에는 하한(11px)이 있어 좁은 화면에서 안 줄어드는데 패딩만 비율로
+             줄어서, 아트보드 값으로 자르면 둘째 줄이 한가운데서 잘린 채로 남는다
+             (390px 화면에서 칩 실제 높이 17.2px · 아트보드 환산 12.3px). 스탬프 글자가
+             띠를 넘던 것과 같은 어긋남이다. */
+          maxHeight: chipH * 2 + px(12), overflow: 'hidden',
         }}>
           {rest.map((k) => (
             <span key={k} style={{
@@ -2030,8 +2161,9 @@ function Card({ p, no, top, lo, w = 560 }) {
           도장 아래 끝이 칩 줄 바로 위에서 멈춘다 — 카드 위쪽 여백을 조일 때는 이 값도 같은
           만큼 올려야 한다. 도장만 흐름 밖(absolute)이라 저 혼자 제자리에 남는다. */}
       <div aria-hidden style={{
-        position: 'absolute', top: px(148), right: px(130),
-        width: px(380), height: px(380), pointerEvents: 'none', zIndex: 2,
+        // top 은 아래 끝을 붙박기 위해 되뺀 값이다: (148+380) − 지름. 넓은 화면에서는 px(148).
+        position: 'absolute', top: px(528) - spx(380), right: px(130),
+        width: spx(380), height: spx(380), pointerEvents: 'none', zIndex: 2,
         // 도장만 반시계로 4도. 안쪽 띠·글자의 18도는 이 위에 얹히므로 함께 돌아간다.
         transform: 'rotate(-4deg)',
       }}>
@@ -2061,14 +2193,27 @@ function Card({ p, no, top, lo, w = 560 }) {
           {/* 글자는 도장 한가운데 — 뒤에 깔아 둔 띠와 같은 중심, 같은 각도다.
               시안 좌표를 그대로 옮겼을 땐 중심보다 17 위에 있었는데, 그건 아트보드에서
               띠를 눈으로 맞춘 값이라 띠를 코드로 그린 지금은 어긋난다. */}
+          {/* 두 줄 사이를 좁힌다(1.25 → 1.06). 둘은 한 값의 이름과 숫자라 붙어 있어야
+              한 덩어리로 읽히고, 줄어든 만큼이 위아래 여백으로 돌아간다 — 블록이 띠
+              한가운데에 놓여 있어서다. '예상 급여'가 띠 윗변에 닿아 있던 게 이것 때문이다. */}
+          {/* 살짝 내린다. 글자 상자는 띠 한가운데에 놓이는데, 위 줄이 작고(8.5px) 아래
+              줄이 커서(14.8px) 시각적 무게가 아래로 쏠린다 — 기하학적 중심에 맞추면
+              아래 여백이 더 넓어 보인다. marginTop 은 회전 전 좌표에 걸리므로 화면에서
+              그대로 아래로 내려간다(transform 은 자리를 안 바꾼다). */}
           <div style={{
-            transform: 'rotate(18deg)',
-            textAlign: 'center', whiteSpace: 'nowrap', lineHeight: 1.25,
+            transform: 'rotate(18deg)', marginTop: px(9),
+            textAlign: 'center', whiteSpace: 'nowrap', lineHeight: 1.06,
           }}>
             <div style={{ fontSize: f(16, 8.5), fontWeight: 500, color: '#B09E90' }}>
               예상 급여{cost ? ` · ${cost.label}` : ''}
             </div>
-            <div style={{ fontSize: f(45, 15), fontWeight: 700, color: '#C90B0A', letterSpacing: '-0.02em' }}>
+            {/* 금액만 한 단 줄인다(45 → 38). 도장 띠 안에서 글자가 양쪽 테두리에 거의
+                닿아 있었다 — 도장은 '찍힌 것'으로 보여야 하는데 글자가 띠를 밀고 있으면
+                띠가 글자를 담은 상자로 읽힌다. 위의 '예상 급여'는 그대로 둔다:
+                이미 8.5px 하한에 걸려 있어 더 줄이면 좁은 화면에서 안 읽힌다. */}
+            {/* 하한 12 — 넓은 화면에서는 비율(38×s=14.8)이 이겨서 안 걸리고, 좁은 화면에서만
+                산다. 13 이면 도장을 더 키워야 겨우 담기는데, 그만큼 키우면 위 게이지에 닿는다. */}
+            <div style={{ fontSize: f(38, 12), fontWeight: 700, color: '#C90B0A', letterSpacing: '-0.02em' }}>
               {cost ? `${cost.won}만원/월` : '별도 협의'}
             </div>
           </div>
@@ -2076,30 +2221,4 @@ function Card({ p, no, top, lo, w = 560 }) {
       </div>
     </div>
   )
-}
-
-
-/* ?c= 토큰 → 기업 이름. 서명 확인이 서버에서만 되므로(시크릿) 여기서 푼다.
-
-   토큰이 없거나 가짜여도 페이지는 그냥 연다 — 지금 이 주소의 '비공개'는 인증이 아니라
-   안 알려진 주소이고, 여기서 막으면 우리가 직접 붙여넣어 여는 링크까지 막힌다.
-   토큰이 하는 일은 '누구에게 보낸 링크로 들어왔나'를 로그에 남기는 것뿐이다.
-   나중에 기업마다 다른 후보를 보여주게 되면, 그때 이 자리에서 막으면 된다.
-
-   서명이 맞아도 showcase_links 에 없으면(= 어드민에서 추적을 끊은 링크) 아무것도 안 남긴다.
-   서명만으로는 회수가 안 되니, 표에 있느냐가 곧 '아직 세는 링크냐'다. 조회를 한 번 더
-   하는 값으로 추적을 끝낼 수단을 얻는 셈이다. */
-export async function getServerSideProps({ query }) {
-  const v = query.c ? verifyToken(String(query.c)) : null
-  if (!v) return { props: { co: null, campaign: null, off: false, c: null } }
-
-  const { data } = await supabaseAdmin
-    .from('showcase_links').select('token').eq('token', String(query.c)).maybeSingle()
-  // 추적을 끊은 링크: 기업도 안 붙이고 이벤트도 안 보낸다. '직접'으로 세면 우리가 연 것과
-  // 섞여서, 그만 보기로 한 링크가 익명 방문으로 되살아난다.
-  // 토큰(c)도 안 넘긴다 — 검색 기록에도 기업이 안 붙는다. 다만 상담 문의는 그대로 받는다:
-  // 추적을 끊은 것과 사람이 실제로 연락해 온 것은 다른 일이고, 기업명은 그 사람이 폼에 적는다.
-  if (!data) return { props: { co: null, campaign: null, off: true, c: null } }
-
-  return { props: { co: v.company, campaign: v.campaign, off: false, c: String(query.c) } }
 }

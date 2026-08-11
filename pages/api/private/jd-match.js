@@ -2,7 +2,6 @@ import { createClient } from '@supabase/supabase-js'
 import OpenAI from 'openai'
 import { asSkills, asExperiences } from '../../../lib/talentCategory'
 import { prefilterScore, judge, yoeWindow, RANKS, normSkill } from '../../../lib/jdMatch'
-import { verifyToken } from '../../../lib/showcaseToken'
 
 /* 조건(jd-criteria 결과) → 인재 5명.
 
@@ -122,24 +121,39 @@ JSON 만 출력하세요:
     "career_trajectory": 0-10
   },
   "why": "이 분을 왜 추천하는지 한국어 한 문장 (아래 쓰기 규칙을 지킬 것).",
-  "experiences": ["이 자리와 가장 관련된 경험 2개 (아래 규칙)"],
-  "strengths": ["강점 한국어 2~3개 (아래 규칙)"]
+  "experiences": ["이 자리와 가장 관련된 경험 3개 (아래 규칙)"],
+  "strengths": ["이 사람만의 강점 한국어 최대 2개 (아래 규칙). 없으면 빈 배열"]
 }
 
-experiences 규칙 — 이 값이 카드의 '추천 이유' 칸 가운데 줄로 들어갑니다:
-- 정확히 2개. 한 줄에 한 문장, 40~70자, '~합니다' 체.
-- 이 자리와 가장 관련이 깊은 것부터. 관련 없는 경력은 채우려고 넣지 마세요.
-- 두 줄이 서로 다른 경험이어야 합니다. 같은 일을 표현만 바꿔 쓰지 마세요.
-- 기술 이름만 늘어놓지 말고 그 기술로 무엇을 했는지를 쓰세요 — 스킬 목록은 카드에 칩으로
-  따로 붙고, 이 칸의 첫 줄도 스킬 이야기라 여기서 또 나열하면 세 번 같은 말이 실립니다.
+experiences 규칙 — 이 값이 카드의 '추천 이유' 칸 전부입니다. 고객사가 열 명을 갈라 보는
+근거가 이 세 줄뿐이므로, 다른 후보에게 그대로 옮겨 붙일 수 있는 문장은 실패입니다:
+- 3개. 한 줄에 한 문장, 40~70자, '~합니다' 체.
+- 한 줄에 반드시 이 사람만의 고정점이 하나 들어가야 합니다 — 회사명·제품이나 도메인·
+  담당한 규모나 수치·맡았던 역할 중 하나. 넷 다 없는 문장은 쓰지 마세요.
+  (나쁨: "Docker를 활용하여 애플리케이션을 배포하고 관리했습니다" — 열 명 모두에게 참입니다.
+   좋음: "Galaxy Pay에서 결제 시스템 백엔드를 맡아 정산 배치를 다시 세웠습니다")
+- 요건에 적힌 기술을 그대로 되뇌지 마세요. 요건은 열 명이 이미 다 통과한 것이라
+  적어 봐야 아무도 갈리지 않고, 걸린 기술은 이 칸 바로 위에 칩으로 이미 붙어 있습니다.
+- 세 줄이 서로 다른 경험이어야 합니다. 같은 일을 표현만 바꿔 쓰지 마세요.
 - 이력서 요약에 근거가 있는 것만. 없는 경력을 지어내지 마세요.
+- 한 줄에 반드시 '어디서'가 들어갑니다 — 회사명 + "에서", 또는 "개인 프로젝트로".
+  이것이 없는 줄은 카드에 실리지 않고 버려집니다. 셋을 채우는 것보다 이 규칙이
+  먼저입니다. 쓸 것이 둘뿐이면 2개, 하나뿐이면 1개만 쓰세요.
 - 연차와 어학은 쓰지 마세요. 둘 다 카드의 다른 자리에 이미 있습니다.
+- 재직 기간도 쓰지 마세요("5개월간"·"43개월 동안"). 경력은 카드 머리에 이미 있고,
+  짧은 재직을 문장으로 세우면 추천하는 자리에서 우리가 흠을 먼저 적는 셈입니다.
 
-strengths 규칙 — 이 값은 카드에 짧은 칩으로 붙습니다:
-- 스킬 이름을 되풀이하지 마세요. "React 숙련", "TypeScript 경험" 은 카드에 기술 칩으로
-  이미 붙어 있어서, 여기 또 쓰면 같은 자리에 같은 말이 두 번 실립니다.
-- 대신 이력서에만 있는 구체적인 사실을 쓰세요 — 다뤄 본 제품·도메인·규모, 맡았던 역할,
-  옮겨 다닌 회사의 성격 같은 것. 예: "은행 결제 시스템 운영", "팀 리드 경험", "이커머스 도메인".
+strengths 규칙 — 이 값이 카드 '추천 이유' 칸 맨 위의 칩입니다. 고객사가 열 장을 넘기며
+제일 먼저 보는 자리이고, 열 명을 갈라 주지 못하면 없는 것만 못합니다:
+- 최대 2개. 조건을 채우는 것이 개수보다 먼저입니다 — 하나뿐이면 1개, 없으면 빈 배열.
+- 이력서에만 있는 구체적인 사실이어야 합니다. 다뤄 본 도메인·제품, 맡았던 역할, 규모.
+  예: "은행 결제 시스템", "이커머스 도메인", "백엔드 팀 리드", "AI 연구 경험".
+- 다음은 쓰지 마세요. 누구에게나 참이라 열 명이 같은 칩을 답니다:
+  "팀 협업 능력", "다양한 기술 스택", "실무 경험", "문제 해결 능력", "문서화 능력",
+  "팀 프로젝트 경험", "커뮤니케이션 능력", "성실함", "학습 능력".
+  이런 말로 두 번째 칸을 채우느니 칩 하나만 쓰세요.
+- 요건에 적힌 스킬 이름을 되풀이하지 마세요("Docker 경험"). 요건은 열 명이 이미 다
+  통과했고, 걸린 기술은 같은 칸 아래에 따로 적힙니다.
 - 연차는 쓰지 마세요. 카드에 이미 있습니다.
 - 한 칩은 12자 안팎으로 짧게.
 
@@ -294,70 +308,101 @@ function langKo(s) {
   return raw
 }
 
-/* 어학 한 줄 — 추천 이유의 마지막 자리.
+/* 어학 등급 문장(EN_SENTENCE·englishTier)은 걷어냈다 — 추천 이유의 마지막 줄로 쓰던
+   것인데, 등급이 넷뿐이라 같은 급이면 열 장이 글자까지 같았고 성적 자체는 카드 머리의
+   "영어 TOEIC 765"에 이미 있다. 되살릴 일이 생기면 git 이력에 있다(IELTS·TOEFL·TOEIC·
+   CEFR 경계는 인재풀 실제 분포에서 잡은 값이라 다시 재기 아깝다). */
 
-   성적을 그대로 적지 않고 "어느 정도가 되는 사람인가"로 풀어 쓴 뒤 성적을 괄호에 넣는다.
-   읽는 사람은 한국 기업 담당자라 IELTS 6.5 가 실무에서 어느 정도인지 바로 안 떠오른다 —
-   숫자만 적으면 각자 알아서 해석하라는 말이 된다.
+/* 추천 이유 한 줄이 실릴 자격 — '어디서 한 일인가'가 적혀 있을 것.
 
-   등급 기준은 인재풀의 실제 분포에서 잡았다(english_cert 보유 1,789명 · 서로 다른 값 396종).
-   IELTS(5.0~7.5)·CEFR(A2~C1)·TOEIC(600~820)이 대부분이고 레벨 단어가 섞여 있다.
-   경계는 보수적으로 뒀다 — 이 문장은 고객사가 미팅 전에 읽는 값이라, 부풀리면 만나서
-   드러난다. 애매하면 한 칸 낮게 적는 쪽이 낫다.
+   프롬프트로 세 번 조여도 모델은 마지막 한 줄을 "Docker를 활용하여 애플리케이션 배포 및
+   관리를 수행했습니다"로 채웠다(열 명 중 다섯). 금지 예시로 그 문장을 그대로 적어 둬도
+   그랬다 — 세 개를 달라고 하면 세 개를 만들어 낸다.
 
-   기초이거나 알 수 없으면 아예 안 쓴다. 이 칸은 '왜 이 사람인가'를 적는 자리라
-   "영어는 초급입니다"는 우리가 우리 손으로 적는 감점이다 — 그럴 바엔 그 자리를
-   경험 한 줄에 내준다(그래서 experiences 를 두 줄 받는다). */
-const EN_SENTENCE = [
-  '', // 0 — 기초. 쓰지 않는다
-  '영어로 일상 대화가 가능한 수준입니다',
-  '영어로 업무 의사소통이 가능한 수준입니다',
-  '영어로 원어민에 가까운 의사소통이 가능합니다',
-]
+   그래서 판정을 코드로 내린다. 소속이 없는 줄은 이 사람을 가리키지 못하고, 옆 카드에
+   그대로 옮겨 붙는다 — 열 명을 갈라 보라고 만든 칸에서 그건 빈 줄만 못하다.
+   줄이 줄어드는 쪽을 택한다. */
+const ANCHORED = (s) => /에서|개인 프로젝트|프리랜|freelance/i.test(s)
 
-// 점수 체계별 경계. [이름 패턴, [3단 하한, 2단 하한, 1단 하한]]
-const EN_SCALES = [
-  [/ielts/i, [7.5, 6.0, 5.0]],
-  [/toefl/i, [100, 80, 60]],
-  [/toeic/i, [900, 750, 600]],
-]
-const EN_WORDS = [
-  [/native|bilingual|ban ngu|원어민/i, 3],
-  [/fluent|luu loat|thanh thao|유창|advanced|proficien|professional|business|cao cap|고급|비즈니스/i, 2],
-  [/intermediate|conversational|daily|giao tiep|trung cap|중급|회화/i, 1],
-  [/basic|beginner|elementary|co ban|so cap|초급|기초/i, 0],
-]
-// CEFR 은 자격 이름 없이 "B2" 한 글자로만 오는 경우가 많다(VSTEP B2·APTIS B2 포함).
-const CEFR = { c2: 3, c1: 2, b2: 2, b1: 1, a2: 0, a1: 0 }
+/* 강점 칩이 실릴 자격 — 이 사람을 가리킬 것.
 
-function englishTier(raw) {
-  const v = String(raw || '').trim()
-  if (!v) return -1
-  const plain = v.normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/đ/gi, 'd').toLowerCase()
+   experiences 와 같은 버릇이 여기서도 나왔다. 세 개를 달라니 첫 칸은 "은행 시스템 도메인"
+   처럼 쓸 만한 것을 쓰고 나머지를 "팀 협업 능력"·"다양한 기술 스택"으로 채웠다(열 명 중
+   여덟). 그 말들은 열 명 모두에게 참이라 칩으로 붙는 순간 열 장이 같아진다.
 
-  for (const [re, [hi, mid, low]] of EN_SCALES) {
-    if (!re.test(plain)) continue
-    const n = parseFloat((plain.match(/\d+(\.\d+)?/) || [])[0])
-    if (!Number.isFinite(n)) break // "TOEIC" 처럼 점수 없이 이름만 적힌 경우
-    return n >= hi ? 3 : n >= mid ? 2 : n >= low ? 1 : 0
-  }
-  const cefr = plain.match(/\b([abc][12])\b/)
-  if (cefr) return CEFR[cefr[1]]
-  for (const [re, tier] of EN_WORDS) if (re.test(plain)) return tier
-  return -1 // 처음 보는 표기 — 지어내지 않는다
+   프롬프트에도 금지 목록을 적었지만 판정은 코드가 한다 — 남는 칩이 없으면 칩을 안 그린다.
+   빈 자리가 거짓 칩보다 낫다. */
+const SPECIFIC = (s) => !/협업|팀워크|커뮤니케이션|의사소통 능력|성실|열정|책임감|문제\s*해결|문서화|학습\s*능력|적응력|실무\s*경험|기술\s*스택/.test(s)
+  && !/^다양한/.test(s)
+
+/* 고객사가 '한국 유학 · 한국 대학'을 우대로 걸었고 이 사람이 그걸 채웠으면, 추천 이유에
+   학교를 한 줄 세운다.
+
+   카드는 원래 학력을 안 내보낸다 — 학교 이름만 적어 두면 한국 기업이 그게 어느 정도인지
+   알 수 없어 판단만 흐려진다는 이유였다. 그런데 고객사가 그 칩을 직접 눌렀다면 얘기가
+   다르다. 그건 "이 값으로 사람을 가려 달라"는 말인데, 정작 채운 사람의 학교가 화면 어디에도
+   없으면 우리가 무엇을 보고 골랐는지 보여주지 못한다. 물은 것에만 답한다 — 안 걸었으면
+   여전히 안 쓴다.
+
+   판정은 모델이 이미 한 것을 쓴다(preferred_met). 한국 대학인지를 우리가 다시 재지 않는
+   이유는 그 표를 우리가 안 들고 있어서다 — lib/topUniversities.js 의 overseasOf 에
+   한국을 더하면 될 것 같지만, 그 함수는 어드민 인재풀의 해외 비율·점수 가중치·CSV 가
+   같이 쓴다(showcaseChips.js 의 우대 주석과 같은 사정). */
+// 파서가 실제로 적어 온 값들(2026-08-11 이력서 2,073건): bachelor 1,799 · associate 69 ·
+// master 46 · diploma 2 · advanced diploma 2 · engineer 2 · doctor 1 · higher diploma 1.
+// 목록 밖은 학위 없이 전공만 적는다 — 모르는 표기를 우리말로 지어내지 않는다.
+const DEGREE_KO = {
+  associate: '전문학사', bachelor: '학사', master: '석사',
+  phd: '박사', doctorate: '박사', doctor: '박사',
+}
+const KR_SCHOOL = /한국\s*유학|한국\s*대학|국내\s*대학/
+// 받침이 있으면 '을' — "서울대학교를"·"한국외대를" 처럼 학교 이름은 끝 글자가 제각각이다.
+const eulReul = (s) => {
+  const code = s.charCodeAt(s.length - 1)
+  if (code < 0xac00 || code > 0xd7a3) return '를'
+  return (code - 0xac00) % 28 ? '을' : '를'
 }
 
-function englishLine(raw) {
-  const tier = englishTier(raw)
-  if (tier < 1) return '' // 기초(0)·알 수 없음(-1)
-  const v = String(raw).trim()
-  // 괄호는 숫자가 든 표기에만 — "Fluent (Fluent)" 가 되면 안 된다
-  return `${EN_SENTENCE[tier]}${/\d/.test(v) ? ` (${v})` : ''}.`
+function koreanSchoolLine(p, v, c) {
+  if (!(c.preferred || []).some((x) => KR_SCHOOL.test(x))) return ''
+  if (!(v.preferredList || []).some((x) => KR_SCHOOL.test(String(x)))) return ''
+  const uni = String(p.university || p.verified_school_name || '').trim()
+  if (!uni) return ''
+  const deg = DEGREE_KO[String(p.resume_summary?.degree || '').trim().toLowerCase()] || ''
+  const tail = [String(p.major || '').trim(), deg].filter(Boolean).join(' ')
+  return tail ? `${uni}에서 ${tail}를 마쳤습니다.` : `${uni}${eulReul(uni)} 졸업했습니다.`
 }
+
+/* 재직 기간은 문장에서 지운다("5개월간"·"3년 동안"). 경력은 카드 머리에 이미 있고,
+   짧은 재직을 굳이 문장으로 세우면 추천하는 자리에서 우리가 흠을 먼저 적는 셈이다
+   ("RECO에서 5개월간 …"). 이것도 프롬프트로 막아 봤지만 회사명 뒤에 자연스럽게 붙어
+   계속 나왔다 — 지우는 편이 확실하고, 지워도 문장이 안 깨진다(…에서 ~을 했습니다).
+   '3년차'는 안 건드린다 — 기간이 아니라 연차 표기라 뒤에 간/동안이 안 붙는다. */
+const stripTenure = (s) => s
+  .replace(/\s*\d+\s*(개월|년)\s*(간|동안)\s*/g, ' ')
+  .replace(/\s{2,}/g, ' ')
+  .trim()
 
 function card(p, v, c) {
   const s = p.resume_summary || {}
   const exps = asExperiences(p.experiences)
+  const school = koreanSchoolLine(p, v, c)
+
+  /* 충족한 우대를 배지로 내보낸다.
+
+     우대는 순서를 가르는 첫 기준인데(jd-match 의 byFit·byScore) 카드에는 그게 안 보였다.
+     게다가 카드는 학력·어학을 따로 안 적는다 — 학교 이름만으로는 한국 기업이 그게 어느
+     정도인지 못 가늠해서 판단만 흐려진다는 이유였다. 그래서 고객사가 "이걸로 봐 달라"고
+     누른 값이 충족됐다는 사실을 말할 자리가 화면에 없었다.
+
+     '~우대' 꼬리는 뗀다 — 배지가 붙었다는 것 자체가 충족을 뜻해서 말이 겹친다.
+     한국 대학만 배지에서 뺀다: 같은 사실을 학교 이름까지 붙여 추천 이유 한 줄로
+     이미 세웠다(school). 배지와 문장이 같은 말을 두 번 하게 두지 않는다. */
+  const prefMet = (v.preferredList || [])
+    .map((x) => String(x).replace(/\s*우대\s*$/, '').trim())
+    .filter(Boolean)
+    .filter((x) => !(school && KR_SCHOOL.test(x)))
+    .slice(0, 3)
 
   /* 기준에 든 기술을 앞으로 당긴다. 카드에는 세 개만 보이는데, 정렬을 안 하면 이력서에
      적힌 순서대로 잘려서 정작 고객사가 적은 스택(React·TypeScript)이 "+17" 안에 숨는다.
@@ -377,27 +422,34 @@ function card(p, v, c) {
     fit: v.fit,
     rank: v.rank,
     why: v.why,
-    /* 카드의 '추천 이유' 칸. 자리가 정해진 세 줄이다.
+    /* 카드의 '추천 이유' 칸 — 이제 전부 모델이 쓴 경험 줄이다.
 
-         1) 조건에 걸린 스택   — hits 를 그대로 잇는다
-         2) 가장 관련된 경험   — 모델이 쓴다(2줄)
-         3) 어학               — 쓸 만할 때만
+       전에는 세 줄 중 둘을 코드가 찍었다: 걸린 스택을 이은 첫 줄과 어학 한 줄. 데이터로
+       지을 수 있는 문장은 데이터로 짓는다는 뜻이었는데, 화면이 JD 붙여넣기에서 칩 고르기로
+       바뀌면서 그 둘이 같이 무너졌다.
 
-       1·3 을 모델에 안 맡기는 이유: 둘 다 이미 우리가 쥔 값이라 모델이 하는 일이
-       '가진 것을 다시 적기'뿐인데, 그러면서 빠뜨리거나 없는 걸 붙인다. 실제로 스킬을
-       나열하지 말라고 시켜도 계속 나열했다. 데이터로 지을 수 있는 문장은 데이터로 짓고,
-       모델에게는 판단이 필요한 줄(어느 경험이 이 자리와 가장 가까운가)만 남긴다.
+       스택 줄: 칩 화면은 요건이 두세 개짜리 고정 목록이고, 열 명은 그 요건을 다 통과해서
+       올라온 사람들이다. 그래서 첫 줄이 열 장 모두 "MySQL, Docker 의 경험이 있습니다"로
+       같아진다 — 고르는 근거가 되라고 만든 칸이 고른 조건을 되읽는 칸이 됐다. 게다가
+       그 문장은 바로 위 '추천 이유' 상자의 주황 칩과 같은 말이다(칩 옆에 "이 핵심
+       키워드를 모두 보유하고 있어요!"까지 붙어 있다).
 
-       어학이 빠지면 두 줄이 되므로 경험을 두 줄 받아 둔다 — 세 줄짜리 칸이 두 줄로
-       쪼그라들면 카드마다 높이가 달라 보인다.
+       어학 줄: 등급 문장이 네 개뿐이라 같은 급이면 글자까지 같고, 성적은 카드 머리의
+       "영어 TOEIC 765"에 이미 있다.
+
+       둘 다 빼고 판단이 필요한 줄만 남긴다 — 이 사람이 어디서 무엇을 했나. 그 자리에
+       고정점(회사·도메인·규모·역할)을 반드시 넣게 해서, 옆 카드에 옮겨 붙일 수 있는
+       문장이 나오지 않게 한다(screenPrompt 의 experiences 규칙).
        캐시(#5)로 저장된 옛 응답에는 이 값이 없다 — 화면이 한 문장짜리 why 로 떨어진다. */
-    reasons: [
-      hits.length ? `${hits.slice(0, 5).join(', ')} 의 경험이 있습니다.` : '',
-      ...(Array.isArray(v.experiences) ? v.experiences : [])
-        .map((x) => String(x).trim()).filter(Boolean).slice(0, 2),
-      englishLine(p.english_cert),
-    ].filter(Boolean),
-    strengths: (v.strengths || []).slice(0, 3),
+    /* 학교 줄이 서면 경험은 두 줄까지다 — 세 줄 칸에 넷을 넣으면 카드가 그만큼 길어지고,
+       고객사가 우대로 물은 것(학교)이 맨 아래로 밀린다. */
+    reasons: (() => {
+      const exp = (Array.isArray(v.experiences) ? v.experiences : [])
+        .map((x) => stripTenure(String(x))).filter(Boolean).filter(ANCHORED)
+      return school ? [...exp.slice(0, 2), school] : exp.slice(0, 3)
+    })(),
+    prefMet,
+    strengths: (v.strengths || []).map((x) => String(x).trim()).filter(Boolean).filter(SPECIFIC).slice(0, 2),
     met: v.met.length,
     total: v.met.length + v.missing.length,
     pref: v.preferredMet,
@@ -437,20 +489,14 @@ function card(p, v, c) {
    저장하는 건 criteria 와 후보 id 다. JD 원문은 여기서도 안 남긴다 — 그건 고객사가
    아직 안 낸 자리의 문서이고, 우리가 필요한 건 '무슨 조건으로 누굴 보여줬나'뿐이다.
 
-   기업명은 클라이언트가 보낸 문자열이 아니라 토큰 서명을 확인해서 얻는다. 로그인이
-   없는 경로라 문자열을 그냥 믿으면 아무 회사 이름이나 적힌 검색 기록이 쌓인다.
-   날린 링크(showcase_links 에서 지운 것)는 화면이 c 를 아예 안 보내므로 여기서
-   기업이 안 붙는다 — 이벤트 쪽 규칙과 같다.
+   기업은 여기서 안 붙인다 — 리드가 상담 문의에 회사명을 적는 순간 생긴다.
 
    실패해도 던지지 않는다. 검색 결과를 못 돌려주는 것과 기록을 못 남기는 것은 무게가
    다르다. 대신 sid 가 null 로 나가고, 화면은 그때 문의 버튼을 감춘다 — 누른 뒤에
    실패하는 것보다 처음부터 없는 편이 낫다. */
-async function saveSearch({ token, criteria, picks, pool, screened, passed }) {
+async function saveSearch({ criteria, picks, pool, screened, passed }) {
   try {
-    const v = token ? verifyToken(token) : null
     const { data, error } = await supabase.from('showcase_searches').insert({
-      token: v ? token : null,
-      company: v ? v.company : null,
       criteria,
       picks: picks.map(({ p }) => String(p.id)),
       pool,
@@ -509,8 +555,18 @@ export default async function handler(req, res) {
   // (#5: title_ko를 한국 실사용 직함 표기로 — 제품관리자 → 프로덕트 매니저)
   // (#6: 추천 이유가 한 문장 why 에서 세 줄 reasons 로 — 스택·경험·어학)
   // (#7: 카드 순서를 뽑는 순서(byFit)가 아니라 점수 내림차순(byScore)으로)
+  /* (#12: '추천 이유' 칸을 통째로 다시 세웠다. 칩 화면은 요건이 두세 개짜리 고정 목록이고
+           열 명이 그걸 다 통과해 올라온 사람들이라, 칸의 윗줄(걸린 스택 칩)도 첫 문장도
+           열 장이 똑같아졌다. 칩은 이 사람만의 강점(strengths)으로 바꾸고, 문장은
+           '어디서 한 일'만 남기고, 요건 충족은 맨 아래 회색 한 줄로 내렸다.
+           소속 없는 줄(ANCHORED)·두루뭉술한 칩(SPECIFIC)은 싣지 않고 재직 기간은
+           지운다(stripTenure). #8~#11 은 이 칸을 고치며 쓴 중간값이라 건너뛴 번호다.)
+     (#13: '한국 유학·한국 대학'을 우대로 건 검색에서만, 그걸 채운 사람의 학교를 추천 이유
+           한 줄로 세운다(koreanSchoolLine). 그때는 경험이 두 줄이 된다.)
+     (#14: 충족한 우대를 배지로 내보낸다(prefMet). 우대는 순서를 가르는 첫 기준인데
+           카드에 그게 안 보였다.) */
   const raw = typeof req.body?.h === 'string' && /^[a-f0-9]{64}$/.test(req.body.h) ? req.body.h : null
-  const h = raw ? `${raw}#7` : null
+  const h = raw ? `${raw}#14` : null
   if (h) {
     try {
       const { data: hits } = await supabase.from('showcase_searches')
@@ -547,7 +603,16 @@ export default async function handler(req, res) {
       const v = judge(raws[i], c, years)
       judged.push({
         p,
-        v: { ...v, strengths: raws[i].strengths, titleKo: raws[i].title_ko, experiences: raws[i].experiences },
+        /* preferredList — judge 는 우대를 개수로만 남긴다(순서를 가르는 데는 그거면 된다).
+           어느 우대를 채웠는지는 카드가 알아야 한다: 고객사가 '한국 대학'을 걸었으면
+           그 사람의 학교를 추천 이유에 세운다(koreanSchoolLine). */
+        v: {
+          ...v,
+          strengths: raws[i].strengths,
+          titleKo: raws[i].title_ko,
+          experiences: raws[i].experiences,
+          preferredList: raws[i].preferred_met,
+        },
         pre: short[i].s,
       })
     }
@@ -597,7 +662,6 @@ export default async function handler(req, res) {
 
     // 카드를 그리기 전에 남긴다 — 화면이 문의 버튼을 띄우려면 sid 가 같은 응답에 있어야 한다.
     const sid = await saveSearch({
-      token: typeof req.body?.c === 'string' ? req.body.c : null,
       criteria: c,
       picks,
       pool: pool.length,
