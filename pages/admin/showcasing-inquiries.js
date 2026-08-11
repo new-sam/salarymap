@@ -6,9 +6,9 @@ import AdminLayout from '../../components/admin/AdminLayout'
 import { sectionStyle } from '../../constants/dashboard'
 
 /* /admin/showcasing-inquiries — 전시장(/private/showcasing)에서 들어온 상담 문의.
-   (내부 작업용이라 한국어만 — /admin/showcasing-events 와 같다)
+   (내부 작업용이라 한국어만 — /admin/lang-scores 와 같다)
 
-   이벤트 로그가 "무슨 일이 일어났나"라면 여기는 "누가 우리에게 연락했나"다. 이 화면에
+   전시장에서 우리가 보는 건 여기 하나다 — "누가 우리에게 연락했나". 이 화면에
    한 줄이 생기는 것이 전시장을 만든 이유이므로, 열었을 때 제일 먼저 보여야 하는 건
    건수가 아니라 아직 연락 안 한 문의다.
 
@@ -121,8 +121,15 @@ function InquiryCard({ r, onStatus }) {
         }}>{s.label}</span>
         <span style={{ fontSize: 14, fontWeight: 700, color: '#191F28' }}>{r.company}</span>
         <span style={{ fontSize: 13, color: '#4E5968' }}>{r.contact_name}</span>
-        {/* 폼에 적은 회사명과 링크를 보낸 기업이 다르면 짚어 준다 — 링크가 사내에서
-            옮겨 다녔다는 뜻이고, 그건 다음에 누구에게 보낼지의 단서다. */}
+        {/* 어느 발송으로 들어온 문의인지. 회사명은 이 사람이 폼에 적은 값이고, 링크가
+            아는 건 발송(캠페인)까지다 — 그 둘이 만나는 자리가 여기다.
+            기업명이 적힌 옛 링크는 폼의 회사명과 다를 때만 짚어 준다: 다르다는 건 링크가
+            사내에서 옮겨 다녔다는 뜻이고, 그건 다음에 누구에게 보낼지의 단서다. */}
+        {!!r.linkCampaign && (
+          <span title="이 문의가 들어온 발송" style={{ fontSize: 11, color: '#B0B8C1' }}>
+            {r.linkCampaign}
+          </span>
+        )}
         {!!r.linkCompany && r.linkCompany !== r.company && (
           <span title="이 링크는 이 기업에 보냈습니다" style={{ fontSize: 11, color: '#B0B8C1' }}>
             링크: {r.linkCompany}

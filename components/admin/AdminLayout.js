@@ -47,7 +47,6 @@ function buildNav(lang) {
       items: [
         // 자체 페이지라 tab 이 없다 — '어학 점수'와 같다.
         { label: L('상담 문의', 'Inquiries'), pathname: '/admin/showcasing-inquiries' },
-        { label: L('이벤트 로그 보기', 'Event log'), pathname: '/admin/showcasing-events' },
       ],
     },
     {

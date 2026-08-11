@@ -39,9 +39,18 @@ export default async function handler(req, res) {
     if (!rows?.length) return res.status(200).json({ rows: [] })
 
     const { data: searches } = await supabaseAdmin
-      .from('showcase_searches').select('id, picks, criteria, company, created_at')
+      .from('showcase_searches').select('id, token, picks, criteria, company, created_at')
       .in('id', [...new Set(rows.map((r) => r.search_id))])
     const byId = Object.fromEntries((searches || []).map((s) => [s.id, s]))
+
+    /* 어느 발송으로 들어온 문의인지. 링크는 이제 캠페인(테마) 단위라 기업명 자리가
+       비어 있고, 그러면 "이 문의가 어느 콜드메일에서 왔나"를 알 길이 검색에 실린
+       토큰뿐이다 — 그 토큰으로 링크를 찾아 캠페인 이름을 붙인다. */
+    const tokens = [...new Set((searches || []).map((s) => s.token).filter(Boolean))]
+    const { data: links } = tokens.length
+      ? await supabaseAdmin.from('showcase_links').select('token, campaign').in('token', tokens)
+      : { data: [] }
+    const campOfToken = Object.fromEntries((links || []).map((l) => [l.token, l.campaign]))
 
     // 고른 후보 전부를 한 번에 — 문의마다 조회하면 목록 한 장에 쿼리가 수십 번이 된다.
     const ids = [...new Set(rows.flatMap((r) => (r.picked || [])
@@ -61,6 +70,8 @@ export default async function handler(req, res) {
           // 링크로 들어왔으면 서명에서 푼 기업명 — 폼에 적은 회사명과 다르면 그 차이가
           // 곧 정보다(링크가 사내에서 옮겨 다녔거나, 우리가 잘못 보냈거나).
           linkCompany: s?.company || null,
+          // 발송 이름. 링크를 지운(추적 끊은) 뒤에 들어온 문의면 null 이 된다.
+          linkCampaign: s?.token ? campOfToken[s.token] || null : null,
           candidates: (r.picked || []).map((i) => {
             const p = byPid[String(s?.picks?.[i])]
             return {

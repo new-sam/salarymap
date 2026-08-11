@@ -1,6 +1,7 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import Head from 'next/head'
 import { GROUPS, YOE_MAX, PREF_CHIPS, groupOf, stacksFor, chipsToJd, yoeLabel } from '../../lib/showcaseChips'
+import { track } from '../../lib/track'
 
 /* /private/showcasing — 고객사에 보여줄 인재 전시장(비공개).
 
@@ -27,6 +28,39 @@ import { GROUPS, YOE_MAX, PREF_CHIPS, groupOf, stacksFor, chipsToJd, yoeLabel } 
    조건은 들어갈 길이 아예 없어졌다 — 새 조건은 칩으로 세워야 한다.
    파일 파싱 API(/api/private/jd-extract)는 지우지 않았다. 되살릴 일이 생기면 화면만
    다시 붙이면 된다(git 이력에 있다). */
+
+/* ── 로그 ────────────────────────────────────────────────────────────────────
+   이 화면에서 알아야 하는 건 세 숫자다. 열었나(psc_open) → 조건을 넣었나(psc_submit)
+   → 추천을 받아봤나(psc_result). 나머지 이벤트는 그 사이가 어디서 끊겼는지 볼 때만 쓴다.
+
+   유입은 ?utm_source= 로 가른다(콜드메일은 utm_source=coldmail). UTM 은 원래
+   session_start 만 싣고 가는데, 그러면 세 숫자를 셀 때마다 client_id 로 두 이벤트를
+   이어붙여야 한다 — 세 줄짜리 질문에 조인이 붙는다. 그래서 여기서는 세 이벤트가
+   각자 src 를 들고 간다. 이제 "coldmail 로 들어와 추천까지 간 건수"가 한 줄로 세어진다.
+
+   src 를 마운트 때 한 번 읽어 고정하는 이유: 이 화면은 주소를 바꾸지 않지만, 뒤로
+   그럴 일이 생기면 제출·결과가 유입을 잃는다. 유입은 들어온 순간의 사실이라 그때 박는다.
+
+   본인 테스트는 ?qa=1 로 들어가면 track() 이 통째로 막는다(lib/track.js). 그래야
+   로그에 남은 것이 전부 '남'이 된다 — 이 화면은 그걸 못 갈라서 한참 헤맸다.
+
+   client_id 는 track() 이 localStorage(sm_cid)에서 알아서 실어 보낸다. 같은 값이
+   showcase_searches.client_id 에도 들어가므로, 서버에 남는 실행 기록과 이 이벤트가
+   이어진다 — UTM 이 없는 링크로 들어온 사람도 그쪽에서는 갈린다.
+
+   JD 원문·회사명·연락처는 싣지 않는다(이 화면의 오래된 규칙). 고른 칩과 길이·건수만 남긴다.
+
+   page 값은 반드시 이 문자열이어야 한다 — 집계가 이벤트 이름이 아니라 page 로 거른다.
+   ────────────────────────────────────────────────────────────────────────── */
+const PAGE = '/private/showcasing'
+
+// 들어온 순간의 utm_source. 없으면 null — 직접 주소를 친 사람과 메일에서 온 사람이 갈린다.
+let SRC = null
+const readSrc = () => {
+  if (typeof window === 'undefined') return null
+  try { return new URLSearchParams(window.location.search).get('utm_source') || null } catch { return null }
+}
+const ev = (name, meta) => track(name, { page: PAGE, meta: { src: SRC, ...(meta || {}) } })
 
 /* 세 화면이 같은 언어를 쓰게 하는 최소한의 토큰.
 
@@ -174,6 +208,12 @@ export default function PrivateShowcasing() {
   const [result, setResult] = useState(null)
   const [err, setErr] = useState('')
 
+  /* 마운트 1회 — '몇 번 돌렸나'가 아니라 '몇 명이 열었나'다. 한 탭에서 조건을 열 번
+     바꿔 돌려도 이건 한 번만 찍힌다. 열람 대비 제출을 볼 때 분모가 되는 값이라,
+     실행마다 찍게 바꾸면 이탈률이 통째로 망가진다.
+     src 를 먼저 박고 쏜다 — 이 줄 순서가 바뀌면 psc_open 만 유입을 잃는다. */
+  useEffect(() => { SRC = readSrc(); ev('psc_open') }, [])
+
   /* 화면에 낼 스택 칩. 고른 직무가 얹는 것까지 합친다 — 개발 기본 목록은 웹 쪽으로
      기울어 있어서, 머신러닝을 고른 사람에게는 정작 쓰는 도구가 목록에 없다. */
   const stackList = stacksFor(group, roles)
@@ -216,6 +256,14 @@ export default function PrivateShowcasing() {
     /* 고른 칩을 글로 편다. 뒤쪽(조건 뽑기 → 판정 → 순위)이 전부 "글에서 요건을 뽑는다"를
        전제로 서 있어서, 그 셋을 한꺼번에 고쳐 쓰는 대신 입구에서 글로 만들어 넣는다. */
     const jd = chipsToJd({ group, roles, stacks, yoe, prefs })
+    /* 여기가 '진짜 써 본 사람'의 경계다 — 열어보기만 한 사람과 조건을 골라 보낸 사람이
+       갈린다. 무엇을 골랐는지 다 남긴다: 결과가 엉뚱할 때 어느 칩 탓인지 갈리고,
+       칩 목록을 고칠 때 실제로 눌리는 것이 무엇인지가 근거가 된다. */
+    ev('psc_submit', {
+      chars: jd.length,
+      group: group || null, roles, stacks, prefs,
+      yoe_min: yoe[0], yoe_max: yoe[1],
+    })
     setErr(''); setCriteria(null); setResult(null); setStep('criteria')
     try {
       const r1 = await fetch('/api/private/jd-criteria', {
@@ -236,6 +284,17 @@ export default function PrivateShowcasing() {
       })
       const j2 = await r2.json()
       if (!r2.ok) throw new Error(j2.error || '후보를 찾지 못했습니다')
+      /* 추천을 실제로 받아본 건수. 아래 최소 대기(3초) 전에 찍는다 — 그건 읽을 틈을 주려고
+         우리가 넣은 연출이지 결과가 늦게 온 게 아니다. 대기 중에 창을 닫은 사람까지
+         '추천 실패'로 세면 숫자가 우리 연출 탓에 깎인다.
+         sid 는 이 실행의 showcase_searches 행 번호다 — 서버 기록과 이 이벤트를 잇는 유일한
+         키이고, 상담 문의가 걸리는 것도 이 값이다. */
+      ev('psc_result', {
+        picks: j2.picks?.length || 0,
+        screened: j2.screened ?? null,
+        passed: j2.passed ?? null,
+        sid: j2.sid || null,
+      })
       /* 결과가 너무 빨리 오면(캐시) 조건 상자가 뜨자마자 화면이 바뀐다 — "이렇게
          이해했습니다"를 읽을 시간이 없으면 그 상자는 없는 셈이다. 조건이 뜬 뒤로
          최소 3초는 머문다. 진짜 매칭(15초대)에서는 이 대기가 0이다. */
