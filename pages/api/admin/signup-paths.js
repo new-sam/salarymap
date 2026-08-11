@@ -49,7 +49,7 @@ const refHost = (r) => {
   try { return new URL(r).hostname.replace('www.', '') } catch { return r }
 }
 
-// ad-metrics의 channelOf와 동일한 분류 — 소스 문자열/referrer → 채널 라벨.
+// 소스 문자열/referrer → 채널 라벨.
 function classify(source, referrer) {
   const s = (source || '').toLowerCase()
   if (['meta', 'mt', 'facebook', 'fb', 'instagram', 'ig'].includes(s)) return 'meta_ad'
