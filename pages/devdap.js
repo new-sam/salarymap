@@ -4,9 +4,9 @@ import { createClient } from '@supabase/supabase-js'
 
 /* /devdap — 데드댑(DevDap) 전달용 요금제별 추천 인재 프로필 (2026-08-11).
    요금제(99/149/199만원·별도협의) × 포지션(풀스택/AI) 별 5명씩, 어드민 TalentCard 양식.
-   ⚠️ 후보 연락처 보호: 이메일·전화·원본 이력서(PDF)·개인 링크는 서버에서부터 내려보내지
-   않는다 — 채용 논의가 FYI 를 우회해 직접 컨택으로 새는 걸 막는 게 수익모델상 핵심.
-   "이력서 보기"는 파싱된 구조화 프로필(한국어)만 모달로 보여준다. */
+   연락처 정책(8/11 유저 결정): 원본 이력서(PDF)는 공개하되 프로필 필드의 이메일·전화는
+   내려보내지 않고, "직접 컨택 지양·FYI 통해 진행" 안내문구로 우회를 막는다 — 성사 수수료가
+   수익모델이라 직접 컨택 방지가 중요하지만, 검토 편의를 위해 원본 열람은 허용하는 절충. */
 
 // 선정 명단(2026-08-11 확정, 8/11 오후 사진 보유자 우선으로 개편) — 인재풀 2,064명 중
 // 수기 검토로 뽑은 요금제별 상위 5명. CV 증명사진 보유자만 선정하되, AI 3~5년차는 사진
@@ -55,7 +55,7 @@ export async function getServerSideProps({ res }) {
   const sb = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY)
   const allIds = Object.values(PICKS).flatMap(g => Object.values(g).flat())
   const { data, error } = await sb.from('user_profiles')
-    .select('id,full_name,headline,position,yoe_months,skills,university,major,graduation_year,experiences,english_cert,korean_cert,resume_summary,photo_url,location')
+    .select('id,full_name,headline,position,yoe_months,skills,university,major,graduation_year,experiences,english_cert,korean_cert,resume_summary,photo_url,location,resume_url')
     .in('id', allIds)
   if (error) return { props: { groups: null } }
 
@@ -82,6 +82,7 @@ export async function getServerSideProps({ res }) {
       })),
       photo: p.photo_url || '',
       loc: p.location || '',
+      resume: p.resume_url || '',
       score: matchScore(p),
     }
   }
@@ -173,8 +174,16 @@ function ProfileCard({ p, rank, onDetail }) {
         </PanelRow>
       </div>
 
-      <div style={{ display: 'block', textAlign: 'center', marginTop: 12, padding: '10px 0', border: '1px solid #E5E8EB', borderRadius: 10, fontSize: 13, fontWeight: 700, color: '#111', background: '#fff' }}>
-        이력서 보기 (한국어)
+      <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
+        <div style={{ flex: 1, textAlign: 'center', padding: '10px 0', border: '1px solid #E5E8EB', borderRadius: 10, fontSize: 13, fontWeight: 700, color: '#111', background: '#fff' }}>
+          이력서 (한국어)
+        </div>
+        {p.resume && (
+          <a href={p.resume} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()}
+            style={{ flex: 1, textAlign: 'center', padding: '10px 0', border: '1px solid #E5E8EB', borderRadius: 10, fontSize: 13, fontWeight: 700, color: '#111', background: '#fff', textDecoration: 'none' }}>
+            원본 이력서 ↗
+          </a>
+        )}
       </div>
     </div>
   )
@@ -250,8 +259,14 @@ function DetailModal({ p, onClose }) {
             </div>
           ))}
 
-          <div style={{ marginTop: 4, padding: '10px 12px', background: '#FFF7ED', borderRadius: 10, fontSize: 12, color: '#B0691A', lineHeight: 1.5 }}>
-            후보자 보호를 위해 연락처와 원본 이력서는 공개하지 않습니다. 인터뷰를 원하시면 FYI 담당자에게 순위 번호로 요청해 주세요.
+          {p.resume && (
+            <a href={p.resume} target="_blank" rel="noopener noreferrer"
+              style={{ display: 'block', textAlign: 'center', padding: '11px 0', border: '1px solid #E5E8EB', borderRadius: 10, fontSize: 13, fontWeight: 700, color: '#111', background: '#fff', textDecoration: 'none', marginBottom: 12 }}>
+              원본 이력서 보기 ↗
+            </a>
+          )}
+          <div style={{ padding: '10px 12px', background: '#FFF7ED', borderRadius: 10, fontSize: 12, color: '#B0691A', lineHeight: 1.5 }}>
+            이력서에 포함된 연락처로 후보자에게 직접 연락하는 것은 지양해 주세요. 인터뷰 요청과 채용 논의는 FYI 담당자를 통해 진행 부탁드립니다.
           </div>
         </div>
       </div>
@@ -305,9 +320,9 @@ export default function DevdapPage({ groups }) {
       <div style={{ maxWidth: 1080, margin: '0 auto', padding: '28px 16px 60px' }}>
         <h1 style={{ fontSize: 23, fontWeight: 800, margin: '0 0 6px' }}>{posLabel[pos]} 추천 인재</h1>
         <p style={{ fontSize: 13.5, color: '#6B7280', margin: 0, lineHeight: 1.6 }}>
-          FYI 인재풀에서 요금제 구간별로 선별한 상위 5명입니다. 카드를 누르면 한국어 이력서 요약을
-          볼 수 있습니다. 후보자 보호를 위해 연락처와 원본 이력서는 비공개이며, 인터뷰 요청은 FYI
-          담당자를 통해 진행됩니다.
+          FYI 인재풀에서 요금제 구간별로 선별한 상위 5명입니다. 카드를 누르면 한국어 이력서 요약을, 원본 버튼으로 원문 이력서를 볼 수 있습니다.
+          <br />
+          후보자에게 직접 연락하는 것은 지양해 주시고, 인터뷰 요청과 채용 논의는 FYI 담당자를 통해 진행 부탁드립니다.
         </p>
 
         {!groups ? (
