@@ -442,7 +442,8 @@ export default function Survey() {
   const qBox = { background: '#fff', border: '1px solid #eee5da', borderRadius: 16, padding: '18px 18px 16px', marginBottom: 14 }
   const qTitle = { fontSize: 15, fontWeight: 700, lineHeight: 1.45, marginBottom: 12 }
   const rowSt = (active) => ({ display: 'flex', alignItems: 'center', gap: 10, padding: '11px 13px', borderRadius: 11, border: active ? '2px solid #ff6000' : '1px solid #e5ddd2', background: active ? '#fff4ec' : '#fff', fontSize: 14, cursor: 'pointer', marginBottom: 8, fontWeight: active ? 700 : 400 })
-  const ta = { width: '100%', minHeight: 96, border: '1px solid #e5ddd2', borderRadius: 11, padding: '11px 13px', fontSize: 14, lineHeight: 1.55, fontFamily: 'inherit', resize: 'vertical', boxSizing: 'border-box', outline: 'none' }
+  // fontSize 16 필수 — iOS 사파리는 입력칸 폰트가 16px 미만이면 포커스 시 화면을 자동 확대한다
+  const ta = { width: '100%', minHeight: 96, border: '1px solid #e5ddd2', borderRadius: 11, padding: '11px 13px', fontSize: 16, lineHeight: 1.55, fontFamily: 'inherit', resize: 'vertical', boxSizing: 'border-box', outline: 'none' }
   const input = { ...ta, minHeight: 0, resize: 'none' }
   const btn = (enabled) => ({ display: 'block', width: '100%', padding: '15px 0', border: 'none', borderRadius: 12, background: enabled ? '#ff6000' : '#f5c9a8', color: '#fff', fontSize: 15.5, fontWeight: 800, cursor: enabled ? 'pointer' : 'default' })
   const Dot = ({ on }) => <span style={{ width: 16, height: 16, borderRadius: '50%', border: on ? '5px solid #ff6000' : '2px solid #d9cfc2', boxSizing: 'border-box', flexShrink: 0 }} />
@@ -457,7 +458,8 @@ export default function Survey() {
         <title>Khảo sát FYI</title>
         <meta name="robots" content="noindex" />
         {/* 안드로이드 크롬: 키보드가 레이아웃 뷰포트를 줄이게 해 가운데 정렬이 키보드 위 기준으로 재계산되게 */}
-        <meta name="viewport" content="width=device-width, initial-scale=1, interactive-widget=resizes-content" />
+        {/* maximum-scale=1 — iOS 입력 포커스 자동확대 방지 (iOS 10+는 수동 핀치줌은 여전히 허용) */}
+        <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, interactive-widget=resizes-content" />
       </Head>
       <div style={card} ref={cardRef}>
         <img src="/fyi-logo.png" alt="FYI" style={{ height: 28, width: 'auto', display: 'block', margin: '0 auto 18px' }} />
