@@ -18,20 +18,20 @@ const maxN = flag('max', null) ? parseInt(flag('max'), 10) : null
 const CAMPAIGN = String(flag('campaign', 'survey1'))
 const SITE = String(flag('site', env.NEXT_PUBLIC_SITE_URL || 'https://salary-fyi.com')).replace(/\/$/, '')
 const RESEND_FROM = env.RESEND_FROM || 'FYI <hello@salary-fyi.com>'
-const FROM = RESEND_FROM.replace(/^[^<]*</, 'Seungju (FYI) <') // 창업자 개인 명의 표시명
+const FROM = RESEND_FROM.replace(/^[^<]*</, 'Sean (FYI) <') // 창업자 개인 명의 표시명
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
 const esc = (s) => String(s || '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]))
 const firstName = (n) => String(n || '').trim().split(/\s+/).slice(-1)[0] || 'bạn'
 
 const COPY = {
   subject: {
-    vi: 'Mình là Seungju, người sáng lập FYI — xin bạn 3 phút được không?',
-    ko: '안녕하세요, FYI 창업자 승주입니다 — 3분만 내주실 수 있나요?',
+    vi: 'Mình là Sean, người sáng lập FYI — xin bạn 3 phút được không?',
+    ko: '안녕하세요, FYI 창업자 Sean입니다 — 3분만 내주실 수 있나요?',
   },
   hi: { vi: (n) => `Chào ${n},`, ko: (n) => `안녕하세요 ${n}님,` },
   p1: {
-    vi: 'Mình là <b>Seungju</b>, người sáng lập FYI (salary-fyi.com). Mình là người Hàn Quốc, đang cùng đội ngũ xây dựng FYI để giúp các bạn Việt Nam phát triển sự nghiệp.',
-    ko: '저는 FYI(salary-fyi.com) 창업자 <b>승주</b>입니다. 한국인으로서 베트남 분들의 커리어 성장을 돕기 위해 FYI를 만들고 있습니다.',
+    vi: 'Mình là <b>Sean</b>, người sáng lập FYI (salary-fyi.com). Mình là người Hàn Quốc, đang cùng đội ngũ xây dựng FYI để giúp các bạn Việt Nam phát triển sự nghiệp.',
+    ko: '저는 FYI(salary-fyi.com) 창업자 <b>Sean</b>입니다. 한국인으로서 베트남 분들의 커리어 성장을 돕기 위해 FYI를 만들고 있습니다.',
   },
   p2: {
     vi: 'Hơn 3.000 bạn đã tham gia FYI, nhưng mình vẫn muốn hiểu rõ hơn: <b>điều gì thực sự khó khăn với bạn</b> khi tìm việc và phát triển sự nghiệp?',
@@ -42,7 +42,7 @@ const COPY = {
     ko: '여러분의 구직과 커리어 성장을 더 잘 돕기 위해, <b>~4분</b>짜리 설문에 답해주세요 — 대부분 탭 선택형입니다. 더 나은 FYI를 만들도록 최선을 다하겠습니다.',
   },
   cta: { vi: 'Trả lời khảo sát (3 phút) →', ko: '설문 참여하기 (3분) →' },
-  thanks: { vi: 'Cảm ơn bạn rất nhiều!<br>— Seungju, Founder của FYI', ko: '정말 감사합니다!<br>— FYI 창업자 승주 드림' },
+  thanks: { vi: 'Cảm ơn bạn rất nhiều!<br>— Sean, Founder của FYI', ko: '정말 감사합니다!<br>— FYI 창업자 Sean 드림' },
   footer: {
     vi: 'Bạn nhận được email này vì đã đăng ký tài khoản trên FYI.',
     ko: 'FYI에 가입하셔서 이 메일을 받으셨습니다.',
@@ -57,7 +57,7 @@ function emailHtml(name, url, unsubUrl, lang) {
 <table width="100%" cellpadding="0" cellspacing="0" style="background:#faf9f7"><tr><td align="center" style="padding:28px 16px">
 <table width="100%" cellpadding="0" cellspacing="0" style="max-width:520px">
   <tr><td style="padding-bottom:18px"><img src="https://salary-fyi.com/fyi-logo.png" height="24" alt="FYI" style="height:24px;width:auto;display:block"></td></tr>
-  <tr><td style="padding-bottom:12px"><img src="https://salary-fyi.com/founder-seungju.jpg" width="56" height="56" alt="Seungju" style="width:56px;height:56px;border-radius:50%;object-fit:cover;display:block"></td></tr>
+  <tr><td style="padding-bottom:12px"><img src="https://salary-fyi.com/founder-seungju.jpg" width="56" height="56" alt="Sean" style="width:56px;height:56px;border-radius:50%;object-fit:cover;display:block"></td></tr>
   <tr><td style="font-size:15px;line-height:1.6;color:#1a1612;padding-bottom:6px">${L(COPY.hi)(esc(firstName(name)))}</td></tr>
   <tr><td style="font-size:14px;line-height:1.65;color:#4a443c;padding-bottom:14px">${L(COPY.p1)}</td></tr>
   <tr><td style="font-size:14px;line-height:1.65;color:#4a443c;padding-bottom:14px">${L(COPY.p2)}</td></tr>

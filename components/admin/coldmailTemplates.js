@@ -494,6 +494,16 @@ const mnfTail = (benefit) => ({
   vi: `${MNF_LINE.vi}<br><br>${benefit.vi}`, ko: `${MNF_LINE.ko}<br><br>${benefit.ko}`, en: `${MNF_LINE.en}<br><br>${benefit.en}`,
 })
 
+// ── OpenMinds Full Stack Developer (openminds-recommend-coldmail.mjs) — 훅(언어요건)+JD 요약, 두 프레임 공통 ──
+const OPENMINDS_LINE = {
+  vi: 'Vị trí này ưu tiên ứng viên Full Stack <b>giao tiếp tốt tiếng Anh hoặc tiếng Hàn</b> — hồ sơ của bạn đáp ứng đúng cả hai tiêu chí đó.<br><br>Phát triển và bảo trì Web/Mobile Application: Front-end (<b>React · Vue · Angular</b>), Back-end (<b>Node.js · Spring Boot · .NET · Django</b>), xây dựng RESTful API và tham gia triển khai, vận hành hệ thống.<br><br>Yêu cầu <b>3–4 năm kinh nghiệm Full Stack</b> và ít nhất 1 dự án đã triển khai thực tế. <b>Không giới hạn địa điểm làm việc</b>. Lương 18–20 triệu.',
+  ko: '이 포지션은 <b>영어 또는 한국어 회화가 가능한</b> 풀스택 개발자를 우선합니다 — 회원님의 이력서가 두 조건 모두에 해당합니다.<br><br>웹/모바일 애플리케이션 개발·유지보수: 프론트엔드(<b>React · Vue · Angular</b>), 백엔드(<b>Node.js · Spring Boot · .NET · Django</b>), RESTful API 구축과 배포·운영 참여.<br><br>요건: <b>풀스택 경력 3–4년</b>, 실서비스 배포 프로젝트 1개 이상. <b>근무지 무관</b>. 급여 18–20백만 동.',
+  en: 'This position prioritizes Full Stack developers who <b>communicate well in English or Korean</b> — your profile matches both criteria.<br><br>Develop and maintain Web/Mobile applications: Front-end (<b>React · Vue · Angular</b>), Back-end (<b>Node.js · Spring Boot · .NET · Django</b>), build RESTful APIs and join deployment and operations.<br><br>Requires <b>3–4 years of Full Stack experience</b> and at least 1 project deployed to production. <b>No work-location restriction</b>. Salary 18–20M VND.',
+}
+const openmindsTail = (benefit) => ({
+  vi: `${OPENMINDS_LINE.vi}<br><br>${benefit.vi}`, ko: `${OPENMINDS_LINE.ko}<br><br>${benefit.ko}`, en: `${OPENMINDS_LINE.en}<br><br>${benefit.en}`,
+})
+
 // 순서대로 첫 매치 사용 — 접두어가 겹치는 항목(coldmail-ktc*)은 구체적인 것을 앞에 둘 것.
 // ── 프로필 사진 등록(photo1): 대기 리스트 미선정(사유: 사진 없음) 프레임 ──
 const PHOTO_I18N = {
@@ -1170,6 +1180,42 @@ export const COLDMAIL_TEMPLATES = [
         en: '<b>LION ROCKET</b> — the Korean company behind <b>Tynt</b>, an AI Beauty & Wellness service with 50,000+ users — is hiring a Content Marketer through FYI. The FYI team reviewed every registered CV and <b>selected you for the nominee list</b> sent to the recruiter.',
       },
       initial: 'L', company: 'LION ROCKET', title: 'Content Marketer', meta: 'HCM · Đà Nẵng · Hà Nội · 20–25 triệu', tail: LIONROCKET_TAIL(BENEFIT_PRIVATE),
+    }),
+  },
+  {
+    match: /^openminds-recommend1-public/,
+    subject: {
+      vi: '[FYI] OpenMinds đã xem hồ sơ của bạn và mời bạn ứng tuyển — Full Stack Developer',
+      ko: '[FYI] OpenMinds가 회원님의 이력서를 보고 지원을 제안했습니다 — Full Stack Developer',
+      en: '[FYI] OpenMinds viewed your CV and invited you to apply — Full Stack Developer',
+    },
+    desc: 'OpenMinds Full Stack Developer(KTC·근무지 무관) 추천 · 공개 프레임 (8/11): KTC 추가모집(영어/한국어 요건) 대응. 풀스택 스택 × 영어 중급+/한국어 × 경력 2~6y, gpt-4o-mini 3점↑.',
+    source: 'scripts/outreach/openminds-recommend-coldmail.mjs',
+    html: (lang) => recommendShell(lang, {
+      intro: {
+        vi: 'Nhà tuyển dụng của <b>OpenMinds</b> — công ty công nghệ Hàn Quốc (thành lập 2016) chuyên giải pháp chuyển đổi số trong sản xuất, nhân sự và khu vực công — đã xem hồ sơ của bạn trên FYI và <b>gửi cho bạn vị trí này</b>.',
+        ko: '제조·HR·공공 분야 디지털 전환 솔루션을 만드는 한국 기술기업 <b>OpenMinds</b>(2016년 설립)의 채용 담당자가 FYI에서 회원님의 이력서를 보고 <b>이 포지션을 보냈습니다</b>.',
+        en: 'A recruiter at <b>OpenMinds</b> — a Korean tech company (founded 2016) building digital-transformation solutions for manufacturing, HR and the public sector — viewed your CV on FYI and <b>sent you this position</b>.',
+      },
+      initial: 'O', company: 'OpenMinds', title: 'Full Stack Developer', meta: 'Không giới hạn địa điểm làm việc', tail: openmindsTail(BENEFIT_PUBLIC),
+    }),
+  },
+  {
+    match: /^openminds-recommend1-private/,
+    subject: {
+      vi: '[FYI] Bạn được chọn vào danh sách đề cử — Full Stack Developer tại OpenMinds',
+      ko: '[FYI] 추천 후보 명단에 선정되셨습니다 — OpenMinds Full Stack Developer',
+      en: '[FYI] You\'ve been selected for the nominee list — Full Stack Developer at OpenMinds',
+    },
+    desc: 'OpenMinds Full Stack Developer 추천 · 비공개 프레임 (8/11): "명단 선정 + 이번 주 담당자 전달 + 우선검토" 훅. ⚠️발송 후 실제 명단 공유 의무(KTC 이정애·Alice).',
+    source: 'scripts/outreach/openminds-recommend-coldmail.mjs',
+    html: (lang) => recommendShell(lang, {
+      intro: {
+        vi: '<b>OpenMinds</b> — công ty công nghệ Hàn Quốc (thành lập 2016) chuyên giải pháp chuyển đổi số trong sản xuất, nhân sự và khu vực công — đang tuyển Full Stack Developer qua FYI (dự án K-Tech College 2026). Đội ngũ FYI đã xem xét toàn bộ hồ sơ đã đăng ký và <b>chọn bạn vào danh sách đề cử</b> gửi cho nhà tuyển dụng.',
+        ko: '제조·HR·공공 분야 디지털 전환 솔루션을 만드는 한국 기술기업 <b>OpenMinds</b>(2016년 설립)가 FYI를 통해 Full Stack Developer를 채용 중입니다(K-Tech College 2026). FYI 팀이 등록된 이력서 전체를 검토해 회원님을 <b>추천 명단에 선정</b>했습니다.',
+        en: '<b>OpenMinds</b> — a Korean tech company (founded 2016) building digital-transformation solutions for manufacturing, HR and the public sector — is hiring a Full Stack Developer through FYI (K-Tech College 2026). The FYI team reviewed every registered CV and <b>selected you for the nominee list</b> sent to the recruiter.',
+      },
+      initial: 'O', company: 'OpenMinds', title: 'Full Stack Developer', meta: 'Không giới hạn địa điểm làm việc', tail: openmindsTail(BENEFIT_PRIVATE),
     }),
   },
   {

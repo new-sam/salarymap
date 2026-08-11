@@ -1,13 +1,13 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import Head from 'next/head'
 
 // 유저 서베이 콜드메일 랜딩 — 로그인 없이 토큰(?t=)으로 진입, 대상이 베트남 회원이라 기본 VI.
 // ?lang=ko 는 검수용(실발송 링크에는 안 붙임).
 //
-// 질문 설계: 기능 가설(이력서 첨삭·프로필 사진·모의 면접·커리어 코칭)을 직접 묻지 않는다.
-// "있으면 쓸래요?"도, "해본 것 고르세요"도 아니고 — 영역별로 자연스러운 현황·경험 질문 2개씩을
-// 흩어놓고 니즈는 어드민에서 답변 조합으로 도출한다(예: CV 걱정 있음+피드백 경험 없음=첨삭 수요).
-// 대부분 탭 선택형이라 12문항이어도 ~4분. 제출은 /api/survey → events(survey_submit).
+// 질문 설계: 기능 가설(첨삭·사진·모의면접·코칭·교육·정보)을 직접 묻지 않는다 — 영역별 자연스러운
+// 현황·경험 질문을 흩어놓고 니즈는 어드민에서 답변 조합으로 도출한다.
+// UX: 한 화면에 한 질문(스텝퍼) — 긴 스크롤 회피. 꼬리 질문(N-1)은 별도 스텝이 아니라
+// 같은 화면에 슥 나타나고 자동 포커스 스크롤. 후속 없는 라디오는 답하면 자동으로 다음 스텝.
 const QUESTIONS = [
   {
     key: 'status', type: 'radio',
@@ -175,7 +175,6 @@ const PAIN_PROMPTS = {
 const PAIN_PH = { vi: 'Kể lại một tình huống cụ thể gần đây — càng chi tiết càng giúp bọn mình hiểu rõ hơn.', ko: '최근 겪은 구체적인 상황을 적어주세요 — 자세할수록 도움이 됩니다.' }
 
 // 조건부 후속(N-1) — 경험 있으면 "어땠는지", 없으면 "왜 없는지"를 파서 미충족 수요를 가른다.
-// (예: 피드백 못 받은 이유가 '부탁할 사람 없음'이면 잠재 수요, '필요 없어서'면 수요 아님)
 const FOLLOWUPS = [
   {
     key: 'cv_fb_quality', parent: 'cv_feedback', type: 'radio',
@@ -283,9 +282,11 @@ const COPY = {
   },
   introHi: { vi: (n) => `Chào ${n} 👋`, ko: (n) => `안녕하세요 ${n}님 👋` },
   intro: {
-    vi: 'Mình là [Seungju, người sáng lập FYI]. Để hỗ trợ bạn tốt hơn trên hành trình tìm việc và phát triển sự nghiệp, mong bạn trả lời vài câu hỏi dưới đây — hầu hết chỉ cần chạm chọn (~4 phút). Mình sẽ cố gắng hết sức để xây dựng một FYI tốt hơn cho bạn.',
-    ko: '저는 [FYI 창업자 승주]입니다. 여러분의 구직과 커리어 성장을 더 잘 돕기 위해, 아래 질문들에 답해주세요 — 대부분 선택형이라 4분이면 충분합니다. 더 나은 FYI를 만들도록 최선을 다하겠습니다.',
+    vi: 'Mình là [Sean, người sáng lập FYI]. Để hỗ trợ bạn tốt hơn trên hành trình tìm việc và phát triển sự nghiệp, mong bạn trả lời vài câu hỏi dưới đây — hầu hết chỉ cần chạm chọn (~4 phút). Mình sẽ cố gắng hết sức để xây dựng một FYI tốt hơn cho bạn.',
+    ko: '저는 [FYI 창업자 Sean]입니다. 여러분의 구직과 커리어 성장을 더 잘 돕기 위해, 아래 질문들에 답해주세요 — 대부분 선택형이라 4분이면 충분합니다. 더 나은 FYI를 만들도록 최선을 다하겠습니다.',
   },
+  next: { vi: 'Tiếp tục →', ko: '다음 →' },
+  back: { vi: '← Quay lại', ko: '← 이전' },
   submit: { vi: 'Gửi câu trả lời', ko: '답변 보내기' },
   submitting: { vi: 'Đang gửi…', ko: '보내는 중…' },
   privacy: { vi: 'Câu trả lời chỉ dùng để cải thiện FYI, không chia sẻ cho bên thứ ba.', ko: '답변은 FYI 개선에만 사용되며 제3자와 공유하지 않습니다.' },
@@ -319,10 +320,13 @@ export default function Survey() {
   const [name, setName] = useState('')
   const [state, setState] = useState('loading') // loading | invalid | form | submitting | done
   const [error, setError] = useState('')
+  const [step, setStep] = useState(0) // 0..QUESTIONS.length-1 = 질문, QUESTIONS.length = 인터뷰+제출
   const [a, setA] = useState(INITIAL)
+  const cardRef = useRef(null)
   const set = (k, v) => setA((prev) => ({ ...prev, [k]: v }))
   const L = (o) => o[lang] || o.vi
   const LOpt = (o) => (lang === 'ko' ? o.ko : o.vi)
+  const TOTAL = QUESTIONS.length + 1
 
   // multi 토글 — exclusive 옵션('없음' 류)은 배타
   const toggleMulti = (key, opt, opts) => setA((prev) => {
@@ -348,15 +352,47 @@ export default function Survey() {
       .catch(() => setState('invalid'))
   }, [])
 
-  // 지출: '없음'이거나, 고른 항목마다 금액이 입력돼야 함
-  const spendOk = a.spend_sel.includes('none')
-    || (a.spend_sel.length > 0 && a.spend_sel.every((k) => digitsOf(a.spend_amounts[k])))
+  // 현재 스텝 완료 판정 — 본질문 + 화면에 뜬 꼬리 질문까지 다 답해야 다음으로
+  const stepDone = (st, ans = a) => {
+    if (st >= QUESTIONS.length) return true // 인터뷰 스텝은 선택 사항
+    const q = QUESTIONS[st]
+    let base
+    if (q.type === 'radio') base = !!ans[q.key]
+    else if (q.type === 'multi') base = (ans[q.key] || []).length > 0
+    else if (q.type === 'spend') base = ans.spend_sel.includes('none')
+      || (ans.spend_sel.length > 0 && ans.spend_sel.every((k) => digitsOf(ans.spend_amounts[k])))
+    else base = true
+    if (!base) return false
+    if (q.key === 'stage' && ans.pain.trim().length < 5) return false
+    for (const f of FOLLOWUPS) if (f.parent === q.key && f.when(ans) && !ans[f.key]) return false
+    return true
+  }
+
+  const goTo = (st) => {
+    setStep(st)
+    requestAnimationFrame(() => cardRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }))
+  }
+  // 라디오 클릭 — 값 반영 후 스텝이 완결되면 잠깐 뒤 자동으로 다음, 꼬리가 생기면 거기로 포커스
+  const clickRadio = (key, v) => {
+    const nextA = { ...a, [key]: v }
+    set(key, v)
+    setTimeout(() => {
+      if (stepDone(step, nextA)) goTo(Math.min(step + 1, QUESTIONS.length))
+      else document.querySelector('[data-follow]')?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    }, 260)
+  }
+  // 다중선택 토글 후 꼬리가 새로 뜨면 거기로 포커스
+  const clickMulti = (key, opt, opts) => {
+    toggleMulti(key, opt, opts)
+    setTimeout(() => document.querySelector('[data-follow]')?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 120)
+  }
+
   const canSubmit = RADIO_KEYS.every((k) => a[k])
     && a.cv_feedback.length > 0
     && a.info_source.length > 0
     && a.pain.trim().length >= 5
-    && spendOk
-    && FOLLOWUPS.every((f) => !f.when(a) || a[f.key]) // 화면에 뜬 후속 질문은 모두 답해야 함
+    && (a.spend_sel.includes('none') || (a.spend_sel.length > 0 && a.spend_sel.every((k) => digitsOf(a.spend_amounts[k]))))
+    && FOLLOWUPS.every((f) => !f.when(a) || a[f.key])
 
   async function submit() {
     if (!canSubmit || state === 'submitting') return
@@ -404,10 +440,13 @@ export default function Survey() {
   const Dot = ({ on }) => <span style={{ width: 16, height: 16, borderRadius: '50%', border: on ? '5px solid #ff6000' : '2px solid #d9cfc2', boxSizing: 'border-box', flexShrink: 0 }} />
   const Check = ({ on }) => <span style={{ width: 16, height: 16, borderRadius: 4, border: on ? 'none' : '2px solid #d9cfc2', background: on ? '#ff6000' : '#fff', boxSizing: 'border-box', flexShrink: 0, color: '#fff', fontSize: 12, fontWeight: 800, textAlign: 'center', lineHeight: '16px' }}>{on ? '✓' : ''}</span>
 
+  const q = step < QUESTIONS.length ? QUESTIONS[step] : null
+  const followBox = { ...qBox, borderLeft: '3px solid #ff6000', animation: 'surveySlideIn .25s ease' }
+
   return (
     <div style={wrap}>
       <Head><title>Khảo sát FYI</title><meta name="robots" content="noindex" /></Head>
-      <div style={card}>
+      <div style={card} ref={cardRef}>
         <img src="/fyi-logo.png" alt="FYI" style={{ height: 28, width: 'auto', display: 'block', marginBottom: 18 }} />
 
         {state === 'loading' && <div style={{ textAlign: 'center', padding: 60, color: '#8a8073' }}>{L(COPY.loading)}</div>}
@@ -429,37 +468,44 @@ export default function Survey() {
 
         {(state === 'form' || state === 'submitting') && (
           <>
-            {/* 창업자 말풍선 — 아바타 쪽 모서리만 좁혀 채팅 꼬리 느낌 */}
-            <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12, marginBottom: 22 }}>
-              <img src="/founder-seungju.jpg" alt="Seungju" style={{ width: 56, height: 56, borderRadius: '50%', objectFit: 'cover', border: '2px solid #fff', boxShadow: '0 2px 10px rgba(0,0,0,.1)', flexShrink: 0 }} />
-              <div style={{ flex: 1, background: '#fff', border: '1px solid #eee5da', borderRadius: '4px 16px 16px 16px', padding: '14px 16px', boxShadow: '0 2px 10px rgba(0,0,0,.05)' }}>
-                <div style={{ fontSize: 17, fontWeight: 800, lineHeight: 1.35, marginBottom: 6 }}>
-                  {L(COPY.introHi)(firstName)}
-                </div>
-                <div style={{ fontSize: 14, color: '#4a443c', lineHeight: 1.6 }}>
-                  {em(L(COPY.intro))}
+            <style>{`@keyframes surveySlideIn { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: translateY(0); } }`}</style>
+
+            {/* 창업자 말풍선 — 첫 스텝에서만 */}
+            {step === 0 && (
+              <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12, marginBottom: 22 }}>
+                <img src="/founder-seungju.jpg" alt="Sean" style={{ width: 56, height: 56, borderRadius: '50%', objectFit: 'cover', border: '2px solid #fff', boxShadow: '0 2px 10px rgba(0,0,0,.1)', flexShrink: 0 }} />
+                <div style={{ flex: 1, background: '#fff', border: '1px solid #eee5da', borderRadius: '4px 16px 16px 16px', padding: '14px 16px', boxShadow: '0 2px 10px rgba(0,0,0,.05)' }}>
+                  <div style={{ fontSize: 17, fontWeight: 800, lineHeight: 1.35, marginBottom: 6 }}>{L(COPY.introHi)(firstName)}</div>
+                  <div style={{ fontSize: 14, color: '#4a443c', lineHeight: 1.6 }}>{em(L(COPY.intro))}</div>
                 </div>
               </div>
+            )}
+
+            {/* 진행 바 + 이전 */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14 }}>
+              {step > 0 ? (
+                <button onClick={() => goTo(step - 1)} style={{ border: 'none', background: 'none', color: '#8a8073', fontSize: 13, fontWeight: 700, cursor: 'pointer', padding: 0, flexShrink: 0 }}>{L(COPY.back)}</button>
+              ) : null}
+              <div style={{ flex: 1, height: 4, background: '#f0e7db', borderRadius: 2 }}>
+                <div style={{ width: `${((step + 1) / TOTAL) * 100}%`, height: '100%', background: '#ff6000', borderRadius: 2, transition: 'width .3s ease' }} />
+              </div>
+              <div style={{ fontSize: 12, fontWeight: 700, color: '#8a8073', flexShrink: 0, fontVariantNumeric: 'tabular-nums' }}>{step + 1} / {TOTAL}</div>
             </div>
 
-            <style>{`@keyframes surveySlideIn { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: translateY(0); } }`}</style>
-            {QUESTIONS.map((q, i) => (
-              <div key={q.key}>
+            {q && (
+              <div key={q.key} style={{ animation: 'surveySlideIn .25s ease' }}>
                 <div style={qBox}>
-                  <div style={qTitle}>{i + 1}. {em(L(q.title))}</div>
+                  <div style={qTitle}>{step + 1}. {em(L(q.title))}</div>
                   {q.type === 'radio' && q.opts.map((o) => (
-                    <div key={o.value} style={rowSt(a[q.key] === o.value)} onClick={() => set(q.key, o.value)}>
+                    <div key={o.value} style={rowSt(a[q.key] === o.value)} onClick={() => clickRadio(q.key, o.value)}>
                       <Dot on={a[q.key] === o.value} />{LOpt(o)}
                     </div>
                   ))}
                   {q.type === 'multi' && q.opts.map((o) => (
-                    <div key={o.value} style={rowSt(a[q.key].includes(o.value))} onClick={() => toggleMulti(q.key, o, q.opts)}>
+                    <div key={o.value} style={rowSt(a[q.key].includes(o.value))} onClick={() => clickMulti(q.key, o, q.opts)}>
                       <Check on={a[q.key].includes(o.value)} />{LOpt(o)}
                     </div>
                   ))}
-                  {q.type === 'text' && (
-                    <textarea style={{ ...ta, minHeight: q.short ? 76 : 96 }} value={a[q.key]} onChange={(e) => set(q.key, e.target.value)} placeholder={L(q.ph)} />
-                  )}
                   {q.type === 'spend' && (
                     <>
                       {q.opts.map((o) => (
@@ -492,48 +538,58 @@ export default function Survey() {
                     </>
                   )}
                 </div>
-                {/* 2-1 후속 — Q2에서 단계를 고르면 그 단계 맞춤 주관식이 슥 나타난다 */}
+
+                {/* 2-1 후속 — Q2에서 단계를 고르면 그 단계 맞춤 주관식이 같은 화면에 슥 나타난다 */}
                 {q.key === 'stage' && a.stage && (
-                  <div key={a.stage} style={{ ...qBox, borderLeft: '3px solid #ff6000', animation: 'surveySlideIn .25s ease' }}>
+                  <div key={a.stage} data-follow style={followBox}>
                     <div style={qTitle}>2-1. {em(L(PAIN_PROMPTS[a.stage] || PAIN_PH))}</div>
                     <textarea style={ta} value={a.pain} onChange={(e) => set('pain', e.target.value)} placeholder={L(PAIN_PH)} />
                   </div>
                 )}
-                {/* N-1 후속 — 답에 따라 "어땠는지"/"왜 안 했는지"가 슥 나타난다 */}
+                {/* N-1 후속 — 답에 따라 "어땠는지"/"왜 안 했는지"가 같은 화면에 슥 나타난다 */}
                 {FOLLOWUPS.filter((f) => f.parent === q.key && f.when(a)).map((f) => (
-                  <div key={f.key} style={{ ...qBox, borderLeft: '3px solid #ff6000', animation: 'surveySlideIn .25s ease' }}>
-                    <div style={qTitle}>{i + 1}-1. {em(L(f.title))}</div>
+                  <div key={f.key} data-follow style={followBox}>
+                    <div style={qTitle}>{step + 1}-1. {em(L(f.title))}</div>
                     {f.opts.map((o) => (
-                      <div key={o.value} style={rowSt(a[f.key] === o.value)} onClick={() => set(f.key, o.value)}>
+                      <div key={o.value} style={rowSt(a[f.key] === o.value)} onClick={() => clickRadio(f.key, o.value)}>
                         <Dot on={a[f.key] === o.value} />{LOpt(o)}
                       </div>
                     ))}
                   </div>
                 ))}
-              </div>
-            ))}
 
-            <div style={qBox}>
-              <div style={qTitle}>{QUESTIONS.length + 1}. {em(L(COPY.callTitle))}</div>
-              <div style={rowSt(a.call_ok)} onClick={() => set('call_ok', !a.call_ok)}>
-                <Check on={a.call_ok} />{L(COPY.callYes)}
+                <button style={btn(stepDone(step))} onClick={() => stepDone(step) && goTo(step + 1)} disabled={!stepDone(step)}>
+                  {L(COPY.next)}
+                </button>
               </div>
-              {a.call_ok && (
-                <input style={{ ...input, marginTop: 6 }} value={a.contact} onChange={(e) => set('contact', e.target.value)} placeholder={L(COPY.callPh)} />
-              )}
-              <div style={{ fontSize: 13, color: '#8a8073', marginTop: 10, lineHeight: 1.55 }}>
-                {L(COPY.callAlt)}{' '}
-                <a href="https://www.linkedin.com/in/wiseungju/" target="_blank" rel="noreferrer" style={{ color: '#0a66c2', fontWeight: 700 }}>LinkedIn →</a>
-              </div>
-            </div>
+            )}
 
-            {error && <div style={{ color: '#c00', fontSize: 13.5, marginBottom: 10, textAlign: 'center' }}>{error}</div>}
-            <button style={btn(canSubmit && state !== 'submitting')} onClick={submit} disabled={!canSubmit || state === 'submitting'}>
-              {state === 'submitting' ? L(COPY.submitting) : L(COPY.submit)}
-            </button>
-            <div style={{ fontSize: 12, color: '#a89f92', textAlign: 'center', marginTop: 14, lineHeight: 1.5 }}>
-              {L(COPY.privacy)}
-            </div>
+            {/* 마지막 스텝 — 인터뷰 옵트인 + 제출 */}
+            {step === QUESTIONS.length && (
+              <div style={{ animation: 'surveySlideIn .25s ease' }}>
+                <div style={qBox}>
+                  <div style={qTitle}>{TOTAL}. {em(L(COPY.callTitle))}</div>
+                  <div style={rowSt(a.call_ok)} onClick={() => set('call_ok', !a.call_ok)}>
+                    <Check on={a.call_ok} />{L(COPY.callYes)}
+                  </div>
+                  {a.call_ok && (
+                    <input style={{ ...input, marginTop: 6 }} value={a.contact} onChange={(e) => set('contact', e.target.value)} placeholder={L(COPY.callPh)} />
+                  )}
+                  <div style={{ fontSize: 13, color: '#8a8073', marginTop: 10, lineHeight: 1.55 }}>
+                    {L(COPY.callAlt)}{' '}
+                    <a href="https://www.linkedin.com/in/wiseungju/" target="_blank" rel="noreferrer" style={{ color: '#0a66c2', fontWeight: 700 }}>LinkedIn →</a>
+                  </div>
+                </div>
+
+                {error && <div style={{ color: '#c00', fontSize: 13.5, marginBottom: 10, textAlign: 'center' }}>{error}</div>}
+                <button style={btn(canSubmit && state !== 'submitting')} onClick={submit} disabled={!canSubmit || state === 'submitting'}>
+                  {state === 'submitting' ? L(COPY.submitting) : L(COPY.submit)}
+                </button>
+                <div style={{ fontSize: 12, color: '#a89f92', textAlign: 'center', marginTop: 14, lineHeight: 1.5 }}>
+                  {L(COPY.privacy)}
+                </div>
+              </div>
+            )}
           </>
         )}
       </div>
