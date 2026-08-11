@@ -282,10 +282,11 @@ const COPY = {
   },
   introHi: { vi: (n) => `Chào ${n} 👋`, ko: (n) => `안녕하세요 ${n}님 👋` },
   intro: {
-    vi: 'Mình là [Sean, người sáng lập FYI]. Để hỗ trợ bạn tốt hơn trên hành trình tìm việc và phát triển sự nghiệp, mong bạn trả lời vài câu hỏi dưới đây — hầu hết chỉ cần chạm chọn (~4 phút). Mình sẽ cố gắng hết sức để xây dựng một FYI tốt hơn cho bạn.',
-    ko: '저는 [FYI 창업자 Sean]입니다. 여러분의 구직과 커리어 성장을 더 잘 돕기 위해, 아래 질문들에 답해주세요 — 대부분 선택형이라 4분이면 충분합니다. 더 나은 FYI를 만들도록 최선을 다하겠습니다.',
+    vi: 'Mình là [Sean, người sáng lập FYI]. Để hỗ trợ bạn tốt hơn trên hành trình tìm việc và phát triển sự nghiệp, mong bạn trả lời vài câu hỏi dưới đây — hầu hết chỉ cần chạm chọn (~3 phút). Mình sẽ cố gắng hết sức để xây dựng một FYI tốt hơn cho bạn.',
+    ko: '저는 [FYI 창업자 Sean]입니다. 여러분의 구직과 커리어 성장을 더 잘 돕기 위해, 아래 질문들에 답해주세요 — 대부분 선택형이라 3분이면 충분합니다. 더 나은 FYI를 만들도록 최선을 다하겠습니다.',
   },
   next: { vi: 'Tiếp tục →', ko: '다음 →' },
+  start: { vi: 'Bắt đầu', ko: '시작하기' },
   back: { vi: '← Quay lại', ko: '← 이전' },
   submit: { vi: 'Gửi câu trả lời', ko: '답변 보내기' },
   submitting: { vi: 'Đang gửi…', ko: '보내는 중…' },
@@ -320,7 +321,7 @@ export default function Survey() {
   const [name, setName] = useState('')
   const [state, setState] = useState('loading') // loading | invalid | form | submitting | done
   const [error, setError] = useState('')
-  const [step, setStep] = useState(0) // 0..QUESTIONS.length-1 = 질문, QUESTIONS.length = 인터뷰+제출
+  const [step, setStep] = useState(-1) // -1=인사 화면, 0..QUESTIONS.length-1 = 질문, QUESTIONS.length = 인터뷰+제출
   const [a, setA] = useState(INITIAL)
   const cardRef = useRef(null)
   const set = (k, v) => setA((prev) => ({ ...prev, [k]: v }))
@@ -329,13 +330,12 @@ export default function Survey() {
   const TOTAL = QUESTIONS.length + 1
 
   // multi 토글 — exclusive 옵션('없음' 류)은 배타
-  const toggleMulti = (key, opt, opts) => setA((prev) => {
-    const cur = prev[key] || []
-    if (opt.exclusive) return { ...prev, [key]: cur.includes(opt.value) ? [] : [opt.value] }
+  const nextMulti = (cur, opt, opts) => {
+    if (opt.exclusive) return cur.includes(opt.value) ? [] : [opt.value]
     const exclusives = opts.filter((o) => o.exclusive).map((o) => o.value)
     const rest = cur.filter((x) => !exclusives.includes(x))
-    return { ...prev, [key]: rest.includes(opt.value) ? rest.filter((x) => x !== opt.value) : [...rest, opt.value] }
-  })
+    return rest.includes(opt.value) ? rest.filter((x) => x !== opt.value) : [...rest, opt.value]
+  }
 
   useEffect(() => {
     const sp = new URLSearchParams(window.location.search)
@@ -372,19 +372,27 @@ export default function Survey() {
     setStep(st)
     requestAnimationFrame(() => cardRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }))
   }
-  // 라디오 클릭 — 값 반영 후 스텝이 완결되면 잠깐 뒤 자동으로 다음, 꼬리가 생기면 거기로 포커스
+  // 입력칸 포커스 — 키보드가 열린 뒤(≈300ms) 입력칸을 보이는 영역 중앙으로 재스크롤
+  // (iOS는 100vh가 키보드를 무시해 가운데 정렬이 키보드 뒤로 숨을 수 있다)
+  const focusScroll = (e) => {
+    const el = e.currentTarget
+    setTimeout(() => el.scrollIntoView({ behavior: 'smooth', block: 'center' }), 300)
+  }
+  // 라디오 클릭 — 스텝이 완결되면 딜레이 없이 바로 다음, 꼬리가 생기면 거기로 포커스
   const clickRadio = (key, v) => {
     const nextA = { ...a, [key]: v }
     set(key, v)
-    setTimeout(() => {
-      if (stepDone(step, nextA)) goTo(Math.min(step + 1, QUESTIONS.length))
-      else document.querySelector('[data-follow]')?.scrollIntoView({ behavior: 'smooth', block: 'center' })
-    }, 260)
+    if (stepDone(step, nextA)) goTo(Math.min(step + 1, QUESTIONS.length))
+    else setTimeout(() => document.querySelector('[data-follow]')?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 120)
   }
-  // 다중선택 토글 후 꼬리가 새로 뜨면 거기로 포커스
+  // 다중선택 토글 — '없음'(배타)으로 스텝이 완결되면 자동 진행, 아니면 꼬리로 포커스만.
+  // 일반 항목 선택은 자동 진행하지 않는다(더 고를 수 있으므로) — 진행은 꼬리 라디오 답에서 일어난다.
   const clickMulti = (key, opt, opts) => {
-    toggleMulti(key, opt, opts)
-    setTimeout(() => document.querySelector('[data-follow]')?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 120)
+    const arr = nextMulti(a[key] || [], opt, opts)
+    set(key, arr)
+    const nextA = { ...a, [key]: arr }
+    if (opt.exclusive && stepDone(step, nextA)) goTo(Math.min(step + 1, QUESTIONS.length))
+    else setTimeout(() => document.querySelector('[data-follow]')?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 120)
   }
 
   const canSubmit = RADIO_KEYS.every((k) => a[k])
@@ -440,14 +448,19 @@ export default function Survey() {
   const Dot = ({ on }) => <span style={{ width: 16, height: 16, borderRadius: '50%', border: on ? '5px solid #ff6000' : '2px solid #d9cfc2', boxSizing: 'border-box', flexShrink: 0 }} />
   const Check = ({ on }) => <span style={{ width: 16, height: 16, borderRadius: 4, border: on ? 'none' : '2px solid #d9cfc2', background: on ? '#ff6000' : '#fff', boxSizing: 'border-box', flexShrink: 0, color: '#fff', fontSize: 12, fontWeight: 800, textAlign: 'center', lineHeight: '16px' }}>{on ? '✓' : ''}</span>
 
-  const q = step < QUESTIONS.length ? QUESTIONS[step] : null
+  const q = step >= 0 && step < QUESTIONS.length ? QUESTIONS[step] : null
   const followBox = { ...qBox, borderLeft: '3px solid #ff6000', animation: 'surveySlideIn .25s ease' }
 
   return (
     <div style={wrap}>
-      <Head><title>Khảo sát FYI</title><meta name="robots" content="noindex" /></Head>
+      <Head>
+        <title>Khảo sát FYI</title>
+        <meta name="robots" content="noindex" />
+        {/* 안드로이드 크롬: 키보드가 레이아웃 뷰포트를 줄이게 해 가운데 정렬이 키보드 위 기준으로 재계산되게 */}
+        <meta name="viewport" content="width=device-width, initial-scale=1, interactive-widget=resizes-content" />
+      </Head>
       <div style={card} ref={cardRef}>
-        <img src="/fyi-logo.png" alt="FYI" style={{ height: 28, width: 'auto', display: 'block', marginBottom: 18 }} />
+        <img src="/fyi-logo.png" alt="FYI" style={{ height: 28, width: 'auto', display: 'block', margin: '0 auto 18px' }} />
 
         {state === 'loading' && <div style={{ textAlign: 'center', padding: 60, color: '#8a8073' }}>{L(COPY.loading)}</div>}
 
@@ -468,29 +481,43 @@ export default function Survey() {
 
         {(state === 'form' || state === 'submitting') && (
           <>
-            <style>{`@keyframes surveySlideIn { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: translateY(0); } }`}</style>
+            <style>{`
+              @keyframes surveySlideIn { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: translateY(0); } }
+              /* 풀하이트 센터링 — dvh 지원 브라우저는 주소창/키보드 변화에 맞춰 재계산 */
+              .sv-full { min-height: calc(100vh - 175px); display: flex; flex-direction: column; }
+              @supports (height: 100dvh) { .sv-full { min-height: calc(100dvh - 175px); } }
+            `}</style>
 
-            {/* 창업자 말풍선 — 첫 스텝에서만 */}
-            {step === 0 && (
-              <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12, marginBottom: 22 }}>
-                <img src="/founder-seungju.jpg" alt="Sean" style={{ width: 56, height: 56, borderRadius: '50%', objectFit: 'cover', border: '2px solid #fff', boxShadow: '0 2px 10px rgba(0,0,0,.1)', flexShrink: 0 }} />
-                <div style={{ flex: 1, background: '#fff', border: '1px solid #eee5da', borderRadius: '4px 16px 16px 16px', padding: '14px 16px', boxShadow: '0 2px 10px rgba(0,0,0,.05)' }}>
-                  <div style={{ fontSize: 17, fontWeight: 800, lineHeight: 1.35, marginBottom: 6 }}>{L(COPY.introHi)(firstName)}</div>
-                  <div style={{ fontSize: 14, color: '#4a443c', lineHeight: 1.6 }}>{em(L(COPY.intro))}</div>
+            {/* 인사 화면 — 말풍선은 화면 세로 가운데, 시작하기는 하단 고정 배치 */}
+            {step === -1 && (
+              <div className="sv-full" style={{ animation: 'surveySlideIn .25s ease' }}>
+                <div style={{ flex: 1, display: 'flex', alignItems: 'center' }}>
+                  <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12, width: '100%' }}>
+                    <img src="/founder-seungju.jpg" alt="Sean" style={{ width: 56, height: 56, borderRadius: '50%', objectFit: 'cover', border: '2px solid #fff', boxShadow: '0 2px 10px rgba(0,0,0,.1)', flexShrink: 0 }} />
+                    <div style={{ flex: 1, background: '#fff', border: '1px solid #eee5da', borderRadius: '4px 16px 16px 16px', padding: '14px 16px', boxShadow: '0 2px 10px rgba(0,0,0,.05)' }}>
+                      <div style={{ fontSize: 17, fontWeight: 800, lineHeight: 1.35, marginBottom: 6 }}>{L(COPY.introHi)(firstName)}</div>
+                      <div style={{ fontSize: 14, color: '#4a443c', lineHeight: 1.6 }}>{em(L(COPY.intro))}</div>
+                    </div>
+                  </div>
+                </div>
+                <div>
+                  <button style={btn(true)} onClick={() => goTo(0)}>{L(COPY.start)}</button>
+                  <div style={{ fontSize: 12, color: '#a89f92', textAlign: 'center', marginTop: 14, lineHeight: 1.5 }}>
+                    {L(COPY.privacy)}
+                  </div>
                 </div>
               </div>
             )}
 
-            {/* 진행 바 + 이전 */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14 }}>
-              {step > 0 ? (
-                <button onClick={() => goTo(step - 1)} style={{ border: 'none', background: 'none', color: '#8a8073', fontSize: 13, fontWeight: 700, cursor: 'pointer', padding: 0, flexShrink: 0 }}>{L(COPY.back)}</button>
-              ) : null}
-              <div style={{ flex: 1, height: 4, background: '#f0e7db', borderRadius: 2 }}>
-                <div style={{ width: `${((step + 1) / TOTAL) * 100}%`, height: '100%', background: '#ff6000', borderRadius: 2, transition: 'width .3s ease' }} />
-              </div>
-              <div style={{ fontSize: 12, fontWeight: 700, color: '#8a8073', flexShrink: 0, fontVariantNumeric: 'tabular-nums' }}>{step + 1} / {TOTAL}</div>
-            </div>
+            {/* 질문 화면 — 이전 버튼은 상단, 질문 카드는 세로 가운데(짧을 때 하단 공백 방지, margin:auto라 길면 자연 스크롤) */}
+            {step >= 0 && (
+              <div className="sv-full">
+                {step > 0 && (
+                  <div style={{ marginBottom: 14 }}>
+                    <button onClick={() => goTo(step - 1)} style={{ border: 'none', background: 'none', color: '#8a8073', fontSize: 13, fontWeight: 700, cursor: 'pointer', padding: 0 }}>{L(COPY.back)}</button>
+                  </div>
+                )}
+                <div style={{ margin: 'auto 0', paddingBottom: 24 }}>
 
             {q && (
               <div key={q.key} style={{ animation: 'surveySlideIn .25s ease' }}>
@@ -509,7 +536,7 @@ export default function Survey() {
                   {q.type === 'spend' && (
                     <>
                       {q.opts.map((o) => (
-                        <div key={o.value} style={rowSt(a.spend_sel.includes(o.value))} onClick={() => toggleMulti('spend_sel', o, q.opts)}>
+                        <div key={o.value} style={rowSt(a.spend_sel.includes(o.value))} onClick={() => clickMulti('spend_sel', o, q.opts)}>
                           <Check on={a.spend_sel.includes(o.value)} />{LOpt(o)}
                         </div>
                       ))}
@@ -520,7 +547,7 @@ export default function Survey() {
                           <div key={k} style={{ animation: 'surveySlideIn .25s ease', marginTop: 8 }}>
                             <div style={{ fontSize: 12.5, fontWeight: 700, color: '#8a8073', margin: '0 0 4px 2px' }}>{o ? LOpt(o) : k}</div>
                             {k === 'other' && (
-                              <input style={{ ...input, marginBottom: 6 }} value={a.spend_other} onChange={(e) => set('spend_other', e.target.value)}
+                              <input style={{ ...input, marginBottom: 6 }} value={a.spend_other} onChange={(e) => set('spend_other', e.target.value)} onFocus={focusScroll}
                                 placeholder={lang === 'ko' ? '어떤 항목인가요?' : 'Khoản gì vậy?'} />
                             )}
                             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -529,12 +556,19 @@ export default function Survey() {
                                 inputMode="numeric" pattern="[0-9]*" placeholder="500.000"
                                 value={fmtVnd(digitsOf(a.spend_amounts[k]))}
                                 onChange={(e) => set('spend_amounts', { ...a.spend_amounts, [k]: digitsOf(e.target.value) })}
+                                onFocus={focusScroll}
                               />
                               <span style={{ fontSize: 14, fontWeight: 700, color: '#8a8073', flexShrink: 0 }}>₫</span>
                             </div>
                           </div>
                         )
                       })}
+                      {/* 금액은 타이핑이라 자동 진행 불가 — 버튼을 항상 보여주되 다 채우기 전엔 비활성 ('없음'은 자동 진행) */}
+                      {!a.spend_sel.includes('none') && (
+                        <button style={{ ...btn(stepDone(step)), marginTop: 12 }} disabled={!stepDone(step)} onClick={() => stepDone(step) && goTo(step + 1)}>
+                          {L(COPY.next)}
+                        </button>
+                      )}
                     </>
                   )}
                 </div>
@@ -543,7 +577,11 @@ export default function Survey() {
                 {q.key === 'stage' && a.stage && (
                   <div key={a.stage} data-follow style={followBox}>
                     <div style={qTitle}>2-1. {em(L(PAIN_PROMPTS[a.stage] || PAIN_PH))}</div>
-                    <textarea style={ta} value={a.pain} onChange={(e) => set('pain', e.target.value)} placeholder={L(PAIN_PH)} />
+                    <textarea style={ta} value={a.pain} onChange={(e) => set('pain', e.target.value)} onFocus={focusScroll} placeholder={L(PAIN_PH)} />
+                    {/* 주관식은 타이핑이라 자동 진행 불가 — 버튼을 항상 보여주되 쓰기 전엔 비활성 */}
+                    <button style={{ ...btn(a.pain.trim().length >= 5), marginTop: 10 }} disabled={a.pain.trim().length < 5} onClick={() => goTo(step + 1)}>
+                      {L(COPY.next)}
+                    </button>
                   </div>
                 )}
                 {/* N-1 후속 — 답에 따라 "어땠는지"/"왜 안 했는지"가 같은 화면에 슥 나타난다 */}
@@ -557,10 +595,6 @@ export default function Survey() {
                     ))}
                   </div>
                 ))}
-
-                <button style={btn(stepDone(step))} onClick={() => stepDone(step) && goTo(step + 1)} disabled={!stepDone(step)}>
-                  {L(COPY.next)}
-                </button>
               </div>
             )}
 
@@ -573,7 +607,7 @@ export default function Survey() {
                     <Check on={a.call_ok} />{L(COPY.callYes)}
                   </div>
                   {a.call_ok && (
-                    <input style={{ ...input, marginTop: 6 }} value={a.contact} onChange={(e) => set('contact', e.target.value)} placeholder={L(COPY.callPh)} />
+                    <input style={{ ...input, marginTop: 6 }} value={a.contact} onChange={(e) => set('contact', e.target.value)} onFocus={focusScroll} placeholder={L(COPY.callPh)} />
                   )}
                   <div style={{ fontSize: 13, color: '#8a8073', marginTop: 10, lineHeight: 1.55 }}>
                     {L(COPY.callAlt)}{' '}
@@ -587,6 +621,9 @@ export default function Survey() {
                 </button>
                 <div style={{ fontSize: 12, color: '#a89f92', textAlign: 'center', marginTop: 14, lineHeight: 1.5 }}>
                   {L(COPY.privacy)}
+                </div>
+              </div>
+            )}
                 </div>
               </div>
             )}

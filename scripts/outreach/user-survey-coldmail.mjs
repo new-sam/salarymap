@@ -38,8 +38,8 @@ const COPY = {
     ko: '3,000명 넘는 분들이 FYI에 함께해 주셨지만, <b>구직과 커리어에서 정말 어려운 게 뭔지</b> 더 깊이 이해하고 싶습니다.',
   },
   p3: {
-    vi: 'Để hỗ trợ bạn tốt hơn trên hành trình tìm việc và phát triển sự nghiệp, mong bạn dành <b>~4 phút</b> trả lời khảo sát — hầu hết chỉ cần chạm chọn. Mình sẽ cố gắng hết sức để xây dựng một FYI tốt hơn cho bạn.',
-    ko: '여러분의 구직과 커리어 성장을 더 잘 돕기 위해, <b>~4분</b>짜리 설문에 답해주세요 — 대부분 탭 선택형입니다. 더 나은 FYI를 만들도록 최선을 다하겠습니다.',
+    vi: 'Để hỗ trợ bạn tốt hơn trên hành trình tìm việc và phát triển sự nghiệp, mong bạn dành <b>~3 phút</b> trả lời khảo sát — hầu hết chỉ cần chạm chọn. Mình sẽ cố gắng hết sức để xây dựng một FYI tốt hơn cho bạn.',
+    ko: '여러분의 구직과 커리어 성장을 더 잘 돕기 위해, <b>~3분</b>짜리 설문에 답해주세요 — 대부분 탭 선택형입니다. 더 나은 FYI를 만들도록 최선을 다하겠습니다.',
   },
   cta: { vi: 'Trả lời khảo sát (3 phút) →', ko: '설문 참여하기 (3분) →' },
   thanks: { vi: 'Cảm ơn bạn rất nhiều!<br>— Sean, Founder của FYI', ko: '정말 감사합니다!<br>— FYI 창업자 Sean 드림' },
