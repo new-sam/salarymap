@@ -1,6 +1,8 @@
 import { useState, useEffect, useCallback } from 'react'
 import MetricChart from '../DashboardCharts'
 import { templateFor, localizeTemplate, DRAFT_CAMPAIGNS } from './coldmailTemplates'
+import { ROLE_GROUPS } from '../../constants/jobs'
+import SurveyView from './SurveyView'
 
 // "승주 작업실" — 어드민 인증으로만 접근(개인 비밀번호 게이트 제거).
 // 기본 탭은 목표지표인 [이력서 공개].
@@ -8,10 +10,6 @@ import { templateFor, localizeTemplate, DRAFT_CAMPAIGNS } from './coldmailTempla
 export default function GoalMetricsView({ token, lang }) {
   const ko = lang !== 'en'
   const [view, setView] = useState('resumePublic')
-
-  const [adData, setAdData] = useState(null) // 광고 성과
-  const [adError, setAdError] = useState('')
-  const [adLoading, setAdLoading] = useState(false)
 
   const [rpData, setRpData] = useState(null) // 이력서 공개 전환 (목표지표)
   const [rpError, setRpError] = useState('')
@@ -25,10 +23,6 @@ export default function GoalMetricsView({ token, lang }) {
   const [spError, setSpError] = useState('')
   const [spLoading, setSpLoading] = useState(false)
 
-  const [ntData, setNtData] = useState(null) // 비개발 인재풀
-  const [ntError, setNtError] = useState('')
-  const [ntLoading, setNtLoading] = useState(false)
-
   const [phData, setPhData] = useState(null) // 프로필 사진 현황
   const [phError, setPhError] = useState('')
   const [phLoading, setPhLoading] = useState(false)
@@ -37,20 +31,9 @@ export default function GoalMetricsView({ token, lang }) {
   const [reError, setReError] = useState('')
   const [reLoading, setReLoading] = useState(false)
 
-  const loadAd = useCallback(async () => {
-    if (!token) return
-    setAdLoading(true)
-    setAdError('')
-    try {
-      const res = await fetch('/api/admin/ad-metrics', { headers: { Authorization: `Bearer ${token}` } })
-      if (!res.ok) throw new Error(`(${res.status})`)
-      setAdData(await res.json())
-    } catch (e) {
-      setAdError((ko ? '불러오기 실패 ' : 'Load failed ') + e.message)
-    } finally {
-      setAdLoading(false)
-    }
-  }, [token, ko])
+  const [hkData, setHkData] = useState(null) // 홍익 QR 캠페인
+  const [hkError, setHkError] = useState('')
+  const [hkLoading, setHkLoading] = useState(false)
 
   const loadRp = useCallback(async () => {
     if (!token) return
@@ -97,21 +80,6 @@ export default function GoalMetricsView({ token, lang }) {
     }
   }, [token, ko])
 
-  const loadNt = useCallback(async () => {
-    if (!token) return
-    setNtLoading(true)
-    setNtError('')
-    try {
-      const res = await fetch('/api/admin/nontech-pool', { headers: { Authorization: `Bearer ${token}` } })
-      if (!res.ok) throw new Error(`(${res.status})`)
-      setNtData(await res.json())
-    } catch (e) {
-      setNtError((ko ? '불러오기 실패 ' : 'Load failed ') + e.message)
-    } finally {
-      setNtLoading(false)
-    }
-  }, [token, ko])
-
   const loadPh = useCallback(async () => {
     if (!token) return
     setPhLoading(true)
@@ -142,15 +110,30 @@ export default function GoalMetricsView({ token, lang }) {
     }
   }, [token, ko])
 
+  const loadHk = useCallback(async () => {
+    if (!token) return
+    setHkLoading(true)
+    setHkError('')
+    try {
+      const res = await fetch('/api/admin/hongik-metrics', { headers: { Authorization: `Bearer ${token}` } })
+      if (!res.ok) throw new Error(`(${res.status})`)
+      setHkData(await res.json())
+    } catch (e) {
+      setHkError((ko ? '불러오기 실패 ' : 'Load failed ') + e.message)
+    } finally {
+      setHkLoading(false)
+    }
+  }, [token, ko])
+
   // 전직군 개편 탭 최초 진입 시 lazy 로드
   useEffect(() => {
     if (view === 'roleExpansion' && !reData && !reLoading) loadRe()
   }, [view, reData, reLoading, loadRe])
 
-  // 광고 탭 최초 진입 시 lazy 로드
+  // 홍익 QR 탭 최초 진입 시 lazy 로드
   useEffect(() => {
-    if (view === 'ad' && !adData && !adLoading) loadAd()
-  }, [view, adData, adLoading, loadAd])
+    if (view === 'hongik' && !hkData && !hkLoading) loadHk()
+  }, [view, hkData, hkLoading, loadHk])
 
   // 프로필 사진 탭 최초 진입 시 lazy 로드
   useEffect(() => {
@@ -172,11 +155,6 @@ export default function GoalMetricsView({ token, lang }) {
     if (view === 'paths' && !spData && !spLoading) loadSp()
   }, [view, spData, spLoading, loadSp])
 
-  // 비개발 인재풀 탭 최초 진입 시 lazy 로드
-  useEffect(() => {
-    if (view === 'nontech' && !ntData && !ntLoading) loadNt()
-  }, [view, ntData, ntLoading, loadNt])
-
   const tabBtn = (key, label) => (
     <button onClick={() => setView(key)} style={{
       padding: '8px 16px', fontSize: 13.5, fontWeight: 700, cursor: 'pointer', border: 'none', borderRadius: 9,
@@ -190,18 +168,18 @@ export default function GoalMetricsView({ token, lang }) {
         {tabBtn('resumePublic', ko ? '이력서 공개' : 'Resume public')}
         {tabBtn('roleExpansion', ko ? '전직군 개편' : 'Role expansion')}
         {tabBtn('coldmail', ko ? '콜드메일' : 'Cold email')}
-        {tabBtn('nontech', ko ? '비개발 인재풀' : 'Non-tech pool')}
         {tabBtn('photos', ko ? '프로필 사진' : 'Profile photos')}
         {tabBtn('paths', ko ? '가입 경로' : 'Signup paths')}
-        {tabBtn('ad', ko ? '광고 성과' : 'Ad performance')}
+        {tabBtn('hongik', ko ? '홍익 QR' : 'Hongik QR')}
+        {tabBtn('survey', ko ? '유저 서베이' : 'User survey')}
       </div>
       {view === 'roleExpansion' && <RoleExpansionTab data={reData} loading={reLoading} error={reError} ko={ko} lang={lang} />}
-      {view === 'nontech' && <NontechPoolTab data={ntData} loading={ntLoading} error={ntError} ko={ko} lang={lang} />}
       {view === 'photos' && <PhotoStatsTab data={phData} loading={phLoading} error={phError} ko={ko} />}
       {view === 'paths' && <SignupPathsTab data={spData} loading={spLoading} error={spError} ko={ko} />}
-      {view === 'ad' && <AdTab data={adData} loading={adLoading} error={adError} ko={ko} />}
       {view === 'resumePublic' && <ResumePublicTab data={rpData} loading={rpLoading} error={rpError} ko={ko} lang={lang} onRefresh={loadRp} />}
       {view === 'coldmail' && <ColdmailPublicTab data={cmData} loading={cmLoading} error={cmError} ko={ko} lang={lang} />}
+      {view === 'hongik' && <HongikTab data={hkData} loading={hkLoading} error={hkError} ko={ko} onRefresh={loadHk} />}
+      {view === 'survey' && <SurveyView token={token} lang={lang} />}
     </div>
   )
 }
@@ -357,103 +335,6 @@ function RoleExpansionTab({ data, loading, error, ko, lang }) {
   )
 }
 
-// ============ 비개발 인재풀 탭 ============
-// 인재풀이 개발 직군에 극편중돼 있어(비개발이 직군 기입자의 한 자릿수 %) 비개발 공고를 늘리는 중.
-// 그 액션이 실제로 풀을 늘렸는지 가입일 기준 누적 곡선으로 본다(세로선 = 액션 시점).
-function NontechPoolTab({ data, loading, error, ko, lang }) {
-  if (loading || !data) return <div style={{ textAlign: 'center', padding: 40, color: '#666' }}>{ko ? '불러오는 중…' : 'Loading…'}</div>
-  if (error) return <div style={{ textAlign: 'center', padding: 40, color: '#c00' }}>{error}</div>
-  if (data.error) return <div style={{ textAlign: 'center', padding: 40, color: '#c00' }}>{data.error}</div>
-
-  const { totals, series, categories, actions, jobs, recent } = data
-  const classified = totals.nontech + totals.tech
-  const th = { textAlign: 'left', fontSize: 11, fontWeight: 700, color: '#9CA3AF', padding: '6px 10px', borderBottom: '1px solid #EEF0F2', textTransform: 'uppercase', letterSpacing: '.04em' }
-  const td = { fontSize: 13, color: '#1F2937', padding: '7px 10px', borderBottom: '1px solid #F5F6F7' }
-  const num = { ...td, textAlign: 'right', fontVariantNumeric: 'tabular-nums', fontWeight: 600 }
-
-  const Card = ({ label, value, sub, accent }) => (
-    <div style={{ flex: '1 1 180px', background: '#fff', border: '1px solid #E5E8EB', borderRadius: 16, padding: '18px 20px' }}>
-      <div style={{ fontSize: 12, fontWeight: 700, color: '#6B7280', marginBottom: 8 }}>{label}</div>
-      <div style={{ fontSize: 30, fontWeight: 800, color: accent || '#0F172A', lineHeight: 1, marginBottom: 6 }}>{value}</div>
-      {sub && <div style={{ fontSize: 12, color: '#9CA3AF' }}>{sub}</div>}
-    </div>
-  )
-
-  return (
-    <div>
-      <div style={{ fontSize: 15, fontWeight: 800, color: '#0F172A', marginBottom: 6 }}>
-        {ko ? '비개발 인재풀' : 'Non-tech talent pool'}
-      </div>
-      <div style={{ fontSize: 12, color: '#9CA3AF', marginBottom: 16 }}>
-        {ko
-          ? `마케팅·영업·HR·재무·구매·통번역·생산·운영 합계 · 기준 ${new Date(data.generatedAt).toLocaleString('ko-KR')}`
-          : `Marketing, Sales, HR, Finance, Procurement, Interpreter, Manufacturing, Ops · as of ${new Date(data.generatedAt).toLocaleString('en-US')}`}
-      </div>
-
-      <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginBottom: 20 }}>
-        <Card label={ko ? '비개발 인재' : 'Non-tech talent'} value={totals.nontech.toLocaleString()}
-          sub={ko ? `직군 기입자 ${classified.toLocaleString()}명 중 ${classified ? Math.round((totals.nontech / classified) * 100) : 0}%` : `${classified ? Math.round((totals.nontech / classified) * 100) : 0}% of ${classified.toLocaleString()} with a role`}
-          accent="#0D9488" />
-        <Card label={ko ? '이력서 보유' : 'With resume'} value={totals.nontechResume.toLocaleString()}
-          sub={ko ? `비개발의 ${totals.nontech ? Math.round((totals.nontechResume / totals.nontech) * 100) : 0}%` : `${totals.nontech ? Math.round((totals.nontechResume / totals.nontech) * 100) : 0}% of non-tech`} />
-        <Card label={ko ? '최근 7일 신규' : 'New in 7 days'} value={`+${recent.d7}`}
-          sub={ko ? `30일 +${recent.d30}` : `30d +${recent.d30}`} accent={recent.d7 > 0 ? '#059669' : '#0F172A'} />
-        <Card label={ko ? '비개발 활성 공고' : 'Active non-tech jobs'} value={jobs.nontech.toLocaleString()}
-          sub={ko ? `전체 활성 ${jobs.active}건 중` : `of ${jobs.active} active`} accent="#7C3AED" />
-      </div>
-
-      <div style={{ background: '#fff', border: '1px solid #EEF0F2', borderRadius: 14, padding: 16, marginBottom: 12 }}>
-        <h4 style={{ fontSize: 14, fontWeight: 700, margin: '0 0 2px 0', color: '#191F28' }}>{ko ? '누적 추이' : 'Cumulative'}</h4>
-        <div style={{ fontSize: 11, color: '#9CA3AF', marginBottom: 8 }}>
-          {ko ? '가입일 기준 누적 · 세로선 = 액션 시점' : 'Cumulative by signup date · vertical line = action'}
-        </div>
-        <MetricChart
-          daily={series}
-          metrics={[
-            { key: 'nt-total', dataKey: 'total', label: ko ? '비개발 인재' : 'Non-tech', color: '#0D9488' },
-            { key: 'nt-resume', dataKey: 'resume', label: ko ? '이력서 보유' : 'With resume', color: '#94A3B8' },
-          ]}
-          experiments={actions}
-          lang={lang}
-          dualAxis={false}
-          lineType="linear"
-          dots={false}
-        />
-      </div>
-
-      <div style={{ fontSize: 11.5, color: '#9CA3AF', marginBottom: 24, lineHeight: 1.6 }}>
-        {ko
-          ? `⚠️ 포지션 미입력 ${totals.noPosition.toLocaleString()}명(전체 ${totals.profiles.toLocaleString()}명의 ${Math.round((totals.noPosition / totals.profiles) * 100)}%)은 직군을 알 수 없어 빠져 있다 — 이 숫자는 하한이다. 직군/이력서는 현재값이라 가입일에 얹은 근사치.`
-          : `⚠️ ${totals.noPosition.toLocaleString()} profiles (${Math.round((totals.noPosition / totals.profiles) * 100)}%) have no position and are excluded — treat this as a lower bound. Role/resume are current values mapped onto signup date.`}
-      </div>
-
-      <div style={{ fontSize: 13, fontWeight: 700, color: '#374151', margin: '0 0 8px' }}>{ko ? '직군별' : 'By role'}</div>
-      <div style={{ overflowX: 'auto', border: '1px solid #EEF0F2', borderRadius: 12 }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 420 }}>
-          <thead><tr>
-            <th style={th}>{ko ? '직군' : 'Role'}</th>
-            <th style={{ ...th, textAlign: 'right' }}>{ko ? '인원' : 'Talent'}</th>
-            <th style={{ ...th, textAlign: 'right' }}>{ko ? '이력서' : 'Resume'}</th>
-            <th style={{ ...th, textAlign: 'right' }}>{ko ? '7일' : '7d'}</th>
-            <th style={{ ...th, textAlign: 'right' }}>{ko ? '30일' : '30d'}</th>
-          </tr></thead>
-          <tbody>
-            {categories.map((c) => (
-              <tr key={c.key}>
-                <td style={td}>{lang === 'vi' ? (c.vi || c.en) : ko ? c.ko : c.en}</td>
-                <td style={{ ...num, fontWeight: 800 }}>{c.all}</td>
-                <td style={num}>{c.resume}</td>
-                <td style={{ ...num, color: c.d7 ? '#059669' : '#9CA3AF' }}>{c.d7 || ''}</td>
-                <td style={num}>{c.d30 || ''}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  )
-}
-
 // ============ 가입 경로 탭 ============
 // 일별로 가입자 한 명 한 명의 유입 경로 — 가입이 튄 날 어떤 채널/캠페인이 만든 건지 확인용.
 // 귀속: user_profiles.utm(가입 시점) > 첫 이벤트 utm > referrer.
@@ -540,147 +421,6 @@ function SignupPathsTab({ data, loading, error, ko }) {
           )}
         </div>
       ))}
-    </div>
-  )
-}
-
-// ============ 광고 성과 탭 ============
-function AdTab({ data, loading, error, ko }) {
-  if (loading) return <div style={{ textAlign: 'center', padding: 40, color: '#666' }}>{ko ? '불러오는 중… (유입 집계는 몇 초 걸립니다)' : 'Loading…'}</div>
-  if (error) return <div style={{ textAlign: 'center', padding: 40, color: '#c00' }}>{error}</div>
-  if (!data) return <div style={{ textAlign: 'center', padding: 40, color: '#666' }}>{ko ? '불러오는 중…' : 'Loading…'}</div>
-
-  const t = data.totals
-  const th = { textAlign: 'left', fontSize: 11, fontWeight: 700, color: '#9CA3AF', padding: '6px 10px', borderBottom: '1px solid #EEF0F2', textTransform: 'uppercase', letterSpacing: '.04em' }
-  const td = { fontSize: 13, color: '#1F2937', padding: '7px 10px', borderBottom: '1px solid #F5F6F7' }
-  const num = { ...td, textAlign: 'right', fontVariantNumeric: 'tabular-nums', fontWeight: 600 }
-
-  const Stat = ({ label, value, sub, color }) => (
-    <div style={{ background: '#fff', border: '1px solid #E5E8EB', borderRadius: 12, padding: '13px 16px', minWidth: 120, flex: '1 1 120px' }}>
-      <div style={{ fontSize: 11.5, color: '#6B7280', fontWeight: 600, marginBottom: 4 }}>{label}</div>
-      <div style={{ fontSize: 22, fontWeight: 800, color: color || '#0F172A', lineHeight: 1 }}>{value}</div>
-      {sub && <div style={{ fontSize: 11, color: '#9CA3AF', marginTop: 4 }}>{sub}</div>}
-    </div>
-  )
-
-  const BarList = ({ title, rows, hint }) => {
-    const max = Math.max(1, ...rows.map((r) => r.count))
-    return (
-      <div style={{ flex: '1 1 320px', minWidth: 300 }}>
-        <div style={{ fontSize: 13, fontWeight: 700, color: '#374151', margin: '0 0 3px' }}>{title}</div>
-        {hint && <div style={{ fontSize: 11, color: '#9CA3AF', marginBottom: 8 }}>{hint}</div>}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
-          {rows.map((r) => (
-            <div key={r.name} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <div style={{ width: 130, fontSize: 12, color: '#374151', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} title={r.name}>{r.name}</div>
-              <div style={{ flex: 1, height: 16, background: '#F1F5F9', borderRadius: 4, overflow: 'hidden' }}>
-                <div style={{ width: `${(r.count / max) * 100}%`, height: '100%', background: '#ff6b35', borderRadius: 4 }} />
-              </div>
-              <div style={{ width: 84, textAlign: 'right', fontSize: 12, fontWeight: 600, color: '#1F2937', fontVariantNumeric: 'tabular-nums' }}>
-                {r.count.toLocaleString()} <span style={{ color: '#9CA3AF', fontWeight: 500 }}>{r.pct}%</span>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-    )
-  }
-
-  return (
-    <div>
-      <div style={{ fontSize: 12, color: '#9CA3AF', marginBottom: 14 }}>
-        {ko ? `최근 ${data.windowDays}일 · 기준 ` : `Last ${data.windowDays}d · as of `}{new Date(data.generatedAt).toLocaleString(ko ? 'ko-KR' : 'en-US')}
-      </div>
-
-      <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginBottom: 26 }}>
-        <Stat label={ko ? '가입 (30일)' : 'Sign-ups (30d)'} value={t.signups.toLocaleString()} sub={`web ${t.web} / app ${t.app}`} />
-        <Stat label={ko ? '유입 landing' : 'Landings'} value={t.landings.toLocaleString()} />
-        <Stat label={ko ? '전환율 (가입/landing)' : 'CVR'} value={`${t.landings ? Math.round((t.signups / t.landings) * 1000) / 10 : 0}%`} />
-        <Stat label={ko ? '소스 미귀속' : 'Unattributed'} value={`${t.noEventPct}%`} sub={`${t.noEvent}${ko ? '명 이벤트無' : ' no-event'}`} color="#DC2626" />
-      </div>
-
-      {/* 가입 캠페인별 — 실제 가입 기준 (핵심) */}
-      <div style={{ fontSize: 13, fontWeight: 700, color: '#374151', margin: '0 0 3px' }}>{ko ? '가입 캠페인별 성과 (실제 가입 기준)' : 'Sign-ups by campaign (actual)'}</div>
-      <div style={{ fontSize: 11, color: '#9CA3AF', marginBottom: 8 }}>
-        {ko
-          ? `트래픽(landing)이 아니라 가입 전환 기준 · 귀속 ${data.signupAttribution.attributed}/${data.signupAttribution.total} (${data.signupAttribution.pct}%, user_profiles.utm)`
-          : `Ranked by sign-up conversion, not traffic · attributed ${data.signupAttribution.attributed}/${data.signupAttribution.total} (${data.signupAttribution.pct}%)`}
-      </div>
-      <div style={{ overflowX: 'auto', marginBottom: 30, border: '1px solid #EEF0F2', borderRadius: 12 }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 460 }}>
-          <thead><tr>
-            <th style={th}>{ko ? '캠페인' : 'Campaign'}</th>
-            <th style={{ ...th, textAlign: 'right' }}>landing</th>
-            <th style={{ ...th, textAlign: 'right' }}>{ko ? '가입' : 'sign-ups'}</th>
-            <th style={{ ...th, textAlign: 'right' }}>{ko ? '가입 전환율' : 'sign-up CVR'}</th>
-            <th style={{ ...th, textAlign: 'right', width: '24%' }}>{ko ? '가입 볼륨' : 'sign-ups'}</th>
-          </tr></thead>
-          <tbody>
-            {(() => {
-              const maxS = Math.max(1, ...data.campaignFunnel.map((c) => c.signups))
-              return data.campaignFunnel.map((c) => (
-                <tr key={c.campaign}>
-                  <td style={{ ...td, fontWeight: 600, maxWidth: 200, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} title={c.campaign}>{c.campaign}</td>
-                  <td style={{ ...num, color: '#9CA3AF' }}>{c.landings.toLocaleString()}</td>
-                  <td style={{ ...num, fontWeight: 800 }}>{c.signups}</td>
-                  <td style={{ ...num, color: c.cvr == null ? '#9CA3AF' : c.cvr >= 10 ? '#059669' : c.cvr >= 2 ? '#D97706' : '#DC2626' }}>
-                    {c.cvr == null ? '—' : `${c.cvr}%`}
-                  </td>
-                  <td style={{ ...td, width: '24%' }}>
-                    <div style={{ height: 6, background: '#F1F5F9', borderRadius: 4, overflow: 'hidden' }}>
-                      <div style={{ width: `${(c.signups / maxS) * 100}%`, height: '100%', background: '#059669' }} />
-                    </div>
-                  </td>
-                </tr>
-              ))
-            })()}
-          </tbody>
-        </table>
-      </div>
-
-      {/* 일별 퍼널 */}
-      <div style={{ fontSize: 13, fontWeight: 700, color: '#374151', margin: '0 0 8px' }}>{ko ? '일별 유입 → 가입 퍼널' : 'Daily landing → sign-up funnel'}</div>
-      <div style={{ overflowX: 'auto', marginBottom: 30, border: '1px solid #EEF0F2', borderRadius: 12 }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 420 }}>
-          <thead><tr>
-            <th style={th}>{ko ? '날짜' : 'Date'}</th>
-            <th style={{ ...th, textAlign: 'right' }}>landing</th>
-            <th style={{ ...th, textAlign: 'right' }}>{ko ? '가입' : 'signup'}</th>
-            <th style={{ ...th, textAlign: 'right' }}>CVR</th>
-            <th style={{ ...th, textAlign: 'right', width: '26%' }}>{ko ? '가입 볼륨' : 'signups'}</th>
-          </tr></thead>
-          <tbody>
-            {(() => {
-              const maxS = Math.max(1, ...data.funnel.map((f) => f.signups))
-              return [...data.funnel].reverse().map((f) => (
-                <tr key={f.date}>
-                  <td style={td}>{f.date.slice(5)}</td>
-                  <td style={num}>{f.landings.toLocaleString()}</td>
-                  <td style={{ ...num, fontWeight: 800 }}>{f.signups}</td>
-                  <td style={{ ...num, color: '#6B7280' }}>{f.cvr == null ? '—' : `${f.cvr}%`}</td>
-                  <td style={{ ...td, width: '26%' }}>
-                    <div style={{ height: 6, background: '#F1F5F9', borderRadius: 4, overflow: 'hidden' }}>
-                      <div style={{ width: `${(f.signups / maxS) * 100}%`, height: '100%', background: '#ff6b35' }} />
-                    </div>
-                  </td>
-                </tr>
-              ))
-            })()}
-          </tbody>
-        </table>
-      </div>
-
-      {/* 소재 + 소스 */}
-      <div style={{ display: 'flex', gap: 28, flexWrap: 'wrap', marginBottom: 28 }}>
-        <BarList title={ko ? '광고 소재별 유입 (utm_content)' : 'By creative (utm_content)'} hint={ko ? '어떤 앵글이 트래픽을 만드나 — 피로도 감시' : 'Which angle drives traffic'} rows={data.creatives} />
-        <BarList title={ko ? '유입 소스 (utm_source)' : 'By source'} rows={data.sources} />
-      </div>
-
-      {/* 캠페인 + 가입채널 */}
-      <div style={{ display: 'flex', gap: 28, flexWrap: 'wrap' }}>
-        <BarList title={ko ? '캠페인별 유입 (utm_campaign)' : 'By campaign'} rows={data.campaigns} />
-        <BarList title={ko ? '가입자 유입 채널 (첫 이벤트)' : 'Sign-up channel (first event)'} hint={ko ? 'no_event/direct 비중이 크면 귀속 사각지대' : 'Attribution of who converted'} rows={data.signupChannels} />
-      </div>
     </div>
   )
 }
@@ -847,7 +587,7 @@ function ResumePublicTab({ data, loading, error, ko, lang, onRefresh }) {
   )
 }
 
-// ============ 8월 목표 (마감 8/10) ============
+// ============ 목표 현황 ============
 // "등록 인재풀" = 이력서를 올린 회원, "등록 비율" = 가입자 중 그 비율(유저 확정 정의).
 // 개발:비개발은 비개발 비중을 목표(40%)에 대고 재고, 기획·디자인은 비개발에 넣는다.
 // 어학은 목표선 없이 현황만 — 수준을 나눌 기준이 없어 '이력서에 기재됨'으로만 센다.
@@ -869,8 +609,8 @@ function AugustGoalPanel({ g, ko, onRefresh, generatedAt, lang }) {
       target: `${g.pool.target.toLocaleString()}${ko ? '명' : ''}`,
       ratio: g.pool.current / g.pool.target,
       note: ko
-        ? `최근 7일 +${g.pool.d7}명(하루 ${g.pool.actualPerDay}명) · 목표까지 ${(g.pool.target - g.pool.current).toLocaleString()}명, 남은 ${g.daysLeft}일간 하루 ${g.pool.needPerDay}명 필요`
-        : `+${g.pool.d7} in 7d (${g.pool.actualPerDay}/day) · needs ${g.pool.needPerDay}/day for ${g.daysLeft} days`,
+        ? `최근 7일 +${g.pool.d7}명(하루 ${g.pool.actualPerDay}명) · 목표까지 ${Math.max(0, g.pool.target - g.pool.current).toLocaleString()}명`
+        : `+${g.pool.d7} in 7d (${g.pool.actualPerDay}/day) · ${Math.max(0, g.pool.target - g.pool.current).toLocaleString()} to go`,
     },
     {
       key: 'rate',
@@ -912,7 +652,7 @@ function AugustGoalPanel({ g, ko, onRefresh, generatedAt, lang }) {
   return (
     <div style={{ background: '#fff', border: '1px solid #E5E8EB', borderRadius: 16, padding: '16px 18px 6px', marginBottom: 20 }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 10, marginBottom: 4 }}>
-        <div style={{ fontSize: 14, fontWeight: 800, color: '#0F172A' }}>{ko ? '8월 목표' : 'August goals'}</div>
+        <div style={{ fontSize: 14, fontWeight: 800, color: '#0F172A' }}>{ko ? '목표' : 'Goals'}</div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           {/* 수치는 열 때 한 번만 불러온다 — 열어둔 채로는 안 오르므로 기준 시각과 갱신 버튼을 같이 둔다 */}
           {generatedAt && (
@@ -926,9 +666,6 @@ function AugustGoalPanel({ g, ko, onRefresh, generatedAt, lang }) {
               fontSize: 11.5, fontWeight: 700, color: '#4E5968', cursor: 'pointer',
             }}>{ko ? '갱신' : 'Refresh'}</button>
           )}
-          <div style={{ fontSize: 12, fontWeight: 700, color: g.daysLeft <= 3 ? '#DC2626' : '#6B7280' }}>
-            {ko ? `D-${g.daysLeft} · ${g.deadline.slice(5)} 마감` : `D-${g.daysLeft} · due ${g.deadline.slice(5)}`}
-          </div>
         </div>
       </div>
 
@@ -1350,6 +1087,125 @@ function PhotoStatsTab({ data, loading, error, ko }) {
                 </tr>
               )
             })}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  )
+}
+
+// ─────────────────────────────────────────────────────────────
+// 홍익 QR — /hongik 현장 캠페인 트래킹 (유입 → 가입·인증 → TOPIK/직무 → CV + 명단)
+const HK_ROLE_LABEL = {}
+ROLE_GROUPS.forEach(g => g.roles.forEach(r => { HK_ROLE_LABEL[r.value] = r.label.ko }))
+
+function HongikTab({ data, loading, error, ko, onRefresh }) {
+  if (loading || !data) return <div style={{ textAlign: 'center', padding: 40, color: '#666' }}>{ko ? '불러오는 중…' : 'Loading…'}</div>
+  if (error) return <div style={{ textAlign: 'center', padding: 40, color: '#c00' }}>{error}</div>
+  if (data.error) return <div style={{ textAlign: 'center', padding: 40, color: '#c00' }}>{data.error}</div>
+
+  const th = { textAlign: 'left', fontSize: 11, fontWeight: 700, color: '#9CA3AF', padding: '6px 10px', borderBottom: '1px solid #EEF0F2', textTransform: 'uppercase', letterSpacing: '.04em' }
+  const td = { fontSize: 12.5, color: '#1F2937', padding: '6px 10px', borderBottom: '1px solid #F5F6F7', whiteSpace: 'nowrap' }
+  const card = { border: '1px solid #EEF0F2', borderRadius: 12, padding: '14px 16px', background: '#fff' }
+  const num = { fontSize: 24, fontWeight: 800, color: '#1d1d1f', lineHeight: 1.2 }
+  const cap = { fontSize: 11.5, fontWeight: 700, color: '#9CA3AF', marginBottom: 4 }
+  const sub = { fontSize: 11.5, color: '#9CA3AF', marginTop: 3 }
+  const secH = { fontSize: 13.5, fontWeight: 800, color: '#1d1d1f', margin: '22px 0 8px' }
+
+  const ictTime = (iso) => new Date(new Date(iso).getTime() + 7 * 3600 * 1000).toISOString().slice(5, 16).replace('T', ' ')
+  const roleLabel = (v) => HK_ROLE_LABEL[v] || v
+  const topikDist = data.topik?.dist || {}
+  const roleRows = Object.entries(data.roles?.freq || {}).sort((a, b) => b[1] - a[1])
+
+  return (
+    <div>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+        <div style={{ fontSize: 12.5, color: '#6B7280' }}>
+          {ko ? '/hongik 현장 QR — 팀 계정은 카운트 제외, 명단엔 회색 표시. 비로그인 유입 수는 참고치.' : '/hongik QR campaign.'}
+        </div>
+        <button onClick={onRefresh} style={{ fontSize: 12, fontWeight: 700, padding: '6px 12px', borderRadius: 8, border: '1px solid #E5E7EB', background: '#fff', cursor: 'pointer', color: '#374151' }}>
+          {ko ? '새로고침' : 'Refresh'}
+        </button>
+      </div>
+
+      <div className="adm-m-2col" style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: 10 }}>
+        <div style={card}><div style={cap}>{ko ? 'QR 유입' : 'Views'}</div><div style={num}>{data.views.uniq}</div><div style={sub}>{ko ? `총 ${data.views.total}뷰` : `${data.views.total} views`}</div></div>
+        <div style={card}><div style={cap}>{ko ? '로그인 시작' : 'Login starts'}</div><div style={num}>{data.starts}</div></div>
+        <div style={{ ...card, borderColor: 'rgba(255,96,0,0.45)' }}><div style={{ ...cap, color: '#e05400' }}>{ko ? '가입·인증' : 'Verified'}</div><div style={{ ...num, color: '#e05400' }}>{data.verified}</div><div style={sub}>{ko ? '한국어 인증 완료' : 'Korean verified'}</div></div>
+        <div style={card}><div style={cap}>TOPIK</div><div style={num}>{data.topik.answered - data.topik.none}</div><div style={sub}>{ko ? `없음 ${data.topik.none}` : `none ${data.topik.none}`}</div></div>
+        <div style={card}><div style={cap}>{ko ? '직무 선택' : 'Roles'}</div><div style={num}>{data.roles.chosen}</div><div style={sub}>{ko ? `건너뜀 ${data.roles.skipped}` : `skipped ${data.roles.skipped}`}</div></div>
+        <div style={card}><div style={cap}>CV</div><div style={num}>{data.cv}</div><div style={sub}>{ko ? '이력서 등록' : 'resumes'}</div></div>
+      </div>
+
+      <div className="adm-m-1col" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 16 }}>
+        <div>
+          <div style={secH}>{ko ? 'TOPIK 분포' : 'TOPIK levels'}</div>
+          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+            <thead><tr><th style={th}>{ko ? '급수' : 'Level'}</th><th style={{ ...th, textAlign: 'right' }}>{ko ? '명' : '#'}</th></tr></thead>
+            <tbody>
+              {[6, 5, 4, 3, 2, 1].map(n => (
+                <tr key={n}><td style={td}>{n}{ko ? '급' : ''}</td><td style={{ ...td, textAlign: 'right', fontWeight: 700 }}>{topikDist[n] || 0}</td></tr>
+              ))}
+              <tr><td style={{ ...td, color: '#9CA3AF' }}>{ko ? '아직 없음' : 'None yet'}</td><td style={{ ...td, textAlign: 'right', color: '#9CA3AF' }}>{data.topik.none}</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div>
+          <div style={secH}>{ko ? '희망 직무' : 'Desired roles'}</div>
+          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+            <thead><tr><th style={th}>{ko ? '직무' : 'Role'}</th><th style={{ ...th, textAlign: 'right' }}>{ko ? '명' : '#'}</th></tr></thead>
+            <tbody>
+              {roleRows.length === 0 && <tr><td style={{ ...td, color: '#9CA3AF' }} colSpan={2}>{ko ? '아직 없음' : 'No data'}</td></tr>}
+              {roleRows.slice(0, 10).map(([r, c]) => (
+                <tr key={r}><td style={td}>{roleLabel(r)}</td><td style={{ ...td, textAlign: 'right', fontWeight: 700 }}>{c}</td></tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <div>
+          <div style={secH}>{ko ? '일별' : 'Daily'}</div>
+          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+            <thead><tr><th style={th}>{ko ? '날짜' : 'Day'}</th><th style={{ ...th, textAlign: 'right' }}>{ko ? '유입' : 'Views'}</th><th style={{ ...th, textAlign: 'right' }}>{ko ? '가입' : 'Verified'}</th></tr></thead>
+            <tbody>
+              {data.daily.length === 0 && <tr><td style={{ ...td, color: '#9CA3AF' }} colSpan={3}>{ko ? '아직 없음' : 'No data'}</td></tr>}
+              {data.daily.map(d => (
+                <tr key={d.day}><td style={td}>{d.day.slice(5)}</td><td style={{ ...td, textAlign: 'right' }}>{d.views}</td><td style={{ ...td, textAlign: 'right', fontWeight: 700 }}>{d.verified}</td></tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div style={secH}>{ko ? `명단 (${data.people.length})` : `People (${data.people.length})`}</div>
+      <div className="adm-m-scroll" style={{ overflowX: 'auto' }}>
+        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+          <thead>
+            <tr>
+              <th style={th}>{ko ? '인증 시각(ICT)' : 'Verified at'}</th>
+              <th style={th}>{ko ? '이름' : 'Name'}</th>
+              <th style={th}>{ko ? '이메일' : 'Email'}</th>
+              <th style={th}>TOPIK</th>
+              <th style={th}>{ko ? '희망 직무' : 'Roles'}</th>
+              <th style={th}>CV</th>
+            </tr>
+          </thead>
+          <tbody>
+            {data.people.length === 0 && <tr><td style={{ ...td, color: '#9CA3AF' }} colSpan={6}>{ko ? '아직 아무도 없어요 — QR이 찍히면 여기 실시간으로 쌓입니다.' : 'Nobody yet.'}</td></tr>}
+            {data.people.map(p => (
+              <tr key={p.userId} style={p.excluded ? { opacity: 0.45 } : undefined}>
+                <td style={td}>{ictTime(p.verifiedAt)}</td>
+                <td style={td}>
+                  {p.name || '—'}
+                  {p.excluded && <span style={{ fontSize: 10.5, fontWeight: 800, color: '#6B7280', background: '#F3F4F6', borderRadius: 100, padding: '1px 7px', marginLeft: 6 }}>{ko ? '팀' : 'team'}</span>}
+                </td>
+                <td style={td}>{p.email || '—'}</td>
+                <td style={td}>{p.topik === 'none' ? (ko ? '없음' : 'none') : p.topik != null ? `${p.topik}${ko ? '급' : ''}` : (p.koreanCert || '—')}</td>
+                <td style={{ ...td, whiteSpace: 'normal', maxWidth: 260 }}>
+                  {p.roles === 'skip' ? (ko ? '건너뜀' : 'skipped') : Array.isArray(p.roles) ? p.roles.map(roleLabel).join(', ') : '—'}
+                </td>
+                <td style={{ ...td, fontWeight: 700, color: p.hasCv ? '#15803d' : '#9CA3AF' }}>{p.hasCv ? '✓' : '—'}</td>
+              </tr>
+            ))}
           </tbody>
         </table>
       </div>

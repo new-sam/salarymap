@@ -155,6 +155,11 @@ a {
   body[data-standalone-landing="1"] {
     padding-bottom: 0 !important;
   }
+  /* 광고·QR 랜딩(/korean-cv, /hongik)도 탭바가 없으므로 하단 예약만 제거 —
+     남겨두면 푸터 밑에 body 흰 띠가 드러난다. */
+  body[data-kcv-landing="1"] {
+    padding-bottom: 0 !important;
+  }
   .mtab {
     display: flex !important;
     position: fixed !important;

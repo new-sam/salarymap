@@ -34,7 +34,7 @@ const TREND_START = '2026-07-28'
 // 8월 목표(승주, 마감 8/10). "등록 인재풀" = 이력서를 올린 회원, "등록 비율" = 가입자 중 그 비율.
 // 개발:비개발은 직군 분류(talent-supply와 동일 normalizePosition) 기준이고,
 // 기획·디자인(product)은 비개발에 포함한다. 한국어/영어는 목표선 없이 현황만 본다.
-const GOAL = { deadline: '2026-08-10', pool: 2000, rate: 0.5, techShare: 0.6 }
+const GOAL = { pool: 2000, rate: 0.5, techShare: 0.6 }
 
 const GROUP_OF = Object.fromEntries(CATEGORIES.map((c) => [c.key, c.group]))
 // position이 비면 desired_roles로 폴백 — 인재 공급/비개발 풀 탭과 같은 규칙.
@@ -191,8 +191,6 @@ export default async function handler(req, res) {
       l.either = l.en + l.ko - l.both
       return l
     }
-    const daysLeft = Math.max(0, Math.ceil((new Date(`${GOAL.deadline}T23:59:59+07:00`).getTime() - Date.now()) / 86400000))
-
     // ---- 등록 인재풀 추이 ----
     // 비율만으로는 개발/비개발이 각각 늘고 있는지 안 보여서 절대 수 곡선을 같이 준다.
     // ⚠️ 이력서 업로드 시각 컬럼이 없어 가입일에 얹는다(위 needPerDay와 같은 근사치).
@@ -239,15 +237,11 @@ export default async function handler(req, res) {
     })).filter((d) => d.date >= TREND_START) // 이동합계는 시작일 이전 데이터까지 써서 계산한 뒤 자른다
 
     const goal = {
-      deadline: GOAL.deadline,
-      daysLeft,
       pool: {
         current: profiles.length,
         target: GOAL.pool,
         d7: newResumes(7),
         d30: newResumes(30),
-        // 남은 기간 동안 하루에 몇 명을 더 받아야 하는지 vs 최근 7일 실제 속도
-        needPerDay: daysLeft ? Math.ceil(Math.max(0, GOAL.pool - profiles.length) / daysLeft) : null,
         actualPerDay: Math.round((newResumes(7) / 7) * 10) / 10,
       },
       rate: {

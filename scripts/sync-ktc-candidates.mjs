@@ -12,11 +12,17 @@ for (const line of readFileSync(new URL('../.env.local', import.meta.url), 'utf8
   }
 }
 
-const { triggerSheetSync, syncKtcCandidates, syncKtcApplications, syncKtcHires, pushFyiToKtc } = await import('../lib/ktcCandidatesSync.js');
+const { triggerSheetSync, syncKtcCandidates, syncKtcApplications, syncKtcHires, pushFyiToKtc, appendFyiToSheet } = await import('../lib/ktcCandidatesSync.js');
 
-// FYI 지원자를 ktc-support 파이프라인에 먼저 밀어넣고 (신규만), 그다음 당겨온다
+// FYI 지원 건을 ktc-support 파이프라인에 직접 밀어넣고 (지원건 단위), 그다음 당겨온다
 const push = await pushFyiToKtc();
-console.log(`✓ FYI→파이프라인: 신규 ${push.pushed}명 유입 (기존재 ${push.alreadyInPipeline}, FYI 전체 ${push.fyiPeople})`);
+console.log(`✓ FYI→파이프라인: 신규 ${push.pushed}건 유입 (기존재 ${push.alreadyInPipeline}, FYI 지원 건 ${push.fyiPeople})`);
+
+// Candidate Data 시트 FYI 탭 보충 (기록 보존용 — DB에만 있고 시트에 없는 지원 건 append)
+if (process.env.GOOGLE_SHEET_ID && process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL) {
+  const fyiSheet = await appendFyiToSheet();
+  console.log(`✓ FYI 탭 append: 누락 ${fyiSheet.appended}건 추가 (시트 기존 ${fyiSheet.sheetRows}건)`);
+}
 
 if (process.argv.includes('--sheets')) {
   console.log('• ktc-support 시트 동기화 트리거...');

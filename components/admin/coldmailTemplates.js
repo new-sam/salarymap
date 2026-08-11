@@ -525,6 +525,59 @@ const PHOTO_I18N = {
     footer: '— The FYI team · salary-fyi.com · <u>Unsubscribe</u>',
   },
 }
+// ── 프로필 사진 재발송(photo-remind1): "그때 사진 올린 사람들은 3일 내 오퍼 1~2건" 사회적 증거 프레임 ──
+const PHOTO_REMIND_I18N = {
+  vi: {
+    greeting: 'Chào <b>{{name}}</b>,',
+    p1: 'Lần trước, chúng tôi đã thông báo rằng hồ sơ của bạn bị loại khỏi danh sách đề cử nhận offer vì <b>chưa có ảnh đại diện</b>.',
+    p2: 'Kể từ đó, hầu hết những người đã thêm ảnh hồ sơ đều nhận được <b>1–2 offer</b> từ nhà tuyển dụng <b>chỉ trong vòng 3 ngày</b>.',
+    p3: 'Chưa có kế hoạch chuyển việc ngay? Không sao cả. Nhận offer và trải nghiệm phỏng vấn cũng là cơ hội tốt để kiểm tra giá trị của bạn trên thị trường tuyển dụng và phát triển sự nghiệp.',
+    p4: 'Thêm ảnh chỉ mất <b>chưa đến 1 phút</b>, không cần đăng nhập:',
+    cta: 'Thêm ảnh trong 1 phút →',
+    tail: 'Chọn 1 ảnh chân dung rõ mặt — ảnh sẽ được áp dụng ngay từ danh sách đề cử tiếp theo.',
+    footer: '— Đội ngũ FYI · salary-fyi.com · <u>Hủy nhận email</u>',
+  },
+  ko: {
+    greeting: '안녕하세요 <b>{{name}}</b>님,',
+    p1: '지난번에 프로필에 <b>사진이 없어</b> 오퍼 추천 명단에서 제외되었다는 안내를 드렸습니다.',
+    p2: '그 뒤 사진을 추가한 분들 대부분이 <b>3일 이내에</b> 기업 담당자로부터 오퍼 제안을 <b>1~2건</b> 받았습니다.',
+    p3: '당장 이직 계획이 없으셔도 괜찮습니다. 오퍼를 받아보고 면접을 경험하는 것만으로도 내 시장가치를 확인하고 커리어를 발전시키는 좋은 기회가 됩니다.',
+    p4: '사진 추가는 <b>1분이면 됩니다</b>. 로그인도 필요 없습니다:',
+    cta: '1분 만에 사진 추가하기 →',
+    tail: '얼굴이 잘 나온 사진 한 장을 고르면 다음 추천 명단부터 바로 반영됩니다.',
+    footer: '— FYI 팀 · salary-fyi.com · <u>수신거부</u>',
+  },
+  en: {
+    greeting: 'Hi <b>{{name}}</b>,',
+    p1: 'Last time, we let you know your profile was left off an offer nominee list because it had <b>no photo</b>.',
+    p2: 'Since then, most people who added a photo received <b>1–2 offers</b> from recruiters <b>within 3 days</b>.',
+    p3: 'Not planning to switch jobs right now? That\'s fine — receiving offers and interviewing is a great way to gauge your market value and grow your career.',
+    p4: 'Adding a photo takes <b>under a minute</b>, no login needed:',
+    cta: 'Add a photo in 1 minute →',
+    tail: 'Pick one clear headshot — it applies from the next nominee list.',
+    footer: '— The FYI team · salary-fyi.com · <u>Unsubscribe</u>',
+  },
+}
+const photoRemindHtml = (lang) => {
+  const s = pickLang(PHOTO_REMIND_I18N, lang)
+  return `<!doctype html><html><body style="margin:0;background:#faf9f7;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif;color:#1a1612">
+<div style="max-width:520px;margin:0 auto;padding:32px 20px">
+  <div style="font-size:20px;font-weight:800;color:#ff6000;margin-bottom:20px">FYI</div>
+  <div style="background:#fff;border:1px solid #eee5da;border-radius:18px;padding:30px 26px">
+    <p style="font-size:15px;margin:0 0 14px">${s.greeting}</p>
+    <p style="font-size:14.5px;line-height:1.6;margin:0 0 14px">${s.p1}</p>
+    <p style="font-size:14.5px;line-height:1.6;margin:0 0 14px">${s.p2}</p>
+    <p style="font-size:14.5px;line-height:1.6;margin:0 0 20px">${s.p3}</p>
+    <p style="font-size:14.5px;line-height:1.6;margin:0 0 14px">${s.p4}</p>
+    <div style="text-align:center;margin:0 0 20px">
+      <span style="display:inline-block;background:#ff6000;color:#fff;font-weight:700;font-size:15px;padding:14px 28px;border-radius:12px">${s.cta}</span>
+    </div>
+    <p style="font-size:13px;line-height:1.6;color:#8a8073;margin:0">${s.tail}</p>
+  </div>
+  <p style="font-size:11.5px;color:#a89f92;text-align:center;margin:18px 0 0;line-height:1.5">${s.footer}</p>
+</div></body></html>`
+}
+
 const photoColdmailHtml = (lang) => {
   const s = pickLang(PHOTO_I18N, lang)
   return `<!doctype html><html><body style="margin:0;background:#faf9f7;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif;color:#1a1612">
@@ -666,13 +719,24 @@ const LIONROCKET_TAIL = d3Tail({
 })
 export const COLDMAIL_TEMPLATES = [
   {
+    match: /^photo-remind/,
+    subject: {
+      vi: 'Những người đã thêm ảnh hồ sơ nhận được 1–2 offer chỉ trong 3 ngày',
+      ko: '사진을 추가한 분들은 3일 안에 오퍼 1~2건을 받았습니다',
+      en: 'People who added a photo received 1–2 offers within 3 days',
+    },
+    desc: '프로필 사진 재발송 photo-remind1(8/11 photo1·photo2 미전환 코호트): "그때 사진 올린 사람들은 3일 내 오퍼 1~2건 받았다" 사회적 증거 + "당장 이직 생각 없어도 오퍼·면접 = 시장가치 확인" 카운터 앵글(유저 확정 카피). 동일 원클릭 토큰 랜딩(/photo-upload).',
+    source: 'scripts/outreach/photo-coldmail.mjs --remind',
+    html: photoRemindHtml,
+  },
+  {
     match: /^photo/,
     subject: {
       vi: 'Bạn đã vào danh sách chờ nhận offer — nhưng chưa được chọn (lý do: thiếu ảnh hồ sơ)',
       ko: '오퍼 대기 리스트에 올랐지만 아쉽게 선정되지 않았습니다 (사유: 프로필 사진 없음)',
       en: 'You were on an offer shortlist — but not selected (reason: no profile photo)',
     },
-    desc: '프로필 사진 등록 유도 photo1(8/5 769명)·photo2(8/6 잔여 269명, 동일 양식·발송일만 분리): "담당자가 오퍼 1차 대기 리스트에 올렸으나 사진 없음 사유로 미선정" 프레임 + 사진 있는 프로필 오퍼 확률 62%↑(유저 확정 카피). 원클릭 토큰 랜딩(/photo-upload)에서 로그인 없이 업로드 → vision 인물사진 검증 후 즉시 반영.',
+    desc: '프로필 사진 등록 유도 photo1(8/5 769명)·photo2(8/6 잔여 269명)·photo3(8/11 신규 유입 353명, 동일 양식·코호트만 분리): "담당자가 오퍼 1차 대기 리스트에 올렸으나 사진 없음 사유로 미선정" 프레임 + 사진 있는 프로필 오퍼 확률 62%↑(유저 확정 카피). 원클릭 토큰 랜딩(/photo-upload)에서 로그인 없이 업로드 → vision 인물사진 검증 후 즉시 반영.',
     source: 'scripts/outreach/photo-coldmail.mjs',
     html: photoColdmailHtml,
   },
