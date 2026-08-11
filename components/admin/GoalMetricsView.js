@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 import MetricChart from '../DashboardCharts'
 import { templateFor, localizeTemplate, DRAFT_CAMPAIGNS } from './coldmailTemplates'
 import { ROLE_GROUPS } from '../../constants/jobs'
+import SurveyView from './SurveyView'
 
 // "승주 작업실" — 어드민 인증으로만 접근(개인 비밀번호 게이트 제거).
 // 기본 탭은 목표지표인 [이력서 공개].
@@ -170,6 +171,7 @@ export default function GoalMetricsView({ token, lang }) {
         {tabBtn('photos', ko ? '프로필 사진' : 'Profile photos')}
         {tabBtn('paths', ko ? '가입 경로' : 'Signup paths')}
         {tabBtn('hongik', ko ? '홍익 QR' : 'Hongik QR')}
+        {tabBtn('survey', ko ? '유저 서베이' : 'User survey')}
       </div>
       {view === 'roleExpansion' && <RoleExpansionTab data={reData} loading={reLoading} error={reError} ko={ko} lang={lang} />}
       {view === 'photos' && <PhotoStatsTab data={phData} loading={phLoading} error={phError} ko={ko} />}
@@ -177,6 +179,7 @@ export default function GoalMetricsView({ token, lang }) {
       {view === 'resumePublic' && <ResumePublicTab data={rpData} loading={rpLoading} error={rpError} ko={ko} lang={lang} onRefresh={loadRp} />}
       {view === 'coldmail' && <ColdmailPublicTab data={cmData} loading={cmLoading} error={cmError} ko={ko} lang={lang} />}
       {view === 'hongik' && <HongikTab data={hkData} loading={hkLoading} error={hkError} ko={ko} onRefresh={loadHk} />}
+      {view === 'survey' && <SurveyView token={token} lang={lang} />}
     </div>
   )
 }

@@ -88,6 +88,8 @@ export default function App({ Component, pageProps }) {
   // /private/* — 고객사에게만 링크로 여는 비공개 화면. 푸터·탭바·앱 모달이 붙으면
   // 거기 링크를 타고 FYI 본 사이트로 새어 나가고, 화면도 우리 서비스 소개처럼 보인다.
   const isPrivate = router.pathname.startsWith('/private');
+  // /survey — 콜드메일 토큰 서베이 랜딩. /private 처럼 헤더·푸터·탭바 없이 응답에만 집중.
+  const isSurvey = router.pathname === '/survey';
 
   // Flag the body so the mobile-only top/bottom reservations (52/60px in
   // globals.css) collapse for company pages — they render their own header.
@@ -112,9 +114,9 @@ export default function App({ Component, pageProps }) {
     if (isKcvLanding) document.body.dataset.kcvLanding = '1';
     else delete document.body.dataset.kcvLanding;
     // /private/* 는 헤더·탭바를 안 그리므로 그 자리 예약도 같이 걷어낸다.
-    if (isPrivate) document.body.dataset.privateMobile = '1';
+    if (isPrivate || isSurvey) document.body.dataset.privateMobile = '1';
     else delete document.body.dataset.privateMobile;
-  }, [isCompany, isJobDetail, isAdLanding, isCard, isAdmin, isStandaloneLanding, isKcvLanding, isPrivate]);
+  }, [isCompany, isJobDetail, isAdLanding, isCard, isAdmin, isStandaloneLanding, isKcvLanding, isPrivate, isSurvey]);
   const activePage = activePageFor(router.pathname);
 
   // 웹 첫 진입(세션당 1회) — landing 은 홈에서만 떠서 공고/CV/회사 링크 등 직접 유입을 놓친다.
@@ -188,14 +190,14 @@ export default function App({ Component, pageProps }) {
         <main style={{ flex: '1 0 auto' }}>
           <Component {...pageProps} />
         </main>
-        {(!isCompany || isForCompaniesLanding) && !isAdmin && !isPromoLanding && !isCard && !isLogin && !isPrivate && (
+        {(!isCompany || isForCompaniesLanding) && !isAdmin && !isPromoLanding && !isCard && !isLogin && !isPrivate && !isSurvey && (
           <GlobalFooter />
         )}
       </div>
-      {!isCompany && !isJobDetail && !isCard && !isAdmin && !isLogin && !isStandaloneLanding && !isKcvLanding && !isPrivate && <MobileTabBar />}
+      {!isCompany && !isJobDetail && !isCard && !isAdmin && !isLogin && !isStandaloneLanding && !isKcvLanding && !isPrivate && !isSurvey && <MobileTabBar />}
       <GlobalLoginModal />
       <GoogleOneTap />
-      {!isAdmin && !isAdLanding && !isCard && !isCompany && !isLogin && !isStandaloneLanding && !isKcvLanding && !isPrivate && <AppDownloadModal />}
+      {!isAdmin && !isAdLanding && !isCard && !isCompany && !isLogin && !isStandaloneLanding && !isKcvLanding && !isPrivate && !isSurvey && <AppDownloadModal />}
       <Toaster
         position="bottom-right"
         richColors

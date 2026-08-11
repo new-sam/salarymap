@@ -73,7 +73,6 @@ function buildNav(lang) {
       label: 'Personal',
       items: [
         { label: L('승주 작업실', "Seungju's Lab"), pathname: '/admin/dashboard', tab: 'goals' },
-        { label: L('유저 서베이', 'User survey', 'Khảo sát người dùng'), pathname: '/admin/dashboard', tab: 'survey' },
         { label: L('유진 작업실', "Yujin's Lab"), pathname: '/admin/dashboard', tab: 'yujin' },
       ],
     },

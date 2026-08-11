@@ -30,16 +30,32 @@ export default async function handler(req, res) {
 
     const a = req.body?.answers
     if (!a || typeof a !== 'object') return res.status(400).json({ error: 'no_answers' })
+    // 선택형 키는 pages/survey.js QUESTIONS와 1:1 — 니즈 도출은 어드민에서 조합으로 한다
+    const RADIO_KEYS = ['status', 'stage', 'cv_worry', 'photo_current', 'interview_prep', 'interview_weak', 'coach_who', 'coach_exp', 'info_gap', 'learn_block']
     const answers = {
-      status: clean(a.status),
       pain: clean(a.pain),
-      spent: clean(a.spent),
-      kr_interest: clean(a.kr_interest),
-      kr_obstacle: clean(a.kr_obstacle),
+      cv_feedback: Array.isArray(a.cv_feedback) ? a.cv_feedback.map(clean).filter(Boolean).slice(0, 10) : [],
+      info_source: Array.isArray(a.info_source) ? a.info_source.map(clean).filter(Boolean).slice(0, 10) : [],
+      // 지출 — 구조화 {item, amount(VND), note?}[], '없음'은 spent_none
+      spent_none: !!a.spent_none,
+      spent_items: (Array.isArray(a.spent_items) ? a.spent_items : []).slice(0, 10)
+        .map((it) => ({
+          item: clean(it?.item),
+          amount: Math.max(0, Math.min(1e12, parseInt(it?.amount, 10) || 0)),
+          ...(it?.note ? { note: clean(it.note) } : {}),
+        }))
+        .filter((it) => it.item),
       call_ok: !!a.call_ok,
       contact: clean(a.contact),
     }
-    if (!answers.status || !answers.pain) return res.status(400).json({ error: 'missing_required' })
+    for (const k of RADIO_KEYS) answers[k] = clean(a[k])
+    // 조건부 후속(N-1) — 부모 답에 따라 안 뜰 수 있어 서버에선 선택값으로 받는다
+    const FOLLOWUP_KEYS = ['cv_fb_quality', 'cv_fb_why_not', 'photo_app_sat', 'photo_why', 'prep_enough', 'prep_why_not', 'info_trust', 'info_gap_impact', 'learn_want']
+    for (const k of FOLLOWUP_KEYS) answers[k] = clean(a[k])
+    if (RADIO_KEYS.some((k) => !answers[k]) || !answers.pain || !answers.cv_feedback.length
+      || !answers.info_source.length || (!answers.spent_none && !answers.spent_items.length)) {
+      return res.status(400).json({ error: 'missing_required' })
+    }
 
     await supabase.from('events').insert([{
       event: 'survey_submit', page: '/survey', user_id: userId, meta: { campaign, answers },

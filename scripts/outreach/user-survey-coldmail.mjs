@@ -38,8 +38,8 @@ const COPY = {
     ko: '3,000명 넘는 분들이 FYI에 함께해 주셨지만, <b>구직과 커리어에서 정말 어려운 게 뭔지</b> 더 깊이 이해하고 싶습니다.',
   },
   p3: {
-    vi: 'Khảo sát chỉ có <b>5 câu hỏi (~3 phút)</b>. Câu trả lời của bạn sẽ trực tiếp quyết định những tính năng FYI xây dựng tiếp theo.',
-    ko: '<b>5문항(~3분)</b>짜리 짧은 설문입니다. 답변은 FYI가 다음에 만들 기능을 결정하는 데 그대로 반영됩니다.',
+    vi: 'Để hỗ trợ bạn tốt hơn trên hành trình tìm việc và phát triển sự nghiệp, mong bạn dành <b>~4 phút</b> trả lời khảo sát — hầu hết chỉ cần chạm chọn. Mình sẽ cố gắng hết sức để xây dựng một FYI tốt hơn cho bạn.',
+    ko: '여러분의 구직과 커리어 성장을 더 잘 돕기 위해, <b>~4분</b>짜리 설문에 답해주세요 — 대부분 탭 선택형입니다. 더 나은 FYI를 만들도록 최선을 다하겠습니다.',
   },
   cta: { vi: 'Trả lời khảo sát (3 phút) →', ko: '설문 참여하기 (3분) →' },
   thanks: { vi: 'Cảm ơn bạn rất nhiều!<br>— Seungju, Founder của FYI', ko: '정말 감사합니다!<br>— FYI 창업자 승주 드림' },
@@ -56,7 +56,8 @@ function emailHtml(name, url, unsubUrl, lang) {
 <body style="margin:0;background:#faf9f7;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;color:#1a1612">
 <table width="100%" cellpadding="0" cellspacing="0" style="background:#faf9f7"><tr><td align="center" style="padding:28px 16px">
 <table width="100%" cellpadding="0" cellspacing="0" style="max-width:520px">
-  <tr><td style="font-size:20px;font-weight:800;color:#ff6000;padding-bottom:18px">FYI</td></tr>
+  <tr><td style="padding-bottom:18px"><img src="https://salary-fyi.com/fyi-logo.png" height="24" alt="FYI" style="height:24px;width:auto;display:block"></td></tr>
+  <tr><td style="padding-bottom:12px"><img src="https://salary-fyi.com/founder-seungju.jpg" width="56" height="56" alt="Seungju" style="width:56px;height:56px;border-radius:50%;object-fit:cover;display:block"></td></tr>
   <tr><td style="font-size:15px;line-height:1.6;color:#1a1612;padding-bottom:6px">${L(COPY.hi)(esc(firstName(name)))}</td></tr>
   <tr><td style="font-size:14px;line-height:1.65;color:#4a443c;padding-bottom:14px">${L(COPY.p1)}</td></tr>
   <tr><td style="font-size:14px;line-height:1.65;color:#4a443c;padding-bottom:14px">${L(COPY.p2)}</td></tr>
