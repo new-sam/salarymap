@@ -21,6 +21,7 @@ import CompanyView from '../../components/admin/CompanyView'
 import RevenueView from '../../components/admin/RevenueView'
 import PikdiView from '../../components/admin/PikdiView'
 import RecommendView from '../../components/admin/RecommendView'
+import SurveyView from '../../components/admin/SurveyView'
 import GoalMetricsView from '../../components/admin/GoalMetricsView'
 import YujinLabView, { YujinLabTabs } from '../../components/admin/YujinLabView'
 import {
@@ -1016,6 +1017,11 @@ export default function AdminDashboard() {
         {/* 광고메일 — 공고 추천 메일 발송/전환 현황 */}
         {tab === 'recommend' && (
           <RecommendView token={token} lang={lang} />
+        )}
+
+        {/* 유저 서베이 — 콜드메일 개인 링크(/survey?t=) 페인포인트 조사 결과 */}
+        {tab === 'survey' && (
+          <SurveyView token={token} lang={lang} />
         )}
 
         {/* Personal · 승주 작업실 */}
