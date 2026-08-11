@@ -12,6 +12,8 @@
 | FYI 기업정책 | `docs/fyi-staffing/FYI_기업정책.md` |
 | GTM 전략 | `docs/FYI_GTM_STRATEGY.html` |
 | 스태핑 데일리 대시보드 | `docs/STAFFING_DAILY_DASHBOARD.html` |
+| 스태핑 사업 이해 | `docs/STAFFING_101.md` |
+| 중진공 보고자료 | `docs/KOSME_REVIEW_DECK.html` |
 
 링크드인 광고 확정값: 계정 SUPERCHIPS · 발신 KEE Kim · 대화 광고 · 리드 양식 개인정보처리방침 URL = https://ggmg.ai.kr/privacy (공고마감 서비스로 리드 수집).
 
