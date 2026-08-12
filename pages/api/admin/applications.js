@@ -57,6 +57,20 @@ export default async function handler(req, res) {
     const { id, status, admin_note } = req.body
     const updates = { status, updated_at: new Date().toISOString() }
     if (admin_note !== undefined) updates.admin_note = admin_note
+    // 불합격 처리 시 탈락 시점의 단계를 남긴다 — 유저 스텝퍼가 '불합격' 표시 위치를 정하는 데 쓴다.
+    // 기업 ATS(reject/unreject)와 같은 컬럼(rejected_at·rejected_at_stage)을 공유하고,
+    // 불합격을 다른 상태로 되돌리면 마커를 지운다.
+    if (status === 'rejected') {
+      const { data: prev } = await supabase
+        .from('job_applications').select('status, rejected_at_stage').eq('id', id).maybeSingle()
+      if (prev?.status !== 'rejected') {
+        updates.rejected_at = new Date().toISOString()
+        updates.rejected_at_stage = prev?.rejected_at_stage || prev?.status || null
+      }
+    } else if (status) {
+      updates.rejected_at = null
+      updates.rejected_at_stage = null
+    }
     const { error } = await supabase
       .from('job_applications')
       .update(updates)

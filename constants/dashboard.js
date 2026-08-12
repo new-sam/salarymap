@@ -474,7 +474,7 @@ export const PRESET_FUNNELS = {
 
 export const MAX_BAR_HEIGHT = 160
 
-export const STATUS_OPTIONS = ['applied', 'viewed', 'reviewing', 'accepted', 'rejected']
+export const STATUS_OPTIONS = ['applied', 'viewed', 'reviewing', 'docs_passed', 'interview', 'accepted', 'rejected']
 
 export const STATUS_COLORS = {
   applied: { bg: '#E0E7FF', color: '#3730A3' },

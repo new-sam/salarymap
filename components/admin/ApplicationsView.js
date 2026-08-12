@@ -8,6 +8,8 @@ const STATUS_STYLE = {
   applied:   { bg: '#64748B', color: '#fff' },
   viewed:    { bg: '#D97706', color: '#fff' },
   reviewing: { bg: '#2563EB', color: '#fff' },
+  docs_passed: { bg: '#0D9488', color: '#fff' },
+  interview: { bg: '#7C3AED', color: '#fff' },
   accepted:  { bg: '#059669', color: '#fff' },
   rejected:  { bg: '#DC2626', color: '#fff' },
   canceled:  { bg: '#E5E7EB', color: '#6B7280' }, // 지원자 본인 취소 — 어드민이 바꾸는 상태 아님
@@ -20,7 +22,9 @@ const STATUS_LABEL = {
   applied:   { ko: '지원 완료',  en: 'Applied',   vi: 'Đã ứng tuyển' },
   viewed:    { ko: '열람',      en: 'Viewed',    vi: 'Đã xem' },
   reviewing: { ko: '검토중',    en: 'Reviewing', vi: 'Đang xét duyệt' },
-  accepted:  { ko: '합격',      en: 'Accepted',  vi: 'Trúng tuyển' },
+  docs_passed: { ko: '서류합격', en: 'Docs Passed', vi: 'Đạt hồ sơ' },
+  interview: { ko: '면접 안내',  en: 'Interview', vi: 'Phỏng vấn' },
+  accepted:  { ko: '최종 합격',  en: 'Accepted',  vi: 'Trúng tuyển' },
   rejected:  { ko: '불합격',    en: 'Rejected',  vi: 'Không trúng tuyển' },
   canceled:  { ko: '지원자 취소', en: 'Canceled', vi: 'Ứng viên đã hủy' },
 }

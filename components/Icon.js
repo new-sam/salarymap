@@ -50,12 +50,13 @@ const map = {
   hourglass: HourglassMedium,
 }
 
-export default function Icon({ name, size = 24, color = 'currentColor', style, className }) {
+export default function Icon({ name, size = 24, color = 'currentColor', style, className, weight: weightProp }) {
   const Comp = map[name]
   if (!Comp) return null
 
   const hasFill = style?.fill && style.fill !== 'none'
-  const weight = hasFill ? 'fill' : 'duotone'
+  // duotone은 글리프 뒤에 반투명 배경 레이어를 함께 그림 — 배경 없는 순수 획이 필요하면 weight="bold" 등으로 지정.
+  const weight = weightProp || (hasFill ? 'fill' : 'duotone')
 
   return (
     <Comp

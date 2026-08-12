@@ -25,7 +25,7 @@ export default async function handler(req, res) {
 
   const { data, error } = await supabase
     .from('job_applications')
-    .select('id, job_id, job_title, job_company, status, created_at, jobs(logo_url, image_url)')
+    .select('id, job_id, job_title, job_company, status, rejected_at, rejected_at_stage, created_at, jobs(logo_url, image_url)')
     .eq('user_id', user.id)
     .order('created_at', { ascending: false })
 
