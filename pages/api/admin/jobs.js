@@ -11,11 +11,21 @@ export default async function handler(req, res) {
   if (!admin) return res.status(401).json({ error: 'Unauthorized' })
 
   if (req.method === 'GET') {
-    const { data } = await supabase
-      .from('jobs')
-      .select('*')
-      .order('created_at', { ascending: false })
-    const jobs = data || []
+    // PostgREST는 한 번에 최대 1000행만 반환하므로 range로 끝까지 페이지네이션.
+    // (jobs 1,877행 시점에 최신 1000행 밖 KTC 공고 80건이 어드민에서 안 보이던 버그)
+    const PAGE = 1000
+    let jobs = []
+    for (let offset = 0; ; offset += PAGE) {
+      const { data: page } = await supabase
+        .from('jobs')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .order('id', { ascending: false })
+        .range(offset, offset + PAGE - 1)
+      if (!page?.length) break
+      jobs = jobs.concat(page)
+      if (page.length < PAGE) break
+    }
     // 등록자 이메일 매핑 (created_by -> recruiter_users.email)
     const creatorIds = [...new Set(jobs.map(j => j.created_by).filter(Boolean))]
     let emailMap = {}
