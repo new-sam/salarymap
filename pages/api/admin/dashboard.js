@@ -212,6 +212,8 @@ export default async function handler(req, res) {
   }
 
   const daily = Object.values(dailyMap)
+    // resumeUsers 는 날짜 필터 없이 전량 버킷팅이라(누적 합계용) 범위 밖 날짜가 끼어든다 — daily 는 요청 범위만.
+    .filter(d => d.date >= startDate && d.date <= endDate)
     .sort((a, b) => a.date.localeCompare(b.date))
     .map(d => ({
       ...d,

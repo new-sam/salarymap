@@ -213,6 +213,8 @@ export default function AdminDashboard() {
   if (auth === 'denied') return <div style={{ padding: 40, textAlign: 'center' }}>{t.denied}</div>
 
   const selectedMetrics = METRICS.filter(m => selected.includes(m.key))
+  // 차트는 선택 지표가 속한 최상단 섹션 바로 아래에 붙인다 (기본 지표 선택인데 인재 아래에 뜨지 않게)
+  const chartSection = ['basic', 'talent', 'company'].find(s => selectedMetrics.some(m => m.section === s))
 
   const dailyWithToday = (() => {
     if (!data?.daily) return data?.daily
@@ -567,8 +569,8 @@ export default function AdminDashboard() {
                   )}
                 </div>
 
-                {/* Chart — 인재 지표 바로 아래 */}
-                {sec === 'talent' && selectedMetrics.length > 0 && (
+                {/* Chart — 선택 지표가 속한 섹션 바로 아래 */}
+                {sec === chartSection && selectedMetrics.length > 0 && (
                   <div style={sectionStyle}>
                     <div className="adm-chart-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, flexWrap: 'wrap', gap: 8 }}>
                       <h3 style={{ ...sectionTitle, margin: 0 }}>{selectedMetrics.map(m => m.label).join(' + ')} {t.trend}</h3>
