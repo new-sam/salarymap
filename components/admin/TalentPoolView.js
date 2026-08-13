@@ -119,7 +119,7 @@ export default function TalentPoolView({ token, lang }) {
     eliteBtn: 'Ứng viên xuất sắc', aiFillAll: 'Điền AI tất cả', batchStop: 'Dừng', batchDone: 'Hoàn tất',
     filterBtn: 'Bộ lọc', reset: 'Đặt lại', done: 'Xong', lblLevel: 'Kinh nghiệm', lblWork: 'Hình thức',
     rowSchool: 'Học vấn', rowCareer: 'Kinh nghiệm', rowHighlights: 'Nổi bật', rowLang: 'Ngoại ngữ', rowSkills: 'Kỹ năng', rowLinks: 'Portfolio',
-    rowSalary: 'Lương', salarySrcProfile: 'tự khai', salarySrcVerified: 'đã xác minh',
+    rowSalary: 'Lương/năm', salarySrcProfile: 'tự khai', salarySrcVerified: 'đã xác minh',
     topNote: 'Trường top VN', langEn: 'T.Anh', langKo: 'T.Hàn', noInfo: 'Chưa rõ', newGrad: 'Fresher',
     unknown: 'Chưa rõ', noRole: 'Chưa rõ vị trí', levelUnknown: 'Cấp bậc?', aiFill: 'Điền bằng AI', aiFilling: 'Đang phân tích…',
     aiTitle: 'Kinh nghiệm/ngoại ngữ còn trống — bấm để điền bằng AI', resume: 'CV →',
@@ -153,7 +153,7 @@ export default function TalentPoolView({ token, lang }) {
     eliteBtn: 'Top talent', aiFillAll: 'AI fill all', batchStop: 'Stop', batchDone: 'Done',
     filterBtn: 'Filters', reset: 'Reset', done: 'Done', lblLevel: 'Level', lblWork: 'Work type',
     rowSchool: 'Education', rowCareer: 'Career', rowHighlights: 'Highlights', rowLang: 'Languages', rowSkills: 'Skills', rowLinks: 'Portfolio',
-    rowSalary: 'Salary', salarySrcProfile: 'self-reported', salarySrcVerified: 'badge-verified',
+    rowSalary: 'Salary/yr', salarySrcProfile: 'self-reported', salarySrcVerified: 'badge-verified',
     topNote: 'Top-tier VN univ.', langEn: 'EN', langKo: 'KO', noInfo: 'N/A', newGrad: 'New grad',
     unknown: 'Unknown', noRole: 'No role', levelUnknown: 'Level?', aiFill: 'AI fill', aiFilling: 'Filling…',
     aiTitle: 'Career/language empty — click to fill with AI', resume: 'Resume →',
@@ -338,7 +338,7 @@ export default function TalentPoolView({ token, lang }) {
   )
 
   function downloadCsv() {
-    const headers = ['Name', 'Email', 'Public', 'Position', 'Level', 'YoE (months)', 'University', 'Top-tier', 'Overseas', 'Major', 'Grad Year', 'Companies', 'Korean', 'English', 'Skills', 'Location', 'Work Type', 'Salary Min', 'Salary Max', 'Currency', 'Current Salary (M)', 'Verified Salary (M)', 'Resume URL', 'Updated']
+    const headers = ['Name', 'Email', 'Public', 'Position', 'Level', 'YoE (months)', 'University', 'Top-tier', 'Overseas', 'Major', 'Grad Year', 'Companies', 'Korean', 'English', 'Skills', 'Location', 'Work Type', 'Salary Min', 'Salary Max', 'Currency', 'Current Salary (M/yr)', 'Verified Salary (M/yr)', 'Resume URL', 'Updated']
     const rows = filtered.map(r => {
       const exps = asExperiences(r.experiences)
       return [
@@ -347,7 +347,7 @@ export default function TalentPoolView({ token, lang }) {
         exps.map(e => `${e.company}${e.title ? ` (${e.title})` : ''}`).join(' / '),
         r.korean_cert || '', r.english_cert || '', asSkills(r.skills).join(', '),
         r.location || '', r.work_type || '', r.salary_min ?? '', r.salary_max ?? '', r.salary_currency || '',
-        r.current_salary ? Math.round(r.current_salary / 1000000) : '', r.verified_salary ?? '',
+        r.current_salary ? Math.round(r.current_salary / 1000000) * 12 : '', r.verified_salary ? Math.round(r.verified_salary) * 12 : '',
         r.resume_url, r.updated_at ? new Date(r.updated_at).toLocaleString('ko-KR') : '',
       ]
     })
@@ -590,15 +590,16 @@ function TalentCard({ r, L, vi, ko, userRecs = [], onRecommend, onReparse, parsi
   )
   // 연봉: 프로필 직접기입(current_salary, 원 단위) > 뱃지 인증(verified_salary, 백만 단위) 폴백.
   // 연봉위저드 제출은 안 쓴다 — 익명 자기신고라 부정확(유저 지시 8/13, 정확한 값만).
-  // 신입(경력 1년 미만 확인)은 연봉이 없는 게 정상이라 미상 대신 "신입"으로 채운다(유저 지시 8/13).
+  // 수집·저장은 월급이지만 표기는 연봉(×12) — 행 라벨이 "연봉"이라서(유저 지시 8/13). 툴팁=월급.
+  // 신입 처리는 경력 0 확인자만 — 1~11개월 경력자도 월급 수집 가능 풀(유저 정정 8/13).
   const curM = r.current_salary ? Math.round(r.current_salary / 1000000) : null
   const verM = curM == null && r.verified_salary ? Math.round(r.verified_salary) : null
   const salM = curM ?? verM
-  const salaryFresher = salM == null && r.yoe_months != null && r.yoe_months < 12
+  const salaryFresher = salM == null && r.yoe_months === 0
   const salaryNode = (
-    <span style={oneLine} title={verM != null && r.verified_salary_at ? r.verified_salary_at.slice(0, 10) : undefined}>
+    <span style={oneLine} title={salM != null ? `${salM}M/tháng${verM != null && r.verified_salary_at ? ` · ${r.verified_salary_at.slice(0, 10)}` : ''}` : undefined}>
       {salM != null ? (<>
-        <span style={{ fontWeight: 700, color: '#111' }}>₫{salM}M</span>
+        <span style={{ fontWeight: 700, color: '#111' }}>₫{salM * 12}M</span>
         <span style={{ color: '#9CA3AF' }}> · {curM != null ? L.salarySrcProfile : L.salarySrcVerified}</span>
       </>) : salaryFresher ? <span style={{ color: '#6B7280', fontWeight: 600 }}>{L.newGrad}</span> : '-'}
     </span>

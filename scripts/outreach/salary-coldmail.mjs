@@ -2,7 +2,8 @@
 // 랜딩은 로그인 없이 숫자 한 칸(백만 VND/월)만 받아 user_profiles.current_salary 에 저장.
 // 퍼널: 발송(coldmail_salary_sent) → 클릭(coldmail_salary_click) → 입력(coldmail_salary_fill, meta.amount).
 //
-// 대상: 이력서 보유 + 경력 1년 이상(yoe_months>=12, 신입 제외 — 현/직전연봉이 없어 애매)
+// 대상: 이력서 보유 + 경력 1개월 이상(yoe_months>=1 — 1년 미만도 월급을 받아봤으니 수집 가능,
+//       유저 정정 8/13. 제외되는 건 경력 0 확인자와 yoe 미상뿐)
 //       − likelion − 수신거부(coldmail_unsub) − 기발송(coldmail_salary_sent 전체, 1인 1회)
 //       − current_salary 이미 기입 − 연봉위저드 제출 연결자(폴백 데이터 있음, --include-submitted 로 포함)
 //
@@ -154,7 +155,7 @@ async function main() {
   const seen = new Set()
   const cohort = pool.filter((p) => {
     if (!p.email || /likelion/i.test(p.email)) return false
-    if ((p.yoe_months ?? 0) < 12) return false
+    if ((p.yoe_months ?? 0) < 1) return false
     if (p.current_salary) return false
     if (unsubSet.has(p.id) || sentSet.has(p.id)) return false
     if (!includeSubmitted && subSet.has(p.id)) return false
@@ -164,7 +165,7 @@ async function main() {
     return true
   })
 
-  console.log(`대상 ${cohort.length}명 (이력서 보유 ${pool.length} 중 경력 1년+ · likelion/수신거부 ${unsubSet.size}/기발송 ${sentSet.size}/기입자/제출연결${includeSubmitted ? '(포함)' : ''} 제외) · 캠페인 ${CAMPAIGN}`)
+  console.log(`대상 ${cohort.length}명 (이력서 보유 ${pool.length} 중 경력 1개월+ · likelion/수신거부 ${unsubSet.size}/기발송 ${sentSet.size}/기입자/제출연결${includeSubmitted ? '(포함)' : ''} 제외) · 캠페인 ${CAMPAIGN}`)
   if (!doSend) {
     for (const p of cohort.slice(0, 20)) console.log(`  ${p.full_name || '(이름없음)'} <${p.email}> · yoe ${p.yoe_months}m`)
     if (cohort.length > 20) console.log(`  … 외 ${cohort.length - 20}명`)

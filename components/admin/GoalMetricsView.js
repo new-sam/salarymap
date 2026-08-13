@@ -1068,26 +1068,26 @@ function SalaryStatsTab({ data, loading, error, ko }) {
       <div style={{ background: '#fff', border: '1px solid #E5E8EB', borderRadius: 12, padding: '18px 20px' }}>
         <ProgressBar title={ko ? '전체 인재풀 (이력서 보유)' : 'Entire pool (with resume)'}
           direct={pool.direct} verified={pool.verified} fresher={pool.fresher} total={pool.total} />
-        <ProgressBar title={ko ? '경력 1년+ (캠페인 대상)' : '1+ yr experience (campaign target)'}
+        <ProgressBar title={ko ? '경력 보유 (월급 수집 가능 풀)' : 'With experience (collectible pool)'}
           direct={pool.expDirect} verified={pool.expVerified} total={pool.expTotal} />
         <div style={{ display: 'flex', gap: 16, fontSize: 12, color: '#6B7280', flexWrap: 'wrap' }}>
           <span><span style={{ display: 'inline-block', width: 10, height: 10, background: '#15803D', borderRadius: 3, marginRight: 5 }} />{ko ? '직접기입 (랜딩·프로필)' : 'Self-reported (landing/profile)'}</span>
           <span><span style={{ display: 'inline-block', width: 10, height: 10, background: '#86EFAC', borderRadius: 3, marginRight: 5 }} />{ko ? '연봉 뱃지 인증 (증빙 승인)' : 'Badge-verified (doc approved)'}</span>
-          <span><span style={{ display: 'inline-block', width: 10, height: 10, background: '#CBD5E1', borderRadius: 3, marginRight: 5 }} />{ko ? '신입 — 연봉 없음 처리 (경력 1년 미만)' : 'Fresher — no salary by definition'}</span>
+          <span><span style={{ display: 'inline-block', width: 10, height: 10, background: '#CBD5E1', borderRadius: 3, marginRight: 5 }} />{ko ? '신입 — 연봉 없음 처리 (경력 0 확인)' : 'Fresher — zero experience confirmed'}</span>
         </div>
       </div>
 
       <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
         <Card label={ko ? '표본' : 'Sample'} value={stats.n.toLocaleString()} sub={ko ? '연봉 확보 인원' : 'people with salary'} />
-        <Card label={ko ? '중앙값' : 'Median'} value={stats.median != null ? `${stats.median}M` : '—'} accent="#15803D" sub={ko ? '백만 VND/월' : 'M VND/month'} />
-        <Card label={ko ? '평균' : 'Average'} value={stats.avg != null ? `${stats.avg}M` : '—'} sub={ko ? '백만 VND/월' : 'M VND/month'} />
+        <Card label={ko ? '중앙값' : 'Median'} value={stats.median != null ? `${stats.median}M` : '—'} accent="#15803D" sub={ko ? '백만 VND/년 (월×12)' : 'M VND/yr (mo ×12)'} />
+        <Card label={ko ? '평균' : 'Average'} value={stats.avg != null ? `${stats.avg}M` : '—'} sub={ko ? '백만 VND/년 (월×12)' : 'M VND/yr (mo ×12)'} />
         <Card label="P25–P75" value={stats.p25 != null ? `${stats.p25}–${stats.p75}M` : '—'} sub={ko ? '중간 50% 구간' : 'middle 50%'} />
       </div>
 
       <div style={section}>
         <div style={{ fontSize: 14, fontWeight: 800, marginBottom: 10 }}>
-          {ko ? '월급 분포' : 'Salary distribution'}
-          <span style={{ fontSize: 11.5, fontWeight: 600, color: '#9CA3AF', marginLeft: 8 }}>{ko ? '단위: 백만 VND/월' : 'M VND/month'}</span>
+          {ko ? '연봉 분포' : 'Annual salary distribution'}
+          <span style={{ fontSize: 11.5, fontWeight: 600, color: '#9CA3AF', marginLeft: 8 }}>{ko ? '단위: 백만 VND/년 (월급×12 환산)' : 'M VND/yr (monthly ×12)'}</span>
         </div>
         <table style={{ width: '100%', borderCollapse: 'collapse' }}>
           <thead><tr>
@@ -1117,7 +1117,10 @@ function SalaryStatsTab({ data, loading, error, ko }) {
       </div>
 
       <div style={section}>
-        <div style={{ fontSize: 14, fontWeight: 800, marginBottom: 10 }}>{ko ? '경력구간별 중앙값' : 'Median by experience'}</div>
+        <div style={{ fontSize: 14, fontWeight: 800, marginBottom: 10 }}>
+          {ko ? '경력구간별 중앙값' : 'Median by experience'}
+          <span style={{ fontSize: 11.5, fontWeight: 600, color: '#9CA3AF', marginLeft: 8 }}>{ko ? '백만 VND/년' : 'M VND/yr'}</span>
+        </div>
         <table style={{ width: '100%', borderCollapse: 'collapse' }}>
           <thead><tr>
             <th style={{ ...th, textAlign: 'left' }}>{ko ? '경력' : 'Experience'}</th>
@@ -1155,7 +1158,7 @@ function SalaryStatsTab({ data, loading, error, ko }) {
               <th style={{ ...th, textAlign: 'left' }}>{ko ? '직군' : 'Role'}</th>
               <th style={th}>{ko ? '경력' : 'YoE'}</th>
               <th style={th}>{ko ? '구분' : 'Type'}</th>
-              <th style={th}>{ko ? '월급' : 'Salary'}</th>
+              <th style={th}>{ko ? '연봉(환산)' : 'Salary/yr'}</th>
             </tr></thead>
             <tbody>
               {recent.map((r, i) => (

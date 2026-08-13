@@ -27,16 +27,16 @@ async function fetchAll(build) {
   return all
 }
 
-// 분포 구간(triệu/월) — 베트남 사무직 월급 스펙트럼 기준.
+// 분포 구간 — 내부 값은 월급(triệu/월), 라벨은 연봉(×12) 표기(유저 지시 8/13: "연봉 수집"이니 연 단위로).
 const BANDS = [
-  { label: '<10', min: 0, max: 9 },
-  { label: '10–14', min: 10, max: 14 },
-  { label: '15–19', min: 15, max: 19 },
-  { label: '20–24', min: 20, max: 24 },
-  { label: '25–29', min: 25, max: 29 },
-  { label: '30–39', min: 30, max: 39 },
-  { label: '40–49', min: 40, max: 49 },
-  { label: '50+', min: 50, max: Infinity },
+  { label: '<120', min: 0, max: 9 },
+  { label: '120–180', min: 10, max: 14 },
+  { label: '180–240', min: 15, max: 19 },
+  { label: '240–300', min: 20, max: 24 },
+  { label: '300–360', min: 25, max: 29 },
+  { label: '360–480', min: 30, max: 39 },
+  { label: '480–600', min: 40, max: 49 },
+  { label: '600+', min: 50, max: Infinity },
 ]
 const YOE_BANDS = [
   { label: '<1y', min: 0, max: 11 },
@@ -89,11 +89,11 @@ export default async function handler(req, res) {
       return { ...p, salary, source: sane(direct) ? 'direct' : sane(ver) ? 'verified' : null }
     })
 
-    const experienced = people.filter((p) => (p.yoe_months ?? 0) >= 12)
+    // 수집 가능 풀 = 경력 1개월 이상(월급을 받아본 사람). 신입 처리는 경력 0 확인자만 —
+    // 1~11개월도 월급 수집 대상(유저 정정 8/13). yoe 미상(null)은 신입이 아니라 미수집.
+    const experienced = people.filter((p) => (p.yoe_months ?? 0) >= 1)
     const count = (list, src) => list.filter((p) => p.source === src).length
-    // 신입(경력 1년 미만 확인됨)은 현/직전연봉이 없는 게 정상 — "신입"으로 채운 것으로
-    // 간주해 진행률에 포함(유저 지시 8/13). yoe 미상(null)은 신입이 아니라 미수집.
-    const fresher = people.filter((p) => p.salary == null && p.yoe_months != null && p.yoe_months < 12).length
+    const fresher = people.filter((p) => p.salary == null && p.yoe_months === 0).length
     const pool = {
       total: people.length,
       direct: count(people, 'direct'),
@@ -106,12 +106,14 @@ export default async function handler(req, res) {
 
     const withSalary = people.filter((p) => p.salary != null)
     const values = withSalary.map((p) => p.salary).sort((a, b) => a - b)
+    // 표기값은 연봉(월×12) — 수집·저장은 월급이지만 탭 이름이 "연봉 수집"이라 연 단위로 통일.
+    const annual = (v) => (v == null ? null : v * 12)
     const stats = {
       n: values.length,
-      median: quantile(values, 0.5),
-      avg: values.length ? Math.round(values.reduce((a, b) => a + b, 0) / values.length) : null,
-      p25: quantile(values, 0.25),
-      p75: quantile(values, 0.75),
+      median: annual(quantile(values, 0.5)),
+      avg: values.length ? annual(Math.round(values.reduce((a, b) => a + b, 0) / values.length)) : null,
+      p25: annual(quantile(values, 0.25)),
+      p75: annual(quantile(values, 0.75)),
     }
 
     const bands = BANDS.map((b) => ({
@@ -124,7 +126,7 @@ export default async function handler(req, res) {
       const seg = withSalary
         .filter((p) => p.yoe_months != null && p.yoe_months >= b.min && p.yoe_months <= b.max)
         .map((p) => p.salary).sort((x, y) => x - y)
-      return { label: b.label, n: seg.length, median: quantile(seg, 0.5) }
+      return { label: b.label, n: seg.length, median: annual(quantile(seg, 0.5)) }
     })
 
     // 최근 랜딩 입력(콜드메일 전환 원본) — 프로필 조인해 직군·경력 표시. 프로필 폼 직접 수정은
@@ -137,7 +139,7 @@ export default async function handler(req, res) {
         name: p.full_name || '(이름없음)',
         position: p.position || null,
         yoeMonths: p.yoe_months ?? null,
-        amount: f.meta?.amount ?? null,
+        amount: annual(f.meta?.amount ?? null),
         type: f.meta?.type ?? null,
         campaign: f.meta?.campaign ?? null,
       }
