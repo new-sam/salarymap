@@ -168,6 +168,14 @@
   .perf li + li{margin-top:.7cqw;}
   .perf li::before{width:.24cqw;height:.24cqw;left:.08cqw;top:.55cqw;}
 
+  /* 부록 스크린샷 */
+  .shots{display:grid;grid-template-columns:1fr 1fr 1fr;gap:1.4cqw;height:100%;}
+  .shot{border:.08cqw solid var(--line);border-radius:.5cqw;background:#fff;overflow:hidden;display:flex;flex-direction:column;}
+  .shot .cap{font-size:1cqw;font-weight:800;color:var(--navy);padding:.75cqw .9cqw .55cqw;}
+  .shot .cap small{display:block;font-size:.85cqw;font-weight:600;color:var(--mute);margin-top:.2cqw;line-height:1.45;}
+  .shot .im{flex:1;overflow:hidden;border-top:.08cqw solid var(--hair);background:var(--panel);}
+  .shot .im img{width:100%;display:block;}
+
   /* 핵심 강조 블록 */
   .keypoint{background:var(--navy);color:#fff;border-radius:.5cqw;padding:1.6cqw 2cqw;margin-top:1.5cqw;}
   .keypoint .kp{font-size:.88cqw;font-weight:800;letter-spacing:.08em;color:#a9bede;}
@@ -662,8 +670,35 @@
   <div class="foot"><span>비목 간 조정 2건, 총사업비 증액 요청 없음</span><span>10</span></div>
 </section></div>
 
+<!-- ===== 11 부록 자체 개발 내역 ===== -->
+<div class="wrap"><section class="slide">
+  <div class="head">
+    <div class="no">부록</div>
+    <h2>참고 : 외부 구매 없이 자체 개발하여 운영 중인 도구</h2>
+    <div class="rule"></div>
+    <div class="sum">AI 면접과 코딩테스트, 이력서 첨삭은 외부 서비스를 구매하지 않고 직접 개발해 운영하고 있습니다.</div>
+  </div>
+  <div class="body tight">
+    <div class="shots">
+      <div class="shot">
+        <div class="cap">AI 인터뷰 응시<small>영어와 베트남어 문항을 동시 제공, 음성 답변 녹화</small></div>
+        <div class="im"><img src="shots/ktc_ai_interview_q.png" alt="AI 인터뷰 응시 화면"></div>
+      </div>
+      <div class="shot">
+        <div class="cap">AI 인터뷰 채점<small>문항별 점수와 판단 근거, 전사 결과를 함께 제공</small></div>
+        <div class="im"><img src="shots/ktc_ai_interview_score.png" alt="AI 인터뷰 채점 결과 화면"></div>
+      </div>
+      <div class="shot">
+        <div class="cap">인재 요약<small>이력서를 한국어 요약 카드로 자동 변환하여 기업에 전달</small></div>
+        <div class="im"><img src="shots/ktc_talent_summary.png" alt="인재 요약 카드"></div>
+      </div>
+    </div>
+  </div>
+  <div class="foot"><span>이력서 자동 번역과 근태관리 도구도 자체 개발하여 사용 중입니다</span><span>11</span></div>
+</section></div>
+
 </div>
-<div class="count" id="count">01 / 10</div>
+<div class="count" id="count">01 / 11</div>
 <div class="legend"><i></i>붉은 점선 = 확정 필요 수치</div>
 
 <script>
