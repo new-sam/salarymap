@@ -119,6 +119,7 @@ export default function TalentPoolView({ token, lang }) {
     eliteBtn: 'Ứng viên xuất sắc', aiFillAll: 'Điền AI tất cả', batchStop: 'Dừng', batchDone: 'Hoàn tất',
     filterBtn: 'Bộ lọc', reset: 'Đặt lại', done: 'Xong', lblLevel: 'Kinh nghiệm', lblWork: 'Hình thức',
     rowSchool: 'Học vấn', rowCareer: 'Kinh nghiệm', rowHighlights: 'Nổi bật', rowLang: 'Ngoại ngữ', rowSkills: 'Kỹ năng', rowLinks: 'Portfolio',
+    rowSalary: 'Lương', salarySrcProfile: 'tự khai', salarySrcSubmit: 'khảo sát lương',
     topNote: 'Trường top VN', langEn: 'T.Anh', langKo: 'T.Hàn', noInfo: 'Chưa rõ', newGrad: 'Fresher',
     unknown: 'Chưa rõ', noRole: 'Chưa rõ vị trí', levelUnknown: 'Cấp bậc?', aiFill: 'Điền bằng AI', aiFilling: 'Đang phân tích…',
     aiTitle: 'Kinh nghiệm/ngoại ngữ còn trống — bấm để điền bằng AI', resume: 'CV →',
@@ -135,6 +136,7 @@ export default function TalentPoolView({ token, lang }) {
     eliteBtn: '최우수 인재', aiFillAll: 'AI 전체 채우기', batchStop: '중단', batchDone: '완료',
     filterBtn: '필터', reset: '초기화', done: '완료', lblLevel: '경력', lblWork: '근무형태',
     rowSchool: '학력', rowCareer: '경력', rowHighlights: '주요이력', rowLang: '외국어', rowSkills: '기술', rowLinks: '포폴',
+    rowSalary: '연봉', salarySrcProfile: '직접기입', salarySrcSubmit: '연봉제출',
     topNote: '베트남 상위권 대학 (한국 인서울급)', langEn: '영어', langKo: '한국어', noInfo: '정보 없음', newGrad: '신입',
     unknown: '미상', noRole: '직무 미상', levelUnknown: '경력?', aiFill: 'AI 채우기', aiFilling: '분석 중…',
     aiTitle: '경력/어학이 비어 있어요 — 눌러서 AI로 채웁니다', resume: '이력서 보기',
@@ -151,6 +153,7 @@ export default function TalentPoolView({ token, lang }) {
     eliteBtn: 'Top talent', aiFillAll: 'AI fill all', batchStop: 'Stop', batchDone: 'Done',
     filterBtn: 'Filters', reset: 'Reset', done: 'Done', lblLevel: 'Level', lblWork: 'Work type',
     rowSchool: 'Education', rowCareer: 'Career', rowHighlights: 'Highlights', rowLang: 'Languages', rowSkills: 'Skills', rowLinks: 'Portfolio',
+    rowSalary: 'Salary', salarySrcProfile: 'self-reported', salarySrcSubmit: 'salary survey',
     topNote: 'Top-tier VN univ.', langEn: 'EN', langKo: 'KO', noInfo: 'N/A', newGrad: 'New grad',
     unknown: 'Unknown', noRole: 'No role', levelUnknown: 'Level?', aiFill: 'AI fill', aiFilling: 'Filling…',
     aiTitle: 'Career/language empty — click to fill with AI', resume: 'Resume →',
@@ -335,7 +338,7 @@ export default function TalentPoolView({ token, lang }) {
   )
 
   function downloadCsv() {
-    const headers = ['Name', 'Email', 'Public', 'Position', 'Level', 'YoE (months)', 'University', 'Top-tier', 'Overseas', 'Major', 'Grad Year', 'Companies', 'Korean', 'English', 'Skills', 'Location', 'Work Type', 'Salary Min', 'Salary Max', 'Currency', 'Resume URL', 'Updated']
+    const headers = ['Name', 'Email', 'Public', 'Position', 'Level', 'YoE (months)', 'University', 'Top-tier', 'Overseas', 'Major', 'Grad Year', 'Companies', 'Korean', 'English', 'Skills', 'Location', 'Work Type', 'Salary Min', 'Salary Max', 'Currency', 'Current Salary (M)', 'Submitted Salary (M)', 'Resume URL', 'Updated']
     const rows = filtered.map(r => {
       const exps = asExperiences(r.experiences)
       return [
@@ -344,6 +347,7 @@ export default function TalentPoolView({ token, lang }) {
         exps.map(e => `${e.company}${e.title ? ` (${e.title})` : ''}`).join(' / '),
         r.korean_cert || '', r.english_cert || '', asSkills(r.skills).join(', '),
         r.location || '', r.work_type || '', r.salary_min ?? '', r.salary_max ?? '', r.salary_currency || '',
+        r.current_salary ? Math.round(r.current_salary / 1000000) : '', r.submitted_salary ?? '',
         r.resume_url, r.updated_at ? new Date(r.updated_at).toLocaleString('ko-KR') : '',
       ]
     })
@@ -584,6 +588,18 @@ function TalentCard({ r, L, vi, ko, userRecs = [], onRecommend, onReparse, parsi
       <span style={{ ...oneLine, color: '#9CA3AF' }}>{[summary.degree, summary.edu_ko || r.major].filter(Boolean).join(' · ') || '-'}</span>
     </span>
   )
+  // 연봉: 프로필 직접기입(current_salary, 원 단위) > 연봉 위저드 제출(submitted_salary, 백만 단위) 폴백
+  const curM = r.current_salary ? Math.round(r.current_salary / 1000000) : null
+  const subM = curM == null && r.submitted_salary ? Math.round(r.submitted_salary) : null
+  const salM = curM ?? subM
+  const salaryNode = (
+    <span style={oneLine} title={subM != null && r.submitted_salary_at ? r.submitted_salary_at.slice(0, 10) : undefined}>
+      {salM != null ? (<>
+        <span style={{ fontWeight: 700, color: '#111' }}>₫{salM}M</span>
+        <span style={{ color: '#9CA3AF' }}> · {curM != null ? L.salarySrcProfile : L.salarySrcSubmit}</span>
+      </>) : '-'}
+    </span>
+  )
   const hasLang = !!(r.english_cert || r.korean_cert)
   const langNode = (
     <span style={oneLine} title={[r.english_cert, r.korean_cert].filter(Boolean).join(' / ')}>
@@ -646,6 +662,7 @@ function TalentCard({ r, L, vi, ko, userRecs = [], onRecommend, onReparse, parsi
       {/* 스펙 패널: 행 구성·순서·높이 고정 — 카드끼리 같은 위치에 같은 정보. flex:1로 하단 버튼 라인 통일 */}
       <div style={{ background: '#F8F9FA', borderRadius: 10, flex: 1 }}>
         {panelRow(L.rowCareer, yoeText || L.unknown, !yoeText, true)}
+        {panelRow(L.rowSalary, salaryNode, salM == null)}
         {panelRow(L.rowSchool, eduNode, !uni)}
         {panelRow(L.rowHighlights, bulletsNode, bullets.length === 0)}
         {panelRow(L.rowLang, langNode, !hasLang)}

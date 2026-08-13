@@ -23,7 +23,7 @@ export default async function handler(req, res) {
     const allowed = [
       'full_name', 'headline', 'position', 'yoe_months', 'intro', 'skills',
       'english_cert', 'korean_cert', 'location', 'birthdate', 'university',
-      'major', 'graduation_year', 'gpa', 'salary_min', 'salary_max', 'salary_currency', 'work_type',
+      'major', 'graduation_year', 'gpa', 'salary_min', 'salary_max', 'salary_currency', 'current_salary', 'work_type',
       'job_signal', 'hr_visible', 'photo_url', 'resume_url',
       'experiences', 'projects', 'certs', 'portfolio_url', 'is_resume_public',
       // Profile redesign (20260608_profile_sections.sql)
@@ -63,6 +63,11 @@ export default async function handler(req, res) {
     if (error && (error.code === 'PGRST204' || /resume_(platform|source)/.test(error.message || ''))) {
       const { resume_platform, resume_source, ...withoutSource } = update
       ;({ error } = await upsert(withoutSource))
+    }
+    // current_salary(20260813) 미적용 환경도 같은 방식으로 방어.
+    if (error && (error.code === 'PGRST204' || /current_salary/.test(error.message || ''))) {
+      const { resume_platform, resume_source, current_salary, ...minimal } = update
+      ;({ error } = await upsert(minimal))
     }
     if (error) return res.status(500).json({ error: error.message })
     return res.json({ success: true })

@@ -204,6 +204,7 @@ export default function ProfilePage() {
             graduation_year: p.graduation_year || '',
             salary_min: p.salary_min ? String(p.salary_min / 1000000) : '',
             salary_max: p.salary_max ? String(p.salary_max / 1000000) : '',
+            current_salary: p.current_salary ? String(p.current_salary / 1000000) : '',
             work_type: p.work_type || '',
             portfolio_url: p.portfolio_url || '',
             gpa: p.gpa || '',
@@ -282,6 +283,7 @@ export default function ProfilePage() {
       yoe_months: form.yoe_months ? parseInt(form.yoe_months) : null,
       salary_min: form.salary_min ? parseInt(form.salary_min) * 1000000 : null,
       salary_max: form.salary_max ? parseInt(form.salary_max) * 1000000 : null,
+      current_salary: form.current_salary ? parseInt(form.current_salary) * 1000000 : null,
     }
     const saveRes = await fetch('/api/profile/talent', {
       method: 'PUT',
@@ -819,7 +821,7 @@ export default function ProfilePage() {
             </div>
           </div>
 
-          {/* 희망 조건 — 직군·경력·희망연봉·근무형태 */}
+          {/* 희망 조건 — 직군·경력·현(직전)연봉·근무형태 */}
           <div className="pcard">
             <div className="pcard-h">
               <span className="pcard-ico"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1"/></svg></span>
@@ -847,12 +849,8 @@ export default function ProfilePage() {
                 </div>
                 <div className="pinline">
                   <div className="pfield">
-                    <div className="pfield-label">{t('profile.salary')}</div>
-                    <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                      <input className={`pinput${df('salary_min')}`} inputMode="numeric" value={form.salary_min || ''} onChange={e => set('salary_min', e.target.value.replace(/[^0-9]/g, ''))} placeholder="" style={{ flex: 1 }} />
-                      <span style={{ color: 'rgba(0,0,0,0.25)' }}>~</span>
-                      <input className={`pinput${df('salary_max')}`} inputMode="numeric" value={form.salary_max || ''} onChange={e => set('salary_max', e.target.value.replace(/[^0-9]/g, ''))} placeholder="" style={{ flex: 1 }} />
-                    </div>
+                    <div className="pfield-label">{t('profile.currentSalary')}</div>
+                    <input className={`pinput${df('current_salary')}`} inputMode="numeric" value={form.current_salary || ''} onChange={e => set('current_salary', e.target.value.replace(/[^0-9]/g, ''))} placeholder="" />
                   </div>
                 </div>
                 <div className="pfield" style={{ marginTop: 4 }}>
