@@ -1,5 +1,5 @@
 import { verifyAdminOrDevStub } from './check'
-import { triggerSheetSync, syncKtcCandidates, syncKtcApplications, syncKtcHires, pushFyiToKtc } from '../../../lib/ktcCandidatesSync'
+import { triggerSheetSync, syncKtcCandidates, syncKtcApplications, syncKtcHires, pushFyiToKtc, syncFyiRejections } from '../../../lib/ktcCandidatesSync'
 
 // KTC 소싱 탭의 "동기화" 버튼 — 클릭 한 번으로 세 단계를 순서대로 실행:
 //  ① ktc-support 시트→DB 동기화 트리거 (완료까지 대기)
@@ -21,6 +21,9 @@ export default async function handler(req, res) {
       return res.status(502).json({ error: `시트 동기화 실패: ${sheet.message || 'unknown'}` })
     }
     const stats = await syncKtcCandidates()
+    // KTC 스크리닝 탈락을 FYI 지원 건에 반영 (유저 스텝퍼 '서류 불합격' 표시)
+    let rejections = null
+    try { rejections = await syncFyiRejections() } catch (e) { console.error('syncFyiRejections:', e.message) }
     let apps = null
     let hires = null
     if (process.env.GOOGLE_SHEET_ID && process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL) {

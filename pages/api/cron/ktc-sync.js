@@ -3,7 +3,7 @@
 // 수동 실행 없이도 최신으로 유지되게 한다 (스태핑 마스터 대시보드가 이 산출물을 읽음).
 // Vercel cron이 Authorization: Bearer ${CRON_SECRET} 헤더로 호출 (daily-hot-post.js와 동일).
 // vercel.json crons: 하루 2회 — "30 22 * * *"(07:30 KST) + "0 6 * * *"(15:00 KST, 베트남팀 요청 2026-08-10)
-import { triggerSheetSync, syncKtcCandidates, syncKtcApplications, syncKtcHires, pushFyiToKtc, appendFyiToSheet, syncKtcJobCodes } from '../../../lib/ktcCandidatesSync'
+import { triggerSheetSync, syncKtcCandidates, syncKtcApplications, syncKtcHires, pushFyiToKtc, appendFyiToSheet, syncKtcJobCodes, syncFyiRejections } from '../../../lib/ktcCandidatesSync'
 
 export const config = { maxDuration: 300 }
 
@@ -25,6 +25,9 @@ export default async function handler(req, res) {
       return res.status(502).json({ error: `시트 동기화 실패: ${sheet.message || 'unknown'}` })
     }
     const stats = await syncKtcCandidates()
+    // KTC 스크리닝 탈락을 FYI 지원 건에 반영 (유저 스텝퍼 '서류 불합격' 표시)
+    let rejections = null
+    try { rejections = await syncFyiRejections() } catch (e) { console.error('syncFyiRejections:', e.message) }
     let apps = null
     let hires = null
     if (process.env.GOOGLE_SHEET_ID && process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL) {
@@ -40,6 +43,7 @@ export default async function handler(req, res) {
       applications: apps ? apps.total : null,
       hires: hires ? hires.total : null,
       fyiPushed: push.pushed,
+      fyiRejections: rejections ? rejections.updated : null,
       fyiSheetAppended: fyiSheet ? fyiSheet.appended : null,
       jobCodes: jobCodes ? { set: jobCodes.set, ambiguous: jobCodes.ambiguous.length, conflicts: jobCodes.conflicts.length } : null,
     })
