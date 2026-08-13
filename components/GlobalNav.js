@@ -235,18 +235,9 @@ export default function GlobalNav({ activePage, onLogin, onJobsClick, mobileSear
           </Link>
           <Link href="/ktc" className={`gnav-link gnav-zone gnav-zone-m${activePage === 'ktc' ? ' on' : ''}`} onClick={() => track('click_ktc_nav', { meta: { source: 'mobile' }, page: activePage || null })}>K-company</Link>
           <div className="gnav-l-menu">
-            {/* 이력서 등록 문을 다시 연다. 전에 내려 둔 이유는 이 자리가 /profile#resume 을
-               가리켜서, 바로 옆 /cv 와 이름만 같고 들어올 이유가 안 갈렸기 때문이었다.
-               이제 /resume 이 자기 훅("지금보다 높은 연봉 · 열려 있는 공고 N개")을 갖고
-               /cv 는 축하금으로 남아, 두 문이 이름이 아니라 이유로 갈린다.
-               /profile 은 로그인 필수라 비회원을 못 받는데, /resume 은 /cv 처럼 받는다. */}
-            <Link
-              href="/resume"
-              className={`gnav-link gnav-link-light${activePage === 'resume' ? ' on' : ''}`}
-              onClick={() => track('click_my_resume_nav', { meta: { source: 'web' }, page: activePage || null })}
-            >
-              {t('nav.myResume')}
-            </Link>
+            {/* 문을 다시 닫아 둔다 — /resume 이 아직 공개하면 안 되는 상태로 라이브에 나갔다.
+               next.config.mjs 의 리다이렉트와 짝이다: 저기서 라우트를 막는데 이 링크를 남겨두면
+               내비를 눌렀을 때 홈으로 튕기는 게 그대로 보인다. 다시 열 때 둘을 같이 되돌린다. */}
             <Link href="/jobs" className={`gnav-link gnav-link-light${activePage === 'jobs' ? ' on' : ''}`} onClick={() => onJobsClick?.()}>{t('nav.jobs')}</Link>
             <Link href="/cv" className={`gnav-link gnav-link-light${activePage === 'cv' ? ' on' : ''}`} onClick={() => track('click_welcome_bonus_nav', { meta: { source: 'web' }, page: activePage || null })}>
               {t('nav.welcomeBonus')}
