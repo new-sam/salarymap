@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js'
 import { STATUS_PUSH, appPushTitle } from '../../../lib/application-push'
+import { notifyApplicantRejection, REJECTION_EMAIL_SINCE } from '../../../lib/notifyApplicantRejection'
 import { sendPush } from '../../../lib/push'
 import { verifyAdminOrDevStub } from './check'
 import { isExcludedEmail } from '../../../lib/admin-metrics'
@@ -81,7 +82,7 @@ export default async function handler(req, res) {
     if (status && STATUS_PUSH[status]) {
       const { data: app } = await supabase
         .from('job_applications')
-        .select('user_id, job_title, job_company')
+        .select('user_id, job_title, job_company, created_at')
         .eq('id', id)
         .maybeSingle()
       if (app?.user_id) {
@@ -91,6 +92,10 @@ export default async function handler(req, res) {
           category: 'application',
           data: { url: '/jobs/applications' },
         })
+      }
+      // 기준일 이후 접수된 지원 건은 불합격 확정 시 안내 메일 (지원건당 1회 — 로그 dedup)
+      if (status === 'rejected' && app && new Date(app.created_at) >= new Date(REJECTION_EMAIL_SINCE)) {
+        await notifyApplicantRejection(id)
       }
     }
 
