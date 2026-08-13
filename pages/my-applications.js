@@ -15,6 +15,7 @@ export default function MyApplications() {
   const [loading, setLoading] = useState(true)
   const [applications, setApplications] = useState([])
   const [tab, setTab] = useState('all') // all | active | ended
+  const [rejApp, setRejApp] = useState(null) // 불합격 카드 클릭 시 안내 모달
 
   useEffect(() => {
     // Show cached data instantly
@@ -63,6 +64,14 @@ export default function MyApplications() {
         .ma-tab.on { background: #ff4400; border-color: #ff4400; color: #fff; }
         .ma-tab-n { margin-left: 4px; opacity: 0.7; font-weight: 700; }
         .ma-filter-empty { text-align: center; padding: 48px 0; font-size: 14px; color: #aaa; }
+        .ma-modal-bg { position: fixed; inset: 0; background: rgba(0,0,0,0.4); display: flex; align-items: center; justify-content: center; z-index: 1000; padding: 20px; }
+        .ma-modal { background: #fff; border-radius: 16px; padding: 28px 24px; max-width: 420px; width: 100%; }
+        .ma-modal-h { font-size: 17px; font-weight: 800; color: #111; margin-bottom: 12px; }
+        .ma-modal-p { font-size: 14px; color: #374151; line-height: 1.6; margin-bottom: 12px; }
+        .ma-modal-btns { display: flex; gap: 8px; margin-top: 20px; }
+        .ma-modal-browse { flex: 1; padding: 12px; background: #ff4400; color: #fff; border: none; border-radius: 8px; font-size: 14px; font-weight: 700; cursor: pointer; }
+        .ma-modal-browse:hover { background: #e63d00; }
+        .ma-modal-close { padding: 12px 16px; background: #f0f0ee; color: #555; border: none; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; }
         ${applicationCardCss}
         @media (max-width: 500px) {
           .ma-wrap { padding: 28px 16px 60px; }
@@ -105,12 +114,32 @@ export default function MyApplications() {
                 <div className="ma-filter-empty">{t('apps.filterEmpty')}</div>
               ) : (
                 visible.map(app => (
-                  <ApplicationCard key={app.id} app={app} t={t} onClick={() => router.push(`/jobs?jobId=${app.job_id}`)} />
+                  <ApplicationCard
+                    key={app.id}
+                    app={app}
+                    t={t}
+                    // 불합격 건은 공고 이동 대신 결과 안내 모달
+                    onClick={() => (app.status === 'rejected' || app.rejected_at) ? setRejApp(app) : router.push(`/jobs?jobId=${app.job_id}`)}
+                  />
                 ))
               )}
             </>
           )
         })()}
+
+        {rejApp && (
+          <div className="ma-modal-bg" onClick={() => setRejApp(null)}>
+            <div className="ma-modal" onClick={e => e.stopPropagation()}>
+              <div className="ma-modal-h">{t('apps.rejTitle')}</div>
+              <div className="ma-modal-p">{t('apps.rejBody1', { job: rejApp.job_title || '', company: rejApp.job_company || '' })}</div>
+              <div className="ma-modal-p">{t('apps.rejBody2')}</div>
+              <div className="ma-modal-btns">
+                <button className="ma-modal-browse" onClick={() => router.push('/jobs')}>{t('apps.browseJobs')}</button>
+                <button className="ma-modal-close" onClick={() => setRejApp(null)}>{t('apps.rejClose')}</button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </>
   )
