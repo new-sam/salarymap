@@ -727,7 +727,64 @@ const LIONROCKET_TAIL = d3Tail({
   ko: '본인이 만든 콘텐츠의 CPA/ROAS를 직접 보며 데이터 기반으로 개선합니다. <b>호치민 · 다낭 · 하노이</b> 근무, 급여 <b>20–25 triệu</b>.',
   en: 'Track the CPA/ROAS of your own content and iterate on real data. Based in <b>HCM · Da Nang · Hanoi</b>, salary <b>20–25M VND</b>.',
 })
+// ── 현/직전연봉 수집 salary1 (scripts/outreach/salary-coldmail.mjs) ──
+const SALARY_I18N = {
+  vi: {
+    hi: 'Chào {{name}},',
+    p1: 'FYI đang trực tiếp tiến cử hồ sơ của bạn với các công ty. Khi biết mức lương của bạn, chúng tôi có thể <b>chỉ chọn những công ty có mức lương khiến bạn thực sự hài lòng</b> để tiến cử — mục tiêu của chúng tôi là giúp bạn chuyển việc với mức lương cao hơn.',
+    p2: 'Vì vậy, chỉ cần cho chúng tôi biết <b>lương tháng hiện tại (hoặc ở công việc gần nhất)</b> của bạn — một con số, không cần đăng nhập, 30 giây. Thông tin này <b>không hiển thị với công ty</b>, chỉ dùng để chọn công ty xứng đáng với bạn.',
+    cta: 'Nhập mức lương (30 giây) →',
+    thanks: 'Cảm ơn bạn!<br>— Đội ngũ FYI',
+    footer: 'Bạn nhận được email này vì đã đăng ký tài khoản trên FYI.',
+  },
+  ko: {
+    hi: '안녕하세요 {{name}}님,',
+    p1: 'FYI는 회원님 프로필을 기업에 직접 추천하고 있어요. 연봉을 알면 <b>정말 만족할 만한 연봉의 기업만 골라서</b> 추천할 수 있습니다 — 저희 목표는 회원님이 더 높은 연봉으로 이직하는 거예요.',
+    p2: '그래서 <b>현재(또는 직전 직장) 월급</b> 숫자 하나만 부탁드려요 — 로그인 없이 30초면 됩니다. 이 정보는 <b>기업에 공개되지 않고</b>, 회원님이 만족할 기업을 고르는 데만 사용돼요.',
+    cta: '연봉 입력하기 (30초) →',
+    thanks: '감사합니다!<br>— FYI 팀 드림',
+    footer: 'FYI에 가입하셔서 이 메일을 받으셨습니다.',
+  },
+  en: {
+    hi: 'Hi {{name}},',
+    p1: 'FYI is directly recommending your profile to companies. Once we know your salary, we can <b>recommend you only to companies whose pay would truly satisfy you</b> — our goal is to help you move to a higher salary.',
+    p2: 'So please just tell us <b>your monthly salary at your current (or most recent) job</b> — one number, no login, 30 seconds. This is <b>never shown to companies</b>; it is only used to pick companies that deserve you.',
+    cta: 'Enter my salary (30s) →',
+    thanks: 'Thank you!<br>— The FYI team',
+    footer: 'You received this email because you signed up on FYI.',
+  },
+}
+
+const salaryHtml = (lang) => {
+  const s = pickLang(SALARY_I18N, lang)
+  return `<!doctype html><html lang="vi"><head><meta charset="utf-8"></head>
+<body style="margin:0;background:#faf9f7;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;color:#1a1612">
+<table width="100%" cellpadding="0" cellspacing="0" style="background:#faf9f7"><tr><td align="center" style="padding:28px 16px">
+<table width="100%" cellpadding="0" cellspacing="0" style="max-width:520px">
+  <tr><td style="padding-bottom:18px"><img src="https://salary-fyi.com/fyi-logo.png" height="24" alt="FYI" style="height:24px;width:auto;display:block"></td></tr>
+  <tr><td style="font-size:15px;line-height:1.6;color:#1a1612;padding-bottom:6px">${s.hi}</td></tr>
+  <tr><td style="font-size:14px;line-height:1.65;color:#4a443c;padding-bottom:14px">${s.p1}</td></tr>
+  <tr><td style="font-size:14px;line-height:1.65;color:#4a443c;padding-bottom:6px">${s.p2}</td></tr>
+  <tr><td align="center" style="padding:16px 0 6px">
+    <a style="display:inline-block;background:#ff6000;color:#fff;font-weight:700;font-size:15px;text-decoration:none;padding:14px 30px;border-radius:12px">${s.cta}</a>
+  </td></tr>
+  <tr><td style="font-size:14px;line-height:1.65;color:#4a443c;padding-top:14px">${s.thanks}</td></tr>
+  <tr><td style="font-size:11.5px;color:#a89f92;text-align:center;line-height:1.5;padding-top:20px">${s.footer}<br>— FYI · salary-fyi.com</td></tr>
+</table></td></tr></table></body></html>`
+}
+
 export const COLDMAIL_TEMPLATES = [
+  {
+    match: /^salary/,
+    subject: {
+      vi: 'FYI đang tiến cử bạn với các công ty — chỉ cần cho chúng tôi 1 con số',
+      ko: 'FYI가 회원님을 기업에 추천하고 있어요 — 숫자 하나만 알려주세요',
+      en: 'FYI is recommending you to companies — just give us 1 number',
+    },
+    desc: '현/직전연봉 수집 salary1(8/13 이력서 보유·경력 1년+ 중 200명 테스트 발송): "FYI가 너를 기업에 추천하는데, 연봉을 알면 정말 만족할 기업만 골라줄 수 있다(목표=연봉 상승)" 앵글 + 기업 비공개 강조. 무로그인 토큰 랜딩(/salary-update)에서 현재/직전 토글 + 숫자 한 칸(triệu/월) 입력 → current_salary 저장.',
+    source: 'scripts/outreach/salary-coldmail.mjs',
+    html: salaryHtml,
+  },
   {
     match: /^photo-remind/,
     subject: {

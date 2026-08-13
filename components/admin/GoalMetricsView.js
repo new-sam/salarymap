@@ -824,6 +824,12 @@ const CAMPAIGN_GROUPS = [
     enDesc: 'Members with a resume but no photo · click = landing view · convert = photo uploaded',
     convKo: '사진 등록', convEn: 'Uploaded',
   },
+  {
+    key: 'salary', ko: '⑥ 현/직전연봉 수집', en: '(6) Salary collection',
+    koDesc: '이력서 보유·경력 1년+ 회원 대상 · 전환 = 현/직전 월급 입력(무로그인 랜딩 /salary-update)',
+    enDesc: 'Members with a resume and 1+ yr experience · convert = entered current/last salary (no-login landing)',
+    convKo: '입력', convEn: 'Filled',
+  },
 ]
 
 // 그룹이 정한 소스에서 전환 인원을 꺼낸다(공개전환 = converted / 추천 = 지원자 수).

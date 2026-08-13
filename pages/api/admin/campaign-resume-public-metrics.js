@@ -21,13 +21,15 @@ const vnDay = (iso) => new Date(new Date(iso).getTime() + ICT_OFFSET_MS).toISOSt
 //   resume    — 기가입 회원 → 이력서 공개
 //   recommend — 기가입 회원 → 특정 공고 지원
 //   photo     — 이력서 보유·사진 없는 회원 → 프로필 사진 등록(원클릭 랜딩)
-const GROUP_ORDER = ['signup', 'register', 'resume', 'recommend', 'photo']
+//   salary    — 이력서 보유·경력 1년+ 회원 → 현/직전 월급 입력(무로그인 랜딩)
+const GROUP_ORDER = ['signup', 'register', 'resume', 'recommend', 'photo', 'salary']
 const groupOf = (name) =>
   /^coldmail-ktc/.test(name) ? 'signup'
     : /^resume-register/.test(name) ? 'register'
       : /recommend/.test(name) ? 'recommend'
         : /^photo/.test(name) ? 'photo'
-          : 'resume'
+          : /^salary/.test(name) ? 'salary'
+            : 'resume'
 
 async function fetchAll(build) {
   const PAGE = 1000
@@ -51,7 +53,7 @@ export default async function handler(req, res) {
     const [evts, targetHead] = await Promise.all([
       fetchAll(() => supabase.from('events')
         .select('event, user_id, created_at, meta')
-        .in('event', ['coldmail_public_sent', 'coldmail_public_click', 'coldmail_public_convert', 'coldmail_job_apply', 'recommend_sent', 'recommend_click', 'coldmail_resume_sent', 'coldmail_resume_click', 'coldmail_resume_upload', 'coldmail_photo_sent', 'photo_claim_view', 'photo_claim_done'])
+        .in('event', ['coldmail_public_sent', 'coldmail_public_click', 'coldmail_public_convert', 'coldmail_job_apply', 'recommend_sent', 'recommend_click', 'coldmail_resume_sent', 'coldmail_resume_click', 'coldmail_resume_upload', 'coldmail_photo_sent', 'photo_claim_view', 'photo_claim_done', 'coldmail_salary_sent', 'coldmail_salary_click', 'coldmail_salary_fill'])
         .order('created_at')),
       // 아직 비공개인(= 앞으로 보낼 수 있는) 이력서 보유자 수 — 라이브 참고값
       supabase.from('user_profiles').select('id', { count: 'exact', head: true })
@@ -132,6 +134,16 @@ export default async function handler(req, res) {
       } else if (e.event === 'photo_claim_view') {
         if (uid) c.click.add(uid) // 클릭 = 랜딩 조회
       } else if (e.event === 'photo_claim_done') {
+        if (uid) c.convert.add(uid)
+      } else if (e.event === 'coldmail_salary_sent') {
+        // 현/직전연봉 수집 — 전환 정의가 '연봉 입력'이라 top-line 퍼널엔 안 넣고 캠페인별만.
+        if (uid) c.sent.add(uid)
+        const day = vnDay(e.created_at)
+        if (!c.firstSentDay || day < c.firstSentDay) c.firstSentDay = day
+        if (!c.lastSentDay || day > c.lastSentDay) c.lastSentDay = day
+      } else if (e.event === 'coldmail_salary_click') {
+        if (uid) c.click.add(uid)
+      } else if (e.event === 'coldmail_salary_fill') {
         if (uid) c.convert.add(uid)
       }
     }
