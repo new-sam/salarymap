@@ -170,6 +170,8 @@
 
   /* 부록 스크린샷 */
   .shots{display:grid;grid-template-columns:1fr 1fr 1fr;gap:1.4cqw;height:100%;}
+  .shots.two{grid-template-columns:1fr 1fr;grid-template-rows:auto auto;}
+  .shots.two .shot.wide{grid-column:1 / -1;}
   .shot{border:.08cqw solid var(--line);border-radius:.5cqw;background:#fff;overflow:hidden;display:flex;flex-direction:column;}
   .shot .cap{font-size:1cqw;font-weight:800;color:var(--navy);padding:.75cqw .9cqw .55cqw;}
   .shot .cap small{display:block;font-size:.85cqw;font-weight:600;color:var(--mute);margin-top:.2cqw;line-height:1.45;}
@@ -687,11 +689,38 @@
       </div>
     </div>
   </div>
-  <div class="foot"><span>이력서 자동 번역과 근태관리 도구도 자체 개발하여 사용 중입니다</span><span>11</span></div>
+  <div class="foot"><span>이력서 자동 번역과 요약까지 전 과정을 자체 시스템으로 운영합니다</span><span>11</span></div>
+</section></div>
+
+<!-- ===== 12 부록 리모트 인턴십 PM 툴 ===== -->
+<div class="wrap"><section class="slide">
+  <div class="head">
+    <div class="no">부록</div>
+    <h2>참고 : 리모트 인턴십 운영 관리 도구</h2>
+    <div class="rule"></div>
+    <div class="sum">기업이 원격 근무 인턴의 근태와 업무 진행을 직접 확인할 수 있도록 관리 도구를 만들어 제공하고 있습니다.</div>
+  </div>
+  <div class="body tight">
+    <div class="shots two">
+      <div class="shot">
+        <div class="cap">근태 대시보드<small>출근율, 현재 근무 인원, 미출근과 지각을 당일 기준으로 집계</small></div>
+        <div class="im"><img src="shots/ktc_pm_attendance_dashboard.png" alt="근태 대시보드"></div>
+      </div>
+      <div class="shot">
+        <div class="cap">팀원 근무 현황<small>출퇴근 시각과 누적 근무 시간을 인원별 타임라인으로 표시</small></div>
+        <div class="im"><img src="shots/ktc_pm_attendance_timeline.png" alt="팀원 근무 현황 타임라인"></div>
+      </div>
+      <div class="shot wide">
+        <div class="cap">업무 진행 관리<small>과제별 담당자와 진척률을 일정표로 관리, 지연 과제를 바로 확인</small></div>
+        <div class="im"><img src="shots/ktc_pm_task_gantt.png" alt="업무 진행 간트 차트"></div>
+      </div>
+    </div>
+  </div>
+  <div class="foot"><span>원격 근무의 관리 부담을 낮추기 위해 근태와 업무 관리 도구를 함께 제공합니다</span><span>12</span></div>
 </section></div>
 
 </div>
-<div class="count" id="count">01 / 11</div>
+<div class="count" id="count">01 / 12</div>
 <div class="legend"><i></i>붉은 점선 = 확정 필요 수치</div>
 
 <script>
