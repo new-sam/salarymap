@@ -755,8 +755,30 @@ const SALARY_I18N = {
   },
 }
 
-const salaryHtml = (lang) => {
-  const s = pickLang(SALARY_I18N, lang)
+// B 프레임(salary-b, 8/13 A/B) — photo1 검증 구조: 후보에 올랐다(기회)+연봉 미확인 보류(손실)+숫자 하나면 재개(복구).
+const SALARY_B_I18N = {
+  vi: {
+    ...SALARY_I18N.vi,
+    p1: 'Người phụ trách đã đưa hồ sơ của bạn vào <b>danh sách đề cử cho các công ty</b>. Nhưng vì chưa biết mức lương hiện tại của bạn, chúng tôi không thể xác nhận vị trí có phù hợp mức lương hay không — <b>quá trình xem xét đang bị tạm dừng</b>.',
+    p2: 'Chỉ cần cho chúng tôi biết <b>lương tháng hiện tại (hoặc ở công việc gần nhất)</b> — một con số, không cần đăng nhập, 30 giây — <b>việc xem xét sẽ được tiếp tục ngay</b>. Thông tin này <b>không hiển thị với công ty</b>.',
+    cta: 'Nhập mức lương để tiếp tục xem xét →',
+  },
+  ko: {
+    ...SALARY_I18N.ko,
+    p1: '담당자가 회원님 프로필을 <b>기업 추천 후보</b>에 올렸습니다. 그런데 현재 연봉을 몰라 연봉이 맞는 포지션인지 확인을 못 해 <b>검토가 멈춰 있어요</b>.',
+    p2: '<b>현재(또는 직전 직장) 월급</b> 숫자 하나만 알려주시면 <b>검토가 바로 재개됩니다</b> — 로그인 없이 30초. 이 정보는 <b>기업에 공개되지 않아요</b>.',
+    cta: '연봉 입력하고 검토 재개하기 →',
+  },
+  en: {
+    ...SALARY_I18N.en,
+    p1: 'A manager put your profile on the <b>nomination list for companies</b>. But without your current salary we cannot confirm whether the positions match your pay — <b>the review is on hold</b>.',
+    p2: 'Just tell us <b>your monthly salary at your current (or most recent) job</b> — one number, no login, 30 seconds — and <b>the review resumes right away</b>. This is <b>never shown to companies</b>.',
+    cta: 'Enter my salary to resume the review →',
+  },
+}
+
+const renderSalaryMail = (i18n) => (lang) => {
+  const s = pickLang(i18n, lang)
   return `<!doctype html><html lang="vi"><head><meta charset="utf-8"></head>
 <body style="margin:0;background:#faf9f7;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;color:#1a1612">
 <table width="100%" cellpadding="0" cellspacing="0" style="background:#faf9f7"><tr><td align="center" style="padding:28px 16px">
@@ -772,8 +794,21 @@ const salaryHtml = (lang) => {
   <tr><td style="font-size:11.5px;color:#a89f92;text-align:center;line-height:1.5;padding-top:20px">${s.footer}<br>— FYI · salary-fyi.com</td></tr>
 </table></td></tr></table></body></html>`
 }
+const salaryHtml = renderSalaryMail(SALARY_I18N)
+const salaryBHtml = renderSalaryMail(SALARY_B_I18N)
 
 export const COLDMAIL_TEMPLATES = [
+  {
+    match: /^salary-b/,
+    subject: {
+      vi: 'Đề cử của bạn đang bị tạm dừng — vì chưa xác nhận được mức lương',
+      ko: '회원님 추천이 보류 중입니다 — 연봉 확인이 안 돼서요',
+      en: 'Your nomination is on hold — we could not confirm your salary',
+    },
+    desc: '연봉수집 B 프레임 salary-b(8/13 A/B 200명): photo1 검증 구조 이식 — "추천 후보에 올랐는데 연봉 미확인으로 검토 보류, 숫자 하나면 재개" 손실 프레임. 랜딩(/salary-update)도 같은 문구로 분기(frameB).',
+    source: 'scripts/outreach/salary-coldmail.mjs --campaign salary-b',
+    html: salaryBHtml,
+  },
   {
     match: /^salary/,
     subject: {
@@ -781,7 +816,7 @@ export const COLDMAIL_TEMPLATES = [
       ko: 'FYI가 회원님을 기업에 추천하고 있어요 — 숫자 하나만 알려주세요',
       en: 'FYI is recommending you to companies — just give us 1 number',
     },
-    desc: '현/직전연봉 수집 salary1(8/13 이력서 보유·경력 1년+ 중 200명 테스트 발송): "FYI가 너를 기업에 추천하는데, 연봉을 알면 정말 만족할 기업만 골라줄 수 있다(목표=연봉 상승)" 앵글 + 기업 비공개 강조. 무로그인 토큰 랜딩(/salary-update)에서 현재/직전 토글 + 숫자 한 칸(triệu/월) 입력 → current_salary 저장.',
+    desc: '현/직전연봉 수집 A 프레임 salary-a(구 salary1, 8/13 200명): "FYI가 너를 기업에 추천하는데, 연봉을 알면 정말 만족할 기업만 골라줄 수 있다(목표=연봉 상승)" 정중한 ask 앵글 + 기업 비공개 강조. 무로그인 토큰 랜딩(/salary-update)에서 현재/직전 토글 + 숫자 한 칸(triệu/월) 입력 → current_salary 저장.',
     source: 'scripts/outreach/salary-coldmail.mjs',
     html: salaryHtml,
   },

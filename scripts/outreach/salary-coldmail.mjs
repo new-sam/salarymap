@@ -11,7 +11,11 @@
 //   node scripts/outreach/salary-coldmail.mjs --test wsj@likelion.net  # 검수용 한국어 1통, 이벤트 기록 없음
 //   node scripts/outreach/salary-coldmail.mjs                          # dry-run: 대상 집계
 //   node scripts/outreach/salary-coldmail.mjs --send [--max N]         # 실발송 + coldmail_salary_sent 기록
-//   재발송/리마인드는 --campaign salary1-MMDD 로 캠페인명 분리(-MMDD 표준).
+//   재발송/리마인드는 --campaign salary-a-MMDD 로 캠페인명 분리(-MMDD 표준).
+//
+// 프레임 A/B (8/13): 캠페인명이 salary-b* 면 B 프레임, 그 외는 A.
+//   A(salary-a, 구 salary1) = "추천 잘하려면 연봉 알려달라" 정중한 ask
+//   B(salary-b) = "추천 후보에 올랐는데 연봉 확인이 안 돼 보류 중 — 숫자 하나면 재개" 손실 프레임(photo1 구조)
 import { Resend } from 'resend'
 import { sb, env, fetchAll } from './lib.mjs'
 import { makeToken } from '../../lib/campaignToken.js'
@@ -22,14 +26,14 @@ const testTo = flag('test', null)
 const doSend = args.includes('--send')
 const includeSubmitted = args.includes('--include-submitted')
 const maxN = flag('max', null) ? parseInt(flag('max'), 10) : null
-const CAMPAIGN = String(flag('campaign', 'salary1'))
+const CAMPAIGN = String(flag('campaign', 'salary-a'))
 const SITE = String(flag('site', env.NEXT_PUBLIC_SITE_URL || 'https://salary-fyi.com')).replace(/\/$/, '')
 const FROM = env.RESEND_FROM || 'FYI <hello@salary-fyi.com>'
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
 const esc = (s) => String(s || '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]))
 const firstName = (n) => String(n || '').trim().split(/\s+/).slice(-1)[0] || 'bạn'
 
-const COPY = {
+const COPY_A = {
   subject: {
     vi: 'FYI đang tiến cử bạn với các công ty — chỉ cần cho chúng tôi 1 con số',
     ko: 'FYI가 회원님을 기업에 추천하고 있어요 — 숫자 하나만 알려주세요',
@@ -51,6 +55,26 @@ const COPY = {
   },
   unsub: { vi: 'Hủy nhận email', ko: '수신 거부' },
 }
+
+// B 프레임 — photo1 검증 구조: 이미 후보에 올랐다(기회) + 연봉 미확인으로 보류(손실) + 숫자 하나면 재개(복구).
+const COPY_B = {
+  ...COPY_A,
+  subject: {
+    vi: 'Đề cử của bạn đang bị tạm dừng — vì chưa xác nhận được mức lương',
+    ko: '회원님 추천이 보류 중입니다 — 연봉 확인이 안 돼서요',
+  },
+  p1: {
+    vi: 'Người phụ trách đã đưa hồ sơ của bạn vào <b>danh sách đề cử cho các công ty</b>. Nhưng vì chưa biết mức lương hiện tại của bạn, chúng tôi không thể xác nhận vị trí có phù hợp mức lương hay không — <b>quá trình xem xét đang bị tạm dừng</b>.',
+    ko: '담당자가 회원님 프로필을 <b>기업 추천 후보</b>에 올렸습니다. 그런데 현재 연봉을 몰라 연봉이 맞는 포지션인지 확인을 못 해 <b>검토가 멈춰 있어요</b>.',
+  },
+  p2: {
+    vi: 'Chỉ cần cho chúng tôi biết <b>lương tháng hiện tại (hoặc ở công việc gần nhất)</b> — một con số, không cần đăng nhập, 30 giây — <b>việc xem xét sẽ được tiếp tục ngay</b>. Thông tin này <b>không hiển thị với công ty</b>.',
+    ko: '<b>현재(또는 직전 직장) 월급</b> 숫자 하나만 알려주시면 <b>검토가 바로 재개됩니다</b> — 로그인 없이 30초. 이 정보는 <b>기업에 공개되지 않아요</b>.',
+  },
+  cta: { vi: 'Nhập mức lương để tiếp tục xem xét →', ko: '연봉 입력하고 검토 재개하기 →' },
+}
+
+const COPY = /^salary-b/.test(CAMPAIGN) ? COPY_B : COPY_A
 
 function emailHtml(name, url, unsubUrl, lang) {
   const L = (o) => o[lang] || o.vi

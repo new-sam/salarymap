@@ -44,6 +44,8 @@ export async function getServerSideProps({ query }) {
       uiLang: normLang(query.lang),
       name: prof.full_name || '',
       initial: prof.current_salary ? Math.round(prof.current_salary / 1000000) : null,
+      // B 프레임(salary-b*, "추천 보류→재개") — 메일과 착지 화면이 같은 말을 해야 한 흐름으로 읽힌다.
+      frameB: /^salary-b/.test(claim.campaign || ''),
     },
   }
 }
@@ -60,6 +62,8 @@ const T = {
     toJobs: 'Xem tin tuyển dụng',
     formHead: (n) => (n ? `${n} ơi, chỉ cần một con số` : 'Chỉ cần một con số'),
     formSub: 'FYI đang tiến cử bạn với các công ty. Khi biết mức lương của bạn, chúng tôi chỉ chọn những công ty có mức lương khiến bạn thực sự hài lòng — không cần đăng nhập, 30 giây.',
+    formSubB: 'Việc xem xét đề cử của bạn đang chờ xác nhận mức lương. Chỉ cần một con số — không cần đăng nhập, 30 giây — việc xem xét sẽ được tiếp tục ngay.',
+    doneSubB: 'Đã xác nhận — việc xem xét đề cử sẽ được tiếp tục. Chúng tôi sẽ chỉ tiến cử bạn với những công ty phù hợp mức lương.',
     typeCurrent: 'Lương hiện tại',
     typePrevious: 'Lương công việc gần nhất',
     unit: 'triệu VND / tháng',
@@ -81,6 +85,8 @@ const T = {
     toJobs: '채용 공고 보러가기',
     formHead: (n) => (n ? `${n}님, 숫자 하나면 됩니다` : '숫자 하나면 됩니다'),
     formSub: 'FYI가 회원님을 기업에 직접 추천하고 있어요. 연봉을 알면 정말 만족할 만한 기업만 골라 추천할 수 있습니다 — 로그인 없이 30초.',
+    formSubB: '담당자 추천 검토가 연봉 확인 대기 중이에요. 숫자 하나만 알려주시면 검토가 바로 재개됩니다 — 로그인 없이 30초.',
+    doneSubB: '확인됐습니다 — 추천 검토가 재개돼요. 연봉이 맞는 기업에만 추천해 드릴게요.',
     typeCurrent: '현재 월급',
     typePrevious: '직전 직장 월급',
     unit: '백만 VND / 월',
@@ -102,6 +108,8 @@ const T = {
     toJobs: 'Browse job posts',
     formHead: (n) => (n ? `${n}, just one number` : 'Just one number'),
     formSub: 'FYI recommends you directly to companies. Knowing your salary lets us pick only companies you would truly be happy with — no login, 30 seconds.',
+    formSubB: 'Your nomination review is waiting on a salary check. One number — no login, 30 seconds — and the review resumes right away.',
+    doneSubB: 'Confirmed — your nomination review will resume. We will only recommend you to companies that match your salary.',
     typeCurrent: 'Current salary',
     typePrevious: 'Previous job salary',
     unit: 'million VND / month',
@@ -118,8 +126,9 @@ const T = {
   },
 }
 
-export default function SalaryUpdateLanding({ valid, token, uiLang, name, initial }) {
-  const t = T[uiLang] || T.vi
+export default function SalaryUpdateLanding({ valid, token, uiLang, name, initial, frameB }) {
+  const base = T[uiLang] || T.vi
+  const t = frameB ? { ...base, formSub: base.formSubB, doneSub: base.doneSubB } : base
   const [amount, setAmount] = useState(initial ? String(initial) : '')
   const [type, setType] = useState('current')
   const [saving, setSaving] = useState(false)

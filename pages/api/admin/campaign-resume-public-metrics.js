@@ -69,10 +69,13 @@ export default async function handler(req, res) {
     // 등을 따로 본다. 버킷은 meta.campaign 값으로 자동 생성되므로 새 캠페인은 이벤트만 쌓이면 표에 나온다.
     // 지원(coldmail_job_apply)은 jobs* 캠페인 전용 이벤트라 캠페인별에만 존재.
     const camps = {}
-    const camp = (name) => (camps[name] = camps[name] || {
+    // salary1은 8/13 salary-a로 개명(A/B 분리) — 기존 이벤트는 리네임했지만 이미 나간 메일
+    // 토큰에는 salary1이 박혀 있어 늦은 클릭/입력이 salary1로 들어온다 → 여기서 합친다.
+    const ALIAS = { salary1: 'salary-a' }
+    const camp = (raw) => { const name = ALIAS[raw] || raw; return (camps[name] = camps[name] || {
       campaign: name, sent: new Set(), click: new Set(), convert: new Set(),
       applies: 0, appliers: new Set(), firstSentDay: null, lastSentDay: null,
-    })
+    }) }
     // 사진 클레임 view/done 은 토큰에 발송 당시 캠페인이 박혀 온다(photo2 코호트가 photo1 토큰으로
     // 클릭해도 photo1 로 찍힘) — 본인이 받은 sent 캠페인(last-touch)으로 귀속한다.
     const photoCampByUser = {}
