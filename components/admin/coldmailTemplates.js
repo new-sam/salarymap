@@ -805,7 +805,7 @@ export const COLDMAIL_TEMPLATES = [
       ko: '회원님 추천이 보류 중입니다 — 연봉 확인이 안 돼서요',
       en: 'Your nomination is on hold — we could not confirm your salary',
     },
-    desc: '연봉수집 B 프레임 salary-b(8/13 A/B 200명): photo1 검증 구조 이식 — "추천 후보에 올랐는데 연봉 미확인으로 검토 보류, 숫자 하나면 재개" 손실 프레임. 랜딩(/salary-update)도 같은 문구로 분기(frameB).',
+    desc: '연봉수집 B 프레임(8/13): photo1 검증 구조 이식 — "추천 후보에 올랐는데 연봉 미확인으로 검토 보류, 숫자 하나면 재개" 손실 프레임. 랜딩(/salary-update)도 같은 문구로 분기(frameB). salary-b=A/B 200명(1h 클릭 26.5%로 A 3배·photo 동시점 상회), salary-b-full=사인 후 잔여 1,222명 벌크(같은 양식).',
     source: 'scripts/outreach/salary-coldmail.mjs --campaign salary-b',
     html: salaryBHtml,
   },
