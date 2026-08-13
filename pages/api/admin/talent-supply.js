@@ -1,6 +1,7 @@
 import { createClient } from '@supabase/supabase-js'
 import { verifyAdminOrDevStub } from './check'
 import { ROLE_GROUPS } from '../../../constants/jobs'
+import { fetchExcludedUserIds } from '../../../lib/admin-metrics'
 
 // 인재 공급(Talent supply) 구성 — FYI에 등록한 인재풀을 "포지션(직군)"으로 분해해
 // 기업 고객의 수요 포지션과 공급이 맞는지 매일 확인하기 위한 스냅샷.
@@ -136,12 +137,15 @@ export default async function handler(req, res) {
     const nowMs = Date.now()
     const weekAgoISO = new Date(nowMs - 7 * DAY).toISOString()
 
-    const [profiles, idEvents, apps] = await Promise.all([
+    const [profilesRaw, idEvents, apps, excludedIds] = await Promise.all([
       fetchAll('user_profiles', 'id, position, desired_roles, resume_url, is_resume_public, korean_cert, english_cert'),
       // 로그인 식별 이벤트만(웹은 대부분 익명 client_id라 활성 판정은 로그인 유저 기준).
       fetchAll('events', 'user_id, created_at', q => q.not('user_id', 'is', null)),
       fetchAll('job_applications', 'user_id', q => q.not('user_id', 'is', null)),
+      fetchExcludedUserIds(supabase),
     ])
+    // 내부/테스트 계정(@likelion.net 등)은 공급 집계에서 제외.
+    const profiles = profilesRaw.filter(p => !excludedIds.has(p.id))
 
     // ---- 활성 집합 계산 ----
     // recent7d: 최근 7일 방문 / repeat: 서로 다른 2일+ 방문(반복) / applied: 채용 지원 이력

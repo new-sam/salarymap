@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js'
 import { verifyAdminOrDevStub } from './check'
+import { isExcludedEmail } from '../../../lib/admin-metrics'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
@@ -51,21 +52,23 @@ export default async function handler(req, res) {
 
     if (error) return res.status(500).json({ error: error.message })
 
-    // 연봉 위저드 제출(submissions)로도 현재연봉을 안다 — 프로필 미기입자 폴백.
-    // 유저당 최신 1건. salary는 triệu(백만 VND/월) 단위 그대로 내려준다.
-    const submittedSalary = {}
+    // 연봉 뱃지 인증(salary_verifications approved)으로도 연봉을 안다 — 프로필 미기입자 폴백.
+    // 연봉위저드 제출(submissions)은 폴백에서 뺐다(8/13 유저 지시) — 익명 통계용 자기신고라
+    // 부정확. 정확한 소스만: 직접기입(current_salary) > 증빙 승인 인증.
+    // 유저당 최신 승인 1건. salary_amount는 triệu(백만 VND/월) 단위 그대로 내려준다.
+    const verifiedSalary = {}
     for (let offset = 0; ; offset += 1000) {
-      const { data: subs, error: subErr } = await supabase
-        .from('submissions')
-        .select('user_id, salary, created_at')
-        .not('user_id', 'is', null)
+      const { data: vers, error: verErr } = await supabase
+        .from('salary_verifications')
+        .select('user_id, salary_amount, created_at')
+        .eq('status', 'approved')
         .order('created_at', { ascending: false })
         .range(offset, offset + 999)
-      if (subErr || !subs) break
-      for (const s of subs) {
-        if (!(s.user_id in submittedSalary)) submittedSalary[s.user_id] = { salary: s.salary, at: s.created_at }
+      if (verErr || !vers) break
+      for (const v of vers) {
+        if (!(v.user_id in verifiedSalary)) verifiedSalary[v.user_id] = { salary: v.salary_amount, at: v.created_at }
       }
-      if (subs.length < 1000) break
+      if (vers.length < 1000) break
     }
 
     // Fetch emails from auth
@@ -88,12 +91,15 @@ export default async function handler(req, res) {
       }
     }
 
-    const result = data.map(p => ({
-      ...p,
-      email: emails[p.id] || '',
-      submitted_salary: submittedSalary[p.id]?.salary ?? null,
-      submitted_salary_at: submittedSalary[p.id]?.at ?? null,
-    }))
+    // 내부/테스트 계정(@likelion.net 등)은 인재풀에서 제외.
+    const result = data
+      .map(p => ({
+        ...p,
+        email: emails[p.id] || '',
+        verified_salary: verifiedSalary[p.id]?.salary ?? null,
+        verified_salary_at: verifiedSalary[p.id]?.at ?? null,
+      }))
+      .filter(p => !isExcludedEmail(p.email))
 
     return res.status(200).json(result)
   } catch (e) {

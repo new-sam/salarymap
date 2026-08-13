@@ -35,6 +35,10 @@ export default function GoalMetricsView({ token, lang }) {
   const [hkError, setHkError] = useState('')
   const [hkLoading, setHkLoading] = useState(false)
 
+  const [slData, setSlData] = useState(null) // 연봉 수집 (현/직전연봉)
+  const [slError, setSlError] = useState('')
+  const [slLoading, setSlLoading] = useState(false)
+
   const loadRp = useCallback(async () => {
     if (!token) return
     setRpLoading(true)
@@ -125,6 +129,26 @@ export default function GoalMetricsView({ token, lang }) {
     }
   }, [token, ko])
 
+  const loadSl = useCallback(async () => {
+    if (!token) return
+    setSlLoading(true)
+    setSlError('')
+    try {
+      const res = await fetch('/api/admin/salary-stats', { headers: { Authorization: `Bearer ${token}` } })
+      if (!res.ok) throw new Error(`(${res.status})`)
+      setSlData(await res.json())
+    } catch (e) {
+      setSlError((ko ? '불러오기 실패 ' : 'Load failed ') + e.message)
+    } finally {
+      setSlLoading(false)
+    }
+  }, [token, ko])
+
+  // 연봉 수집 탭 최초 진입 시 lazy 로드
+  useEffect(() => {
+    if (view === 'salary' && !slData && !slLoading) loadSl()
+  }, [view, slData, slLoading, loadSl])
+
   // 전직군 개편 탭 최초 진입 시 lazy 로드
   useEffect(() => {
     if (view === 'roleExpansion' && !reData && !reLoading) loadRe()
@@ -168,6 +192,7 @@ export default function GoalMetricsView({ token, lang }) {
         {tabBtn('resumePublic', ko ? '이력서 공개' : 'Resume public')}
         {tabBtn('roleExpansion', ko ? '전직군 개편' : 'Role expansion')}
         {tabBtn('coldmail', ko ? '콜드메일' : 'Cold email')}
+        {tabBtn('salary', ko ? '연봉 수집' : 'Salary collection')}
         {tabBtn('photos', ko ? '프로필 사진' : 'Profile photos')}
         {tabBtn('paths', ko ? '가입 경로' : 'Signup paths')}
         {tabBtn('hongik', ko ? '홍익 QR' : 'Hongik QR')}
@@ -175,6 +200,7 @@ export default function GoalMetricsView({ token, lang }) {
       </div>
       {view === 'roleExpansion' && <RoleExpansionTab data={reData} loading={reLoading} error={reError} ko={ko} lang={lang} />}
       {view === 'photos' && <PhotoStatsTab data={phData} loading={phLoading} error={phError} ko={ko} />}
+      {view === 'salary' && <SalaryStatsTab data={slData} loading={slLoading} error={slError} ko={ko} />}
       {view === 'paths' && <SignupPathsTab data={spData} loading={spLoading} error={spError} ko={ko} />}
       {view === 'resumePublic' && <ResumePublicTab data={rpData} loading={rpLoading} error={rpError} ko={ko} lang={lang} onRefresh={loadRp} />}
       {view === 'coldmail' && <ColdmailPublicTab data={cmData} loading={cmLoading} error={cmError} ko={ko} lang={lang} />}
@@ -989,6 +1015,167 @@ function ColdmailPublicTab({ data, loading, error, ko, lang }) {
 // ============ 프로필 사진 탭 ============
 // 인재풀 사진 보유 현황 — 기업 쇼케이스 카드 품질 지표이자 사진 등록 유도 콜드메일의 베이스라인.
 // 사진은 전부 검증된 것(직접 업로드 / CV 추출·소셜 아바타는 vision 인물사진 검증 통과분).
+// ============ 연봉 수집 탭 ============
+// 인재풀(이력서 보유) 대비 현/직전연봉 확보 진행률 + 수집값 분석.
+// 소스 2개: 직접기입(current_salary, /salary-update 랜딩·프로필 폼) > 뱃지 인증(salary_verifications).
+// 연봉위저드 제출은 안 쓴다 — 익명 자기신고라 부정확(유저 지시 8/13, 정확한 값만).
+function SalaryStatsTab({ data, loading, error, ko }) {
+  if (loading) return <div style={{ textAlign: 'center', padding: 40, color: '#666' }}>{ko ? '불러오는 중…' : 'Loading…'}</div>
+  if (error) return <div style={{ textAlign: 'center', padding: 40, color: '#DC2626' }}>{error}</div>
+  if (!data) return null
+  if (data.error) return <div style={{ textAlign: 'center', padding: 40, color: '#DC2626' }}>{data.error}</div>
+  const { pool, stats, bands, byYoe, recent } = data
+
+  const th = { padding: '8px 12px', textAlign: 'right', fontWeight: 600, color: '#374151', borderBottom: '2px solid #e5e7eb', fontSize: 12.5 }
+  const td = { padding: '7px 12px', textAlign: 'right', borderBottom: '1px solid #f3f4f6', fontSize: 13, fontVariantNumeric: 'tabular-nums' }
+  const section = { background: '#fff', border: '1px solid #E5E8EB', borderRadius: 12, padding: '16px 18px' }
+  const Card = ({ label, value, sub, accent }) => (
+    <div style={{ background: '#fff', border: '1px solid #E5E8EB', borderRadius: 16, padding: '18px 20px', flex: '1 1 200px', minWidth: 180 }}>
+      <div style={{ fontSize: 12.5, fontWeight: 700, color: '#6B7280', marginBottom: 10 }}>{label}</div>
+      <div style={{ fontSize: 30, fontWeight: 800, color: accent || '#0F172A', lineHeight: 1, marginBottom: 6 }}>{value}</div>
+      {sub && <div style={{ fontSize: 12, color: '#9CA3AF' }}>{sub}</div>}
+    </div>
+  )
+
+  // 진행률 바 — 직접기입(진한색)·뱃지 인증(연한색)·신입 처리(회색)를 한 바에 이어 붙인다.
+  const ProgressBar = ({ title, direct, verified, fresher = 0, total }) => {
+    const got = direct + verified + fresher
+    const pct = total ? Math.round((got / total) * 100) : 0
+    return (
+      <div style={{ marginBottom: 14 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 8, flexWrap: 'wrap', gap: 8 }}>
+          <div style={{ fontSize: 13.5, fontWeight: 800 }}>{title}</div>
+          <div style={{ fontSize: 13, color: '#6B7280' }}>
+            <strong style={{ fontSize: 20, fontWeight: 800, color: '#15803D' }}>{pct}%</strong>
+            <span style={{ marginLeft: 10 }}><strong style={{ color: '#0F172A' }}>{got.toLocaleString()}</strong> / {total.toLocaleString()}{ko ? '명' : ''}</span>
+          </div>
+        </div>
+        <div style={{ display: 'flex', height: 20, background: '#F1F5F9', borderRadius: 999, overflow: 'hidden' }}>
+          <div style={{ width: `${total ? (direct / total) * 100 : 0}%`, background: '#15803D' }} />
+          <div style={{ width: `${total ? (verified / total) * 100 : 0}%`, background: '#86EFAC' }} />
+          <div style={{ width: `${total ? (fresher / total) * 100 : 0}%`, background: '#CBD5E1' }} />
+        </div>
+      </div>
+    )
+  }
+
+  const maxBand = Math.max(...bands.map((b) => b.total), 1)
+  const maxMedian = Math.max(...byYoe.map((b) => b.median || 0), 1)
+  const yoeText = (m) => (m == null ? '—' : m < 12 ? `${m}m` : `${Math.floor(m / 12)}y${m % 12 ? ` ${m % 12}m` : ''}`)
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+      <div style={{ background: '#fff', border: '1px solid #E5E8EB', borderRadius: 12, padding: '18px 20px' }}>
+        <ProgressBar title={ko ? '전체 인재풀 (이력서 보유)' : 'Entire pool (with resume)'}
+          direct={pool.direct} verified={pool.verified} fresher={pool.fresher} total={pool.total} />
+        <ProgressBar title={ko ? '경력 1년+ (캠페인 대상)' : '1+ yr experience (campaign target)'}
+          direct={pool.expDirect} verified={pool.expVerified} total={pool.expTotal} />
+        <div style={{ display: 'flex', gap: 16, fontSize: 12, color: '#6B7280', flexWrap: 'wrap' }}>
+          <span><span style={{ display: 'inline-block', width: 10, height: 10, background: '#15803D', borderRadius: 3, marginRight: 5 }} />{ko ? '직접기입 (랜딩·프로필)' : 'Self-reported (landing/profile)'}</span>
+          <span><span style={{ display: 'inline-block', width: 10, height: 10, background: '#86EFAC', borderRadius: 3, marginRight: 5 }} />{ko ? '연봉 뱃지 인증 (증빙 승인)' : 'Badge-verified (doc approved)'}</span>
+          <span><span style={{ display: 'inline-block', width: 10, height: 10, background: '#CBD5E1', borderRadius: 3, marginRight: 5 }} />{ko ? '신입 — 연봉 없음 처리 (경력 1년 미만)' : 'Fresher — no salary by definition'}</span>
+        </div>
+      </div>
+
+      <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+        <Card label={ko ? '표본' : 'Sample'} value={stats.n.toLocaleString()} sub={ko ? '연봉 확보 인원' : 'people with salary'} />
+        <Card label={ko ? '중앙값' : 'Median'} value={stats.median != null ? `${stats.median}M` : '—'} accent="#15803D" sub={ko ? '백만 VND/월' : 'M VND/month'} />
+        <Card label={ko ? '평균' : 'Average'} value={stats.avg != null ? `${stats.avg}M` : '—'} sub={ko ? '백만 VND/월' : 'M VND/month'} />
+        <Card label="P25–P75" value={stats.p25 != null ? `${stats.p25}–${stats.p75}M` : '—'} sub={ko ? '중간 50% 구간' : 'middle 50%'} />
+      </div>
+
+      <div style={section}>
+        <div style={{ fontSize: 14, fontWeight: 800, marginBottom: 10 }}>
+          {ko ? '월급 분포' : 'Salary distribution'}
+          <span style={{ fontSize: 11.5, fontWeight: 600, color: '#9CA3AF', marginLeft: 8 }}>{ko ? '단위: 백만 VND/월' : 'M VND/month'}</span>
+        </div>
+        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+          <thead><tr>
+            <th style={{ ...th, textAlign: 'left' }}>{ko ? '구간' : 'Band'}</th>
+            <th style={th}>{ko ? '직접기입' : 'Self'}</th>
+            <th style={th}>{ko ? '인증' : 'Verified'}</th>
+            <th style={th}>{ko ? '합계' : 'Total'}</th>
+            <th style={{ ...th, width: '38%' }} />
+          </tr></thead>
+          <tbody>
+            {bands.map((b) => (
+              <tr key={b.label}>
+                <td style={{ ...td, textAlign: 'left', color: '#374151', fontWeight: 600 }}>{b.label}</td>
+                <td style={td}>{b.direct || '—'}</td>
+                <td style={{ ...td, color: '#9CA3AF' }}>{b.verified || '—'}</td>
+                <td style={{ ...td, fontWeight: 700 }}>{b.total || '—'}</td>
+                <td style={td}>
+                  <div style={{ display: 'flex', height: 14, width: `${Math.max(2, (b.total / maxBand) * 100)}%`, marginLeft: 'auto', borderRadius: 3, overflow: 'hidden' }}>
+                    <div style={{ width: `${b.total ? (b.direct / b.total) * 100 : 0}%`, background: '#15803D' }} />
+                    <div style={{ flex: 1, background: '#86EFAC' }} />
+                  </div>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      <div style={section}>
+        <div style={{ fontSize: 14, fontWeight: 800, marginBottom: 10 }}>{ko ? '경력구간별 중앙값' : 'Median by experience'}</div>
+        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+          <thead><tr>
+            <th style={{ ...th, textAlign: 'left' }}>{ko ? '경력' : 'Experience'}</th>
+            <th style={th}>{ko ? '표본' : 'n'}</th>
+            <th style={th}>{ko ? '중앙값' : 'Median'}</th>
+            <th style={{ ...th, width: '38%' }} />
+          </tr></thead>
+          <tbody>
+            {byYoe.map((b) => (
+              <tr key={b.label}>
+                <td style={{ ...td, textAlign: 'left', color: '#374151', fontWeight: 600 }}>{b.label}</td>
+                <td style={td}>{b.n || '—'}</td>
+                <td style={{ ...td, fontWeight: 700 }}>{b.median != null ? `${b.median}M` : '—'}</td>
+                <td style={td}>
+                  {b.median != null && <div style={{ width: `${Math.max(2, (b.median / maxMedian) * 100)}%`, height: 14, background: '#0F172A', opacity: 0.75, borderRadius: 3, marginLeft: 'auto' }} />}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      <div style={section}>
+        <div style={{ fontSize: 14, fontWeight: 800, marginBottom: 2 }}>{ko ? '최근 랜딩 입력' : 'Recent landing entries'}</div>
+        <div style={{ fontSize: 11.5, color: '#9CA3AF', marginBottom: 8 }}>
+          {ko ? '콜드메일 랜딩(/salary-update)으로 들어온 입력 원본 · 프로필 폼 직접 수정은 진행률에만 반영' : 'Raw entries from the coldmail landing; profile-form edits count toward coverage only'}
+        </div>
+        {recent.length === 0 ? (
+          <div style={{ fontSize: 13, color: '#9CA3AF', padding: '8px 0' }}>{ko ? '아직 입력이 없어요' : 'No entries yet'}</div>
+        ) : (
+          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+            <thead><tr>
+              <th style={{ ...th, textAlign: 'left' }}>{ko ? '일시' : 'Time'}</th>
+              <th style={{ ...th, textAlign: 'left' }}>{ko ? '이름' : 'Name'}</th>
+              <th style={{ ...th, textAlign: 'left' }}>{ko ? '직군' : 'Role'}</th>
+              <th style={th}>{ko ? '경력' : 'YoE'}</th>
+              <th style={th}>{ko ? '구분' : 'Type'}</th>
+              <th style={th}>{ko ? '월급' : 'Salary'}</th>
+            </tr></thead>
+            <tbody>
+              {recent.map((r, i) => (
+                <tr key={i}>
+                  <td style={{ ...td, textAlign: 'left', color: '#9CA3AF', whiteSpace: 'nowrap' }}>{String(r.at).slice(5, 16).replace('T', ' ')}</td>
+                  <td style={{ ...td, textAlign: 'left', fontWeight: 600 }}>{r.name}</td>
+                  <td style={{ ...td, textAlign: 'left', color: '#6B7280' }}>{r.position || '—'}</td>
+                  <td style={td}>{yoeText(r.yoeMonths)}</td>
+                  <td style={{ ...td, color: '#6B7280' }}>{r.type === 'previous' ? (ko ? '직전' : 'prev') : r.type === 'current' ? (ko ? '현재' : 'cur') : '—'}</td>
+                  <td style={{ ...td, fontWeight: 800, color: '#15803D' }}>{r.amount != null ? `${r.amount}M` : '—'}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </div>
+    </div>
+  )
+}
+
 function PhotoStatsTab({ data, loading, error, ko }) {
   if (loading) return <div style={{ textAlign: 'center', padding: 40, color: '#666' }}>{ko ? '불러오는 중…' : 'Loading…'}</div>
   if (error) return <div style={{ textAlign: 'center', padding: 40, color: '#DC2626' }}>{error}</div>
