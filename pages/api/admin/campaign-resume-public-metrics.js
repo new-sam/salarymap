@@ -26,7 +26,7 @@ const GROUP_ORDER = ['signup', 'register', 'resume', 'recommend', 'photo', 'sala
 const groupOf = (name) =>
   /^coldmail-ktc/.test(name) ? 'signup'
     : /^resume-register/.test(name) ? 'register'
-      : /recommend/.test(name) ? 'recommend'
+      : /recommend/.test(name) || /^kyndof/.test(name) ? 'recommend'
         : /^photo/.test(name) ? 'photo'
           : /^salary/.test(name) ? 'salary'
             : 'resume'
