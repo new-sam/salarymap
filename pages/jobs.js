@@ -896,7 +896,7 @@ export default function JobsPage() {
 
       <style>{`
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-        body { background: #f7f7f5; font-family: -apple-system, 'Helvetica Neue', Arial, sans-serif; -webkit-font-smoothing: antialiased; }
+        body { background: #f7f7f5; -webkit-font-smoothing: antialiased; }
 
         .jw { max-width: 1080px; margin: 0 auto; padding: 36px 40px 80px; }
         .jw-eye { font-size: 11px; font-weight: 700; color: #ff4400; letter-spacing: .08em; margin-bottom: 8px; }

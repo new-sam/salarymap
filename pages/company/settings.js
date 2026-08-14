@@ -210,10 +210,10 @@ export default function CompanySettings() {
 }
 
 const fcss = {
-  label: { display: 'block', marginBottom: 6, color: '#4E5968', fontSize: 12, fontWeight: 800 },
+  label: { display: 'block', marginBottom: 6, color: 'var(--sm-gray-700)', fontSize: 12, fontWeight: 800 },
   input: {
-    width: '100%', border: '1px solid #D1D6DB', borderRadius: 10,
-    padding: '12px 14px', color: '#191F28', background: '#fff', fontSize: 14,
+    width: '100%', border: '1px solid var(--sm-gray-300)', borderRadius: 10,
+    padding: '12px 14px', color: 'var(--sm-gray-900)', background: '#fff', fontSize: 14,
     fontFamily: 'inherit', outline: 'none',
   },
   okBox: { padding: '10px 12px', borderRadius: 9, background: '#F0FDF4', color: '#16A34A', fontSize: 12.5, fontWeight: 700 },

@@ -883,16 +883,16 @@ export default function CompanyATSPage() {
                   onDrop={() => handleDrop(col.key)}
                   className={cn(
                     'rounded-lg border p-2.5 flex flex-col gap-2 transition-all duration-200 min-h-0',
-                    isOver ? 'bg-primary-50 border-primary-300 shadow-soft-md' : 'bg-[#F9FAFB] border-[#F2F4F6]',
+                    isOver ? 'bg-primary-50 border-primary-300 shadow-soft-md' : 'bg-[var(--sm-gray-50)] border-[var(--sm-gray-100)]',
                     hiddenOnMobile && 'hidden md:flex'
                   )}
                 >
                   {/* Column header — hidden on mobile since the stage chip above
                       already shows the same info; redundancy hurts mobile space. */}
-                  <div className="hidden md:flex items-center gap-2 px-1 pb-2 border-b border-[#E5E8EB]">
+                  <div className="hidden md:flex items-center gap-2 px-1 pb-2 border-b border-[var(--sm-gray-200)]">
                     <StageIcon className={cn('w-3.5 h-3.5', STAGE_ICON_CLASS[col.key])} />
                     <span className="text-[13px] font-extrabold text-gray-900 tracking-tight flex-1">{t(`company.stage.${col.key}`)}</span>
-                    <span className="text-[11px] font-extrabold text-gray-900 tabular-nums bg-white border border-[#E5E8EB] rounded-full min-w-[22px] text-center px-1.5 py-0.5">{col.apps.length}</span>
+                    <span className="text-[11px] font-extrabold text-gray-900 tabular-nums bg-white border border-[var(--sm-gray-200)] rounded-full min-w-[22px] text-center px-1.5 py-0.5">{col.apps.length}</span>
                   </div>
 
                   {/* Cards — scrolls internally so column header stays pinned */}
@@ -1052,8 +1052,8 @@ export default function CompanyATSPage() {
 }
 
 const localCss = {
-  crumb: { fontSize: 12, color: '#8B95A1', marginBottom: 4 },
-  crumbLink: { color: '#4E5968', textDecoration: 'none' },
+  crumb: { fontSize: 12, color: 'var(--sm-gray-500)', marginBottom: 4 },
+  crumbLink: { color: 'var(--sm-gray-700)', textDecoration: 'none' },
 
   // ── Kanban ──
   kanban: { display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: space[5], alignItems: 'stretch', minHeight: 'calc(100vh - 240px)' },
@@ -1148,7 +1148,7 @@ const KanbanCard = memo(function KanbanCard({
       onClick={() => onSelect(app.id)}
       className={cn(
         'relative rounded-md border p-2.5 flex flex-col gap-1 cursor-pointer transition-all duration-200 ease-spring',
-        !hasStagePassed && !isRejected && 'bg-white border-[#E5E8EB] hover:border-primary-300 hover:bg-primary-50/30 hover:shadow-soft-sm hover:-translate-y-px',
+        !hasStagePassed && !isRejected && 'bg-white border-[var(--sm-gray-200)] hover:border-primary-300 hover:bg-primary-50/30 hover:shadow-soft-sm hover:-translate-y-px',
         !isRejected && hasStagePassed && 'bg-green-50/60 border-green-300 hover:border-green-400 hover:shadow-soft-sm hover:-translate-y-px',
         isRejected && 'bg-red-50/40 border-red-200 opacity-65',
         isSelected && !hasStagePassed && !isRejected && 'bg-primary-50/70 border-primary-500 ring-2 ring-primary-200 -translate-y-0.5 shadow-soft-md',

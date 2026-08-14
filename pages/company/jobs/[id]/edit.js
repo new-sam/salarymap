@@ -377,7 +377,7 @@ export default function EditJobPage() {
               </div>
 
               <label className="flex items-center gap-2 mt-2 cursor-pointer select-none">
-                <input type="checkbox" checked={!!form.salary_negotiable} onChange={e => setF('salary_negotiable', e.target.checked)} className="accent-[#ff4400]" />
+                <input type="checkbox" checked={!!form.salary_negotiable} onChange={e => setF('salary_negotiable', e.target.checked)} className="accent-[var(--sm-primary)]" />
                 <span className="text-sm text-gray-700">{t('company.jobsnew.negotiable')}</span>
               </label>
               {form.salary_negotiable && (

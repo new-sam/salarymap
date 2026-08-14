@@ -405,7 +405,7 @@ export default function NewJobPage() {
               </div>
 
               <label className="flex items-center gap-2 mt-2 cursor-pointer select-none">
-                <input type="checkbox" checked={form.salary_negotiable} onChange={e => setF('salary_negotiable', e.target.checked)} className="accent-[#ff4400]" />
+                <input type="checkbox" checked={form.salary_negotiable} onChange={e => setF('salary_negotiable', e.target.checked)} className="accent-[var(--sm-primary)]" />
                 <span className="text-sm text-gray-700">{t('company.jobsnew.negotiable')}</span>
               </label>
               {form.salary_negotiable && (
@@ -520,7 +520,7 @@ export function SelectInput({ value, onChange, children }) {
   );
 }
 
-const DOT_COLOR = { live: '#10b981', paused: '#f59e0b', closed: '#8B95A1', draft: '#D1D6DB', pending_review: '#f97316' };
+const DOT_COLOR = { live: '#10b981', paused: '#f59e0b', closed: 'var(--sm-gray-500)', draft: 'var(--sm-gray-300)', pending_review: 'var(--sm-primary)' };
 
 export function Sidebar({ companyName, userEmail, activePage = 'home', activeJobId = null }) {
   const router = useRouter();
@@ -788,92 +788,92 @@ export function Sidebar({ companyName, userEmail, activePage = 'home', activeJob
 }
 
 export const css = {
-  loading: { display: 'grid', placeItems: 'center', height: '100vh', background: '#F9FAFB', color: '#4E5968', fontFamily: "'Pretendard Variable', 'Pretendard', sans-serif" },
+  loading: { display: 'grid', placeItems: 'center', height: '100vh', background: 'var(--sm-gray-50)', color: 'var(--sm-gray-700)', fontFamily: "'Pretendard Variable', 'Pretendard', sans-serif" },
 
-  fullCenter: { minHeight: '100vh', background: '#F9FAFB', display: 'grid', placeItems: 'center', padding: 20, fontFamily: "'Pretendard Variable', 'Pretendard', sans-serif" },
-  lightCard: { maxWidth: 420, width: '100%', padding: '40px 32px', textAlign: 'center', background: '#fff', border: '1px solid #E5E8EB', borderRadius: 14, boxShadow: '0 8px 24px rgba(0,0,0,0.05)' },
-  cardH: { fontSize: 20, fontWeight: 800, color: '#191F28', marginBottom: 8 },
-  cardP: { fontSize: 13.5, color: '#4E5968', marginBottom: 22, lineHeight: 1.65 },
+  fullCenter: { minHeight: '100vh', background: 'var(--sm-gray-50)', display: 'grid', placeItems: 'center', padding: 20, fontFamily: "'Pretendard Variable', 'Pretendard', sans-serif" },
+  lightCard: { maxWidth: 420, width: '100%', padding: '40px 32px', textAlign: 'center', background: '#fff', border: '1px solid var(--sm-gray-200)', borderRadius: 14, boxShadow: '0 8px 24px rgba(0,0,0,0.05)' },
+  cardH: { fontSize: 20, fontWeight: 800, color: 'var(--sm-gray-900)', marginBottom: 8 },
+  cardP: { fontSize: 13.5, color: 'var(--sm-gray-700)', marginBottom: 22, lineHeight: 1.65 },
 
-  app: { display: 'flex', minHeight: '100vh', background: '#F9FAFB', color: '#191F28', fontFamily: "'Pretendard Variable', 'Pretendard', sans-serif" },
+  app: { display: 'flex', minHeight: '100vh', background: 'var(--sm-gray-50)', color: 'var(--sm-gray-900)', fontFamily: "'Pretendard Variable', 'Pretendard', sans-serif" },
 
   // Sidebar (light)
-  sidebar: { background: '#fff', borderRight: '1px solid #E5E8EB', padding: '16px 12px', display: 'flex', flexDirection: 'column', gap: 4 },
-  sideHead: { padding: '8px 10px 14px', borderBottom: '1px solid #E5E8EB', marginBottom: 10 },
-  sideCompany: { fontSize: 14, fontWeight: 800, color: '#191F28' },
-  sideUser: { fontSize: 11, color: '#6B7684', marginTop: 3 },
+  sidebar: { background: '#fff', borderRight: '1px solid var(--sm-gray-200)', padding: '16px 12px', display: 'flex', flexDirection: 'column', gap: 4 },
+  sideHead: { padding: '8px 10px 14px', borderBottom: '1px solid var(--sm-gray-200)', marginBottom: 10 },
+  sideCompany: { fontSize: 14, fontWeight: 800, color: 'var(--sm-gray-900)' },
+  sideUser: { fontSize: 11, color: 'var(--sm-gray-600)', marginTop: 3 },
   sideNav: { display: 'flex', flexDirection: 'column', gap: 2 },
-  navItem: { display: 'flex', alignItems: 'center', gap: 9, padding: '9px 10px', borderRadius: 7, fontSize: 13, color: '#4E5968', fontWeight: 600, textDecoration: 'none' },
-  navItemActive: { background: '#FFF7ED', color: '#EA580C', fontWeight: 800 },
+  navItem: { display: 'flex', alignItems: 'center', gap: 9, padding: '9px 10px', borderRadius: 7, fontSize: 13, color: 'var(--sm-gray-700)', fontWeight: 600, textDecoration: 'none' },
+  navItemActive: { background: 'var(--sm-primary-50)', color: 'var(--sm-primary-600)', fontWeight: 800 },
   navIco: { width: 14, textAlign: 'center', fontSize: 13 },
   sideBottom: { marginTop: 'auto', padding: 10 },
-  signoutLink: { fontSize: 11.5, color: '#6B7684', cursor: 'pointer', textDecoration: 'underline' },
+  signoutLink: { fontSize: 11.5, color: 'var(--sm-gray-600)', cursor: 'pointer', textDecoration: 'underline' },
 
-  sideDivider: { height: 1, background: '#E5E8EB', margin: '12px 8px' },
-  sideSectionTitle: { fontSize: 10.5, color: '#8B95A1', fontWeight: 800, letterSpacing: '0.06em', textTransform: 'uppercase', padding: '4px 10px 6px' },
-  sideSubGroupTitle: { fontSize: 11, color: '#4E5968', fontWeight: 700, padding: '8px 10px 4px' },
+  sideDivider: { height: 1, background: 'var(--sm-gray-200)', margin: '12px 8px' },
+  sideSectionTitle: { fontSize: 10.5, color: 'var(--sm-gray-500)', fontWeight: 800, letterSpacing: '0.06em', textTransform: 'uppercase', padding: '4px 10px 6px' },
+  sideSubGroupTitle: { fontSize: 11, color: 'var(--sm-gray-700)', fontWeight: 700, padding: '8px 10px 4px' },
   sideJobList: { display: 'flex', flexDirection: 'column', gap: 1, maxHeight: 360, overflowY: 'auto' },
-  sideJobItem: { display: 'flex', alignItems: 'center', gap: 8, padding: '7px 10px', borderRadius: 6, fontSize: 12.5, color: '#4E5968', fontWeight: 600, textDecoration: 'none' },
-  sideJobItemActive: { background: '#FFF7ED', color: '#EA580C', fontWeight: 800 },
+  sideJobItem: { display: 'flex', alignItems: 'center', gap: 8, padding: '7px 10px', borderRadius: 6, fontSize: 12.5, color: 'var(--sm-gray-700)', fontWeight: 600, textDecoration: 'none' },
+  sideJobItemActive: { background: 'var(--sm-primary-50)', color: 'var(--sm-primary-600)', fontWeight: 800 },
   sideJobDot: { width: 7, height: 7, borderRadius: '50%', flexShrink: 0 },
   sideJobTitle: { whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' },
 
   // Main — flex-1 min-w-0 so it lives nicely in flex shell. Top padding kept thin since PageHeader is sticky.
   main: { flex: 1, minWidth: 0, paddingLeft: 'clamp(16px, 3vw, 28px)', paddingRight: 'clamp(16px, 3vw, 28px)', paddingTop: 0, paddingBottom: 40, display: 'flex', flexDirection: 'column', gap: 14 },
   mainHead: { display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' },
-  mainH: { fontSize: 26, fontWeight: 800, color: '#191F28', letterSpacing: '-0.01em' },
-  mainP: { fontSize: 13.5, color: '#4E5968', marginTop: 4 },
+  mainH: { fontSize: 26, fontWeight: 800, color: 'var(--sm-gray-900)', letterSpacing: '-0.01em' },
+  mainP: { fontSize: 13.5, color: 'var(--sm-gray-700)', marginTop: 4 },
 
   formShell: { display: 'grid', gridTemplateColumns: '1.4fr 1fr', gap: 24, alignItems: 'flex-start' },
   formCol: { display: 'flex', flexDirection: 'column' },
-  sectionTitle: { fontSize: 12, fontWeight: 800, color: '#6B7684', letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: 14 },
+  sectionTitle: { fontSize: 12, fontWeight: 800, color: 'var(--sm-gray-600)', letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: 14 },
 
   field: { display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 14 },
-  fieldLabel: { fontSize: 12, color: '#4E5968', fontWeight: 700 },
-  inp: { background: '#fff', border: '1px solid #D1D6DB', borderRadius: 8, padding: '10px 12px', fontSize: 14, color: '#191F28', fontFamily: 'inherit' },
-  hint: { fontSize: 11, color: '#6B7684' },
+  fieldLabel: { fontSize: 12, color: 'var(--sm-gray-700)', fontWeight: 700 },
+  inp: { background: '#fff', border: '1px solid var(--sm-gray-300)', borderRadius: 8, padding: '10px 12px', fontSize: 14, color: 'var(--sm-gray-900)', fontFamily: 'inherit' },
+  hint: { fontSize: 11, color: 'var(--sm-gray-600)' },
   row2: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 },
 
-  previewCol: { background: '#fff', border: '1px solid #E5E8EB', borderRadius: 12, padding: 18, display: 'flex', flexDirection: 'column', gap: 10, position: 'sticky', top: 20 },
-  previewLabel: { fontSize: 10.5, color: '#6B7684', fontWeight: 700, letterSpacing: '0.05em', textTransform: 'uppercase' },
-  previewCard: { background: '#F9FAFB', border: '1px solid #E5E8EB', borderRadius: 8, padding: 14 },
-  pTitle: { fontSize: 14, fontWeight: 800, color: '#191F28', marginBottom: 5 },
-  pMeta: { fontSize: 11.5, color: '#4E5968', marginTop: 2 },
-  pLoc: { fontSize: 11.5, color: '#6B7684', marginTop: 6 },
+  previewCol: { background: '#fff', border: '1px solid var(--sm-gray-200)', borderRadius: 12, padding: 18, display: 'flex', flexDirection: 'column', gap: 10, position: 'sticky', top: 20 },
+  previewLabel: { fontSize: 10.5, color: 'var(--sm-gray-600)', fontWeight: 700, letterSpacing: '0.05em', textTransform: 'uppercase' },
+  previewCard: { background: 'var(--sm-gray-50)', border: '1px solid var(--sm-gray-200)', borderRadius: 8, padding: 14 },
+  pTitle: { fontSize: 14, fontWeight: 800, color: 'var(--sm-gray-900)', marginBottom: 5 },
+  pMeta: { fontSize: 11.5, color: 'var(--sm-gray-700)', marginTop: 2 },
+  pLoc: { fontSize: 11.5, color: 'var(--sm-gray-600)', marginTop: 6 },
 
   err: { gridColumn: '1 / -1', background: '#FEF2F2', border: '1px solid #FECACA', borderRadius: 6, padding: '10px 12px', fontSize: 12.5, color: '#B91C1C' },
 
-  formFoot: { gridColumn: '1 / -1', display: 'flex', justifyContent: 'flex-end', gap: 8, paddingTop: 16, borderTop: '1px solid #E5E8EB', marginTop: 8 },
+  formFoot: { gridColumn: '1 / -1', display: 'flex', justifyContent: 'flex-end', gap: 8, paddingTop: 16, borderTop: '1px solid var(--sm-gray-200)', marginTop: 8 },
 
   // Matches the shadcn Button default/outline variants (ui/button.js) so
   // inline-styled pages read as the same system.
-  btnPrimary: { padding: '12px 24px', borderRadius: 8, border: 'none', background: 'linear-gradient(135deg, #FB923C, #EA580C)', color: '#fff', fontSize: 14, fontWeight: 800, cursor: 'pointer', fontFamily: 'inherit', textDecoration: 'none', display: 'inline-block', boxShadow: '0 6px 16px rgba(234,88,12,0.25)' },
-  btnGhost: { padding: '12px 24px', borderRadius: 8, border: '1px solid #E5E8EB', background: '#fff', color: '#191F28', fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', textDecoration: 'none', display: 'inline-block', boxShadow: '0 1px 2px rgba(17,24,39,0.04)' },
-  btnDisabled: { padding: '12px 24px', borderRadius: 8, border: 'none', background: '#E5E8EB', color: '#8B95A1', fontSize: 14, fontWeight: 800, cursor: 'not-allowed', fontFamily: 'inherit' },
+  btnPrimary: { padding: '12px 24px', borderRadius: 8, border: 'none', background: 'linear-gradient(135deg, var(--sm-primary), var(--sm-primary-400))', color: '#fff', fontSize: 14, fontWeight: 800, cursor: 'pointer', fontFamily: 'inherit', textDecoration: 'none', display: 'inline-block', boxShadow: '0 6px 16px rgba(var(--sm-primary-rgb),0.25)' },
+  btnGhost: { padding: '12px 24px', borderRadius: 8, border: '1px solid var(--sm-gray-200)', background: '#fff', color: 'var(--sm-gray-900)', fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', textDecoration: 'none', display: 'inline-block', boxShadow: '0 1px 2px rgba(17,24,39,0.04)' },
+  btnDisabled: { padding: '12px 24px', borderRadius: 8, border: 'none', background: 'var(--sm-gray-200)', color: 'var(--sm-gray-500)', fontSize: 14, fontWeight: 800, cursor: 'not-allowed', fontFamily: 'inherit' },
   btnDanger: { padding: '12px 22px', borderRadius: 8, border: '1px solid #FECACA', background: '#FEF2F2', color: '#B91C1C', fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' },
 };
 
 const localCss = {
-  fileInp: { padding: '8px 10px', fontSize: 12.5, color: '#4E5968', border: '1px dashed #D1D6DB', borderRadius: 7, background: '#F9FAFB', cursor: 'pointer', fontFamily: 'inherit' },
-  imgRow: { display: 'flex', alignItems: 'center', gap: 10, padding: 10, border: '1px solid #E5E8EB', borderRadius: 7, background: '#fff' },
-  logoPreview: { height: 40, width: 40, borderRadius: 6, objectFit: 'contain', background: '#F9FAFB' },
+  fileInp: { padding: '8px 10px', fontSize: 12.5, color: 'var(--sm-gray-700)', border: '1px dashed var(--sm-gray-300)', borderRadius: 7, background: 'var(--sm-gray-50)', cursor: 'pointer', fontFamily: 'inherit' },
+  imgRow: { display: 'flex', alignItems: 'center', gap: 10, padding: 10, border: '1px solid var(--sm-gray-200)', borderRadius: 7, background: '#fff' },
+  logoPreview: { height: 40, width: 40, borderRadius: 6, objectFit: 'contain', background: 'var(--sm-gray-50)' },
   imgPreview: { height: 60, width: 100, borderRadius: 6, objectFit: 'cover' },
   imgRemove: { marginLeft: 'auto', padding: '5px 10px', fontSize: 11, color: '#B91C1C', background: '#FEF2F2', border: '1px solid #FECACA', borderRadius: 5, cursor: 'pointer', fontFamily: 'inherit', fontWeight: 700 },
-  uploadHint: { fontSize: 12, color: '#EA580C', fontWeight: 600, marginTop: -8, marginBottom: 14 },
-  photoHint: { fontSize: 11.5, color: '#8B95A1', marginTop: -8, marginBottom: 14, fontWeight: 600 },
+  uploadHint: { fontSize: 12, color: 'var(--sm-primary-600)', fontWeight: 600, marginTop: -8, marginBottom: 14 },
+  photoHint: { fontSize: 11.5, color: 'var(--sm-gray-500)', marginTop: -8, marginBottom: 14, fontWeight: 600 },
 
   // 미리보기 — 실제 /jobs 피드 카드 형태
-  pvCard: { background: '#fff', border: '1px solid #E5E8EB', borderRadius: 10, overflow: 'hidden' },
+  pvCard: { background: '#fff', border: '1px solid var(--sm-gray-200)', borderRadius: 10, overflow: 'hidden' },
   pvImg: { width: '100%', height: 140, objectFit: 'cover', display: 'block' },
-  pvImgEmpty: { width: '100%', height: 140, background: '#F2F4F6', display: 'grid', placeItems: 'center', color: '#8B95A1', fontSize: 12.5, fontWeight: 700 },
+  pvImgEmpty: { width: '100%', height: 140, background: 'var(--sm-gray-100)', display: 'grid', placeItems: 'center', color: 'var(--sm-gray-500)', fontSize: 12.5, fontWeight: 700 },
   pvBody: { padding: 14 },
   pvCompanyRow: { display: 'flex', alignItems: 'center', gap: 6, marginBottom: 7 },
-  pvLogo: { width: 20, height: 20, borderRadius: 5, objectFit: 'contain', background: '#F2F4F6' },
-  pvLogoEmpty: { width: 20, height: 20, borderRadius: 5, background: '#E5E8EB' },
-  pvCompany: { fontSize: 11.5, color: '#6B7684', fontWeight: 700 },
-  pvTitle: { fontSize: 15, fontWeight: 800, color: '#191F28', marginBottom: 6, lineHeight: 1.3 },
-  pvSalary: { fontSize: 13, color: '#EA580C', fontWeight: 800, marginBottom: 7 },
+  pvLogo: { width: 20, height: 20, borderRadius: 5, objectFit: 'contain', background: 'var(--sm-gray-100)' },
+  pvLogoEmpty: { width: 20, height: 20, borderRadius: 5, background: 'var(--sm-gray-200)' },
+  pvCompany: { fontSize: 11.5, color: 'var(--sm-gray-600)', fontWeight: 700 },
+  pvTitle: { fontSize: 15, fontWeight: 800, color: 'var(--sm-gray-900)', marginBottom: 6, lineHeight: 1.3 },
+  pvSalary: { fontSize: 13, color: 'var(--sm-primary-600)', fontWeight: 800, marginBottom: 7 },
   pvTags: { display: 'flex', flexWrap: 'wrap', gap: 5, marginBottom: 8 },
-  pvTag: { fontSize: 10.5, fontWeight: 700, color: '#4E5968', background: '#F2F4F6', padding: '3px 8px', borderRadius: 999 },
-  pvLoc: { fontSize: 11.5, color: '#6B7684' },
+  pvTag: { fontSize: 10.5, fontWeight: 700, color: 'var(--sm-gray-700)', background: 'var(--sm-gray-100)', padding: '3px 8px', borderRadius: 999 },
+  pvLoc: { fontSize: 11.5, color: 'var(--sm-gray-600)' },
 };

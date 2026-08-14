@@ -107,7 +107,7 @@ export default function ForCompanies() {
       <style>{`
         section { scroll-margin-top: 96px; }
         .fc-kpi strong {
-          color: #ea580c;
+          color: var(--sm-primary);
           font-size: clamp(46px, 7vw, 82px);
           line-height: 0.95;
           letter-spacing: -0.05em;
@@ -138,7 +138,7 @@ export default function ForCompanies() {
         }
         .fc-offer-flow b {
           display: block; width: 46px; height: 1px;
-          background: linear-gradient(90deg, rgba(234,88,12,0.18), rgba(234,88,12,0.8));
+          background: linear-gradient(90deg, rgba(var(--sm-primary-rgb),0.18), rgba(var(--sm-primary-rgb),0.8));
         }
         .fc-close-quote {
           position: absolute;
@@ -411,7 +411,7 @@ const css = {
     padding: '9px 14px',
     borderRadius: 7,
     background: '#fff',
-    color: '#111',
+    color: 'var(--sm-gray-900)',
     fontSize: 12.5,
     fontWeight: 850,
     textDecoration: 'none',
@@ -425,8 +425,8 @@ const css = {
     maxWidth: 'none',
     margin: '0 auto',
     padding: '74px max(32px, calc((100vw - 1240px) / 2 + 32px)) 96px',
-    background: '#f7f7f5',
-    color: '#151515',
+    background: 'var(--sm-gray-50)',
+    color: 'var(--sm-gray-900)',
   },
   heroBadge: {
     display: 'inline-block',
@@ -434,7 +434,7 @@ const css = {
     borderRadius: 999,
     background: '#fff',
     border: '1px solid rgba(0,0,0,0.08)',
-    color: '#525252',
+    color: 'var(--sm-gray-700)',
     fontSize: 12,
     fontWeight: 800,
     letterSpacing: '0.02em',
@@ -442,7 +442,7 @@ const css = {
     marginBottom: 24,
   },
   eyebrow: {
-    color: '#fb923c',
+    color: 'var(--sm-primary-400)',
     fontSize: 11,
     fontWeight: 900,
     letterSpacing: '0.16em',
@@ -450,7 +450,7 @@ const css = {
     marginBottom: 16,
   },
   eyebrowDark: {
-    color: '#ea580c',
+    color: 'var(--sm-primary)',
     fontSize: 11,
     fontWeight: 900,
     letterSpacing: '0.16em',
@@ -466,7 +466,7 @@ const css = {
     letterSpacing: '-0.035em',
   },
   highlight: {
-    color: '#ea580c',
+    color: 'var(--sm-primary)',
     background: 'linear-gradient(180deg, transparent 58%, rgba(249,115,22,0.22) 58%)',
     borderRadius: 6,
     padding: '0 8px',
@@ -474,7 +474,7 @@ const css = {
   lead: {
     maxWidth: 620,
     margin: '20px auto 0',
-    color: '#4b5563',
+    color: 'var(--sm-gray-700)',
     fontSize: 17,
     lineHeight: 1.6,
     fontWeight: 650,
@@ -485,7 +485,7 @@ const css = {
     borderRadius: 999,
     background: '#fff',
     border: '1px solid rgba(0,0,0,0.14)',
-    color: '#111',
+    color: 'var(--sm-gray-900)',
     fontSize: 14,
     fontWeight: 850,
     fontFamily: 'inherit',
@@ -498,8 +498,8 @@ const css = {
     border: 0,
     borderRadius: 999,
     padding: '14px 26px',
-    background: 'linear-gradient(135deg,#ef4444,#f97316)',
-    boxShadow: '0 6px 18px rgba(234,88,12,0.28)',
+    background: 'linear-gradient(135deg,var(--sm-primary),var(--sm-primary-400))',
+    boxShadow: '0 6px 18px rgba(var(--sm-primary-rgb),0.28)',
     color: '#fff',
     fontSize: 14,
     fontWeight: 850,
@@ -513,7 +513,7 @@ const css = {
     border: 0,
     borderRadius: 999,
     padding: '17px 30px',
-    background: 'linear-gradient(135deg,#ef4444,#f97316)',
+    background: 'linear-gradient(135deg,var(--sm-primary),var(--sm-primary-400))',
     color: '#fff',
     fontSize: 15.5,
     fontWeight: 900,
@@ -534,7 +534,7 @@ const css = {
     borderRadius: 24,
     overflow: 'hidden',
     boxShadow: '0 30px 70px rgba(17,17,17,0.14)',
-    background: '#e5e7eb',
+    background: 'var(--sm-gray-200)',
   },
   heroImg: {
     width: '100%',
@@ -546,8 +546,8 @@ const css = {
     padding: '78px max(32px, calc((100vw - 1240px) / 2 + 32px)) 86px',
     background:
       'radial-gradient(circle at 20% 8%, rgba(249,115,22,0.10), transparent 26%),' +
-      'linear-gradient(180deg, #f7f7f5 0%, #fff 58%, #f7f7f5 100%)',
-    color: '#151515',
+      'linear-gradient(180deg, var(--sm-gray-50) 0%, #fff 58%, var(--sm-gray-50) 100%)',
+    color: 'var(--sm-gray-900)',
   },
   talentProofHead: {
     maxWidth: 820,
@@ -555,7 +555,7 @@ const css = {
   },
   talentProofTitle: {
     margin: 0,
-    color: '#151515',
+    color: 'var(--sm-gray-900)',
     fontSize: 'clamp(34px, 4.6vw, 56px)',
     lineHeight: 1.08,
     fontWeight: 950,
@@ -564,7 +564,7 @@ const css = {
   talentProofLead: {
     maxWidth: 650,
     margin: '18px 0 0',
-    color: '#4b5563',
+    color: 'var(--sm-gray-700)',
     fontSize: 17,
     lineHeight: 1.62,
     fontWeight: 650,
@@ -603,7 +603,7 @@ const css = {
     borderRadius: 14,
     background: '#fff',
     border: '1px solid rgba(0,0,0,0.06)',
-    color: '#111',
+    color: 'var(--sm-gray-900)',
     boxShadow: '0 14px 34px rgba(0,0,0,0.10)',
     minWidth: 130,
     textAlign: 'left',
@@ -614,7 +614,7 @@ const css = {
     right: -24, top: 36,
     padding: '14px 18px',
     borderRadius: 14,
-    background: 'linear-gradient(135deg, #ef4444, #f97316)',
+    background: 'linear-gradient(135deg, var(--sm-primary), var(--sm-primary-400))',
     color: '#fff',
     boxShadow: '0 16px 36px rgba(249,115,22,0.34)',
     minWidth: 140,
@@ -640,8 +640,8 @@ const css = {
     maxWidth: 'none',
     margin: '0 auto',
     padding: '0 max(32px, calc((100vw - 1240px) / 2 + 32px)) 46px',
-    background: '#f7f7f5',
-    color: '#151515',
+    background: 'var(--sm-gray-50)',
+    color: 'var(--sm-gray-900)',
   },
   kpi: {
     display: 'flex',
@@ -657,7 +657,7 @@ const css = {
     background:
       'radial-gradient(circle at 18% 18%, rgba(249,115,22,0.14), transparent 26%),' +
       'linear-gradient(180deg, #fff 0%, #f6f4ef 100%)',
-    color: '#111',
+    color: 'var(--sm-gray-900)',
     padding: '78px 32px 84px',
   },
   sectionHead: { maxWidth: 760, margin: '0 auto 38px', textAlign: 'center' },
@@ -671,7 +671,7 @@ const css = {
   },
   h2Dark: {
     margin: 0,
-    color: '#111',
+    color: 'var(--sm-gray-900)',
     fontSize: 'clamp(28px, 4vw, 42px)',
     lineHeight: 1.2,
     fontWeight: 900,
@@ -709,7 +709,7 @@ const css = {
   },
   flowNumber: {
     alignSelf: 'flex-start',
-    color: '#ff4b16',
+    color: 'var(--sm-primary)',
     fontSize: 13,
     fontWeight: 950,
   },
@@ -718,7 +718,7 @@ const css = {
     height: 132,
     margin: '8px auto 22px',
     borderRadius: 20,
-    background: '#f5f7fb',
+    background: 'var(--sm-gray-100)',
     border: '1px solid rgba(15,23,42,0.06)',
     boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.82)',
     position: 'relative',
@@ -737,7 +737,7 @@ const css = {
     padding: '7px 12px',
     borderRadius: 999,
     background: '#fff',
-    color: '#ea580c',
+    color: 'var(--sm-primary)',
     fontSize: 11.5,
     lineHeight: 1,
     fontWeight: 950,
@@ -746,7 +746,7 @@ const css = {
   },
   flowTitle: {
     margin: '14px 0 8px',
-    color: '#111827',
+    color: 'var(--sm-gray-900)',
     fontSize: 17,
     lineHeight: 1.25,
     fontWeight: 950,
@@ -755,7 +755,7 @@ const css = {
   },
   flowDesc: {
     margin: 0,
-    color: '#475569',
+    color: 'var(--sm-gray-700)',
     fontSize: 13,
     lineHeight: 1.52,
     fontWeight: 750,
@@ -771,7 +771,7 @@ const css = {
     display: 'grid',
     placeItems: 'center',
     background: '#fff',
-    color: '#ff4b16',
+    color: 'var(--sm-primary)',
     fontSize: 17,
     fontWeight: 950,
     boxShadow: '0 8px 20px rgba(15,23,42,0.08)',
@@ -801,7 +801,7 @@ const css = {
     gap: 12,
     maxWidth: 640,
     margin: '34px auto 0',
-    color: '#525252',
+    color: 'var(--sm-gray-700)',
     fontSize: 13,
     fontWeight: 900,
   },
@@ -814,7 +814,7 @@ const css = {
       'radial-gradient(circle at 18% 18%, rgba(47,128,237,0.10), transparent 28%),' +
       'radial-gradient(circle at 82% 80%, rgba(249,115,22,0.08), transparent 26%),' +
       'linear-gradient(180deg, #f7fbff 0%, #eef5fb 100%)',
-    color: '#111',
+    color: 'var(--sm-gray-900)',
   },
   closeWrap: {
     width: '100%',
@@ -832,18 +832,18 @@ const css = {
     letterSpacing: '-0.08em',
   },
   closeCurrency: {
-    color: '#ea580c',
+    color: 'var(--sm-primary)',
     letterSpacing: '-0.08em',
   },
   closeCaption: {
     margin: '42px 0 0',
-    color: '#98a2b3',
+    color: 'var(--sm-gray-400)',
     fontSize: 24,
     lineHeight: 1.35,
     fontWeight: 650,
     letterSpacing: '-0.015em',
   },
-  closeCaptionStrong: { color: '#111827', fontWeight: 850 },
+  closeCaptionStrong: { color: 'var(--sm-gray-900)', fontWeight: 850 },
   closePills: {
     display: 'flex',
     alignItems: 'center',
@@ -856,7 +856,7 @@ const css = {
     borderRadius: 999,
     background: 'rgba(255,255,255,0.78)',
     border: '1px solid rgba(17,24,39,0.06)',
-    color: '#667085',
+    color: 'var(--sm-gray-600)',
     fontSize: 15,
     fontWeight: 760,
   },
@@ -873,7 +873,7 @@ const css = {
   },
   quoteText: {
     margin: 0,
-    color: '#3f4652',
+    color: 'var(--sm-gray-700)',
     fontSize: 'clamp(28px, 2.35vw, 42px)',
     lineHeight: 1.44,
     fontWeight: 780,
@@ -882,7 +882,7 @@ const css = {
   },
   quoteRole: {
     marginTop: 28,
-    color: '#4b5563',
+    color: 'var(--sm-gray-700)',
     fontSize: 18,
     fontWeight: 800,
   },
@@ -905,7 +905,7 @@ const css = {
   },
   closeFoot: {
     margin: '74px 0 0',
-    color: '#98a2b3',
+    color: 'var(--sm-gray-400)',
     fontSize: 17,
     lineHeight: 1.7,
     fontWeight: 680,
@@ -920,7 +920,7 @@ const css = {
     padding: '0 16px 0 26px',
     border: 0,
     borderRadius: 999,
-    background: '#111827',
+    background: 'var(--sm-gray-900)',
     color: '#fff',
     fontFamily: 'inherit',
     fontSize: 15,
@@ -935,6 +935,6 @@ const css = {
     height: 32,
     borderRadius: '50%',
     background: '#fff',
-    color: '#111827',
+    color: 'var(--sm-gray-900)',
   },
 };

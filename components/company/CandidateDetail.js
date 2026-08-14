@@ -802,7 +802,7 @@ export default function CandidateDetail({
   return (
     <div className={cn(
       mode === 'overlay'
-        ? 'flex flex-col h-full bg-[#F9FAFB]'
+        ? 'flex flex-col h-full bg-[var(--sm-gray-50)]'
         : 'min-h-screen bg-gray-50 px-4 py-4 md:px-6 md:py-6 max-w-[1400px] mx-auto'
     )}>
       {/* Mobile top bar — icon-only back + 3-tab nav. Replaces hero clutter on small screens. */}
@@ -1173,7 +1173,7 @@ export default function CandidateDetail({
             // fills the panel cleanly instead of floating with side gutters.
             <iframe
               src={`${app.resume_url}${app.resume_url.includes('#') ? '&' : '#'}view=FitH`}
-              className="flex-1 w-full border-0 min-h-[420px] md:min-h-[720px] bg-[#F2F4F6]"
+              className="flex-1 w-full border-0 min-h-[420px] md:min-h-[720px] bg-[var(--sm-gray-100)]"
               title="resume"
             />
           ) : (

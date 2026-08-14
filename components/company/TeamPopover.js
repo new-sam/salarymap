@@ -9,7 +9,7 @@ import { Input as UInput } from '../ui/input';
 import { Dialog as UDialog, DialogContent as UDialogContent, DialogHeader as UDialogHeader, DialogTitle as UDialogTitle, DialogDescription as UDialogDescription } from '../ui/dialog';
 import { X as XIcon, Check, Mail as MailIcon, Users as UsersIcon } from 'lucide-react';
 
-const AVATAR_COLORS = ['#fb923c', '#60a5fa', '#34d399', '#f472b6', '#a78bfa', '#fbbf24', '#22d3ee', '#f87171'];
+const AVATAR_COLORS = ['var(--sm-primary-400)', '#60a5fa', '#34d399', '#f472b6', '#a78bfa', '#fbbf24', '#22d3ee', '#f87171'];
 function colorFor(seed = '') {
   let h = 0;
   for (let i = 0; i < seed.length; i++) h = (h * 31 + seed.charCodeAt(i)) >>> 0;

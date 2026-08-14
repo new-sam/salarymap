@@ -126,23 +126,23 @@ const s = {
     background: '#fff', borderRadius: 18, padding: '34px 30px 30px',
     boxShadow: '0 30px 80px rgba(0,0,0,0.4)',
     fontFamily: "'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
-    color: '#151515',
+    color: 'var(--sm-gray-900)',
   },
   close: {
     position: 'absolute', top: 14, right: 16, border: 0, background: 'transparent',
-    fontSize: 26, lineHeight: 1, color: '#9ca3af', cursor: 'pointer',
+    fontSize: 26, lineHeight: 1, color: 'var(--sm-gray-400)', cursor: 'pointer',
   },
-  loading: { textAlign: 'center', padding: '30px 0', color: '#9ca3af', fontSize: 22 },
+  loading: { textAlign: 'center', padding: '30px 0', color: 'var(--sm-gray-400)', fontSize: 22 },
   title: { margin: 0, fontSize: 21, fontWeight: 900, letterSpacing: '-0.02em' },
-  lead: { margin: '10px 0 20px', fontSize: 14, lineHeight: 1.6, color: '#4b5563', fontWeight: 600, wordBreak: 'keep-all' },
+  lead: { margin: '10px 0 20px', fontSize: 14, lineHeight: 1.6, color: 'var(--sm-gray-700)', fontWeight: 600, wordBreak: 'keep-all' },
   emailHint: {
     display: 'inline-block', padding: '6px 11px', borderRadius: 8,
-    background: '#f3f4f6', color: '#374151', fontSize: 12.5, fontWeight: 700, marginBottom: 16,
+    background: 'var(--sm-gray-100)', color: 'var(--sm-gray-700)', fontSize: 12.5, fontWeight: 700, marginBottom: 16,
   },
-  label: { display: 'block', fontSize: 12.5, fontWeight: 700, color: '#374151', margin: '12px 0 6px' },
+  label: { display: 'block', fontSize: 12.5, fontWeight: 700, color: 'var(--sm-gray-700)', margin: '12px 0 6px' },
   input: {
-    width: '100%', border: '1px solid #D4D7DD', borderRadius: 9, padding: '11px 13px',
-    fontSize: 14, color: '#111', fontFamily: 'inherit', outline: 'none', background: '#fff',
+    width: '100%', border: '1px solid var(--sm-gray-300)', borderRadius: 9, padding: '11px 13px',
+    fontSize: 14, color: 'var(--sm-gray-900)', fontFamily: 'inherit', outline: 'none', background: '#fff',
   },
   textarea: { resize: 'vertical', lineHeight: 1.5 },
   err: {
@@ -151,17 +151,17 @@ const s = {
   },
   btnPrimary: {
     width: '100%', marginTop: 18, border: 0, borderRadius: 10, padding: '14px 18px',
-    background: '#EA580C', color: '#fff',
+    background: 'var(--sm-primary-600)', color: '#fff',
     fontSize: 14.5, fontWeight: 850, fontFamily: 'inherit', cursor: 'pointer',
   },
   btnGhost: {
     width: '100%', marginTop: 10, borderRadius: 10, padding: '12px 18px',
-    border: '1px solid #e5e7eb', background: '#fff', color: '#374151',
+    border: '1px solid var(--sm-gray-200)', background: '#fff', color: 'var(--sm-gray-700)',
     fontSize: 13.5, fontWeight: 750, fontFamily: 'inherit', cursor: 'pointer',
   },
   doneIcon: {
     width: 52, height: 52, borderRadius: '50%', margin: '4px auto 16px',
-    display: 'grid', placeItems: 'center', background: '#EA580C', color: '#fff',
+    display: 'grid', placeItems: 'center', background: 'var(--sm-primary-600)', color: '#fff',
     fontSize: 26, fontWeight: 900,
   },
 };

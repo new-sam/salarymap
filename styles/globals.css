@@ -15,25 +15,52 @@
 @layer base {
   :root {
     --background: 0 0% 100%;
-    --foreground: 220 26% 14%;
+    --foreground: 0 0% 7%;
     --card: 0 0% 100%;
-    --card-foreground: 220 26% 14%;
+    --card-foreground: 0 0% 7%;
     --popover: 0 0% 100%;
-    --popover-foreground: 220 26% 14%;
-    --primary: 21 90% 48%;
+    --popover-foreground: 0 0% 7%;
+    --primary: 16 100% 50%;
     --primary-foreground: 0 0% 100%;
-    --secondary: 220 14% 96%;
-    --secondary-foreground: 215 19% 35%;
-    --muted: 220 14% 96%;
-    --muted-foreground: 215 14% 46%;
-    --accent: 220 14% 96%;
-    --accent-foreground: 220 26% 14%;
+    --secondary: 0 0% 96%;
+    --secondary-foreground: 0 0% 27%;
+    --muted: 0 0% 96%;
+    --muted-foreground: 0 0% 53%;
+    --accent: 0 0% 96%;
+    --accent-foreground: 0 0% 7%;
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
-    --border: 220 13% 91%;
-    --input: 220 13% 91%;
-    --ring: 21 90% 48%;
+    --border: 0 0% 91%;
+    --input: 0 0% 91%;
+    --ring: 16 100% 50%;
     --radius: 14px;
+  }
+
+  /* ── FYI 브랜드 토큰 (--sm-*) ─────────────────────────────────
+     인라인 스타일·<style> 블록용 단일 소스. tailwind.config.js의
+     primary/gray, lib/theme.js와 같은 값을 유지할 것. */
+  :root {
+    --sm-primary: #FF4400;
+    --sm-primary-rgb: 255, 68, 0;
+    --sm-primary-50: #FFF2EC;
+    --sm-primary-100: #FFE4D9;
+    --sm-primary-200: #FFC9B3;
+    --sm-primary-300: #FFA07F;
+    --sm-primary-400: #FF6B35;
+    --sm-primary-500: #FF4400;
+    --sm-primary-600: #E03C00;
+    --sm-primary-700: #B83100;
+    --sm-gray-0: #FFFFFF;
+    --sm-gray-50: #FAFAFA;
+    --sm-gray-100: #F5F5F5;
+    --sm-gray-200: #E8E8E8;
+    --sm-gray-300: #D6D6D6;
+    --sm-gray-400: #B0B0B0;
+    --sm-gray-500: #8C8C8C;
+    --sm-gray-600: #666666;
+    --sm-gray-700: #444444;
+    --sm-gray-800: #2A2A2A;
+    --sm-gray-900: #111111;
   }
 }
 
@@ -56,7 +83,7 @@ body {
   /* Slight tracking pull-in for Korean — feels tighter without being cramped. */
   letter-spacing: -0.005em;
   line-height: 1.55;
-  color: #191F28;
+  color: var(--sm-gray-900);
 }
 
 /* Vietnamese visitors: route to Be Vietnam Pro so diacritic stacks

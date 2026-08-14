@@ -54,7 +54,7 @@ export default function SavedJobs() {
       <Head><title>{t('nav.savedJobs')} — FYI</title></Head>
       <style>{`
         * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { background: #f7f7f5; font-family: -apple-system, 'Helvetica Neue', Arial, sans-serif; }
+        body { background: #f7f7f5; }
         .sv-wrap { max-width: 600px; margin: 0 auto; padding: 40px 20px 80px; min-height: calc(100vh - 56px); }
         .sv-h { font-size: 22px; font-weight: 800; color: #111; margin-bottom: 4px; }
         .sv-sub { font-size: 13px; color: #aaa; margin-bottom: 28px; }
