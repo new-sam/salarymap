@@ -797,7 +797,92 @@ const renderSalaryMail = (i18n) => (lang) => {
 const salaryHtml = renderSalaryMail(SALARY_I18N)
 const salaryBHtml = renderSalaryMail(SALARY_B_I18N)
 
+// ── KYNDOF·Collective 추천 (8/14, scripts/outreach/kyndof-recommend-coldmail.mjs) ──
+// 14개 공고(KYN4001~4014)를 9개 발송 그룹으로 통합(1인 1통 배정), gpt-4o-mini 채점 4점+(ops1만 3점+).
+// 통합 그룹 메일은 공고 카드가 최대 2개(대상자가 통과한 공고만 — 1개일 수도 있다). 프레임:
+// public=공개 이력서(명단에 프로필 동봉), private=비공개(지원 시 CV 전달) — 둘 다 "이번 주
+// 담당자에게 명단 전달"을 약속하므로 발송 후 킨도프 측에 추천 명단 실제 공유 의무.
+const KYNDOF_I18N = {
+  intro: {
+    vi: '<b>KYNDOF</b> — công ty Hàn Quốc vận hành thương hiệu thời trang <b>2000Archives</b>, tổ chức sản xuất trang phục theo yêu cầu <b>2000Atelier</b> và nền tảng marketplace thời trang C2C <b>Collective</b> — đang tuyển dụng đồng thời nhiều vị trí then chốt qua FYI.',
+    ko: '패션 브랜드 <b>2000Archives</b>, 맞춤 제작 <b>2000Atelier</b>, C2C 패션 마켓플레이스 <b>Collective</b>를 운영하는 한국 기업 <b>KYNDOF</b>가 FYI를 통해 주요 포지션을 동시 채용 중입니다.',
+    en: '<b>KYNDOF</b> — a Korean company running the fashion brand <b>2000Archives</b>, the made-to-order studio <b>2000Atelier</b> and the C2C fashion marketplace <b>Collective</b> — is hiring for multiple key positions at once through FYI.',
+  },
+  hook: {
+    vi: 'Đội ngũ FYI đã xem xét toàn bộ hồ sơ đã đăng ký và <b>chọn bạn vào danh sách đề cử</b> cho vị trí dưới đây — hồ sơ của bạn phù hợp với yêu cầu của vị trí này.',
+    ko: 'FYI 팀이 등록된 이력서 전체를 검토해 회원님을 아래 포지션의 <b>추천 명단에 선정</b>했습니다 — 회원님의 이력이 이 포지션 요건에 부합합니다.',
+    en: 'The FYI team reviewed every registered CV and <b>selected you for the nominee list</b> for the position below — your experience matches its requirements.',
+  },
+  benefit: {
+    public: {
+      vi: '<b>Trong tuần này</b>, FYI sẽ gửi danh sách đề cử trực tiếp cho người phụ trách tuyển dụng của KYNDOF. Hồ sơ của bạn đang ở chế độ công khai nên sẽ được gửi kèm danh sách. Nếu bạn ứng tuyển ngay, CV của bạn sẽ được <b>ưu tiên xem xét</b> cùng lời giới thiệu từ FYI.',
+      ko: '<b>이번 주에</b> FYI가 킨도프 채용 담당자에게 추천 명단을 직접 전달합니다. 회원님 이력서는 공개 상태라 명단과 함께 프로필이 전달됩니다. 지금 지원하시면 FYI의 추천과 함께 <b>우선 검토</b>됩니다.',
+      en: '<b>This week</b>, FYI will send the nominee list directly to KYNDOF\'s recruiter. Your resume is public, so your profile goes with the list. Apply now and your CV gets <b>priority review</b> with FYI\'s recommendation.',
+    },
+    private: {
+      vi: '<b>Trong tuần này</b>, FYI sẽ gửi danh sách đề cử trực tiếp cho người phụ trách tuyển dụng của KYNDOF. Hồ sơ của bạn đang ở chế độ riêng tư — nếu bạn ứng tuyển ngay, CV của bạn sẽ được gửi kèm lời giới thiệu từ FYI và được <b>ưu tiên xem xét</b>.',
+      ko: '<b>이번 주에</b> FYI가 킨도프 채용 담당자에게 추천 명단을 직접 전달합니다. 회원님 이력서는 비공개 상태라, 지금 지원하시면 CV가 FYI의 추천과 함께 전달되어 <b>우선 검토</b>됩니다.',
+      en: '<b>This week</b>, FYI will send the nominee list directly to KYNDOF\'s recruiter. Your resume is private — apply now and your CV goes with FYI\'s recommendation and gets <b>priority review</b>.',
+    },
+  },
+}
+const KYNDOF_GROUPS = [
+  { key: 'tech1', role: { vi: 'Tech Lead / Backend Marketplace', ko: '테크리드·백엔드', en: 'Tech Lead / Backend (Marketplace)' }, jobs: ['Tech Lead / Engineering Manager', 'Backend Marketplace'] },
+  { key: 'growth1', role: { vi: 'Growth Marketing & Marketplace Marketing', ko: '그로스 마케팅', en: 'Growth & Marketplace Marketing' }, jobs: ['Growth Marketing & Cộng đồng', 'Growth & Marketplace Marketing Manager'] },
+  { key: 'design1', role: { vi: 'Graphic Designer / Product Designer UX·UI', ko: '그래픽·프로덕트 디자이너', en: 'Graphic / Product Designer (UX·UI)' }, jobs: ['Graphic Designer/ Editor', 'Product Designer UX/UI'] },
+  { key: 'mobile1', role: { vi: 'Kỹ sư Frontend (Ứng dụng Di động)', ko: '프론트엔드(모바일 앱)', en: 'Frontend Engineer (Mobile App)' }, jobs: ['Kỹ sư Frontend (Ứng dụng Di động)'] },
+  { key: 'ops1', role: { vi: 'Vận hành TMĐT & Marketplace', ko: '이커머스·마켓플레이스 운영', en: 'E-commerce & Marketplace Operations' }, jobs: ['Nhân viên Vận hành Thương mại điện tử & Chăm sóc khách hàng', 'Marketplace Operations Manager'] },
+  { key: 'data1', role: { vi: 'Kỹ sư Tự động hóa & Vận hành Dữ liệu', ko: '자동화·데이터 운영 엔지니어', en: 'Automation & Data Operations Engineer' }, jobs: ['Kỹ sư Tự động hóa & Vận hành Dữ liệu'] },
+  { key: 'atelier1', role: { vi: 'Vận hành Kinh doanh & Dự án Atelier', ko: 'Atelier 사업·프로젝트 운영', en: 'Atelier Business & Project Operations' }, jobs: ['Nhân viên Vận hành Kinh doanh & Dự án Atelier'] },
+  { key: 'research1', role: { vi: 'Associate Nghiên cứu & Vận hành', ko: '리서치·운영 Associate', en: 'Research & Operations Associate' }, jobs: ['Associate Nghiên cứu & Vận hành'] },
+  { key: 'pm1', role: { vi: 'Product Manager / Hoạch định Dịch vụ', ko: 'PM/서비스기획', en: 'Product Manager / Service Planning' }, jobs: ['Product Manager / Chuyên viên Hoạch định Dịch vụ'] },
+]
+const kyndofCard = (title) => `<table width="100%" cellpadding="0" cellspacing="0" style="background:#fff;border:1px solid #eee5da;border-radius:14px;margin-bottom:8px"><tr>
+  <td width="44" style="padding:14px 0 14px 14px;vertical-align:middle"><div style="width:44px;height:44px;border-radius:10px;background:#fff0e6;color:#ff6000;font-weight:800;font-size:16px;text-align:center;line-height:44px">K</div></td>
+  <td style="padding:14px 14px 14px 12px;vertical-align:middle">
+    <div style="font-size:12px;color:#8a8073;margin-bottom:3px">KYNDOF · Collective</div>
+    <div style="font-size:14.5px;font-weight:700;color:#1a1612;line-height:1.35">${title}</div>
+    <div style="font-size:12px;color:#b0691a;margin-top:3px">HCM, ĐN, HN</div>
+  </td>
+</tr></table>`
+const kyndofHtml = (frame, g) => (lang) => {
+  const s = pickLang(SHELL_I18N, lang)
+  return `<!doctype html><html lang="vi"><head><meta charset="utf-8"></head>
+<body style="margin:0;background:#faf9f7;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;color:#1a1612">
+<table width="100%" cellpadding="0" cellspacing="0" style="background:#faf9f7"><tr><td align="center" style="padding:28px 16px">
+<table width="100%" cellpadding="0" cellspacing="0" style="max-width:520px">
+  <tr><td style="padding-bottom:18px"><img src="https://salary-fyi.com/fyi-logo.png" height="24" alt="FYI" style="height:24px;width:auto;display:block"></td></tr>
+  <tr><td style="font-size:15px;line-height:1.6;color:#1a1612;padding-bottom:6px">${s.greeting}</td></tr>
+  <tr><td style="font-size:14px;line-height:1.65;color:#4a443c;padding-bottom:14px">${pickLang(KYNDOF_I18N.intro, lang)}</td></tr>
+  <tr><td style="font-size:14px;line-height:1.65;color:#4a443c;padding-bottom:14px">${pickLang(KYNDOF_I18N.hook, lang)}</td></tr>
+  <tr><td style="padding-bottom:10px">${g.jobs.map(kyndofCard).join('')}</td></tr>
+  <tr><td style="font-size:14px;line-height:1.65;color:#4a443c;padding-top:4px">${pickLang(KYNDOF_I18N.benefit[frame], lang)} ${s.onetap}</td></tr>
+  <tr><td align="center" style="padding:16px 0 6px">
+    <a style="display:inline-block;background:#ff6000;color:#fff;font-weight:700;font-size:15px;text-decoration:none;padding:14px 30px;border-radius:12px">${s.cta}</a>
+  </td></tr>
+  <tr><td style="font-size:11.5px;color:#a89f92;text-align:center;line-height:1.5;padding-top:20px">${s.footer}</td></tr>
+</table></td></tr></table></body></html>`
+}
+const KYNDOF_TEMPLATES = KYNDOF_GROUPS.flatMap((g) => ['public', 'private'].map((frame) => ({
+  match: new RegExp(`^kyndof-${g.key}-${frame}`),
+  subject: frame === 'public'
+    ? {
+      vi: `[FYI] Bạn được chọn vào danh sách đề cử gửi KYNDOF — ${g.role.vi}`,
+      ko: `[FYI] KYNDOF 추천 명단에 선정되셨습니다 — ${g.role.ko}`,
+      en: `[FYI] You're on the nominee list sent to KYNDOF — ${g.role.en}`,
+    }
+    : {
+      vi: `[FYI] Bạn được chọn vào danh sách đề cử — ${g.role.vi} tại KYNDOF·Collective`,
+      ko: `[FYI] 추천 후보 명단에 선정되셨습니다 — KYNDOF·Collective ${g.role.ko}`,
+      en: `[FYI] You've been selected for the nominee list — ${g.role.en} at KYNDOF·Collective`,
+    },
+  desc: `킨도프 ${g.role.ko} 추천 · ${frame === 'public' ? '공개' : '비공개'} 프레임 (8/14): 14개 공고→9그룹 통합·1인 1통, gpt-4o-mini 채점 ${g.key === 'ops1' ? '3점+(운영만 완화)' : '4점+'}. 카드는 대상자가 통과한 공고만(1~2개). ⚠️"이번 주 명단 전달" 카피 — 킨도프 측 실제 공유 의무.`,
+  source: 'scripts/outreach/kyndof-recommend-coldmail.mjs',
+  html: kyndofHtml(frame, g),
+})))
+
 export const COLDMAIL_TEMPLATES = [
+  ...KYNDOF_TEMPLATES,
   {
     match: /^salary-b/,
     subject: {
