@@ -30,7 +30,8 @@ const FREE_MAIL_DOMAINS = new Set([
 ]);
 
 const EMPTY = {
-  title: '', description: '', role: 'Backend', type: 'hybrid', country: 'vietnam',
+  title: '', description: '', responsibilities: '', requirements: '', preferred: '',
+  role: 'Backend', type: 'hybrid', country: 'vietnam',
   location: 'Hồ Chí Minh', experience_min: 1, experience_max: 5,
   salary_min: 30000000, salary_max: 50000000, salary_negotiable: false, tech_stack: '', benefits: '',
   headcount: '', deadline: '',
@@ -142,6 +143,8 @@ export default function NewJobPage() {
     setErr('');
     if (!form.title.trim()) { setErr(t('company.err.titleRequired')); return; }
     if (!form.description.trim()) { setErr(t('company.err.descRequired')); return; }
+    if (!form.responsibilities.trim()) { setErr(t('company.err.respRequired')); return; }
+    if (!form.requirements.trim()) { setErr(t('company.err.reqRequired')); return; }
     if (!form.salary_negotiable && Number(form.salary_min) >= Number(form.salary_max)) { setErr(t('company.err.salaryRange')); return; }
     setStatus('saving');
 
@@ -160,6 +163,9 @@ export default function NewJobPage() {
       is_active: isInternal,
       created_by: user?.id || null,
       description: form.description.trim(),
+      responsibilities: form.responsibilities.trim() || null,
+      requirements: form.requirements.trim() || null,
+      preferred: form.preferred.trim() || null,
       role: form.role, type: form.type, country: form.country, location: form.location,
       experience_min: Number(form.experience_min), experience_max: Number(form.experience_max),
       // 급여 협의: 0-0 저장 → 지면에서는 '협의 가능'으로 표시 (utils/salary.js isSalaryNegotiable)
@@ -316,6 +322,24 @@ export default function NewJobPage() {
                 <textarea value={form.description} onChange={e => setF('description', e.target.value)} rows={4}
                   placeholder={t('company.jobsnew.descPh')}
                   className="flex w-full rounded-lg border border-input bg-background px-3 py-2.5 text-sm font-medium leading-relaxed resize-y min-h-[110px] focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-1" />
+              </Field>
+
+              <Field label={t('company.jobsnew.respLabel')}>
+                <textarea value={form.responsibilities} onChange={e => setF('responsibilities', e.target.value)} rows={4}
+                  placeholder={t('company.jobsnew.respPh')}
+                  className="flex w-full rounded-lg border border-input bg-background px-3 py-2.5 text-sm font-medium leading-relaxed resize-y min-h-[110px] focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-1" />
+              </Field>
+
+              <Field label={t('company.jobsnew.reqLabel')}>
+                <textarea value={form.requirements} onChange={e => setF('requirements', e.target.value)} rows={4}
+                  placeholder={t('company.jobsnew.reqPh')}
+                  className="flex w-full rounded-lg border border-input bg-background px-3 py-2.5 text-sm font-medium leading-relaxed resize-y min-h-[110px] focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-1" />
+              </Field>
+
+              <Field label={t('company.jobsnew.prefLabel')}>
+                <textarea value={form.preferred} onChange={e => setF('preferred', e.target.value)} rows={3}
+                  placeholder={t('company.jobsnew.prefPh')}
+                  className="flex w-full rounded-lg border border-input bg-background px-3 py-2.5 text-sm font-medium leading-relaxed resize-y min-h-[80px] focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-1" />
               </Field>
 
               <div className="grid grid-cols-2 gap-3">

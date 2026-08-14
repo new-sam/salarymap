@@ -242,9 +242,9 @@ export default function ForCompanies() {
             </h1>
             <p style={css.lead}>{t('company.landing.lead')}</p>
             <div className="fc-hero-ctas" style={css.heroCtas}>
-              <button type="button" onClick={() => { track('click_contact_owner', { page: '/for-companies' }); setContactOpen(true); }} style={css.btnOutline}>💬 {t('company.landing.heroCtaContact')}</button>
+              <button type="button" onClick={() => { track('click_contact_owner', { page: '/for-companies' }); setContactOpen(true); }} style={css.btnOutline}>{t('company.landing.heroCtaContact')}</button>
               <button type="button" onClick={goPostJob} style={css.btnDark}>
-                📝 {t('company.landing.heroCtaPost')} -&gt;
+                {t('company.landing.heroCtaPost')}
               </button>
             </div>
 

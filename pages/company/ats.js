@@ -1221,6 +1221,7 @@ const KanbanCard = memo(function KanbanCard({
         )}
         {!isRejected && hasStagePassed && app.status !== 'decided' && (
           <span className="text-[10.5px] font-extrabold text-green-700 bg-green-100 border border-green-200 shrink-0 inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded">
+            <Check className="h-2.5 w-2.5" />
             {t('company.ats.passBadge')}
           </span>
         )}

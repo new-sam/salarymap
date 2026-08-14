@@ -1124,6 +1124,8 @@ export default function JobsPage() {
         .jd-co-head { display: flex; align-items: center; gap: 8px; }
         .jd-ai-badge { display: inline-flex; align-items: center; gap: 3px; font-size: 11px; font-weight: 700; color: #7c3aed; background: #f5f3ff; border: 1px solid #e9e5ff; padding: 2px 8px; border-radius: 999px; letter-spacing: 0; }
         .jd-desc { font-size: 14px; color: #444; line-height: 1.8; margin-bottom: 24px; white-space: pre-line; }
+        .jd-list { font-size: 14px; color: #444; line-height: 1.8; margin: 0 0 24px; padding-left: 20px; }
+        .jd-list li { margin-bottom: 4px; }
         .jd-sim { margin-bottom: 24px; }
         .jd-sim-jg { grid-template-columns: 1fr 1fr !important; gap: 18px 14px !important; }
         .jd-meta-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 24px; }
@@ -1572,6 +1574,26 @@ export default function JobsPage() {
                   {decodeHTML(detailJob.description) || `${detailJob.company} is looking for a ${detailJob.title} to join their team in ${detailJob.location}.\n\nThis is a ${detailJob.type} position offering ${Math.round(detailJob.salary_min / 1e6)}M–${Math.round(detailJob.salary_max / 1e6)}M VND, ideal for candidates with ${detailJob.experience_min}–${detailJob.experience_max} years of experience in ${detailJob.role}.\n\nOur headhunter team will personally introduce you and support you throughout the process.`}
                 </div>
               )}
+
+              {/* 구조화 JD — 주요업무/자격요건/우대사항 (한 줄당 한 항목, 없으면 섹션 생략) */}
+              {[
+                ['responsibilities', t('jobs.responsibilities')],
+                ['requirements', t('jobs.requirements')],
+                ['preferred', t('jobs.preferred')],
+              ].map(([key, label]) => {
+                const lines = decodeHTML(detailJob[key] || '').split('\n')
+                  .map(l => l.replace(/^[-•*]\s*/, '').trim()).filter(Boolean)
+                if (!lines.length) return null
+                return (
+                  <div key={key}>
+                    <div className="jd-divider" />
+                    <div className="jd-section-title">{label}</div>
+                    <ul className="jd-list">
+                      {lines.map((li, i) => <li key={i}>{li}</li>)}
+                    </ul>
+                  </div>
+                )
+              })}
 
               {/* Benefits */}
               {detailJob.benefits?.length > 0 && (
