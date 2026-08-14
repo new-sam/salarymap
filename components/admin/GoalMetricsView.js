@@ -3,6 +3,7 @@ import MetricChart from '../DashboardCharts'
 import { templateFor, localizeTemplate, DRAFT_CAMPAIGNS } from './coldmailTemplates'
 import { ROLE_GROUPS } from '../../constants/jobs'
 import SurveyView from './SurveyView'
+import { KRW_PER_M_VND, vndMToKrwText } from '../../lib/fx'
 
 // "승주 작업실" — 어드민 인증으로만 접근(개인 비밀번호 게이트 제거).
 // 기본 탭은 목표지표인 [이력서 공개].
@@ -1059,6 +1060,9 @@ function SalaryStatsTab({ data, loading, error, ko }) {
     )
   }
 
+  // 밴드 라벨(백만 VND) 속 숫자를 원화 만원으로 치환 — '<120'→'<660만원', '600+'→'3,300만원+'
+  const bandKrw = (label) => (label.replace(/\d+/g, (n) => Math.round((Number(n) * KRW_PER_M_VND) / 10000).toLocaleString()) + '만원').replace('+만원', '만원+')
+  const krwSub = { marginLeft: 6, color: '#9CA3AF', fontWeight: 500, fontSize: 11.5 }
   const maxBand = Math.max(...bands.map((b) => b.total), 1)
   const maxMedian = Math.max(...byYoe.map((b) => b.median || 0), 1)
   const yoeText = (m) => (m == null ? '—' : m < 12 ? `${m}m` : `${Math.floor(m / 12)}y${m % 12 ? ` ${m % 12}m` : ''}`)
@@ -1079,15 +1083,15 @@ function SalaryStatsTab({ data, loading, error, ko }) {
 
       <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
         <Card label={ko ? '표본' : 'Sample'} value={stats.n.toLocaleString()} sub={ko ? '연봉 확보 인원' : 'people with salary'} />
-        <Card label={ko ? '중앙값' : 'Median'} value={stats.median != null ? `${stats.median}M` : '—'} accent="#15803D" sub={ko ? '백만 VND/년 (월×12)' : 'M VND/yr (mo ×12)'} />
-        <Card label={ko ? '평균' : 'Average'} value={stats.avg != null ? `${stats.avg}M` : '—'} sub={ko ? '백만 VND/년 (월×12)' : 'M VND/yr (mo ×12)'} />
-        <Card label="P25–P75" value={stats.p25 != null ? `${stats.p25}–${stats.p75}M` : '—'} sub={ko ? '중간 50% 구간' : 'middle 50%'} />
+        <Card label={ko ? '중앙값' : 'Median'} value={stats.median != null ? `${stats.median}M` : '—'} accent="#15803D" sub={`${stats.median != null ? `≈ ${vndMToKrwText(stats.median)} · ` : ''}${ko ? '백만 VND/년 (월×12)' : 'M VND/yr (mo ×12)'}`} />
+        <Card label={ko ? '평균' : 'Average'} value={stats.avg != null ? `${stats.avg}M` : '—'} sub={`${stats.avg != null ? `≈ ${vndMToKrwText(stats.avg)} · ` : ''}${ko ? '백만 VND/년 (월×12)' : 'M VND/yr (mo ×12)'}`} />
+        <Card label="P25–P75" value={stats.p25 != null ? `${stats.p25}–${stats.p75}M` : '—'} sub={`${stats.p25 != null ? `≈ ${vndMToKrwText(stats.p25)}–${vndMToKrwText(stats.p75)} · ` : ''}${ko ? '중간 50% 구간' : 'middle 50%'}`} />
       </div>
 
       <div style={section}>
         <div style={{ fontSize: 14, fontWeight: 800, marginBottom: 10 }}>
           {ko ? '연봉 분포' : 'Annual salary distribution'}
-          <span style={{ fontSize: 11.5, fontWeight: 600, color: '#9CA3AF', marginLeft: 8 }}>{ko ? '단위: 백만 VND/년 (월급×12 환산)' : 'M VND/yr (monthly ×12)'}</span>
+          <span style={{ fontSize: 11.5, fontWeight: 600, color: '#9CA3AF', marginLeft: 8 }}>{(ko ? '단위: 백만 VND/년 (월급×12 환산)' : 'M VND/yr (monthly ×12)') + ` · 1M VND ≈ ${KRW_PER_M_VND / 10000}만원`}</span>
         </div>
         <table style={{ width: '100%', borderCollapse: 'collapse' }}>
           <thead><tr>
@@ -1100,7 +1104,7 @@ function SalaryStatsTab({ data, loading, error, ko }) {
           <tbody>
             {bands.map((b) => (
               <tr key={b.label}>
-                <td style={{ ...td, textAlign: 'left', color: '#374151', fontWeight: 600 }}>{b.label}</td>
+                <td style={{ ...td, textAlign: 'left', color: '#374151', fontWeight: 600 }}>{b.label}<span style={krwSub}>≈{bandKrw(b.label)}</span></td>
                 <td style={td}>{b.direct || '—'}</td>
                 <td style={{ ...td, color: '#9CA3AF' }}>{b.verified || '—'}</td>
                 <td style={{ ...td, fontWeight: 700 }}>{b.total || '—'}</td>
@@ -1133,7 +1137,7 @@ function SalaryStatsTab({ data, loading, error, ko }) {
               <tr key={b.label}>
                 <td style={{ ...td, textAlign: 'left', color: '#374151', fontWeight: 600 }}>{b.label}</td>
                 <td style={td}>{b.n || '—'}</td>
-                <td style={{ ...td, fontWeight: 700 }}>{b.median != null ? `${b.median}M` : '—'}</td>
+                <td style={{ ...td, fontWeight: 700 }}>{b.median != null ? <>{`${b.median}M`}<span style={krwSub}>≈{vndMToKrwText(b.median)}</span></> : '—'}</td>
                 <td style={td}>
                   {b.median != null && <div style={{ width: `${Math.max(2, (b.median / maxMedian) * 100)}%`, height: 14, background: '#0F172A', opacity: 0.75, borderRadius: 3, marginLeft: 'auto' }} />}
                 </td>
@@ -1168,7 +1172,7 @@ function SalaryStatsTab({ data, loading, error, ko }) {
                   <td style={{ ...td, textAlign: 'left', color: '#6B7280' }}>{r.position || '—'}</td>
                   <td style={td}>{yoeText(r.yoeMonths)}</td>
                   <td style={{ ...td, color: '#6B7280' }}>{r.type === 'previous' ? (ko ? '직전' : 'prev') : r.type === 'current' ? (ko ? '현재' : 'cur') : '—'}</td>
-                  <td style={{ ...td, fontWeight: 800, color: '#15803D' }}>{r.amount != null ? `${r.amount}M` : '—'}</td>
+                  <td style={{ ...td, fontWeight: 800, color: '#15803D' }}>{r.amount != null ? <>{`${r.amount}M`}<span style={krwSub}>≈{vndMToKrwText(r.amount)}</span></> : '—'}</td>
                 </tr>
               ))}
             </tbody>

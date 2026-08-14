@@ -107,7 +107,7 @@ export default async function handler(req, res) {
     (async () => {
       try {
         const rows = await fetchAll(supabase.from('user_profiles')
-          .select('id, updated_at, is_resume_public, resume_platform')
+          .select('id, created_at, updated_at, is_resume_public, resume_platform')
           .not('resume_url', 'is', null).order('id'))
         return rows.filter(r => r.updated_at)
       } catch (e) { return [] }
@@ -177,9 +177,15 @@ export default async function handler(req, res) {
   }
 
   for (const ru of resumeUsers) {
+    // 이력서풀 등록은 created_at 버킷 — updated_at은 프로필을 스치는 모든 갱신(연봉 입력,
+    // 콜드메일 전환 등)에 부풀어 8/13 +706%·7/14 +294% 착시를 만들었다(유저 확정 8/14:
+    // "이력서 파일을 등록한 사람 수"가 의도). 업로드 시각은 따로 없어 프로필 생성일이 근사값 —
+    // 가입 후 나중에 올린 사람은 가입일로 소급 집계된다.
+    const regDate = toVN(ru.created_at || ru.updated_at)
+    if (!dailyMap[regDate]) dailyMap[regDate] = { ...newDay(), date: regDate }
+    dailyMap[regDate].resumeUploads++
     const date = toVN(ru.updated_at)
     if (!dailyMap[date]) dailyMap[date] = { ...newDay(), date }
-    dailyMap[date].resumeUploads++
     // 이력서 공개(is_resume_public) — 그중 플랫폼(resume_platform)별. 공개는 updated_at으로
     // 버킷팅(토글 이벤트가 없어 상태 스냅샷). 20260617 마이그 이전 행은 platform이 null이라
     // 앱/웹 어느 쪽에도 안 잡힘(그 구간은 앱+웹 < 공개총합).

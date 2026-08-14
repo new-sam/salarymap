@@ -4,6 +4,7 @@ import { useAdmin } from '../../lib/adminSwr'
 import { isTopTier, overseasOf, classifyUniversity } from '../../lib/topUniversities'
 import { ROLE_GROUPS } from '../../constants/jobs'
 import { ELITE_CATS, asSkills, asExperiences, eliteCategory } from '../../lib/talentCategory'
+import { vndMToKrwText } from '../../lib/fx'
 
 // 인재의 학벌 신호 = 도메인 인증 학교(authoritative) ∪ 이력서 자유입력 university.
 // 인증 학교는 verified_school_tier(='top')로 바로 명문대 집계되고, 그 외엔 자유입력
@@ -600,7 +601,7 @@ function TalentCard({ r, L, vi, ko, userRecs = [], onRecommend, onReparse, parsi
     <span style={oneLine} title={salM != null ? `${salM}M/tháng${verM != null && r.verified_salary_at ? ` · ${r.verified_salary_at.slice(0, 10)}` : ''}` : undefined}>
       {salM != null ? (<>
         <span style={{ fontWeight: 700, color: '#111' }}>₫{salM * 12}M</span>
-        <span style={{ color: '#9CA3AF' }}> · {curM != null ? L.salarySrcProfile : L.salarySrcVerified}</span>
+        <span style={{ color: '#9CA3AF' }}> ≈ {vndMToKrwText(salM * 12)} · {curM != null ? L.salarySrcProfile : L.salarySrcVerified}</span>
       </>) : salaryFresher ? <span style={{ color: '#6B7280', fontWeight: 600 }}>{L.newGrad}</span> : '-'}
     </span>
   )
