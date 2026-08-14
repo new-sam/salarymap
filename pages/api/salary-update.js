@@ -1,5 +1,7 @@
 import supabaseAdmin from '../../lib/supabaseAdmin'
 import { verifyToken } from '../../lib/campaignToken'
+import { canonicalCompanyName } from '../../lib/canonicalCompany'
+import { deriveSalarySubmission } from '../../lib/salarySubmission'
 
 // 현/직전연봉 착지 페이지(/salary-update)의 저장 엔드포인트 — 로그인 없이 동작한다.
 // 인증은 메일 링크의 HMAC 토큰(user_id). /api/lang/save 와 같은 최소권한 설계:
@@ -22,7 +24,7 @@ export default async function handler(req, res) {
   const salaryType = ['current', 'previous'].includes(type) ? type : null
 
   const { data: prof, error: findErr } = await supabaseAdmin
-    .from('user_profiles').select('id').eq('id', claim.userId).maybeSingle()
+    .from('user_profiles').select('id, position, yoe_months, experiences').eq('id', claim.userId).maybeSingle()
   if (findErr) return res.status(500).json({ error: findErr.message })
   if (!prof) return res.status(404).json({ error: 'profile_not_found' })
 
@@ -37,6 +39,23 @@ export default async function handler(req, res) {
     user_id: prof.id,
     meta: { campaign: claim.campaign, amount: n, type: salaryType },
   })
+
+  // 수집값을 연봉 통계에도 append(source='talent', 재입력도 그대로 쌓음 — 유저 결정 8/14).
+  // 파생 실패가 본 저장을 막으면 안 되므로 best-effort.
+  try {
+    const sub = deriveSalarySubmission({ ...prof, current_salary: n * 1000000 }, salaryType)
+    if (sub) {
+      const company = sub.company ? await canonicalCompanyName(sub.company) : null
+      await supabaseAdmin.from('submissions')
+        .insert({ role: sub.role, experience: sub.experience, salary: sub.salary, company, user_id: prof.id, source: 'talent' })
+      if (company) {
+        await supabaseAdmin.from('companies')
+          .upsert({ name: company, tier: 4 }, { onConflict: 'name', ignoreDuplicates: true })
+      }
+    }
+  } catch (e) {
+    console.error('salary-update: derived submission failed', e?.message)
+  }
 
   return res.status(200).json({ ok: true })
 }
