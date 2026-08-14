@@ -136,7 +136,7 @@ export default function CompanySettings() {
           <div className="max-w-[520px] flex flex-col gap-5">
             <form onSubmit={saveProfile} className="rounded-xl border border-border bg-card px-4 py-4 flex flex-col gap-3.5">
               <div>
-                <div className="text-[15px] font-extrabold text-foreground">{t('company.profile.title')}</div>
+                <div className="text-[15px] font-bold text-foreground">{t('company.profile.title')}</div>
                 <div className="text-[12px] text-gray-500 mt-0.5 font-medium">{t('company.profile.desc')}</div>
               </div>
 
@@ -181,12 +181,12 @@ export default function CompanySettings() {
             </form>
 
             <div className="rounded-xl border border-border bg-card px-4 py-3.5">
-              <div className="text-[11px] font-extrabold text-gray-500 uppercase tracking-[0.08em]">{t('company.settings.emailLabel')}</div>
+              <div className="text-[11px] font-bold text-gray-500">{t('company.settings.emailLabel')}</div>
               <div className="mt-1 text-[14px] font-bold text-foreground">{user?.email}</div>
             </div>
 
             <form onSubmit={changePassword} className="rounded-xl border border-border bg-card px-4 py-4 flex flex-col gap-3">
-              <div className="text-[15px] font-extrabold text-foreground">{t('company.settings.pwTitle')}</div>
+              <div className="text-[15px] font-bold text-foreground">{t('company.settings.pwTitle')}</div>
               <div>
                 <label style={fcss.label}>{t('company.settings.newPw')}</label>
                 <input type="password" value={newPw} onChange={(e) => setNewPw(e.target.value)} style={fcss.input} required />
@@ -210,7 +210,7 @@ export default function CompanySettings() {
 }
 
 const fcss = {
-  label: { display: 'block', marginBottom: 6, color: 'var(--sm-gray-700)', fontSize: 12, fontWeight: 800 },
+  label: { display: 'block', marginBottom: 6, color: 'var(--sm-gray-700)', fontSize: 12, fontWeight: 700 },
   input: {
     width: '100%', border: '1px solid var(--sm-gray-300)', borderRadius: 10,
     padding: '12px 14px', color: 'var(--sm-gray-900)', background: '#fff', fontSize: 14,

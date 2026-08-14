@@ -3,7 +3,7 @@ import { cva } from 'class-variance-authority';
 import { cn } from '../../lib/cn';
 
 const badgeVariants = cva(
-  'inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10.5px] font-extrabold uppercase tracking-[0.04em] transition-colors',
+  'inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10.5px] font-bold transition-colors',
   {
     variants: {
       variant: {
@@ -14,7 +14,7 @@ const badgeVariants = cva(
         warning:  'border border-amber-200 bg-amber-50 text-amber-700',
         info:     'border border-gray-200 bg-gray-50 text-gray-700',
         outline:  'text-foreground border border-border',
-        brand:    'border border-primary-200 bg-primary-50 text-primary-700',
+        brand:    'border border-primary-200 bg-primary-50 text-primary-500',
       },
     },
     defaultVariants: { variant: 'default' },

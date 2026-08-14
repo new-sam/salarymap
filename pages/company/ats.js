@@ -16,7 +16,7 @@ import { Button } from '../../components/ui/button';
 import { Badge } from '../../components/ui/badge';
 import { Input } from '../../components/ui/input';
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator } from '../../components/ui/dropdown-menu';
-import { MoreVertical, Calendar, Mail, Ban, Lock, Plus, Search as SearchIcon, X as XIcon, Inbox, MessageSquare, Users, Trophy, Activity, CheckCircle2, XCircle, Edit3, Clock, Check, MoveHorizontal, Briefcase, PartyPopper, ChevronLeft } from 'lucide-react';
+import { MoreVertical, Calendar, Mail, Ban, Lock, Plus, Search as SearchIcon, X as XIcon, Inbox, MessageSquare, Users, Trophy, Edit3, Clock, Check, MoveHorizontal, Briefcase, PartyPopper, ChevronLeft } from 'lucide-react';
 import { PageHeader } from '../../components/ui/page-header';
 import { KanbanSkeleton } from '../../components/ui/page-skeleton';
 import Truncate from '../../components/ui/truncate';
@@ -38,7 +38,7 @@ const STAGE_COLORS = {
   pending:   'text-gray-700 bg-gray-100',
   viewed:    'text-gray-700 bg-gray-100',
   reviewing: 'text-gray-700 bg-gray-100',
-  decided:   'text-primary-700 bg-primary-50',
+  decided:   'text-primary-500 bg-primary-50',
 };
 
 const STAGES = [
@@ -663,7 +663,7 @@ export default function CompanyATSPage() {
             >
               <ChevronLeft className="w-5 h-5" />
             </Link>
-            <Truncate as="span" className="text-[15px] font-extrabold text-gray-900 tracking-tight min-w-0">
+            <Truncate as="span" className="text-[15px] font-bold text-gray-900 tracking-tight min-w-0">
               {job.title}
             </Truncate>
           </div>
@@ -685,9 +685,9 @@ export default function CompanyATSPage() {
             right={(
               <>
                 <span className={cn(
-                  'hidden md:inline-flex items-center gap-1 h-9 px-2.5 rounded-md border text-[12px] font-extrabold whitespace-nowrap',
+                  'hidden md:inline-flex items-center gap-1 h-9 px-2.5 rounded-md border text-[12px] font-bold whitespace-nowrap',
                   isOwner
-                    ? 'bg-primary-50 border-primary-200 text-primary-700'
+                    ? 'bg-primary-50 border-primary-200 text-primary-500'
                     : 'bg-gray-100 border-gray-200 text-gray-700'
                 )}>
                   {isOwner ? t('company.ats.roleOwnerJoined') : t('company.ats.roleInterviewerJoined')}
@@ -709,92 +709,29 @@ export default function CompanyATSPage() {
             )}
           />
 
-          {/* KPI cards — desktop only; mobile keeps the kanban-as-list focused on the task,
-              not on stats (Greeting-style minimalism). */}
-          <div className="hidden md:grid grid-cols-2 md:grid-cols-4 gap-3">
-            {/* 신규 검토 — 가장 중요. "오늘의 할 일" 강조 */}
-            <button
-              type="button"
-              onClick={() => toggleKpi('new')}
-              className={cn(
-                'rounded-lg border bg-card px-3 py-2.5 transition-all duration-200 text-left cursor-pointer',
-                kpiFilter === 'new'
-                  ? 'border-primary-500 ring-2 ring-primary-200'
-                  : newReviewCount > 0
-                    ? 'border-primary-200 shadow-soft-xs hover:border-primary-400'
-                    : 'border-border shadow-soft-xs hover:border-gray-300'
-              )}>
-              <div className="flex items-center gap-1.5">
-                <div className={cn('w-6 h-6 rounded-md grid place-items-center',
-                  newReviewCount > 0 ? 'bg-primary-100 text-primary-700' : 'bg-gray-100 text-gray-400'
+          {/* KPI — 어드민식 콤팩트 필터 칩 한 줄 (클릭 = 해당 상태 필터 토글).
+              큰 카드 4개 대신 세로 공간을 칸반에 양보한다. desktop only. */}
+          <div className="hidden md:flex items-center gap-1.5 flex-wrap">
+            {[
+              { key: 'new', label: t('company.kpi.new'), n: newReviewCount,
+                on: 'border-primary-500 bg-primary-50 text-primary-600',
+                num: newReviewCount > 0 ? 'text-primary-500' : 'text-gray-400' },
+              { key: 'inProgress', label: t('company.kpi.inProgress'), n: inProgressCount,
+                on: 'border-gray-500 bg-gray-100 text-gray-900', num: 'text-gray-700' },
+              { key: 'hired', label: t('company.kpi.hired'), n: hiredCount,
+                on: 'border-green-600 bg-green-50 text-green-700', num: 'text-green-700' },
+              { key: 'rejected', label: t('company.kpi.rejected'), n: rejectedCount,
+                on: 'border-red-400 bg-red-50 text-red-600', num: 'text-red-600' },
+            ].map((c) => (
+              <button key={c.key} type="button" onClick={() => toggleKpi(c.key)}
+                className={cn(
+                  'inline-flex items-center gap-1.5 h-8 px-3 rounded-md border text-[12.5px] font-semibold transition-colors cursor-pointer',
+                  kpiFilter === c.key ? c.on : 'border-border bg-card text-gray-600 hover:bg-gray-50'
                 )}>
-                  <Inbox className="h-3.5 w-3.5" />
-                </div>
-                <span className={cn('text-[12.5px] font-extrabold uppercase tracking-[0.08em]',
-                  newReviewCount > 0 ? 'text-primary-700' : 'text-gray-500'
-                )}>{t('company.kpi.new')}</span>
-              </div>
-              <div className={cn('text-[26px] font-black mt-1.5 leading-none tabular-nums',
-                newReviewCount > 0 ? 'text-primary-700' : 'text-gray-900'
-              )}>{newReviewCount}</div>
-            </button>
-
-            {/* 진행중 */}
-            <button
-              type="button"
-              onClick={() => toggleKpi('inProgress')}
-              className={cn(
-                'rounded-lg border bg-card px-3 py-2.5 transition-all duration-200 text-left cursor-pointer',
-                kpiFilter === 'inProgress'
-                  ? 'border-gray-500 shadow-soft-md ring-2 ring-gray-200'
-                  : 'border-border shadow-soft-xs hover:border-gray-300'
-              )}>
-              <div className="flex items-center gap-1.5">
-                <div className="w-6 h-6 rounded-md grid place-items-center bg-gray-100 text-gray-700">
-                  <Activity className="h-3.5 w-3.5" />
-                </div>
-                <span className="text-[12.5px] font-extrabold text-gray-700 uppercase tracking-[0.08em]">{t('company.kpi.inProgress')}</span>
-              </div>
-              <div className="text-[26px] font-black mt-1.5 leading-none tabular-nums text-gray-900">{inProgressCount}</div>
-            </button>
-
-            {/* 합격 — green accent (matches the platform-wide pass = green rule). */}
-            <button
-              type="button"
-              onClick={() => toggleKpi('hired')}
-              className={cn(
-                'rounded-lg border bg-card px-3 py-2.5 transition-all duration-200 text-left cursor-pointer',
-                kpiFilter === 'hired'
-                  ? 'border-green-500 shadow-soft-md ring-2 ring-green-200'
-                  : 'border-border shadow-soft-xs hover:border-green-300'
-              )}>
-              <div className="flex items-center gap-1.5">
-                <div className="w-6 h-6 rounded-md grid place-items-center bg-green-50 text-green-700">
-                  <CheckCircle2 className="h-3.5 w-3.5" />
-                </div>
-                <span className="text-[12.5px] font-extrabold text-green-700 uppercase tracking-[0.08em]">{t('company.kpi.hired')}</span>
-              </div>
-              <div className="text-[26px] font-black mt-1.5 leading-none tabular-nums text-green-700">{hiredCount}</div>
-            </button>
-
-            {/* 불합격 — red accent (matches the platform-wide fail = red rule). */}
-            <button
-              type="button"
-              onClick={() => toggleKpi('rejected')}
-              className={cn(
-                'rounded-lg border bg-card px-3 py-2.5 transition-all duration-200 text-left cursor-pointer',
-                kpiFilter === 'rejected'
-                  ? 'border-red-400 shadow-soft-md ring-2 ring-red-100'
-                  : 'border-border shadow-soft-xs hover:border-red-200'
-              )}>
-              <div className="flex items-center gap-1.5">
-                <div className="w-6 h-6 rounded-md grid place-items-center bg-red-50 text-red-600">
-                  <XCircle className="h-3.5 w-3.5" />
-                </div>
-                <span className="text-[12.5px] font-extrabold text-red-600 uppercase tracking-[0.08em]">{t('company.kpi.rejected')}</span>
-              </div>
-              <div className="text-[26px] font-black mt-1.5 leading-none tabular-nums text-red-600">{rejectedCount}</div>
-            </button>
+                {c.label}
+                <span className={cn('font-bold tabular-nums', c.num)}>{c.n}</span>
+              </button>
+            ))}
           </div>
 
           {err && (
@@ -865,7 +802,7 @@ export default function CompanyATSPage() {
           {/* First-run notice — a fresh board full of "비어 있음" columns reads
               as broken to a new company; say what will happen here instead. */}
           {apps.length === 0 && (
-            <div className="text-[12.5px] font-semibold text-primary-700 bg-primary-50 border border-primary-200 rounded-lg px-3 py-2 mb-3 flex-shrink-0">
+            <div className="text-[12.5px] font-semibold text-primary-500 bg-primary-50 border border-primary-200 rounded-lg px-3 py-2 mb-3 flex-shrink-0">
               {job?.status === 'pending_review' ? t('company.ats.noAppsPending') : t('company.ats.noApps')}
             </div>
           )}
@@ -891,8 +828,8 @@ export default function CompanyATSPage() {
                       already shows the same info; redundancy hurts mobile space. */}
                   <div className="hidden md:flex items-center gap-2 px-1 pb-2 border-b border-[var(--sm-gray-200)]">
                     <StageIcon className={cn('w-3.5 h-3.5', STAGE_ICON_CLASS[col.key])} />
-                    <span className="text-[13px] font-extrabold text-gray-900 tracking-tight flex-1">{t(`company.stage.${col.key}`)}</span>
-                    <span className="text-[11px] font-extrabold text-gray-900 tabular-nums bg-white border border-[var(--sm-gray-200)] rounded-full min-w-[22px] text-center px-1.5 py-0.5">{col.apps.length}</span>
+                    <span className="text-[13px] font-bold text-gray-900 tracking-tight flex-1">{t(`company.stage.${col.key}`)}</span>
+                    <span className="text-[11px] font-bold text-gray-900 tabular-nums bg-white border border-[var(--sm-gray-200)] rounded-full min-w-[22px] text-center px-1.5 py-0.5">{col.apps.length}</span>
                   </div>
 
                   {/* Cards — scrolls internally so column header stays pinned */}
@@ -1095,7 +1032,7 @@ const localCss = {
   toggleLabel: { display: 'flex', alignItems: 'center', gap: space[2], fontSize: font.size.sm, color: color.text, fontWeight: font.weight.semi, cursor: 'pointer', padding: `${space[2]}px ${space[3]}px`, background: color.surface, border: `1px solid ${color.border}`, borderRadius: radius.md, transition: motion.base },
 
   // ── Header buttons ──
-  btnNewJob: { padding: `${space[3]}px ${space[6]}px`, borderRadius: radius.md, background: color.primary[600], color: color.white, fontSize: font.size.base, fontWeight: font.weight.extra, textDecoration: 'none', boxShadow: shadow.brand, display: 'inline-flex', alignItems: 'center', transition: motion.base, letterSpacing: font.letterSpacing.tight },
+  btnNewJob: { padding: `${space[3]}px ${space[6]}px`, borderRadius: radius.md, background: color.primary[500], color: color.white, fontSize: font.size.base, fontWeight: font.weight.extra, textDecoration: 'none', boxShadow: shadow.brand, display: 'inline-flex', alignItems: 'center', transition: motion.base, letterSpacing: font.letterSpacing.tight },
 
   // ── Candidate detail overlay ──
   overlay: { position: 'fixed', inset: 0, background: 'rgba(17, 24, 39, 0.45)', backdropFilter: 'blur(2px)', zIndex: 50 },
@@ -1134,7 +1071,7 @@ const KanbanCard = memo(function KanbanCard({
   const dateLabel = daysAgo === 0
     ? t('company.ats.appliedToday', { date: dateText })
     : t('company.ats.appliedDaysAgo', { date: dateText, n: daysAgo });
-  const urgencyClass = 'bg-amber-50 text-amber-700 border-amber-200';
+  const urgencyClass = 'bg-primary-50 text-primary-500 border-primary-200';
   const email = app.applicant_email || profile?.email || '';
   const defaultTpl = defaultComposeTemplate(app.status, app.rejected_at);
   const hasStagePassed = stagePassSet?.has(`${app.status}_pass`);
@@ -1206,21 +1143,21 @@ const KanbanCard = memo(function KanbanCard({
         </DropdownMenu>
       </div>
 
-      <div className={cn('self-start inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider border', urgencyClass)}>
+      <div className={cn('self-start inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold border', urgencyClass)}>
         <Clock className="h-2.5 w-2.5" />
         {dateLabel}
       </div>
 
       <div className="flex items-center justify-between gap-2 md:pr-6">
-        <Truncate className="text-[15px] font-extrabold text-gray-900 tracking-tight leading-tight">{name}</Truncate>
+        <Truncate className="text-[15px] font-bold text-gray-900 tracking-tight leading-tight">{name}</Truncate>
         {isRejected && (
-          <span className="text-[10.5px] font-extrabold text-red-600 shrink-0 inline-flex items-center gap-0.5 uppercase tracking-wider">
+          <span className="text-[10.5px] font-bold text-red-600 shrink-0 inline-flex items-center gap-0.5">
             <Ban className="h-2.5 w-2.5" />
             {t('company.ats.rejectedBadge')}
           </span>
         )}
         {!isRejected && hasStagePassed && app.status !== 'decided' && (
-          <span className="text-[10.5px] font-extrabold text-green-700 bg-green-100 border border-green-200 shrink-0 inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded">
+          <span className="text-[10.5px] font-bold text-green-700 bg-green-100 border border-green-200 shrink-0 inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded">
             <Check className="h-2.5 w-2.5" />
             {t('company.ats.passBadge')}
           </span>
@@ -1265,7 +1202,7 @@ const KanbanCard = memo(function KanbanCard({
       )}
 
       {app.status === 'decided' && !isRejected && (
-        <div className="mt-1 inline-flex items-center justify-center gap-1.5 px-2 py-1.5 rounded-md bg-primary-50 border border-primary-200 text-primary-700 text-[12px] font-extrabold w-full">
+        <div className="mt-1 inline-flex items-center justify-center gap-1.5 px-2 py-1.5 rounded-md bg-primary-50 border border-primary-200 text-primary-500 text-[12px] font-bold w-full">
           <PartyPopper className="w-3.5 h-3.5" />
           {t('company.candidate.finalPass')}
         </div>

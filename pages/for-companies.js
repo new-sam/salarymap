@@ -194,7 +194,7 @@ export default function ForCompanies() {
         .fc-flow-stage.fc-reveal.is-visible article:nth-child(4) { transition-delay: 240ms; }
         .fc-flow-stage.is-visible .fc-flow-grid article:hover {
           transform: translateY(-4px);
-          border-color: rgba(249,115,22,0.2);
+          border-color: rgba(var(--sm-primary-rgb),0.2);
           box-shadow: 0 24px 48px rgba(15,23,42,0.11);
         }
         @keyframes fcHeroReveal {
@@ -467,7 +467,7 @@ const css = {
   },
   highlight: {
     color: 'var(--sm-primary)',
-    background: 'linear-gradient(180deg, transparent 58%, rgba(249,115,22,0.22) 58%)',
+    background: 'linear-gradient(180deg, transparent 58%, rgba(var(--sm-primary-rgb),0.22) 58%)',
     borderRadius: 6,
     padding: '0 8px',
   },
@@ -498,7 +498,7 @@ const css = {
     border: 0,
     borderRadius: 999,
     padding: '14px 26px',
-    background: 'linear-gradient(135deg,var(--sm-primary),var(--sm-primary-400))',
+    background: 'var(--sm-primary)',
     boxShadow: '0 6px 18px rgba(var(--sm-primary-rgb),0.28)',
     color: '#fff',
     fontSize: 14,
@@ -513,13 +513,13 @@ const css = {
     border: 0,
     borderRadius: 999,
     padding: '17px 30px',
-    background: 'linear-gradient(135deg,var(--sm-primary),var(--sm-primary-400))',
+    background: 'var(--sm-primary)',
     color: '#fff',
     fontSize: 15.5,
     fontWeight: 900,
     fontFamily: 'inherit',
     cursor: 'pointer',
-    boxShadow: '0 14px 34px rgba(249,115,22,0.32)',
+    boxShadow: '0 14px 34px rgba(var(--sm-primary-rgb),0.32)',
   },
   heroVisual: {
     position: 'relative',
@@ -545,7 +545,7 @@ const css = {
   talentProof: {
     padding: '78px max(32px, calc((100vw - 1240px) / 2 + 32px)) 86px',
     background:
-      'radial-gradient(circle at 20% 8%, rgba(249,115,22,0.10), transparent 26%),' +
+      'radial-gradient(circle at 20% 8%, rgba(var(--sm-primary-rgb),0.10), transparent 26%),' +
       'linear-gradient(180deg, var(--sm-gray-50) 0%, #fff 58%, var(--sm-gray-50) 100%)',
     color: 'var(--sm-gray-900)',
   },
@@ -614,9 +614,9 @@ const css = {
     right: -24, top: 36,
     padding: '14px 18px',
     borderRadius: 14,
-    background: 'linear-gradient(135deg, var(--sm-primary), var(--sm-primary-400))',
+    background: 'var(--sm-primary)',
     color: '#fff',
-    boxShadow: '0 16px 36px rgba(249,115,22,0.34)',
+    boxShadow: '0 16px 36px rgba(var(--sm-primary-rgb),0.34)',
     minWidth: 140,
     textAlign: 'left',
     zIndex: 2,
@@ -655,7 +655,7 @@ const css = {
     position: 'relative',
     overflow: 'hidden',
     background:
-      'radial-gradient(circle at 18% 18%, rgba(249,115,22,0.14), transparent 26%),' +
+      'radial-gradient(circle at 18% 18%, rgba(var(--sm-primary-rgb),0.14), transparent 26%),' +
       'linear-gradient(180deg, #fff 0%, #f6f4ef 100%)',
     color: 'var(--sm-gray-900)',
     padding: '78px 32px 84px',
@@ -741,7 +741,7 @@ const css = {
     fontSize: 11.5,
     lineHeight: 1,
     fontWeight: 950,
-    border: '1px solid rgba(249,115,22,0.16)',
+    border: '1px solid rgba(var(--sm-primary-rgb),0.16)',
     boxShadow: '0 8px 20px rgba(15,23,42,0.05)',
   },
   flowTitle: {
@@ -812,7 +812,7 @@ const css = {
     padding: '86px max(32px, calc((100vw - 1240px) / 2 + 32px)) 96px',
     background:
       'radial-gradient(circle at 18% 18%, rgba(47,128,237,0.10), transparent 28%),' +
-      'radial-gradient(circle at 82% 80%, rgba(249,115,22,0.08), transparent 26%),' +
+      'radial-gradient(circle at 82% 80%, rgba(var(--sm-primary-rgb),0.08), transparent 26%),' +
       'linear-gradient(180deg, #f7fbff 0%, #eef5fb 100%)',
     color: 'var(--sm-gray-900)',
   },

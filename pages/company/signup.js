@@ -76,7 +76,7 @@ const css = {
     border: '1px solid rgba(0,0,0,0.05)',
     boxShadow: '0 1px 2px rgba(0,0,0,0.04), 0 14px 36px rgba(0,0,0,0.07)',
   },
-  h: { fontSize: 24, fontWeight: 800, color: 'var(--sm-gray-900)', marginBottom: 8, letterSpacing: '-0.02em' },
+  h: { fontSize: 24, fontWeight: 700, color: 'var(--sm-gray-900)', marginBottom: 8, letterSpacing: '-0.02em' },
   lead: { fontSize: 13.5, color: 'var(--sm-gray-600)', marginBottom: 24, lineHeight: 1.6 },
   note: {
     background: '#F0F6FF', border: '1px solid #DBE8FF', borderRadius: 10,

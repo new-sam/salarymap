@@ -15,7 +15,7 @@ export function PageHeader({ title, subtitle, back, right, size = 'md', sticky =
     )}>
       <div className="min-w-0 flex-1">
         {back}
-        <h1 className={cn('font-extrabold text-foreground tracking-tight leading-tight', titleClass)}>
+        <h1 className={cn('font-bold text-foreground tracking-tight leading-tight', titleClass)}>
           {title}
         </h1>
         {subtitle && (

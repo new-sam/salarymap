@@ -32,7 +32,7 @@ export default function LangToggle({ align = 'right', tone = 'dark' }) {
         type="button"
         onClick={() => setOpen(v => !v)}
         className={cn(
-          'inline-flex items-center gap-1 px-2 h-7 rounded-md text-[11px] font-bold uppercase tracking-wider transition-colors',
+          'inline-flex items-center gap-1 px-2 h-7 rounded-md text-[11px] font-bold transition-colors',
           triggerClass
         )}
       >
@@ -61,7 +61,7 @@ export default function LangToggle({ align = 'right', tone = 'dark' }) {
                   active
                     ? tone === 'dark'
                       ? 'bg-primary-500/15 text-primary-300 font-bold'
-                      : 'bg-primary-50 text-primary-700 font-bold'
+                      : 'bg-primary-50 text-primary-500 font-bold'
                     : tone === 'dark'
                       ? 'text-gray-300 hover:bg-white/5 hover:text-white font-medium'
                       : 'text-gray-700 hover:bg-gray-100 font-medium'

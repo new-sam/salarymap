@@ -13,7 +13,7 @@ import { useT } from '../../lib/i18n';
 import { cn } from '../../lib/cn';
 import { Button as UButton } from '../../components/ui/button';
 import { Badge as UBadge } from '../../components/ui/badge';
-import { Plus, FileText, Edit3, ArrowRight, Briefcase, CheckCircle2, Users, Home } from 'lucide-react';
+import { Plus, FileText, ArrowRight, Users, Home } from 'lucide-react';
 import { EmptyState } from '../../components/ui/empty-state';
 import { PageHeader } from '../../components/ui/page-header';
 import { DashboardSkeleton } from '../../components/ui/page-skeleton';
@@ -485,55 +485,22 @@ export default function CompanyDashboard() {
             </div>
           ) : (
             <>
-              {/* Dashboard KPI — desktop only; mobile MVP is a focused job list à la Greeting,
-                  not a dashboard. Recruiters open mobile to drill into jobs, not skim stats. */}
+              {/* Dashboard KPI — 어드민 대시보드식 콤팩트 스탯 (라벨 11.5/숫자 20, 아이콘 없음).
+                  desktop only; mobile MVP is a focused job list. */}
               <div className="hidden md:grid grid-cols-1 sm:grid-cols-3 gap-2.5 mb-4">
-                {/* 공고 (총) — gray */}
-                <div className="rounded-lg border border-border bg-card px-3 py-2.5 shadow-soft-xs">
-                  <div className="flex items-center gap-1.5">
-                    <div className="w-6 h-6 rounded-md grid place-items-center bg-gray-100 text-gray-700">
-                      <Briefcase className="h-3.5 w-3.5" />
-                    </div>
-                    <span className="text-[12.5px] font-extrabold text-gray-700 uppercase tracking-[0.08em]">{t('company.kpiJobs')}</span>
-                  </div>
-                  <div className="mt-1.5 flex items-baseline gap-1 text-gray-900">
-                    <span className="text-[26px] font-black leading-none tracking-tight tabular-nums">{jobs.length}</span>
-                    <span className="text-[13px] font-bold text-gray-900">{t('company.unit.count')}</span>
-                  </div>
+                <div className="rounded-lg border border-border bg-card px-3.5 py-2.5 shadow-soft-xs">
+                  <div className="text-[11.5px] font-semibold text-gray-500">{t('company.kpiJobs')}</div>
+                  <div className="mt-1 text-[20px] font-bold text-gray-900 tabular-nums leading-none">{jobs.length}</div>
                 </div>
-                {/* 활성 공고 — green (positive state) */}
-                <div className="rounded-lg border border-border bg-card px-3 py-2.5 shadow-soft-xs">
-                  <div className="flex items-center gap-1.5">
-                    <div className="w-6 h-6 rounded-md grid place-items-center bg-green-50 text-green-700">
-                      <CheckCircle2 className="h-3.5 w-3.5" />
-                    </div>
-                    <span className="text-[12.5px] font-extrabold text-green-700 uppercase tracking-[0.08em]">{t('company.kpiActive')}</span>
-                  </div>
-                  <div className="mt-1.5 flex items-baseline gap-1 text-green-700">
-                    <span className="text-[26px] font-black leading-none tracking-tight tabular-nums">{activeCount}</span>
-                    <span className="text-[13px] font-bold text-green-700">{t('company.unit.count')}</span>
-                  </div>
+                <div className="rounded-lg border border-border bg-card px-3.5 py-2.5 shadow-soft-xs">
+                  <div className="text-[11.5px] font-semibold text-gray-500">{t('company.kpiActive')}</div>
+                  <div className="mt-1 text-[20px] font-bold text-green-700 tabular-nums leading-none">{activeCount}</div>
                 </div>
-                {/* 지원자 — primary (action target) */}
-                <div className="rounded-lg border border-border bg-card px-3 py-2.5 shadow-soft-xs">
-                  <div className="flex items-center gap-1.5">
-                    <div className={cn('w-6 h-6 rounded-md grid place-items-center',
-                      appsCount > 0 ? 'bg-primary-100 text-primary-700' : 'bg-gray-100 text-gray-400'
-                    )}>
-                      <Users className="h-3.5 w-3.5" />
-                    </div>
-                    <span className={cn('text-[12.5px] font-extrabold uppercase tracking-[0.08em]',
-                      appsCount > 0 ? 'text-primary-700' : 'text-gray-500'
-                    )}>{t('company.kpiApps')}</span>
-                  </div>
-                  <div className={cn('mt-1.5 flex items-baseline gap-1',
-                    appsCount > 0 ? 'text-primary-700' : 'text-gray-900'
-                  )}>
-                    <span className="text-[26px] font-black leading-none tracking-tight tabular-nums">{appsCount}</span>
-                    <span className={cn('text-[13px] font-bold',
-                      appsCount > 0 ? 'text-primary-700' : 'text-gray-900'
-                    )}>{t('company.unit.people')}</span>
-                  </div>
+                <div className="rounded-lg border border-border bg-card px-3.5 py-2.5 shadow-soft-xs">
+                  <div className="text-[11.5px] font-semibold text-gray-500">{t('company.kpiApps')}</div>
+                  <div className={cn('mt-1 text-[20px] font-bold tabular-nums leading-none',
+                    appsCount > 0 ? 'text-primary-500' : 'text-gray-900'
+                  )}>{appsCount}</div>
                 </div>
               </div>
 
@@ -543,97 +510,71 @@ export default function CompanyDashboard() {
                 const groupOf = (s) => s === 'live' ? 'active' : s === 'pending_review' ? 'pending' : 'inactive';
                 const grouped = { active: [], pending: [], inactive: [] };
                 jobs.forEach(j => { grouped[groupOf(j.status)].push(j); });
+                // isJobOwner: "공고 관리자(admin)" 여부. 백필된 created_by 는 이미
+                // job_team.role='admin' 이지만, rolesMap 미로드 초기 렌더에서는
+                // created_by fallback 으로 안정성 확보.
+                const ownerOf = (job) => jobRoles.get(job.id) === 'admin'
+                  || (job.created_by && user?.id && job.created_by === user.id);
+                // 데스크톱: 어드민 대시보드식 테이블 행
+                const renderRow = (job) => {
+                  const stats = appsByJob[job.id] || { total: 0, new: 0 };
+                  const isJobOwner = ownerOf(job);
+                  return (
+                    <tr key={job.id} onClick={() => goKanban(job.id)}
+                        className="cursor-pointer border-b border-border last:border-0 hover:bg-gray-50 transition-colors">
+                      <td className="py-2 pr-3 max-w-[340px]">
+                        <div className="flex items-center gap-2 min-w-0">
+                          <Truncate className="text-[13px] font-bold text-foreground">{job.title}</Truncate>
+                          {!isJobOwner && (
+                            <span className="text-[10.5px] font-semibold text-gray-500 flex-shrink-0">{t('company.role.interviewerJoined')}</span>
+                          )}
+                        </div>
+                      </td>
+                      <td className="py-2 pr-3"><UBadge variant={statusBadgeVariant(job.status)}>{t(`company.status.${job.status}`)}</UBadge></td>
+                      <td className="py-2 pr-3 text-[12px] text-gray-600 font-medium whitespace-nowrap">
+                        {job.location} · {job.salary_min > 0 ? `₫${Math.round(job.salary_min/1e6)}–${Math.round(job.salary_max/1e6)}M` : t('jobs.salaryNegotiable')}
+                      </td>
+                      <td className="py-2 pr-3 text-[13px] font-bold tabular-nums text-right">{stats.total}</td>
+                      <td className={cn('py-2 pr-3 text-[13px] font-bold tabular-nums text-right', stats.new > 0 ? 'text-primary-500' : 'text-gray-300')}>
+                        {stats.new || '—'}
+                      </td>
+                      <td className="py-2 pr-3 text-[12px] text-gray-500 font-medium whitespace-nowrap">{new Date(job.created_at).toLocaleDateString()}</td>
+                      <td className="py-2 text-right whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
+                        {isJobOwner && (
+                          <>
+                            <UButton variant="outline" size="sm" onClick={() => router.push(`/company/jobs/${job.id}/edit`)}>
+                              {t('company.editBtn')}
+                            </UButton>
+                            {/* 게시/숨김 토글은 이미 승인된 공고(활성 또는 일시중지)만. */}
+                            {(job.is_active || job.status === 'paused') && (
+                              <UButton variant="outline" size="sm" className="ml-1.5" onClick={() => toggleJobActive(job)}>
+                                {job.is_active ? t('company.editJob.deactivate') : t('company.editJob.activate')}
+                              </UButton>
+                            )}
+                            <UButton variant="outline" size="sm" className="ml-1.5 text-red-600 hover:text-red-700" onClick={() => deleteJob(job)}>
+                              {t('company.editJob.delete')}
+                            </UButton>
+                          </>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                };
+                // 모바일: 제목+지원 수만 있는 간결 카드
                 const renderCard = (job) => {
                   const stats = appsByJob[job.id] || { total: 0, new: 0 };
-                  // isJobOwner 는 이제 "공고 관리자(admin)" 여부로 판단한다.
-                  // 백필된 created_by 는 이미 job_team.role='admin' 이라 rolesMap 만 봐도
-                  // 충분하지만, rolesMap 이 아직 안 로드된 초기 렌더에서는
-                  // created_by fallback 으로 안정성 확보.
-                  const isJobOwner = jobRoles.get(job.id) === 'admin'
-                    || (job.created_by && user?.id && job.created_by === user.id);
                   return (
-                    <div
-                      key={job.id}
-                      onClick={() => goKanban(job.id)}
-                      className="group flex items-center justify-between gap-4 rounded-xl bg-white border border-border px-4 py-3 cursor-pointer transition-all duration-200 ease-spring hover:border-primary-300 hover:shadow-soft-sm hover:-translate-y-px"
-                    >
+                    <div key={job.id} onClick={() => goKanban(job.id)}
+                        className="flex items-center justify-between gap-4 rounded-lg bg-white border border-border px-4 py-3 cursor-pointer">
                       <div className="flex-1 min-w-0">
-                        {/* Title row — full info on desktop, just the title on mobile. */}
-                        <div className="flex items-center gap-2 md:mb-1 flex-wrap">
-                          <Truncate className="text-[15px] font-bold text-foreground tracking-tight">{job.title}</Truncate>
-                          <UBadge variant={statusBadgeVariant(job.status)} className="hidden md:inline-flex flex-shrink-0">
-                            {t(`company.status.${job.status}`)}
-                          </UBadge>
-                          <span className={cn(
-                            'hidden md:inline-flex items-center gap-1 text-[10.5px] font-extrabold px-1.5 py-0.5 rounded border flex-shrink-0',
-                            isJobOwner
-                              ? 'bg-primary-50 border-primary-200 text-primary-700'
-                              : 'bg-gray-100 border-gray-200 text-gray-700'
-                          )}>
-                            {isJobOwner ? t('company.role.ownerJoined') : t('company.role.interviewerJoined')}
-                          </span>
-                        </div>
-                        {/* Desktop secondary info */}
-                        <div className="hidden md:block text-[12px] text-gray-900 font-semibold truncate">
-                          {job.location} · {job.type} · {job.salary_min > 0 ? `₫${Math.round(job.salary_min/1e6)}M–${Math.round(job.salary_max/1e6)}M/tháng` : t('jobs.salaryNegotiable')}
-                        </div>
-                        <div className="hidden md:block text-[11px] text-gray-500 font-semibold mt-1 truncate">
-                          {t('company.card.postedAt', { date: new Date(job.created_at).toLocaleDateString() })}
-                        </div>
-                        {/* Mobile minimal info — just total applicant count. */}
-                        <div className="md:hidden flex items-center gap-1.5 mt-1 text-[12px] text-gray-600 font-bold">
+                        <Truncate className="text-[14px] font-bold text-foreground">{job.title}</Truncate>
+                        <div className="flex items-center gap-1.5 mt-1 text-[12px] text-gray-600 font-semibold">
                           <Users className="w-3.5 h-3.5 text-gray-400" />
                           <span className="tabular-nums">{t('company.card.appliedCount', { n: stats.total })}</span>
+                          {stats.new > 0 && <span className="text-primary-500 tabular-nums">+{stats.new}</span>}
                         </div>
                       </div>
-                      <div className="flex items-center gap-4 flex-shrink-0">
-                        {/* Desktop stats + edit (mobile uses inline count above). */}
-                        <div className="hidden md:flex gap-4">
-                          <div className="text-center min-w-[44px]">
-                            <div className="text-xl font-extrabold text-foreground tabular-nums leading-none">{stats.total}</div>
-                            <div className="text-[10px] text-gray-500 font-extrabold uppercase tracking-[0.08em] mt-1.5">{t('company.stat.apps')}</div>
-                          </div>
-                          <div className="text-center min-w-[44px]">
-                            <div className={cn('text-xl font-extrabold tabular-nums leading-none', stats.new > 0 ? 'text-primary-600' : 'text-gray-300')}>{stats.new || '—'}</div>
-                            <div className={cn('text-[10px] font-extrabold uppercase tracking-[0.08em] mt-1.5', stats.new > 0 ? 'text-primary-600' : 'text-gray-300')}>{t('company.stat.new')}</div>
-                          </div>
-                        </div>
-                        {/* Edit is owner-only — interviewers viewing this job from
-                            the dashboard don't see the button. */}
-                        {isJobOwner && (
-                          <UButton
-                            variant="outline"
-                            size="sm"
-                            onClick={(e) => { e.stopPropagation(); router.push(`/company/jobs/${job.id}/edit`); }}
-                            className="hidden md:inline-flex"
-                          >
-                            <Edit3 className="w-3.5 h-3.5" />
-                            {t('company.editBtn')}
-                          </UButton>
-                        )}
-                        {/* 게시/숨김 토글은 이미 승인된 공고(활성 또는 일시중지)만.
-                            승인 대기(pending_review) 등은 관리자 승인 전까지 스스로 게시 불가. */}
-                        {isJobOwner && (job.is_active || job.status === 'paused') && (
-                          <UButton
-                            variant="outline"
-                            size="sm"
-                            onClick={(e) => { e.stopPropagation(); toggleJobActive(job); }}
-                            className="hidden md:inline-flex"
-                          >
-                            {job.is_active ? t('company.editJob.deactivate') : t('company.editJob.activate')}
-                          </UButton>
-                        )}
-                        {isJobOwner && (
-                          <UButton
-                            variant="outline"
-                            size="sm"
-                            onClick={(e) => { e.stopPropagation(); deleteJob(job); }}
-                            className="hidden md:inline-flex text-red-600 hover:text-red-700"
-                          >
-                            {t('company.editJob.delete')}
-                          </UButton>
-                        )}
-                      </div>
+                      <ArrowRight className="w-4 h-4 text-gray-300 flex-shrink-0" />
                     </div>
                   );
                 };
@@ -644,14 +585,14 @@ export default function CompanyDashboard() {
                   return (
                     <section key={g} className={cn('mb-3 md:mb-6', g === 'inactive' && 'hidden md:block')}>
                       <h2 className={cn(
-                        'text-[15px] font-extrabold text-gray-800 tracking-tight pl-3 mb-3 border-l-[3px] border-primary-500',
+                        'text-[15px] font-bold text-gray-800 tracking-tight pl-3 mb-3 border-l-[3px] border-primary-500',
                         // Group header is redundant on mobile when only active is shown.
                         g === 'active' && 'hidden md:block'
                       )}>
                         {t(`company.jobGroup.${g}`, { n: grouped[g].length })}
                       </h2>
                       {g === 'pending' && (
-                        <div className="text-[12.5px] font-semibold text-primary-700 bg-primary-50 border border-primary-200 rounded-lg px-3 py-2 mb-3">
+                        <div className="text-[12.5px] font-semibold text-primary-500 bg-primary-50 border border-primary-200 rounded-lg px-3 py-2 mb-3">
                           {t('company.jobGroup.pendingHint')}
                         </div>
                       )}
@@ -660,9 +601,29 @@ export default function CompanyDashboard() {
                           —
                         </div>
                       ) : (
-                        <div className="flex flex-col gap-2.5">
-                          {grouped[g].map(renderCard)}
-                        </div>
+                        <>
+                          {/* 데스크톱: 어드민 대시보드식 테이블 */}
+                          <div className="hidden md:block bg-white border border-border rounded-lg px-4 overflow-x-auto">
+                            <table className="w-full border-collapse">
+                              <thead>
+                                <tr className="border-b border-border">
+                                  <th className="text-left py-2 pr-3 text-[11.5px] font-semibold text-gray-500">{t('company.th.job')}</th>
+                                  <th className="text-left py-2 pr-3 text-[11.5px] font-semibold text-gray-500">{t('company.th.status')}</th>
+                                  <th className="text-left py-2 pr-3 text-[11.5px] font-semibold text-gray-500">{t('company.th.info')}</th>
+                                  <th className="text-right py-2 pr-3 text-[11.5px] font-semibold text-gray-500">{t('company.stat.apps')}</th>
+                                  <th className="text-right py-2 pr-3 text-[11.5px] font-semibold text-gray-500">{t('company.stat.new')}</th>
+                                  <th className="text-left py-2 pr-3 text-[11.5px] font-semibold text-gray-500">{t('company.th.posted')}</th>
+                                  <th className="text-right py-2 text-[11.5px] font-semibold text-gray-500">{t('company.th.actions')}</th>
+                                </tr>
+                              </thead>
+                              <tbody>{grouped[g].map(renderRow)}</tbody>
+                            </table>
+                          </div>
+                          {/* 모바일: 간결 카드 */}
+                          <div className="md:hidden flex flex-col gap-2.5">
+                            {grouped[g].map(renderCard)}
+                          </div>
+                        </>
                       )}
                     </section>
                   );
@@ -700,7 +661,7 @@ const localCss = {
   authKicker: {
     color: 'var(--sm-primary-600)',
     fontSize: 11,
-    fontWeight: 900,
+    fontWeight: 800,
     letterSpacing: '0.16em',
     marginBottom: 18,
   },
@@ -725,7 +686,7 @@ const localCss = {
     marginTop: 28,
     color: 'var(--sm-gray-700)',
     fontSize: 12.5,
-    fontWeight: 850,
+    fontWeight: 700,
   },
   authPanel: {
     background: '#fff',
@@ -734,13 +695,13 @@ const localCss = {
     padding: 30,
     boxShadow: '0 18px 46px rgba(17,17,17,0.08)',
   },
-  panelTitle: { margin: 0, fontSize: 23, lineHeight: 1.2, fontWeight: 900, letterSpacing: '-0.02em' },
+  panelTitle: { margin: 0, fontSize: 23, lineHeight: 1.2, fontWeight: 800, letterSpacing: '-0.02em' },
   panelCopy: { margin: '9px 0 20px', color: 'var(--sm-gray-600)', fontSize: 13.5, lineHeight: 1.55, fontWeight: 600 },
   form: { display: 'flex', flexDirection: 'column', gap: 9 },
   divider: { display: 'flex', alignItems: 'center', gap: 10, margin: '18px 0 4px' },
   dividerLine: { flex: 1, height: 1, background: 'var(--sm-gray-200)' },
-  dividerText: { color: 'var(--sm-gray-400)', fontSize: 11.5, fontWeight: 800 },
-  label: { display: 'block', marginBottom: 6, color: 'var(--sm-gray-700)', fontSize: 12, fontWeight: 800 },
+  dividerText: { color: 'var(--sm-gray-400)', fontSize: 11.5, fontWeight: 700 },
+  label: { display: 'block', marginBottom: 6, color: 'var(--sm-gray-700)', fontSize: 12, fontWeight: 700 },
   note: {
     margin: '4px 0 2px',
     color: 'var(--sm-gray-400)',
@@ -774,9 +735,9 @@ const localCss = {
     borderRadius: 999,
     padding: '14px 18px',
     color: '#fff',
-    background: 'var(--sm-primary-600)',
+    background: 'var(--sm-primary)',
     fontSize: 14.5,
-    fontWeight: 900,
+    fontWeight: 800,
     fontFamily: 'inherit',
     cursor: 'pointer',
     display: 'inline-flex',
@@ -821,22 +782,22 @@ const localCss = {
     margin: '0 auto 18px',
     borderRadius: '50%',
     color: '#fff',
-    background: 'var(--sm-primary-600)',
+    background: 'var(--sm-primary)',
     fontSize: 24,
-    fontWeight: 900,
+    fontWeight: 800,
   },
   empty: { border: '2px dashed var(--sm-gray-200)', borderRadius: 12, padding: '48px 24px', textAlign: 'center', background: '#fff' },
   emptyIco: { fontSize: 36, marginBottom: 12, opacity: 0.5 },
-  emptyH: { fontSize: 18, fontWeight: 800, color: 'var(--sm-gray-900)', marginBottom: 8 },
+  emptyH: { fontSize: 18, fontWeight: 700, color: 'var(--sm-gray-900)', marginBottom: 8 },
   emptyP: { fontSize: 13.5, color: 'var(--sm-gray-700)', maxWidth: 380, margin: '0 auto 22px', lineHeight: 1.65 },
 
   kpiInline: { display: 'flex', alignItems: 'center', gap: 12, fontSize: 13.5, color: 'var(--sm-gray-700)', fontWeight: 600 },
-  kpiStrong: { color: 'var(--sm-gray-900)', fontWeight: 900, fontSize: 16, fontVariantNumeric: 'tabular-nums' },
+  kpiStrong: { color: 'var(--sm-gray-900)', fontWeight: 800, fontSize: 16, fontVariantNumeric: 'tabular-nums' },
   kpiSep: { color: 'var(--sm-gray-300)' },
 
   list: { display: 'flex', flexDirection: 'column', gap: 10 },
   groupSection: { display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 24 },
-  groupTitle: { fontSize: 14, fontWeight: 800, color: 'var(--sm-gray-900)', margin: 0, padding: '4px 2px', borderLeft: '3px solid var(--sm-primary-600)', paddingLeft: 10 },
+  groupTitle: { fontSize: 14, fontWeight: 700, color: 'var(--sm-gray-900)', margin: 0, padding: '4px 2px', borderLeft: '3px solid var(--sm-primary-600)', paddingLeft: 10 },
   card: {
     display: 'flex', justifyContent: 'space-between', alignItems: 'center',
     padding: '18px 22px', background: '#fff', border: '1px solid var(--sm-gray-200)',
@@ -844,18 +805,18 @@ const localCss = {
   },
   cardLeft: { flex: 1, minWidth: 0 },
   cardTitleRow: { display: 'flex', alignItems: 'center', gap: 10, marginBottom: 5 },
-  cardTitle: { fontSize: 15, fontWeight: 800, color: 'var(--sm-gray-900)' },
+  cardTitle: { fontSize: 15, fontWeight: 700, color: 'var(--sm-gray-900)' },
   cardMeta: { fontSize: 12.5, color: 'var(--sm-gray-700)' },
   cardPosted: { fontSize: 11.5, color: 'var(--sm-gray-400)', fontWeight: 600, marginTop: 4 },
   cardRight: { display: 'flex', alignItems: 'center', gap: 16 },
-  badge: { padding: '3px 9px', borderRadius: 999, fontSize: 10.5, fontWeight: 800, letterSpacing: '0.04em', textTransform: 'uppercase' },
+  badge: { padding: '3px 9px', borderRadius: 999, fontSize: 10.5, fontWeight: 700, letterSpacing: '0.04em' },
 
   stats: { display: 'flex', gap: 10 },
   statBox: { textAlign: 'center', minWidth: 40 },
   statBoxNew: { color: 'var(--sm-primary-600)' },
-  statVal: { fontSize: 18, fontWeight: 900, color: 'var(--sm-gray-900)', letterSpacing: '-0.01em', fontVariantNumeric: 'tabular-nums' },
-  statLab: { fontSize: 10.5, color: 'var(--sm-gray-600)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em' },
+  statVal: { fontSize: 18, fontWeight: 800, color: 'var(--sm-gray-900)', letterSpacing: '-0.01em', fontVariantNumeric: 'tabular-nums' },
+  statLab: { fontSize: 10.5, color: 'var(--sm-gray-600)', fontWeight: 700, letterSpacing: '0.04em' },
 
   editBtn: { padding: '6px 12px', borderRadius: 6, border: '1px solid var(--sm-gray-300)', background: '#fff', color: 'var(--sm-gray-700)', fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' },
-  arrow: { fontSize: 16, color: 'var(--sm-gray-400)', fontWeight: 800 },
+  arrow: { fontSize: 16, color: 'var(--sm-gray-400)', fontWeight: 700 },
 };

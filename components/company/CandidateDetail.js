@@ -42,7 +42,7 @@ const STAGE_SOLID_CLASS = {
   pending: 'bg-gray-500',
   viewed: 'bg-gray-600',
   reviewing: 'bg-gray-700',
-  decided: 'bg-primary-600',
+  decided: 'bg-primary-500',
 };
 // Evaluation-section labels are resolved via t('company.stageLabel.eval.<key>').
 // We still expose the set of stages that have evaluations so the eval section
@@ -789,7 +789,7 @@ export default function CandidateDetail({
   // soft primary tint + a primary eyebrow + a primary-tinted lightbulb.
   // The rest of the UI stays neutral so this card actually draws the eye.
   const hintToneClass = 'bg-primary-50/70 border-primary-200 text-gray-900';
-  const hintEyebrowClass = 'text-primary-700';
+  const hintEyebrowClass = 'text-primary-500';
 
   // Mobile-only 3-tab nav definition — kept inside the component so it picks
   // up t() updates on language change.
@@ -816,15 +816,15 @@ export default function CandidateDetail({
             >
               <ChevronLeft className="w-5 h-5" />
             </Link>
-            <Truncate as="span" className="text-[15px] font-extrabold text-gray-900 tracking-tight min-w-0">
+            <Truncate as="span" className="text-[15px] font-bold text-gray-900 tracking-tight min-w-0">
               {name}
             </Truncate>
             {/* Current-stage chip — primary tone for active stages, red for rejected. */}
             <span className={cn(
-              'ml-2 inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10.5px] font-extrabold flex-shrink-0 border',
+              'ml-2 inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10.5px] font-bold flex-shrink-0 border',
               app.rejected_at
                 ? 'bg-red-50 border-red-200 text-red-700'
-                : 'bg-primary-50 border-primary-200 text-primary-700'
+                : 'bg-primary-50 border-primary-200 text-primary-500'
             )}>
               {app.rejected_at ? t('company.ats.rejectedBadge') : t(`company.stage.${app.status}`)}
             </span>
@@ -838,7 +838,7 @@ export default function CandidateDetail({
                   type="button"
                   onClick={() => setMobileTab(mt.key)}
                   className={cn(
-                    'flex-1 h-10 text-[12.5px] font-extrabold transition-colors border-b-2',
+                    'flex-1 h-10 text-[12.5px] font-bold transition-colors border-b-2',
                     isActive ? 'text-gray-900 border-gray-900' : 'text-gray-500 border-transparent'
                   )}
                 >
@@ -898,7 +898,7 @@ export default function CandidateDetail({
                         isActive ? 'bg-white' : STAGE_DOT_CLASS[sKey]
                       )} />
                       {label}
-                      <span className={cn('tabular-nums font-extrabold', isActive ? 'text-white/90' : 'text-gray-900')}>
+                      <span className={cn('tabular-nums font-bold', isActive ? 'text-white/90' : 'text-gray-900')}>
                         {cnt}
                       </span>
                     </button>
@@ -916,7 +916,7 @@ export default function CandidateDetail({
                     <span className={cn('w-1.5 h-1.5 rounded-full flex-shrink-0', STAGE_DOT_CLASS[app.status])} />
                     <span className="text-[11.5px] font-bold text-gray-900 truncate">{t(`company.stage.${app.status}`)}</span>
                     {stageTotal != null && stageIndex != null && stageTotal > 0 && (
-                      <span className="text-[11px] font-extrabold text-gray-900 tabular-nums">
+                      <span className="text-[11px] font-bold text-gray-900 tabular-nums">
                         {stageIndex + 1}<span className="text-gray-400">/{stageTotal}</span>
                       </span>
                     )}
@@ -942,7 +942,7 @@ export default function CandidateDetail({
         {/* Row 1: avatar + name + meta (left) | all actions (right) */}
         <div className="flex items-start gap-3 flex-wrap">
           <div className={cn(
-            'flex-shrink-0 w-12 h-12 rounded-full flex items-center justify-center text-base font-extrabold',
+            'flex-shrink-0 w-12 h-12 rounded-full flex items-center justify-center text-base font-bold',
             avatarPalette.bg, avatarPalette.text
           )}>
             {initial}
@@ -978,7 +978,7 @@ export default function CandidateDetail({
               const when = formatInterviewShort(app.interview_at);
               return (
                 <span className={cn(
-                  'inline-flex items-center gap-1.5 h-9 px-3 rounded-md border text-[12.5px] font-extrabold tabular-nums whitespace-nowrap',
+                  'inline-flex items-center gap-1.5 h-9 px-3 rounded-md border text-[12.5px] font-bold tabular-nums whitespace-nowrap',
                   isPast
                     ? 'bg-green-50 border-green-200 text-green-800'
                     : 'bg-sky-50 border-sky-200 text-sky-800'
@@ -1026,7 +1026,7 @@ export default function CandidateDetail({
                   type="button"
                   onClick={markStagePass}
                   title={t('company.ats.stagePass', { stage: decisionPrefix })}
-                  className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-md border border-green-200 bg-green-50 text-[14px] font-extrabold text-green-700 hover:bg-green-100 hover:border-green-300 shadow-soft-xs transition-colors"
+                  className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-md border border-green-200 bg-green-50 text-[14px] font-bold text-green-700 hover:bg-green-100 hover:border-green-300 shadow-soft-xs transition-colors"
                 >
                   <Check className="w-3.5 h-3.5" />
                   {t('company.ats.stagePass', { stage: decisionPrefix })}
@@ -1035,7 +1035,7 @@ export default function CandidateDetail({
                   type="button"
                   onClick={() => setRejectModal('new')}
                   title={`${t('company.ats.stageReject', { stage: decisionPrefix })} (R)`}
-                  className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-md border border-red-200 bg-red-50 text-[14px] font-extrabold text-red-700 hover:bg-red-100 hover:border-red-300 shadow-soft-xs transition-colors"
+                  className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-md border border-red-200 bg-red-50 text-[14px] font-bold text-red-700 hover:bg-red-100 hover:border-red-300 shadow-soft-xs transition-colors"
                 >
                   <Ban className="w-3.5 h-3.5" />
                   {t('company.ats.stageReject', { stage: decisionPrefix })}
@@ -1043,7 +1043,7 @@ export default function CandidateDetail({
               </>
             )}
             {canRunQuick && !app.rejected_at && nextStage && hasStagePassed && (
-              <span className="inline-flex items-center gap-1.5 h-9 px-3 rounded-md bg-green-50 border border-green-200 text-[13px] font-extrabold text-green-800">
+              <span className="inline-flex items-center gap-1.5 h-9 px-3 rounded-md bg-green-50 border border-green-200 text-[13px] font-bold text-green-800">
                 <Check className="w-3.5 h-3.5" />
                 {t('company.candidate.stagePassed', { stage: decisionPrefix })}
                 <button
@@ -1062,7 +1062,7 @@ export default function CandidateDetail({
                 ? (app.rejection_note || '').trim()
                 : (app.rejection_reason ? t(`company.reject.reason.${app.rejection_reason}`) : null);
               return (
-                <span className="inline-flex items-center gap-1.5 h-9 px-3 rounded-md bg-red-50 border border-red-200 text-[13px] font-extrabold text-red-800 max-w-[320px]">
+                <span className="inline-flex items-center gap-1.5 h-9 px-3 rounded-md bg-red-50 border border-red-200 text-[13px] font-bold text-red-800 max-w-[320px]">
                   <Ban className="w-3.5 h-3.5 flex-shrink-0" />
                   <span className="truncate">
                     {rejectedStageLabel ? t('company.candidate.rejectedAtStageLabel', { stage: rejectedStageLabel }) : t('company.candidate.rejectedSimple')}
@@ -1082,7 +1082,7 @@ export default function CandidateDetail({
             {/* Final-hire celebration — being in the 최종 합격 column IS the final-hire state.
                 To revert, move the candidate to a different stage on the kanban. */}
             {!app.rejected_at && app.status === 'decided' && (
-              <span className="inline-flex items-center gap-1.5 h-9 px-3 rounded-md bg-primary-50 border border-primary-200 text-[13px] font-extrabold text-primary-800">
+              <span className="inline-flex items-center gap-1.5 h-9 px-3 rounded-md bg-primary-50 border border-primary-200 text-[13px] font-bold text-primary-600">
                 <PartyPopper className="w-4 h-4" />
                 {t('company.candidate.finalPass')}
               </span>
@@ -1098,7 +1098,7 @@ export default function CandidateDetail({
             <Lightbulb className="w-[18px] h-[18px] flex-shrink-0 mt-0.5 text-primary-600" />
             <div className="min-w-0 flex-1 space-y-1.5">
               <div className="flex items-center gap-2.5 flex-wrap">
-                <span className={cn('text-[11.5px] font-extrabold uppercase tracking-[0.06em]', hintEyebrowClass)}>
+                <span className={cn('text-[11.5px] font-bold', hintEyebrowClass)}>
                   {smartHint.eyebrow}
                 </span>
                 {smartHint.steps && smartHint.total > 1 && (
@@ -1113,12 +1113,12 @@ export default function CandidateDetail({
                           <span key={i} className="flex items-center gap-1">
                             {i > 0 && <span className="text-gray-300 select-none">›</span>}
                             <span className={cn(
-                              'inline-flex items-center gap-1 rounded-full px-2 py-0.5 font-extrabold transition-colors',
-                              isCurrent ? 'bg-primary-50 text-primary-700 ring-1 ring-primary-200' : 'text-gray-400'
+                              'inline-flex items-center gap-1 rounded-full px-2 py-0.5 font-bold transition-colors',
+                              isCurrent ? 'bg-primary-50 text-primary-500 ring-1 ring-primary-200' : 'text-gray-400'
                             )}>
                               <span className={cn(
                                 'w-1.5 h-1.5 rounded-full',
-                                isCurrent ? 'bg-primary-600' : isDone ? 'bg-gray-500' : 'bg-gray-300'
+                                isCurrent ? 'bg-primary-500' : isDone ? 'bg-gray-500' : 'bg-gray-300'
                               )} />
                               <span>{label}</span>
                             </span>
@@ -1196,7 +1196,7 @@ export default function CandidateDetail({
               <TabsTrigger value="eval"><Star className="w-3.5 h-3.5" />{t('company.candidate.tab.eval')}</TabsTrigger>
               <TabsTrigger value="mail">
                 <Mail className="w-3.5 h-3.5" />{t('company.candidate.tab.mail')}
-                <span className={cn('font-extrabold', tab === 'mail' ? 'text-gray-900' : 'text-gray-400')}>{mailLog.length}</span>
+                <span className={cn('font-bold', tab === 'mail' ? 'text-gray-900' : 'text-gray-400')}>{mailLog.length}</span>
               </TabsTrigger>
               <TabsTrigger value="history"><History className="w-3.5 h-3.5" />{t('company.candidate.tab.history')}</TabsTrigger>
             </TabsList>
@@ -1260,7 +1260,7 @@ export default function CandidateDetail({
                   </UButton>
                 )}
                 <div className="space-y-2">
-                  <div className="text-[10.5px] font-extrabold text-gray-500 uppercase tracking-[0.08em]">
+                  <div className="text-[10.5px] font-bold text-gray-500">
                     {t('company.candidate.mailLogH')} · {mailLog.length}
                   </div>
                   {mailLog.length === 0 ? (
@@ -1368,7 +1368,7 @@ export default function CandidateDetail({
                     type="button"
                     onClick={() => setEditScore('1')}
                     className={cn(
-                      'px-4 h-9 text-[13px] font-extrabold transition-colors',
+                      'px-4 h-9 text-[13px] font-bold transition-colors',
                       editScore === '1' || editScore === 1
                         ? 'bg-green-500 text-white'
                         : 'bg-white text-gray-700 hover:bg-green-50/60'
@@ -1380,7 +1380,7 @@ export default function CandidateDetail({
                     type="button"
                     onClick={() => setEditScore('0')}
                     className={cn(
-                      'px-4 h-9 text-[13px] font-extrabold transition-colors border-l border-border',
+                      'px-4 h-9 text-[13px] font-bold transition-colors border-l border-border',
                       editScore === '0' || editScore === 0
                         ? 'bg-red-500 text-white'
                         : 'bg-white text-gray-700 hover:bg-red-50/60'
@@ -1480,9 +1480,9 @@ function EvaluationSection({
               )}
             >
               <span className={cn('w-1.5 h-1.5 rounded-full', STAGE_DOT_CLASS[s.key])} />
-              <span className="text-xs font-extrabold text-foreground flex-1">{EVAL_STAGE_KEYS.includes(s.key) ? t(`company.stageLabel.eval.${s.key}`) : t(`company.stage.${s.key}`)}</span>
+              <span className="text-xs font-bold text-foreground flex-1">{EVAL_STAGE_KEYS.includes(s.key) ? t(`company.stageLabel.eval.${s.key}`) : t(`company.stage.${s.key}`)}</span>
               {summary ? (
-                <span className="flex items-center gap-1 text-[10.5px] font-extrabold tabular-nums">
+                <span className="flex items-center gap-1 text-[10.5px] font-bold tabular-nums">
                   <span className="text-green-700 bg-green-50 border border-green-200 px-1.5 py-0.5 rounded-full">{t('company.eval.fitSummary', { n: summary.fit })}</span>
                   <span className="text-red-700 bg-red-50 border border-red-200 px-1.5 py-0.5 rounded-full">{t('company.eval.unfitSummary', { n: summary.unfit })}</span>
                 </span>
@@ -1505,7 +1505,7 @@ function EvaluationSection({
                           {isMe ? `${t('company.eval.me')} (${e.reviewer_name || ''})` : (e.reviewer_name || '—')}
                         </span>
                         <span className={cn(
-                          'text-[10.5px] font-extrabold px-1.5 py-0.5 rounded border',
+                          'text-[10.5px] font-bold px-1.5 py-0.5 rounded border',
                           isOwnerRole
                             ? 'text-gray-700 bg-gray-100 border-gray-200'
                             : 'text-gray-500 bg-white border-gray-200'
@@ -1530,7 +1530,7 @@ function EvaluationSection({
                         <span className="text-[13px] text-gray-700 leading-relaxed whitespace-pre-wrap flex-1">{e.comment || <span className="text-gray-400 italic">{t('company.eval.noComment')}</span>}</span>
                         {typeof e.score === 'number' && (
                           <span className={cn(
-                            'text-[11.5px] font-extrabold px-2 py-0.5 rounded-full flex-shrink-0 border whitespace-nowrap',
+                            'text-[11.5px] font-bold px-2 py-0.5 rounded-full flex-shrink-0 border whitespace-nowrap',
                             e.score === 1
                               ? 'text-green-700 bg-green-50 border-green-200'
                               : 'text-red-700 bg-red-50 border-red-200'
@@ -1563,7 +1563,7 @@ function EvaluationSection({
                           type="button"
                           onClick={() => setEvalScore('1')}
                           className={cn(
-                            'px-3.5 h-9 text-[13px] font-extrabold transition-colors',
+                            'px-3.5 h-9 text-[13px] font-bold transition-colors',
                             evalScore === '1' || evalScore === 1
                               ? 'bg-green-500 text-white'
                               : 'bg-white text-gray-700 hover:bg-green-50/60'
@@ -1575,7 +1575,7 @@ function EvaluationSection({
                           type="button"
                           onClick={() => setEvalScore('0')}
                           className={cn(
-                            'px-3.5 h-9 text-[13px] font-extrabold transition-colors border-l border-border',
+                            'px-3.5 h-9 text-[13px] font-bold transition-colors border-l border-border',
                             evalScore === '0' || evalScore === 0
                               ? 'bg-red-500 text-white'
                               : 'bg-white text-gray-700 hover:bg-red-50/60'
@@ -1661,7 +1661,7 @@ function InterviewModal({ app, onClose, onSaved }) {
             <label className="text-xs font-bold text-gray-700">{t('company.interview.slotsLabel')}</label>
             {slots.map((s, i) => (
               <div key={i} className="flex items-center gap-1.5">
-                <span className="w-4 text-xs font-extrabold text-gray-600">{i + 1}</span>
+                <span className="w-4 text-xs font-bold text-gray-600">{i + 1}</span>
                 <UInput type="date" lang={lang} value={s.date} onChange={(e) => updateSlot(i, 'date', e.target.value)} className="flex-1" disabled={saving} />
                 <UInput type="time" lang={lang} value={s.time} onChange={(e) => updateSlot(i, 'time', e.target.value)} className="w-[110px]" disabled={saving} />
                 {slots.length > 1 && (
@@ -1901,9 +1901,9 @@ function NoteSection({ app, evals, setEvals, userId, reviewerName, expanded, onT
         className="w-full flex items-center gap-2 px-3 py-2 text-left transition-colors bg-gray-50 hover:bg-gray-100"
       >
         <StickyNote className="w-3.5 h-3.5 text-gray-500" />
-        <span className="text-xs font-extrabold text-foreground flex-1">{t('company.note.h')}</span>
+        <span className="text-xs font-bold text-foreground flex-1">{t('company.note.h')}</span>
         <span className={cn(
-          'text-[10.5px] font-extrabold px-2 py-0.5 rounded-full tabular-nums',
+          'text-[10.5px] font-bold px-2 py-0.5 rounded-full tabular-nums',
           notes.length > 0
             ? 'text-gray-700 bg-gray-100 border border-gray-200'
             : 'text-gray-400 bg-white border border-dashed border-gray-300',
@@ -1924,7 +1924,7 @@ function NoteSection({ app, evals, setEvals, userId, reviewerName, expanded, onT
                     {n.reviewer_name || t('company.role.anon')}
                   </span>
                   <span className={cn(
-                    'text-[10.5px] font-extrabold px-1.5 py-0.5 rounded border',
+                    'text-[10.5px] font-bold px-1.5 py-0.5 rounded border',
                     isOwnerRole
                       ? 'text-gray-700 bg-gray-100 border-gray-200'
                       : 'text-gray-500 bg-white border-gray-200'
@@ -2119,7 +2119,7 @@ function ActivityTimeline({ t, app, evals, mailLog }) {
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
-        <div className="text-[10.5px] font-extrabold text-gray-500 uppercase tracking-[0.08em]">
+        <div className="text-[10.5px] font-bold text-gray-500">
           {t('company.activity.h')}
         </div>
         <span className="text-[10.5px] font-bold text-gray-400 tabular-nums">{t('company.activity.countUnit', { n: events.length })}</span>
@@ -2139,7 +2139,7 @@ function ActivityTimeline({ t, app, evals, mailLog }) {
               <div className="min-w-0 flex-1 pt-0.5 pb-0.5">
                 <div className="flex items-baseline justify-between gap-2 flex-wrap">
                   <div className="text-[13.5px] leading-snug min-w-0 flex-1">
-                    <span className="font-extrabold text-gray-900">{e.actor}</span>
+                    <span className="font-bold text-gray-900">{e.actor}</span>
                     {e.actorRole && (
                       <span className="ml-1 text-[11.5px] font-bold text-gray-500">({e.actorRole})</span>
                     )}
@@ -2150,7 +2150,7 @@ function ActivityTimeline({ t, app, evals, mailLog }) {
                 {(e.detail || e.badge) && (
                   <div className="mt-1.5 flex items-start gap-1.5 flex-wrap">
                     {e.badge && (
-                      <span className={cn('text-[11.5px] font-extrabold px-2 py-0.5 rounded tabular-nums', badgeToneClass[e.badge.tone] || badgeToneClass.gray)}>
+                      <span className={cn('text-[11.5px] font-bold px-2 py-0.5 rounded tabular-nums', badgeToneClass[e.badge.tone] || badgeToneClass.gray)}>
                         {e.badge.text}
                       </span>
                     )}
@@ -2399,7 +2399,7 @@ export function MailComposer({
                     className={cn(
                       'h-8 px-3 rounded-full text-[12px] font-bold border transition-colors',
                       active
-                        ? 'bg-primary-600 border-primary-600 text-white hover:bg-primary-700'
+                        ? 'bg-primary-500 border-primary-500 text-white hover:bg-primary-600'
                         : 'bg-white border-gray-200 text-gray-800 hover:bg-gray-50'
                     )}
                   >
@@ -2419,7 +2419,7 @@ export function MailComposer({
                 className={cn(
                   'h-8 px-3 rounded-full text-[12px] font-bold border transition-colors',
                   pickedBlank
-                    ? 'bg-primary-600 border-primary-600 text-white hover:bg-primary-700'
+                    ? 'bg-primary-500 border-primary-500 text-white hover:bg-primary-600'
                     : 'bg-white border-gray-200 text-gray-800 hover:bg-gray-50'
                 )}
               >
@@ -2437,13 +2437,13 @@ export function MailComposer({
                         'h-8 pl-3 rounded-full text-[12px] font-bold border transition-colors',
                         canManage ? 'pr-8' : 'pr-3',
                         active
-                          ? 'bg-primary-600 border-primary-600 text-white hover:bg-primary-700'
+                          ? 'bg-primary-500 border-primary-500 text-white hover:bg-primary-600'
                           : 'bg-white border-gray-200 text-gray-800 hover:bg-gray-50'
                       )}
                     >
                       {tpl.name}
                       {editingTplId === tpl.id && (
-                        <span className="ml-1.5 text-[10.5px] font-extrabold opacity-80">{t('company.mail.editingBadge')}</span>
+                        <span className="ml-1.5 text-[10.5px] font-bold opacity-80">{t('company.mail.editingBadge')}</span>
                       )}
                     </button>
                     {canManage && (
@@ -2498,7 +2498,7 @@ export function MailComposer({
             <div className="space-y-2 rounded-lg bg-gray-50 border border-gray-200 p-3">
               {slots.map((s, i) => (
                 <div key={i} className="flex items-center gap-2">
-                  <span className="flex-shrink-0 w-6 h-6 rounded-full bg-primary-100 text-primary-700 flex items-center justify-center text-xs font-bold">{i + 1}</span>
+                  <span className="flex-shrink-0 w-6 h-6 rounded-full bg-primary-100 text-primary-500 flex items-center justify-center text-xs font-bold">{i + 1}</span>
                   <UInput type="date" lang={lang} value={s.date} onChange={(e) => updateSlot(i, 'date', e.target.value)} className="flex-[1.6] min-w-0" />
                   <UInput type="time" lang={lang} value={s.time} onChange={(e) => updateSlot(i, 'time', e.target.value)} className="flex-1 min-w-0" />
                   <UButton type="button" size="sm" variant="outline" onClick={() => insertSlot(i)} disabled={!s.date} className="h-9 px-3 text-xs font-bold flex-shrink-0">
@@ -2540,7 +2540,7 @@ export function MailComposer({
             </div>
           ) : showSaveDialog ? (
             <div className="rounded-lg bg-primary-50/50 border border-primary-200 p-3 space-y-2.5">
-              <div className="text-sm font-bold text-primary-800">{t('company.mail.tplSaveTitle')}</div>
+              <div className="text-sm font-bold text-primary-600">{t('company.mail.tplSaveTitle')}</div>
               <UInput
                 value={newTplName}
                 onChange={(e) => setNewTplName(e.target.value)}
@@ -2557,7 +2557,7 @@ export function MailComposer({
               </div>
             </div>
           ) : (
-            <UButton variant="ghost" size="sm" onClick={() => setShowSaveDialog(true)} className="text-primary-700 hover:bg-primary-50">
+            <UButton variant="ghost" size="sm" onClick={() => setShowSaveDialog(true)} className="text-primary-500 hover:bg-primary-50">
               <Save className="w-4 h-4" />
               {t('company.mail.tplSaveBtn')}
             </UButton>
@@ -2808,7 +2808,7 @@ export function RejectionModal({ app, stageKey, candidateName, mode = 'new', ini
                 <label className="text-xs font-bold text-gray-700">{t('company.reject.reasonLabel')}</label>
                 <div className="flex flex-col gap-2 py-1">
                   {REJECT_REASONS.map(r => (
-                    <label key={r} className="flex items-center gap-2.5 cursor-pointer text-sm text-foreground hover:text-primary-700 transition-colors">
+                    <label key={r} className="flex items-center gap-2.5 cursor-pointer text-sm text-foreground hover:text-primary-500 transition-colors">
                       <input
                         type="radio"
                         name="reject-reason"

@@ -279,7 +279,7 @@ export default function NewJobPage() {
                 sitting bare on the gray page background. */}
             <div className="flex-[1.4] overflow-y-auto min-h-0 pr-3 pb-10 [scrollbar-gutter:stable]">
             <div className="bg-white border border-border rounded-xl shadow-soft-xs p-5 flex flex-col">
-              <h2 className="text-[12px] font-extrabold text-gray-500 uppercase tracking-[0.08em] mb-3">{t('company.jobsnew.photoH')}</h2>
+              <h2 className="text-[12px] font-bold text-gray-500 mb-3">{t('company.jobsnew.photoH')}</h2>
 
               <div className="grid grid-cols-2 gap-3 mb-3">
                 <Field label={t('company.jobsnew.imageLabel')}>
@@ -312,7 +312,7 @@ export default function NewJobPage() {
                   </div>
                 )}
 
-              <h2 className="text-[12px] font-extrabold text-gray-500 uppercase tracking-[0.08em] mt-3 mb-3">{t('company.jobsnew.basicH')}</h2>
+              <h2 className="text-[12px] font-bold text-gray-500 mt-3 mb-3">{t('company.jobsnew.basicH')}</h2>
 
               <Field label={t('company.jobsnew.title')}>
                 <UInput value={form.title} onChange={e => setF('title', e.target.value)} placeholder="Senior Backend Engineer" />
@@ -365,7 +365,7 @@ export default function NewJobPage() {
                 </SelectInput>
               </Field>
 
-              <h2 className="text-[12px] font-extrabold text-gray-500 uppercase tracking-[0.08em] mt-5 mb-1">{t('company.jobsnew.workH')}</h2>
+              <h2 className="text-[12px] font-bold text-gray-500 mt-5 mb-1">{t('company.jobsnew.workH')}</h2>
               <div className="text-xs text-gray-400 font-semibold mb-3">{t('company.jobsnew.workHint')}</div>
               <div className="grid grid-cols-2 gap-3">
                 <Field label={t('company.jobsnew.workDays')}>
@@ -382,7 +382,7 @@ export default function NewJobPage() {
                 </Field>
               </div>
 
-              <h2 className="text-[12px] font-extrabold text-gray-500 uppercase tracking-[0.08em] mt-5 mb-3">{t('company.jobsnew.expSalH')}</h2>
+              <h2 className="text-[12px] font-bold text-gray-500 mt-5 mb-3">{t('company.jobsnew.expSalH')}</h2>
 
               <div className="grid grid-cols-2 gap-3">
                 <Field label={t('company.jobsnew.expMin')}>
@@ -412,7 +412,7 @@ export default function NewJobPage() {
                 <div className="text-xs text-gray-500 mt-1">{t('company.jobsnew.negotiableHint')}</div>
               )}
 
-              <h2 className="text-[12px] font-extrabold text-gray-500 uppercase tracking-[0.08em] mt-5 mb-3">{t('company.jobsnew.skillH')}</h2>
+              <h2 className="text-[12px] font-bold text-gray-500 mt-5 mb-3">{t('company.jobsnew.skillH')}</h2>
 
               <Field label={t('company.jobsnew.tech')}>
                 <UInput value={form.tech_stack} onChange={e => setF('tech_stack', e.target.value)} placeholder="Node.js, PostgreSQL, AWS" />
@@ -437,7 +437,7 @@ export default function NewJobPage() {
             {/* Preview column — JobPreview faithfully mirrors /jobs/[id] layout. */}
             <aside className="flex-1 overflow-y-auto min-h-0 pl-2 pr-3 pb-10 flex flex-col gap-3 [scrollbar-gutter:stable]">
               <div className="flex items-center justify-between flex-shrink-0">
-                <div className="text-[10.5px] font-extrabold uppercase tracking-[0.08em] text-gray-500">{t('company.jobsnew.previewLabel')}</div>
+                <div className="text-[10.5px] font-bold text-gray-500">{t('company.jobsnew.previewLabel')}</div>
                 <UButton type="button" size="sm" variant="outline" onClick={() => setPreviewFull(true)} className="h-7 px-2.5 text-[11.5px]">
                   <Maximize2 className="w-3.5 h-3.5" />
                   {t('company.jobsnew.previewFull')}
@@ -646,7 +646,7 @@ export function Sidebar({ companyName, userEmail, activePage = 'home', activeJob
           <Brand href="/company" size="sm" />
           <LangToggle align="right" />
         </div>
-        <div className="text-[13px] font-extrabold text-white tracking-tight truncate">{companyName || t('company.sidebar.myCompany')}</div>
+        <div className="text-[13px] font-bold text-white tracking-tight truncate">{companyName || t('company.sidebar.myCompany')}</div>
         <div className="text-[11px] text-gray-500 mt-0.5 truncate font-medium">{userEmail}</div>
       </div>
 
@@ -688,7 +688,7 @@ export function Sidebar({ companyName, userEmail, activePage = 'home', activeJob
           <CheckSquare className="h-3.5 w-3.5" />
           <span className="flex-1">{t('company.sidebar.todo')}</span>
           {todoCount > 0 && (
-            <span className="inline-flex items-center justify-center px-1.5 py-0.5 rounded-full bg-primary-500 text-white text-[11.5px] font-extrabold tabular-nums">
+            <span className="inline-flex items-center justify-center px-1.5 py-0.5 rounded-full bg-primary-500 text-white text-[11.5px] font-bold tabular-nums">
               {t('company.unit.items', { n: todoCount })}
             </span>
           )}
@@ -705,7 +705,7 @@ export function Sidebar({ companyName, userEmail, activePage = 'home', activeJob
           <CalendarDays className="h-3.5 w-3.5" />
           <span className="flex-1">{t('company.sidebar.calendar')}</span>
           {interviewCount > 0 && (
-            <span className="inline-flex items-center justify-center px-1.5 py-0.5 rounded-full bg-primary-500 text-white text-[11.5px] font-extrabold tabular-nums">
+            <span className="inline-flex items-center justify-center px-1.5 py-0.5 rounded-full bg-primary-500 text-white text-[11.5px] font-bold tabular-nums">
               {t('company.unit.items', { n: interviewCount })}
             </span>
           )}
@@ -737,7 +737,7 @@ export function Sidebar({ companyName, userEmail, activePage = 'home', activeJob
           <>
             {/* Section divider with title — myJobs */}
             <div className="h-px bg-white/15 my-3 mx-1" />
-            <div className="px-2.5 pt-0.5 pb-1.5 text-[11.5px] font-extrabold text-gray-400 uppercase tracking-[0.08em]">
+            <div className="px-2.5 pt-0.5 pb-1.5 text-[11.5px] font-bold text-gray-400">
               {t('company.sidebar.myJobs', { n: jobs.length })}
             </div>
             <div className="flex flex-col gap-0.5 max-h-[400px] overflow-y-auto">
@@ -792,7 +792,7 @@ export const css = {
 
   fullCenter: { minHeight: '100vh', background: 'var(--sm-gray-50)', display: 'grid', placeItems: 'center', padding: 20, fontFamily: "'Pretendard Variable', 'Pretendard', sans-serif" },
   lightCard: { maxWidth: 420, width: '100%', padding: '40px 32px', textAlign: 'center', background: '#fff', border: '1px solid var(--sm-gray-200)', borderRadius: 14, boxShadow: '0 8px 24px rgba(0,0,0,0.05)' },
-  cardH: { fontSize: 20, fontWeight: 800, color: 'var(--sm-gray-900)', marginBottom: 8 },
+  cardH: { fontSize: 20, fontWeight: 700, color: 'var(--sm-gray-900)', marginBottom: 8 },
   cardP: { fontSize: 13.5, color: 'var(--sm-gray-700)', marginBottom: 22, lineHeight: 1.65 },
 
   app: { display: 'flex', minHeight: '100vh', background: 'var(--sm-gray-50)', color: 'var(--sm-gray-900)', fontFamily: "'Pretendard Variable', 'Pretendard', sans-serif" },
@@ -800,33 +800,33 @@ export const css = {
   // Sidebar (light)
   sidebar: { background: '#fff', borderRight: '1px solid var(--sm-gray-200)', padding: '16px 12px', display: 'flex', flexDirection: 'column', gap: 4 },
   sideHead: { padding: '8px 10px 14px', borderBottom: '1px solid var(--sm-gray-200)', marginBottom: 10 },
-  sideCompany: { fontSize: 14, fontWeight: 800, color: 'var(--sm-gray-900)' },
+  sideCompany: { fontSize: 14, fontWeight: 700, color: 'var(--sm-gray-900)' },
   sideUser: { fontSize: 11, color: 'var(--sm-gray-600)', marginTop: 3 },
   sideNav: { display: 'flex', flexDirection: 'column', gap: 2 },
   navItem: { display: 'flex', alignItems: 'center', gap: 9, padding: '9px 10px', borderRadius: 7, fontSize: 13, color: 'var(--sm-gray-700)', fontWeight: 600, textDecoration: 'none' },
-  navItemActive: { background: 'var(--sm-primary-50)', color: 'var(--sm-primary-600)', fontWeight: 800 },
+  navItemActive: { background: 'var(--sm-primary-50)', color: 'var(--sm-primary-600)', fontWeight: 700 },
   navIco: { width: 14, textAlign: 'center', fontSize: 13 },
   sideBottom: { marginTop: 'auto', padding: 10 },
   signoutLink: { fontSize: 11.5, color: 'var(--sm-gray-600)', cursor: 'pointer', textDecoration: 'underline' },
 
   sideDivider: { height: 1, background: 'var(--sm-gray-200)', margin: '12px 8px' },
-  sideSectionTitle: { fontSize: 10.5, color: 'var(--sm-gray-500)', fontWeight: 800, letterSpacing: '0.06em', textTransform: 'uppercase', padding: '4px 10px 6px' },
+  sideSectionTitle: { fontSize: 10.5, color: 'var(--sm-gray-500)', fontWeight: 700, letterSpacing: '0.06em', padding: '4px 10px 6px' },
   sideSubGroupTitle: { fontSize: 11, color: 'var(--sm-gray-700)', fontWeight: 700, padding: '8px 10px 4px' },
   sideJobList: { display: 'flex', flexDirection: 'column', gap: 1, maxHeight: 360, overflowY: 'auto' },
   sideJobItem: { display: 'flex', alignItems: 'center', gap: 8, padding: '7px 10px', borderRadius: 6, fontSize: 12.5, color: 'var(--sm-gray-700)', fontWeight: 600, textDecoration: 'none' },
-  sideJobItemActive: { background: 'var(--sm-primary-50)', color: 'var(--sm-primary-600)', fontWeight: 800 },
+  sideJobItemActive: { background: 'var(--sm-primary-50)', color: 'var(--sm-primary-600)', fontWeight: 700 },
   sideJobDot: { width: 7, height: 7, borderRadius: '50%', flexShrink: 0 },
   sideJobTitle: { whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' },
 
   // Main — flex-1 min-w-0 so it lives nicely in flex shell. Top padding kept thin since PageHeader is sticky.
   main: { flex: 1, minWidth: 0, paddingLeft: 'clamp(16px, 3vw, 28px)', paddingRight: 'clamp(16px, 3vw, 28px)', paddingTop: 0, paddingBottom: 40, display: 'flex', flexDirection: 'column', gap: 14 },
   mainHead: { display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' },
-  mainH: { fontSize: 26, fontWeight: 800, color: 'var(--sm-gray-900)', letterSpacing: '-0.01em' },
+  mainH: { fontSize: 26, fontWeight: 700, color: 'var(--sm-gray-900)', letterSpacing: '-0.01em' },
   mainP: { fontSize: 13.5, color: 'var(--sm-gray-700)', marginTop: 4 },
 
   formShell: { display: 'grid', gridTemplateColumns: '1.4fr 1fr', gap: 24, alignItems: 'flex-start' },
   formCol: { display: 'flex', flexDirection: 'column' },
-  sectionTitle: { fontSize: 12, fontWeight: 800, color: 'var(--sm-gray-600)', letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: 14 },
+  sectionTitle: { fontSize: 12, fontWeight: 700, color: 'var(--sm-gray-600)', letterSpacing: '0.06em', marginBottom: 14 },
 
   field: { display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 14 },
   fieldLabel: { fontSize: 12, color: 'var(--sm-gray-700)', fontWeight: 700 },
@@ -835,9 +835,9 @@ export const css = {
   row2: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 },
 
   previewCol: { background: '#fff', border: '1px solid var(--sm-gray-200)', borderRadius: 12, padding: 18, display: 'flex', flexDirection: 'column', gap: 10, position: 'sticky', top: 20 },
-  previewLabel: { fontSize: 10.5, color: 'var(--sm-gray-600)', fontWeight: 700, letterSpacing: '0.05em', textTransform: 'uppercase' },
+  previewLabel: { fontSize: 10.5, color: 'var(--sm-gray-600)', fontWeight: 700, letterSpacing: '0.05em' },
   previewCard: { background: 'var(--sm-gray-50)', border: '1px solid var(--sm-gray-200)', borderRadius: 8, padding: 14 },
-  pTitle: { fontSize: 14, fontWeight: 800, color: 'var(--sm-gray-900)', marginBottom: 5 },
+  pTitle: { fontSize: 14, fontWeight: 700, color: 'var(--sm-gray-900)', marginBottom: 5 },
   pMeta: { fontSize: 11.5, color: 'var(--sm-gray-700)', marginTop: 2 },
   pLoc: { fontSize: 11.5, color: 'var(--sm-gray-600)', marginTop: 6 },
 
@@ -847,9 +847,9 @@ export const css = {
 
   // Matches the shadcn Button default/outline variants (ui/button.js) so
   // inline-styled pages read as the same system.
-  btnPrimary: { padding: '12px 24px', borderRadius: 8, border: 'none', background: 'linear-gradient(135deg, var(--sm-primary), var(--sm-primary-400))', color: '#fff', fontSize: 14, fontWeight: 800, cursor: 'pointer', fontFamily: 'inherit', textDecoration: 'none', display: 'inline-block', boxShadow: '0 6px 16px rgba(var(--sm-primary-rgb),0.25)' },
+  btnPrimary: { padding: '12px 24px', borderRadius: 8, border: 'none', background: 'var(--sm-primary)', color: '#fff', fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', textDecoration: 'none', display: 'inline-block', boxShadow: '0 6px 16px rgba(var(--sm-primary-rgb),0.25)' },
   btnGhost: { padding: '12px 24px', borderRadius: 8, border: '1px solid var(--sm-gray-200)', background: '#fff', color: 'var(--sm-gray-900)', fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', textDecoration: 'none', display: 'inline-block', boxShadow: '0 1px 2px rgba(17,24,39,0.04)' },
-  btnDisabled: { padding: '12px 24px', borderRadius: 8, border: 'none', background: 'var(--sm-gray-200)', color: 'var(--sm-gray-500)', fontSize: 14, fontWeight: 800, cursor: 'not-allowed', fontFamily: 'inherit' },
+  btnDisabled: { padding: '12px 24px', borderRadius: 8, border: 'none', background: 'var(--sm-gray-200)', color: 'var(--sm-gray-500)', fontSize: 14, fontWeight: 700, cursor: 'not-allowed', fontFamily: 'inherit' },
   btnDanger: { padding: '12px 22px', borderRadius: 8, border: '1px solid #FECACA', background: '#FEF2F2', color: '#B91C1C', fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' },
 };
 
@@ -871,8 +871,8 @@ const localCss = {
   pvLogo: { width: 20, height: 20, borderRadius: 5, objectFit: 'contain', background: 'var(--sm-gray-100)' },
   pvLogoEmpty: { width: 20, height: 20, borderRadius: 5, background: 'var(--sm-gray-200)' },
   pvCompany: { fontSize: 11.5, color: 'var(--sm-gray-600)', fontWeight: 700 },
-  pvTitle: { fontSize: 15, fontWeight: 800, color: 'var(--sm-gray-900)', marginBottom: 6, lineHeight: 1.3 },
-  pvSalary: { fontSize: 13, color: 'var(--sm-primary-600)', fontWeight: 800, marginBottom: 7 },
+  pvTitle: { fontSize: 15, fontWeight: 700, color: 'var(--sm-gray-900)', marginBottom: 6, lineHeight: 1.3 },
+  pvSalary: { fontSize: 13, color: 'var(--sm-primary-600)', fontWeight: 700, marginBottom: 7 },
   pvTags: { display: 'flex', flexWrap: 'wrap', gap: 5, marginBottom: 8 },
   pvTag: { fontSize: 10.5, fontWeight: 700, color: 'var(--sm-gray-700)', background: 'var(--sm-gray-100)', padding: '3px 8px', borderRadius: 999 },
   pvLoc: { fontSize: 11.5, color: 'var(--sm-gray-600)' },

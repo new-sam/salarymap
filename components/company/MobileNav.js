@@ -45,7 +45,7 @@ export default function MobileNav({ active, companyName, userEmail }) {
                 className="inline-flex items-center gap-1.5 max-w-[55%] min-w-0 h-8 px-2.5 rounded-md border border-white/10 bg-white/5 hover:bg-white/10 transition-colors"
               >
                 <Truncate
-                  className="text-[12.5px] font-extrabold text-white tracking-tight"
+                  className="text-[12.5px] font-bold text-white tracking-tight"
                   stopPropagation={false}
                 >
                   {companyName || userEmail}
@@ -56,7 +56,7 @@ export default function MobileNav({ active, companyName, userEmail }) {
             <DropdownMenuContent align="end" className="min-w-[240px]">
               <div className="px-2 py-2">
                 {companyName && (
-                  <div className="text-[14px] font-extrabold text-gray-900 truncate">
+                  <div className="text-[14px] font-bold text-gray-900 truncate">
                     {companyName}
                   </div>
                 )}
@@ -88,7 +88,7 @@ export default function MobileNav({ active, companyName, userEmail }) {
               key={tab.key}
               href={tab.href}
               className={cn(
-                'flex-1 min-w-0 inline-flex items-center justify-center gap-1.5 h-11 text-[12.5px] font-extrabold transition-colors border-b-2 px-1',
+                'flex-1 min-w-0 inline-flex items-center justify-center gap-1.5 h-11 text-[12.5px] font-bold transition-colors border-b-2 px-1',
                 isActive
                   ? 'text-primary-300 bg-primary-500/15 border-primary-400'
                   : 'text-gray-400 border-transparent hover:bg-white/5'

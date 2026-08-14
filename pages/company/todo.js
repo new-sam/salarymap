@@ -44,7 +44,7 @@ const KIND_LABEL_KEY = {
 };
 
 const TONE_CLASS = {
-  primary: 'text-primary-700 bg-primary-50 border-primary-200',
+  primary: 'text-primary-500 bg-primary-50 border-primary-200',
   green:   'text-green-700  bg-green-50  border-green-200',
   red:     'text-red-700    bg-red-50    border-red-200',
   gray:    'text-gray-700   bg-gray-100  border-gray-200',
@@ -225,7 +225,7 @@ export default function CompanyTodoPage() {
                   <CheckSquare className="w-5 h-5 text-primary-600" />
                   {t('company.todo.h')}
                   {items.length > 0 && (
-                    <span className="inline-flex items-center min-w-[28px] h-[22px] px-2 rounded-full bg-primary-50 border border-primary-200 text-primary-700 text-[12px] font-extrabold tabular-nums">
+                    <span className="inline-flex items-center min-w-[28px] h-[22px] px-2 rounded-full bg-primary-50 border border-primary-200 text-primary-500 text-[12px] font-bold tabular-nums">
                       {t('company.todo.count', { n: items.length })}
                     </span>
                   )}
@@ -237,7 +237,7 @@ export default function CompanyTodoPage() {
 
           {items.length === 0 ? (
             <div className="rounded-xl border border-dashed border-gray-200 bg-white p-10 text-center">
-              <div className="text-[15px] font-extrabold text-gray-800 mb-1">{t('company.todo.empty')}</div>
+              <div className="text-[15px] font-bold text-gray-800 mb-1">{t('company.todo.empty')}</div>
               <div className="text-[13px] text-gray-500">{t('company.todo.allClear')}</div>
             </div>
           ) : (
@@ -256,13 +256,13 @@ export default function CompanyTodoPage() {
                     )}
                   >
                     <header className="flex items-center gap-2 mb-1">
-                      <h2 className="text-[15px] font-extrabold text-gray-900 tracking-tight">{job.title}</h2>
-                      <span className="inline-flex items-center min-w-[30px] h-[20px] px-2 rounded-full bg-gray-900 text-white text-[10.5px] font-extrabold tabular-nums">
+                      <h2 className="text-[15px] font-bold text-gray-900 tracking-tight">{job.title}</h2>
+                      <span className="inline-flex items-center min-w-[30px] h-[20px] px-2 rounded-full bg-gray-900 text-white text-[10.5px] font-bold tabular-nums">
                         {t('company.todo.count', { n: jobItems.length })}
                       </span>
                       <Link
                         href={`/company/ats?job=${jid}`}
-                        className="hidden md:inline-block ml-auto text-[12px] font-bold text-primary-700 hover:text-primary-900 underline underline-offset-2"
+                        className="hidden md:inline-block ml-auto text-[12px] font-bold text-primary-500 hover:text-primary-600 underline underline-offset-2"
                       >
                         {t('company.todo.openJob')}
                       </Link>
@@ -300,14 +300,14 @@ export default function CompanyTodoPage() {
                             </span>
                             <div className="min-w-0 flex-1">
                               <div className="flex items-center gap-1.5 flex-wrap mb-0.5">
-                                <Truncate className="text-[13.5px] font-extrabold text-gray-900" stopPropagation={false}>{name}</Truncate>
-                                <span className="hidden md:inline-flex text-[10.5px] font-extrabold px-1.5 py-0.5 rounded border border-gray-200 bg-gray-100 text-gray-700">
+                                <Truncate className="text-[13.5px] font-bold text-gray-900" stopPropagation={false}>{name}</Truncate>
+                                <span className="hidden md:inline-flex text-[10.5px] font-bold px-1.5 py-0.5 rounded border border-gray-200 bg-gray-100 text-gray-700">
                                   {stageLabel}
                                 </span>
                                 <span className={cn(
-                                  'hidden md:inline-flex text-[10.5px] font-extrabold px-1.5 py-0.5 rounded border',
+                                  'hidden md:inline-flex text-[10.5px] font-bold px-1.5 py-0.5 rounded border',
                                   isOwner
-                                    ? 'bg-primary-50 border-primary-200 text-primary-700'
+                                    ? 'bg-primary-50 border-primary-200 text-primary-500'
                                     : 'bg-gray-100 border-gray-200 text-gray-700'
                                 )}>
                                   {isOwner ? t('company.todo.roleOwner') : t('company.todo.roleInterviewer')}

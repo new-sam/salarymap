@@ -50,7 +50,7 @@ DropdownMenuSeparator.displayName = DropdownMenuPrimitive.Separator.displayName;
 const DropdownMenuLabel = React.forwardRef(({ className, inset, ...props }, ref) => (
   <DropdownMenuPrimitive.Label
     ref={ref}
-    className={cn('px-3 py-1.5 text-xs font-bold uppercase tracking-wider text-muted-foreground', inset && 'pl-8', className)}
+    className={cn('px-3 py-1.5 text-xs font-bold text-muted-foreground', inset && 'pl-8', className)}
     {...props}
   />
 ));

@@ -256,7 +256,7 @@ export default function EditJobPage() {
           <form id="job-edit-form" onSubmit={onSubmit} className="flex-1 min-h-0 flex flex-col lg:flex-row gap-6 overflow-hidden">
             <div className="flex-[1.4] flex flex-col overflow-y-auto min-h-0 px-1 pb-10">
               {/* Mirrors /company/jobs/new exactly — same headers, fields, order, and i18n keys. */}
-              <h2 className="text-[12px] font-extrabold text-gray-500 uppercase tracking-[0.08em] mb-3">{t('company.jobsnew.photoH')}</h2>
+              <h2 className="text-[12px] font-bold text-gray-500 mb-3">{t('company.jobsnew.photoH')}</h2>
 
               <div className="grid grid-cols-2 gap-3 mb-3">
                 <Field label={t('company.jobsnew.imageLabel')}>
@@ -284,7 +284,7 @@ export default function EditJobPage() {
                 ? <div className="text-xs text-primary-600 font-semibold mb-3">{t('company.uploading')}</div>
                 : <div className="text-xs text-gray-400 font-semibold mb-5">{t('company.jobsnew.photoHint')}</div>}
 
-              <h2 className="text-[12px] font-extrabold text-gray-500 uppercase tracking-[0.08em] mt-3 mb-3">{t('company.jobsnew.basicH')}</h2>
+              <h2 className="text-[12px] font-bold text-gray-500 mt-3 mb-3">{t('company.jobsnew.basicH')}</h2>
 
               <Field label={t('company.jobsnew.title')}>
                 <UInput value={form.title} onChange={e => setF('title', e.target.value)} placeholder="Senior Backend Engineer" />
@@ -337,7 +337,7 @@ export default function EditJobPage() {
                 </SelectInput>
               </Field>
 
-              <h2 className="text-[12px] font-extrabold text-gray-500 uppercase tracking-[0.08em] mt-5 mb-1">{t('company.jobsnew.workH')}</h2>
+              <h2 className="text-[12px] font-bold text-gray-500 mt-5 mb-1">{t('company.jobsnew.workH')}</h2>
               <div className="text-xs text-gray-400 font-semibold mb-3">{t('company.jobsnew.workHint')}</div>
               <div className="grid grid-cols-2 gap-3">
                 <Field label={t('company.jobsnew.workDays')}>
@@ -354,7 +354,7 @@ export default function EditJobPage() {
                 </Field>
               </div>
 
-              <h2 className="text-[12px] font-extrabold text-gray-500 uppercase tracking-[0.08em] mt-5 mb-3">{t('company.jobsnew.expSalH')}</h2>
+              <h2 className="text-[12px] font-bold text-gray-500 mt-5 mb-3">{t('company.jobsnew.expSalH')}</h2>
 
               <div className="grid grid-cols-2 gap-3">
                 <Field label={t('company.jobsnew.expMin')}>
@@ -384,7 +384,7 @@ export default function EditJobPage() {
                 <div className="text-xs text-gray-500 mt-1">{t('company.jobsnew.negotiableHint')}</div>
               )}
 
-              <h2 className="text-[12px] font-extrabold text-gray-500 uppercase tracking-[0.08em] mt-5 mb-3">{t('company.jobsnew.skillH')}</h2>
+              <h2 className="text-[12px] font-bold text-gray-500 mt-5 mb-3">{t('company.jobsnew.skillH')}</h2>
 
               <Field label={t('company.jobsnew.tech')}>
                 <UInput value={form.tech_stack} onChange={e => setF('tech_stack', e.target.value)} placeholder="Node.js, PostgreSQL, AWS" />
@@ -408,7 +408,7 @@ export default function EditJobPage() {
             {/* Preview column — JobPreview faithfully mirrors /jobs/[id] layout. */}
             <aside className="flex-1 overflow-y-auto min-h-0 pl-2 pr-1 pb-10 flex flex-col gap-3">
               <div className="flex items-center justify-between flex-shrink-0">
-                <div className="text-[10.5px] font-extrabold uppercase tracking-[0.08em] text-gray-500">{t('company.jobsnew.previewLabel')}</div>
+                <div className="text-[10.5px] font-bold text-gray-500">{t('company.jobsnew.previewLabel')}</div>
                 <UButton type="button" size="sm" variant="outline" onClick={() => setPreviewFull(true)} className="h-7 px-2.5 text-[11.5px]">
                   <Maximize2 className="w-3.5 h-3.5" />
                   {t('company.jobsnew.previewFull')}

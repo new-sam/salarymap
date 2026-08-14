@@ -136,12 +136,12 @@ export default function TeamPopover({ jobId, canInvite = true }) {
       >
         <UsersIcon className="w-3.5 h-3.5" />
         {t('company.team.btn')}
-        <span className="text-gray-900 font-extrabold tabular-nums">{count}</span>
+        <span className="text-gray-900 font-bold tabular-nums">{count}</span>
       </button>
 
       {open && (
         <div className="absolute top-[calc(100%+6px)] right-0 z-[60] w-[308px] max-h-[440px] overflow-y-auto bg-white rounded-xl border border-border shadow-soft-lg p-3">
-          <div className="text-xs font-extrabold text-gray-900 uppercase tracking-[0.02em] mb-2">{t('company.team.title')}</div>
+          <div className="text-xs font-bold text-gray-900 mb-2">{t('company.team.title')}</div>
 
           <div className="flex flex-col gap-2">
             {loading && <div className="py-5 text-center text-[13px] text-gray-400">···</div>}
@@ -162,16 +162,16 @@ export default function TeamPopover({ jobId, canInvite = true }) {
               const canRemove = team.currentUserIsAdmin && !isCreator && !isMe;
               return (
                 <div key={m.user_id} className="flex items-center gap-2.5 px-1 py-1.5">
-                  <div className="shrink-0 w-[30px] h-[30px] rounded-full grid place-items-center text-white text-[13px] font-black" style={{ background: colorFor(m.email || name) }}>{initialOf(name)}</div>
+                  <div className="shrink-0 w-[30px] h-[30px] rounded-full grid place-items-center text-white text-[13px] font-extrabold" style={{ background: colorFor(m.email || name) }}>{initialOf(name)}</div>
                   <div className="flex-1 min-w-0">
-                    <div className="text-[13.5px] font-extrabold text-gray-900 truncate">{name}{isMe && <span className="font-bold text-gray-400 text-[11.5px]"> ({t('company.team.you')})</span>}</div>
+                    <div className="text-[13.5px] font-bold text-gray-900 truncate">{name}{isMe && <span className="font-bold text-gray-400 text-[11.5px]"> ({t('company.team.you')})</span>}</div>
                     <div className="text-[11.5px] text-gray-600 truncate">{m.email}</div>
                   </div>
                   <div className={cn(
                     'shrink-0',
                     isAdmin
-                      ? 'text-[10.5px] font-black text-primary-600 bg-primary-50 px-2 py-1 rounded-md border border-primary-500/30'
-                      : 'text-[11px] font-extrabold text-gray-600'
+                      ? 'text-[10.5px] font-extrabold text-primary-600 bg-primary-50 px-2 py-1 rounded-md border border-primary-500/30'
+                      : 'text-[11px] font-bold text-gray-600'
                   )}>
                     {t(`company.team.role.${isAdmin ? 'admin' : 'interviewer'}`)}
                   </div>
@@ -184,17 +184,17 @@ export default function TeamPopover({ jobId, canInvite = true }) {
 
             {team.invites.map(iv => (
               <div key={iv.id} className="flex items-center gap-2.5 px-1 py-1.5">
-                <div className="shrink-0 w-[30px] h-[30px] rounded-full grid place-items-center text-white text-[13px] font-black bg-gray-400">{initialOf(iv.email)}</div>
+                <div className="shrink-0 w-[30px] h-[30px] rounded-full grid place-items-center text-white text-[13px] font-extrabold bg-gray-400">{initialOf(iv.email)}</div>
                 <div className="flex-1 min-w-0">
-                  <div className="text-[13.5px] font-extrabold text-gray-900 truncate">{iv.email.split('@')[0]}</div>
+                  <div className="text-[13.5px] font-bold text-gray-900 truncate">{iv.email.split('@')[0]}</div>
                   <div className="text-[11.5px] text-gray-600 truncate">{iv.email}</div>
                   <div className="text-[10.5px] text-gray-400 mt-0.5">{t('company.team.invitedAt', { when: relTime(iv.created_at, t) })}</div>
                 </div>
                 <div className={cn(
                   'shrink-0',
                   iv.role === 'admin'
-                    ? 'text-[10.5px] font-black text-primary-600 bg-primary-50 px-2 py-1 rounded-md border border-primary-500/30'
-                    : 'text-[11px] font-extrabold text-primary-500'
+                    ? 'text-[10.5px] font-extrabold text-primary-600 bg-primary-50 px-2 py-1 rounded-md border border-primary-500/30'
+                    : 'text-[11px] font-bold text-primary-500'
                 )}>
                   {iv.role === 'admin' ? t('company.team.role.admin') : t('company.team.pending')}
                 </div>
@@ -206,7 +206,7 @@ export default function TeamPopover({ jobId, canInvite = true }) {
           </div>
 
           {canInvite && (
-            <button type="button" className="mt-2.5 w-full rounded-lg py-2.5 px-3 bg-primary-50 text-primary-600 text-[13px] font-extrabold border border-dashed border-primary-500/40 hover:bg-primary-100 transition-colors" onClick={() => { setInviteOpen(true); setOpen(false); }}>
+            <button type="button" className="mt-2.5 w-full rounded-lg py-2.5 px-3 bg-primary-50 text-primary-600 text-[13px] font-bold border border-dashed border-primary-500/40 hover:bg-primary-100 transition-colors" onClick={() => { setInviteOpen(true); setOpen(false); }}>
               + {t('company.team.invite')}
             </button>
           )}
@@ -288,7 +288,7 @@ function InviteModal({ jobId, onClose, onDone }) {
                     type="button"
                     onClick={() => setRole('admin')}
                     className={cn(
-                      'flex-1 px-3 py-2.5 rounded-lg border text-[13px] font-extrabold text-left transition-colors',
+                      'flex-1 px-3 py-2.5 rounded-lg border text-[13px] font-bold text-left transition-colors',
                       role === 'admin' ? 'bg-primary-50 border-primary-400 text-primary-600' : 'bg-white border-input text-gray-700 hover:bg-gray-50'
                     )}
                   >
@@ -299,7 +299,7 @@ function InviteModal({ jobId, onClose, onDone }) {
                     type="button"
                     onClick={() => setRole('interviewer')}
                     className={cn(
-                      'flex-1 px-3 py-2.5 rounded-lg border text-[13px] font-extrabold text-left transition-colors',
+                      'flex-1 px-3 py-2.5 rounded-lg border text-[13px] font-bold text-left transition-colors',
                       role === 'interviewer' ? 'bg-primary-50 border-primary-400 text-primary-600' : 'bg-white border-input text-gray-700 hover:bg-gray-50'
                     )}
                   >

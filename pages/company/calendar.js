@@ -189,7 +189,7 @@ export default function CompanyCalendarPage() {
                 <CalendarIcon className="w-5 h-5 text-primary-600" />
                 {t('company.calendar.h')}
                 {upcomingCount > 0 && (
-                  <span className="inline-flex items-center min-w-[28px] h-[22px] px-2 rounded-full bg-primary-50 border border-primary-200 text-primary-700 text-[12px] font-extrabold tabular-nums">
+                  <span className="inline-flex items-center min-w-[28px] h-[22px] px-2 rounded-full bg-primary-50 border border-primary-200 text-primary-500 text-[12px] font-bold tabular-nums">
                     {t('company.unit.items', { n: upcomingCount })}
                   </span>
                 )}
@@ -201,13 +201,13 @@ export default function CompanyCalendarPage() {
 
           <div className="hidden md:flex items-center justify-between mb-2 px-1">
             <div className="flex items-center gap-2">
-              <h2 className="text-[15px] font-extrabold text-foreground tracking-tight">
+              <h2 className="text-[15px] font-bold text-foreground tracking-tight">
                 {t('company.calendar.monthLabel', { year: view.year, month: view.month + 1 })}
               </h2>
-              <span className="inline-flex items-center h-[22px] px-2 rounded-full bg-green-100 border border-green-200 text-green-800 text-[11.5px] font-extrabold tabular-nums">
+              <span className="inline-flex items-center h-[22px] px-2 rounded-full bg-green-100 border border-green-200 text-green-800 text-[11.5px] font-bold tabular-nums">
                 {t('company.calendar.doneChip', { n: monthDoneCount })}
               </span>
-              <span className="inline-flex items-center h-[22px] px-2 rounded-full bg-sky-100 border border-sky-200 text-sky-800 text-[11.5px] font-extrabold tabular-nums">
+              <span className="inline-flex items-center h-[22px] px-2 rounded-full bg-sky-100 border border-sky-200 text-sky-800 text-[11.5px] font-bold tabular-nums">
                 {t('company.calendar.upcomingChip', { n: monthUpcomingCount })}
               </span>
             </div>
@@ -230,7 +230,7 @@ export default function CompanyCalendarPage() {
                 <div
                   key={i}
                   className={cn(
-                    'py-1.5 text-center text-[11px] font-extrabold uppercase tracking-[0.06em]',
+                    'py-1.5 text-center text-[11px] font-bold',
                     i === 0 ? 'text-red-500' : i === 6 ? 'text-blue-500' : 'text-gray-500'
                   )}
                 >
@@ -262,15 +262,15 @@ export default function CompanyCalendarPage() {
                   )}
                 >
                   <div className={cn(
-                    'text-xs font-extrabold px-1 py-0.5 tabular-nums flex-shrink-0',
+                    'text-xs font-bold px-1 py-0.5 tabular-nums flex-shrink-0',
                     c.otherMonth && 'text-gray-300',
                     !c.otherMonth && dayOfWeek === 0 && 'text-red-600',
                     !c.otherMonth && dayOfWeek === 6 && 'text-blue-600',
                     !c.otherMonth && dayOfWeek !== 0 && dayOfWeek !== 6 && 'text-gray-900',
-                    isToday && !c.otherMonth && 'text-primary-700 font-black'
+                    isToday && !c.otherMonth && 'text-primary-500 font-extrabold'
                   )}>
                     {isToday && !c.otherMonth ? (
-                      <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-primary-600 text-white text-[10.5px]">{c.day}</span>
+                      <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-primary-500 text-white text-[10.5px]">{c.day}</span>
                     ) : c.day}
                   </div>
                   <div className="flex flex-col gap-0.5 overflow-y-auto flex-1 min-h-0 pr-0.5">
@@ -292,7 +292,7 @@ export default function CompanyCalendarPage() {
                           )}
                         >
                           <span className={cn(
-                            'font-extrabold tabular-nums flex-shrink-0',
+                            'font-bold tabular-nums flex-shrink-0',
                             isPast ? 'text-green-700' : 'text-sky-700'
                           )}>{time}</span>
                           <span className="truncate min-w-0">{name} · {it.jobTitle}</span>
@@ -332,7 +332,7 @@ export default function CompanyCalendarPage() {
                 const grp = groups[k];
                 return (
                   <section key={k} className="mb-4">
-                    <div className="text-[11.5px] font-extrabold text-gray-500 uppercase tracking-[0.06em] mb-2 px-1">
+                    <div className="text-[11.5px] font-bold text-gray-500 mb-2 px-1">
                       {labelFor(grp.date, k)}
                     </div>
                     <div className="flex flex-col gap-1.5">
@@ -352,13 +352,13 @@ export default function CompanyCalendarPage() {
                             )}
                           >
                             <span className={cn(
-                              'text-[13px] font-extrabold tabular-nums flex-shrink-0 w-12',
+                              'text-[13px] font-bold tabular-nums flex-shrink-0 w-12',
                               isPast ? 'text-green-700' : 'text-sky-700'
                             )}>
                               {time}
                             </span>
                             <div className="flex-1 min-w-0">
-                              <Truncate as="div" className="text-[14px] font-extrabold text-gray-900" stopPropagation={false}>{name}</Truncate>
+                              <Truncate as="div" className="text-[14px] font-bold text-gray-900" stopPropagation={false}>{name}</Truncate>
                               <Truncate as="div" className="text-[12px] text-gray-700 font-semibold" stopPropagation={false}>{it.jobTitle} · {stageLabel}</Truncate>
                             </div>
                           </button>

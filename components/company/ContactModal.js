@@ -133,7 +133,7 @@ const s = {
     fontSize: 26, lineHeight: 1, color: 'var(--sm-gray-400)', cursor: 'pointer',
   },
   loading: { textAlign: 'center', padding: '30px 0', color: 'var(--sm-gray-400)', fontSize: 22 },
-  title: { margin: 0, fontSize: 21, fontWeight: 900, letterSpacing: '-0.02em' },
+  title: { margin: 0, fontSize: 21, fontWeight: 800, letterSpacing: '-0.02em' },
   lead: { margin: '10px 0 20px', fontSize: 14, lineHeight: 1.6, color: 'var(--sm-gray-700)', fontWeight: 600, wordBreak: 'keep-all' },
   emailHint: {
     display: 'inline-block', padding: '6px 11px', borderRadius: 8,
@@ -151,17 +151,17 @@ const s = {
   },
   btnPrimary: {
     width: '100%', marginTop: 18, border: 0, borderRadius: 10, padding: '14px 18px',
-    background: 'var(--sm-primary-600)', color: '#fff',
-    fontSize: 14.5, fontWeight: 850, fontFamily: 'inherit', cursor: 'pointer',
+    background: 'var(--sm-primary)', color: '#fff',
+    fontSize: 14.5, fontWeight: 700, fontFamily: 'inherit', cursor: 'pointer',
   },
   btnGhost: {
     width: '100%', marginTop: 10, borderRadius: 10, padding: '12px 18px',
     border: '1px solid var(--sm-gray-200)', background: '#fff', color: 'var(--sm-gray-700)',
-    fontSize: 13.5, fontWeight: 750, fontFamily: 'inherit', cursor: 'pointer',
+    fontSize: 13.5, fontWeight: 600, fontFamily: 'inherit', cursor: 'pointer',
   },
   doneIcon: {
     width: 52, height: 52, borderRadius: '50%', margin: '4px auto 16px',
-    display: 'grid', placeItems: 'center', background: 'var(--sm-primary-600)', color: '#fff',
-    fontSize: 26, fontWeight: 900,
+    display: 'grid', placeItems: 'center', background: 'var(--sm-primary)', color: '#fff',
+    fontSize: 26, fontWeight: 800,
   },
 };
