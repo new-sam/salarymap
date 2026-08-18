@@ -461,16 +461,37 @@ export default function CvLanding() {
   // cv-how 아래라 최상단에서는 절대 안 보이는데, 이미지가 자리를 잡기 전 레이아웃에서는
   // 위로 올라와 있어 그 초기 콜백이 그대로 통과했다(관측된 cv_view→cv_form_view 최단 24ms).
   // 그래서 ① 스크롤이 일어났는지 ② 폼 윗면이 화면 안으로 들어왔는지 둘 다 본다.
+  //
+  // 그런데 이 가드가 삼킨 게 초기 오발만이 아니었다. threshold:0 은 "교차 중" 상태가
+  // 유지되는 한 콜백을 다시 주지 않는다 — 마운트 직후 오발 콜백이 scrollY 가드에 걸려
+  // 버려지고 폼이 계속 교차 상태로 남으면, 히어로 CTA 로 폼까지 내려가 도달해도 이벤트가
+  // 영영 안 찍힌다. 실제로 파일을 첨부한 205명 중 126명(85명은 히어로 CTA 클릭 기록까지
+  // 있다)이 cv_form_view 없이 첨부했다. 같은 판정을 스크롤에서도 돌려 회수한다.
   useEffect(() => {
     const el = formCardRef.current
-    if (!el || showSuccess || existingResume || typeof IntersectionObserver === 'undefined') return
-    const io = new IntersectionObserver((entries) => {
-      if (formViewTracked.current) return
+    if (!el || showSuccess || existingResume) return
+    // ratio 로 재면 폼이 뷰포트보다 훨씬 길 때 기준을 영영 못 넘는다. 높이와 무관하게
+    // "폼 윗면이 화면 안으로 들어왔는가"로 본다. bottom > 0 이 isIntersecting 을 대신한다.
+    const reached = () => {
+      if (formViewTracked.current) return false
       // 도달은 언제나 스크롤을 동반한다 — 최상단에서 들어온 신호는 레이아웃 오발이다.
-      if (window.scrollY < window.innerHeight * 0.5) return
-      // ratio 로 재면 폼이 뷰포트보다 훨씬 길 때 기준을 영영 못 넘는다. 높이와 무관하게
-      // "폼 윗면이 화면 안으로 들어왔는가"로 본다.
-      if (!entries.some((e) => e.isIntersecting && e.boundingClientRect.top < window.innerHeight * 0.75)) return
+      if (window.scrollY < window.innerHeight * 0.5) return false
+      const r = el.getBoundingClientRect()
+      return r.bottom > 0 && r.top < window.innerHeight * 0.75
+    }
+    let raf = 0
+    let io = null
+    const onScroll = () => {
+      if (raf) return
+      raf = requestAnimationFrame(() => { raf = 0; fire() })
+    }
+    const cleanup = () => {
+      io?.disconnect()
+      window.removeEventListener('scroll', onScroll)
+      if (raf) cancelAnimationFrame(raf)
+    }
+    const fire = () => {
+      if (!reached()) return
       formViewTracked.current = true
       // 판정을 나중에 다시 검산할 수 있게 근거를 같이 남긴다 — via 만 있으면 이번처럼
       // 오발이 섞였을 때 걸러낼 방법이 없다.
@@ -483,10 +504,14 @@ export default function CvLanding() {
         },
         page: '/cv',
       })
-      io.disconnect()
-    }, { threshold: 0 })
-    io.observe(el)
-    return () => io.disconnect()
+      cleanup()
+    }
+    if (typeof IntersectionObserver !== 'undefined') {
+      io = new IntersectionObserver(fire, { threshold: 0 })
+      io.observe(el)
+    }
+    window.addEventListener('scroll', onScroll, { passive: true })
+    return cleanup
   }, [showSuccess, existingResume])
 
   const onStickyClick = () => {
