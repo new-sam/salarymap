@@ -198,6 +198,10 @@ async function collect(row) {
 }
 
 async function upsert(rows) {
+  // PostgREST 일괄 업서트는 모든 행의 키가 동일해야 함(PGRST102) — 누락 컬럼을 null 로 정규화
+  const COLS = ['company', 'kr_name', 'bzowr_rgst_no', 'address', 'industry', 'registered_at',
+    'established_at', 'dart_corp_code', 'headcount', 'monthly', 'financials', 'fetched_at'];
+  rows = rows.map((row) => Object.fromEntries(COLS.map((c) => [c, row[c] ?? null])));
   const r = await fetch(`${SB_URL}/rest/v1/company_kr_stats?on_conflict=company`, {
     method: 'POST',
     headers: {

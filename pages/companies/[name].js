@@ -97,7 +97,16 @@ export async function getServerSideProps({ params }) {
     .limit(1)
   if (!krErr && kr && kr.length) krStats = kr[0]
 
-  return { props: { companyName, domain: domain || null, krStats } }
+  // AI 생성 회사 소개 (jobs 상세와 같은 소스) — 원티드식 인트로 문단으로 사용
+  let overview = null
+  const { data: ov, error: ovErr } = await supabaseServer
+    .from('company_overviews')
+    .select('overview')
+    .eq('company', companyName)
+    .maybeSingle()
+  if (!ovErr && ov?.overview) overview = ov.overview
+
+  return { props: { companyName, domain: domain || null, krStats, overview } }
 }
 
 function timeAgo(iso) {
@@ -119,10 +128,11 @@ function fmtKrw(v, lang) {
   return `₩${Math.round(v / 1e6).toLocaleString()}M`
 }
 
-export default function CompanyPage({ companyName, domain, krStats }) {
+export default function CompanyPage({ companyName, domain, krStats, overview }) {
   const { t, lang } = useT()
   const router = useRouter()
   const [roleFilter, setRoleFilter] = useState('all')
+  const [introOpen, setIntroOpen] = useState(false)
 
   const [posts, setPosts] = useState([])
   const [postsLoading, setPostsLoading] = useState(true)
@@ -134,6 +144,14 @@ export default function CompanyPage({ companyName, domain, krStats }) {
   const [following, setFollowing] = useState(false)
   const [followerCount, setFollowerCount] = useState(0)
   const [followBusy, setFollowBusy] = useState(false)
+
+  // 히어로 메타: 업종 · 도시 · 설립연도 (한국 공공데이터가 있을 때만)
+  const foundedYear = String(krStats?.established_at || krStats?.registered_at || '').slice(0, 4)
+  const heroCity = (() => {
+    const p = String(krStats?.address || '').split(' ')
+    if (!p[0]) return null
+    return [p[0].replace(/(특별자치도|특별자치시|특별시|광역시)$/, ''), p[1]].filter(Boolean).join(' ')
+  })()
 
   const initial = (companyName || '?').trim().charAt(0).toUpperCase()
   const [logoError, setLogoError] = useState(false)
@@ -219,10 +237,17 @@ export default function CompanyPage({ companyName, domain, krStats }) {
         .cpg-follow-btn { padding: 9px 20px; border-radius: 999px; font-size: 14px; font-weight: 700; cursor: pointer; border: 1px solid #ff6000; background: #ff6000; color: #fff; transition: all .15s; white-space: nowrap; }
         .cpg-follow-btn.on { background: #fff; color: #666; border-color: #ddd; }
         .cpg-follow-btn:disabled { opacity: .6; cursor: default; }
-        .cpg-tabs { display: flex; gap: 4px; border-bottom: 1px solid #ececec; margin-bottom: 20px; }
-        .cpg-tab { padding: 12px 16px; font-size: 14px; font-weight: 700; color: #999; background: none; border: none; cursor: pointer; position: relative; font-family: 'Barlow', sans-serif; }
-        .cpg-tab.on { color: #111; }
-        .cpg-tab.on::after { content: ''; position: absolute; bottom: -1px; left: 0; right: 0; height: 2px; background: #ff6000; }
+        .cpg-meta { font-size: 13px; color: var(--sm-gray-600); margin: 2px 0 4px; }
+        .cpg-sec { font-size: 17px; font-weight: 800; color: #111; margin: 30px 0 12px; }
+        .cpg-sec .n { color: var(--sm-primary-500); }
+        .cpg-panel { border: 1px solid #ececec; border-radius: 14px; padding: 16px 18px; background: #fff; }
+        .cpg-stat-n { font-size: 26px; font-weight: 800; color: #111; }
+        .cpg-jobs { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .cpg-jobs .cpg-card { margin-bottom: 0; }
+        @media (max-width: 640px) { .cpg-jobs { grid-template-columns: 1fr; } }
+        .cpg-intro { font-size: 14px; color: var(--sm-gray-800); line-height: 1.7; white-space: pre-line; }
+        .cpg-intro.clamp { display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; }
+        .cpg-more { margin-top: 8px; background: none; border: none; padding: 0; color: var(--sm-gray-500); font-size: 13px; font-weight: 600; cursor: pointer; font-family: inherit; }
         .cpg-empty { text-align: center; color: #999; padding: 48px 0; font-size: 14px; }
         .cpg-card { display: block; padding: 16px 18px; border: 1px solid #ececec; border-radius: 14px; margin-bottom: 10px; background: #fff; text-decoration: none; color: inherit; transition: border-color .15s, box-shadow .15s; }
         .cpg-card:hover { border-color: #ddd; box-shadow: 0 2px 12px rgba(0,0,0,0.04); }
@@ -276,6 +301,9 @@ export default function CompanyPage({ companyName, domain, krStats }) {
           </div>
           <div className="cpg-hmeta">
             <h1 className="cpg-name">{companyName}</h1>
+            {(krStats?.industry || heroCity || foundedYear) && (
+              <div className="cpg-meta">{[krStats?.industry, heroCity, foundedYear && t('cpage.foundedIn', { year: foundedYear })].filter(Boolean).join(' · ')}</div>
+            )}
             <div className="cpg-followers">{followerCount.toLocaleString()} {t('cpage.followers')}</div>
           </div>
           <button
@@ -287,158 +315,156 @@ export default function CompanyPage({ companyName, domain, krStats }) {
           </button>
         </div>
 
-        <div className="cpg-tabs">
-          <button className={`cpg-tab${tab === 'news' ? ' on' : ''}`} onClick={() => selectTab('news')}>{t('cpage.tabNews')}</button>
-          <button className={`cpg-tab${tab === 'jobs' ? ' on' : ''}`} onClick={() => selectTab('jobs')}>{t('cpage.tabJobs')}{jobs.length > 0 ? ` ${jobs.length}` : ''}</button>
-          {/* 연봉 탭은 우리 실측(submissions) 데이터가 있을 때만 노출 */}
-          {!salaryLoading && salary?.roles?.length > 0 && (
-            <button className={`cpg-tab${tab === 'salary' ? ' on' : ''}`} onClick={() => selectTab('salary')}>{t('cpage.tabSalary')}</button>
-          )}
-          <button className={`cpg-tab${tab === 'info' ? ' on' : ''}`} onClick={() => selectTab('info')}>{t('cpage.tabInfo')}</button>
-        </div>
+        {/* 원티드식 단일 스크롤 구성 — 데이터가 있는 섹션만 렌더 */}
+        {overview && (
+          <section>
+            <div className="cpg-sec">{t('cpage.secIntro')}</div>
+            <div className="cpg-panel">
+              <div className={`cpg-intro${introOpen ? '' : ' clamp'}`}>{overview}</div>
+              <button className="cpg-more" onClick={() => setIntroOpen(o => !o)}>{introOpen ? t('cpage.introLess') : t('cpage.introMore')}</button>
+            </div>
+          </section>
+        )}
 
-        {tab === 'news' && (
-          postsLoading ? (
-            <div className="cpg-empty">···</div>
-          ) : posts.length === 0 ? (
-            <div className="cpg-empty">{t('cpage.newsEmpty')}</div>
-          ) : (
-            posts.map(p => (
+        {jobs.length > 0 && (
+          <section>
+            <div className="cpg-sec">{t('cpage.secJobs')} <span className="n">{jobs.length}</span></div>
+            <div className="cpg-jobs">
+              {jobs.map(j => (
+                <Link key={j.id} href={`/jobs?jobId=${j.id}`} className="cpg-card">
+                  <div className="cpg-card-meta">{[j.location, j.type].filter(Boolean).join(' · ')}</div>
+                  <div className="cpg-card-title">{j.title}</div>
+                  {j.salary_min > 0 ? (
+                    <div className="cpg-job-sal">{Math.round(j.salary_min / 1e6)}M – {Math.round(j.salary_max / 1e6)}M VND</div>
+                  ) : isSalaryNegotiable(j) ? (
+                    <div className="cpg-job-sal">{t('jobs.salaryNegotiable')}</div>
+                  ) : null}
+                </Link>
+              ))}
+            </div>
+          </section>
+        )}
+
+        {/* 연봉: 우리 실측(submissions)이 있을 때만 노출 */}
+        {salary?.roles?.length > 0 && (
+          <section>
+            <div className="cpg-sec">{t('cpage.tabSalary')}</div>
+            {salary.overall != null && (
+              <div className="cpg-headline">
+                <div className="cpg-headline-n">{salary.overall}M</div>
+                <div className="cpg-headline-l">{t('cpage.overallMedian')} · {salary.sampleCount} {t('cpage.samples')}</div>
+              </div>
+            )}
+
+            <div className="cpg-rolefilter">
+              <button className={`cpg-chip${roleFilter === 'all' ? ' on' : ''}`} onClick={() => setRoleFilter('all')}>{t('cpage.allRoles')}</button>
+              {salary.roles.map(r => (
+                <button key={r.role} className={`cpg-chip${roleFilter === r.role ? ' on' : ''}`} onClick={() => setRoleFilter(r.role)}>{r.role}</button>
+              ))}
+            </div>
+
+            <div className="cpg-chart-cap">{t('cpage.byExperience')} · {t('cpage.yrs')}</div>
+            {(() => {
+              const ser = (salary.series && salary.series[roleFilter]) || []
+              if (!ser.length) return <div className="cpg-empty">{t('cpage.salaryEmpty')}</div>
+              const maxMedian = Math.max(...ser.map(p => p.median), 1)
+              return (
+                <div className="cpg-chart">
+                  {ser.map(p => (
+                    <div className="cpg-col" key={p.bucket}>
+                      <div className="cpg-col-val">{p.median}M</div>
+                      <div className="cpg-col-barwrap">
+                        <div className="cpg-col-bar" style={{ height: `${Math.round((p.median / maxMedian) * 100)}%` }} />
+                      </div>
+                      <div className="cpg-col-x">{p.bucket}</div>
+                      <div className="cpg-col-n">n={p.count}</div>
+                    </div>
+                  ))}
+                </div>
+              )
+            })()}
+          </section>
+        )}
+
+        {/* 인원·매출·위치: 한국 공공데이터 (있을 때만) */}
+        {krStats && (() => {
+          const months = krStats.monthly || []
+          const trend = months.filter(m => m.headcount != null)
+          const hasFlow = months.some(m => m.joined != null || m.left != null)
+          const joined = months.reduce((a, m) => a + (m.joined || 0), 0)
+          const left = months.reduce((a, m) => a + (m.left || 0), 0)
+          const fins = (krStats.financials || []).filter(f => f.revenue != null)
+          const maxH = Math.max(...trend.map(m => m.headcount), 1)
+          const ymLabel = ym => `${ym.slice(2, 4)}.${ym.slice(4, 6)}`
+          return (
+            <>
+              {krStats.headcount != null && (
+                <section>
+                  <div className="cpg-sec">{t('cpage.krHeadcount')}</div>
+                  <div className="cpg-panel">
+                    <div className="cpg-stat-n">{krStats.headcount.toLocaleString()}{t('cpage.krPeople')}</div>
+                    {trend.length >= 2 && (
+                      <>
+                        <div className="cpg-kr-cap">{t('cpage.krTrend')}</div>
+                        <div className="cpg-mini-v"><span>{trend[0].headcount.toLocaleString()}</span><span>{trend[trend.length - 1].headcount.toLocaleString()}</span></div>
+                        <div className="cpg-mini">
+                          {trend.map(m => (
+                            <div className="cpg-mini-col" key={m.ym} title={`${ymLabel(m.ym)} · ${m.headcount.toLocaleString()}`}>
+                              <div className="cpg-mini-bar" style={{ height: `${Math.round((m.headcount / maxH) * 100)}%` }} />
+                            </div>
+                          ))}
+                        </div>
+                        <div className="cpg-mini-x"><span>{ymLabel(trend[0].ym)}</span><span>{ymLabel(trend[trend.length - 1].ym)}</span></div>
+                      </>
+                    )}
+                    {hasFlow && (
+                      <div className="cpg-info-row"><span>{t('cpage.krJoined12m')}</span><span>{joined.toLocaleString()}{t('cpage.krPeople')}</span></div>
+                    )}
+                    {hasFlow && (
+                      <div className="cpg-info-row"><span>{t('cpage.krLeft12m')}</span><span>{left.toLocaleString()}{t('cpage.krPeople')}</span></div>
+                    )}
+                    {krStats.industry && (
+                      <div className="cpg-info-row"><span>{t('cpage.krIndustry')}</span><span>{krStats.industry}</span></div>
+                    )}
+                    <div className="cpg-kr-src">{t('cpage.krSource')}</div>
+                  </div>
+                </section>
+              )}
+
+              {fins.length > 0 && (
+                <section>
+                  <div className="cpg-sec">{t('cpage.krRevenue')}</div>
+                  <div className="cpg-panel">
+                    {fins.map(f => (
+                      <div className="cpg-info-row" key={f.year}><span>{f.year}</span><span>{fmtKrw(f.revenue, lang)}{f.operating_income != null ? ` · ${t('cpage.krOpIncome')} ${fmtKrw(f.operating_income, lang)}` : ''}</span></div>
+                    ))}
+                    <div className="cpg-kr-src">{t('cpage.krSourceDart')}</div>
+                  </div>
+                </section>
+              )}
+
+              {krStats.address && (
+                <section>
+                  <div className="cpg-sec">{t('cpage.secLocation')}</div>
+                  <div className="cpg-panel"><div className="cpg-intro">{krStats.address}</div></div>
+                </section>
+              )}
+            </>
+          )
+        })()}
+
+        {posts.length > 0 && (
+          <section>
+            <div className="cpg-sec">{t('cpage.tabNews')}</div>
+            {posts.slice(0, 8).map(p => (
               <Link key={p.id} href={`/community/${p.id}`} className="cpg-card">
                 <div className="cpg-card-meta">{p.author_name} · {timeAgo(p.created_at)}</div>
                 <div className="cpg-card-title">{p.title}</div>
                 {p.content && <div className="cpg-card-preview">{p.content}</div>}
               </Link>
-            ))
-          )
+            ))}
+          </section>
         )}
-
-        {tab === 'jobs' && (
-          jobsLoading ? (
-            <div className="cpg-empty">···</div>
-          ) : jobs.length === 0 ? (
-            <div className="cpg-empty">{t('cpage.jobsEmpty')}</div>
-          ) : (
-            jobs.map(j => (
-              <Link key={j.id} href={`/jobs?jobId=${j.id}`} className="cpg-card">
-                <div className="cpg-card-meta">{[j.location, j.type].filter(Boolean).join(' · ')}</div>
-                <div className="cpg-card-title">{j.title}</div>
-                {j.salary_min > 0 ? (
-                  <div className="cpg-job-sal">{Math.round(j.salary_min / 1e6)}M – {Math.round(j.salary_max / 1e6)}M VND</div>
-                ) : isSalaryNegotiable(j) ? (
-                  <div className="cpg-job-sal">{t('jobs.salaryNegotiable')}</div>
-                ) : null}
-              </Link>
-            ))
-          )
-        )}
-
-        {tab === 'salary' && (
-          salaryLoading ? (
-            <div className="cpg-empty">···</div>
-          ) : !salary || !salary.roles?.length ? (
-            <div className="cpg-empty">{t('cpage.salaryEmpty')}</div>
-          ) : (
-            <>
-              {salary.overall != null && (
-                <div className="cpg-headline">
-                  <div className="cpg-headline-n">{salary.overall}M</div>
-                  <div className="cpg-headline-l">{t('cpage.overallMedian')} · {salary.sampleCount} {t('cpage.samples')}</div>
-                </div>
-              )}
-
-              <div className="cpg-rolefilter">
-                <button className={`cpg-chip${roleFilter === 'all' ? ' on' : ''}`} onClick={() => setRoleFilter('all')}>{t('cpage.allRoles')}</button>
-                {salary.roles.map(r => (
-                  <button key={r.role} className={`cpg-chip${roleFilter === r.role ? ' on' : ''}`} onClick={() => setRoleFilter(r.role)}>{r.role}</button>
-                ))}
-              </div>
-
-              <div className="cpg-chart-cap">{t('cpage.byExperience')} · {t('cpage.yrs')}</div>
-              {(() => {
-                const ser = (salary.series && salary.series[roleFilter]) || []
-                if (!ser.length) return <div className="cpg-empty">{t('cpage.salaryEmpty')}</div>
-                const maxMedian = Math.max(...ser.map(p => p.median), 1)
-                return (
-                  <div className="cpg-chart">
-                    {ser.map(p => (
-                      <div className="cpg-col" key={p.bucket}>
-                        <div className="cpg-col-val">{p.median}M</div>
-                        <div className="cpg-col-barwrap">
-                          <div className="cpg-col-bar" style={{ height: `${Math.round((p.median / maxMedian) * 100)}%` }} />
-                        </div>
-                        <div className="cpg-col-x">{p.bucket}</div>
-                        <div className="cpg-col-n">n={p.count}</div>
-                      </div>
-                    ))}
-                  </div>
-                )
-              })()}
-            </>
-          )
-        )}
-
-        {tab === 'info' && (() => {
-          const months = krStats?.monthly || []
-          const trend = months.filter(m => m.headcount != null)
-          const hasFlow = months.some(m => m.joined != null || m.left != null)
-          const joined = months.reduce((a, m) => a + (m.joined || 0), 0)
-          const left = months.reduce((a, m) => a + (m.left || 0), 0)
-          const fins = (krStats?.financials || []).filter(f => f.revenue != null)
-          const fin = fins[fins.length - 1]
-          const foundedYear = (krStats?.established_at || '').slice(0, 4)
-          const npsYear = (krStats?.registered_at || '').slice(0, 4)
-          const maxH = Math.max(...trend.map(m => m.headcount), 1)
-          const ymLabel = ym => `${ym.slice(2, 4)}.${ym.slice(4, 6)}`
-          return (
-            <div>
-              {krStats && (
-                <>
-                  {krStats.headcount != null && (
-                    <div className="cpg-info-row"><span>{t('cpage.krHeadcount')}</span><span>{krStats.headcount.toLocaleString()}{t('cpage.krPeople')}</span></div>
-                  )}
-                  {foundedYear ? (
-                    <div className="cpg-info-row"><span>{t('cpage.krFounded')}</span><span>{foundedYear}</span></div>
-                  ) : npsYear ? (
-                    <div className="cpg-info-row"><span>{t('cpage.krNpsRegistered')}</span><span>{npsYear}</span></div>
-                  ) : null}
-                  {krStats.industry && (
-                    <div className="cpg-info-row"><span>{t('cpage.krIndustry')}</span><span>{krStats.industry}</span></div>
-                  )}
-                  {fin && (
-                    <div className="cpg-info-row"><span>{t('cpage.krRevenue')} ({fin.year})</span><span>{fmtKrw(fin.revenue, lang)}</span></div>
-                  )}
-                  {fin && fin.operating_income != null && (
-                    <div className="cpg-info-row"><span>{t('cpage.krOpIncome')} ({fin.year})</span><span>{fmtKrw(fin.operating_income, lang)}</span></div>
-                  )}
-                  {hasFlow && (
-                    <div className="cpg-info-row"><span>{t('cpage.krJoined12m')}</span><span>{joined.toLocaleString()}{t('cpage.krPeople')}</span></div>
-                  )}
-                  {hasFlow && (
-                    <div className="cpg-info-row"><span>{t('cpage.krLeft12m')}</span><span>{left.toLocaleString()}{t('cpage.krPeople')}</span></div>
-                  )}
-                  {trend.length >= 2 && (
-                    <>
-                      <div className="cpg-kr-cap">{t('cpage.krTrend')}</div>
-                      <div className="cpg-mini-v"><span>{trend[0].headcount.toLocaleString()}</span><span>{trend[trend.length - 1].headcount.toLocaleString()}</span></div>
-                      <div className="cpg-mini">
-                        {trend.map(m => (
-                          <div className="cpg-mini-col" key={m.ym} title={`${ymLabel(m.ym)} · ${m.headcount.toLocaleString()}`}>
-                            <div className="cpg-mini-bar" style={{ height: `${Math.round((m.headcount / maxH) * 100)}%` }} />
-                          </div>
-                        ))}
-                      </div>
-                      <div className="cpg-mini-x"><span>{ymLabel(trend[0].ym)}</span><span>{ymLabel(trend[trend.length - 1].ym)}</span></div>
-                    </>
-                  )}
-                  <div className="cpg-kr-src">{t('cpage.krSource')}</div>
-                </>
-              )}
-              <div className="cpg-info-row"><span>{t('cpage.infoSubmissions')}</span><span>{salary?.total ?? '–'}</span></div>
-              <div className="cpg-info-row"><span>{t('cpage.followers')}</span><span>{followerCount.toLocaleString()}</span></div>
-            </div>
-          )
-        })()}
       </div>
       </div>
     </>
