@@ -477,6 +477,74 @@ const KTC_CLAIM_SUBJECT = {
   ko: '{{name}}님, {{position}} 프로필이 FYI에 준비돼 있어요',
   en: '{{name}}, your {{position}} profile is ready on FYI',
 }
+// ── resume-register-bonus · 축하금 손실 프레임 (resume-register-bonus-coldmail.mjs) ──
+// coldmail1에서 검증된 "아직 자격이 없다" 손실 프레임을 미등록자에게 적용.
+// 수치는 축하금 금액·실제 지급 조건(/cv cv.how.notice와 동일)만 쓴다.
+const REGISTER_BONUS_I18N = {
+  vi: {
+    greeting: 'Chào {{name}},',
+    lead: 'Bạn chưa đủ điều kiện nhận thưởng 1.000.000₫.',
+    body: 'Bạn đã có tài khoản FYI nhưng chưa đăng ký CV — vì vậy bạn chưa thể tham gia sự kiện thưởng 1.000.000₫ khi được tuyển qua FYI.',
+    stepsIntro: 'Chỉ cần một bước để tham gia:',
+    li1: 'Tải lên file CV — khoảng 30 giây, không cần nhập thêm thông tin',
+    li2: 'Nhà tuyển dụng phù hợp xem hồ sơ và chủ động liên hệ bạn',
+    li3: 'Được tuyển qua FYI → nhận thưởng 1.000.000₫',
+    cta: 'Đăng ký CV &amp; tham gia sự kiện →',
+    note: 'Không cần đăng nhập · PDF / DOCX · khoảng 30 giây',
+    cond: 'Thưởng chỉ áp dụng cho vị trí tại doanh nghiệp Việt Nam, chi trả sau 2 tháng (60 ngày) làm việc.',
+    footer: 'Bạn nhận email này vì đã đăng ký tài khoản FYI.<br>salary-fyi.com · Hủy đăng ký',
+  },
+  ko: {
+    greeting: '{{name}}님, 안녕하세요.',
+    lead: '아직 1,000,000₫ 축하금 이벤트 대상이 아닙니다.',
+    body: 'FYI 계정은 있으신데 아직 CV가 등록되어 있지 않네요 — 그래서 지금은 FYI를 통해 채용될 때 지급되는 1,000,000₫ 취업 축하금 이벤트에 참여하실 수 없습니다.',
+    stepsIntro: '참여 방법은 하나뿐입니다:',
+    li1: 'CV 파일 업로드 — 약 30초, 추가 입력 없음',
+    li2: '맞는 기업이 프로필을 보고 먼저 연락합니다',
+    li3: 'FYI를 통해 채용되면 1,000,000₫ 축하금 지급 대상이 됩니다',
+    cta: 'CV 올리고 이벤트 참여 →',
+    note: '로그인 불필요 · PDF / DOCX · 약 30초',
+    cond: '축하금은 베트남 현지 기업 공고에 한해 적용되며, 입사 후 2개월(60일) 근속이 확인된 뒤 지급됩니다.',
+    footer: 'FYI에 가입하셔서 이 메일을 받으셨습니다.<br>salary-fyi.com · 수신 거부',
+  },
+  en: {
+    greeting: 'Hi {{name}},',
+    lead: 'You\'re not yet eligible for the 1,000,000₫ bonus.',
+    body: 'You have an FYI account but no CV registered — so you can\'t yet join the 1,000,000₫ hiring-bonus event for people hired through FYI.',
+    stepsIntro: 'Only one step to join:',
+    li1: 'Upload your CV file — about 30 seconds, nothing else to fill in',
+    li2: 'Matching companies view your profile and reach out first',
+    li3: 'Get hired through FYI → receive the 1,000,000₫ bonus',
+    cta: 'Register CV &amp; join the event →',
+    note: 'No login needed · PDF / DOCX · about 30 seconds',
+    cond: 'Applies only to jobs at Vietnam-based companies, paid after 2 months (60 days) of employment.',
+    footer: 'You received this email because you have an FYI account.<br>salary-fyi.com · Unsubscribe',
+  },
+}
+const registerBonusHtml = (lang) => {
+  const s = pickLang(REGISTER_BONUS_I18N, lang)
+  const li = (t) => `<li style="margin:0 0 8px">${t}</li>`
+  return `<!doctype html><html><head><meta charset="utf-8"></head>
+<body style="margin:0;background:#f4f2ee;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;color:#1a1612">
+<table width="100%" cellpadding="0" cellspacing="0" style="background:#f4f2ee"><tr><td align="center" style="padding:32px 16px 40px">
+<table width="100%" cellpadding="0" cellspacing="0" style="max-width:480px">
+  <tr><td style="font-size:17px;font-weight:800;color:#ff6000;letter-spacing:-0.01em;padding-bottom:14px">FYI</td></tr>
+  <tr><td style="background:#ffffff;border-radius:18px;padding:32px 28px 28px">
+    <table width="100%" cellpadding="0" cellspacing="0">
+      <tr><td style="font-size:13.5px;color:#8a8177;padding-bottom:12px">${s.greeting}</td></tr>
+      <tr><td style="font-size:20px;font-weight:800;line-height:1.45;padding-bottom:16px;word-break:keep-all">${s.lead}</td></tr>
+      <tr><td style="font-size:14px;line-height:1.7;color:#57504a;padding-bottom:18px;word-break:keep-all">${s.body}</td></tr>
+      <tr><td style="border-top:1px solid #eeeae4;padding-top:18px;font-size:14px;font-weight:700;padding-bottom:10px">${s.stepsIntro}</td></tr>
+      <tr><td><ul style="font-size:14px;line-height:1.6;color:#57504a;margin:0 0 20px;padding-left:20px;word-break:keep-all">${li(s.li1)}${li(s.li2)}${li(s.li3)}</ul></td></tr>
+      <tr><td><a style="display:block;background:#ff6000;color:#fff;font-weight:700;font-size:15px;text-decoration:none;padding:16px;border-radius:12px;text-align:center">${s.cta}</a></td></tr>
+      <tr><td style="font-size:12.5px;color:#9a9186;text-align:center;padding-top:12px">${s.note}</td></tr>
+      <tr><td style="font-size:12px;color:#9a9186;line-height:1.6;padding-top:18px;word-break:keep-all">${s.cond}</td></tr>
+    </table>
+  </td></tr>
+  <tr><td style="font-size:11.5px;color:#a8a096;text-align:center;line-height:1.6;padding-top:20px">${s.footer}</td></tr>
+</table></td></tr></table></body></html>`
+}
+
 const invitedSubject = (company) => ({
   vi: `[FYI] ${company} đã xem hồ sơ của bạn và mời bạn ứng tuyển`,
   ko: `[FYI] ${company}가 회원님의 프로필을 보고 지원을 요청했습니다`,
@@ -1396,6 +1464,17 @@ export const COLDMAIL_TEMPLATES = [
     }),
   },
   {
+    match: /^resume-register-bonus/,
+    subject: {
+      vi: '{{name}} ơi, bạn chưa đủ điều kiện nhận thưởng 1.000.000₫',
+      ko: '{{name}}님, 아직 1,000,000₫ 이벤트 대상이 아니에요',
+      en: '{{name}}, you\'re not yet eligible for the 1,000,000₫ bonus',
+    },
+    desc: '이력서 등록 유도 축하금 프레임 (8/18): coldmail1에서 검증된 "아직 자격이 없다" 손실 프레임 + 취업 축하금 훅(1,000,000₫ · 베트남 현지 기업 · 입사 60일 근속 후 지급 — /cv 조건과 동일 명시). 수치는 금액·조건만(v1 조작 수치 계열 미사용). 버튼 = /api/resume/upload 토큰 랜딩 축하금 배리언트. -apply=지원버튼 이탈층 / -rest=그 외.',
+    source: 'scripts/outreach/resume-register-bonus-coldmail.mjs',
+    html: registerBonusHtml,
+  },
+  {
     match: /^resume-register-(apply2|jobcard|rest)/,
     subject: {
       vi: '{{name}} ơi, người đăng ký CV nhận trung bình 3,2 lời mời mỗi tuần',
@@ -1422,6 +1501,8 @@ export const COLDMAIL_TEMPLATES = [
 // 발송 전 초안 캠페인 — 이벤트가 없어도 콜드메일 탭 표에 '미발송' 행으로 띄워 양식을 검수한다.
 // 발송이 시작되면(같은 이름의 이벤트가 쌓이면) 실측 행이 이 자리를 대체하므로 발송 후 지워도 된다.
 export const DRAFT_CAMPAIGNS = [
+  { campaign: 'resume-register-bonus1-apply', group: 'register' },
+  { campaign: 'resume-register-bonus1-rest', group: 'register' },
   { campaign: 'wellpod-recommend1', group: 'recommend' },
   { campaign: 'mnf-recommend1-public', group: 'recommend' },
   { campaign: 'mnf-recommend1-private', group: 'recommend' },

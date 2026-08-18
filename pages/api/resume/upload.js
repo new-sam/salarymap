@@ -35,7 +35,7 @@ export default async function handler(req, res) {
 
   res.setHeader('Content-Type', 'text/html; charset=utf-8')
   if (p.resume_url) return res.status(200).send(page('already'))
-  return res.status(200).send(landing(token, p.full_name))
+  return res.status(200).send(landing(token, p.full_name, /^resume-register-bonus/.test(campaign || '')))
 }
 
 async function handleUpload(req, res) {
@@ -85,16 +85,19 @@ const SHELL = (inner) => `<!doctype html><html lang="vi"><head><meta charset="ut
 <div style="font-size:17px;font-weight:800;color:#ff6000;letter-spacing:-0.01em;margin-bottom:14px">FYI</div>
 ${inner}</div></body></html>`
 
-function landing(token, fullName) {
+function landing(token, fullName, bonus) {
   const hi = fullName ? `Chào ${esc(String(fullName).trim().split(/\s+/).slice(-1)[0])},` : 'Chào bạn,'
   // 메일과 같은 구조 — 320px에서 2열로 깔면 라벨이 서너 줄로 접힌다.
   const stat = (n, label) => `<tr>
     <td width="72" style="font-size:30px;font-weight:800;color:#ff6000;line-height:1.15;letter-spacing:-0.02em;vertical-align:middle;padding:9px 0">${n}</td>
     <td style="font-size:14px;font-weight:600;color:#1a1612;line-height:1.4;vertical-align:middle;padding:9px 0">${label}</td>
   </tr>`
-  return SHELL(`
-<div style="background:#fff;border-radius:18px;padding:32px 24px 28px">
-  <div style="font-size:13.5px;color:#8a8177;margin-bottom:12px">${hi}</div>
+  // 축하금 캠페인(resume-register-bonus*)은 메일과 같은 이벤트 프레임으로 —
+  // 조건 문구는 /cv 랜딩(cv.how.notice)과 동일하게 유지한다.
+  const hero = bonus ? `
+  <div style="font-size:20px;font-weight:800;line-height:1.45;letter-spacing:-0.01em;margin-bottom:6px">Sự kiện thưởng <span style="color:#ff6000">1.000.000₫</span> khi được tuyển qua FYI</div>
+  <p style="margin:0 0 20px;font-size:14px;line-height:1.7;color:#57504a">Đăng ký CV để tham gia. Khi có vị trí phù hợp, nhà tuyển dụng xem hồ sơ và chủ động liên hệ bạn — được tuyển qua FYI là bạn nhận thưởng.</p>
+  <p style="border-top:1px solid #eeeae4;padding-top:16px;margin:0 0 22px;font-size:12px;line-height:1.6;color:#9a9186">Thưởng chỉ áp dụng cho vị trí tại doanh nghiệp Việt Nam, chi trả sau 2 tháng (60 ngày) làm việc.</p>` : `
   <div style="font-size:20px;font-weight:800;line-height:1.45;letter-spacing:-0.01em;margin-bottom:20px">Đăng ký CV, nhà tuyển dụng sẽ tìm đến bạn.</div>
 
   <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:8px">
@@ -103,7 +106,11 @@ function landing(token, fullName) {
   </table>
   <div style="font-size:12px;color:#9a9186;line-height:1.5;margin-bottom:20px">Số liệu trung bình của người đã đăng ký CV.</div>
 
-  <p style="border-top:1px solid #eeeae4;padding-top:20px;margin:0 0 22px;font-size:14px;line-height:1.7;color:#57504a">Bạn không cần tìm việc nữa. Chúng tôi chọn những vị trí bạn có khả năng đậu cao và liên hệ trước.</p>
+  <p style="border-top:1px solid #eeeae4;padding-top:20px;margin:0 0 22px;font-size:14px;line-height:1.7;color:#57504a">Bạn không cần tìm việc nữa. Chúng tôi chọn những vị trí bạn có khả năng đậu cao và liên hệ trước.</p>`
+  return SHELL(`
+<div style="background:#fff;border-radius:18px;padding:32px 24px 28px">
+  <div style="font-size:13.5px;color:#8a8177;margin-bottom:12px">${hi}</div>
+${hero}
 
   <input id="f" type="file" accept=".pdf,.doc,.docx" style="display:none">
   <button id="b" style="display:block;width:100%;background:#ff6000;color:#fff;font-weight:700;font-size:15px;border:0;border-radius:12px;padding:16px;cursor:pointer;font-family:inherit">Chọn file CV</button>
