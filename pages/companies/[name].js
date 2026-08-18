@@ -92,7 +92,7 @@ export async function getServerSideProps({ params }) {
   let krStats = null
   const { data: kr, error: krErr } = await supabaseServer
     .from('company_kr_stats')
-    .select('kr_name, headcount, monthly, financials, registered_at, established_at, industry')
+    .select('kr_name, headcount, monthly, financials, registered_at, established_at, industry, address, i18n')
     .ilike('company', companyName)
     .limit(1)
   if (!krErr && kr && kr.length) krStats = kr[0]
@@ -133,6 +133,7 @@ export default function CompanyPage({ companyName, domain, krStats, overview }) 
   const router = useRouter()
   const [roleFilter, setRoleFilter] = useState('all')
   const [introOpen, setIntroOpen] = useState(false)
+  const [jobsOpen, setJobsOpen] = useState(false)
 
   const [posts, setPosts] = useState([])
   const [postsLoading, setPostsLoading] = useState(true)
@@ -146,16 +147,28 @@ export default function CompanyPage({ companyName, domain, krStats, overview }) 
   const [followBusy, setFollowBusy] = useState(false)
 
   // 히어로 메타: 업종 · 도시 · 설립연도 (한국 공공데이터가 있을 때만)
+  // 업종·주소는 ko=원문, vi/en=수집 시 번역해둔 i18n(주소는 로마자 en 공용) 폴백 원문
   const foundedYear = String(krStats?.established_at || krStats?.registered_at || '').slice(0, 4)
+  const locIndustry = !krStats?.industry ? null
+    : lang === 'ko' ? krStats.industry
+    : (lang === 'vi' ? krStats.i18n?.industry_vi : krStats.i18n?.industry_en) || krStats.i18n?.industry_en || krStats.industry
+  const locAddress = !krStats?.address ? null
+    : lang === 'ko' ? krStats.address : (krStats.i18n?.address_en || krStats.address)
   const heroCity = (() => {
+    if (lang !== 'ko' && krStats?.i18n?.address_en) {
+      return krStats.i18n.address_en.split(',').map(s => s.trim()).slice(-2).join(', ') || null
+    }
     const p = String(krStats?.address || '').split(' ')
     if (!p[0]) return null
     return [p[0].replace(/(특별자치도|특별자치시|특별시|광역시)$/, ''), p[1]].filter(Boolean).join(' ')
   })()
 
   const initial = (companyName || '?').trim().charAt(0).toUpperCase()
-  const [logoError, setLogoError] = useState(false)
-  const logoUrl = logoUrlFor(domain)
+  // 로고: 도메인 기반(클리어빗식) → 공고에 실린 logo_url(KTC 등 한국 회사) → 이니셜 순 폴백
+  const [logoIdx, setLogoIdx] = useState(0)
+  const jobLogo = jobs.find(j => j.logo_url)?.logo_url || null
+  const logoCandidates = [logoUrlFor(domain), jobLogo].filter(Boolean)
+  const logoSrc = logoCandidates[logoIdx] || null
   const enc = encodeURIComponent(companyName)
 
   const loadFollow = useCallback(async () => {
@@ -277,11 +290,15 @@ export default function CompanyPage({ companyName, domain, krStats, overview }) 
         .cpg-info-row span:last-child { font-weight: 700; color: #111; }
         .cpg-kr-cap { font-size: 13px; font-weight: 700; color: var(--sm-gray-700); margin: 20px 0 2px; padding: 0 4px; }
         .cpg-kr-src { font-size: 11px; color: var(--sm-gray-500); margin: 12px 0 4px; padding: 0 4px; }
-        .cpg-mini-v { display: flex; justify-content: space-between; font-size: 12px; font-weight: 700; color: var(--sm-gray-700); padding: 0 4px; margin-top: 10px; }
-        .cpg-mini { display: flex; align-items: flex-end; gap: 3px; height: 72px; margin: 6px 4px 0; }
-        .cpg-mini-col { flex: 1; height: 100%; display: flex; align-items: flex-end; }
-        .cpg-mini-bar { width: 100%; max-width: 22px; margin: 0 auto; background: var(--sm-primary-500); border-radius: 4px 4px 0 0; min-height: 3px; }
+        .cpg-line { width: 100%; height: auto; display: block; margin-top: 6px; }
+        .cpg-line-t { font-size: 11px; font-weight: 700; fill: var(--sm-gray-700); }
         .cpg-mini-x { display: flex; justify-content: space-between; font-size: 11px; color: var(--sm-gray-500); padding: 0 4px; margin-top: 4px; }
+        .cpg-morebtn { width: 100%; margin-top: 10px; padding: 13px; border: 1px solid #ececec; border-radius: 12px; background: #fff; font-size: 14px; font-weight: 700; color: var(--sm-gray-700); cursor: pointer; font-family: inherit; }
+        .cpg-morebtn:hover { border-color: #ddd; }
+        .cpg-map-panel { padding: 0; overflow: hidden; }
+        .cpg-map { width: 100%; height: 240px; border: 0; display: block; }
+        .cpg-map-addr { display: block; padding: 12px 18px; font-size: 14px; font-weight: 600; color: #111; text-decoration: none; }
+        .cpg-map-addr:hover { color: var(--sm-primary-500); }
       `}</style>
 
       <div className="cpg-page">
@@ -294,15 +311,15 @@ export default function CompanyPage({ companyName, domain, krStats, overview }) 
           {t('cpage.back')}
         </button>
         <div className="cpg-hero">
-          <div className={`cpg-logo${logoUrl && !logoError ? ' has-img' : ''}`}>
-            {logoUrl && !logoError
-              ? <img src={logoUrl} alt={companyName} onError={() => setLogoError(true)} />
+          <div className={`cpg-logo${logoSrc ? ' has-img' : ''}`}>
+            {logoSrc
+              ? <img src={logoSrc} alt={companyName} onError={() => setLogoIdx(i => i + 1)} />
               : initial}
           </div>
           <div className="cpg-hmeta">
             <h1 className="cpg-name">{companyName}</h1>
-            {(krStats?.industry || heroCity || foundedYear) && (
-              <div className="cpg-meta">{[krStats?.industry, heroCity, foundedYear && t('cpage.foundedIn', { year: foundedYear })].filter(Boolean).join(' · ')}</div>
+            {(locIndustry || heroCity || foundedYear) && (
+              <div className="cpg-meta">{[locIndustry, heroCity, foundedYear && t('cpage.foundedIn', { year: foundedYear })].filter(Boolean).join(' · ')}</div>
             )}
             <div className="cpg-followers">{followerCount.toLocaleString()} {t('cpage.followers')}</div>
           </div>
@@ -330,7 +347,7 @@ export default function CompanyPage({ companyName, domain, krStats, overview }) 
           <section>
             <div className="cpg-sec">{t('cpage.secJobs')} <span className="n">{jobs.length}</span></div>
             <div className="cpg-jobs">
-              {jobs.map(j => (
+              {(jobsOpen ? jobs : jobs.slice(0, 4)).map(j => (
                 <Link key={j.id} href={`/jobs?jobId=${j.id}`} className="cpg-card">
                   <div className="cpg-card-meta">{[j.location, j.type].filter(Boolean).join(' · ')}</div>
                   <div className="cpg-card-title">{j.title}</div>
@@ -342,6 +359,11 @@ export default function CompanyPage({ companyName, domain, krStats, overview }) 
                 </Link>
               ))}
             </div>
+            {jobs.length > 4 && (
+              <button className="cpg-morebtn" onClick={() => setJobsOpen(o => !o)}>
+                {jobsOpen ? t('cpage.introLess') : t('cpage.jobsMore', { n: jobs.length - 4 })}
+              </button>
+            )}
           </section>
         )}
 
@@ -394,7 +416,6 @@ export default function CompanyPage({ companyName, domain, krStats, overview }) 
           const joined = months.reduce((a, m) => a + (m.joined || 0), 0)
           const left = months.reduce((a, m) => a + (m.left || 0), 0)
           const fins = (krStats.financials || []).filter(f => f.revenue != null)
-          const maxH = Math.max(...trend.map(m => m.headcount), 1)
           const ymLabel = ym => `${ym.slice(2, 4)}.${ym.slice(4, 6)}`
           return (
             <>
@@ -403,28 +424,47 @@ export default function CompanyPage({ companyName, domain, krStats, overview }) 
                   <div className="cpg-sec">{t('cpage.krHeadcount')}</div>
                   <div className="cpg-panel">
                     <div className="cpg-stat-n">{krStats.headcount.toLocaleString()}{t('cpage.krPeople')}</div>
-                    {trend.length >= 2 && (
-                      <>
-                        <div className="cpg-kr-cap">{t('cpage.krTrend')}</div>
-                        <div className="cpg-mini-v"><span>{trend[0].headcount.toLocaleString()}</span><span>{trend[trend.length - 1].headcount.toLocaleString()}</span></div>
-                        <div className="cpg-mini">
-                          {trend.map(m => (
-                            <div className="cpg-mini-col" key={m.ym} title={`${ymLabel(m.ym)} · ${m.headcount.toLocaleString()}`}>
-                              <div className="cpg-mini-bar" style={{ height: `${Math.round((m.headcount / maxH) * 100)}%` }} />
-                            </div>
-                          ))}
-                        </div>
-                        <div className="cpg-mini-x"><span>{ymLabel(trend[0].ym)}</span><span>{ymLabel(trend[trend.length - 1].ym)}</span></div>
-                      </>
-                    )}
+                    {trend.length >= 2 && (() => {
+                      // 라인 차트: 값 범위에 맞춘 스케일, 첫·끝 점에만 값 라벨, 점 호버 시 월·인원
+                      const W = 560, H = 88, PX = 16, PY = 20
+                      const vals = trend.map(m => m.headcount)
+                      const min = Math.min(...vals), span = (Math.max(...vals) - min) || 1
+                      const x = i => PX + (i * (W - PX * 2)) / (trend.length - 1)
+                      const y = v => H - PY - ((v - min) * (H - PY * 2)) / span
+                      const last = trend.length - 1
+                      return (
+                        <>
+                          <div className="cpg-kr-cap">{t('cpage.krTrend')}</div>
+                          <svg className="cpg-line" viewBox={`0 0 ${W} ${H}`} role="img">
+                            <polyline
+                              points={trend.map((m, i) => `${x(i)},${y(m.headcount)}`).join(' ')}
+                              fill="none" stroke="var(--sm-primary-500)" strokeWidth="2"
+                              strokeLinejoin="round" strokeLinecap="round"
+                            />
+                            {trend.map((m, i) => (
+                              <circle
+                                key={m.ym} cx={x(i)} cy={y(m.headcount)} r={i === last ? 4 : 2.5}
+                                fill={i === last ? 'var(--sm-primary-500)' : '#fff'}
+                                stroke="var(--sm-primary-500)" strokeWidth="1.5"
+                              >
+                                <title>{`${ymLabel(m.ym)} · ${m.headcount.toLocaleString()}${t('cpage.krPeople')}`}</title>
+                              </circle>
+                            ))}
+                            <text x={x(0)} y={y(trend[0].headcount) - 9} textAnchor="start" className="cpg-line-t">{trend[0].headcount.toLocaleString()}</text>
+                            <text x={x(last)} y={y(trend[last].headcount) - 9} textAnchor="end" className="cpg-line-t">{trend[last].headcount.toLocaleString()}</text>
+                          </svg>
+                          <div className="cpg-mini-x"><span>{ymLabel(trend[0].ym)}</span><span>{ymLabel(trend[last].ym)}</span></div>
+                        </>
+                      )
+                    })()}
                     {hasFlow && (
                       <div className="cpg-info-row"><span>{t('cpage.krJoined12m')}</span><span>{joined.toLocaleString()}{t('cpage.krPeople')}</span></div>
                     )}
                     {hasFlow && (
                       <div className="cpg-info-row"><span>{t('cpage.krLeft12m')}</span><span>{left.toLocaleString()}{t('cpage.krPeople')}</span></div>
                     )}
-                    {krStats.industry && (
-                      <div className="cpg-info-row"><span>{t('cpage.krIndustry')}</span><span>{krStats.industry}</span></div>
+                    {locIndustry && (
+                      <div className="cpg-info-row"><span>{t('cpage.krIndustry')}</span><span>{locIndustry}</span></div>
                     )}
                     <div className="cpg-kr-src">{t('cpage.krSource')}</div>
                   </div>
@@ -446,7 +486,20 @@ export default function CompanyPage({ companyName, domain, krStats, overview }) 
               {krStats.address && (
                 <section>
                   <div className="cpg-sec">{t('cpage.secLocation')}</div>
-                  <div className="cpg-panel"><div className="cpg-intro">{krStats.address}</div></div>
+                  <div className="cpg-panel cpg-map-panel">
+                    <iframe
+                      className="cpg-map"
+                      src={`https://maps.google.com/maps?q=${encodeURIComponent(krStats.address)}&output=embed&hl=${lang === 'ko' ? 'ko' : 'vi'}`}
+                      loading="lazy"
+                      referrerPolicy="no-referrer-when-downgrade"
+                      title={t('cpage.secLocation')}
+                    />
+                    <a
+                      className="cpg-map-addr"
+                      href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(krStats.address)}`}
+                      target="_blank" rel="noreferrer"
+                    >{locAddress}</a>
+                  </div>
                 </section>
               )}
             </>

@@ -8,7 +8,8 @@
 //   node scripts/kr-company-stats.mjs --search-all           # 매핑에서 seq 미확정 회사 일괄 검색
 //   node scripts/kr-company-stats.mjs --probe <seq>          # 상세/기간 응답 원본 확인 (필드 검증용)
 //   node scripts/kr-company-stats.mjs --dart-search "회사명"  # DART corp_code 검색
-//   node scripts/kr-company-stats.mjs --sync [--apply]       # 수집 → 드라이런 / --apply 시 DB 적재
+//   node scripts/kr-company-stats.mjs --sync [--apply]       # 수집(+업종/주소 번역) → 드라이런 / --apply 시 DB 적재
+//   node scripts/kr-company-stats.mjs --translate            # 재수집 없이 기존 행의 업종/주소만 번역(i18n)
 //
 // env(.env.local): DATA_GO_KR_API_KEY(일반 인증키 Decoding), DART_API_KEY
 import { readFileSync, writeFileSync, existsSync } from 'node:fs';
@@ -197,10 +198,52 @@ async function collect(row) {
   return out;
 }
 
+// 업종·주소 번역 (유니크 값만 모아 gpt-4o-mini 1콜, 결과를 각 행의 i18n 에 부착)
+// 주소는 표준 로마자 표기(en)를 만들어 vi 에도 공용으로 쓴다.
+async function translateRows(rows) {
+  const key = process.env.OPENAI_API_KEY;
+  if (!key) { console.log('⚠️ OPENAI_API_KEY 없음 — 업종/주소 번역 건너뜀'); return; }
+  const industries = [...new Set(rows.map((r) => r.industry).filter(Boolean))];
+  const addresses = [...new Set(rows.map((r) => r.address).filter(Boolean))];
+  if (!industries.length && !addresses.length) return;
+  const r = await fetch('https://api.openai.com/v1/chat/completions', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${key}` },
+    body: JSON.stringify({
+      model: 'gpt-4o-mini',
+      response_format: { type: 'json_object' },
+      messages: [
+        {
+          role: 'system',
+          content: 'You translate Korean company data for a Vietnamese job platform. Return JSON exactly as: ' +
+            '{"industries": {"<korean>": {"en": "...", "vi": "..."}}, "addresses": {"<korean>": {"en": "..."}}}. ' +
+            'Industries: natural translations of the Korean industry-classification name. ' +
+            'Addresses: standard romanization of the Korean road address, ordered road, district, city (e.g. "Digital-ro, Geumcheon-gu, Seoul"). Do not invent building numbers.',
+        },
+        { role: 'user', content: JSON.stringify({ industries, addresses }) },
+      ],
+    }),
+  });
+  const d = await r.json();
+  if (!d.choices?.[0]) { console.log(`⚠️ 번역 실패 — ${d.error?.message || '응답 없음'}`); return; }
+  const out = JSON.parse(d.choices[0].message.content);
+  for (const row of rows) {
+    const ind = row.industry ? out.industries?.[row.industry] : null;
+    const adr = row.address ? out.addresses?.[row.address] : null;
+    const i18n = {
+      ...(ind?.en ? { industry_en: ind.en } : {}),
+      ...(ind?.vi ? { industry_vi: ind.vi } : {}),
+      ...(adr?.en ? { address_en: adr.en } : {}),
+    };
+    if (Object.keys(i18n).length) row.i18n = i18n;
+  }
+  console.log(`번역 완료 — 업종 ${industries.length}종 · 주소 ${addresses.length}건`);
+}
+
 async function upsert(rows) {
   // PostgREST 일괄 업서트는 모든 행의 키가 동일해야 함(PGRST102) — 누락 컬럼을 null 로 정규화
   const COLS = ['company', 'kr_name', 'bzowr_rgst_no', 'address', 'industry', 'registered_at',
-    'established_at', 'dart_corp_code', 'headcount', 'monthly', 'financials', 'fetched_at'];
+    'established_at', 'dart_corp_code', 'headcount', 'monthly', 'financials', 'i18n', 'fetched_at'];
   rows = rows.map((row) => Object.fromEntries(COLS.map((c) => [c, row[c] ?? null])));
   const r = await fetch(`${SB_URL}/rest/v1/company_kr_stats?on_conflict=company`, {
     method: 'POST',
@@ -285,11 +328,32 @@ if (has('--sync')) {
     }
   }
   if (apply && collected.length) {
+    await translateRows(collected);
     await upsert(collected);
     console.log(`\n✅ ${collected.length}곳 적재 완료 (company_kr_stats)`);
   } else if (!apply) {
     console.log('\n[드라이런] 아무것도 쓰지 않음.');
   }
+  process.exit(0);
+}
+
+// 재수집 없이 DB의 기존 행만 번역해서 i18n 채움
+if (has('--translate')) {
+  const H = { apikey: SB_KEY, Authorization: `Bearer ${SB_KEY}`, 'Content-Type': 'application/json' };
+  const r = await fetch(`${SB_URL}/rest/v1/company_kr_stats?select=company,industry,address,i18n&order=company.asc`, { headers: H });
+  if (!r.ok) throw new Error(`조회 실패 ${r.status}: ${await r.text()}`);
+  const rows = await r.json();
+  await translateRows(rows);
+  let n = 0;
+  for (const row of rows) {
+    if (!row.i18n) continue;
+    const p = await fetch(`${SB_URL}/rest/v1/company_kr_stats?company=eq.${encodeURIComponent(row.company)}`, {
+      method: 'PATCH', headers: H, body: JSON.stringify({ i18n: row.i18n }),
+    });
+    if (!p.ok) { console.log(`✗ ${row.company}: ${p.status}`); continue; }
+    n++;
+  }
+  console.log(`✅ ${n}/${rows.length}곳 i18n 갱신`);
   process.exit(0);
 }
 
