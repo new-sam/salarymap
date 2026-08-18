@@ -21,6 +21,7 @@ function buildNav(lang) {
         { label: L('지원자', 'Applicants', 'Ứng viên'), pathname: '/admin/dashboard', tab: 'applications' },
         { label: L('이력서', 'Resumes', 'CV'), pathname: '/admin/dashboard', tab: 'resumes' },
         { label: L('인재풀', 'Talent', 'Nguồn ứng viên'), pathname: '/admin/dashboard', tab: 'talent' },
+        { label: L('인재 퀄리티', 'Quality', 'Chất lượng ƯV'), pathname: '/admin/dashboard', tab: 'quality' },
         // '어학 점수'는 유진 작업실 > 어학 정보 수집 안으로 옮겼다 — 캠페인 카드 바로
         // 아래에서 "그래서 무슨 점수가 들어왔나"를 이어서 보는 흐름이라 여기 두면 끊긴다.
         // /admin/lang-scores URL 은 살아 있다(명단이 길어 전체 화면으로 볼 때).

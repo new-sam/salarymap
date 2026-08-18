@@ -13,6 +13,7 @@ import RetentionView from '../../components/admin/RetentionView'
 import ApplicationsView from '../../components/admin/ApplicationsView'
 import ResumesView from '../../components/admin/ResumesView'
 import TalentPoolView from '../../components/admin/TalentPoolView'
+import TalentQualityView from '../../components/admin/TalentQualityView'
 import TalentSupplyView from '../../components/admin/TalentSupplyView'
 import KtcSourcesView from '../../components/admin/KtcSourcesView'
 import VerificationsView from '../../components/admin/VerificationsView'
@@ -973,6 +974,11 @@ export default function AdminDashboard() {
         {/* Talent Pool Tab — 이력서 보유 인재 전체 (공개 여부는 뷰 내 필터/뱃지) */}
         {tab === 'talent' && (
           <TalentPoolView token={token} lang={lang} />
+        )}
+
+        {/* Talent Quality Tab — 퀄리티 신호 분포 (한국행/VN 현지 두 렌즈) */}
+        {tab === 'quality' && (
+          <TalentQualityView token={token} lang={lang} />
         )}
 
         {/* Talent Supply Tab — 직군별 공급 구성 스냅샷 */}
