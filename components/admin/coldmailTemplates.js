@@ -949,7 +949,85 @@ const KYNDOF_TEMPLATES = KYNDOF_GROUPS.flatMap((g) => ['public', 'private'].map(
   html: kyndofHtml(frame, g),
 })))
 
+// ── 8/18 지원미달 공고 추천 3종 (moen·andwise·nexacode) — kyndof 정직 프레임, 단일 공고 카드 ──
+// 스크립트: jic-moen-recommend-coldmail.mjs(moen) / aw-nx-recommend-coldmail.mjs(andwise·nexacode)
+const REC0818_GROUPS = [
+  {
+    key: 'moen', company: 'Moen', initial: 'M',
+    title: 'AI-Powered Designer (Thực tập sinh/Trainee)', meta: 'Hồ Chí Minh · Hà Nội · Đà Nẵng',
+    role: { vi: 'Brand · AI-Powered Designer (Trainee)', ko: '브랜드 · AI 디자이너 (인턴/트레이니)', en: 'Brand · AI-Powered Designer (Trainee)' },
+    source: 'scripts/outreach/jic-moen-recommend-coldmail.mjs',
+    note: '모엔 F&B AI 디자이너 인턴 추천 (8/18 77명): 디자인 계열 570명 gpt-4o-mini 채점 3점+.',
+    intro: {
+      vi: '<b>Moen</b> — thương hiệu F&B Hàn Quốc đang xây dựng hình ảnh trên Instagram, Smart Store và website riêng — đang tuyển <b>Brand · AI-Powered Designer (Thực tập sinh/Trainee)</b> tại Hồ Chí Minh · Hà Nội · Đà Nẵng. <b>Không yêu cầu kinh nghiệm làm việc</b> — chỉ cần portfolio và kinh nghiệm dùng công cụ tạo ảnh AI (Midjourney, Firefly, v.v.), kể cả từ dự án cá nhân.',
+      ko: '인스타그램·스마트스토어·자사몰 브랜딩을 하는 한국 F&B 브랜드 <b>Moen</b>이 <b>브랜드 · AI 디자이너 인턴(트레이니)</b>을 호치민·하노이·다낭에서 채용 중입니다. <b>경력 무관</b> — 포트폴리오와 AI 이미지 툴(미드저니·파이어플라이 등) 사용 경험(개인 프로젝트 인정)이면 충분합니다.',
+      en: '<b>Moen</b> — a Korean F&B brand building its presence on Instagram, Smart Store and its own website — is hiring a <b>Brand · AI-Powered Designer (Trainee)</b> in HCMC · Hanoi · Da Nang. <b>No work experience required</b> — just a portfolio and hands-on experience with AI image tools (Midjourney, Firefly, etc.), personal projects included.',
+    },
+  },
+  {
+    key: 'andwise', company: 'Andwise', initial: 'A',
+    title: 'Backend Senior Developer', meta: 'Đà Nẵng',
+    role: { vi: 'Backend Senior Developer (Java·Spring)', ko: '백엔드 시니어 개발자 (Java·Spring)', en: 'Backend Senior Developer (Java·Spring)' },
+    source: 'scripts/outreach/aw-nx-recommend-coldmail.mjs',
+    note: '앤드와이즈 백엔드 시니어 추천 (8/18 57명): Java/백엔드 2.5y+ 249명 채점 3점+(3점=비Java 백엔드 포함). 공고 source_id 없음 — jobs.id 직접 참조.',
+    intro: {
+      vi: '<b>Andwise</b> đang tuyển vị trí <b>Backend Senior Developer</b> làm việc tại <b>Đà Nẵng</b> — vị trí senior yêu cầu tối thiểu 3 năm kinh nghiệm backend <b>Java·Spring</b>, có kinh nghiệm technical leadership / dẫn dắt dự án; kinh nghiệm Python·AI/ML là lợi thế lớn.',
+      ko: '<b>Andwise</b>가 <b>다낭</b> 근무 <b>백엔드 시니어 개발자</b>를 채용 중입니다. <b>Java·Spring</b> 백엔드 3년 이상, 테크니컬 리더십/프로젝트 리딩 경험 필수이며 Python·AI/ML 경험은 큰 우대 요소입니다.',
+      en: '<b>Andwise</b> is hiring a <b>Backend Senior Developer</b> based in <b>Da Nang</b> — a senior role requiring 3+ years of <b>Java·Spring</b> backend experience and technical leadership / project leading; Python·AI/ML experience is a big plus.',
+    },
+  },
+  {
+    key: 'nexacode', company: 'Nexacode', initial: 'N',
+    title: 'B2B Sales & Marketing Executive', meta: 'Remote (HCM · Hà Nội · Đà Nẵng)',
+    role: { vi: 'B2B Sales & Marketing Executive', ko: 'B2B 세일즈 & 마케팅 담당자', en: 'B2B Sales & Marketing Executive' },
+    source: 'scripts/outreach/aw-nx-recommend-coldmail.mjs',
+    note: '넥사코드 B2B 세일즈 추천 (8/18 24명): 세일즈/마케팅 계열 717명 채점 3점+(3점=인접 직군 포함).',
+    intro: {
+      vi: '<b>Nexacode</b> — công ty phần mềm xây dựng sản phẩm SaaS, ERP và giải pháp chuyển đổi số — đang tuyển <b>B2B Sales & Marketing Executive</b> làm việc <b>hoàn toàn từ xa (remote)</b>. <b>Không yêu cầu kinh nghiệm</b> — chỉ cần quan tâm đến B2B sales/marketing, có khả năng nghiên cứu doanh nghiệp và giao tiếp tốt qua email·văn bản; kinh nghiệm cold email, CRM hay công cụ AI (ChatGPT, v.v.) là lợi thế.',
+      ko: 'SaaS·ERP·DX 소프트웨어 회사 <b>Nexacode</b>가 <b>풀리모트</b> <b>B2B 세일즈 & 마케팅 담당자</b>를 채용 중입니다. <b>경력 무관</b> — B2B 세일즈/마케팅에 대한 관심, 기업 리서치, 이메일·문서 커뮤니케이션이면 충분하고 콜드메일·CRM·AI 툴 경험은 우대입니다.',
+      en: '<b>Nexacode</b> — a software company building SaaS, ERP and digital-transformation products — is hiring a <b>B2B Sales & Marketing Executive</b>, <b>fully remote</b>. <b>No experience required</b> — an interest in B2B sales/marketing, company research skills and strong written communication are enough; cold email, CRM or AI-tool experience is a plus.',
+    },
+  },
+]
+const rec0818Benefit = (frame, c) => ({
+  vi: `<b>Trong tuần này</b>, FYI sẽ gửi danh sách đề cử trực tiếp cho người phụ trách tuyển dụng của ${c}. ` + (frame === 'public'
+    ? 'Hồ sơ của bạn đang ở chế độ công khai nên sẽ được gửi kèm danh sách. Nếu bạn ứng tuyển ngay, CV của bạn sẽ được <b>ưu tiên xem xét</b> cùng lời giới thiệu từ FYI.'
+    : 'Hồ sơ của bạn đang ở chế độ riêng tư — nếu bạn ứng tuyển ngay, CV của bạn sẽ được gửi kèm lời giới thiệu từ FYI và được <b>ưu tiên xem xét</b>.'),
+  ko: `<b>이번 주에</b> FYI가 ${c} 채용 담당자에게 추천 명단을 직접 전달합니다. ` + (frame === 'public'
+    ? '회원님 이력서는 공개 상태라 명단과 함께 프로필이 전달됩니다. 지금 지원하시면 FYI의 추천과 함께 <b>우선 검토</b>됩니다.'
+    : '회원님 이력서는 비공개 상태라, 지금 지원하시면 CV가 FYI의 추천과 함께 전달되어 <b>우선 검토</b>됩니다.'),
+  en: `<b>This week</b>, FYI will send the nominee list directly to ${c}'s recruiter. ` + (frame === 'public'
+    ? 'Your profile is public, so it goes along with the list. If you apply now, your CV gets <b>priority review</b> with FYI\'s recommendation.'
+    : 'Your profile is private — if you apply now, your CV is delivered with FYI\'s recommendation and gets <b>priority review</b>.'),
+})
+const REC0818_TEMPLATES = REC0818_GROUPS.flatMap((g) => ['public', 'private'].map((frame) => ({
+  match: new RegExp(`^${g.key}-recommend1-${frame}`),
+  subject: frame === 'public'
+    ? {
+      vi: `[FYI] Bạn được chọn vào danh sách đề cử gửi ${g.company} — ${g.role.vi}`,
+      ko: `[FYI] ${g.company} 추천 명단에 선정되셨습니다 — ${g.role.ko}`,
+      en: `[FYI] You're on the nominee list sent to ${g.company} — ${g.role.en}`,
+    }
+    : {
+      vi: `[FYI] Bạn được chọn vào danh sách đề cử — ${g.role.vi} tại ${g.company}`,
+      ko: `[FYI] 추천 후보 명단에 선정되셨습니다 — ${g.company} ${g.role.ko}`,
+      en: `[FYI] You've been selected for the nominee list — ${g.role.en} at ${g.company}`,
+    },
+  desc: `${g.note} ${frame === 'public' ? '공개' : '비공개'} 프레임(kyndof 정직 프레임). ⚠️"이번 주 명단 전달" 카피 — 기업 측 실제 공유 의무.`,
+  source: g.source,
+  html: (lang) => recommendShell(lang, {
+    intro: {
+      vi: `${g.intro.vi} ${KYNDOF_I18N.hook.vi}`,
+      ko: `${g.intro.ko} ${KYNDOF_I18N.hook.ko}`,
+      en: `${g.intro.en} ${KYNDOF_I18N.hook.en}`,
+    },
+    initial: g.initial, company: g.company, title: g.title, meta: g.meta,
+    tail: rec0818Benefit(frame, g.company),
+  }),
+})))
+
 export const COLDMAIL_TEMPLATES = [
+  ...REC0818_TEMPLATES,
   ...KYNDOF_TEMPLATES,
   {
     match: /^salary-b/,

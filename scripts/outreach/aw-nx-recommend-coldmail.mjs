@@ -51,7 +51,7 @@ const SALES_RE = /\bb2b\b|sales|business development|\bbd\b|account (manager|exe
 // ── 그룹 정의: 공고 jobs.id·게이트·rubric·카피(회사 소개는 JD 원문에서만, 수치 없음) ──
 const GROUPS = [
   {
-    key: 'aw1', code: 'AW802', jobId: '3d5e17b3-4219-4f4b-9ece-fe80ff93b758', min: 4,
+    key: 'aw1', code: 'AW802', jobId: '3d5e17b3-4219-4f4b-9ece-fe80ff93b758', min: 3, // 3점=비Java 백엔드 포함(유저 결정 8/18)
     label: { vi: 'Backend Senior Developer (Java·Spring)', ko: '백엔드 시니어 개발자 (Java·Spring)' },
     company: 'Andwise',
     locationDisplay: 'Đà Nẵng',
@@ -62,7 +62,7 @@ const GROUPS = [
 5=Java/Spring 백엔드 3년+가 명확하고 리딩 또는 AI/ML·인프라 심화 증거 있음, 4=Java/Spring 백엔드 실무가 명확(리딩 증거는 약함), 3=백엔드 개발자지만 Java 중심 아님(Node/PHP/.NET/Go 등), 2=개발자지만 백엔드 아님(프론트/모바일/QA/데이터), 1=비개발자.`,
   },
   {
-    key: 'nx1', code: 'NX502', jobId: '2c16fea9-44ce-4a6d-8556-acd28d3a6a3e', min: 4,
+    key: 'nx1', code: 'NX502', jobId: '2c16fea9-44ce-4a6d-8556-acd28d3a6a3e', min: 3, // 3점=세일즈/마케팅 인접 포함(유저 결정 8/18)
     label: { vi: 'B2B Sales & Marketing Executive', ko: 'B2B 세일즈 & 마케팅 담당자' },
     company: 'Nexacode',
     locationDisplay: 'Remote (HCM · Hà Nội · Đà Nẵng)',

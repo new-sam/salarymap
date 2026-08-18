@@ -176,6 +176,7 @@ export default function JobsPage() {
   const [user, setUser] = useState(null)
   const [userSalary, setUserSalary] = useState(null)
   const [userRole, setUserRole] = useState(null)
+  const [profileRoles, setProfileRoles] = useState([]) // 인재풀 프로필 position+desired_roles — 직군 부스팅 신호
   const [userExperience, setUserExperience] = useState(null)
   const [userCompany, setUserCompany] = useState(null)
 
@@ -237,6 +238,30 @@ export default function JobsPage() {
     const r = router.query.role
     if (typeof r === 'string' && r) setRoleFilters([r])
   }, [router.query.role])
+
+  // 실험: 직무 자동 부스팅 — 내 직군 대분류 공고를 기본 뷰에서 상단으로 올린다(필터는 안 건드림).
+  // 신호: 프로필 position, 대분류 미매핑('Other' 등)이면 desired_roles 첫 매핑, 없으면
+  // 지원이력(localStorage) 최다 직군. 롤백: NEXT_PUBLIC_JOBS_AUTOFILTER=0
+  const boost = useMemo(() => {
+    if (process.env.NEXT_PUBLIC_JOBS_AUTOFILTER === '0') return null
+    const fromProfile = profileRoles.map(roleGroupKey).find(Boolean)
+    if (fromProfile) return { group: fromProfile, source: 'position' }
+    if (!appliedJobs.length || !jobs.length) return null
+    const counts = {}
+    for (const id of appliedJobs) {
+      const g = roleGroupKey(jobs.find(j => j.id === id)?.role)
+      if (g) counts[g] = (counts[g] || 0) + 1
+    }
+    const top = Object.entries(counts).sort((a, b) => b[1] - a[1])[0]?.[0]
+    return top ? { group: top, source: 'applied' } : null
+  }, [profileRoles, appliedJobs, jobs])
+
+  const boostLogged = useRef(false)
+  useEffect(() => {
+    if (boostLogged.current || !boost || !jobsLoaded) return
+    boostLogged.current = true
+    track('jobs_autoboost_on', '/jobs', { group: boost.group, source: boost.source })
+  }, [boost, jobsLoaded])
 
 
   // UTM capture + page view tracking on jobs page
@@ -327,6 +352,8 @@ export default function JobsPage() {
           const pData = await pRes.json()
           const pResume = pData.profile?.resume_url
           if (pResume) { setHasProfileResume(true); setProfileResumeUrl(pResume) }
+          const roles = [pData.profile?.position, ...(Array.isArray(pData.profile?.desired_roles) ? pData.profile.desired_roles : [])].filter(Boolean)
+          if (roles.length) setProfileRoles(roles)
         } catch { }
       }
     })
@@ -619,7 +646,11 @@ export default function JobsPage() {
   const hotIds = new Set(hotJobs.map(j => j.id))
   const gridJobs = (() => {
     const base = hotJobs.length ? filteredJobs.filter(j => !hotIds.has(j.id)) : filteredJobs
-    return roleFilters.includes('grp:ktc') ? pinPriority(base, KTC_PRIORITY_IDS) : base
+    if (roleFilters.includes('grp:ktc')) return pinPriority(base, KTC_PRIORITY_IDS)
+    // 내 직군 부스팅 — 검색·필터·정렬을 안 건드린 기본 뷰에서만. 순서만 바꾸고 목록은 그대로.
+    if (boost && sortBy === 'spread' && roleFilters.length === 0 && !searchQuery && !companyQuery)
+      return [...base.filter(j => roleGroupKey(j.role) === boost.group), ...base.filter(j => roleGroupKey(j.role) !== boost.group)]
+    return base
   })()
 
   /* 페이지네이션 — 20개씩 끊어 보여준다(무한 스크롤에서 전환).
