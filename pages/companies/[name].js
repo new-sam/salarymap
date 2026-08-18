@@ -87,7 +87,17 @@ export async function getServerSideProps({ params }) {
     if (d2 && d2.length && d2[0].domain) domain = d2[0].domain
   }
 
-  return { props: { companyName, domain: domain || null } }
+  // 한국 법인 공공데이터 캐시 (scripts/kr-company-stats.mjs 적재분).
+  // 테이블 미생성/미적재 상태여도 페이지는 떠야 하므로 에러는 무시하고 null.
+  let krStats = null
+  const { data: kr, error: krErr } = await supabaseServer
+    .from('company_kr_stats')
+    .select('kr_name, headcount, monthly, financials, registered_at, established_at, industry')
+    .ilike('company', companyName)
+    .limit(1)
+  if (!krErr && kr && kr.length) krStats = kr[0]
+
+  return { props: { companyName, domain: domain || null, krStats } }
 }
 
 function timeAgo(iso) {
@@ -98,10 +108,20 @@ function timeAgo(iso) {
   return `${Math.floor(d / 86400)}d`
 }
 
-export default function CompanyPage({ companyName, domain }) {
-  const { t } = useT()
+// 원 단위 금액 → 로케일별 축약 표기 (ko: 억/조원, 그 외: ₩M/B)
+function fmtKrw(v, lang) {
+  if (v == null) return null
+  if (lang === 'ko') {
+    if (Math.abs(v) >= 1e12) return `${(v / 1e12).toFixed(1)}조원`
+    return `${Math.round(v / 1e8).toLocaleString()}억원`
+  }
+  if (Math.abs(v) >= 1e9) return `₩${(v / 1e9).toFixed(1)}B`
+  return `₩${Math.round(v / 1e6).toLocaleString()}M`
+}
+
+export default function CompanyPage({ companyName, domain, krStats }) {
+  const { t, lang } = useT()
   const router = useRouter()
-  const [tab, setTab] = useState('news')
   const [roleFilter, setRoleFilter] = useState('all')
 
   const [posts, setPosts] = useState([])
@@ -110,8 +130,6 @@ export default function CompanyPage({ companyName, domain }) {
   const [salaryLoading, setSalaryLoading] = useState(true)
   const [jobs, setJobs] = useState([])
   const [jobsLoading, setJobsLoading] = useState(true)
-  const [tabTouched, setTabTouched] = useState(false)
-  const selectTab = (x) => { setTabTouched(true); setTab(x) }
 
   const [following, setFollowing] = useState(false)
   const [followerCount, setFollowerCount] = useState(0)
@@ -157,13 +175,6 @@ export default function CompanyPage({ companyName, domain }) {
 
     loadFollow()
   }, [enc, loadFollow])
-
-  // 채용 공고만 있고 소식이 없는 회사(예: jobs에서 넘어온 한국 기업)는
-  // 사용자가 직접 탭을 바꾸기 전까지 채용중 탭을 기본으로 보여준다.
-  useEffect(() => {
-    if (tabTouched || postsLoading || jobsLoading) return
-    if (posts.length === 0 && jobs.length > 0) setTab('jobs')
-  }, [tabTouched, postsLoading, jobsLoading, posts.length, jobs.length])
 
   const toggleFollow = async () => {
     const { data: { session } } = await supabase.auth.getSession()
@@ -239,6 +250,13 @@ export default function CompanyPage({ companyName, domain }) {
         .cpg-info-row { display: flex; justify-content: space-between; padding: 14px 4px; border-bottom: 1px solid #f2f2f2; font-size: 14px; }
         .cpg-info-row span:first-child { color: #888; }
         .cpg-info-row span:last-child { font-weight: 700; color: #111; }
+        .cpg-kr-cap { font-size: 13px; font-weight: 700; color: var(--sm-gray-700); margin: 20px 0 2px; padding: 0 4px; }
+        .cpg-kr-src { font-size: 11px; color: var(--sm-gray-500); margin: 12px 0 4px; padding: 0 4px; }
+        .cpg-mini-v { display: flex; justify-content: space-between; font-size: 12px; font-weight: 700; color: var(--sm-gray-700); padding: 0 4px; margin-top: 10px; }
+        .cpg-mini { display: flex; align-items: flex-end; gap: 3px; height: 72px; margin: 6px 4px 0; }
+        .cpg-mini-col { flex: 1; height: 100%; display: flex; align-items: flex-end; }
+        .cpg-mini-bar { width: 100%; max-width: 22px; margin: 0 auto; background: var(--sm-primary-500); border-radius: 4px 4px 0 0; min-height: 3px; }
+        .cpg-mini-x { display: flex; justify-content: space-between; font-size: 11px; color: var(--sm-gray-500); padding: 0 4px; margin-top: 4px; }
       `}</style>
 
       <div className="cpg-page">
@@ -272,7 +290,10 @@ export default function CompanyPage({ companyName, domain }) {
         <div className="cpg-tabs">
           <button className={`cpg-tab${tab === 'news' ? ' on' : ''}`} onClick={() => selectTab('news')}>{t('cpage.tabNews')}</button>
           <button className={`cpg-tab${tab === 'jobs' ? ' on' : ''}`} onClick={() => selectTab('jobs')}>{t('cpage.tabJobs')}{jobs.length > 0 ? ` ${jobs.length}` : ''}</button>
-          <button className={`cpg-tab${tab === 'salary' ? ' on' : ''}`} onClick={() => selectTab('salary')}>{t('cpage.tabSalary')}</button>
+          {/* 연봉 탭은 우리 실측(submissions) 데이터가 있을 때만 노출 */}
+          {!salaryLoading && salary?.roles?.length > 0 && (
+            <button className={`cpg-tab${tab === 'salary' ? ' on' : ''}`} onClick={() => selectTab('salary')}>{t('cpage.tabSalary')}</button>
+          )}
           <button className={`cpg-tab${tab === 'info' ? ' on' : ''}`} onClick={() => selectTab('info')}>{t('cpage.tabInfo')}</button>
         </div>
 
@@ -357,12 +378,67 @@ export default function CompanyPage({ companyName, domain }) {
           )
         )}
 
-        {tab === 'info' && (
-          <div>
-            <div className="cpg-info-row"><span>{t('cpage.infoSubmissions')}</span><span>{salary?.total ?? '–'}</span></div>
-            <div className="cpg-info-row"><span>{t('cpage.followers')}</span><span>{followerCount.toLocaleString()}</span></div>
-          </div>
-        )}
+        {tab === 'info' && (() => {
+          const months = krStats?.monthly || []
+          const trend = months.filter(m => m.headcount != null)
+          const hasFlow = months.some(m => m.joined != null || m.left != null)
+          const joined = months.reduce((a, m) => a + (m.joined || 0), 0)
+          const left = months.reduce((a, m) => a + (m.left || 0), 0)
+          const fins = (krStats?.financials || []).filter(f => f.revenue != null)
+          const fin = fins[fins.length - 1]
+          const foundedYear = (krStats?.established_at || '').slice(0, 4)
+          const npsYear = (krStats?.registered_at || '').slice(0, 4)
+          const maxH = Math.max(...trend.map(m => m.headcount), 1)
+          const ymLabel = ym => `${ym.slice(2, 4)}.${ym.slice(4, 6)}`
+          return (
+            <div>
+              {krStats && (
+                <>
+                  {krStats.headcount != null && (
+                    <div className="cpg-info-row"><span>{t('cpage.krHeadcount')}</span><span>{krStats.headcount.toLocaleString()}{t('cpage.krPeople')}</span></div>
+                  )}
+                  {foundedYear ? (
+                    <div className="cpg-info-row"><span>{t('cpage.krFounded')}</span><span>{foundedYear}</span></div>
+                  ) : npsYear ? (
+                    <div className="cpg-info-row"><span>{t('cpage.krNpsRegistered')}</span><span>{npsYear}</span></div>
+                  ) : null}
+                  {krStats.industry && (
+                    <div className="cpg-info-row"><span>{t('cpage.krIndustry')}</span><span>{krStats.industry}</span></div>
+                  )}
+                  {fin && (
+                    <div className="cpg-info-row"><span>{t('cpage.krRevenue')} ({fin.year})</span><span>{fmtKrw(fin.revenue, lang)}</span></div>
+                  )}
+                  {fin && fin.operating_income != null && (
+                    <div className="cpg-info-row"><span>{t('cpage.krOpIncome')} ({fin.year})</span><span>{fmtKrw(fin.operating_income, lang)}</span></div>
+                  )}
+                  {hasFlow && (
+                    <div className="cpg-info-row"><span>{t('cpage.krJoined12m')}</span><span>{joined.toLocaleString()}{t('cpage.krPeople')}</span></div>
+                  )}
+                  {hasFlow && (
+                    <div className="cpg-info-row"><span>{t('cpage.krLeft12m')}</span><span>{left.toLocaleString()}{t('cpage.krPeople')}</span></div>
+                  )}
+                  {trend.length >= 2 && (
+                    <>
+                      <div className="cpg-kr-cap">{t('cpage.krTrend')}</div>
+                      <div className="cpg-mini-v"><span>{trend[0].headcount.toLocaleString()}</span><span>{trend[trend.length - 1].headcount.toLocaleString()}</span></div>
+                      <div className="cpg-mini">
+                        {trend.map(m => (
+                          <div className="cpg-mini-col" key={m.ym} title={`${ymLabel(m.ym)} · ${m.headcount.toLocaleString()}`}>
+                            <div className="cpg-mini-bar" style={{ height: `${Math.round((m.headcount / maxH) * 100)}%` }} />
+                          </div>
+                        ))}
+                      </div>
+                      <div className="cpg-mini-x"><span>{ymLabel(trend[0].ym)}</span><span>{ymLabel(trend[trend.length - 1].ym)}</span></div>
+                    </>
+                  )}
+                  <div className="cpg-kr-src">{t('cpage.krSource')}</div>
+                </>
+              )}
+              <div className="cpg-info-row"><span>{t('cpage.infoSubmissions')}</span><span>{salary?.total ?? '–'}</span></div>
+              <div className="cpg-info-row"><span>{t('cpage.followers')}</span><span>{followerCount.toLocaleString()}</span></div>
+            </div>
+          )
+        })()}
       </div>
       </div>
     </>

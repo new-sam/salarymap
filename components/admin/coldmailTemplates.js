@@ -1592,7 +1592,6 @@ export const COLDMAIL_TEMPLATES = [
 // 발송이 시작되면(같은 이름의 이벤트가 쌓이면) 실측 행이 이 자리를 대체하므로 발송 후 지워도 된다.
 export const DRAFT_CAMPAIGNS = [
   { campaign: 'resume-register-bonus1-apply', group: 'register' },
-  { campaign: 'resume-register-bonus1-rest', group: 'register' },
   { campaign: 'wellpod-recommend1', group: 'recommend' },
   { campaign: 'mnf-recommend1-public', group: 'recommend' },
   { campaign: 'mnf-recommend1-private', group: 'recommend' },
