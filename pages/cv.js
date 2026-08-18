@@ -386,12 +386,20 @@ export default function CvLanding() {
 
   const moreJobsHref = '/jobs'
 
+  // 파일 피커가 열리는 지점은 드롭존과 STEP2 CTA 두 곳인데 드롭존에만 계측이 없었다.
+  // 그래서 "피커 열림"이 "파일 선택"보다 작게 집계돼(퍼널 3단계 < 4단계) 첨부 직전
+  // 이탈 — PDF 미보유 —을 셀 수가 없었다. 두 경로를 한 이벤트로 묶고 via 로 가른다.
+  const openPicker = (via) => {
+    track('cv_open_picker', { meta: { ...cvMeta(), via }, page: '/cv' })
+    fileRef.current?.click()
+  }
+
   const onSubmit = async () => {
     if (!file) {
       // remember CTA intent so handleFile auto-progresses to OAuth after pick (미로그인일 때만)
       if (!user) oauthAfterPick.current = 'google'
       track('cv_click_cta', { meta: { ...cvMeta(), provider: 'google', has_file: false }, page: '/cv' })
-      fileRef.current?.click()
+      openPicker('cta_google')
       return
     }
     if (!user) {
@@ -408,7 +416,7 @@ export default function CvLanding() {
     if (!file) {
       oauthAfterPick.current = 'linkedin'
       track('cv_click_cta', { meta: { ...cvMeta(), provider: 'linkedin', has_file: false }, page: '/cv' })
-      fileRef.current?.click()
+      openPicker('cta_linkedin')
       return
     }
     if (user) { await doUpload(file); return }
@@ -745,7 +753,7 @@ export default function CvLanding() {
                   ) : (
                     <button
                       type="button"
-                      onClick={() => fileRef.current?.click()}
+                      onClick={() => openPicker('dropzone')}
                       className="cv-drop"
                       disabled={status === 'uploading'}
                       onDragOver={(e) => { e.preventDefault(); e.currentTarget.classList.add('drag') }}
