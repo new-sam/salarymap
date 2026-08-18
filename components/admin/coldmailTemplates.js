@@ -949,8 +949,8 @@ const KYNDOF_TEMPLATES = KYNDOF_GROUPS.flatMap((g) => ['public', 'private'].map(
   html: kyndofHtml(frame, g),
 })))
 
-// ── 8/18 지원미달 공고 추천 3종 (moen·andwise·nexacode) — kyndof 정직 프레임, 단일 공고 카드 ──
-// 스크립트: jic-moen-recommend-coldmail.mjs(moen) / aw-nx-recommend-coldmail.mjs(andwise·nexacode)
+// ── 8/18 공고 추천 4종 (moen·andwise·nexacode 세일즈·nexacode 디자이너) — kyndof 정직 프레임, 단일 공고 카드 ──
+// 스크립트: jic-moen-recommend-coldmail.mjs(moen) / aw-nx-recommend-coldmail.mjs(andwise·nexacode) / nx-designer-recommend-coldmail.mjs(디자이너)
 const REC0818_GROUPS = [
   {
     key: 'moen', company: 'Moen', initial: 'M',
@@ -986,6 +986,18 @@ const REC0818_GROUPS = [
       vi: '<b>Nexacode</b> — công ty phần mềm xây dựng sản phẩm SaaS, ERP và giải pháp chuyển đổi số — đang tuyển <b>B2B Sales & Marketing Executive</b> làm việc <b>hoàn toàn từ xa (remote)</b>. <b>Không yêu cầu kinh nghiệm</b> — chỉ cần quan tâm đến B2B sales/marketing, có khả năng nghiên cứu doanh nghiệp và giao tiếp tốt qua email·văn bản; kinh nghiệm cold email, CRM hay công cụ AI (ChatGPT, v.v.) là lợi thế.',
       ko: 'SaaS·ERP·DX 소프트웨어 회사 <b>Nexacode</b>가 <b>풀리모트</b> <b>B2B 세일즈 & 마케팅 담당자</b>를 채용 중입니다. <b>경력 무관</b> — B2B 세일즈/마케팅에 대한 관심, 기업 리서치, 이메일·문서 커뮤니케이션이면 충분하고 콜드메일·CRM·AI 툴 경험은 우대입니다.',
       en: '<b>Nexacode</b> — a software company building SaaS, ERP and digital-transformation products — is hiring a <b>B2B Sales & Marketing Executive</b>, <b>fully remote</b>. <b>No experience required</b> — an interest in B2B sales/marketing, company research skills and strong written communication are enough; cold email, CRM or AI-tool experience is a plus.',
+    },
+  },
+  {
+    key: 'nexacode-designer', company: 'Nexacode', initial: 'N',
+    title: 'Web / UI·UX Designer', meta: 'Remote',
+    role: { vi: 'Web / UI·UX Designer', ko: '웹/UI·UX 디자이너', en: 'Web / UI·UX Designer' },
+    source: 'scripts/outreach/nx-designer-recommend-coldmail.mjs',
+    note: '넥사코드 웹/UI·UX 디자이너 추천 (8/18): 디자인 계열 2.5y+ 159명 gpt-4o-mini 채점 3점+(풀 얇아 전원 발송).',
+    intro: {
+      vi: '<b>Nexacode</b> — công ty phần mềm xây dựng sản phẩm SaaS, ERP và giải pháp chuyển đổi số — đang tuyển <b>Web / UI·UX Designer</b> làm việc <b>hoàn toàn từ xa (remote)</b>. Công việc tập trung vào thiết kế UI/UX web·mobile trên <b>Figma</b> (wireframe·prototype), landing page và website doanh nghiệp, màn hình admin/dashboard cho sản phẩm B2B, cùng các ấn phẩm marketing (banner, SNS) và tài liệu doanh nghiệp (PPT, proposal). Ưu tiên ứng viên có <b>từ 3 năm kinh nghiệm</b> và portfolio; kinh nghiệm làm việc tại công ty toàn cầu là lợi thế.',
+      ko: 'SaaS·ERP·DX 소프트웨어 회사 <b>Nexacode</b>가 <b>풀리모트</b> <b>웹/UI·UX 디자이너</b>를 채용 중입니다. <b>Figma</b> 기반 웹·모바일 UI/UX(화면설계·프로토타입), 랜딩페이지·기업 홈페이지, 어드민·대시보드 등 B2B 화면과 배너·SNS 마케팅 디자인, PPT·제안서까지 폭넓게 다루는 포지션으로, <b>경력 3년 이상</b>·포트폴리오 보유자를 우대하며 글로벌 기업 근무 이력은 큰 우대 요소입니다.',
+      en: '<b>Nexacode</b> — a software company building SaaS, ERP and digital-transformation products — is hiring a <b>Web / UI·UX Designer</b>, <b>fully remote</b>. The role covers web·mobile UI/UX in <b>Figma</b> (wireframes·prototypes), landing pages and corporate websites, admin/dashboard screens for B2B products, plus marketing assets (banners, social content) and business documents (PPT, proposals). <b>3+ years of experience</b> and a portfolio preferred; experience at a global company is a plus.',
     },
   },
 ]
