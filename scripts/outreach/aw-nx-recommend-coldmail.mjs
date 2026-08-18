@@ -24,6 +24,9 @@ const doSend = args.includes('--send')
 const doFilter = args.includes('--filter')
 const onlyGroup = flag('group', null)
 const maxN = flag('max', null) ? parseInt(flag('max'), 10) : null
+// 웨이브2(8/18 팀 결정 "지원 수 늘리기"): --min 2 로 채점 컷 완화(1점=완전 무관만 제외), --wave 2 로 캠페인명 분리
+const minOverride = flag('min', null) ? parseInt(flag('min'), 10) : null
+const WAVE = flag('wave', null) ? parseInt(flag('wave'), 10) : 1
 const SITE = String(flag('site', env.NEXT_PUBLIC_SITE_URL || 'https://salary-fyi.com')).replace(/\/$/, '')
 const RESEND_FROM = env.RESEND_FROM || 'FYI <hello@salary-fyi.com>'
 const CACHE_FILE = new URL('../../data/aw-nx-coldmail-scores.json', import.meta.url)
@@ -72,7 +75,7 @@ const GROUPS = [
 5=B2B 세일즈/BD/아웃바운드 실무 경험이 명확, 4=세일즈 또는 마케팅 실무자로 문서 커뮤니케이션·리서치 역량이 뚜렷(B2B 직접 경험은 약함), 3=세일즈/마케팅 인접(CS·오피스·이커머스 운영 등)이고 전환 가능성 있음, 2=직무 무관하나 사무직 배경, 1=무관.`,
   },
 ]
-const campaignOf = (g, frame) => `${g === 'aw1' ? 'andwise' : 'nexacode'}-recommend1-${frame}`
+const campaignOf = (g, frame) => `${g === 'aw1' ? 'andwise' : 'nexacode'}-recommend${WAVE}-${frame}`
 
 // ── 카피 — vi=실발송, ko=검수(--test). kyndof 정직 프레임 재사용, 회사명만 치환 ──
 const COPY = {
@@ -217,8 +220,8 @@ async function main() {
     return
   }
 
-  // ── 풀 로드 + 제외(수신거부·기추천·기지원·likelion·이메일 중복) ──
-  const [pool, unsubs, recs, apps] = await Promise.all([
+  // ── 풀 로드 + 제외(수신거부·기추천·기지원·likelion·이메일 중복·당일 타 캠페인 수신) ──
+  const [pool, unsubs, recs, apps, todays] = await Promise.all([
     fetchAll(() => sb.from('user_profiles')
       .select('id,email,full_name,position,headline,skills,desired_roles,yoe_months,experiences,is_resume_public,korean_cert,resume_summary')
       .not('email', 'is', null).not('resume_url', 'is', null)
@@ -226,7 +229,12 @@ async function main() {
     fetchAll(() => sb.from('events').select('user_id').eq('event', 'coldmail_unsub').not('user_id', 'is', null).order('id')),
     fetchAll(() => sb.from('job_recommendations').select('user_id,job_id,to_email').in('job_id', jobs.map((j) => j.id)).order('id')),
     fetchAll(() => sb.from('job_applications').select('user_id,job_id').in('job_id', jobs.map((j) => j.id)).order('id')),
+    // 오늘 이미 어떤 공고든 추천 메일을 받은 사람 — 1인 1통/일 유지(같은 날 여러 회사 "선정" 메일 방지)
+    fetchAll(() => sb.from('job_recommendations').select('user_id,to_email')
+      .gte('created_at', new Date().toISOString().slice(0, 10)).order('id')),
   ])
+  const todayUsers = new Set(todays.map((r) => r.user_id))
+  const todayEmails = new Set(todays.map((r) => (r.to_email || '').toLowerCase()).filter(Boolean))
   const unsubSet = new Set(unsubs.map((r) => r.user_id))
   const recUserByJob = {}
   for (const r of recs) (recUserByJob[r.job_id] ||= new Set()).add(r.user_id)
@@ -240,6 +248,7 @@ async function main() {
     if (unsubSet.has(p.id)) return false
     const e = p.email.toLowerCase()
     if (seen.has(e) || recEmails.has(e)) return false
+    if (todayUsers.has(p.id) || todayEmails.has(e)) return false
     seen.add(e)
     return true
   })
@@ -303,7 +312,7 @@ skills: ${(Array.isArray(p.skills) ? p.skills : []).join(', ').slice(0, 300)}
   for (const g of GROUPS) {
     for (const p of gatedBy[g.key]) {
       const s = cache[`${g.code}:${p.id}`]?.score ?? 0
-      if (s < g.min) continue
+      if (s < (minOverride ?? g.min)) continue
       const prev = assigned.get(p.id)
       if (!prev || s > prev.score)
         assigned.set(p.id, { p, g, score: s, gi: GROUPS.indexOf(g), frame: p.is_resume_public ? 'public' : 'private' })
@@ -316,7 +325,7 @@ skills: ${(Array.isArray(p.skills) ? p.skills : []).join(', ').slice(0, 300)}
     const rows = list.filter((x) => x.g.key === g.key)
     if (!rows.length) continue
     const pub = rows.filter((x) => x.frame === 'public').length
-    console.log(`  ${g.key} (${g.label.ko}, ${g.min}점+): ${rows.length}명 (공개 ${pub} / 비공개 ${rows.length - pub})`)
+    console.log(`  ${g.key} (${g.label.ko}, ${minOverride ?? g.min}점+): ${rows.length}명 (공개 ${pub} / 비공개 ${rows.length - pub})`)
   }
   if (!doSend) {
     for (const { p, g, score, frame } of list.slice(0, 40))

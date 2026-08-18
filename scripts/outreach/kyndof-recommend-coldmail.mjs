@@ -23,6 +23,11 @@ const testTo = flag('test', null)
 const doSend = args.includes('--send')
 const onlyGroup = flag('group', null)
 const maxN = flag('max', null) ? parseInt(flag('max'), 10) : null
+// 웨이브2(8/18 팀 결정 "지원 수 늘리기"): --min 2 로 채점 컷 완화(1점=완전 무관만 제외), --wave 2 로 캠페인명 분리
+const minOverride = flag('min', null) ? parseInt(flag('min'), 10) : null
+const WAVE = flag('wave', null) ? parseInt(flag('wave'), 10) : 1
+// --skip KYN4002,KYN4010 — 이미 지원 충족(10+)된 공고 코드 제외(그룹의 나머지 코드만 발송)
+const SKIP = new Set(String(flag('skip', '') || '').split(',').map((s) => s.trim()).filter(Boolean))
 const SITE = String(flag('site', env.NEXT_PUBLIC_SITE_URL || 'https://salary-fyi.com')).replace(/\/$/, '')
 const RESEND_FROM = env.RESEND_FROM || 'FYI <hello@salary-fyi.com>'
 const CACHE_FILE = new URL('../../data/kyndof-coldmail-scores.json', import.meta.url)
@@ -74,7 +79,7 @@ const GROUPS = [
   { key: 'growth1', codes: ['KYN4002', 'KYN4013'], min: 4, label: { vi: 'Growth Marketing & Marketplace Marketing', ko: '그로스 마케팅' } },
   { key: 'tech1', codes: ['KYN4008', 'KYN4009'], min: 4, label: { vi: 'Tech Lead / Backend Marketplace', ko: '테크리드·백엔드' } },
 ]
-const campaignOf = (g, frame) => `kyndof-${g}-${frame}`
+const campaignOf = (g, frame) => `kyndof${WAVE > 1 ? WAVE : ''}-${g}-${frame}` // 웨이브2부터 kyndof2-* (groupOf는 ^kyndof 매치라 동일 그룹)
 
 // ── 카피 — vi=실발송, ko=검수(--test). 회사 소개는 JD 원문에서만. 수치 없음. ──
 // public = 이력서 공개 상태 → 명단과 함께 프로필이 그대로 전달됨을 강조.
@@ -213,7 +218,7 @@ async function main() {
   }
 
   // ── 풀 로드 + 프리필터 재구성(채점 캐시 키와 동일 기준) ──
-  const [pool, unsubs, recs, apps] = await Promise.all([
+  const [pool, unsubs, recs, apps, todays] = await Promise.all([
     fetchAll(() => sb.from('user_profiles')
       .select('id,email,full_name,position,headline,skills,desired_roles,yoe_months,experiences,is_resume_public,korean_cert')
       .not('email', 'is', null).not('resume_url', 'is', null)
@@ -221,7 +226,12 @@ async function main() {
     fetchAll(() => sb.from('events').select('user_id').eq('event', 'coldmail_unsub').not('user_id', 'is', null).order('id')),
     fetchAll(() => sb.from('job_recommendations').select('user_id,job_id,to_email').in('job_id', jobs.map((j) => j.id)).order('id')),
     fetchAll(() => sb.from('job_applications').select('user_id,job_id').in('job_id', jobs.map((j) => j.id)).order('id')),
+    // 오늘 이미 어떤 공고든 추천 메일을 받은 사람 — 1인 1통/일 유지(같은 날 여러 회사 "선정" 메일 방지)
+    fetchAll(() => sb.from('job_recommendations').select('user_id,to_email')
+      .gte('created_at', new Date().toISOString().slice(0, 10)).order('id')),
   ])
+  const todayUsers = new Set(todays.map((r) => r.user_id))
+  const todayEmails = new Set(todays.map((r) => (r.to_email || '').toLowerCase()).filter(Boolean))
   const unsubSet = new Set(unsubs.map((r) => r.user_id))
   const recUserByJob = {}
   for (const r of recs) (recUserByJob[r.job_id] ||= new Set()).add(r.user_id)
@@ -235,6 +245,7 @@ async function main() {
     if (unsubSet.has(p.id)) return false
     const e = p.email.toLowerCase()
     if (seen.has(e) || recEmails.has(e)) return false
+    if (todayUsers.has(p.id) || todayEmails.has(e)) return false
     seen.add(e)
     return true
   })
@@ -257,13 +268,14 @@ async function main() {
       const okJobs = []
       let gScore = 0
       for (const code of g.codes) {
+        if (SKIP.has(code)) continue
         const job = jobByCode[code]
         if (!job || !job.is_active) continue
         if ((appliedByJob[job.id] || new Set()).has(p.id)) continue
         if ((recUserByJob[job.id] || new Set()).has(p.id)) continue
         if (!prefilterHit(code, p)) continue
         const s = scoreOf(code, p)
-        if (s >= g.min) { okJobs.push(job); gScore = Math.max(gScore, s) }
+        if (s >= (minOverride ?? g.min)) { okJobs.push(job); gScore = Math.max(gScore, s) }
       }
       if (!okJobs.length) continue
       // 배정: 점수 우선, 동점이면 GROUPS 정의 순(모수 얇은 그룹 먼저)
@@ -281,7 +293,7 @@ async function main() {
     const rows = list.filter((x) => x.group.key === g.key)
     if (!rows.length) continue
     const pub = rows.filter((x) => x.frame === 'public').length
-    console.log(`  ${g.key} (${g.label.ko}, ${g.min}점+): ${rows.length}명 (공개 ${pub} / 비공개 ${rows.length - pub})`)
+    console.log(`  ${g.key} (${g.label.ko}, ${minOverride ?? g.min}점+): ${rows.length}명 (공개 ${pub} / 비공개 ${rows.length - pub})`)
   }
   if (!doSend) {
     for (const { p, group, jobs: gj, score, frame } of list.slice(0, 25))

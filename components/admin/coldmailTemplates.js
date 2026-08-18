@@ -932,7 +932,7 @@ const kyndofHtml = (frame, g) => (lang) => {
 </table></td></tr></table></body></html>`
 }
 const KYNDOF_TEMPLATES = KYNDOF_GROUPS.flatMap((g) => ['public', 'private'].map((frame) => ({
-  match: new RegExp(`^kyndof-${g.key}-${frame}`),
+  match: new RegExp(`^kyndof\\d?-${g.key}-${frame}`), // kyndof2-* = 웨이브2(8/18 컷 완화)
   subject: frame === 'public'
     ? {
       vi: `[FYI] Bạn được chọn vào danh sách đề cử gửi KYNDOF — ${g.role.vi}`,
@@ -1013,7 +1013,7 @@ const rec0818Benefit = (frame, c) => ({
     : 'Your profile is private — if you apply now, your CV is delivered with FYI\'s recommendation and gets <b>priority review</b>.'),
 })
 const REC0818_TEMPLATES = REC0818_GROUPS.flatMap((g) => ['public', 'private'].map((frame) => ({
-  match: new RegExp(`^${g.key}-recommend1-${frame}`),
+  match: new RegExp(`^${g.key}-recommend\\d-${frame}`), // recommend2 = 웨이브2(8/18 컷 완화)
   subject: frame === 'public'
     ? {
       vi: `[FYI] Bạn được chọn vào danh sách đề cử gửi ${g.company} — ${g.role.vi}`,
