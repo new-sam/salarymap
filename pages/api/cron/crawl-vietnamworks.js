@@ -145,8 +145,17 @@ function mapToRecord(job, target) {
     .slice(0, 10)
 
   const rate = job.salaryCurrency === 'USD' ? USD_TO_VND : 1
-  const salaryMin = Math.round((job.salaryMin || 0) * rate)
-  const salaryMax = Math.round((job.salaryMax || 0) * rate)
+  let salaryMin = Math.round((job.salaryMin || 0) * rate)
+  let salaryMax = Math.round((job.salaryMax || 0) * rate)
+  // VW가 VND 금액에 통화만 USD로 주는 공고가 있어(예: 30tr → salaryMin=30000000, currency=USD)
+  // 이중환산 방지 — 환산 결과가 월 20억 VND을 넘으면 원 숫자를 VND로 취급
+  if (salaryMin > 2e9 || salaryMax > 2e9) {
+    salaryMin = Math.round(job.salaryMin || 0)
+    salaryMax = Math.round(job.salaryMax || 0)
+  }
+  // 단위 누락 입력(예: "13-15 ₫", "8,000 ₫")은 월급으로 성립 안 함 — 미기재(0) 처리
+  if (salaryMin < 1e6) salaryMin = 0
+  if (salaryMax < 1e6) salaryMax = 0
 
   return {
     title: job.jobTitle,

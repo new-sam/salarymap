@@ -1,0 +1,394 @@
+[
+  {
+    "id": "b7114bd6-0973-48e1-b51f-c4e9f3f2d40d",
+    "company": "Công ty TNHH BlueMedia Việt Nam",
+    "title": "Senior Partnership Executive",
+    "before": {
+      "salary_min": 889000000000,
+      "salary_max": 0
+    },
+    "after": {
+      "salary_min": 35000000,
+      "salary_max": 0
+    },
+    "note": "÷25400 | 원페이지: undefined cur=null"
+  },
+  {
+    "id": "899dbe0c-688e-499d-9cdc-de126bac77b6",
+    "company": "Công ty TNHH Phát triển Deli Việt Nam",
+    "title": "Trưởng Phòng Mua Hàng Thu Nhập Từ 30 - 40 Triệu/tháng - Tuyển Gấp",
+    "before": {
+      "salary_min": 762000000000,
+      "salary_max": 1016000000000
+    },
+    "after": {
+      "salary_min": 30000000,
+      "salary_max": 40000000
+    },
+    "note": "÷25400 | 원페이지: $$ 30tr-40tr /tháng cur=USD"
+  },
+  {
+    "id": "3faa6e1f-730a-4be7-b215-3d0e1f875d4b",
+    "company": "Chicilon Media",
+    "title": "Phó Phòng Sales Admin (Thành thạo Tiếng Trung /tiếng Anh)",
+    "before": {
+      "salary_min": 635000000000,
+      "salary_max": 762000000000
+    },
+    "after": {
+      "salary_min": 25000000,
+      "salary_max": 30000000
+    },
+    "note": "÷25400 | 원페이지: Thương lượng cur="
+  },
+  {
+    "id": "9846e5d8-5ce9-4b5e-9033-c598d1b70699",
+    "company": "CÔNG TY CỔ PHẦN TẬP ĐOÀN INVET",
+    "title": "Kế Toán Trưởng",
+    "before": {
+      "salary_min": 508000000000,
+      "salary_max": 762000000000
+    },
+    "after": {
+      "salary_min": 20000000,
+      "salary_max": 30000000
+    },
+    "note": "÷25400 | 원페이지: $$ 20tr-30tr /tháng cur=USD"
+  },
+  {
+    "id": "7f8be101-3358-4ad5-bfe5-21514293303c",
+    "company": "CÔNG TY CỔ PHẦN NEXUS GLOBAL HOLDING",
+    "title": "Marketing Manager ( Thu Nhập Lên Đến 25 Triệu)",
+    "before": {
+      "salary_min": 508000000000,
+      "salary_max": 635000000000
+    },
+    "after": {
+      "salary_min": 20000000,
+      "salary_max": 25000000
+    },
+    "note": "÷25400 | 원페이지: $$ 20tr-25tr /tháng cur=USD"
+  },
+  {
+    "id": "4f13d6cd-c3df-4dbf-844e-881fe23364a2",
+    "company": "Công Ty TNHH Cuckoovina",
+    "title": "Performance Marketing Specialist (HCM)",
+    "before": {
+      "salary_min": 457200000000,
+      "salary_max": 558800000000
+    },
+    "after": {
+      "salary_min": 18000000,
+      "salary_max": 22000000
+    },
+    "note": "÷25400 | 원페이지: $$ 18tr-22tr /tháng cur=USD"
+  },
+  {
+    "id": "aec8a2b1-1444-402f-8c57-1c6dce577c6c",
+    "company": "CÔNG TY CỔ PHẦN TẬP ĐOÀN LONG GIANG",
+    "title": "Chuyên Viên Tuyển Dụng",
+    "before": {
+      "salary_min": 381000000000,
+      "salary_max": 508000000000
+    },
+    "after": {
+      "salary_min": 15000000,
+      "salary_max": 20000000
+    },
+    "note": "÷25400 | 원페이지: $$ 15tr-20tr /tháng cur=USD"
+  },
+  {
+    "id": "218b5da7-09f2-4a70-94b5-8e713f9aa1f3",
+    "company": "Công ty CP HTOP",
+    "title": "Trưởng Phòng Sale Marketing Lĩnh Vực Thương Mại Điện Tử",
+    "before": {
+      "salary_min": 381000000000,
+      "salary_max": 0
+    },
+    "after": {
+      "salary_min": 15000000,
+      "salary_max": 0
+    },
+    "note": "÷25400 | 원페이지: Từ $ 15tr /tháng cur=USD"
+  },
+  {
+    "id": "ad27c675-7de2-4cc8-9ba3-0d4ff1853e6a",
+    "company": "Công Ty TNHH Khu Công Nghiệp Thăng Long",
+    "title": "Kế Toán Công Nợ/ AR Accountant",
+    "before": {
+      "salary_min": 330200000000,
+      "salary_max": 609600000000
+    },
+    "after": {
+      "salary_min": 13000000,
+      "salary_max": 24000000
+    },
+    "note": "÷25400 | 원페이지: $$ 13tr-24tr /tháng cur=USD"
+  },
+  {
+    "id": "9f266ac9-c11e-4b75-bd0e-9739c12c4b0b",
+    "company": "CÔNG TY TNHH HÀ KIM GROUP",
+    "title": "Senior Marketing Specialist",
+    "before": {
+      "salary_min": 304800000000,
+      "salary_max": 457200000000
+    },
+    "after": {
+      "salary_min": 12000000,
+      "salary_max": 18000000
+    },
+    "note": "÷25400 | 원페이지: $$ 12tr-18tr /tháng cur=USD"
+  },
+  {
+    "id": "9ff489d0-60b5-4568-a60f-ef3ec7440312",
+    "company": "CÔNG TY TNHH MỘT THÀNH VIÊN BIG NANO TECHNOLOGY",
+    "title": "Accountant- Nhân Viên Kế Toán",
+    "before": {
+      "salary_min": 304800000000,
+      "salary_max": 381000000000
+    },
+    "after": {
+      "salary_min": 12000000,
+      "salary_max": 15000000
+    },
+    "note": "÷25400 | 원페이지: $$ 12tr-15tr /tháng cur=USD"
+  },
+  {
+    "id": "acaa8dcc-5381-4356-b09d-2d365f2ee762",
+    "company": "Công ty TNHH V Và V",
+    "title": "Sales Admin",
+    "before": {
+      "salary_min": 254000000000,
+      "salary_max": 304800000000
+    },
+    "after": {
+      "salary_min": 10000000,
+      "salary_max": 12000000
+    },
+    "note": "÷25400 | 원페이지: $$ 10tr-12tr /tháng cur=USD"
+  },
+  {
+    "id": "0eaf0d46-3e65-4bee-a038-e260b0c73e43",
+    "company": "Công Ty TNHH Kuroda Kagaku Việt Nam",
+    "title": "[Tuyển Gấp] Nhân Viên Thiết Kế Khuôn Đúc Nhựa",
+    "before": {
+      "salary_min": 254000000000,
+      "salary_max": 381000000000
+    },
+    "after": {
+      "salary_min": 10000000,
+      "salary_max": 15000000
+    },
+    "note": "÷25400 | 원페이지: $$ 10tr-15tr /tháng cur=USD"
+  },
+  {
+    "id": "b70a3471-1e20-4ce4-928a-5c78dca8fd05",
+    "company": "Công Ty TNHH Kuroda Kagaku Việt Nam",
+    "title": "Nhân Viên Vận Hành Máy Xung Điện EDM hoặc Máy Cắt Dây Wedm - Phòng Sản Xuất Khuôn",
+    "before": {
+      "salary_min": 228600000000,
+      "salary_max": 304800000000
+    },
+    "after": {
+      "salary_min": 9000000,
+      "salary_max": 12000000
+    },
+    "note": "÷25400 | 원페이지: $$ 9tr-12tr /tháng cur=USD"
+  },
+  {
+    "id": "4c5a722b-b394-4aec-8aa2-9347b47a243b",
+    "company": "VT Global L&T COMPANY Limited",
+    "title": "Nhân Viên Khai Báo Hải Quan",
+    "before": {
+      "salary_min": 13,
+      "salary_max": 15
+    },
+    "after": {
+      "salary_min": 0,
+      "salary_max": 0
+    },
+    "note": "단위불명(cur=VND) → 미기재 처리 | 13-15 ₫/tháng"
+  },
+  {
+    "id": "e493e662-a6ff-4a2e-aa3a-f57092f4a81d",
+    "company": "Công Ty CP Đầu Tư Xây Dựng Và Thương Mại Phú Điền",
+    "title": "Nhân Viên Kế Toán Tổng Hợp",
+    "before": {
+      "salary_min": 18,
+      "salary_max": 30
+    },
+    "after": {
+      "salary_min": 0,
+      "salary_max": 0
+    },
+    "note": "단위불명(cur=VND) → 미기재 처리 | 18-30 ₫/tháng"
+  },
+  {
+    "id": "fa0a20b8-70d1-4004-9f58-8d38c538374e",
+    "company": "Công Ty Cổ Phần Daesang Đức Việt",
+    "title": "Kế Toán Trưởng (Làm Việc Tại Duy Tân, Cầu Giấy/ Nghỉ T7, CN)",
+    "before": {
+      "salary_min": 30,
+      "salary_max": 0
+    },
+    "after": {
+      "salary_min": 0,
+      "salary_max": 0
+    },
+    "note": "단위불명(cur=VND) → 미기재 처리 | Từ 30 ₫/tháng"
+  },
+  {
+    "id": "d992987a-5af9-4728-8400-37c7976fdd03",
+    "company": "Nikkiso Vietnam, Inc",
+    "title": "[Gấp] Material Control Staff / Nhân Viên Kho Tiếng Anh Khá",
+    "before": {
+      "salary_min": 400,
+      "salary_max": 700
+    },
+    "after": {
+      "salary_min": 0,
+      "salary_max": 0
+    },
+    "note": "단위불명(cur=VND) → 미기재 처리 | 400-700 ₫/tháng"
+  },
+  {
+    "id": "4085f438-2b52-4636-9b02-aa25965aa004",
+    "company": "CN Công Ty TNHH Shoei Việt Nam Tại Bắc Ninh",
+    "title": "Tuyển Gấp - Phó Phòng Quản Lý Sản Xuất ( Lương Thỏa Thuận)",
+    "before": {
+      "salary_min": 460,
+      "salary_max": 650
+    },
+    "after": {
+      "salary_min": 0,
+      "salary_max": 0
+    },
+    "note": "단위불명(cur=VND) → 미기재 처리 | 460-650 ₫/tháng"
+  },
+  {
+    "id": "1346c04c-a8a1-4956-8dba-24fee0823fc7",
+    "company": "Công Ty TNHH Công Nghệ An Pha",
+    "title": "Nhân Viên Kinh Doanh Thiết Bị Y Tế",
+    "before": {
+      "salary_min": 600,
+      "salary_max": 1000
+    },
+    "after": {
+      "salary_min": 0,
+      "salary_max": 0
+    },
+    "note": "단위불명(cur=VND) → 미기재 처리 | 600-1,000 ₫/tháng"
+  },
+  {
+    "id": "f2595966-23b1-4bd3-9f49-afb6f9b511e9",
+    "company": "Công Ty TNHH Thương Mại Điện Đông Nam Á",
+    "title": "Kế Toán Thu Hồi Nợ",
+    "before": {
+      "salary_min": 1200,
+      "salary_max": 1800
+    },
+    "after": {
+      "salary_min": 12000000,
+      "salary_max": 18000000
+    },
+    "note": "페이지 정정값 채택 | 12tr-18tr ₫/tháng"
+  },
+  {
+    "id": "75be72e8-0143-48d9-92a2-5dbc30b3ce2c",
+    "company": "Công Ty Cổ Phần Đầu Tư Nam Long",
+    "title": "Expert, Compensation & Benefit",
+    "before": {
+      "salary_min": 1400,
+      "salary_max": 1600
+    },
+    "after": {
+      "salary_min": 0,
+      "salary_max": 0
+    },
+    "note": "단위불명(cur=VND) → 미기재 처리 | 1,400-1,600 ₫/tháng"
+  },
+  {
+    "id": "3e993a42-e618-41ce-85ab-1134ca4c62c2",
+    "company": "Công Ty Cổ Phần Nhà Ga Hàng Hóa ALS",
+    "title": "Nhân Viên Khai Thác Logistics Hàng Không - Chấp Nhận Sinh Viên Mới Ra Trường - Có Xe Đưa Đón",
+    "before": {
+      "salary_min": 8000,
+      "salary_max": 12000
+    },
+    "after": {
+      "salary_min": 0,
+      "salary_max": 0
+    },
+    "note": "단위불명(cur=VND) → 미기재 처리 | 8,000-12,000 ₫/tháng"
+  },
+  {
+    "id": "dc6867a2-80cb-4860-94ab-4fd64fa3929b",
+    "company": "Công Ty CP Tập Đoàn Vinatech Việt Nam",
+    "title": "Kỹ Sư Thiết Kế Cơ Khí (Làm Tại Củ Chi - Tổng Thu Nhập Lên Đến 24Tr/th)",
+    "before": {
+      "salary_min": 12000,
+      "salary_max": 24000
+    },
+    "after": {
+      "salary_min": 0,
+      "salary_max": 0
+    },
+    "note": "단위불명(cur=VND) → 미기재 처리 | 12,000-24,000 ₫/tháng"
+  },
+  {
+    "id": "81d06b2e-d547-4164-a226-8583815c0bd1",
+    "company": "Công Ty TNHH Kwang Sung Sprayers VINA",
+    "title": "Sales Admin Executive",
+    "before": {
+      "salary_min": 13000,
+      "salary_max": 14000
+    },
+    "after": {
+      "salary_min": 0,
+      "salary_max": 0
+    },
+    "note": "단위불명(cur=undefined) → 미기재 처리 | "
+  },
+  {
+    "id": "c33f18d3-7ccd-4822-9d3c-d3cc46396798",
+    "company": "Công Ty Cổ Phần Thương Mại Và Liên Kết Nano",
+    "title": "Kế Toán Thuế",
+    "before": {
+      "salary_min": 15000,
+      "salary_max": 20000
+    },
+    "after": {
+      "salary_min": 0,
+      "salary_max": 0
+    },
+    "note": "단위불명(cur=VND) → 미기재 처리 | 15,000-20,000 ₫/tháng"
+  },
+  {
+    "id": "c95d13b6-028f-4773-9c40-204471c273c2",
+    "company": "Công Ty Cổ Phần YBM",
+    "title": "Chuyên Viên Xuất Nhập Khẩu Tiếng Trung (Thu Nhập 25-30 Triệu+)",
+    "before": {
+      "salary_min": 25000,
+      "salary_max": 30000
+    },
+    "after": {
+      "salary_min": 0,
+      "salary_max": 0
+    },
+    "note": "단위불명(cur=VND) → 미기재 처리 | 25,000-30,000 ₫/tháng"
+  },
+  {
+    "id": "b6237806-ca8a-46bc-a123-1269ed10d495",
+    "company": "NEYU",
+    "title": "Marketing Operations Executive (Performance Marketing, Affiliate Marketing)",
+    "before": {
+      "salary_min": 25400,
+      "salary_max": 254000
+    },
+    "after": {
+      "salary_min": 0,
+      "salary_max": 0
+    },
+    "note": "단위불명(cur=USD) → 미기재 처리 | $$ 1-10 /tháng"
+  }
+]
