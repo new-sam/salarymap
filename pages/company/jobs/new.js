@@ -98,8 +98,6 @@ export default function NewJobPage() {
 
   const [uploading, setUploading] = useState(false);
   const [previewFull, setPreviewFull] = useState(false);
-  // 선택 필드(근무조건·스킬·사진)는 접어서 최초 노출 필드 수를 줄인다.
-  const [showMore, setShowMore] = useState(false);
   // 직군은 옵션이 많아 드롭다운 대신 2단(대분류→소분류) 모달로 고른다.
   const [roleModal, setRoleModal] = useState(false);
   const [roleGroup, setRoleGroup] = useState(ROLE_GROUPS[0]?.key);
@@ -116,34 +114,8 @@ export default function NewJobPage() {
     }
     return '';
   };
-  // 토스식 단계 입력 — 한 번에 한 묶음만 보여주고, 단계별 검증 후 진행.
-  const [step, setStep] = useState(0);
   // 에러는 박스 대신 해당 필드의 빨간 테두리 + 필드 아래 안내 문구로 표시.
   const [errField, setErrField] = useState(null);
-  const validateStep = (s) => {
-    if (s === 0 && !form.title.trim()) return ['title', t('company.err.titleRequired')];
-    if (s === 0 && !form.role) return ['role', t('company.err.roleRequired')];
-    if (s === 1 && !form.salary_negotiable && Number(form.salary_min) >= Number(form.salary_max)) return ['salary', t('company.err.salaryRange')];
-    if (s === 2 && !form.responsibilities.trim()) return ['responsibilities', t('company.err.respRequired')];
-    if (s === 2 && !form.requirements.trim()) return ['requirements', t('company.err.reqRequired')];
-    if (s === 3 && !form.description.trim()) return ['description', t('company.err.descRequired')];
-    return null;
-  };
-  const goNext = () => {
-    const v = validateStep(step);
-    if (v) { setErrField(v[0]); setErr(v[1]); return; }
-    setErr(''); setErrField(null);
-    setStep(s => s + 1);
-  };
-  // 필수 미기입/오류가 있으면 다음(게재) 버튼 비활성화. 검증 로직과 동일 기준.
-  const stepComplete = (s) => {
-    if (s === 0) return !!form.title.trim() && !!form.role;
-    if (s === 1) return form.salary_negotiable
-      || (form.salary_min > 0 && form.salary_max > 0 && Number(form.salary_min) < Number(form.salary_max));
-    if (s === 2) return !!form.responsibilities.trim() && !!form.requirements.trim();
-    if (s === 3) return !!form.description.trim();
-    return true;
-  };
   // 급여 직접 입력은 역전(최소≥최대)이 가능하므로 입력 즉시 인라인 경고.
   // 둘 다 값이 있을 때만 검사 — 한쪽을 지우고 다시 치는 중엔 조용히 둔다.
   const setSalary = (k, v) => {
@@ -154,10 +126,9 @@ export default function NewJobPage() {
       setErrField('salary'); setErr(t('company.err.salaryRange'));
     } else if (err) { setErr(''); setErrField(null); }
   };
-  // 최종 제출에서 걸리면 해당 필드가 있는 단계로 점프해 인라인 에러를 보여준다.
-  const failAt = (field, msg, s) => {
+  // 제출에서 걸리면 해당 필드에 인라인 에러를 보여준다.
+  const failAt = (field, msg) => {
     setErrField(field); setErr(msg);
-    if (s !== undefined && s !== step) setStep(s);
   };
   const uploadImage = async (file, field) => {
     if (!file || !user) return;
@@ -210,14 +181,12 @@ export default function NewJobPage() {
   const onSubmit = async (e) => {
     e.preventDefault();
     setErr('');
-    // 마지막 단계 전에는 Enter/제출이 "다음"으로 동작 — 토스식 진행.
-    if (step < 3) { goNext(); return; }
-    if (!form.title.trim()) { failAt('title', t('company.err.titleRequired'), 0); return; }
-    if (!form.role) { failAt('role', t('company.err.roleRequired'), 0); return; }
-    if (!form.responsibilities.trim()) { failAt('responsibilities', t('company.err.respRequired'), 2); return; }
-    if (!form.requirements.trim()) { failAt('requirements', t('company.err.reqRequired'), 2); return; }
-    if (!form.description.trim()) { failAt('description', t('company.err.descRequired'), 3); return; }
-    if (!form.salary_negotiable && Number(form.salary_min) >= Number(form.salary_max)) { failAt('salary', t('company.err.salaryRange'), 1); return; }
+    if (!form.title.trim()) { failAt('title', t('company.err.titleRequired')); return; }
+    if (!form.role) { failAt('role', t('company.err.roleRequired')); return; }
+    if (!form.description.trim()) { failAt('description', t('company.err.descRequired')); return; }
+    if (!form.responsibilities.trim()) { failAt('responsibilities', t('company.err.respRequired')); return; }
+    if (!form.requirements.trim()) { failAt('requirements', t('company.err.reqRequired')); return; }
+    if (!form.salary_negotiable && Number(form.salary_min) >= Number(form.salary_max)) { failAt('salary', t('company.err.salaryRange')); return; }
     setStatus('saving');
 
     const techArr = form.tech_stack.split(',').map(s => s.trim()).filter(Boolean);
@@ -336,11 +305,9 @@ export default function NewJobPage() {
                 <UButton asChild variant="outline">
                   <Link href="/company/jobs">{t('company.cancel')}</Link>
                 </UButton>
-                {step === 3 && (
-                  <UButton type="submit" form="job-new-form" disabled={status === 'saving' || !stepComplete(3)}>
-                    {status === 'saving' ? t('company.saving') : t('company.jobsnew.publish')}
-                  </UButton>
-                )}
+                <UButton type="submit" form="job-new-form" disabled={status === 'saving'}>
+                  {status === 'saving' ? t('company.saving') : t('company.jobsnew.publish')}
+                </UButton>
               </>
             )}
           />
@@ -353,19 +320,71 @@ export default function NewJobPage() {
                 sitting bare on the gray page background. */}
             <div className="flex-[1.4] overflow-y-auto min-h-0 pr-3 pb-10 [scrollbar-gutter:stable]">
             <div className="bg-white border border-border rounded-xl shadow-soft-xs p-5 flex flex-col">
-              {/* 단계 제목 + 진행 바 */}
-              <div className="flex items-center justify-between mb-2">
-                <h2 className="text-[17px] font-bold text-gray-900">{t(`company.jobsnew.stepTitle${step + 1}`)}</h2>
-                <span className="text-[12px] font-semibold text-gray-400 tabular-nums">{step + 1} / 4</span>
-              </div>
-              <div className="h-1 bg-gray-100 rounded-full mb-6 overflow-hidden">
-                <div className="h-full bg-primary-500 rounded-full transition-all duration-300" style={{ width: `${((step + 1) / 4) * 100}%` }} />
-              </div>
+              <h2 className="text-[12px] font-bold text-gray-500 mb-3">{t('company.jobsnew.photoH')}</h2>
 
-              {step === 0 && (<>
+              <div className="grid grid-cols-2 gap-3 mb-3">
+                <Field label={t('company.jobsnew.imageLabel')}>
+                  {form.image_url ? (
+                    <div className="flex items-center gap-2.5 p-2.5 border border-border rounded-lg bg-white">
+                      <img src={form.image_url} alt="thumbnail" className="h-14 w-24 rounded-md object-cover" />
+                      <UButton type="button" variant="outline" size="sm" onClick={() => setF('image_url', '')} className="ml-auto h-7 px-2 text-xs text-red-600 border-red-200 hover:bg-red-50">{t('company.remove')}</UButton>
+                    </div>
+                  ) : (
+                    <UploadInput label={t('company.jobsnew.uploadBtn')} disabled={uploading} onFile={(f) => uploadImage(f, 'image_url')} />
+                  )}
+                </Field>
+                <Field label={t('company.jobsnew.logoLabel')}>
+                  {form.logo_url ? (
+                    <div className="flex items-center gap-2.5 p-2.5 border border-border rounded-lg bg-white">
+                      <img src={form.logo_url} alt="logo" className="h-10 w-10 rounded-md object-contain bg-gray-50" />
+                      <UButton type="button" variant="outline" size="sm" onClick={() => setF('logo_url', '')} className="ml-auto h-7 px-2 text-xs text-red-600 border-red-200 hover:bg-red-50">{t('company.remove')}</UButton>
+                    </div>
+                  ) : (
+                    <UploadInput label={t('company.jobsnew.uploadBtn')} disabled={uploading} onFile={(f) => uploadImage(f, 'logo_url')} />
+                  )}
+                </Field>
+              </div>
+              {uploading
+                ? <div className="text-xs text-primary-600 font-semibold mb-3">{t('company.uploading')}</div>
+                : (
+                  <div className="text-xs text-gray-400 font-semibold mb-5">
+                    {t('company.jobsnew.photoHint')}{' '}
+                    <Link href="/company/settings" className="text-primary-600 hover:underline">{t('company.jobsnew.profileHint')}</Link>
+                  </div>
+                )}
+
+              <h2 className="text-[12px] font-bold text-gray-500 mt-3 mb-3">{t('company.jobsnew.basicH')}</h2>
+
               <Field label={t('company.jobsnew.title')} required error={errField === 'title' ? err : undefined}>
                 <UInput value={form.title} onChange={e => setF('title', e.target.value)} placeholder="ex) Senior Backend Engineer"
                   className={errField === 'title' ? 'border-red-400 focus-visible:ring-red-300' : undefined} />
+              </Field>
+
+              <Field label={t('company.jobsnew.descLabel')} required error={errField === 'description' ? err : undefined}>
+                <textarea value={form.description} onChange={e => setF('description', e.target.value)} rows={4}
+                  placeholder={t('company.jobsnew.descPh')}
+                  className={cn('flex w-full rounded-lg border bg-background px-3 py-2.5 text-sm font-medium leading-relaxed resize-y min-h-[110px] focus:outline-none focus:ring-2 focus:ring-offset-1',
+                    errField === 'description' ? 'border-red-400 focus:ring-red-300' : 'border-input focus:ring-ring')} />
+              </Field>
+
+              <Field label={t('company.jobsnew.respLabel')} required error={errField === 'responsibilities' ? err : undefined}>
+                <textarea value={form.responsibilities} onChange={e => setF('responsibilities', e.target.value)} rows={4}
+                  placeholder={t('company.jobsnew.respPh')}
+                  className={cn('flex w-full rounded-lg border bg-background px-3 py-2.5 text-sm font-medium leading-relaxed resize-y min-h-[110px] focus:outline-none focus:ring-2 focus:ring-offset-1',
+                    errField === 'responsibilities' ? 'border-red-400 focus:ring-red-300' : 'border-input focus:ring-ring')} />
+              </Field>
+
+              <Field label={t('company.jobsnew.reqLabel')} required error={errField === 'requirements' ? err : undefined}>
+                <textarea value={form.requirements} onChange={e => setF('requirements', e.target.value)} rows={4}
+                  placeholder={t('company.jobsnew.reqPh')}
+                  className={cn('flex w-full rounded-lg border bg-background px-3 py-2.5 text-sm font-medium leading-relaxed resize-y min-h-[110px] focus:outline-none focus:ring-2 focus:ring-offset-1',
+                    errField === 'requirements' ? 'border-red-400 focus:ring-red-300' : 'border-input focus:ring-ring')} />
+              </Field>
+
+              <Field label={t('company.jobsnew.prefLabel')}>
+                <textarea value={form.preferred} onChange={e => setF('preferred', e.target.value)} rows={3}
+                  placeholder={t('company.jobsnew.prefPh')}
+                  className="flex w-full rounded-lg border border-input bg-background px-3 py-2.5 text-sm font-medium leading-relaxed resize-y min-h-[80px] focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-1" />
               </Field>
 
               <div className="grid grid-cols-2 gap-3">
@@ -402,9 +421,24 @@ export default function NewJobPage() {
                 </Field>
               )}
 
-              </>)}
+              <h2 className="text-[12px] font-bold text-gray-500 mt-5 mb-1">{t('company.jobsnew.workH')}</h2>
+              <div className="text-xs text-gray-400 font-semibold mb-3">{t('company.jobsnew.workHint')}</div>
+              <div className="grid grid-cols-2 gap-3">
+                <Field label={t('company.jobsnew.workDays')}>
+                  <UInput value={form.work_days} onChange={e => setF('work_days', e.target.value)} placeholder={DEFAULT_WORK_DAYS} />
+                </Field>
+                <Field label={t('company.jobsnew.workHours')}>
+                  <UInput value={form.work_hours} onChange={e => setF('work_hours', e.target.value)} placeholder={DEFAULT_WORK_HOURS} />
+                </Field>
+                <Field label={t('company.jobsnew.paidLeave')}>
+                  <UInput value={form.paid_leave} onChange={e => setF('paid_leave', e.target.value)} placeholder={DEFAULT_PAID_LEAVE} />
+                </Field>
+                <Field label={t('company.jobsnew.contract')}>
+                  <UInput value={form.contract_type} onChange={e => setF('contract_type', e.target.value)} placeholder={DEFAULT_CONTRACT} />
+                </Field>
+              </div>
 
-              {step === 1 && (<>
+              <h2 className="text-[12px] font-bold text-gray-500 mt-5 mb-3">{t('company.jobsnew.expSalH')}</h2>
 
               <Field label={t('company.jobsnew.expLabel')}>
                 <div className="text-[13px] font-semibold text-primary-600 tabular-nums">
@@ -471,64 +505,6 @@ export default function NewJobPage() {
                 <div className="text-xs text-gray-500 mt-1">{t('company.jobsnew.negotiableHint')}</div>
               )}
 
-              </>)}
-
-              {step === 2 && (<>
-              <Field label={t('company.jobsnew.respLabel')} required error={errField === 'responsibilities' ? err : undefined}>
-                <textarea value={form.responsibilities} onChange={e => setF('responsibilities', e.target.value)} rows={4}
-                  placeholder={t('company.jobsnew.respPh')}
-                  className={cn('flex w-full rounded-lg border bg-background px-3 py-2.5 text-sm font-medium leading-relaxed resize-y min-h-[110px] focus:outline-none focus:ring-2 focus:ring-offset-1',
-                    errField === 'responsibilities' ? 'border-red-400 focus:ring-red-300' : 'border-input focus:ring-ring')} />
-              </Field>
-
-              <Field label={t('company.jobsnew.reqLabel')} required error={errField === 'requirements' ? err : undefined}>
-                <textarea value={form.requirements} onChange={e => setF('requirements', e.target.value)} rows={4}
-                  placeholder={t('company.jobsnew.reqPh')}
-                  className={cn('flex w-full rounded-lg border bg-background px-3 py-2.5 text-sm font-medium leading-relaxed resize-y min-h-[110px] focus:outline-none focus:ring-2 focus:ring-offset-1',
-                    errField === 'requirements' ? 'border-red-400 focus:ring-red-300' : 'border-input focus:ring-ring')} />
-              </Field>
-
-              <Field label={t('company.jobsnew.prefLabel')}>
-                <textarea value={form.preferred} onChange={e => setF('preferred', e.target.value)} rows={3}
-                  placeholder={t('company.jobsnew.prefPh')}
-                  className="flex w-full rounded-lg border border-input bg-background px-3 py-2.5 text-sm font-medium leading-relaxed resize-y min-h-[80px] focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-1" />
-              </Field>
-
-              </>)}
-
-              {step === 3 && (<>
-              <Field label={t('company.jobsnew.descLabel')} required error={errField === 'description' ? err : undefined}>
-                <textarea value={form.description} onChange={e => setF('description', e.target.value)} rows={3}
-                  placeholder={t('company.jobsnew.descPh')}
-                  className={cn('flex w-full rounded-lg border bg-background px-3 py-2.5 text-sm font-medium leading-relaxed resize-y min-h-[84px] focus:outline-none focus:ring-2 focus:ring-offset-1',
-                    errField === 'description' ? 'border-red-400 focus:ring-red-300' : 'border-input focus:ring-ring')} />
-              </Field>
-
-              {/* 선택 필드 접기 — 근무조건·스킬·마감·사진은 없어도 게재 가능 */}
-              <button type="button" onClick={() => setShowMore(v => !v)}
-                className="mt-4 inline-flex items-center gap-1 text-[13px] font-bold text-gray-600 hover:text-gray-900 self-start">
-                <ChevronDown className={cn('w-4 h-4 transition-transform', showMore && 'rotate-180')} />
-                {t('company.jobsnew.moreH')}
-              </button>
-
-              {showMore && (<>
-              <h2 className="text-[12px] font-bold text-gray-500 mt-5 mb-1">{t('company.jobsnew.workH')}</h2>
-              <div className="text-xs text-gray-400 font-semibold mb-3">{t('company.jobsnew.workHint')}</div>
-              <div className="grid grid-cols-2 gap-3">
-                <Field label={t('company.jobsnew.workDays')}>
-                  <UInput value={form.work_days} onChange={e => setF('work_days', e.target.value)} placeholder={DEFAULT_WORK_DAYS} />
-                </Field>
-                <Field label={t('company.jobsnew.workHours')}>
-                  <UInput value={form.work_hours} onChange={e => setF('work_hours', e.target.value)} placeholder={DEFAULT_WORK_HOURS} />
-                </Field>
-                <Field label={t('company.jobsnew.paidLeave')}>
-                  <UInput value={form.paid_leave} onChange={e => setF('paid_leave', e.target.value)} placeholder={DEFAULT_PAID_LEAVE} />
-                </Field>
-                <Field label={t('company.jobsnew.contract')}>
-                  <UInput value={form.contract_type} onChange={e => setF('contract_type', e.target.value)} placeholder={DEFAULT_CONTRACT} />
-                </Field>
-              </div>
-
               <h2 className="text-[12px] font-bold text-gray-500 mt-5 mb-3">{t('company.jobsnew.skillH')}</h2>
 
               <Field label={t('company.jobsnew.tech')}>
@@ -549,61 +525,10 @@ export default function NewJobPage() {
                 </Field>
               </div>
 
-              <h2 className="text-[12px] font-bold text-gray-500 mt-5 mb-3">{t('company.jobsnew.photoH')}</h2>
-
-              <div className="grid grid-cols-2 gap-3 mb-3">
-                <Field label={t('company.jobsnew.imageLabel')}>
-                  {form.image_url ? (
-                    <div className="flex items-center gap-2.5 p-2.5 border border-border rounded-lg bg-white">
-                      <img src={form.image_url} alt="thumbnail" className="h-14 w-24 rounded-md object-cover" />
-                      <UButton type="button" variant="outline" size="sm" onClick={() => setF('image_url', '')} className="ml-auto h-7 px-2 text-xs text-red-600 border-red-200 hover:bg-red-50">{t('company.remove')}</UButton>
-                    </div>
-                  ) : (
-                    <UploadInput label={t('company.jobsnew.uploadBtn')} disabled={uploading} onFile={(f) => uploadImage(f, 'image_url')} />
-                  )}
-                </Field>
-                <Field label={t('company.jobsnew.logoLabel')}>
-                  {form.logo_url ? (
-                    <div className="flex items-center gap-2.5 p-2.5 border border-border rounded-lg bg-white">
-                      <img src={form.logo_url} alt="logo" className="h-10 w-10 rounded-md object-contain bg-gray-50" />
-                      <UButton type="button" variant="outline" size="sm" onClick={() => setF('logo_url', '')} className="ml-auto h-7 px-2 text-xs text-red-600 border-red-200 hover:bg-red-50">{t('company.remove')}</UButton>
-                    </div>
-                  ) : (
-                    <UploadInput label={t('company.jobsnew.uploadBtn')} disabled={uploading} onFile={(f) => uploadImage(f, 'logo_url')} />
-                  )}
-                </Field>
-              </div>
-              {uploading
-                ? <div className="text-xs text-primary-600 font-semibold mb-3">{t('company.uploading')}</div>
-                : (
-                  <div className="text-xs text-gray-400 font-semibold mb-5">
-                    {t('company.jobsnew.photoHint')}{' '}
-                    <Link href="/company/settings" className="text-primary-600 hover:underline">{t('company.jobsnew.profileHint')}</Link>
-                  </div>
-                )}
-              </>)}
-              </>)}
-
               {/* 필드에 귀속되지 않는 에러(API 실패 등)만 박스로 */}
               {err && !errField && (
                 <div className="rounded-lg bg-red-50 border border-red-200 px-3 py-2 text-sm text-red-700 font-semibold mt-4">{err}</div>
               )}
-
-              {/* 이전/다음 내비게이션 — 마지막 단계에서만 게재 버튼 */}
-              <div className="flex items-center justify-between mt-5">
-                {step > 0 ? (
-                  <UButton type="button" variant="outline" onClick={() => { setErr(''); setStep(s => s - 1); }}>
-                    {t('company.jobsnew.prev')}
-                  </UButton>
-                ) : <span />}
-                {step < 3 ? (
-                  <UButton type="button" onClick={goNext} disabled={!stepComplete(step)}>{t('company.jobsnew.next')}</UButton>
-                ) : (
-                  <UButton type="submit" disabled={status === 'saving' || !stepComplete(3)}>
-                    {status === 'saving' ? t('company.saving') : t('company.jobsnew.publish')}
-                  </UButton>
-                )}
-              </div>
             </div>
             </div>
 
