@@ -1,6 +1,6 @@
 import { createClient } from '@supabase/supabase-js'
 import { verifyAdminOrDevStub } from './check'
-import { parseResumeBuffer, preserveUserLanguage } from '../../../lib/parseResume'
+import { parseResumeBuffer, preserveUserEntered } from '../../../lib/parseResume'
 
 // /admin/korean-cv 백엔드 — 한국식 이력서 첨삭 요청 큐.
 //   GET               → 요청 목록(kcv_request events + user_profiles 조인, 발송 여부 포함)
@@ -86,7 +86,7 @@ export default async function handler(req, res) {
 
     if (action === 'parse') {
       const { data: profile, error } = await supabase
-        .from('user_profiles').select('id, resume_url, full_name').eq('id', userId).single()
+        .from('user_profiles').select('id, resume_url, full_name, english_cert, korean_cert, position, yoe_months').eq('id', userId).single()
       if (error || !profile?.resume_url) return res.status(404).json({ error: 'no resume' })
 
       const fileRes = await fetch(profile.resume_url)
@@ -100,8 +100,8 @@ export default async function handler(req, res) {
         return res.status(422).json({ error: e.message })
       }
       // 파싱 성공 시 인재풀 구조화 필드도 보강 (updated_at 미변경 — 지표 착시 방지)
-      // 어학은 사람이 넣은 값이 있으면 덮지 않는다(preserveUserLanguage 주석 참고).
-      await supabase.from('user_profiles').update(preserveUserLanguage(update, profile)).eq('id', userId)
+      // 사람이 직접 넣은 값(어학·희망직무·연차)은 덮지 않는다(preserveUserEntered 주석 참고).
+      await supabase.from('user_profiles').update(preserveUserEntered(update, profile)).eq('id', userId)
 
       const photo = buffer.subarray(0, 5).toString('latin1') === '%PDF-' ? extractPhotoFromPdf(buffer) : null
       return res.json({ profile: update, photo })
