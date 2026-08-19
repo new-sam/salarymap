@@ -845,6 +845,29 @@ const SALARY_B_I18N = {
   },
 }
 
+// C 프레임(salary-c, 8/19 재발송): B의 '보류'보다 강한 손실 — 1차 대기 리스트 등재→연봉 미확인으로
+// 최종 명단 탈락→숫자 하나면 다음 명단. 62% 수치는 기업 VOC 실측(유저 확정 8/19).
+const SALARY_C_I18N = {
+  vi: {
+    ...SALARY_I18N.vi,
+    p1: 'Gần đây, khi chọn ứng viên để gửi offer cho doanh nghiệp, người phụ trách đã đưa hồ sơ của bạn vào <b>danh sách chờ vòng 1</b>. Nhưng rất tiếc, hồ sơ của bạn <b>không được chọn vào danh sách cuối cùng</b>.<br><br>Lý do: <b>chưa xác nhận được mức lương hiện tại của bạn</b>.',
+    p2: 'Khi chưa biết mức lương, chúng tôi không thể xác định vị trí nào có điều kiện khiến bạn hài lòng, nên hồ sơ chưa xác nhận lương thường bị loại khỏi danh sách đề cử. Để không bỏ lỡ cơ hội tiếp theo, chỉ cần cho chúng tôi biết <b>lương tháng hiện tại (hoặc ở công việc gần nhất)</b> — một con số, không cần đăng nhập, 30 giây. <b>Hồ sơ đã xác nhận mức lương có tỷ lệ nhận offer cao hơn 62%.</b> Thông tin này <b>không hiển thị với công ty</b>.',
+    cta: 'Nhập mức lương để vào danh sách tiếp theo →',
+  },
+  ko: {
+    ...SALARY_I18N.ko,
+    p1: '최근 기업에 보낼 오퍼 후보를 추리면서 담당자가 회원님 프로필을 <b>1차 대기 리스트</b>에 올렸습니다. 그런데 아쉽게도 <b>최종 명단에는 선정되지 못했습니다</b>.<br><br>사유: <b>현재 연봉이 확인되지 않아서</b>입니다.',
+    p2: '연봉을 모르면 어떤 포지션이 회원님께 만족스러운 조건인지 판단할 수 없어, 연봉 미확인 프로필은 추천 명단에서 제외되는 경우가 많습니다. 다음 기회를 놓치지 않도록 <b>현재(또는 직전 직장) 월급</b> 숫자 하나만 알려주세요 — 로그인 없이 30초면 됩니다. <b>연봉이 확인된 프로필은 오퍼 확률이 62% 더 높습니다.</b> 이 정보는 <b>기업에 공개되지 않아요</b>.',
+    cta: '연봉 입력하고 다음 명단에 오르기 →',
+  },
+  en: {
+    ...SALARY_I18N.en,
+    p1: 'Recently, while shortlisting candidates for company offers, a manager put your profile on the <b>round-1 waiting list</b>. Unfortunately, your profile <b>was not selected for the final list</b>.<br><br>Reason: <b>we could not confirm your current salary</b>.',
+    p2: 'Without your salary we cannot tell which positions would truly satisfy you, so profiles with unconfirmed salary are often dropped from nomination lists. To not miss the next opportunity, just tell us <b>your monthly salary at your current (or most recent) job</b> — one number, no login, 30 seconds. <b>Profiles with a confirmed salary are 62% more likely to receive an offer.</b> This is <b>never shown to companies</b>.',
+    cta: 'Enter my salary to make the next list →',
+  },
+}
+
 const renderSalaryMail = (i18n) => (lang) => {
   const s = pickLang(i18n, lang)
   return `<!doctype html><html lang="vi"><head><meta charset="utf-8"></head>
@@ -864,6 +887,7 @@ const renderSalaryMail = (i18n) => (lang) => {
 }
 const salaryHtml = renderSalaryMail(SALARY_I18N)
 const salaryBHtml = renderSalaryMail(SALARY_B_I18N)
+const salaryCHtml = renderSalaryMail(SALARY_C_I18N)
 
 // ── KYNDOF·Collective 추천 (8/14, scripts/outreach/kyndof-recommend-coldmail.mjs) ──
 // 14개 공고(KYN4001~4014)를 9개 발송 그룹으로 통합(1인 1통 배정), gpt-4o-mini 채점 4점+(ops1만 3점+).
@@ -1041,6 +1065,17 @@ const REC0818_TEMPLATES = REC0818_GROUPS.flatMap((g) => ['public', 'private'].ma
 export const COLDMAIL_TEMPLATES = [
   ...REC0818_TEMPLATES,
   ...KYNDOF_TEMPLATES,
+  {
+    match: /^salary-c/,
+    subject: {
+      vi: 'Bạn chưa được chọn vào danh sách đề cử lần này — lý do: chưa xác nhận mức lương',
+      ko: '회원님이 이번 추천 명단에서 제외되었습니다 — 사유: 연봉 미확인',
+      en: 'You were not selected for this nomination list — reason: salary unconfirmed',
+    },
+    desc: '연봉수집 C 프레임(8/19 재발송 salary-c-0819): B의 \'보류\'보다 강한 손실 — "1차 대기 리스트에 올랐지만 연봉 미확인으로 최종 명단 탈락, 숫자 하나면 다음 명단" (photo 손실 프레임 유저 초안 이식). 62% 수치는 기업 VOC 실측(유저 확정). 대상=기발송 1,622 중 미기입·미수신거부·당일 미접촉(--resend --skip-today).',
+    source: 'scripts/outreach/salary-coldmail.mjs --resend --campaign salary-c-0819 --skip-today',
+    html: salaryCHtml,
+  },
   {
     match: /^salary-b/,
     subject: {

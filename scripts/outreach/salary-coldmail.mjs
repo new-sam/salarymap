@@ -13,19 +13,27 @@
 //   node scripts/outreach/salary-coldmail.mjs                          # dry-run: 대상 집계
 //   node scripts/outreach/salary-coldmail.mjs --send [--max N]         # 실발송 + coldmail_salary_sent 기록
 //   재발송/리마인드는 --campaign salary-a-MMDD 로 캠페인명 분리(-MMDD 표준).
+//   --resend      2차: 기발송자 중 미기입자에게 다른 프레임 재발송(1인1회 원칙의 의식적 예외 8/19,
+//                 이번 캠페인명 발송済는 제외라 재실행 안전. 프레임 겹침 방지로 salary-c* 캠페인명과 함께 쓸 것)
+//   --skip-today  오늘(로컬 자정 이후) 다른 캠페인 메일을 받은 사람 제외 — KTC 재발송 등 대량 발송일 중복 접촉 방지
 //
-// 프레임 A/B (8/13): 캠페인명이 salary-b* 면 B 프레임, 그 외는 A.
+// 프레임 A/B/C: 캠페인명이 salary-b* 면 B, salary-c* 면 C, 그 외는 A.
 //   A(salary-a, 구 salary1) = "추천 잘하려면 연봉 알려달라" 정중한 ask
 //   B(salary-b) = "추천 후보에 올랐는데 연봉 확인이 안 돼 보류 중 — 숫자 하나면 재개" 손실 프레임(photo1 구조)
+//   C(salary-c) = "1차 대기 리스트에 올랐지만 연봉 미확인으로 최종 명단 탈락" — B보다 강한 손실(이미 잃음)+복구 프레임.
+//                 62% 수치는 기업 VOC 실측(유저 확정 8/19).
 import { Resend } from 'resend'
 import { sb, env, fetchAll } from './lib.mjs'
 import { makeToken } from '../../lib/campaignToken.js'
+import { leadId } from '../../lib/ktcMailToken.js'
 
 const args = process.argv.slice(2)
 const flag = (k, d) => { const i = args.indexOf('--' + k); return i >= 0 ? (args[i + 1] && !args[i + 1].startsWith('--') ? args[i + 1] : true) : d }
 const testTo = flag('test', null)
 const doSend = args.includes('--send')
 const includeSubmitted = args.includes('--include-submitted')
+const resendMode = args.includes('--resend')
+const skipToday = args.includes('--skip-today')
 const maxN = flag('max', null) ? parseInt(flag('max'), 10) : null
 const CAMPAIGN = String(flag('campaign', 'salary-a'))
 const SITE = String(flag('site', env.NEXT_PUBLIC_SITE_URL || 'https://salary-fyi.com')).replace(/\/$/, '')
@@ -75,7 +83,26 @@ const COPY_B = {
   cta: { vi: 'Nhập mức lương để tiếp tục xem xét →', ko: '연봉 입력하고 검토 재개하기 →' },
 }
 
-const COPY = /^salary-b/.test(CAMPAIGN) ? COPY_B : COPY_A
+// C 프레임 — photo 손실 프레임 이식(유저 초안 8/19): 1차 대기 리스트 등재(기회) + 연봉 미확인으로
+// 최종 명단 탈락(이미 잃음) + 숫자 하나면 다음 명단(복구). "연봉을 몰라 판단이 애매하다"는 실제 운영 사실.
+const COPY_C = {
+  ...COPY_A,
+  subject: {
+    vi: 'Bạn chưa được chọn vào danh sách đề cử lần này — lý do: chưa xác nhận mức lương',
+    ko: '회원님이 이번 추천 명단에서 제외되었습니다 — 사유: 연봉 미확인',
+  },
+  p1: {
+    vi: 'Gần đây, khi chọn ứng viên để gửi offer cho doanh nghiệp, người phụ trách đã đưa hồ sơ của bạn vào <b>danh sách chờ vòng 1</b>. Nhưng rất tiếc, hồ sơ của bạn <b>không được chọn vào danh sách cuối cùng</b>.<br><br>Lý do: <b>chưa xác nhận được mức lương hiện tại của bạn</b>.',
+    ko: '최근 기업에 보낼 오퍼 후보를 추리면서 담당자가 회원님 프로필을 <b>1차 대기 리스트</b>에 올렸습니다. 그런데 아쉽게도 <b>최종 명단에는 선정되지 못했습니다</b>.<br><br>사유: <b>현재 연봉이 확인되지 않아서</b>입니다.',
+  },
+  p2: {
+    vi: 'Khi chưa biết mức lương, chúng tôi không thể xác định vị trí nào có điều kiện khiến bạn hài lòng, nên hồ sơ chưa xác nhận lương thường bị loại khỏi danh sách đề cử. Để không bỏ lỡ cơ hội tiếp theo, chỉ cần cho chúng tôi biết <b>lương tháng hiện tại (hoặc ở công việc gần nhất)</b> — một con số, không cần đăng nhập, 30 giây. <b>Hồ sơ đã xác nhận mức lương có tỷ lệ nhận offer cao hơn 62%.</b> Thông tin này <b>không hiển thị với công ty</b>.',
+    ko: '연봉을 모르면 어떤 포지션이 회원님께 만족스러운 조건인지 판단할 수 없어, 연봉 미확인 프로필은 추천 명단에서 제외되는 경우가 많습니다. 다음 기회를 놓치지 않도록 <b>현재(또는 직전 직장) 월급</b> 숫자 하나만 알려주세요 — 로그인 없이 30초면 됩니다. <b>연봉이 확인된 프로필은 오퍼 확률이 62% 더 높습니다.</b> 이 정보는 <b>기업에 공개되지 않아요</b>.',
+  },
+  cta: { vi: 'Nhập mức lương để vào danh sách tiếp theo →', ko: '연봉 입력하고 다음 명단에 오르기 →' },
+}
+
+const COPY = /^salary-c/.test(CAMPAIGN) ? COPY_C : /^salary-b/.test(CAMPAIGN) ? COPY_B : COPY_A
 
 function emailHtml(name, url, unsubUrl, lang) {
   const L = (o) => o[lang] || o.vi
@@ -144,28 +171,51 @@ async function main() {
   try { pool = await selectPool('id,email,full_name,yoe_months,current_salary') }
   catch { pool = (await selectPool('id,email,full_name,yoe_months')).map((p) => ({ ...p, current_salary: null })) }
 
-  const [subs, unsubs, sents] = await Promise.all([
+  const [subs, unsubs, sents, fills] = await Promise.all([
     fetchAll(() => sb.from('submissions').select('user_id').not('user_id', 'is', null).order('created_at', { ascending: false })),
     fetchAll(() => sb.from('events').select('user_id').eq('event', 'coldmail_unsub').not('user_id', 'is', null).order('id')),
-    fetchAll(() => sb.from('events').select('user_id').eq('event', 'coldmail_salary_sent').not('user_id', 'is', null).order('id')),
+    fetchAll(() => sb.from('events').select('user_id, meta').eq('event', 'coldmail_salary_sent').not('user_id', 'is', null).order('id')),
+    fetchAll(() => sb.from('events').select('user_id').eq('event', 'coldmail_salary_fill').not('user_id', 'is', null).order('id')),
   ])
   const subSet = new Set(subs.map((r) => r.user_id))
   const unsubSet = new Set(unsubs.map((r) => r.user_id))
   const sentSet = new Set(sents.map((r) => r.user_id)) // 연봉 계열 전체 — 1인 1회
+  const sentThis = new Set(sents.filter((r) => r.meta?.campaign === CAMPAIGN).map((r) => r.user_id)) // 재실행 dedup
+  const fillSet = new Set(fills.map((r) => r.user_id))
+
+  // 오늘 접촉자(모든 캠페인) — 회원 발송은 user_id, KTC 계열 비회원 발송은 lead 해시로 대조
+  const todayUserIds = new Set(), todayLeads = new Set()
+  if (skipToday) {
+    const dayStart = new Date(); dayStart.setHours(0, 0, 0, 0)
+    const todayEvts = await fetchAll(() => sb.from('events').select('user_id, meta')
+      .gte('created_at', dayStart.toISOString()).like('event', '%sent%').order('id'))
+    for (const e of todayEvts) {
+      if (e.user_id) todayUserIds.add(e.user_id)
+      if (e.meta?.lead) todayLeads.add(e.meta.lead)
+    }
+  }
+
   const seen = new Set()
   const cohort = pool.filter((p) => {
     if (!p.email || /likelion/i.test(p.email)) return false
     if ((p.yoe_months ?? 0) < 1) return false
     if (p.current_salary) return false
-    if (unsubSet.has(p.id) || sentSet.has(p.id)) return false
+    if (unsubSet.has(p.id)) return false
+    if (resendMode) {
+      // 2차 = 기발송 ∧ 미기입(랜딩 fill 없음 — current_salary 기입자는 위에서 이미 제외) ∧ 이번 캠페인 미발송
+      if (!sentSet.has(p.id) || fillSet.has(p.id) || sentThis.has(p.id)) return false
+    } else if (sentSet.has(p.id)) return false
     if (!includeSubmitted && subSet.has(p.id)) return false
+    if (skipToday && (todayUserIds.has(p.id) || todayLeads.has(leadId(p.email.toLowerCase())))) return false
     const e = p.email.toLowerCase()
     if (seen.has(e)) return false
     seen.add(e)
     return true
   })
 
-  console.log(`대상 ${cohort.length}명 (이력서 보유 ${pool.length} 중 경력 1개월+ · likelion/수신거부 ${unsubSet.size}/기발송 ${sentSet.size}/기입자/제출연결${includeSubmitted ? '(포함)' : ''} 제외) · 캠페인 ${CAMPAIGN}`)
+  console.log(resendMode
+    ? `대상 ${cohort.length}명 (기발송 ${sentSet.size} 중 미기입·미수신거부${skipToday ? '·오늘 미접촉' : ''}, 이번 캠페인済 ${sentThis.size} 제외) · 캠페인 ${CAMPAIGN}`
+    : `대상 ${cohort.length}명 (이력서 보유 ${pool.length} 중 경력 1개월+ · likelion/수신거부 ${unsubSet.size}/기발송 ${sentSet.size}/기입자/제출연결${includeSubmitted ? '(포함)' : ''}${skipToday ? '/오늘 접촉' : ''} 제외) · 캠페인 ${CAMPAIGN}`)
   if (!doSend) {
     for (const p of cohort.slice(0, 20)) console.log(`  ${p.full_name || '(이름없음)'} <${p.email}> · yoe ${p.yoe_months}m`)
     if (cohort.length > 20) console.log(`  … 외 ${cohort.length - 20}명`)
