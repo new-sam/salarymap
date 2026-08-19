@@ -9,6 +9,7 @@
 //   node scripts/outreach/ktc-claim-coldmail.mjs --test a@x.com --lang ko # 한국어판 문구 검토
 //   node scripts/outreach/ktc-claim-coldmail.mjs --max 200 --send
 //   node scripts/outreach/ktc-claim-coldmail.mjs --remind --send        # 24h+ 미클릭 리마인드
+//   node scripts/outreach/ktc-claim-coldmail.mjs --reblast --send --max 1600  # 8/19 전량 재발송(원본 카피)
 //   옵션: --max N(이번에 보낼 인원) · --campaign coldmail-ktc-cv · --lang ko|vi(기본 vi)
 //        --parsed-only(사전 파싱 성공자만 — 리치 카드 랜딩이 보장되는 리드로 한정)
 //        --remind(coldmail-ktc-cv 수신 24h+ & 미클릭 & 미가입에게 "받아간 사람들은 평균 오퍼 2.1건" 훅 재발송,
@@ -40,7 +41,8 @@ const revive = args.includes('--revive') // 구 앵글(coldmail-ktc/-2/-3) 무�
 const remind = args.includes('--remind') // coldmail-ktc-cv 수신 24h+ 미클릭 리마인드 — 클릭은 24h 내 100% 들어오는 실측이라 24h 지나면 리스트가 확정된다
 const clicked1 = args.includes('--clicked') // 클릭했는데 미가입 후속 — 랜딩까지 왔다 로그인 직전에 멈춘 사람. remind 는 클릭자를 제외해 이 층은 후속을 못 받았다
 const remind2 = args.includes('--remind2') // CV 계열 수신자 전체 무반응(미가입) 재발송 — 8/10 인재풀 2,000 D-day 마지막 푸시. 클릭 여부 안 가르고, 계열 3회+ 접촉자만 피로 제외
-const campaign = flag('campaign', clicked1 ? 'coldmail-ktc-cv-clicked1' : remind2 ? 'coldmail-ktc-cv-remind2-0810' : remind ? 'coldmail-ktc-cv-remind1' : revive ? 'coldmail-ktc-cv-revive' : 'coldmail-ktc-cv')
+const reblast = args.includes('--reblast') // 8/19 휴지기 후 전량 재발송 — 미가입·미수신거부 전원(접촉횟수 안 가림, 신규 89명 포함). 원본 제목/본문 그대로, 중복 방지는 이번 캠페인명 발송済만 제외(재실행 안전)
+const campaign = flag('campaign', reblast ? 'coldmail-ktc-cv-0819' : clicked1 ? 'coldmail-ktc-cv-clicked1' : remind2 ? 'coldmail-ktc-cv-remind2-0810' : remind ? 'coldmail-ktc-cv-remind1' : revive ? 'coldmail-ktc-cv-revive' : 'coldmail-ktc-cv')
 const parsedOnly = args.includes('--parsed-only')
 const max = parseInt(flag('max', doSend ? '200' : '0')) || 0
 
@@ -317,7 +319,7 @@ async function mxOk(domains) {
   const members = new Set(profs.map(p => p.email.trim().toLowerCase()))
   // 이미 보낸 사람(coldmail-ktc* 계열 전체) / 수신거부 제외 — events 가 발송 원장(재실행 idempotent).
   const evts = await fetchAll(sb, () => sb.from('events').select('event, meta, created_at').in('event', ['coldmail_public_sent', 'coldmail_unsub', 'coldmail_public_click']))
-  const sentRe = revive ? /^coldmail-ktc-cv/ : /^coldmail-ktc/
+  const sentRe = reblast ? new RegExp(`^${campaign}$`) : revive ? /^coldmail-ktc-cv/ : /^coldmail-ktc/
   const sentLeads = new Set(evts.filter(e => e.event === 'coldmail_public_sent' && sentRe.test(e.meta?.campaign || '') && e.meta?.lead).map(e => e.meta.lead))
   const unsubLeads = new Set(evts.filter(e => e.event === 'coldmail_unsub' && e.meta?.lead).map(e => e.meta.lead))
 
