@@ -1229,9 +1229,32 @@ export const COLDMAIL_TEMPLATES = [
     }),
   },
   {
+    match: /^mpnx-.*-private/,
+    subject: {
+      vi: '[FYI] Bạn được chọn vào danh sách đề cử — Senior Technical IP Analyst tại MPNX',
+      ko: '[FYI] 추천 후보 명단에 선정되셨습니다 — MPNX Senior Technical IP Analyst',
+      en: "[FYI] You've been nominated — Senior Technical IP Analyst at MPNX",
+    },
+    desc: 'MPNX 2차 (8/20): 비공개 프로필용 "FYI 검토 후 선정" 정직 프레임 — 지원 시 CV가 FYI 추천과 함께 전달.',
+    source: 'scripts/outreach/mpnx-recommend-coldmail.mjs',
+    html: (lang) => recommendShell(lang, {
+      intro: {
+        vi: 'Đội ngũ FYI đã xem xét toàn bộ hồ sơ đã đăng ký và <b>chọn bạn vào danh sách đề cử</b> cho vị trí này tại <b>MPNX</b> — công ty chuyên về thương mại hóa tài sản trí tuệ và cấp phép công nghệ (patent licensing) trên thị trường quốc tế.',
+        ko: 'FYI 팀이 등록된 이력서 전체를 검토해 국제 특허 라이선싱 기업 <b>MPNX</b>의 이 포지션 <b>추천 명단에 선정</b>했습니다.',
+        en: 'The FYI team reviewed all registered profiles and <b>nominated you</b> for this position at <b>MPNX</b>, an international patent licensing company.',
+      },
+      initial: 'M', company: 'MPNX', title: '{{공고 제목}}', meta: '{{직군 · 지역}}',
+      tail: {
+        vi: 'Hồ sơ của bạn đang ở chế độ riêng tư — nếu bạn ứng tuyển ngay, CV của bạn sẽ được gửi kèm lời giới thiệu từ FYI và được <b>ưu tiên xem xét</b>.',
+        ko: '이력서가 비공개 상태라, 지금 지원하시면 CV가 FYI의 추천과 함께 전달되어 <b>우선 검토</b>됩니다.',
+        en: "Your profile is private — apply now and your CV will be sent with FYI's recommendation for <b>priority review</b>.",
+      },
+    }),
+  },
+  {
     match: /^mpnx-/,
     subject: invitedSubject('MPNX'),
-    desc: 'MPNX 단일공고 추천 (7/29): NALDA와 같은 "담당자가 봤다 · 우선검토" 공개 프레임.',
+    desc: 'MPNX 단일공고 추천 (7/29 공개 프레임 · 8/20 2차 재사용): NALDA와 같은 "담당자가 봤다 · 우선검토" 톤.',
     source: 'scripts/outreach/mpnx-recommend-coldmail.mjs',
     html: (lang) => recommendShell(lang, {
       intro: {
