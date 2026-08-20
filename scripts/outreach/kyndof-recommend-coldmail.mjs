@@ -28,6 +28,23 @@ const minOverride = flag('min', null) ? parseInt(flag('min'), 10) : null
 const WAVE = flag('wave', null) ? parseInt(flag('wave'), 10) : 1
 // --skip KYN4002,KYN4010 — 이미 지원 충족(10+)된 공고 코드 제외(그룹의 나머지 코드만 발송)
 const SKIP = new Set(String(flag('skip', '') || '').split(',').map((s) => s.trim()).filter(Boolean))
+// --english (웨이브3, 8/20 유저 결정): JD 언어 우대 대응 — 영어 업무소통 가능자(중급+)만 발송
+const ENGLISH = args.includes('--english')
+// english_cert 자유기입 판독 — 중급+ 하한: Intermediate/B1·B2·C1·C2/IELTS 5.0+/TOEIC 600+/Fluent 등
+const englishOk = (c) => {
+  const s = String(c || '').toLowerCase()
+  if (!s) return false
+  if (/pre[- ]?intermediate|elementary|beginner|basic|\ba[12]\b/.test(s)) return false
+  if (/fluent|native|advanced|professional|business|upper|intermediate|bilingual|working proficiency|good command|thành thạo|\b[bc][12]\b/.test(s)) return true
+  if (/vstep/.test(s) && /[345]/.test(s)) return true // VSTEP 3=B1, 4=B2, 5=C1
+  const ielts = s.match(/(\d+(?:\.\d+)?)\s*ielts|ielts[^0-9]{0,25}(\d+(?:\.\d+)?)/)
+  if (ielts) return parseFloat(ielts[1] ?? ielts[2]) >= 5
+  const toefl = s.match(/toefl[^0-9]{0,15}(\d+)/)
+  if (toefl) return parseInt(toefl[1], 10) >= 500
+  const toeic = s.match(/toeic[^0-9]{0,15}(\d+)/)
+  if (toeic) return parseInt(toeic[1], 10) >= 600
+  return false
+}
 const SITE = String(flag('site', env.NEXT_PUBLIC_SITE_URL || 'https://salary-fyi.com')).replace(/\/$/, '')
 const RESEND_FROM = env.RESEND_FROM || 'FYI <hello@salary-fyi.com>'
 const CACHE_FILE = new URL('../../data/kyndof-coldmail-scores.json', import.meta.url)
@@ -220,7 +237,7 @@ async function main() {
   // ── 풀 로드 + 프리필터 재구성(채점 캐시 키와 동일 기준) ──
   const [pool, unsubs, recs, apps, todays] = await Promise.all([
     fetchAll(() => sb.from('user_profiles')
-      .select('id,email,full_name,position,headline,skills,desired_roles,yoe_months,experiences,is_resume_public,korean_cert')
+      .select('id,email,full_name,position,headline,skills,desired_roles,yoe_months,experiences,is_resume_public,korean_cert,english_cert')
       .not('email', 'is', null).not('resume_url', 'is', null)
       .order('created_at', { ascending: false })),
     fetchAll(() => sb.from('events').select('user_id').eq('event', 'coldmail_unsub').not('user_id', 'is', null).order('id')),
@@ -235,7 +252,8 @@ async function main() {
   const unsubSet = new Set(unsubs.map((r) => r.user_id))
   const recUserByJob = {}
   for (const r of recs) (recUserByJob[r.job_id] ||= new Set()).add(r.user_id)
-  const recEmails = new Set(recs.map((r) => (r.to_email || '').toLowerCase()).filter(Boolean))
+  // 8/20 유저 정정: 규칙은 1일 1통(todays)이지 1인 1통 영구 제외가 아님 — 타 공고 기수신자도 재추천 허용.
+  // 같은 공고 재추천은 recUserByJob(공고별 dedup)이 계속 막는다.
   const appliedByJob = {}
   for (const a of apps) (appliedByJob[a.job_id] ||= new Set()).add(a.user_id)
 
@@ -243,8 +261,9 @@ async function main() {
   const cohort = pool.filter((p) => {
     if (!p.email || /likelion/i.test(p.email)) return false
     if (unsubSet.has(p.id)) return false
+    if (ENGLISH && !englishOk(p.english_cert)) return false
     const e = p.email.toLowerCase()
-    if (seen.has(e) || recEmails.has(e)) return false
+    if (seen.has(e)) return false
     if (todayUsers.has(p.id) || todayEmails.has(e)) return false
     seen.add(e)
     return true
