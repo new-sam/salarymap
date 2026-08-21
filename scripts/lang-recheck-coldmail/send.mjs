@@ -40,10 +40,16 @@ const RESEND_FROM = process.env.RESEND_FROM || 'FYI <hello@salary-fyi.com>'
 const sb = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY)
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
 
+/* range() 로 1000 행씩 끊어 읽을 때 정렬이 없으면 페이지마다 순서가 달라진다 —
+   같은 행이 두 번 나오거나 아예 빠진다. 실제로 '재확인 기수신'이 같은 명령에서
+   0명 / 100명 을 오갔다. 0 으로 잡힌 회차에 발송했으면 5 차 수신자 100명에게
+   그대로 다시 나갔을 것이다.
+   id 는 유니크라 페이지 경계에서 동률이 없다 — created_at 정렬로는 같은 초에
+   여러 행이 있을 때 여전히 흔들린다. */
 async function all(table, cols, tweak) {
   let out = [], from = 0
   for (;;) {
-    let q = sb.from(table).select(cols).range(from, from + 999)
+    let q = sb.from(table).select(cols).order('id').range(from, from + 999)
     if (tweak) q = tweak(q)
     const { data, error } = await q
     if (error) throw error
