@@ -41,16 +41,19 @@ const familyOf = (campaign) =>
   /^coldmail-ktc-lang/.test(campaign) ? 'ktc'
     : /^coldmail-lang-resume/.test(campaign) ? 'resume'
       : /^coldmail-lang-ghost/.test(campaign) ? 'ghost'
-        : /^coldmail-lang-recheck/.test(campaign) ? 'recheck'
-          : /^coldmail-lang-nocert/.test(campaign) ? 'nocert'
-            : /^coldmail-language/.test(campaign) ? 'language'
-              : 'other'
+        : /^coldmail-lang-exam/.test(campaign) ? 'exam'
+          : /^coldmail-lang-recheck/.test(campaign) ? 'recheck'
+            : /^coldmail-lang-nocert/.test(campaign) ? 'nocert'
+              : /^coldmail-language/.test(campaign) ? 'language'
+                : 'other'
 
 /* 들어온 값이 어떤 종류인지 — 이 캠페인의 원래 목적이 "자기서술 52% 를 자격증·점수로
    바꾸기"라, 전환율만큼이나 값의 생김새가 결론을 좌우한다. 전환 10% 를 넘겨도 전부
    자기서술이면 지금과 같은 데이터가 늘어난 것뿐이다.
    판정 기준은 LanguageCard 의 splitCert 와 같아야 한다 — 다르면 화면과 표가 어긋난다. */
-const CERTS = ['TOEIC', 'IELTS', 'TOEFL', 'VSTEP', 'APTIS', 'TOPIK']
+// CEFR 은 시험이 아니라 척도지만 langTier 가 급수를 매기는 값이라 여기서도 점수로 센다.
+// 빠뜨리면 CEFR 로 저장된 값이 '미지의 자격증'으로 떨어져 회수 실적이 0 으로 보인다.
+const CERTS = ['TOEIC', 'IELTS', 'TOEFL', 'VSTEP', 'APTIS', 'TOPIK', 'CEFR']
 const LEVELS = ['Native', 'Fluent', 'Business', 'Intermediate', 'Basic', 'C2', 'C1', 'B2', 'B1', 'A2', 'A1']
 /* 베트남어 수준 표현 — 이게 없으면 'Co ban'(기초)·'Giao tiep'(회화) 같은 값이 전부
    '기타'로 떨어져, 실제로는 자기서술인데 "우리가 못 읽는 값"처럼 보인다.
@@ -118,6 +121,24 @@ export default async function handler(req, res) {
       .in('event', EVENTS)
       .order('created_at').order('id'))
 
+    /* 응답 원본(append-only). 계측이 바뀌기 전 회차를 여기서 읽는다.
+
+       '점수 갱신'은 fill 이벤트의 meta.saved 로, '그대로 확인'은 coldmail_lang_same
+       이벤트로 센다. 둘 다 2026-08-21 에 붙인 계측이라 5차(8/19)에는 한 줄도 없다.
+       그렇다고 0 으로 두면 "안 됐다"로 읽히는데, 실제로는 자격증 5건·그대로 11건이
+       들어왔다. 그때 값이 이 표에 그대로 남아 있으므로 회차별로 여기서 채운다.
+       events 와 큰 쪽을 쓴다 — 6차부터는 이벤트가 더 정확하고(응답 로그 insert 가
+       실패해도 이벤트는 남는다), 5차는 이쪽에만 있다. */
+    const legacy = {}
+    const isCertText = (v) => CERTS.some((c) => new RegExp(`^${c}\\b`, 'i').test(String(v || '').trim()))
+    for (const r of await fetchAll(() => supabase.from('coldmail_lang_responses')
+      .select('user_id, campaign, cta, english_cert, korean_cert').order('id'))) {
+      if (!r.user_id || !r.campaign) continue
+      const g = legacy[r.campaign] = legacy[r.campaign] || { scored: new Set(), same: new Set() }
+      if (isCertText(r.english_cert) || isCertText(r.korean_cert)) g.scored.add(r.user_id)
+      if (r.cta === 'same') g.same.add(r.user_id)
+    }
+
     /* wave — 같은 캠페인 ID 를 쓰되 모집단이 다른 코호트.
          wave 1 = 콜드메일을 한 번도 안 받은 사람 200명
          wave 2 = 이미 다른 콜드메일을 받은 적 있는 사람 260명
@@ -139,7 +160,11 @@ export default async function handler(req, res) {
       campaign: name,
       sent: new Set(), click: new Set(), fill: new Set(), same: new Set(),
       // same = 재확인 회차의 '그대로입니다' 버튼. 다른 회차엔 없어 항상 0 이다.
-      cta: { score: new Set(), daily: new Set(), basic: new Set(), none: new Set(), same: new Set() },
+      cta: {
+        score: new Set(), daily: new Set(), basic: new Set(), none: new Set(), same: new Set(),
+        // 6차('어느 시험이었나요') — vstep·aptis 는 원탭 확정, exam 은 폼, self 는 이탈구.
+        vstep: new Set(), aptis: new Set(), exam: new Set(), self: new Set(),
+      },
       view: new Set(),
       // 저장된 값이 실제 자격증 형태였는지. 저장(fill)만 세면 cta=score 를 눌러놓고
       // "Basic" 을 저장한 사람까지 점수 갱신으로 잡힌다 — 1 차에서 실제로 나왔다.
@@ -179,15 +204,19 @@ export default async function handler(req, res) {
         viewed: a.view.size,
         filled: a.fill.size,
         // 재확인 회차의 결론. filled 와 달리 자격증 형태로 들어온 것만 센다.
-        // meta.saved 는 2026-08-21 부터 실린다 — 그 이전 fill 은 여기서 0 으로 잡힌다.
-        scored: a.fillCert.size,
-        same: a.same.size,
+        // meta.saved 는 2026-08-21 부터 실린다 — 그 이전 회차는 응답 원본에서 채운다.
+        scored: Math.max(a.fillCert.size, legacy[a.campaign]?.scored.size || 0),
+        same: Math.max(a.same.size, legacy[a.campaign]?.same.size || 0),
         clickRate: a.sent.size ? a.click.size / a.sent.size : 0,
-        sameRate: a.sent.size ? a.same.size / a.sent.size : 0,
+        sameRate: a.sent.size ? Math.max(a.same.size, legacy[a.campaign]?.same.size || 0) / a.sent.size : 0,
         fillRate: a.sent.size ? a.fill.size / a.sent.size : 0,
         clickToFill: a.click.size ? a.fill.size / a.click.size : 0,
-        cta: { score: a.cta.score.size, daily: a.cta.daily.size, basic: a.cta.basic.size, none: a.cta.none.size, same: a.cta.same.size },
-        scoreRate: a.sent.size ? a.fillCert.size / a.sent.size : 0,
+        cta: {
+          score: a.cta.score.size, daily: a.cta.daily.size, basic: a.cta.basic.size,
+          none: a.cta.none.size, same: a.cta.same.size,
+          vstep: a.cta.vstep.size, aptis: a.cta.aptis.size, exam: a.cta.exam.size, self: a.cta.self.size,
+        },
+        scoredRate: a.sent.size ? Math.max(a.fillCert.size, legacy[a.campaign]?.scored.size || 0) / a.sent.size : 0,
         firstSentAt: a.firstSentAt,
         lastSentAt: a.lastSentAt,
       }))
@@ -291,7 +320,7 @@ export default async function handler(req, res) {
         kinds: tally(wFills),
         /* 버튼 → 저장값 매핑. "Intermediate 7건"이 자기서술로 읽히면 안 되므로, 버튼별로
            프리셀렉트를 그대로 둔 사람과 직접 고친 사람을 나눠 센다. */
-        mapping: ['score', 'daily', 'basic', 'none'].map((c) => {
+        mapping: ['score', 'daily', 'basic', 'none', 'vstep', 'aptis', 'exam', 'self'].map((c) => {
           const g = wFills.filter((f) => f.cta === c)
           return {
             cta: c,

@@ -47,6 +47,14 @@ const TODAY_ARMS = [
 
 const pct = (v) => `${(v * 100).toFixed(1)}%`
 
+/* 재확인 회차 — 카드 안에 바로 편다. '자세히 보기'를 눌러야 보이면 회차 비교가
+   한 화면에서 안 된다. 이 카드의 질문이 "카피를 바꿔서 나아졌나"라 R5·R6 를 세로로
+   붙여 두는 것 자체가 답이다. */
+const RECHECK_ARMS = [
+  { campaign: 'coldmail-lang-recheck-1', ko: '5차 · 부탁 프레임', en: '5th · request framing', vi: 'Đợt 5' },
+  { campaign: 'coldmail-lang-recheck-2', ko: '6차 · 손실 프레임', en: '6th · loss framing', vi: 'Đợt 6' },
+]
+
 /* 발송일 — 회차를 며칠에 걸쳐 나눠 보내므로, 제목에 날짜가 없으면 지금 보고 있는 숫자가
    어느 회차 것인지 알 수 없다. 발송 스크립트가 베트남 시간으로 도니 표시도 ICT 기준.
    조각을 직접 꺼내 붙인다 — 연도를 뺀 포맷은 로케일마다 자리 순서가 달라(sv-SE 는 일-월)
@@ -223,6 +231,7 @@ export default function LangColdmailCards({ token, lang }) {
             { label: L('그대로 확인', 'Confirmed', 'Xác nhận'), value: recheck?.totals?.same ?? 0,
               sub: recheck?.totals?.sent ? pct(recheck.totals.same / recheck.totals.sent) : null, accent: '#7C3AED' },
           ]}
+          body={<RecheckArms group={recheck} L={L} />}
           footer={recheck ? null : L('아직 발송 전 — coldmail-lang-recheck-* 가 나가면 채워집니다',
                                      'Not sent yet', 'Chưa gửi')}
           open={detailRecheck}
@@ -323,6 +332,44 @@ const FAMILY_LABEL = (f, L) => (
 /* 4차 갈래별 줄 — 발송 전에는 각 갈래의 대상 수를, 발송 뒤에는 같은 자리에 발송·입력을
    그린다. 대상 수는 어학이 채워지는 만큼 줄어들므로(=우리가 받아낸 만큼) 보내고 난
    뒤에도 남은 모수로 계속 읽힌다. */
+function RecheckArms({ group, L }) {
+  const rowOf = (campaign) => group?.rows?.find((r) => r.campaign === campaign)
+  return (
+    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 11.5, marginTop: 10 }}>
+      <tbody>
+        {RECHECK_ARMS.map((a) => {
+          const r = rowOf(a.campaign)
+          const m = ARM_META[a.campaign]
+          return (
+            <tr key={a.campaign} style={{ borderTop: '1px solid #F2F4F6' }}>
+              <td style={{ padding: '5px 0', color: '#4E5968' }}>
+                <span style={{ color: m.color, fontWeight: 700, marginRight: 5 }}>{m.tag}</span>
+                {L(a.ko, a.en, a.vi)}
+              </td>
+              {/* 발송 → 점수 갱신 · 그대로. 두 결과를 한 줄에 둬야 "무엇이 늘었나"가 읽힌다. */}
+              <td style={{ padding: '5px 0', textAlign: 'right', whiteSpace: 'nowrap' }}>
+                {r ? (
+                  <>
+                    <span style={{ color: '#8B95A1' }}>{r.sent}</span>
+                    <span style={{ color: '#D1D6DB', margin: '0 4px' }}>→</span>
+                    <span style={{ fontWeight: 700, color: '#16a34a' }}>{r.scored}</span>
+                    {!!r.sent && <span style={{ color: '#8B95A1', marginLeft: 4 }}>{pct(r.scoredRate || 0)}</span>}
+                    <span style={{ color: '#D1D6DB', margin: '0 6px' }}>|</span>
+                    <span style={{ fontWeight: 700, color: '#7C3AED' }}>{r.same}</span>
+                    <span style={{ color: '#B0B8C1', marginLeft: 3 }}>{L('그대로', 'same', 'giữ')}</span>
+                  </>
+                ) : (
+                  <span style={{ color: '#B0B8C1' }}>{L('발송 전', 'not sent', 'chưa gửi')}</span>
+                )}
+              </td>
+            </tr>
+          )
+        })}
+      </tbody>
+    </table>
+  )
+}
+
 function TodayArms({ pool, group, L }) {
   if (!pool) return null
   const rowOf = (campaign) => group?.rows?.find((r) => r.campaign === campaign)
