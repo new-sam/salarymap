@@ -289,6 +289,13 @@ export default function CvLanding() {
       doUpload(f)
       return
     }
+    /* 로그인한 사람은 파일을 고르는 순간 등록된다. 로그인이 끝난 사람에게 남은 건
+       업로드뿐인데 그걸 'STEP 2' 칸에 버튼으로 세워 두면 단계가 하나 헛돈다 —
+       화면은 두 단계를 요구하지만 실제로 할 일은 파일 고르기 하나다. */
+    if (user) {
+      doUpload(f)
+      return
+    }
     // If the file picker was opened via a sign-in CTA, auto-progress to OAuth
     const pending = oauthAfterPick.current
     if (pending && !user) {
@@ -747,7 +754,8 @@ export default function CvLanding() {
             ) : (
               <div className="cv-card">
                 <h3 className="cv-card-h">{t('cv.form.card.headingPrefix')}<em>{t('cv.form.card.headingAction')}</em></h3>
-                <p className="cv-card-sub">{t('cv.form.card.sub')}</p>
+                {/* 로그인한 사람에게 남은 단계는 첨부 하나뿐이라 '두 단계'가 거짓이 된다. */}
+                <p className="cv-card-sub">{t(user ? 'cv.form.card.subAuthed' : 'cv.form.card.sub')}</p>
 
                 {pendingHint && (
                   <div className="cv-ai-bubble">
@@ -798,23 +806,26 @@ export default function CvLanding() {
 
                 </div>
 
-                {/* ─── STEP 2: 회원가입 (미인증) 또는 등록 (인증) ─── */}
-                <div className={`cv-stepblock ${!file ? 'inactive' : ''}`}>
+                {/* ─── STEP 2: 로그인 ───
+                    로그인한 사람에게는 이미 끝난 칸이다. 칸을 지우면 STEP 1 만 홀로
+                    남아 '두 단계'라던 안내와 어긋나므로, 지우지 않고 완료로 접는다.
+                    라벨도 '이력서 등록'이 아니라 '로그인 완료'다 — 체크가 붙은 칸에
+                    아직 안 한 일(등록)의 이름을 달아 두면 이미 등록된 줄 알게 된다. */}
+                <div className={`cv-stepblock ${user ? 'done' : ''} ${!user && !file ? 'inactive' : ''}`}>
                   <div className="cv-stepblock-label">
-                    <span className="cv-stepblock-num">2</span>
-                    {user ? t('cv.form.step2LabelRegister') : t('cv.form.step2LabelSignup')}
+                    <span className="cv-stepblock-num">{user ? <IconCheck /> : 2}</span>
+                    {user ? t('cv.form.step2LabelAuthed') : t('cv.form.step2LabelSignup')}
                   </div>
 
                   {errMsg && <div className="cv-err">{errMsg}</div>}
 
-                  <button className="cv-btn" onClick={onSubmit} disabled={status === 'uploading'}>
-                    {status === 'uploading' ? t('cv.form.uploading') :
-                      user ? <>{t('cv.form.cta.register')} <IconArrowRight /></> :
-                      <><IconGoogle />{t('cv.form.cta.google')} <IconArrowRight /></>}
-                  </button>
-
                   {!user && (
                     <>
+                      <button className="cv-btn" onClick={onSubmit} disabled={status === 'uploading'}>
+                        {status === 'uploading' ? t('cv.form.uploading')
+                          : <><IconGoogle />{t('cv.form.cta.google')} <IconArrowRight /></>}
+                      </button>
+
                       <div className="cv-or-divider"><span>{t('cv.form.or')}</span></div>
                       <button className="cv-btn-linkedin" onClick={onLinkedInSubmit}>
                         <IconLinkedIn />{t('cv.form.cta.linkedin')}
