@@ -1,0 +1,118 @@
+<!--
+  [검수용 한글] 어학 재확인 4차 · 자기서술 세그먼트
+  ────────────────────────────────────────────────────────────
+  실발송이 베트남어라면 email-vi.html 을 1:1 대응으로 같이 만들 것.
+  ※ 한쪽만 고치면 두 파일이 갈라진다. 문구를 바꿀 땐 반드시 양쪽 같이.
+
+  타겟   : 어학 O · 값이 자기서술("Intermediate"·"Fluent"·"B2") — 823명 중 100명
+  제목   : 어학 요건 공고에 추천해 드리지 못했습니다  (이전 캠페인 제목으로 회귀)
+
+  훅     : 손실 확정 — "이미 못 올렸다". 1차(coldmail-lang-recheck-1, 100통)는 부탁
+           프레임("점수를 넣어주세요")이었고, 클릭 20 · 저장 16 · 자격증 회수 5 였다.
+           저장한 16명 중 11명이 '그대로'를 눌렀는데, 본문이 "아직 없으시면 그대로라고만
+           알려주셔도 됩니다"로 끝나 면죄부를 준 탓이 크다.
+
+  ※ 등급(A·B·C)을 본문에 쓰지 않는다. 우리가 사람을 어떻게 분류하는지는 내부 기준이고,
+    수신자에게 "당신은 등급이 없다"고 말하는 건 얻는 것 없이 기분만 상하게 한다.
+    같은 사실을 '확인된 자격증' 프레임으로 말한다 — 판단 주체가 그 사람이 아니라 우리다.
+
+  ⚠️ 범위를 지킬 것 — "추천에서 배제됐다"를 통째로 주장하면 거짓이 된다.
+     lib/jdMatch.js:113-116 은 english_cert 가 '있기만 하면' 점수를 준다
+     (p.english_cert ? 8 : -8). JD 매칭에서 "Intermediate" 는 "TOEIC 900" 과 동점이다.
+     실제 배제는 certOf(langTier.js)로 자격증을 가려 후보를 넘기는 자리에서만 일어난다.
+     그래서 본문은 "어학 요건이 걸린 자리에 못 올렸다"까지만 쓰고, 모든 추천을 주장하지 않는다.
+
+  버튼   : '점수가 생겼어요' 단일 버튼 + 이탈구는 카드 밖 회색 링크.
+           1차는 둘 다 풀폭 버튼이라 선택지가 대등해 보였다. 다만 '그대로'는 없애지
+           않는다 — "이 값은 이상치가 아니라 사실"이라는 확정 라벨이라, 다음 웨이브
+           모수에서 정당하게 빼는 근거가 된다.
+
+  ※ 실적 숫자(자격증 등록 809명 등)를 본문에 넣었다가 뺐다. 우리 사정이지 수신자가
+    궁금한 값이 아니고, "절반은 이미 넘어갔습니다" 류는 은근한 압박으로 읽힌다.
+    이 메일이 파는 건 통계가 아니라 "당신이 어느 자리에서 빠졌다"는 사실 하나다.
+  캠페인 : coldmail-lang-recheck-2
+-->
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>FYI (한글 검수용)</title>
+</head>
+<body style="margin:0;padding:24px 0;background:#f2f4f6;">
+
+<div style="display:none;max-height:0;overflow:hidden;opacity:0;">
+  어학 자격증이 확인되지 않아 후보로 올리지 못했습니다. 점수가 생기셨다면 30초면 바뀝니다.
+</div>
+
+<div style="font-family:'Pretendard','Segoe UI',Roboto,'Apple SD Gothic Neo',Arial,sans-serif;color:#191F28;max-width:560px;margin:0 auto;background:#ffffff;border-radius:16px;overflow:hidden;border:1px solid #E5E8EB;">
+
+  <div style="padding:22px 32px;border-bottom:1px solid #F2F4F6;">
+    <span style="font-size:22px;font-weight:900;letter-spacing:-0.5px;color:#ff6000;">FYI</span>
+    <span style="font-size:11px;font-weight:700;color:#8B95A1;letter-spacing:0.5px;margin-left:8px;">베트남 채용 플랫폼</span>
+  </div>
+
+  <div style="padding:32px;">
+
+    <h1 style="margin:0 0 18px;font-size:26px;line-height:1.35;font-weight:800;color:#191F28;letter-spacing:-0.7px;">
+      어학 요건이 있는 공고에<br />
+      <span style="color:#ff6000;">{{name}}님을 올리지 못했습니다.</span>
+    </h1>
+
+    <p style="margin:0 0 16px;font-size:15px;line-height:1.7;color:#4E5968;">
+      안녕하세요 <b style="color:#191F28;">{{name}}</b>님,<br />
+      FYI에 등록된 {{name}}님의 어학은 <b style="color:#191F28;">{{cert}}</b>입니다.
+    </p>
+
+    <p style="margin:0 0 16px;font-size:15px;line-height:1.7;color:#4E5968;">
+      기업이 어학 요건을 걸면 저희는 <b style="color:#191F28;">확인된 자격증</b>을 근거로 후보를 넘깁니다.
+      TOEIC 900, IELTS 6.5, VSTEP B2처럼 시험명과 점수가 있는 값입니다.
+      <b style="color:#191F28;">{{cert}}는 저희가 확인할 수 없는 값이라, 그 자리에 올리지 못했습니다.</b>
+    </p>
+
+
+    <p style="margin:0 0 24px;font-size:15px;line-height:1.7;color:#4E5968;">
+      실력을 의심한 게 아니라, <b style="color:#191F28;">저희가 확인할 방법이 없었습니다.</b>
+      그 뒤로 시험을 보셨다면 <b style="color:#191F28;">점수를 입력해주세요.</b>
+    </p>
+
+    <div style="background:#F9F9F9;border:1px solid #F2F4F6;border-radius:14px;padding:22px;">
+      <div style="font-size:15px;font-weight:700;color:#191F28;margin-bottom:4px;">어학을 점수로 바꾸기</div>
+      <div style="font-size:12.5px;color:#8B95A1;margin-bottom:16px;">로그인 없이 30초 &middot; 영어만 넣으셔도 됩니다</div>
+
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:separate;border-spacing:0;">
+        <tr>
+          <td>
+            <a href="{{ctaScore}}" style="display:block;background:#ff6000;color:#ffffff;text-decoration:none;border-radius:10px;padding:16px 18px;font-size:15px;font-weight:700;text-align:center;line-height:1.4;">
+              점수가 생겼어요
+              <span style="display:block;font-size:12px;font-weight:500;opacity:0.85;margin-top:3px;">TOEIC &middot; IELTS &middot; TOPIK &middot; VSTEP</span>
+            </a>
+          </td>
+        </tr>
+      </table>
+    </div>
+
+    <!-- 이탈구 — 카드 밖 회색 링크. 풀폭 버튼으로 두면 위 버튼과 대등해 보인다(1차 실패 지점). -->
+    <p style="margin:14px 0 0;text-align:center;">
+      <a href="{{ctaSame}}" style="font-size:12px;color:#B0B8C1;text-decoration:underline;">
+        아직 시험 본 적 없습니다 &mdash; {{cert}} 그대로 두기
+      </a>
+    </p>
+
+  </div>
+
+  <div style="padding:20px 32px;border-top:1px solid #F2F4F6;background:#FAFAFA;">
+    <p style="margin:0 0 8px;font-size:12px;line-height:1.6;color:#8B95A1;">
+      FYI에 어학 정보를 등록해 주셔서 이 메일을 보내드립니다.
+    </p>
+    <p style="margin:0;font-size:11.5px;color:#B0B8C1;">
+      <a href="{{unsubscribeUrl}}" style="color:#B0B8C1;text-decoration:underline;">수신거부</a>
+    </p>
+  </div>
+
+</div>
+
+<img src="{{pixelUrl}}" width="1" height="1" alt="" style="display:block;border:0;" />
+
+</body>
+</html>
