@@ -1096,9 +1096,11 @@ export default function CvLanding() {
       <div key="auth" className={`cv-stepblock cv-step-auth ${authDone ? 'done' : ''} ${authLocked ? 'inactive' : ''}`}>
         <div className="cv-stepblock-label">
           <span className="cv-stepblock-num">{authDone ? <IconCheck /> : (signupFirst ? 1 : 2)}</span>
+          {/* 로그인한 사람의 이 칸은 체크가 붙은 완료 칸이다. 라벨이 '이력서 등록'이면
+              아직 안 한 일에 체크가 달린 셈이라 이미 등록된 줄 알게 된다. */}
           {signupFirst
             ? t('cv.form.sf.step1Label')
-            : (user ? t('cv.form.step2LabelRegister') : t('cv.form.step2LabelSignup'))}
+            : (user ? t('cv.form.step2LabelAuthed') : t('cv.form.step2LabelSignup'))}
         </div>
 
         {!signupFirst && errMsg && <div className="cv-err">{errMsg}</div>}
