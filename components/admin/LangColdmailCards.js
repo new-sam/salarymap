@@ -469,22 +469,34 @@ function GroupCard({ data, L }) {
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 10 }}>
         {rows.map((r) => {
           const m = ARM_META[r.campaign]
+          /* 세로 flex — 아래 '점수·자기서술·못함' 줄을 marginTop:auto 로 바닥에 붙인다.
+             제목이 한 줄인 카드와 두 줄인 카드가 나란히 서면 그 줄의 높이가 어긋나는데,
+             그리드가 카드 높이를 이미 맞춰 주므로 바닥 기준으로 맞추면 가지런해진다. */
           return (
-            <div key={r.campaign} style={{ border: '1px solid #E5E8EB', borderRadius: 10, padding: 14 }}>
+            <div key={r.campaign} style={{
+              border: '1px solid #E5E8EB', borderRadius: 10, padding: 14,
+              display: 'flex', flexDirection: 'column',
+            }}>
               {/* 제목 줄 오른쪽이 비어 있어서 수치를 그리로 올렸다 — 아래로 한 줄 더
-                  쌓으면 카드가 그만큼 길어지는데, 그 줄에 넣을 자리가 이미 있다. */}
+                  쌓으면 카드가 그만큼 길어지는데, 그 줄에 넣을 자리가 이미 있다.
+
+                  wrap 을 쓰면 안 된다: 제목 길이에 따라 수치 블록이 다음 줄로 밀려서
+                  카드마다 수치의 세로 위치가 달라진다(R6 '자기서술 재확인 · 개정'은 밀리고
+                  R7 '시험명 확인'은 같은 줄에 남았다). nowrap 으로 고정하고 제목 쪽을
+                  줄여, 어느 카드든 수치가 오른쪽 위 같은 자리에 오게 한다.
+                  제목이 길면 잘리지 않고 두 줄로 접힌다 — minWidth:0 이 있어야 접힌다. */}
               <div style={{
-                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                gap: 10, flexWrap: 'wrap', marginBottom: 8,
+                display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between',
+                gap: 10, flexWrap: 'nowrap', marginBottom: 8,
               }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 7, flex: '1 1 auto', minWidth: 0 }}>
                   <span style={{
                     fontSize: 11, fontWeight: 800, color: '#fff', background: m.color,
-                    borderRadius: 5, padding: '2px 7px',
+                    borderRadius: 5, padding: '2px 7px', flex: 'none',
                   }}>{m.tag}</span>
-                  <span style={{ fontSize: 12.5, fontWeight: 700 }}>{L(m.ko, m.en, m.vi)}</span>
+                  <span style={{ fontSize: 12.5, fontWeight: 700, minWidth: 0 }}>{L(m.ko, m.en, m.vi)}</span>
                 </div>
-                <div style={{ display: 'flex', gap: 12 }}>
+                <div style={{ display: 'flex', gap: 12, flex: 'none' }}>
                   <Stat label={L('발송', 'Sent', 'Đã gửi')} value={r.sent} />
                   <Stat label={L('클릭', 'Click', 'Click')} value={r.clicked} sub={r.sent ? pct(r.clickRate) : null} />
                   <Stat label={L('입력', 'Filled', 'Đã điền')} value={r.filled} sub={r.sent ? pct(r.fillRate) : null} accent={m.color} />
@@ -496,7 +508,7 @@ function GroupCard({ data, L }) {
                   적어도 점수 비율이 높아야 가설이 맞는다.
                   어느 버튼을 눌렀는지(cta 분포)는 여기서 뺐다 — 아래 '버튼 → 저장된 값'
                   표가 같은 걸 저장 결과까지 붙여서 보여주므로 두 번 읽을 이유가 없다. */}
-              <div style={{ fontSize: 11, color: '#8B95A1', borderTop: '1px solid #F2F4F6', paddingTop: 8 }}>
+              <div style={{ fontSize: 11, color: '#8B95A1', borderTop: '1px solid #F2F4F6', paddingTop: 8, marginTop: 'auto' }}>
                 <span style={{ color: KIND_COLOR.score, fontWeight: 700 }}>
                   {L('점수', 'Score', 'Điểm')} {r.kinds?.score ?? 0}
                 </span>
