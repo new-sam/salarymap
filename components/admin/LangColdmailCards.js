@@ -75,6 +75,17 @@ const TH = { textAlign: 'left', fontSize: 11, fontWeight: 700, color: '#9CA3AF',
 const TD = { fontSize: 13, color: '#1F2937', padding: '7px 10px', borderBottom: '1px solid #F5F6F7' }
 const NUM = { ...TD, textAlign: 'right', fontVariantNumeric: 'tabular-nums', fontWeight: 600 }
 
+// 계열 한 줄 이름 — 카드 제목의 긴 설명 말고, 표에서 세로로 훑을 수 있는 짧은 이름.
+const FAMILY_LABEL = (f, L) => (
+  f === 'language' ? L('제목 A/B · 지원 경험 O', 'Subject A/B', 'A/B tiêu đề')
+    : f === 'ktc' ? L('KTC 유입', 'From KTC', 'Từ KTC')
+      : f === 'resume' ? L('이력서 O · 지원 0', 'Resume, never applied', 'Có CV, chưa ứng tuyển')
+        : f === 'ghost' ? L('죽은 회원 · 이력서도 지원도 0', 'Dormant — no resume, no application', 'Chỉ đăng ký')
+          : f === 'recheck' ? L('자기서술 재확인', 'Recheck', 'Xác nhận lại')
+            : f === 'nocert' ? L('이력서 O · 어학만 빔', 'Resume, language blank', 'Có CV, thiếu ngoại ngữ')
+              : f
+)
+
 /* 캠페인 한 줄 = 표 한 행. 카드로 나눠 두던 것을 표로 편다 — 회차가 10개를 넘어가면서
    카드가 화면을 가로질러 흩어져, "몇 번째 회차가 제일 잘 됐나"를 한눈에 못 보게 됐다.
 
