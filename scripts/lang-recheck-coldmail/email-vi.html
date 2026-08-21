@@ -1,0 +1,110 @@
+<!--
+  [실발송] 어학 재확인 6차 · 자기서술 세그먼트 — 베트남어
+  ────────────────────────────────────────────────────────────
+  검수용 한글은 email-ko.html. 문장이 1:1 대응한다.
+  ※ 한쪽만 고치면 두 파일이 갈라진다. 문구를 바꿀 땐 반드시 양쪽 같이.
+
+  타겟   : 어학 O · 값이 자기서술("Fluent"·"Advanced"·"Proficient") — 131명 중 100명
+  제목   : Chúng tôi chưa thể giới thiệu bạn cho vị trí yêu cầu ngoại ngữ
+           (한국어 "어학 요건 공고에 추천해 드리지 못했습니다" — 이전 캠페인 제목 회귀)
+
+  훅     : 손실 확정 — "이미 못 올렸다". 5차는 부탁 프레임이었고, 저장한 16명 중
+           11명이 '그대로'를 눌렀다. 본문이 면죄부로 끝난 탓이 크다.
+
+  ※ 등급(A·B·C)을 본문에 쓰지 않는다. 내부 기준이고, "당신은 등급이 없다"는 말은
+    얻는 것 없이 기분만 상하게 한다. '확인된 자격증' 프레임으로 말해 판단 주체를
+    우리 쪽에 둔다. 실적 숫자(자격증 등록 809명 등)도 넣었다가 뺐다 — 우리 사정이지
+    수신자가 궁금한 값이 아니고, "절반은 이미 넘어갔다" 류는 은근한 압박으로 읽힌다.
+
+  ⚠️ "추천에서 배제됐다"를 통째로 주장하지 않는다. lib/jdMatch.js:113-116 은
+     english_cert 가 있기만 하면 점수를 준다(p.english_cert ? 8 : -8). 실제 배제는
+     자격증을 가려 후보를 넘기는 자리에서만 일어나므로, 본문도 그 자리까지만 주장한다.
+
+  캠페인 : coldmail-lang-recheck-2
+-->
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>FYI</title>
+</head>
+<body style="margin:0;padding:24px 0;background:#f2f4f6;">
+
+<div style="display:none;max-height:0;overflow:hidden;opacity:0;">
+  Chúng tôi chưa xác minh được chứng chỉ ngoại ngữ của bạn. Nếu bạn đã có điểm, chỉ mất 30 giây.
+</div>
+
+<div style="font-family:'Pretendard','Segoe UI',Roboto,'Apple SD Gothic Neo',Arial,sans-serif;color:#191F28;max-width:560px;margin:0 auto;background:#ffffff;border-radius:16px;overflow:hidden;border:1px solid #E5E8EB;">
+
+  <div style="padding:22px 32px;border-bottom:1px solid #F2F4F6;">
+    <span style="font-size:22px;font-weight:900;letter-spacing:-0.5px;color:#ff6000;">FYI</span>
+    <span style="font-size:11px;font-weight:700;color:#8B95A1;letter-spacing:0.5px;margin-left:8px;">Nền tảng tuyển dụng Việt Nam</span>
+  </div>
+
+  <div style="padding:32px;">
+
+    <h1 style="margin:0 0 18px;font-size:26px;line-height:1.35;font-weight:800;color:#191F28;letter-spacing:-0.7px;">
+      Chúng tôi chưa thể giới thiệu bạn<br />
+      <span style="color:#ff6000;">cho vị trí yêu cầu ngoại ngữ.</span>
+    </h1>
+
+    <p style="margin:0 0 16px;font-size:15px;line-height:1.7;color:#4E5968;">
+      Chào <b style="color:#191F28;">{{name}}</b>,<br />
+      ngoại ngữ đang lưu trong hồ sơ FYI của bạn là <b style="color:#191F28;">{{cert}}</b>.
+    </p>
+
+    <p style="margin:0 0 16px;font-size:15px;line-height:1.7;color:#4E5968;">
+      Khi doanh nghiệp đặt yêu cầu ngoại ngữ, chúng tôi giới thiệu ứng viên dựa trên
+      <b style="color:#191F28;">chứng chỉ đã được xác minh</b> &mdash; những giá trị có tên kỳ thi và điểm số,
+      như TOEIC 900, IELTS 6.5, VSTEP B2.
+      <b style="color:#191F28;">{{cert}} là giá trị chúng tôi không thể xác minh, nên bạn đã không được đưa vào danh sách đó.</b>
+    </p>
+
+    <p style="margin:0 0 24px;font-size:15px;line-height:1.7;color:#4E5968;">
+      Chúng tôi không nghi ngờ năng lực của bạn &mdash; <b style="color:#191F28;">chỉ là chúng tôi không có cách nào xác minh.</b>
+      Nếu từ đó đến nay bạn đã thi, <b style="color:#191F28;">hãy nhập điểm của bạn.</b>
+    </p>
+
+    <div style="background:#F9F9F9;border:1px solid #F2F4F6;border-radius:14px;padding:22px;">
+      <div style="font-size:15px;font-weight:700;color:#191F28;margin-bottom:4px;">Cập nhật thành điểm chứng chỉ</div>
+      <div style="font-size:12.5px;color:#8B95A1;margin-bottom:16px;">Không cần đăng nhập &middot; 30 giây &middot; Chỉ tiếng Anh cũng được</div>
+
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:separate;border-spacing:0;">
+        <tr>
+          <td>
+            <a href="{{ctaScore}}" style="display:block;background:#ff6000;color:#ffffff;text-decoration:none;border-radius:10px;padding:16px 18px;font-size:15px;font-weight:700;text-align:center;line-height:1.4;">
+              Tôi đã có điểm
+              <span style="display:block;font-size:12px;font-weight:500;opacity:0.85;margin-top:3px;">TOEIC &middot; IELTS &middot; TOPIK &middot; VSTEP</span>
+            </a>
+          </td>
+        </tr>
+      </table>
+    </div>
+
+    <!-- 이탈구 — 카드 밖 회색 링크. 풀폭 버튼으로 두면 위 버튼과 대등해 보인다(5차 실패 지점).
+         없애지는 않는다: "이 값은 이상치가 아니라 사실"이라는 확정 라벨이라, 다음 웨이브
+         모수에서 정당하게 빼는 근거가 된다. -->
+    <p style="margin:14px 0 0;text-align:center;">
+      <a href="{{ctaSame}}" style="font-size:12px;color:#B0B8C1;text-decoration:underline;">
+        Tôi chưa thi &mdash; giữ nguyên {{cert}}
+      </a>
+    </p>
+
+  </div>
+
+  <div style="padding:20px 32px;border-top:1px solid #F2F4F6;background:#FAFAFA;">
+    <p style="margin:0 0 8px;font-size:12px;line-height:1.6;color:#8B95A1;">
+      Bạn nhận được email này vì đã đăng ký thông tin ngoại ngữ trên FYI.
+    </p>
+    <p style="margin:0;font-size:11.5px;color:#B0B8C1;">
+      <a href="{{unsubscribeUrl}}" style="color:#B0B8C1;text-decoration:underline;">Huỷ nhận email</a>
+    </p>
+  </div>
+
+</div>
+
+<img src="{{pixelUrl}}" width="1" height="1" alt="" style="display:block;border:0;" />
+
+</body>
+</html>
