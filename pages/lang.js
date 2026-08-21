@@ -176,7 +176,15 @@ export default function LangLanding({ valid, token, cta, uiLang, name, initial }
   }
 
   const set = (k, v) => setForm((f) => ({ ...f, [k]: v }))
-  const filled = String(form.english_cert || '').trim() || String(form.korean_cert || '').trim()
+  // score 경로에선 손대지 않은 칸을 아예 보내지 않는다. 그대로 실어 보내면 기존
+  // 자기서술("Intermediate")이 이번 답변인 것처럼 다시 저장되고, 응답 원본 기록에도
+  // 그 값이 남아 "이번에 자기서술을 냈다"로 집계된다. 빼면 save.js 가 그 칼럼을
+  // 건드리지 않아 DB 값은 그대로 보존된다 — 화면에 남는 안내문과 뜻이 맞는다.
+  const untouched = (k) => cta === 'score' && form[k] === (initial?.[k] || '')
+  const payload = {}
+  if (!untouched('english_cert')) payload.english_cert = form.english_cert
+  if (!untouched('korean_cert')) payload.korean_cert = form.korean_cert
+  const filled = Object.values(payload).some((v) => String(v || '').trim())
 
   const save = async () => {
     if (!filled || saving) return
@@ -187,7 +195,7 @@ export default function LangLanding({ valid, token, cta, uiLang, name, initial }
         headers: { 'Content-Type': 'application/json' },
         // cta 를 같이 보낸다 — 응답 원본 기록(coldmail_lang_responses)에 "어느 버튼으로
         // 들어와 저장했는지"를 남겨야 프리셀렉트 값인지 직접 고친 값인지 나중에 가른다.
-        body: JSON.stringify({ token, cta, english_cert: form.english_cert, korean_cert: form.korean_cert }),
+        body: JSON.stringify({ token, cta, ...payload }),
       })
       if (!r.ok) throw new Error((await r.json().catch(() => ({}))).error || 'failed')
       setDone(true)
