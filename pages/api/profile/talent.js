@@ -38,10 +38,32 @@ export default async function handler(req, res) {
     // CREATE the row when it's missing — mobile users sign in via native OAuth and never hit
     // the web /auth/callback that would otherwise insert their user_profiles row, so a plain
     // .update() here silently affected 0 rows and dropped their edits.
+    /* 빈 값이 기존 값을 덮지 못하게 막는 칸.
+
+       /profile 은 폼 전체를 PUT 한다. 그래서 화면을 연 시점에 비어 있던 칸은 그 뒤
+       다른 경로로 값이 채워져도 저장 한 번에 ''로 되돌아간다 — 어학은 콜드메일 랜딩
+       (/lang)이 따로 쓰는 칸이라 이 어긋남이 실제로 일어난다. 프로필 탭을 열어둔 채
+       메일에서 VSTEP 을 누르고 돌아와 이력서를 올리면 방금 받은 값이 사라진다.
+       2026-08-05 에 21명, 2026-08-21 에 1명이 이 경로로 지워졌다.
+
+       이력서 파싱이 어학을 비우는 게 아니다(파서가 찾은 칸만 덮어쓴다). 오래된 폼
+       상태가 원인이라 화면 쪽에서는 막을 수 없어 여기서 막는다.
+
+       지우려는 사람은 clear 로 명시한다 — 폼이 통째로 실려 오는 PUT 에는 절대
+       섞이지 않는 필드라, 실수로 비는 것과 일부러 비우는 것이 구분된다. */
+    const KEEP_IF_BLANK = ['english_cert', 'korean_cert']
+    const clear = new Set(
+      Array.isArray(fields.clear) ? fields.clear.filter((k) => KEEP_IF_BLANK.includes(k)) : [],
+    )
+
     const update = { id: user.id, email: user.email, updated_at: new Date().toISOString() }
     for (const key of allowed) {
-      if (key in fields) update[key] = fields[key]
+      if (!(key in fields)) continue
+      if (KEEP_IF_BLANK.includes(key) && !String(fields[key] ?? '').trim() && !clear.has(key)) continue
+      update[key] = fields[key]
     }
+    // 명시적으로 지우겠다고 한 칸은 null 로 —''는 '안 물어봤다'와 구분이 안 된다.
+    for (const key of clear) update[key] = null
     // 이력서 삭제는 null로 통일 — ''는 IS NOT NULL 집계에 잡히는 유령 행을 만든다.
     if (update.resume_url === '') update.resume_url = null
 

@@ -100,7 +100,7 @@ function joinCert({ cert, etc, score }) {
 const isEnKo = (n) => /(anh|english|영어|korean|한국|hàn|hàn quốc)/i.test(String(n || ''))
 
 // 자격증 드롭다운 + 점수 한 줄. 영어·한국어가 같은 모양을 쓴다.
-function CertRow({ label, value, known, onChange, L, allowLevelOnly = true }) {
+function CertRow({ label, value, known, onChange, onClear, L, allowLevelOnly = true }) {
   const raw = splitCert(value, known)
   // "점수가 있다"고 답하고 들어온 경로(/lang?cta=score)에선 자기서술을 넣을 방법이 아예
   // 없어야 한다. 기존 값이 자기서술("Intermediate")이거나 기타면 선택 안 된 상태로 비우고
@@ -129,7 +129,24 @@ function CertRow({ label, value, known, onChange, L, allowLevelOnly = true }) {
 
   return (
     <div className="pfield">
-      <div className="pfield-label">{label}</div>
+      <div className="pfield-label" style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
+        <span>{label}</span>
+        {/* 지우는 길. 서버가 빈 값을 무시하도록 바뀌어서(talent.js), 칸을 비우고 저장하는
+            것만으로는 더 이상 안 지워진다 — 일부러 지우려는 사람에게 이 버튼이 유일한
+            경로다. 값이 있을 때만 뜬다. */}
+        {!!onClear && !!String(value || '').trim() && (
+          <button
+            type="button"
+            onClick={onClear}
+            style={{
+              padding: 0, border: 'none', background: 'none', cursor: 'pointer',
+              fontFamily: 'inherit', fontSize: 11.5, color: '#B0B8C1', textDecoration: 'underline',
+            }}
+          >
+            {L('지우기', 'Clear', 'Xóa')}
+          </button>
+        )}
+      </div>
       <div style={{ display: 'flex', gap: 6, alignItems: 'flex-start' }}>
         <div style={{ flex: '1 1 42%', minWidth: 0 }}>
           <CustomSelect
@@ -197,7 +214,10 @@ function CertRow({ label, value, known, onChange, L, allowLevelOnly = true }) {
      예외다 — 거기선 랜딩이 "어느 언어인가요?"를 묻고 그 답을 korean_cert 에 써넣는다.
      이때 한국어를 TOPIK 전용으로 두면 방금 고른 답이 화면에서 사라진 것처럼 보인다.
      실발송이 전부 베트남어이고 그 메일들이 daily/basic 버튼을 쓰므로 다수 경로다. */
-export default function LanguageCard({ form, set, lang, allowLevelOnly = true, allowKoreanLevel = false }) {
+/* onClear(field) — '지우기'를 눌렀을 때. 쓰는 쪽이 폼 값을 비우고, 저장 payload 에
+   clear:[field] 를 실어 서버에 '일부러 지운다'를 알린다. 안 넘기면 버튼이 안 뜬다
+   (/lang 랜딩에는 지울 값도, 지울 이유도 없다). */
+export default function LanguageCard({ form, set, lang, allowLevelOnly = true, allowKoreanLevel = false, onClear }) {
   const L = (ko, en, vi) => (lang === 'ko' ? ko : lang === 'vi' ? vi : en)
 
   const allLangs = Array.isArray(form.languages) ? form.languages : []
@@ -212,6 +232,7 @@ export default function LanguageCard({ form, set, lang, allowLevelOnly = true, a
         value={form.english_cert}
         known={CERTS.english_cert}
         onChange={(v) => set('english_cert', v)}
+        onClear={onClear && (() => onClear('english_cert'))}
         L={L}
         allowLevelOnly={allowLevelOnly}
       />
@@ -224,6 +245,7 @@ export default function LanguageCard({ form, set, lang, allowLevelOnly = true, a
         value={form.korean_cert}
         known={CERTS.korean_cert}
         onChange={(v) => set('korean_cert', v)}
+        onClear={onClear && (() => onClear('korean_cert'))}
         L={L}
         allowLevelOnly={allowKoreanLevel}
       />

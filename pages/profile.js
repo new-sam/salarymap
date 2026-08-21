@@ -94,6 +94,14 @@ export default function ProfilePage() {
      추천되고 정작 전시장 급수에서는 빠진다. LanguageCard 가 해당 칸에 빨간 안내를
      띄우므로, 버튼만 잠그면 왜 안 눌리는지가 화면에 이미 나와 있다. */
   const langGradeless = [form.english_cert, form.korean_cert].some((v) => certNeedsScore(v))
+  /* '지우기'를 누른 칸. 서버(talent.js)가 빈 값을 무시하도록 바뀌어서, 칸을 비우는
+     것만으로는 안 지워진다 — 지우겠다는 뜻을 payload 에 따로 실어야 한다.
+     저장 성공 뒤 비운다. 실패했는데 남겨두면 다음 저장에 딸려 들어간다. */
+  const [clearFields, setClearFields] = useState([])
+  const clearLang = (field) => {
+    set(field, '')
+    setClearFields((prev) => (prev.includes(field) ? prev : [...prev, field]))
+  }
   const df = (k) => { const a = form[k], b = initialForm[k]; const changed = typeof a === 'object' ? JSON.stringify(a) !== JSON.stringify(b) : a !== b; return changed && a ? ' dirty' : '' }
   const isDirtyRef = useRef(false)
   isDirtyRef.current = isDirty
@@ -289,6 +297,8 @@ export default function ProfilePage() {
       salary_min: form.salary_min ? parseInt(form.salary_min) * 1000000 : null,
       salary_max: form.salary_max ? parseInt(form.salary_max) * 1000000 : null,
       current_salary: form.current_salary ? parseInt(form.current_salary) * 1000000 : null,
+      // 빈 값 가드를 통과시키는 유일한 열쇠. 누르지 않았으면 빈 배열이라 아무 영향이 없다.
+      ...(clearFields.length ? { clear: clearFields } : {}),
     }
     const saveRes = await fetch('/api/profile/talent', {
       method: 'PUT',
@@ -296,6 +306,7 @@ export default function ProfilePage() {
       body: JSON.stringify(payload),
     })
     track(saveRes.ok ? 'profile_save_success' : 'profile_save_error', { page: '/profile' })
+    if (saveRes.ok) setClearFields([])
     // Refresh profile for completion score
     const res = await fetch('/api/profile/talent', { headers: { Authorization: `Bearer ${token}` } })
     if (res.ok) {
@@ -822,7 +833,7 @@ export default function ProfilePage() {
             {/* id="language" — 어학 콜드메일 CTA 가 /profile#language 로 여기에 바로 착지한다.
                 scroll-margin-top 은 sticky 헤더(56px)에 제목이 가리지 않을 만큼. */}
             <div id="language" style={{ scrollMarginTop: 80 }}>
-              <LanguageCard form={form} set={set} lang={lang} />
+              <LanguageCard form={form} set={set} lang={lang} onClear={clearLang} />
             </div>
           </div>
 
