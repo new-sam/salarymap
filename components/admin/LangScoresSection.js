@@ -87,7 +87,10 @@ export default function LangScoresSection({ token }) {
           />
         )}
 
-        {data?.base && <BaseMatrix base={data.base} scorePeople={data.people} />}
+        {/* 모수 교차표(BaseMatrix)는 여기서 뺐다 — 탭 맨 위로 올라갔다.
+            아래 숫자들이 전부 "4,018명 중 몇 명"이라, 모수를 먼저 보고 내려와야
+            콜드메일 회차별 성과가 무엇의 비율인지 알 수 있다.
+            전체 화면(/admin/lang-scores)에서는 LangBaseMatrix 를 따로 얹는다. */}
 
         {data?.certGrades && <CertGrades certs={data.certGrades} members={data.base.members} tiers={data.tiers} />}
 
@@ -188,6 +191,15 @@ export default function LangScoresSection({ token }) {
    설득 대상이 아니라 애초에 도달한 적 없는 사람이다.
    활동 축을 더한 건 그 안에서 다시 '연락하면 답할 사람'과 '떠난 사람'이 갈리기 때문이다.
    기업(hr) 계정은 뺐다. */
+/* 모수 교차표만 따로 꺼내 쓰는 입구. 화면 맨 위에서 이것만 먼저 보여주려고 만들었다.
+   useAdmin 은 [url, token] 으로 캐시를 공유하므로 LangScoresSection 과 같이 떠 있어도
+   요청은 한 번만 나간다. */
+export function LangBaseMatrix({ token }) {
+  const { data } = useAdmin('/api/admin/lang-scores', token)
+  if (!data?.base) return null
+  return <BaseMatrix base={data.base} scorePeople={data.people} />
+}
+
 function BaseMatrix({ base, scorePeople }) {
   const n = (v) => v.toLocaleString()
   const rows = [

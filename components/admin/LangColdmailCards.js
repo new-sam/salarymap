@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { Fragment, useState } from 'react'
 import { useAdmin } from '../../lib/adminSwr'
 import { sectionStyle } from '../../constants/dashboard'
 import { ICT_TZ } from '../../lib/timezone'
@@ -41,28 +41,9 @@ const ARM_META = {
   'coldmail-lang-exam-1': { tag: 'R7', ko: '시험명 확인', en: 'Which test?', vi: 'Kỳ thi nào?', color: '#C2410C' },
 }
 
-/* 4차 세 갈래. 발송 전에는 대상 수를, 발송 뒤에는 그 arm 의 실적을 같은 자리에 그린다 —
-   보낼 때 보던 숫자와 결과를 보는 숫자가 같은 줄에 있어야 회차가 이어져 읽힌다.
-   pool 키는 API 의 pool 과 같은 이름이어야 한다. */
-const TODAY_ARMS = [
-  { pool: 'applied', campaign: 'coldmail-lang-nocert-applied-1', ko: '지원 경험 O', en: 'Has applied', vi: 'Đã ứng tuyển' },
-  { pool: 'fresh', campaign: 'coldmail-lang-nocert-fresh-1', ko: '지원 0', en: 'Never applied', vi: 'Chưa ứng tuyển' },
-  { pool: 'again', campaign: 'coldmail-lang-nocert-again-1', ko: '재발송 · 기수신', en: 'Re-send', vi: 'Gửi lại' },
-]
 
 const pct = (v) => `${(v * 100).toFixed(1)}%`
 
-/* 재확인 회차 — 카드 안에 바로 편다. '자세히 보기'를 눌러야 보이면 회차 비교가
-   한 화면에서 안 된다. 이 카드의 질문이 "카피를 바꿔서 나아졌나"라 R5·R6 를 세로로
-   붙여 두는 것 자체가 답이다. */
-const RECHECK_ARMS = [
-  { campaign: 'coldmail-lang-recheck-1', ko: '5차 · 부탁 프레임', en: '5th · request framing', vi: 'Đợt 5' },
-  { campaign: 'coldmail-lang-recheck-2', ko: '6차 · 손실 프레임', en: '6th · loss framing', vi: 'Đợt 6' },
-  /* 7차는 앞 둘과 묻는 것이 다르다 — R5·R6 는 "그 뒤로 점수가 생겼나"였고 R7 은
-     "그 등급이 어느 시험 것인가"다. 모집단도 자기서술 전체가 아니라 맨 등급값 112명뿐이라,
-     같은 칸에 세워 두되 카피 효과로 세로 비교하면 안 된다. */
-  { campaign: 'coldmail-lang-exam-1', ko: '7차 · 시험명 확인', en: '7th · which test', vi: 'Đợt 7' },
-]
 
 /* 발송일 — 회차를 며칠에 걸쳐 나눠 보내므로, 제목에 날짜가 없으면 지금 보고 있는 숫자가
    어느 회차 것인지 알 수 없다. 발송 스크립트가 베트남 시간으로 도니 표시도 ICT 기준.
@@ -87,6 +68,89 @@ const CTA_LABEL = (L) => ({
   exam: L('다른 시험 점수가 있어요', 'Another test', 'Kỳ thi khác'),
   self: L('시험 아님 · 자기 평가', 'Self-assessed, no test', 'Tự đánh giá'),
 })
+
+/* 표 스타일 — 승주 작업실의 지표 표(GoalMetricsView)와 같은 규격을 쓴다.
+   두 작업실의 표가 다르게 생기면 같은 화면을 오가며 읽을 때 매번 눈이 다시 적응해야 한다. */
+const TH = { textAlign: 'left', fontSize: 11, fontWeight: 700, color: '#9CA3AF', padding: '6px 10px', borderBottom: '1px solid #EEF0F2', textTransform: 'uppercase', letterSpacing: '.04em' }
+const TD = { fontSize: 13, color: '#1F2937', padding: '7px 10px', borderBottom: '1px solid #F5F6F7' }
+const NUM = { ...TD, textAlign: 'right', fontVariantNumeric: 'tabular-nums', fontWeight: 600 }
+
+/* 캠페인 한 줄 = 표 한 행. 카드로 나눠 두던 것을 표로 편다 — 회차가 10개를 넘어가면서
+   카드가 화면을 가로질러 흩어져, "몇 번째 회차가 제일 잘 됐나"를 한눈에 못 보게 됐다.
+
+   계열은 카드 대신 구분 행으로 남긴다. 모집단이 달라 세로로 전환율을 비교하면 안 되는
+   건 표가 돼도 그대로라, 계열 경계가 보이지 않으면 그 함정이 더 커진다. */
+function CampaignTable({ groups, L }) {
+  const rows = groups.flatMap((g) => g.rows
+    .filter((r) => ARM_META[r.campaign])
+    .map((r) => ({ ...r, family: g.family })))
+  if (!rows.length) return null
+
+  const pctOr = (v, n) => (n ? pct(v) : '—')
+  let lastFamily = null
+
+  return (
+    <div className="adm-m-scroll" style={{ overflowX: 'auto', border: '1px solid #EEF0F2', borderRadius: 12 }}>
+      <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 720 }}>
+        <thead><tr>
+          <th style={{ ...TH, width: 44 }}>{L('회차', 'Round', 'Đợt')}</th>
+          <th style={TH}>{L('캠페인', 'Campaign', 'Chiến dịch')}</th>
+          <th style={TH}>{L('발송일', 'Sent on', 'Ngày gửi')}</th>
+          <th style={{ ...TH, textAlign: 'right' }}>{L('발송', 'Sent', 'Gửi')}</th>
+          <th style={{ ...TH, textAlign: 'right' }}>{L('도달', 'Reached', 'Mở')}</th>
+          <th style={{ ...TH, textAlign: 'right' }}>{L('저장', 'Saved', 'Đã lưu')}</th>
+          <th style={{ ...TH, textAlign: 'right' }}>{L('저장률', 'Rate', 'Tỷ lệ')}</th>
+          {/* 저장된 값의 생김새. 전환율이 높아도 전부 자기서술이면 이 캠페인은 실패다. */}
+          <th style={{ ...TH, textAlign: 'right' }}>{L('점수', 'Score', 'Điểm')}</th>
+          <th style={{ ...TH, textAlign: 'right' }}>{L('자기서술', 'Self-desc', 'Tự mô tả')}</th>
+          <th style={{ ...TH, textAlign: 'right' }}>{L('못함', 'Neither', 'Không')}</th>
+        </tr></thead>
+        <tbody>
+          {rows.map((r) => {
+            const m = ARM_META[r.campaign]
+            const head = r.family !== lastFamily ? (lastFamily = r.family, true) : false
+            const d0 = r.firstSentAt ? mmdd(r.firstSentAt) : ''
+            const d1 = r.lastSentAt ? mmdd(r.lastSentAt) : ''
+            return (
+              <Fragment key={r.campaign}>
+                {head && (
+                  <tr>
+                    <td colSpan={10} style={{
+                      fontSize: 11, fontWeight: 700, color: '#6B7280', background: '#FAFBFC',
+                      padding: '5px 10px', borderBottom: '1px solid #EEF0F2',
+                    }}>{FAMILY_LABEL(r.family, L)}</td>
+                  </tr>
+                )}
+                <tr>
+                  <td style={TD}>
+                    <span style={{
+                      fontSize: 10.5, fontWeight: 800, color: '#fff', background: m.color,
+                      borderRadius: 5, padding: '2px 6px', whiteSpace: 'nowrap',
+                    }}>{m.tag}</span>
+                  </td>
+                  <td style={{ ...TD, fontWeight: 600 }}>{L(m.ko, m.en, m.vi)}</td>
+                  <td style={{ ...TD, color: '#9CA3AF', fontSize: 12, whiteSpace: 'nowrap' }}>
+                    {d0 && d1 && d0 !== d1 ? `${d0}–${d1}` : d0 || '—'}
+                  </td>
+                  <td style={NUM}>{r.sent.toLocaleString()}</td>
+                  <td style={NUM}>
+                    {r.clicked || '—'}
+                    {!!r.sent && !!r.clicked && <span style={{ color: '#9CA3AF', fontWeight: 400, marginLeft: 4 }}>{pct(r.clickRate)}</span>}
+                  </td>
+                  <td style={{ ...NUM, color: r.filled ? '#0D9488' : '#C0C4CC' }}>{r.filled || '—'}</td>
+                  <td style={{ ...NUM, fontWeight: 800 }}>{pctOr(r.fillRate, r.sent)}</td>
+                  <td style={{ ...NUM, color: r.kinds?.score ? KIND_COLOR.score : '#C0C4CC' }}>{r.kinds?.score || '—'}</td>
+                  <td style={{ ...NUM, color: r.kinds?.level ? KIND_COLOR.level : '#C0C4CC' }}>{r.kinds?.level || '—'}</td>
+                  <td style={{ ...NUM, color: '#9CA3AF' }}>{r.kinds?.none || '—'}</td>
+                </tr>
+              </Fragment>
+            )
+          })}
+        </tbody>
+      </table>
+    </div>
+  )
+}
 
 /* 묶음마다 카드를 하나씩 그린다. 합치지 않는 이유 — 모집단이 다르다:
      language wave 1 = 콜드메일을 한 번도 안 받은 회원 200명
@@ -120,13 +184,9 @@ const GROUP_NOTE = (g, L) => {
 
 export default function LangColdmailCards({ token, lang }) {
   const L = (ko, en, vi) => (lang === 'vi' ? (vi ?? en) : lang === 'ko' ? ko : en)
-  // 캠페인 카드는 접어 둔다 — 계열(A/B·KTC·이력서·유령)마다 모집단이 달라 카드를
-  // 넷으로 갈라 놨는데, 평소 묻는 건 "그래서 다 합쳐 몇 명이 썼나" 하나뿐이다.
-  // 지난 회차와 4차를 따로 여는 이유: 두 카드가 나란히 서 있는데 토글이 하나면
-  // 오른쪽을 펼치려다 왼쪽 네 장이 같이 쏟아진다.
+  // 값 상세('버튼 → 저장된 값')는 접어 둔다 — 평소 묻는 건 회차별 성과 한 줄이고,
+  // 저장된 값 원본까지 늘 펴 두면 표가 화면 밖으로 밀린다.
   const [detail, setDetail] = useState(false)
-  const [detailToday, setDetailToday] = useState(false)
-  const [detailRecheck, setDetailRecheck] = useState(false)
   // dateRange 를 안 붙인다 — A/B 는 캠페인 전 기간을 한 번에 봐야 하고, 날짜로 자르면
   // arm 별 발송일이 하루라도 어긋났을 때 분모가 달라져 비교가 깨진다.
   const { data, error, isLoading } = useAdmin('/api/admin/lang-coldmail', token)
@@ -150,23 +210,6 @@ export default function LangColdmailCards({ token, lang }) {
     )
   }
 
-  // 4차(오늘 나가는 회차)는 왼쪽 합계에서 뺀다 — 지난 회차의 결론과 진행 중인 회차를
-  // 한 숫자로 뭉치면 둘 다 못 읽는다. 카드를 나란히 두 장 세우는 것도 같은 이유다.
-  // 7차(R7)는 API 의 familyOf 가 recheck 으로 보내므로 재확인 카드에 같이 잡힌다.
-  const past = groups.filter((g) => g.family !== 'nocert' && g.family !== 'recheck')
-  const today = groups.find((g) => g.family === 'nocert') || null
-  const recheck = groups.find((g) => g.family === 'recheck') || null
-
-  // 계열을 가로질러 더한다. 카드 안에서는 절대 합치면 안 되는 숫자지만(모집단이 다르다),
-  // 여기 질문은 전환율이 아니라 "이 캠페인으로 어학을 몇 명한테서 받아냈나"라 합이 답이다.
-  const sum = (gs) => gs.reduce((s, g) => ({
-    sent: s.sent + (g.totals?.sent || 0),
-    clicked: s.clicked + (g.totals?.clicked || 0),
-    filled: s.filled + (g.totals?.filled || 0),
-  }), { sent: 0, clicked: 0, filled: 0 })
-  const totals = sum(past)
-  const todayTotals = sum(today ? [today] : [])
-
   // 발송이 걸쳐 있는 날짜. 하루에 다 나갔으면 한 날짜만 뜬다.
   const dateOf = (gs) => {
     const ats = gs.flatMap((g) => g.rows.flatMap((r) => [r.firstSentAt, r.lastSentAt])).filter(Boolean).sort()
@@ -174,267 +217,55 @@ export default function LangColdmailCards({ token, lang }) {
     const a = mmdd(ats[0]), b = mmdd(ats[ats.length - 1])
     return a === b ? a : `${a}–${b}`
   }
-  const pool = data?.pool
+
+  /* 회차가 10개를 넘어가면서 카드로는 안 읽힌다 — 화면을 가로질러 흩어져 "몇 번째가
+     제일 잘 됐나"를 한눈에 못 본다. 승주 작업실 지표 표와 같은 규격의 표 하나로 편다.
+     계열별 합계 카드는 표의 계열 구분 행이 대신하고, 총계만 머리에 한 줄로 남긴다. */
+  const grand = groups.reduce((s, g) => ({
+    sent: s.sent + (g.totals?.sent || 0),
+    clicked: s.clicked + (g.totals?.clicked || 0),
+    filled: s.filled + (g.totals?.filled || 0),
+  }), { sent: 0, clicked: 0, filled: 0 })
+  const campaignCount = groups.reduce((n, g) => n + g.rows.filter((r) => ARM_META[r.campaign]).length, 0)
 
   return (
-    <>
-      {/* 지난 회차 결과 | 진행 중인 4차 — 같은 생김새의 카드 두 장. 폭이 좁아지면
-          (사이드바를 편 노트북) 한 줄로 접힌다. */}
-      <div className="adm-m-1col" style={{
-        display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 16, marginBottom: 16,
-        alignItems: 'start',
-      }}>
-        <SummaryCard
-          L={L}
-          date={dateOf(past)}
-          title={L('어학 콜드메일 결과', 'Language cold-email results', 'Kết quả cold-email ngoại ngữ')}
-          note={L(`${past.length}개 계열 합계 · 발송분 전체`,
-                  `${past.length} campaign families · all sends`,
-                  `${past.length} nhóm chiến dịch`)}
-          stats={[
-            { label: L('총 발송', 'Sent', 'Đã gửi'), value: totals.sent },
-            { label: L('클릭', 'Click', 'Click'), value: totals.clicked, sub: totals.sent ? pct(totals.clicked / totals.sent) : null },
-            { label: L('어학 입력', 'Filled', 'Đã điền'), value: totals.filled, sub: totals.sent ? pct(totals.filled / totals.sent) : null, accent: '#16a34a' },
-          ]}
-          /* 합계만 두면 656건짜리 유령 계열이 섞인 게 안 보여 입력률 13.0% 를 캠페인
-             성능으로 읽게 된다. 계열별로 펼쳐 두면 그 줄이 스스로 설명한다. */
-          body={<PastArms groups={past} L={L} />}
-          open={detail}
-          onToggle={() => setDetail((v) => !v)}
-          toggleNote={L('계열별 제목 A/B · 들어온 값', 'Per-family subject A/B · what came in', 'A/B tiêu đề · dữ liệu đã nhận')}
-        />
-
-        <SummaryCard
-          L={L}
-          /* 아직 안 나갔으면 오늘 날짜를 쓴다 — 이 카드는 '지금 나가는 회차'라서
-             날짜 자리가 비면 왼쪽 카드와 제목이 똑같아진다. 발송이 시작되면 실제
-             발송일로 바뀐다. */
-          date={dateOf(today ? [today] : []) || mmdd(new Date().toISOString())}
-          title={L('어학 콜드메일 결과', 'Language cold-email results', 'Kết quả cold-email ngoại ngữ')}
-          note={L(`이력서 O · 어학만 빔 · 근거별 3종 · 모수 ${pool?.total ?? 0}명`,
-                  `Resume, language blank · 3 angles · pool ${pool?.total ?? 0}`,
-                  `Có CV, thiếu ngoại ngữ · 3 phiên bản · ${pool?.total ?? 0}`)}
-          stats={[
-            { label: L('발송', 'Sent', 'Đã gửi'), value: todayTotals.sent },
-            { label: L('클릭', 'Click', 'Click'), value: todayTotals.clicked, sub: todayTotals.sent ? pct(todayTotals.clicked / todayTotals.sent) : null },
-            { label: L('어학 입력', 'Filled', 'Đã điền'), value: todayTotals.filled, sub: todayTotals.sent ? pct(todayTotals.filled / todayTotals.sent) : null, accent: '#16a34a' },
-          ]}
-          body={<TodayArms pool={pool} group={today} L={L} />}
-          open={detailToday}
-          onToggle={today ? () => setDetailToday((v) => !v) : null}
-          toggleNote={L('갈래별 들어온 값', 'What came in per angle', 'Dữ liệu theo phiên bản')}
-        />
-
-        {/* 5차 — 세는 것이 다르다. '입력'은 점수를 새로 받아낸 것이고 '그대로 확인'은
-            값은 그대로인 채 "아직 자격증은 없다"가 확정된 것이다. 둘을 한 칸에 합치면
-            무엇이 늘었는지 알 수 없어진다. */}
-        <SummaryCard
-          L={L}
-          date={dateOf(recheck ? [recheck] : []) || mmdd(new Date().toISOString())}
-          title={L('어학 재확인', 'Language recheck', 'Xác nhận lại ngoại ngữ')}
-          note={L(`자기서술로 남아 있는 회원 ${data?.selfDesc ?? 0}명 중`,
-                  `of ${data?.selfDesc ?? 0} still self-described`,
-                  `trong ${data?.selfDesc ?? 0} người`)}
-          stats={[
-            { label: L('발송', 'Sent', 'Đã gửi'), value: recheck?.totals?.sent ?? 0 },
-            /* 저장(filled)이 아니라 자격증 형태로 들어온 것만 센다 — cta=score 를 눌러놓고
-               "Basic" 을 저장한 사람이 1 차에 실제로 있었다. 그 사람까지 점수 갱신으로
-               세면 이 캠페인이 성공했는지를 스스로 속이게 된다.
-               meta.saved 는 2026-08-21 부터 실려서 그 이전 회차는 0 으로 보인다. */
-            { label: L('점수 갱신', 'Scored', 'Có điểm'), value: recheck?.totals?.scored ?? 0,
-              sub: recheck?.totals?.sent ? pct((recheck.totals.scored || 0) / recheck.totals.sent) : null, accent: '#16a34a' },
-            { label: L('그대로 확인', 'Confirmed', 'Xác nhận'), value: recheck?.totals?.same ?? 0,
-              sub: recheck?.totals?.sent ? pct(recheck.totals.same / recheck.totals.sent) : null, accent: '#7C3AED' },
-          ]}
-          body={<RecheckArms group={recheck} L={L} />}
-          footer={recheck ? null : L('아직 발송 전 — coldmail-lang-recheck-* 가 나가면 채워집니다',
-                                     'Not sent yet', 'Chưa gửi')}
-          open={detailRecheck}
-          onToggle={recheck ? () => setDetailRecheck((v) => !v) : null}
-          toggleNote={L('들어온 값', 'What came in', 'Dữ liệu đã nhận')}
-        />
+    <div style={{ ...sectionStyle, marginBottom: 16 }}>
+      <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, flexWrap: 'wrap', marginBottom: 2 }}>
+        <span style={{ fontSize: 13, fontWeight: 700, color: '#374151' }}>
+          {L('어학 콜드메일 회차별 성과', 'Language cold-email by round', 'Cold-email ngoại ngữ theo đợt')}
+        </span>
+        <span style={{ fontSize: 11.5, color: '#9CA3AF' }}>{dateOf(groups)}</span>
+      </div>
+      <div style={{ fontSize: 11.5, color: '#9CA3AF', marginBottom: 8 }}>
+        {L(`캠페인 ${campaignCount}개 · 총 발송 ${grand.sent.toLocaleString()}건 · 도달 ${grand.clicked} · 저장 ${grand.filled}`,
+           `${campaignCount} campaigns · ${grand.sent.toLocaleString()} sent · ${grand.clicked} reached · ${grand.filled} saved`,
+           `${campaignCount} chiến dịch · ${grand.sent.toLocaleString()} gửi`)}
+        {' — '}
+        {/* 계열마다 모집단이 달라 세로로 전환율을 비교하면 안 된다. 표가 되면서 줄이
+            한 화면에 서니 이 경고가 카드일 때보다 더 필요해졌다. */}
+        {L('계열이 다르면 모수가 달라 저장률을 세로로 비교하면 안 된다',
+           'Different families have different pools — do not compare rates across them',
+           'Khác nhóm thì khác mẫu — đừng so sánh tỷ lệ')}
       </div>
 
-      {detailRecheck && recheck && <GroupCard data={recheck} L={L} />}
-      {detail && past.map((g) => <GroupCard key={g.key} data={g} L={L} />)}
-      {detailToday && today && <GroupCard data={today} L={L} />}
-    </>
-  )
-}
+      <CampaignTable groups={groups} L={L} />
 
-/* 두 카드를 같은 함수로 찍는다 — 나란히 놓인 카드의 제목 크기·숫자 크기·토글 자리가
-   조금이라도 어긋나면 두 회차를 비교해 읽을 수 없다. 다른 건 내용뿐이어야 한다. */
-function SummaryCard({ L, date, title, note, stats, footer, body, open, onToggle, toggleNote }) {
-  return (
-    <div style={{ ...sectionStyle, marginBottom: 0 }}>
-      <div style={{ fontSize: 13, fontWeight: 700 }}>
-        {date && `${date} `}
-        {title}
-        <span style={{ fontSize: 11, fontWeight: 500, color: '#8B95A1', marginLeft: 7 }}>{note}</span>
-      </div>
+      <button
+        onClick={() => setDetail((v) => !v)}
+        style={{
+          marginTop: 10, padding: '5px 10px', fontSize: 11.5, fontWeight: 600, cursor: 'pointer',
+          color: '#4E5968', background: '#fff', border: '1px solid #E5E8EB', borderRadius: 7,
+        }}
+      >
+        {detail
+          ? L('자세히 닫기', 'Hide detail', 'Ẩn chi tiết')
+          : L('버튼 → 저장된 값 자세히 보기', 'Button → saved value detail', 'Chi tiết')}
+      </button>
 
-      <div style={{ display: 'flex', gap: 26, flexWrap: 'wrap', marginTop: 10 }}>
-        {stats.map((s) => (
-          <div key={s.label}>
-            <div style={{ fontSize: 10.5, color: '#8B95A1', fontWeight: 600 }}>{s.label}</div>
-            <div style={{ lineHeight: 1.2, whiteSpace: 'nowrap' }}>
-              <span style={{ fontSize: 22, fontWeight: 800, color: s.accent || '#191F28' }}>{s.value}</span>
-              {s.sub && <span style={{ fontSize: 11, color: '#8B95A1', marginLeft: 4 }}>{s.sub}</span>}
-            </div>
-          </div>
-        ))}
-      </div>
-
-      {body}
-
-      {footer && (
-        <div style={{ fontSize: 11, color: '#8B95A1', marginTop: 10, lineHeight: 1.5 }}>{footer}</div>
-      )}
-
-      {onToggle && (
-        <button
-          type="button"
-          onClick={onToggle}
-          style={{
-            fontSize: 11.5, fontWeight: 600, color: '#4E5968', background: 'none', border: 0, padding: 0,
-            cursor: 'pointer', fontFamily: 'inherit', marginTop: 12,
-          }}
-        >
-          <span style={{ color: '#8B95A1', marginRight: 4, fontSize: 10 }}>{open ? '▾' : '▸'}</span>
-          {L('자세히 보기', 'Details', 'Xem chi tiết')}
-          <span style={{ fontWeight: 500, color: '#8B95A1', marginLeft: 5 }}>{toggleNote}</span>
-        </button>
-      )}
+      {detail && groups.map((g) => <GroupCard key={g.key} data={g} L={L} />)}
     </div>
   )
 }
-
-/* 지난 회차 계열별 한 줄 — 오른쪽 4차 카드와 같은 모양이라 두 회차를 같은 눈으로 읽는다.
-   합계 한 줄만 두면 656건짜리 유령 계열이 나머지를 다 끌어내린다는 게 안 보인다. */
-function PastArms({ groups, L }) {
-  if (!groups.length) return null
-  return (
-    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 11.5, marginTop: 10 }}>
-      <tbody>
-        {groups.map((g) => (
-          <tr key={g.key} style={{ borderTop: '1px solid #F2F4F6' }}>
-            <td style={{ padding: '5px 0', color: '#4E5968' }}>{FAMILY_LABEL(g.family, L)}</td>
-            <td style={{ padding: '5px 0', textAlign: 'right', whiteSpace: 'nowrap' }}>
-              <span style={{ color: '#8B95A1' }}>{g.totals.sent}</span>
-              <span style={{ color: '#D1D6DB', margin: '0 4px' }}>→</span>
-              <span style={{ fontWeight: 700, color: '#16a34a' }}>{g.totals.filled}</span>
-              {!!g.totals.sent && (
-                <span style={{ color: '#8B95A1', marginLeft: 4 }}>{pct(g.totals.filled / g.totals.sent)}</span>
-              )}
-            </td>
-          </tr>
-        ))}
-      </tbody>
-    </table>
-  )
-}
-
-// 계열 한 줄 이름 — 카드 제목의 긴 설명 말고, 표에서 세로로 훑을 수 있는 짧은 이름.
-const FAMILY_LABEL = (f, L) => (
-  f === 'language' ? L('제목 A/B · 지원 경험 O', 'Subject A/B', 'A/B tiêu đề')
-    : f === 'ktc' ? L('KTC 유입', 'From KTC', 'Từ KTC')
-      : f === 'resume' ? L('이력서 O · 지원 0', 'Resume, never applied', 'Có CV, chưa ứng tuyển')
-        : f === 'ghost' ? L('죽은 회원 · 이력서도 지원도 0', 'Dormant — no resume, no application', 'Chỉ đăng ký')
-          : f === 'recheck' ? L('자기서술 재확인', 'Recheck', 'Xác nhận lại')
-            : f
-)
-
-/* 4차 갈래별 줄 — 발송 전에는 각 갈래의 대상 수를, 발송 뒤에는 같은 자리에 발송·입력을
-   그린다. 대상 수는 어학이 채워지는 만큼 줄어들므로(=우리가 받아낸 만큼) 보내고 난
-   뒤에도 남은 모수로 계속 읽힌다. */
-function RecheckArms({ group, L }) {
-  const rowOf = (campaign) => group?.rows?.find((r) => r.campaign === campaign)
-  return (
-    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 11.5, marginTop: 10 }}>
-      <tbody>
-        {RECHECK_ARMS.map((a) => {
-          const r = rowOf(a.campaign)
-          const m = ARM_META[a.campaign]
-          return (
-            <tr key={a.campaign} style={{ borderTop: '1px solid #F2F4F6' }}>
-              <td style={{ padding: '5px 0', color: '#4E5968' }}>
-                <span style={{ color: m.color, fontWeight: 700, marginRight: 5 }}>{m.tag}</span>
-                {L(a.ko, a.en, a.vi)}
-              </td>
-              {/* 발송 → 점수 갱신 · 그대로. 두 결과를 한 줄에 둬야 "무엇이 늘었나"가 읽힌다. */}
-              <td style={{ padding: '5px 0', textAlign: 'right', whiteSpace: 'nowrap' }}>
-                {r ? (
-                  <>
-                    <span style={{ color: '#8B95A1' }}>{r.sent}</span>
-                    <span style={{ color: '#D1D6DB', margin: '0 4px' }}>→</span>
-                    <span style={{ fontWeight: 700, color: '#16a34a' }}>{r.scored}</span>
-                    {!!r.sent && <span style={{ color: '#8B95A1', marginLeft: 4 }}>{pct(r.scoredRate || 0)}</span>}
-                    <span style={{ color: '#D1D6DB', margin: '0 6px' }}>|</span>
-                    <span style={{ fontWeight: 700, color: '#7C3AED' }}>{r.same}</span>
-                    <span style={{ color: '#B0B8C1', marginLeft: 3 }}>{L('그대로', 'same', 'giữ')}</span>
-                  </>
-                ) : (
-                  <span style={{ color: '#B0B8C1' }}>{L('발송 전', 'not sent', 'chưa gửi')}</span>
-                )}
-              </td>
-            </tr>
-          )
-        })}
-      </tbody>
-    </table>
-  )
-}
-
-function TodayArms({ pool, group, L }) {
-  if (!pool) return null
-  const rowOf = (campaign) => group?.rows?.find((r) => r.campaign === campaign)
-
-  return (
-    <div>
-      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 11.5, marginTop: 10 }}>
-        <tbody>
-          {TODAY_ARMS.map((a) => {
-            const r = rowOf(a.campaign)
-            const m = ARM_META[a.campaign]
-            return (
-              <tr key={a.pool} style={{ borderTop: '1px solid #F2F4F6' }}>
-                <td style={{ padding: '5px 0', color: '#4E5968' }}>
-                  <span style={{ color: m.color, fontWeight: 700, marginRight: 5 }}>{m.tag}</span>
-                  {L(a.ko, a.en, a.vi)}
-                </td>
-                {/* 발송 전에는 대상 수, 발송 뒤에는 발송 → 입력. 두 상태가 같은 칸을 쓴다. */}
-                <td style={{ padding: '5px 0', textAlign: 'right', whiteSpace: 'nowrap' }}>
-                  {r ? (
-                    <>
-                      <span style={{ color: '#8B95A1' }}>{r.sent}</span>
-                      <span style={{ color: '#D1D6DB', margin: '0 4px' }}>→</span>
-                      <span style={{ fontWeight: 700, color: '#16a34a' }}>{r.filled}</span>
-                      {!!r.sent && <span style={{ color: '#8B95A1', marginLeft: 4 }}>{pct(r.fillRate)}</span>}
-                    </>
-                  ) : (
-                    <>
-                      <span style={{ fontWeight: 700 }}>{pool[a.pool] ?? 0}</span>
-                      <span style={{ color: '#B0B8C1', marginLeft: 4 }}>{L('대상', 'to send', 'mục tiêu')}</span>
-                    </>
-                  )}
-                </td>
-              </tr>
-            )
-          })}
-        </tbody>
-      </table>
-
-      {!group && (
-        <div style={{ fontSize: 10.5, color: '#B0B8C1', marginTop: 7, lineHeight: 1.45 }}>
-          {L('아직 발송 전 — coldmail-lang-nocert-* 가 나가면 이 자리에 발송 → 입력으로 바뀝니다',
-             'Not sent yet — turns into sent → filled once coldmail-lang-nocert-* goes out',
-             'Chưa gửi — sẽ hiện kết quả sau khi gửi')}
-        </div>
-      )}
-    </div>
-  )
-}
-
 function GroupCard({ data, L }) {
   // 값 종류 필터. null = 전체. 아래 early return 들보다 먼저 선언해야 훅 순서가 안 깨진다.
   const [kindFilter, setKindFilter] = useState(null)

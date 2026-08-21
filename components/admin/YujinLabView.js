@@ -5,7 +5,7 @@ import DateRangePicker from './DateRangePicker'
 import ResumeDropoffSection from './ResumeDropoffSection'
 import ProfileEditSection from './ProfileEditSection'
 import LangColdmailCards from './LangColdmailCards'
-import LangScoresSection from './LangScoresSection'
+import LangScoresSection, { LangBaseMatrix } from './LangScoresSection'
 import ChangeTestView from './ChangeTestView'
 
 // "유진 작업실" — 작업 중인 분석을 탭으로 나눠 붙인다. 분석마다 컴포넌트를 분리해
@@ -88,6 +88,13 @@ export default function YujinLabView({ token, lang, dateRange, onDateChange, lab
 
       {labTab === 'inflow' && <KtcInflowSection token={token} lang={lang} dateRange={dateRange} />}
       {labTab === 'resume' && <ResumeDropoffSection token={token} lang={lang} dateRange={dateRange} />}
+      {/* 모수 교차표를 맨 위에 둔다 — 아래 숫자가 전부 "전체 회원 중 몇 명"이라,
+          모수를 먼저 보지 않으면 콜드메일 회차별 성과가 무엇의 비율인지 알 수 없다. */}
+      {labTab === 'profile' && (
+        <div style={{ ...sectionStyle, marginBottom: 16 }}>
+          <LangBaseMatrix token={token} />
+        </div>
+      )}
       {/* 어학 콜드메일은 이 탭 퍼널(진입→수정→저장)을 만드는 유입이라 위에 둔다 */}
       {labTab === 'profile' && <LangColdmailCards token={token} lang={lang} />}
       {/* 어학 점수 목록 — 원래 좌측 내비 Performance 아래 별도 페이지였는데, 캠페인

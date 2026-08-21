@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import Head from 'next/head'
 import { supabase } from '../../lib/supabaseClient'
 import AdminLayout from '../../components/admin/AdminLayout'
-import LangScoresSection from '../../components/admin/LangScoresSection'
+import LangScoresSection, { LangBaseMatrix } from '../../components/admin/LangScoresSection'
 
 /* /admin/lang-scores — 본문은 components/admin/LangScoresSection 으로 옮겼다.
    같은 화면을 유진 작업실 > 어학 정보 수집 탭 안에서도 보여주는데, 두 벌로 두면
@@ -20,6 +20,8 @@ export default function AdminLangScores() {
     <AdminLayout>
       <Head><title>어학 점수 · FYI Admin</title></Head>
       <div style={{ maxWidth: 1200, margin: '0 auto', padding: '20px 16px 60px' }}>
+        {/* 모수 교차표를 맨 위에 — 유진 작업실 탭과 순서를 같게 둔다. */}
+        <LangBaseMatrix token={token} />
         <LangScoresSection token={token} />
       </div>
     </AdminLayout>
