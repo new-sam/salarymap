@@ -162,9 +162,18 @@ function CertRow({ label, value, known, onChange, L, allowLevelOnly = true }) {
   )
 }
 
-// allowLevelOnly=false 는 어학 콜드메일의 '점수 있어요' 경로 전용이다. 프로필은 기본값
-// (true)을 그대로 쓴다 — 거기선 자기서술이 유일한 답인 사람이 절반이라 빼면 안 된다.
-export default function LanguageCard({ form, set, lang, allowLevelOnly = true }) {
+/* 수준(자기서술)을 받을지는 영어와 한국어가 규칙이 다르다. 그래서 플래그도 둘이다.
+
+   allowLevelOnly (영어) — 기본 true. 프로필에선 자기서술이 유일한 답인 사람이 절반이라
+     빼면 그 절반이 갈 곳을 잃는다. 어학 콜드메일의 '점수 있어요'(/lang?cta=score)에서만
+     false 로 내려 자격증만 받는다.
+
+   allowKoreanLevel (한국어) — 기본 false. 한국어는 값이 115건뿐이라 지금 막으면 늘어나기
+     전에 끊을 수 있다. 다만 메일이 수준을 직접 물어본 경로(/lang?cta=daily|basic|none)는
+     예외다 — 거기선 랜딩이 "어느 언어인가요?"를 묻고 그 답을 korean_cert 에 써넣는다.
+     이때 한국어를 TOPIK 전용으로 두면 방금 고른 답이 화면에서 사라진 것처럼 보인다.
+     실발송이 전부 베트남어이고 그 메일들이 daily/basic 버튼을 쓰므로 다수 경로다. */
+export default function LanguageCard({ form, set, lang, allowLevelOnly = true, allowKoreanLevel = false }) {
   const L = (ko, en, vi) => (lang === 'ko' ? ko : lang === 'vi' ? vi : en)
 
   const allLangs = Array.isArray(form.languages) ? form.languages : []
@@ -183,9 +192,8 @@ export default function LanguageCard({ form, set, lang, allowLevelOnly = true })
         allowLevelOnly={allowLevelOnly}
       />
 
-      {/* 한국어는 어디서나 TOPIK 만 받는다 — '자격증 없음'·'기타'가 없다.
-          영어와 달리 한국어는 자기서술이 쓸모가 거의 없다: 값이 115건뿐이라 지금 막으면
-          늘어나기 전에 끊을 수 있고, 한국어 가능자를 찾는 공고는 급수를 요구한다.
+      {/* 한국어는 기본이 TOPIK 전용이다 — 값이 115건뿐이라 지금 막으면 늘어나기 전에
+          끊을 수 있다. 메일이 수준을 직접 물어본 경로에서만 열린다(위 주석 참고).
           기존 자기서술 값은 지우지 않고 CertRow 가 안내문으로 보여준다. */}
       <CertRow
         label={L('한국어', 'Korean', 'Tiếng Hàn')}
@@ -193,7 +201,7 @@ export default function LanguageCard({ form, set, lang, allowLevelOnly = true })
         known={CERTS.korean_cert}
         onChange={(v) => set('korean_cert', v)}
         L={L}
-        allowLevelOnly={false}
+        allowLevelOnly={allowKoreanLevel}
       />
 
       {/* 기타 언어는 score 경로에서 렌더하지 않는다 — 수준을 자유 텍스트로 받는 칸이라
