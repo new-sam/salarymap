@@ -1229,6 +1229,42 @@ export const COLDMAIL_TEMPLATES = [
     }),
   },
   {
+    match: /^bada-.*-private/,
+    subject: {
+      vi: '[FYI] Bạn được chọn vào danh sách đề cử — {{포지션}} tại Bada Fintech',
+      ko: '[FYI] 추천 후보 명단에 선정되셨습니다 — Bada Fintech {{포지션}}',
+      en: "[FYI] You've been nominated — {{position}} at Bada Fintech",
+    },
+    desc: '바다핀테크 추천 (8/21): 비공개 프레임 — FYI 검토 선정·이번 주 명단 전달·지원 시 CV+추천 전달. 3그룹(plan/uiux/mkt).',
+    source: 'scripts/outreach/bada-recommend-coldmail.mjs',
+    html: (lang) => recommendShell(lang, {
+      intro: {
+        vi: '<b>Bada Fintech</b> — công ty fintech Hàn Quốc chuyên về giải pháp tài chính dựa trên khoản phải thu, kết nối với Ngân hàng Hana tại Hàn Quốc và Việt Nam — đang tuyển dụng các vị trí chủ chốt qua FYI. Đội ngũ FYI đã xem xét toàn bộ hồ sơ và <b>chọn bạn vào danh sách đề cử</b>.',
+        ko: '하나은행 한국·베트남과 연계된 매출채권 기반 핀테크 <b>바다핀테크</b>가 FYI를 통해 주요 포지션을 채용 중입니다. FYI 팀이 이력서 전체를 검토해 회원님을 <b>추천 명단에 선정</b>했습니다.',
+        en: '<b>Bada Fintech</b> — a Korean fintech in receivables financing working with Hana Bank Korea & Vietnam — is hiring via FYI. The FYI team reviewed all profiles and <b>nominated you</b>.',
+      },
+      initial: 'B', company: 'Bada Fintech', title: '{{공고 제목}}', meta: '{{급여 · 지역}}', tail: BENEFIT_PRIVATE,
+    }),
+  },
+  {
+    match: /^bada-/,
+    subject: {
+      vi: '[FYI] Bạn được chọn vào danh sách đề cử gửi Bada Fintech — {{포지션}}',
+      ko: '[FYI] Bada Fintech 추천 명단에 선정되셨습니다 — {{포지션}}',
+      en: "[FYI] You've been nominated to Bada Fintech — {{position}}",
+    },
+    desc: '바다핀테크 추천 (8/21): 공개 프레임 — FYI 검토 선정·명단에 프로필 동봉·지원 시 우선 검토. 3그룹(plan/uiux/mkt).',
+    source: 'scripts/outreach/bada-recommend-coldmail.mjs',
+    html: (lang) => recommendShell(lang, {
+      intro: {
+        vi: '<b>Bada Fintech</b> — công ty fintech Hàn Quốc chuyên về giải pháp tài chính dựa trên khoản phải thu, kết nối với Ngân hàng Hana tại Hàn Quốc và Việt Nam — đang tuyển dụng các vị trí chủ chốt qua FYI. Đội ngũ FYI đã xem xét toàn bộ hồ sơ và <b>chọn bạn vào danh sách đề cử</b> — hồ sơ công khai của bạn sẽ được gửi kèm danh sách cho nhà tuyển dụng trong tuần này.',
+        ko: '하나은행 한국·베트남과 연계된 매출채권 기반 핀테크 <b>바다핀테크</b>가 FYI를 통해 주요 포지션을 채용 중입니다. FYI 팀이 이력서 전체를 검토해 회원님을 <b>추천 명단에 선정</b>했으며, 공개 프로필은 이번 주 명단과 함께 담당자에게 전달됩니다.',
+        en: '<b>Bada Fintech</b> — a Korean fintech in receivables financing working with Hana Bank Korea & Vietnam — is hiring via FYI. The FYI team reviewed all profiles and <b>nominated you</b>; your public profile goes to the recruiter with this week\'s list.',
+      },
+      initial: 'B', company: 'Bada Fintech', title: '{{공고 제목}}', meta: '{{급여 · 지역}}', tail: BENEFIT_PUBLIC,
+    }),
+  },
+  {
     match: /^mpnx-.*-private/,
     subject: {
       vi: '[FYI] Bạn được chọn vào danh sách đề cử — Senior Technical IP Analyst tại MPNX',
