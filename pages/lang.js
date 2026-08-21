@@ -217,6 +217,24 @@ export default function LangLanding({ valid, token, cta, uiLang, name, initial }
   const [done, setDone] = useState(false)
   const [err, setErr] = useState('')
 
+  /* 사람이 실제로 연 것만 세는 이벤트.
+
+     coldmail_lang_click 은 getServerSideProps 에서 찍는다 — 메일 보안 스캐너가 링크를
+     미리 열어도 똑같이 찍히므로 '도달'이지 '클릭'이 아니다. 스캐너는 자바스크립트를
+     실행하지 않으니, 브라우저에서 한 번 더 찍어야 사람 수를 셀 수 있다.
+     click 을 고치지 않고 이벤트를 하나 더 두는 이유: 기존 대시보드가 click 으로
+     시계열을 그리고 있어, 정의를 바꾸면 8월 이전 숫자와 비교가 끊긴다.
+     StrictMode 이중 마운트로 두 번 찍히는 건 표에서 사람 단위로 세니 문제되지 않는다. */
+  useEffect(() => {
+    if (!valid) return
+    fetch('/api/lang/view', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token, cta }),
+      keepalive: true,
+    }).catch(() => {})
+  }, [])
+
   const pickLang = (which) => {
     setForm((f) => ({ ...f, [which === 'ko' ? 'korean_cert' : 'english_cert']: LEVEL_OF[cta] }))
     setLangPicked(true)

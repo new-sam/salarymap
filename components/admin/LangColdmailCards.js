@@ -31,6 +31,9 @@ const ARM_META = {
   /* 5차 — 어학은 적었지만 점수가 아닌 층의 재확인. 앞 회차와 세는 것이 다르다:
      '입력'이 아니라 '확인'이라, 답이 들어와도 값은 그대로일 수 있다. */
   'coldmail-lang-recheck-1': { tag: 'R5', ko: '자기서술 재확인', en: 'Recheck', vi: 'Xác nhận lại', color: '#7C3AED' },
+  // 6차 — 같은 모집단에 본문을 바꿔 다시 보낸다(제목도 이전 캠페인 것으로 회귀).
+  // R5 와 나란히 두면 카피 변경의 효과가 그대로 세로로 읽힌다.
+  'coldmail-lang-recheck-2': { tag: 'R6', ko: '자기서술 재확인 · 개정', en: 'Recheck v2', vi: 'Xác nhận lại v2', color: '#6D28D9' },
 }
 
 /* 4차 세 갈래. 발송 전에는 대상 수를, 발송 뒤에는 그 arm 의 실적을 같은 자리에 그린다 —
@@ -211,8 +214,12 @@ export default function LangColdmailCards({ token, lang }) {
                   `trong ${data?.selfDesc ?? 0} người`)}
           stats={[
             { label: L('발송', 'Sent', 'Đã gửi'), value: recheck?.totals?.sent ?? 0 },
-            { label: L('점수 갱신', 'Scored', 'Có điểm'), value: recheck?.totals?.filled ?? 0,
-              sub: recheck?.totals?.sent ? pct(recheck.totals.filled / recheck.totals.sent) : null, accent: '#16a34a' },
+            /* 저장(filled)이 아니라 자격증 형태로 들어온 것만 센다 — cta=score 를 눌러놓고
+               "Basic" 을 저장한 사람이 1 차에 실제로 있었다. 그 사람까지 점수 갱신으로
+               세면 이 캠페인이 성공했는지를 스스로 속이게 된다.
+               meta.saved 는 2026-08-21 부터 실려서 그 이전 회차는 0 으로 보인다. */
+            { label: L('점수 갱신', 'Scored', 'Có điểm'), value: recheck?.totals?.scored ?? 0,
+              sub: recheck?.totals?.sent ? pct((recheck.totals.scored || 0) / recheck.totals.sent) : null, accent: '#16a34a' },
             { label: L('그대로 확인', 'Confirmed', 'Xác nhận'), value: recheck?.totals?.same ?? 0,
               sub: recheck?.totals?.sent ? pct(recheck.totals.same / recheck.totals.sent) : null, accent: '#7C3AED' },
           ]}
