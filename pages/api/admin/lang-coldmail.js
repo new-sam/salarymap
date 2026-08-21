@@ -41,8 +41,11 @@ const familyOf = (campaign) =>
   /^coldmail-ktc-lang/.test(campaign) ? 'ktc'
     : /^coldmail-lang-resume/.test(campaign) ? 'resume'
       : /^coldmail-lang-ghost/.test(campaign) ? 'ghost'
-        : /^coldmail-lang-exam/.test(campaign) ? 'exam'
-          : /^coldmail-lang-recheck/.test(campaign) ? 'recheck'
+        /* exam(7차·R7)도 recheck 카드에 넣는다. 캠페인 ID 는 '무엇을 물었나'(시험명)라
+           따로 두지만, 화면에서는 같은 층에 이어 보내는 재확인 시리즈라 R5·R6 아래
+           R7 로 붙어야 회차가 이어져 읽힌다. 계열을 다시 가르려면 여기서 'exam' 을
+           돌려주고 화면에 전용 카드를 세우면 된다. */
+        : /^coldmail-lang-(recheck|exam)/.test(campaign) ? 'recheck'
             : /^coldmail-lang-nocert/.test(campaign) ? 'nocert'
               : /^coldmail-language/.test(campaign) ? 'language'
                 : 'other'
