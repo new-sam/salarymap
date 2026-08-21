@@ -75,15 +75,22 @@ const TH = { textAlign: 'left', fontSize: 11, fontWeight: 700, color: '#9CA3AF',
 const TD = { fontSize: 13, color: '#1F2937', padding: '7px 10px', borderBottom: '1px solid #F5F6F7' }
 const NUM = { ...TD, textAlign: 'right', fontVariantNumeric: 'tabular-nums', fontWeight: 600 }
 
-// 계열 한 줄 이름 — 카드 제목의 긴 설명 말고, 표에서 세로로 훑을 수 있는 짧은 이름.
-const FAMILY_LABEL = (f, L) => (
-  f === 'language' ? L('제목 A/B · 지원 경험 O', 'Subject A/B', 'A/B tiêu đề')
-    : f === 'ktc' ? L('KTC 유입', 'From KTC', 'Từ KTC')
-      : f === 'resume' ? L('이력서 O · 지원 0', 'Resume, never applied', 'Có CV, chưa ứng tuyển')
-        : f === 'ghost' ? L('죽은 회원 · 이력서도 지원도 0', 'Dormant — no resume, no application', 'Chỉ đăng ký')
-          : f === 'recheck' ? L('자기서술 재확인', 'Recheck', 'Xác nhận lại')
-            : f === 'nocert' ? L('이력서 O · 어학만 빔', 'Resume, language blank', 'Có CV, thiếu ngoại ngữ')
-              : f
+/* 표의 구분 행은 계열이 아니라 3분류로 묶는다.
+
+   계열(language·ktc·resume·ghost·nocert·recheck)은 '누구에게 보냈나'를 가르는 축이고
+   API 는 그 단위로 내려준다. 그런데 화면에서 계열마다 구분 행을 세웠더니 캠페인 11개에
+   구분 행이 6개가 붙어, 표가 절반쯤 머리글이 됐다.
+
+   앞의 넷(A/B·KTC·이력서 O·죽은 회원)은 대상을 고른 근거만 다를 뿐 묻는 말이 같다 —
+   "어학을 채워달라". 그래서 한 덩어리로 묶는다. 나머지 둘은 묻는 말 자체가 다르다:
+   4차는 어학 칸이 아예 빈 사람에게 처음 묻는 것이고, 5~7차는 이미 적힌 값을 되묻는다.
+   전환의 정의가 갈리는 자리가 거기라 그 둘만 따로 세운다. */
+const SECTION_OF = (f) => (f === 'nocert' ? 'nocert' : f === 'recheck' ? 'recheck' : 'early')
+
+const SECTION_LABEL = (s, L) => (
+  s === 'nocert' ? L('4차 · 이력서 O · 어학 칸이 빈 층', '4th · language field blank', 'Đợt 4 · thiếu ngoại ngữ')
+    : s === 'recheck' ? L('5–7차 · 이미 적힌 값 재확인', '5–7th · recheck what was written', 'Đợt 5–7 · xác nhận lại')
+      : L('1–3차 · 어학 입력 요청', '1–3rd · asking to fill language', 'Đợt 1–3 · yêu cầu điền')
 )
 
 /* 캠페인 한 줄 = 표 한 행. 카드로 나눠 두던 것을 표로 편다 — 회차가 10개를 넘어가면서
@@ -98,7 +105,7 @@ function CampaignTable({ groups, L }) {
   if (!rows.length) return null
 
   const pctOr = (v, n) => (n ? pct(v) : '—')
-  let lastFamily = null
+  let lastSection = null
 
   return (
     <div className="adm-m-scroll" style={{ overflowX: 'auto', border: '1px solid #EEF0F2', borderRadius: 12 }}>
@@ -119,7 +126,8 @@ function CampaignTable({ groups, L }) {
         <tbody>
           {rows.map((r) => {
             const m = ARM_META[r.campaign]
-            const head = r.family !== lastFamily ? (lastFamily = r.family, true) : false
+            const section = SECTION_OF(r.family)
+            const head = section !== lastSection ? (lastSection = section, true) : false
             const d0 = r.firstSentAt ? mmdd(r.firstSentAt) : ''
             const d1 = r.lastSentAt ? mmdd(r.lastSentAt) : ''
             return (
@@ -129,7 +137,7 @@ function CampaignTable({ groups, L }) {
                     <td colSpan={10} style={{
                       fontSize: 11, fontWeight: 700, color: '#6B7280', background: '#FAFBFC',
                       padding: '5px 10px', borderBottom: '1px solid #EEF0F2',
-                    }}>{FAMILY_LABEL(r.family, L)}</td>
+                    }}>{SECTION_LABEL(section, L)}</td>
                   </tr>
                 )}
                 <tr>
