@@ -93,11 +93,23 @@ export default async function handler(req, res) {
   // supabase-js 는 throw 하지 않고 error 를 돌려준다 — try/catch 로는 못 잡는다.
   if (logErr) console.error('coldmail_lang_responses insert failed:', logErr.message)
 
-  // 전환 이벤트. user_id 를 같이 남겨 유진 작업실 표가 사람 수로 셀 수 있게 한다.
+  /* 전환 이벤트. user_id 를 같이 남겨 유진 작업실 표가 사람 수로 셀 수 있게 한다.
+
+     cta 를 같이 싣는다 — coldmail_lang_responses 에는 있는데 events 에는 없어서,
+     "어느 버튼으로 들어온 사람이 저장했나"를 표에서 가를 수 없었다. 재확인 회차는
+     그 구분이 곧 결론이다(점수 갱신 vs 그대로 확인).
+     saved 는 실제로 자격증 형태가 들어왔는지다. cta=score 를 눌러놓고 "Basic" 을
+     저장한 사람이 실제로 있었다 — 버튼만 세면 그 사람이 점수를 낸 걸로 잡힌다. */
+  const isCert = (v) => /^(TOEIC|IELTS|TOEFL|VSTEP|APTIS|TOPIK|CEFR)\b/i.test(String(v || '').trim())
   await supabaseAdmin.from('events').insert({
     event: 'coldmail_lang_fill',
     user_id: prof.id,
-    meta: { campaign: claim.campaign, lead: leadId(claim.email) },
+    meta: {
+      campaign: claim.campaign,
+      lead: leadId(claim.email),
+      cta: typeof cta === 'string' ? cta.slice(0, 20) : null,
+      saved: isCert(patch.english_cert) || isCert(patch.korean_cert) ? 'cert' : 'level',
+    },
   })
 
   return res.status(200).json({ ok: true })

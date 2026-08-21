@@ -25,7 +25,7 @@ const supabase = createClient(
 /* coldmail_lang_same — 5차 재확인의 '그대로입니다'. fill 과 이름을 나눈 이유: 그건
    새로 받아낸 입력이 아니라 기존 값의 확인이라, 같은 칸에 세면 전환율이 부풀어 오른다.
    그래서 세는 것도 따로 세고 화면에도 따로 그린다. */
-const EVENTS = ['coldmail_lang_sent', 'coldmail_lang_click', 'coldmail_lang_fill', 'coldmail_lang_same']
+const EVENTS = ['coldmail_lang_sent', 'coldmail_lang_click', 'coldmail_lang_view', 'coldmail_lang_fill', 'coldmail_lang_same']
 
 /* 같은 이벤트 이름을 쓰는 캠페인이 여럿이다 — 전환 정의가 '어학 입력'으로 같아서다.
    그러나 모집단이 달라 한 표에 합치면 전환율이 무엇의 전환율인지 알 수 없다.
@@ -138,7 +138,12 @@ export default async function handler(req, res) {
     const arm = (name) => (arms[name] = arms[name] || {
       campaign: name,
       sent: new Set(), click: new Set(), fill: new Set(), same: new Set(),
-      cta: { score: new Set(), daily: new Set(), basic: new Set(), none: new Set() },
+      // same = 재확인 회차의 '그대로입니다' 버튼. 다른 회차엔 없어 항상 0 이다.
+      cta: { score: new Set(), daily: new Set(), basic: new Set(), none: new Set(), same: new Set() },
+      view: new Set(),
+      // 저장된 값이 실제 자격증 형태였는지. 저장(fill)만 세면 cta=score 를 눌러놓고
+      // "Basic" 을 저장한 사람까지 점수 갱신으로 잡힌다 — 1 차에서 실제로 나왔다.
+      fillCert: new Set(),
       firstSentAt: null, lastSentAt: null,
     })
 
@@ -155,8 +160,11 @@ export default async function handler(req, res) {
         if (pid) a.click.add(pid)
         const c = e.meta?.cta
         if (pid && a.cta[c]) a.cta[c].add(pid)
+      } else if (e.event === 'coldmail_lang_view') {
+        if (pid) a.view.add(pid)
       } else if (e.event === 'coldmail_lang_fill') {
         if (pid) a.fill.add(pid)
+        if (pid && e.meta?.saved === 'cert') a.fillCert.add(pid)
       } else if (e.event === 'coldmail_lang_same') {
         if (pid) a.same.add(pid)
       }
@@ -167,13 +175,19 @@ export default async function handler(req, res) {
         campaign: a.campaign,
         sent: a.sent.size,
         clicked: a.click.size,
+        // 사람이 브라우저로 연 수. click 과의 차이가 메일 스캐너 프리페치다.
+        viewed: a.view.size,
         filled: a.fill.size,
+        // 재확인 회차의 결론. filled 와 달리 자격증 형태로 들어온 것만 센다.
+        // meta.saved 는 2026-08-21 부터 실린다 — 그 이전 fill 은 여기서 0 으로 잡힌다.
+        scored: a.fillCert.size,
         same: a.same.size,
         clickRate: a.sent.size ? a.click.size / a.sent.size : 0,
         sameRate: a.sent.size ? a.same.size / a.sent.size : 0,
         fillRate: a.sent.size ? a.fill.size / a.sent.size : 0,
         clickToFill: a.click.size ? a.fill.size / a.click.size : 0,
-        cta: { score: a.cta.score.size, daily: a.cta.daily.size, basic: a.cta.basic.size, none: a.cta.none.size },
+        cta: { score: a.cta.score.size, daily: a.cta.daily.size, basic: a.cta.basic.size, none: a.cta.none.size, same: a.cta.same.size },
+        scoreRate: a.sent.size ? a.fillCert.size / a.sent.size : 0,
         firstSentAt: a.firstSentAt,
         lastSentAt: a.lastSentAt,
       }))
@@ -295,7 +309,9 @@ export default async function handler(req, res) {
         totals: {
           sent: wRows.reduce((s, r) => s + r.sent, 0),
           clicked: wRows.reduce((s, r) => s + r.clicked, 0),
+          viewed: wRows.reduce((s, r) => s + r.viewed, 0),
           filled: wRows.reduce((s, r) => s + r.filled, 0),
+          scored: wRows.reduce((s, r) => s + r.scored, 0),
           same: wRows.reduce((s, r) => s + r.same, 0),
         },
       }

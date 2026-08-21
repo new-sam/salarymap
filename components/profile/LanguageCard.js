@@ -84,6 +84,8 @@ function CertRow({ label, value, known, onChange, L, allowLevelOnly = true }) {
   // 없어야 한다. 기존 값이 자기서술("Intermediate")이거나 기타면 선택 안 된 상태로 비우고
   // 시작한다 — 그대로 두면 목록에 없는 항목이 골라진 것처럼 보이고, 점수 칸에 남은
   // "Intermediate"가 시험명과 붙어 "TOEIC Intermediate"로 저장된다.
+  // 기존 값을 화면에 되비추지는 않는다. 값은 지우지 않고 남지만(무엇을 고르지 않으면
+  // 그대로다), 자격증만 받는 칸에 자기서술을 다시 보여주면 그걸 고쳐 쓰려 든다.
   const blanked = raw.cert === CERT_ETC || (raw.cert === CERT_NONE && !allowLevelOnly)
   const cur = blanked ? { cert: '', etc: '', score: '' } : raw
   const emit = (next) => onChange(joinCert({ ...cur, ...next }))
@@ -146,18 +148,6 @@ function CertRow({ label, value, known, onChange, L, allowLevelOnly = true }) {
         </div>
       </div>
 
-      {/* 자격증 전용 칸인데 기존 값이 자기서술이면, 빈칸만 보여주고 끝내지 않는다.
-          값은 지우지 않고 그대로 두되(덮어쓰기로 값을 잃는 사고가 반복됐다) 무엇이
-          저장돼 있는지는 보여줘야 한다 — 안 보여주면 "빈칸인데 옛 값이 남는" 상태가 된다. */}
-      {blanked && (
-        <div style={{ marginTop: 6, fontSize: 12.5, color: 'rgba(0,0,0,0.45)', lineHeight: 1.5 }}>
-          {L(
-            `현재 저장된 값: ${value} — 자격증을 고르면 이 값이 바뀝니다`,
-            `Saved: ${value} — picking a test replaces it`,
-            `Đã lưu: ${value} — chọn chứng chỉ sẽ thay giá trị này`,
-          )}
-        </div>
-      )}
     </div>
   )
 }
