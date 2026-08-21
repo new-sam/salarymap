@@ -10,8 +10,13 @@ import CustomSelect from './CustomSelect'
 // VSTEP/APTIS 는 베트남에서 흔한 영어 시험이라 빼면 18명이 바로 기타로 떨어진다.
 //
 // '자격증 없음'이 필요한 이유: english_cert 390명 중 52%가 자격증이 아니라 자기서술
-// 수준("Fluent", "Intermediate", "B1"…)이다. 이 옵션이 없으면 절반이 기타에 쌓여
-// 지금과 똑같아진다.
+// 수준("Fluent", "Intermediate", "B1"…)이다. 이 옵션이 없으면 그 절반이 갈 곳을 잃는다.
+// 그래서 영어의 프로필 경로에만 남긴다 — 한국어와 /lang?cta=score 에는 없다.
+//
+// '기타'(자유 입력 자격증명)는 2026-08-21 에 전부 뺐다. 자유 입력은 certOf(langTier.js)가
+// 못 읽는 값을 만들고, 그건 결국 자기서술로 집계된다 — '자격증 없음'을 없앤 이유와 같다.
+// splitCert 는 기존 저장값을 읽기 위해 CERT_ETC 를 계속 내보내지만, 그 값이 걸리면
+// 화면은 빈칸 + 안내문으로 보여준다(값 자체는 안 지운다).
 //
 // 저장 포맷은 "TOEIC 900" 한 줄 텍스트로 정규화한다. 컬럼 타입을 안 바꿔서 390행
 // 마이그레이션도, 파서(parseResume.js)·어드민 인재풀 표시도 건드리지 않는다.
@@ -74,20 +79,25 @@ const isEnKo = (n) => /(anh|english|영어|korean|한국|hàn|hàn quốc)/i.tes
 
 // 자격증 드롭다운 + 점수 한 줄. 영어·한국어가 같은 모양을 쓴다.
 function CertRow({ label, value, known, onChange, L, allowLevelOnly = true }) {
-  const cur = splitCert(value, known)
+  const raw = splitCert(value, known)
+  // "점수가 있다"고 답하고 들어온 경로(/lang?cta=score)에선 자기서술을 넣을 방법이 아예
+  // 없어야 한다. 기존 값이 자기서술("Intermediate")이거나 기타면 선택 안 된 상태로 비우고
+  // 시작한다 — 그대로 두면 목록에 없는 항목이 골라진 것처럼 보이고, 점수 칸에 남은
+  // "Intermediate"가 시험명과 붙어 "TOEIC Intermediate"로 저장된다.
+  const blanked = raw.cert === CERT_ETC || (raw.cert === CERT_NONE && !allowLevelOnly)
+  const cur = blanked ? { cert: '', etc: '', score: '' } : raw
   const emit = (next) => onChange(joinCert({ ...cur, ...next }))
 
   const certItems = [
     ...known.map((c) => ({ value: c, label: c })),
-    // '자격증 없음'은 "점수가 있다"고 답하고 들어온 경로(/lang?cta=score)에서만 뺀다.
-    // 그 사람에게 자기서술 선택지를 바로 옆에 놓으면 이 캠페인이 고치려는 52%(자격증이
-    // 아니라 "Fluent"·"B1" 같은 자기서술)가 또 쌓인다. 잘못 누른 사람은 '기타'로 적거나
-    // 메일의 다른 버튼으로 돌아가면 된다.
-    // 단 이미 그 값이 들어 있으면 남긴다 — 빼버리면 기존 값의 라벨만 빈칸으로 보인다.
-    ...(allowLevelOnly || cur.cert === CERT_NONE
+    // '기타'는 어디서도 받지 않는다 — 자유 입력이라 certOf(langTier.js)가 못 읽는 값이
+    // 들어오고, 그건 결국 자기서술로 집계된다. 목록에 없는 시험을 가진 사람은 드물고,
+    // 그 한 명을 받자고 자기서술 유입구를 열어두는 쪽이 손해다.
+    // '자격증 없음'은 영어의 프로필 경로에만 남긴다 — 거기선 자기서술이 유일한 답인
+    // 사람이 절반이라 빼면 그 절반이 갈 곳이 없다. score 경로와 한국어는 뺀다.
+    ...(allowLevelOnly
       ? [{ value: CERT_NONE, label: L('자격증 없음 (수준만)', 'No test (level only)', 'Không có chứng chỉ') }]
       : []),
-    { value: CERT_ETC, label: L('기타', 'Other', 'Khác') },
   ]
   const certLabel = certItems.find((i) => i.value === cur.cert)?.label || ''
 
@@ -107,7 +117,7 @@ function CertRow({ label, value, known, onChange, L, allowLevelOnly = true }) {
             // 자격증끼리 바꾸는 건 시험명 정정이므로 점수를 남긴다.
             onChange={(v) => emit({
               cert: v,
-              etc: v === CERT_ETC ? cur.etc : '',
+              etc: '',
               score: (cur.cert === CERT_NONE) === (v === CERT_NONE) ? cur.score : '',
             })}
           />
@@ -136,14 +146,17 @@ function CertRow({ label, value, known, onChange, L, allowLevelOnly = true }) {
         </div>
       </div>
 
-      {cur.cert === CERT_ETC && (
-        <input
-          className="pinput"
-          style={{ marginTop: 6 }}
-          value={cur.etc}
-          onChange={(e) => emit({ etc: e.target.value })}
-          placeholder={L('자격증명 (예: HSK)', 'Test name (e.g. HSK)', 'Tên chứng chỉ (vd: HSK)')}
-        />
+      {/* 자격증 전용 칸인데 기존 값이 자기서술이면, 빈칸만 보여주고 끝내지 않는다.
+          값은 지우지 않고 그대로 두되(덮어쓰기로 값을 잃는 사고가 반복됐다) 무엇이
+          저장돼 있는지는 보여줘야 한다 — 안 보여주면 "빈칸인데 옛 값이 남는" 상태가 된다. */}
+      {blanked && (
+        <div style={{ marginTop: 6, fontSize: 12.5, color: 'rgba(0,0,0,0.45)', lineHeight: 1.5 }}>
+          {L(
+            `현재 저장된 값: ${value} — 자격증을 고르면 이 값이 바뀝니다`,
+            `Saved: ${value} — picking a test replaces it`,
+            `Đã lưu: ${value} — chọn chứng chỉ sẽ thay giá trị này`,
+          )}
+        </div>
       )}
     </div>
   )
@@ -170,15 +183,24 @@ export default function LanguageCard({ form, set, lang, allowLevelOnly = true })
         allowLevelOnly={allowLevelOnly}
       />
 
+      {/* 한국어는 어디서나 TOPIK 만 받는다 — '자격증 없음'·'기타'가 없다.
+          영어와 달리 한국어는 자기서술이 쓸모가 거의 없다: 값이 115건뿐이라 지금 막으면
+          늘어나기 전에 끊을 수 있고, 한국어 가능자를 찾는 공고는 급수를 요구한다.
+          기존 자기서술 값은 지우지 않고 CertRow 가 안내문으로 보여준다. */}
       <CertRow
         label={L('한국어', 'Korean', 'Tiếng Hàn')}
         value={form.korean_cert}
         known={CERTS.korean_cert}
         onChange={(v) => set('korean_cert', v)}
         L={L}
-        allowLevelOnly={allowLevelOnly}
+        allowLevelOnly={false}
       />
 
+      {/* 기타 언어는 score 경로에서 렌더하지 않는다 — 수준을 자유 텍스트로 받는 칸이라
+          '자격증만 받는다'는 이 경로의 규칙과 어긋난다.
+          ※ /lang 은 api/lang/save.js 가 english_cert·korean_cert 두 칼럼만 쓰기 때문에
+            애초에 여기 입력이 저장되지 않는다(프로필에서만 유효하다). */}
+      {allowLevelOnly && (
       <div className="pfield">
         <div className="pfield-label">{L('기타 언어', 'Other languages', 'Ngôn ngữ khác')}</div>
         {others.map((row, i) => (
@@ -219,6 +241,7 @@ export default function LanguageCard({ form, set, lang, allowLevelOnly = true })
           + {L('언어 추가', 'Add language', 'Thêm ngôn ngữ')}
         </button>
       </div>
+      )}
     </>
   )
 }
