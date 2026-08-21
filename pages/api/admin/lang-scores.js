@@ -35,6 +35,10 @@ function scoreOf(value) {
 
 const hasText = (v) => !!String(v || '').trim()
 
+/* 넘겨받는 쿼리에는 반드시 유일한 정렬키가 있어야 한다 — ORDER BY 없이(또는 created_at
+   처럼 값이 겹칠 수 있는 키만으로) range() 페이지를 넘기면 Postgres 가 행 순서를 보장하지
+   않아 페이지마다 행이 중복되거나 빠진다. 여러 페이지짜리 테이블(user_profiles 4페이지,
+   events 18페이지)에서 실제로 터졌다 — 같은 집계가 실행마다 다른 수를 냈다. */
 async function fetchAll(build) {
   const PAGE = 1000
   let all = [], from = 0
@@ -57,7 +61,7 @@ export default async function handler(req, res) {
     const evts = await fetchAll(() => supabase.from('events')
       .select('event, user_id, created_at, meta')
       .in('event', ['coldmail_lang_sent', 'coldmail_lang_fill'])
-      .order('created_at'))
+      .order('created_at').order('id'))
 
     // wave 는 발송에만 있다 — 저장은 랜딩에서 찍히는데 거기선 wave 를 모른다.
     const waveOf = {}
@@ -113,16 +117,36 @@ export default async function handler(req, res) {
 
     const counts = Object.fromEntries(chipOrder.map((c) => [c, rows.filter((r) => r.chip === c).length]))
 
-    /* 회원 전체를 이력서 × 어학 2×2 로 — 위 47명이 전체의 어디쯤인지 보려면 모수가 필요하다.
+    /* 회원 전체를 이력서 × 활동 4분할로 — 위 47명이 전체의 어디쯤인지 보려면 모수가 필요하다.
        hr 계정은 뺀다(구직자 지표에 기업 계정이 섞이면 분모가 틀어진다).
-       카운트 쿼리 대신 세 칼럼을 다 읽는 이유: '어학 있음'과 '점수'의 판정을 위 목록과
+       카운트 쿼리 대신 칼럼을 다 읽는 이유: '어학 있음'과 '점수'의 판정을 위 목록과
        같은 함수로 해야 한다. PostgREST 필터로 같은 규칙을 다시 쓰면 두 정의가 갈라진다.
        화면으로는 숫자만 나가고 행은 나가지 않는다. */
     const profilesAll = await fetchAll(() => supabase
-      .from('user_profiles').select('role, resume_url, english_cert, korean_cert'))
+      .from('user_profiles').select('id, role, resume_url, english_cert, korean_cert').order('id'))
     const seekers = profilesAll.filter((p) => p.role !== 'hr')
-    const bucket = (withResume) => {
-      const pool = seekers.filter((p) => hasText(p.resume_url) === withResume)
+
+    /* 활동 = 본인이 한 행동이 한 건이라도 남은 사람. 커뮤니티·팔로우·명함 같은 나머지
+       테이블은 다 더해도 여기서 안 잡히는 사람이 0명이라 읽지 않는다.
+       주의: user_activity_days 는 2026-06-22(트래킹 시작)부터만 쌓인다 — 그 전에만
+       쓰고 떠난 사람은 지원·연봉제출 기록으로만 잡히므로 '활동 X'가 조금 부풀 수 있다. */
+    // 두 번째 값은 페이지네이션 정렬키다 — 값이 유일해야 한다(user_activity_days 는
+    // id 가 없고 PK 가 (user_id, day) 라 day 를 같이 건다). 아래 fetchAll 주석 참고.
+    const ACTIVITY_TABLES = [
+      ['user_activity_days', ['user_id', 'day']], ['job_applications', ['id']],
+      ['submissions', ['id']], ['job_bookmarks', ['id']], ['company_follows', ['id']],
+    ]
+    const active = new Set()
+    for (const [table, orderBy] of ACTIVITY_TABLES) {
+      const hits = await fetchAll(() => orderBy.reduce(
+        (q, col) => q.order(col, { ascending: true }),
+        supabase.from(table).select(['user_id', ...orderBy].join(',')).not('user_id', 'is', null)))
+      for (const h of hits) active.add(h.user_id)
+    }
+
+    const bucket = (withResume, isActive) => {
+      const pool = seekers.filter((p) =>
+        hasText(p.resume_url) === withResume && active.has(p.id) === isActive)
       const lang = pool.filter((p) => hasText(p.english_cert) || hasText(p.korean_cert))
       return {
         total: pool.length,
@@ -131,7 +155,13 @@ export default async function handler(req, res) {
         score: lang.filter((p) => certOf(p.english_cert) || certOf(p.korean_cert)).length,
       }
     }
-    const base = { members: seekers.length, resume: bucket(true), noResume: bucket(false) }
+    const base = {
+      members: seekers.length,
+      resumeActive: bucket(true, true),
+      resumeIdle: bucket(true, false),
+      noResumeActive: bucket(false, true),
+      noResumeIdle: bucket(false, false),
+    }
 
     /* 총 회원(콜드메일 응답자만이 아니라) 기준 자격증별 등급 분포.
        한 사람이 TOEIC 과 TOPIK 을 둘 다 가졌으면 두 시험 모두에 한 번씩 세지만,
