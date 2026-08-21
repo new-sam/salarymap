@@ -230,19 +230,26 @@ export default async function handler(req, res) {
     /* 실제로 들어온 값 목록. 비율만 보면 "무엇이 들어왔는지"를 못 본다 — 이 캠페인의
        원래 목적이 자기서술 52% 를 자격증·점수로 바꾸는 거라, 들어온 값의 생김새가
        전환율만큼 중요하다. 프로필의 현재 값을 읽는다(이벤트에는 값을 안 남긴다).
-       같은 사람이 두 번 저장하면 첫 저장 시각으로 한 줄만 남긴다 — 전환을 세는 방식과 같다. */
-    const firstFill = {}
+       같은 사람이 두 번 저장하면 마지막 저장으로 남긴다.
+
+       원래는 첫 저장만 남겼다(전환 세는 방식과 같게). 캠페인끼리 대상이 안 겹칠 때는
+       맞았는데, 재확인 회차는 이미 답한 사람에게 일부러 다시 보낸다 — 8/4 에 'Fluent'
+       를 저장했던 사람이 6차에서 'TOEIC 750' 을 넣었더니 첫 저장 기준으로 8/4 캠페인에
+       잡혀 R6 목록에서 사라졌다. 목록이 보여주는 값은 현재 프로필 값이므로, 그 값을
+       만든 마지막 저장에 붙이는 것이 맞다.
+       전환 수(filled)는 이벤트별로 세므로 이 변경과 무관하다.
+    const lastFill = {}
     for (const e of evts) {
       if (e.event !== 'coldmail_lang_fill' || !e.user_id) continue
-      if (!firstFill[e.user_id]) firstFill[e.user_id] = { at: e.created_at, campaign: e.meta?.campaign || null }
+      lastFill[e.user_id] = { at: e.created_at, campaign: e.meta?.campaign || null }
     }
     // 저장 직전에 누른 버튼 — 저장된 값이 본인 답인지 우리가 넣어준 값인지 가르는 기준이다.
     const ctaOf = {}
     for (const e of evts) {
       if (e.event !== 'coldmail_lang_click' || !e.user_id) continue
-      if (firstFill[e.user_id] && e.created_at <= firstFill[e.user_id].at) ctaOf[e.user_id] = e.meta?.cta || null
+      if (lastFill[e.user_id] && e.created_at <= lastFill[e.user_id].at) ctaOf[e.user_id] = e.meta?.cta || null
     }
-    const fillIds = Object.keys(firstFill)
+    const fillIds = Object.keys(lastFill)
     let fills = []
     if (fillIds.length) {
       // 200명 캠페인이라 한 번에 들어간다. 캠페인이 커지면 여기서 쪼개야 한다.
@@ -260,9 +267,9 @@ export default async function handler(req, res) {
           // '버튼 그대로'다.
           keptPreset: !!PRESET[ctaOf[p.id]] &&
             [p.english_cert, p.korean_cert].filter(Boolean).every((v) => v === PRESET[ctaOf[p.id]]),
-          campaign: firstFill[p.id]?.campaign || null,
+          campaign: lastFill[p.id]?.campaign || null,
           wave: waveOf[p.id] || 1,
-          at: firstFill[p.id]?.at || null,
+          at: lastFill[p.id]?.at || null,
         }))
         .sort((a, b) => String(b.at || '').localeCompare(String(a.at || '')))
     }
