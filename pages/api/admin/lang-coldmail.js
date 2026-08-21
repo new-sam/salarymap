@@ -1,5 +1,7 @@
 import { createClient } from '@supabase/supabase-js'
 import { verifyAdminOrDevStub } from './check'
+// 점수/자기서술 판정은 어학 점수 패널·발송 스크립트와 같은 함수를 쓴다.
+import { certOf } from '../../../lib/langTier'
 
 // "유진 작업실 > 어학 콜드메일" — 어학 정보 수집 콜드메일의 제목 A/B 판독.
 //
@@ -20,7 +22,10 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
 )
 
-const EVENTS = ['coldmail_lang_sent', 'coldmail_lang_click', 'coldmail_lang_fill']
+/* coldmail_lang_same — 5차 재확인의 '그대로입니다'. fill 과 이름을 나눈 이유: 그건
+   새로 받아낸 입력이 아니라 기존 값의 확인이라, 같은 칸에 세면 전환율이 부풀어 오른다.
+   그래서 세는 것도 따로 세고 화면에도 따로 그린다. */
+const EVENTS = ['coldmail_lang_sent', 'coldmail_lang_click', 'coldmail_lang_fill', 'coldmail_lang_same']
 
 /* 같은 이벤트 이름을 쓰는 캠페인이 여럿이다 — 전환 정의가 '어학 입력'으로 같아서다.
    그러나 모집단이 달라 한 표에 합치면 전환율이 무엇의 전환율인지 알 수 없다.
@@ -28,14 +33,18 @@ const EVENTS = ['coldmail_lang_sent', 'coldmail_lang_click', 'coldmail_lang_fill
      ktc      = KTC 유입자 (coldmail-ktc-lang-1)
      resume   = 이력서 O · FYI 지원 0 (coldmail-lang-resume-1)
      ghost    = 이력서 X · FYI 지원 0 (coldmail-lang-ghost-1)
+     nocert   = 이력서 O · 어학 빔 · 지원 여부 무관 (coldmail-lang-nocert-*)
+     recheck  = 어학은 적었지만 점수가 아닌 층의 재확인 (coldmail-lang-recheck-*)
    language 외에는 wave 를 안 쓴다 — meta.wave 가 없어 1 로 떨어지는데, 계열로 먼저
    가르지 않으면 그대로 어학 wave 1 숫자에 섞인다. */
 const familyOf = (campaign) =>
   /^coldmail-ktc-lang/.test(campaign) ? 'ktc'
     : /^coldmail-lang-resume/.test(campaign) ? 'resume'
       : /^coldmail-lang-ghost/.test(campaign) ? 'ghost'
-        : /^coldmail-language/.test(campaign) ? 'language'
-          : 'other'
+        : /^coldmail-lang-recheck/.test(campaign) ? 'recheck'
+          : /^coldmail-lang-nocert/.test(campaign) ? 'nocert'
+            : /^coldmail-language/.test(campaign) ? 'language'
+              : 'other'
 
 /* 들어온 값이 어떤 종류인지 — 이 캠페인의 원래 목적이 "자기서술 52% 를 자격증·점수로
    바꾸기"라, 전환율만큼이나 값의 생김새가 결론을 좌우한다. 전환 10% 를 넘겨도 전부
@@ -43,6 +52,10 @@ const familyOf = (campaign) =>
    판정 기준은 LanguageCard 의 splitCert 와 같아야 한다 — 다르면 화면과 표가 어긋난다. */
 const CERTS = ['TOEIC', 'IELTS', 'TOEFL', 'VSTEP', 'APTIS', 'TOPIK']
 const LEVELS = ['Native', 'Fluent', 'Business', 'Intermediate', 'Basic', 'C2', 'C1', 'B2', 'B1', 'A2', 'A1']
+/* 베트남어 수준 표현 — 이게 없으면 'Co ban'(기초)·'Giao tiep'(회화) 같은 값이 전부
+   '기타'로 떨어져, 실제로는 자기서술인데 "우리가 못 읽는 값"처럼 보인다.
+   실발송이 베트남어인 캠페인에서 영어 단어만 수준으로 인정하고 있었다. */
+const VI_LEVELS = /(co\u0301? ?ba\u0309n|c\u01a1 b\u1ea3n|s\u01a1 c\u1ea5p|trung c\u1ea5p|cao c\u1ea5p|giao ti\u1ebfp|th\u00e0nh th\u1ea1o|b\u1ea3n ng\u1eef|ti\u1ebfng m\u1eb9 \u0111\u1ebb|ng\u00f4n ng\u1eef ch\u00ednh|kh\u00e1|t\u1ed1t|trung b\u00ecnh|\u0111\u1ecdc hi\u1ec3u|nghe|n\u00f3i|vi\u1ebft)/i
 /* 메일 버튼 → 랜딩이 미리 채워 넣는 값. pages/lang.js 의 LEVEL_OF + cta=none 처리와
    같아야 한다. 이 값이 그대로 저장됐다면 그 사람이 "수준을 서술한" 게 아니라 버튼을
    누르고 저장만 누른 것이다 — 정보량이 클릭한 버튼과 같다는 뜻이라, 'Intermediate 7건'
@@ -55,9 +68,14 @@ function kindOf(raw) {
   if (s.toLowerCase() === 'none') return 'none'                               // 못한다고 명시
   if (CERTS.some((c) => new RegExp(`^${c}\\b`, 'i').test(s))) return 'score'  // "TOEIC 900"
   if (/^[A-C][12]$/i.test(s) || LEVELS.some((l) => l.toLowerCase() === s.toLowerCase())) return 'level'
+  if (VI_LEVELS.test(s)) return 'level'                    // 베트남어 수준 표현도 자기서술이다
   return 'other'                                                              // 미지의 자격증·자유서술
 }
 
+/* 넘겨받는 쿼리에는 반드시 유일한 정렬키가 있어야 한다 — ORDER BY 없이(또는 created_at
+   처럼 값이 겹칠 수 있는 키만으로) range() 페이지를 넘기면 Postgres 가 행 순서를
+   보장하지 않아 페이지마다 행이 중복되거나 빠진다. events 의 coldmail 행이 17,621개라
+   실제로 이게 터졌다(같은 집계가 실행마다 1072/1452/670 으로 달라졌다). */
 async function fetchAll(build) {
   const PAGE = 1000
   let all = [], from = 0
@@ -98,7 +116,7 @@ export default async function handler(req, res) {
     const evts = await fetchAll(() => supabase.from('events')
       .select('event, user_id, created_at, meta')
       .in('event', EVENTS)
-      .order('created_at'))
+      .order('created_at').order('id'))
 
     /* wave — 같은 캠페인 ID 를 쓰되 모집단이 다른 코호트.
          wave 1 = 콜드메일을 한 번도 안 받은 사람 200명
@@ -119,7 +137,7 @@ export default async function handler(req, res) {
     // fills 에도 wave 가 그대로 실린다.
     const arm = (name) => (arms[name] = arms[name] || {
       campaign: name,
-      sent: new Set(), click: new Set(), fill: new Set(),
+      sent: new Set(), click: new Set(), fill: new Set(), same: new Set(),
       cta: { score: new Set(), daily: new Set(), basic: new Set(), none: new Set() },
       firstSentAt: null, lastSentAt: null,
     })
@@ -139,6 +157,8 @@ export default async function handler(req, res) {
         if (pid && a.cta[c]) a.cta[c].add(pid)
       } else if (e.event === 'coldmail_lang_fill') {
         if (pid) a.fill.add(pid)
+      } else if (e.event === 'coldmail_lang_same') {
+        if (pid) a.same.add(pid)
       }
     }
 
@@ -148,14 +168,21 @@ export default async function handler(req, res) {
         sent: a.sent.size,
         clicked: a.click.size,
         filled: a.fill.size,
+        same: a.same.size,
         clickRate: a.sent.size ? a.click.size / a.sent.size : 0,
+        sameRate: a.sent.size ? a.same.size / a.sent.size : 0,
         fillRate: a.sent.size ? a.fill.size / a.sent.size : 0,
         clickToFill: a.click.size ? a.fill.size / a.click.size : 0,
         cta: { score: a.cta.score.size, daily: a.cta.daily.size, basic: a.cta.basic.size, none: a.cta.none.size },
         firstSentAt: a.firstSentAt,
         lastSentAt: a.lastSentAt,
       }))
-      .sort((x, y) => x.campaign.localeCompare(y.campaign))
+      /* 카드 안 arm 순서 = 보낸 순서. 캠페인명 알파벳순으로 두면 4차가 again → applied →
+         fresh(=N3 → N1 → N2)로 뒤집혀 뜬다 — 이름이 우연히 그렇게 정렬될 뿐, 우리가
+         보낸 순서도 읽는 순서도 아니다. 아직 안 나간 arm 은 맨 뒤로. */
+      .sort((x, y) =>
+        String(x.firstSentAt || '9999').localeCompare(String(y.firstSentAt || '9999')) ||
+        x.campaign.localeCompare(y.campaign))
 
     /* 실제로 들어온 값 목록. 비율만 보면 "무엇이 들어왔는지"를 못 본다 — 이 캠페인의
        원래 목적이 자기서술 52% 를 자격증·점수로 바꾸는 거라, 들어온 값의 생김새가
@@ -269,13 +296,55 @@ export default async function handler(req, res) {
           sent: wRows.reduce((s, r) => s + r.sent, 0),
           clicked: wRows.reduce((s, r) => s + r.clicked, 0),
           filled: wRows.reduce((s, r) => s + r.filled, 0),
+          same: wRows.reduce((s, r) => s + r.same, 0),
         },
       }
     })
 
+    /* 4차 모수 — 이력서는 있는데 어학이 빈 회원. 판정은 send.mjs 의 noLanguage 와
+       같아야 한다(languages jsonb 까지 본다) — 다르면 이미 어학을 넣은 사람에게
+       "어학이 비었다"고 보내게 된다.
+       셋으로 가르는 이유는 메일 문구가 다르기 때문이다. 같은 "어학을 넣어라"라도
+       근거로 댈 수 있는 사실이 층마다 다르다:
+         applied 미수신 · 지원 경험 O — "지원까지 했는데 어학만 비었다"
+         fresh   미수신 · 지원 0     — "어학이 있으면 지원해 볼 자리가 있다"
+         again   기수신             — 한 번 받고도 안 넣은 층. 새 근거가 없으니 재확인.
+       기수신을 버리지 않는 이유: 이 층의 60%가 거기 있어서 빼면 보낼 사람이 337명뿐이다. */
+    const allProfiles = await fetchAll(() => supabase.from('user_profiles')
+      .select('id, role, resume_url, english_cert, korean_cert, languages').order('id'))
+    /* '지원 경험'이 아니라 '최근 지원'이다 — applied 메일이 "얼마 전 {회사}의 {직무}에
+       지원하셨죠"로 시작하므로 오래된 지원자에게는 그 문장이 거짓이 된다.
+       send.mjs 의 RECENT_DAYS 와 같은 값이어야 화면의 대상 수와 실제 발송 수가 맞는다. */
+    const RECENT_DAYS = 90
+    const cutoff = new Date(Date.now() - RECENT_DAYS * 86400e3).toISOString()
+    const appliedIds = new Set((await fetchAll(() => supabase.from('job_applications')
+      .select('id, user_id, created_at').not('user_id', 'is', null).order('id')))
+      .filter((a) => a.created_at >= cutoff).map((a) => a.user_id))
+    const sentTo = new Set(evts
+      .filter((e) => e.event === 'coldmail_lang_sent' && e.user_id).map((e) => e.user_id))
+    const blank = (v) => !String(v || '').trim()
+    const noLanguage = (p) => blank(p.english_cert) && blank(p.korean_cert)
+      && !(Array.isArray(p.languages) && p.languages.some((l) => String(l?.name || '').trim()))
+    const poolRows = allProfiles.filter((p) => p.role !== 'hr' && !blank(p.resume_url) && noLanguage(p))
+    const seg = (f) => poolRows.filter(f).length
+
+    /* 5차 모수 — 어학을 적긴 했는데 자격증·점수가 아닌 사람. 이 수는 우리가 점수로
+       바꿔낸 만큼 줄어들므로, 발송 뒤에도 '아직 남은 확인 대상'으로 계속 읽힌다. */
+    const selfDesc = allProfiles.filter((p) => p.role !== 'hr' && !blank(p.resume_url)
+      && (!blank(p.english_cert) || !blank(p.korean_cert))
+      && !certOf(p.english_cert) && !certOf(p.korean_cert)
+      && ![p.english_cert, p.korean_cert].some((v) => String(v || '').trim().toLowerCase() === 'none')).length
+
     res.setHeader('Cache-Control', 'no-store')
     return res.status(200).json({
       groups,
+      selfDesc,
+      pool: {
+        total: poolRows.length,
+        applied: seg((p) => !sentTo.has(p.id) && appliedIds.has(p.id)),
+        fresh: seg((p) => !sentTo.has(p.id) && !appliedIds.has(p.id)),
+        again: seg((p) => sentTo.has(p.id)),
+      },
       generatedAt: new Date().toISOString(),
     })
   } catch (e) {

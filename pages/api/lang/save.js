@@ -20,9 +20,38 @@ const CERT_TO_FIELD = {
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' })
 
-  const { token, english_cert: en, korean_cert: ko, cta } = req.body || {}
+  const { token, english_cert: en, korean_cert: ko, cta, mode } = req.body || {}
   const claim = verifyToken(token)
   if (!claim?.email) return res.status(401).json({ error: 'invalid_token' })
+
+  /* mode='confirm' — 5차 재확인('그대로입니다')의 저장. 프로필은 건드리지 않는다:
+     바뀐 값이 없는데 update 를 때리면 updated_at 만 밀려서, 나중에 "언제 어학을 넣었나"를
+     볼 때 오늘 넣은 것처럼 보인다.
+     이벤트도 coldmail_lang_fill 이 아니라 별도 이름을 쓴다 — '그대로'는 새로 받아낸
+     입력이 아니라 기존 값의 확인이라, 같은 칸에 세면 전환율이 부풀어 오른다. */
+  if (mode === 'confirm') {
+    const { data: p, error } = await supabaseAdmin
+      .from('user_profiles').select('id, english_cert, korean_cert').ilike('email', claim.email).maybeSingle()
+    if (error) return res.status(500).json({ error: error.message })
+    if (!p) return res.status(404).json({ error: 'profile_not_found' })
+
+    const { error: logErr } = await supabaseAdmin.from('coldmail_lang_responses').insert({
+      user_id: p.id,
+      campaign: claim.campaign || null,
+      cta: typeof cta === 'string' ? cta.slice(0, 20) : null,
+      english_cert: p.english_cert ?? null,   // 확인 시점의 값을 그대로 박아둔다
+      korean_cert: p.korean_cert ?? null,
+      source: 'lang-confirm',
+    })
+    if (logErr) console.error('coldmail_lang_responses insert failed:', logErr.message)
+
+    await supabaseAdmin.from('events').insert({
+      event: 'coldmail_lang_same',
+      user_id: p.id,
+      meta: { campaign: claim.campaign, lead: leadId(claim.email) },
+    })
+    return res.status(200).json({ ok: true, confirmed: true })
+  }
 
   // 한 줄 텍스트 포맷은 LanguageCard 와 동일하게 유지한다("TOEIC 900").
   // 여기서 다른 포맷으로 저장하면 프로필 화면이 그 값을 칩으로 못 쪼갠다.

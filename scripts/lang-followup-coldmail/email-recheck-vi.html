@@ -1,0 +1,98 @@
+<!--
+  [실발송 · 베트남어] 어학 수집 5차 · selfdesc-recheck 세그먼트
+  검수용 한글본은 email-recheck-ko.html — 문장이 1:1 대응한다. 고칠 땐 양쪽 같이.
+
+  타겟   : 이력서 O · 어학은 적었지만 자격증·점수가 아닌 층 (Intermediate·Fluent·B1…) — 791명
+           이번엔 그중 100명만. 'None'(못한다고 명시)은 뺐다 — 이미 받은 확답이다.
+  제목   : ✉️ 어학 요건 공고에 추천해 드리지 못했습니다 (사유: 공인 점수 미확인)
+           이름을 안 붙인다 — 개인 인사가 붙으면 알림이 아니라 마케팅 메일로 읽힌다.
+
+  훅     : 앞선 회차와 목적이 다르다. 빈칸을 채우는 게 아니라 이미 받은 답이 아직
+           유효한지 확인한다. 그래서 본인이 적어둔 값({{current}})을 그대로 되읽어 준다 —
+           우리가 그 답을 기억하고 있다는 게 이 통의 유일한 근거다.
+           ※ 3차 N3 와 같은 형태로 짧게. 이 층은 이미 한 번 답해준 사람들이라
+             다시 설득하려 들면 그게 실례다.
+           ※ '그대로입니다'도 정답이다. 누르면 프로필은 그대로 두고 coldmail_lang_same
+             이벤트만 남는다 — 다음부터 '안 물어봤다'가 아니라 '물어봤고 아직 없다'가 된다.
+             전환 이벤트(coldmail_lang_fill)와 이름을 나눈 건, 확인은 새로 받아낸 입력이
+             아니라 같은 칸에 세면 전환율이 부풀기 때문이다.
+
+  버튼   : 둘뿐이다. 점수가 생겼으면 폼으로, 아니면 확인 한 번.
+  캠페인 : coldmail-lang-recheck-1
+-->
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>FYI</title>
+</head>
+<body style="margin:0;padding:24px 0;background:#f2f4f6;">
+
+<div style="display:none;max-height:0;overflow:hidden;opacity:0;">
+  Ngoại ngữ bạn từng cho biết vẫn chưa thay đổi. Nếu đã có điểm, chỉ mất 30 giây.
+</div>
+
+<div style="font-family:'Pretendard','Segoe UI',Roboto,Arial,sans-serif;color:#191F28;max-width:560px;margin:0 auto;background:#ffffff;border-radius:16px;overflow:hidden;border:1px solid #E5E8EB;">
+
+  <div style="padding:22px 32px;border-bottom:1px solid #F2F4F6;">
+    <span style="font-size:22px;font-weight:900;letter-spacing:-0.5px;color:#ff6000;">FYI</span>
+    <span style="font-size:11px;font-weight:700;color:#8B95A1;letter-spacing:0.5px;margin-left:8px;">Nền tảng tuyển dụng Việt Nam</span>
+  </div>
+
+  <div style="padding:32px;">
+
+    <h1 style="margin:0 0 18px;font-size:26px;line-height:1.35;font-weight:800;color:#191F28;letter-spacing:-0.7px;">
+      Từ đó tới nay<br />
+      <span style="color:#ff6000;">bạn có chứng chỉ chưa?</span>
+    </h1>
+
+    <p style="margin:0 0 16px;font-size:15px;line-height:1.7;color:#4E5968;">
+      Chào <b style="color:#191F28;">{{name}}</b>,<br />
+      Trước đây bạn cho biết ngoại ngữ của mình là <b style="color:#191F28;">“{{current}}”</b>.
+    </p>
+
+    <p style="margin:0 0 24px;font-size:15px;line-height:1.7;color:#4E5968;">
+      Nếu <b style="color:#191F28;">bạn đã thi và có điểm</b>, hãy điền vào giúp chúng tôi. Có chứng chỉ thì chúng tôi giới thiệu bạn với công ty tự tin hơn nhiều.<br />Nếu chưa có, bạn <b style="color:#191F28;">chỉ cần cho biết là vẫn như cũ</b>.
+    </p>
+
+    <div style="background:#F9F9F9;border:1px solid #F2F4F6;border-radius:14px;padding:22px;">
+      <div style="font-size:15px;font-weight:700;color:#191F28;margin-bottom:4px;">Thông tin ngoại ngữ có thay đổi không?</div>
+      <div style="font-size:12.5px;color:#8B95A1;margin-bottom:16px;">Không cần đăng nhập · 30 giây</div>
+
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:separate;border-spacing:0 8px;">
+        <tr>
+          <td>
+            <a href="{{ctaScore}}" style="display:block;background:#ff6000;color:#ffffff;text-decoration:none;border-radius:10px;padding:15px 18px;font-size:15px;font-weight:700;text-align:center;line-height:1.4;">
+              Tôi đã có điểm rồi
+              <span style="display:block;font-size:12px;font-weight:500;opacity:0.85;margin-top:3px;">TOEIC · IELTS · TOPIK · VSTEP</span>
+            </a>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            <a href="{{ctaSame}}" style="display:block;background:#ffffff;color:#191F28;text-decoration:none;border:1px solid #D1D6DB;border-radius:10px;padding:15px 18px;font-size:15px;font-weight:600;text-align:center;line-height:1.4;">
+              Vẫn vậy, tôi chưa có chứng chỉ
+            </a>
+          </td>
+        </tr>
+      </table>
+    </div>
+
+  </div>
+
+  <div style="padding:20px 32px;border-top:1px solid #F2F4F6;background:#FAFAFA;">
+    <p style="margin:0 0 8px;font-size:12px;line-height:1.6;color:#8B95A1;">
+      Bạn nhận email này vì đã tải CV lên FYI.
+    </p>
+    <p style="margin:0;font-size:11.5px;color:#B0B8C1;">
+      <a href="{{unsubscribeUrl}}" style="color:#B0B8C1;text-decoration:underline;">Hủy đăng ký</a>
+    </p>
+  </div>
+
+</div>
+
+<img src="{{pixelUrl}}" width="1" height="1" alt="" style="display:block;border:0;" />
+
+</body>
+</html>

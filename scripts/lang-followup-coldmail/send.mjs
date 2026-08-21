@@ -8,8 +8,15 @@
  *   옵션: --max N · --lang ko|vi (기본 vi)
  *
  * 세그먼트
- *   resume  이력서 O · 지원 0 · 어학 빔 — "이력서는 확인했다, 어학만 비었다"(소유 프레임)
- *   ghost   이력서 X · 지원 0 · 어학 빔 — "이력서 없어도 괜찮다"(문턱 낮추기)
+ *   resume         이력서 O · 지원 0 · 어학 빔 — "이력서는 확인했다, 어학만 비었다"
+ *   ghost          이력서 X · 지원 0 · 어학 빔 — "이력서 없어도 괜찮다"(문턱 낮추기)
+ *   nocert-applied 이력서 O · 지원 O · 어학 빔 · 미수신 — "지원까지 했는데 어학만 비었다"
+ *   nocert-fresh   이력서 O · 지원 0 · 어학 빔 · 미수신 — "어학 되면 지원해볼 자리가 있다"
+ *   nocert-again   이력서 O · 어학 빔 · 기수신 — "혹시 어학이 없으신가요"(공백 해소)
+ *   selfdesc-recheck 어학은 적었지만 점수가 아닌 층 — "그 뒤로 자격증 따셨나요"(값 검증)
+ *
+ * 4차(nocert-*) 는 지원 조건을 뺀 회차다. 3차까지의 조건으로는 337명이 남는데 어학이 빈
+ * 이력서 보유자는 847명이고, 차이인 510명은 앞 회차 기수신자다. 그 층만 again 으로 뺐다.
  *
  * 왜 지원 경험을 조건에서 뺐나
  *   2차까지의 조건(이력서 O + 지원 1+)은 7명 남아 소진됐다. 남은 층은 전부 지원 이력이
@@ -28,6 +35,8 @@ import { readFileSync } from 'node:fs'
 import { config } from 'dotenv'
 import { makeToken as langToken, leadId } from '../../lib/ktcMailToken.js'
 import { makeToken as resumeToken } from '../../lib/campaignToken.js'
+// 점수/자기서술 판정은 대시보드와 같은 함수를 쓴다 — 규칙을 두 벌 들면 조용히 갈라진다.
+import { certOf } from '../../lib/langTier.js'
 
 config({ path: '.env.local', quiet: true })
 
@@ -75,19 +84,95 @@ const SEGMENTS = {
       ko: (n) => `${n}님, 이력서 없어도 괜찮습니다`,
     },
   },
+
+  /* 4차 — 지원 조건을 아예 뺐다. 3차까지의 조건(지원 0)으로는 337명이 남는데, 어학이 빈
+     이력서 보유자는 847명이다. 나머지 510명은 앞 회차에서 이미 한 번 받은 사람들이라
+     'again' 으로 따로 뺐다 — 같은 문구를 두 번 보내면 그건 재발송이 아니라 스팸이다.
+     셋 다 제목 A/B 는 없다. 2차에서 제목으로는 차이가 안 난다고 판정됐다(p≈0.9). */
+  'nocert-applied': {
+    campaign: 'coldmail-lang-nocert-applied-1',
+    tpl: (l) => `scripts/lang-followup-coldmail/email-nocert-applied-${l}.html`,
+    wantsResume: false,
+    // 메일이 "얼마 전 {회사}의 {직무}에 지원하셨죠"로 시작한다 — 그래서 '지원 경험'이
+    // 아니라 '최근 지원'이 조건이다. 3개월 전 지원자에게 '얼마 전'이라고 쓰면 거짓이고,
+    // 이 캠페인은 못 지킬 문장을 한 줄이라도 쓰지 않는 걸 규칙으로 삼았다.
+    // 오래된 지원자는 버리지 않고 nocert-fresh 로 넘어간다(그 문구는 지원 이력을
+    // 언급하지 않아 누구에게나 참이다).
+    match: (p, applied) => !!p.resume_url && applied.has(p.id),
+    subject: {
+      vi: (n) => `${n} ơi, bạn đã ứng tuyển rồi mà ngoại ngữ còn trống`,
+      ko: (n) => `${n}님, 지원은 하셨는데 어학이 비어 있어요`,
+    },
+  },
+  'nocert-fresh': {
+    campaign: 'coldmail-lang-nocert-fresh-1',
+    tpl: (l) => `scripts/lang-followup-coldmail/email-nocert-fresh-${l}.html`,
+    wantsResume: false,
+    // 지원이 아예 없는 사람 + 지원이 오래돼 nocert-applied 의 '얼마 전'이 거짓이 되는 사람.
+    match: (p, applied) => !!p.resume_url && !applied.has(p.id),
+    subject: {
+      vi: (n) => `${n} ơi, biết ngoại ngữ thì có chỗ đáng để thử`,
+      ko: (n) => `${n}님, 어학 되시면 지원해볼 자리가 있어요`,
+    },
+  },
+  'nocert-again': {
+    campaign: 'coldmail-lang-nocert-again-1',
+    tpl: (l) => `scripts/lang-followup-coldmail/email-nocert-again-${l}.html`,
+    wantsResume: false,
+    // 유일하게 기수신자를 대상으로 한다 — 아래 langSent 제외를 이 플래그로 뒤집는다.
+    resend: true,
+    match: (p) => !!p.resume_url,
+    subject: {
+      vi: (n) => `${n} ơi, hay là bạn không biết ngoại ngữ?`,
+      ko: (n) => `${n}님, 혹시 어학은 없으신가요?`,
+    },
+  },
+
+  /* 5차 — 어학을 적긴 했는데 자격증·점수가 아닌 사람(Intermediate·Fluent·B1…) 791명.
+     앞선 회차와 목적이 다르다: 빈칸을 채우는 게 아니라 이미 받은 답이 아직 유효한지
+     확인한다. 그래서 조건이 '어학 빔'이 아니라 '어학 있음 + 점수 아님'이고,
+     noLanguage 필터를 건너뛰어야 한다(아래 targets 의 needBlank 참고).
+     'None'(못한다고 명시)은 뺀다 — 그건 이미 우리가 원한 확답이라 다시 물을 이유가 없다. */
+  'selfdesc-recheck': {
+    campaign: 'coldmail-lang-recheck-1',
+    tpl: (l) => `scripts/lang-followup-coldmail/email-recheck-${l}.html`,
+    wantsResume: false,
+    needBlank: false,   // 어학이 채워진 사람이 대상이다
+    resend: null,       // 기수신·미수신 둘 다 — 이 층 대부분이 앞 회차 응답자다
+    match: (p) => !!p.resume_url
+      && (hasText(p.english_cert) || hasText(p.korean_cert))
+      && !certOf(p.english_cert) && !certOf(p.korean_cert)
+      && ![p.english_cert, p.korean_cert].some((v) => String(v || '').trim().toLowerCase() === 'none'),
+    /* 제목을 알림 형식으로 쓴다 — 이미지 등록 캠페인에서 "…선정되지 않았습니다
+       (사유: 프로필 사진 없음)"이 반응이 좋았다. 이름을 안 붙이는 것도 그 형식의
+       일부다: 개인 인사가 붙는 순간 마케팅 메일로 읽히고 알림처럼 안 읽힌다.
+       다만 없는 심사 결과를 지어내지는 않는다 — 우리가 실제로 한 일까지만 쓴다
+       ('떨어졌다'가 아니라 '추천해 드리지 못했다'). */
+    subject: {
+      vi: () => '✉️ Chưa thể giới thiệu bạn cho vị trí yêu cầu ngoại ngữ (lý do: chưa có điểm chính thức)',
+      ko: () => '✉️ 어학 요건 공고에 추천해 드리지 못했습니다 (사유: 공인 점수 미확인)',
+    },
+  },
 }
 
+const hasText = (v) => !!String(v || '').trim()
+
 const S = SEGMENTS[segment]
-if (!S) { console.error(`--segment 는 resume 또는 ghost (받은 값: '${segment}')`); process.exit(1) }
+if (!S) { console.error(`--segment 는 ${Object.keys(SEGMENTS).join(' | ')} (받은 값: '${segment}')`); process.exit(1) }
 if (!S.subject[lang]) { console.error(`--lang 은 vi 또는 ko (받은 값: '${lang}')`); process.exit(1) }
 
 const sb = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY)
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
 
+/* 정렬 없이 range() 로 페이지를 넘기면 안 된다 — Postgres 는 ORDER BY 가 없는
+   LIMIT/OFFSET 의 행 순서를 보장하지 않아서, 페이지마다 같은 행이 두 번 오거나 아예
+   빠진다. events 의 coldmail 행이 17,621개(18페이지)라 이게 실제로 터졌다:
+   같은 명령을 세 번 돌렸더니 기수신자가 1072 / 1452 / 670 명으로 매번 달라졌고,
+   그만큼 "이미 받은 사람"이 대상에 다시 섞였다. id 로 고정한다. */
 async function all(table, cols, tweak) {
   let out = [], from = 0
   for (;;) {
-    let q = sb.from(table).select(cols).range(from, from + 999)
+    let q = sb.from(table).select(cols).order('id', { ascending: true }).range(from, from + 999)
     if (tweak) q = tweak(q)
     const { data, error } = await q
     if (error) throw error
@@ -112,10 +197,15 @@ const ctaUrl = (email, kind) =>
 
 const fill = (row) => ({
   name: row.name || (lang === 'vi' ? 'bạn' : '회원'),
+  company: row.company || '',
+  jobTitle: row.jobTitle || '',
+  current: row.current || '',
   ctaScore: ctaUrl(row.email, 'score'),
   ctaDaily: ctaUrl(row.email, 'daily'),
   ctaBasic: ctaUrl(row.email, 'basic'),
   ctaNone: ctaUrl(row.email, 'none'),
+  // 5차 전용 — '그대로입니다'. 랜딩이 지금 값을 보여주고 확인만 받는다.
+  ctaSame: ctaUrl(row.email, 'same'),
   // 이력서 랜딩만 토큰 체계가 다르다(campaignToken 은 user_id 를 서명한다).
   ctaResume: `${SITE}/api/resume/upload?t=${encodeURIComponent(resumeToken(row.user_id, S.campaign))}`,
   unsub: `${SITE}/api/ktc/unsub?t=${encodeURIComponent(langToken(row.email, S.campaign))}`,
@@ -124,10 +214,14 @@ const fill = (row) => ({
 
 const render = (tpl, p) => tpl
   .replace(/\{\{name\}\}/g, p.name)
+  .replace(/\{\{company\}\}/g, p.company)
+  .replace(/\{\{jobTitle\}\}/g, p.jobTitle)
+  .replace(/\{\{current\}\}/g, p.current)
   .replace(/\{\{ctaScore\}\}/g, p.ctaScore)
   .replace(/\{\{ctaDaily\}\}/g, p.ctaDaily)
   .replace(/\{\{ctaBasic\}\}/g, p.ctaBasic)
   .replace(/\{\{ctaNone\}\}/g, p.ctaNone)
+  .replace(/\{\{ctaSame\}\}/g, p.ctaSame)
   .replace(/\{\{ctaResume\}\}/g, p.ctaResume)
   .replace(/\{\{unsubscribeUrl\}\}/g, p.unsub)
   .replace(/\{\{pixelUrl\}\}/g, p.pixel)
@@ -139,7 +233,11 @@ const render = (tpl, p) => tpl
   // ── 테스트 발송 ── events 에 아무것도 남기지 않는다.
   if (testTo) {
     for (const to of testTo.split(',').map((s) => s.trim()).filter(Boolean)) {
-      const row = { email: to, name: lang === 'vi' ? 'Tây' : '유진', user_id: '00000000-0000-0000-0000-000000000000' }
+      const row = {
+        email: to, name: lang === 'vi' ? 'Tây' : '유진',
+        user_id: '00000000-0000-0000-0000-000000000000',
+        company: 'Man Man Market', jobTitle: 'SNS Marketer Intern', current: 'Intermediate',
+      }
       const p = fill(row)
       const subject = S.subject[lang](row.name)
       const r = await resend.emails.send({
@@ -157,11 +255,23 @@ const render = (tpl, p) => tpl
   }
 
   const [profiles, apps, evts] = await Promise.all([
-    all('user_profiles', 'id,email,full_name,resume_url,english_cert,korean_cert,languages'),
-    all('job_applications', 'user_id'),
+    all('user_profiles', 'id,email,full_name,role,resume_url,english_cert,korean_cert,languages'),
+    all('job_applications', 'user_id,job_company,job_title,created_at'),
     all('events', 'user_id,event,meta,created_at', (q) => q.ilike('event', 'coldmail%')),
   ])
-  const applied = new Set(apps.map((a) => a.user_id).filter(Boolean))
+  /* 사람별 '가장 최근 지원' 1건. nocert-applied 메일이 그 회사·직무를 그대로 쓴다.
+     지원이 오래된 사람은 applied 에서 빼서 nocert-fresh 로 흘려보낸다 — '얼마 전'이
+     거짓이 되느니 지원 이력을 언급하지 않는 문구로 보내는 게 맞다. */
+  const RECENT_DAYS = 90
+  const cutoff = new Date(Date.now() - RECENT_DAYS * 86400e3).toISOString()
+  const latestApp = new Map()
+  for (const a of apps) {
+    if (!a.user_id) continue
+    const cur = latestApp.get(a.user_id)
+    if (!cur || a.created_at > cur.created_at) latestApp.set(a.user_id, a)
+  }
+  const applied = new Set([...latestApp].filter(([, a]) => a.created_at >= cutoff).map(([id]) => id))
+  const staleApplied = latestApp.size - applied.size
   // 수신거부는 user_id 가 아니라 meta.lead(이메일 해시)로만 남는다.
   const unsubLeads = new Set(evts.filter((e) => e.event === 'coldmail_unsub').map((e) => e.meta?.lead).filter(Boolean))
   // 어학 캠페인을 이미 받은 사람 전원 제외 — 2차 583명 + 이 캠페인 기수신분.
@@ -177,16 +287,32 @@ const render = (tpl, p) => tpl
     ;(sentToday[e.user_id] = sentToday[e.user_id] || new Set()).add(e.meta?.campaign || '?')
   }
 
+  /* 기수신 조건 — 보통은 이미 받은 사람을 빼지만, resend 세그먼트는 정확히 그 사람들이
+     대상이다. 조건을 뒤집을 뿐 나머지(수신거부·같은 날 중복)는 그대로 건다. */
+  // resend 가 null 이면 기수신 여부를 따지지 않는다(5차: 이 층 대부분이 앞 회차 응답자다).
+  const sendable = (p) => (S.resend == null ? true : S.resend ? langSent.has(p.id) : !langSent.has(p.id))
+  // needBlank 가 false 인 세그먼트는 '어학이 채워진 사람'이 대상이라 이 필터를 건너뛴다.
+  const blankOk = (p) => (S.needBlank === false ? true : noLanguage(p))
+
+  /* 기업(hr) 계정 제외 — 구직자용 문구가 채용 담당자에게 가면 그 자체로 사고다.
+     실제로 어학 빈 이력서 보유자 848명 중 1명이 내부 hr 계정이었다(대시보드는
+     처음부터 role!=='hr' 로 세고 있어 두 숫자가 511 vs 510 으로 어긋났다). */
   let targets = profiles.filter((p) =>
-    p.email && noLanguage(p) && S.match(p, applied)
-    && !langSent.has(p.id) && !unsubLeads.has(leadId(p.email))
+    p.email && p.role !== 'hr' && blankOk(p) && S.match(p, applied)
+    && sendable(p) && !unsubLeads.has(leadId(p.email))
     && (allowSameDay || !sentToday[p.id]),
-  ).map((p) => ({ user_id: p.id, email: p.email, name: p.full_name || '' }))
+  ).map((p) => ({
+    user_id: p.id, email: p.email, name: p.full_name || '',
+    company: latestApp.get(p.id)?.job_company || '',
+    jobTitle: latestApp.get(p.id)?.job_title || '',
+    // 5차가 "‘{{current}}’라고 알려주셨었죠"로 되묻는 값. 둘 다 있으면 둘 다 보여준다.
+    current: [p.english_cert, p.korean_cert].map((v) => String(v || '').trim()).filter(Boolean).join(' · '),
+  }))
 
   // 무엇 때문에 몇 명이 빠졌는지 보여준다 — 조용히 줄어들면 대상 수가 왜 다른지 못 짚는다.
   const sameDayHit = profiles.filter((p) =>
-    p.email && noLanguage(p) && S.match(p, applied)
-    && !langSent.has(p.id) && !unsubLeads.has(leadId(p.email)) && sentToday[p.id],
+    p.email && p.role !== 'hr' && blankOk(p) && S.match(p, applied)
+    && sendable(p) && !unsubLeads.has(leadId(p.email)) && sentToday[p.id],
   )
   const sameDayCampaigns = [...new Set(sameDayHit.flatMap((p) => [...sentToday[p.id]]))]
 
@@ -195,10 +321,29 @@ const render = (tpl, p) => tpl
   console.log(`세그먼트 ${segment} · 캠페인 ${S.campaign}`)
   console.log(`대상 ${targets.length}명 · 템플릿 ${S.tpl(lang)}`)
   console.log(`제목 ${S.subject[lang]('◯◯')}`)
-  console.log(`어학 메일 기수신 ${langSent.size}명 · 수신거부 ${unsubLeads.size}명 (자동 제외)`)
+  console.log(`어학 메일 기수신 ${langSent.size}명 `
+    + (S.resend == null ? '(이 세그먼트는 기수신 여부를 안 따진다)' : S.resend ? '→ 이 세그먼트의 대상' : '(자동 제외)')
+    + ` · 수신거부 ${unsubLeads.size}명 (자동 제외)`)
   console.log(`오늘 다른 콜드메일 수신 ${sameDayHit.length}명 ${allowSameDay ? '→ --allow-same-day 로 포함' : '(제외)'}`
     + (sameDayCampaigns.length ? ` · ${sameDayCampaigns.join(', ')}` : ''))
   console.log(`이름 없는 대상 ${targets.filter((t) => !t.name).length}명 (호칭 폴백)`)
+  console.log(`최근 ${RECENT_DAYS}일 지원자 ${applied.size}명 · 그보다 오래된 지원자 ${staleApplied}명은 nocert-fresh 로`)
+  // 회사·직무가 비면 "얼마 전 에 지원하셨죠"가 된다. 한 명이라도 있으면 발송을 막는다.
+  if (segment === 'selfdesc-recheck') {
+    const holes = targets.filter((t) => !t.current)
+    if (holes.length) {
+      console.error(`\n! 적어둔 어학 값이 빈 대상 ${holes.length}명 — 메일 문장이 깨진다. 중단.`)
+      process.exit(1)
+    }
+  }
+  if (segment === 'nocert-applied') {
+    const holes = targets.filter((t) => !t.company || !t.jobTitle)
+    if (holes.length) {
+      console.error(`\n! 회사·직무가 빈 대상 ${holes.length}명 — 메일 문장이 깨진다. 중단.`)
+      for (const h of holes.slice(0, 5)) console.error(`  ${h.email}`)
+      process.exit(1)
+    }
+  }
 
   if (!doSend) {
     console.log('\n[드라이런] 발송하지 않았습니다. --send 로 실발송 + coldmail_lang_sent 기록.')

@@ -181,27 +181,30 @@ export default function LangScoresSection({ token }) {
   )
 }
 
-/* 이력서 × 어학 2×2 — 위 목록(점수 47명)이 전체의 어디쯤인지 보려면 모수가 있어야 한다.
-   두 축을 교차시키는 이유: '어학 입력'은 이력서를 이미 낸 사람에게만 사실상 열려 있는
+/* 이력서 × 활동 4분할 × 어학 — 위 목록(점수 47명)이 전체의 어디쯤인지 보려면 모수가 있어야 한다.
+   축을 교차시키는 이유: '어학 입력'은 이력서를 이미 낸 사람에게만 사실상 열려 있는
    칸이라(어학은 프로필 화면 안에 있다), 한 줄로 세우면 '어학 없음'이 거절인지 미도달인지
    구분되지 않는다. 실제로 이력서 미등록 쪽은 거의 전부 어학이 비어 있다 — 그 칸은
    설득 대상이 아니라 애초에 도달한 적 없는 사람이다.
+   활동 축을 더한 건 그 안에서 다시 '연락하면 답할 사람'과 '떠난 사람'이 갈리기 때문이다.
    기업(hr) 계정은 뺐다. */
 function BaseMatrix({ base, scorePeople }) {
   const n = (v) => v.toLocaleString()
   const rows = [
-    { label: '이력서 등록', b: base.resume, accent: '#191F28' },
-    { label: '이력서 미등록', b: base.noResume, accent: '#8B95A1' },
+    { label: '이력서 등록 · 활동 O', b: base.resumeActive, accent: '#191F28' },
+    { label: '이력서 등록 · 활동 X', b: base.resumeIdle, accent: '#4E5968' },
+    { label: '이력서 미등록 · 활동 O', b: base.noResumeActive, accent: '#8B95A1' },
+    { label: '이력서 미등록 · 활동 X', b: base.noResumeIdle, accent: '#B0B8C1' },
   ]
-  const langTotal = base.resume.lang + base.noResume.lang
-  const scoreTotal = base.resume.score + base.noResume.score
+  const langTotal = rows.reduce((s, r) => s + r.b.lang, 0)
+  const scoreTotal = rows.reduce((s, r) => s + r.b.score, 0)
 
   return (
     <div style={sectionStyle}>
       <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 3 }}>
         전체 회원 {n(base.members)}명
         <span style={{ fontSize: 11, fontWeight: 500, color: '#8B95A1', marginLeft: 7 }}>
-          이력서 × 어학 · 기업 계정 제외
+          이력서 × 활동 × 어학 · 기업 계정 제외
         </span>
       </div>
       <div style={{ fontSize: 11.5, color: '#8B95A1', marginBottom: 12 }}>
@@ -209,6 +212,9 @@ function BaseMatrix({ base, scorePeople }) {
         {' · 그중 자격증·점수 '}
         <span style={{ color: '#16a34a', fontWeight: 700 }}>{n(scoreTotal)}명</span>
         {' · 어제 콜드메일로 받은 '}{n(scorePeople)}명 포함
+        <br />
+        활동 O = 접속·지원·연봉제출·북마크·기업팔로우 중 하나라도 남긴 회원
+        <span style={{ color: '#B0B8C1' }}> · 접속 기록은 2026-06-22부터</span>
       </div>
 
       <div className="adm-m-scroll">

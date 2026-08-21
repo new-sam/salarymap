@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import Head from 'next/head'
 import supabaseAdmin from '../lib/supabaseAdmin'
 import { verifyToken, leadId } from '../lib/ktcMailToken'
@@ -91,7 +91,16 @@ const T = {
     selfInput: 'Tôi sẽ tự nhập',
     formHead: (n) => (n ? `${n} ơi, chỉ cần điền một ô ngoại ngữ` : 'Chỉ cần điền một ô ngoại ngữ'),
     formSub: 'Không cần đăng nhập · 30 giây · Chỉ tiếng Anh cũng đủ.',
-    formSubNone: 'Đã điền sẵn “không biết cả tiếng Anh lẫn tiếng Hàn”. Nếu đúng, bạn chỉ cần bấm Lưu.',
+    noneHead: (n) => (n ? `${n} ơi, đúng là không biết cả hai chứ?` : 'Không biết cả hai, đúng chứ?'),
+    noneSub: 'Bạn cho biết là xong — chúng tôi sẽ không hỏi lại về ngoại ngữ nữa.',
+    noneYes: 'Đúng, tôi không biết cả hai',
+    noneNo: 'Thật ra tôi có biết một chút',
+    noneDoneSub: 'Cảm ơn bạn đã cho biết. Chúng tôi sẽ không gửi email về ngoại ngữ nữa.',
+    sameHead: (n) => (n ? `${n} ơi, vẫn như cũ chứ?` : 'Vẫn như cũ chứ?'),
+    sameSub: (v) => `Bạn đã cho biết là “${v}”. Từ đó tới nay bạn có thi lấy chứng chỉ nào không?`,
+    sameYes: 'Vẫn vậy, tôi chưa có chứng chỉ',
+    sameNo: 'Tôi đã có điểm rồi',
+    sameDoneSub: 'Cảm ơn bạn đã xác nhận. Khi nào có chứng chỉ, bạn thêm vào hồ sơ bất cứ lúc nào cũng được.',
     save: 'Lưu',
     saving: 'Đang lưu…',
     fine: 'Thông tin này được lưu vào mục ngoại ngữ trong hồ sơ của bạn.',
@@ -116,7 +125,16 @@ const T = {
     selfInput: '직접 입력할게요',
     formHead: (n) => (n ? `${n}님, 어학 한 칸만 채워주세요` : '어학 한 칸만 채워주세요'),
     formSub: '로그인 없이 30초 · 영어만 채우셔도 충분합니다.',
-    formSubNone: '‘영어·한국어 모두 못합니다’로 채워뒀습니다. 맞으면 저장만 눌러주세요.',
+    noneHead: (n) => (n ? `${n}님, 둘 다 못하시는 게 맞나요?` : '둘 다 못하시는 게 맞나요?'),
+    noneSub: '알려주시면 끝납니다 — 앞으로 어학은 다시 묻지 않습니다.',
+    noneYes: '네, 둘 다 못합니다',
+    noneNo: '사실은 좀 합니다',
+    noneDoneSub: '알려주셔서 감사합니다. 앞으로 어학 메일은 보내지 않습니다.',
+    sameHead: (n) => (n ? `${n}님, 그대로신가요?` : '그대로신가요?'),
+    sameSub: (v) => `‘${v}’라고 알려주셨었죠. 그 뒤로 시험 보신 게 있으실까요?`,
+    sameYes: '그대로입니다, 자격증은 없어요',
+    sameNo: '점수가 생겼어요',
+    sameDoneSub: '확인해 주셔서 감사합니다. 나중에 자격증이 생기면 프로필에서 언제든 추가하실 수 있어요.',
     save: '저장하기',
     saving: '저장 중…',
     fine: '입력한 값은 내 프로필의 어학 항목에 저장됩니다.',
@@ -141,7 +159,16 @@ const T = {
     selfInput: 'I will type it myself',
     formHead: (n) => (n ? `${n}, just one language field` : 'Just one language field'),
     formSub: 'No login · 30 seconds · English alone is enough.',
-    formSubNone: 'We pre-filled “I speak neither English nor Korean”. If that is right, just hit Save.',
+    noneHead: (n) => (n ? `${n}, neither language — is that right?` : 'Neither language — is that right?'),
+    noneSub: 'Tell us once and we are done — we will not ask about language again.',
+    noneYes: 'Right, I speak neither',
+    noneNo: 'Actually I know a little',
+    noneDoneSub: 'Thanks for telling us. We will not email you about language again.',
+    sameHead: (n) => (n ? `${n}, still the same?` : 'Still the same?'),
+    sameSub: (v) => `You told us “${v}”. Have you taken any test since then?`,
+    sameYes: 'Still the same, no certificate',
+    sameNo: 'I have a score now',
+    sameDoneSub: 'Thanks for confirming. You can add a certificate to your profile any time.',
     save: 'Save',
     saving: 'Saving…',
     fine: 'This is saved to the language section of your profile.',
@@ -152,14 +179,29 @@ const T = {
 
 export default function LangLanding({ valid, token, cta, uiLang, name, initial }) {
   const t = T[uiLang] || T.vi
-  // cta=none('영어·한국어 모두 못합니다')만 예외적으로 값을 미리 채운다. 'None' 은 거친
-  // 값이 아니라 그 자체로 확정된 답이고, 폼을 그대로 보여주므로 잘못 눌렀으면 저장 전에
-  // 고칠 수 있다. 빈칸("아직 안 물어봤다")과 뜻이 달라 다시 묻지 않아도 된다.
   const [form, setForm] = useState({
-    english_cert: initial?.english_cert || (cta === 'none' ? 'None' : ''),
-    korean_cert: initial?.korean_cert || (cta === 'none' ? 'None' : ''),
+    english_cert: initial?.english_cert || '',
+    korean_cert: initial?.korean_cert || '',
     languages: [],
   })
+  /* cta=none('영어·한국어 모두 못합니다')은 자격증 폼을 아예 안 띄운다. 채울 게 없는
+     사람에게 드롭다운을 내미는 건 답을 받기 어렵게 만들 뿐이고, 잘못 눌렀더라도
+     프로필에서 직접 고칠 수 있다. 대신 버튼 한 번은 남긴다 — 메일 보안 스캐너가 링크를
+     미리 열기 때문에, 링크를 여는 것만으로 저장하면 본인 의사 없이 'None' 이 박힌다.
+     그러면 그 사람은 앞으로 어학 캠페인 대상에서도 빠진다. */
+  const [noneConfirm, setNoneConfirm] = useState(cta === 'none')
+  /* cta=same('그대로입니다') — 자기서술만 적어둔 사람에게 "그 뒤로 자격증 땄나요"를
+     되묻는 경로. 값은 안 바뀌지만 coldmail_lang_responses 에 한 줄이 남아, 다음부터는
+     '안 물어봤다'가 아니라 '물어봤고 아직 없다'로 읽힌다.
+
+     화면에서 한 번 더 묻지 않는다 — 메일에서 이미 답한 사람에게 같은 질문을 두 번 하는
+     꼴이다. 대신 저장을 서버 렌더가 아니라 브라우저에서 태운다: 메일 보안 스캐너는
+     링크를 미리 열되 자바스크립트는 실행하지 않으므로, 이렇게 해야 사람이 누른 것만
+     기록된다. 이 회차는 그 기록 자체가 목적이라 가짜 확인이 섞이면 안 된다.
+     기존 값이 없으면 되물을 게 없으므로 평소 폼으로 보낸다. */
+  const currentText = [initial?.english_cert, initial?.korean_cert].filter(Boolean).join(' · ')
+  const sameAuto = cta === 'same' && !!currentText
+  const autoFired = useRef(false)
   // '일상 회화'·'인사말'은 어느 언어인지 메일에서 알 수 없다 — 메일 버튼이 언어를
   // 구분하지 않기 때문이다(구분하려면 버튼이 4~6개가 되어 클릭 장벽이 도로 올라간다).
   // 그래서 랜딩에서 한 번만 묻는다. 임의로 영어라고 가정하면 한국어를 뜻한 사람의
@@ -178,8 +220,13 @@ export default function LangLanding({ valid, token, cta, uiLang, name, initial }
   const set = (k, v) => setForm((f) => ({ ...f, [k]: v }))
   const filled = String(form.english_cert || '').trim() || String(form.korean_cert || '').trim()
 
-  const save = async () => {
-    if (!filled || saving) return
+  /* 인자 없이 부르면 폼 값을, 값을 주면 그걸 저장한다 — 확인 화면은 폼을 안 띄우므로
+     setForm 을 거치면 리렌더 한 박자 뒤에나 저장돼 버튼이 먹통처럼 보인다. */
+  const save = async (override, mode) => {
+    const body = override || { english_cert: form.english_cert, korean_cert: form.korean_cert }
+    if (saving) return
+    // 확인 모드는 값을 안 보내므로 빈 값 검사를 건너뛴다.
+    if (mode !== 'confirm' && !String(body.english_cert || '').trim() && !String(body.korean_cert || '').trim()) return
     setSaving(true); setErr('')
     try {
       const r = await fetch('/api/lang/save', {
@@ -187,7 +234,7 @@ export default function LangLanding({ valid, token, cta, uiLang, name, initial }
         headers: { 'Content-Type': 'application/json' },
         // cta 를 같이 보낸다 — 응답 원본 기록(coldmail_lang_responses)에 "어느 버튼으로
         // 들어와 저장했는지"를 남겨야 프리셀렉트 값인지 직접 고친 값인지 나중에 가른다.
-        body: JSON.stringify({ token, cta, english_cert: form.english_cert, korean_cert: form.korean_cert }),
+        body: JSON.stringify({ token, cta, mode, ...body }),
       })
       if (!r.ok) throw new Error((await r.json().catch(() => ({}))).error || 'failed')
       setDone(true)
@@ -196,6 +243,14 @@ export default function LangLanding({ valid, token, cta, uiLang, name, initial }
     }
     setSaving(false)
   }
+
+  // save 가 정의된 뒤에 건다. StrictMode 가 effect 를 두 번 돌려도 ref 로 한 번만 저장한다
+  // (두 번 돌면 coldmail_lang_fill 이 두 줄 남는다).
+  useEffect(() => {
+    if (!valid || !sameAuto || autoFired.current) return
+    autoFired.current = true
+    save({}, 'confirm')
+  }, [])
 
   if (!valid) {
     return (
@@ -212,9 +267,57 @@ export default function LangLanding({ valid, token, cta, uiLang, name, initial }
       <Shell t={t} uiLang={uiLang}>
         <div className="lg-check">✓</div>
         <h1 className="lg-h">{t.doneHead(name)}</h1>
-        <p className="lg-sub">{t.doneSub}</p>
-        <a className="lg-btn" href="/jobs">{t.doneCta}</a>
-        <a className="lg-link" href="/profile#language">{t.toProfile}</a>
+        {/* '못한다'고 답한 사람에게 "어학 보는 공고에 우선 추천할게요"는 앞뒤가 안 맞는다. */}
+        <p className="lg-sub">{cta === 'none' ? t.noneDoneSub : cta === 'same' ? t.sameDoneSub : t.doneSub}</p>
+        <a className="lg-btn" href="/jobs">{cta === 'none' ? t.toJobs : t.doneCta}</a>
+        {/* '그대로'로 들어왔는데 사실 점수가 있는 사람의 출구 — 프로필까지 안 가도 된다. */}
+        {cta === 'same'
+          ? <a className="lg-link" href={`/lang?t=${encodeURIComponent(token)}&cta=score&lang=${uiLang}`}>{t.sameNo}</a>
+          : <a className="lg-link" href="/profile#language">{t.toProfile}</a>}
+      </Shell>
+    )
+  }
+
+  /* '둘 다 못합니다'로 들어온 사람 — 폼 대신 확인 한 번. 누르면 바로 저장된다.
+     '사실은 좀 합니다'를 고르면 평소 폼으로 넘어간다(잘못 누른 사람의 출구). */
+  if (noneConfirm) {
+    return (
+      <Shell t={t} uiLang={uiLang}>
+        <h1 className="lg-h">{t.noneHead(name)}</h1>
+        <p className="lg-sub">{t.noneSub}</p>
+        {err && <p className="lg-err">{err}</p>}
+        <button className="lg-btn" onClick={() => save({ english_cert: 'None', korean_cert: 'None' })} disabled={saving}>
+          {saving ? t.saving : t.noneYes}
+        </button>
+        <button className="lg-link lg-linkbtn" onClick={() => setNoneConfirm(false)}>{t.noneNo}</button>
+        <p className="lg-fine">{t.fine}</p>
+      </Shell>
+    )
+  }
+
+  /* '그대로입니다'로 들어온 사람 — 뜨자마자 저장된다. 실패했을 때만 버튼이 보인다
+     (자바스크립트가 막혀 있거나 네트워크가 끊긴 경우의 유일한 출구). */
+  if (sameAuto && !err) {
+    return (
+      <Shell t={t} uiLang={uiLang}>
+        <h1 className="lg-h">{t.sameHead(name)}</h1>
+        <p className="lg-sub">{t.sameSub(currentText)}</p>
+        <p className="lg-fine">{t.saving}</p>
+      </Shell>
+    )
+  }
+  if (sameAuto && err) {
+    return (
+      <Shell t={t} uiLang={uiLang}>
+        <h1 className="lg-h">{t.sameHead(name)}</h1>
+        <p className="lg-err">{err}</p>
+        <button
+          className="lg-btn"
+          onClick={() => save({}, 'confirm')}
+          disabled={saving}
+        >
+          {saving ? t.saving : t.sameYes}
+        </button>
       </Shell>
     )
   }
@@ -235,7 +338,7 @@ export default function LangLanding({ valid, token, cta, uiLang, name, initial }
   return (
     <Shell t={t} uiLang={uiLang}>
       <h1 className="lg-h">{t.formHead(name)}</h1>
-      <p className="lg-sub">{cta === 'none' ? t.formSubNone : t.formSub}</p>
+      <p className="lg-sub">{t.formSub}</p>
 
       {/* '점수 있어요'로 들어온 사람에게는 '자격증 없음(수준만)'을 안 보여준다 — 방금
           점수가 있다고 답한 사람에게 자기서술 선택지를 내미는 건 모순이고, 이 캠페인이
@@ -246,7 +349,7 @@ export default function LangLanding({ valid, token, cta, uiLang, name, initial }
 
       {err && <p className="lg-err">{err}</p>}
 
-      <button className="lg-btn" onClick={save} disabled={!filled || saving}>
+      <button className="lg-btn" onClick={() => save()} disabled={!filled || saving}>
         {saving ? t.saving : t.save}
       </button>
       <p className="lg-fine">{t.fine}</p>
