@@ -10,7 +10,7 @@ import { ROLE_GROUPS } from '../constants/jobs'
 import { completionScore } from '../lib/profileScore'
 import EmploymentTab from '../components/profile/EmploymentTab'
 import BadgesTab from '../components/profile/BadgesTab'
-import LanguageCard from '../components/profile/LanguageCard'
+import LanguageCard, { certNeedsScore } from '../components/profile/LanguageCard'
 import CustomSelect from '../components/profile/CustomSelect'
 
 // 프로필 직군 선택 — 공고/ATS와 동일한 ROLE_GROUPS. 대분류→소분류 2단계로 고른다.
@@ -89,6 +89,11 @@ export default function ProfilePage() {
   const [initialForm, setInitialForm] = useState({})
   const set = (k, v) => setForm(prev => ({ ...prev, [k]: v }))
   const isDirty = JSON.stringify(form) !== JSON.stringify(initialForm)
+  /* 시험명만 고르고 점수를 안 적은 어학 값은 저장을 막는다. 급수가 안 나오는 값인데
+     jdMatch 는 자격증이 '있기만 하면' 점수를 줘서, 그대로 두면 실력이 부풀려진 채
+     추천되고 정작 전시장 급수에서는 빠진다. LanguageCard 가 해당 칸에 빨간 안내를
+     띄우므로, 버튼만 잠그면 왜 안 눌리는지가 화면에 이미 나와 있다. */
+  const langGradeless = [form.english_cert, form.korean_cert].some((v) => certNeedsScore(v))
   const df = (k) => { const a = form[k], b = initialForm[k]; const changed = typeof a === 'object' ? JSON.stringify(a) !== JSON.stringify(b) : a !== b; return changed && a ? ' dirty' : '' }
   const isDirtyRef = useRef(false)
   isDirtyRef.current = isDirty
@@ -992,7 +997,7 @@ export default function ProfilePage() {
       {/* Floating Save Button */}
       <div className={`psave-wrap${isDirty ? ' show' : ''}`}>
         <div className="psave-inner">
-          <button className="psave" onClick={handleSave} disabled={saving || !isDirty}>
+          <button className="psave" onClick={handleSave} disabled={saving || !isDirty || langGradeless}>
             {saving ? t('profile.saving') : t('profile.save')}
           </button>
         </div>

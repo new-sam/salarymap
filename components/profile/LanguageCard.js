@@ -29,6 +29,8 @@ const CERTS = {
   english_cert: ['TOEIC', 'IELTS', 'TOEFL', 'VSTEP', 'APTIS'],
   korean_cert: ['TOPIK'],
 }
+// 두 칸을 합친 목록 — 바깥(저장 버튼)에서 어느 칸인지 모른 채 검사할 때 쓴다.
+const ALL_CERTS = [...CERTS.english_cert, ...CERTS.korean_cert]
 
 // 자기서술 수준 — DB 상위 표현을 그대로 채택(Intermediate 40 · Fluent 22 · Basic 12 …).
 // CEFR(B1 17 · B2 12)도 31명이 쓰고 있어 같이 넣는다.
@@ -63,6 +65,24 @@ function splitCert(raw, known) {
   const m = s.match(/^([A-Za-z][A-Za-z.\-]{1,14})\s+(.+)$/)
   if (m) return { cert: CERT_ETC, etc: m[1], score: m[2] }
   return { cert: CERT_NONE, etc: '', score: s }
+}
+
+/* 시험명만 있고 점수가 없는 값인가 — "TOPIK", "TOEIC" 처럼.
+
+   이런 값은 저장돼도 급수가 안 나온다(langTier.gradeOf 가 숫자·등급을 찾지 못한다).
+   그런데 jdMatch 는 english_cert 가 '있기만 하면' 점수를 줘서, JD 매칭에서는
+   "TOEIC"이 "TOEIC 900"과 동점이 된다. 두 곳이 같은 값을 다르게 취급하는 셈이라
+   실력을 부풀린 채 추천되고 정작 전시장 급수에서는 빠진다.
+   2026-08-21 기준 이런 값이 48건 쌓여 있었다(TOEIC 13 · IELTS 5 …).
+
+   그래서 저장 자체를 막는다. 폼 상태에서 값을 지우지는 않는다 — 시험을 고르고 점수를
+   치는 사이에 선택이 사라지면 쓸 수 없는 화면이 된다. 대신 저장 버튼을 잠근다. */
+export function certNeedsScore(value, known = ALL_CERTS) {
+  const s = String(value || '').trim()
+  if (!s) return false
+  const hit = known.find((c) => new RegExp(`^${c}\\b`, 'i').test(s))
+  if (!hit) return false
+  return !s.slice(hit.length).replace(/^[\s:\-–—]+/, '').trim()
 }
 
 function joinCert({ cert, etc, score }) {
@@ -102,6 +122,8 @@ function CertRow({ label, value, known, onChange, L, allowLevelOnly = true }) {
       : []),
   ]
   const certLabel = certItems.find((i) => i.value === cur.cert)?.label || ''
+  // 실제 시험을 골랐는데 점수 칸이 빈 상태. CERT_NONE(수준만)·CERT_ETC 는 해당 없다.
+  const needsScore = !!cur.cert && cur.cert !== CERT_NONE && cur.cert !== CERT_ETC && !cur.score.trim()
 
   return (
     <div className="pfield">
@@ -138,6 +160,9 @@ function CertRow({ label, value, known, onChange, L, allowLevelOnly = true }) {
               className="pinput"
               value={cur.score}
               onChange={(e) => emit({ score: e.target.value })}
+              // 점수가 비면 테두리로 먼저 알린다 — 저장 버튼이 잠긴 이유가 여기 있다는 걸
+              // 버튼까지 내려가기 전에 알아야 한다.
+              style={needsScore ? { borderColor: '#DC2626' } : undefined}
               placeholder={L(
                 `점수 / 등급${SCORE_PH[cur.cert] ? ` (예: ${SCORE_PH[cur.cert]})` : ''}`,
                 `Score / level${SCORE_PH[cur.cert] ? ` (e.g. ${SCORE_PH[cur.cert]})` : ''}`,
@@ -148,6 +173,13 @@ function CertRow({ label, value, known, onChange, L, allowLevelOnly = true }) {
         </div>
       </div>
 
+      {needsScore && (
+        <div style={{ fontSize: 11.5, color: '#DC2626', marginTop: 5 }}>
+          {L(`${cur.cert} 점수나 등급을 함께 적어주세요. 시험명만으로는 급수를 매길 수 없습니다.`,
+             `Add your ${cur.cert} score or level — the test name alone cannot be graded.`,
+             `Vui lòng nhập điểm hoặc cấp độ ${cur.cert} — chỉ tên kỳ thi thì không xếp hạng được.`)}
+        </div>
+      )}
     </div>
   )
 }

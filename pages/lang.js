@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import Head from 'next/head'
 import supabaseAdmin from '../lib/supabaseAdmin'
 import { verifyToken, leadId } from '../lib/ktcMailToken'
-import LanguageCard from '../components/profile/LanguageCard'
+import LanguageCard, { certNeedsScore } from '../components/profile/LanguageCard'
 
 /* 어학 콜드메일 착지 페이지 — 로그인 없이 어학 한 칸만 받는다.
    /lang?t=<token>&cta=score|daily|basic
@@ -292,6 +292,10 @@ export default function LangLanding({ valid, token, cta, uiLang, name, initial }
   if (!untouched('english_cert')) payload.english_cert = form.english_cert
   if (!untouched('korean_cert')) payload.korean_cert = form.korean_cert
   const filled = Object.values(payload).some((v) => String(v || '').trim())
+  /* 시험명만 고르고 점수를 안 적은 값은 저장을 막는다 — 급수가 안 나오는데
+     jdMatch 는 '있기만 하면' 점수를 줘서 두 곳이 같은 값을 다르게 취급한다.
+     LanguageCard 가 그 칸에 빨간 안내를 띄우므로 버튼만 잠그면 이유가 전달된다. */
+  const gradeless = [form.english_cert, form.korean_cert].some((v) => certNeedsScore(v))
 
   /* 인자 없이 부르면 폼 값을, 값을 주면 그걸 저장한다 — 확인 화면은 폼을 안 띄우므로
      setForm 을 거치면 리렌더 한 박자 뒤에나 저장돼 버튼이 먹통처럼 보인다. */
@@ -459,7 +463,7 @@ export default function LangLanding({ valid, token, cta, uiLang, name, initial }
 
       {err && <p className="lg-err">{err}</p>}
 
-      <button className="lg-btn" onClick={() => save()} disabled={!filled || saving}>
+      <button className="lg-btn" onClick={() => save()} disabled={!filled || gradeless || saving}>
         {saving ? t.saving : t.save}
       </button>
       <p className="lg-fine">{t.fine}</p>
