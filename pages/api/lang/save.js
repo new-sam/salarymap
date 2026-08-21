@@ -14,7 +14,7 @@ import { verifyToken, leadId } from '../../../lib/ktcMailToken'
 
 const CERT_TO_FIELD = {
   TOEIC: 'english_cert', IELTS: 'english_cert', TOEFL: 'english_cert',
-  VSTEP: 'english_cert', APTIS: 'english_cert', TOPIK: 'korean_cert',
+  VSTEP: 'english_cert', APTIS: 'english_cert', OPIC: 'english_cert', TOPIK: 'korean_cert',
 }
 
 /* mode='attach' 가 붙일 수 있는 시험. 맨 등급값("B2")에 시험명만 얹는 경로다.
@@ -172,7 +172,7 @@ export default async function handler(req, res) {
      그 구분이 곧 결론이다(점수 갱신 vs 그대로 확인).
      saved 는 실제로 자격증 형태가 들어왔는지다. cta=score 를 눌러놓고 "Basic" 을
      저장한 사람이 실제로 있었다 — 버튼만 세면 그 사람이 점수를 낸 걸로 잡힌다. */
-  const isCert = (v) => /^(TOEIC|IELTS|TOEFL|VSTEP|APTIS|TOPIK|CEFR)\b/i.test(String(v || '').trim())
+  const isCert = (v) => /^(TOEIC|IELTS|TOEFL|VSTEP|APTIS|TOPIK|CEFR|OPIC)\b/i.test(String(v || '').trim())
   await supabaseAdmin.from('events').insert({
     event: 'coldmail_lang_fill',
     user_id: prof.id,

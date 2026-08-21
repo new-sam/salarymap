@@ -26,7 +26,9 @@ const CERT_NONE = '__none__'
 const CERT_ETC = '__etc__'
 
 const CERTS = {
-  english_cert: ['TOEIC', 'IELTS', 'TOEFL', 'VSTEP', 'APTIS'],
+  // 표기는 'OPIc' 로 둔다 — 드롭다운 라벨이자 저장값의 앞머리라 성적표와 같은 철자여야
+  // 한다. langTier 는 대소문자를 안 가리고 찾으므로 거기 'OPIC' 과 어긋나지 않는다.
+  english_cert: ['TOEIC', 'IELTS', 'TOEFL', 'VSTEP', 'APTIS', 'OPIc'],
   korean_cert: ['TOPIK'],
 }
 // 두 칸을 합친 목록 — 바깥(저장 버튼)에서 어느 칸인지 모른 채 검사할 때 쓴다.
@@ -40,7 +42,7 @@ const ALL_CERTS = [...CERTS.english_cert, ...CERTS.korean_cert]
 const LEVELS = ['Native', 'Fluent', 'Business', 'Intermediate', 'Basic', 'C2', 'C1', 'B2', 'B1', 'A2', 'A1', 'None']
 
 const SCORE_PH = {
-  TOEIC: '900', IELTS: '6.5', TOEFL: '100', VSTEP: 'B2', APTIS: 'B2', TOPIK: '5',
+  TOEIC: '900', IELTS: '6.5', TOEFL: '100', VSTEP: 'B2', APTIS: 'B2', TOPIK: '5', OPIc: 'IH',
 }
 
 // "TOEIC 900" → { cert:'TOEIC', score:'900' }.  기존 데이터가 지저분해서

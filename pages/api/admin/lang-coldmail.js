@@ -56,7 +56,7 @@ const familyOf = (campaign) =>
    판정 기준은 LanguageCard 의 splitCert 와 같아야 한다 — 다르면 화면과 표가 어긋난다. */
 // CEFR 은 시험이 아니라 척도지만 langTier 가 급수를 매기는 값이라 여기서도 점수로 센다.
 // 빠뜨리면 CEFR 로 저장된 값이 '미지의 자격증'으로 떨어져 회수 실적이 0 으로 보인다.
-const CERTS = ['TOEIC', 'IELTS', 'TOEFL', 'VSTEP', 'APTIS', 'TOPIK', 'CEFR']
+const CERTS = ['TOEIC', 'IELTS', 'TOEFL', 'VSTEP', 'APTIS', 'TOPIK', 'CEFR', 'OPIC']
 const LEVELS = ['Native', 'Fluent', 'Business', 'Intermediate', 'Basic', 'C2', 'C1', 'B2', 'B1', 'A2', 'A1']
 /* 베트남어 수준 표현 — 이게 없으면 'Co ban'(기초)·'Giao tiep'(회화) 같은 값이 전부
    '기타'로 떨어져, 실제로는 자기서술인데 "우리가 못 읽는 값"처럼 보인다.
