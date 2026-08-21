@@ -396,9 +396,11 @@ export default function CvLanding() {
       doUpload(f)
       return
     }
-    // 가입 선행 변이: 가입이 STEP1 로 올라가 등록 버튼이 사라졌다 — 로그인 상태에서
-    // 파일을 고르면 그 자체가 등록 의사이므로 바로 올린다(누를 버튼이 따로 없다).
-    if (signupFirst && user) {
+    /* 로그인한 사람은 파일을 고르는 순간 등록된다. 로그인이 끝난 사람에게 남은 건
+       업로드뿐인데, 그걸 'STEP 2'라는 칸에 버튼으로 세워 두면 단계가 하나 헛돈다 —
+       화면은 두 단계를 요구하지만 실제로 할 일은 파일 고르기 하나다.
+       가입 선행 변이가 이미 이렇게 동작하고 있었고, 대조군만 버튼을 남겨 두었다. */
+    if (user) {
       doUpload(f)
       return
     }
@@ -592,7 +594,8 @@ export default function CvLanding() {
   // 포커스를 안 받는다 — 결국 첫 포커스는 화면상 첫 요소인 가입 버튼이다.
   const resumeLocked = signupFirst && !user
   const authLocked = !signupFirst && !file
-  const authDone = signupFirst && !!user
+  // 로그인이 끝났으면 이 칸에 남은 할 일이 없다 — 변이와 무관하게 완료로 접는다.
+  const authDone = !!user
 
   const scrollToForm = () => (formCardRef.current || formAnchorRef.current)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
 
@@ -909,7 +912,8 @@ export default function CvLanding() {
             ) : (
               <div className="cv-card">
                 <h3 className="cv-card-h">{t('cv.form.card.headingPrefix')}<em>{t('cv.form.card.headingAction')}</em></h3>
-                <p className="cv-card-sub">{t('cv.form.card.sub')}</p>
+                {/* 로그인한 사람에게 남은 단계는 첨부 하나뿐이라 '두 단계'가 거짓이 된다. */}
+                <p className="cv-card-sub">{t(user ? 'cv.form.card.subAuthed' : 'cv.form.card.sub')}</p>
 
                 {pendingHint && (
                   <div className="cv-ai-bubble">
