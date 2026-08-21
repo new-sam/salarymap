@@ -68,6 +68,11 @@ const normLang = (v) => (LANGS.includes(String(v || '')) ? String(v) : 'vi')
 // 높게 기록되므로 Intermediate 로 둔다. 어차피 랜딩에서 본인이 조정할 수 있다.
 const LEVEL_OF = { daily: 'Intermediate', basic: 'Basic' }
 
+// 랜딩이 korean_cert 에 수준을 직접 써넣는 경로. 여기서만 한국어가 수준을 받는다 —
+// 아니면 방금 고른 답이 화면에서 사라진 것처럼 보인다(LanguageCard 주석 참고).
+// 'none' 은 LEVEL_OF 에 없지만 폼 초기값으로 'None' 을 넣으므로 같이 넣는다.
+const KOREAN_LEVEL_CTAS = ['daily', 'basic', 'none']
+
 // 문구는 lib/translations 를 쓰지 않고 여기 둔다 — 이 페이지 전용이고 캠페인이 끝나면
 // 같이 사라지는 문구라, 전역 사전에 넣으면 다음 사람이 지울 수 없는 키가 된다.
 // vi 문구는 email-vi.html 과 같은 표현을 쓴다. 메일에서 누른 버튼과 착지 화면의 말이
@@ -354,7 +359,13 @@ export default function LangLanding({ valid, token, cta, uiLang, name, initial }
           점수가 있다고 답한 사람에게 자기서술 선택지를 내미는 건 모순이고, 이 캠페인이
           고치려는 자기서술 52% 를 그 경로에서 다시 쌓게 된다. */}
       <div className="lg-card">
-        <LanguageCard form={form} set={set} lang={uiLang} allowLevelOnly={cta !== 'score'} />
+        <LanguageCard
+          form={form}
+          set={set}
+          lang={uiLang}
+          allowLevelOnly={cta !== 'score'}
+          allowKoreanLevel={KOREAN_LEVEL_CTAS.includes(cta)}
+        />
       </div>
 
       {err && <p className="lg-err">{err}</p>}
