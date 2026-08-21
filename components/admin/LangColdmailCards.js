@@ -93,15 +93,163 @@ const SECTION_LABEL = (s, L) => (
       : L('1–3차 · 어학 입력 요청', '1–3rd · asking to fill language', 'Đợt 1–3 · yêu cầu điền')
 )
 
+/* 캠페인 한 줄의 상세 — 그 회차에서 실제로 들어온 값과, 어느 버튼이 그 값을 만들었나.
+
+   집계를 여기서 다시 센다: API 의 mapping·fills 는 계열(family) 단위 합이라, 캠페인
+   하나만 볼 때 그대로 쓰면 같은 계열의 다른 회차 클릭이 섞인다. R5·R6·R7 이 한 계열에
+   묶여 있으므로 이걸 안 하면 R7 상세에 R5 응답이 딸려 들어온다. */
+function CampaignDetail({ row, group, L }) {
+  const [kindFilter, setKindFilter] = useState(null)
+
+  const fills = (group.fills || []).filter((f) => f.campaign === row.campaign)
+  // '미리 채운 값'은 캠페인이 아니라 버튼의 성질이라 계열 응답에서 그대로 빌려 쓴다.
+  const presetOf = Object.fromEntries((group.mapping || []).map((mm) => [mm.cta, mm.preset]))
+  const mapping = [...new Set(fills.map((f) => f.cta).filter(Boolean))].map((c) => {
+    const g = fills.filter((f) => f.cta === c)
+    return {
+      cta: c,
+      preset: presetOf[c] ?? null,
+      n: g.length,
+      kept: g.filter((f) => f.keptPreset).length,
+      changed: g.filter((f) => !f.keptPreset).length,
+    }
+  })
+  const kindCount = (k) => fills.filter((f) => f.kind === k).length
+  const shown = fills.filter((f) => !kindFilter || f.kind === kindFilter)
+  // 클릭 분포는 캠페인 행에 이미 사람 수로 들어 있다(0 인 버튼은 뺀다).
+  const clickedCtas = Object.entries(row.cta || {}).filter(([, n]) => n > 0)
+
+  /* 저장된 값이 없어도 클릭은 보여준다 — 값을 안 바꾸는 버튼만 눌린 회차가 있을 수 있고
+     ('시험 아님'), 그때 "아무 일도 없었다"로 읽히면 안 된다. */
+  if (!fills.length) {
+    return (
+      <div style={{ padding: '12px 14px', fontSize: 11.5, color: '#B0B8C1' }}>
+        {L('이 회차에서 저장된 값이 아직 없습니다.', 'Nothing saved from this round yet.', 'Chưa có dữ liệu.')}
+        {!!clickedCtas.length && (
+          <div style={{ marginTop: 6, color: '#8B95A1' }}>
+            {L('누른 버튼', 'Buttons clicked', 'Nút đã bấm')}{' '}
+            {clickedCtas.map(([c, n], i) => (
+              <span key={c}>{i > 0 && ' · '}{CTA_LABEL(L)[c] || c} <b style={{ color: '#4E5968' }}>{n}</b></span>
+            ))}
+          </div>
+        )}
+      </div>
+    )
+  }
+
+  return (
+    <div style={{ padding: '12px 14px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap', marginBottom: 8 }}>
+        <Chip on={!kindFilter} onClick={() => setKindFilter(null)}
+          label={L('전체', 'All', 'Tất cả')} n={fills.length} />
+        <Chip on={kindFilter === 'score'} onClick={() => setKindFilter(kindFilter === 'score' ? null : 'score')}
+          label={L('점수', 'Score', 'Điểm')} n={kindCount('score')} color={KIND_COLOR.score} />
+        <Chip on={kindFilter === 'level'} onClick={() => setKindFilter(kindFilter === 'level' ? null : 'level')}
+          label={L('수준(자기서술)', 'Self-described', 'Tự mô tả')} n={kindCount('level')} color={KIND_COLOR.level} />
+        <Chip on={kindFilter === 'other'} onClick={() => setKindFilter(kindFilter === 'other' ? null : 'other')}
+          label={L('기타', 'Other', 'Khác')} n={kindCount('other')} color={KIND_COLOR.other} />
+        <Chip on={kindFilter === 'none'} onClick={() => setKindFilter(kindFilter === 'none' ? null : 'none')}
+          label={L('못함', 'Neither', 'Không biết')} n={kindCount('none')} color={KIND_COLOR.none} />
+      </div>
+
+      <div style={{ maxHeight: 240, overflowY: 'auto', border: '1px solid #F2F4F6', borderRadius: 8, background: '#fff' }}>
+        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 11.5 }}>
+          <thead>
+            <tr style={{ position: 'sticky', top: 0, background: '#FAFBFC' }}>
+              <th style={fillTh}>{L('이름', 'Name', 'Tên')}</th>
+              <th style={fillTh}>{L('영어', 'English', 'Tiếng Anh')}</th>
+              <th style={fillTh}>{L('한국어', 'Korean', 'Tiếng Hàn')}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {shown.map((f, i) => (
+              <tr key={i} style={{ borderTop: '1px solid #F2F4F6' }}>
+                <td style={{ ...fillTd, fontWeight: 600 }}>{f.name}</td>
+                <td style={fillTd}><CertCell value={f.english_cert} kind={f.englishKind} L={L} /></td>
+                <td style={fillTd}><CertCell value={f.korean_cert} kind={f.koreanKind} L={L} /></td>
+              </tr>
+            ))}
+            {!shown.length && (
+              <tr><td colSpan={3} style={{ ...fillTd, color: '#B0B8C1', textAlign: 'center', padding: '14px 8px' }}>
+                {L('해당하는 값이 없습니다', 'Nothing in this bucket', 'Không có dữ liệu')}
+              </td></tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+
+      {/* 버튼 → 저장값. 위 목록의 값이 왜 그렇게 생겼는지를 설명하는 표라 붙여 둔다.
+          '그대로'가 크면 그 버튼은 수준을 측정하지 못하고 있다는 뜻이다 — 저장된 값의
+          정보량이 "그 버튼을 눌렀다"와 정확히 같아진다. */}
+      {!!mapping.length && (<>
+        <div style={{ fontSize: 12, fontWeight: 700, margin: '14px 0 4px' }}>
+          {L('버튼 → 저장된 값', 'Button → stored value', 'Nút → giá trị đã lưu')}
+        </div>
+        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 11.5 }}>
+          <thead>
+            <tr>
+              <th style={fillTh}>{L('버튼', 'Button', 'Nút')}</th>
+              <th style={fillTh}>{L('미리 채운 값', 'Pre-filled', 'Điền sẵn')}</th>
+              <th style={{ ...fillTh, textAlign: 'right' }}>{L('저장', 'Saved', 'Đã lưu')}</th>
+              <th style={{ ...fillTh, textAlign: 'right' }}>{L('그대로', 'Kept', 'Giữ')}</th>
+              <th style={{ ...fillTh, textAlign: 'right' }}>{L('고침', 'Changed', 'Sửa')}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {mapping.map((mm) => (
+              <tr key={mm.cta} style={{ borderTop: '1px solid #F2F4F6' }}>
+                <td style={fillTd}>{CTA_LABEL(L)[mm.cta] || mm.cta}</td>
+                <td style={{ ...fillTd, color: mm.preset ? KIND_COLOR.level : '#B0B8C1' }}>
+                  {mm.preset || L('없음 (직접 입력)', 'none (typed)', 'không có')}
+                </td>
+                <td style={{ ...fillTd, textAlign: 'right', fontWeight: 600 }}>{mm.n}</td>
+                <td style={{ ...fillTd, textAlign: 'right', color: mm.kept ? KIND_COLOR.level : '#B0B8C1', fontWeight: mm.kept ? 700 : 400 }}>{mm.kept}</td>
+                <td style={{ ...fillTd, textAlign: 'right', color: mm.changed ? KIND_COLOR.score : '#B0B8C1' }}>{mm.changed}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </>)}
+
+      {/* 누른 버튼 전체. 위 표는 '저장까지 간' 사람만 세는데, 값을 안 바꾸는 버튼이 있다 —
+          7차의 '시험 아님'은 값을 그대로 두고 기록만 남기므로(coldmail_lang_same) fills 에
+          안 들어온다. 그 버튼이 이 회차의 정답 중 하나라, 클릭 분포를 같이 보여주지 않으면
+          "아무도 안 눌렀다"로 잘못 읽힌다. */}
+      {!!clickedCtas.length && (
+        <div style={{ fontSize: 11, color: '#8B95A1', marginTop: 10 }}>
+          {L('누른 버튼', 'Buttons clicked', 'Nút đã bấm')}{' '}
+          {clickedCtas.map(([c, n], i) => (
+            <span key={c}>
+              {i > 0 && ' · '}
+              {CTA_LABEL(L)[c] || c} <b style={{ color: '#4E5968' }}>{n}</b>
+            </span>
+          ))}
+          {!!row.same && (
+            <span style={{ color: '#7C3AED' }}>
+              {' — '}{L('값 유지 확인', 'kept as-is', 'giữ nguyên')} {row.same}
+            </span>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
+
 /* 캠페인 한 줄 = 표 한 행. 카드로 나눠 두던 것을 표로 편다 — 회차가 10개를 넘어가면서
    카드가 화면을 가로질러 흩어져, "몇 번째 회차가 제일 잘 됐나"를 한눈에 못 보게 됐다.
 
    계열은 카드 대신 구분 행으로 남긴다. 모집단이 달라 세로로 전환율을 비교하면 안 되는
    건 표가 돼도 그대로라, 계열 경계가 보이지 않으면 그 함정이 더 커진다. */
 function CampaignTable({ groups, L }) {
+  /* 자세히 보기는 캠페인 한 줄씩 연다. 계열 단위로 통째로 펴던 때는 한 번 누르면
+     카드 넉 장이 쏟아져서, 정작 보려던 회차를 다시 찾아야 했다.
+     한 번에 하나만 연다 — 여러 줄을 펴 두면 표가 다시 세로로 길어진다. */
+  const [open, setOpen] = useState(null)
+
+  // 상세는 계열 응답(fills·mapping)에서 캠페인 것만 골라 쓰므로 group 을 같이 들고 간다.
   const rows = groups.flatMap((g) => g.rows
     .filter((r) => ARM_META[r.campaign])
-    .map((r) => ({ ...r, family: g.family })))
+    .map((r) => ({ ...r, family: g.family, group: g })))
   if (!rows.length) return null
 
   const pctOr = (v, n) => (n ? pct(v) : '—')
@@ -140,14 +288,22 @@ function CampaignTable({ groups, L }) {
                     }}>{SECTION_LABEL(section, L)}</td>
                   </tr>
                 )}
-                <tr>
+                <tr
+                  onClick={() => setOpen(open === r.campaign ? null : r.campaign)}
+                  style={{ cursor: 'pointer', background: open === r.campaign ? '#FAFBFC' : undefined }}
+                >
                   <td style={TD}>
                     <span style={{
                       fontSize: 10.5, fontWeight: 800, color: '#fff', background: m.color,
                       borderRadius: 5, padding: '2px 6px', whiteSpace: 'nowrap',
                     }}>{m.tag}</span>
                   </td>
-                  <td style={{ ...TD, fontWeight: 600 }}>{L(m.ko, m.en, m.vi)}</td>
+                  <td style={{ ...TD, fontWeight: 600 }}>
+                    <span style={{ color: '#B0B8C1', fontSize: 10, marginRight: 5 }}>
+                      {open === r.campaign ? '▾' : '▸'}
+                    </span>
+                    {L(m.ko, m.en, m.vi)}
+                  </td>
                   <td style={{ ...TD, color: '#9CA3AF', fontSize: 12, whiteSpace: 'nowrap' }}>
                     {d0 && d1 && d0 !== d1 ? `${d0}–${d1}` : d0 || '—'}
                   </td>
@@ -162,6 +318,13 @@ function CampaignTable({ groups, L }) {
                   <td style={{ ...NUM, color: r.kinds?.level ? KIND_COLOR.level : '#C0C4CC' }}>{r.kinds?.level || '—'}</td>
                   <td style={{ ...NUM, color: '#9CA3AF' }}>{r.kinds?.none || '—'}</td>
                 </tr>
+                {open === r.campaign && (
+                  <tr>
+                    <td colSpan={10} style={{ padding: 0, background: '#FAFBFC', borderBottom: '1px solid #EEF0F2' }}>
+                      <CampaignDetail row={r} group={r.group} L={L} />
+                    </td>
+                  </tr>
+                )}
               </Fragment>
             )
           })}
@@ -186,26 +349,8 @@ const GROUP_TITLE = (g, L) => {
   return L('어학 콜드메일 (제목 A/B)', 'Language cold-email (subject A/B)', 'Cold-email ngoại ngữ (A/B tiêu đề)')
 }
 
-const GROUP_NOTE = (g, L) => {
-  if (g.family === 'ktc') return L('K-Tech College 로 들어와 계정을 만든 회원 · 단일 버전', 'Signed up via K-Tech College · single version', 'Đăng ký qua K-Tech College')
-  // 3차 두 계열의 질문: 이력서가 없어도 어학만으로 추천 대상이 되는가.
-  if (g.family === 'resume') return L('이력서는 있으나 FYI 에서 지원한 적 없는 회원', 'Has a resume but never applied on FYI', 'Có CV nhưng chưa ứng tuyển')
-  if (g.family === 'ghost') return L('가입만 하고 이력서도 지원도 없는 회원 · 이력서 등록 버튼 포함', 'Signed up only — no resume, no application', 'Chỉ đăng ký, chưa có CV')
-  // 5차. 세는 것이 '입력'이 아니라 '확인'이라 아래 카드의 숫자도 다르게 읽어야 한다.
-  if (g.family === 'recheck') return L('어학은 적었지만 자격증·점수가 아닌 층 · 값이 아직 유효한지 확인', 'Wrote a level but no certificate — is it still true?', 'Đã ghi trình độ nhưng chưa có chứng chỉ')
-  // 4차. 앞 회차들과 달리 arm 끼리 모집단이 다르다 — 칸을 가로질러 전환율을 비교하지 말 것.
-  if (g.family === 'nocert') return L('이력서 O · 어학 3칸 모두 빔 · 지원 여부 무관 · 근거별 3종', 'Has resume, all language fields blank · 3 angles', 'Có CV, bỏ trống ngoại ngữ · 3 phiên bản')
-  // wave 1(콜드메일 미수신 200) + wave 2(기수신 260)를 합쳐 230/230 으로 본다.
-  // 두 코호트의 입력률이 21.0% vs 24.6% 로 크게 벌어지지 않아, 제목 A/B 판정에는
-  // 한 덩어리로 보는 편이 검정력이 높다.
-  return L('이력서 O · FYI 지원 1회 이상 · 230/230', 'Has resume, applied before · 230/230', 'Có CV, đã ứng tuyển · 230/230')
-}
-
 export default function LangColdmailCards({ token, lang }) {
   const L = (ko, en, vi) => (lang === 'vi' ? (vi ?? en) : lang === 'ko' ? ko : en)
-  // 값 상세('버튼 → 저장된 값')는 접어 둔다 — 평소 묻는 건 회차별 성과 한 줄이고,
-  // 저장된 값 원본까지 늘 펴 두면 표가 화면 밖으로 밀린다.
-  const [detail, setDetail] = useState(false)
   // dateRange 를 안 붙인다 — A/B 는 캠페인 전 기간을 한 번에 봐야 하고, 날짜로 자르면
   // arm 별 발송일이 하루라도 어긋났을 때 분모가 달라져 비교가 깨진다.
   const { data, error, isLoading } = useAdmin('/api/admin/lang-coldmail', token)
@@ -268,214 +413,6 @@ export default function LangColdmailCards({ token, lang }) {
       </div>
 
       <CampaignTable groups={groups} L={L} />
-
-      <button
-        onClick={() => setDetail((v) => !v)}
-        style={{
-          marginTop: 10, padding: '5px 10px', fontSize: 11.5, fontWeight: 600, cursor: 'pointer',
-          color: '#4E5968', background: '#fff', border: '1px solid #E5E8EB', borderRadius: 7,
-        }}
-      >
-        {detail
-          ? L('자세히 닫기', 'Hide detail', 'Ẩn chi tiết')
-          : L('버튼 → 저장된 값 자세히 보기', 'Button → saved value detail', 'Chi tiết')}
-      </button>
-
-      {detail && groups.map((g) => <GroupCard key={g.key} data={g} L={L} />)}
-    </div>
-  )
-}
-function GroupCard({ data, L }) {
-  // 값 종류 필터. null = 전체. 아래 early return 들보다 먼저 선언해야 훅 순서가 안 깨진다.
-  const [kindFilter, setKindFilter] = useState(null)
-  // 목록은 기본으로 접어둔다 — 이름·값이 한 줄씩 쌓여 카드보다 커지고, arm/종류 요약은
-  // 위 카드에 이미 있어 접혀 있어도 읽을 게 없어지지 않는다.
-  const [showFills, setShowFills] = useState(false)
-
-  const rows = data.rows.filter((r) => ARM_META[r.campaign])
-
-  return (
-    <div style={{ ...sectionStyle, marginBottom: 16 }}>
-      <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 3 }}>
-        {GROUP_TITLE(data, L)}
-        <span style={{ fontSize: 11, fontWeight: 500, color: '#8B95A1', marginLeft: 7 }}>
-          {GROUP_NOTE(data, L)}
-        </span>
-      </div>
-      {/* 부제는 A/B 합계 실적. 제목 옆에서 "그래서 이 캠페인이 얼마나 먹혔나"가 한 줄로
-          읽혀야 한다 — 두 arm 을 각각 보기 전에 알아야 할 수가 그것이다. */}
-      <div style={{ fontSize: 11.5, color: '#8B95A1', marginBottom: 12 }}>
-        {L('발송', 'Sent', 'Đã gửi')} {data?.totals?.sent ?? 0}
-        {' · '}
-        {L('클릭', 'Click', 'Click')} {data?.totals?.clicked ?? 0}
-        {data?.totals?.sent ? ` (${pct(data.totals.clicked / data.totals.sent)})` : ''}
-        {' · '}
-        <span style={{ color: '#4E5968', fontWeight: 600 }}>
-          {L('어학 입력', 'Filled', 'Đã điền')} {data?.totals?.filled ?? 0}
-          {data?.totals?.sent ? ` (${pct(data.totals.filled / data.totals.sent)})` : ''}
-        </span>
-      </div>
-
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 10 }}>
-        {rows.map((r) => {
-          const m = ARM_META[r.campaign]
-          /* 세로 flex — 아래 '점수·자기서술·못함' 줄을 marginTop:auto 로 바닥에 붙인다.
-             제목이 한 줄인 카드와 두 줄인 카드가 나란히 서면 그 줄의 높이가 어긋나는데,
-             그리드가 카드 높이를 이미 맞춰 주므로 바닥 기준으로 맞추면 가지런해진다. */
-          return (
-            <div key={r.campaign} style={{
-              border: '1px solid #E5E8EB', borderRadius: 10, padding: 14,
-              display: 'flex', flexDirection: 'column',
-            }}>
-              {/* 제목 줄 오른쪽이 비어 있어서 수치를 그리로 올렸다 — 아래로 한 줄 더
-                  쌓으면 카드가 그만큼 길어지는데, 그 줄에 넣을 자리가 이미 있다.
-
-                  wrap 을 쓰면 안 된다: 제목 길이에 따라 수치 블록이 다음 줄로 밀려서
-                  카드마다 수치의 세로 위치가 달라진다(R6 '자기서술 재확인 · 개정'은 밀리고
-                  R7 '시험명 확인'은 같은 줄에 남았다). nowrap 으로 고정하고 제목 쪽을
-                  줄여, 어느 카드든 수치가 오른쪽 위 같은 자리에 오게 한다.
-                  제목이 길면 잘리지 않고 두 줄로 접힌다 — minWidth:0 이 있어야 접힌다. */}
-              <div style={{
-                display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between',
-                gap: 10, flexWrap: 'nowrap', marginBottom: 8,
-              }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 7, flex: '1 1 auto', minWidth: 0 }}>
-                  <span style={{
-                    fontSize: 11, fontWeight: 800, color: '#fff', background: m.color,
-                    borderRadius: 5, padding: '2px 7px', flex: 'none',
-                  }}>{m.tag}</span>
-                  <span style={{ fontSize: 12.5, fontWeight: 700, minWidth: 0 }}>{L(m.ko, m.en, m.vi)}</span>
-                </div>
-                <div style={{ display: 'flex', gap: 12, flex: 'none' }}>
-                  <Stat label={L('발송', 'Sent', 'Đã gửi')} value={r.sent} />
-                  <Stat label={L('클릭', 'Click', 'Click')} value={r.clicked} sub={r.sent ? pct(r.clickRate) : null} />
-                  <Stat label={L('입력', 'Filled', 'Đã điền')} value={r.filled} sub={r.sent ? pct(r.fillRate) : null} accent={m.color} />
-                </div>
-              </div>
-
-              {/* 들어온 값의 종류 — "주제를 밝힌 제목(B)이 실제로 어학 되는 사람만
-                  데려온다"는 가설은 전환 수가 아니라 이 줄로만 확인된다. B 는 입력이
-                  적어도 점수 비율이 높아야 가설이 맞는다.
-                  어느 버튼을 눌렀는지(cta 분포)는 여기서 뺐다 — 아래 '버튼 → 저장된 값'
-                  표가 같은 걸 저장 결과까지 붙여서 보여주므로 두 번 읽을 이유가 없다. */}
-              <div style={{ fontSize: 11, color: '#8B95A1', borderTop: '1px solid #F2F4F6', paddingTop: 8, marginTop: 'auto' }}>
-                <span style={{ color: KIND_COLOR.score, fontWeight: 700 }}>
-                  {L('점수', 'Score', 'Điểm')} {r.kinds?.score ?? 0}
-                </span>
-                {' · '}
-                <span style={{ color: KIND_COLOR.level }}>
-                  {L('자기서술', 'Self-desc', 'Tự mô tả')} {r.kinds?.level ?? 0}
-                </span>
-                {' · '}
-                {L('못함', 'Neither', 'Không biết')} {r.kinds?.none ?? 0}
-              </div>
-            </div>
-          )
-        })}
-      </div>
-
-      {/* 실제로 들어온 값 — 비율만 보면 "무엇이 들어왔는지"를 못 본다. 이 캠페인의 목적이
-          자기서술 52% 를 자격증·점수로 바꾸는 거라, 전환 10% 를 넘겨도 전부 자기서술이면
-          지금과 같은 데이터가 늘어난 것뿐이다. 그래서 종류를 같이 센다. */}
-      {!!data?.fills?.length && (
-        <div style={{ marginTop: 14, borderTop: '1px solid #F2F4F6', paddingTop: 10 }}>
-          <button
-            type="button"
-            onClick={() => setShowFills((v) => !v)}
-            style={{
-              display: 'flex', alignItems: 'center', gap: 5, padding: 0, border: 'none',
-              background: 'none', cursor: 'pointer', fontFamily: 'inherit',
-              fontSize: 12, fontWeight: 700, color: '#191F28',
-            }}
-          >
-            <span style={{ color: '#8B95A1', fontSize: 10 }}>{showFills ? '▾' : '▸'}</span>
-            {L('들어온 값', 'What came in', 'Dữ liệu đã nhận')} {data.fills.length}
-          </button>
-
-          {showFills && (<>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap', margin: '8px 0' }}>
-            <Chip on={!kindFilter} onClick={() => setKindFilter(null)}
-              label={L('전체', 'All', 'Tất cả')} n={data.fills.length} />
-            <Chip on={kindFilter === 'score'} onClick={() => setKindFilter(kindFilter === 'score' ? null : 'score')}
-              label={L('점수', 'Score', 'Điểm')} n={data.kinds?.score ?? 0} color={KIND_COLOR.score} />
-            <Chip on={kindFilter === 'level'} onClick={() => setKindFilter(kindFilter === 'level' ? null : 'level')}
-              label={L('수준(자기서술)', 'Self-described', 'Tự mô tả')} n={data.kinds?.level ?? 0} color={KIND_COLOR.level} />
-            <Chip on={kindFilter === 'other'} onClick={() => setKindFilter(kindFilter === 'other' ? null : 'other')}
-              label={L('기타', 'Other', 'Khác')} n={data.kinds?.other ?? 0} color={KIND_COLOR.other} />
-            <Chip on={kindFilter === 'none'} onClick={() => setKindFilter(kindFilter === 'none' ? null : 'none')}
-              label={L('못함', 'Neither', 'Không biết')} n={data.kinds?.none ?? 0} color={KIND_COLOR.none} />
-          </div>
-
-          <div style={{ maxHeight: 240, overflowY: 'auto', border: '1px solid #F2F4F6', borderRadius: 8 }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 11.5 }}>
-              <thead>
-                <tr style={{ position: 'sticky', top: 0, background: '#FAFBFC' }}>
-                  <th style={{ ...fillTh, width: 26 }}>arm</th>
-                  <th style={fillTh}>{L('이름', 'Name', 'Tên')}</th>
-                  <th style={fillTh}>{L('영어', 'English', 'Tiếng Anh')}</th>
-                  <th style={fillTh}>{L('한국어', 'Korean', 'Tiếng Hàn')}</th>
-                </tr>
-              </thead>
-              <tbody>
-                {data.fills.filter((f) => !kindFilter || f.kind === kindFilter).map((f, i) => (
-                  <tr key={i} style={{ borderTop: '1px solid #F2F4F6' }}>
-                    <td style={fillTd}><ArmTag campaign={f.campaign} /></td>
-                    <td style={{ ...fillTd, fontWeight: 600 }}>{f.name}</td>
-                    <td style={fillTd}><CertCell value={f.english_cert} kind={f.englishKind} L={L} /></td>
-                    <td style={fillTd}><CertCell value={f.korean_cert} kind={f.koreanKind} L={L} /></td>
-                  </tr>
-                ))}
-                {kindFilter && !data.fills.some((f) => f.kind === kindFilter) && (
-                  <tr><td colSpan={4} style={{ ...fillTd, color: '#B0B8C1', textAlign: 'center', padding: '14px 8px' }}>
-                    {L('해당하는 값이 없습니다', 'Nothing in this bucket', 'Không có dữ liệu')}
-                  </td></tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-
-          {/* 버튼 → 저장값 매핑. 같은 토글 안, 목록 바로 아래에 둔다 — 위 목록의 값이 왜
-              그렇게 생겼는지를 설명하는 표라 떨어뜨려 놓으면 따로 읽히고 오해가 남는다.
-              'Intermediate 7건'은 7명이 자기 수준을 서술한 게 아니라 랜딩이 미리 채워준
-              값을 그대로 저장한 것이다 — 정보량이 "그 버튼을 눌렀다"와 정확히 같다.
-              '그대로'가 크면 그 버튼은 수준을 측정하지 못하고 있다는 뜻이다. */}
-          {!!data?.mapping?.length && (<>
-          <div style={{ fontSize: 12, fontWeight: 700, margin: '14px 0 0' }}>
-            {L('버튼 → 저장된 값', 'Button → stored value', 'Nút → giá trị đã lưu')}
-          </div>
-          <div style={{ fontSize: 11, color: '#8B95A1', margin: '4px 0 8px' }}>
-            {L("‘그대로’는 우리가 미리 채운 값을 손대지 않고 저장한 사람이다. 그 값은 자기서술이 아니라 '그 버튼을 눌렀다'와 같은 뜻이다.",
-               "‘Kept’ = saved our pre-filled value untouched. That is not self-description — it carries no more than the click itself.",
-               "‘Giữ nguyên’ = lưu giá trị điền sẵn của chúng tôi.")}
-          </div>
-          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 11.5 }}>
-            <thead>
-              <tr>
-                <th style={fillTh}>{L('버튼', 'Button', 'Nút')}</th>
-                <th style={fillTh}>{L('미리 채운 값', 'Pre-filled', 'Điền sẵn')}</th>
-                <th style={{ ...fillTh, textAlign: 'right' }}>{L('저장', 'Saved', 'Đã lưu')}</th>
-                <th style={{ ...fillTh, textAlign: 'right' }}>{L('그대로', 'Kept', 'Giữ')}</th>
-                <th style={{ ...fillTh, textAlign: 'right' }}>{L('고침', 'Changed', 'Sửa')}</th>
-              </tr>
-            </thead>
-            <tbody>
-              {data.mapping.map((m) => (
-                <tr key={m.cta} style={{ borderTop: '1px solid #F2F4F6' }}>
-                  <td style={fillTd}>{CTA_LABEL(L)[m.cta] || m.cta}</td>
-                  <td style={{ ...fillTd, color: m.preset ? KIND_COLOR.level : '#B0B8C1' }}>
-                    {m.preset || L('없음 (직접 입력)', 'none (typed)', 'không có')}
-                  </td>
-                  <td style={{ ...fillTd, textAlign: 'right', fontWeight: 600 }}>{m.n}</td>
-                  <td style={{ ...fillTd, textAlign: 'right', color: m.kept ? KIND_COLOR.level : '#B0B8C1', fontWeight: m.kept ? 700 : 400 }}>{m.kept}</td>
-                  <td style={{ ...fillTd, textAlign: 'right', color: m.changed ? KIND_COLOR.score : '#B0B8C1' }}>{m.changed}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          </>)}
-          </>)}
-        </div>
-      )}
     </div>
   )
 }
@@ -486,20 +423,6 @@ const fillTd = { padding: '6px 8px', textAlign: 'left', verticalAlign: 'top' }
 // 값 자체를 그대로 보여주되 종류를 색으로 구분한다. '점수'만 이 캠페인이 원한 결과다.
 const KIND_COLOR = { score: '#16a34a', other: '#4E5968', level: '#B45309', none: '#B0B8C1' }
 
-// 어느 arm 에서 온 사람인지 — 목록의 첫 칸. 위 카드의 배지와 달리 채우지 않고 외곽선만
-// 쓴다. 스무 줄이 넘는 목록에서 solid 배지가 줄마다 들어가면 정작 읽어야 할 값(점수·수준)
-// 보다 arm 이 먼저 눈에 들어온다.
-function ArmTag({ campaign }) {
-  const m = ARM_META[campaign]
-  if (!m) return <span style={{ color: '#D1D6DB' }}>?</span>
-  return (
-    <span style={{
-      display: 'inline-block', minWidth: 14, textAlign: 'center',
-      fontSize: 10, fontWeight: 700, color: m.color, background: 'none',
-      border: `1px solid ${m.color}55`, borderRadius: 4, padding: '0 4px', lineHeight: 1.6,
-    }}>{m.tag}</span>
-  )
-}
 
 // 값 종류 필터 칩. 숫자는 API 가 준 kinds 를 그대로 쓴다 — 화면에서 다시 세면
 // 칩의 숫자와 필터 결과가 어긋날 수 있다.
@@ -530,16 +453,3 @@ function CertCell({ value, kind, L }) {
   )
 }
 
-// 제목 줄 오른쪽에 들어가므로 두 줄을 넘기지 않는다 — 값과 비율을 한 줄에 붙여
-// 라벨/값 2단으로만 쌓는다. 예전처럼 3단으로 쌓으면 제목 줄이 그만큼 두꺼워진다.
-function Stat({ label, value, sub, accent }) {
-  return (
-    <div style={{ textAlign: 'right', minWidth: 42 }}>
-      <div style={{ fontSize: 10, color: '#8B95A1', fontWeight: 600, lineHeight: 1.4 }}>{label}</div>
-      <div style={{ lineHeight: 1.25, whiteSpace: 'nowrap' }}>
-        <span style={{ fontSize: 16, fontWeight: 800, color: accent || '#191F28' }}>{value}</span>
-        {sub && <span style={{ fontSize: 10, color: '#8B95A1', marginLeft: 3 }}>{sub}</span>}
-      </div>
-    </div>
-  )
-}
