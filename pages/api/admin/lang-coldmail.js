@@ -237,7 +237,7 @@ export default async function handler(req, res) {
        를 저장했던 사람이 6차에서 'TOEIC 750' 을 넣었더니 첫 저장 기준으로 8/4 캠페인에
        잡혀 R6 목록에서 사라졌다. 목록이 보여주는 값은 현재 프로필 값이므로, 그 값을
        만든 마지막 저장에 붙이는 것이 맞다.
-       전환 수(filled)는 이벤트별로 세므로 이 변경과 무관하다.
+       전환 수(filled)는 이벤트별로 세므로 이 변경과 무관하다. */
     const lastFill = {}
     for (const e of evts) {
       if (e.event !== 'coldmail_lang_fill' || !e.user_id) continue
