@@ -17,6 +17,17 @@ const CERT_TO_FIELD = {
   VSTEP: 'english_cert', APTIS: 'english_cert', TOPIK: 'korean_cert',
 }
 
+/* mode='attach' 가 붙일 수 있는 시험. 맨 등급값("B2")에 시험명만 얹는 경로다.
+
+   왜 CEFR 을 안 넣는가: CEFR 은 시험이 아니라 척도다. 아무도 CEFR 을 응시하지 않고,
+   VSTEP·APTIS 가 성적을 CEFR 등급으로 발급할 뿐이다. 실제로 시험명이 확인된 값 중
+   CEFR 척도로 발급되는 100건은 VSTEP 59 · APTIS 39 · CEFR 2 였다.
+   "CEFR 맞나요"로 물으면 시험을 안 본 사람도 정직하게 '예'라고 답할 수 있어
+   (본인은 정말 CEFR 척도를 뜻했으므로) 자기서술이 급수로 세탁된다. 그래서 묻는 말이
+   척도가 아니라 시험명이어야 하고, 붙일 수 있는 것도 실재하는 시험뿐이다. */
+const ATTACH_CERT = { vstep: 'VSTEP', aptis: 'APTIS' }
+const BARE_LEVEL = /^[A-C][12]$/i
+
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' })
 
@@ -45,12 +56,73 @@ export default async function handler(req, res) {
     })
     if (logErr) console.error('coldmail_lang_responses insert failed:', logErr.message)
 
+    // cta 를 같이 싣는다 — 이 경로로 들어오는 버튼이 둘이다(5차 'same' / 7차 'self').
+    // 뜻이 다르므로(아직 시험 안 봤다 vs 이 값은 시험이 아니다) 이벤트만 보고 갈라야 한다.
     await supabaseAdmin.from('events').insert({
       event: 'coldmail_lang_same',
       user_id: p.id,
-      meta: { campaign: claim.campaign, lead: leadId(claim.email) },
+      meta: {
+        campaign: claim.campaign,
+        lead: leadId(claim.email),
+        cta: typeof cta === 'string' ? cta.slice(0, 20) : null,
+      },
     })
     return res.status(200).json({ ok: true, confirmed: true })
+  }
+
+  /* mode='attach' — 7차('어느 시험이었나요') 원탭 확정. 맨 등급값에 시험명만 붙인다.
+
+     값을 클라이언트에서 받지 않는다. 받으면 링크가 유출됐을 때 남이 아무 등급이나 심을
+     수 있고, 본인이 B1 을 C1 로 올려 보내는 것도 못 막는다. 서버가 저장된 등급을 읽어
+     그대로 쓰고 앞에 시험명만 얹으므로, 이 경로로는 급수가 오르지도 내리지도 않는다.
+     바뀌는 건 "확인 가능한 시험명이 붙었다" 하나뿐이다 — VSTEP·APTIS·CEFR 는 급수표가
+     같아서(langTier.GRADES) 이름이 달라져도 급수는 동일하다. */
+  if (mode === 'attach') {
+    const cert = ATTACH_CERT[String(cta || '').toLowerCase()]
+    if (!cert) return res.status(400).json({ error: 'bad_cta' })
+
+    const { data: p, error } = await supabaseAdmin
+      .from('user_profiles').select('id, english_cert').ilike('email', claim.email).maybeSingle()
+    if (error) return res.status(500).json({ error: error.message })
+    if (!p) return res.status(404).json({ error: 'profile_not_found' })
+
+    /* 맨 등급값일 때만 붙인다. 이미 다른 시험명이 있거나("DELF B1") 범위값("B2–C1")이면
+       덮는 순간 원문이 사라진다 — 그런 값은 폼으로 보내 본인이 고르게 해야 한다.
+       발송 대상을 맨 등급값으로 좁혀 뽑지만, 메일을 받은 뒤 프로필에서 값을 고치고
+       나서 버튼을 누를 수 있으므로 저장 직전에 다시 본다. */
+    const lv = String(p.english_cert || '').trim()
+    if (!BARE_LEVEL.test(lv)) return res.status(409).json({ error: 'not_bare_level' })
+
+    const value = `${cert} ${lv.toUpperCase()}`
+    const { error: upErr } = await supabaseAdmin
+      .from('user_profiles')
+      .update({ english_cert: value, updated_at: new Date().toISOString() })
+      .eq('id', p.id)
+    if (upErr) return res.status(500).json({ error: upErr.message })
+
+    const { error: logErr } = await supabaseAdmin.from('coldmail_lang_responses').insert({
+      user_id: p.id,
+      campaign: claim.campaign || null,
+      cta: typeof cta === 'string' ? cta.slice(0, 20) : null,
+      english_cert: value,
+      korean_cert: null,
+      source: 'lang-attach',
+    })
+    if (logErr) console.error('coldmail_lang_responses insert failed:', logErr.message)
+
+    await supabaseAdmin.from('events').insert({
+      event: 'coldmail_lang_fill',
+      user_id: p.id,
+      meta: {
+        campaign: claim.campaign,
+        lead: leadId(claim.email),
+        cta: typeof cta === 'string' ? cta.slice(0, 20) : null,
+        saved: 'cert',
+        // 붙이기 전 값. 나중에 "무엇이 무엇으로 바뀌었나"를 이벤트만 보고 복원할 수 있다.
+        from: lv.toUpperCase(),
+      },
+    })
+    return res.status(200).json({ ok: true, attached: value })
   }
 
   // 한 줄 텍스트 포맷은 LanguageCard 와 동일하게 유지한다("TOEIC 900").

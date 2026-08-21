@@ -151,6 +151,18 @@ export default async function handler(req, res) {
       if (e.event === 'coldmail_lang_sent' && e.user_id) waveOf[e.user_id] = Number(e.meta?.wave) || 1
     }
 
+    /* round — 어학 재확인 시리즈의 몇 번째 회차인가('R7' 등). wave 와 같은 이유로
+       발송 이벤트에만 실려 있어 캠페인 단위로 되읽는다. 캠페인 ID 는 '무엇을 물었나'를,
+       round 는 '몇 번째였나'를 뜻해서 둘을 따로 둔다 — 계열로 묶는 것과 순서대로
+       세우는 것을 한 값으로는 둘 다 할 수 없다.
+       round 를 안 실은 옛 캠페인은 null 로 남는다(표시하지 않으면 그만이다). */
+    const roundOfCampaign = {}
+    for (const e of evts) {
+      if (e.event !== 'coldmail_lang_sent') continue
+      const c = e.meta?.campaign, r = e.meta?.round
+      if (c && r && !roundOfCampaign[c]) roundOfCampaign[c] = String(r)
+    }
+
     const arms = {}
     // 사람 단위로 센다 — 같은 사람의 재클릭(메일 스캐너 중복 포함)이 비율을 부풀리지 않게.
     // 캠페인 하나가 한 줄이다. wave 로 쪼개던 것을 합쳤으므로 language 는 A/B 두 줄
@@ -162,7 +174,7 @@ export default async function handler(req, res) {
       // same = 재확인 회차의 '그대로입니다' 버튼. 다른 회차엔 없어 항상 0 이다.
       cta: {
         score: new Set(), daily: new Set(), basic: new Set(), none: new Set(), same: new Set(),
-        // 6차('어느 시험이었나요') — vstep·aptis 는 원탭 확정, exam 은 폼, self 는 이탈구.
+        // 7차('어느 시험이었나요') — vstep·aptis 는 원탭 확정, exam 은 폼, self 는 이탈구.
         vstep: new Set(), aptis: new Set(), exam: new Set(), self: new Set(),
       },
       view: new Set(),
@@ -198,6 +210,7 @@ export default async function handler(req, res) {
     const rows = Object.values(arms)
       .map((a) => ({
         campaign: a.campaign,
+        round: roundOfCampaign[a.campaign] || null,   // 'R7' — 없으면 표시하지 않는다
         sent: a.sent.size,
         clicked: a.click.size,
         // 사람이 브라우저로 연 수. click 과의 차이가 메일 스캐너 프리페치다.
@@ -322,6 +335,8 @@ export default async function handler(req, res) {
       return {
         key,
         family: familyOf(wRows[0].campaign),
+        // 카드 제목에 붙일 회차. 한 카드에 회차가 여럿이면 모두 넘긴다.
+        rounds: [...new Set(wRows.map((r) => r.round).filter(Boolean))],
         rows: wRows,
         fills: wFills,
         kinds: tally(wFills),

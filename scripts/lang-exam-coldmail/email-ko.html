@@ -1,0 +1,134 @@
+<!--
+  [검수용 한글] 어학 7차 · 맨 등급값 세그먼트
+  ────────────────────────────────────────────────────────────
+  실발송이 베트남어라면 email-vi.html 을 1:1 대응으로 같이 고칠 것.
+  ※ 한쪽만 고치면 두 파일이 갈라진다. 문구를 바꿀 땐 반드시 양쪽 같이.
+
+  타겟   : english_cert 가 맨 등급값("B2"·"B1") 123명 중 recheck-1 기발송 11명을 뺀 112명.
+           등급이 섞인 값("B2 Level"·"DELF B1"·"B2–C1") 30명은 대상이 아니다 —
+           원탭으로 시험명을 얹으면 원문이 사라진다. 그 층은 폼으로만 받는다.
+  제목   : 어학 요건 공고에 추천해 드리지 못했습니다  (recheck 캠페인 확정 문구 그대로)
+  캠페인 : coldmail-lang-exam-1
+
+  ※ 제목에는 {{cert}} 를 넣지 않는다. 손실("추천해 드리지 못했다")이 열게 만드는 훅이고,
+    "그래서 내 값이 뭔데"의 답은 열고 나서 본문 첫 줄이 한다. 제목은 전원 동일하다.
+    제목을 바꿀 땐 send.mjs 의 SUBJECT 와 같이 고칠 것 — 본문 h1 은 따라가지 않는다.
+
+  ※ 왜 "CEFR 등급인가요?"라고 묻지 않는가 — 이 회차의 핵심이다.
+    CEFR 은 시험이 아니라 척도다. 아무도 CEFR 을 응시하지 않고, VSTEP·APTIS 가
+    성적을 CEFR 등급으로 발급할 뿐이다. 실제로 시험명이 확인된 값 중 CEFR 척도로
+    발급되는 100건은 VSTEP 59 · APTIS 39 · CEFR 2 였다.
+    "CEFR 맞나요"로 물으면 시험을 안 본 사람도 정직하게 '예'라고 답할 수 있다
+    (본인은 정말 CEFR 척도를 뜻했으므로). 그러면 자기서술이 그대로 급수로 세탁된다.
+    그래서 묻는 말은 척도가 아니라 시험명이어야 한다. VSTEP·APTIS 두 버튼이
+    확인된 CEFR 척도 보유자의 98% 를 덮으므로 클릭 비용은 여전히 한 번이다.
+
+  ※ 마지막 줄('시험을 본 건 아니고…')을 회색 링크로 숨기지 않는다.
+    1차(recheck-1) 에서 저장한 16명 중 11명이 '그대로'를 눌렀다 — 시험 없는 사람이
+    다수라는 신호다. 이 선택지를 흐리게 두면 그 사람들이 위쪽 시험 버튼을 누르고,
+    그게 정확히 이 회차가 막으려는 세탁이다. 여기서 '시험 안 봤다'는 변명이 아니라
+    우리가 받아야 할 정답이다.
+
+  ⚠️ 범위를 지킬 것 — "추천에서 배제됐다"를 통째로 주장하면 거짓이 된다.
+     lib/jdMatch.js 는 english_cert 가 '있기만 하면' 점수를 준다. 실제 배제는
+     certOf(langTier.js)로 자격증을 가려 후보를 넘기는 자리에서만 일어난다.
+     그래서 본문은 "어학 요건이 걸린 자리에 못 올렸다"까지만 쓴다.
+
+  ※ 등급(A·B·C)을 본문에 쓰지 않는다. 우리가 사람을 어떻게 분류하는지는 내부 기준이다.
+-->
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>FYI (한글 검수용)</title>
+</head>
+<body style="margin:0;padding:24px 0;background:#f2f4f6;">
+
+<div style="display:none;max-height:0;overflow:hidden;opacity:0;">
+  어느 시험의 등급인지만 알려주시면 됩니다. 버튼 한 번이면 끝납니다.
+</div>
+
+<div style="font-family:'Pretendard','Segoe UI',Roboto,'Apple SD Gothic Neo',Arial,sans-serif;color:#191F28;max-width:560px;margin:0 auto;background:#ffffff;border-radius:16px;overflow:hidden;border:1px solid #E5E8EB;">
+
+  <div style="padding:22px 32px;border-bottom:1px solid #F2F4F6;">
+    <span style="font-size:22px;font-weight:900;letter-spacing:-0.5px;color:#ff6000;">FYI</span>
+    <span style="font-size:11px;font-weight:700;color:#8B95A1;letter-spacing:0.5px;margin-left:8px;">베트남 채용 플랫폼</span>
+  </div>
+
+  <div style="padding:32px;">
+
+    <h1 style="margin:0 0 18px;font-size:26px;line-height:1.35;font-weight:800;color:#191F28;letter-spacing:-0.7px;">
+      FYI에 등록된 {{name}}님의 영어는<br />
+      <span style="color:#ff6000;">“{{cert}}”입니다.</span>
+    </h1>
+
+    <p style="margin:0 0 16px;font-size:15px;line-height:1.7;color:#4E5968;">
+      기업이 자격 요건에 어학을 걸면 저희는 <b style="color:#191F28;">시험명이 있는 값</b>으로 후보를 넘깁니다.
+      <b style="color:#191F28;">“{{cert}}”만으로는 어느 시험의 등급인지 알 수 없어</b> 그 자리에 올리지 못했습니다.
+    </p>
+
+    <p style="margin:0 0 24px;font-size:15px;line-height:1.7;color:#4E5968;">
+      실력을 의심한 게 아닙니다. <b style="color:#191F28;">어느 시험이었는지만 눌러주세요. 그걸로 끝납니다.</b>
+    </p>
+
+    <div style="background:#F9F9F9;border:1px solid #F2F4F6;border-radius:14px;padding:22px;">
+      <div style="font-size:15px;font-weight:700;color:#191F28;margin-bottom:4px;">어느 시험의 {{cert}}인가요?</div>
+      <div style="font-size:12.5px;color:#8B95A1;margin-bottom:16px;">로그인 없이 · 누르면 바로 반영 · 입력할 것 없음</div>
+
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:separate;border-spacing:0;">
+        <tr>
+          <td width="50%" style="padding-right:5px;">
+            <a href="{{ctaVstep}}" style="display:block;background:#ff6000;color:#ffffff;text-decoration:none;border-radius:10px;padding:16px 12px;font-size:16px;font-weight:700;text-align:center;line-height:1.4;">
+              VSTEP
+            </a>
+          </td>
+          <td width="50%" style="padding-left:5px;">
+            <a href="{{ctaAptis}}" style="display:block;background:#ff6000;color:#ffffff;text-decoration:none;border-radius:10px;padding:16px 12px;font-size:16px;font-weight:700;text-align:center;line-height:1.4;">
+              APTIS
+            </a>
+          </td>
+        </tr>
+      </table>
+
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:separate;border-spacing:0;margin-top:10px;">
+        <tr>
+          <td>
+            <a href="{{ctaExam}}" style="display:block;background:#ffffff;color:#191F28;text-decoration:none;border:1px solid #D1D6DB;border-radius:10px;padding:14px 18px;font-size:15px;font-weight:700;text-align:center;line-height:1.4;">
+              다른 시험 점수가 있어요
+              <span style="display:block;font-size:12px;font-weight:500;color:#8B95A1;margin-top:3px;">TOEIC &middot; IELTS &middot; TOEFL</span>
+            </a>
+          </td>
+        </tr>
+      </table>
+    </div>
+
+    <!-- 이탈구지만 회색 링크로 숨기지 않는다. 여기서 '시험 안 봤다'는 우리가 받아야 할
+         정답이라, 흐리게 두면 시험을 안 본 사람이 위 버튼을 눌러 값이 오염된다. -->
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:separate;border-spacing:0;margin-top:14px;">
+      <tr>
+        <td>
+          <a href="{{ctaSelf}}" style="display:block;color:#4E5968;text-decoration:none;border:1px solid #E5E8EB;border-radius:10px;padding:13px 18px;font-size:14px;font-weight:600;text-align:center;line-height:1.4;">
+            시험을 본 건 아니고 제 수준을 적은 겁니다
+          </a>
+        </td>
+      </tr>
+    </table>
+
+  </div>
+
+  <div style="padding:20px 32px;border-top:1px solid #F2F4F6;background:#FAFAFA;">
+    <p style="margin:0 0 8px;font-size:12px;line-height:1.6;color:#8B95A1;">
+      FYI에 어학 정보를 등록해 주셔서 이 메일을 보내드립니다.
+    </p>
+    <p style="margin:0;font-size:11.5px;color:#B0B8C1;">
+      <a href="{{unsubscribeUrl}}" style="color:#B0B8C1;text-decoration:underline;">수신거부</a>
+    </p>
+  </div>
+
+</div>
+
+<img src="{{pixelUrl}}" width="1" height="1" alt="" style="display:block;border:0;" />
+
+</body>
+</html>

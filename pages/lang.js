@@ -19,7 +19,10 @@ import LanguageCard from '../components/profile/LanguageCard'
 
 export async function getServerSideProps({ query }) {
   const claim = verifyToken(query.t)
-  if (!claim?.email) return { props: { valid: false } }
+  /* 실패 화면에도 uiLang 을 넘긴다 — 안 넘기면 T[undefined] 가 베트남어로 떨어져서,
+     한국어 메일을 받은 사람이 링크가 깨졌을 때 베트남어 안내를 보게 된다.
+     실발송이 전부 vi 라 지금까지 티가 안 났을 뿐이다. */
+  if (!claim?.email) return { props: { valid: false, uiLang: normLang(query.lang) } }
 
   const { data: prof } = await supabaseAdmin
     .from('user_profiles')
@@ -27,7 +30,7 @@ export async function getServerSideProps({ query }) {
     .ilike('email', claim.email)
     .maybeSingle()
 
-  if (!prof) return { props: { valid: false } }
+  if (!prof) return { props: { valid: false, uiLang: normLang(query.lang) } }
 
   // 도달 자체를 클릭으로 센다 — 메일 클라이언트가 링크를 프리페치해도 사람이 온 것과
   // 구분이 안 되지만, 그건 기존 콜드메일 지표와 같은 조건이라 비교 가능성이 유지된다.
@@ -106,6 +109,13 @@ const T = {
     sameYes: 'Vẫn vậy, tôi chưa có chứng chỉ',
     sameNo: 'Tôi đã có điểm rồi',
     sameDoneSub: 'Cảm ơn bạn đã xác nhận. Khi nào có chứng chỉ, bạn thêm vào hồ sơ bất cứ lúc nào cũng được.',
+    attachHead: (n, c) => (n ? `${n} ơi, đang ghi nhận ${c}` : `Đang ghi nhận ${c}`),
+    attachSub: (c, v) => `Chúng tôi sẽ lưu là “${c} ${v}”.`,
+    attachRetry: (c) => `Ghi nhận ${c}`,
+    attachDoneSub: 'Đã có tên kỳ thi. Từ giờ chúng tôi sẽ gửi hồ sơ của bạn cho những vị trí yêu cầu chứng chỉ ngoại ngữ.',
+    selfHead: (n) => (n ? `${n} ơi, cảm ơn bạn đã cho biết` : 'Cảm ơn bạn đã cho biết'),
+    selfSub: (v) => `Bạn cho biết “${v}” là mức bạn tự đánh giá, không phải điểm thi.`,
+    selfDoneSub: 'Chúng tôi giữ nguyên giá trị này và ghi chú là mức tự đánh giá. Khi nào thi xong, bạn thêm điểm vào hồ sơ bất cứ lúc nào.',
     save: 'Lưu',
     saving: 'Đang lưu…',
     fine: 'Thông tin này được lưu vào mục ngoại ngữ trong hồ sơ của bạn.',
@@ -140,6 +150,13 @@ const T = {
     sameYes: '그대로입니다, 자격증은 없어요',
     sameNo: '점수가 생겼어요',
     sameDoneSub: '확인해 주셔서 감사합니다. 나중에 자격증이 생기면 프로필에서 언제든 추가하실 수 있어요.',
+    attachHead: (n, c) => (n ? `${n}님, ${c}로 기록할게요` : `${c}로 기록할게요`),
+    attachSub: (c, v) => `‘${c} ${v}’로 저장합니다.`,
+    attachRetry: (c) => `${c}로 기록하기`,
+    attachDoneSub: '시험명이 붙었습니다. 이제 어학 자격증을 보는 공고에 후보로 올려드릴 수 있어요.',
+    selfHead: (n) => (n ? `${n}님, 알려주셔서 감사합니다` : '알려주셔서 감사합니다'),
+    selfSub: (v) => `‘${v}’는 시험 점수가 아니라 본인이 판단한 수준이라고 알려주셨어요.`,
+    selfDoneSub: '값은 그대로 두고 자기 평가라고 기록해 두었습니다. 나중에 시험을 보시면 프로필에서 언제든 추가하실 수 있어요.',
     save: '저장하기',
     saving: '저장 중…',
     fine: '입력한 값은 내 프로필의 어학 항목에 저장됩니다.',
@@ -174,6 +191,13 @@ const T = {
     sameYes: 'Still the same, no certificate',
     sameNo: 'I have a score now',
     sameDoneSub: 'Thanks for confirming. You can add a certificate to your profile any time.',
+    attachHead: (n, c) => (n ? `${n}, recording this as ${c}` : `Recording this as ${c}`),
+    attachSub: (c, v) => `We will save it as “${c} ${v}”.`,
+    attachRetry: (c) => `Record as ${c}`,
+    attachDoneSub: 'The test name is on your profile now. We can put you forward for roles that require a language certificate.',
+    selfHead: (n) => (n ? `${n}, thanks for telling us` : 'Thanks for telling us'),
+    selfSub: (v) => `You told us “${v}” is your own assessment, not a test score.`,
+    selfDoneSub: 'We kept the value and noted it as self-assessed. If you take a test later, you can add the score to your profile any time.',
     save: 'Save',
     saving: 'Saving…',
     fine: 'This is saved to the language section of your profile.',
@@ -205,8 +229,23 @@ export default function LangLanding({ valid, token, cta, uiLang, name, initial }
      기록된다. 이 회차는 그 기록 자체가 목적이라 가짜 확인이 섞이면 안 된다.
      기존 값이 없으면 되물을 게 없으므로 평소 폼으로 보낸다. */
   const currentText = [initial?.english_cert, initial?.korean_cert].filter(Boolean).join(' · ')
-  const sameAuto = cta === 'same' && !!currentText
+  /* cta=self('시험을 본 건 아니고 제 수준을 적은 겁니다') — 7차의 이탈구. 하는 일은
+     same 과 같다(값 유지 + 기록 한 줄). 문구만 다르다: same 은 "그 뒤로 시험 봤나요"고
+     self 는 "이 값은 시험이 아니다"라는 확정이다. */
+  const sameAuto = (cta === 'same' || cta === 'self') && !!currentText
   const autoFired = useRef(false)
+
+  /* cta=vstep|aptis — 7차('어느 시험이었나요')의 원탭 확정. 맨 등급값("B2")에 시험명만
+     얹어 VSTEP B2 로 만든다. 급수는 안 변한다(세 척도의 급수표가 같다) — 바뀌는 건
+     확인 가능한 시험명이 붙는다는 것 하나다.
+
+     맨 등급값이 아니면 붙이지 않고 평소 폼으로 보낸다. "DELF B1"·"B2–C1" 같은 값에
+     시험명을 얹으면 원문이 사라진다. 서버도 같은 검사를 한 번 더 한다(409) — 메일을
+     받은 뒤 프로필에서 값을 고치고 버튼을 누르면 여기 initial 은 이미 낡은 값이다. */
+  const attachCert = { vstep: 'VSTEP', aptis: 'APTIS' }[cta] || null
+  const [attachFallback, setAttachFallback] = useState(false)
+  const attachAuto = !!attachCert && /^[A-C][12]$/i.test(String(initial?.english_cert || '').trim())
+    && !attachFallback
   // '일상 회화'·'인사말'은 어느 언어인지 메일에서 알 수 없다 — 메일 버튼이 언어를
   // 구분하지 않기 때문이다(구분하려면 버튼이 4~6개가 되어 클릭 장벽이 도로 올라간다).
   // 그래서 랜딩에서 한 번만 묻는다. 임의로 영어라고 가정하면 한국어를 뜻한 사람의
@@ -245,7 +284,10 @@ export default function LangLanding({ valid, token, cta, uiLang, name, initial }
   // 자기서술("Intermediate")이 이번 답변인 것처럼 다시 저장되고, 응답 원본 기록에도
   // 그 값이 남아 "이번에 자기서술을 냈다"로 집계된다. 빼면 save.js 가 그 칼럼을
   // 건드리지 않아 DB 값은 그대로 보존된다 — 화면에 남는 안내문과 뜻이 맞는다.
-  const untouched = (k) => cta === 'score' && form[k] === (initial?.[k] || '')
+  // cta=exam('다른 시험이었어요')도 score 와 같다 — 시험명을 받으러 온 경로라, 손대지
+  // 않은 기존 자기서술이 이번 답변인 것처럼 다시 저장되면 안 된다.
+  const CERT_CTAS = ['score', 'exam']
+  const untouched = (k) => CERT_CTAS.includes(cta) && form[k] === (initial?.[k] || '')
   const payload = {}
   if (!untouched('english_cert')) payload.english_cert = form.english_cert
   if (!untouched('korean_cert')) payload.korean_cert = form.korean_cert
@@ -272,7 +314,10 @@ export default function LangLanding({ valid, token, cta, uiLang, name, initial }
       if (!r.ok) throw new Error((await r.json().catch(() => ({}))).error || 'failed')
       setDone(true)
     } catch (e) {
-      setErr(e.message === 'profile_not_found' ? t.errNotFound : t.errSave)
+      /* 붙일 수 없는 값이면 에러가 아니라 폼으로 넘긴다 — 사용자가 뭘 잘못한 게 아니라
+         우리가 가진 값이 원탭 조건을 벗어난 것뿐이고, 본인이 고르면 해결된다. */
+      if (e.message === 'not_bare_level') setAttachFallback(true)
+      else setErr(e.message === 'profile_not_found' ? t.errNotFound : t.errSave)
     }
     setSaving(false)
   }
@@ -280,9 +325,10 @@ export default function LangLanding({ valid, token, cta, uiLang, name, initial }
   // save 가 정의된 뒤에 건다. StrictMode 가 effect 를 두 번 돌려도 ref 로 한 번만 저장한다
   // (두 번 돌면 coldmail_lang_fill 이 두 줄 남는다).
   useEffect(() => {
-    if (!valid || !sameAuto || autoFired.current) return
+    if (!valid || autoFired.current) return
+    if (!sameAuto && !attachAuto) return
     autoFired.current = true
-    save({}, 'confirm')
+    save({}, attachAuto ? 'attach' : 'confirm')
   }, [])
 
   if (!valid) {
@@ -301,11 +347,18 @@ export default function LangLanding({ valid, token, cta, uiLang, name, initial }
         <div className="lg-check">✓</div>
         <h1 className="lg-h">{t.doneHead(name)}</h1>
         {/* '못한다'고 답한 사람에게 "어학 보는 공고에 우선 추천할게요"는 앞뒤가 안 맞는다. */}
-        <p className="lg-sub">{cta === 'none' ? t.noneDoneSub : cta === 'same' ? t.sameDoneSub : t.doneSub}</p>
+        <p className="lg-sub">
+          {cta === 'none' ? t.noneDoneSub
+            : cta === 'same' ? t.sameDoneSub
+              : cta === 'self' ? t.selfDoneSub
+                : attachCert ? t.attachDoneSub
+                  : t.doneSub}
+        </p>
         <a className="lg-btn" href="/jobs">{cta === 'none' ? t.toJobs : t.doneCta}</a>
-        {/* '그대로'로 들어왔는데 사실 점수가 있는 사람의 출구 — 프로필까지 안 가도 된다. */}
-        {cta === 'same'
-          ? <a className="lg-link" href={`/lang?t=${encodeURIComponent(token)}&cta=score&lang=${uiLang}`}>{t.sameNo}</a>
+        {/* '그대로'·'시험 아님'으로 들어왔는데 사실 점수가 있는 사람의 출구 —
+            프로필까지 안 가도 된다. */}
+        {cta === 'same' || cta === 'self'
+          ? <a className="lg-link" href={`/lang?t=${encodeURIComponent(token)}&cta=exam&lang=${uiLang}`}>{t.sameNo}</a>
           : <a className="lg-link" href="/profile#language">{t.toProfile}</a>}
       </Shell>
     )
@@ -330,27 +383,45 @@ export default function LangLanding({ valid, token, cta, uiLang, name, initial }
 
   /* '그대로입니다'로 들어온 사람 — 뜨자마자 저장된다. 실패했을 때만 버튼이 보인다
      (자바스크립트가 막혀 있거나 네트워크가 끊긴 경우의 유일한 출구). */
-  if (sameAuto && !err) {
+  if (sameAuto) {
+    const head = cta === 'self' ? t.selfHead(name) : t.sameHead(name)
     return (
       <Shell t={t} uiLang={uiLang}>
-        <h1 className="lg-h">{t.sameHead(name)}</h1>
-        <p className="lg-sub">{t.sameSub(currentText)}</p>
-        <p className="lg-fine">{t.saving}</p>
+        <h1 className="lg-h">{head}</h1>
+        {err
+          ? <>
+            <p className="lg-err">{err}</p>
+            <button className="lg-btn" onClick={() => save({}, 'confirm')} disabled={saving}>
+              {saving ? t.saving : t.sameYes}
+            </button>
+          </>
+          : <>
+            <p className="lg-sub">{cta === 'self' ? t.selfSub(currentText) : t.sameSub(currentText)}</p>
+            <p className="lg-fine">{t.saving}</p>
+          </>}
       </Shell>
     )
   }
-  if (sameAuto && err) {
+
+  /* 'VSTEP'·'APTIS'로 들어온 사람 — 뜨자마자 시험명이 붙는다. 실패했을 때만 버튼이
+     보인다(자바스크립트가 막혔거나 네트워크가 끊긴 경우의 유일한 출구).
+     붙일 수 없는 값이면 attachFallback 이 서서 이 화면을 건너뛰고 폼으로 간다. */
+  if (attachAuto) {
+    const lv = String(initial?.english_cert || '').trim().toUpperCase()
     return (
       <Shell t={t} uiLang={uiLang}>
-        <h1 className="lg-h">{t.sameHead(name)}</h1>
-        <p className="lg-err">{err}</p>
-        <button
-          className="lg-btn"
-          onClick={() => save({}, 'confirm')}
-          disabled={saving}
-        >
-          {saving ? t.saving : t.sameYes}
-        </button>
+        <h1 className="lg-h">{t.attachHead(name, attachCert)}</h1>
+        {err
+          ? <>
+            <p className="lg-err">{err}</p>
+            <button className="lg-btn" onClick={() => save({}, 'attach')} disabled={saving}>
+              {saving ? t.saving : t.attachRetry(attachCert)}
+            </button>
+          </>
+          : <>
+            <p className="lg-sub">{t.attachSub(attachCert, lv)}</p>
+            <p className="lg-fine">{t.saving}</p>
+          </>}
       </Shell>
     )
   }
@@ -381,7 +452,7 @@ export default function LangLanding({ valid, token, cta, uiLang, name, initial }
           form={form}
           set={set}
           lang={uiLang}
-          allowLevelOnly={cta !== 'score'}
+          allowLevelOnly={!CERT_CTAS.includes(cta)}
           allowKoreanLevel={KOREAN_LEVEL_CTAS.includes(cta)}
         />
       </div>

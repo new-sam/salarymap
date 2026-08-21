@@ -34,6 +34,11 @@ const ARM_META = {
   // 6차 — 같은 모집단에 본문을 바꿔 다시 보낸다(제목도 이전 캠페인 것으로 회귀).
   // R5 와 나란히 두면 카피 변경의 효과가 그대로 세로로 읽힌다.
   'coldmail-lang-recheck-2': { tag: 'R6', ko: '자기서술 재확인 · 개정', en: 'Recheck v2', vi: 'Xác nhận lại v2', color: '#6D28D9' },
+  /* 7차 — 앞 회차와 묻는 것이 다르다. R5·R6 는 "그 뒤로 점수가 생겼나"였고, 여기는
+     "그 등급이 어느 시험 것인가"다. 모집단도 자기서술 전체가 아니라 맨 등급값("B2") 112명만
+     골랐다. 그래서 R5·R6 와 세로로 세워 카피 효과로 비교하면 안 된다 — 전환의 정의가 다르다.
+     tag 는 발송 이벤트 meta.round 와 같은 R7 이다. */
+  'coldmail-lang-exam-1': { tag: 'R7', ko: '시험명 확인', en: 'Which test?', vi: 'Kỳ thi nào?', color: '#C2410C' },
 }
 
 /* 4차 세 갈래. 발송 전에는 대상 수를, 발송 뒤에는 그 arm 의 실적을 같은 자리에 그린다 —
@@ -72,6 +77,11 @@ const CTA_LABEL = (L) => ({
   daily: L('일상 회화는 됩니다', 'Daily conversation', 'Giao tiếp hằng ngày'),
   basic: L('인사말 정도만 압니다', 'Basic greetings', 'Chào hỏi cơ bản'),
   none: L('둘 다 못합니다', 'Neither', 'Không biết cả hai'),
+  // 7차 버튼. vstep·aptis 는 누르는 즉시 등급 앞에 시험명이 붙는다(원탭 확정).
+  vstep: L('VSTEP', 'VSTEP', 'VSTEP'),
+  aptis: L('APTIS', 'APTIS', 'APTIS'),
+  exam: L('다른 시험 점수가 있어요', 'Another test', 'Kỳ thi khác'),
+  self: L('시험 아님 · 자기 평가', 'Self-assessed, no test', 'Tự đánh giá'),
 })
 
 /* 묶음마다 카드를 하나씩 그린다. 합치지 않는 이유 — 모집단이 다르다:
@@ -86,6 +96,7 @@ const GROUP_TITLE = (g, L) => {
   if (g.family === 'ghost') return L('어학 콜드메일 · 이력서 X / 지원 0', 'Language cold-email · no resume', 'Cold-email ngoại ngữ · chưa có CV')
   if (g.family === 'nocert') return L('어학 콜드메일 · 이력서 O / 어학만 빔', 'Language cold-email · resume, language blank', 'Cold-email ngoại ngữ · có CV, thiếu ngoại ngữ')
   if (g.family === 'recheck') return L('어학 콜드메일 · 자기서술 재확인', 'Language cold-email · recheck', 'Cold-email ngoại ngữ · xác nhận lại')
+  if (g.family === 'exam') return L('어학 콜드메일 · 시험명 확인', 'Language cold-email · which test', 'Cold-email ngoại ngữ · kỳ thi nào')
   return L('어학 콜드메일 (제목 A/B)', 'Language cold-email (subject A/B)', 'Cold-email ngoại ngữ (A/B tiêu đề)')
 }
 
@@ -96,6 +107,7 @@ const GROUP_NOTE = (g, L) => {
   if (g.family === 'ghost') return L('가입만 하고 이력서도 지원도 없는 회원 · 이력서 등록 버튼 포함', 'Signed up only — no resume, no application', 'Chỉ đăng ký, chưa có CV')
   // 5차. 세는 것이 '입력'이 아니라 '확인'이라 아래 카드의 숫자도 다르게 읽어야 한다.
   if (g.family === 'recheck') return L('어학은 적었지만 자격증·점수가 아닌 층 · 값이 아직 유효한지 확인', 'Wrote a level but no certificate — is it still true?', 'Đã ghi trình độ nhưng chưa có chứng chỉ')
+  if (g.family === 'exam') return L('등급만 한 글자 적힌 층 112명 · 어느 시험의 등급인지 원탭으로 확정', 'Bare CEFR-style level only · one tap to name the test', 'Chỉ ghi trình độ · một cú bấm để chọn kỳ thi')
   // 4차. 앞 회차들과 달리 arm 끼리 모집단이 다르다 — 칸을 가로질러 전환율을 비교하지 말 것.
   if (g.family === 'nocert') return L('이력서 O · 어학 3칸 모두 빔 · 지원 여부 무관 · 근거별 3종', 'Has resume, all language fields blank · 3 angles', 'Có CV, bỏ trống ngoại ngữ · 3 phiên bản')
   // wave 1(콜드메일 미수신 200) + wave 2(기수신 260)를 합쳐 230/230 으로 본다.
@@ -138,6 +150,9 @@ export default function LangColdmailCards({ token, lang }) {
 
   // 4차(오늘 나가는 회차)는 왼쪽 합계에서 뺀다 — 지난 회차의 결론과 진행 중인 회차를
   // 한 숫자로 뭉치면 둘 다 못 읽는다. 카드를 나란히 두 장 세우는 것도 같은 이유다.
+  /* exam(7차·R7)은 아직 전용 카드가 없어 지난 회차 쪽에 묶인다. 전환의 정의가
+     '어학 입력'이 아니라 '시험명 확정'이라 원래는 따로 세워야 하는 회차다 — 카드를
+     만들기 전까지는 합계에 섞이니 R7 숫자는 카드를 펼쳐 행 단위로 읽을 것. */
   const past = groups.filter((g) => g.family !== 'nocert' && g.family !== 'recheck')
   const today = groups.find((g) => g.family === 'nocert') || null
   const recheck = groups.find((g) => g.family === 'recheck') || null

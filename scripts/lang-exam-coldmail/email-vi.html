@@ -1,0 +1,108 @@
+<!--
+  [실발송] 어학 7차 · 맨 등급값 세그먼트 — 베트남어
+  ────────────────────────────────────────────────────────────
+  email-ko.html 과 1:1 대응이다. 한쪽만 고치면 두 파일이 갈라진다.
+  설계 근거(왜 "CEFR 인가요"로 묻지 않는지, 왜 마지막 선택지를 안 숨기는지)는
+  email-ko.html 의 머리말에 한국어로 적어두었다.
+
+  제목   : Chúng tôi chưa thể giới thiệu bạn cho vị trí yêu cầu ngoại ngữ
+           (한국어 "어학 요건 공고에 추천해 드리지 못했습니다" — recheck 캠페인 확정 문구)
+  캠페인 : coldmail-lang-exam-1
+-->
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>FYI</title>
+</head>
+<body style="margin:0;padding:24px 0;background:#f2f4f6;">
+
+<div style="display:none;max-height:0;overflow:hidden;opacity:0;">
+  Chỉ cần cho biết đó là chứng chỉ của kỳ thi nào. Một cú bấm là xong.
+</div>
+
+<div style="font-family:'Pretendard','Segoe UI',Roboto,Arial,sans-serif;color:#191F28;max-width:560px;margin:0 auto;background:#ffffff;border-radius:16px;overflow:hidden;border:1px solid #E5E8EB;">
+
+  <div style="padding:22px 32px;border-bottom:1px solid #F2F4F6;">
+    <span style="font-size:22px;font-weight:900;letter-spacing:-0.5px;color:#ff6000;">FYI</span>
+    <span style="font-size:11px;font-weight:700;color:#8B95A1;letter-spacing:0.5px;margin-left:8px;">Nền tảng tuyển dụng Việt Nam</span>
+  </div>
+
+  <div style="padding:32px;">
+
+    <h1 style="margin:0 0 18px;font-size:26px;line-height:1.35;font-weight:800;color:#191F28;letter-spacing:-0.7px;">
+      Trình độ tiếng Anh của {{name}} trên FYI<br />
+      <span style="color:#ff6000;">là “{{cert}}”.</span>
+    </h1>
+
+    <p style="margin:0 0 16px;font-size:15px;line-height:1.7;color:#4E5968;">
+      Khi doanh nghiệp đặt yêu cầu ngoại ngữ, chúng tôi chỉ giới thiệu ứng viên bằng
+      <b style="color:#191F28;">giá trị có tên kỳ thi</b>.
+      <b style="color:#191F28;">Chỉ với “{{cert}}”, chúng tôi không biết đó là chứng chỉ của kỳ thi nào</b>
+      nên đã không thể đưa bạn vào những vị trí đó.
+    </p>
+
+    <p style="margin:0 0 24px;font-size:15px;line-height:1.7;color:#4E5968;">
+      Chúng tôi không nghi ngờ năng lực của bạn.
+      <b style="color:#191F28;">Bạn chỉ cần bấm chọn đó là kỳ thi nào. Vậy là xong.</b>
+    </p>
+
+    <div style="background:#F9F9F9;border:1px solid #F2F4F6;border-radius:14px;padding:22px;">
+      <div style="font-size:15px;font-weight:700;color:#191F28;margin-bottom:4px;">“{{cert}}” là của kỳ thi nào?</div>
+      <div style="font-size:12.5px;color:#8B95A1;margin-bottom:16px;">Không cần đăng nhập &middot; Bấm là cập nhật ngay &middot; Không phải nhập gì</div>
+
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:separate;border-spacing:0;">
+        <tr>
+          <td width="50%" style="padding-right:5px;">
+            <a href="{{ctaVstep}}" style="display:block;background:#ff6000;color:#ffffff;text-decoration:none;border-radius:10px;padding:16px 12px;font-size:16px;font-weight:700;text-align:center;line-height:1.4;">
+              VSTEP
+            </a>
+          </td>
+          <td width="50%" style="padding-left:5px;">
+            <a href="{{ctaAptis}}" style="display:block;background:#ff6000;color:#ffffff;text-decoration:none;border-radius:10px;padding:16px 12px;font-size:16px;font-weight:700;text-align:center;line-height:1.4;">
+              APTIS
+            </a>
+          </td>
+        </tr>
+      </table>
+
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:separate;border-spacing:0;margin-top:10px;">
+        <tr>
+          <td>
+            <a href="{{ctaExam}}" style="display:block;background:#ffffff;color:#191F28;text-decoration:none;border:1px solid #D1D6DB;border-radius:10px;padding:14px 18px;font-size:15px;font-weight:700;text-align:center;line-height:1.4;">
+              Tôi có điểm kỳ thi khác
+              <span style="display:block;font-size:12px;font-weight:500;color:#8B95A1;margin-top:3px;">TOEIC &middot; IELTS &middot; TOEFL</span>
+            </a>
+          </td>
+        </tr>
+      </table>
+    </div>
+
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:separate;border-spacing:0;margin-top:14px;">
+      <tr>
+        <td>
+          <a href="{{ctaSelf}}" style="display:block;color:#4E5968;text-decoration:none;border:1px solid #E5E8EB;border-radius:10px;padding:13px 18px;font-size:14px;font-weight:600;text-align:center;line-height:1.4;">
+            Tôi không thi, đây là mức tôi tự đánh giá
+          </a>
+        </td>
+      </tr>
+    </table>
+
+  </div>
+
+  <div style="padding:20px 32px;border-top:1px solid #F2F4F6;background:#FAFAFA;">
+    <p style="margin:0 0 8px;font-size:12px;line-height:1.6;color:#8B95A1;">
+      Bạn nhận email này vì đã đăng ký thông tin ngoại ngữ trên FYI.
+    </p>
+    <p style="margin:0;font-size:11.5px;color:#B0B8C1;">
+      <a href="{{unsubscribeUrl}}" style="color:#B0B8C1;text-decoration:underline;">Hủy nhận email</a>
+    </p>
+  </div>
+
+</div>
+
+<img src="{{pixelUrl}}" width="1" height="1" alt="" style="display:block;border:0;" />
+
+</body>
+</html>
