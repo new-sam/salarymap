@@ -365,7 +365,13 @@ export default function CvLanding() {
           .catch(() => track('cv_resume_public_error', { meta: cvMeta(), page: '/cv' }))
       }
       if (typeof gtag === 'function') gtag('event', 'cv_register', { source: 'ad-landing' })
-      if (typeof fbq === 'function') fbq('trackCustom', 'CVRegister', { source: 'ad-landing' })
+      if (typeof fbq === 'function') {
+        fbq('trackCustom', 'CVRegister', { source: 'ad-landing' })
+        // 표준 이벤트 병행 발사 — MT-lead 캠페인은 커스텀 이벤트로는 최적화 신호를 못 받아
+        // 실제 등록 9건이 Meta 리드 1건으로 잡혔다 (2026-08-23). CVReg 캠페인의 최적화
+        // 이벤트를 CompleteRegistration 으로 바꾸면 Meta 가 실제 등록 기준으로 배분한다.
+        fbq('track', 'CompleteRegistration', { content_name: 'cv_register', source: 'ad-landing' })
+      }
       track('cv_register_success', { meta: { ...cvMeta(), ...fileMeta(fileToUpload) }, page: '/cv' })
       await idbClearCv()
       setStatus('success')
