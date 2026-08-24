@@ -15,6 +15,7 @@
 //   재발송/리마인드는 --campaign salary-a-MMDD 로 캠페인명 분리(-MMDD 표준).
 //   --resend      2차: 기발송자 중 미기입자에게 다른 프레임 재발송(1인1회 원칙의 의식적 예외 8/19,
 //                 이번 캠페인명 발송済는 제외라 재실행 안전. 프레임 겹침 방지로 salary-c* 캠페인명과 함께 쓸 것)
+//   --from X      --resend와 함께: 캠페인 X 수신자로 한정(예: --from salary-c-0819 = C 수신 미기입자만 B로 재발송 8/24)
 //   --skip-today  오늘(로컬 자정 이후) 다른 캠페인 메일을 받은 사람 제외 — KTC 재발송 등 대량 발송일 중복 접촉 방지
 //
 // 프레임 A/B/C: 캠페인명이 salary-b* 면 B, salary-c* 면 C, 그 외는 A.
@@ -33,6 +34,7 @@ const testTo = flag('test', null)
 const doSend = args.includes('--send')
 const includeSubmitted = args.includes('--include-submitted')
 const resendMode = args.includes('--resend')
+const fromCampaign = flag('from', null)
 const skipToday = args.includes('--skip-today')
 const maxN = flag('max', null) ? parseInt(flag('max'), 10) : null
 const CAMPAIGN = String(flag('campaign', 'salary-a'))
@@ -181,6 +183,7 @@ async function main() {
   const unsubSet = new Set(unsubs.map((r) => r.user_id))
   const sentSet = new Set(sents.map((r) => r.user_id)) // 연봉 계열 전체 — 1인 1회
   const sentThis = new Set(sents.filter((r) => r.meta?.campaign === CAMPAIGN).map((r) => r.user_id)) // 재실행 dedup
+  const fromSet = fromCampaign ? new Set(sents.filter((r) => r.meta?.campaign === fromCampaign).map((r) => r.user_id)) : null
   const fillSet = new Set(fills.map((r) => r.user_id))
 
   // 오늘 접촉자(모든 캠페인) — 회원 발송은 user_id, KTC 계열 비회원 발송은 lead 해시로 대조
@@ -204,6 +207,7 @@ async function main() {
     if (resendMode) {
       // 2차 = 기발송 ∧ 미기입(랜딩 fill 없음 — current_salary 기입자는 위에서 이미 제외) ∧ 이번 캠페인 미발송
       if (!sentSet.has(p.id) || fillSet.has(p.id) || sentThis.has(p.id)) return false
+      if (fromSet && !fromSet.has(p.id)) return false
     } else if (sentSet.has(p.id)) return false
     if (!includeSubmitted && subSet.has(p.id)) return false
     if (skipToday && (todayUserIds.has(p.id) || todayLeads.has(leadId(p.email.toLowerCase())))) return false
@@ -214,7 +218,7 @@ async function main() {
   })
 
   console.log(resendMode
-    ? `대상 ${cohort.length}명 (기발송 ${sentSet.size} 중 미기입·미수신거부${skipToday ? '·오늘 미접촉' : ''}, 이번 캠페인済 ${sentThis.size} 제외) · 캠페인 ${CAMPAIGN}`
+    ? `대상 ${cohort.length}명 (기발송 ${fromCampaign ? `${fromCampaign} ${fromSet.size}` : sentSet.size} 중 미기입·미수신거부${skipToday ? '·오늘 미접촉' : ''}, 이번 캠페인済 ${sentThis.size} 제외) · 캠페인 ${CAMPAIGN}`
     : `대상 ${cohort.length}명 (이력서 보유 ${pool.length} 중 경력 1개월+ · likelion/수신거부 ${unsubSet.size}/기발송 ${sentSet.size}/기입자/제출연결${includeSubmitted ? '(포함)' : ''}${skipToday ? '/오늘 접촉' : ''} 제외) · 캠페인 ${CAMPAIGN}`)
   if (!doSend) {
     for (const p of cohort.slice(0, 20)) console.log(`  ${p.full_name || '(이름없음)'} <${p.email}> · yoe ${p.yoe_months}m`)
