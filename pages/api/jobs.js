@@ -22,20 +22,31 @@ const KOREAN_RE = /한국어|topik|tiếng\s*hàn|tieng\s*han|hàn\s*ngữ|korea
 
 export default async function handler(req, res) {
   const koreanOnly = req.query.korean === '1'
-  let query = supabase
-    .from('jobs')
-    .select(koreanOnly ? `${LIST_FIELDS}, description` : LIST_FIELDS)
-    .eq('is_active', true)
-    .order('created_at', { ascending: false })
+  // Supabase 는 요청당 1,000행이 상한이라 active 공고(1,700건+)가 잘려 오래된 공고가
+  // 피드에서 통째로 사라진다 — 다 받을 때까지 페이지로 돈다. 응답 형태(전체 배열)는
+  // 배포된 앱이 그대로 의존하므로 유지. created_at 동률(벌크 크롤)에서 경계가 흔들리지
+  // 않게 id 를 2차 정렬로 고정한다.
+  const PAGE = 1000
+  let data = []
+  for (let from = 0; ; from += PAGE) {
+    let query = supabase
+      .from('jobs')
+      .select(koreanOnly ? `${LIST_FIELDS}, description` : LIST_FIELDS)
+      .eq('is_active', true)
+      .order('created_at', { ascending: false })
+      .order('id', { ascending: true })
+      .range(from, from + PAGE - 1)
 
-  // 회사 페이지에서 특정 회사의 공고만 요청할 때 사용 (?company=)
-  if (req.query.company) query = query.ilike('company', String(req.query.company))
+    // 회사 페이지에서 특정 회사의 공고만 요청할 때 사용 (?company=)
+    if (req.query.company) query = query.ilike('company', String(req.query.company))
 
-  let { data, error } = await query
-
-  if (error || !data) {
-    res.setHeader('Cache-Control', 'no-store')
-    return res.status(500).json([])
+    const { data: batch, error } = await query
+    if (error) {
+      res.setHeader('Cache-Control', 'no-store')
+      return res.status(500).json([])
+    }
+    data = data.concat(batch || [])
+    if (!batch || batch.length < PAGE) break
   }
 
   if (koreanOnly) {
@@ -46,7 +57,6 @@ export default async function handler(req, res) {
   // CV 완료 모달 랭킹용 누적 지원 수 — ?counts=1일 때만 붙인다(기본 페이로드는 그대로).
   if (req.query.counts === '1') {
     const counts = {}
-    const PAGE = 1000
     for (let from = 0; ; from += PAGE) {
       const { data: apps, error: aErr } = await supabase
         .from('job_applications')
