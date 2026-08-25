@@ -7,6 +7,14 @@
 @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css');
 @import url('https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800;900&family=Inter:wght@400;500;600;700;800;900&display=swap');
 
+/* 안드로이드 WebView 는 폰트 부스팅(text autosizing)을 기본으로 켜서, 폭이 넓은
+   블록 안의 글자를 제멋대로 키운다. 브라우저에선 안 일어나고 앱 웹뷰에서만 글자가
+   커져 레이아웃이 밀리는 원인이 된다. 100% 로 못 박아 끈다. */
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;

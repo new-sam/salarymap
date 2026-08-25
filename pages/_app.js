@@ -1,6 +1,7 @@
 import "@/styles/globals.css";
 import { useEffect } from 'react';
 import { useRouter } from 'next/router';
+import Head from 'next/head';
 import { Toaster } from 'sonner';
 import { I18nProvider, LanguageSwitcher, useT } from '../lib/i18n';
 import MobileTabBar from '../components/MobileTabBar';
@@ -169,6 +170,16 @@ export default function App({ Component, pageProps }) {
   }, [autoHideChrome, router.pathname]);
   return (
     <I18nProvider>
+      {/* Next 기본값은 width=device-width 뿐이라 initial-scale 이 없다 — 브라우저는
+          알아서 1로 잡지만 앱 웹뷰(WKWebView·Android WebView)는 자기 초기 배율을
+          계산해서 레이아웃 뷰포트가 기기 폭과 어긋난다. 웹에선 멀쩡한 화면이 앱에서만
+          깨지는 전형적인 원인이라 명시한다.
+          viewport-fit=cover 가 없으면 env(safe-area-inset-*) 이 전부 0 으로 계산된다 —
+          코드베이스 16곳이 이 값을 쓰고 있어서 노치 기기에서 하단 탭바·CTA 바가
+          홈 인디케이터에 물린다. */}
+      <Head>
+        <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+      </Head>
       {/* 콘텐츠가 짧은 페이지/탭에서 푸터가 위로 따라 올라오지 않도록:
           최소 뷰포트 높이를 채우고 푸터는 항상 바닥에 붙인다. */}
       <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>

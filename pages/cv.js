@@ -83,7 +83,11 @@ function cvMeta() {
     utm_campaign: sessionStorage.getItem('utm_campaign') || null,
     utm_content: sessionStorage.getItem('utm_content') || null,
     utm_term: sessionStorage.getItem('utm_term') || null,
-    lang: localStorage.getItem('fyi_lang') || 'ko',
+    /* i18n 기본값은 'vi' 이고 활성 언어를 documentElement.lang 에 동기화한다.
+       localStorage 의 fyi_lang 은 사용자가 직접 언어를 바꿨을 때만 생기므로,
+       그것만 읽으면 한 번도 안 바꾼 대다수 방문자가 실제로는 베트남어 화면을
+       보면서 전부 'ko' 로 기록된다. 렌더된 언어를 1순위로 본다. */
+    lang: (typeof document !== 'undefined' && document.documentElement.lang) || localStorage.getItem('fyi_lang') || 'vi',
     variant: currentVariant,
   }
 }
@@ -623,11 +627,27 @@ export default function CvLanding() {
       const formTop = formAnchorRef.current?.getBoundingClientRect().top ?? Infinity
       // 히어로 CTA 아랫면이 화면 위로 넘어갔는가 — 아직 보이면 하단 바는 중복이다.
       const heroBottom = heroCtaRef.current?.getBoundingClientRect().bottom ?? Infinity
-      setShowScrollDown(heroBottom < 0 && formTop >= window.innerHeight * 0.5)
+      // 탭바가 빠지는 그 순간 자리를 물려받는다 — _app.js 가 스크롤을 내릴 때
+      // data-chrome-hidden 을 켜므로 같은 신호를 읽는다. 히어로가 78vh 라
+      // '히어로 CTA 가 완전히 사라질 때'(≈570px)까지 기다리면 탭바가 빠진 빈 자리가
+      // 한참 남는다. 대신 스크롤을 올려 탭바가 돌아오면 히어로 CTA 도 같이 돌아오는
+      // 구간이라 바를 접는다 — 그때는 같은 버튼이 두 개다.
+      // 히어로를 완전히 지난 뒤부터는 탭바와 무관하게 계속 띄운다.
+      const chromeHidden = document.body.dataset.chromeHidden === '1'
+      const formNotReached = formTop >= window.innerHeight * 0.5
+      setShowScrollDown(formNotReached && (chromeHidden || heroBottom < 0))
     }
     update()
     window.addEventListener('scroll', update, { passive: true })
-    return () => window.removeEventListener('scroll', update)
+    // _app.js 는 rAF 안에서 data-chrome-hidden 을 켠다 — 스크롤 이벤트만 듣고 있으면
+    // 같은 이벤트에서 우리가 먼저 읽어 한 프레임 늦은 값을 본다. 속성이 바뀌는 순간을
+    // 직접 구독해 탭바가 빠지는 프레임에 바로 자리를 물려받는다.
+    const mo = new MutationObserver(update)
+    mo.observe(document.body, { attributes: true, attributeFilter: ['data-chrome-hidden'] })
+    return () => {
+      window.removeEventListener('scroll', update)
+      mo.disconnect()
+    }
   }, [])
 
   /* 폼에 닿지 못한 절반이 아예 안 내려간 건지, 내려가다 만 건지 구분한다 —
@@ -2838,6 +2858,11 @@ export default function CvLanding() {
           .cv-stepnode.goal .cv-stepnode-label {
             font-size: 15.5px;
           }
+          /* 좁은 폭(앱 웹뷰 포함)에서는 1-2-3 스텝퍼를 접는다 — 점·글로우·라벨이
+             한 줄에 들어가지 않아 레이아웃이 깨지고, 이 화면에서 바로 다음 할 일은
+             여정 안내가 아니라 "메일함을 확인하라"다. 접으면 그 안내(.cv-success-next)가
+             금액 바로 아래로 올라온다. */
+          .cv-stepper { display: none; }
         }
         .cv-success-next {
           margin: 20px 0 24px;
