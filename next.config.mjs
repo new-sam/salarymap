@@ -10,6 +10,19 @@ const nextConfig = {
     NEXT_PUBLIC_GOOGLE_CLIENT_ID: process.env.GOOGLE_CLIENT_ID || '',
   },
   serverExternalPackages: ['googleapis', 'google-auth-library'],
+  async headers() {
+    return [
+      {
+        source: '/:path*',
+        headers: [
+          // HSTS 는 Vercel 이 기본으로 붙여준다. 나머지 기본 방어 헤더는 여기서.
+          { key: 'X-Content-Type-Options', value: 'nosniff' },
+          { key: 'X-Frame-Options', value: 'SAMEORIGIN' },
+          { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
+        ],
+      },
+    ];
+  },
   async redirects() {
     return [
       // /resume 비공개 — 아직 공개하면 안 되는 페이지가 main 에 올라가 라이브로 나갔다.
