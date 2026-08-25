@@ -7,57 +7,7 @@ import { track, getClientId } from '../lib/track'
 import { useFlags } from '../lib/flags'
 import { toast } from 'sonner'
 import { idbPutCv, idbGetCv, idbClearCv } from '../lib/pendingCv'
-import { ROLE_GROUPS } from '../constants/jobs'
 import QuickApplyJobList from '../components/jobs/QuickApplyJobList'
-
-/* ── 직접입력 트랙 ──────────────────────────────────────────────
-   PDF 가 없는 사람에게서 "콜드메일을 보낼 만큼"만 받는다. 이력서를 다 받으려 하면
-   PDF 찾기와 다를 바 없어져 같은 자리에서 또 이탈한다.
-   저장 위치는 파서(parseResume)가 채우는 컬럼과 같아서 매칭·추천·어드민이 그대로 쓴다.
-   /profile 의 CustomSelect·LanguageCard 는 그 페이지 CSS(pinput/pfield)에 묶여 있어
-   여기서 재사용하면 스타일이 깨진다 — 네이티브 select 로 짠다(모바일 OS 피커라 더 빠르다). */
-const roleLabel = (o, lang) => o.label[lang] || o.label.en
-const roleGroupsFor = (lang) => ROLE_GROUPS.map(g => ({ value: g.key, label: roleLabel(g, lang) }))
-const rolesInGroup = (key, lang) => {
-  const g = ROLE_GROUPS.find(x => x.key === key)
-  return g ? g.roles.map(r => ({ value: r.value, label: roleLabel(r, lang) })) : []
-}
-
-/* /profile 의 연차 목록을 광고 랜딩용으로 줄이고 현지화했다(값은 그대로 yoe_months 라
-   프로필과 호환된다). 선택지를 늘리면 고르는 시간이 늘어 트랙의 취지가 사라진다. */
-const YOE_CHOICES = [
-  { value: '0', ko: '신입 · 인턴', en: 'New grad / Intern', vi: 'Mới tốt nghiệp / Thực tập' },
-  { value: '12', ko: '1년', en: '1 year', vi: '1 năm' },
-  { value: '24', ko: '2년', en: '2 years', vi: '2 năm' },
-  { value: '36', ko: '3년', en: '3 years', vi: '3 năm' },
-  { value: '60', ko: '5년', en: '5 years', vi: '5 năm' },
-  { value: '84', ko: '5~7년', en: '5-7 years', vi: '5-7 năm' },
-  { value: '108', ko: '7~10년', en: '7-10 years', vi: '7-10 năm' },
-  { value: '120', ko: '10년 이상', en: '10+ years', vi: 'Trên 10 năm' },
-]
-
-/* 어학은 "자격증 + 점수" 쌍으로 여러 개 받는다. 저장 포맷은 LanguageCard 와 동일한
-   "TOEIC 900" 한 줄 텍스트라 /profile 이 그대로 되읽고 어학 등급(A/B/C) 환산도 붙는다.
-   컬럼이 영어/한국어 각 한 칸뿐이라 나머지는 languages(jsonb)로 흘린다 — 기타 언어를
-   담는 기존 자리이고 모양도 {name, level} 로 같다. */
-const ENGLISH_CERTS = ['TOEIC', 'IELTS', 'TOEFL', 'VSTEP', 'APTIS', 'CEFR']
-const KOREAN_CERTS = ['TOPIK']
-const CERT_CHOICES = [...ENGLISH_CERTS, ...KOREAN_CERTS]
-const CERT_SCORE_PH = { TOEIC: '900', IELTS: '6.5', TOEFL: '100', VSTEP: 'B2', APTIS: 'B2', CEFR: 'B2', TOPIK: '5' }
-
-/* [{cert, score}] → user_profiles 컬럼들. 같은 자격증이 겹치면 첫 줄만 컬럼으로 올리고
-   나머지는 languages 로 보낸다 — 덮어쓰기로 조용히 잃는 것보다 낫다. */
-function certRowsToProfile(rows) {
-  const filled = rows.filter((r) => r.cert && String(r.score).trim())
-  const out = { english_cert: null, korean_cert: null, languages: [] }
-  for (const r of filled) {
-    const text = `${r.cert} ${String(r.score).trim()}`
-    if (ENGLISH_CERTS.includes(r.cert) && !out.english_cert) out.english_cert = text
-    else if (KOREAN_CERTS.includes(r.cert) && !out.korean_cert) out.korean_cert = text
-    else out.languages.push({ name: r.cert, level: String(r.score).trim() })
-  }
-  return out
-}
 
 /* 가입 선행 실험(cv_signup_first) 버킷 — sm_cid 해시로 고정 배정한다.
    같은 브라우저는 늘 같은 쪽이라 새로고침·재방문에도 변이가 안 바뀐다. */
@@ -207,14 +157,6 @@ export default function CvLanding() {
   // (STEP 1 → 2 → 3 카드 → 등록 폼). 폼이 화면 절반 안에 들어오면
   // 폼 자체 CTA와 겹치지 않게 숨긴다.
   const [showScrollDown, setShowScrollDown] = useState(false)
-  // 직접입력 트랙 — PDF 없는 사람이 STEP2 에서 고르는 두 번째 경로.
-  const [manualMode, setManualMode] = useState(false)
-  const [manualGroup, setManualGroup] = useState('')
-  const [manual, setManual] = useState({ position: '', yoe_months: '' })
-  const [certRows, setCertRows] = useState([{ cert: '', score: '' }])
-  const [manualStatus, setManualStatus] = useState('idle') // idle | saving | saved | error
-  const setManualField = (k, v) => setManual((prev) => ({ ...prev, [k]: v }))
-  const setCertRow = (i, patch) => setCertRows((rows) => rows.map((r, n) => (n === i ? { ...r, ...patch } : r)))
   const showSuccess = status === 'success' || (process.env.NODE_ENV !== 'production' && router.query.successPreview === '1')
 
   // ── 가입 선행 ───────────────────────────────────────────────────
@@ -553,42 +495,6 @@ export default function CvLanding() {
         scopes: 'openid profile email',
       }
     })
-  }
-
-  /* 직접입력 저장 — 새 API 가 필요 없다. /api/profile/talent PUT 이 position·yoe_months·
-     english_cert·korean_cert·hr_visible 를 이미 화이트리스트에 갖고 있다.
-     is_resume_public 은 켜지 않는다: 파일 이력서가 없는 프로필이라 기업이 직접 보는
-     공개 인재풀 품질 기준을 못 넘는다. 우리 영업·추천(hr_visible)에서만 쓴다. */
-  const saveManual = async () => {
-    if (!manual.position || !manual.yoe_months) return
-    setManualStatus('saving')
-    try {
-      const { data: { session } } = await supabase.auth.getSession()
-      const token = session?.access_token
-      if (!token) throw new Error(t('cv.err.notLoggedIn'))
-      const certs = certRowsToProfile(certRows)
-      const r = await fetch('/api/profile/talent', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({
-          position: manual.position,
-          yoe_months: parseInt(manual.yoe_months, 10),
-          ...certs,
-          hr_visible: true,
-          job_signal: 'open',
-        }),
-      })
-      if (!r.ok) throw new Error((await r.json().catch(() => ({}))).error || 'save failed')
-      track('cv_manual_success', {
-        meta: { ...cvMeta(), position: manual.position, yoe_months: manual.yoe_months,
-          cert_count: certRows.filter((c) => c.cert && String(c.score).trim()).length },
-        page: '/cv',
-      })
-      setManualStatus('saved')
-    } catch (e) {
-      track('cv_manual_error', { meta: { ...cvMeta(), error_message: e.message }, page: '/cv' })
-      setManualStatus('error')
-    }
   }
 
   // STEP 블록의 잠금·완료 판정. JSX 자체는 return 트리 안에 둬야 styled-jsx 가
@@ -992,124 +898,9 @@ export default function CvLanding() {
         </div>
         {/* 가입 선행에서는 업로드가 파일 선택 즉시 일어나므로 오류도 이 블록에 붙는다. */}
         {signupFirst && errMsg && <div className="cv-err">{errMsg}</div>}
-        {/* 파일 / 직접입력 두 경로. 가입 선행 변이에서만, 그리고 로그인 뒤에만 뜬다 —
-            직접입력은 저장할 계정이 있어야 성립하고, 대조군은 그대로 둬야 A/B 가 깨끗하다. */}
-        {signupFirst && user && manualStatus !== 'saved' && (
-          <div className="cv-modetabs">
-            <button
-              type="button"
-              className={`cv-modetab ${!manualMode ? 'on' : ''}`}
-              onClick={() => setManualMode(false)}
-            >{t('cv.form.sf.tab.file')}</button>
-            <button
-              type="button"
-              className={`cv-modetab ${manualMode ? 'on' : ''}`}
-              onClick={() => {
-                setManualMode(true)
-                track('cv_manual_open', { meta: cvMeta(), page: '/cv' })
-              }}
-            >{t('cv.form.sf.tab.manual')}</button>
-          </div>
-        )}
-
         {/* 잠긴 동안에는 드롭존을 아예 걷어낸다 — 못 누르는 입력란을 보여주는 것보다
             "가입하면 열린다" 한 줄만 남기는 편이 다음 행동이 분명해진다. */}
-        {resumeLocked ? null : manualMode ? (
-          manualStatus === 'saved' ? (
-            /* 완료 화면(컨페티)을 주지 않는다 — 여기서 "다 했다"고 믿으면 이력서를
-               영영 안 올리고, 등록 유도 콜드메일도 뜬금없어진다. 다음 할 일을 남긴다. */
-            <div className="cv-manual-done">
-              <span className="cv-promise-check"><IconCheck /></span>
-              <div>
-                <b>{t('cv.form.sf.manual.saved')}</b>
-                <br />{t('cv.form.sf.manual.savedHint')}
-              </div>
-            </div>
-          ) : (
-            <div className="cv-manual">
-              <label className="cv-manual-label" htmlFor="cv-role-group">{t('cv.form.sf.manual.role')}</label>
-              <div className="cv-manual-two">
-                <select
-                  id="cv-role-group"
-                  className="cv-select"
-                  value={manualGroup}
-                  onChange={(e) => { setManualGroup(e.target.value); setManualField('position', '') }}
-                >
-                  <option value="">{t('cv.form.sf.manual.roleGroupPh')}</option>
-                  {roleGroupsFor(lang).map((g) => <option key={g.value} value={g.value}>{g.label}</option>)}
-                </select>
-                <select
-                  className="cv-select"
-                  value={manual.position}
-                  disabled={!manualGroup}
-                  onChange={(e) => setManualField('position', e.target.value)}
-                >
-                  <option value="">{t('cv.form.sf.manual.rolePh')}</option>
-                  {rolesInGroup(manualGroup, lang).map((r) => <option key={r.value} value={r.value}>{r.label}</option>)}
-                </select>
-              </div>
-
-              <label className="cv-manual-label" htmlFor="cv-yoe">{t('cv.form.sf.manual.yoe')}</label>
-              <select
-                id="cv-yoe"
-                className="cv-select"
-                value={manual.yoe_months}
-                onChange={(e) => setManualField('yoe_months', e.target.value)}
-              >
-                <option value="">{t('cv.form.sf.manual.yoePh')}</option>
-                {YOE_CHOICES.map((o) => <option key={o.value} value={o.value}>{L(o.ko, o.en, o.vi)}</option>)}
-              </select>
-
-              {/* 어학은 선택 항목이라 빈 줄로 시작한다 — 안 채우면 그냥 안 저장된다. */}
-              <label className="cv-manual-label">
-                {t('cv.form.sf.manual.lang')}
-                <span className="cv-manual-opt">{t('cv.form.sf.manual.optional')}</span>
-              </label>
-              {certRows.map((row, i) => (
-                <div className="cv-certrow" key={i}>
-                  <select
-                    className="cv-select"
-                    value={row.cert}
-                    onChange={(e) => setCertRow(i, { cert: e.target.value })}
-                  >
-                    <option value="">{t('cv.form.sf.manual.certPh')}</option>
-                    {CERT_CHOICES.map((c) => <option key={c} value={c}>{c}</option>)}
-                  </select>
-                  <input
-                    className="cv-input"
-                    type="text"
-                    inputMode="text"
-                    value={row.score}
-                    placeholder={CERT_SCORE_PH[row.cert] || t('cv.form.sf.manual.scorePh')}
-                    onChange={(e) => setCertRow(i, { score: e.target.value })}
-                    aria-label={t('cv.form.sf.manual.scorePh')}
-                  />
-                  <button
-                    type="button"
-                    className="cv-certdel"
-                    onClick={() => setCertRows((rows) => (rows.length > 1 ? rows.filter((_, n) => n !== i) : [{ cert: '', score: '' }]))}
-                    aria-label={t('cv.form.sf.manual.certRemove')}
-                  >&times;</button>
-                </div>
-              ))}
-              <button
-                type="button"
-                className="cv-certadd"
-                onClick={() => setCertRows((rows) => [...rows, { cert: '', score: '' }])}
-              >+ {t('cv.form.sf.manual.certAdd')}</button>
-
-              {manualStatus === 'error' && <div className="cv-err">{t('cv.form.sf.manual.err')}</div>}
-
-              <button
-                className="cv-btn"
-                onClick={saveManual}
-                disabled={!manual.position || !manual.yoe_months || manualStatus === 'saving'}
-              >
-                {manualStatus === 'saving' ? t('cv.form.uploading') : <>{t('cv.form.sf.manual.save')} <IconArrowRight /></>}
-              </button>
-            </div>
-          )
-        ) : file ? (
+        {resumeLocked ? null : file ? (
           <div className="cv-file">
             <div className="cv-file-info">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#16a34a" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
@@ -1142,12 +933,9 @@ export default function CvLanding() {
         )}
         {/* 잠금 안내는 가운데가 아니라 왼쪽 — 가운데 정렬은 드롭존 밑에 붙는 파일 규격
             안내용이고, 드롭존이 사라진 자리에서는 라벨 시작선에 맞아야 읽힌다. */}
-        {/* 파일 규격 안내는 파일 경로에서만 뜻이 있다 — 직접입력 중에는 걷어낸다. */}
-        {!manualMode && (
-          <div className={`cv-hint ${resumeLocked ? 'cv-hint-locked' : ''}`}>
-            {resumeLocked ? t('cv.form.sf.locked') : t('cv.form.fileHint')}
-          </div>
-        )}
+        <div className={`cv-hint ${resumeLocked ? 'cv-hint-locked' : ''}`}>
+          {resumeLocked ? t('cv.form.sf.locked') : t('cv.form.fileHint')}
+        </div>
       </div>
 
       <div key="auth" className={`cv-stepblock cv-step-auth ${authDone ? 'done' : ''} ${authLocked ? 'inactive' : ''}`}>
@@ -2439,119 +2227,6 @@ export default function CvLanding() {
         .cv-hint { font-size: 11.5px; color: rgba(26,22,18,0.4); text-align: center; margin-top: 10px; letter-spacing: 0.2px; }
         .cv-hint.cv-hint-locked { text-align: left; margin-top: 4px; }
         /* ── 직접입력 트랙 ── */
-        .cv-modetabs {
-          display: flex;
-          gap: 6px;
-          margin: 14px 0 16px;
-          padding: 4px;
-          background: rgba(26,22,18,0.05);
-          border-radius: 10px;
-        }
-        .cv-modetab {
-          flex: 1;
-          padding: 8px 10px;
-          border: 0;
-          border-radius: 7px;
-          background: transparent;
-          color: rgba(26,22,18,0.5);
-          font-family: inherit;
-          font-size: 13px;
-          font-weight: 600;
-          cursor: pointer;
-          transition: background .15s ease, color .15s ease;
-        }
-        .cv-modetab.on { background: #fff; color: #1a1612; box-shadow: 0 1px 3px rgba(26,22,18,0.1); }
-        .cv-modetab:focus-visible { outline: 2px solid #ff6000; outline-offset: 2px; }
-        .cv-manual { margin-top: 0; }
-        .cv-manual-label {
-          display: block;
-          margin: 14px 0 6px;
-          font-size: 12px;
-          font-weight: 700;
-          color: rgba(26,22,18,0.6);
-          letter-spacing: 0.2px;
-        }
-        .cv-manual-label:first-child { margin-top: 0; }
-        .cv-manual-two { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-        .cv-select {
-          width: 100%;
-          padding: 12px 34px 12px 12px;
-          border: 1px solid rgba(26,22,18,0.14);
-          border-radius: 10px;
-          background: #fff;
-          background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8' fill='none'%3E%3Cpath d='M1 1.5 6 6.5l5-5' stroke='%231a1612' stroke-opacity='.45' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
-          background-repeat: no-repeat;
-          background-position: right 12px center;
-          color: #1a1612;
-          font-family: inherit;
-          font-size: 14px;
-          line-height: 1.3;
-          appearance: none;
-          -webkit-appearance: none;
-        }
-        .cv-select:disabled { background-color: rgba(26,22,18,0.04); color: rgba(26,22,18,0.35); }
-        .cv-select:focus-visible { outline: 2px solid #ff6000; outline-offset: 1px; }
-        .cv-manual-opt { font-weight: 500; color: rgba(26,22,18,0.35); letter-spacing: 0; }
-        .cv-certrow {
-          display: grid;
-          grid-template-columns: 1fr 1fr 34px;
-          gap: 8px;
-          margin-bottom: 8px;
-        }
-        .cv-input {
-          width: 100%;
-          padding: 12px;
-          border: 1px solid rgba(26,22,18,0.14);
-          border-radius: 10px;
-          background: #fff;
-          color: #1a1612;
-          font-family: inherit;
-          font-size: 14px;
-          line-height: 1.3;
-        }
-        .cv-input::placeholder { color: rgba(26,22,18,0.3); }
-        .cv-input:focus-visible, .cv-certdel:focus-visible, .cv-certadd:focus-visible {
-          outline: 2px solid #ff6000;
-          outline-offset: 1px;
-        }
-        .cv-certdel {
-          border: 1px solid rgba(26,22,18,0.12);
-          border-radius: 10px;
-          background: #fff;
-          color: rgba(26,22,18,0.4);
-          font-size: 18px;
-          line-height: 1;
-          cursor: pointer;
-          transition: color .15s ease, border-color .15s ease;
-        }
-        .cv-certdel:hover { color: #b42318; border-color: rgba(180,35,24,0.3); }
-        .cv-certadd {
-          margin-top: 2px;
-          padding: 6px 2px;
-          border: 0;
-          background: transparent;
-          color: #ff6000;
-          font-family: inherit;
-          font-size: 13px;
-          font-weight: 600;
-          cursor: pointer;
-        }
-        .cv-manual .cv-btn { margin-top: 18px; }
-        .cv-manual-done {
-          display: flex;
-          align-items: flex-start;
-          gap: 12px;
-          margin-top: 14px;
-          padding: 14px 16px;
-          background: #f0fbf3;
-          border: 1px solid rgba(22,163,74,0.25);
-          border-radius: 12px;
-          font-size: 13px;
-          color: rgba(26,22,18,0.7);
-          line-height: 1.55;
-        }
-        .cv-manual-done b { color: #1a1612; font-weight: 700; }
-        .cv-manual-done .cv-promise-check { background: #16a34a; }
         .cv-err {
           margin-top: 14px;
           padding: 12px 14px;
