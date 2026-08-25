@@ -201,13 +201,16 @@ export default function CvLanding() {
   const L = (ko, en, vi) => (lang === 'vi' ? vi : lang === 'en' ? en : ko)
   const fileRef = useRef(null)
   const formAnchorRef = useRef(null)
+  // 히어로 CTA 와 하단 바는 같은 문구·같은 목적지다 — 둘이 동시에 보이면 같은 버튼이
+  // 두 개다. 히어로 CTA 가 화면 위로 사라진 뒤에만 하단 바를 띄우려고 위치를 잰다.
+  const heroCtaRef = useRef(null)
   // 스크롤 목적지는 섹션(formAnchorRef)이 아니라 카드다 — 섹션은 padding-top 만
   // 90px(모바일 80px)이라 섹션 맨 위로 보내면 카드가 화면 한참 아래에서 시작한다.
   const formCardRef = useRef(null)
   // 모바일 하단 스크롤 다운 버튼 — 긴 랜딩을 단계별로 넘겨준다
   // (STEP 1 → 2 → 3 카드 → 등록 폼). 폼이 화면 절반 안에 들어오면
   // 폼 자체 CTA와 겹치지 않게 숨긴다.
-  const [showScrollDown, setShowScrollDown] = useState(true)
+  const [showScrollDown, setShowScrollDown] = useState(false)
   // 직접입력 트랙 — PDF 없는 사람이 STEP2 에서 고르는 두 번째 경로.
   const [manualMode, setManualMode] = useState(false)
   const [manualGroup, setManualGroup] = useState('')
@@ -618,12 +621,50 @@ export default function CvLanding() {
   useEffect(() => {
     const update = () => {
       const formTop = formAnchorRef.current?.getBoundingClientRect().top ?? Infinity
-      setShowScrollDown(formTop >= window.innerHeight * 0.5)
+      // 히어로 CTA 아랫면이 화면 위로 넘어갔는가 — 아직 보이면 하단 바는 중복이다.
+      const heroBottom = heroCtaRef.current?.getBoundingClientRect().bottom ?? Infinity
+      setShowScrollDown(heroBottom < 0 && formTop >= window.innerHeight * 0.5)
     }
     update()
     window.addEventListener('scroll', update, { passive: true })
     return () => window.removeEventListener('scroll', update)
   }, [])
+
+  /* 폼에 닿지 못한 절반이 아예 안 내려간 건지, 내려가다 만 건지 구분한다 —
+     둘은 처방이 반대다(거리·신호를 고칠 것인가, 중간 콘텐츠를 고칠 것인가).
+     cv_form_view 는 도달한 사람만 찍히므로 이탈한 쪽을 볼 지표가 없었다.
+     변이가 확정된 뒤에만 쏜다 — cv_view 와 같은 이유로 분모가 갈려야 한다. */
+  useEffect(() => {
+    if (!variantReady) return
+    const MARKS = [25, 50, 75, 100]
+    const fired = new Set()
+    let raf = 0
+    const check = () => {
+      raf = 0
+      // 문서가 뷰포트보다 짧으면(완료 화면 등) 비율 자체가 성립하지 않는다.
+      const max = document.documentElement.scrollHeight - window.innerHeight
+      if (max <= 0) return
+      const pct = Math.min(100, Math.round((window.scrollY / max) * 100))
+      for (const m of MARKS) {
+        if (pct < m || fired.has(m)) continue
+        fired.add(m)
+        track('cv_scroll_depth', {
+          meta: {
+            ...cvMeta(),
+            pct: m,
+            ms: Math.round((typeof performance !== 'undefined' ? performance.now() : 0) - cvViewAt.current),
+          },
+          page: '/cv',
+        })
+      }
+    }
+    const onScroll = () => { if (!raf) raf = requestAnimationFrame(check) }
+    window.addEventListener('scroll', onScroll, { passive: true })
+    return () => {
+      window.removeEventListener('scroll', onScroll)
+      if (raf) cancelAnimationFrame(raf)
+    }
+  }, [variantReady])
 
   // 등록 폼이 화면에 들어온 순간 1회. 완료·기등록 화면은 등록 폼이 아니라서 제외한다.
   //
@@ -685,14 +726,13 @@ export default function CvLanding() {
     return cleanup
   }, [showSuccess, existingResume])
 
+  // 카드를 한 장씩 거쳐 내려가던 동작을 폼 직행으로 바꾼다 — 모바일 축소로 카드
+  // 세 장이 1,404px → 380px 이 되어 한 화면에 다 들어오므로 단계별 이동이 의미가 없다.
+  // style 을 meta 에 남겨 교체 전후(icon/bar)를 같은 이벤트 안에서 가른다.
   const onStickyClick = () => {
-    track('cv_scrolldown_click', { meta: cvMeta(), page: '/cv' })
+    track('cv_scrolldown_click', { meta: { ...cvMeta(), style: 'bar' }, page: '/cv' })
     arrivedVia.current = 'scrolldown'
-    // 아직 화면 절반 아래에 있는 첫 스텝 카드로 — 셋 다 지났으면 등록 폼으로
-    const nextCard = Array.from(document.querySelectorAll('.cv-flow-card'))
-      .find((el) => el.getBoundingClientRect().top > window.innerHeight * 0.5)
-    if (nextCard) nextCard.scrollIntoView({ behavior: 'smooth', block: 'center' })
-    else scrollToForm()
+    scrollToForm()
   }
 
   return (
@@ -720,7 +760,7 @@ export default function CvLanding() {
               <img src="/cv/banknote-prize-v2.png" alt="" className="cv-banknote-img" />
             </div>
             {/* 히어로 CTA — 스크롤 없이 첫 화면에서 바로 등록 폼으로 */}
-            <div className="cv-hero-cta">
+            <div className="cv-hero-cta" ref={heroCtaRef}>
               <button
                 type="button"
                 className="cv-btn cv-btn-hero"
@@ -1158,11 +1198,17 @@ export default function CvLanding() {
 
       </main>
 
-      {/* 하단 스크롤 다운 버튼 — 누를 때마다 다음 단계로 스크롤 (STEP 1→2→3 → 등록 폼) */}
+      {/* 하단 고정 CTA — 아이콘만 있던 44px 원형 화살표는 무엇을 하는 버튼인지 말하지
+          않아 813명 중 3명(0.4%)만 눌렀다. 히어로에서 21.3% 가 누르는 같은 문구를 달고
+          같은 목적지로 보낸다. 히어로 CTA 가 화면 위로 사라진 뒤부터 폼이 화면에 들어오기
+          전까지만 띄운다 — 히어로가 보이는 동안은 같은 버튼이 두 개고, 폼에 닿으면 더
+          필요 없다. 스크롤한다고 숨기지는 않는다(showScrollDown). */}
       {showScrollDown && (
-        <button type="button" className="cv-scrolldown" onClick={onStickyClick} aria-label={L('다음 단계로', 'Next section', 'Phần tiếp theo')}>
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
-        </button>
+        <div className="cv-sticky">
+          <button type="button" className="cv-btn cv-btn-sticky" onClick={onStickyClick}>
+            {t('cv.sticky.cta')} <IconArrowRight />
+          </button>
+        </div>
       )}
 
       {/* 등록 완료 → 방금 올린 이력서로 맞는 공고 바로 지원 (원탭) */}
@@ -3334,6 +3380,10 @@ export default function CvLanding() {
         .cv-conds-link a:hover { text-decoration: underline; }
 
         /* ───── Sticky CTA (mobile) ───── */
+        /* 하단 탭바(.mtab, 60px) 바로 위에 앉는다. 스크롤을 내리면 _app.js 가
+           data-chrome-hidden 을 켜고 탭바가 translateY(100%) 로 빠지는데, 그때 비는
+           60px 를 그대로 물려받아 화면 맨 아래로 내려온다. 탭바와 같은 .25s ease 를
+           쓰므로 둘이 어긋나 보이지 않는다(스크롤을 올리면 탭바가 돌아오며 같이 복귀). */
         .cv-sticky {
           display: none;
           position: fixed;
@@ -3344,34 +3394,18 @@ export default function CvLanding() {
           backdrop-filter: blur(14px);
           border-top: 1px solid rgba(26,22,18,0.08);
           z-index: 90;
+          transition: bottom .25s ease, padding-bottom .25s ease;
+        }
+        /* 탭바가 빠진 자리로 내려앉을 때는 홈 인디케이터 여백을 이쪽이 떠안는다 —
+           탭바가 갖고 있던 padding-bottom 이 같이 사라지기 때문이다.
+           body 는 :global 로 감싼다 — 안 감싸면 styled-jsx 가 body 에도 스코프 클래스를
+           붙여(body[...].jsx-xxx) 그 클래스가 없는 실제 body 와 영영 안 맞는다. */
+        :global(body[data-chrome-hidden="1"]) .cv-sticky {
+          bottom: 0;
+          padding-bottom: calc(12px + env(safe-area-inset-bottom));
         }
         .cv-btn-sticky { margin-top: 0; padding: 16px; box-shadow: 0 -4px 18px rgba(255,96,0,0.22); }
 
-        /* ───── 단계별 스크롤 다운 버튼 (mobile) ───── */
-        .cv-scrolldown {
-          display: none;
-          position: fixed;
-          bottom: calc(74px + env(safe-area-inset-bottom));
-          left: 50%;
-          margin-left: -22px;
-          width: 44px;
-          height: 44px;
-          padding: 0;
-          border-radius: 50%;
-          border: 1px solid rgba(26,22,18,0.08);
-          background: #fff;
-          color: #ff6000;
-          align-items: center;
-          justify-content: center;
-          cursor: pointer;
-          box-shadow: 0 6px 18px rgba(26,22,18,0.18);
-          z-index: 90;
-          animation: cvScrollBob 1.6s ease-in-out infinite;
-        }
-        @keyframes cvScrollBob {
-          0%, 100% { transform: translateY(0); }
-          50% { transform: translateY(6px); }
-        }
 
         /* ───── Responsive ───── */
         @media (max-width: 960px) {
@@ -3555,7 +3589,6 @@ export default function CvLanding() {
           .cv-test-card { flex-basis: 290px; padding: 26px 22px 20px; }
           .cv-jobs-grid { padding: 0 20px; }
           .cv-sticky { display: block; }
-          .cv-scrolldown { display: flex; }
           /* 히어로 CTA 는 모바일에서도 화면 폭을 다 먹지 않고 글자 폭에 맞춘다 —
              풀폭이면 하단 스티키 바와 구분이 안 되고 가로로 늘어져 보인다. */
           .cv-btn.cv-btn-hero { width: auto; max-width: 86%; padding: 16px 44px; font-size: 15px; }
