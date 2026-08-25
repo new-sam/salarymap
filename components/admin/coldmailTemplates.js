@@ -973,8 +973,8 @@ const KYNDOF_TEMPLATES = KYNDOF_GROUPS.flatMap((g) => ['public', 'private'].map(
   html: kyndofHtml(frame, g),
 })))
 
-// ── 8/18 공고 추천 4종 (moen·andwise·nexacode 세일즈·nexacode 디자이너) — kyndof 정직 프레임, 단일 공고 카드 ──
-// 스크립트: jic-moen-recommend-coldmail.mjs(moen) / aw-nx-recommend-coldmail.mjs(andwise·nexacode) / nx-designer-recommend-coldmail.mjs(디자이너)
+// ── 8/18 공고 추천 4종 (moen·andwise·nexacode 세일즈·nexacode 디자이너) + 8/25 nexacode 그래픽(JD 전환 재발송) — kyndof 정직 프레임, 단일 공고 카드 ──
+// 스크립트: jic-moen-recommend-coldmail.mjs(moen) / aw-nx-recommend-coldmail.mjs(andwise·nexacode) / nx-designer-recommend-coldmail.mjs(디자이너) / nx-graphic-recommend-coldmail.mjs(그래픽)
 const REC0818_GROUPS = [
   {
     key: 'moen', company: 'Moen', initial: 'M',
@@ -1022,6 +1022,18 @@ const REC0818_GROUPS = [
       vi: '<b>Nexacode</b> — công ty phần mềm xây dựng sản phẩm SaaS, ERP và giải pháp chuyển đổi số — đang tuyển <b>Web / UI·UX Designer</b> làm việc <b>hoàn toàn từ xa (remote)</b>. Công việc tập trung vào thiết kế UI/UX web·mobile trên <b>Figma</b> (wireframe·prototype), landing page và website doanh nghiệp, màn hình admin/dashboard cho sản phẩm B2B, cùng các ấn phẩm marketing (banner, SNS) và tài liệu doanh nghiệp (PPT, proposal). Ưu tiên ứng viên có <b>từ 3 năm kinh nghiệm</b> và portfolio; kinh nghiệm làm việc tại công ty toàn cầu là lợi thế.',
       ko: 'SaaS·ERP·DX 소프트웨어 회사 <b>Nexacode</b>가 <b>풀리모트</b> <b>웹/UI·UX 디자이너</b>를 채용 중입니다. <b>Figma</b> 기반 웹·모바일 UI/UX(화면설계·프로토타입), 랜딩페이지·기업 홈페이지, 어드민·대시보드 등 B2B 화면과 배너·SNS 마케팅 디자인, PPT·제안서까지 폭넓게 다루는 포지션으로, <b>경력 3년 이상</b>·포트폴리오 보유자를 우대하며 글로벌 기업 근무 이력은 큰 우대 요소입니다.',
       en: '<b>Nexacode</b> — a software company building SaaS, ERP and digital-transformation products — is hiring a <b>Web / UI·UX Designer</b>, <b>fully remote</b>. The role covers web·mobile UI/UX in <b>Figma</b> (wireframes·prototypes), landing pages and corporate websites, admin/dashboard screens for B2B products, plus marketing assets (banners, social content) and business documents (PPT, proposals). <b>3+ years of experience</b> and a portfolio preferred; experience at a global company is a plus.',
+    },
+  },
+  {
+    key: 'nexacode-graphic', company: 'Nexacode', initial: 'N',
+    title: 'Web/Graphic Designer', meta: 'Remote',
+    role: { vi: 'Web / Graphic Designer', ko: '웹/그래픽 디자이너', en: 'Web / Graphic Designer' },
+    source: 'scripts/outreach/nx-graphic-recommend-coldmail.mjs',
+    note: '넥사코드 웹/그래픽 디자이너 추천 (8/25): JD가 UI/UX→그래픽 중심으로 수정돼 재발송(같은 공고 ID, 8/18 발송분 제외). 디자인 계열 연차 무관 443명 그래픽 루브릭 재채점 3점+ 96명.',
+    intro: {
+      vi: '<b>Nexacode</b> — công ty phần mềm xây dựng sản phẩm SaaS, ERP và giải pháp chuyển đổi số — đang tuyển <b>Web / Graphic Designer</b> làm việc <b>hoàn toàn từ xa (remote)</b>. Công việc tập trung vào thiết kế ấn phẩm quảng cáo số·banner, nội dung SNS·thumbnail, landing page·trang khuyến mãi, trang chi tiết sản phẩm·dịch vụ, website doanh nghiệp·brand, cùng tài liệu doanh nghiệp (PPT, proposal); khi cần có thể tham gia thiết kế·cải thiện UI web·mobile. Yêu cầu sử dụng thành thạo <b>Figma</b>, có nền tảng thiết kế thị giác (layout·typography·màu sắc) và portfolio; kinh nghiệm Photoshop·Illustrator là lợi thế.',
+      ko: 'SaaS·ERP·DX 소프트웨어 회사 <b>Nexacode</b>가 <b>풀리모트</b> <b>웹/그래픽 디자이너</b>를 채용 중입니다. 디지털 광고 소재·배너, SNS 콘텐츠·썸네일, 랜딩·프로모션·상세페이지, 기업 홈페이지·브랜드 웹페이지, PPT·제안서 등 그래픽·시각 디자인이 중심이고 필요시 웹·앱 UI 디자인·개선도 일부 다룹니다. <b>Figma</b> 활용과 시각 디자인 기본기(레이아웃·타이포·컬러), 포트폴리오가 필요하며 Photoshop·Illustrator 경험은 우대 요소입니다.',
+      en: '<b>Nexacode</b> — a software company building SaaS, ERP and digital-transformation products — is hiring a <b>Web / Graphic Designer</b>, <b>fully remote</b>. The role centers on digital ad creatives·banners, SNS content·thumbnails, landing·promotion·detail pages, corporate & brand web pages, and business documents (PPT, proposals), with occasional web·mobile UI design/improvement. Requires <b>Figma</b>, solid visual-design fundamentals (layout·typography·color) and a portfolio; Photoshop·Illustrator experience is a plus.',
     },
   },
 ]
