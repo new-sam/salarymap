@@ -61,14 +61,6 @@ function certRowsToProfile(rows) {
 
 /* 가입 선행 실험(cv_signup_first) 버킷 — sm_cid 해시로 고정 배정한다.
    같은 브라우저는 늘 같은 쪽이라 새로고침·재방문에도 변이가 안 바뀐다. */
-function abBucket() {
-  const cid = getClientId()
-  if (!cid) return 0
-  let h = 0
-  for (let i = 0; i < cid.length; i++) h = (h * 31 + cid.charCodeAt(i)) | 0
-  return Math.abs(h) % 2
-}
-
 /* cvMeta 가 모든 이벤트에 실어 보내는 현재 변이. 컴포넌트가 플래그를 받아 확정한 뒤
    여기에 써 넣는다 — 그래야 퍼널 단계별 이벤트를 변이로 갈라 볼 수 있다. */
 let currentVariant = null
@@ -225,22 +217,21 @@ export default function CvLanding() {
   const setCertRow = (i, patch) => setCertRows((rows) => rows.map((r, n) => (n === i ? { ...r, ...patch } : r)))
   const showSuccess = status === 'success' || (process.env.NODE_ENV !== 'production' && router.query.successPreview === '1')
 
-  // ── 가입 선행 실험 ──────────────────────────────────────────────
-  // signupFirst = STEP1 가입 / STEP2 이력서(가입 전엔 잠김). 대조군은 기존 순서 그대로.
-  // 플래그를 끄면 버킷과 무관하게 전원 대조군 — 재배포 없는 롤백 스위치다.
+  // ── 가입 선행 ───────────────────────────────────────────────────
+  // signupFirst = STEP1 가입 / STEP2 이력서(가입 전엔 잠김). A/B 없이 전원에게 적용한다.
+  // cv_signup_first 는 실험 배정이 아니라 킬 스위치다 — 끄면 전원이 기존 순서로 돌아간다.
+  // 재배포 없이 되돌릴 수 있게 남겨 둔 것이므로 배정 로직은 없다.
   const { flags, loaded: flagsLoaded } = useFlags()
-  const [bucket, setBucket] = useState(null)
-  // ?variant=signup_first|control 로 버킷을 강제한다 — 해시 배정이라 강제 수단이 없으면
-  // QA 도 팀 리뷰도 못 한다. 실사용자 데이터에 섞이지 않게 ?qa=1 과 같이 쓸 것.
+  // ?variant=signup_first|control 로 강제한다 — QA·팀 리뷰가 두 화면을 다 봐야 한다.
+  // 실사용자 데이터에 섞이지 않게 ?qa=1 과 같이 쓸 것.
   const [forced, setForced] = useState(null)
   useEffect(() => {
-    setBucket(abBucket())
     const v = new URLSearchParams(window.location.search).get('variant')
     if (v === 'signup_first' || v === 'control') setForced(v)
   }, [])
-  const variantReady = flagsLoaded && bucket !== null
+  const variantReady = flagsLoaded
   const signupFirst = variantReady && (
-    forced ? forced === 'signup_first' : (!!flags.cv_signup_first && bucket === 1)
+    forced ? forced === 'signup_first' : !!flags.cv_signup_first
   )
   // 이벤트 meta 에 실릴 변이명을 확정한다. cv_view 를 포함한 모든 퍼널 이벤트가
   // 이 값을 읽으므로, 확정 전에는 어떤 이벤트도 쏘지 않는다(아래 cv_view 이펙트).
@@ -299,8 +290,8 @@ export default function CvLanding() {
     })
   }, [])
 
-  // cv_view 는 실험 분모다 — 변이가 확정되기 전에 쏘면 variant:null 로 찍혀
-  // 어느 쪽 방문자인지 영영 모른다. 플래그·버킷이 정해진 뒤 1회만 기록한다.
+  // cv_view 는 퍼널 분모다 — 플래그가 확정되기 전에 쏘면 variant:null 로 찍혀
+  // 배포 전후를 갈라 볼 수 없다. 플래그가 정해진 뒤 1회만 기록한다.
   const viewTracked = useRef(false)
   useEffect(() => {
     if (!variantReady || viewTracked.current) return
