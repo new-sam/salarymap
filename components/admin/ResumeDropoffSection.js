@@ -259,6 +259,27 @@ function DeployCompareCard({ res, L }) {
             </table>
           </div>
           <div style={{ fontSize: 10.5, color: '#8B95A1', marginTop: 10, lineHeight: 1.6 }}>
+            {data.before.signup_from_cv !== undefined && (
+              <div style={{ marginBottom: 6 }}>
+                <b style={{ color: '#475569' }}>{L('비고 · 가입', 'Note · signups', 'Ghi chú · đăng ký')}</b>
+                {' — '}
+                {L('/cv 진입자 중 회원가입', 'signed up among /cv visitors', 'đăng ký trong số khách /cv')}{' '}
+                <b style={{ color: '#191F28' }}>{show(data.before.signup_from_cv)}</b>
+                {' → '}
+                <b style={{ color: '#191F28' }}>{show(data.after.signup_from_cv)}</b>
+                {(() => {
+                  const bp = data.before.cv_view ? (data.before.signup_from_cv / data.before.cv_view) * 100 : null
+                  const ap = data.after.cv_view ? (data.after.signup_from_cv / data.after.cv_view) * 100 : null
+                  if (bp === null || ap === null) return null
+                  return <span style={{ color: '#8B95A1' }}>
+                    {' '}({bp.toFixed(1)}% → {ap.toFixed(1)}%,{' '}
+                    <b style={{ color: ap - bp > 0 ? '#0F7B6C' : ap - bp < 0 ? TONE.bad : '#8B95A1' }}>
+                      {ap - bp > 0 ? '+' : ''}{(ap - bp).toFixed(1)}%p
+                    </b>)
+                  </span>
+                })()}
+              </div>
+            )}
             {L('사람(client_id) 단위 · 비율은 진입 대비 · 하루가 차기 전에는 창 길이만큼의 실제 건수, 하루를 넘기면 완료된 날수로 나눈 일 평균이다(부분 일수는 버린다). 표본이 수백 명 아래면 방향만 읽고 유의성은 말하지 말 것 — 하루 진입이 100 안팎이라 며칠은 모아야 한다.',
                'Per client_id · rates are share of views. Below a few hundred users read direction only, not significance.',
                'Theo client_id · tỷ lệ so với lượt xem. Dưới vài trăm người chỉ đọc xu hướng.')}

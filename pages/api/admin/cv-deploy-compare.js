@@ -17,7 +17,12 @@ const DEPLOY_AT = new Date('2026-08-25T14:13:00+07:00')
    배포 효과가 아니라 계측 차이를 보게 된다. 8/18~8/25 사이인 7일이 한계다. */
 const MAX_WINDOW_MS = 7 * 86400000
 const EVENTS = ['cv_view', 'cv_form_view', 'cv_open_picker', 'cv_attach_file',
-                'cv_register_success', 'cv_click_hero_cta', 'cv_scrolldown_click']
+                'cv_register_success', 'cv_click_hero_cta', 'cv_scrolldown_click',
+                /* 가입은 이력서 등록과 다른 사건이다 — 순서를 바꾼 뒤로는 이력서 없이
+                   가입만 하고 나가는 사람이 생긴다. sign_up 은 /auth/callback 에서
+                   sm_cid 쿠키로 찍히므로 /cv 방문자와 client_id 로 이을 수 있다.
+                   단 전역 이벤트라 /cv 밖 가입도 섞인다 — 반드시 교집합으로 센다. */
+                'sign_up']
 const PAGE = 1000
 
 async function tally(fromISO, toISO) {
@@ -35,7 +40,14 @@ async function tally(fromISO, toISO) {
     if (!data || data.length < PAGE) break
     if (off > 200000) break // 안전판
   }
-  return Object.fromEntries(EVENTS.map(e => [e, seen[e].size]))
+  const out = Object.fromEntries(EVENTS.map(e => [e, seen[e].size]))
+  // /cv 를 본 사람 중 가입한 사람 — 전역 sign_up 을 그대로 쓰면 /cv 밖 유입이 섞인다.
+  const viewers = seen.cv_view
+  out.signup_from_cv = [...seen.sign_up].filter(k => viewers.has(k)).length
+  // 가입은 했는데 이력서는 안 남긴 사람. 순서 교체가 만드는 코호트라 따로 센다.
+  out.signup_no_resume = [...seen.sign_up]
+    .filter(k => viewers.has(k) && !seen.cv_register_success.has(k)).length
+  return out
 }
 
 export default async function handler(req, res) {
