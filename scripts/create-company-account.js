@@ -98,6 +98,26 @@ async function main() {
   if (linkErr) throw linkErr
   console.log('• Recruiter linked as admin.')
 
+  // 4) job_team — the dashboard only surfaces jobs the user created or was
+  //    invited to (lib/company-access.js), so recruiter_users alone leaves a
+  //    second account on an existing tenant with zero visible jobs. Join them
+  //    to every existing job of the company as admin.
+  const { data: jobs, error: jobsErr } = await supabase
+    .from('jobs')
+    .select('id, created_by')
+    .eq('company_id', company.id)
+  if (jobsErr) throw jobsErr
+  const teamRows = (jobs || [])
+    .filter((j) => j.created_by !== userId)
+    .map((j) => ({ job_id: j.id, user_id: userId, role: 'admin', added_by: j.created_by || userId }))
+  if (teamRows.length > 0) {
+    const { error: teamErr } = await supabase
+      .from('job_team')
+      .upsert(teamRows, { onConflict: 'job_id,user_id' })
+    if (teamErr) throw teamErr
+    console.log(`• Joined job_team as admin on ${teamRows.length} existing job(s).`)
+  }
+
   console.log('\n✅ Done. Hand these to the customer:')
   console.log('   URL:      https://salary-fyi.com/company')
   console.log('   Email:   ', normEmail)
