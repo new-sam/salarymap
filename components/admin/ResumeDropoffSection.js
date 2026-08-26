@@ -12,6 +12,11 @@ import { AmpChart } from './BehaviorFunnel'
 
 const WINDOW_SEC = 86400 // 이력서 등록은 한자리에서 끝나는 흐름 — 1일이면 넉넉하다
 
+/* cv_scroll_depth 가 배포된 날. 이 이전 기간을 섞으면 깊이를 모르는 사람이 전부
+   "25% 미만"으로 떨어져 이탈이 크게 부풀려진다(실제로 30일 기본 범위에서 73.7% 로
+   보였다). 주의 문구로는 오독을 못 막으니 카드 질의 자체를 이 날짜로 가둔다. */
+const SCROLL_SINCE = '2026-08-25'
+
 const FUNNELS = [
   {
     key: 'cv',
@@ -146,6 +151,124 @@ function FunnelCard({ f, res, L }) {
   )
 }
 
+/* 배포 전후를 같은 길이의 창으로 나란히 놓는다. 날짜 피커를 안 쓰는 이유는
+   API 쪽 주석에 적었다 — 이 표는 배포 시점에 고정돼야 뜻이 있다. */
+/* 진입 → 폼 도달 → 등록 완료가 주 3단이고 나머지는 그 사이를 설명하는 보조 지표다.
+   한 표에 두되 주 3단만 굵게 둔다. */
+const CMP_ROWS = [
+  { key: 'cv_view', ko: '진입', en: 'Views', vi: 'Lượt xem', base: true, strong: true },
+  { key: 'cv_form_view', ko: '폼 도달', en: 'Form reached', vi: 'Tới form', strong: true },
+  { key: 'cv_open_picker', ko: '피커 열기', en: 'Picker opened', vi: 'Mở chọn file' },
+  { key: 'cv_attach_file', ko: '첨부', en: 'Attached', vi: 'Đính kèm' },
+  { key: 'cv_register_success', ko: '등록 완료', en: 'Registered', vi: 'Hoàn tất', strong: true },
+  { key: 'cv_click_hero_cta', ko: '히어로 CTA 클릭', en: 'Hero CTA click', vi: 'Bấm CTA đầu' },
+  { key: 'cv_scrolldown_click', ko: '하단 CTA 바 클릭', en: 'Bottom CTA click', vi: 'Bấm CTA dưới' },
+]
+
+function DeployCompareCard({ res, L }) {
+  const { data, error, isLoading } = res
+  /* 하루가 안 찼으면 원값 그대로 — 22시간치를 24시간으로 부풀리면 안 본 2시간을
+     예측으로 채우는 셈이다. 하루를 넘긴 뒤에는 완료된 날수로만 나눈다. */
+  const days = data?.days || 0
+  const asAvg = days >= 1
+  const show = (v) => (asAvg ? (v / days).toFixed(1) : fmt(v))
+  const cell = (side, r) => {
+    const v = data?.[side]?.[r.key] ?? 0
+    const base = data?.[side]?.cv_view ?? 0
+    return { v, rate: r.base || base === 0 ? null : (v / base) * 100 }
+  }
+  const th = { padding: '8px 10px', fontSize: 11, fontWeight: 700, color: '#8B95A1', textAlign: 'right', whiteSpace: 'nowrap' }
+  const td = { padding: '8px 10px', fontSize: 12.5, color: '#191F28', textAlign: 'right', whiteSpace: 'nowrap' }
+  return (
+    <div style={{ ...sectionStyle, marginBottom: 12 }}>
+      <div style={{ fontSize: 13.5, fontWeight: 700, color: '#333', marginBottom: 2 }}>
+        {L('2026-08-25 배포 전후 비교', 'Before vs after the 2026-08-25 deploy', 'So sánh trước/sau triển khai 2026-08-25')}
+      </div>
+      <div style={{ fontSize: 11.5, color: '#8B95A1', marginBottom: 12, lineHeight: 1.7 }}>
+        {L('배포 시각을 기준으로 같은 길이의 창을 나란히 둔다 — 위 날짜 피커와 무관하다. "전" 창은 계측이 바뀐 8/18 을 넘지 않게 최대 7일로 막아둔다(넘으면 배포 효과가 아니라 계측 차이를 보게 된다).',
+           'Two equal windows anchored on the deploy time — independent of the date picker above. The "before" window is capped at 7 days so it never crosses the 8/18 instrumentation change.',
+           'Hai cửa sổ bằng nhau quanh thời điểm triển khai — không phụ thuộc bộ chọn ngày ở trên.')}
+      </div>
+      {error ? <div style={{ color: '#c00', fontSize: 12.5 }}>{error.message}</div>
+        : isLoading && !data ? <div style={{ color: '#999', fontSize: 12.5 }}>{L('불러오는 중…', 'Loading…', 'Đang tải…')}</div>
+        : (
+        <>
+          <div style={{ fontSize: 11.5, color: '#8B95A1', marginBottom: 8 }}>
+            {L('배포', 'Deployed', 'Triển khai')}{' '}
+            <b style={{ color: '#191F28' }}>
+              {new Date(data.deployAt).toLocaleString('sv-SE', { timeZone: 'Asia/Ho_Chi_Minh' }).slice(0, 16)} VN
+            </b>
+            {' · '}
+            {asAvg
+              ? <>
+                  <b style={{ color: '#191F28' }}>{L('일 평균', 'Per day', 'Mỗi ngày')}</b>
+                  <span style={{ color: '#8B95A1' }}>
+                    {' '}({L(`완료된 ${days}일치를 나눈 값`, `averaged over ${days} whole day${days > 1 ? 's' : ''}`, `chia cho ${days} ngày trọn`)})
+                  </span>
+                </>
+              : <><b style={{ color: '#191F28' }}>{data.hours}h</b>
+                <span style={{ color: TONE.warn }}>
+                  {' '}({L(`아직 24시간이 안 지나 ${data.hours}h 기준입니다`,
+                          `less than 24h since deploy — ${data.hours}h window`,
+                          `chưa đủ 24h — cửa sổ ${data.hours}h`)})
+                </span></>}
+            {data.capped && <span style={{ color: TONE.warn }}>{' '}({L('7일 상한 도달 — 더 늘지 않음', 'capped at 7 days', 'giới hạn 7 ngày')})</span>}
+          </div>
+          <div style={{ overflowX: 'auto' }}>
+            <table style={{ borderCollapse: 'collapse', width: '100%', minWidth: 470 }}>
+              <thead>
+                <tr style={{ borderBottom: '1px solid #e5e7eb' }}>
+                  <th style={{ ...th, textAlign: 'left' }} />
+                  <th style={th}>{asAvg
+                    ? L(`배포 전 (일 평균)`, `Before (per day)`, `Trước (mỗi ngày)`)
+                    : L(`배포 전 ${data.hours}h`, `Before ${data.hours}h`, `Trước ${data.hours}h`)}</th>
+                  <th style={th}>{asAvg
+                    ? L(`배포 후 (일 평균)`, `After (per day)`, `Sau (mỗi ngày)`)
+                    : L(`배포 후 ${data.hours}h`, `After ${data.hours}h`, `Sau ${data.hours}h`)}</th>
+                  <th style={th}>{L('변화', 'Change', 'Thay đổi')}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {CMP_ROWS.map(r => {
+                  const b = cell('before', r), a = cell('after', r)
+                  const dp = b.rate !== null && a.rate !== null ? a.rate - b.rate : null
+                  // 진입(분모)은 비율이 없으니 물량 증감률로 본다.
+                  const dv = b.v > 0 ? ((a.v - b.v) / b.v) * 100 : null
+                  const good = dp !== null ? dp > 0 : dv !== null && dv > 0
+                  const bad = dp !== null ? dp < 0 : dv !== null && dv < 0
+                  return (
+                    <tr key={r.key} style={{ borderBottom: '1px solid #f4f5f6', background: r.strong ? '#FAFBFC' : undefined }}>
+                      <td style={{ ...td, textAlign: 'left', fontWeight: r.strong ? 700 : 500, color: '#475569' }}>{L(r.ko, r.en, r.vi)}</td>
+                      <td style={td}>
+                        <b>{show(b.v)}</b>
+                        {b.rate !== null && <span style={{ color: '#8B95A1' }}> ({b.rate.toFixed(1)}%)</span>}
+                      </td>
+                      <td style={td}>
+                        <b>{show(a.v)}</b>
+                        {a.rate !== null && <span style={{ color: '#8B95A1' }}> ({a.rate.toFixed(1)}%)</span>}
+                      </td>
+                      <td style={{ ...td, fontWeight: 700, color: good ? '#0F7B6C' : bad ? TONE.bad : '#8B95A1' }}>
+                        {dp !== null
+                          ? `${dp > 0 ? '+' : ''}${dp.toFixed(1)}%p`
+                          : dv !== null ? `${dv > 0 ? '+' : ''}${dv.toFixed(1)}%` : '—'}
+                      </td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
+          <div style={{ fontSize: 10.5, color: '#8B95A1', marginTop: 10, lineHeight: 1.6 }}>
+            {L('사람(client_id) 단위 · 비율은 진입 대비 · 하루가 차기 전에는 창 길이만큼의 실제 건수, 하루를 넘기면 완료된 날수로 나눈 일 평균이다(부분 일수는 버린다). 표본이 수백 명 아래면 방향만 읽고 유의성은 말하지 말 것 — 하루 진입이 100 안팎이라 며칠은 모아야 한다.',
+               'Per client_id · rates are share of views. Below a few hundred users read direction only, not significance.',
+               'Theo client_id · tỷ lệ so với lượt xem. Dưới vài trăm người chỉ đọc xu hướng.')}
+          </div>
+        </>
+      )}
+    </div>
+  )
+}
+
 /* 폼에 닿지 못한 사람이 "아예 안 내려간 건지 내려가다 만 건지" — 순차 퍼널은
    도달한 사람만 세므로 이 질문에 답할 수 없다. cv_scroll_depth 로 사람 단위 최대
    깊이를 접어서 본다. 둘은 처방이 반대다: 안 내려갔으면 거리·신호 문제이고,
@@ -165,7 +288,7 @@ const VIA_ROWS = [
   { key: 'scroll', ko: '맨손 스크롤', en: 'Plain scroll', vi: 'Tự cuộn' },
 ]
 
-function ScrollDepthCard({ res, L }) {
+function ScrollDepthCard({ res, L, from, to, clamped, pickedFrom }) {
   const { data, error, isLoading } = res
   const n = data?.viewers || 0
   return (
@@ -178,12 +301,29 @@ function ScrollDepthCard({ res, L }) {
            'Sequential funnels only count arrivals — this is the only place that separates "never scrolled" from "gave up midway". The fixes are opposite.',
            'Phễu tuần tự chỉ đếm người tới nơi — chỉ ở đây mới tách được "không cuộn" và "bỏ giữa chừng".')}
       </div>
+      {/* 이 카드의 숫자는 8/25 배포 이후에만 존재한다 — 무엇이 바뀐 뒤의 값인지
+          한 줄로 박아둬야 나중에 이 표를 배포 전 수치와 섞어 읽지 않는다. */}
+      <div style={{
+        border: '1px solid #e5e7eb', borderLeft: `3px solid ${TONE.warn}`, borderRadius: 8,
+        background: '#FCFCFD', padding: '9px 12px', marginBottom: 14,
+        fontSize: 11.5, fontWeight: 700, color: '#475569',
+      }}>
+        {L('2026-08-25 배포 내역', 'Shipped 2026-08-25', 'Triển khai 2026-08-25')}
+      </div>
       {error ? <div style={{ color: '#c00', fontSize: 12.5 }}>{error.message}</div>
         : isLoading && !data ? <div style={{ color: '#999', fontSize: 12.5 }}>{L('불러오는 중…', 'Loading…', 'Đang tải…')}</div>
         : (
         <>
           <div style={{ fontSize: 11.5, color: '#8B95A1', marginBottom: 10 }}>
-            {L('CV 페이지 뷰', 'CV views', 'Lượt xem CV')} <b style={{ color: '#191F28' }}>{fmt(n)}</b>
+            <b style={{ color: '#191F28' }}>{from} ~ {to}</b>
+            {clamped && (
+              <span style={{ color: TONE.warn }}>
+                {' '}({L(`피커는 ${pickedFrom} 부터지만 계측 배포일로 맞춤`,
+                        `picker starts ${pickedFrom}; clamped to the instrumentation date`,
+                        `bộ chọn từ ${pickedFrom}; đã kẹp về ngày triển khai`)})
+              </span>
+            )}
+            {' · '}{L('CV 페이지 뷰', 'CV views', 'Lượt xem CV')} <b style={{ color: '#191F28' }}>{fmt(n)}</b>
             {' · '}{L('등록 완료', 'registered', 'hoàn tất')} <b style={{ color: '#191F28' }}>{fmt(data.done)}</b>
             {n > 0 && ` (${pct(data.done, n)}%)`}
           </div>
@@ -265,6 +405,8 @@ export default function ResumeDropoffSection({ token, lang, dateRange }) {
   // /profile 쪽 퍼널 2종은 하단 토글 — 열기 전엔 요청도 보내지 않는다.
   const [showParse, setShowParse] = useState(false)
   const [showSave, setShowSave] = useState(false)
+  // 스크롤 깊이는 지금 판단에 쓰는 값이 아니라 나중을 위해 남겨둔 계측 — 접어 둔다.
+  const [showDepth, setShowDepth] = useState(false)
 
   const funnelUrl = (f) => `/api/admin/funnel-explore?steps=${f.steps.map(s => s.event).join(',')}&${range}&window=${WINDOW_SEC}&order=this`
   // 퍼널 3종 + 이탈/실패 건수 1종. 훅은 조건 없이 항상 같은 개수로 호출한다.
@@ -272,7 +414,12 @@ export default function ResumeDropoffSection({ token, lang, dateRange }) {
   const f1 = useAdmin(showParse ? funnelUrl(FUNNELS[1]) : null, token)
   const f2 = useAdmin(showSave ? funnelUrl(FUNNELS[2]) : null, token)
   const sig = useAdmin(`/api/admin/funnel-explore?steps=${SIGNALS.map(s => s.event).join(',')}&${range}&mode=count`, token)
-  const depth = useAdmin(`/api/admin/cv-dropoff?${range}`, token)
+  // 카드 질의는 계측 배포일 이전으로 내려가지 않는다 — 피커가 더 과거를 가리켜도 클램프한다.
+  const depthFrom = dateRange.from < SCROLL_SINCE ? SCROLL_SINCE : dateRange.from
+  const depthClamped = depthFrom !== dateRange.from
+  const depth = useAdmin(showDepth ? `/api/admin/cv-dropoff?from=${depthFrom}&to=${dateRange.to}` : null, token)
+  // 배포 전후 비교는 피커와 무관하게 배포 시각에 고정 — 키에 날짜를 넣지 않는다.
+  const cmp = useAdmin('/api/admin/cv-deploy-compare', token)
 
   const sigCount = Object.fromEntries((sig.data?.steps || []).map(s => [s.event, s.count]))
 
@@ -285,8 +432,9 @@ export default function ResumeDropoffSection({ token, lang, dateRange }) {
 
       <FunnelCard f={FUNNELS[0]} res={f0} L={L} />
 
-      {/* 순차 퍼널이 답 못 하는 구간 — 폼에 닿지 못한 사람의 스크롤 깊이 */}
-      <ScrollDepthCard res={depth} L={L} />
+      {/* 이번 배포가 실제로 무엇을 바꿨나 — 같은 길이의 창 두 개 */}
+      <DeployCompareCard res={cmp} L={L} />
+
 
       {/* 이탈·실패 신호 — 퍼널 단계가 아니라 건수 */}
       <div style={{ ...sectionStyle, marginBottom: 12 }}>
@@ -314,6 +462,11 @@ export default function ResumeDropoffSection({ token, lang, dateRange }) {
           </div>
         )}
       </div>
+
+      {/* 스크롤 깊이 — 나중을 위해 남긴 계측이라 접어둔다 */}
+      <ToggleBar open={showDepth} onClick={() => setShowDepth(v => !v)}
+        title={L('폼에 닿기 전 어디까지 내려갔나', 'How far they scrolled before the form', 'Cuộn tới đâu trước khi tới form')} L={L} />
+      {showDepth && <ScrollDepthCard res={depth} L={L} from={depthFrom} to={dateRange.to} clamped={depthClamped} pickedFrom={dateRange.from} />}
 
       {/* /profile 퍼널 2종 — 자주 보는 값이 아니라 토글로 접어둔다 */}
       <ToggleBar open={showParse} onClick={() => setShowParse(v => !v)} title={L(...FUNNELS[1].title)} L={L} />
